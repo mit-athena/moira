@@ -457,13 +457,19 @@ clean::									@@\
 	$(RM) concat(file,.ec) concat(file,.c)
 #endif
 #ifdef ORACLE
+/* have to undef these to keep the ORADEFS line from being attacked */
+#undef HESIOD
+#undef ZEPHYR
+#undef GDSS
+#undef ATHENA
+ORADEFS= DEFINE=HESIOD DEFINE=ZEPHYR DEFINE=GDSS DEFINE=ATHENA
 #define sqlrule()							@@\
 .SUFFIXES: .pc .dc							@@\
 .dc.pc:									@@\
 	$(AWK) -f $(SRCTOP)/util/imake.includes/oracle.awk < $< > $*.pc @@\
 									@@\
 .pc.c:									@@\
-	/usr/oracle/bin/pcc INAME=$*.pc
+	/usr/oracle/bin/proc INAME=$*.pc INCLUDE=$(BUILDTOP)/include INCLUDE=$(BUILDTOP)/lib INCLUDE=$(INCLDIR) $(ORADEFS)
 #define sqlfile(file)							@@\
 concat(file,.pc): concat(file,.dc)					@@\
 concat(file,.c): concat(file,.pc)					@@\

@@ -41,7 +41,7 @@ OSDEFS= -DPOSIX
 #if defined(SOLARIS)
 OSDEFS= -DPOSIX -DSOLARIS -I/usr/openwin/include
 OSLIBS= -L/usr/ccs/lib -lcurses -ltermcap -lresolv \
-	-lsocket -lnsl -lc /usr/ucblib/libucb.a -lelf -ldl
+	-lsocket -lnsl -lc -lelf -ldl
 CURSES= 
 /* the curses and termcap libs are where they are on purpose. -vrt 4/28/93
  */
@@ -52,7 +52,7 @@ OSLIBS= -lresolv
 #endif
 
 
-GLOBAL_CDEFS= -DHESIOD -DZEPHYR -DGDSS -DATHENA -DDBMS=INGRES -I/usr/athena/include $(OSDEFS)
+GLOBAL_CDEFS= -DHESIOD -DZEPHYR -DGDSS -DATHENA -DDBMS=ORACLE -I/usr/athena/include $(OSDEFS)
 
 
 /* SRCTOP is the root of the Moira source tree */
@@ -129,18 +129,21 @@ LZEPHYR=-lzephyr
  * location of library and includes.
  */
 #define GDSS
-#if !defined(sgi)
-LIBGDSS= /mit/gdss/`machtype`/libgdss.a
-#else
+#ifdef sgi
 LIBGDSS= /mit/gdss/lib/libgdss.a
+#else
+#ifdef SOLARIS
+LIBGDSS= /mit/gdss/`machtype`/libgdss.a -lbsd
+#else
+LIBGDSS= /mit/gdss/`machtype`/libgdss.a
+#endif
 #endif
 GDSSINC= -I/mit/gdss/include
 
 /*
- * Define your DBMS here.  Currently, the code will work with either
- * INGRES or INFORMIX.
+ * Define your DBMS here.  Currently only ORACLE is supported.
  */
-#define INGRES
+#define ORACLE
 
 /*
  * Define NEED_STRCASECMP if you don't have strcasecmp() in your libc.
@@ -214,7 +217,7 @@ SQL_LIB= /usr/ingres/lib/libingres.a -lm
 SQL_LIB= /usr/informix/lib/libsql.a
 #endif
 #ifdef ORACLE
-SQL_LIB= /usr/oracle/lib/#########
+SQL_LIB= -L/usr/oracle/lib -lsql /usr/oracle/lib/osntab.o -lsqlnet -lora -lsqlnet -lora -lnlsrtl -lcv6 -lcore -lnlsrtl -lcv6 -lcore -lsocket -lnsl -lm -lm -ldl -laio
 #endif
 
 

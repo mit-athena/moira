@@ -4,6 +4,7 @@
 @Modify(Enumerate, Numbered <@A. @,@1. @,@a. @,@i. >)
 @Modify(Title, Below .2inch)
 @Modify(Author, Below 0, Above 0)
+@Modify(hd3, below 1)
 
 @PlanHead(
 	VersionDate "Draft@Y<M>@value<date>",

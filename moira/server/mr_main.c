@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v $
  *	$Author: wesommer $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.12 1987-08-04 01:50:00 wesommer Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.13 1987-08-04 02:40:30 wesommer Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
@@ -14,6 +14,9 @@
  * 	Let the reader beware.
  * 
  *	$Log: not supported by cvs2svn $
+ * Revision 1.12  87/08/04  01:50:00  wesommer
+ * Rearranged messages.
+ * 
  * Revision 1.11  87/07/29  16:04:54  wesommer
  * Add keepalive feature.
  * 
@@ -50,7 +53,7 @@
  * 
  */
 
-static char *rcsid_sms_main_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.12 1987-08-04 01:50:00 wesommer Exp $";
+static char *rcsid_sms_main_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.13 1987-08-04 02:40:30 wesommer Exp $";
 
 #include <strings.h>
 #include <sys/errno.h>
@@ -76,6 +79,7 @@ extern int errno;
 
 
 extern char *malloc();
+extern int free();
 extern char *inet_ntoa();
 extern void sms_com_err();
 extern void do_client();
@@ -116,6 +120,12 @@ main(argc, argv)
 		com_err(whoami, 0, "Usage: smsd");
 		exit(1);
 	}		
+
+	/* Profiling implies that getting rid of one level of call
+	 * indirection here wins us maybe 1% on the VAX.
+	 */
+	gdb_amv = malloc;
+	gdb_fmv = free;
 	
 	/*
 	 * GDB initialization.

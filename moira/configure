@@ -917,7 +917,7 @@ fi
 
 if test "$athena" = true; then
     enable_athena=yes
-    prefix=/afs/athena.mit.edu/system/moira
+    prefix=/afs/.athena.mit.edu/system/moira
     bindir=$prefix/arch/$ATHENA_SYS/bin
     sbindir=$bindir
     
@@ -2549,7 +2549,7 @@ fi
 
 
 
-for ac_func in getusershell
+for ac_func in getusershell strlcpy strlcat
 do
 echo $ac_n "checking for $ac_func""... $ac_c" 1>&6
 echo "configure:2556: checking for $ac_func" >&5

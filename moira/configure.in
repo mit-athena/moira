@@ -393,7 +393,7 @@ AC_SUBST(CURSES_LIBS)
 AC_SUBST(CURSES_SUBDIRS)
 
 
-AC_CHECK_FUNCS(getusershell)
+AC_CHECK_FUNCS(getusershell strlcpy strlcat)
 
 MR_EXTEND(PRO_C_INCLUDES, INCLUDE='$(srcdir)')
 MR_INCLUDE('$(SRCTOP)/include')

@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/afs.c,v 1.27 1992-07-10 20:06:20 probe Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/afs.c,v 1.28 1992-07-16 22:11:23 probe Exp $
  *
  * Do AFS incremental updates
  *
@@ -96,7 +96,7 @@ char *cmd;
 {
     int success = 0, tries = 0;
 
-    while (success == 0 && tries < 1) {
+    while (success == 0 && tries < 2) {
 	if (tries++)
 	    sleep(5*60);
 	com_err(whoami, 0, "Executing command: %s", cmd);
@@ -114,7 +114,6 @@ add_user_lists(ac, av, user)
     char *user;
 {
     if (atoi(av[5])) {
-	sleep(1);				/* give the ptserver room */
 	edit_group(1, av[0], "USER", user);
     }
 }
@@ -157,8 +156,7 @@ int afterc;
     
     if (astate == bstate) {
 	/* Only a modify has to be done */
-	code = pr_ChangeEntry(before[U_NAME], after[U_NAME],
-			      (auid==buid) ? 0 : auid, "");
+	code = pr_ChangeEntry(before[U_NAME], after[U_NAME], auid, "");
 	if (code) {
 	    critical_alert("incremental",
 			   "Couldn't change user %s (id %d) to %s (id %d): %s",
@@ -183,6 +181,8 @@ int afterc;
 			   "Couldn't create user %s (id %d): %s",
 			   after[U_NAME], auid, error_message(code));
 	}
+	sleep(1);				/* give ptserver some time */
+
 	if (beforec) {
 	    /* Reactivating a user; get his group list */
 	    gethostname(hostname, sizeof(hostname));
@@ -194,7 +194,7 @@ int afterc;
 			       after[U_NAME], error_message(code));
 		return;
 	    }
-	    av[0] = "RUSER";
+	    av[0] = "ruser";
 	    av[1] = after[U_NAME];
 	    code = mr_query("get_lists_of_member", 2, av,
 			    add_user_lists, after[U_NAME]);
@@ -304,6 +304,8 @@ int afterc;
 	    }
 	}
 
+	sleep(1);				/* give ptserver some time */
+
 	/* We need to make sure the group is properly populated */
 	if (beforec < L_ACTIVE || atoi(before[L_ACTIVE]) == 0) return;
 
@@ -361,7 +363,6 @@ get_members(ac, av, group)
     int code=0;
 
     if (strcmp(av[0], "LIST")) {
-	sleep(1);				/* give the ptserver room */
 	edit_group(1, group, av[0], av[1]);
     } else {
 	code = mr_query("get_end_members_of_list", 1, &av[1],
@@ -404,6 +405,7 @@ edit_group(op, group, type, member)
 
     strcpy(buf, "system:");
     strcat(buf, group);
+    sleep(1);					/* give ptserver some time */
     code = (*fn)(member, buf);
     if (code) {
 	if (op==0 && code == PRNOENT) return;

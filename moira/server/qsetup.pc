@@ -1,4 +1,4 @@
-/* $Id: qsetup.pc,v 2.50 2002-08-02 10:30:08 zacheiss Exp $
+/* $Id: qsetup.pc,v 2.51 2002-11-28 03:05:56 zacheiss Exp $
  *
  * Query setup routines
  *
@@ -21,7 +21,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsetup.pc,v 2.50 2002-08-02 10:30:08 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsetup.pc,v 2.51 2002-11-28 03:05:56 zacheiss Exp $");
 
 extern char *whoami;
 extern int dbms_errno, mr_errcode;
@@ -114,12 +114,13 @@ int setup_dusr(struct query *q, char *argv[], client *cl)
 
   id = *(int *)argv[0];
 
-  /* For now, only allow users to be deleted if their status is 0
+  /* For now, only allow users to be deleted if their status is
+   * one of 0, 4, or 8 (the various registerable statuses)
    * and we have no reservations about deleting them.
    */
   EXEC SQL SELECT status, reservations INTO :flag, :resv
     FROM users WHERE users_id = :id;
-  if ((flag != 0 && flag != 4) || *resv)
+  if ((flag != 0 && flag != 4 && flag != 8) || *resv)
     return MR_IN_USE;
 
   EXEC SQL SELECT COUNT(member_id) INTO :cnt FROM imembers

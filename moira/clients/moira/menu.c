@@ -4,9 +4,12 @@
  * "mit-copyright.h".
  *
  * $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v $
- * $Author: jtkohl $
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.7 1987-08-17 14:23:05 jtkohl Exp $
+ * $Author: wesommer $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.8 1987-08-21 22:52:37 wesommer Exp $
  * $Log: not supported by cvs2svn $
+ * Revision 1.7  87/08/17  14:23:05  jtkohl
+ * add Password_input
+ * 
  * Revision 1.6  87/08/17  11:55:23  jtkohl
  * changes made by poto. Looks like cleanup
  * 
@@ -40,7 +43,7 @@
  */
 
 #ifndef lint
-static char rcsid_menu_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.7 1987-08-17 14:23:05 jtkohl Exp $";
+static char rcsid_menu_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.8 1987-08-21 22:52:37 wesommer Exp $";
 
 #endif lint
 
@@ -326,7 +329,9 @@ int Prompt_input(prompt, buf, buflen)
 	getyx(cur_ms->ms_input, y, x);
 
 	oldx = x;
-	for (p = buf; p - buf < buflen;) {
+	p = buf;
+	while(1) {
+/*	for (p = buf; p - buf < buflen;) { */
 	    (void) wmove(cur_ms->ms_input, y, x);
 	    (void) wclrtoeol(cur_ms->ms_input);
 	    refresh_ms(cur_ms);
@@ -346,14 +351,7 @@ int Prompt_input(prompt, buf, buflen)
 		break;
 	    case '\n':
 	    case '\r':
-		(void) waddch(cur_ms->ms_input, '\n');
-		(void) waddch(cur_ms->ms_input, '\r');
-
-		(void) wclrtoeol(cur_ms->ms_input);
-		refresh_ms(cur_ms);
-		*p = '\0';
-		Start_paging();
-		return 1;
+		goto end_input;
 	    case '\b':
 	    case '\177':
 		if (p > buf) {
@@ -368,7 +366,7 @@ int Prompt_input(prompt, buf, buflen)
 		p = buf;
 		break;
 	    default:
-		if (isprint(c)) {
+		if (isprint(c) && (p - buf < buflen)) {
 		    (void) waddch(cur_ms->ms_input, c);
 		    *p++ = c;
 		    x++;
@@ -377,8 +375,16 @@ int Prompt_input(prompt, buf, buflen)
 		break;
 	    }
 	}
-    }
-    else {
+    end_input:
+	(void) waddch(cur_ms->ms_input, '\n');
+	(void) waddch(cur_ms->ms_input, '\r');
+	
+	(void) wclrtoeol(cur_ms->ms_input);
+	refresh_ms(cur_ms);
+	*p = '\0';
+	Start_paging();
+	return 1;
+    } else {
 	printf("%s", prompt);
 	if (gets(buf) == NULL)
 	    return 0;
@@ -495,9 +501,33 @@ Stop_paging()
     lines_left = -1;
 }
 
-/* Print a message in the input window of cur_ms */
+/* Print a message in the input window of cur_ms.  */
 Put_message(msg)
-    char *msg;
+char *msg;
+{
+    char *copy, *line, *s;
+
+    copy = (char *) malloc(COLS);
+    s = line = msg;
+    while(*s++) {
+	if (s - line >= COLS-1) {
+	    strncpy(copy, line, COLS-1);
+	    line += COLS-1;
+	} else if (*s == '\n') {
+	    *s = '\0';
+	    strcpy(copy, line);
+	    line = ++s;
+	} else
+	    continue;
+	Put_line(copy);
+    }
+    Put_line(line);
+    free(copy);
+}
+
+/* Will be truncated to COLS characters.  */
+Put_line(msg)
+char *msg;
 {
     int y, x, i;
     char *msg1, chr;
@@ -532,8 +562,8 @@ Put_message(msg)
 
     if (cur_ms != NULLMS) {
 	msg1 = (char *) calloc(COLS, 1);
-	(void) strcpy(msg1, msg);
-	for (i = strlen(msg); i < COLS - 1; i++)
+	(void) strncpy(msg1, msg, COLS-1);
+	for (i = strlen(msg1); i < COLS - 1; i++)
 	    msg1[i] = ' ';
 	(void) wprintw(cur_ms->ms_input, "%s\n", msg1);
 /*	refresh_ms(cur_ms); */
@@ -624,14 +654,3 @@ Find_command(command)
 	return (find_command_from(command, top_menu, MAX_MENU_DEPTH));
     }
 }
-
-/*
- * Local Variables:
- * mode: c
- * c-indent-level: 4
- * c-continued-statement-offset: 4
- * c-brace-offset: -4
- * c-argdecl-indent: 4
- * c-label-offset: -4
- * End:
- */

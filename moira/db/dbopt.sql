@@ -43,6 +43,7 @@ create index i_lis_name on  list (name);
 create index i_lis_mail on  list (maillist);
 create index i_lis_group on  list (grouplist);
 create index i_lis_gid on  list (gid);
+create index i_lis_nfsgroup on list (nfsgroup);
 create index i_lis_acl on list (acl_id);
 
 create index i_imem_mid on imembers (member_id, member_type);

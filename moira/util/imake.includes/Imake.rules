@@ -1,0 +1,255 @@
+#ifdef __STDC__
+#define concat(x,y) x##y
+#define concat3(x,y,z) x##y##z
+#define concat4(w,x,y,z) w##x##y##z
+#define requote(x) #x
+#else
+#define concat(x,y) x/**/y
+#define concat3(x,y,z) x/**/y/**/z
+#define concat4(w,x,y,z) w/**/x/**/y/**/z
+#define requote(x) "x"
+#endif
+
+/*
+ * Rule for building objects in libraries.
+ */
+
+#define library_obj_rule()						@@\
+.c.o:									@@\
+	$(CC) -p -c $(CFLAGS) $*.c					@@\
+	-$(LD) -X -r -o profiled/$*.o $*.o				@@\
+	$(CC) -c $(CFLAGS) $*.c						@@\
+	-$(LD) -x -r -o a.out $*.o					@@\
+	$(MV) a.out $*.o
+
+/*
+ * cc -R breaks profiling with -p on 4.3BSD on the VAX 
+ * (and probably elsewhere), so we don't do it for the profiled version.
+ */
+
+#define library_ro_object(cfile)					@@\
+concat(cfile,.o): concat(cfile,.c)					@@\
+	$(CC) -p -c $(CFLAGS) concat(cfile,.c)				@@\
+	-$(LD) -X -r -o profiled/$*.o $*.o				@@\
+	$(CCRO) -c $(CFLAGS) concat(cfile,.c)				@@\
+	-$(LD) -x -r -o a.out $*.o					@@\
+	$(MV) a.out $*.o
+
+#define library_asm_object(ofile,sfile)					@@\
+ofile: sfile								@@\
+	$(CP) sfile x.c							@@\
+	$(CPP) -DPROF x.c | $(AS) - 					@@\
+	-$(LD) -X -r -o profiled/$*.o a.out				@@\
+	$(CPP) x.c | $(AS) -						@@\
+	-$(LD) -x -r -o $*.o a.out					@@\
+	$(RM) a.out x.c
+
+#define	install_library_target(libname,objs,srcs,lintlibs)		@@\
+									@@\
+all:: concat3(lib,libname,.a) concat3(lib,libname,_p.a)			@@\
+all:: concat3(llib-l,libname,.ln)					@@\
+									@@\
+concat3(lib,libname,.a): objs						@@\
+	$(ARCHIVE) $@ objs						@@\
+	$(RANLIB) $@							@@\
+									@@\
+concat3(lib,libname,_p.a): objs						@@\
+	cd profiled; $(ARCHIVE) ../$@ objs				@@\
+	$(RANLIB) $@							@@\
+									@@\
+lint: concat3(llib-l,libname,.ln)					@@\
+									@@\
+concat3(llib-l,libname,.ln): srcs					@@\
+	$(LINT) concat(-C,libname) $(CFLAGS) srcs lintlibs 		@@\
+									@@\
+clean:: 								@@\
+	$(RM) concat3(lib,libname,.a) concat3(lib,libname,_p.a)		@@\
+	$(RM) concat3(llib-l,libname,.ln)				@@\
+	$(RM) objs							@@\
+	$(RM) profiled/*.o						@@\
+									@@\
+install:: 								@@\
+	$(INSTALLFILE) concat3(lib,libname,.a) $(DESTDIR)/$(LIBDIR)	@@\
+	$(RANLIB) concat4($(DESTDIR)/$(LIBDIR),lib,libname,.a)		@@\
+	$(INSTALLFILE) concat3(lib,libname,_p.a) $(DESTDIR)/$(LIBDIR)   @@\
+	$(RANLIB) concat4($(DESTDIR)/$(LIBDIR),lib,libname,_p.a)	@@\
+	$(INSTALLFILE) concat3(llib-l,libname,.ln) $(DESTDIR)/$(LIBDIR)/lint
+
+/*
+ * Rule for building utilities (binaries which don't get installed)
+ */
+
+#define genutil(pgm,objs,localdeps,syslibs)				@@\
+all:: pgm								@@\
+									@@\
+pgm: objs localdeps							@@\
+	$(CC) $(CFLAGS) -o $@ objs localdeps syslibs			@@\
+									@@\
+clean:: 								@@\
+	$(RM) pgm objs							@@\
+
+/*
+ * Rule for building "generator" programs.
+ */
+
+#define generate(file,pgm,libs)						@@\
+									@@\
+pgm: concat(pgm,.c) libs						@@\
+	$(HCC) $(HCFLAGS) -o $@ $@.c libs				@@\
+									@@\
+file: pgm								@@\
+	./pgm > file							@@\
+									@@\
+clean::									@@\
+	$(RM) file pgm concat(pgm,.o)					
+
+#define generate_depend(file,pgm,libs)					@@\
+	generate(file,pgm,libs)						@@\
+									@@\
+depend:: file
+
+
+/*
+ * Rule for building test programs (something which is not installed)
+ */
+
+#define test(pgm,locallibs,syslibs)					@@\
+									@@\
+all:: pgm								@@\
+									@@\
+pgm: concat(pgm,.c) locallibs						@@\
+	$(CC) $(CFLAGS) -o $@ $@.c locallibs syslibs			@@\
+									@@\
+clean::									@@\
+	$(RM) pgm concat(pgm,.o) 					@@\
+
+/*
+ * Rule for building some random object module
+ */
+
+#define host_simple_object(obj,src)					@@\
+obj:	src								@@\
+	$(HCC) $(HCFLAGS) -c src					@@\
+									@@\
+clean::									@@\
+	$(RM) obj							@@\
+
+#define ro_object(obj,src)						@@\
+obj:	src								@@\
+	$(CCRO) $(CFLAGS) -c src					@@\
+									@@\
+clean::									@@\
+	$(RM) obj							@@\
+	
+/*
+ * Rule for building a program which is to be installed:
+ */
+
+#define program(pgm,objs,localdeps,syslibs,installdir)			@@\
+all:: pgm								@@\
+									@@\
+pgm: objs localdeps							@@\
+	$(CC) $(CFLAGS) -o $@ objs localdeps syslibs			@@\
+									@@\
+install::								@@\
+	$(INSTALLPROG) pgm ${DESTDIR}installdir				@@\
+									@@\
+clean:: 								@@\
+	$(RM) pgm objs							@@\
+
+/*
+ * Rule for building a specially installed program
+ */
+
+#define program_spinst(pgm,objs,localdeps,syslibs,installdir,instopts)	@@\
+all:: pgm								@@\
+									@@\
+pgm: objs localdeps							@@\
+	$(CC) $(CFLAGS) -o $@ objs localdeps syslibs			@@\
+									@@\
+install::								@@\
+	$(INSTALLPROG) instopts pgm ${DESTDIR}installdir		@@\
+									@@\
+clean:: 								@@\
+	$(RM) pgm objs							@@\
+
+/*
+ * Rule for installing man pages.
+ */
+
+#define manpage(section,page)						@@\
+all::									@@\
+install:: page								@@\
+	$(INSTALLFILE) page concat3(${DESTDIR}${MANDIR}/man,section,/`basename page`) @@\
+
+/*
+ * Rule for building makefile dependancies.
+ */
+
+#define	depend_target()							@@\
+depend:: $(SRCS)							@@\
+	@echo "### Now computing dependancies"				@@\
+	@$(DEPEND) -s "# DO NOT DELETE" $(CFLAGS) $(SRCS)		@@\
+
+#define clean_target()							@@\
+clean::									@@\
+	$(RM) *~ \#* *.bak $(TAGSFILE)				
+
+#define tags_target()							@@\
+tags:: 									@@\
+	$(TAGGER) *.c *.h
+
+#define makefile_target()						@@\
+Makefile:: 	 							@@\
+	-$(RM) Makefile.bak; $(MV) Makefile Makefile.bak		@@\
+	$(IMAKE) -DNEW_TOP=$(NEWTOP) -s Makefile			@@\
+
+#define foreach_subdirs(name,subdirs)					@@\
+name::									@@\
+	@for d in subdirs; \						@@\
+	do \								@@\
+		(cd $$d; echo "### Making" name "in" `pwd`;	\	@@\
+			$(MAKE) $(MFLAGS) name ;	\		@@\
+			echo "### Done with" `pwd`);		\	@@\
+	done
+
+#define print_target()							@@\
+print:: ${CODE}								@@\
+	${LPR} ${CODE}
+	
+#define src_target()							@@\
+src:: ${CODE}								@@\
+									@@\
+${CODE}:								@@\
+	-$(LN) ${SRCDIR}/$@ $@
+
+#define do_subdirs_no_imakefile(subdirs)				@@\
+	foreach_subdirs(all, subdirs)					@@\
+	foreach_subdirs(install, subdirs)				@@\
+	foreach_subdirs(clean, subdirs)					@@\
+	foreach_subdirs(depend, subdirs)				@@\
+	foreach_subdirs(tags, subdirs)					@@\
+	foreach_subdirs(print, subdirs)					@@\
+	foreach_subdirs(src, subdirs)					@@\
+
+#define do_subdirs(subdirs)						@@\
+	do_subdirs_no_imakefile(subdirs)				@@\
+									@@\
+Makefiles::								@@\
+	@echo "### Making Makefiles in" `pwd`				@@\
+	@for d in subdirs; \						@@\
+	do \								@@\
+		(cd $$d; echo "### Making Makefile in" `pwd`; \		@@\
+			$(MAKE) $(MFLAGS) SRCTOP=$(SRCTOP) \		@@\
+			NEWTOP=../$(BUILDTOP)		\		@@\
+			BUILDTOP=../$(BUILDTOP)		\		@@\
+			-f ../Makefile			\		@@\
+			Makefile; \					@@\
+			$(MAKE) $(MFLAGS) SRCTOP=$(SRCTOP) \		@@\
+			NEWTOP=../$(BUILDTOP)		\		@@\
+			Makefiles; \					@@\
+			echo "### Done with" `pwd`); \			@@\
+	done
+
+
+

@@ -1,4 +1,4 @@
-/* $Id: mr_main.c,v 1.42 1998-03-30 16:19:17 danw Exp $
+/* $Id: mr_main.c,v 1.43 1998-03-31 16:08:07 danw Exp $
  *
  * Moira server process.
  *
@@ -30,7 +30,7 @@
 
 #include <krb.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.42 1998-03-30 16:19:17 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.43 1998-03-31 16:08:07 danw Exp $");
 
 extern char *krb_get_lrealm(char *, int);
 
@@ -316,8 +316,7 @@ int main(int argc, char **argv)
 	      close(clients[i]->con);
 	      FD_CLR(clients[i]->con, &xreadfds);
 	      FD_CLR(clients[i]->con, &xwritefds);
-	      for (; clients[i]->ntuples; clients[i]->ntuples--)
-		mr_destroy_reply(clients[i]->tuples[clients[i]->ntuples - 1]);
+	      free_rtn_tuples(clients[i]);
 	      free(clients[i]->tuples);
 	      old = clients[i];
 	      clients[i] = clients[--nclients];

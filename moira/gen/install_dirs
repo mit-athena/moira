@@ -10,22 +10,7 @@ set path=(/etc /bin /usr/bin /usr/etc)
 # Find out what device we're working on
 set dev = $1
 
-set TMPSTOR = /tmp/tmpstor	# Temporary area for user . files
-set USERTAR = /tmp/proto.tar	# Tarfile for user . files
-
-# Give ourselves a fresh work area
-rm -rf $USERTAR
-rm -rf $TMPSTOR
-mkdir $TMPSTOR
-if ($status) exit $SMS_PROTO
-
-# Make a tarfile containing the user prototype files for future use.
-(cd /usr/prototype_user;tar cf - .) | (cd $TMPSTOR; tar xpf -)
-chmod -R 444 $TMPSTOR
-chmod 700 $TMPSTOR/Mail
-(cd $TMPSTOR; tar cf $USERTAR .)
-if ($status) exit $SMS_PROTO
-rm -rf $TMPSTOR
+set USERTAR = /tmp/nfs.dir/proto.tar	# Tarfile for user . files
 
 # So that the new directories get the right protections.
 umask 66
@@ -83,11 +68,9 @@ while (1)
    ### Soft failure when ready
 end
 
-# Cleanup
-rm -f $USERTAR
 exit 0
 
 #
 # 	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/install_dirs,v $
-#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/install_dirs,v 1.5 1989-07-18 16:57:57 mar Exp $
+#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/install_dirs,v 1.6 1989-08-21 21:49:32 mar Exp $
 #

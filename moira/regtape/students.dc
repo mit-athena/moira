@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/students.dc,v 1.18 1993-03-10 10:15:42 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/students.dc,v 1.19 1993-03-10 13:48:08 mar Exp $
  */
 
 #include <stdio.h>
@@ -247,7 +247,7 @@ struct entry *e;
     int changed, nochange, encrypted;
     char buf[BUFSIZ], *from, *to;
     EXEC SQL BEGIN DECLARE SECTION;
-    char *first, *last, *eid, *title, *sid, *name, *rname, *rdept, *rtitle;
+    char *first, *last, *middle, *eid, *title, *sid, *name, *rname, *rdept, *rtitle;
     char *rophone, *rhphone, *prog;
     char class[9], haddr[128], hphone[33], ophone[33], dept[33], raddr[128];
     char dfirst[17], dlast[17], dmiddle[17];
@@ -262,12 +262,13 @@ struct entry *e;
     last = e->last;
     if (strlen(last) > 16)
       last[16] = 0;
+    middle = e->middle;
     eid = e->eid;
     sid = e->id;
     id = 0;
     encrypted = 0;
 
-/* Get user info */
+    /* Get user info */
     EXEC SQL REPEATED SELECT users_id, first, last, middle, type, home_addr, home_phone, office_phone, status, department
       INTO :id, :dfirst, :dlast, :dmiddle, :class, :haddr, :hphone, :ophone, :status, :dept
       FROM users
@@ -292,10 +293,10 @@ struct entry *e;
 	}
     }
 
-/* See if class changed: if it's different, and the value in the database
- * is not STAFF or SIPB, then update the database.  Since they were on the
- * students tape, make the account usable.
- */
+    /* See if class changed: if it's different, and the value in the database
+     * is not STAFF or SIPB, then update the database.  Since they were on the
+     * students tape, make the account usable.
+     */
     if (strcmp(e->class, strtrim(class)) &&
 	strcmp(class, "STAFF") && strcmp(class, "SIPB")) {
 	com_err(whoami, 0, "updating class for user %s %s from %s to %s",
@@ -313,8 +314,22 @@ struct entry *e;
 	}
     }
 
-    /* Deal with updating the finger info if necessary */
+    /* Update name if necessary */
+    if (strcmp(first, strtrim(dfirst)) ||
+	strcmp(last, strtrim(dlast)) ||
+	strcmp(middle, strtrim(dmiddle))) {
+	com_err(whoami, 0, "updating real name for %s %s", first, last);
+	EXEC SQL UPDATE users
+	  SET first = :first, last = :last, middle = :middle,
+	  	modby = :who, modwith = :prog, modtime = 'now'
+	  WHERE users_id = :id;
+	if (sqlca.sqlcode != 0) {
+	    com_err(whoami, 0, "ingres error %d", sqlca.sqlcode);
+	    exit(1);
+	}
+    }
 
+    /* Deal with updating the finger info if necessary */
     changed = nochange = 0;
     if (encrypted) changed++;
     strcpy(buf, e->address);

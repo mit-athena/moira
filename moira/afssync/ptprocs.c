@@ -7,7 +7,7 @@
  */
 
 #ifndef lint
-static char rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/afssync/ptprocs.c,v 1.2 1990-09-21 15:18:39 mar Exp $";
+static char rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/afssync/ptprocs.c,v 1.3 1990-09-25 00:06:06 mar Exp $";
 #endif
 
 /*	
@@ -59,6 +59,10 @@ static int CreateOK (ut, cid, oid, flag, admin)
     return 1;				/* OK! */
 }
 
+#if 0
+/*
+ * WhoIsThis() has been replaced for the Moira-AFS synchronization.
+ */ 
 long WhoIsThis (acall, at, aid)
   struct rx_call *acall;
   struct ubik_trans *at;
@@ -120,6 +124,18 @@ long WhoIsThis (acall, at, aid)
     if (code && !pr_noAuth) return -1;
     return 0;
 }
+#else /* AFS-Moira synchronization */
+#define USERSMS 14487
+
+long WhoIsThis(acall, at, aid)
+struct rx_call *acall;
+struct ubik_trans *at;
+long *aid;
+{
+    *aid = USERSMS;
+    return 0;
+}
+#endif
 
 long PR_INewEntry(call,aname,aid,oid)
   struct rx_call *call;

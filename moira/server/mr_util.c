@@ -1,4 +1,4 @@
-/* $Id: mr_util.c,v 1.32 1998-10-19 20:18:58 danw Exp $
+/* $Id: mr_util.c,v 1.33 2004-02-15 01:54:58 zacheiss Exp $
  *
  * Copyright (C) 1987-1998 by the Massachusetts Institute of Technology
  * For copying and distribution information, please see the file
@@ -13,7 +13,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_util.c,v 1.32 1998-10-19 20:18:58 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_util.c,v 1.33 2004-02-15 01:54:58 zacheiss Exp $");
 
 extern char *whoami;
 
@@ -102,8 +102,7 @@ void mr_com_err(const char *whoami, long code, const char *fmt, va_list pvar)
 
 
 /* mr_trim_args: passed an argument vector, it will trim any trailing
- * spaces on the args by writing a null into the string.  If an argument
- * appears to be binary instead of ASCII, it will not be trimmed.
+ * spaces on the args by writing a null into the string.
  */
 
 int mr_trim_args(int argc, char **argv)
@@ -115,16 +114,6 @@ int mr_trim_args(int argc, char **argv)
     {
       for (lastch = p = (unsigned char *) *arg; *p; p++)
 	{
-	  /* If any byte in the string has the high bit set, assume
-	   * that it is binary and we do not want to trim it.
-	   * Setting p = lastch will cause us not to trim the string
-	   * when we break out of this inner loop.
-	   */
-	  if (*p >= 0x80)
-	    {
-	      p = lastch;
-	      break;
-	    }
 	  if (!isspace(*p))
 	    lastch = p;
 	}

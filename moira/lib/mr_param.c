@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_param.c,v $
  *	$Author: danw $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_param.c,v 1.9 1998-01-05 19:53:13 danw Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_param.c,v 1.10 1998-01-06 20:40:02 danw Exp $
  *
  *	Copyright (C) 1987, 1990 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_sms_param_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_param.c,v 1.9 1998-01-05 19:53:13 danw Exp $";
+static char *rcsid_sms_param_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_param.c,v 1.10 1998-01-06 20:40:02 danw Exp $";
 #endif
 
 #include <mit-copyright.h>
@@ -40,7 +40,7 @@ int mr_cont_send(OPERATION op, HALF_CONNECTION hcon, struct mr_params *arg)
 }
 
 int mr_start_send(OPERATION op, HALF_CONNECTION hcon,
-		  register struct mr_params *arg)
+		  struct mr_params *arg)
 {
   int i, len;
   unsigned int mr_size;
@@ -129,7 +129,7 @@ int mr_cont_recv(OPERATION op, HALF_CONNECTION hcon, mr_params **argp)
   char *cp;
   int *ip;
   int i;
-  register mr_params *arg = *argp;
+  mr_params *arg = *argp;
 
   while (!done)
     {
@@ -200,7 +200,7 @@ int mr_cont_recv(OPERATION op, HALF_CONNECTION hcon, mr_params **argp)
 
 int mr_start_recv(OPERATION op, HALF_CONNECTION hcon, struct mr_params **argp)
 {
-  register mr_params *arg = *argp;
+  mr_params *arg = *argp;
   if (!arg)
     {
       *argp = arg = malloc(sizeof(mr_params));

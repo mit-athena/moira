@@ -2,7 +2,7 @@
  * $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.c,v $
  * $Author: danw $
  * $Locker:  $
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.c,v 1.32 1998-01-05 19:52:26 danw Exp $ 
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.c,v 1.33 1998-01-06 20:39:44 danw Exp $ 
  *
  *  (c) Copyright 1988 by the Massachusetts Institute of Technology.
  *  For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char    *rcsid_userreg_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.c,v 1.32 1998-01-05 19:52:26 danw Exp $";
+static char    *rcsid_userreg_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.c,v 1.33 1998-01-06 20:39:44 danw Exp $";
 #endif
 
 #include <mit-copyright.h>
@@ -66,8 +66,8 @@ fix_display(sig)
 
 int main(int argc, char **argv)
 {
-  register int ntimes;
-  register int reencrypt;
+  int ntimes;
+  int reencrypt;
   char line[100], *when, *msg;
   int status;
   char tmpfirst[100], tmplast[100], tmpmid[100];
@@ -259,7 +259,7 @@ int dolook(void)
   /* do the database lookup */
 
   char line[100];
-  register int result;
+  int result;
 
   if (user_is_valid)
     {
@@ -675,9 +675,9 @@ glogin(void)
 gmitid(void)
 {
   /* get mid id */
-  register int i;
+  int i;
   char buf[15];
-  register char *nbuf = buf;
+  char *nbuf = buf;
   struct sigaction act;
 
 input_mit_id:
@@ -798,7 +798,7 @@ int kinit(char *user, char *passwd)
 #define _toupper(c) ((c) & ~0x20)
 #endif
 
-int lenient_strcmp(register char *string1, register char *string2)
+int lenient_strcmp(char *string1, char *string2)
 {
   /*
    * a primitive case insensitive string comparison. It returns only 0
@@ -864,9 +864,9 @@ restart(void)
   longjmp(redo, 1);
 }
 
-canon_name(register char *cp)
+canon_name(char *cp)
 {
-  register char *p2 = cp;
+  char *p2 = cp;
 
   /* Trim whitespace off both ends. */
   for (; *p2 && isspace(*p2); p2++)

@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/afs.c,v 1.59 1998-01-05 19:52:56 danw Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/afs.c,v 1.60 1998-01-06 20:39:53 danw Exp $
  *
  * Do AFS incremental updates
  *
@@ -233,7 +233,7 @@ do_user(char **before, int beforec, char **after, int afterc)
 
 do_list(char **before, int beforec, char **after, int afterc)
 {
-  register int agid, bgid;
+  int agid, bgid;
   int ahide, bhide;
   long code, id;
   char g1[PR_MAXNAMELEN], g2[PR_MAXNAMELEN];
@@ -632,8 +632,8 @@ long pr_try(long (*fn)(), char *a1, char *a2, char *a3, char *a4, char *a5,
 	    char *a6, char *a7, char *a8)
 {
   static int initd = 0;
-  register long code;
-  register int tries = 0;
+  long code;
+  int tries = 0;
 
   check_afs();
 

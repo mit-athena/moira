@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v 1.39 1998-01-05 19:52:14 danw Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v 1.40 1998-01-06 20:39:38 danw Exp $";
 #endif
 
 /*	This is the file utils.c for the MOIRA Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v $
  *      $Author: danw $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v 1.39 1998-01-05 19:52:14 danw Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v 1.40 1998-01-06 20:39:38 danw Exp $
  *
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -436,7 +436,7 @@ int NullFunc(void)
 
 void SlipInNewName(char **info, char *name)
 {
-  register int i;
+  int i;
 
   /* This also pushes the NULL down. */
   for (i = CountArgs(info); i > 0; i--)
@@ -588,7 +588,7 @@ int GetFSTypes(char **current, int options)
 
 char *Strsave(char *str)
 {
-  register char *newstr = malloc(strlen(str) + 1);
+  char *newstr = malloc(strlen(str) + 1);
 
   if (!newstr)
     return NULL;
@@ -621,7 +621,7 @@ char *atot(char *itime)
 int Print(int argc, char **argv, char *callback)
 {
   char buf[BUFSIZ];
-  register int i;
+  int i;
 
   found_some = TRUE;
   strcpy(buf, argv[0]);	/* no newline 'cause Put_message adds one */
@@ -659,7 +659,7 @@ int PrintByType(int argc, char **argv, char *callback)
 
 int PrintHelp(char **message)
 {
-  register int i;
+  int i;
 
   for (i = 0; i < CountArgs(message); i++)
     Put_message(message[i]);

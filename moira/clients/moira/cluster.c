@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/cluster.c,v 1.31 1998-01-05 19:51:55 danw Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/cluster.c,v 1.32 1998-01-06 20:39:29 danw Exp $";
 #endif
 
 /*	This is the file cluster.c for the MOIRA Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/cluster.c,v $
  *      $Author: danw $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/cluster.c,v 1.31 1998-01-05 19:51:55 danw Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/cluster.c,v 1.32 1998-01-06 20:39:29 danw Exp $
  *
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -828,7 +828,7 @@ int AddMachine(int argc, char **argv)
 
 static void RealUpdateMachine(char **info, Bool junk)
 {
-  register int stat;
+  int stat;
   char **args = AskMCDInfo(info, MACHINE, TRUE);
   if (!args)
     {
@@ -872,7 +872,7 @@ int UpdateMachine(int argc, char **argv)
 
 int CheckAndRemoveFromCluster(char *name, Bool ask_user)
 {
-  register int stat, ret_value;
+  int stat, ret_value;
   Bool delete_it;
   char *args[10], temp_buf[BUFSIZ], *ptr;
   struct qelem *top, *elem = NULL;
@@ -941,7 +941,7 @@ int CheckAndRemoveFromCluster(char *name, Bool ask_user)
 
 static void RealDeleteMachine(char **info, Bool one_machine)
 {
-  register int stat;
+  int stat;
   char temp_buf[BUFSIZ];
 
   sprintf(temp_buf, "Are you sure you want to delete the machine %s (y/n)? ",
@@ -1179,7 +1179,7 @@ int AddMachineToCluster(int argc, char **argv)
 static void RealRemoveMachineFromCluster(char **info, Bool one_map)
 {
   char temp_buf[BUFSIZ];
-  register int stat;
+  int stat;
 
   sprintf(temp_buf, "Remove %s from the cluster %s",
 	  info[MAP_MACHINE], info[MAP_CLUSTER]);
@@ -1210,7 +1210,7 @@ int RemoveMachineFromCluster(int argc, char **argv)
 {
   struct qelem *elem = NULL;
   char buf[BUFSIZ], * args[10];
-  register int stat;
+  int stat;
 
   args[MAP_MACHINE] = canonicalize_hostname(strsave(argv[1]));
   if (strcasecmp(args[MAP_MACHINE], argv[1]) && *argv[1] != '"')
@@ -1317,7 +1317,7 @@ int AddSubnet(int argc, char **argv)
 
 static void RealUpdateSubnet(char **info, Bool junk)
 {
-  register int stat;
+  int stat;
   char **args = AskMCDInfo(info, SUBNET, TRUE);
   if (!args)
     {
@@ -1357,7 +1357,7 @@ int UpdateSubnet(int argc, char **argv)
 
 static void RealDeleteSubnet(char **info, Bool one_subnet)
 {
-  register int stat;
+  int stat;
   char temp_buf[BUFSIZ];
 
   sprintf(temp_buf,
@@ -1471,7 +1471,7 @@ int AddCluster(int argc, char **argv)
 
 static void RealUpdateCluster(char **info, Bool junk)
 {
-  register int stat;
+  int stat;
   char **args = AskMCDInfo(info, CLUSTER, TRUE);
 
   if (!args)
@@ -1513,7 +1513,7 @@ int UpdateCluster(int argc, char **argv)
 
 int CheckAndRemoveMachines(char *name, Bool ask_first)
 {
-  register int stat, ret_value;
+  int stat, ret_value;
   Bool delete_it;
   char *args[10], temp_buf[BUFSIZ], *ptr;
   struct qelem *top, *elem = NULL;
@@ -1590,7 +1590,7 @@ int CheckAndRemoveMachines(char *name, Bool ask_first)
 
 static void RealDeleteCluster(char **info, Bool one_cluster)
 {
-  register int stat;
+  int stat;
   char temp_buf[BUFSIZ];
 
   sprintf(temp_buf,
@@ -1688,7 +1688,7 @@ int AddClusterData(int argc, char **argv)
 
 static void RealRemoveClusterData(char **info, Bool one_item)
 {
-  register int stat;
+  int stat;
   char *temp_ptr;
 
   Put_message(" ");

@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/strs.c,v $
  *	$Author: danw $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/strs.c,v 1.13 1998-01-05 19:53:16 danw Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/strs.c,v 1.14 1998-01-06 20:40:05 danw Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -11,7 +11,7 @@
  */
 
 #ifndef lint
-static char *rcsid_strs_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/strs.c,v 1.13 1998-01-05 19:53:16 danw Exp $";
+static char *rcsid_strs_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/strs.c,v 1.14 1998-01-06 20:40:05 danw Exp $";
 #endif
 
 #include <mit-copyright.h>
@@ -29,8 +29,8 @@ static char *rcsid_strs_c = "$Header: /afs/.athena.mit.edu/astaff/project/moirad
  */
 char *strsave(char *s)
 {
-  register int len;
-  register char *p;
+  int len;
+  char *p;
   /* Kludge for sloppy string semantics */
   if (!s)
     {
@@ -48,9 +48,9 @@ char *strsave(char *s)
 /*
  * Trim whitespace off both ends of a string.
  */
-char *strtrim(register char *save)
+char *strtrim(char *save)
 {
-  register char *t, *s;
+  char *t, *s;
 
   s = save;
   while (isspace(*s))
@@ -83,7 +83,7 @@ char *strtrim(register char *save)
 
 char *uppercase(char *s)
 {
-  register char *p;
+  char *p;
 
   for (p = s; *p; p++)
     {
@@ -96,7 +96,7 @@ char *uppercase(char *s)
 
 char *lowercase(char *s)
 {
-  register char *p;
+  char *p;
 
   for (p = s; *p; p++)
     {

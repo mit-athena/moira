@@ -1,7 +1,7 @@
 /*
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v $
  *      $Author: danw $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.46 1998-01-05 19:53:18 danw Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.47 1998-01-06 20:40:08 danw Exp $
  *
  *      Copyright (C) 1987, 1988 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -16,7 +16,7 @@
  */
 
 #ifndef lint
-static char *rcsid_reg_svr_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.46 1998-01-05 19:53:18 danw Exp $";
+static char *rcsid_reg_svr_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.47 1998-01-06 20:40:08 danw Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -534,7 +534,7 @@ int reserve_user(struct msg *message, char *retval)
   int status = SUCCESS;		/* General purpose error status */
   char fstype_buf[7];		/* Buffer to hold fs_type, a 16 bit number */
   char *login;			/* The login name the user wants */
-  register int i;		/* A counter */
+  int i;			/* A counter */
 
   /* Log that we are about to reserve a user. */
   com_err(whoami, 0, "reserving user %s %s", message->first, message->last);
@@ -733,7 +733,7 @@ int set_identity(struct msg *message, char *retval)
   int status = SUCCESS;		/* General purpose error status */
   char fstype_buf[7];		/* Buffer to hold fs_type, a 16 bit number */
   char *login;			/* The login name the user wants */
-  register int i;		/* A counter */
+  int i;			/* A counter */
 
   /* Log that we are about to reserve a user. */
   com_err(whoami, 0, "setting identity %s %s",

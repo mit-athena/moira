@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_glue.c,v $
  *	$Author: danw $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_glue.c,v 1.21 1998-01-05 19:53:29 danw Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_glue.c,v 1.22 1998-01-06 20:40:12 danw Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -12,7 +12,7 @@
  */
 
 #ifndef lint
-static char *rcsid_mr_glue_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_glue.c,v 1.21 1998-01-05 19:53:29 danw Exp $";
+static char *rcsid_mr_glue_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_glue.c,v 1.22 1998-01-06 20:40:12 danw Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -36,7 +36,7 @@ void reapchild();
 
 int mr_connect(char *server)
 {
-  register int status;
+  int status;
   extern int query_timeout;
   struct sigaction action;
 
@@ -178,7 +178,7 @@ struct query pseudo_query = {
 
 int trigger_dcm(int dummy0, int dummy1, client *cl)
 {
-  register int pid, status;
+  int pid, status;
   char prog[128];
 
   if ((status = check_query_access(&pseudo_query, 0, cl)))

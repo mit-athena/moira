@@ -1,13 +1,13 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/update_server.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/update_server.c,v 1.14 1998-01-05 19:53:57 danw Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/update_server.c,v 1.15 1998-01-06 20:40:23 danw Exp $
  */
 /*  (c) Copyright 1988 by the Massachusetts Institute of Technology. */
 /*  For copying and distribution information, please see the file */
 /*  <mit-copyright.h>. */
 
 #ifndef lint
-static char *rcsid_dispatch_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/update_server.c,v 1.14 1998-01-05 19:53:57 danw Exp $";
+static char *rcsid_dispatch_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/update_server.c,v 1.15 1998-01-06 20:40:23 danw Exp $";
 #endif
 
 #include <mit-copyright.h>
@@ -149,7 +149,7 @@ int main(int argc, char **argv)
   /* got a connection; loop forever */
   while (1)
     {
-      register char *cp;
+      char *cp;
       code = receive_object(conn, (char *)&str, STRING_T);
       if (code)
 	{

@@ -5,7 +5,7 @@
  *
  * $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v $
  * $Author: danw $
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.45 1998-01-05 19:52:05 danw Exp $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.46 1998-01-06 20:39:34 danw Exp $
  *
  * Generic menu system module.
  *
@@ -18,7 +18,7 @@
  */
 
 #ifndef lint
-static char rcsid_menu_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.45 1998-01-05 19:52:05 danw Exp $";
+static char rcsid_menu_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.46 1998-01-06 20:39:34 danw Exp $";
 #endif
 
 #include <mit-copyright.h>
@@ -99,7 +99,7 @@ void menu_com_err_hook(const char *who, long code, const char *fmt,
 int Start_menu(Menu *m)
 {
   struct menu_screen *make_ms();
-  register void (*old_hook)(const char *, long, const char *, va_list) =
+  void (*old_hook)(const char *, long, const char *, va_list) =
     set_com_err_hook((void (*) (const char *, long, const char *, va_list))menu_com_err_hook);
 
   if (initscr() == (WINDOW *)ERR)

@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/nfsparttype.c,v $
  *	$Author: danw $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/nfsparttype.c,v 1.7 1998-01-05 19:53:15 danw Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/nfsparttype.c,v 1.8 1998-01-06 20:40:03 danw Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_nfsparttype_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/nfsparttype.c,v 1.7 1998-01-05 19:53:15 danw Exp $";
+static char *rcsid_nfsparttype_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/nfsparttype.c,v 1.8 1998-01-06 20:40:03 danw Exp $";
 #endif
 
 #include <mit-copyright.h>
@@ -49,7 +49,7 @@ static struct pair fs_names[] = {
 char *format_filesys_type(char *fs_status)
 {
   char buf[BUFSIZ];
-  register struct pair *pp;
+  struct pair *pp;
 
   int n_names = 0;
   int stat = atoi(fs_status);
@@ -87,8 +87,8 @@ char *format_filesys_type(char *fs_status)
  */
 char *parse_filesys_type(char *fs_type_name)
 {
-  register struct pair *pp;
-  register char *cp = fs_type_name;
+  struct pair *pp;
+  char *cp = fs_type_name;
   char temp[BUFSIZ];
   int flags = 0;
 

@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.41 1998-01-05 19:52:13 danw Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.42 1998-01-06 20:39:37 danw Exp $";
 #endif
 
 /*	This is the file user.c for the MOIRA Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v $
  *      $Author: danw $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.41 1998-01-05 19:52:13 danw Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.42 1998-01-06 20:39:37 danw Exp $
  *
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -369,7 +369,7 @@ char **AskUserInfo(char **info, Bool name)
 struct qelem *GetUserInfo(int type, char *name1, char *name2)
 {
   char *args[2];
-  register int status;
+  int status;
   struct qelem *elem = NULL;
 
   switch (type)
@@ -437,7 +437,7 @@ struct qelem *GetUserInfo(int type, char *name1, char *name2)
 
 int AddNewUser(void)
 {
-  register int status;
+  int status;
   char **args, *info[MAX_ARGS_SIZE];
 
   if (!(args = AskUserInfo(SetUserDefaults(info), FALSE)))
@@ -509,7 +509,7 @@ static char *ChooseUser(struct qelem *elem)
 static char *GetUidNumberFromName(void)
 {
   char *args[5], *uid, first[BUFSIZ], last[BUFSIZ];
-  register int status;
+  int status;
   struct qelem *top = NULL;
 
   if (!Prompt_input("First Name: ", first, BUFSIZ))
@@ -590,7 +590,7 @@ int RegisterUser(void)
   char *args[MAX_ARGS_SIZE];
   char *login, *fstype = NULL;
   char temp_buf[BUFSIZ];
-  register int status;
+  int status;
 
   Put_message("This function has NO kerberos support, so strange things");
   Put_message("may happen if you use it to register a user.");
@@ -653,7 +653,7 @@ int RegisterUser(void)
 
 static void RealUpdateUser(char **info, Bool junk)
 {
-  register int status;
+  int status;
   char error_buf[BUFSIZ];
   char **args = AskUserInfo(info, TRUE);
 
@@ -697,7 +697,7 @@ int UpdateUser(int argc, char **argv)
 
 static void RealDeactivateUser(char **info, Bool one_item)
 {
-  register int status;
+  int status;
   char txt_buf[BUFSIZ];
   char *qargs[2], **args;
   struct qelem *elem = NULL;

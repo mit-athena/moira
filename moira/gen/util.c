@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/util.c,v 1.11 1998-01-05 19:52:52 danw Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/util.c,v 1.12 1998-01-06 20:39:51 danw Exp $
  *
  * Utility routines used by the MOIRA extraction programs.
  *
@@ -45,7 +45,7 @@ fix_file(char *targetfile)
 }
 
 
-char *dequote(register char *s)
+char *dequote(char *s)
 {
   char *last = s;
 

@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/hesiod.pc,v 1.3 1998-01-05 19:52:43 danw Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/hesiod.pc,v 1.4 1998-01-06 20:39:49 danw Exp $
  *
  * This generates the zone files necessary to load a hesiod server.
  * The following zones are generated: passwd, uid, pobox, group,
@@ -250,7 +250,7 @@ int do_groups(void)
   FILE *iout, *gout, *lout;
   char ioutf[64], goutf[64], loutf[64], buf[2048], *l;
   struct hash *groups;
-  register struct bucket *b, **p;
+  struct bucket *b, **p;
   struct grp *g;
   struct user *u;
   struct stat isb, gsb, lsb;
@@ -431,7 +431,7 @@ int do_filsys(void)
 {
   FILE *out;
   char outf[64], outft[64], *mach, *group;
-  register char *p;
+  char *p;
   struct stat sb;
   time_t ftime;
   struct save_queue *sq, *sq2, *sq_create();

@@ -1,7 +1,7 @@
 /*
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/requests.c,v $
  *      $Author: danw $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/requests.c,v 1.10 1998-01-05 19:53:20 danw Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/requests.c,v 1.11 1998-01-06 20:40:09 danw Exp $
  *
  *      Copyright (C) 1987, 1988 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -14,7 +14,7 @@
  */
 
 #ifndef lint
-static char *rcsid_requests_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/requests.c,v 1.10 1998-01-05 19:53:20 danw Exp $";
+static char *rcsid_requests_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/requests.c,v 1.11 1998-01-06 20:40:09 danw Exp $";
 #endif lint
 
 /*
@@ -71,7 +71,7 @@ void clear_req(struct request_save *req)
 
 void req_initialize(void)
 {
-  register int i;
+  int i;
 
   /* Get service information from /etc/services */
   if (!(sp = getservbyname("sms_ureg", "udp")))
@@ -105,7 +105,7 @@ void req_initialize(void)
 
 int handle_retransmitted(void)
 {
-  register int i;		/* A counter */
+  int i;			/* A counter */
   int status = FALSE;		/* Return status */
 
   for (i = PREV_INDEX(cur_request_index); i != cur_request_index;
@@ -257,7 +257,7 @@ static int illegalchars[] = {
     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
 };
 
-int ureg_validate_char(register char *s)
+int ureg_validate_char(char *s)
 {
   while (*s)
     {

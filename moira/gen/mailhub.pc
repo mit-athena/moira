@@ -1,5 +1,5 @@
 
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/mailhub.pc,v 1.3 1998-01-05 19:52:46 danw Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/mailhub.pc,v 1.4 1998-01-06 20:39:50 danw Exp $
  *
  * This generates the /usr/lib/aliases file for the mailhub.
  *
@@ -138,9 +138,9 @@ get_info(void)
   char name[129], type[9], fname[17], mname[17], lname[17], buf[257];
   EXEC SQL END DECLARE SECTION;
   char *s;
-  register struct user *u;
+  struct user *u;
   struct list *l, *memberlist;
-  register struct member *m;
+  struct member *m;
 
   /* The following is declarative, not executed,
    * and so is dependent on where it is in the file,
@@ -332,8 +332,8 @@ sqlerr:
 
 save_mlist(int id, struct list *l, int force)
 {
-  register struct member *m;
-  register struct list *l1;
+  struct member *m;
+  struct list *l1;
 
   if (l->maillist > 1 || (l->maillist == 0 && !force))
     return;
@@ -387,7 +387,7 @@ int incount = 0;
 insert_name(char *s, int id, int nodups, int copy)
 {
   int code;
-  register struct names *ns;
+  struct names *ns;
 
   incount++;
   code = hashstr(s);
@@ -471,16 +471,16 @@ static int illegalchars[] = {
 
 /* While hashing the string, punt any illegal characters */
 
-int hashstr(register char *s)
+int hashstr(char *s)
 {
-  register int result;
-  register int c;
+  int result;
+  int c;
 
   for (result = 0; c = *s; s++)
     {
       if (illegalchars[c])
 	{
-	  register char *p;
+	  char *p;
 	  for (p = s; *p; p++)
 	    *p = p[1];
 	  continue;
@@ -508,8 +508,8 @@ sort_info(void)
 
 output_data(int dummy, struct names *nms, FILE *out)
 {
-  register struct names *ns;
-  register struct user *u;
+  struct names *ns;
+  struct user *u;
 
   incount++;
   for (ns = nms; ns; ns = ns->next)
@@ -535,11 +535,11 @@ output_data(int dummy, struct names *nms, FILE *out)
 
 int lwid, bol, awid;
 
-output_mlist(int id, register struct list *l)
+output_mlist(int id, struct list *l)
 {
   struct list *l1;
-  register struct member *m;
-  register struct user *u;
+  struct member *m;
+  struct user *u;
 
   put_fill(out, l->description);
   if (l->acl_t ==  'L' && (l1 = (struct list *) hash_lookup(lists, l->acl_id)))
@@ -563,9 +563,9 @@ output_mlist(int id, register struct list *l)
 
 /* print out strings separated by commas, doing line breaks as appropriate */
 
-do_member(FILE *out, register char *s)
+do_member(FILE *out, char *s)
 {
-  register wwid;
+  wwid;
   static int cont = 1;
   char str[8];
 
@@ -604,11 +604,11 @@ do_member(FILE *out, register char *s)
 }
 
 
-put_fill(FILE *aliases, register char *string)
+put_fill(FILE *aliases, char *string)
 {
-  register char *c;
-  register int lwid;
-  register int wwid;
+  char *c;
+  int lwid;
+  int wwid;
 
   if (!string || !*string)
     return;
@@ -671,7 +671,7 @@ char *perm_malloc(unsigned size)
 {
   static char *pool = NULL;
   static unsigned pool_size = 0;
-  register char *ret;
+  char *ret;
 
   if (size > pool_size)
     {
@@ -691,8 +691,8 @@ char *perm_malloc(unsigned size)
  */
 char *pstrsave(char *s)
 {
-  register int len;
-  register char *p;
+  int len;
+  char *p;
   /* Kludge for sloppy string semantics */
   if (!s)
     {
@@ -731,9 +731,9 @@ struct hash *create_hash(int size)
  * the key, or NULL (thus NULL is not a very good value to store...)
  */
 
-char *hash_lookup(struct hash *h, register int key)
+char *hash_lookup(struct hash *h, int key)
 {
-  register struct bucket *b;
+  struct bucket *b;
 
   b = h->data[hash_func(h, key)];
   while (b && b->key != key)
@@ -749,9 +749,9 @@ char *hash_lookup(struct hash *h, register int key)
  * existed, or 0 if not.
  */
 
-int hash_update(struct hash *h, register int key, char *value)
+int hash_update(struct hash *h, int key, char *value)
 {
-  register struct bucket *b;
+  struct bucket *b;
 
   b = h->data[hash_func(h, key)];
   while (b && b->key != key)
@@ -770,9 +770,9 @@ int hash_update(struct hash *h, register int key, char *value)
  * there, 1 if it was, or -1 if we ran out of memory.
  */
 
-int hash_store(struct hash *h, register int key, char *value)
+int hash_store(struct hash *h, int key, char *value)
 {
-  register struct bucket *b, **p;
+  struct bucket *b, **p;
 
   p = &(h->data[hash_func(h, key)]);
   if (!*p)
@@ -807,9 +807,9 @@ int hash_store(struct hash *h, register int key, char *value)
  * data with that value, call the callback proc with the corresponding key.
  */
 
-hash_search(struct hash *h, register char *value, void (*callback)())
+hash_search(struct hash *h, char *value, void (*callback)())
 {
-  register struct bucket *b, **p;
+  struct bucket *b, **p;
 
   for (p = &(h->data[h->size - 1]); p >= h->data; p--)
     {
@@ -827,7 +827,7 @@ hash_search(struct hash *h, register char *value, void (*callback)())
 
 hash_step(struct hash *h, void (*callback)(), char *hint)
 {
-  register struct bucket *b, **p;
+  struct bucket *b, **p;
 
   for (p = &(h->data[h->size - 1]); p >= h->data; p--)
     {

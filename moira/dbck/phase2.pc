@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase2.pc,v 1.3 1998-01-05 19:52:36 danw Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase2.pc,v 1.4 1998-01-06 20:39:47 danw Exp $
  *
  *  (c) Copyright 1988 by the Massachusetts Institute of Technology.
  *  For copying and distribution information, please see the file
@@ -12,7 +12,7 @@
 #include "dbck.h"
 EXEC SQL INCLUDE sqlca;
 
-static char phase2_qc_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase2.pc,v 1.3 1998-01-05 19:52:36 danw Exp $";
+static char phase2_qc_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase2.pc,v 1.4 1998-01-06 20:39:47 danw Exp $";
 
 EXEC SQL WHENEVER SQLERROR DO dbmserr();
 
@@ -871,7 +871,7 @@ fsmatch(int id, struct nfsphys *n, struct filesys *f)
 }
 
 
-check_fs(int id, register struct filesys *f, int hint)
+check_fs(int id, struct filesys *f, int hint)
 {
   EXEC SQL BEGIN DECLARE SECTION;
   int iid = id, id1, id2, id3, rowcount;

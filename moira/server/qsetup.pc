@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsetup.pc,v $
  *	$Author: danw $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsetup.pc,v 2.5 1998-01-05 19:53:38 danw Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsetup.pc,v 2.6 1998-01-06 20:40:17 danw Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_qsupport_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsetup.pc,v 2.5 1998-01-05 19:53:38 danw Exp $";
+static char *rcsid_qsupport_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsetup.pc,v 2.6 1998-01-06 20:40:17 danw Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -609,9 +609,9 @@ int check_nfs(int mach_id, char *name, char *access)
   char dir[81];
   int mid = mach_id;
   EXEC SQL END DECLARE SECTION;
-  register int status;
-  register char *cp1;
-  register char *cp2;
+  int status;
+  char *cp1;
+  char *cp2;
 
   status = MR_NFS;
   EXEC SQL DECLARE csr101 CURSOR FOR

@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/dump_db.pc,v $
  *	$Author: danw $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/dump_db.pc,v 1.3 1998-01-05 19:51:34 danw Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/dump_db.pc,v 1.4 1998-01-06 20:39:18 danw Exp $
  *
  *	(c) Copyright 1988 by the Massachusetts Institute of Technology.
  *	For copying and distribution information, please see the file
@@ -13,7 +13,7 @@
  */
 
 #ifndef lint
-static char *rcsid_dump_db_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/dump_db.pc,v 1.3 1998-01-05 19:51:34 danw Exp $";
+static char *rcsid_dump_db_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/dump_db.pc,v 1.4 1998-01-06 20:39:18 danw Exp $";
 #endif lint
 
 #include <stdio.h>
@@ -39,7 +39,7 @@ EXEC SQL END DECLARE SECTION;
 int main(int argc, char **argv)
 {
   char *prefix;
-  register int i;
+  int i;
 
   if (argc != 2)
     {
@@ -68,11 +68,10 @@ int wpunt(void)
   punt("can't write backup file");
 }
 
-int dump_str(register FILE *f, register char *str)
+int dump_str(FILE *f, char *str)
 {
-  register char *ibp;
-  register int c;		/* PCC doesn't put chars in registers.. */
-  register int t;
+  char *ibp, c;
+  int t;
 
   for (ibp = str; c = (unsigned char) *ibp; ibp++)
     {
@@ -133,9 +132,9 @@ FILE *open_file(char *prefix, char *suffix)
 /*
  * Trim whitespace off both ends of a string.
  */
-char *strtrim(register char *save)
+char *strtrim(char *save)
 {
-  register char *t, *s;
+  char *t, *s;
 
   s = save;
   while (isspace(*s))

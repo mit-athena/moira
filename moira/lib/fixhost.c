@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/fixhost.c,v $
  *	$Author: danw $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/fixhost.c,v 1.13 1998-01-05 19:53:01 danw Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/fixhost.c,v 1.14 1998-01-06 20:39:56 danw Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -9,7 +9,7 @@
  */
 
 #ifndef lint
-static char *rcsid_fixhost_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/fixhost.c,v 1.13 1998-01-05 19:53:01 danw Exp $";
+static char *rcsid_fixhost_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/fixhost.c,v 1.14 1998-01-06 20:39:56 danw Exp $";
 #endif
 
 #include <mit-copyright.h>
@@ -37,12 +37,12 @@ static char *rcsid_fixhost_c = "$Header: /afs/.athena.mit.edu/astaff/project/moi
 
 char *canonicalize_hostname(char *host)
 {
-  register struct hostent *hp;
+  struct hostent *hp;
   int n_len;
   int has_dot = 0;
   char tbuf[BUFSIZ];
   struct utsname name;
-  register char *cp;
+  char *cp;
 
   if (strlen(host) > 2 && host[0] == '"' && host[strlen(host) - 1] == '"')
     {
@@ -70,7 +70,7 @@ char *canonicalize_hostname(char *host)
       /* can't get name from nameserver; fix up the format a bit */
       for (cp = host; *cp; cp++)
 	{
-	  register int c;	/* pcc doesn't like register char */
+	  int c;
 	  if (islower(c = *cp))
 	    *cp = toupper(c);
 	  has_dot |= (c == '.');

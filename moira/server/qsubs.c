@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsubs.c,v $
  *	$Author: danw $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsubs.c,v 1.12 1998-01-05 19:53:39 danw Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsubs.c,v 1.13 1998-01-06 20:40:18 danw Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_qsubs_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsubs.c,v 1.12 1998-01-05 19:53:39 danw Exp $";
+static char *rcsid_qsubs_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsubs.c,v 1.13 1998-01-06 20:40:18 danw Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -21,10 +21,10 @@ static char *rcsid_qsubs_c = "$Header: /afs/.athena.mit.edu/astaff/project/moira
 extern struct query Queries2[];
 extern int QueryCount2;
 
-struct query *get_query_by_name(register char *name, int version)
+struct query *get_query_by_name(char *name, int version)
 {
-  register struct query *q;
-  register int i;
+  struct query *q;
+  int i;
 
   q = Queries2;
   i = QueryCount2;
@@ -53,10 +53,10 @@ struct query *get_query_by_name(register char *name, int version)
 
 void list_queries(int version, int (*action)(), char *actarg)
 {
-  register struct query *q;
-  register int i;
+  struct query *q;
+  int i;
   static struct query **squeries2 = NULL;
-  register struct query **sq;
+  struct query **sq;
   char qnames[80];
   char *qnp;
   int count;
@@ -88,10 +88,10 @@ void list_queries(int version, int (*action)(), char *actarg)
   (*action)(1, &qnp, actarg);
 }
 
-void help_query(register struct query *q, int (*action)(), char *actarg)
+void help_query(struct query *q, int (*action)(), char *actarg)
 {
-  register int argcount;
-  register int i;
+  int argcount;
+  int i;
   char argn[32];
   char qname[512];
   char argr[512];

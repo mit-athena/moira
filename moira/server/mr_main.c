@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v $
  *	$Author: danw $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.36 1998-01-05 19:53:30 danw Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.37 1998-01-06 20:40:13 danw Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -16,7 +16,7 @@
  *
  */
 
-static char *rcsid_mr_main_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.36 1998-01-05 19:53:30 danw Exp $";
+static char *rcsid_mr_main_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.37 1998-01-06 20:40:13 danw Exp $";
 
 #include <mit-copyright.h>
 #include <string.h>
@@ -197,7 +197,7 @@ int main(int argc, char **argv)
    */
   while (!takedown)
     {
-      register int i;
+      int i;
       /*
        * Block until something happens.
        */
@@ -348,7 +348,7 @@ void do_reset_listen(void)
  */
 int new_connection(void)
 {
-  register client *cp;
+  client *cp;
   static counter = 0;
 
   /*
@@ -479,8 +479,8 @@ void oplist_append(LIST_OF_OPERATIONS *oplp, OPERATION op)
 
 void oplist_delete(LIST_OF_OPERATIONS oplp, OPERATION op)
 {
-  register OPERATION *s;
-  register int c;
+  OPERATION *s;
+  int c;
 
   for (s = oplp->op, c = oplp->count; c; --c, ++s)
     {

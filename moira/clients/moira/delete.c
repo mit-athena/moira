@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/delete.c,v 1.22 1998-01-05 19:52:00 danw Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/delete.c,v 1.23 1998-01-06 20:39:31 danw Exp $";
 #endif
 
 /*	This is the file delete.c for the MOIRA Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/delete.c,v $
  *      $Author: danw $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/delete.c,v 1.22 1998-01-05 19:52:00 danw Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/delete.c,v 1.23 1998-01-06 20:39:31 danw Exp $
  *
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -194,7 +194,7 @@ int RemoveItemFromLists(char *name, char *type, struct qelem **elem,
   struct qelem *local;
   char *args[10], temp_buf[BUFSIZ];
   int lists;
-  register int status;
+  int status;
 
   args[0] = type;
   args[1] = name;
@@ -581,7 +581,7 @@ int DeleteList(int argc, char *argv[])
 {
   char buf[BUFSIZ];
   struct qelem *top, *list;
-  register int status;
+  int status;
   Bool one_list;
 
   list = NULL;

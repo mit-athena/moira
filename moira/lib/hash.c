@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/hash.c,v 1.12 1998-01-05 19:53:04 danw Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/hash.c,v 1.13 1998-01-06 20:39:58 danw Exp $
  *
  * Generic hash table routines.  Uses integer keys to store char * values.
  *
@@ -42,9 +42,9 @@ struct hash *create_hash(int size)
  * the key, or NULL (thus NULL is not a very good value to store...)
  */
 
-char *hash_lookup(struct hash *h, register int key)
+char *hash_lookup(struct hash *h, int key)
 {
-  register struct bucket *b;
+  struct bucket *b;
 
   b = h->data[hash_func(h, key)];
   while (b && b->key != key)
@@ -60,9 +60,9 @@ char *hash_lookup(struct hash *h, register int key)
  * existed, or 0 if not.
  */
 
-int hash_update(struct hash *h, register int key, char *value)
+int hash_update(struct hash *h, int key, char *value)
 {
-  register struct bucket *b;
+  struct bucket *b;
 
   b = h->data[hash_func(h, key)];
   while (b && b->key != key)
@@ -81,9 +81,9 @@ int hash_update(struct hash *h, register int key, char *value)
  * there, 1 if it was, or -1 if we ran out of memory.
  */
 
-int hash_store(struct hash *h, register int key, char *value)
+int hash_store(struct hash *h, int key, char *value)
 {
-  register struct bucket *b, **p;
+  struct bucket *b, **p;
 
   p = &(h->data[hash_func(h, key)]);
   if (!*p)
@@ -118,9 +118,9 @@ int hash_store(struct hash *h, register int key, char *value)
  * data with that value, call the callback proc with the corresponding key.
  */
 
-hash_search(struct hash *h, register char *value, void (*callback)())
+hash_search(struct hash *h, char *value, void (*callback)())
 {
-  register struct bucket *b, **p;
+  struct bucket *b, **p;
 
   for (p = &(h->data[h->size - 1]); p >= h->data; p--)
     {
@@ -138,7 +138,7 @@ hash_search(struct hash *h, register char *value, void (*callback)())
 
 hash_step(struct hash *h, void (*callback)(), char *hint)
 {
-  register struct bucket *b, **p;
+  struct bucket *b, **p;
 
   for (p = &(h->data[h->size - 1]); p >= h->data; p--)
     {
@@ -152,7 +152,7 @@ hash_step(struct hash *h, void (*callback)(), char *hint)
 
 hash_destroy(struct hash *h)
 {
-  register struct bucket *b, **p, *b1;
+  struct bucket *b, **p, *b1;
 
   for (p = &(h->data[h->size - 1]); p >= h->data; p--)
     {

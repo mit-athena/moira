@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.42 1998-01-05 19:51:53 danw Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.43 1998-01-06 20:39:28 danw Exp $";
 #endif
 
 /*	This is the file attach.c for the MOIRA Client, which allows a nieve
@@ -13,7 +13,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v $
  *      $Author: danw $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.42 1998-01-05 19:51:53 danw Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.43 1998-01-06 20:39:28 danw Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -948,7 +948,7 @@ int GetFSAlias(int argc, char **argv)
 
 int CreateFSAlias(int argc, char **argv)
 {
-  register int stat;
+  int stat;
   struct qelem *elem, *top;
   char *args[MAX_ARGS_SIZE], buf[BUFSIZ], **info;
 

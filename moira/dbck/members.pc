@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/members.pc,v 1.1 1997-01-29 23:13:10 danw Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/members.pc,v 1.2 1998-01-06 20:39:45 danw Exp $
  */
 
 #include <stdio.h>
@@ -344,7 +344,7 @@ fix_members()
 insert_list(m)
 struct member *m;
 {
-    register struct member_list *l, *l1;
+    struct member_list *l, *l1;
 
     l = (struct member_list *) hash_lookup(lists, m->list_id);
     if (l == NULL) {
@@ -385,7 +385,7 @@ struct member *m;
 insert_member(m)
 struct member *m;
 {
-    register struct member_list *l, *l1;
+    struct member_list *l, *l1;
 
     l = (struct member_list *) hash_lookup(members, m->member_id);
     if (l == NULL) {
@@ -428,7 +428,7 @@ struct member *find_member(listid, memberid)
 int listid;
 int memberid;
 {
-    register struct member_list *l;
+    struct member_list *l;
 
     for (l = (struct member_list *) hash_lookup(lists, listid); l; l = l->next)
       if (l->member->member_id == memberid)
@@ -448,7 +448,7 @@ int *errmis;
     char *mtype;
     EXEC SQL END DECLARE SECTION; 
     char buf[2];
-    register struct member *m;
+    struct member *m;
 
     for (; l; l = l->next) {
 	m = l->member;
@@ -523,7 +523,7 @@ int *errmis;
 
 struct member *allocmember()
 {
-    register struct member *m;
+    struct member *m;
 
     m = (struct member *) malloc(sizeof(struct member));
     if (m == NULL) {
@@ -538,7 +538,7 @@ struct member *allocmember()
 
 int isinchain(m, l)
 struct member *m;
-register struct member_list *l;
+struct member_list *l;
 {
     for (; l; l = l->next)
       if (l->member == m)
@@ -548,9 +548,9 @@ register struct member_list *l;
 
 
 int chainlen(l)
-register struct member_list *l;
+struct member_list *l;
 {
-    register int i;
+    int i;
     for (i = 0; l; l = l->next, i++);
     return(i);
 }

@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/quota.c,v 1.24 1998-01-05 19:52:12 danw Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/quota.c,v 1.25 1998-01-06 20:39:36 danw Exp $";
 #endif
 
 /*	This is the file quota.c for the MOIRA Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/quota.c,v $
  *      $Author: danw $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/quota.c,v 1.24 1998-01-05 19:52:12 danw Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/quota.c,v 1.25 1998-01-06 20:39:36 danw Exp $
  *
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -49,7 +49,7 @@ static char *def_quota = NULL;
 
 static char *GetDefaultUserQuota(Bool override)
 {
-  register int status;
+  int status;
   char **info;
   struct qelem *top = NULL;
   static char *val[] = {"def_quota", NULL};
@@ -235,7 +235,7 @@ int ShowDefaultQuota(void)
 
 int ChangeDefaultQuota(int argc, char *argv[])
 {
-  register int status;
+  int status;
   char temp_buf[BUFSIZ];
   static char *newval[] = {
     "def_quota", NULL, NULL
@@ -276,7 +276,7 @@ int ChangeDefaultQuota(int argc, char *argv[])
 int GetQuota(void)
 {
   struct qelem *top = NULL;
-  register int status;
+  int status;
   char **args;
 
   if (!(args = GetQuotaArgs(FALSE)))
@@ -306,7 +306,7 @@ int GetQuota(void)
 int GetQuotaByFilesys(void)
 {
   struct qelem *top = NULL;
-  register int status;
+  int status;
   char **args = malloc(2 * sizeof(char *));
 
   if (!args)
@@ -343,7 +343,7 @@ int GetQuotaByFilesys(void)
 int AddQuota(void)
 {
   char **args;
-  register int status;
+  int status;
 
   if (!(args = GetQuotaArgs(TRUE)))
     return DM_NORMAL;
@@ -365,7 +365,7 @@ int AddQuota(void)
 
 static void RealUpdateQuota(char **info)
 {
-  register int status;
+  int status;
   char temp_buf[BUFSIZ];
 
   sprintf(temp_buf, "New quota for filesystem %s (in KB)", info[Q_FILESYS]);
@@ -425,7 +425,7 @@ int UpdateQuota(void)
 
 static void RealDeleteQuota(char **info, Bool one_item)
 {
-  register int status;
+  int status;
   char temp_buf[BUFSIZ];
 
   if (!strcmp(info[Q_TYPE], "ANY"))
@@ -461,7 +461,7 @@ static void RealDeleteQuota(char **info, Bool one_item)
 
 int DeleteQuota(void)
 {
-  register int status;
+  int status;
   char **args;
   struct qelem *top = NULL;
 

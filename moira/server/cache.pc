@@ -1,5 +1,5 @@
 /*
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/cache.pc,v 2.3 1998-01-05 19:53:28 danw Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/cache.pc,v 2.4 1998-01-06 20:40:12 danw Exp $
  *
  *	Copyright (C) 1989, 1990 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -7,7 +7,7 @@
  */
 
 #ifndef lint
-static char *rcsid_cache_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/cache.pc,v 2.3 1998-01-05 19:53:28 danw Exp $";
+static char *rcsid_cache_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/cache.pc,v 2.4 1998-01-06 20:40:12 danw Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -45,7 +45,7 @@ int cachehits = 0, cachemisses = 0;
 
 int hashname(char *name, enum tables type)
 {
-  register int val = type;
+  int val = type;
 
   while (*name)
     val = (val << 5) - val + *name++ - '`';
@@ -59,7 +59,7 @@ int hashname(char *name, enum tables type)
 
 void flush_cache(void)
 {
-  register struct item *i;
+  struct item *i;
 
   if (cachehits + cachemisses != 0)
     {
@@ -88,7 +88,7 @@ void flush_cache(void)
 
 int name_to_id(char *name, enum tables type, int *id)
 {
-  register struct item *i, *t;
+  struct item *i, *t;
   EXEC SQL BEGIN DECLARE SECTION;
   char *iname;
   int j, h;
@@ -194,7 +194,7 @@ int name_to_id(char *name, enum tables type, int *id)
 
 int id_to_name(int id, enum tables type, char **name)
 {
-  register struct item *i, *t;
+  struct item *i, *t;
   EXEC SQL BEGIN DECLARE SECTION;
   char iname[NAMESZ];
   int j;
@@ -295,7 +295,7 @@ int id_to_name(int id, enum tables type, char **name)
 
 int cache_entry(char *name, enum tables type, int id)
 {
-  register struct item *i, *t;
+  struct item *i, *t;
 
   for (i = cachehead.next; i != &cachehead; i = i->next)
     {
@@ -342,7 +342,7 @@ int cache_entry(char *name, enum tables type, int id)
 
 void flush_name(char *name, enum tables type)
 {
-  register struct item *i;
+  struct item *i;
 
   /* first clear it out of the transaction chain */
   for (i = &cachehead; i && i->trans; i = i->trans)
@@ -381,7 +381,7 @@ void cache_commit(void)
 
 void cache_abort(void)
 {
-  register struct item *i, *t;
+  struct item *i, *t;
 
   for (i = cachehead.trans; i; i = t)
     {

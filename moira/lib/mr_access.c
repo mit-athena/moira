@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_access.c,v $
  *	$Author: danw $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_access.c,v 1.8 1998-01-05 19:53:07 danw Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_access.c,v 1.9 1998-01-06 20:39:59 danw Exp $
  *
  *	Copyright (C) 1987, 1990 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -9,7 +9,7 @@
  */
 
 #ifndef lint
-static char *rcsid_sms_access_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_access.c,v 1.8 1998-01-05 19:53:07 danw Exp $";
+static char *rcsid_sms_access_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_access.c,v 1.9 1998-01-06 20:39:59 danw Exp $";
 #endif
 
 #include <mit-copyright.h>
@@ -22,8 +22,8 @@ static char *rcsid_sms_access_c = "$Header: /afs/.athena.mit.edu/astaff/project/
  */
 int mr_access(char *name, int argc, char **argv)
 {
-  register char **nargv = malloc(sizeof(char *) * (argc + 1));
-  register int status = 0;
+  char **nargv = malloc(sizeof(char *) * (argc + 1));
+  int status = 0;
 
   nargv[0] = name;
   memcpy(nargv + 1, argv, sizeof(char *) * argc);
@@ -40,7 +40,7 @@ int mr_access_internal(int argc, char **argv)
 {
   int status;
   mr_params params_st;
-  register mr_params *params = NULL;
+  mr_params *params = NULL;
   mr_params *reply = NULL;
 
   CHECK_CONNECTED;

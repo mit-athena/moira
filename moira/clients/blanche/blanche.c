@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.35 1998-01-05 19:51:48 danw Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.36 1998-01-06 20:39:26 danw Exp $
  *
  * Command line oriented Moira List tool.
  *
@@ -24,7 +24,7 @@
 #include <moira_site.h>
 
 #ifndef LINT
-static char blanche_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.35 1998-01-05 19:51:48 danw Exp $";
+static char blanche_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.36 1998-01-06 20:39:26 danw Exp $";
 #endif
 
 
@@ -993,9 +993,9 @@ int collect(int argc, char **argv, char ***list)
  * is not found.  ';' is a comment character.
  */
 
-struct member *parse_member(register char *s)
+struct member *parse_member(char *s)
 {
-  register struct member *m;
+  struct member *m;
   char *p, *lastchar;
 
   while (*s && isspace(*s))

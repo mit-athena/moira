@@ -19,7 +19,7 @@
 /*#include <conf.h>*/
 
 char rcsid[] =
-    "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/ksrvtgt.c,v 1.5 1998-01-05 19:52:59 danw Exp $";
+    "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/ksrvtgt.c,v 1.6 1998-01-06 20:39:55 danw Exp $";
 
 
 void usage(char **argv)
@@ -34,7 +34,7 @@ void usage(char **argv)
 int main(int argc, char **argv)
 {
   char realm[REALM_SZ + 1];
-  register int code;
+  int code;
   int i, lifetime = 1;
   char srvtab[MAXPATHLEN + 1];
 

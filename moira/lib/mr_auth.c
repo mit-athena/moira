@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_auth.c,v $
  *	$Author: danw $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_auth.c,v 1.17 1998-01-05 19:53:09 danw Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_auth.c,v 1.18 1998-01-06 20:40:00 danw Exp $
  *
  *	Copyright (C) 1987, 1990 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -12,7 +12,7 @@
  */
 
 #ifndef lint
-static char *rcsid_sms_auth_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_auth.c,v 1.17 1998-01-05 19:53:09 danw Exp $";
+static char *rcsid_sms_auth_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_auth.c,v 1.18 1998-01-06 20:40:00 danw Exp $";
 #endif
 
 #include <mit-copyright.h>
@@ -28,13 +28,13 @@ static char *rcsid_sms_auth_c = "$Header: /afs/.athena.mit.edu/astaff/project/mo
 
 int mr_auth(char *prog)
 {
-  register int status;
+  int status;
   mr_params params_st;
   char *args[2];
   int argl[2];
   char realm[REALM_SZ], host[BUFSIZ], *p;
 
-  register mr_params *params = &params_st;
+  mr_params *params = &params_st;
   mr_params *reply = NULL;
   KTEXT_ST auth;
 

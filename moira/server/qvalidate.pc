@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qvalidate.pc,v $
  *	$Author: danw $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qvalidate.pc,v 2.5 1998-01-05 19:53:48 danw Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qvalidate.pc,v 2.6 1998-01-06 20:40:18 danw Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_qsupport_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qvalidate.pc,v 2.5 1998-01-05 19:53:48 danw Exp $";
+static char *rcsid_qsupport_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qvalidate.pc,v 2.6 1998-01-06 20:40:18 danw Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -47,7 +47,7 @@ EXEC SQL WHENEVER SQLERROR DO dbmserr();
 
 /* Validation Routines */
 
-int validate_row(register struct query *q, char *argv[], register struct validate *v)
+int validate_row(struct query *q, char *argv[], struct validate *v)
 {
   EXEC SQL BEGIN DECLARE SECTION;
   char qual[128];
@@ -76,10 +76,9 @@ int validate_row(register struct query *q, char *argv[], register struct validat
   return MR_EXISTS;
 }
 
-int validate_fields(struct query *q, register char *argv[],
-		    register struct valobj *vo, register int n)
+int validate_fields(struct query *q, char *argv[], struct valobj *vo, int n)
 {
-  register int status;
+  int status;
 
   while (--n >= 0)
     {
@@ -198,7 +197,7 @@ static int illegalchars[] = {
   1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
 };
 
-int validate_chars(char *argv[], register struct valobj *vo)
+int validate_chars(char *argv[], struct valobj *vo)
 {
   char *s = argv[vo->index];
   int arg;
@@ -228,14 +227,14 @@ int validate_chars(char *argv[], register struct valobj *vo)
 }
 
 
-int validate_id(struct query *q, char *argv[], register struct valobj *vo)
+int validate_id(struct query *q, char *argv[], struct valobj *vo)
 {
   EXEC SQL BEGIN DECLARE SECTION;
   char *name, *namefield, *idfield;
   int id, rowcount, tbl;
   EXEC SQL END DECLARE SECTION;
   int status;
-  register char *c;
+  char *c;
 
   name = argv[vo->index];
   tbl = vo->table;
@@ -289,10 +288,10 @@ int validate_id(struct query *q, char *argv[], register struct valobj *vo)
     }
 }
 
-int validate_name(char *argv[], register struct valobj *vo)
+int validate_name(char *argv[], struct valobj *vo)
 {
   char *name, *namefield;
-  register char *c;
+  char *c;
 
   name = argv[vo->index];
   namefield = vo->namefield;
@@ -320,7 +319,7 @@ int validate_rename(char *argv[], struct valobj *vo)
   int id;
   EXEC SQL END DECLARE SECTION;
   int status;
-  register char *c;
+  char *c;
 
   status = validate_chars(argv, vo);
   if (status != MR_EXISTS)
@@ -361,14 +360,14 @@ int validate_rename(char *argv[], struct valobj *vo)
 }
 
 
-int validate_type(char *argv[], register struct valobj *vo)
+int validate_type(char *argv[], struct valobj *vo)
 {
   EXEC SQL BEGIN DECLARE SECTION;
   char *typename;
   char *val;
   int cnt;
   EXEC SQL END DECLARE SECTION;
-  register char *c;
+  char *c;
 
   typename = vo->namefield;
   c = val = argv[vo->index];
@@ -394,7 +393,7 @@ int validate_type(char *argv[], register struct valobj *vo)
 
 /* validate member or type-specific data field */
 
-int validate_typedata(register struct query *q, register char *argv[], register struct valobj *vo)
+int validate_typedata(struct query *q, char *argv[], struct valobj *vo)
 {
   EXEC SQL BEGIN DECLARE SECTION;
   char *name;
@@ -403,7 +402,7 @@ int validate_typedata(register struct query *q, register char *argv[], register 
   int id;
   EXEC SQL END DECLARE SECTION;
   int status;
-  register char *c;
+  char *c;
 
   /* get named object */
   name = argv[vo->index];
@@ -503,7 +502,7 @@ int validate_typedata(register struct query *q, register char *argv[], register 
 
 
 /* Make sure the data fits in the field */
-int validate_len(register char *argv[], register struct valobj *vo)
+int validate_len(char *argv[], struct valobj *vo)
 {
   EXEC SQL BEGIN DECLARE SECTION;
   int len;
@@ -590,7 +589,7 @@ char *sqlbuffer[QMAXARGS];
 SQLDA *mr_alloc_sqlda()
 {
   SQLDA *it;
-  register int j;
+  int j;
 
   it = sqlald(QMAXARGS, ARGLEN, 0);
   if (!it)
@@ -614,7 +613,7 @@ SQLDA *mr_alloc_sqlda()
 int convert_wildcards(char *arg)
 {
   static char buffer[ARGLEN];
-  register char *s, *d;
+  char *s, *d;
 
   for (d = buffer, s = arg; *s; s++)
     {
@@ -657,7 +656,7 @@ int convert_wildcards(char *arg)
 int convert_wildcards_uppercase(char *arg)
 {
   static char buffer[ARGLEN];
-  register char *s, *d;
+  char *s, *d;
 
   for (d = buffer, s = arg; *s; s++)
     {

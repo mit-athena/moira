@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/sq.c,v 1.10 1998-01-05 19:53:15 danw Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/sq.c,v 1.11 1998-01-06 20:40:04 danw Exp $
  *
  * Generic Queue Routines
  *
@@ -14,7 +14,7 @@
 
 struct save_queue *sq_create(void)
 {
-  register struct save_queue *sq;
+  struct save_queue *sq;
 
   sq = malloc(sizeof(struct save_queue));
   if (!sq)
@@ -25,9 +25,9 @@ struct save_queue *sq_create(void)
   return sq;
 }
 
-int sq_save_data(register struct save_queue *sq, char *data)
+int sq_save_data(struct save_queue *sq, char *data)
 {
-  register struct save_queue *q;
+  struct save_queue *q;
 
   q = malloc(sizeof(struct save_queue));
   if (!q)
@@ -40,12 +40,10 @@ int sq_save_data(register struct save_queue *sq, char *data)
   return 1;
 }
 
-int sq_save_args(register int argc, register char *argv[],
-		 register struct save_queue *sq)
+int sq_save_args(int argc, char *argv[], struct save_queue *sq)
 {
-  register char **argv_copy;
-  register int i;
-  register int n;
+  char **argv_copy;
+  int i, n;
 
   argv_copy = malloc(argc * sizeof(char *));
   if (!argv_copy)
@@ -67,9 +65,9 @@ int sq_save_args(register int argc, register char *argv[],
   return sq_save_data(sq, (char *)argv_copy);
 }
 
-int sq_save_unique_data(register struct save_queue *sq, char *data)
+int sq_save_unique_data(struct save_queue *sq, char *data)
 {
-  register struct save_queue *q;
+  struct save_queue *q;
 
   for (q = sq->q_next; q != sq; q = q->q_next)
     {
@@ -80,9 +78,9 @@ int sq_save_unique_data(register struct save_queue *sq, char *data)
   return sq_save_data(sq, data);
 }
 
-int sq_save_unique_string(register struct save_queue *sq, char *data)
+int sq_save_unique_string(struct save_queue *sq, char *data)
 {
-  register struct save_queue *q;
+  struct save_queue *q;
 
   for (q = sq->q_next; q != sq; q = q->q_next)
     {
@@ -93,7 +91,7 @@ int sq_save_unique_string(register struct save_queue *sq, char *data)
   return sq_save_data(sq, data);
 }
 
-int sq_get_data(register struct save_queue *sq, register char **data)
+int sq_get_data(struct save_queue *sq, char **data)
 {
   if (sq->q_lastget == (struct save_queue *)0)
     sq->q_lastget = sq->q_next;
@@ -106,7 +104,7 @@ int sq_get_data(register struct save_queue *sq, register char **data)
   return 1;
 }
 
-int sq_remove_data(register struct save_queue *sq, register char **data)
+int sq_remove_data(struct save_queue *sq, char **data)
 {
   if (sq->q_next != sq)
     {
@@ -119,7 +117,7 @@ int sq_remove_data(register struct save_queue *sq, register char **data)
   return 0;
 }
 
-int sq_empty(register struct save_queue *sq)
+int sq_empty(struct save_queue *sq)
 {
   if (sq->q_next == sq)
     return 1;
@@ -127,9 +125,9 @@ int sq_empty(register struct save_queue *sq)
     return 0;
 }
 
-sq_destroy(register struct save_queue *sq)
+sq_destroy(struct save_queue *sq)
 {
-  register struct save_queue *q;
+  struct save_queue *q;
 
   for (q = sq->q_next; q != sq; q = sq->q_next)
     {

@@ -1,13 +1,13 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/log.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/log.c,v 1.12 1998-01-05 19:53:55 danw Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/log.c,v 1.13 1998-01-06 20:40:22 danw Exp $
  */
 /*  (c) Copyright 1988 by the Massachusetts Institute of Technology. */
 /*  For copying and distribution information, please see the file */
 /*  <mit-copyright.h>. */
 
 #ifndef lint
-static char *rcsid_log_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/log.c,v 1.12 1998-01-05 19:53:55 danw Exp $";
+static char *rcsid_log_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/log.c,v 1.13 1998-01-06 20:40:22 danw Exp $";
 #endif
 
 /*
@@ -95,7 +95,7 @@ static char fmt[] = "[%s] %s";
 #define	def(name, level, prio) \
 name(char *msg)\
 {\
-   register int old_prio; \
+   int old_prio; \
    old_prio = log_priority; \
    mr_update_initialize(); \
    com_err(whoami, 0, fmt, level, msg); \

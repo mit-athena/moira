@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_scall.c,v $
  *	$Author: danw $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_scall.c,v 1.28 1998-01-05 19:53:31 danw Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_scall.c,v 1.29 1998-01-06 20:40:14 danw Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_sms_scall_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_scall.c,v 1.28 1998-01-05 19:53:31 danw Exp $";
+static char *rcsid_sms_scall_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_scall.c,v 1.29 1998-01-06 20:40:14 danw Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -163,10 +163,10 @@ void do_call(client *cl)
 
 free_rtn_tuples(client *cp)
 {
-  register returned_tuples *temp;
+  returned_tuples *temp;
   for (temp = cp->first; temp && OP_DONE(temp->op); )
     {
-      register returned_tuples *t1 = temp;
+      returned_tuples *t1 = temp;
       temp = t1->next;
       if (t1 == cp->last)
 	cp->last = NULL;
@@ -178,14 +178,14 @@ free_rtn_tuples(client *cp)
   cp->first = temp;
 }
 
-retr_callback(register int argc, register char **argv, char *p_cp)
+retr_callback(int argc, char **argv, char *p_cp)
 {
-  register client *cp = (client *)p_cp;
+  client *cp = (client *)p_cp;
   mr_params *arg_tmp;
   returned_tuples *tp;
   OPERATION op_tmp;
-  register char **nargv;
-  register int i;
+  char **nargv;
+  int i;
 
   if (row_count++ >= max_row_count)
     {
@@ -218,7 +218,7 @@ retr_callback(register int argc, register char **argv, char *p_cp)
   arg_tmp->mr_argv = nargv;
   for (i = 0; i < argc; i++)
     {
-      register int len = strlen(argv[i]) + 1;
+      int len = strlen(argv[i]) + 1;
       nargv[i] = malloc(len);
       memcpy(nargv[i], argv[i], len);
     }
@@ -249,7 +249,7 @@ int list_users(int (*callbk)(), char *callarg)
 
   for (i = 0; i < nclients; i++)
     {
-      register client *cl = clients[i];
+      client *cl = clients[i];
       if (cl->clname)
 	argv[0] = cl->clname;
       else argv[0] = "unauthenticated";
@@ -268,9 +268,9 @@ int list_users(int (*callbk)(), char *callarg)
   return 0;
 }
 
-do_retr(register client *cl)
+do_retr(client *cl)
 {
-  register char *queryname;
+  char *queryname;
 
   cl->reply.mr_argc = 0;
   cl->reply.mr_status = 0;
@@ -337,7 +337,7 @@ struct query pseudo_query = {
 
 int trigger_dcm(int dummy0, int dummy1, client *cl)
 {
-  register int pid;
+  int pid;
   char prog[128];
 
   cl->reply.mr_argc = 0;

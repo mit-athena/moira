@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/nfs.c,v 1.20 1998-01-05 19:52:09 danw Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/nfs.c,v 1.21 1998-01-06 20:39:34 danw Exp $";
 #endif
 
 /*	This is the file nfs.c for the MOIRA Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/nfs.c,v $
  *      $Author: danw $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/nfs.c,v 1.20 1998-01-05 19:52:09 danw Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/nfs.c,v 1.21 1998-01-06 20:39:34 danw Exp $
  *
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -158,7 +158,7 @@ char **AskNFSInfo(char **info)
 
 int ShowNFSService(int argc, char **argv)
 {
-  register int stat;
+  int stat;
   struct qelem *elem = NULL;
   char *args[10];
 
@@ -245,7 +245,7 @@ int AddNFSService(int argc, char **argv)
 static void RealUpdateNFSService(char **info, Bool junk)
 {
   char **args;
-  register int stat;
+  int stat;
 
   if (!(args = AskNFSInfo(info)))
     {
@@ -266,7 +266,7 @@ static void RealUpdateNFSService(char **info, Bool junk)
 
 int UpdateNFSService(int argc, char **argv)
 {
-  register int stat;
+  int stat;
   struct qelem *elem = NULL;
   char *args[10];
 
@@ -318,7 +318,7 @@ static void RealDeleteNFSService(char **info, Bool one_item)
 {
   char temp_buf[BUFSIZ], *args[10];
   struct qelem *elem = NULL;
-  register int stat;
+  int stat;
 
   sprintf(temp_buf,
 	  "Are you sure that you want to delete the %s directory on %s",
@@ -368,7 +368,7 @@ static void RealDeleteNFSService(char **info, Bool one_item)
 
 int DeleteNFSService(int argc, char **argv)
 {
-  register int stat;
+  int stat;
   struct qelem *elem = NULL;
   char *args[10];
 

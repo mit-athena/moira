@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v 1.31 1998-01-05 19:52:03 danw Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v 1.32 1998-01-06 20:39:32 danw Exp $";
 #endif
 
 /*	This is the file lists.c for the MOIRA Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v $
  *      $Author: danw $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v 1.31 1998-01-05 19:52:03 danw Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v 1.32 1998-01-06 20:39:32 danw Exp $
  *
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -120,7 +120,7 @@ struct qelem *GetListInfo(int type, char *name1, char *name2)
 {
   char *args[2];
   struct qelem *elem = NULL;
-  register int status;
+  int status;
 
   switch (type)
     {
@@ -276,7 +276,7 @@ int ShowListInfo(int argc, char **argv)
 
 static void RealUpdateList(char **info, Bool junk)
 {
-  register int stat;
+  int stat;
   char **args;
   struct qelem *elem = NULL;
 
@@ -459,7 +459,7 @@ int ListmaintMemberMenuEntry(Menu *m, int argc, char **argv)
 {
   char temp_buf[BUFSIZ];
   char *list_name = argv[1];
-  register int stat;
+  int stat;
 
   if (!ValidName(list_name))
     return DM_QUIT;
@@ -521,7 +521,7 @@ int ListmaintMemberMenuExit(Menu *m)
 int ListMembersByType(char *type)
 {
   char temp_buf[BUFSIZ];
-  register int status;
+  int status;
   char *args[10];
 
   args[0] = current_list;
@@ -639,7 +639,7 @@ int GetMemberInfo(char *action, char **ret_argv)
 int AddMember(void)
 {
   char *args[10], temp_buf[BUFSIZ], *p;
-  register int status;
+  int status;
   struct qelem *mailhubs, *elem, *GetTypeValues();
 
   if (GetMemberInfo("add", args) == SUB_ERROR)
@@ -703,7 +703,7 @@ int AddMember(void)
 int DeleteMember(void)
 {
   char *args[10];
-  register int status;
+  int status;
 
   if (GetMemberInfo("delete", args) == SUB_ERROR)
     return DM_NORMAL;
@@ -734,7 +734,7 @@ int DeleteMember(void)
 
 int InterRemoveItemFromLists(void)
 {
-  register int status;
+  int status;
   char *type, *name, *args[10], buf[BUFSIZ];
   struct qelem *top, *elem;
 
@@ -883,7 +883,7 @@ int ListByAdministrator(void)
 
 int ListAllPublicMailLists(void)
 {
-  register int status;
+  int status;
   static char *args[] = {
     "TRUE",			/* active */
     "TRUE",			/* public */

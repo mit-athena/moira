@@ -1,13 +1,13 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/checksum.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/checksum.c,v 1.6 1998-01-05 19:53:51 danw Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/checksum.c,v 1.7 1998-01-06 20:40:20 danw Exp $
  */
 /*  (c) Copyright 1988 by the Massachusetts Institute of Technology. */
 /*  For copying and distribution information, please see the file */
 /*  <mit-copyright.h>. */
 
 #ifndef lint
-static char *rcsid_checksum_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/checksum.c,v 1.6 1998-01-05 19:53:51 danw Exp $";
+static char *rcsid_checksum_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/checksum.c,v 1.7 1998-01-06 20:40:20 danw Exp $";
 #endif
 
 #include <mit-copyright.h>
@@ -22,9 +22,9 @@ static char *rcsid_checksum_c = "$Header: /afs/.athena.mit.edu/astaff/project/mo
 
 int checksum_file(char *path)
 {
-  register int sum;
-  register int ch;
-  register FILE *f;
+  int sum;
+  int ch;
+  FILE *f;
 
   sum = 0;
   f = fopen(path, "r");

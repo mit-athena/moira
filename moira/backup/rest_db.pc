@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/rest_db.pc,v $
  *	$Author: danw $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/rest_db.pc,v 1.2 1998-01-05 19:51:35 danw Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/rest_db.pc,v 1.3 1998-01-06 20:39:20 danw Exp $
  *
  *  (c) Copyright 1988 by the Massachusetts Institute of Technology.
  *  For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_rest_db_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/rest_db.pc,v 1.2 1998-01-05 19:51:35 danw Exp $";
+static char *rcsid_rest_db_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/rest_db.pc,v 1.3 1998-01-06 20:39:20 danw Exp $";
 #endif lint
 
 #include <sys/file.h>
@@ -85,7 +85,7 @@ int yes_or_no(char *prompt)
   int tt = open("/dev/tty", O_RDWR, 0);
   FILE *o, *i;
 
-  register char *cp;
+  char *cp;
 
   if (tt < 0)
     return 0;
@@ -128,11 +128,11 @@ out:
   return ret;
 }
 
-int parse_int(register FILE *f)
+int parse_int(FILE *f)
 {
-  register int c;
-  register int val = 0;
-  register int sign = 1;
+  int c;
+  int val = 0;
+  int sign = 1;
   while ((c = getc(f)) != EOF && c != SEP_CHAR && c != '\n')
     {
       if (c == '-')
@@ -148,9 +148,9 @@ int parse_int(register FILE *f)
   return val * sign;
 }
 
-void parse_str(register FILE *f, register char *buf, register int maxlen)
+void parse_str(FILE *f, char *buf, int maxlen)
 {
-  register int c, len = 0;
+  int c, len = 0;
 
   while ((c = getc(f)) != EOF && c != SEP_CHAR && c != '\n' && len < maxlen)
     {
@@ -160,7 +160,7 @@ void parse_str(register FILE *f, register char *buf, register int maxlen)
 	  if (isdigit(c))
 	    {
 	      /* Expect three-digit octal number.. */
-	      register int c1, c2;
+	      int c1, c2;
 	      c1 = getc(f);
 	      c2 = getc(f);
 	      if (!isdigit(c1) || !isdigit(c2))

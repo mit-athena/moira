@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.pc,v $
  *	$Author: danw $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.pc,v 2.6 1998-01-05 19:53:37 danw Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.pc,v 2.7 1998-01-06 20:40:16 danw Exp $
  *
  *	Copyright (C) 1987, 1988 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_qrtn_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.pc,v 2.6 1998-01-05 19:53:37 danw Exp $";
+static char *rcsid_qrtn_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.pc,v 2.7 1998-01-06 20:40:16 danw Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -86,7 +86,7 @@ EXEC SQL WHENEVER SQLERROR DO dbmserr();
 
 int mr_open_database(void)
 {
-  register int i;
+  int i;
   SQLDA *mr_alloc_sqlda();
   static first_open = 1;
 
@@ -145,9 +145,9 @@ int mr_check_access(client *cl, char *name, int argc, char *argv_ro[])
 int mr_process_query(client *cl, char *name, int argc, char *argv_ro[],
 		     int (*action)(), char *actarg)
 {
-  register struct query *q;
-  register int status;
-  register struct validate *v;
+  struct query *q;
+  int status;
+  struct validate *v;
   char qual[256];
   char sort[32];
   char *pqual;
@@ -462,8 +462,8 @@ int build_qual(char *fmt_buf, int argc, char *argv[], char *qual)
 
 char *build_sort(struct validate *v, char *sort)
 {
-  register struct valobj *vo;
-  register int n;
+  struct valobj *vo;
+  int n;
   char elem[16];
 
   n = v->objcnt;
@@ -492,11 +492,11 @@ int privileged;
 
 int mr_verify_query(client *cl, struct query *q, int argc, char *argv_ro[])
 {
-  register int argreq;
-  register int status;
-  register struct validate *v = q->validate;
-  register int i;
-  register char *to, *fr, *stop;
+  int argreq;
+  int status;
+  struct validate *v = q->validate;
+  int i;
+  char *to, *fr, *stop;
 
   privileged = 0;
 
@@ -640,7 +640,7 @@ int do_retrieve(struct query *q, char *pqual, char *psort,
 
 char *sqlstrstr(char *str, char *pat)
 {
-  register char *p = pat;
+  char *p = pat;
 
   do
     {
@@ -652,7 +652,7 @@ char *sqlstrstr(char *str, char *pat)
 	}
       if (*str == *p)
 	{
-	  register char *s;
+	  char *s;
 	  s = str;
 	  while (*++p && (*++s == *p))
 	    ;
@@ -747,7 +747,7 @@ void build_sql_stmt(char *result_buf, char *cmd, char *targetlist,
 		    char *argv[], char *qual)
 {
   char fmt_buf[MR_STMTBUF_LEN];
-  register char *res, *fmt;
+  char *res, *fmt;
 
   if (qual)
     sprintf(fmt_buf, "%s %s WHERE %s", cmd, targetlist, qual);
@@ -935,7 +935,7 @@ int set_krb_mapping(char *name, char *login, int ok, int *kid, int *uid)
 
 void sanity_check_queries(void)
 {
-  register int i;
+  int i;
   int maxv = 0, maxa = 0;
   extern int QueryCount2;
   extern struct query Queries2[];

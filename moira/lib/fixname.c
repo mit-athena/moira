@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/fixname.c,v $
  *	$Author: danw $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/fixname.c,v 1.9 1998-01-05 19:53:02 danw Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/fixname.c,v 1.10 1998-01-06 20:39:57 danw Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -9,7 +9,7 @@
  */
 
 #ifndef lint
-static char *rcsid_fixname_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/fixname.c,v 1.9 1998-01-05 19:53:02 danw Exp $";
+static char *rcsid_fixname_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/fixname.c,v 1.10 1998-01-06 20:39:57 danw Exp $";
 #endif
 
 #include <mit-copyright.h>
@@ -50,10 +50,10 @@ void FixName(char *ilnm, char *ifnm, char *last, char *first, char *middle)
   strncpy(first, ifnm, FIRST_LEN);
 }
 
-FixCase(register char *p)
+FixCase(char *p)
 {
-  register int cflag;	/* convert to lcase, unless at start or following */
-			/* a space or punctuation mark (e.g., '-') */
+  int cflag;	/* convert to lcase, unless at start or following */
+		/* a space or punctuation mark (e.g., '-') */
 
   for (cflag = 0; *p; p++)
     {
@@ -68,11 +68,10 @@ FixCase(register char *p)
     }
 }
 
-LookForJrAndIII(register char *nm, register int *pends_jr, int *pends_ii,
-		register int *pends_iii, register int *pends_iv,
-		int *pends_v)
+LookForJrAndIII(char *nm, int *pends_jr, int *pends_ii, int *pends_iii,
+		int *pends_iv, int *pends_v)
 {
-  register int len = strlen(nm);
+  int len = strlen(nm);
 
   if (len >= 4 && !strcmp(nm + len - 3, " JR"))
     {
@@ -106,7 +105,7 @@ LookForJrAndIII(register char *nm, register int *pends_jr, int *pends_ii,
     }
 }
 
-LookForSt(register char *nm)		/* ST PIERRE, etc. */
+LookForSt(char *nm)		/* ST PIERRE, etc. */
 {
   char temp[256];
 
@@ -118,20 +117,20 @@ LookForSt(register char *nm)		/* ST PIERRE, etc. */
     }
 }
 
-LookForO(register char *nm)		/* O BRIEN, etc. */
+LookForO(char *nm)		/* O BRIEN, etc. */
 {
   if (!strcmp(nm, "O ") && isalpha(nm[2]))
     nm[1] = '\'';
 }
 
-TrimTrailingSpace(register char *ip)
+TrimTrailingSpace(char *ip)
 {
-  register char *p;
+  char *p;
   for (p = ip + strlen(ip) - 1; p >= ip && isspace(*p); p--)
     *p = '\0';
 }
 
-GetMidInit(register char *nm, register char *mi)
+GetMidInit(char *nm, char *mi)
 {
   while (*nm && !isspace(*nm))
     nm++;

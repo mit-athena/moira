@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/reg_stubs.c,v $
  *	$Author: danw $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/reg_stubs.c,v 1.26 1998-01-05 19:52:24 danw Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/reg_stubs.c,v 1.27 1998-01-06 20:39:42 danw Exp $
  *
  *  (c) Copyright 1988 by the Massachusetts Institute of Technology.
  *  For copying and distribution information, please see the file
@@ -9,7 +9,7 @@
  */
 
 #ifndef lint
-static char *rcsid_reg_stubs_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/reg_stubs.c,v 1.26 1998-01-05 19:52:24 danw Exp $";
+static char *rcsid_reg_stubs_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/reg_stubs.c,v 1.27 1998-01-06 20:39:42 danw Exp $";
 #endif
 
 #include <mit-copyright.h>
@@ -109,8 +109,8 @@ int verify_user(char *first, char *last, char *idnumber,
   int call = ntohl((u_long)UREG_VERIFY_USER);
   des_cblock key;
   des_key_schedule ks;
-  register char *bp = buf;
-  register int len;
+  char *bp = buf;
+  int len;
   char crypt_src[1024];
 
   memcpy(bp, &version, sizeof(int));
@@ -151,8 +151,8 @@ int do_operation(char *first, char *last, char *idnumber, char *hashidnumber,
   int call = ntohl(opcode);
   des_cblock key;
   des_key_schedule ks;
-  register char *bp = buf;
-  register int len;
+  char *bp = buf;
+  int len;
 
   char crypt_src[1024];
   char *cbp;

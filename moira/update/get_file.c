@@ -1,13 +1,13 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/get_file.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/get_file.c,v 1.14 1998-01-05 19:53:53 danw Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/get_file.c,v 1.15 1998-01-06 20:40:21 danw Exp $
  */
 /*  (c) Copyright 1988 by the Massachusetts Institute of Technology. */
 /*  For copying and distribution information, please see the file */
 /*  <mit-copyright.h>. */
 
 #ifndef lint
-static char *rcsid_get_file_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/get_file.c,v 1.14 1998-01-05 19:53:53 danw Exp $";
+static char *rcsid_get_file_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/get_file.c,v 1.15 1998-01-06 20:40:21 danw Exp $";
 #endif
 
 #include <mit-copyright.h>
@@ -113,7 +113,7 @@ int get_file(char *pathname, int file_size, int checksum,
   n_written = 0;
   while (n_written < file_size)
     {
-      register int n_wrote;
+      int n_wrote;
       n_wrote = write(fd, buf, sizeof(buf));
       if (n_wrote == -1)
 	{
@@ -234,7 +234,7 @@ static int get_block(int fd, int max_size, int encrypt)
   n = 0;
   while (n < n_read)
     {
-      register int n_wrote;
+      int n_wrote;
       n_wrote = write(fd, STRING_DATA(data) + n, n_read - n);
       if (n_wrote == -1)
 	{

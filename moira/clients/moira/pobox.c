@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/pobox.c,v 1.22 1998-01-05 19:52:10 danw Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/pobox.c,v 1.23 1998-01-06 20:39:35 danw Exp $";
 #endif
 
 /*	This is the file pobox.c for the MOIRA Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/pobox.c,v $
  *      $Author: danw $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/pobox.c,v 1.22 1998-01-05 19:52:10 danw Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/pobox.c,v 1.23 1998-01-06 20:39:35 danw Exp $
  *
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -70,7 +70,7 @@ static void RealPrintPOMachines(char **info)
 
 static int PrintPOMachines(void)
 {
-  register int status;
+  int status;
   static char *args[] = {"pop", NULL};
   struct qelem *top = NULL;
 
@@ -95,7 +95,7 @@ static int PrintPOMachines(void)
 
 int GetUserPOBox(int argc, char **argv)
 {
-  register int status;
+  int status;
   struct qelem *top = NULL;
   char buf[BUFSIZ];
 
@@ -154,7 +154,7 @@ static char *GetNewLocalPOBox(char *local_user)
 
 int SetUserPOBox(int argc, char **argv)
 {
-  register int status;
+  int status;
   char *type, temp_buf[BUFSIZ], *local_user, *args[10], box[BUFSIZ];
   char *temp_box;
   struct qelem *top = NULL;
@@ -267,7 +267,7 @@ int SetUserPOBox(int argc, char **argv)
 
 int RemoveUserPOBox(int argc, char **argv)
 {
-  register int status;
+  int status;
   char temp_buf[BUFSIZ];
 
   if (!ValidName(argv[1]))

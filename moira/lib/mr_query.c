@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_query.c,v $
  *	$Author: danw $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_query.c,v 1.11 1998-01-05 19:53:14 danw Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_query.c,v 1.12 1998-01-06 20:40:03 danw Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_sms_query_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_query.c,v 1.11 1998-01-05 19:53:14 danw Exp $";
+static char *rcsid_sms_query_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_query.c,v 1.12 1998-01-06 20:40:03 danw Exp $";
 #endif
 
 #include <mit-copyright.h>
@@ -29,8 +29,8 @@ static int level = 0;
 int mr_query(char *name, int argc, char **argv,
 	     int (*callproc)(), char *callarg)
 {
-  register char **nargv = malloc(sizeof(char *) * (argc + 1));
-  register int status = 0;
+  char **nargv = malloc(sizeof(char *) * (argc + 1));
+  int status = 0;
 
   nargv[0] = name;
   memcpy(nargv + 1, argv, sizeof(char *) * argc);
@@ -56,7 +56,7 @@ int mr_query_internal(int argc, char **argv, int (*callproc)(), char *callarg)
 {
   int status;
   mr_params params_st;
-  register mr_params *params = NULL;
+  mr_params *params = NULL;
   mr_params *reply = NULL;
   int stopcallbacks = 0;
 

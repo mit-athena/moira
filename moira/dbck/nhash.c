@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/nhash.c,v 1.4 1998-01-05 19:52:33 danw Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/nhash.c,v 1.5 1998-01-06 20:39:46 danw Exp $
  *
  * Generic hash table routines.  Uses integer keys to store integer values.
  *
@@ -48,9 +48,9 @@ struct int_hash *create_int_hash(int size)
  * the key, or NULL (thus NULL is not a very good value to store...)
  */
 
-int int_hash_lookup(struct int_hash *h, register int key)
+int int_hash_lookup(struct int_hash *h, int key)
 {
-  register struct int_bucket *b;
+  struct int_bucket *b;
 
   b = h->data[int_hash_func(h, key)];
   while (b && b->key != key)
@@ -66,9 +66,9 @@ int int_hash_lookup(struct int_hash *h, register int key)
  * existed, or 0 if not.
  */
 
-int int_hash_update(struct int_hash *h, register int key, int value)
+int int_hash_update(struct int_hash *h, int key, int value)
 {
-  register struct int_bucket *b;
+  struct int_bucket *b;
 
   b = h->data[int_hash_func(h, key)];
   while (b && b->key != key)
@@ -87,9 +87,9 @@ int int_hash_update(struct int_hash *h, register int key, int value)
  * previously there, 1 if it was, or -1 if we ran out of memory.
  */
 
-int int_hash_store(struct int_hash *h, register int key, int value)
+int int_hash_store(struct int_hash *h, int key, int value)
 {
-  register struct int_bucket *b, **p;
+  struct int_bucket *b, **p;
 
   p = &(h->data[int_hash_func(h, key)]);
   if (!*p)
@@ -124,9 +124,9 @@ int int_hash_store(struct int_hash *h, register int key, int value)
  * data with that value, call the callback proc with the corresponding key.
  */
 
-int int_hash_search(struct int_hash *h, register int value, void (*callback)())
+int int_hash_search(struct int_hash *h, int value, void (*callback)())
 {
-  register struct int_bucket *b, **p;
+  struct int_bucket *b, **p;
 
   for (p = &(h->data[h->size - 1]); p >= h->data; p--)
     {
@@ -144,7 +144,7 @@ int int_hash_search(struct int_hash *h, register int value, void (*callback)())
 
 int int_hash_step(struct int_hash *h, void (*callback)(), char *hint)
 {
-  register struct int_bucket *b, **p;
+  struct int_bucket *b, **p;
 
   for (p = &(h->data[h->size - 1]); p >= h->data; p--)
     {
@@ -158,7 +158,7 @@ int int_hash_step(struct int_hash *h, void (*callback)(), char *hint)
 
 int int_hash_destroy(struct int_hash *h)
 {
-  register struct int_bucket *b, **p, *b1;
+  struct int_bucket *b, **p, *b1;
 
   for (p = &(h->data[h->size - 1]); p >= h->data; p--)
     {

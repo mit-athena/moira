@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_util.c,v $
  *	$Author: danw $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_util.c,v 1.27 1998-01-05 19:53:34 danw Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_util.c,v 1.28 1998-01-06 20:40:15 danw Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -9,7 +9,7 @@
  */
 
 #ifndef lint
-static char *rcsid_mr_util_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_util.c,v 1.27 1998-01-05 19:53:34 danw Exp $";
+static char *rcsid_mr_util_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_util.c,v 1.28 1998-01-06 20:40:15 danw Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -21,10 +21,10 @@ static char *rcsid_mr_util_c = "$Header: /afs/.athena.mit.edu/astaff/project/moi
 
 extern char *whoami;
 
-char *requote(char *buf, register char *cp, int len)
+char *requote(char *buf, char *cp, int len)
 {
-  register int count = 0;
-  register unsigned char c;
+  int count = 0;
+  unsigned char c;
   if (len <= 2)
     return buf;
   *buf++ = '"';
@@ -56,8 +56,8 @@ char *requote(char *buf, register char *cp, int len)
 void log_args(char *tag, int version, int argc, char **argv)
 {
   char buf[BUFSIZ];
-  register int i;
-  register char *bp;
+  int i;
+  char *bp;
 
   i = strlen(tag);
   sprintf(buf, "%s[%d]: ", tag, version);
@@ -103,8 +103,8 @@ void mr_com_err(const char *whoami, long code, const char *fmt, va_list pvar)
 
 int mr_trim_args(int argc, char **argv)
 {
-  register char **arg;
-  register unsigned char *p, *lastch;
+  char **arg;
+  unsigned char *p, *lastch;
 
   for (arg = argv; argc--; arg++)
     {

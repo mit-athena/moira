@@ -1,13 +1,13 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/auth_002.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/auth_002.c,v 1.5 1998-01-05 19:53:50 danw Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/auth_002.c,v 1.6 1998-01-06 20:40:19 danw Exp $
  */
 /*  (c) Copyright 1988 by the Massachusetts Institute of Technology. */
 /*  For copying and distribution information, please see the file */
 /*  <mit-copyright.h>. */
 
 #ifndef lint
-static char *rcsid_auth_002_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/auth_002.c,v 1.5 1998-01-05 19:53:50 danw Exp $";
+static char *rcsid_auth_002_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/auth_002.c,v 1.6 1998-01-06 20:40:19 danw Exp $";
 #endif
 
 #include <mit-copyright.h>
@@ -142,7 +142,7 @@ auth_failed:
   sprintf(buf, "auth for %s.%s@%s failed: %s",
 	  ad.pname, ad.pinst, ad.prealm, error_message(code));
   {
-    register int rc;
+    int rc;
     rc = send_object(conn, (char *)&code, INTEGER_T);
     code = rc;
   }

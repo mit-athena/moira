@@ -1,11 +1,11 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/rafnu.c,v $
  *	$Author: danw $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/rafnu.c,v 1.5 1998-01-05 19:53:23 danw Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/rafnu.c,v 1.6 1998-01-06 20:40:10 danw Exp $
  */
 
 #ifndef lint
-static char *rcsid_rafnu_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/rafnu.c,v 1.5 1998-01-05 19:53:23 danw Exp $";
+static char *rcsid_rafnu_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/rafnu.c,v 1.6 1998-01-06 20:40:10 danw Exp $";
 
 #endif	lint
 
@@ -13,9 +13,9 @@ static char *rcsid_rafnu_c = "$Header: /afs/.athena.mit.edu/astaff/project/moira
 #include <stdio.h>
 #include <ctype.h>
 
-FixCase(register char *p)
+FixCase(char *p)
 {
-  register int cflag;
+  int cflag;
 
   for (cflag = 0; *p; p++)
     {
@@ -28,11 +28,10 @@ FixCase(register char *p)
     }
 }
 
-LookForJrAndIII(register char *nm, register int *pends_sr,
-		register int *pends_jr, register int *pends_iii,
-		register int *pends_iv)
+LookForJrAndIII(char *nm, int *pends_sr, int *pends_jr, int *pends_iii,
+		int *pends_iv)
 {
-  register int len = strlen(nm);
+  int len = strlen(nm);
 
   if (len >= 4 && !strcmp(nm + len - 3, " SR"))
     {
@@ -66,7 +65,7 @@ LookForJrAndIII(register char *nm, register int *pends_sr,
     }
 }
 
-LookForSt(register char *nm)			/* ST PIERRE, etc. */
+LookForSt(char *nm)			/* ST PIERRE, etc. */
 {
   char temp[256];
 
@@ -78,7 +77,7 @@ LookForSt(register char *nm)			/* ST PIERRE, etc. */
     }
 }
 
-LookForO(register char *nm)			/* O BRIEN, etc. */
+LookForO(char *nm)			/* O BRIEN, etc. */
 {
   if (!strcmp(nm, "O ") && isalpha(nm[2]))
     nm[1] = '\'';

@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/disable.c,v 1.8 1998-01-05 19:52:23 danw Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/disable.c,v 1.9 1998-01-06 20:39:40 danw Exp $
  *
  * disabled: check to see if registration is enabled right now.  Most of this
  * code is stolen from the cron daemon.
@@ -36,7 +36,7 @@ char	*listend;
 unsigned listsize;
 
 char *cmp();
-int number(register char c, FILE *f);
+int number(char c, FILE *f);
 
 /* This routine will determine if registration is enabled at this time.  If
  * NULL is returned, registration is OK.  Otherwise, the string returned
@@ -45,7 +45,7 @@ int number(register char c, FILE *f);
 
 char *disabled(char **msg)
 {
-  register char *cp;
+  char *cp;
   int hit;
 
   *msg = 0;
@@ -110,7 +110,7 @@ char *disabled(char **msg)
 
 char *cmp(char *p, int v)
 {
-  register char *cp;
+  char *cp;
 
   cp = p;
   switch (*cp++)
@@ -163,10 +163,10 @@ init(void)
 
 append(char *fn)
 {
-  register int i, c;
-  register char *cp;
-  register char *ocp;
-  register int n;
+  int i, c;
+  char *cp;
+  char *ocp;
+  int n;
   FILE *f, *fopen();
 
   if (!(f = fopen(fn, "r")))
@@ -263,9 +263,9 @@ ignore:
   goto loop;
 }
 
-int number(register char c, FILE *f)
+int number(char c, FILE *f)
 {
-  register int n = 0;
+  int n = 0;
 
   while (isdigit(c))
     {

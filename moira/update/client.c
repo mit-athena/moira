@@ -1,15 +1,15 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/client.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/client.c,v 1.19 1998-01-05 19:53:51 danw Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/client.c,v 1.20 1998-01-06 20:40:20 danw Exp $
  */
 
 #ifndef lint
-static char *rcsid_client2_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/client.c,v 1.19 1998-01-05 19:53:51 danw Exp $";
+static char *rcsid_client2_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/client.c,v 1.20 1998-01-06 20:40:20 danw Exp $";
 #endif	lint
 
 /*
  * MODULE IDENTIFICATION:
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/client.c,v 1.19 1998-01-05 19:53:51 danw Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/client.c,v 1.20 1998-01-06 20:40:20 danw Exp $
  *	Copyright 1987, 1988 by the Massachusetts Institute of Technology.
  *	For copying and distribution information, please see the file
  *	<mit-copyright.h>.
@@ -78,7 +78,7 @@ int send_auth(char *host_name)
   KTEXT_ST ticket_st;
   KTEXT ticket = &ticket_st;
   STRING data;
-  register int code;
+  int code;
   int response;
   int auth_version = 2;
 
@@ -146,7 +146,7 @@ int execute(char *path)
 {
   int response;
   STRING data;
-  register int code;
+  int code;
 
   string_alloc(&data, BUFSIZ);
   sprintf(STRING_DATA(data), "EXEC_002 %s", path);

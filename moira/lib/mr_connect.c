@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_connect.c,v $
  *	$Author: danw $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_connect.c,v 1.17 1998-01-05 19:53:10 danw Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_connect.c,v 1.18 1998-01-06 20:40:01 danw Exp $
  *
  *	Copyright (C) 1987, 1990 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -12,7 +12,7 @@
  */
 
 #ifndef lint
-static char *rcsid_sms_connect_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_connect.c,v 1.17 1998-01-05 19:53:10 danw Exp $";
+static char *rcsid_sms_connect_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_connect.c,v 1.18 1998-01-06 20:40:01 danw Exp $";
 #endif
 
 #include <mit-copyright.h>
@@ -69,7 +69,7 @@ int mr_connect(char *server)
     return errno;
   if (connection_status(_mr_conn) == CON_STOPPED)
     {
-      register status = connection_errno(_mr_conn);
+      int status = connection_errno(_mr_conn);
       if (!status)
 	status = MR_CANT_CONNECT;
       mr_disconnect();

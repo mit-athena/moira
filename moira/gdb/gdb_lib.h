@@ -1,6 +1,6 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_lib.h,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_lib.h,v 1.2 1991-03-08 10:18:55 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_lib.h,v 1.3 1992-12-01 11:45:36 mar Exp $
  */
 
 /************************************************************************/
@@ -53,6 +53,8 @@ int  (*gdb_fmv)() = gdb_fm;
 /*	
 /*	
 /************************************************************************/
+
+int	gdb_Options=0;				/* GDB options are set here */
 
 int	gdb_Debug=0;				/* debugging flags are */
 						/* stored here */

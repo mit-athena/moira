@@ -1,11 +1,14 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_sauth.c,v $
  *	$Author: wesommer $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_sauth.c,v 1.3 1987-06-21 16:40:10 wesommer Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_sauth.c,v 1.4 1987-06-30 20:03:46 wesommer Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
  *	$Log: not supported by cvs2svn $
+ * Revision 1.3  87/06/21  16:40:10  wesommer
+ * Performance work, rearrangement of include files.
+ * 
  * Revision 1.2  87/06/04  01:34:35  wesommer
  * Added logging of arguments for some perverse reason.
  * 
@@ -15,11 +18,10 @@
  */
 
 #ifndef lint
-static char *rcsid_sms_sauth_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_sauth.c,v 1.3 1987-06-21 16:40:10 wesommer Exp $";
+static char *rcsid_sms_sauth_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_sauth.c,v 1.4 1987-06-30 20:03:46 wesommer Exp $";
 #endif lint
 
 extern int krb_err_base;
-#include <krb.h>
 #include <strings.h>
 #include "sms_server.h"
 
@@ -60,6 +62,10 @@ do_auth(cl)
 		com_err(whoami, status, "(authentication failed)");
 		return;
 	}
+	bcopy(ad.pname, cl->kname.name, ANAME_SZ);
+	bcopy(ad.pinst, cl->kname.inst, INST_SZ);
+	bcopy(ad.prealm, cl->kname.realm, REALM_SZ);
+	
 	(void) strcpy(buf, ad.pname);
 	if(ad.pinst[0]) {
 		(void) strcat(buf, ".");

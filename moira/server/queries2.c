@@ -1,6 +1,6 @@
 /* This file defines the query dispatch table for version 2 of the protocol
  *
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/queries2.c,v 1.16 1989-08-25 14:46:30 mar Exp $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/queries2.c,v 1.17 1989-09-08 15:36:11 mar Exp $
  *
  * Copyright 1987, 1988 by the Massachusetts Institute of Technology.
  * For copying and distribution information, please see the file
@@ -282,9 +282,16 @@ static char *rusr_fields[] = {
   UID, LOGIN, "fs_type"
 };
 
+static struct valobj rusr_valobj[] = {
+  {V_LOCK, 0, USERS, 0, USERS_ID, SMS_DEADLOCK},
+  {V_LOCK, 0, LIST, 0, LIST_ID, SMS_DEADLOCK},
+  {V_LOCK, 0, FILESYS, 0, FILSYS_ID, SMS_DEADLOCK},
+  {V_LOCK, 0, "nfsphys", 0, "nfsphys_id", SMS_DEADLOCK},
+};
+
 static struct validate rusr_validate = {
-  ausr_valobj,
-  1,
+  rusr_valobj,
+  4,
   0,
   0,
   0,

@@ -1,4 +1,4 @@
-/* $Id: update_server.c,v 1.24 2003-04-24 18:40:03 zacheiss Exp $
+/* $Id: update_server.c,v 1.25 2003-05-15 12:04:17 zacheiss Exp $
  *
  * Copyright 1988-1998 by the Massachusetts Institute of Technology.
  * For copying and distribution information, please see the file
@@ -28,7 +28,7 @@
 #include <des.h>
 #include "update.h"
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/update_server.c,v 1.24 2003-04-24 18:40:03 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/update_server.c,v 1.25 2003-05-15 12:04:17 zacheiss Exp $");
 
 char *whoami, *hostname;
 
@@ -243,5 +243,6 @@ static void syslog_com_err_proc(const char *progname, long code,
   buf[BUFSIZ] = '\0';
 
   vsnprintf(buf, BUFSIZ, fmt, args);
-  syslog(LOG_NOTICE, "%s: %s %s", progname, error_message(code), buf);
+  syslog(LOG_NOTICE, "%s: %s %s", progname ? progname : "",
+	 code ? error_message(code) : "", buf);
 }

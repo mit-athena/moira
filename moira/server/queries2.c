@@ -1,4 +1,4 @@
-/* $Id: queries2.c,v 2.97 2003-05-14 13:07:36 zacheiss Exp $
+/* $Id: queries2.c,v 2.98 2003-08-14 02:43:55 zacheiss Exp $
  *
  * This file defines the query dispatch table
  *
@@ -612,7 +612,7 @@ static struct validate uuac_validate = {
   0,
   0,
   "users_id",
-  0,
+  access_update_user,
   setup_ausr,
   set_modtime_by_id,
 };

@@ -6,7 +6,7 @@ LIBS= -L../lib -L/usr/athena/lib -lmoira -lcom_err -lkrb -ldes ${DBLIBS}
 
 OBJS= ptutils.o utils.o ubik.o
 SRCS= ptutils.c utils.c ubik.c
-CODE= $(SRCS) migrate.qc sync.dc
+CODE= $(SRCS) sync.pc
 
 AFSDIR = /mit/afsuser
 AFSLIBS=$(AFSDIR)/lib/afs/libprot.a   $(AFSDIR)/lib/afs/libauth.a \
@@ -21,4 +21,3 @@ genutil(pt_util,pt_util.o $(OBJS),,$(AFSLIBS) -L../lib -L/usr/athena/lib -lcom_e
 /* genutil(ptdump,ptdump.o $(OBJS),,) */
 
 sqlfile(sync)
-sqlfile(migrate)

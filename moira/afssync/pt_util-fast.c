@@ -13,7 +13,7 @@
 #include <sys/time.h>
 #include <stdio.h>
 #include <ctype.h>
-#include <strings.h>
+#include <string.h>
 #include <sys/file.h>
 
 #include <afs/param.h>
@@ -169,7 +169,7 @@ char **argv;
     if (ntohl(uh->magic) != UBIK_MAGIC)
 	fprintf(stderr, "ptdump: %s: Bad UBIK_MAGIC. Is %x should be %x\n",
 		pfile, ntohl(uh->magic), UBIK_MAGIC);
-    bcopy(&uh->version, &uv, sizeof(struct ubik_version));
+    memcpy(&uv, &uh->version, sizeof(struct ubik_version));
     fprintf(stderr, "Ubik Version is: %d.%d\n",
 	    ntohl(uv.epoch), ntohl(uv.counter));
     if (read(dbase_fd, &prh, sizeof(struct prheader)) < 0) {

@@ -13,7 +13,7 @@
 #include <sys/time.h>
 #include <stdio.h>
 #include <ctype.h>
-#include <strings.h>
+#include <string.h>
 #include <sys/file.h>
 
 #include <afs/param.h>

@@ -2,7 +2,7 @@
  * $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.c,v $
  * $Author: mar $
  * $Locker:  $
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.c,v 1.25 1991-08-14 16:04:56 mar Exp $ 
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.c,v 1.26 1993-10-22 17:21:57 mar Exp $ 
  *
  *  (c) Copyright 1988 by the Massachusetts Institute of Technology.
  *  For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char    *rcsid_userreg_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.c,v 1.25 1991-08-14 16:04:56 mar Exp $";
+static char    *rcsid_userreg_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.c,v 1.26 1993-10-22 17:21:57 mar Exp $";
 #endif	lint
 
 #include <mit-copyright.h>
@@ -19,6 +19,7 @@ static char    *rcsid_userreg_c = "$Header: /afs/.athena.mit.edu/astaff/project/
 #include <sys/time.h>
 #include <setjmp.h>
 #include <ctype.h>
+#include <string.h>
 #include <krb.h>
 #include <des.h>
 #include <kadm.h>
@@ -51,7 +52,16 @@ extern char *disabled();
 
 fix_display(sig)
 {
+#ifdef POSIX
+    	struct sigaction act;
+
+	sigemptyset(&act.sa_mask);
+	act.sa_flags = 0;
+	act.sa_handler= (void (*)()) SIG_IGN;
+	sigaction(sig, &act, NULL);
+#else
 	signal(sig, SIG_IGN);	/* let us clean up, please */
+#endif
 	noraw();
 	echo();
 	endwin();
@@ -67,7 +77,10 @@ main(argc, argv)
 	char            line[100], *when, *msg;
 	int status;
 	char tmpfirst[100], tmplast[100], tmpmid[100];
-	
+#ifdef POSIX
+	struct sigaction act;
+#endif
+
 	status = ureg_init();
 	if (status) {
 		com_err(argv[0], status, "while trying to initialize");
@@ -93,9 +106,18 @@ main(argc, argv)
 
 	setup_display();
 
+#ifdef POSIX
+	sigemptyset(&act.sa_mask);
+	act.sa_flags = 0;       
+	act.sa_handler= (void (*)()) fix_display;
+	sigaction(SIGINT, &act, NULL);
+	sigaction(SIGQUIT, &act, NULL);
+	sigaction(SIGHUP, &act, NULL);
+#else
 	signal(SIGINT, fix_display);
 	signal(SIGQUIT, fix_display);
 	signal(SIGHUP, fix_display);
+#endif
 
 	while (1) {
 		setjmp(redo);
@@ -218,7 +240,7 @@ main(argc, argv)
 reset()
 {
 	reset_display();
-	bzero(&user, sizeof(user));
+	memset(&user, 0, sizeof(user));
 	user_is_valid = 0;
 	already_registered = 0;
 	enrollment = 0;
@@ -544,8 +566,16 @@ gfirst()
 {
 	/* input the first name */
 	char            buf[FIRST_NAME_SIZE+2];
+#ifdef POSIX
+	struct sigaction act;
 
+	sigemptyset(&act.sa_mask);
+	act.sa_flags = 0;
+	act.sa_handler= (void (*)()) fix_display;
+	sigaction(SIGALRM, &act, NULL);
+#else
 	signal(SIGALRM, fix_display);
+#endif
 	input("Enter first Name:", buf, FIRST_NAME_SIZE+1,
 	      FIRSTNAME_TIMEOUT, TRUE);
 	strncpy(user.u_first, buf, FIRST_NAME_SIZE);
@@ -558,8 +588,16 @@ glast()
 {
 	/* input the last name */
 	char            buf[LAST_NAME_SIZE+2];
+#ifdef POSIX
+	struct sigaction act;
 
+	sigemptyset(&act.sa_mask);
+	act.sa_flags = 0;
+	act.sa_handler= (void (*)()) fix_display;
+	sigaction(SIGALRM, &act, NULL);
+#else
 	signal(SIGALRM, restart);
+#endif
 	input("Enter family Name:", buf, LAST_NAME_SIZE+1,
 	      LASTNAME_TIMEOUT, FALSE);
 	strncpy(user.u_last, buf, LAST_NAME_SIZE);
@@ -572,8 +610,16 @@ gpass()
 {
 	/* input password */
 	char            new_password[PASSWORD_SIZE + 1];
+#ifdef POSIX
+	struct sigaction act;
 
+	sigemptyset(&act.sa_mask);
+	act.sa_flags = 0;
+	act.sa_handler= (void (*)()) fix_display;
+	sigaction(SIGALRM, &act, NULL);
+#else
 	signal(SIGALRM, restart);
+#endif
 	input_no_echo("Enter password:", new_password,
 		      PASSWORD_SIZE, NEW_PASSWORD_TIMEOUT);
 	strcpy(user.u_password, new_password);
@@ -586,9 +632,17 @@ gpass()
 glogin()
 {
 	char buf[LOGIN_SIZE+2];
+#ifdef POSIX
+	struct sigaction act;
 
-	user.u_login[0] = '\0';
+	sigemptyset(&act.sa_mask);
+	act.sa_flags = 0;
+	act.sa_handler= (void (*)()) fix_display;
+	sigaction(SIGALRM, &act, NULL);
+#else
 	signal(SIGALRM, restart);
+#endif
+	user.u_login[0] = '\0';
 	input("Enter username:", buf, LOGIN_SIZE, USERNAME_TIMEOUT, FALSE);
 	strcpy(user.u_login, buf);
 	redisp();
@@ -600,9 +654,20 @@ gmitid()
 	register int    i;
 	char            buf[15];
 	register char  *nbuf = buf;
+#ifdef POSIX
+	struct sigaction act;
+#endif
+
 
 input_mit_id:
+#ifdef POSIX
+	sigemptyset(&act.sa_mask);
+	act.sa_flags = 0;
+	act.sa_handler= (void (*)()) fix_display;
+	sigaction(SIGALRM, &act, NULL);
+#else
 	signal(SIGALRM, restart);
+#endif
 	input("Enter MIT Id:", buf, 14, MITID_TIMEOUT, FALSE);
 	i = 0;
 	nbuf = &buf[0];
@@ -633,8 +698,16 @@ gmi()
 {
 	/* get middle initial */
 	char            buf[MID_INIT_SIZE+2];
+#ifdef POSIX
+	struct sigaction act;
 
+	sigemptyset(&act.sa_mask);
+	act.sa_flags = 0;
+	act.sa_handler= (void (*)()) fix_display;
+	sigaction(SIGALRM, &act, NULL);
+#else
 	signal(SIGALRM, restart);
+#endif
 	input("Enter Middle Initial:", buf, MID_INIT_SIZE+1, MI_TIMEOUT, TRUE);
 	strncpy(user.u_mid_init, buf, MID_INIT_SIZE);
 	user.u_mid_init[MID_INIT_SIZE - 1] = '\0';
@@ -645,7 +718,7 @@ gmi()
 qexit()
 {
 	/* exit quickly, not saving anything in the database */
-	bzero(&user, sizeof(user));
+	memset(&user, 0, sizeof(user));
 	typed_mit_id[0] = '\0';
 	user_is_valid = 0;
 	already_registered = 0;

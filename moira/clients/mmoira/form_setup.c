@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/form_setup.c,v 1.10 1993-01-05 11:32:17 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/form_setup.c,v 1.11 1993-01-13 14:06:06 mar Exp $
  */
 
 #include <stdio.h>
@@ -139,45 +139,45 @@ UserPrompt *prompt;
 	    (!strcmp(stringval(f, FS_TYPE), "FSGROUP") ||
 	     !strcmp(stringval(f, FS_TYPE), "MUL") ||
 	     !strcmp(stringval(f, FS_TYPE), "ERR"))) {
-	    maybechange(f, FS_MACHINE, True);
-	    maybechange(f, FS_PACK, True);
-	    maybechange(f, FS_M_POINT, True);
-	    maybechange(f, FS_ACCESS, True);
-	    maybechange(f, FS_CREATE, True);
+	    maybechange(f, FS_MACHINE+1, True);
+	    maybechange(f, FS_PACK+1, True);
+	    maybechange(f, FS_M_POINT+1, True);
+	    maybechange(f, FS_ACCESS+1, True);
+	    maybechange(f, FS_CREATE+1, True);
 	} else if (field == FS_TYPE &&
 		   (!strcmp(stringval(f, FS_TYPE), "NFS") ||	
 		    !strcmp(stringval(f, FS_TYPE), "AFS") ||
 		    !strcmp(stringval(f, FS_TYPE), "RVD"))) {
-	    maybechange(f, FS_MACHINE, False);
-	    maybechange(f, FS_PACK, False);
-	    maybechange(f, FS_M_POINT, False);
-	    maybechange(f, FS_ACCESS, False);
-	    maybechange(f, FS_CREATE, False);
+	    maybechange(f, FS_MACHINE+1, False);
+	    maybechange(f, FS_PACK+1, False);
+	    maybechange(f, FS_M_POINT+1, False);
+	    maybechange(f, FS_ACCESS+1, False);
+	    maybechange(f, FS_CREATE+1, False);
 	}
-	if (field == FS_NAME && !strcmp(stringval(f, FS_M_POINT), "/mit/")) {
+	if (field == FS_NAME && !strcmp(stringval(f, FS_M_POINT+1), "/mit/")) {
 	    sprintf(buf, "/mit/%s", stringval(f, FS_NAME));
-	    StoreField(f, FS_M_POINT, buf);
+	    StoreField(f, FS_M_POINT+1, buf);
 	}
-	if (field == FS_MACHINE && !strcmp(stringval(f, FS_TYPE), "AFS")) {
-	    p = strsave(stringval(f, FS_MACHINE));
+	if (field == FS_MACHINE+1 && !strcmp(stringval(f, FS_TYPE), "AFS")) {
+	    p = strsave(stringval(f, FS_MACHINE+1));
 	    p = canonicalize_cell(p);
 	    lowercase(p);
-	    StoreField(f, FS_MACHINE, p);
+	    StoreField(f, FS_MACHINE+1, p);
 	    free(p);
 	}
-	if (field == FS_MACHINE && (!strcmp(stringval(f, FS_TYPE), "NFS") ||
+	if (field == FS_MACHINE+1 && (!strcmp(stringval(f, FS_TYPE), "NFS") ||
 				    !strcmp(stringval(f, FS_TYPE), "RVD"))) {
-	    StoreHost(f, FS_MACHINE, &p);
+	    StoreHost(f, FS_MACHINE+1, &p);
 	}
 	if (!strcmp(stringval(f, FS_TYPE), "AFS") &&
 	    *stringval(f, FS_NAME) &&
-	    *stringval(f, FS_MACHINE) &&
-	    *stringval(f, FS_L_TYPE)) {
+	    *stringval(f, FS_MACHINE+1) &&
+	    *stringval(f, /*FS_L_TYPE*/FS_TYPE+1)) {
 	    char *path;
 	    int depth;
 
-	    sprintf(buf, "%s:%s", stringval(f, FS_MACHINE),
-		    stringval(f, FS_L_TYPE));
+	    sprintf(buf, "%s:%s", stringval(f, FS_MACHINE+1),
+		    stringval(f, FS_TYPE+1));
 	    argv[0] = buf;
 	    argv[1] = "AFSPATH";
 	    argv[2] = "*";
@@ -189,7 +189,7 @@ UserPrompt *prompt;
 		    *p = 0;
 		    depth = atoi(++p);
 		} else depth = 0;
-		sprintf(buf, "/afs/%s/%s", stringval(f, FS_MACHINE), path);
+		sprintf(buf, "/afs/%s/%s", stringval(f, FS_MACHINE+1), path);
 		if (depth >= 0) {
 		    for (p=stringval(f, FS_NAME);
 			 *p && (p - stringval(f, FS_NAME)) < depth;
@@ -199,7 +199,7 @@ UserPrompt *prompt;
 			    buf[strlen(buf)-1] = *p;
 			} else {
 			    sprintf(buf, "/afs/%s/%s/other",
-				    stringval(f, FS_MACHINE), path);
+				    stringval(f, FS_MACHINE+1), path);
 			    break;
 			}
 		    }
@@ -222,12 +222,12 @@ UserPrompt *prompt;
 		strcat(buf, stringval(f, FS_NAME));
 		free(path);
 	    } else {
-		p = strsave(stringval(f, FS_L_TYPE));
-		sprintf(buf, "/afs/%s/%s/%s", stringval(f, FS_MACHINE),
+		p = strsave(stringval(f, FS_TYPE+1));
+		sprintf(buf, "/afs/%s/%s/%s", stringval(f, FS_MACHINE+1),
 			lowercase(p), stringval(f, FS_NAME));
 		free(p);
 	    }
-	    StoreField(f, FS_PACK, buf);
+	    StoreField(f, FS_PACK+1, buf);
 	}
 	break;
     case MM_SET_POBOX:
@@ -439,19 +439,19 @@ MenuItem	*menu;
 	break;
     case MM_ADD_FILSYS:
 	StoreField(f, FS_TYPE, "AFS");
-	StoreField(f, FS_M_POINT, "/mit/");
-	StoreField(f, FS_MACHINE, "athena.mit.edu");
-	StoreField(f, FS_ACCESS, "w");
-	StoreField(f, FS_OWNER, user);
-	StoreField(f, FS_OWNERS, user);
-	boolval(f, FS_CREATE) = TRUE;
+	StoreField(f, FS_M_POINT+1, "/mit/");
+	StoreField(f, FS_MACHINE+1, "athena.mit.edu");
+	StoreField(f, FS_ACCESS+1, "w");
+	StoreField(f, FS_OWNER+1, user);
+	StoreField(f, FS_OWNERS+1, user);
+	boolval(f, FS_CREATE+1) = TRUE;
 	GetKeywords(f, FS_TYPE, "filesys");
-	GetKeywords(f, FS_ACCESS, "fs_access_AFS");
-	GetKeywords(f, FS_L_TYPE, "lockertype");
+	GetKeywords(f, FS_ACCESS+1, "fs_access_AFS");
+	GetKeywords(f, FS_TYPE+1, "lockertype");
 	f->inputlines[FS_TYPE]->valuechanged = MoiraValueChanged;
-	f->inputlines[FS_L_TYPE]->valuechanged = MoiraValueChanged;
+	f->inputlines[FS_TYPE+1]->valuechanged = MoiraValueChanged;
 	f->inputlines[FS_NAME]->valuechanged = MoiraValueChanged;
-	f->inputlines[FS_MACHINE]->valuechanged = MoiraValueChanged;
+	f->inputlines[FS_MACHINE+1]->valuechanged = MoiraValueChanged;
 	break;
     case MM_ADD_FSGROUP:
 	if (f->inputlines[2]->keywords)

@@ -138,7 +138,7 @@ sub athena_proc
 	    die "Unable to set volume ownership\n";
     }
 
-    if ($type eq "ORG") {
+    if ($type =~ /^(ORG|COURSE)/) {
 	mkdir("$path/www",0755) &&
 	    chown(0,0,"$path/www") ||
 		die "Unable to create subdirectories\n";

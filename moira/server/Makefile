@@ -1,6 +1,6 @@
 #	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/Makefile,v $
 #	$Author: genoa $
-#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/Makefile,v 1.4 1992-06-08 16:35:37 genoa Exp $
+#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/Makefile,v 1.5 1992-06-19 10:13:29 genoa Exp $
 #
 
 CFILES = startmoira.c mr_main.c mr_sauth.c mr_scall.c \
@@ -86,7 +86,7 @@ install: moirad startmoira
 
 clean:
 	rm -f ${ALL} libmoiraglue_p.a
-	rm -f *.o *~ qrtn.c qsupport.c qoldsup.c increment.c
+	rm -f *.o *~ *.sc qrtn.c qsupport.c qoldsup.c increment.c
 	rm -f profiled/*.o
 	rm -f *.err
 

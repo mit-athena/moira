@@ -2,7 +2,7 @@
  * $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.c,v $
  * $Author: mar $
  * $Locker:  $
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.c,v 1.15 1989-11-21 16:04:03 mar Exp $ 
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.c,v 1.16 1990-03-13 13:13:44 mar Exp $ 
  *
  *  (c) Copyright 1988 by the Massachusetts Institute of Technology.
  *  For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char    *rcsid_userreg_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.c,v 1.15 1989-11-21 16:04:03 mar Exp $";
+static char    *rcsid_userreg_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.c,v 1.16 1990-03-13 13:13:44 mar Exp $";
 #endif	lint
 
 #include <mit-copyright.h>
@@ -38,6 +38,7 @@ extern int      errno;
 int             user_is_valid = 0;
 int		user_has_login = 0;
 int             already_registered = 0;
+int		enrollment = 0;
 extern char *disabled();
 
 fix_display(sig)
@@ -154,7 +155,8 @@ main(argc, argv)
 					reencrypt = 0;
 				}
 				if (reencrypt) {
-					encrypt_mitid();
+				    EncryptID(user.u_mit_id, typed_mit_id,
+					      user.u_first, user.u_last);
 				}
 			} else
 				break;
@@ -176,13 +178,15 @@ main(argc, argv)
 		}
 		sleep(1);
 		display_text_line(0);
-		display_text_line("You are now registered to get an Athena account.");
+		if (!enrollment)
+		  display_text_line("You are now registered to get an Athena account.");
 		sprintf(line, "Please remember your username of \"%s\" and the password",
 			user.u_login);
 		display_text_line(line);
 		display_text_line("you typed in earlier.");
 		display_text_line("");
-		display_text_line("Your account should be created by tomorrow\n");
+		if (!enrollment)
+		  display_text_line("Your account should be created by tomorrow\n");
 		
 		display_text_line("");
 		display_text_line("You are now finished. Thank you!");
@@ -200,6 +204,7 @@ reset()
 	bzero(&user, sizeof(user));
 	user_is_valid = 0;
 	already_registered = 0;
+	enrollment = 0;
 	redisp();
 }
 
@@ -232,6 +237,7 @@ dolook()
 		sleep(1);
 		return 0;
 	case UREG_NO_PASSWD_YET:
+	case UREG_HALF_ENROLLED:
 		user_is_valid = 1;
 		user_has_login = 1;
 		display_text_line ("You have chosen a login name, but you have not yet chosen a password.");
@@ -267,6 +273,16 @@ dolook()
 		restore_display();
 		exit(0);
 	case UREG_NOT_ALLOWED:
+		display_text(OFFER_ENROLL);
+		redisp();
+		if (!askyn("Continue choosing a name and password (Y/N)? ")) {
+		    already_registered = 1;
+		    return(0);
+		}
+		user_has_login = 0;
+		user_is_valid = 1;
+		enrollment = 1;
+		return(0);
 	case UREG_ENROLL_NOT_ALLOWED:
 		display_text(NOT_ALLOWED);
 		wait_for_user();
@@ -358,9 +374,14 @@ negotiate_login()
 		 * If he isn't, let's try through SMS.
 		 */
 		timer_off();
-		result = grab_login(user.u_first, user.u_last,
-				    typed_mit_id, user.u_mit_id,
-				    user.u_login);
+		if (!enrollment)
+		  result = grab_login(user.u_first, user.u_last,
+				      typed_mit_id, user.u_mit_id,
+				      user.u_login);
+		else
+		  result = enroll_login(user.u_first, user.u_last,
+					typed_mit_id, user.u_mit_id,
+					user.u_login);
 		wfeep();
 		timer_on();
 		if (result != 0) {
@@ -531,27 +552,8 @@ input_mit_id:
 	}
 	typed_mit_id[9] = '\0';
 	redisp();
-	encrypt_mitid();
+	EncryptID(user.u_mit_id, typed_mit_id, user.u_first, user.u_last);
 }
-
-encrypt_mitid()
-{
-	char            salt[3];
-
-	make_salt(salt, user.u_first, user.u_last);
-	strcpy(user.u_mit_id, crypt(&typed_mit_id[2], salt));
-}
-
-
-#define _tolower(c) ((c)|0x60)
-
-make_salt(salt, first, last)
-	char           *salt, *first, *last;
-{
-	salt[0] = _tolower(last[0]);
-	salt[1] = _tolower(first[0]);
-}
-
 
 gmi()
 {
@@ -573,6 +575,7 @@ qexit()
 	typed_mit_id[0] = '\0';
 	user_is_valid = 0;
 	already_registered = 0;
+	enrollment = 0;
 	sleep(2);		/* give the user a chance to see the screen */
 	display_text_line(0);
 	return (EXIT);
@@ -588,8 +591,12 @@ do_replace()
 	 * the user and calls qexit(); It returns only if is is successful 
 	 */
 	timer_off();
-	status = set_password(user.u_first, user.u_last, typed_mit_id,
-			      user.u_mit_id, user.u_password);
+	if (!enrollment)
+	  status = set_password(user.u_first, user.u_last, typed_mit_id,
+				user.u_mit_id, user.u_password);
+	else
+	  status = get_krb(user.u_first, user.u_last, typed_mit_id,
+				user.u_mit_id, user.u_password);
 	wfeep();
 	timer_on();
 	if (status) {

@@ -10,6 +10,7 @@
 #include <moira_site.h>
 #include "ureg_proto.h"
 
+#include <sys/time.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 
@@ -28,7 +29,7 @@
 #include <kadm_err.h>
 #include <krb.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/reg_stubs.c,v 1.29 1998-02-05 22:50:58 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/reg_stubs.c,v 1.30 1998-02-07 17:49:54 danw Exp $");
 
 int do_operation(char *first, char *last, char *idnumber, char *hashidnumber,
 		 char *data, u_long opcode);

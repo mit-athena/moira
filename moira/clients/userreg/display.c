@@ -10,6 +10,8 @@
 #include <mit-copyright.h>
 #include <moira.h>
 
+#include <sys/time.h>
+
 #include <curses.h>
 #include <stdio.h>
 #include <time.h>
@@ -17,7 +19,7 @@
 
 #include "userreg.h"
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/display.c,v 1.14 1998-02-05 22:50:57 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/display.c,v 1.15 1998-02-07 17:49:53 danw Exp $");
 
 void make_border(int l);
 void query_user(char *prompt, char *buf, int maxsize, int timeout,

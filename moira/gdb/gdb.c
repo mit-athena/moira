@@ -1,10 +1,10 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb.c,v 1.1 1987-08-02 22:09:54 wesommer Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb.c,v 1.2 1987-08-02 23:51:38 wesommer Exp $
  */
 
 #ifndef lint
-static char *rcsid_gdb_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb.c,v 1.1 1987-08-02 22:09:54 wesommer Exp $";
+static char *rcsid_gdb_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb.c,v 1.2 1987-08-02 23:51:38 wesommer Exp $";
 #endif	lint
 
 
@@ -127,7 +127,7 @@ gdb_init()
 		uname = pw_struct->pw_name;
 	else
 		uname = "????";
-	gdb_uname = db_alloc(strlen(hostname)+1);
+	gdb_uname = db_alloc(strlen(uname)+1);
 	(void) strcpy(gdb_uname, uname);	
 	
 	return 0;

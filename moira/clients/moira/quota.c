@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/quota.c,v 1.18 1990-07-11 15:54:14 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/quota.c,v 1.19 1990-07-13 15:51:44 mar Exp $";
 #endif lint
 
 /*	This is the file quota.c for the MOIRA Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/quota.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/quota.c,v 1.18 1990-07-11 15:54:14 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/quota.c,v 1.19 1990-07-13 15:51:44 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -147,7 +147,7 @@ char *name;
 			  afsfilsyshelper, &ret);
     if (status == MR_SUCCESS)
       return(ret);
-    return(0);
+    return(status);
     
 }
 
@@ -163,6 +163,7 @@ GetQuotaArgs(quota)
 Bool quota;
 {
   char ** args = (char **) malloc( MAX_ARGS_SIZE * sizeof(char *) );
+  int af;
   
   if (args == NULL) {
     Put_message("Could not allocate memory in GetQuotaArgs.");
@@ -186,7 +187,15 @@ Bool quota;
   if (quota && !ValidName(args[Q_FILESYS]))
     return(NULL);
  
-  if (afsfilesys(args[Q_FILESYS])) {
+  af = afsfilesys(args[Q_FILESYS]);
+  if (af != 0 && af != (1 == 1)) {
+      if (af == MR_NO_MATCH)
+	Put_message("That filesystem does not exist.");
+      else
+	com_err(program_name, af, " in afsfilesys");
+      return(NULL);
+  }
+  if (af) {
     args[Q_TYPE] = strsave("ANY");
     args[Q_NAME] = strsave(NOBODY);
   }

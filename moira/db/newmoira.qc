@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/db/newmoira.qc,v 1.3 1988-12-07 18:33:52 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/db/newmoira.qc,v 1.4 1989-03-21 18:18:10 mar Exp $
  *
  * Creates a new sms database
  *
@@ -48,6 +48,7 @@ struct alias { char *name;
 		   {"class", "TYPE", "GUEST"},
 		   {"class", "TYPE", "UNKNOWN"},
 		   {"filesys", "TYPE", "ERR"},
+		   {"filesys", "TYPE", "FSGROUP"},
 		   {"filesys", "TYPE", "NFS"},
 		   {"filesys", "TYPE", "RVD"},
 		   {"gaus", "TYPE", "LIST"},

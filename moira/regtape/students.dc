@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/students.dc,v 1.10 1990-04-23 16:42:35 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/students.dc,v 1.11 1990-06-13 12:46:57 mar Exp $
  */
 
 #include <stdio.h>
@@ -185,9 +185,10 @@ FILE *in;
 	    *p = 0;
 	    e.first = strtrim(e.first);
 	    e.middle = strtrim(p + 1);
-	} else
-	  e.first = strtrim(e.first);
-	  e.middle = "";
+	} else {
+	    e.first = strtrim(e.first);
+	    e.middle = "";
+	}
     } else {
 	e.first = "";
 	e.middle = "";
@@ -381,9 +382,14 @@ struct entry *e;
 	    strcat(haddr, e->state);
 	}
 	
+	status = 1;
+##	repeat retrieve (status = any (xuser.users_id
+##			 where xuser.users_id = @id))
+	if (!status) {
 ##	append xuser (users_id = id, #id = sid, #name = name, #dept = dept,
 ##		      #title = title, address = haddr, #phone1 = hphone,
 ##		      #phone2 = ophone, modtime = "now")
+	}
     }
 ##}
 

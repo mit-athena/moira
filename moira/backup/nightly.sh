@@ -55,4 +55,11 @@ su wesommer -fc "rdist -c ${BKUPDIRDIR} apollo:/site/sms/sms_backup"
 su wesommer -fc "rdist -c ${BKUPDIRDIR} zeus:/site/sms/sms_backup"
 su wesommer -fc "rdist -c ${BKUPDIRDIR} jason:/site/sms/sms_backup"
 su wesommer -fc "rdist -c ${BKUPDIRDIR} trillian:/site/sms/sms_backup"
+
+if [ "`/usr/bin/find /u1/sms/critical.log -mtime -1 -print`" = "/u1/sms/critical.log" ]; then
+	(/bin/echo "To: dbadmin";\
+	 /bin/echo "Subject: Moira update status";\
+	 /usr/ucb/tail /u1/sms/critical.log) | /bin/mail dbadmin
+fi
+
 exit 0

@@ -1,22 +1,25 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/fixname.c,v $
  *	$Author: wesommer $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/fixname.c,v 1.1 1987-08-22 17:14:30 wesommer Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/fixname.c,v 1.2 1987-09-03 03:21:34 wesommer Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
  *	$Log: not supported by cvs2svn $
+ * Revision 1.1  87/08/22  17:14:30  wesommer
+ * Initial revision
+ * 
  */
 
 #ifndef lint
-static char *rcsid_fixname_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/fixname.c,v 1.1 1987-08-22 17:14:30 wesommer Exp $";
+static char *rcsid_fixname_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/fixname.c,v 1.2 1987-09-03 03:21:34 wesommer Exp $";
 #endif lint
 
 #include <strings.h>
 #include <ctype.h>
 
-#define LAST_LEN		15
-#define FIRST_LEN		15
+#define LAST_LEN		100
+#define FIRST_LEN		100
 
 void FixName(ilnm, ifnm, last, first, middle)
 	char *ilnm, *ifnm;

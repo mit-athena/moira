@@ -2,11 +2,11 @@
  * $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.c,v $
  * $Author: mar $
  * $Locker:  $
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.c,v 1.8 1988-08-03 20:17:04 mar Exp $ 
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.c,v 1.9 1988-08-09 17:56:01 mar Exp $ 
  */
 
 #ifndef lint
-static char    *rcsid_userreg_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.c,v 1.8 1988-08-03 20:17:04 mar Exp $";
+static char    *rcsid_userreg_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.c,v 1.9 1988-08-09 17:56:01 mar Exp $";
 #endif	lint
 
 #include <curses.h>
@@ -65,7 +65,9 @@ main(argc, argv)
 	    if (msg)
 	      printf("because %s\n", msg);
 	    printf("You should be able to register after %s", when);
-	    sleep(30);
+	    printf("\nPress ENTER or RETURN to continue ");
+	    fflush(stdout);
+	    getchar();
 	    exit(0);
 	}
 
@@ -96,14 +98,15 @@ main(argc, argv)
 		while (dolook()) {
 			ntimes++;
 			if (ntimes > 3) {
+			    	display_text_line(0);
 				display_text_line("Sorry, you still cannot be found in the database.");
 				display_text_line(" ");
-				display_text_line("Please call the account administrator at x1325 for help.");
-				sleep(8);
+				display_text_line("Please call the account administrator at x3-1325 for help.");
+				wait_for_user();
 				break;
 			}
 			display_text_line(0);	/* clear the window */
-			display_text_line("I'm afraid I was unable to find you in the database.");
+			display_text_line("You could not be found in the database.");
 			display_text_line("Do you want to change some input (for example, the spelling");
 			display_text_line("of part of your name) and try again?");
 			if (askyn("Do you want to try again ? ") == YES) {
@@ -179,7 +182,7 @@ main(argc, argv)
 		
 		display_text_line("");
 		display_text_line("You are now finished. Thank you!");
-		sleep(5);
+		wait_for_user();
 		qexit();
 	} while (getuid() == 0);/* Loop forever if we're root */
 	restore_display();
@@ -206,12 +209,14 @@ dolook()
 		return (0);
 	}
 	display_text_line(0);
-	display_text_line(
-	 "Looking you up in the database.... This may take a few minutes.");
+	display_text_line("Looking you up in the database.... This may take from 30 seconds to 10");
+	display_text_line("minutes, depending on how busy the system is at the moment.");
 
 	timer_off();
 	result = verify_user(user.u_first, user.u_last,
 			     typed_mit_id, user.u_mit_id, db_user.u_login);
+	wfeep();
+	display_text_line(0);
 	timer_on();
 	switch(result) {
 	case 0:
@@ -248,22 +253,21 @@ dolook()
 			db_user.u_login);
 		display_text_line(line);
 		redisp();
-		sleep(10);
+		wait_for_user();
 		return (0);
 	case UREG_DELETED:
 		display_text(DELETED_ACCT);
-		refresh();
-		sleep(20);
+		wait_for_user();
 		restore_display();
 		exit(0);
 	case UREG_NOT_ALLOWED:
 		display_text(NOT_ALLOWED);
-		refresh();
-		sleep(20);
+		wait_for_user();
 		restore_display();
 		exit(0);
 	case UREG_KRB_TAKEN:
 		display_text(IMPROPER_LOGIN);
+		wait_for_user();
 		return(0);
 	case UREG_USER_NOT_FOUND:
 		return (1);
@@ -272,13 +276,14 @@ dolook()
 	case ETIMEDOUT:
 	case UREG_MISC_ERROR:
 		display_text(NETWORK_DOWN);
+		wait_for_user();
 		return (0);
 		
 	default:
 		display_text_line("An unexpected error occurred while trying to access the database");
 		display_text_line(error_message(result));
 		redisp();
-		sleep(10);
+		wait_for_user();
 		return(1);
 	}
 }
@@ -311,16 +316,16 @@ negotiate_login()
 	sprintf(line, "We suggest the username '%s'.", user.u_login);
 	display_text_line(line);
 	display_text_line(
-			  "If you are sure you would prefer another username,  feel free to enter");
+			  "If you are sure you would prefer another username, feel free to enter");
 	display_text_line(
-			  "a different one,  but  remember  that it will remain with you for all the ");
+			  "a different one, but keep in mind that it will remain with you for all the ");
 	display_text_line("time you are at MIT.");
 
 	while (1) {
 		glogin();
 
 		display_text_line(0);
-		display_text_line("Looking up that username in the database...  This may take a few minutes.");
+		display_text_line("Trying to assign that username...  This may take a few minutes.");
 		timer_off();
 		/*
 		 * Rather than bother SMS with a bunch of different
@@ -331,13 +336,13 @@ negotiate_login()
 		    display_text_line("System error, please try another workstation.");
 		    continue;
 		}
-		result = get_in_tkt(user.u_login, "", realm, "krbtgt", realm, "");
+		result = get_in_tkt(user.u_login, "", realm, "krbtgt", realm, 1, "");
 		timer_on();
 		if (result != KDC_PR_UNKNOWN) {
 		in_use:
 			strcpy(user.u_login, old_login);
 			redisp();
-			display_text_line("I'm sorry, but that username is already taken.  Please try again with a different username");
+			display_text_line("That username is already taken.  Please try again with a different username");
 			continue;
 		}
 
@@ -348,10 +353,18 @@ negotiate_login()
 		result = grab_login(user.u_first, user.u_last,
 				    typed_mit_id, user.u_mit_id,
 				    user.u_login);
+		wfeep();
 		timer_on();
 		if (result != 0) {
+		    	char buf[BUFSIZ];
+
 			if (result == UREG_LOGIN_USED) goto in_use;
 			display_text(NETWORK_DOWN);
+			display_text_line(" ");
+			sprintf(buf, "The specific error was: %s",
+				error_message(result));
+			display_text_line(buf);
+			wait_for_user();
 			return (qexit());
 		} else break;
 	}
@@ -381,10 +394,11 @@ negotiate_passwd()
 gfirst()
 {
 	/* input the first name */
-	char            buf[100];
+	char            buf[FIRST_NAME_SIZE+2];
 
 	signal(SIGALRM, restart);
-	input("Enter first Name:", buf, 100, FIRSTNAME_TIMEOUT);
+	input("Enter first Name:", buf, FIRST_NAME_SIZE+1,
+	      FIRSTNAME_TIMEOUT, TRUE);
 	strncpy(user.u_first, buf, FIRST_NAME_SIZE);
 	user.u_first[FIRST_NAME_SIZE - 1] = '\0';
 	canon_name(user.u_first);
@@ -394,10 +408,11 @@ gfirst()
 glast()
 {
 	/* input the last name */
-	char            buf[100];
+	char            buf[LAST_NAME_SIZE+2];
 
 	signal(SIGALRM, restart);
-	input("Enter family Name:", buf, 100, LASTNAME_TIMEOUT);
+	input("Enter family Name:", buf, LAST_NAME_SIZE+1,
+	      LASTNAME_TIMEOUT, FALSE);
 	strncpy(user.u_last, buf, LAST_NAME_SIZE);
 	user.u_last[LAST_NAME_SIZE - 1] = '\0';
 	canon_name(user.u_last);
@@ -435,7 +450,7 @@ glogin()
 {
 	/* get login name */
 	register int    i;
-	char            buf[100];
+	char            buf[LOGIN_SIZE+2];
 	register char  *nbuf = buf;
 
 input_login:
@@ -443,7 +458,11 @@ input_login:
 	user.u_login[0] = '\0';
 	nbuf = &buf[0];
 	signal(SIGALRM, restart);
-	input("Enter username:", buf, 100, USERNAME_TIMEOUT);
+	input("Enter username:", buf, LOGIN_SIZE+1, USERNAME_TIMEOUT, FALSE);
+	if (!islower(*nbuf) && !isdigit(*nbuf)) {
+	    display_text_line("Your username must start with a letter or number.");
+	    goto input_login;
+	}
 	while (*nbuf != '\0') {
 		if (!islower(*nbuf) && !isdigit(*nbuf)
 		    && (*nbuf != '_') && (*nbuf != '.')) {
@@ -471,12 +490,12 @@ gmitid()
 {
 	/* get mid id */
 	register int    i;
-	char            buf[100];
+	char            buf[15];
 	register char  *nbuf = buf;
 
 input_mit_id:
 	signal(SIGALRM, restart);
-	input("Enter MIT Id:", buf, 100, MITID_TIMEOUT);
+	input("Enter MIT Id:", buf, 14, MITID_TIMEOUT, FALSE);
 	i = 0;
 	nbuf = &buf[0];
 	while (*nbuf != '\0') {
@@ -524,10 +543,10 @@ make_salt(salt, first, last)
 gmi()
 {
 	/* get middle initial */
-	char            buf[100];
+	char            buf[MID_INIT_SIZE+2];
 
 	signal(SIGALRM, restart);
-	input("Enter Middle Initial:", buf, 100, MI_TIMEOUT);
+	input("Enter Middle Initial:", buf, MID_INIT_SIZE+1, MI_TIMEOUT, TRUE);
 	strncpy(user.u_mid_init, buf, MID_INIT_SIZE);
 	user.u_mid_init[MID_INIT_SIZE - 1] = '\0';
 	canon_name(user.u_mid_init);
@@ -541,7 +560,7 @@ qexit()
 	typed_mit_id[0] = '\0';
 	user_is_valid = 0;
 	already_registered = 0;
-	sleep(6);		/* give the user a chance to see the screen */
+	sleep(2);		/* give the user a chance to see the screen */
 	display_text_line(0);
 	return (EXIT);
 }
@@ -558,6 +577,7 @@ do_replace()
 	timer_off();
 	status = set_password(user.u_first, user.u_last, typed_mit_id,
 			      user.u_mit_id, user.u_password);
+	wfeep();
 	timer_on();
 	if (status) {
 		display_text (NETWORK_DOWN);

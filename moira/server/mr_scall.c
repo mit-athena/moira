@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_scall.c,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_scall.c,v 1.19 1990-03-19 15:42:05 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_scall.c,v 1.20 1990-06-01 18:46:36 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_sms_scall_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_scall.c,v 1.19 1990-03-19 15:42:05 mar Exp $";
+static char *rcsid_sms_scall_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_scall.c,v 1.20 1990-06-01 18:46:36 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -95,6 +95,7 @@ do_call(cl)
 	client *cl;
 {
 	int pn;
+	extern int ingres_errno;
 	cl->reply.mr_argc = 0;
 	cl->reply.mr_status = 0;
 	cl->reply.mr_version_no = cl->args->mr_version_no;
@@ -117,6 +118,9 @@ do_call(cl)
 	      com_err(whoami, MR_DOWN, "(query refused)");
 	    return;
 	}
+
+	/* make sure this gets cleared before every operation */
+	ingres_errno = 0;
 
 	switch(pn) {
 	case MR_NOOP:

@@ -1,4 +1,4 @@
-/* $Id $
+/* $Id: cluster.c,v 1.36 1998-03-10 21:09:33 danw Exp $
  *
  *	This is the file cluster.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.

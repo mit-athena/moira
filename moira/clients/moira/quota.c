@@ -1,4 +1,4 @@
-/* $Id $
+/* $Id: quota.c,v 1.29 1998-03-10 21:09:43 danw Exp $
  *
  *	This is the file quota.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.

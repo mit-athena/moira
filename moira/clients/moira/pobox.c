@@ -1,4 +1,4 @@
-/* $Id $
+/* $Id: pobox.c,v 1.27 1998-03-10 21:09:42 danw Exp $
  *
  *	This is the file pobox.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -23,7 +23,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/pobox.c,v 1.26 1998-02-07 17:49:31 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/pobox.c,v 1.27 1998-03-10 21:09:42 danw Exp $");
 
 #define FOREIGN_BOX ("SMTP")
 #define LOCAL_BOX ("POP")

@@ -1,4 +1,4 @@
-/* $Id $
+/* $Id: menus.c,v 1.34 1998-03-10 21:09:39 danw Exp $
  *
  *	This is the file menus.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -22,7 +22,7 @@
 
 #include <stdio.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menus.c,v 1.33 1998-02-07 17:49:29 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menus.c,v 1.34 1998-03-10 21:09:39 danw Exp $");
 
 /* ------------------------- Second Tier Menus ------------------------- */
 

@@ -1,4 +1,4 @@
-/* $Id $
+/* $Id: menu.c,v 1.50 1998-03-10 21:09:38 danw Exp $
  *
  * Generic menu system module.
  *
@@ -19,7 +19,7 @@
 #include <string.h>
 #include <unistd.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.49 1998-02-08 20:16:38 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.50 1998-03-10 21:09:38 danw Exp $");
 
 #define MAX(A, B)	((A) > (B) ? (A) : (B))
 #define MIN(A, B)	((A) < (B) ? (A) : (B))

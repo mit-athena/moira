@@ -1,4 +1,4 @@
-/* $Id $
+/* $Id: printer.c,v 1.20 1998-03-10 21:09:42 danw Exp $
  *
  *	This is the file printer.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -23,7 +23,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/printer.c,v 1.19 1998-02-07 17:49:32 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/printer.c,v 1.20 1998-03-10 21:09:42 danw Exp $");
 
 void RealDeletePcap(char **info, Bool one_item);
 void ChangePcap(char **info, Bool one_item);

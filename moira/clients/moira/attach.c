@@ -1,4 +1,4 @@
-/* $Id $
+/* $Id: attach.c,v 1.47 1998-03-10 21:09:32 danw Exp $
  *
  *	This is the file attach.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -30,7 +30,7 @@
 #include <string.h>
 #include <unistd.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.46 1998-02-07 17:49:24 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.47 1998-03-10 21:09:32 danw Exp $");
 
 char *canonicalize_cell(char *c);
 int GetAliasValue(int argc, char **argv, void *retval);

@@ -1,4 +1,4 @@
-/* $Id $
+/* $Id: main.c,v 1.31 1998-03-10 21:09:38 danw Exp $
  *
  *	This is the file main.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -24,7 +24,7 @@
 #include <string.h>
 #include <unistd.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/main.c,v 1.30 1998-02-05 22:50:43 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/main.c,v 1.31 1998-03-10 21:09:38 danw Exp $");
 
 static void ErrorExit(char *buf, int status);
 static void Usage(void);

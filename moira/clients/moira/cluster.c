@@ -1,4 +1,4 @@
-/* $Id: cluster.c,v 1.43 2000-04-20 20:12:15 zacheiss Exp $
+/* $Id: cluster.c,v 1.44 2000-09-07 01:25:15 zacheiss Exp $
  *
  *	This is the file cluster.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -46,6 +46,7 @@ struct mqelem *GetMCInfo(int type, char *name1, char *name2);
 struct mqelem *GetMachineByOwner(char *type, char *name);
 char **AskMCDInfo(char **info, int type, Bool name);
 int CheckAndRemoveFromCluster(char *name, Bool ask_user);
+int CheckAndRemoveCnames(char *name, Bool ask_user);
 int CheckAndRemoveMachines(char *name, Bool ask_first);
 
 #define MACHINE  0
@@ -879,7 +880,7 @@ int UpdateMachine(int argc, char **argv)
 /*	Function Name: CheckAndRemoveFromCluster
  *	Description: This func tests to see if a machine is in a cluster.
  *                   and if so then removes it
- *	Arguments: name - name of the machine (already Canonocalized).
+ *	Arguments: name - name of the machine (already Canonicalized).
  *                 ask_user- query the user before removing if from clusters?
  *	Returns: MR_ERROR if machine left in a cluster, or mr_error.
  */
@@ -944,6 +945,73 @@ int CheckAndRemoveFromCluster(char *name, Bool ask_user)
   return ret_value;
 }
 
+/*	Function Name: CheckAndRemoveCnames
+ *	Description: This func tests to see if a machine has cnames, 
+ *                   and if so then removes them.
+ *	Arguments: name - name of the machine (already Canonicalized).
+ *                 ask_user- query the user before removing cnames?
+ *	Returns: MR_ERROR if machine left in a cluster, or mr_error.
+ */
+
+int CheckAndRemoveCnames(char *name, Bool ask_user)
+{
+  int stat, ret_value;
+  Bool delete_it;
+  char *args[10], temp_buf[BUFSIZ], *ptr;
+  struct mqelem *top, *elem = NULL;
+
+  ret_value = SUB_NORMAL;
+  args[0] = "*";
+  args[1] = name;
+  stat = do_mr_query("get_hostalias", 2, args, StoreInfo, &elem);
+  if (stat && stat != MR_NO_MATCH)
+    {
+      com_err(program_name, stat, " in get_hostalias.");
+      return DM_NORMAL;
+    }
+  if (stat == MR_SUCCESS)
+    {
+      elem = top = QueueTop(elem);
+      if (ask_user)
+	{
+	  sprintf(temp_buf, "%s has the following cnames.", name);
+	  Put_message(temp_buf);
+	  Loop(top, (void (*)(char **)) PrintCname);
+	  ptr = "Remove ** ALL ** these cnames?";
+	  if (YesNoQuestion(ptr, FALSE) == TRUE) /* may return -1. */
+	    delete_it = TRUE;
+	  else
+	    {
+	      Put_message("Aborting...");
+	      FreeQueue(top);
+	      return SUB_ERROR;
+	    }
+	}
+      else
+	delete_it = TRUE;
+
+      if (delete_it)
+	{
+	  while (elem)
+	    {
+	      char **info = elem->q_data;
+	      if ((stat = do_mr_query("delete_hostalias", 2, info, 
+				      NULL, NULL)))
+		{
+		  ret_value = SUB_ERROR;
+		  com_err(program_name, stat, " in delete_hostalias.");
+		  sprintf(temp_buf, 
+			  "Cname %s ** NOT ** removed from host %s.",
+			  info[0], info[1]);
+		  Put_message(temp_buf);
+		}
+	      elem = elem->q_forw;
+	    }
+	}
+    }
+  return ret_value;
+}
+
 /*	Function Name: RealDeleteMachine
  *	Description: Actually Deletes the Machine.
  *	Arguments: info - nescessary information stored as an array of char *'s
@@ -963,23 +1031,25 @@ static void RealDeleteMachine(char **info, Bool one_machine)
     {
       if (CheckAndRemoveFromCluster(info[M_NAME], TRUE) != SUB_ERROR)
 	{
-	  if ((stat = do_mr_query("delete_host", 1,
-				  &info[M_NAME], NULL, NULL)))
+	  if (CheckAndRemoveCnames(info[M_NAME], TRUE) != SUB_ERROR)
 	    {
-	      com_err(program_name, stat, " in DeleteMachine.");
-	      sprintf(temp_buf, "%s ** NOT ** deleted.",
-		      info[M_NAME]);
-	      Put_message(temp_buf);
-	    }
-	  else
-	    {
-	      sprintf(temp_buf, "%s successfully Deleted.", info[M_NAME]);
-	      Put_message(temp_buf);
+	      if ((stat = do_mr_query("delete_host", 1,
+				      &info[M_NAME], NULL, NULL)))
+		{
+		  com_err(program_name, stat, " in DeleteMachine.");
+		  sprintf(temp_buf, "%s ** NOT ** deleted.",
+			  info[M_NAME]);
+		  Put_message(temp_buf);
+		}
+	      else
+		{
+		  sprintf(temp_buf, "%s successfully Deleted.", info[M_NAME]);
+		  Put_message(temp_buf);
+		}
 	    }
 	}
     }
 }
-
 /*	Function Name: DeleteMachine
  *	Description: This function removes a machine from the data base.
  *	Arguments: argc, argv - the machines name int argv[1].

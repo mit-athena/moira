@@ -1,6 +1,6 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v 1.25 1991-05-14 18:06:56 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v 1.26 1991-05-17 12:57:53 mar Exp $
  */
 
 /*  (c) Copyright 1988 by the Massachusetts Institute of Technology. */
@@ -8,7 +8,7 @@
 /*  <mit-copyright.h>. */
 
 #ifndef lint
-static char rcsid_mailmaint_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v 1.25 1991-05-14 18:06:56 mar Exp $";
+static char rcsid_mailmaint_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v 1.26 1991-05-17 12:57:53 mar Exp $";
 #endif lint
 
 /***********************************************************************/
@@ -91,6 +91,10 @@ int level, found_some, currow, page, num_members;
 int moreflg, toggle, first_time;
 char *uname;
 
+/* This crock is because the original code was very broken and this makes
+ * it work.  Someday, we should abandon the code or fix it right.
+ */
+#define mvcur(oy,ox,ny,nx) move(ny,nx)
 
 /****************************************************/
 /*ARGSUSED*/
@@ -201,7 +205,7 @@ get_main_input()
 	page = 1;
 	toggle = num_members = moreflg = 0;
 	c = getchar() & 0x7f;	/* mask parity bit */
-	if (c == 13) {
+	if (c == '\r' || c == '\n') {
 	    if (position[level] == 7)
 		c = 'q';
 	    else
@@ -288,12 +292,12 @@ show_list_info()
 {
     char *buf;
 
-    show_text(DISPROW, STARTCOL, "Show information about a list.\n\r");
+    show_text(DISPROW, STARTCOL, "Show information about a list.\n");
     buf = calloc((unsigned)1024, 1);
     if (Prompt("Enter List Name: ", buf, LISTSIZE, 1) == 1) {
-	display_buff("\n\r");
+	display_buff("\n");
 	if (fetch_list_info(buf, current_li) == 0) {
-	    (void) sprintf(buf, "Description: %s\n\r", current_li->desc);
+	    (void) sprintf(buf, "Description: %s\n", current_li->desc);
 	    if (strlen(buf) > 60)
 		(void) display_buff(buf);
 	    else
@@ -385,20 +389,20 @@ add_member()
     char *argv[3];
     char *buf;
 
-    show_text(DISPROW, STARTCOL, "Add yourself to a list\n\r");
+    show_text(DISPROW, STARTCOL, "Add yourself to a list\n");
     buf = calloc(LISTMAX, 1);
     if (Prompt("Enter List Name: ", buf, LISTSIZE, 1) == 1) {
-	display_buff("\r\n");
+	display_buff("\n");
 	argv[0] = strsave(buf);
 	argv[1] = strsave("user");
 	argv[2] = strsave(uname);
 	if (status = mr_query("add_member_to_list", 3, argv,
 			       scream, (char *) NULL)) {
-	    display_buff("\r\n");
+	    display_buff("\n");
 	    com_err(whoami, status, " found.\n");
 	}
 	else {
-	    (void) sprintf(buf, "User %s added to list\r", uname);
+	    (void) sprintf(buf, "User %s added to list\n", uname);
 	    show_text(DISPROW + 3, STARTCOL, buf);
 	}
 	currow = DISPROW + 4;
@@ -414,20 +418,20 @@ delete_member()
     char *argv[3];
     char *buf;
 
-    show_text(DISPROW, STARTCOL, "Remove yourself from a list\n\r");
+    show_text(DISPROW, STARTCOL, "Remove yourself from a list\n");
     buf = calloc(LISTMAX, 1);
     if (Prompt("Enter List Name: ", buf, LISTSIZE, 1) == 1) {
-	display_buff("\r\n");
+	display_buff("\n");
 	argv[0] = strsave(buf);
 	argv[1] = strsave("user");
 	argv[2] = strsave(uname);
 	if (status = mr_query("delete_member_from_list", 3, argv,
 			       scream, (char *) NULL)) {
-	    display_buff("\r\n");
+	    display_buff("\n");
 	    com_err(whoami, status, " found.\n");
 	}
 	else {
-	    (void) sprintf(buf, "User %s deleted from list\r", uname);
+	    (void) sprintf(buf, "User %s deleted from list\n", uname);
 	    show_text(DISPROW + 3, STARTCOL, buf);
 	}
 	currow = DISPROW + 4;
@@ -446,13 +450,13 @@ list_by_member()
     nargv[1] = strsave("ruser");
     nargv[2] = strsave(uname);
     buf = calloc(BUFSIZ, 1);
-    (void) sprintf(buf, "%s is on the following lists:\r", uname);
+    (void) sprintf(buf, "%s is on the following lists:\n", uname);
     show_text(DISPROW, STARTCOL, buf);
     mvcur(0, 0, currow, STARTCOL);
     refresh();
     if (status = mr_query("get_lists_of_member", 2, nargv + 1,
 			   print_1, (char *) NULL)) {
-	display_buff("\r\n");
+	display_buff("\n");
 	com_err(whoami, status, " in get_lists_of_member");
     }
     currow++;
@@ -492,7 +496,7 @@ print_1(argc, argv, callback)
     char buf[BUFSIZ];
 
     /* no newline 'cause display_buff adds one */
-    (void) sprintf(buf, "%s\r", argv[0]);
+    (void) sprintf(buf, "%s\n", argv[0]);
     (void) start_display(buf);
 
     return (0);
@@ -514,7 +518,7 @@ print_all(argc, argv, callback)
 	show_text(DISPROW + 1, STARTCOL, "All mailing lists:");
 	first_time = 0;
     }
-    (void) sprintf(buf, "%s\r", argv[0]);
+    (void) sprintf(buf, "%s\n", argv[0]);
     (void) start_display(buf);
 
     return (0);
@@ -530,7 +534,7 @@ list_all_groups()
     first_time = 1;
     if (status = mr_query("qualified_get_lists", 5, argv,
 			   print_all, (char *) NULL)) {
-	display_buff("\r\n");
+	display_buff("\n");
 	com_err(whoami, status, " in list_all_groups\n");
     }
     end_display();
@@ -556,7 +560,7 @@ list_members()
 	argv[0] = buf;
 	if (status = mr_query("get_members_of_list", 1, argv,
 			       print_2, (char *) NULL)) {
-	    display_buff("\r\n");
+	    display_buff("\n");
 	    com_err(whoami, status, " found.\n");
 	    currow++;
 	}
@@ -603,7 +607,6 @@ start_display(buff)
     buffer = calloc(50, 1);
     if (currow >= LINES - 2) {
 	page++;
-	currow++;
 	mvcur(0, 0, currow, STARTCOL);
 	refresh();
 	if (Prompt("--RETURN for more, ctl-c to exit--", buffer, 1, 0) == 0) {
@@ -640,7 +643,7 @@ end_display()
 
     buffer = calloc(50, 1);
     currow++;
-    (void) sprintf(buffer, "End of List. %d Total Members\r", num_members);
+    (void) sprintf(buffer, "End of List. %d Total Members\n", num_members - 1);
     show_text(currow, STARTCOL, buffer);
     currow++;
     show_text(currow, STARTCOL, "Press any key to continue...");
@@ -762,8 +765,8 @@ show_text(row, col, buff)
     char *buff;
 {
     mvcur(0, 0, row, col);
+    addstr(buff);
     refresh();
-    printf("%s", buff);
 }
 
 /****************************************************/
@@ -779,7 +782,7 @@ erase_line(row, col)
     buff[i] = 0;		/* just to be sure ! */
     move(row, col);
     mvcur(0, 0, row, col);
-    printf("%s", buff);
+    addstr(buff);
     refresh();
 }
 
@@ -809,9 +812,9 @@ clrwin(erase_row)
     mvcur(0, 0, erase_row, STARTCOL);
     refresh();
     for (i = erase_row; i <= currow - 1; i++) {
-	printf("%s\n\r", buff);
+	addstr(buff);
     }
-    printf("%s", buff);
+    addstr(buff);
     mvcur(erase_row, STARTCOL, STARTROW + oldpos[level] - 1, STARTCOL);
     refresh();
 }
@@ -884,7 +887,7 @@ Prompt(prompt, buf, buflen, crok)
     int c;
     char *p;
 
-    printf("%s", prompt);
+    addstr(prompt);
     refresh();
     for (p = buf; abs(strlen(p) - strlen(buf)) <= buflen;) {
 	refresh();
@@ -901,7 +904,7 @@ Prompt(prompt, buf, buflen, crok)
 	case '\n':
 	case '\r':
 	    if (crok)
-		display_buff("\r");
+		display_buff("\n");
 	    *p = '\0';
 	    if (strlen(buf) < 1)/* only \n or \r in buff */
 		return (-1);

@@ -1,6 +1,6 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v 1.22 1990-03-17 15:46:50 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v 1.23 1990-03-17 16:55:10 mar Exp $
  */
 
 /*  (c) Copyright 1988 by the Massachusetts Institute of Technology. */
@@ -8,7 +8,7 @@
 /*  <mit-copyright.h>. */
 
 #ifndef lint
-static char rcsid_mailmaint_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v 1.22 1990-03-17 15:46:50 mar Exp $";
+static char rcsid_mailmaint_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v 1.23 1990-03-17 16:55:10 mar Exp $";
 #endif lint
 
 /***********************************************************************/
@@ -25,8 +25,8 @@ static char rcsid_mailmaint_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/
 #include <varargs.h>
 #include <com_err.h>
 #include <ctype.h>
-#include <sms.h>
-#include <sms_app.h>
+#include <moira.h>
+#include <moira_site.h>
 #include <mit-copyright.h>
 
 
@@ -135,24 +135,24 @@ main(argc, argv)
 
     printf("Connecting to database for %s...please hold on.\n", uname);
 
-    status = sms_connect(NULL);
+    status = mr_connect(NULL);
     if (status) {
 	(void) sprintf(buf, "\nConnection to Moira server failed");
 	goto punt;
     }
 
-    status = sms_motd(&motd);
+    status = mr_motd(&motd);
     if (status) {
         com_err(whoami, status, " unable to check server status");
-	sms_disconnect();
+	mr_disconnect();
 	exit(2);
     }
     if (motd) {
 	fprintf(stderr, "The Moira server is currently unavailable:\n%s\n", motd);
-	sms_disconnect();
+	mr_disconnect();
 	exit(2);
     }
-    status = sms_auth("mailmaint");
+    status = mr_auth("mailmaint");
     if (status) {
 	(void) sprintf(buf, "\nAuthorization failed.\n");
 	goto punt;
@@ -393,7 +393,7 @@ add_member()
 	argv[0] = strsave(buf);
 	argv[1] = strsave("user");
 	argv[2] = strsave(uname);
-	if (status = sms_query("add_member_to_list", 3, argv,
+	if (status = mr_query("add_member_to_list", 3, argv,
 			       scream, (char *) NULL)) {
 	    display_buff("\r\n");
 	    com_err(whoami, status, " found.\n");
@@ -422,7 +422,7 @@ delete_member()
 	argv[0] = strsave(buf);
 	argv[1] = strsave("user");
 	argv[2] = strsave(uname);
-	if (status = sms_query("delete_member_from_list", 3, argv,
+	if (status = mr_query("delete_member_from_list", 3, argv,
 			       scream, (char *) NULL)) {
 	    display_buff("\r\n");
 	    com_err(whoami, status, " found.\n");
@@ -451,7 +451,7 @@ list_by_member()
     show_text(DISPROW, STARTCOL, buf);
     mvcur(0, 0, currow, STARTCOL);
     refresh();
-    if (status = sms_query("get_lists_of_member", 2, nargv + 1,
+    if (status = mr_query("get_lists_of_member", 2, nargv + 1,
 			   print_1, (char *) NULL)) {
 	display_buff("\r\n");
 	com_err(whoami, status, " in get_lists_of_member");
@@ -529,7 +529,7 @@ list_all_groups()
     argv[1] = argv[4] = "dontcare";
     argv[2] = "false";
     first_time = 1;
-    if (status = sms_query("qualified_get_lists", 5, argv,
+    if (status = mr_query("qualified_get_lists", 5, argv,
 			   print_all, (char *) NULL)) {
 	display_buff("\r\n");
 	com_err(whoami, status, " in list_all_groups\n");
@@ -555,7 +555,7 @@ list_members()
 	(void) sprintf(buffer, "The members of list '%s' are:", buf);
 	show_text(DISPROW + 1, STARTCOL, buffer);
 	argv[0] = buf;
-	if (status = sms_query("get_members_of_list", 1, argv,
+	if (status = mr_query("get_members_of_list", 1, argv,
 			       print_2, (char *) NULL)) {
 	    display_buff("\r\n");
 	    com_err(whoami, status, " found.\n");
@@ -824,7 +824,7 @@ scream()
 {
     com_err(whoami, status, "\nA Moira update returned a value -- programmer \
 botch\n");
-    sms_disconnect();
+    mr_disconnect();
     exit(1);
     return(0);	/* to keep compiler happy */
 }
@@ -839,7 +839,7 @@ fetch_list_info(list, li)
     char *argv[1];
 
     argv[0] = list;
-    return sms_query("get_list_info", 1, argv, get_list_info, (char *) NULL);
+    return mr_query("get_list_info", 1, argv, get_list_info, (char *) NULL);
 }
 
 /* ARGSUSED */

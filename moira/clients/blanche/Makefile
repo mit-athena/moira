@@ -3,7 +3,7 @@
 #	MIT Project Athena
 #
 #	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/Makefile,v $
-#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/Makefile,v 1.6 1990-03-17 16:48:46 mar Exp $
+#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/Makefile,v 1.7 1990-03-17 16:54:51 mar Exp $
 #	$Author: mar $
 # 
 # (c) Copyright 1988 by the Massachusetts Institute of Technology.
@@ -42,5 +42,5 @@ depend:
 # DO NOT DELETE THIS LINE -- mkdep uses it.
 
 blanche.o: blanche.c ../../include/mit-copyright.h /usr/include/stdio.h
-blanche.o: /usr/include/ctype.h ../../include/Moira.h /usr/include/Moira_et.h
-blanche.o: ../../include/Moira_app.h
+blanche.o: /usr/include/ctype.h ../../include/moira.h ../../include/mr_et.h
+blanche.o: ../../include/moira_site.h

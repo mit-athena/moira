@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/nfs.qc,v 1.13 1989-09-08 15:18:57 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/nfs.qc,v 1.14 1989-09-18 15:15:16 mar Exp $
  *
  * This generates the files necessary to load an nfs server.
  *
@@ -170,7 +170,7 @@ struct save_queue *lists;
 	    exit(SMS_OCONFIG);
 	}
 ##	repeat retrieve (id = m.member_id)
-##	    where m.list_id = l1.list_id and l1.name = @lsname and
+##	    where m.list_id = l1.list_id and l1.name = @listname and
 ##	    m.member_type = "USER" {
 	    if (u = hash_lookup(users, id))
 	      fprintf(fd, "%s\n", u);
@@ -390,8 +390,8 @@ struct save_queue *machs;
 	    prevuid = -1;
 	    quotasum = 0;
 ##	    repeat retrieve (uid = u.#uid, quota = q.#quota)
-##		where q.users_id = u.users_id and q.filsys_id = f.filsys_id and
-##		      f.phys_id = @id and u.status != 0 sort by #uid {
+##		where q.users_id = u.users_id and q.phys_id = @id and
+##		      u.status != 0 sort by #uid {
     		if (uid != prevuid) {
 		    if (quotasum)
 		      fprintf(fd, "%d %d\n", prevuid, quotasum);

@@ -45,6 +45,7 @@ create index i_lis_group on  list (grouplist);
 create index i_lis_gid on  list (gid);
 create index i_lis_nfsgroup on list (nfsgroup);
 create index i_lis_acl on list (acl_id);
+create index i_lis_memacl on list (memacl_id);
 
 create index i_imem_mid on imembers (member_id, member_type);
 create index i_imem_list on  imembers (list_id);

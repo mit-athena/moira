@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.17 1992-03-26 13:35:42 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.18 1993-04-06 10:30:46 mar Exp $
  *
  * Command line oriented Moira List tool.
  *
@@ -21,7 +21,7 @@
 #include <moira_site.h>
 
 #ifndef LINT
-static char blanche_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.17 1992-03-26 13:35:42 mar Exp $";
+static char blanche_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.18 1993-04-06 10:30:46 mar Exp $";
 #endif
 
 
@@ -395,7 +395,7 @@ char **argv;
 usage(argv)
 char **argv;
 {
-    fprintf(stderr, "Usage: %s [options] listname [options]\n",argv[0]);
+    fprintf(stderr, "Usage: %s listname [options]\n",argv[0]);
     fprintf(stderr, "Options are\n");
     fprintf(stderr, "   -v | -verbose\n");
     fprintf(stderr, "   -m | -members\n");

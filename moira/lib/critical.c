@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/critical.c,v 1.7 1989-10-05 01:24:47 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/critical.c,v 1.8 1990-01-29 18:09:43 mar Exp $
  *
  * Log and send a zephyrgram about any critical errors.
  *
@@ -30,27 +30,25 @@
 extern char *whoami;
 
 
-void critical_alert(instance, msg, args)
+/* This routine sends a class SMS zephyrgram of specified instance
+ * and logs to a special logfile the message passed to it via msg
+ * and args in printf format.  *** It expects the global variable
+ * whoami to be defined and contain the name of the calling program.
+ * It's a kludge that it takes a max of 8 arguments in a way that
+ * isn't necessarily portable, but varargs doesn't work here and we
+ * don't have vsprintf().
+ */
+
+void critical_alert(instance, msg, arg1, arg2, arg3, arg4,
+		    arg5, arg6, arg7, arg8)
   char *instance;		/* Instance for zephyr gram */
   char *msg;			/* printf format message */
-				/* args = arguements, printf style */
-  /* This routine sends a class SMS zephyrgram of specified instance
-     and logs to a special logfile the message passed to it via msg
-     and args in printf format.  *** It expects the global variable
-     whoami to be defined and contain the name of the calling program. */
-  /* Note: The part of this code that process the variable arguements
-     was stolen from sprintf(). */
+  char *arg1, *arg2, *arg3, *arg4, *arg5, *arg6, *arg7, *arg8;
 {
-    FILE _bufstr;		/* For _doprnt() */
     FILE *crit;			/* FILE for critical log file */
     char buf[BUFSIZ];		/* Holds the formatted message */
 
-    /* Put the fully formatted message into buf */
-    _bufstr._flag = _IOWRT + _IOSTRG;
-    _bufstr._ptr = buf;
-    _bufstr._cnt = BUFSIZ;
-    _doprnt(msg, &args, &_bufstr);
-    putc('\0', &_bufstr);
+    sprintf(buf, msg, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8);
 
     /* Send zephyr notice */
     send_zgram(instance, buf);

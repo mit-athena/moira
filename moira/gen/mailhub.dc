@@ -1,5 +1,5 @@
 
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/mailhub.dc,v 1.10 1994-08-31 15:54:26 nocuser Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/mailhub.dc,v 1.11 1997-01-20 18:22:56 danw Exp $
  *
  * This generates the /usr/lib/aliases file for the mailhub.
  *
@@ -22,6 +22,7 @@ EXEC SQL INCLUDE sqlca;
 
 extern int errno;
 char *whoami = "mailhub.gen";
+char *db = "moira/moira";
 char *perm_malloc();
 char *pstrsave();
 char *divide = "##############################################################";
@@ -46,13 +47,7 @@ char **argv;
     int flag;
     EXEC SQL END DECLARE SECTION;
 
-#ifsql INGRES
-    EXEC SQL CONNECT moira;
-    EXEC SQL SET LOCKMODE SESSION WHERE LEVEL=TABLE, READLOCK=SHARED;
-#endsql
-#ifsql INFORMIX
-    EXEC SQL DATABASE moira;
-#endsql
+    EXEC SQL CONNECT :db;
 
     if (argc == 2) {
 	if (stat(argv[1], &sb) == 0) {
@@ -80,12 +75,7 @@ char **argv;
 
     get_info();
 
-#ifsql INGRES
-    EXEC SQL DISCONNECT;
-#endsql
-#ifsql INFORMIX
-    EXEC SQL CLOSE DATABASE;
-#endsql
+    EXEC SQL COMMIT;
 
     fprintf(stderr, "Sorting Info\n");
     sort_info();
@@ -131,8 +121,8 @@ struct list {
 struct names {
     char *name;
     struct names *next;
-    int keep:1;
-    int id:31;
+    int keep;
+    int id;
 };
 
 
@@ -153,11 +143,6 @@ get_info()
      */
     EXEC SQL WHENEVER SQLERROR GOTO sqlerr;
 
-    /* Get Locks */
-
-    EXEC SQL SELECT modtime INTO :buf FROM users WHERE users_id = 0;
-    EXEC SQL SELECT modtime INTO :buf FROM list WHERE list_id = 0;
-
     cnt = 0;
     machines = create_hash(1000);
 
@@ -170,7 +155,7 @@ get_info()
     while (1) {
 	EXEC SQL FETCH m_cursor INTO :id, :name;
 	if (sqlca.sqlcode != 0) break;
-	if (s = index(name, '.'))
+	if (s = strchr(name, '.'))
 	  *s = 0;
 	else
 	  strtrim(name);
@@ -191,14 +176,14 @@ get_info()
     strings = create_hash(11001);
 
     EXEC SQL DECLARE s_cursor CURSOR FOR
-      SELECT string_id, trim(string)
+      SELECT string_id, string
       FROM strings
       ORDER BY string_id;
     EXEC SQL OPEN s_cursor;
     while (1) {
 	EXEC SQL FETCH s_cursor INTO :id, :name;
 	if (sqlca.sqlcode != 0) break;
-	if (hash_store(strings, id, pstrsave(name)) < 0) {
+	if (hash_store(strings, id, pstrsave(strtrim(name))) < 0) {
 	    fprintf(stderr, "Out of memory!\n");
 	    exit(MR_NO_MEM);
 	}
@@ -244,7 +229,6 @@ get_info()
 	cnt++;
     }
     EXEC SQL CLOSE u_cursor;
-    EXEC SQL COMMIT;
     fprintf(stderr, "Loaded %d users\n", cnt);
 
     cnt = 0;
@@ -273,7 +257,6 @@ get_info()
 	cnt++;
     }
     EXEC SQL CLOSE l_cursor;
-    EXEC SQL COMMIT;
     fprintf(stderr, "Loaded %d lists\n", cnt);
 
     cnt = 0;
@@ -313,12 +296,12 @@ get_info()
     }
     EXEC SQL CLOSE m_cursor2;
     fprintf(stderr, "Loaded %d members\n", cnt);
+
+    EXEC SQL COMMIT;
     return;
  sqlerr:
-    com_err(whoami, MR_INGRES_ERR, " code %d\n", sqlca.sqlcode);
-    critical_alert("DCM", "Mailhub build encountered DATABASE ERROR %d",
-		   sqlca.sqlcode);
-    exit(MR_INGRES_ERR);
+    db_error(sqlca.sqlcode);
+    exit(MR_DBMS_ERR);
 }
 
 
@@ -576,9 +559,9 @@ register char *s;
     wwid = strlen(s);
 
     if (!bol && awid + wwid + 2 > AL_MAX_WID) {
-	sprintf(str, "%c%c%c%c%c%c", random() % 26 + 97, random() % 26 + 97,
-                                     random() % 26 + 97, random() % 26 + 97,
-				     random() % 26 + 97, random() % 26 + 97);
+	sprintf(str, "%c%c%c%c%c%c", rand() % 26 + 97, rand() % 26 + 97,
+                                     rand() % 26 + 97, rand() % 26 + 97,
+				     rand() % 26 + 97, rand() % 26 + 97);
 	str[6] = '\0';			
 	fprintf(out, ",\n\tcont%d-%s\ncont%d-%s: ", cont, str, cont, str);
 	cont++;
@@ -619,7 +602,7 @@ register char *string;
 
     while (1) {
 	while (*string && *string == ' ') string++;
-	c = (char *)index(string, ' ');
+	c = (char *)strchr(string, ' ');
 	if (c == 0) {
 	    wwid = strlen(string);
 	} else {
@@ -700,7 +683,7 @@ pstrsave(s)
     }
     len = strlen(s) + 1;
     p = perm_malloc((u_int)len);
-    if (p) bcopy(s, p, len);
+    if (p) memcpy(p, s, len);
     return p;
 }
 
@@ -722,7 +705,7 @@ int size;
 	free(h);
 	return((struct hash *) NULL);
     }
-    bzero(h->data, size * sizeof(char *));
+    memset(h->data, 0, size * sizeof(char *));
     return(h);
 }
 

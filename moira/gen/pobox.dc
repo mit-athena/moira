@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/pobox.dc,v 1.5 1996-08-21 03:30:13 danw Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/pobox.dc,v 1.6 1997-01-20 18:23:01 danw Exp $
  *
  * This generates a list of everyone's poboxes for the mitdir.
  *
@@ -14,12 +14,11 @@
 #include <sys/stat.h>
 #include <sys/time.h>
 #include <ctype.h>
-#include <string.h>
 EXEC SQL INCLUDE sqlca;
 
 extern int errno;
 char *whoami = "pobox.gen";
-
+char *db = "moira/moira";
 
 main(argc, argv)
 int argc;
@@ -33,13 +32,7 @@ char **argv;
     char login[9], id[18], string[257];
     EXEC SQL END DECLARE SECTION;
 
-#ifsql INGRES
-    EXEC SQL CONNECT moira;
-    EXEC SQL SET LOCKMODE SESSION WHERE LEVEL=TABLE, READLOCK=SHARED;
-#endsql
-#ifsql INFORMIX
-    EXEC SQL DATABASE moira;
-#endsql
+    EXEC SQL CONNECT :db;
 
     if (argc == 2) {
 	if (stat(argv[1], &sb) == 0) {
@@ -109,12 +102,7 @@ char **argv;
 
     EXEC SQL CLOSE y;
 
-#ifsql INGRES
-    EXEC SQL DISCONNECT;
-#endsql
-#ifsql INFORMIX
-    EXEC SQL CLOSE DATABASE;
-#endsql
+    EXEC SQL COMMIT;
 
     if (fclose(out)) {
 	perror("close failed");
@@ -125,12 +113,6 @@ char **argv;
     exit(MR_SUCCESS);
 
  sqlerr:
-    com_err(whoami, MR_INGRES_ERR, " code %d\n", sqlca.sqlcode);
-#ifsql INGRES
-    if (sqlca.sqlcode == 17700 || sqlca.sqlcode == -37000)
-      exit(MR_DEADLOCK);
-#endsql
-    critical_alert("DCM", "Pobox build encountered INGRES ERROR %d",
-		   sqlca.sqlcode);
-    exit(MR_INGRES_ERR);
+    db_error(sqlca.sqlcode);
+    exit(MR_DBMS_ERR);
 }

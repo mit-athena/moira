@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/passwd.dc,v 1.13 1992-12-21 17:57:01 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/passwd.dc,v 1.14 1997-01-20 18:23:00 danw Exp $
  *
  * This generates a master /etc/passwd containing all active (status != 0)
  * accounts.
@@ -18,7 +18,7 @@ EXEC SQL INCLUDE sqlca;
 
 extern int errno;
 char *whoami = "passwd.gen";
-
+char *db = "moira/moira";
 
 main(argc, argv)
 int argc;
@@ -34,13 +34,7 @@ char **argv;
     int uid;
     EXEC SQL END DECLARE SECTION;
 
-#ifsql INGRES
-    EXEC SQL CONNECT moira;
-    EXEC SQL SET LOCKMODE SESSION WHERE LEVEL=TABLE, READLOCK=SHARED;
-#endsql
-#ifsql INFORMIX
-    EXEC SQL DATABASE moira;
-#endsql
+    EXEC SQL CONNECT :db;
 
     if (argc == 2) {
 	if (stat(argv[1], &sb) == 0) {
@@ -68,7 +62,7 @@ char **argv;
     EXEC SQL WHENEVER SQLERROR GOTO sqlerr;
 
     EXEC SQL DECLARE x CURSOR FOR SELECT 
-      login, uid, shell, fullname, office_addr, nickname,
+      login, unix_uid, shell, fullname, office_addr, nickname,
       office_phone, home_phone
 	FROM users WHERE status = 1;
     EXEC SQL OPEN x;
@@ -88,12 +82,8 @@ char **argv;
     }
 
     EXEC SQL CLOSE x;
-#ifsql INGRES
-    EXEC SQL DISCONNECT;
-#endsql
-#ifsql INFORMIX
-    EXEC SQL CLOSE DATABASE;
-#endsql
+
+    EXEC SQL COMMIT;
 
     if (fclose(out)) {
 	perror("close failed");
@@ -104,8 +94,6 @@ char **argv;
     exit(MR_SUCCESS);
 
  sqlerr:
-    com_err(whoami, MR_INGRES_ERR, " code %d\n", sqlca.sqlcode);
-    critical_alert("DCM", "Passwd build encountered INGRES ERROR %d",
-		   sqlca.sqlcode);
-    exit(MR_INGRES_ERR);
+    db_error(sqlca.sqlcode);
+    exit(MR_DBMS_ERR);
 }

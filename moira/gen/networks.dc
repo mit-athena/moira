@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/networks.dc,v 1.2 1994-01-14 16:10:00 tom Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/networks.dc,v 1.3 1997-01-20 18:22:58 danw Exp $
  *
  * This generates the network table.
  *
@@ -13,12 +13,13 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/time.h>
+#include <netinet/in.h>
 
 EXEC SQL INCLUDE sqlca;
 
 extern int errno;
 char *whoami = "network.gen";
-
+char *db = "moira/moira";
 
 main(argc, argv)
 int argc;
@@ -28,19 +29,14 @@ char **argv;
     char *outf = NULL, outft[64], *p, buf[256];
     struct stat sb;
     struct timeval now;
+    struct in_addr addr;
     int flag1, i;
     EXEC SQL BEGIN DECLARE SECTION;
-    int id, addr;
+    int id, saddr;
     char name[65], description[65];
     EXEC SQL END DECLARE SECTION;
 
-#ifsql INGRES
-    EXEC SQL CONNECT moira;
-    EXEC SQL SET LOCKMODE SESSION WHERE LEVEL=TABLE, READLOCK=SHARED;
-#endsql
-#ifsql INFORMIX
-    EXEC SQL DATABASE moira;
-#endsql
+    EXEC SQL CONNECT :db;
 
     if (argc == 2) { 
 	if (stat(argv[1], &sb) == 0) { 
@@ -81,21 +77,19 @@ char **argv;
       FROM subnet ORDER BY saddr;
     EXEC SQL OPEN x;
     while (1) {
-	EXEC SQL FETCH x INTO :name, :id, :addr, :description;
+	EXEC SQL FETCH x INTO :name, :id, :saddr, :description;
 	if (sqlca.sqlcode != 0) break;
 	if (id == 0) continue;
 	if (*strtrim(name) == 0) continue;
-	fprintf(out, "NETWORK : %-16.16s : %-12.12s : %s\n", name, inet_ntoa(htonl(addr)), 
-	   description);
+	addr.s_addr=htonl(saddr);
+	fprintf(out, "NETWORK : %-16.16s : %-12.12s : %s\n", name,
+		inet_ntoa(addr), 
+	   strtrim(description));
     }
 
     EXEC SQL CLOSE x;
-#ifsql INGRES
-    EXEC SQL DISCONNECT;
-#endsql
-#ifsql INFORMIX
-    EXEC SQL CLOSE DATABASE;
-#endsql
+
+    EXEC SQL COMMIT;
 
     fprintf(out, "; End of automatically generated network table\n");
     if (fclose(out)) {
@@ -107,12 +101,6 @@ char **argv;
     exit(MR_SUCCESS);
 
  sqlerr:
-    com_err(whoami, MR_INGRES_ERR, " code %d\n", sqlca.sqlcode);
-#ifsql INGRES
-    if (sqlca.sqlcode == 17700 || sqlca.sqlcode == -37000)
-      exit(MR_DEADLOCK);
-#endsql
-    critical_alert("DCM", "Networks build encountered INGRES ERROR %d",
-		   sqlca.sqlcode);
-    exit(MR_INGRES_ERR);
+    db_error(sqlca.sqlcode);
+    exit(MR_DBMS_ERR);
 }

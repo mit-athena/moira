@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/hesiod.dc,v 1.15 1996-10-12 22:39:13 danw Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/hesiod.dc,v 1.16 1997-01-20 18:22:51 danw Exp $
  *
  * This generates the zone files necessary to load a hesiod server.
  * The following zones are generated: passwd, uid, pobox, group,
@@ -17,13 +17,19 @@
 #include <sys/stat.h>
 #include <sys/time.h>
 #include <ctype.h>
+#include <string.h>
 EXEC SQL INCLUDE sqlca;
 
 
-#ifdef ATHENA
+#ifndef HTYPE
 #define HTYPE "UNSPECA"
-#else
-#define HTYPE "TXT"
+#endif
+#ifndef HCLASS
+#define HCLASS "HS"
+#endif
+
+#ifndef HESIOD_SUBDIR
+#define HESIOD_SUBDIR "hesiod"
 #endif
 
 /* max number of bytes of a data record that can be returned in a hesiod 
@@ -37,6 +43,7 @@ char hesiod_dir[64];
 struct hash *machines = NULL;
 struct hash *users = NULL;
 char *whoami = "hesiod.gen";
+char *db = "moira/moira";
 
 struct grp {
     struct grp *next;
@@ -65,15 +72,9 @@ char **argv;
     }
 
     initialize_sms_error_table ();
-    sprintf(hesiod_dir, "%s/hesiod", DCM_DIR);
+    sprintf(hesiod_dir, "%s/%s", DCM_DIR, HESIOD_SUBDIR);
 
-#ifsql INGRES
-    EXEC SQL CONNECT moira;
-    EXEC SQL SET LOCKMODE SESSION WHERE LEVEL=TABLE, READLOCK=SHARED;
-#endsql
-#ifsql INFORMIX
-    EXEC SQL DATABASE moira;
-#endsql
+    EXEC SQL CONNECT :db;
 
     changed = do_passwd();
     changed += do_filsys();
@@ -83,13 +84,6 @@ char **argv;
     changed += do_sloc();
     changed += do_service();
     changed += do_groups();
-
-#ifsql INGRES
-    EXEC SQL DISCONNECT;
-#endsql
-#ifsql INFORMIX
-    EXEC SQL CLOSE DATABASE;
-#endsql
 
     if (!changed) {
 	fprintf(stderr, "No files updated.\n");
@@ -122,7 +116,7 @@ get_mach()
     EXEC SQL DECLARE m_cursor CURSOR FOR
       SELECT name, mach_id
       FROM machine
-      WHERE status = 1
+      WHERE status = 1 and mach_id != 0
       ORDER BY mach_id;
     EXEC SQL OPEN m_cursor;
     while (1) {
@@ -132,12 +126,7 @@ get_mach()
     }
     if (sqlca.sqlcode < 0) db_error(sqlca.sqlcode);
     EXEC SQL CLOSE m_cursor;
-#ifsql INGRES
     EXEC SQL COMMIT;
-#endsql
-#ifsql INFORMIX
-    EXEC SQL COMMIT WORK;
-#endsql
 }
 
 
@@ -195,7 +184,7 @@ do_passwd()
 
     users = create_hash(12001);
     EXEC SQL DECLARE u_cursor CURSOR FOR
-      SELECT login, uid, shell, fullname, nickname, office_addr,
+      SELECT login, unix_uid, shell, fullname, nickname, office_addr,
       	     office_phone, home_phone, users_id, pop_id, potype, status
       FROM users
       WHERE status = 1 or status = 5 or status = 6
@@ -217,24 +206,20 @@ do_passwd()
 	    u->lists = NULL;
 	    hash_store(users, id, u);
 	    if (status == 1) {
-		fprintf(pout, "%s.passwd\tHS %s \"%s:*:%d:101:%s,%s,%s,%s,%s:/mit/%s:%s\"\n",
-			login, HTYPE, login, uid, fullname, nn, oa, op, hp,
-			login, shell);
-		fprintf(uout, "%d.uid\tHS CNAME %s.passwd\n", uid, login);
+		fprintf(pout, "%s.passwd\t%s %s \"%s:*:%d:101:%s,%s,%s,%s,%s:/mit/%s:%s\"\n",
+			login, HCLASS, HTYPE, login, uid, fullname, nn, oa,
+			op, hp, login, shell);
+		fprintf(uout, "%d.uid\t%s CNAME %s.passwd\n", uid, HCLASS,
+			login);
 	    }
 	    if (pid != 0 && (mach = hash_lookup(machines, pid))) {
-		fprintf(bout, "%s.pobox\tHS %s \"POP %s %s\"\n",
-			login, HTYPE, mach, login);
+		fprintf(bout, "%s.pobox\t%s %s \"POP %s %s\"\n",
+			login, HCLASS, HTYPE, mach, login);
 	    }
     }
     if (sqlca.sqlcode < 0) db_error(sqlca.sqlcode);
     EXEC SQL CLOSE u_cursor;
-#ifsql INGRES
     EXEC SQL COMMIT;
-#endsql
-#ifsql INFORMIX
-    EXEC SQL COMMIT WORK;
-#endsql
 
     if (fclose(pout) || fclose(uout) || fclose(bout)) {
 	fprintf(stderr, "Unsuccessful file close of passwd.db, uid.db, or pobox.db\n");
@@ -308,10 +293,6 @@ do_groups()
      */
     EXEC SQL WHENEVER SQLERROR GOTO sqlerr;
 
-    /* get lock records */
-    EXEC SQL SELECT modtime INTO :name FROM list WHERE list_id = 0;
-    EXEC SQL SELECT modtime INTO :name FROM users WHERE users_id = 0;
-
     EXEC SQL DECLARE l_cursor CURSOR FOR
       SELECT name, gid, list_id
       FROM list
@@ -324,9 +305,9 @@ do_groups()
 	strtrim(name);
 	sprintf(buf, "%s:%d", name, gid);
 	hash_store(groups, lid, strsave(buf));
-	fprintf(iout, "%d.gid\tHS CNAME %s.group\n", gid, name);
-	fprintf(gout, "%s.group\tHS %s \"%s:*:%d:\"\n",
-		name, HTYPE, name, gid);
+	fprintf(iout, "%d.gid\t%s CNAME %s.group\n", gid, HCLASS, name);
+	fprintf(gout, "%s.group\t%s %s \"%s:*:%d:\"\n",
+		name, HCLASS, HTYPE, name, gid);
     }
     EXEC SQL CLOSE l_cursor;
 
@@ -371,19 +352,15 @@ do_groups()
 	}
     }
     EXEC SQL CLOSE i_cursor;
-#ifsql INGRES
+
     EXEC SQL COMMIT;
-#endsql
-#ifsql INFORMIX
-    EXEC SQL COMMIT WORK;
-#endsql
 
     for (p = &(users->data[users->size - 1]); p >= users->data; p--) {
 	for (b = *p; b; b = b->next) {
 	    if ((g = ((struct user *)b->data)->lists) == NULL)
 	      continue;
-	    fprintf(lout, "%s.grplist\tHS %s \"",
-		    ((struct user *)b->data)->name, HTYPE);
+	    fprintf(lout, "%s.grplist\t%s %s \"",
+		    ((struct user *)b->data)->name, HCLASS, HTYPE);
 	    len = 0;
 	    for (; g; g = g->next) {
 		if (len + strlen(g->lid) + 1 < MAXHESSIZE) {
@@ -428,7 +405,6 @@ do_filsys()
     char comments[65];
     int flag1, flag2, flag3, flag4, id, fid;
     EXEC SQL END DECLARE SECTION;
-    char *index();
 
     sprintf(outf, "%s/filsys.db", hesiod_dir);
 
@@ -459,7 +435,7 @@ do_filsys()
     sq2 = sq_create();
 
     EXEC SQL DECLARE f_cursor CURSOR FOR
-      SELECT label, type, name, mach_id, access, mount, comments, filsys_id
+      SELECT label, type, name, mach_id, rwaccess, mount, comments, filsys_id
       FROM filesys
       ORDER BY filsys_id;
     EXEC SQL OPEN f_cursor;
@@ -470,17 +446,17 @@ do_filsys()
 	strtrim(type);
 	if (!strcmp(type, "NFS") || !strcmp(type, "RVD")) {
 	    if (mach = hash_lookup(machines, id)) {
-		fprintf(out, "%s.filsys\tHS %s \"%s %s %s %s %s\"\n",
-			strtrim(name), HTYPE, type, strtrim(loc), mach,
-			strtrim(access), strtrim(mount));
+		fprintf(out, "%s.filsys\t%s %s \"%s %s %s %s %s\"\n",
+			strtrim(name), HCLASS, HTYPE, type, strtrim(loc),
+			mach, strtrim(access), strtrim(mount));
 	    }
 	} else if (!strcmp(type, "AFS")) {
-	    fprintf(out, "%s.filsys\tHS %s \"AFS %s %s %s\"\n",
-		    strtrim(name), HTYPE, strtrim(loc), strtrim(access),
-		    strtrim(mount));
+	    fprintf(out, "%s.filsys\t%s %s \"AFS %s %s %s\"\n",
+		    strtrim(name), HCLASS, HTYPE, strtrim(loc),
+		    strtrim(access), strtrim(mount));
 	} else if (!strcmp(type, "ERR")) {
-	    fprintf(out, "%s.filsys\tHS %s \"ERR %s\"\n",
-		    strtrim(name), HTYPE, strtrim(comments));
+	    fprintf(out, "%s.filsys\t%s %s \"ERR %s\"\n",
+		    strtrim(name), HCLASS, HTYPE, strtrim(comments));
 	} else if (!strcmp(type, "FSGROUP")) {
 	    sprintf(trans, "%s:%d", strtrim(name), fid);
 	    sq_save_data(sq, strsave(trans));
@@ -492,34 +468,34 @@ do_filsys()
     EXEC SQL CLOSE f_cursor;
 
     while (sq_get_data(sq, &group)) {
-	fid = atoi(index(group, ':')+1);
-	*index(group, ':') = 0;
+	fid = atoi(strchr(group, ':')+1);
+	*strchr(group, ':') = 0;
 
 	EXEC SQL DECLARE f_cursor2 CURSOR FOR
-	  SELECT DISTINCT f.type, f.name, f.mach_id, f.access, f.mount,
+	  SELECT DISTINCT f.type, f.name, f.mach_id, f.rwaccess, f.mount,
 		f.comments, f.label, g.key
 	  FROM filesys f, fsgroup g
 	  WHERE f.filsys_id = g.filsys_id AND g.group_id = :fid
 	  ORDER BY key, label;
 	EXEC SQL OPEN f_cursor2;
-        for (flag1=1;;flag1++) {
+	for (flag1=1;;flag1++) {
             EXEC SQL FETCH f_cursor2 INTO :type, :loc, :id, :access,:mount,
                                     :comments, :name, :trans;
             if (sqlca.sqlcode != 0) break;
 	    strtrim(type);
 	    if (!strcmp(type, "NFS") || !strcmp(type, "RVD")) {
 		if (mach = hash_lookup(machines, id)) {
-		    fprintf(out, "%s.filsys\tHS %s \"%s %s %s %s %s %d\"\n",
-			    group, HTYPE, type, strtrim(loc), mach,
+		    fprintf(out, "%s.filsys\t%s %s \"%s %s %s %s %s %d\"\n",
+			    group, HCLASS, HTYPE, type, strtrim(loc), mach,
 			    strtrim(access), strtrim(mount), flag1);
 		}
 	    } else if (!strcmp(type, "AFS")) {
-		fprintf(out, "%s.filsys\tHS %s \"AFS %s %s %s %d\"\n",
-			group, HTYPE, strtrim(loc), strtrim(access),
+		fprintf(out, "%s.filsys\t%s %s \"AFS %s %s %s %d\"\n",
+			group, HCLASS, HTYPE, strtrim(loc), strtrim(access),
 			strtrim(mount), flag1);
 	    } else if (!strcmp(type, "ERR")) {
-		fprintf(out, "%s.filsys\tHS %s \"ERR %s\"\n",
-			group, HTYPE, strtrim(comments));
+		fprintf(out, "%s.filsys\t%s %s \"ERR %s\"\n",
+			group, HCLASS, HTYPE, strtrim(comments));
     	    }
   	}
         EXEC SQL CLOSE f_cursor2;
@@ -528,9 +504,9 @@ do_filsys()
     sq_destroy(sq);
 
     while (sq_get_data(sq2, &group)) {
-        fid = atoi(index(group, ':') + 1);
-        *index(group, ':') = 0;
-        fprintf(out, "%s.filsys\tHS %s \"MUL", group, HTYPE);
+        fid = atoi(strchr(group, ':') + 1);
+        *strchr(group, ':') = 0;
+        fprintf(out, "%s.filsys\t%s %s \"MUL", group, HCLASS, HTYPE);
 	EXEC SQL DECLARE f_cursor3 CURSOR FOR
 	    SELECT DISTINCT f.label, g.key
 	    FROM filesys f, fsgroup g
@@ -556,16 +532,12 @@ do_filsys()
     while (1) {
         EXEC SQL FETCH a_cursor INTO :name, :trans;
         if (sqlca.sqlcode != 0) break;
-    	fprintf(out, "%s.filsys\tHS CNAME %s.filsys\n",
-		strtrim(name), strtrim(trans));
+    	fprintf(out, "%s.filsys\t%s CNAME %s.filsys\n",
+		strtrim(name), HCLASS, strtrim(trans));
     }
     EXEC SQL CLOSE a_cursor;
-#ifsql INGRES
+
     EXEC SQL COMMIT;
-#endsql
-#ifsql INFORMIX
-    EXEC SQL COMMIT WORK;
-#endsql
 
     if (fclose(out)) {
 	fprintf(stderr, "Unsuccessful close of filsys.db\n");
@@ -594,8 +566,8 @@ typedef long	set_mask;
 #define	SET_CLR(n, p)	((p)[(n)/NSETBITS] &= ~(1 << ((n) % NSETBITS)))
 #define	SET_ISSET(n, p)	((p)[(n)/NSETBITS] &   (1 << ((n) % NSETBITS)))
 #define SET_CREATE()	((set_mask *)malloc(setsize * sizeof(set_mask)))
-#define SET_ZERO(p)	bzero((char *)(p), setsize * sizeof(set_mask))
-#define SET_CMP(p1, p2) (bcmp((p1), (p2), setsize * sizeof(set_mask)))
+#define SET_ZERO(p)	memset((char *)(p), 0, setsize * sizeof(set_mask))
+#define SET_CMP(p1, p2) (memcmp((p1), (p2), setsize * sizeof(set_mask)))
 
 int nbitsset(set)
 set_mask *set;
@@ -626,7 +598,7 @@ do_cluster()
 
     if (stat(outf, &sb) == 0) {
 	ftime = sb.st_mtime;
-        if (ModDiff (&flag1, "cluster", ftime)
+        if (ModDiff (&flag1, "clusters", ftime)
             || ModDiff (&flag2, "machine", ftime)
             || ModDiff (&flag3, "mcmap", ftime)
             || ModDiff (&flag4, "svc", ftime)) exit (MR_DATE);
@@ -646,14 +618,14 @@ do_cluster()
     fprintf(stderr, "Building cluster.db\n");
     get_mach();
 
-    EXEC SQL SELECT MAX(clu_id) INTO :maxclu FROM cluster;
+    EXEC SQL SELECT MAX(clu_id) INTO :maxclu FROM clusters;
     maxclu++;
     setsize = howmany(maxclu, NSETBITS);
 
     EXEC SQL SELECT MAX(mach_id) INTO :maxmach FROM machine;
     maxmach++;
     machs = (set_mask **)malloc((maxmach + 1) * sizeof(set_mask **));
-    bzero(machs, (maxmach + 1) * sizeof(int));
+    memset(machs, 0, (maxmach + 1) * sizeof(int));
 
     EXEC SQL DECLARE p_cursor CURSOR FOR
       SELECT mach_id, clu_id
@@ -690,8 +662,8 @@ do_cluster()
 			strtrim(label2);
 			strtrim(data);
 			fprintf(out,
-				"mrinternal-%d.cluster\tHS %s \"%s %s\"\n",
-				mid, HTYPE, label2, data);
+				"mrinternal-%d.cluster\t%s %s \"%s %s\"\n",
+				mid, HCLASS, HTYPE, label2, data);
 		    }
 		    EXEC SQL CLOSE d_cursor;
 		}
@@ -701,7 +673,7 @@ do_cluster()
 	    for (cid = 1; cid < maxclu; cid++)
 	      if (SET_ISSET(cid, ms)) break;
 
-	    EXEC SQL SELECT name INTO :name FROM cluster WHERE clu_id = :cid;
+	    EXEC SQL SELECT name INTO :name FROM clusters WHERE clu_id = :cid;
 	    strtrim(name);
 	}
 
@@ -710,11 +682,11 @@ do_cluster()
 	      *p++ = *mach;
 	    *p = 0;
 	    if (oneclu)
-	      fprintf(out, "%s.cluster\tHS CNAME %s.cluster\n",
-		      machbuf, name);
+	      fprintf(out, "%s.cluster\t%s CNAME %s.cluster\n",
+		      machbuf, HCLASS, name);
 	    else
-	      fprintf(out, "%s.cluster\tHS CNAME mrinternal-%d.cluster\n",
-		      machbuf, mid);
+	      fprintf(out, "%s.cluster\t%s CNAME mrinternal-%d.cluster\n",
+		      machbuf, HCLASS, mid);
 	}
 	for (id = mid + 1; id < maxmach; id++) {
 	    if ((ps = machs[id]) && !SET_CMP(ms, ps)) {
@@ -725,12 +697,12 @@ do_cluster()
 		      *p++ = *mach;
 		    *p = 0;
 		    if (oneclu)
-		      fprintf(out, "%s.cluster\tHS CNAME %s.cluster\n",
-			      machbuf, name);
+		      fprintf(out, "%s.cluster\t%s CNAME %s.cluster\n",
+			      machbuf, HCLASS, name);
 		    else
 		      fprintf(out,
-			      "%s.cluster\tHS CNAME mrinternal-%d.cluster\n",
-			      machbuf, mid);
+			      "%s.cluster\t%s CNAME mrinternal-%d.cluster\n",
+			      machbuf, HCLASS, mid);
 		}
 	    }
 	}
@@ -740,7 +712,7 @@ do_cluster()
 
     EXEC SQL DECLARE d_cursor2 CURSOR FOR
       SELECT c.name, d.serv_label, d.serv_cluster
-      FROM svc d, cluster c
+      FROM svc d, clusters c
       WHERE c.clu_id = d.clu_id; 
     EXEC SQL OPEN d_cursor2; 
         while (1) { 
@@ -749,16 +721,11 @@ do_cluster()
 	    strtrim(name);
 	    strtrim(label2);
 	    strtrim(data);
-	    fprintf(out, "%s.cluster\tHS %s \"%s %s\"\n",
-		    name, HTYPE, label2, data);
+	    fprintf(out, "%s.cluster\t%s %s \"%s %s\"\n",
+		    name, HCLASS, HTYPE, label2, data);
     }
     free(machs);
-#ifsql INGRES
     EXEC SQL COMMIT;
-#endsql
-#ifsql INFORMIX
-    EXEC SQL COMMIT WORK;
-#endsql
 
     if (fclose(out)) {
 	fprintf(stderr, "Unsuccessful close of cluster.db\n");
@@ -813,23 +780,21 @@ do_printcap()
     while (1) { 
         EXEC SQL FETCH p_cursor2 INTO :name, :rp, :sd, :rm, :ka, :pc, :rq; 
         if (sqlca.sqlcode != 0) break;
+	if (!hash_lookup(machines, rm)) continue;
 	strtrim(name);
 	strtrim(rp);
 	strtrim(sd);
-	fprintf(out, "%s.pcap\tHS %s \"%s:rp=%s:rm=%s:sd=%s:ka#%d:pc#%d",
-		name, HTYPE, name, rp, hash_lookup(machines, rm), sd, ka, pc);
+	fprintf(out, "%s.pcap\t%s %s \"%s:rp=%s:rm=%s:sd=%s:ka#%d:pc#%d",
+		name, HCLASS, HTYPE, name, rp, hash_lookup(machines, rm),
+		sd, ka, pc);
 	if (rq && hash_lookup(machines, rq))
 	  fprintf(out, ":rq=%s\"\n", hash_lookup(machines, rq));
 	else
 	  fputs("\"\n", out);
     }
     EXEC SQL CLOSE p_cursor2;
-#ifsql INGRES
+
     EXEC SQL COMMIT;
-#endsql
-#ifsql INFORMIX
-    EXEC SQL COMMIT WORK;
-#endsql
 
     if (fclose(out)) {
 	fprintf(stderr, "Unsuccessful close of pcap.db\n");
@@ -851,7 +816,7 @@ do_palladium()
     time_t ftime;
     EXEC SQL BEGIN DECLARE SECTION;
     char name[33], trans[129];
-    int flag, flag1, ident, rm;
+    int flag, flag1, identifier, rm;
     EXEC SQL END DECLARE SECTION;
 
     sprintf(outf, "%s/palladium.db", hesiod_dir);
@@ -877,16 +842,18 @@ do_palladium()
     get_mach();
 
     EXEC SQL DECLARE p_cursor3 CURSOR FOR
-      SELECT name, ident, mach_id
+      SELECT name, identifier, mach_id
       FROM palladium;
     EXEC SQL OPEN p_cursor3; 
     while (1) { 
-        EXEC SQL FETCH p_cursor3 INTO :name, :ident, :rm;
+        EXEC SQL FETCH p_cursor3 INTO :name, :identifier, :rm;
         if (sqlca.sqlcode != 0) break;
+	if (!hash_lookup(machines, rm)) break;
 	strtrim(name);
 	fprintf(out,
-		"%s.palladium\tHS %s \"%s %d %s interface directory\"\n",
-		name, HTYPE, hash_lookup(machines, rm), ident, name);
+		"%s.palladium\t%s %s \"%s %d %s interface directory\"\n",
+		name, HCLASS, HTYPE, hash_lookup(machines, rm), identifier,
+		name);
     }
     EXEC SQL CLOSE p_cursor3;
 
@@ -900,15 +867,12 @@ do_palladium()
         if (sqlca.sqlcode != 0) break;
     	strtrim(name);
 	strtrim(trans);
-	fprintf(out, "%s.palladium\tHS %s \"%s\"\n", name, HTYPE, trans);
+	fprintf(out, "%s.palladium\t%s %s \"%s\"\n", name, HCLASS, HTYPE,
+		trans);
     }
     EXEC SQL CLOSE a_cursor2;
-#ifsql INGRES
+
     EXEC SQL COMMIT;
-#endsql
-#ifsql INFORMIX
-    EXEC SQL COMMIT WORK;
-#endsql
 
     if (fclose(out)) {
 	fprintf(stderr, "Unsuccessful close of palladium.db\n");
@@ -965,15 +929,11 @@ do_sloc()
 	if (sqlca.sqlcode != 0) break;
 	strtrim(service);
 	if (mach = hash_lookup(machines, id))
-	  fprintf(out, "%s.sloc\tHS %s %s\n", service, HTYPE, mach);
+	  fprintf(out, "%s.sloc\t%s %s %s\n", service, HCLASS, HTYPE, mach);
     }
     EXEC SQL CLOSE s_cursor;
-#ifsql INGRES
+
     EXEC SQL COMMIT;
-#endsql
-#ifsql INFORMIX
-    EXEC SQL COMMIT WORK;
-#endsql
 
     if (fclose(out)) {
 	fprintf(stderr, "Unsuccessful close of sloc.db\n");
@@ -1028,8 +988,8 @@ do_service()
 	lowercase(protocol);      /* Convert protocol to lowercase */
 	strtrim(service);
 	strtrim(protocol);
-	fprintf(out, "%s.service\tHS %s \"%s %s %d\"\n",
-		service, HTYPE, service, protocol, port);
+	fprintf(out, "%s.service\t%s %s \"%s %s %d\"\n",
+		service, HCLASS, HTYPE, service, protocol, port);
     }
     EXEC SQL CLOSE s_cursor2;
 
@@ -1043,15 +1003,12 @@ do_service()
         if (sqlca.sqlcode != 0) break;
 	strtrim(service);
 	strtrim(altserv);
-	fprintf(out, "%s.service\tHS CNAME %s.service\n", service, altserv);
+	fprintf(out, "%s.service\t%s CNAME %s.service\n", service, HCLASS,
+		altserv);
     }
     EXEC SQL CLOSE a_cursor3;
-#ifsql INGRES
+
     EXEC SQL COMMIT;
-#endsql
-#ifsql INFORMIX
-    EXEC SQL COMMIT WORK;
-#endsql
 
     if (fclose(out)) {
 	fprintf(stderr, "Unsuccessful close of service.db\n");

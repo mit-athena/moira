@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/util.c,v 1.8 1993-04-20 12:04:22 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/util.c,v 1.9 1997-01-20 18:23:05 danw Exp $
  *
  * Utility routines used by the MOIRA extraction programs.
  *
@@ -14,6 +14,7 @@
 #include <moira.h>
 #include <moira_site.h>
 
+extern void sqlglm(char buf[], int *, int *);
 
 fix_file(targetfile)
 char *targetfile;
@@ -65,11 +66,14 @@ db_error(code)
 int code;
 {
     extern char *whoami;
+    char buf[256];
+    int bufsize=256, len=0;
 
-    com_err(whoami, MR_INGRES_ERR, " code %d\n", code);
-    if (code == -49900 || code == -37000 || code == 17700)
-      exit(MR_DEADLOCK);
-    critical_alert("DCM", "%s build encountered DATABASE ERROR %d",
-		   whoami, code);
-    exit(MR_INGRES_ERR);
+    com_err(whoami, MR_DBMS_ERR, " code %d\n", code);
+    sqlglm(buf, &bufsize, &len);
+    buf[len]=0;
+    com_err(whoami, 0, "SQL error text = %s", buf);
+    critical_alert("DCM", "%s build encountered DATABASE ERROR %d\n%s",
+		   whoami, code, buf);
+    exit(MR_DBMS_ERR);
 }

@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/sis.dc,v 1.4 1996-09-29 21:09:29 danw Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/sis.dc,v 1.5 1997-01-20 18:23:04 danw Exp $
  *
  * This generates a list of users and their MIT ID numbers and the
  * signatures which guarentee this mapping.
@@ -21,11 +21,12 @@
 #include <sys/file.h>
 #include <strings.h>
 #include <ctype.h>
+#include <fcntl.h>
 EXEC SQL INCLUDE sqlca;
 
 extern int errno;
 char *whoami = "sis.gen";
-
+char *db = "moira/moira";
 
 main(argc, argv)
 int argc;
@@ -39,6 +40,7 @@ char **argv;
     struct timeval now;
     EXEC SQL BEGIN DECLARE SECTION;
     char login[9], sig[257], id[17], kname[257];
+    EXEC SQL VAR sig IS STRING(257);
     int timestamp;
     struct { char login[12];
 	     char id[12];
@@ -48,13 +50,7 @@ char **argv;
 
     initialize_sms_error_table ();
 
-#ifsql INGRES
-    EXEC SQL CONNECT moira;
-    EXEC SQL SET LOCKMODE SESSION WHERE LEVEL=TABLE, READLOCK=SHARED;
-#endsql
-#ifsql INFORMIX
-    EXEC SQL DATABASE moira;
-#endsql
+    EXEC SQL CONNECT :db;
 
     if (argc == 2) {
 	if (stat(argv[1], &sb) == 0) {
@@ -98,6 +94,7 @@ char **argv;
 	strtrim(login);
 	strtrim(id);
 	strtrim(kname);
+	memset(&outrec, 0, sizeof(outrec));
 	strcpy(outrec.login, login);
 	strcpy(outrec.id, id);
 	si.timestamp = timestamp;
@@ -109,12 +106,7 @@ char **argv;
     }
     EXEC SQL CLOSE x;
 
-#ifsql INGRES
-    EXEC SQL DISCONNECT;
-#endsql
-#ifsql INFORMIX
-    EXEC SQL CLOSE DATABASE;
-#endsql
+    EXEC SQL COMMIT;
 
     if (close(out)) {
 	perror("close failed");
@@ -125,12 +117,6 @@ char **argv;
     exit(MR_SUCCESS);
 
  sqlerr:
-    com_err(whoami, MR_INGRES_ERR, " code %d\n", sqlca.sqlcode);
-#ifsql INGRES
-    if (sqlca.sqlcode == 17700 || sqlca.sqlcode == -37000)
-      exit(MR_DEADLOCK);
-#endsql
-    critical_alert("DCM", "SIS build encountered INGRES ERROR %d",
-		   sqlca.sqlcode);
-    exit(MR_INGRES_ERR);
+    db_error(sqlca.sqlcode);
+    exit(MR_DBMS_ERR);
 }

@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/moddiff.dc,v 1.6 1993-11-29 12:25:29 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/moddiff.dc,v 1.7 1997-01-20 18:22:57 danw Exp $
  *
  *  (c) Copyright 1990 by the Massachusetts Institute of Technology.
  *  For copying and distribution information, please see the file
@@ -38,12 +38,9 @@ time_t ModTime;
 
     *flag = 0;
     tbl_name = tbl;
-    EXEC SQL SELECT modtime INTO :filetime FROM tblstats 
+    EXEC SQL SELECT TO_CHAR(modtime, 'DD-mon-YYYY HH24:MI:SS') INTO :filetime FROM tblstats 
       WHERE table_name = :tbl_name;
     if (sqlca.sqlcode != 0) {
-	if (sqlca.sqlcode == -37000 ||
-	    sqlca.sqlcode == 17700)
-	  exit(MR_DEADLOCK);
 	fprintf(stderr, "Moddiff Query failed: %d\n", sqlca.sqlcode);
 	return(MR_DATE);
     }

@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/hosts.dc,v 1.7 1994-05-12 21:43:16 tom Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/hosts.dc,v 1.8 1997-01-20 18:22:51 danw Exp $
  *
  * This generates the hstath.txt hosttable.
  *
@@ -17,7 +17,7 @@ EXEC SQL INCLUDE sqlca;
 
 extern int errno;
 char *whoami = "hosts.gen";
-
+char *db = "moira/moira";
 
 main(argc, argv)
 int argc;
@@ -34,13 +34,7 @@ char **argv;
     char name[65], vendor[33], model[33], os[33], addr[17];
     EXEC SQL END DECLARE SECTION;
 
-#ifsql INGRES
-    EXEC SQL CONNECT moira;
-    EXEC SQL SET LOCKMODE SESSION WHERE LEVEL=TABLE, READLOCK=SHARED;
-#endsql
-#ifsql INFORMIX
-    EXEC SQL DATABASE moira;
-#endsql
+    EXEC SQL CONNECT :db;
 
     if (argc == 2) {
 	if (stat(argv[1], &sb) == 0) {
@@ -135,12 +129,8 @@ char **argv;
     }
 
     EXEC SQL CLOSE x;
-#ifsql INGRES
-    EXEC SQL DISCONNECT;
-#endsql
-#ifsql INFORMIX
-    EXEC SQL CLOSE DATABASE;
-#endsql
+
+    EXEC SQL COMMIT;
 
     fprintf(out, "; End of automatically generated host table\n");
     if (fclose(out)) {
@@ -152,12 +142,6 @@ char **argv;
     exit(MR_SUCCESS);
 
  sqlerr:
-    com_err(whoami, MR_INGRES_ERR, " code %d\n", sqlca.sqlcode);
-#ifsql INGRES
-    if (sqlca.sqlcode == 17700 || sqlca.sqlcode == -37000)
-      exit(MR_DEADLOCK);
-#endsql
-    critical_alert("DCM", "Hosts build encountered INGRES ERROR %d",
-		   sqlca.sqlcode);
-    exit(MR_INGRES_ERR);
+    db_error(sqlca.sqlcode);
+    exit(MR_DBMS_ERR);
 }

@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/nfs.dc,v 1.4 1993-11-24 15:52:13 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/nfs.dc,v 1.5 1997-01-20 18:22:59 danw Exp $
  *
  * This generates the files necessary to load an nfs server.
  *
@@ -9,6 +9,7 @@
 
 #include <mit-copyright.h>
 #include <stdio.h>
+#include <string.h>
 #include <moira.h>
 #include <moira_site.h>
 #include <sys/types.h>
@@ -20,6 +21,7 @@ EXEC SQL INCLUDE sqlca;
 #define min(x,y)	((x) < (y) ? (x) : (y))
 
 char *whoami = "nfs.gen";
+char *db = "moira/moira";
 char *malloc(), *strsave();
 char nfs_dir[64];
 struct hash *users, *groups;
@@ -41,22 +43,11 @@ char **argv;
     initialize_sms_error_table();
     sprintf(nfs_dir, "%s/nfs", DCM_DIR);
 
-#ifsql INGRES
-    EXEC SQL CONNECT moira;
-    EXEC SQL SET LOCKMODE SESSION WHERE LEVEL=TABLE, READLOCK=SHARED;
-#endsql
-#ifsql INFORMIX
-    EXEC SQL DATABASE moira;
-#endsql
+    EXEC SQL CONNECT :db;
 
     changed = do_nfs();
 
-#ifsql INGRES
-    EXEC SQL DISCONNECT;
-#endsql
-#ifsql INFORMIX
-    EXEC SQL CLOSE DATABASE;
-#endsql
+    EXEC SQL COMMIT;
 
     if (!changed) {
 	fprintf(stderr, "No files updated.\n");
@@ -93,6 +84,7 @@ int do_nfs()
      * not in the order of execution of statements.
      */
     EXEC SQL WHENEVER SQLERROR GOTO sqlerr;
+
     EXEC SQL DECLARE s_cursor CURSOR FOR
       SELECT m.name, s.value3
       FROM machine m, serverhosts s
@@ -111,15 +103,14 @@ int do_nfs()
     changed += do_machs(machs);
     return(changed);
  sqlerr:
-    com_err(whoami, MR_INGRES_ERR, " code %d\n", sqlca.sqlcode);
-    critical_alert("DCM", "NFS build encountered DATABASE ERROR %d",
-		   sqlca.sqlcode);
-    exit(MR_INGRES_ERR);
+    db_error(sqlca.sqlcode);
+    exit(MR_DBMS_ERR);
 }
 
 
 /* Make all of the credentials lists that will be needed.  Returns 0 if
- * no files were actually changed */
+ * no files were actually changed 
+ */
 
 int do_lists(lists)
 struct save_queue *lists;
@@ -146,9 +137,6 @@ struct save_queue *lists;
     }
     */
 
-    /* get locks */
-    EXEC SQL SELECT modtime INTO :lname FROM list WHERE list_id = 0;
-    EXEC SQL SELECT modtime INTO :lname FROM users WHERE users_id = 0;
 
     /* build the list of everyone, and store it in a file whose name
      * corresponds to the empty list.
@@ -192,10 +180,8 @@ struct save_queue *lists;
  */
     return(1);
  sqlerr:
-    com_err(whoami, MR_INGRES_ERR, " code %d\n", sqlca.sqlcode);
-    critical_alert("DCM", "NFS build encountered DATABASE ERROR %d",
-		   sqlca.sqlcode);
-    exit(MR_INGRES_ERR);
+    db_error(sqlca.sqlcode);
+    exit(MR_DBMS_ERR);
 }
 
 
@@ -254,7 +240,7 @@ do_everyone()
     /* now do grplists */
     users = create_hash(10000);
     EXEC SQL DECLARE u_cursor CURSOR FOR
-      SELECT users_id, login, uid
+      SELECT users_id, login, unix_uid
       FROM users
       WHERE status = 1
       ORDER BY users_id;
@@ -304,10 +290,8 @@ do_everyone()
     free(groups);
     return(1);
  sqlerr:
-    com_err(whoami, MR_INGRES_ERR, " code %d\n", sqlca.sqlcode);
-    critical_alert("DCM", "NFS build encountered DATABASE ERROR %d",
-		   sqlca.sqlcode);
-    exit(MR_INGRES_ERR);
+    db_error(sqlca.sqlcode);
+    exit(MR_DBMS_ERR);
 }
 
 
@@ -322,17 +306,13 @@ struct save_queue *machs;
     char *machname, listname[33], dev[33], dir[81], fstype[9];
     int uid, quota, id, gid, flag1, flag2, flag3, flag4;
     EXEC SQL END DECLARE SECTION;
-    char file[64], f1[64], f2[64], *cp, *index();
+    char file[64], f1[64], f2[64], *cp;
     int prevuid, quotasum, olddev, oldmach;
     FILE *fd;
     struct hash *machines;
 
     fprintf(stderr, "Building machine files\n");
 
-    /* acquire locks on machines & filesystems */
-    EXEC SQL SELECT modtime INTO :listname FROM users WHERE users_id = 0;
-    EXEC SQL SELECT modtime INTO :listname FROM machine WHERE mach_id = 0;
-    EXEC SQL SELECT modtime INTO :listname FROM filesys WHERE filsys_id = 0;
 
     machines = create_hash(100);
     while (sq_get_data(machs, &machname)) {
@@ -375,7 +355,7 @@ struct save_queue *machs;
 	      fclose(fd);
 	    olddev = flag1;
 	    oldmach = flag2;
-	    while (cp = index(dev, '/')) *cp = '@';
+	    while (cp = strchr(dev, '/')) *cp = '@';
 	    sprintf(file, "%s/%s.%s.quotas", nfs_dir,
 		    hash_lookup(machines, flag2), strtrim(dev));
 	    fd = fopen(file, "w");
@@ -388,7 +368,7 @@ struct save_queue *machs;
 	}
 	if (uid != prevuid) {
 	    if ((cp = hash_lookup(users, prevuid)) &&
-		(cp = index(cp, ':')))
+		(cp = strchr(cp, ':')))
 	      prevuid = atoi(cp+1);
 	    if (quotasum)
 	      fprintf(fd, "%d %d\n", prevuid, quotasum);
@@ -400,7 +380,7 @@ struct save_queue *machs;
     }
     EXEC SQL CLOSE q_cursor;
     if ((cp = hash_lookup(users, prevuid)) &&
-	(cp = index(cp, ':')))
+	(cp = strchr(cp, ':')))
       prevuid = atoi(cp+1);
     if (quotasum)
       fprintf(fd, "%d %d\n", prevuid, quotasum);
@@ -432,7 +412,7 @@ struct save_queue *machs;
 	      fclose(fd);
 	    olddev = flag1;
 	    oldmach = flag2;
-	    while (cp = index(dev, '/')) *cp = '@';
+	    while (cp = strchr(dev, '/')) *cp = '@';
 	    sprintf(file, "%s/%s.%s.quotas", nfs_dir,
 		    hash_lookup(machines, flag2), strtrim(dev));
 	    fd = fopen(file, "w");
@@ -468,7 +448,7 @@ struct save_queue *machs;
     fd = stdin;
 
     EXEC SQL DECLARE q_cursor3 CURSOR FOR
-      SELECT DISTINCT f.name, f.lockertype, u.uid, l.gid, f.phys_id, 
+      SELECT DISTINCT f.name, f.lockertype, u.unix_uid, l.gid, f.phys_id, 
 		f.mach_id, n.device 
       FROM users u, list l, nfsphys n, filesys f
       WHERE u.users_id = f.owner AND 
@@ -482,12 +462,13 @@ struct save_queue *machs;
 	EXEC SQL FETCH q_cursor3 INTO :dir, :fstype, :uid, :gid, :flag1,
 			:flag2, :dev;
 	if (sqlca.sqlcode != 0) break;
-	if (flag1 != olddev || flag2 != oldmach) {
+	if ((flag1 != olddev || flag2 != oldmach) &&
+	    hash_lookup(machines, flag2)) {
 	    if (fd != stdin)
 	      fclose(fd);
 	    olddev = flag1;
 	    oldmach = flag2;
-	    while (cp = index(dev, '/')) *cp = '@';
+	    while (cp = strchr(dev, '/')) *cp = '@';
 	    sprintf(file, "%s/%s.%s.dirs", nfs_dir,
 		    hash_lookup(machines, flag2), strtrim(dev));
 	    fd = fopen(file, "w");
@@ -505,8 +486,6 @@ struct save_queue *machs;
     }
     return(1);
  sqlerr:
-    com_err(whoami, MR_INGRES_ERR, " code %d\n", sqlca.sqlcode);
-    critical_alert("DCM", "NFS build encountered DATABASE ERROR %d",
-		   sqlca.sqlcode);
-    exit(MR_INGRES_ERR);
+    db_error(sqlca.sqlcode);
+    exit(MR_DBMS_ERR);
 }

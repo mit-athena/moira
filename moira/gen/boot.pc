@@ -1,4 +1,4 @@
-/* $Id: boot.pc,v 1.5 1999-03-30 04:00:28 danw Exp $
+/* $Id: boot.pc,v 1.6 1999-03-30 20:03:31 danw Exp $
  *
  * This generates the bootptab and associated files.
  *
@@ -22,7 +22,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/boot.pc,v 1.5 1999-03-30 04:00:28 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/boot.pc,v 1.6 1999-03-30 20:03:31 danw Exp $");
 
 char *whoami = "boot.gen";
 char *db = "moira/moira";
@@ -130,11 +130,11 @@ int main(int argc, char **argv)
 
       fprintf(out, "# %s: %s\n# contact: %s\n%s:\\\n\t:tc=net%s.global:\\\n"
 	      "\t:ht=ethernet:\\\n\t:ha=%s:\\\n\t:ip=%s:\\\n"
-	      "\t:lg=%s:\\\n\t:vm=rfc1048:\n",
+	      "\t:lg=%s:\\\n\t:vm=rfc1048:",
 	      shortname, location, contact, name, net, hwaddr, addr, logaddr);
       if (!strcmp(hwtype, "HP"))
-	fprintf(out, "\t:T144=\"/hp/%s\":\\\n", shortname);
-      fprintf(out, "\n");
+	fprintf(out, "\\\n\t:T144=\"/hp/%s\":", shortname);
+      fprintf(out, "\n\n");
     }
   EXEC SQL CLOSE csr_boot;
   tarfile_end(tf);

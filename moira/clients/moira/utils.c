@@ -1,4 +1,4 @@
-/* $Id: utils.c,v 1.47 2000-03-15 22:44:06 rbasch Exp $
+/* $Id: utils.c,v 1.48 2000-04-12 06:02:29 jweiss Exp $
  *
  *	This is the file utils.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -33,7 +33,7 @@
 #include <string.h>
 #include <time.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v 1.47 2000-03-15 22:44:06 rbasch Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v 1.48 2000-04-12 06:02:29 jweiss Exp $");
 
 /*	Function Name: AddQueue
  *	Description: Adds an element to a queue
@@ -865,7 +865,7 @@ int GetAddressFromUser(char *prompt, char **pointer)
   if (ret == SUB_ERROR)
     return SUB_ERROR;
   addr.s_addr = inet_addr(value);
-  free(pointer);
+  free(*pointer);
   sprintf(buf, "%ld", ntohl(addr.s_addr));
   *pointer = strdup(buf);
   return SUB_NORMAL;

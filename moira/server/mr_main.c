@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v $
  *	$Author: wesommer $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.13 1987-08-04 02:40:30 wesommer Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.14 1987-09-12 20:41:50 wesommer Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
@@ -14,6 +14,13 @@
  * 	Let the reader beware.
  * 
  *	$Log: not supported by cvs2svn $
+ * Revision 1.14  87/09/12  20:08:01  wesommer
+ * Add some defensive programming to defend against people who don't
+ * understand what the contents of the cl struct mean.
+ * 
+ * Revision 1.13  87/08/04  02:40:30  wesommer
+ * Do end run around minor hotspot.
+ * 
  * Revision 1.12  87/08/04  01:50:00  wesommer
  * Rearranged messages.
  * 
@@ -53,7 +60,7 @@
  * 
  */
 
-static char *rcsid_sms_main_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.13 1987-08-04 02:40:30 wesommer Exp $";
+static char *rcsid_sms_main_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.14 1987-09-12 20:41:50 wesommer Exp $";
 
 #include <strings.h>
 #include <sys/errno.h>
@@ -309,6 +316,7 @@ new_connection()
 	 * Set up the new connection and reply to the client
 	 */
 	cp = (client *)malloc(sizeof *cp);
+	bzero(cp, sizeof(*cp));
 	cp->state = CL_STARTING;
 	cp->action = CL_ACCEPT;
 	cp->con = newconn;

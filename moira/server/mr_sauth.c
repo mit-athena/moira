@@ -1,11 +1,14 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_sauth.c,v $
  *	$Author: wesommer $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_sauth.c,v 1.6 1987-08-04 02:40:47 wesommer Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_sauth.c,v 1.7 1987-09-12 20:42:05 wesommer Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
  *	$Log: not supported by cvs2svn $
+ * Revision 1.6  87/08/04  02:40:47  wesommer
+ * Clean up messages.
+ * 
  * Revision 1.5  87/07/14  00:40:18  wesommer
  * Rearranged logging.
  * 
@@ -24,7 +27,7 @@
  */
 
 #ifndef lint
-static char *rcsid_sms_sauth_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_sauth.c,v 1.6 1987-08-04 02:40:47 wesommer Exp $";
+static char *rcsid_sms_sauth_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_sauth.c,v 1.7 1987-09-12 20:42:05 wesommer Exp $";
 #endif lint
 
 extern int krb_err_base;
@@ -53,8 +56,13 @@ do_auth(cl)
 	char buf[REALM_SZ+INST_SZ+ANAME_SZ];
 	extern int krb_err_base;
 	
+	if (cl->clname) {
+		free(cl->clname);
+		cl->clname = 0;
+		bzero(&cl->kname, sizeof(cl->kname));
+	}
+	
 	auth.length = cl->args->sms_argl[0];
-
 	bcopy(cl->args->sms_argv[0], (char *)auth.dat, auth.length);
 	auth.mbz = 0;
 	
@@ -81,6 +89,7 @@ do_auth(cl)
 	
 	cl->clname = (char *)malloc((unsigned)(strlen(buf)+1));
 	(void) strcpy(cl->clname, buf);
+	bzero(&ad, sizeof(ad));	/* Clean up session key, etc. */
 	if (log_flags & LOG_RES) {
 		com_err(whoami, 0, "Authenticated to %s", cl->clname);
 	}

@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/afs/afs.c,v 1.1 2000-06-06 04:38:26 zacheiss Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/afs/afs.c,v 1.2 2002-04-30 01:58:59 zacheiss Exp $
  *
  * Do AFS incremental updates
  *
@@ -28,6 +28,12 @@
 #include <afs/venus.h>
 #include <afs/ptclient.h>
 #include <afs/pterror.h>
+
+/* Cheesy test for determining AFS more recent than 3.4a */
+#ifndef AFSCONF_CLIENTNAME
+#include <afs/dirpath.h>
+#define AFSCONF_CLIENTNAME AFSDIR_CLIENT_ETC_DIRPATH
+#endif
 
 #define STOP_FILE "/moira/afs/noafs"
 #define file_exists(file) (access((file), F_OK) == 0)

@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/reg_stubs.c,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/reg_stubs.c,v 1.17 1991-03-08 10:28:08 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/reg_stubs.c,v 1.18 1991-07-26 14:47:21 mar Exp $
  *
  *  (c) Copyright 1988 by the Massachusetts Institute of Technology.
  *  For copying and distribution information, please see the file
@@ -9,7 +9,7 @@
  */
 
 #ifndef lint
-static char *rcsid_reg_stubs_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/reg_stubs.c,v 1.17 1991-03-08 10:28:08 mar Exp $";
+static char *rcsid_reg_stubs_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/reg_stubs.c,v 1.18 1991-07-26 14:47:21 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -50,7 +50,7 @@ ureg_init()
     initialize_ureg_error_table();
     initialize_krb_error_table(); 
     initialize_sms_error_table();
-/*     init_kadm_err_tbl(); */
+    initialize_kadm_error_table();
    
     seq_no = getpid();
 

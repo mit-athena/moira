@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.19 2000-03-29 19:59:20 zacheiss Exp $
+# $Id: Makefile.in,v 1.20 2000-07-27 02:13:34 zacheiss Exp $
 
 SHELL=/bin/sh
 @SET_MAKE@
@@ -30,19 +30,19 @@ LIB_OBJS=util.o moddiff.o tar.o genacl.o
 LIB_CFILES=moddiff.c genacl.c
 LIB_TARGET=libdcm.a
 
-OBJS=	acl.o boot.o directory.o hesiod.o hosts.o mailhub.o \
+OBJS=	acl.o boot.o dhcp.o directory.o hesiod.o hosts.o mailhub.o \
 	ndb.o network.o nfs.o pobox.o postoffice.o print.o \
 	warehouse.o www.o zephyr.o
 
-CFILES= acl.c boot.c directory.c hesiod.c hosts.c mailhub.c \
+CFILES= acl.c boot.c dhcp.c directory.c hesiod.c hosts.c mailhub.c \
 	ndb.c network.c nfs.c pobox.c postoffice.c print.c \
 	warehouse.c www.c zephyr.c
 
-TARGET=	acl.gen boot.gen directory.gen hesiod.gen hosts.gen \
+TARGET=	acl.gen boot.gen dhcp.gen directory.gen hesiod.gen hosts.gen \
 	mailhub.gen ndb.gen network.gen nfs.gen pobox.gen \
 	postoffice.gen print.gen warehouse.gen www.gen zephyr.gen
 
-SCRIPTS=boot.sh hesiod.sh mailhub.sh ndb.sh nfs.sh null.sh \
+SCRIPTS=boot.sh dhcp.sh hesiod.sh mailhub.sh ndb.sh nfs.sh null.sh \
 	postoffice.sh print.sh sapprint.gen sapprint.sh spwatch.gen \
 	warehouse.sh www.sh zephyr.sh install_dirs install_quotas \
 	zero_quotas
@@ -81,6 +81,9 @@ hosts.gen: hosts.o libdcm.a $(MR_LIBDEP)
 
 nfs.gen: nfs.o libdcm.a $(MR_LIBDEP)
 	$(CC) -o $@ $(LDFLAGS) nfs.o libdcm.a $(SQL_LIBS) $(LIBS)
+
+dhcp.gen: dhcp.o libdcm.a $(MR_LIBDEP)
+	$(CC) -o $@ $(LDFLAGS) dhcp.o libdcm.a $(SQL_LIBS) $(LIBS)
 
 directory.gen: directory.o libdcm.a $(MR_LIBDEP)
 	$(CC) -o $@ $(LDFLAGS) directory.o libdcm.a $(SQL_LIBS) $(LIBS)

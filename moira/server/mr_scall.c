@@ -1,11 +1,14 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_scall.c,v $
  *	$Author: wesommer $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_scall.c,v 1.6 1987-06-30 20:04:43 wesommer Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_scall.c,v 1.7 1987-07-14 00:39:01 wesommer Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
  *	$Log: not supported by cvs2svn $
+ * Revision 1.6  87/06/30  20:04:43  wesommer
+ * Free returned tuples when possible.
+ * 
  * Revision 1.5  87/06/26  10:55:53  wesommer
  * Added sms_access, now paiys attention to return code from 
  * sms_process_query, sms_check_access.
@@ -25,7 +28,7 @@
  */
 
 #ifndef lint
-static char *rcsid_sms_scall_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_scall.c,v 1.6 1987-06-30 20:04:43 wesommer Exp $";
+static char *rcsid_sms_scall_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_scall.c,v 1.7 1987-07-14 00:39:01 wesommer Exp $";
 #endif lint
 
 #include <krb.h>
@@ -74,14 +77,14 @@ do_client(cp)
 	}
 }		
 
-#ifdef notdef
 char *procnames[] = {
 	 "noop",
 	 "auth",
 	 "shutdown",
 	 "query",
-	 };
-#endif notdef
+	 "access",
+};
+
 
 void
 do_call(cl)
@@ -96,19 +99,15 @@ do_call(cl)
 		cl->reply.sms_status = SMS_UNKNOWN_PROC;
 		return;
 	}
-#ifdef SMS_DBG
-	fprintf(stderr, "[#%d] %s(", cl->id, procnames[pn]);
-	for (i=0; i < cl->args->sms_argc; i++) {
-		if (i) fputc(',', stderr);
-		frequote(stderr,cl->args->sms_argv[i]);
-	}
-	fprintf(stderr, ")\n");
-#endif SMS_DBG
+	if (log_flags & LOG_ARGS)
+		log_args(procnames[pn], cl->args->sms_argc,
+			 cl->args->sms_argv);
+	else if (log_flags & LOG_REQUESTS)
+		com_err(whoami, 0, procnames[pn]);
 
 	switch(pn) {
 	case SMS_NOOP:
 		cl->reply.sms_status = 0;
-		com_err(whoami, 0, "noop");
 		return;
 
 	case SMS_AUTH:
@@ -170,10 +169,9 @@ retr_callback(argc, argv, p_cp)
 	
 	OPERATION op_tmp = create_operation();
 
-#ifdef notdef			/* We really don't want this logged */
-	com_err(whoami, 0, "Returning next data:");
-	log_args(argc, argv);
-#endif notdef
+	if (log_flags & LOG_RESP)
+		log_args("return: ", argc, argv);
+
 	tp->op = op_tmp;
 	tp->retval = arg_tmp;
 	tp->next = NULL;
@@ -203,16 +201,7 @@ do_retr(cl)
 {
 	cl->reply.sms_argc = 0;
 	cl->reply.sms_status = 0;
-#ifdef notdef
-	if (!cl->clname) {
-		com_err(whoami, 0, "Unauthenticated query rejected");
-		cl->reply.sms_status = EACCES;
-		return;
-	}
-#endif notdef
-	com_err(whoami, 0, "Processing query: ");
-	log_args(cl->args->sms_argc, cl->args->sms_argv);
-	
+
 	cl->reply.sms_status = 
 	  sms_process_query(cl,
 			    cl->args->sms_argv[0],
@@ -220,25 +209,15 @@ do_retr(cl)
 			    cl->args->sms_argv+1,
 			    retr_callback,
 			    (char *)cl);
-
-	com_err(whoami, 0, "Query complete.");
+	if (log_flags & LOG_RES)
+		com_err(whoami, 0, "Query complete.");
 }
 
 do_access(cl)
 	client *cl;
 {
 	cl->reply.sms_argc = 0;
-	cl->reply.sms_status = 0;
-#ifdef notdef
-	if (!cl->clname) {
-		com_err(whoami, 0, "Unauthenticated query rejected");
-		cl->reply.sms_status = EACCES;
-		return;
-	}
-#endif notdef
-	com_err(whoami, 0, "Checking access: ");
-	log_args(cl->args->sms_argc, cl->args->sms_argv);
-	
+
 	cl->reply.sms_status = 
 	  sms_check_access(cl,
 			   cl->args->sms_argv[0],

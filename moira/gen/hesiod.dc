@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/hesiod.dc,v 1.9 1993-03-02 17:45:40 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/hesiod.dc,v 1.10 1993-04-20 10:59:12 mar Exp $
  *
  * This generates the zone files necessary to load a hesiod server.
  * The following zones are generated: passwd, uid, pobox, group,
@@ -129,12 +129,7 @@ get_mach()
         if (sqlca.sqlcode != 0) break;
 	hash_store(machines, id, strsave(strtrim(name)));
     }
-    if (sqlca.sqlcode < 0) {
-	com_err(whoami, MR_INGRES_ERR, " code %d\n", sqlca.sqlcode);
-	critical_alert("DCM", "Hesiod build encountered DATABASE ERROR %d",
-		       sqlca.sqlcode);
-	exit(MR_INGRES_ERR);
-    }
+    if (sqlca.sqlcode < 0) db_error(sqlca.sqlcode);
     EXEC SQL CLOSE m_cursor;
 #ifsql INGRES
     EXEC SQL COMMIT;
@@ -231,12 +226,7 @@ do_passwd()
 			login, HTYPE, mach, login);
 	    }
     }
-    if (sqlca.sqlcode < 0) {
-	com_err(whoami, MR_INGRES_ERR, " code %d\n", sqlca.sqlcode);
-	critical_alert("DCM", "Hesiod build encountered DATABASE ERROR %d",
-		       sqlca.sqlcode);
-	exit(MR_INGRES_ERR);
-    }
+    if (sqlca.sqlcode < 0) db_error(sqlca.sqlcode);
     EXEC SQL CLOSE u_cursor;
 #ifsql INGRES
     EXEC SQL COMMIT;
@@ -419,10 +409,8 @@ do_groups()
     fix_file(loutf);
     return(1);
  sqlerr:
-    com_err(whoami, MR_INGRES_ERR, " code %d\n", sqlca.sqlcode);
-    critical_alert("DCM", "Hesiod build encountered DATABASE ERROR %d",
-		   sqlca.sqlcode);
-    exit(MR_INGRES_ERR);
+    db_error(sqlca.sqlcode);
+    return(0);
 }
 
 
@@ -585,10 +573,8 @@ do_filsys()
     fix_file(outf);
     return(1);
  sqlerr:
-    com_err(whoami, MR_INGRES_ERR, " code %d\n", sqlca.sqlcode);
-    critical_alert("DCM", "Hesiod build encountered DATABASE ERROR %d",
-		   sqlca.sqlcode);
-    exit(MR_INGRES_ERR);
+    db_error(sqlca.sqlcode);
+    return(0);
 }
 
 
@@ -780,10 +766,8 @@ do_cluster()
     fix_file(outf);
     return(1);
  sqlerr:
-    com_err(whoami, MR_INGRES_ERR, " code %d\n", sqlca.sqlcode);
-    critical_alert("DCM", "Hesiod build encountered DATABASE ERROR %d",
-		   sqlca.sqlcode);
-    exit(MR_INGRES_ERR);
+    db_error(sqlca.sqlcode);
+    return(0);
 }
 
 
@@ -853,10 +837,8 @@ do_printcap()
     fix_file(outf);
     return(1);
  sqlerr:
-    com_err(whoami, MR_INGRES_ERR, " code %d\n", sqlca.sqlcode);
-    critical_alert("DCM", "Hesiod build encountered DATABASE ERROR %d",
-		   sqlca.sqlcode);
-    exit(MR_INGRES_ERR);
+    db_error(sqlca.sqlcode);
+    return(0);
   }
 
 
@@ -934,10 +916,8 @@ do_palladium()
     fix_file(outf);
     return(1);
  sqlerr:
-    com_err(whoami, MR_INGRES_ERR, " code %d\n", sqlca.sqlcode);
-    critical_alert("DCM", "Hesiod build encountered DATABASE ERROR %d",
-		   sqlca.sqlcode);
-    exit(MR_INGRES_ERR);
+    db_error(sqlca.sqlcode);
+    return(0);
 }
 
 
@@ -1002,10 +982,8 @@ do_sloc()
     fix_file(outf);
     return(1);
  sqlerr:
-    com_err(whoami, MR_INGRES_ERR, " code %d\n", sqlca.sqlcode);
-    critical_alert("DCM", "Hesiod build encountered DATABASE ERROR %d",
-		   sqlca.sqlcode);
-    exit(MR_INGRES_ERR);
+    db_error(sqlca.sqlcode);
+    return(0);
 }
 
 do_service()
@@ -1081,8 +1059,6 @@ do_service()
     fix_file(outf);
     return(1);
  sqlerr:
-    com_err(whoami, MR_INGRES_ERR, " code %d\n", sqlca.sqlcode);
-    critical_alert("DCM", "Hesiod build encountered DATABASE ERROR %d",
-		   sqlca.sqlcode);
-    exit(MR_INGRES_ERR);
+    db_error(sqlca.sqlcode);
+    return(0);
 }

@@ -171,10 +171,11 @@ create nfsphys
 	modby		= i4,
 	modwith		= c8
 )
-create nfsquota 
+create quota 
 (
-	users_id	= i4,
 	filsys_id	= i4,
+	type		= c8,
+	entity_id	= i4,
 	phys_id		= i4,
 	quota		= i4,
 	modtime		= date,

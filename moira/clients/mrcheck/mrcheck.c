@@ -11,12 +11,14 @@
 #include <moira.h>
 #include <moira_site.h>
 
+#include <sys/time.h>
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrcheck/mrcheck.c,v 1.13 1998-02-05 22:50:53 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrcheck/mrcheck.c,v 1.14 1998-02-07 22:04:31 danw Exp $");
 
 char *atot(char *itime);
 int process_server(int argc, char **argv, void *sqv);

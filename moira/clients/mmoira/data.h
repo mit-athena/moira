@@ -18,6 +18,7 @@ typedef struct MenuItemS {
 typedef struct {
 	char	*prompt;		/* text displayed to left of input */
 	int	type;			/* what sort of input expected */
+	Boolean	choice;			/* is this field the next choice */
 	union {				/* default value / return value */
 		char	*stringvalue;
 		Boolean	booleanvalue;

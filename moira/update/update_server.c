@@ -1,4 +1,4 @@
-/* $Id: update_server.c,v 1.19 1998-05-26 18:14:22 danw Exp $
+/* $Id: update_server.c,v 1.20 1998-09-08 16:29:03 danw Exp $
  *
  * Copyright 1988-1998 by the Massachusetts Institute of Technology.
  * For copying and distribution information, please see the file
@@ -25,7 +25,7 @@
 #include <des.h>
 #include "update.h"
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/update_server.c,v 1.19 1998-05-26 18:14:22 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/update_server.c,v 1.20 1998-09-08 16:29:03 danw Exp $");
 
 char *whoami, *hostname;
 
@@ -125,6 +125,8 @@ int main(int argc, char **argv)
 
       if (config_lookup("nofork") || (fork() <= 0))
 	break;
+
+      close(conn);
     }
 
   /* If the config file contains a line "chroot /dir/name", the

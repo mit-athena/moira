@@ -1,11 +1,15 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_scall.c,v $
  *	$Author: wesommer $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_scall.c,v 1.8 1987-07-16 15:43:19 wesommer Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_scall.c,v 1.9 1987-08-04 02:41:22 wesommer Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
  *	$Log: not supported by cvs2svn $
+ * Revision 1.8  87/07/16  15:43:19  wesommer
+ * Fixed bug where the argv was not copied to private storage
+ * (it got changed out from under us before it got sent..).
+ * 
  * Revision 1.7  87/07/14  00:39:01  wesommer
  * Rearranged loggin.
  * 
@@ -31,7 +35,7 @@
  */
 
 #ifndef lint
-static char *rcsid_sms_scall_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_scall.c,v 1.8 1987-07-16 15:43:19 wesommer Exp $";
+static char *rcsid_sms_scall_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_scall.c,v 1.9 1987-08-04 02:41:22 wesommer Exp $";
 #endif lint
 
 #include <krb.h>
@@ -54,10 +58,9 @@ do_client(cp)
 {
 	free_rtn_tuples(cp);
 	if (OP_STATUS(cp->pending_op) == OP_CANCELLED) {
-		(void) sprintf(buf1, "Closed connection (now %d client%s)",
-			       nclients-1,
-			       nclients!=2?"s":"");
-		com_err(whoami, 0, buf1);
+		com_err(whoami, 0, "Closed connection (now %d client%s)",
+			nclients-1,
+			nclients!=2?"s":"");
 		clist_delete(cp);
 		return;
 	}
@@ -107,7 +110,7 @@ do_call(cl)
 		log_args(procnames[pn], cl->args->sms_argc,
 			 cl->args->sms_argv);
 	else if (log_flags & LOG_REQUESTS)
-		com_err(whoami, 0, procnames[pn]);
+		com_err(whoami, 0, "%s", procnames[pn]);
 
 	switch(pn) {
 	case SMS_NOOP:

@@ -45,7 +45,7 @@ typedef enum { UNIVERSAL = 0x00, APPLICATION = 0x40,
 		 CONTEXT_SPECIFIC = 0x80, PRIVATE = 0xC0 } asn1_class;
 #endif
 
-static const char rcsid[] = "$Id: krb5_utils.c,v 1.1 2000-11-11 11:05:31 zacheiss Exp $";
+static const char rcsid[] = "$Id: krb5_utils.c,v 1.2 2000-11-21 16:42:02 zacheiss Exp $";
 
 asn1_error_code asn1_encode_realm(asn1buf *buf, const krb5_principal val, 
                                   int *retlen);
@@ -255,10 +255,10 @@ krb5_locate_kpasswd(krb5_context context, const krb5_data *realm,
                     struct sockaddr **addr_pp, int *naddrs)
 {
   krb5_error_code code;
-	code = krb5_locate_dns_srv(context, realm, "_kpasswd", "_udp",
+	code = krb5_locate_dns_srv(context, realm, "_kpasswd", "_tcp",
 	                           addr_pp, naddrs);
   if (code)
-    code = krb5_locate_dns_srv(context, realm, "_kpasswd", "_tcp",
+    code = krb5_locate_dns_srv(context, realm, "_kpasswd", "_udp",
                                addr_pp, naddrs);
 
   return(code);

@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase4.qc,v 1.2 1988-09-26 14:09:24 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase4.qc,v 1.3 1988-09-26 15:21:21 mar Exp $
  *
  *  (c) Copyright 1988 by the Massachusetts Institute of Technology.
  *  For copying and distribution information, please see the file
@@ -8,7 +8,7 @@
 #include <mit-copyright.h>
 #include "dbck.h"
 
-static char phase4_qc_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase4.qc,v 1.2 1988-09-26 14:09:24 mar Exp $";
+static char phase4_qc_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase4.qc,v 1.3 1988-09-26 15:21:21 mar Exp $";
 
 
 count_boxes(id, u, boxes)
@@ -21,9 +21,11 @@ struct hash *boxes;
     if (u->potype == 'P') {
 	if (i = (int) hash_lookup(boxes, u->pobox_id))
 	  hash_store(boxes, u->pobox_id, i+1);
-	else
+	else {
 	  printf("User %s(%s) has pobox on non-POP server %d\n",
 		 u->fullname, u->login, u->pobox_id);
+	  printf("Not fixing this error\n");
+        }
     }
 }
 

@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase1.qc,v 1.2 1988-09-26 14:07:09 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase1.qc,v 1.3 1988-09-26 15:20:33 mar Exp $
  *
  *  (c) Copyright 1988 by the Massachusetts Institute of Technology.
  *  For copying and distribution information, please see the file
@@ -8,7 +8,7 @@
 #include <mit-copyright.h>
 #include "dbck.h"
 
-static char phase1_qc_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase1.qc,v 1.2 1988-09-26 14:07:09 mar Exp $";
+static char phase1_qc_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase1.qc,v 1.3 1988-09-26 15:20:33 mar Exp $";
 
 
 show_user_id(u)
@@ -365,6 +365,7 @@ phase1()
 ##	retrieve (id = s.string_id, buf = s.string)
 ##	    where s.string = strings.string and s.tid != strings.tid {
 	  printf("String %s(%d) is a duplicate!\n", strtrim(buf), id);
+	  printf("Not fixing this error\n");
 ##	}
     }
 ##}

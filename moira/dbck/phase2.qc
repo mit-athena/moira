@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase2.qc,v 1.2 1988-09-26 14:07:48 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase2.qc,v 1.3 1988-09-26 15:20:51 mar Exp $
  *
  *  (c) Copyright 1988 by the Massachusetts Institute of Technology.
  *  For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
 #include <sms.h>
 #include "dbck.h"
 
-static char phase2_qc_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase2.qc,v 1.2 1988-09-26 14:07:48 mar Exp $";
+static char phase2_qc_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase2.qc,v 1.3 1988-09-26 15:20:51 mar Exp $";
 
 
 show_mcm_mach(id)
@@ -564,10 +564,13 @@ phase2()
 ##  range of s is servers
 ##  retrieve (name = s.#name, type = s.acl_type, id1 = s.acl_id) {
 	strtrim(type);
-	if (!strcmp(type, "USER") && !hash_lookup(users, id1))
-	  printf("Service %s has acl non-existant user %d\n", name, id1);
-	else if (!strcmp(type, "LIST") && !hash_lookup(lists, id1))
-	  printf("Service %s has acl non-existant list %d\n", name, id1);
+	if (!strcmp(type, "USER") && !hash_lookup(users, id1)) {
+	    printf("Service %s has acl non-existant user %d\n", name, id1);
+	    printf("Not fixing this error\n");
+	} else if (!strcmp(type, "LIST") && !hash_lookup(lists, id1)) {
+	    printf("Service %s has acl non-existant list %d\n", name, id1);
+	    printf("Not fixing this error\n");
+	}
 ##  }
 
     dprintf("Checking servershosts...\n");
@@ -611,18 +614,25 @@ phase2()
 ##  range of h is hostaccess
 ##  retrieve (id1 = h.mach_id, type = h.acl_type, id2 = h.acl_id) {
 	strtrim(type);
-	if (!hash_lookup(machines, id1))
-	  printf("Hostaccess for non-existant host %d\n", id1);
-	if (!strcmp(type, "USER") && !hash_lookup(users, id2))
-	  printf("Hostaccess for %d is non-existant user %d\n", id1, id2);
-	else if (!strcmp(type, "LIST") && !hash_lookup(lists, id2))
-	  printf("Hostaccess for %d is non-existant list %d\n", id1, id2);
+	if (!hash_lookup(machines, id1)) {
+	    printf("Hostaccess for non-existant host %d\n", id1);
+	    printf("Not fixing this error\n");
+	}
+	if (!strcmp(type, "USER") && !hash_lookup(users, id2)) {
+	    printf("Hostaccess for %d is non-existant user %d\n", id1, id2);
+	    printf("Not fixing this error\n");
+	} else if (!strcmp(type, "LIST") && !hash_lookup(lists, id2)) {
+	    printf("Hostaccess for %d is non-existant list %d\n", id1, id2);
+	    printf("Not fixing this error\n");
+	}
 ##  }
 
     dprintf("Checking capacls...\n");
 ##  retrieve (id1 = capacls.list_id, name = capacls.tag) {
-	if (!hash_lookup(lists, id1))
-	  printf("Capacl for %s is non-existant list %d\n", name, id1);
+	if (!hash_lookup(lists, id1)) {
+	    printf("Capacl for %s is non-existant list %d\n", name, id1);
+	    printf("Not fixing this error\n");
+	}
 ##  }
 
 ##}

@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_auth.c,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_auth.c,v 1.9 1989-06-26 12:38:26 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_auth.c,v 1.10 1989-06-28 14:45:23 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -12,13 +12,13 @@
  */
 
 #ifndef lint
-static char *rcsid_sms_auth_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_auth.c,v 1.9 1989-06-26 12:38:26 mar Exp $";
+static char *rcsid_sms_auth_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_auth.c,v 1.10 1989-06-28 14:45:23 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
 #include "sms_private.h"
 #include <krb.h>
-#include <krb_et.h>
+#include "krb_et.h"
 
 
 /* Authenticate this client with the SMS server.  prog is the name of the

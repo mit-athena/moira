@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/dcmmaint.c,v 1.10 1990-07-14 16:04:51 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/dcmmaint.c,v 1.11 1990-08-13 18:07:11 mar Exp $
  *
  * Copyright 1987, 1988 by the Massachusetts Institute of Technology.
  * For copying and distribution information, please see the file
@@ -114,7 +114,7 @@ int argc;
 char **argv;
 {
     int status;
-    char *info[SC_END], **askserv();
+    char *info[SC_END+1], **askserv();
 
     initserv(argv[1], info);
     if (askserv(info) == NULL) {
@@ -191,7 +191,7 @@ updateserv(argc, argv)
 int argc;
 char **argv;
 {
-    char *qargv[SC_END];
+    char *qargv[SC_END+1];
     int status;
 
     qargv[0] = (char *)argv[1];
@@ -392,7 +392,7 @@ updatehost(argc, argv)
 int argc;
 char **argv;
 {
-    char *info[SHI_END];
+    char *info[SHI_END+1];
     int status;
 
     info[SHI_SERVICE] = strsave(argv[1]);
@@ -418,7 +418,7 @@ addhost(argc, argv)
 int argc;
 char **argv;
 {
-    char *info[SHI_END];
+    char *info[SHI_END+1];
     int status;
 
     info[SHI_SERVICE] = strsave(argv[1]);
@@ -543,8 +543,9 @@ DcmFailed()
 Dcm()
 {
     int status;
-    if (status = mr_do_update())
-      com_err(whoami, status, " while triggering update");
+    if (Confirm("Are you sure you want to start a DCM now"))
+      if (status = mr_do_update())
+	com_err(whoami, status, " while triggering update");
     return(DM_NORMAL);
 }
 

@@ -1,8 +1,8 @@
-/mit/smsdev/db/README: $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/db/README,v 1.3 1990-02-14 11:12:40 mar Exp $
+/mit/smsdev/db/README: $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/db/README,v 1.4 1990-04-25 14:54:12 mar Exp $
 
 This directory contains stuff necessary to create and initialize an
 sms database.  Note that some other directories rely on files here
-(notably dbbuild), and that the newsms program relies on other files.
+(notably newdb), and that the newsms program relies on other files.
 
 STEPS TO CREATE A DATABASE:
 

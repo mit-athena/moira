@@ -70,6 +70,8 @@ create unique index i_zph_class on zephyr  (class);
 
 create unique index i_hac_mid on hostaccess  (mach_id);
 
+create index i_acl_mt on acl (mach_id, target);
+
 create index i_prn_name on printers (name);
 create index i_prn_dname on printers (duplexname);
 create index i_prn_mach on printers (mach_id);

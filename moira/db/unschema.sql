@@ -16,6 +16,7 @@ drop table nfsphys;
 drop table quota;
 drop table zephyr;
 drop table hostaccess;
+drop table acl;
 drop table strings;
 drop table services;
 drop table printers;

@@ -1,6 +1,6 @@
 /* This file defines the query dispatch table for version 2 of the protocol
  *
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/queries2.c,v 1.5 1988-08-01 00:26:37 mar Exp $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/queries2.c,v 1.6 1988-08-05 16:10:05 mar Exp $
  *
  * Copyright 1987, 1988 by the Massachusetts Institute of Technology.
  */
@@ -1526,16 +1526,23 @@ static char *gasv_fields[] = {
 
 static char *gpcp_fields[] = {
     "printer",
-    "printer", "printcap", MOD1, MOD2, MOD3,
+    "printer", "spooling_host", "spool_directory", "rprinter", "comments",
+    MOD1, MOD2, MOD3,
 };
 
 static char *apcp_fields[] = {
-    "printer", "printcap", MOD1, MOD2, MOD3,
+    "printer", "spooling_host", "spool_directory", "rprinter", "comments",
+    MOD1, MOD2, MOD3,
+};
+
+static struct valobj apcp_valobj[] = {
+    {V_CHAR, 0},
+    {V_ID, 1, MACHINE, NAME, MACH_ID, SMS_MACHINE},
 };
 
 static struct validate apcp_validate = {
-  VOchar0,
-  1,
+  apcp_valobj,
+  2,
   NAME,
   "p.name = \"%s\"",
   1,
@@ -1543,6 +1550,18 @@ static struct validate apcp_validate = {
   0,
   0,
   set_modtime,
+};
+
+static struct validate dpcp_validate = {
+  0,
+  0,
+  NAME,
+  "p.name = \"%s\"",
+  1,
+  0,
+  0,
+  0,
+  0,
 };
 
 static char *gali_fields[] = {
@@ -3067,10 +3086,10 @@ struct query Queries2[] = {
     RETRIEVE,
     "p",
     "printcap",
-    "%c = p.name, %c = p.pcap, %c = p.modtime, %c = text(p.modby), %c = p.modwith",
+    "%c = p.name, %c = machine.name, %c = p.dir, %c = p.rp, %c = p.comments, %c = p.modtime, %c = text(p.modby), %c = p.modwith",
     gpcp_fields,
-    5,
-    "p.name = \"%s\"",
+    8,
+    "p.name = \"%s\" and machine.mach_id = p.mach_id",
     1,
     &VDsortf,
   },
@@ -3082,9 +3101,9 @@ struct query Queries2[] = {
     APPEND,
     "p",
     "printcap",
-    "name = %c, pcap = %c",
+    "name = %c, mach_id = %i4, dir = %c, rp = %c, comments = %c",
     apcp_fields,
-    2,
+    5,
     0,
     0,
     &apcp_validate,
@@ -3102,7 +3121,7 @@ struct query Queries2[] = {
     0,
     "p.name = \"%s\"",
     1,
-    &apcp_validate,
+    &dpcp_validate,
   },
 
   {

@@ -3,13 +3,13 @@
  * and distribution information, see the file "mit-copyright.h". 
  *
  * $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chfn.c,v $
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chfn.c,v 1.6 1989-12-28 18:06:32 mar Exp $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chfn.c,v 1.7 1990-02-14 11:32:14 mar Exp $
  * $Author: mar $
  *
  */
 
 #ifndef lint
-static char *rcsid_chfn_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chfn.c,v 1.6 1989-12-28 18:06:32 mar Exp $";
+static char *rcsid_chfn_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chfn.c,v 1.7 1990-02-14 11:32:14 mar Exp $";
 #endif not lint
 
 /*
@@ -127,7 +127,7 @@ chfn(uname)
 
     /* Try each query.  If we ever fail, print error message and exit. */
 
-    status = sms_connect(SMS_SERVER);
+    status = sms_connect(NULL);
     if (status) {
 	com_err(whoami, status, " while connecting to Moira");
 	exit(1);

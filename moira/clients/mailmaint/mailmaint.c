@@ -1,6 +1,6 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v 1.20 1989-11-28 19:53:09 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v 1.21 1990-02-14 11:36:58 mar Exp $
  */
 
 /*  (c) Copyright 1988 by the Massachusetts Institute of Technology. */
@@ -8,7 +8,7 @@
 /*  <mit-copyright.h>. */
 
 #ifndef lint
-static char rcsid_mailmaint_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v 1.20 1989-11-28 19:53:09 mar Exp $";
+static char rcsid_mailmaint_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v 1.21 1990-02-14 11:36:58 mar Exp $";
 #endif lint
 
 /***********************************************************************/
@@ -135,7 +135,7 @@ main(argc, argv)
 
     printf("Connecting to database for %s...please hold on.\n", uname);
 
-    status = sms_connect(SMS_SERVER);
+    status = sms_connect(NULL);
     if (status) {
 	(void) sprintf(buf, "\nConnection to Moira server failed");
 	goto punt;

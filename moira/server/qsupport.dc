@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.dc,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.dc,v 2.22 1993-04-15 15:54:19 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.dc,v 2.23 1993-04-28 11:56:40 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_qsupport_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.dc,v 2.22 1993-04-15 15:54:19 mar Exp $";
+static char *rcsid_qsupport_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.dc,v 2.23 1993-04-28 11:56:40 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -3337,15 +3337,15 @@ register_user(q, argv, cl)
 
     /* check new login name */
     EXEC SQL REPEATED SELECT COUNT(login) INTO :rowcount FROM users
-      WHERE login = LEFT(:login,SIZE(login)) AND users_id != :users_id;
+      WHERE login = :login AND users_id != :users_id;
     if (ingres_errno) return(mr_errcode);
     if (rowcount > 0) return(MR_IN_USE);
     EXEC SQL REPEATED SELECT COUNT(name) INTO :rowcount FROM list
-      WHERE name = LEFT(:login,SIZE(name));
+      WHERE name = :login;
     if (ingres_errno) return(mr_errcode);
     if (rowcount > 0) return(MR_IN_USE);
     EXEC SQL REPEATED SELECT COUNT(label) INTO :rowcount FROM filesys
-      WHERE label = LEFT(:login,SIZE(label));
+      WHERE label = :login;
     if (ingres_errno) return(mr_errcode);
     if (rowcount > 0) return(MR_IN_USE);
     com_err(whoami, 0, "login name OK");

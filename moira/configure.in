@@ -10,6 +10,19 @@ AC_DEFUN(MR_EXTEND, [
     esac
 ])
 
+AC_CANONICAL_HOST
+case $host_os in
+solaris*)
+	short_os=solaris
+	;;
+irix*)
+	short_os=irix
+	;;
+linux*)
+	short_os=linux
+	;;
+esac
+
 dnl Define for both C and Pro*C
 AC_DEFUN(MR_DEFINE, [
     AC_DEFINE($1)
@@ -242,6 +255,28 @@ AC_SUBST(PRO_C_OPTS)
 AC_SUBST(SQL_LIBS)
 AC_SUBST(SVRSUBDIRS)
 
+# Java support, for webmoira
+AC_MSG_CHECKING(for Java)
+AC_ARG_WITH(java,
+    [ --with-java=PREFIX       Specify location of Java libs and headers],
+    [ java="$withval"],
+    [if test -n "$JAVA_HOME" -a -d "$JAVA_HOME"; then
+	java=$JAVA_HOME
+     else
+	java=no
+     fi])
+AC_MSG_RESULT($java)
+if test "$java" != no; then
+    if test "$java" != yes; then
+	JAVA_CPPFLAGS="-I$java/include -I$java/include/$short_os"
+    fi
+    MR_DEFINE(HAVE_JAVA)
+
+    WEBMOIRA_SUBDIRS="webmoira"
+    WEBMOIRA_OUTPUT_FILES="webmoira/Makefile"
+fi
+AC_SUBST(JAVA_CPPFLAGS)
+
 # LDAP support
 AC_MSG_CHECKING(for LDAP)
 AC_ARG_WITH(ldap,
@@ -419,7 +454,7 @@ AC_OUTPUT(Makefile lib/Makefile include/Makefile clients/Makefile \
 	  clients/chpobox/Makefile clients/chsh/Makefile \
 	  clients/mailmaint/Makefile clients/moira/Makefile \
 	  clients/mrcheck/Makefile clients/mrtest/Makefile \
-	  clients/stanley/Makefile clients/stella/Makefile\
-	   update/Makefile man/Makefile webmoira/Makefile\
+	  clients/stanley/Makefile clients/stella/Makefile \
+	   update/Makefile man/Makefile $WEBMOIRA_OUTPUT_FILES \
 	  $SERVER_OUTPUT_FILES $WINAD_OUTPUT_FILES $AFS_OUTPUT_FILES \
 	  $RSAREF_OUTPUT_FILES)

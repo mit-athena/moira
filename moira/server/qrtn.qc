@@ -1,11 +1,18 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v $
- *	$Author: wesommer $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v 1.12 1987-09-12 20:42:11 wesommer Exp $
+ *	$Author: mar $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v 1.13 1988-01-04 12:02:13 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
  *	$Log: not supported by cvs2svn $
+ * Revision 1.13  87/11/12  18:13:12  wesommer
+ * Move transaction boundary to include the pre routine.
+ * 
+ * Revision 1.12  87/09/12  20:42:11  wesommer
+ * Clean up after Gretzinger: cl->kname is not valid unless cl->clname is
+ * non-NULL.
+ * 
  * Revision 1.12  87/09/12  20:06:46  wesommer
  * Fix security hole/null dereference bug: if clname is NULL, return
  * permission denied in get_client.
@@ -41,7 +48,7 @@
  */
 
 #ifndef lint
-static char *rcsid_qrtn_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v 1.12 1987-09-12 20:42:11 wesommer Exp $";
+static char *rcsid_qrtn_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v 1.13 1988-01-04 12:02:13 mar Exp $";
 #endif lint
 
 #include "query.h"
@@ -195,35 +202,39 @@ sms_process_query(cl, name, argc, argv_ro, action, actarg)
     if (q == (struct query *)0) return(SMS_NO_HANDLE);
     v = q->validate;
 
-    /* check query access */
+    if (q->type != RETRIEVE)
+##      begin transaction
+
+	/* check query access */
     status = check_query_access(q, Argv, cl);
     privileged = (status == SMS_SUCCESS) ? 1 : 0;
     if (!privileged && !(status == SMS_PERM &&
 			 (v && (v->pre_rtn == access_user ||
 				v->pre_rtn == access_pop ||
 				v->pre_rtn == access_list))))
-	return(status);
+	goto out;
 
     /* check argument count */
     argreq = q->argc;
     if (q->type == UPDATE || q->type == APPEND) argreq += q->vcnt;
-    if (argc != argreq) return(SMS_ARGS);
+    if (argc != argreq) {
+	status = SMS_ARGS;
+	goto out;
+    }
+	
 
     /* validate arguments */
     if (v && v->valobj) {
 	status = validate_fields(q, Argv, v->valobj, v->objcnt);
-	if (status != SMS_SUCCESS) return(status);
+	if (status != SMS_SUCCESS) goto out;
     }
 
     /* perform any special query pre-processing */
     if (v && v->pre_rtn) {
 	status = (*v->pre_rtn)(q, Argv, cl, 0);
 	if (status != SMS_SUCCESS && (status != SMS_PERM || !privileged))
-	    return(status);
+	    goto out;
     }
-
-    if (q->type != RETRIEVE)
-##      begin transaction
 
     switch (q->type) {
     case RETRIEVE:
@@ -307,7 +318,10 @@ sms_process_query(cl, name, argc, argv_ro, action, actarg)
 	}
 
 	/* increment id number if necessary */
-	if (v->object_id) set_next_object_id(v->object_id);
+	if (v->object_id) {
+	    status = set_next_object_id(v->object_id);
+	    if (status != SMS_SUCCESS) break;
+	}
 
 	/* build "where" clause if needed */
 	if (q->qual) {
@@ -357,11 +371,12 @@ sms_process_query(cl, name, argc, argv_ro, action, actarg)
 
     }
 
+out:
     if (q->type != RETRIEVE) {
         if (status == SMS_SUCCESS) {
-##          end transaction
+##          end transaction	/* commit to this */
 	} else {
-##          abort
+##          abort		/* it never happened */
 	}
     }
 

@@ -1,4 +1,4 @@
-/* $Id: print.pc,v 1.5 1999-12-06 15:16:07 danw Exp $
+/* $Id: print.pc,v 1.6 2000-01-06 21:13:51 danw Exp $
  *
  * This generates printcaps and other files for Athena print servers
  *
@@ -22,13 +22,12 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/print.pc,v 1.5 1999-12-06 15:16:07 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/print.pc,v 1.6 2000-01-06 21:13:51 danw Exp $");
 
 char *whoami = "print.gen";
 char *db = "moira/moira";
 
 void do_host(char *host);
-void dump_acl(FILE *out, int id, int realms);
 void sqlerr(void);
 #ifndef MAX
 #define MAX(a, b) ( (a) > (b) ? (a) : (b) )
@@ -280,7 +279,10 @@ void do_host(char *host)
 	  sprintf(filename, "/var/spool/printer/%s/restrict.list", name);
 	  out = tarfile_start(tf, filename, 0755, 1, 1, "daemon", "daemon",
 			      now);
-	  dump_acl(out, ac, ka);
+	  if (ka)
+	    dump_krb_acl(out, "LIST", ac, 5);
+	  else
+	    dump_user_list(out, "LIST", ac);
 	  tarfile_end(tf);
 	}
 
@@ -290,7 +292,7 @@ void do_host(char *host)
 	  sprintf(filename, "/var/spool/printer/%s/lpcaccess", name);
 	  out = tarfile_start(tf, filename, 0755, 1, 1, "daemon", "daemon",
 			      now);
-	  dump_acl(out, lpc_acl, 1);
+	  dump_krb_acl(out, "LIST", lpc_acl, 5);
 	  tarfile_end(tf);
 	}
     }
@@ -303,72 +305,13 @@ void do_host(char *host)
     {
       out = tarfile_start(tf, "/var/spool/printer/lpcaccess.top",
 			  0755, 1, 1, "daemon", "daemon", now);
-      dump_acl(out, lpc_acl, 1);
+      dump_krb_acl(out, "LIST", lpc_acl, 5);
       tarfile_end(tf);
     }
 
   EXEC SQL CLOSE csr_spool;
 
   tarfile_close(tf);
-}
-
-void dump_acl(FILE *out, int id, int realms)
-{
-  EXEC SQL BEGIN DECLARE SECTION;
-  int lid = id;
-  char login[USERS_LOGIN_SIZE], princ[STRINGS_STRING_SIZE];
-  EXEC SQL END DECLARE SECTION;
-  char *at, *dot;
-
-  EXEC SQL DECLARE csr_users CURSOR FOR
-    SELECT u.login FROM users u, imembers im
-    WHERE u.users_id = im.member_id
-    AND im.member_type = 'USER' AND im.list_id = :lid;
-  EXEC SQL OPEN csr_users;
-  while (1)
-    {
-      EXEC SQL FETCH csr_users INTO :login;
-      if (sqlca.sqlcode)
-	break;
-
-      fprintf(out, "%s%s\n", strtrim(login), realms ? "@ATHENA.MIT.EDU" : "");
-    }
-  EXEC SQL CLOSE csr_users;
-
-  if (realms)
-    {
-      EXEC SQL DECLARE csr_krb CURSOR FOR
-	SELECT s.string FROM strings s, imembers im
-	WHERE s.string_id = im.member_id
-	AND im.member_type = 'KERBEROS' AND im.list_id = :lid;
-      EXEC SQL OPEN csr_krb;
-      while (1)
-	{
-	  EXEC SQL FETCH csr_krb INTO :princ;
-	  if (sqlca.sqlcode)
-	    break;
-
-	  strtrim(princ);
-	  at = strchr(princ, '@');
-	  dot = strchr(princ, '.');
-
-	  if (at)
-	    {
-	      if (dot && dot < at)
-		fprintf(out, "%.*s/%s\n", dot - princ, princ, dot + 1);
-	      else
-		fprintf(out, "%s\n", princ);
-	    }
-	  else
-	    {
-	      if (dot)
-		fprintf(out, "%.*s/%s@ATHENA.MIT.EDU\n", dot - princ, princ);
-	      else
-		fprintf(out, "%s@ATHENA.MIT.EDU\n", princ);
-	    }
-	}
-    }
-  EXEC SQL CLOSE csr_krb;
 }
 
 void sqlerr(void)

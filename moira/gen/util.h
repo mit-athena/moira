@@ -46,3 +46,18 @@ FILE *tarfile_start(TARFILE *tf, char *name, mode_t mode, uid_t uid, gid_t gid,
 void tarfile_end(TARFILE *tf);
 void tarfile_mkdir(TARFILE *tf, char *name, mode_t mode, uid_t uid, gid_t gid,
 		   char *user, char *group, time_t mtime);
+
+struct imember {
+  char type;
+  char *name, *tag;
+};
+void freeimember(struct imember *m);
+
+void init_acls(void);
+void canon_krb(struct imember *m, int vers, char *buf, int len);
+struct save_queue *get_acl(char *type, int id,
+			   char *(merge_func)(char *, char *));
+void dump_krb_acl(FILE *out, char *type, int id, int vers);
+void dump_user_list(FILE *out, char *type, int id);
+char *user_lookup(int users_id);
+char *string_lookup(int string_id);

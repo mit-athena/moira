@@ -1,0 +1,138 @@
+/* $Id: zephyr.pc,v 1.1 2000-01-06 21:13:51 danw Exp $
+ *
+ * This generates zephyr acl files
+ *
+ * Copyright (C) 1990-1999 by the Massachusetts Institute of Technology.
+ * For copying and distribution information, please see the file
+ * <mit-copyright.h>.
+ */
+
+#include <mit-copyright.h>
+#include <moira.h>
+#include <moira_site.h>
+#include "util.h"
+
+#include <sys/stat.h>
+#include <sys/types.h>
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+EXEC SQL INCLUDE sqlca;
+
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/zephyr.pc,v 1.1 2000-01-06 21:13:51 danw Exp $");
+
+void do_class(TARFILE *tf, char *class);
+void dump_zacl(FILE *out, char *type, int id);
+void sqlerr(void);
+
+char *whoami = "zephyr.gen";
+char *db = "moira/moira";
+
+int main(int argc, char **argv)
+{
+  EXEC SQL BEGIN DECLARE SECTION;
+  char classbuf[ZEPHYR_CLASS_SIZE];
+  EXEC SQL END DECLARE SECTION;
+  TARFILE *tf;
+  FILE *out;
+  struct save_queue *sq;
+  char *class;
+  time_t now;
+ 
+  if (argc != 2)
+    {
+      fprintf(stderr, "usage: %s outfile\n", argv[0]);
+      exit(MR_ARGS);
+    }
+
+  EXEC SQL WHENEVER SQLERROR DO sqlerr();
+  EXEC SQL CONNECT :db;
+  init_acls();
+  time(&now);
+
+  tf = tarfile_open(argv[1]);
+  out = tarfile_start(tf, "class-registry.acl", 0644, 0, 0,
+		      "root", "root", now);
+  sq = sq_create();
+
+  EXEC SQL DECLARE csr_classes CURSOR FOR
+    SELECT class FROM zephyr;
+  EXEC SQL OPEN csr_classes;
+  while (1)
+    {
+      EXEC SQL FETCH csr_classes INTO :classbuf;
+      if (sqlca.sqlcode)
+	break;
+
+      class = strtrim(classbuf);
+      sq_save_data(sq, strdup(class));
+      fprintf(out, "%s:\n", class);
+    }
+  EXEC SQL CLOSE csr_classes;
+  tarfile_end(tf);
+
+  while (sq_remove_data(sq, &class))
+    do_class(tf, class);
+
+  sq_destroy(sq);
+  EXEC SQL COMMIT RELEASE;
+  tarfile_close(tf);
+  exit(MR_SUCCESS);
+}
+
+void do_class(TARFILE *tf, char *class)
+{
+  FILE *out;
+  char filename[ZEPHYR_CLASS_SIZE + 9];
+  EXEC SQL BEGIN DECLARE SECTION;
+  char *zclass = class, zxtype[ZEPHYR_XMT_TYPE_SIZE];
+  char zstype[ZEPHYR_SUB_TYPE_SIZE], zwtype[ZEPHYR_IWS_TYPE_SIZE];
+  char zutype[ZEPHYR_IUI_TYPE_SIZE];
+  int zxid, zsid, zwid, zuid;
+  EXEC SQL END DECLARE SECTION;
+
+  EXEC SQL SELECT xmt_type, xmt_id, sub_type, sub_id,
+    iws_type, iws_id, iui_type, iui_id
+    INTO :zxtype, :zxid, :zstype, :zsid,
+    :zwtype, :zwid, :zutype, :zuid
+    FROM zephyr
+    WHERE class = :zclass;
+  if (sqlca.sqlcode)
+    return;
+
+  sprintf(filename, "xmt-%s.acl", class);
+  out = tarfile_start(tf, filename, 0644, 0, 0, "root", "root", now);
+  dump_zacl(out, strtrim(zxtype), zxid);
+  tarfile_end(tf);
+
+  sprintf(filename, "sub-%s.acl", class);
+  out = tarfile_start(tf, filename, 0644, 0, 0, "root", "root", now);
+  dump_zacl(out, strtrim(zstype), zsid);
+  tarfile_end(tf);
+
+  sprintf(filename, "iws-%s.acl", class);
+  out = tarfile_start(tf, filename, 0644, 0, 0, "root", "root", now);
+  dump_zacl(out, strtrim(zwtype), zwid);
+  tarfile_end(tf);
+
+  sprintf(filename, "iui-%s.acl", class);
+  out = tarfile_start(tf, filename, 0644, 0, 0, "root", "root", now);
+  dump_zacl(out, strtrim(zutype), zuid);
+  tarfile_end(tf);
+}
+
+void dump_zacl(FILE *out, char *type, int id)
+{
+  if (!strcmp(type, "ALL"))
+    fprintf(out, "*.*@*\n");
+  else if (strcmp(type, "NONE") != 0)
+    dump_krb_acl(out, type, id, 4);
+}
+
+void sqlerr(void)
+{
+  db_error(sqlca.sqlcode);
+  exit(MR_DBMS_ERR);
+}

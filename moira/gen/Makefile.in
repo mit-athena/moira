@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.11 1999-12-06 15:25:32 danw Exp $
+# $Id: Makefile.in,v 1.12 2000-01-06 21:13:50 danw Exp $
 
 SHELL=/bin/sh
 @SET_MAKE@
@@ -19,6 +19,7 @@ MR_LIBDEP=@MR_LIBDEP@
 GDSS_LIBDEP=@GDSS_LIBDEP@
 INSTALL=@INSTALL@
 INSTALL_PROGRAM=@INSTALL_PROGRAM@
+RANLIB=@RANLIB@
 
 srcdir=@srcdir@
 VPATH=@srcdir@
@@ -26,22 +27,29 @@ SRCTOP=@top_srcdir@
 BUILDTOP=..
 mrbindir=@mrbindir@
 
+LIB_OBJS=util.o moddiff.o tar.o genacl.o
+LIB_CFILES=moddiff.c genacl.c
+LIB_TARGET=libdcm.a
+
 GDSS_OBJS=warehouse.o
-OBJS=	util.o moddiff.o tar.o boot.o hesiod.o nfs.o mailhub.o pobox.o \
-	print.o hosts.o network.o directory.o ndb.o @GDSS_OBJS@
+OBJS=	acl.o boot.o directory.o hesiod.o hosts.o mailhub.o \
+	ndb.o network.o nfs.o pobox.o print.o zephyr.o \
+	@GDSS_OBJS@
 
 GDSS_CFILES=warehouse.c
-CFILES= moddiff.c boot.c hesiod.c nfs.c mailhub.c pobox.c print.c \
-	hosts.c network.c directory.c ndb.c @GDSS_CFILES@
+CFILES= acl.c boot.c directory.c hesiod.c hosts.c mailhub.c \
+	ndb.c network.c nfs.c pobox.c print.c zephyr.c \
+	@GDSS_CFILES@
 
 GDSS_TARGET=warehouse.gen
-TARGET=	boot.gen hesiod.gen nfs.gen mailhub.gen pobox.gen hosts.gen \
-	print.gen network.gen directory.gen ndb.gen @GDSS_TARGET@
+TARGET=	acl.gen boot.gen directory.gen hesiod.gen hosts.gen \
+	mailhub.gen ndb.gen network.gen nfs.gen pobox.gen \
+	print.gen zephyr.gen @GDSS_TARGET@
 
 SCRIPTS=boot.sh hesiod.sh mailhub.sh nfs.sh null.sh print.sh \
 	sapprint.gen sapprint.sh warehouse.sh
 
-.SUFFIXES: .pc
+.SUFFIXES: .pc .gen
 
 .pc.c:
 	$(PRO_C) $(PRO_C_FLAGS) INAME=$< ONAME=$@
@@ -52,46 +60,59 @@ SCRIPTS=boot.sh hesiod.sh mailhub.sh nfs.sh null.sh print.sh \
 all: $(TARGET)
 
 clean:
-	rm -f $(OBJS) $(CFILES) $(TARGET)
+	rm -f $(LIB_OBJS) $(OBJS) $(LIB_CFILES) $(CFILES) $(LIB_TARGET) $(TARGET)
 
 cleandir distclean: clean
 	rm -f Makefile
 
-depend: $(CFILES)
+depend: $(LIB_CFILES) $(CFILES)
 
 install: all
 	@set -x; for p in $(TARGET); do $(INSTALL_PROGRAM) $$p $(mrbindir); done
 	@set -x; for p in $(SCRIPTS); do $(INSTALL) -m 755 $$p $(mrbindir); done
 
-hesiod.gen: hesiod.o util.o moddiff.o $(MR_LIBDEP)
-	$(CC) -o $@ $(LDFLAGS) hesiod.o util.o moddiff.o $(SQL_LIBS) $(LIBS)
+libdcm.a: $(LIB_OBJS)
+	ar cru $@ $(LIB_OBJS)
+	$(RANLIB) $@
 
-hosts.gen: hosts.o util.o moddiff.o $(MR_LIBDEP)
-	$(CC) -o $@ $(LDFLAGS) hosts.o util.o moddiff.o $(SQL_LIBS) $(LIBS)
+hesiod.gen: hesiod.o libdcm.a $(MR_LIBDEP)
+	$(CC) -o $@ $(LDFLAGS) hesiod.o libdcm.a $(SQL_LIBS) $(LIBS)
 
-nfs.gen: nfs.o util.o moddiff.o $(MR_LIBDEP)
-	$(CC) -o $@ $(LDFLAGS) nfs.o util.o moddiff.o $(SQL_LIBS) $(LIBS)
+hosts.gen: hosts.o libdcm.a $(MR_LIBDEP)
+	$(CC) -o $@ $(LDFLAGS) hosts.o libdcm.a $(SQL_LIBS) $(LIBS)
 
-directory.gen: directory.o util.o moddiff.o $(MR_LIBDEP)
-	$(CC) -o $@ $(LDFLAGS) directory.o util.o moddiff.o $(SQL_LIBS) $(LIBS)
+nfs.gen: nfs.o libdcm.a $(MR_LIBDEP)
+	$(CC) -o $@ $(LDFLAGS) nfs.o libdcm.a $(SQL_LIBS) $(LIBS)
 
-ndb.gen: ndb.o util.o moddiff.o $(MR_LIBDEP)
-	$(CC) -o $@ $(LDFLAGS) ndb.o util.o moddiff.o $(SQL_LIBS) $(LIBS)
+directory.gen: directory.o libdcm.a $(MR_LIBDEP)
+	$(CC) -o $@ $(LDFLAGS) directory.o libdcm.a $(SQL_LIBS) $(LIBS)
 
-mailhub.gen: mailhub.o util.o moddiff.o $(MR_LIBDEP)
-	$(CC) -o $@ $(LDFLAGS) mailhub.o util.o moddiff.o $(SQL_LIBS) $(LIBS)
+ndb.gen: ndb.o libdcm.a $(MR_LIBDEP)
+	$(CC) -o $@ $(LDFLAGS) ndb.o libdcm.a $(SQL_LIBS) $(LIBS)
 
-pobox.gen: pobox.o util.o moddiff.o $(MR_LIBDEP)
-	$(CC) -o $@ $(LDFLAGS) pobox.o util.o moddiff.o $(SQL_LIBS) $(LIBS)
+mailhub.gen: mailhub.o libdcm.a $(MR_LIBDEP)
+	$(CC) -o $@ $(LDFLAGS) mailhub.o libdcm.a $(SQL_LIBS) $(LIBS)
 
-network.gen: network.o util.o moddiff.o $(MR_LIBDEP)
-	$(CC) -o $@ $(LDFLAGS) network.o util.o moddiff.o $(SQL_LIBS) $(LIBS)
+pobox.gen: pobox.o libdcm.a $(MR_LIBDEP)
+	$(CC) -o $@ $(LDFLAGS) pobox.o libdcm.a $(SQL_LIBS) $(LIBS)
 
-warehouse.gen: warehouse.o util.o moddiff.o $(MR_LIBDEP) $(GDSS_LIBDEP)
-	$(CC) -o $@ $(LDFLAGS) warehouse.o util.o moddiff.o $(SQL_LIBS) $(GDSS_LIBS) $(LIBS)
+network.gen: network.o libdcm.a $(MR_LIBDEP)
+	$(CC) -o $@ $(LDFLAGS) network.o libdcm.a $(SQL_LIBS) $(LIBS)
 
-print.gen: print.o util.o moddiff.o tar.o $(MR_LIBDEP)
-	$(CC) -o $@ $(LDFLAGS) print.o util.o moddiff.o tar.o $(SQL_LIBS) $(LIBS)
+warehouse.gen: warehouse.o libdcm.a $(MR_LIBDEP) $(GDSS_LIBDEP)
+	$(CC) -o $@ $(LDFLAGS) warehouse.o libdcm.a $(SQL_LIBS) $(GDSS_LIBS) $(LIBS)
 
-boot.gen: boot.o util.o moddiff.o tar.o $(MR_LIBDEP)
-	$(CC) -o $@ $(LDFLAGS) boot.o util.o moddiff.o tar.o $(SQL_LIBS) $(LIBS)
+print.gen: print.o libdcm.a $(MR_LIBDEP)
+	$(CC) -o $@ $(LDFLAGS) print.o libdcm.a $(SQL_LIBS) $(LIBS)
+
+printng.gen: printng.o libdcm.a $(MR_LIBDEP)
+	$(CC) -o $@ $(LDFLAGS) printng.o libdcm.a $(SQL_LIBS) $(LIBS)
+
+boot.gen: boot.o libdcm.a $(MR_LIBDEP)
+	$(CC) -o $@ $(LDFLAGS) boot.o libdcm.a $(SQL_LIBS) $(LIBS)
+
+acl.gen: acl.o libdcm.a $(MR_LIBDEP)
+	$(CC) -o $@ $(LDFLAGS) acl.o libdcm.a $(SQL_LIBS) $(LIBS)
+
+zephyr.gen: zephyr.o libdcm.a $(MR_LIBDEP)
+	$(CC) -o $@ $(LDFLAGS) zephyr.o libdcm.a $(SQL_LIBS) $(LIBS)

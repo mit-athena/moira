@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/nfs.pc,v 1.1 1997-01-29 23:19:04 danw Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/nfs.pc,v 1.2 1997-08-23 22:27:52 danw Exp $
  *
  * This generates the files necessary to load an nfs server.
  *
@@ -287,7 +287,6 @@ do_everyone()
     }
 
     fclose(fd);
-    free(groups);
     return(1);
  sqlerr:
     db_error(sqlca.sqlcode);

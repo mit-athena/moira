@@ -1,6 +1,6 @@
 #!/bin/sh -x
 #
-#	Nightly script for backing up SMS.
+#	Nightly script for backing up Moira.
 #
 #
 BKUPDIRDIR=/u3/sms_backup
@@ -24,7 +24,7 @@ else
 	echo "Cannot create backup directory"
 	exit 1
 fi
-if /u1/sms/bin/smsbackup ${BKUPDIRDIR}/in_progress/
+if /u1/sms/bin/mrbackup ${BKUPDIRDIR}/in_progress/
 then
 	echo "Backup successful"
 else

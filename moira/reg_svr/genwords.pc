@@ -1,4 +1,4 @@
-/* $Id: genwords.pc,v 1.1 1999-11-29 22:07:45 danw Exp $
+/* $Id: genwords.pc,v 1.2 2000-08-25 23:38:35 zacheiss Exp $
  *
  * Utility program to generate magic words for a given ID
  *
@@ -18,7 +18,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/genwords.pc,v 1.1 1999-11-29 22:07:45 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/genwords.pc,v 1.2 2000-08-25 23:38:35 zacheiss Exp $");
 
 int main(int argc, char **argv)
 {
@@ -69,7 +69,7 @@ int main(int argc, char **argv)
 	  strtrim(last);
 	}
 
-      printf("(%s%s%s %s) (%s) (%s) (%s) (%s) (%s) (%s) (%s)\n",
+      printf("(%s%s%s %s) (%s) (%s) (%s) (%s) (%s) (%s) (%s) dopage\n",
 	     first, *middle ? " " : "", middle, last, id,
 	     words[0], words[1], words[2], words[3], words[4], words[5]);
     }

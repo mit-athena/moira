@@ -1,4 +1,4 @@
-/* $Id: queries2.c,v 2.90 2001-09-13 02:26:42 zacheiss Exp $
+/* $Id: queries2.c,v 2.91 2001-09-17 23:32:08 zacheiss Exp $
  *
  * This file defines the query dispatch table
  *
@@ -4802,7 +4802,7 @@ struct query Queries[] = {
     APPEND,
     "s",
     SUBNET_TABLE,
-    "INTO subnet (name, description, status, contact, account_number, saddr, mask, low, high, prefix, owner_type, owner_id, snet_id) VALUES (UPPER('%s'), NVL('%s', CHR(0)), %s, NVL('%s', CHR(0)), %s, %s, %s, %s, %s, NVL('%s', CHR(0)), '%s', %d, %s)",
+    "INTO subnet (name, description, status, contact, account_number, saddr, mask, low, high, prefix, owner_type, owner_id, snet_id) VALUES (UPPER('%s'), NVL('%s', CHR(0)), %s, NVL('%s', CHR(0)), NVL('%s', CHR(0)), %s, %s, %s, %s, NVL('%s', CHR(0)), '%s', %d, %s)",
     asnt_fields,
     12,
     0,

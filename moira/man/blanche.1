@@ -1,16 +1,16 @@
 .TH BLANCHE 1 "14 Sep 1988" "Project Athena"
-\" RCSID: $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/man/blanche.1,v 1.6 1989-08-21 22:12:43 mar Exp $
+\" RCSID: $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/man/blanche.1,v 1.7 1990-03-08 17:58:14 mar Exp $
 .SH NAME
-blanche \- examine and modify memberships in SMS lists
+blanche \- examine and modify memberships in Moira lists
 .SH SYNOPSIS
 .B blanche [options] listname [options]
 .SH DESCRIPTION
 .I Blanche
-is a tool for maintaining the membership of SMS lists.  It is more
+is a tool for maintaining the membership of Moira lists.  It is more
 limited than the menu-oriented listmaint, but has a more traditional
 unix user interface which makes it easier to use in scripts.  It can
 also read a set of list members from a file and synchronize the list
-in SMS to that file.
+in Moira to that file.
 
 Whenever a member is specified, it may be specified explicitly, as
 user:username, list:listname, string:string_text, or
@@ -39,7 +39,7 @@ same command line.
 .IP \fB-file\ \fIfilename\ \fRor\ \fB-f\ \fIfilename\fR:
 This will read a list of members from the named file, and make those
 members be the membership of the target list.  It will do this by
-extracting the current membership of the target list from SMS, then
+extracting the current membership of the target list from Moira, then
 diff these two sets of members, and determine who has to be added and
 deleted from the list so it will match the contents of the file.
 
@@ -85,12 +85,16 @@ the type of each member, not just those that are ambiguous.  When
 changing the membership of a list, it will print a message for each
 member added or deleted.
 .IP \fB-noauth\ \fRor\ \fB-n\fR:
-Do not attempt to perform Kerberos authentication with the SMS server.
+Do not attempt to perform Kerberos authentication with the Moira server.
 Retrieval operations on not-hidden lists are still possible without
 tickets.
 .IP \fB-server\ \fIhost:port\ \fRor\ \fB-S\ \fIhost:port\fR:
 Use the specified host and port to contact the Moira server instead of
-the default server.  Both may be symbolic names or numbers.
+the default server.  Both may be symbolic names or numbers.  If the
+port is left off, the default Moira server port will be assumed.  The
+server chosen will be the one specified on the command line, specified
+in the MOIRASERVER environment variable, the hesiod "moira" sloc entry,
+or the compiled in default, in that order or preference.
 .IP \fB-debug\ \fRor\ \fB-D\fR:
 Turn on debugging messages.
 

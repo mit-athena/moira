@@ -1,7 +1,6 @@
 #!/bin/sh
 # 
-# $Header: /afs/athena.mit.edu/astaff/project/moiradev/repository/moira/gen/stel
-lar.sh,v 1.1 2002/01/18 06:54:45 zacheiss Exp $
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/ip-billing.sh,v 1.2 2002-03-19 22:07:06 zacheiss Exp $
 
 PATH=/usr/bin:/bin:/usr/sbin:/sbin
 
@@ -15,17 +14,32 @@ fi
 # error codes the library uses:
 MR_MISSINGFILE=47836473
 MR_TARERR=47836476
+MR_MKCRED=47836474
 
 OUTFILE=/var/tmp/ip-billing.out
+OUTDIR=/var/tmp/ip-billing.dir
 
 # Alert if the output file doesn't exist
 test -r $OUTFILE || exit $MR_MISSINGFILE
 
+# Make a temporary directory to unpack files into.
+rm -rf $OUTDIR
+mkdir $OUTDIR || exit $MR_MKCRED
+cd $OUTDIR || exit $MR_MKCRED
+
 # unpack the file
-(cd /var/tmp && tar xf $OUTFILE) || exit $MR_TARERR
+tar xpf $OUTFILE || exit $MR_TARERR
+for i in ctl dat; do
+    if [ ! -f moira.$i ]; then
+	exit $MR_MISSINGFILE
+    fi
+    mv moira.$i /var/tmp
+done
 
 # cleanup
-rm -f $OUTFILE
+cd /
+rm -rf $OUTDIR
+test -f $OUTFILE && rm -f $OUTFILE
 test -f $0 && rm -f $0
 
 exit 0

@@ -1,4 +1,4 @@
-/* $Id: winad.pc,v 1.3 2001-07-20 21:15:31 zacheiss Exp $
+/* $Id: winad.pc,v 1.4 2001-08-12 19:26:33 zacheiss Exp $
  *
  * This generates the user, list, list membership, filesys data
  * for windows active directory update
@@ -32,6 +32,7 @@ char *db = "moira/moira";
 int do_user(void);
 int do_groups(void);
 int do_groupmembership(void);
+int do_containers(void);
 
 int main(int argc, char **argv)
 {
@@ -53,6 +54,7 @@ int main(int argc, char **argv)
   changed = do_user();
   changed += do_groups();
   changed += do_groupmembership();
+  changed += do_containers();
  
   if (!changed)
   {
@@ -137,8 +139,8 @@ int do_user(void)
         }
         else
         {
-          strcpy(type, "");
-          strcpy(name, "");
+          strcpy(type, "NONE");
+          strcpy(name, "NONE");
         }
 
         EXEC SQL CLOSE f_cursor;
@@ -159,8 +161,8 @@ int do_user(void)
         }
         else
         {
-          strcpy(type, "");
-          strcpy(name, "");
+          strcpy(type, "NONE");
+          strcpy(name, "NONE");
         }
       }
   
@@ -229,7 +231,7 @@ acl_type, acl_id
       strtrim(acltype);
 
       
-      strcpy(aclname, "");
+      strcpy(aclname, "NONE");
       if (strcmp(acltype, "LIST") == 0)
       {
         EXEC SQL SELECT name into :aclname
@@ -367,3 +369,87 @@ int do_groupmembership(void)
   fix_file(foutf);
   return 1;
 }
+
+int do_containers(void)
+{
+  FILE *fout;
+  char foutf[MAXPATHLEN];
+  char foutft[MAXPATHLEN];
+  EXEC SQL BEGIN DECLARE SECTION;
+  char container_name[CONTAINERS_NAME_SIZE];
+  char acl_type[CONTAINERS_ACL_TYPE_SIZE];
+  char acl_name[STRINGS_STRING_SIZE];
+  char description[CONTAINERS_DESCRIPTION_SIZE];
+  int cnt_id;
+  int acl_id;
+  EXEC SQL END DECLARE SECTION;
+
+  sprintf(foutf, "%s/wincontainer.db", winad_dir);
+  sprintf(foutft, "%s~", foutf);
+
+  fout = fopen(foutft, "w");
+  if (!fout)
+  {
+    perror("cannot open wincontainer.db for write");
+    exit(MR_OCONFIG);
+  }
+
+  EXEC SQL DECLARE container_cursor CURSOR FOR
+    SELECT name, cnt_id, acl_type, acl_id, description
+    FROM containers
+    ORDER BY cnt_id, name;
+  EXEC SQL OPEN container_cursor;
+  while (1)
+    {
+      EXEC SQL FETCH container_cursor INTO :container_name, :cnt_id, 
+      :acl_type, :acl_id, :description ;
+      
+      if (sqlca.sqlcode)
+	      break;
+      
+      strtrim(container_name);
+      strtrim(acl_type);
+      strtrim(description);
+
+      strcpy(acl_name, "NONE");
+      if (strcmp(acl_type, "LIST") == 0)
+      {
+        EXEC SQL SELECT name into :acl_name
+        FROM list
+        WHERE list_id = :acl_id;
+      }
+      else if (strcmp(acl_type, "USER") == 0)
+      {
+        EXEC SQL SELECT login into :acl_name
+        FROM users
+        WHERE users_id = :acl_id;
+      }
+      else if (strcmp(acl_type, "KERBEROS") == 0)
+      {
+        EXEC SQL SELECT string into :acl_name
+        FROM strings
+        WHERE string_id = :acl_id;
+      }
+      
+      strtrim(acl_name);
+       
+      fprintf(fout, "%d,%s,%s,%s,%s\n",
+		    cnt_id, container_name, acl_type, acl_name,
+        description);
+	}
+  if (sqlca.sqlcode < 0)
+    db_error(sqlca.sqlcode);
+
+  EXEC SQL CLOSE container_cursor;
+  EXEC SQL COMMIT;
+
+  if (fclose(fout))
+  {
+    fprintf(stderr, "Unsuccessful file close of wincontainer.db\n");
+    exit(MR_CCONFIG);
+  }
+
+  fix_file(foutf);
+  return 1;
+}
+

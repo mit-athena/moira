@@ -1,6 +1,6 @@
 #!/moira/bin/perl -Tw
 
-# $Id: ip-billing.gen,v 1.6 2002-03-20 04:02:09 zacheiss Exp $
+# $Id: ip-billing.gen,v 1.7 2002-03-27 14:51:56 zacheiss Exp $
 # The following exit codes are defined and MUST BE CONSISTENT with the
 # error codes the library uses:
 $MR_DBMS_ERR = 47836421;
@@ -25,17 +25,17 @@ $dbh = DBI->connect("dbi:Oracle:moira", "moira", "moira")
 
 # First report all the NETWK-A hosts.
 $sth = $dbh->prepare("SELECT m.address, m.location, m.name, m.contact, " .
-		     "m.account_number, m.created, m.modtime FROM " .
-		     "machine m, subnet s WHERE m.status = 1 " .
+		     "m.billing_contact, m.account_number, m.created, " .
+		     "m.modtime FROM machine m, subnet s WHERE m.status = 1 " .
 		     "AND m.snet_id = s.snet_id AND s.status = 1 " .
 		     "AND m.address != 'unassigned' ORDER BY m.address") 
     || exit $MR_DBMS_ERR;
 
 $sth->execute || exit $MR_DBMS_ERR;
 
-while (($address, $location, $name, $contact, $accountnumber, $created, $modtime) =
+while (($address, $location, $name, $contact, $billingcontact, $accountnumber, $created, $modtime) =
        $sth->fetchrow_array) {
-    $row = "$address\t$location\t$name\t$contact\t$accountnumber\t+NETWK-A\t$created\t$modtime\n";
+    $row = "$address\t$location\t$name\t$contact\t$billingcontact\t$accountnumber\t+NETWK-A\t$created\t$modtime\n";
     $row =~ s/\0//g;
     print DAT $row;
     $count++;
@@ -54,7 +54,9 @@ while (($saddr, $name, $contact, $accountnumber, $modtime) =
        $sth->fetchrow_array) {
     @addr = unpack("C4", pack("N", $saddr));
     $address = "$addr[0].$addr[1].$addr[2].$addr[3]";
-    $row = "$address\t\t$name\t$contact\t$accountnumber\t+NETWK-10P\t\t$modtime\n";
+    # Blank field between contact and account number below because that's
+    # where the billing contact would go if we had it for subnets.
+    $row = "$address\t\t$name\t$contact\t\t$accountnumber\t+NETWK-10P\t\t$modtime\n";
     $row =~ s/\0//g;
     print DAT $row;
     $count++;
@@ -72,7 +74,9 @@ while (($saddr, $name, $contact, $accountnumber, $modtime) =
        $sth->fetchrow_array) {
     @addr = unpack("C4", pack("N", $saddr));
     $address = "$addr[0].$addr[1].$addr[2].$addr[3]";
-    $row = "$address\t\t$name\t$contact\t$accountnumber\t+NETWK-100P\t\t$modtime\n";
+    # Blank field between contact and account number below because that's
+    # where the billing contact would go if we had it for subnets.
+    $row = "$address\t\t$name\t$contact\t\t$accountnumber\t+NETWK-100P\t\t$modtime\n";
     $row =~ s/\0//g;
     print DAT $row;
     $count++;
@@ -90,7 +94,9 @@ while (($saddr, $name, $contact, $accountnumber, $modtime) =
        $sth->fetchrow_array) {
     @addr = unpack("C4", pack("N", $saddr));
     $address = "$addr[0].$addr[1].$addr[2].$addr[3]";
-    $row = "$address\t\t$name\t$contact\t$accountnumber\t+NETWK-1000P\t\t$modtime\n";
+    # Blank field between contact and account number below because that's
+    # where the billing contact would go if we had it for subnets.
+    $row = "$address\t\t$name\t$contact\t\t$accountnumber\t+NETWK-1000P\t\t$modtime\n";
     $row =~ s/\0//g;
     print DAT $row;
     $count++;
@@ -98,8 +104,8 @@ while (($saddr, $name, $contact, $accountnumber, $modtime) =
 
 # +NETWK-DORM
 $sth = $dbh->prepare("SELECT m.address, m.location, m.name, m.contact, " .
-		     "m.account_number, m.created, m.modtime FROM " .
-		     "machine m, subnet s WHERE m.status = 1 " .
+		     "m.billing_contact, m.account_number, m.created, " .
+		     "m.modtime FROM machine m, subnet s WHERE m.status = 1 " .
 		     "AND m.snet_id = s.snet_id AND " .
 		     "s.status = 5 AND m.address != 'unassigned' " .
 		     "ORDER BY m.address")
@@ -107,9 +113,9 @@ $sth = $dbh->prepare("SELECT m.address, m.location, m.name, m.contact, " .
 
 $sth->execute || exit $MR_DBMS_ERR;
 
-while (($address, $location, $name, $contact, $accountnumber, $created, $modtime) = 
+while (($address, $location, $name, $contact, $billingcontact, $accountnumber, $created, $modtime) = 
        $sth->fetchrow_array) { 
-    $row = "$address\t$location\t$name\t$contact\t$accountnumber\t+NETWK-DORM\t$created\t$modtime\n";
+    $row = "$address\t$location\t$name\t$contact\t$billingcontact\t$accountnumber\t+NETWK-DORM\t$created\t$modtime\n";
     $row =~ s/\0//g;
     print DAT $row;
     $count++;
@@ -117,8 +123,8 @@ while (($address, $location, $name, $contact, $accountnumber, $created, $modtime
 
 # +NETWK-FSILG
 $sth = $dbh->prepare("SELECT m.address, m.location, m.name, m.contact, " .
-                     "m.account_number, m.created, m.modtime FROM " .
-                     "machine m, subnet s WHERE m.status = 1 " .
+                     "m.billing_contact, m.account_number, m.created, " .
+		     "m.modtime FROM machine m, subnet s WHERE m.status = 1 " .
                      "AND m.snet_id = s.snet_id AND " .
                      "s.status = 8 AND m.address != 'unassigned' " .
                      "ORDER BY m.address")
@@ -126,9 +132,9 @@ $sth = $dbh->prepare("SELECT m.address, m.location, m.name, m.contact, " .
 
 $sth->execute || exit $MR_DBMS_ERR;
 
-while (($address, $location, $name, $contact, $accountnumber, $created, $modtime) = 
+while (($address, $location, $name, $contact, $billingcontact, $accountnumber, $created, $modtime) = 
        $sth->fetchrow_array) { 
-    $row = "$address\t$location\t$name\t$contact\t$accountnumber\t+NETWK-FSILG\t$created\t$modtime\n";
+    $row = "$address\t$location\t$name\t$contact\t$billingcontact\t$accountnumber\t+NETWK-FSILG\t$created\t$modtime\n";
     $row =~ s/\0//g;
     print DAT $row;
     $count++;
@@ -136,8 +142,8 @@ while (($address, $location, $name, $contact, $accountnumber, $created, $modtime
 
 # +NETWK-OCS
 $sth = $dbh->prepare("SELECT m.address, m.location, m.name, m.contact, " .
-		     "m.account_number, m.created, m.modtime FROM " .
-		     "machine m, subnet s WHERE m.status = 1 " .
+		     "m.billing_contact, m.account_number, m.created, "  .
+		     "m.modtime FROM machine m, subnet s WHERE m.status = 1 " .
 		     "AND m.snet_id = s.snet_id AND " .
 		     "s.status = 6 AND s.name LIKE '%-DHREG' " .
 		     "AND m.address != 'unassigned' ORDER BY m.address")
@@ -145,9 +151,9 @@ $sth = $dbh->prepare("SELECT m.address, m.location, m.name, m.contact, " .
 
 $sth->execute || exit $MR_DBMS_ERR;
 
-while (($address, $location, $name, $contact, $accountnumber, $created, $modtime) =
+while (($address, $location, $name, $contact, $billingcontact, $accountnumber, $created, $modtime) =
        $sth->fetchrow_array) {
-    $row = "$address\t$location\t$name\t$contact\t$accountnumber\t+NETWK-OCS\t$created\t$modtime\n";
+    $row = "$address\t$location\t$name\t$contact\t$billingcontact\t$accountnumber\t+NETWK-OCS\t$created\t$modtime\n";
     $row =~ s/\0//g;
     print DAT $row;
     $count++;
@@ -155,8 +161,8 @@ while (($address, $location, $name, $contact, $accountnumber, $created, $modtime
 
 # +NETWK-0
 $sth = $dbh->prepare("SELECT m.address, m.location, m.name, m.contact, " .
-		     "m.account_number, m.created, m.modtime FROM " .
-		     "machine m, subnet s WHERE m.status = 1 " .
+		     "m.billing_contact, m.account_number, m.created, " .
+		     "m.modtime FROM machine m, subnet s WHERE m.status = 1 " .
 		     "AND m.snet_id = s.snet_id AND " .  
 		     "(s.status = 4 OR s.status = 6) AND " .
 		     "s.name NOT LIKE '%-DHREG' " .
@@ -165,9 +171,9 @@ $sth = $dbh->prepare("SELECT m.address, m.location, m.name, m.contact, " .
 
 $sth->execute || exit $MR_DBMS_ERR;
 
-while (($address, $location, $name, $contact, $accountnumber, $created, $modtime) =
+while (($address, $location, $name, $contact, $billingcontact, $accountnumber, $created, $modtime) =
        $sth->fetchrow_array) {
-    $row = "$address\t$location\t$name\t$contact\t$accountnumber\t+NETWK-0\t$created\t$modtime\n";
+    $row = "$address\t$location\t$name\t$contact\t$billingcontact\t$accountnumber\t+NETWK-0\t$created\t$modtime\n";
     $row =~ s/\0//g;
     print DAT $row;
     $count++;

@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/employee.dc,v 1.6 1990-03-19 21:55:44 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/employee.dc,v 1.7 1990-04-13 16:50:43 mar Exp $
  */
 
 #include <stdio.h>
@@ -40,7 +40,7 @@
 #define LOC_HOST 187
 
 #define LEN_ID 9
-#define LEN_NAME 30
+#define LEN_NAME 29
 #define LEN_OFFICE 12
 #define LEN_PHONE 12
 #define LEN_PHONE2 12
@@ -149,7 +149,9 @@ FILE *in;
       *p = 0;
     e.last = strtrim(&buf[LOC_NAME]);
     if (p) {
-	e.first = p + 3;
+	e.first = p + 1;
+	while (*(e.first) && isspace(*(e.first)))
+	  (e.first)++;
 	if (p = index(e.first, ' ')) {
 	    *p = 0;
 	    e.middle = strtrim(p + 1);

@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_query.c,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_query.c,v 1.6 1988-09-13 15:52:37 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_query.c,v 1.7 1989-09-06 17:19:39 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_sms_query_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_query.c,v 1.6 1988-09-13 15:52:37 mar Exp $";
+static char *rcsid_sms_query_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_query.c,v 1.7 1989-09-06 17:19:39 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -90,7 +90,7 @@ int sms_query_internal(argc, argv, callproc, callarg)
 			     (int (*)())NULL);
 	queue_operation(_sms_conn, CON_INPUT, _sms_recv_op);
 
-	complete_operation(_sms_recv_op);
+	sms_complete_operation(_sms_recv_op);
 	if (OP_STATUS(_sms_recv_op) != OP_COMPLETE) {
 	    sms_disconnect();
 	    status = SMS_ABORTED;
@@ -103,13 +103,3 @@ punt_1:
     level--;
     return status;
 }
-/*
- * Local Variables:
- * mode: c
- * c-indent-level: 4
- * c-continued-statement-offset: 4
- * c-brace-offset: -4
- * c-argdecl-indent: 4
- * c-label-offset: -4
- * End:
- */

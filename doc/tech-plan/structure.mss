@@ -232,15 +232,43 @@ needed by the Data Control Manager or applications for each known server.
 
 @Begin(Description)
 
-@I(service)@\name of service.
-
-@I(machine)@\location of service.
+@I(service_name)@\name of service.
 
 @I(update_int)@\server update interval in minutes (for DCM).
 
 @I(target_dir)@\target directory on server for DCM generated server files.
 
-@I(value)@\server-specific data used by applications.
+@I(dfgen)@\time of server file generation 
+
+@I(script)@\shell script used by servers for particular use.
+
+@I(value)@\server-specific data used by applications (i.e., number of servers
+permitted per machine).
+
+@End(Description)
+
+Please see section @ref(Servers) for a complete discussion of interfaces.
+]
+
+@C(Hosts)@\@Multiple[Server to Host mapping table.  Used by the
+Data Control Manager to map a server to a list of server hosts.]
+
+@Begin(Description)
+
+@I(service_name)@\name of service.
+
+@I(service_host)@\Name of machine server lives on.
+
+@I(enable)@\Enable switch for DCM. This switch controls whether or not 
+the DCM updates a server. (0 - Do not Update, 1 - Update)
+
+@I(override)@\Override time (minutes).  Used by DCM and update mechanism to
+indicate that an update has failed.  This time is used to update services
+at a different time from the default update interval time.  (-1 - Use
+the default interval time, 0 or greater - Use the override interval).
+
+@I(ltt)@\Last time tried.  Used by dcm, this field is adjusted each time
+a service is attemted to be updated, regardless of success or failure.
 
 @End(Description)
 

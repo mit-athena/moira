@@ -1,4 +1,4 @@
-/* $Id: blanche.c,v 1.50 2000-08-16 05:33:17 zacheiss Exp $
+/* $Id: blanche.c,v 1.51 2000-08-17 05:58:38 zacheiss Exp $
  *
  * Command line oriented Moira List tool.
  *
@@ -20,7 +20,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.50 2000-08-16 05:33:17 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.51 2000-08-17 05:58:38 zacheiss Exp $");
 
 struct member {
   int type;
@@ -33,8 +33,9 @@ struct member {
 #define M_LIST		2
 #define M_STRING	3
 #define M_KERBEROS	4
+#define M_NONE		5
 
-char *typename[] = { "ANY", "USER", "LIST", "STRING", "KERBEROS" };
+char *typename[] = { "ANY", "USER", "LIST", "STRING", "KERBEROS", "NONE" };
 
 /* argument parsing macro */
 #define argis(a, b) (!strcmp(*arg + 1, a) || !strcmp(*arg + 1, b))
@@ -1252,6 +1253,8 @@ struct member *parse_member(char *s)
 	m->type = M_STRING;
       else if (!strcasecmp("kerberos", s))
 	m->type = M_KERBEROS;
+      else if (!strcasecmp("none", s))
+	m->type = M_NONE;
       else
 	{
 	  m->type = M_ANY;
@@ -1263,7 +1266,7 @@ struct member *parse_member(char *s)
   else
     {
       m->name = strdup(s);
-      m->type = M_ANY;
+      m->type = strcasecmp(s, "none") ? M_ANY : M_NONE;
     }
   return m;
 }

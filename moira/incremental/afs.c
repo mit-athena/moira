@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/afs.c,v 1.8 1989-11-28 16:27:56 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/afs.c,v 1.9 1989-12-14 13:58:40 mar Exp $
  *
  * Do AFS incremental updates
  *
@@ -230,7 +230,7 @@ int afterc;
     if (!(afterc >= Q_DIRECTORY && !strncmp("/afs", after[Q_DIRECTORY], 4)) &&
 	!(beforec >= Q_DIRECTORY && !strncmp("/afs", before[Q_DIRECTORY], 4)))
       return;
-    if (afterc >= Q_LOGIN && strcmp("[nobody]", after[Q_LOGIN]))
+    if (afterc >= Q_LOGIN && strcmp("\\[nobody\\]", after[Q_LOGIN]))
       return;
     if (afterc != 0) {
 	sprintf(cmd, "%s setquota -dir %s -quota %s",

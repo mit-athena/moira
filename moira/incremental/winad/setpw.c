@@ -1,3 +1,5 @@
+#define LDAP_AUTH_OTHERKIND             0x86L
+#define LDAP_AUTH_NEGOTIATE             (LDAP_AUTH_OTHERKIND | 0x0400)
 /*--
 
 THIS CODE AND INFORMATION IS PROVIDED "AS IS" WITHOUT WARRANTY OF
@@ -94,7 +96,7 @@ Abstract:
 #endif
 #endif /* _WIN32 && !__CYGWIN32__ */
 
-static const char rcsid[] = "$Id: setpw.c,v 1.4 2001-05-03 22:00:15 zacheiss Exp $";
+static const char rcsid[] = "$Id: setpw.c,v 1.5 2003-07-29 20:22:34 zacheiss Exp $";
 
 static int frequency[26][26] =
 { {4, 20, 28, 52, 2, 11, 28, 4, 32, 4, 6, 62, 23, 167, 2, 14, 0, 83, 76, 
@@ -187,7 +189,7 @@ static int total_sum = 11646;
 int get_krb5_error(krb5_error_code rc, char *in, char *out);
 int ad_connect(LDAP **ldap_handle, char *ldap_domain, char *dn_path, 
                char *Win2kPassword, char *Win2kUser, char *default_server, 
-               int connect_to_kdc);
+               int connect_to_kdc, char **ServerList, int *IgnoreServerListError);
 int ad_kdc_connect(char *connectedServer);
 int ad_server_connect(char *connectedServer, char *domain);
 void ad_kdc_disconnect();
@@ -685,12 +687,12 @@ int get_krb5_error(krb5_error_code rc, char *in, char *out)
 
 int ad_connect(LDAP **ldap_handle, char *ldap_domain, char *dn_path, 
                char *Win2kPassword, char *Win2kUser, char *default_server,
-               int connect_to_kdc)
+               int connect_to_kdc, char **ServerList, int *IgnoreServerListError)
 {
   int         i;
-  int         j;
+  int         k;
+  int         Count;
   char        *server_name[MAX_SERVER_NAMES];
-  char        server_array[MAX_SERVER_NAMES][256];
   static char temp[128];
   ULONG       version = LDAP_VERSION3;
   ULONG       rc;
@@ -703,58 +705,80 @@ int ad_connect(LDAP **ldap_handle, char *ldap_domain, char *dn_path,
   if (strlen(dn_path) == 0)
     return(1);
 
+  Count = 0;
+  while (ServerList[Count] != NULL)
+      ++Count;
+
   memset(server_name, 0, sizeof(server_name[0]) * MAX_SERVER_NAMES);
-  memset(server_array, 0, sizeof(server_array[0]) * MAX_SERVER_NAMES);
-  if (strlen(default_server) == 0)
-    {
-      if (locate_ldap_server(ldap_domain, server_name) == -1)
-        return(2);
-      j = 0;
-      for (i = 0; i < MAX_SERVER_NAMES; i++)
-        {
-          if (server_name[i] != NULL)
-            {
-              strcpy(server_array[i], server_name[i]);
-              free(server_name[i]);
-              j++;
-            }
-        }
-      if (j == 0)
-        return(2);
-      qsort((void *)server_array, (size_t)j, sizeof(server_array[0]), compare_elements);
-    }
-  else
-    strcpy(server_array[0], default_server);
+  if (locate_ldap_server(ldap_domain, server_name) == -1)
+      return(2);
 
   for (i = 0; i < MAX_SERVER_NAMES; i++)
     {
-      if (strlen(server_array[i]) != 0)
+      if (server_name[i] != NULL)
         {
-          if (((*ldap_handle) = ldap_open(server_array[i], LDAP_PORT)) != NULL)
+          if (Count >= MAX_SERVER_NAMES)
             {
-              rc = ldap_set_option((*ldap_handle), LDAP_OPT_PROTOCOL_VERSION, &version);
-              rc = ldap_set_option((*ldap_handle), LDAP_OPT_TIMELIMIT, 
-                                   (void *)&Max_wait_time);
-              rc = ldap_set_option((*ldap_handle), LDAP_OPT_SIZELIMIT, 
-                                   (void *)&Max_size_limit);
-              rc = ldap_set_option((*ldap_handle), LDAP_OPT_REFERRALS, LDAP_OPT_OFF);
-              rc = ldap_adgssapi_bind((*ldap_handle), dn_path, GSSSASL_PRIVACY_PROTECTION);
-              if (rc == LDAP_SUCCESS)
+              free(server_name[i]);
+              server_name[i] = NULL;
+              continue;
+            }
+          for (k = 0; k < (int)strlen(server_name[i]); k++)
+              server_name[i][k] = toupper(server_name[i][k]);
+          for (k = 0; k < Count; k++)
+            {
+              if (!strcasecmp(server_name[i], ServerList[k]))
                 {
-                  if (connect_to_kdc)
-                    {
-                      if (!ad_server_connect(server_array[i], ldap_domain))
-                        {
-                          ldap_unbind_s((*ldap_handle));
-                          continue;
-                        }
-                    }
-                  if (strlen(default_server) == 0)
-                    strcpy(default_server, server_array[i]);
-                  strcpy(connected_server, server_array[i]);
+                  free(server_name[i]);
+                  server_name[i] = NULL;
                   break;
                 }
             }
+          if (k == Count)
+            {
+              ServerList[Count] = calloc(1, 256);
+              strcpy(ServerList[Count], server_name[i]);
+              ServerList[Count] = (char *)strdup((char *)server_name[i]);
+              ++Count;
+              free(server_name[i]);
+            }
+        }
+    }
+  
+  for (i = 0; i < Count; i++)
+    {
+      if (ServerList[i] == NULL)
+          continue;
+
+      if (((*ldap_handle) = ldap_open(ServerList[i], LDAP_PORT)) != NULL)
+        {
+          rc = ldap_set_option((*ldap_handle), LDAP_OPT_PROTOCOL_VERSION, &version);
+          rc = ldap_set_option((*ldap_handle), LDAP_OPT_TIMELIMIT, 
+                               (void *)&Max_wait_time);
+          rc = ldap_set_option((*ldap_handle), LDAP_OPT_SIZELIMIT, 
+                               (void *)&Max_size_limit);
+          rc = ldap_set_option((*ldap_handle), LDAP_OPT_REFERRALS, LDAP_OPT_OFF);
+          rc = ldap_adgssapi_bind((*ldap_handle), dn_path, GSSSASL_PRIVACY_PROTECTION);
+          if (rc == LDAP_SUCCESS)
+            {
+              if (connect_to_kdc)
+                {
+                  if (!ad_server_connect(ServerList[i], ldap_domain))
+                    {
+                      ldap_unbind_s((*ldap_handle));
+                      continue;
+                    }
+                }
+              if (strlen(default_server) == 0)
+                  strcpy(default_server, ServerList[i]);
+              strcpy(connected_server, ServerList[i]);
+              break;
+            }
+        }
+      if ((i == 0) && ((*IgnoreServerListError) == 0))
+        {
+          (*IgnoreServerListError) = -1;
+          return(1);
         }
     }
   if (i >= MAX_SERVER_NAMES)
@@ -892,4 +916,3 @@ int compare_elements(const void *arg1, const void *arg2)
     return(-1);
   return(rc);
 }
-

@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/winad/winad.c,v 1.34 2003-05-21 17:21:55 zacheiss Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/winad/winad.c,v 1.35 2003-07-29 20:22:34 zacheiss Exp $
 /* winad.incr arguments examples
  *
  * arguments when moira creates the account - ignored by winad.incr since the account is unusable.
@@ -293,6 +293,10 @@ typedef struct lk_entry {
   DelMods[i++]->mod_values = NULL
 
 #define DOMAIN_SUFFIX   "MIT.EDU"
+#define DOMAIN  "DOMAIN: "
+#define SERVER  "SERVER: "
+#define MSSFU   "SFU: "
+#define SFUTYPE "30"
 
 LK_ENTRY *member_base = NULL;
 LK_ENTRY *sid_base = NULL;
@@ -311,6 +315,7 @@ char  orphans_other_ou[] = "OU=Other,OU=Orphans";
 char  security_template_ou[] = "OU=security_templates";
 char *whoami;
 char ldap_domain[256];
+char *ServerList[MAX_SERVER_NAMES];
 int  mr_connections = 0;
 int  callback_rc;
 char default_server[256];
@@ -326,7 +331,7 @@ int ad_get_group(LDAP *ldap_handle, char *dn_path, char *group_name,
 void AfsToWinAfs(char* path, char* winPath);
 int ad_connect(LDAP **ldap_handle, char *ldap_domain, char *dn_path, 
                char *Win2kPassword, char *Win2kUser, char *default_server,
-               int connect_to_kdc);
+               int connect_to_kdc, char **ServerList, int *IgnoreMasterSeverError);
 void ad_kdc_disconnect();
 int BEREncodeSecurityBits(ULONG uBits, char *pBuffer);
 int checkADname(LDAP *ldap_handle, char *dn_path, char *Name);
@@ -351,6 +356,7 @@ int container_update(LDAP *ldap_handle, char *dn_path, int beforec, char **befor
 int filesys_process(LDAP *ldap_handle, char *dn_path, char *fs_name, 
                     char *fs_type, char *fs_pack, int operation);
 int GetAceInfo(int ac, char **av, void *ptr);
+int GetServerList(char *ldap_domain, char **MasterServe);
 int get_group_membership(char *group_membership, char *group_ou, 
                          int *security_flag, char **av);
 int get_machine_ou(LDAP *ldap_handle, char *dn_path, char *member, char *machine_ou);
@@ -441,7 +447,7 @@ int linklist_create_entry(char *attribute, char *value,
                           LK_ENTRY **linklist_entry);
 int linklist_build(LDAP *ldap_handle, char *dn_path, char *search_exp, 
                    char **attr_array, LK_ENTRY **linklist_base, 
-                   int *linklist_count);
+                   int *linklist_count, unsigned long ScopeType);
 void linklist_free(LK_ENTRY *linklist_base);
 
 int retrieve_attributes(LDAP *ldap_handle, LDAPMessage *ldap_entry, 
@@ -471,6 +477,11 @@ int main(int argc, char **argv)
   int             beforec;
   int             afterc;
   int             i;
+  int             j;
+  int             Count;
+  int             k;
+  int             OldUseSFU30;
+  int             IgnoreServerListError;
   char            *table;
   char            **before;
   char            **after;
@@ -509,23 +520,54 @@ int main(int argc, char **argv)
   check_winad();
 
   memset(ldap_domain, '\0', sizeof(ldap_domain));
+  memset(ServerList, '\0', sizeof(ServerList[0]) * MAX_SERVER_NAMES);
   memset(temp, '\0', sizeof(temp));
   UseSFU30 = 0;
+  OldUseSFU30 = 0;
+  Count = 0;
+
   if ((fptr = fopen(WINADCFG, "r")) != NULL)
     {
-      if (fscanf(fptr, "%s\n", ldap_domain) != 0)
+      while (fgets(temp, sizeof(temp), fptr) != 0)
         {
-          if (fscanf(fptr, "%s\n", temp) != 0)
+          for (i = 0; i < (int)strlen(temp); i++)
+              temp[i] = toupper(temp[i]);
+          if (temp[strlen(temp) - 1] == '\n')
+              temp[strlen(temp) - 1] = '\0';
+          if (!strncmp(temp, DOMAIN, strlen(DOMAIN)))
             {
-              if (!strcasecmp(temp, "SFU30"))
-                UseSFU30 = 1;
+              if (strlen(temp) > (strlen(DOMAIN)))
+                {
+                  strcpy(ldap_domain, &temp[strlen(DOMAIN)]);
+                }
+            }
+          else if (!strncmp(temp, SERVER, strlen(SERVER)))
+            {
+              if (strlen(temp) > (strlen(SERVER)))
+                {
+                  ServerList[Count] = calloc(1, 256);
+                  strcpy(ServerList[Count], &temp[strlen(SERVER)]);
+                  ++Count;
+                }
+            }
+          else if (!strncmp(temp, MSSFU, strlen(MSSFU)))
+            {
+              if (strlen(temp) > (strlen(MSSFU)))
+                {
+                  if (!strcmp(&temp[strlen(MSSFU)], SFUTYPE))
+                      UseSFU30 = 1;
+                }
+            }
+          else
+            {
+              strcpy(ldap_domain, temp);
             }
         }
       fclose(fptr);
     }
+
   if (strlen(ldap_domain) == 0)
     strcpy(ldap_domain, "win.mit.edu");
-
   /* zero trailing newline, if there is one. */
   if (ldap_domain[strlen(ldap_domain) - 1] == '\n')
     ldap_domain[strlen(ldap_domain) - 1] = '\0';
@@ -533,12 +575,50 @@ int main(int argc, char **argv)
   initialize_sms_error_table();
   initialize_krb_error_table();
 
+  IgnoreServerListError = 0;
+  if (ServerList[0] == NULL)
+    {
+      IgnoreServerListError = 1;
+      GetServerList(ldap_domain, ServerList);
+    }
+  for (i = 0; i < MAX_SERVER_NAMES; i++)
+    {
+      if (ServerList[i] != 0)
+        {
+          if (ServerList[i][strlen(ServerList[i]) - 1] == '\n')
+                ServerList[i][strlen(ServerList[i]) - 1] = '\0';
+          strcat(ServerList[i], ".");
+          strcat(ServerList[i], ldap_domain);
+          for (k = 0; k < (int)strlen(ServerList[i]); k++)
+              ServerList[i][k] = toupper(ServerList[i][k]);
+        }
+    }
+
   memset(default_server, '\0', sizeof(default_server));
   memset(dn_path, '\0', sizeof(dn_path));
   for (i = 0; i < 5; i++)
     {
-      if (!(rc = ad_connect(&ldap_handle, ldap_domain, dn_path, "", "", default_server, 1)))
+      if (!(rc = ad_connect(&ldap_handle, ldap_domain, dn_path, "", "", 
+                            default_server, 1, ServerList, &IgnoreServerListError)))
          break;
+      if (IgnoreServerListError < 0)
+        {
+          GetServerList(ldap_domain, ServerList);
+          for (j = 0; j < MAX_SERVER_NAMES; j++)
+            {
+              if (ServerList[j] != NULL)
+                {
+                  if (ServerList[j][strlen(ServerList[j]) - 1] == '\n')
+                        ServerList[j][strlen(ServerList[j]) - 1] = '\0';
+                  strcat(ServerList[j], ".");
+                  strcat(ServerList[j], ldap_domain);
+                  for (k = 0; k < (int)strlen(ServerList[j]); k++)
+                      ServerList[j][k] = toupper(ServerList[j][k]);
+                }
+            }
+          IgnoreServerListError = 1;
+          --i;
+        }
       sleep(2);
     }
   if (rc)
@@ -567,7 +647,19 @@ int main(int argc, char **argv)
   else if (!strcmp(table, "mcntmap"))
     do_mcntmap(ldap_handle, dn_path, ldap_domain, before, beforec, after,
                afterc);
+  if (OldUseSFU30 != UseSFU30)
+    {
+      GetServerList(ldap_domain, ServerList);
+    }
   ad_kdc_disconnect();
+  for (i = 0; i < MAX_SERVER_NAMES; i++)
+    {
+      if (ServerList[i] != NULL)
+        {
+          free(ServerList[i]);
+          ServerList[i] = NULL;
+        }
+    }
   rc = ldap_unbind_s(ldap_handle);
   exit(0);
 }
@@ -1532,7 +1624,7 @@ int construct_newvalues(LK_ENTRY *linklist_base, int modvalue_count,
 
 int linklist_build(LDAP *ldap_handle, char *dn_path, char *search_exp, 
                    char **attr_array, LK_ENTRY **linklist_base,
-                   int *linklist_count)
+                   int *linklist_count, unsigned long ScopeType)
 {
   ULONG       rc;
   LDAPMessage *ldap_entry;
@@ -1541,7 +1633,7 @@ int linklist_build(LDAP *ldap_handle, char *dn_path, char *search_exp,
   ldap_entry = NULL;
   (*linklist_base) = NULL;
   (*linklist_count) = 0;
-  if ((rc = ldap_search_s(ldap_handle, dn_path, LDAP_SCOPE_SUBTREE, 
+  if ((rc = ldap_search_s(ldap_handle, dn_path, ScopeType, 
                           search_exp, attr_array, 0, &ldap_entry))
       != LDAP_SUCCESS)
       {
@@ -2008,7 +2100,7 @@ int group_rename(LDAP *ldap_handle, char *dn_path,
   attr_array[0] = "sAMAccountName";
   attr_array[1] = NULL;
   if ((rc = linklist_build(ldap_handle, dn_path, filter, attr_array, 
-                           &group_base, &group_count)) != 0)
+                           &group_base, &group_count, LDAP_SCOPE_SUBTREE)) != 0)
     {
       com_err(whoami, 0, "LDAP server unable to get list %s dn : %s",
               after_group_name, ldap_err2string(rc));
@@ -2225,7 +2317,7 @@ int group_create(int ac, char **av, void *ptr)
   group_count = 0;
   group_base = NULL;
   if ((rc = linklist_build((LDAP *)call_args[0], call_args[1], filter, attr_array, 
-                           &group_base, &group_count)) == LDAP_SUCCESS)
+                           &group_base, &group_count, LDAP_SCOPE_SUBTREE)) == LDAP_SUCCESS)
     {
       if (group_count != 1)
         {
@@ -2236,7 +2328,7 @@ int group_create(int ac, char **av, void *ptr)
               group_base = NULL;
               sprintf(filter, "(sAMAccountName=%s)", sam_group_name);
               rc = linklist_build((LDAP *)call_args[0], call_args[1], filter, 
-                                  attr_array, &group_base, &group_count);
+                                  attr_array, &group_base, &group_count, LDAP_SCOPE_SUBTREE);
             }
         }
       if (group_count == 1)
@@ -2306,7 +2398,7 @@ int ProcessGroupSecurity(LDAP *ldap_handle, char *dn_path, char *TargetGroupName
   group_count = 0;
   group_base = NULL;
   if ((rc = linklist_build(ldap_handle, search_path, filter_exp, attr_array, 
-                               &group_base, &group_count) != 0))
+                               &group_base, &group_count, LDAP_SCOPE_SUBTREE) != 0))
     return(1);
   if (group_count != 1)
     {
@@ -2347,7 +2439,7 @@ int ProcessGroupSecurity(LDAP *ldap_handle, char *dn_path, char *TargetGroupName
           group_count = 0;
           group_base = NULL;
           if ((rc = linklist_build(ldap_handle, search_path, filter_exp, attr_array, 
-                                   &group_base, &group_count) != 0))
+                                   &group_base, &group_count, LDAP_SCOPE_SUBTREE) != 0))
             return(1);
           if (group_count == 1)
             {
@@ -2375,7 +2467,7 @@ int ProcessGroupSecurity(LDAP *ldap_handle, char *dn_path, char *TargetGroupName
       group_count = 0;
       group_base = NULL;
       if ((rc = linklist_build(ldap_handle, search_path, filter_exp, attr_array, 
-                                   &group_base, &group_count) != 0))
+                                   &group_base, &group_count, LDAP_SCOPE_SUBTREE) != 0))
         return(1);
       if ((rc != 0) || (group_count != 1))
         {
@@ -2425,7 +2517,7 @@ int ProcessGroupSecurity(LDAP *ldap_handle, char *dn_path, char *TargetGroupName
   group_count = 0;
   group_base = NULL;
   if ((rc = linklist_build(ldap_handle, search_path, filter_exp, attr_array, 
-                               &group_base, &group_count) != 0))
+                               &group_base, &group_count, LDAP_SCOPE_SUBTREE) != 0))
     return(1);
   if (group_count != 1)
     {
@@ -2886,7 +2978,7 @@ int user_update(LDAP *ldap_handle, char *dn_path, char *user_name,
       attr_array[0] = "cn";
       attr_array[1] = NULL;
       if ((rc = linklist_build(ldap_handle, dn_path, filter, attr_array, 
-                               &group_base, &group_count)) != 0)
+                               &group_base, &group_count, LDAP_SCOPE_SUBTREE)) != 0)
         {
           com_err(whoami, 0, "LDAP server couldn't process user %s : %s",
                   user_name, ldap_err2string(rc));
@@ -2903,7 +2995,7 @@ int user_update(LDAP *ldap_handle, char *dn_path, char *user_name,
       attr_array[1] = NULL;
       sprintf(temp, "%s,%s", user_ou, dn_path);
       if ((rc = linklist_build(ldap_handle, temp, filter, attr_array, 
-                               &group_base, &group_count)) != 0)
+                               &group_base, &group_count, LDAP_SCOPE_SUBTREE)) != 0)
         {
           com_err(whoami, 0, "LDAP server couldn't process user %s : %s",
                   user_name, ldap_err2string(rc));
@@ -3069,7 +3161,7 @@ int filesys_process(LDAP *ldap_handle, char *dn_path, char *fs_name,
   attr_array[0] = "cn";
   attr_array[1] = NULL;
   if ((rc = linklist_build(ldap_handle, dn_path, filter, attr_array, 
-                           &group_base, &group_count)) != 0)
+                           &group_base, &group_count, LDAP_SCOPE_SUBTREE)) != 0)
     {
       com_err(whoami, 0, "LDAP server couldn't process filesys %s : %s",
               fs_name, ldap_err2string(rc));
@@ -3265,7 +3357,7 @@ int user_create(int ac, char **av, void *ptr)
   group_count = 0;
   group_base = NULL;
   if ((rc = linklist_build((LDAP *)call_args[0], call_args[1], filter, attr_array, 
-                           &group_base, &group_count)) == LDAP_SUCCESS)
+                           &group_base, &group_count, LDAP_SCOPE_SUBTREE)) == LDAP_SUCCESS)
     {
       if (group_count != 1)
         {
@@ -3276,7 +3368,7 @@ int user_create(int ac, char **av, void *ptr)
               group_base = NULL;
               sprintf(filter, "(sAMAccountName=%s)", av[U_NAME]);
               rc = linklist_build((LDAP *)call_args[0], call_args[1], filter, 
-                                  attr_array, &group_base, &group_count);
+                                  attr_array, &group_base, &group_count, LDAP_SCOPE_SUBTREE);
             }
         }
       if (group_count == 1)
@@ -3333,7 +3425,7 @@ int user_change_status(LDAP *ldap_handle, char *dn_path,
       attr_array[0] = "UserAccountControl";
       attr_array[1] = NULL;
       if ((rc = linklist_build(ldap_handle, dn_path, filter, attr_array, 
-                               &group_base, &group_count)) != 0)
+                               &group_base, &group_count, LDAP_SCOPE_SUBTREE)) != 0)
         {
           com_err(whoami, 0, "LDAP server couldn't process user %s : %s",
                   user_name, ldap_err2string(rc));
@@ -3349,7 +3441,7 @@ int user_change_status(LDAP *ldap_handle, char *dn_path,
       attr_array[0] = "UserAccountControl";
       attr_array[1] = NULL;
       if ((rc = linklist_build(ldap_handle, dn_path, filter, attr_array, 
-                               &group_base, &group_count)) != 0)
+                               &group_base, &group_count, LDAP_SCOPE_SUBTREE)) != 0)
         {
           com_err(whoami, 0, "LDAP server couldn't process user %s : %s",
                   user_name, ldap_err2string(rc));
@@ -3423,7 +3515,7 @@ int user_delete(LDAP *ldap_handle, char *dn_path,
       attr_array[0] = "name";
       attr_array[1] = NULL;
       if ((rc = linklist_build(ldap_handle, dn_path, filter, attr_array, 
-                               &group_base, &group_count)) != 0)
+                               &group_base, &group_count, LDAP_SCOPE_SUBTREE)) != 0)
         {
           com_err(whoami, 0, "LDAP server couldn't process user %s : %s",
                   user_name, ldap_err2string(rc));
@@ -3439,7 +3531,7 @@ int user_delete(LDAP *ldap_handle, char *dn_path,
       attr_array[0] = "name";
       attr_array[1] = NULL;
       if ((rc = linklist_build(ldap_handle, dn_path, filter, attr_array, 
-                               &group_base, &group_count)) != 0)
+                               &group_base, &group_count, LDAP_SCOPE_SUBTREE)) != 0)
         {
           com_err(whoami, 0, "LDAP server couldn't process user %s : %s",
                   user_name, ldap_err2string(rc));
@@ -3733,7 +3825,7 @@ int checkADname(LDAP *ldap_handle, char *dn_path, char *Name)
   attr_array[0] = "sAMAccountName";
   attr_array[1] = NULL;
   if ((rc = linklist_build(ldap_handle, dn_path, filter, attr_array, 
-                           &group_base, &group_count)) != 0)
+                           &group_base, &group_count, LDAP_SCOPE_SUBTREE)) != 0)
     {
       com_err(whoami, 0, "LDAP server couldn't process ACE name %s : %s",
               Name, ldap_err2string(rc));
@@ -4051,7 +4143,7 @@ int process_group(LDAP *ldap_handle, char *dn_path, char *MoiraId,
   attr_array[0] = "sAMAccountName";
   attr_array[1] = NULL;
   if ((rc = linklist_build(ldap_handle, dn_path, filter, attr_array, 
-                           &group_base, &group_count)) != 0)
+                           &group_base, &group_count, LDAP_SCOPE_SUBTREE)) != 0)
     {
       com_err(whoami, 0, "LDAP server unable to get list info with MoiraId = %s: %s",
                MoiraId, ldap_err2string(rc));
@@ -4079,7 +4171,7 @@ int process_group(LDAP *ldap_handle, char *dn_path, char *MoiraId,
   attr_array[0] = "name";
   attr_array[1] = NULL;
   if ((rc = linklist_build(ldap_handle, dn_path, filter, attr_array, 
-                           &group_base, &group_count)) != 0)
+                           &group_base, &group_count, LDAP_SCOPE_SUBTREE)) != 0)
     {
       com_err(whoami, 0, "LDAP server unable to get list name with MoiraId = %s: %s",
               MoiraId, ldap_err2string(rc));
@@ -4092,7 +4184,7 @@ int process_group(LDAP *ldap_handle, char *dn_path, char *MoiraId,
   attr_array[0] = "description";
   attr_array[1] = NULL;
   if ((rc = linklist_build(ldap_handle, dn_path, filter, attr_array, 
-                           &group_base, &group_count)) != 0)
+                           &group_base, &group_count, LDAP_SCOPE_SUBTREE)) != 0)
     {
       com_err(whoami, 0, 
               "LDAP server unable to get list description with MoiraId = %s: %s",
@@ -4177,7 +4269,7 @@ int ad_get_group(LDAP *ldap_handle, char *dn_path,
       attr_array[0] = attribute;
       attr_array[1] = NULL;
       if ((rc = linklist_build(ldap_handle, dn_path, filter, attr_array, 
-                               linklist_base, linklist_count)) != 0)
+                               linklist_base, linklist_count, LDAP_SCOPE_SUBTREE)) != 0)
         {
           com_err(whoami, 0, "LDAP server unable to get list info with MoiraId = %s: %s",
                   MoiraId, ldap_err2string(rc));
@@ -4199,7 +4291,7 @@ int ad_get_group(LDAP *ldap_handle, char *dn_path,
       attr_array[0] = attribute;
       attr_array[1] = NULL;
       if ((rc = linklist_build(ldap_handle, dn_path, filter, attr_array, 
-                               linklist_base, linklist_count)) != 0)
+                               linklist_base, linklist_count, LDAP_SCOPE_SUBTREE)) != 0)
         {
           com_err(whoami, 0, "LDAP server unable to get list info with MoiraId = %s: %s",
                   MoiraId, ldap_err2string(rc));
@@ -4235,7 +4327,7 @@ int ad_get_group(LDAP *ldap_handle, char *dn_path,
   attr_array[0] = attribute;
   attr_array[1] = NULL;
   if ((rc = linklist_build(ldap_handle, dn_path, filter, attr_array, 
-                           linklist_base, linklist_count)) != 0)
+                           linklist_base, linklist_count, LDAP_SCOPE_SUBTREE)) != 0)
     {
       com_err(whoami, 0, "LDAP server unable to get list info with MoiraId = %s: %s",
               MoiraId, ldap_err2string(rc));
@@ -4269,7 +4361,7 @@ int check_user(LDAP *ldap_handle, char *dn_path, char *UserName, char *MoiraId)
       attr_array[0] = "sAMAccountName";
       attr_array[1] = NULL;
       if ((rc = linklist_build(ldap_handle, dn_path, filter, attr_array, 
-                               &group_base, &group_count)) != 0)
+                               &group_base, &group_count, LDAP_SCOPE_SUBTREE)) != 0)
         {
           com_err(whoami, 0, "LDAP server couldn't process user %s : %s",
                   UserName, ldap_err2string(rc));
@@ -4297,7 +4389,7 @@ int check_user(LDAP *ldap_handle, char *dn_path, char *UserName, char *MoiraId)
       attr_array[0] = "sAMAccountName";
       attr_array[1] = NULL;
       if ((rc = linklist_build(ldap_handle, dn_path, filter, attr_array, 
-                               &group_base, &group_count)) != 0)
+                               &group_base, &group_count, LDAP_SCOPE_SUBTREE)) != 0)
         {
           com_err(whoami, 0, "LDAP server couldn't process user %s : %s",
                   UserName, ldap_err2string(rc));
@@ -4588,7 +4680,7 @@ int container_create(LDAP *ldap_handle, char *dn_path, int count, char **av)
           group_count = 0;
           group_base = NULL;
           if ((rc = linklist_build(ldap_handle, dn_path, filter, attr_array, 
-                                   &group_base, &group_count)) == LDAP_SUCCESS)
+                                   &group_base, &group_count, LDAP_SCOPE_SUBTREE)) == LDAP_SUCCESS)
             {
               if (group_count == 1)
                 {
@@ -4678,7 +4770,7 @@ int container_get_distinguishedName(LDAP *ldap_handle, char *dn_path, char *dist
   group_count = 0;
   group_base = NULL;
   if ((rc = linklist_build(ldap_handle, dn_path, filter, attr_array, 
-                           &group_base, &group_count)) == LDAP_SUCCESS)
+                           &group_base, &group_count, LDAP_SCOPE_SUBTREE)) == LDAP_SUCCESS)
     {
       if (group_count == 1)
         {
@@ -4696,7 +4788,7 @@ int container_get_distinguishedName(LDAP *ldap_handle, char *dn_path, char *dist
       group_count = 0;
       group_base = NULL;
       if ((rc = linklist_build(ldap_handle, dn_path, filter, attr_array, 
-                               &group_base, &group_count)) == LDAP_SUCCESS)
+                               &group_base, &group_count, LDAP_SCOPE_SUBTREE)) == LDAP_SUCCESS)
         {
           if (group_count == 1)
             {
@@ -4745,7 +4837,7 @@ int container_adupdate(LDAP *ldap_handle, char *dn_path, char *dName,
   group_count = 0;
   group_base = NULL;
   if ((rc = linklist_build(ldap_handle, dn_path, filter, attr_array, 
-                           &group_base, &group_count)) != LDAP_SUCCESS)
+                           &group_base, &group_count, LDAP_SCOPE_SUBTREE)) != LDAP_SUCCESS)
     {
       com_err(whoami, 0, "couldn't retreive container info for %s : %s",
               av[CONTAINER_NAME], ldap_err2string(rc));
@@ -4825,7 +4917,7 @@ int container_adupdate(LDAP *ldap_handle, char *dn_path, char *dName,
           group_count = 0;
           group_base = NULL;
           if ((rc = linklist_build(ldap_handle, dn_path, filter, attr_array, 
-                                   &group_base, &group_count)) == LDAP_SUCCESS)
+                                   &group_base, &group_count, LDAP_SCOPE_SUBTREE)) == LDAP_SUCCESS)
             {
               if (group_count == 1)
                 {
@@ -4916,7 +5008,7 @@ int container_move_objects(LDAP *ldap_handle, char *dn_path, char *dName)
       while (1)
         {
           if ((rc = linklist_build(ldap_handle, dName, filter, attr_array, 
-                                   &group_base, &group_count)) != LDAP_SUCCESS)
+                                   &group_base, &group_count, LDAP_SCOPE_SUBTREE)) != LDAP_SUCCESS)
             {
               break;
             }
@@ -4994,7 +5086,7 @@ int get_machine_ou(LDAP *ldap_handle, char *dn_path, char *member, char *machine
   attr_array[1] = NULL;
   sprintf(temp, "%s", dn_path);
   if ((rc = linklist_build(ldap_handle, temp, filter, attr_array, 
-                        &group_base, &group_count)) != 0)
+                        &group_base, &group_count, LDAP_SCOPE_SUBTREE)) != 0)
     {
       com_err(whoami, 0, "LDAP server couldn't process machine %s : %s",
               member, ldap_err2string(rc));
@@ -5067,7 +5159,8 @@ int machine_move_to_ou(LDAP *ldap_handle, char * dn_path, char *MoiraMachineName
     sprintf(filter, "(sAMAccountName=%s$)", MachineName);
     attr_array[0] = "sAMAccountName";
     attr_array[1] = NULL;
-    if ((rc = linklist_build(ldap_handle, dn_path, filter, attr_array, &group_base, &group_count)) != 0)
+    if ((rc = linklist_build(ldap_handle, dn_path, filter, attr_array, &group_base, 
+                             &group_count, LDAP_SCOPE_SUBTREE)) != 0)
     {
         com_err(whoami, 0, "LDAP server couldn't process machine %s : %s",
                 MoiraMachineName, ldap_err2string(rc));
@@ -5701,4 +5794,143 @@ int SetHomeDirectory(LDAP *ldap_handle, char *user_name, char *DistinguishedName
     }
 
     return(n);
+}
+
+int GetServerList(char *ldap_domain, char **ServerList)
+{
+  unsigned long   rc;
+  int             group_count;
+  int             UseSFU30;
+  int             Count;
+  int             i;
+  int             IgnoreServerListError;
+  int             ServerListFound;
+  char            default_server[256];
+  char            dn_path[256];
+  char            *attr_array[3];
+  char            *sPtr;
+  char            base[128];
+  char            filter[128];
+  LK_ENTRY        *group_base;
+  LK_ENTRY        *gPtr;
+  LDAP            *ldap_handle;
+  FILE            *fptr;
+
+  memset(default_server, '\0', sizeof(default_server));
+  memset(dn_path, '\0', sizeof(dn_path));
+  for (i = 0; i < MAX_SERVER_NAMES; i++)
+    {
+      if (ServerList[i] != NULL)
+        {
+          free(ServerList[i]);
+          ServerList[i] = NULL;
+        }
+    }
+  IgnoreServerListError = 1;
+  if (rc = ad_connect(&ldap_handle, ldap_domain, dn_path, "", "", default_server, 0, 
+                      ServerList, &IgnoreServerListError))
+      return(1);
+  memset(ServerList, '\0', sizeof(ServerList[0]) * MAX_SERVER_NAMES);
+  group_count = 0;
+  group_base = NULL;
+  Count = 0;
+  ServerListFound = 0;
+
+  strcpy(filter, "(&(objectClass=rIDManager)(fSMORoleOwner=*))");
+  attr_array[0] = "fSMORoleOwner";
+  attr_array[1] = NULL;
+  if (!(rc = linklist_build(ldap_handle, dn_path, filter, attr_array, 
+                           &group_base, &group_count, LDAP_SCOPE_SUBTREE)) != 0)
+    {
+      if (group_count != 0)
+        {
+          sPtr = strstr(group_base->value, ",CN=");
+          if (sPtr != NULL)
+            {
+              sPtr += strlen(",CN=");
+              if (ServerList[0] == NULL)
+                  ServerList[0] = calloc(1, 256);
+              strcpy(ServerList[0], sPtr);
+              sPtr = strstr(ServerList[0], ",");
+              if (sPtr != NULL)
+                  (*sPtr) = '\0';
+              ++Count;
+              ServerListFound = 1;
+            }
+        }
+    }
+  linklist_free(group_base);
+
+  group_count = 0;
+  group_base = NULL;
+  attr_array[0] = "cn";
+  attr_array[1] = NULL;
+  strcpy(filter, "(cn=*)");
+  sprintf(base, "cn=Servers,cn=Default-First-Site-Name,cn=Sites,cn=Configuration,%s", dn_path);
+
+  if (!(rc = linklist_build(ldap_handle, base, filter, attr_array, 
+                           &group_base, &group_count, LDAP_SCOPE_ONELEVEL)) != 0)
+    {
+      if (group_count != 0)
+        {
+          gPtr = group_base;
+          while (gPtr != NULL)
+            {
+              if (ServerListFound != 0)
+                {
+                  if (!strcasecmp(ServerList[0], gPtr->value))
+                    {
+                      gPtr = gPtr->next;
+                      continue;
+                    }
+                }
+              if (Count < MAX_SERVER_NAMES)
+                {
+                  if (ServerList[Count] == NULL)
+                      ServerList[Count] = calloc(1, 256);
+                  strcpy(ServerList[Count], gPtr->value);
+                  gPtr = gPtr->next;
+                  ++Count;
+                }
+            }
+        }
+    }
+  linklist_free(group_base);
+
+  UseSFU30 = 0;
+  group_count = 0;
+  group_base = NULL;
+
+  strcpy(filter, "(cn=msSFU-30-Uid-Number)");
+  sprintf(base, "cn=schema,cn=configuration,%s", dn_path);
+
+  if (!(rc = linklist_build(ldap_handle, base, filter, NULL, 
+                           &group_base, &group_count, LDAP_SCOPE_SUBTREE)) != 0)
+    {
+      if (group_count != 0)
+        {
+          UseSFU30 = 1;
+        }
+    }
+  linklist_free(group_base);
+  group_count = 0;
+  group_base = NULL;
+
+  if ((fptr = fopen(WINADCFG, "w+")) != NULL)
+    {
+      fprintf(fptr, "%s%s\n", DOMAIN, ldap_domain);
+      if (UseSFU30)
+          fprintf(fptr, "%s%s\n", MSSFU, SFUTYPE);
+      for (i = 0; i < MAX_SERVER_NAMES; i++)
+        {
+          if (ServerList[i] != NULL)
+            {
+              fprintf(fptr, "%s%s\n", SERVER, ServerList[i]);
+            }
+        }
+      fclose(fptr);
+    }
+  ldap_unbind_s(ldap_handle);
+
+  return(0);
 }

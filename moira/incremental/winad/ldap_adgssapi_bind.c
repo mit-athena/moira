@@ -1,7 +1,7 @@
 /*
  * Copyright (C) 1998-2000 Luke Howard. All rights reserved.
  * CONFIDENTIAL
- * $Id: ldap_adgssapi_bind.c,v 1.4 2003-05-23 16:38:16 zacheiss Exp $
+ * $Id: ldap_adgssapi_bind.c,v 1.5 2003-07-29 20:22:33 zacheiss Exp $
  *
  * Implementation of GSS-API client side binding for SASL
  */
@@ -442,6 +442,8 @@ static int client_establish_context(LDAP *ld, gssldap_client_state_t state,
                              &send_tok,
                              (gss_OID) gss_nt_service_name,
                              &target_name);
+  if (maj_stat)
+    return -1;
   if (ldap_reset_principal(ld, service_name, target_name))
     {
       TRACE("<== client_establish_context");

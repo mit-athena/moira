@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/winad/winad.c,v 1.9 2001-04-30 19:49:56 zacheiss Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/winad/winad.c,v 1.10 2001-05-02 21:23:39 zacheiss Exp $
 /* test parameters for creating a user account - done 
  * users 10 10 a_chen 31275 sh cmd Lastname Firstname Middlename 0 950000000 STAFF a_chen 31275 sh cmd Lastname Firstname Middlename 2 950000000 STAFF
  * users 10 10 a_chen 31275 sh cmd Lastname Firstname Middlename 2 950000000 STAFF a_chen 31275 sh cmd Lastname Firstname Middlename 1 950000000 STAFF
@@ -2864,7 +2864,7 @@ int mr_connect_cl(char *server, char *client, int version, int auth)
   if (status)
     {
       com_err(whoami, status, "while connecting to Moira");
-      return MRCL_FAIL;
+      return status;
     }
 
   status = mr_motd(&motd);
@@ -2872,14 +2872,14 @@ int mr_connect_cl(char *server, char *client, int version, int auth)
     {
       mr_disconnect();
       com_err(whoami, status, "while checking server status");
-      return MRCL_FAIL;
+      return status;
     }
   if (motd)
     {
       sprintf(temp, "The Moira server is currently unavailable: %s", motd);
       com_err(whoami, status, temp);
       mr_disconnect();
-      return MRCL_FAIL;
+      return status;
     }
 
   status = mr_version(version);
@@ -2902,7 +2902,7 @@ int mr_connect_cl(char *server, char *client, int version, int auth)
         {
           com_err(whoami, status, "while setting query version number.");
           mr_disconnect();
-          return MRCL_FAIL;
+          return status;
         }
     }
 
@@ -2913,11 +2913,11 @@ int mr_connect_cl(char *server, char *client, int version, int auth)
         {
           com_err(whoami, status, "while authenticating to Moira.");
           mr_disconnect();
-          return MRCL_AUTH_ERROR;
+          return status;
         }
     }
 
-  return MRCL_SUCCESS;
+  return MR_SUCCESS;
 }
 
 void expand_groups(LDAP *ldap_handle, char *dn_path, char *group_name)

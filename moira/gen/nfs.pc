@@ -1,4 +1,4 @@
-/* $Id: nfs.pc,v 1.9 1999-09-01 16:47:55 jweiss Exp $
+/* $Id: nfs.pc,v 1.10 2000-04-19 23:13:20 zacheiss Exp $
  *
  * This generates the files necessary to load an nfs server.
  *
@@ -23,7 +23,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/nfs.pc,v 1.9 1999-09-01 16:47:55 jweiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/nfs.pc,v 1.10 2000-04-19 23:13:20 zacheiss Exp $");
 
 #define min(x, y)	((x) < (y) ? (x) : (y))
 
@@ -245,7 +245,7 @@ void do_everyone(void)
   EXEC SQL DECLARE l_cursor CURSOR FOR
     SELECT gid, list_id
     FROM list
-    WHERE grouplist != 0 AND active != 0
+    WHERE nfsgroup != 0 AND grouplist != 0 AND active != 0
     ORDER BY list_id;
   EXEC SQL OPEN l_cursor;
   while (1)

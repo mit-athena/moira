@@ -1,6 +1,6 @@
 /* This file defines the query dispatch table for version 2 of the protocol
  *
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/queries2.c,v 1.20 1990-03-19 15:49:36 mar Exp $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/queries2.c,v 1.21 1990-03-30 19:19:40 mar Exp $
  *
  * Copyright 1987, 1988 by the Massachusetts Institute of Technology.
  * For copying and distribution information, please see the file
@@ -39,7 +39,7 @@ int setup_afil();
 int setup_ufil();
 int setup_dfil();
 int setup_dnfp();
-int setup_dnfq();
+int setup_dqot();
 int setup_sshi();
 int setup_akum();
 
@@ -48,10 +48,10 @@ int followup_fix_modby();
 int followup_ausr();
 int followup_gpob();
 int followup_glin();
-int followup_anfq();
+int followup_aqot();
 int followup_gzcl();
 int followup_gsha();
-int followup_gnfq();
+int followup_gqot();
 
 int set_modtime();
 int set_modtime_by_id();
@@ -112,6 +112,8 @@ static char MOD1[] = "modtime";
 static char MOD2[] = "modby";
 static char MOD3[] = "modwith";
 static char NAME[] = "name";
+static char QUOTA[] = "quota";
+static char QUOTA_TYPE[] = "quota_type";
 static char SERVICE[] = "service";
 static char SHELL[] = "shell";
 static char STATUS[] = "status";
@@ -1259,9 +1261,96 @@ static struct validate dnfp_validate = {
   set_nfsphys_modtime,
 };
 
+static char *gqot_fields[] = {
+  FILESYS, TYPE, NAME,
+  FILESYS, TYPE, NAME, QUOTA, DIR, MACHINE, MOD1, MOD2, MOD3,
+};
+
+static struct valobj gqot_valobj[] = {
+  {V_TYPE, 1, QUOTA_TYPE, 0, 0, MR_TYPE},
+  {V_TYPEDATA, 2, 0, 0, 0, MR_ACE},
+  {V_SORT, 0, 0, 0, 0, 0},
+};
+
+static struct validate gqot_validate = {
+  gqot_valobj,
+  3,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  followup_gqot,
+};
+
+static char *gqbf_fields[] = {
+  FILESYS,
+  FILESYS, TYPE, NAME, QUOTA, DIR, MACHINE, MOD1, MOD2, MOD3,
+};
+
+static struct validate gqbf_validate = {
+  VOsort0,
+  1,
+  0,
+  0,
+  0,
+  0,
+  access_filesys,
+  0,
+  followup_gqot,
+};
+
+static char *aqot_fields[] = {
+  FILESYS, TYPE, NAME, QUOTA,
+};
+
+static struct valobj aqot_valobj[] = {
+  {V_LOCK, 0, FILESYS, 0, FILSYS_ID, MR_DEADLOCK},
+  {V_ID, 0, FILESYS, LABEL, FILSYS_ID, MR_FILESYS},
+  {V_TYPE, 1, QUOTA_TYPE, 0, 0, MR_TYPE},
+  {V_TYPEDATA, 2, 0, 0, 0, MR_ACE},
+};
+
+static struct validate aqot_validate = {
+  aqot_valobj,
+  4,
+  FILSYS_ID,
+  "q.filsys_id = %d and q.type = \"%s\" and q.entity_id = %d",
+  3,
+  0,
+  0,
+  0,
+  followup_aqot,
+};
+
+static struct validate uqot_validate = {
+  aqot_valobj,
+  4,
+  FILSYS_ID,
+  "q.filsys_id = %d and q.type = \"%s\" and q.entity_id = %d",
+  3,
+  0,
+  0,
+  setup_dqot,
+  followup_aqot,
+};
+
+static struct validate dqot_validate = {
+  aqot_valobj,
+  4,
+  FILSYS_ID,
+  "q.filsys_id = %d and q.type = \"%s\" and q.entity_id = %d",
+  3,
+  0,
+  0,
+  setup_dqot,
+  0,
+};
+
 static char *gnfq_fields[] = {
   FILESYS, LOGIN,
-  FILESYS, LOGIN, "quota", DIR, MACHINE, MOD1, MOD2, MOD3,
+  FILESYS, LOGIN, QUOTA, DIR, MACHINE, MOD1, MOD2, MOD3,
 };
 
 static struct validate gnfq_validate = {
@@ -1273,51 +1362,51 @@ static struct validate gnfq_validate = {
   0,
   access_filesys,
   0,
-  followup_gnfq,
+  followup_gqot,
 };
 
 static char *gnqp_fields[] = {
   MACHINE, DIR,
-  FILESYS, LOGIN, "quota", DIR, MACHINE, MOD1, MOD2, MOD3,
+  FILESYS, LOGIN, QUOTA, DIR, MACHINE, MOD1, MOD2, MOD3,
 };
 
 static char *anfq_fields[] = {
-  FILESYS, LOGIN, "quota",
+  FILESYS, LOGIN, QUOTA,
 };
 
 static struct validate anfq_validate = {
   VOfilsys0user1,
   3,
-  USERS_ID,
-  "nq.filsys_id = %d and nq.users_id = %d",
+  FILSYS_ID,
+  "q.filsys_id = %d and q.type = \"USER\" and q.entity_id = %d",
   2,
   0,
   0,
   0,
-  followup_anfq,
+  followup_aqot,
 };
 
 static struct validate unfq_validate = {
   VOfilsys0user1,
   3,
-  USERS_ID,
-  "nq.filsys_id = %d and nq.users_id = %d",
+  FILSYS_ID,
+  "q.filsys_id = %d and q.type = \"USER\" and q.entity_id = %d",
   2,
   0,
   0,
-  setup_dnfq,
-  followup_anfq,
+  setup_dqot,
+  followup_aqot,
 };
 
 static struct validate dnfq_validate = {
   VOfilsys0user1,
   3,
-  USERS_ID,
-  "nq.filsys_id = %d and nq.users_id = %d",
+  FILSYS_ID,
+  "q.filsys_id = %d and q.entity_id = %d",
   2,
   0,
   0,
-  setup_dnfq,
+  setup_dqot,
   0,
 };
 
@@ -2947,16 +3036,91 @@ struct query Queries2[] = {
   },
 
   {
+    /* Q_GQOT - GET_QUOTA */
+    "get_quota",
+    "gqot",
+    RETRIEVE,
+    "q",
+    QUOTA,
+    "%c = filesys.label, %c = q.type, %c = text(q.entity_id), %c = text(q.quota), %c = text(q.phys_id), %c = machine.name, %c = q.modtime, %c = text(q.modby), %c = q.modwith",
+    gqot_fields,
+    9,
+    "filesys.label = \"%s\" and q.type = \"%s\" and q.entity_id = %d and filesys.filsys_id = q.filsys_id and machine.mach_id = filesys.mach_id",
+    3,
+    &gqot_validate,
+  },
+
+  {
+    /* Q_GQBF - GET_QUOTA_BY_FILESYS */
+    "get_quota_by_filesys",
+    "gqbf",
+    RETRIEVE,
+    "q",
+    QUOTA,
+    "%c = filesys.label, %c = q.type, %c = text(q.entity_id), %c = text(q.quota), %c = text(q.phys_id), %c = machine.name, %c = q.modtime, %c = text(q.modby), %c = q.modwith",
+    gqbf_fields,
+    9,
+    "filesys.label = \"%s\" and filesys.filsys_id = q.filsys_id and machine.mach_id = filesys.mach_id",
+    1,
+    &gqbf_validate,
+  },
+
+  {
+    /* Q_AQOT - ADD_QUOTA */
+    "add_quota",
+    "aqot",
+    APPEND,
+    "q",
+    QUOTA,
+    "filsys_id = filesys.filsys_id, type  = %c, entity_id = %i4, quota = int4(%c), phys_id = filesys.phys_id",
+    aqot_fields,
+    3,
+    "filesys.filsys_id = %d",
+    1,
+    &aqot_validate,
+  },
+
+  {
+    /* Q_UQOT - UPDATE_QUOTA */
+    "update_quota",
+    "uqot",
+    UPDATE,
+    "q",
+    QUOTA,
+    "quota = int4(%c)",
+    aqot_fields,
+    1,
+    "q.filsys_id = %d and q.type = \"%s\" and q.entity_id = %d",
+    3,
+    &uqot_validate,
+  },
+
+  {
+    /* Q_DQOT - DELETE_QUOTA */
+    "delete_quota",
+    "dqot",
+    DELETE,
+    "q",
+    QUOTA,
+    (char *)0,
+    aqot_fields,
+    0,
+    "q.filsys_id = %d and q.type = \"%s\" and q.entity_id = %d",
+    3,
+    &dqot_validate,
+  },
+
+  {
     /* Q_GNFQ - GET_NFS_QUOTAS */
     "get_nfs_quota",
     "gnfq",
     RETRIEVE,
-    "nq",
-    "nfsquota",
-    "%c = filesys.label, %c = users.login, %c = text(nq.quota), %c = text(nq.phys_id), %c = machine.name, %c = nq.modtime, %c = text(nq.modby), %c = nq.modwith",
+    "q",
+    QUOTA,
+    "%c = filesys.label, %c = users.login, %c = text(q.quota), %c = text(q.phys_id), %c = machine.name, %c = q.modtime, %c = text(q.modby), %c = q.modwith",
     gnfq_fields,
     8,
-    "filesys.label = \"%s\" and nq.users_id = users.users_id and filesys.filsys_id = nq.filsys_id and machine.mach_id = filesys.mach_id and users.login = \"%s\"",
+    "filesys.label = \"%s\" and q.type = \"USER\" and q.entity_id = users.users_id and filesys.filsys_id = q.filsys_id and machine.mach_id = filesys.mach_id and users.login = \"%s\"",
     2,
     &gnfq_validate,
   },
@@ -2966,12 +3130,12 @@ struct query Queries2[] = {
     "get_nfs_quotas_by_partition",
     "gnqp",
     RETRIEVE,
-    "nq",
-    "nfsquota",
-    "%c = filesys.label, %c = users.login, %c = text(nq.quota), %c = nfsphys.dir, %c = machine.name",
+    "q",
+    QUOTA,
+    "%c = filesys.label, %c = users.login, %c = text(q.quota), %c = nfsphys.dir, %c = machine.name",
     gnqp_fields,
     5,
-    "nfsphys.mach_id = %d and nfsphys.dir = \"%s\" and nq.phys_id = nfsphys.nfsphys_id and filesys.filsys_id = nq.filsys_id and users.users_id = nq.users_id and machine.mach_id = nfsphys.mach_id",
+    "nfsphys.mach_id = %d and nfsphys.dir = \"%s\" and q.phys_id = nfsphys.nfsphys_id and filesys.filsys_id = q.filsys_id and q.type = \"USER\" and users.users_id = q.entity_id and machine.mach_id = nfsphys.mach_id",
     2,
     &VDmach,
   },
@@ -2981,9 +3145,9 @@ struct query Queries2[] = {
     "add_nfs_quota",
     "anfq",
     APPEND,
-    "nq",
-    "nfsquota",
-    "filsys_id = filesys.filsys_id, users_id = %i4, quota = int4(%c), phys_id = filesys.phys_id",
+    "q",
+    QUOTA,
+    "filsys_id = filesys.filsys_id, type = \"USER\", entity_id = %i4, quota = int4(%c), phys_id = filesys.phys_id",
     anfq_fields,
     2,
     "filesys.filsys_id = %d",
@@ -2996,12 +3160,12 @@ struct query Queries2[] = {
     "update_nfs_quota",
     "unfq",
     UPDATE,
-    "nq",
-    "nfsquota",
+    "q",
+    QUOTA,
     "quota = int4(%c)",
     anfq_fields,
     1,
-    "nq.filsys_id = %d and nq.users_id = %d",
+    "q.filsys_id = %d and q.type = \"USER\" and q.entity_id = %d",
     2,
     &unfq_validate,
   },
@@ -3011,12 +3175,12 @@ struct query Queries2[] = {
     "delete_nfs_quota",
     "dnfq",
     DELETE,
-    "nq",
-    "nfsquota",
+    "q",
+    QUOTA,
     (char *)0,
     anfq_fields,
     0,
-    "nq.filsys_id = %d and nq.users_id = %d",
+    "q.filsys_id = %d and q.type = \"USER\" and q.entity_id = %d",
     2,
     &dnfq_validate,
   },

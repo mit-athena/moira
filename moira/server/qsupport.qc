@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.49 1990-03-19 15:42:34 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.50 1990-03-30 19:18:16 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_qsupport_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.49 1990-03-19 15:42:34 mar Exp $";
+static char *rcsid_qsupport_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.50 1990-03-30 19:18:16 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -365,7 +365,7 @@ int setup_dusr(q, argv)
     if (flag != 0 && flag != 4)
       return(MR_IN_USE);
 
-##  repeat delete nfsquota where nfsquota.users_id = @id
+##  repeat delete quota where quota.entity_id = @id and quota.type = "USER"
 ##  repeat delete krbmap where krbmap.users_id = @id
 ##  repeat retrieve (flag = any(imembers.member_id where imembers.member_id=@id
 ##			 and imembers.member_type = "USER"))
@@ -684,13 +684,15 @@ setup_afil(q, argv)
  * the new phys_id.
  */
 
-setup_ufil(q, argv)
+setup_ufil(q, argv, cl)
     struct query *q;
     char *argv[];
+    client *cl;
 ##{
     int mach_id, status;
     char *type, *name, *access;  
-##  int fid, total;
+##  int fid, total, who;
+##  char *entity;
 
     type = argv[2];
     mach_id = *(int *)argv[3];
@@ -698,25 +700,26 @@ setup_ufil(q, argv)
     access = argv[6];
     var_phys_id = 0;
     fid = *(int *)argv[0];
+    who = cl->client_id;
+    entity = cl->entity;
 
     if (!strcmp(type, "NFS")) {
 	status = check_nfs(mach_id, name, access);
-##	replace nfsquota (phys_id = var_phys_id) where nfsquota.filsys_id = fid
+##	replace quota (phys_id = var_phys_id) where quota.filsys_id = fid
 	if (ingres_errno) return(mr_errcode);
 	return(status);
     } else if (!strcmp(type, "AFS")) {
 	total = 0;
-##	retrieve (total = sum(nfsquota.quota where nfsquota.filsys_id = fid))
+##	retrieve (total = sum(quota.quota where quota.filsys_id = fid))
 	if (ingres_errno) return(mr_errcode);
 	if (total != 0) {
-##	    delete nfsquota where nfsquota.filsys_id = fid
-	    if (ingres_errno) return(mr_errcode);
-##	    append nfsquota (quota = total, filsys_id = fid,
-##			     phys_id = 0, users_id = 0)
+##	    append quota (quota = total, filsys_id = fid,
+##			     phys_id = 0, entity_id = 0, type = "ANY",
+##			     modtime = "now", modby = who, modwith = entity)
 	    if (ingres_errno) return(mr_errcode);
 	}
     } else {
-##	replace nfsquota (phys_id = 0) where nfsquota.filsys_id = fid
+##	replace quota (phys_id = 0) where quota.filsys_id = fid
 	if (ingres_errno) return(mr_errcode);
     }
     return(MR_SUCCESS);
@@ -777,7 +780,7 @@ setup_dfil(q, argv, cl)
 ##  int id;
 
     id = *(int *)argv[0];
-##  range of q is nfsquota
+##  range of q is quota
 ##  range of n is nfsphys
 ##  repeat replace n (allocated=n.allocated-sum(q.quota where q.filsys_id=@id))
 ##	where n.nfsphys_id = filesys.phys_id and filesys.filsys_id = @id
@@ -811,24 +814,32 @@ setup_dnfp(q, argv, cl)
 ##}
 
 
-/* setup_dnfq: Remove allocation from nfsphys before deleting quota.
+/* setup_dqot: Remove allocation from nfsphys before deleting quota.
  *   argv[0] = filsys_id
- *   argv[1] = users_id
+ *   argv[1] = type if "update_quota" or "delete_quota"
+ *   argv[2 or 1] = users_id or list_id
  */
 
-setup_dnfq(q, argv, cl)
+setup_dqot(q, argv, cl)
     struct query  *q;
     char **argv;
     client *cl;
 ##{
-##  int quota, fs, user;
+##  int quota, fs, id;
+##  char *qtype;
 
     fs = *(int *)argv[0];
-    user = *(int *)argv[1];
+    if (!strcmp(q->name, "update_quota") || !strcmp(q->name, "delete_quota")) {
+	qtype = argv[1];
+	id = *(int *)argv[2];
+    } else {
+	qtype = "USER";
+	id = *(int *)argv[1];
+    }
 
-##  range of q is nfsquota
-##  repeat retrieve (quota = q.#quota) where q.users_id = @user and
-##	q.filsys_id = @fs
+##  range of q is #quota
+##  repeat retrieve (quota = q.#quota) where q.type = @qtype and
+##    	q.entity_id = @id and q.filsys_id = @fs
 ##  repeat replace nfsphys (allocated = nfsphys.allocated - @quota)
 ##	where nfsphys.nfsphys_id = filesys.#phys_id and filesys.filsys_id = @fs
     if (ingres_errno) return(mr_errcode);
@@ -1350,12 +1361,14 @@ followup_glin(q, sq, v, action, actarg, cl)
 }
 
 
-/* followup_gnfq: Fix the directory name & modby fields
+/* followup_gqot: Fix the entity name, directory name & modby fields
  *   argv[0] = filsys_id
- *   argv[2] = ascii(quota)
+ *   argv[1] = type
+ *   argv[2] = entity_id
+ *   argv[3] = ascii(quota)
  */
 
-followup_gnfq(q, sq, v, action, actarg, cl)
+followup_gqot(q, sq, v, action, actarg, cl)
     struct query *q;
     register struct save_queue *sq;
     struct validate *v;
@@ -1367,13 +1380,37 @@ followup_gnfq(q, sq, v, action, actarg, cl)
     char **argv, *malloc();
 ##  int id, rowcount;
 ##  char *name, *label;
-    int status;
+    int status, idx;
 
+    if (!strcmp(q->name, "get_quota") ||
+	!strcmp(q->name, "get_quota_by_filesys"))
+      idx = 4;
+    else
+      idx = 3;
     while (sq_get_data(sq, &argv)) {
-	id = atoi(argv[3]);
-	free(argv[3]);
-	argv[3] = malloc(256);
-	name = argv[3];
+	if (idx == 4) {
+	    switch (argv[1][0]) {
+	    case 'U':
+		status = id_to_name(atoi(argv[2]), "USER", &argv[2]);
+		break;
+	    case 'G':
+	    case 'L':
+		status = id_to_name(atoi(argv[2]), "LIST", &argv[2]);
+		break;
+	    case 'A':
+		free(argv[2]);
+		argv[2] = strsave("system:anyuser");
+		break;
+	    default:
+		id = atoi(argv[2]);
+		argv[2] = malloc(8);
+		sprintf(argv[2], "%d", id);
+	    }
+	}
+	id = atoi(argv[idx]);
+	free(argv[idx]);
+	argv[idx] = malloc(256);
+	name = argv[idx];
 	if (id == 0) {
 	    label = argv[0];
 ##	    repeat retrieve (name = filesys.#name) where filesys.#label = @label
@@ -1382,14 +1419,14 @@ followup_gnfq(q, sq, v, action, actarg, cl)
 	}
 ##	inquire_equel(rowcount = "rowcount")
 	if (rowcount != 1) {
-	    sprintf(argv[3], "#%d", id);
+	    sprintf(argv[idx], "#%d", id);
 	}
 
-	id = atoi(argv[6]);
+	id = atoi(argv[idx+3]);
 	if (id > 0)
-	  status = id_to_name(id, "USER", &argv[6]);
+	  status = id_to_name(id, "USER", &argv[idx+3]);
 	else
-	  status = id_to_name(-id, "STRING", &argv[6]);
+	  status = id_to_name(-id, "STRING", &argv[idx+3]);
 	if (status && status != MR_NO_MATCH)
 	  return(status);
 	(*action)(q->vcnt, argv, actarg);
@@ -1402,27 +1439,36 @@ followup_gnfq(q, sq, v, action, actarg, cl)
 ##}
 
 
-/* followup_anfq: Add allocation to nfsphys after creating quota.
+/* followup_aqot: Add allocation to nfsphys after creating quota.
  *   argv[0] = filsys_id
- *   argv[2] = ascii(quota)
+ *   argv[1] = type if "add_quota" or "update_quota"
+ *   argv[2 or 1] = id
+ *   argv[3 or 2] = ascii(quota)
  */
 
-followup_anfq(q, argv, cl)
+followup_aqot(q, argv, cl)
     struct query  *q;
     char **argv;
     client *cl;
 ##{
-##  int quota, user, fs, who;
-##  char *entity;
+##  int quota, id, fs, who;
+##  char *entity, *qtype;
 
     fs = *(int *)argv[0];
-    user = *(int *)argv[1];
-    quota = atoi(argv[2]);
+    if (!strcmp(q->name, "add_quota") || !strcmp(q->name, "update_quota")) {
+	qtype = argv[1];
+	id = *(int *)argv[2];
+	quota = atoi(argv[3]);
+    } else {
+	qtype = "USER";
+	id = *(int *)argv[1];
+	quota = atoi(argv[2]);
+    }
     who = cl->client_id;
     entity = cl->entity;
 
-##  repeat replace nq (modtime = "now", modby = @who, modwith = @entity)
-##	where nq.filsys_id = @fs and nq.users_id = @user
+##  repeat replace q (modtime = "now", modby = @who, modwith = @entity)
+##	where q.filsys_id = @fs and q.type = @qtype and q.entity_id = @id
 ##  repeat replace nfsphys (allocated = nfsphys.allocated + @quota)
 ##	where nfsphys.nfsphys_id = filesys.#phys_id and filesys.filsys_id = @fs
     if (ingres_errno) return(mr_errcode);
@@ -2618,9 +2664,10 @@ register_user(q, argv, cl)
     if (rowcount != 1)
       return(MR_NO_QUOTA);
     incremental_clear_before();
-##  repeat append nfsquota (#users_id = @users_id, filsys_id = values.value,
-##			    #quota = @quota, phys_id = @pid, modtime = "now",
-##			    modby = @who, modwith = @entity)
+##  repeat append #quota (entity_id = @users_id, filsys_id = values.value,
+##			  type = "USER",
+##			  #quota = @quota, phys_id = @pid, modtime = "now",
+##			  modby = @who, modwith = @entity)
 ##	where values.name = "filsys_id"
     if (ingres_errno) return(mr_errcode);
 ##  inquire_equel(rowcount = "rowcount");
@@ -2635,8 +2682,8 @@ register_user(q, argv, cl)
       return(MR_INTERNAL);
     aargv[0] = login;
     aargv[1] = login;
-    sprintf(buffer, "nq.users_id = %d and nq.filsys_id = values.value and values.name = \"filsys_id\"", users_id);
-    incremental_after("nfsquota", buffer, aargv);
+    sprintf(buffer, "q.entity_id = %d and q.filsys_id = values.value and q.type = \"USER\" and values.name = \"filsys_id\"", users_id);
+    incremental_after("quota", buffer, aargv);
     com_err(whoami, 0, "quota of %d assigned", quota);
     if (ingres_errno) return(mr_errcode);
 
@@ -2646,7 +2693,7 @@ register_user(q, argv, cl)
 ##	where tblstats.table = "users"
 ##  repeat replace tblstats (appends = tblstats.appends + 1, modtime = "now")
 ##	where tblstats.table = "list" or tblstats.table = "filesys" or
-##	      tblstats.table = "nfsquota"
+##	      tblstats.table = "quota"
     if (ingres_errno) return(mr_errcode);
     return(MR_SUCCESS);
 ##}

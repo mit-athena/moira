@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/increment.qc,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/increment.qc,v 1.8 1990-03-19 15:41:29 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/increment.qc,v 1.9 1990-03-30 19:20:40 mar Exp $
  *
  *	Copyright (C) 1989 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_qrtn_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/increment.qc,v 1.8 1990-03-19 15:41:29 mar Exp $";
+static char *rcsid_qrtn_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/increment.qc,v 1.9 1990-03-30 19:20:40 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -144,14 +144,21 @@ char **argv;
 ##		  barg10 = fs.lockertype)
 ##	  where qual
 	beforec = 11;
-    } else if (!strcmp(table, "nfsquota")) {
+    } else if (!strcmp(table, "quota")) {
 	strcpy(barg0, argv[0]);
-	strcpy(barg1, argv[1]);
-	sprintf(buffer, "%s and filesys.filsys_id = nq.filsys_id", qual);
+	if (!strcmp(argv[1], "USER") || !strcmp(argv[1], "GROUP") ||
+	    !strcmp(argv[1], "LIST") || !strcmp(argv[1], "ANY")) {
+	    strcpy(barg1, argv[1]);
+	    strcpy(barg2, argv[2]);
+	} else {
+	    strcpy(barg1, "USER");
+	    strcpy(barg2, argv[1]);
+	}
+	sprintf(buffer, "%s and filesys.filsys_id = q.filsys_id", qual);
 	qual = buffer;
-##	range of nq is nfsquota
-##	retrieve (barg2 = text(nq.quota), barg3 = filesys.name) where qual
-	beforec = 4;
+##	range of q is quota
+##	retrieve (barg3 = text(q.quota), barg4 = filesys.name) where qual
+	beforec = 5;
     } else if (!strcmp(table, "list")) {
 ##	retrieve (barg0 = l.name, barg1 = text(l.active),
 ##		  barg2 = text(l.public), barg3 = text(l.hidden),
@@ -239,14 +246,15 @@ char **argv;
 ##		  aarg10 = fs.lockertype)
 ##	  where qual
 	afterc = 11;
-    } else if (!strcmp(table, "nfsquota")) {
+    } else if (!strcmp(table, "quota")) {
 	strcpy(aarg0, argv[0]);
 	strcpy(aarg1, argv[1]);
-	sprintf(buffer, "%s and filesys.filsys_id = nq.filsys_id", qual);
+	strcpy(aarg2, argv[2]);
+	sprintf(buffer, "%s and filesys.filsys_id = q.filsys_id", qual);
 	qual = buffer;
-##	range of nq is nfsquota
-##	retrieve (aarg2 = text(nq.quota), aarg3 = filesys.name) where qual
-	afterc = 4;
+##	range of q is quota
+##	retrieve (aarg3 = text(q.quota), aarg4 = filesys.name) where qual
+	afterc = 5;
     } else if (!strcmp(table, "list")) {
 ##	retrieve (aarg0 = l.name, aarg1 = text(l.active),
 ##		  aarg2 = text(l.public), aarg3 = text(l.hidden),

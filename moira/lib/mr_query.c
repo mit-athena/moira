@@ -1,4 +1,4 @@
-/* $Id: mr_query.c,v 1.17 1998-02-15 17:49:06 danw Exp $
+/* $Id: mr_query.c,v 1.18 1998-02-19 21:22:25 danw Exp $
  *
  * Perform a Moira query
  *
@@ -16,7 +16,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_query.c,v 1.17 1998-02-15 17:49:06 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_query.c,v 1.18 1998-02-19 21:22:25 danw Exp $");
 
 /*
  * This routine is the primary external interface to the mr library.
@@ -51,7 +51,7 @@ int mr_query(char *name, int argc, char **argv,
 
   while ((status = reply.u.mr_status) == MR_MORE_DATA)
     {
-      if (!stopcallbacks)
+      if (callproc && !stopcallbacks)
 	stopcallbacks = (*callproc)(reply.mr_argc, reply.mr_argv, callarg);
       mr_destroy_reply(reply);
 

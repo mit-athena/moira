@@ -1,4 +1,4 @@
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/db/Makefile,v 1.4 1989-08-16 20:31:17 mar Exp $
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/db/Makefile,v 1.5 1989-12-04 13:04:37 mar Exp $
 
 # (c) Copyright 1988 by the Massachusetts Institute of Technology.
 # For copying and distribution information, please see the file
@@ -6,7 +6,8 @@
 
 
 INGLIB=/usr/rtingres/lib/libqlib /usr/rtingres/lib/compatlib
-OBJS=newsms.o tables.o ../server/queries2.o
+SRCS=newmoira.c tables.c imembers.c class.c
+OBJS=newmoira.o tables.o ../server/queries2.o
 CFLAGS= -I../include -O
 .SUFFIXES: .qc
 
@@ -14,16 +15,16 @@ CFLAGS= -I../include -O
 	rm -f $*.c
 	/usr/rtingres/bin/eqc -p $*
 
-all: newsms class convert imembers
+all: newmoira class convert imembers
 
 imembers: imembers.o
 	cc -o imembers imembers.o ../lib/libsms.a ${INGLIB}
 imembers.c: imembers.qc
 
-newsms: ${OBJS}
-	cc -o newsms ${OBJS} ${INGLIB}
+newmoira: ${OBJS}
+	cc -o newmoira ${OBJS} ${INGLIB}
 
-newsms.c: newsms.qc
+newmoira.c: newmoira.qc
 
 tables.c: newdb db2tbls.awk
 	awk -f db2tbls.awk < newdb > tables.c
@@ -33,16 +34,22 @@ class: class.o
 
 class.c: class.qc
 
-convert: conv.o data.o match.o
-	cc -o convert conv.o data.o match.o ../lib/libsms.a ${INGLIB}
-
-conv.c: conv.qc
-data.c: data.qc
-match.c: match.qc
-
 clean:
-	rm -f *.o newsms.c tables.c newsms extractdb extract.c class class.c
-	rm -f convert conv.c match.c data.c imembers.c imembers
+	rm -f *.o newmoira.c tables.c newmoira extractdb extract.c class class.c
+	rm -f imembers.c imembers
 
-install: newsms
-	install newsms ../bin
+install: newmoira
+	install newmoira ../bin
+
+depend: ${SRCS}
+	mkdep ${CFLAGS} ${SRCS}
+
+# DO NOT DELETE THIS LINE -- mkdep uses it.
+
+newmoira.o: newmoira.c ../include/mit-copyright.h /usr/include/stdio.h
+newmoira.o: ../server/query.h
+tables.o: tables.c
+imembers.o: imembers.c /usr/include/stdio.h ../include/sms.h
+imembers.o: ../include/sms_et.h
+class.o: class.c ../include/mit-copyright.h ../include/sms.h
+class.o: ../include/sms_et.h

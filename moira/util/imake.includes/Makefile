@@ -1,6 +1,6 @@
 #	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/util/imake.includes/Makefile,v $
-#	$Author: jtkohl $
-#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/util/imake.includes/Makefile,v 4.2 1989-04-11 10:30:57 jtkohl Exp $
+#	$Author: mar $
+#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/util/imake.includes/Makefile,v 4.3 1991-01-11 17:07:35 mar Exp $
 #
 # Copyright 1988 by the Massachusetts Institute of Technology.
 #
@@ -10,7 +10,7 @@
 # Makefile for copying Imake configuration files
 LNSOURCES = \
 	${SRCDIR}/util/imake.includes/Imake.rules \
-	${SRCDIR}/util/imake.includes/Imake.template
+	${SRCDIR}/util/imake.includes/Imake.tmpl
 CPSOURCES = ${SRCDIR}/util/imake.includes/config.Imakefile
 DESTDIR =
 SRCDIR = /mit/kerberos/src

@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/winad/winad.c,v 1.10 2001-05-02 21:23:39 zacheiss Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/winad/winad.c,v 1.11 2001-05-02 21:28:55 zacheiss Exp $
 /* test parameters for creating a user account - done 
  * users 10 10 a_chen 31275 sh cmd Lastname Firstname Middlename 0 950000000 STAFF a_chen 31275 sh cmd Lastname Firstname Middlename 2 950000000 STAFF
  * users 10 10 a_chen 31275 sh cmd Lastname Firstname Middlename 2 950000000 STAFF a_chen 31275 sh cmd Lastname Firstname Middlename 1 950000000 STAFF
@@ -572,6 +572,7 @@ void do_list(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
     {
       com_err(whoami, 0, "Creating group %s", after[L_NAME]);
 
+      sleep(1);
       av[0] = after[L_NAME];
       call_args[0] = (char *)ldap_handle;
       call_args[1] = dn_path;
@@ -597,6 +598,8 @@ void do_list(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
 
       if (afterc == 0)
         goto cleanup;
+      sleep(1);
+
       member_base = NULL;
       if (!(rc = mr_query("get_end_members_of_list", 1, av, member_list_build,
                           call_args)))
@@ -682,6 +685,8 @@ void do_member(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
           sid_base = NULL;
         }
       member_base = NULL;
+      sleep(1);
+
       if (!(rc = mr_query("get_end_members_of_list", 1, av, member_list_build,
                           call_args)))
         {
@@ -2958,6 +2963,7 @@ void expand_groups(LDAP *ldap_handle, char *dn_path, char *group_name)
       ptr = group_base;
       while (ptr != NULL)
         {
+          sleep(1);
           av[0] = "RLIST";
           av[1] = ptr->member;
           call_args[0] = (char *)ldap_handle;
@@ -2982,6 +2988,7 @@ void expand_groups(LDAP *ldap_handle, char *dn_path, char *group_name)
   ptr = group_base;
   while (ptr != NULL)
     {
+      sleep(1);
       member_base = NULL;
       sid_base = NULL;
       sid_ptr = &sid_base;
@@ -3007,6 +3014,7 @@ void expand_groups(LDAP *ldap_handle, char *dn_path, char *group_name)
           linklist_free(sid_base);
           sid_base = NULL;
         }
+      sleep(1);
       member_base = NULL;
       if (!(rc = mr_query("get_end_members_of_list", 1, av, member_list_build,
                           call_args)))

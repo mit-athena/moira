@@ -1,15 +1,15 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/client.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/client.c,v 1.5 1988-08-11 13:59:11 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/client.c,v 1.6 1988-08-23 11:46:12 mar Exp $
  */
 
 #ifndef lint
-static char *rcsid_client2_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/client.c,v 1.5 1988-08-11 13:59:11 mar Exp $";
+static char *rcsid_client2_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/client.c,v 1.6 1988-08-23 11:46:12 mar Exp $";
 #endif	lint
 
 /*
  * MODULE IDENTIFICATION:
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/client.c,v 1.5 1988-08-11 13:59:11 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/client.c,v 1.6 1988-08-23 11:46:12 mar Exp $
  *	Copyright 1987 MIT Project Athena.
  * DESCRIPTION:
  *	This code handles the actual distribution of data files
@@ -233,7 +233,7 @@ static
 execute(path)
     char *path;
 {
-    union wait response;
+    int response;
     STRING data;
     register int code;
     
@@ -246,17 +246,9 @@ execute(path)
     if (code)
 	return(connection_errno(conn));
     if (dbg & DBG_TRACE)
-      com_err(whoami, 0, "execute returned %x (%d)",
-	      response, response.w_retcode);
-    if (response.w_retcode) {
-/****************************************************************
- * The following line is there because the current update servers
- * don't return the correct error code when an update fails.  Remove
- * this line when they are fixed.  -mar  7/26/88
- ****************************************************************/
-	return(SMS_INTERNAL);
-/*	return(response.w_retcode); */
-    }
+      com_err(whoami, response, "execute returned %d", response);
+    if (response)
+      return(response);
     return(SMS_SUCCESS);
 }
 

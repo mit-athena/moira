@@ -1,4 +1,4 @@
-/* $Id: qsupport.pc,v 2.21 2000-03-18 08:29:30 mwhitson Exp $
+/* $Id: qsupport.pc,v 2.22 2000-03-19 19:42:40 zacheiss Exp $
  *
  * Special query routines
  *
@@ -18,7 +18,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.pc,v 2.21 2000-03-18 08:29:30 mwhitson Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.pc,v 2.22 2000-03-19 19:42:40 zacheiss Exp $");
 
 extern char *whoami, *table_name[];
 extern int dbms_errno, mr_errcode;
@@ -1375,7 +1375,7 @@ int register_user(struct query *q, char **argv, client *cl)
 	    VALUES
 	    (:popid, :npid, :login || '.po', 'IMAP', :mid, :dir,
 	     CHR(0), 'w', 'IMAP box', :users_id, :list_id, 1,
-	     'IMAP', SYSDATE, :who, :entity);
+	     'USER', SYSDATE, :who, :entity);
 
 	  if (dbms_errno)
 	    return mr_errcode;

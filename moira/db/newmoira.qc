@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/db/newmoira.qc,v 1.10 1990-02-12 12:50:24 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/db/newmoira.qc,v 1.11 1990-03-16 19:02:33 mar Exp $
  *
  * Creates a new sms database
  *
@@ -207,7 +207,7 @@ char **argv;
 	printf("Unable to install 0 list\n");
 	exit(1);
     }
-##  append filesys (label = "[none]", type = "NONE")
+##  append filesys (label = "[none]", #type = "NONE")
     if (ingres_errno) {
 	printf("Unable to install 0 filesys\n");
 	exit(1);

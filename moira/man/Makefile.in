@@ -1,8 +1,9 @@
-# $Id: Makefile.in,v 1.1 1998-05-26 18:14:10 danw Exp $
+# $Id: Makefile.in,v 1.2 1998-05-26 21:50:11 danw Exp $
 
 SHELL=/bin/sh
 @SET_MAKE@
 
+INSTALL=@INSTALL@
 INSTALL_DATA=@INSTALL_DATA@
 
 srcdir=@srcdir@

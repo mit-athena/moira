@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.1 1998-05-26 18:13:34 danw Exp $
+# $Id: Makefile.in,v 1.2 1998-05-26 21:50:04 danw Exp $
 
 SHELL=/bin/sh
 @SET_MAKE@
@@ -21,6 +21,7 @@ AFS_EXTRA_LIBS=@AFS_EXTRA_LIBS@
 AFS_DIR=@AFS_DIR@
 SQL_LIBS=@SQL_LIBS@
 LIBS=@LIBS@
+INSTALL=@INSTALL@
 INSTALL_PROGRAM=@INSTALL_PROGRAM@
 
 srcdir=@srcdir@

@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.1 1998-05-26 18:14:16 danw Exp $
+# $Id: Makefile.in,v 1.2 1998-05-26 21:50:11 danw Exp $
 
 SHELL=/bin/sh
 @SET_MAKE@
@@ -11,6 +11,7 @@ ALL_CFLAGS=$(CPPFLAGS) $(CFLAGS) $(DEFS)
 LDFLAGS=@LDFLAGS@
 SQL_LIBS=@SQL_LIBS@
 LIBS=-lkadm @LIBS@
+INSTALL=@INSTALL@
 INSTALL_PROGRAM=@INSTALL_PROGRAM@
 
 srcdir=@srcdir@

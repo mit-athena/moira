@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 2.1 1998-05-26 18:14:19 danw Exp $
+# $Id: Makefile.in,v 2.2 1998-05-26 21:50:12 danw Exp $
 
 SHELL=/bin/sh
 @SET_MAKE@
@@ -17,6 +17,7 @@ LDFLAGS=@LDFLAGS@
 SERVER_LIBS=@GDSS_LIBS@ @SQL_LIBS@
 LIBS=@LIBS@
 RANLIB=@RANLIB@
+INSTALL=@INSTALL@
 INSTALL_PROGRAM=@INSTALL_PROGRAM@
 
 srcdir=@srcdir@

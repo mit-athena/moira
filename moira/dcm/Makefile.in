@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.1 1998-05-26 18:13:59 danw Exp $
+# $Id: Makefile.in,v 1.2 1998-05-26 21:50:09 danw Exp $
 
 SHELL=/bin/sh
 @SET_MAKE@
@@ -16,6 +16,7 @@ PRO_C_FLAGS=$(PRO_C_OPTS) $(PRO_C_DEFS) $(PRO_C_INCLUDES)
 LDFLAGS=@LDFLAGS@
 SQL_LIBS=@SQL_LIBS@
 LIBS=@LIBS@
+INSTALL=@INSTALL@
 INSTALL_PROGRAM=$(INSTALL_PROGRAM)
 
 srcdir=@srcdir@

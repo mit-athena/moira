@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.30 1992-09-18 15:06:01 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.31 1993-01-26 15:37:26 mar Exp $";
 #endif lint
 
 /*	This is the file user.c for the MOIRA Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.30 1992-09-18 15:06:01 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.31 1993-01-26 15:37:26 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -329,11 +329,14 @@ Bool name;
 		}
 	    }
 #ifdef DEBUG
-	    Put_message("Made signature:");hex_dump(info[U_SIGNATURE]);
+	    Put_message("Made signature:");
 	} else {
 	    Put_message("Don't need to remake signature");
 #endif /* DEBUG */
 	}
+#ifdef DEBUG
+	hex_dump(info[U_SIGNATURE]);
+#endif /* DEBUG */
     }
 #else /* GDSS */
     info[U_SIGNATURE] = strsave("");

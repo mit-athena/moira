@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.27 1992-04-10 16:00:25 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.28 1992-06-26 18:35:21 mar Exp $";
 #endif lint
 
 /*	This is the file user.c for the MOIRA Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.27 1992-04-10 16:00:25 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.28 1992-06-26 18:35:21 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -25,7 +25,12 @@
 #include <moira_site.h>
 #include <menu.h>
 #include <ctype.h>
-
+#include <sys/time.h>
+#ifdef GDSS
+#include <des.h>
+#include <krb.h>
+#include <gdss.h>
+#endif
 #include "mit-copyright.h"
 #include "defs.h"
 #include "f_defs.h"
@@ -96,6 +101,10 @@ PrintUserInfo(info)
 char ** info;
 {
     char name[BUFSIZ], buf[BUFSIZ];
+#ifdef GDSS
+    int status;
+    SigInfo si;
+#endif
 
     sprintf(name, "%s, %s %s", info[U_LAST], info[U_FIRST], info[U_MIDDLE]);
     sprintf(buf, "Login name: %-20s Full name: %s", info[U_NAME], name);
@@ -103,9 +112,26 @@ char ** info;
     sprintf(buf, "User id: %-23s Login shell %-10s Class: %s", 
 	    info[U_UID], info[U_SHELL], info[U_CLASS]);
     Put_message(buf);
+
+#ifdef GDSS
+    sprintf(buf, "%s:%s", info[U_NAME], info[U_MITID]);
+    si.rawsig = NULL;
+    status = GDSS_Verify(buf, strlen(buf), info[U_SIGNATURE], &si);
+#ifdef DEBUG
+    hex_dump(info[U_SIGNATURE]);
+#endif /* DEBUG */
+#else /* GDSS */
+    status = 0;
+#endif /* GDSS */
+
     sprintf(buf, "Account is: %-20s MIT ID number: %s Signed: %s",
 	    UserState(atoi(info[U_STATE])), info[U_MITID],
-	    *info[U_SIGNATURE] ? "Yes" : "No");
+	    *info[U_SIGNATURE] ? (status ? "Bad" : "Yes") : "No");
+    Put_message(buf);
+    if (atoi(info[U_SECURE]))
+      sprintf(buf, "Secure password set on %s.", atot(info[U_SECURE]));
+    else
+      sprintf(buf, "No secure password set.");
     Put_message(buf);
     sprintf(buf, "Comments: %s", info[U_COMMENT]);
     Put_message(buf);
@@ -134,6 +160,7 @@ char ** info;
     info[U_CLASS] = Strsave(DEFAULT_CLASS);
     info[U_COMMENT] = Strsave("");
     info[U_SIGNATURE] = Strsave("");
+    info[U_SECURE] = Strsave("0");
     info[U_MODTIME] = info[U_MODBY] = info[U_MODWITH] = info[U_END] = NULL;
     return(info);
 }
@@ -176,8 +203,9 @@ AskUserInfo(info, name)
 char ** info;
 Bool name;
 {
-    int siglen;
-    char temp_buf[BUFSIZ], *newname, *temp_ptr, *sig;
+    int siglen, i;
+    SigInfo si;
+    char temp_buf[BUFSIZ], *newname, *temp_ptr, *sig, sig_buf[BUFSIZ];
 
     if (name) {
 	sprintf(temp_buf,"\nChanging Attributes of user %s.\n",info[U_NAME]);
@@ -255,11 +283,40 @@ Bool name;
     if (GetValueFromUser("Comments", &info[U_COMMENT]) == SUB_ERROR)
       return(NULL);
 
+    if (YesNoQuestion("Secure password set",
+		      atoi(info[U_SECURE]) ? TRUE : FALSE) == FALSE) {
+	free(info[U_SECURE]);
+	info[U_SECURE] = strsave("0");
+    } else if (!strcmp(info[U_SECURE], "0")) {
+	char buf[16];
+	struct timeval tv;
+
+	gettimeofday(&tv, (struct timezone *)NULL);
+	sprintf(buf, "%d", tv.tv_sec);
+	free(info[U_SECURE]);
+	info[U_SECURE] = strsave(buf);
+    }
+
     /* Sign record */
 #ifdef GDSS
-    info[U_SIGNATURE] = malloc(GDSS_Sig_Size());
-    sprintf(temp_buf, "%s:%s", info[U_NAME], info[U_MITID]);
-    GDSS_Sign(temp_buf, strlen(temp_buf), info[U_SIGNATURE], &siglen);
+    if (strcmp(info[U_NAME], UNIQUE_LOGIN)) {
+	sprintf(temp_buf, "%s:%s", info[U_NAME], info[U_MITID]);
+	si.rawsig = NULL;
+	i = GDSS_Verify(temp_buf, strlen(temp_buf), info[U_SIGNATURE], &si);
+	/* If it's already signed OK, don't resign it. */
+	if (i != GDSS_SUCCESS) {
+	    free(info[U_SIGNATURE]);
+	    info[U_SIGNATURE] = malloc(GDSS_Sig_Size() * 2);
+	    i = GDSS_Sign(temp_buf, strlen(temp_buf), info[U_SIGNATURE]);
+	    if (i != GDSS_SUCCESS)
+	      com_err(program_name, gdss2et(i), "Failed to create signature");
+#ifdef DEBUG
+	    Put_message("Made signature:");hex_dump(info[U_SIGNATURE]);
+	} else {
+	    Put_message("Don't need to remake signature");
+#endif /* DEBUG */
+	}
+    }
 #else /* GDSS */
     info[U_SIGNATURE] = strsave("");
 #endif /* GDSS */
@@ -869,4 +926,54 @@ char **argv;
 	com_err(program_name, stat, " in DeleteKrbMap.");
     }
     return(DM_NORMAL);
+}
+
+
+hex_dump(p)
+unsigned  char *p;
+{
+    char buf[BUFSIZ];
+    int i;
+
+    sprintf(buf, "Size: %d", strlen(p));
+    Put_message(buf);
+    while (strlen(p) >= 8) {
+	sprintf(buf, "%02x %02x %02x %02x %02x %02x %02x %02x",
+		p[0], p[1], p[2], p[3], p[4], p[5], p[6], p[7]);
+	Put_message(buf);
+	p += 8;
+    }
+    switch (strlen(p)) {
+    case 7:
+	sprintf(buf, "%02x %02x %02x %02x %02x %02x %02x",
+		p[0], p[1], p[2], p[3], p[4], p[5], p[6]);
+	break;
+    case 6:
+	sprintf(buf, "%02x %02x %02x %02x %02x %02x",
+		p[0], p[1], p[2], p[3], p[4], p[5]);
+	break;
+    case 5:
+	sprintf(buf, "%02x %02x %02x %02x %02x",
+		p[0], p[1], p[2], p[3], p[4]);
+	break;
+    case 4:
+	sprintf(buf, "%02x %02x %02x %02x",
+		p[0], p[1], p[2], p[3]);
+	break;
+    case 3:
+	sprintf(buf, "%02x %02x %02x",
+		p[0], p[1], p[2]);
+	break;
+    case 2:
+	sprintf(buf, "%02x %02x",
+		p[0], p[1]);
+	break;
+    case 1:
+	sprintf(buf, "%02x",
+		p[0]);
+	break;
+    default:
+	return;
+    }
+    Put_message(buf);
 }

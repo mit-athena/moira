@@ -1,4 +1,4 @@
-/* $Id: reg_svr.pc,v 1.9 2001-10-21 23:34:05 zacheiss Exp $
+/* $Id: reg_svr.pc,v 1.10 2002-02-25 16:41:17 zacheiss Exp $
  *
  * Server for user registration with Moira and Kerberos.
  *
@@ -37,7 +37,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.pc,v 1.9 2001-10-21 23:34:05 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.pc,v 1.10 2002-02-25 16:41:17 zacheiss Exp $");
 
 char *whoami, *hostname, *shorthostname;
 
@@ -300,7 +300,7 @@ void RIFO(reg_client *rc, int argc, char **argv)
   char login[USERS_LOGIN_SIZE], first[USERS_FIRST_SIZE];
   char middle[USERS_MIDDLE_SIZE], last[USERS_LAST_SIZE];
   char fullname[USERS_FIRST_SIZE + USERS_MIDDLE_SIZE + USERS_LAST_SIZE];
-  char class[USERS_TYPE_SIZE];
+  char class[USERS_TYPE_SIZE], pin[USERS_PIN_SIZE];
   int uid, status, secure, sqlstatus, string_id;
   EXEC SQL END DECLARE SECTION;
 
@@ -318,13 +318,13 @@ void RIFO(reg_client *rc, int argc, char **argv)
   /* "ORDER BY status" so that if there's both a matching state 0 entry
      and a matching state 3 entry, we'll get the former. */
   EXEC SQL DECLARE csr_id CURSOR FOR
-    SELECT login, unix_uid, status, secure, first, middle, last, type
+    SELECT login, unix_uid, status, secure, pin, first, middle, last, type
     FROM users WHERE clearid = :id ORDER BY status;
   EXEC SQL OPEN csr_id;
   while (1)
     {
       EXEC SQL FETCH csr_id INTO :login, :uid, :status,
-	:secure, :first, :middle, :last, :class;
+	:secure, :pin, :first, :middle, :last, :class;
       if (sqlca.sqlcode)
 	break;
       strtrim(login);
@@ -332,6 +332,7 @@ void RIFO(reg_client *rc, int argc, char **argv)
       strtrim(middle);
       strtrim(last);
       strtrim(class);
+      strtrim(pin);
 
       /* Check names, allowing for the possibility that Moira and the
 	 user might have them split up differently. eg, Mary/Ann/Singleton
@@ -416,7 +417,12 @@ void RIFO(reg_client *rc, int argc, char **argv)
     }
 
   if (rc->id)
-    reply(rc, FOUND, "GETW", "c", NULL, fullname, class);
+    {
+      if (*pin != '\0')
+	reply(rc, FOUND, "GETI", "c", NULL, fullname, class);
+      else
+	reply(rc, FOUND, "GETW", "c", NULL, fullname, class);
+    }
   else if (!rc->username)
     reply(rc, FOUND, "GETL", "c", rc->suggestions, fullname, class);
   else
@@ -476,6 +482,34 @@ void SWRD(reg_client *rc, int argc, char **argv)
   if (i != 6)
     {
       reply(rc, BAD_SIX_WORDS, "GETW", "d", NULL);
+      return;
+    }
+
+  free(rc->id);
+  rc->id = NULL;
+  if (!rc->username)
+    reply(rc, NO_MESSAGE, "GETL", "c", rc->suggestions);
+  else
+    reply(rc, FORCED_USERNAME, "GETP", "c", NULL, rc->username);
+}
+
+void SPIN(reg_client *rc, int argc, char **argv)
+{
+  EXEC SQL BEGIN DECLARE SECTION;
+  char pin[USERS_PIN_SIZE];
+  EXEC SQL END DECLARE SECTION;
+
+  if (!rc->id || argc != 1)
+    {
+      reply(rc, PROTOCOL_ERROR, "INIT", "c", NULL);
+      return;
+    }
+
+  EXEC SQL SELECT pin INTO :pin FROM users WHERE clearid = :rc->id;
+  strtrim(pin);
+  if (strcmp(argv[0], pin) != 0)
+    {
+      reply(rc, BAD_PIN, "GETI", "d", NULL);
       return;
     }
 

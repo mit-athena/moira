@@ -1,4 +1,4 @@
-/* $Id: update_server.c,v 1.20 1998-09-08 16:29:03 danw Exp $
+/* $Id: update_server.c,v 1.21 1998-11-09 22:48:18 danw Exp $
  *
  * Copyright 1988-1998 by the Massachusetts Institute of Technology.
  * For copying and distribution information, please see the file
@@ -11,12 +11,14 @@
 
 #include <sys/stat.h>
 #include <sys/utsname.h>
+#include <sys/wait.h>
 
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
 #include <errno.h>
 #include <pwd.h>
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -25,13 +27,15 @@
 #include <des.h>
 #include "update.h"
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/update_server.c,v 1.20 1998-09-08 16:29:03 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/update_server.c,v 1.21 1998-11-09 22:48:18 danw Exp $");
 
 char *whoami, *hostname;
 
 int have_authorization = 0;
 des_cblock session;
 int uid = 0;
+
+void child_handler(int signal);
 
 struct _dt {
   char *str;
@@ -52,6 +56,7 @@ int main(int argc, char **argv)
   struct _dt *d;
   struct utsname name;
   int s, conn;
+  struct sigaction sa;
 
   whoami = strrchr(argv[0], '/');
   if (whoami)
@@ -78,6 +83,11 @@ int main(int argc, char **argv)
 
   umask(0022);
   mr_init();
+
+  sigemptyset(&sa.sa_mask);
+  sa.sa_flags = SA_RESTART;
+  sa.sa_handler = child_handler;
+  sigaction(SIGCHLD, &sa, NULL);
 
   /* If the config file contains a line "user username", the
    * daemon will run with that user's UID.
@@ -209,4 +219,12 @@ void fail(int conn, int err, char *msg)
   com_err(whoami, err, msg);
   close(conn);
   exit(1);
+}
+
+void child_handler(int signal)
+{
+  int status;
+
+  while (waitpid(-1, &status, WNOHANG) > 0)
+    ;
 }

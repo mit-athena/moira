@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_glue.c,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_glue.c,v 1.9 1989-06-23 13:48:57 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_glue.c,v 1.10 1989-08-16 20:50:12 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -12,7 +12,7 @@
  */
 
 #ifndef lint
-static char *rcsid_sms_glue_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_glue.c,v 1.9 1989-06-23 13:48:57 mar Exp $";
+static char *rcsid_sms_glue_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_glue.c,v 1.10 1989-08-16 20:50:12 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -78,7 +78,7 @@ char *prog;
 						    * error code table)
 						    */
     strcpy(pseudo_client.kname.name, pw->pw_name);
-    get_krbrlm(pseudo_client.kname.realm, 1);
+    krb_get_lrealm(pseudo_client.kname.realm, 1);
     krb_realm = pseudo_client.kname.realm;
 
     strcpy(buf, pw->pw_name);

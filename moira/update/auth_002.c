@@ -1,13 +1,13 @@
 /*
- *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/auth_001.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/auth_001.c,v 1.10 1997-01-29 23:28:57 danw Exp $
+ *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/auth_002.c,v $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/auth_002.c,v 1.1 1997-07-03 03:22:21 danw Exp $
  */
 /*  (c) Copyright 1988 by the Massachusetts Institute of Technology. */
 /*  For copying and distribution information, please see the file */
 /*  <mit-copyright.h>. */
 
 #ifndef lint
-static char *rcsid_auth_001_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/auth_001.c,v 1.10 1997-01-29 23:28:57 danw Exp $";
+static char *rcsid_auth_002_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/auth_002.c,v 1.1 1997-07-03 03:22:21 danw Exp $";
 #endif
 
 #include <mit-copyright.h>
@@ -31,20 +31,23 @@ extern char *PrincipalHostname();
 static char service[] = "rcmd";
 static char master[] = "sms";
 static char qmark[] = "???";
-C_Block session;
+extern C_Block session;
 
 /*
- * authentication request auth_001:
+ * authentication request auth_002:
  *
- * >>> (STRING) "auth_001"
+ * >>> (STRING) "auth_002"
  * <<< (int) 0
  * >>> (STRING) ticket
+ * <<< (int) code
+ * <<< (STRING) nonce
+ * >>> (STRING) encrypted nonce
  * <<< (int) code
  *
  */
 
 int
-auth_001(str)
+auth_002(str)
      char *str;
 {
     STRING data;
@@ -56,9 +59,11 @@ auth_001(str)
 #ifdef POSIX
     struct utsname name;
 #endif
+    des_key_schedule sched;
+    C_Block nonce, nonce2;
 
     if (send_ok())
-	lose("sending okay for authorization (auth_001)");
+	lose("sending okay for authorization (auth_002)");
     code = receive_object(conn, (char *)&data, STRING_T);
     if (code) {
 	code = connection_errno(conn);
@@ -109,6 +114,22 @@ auth_001(str)
 	strcmp(ainst, ad.pinst) ||
 	strcmp(arealm, ad.prealm))
       goto auth_failed;
+
+    if (send_ok())
+	lose("sending preliminary approval of authorization");
+
+    /* replay protection */
+    des_random_key(&nonce);
+    STRING_DATA(data) = (char *)nonce;
+    MAX_STRING_SIZE(data) = 8;
+    if (send_object(conn, (char *)&data, STRING_T))
+	lose("sending nonce");
+    code = receive_object(conn, (char *)&data, STRING_T);
+    des_key_sched(&ad.session, &sched);
+    des_ecb_encrypt(STRING_DATA(data), nonce2, sched, 0);
+    if (memcmp(nonce, nonce2, sizeof(nonce)))
+	goto auth_failed;
+
     if (send_ok())
 	lose("sending approval of authorization");
     have_authorization = 1;

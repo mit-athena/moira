@@ -1,13 +1,13 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/update_server.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/update_server.c,v 1.12 1997-01-29 23:29:05 danw Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/update_server.c,v 1.13 1997-07-03 03:22:23 danw Exp $
  */
 /*  (c) Copyright 1988 by the Massachusetts Institute of Technology. */
 /*  For copying and distribution information, please see the file */
 /*  <mit-copyright.h>. */
 
 #ifndef lint
-static char *rcsid_dispatch_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/update_server.c,v 1.12 1997-01-29 23:29:05 danw Exp $";
+static char *rcsid_dispatch_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/update_server.c,v 1.13 1997-07-03 03:22:23 danw Exp $";
 #endif
 
 #include <mit-copyright.h>
@@ -25,24 +25,23 @@ static char *rcsid_dispatch_c = "$Header: /afs/.athena.mit.edu/astaff/project/mo
 #include <termios.h>
 #endif
 #include "update.h"
+#include "des.h"
 
-extern int auth_001(), inst_001();
-extern int xfer_002(), xfer_003(), exec_002();
+extern int auth_002(), xfer_002(), xfer_003(), exec_002();
 
 extern int sync_proc(), quit();
 extern char *config_lookup();
 
 extern void gdb_debug();
 extern int errno;
-extern STRING instructions;
 
 CONNECTION conn;
 int code, log_priority;
 char *whoami;
 
 int have_authorization = 0;
+C_Block session;
 int have_file = 0;
-int have_instructions = 0;
 int done = 0;
 int uid = 0;
 
@@ -54,8 +53,7 @@ struct _dt {
      char *str;
      int (*proc)();
 } dispatch_table[] = {
-     { "INST_001", inst_001 },
-     { "AUTH_001", auth_001 },
+     { "AUTH_002", auth_002 },
      { "XFER_002", xfer_002 },
      { "XFER_003", xfer_003 },
      { "EXEC_002", exec_002 },
@@ -202,10 +200,7 @@ initialize()
 {
      /* keep have_authorization around */
      have_file = 0;
-     have_instructions = 0;
      done = 0;
-     if (STRING_DATA(instructions) != (char *)NULL)
-	  string_free(&instructions);
 }
 
 

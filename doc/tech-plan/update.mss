@@ -1,3 +1,30 @@
+@part[update, root="sms.mss"]
+@Section(SMS-to-Server Update Protocol)
+
+SMS provides a reliable mechanism for updating the servers it manages.
+The use of an update protocol allows the servers to be reliably
+managed.  The goals of the server update protocol are:
+
+@Begin(Itemize)
+
+Completely automatic update for normal cases and expected kinds of failures.
+
+Survives clean server crashes.
+
+Survives clean SMS crashes.
+
+Easy to understand state and recovery by hand.
+
+@End(Itemize)
+
+General approach: perform updates using atomic operations only.  All
+updates should be of a nature such that a reboot will fix an
+inconsistent database.  (For example, the RVD database is sent to the
+server upon booting, so if the machine crashes between installation of
+the file and delivery of the information to the server, no harm is
+done.)  Updates not received will be retried at a later point until
+they succeed.  All actions are initiated by the SMS.
+
 @SubHeading(Strategy)
 
 @define(en=enumerate)
@@ -8,7 +35,7 @@
 @begin(en)
 @begin(m)
 
-preparation phase.  This phase is initiated by the SMS when it
+Preparation phase.  This phase is initiated by the SMS when it
 determines that an update should be performed.  This can be triggered by
 a change in data, by an administrator, by a timer (run by cron), or by a
 restart of the SMS machine.
@@ -21,7 +48,9 @@ the SMS database.  (Building the data file is handled with a locking
 strategy that ensures that "the" data file available for distribution
 is not an incomplete one.  The new data file is placed in position for
 transfer once it is complete using the @f(rename) system
-call.)
+call.)@foot(Does this mean that SMS can only update one file at any
+one time? @foot(No, it should all be on a file-by-file basis. -- KR)
+-- AMBAR)
 
 Extract from SMS the list of server machines to update, and the
 instructions for installing the file.  Perform the remaining steps
@@ -46,8 +75,8 @@ Flush all data on the server to disk.
 @end(m)
 @begin(m)
 
-Commit phase.  If all portions of the preparation phase are completed
-without error, the commit phase is initiated by the SMS.
+Execution phase.  If all portions of the preparation phase are
+completed without error, the execution phase is initiated by the SMS.
 
 On a single command from the SMS, the server begins execution of the
 instruction sequence supplied.  These can include the following:
@@ -66,7 +95,12 @@ erroneous installation.
 Send a signal to a specified process.  The process_id is assumed to be
 recorded in a file; the pathname of this file is a parameter to this
 instruction.  The process_id is read out of the file at the time of
-execution of this instruction.
+execution of this instruction.@foot(Does this mean that we're going to
+have to be keeping around lots more @f(daemon.pid) files than we do
+now? @foot(Yes, but it's either that or read kernel data structures
+for the info, and have to recompile the update program with each new
+kernel. -- KR)
+-- AMBAR)
 
 Execute a supplied command.
 
@@ -103,7 +137,7 @@ operation takes longer than a reasonable amount of time, the connection
 is closed, and the installation assumed to have failed.  This is to
 prevent network lossage and machine crashes from causing arbitrarily
 long delays, and instead falls back to the error condition, so that the
-installation will be attempted again later.  (Sinc the all the data
+installation will be attempted again later.  (Since the all the data
 files being prepared are valid, extra installations are not harmful.)
 
 @end(m)
@@ -153,17 +187,33 @@ servers again if the name service is lost.  Also, if the server
 machine crashes, it may not be able to come up to full operational
 capacity if it relies on the databases which have been corrupted; in
 this case, it is possible that the database may not be easily
-replacable.  Manual intervention would be required for recovery.
+replaceable.  Manual intervention would be required for recovery.
 
-@SubHeading(Catastrophic Crashes - Robustness Engineering)
+@SubSection(Catastrophic Crashes - Robustness Engineering)
 
 In the event of a catostrophic system crash, SMS must have the
-capability to be brought up with consistent data.  There are a
-list of scenarios which indicate that a complete set of
-recovery tools are needed to address this isssue.  Thought will
-be given in order that the system reliably is restored.  In many cases,
-the answer to a catastrophic crash will be manual intervention.
-For worst case scenario preparation, the Addendum (section 9), subsection
-@ref(Catfail), presents guidlines and mechanisms for catasrophic recovery
-procedure.
+capability to be brought up with consistent data.  There are a list of
+scenarios which indicate that a complete set of recovery tools are
+needed to address this isssue.  Thought will be given in order that
+the system reliably is restored.  In many cases, the answer to a
+catastrophic crash will be manual intervention.  For worst case
+scenario preparation, subsection @ref(Catfail) presents guidlines and
+mechanisms for catasrophic recovery procedure.
 
+@SubSection(Data Transport Security)
+
+Each datagram which is transmitted over the network is secure using
+Kerberos, the Athena authentication system.  Encyphered information
+headers will proceed each datagram.  The servers decrypt the header
+information and use the packet accordingly.
+
+Data going over the net will be checksummed before it is sent.  This
+checksum will be put in a small encrypted "header", which will be
+decoded on the receiving side.  This will allow detection of lost or
+damaged packets, as well as detection of deliberate attempts to damage
+or change data while it is in transit.
+
+Encryption of the data itself is an option that can be invoked depending
+on the sensitivity of the data involved.  For instance, files such as
+/etc/rvdtab are not particularly secret, but the MIT id numbers of
+users are.

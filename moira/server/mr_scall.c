@@ -1,4 +1,4 @@
-/* $Id: mr_scall.c,v 1.33 1998-02-23 19:24:32 danw Exp $
+/* $Id: mr_scall.c,v 1.34 1998-05-30 18:17:21 danw Exp $
  *
  * Do RPC
  *
@@ -24,7 +24,7 @@
 #include <string.h>
 #include <unistd.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_scall.c,v 1.33 1998-02-23 19:24:32 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_scall.c,v 1.34 1998-05-30 18:17:21 danw Exp $");
 
 extern int nclients;
 extern client **clients;
@@ -39,9 +39,6 @@ int list_users(client *cl);
 void do_retr(client *cl, mr_params req);
 void do_access(client *cl, mr_params req);
 void get_motd(client *cl);
-
-/* Put this in a variable so that we can patch it if necessary */
-int max_row_count = 4096;
 
 char *procnames[] = {
   "noop",
@@ -139,12 +136,6 @@ void client_return_tuple(client *cl, int argc, char **argv)
   if (cl->done || dbms_errno)
     return;
 
-  if (cl->ntuples == max_row_count)
-    {
-      dbms_errno = mr_errcode = MR_NO_MEM;
-      return;
-    }
-
   if (cl->ntuples == cl->tuplessize - 1)
     {
       int newsize = (cl->tuplessize + 4) * 2;
@@ -219,12 +210,6 @@ void do_retr(client *cl, mr_params req)
 			      retr_callback, cl);
 
   client_reply(cl, status);
-
-  if (cl->ntuples >= max_row_count)
-    {
-      critical_alert("moirad", "attempted query %s with too many rows\n",
-		     queryname);
-    }
 
   com_err(whoami, 0, "Query complete.");
 }

@@ -1,4 +1,4 @@
-/* $Id: qrtn.pc,v 2.14 1998-04-01 03:04:21 danw Exp $
+/* $Id: qrtn.pc,v 2.15 1998-05-30 18:17:22 danw Exp $
  *
  * Query-processing routines
  *
@@ -20,7 +20,7 @@
 EXEC SQL INCLUDE sqlca;  /* SQL Communications Area */
 EXEC SQL INCLUDE sqlda;  /* SQL Descriptor Area */
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.pc,v 2.14 1998-04-01 03:04:21 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.pc,v 2.15 1998-05-30 18:17:22 danw Exp $");
 
 SQLDA *mr_sqlda;
 EXEC SQL BEGIN DECLARE SECTION;
@@ -40,6 +40,9 @@ char *database = "moira";
 EXEC SQL END DECLARE SECTION;
 extern char *whoami;
 extern FILE *journal;
+
+/* Put this in a variable so that we can patch it if necessary */
+int max_row_count = 4096;
 
 int mr_verify_query(client *cl, struct query *q, int argc, char *argv_ro[]);
 int do_retrieve(struct query *q, char *pqual,
@@ -216,6 +219,15 @@ int mr_process_query(client *cl, char *name, int argc, char *argv_ro[],
 	      status = do_retrieve(q, qual, sq_save_args, sq);
 	      if (status != MR_SUCCESS)
 		{
+		  char **argv;
+		  int i;
+
+		  while (sq_get_data(sq, &argv))
+		    {
+		      for (i = 0; i < q->vcnt; i++)
+			free(argv[i]);
+		      free(argv);
+		    }
 		  sq_destroy(sq);
 		  break;
 		}
@@ -944,7 +956,7 @@ int do_for_all_rows(char *query, int count,
       mr_sqlda->L[i] = MAX_FIELD_WIDTH;
     }
 
-  while (1)
+  while (rowcount < max_row_count)
     {
       EXEC SQL FETCH curs USING DESCRIPTOR mr_sqlda;
       if (sqlca.sqlcode)
@@ -956,7 +968,15 @@ int do_for_all_rows(char *query, int count,
 
   if (mr_errcode)
     return mr_errcode;
-  return (rowcount == 0) ? MR_NO_MATCH : MR_SUCCESS;
+  if (rowcount == max_row_count)
+    {
+      critical_alert("moirad", "attempted query with too many rows");
+      return MR_NO_MEM;
+    }
+  else if (rowcount == 0)
+    return MR_NO_MATCH;
+  else
+    return MR_SUCCESS;
 }
 
 

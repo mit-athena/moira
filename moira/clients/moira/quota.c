@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/quota.c,v 1.16 1990-04-04 11:35:52 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/quota.c,v 1.17 1990-04-04 12:46:42 mar Exp $";
 #endif lint
 
 /*	This is the file quota.c for the MOIRA Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/quota.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/quota.c,v 1.16 1990-04-04 11:35:52 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/quota.c,v 1.17 1990-04-04 12:46:42 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -191,10 +191,6 @@ Bool quota;
   }
   else {
     GetTypeFromUser("Quota type", "quota_type", &args[Q_TYPE]);
-    if (!cistrcmp(args[Q_TYPE], "ANY")){
-      Put_message("Not an AFS filesystem.");
-      return(NULL);
-    }
     GetValueFromUser("Name", &args[Q_NAME]);
     if (!ValidName(args[Q_NAME])) return(NULL);
   }

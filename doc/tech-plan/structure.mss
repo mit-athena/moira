@@ -53,7 +53,7 @@ becomes inactive.)
 
 @End(Description)
 
-Please see section @ref(Users) for a complete discussion of interfaces.
+See Section @Ref(Users) for the list of queries associated with this table.
 
 There are no entries for password and primary gid because these are
 being subsumed by other services (Kerberos, ACLS).]
@@ -85,7 +85,7 @@ being subsumed by other services (Kerberos, ACLS).]
 
 @I(modtime)@\time finger record was last modified.
 
-Please see section @ref(Finger) for a complete discussion of interfaces.
+See Section @Ref(Finger) for the list of queries associated with this table.
 
 @End(Description)]
 
@@ -105,13 +105,11 @@ Please see section @ref(Finger) for a complete discussion of interfaces.
 
 @I(serial)@\serial number.
 
-@I(ethernet)@\ethernet address.
-
 @I(sys_type)@\system type (for use by release engineering and operations).
 
 @End(Description)
 
-Please see section @ref(Machine) for a complete discussion of interfaces.
+See Section @Ref(Machine) for the list of queries associated with this table.
 ]
 
 @C(cluster)@\@Multiple[Cluster Infomation.  There are several named clusters
@@ -130,7 +128,8 @@ areas.
 
 @End(Description)
 
-Please see section @ref(Cluster)  for a complete discussion of interfaces.]
+See Section @Ref(Cluster) for the list of queries associated with this
+table.]
 
 @C(machclumap)@\@Multiple[Machine-Cluster Map.  This tables is used to
 assign machines to clusters.
@@ -143,7 +142,8 @@ assign machines to clusters.
 
 @End(Description)
 
-Please see section @ref(Cluster)  for a complete discussion of interfaces.]
+See Section @Ref(Cluster) for the list of queries associated with this
+table.]
 
 @C(svc)@\@Multiple[For each cluster there is a set of services that serve the
 machines in that cluster.  These services are described by an environment
@@ -163,7 +163,22 @@ particular cluster.
 
 @End(Description)
 
-Please see section @ref(Svc) for a complete discussion of interfaces.
+See Section @Ref(Svc) for the list of queries associated with this table.
+]
+
+@C(prclumap)@\@Multiple[This table provides a mapping between printer
+service cluster names and printer names.
+
+@Begin(Description)
+
+@I(prcluster)@\printer cluster name
+
+@I(p_id)@\printer id.
+
+@End(Description)
+
+See Section @Ref(Prclusters) for the list of queries associated with this
+table.
 ]
 
 @C(servers)@\@Multiple[Server Information.  This table contains information
@@ -175,18 +190,15 @@ needed by the Data Control Manager or applications for each known server.
 
 @I(update_int)@\server update interval in minutes (for DCM).
 
-@I(target_dir)@\target directory on server for DCM generated server files.
+@I(target_file)@\target file on server for DCM generated server files.
 
 @I(dfgen)@\time of server file generation 
 
 @I(script)@\shell script used by servers for particular use.
 
-@I(value)@\server-specific data used by applications (i.e., number of servers
-permitted per machine).
-
 @End(Description)
 
-Please see section @ref(Servers) for a complete discussion of interfaces.
+See Section @Ref(Servers) for the list of queries associated with this table.
 ]
 
 @C(Hosts)@\@Multiple[Server to Host mapping table.  Used by the
@@ -196,7 +208,7 @@ Data Control Manager to map a server to a list of server hosts.]
 
 @I(service_name)@\name of service.
 
-@I(service_host)@\Name of machine server lives on.
+@I(mach_id)@\Machine id for a host containing the service.
 
 @I(enable)@\Enable switch for DCM. This switch controls whether or not 
 the DCM updates a server. (0 - Do not Update, 1 - Update)
@@ -209,9 +221,17 @@ the default interval time, 0 or greater - Use the override interval).
 @I(ltt)@\Last time tried.  Used by dcm, this field is adjusted each time
 a service is attemted to be updated, regardless of success or failure.
 
+@I(success)@\Flag indicating successful completion of server update.
+
+@I(value1)@\server-specific data used by applications (i.e., number of servers
+permitted per machine).
+
+@I(value2)@\additional server-specific data.
+
 @End(Description)
 
-Please see section @ref(Servers) for a complete discussion of interfaces.
+See Section @Ref(Servers) for the list of queries associated with this
+table.
 ]
 
 @C(services)@\@Multiple[TCP/UDP Port Information.  This is the information
@@ -227,9 +247,12 @@ server.
 
 @I(port)@\port number.
 
+@I(description)@\description of service.
+
 @End(Description)
 
-Please see section @ref(Services) for a complete discussion of interfaces.
+See Section @Ref(Services) for the list of queries associated with this
+table.
 ]
 
 @C(filesys)@\@Multiple[File System Information.  This section desribes the file
@@ -251,7 +274,7 @@ system information necessary for a workstation to attach a file system.
 
 @End(Description)
 
-Please see section @ref(Filesys) for a complete discussion of interfaces.
+See Section @Ref(Filesys) for the list of queries associated with this table.
 ]
 
 @C(rvdsrv)@\@Multiple[RVD Server Information.  This table contains the top
@@ -270,7 +293,7 @@ information should be added here.
 
 @End(Description)
 
-Please see section @ref(Rvdsrv) for a complete discussion of interfaces.
+See Section @Ref(Rvdsrv) for the list of queries associated with this table.
 ]
 
 @C(rvdphys)@\@Multiple[Physical device partition table.
@@ -289,7 +312,7 @@ Please see section @ref(Rvdsrv) for a complete discussion of interfaces.
 
 @End(Description)
 
-Please see section @ref(Rvdphys) for a complete discussion of interfaces.
+See Section @Ref(Rvdphys) for the list of queries associated with this table.
 ]
 
 @C(rvdvirt)@\@Multiple[Virtual device table.  This table contains the list of
@@ -333,7 +356,7 @@ password (not used with acl's?).
 
 @End(Description)
 
-Please see section @ref(Rvdvirt) for a complete discussion of interfaces.
+See Section @Ref(Rvdvirt) for the list of queries associated with this table.
 ]
 
 @C(nfsphys)@\@Multiple[NFS Server Information.  This table contains for each
@@ -347,11 +370,15 @@ is provided.
 
 @I(device)@\file system name.
 
-@I(acl_id)@\access control list.
+@I(dir)@\top-level directory of device.
+
+@I(allocated)@\number of quota units allocated to this device.
+
+@I(size)@\capacity of this device in quota units.
 
 @End(Description)
 
-Please see section @ref(Nfsphys) for a complete discussion of interfaces.
+See Section @Ref(Nfsphys) for the list of queries associated with this table.
 ]
 
 @C(nfsquota)@\@Multiple[NFS Server Quota Information.  This table contains
@@ -361,13 +388,16 @@ per user per server quota information.
 
 @I(machine_id)@\nfs server machine.
 
+@I(device)@\nfs server file system.
+
 @I(users_id)@\user id.
 
-@I(quota)@\user quota in blocks.
+@I(quota)@\user quota in quota units.
 
 @End(Description)
 
-Please see section @ref(Nfsquota) for a complete discussion of interfaces.
+See Section @Ref(Nfsquota) for the list of queries associated with this
+table.
 ]
 
 @C(printer)@\@Multiple[Printer Information.
@@ -380,24 +410,11 @@ Please see section @ref(Nfsquota) for a complete discussion of interfaces.
 
 @I(type)@\printer hardware type: one of LPS40, 3812, LN03, LN01, etc.
 
-@I(machine_id)@\print server machine for this printer.
+@I(description)@\description of this printer.
 
 @End(Description)
 
-Please see section @ref(Printer) for a complete discussion of interfaces.
-]
-
-@C(prability)@\@Multiple[Printer abilities.
-
-@Begin(Description)
-
-@I(printer_id)@\id for a printer.
-
-@I(ability)@\printer ability: one of TEXT, POSTSCRIPT, WINDOWDUMP, etc.
-
-@End(Description)
-
-Please see section @ref(Prability) for a complete discussion of interfaces.
+See Section @Ref(Printer) for the list of queries associated with this table.
 ]
 
 @C(queue)@\@Multiple[Printer queues.  This table contains a list of unique
@@ -413,13 +430,17 @@ list.
 
 @I(machine_id)@\server machine.
 
-@I(ability)@\printer ability associated with this queue.
+@I(abilities)@\printer abilities associated with this queue (stored as an
+integer bitmask).
+
+@I(default)@\flag indicating whether this printer should be treated as a
+default printer.
 
 @I(status)@\queue status string (used by MDQS).
 
 @End(Description)
 
-Please see section @ref(Queue) for a complete discussion of interfaces.
+See Section @Ref(Queue) for the list of queries associated with this table.
 ]
 
 @C(pqm)@\@Multiple[Printer to queue mapping.  This table provides the mapping
@@ -433,7 +454,7 @@ between printers and queues.
 
 @End(Description)
 
-Please see section @ref(Pqm) for a complete discussion of interfaces.
+See Section @Ref(Pqm) for the list of queries associated with this table.
 ]
 
 @C(qdev)@\@Multiple[MDQS device information.  Each MDQS server has a device
@@ -454,7 +475,7 @@ physical printer device.
 
 @End(Description)
 
-Please see section @ref(Qdev) for a complete discussion of interfaces.
+See Section @Ref(Qdev) for the list of queries associated with this table.
 ]
 
 @C(qdm)@\@Multiple[MDQS queue to device mapping.  This table ties together
@@ -475,20 +496,7 @@ device.
 
 @End(Description)
 
-Please see section @ref(Qdm) for a complete discussion of interfaces.
-]
-
-@C(printcap)@\@Multiple[Berkeley line printer software printcap entries.
-
-@Begin(Description)
-
-@I(name)@\printer name.
-
-@I(string)@\printcap string.
-
-@End(Description)
-
-Please see section @ref(Printcap) for a complete discussion of interfaces.
+See Section @Ref(Qdm) for the list of queries associated with this table.
 ]
 
 @C(pobox)@\@Multiple[Post Office Information.  This list matches users with
@@ -500,15 +508,15 @@ machine.
 
 @I(users_id)@\id for a @C(users) entry.
 
-@I(type)@\mailbox type: one of POP, LOCAL.
+@I(type)@\mailbox type: one of POP, LOCAL, or FOREIGN.
 
-@I(machine_id)@\post office server machine.
+@I(machine_id)@\post office server machine (or string_id if type is FOREIGN).
 
 @I(box)@\mailbox name on server.
 
 @End(Description)
 
-Please see section @ref(Pobox) for a complete discussion of interfaces.
+See Section @Ref(Pobox) for the list of queries associated with this table.
 ]
 
 @C(list)@\@Multiple[Lists are used as a general purpose means of grouping
@@ -532,6 +540,8 @@ are used for mailing lists.)
 
 @I(acl_id)@\a list id for the administrators' list.
 
+@I(creator)@\users id of the creator of this list.
+
 @I(expdate)@\expiration date of list.
 
 @I(modtime)@\time list was last modified (@c(list) entry or @C(members)
@@ -539,7 +549,7 @@ entry).
 
 @End(Description)
 
-Please see section @ref(List) for a complete discussion of interfaces.
+See Section @Ref(List) for the list of queries associated with this table.
 ]
 
 @C(members)@\@Multiple[List members.  Members are specified by a member type
@@ -556,7 +566,7 @@ id.)
 
 @End(Description)
 
-Please see section @ref(Members) for a complete discussion of interfaces.
+See Section @Ref(Members) for the list of queries associated with this table.
 ]
 
 @C(strings)@\@Multiple[Used for list members of @i(string) type.  An
@@ -573,7 +583,7 @@ lists.  When the reference count goes to zero, the string is deleted.
 
 @End(Description)
 
-Please see section @ref(Strings) for a complete discussion of interfaces.
+See Section @Ref(Strings) for the list of queries associated with this table.
 ]
 
 @C(maillists)@\@Multiple[This table contains the set of list ids for the
@@ -585,7 +595,8 @@ lists which are to be used as mailing lists.
 
 @End(Description)
 
-Please see section @ref(Maillists) for a complete discussion of interfaces.
+See Section @Ref(Maillists) for the list of queries associated with this
+table.
 ]
 
 @C(groups)@\@Multiple[This table contains the set of list ids for the lists
@@ -595,24 +606,25 @@ which are to be used as groups.
 
 @I(list_id)@\a list id.
 
+@I(gid)@\unix gid.
+
 @End(Description)
 
-Please see section @ref(Groups) for a complete discussion of interfaces.
+See Section @Ref(Groups) for the list of queries associated with this table.
 ]
 
-@C(acls)@\@Multiple[This table contains a set of list id, machine id pairs
-which define the access control lists that are stored for each server
-machine. 
+@C(acls)@\@Multiple[This table contains a set of service, list id pairs
+which define the access control lists that are needed for each service.
 
 @Begin(Description)
 
-@I(list_id)@\a list id.
+@I(service)@\service name.
 
-@I(machine_id)@\a machine id.
+@I(list_id)@\a list id.
 
 @End(Description)
 
-Please see section @ref(Acls) for a complete discussion of interfaces.
+See Section @Ref(Acls) for the list of queries associated with this table.
 ]
 
 @C(capacls)@\@Multiple[This table associates access control lists with
@@ -624,11 +636,13 @@ name appears as a capability name in this list.
 
 @I(capability)@\a string.
 
+@I(tag)@\four character tag name for this capability.
+
 @I(list_id)@\a list id.
 
 @End(Description)
 
-Please see section @ref(Capacls) for a complete discussion of interfaces.
+See Section @Ref(Capacls) for the list of queries associated with this table.
 ]
 
 @C(alias)@\@Multiple[Aliases are used by several different services to
@@ -652,7 +666,7 @@ FILESYS, PRCLUSTER, MACH-CLU-MAP.
 
 @End(Description)
 
-Please see section @ref(Alias) for a complete discussion of interfaces.
+See Section @Ref(Alias) for the list of queries associated with this table.
 ]
 
 @C(values)@\@Multiple[Values needed by the server or application programs.
@@ -665,7 +679,31 @@ Please see section @ref(Alias) for a complete discussion of interfaces.
 
 @End(Description)
 
-Please see section @ref(Values) for a complete discussion of interfaces.
+See Section @Ref(Values) for the list of queries associated with this table.
+]
+
+@C(tblstats)@\@Multiple[Table Statistics.  For each table in the SMS
+database statistics are kept for the number of retrieves, appends, updates,
+and delete performed on the table.  In addition, the last modification time
+is kept.
+
+@Begin(Description)
+
+@I(table)@\table name.
+
+@I(retrieves)@\count of retrievals on this table.
+
+@I(appends)@\count of additions to this table.
+
+@I(updates)@\count of updates to this table.
+
+@I(deletes)@\count of deletions to this table.
+
+@I(modtime)@\time of last modification (append, update, or delete).
+
+@End(Description)
+
+See Section @Ref(Tblstats) for the list of queries associated with this table.
 ]
 
 @End(Description)

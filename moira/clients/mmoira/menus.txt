@@ -1,4 +1,4 @@
-; $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/menus.txt,v 1.1 1991-05-24 12:20:02 mar Exp $
+; $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/menus.txt,v 1.2 1991-06-05 13:17:38 mar Exp $
 ;
 
 ; = menu name
@@ -7,151 +7,164 @@
 ;	submenu name
 
 
-= miscellaneous
-	show database statistics { MM_STATS, 0 }
-	show active Moira clients { MM_CLIENTS, 0 }
-	show numeric value	{ MM_SHOW_VALUE, show_value }
-	show alias		{ MM_SHOW_ALIAS, show_alias }
+= misc
+	show database statistics { MM_STATS, 0 get_all_table_stats 0 }
+	show active Moira clients { MM_CLIENTS, 0 _list_users 0 }
+	show numeric value { MM_SHOW_VALUE, show_value get_value 1 }
+	show alias	{ MM_SHOW_ALIAS, show_alias get_alias 3 }
 
 = hosts
-	show			{ MM_SHOW_HOST, show_host }
-	add			{ MM_ADD_HOST, add_host }
-	modify			{ MM_MOD_HOST, show_host }
-	delete			{ MM_DEL_HOST, show_host }
-	clear error		{ MM_CLEAR_HOST, show_host }
-	reset state		{ MM_RESET_HOST, show_host }
+	show		{ MM_SHOW_HOST, show_host get_server_host_info 2 }
+	add		{ MM_ADD_HOST, add_host add_server_host_info 6 }
+	modify		{ MM_MOD_HOST, select_host get_server_host_info 2 }
+	delete		{ MM_DEL_HOST, select_host delete_server_host_info 2 }
+	clear error	{ MM_CLEAR_HOST, select_host reset_server_host_error 2 }
+	reset state	{ MM_RESET_HOST, select_host set_server_host_internal 9 }
 
 = services
-	show			{ MM_SHOW_SERVICE, show_service }
-	add			{ MM_ADD_SERVICE, add_service }
-	modify			{ MM_MOD_SERVICE, show_service }
-	delete			{ MM_DEL_SERVICE, show_service }
-	clear error		{ MM_CLEAR_SERVICE, show_service }
-	reset state		{ MM_RESET_SERVICE, show_service }
+	show		{ MM_SHOW_SERVICE, show_service get_server_info 1 }
+	add		{ MM_ADD_SERVICE, add_service add_server_info 8 }
+	modify		{ MM_MOD_SERVICE, select_service get_server_info 1 }
+	delete		{ MM_DEL_SERVICE, select_service delete_server_info 1 }
+	clear error	{ MM_CLEAR_SERVICE, select_service reset_server_error 1 }
+	reset state	{ MM_RESET_SERVICE, select_service set_server_internal_flags 6 }
 
-= server updates
-	show status		{ MM_SHOW_DCMM, 0 }
-	enable/disable		{ MM_ENABLE_DCM, dcm_enable }
-	invoke update		{ MM_TRIGGER_DCM, trigger_dcm }
+= updates
+	show status	{ MM_SHOW_DCM, 0 qualified_get_server 3 }
+	enable/disable	{ MM_ENABLE_DCM, dcm_enable get_value 1 }
+	invoke update	{ MM_TRIGGER_DCM, trigger_dcm trigger_dcm 0 }
 	services
 	hosts
 
 = zephyr
-	show			{ MM_SHOW_ZEPHYR, show_zephyr }
-	add			{ MM_ADD_ZEPHYR, add_zephyr }
-	modify			{ MM_MOD_ZEPHYR, show_zephyr }
-	delete			{ MM_DEL_ZEPHYR, show_zephyr }
+	show		{ MM_SHOW_ZEPHYR, show_zephyr get_zephyr_class 1 }
+	add		{ MM_ADD_ZEPHYR, add_zephyr add_zephyr_class 9 }
+	modify		{ MM_MOD_ZEPHYR, select_zephyr get_zephyr_class 1 }
+	delete		{ MM_DEL_ZEPHYR, select_zephyr delete_zephyr_class 1 }
 
 = printer
-	show			{ MM_SHOW_PCAP, show_printer }
-	add			{ MM_ADD_PCAP, add_printer }
-	modify			{ MM_MOD_PCAP, show_printer }
-	delete			{ MM_DEL_PCAP, show_printer }
+	show		{ MM_SHOW_PCAP, show_printer get_printcap_entry 1 }
+	add		{ MM_ADD_PCAP, add_printer add_printcap_entry 8 }
+	modify		{ MM_MOD_PCAP, select_printer get_printcap_entry 1 }
+	delete		{ MM_DEL_PCAP, del_printer delete_printcap_entry 1 }
 
 = cluster data
-	show			{ MM_SHOW_CLDATA, show_cldata }
-	add			{ MM_ADD_CLDATA, add_cldata }
-	delete			{ MM_DEL_CLDATA, del_cldata }
+	show		{ MM_SHOW_CLDATA, show_cldata get_cluster_data 2 }
+	add		{ MM_ADD_CLDATA, add_cldata add_cluster_data 3 }
+	delete		{ MM_DEL_CLDATA, del_cldata delete_cluster_data 3 }
 
 = cluster mappings
-	show			{ MM_SHOW_MCMAP, mcmap }
-	add			{ MM_ADD_MCMAP, add_mcmap }
-	delete			{ MM_DEL_MCMAP, add_mcmap }
+	show		{ MM_SHOW_MCMAP, mcmap get_machine_to_cluster_map 2 }
+	add		{ MM_ADD_MCMAP, add_mcmap add_machine_to_cluster 2 }
+	delete		{ MM_DEL_MCMAP, del_mcmap delete_machine_from_cluster 2 }
 
 = cluster
-	show			{ MM_SHOW_CLUSTER, show_cluster }
-	add			{ MM_ADD_CLUSTER, add_cluster }
-	modify			{ MM_MOD_CLUSTER, show_cluster }
-	delete			{ MM_DEL_CLUSTER, show_cluster }
+	show		{ MM_SHOW_CLUSTER, show_cluster get_cluster 1 }
+	add		{ MM_ADD_CLUSTER, add_cluster add_cluster 3 }
+	modify		{ MM_MOD_CLUSTER, select_cluster get_cluster 1 }
+	delete		{ MM_DEL_CLUSTER, del_cluster delete_cluster 1 }
 	cluster mappings
 	cluster data
 
 = machine
-	show			{ MM_SHOW_MACH, show_machine }
-	add			{ MM_ADD_MACH, add_machine }
-	modify			{ MM_MOD_MACH, show_machine }
-	delete			{ MM_DEL_MACH, show_machine }
+	show		{ MM_SHOW_MACH, show_machine get_machine 1 }
+	add		{ MM_ADD_MACH, add_machine add_machine 2 }
+	modify		{ MM_MOD_MACH, select_machine get_machine 1 }
+	delete		{ MM_DEL_MACH, del_machine delete_machine 1 }
 
-= list membership
-	show			{ MM_SHOW_MEMBERS, show_members }
-	add			{ MM_ADD_MEMBER, add_member }
-	delete			{ MM_DEL_MEMBER, add_member }
-	delete a member from all lists { MM_DEL_ALL_MEMBER, del_all_member }
+= members
+	show		{ MM_SHOW_MEMBERS, show_members get_members_of_list 1 }
+	add		{ MM_ADD_MEMBER, add_member add_member_to_list 3 }
+	delete		{ MM_DEL_MEMBER, del_member delete_member_from_list 3 }
+	delete a member from all lists { MM_DEL_ALL_MEMBER, del_all_member get_lists_of_member 2 }
 
 = list
-	show			{ MM_SHOW_LIST, show_list }
-	show all public mailing lists { MM_SHOW_MAILLIST, 0 }
-	show all items a list or user can administer { MM_SHOW_ACE_USE, show_ace_use }
-	add			{ MM_ADD_LIST, add_list }
-	modify			{ MM_MOD_LIST, show_list }
-	delete			{ MM_DEL_LIST, show_list }
+	show		{ MM_SHOW_LIST, show_list get_list_info 1 }
+	show all public mailing lists { MM_SHOW_MAILLIST, 0 qualified_get_lists 5 }
+	show all items a list or user can administer { MM_SHOW_ACE_USE, show_ace_use get_ace_use 2 }
+	add		{ MM_ADD_LIST, add_list add_list 10 }
+	modify		{ MM_MOD_LIST, select_list get_list_info 1 }
+	delete		{ MM_DEL_LIST, del_list delete_list 1 }
 
 = quota
-	show			{ MM_SHOW_QUOTA, show_quota }
-	add			{ MM_ADD_QUOTA, add_quota }
-	modify			{ MM_MOD_QUOTA, show_quota }
-	delete			{ MM_DEL_QUOTA, show_quota }
-	show default		{ MM_SHOW_DQUOTA, 0 }
-	set default		{ MM_SET_DQUOTA, set_dquota }
+	show		{ MM_SHOW_QUOTA, show_quota get_quota 3 }
+	add		{ MM_ADD_QUOTA, add_quota add_quota 4 }
+	modify		{ MM_MOD_QUOTA, mod_quota update_quota 4 }
+	delete		{ MM_DEL_QUOTA, show_quota delete_quota 3 }
+	show default	{ MM_SHOW_DQUOTA, 0 get_value 1 }
+	set default	{ MM_SET_DQUOTA, set_dquota set_value 2 }
 
 = nfs partition
-	show			{ MM_SHOW_NFS, show_nfs }
-	add			{ MM_ADD_NFS, add_nfs }
-	modify			{ MM_MOD_NFS, show_nfs }
-	delete			{ MM_DEL_NFS, del_nfs }
+	show		{ MM_SHOW_NFS, show_nfs get_nfsphys 2 }
+	add		{ MM_ADD_NFS, add_nfs add_nfsphys 6 }
+	modify		{ MM_MOD_NFS, select_nfs get_nfsphys 2 }
+	delete		{ MM_DEL_NFS, del_nfs delete_nfsphys 2 }
 
 = filesystem alias
-	show alias		{ MM_SHOW_FS_ALIAS, show_fs_alias }
-	add alias		{ MM_ADD_FS_ALIAS, add_fs_alias }
-	delete alias		{ MM_DEL_FS_ALIAS, add_fs_alias }
+	show alias	{ MM_SHOW_FS_ALIAS, show_fs_alias get_alias 3 }
+	add alias	{ MM_ADD_FS_ALIAS, add_fs_alias add_alias 3 }
+	delete alias	{ MM_DEL_FS_ALIAS, del_fs_alias delete_alias 3 }
 
 = filesystem group
-	show			{ MM_SHOW_FSGROUP, show_fsgroup }
-	insert			{ MM_ADD_FSGROUP, add_fsgroup }
-	re-order		{ MM_MOV_FSGROUP, add_fsgroup }
-	remove			{ MM_DEL_FSGROUP, del_fsgroup }
+	show		{ MM_SHOW_FSGROUP, show_fsgroup get_filesys 1 }
+	insert		{ MM_ADD_FSGROUP, add_fsgroup add_filesys_to_fsgroup 3 }
+	re-order	{ MM_MOV_FSGROUP, order_fsgroup 0 -1 }
+	remove		{ MM_DEL_FSGROUP, del_fsgroup remove_filesys_from_fsgroup 2 }
 
 = filesystem
-	show			{ MM_SHOW_FILSYS, show_filsys }
-	add			{ MM_ADD_FILSYS, add_filsys }
-	modify			{ MM_MOD_FILSYS, show_filsys }
-	delete			{ MM_DEL_FILSYS, del_filsys }
-	filesystem group
+	show		{ MM_SHOW_FILSYS, show_filsys get_filesys_by_label 1 }
+	add		{ MM_ADD_FILSYS, add_filsys add_filesys 11 }
+	modify		{ MM_MOD_FILSYS, select_filsys get_filesys_by_label 1 }
+	delete		{ MM_DEL_FILSYS, del_filsys delete_filesys 1 }
+;	filesystem group
 	filesystem alias
 	nfs partition
 
 = kerberos mapping
-	show			{ MM_SHOW_KRBMAP, show_krbmap }
-	add			{ MM_ADD_KRBMAP, add_krbmap }
-	delete			{ MM_DEL_KRBMAP, add_krbmap }
+	show		{ MM_SHOW_KRBMAP, show_krbmap get_kerberos_user_map 2 }
+	add		{ MM_ADD_KRBMAP, add_krbmap add_kerberos_user_map 2 }
+	delete		{ MM_DEL_KRBMAP, del_krbmap delete_kerberos_user_map 2 }
 
 = pobox
-	show			{ MM_SHOW_POBOX, select_pobox }
-	set			{ MM_SET_POBOX, set_pobox }
-	delete			{ MM_DEL_POBOX, select_pobox }
+	show		{ MM_SHOW_POBOX, select_pobox get_pobox 1 }
+	set		{ MM_SET_POBOX, set_pobox set_pobox 3 }
+	reset		{ MM_RESET_POBOX, reset_pobox set_pobox_pop 1 }
+	delete		{ MM_DEL_POBOX, del_pobox delete_pobox 1 }
 
 = user
-	show			{ MM_SHOW_USER, show_user }
-	add			{ MM_ADD_USER, add_user }
-	register		{ MM_REGISTER, register_user }
-	modify			{ MM_MOD_USER, select_user }
-	deactivate		{ MM_DEACTIVATE, select_user }
-	expunge			{ MM_EXPUNGE, select_user }
-	show finger info	{ MM_SHOW_FINGER, select_user }
-	modify finger info	{ MM_MOD_FINGER, mod_finger }
+	show		{ MM_SHOW_USER, show_user get_user_by_login 1 }
+	add		{ MM_ADD_USER, add_user add_user 9 }
+	register	{ MM_REGISTER, register_user register_user 3 }
+	modify		{ MM_MOD_USER, select_user get_user_by_login 1 }
+	deactivate	{ MM_DEACTIVATE, deactivate_user update_user_status 2 }
+	expunge		{ MM_EXPUNGE, expunge_user delete_user 1 }
+	show finger info { MM_SHOW_FINGER, show_finger get_finger_by_login 1 }
+	modify finger info { MM_MOD_FINGER, select_finger get_finger_by_login 1 }
 	kerberos mapping
 
+= help
+	about moira	{ MM_HELP_MOIRA, 0 about_moira 0 }
+	wildcards	{ MM_HELP_WILDCARDS, 0 wildcards 0 }
+	reporting bugs	{ MM_HELP_BUGS, 0, bugs 0 }
+	authors		{ MM_HELP_AUTHORS, 0 authors 0 }
+
+= file
+	save log buffer	{ MM_SAVE_LOG, save_log 0 0 }
+	sticky forms { MM_PERSISTANT_FORMS, sticky_forms 0 0 }
+	quit		{ MM_QUIT, 0 0 0 }
+
 = toplevel
+	file
 	user
 	pobox
 	list
-	list membership
+	members
 	filesystem
 	quota
 	machine
 	cluster
 	printer
 	zephyr
-	server updates
-	miscellaneous
-
+	updates
+	misc
+	help

@@ -1,4 +1,4 @@
-; $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/forms.txt,v 1.1 1991-05-24 12:18:52 mar Exp $
+; $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/forms.txt,v 1.2 1991-06-05 13:18:01 mar Exp $
 ;
 
 ; { FORM_NAME	INSTRUCTION FIELD
@@ -7,320 +7,467 @@
 ; }
 
 { show_user	Enter the login name, real name, uid or class to select one or more users.
-	login name	s
+	Login name	s
     or
-	first name	s
-	last name	s
+	First name	s
+	Last name	s
     or
-	unix uid	s
+	Unix UID	s
     or
-	class	K
+	Class		K
 }
-; add/modify
-{ add_user	Add a new user to the database or modify an existing user.
-	login name	S
-	unix uid	s
-	shell	s
-	last name	s
-	first name	s
-	middle name	s
-	account status	K
+{ add_user	Add a new user to the database.
+	Login name	S
+	Unix UID	s
+	Shell		s
+	Last name	s
+	First name	s
+	Middle name	s
+	Account status	K
 	ID number	s
-	class	K
+	Class		K
+}
+{ mod_user	Modify a user in the database.
+	New login name	S
+	Unix UID	s
+	Shell		s
+	Last name	s
+	First name	s
+	Middle name	s
+	Account status	K
+	ID number	s
+	Class		K
 }
 { register_user	Register a user with an active account.  Specify user by real name or uid.
-	first name s
-	last name s
+	First name	s
+	Last name	s
     or
-	unix uid s
-	desired login name	s
+	Unix UID	s
+	Desired login name	s
 }
 ; deactivate/expunge/show finger
-{ select_user	Enter the login name to select a user.
-	login	s
+{ select_user	Enter the login name to select a user to modify.
+	Login	s
+}
+{ deactivate_user	Enter the login name to select a user to deactivate.
+	Login	s
+}
+{ expunge_user	Enter the login name to select a user to expunge.
+	Login	s
+}
+{ show_finger	Enter the login name to select which user's finger information to display.
+	Login	s
+}
+{ select_finger	Enter the login name to select which user's finger information to modify.
+	Login	s
 }
 
-; show/delete
-{ select_pobox	Enter the login name of the user whose P.O.Box you want to examine.
-	login	s
+{ mod_finger	Enter the new info for the user.
+	Real Name	s
+	Nickname	s
+	Home Address	S
+	Home Phone	S
+	Office Address	S
+	Office Phone	S
+	Department	S
+	Affiliation	S
 }
-{ set_pobox	Enter the new P.O.Box information.
-	login	s
-	type	K
-	address  s
+
+{ select_pobox	Enter the login name of the user whose P. O. Box you want to examine.
+	Login		s
+}
+{ set_pobox	Enter the new P. O. Box information.
+	Login		s
+	Type		K
+	SMTP Address	s
 	    or
-	Post Office server K
+	POP server	K
+}
+{ reset_pobox	Enter the new user whose mailforwarding should be turned off.
+	Login		s
+}
+{ del_pobox	Enter the login name of the user whose P. O. Box you want to delete.
+	Login		s
 }
 
 { show_krbmap	Enter the username or principal of the Kerberos mapping to examine.
-	login	s
+	Login		s
     or
-	principal s
+	Principal	s
 }
-; add/delete
-{ add_krbmap	Modify Kerberos mapping.
-	login	s
-	principal s
+{ add_krbmap	Enter the new Kerberos mapping.
+	Login		s
+	Principal	s
 }
-{ show_filsys	Enter the name, machine, or owning group to see a filesystem.
-	name	s
+{ del_krbmap	Enter the Kerberos mapping to delete.
+	Login		s
+	Principal	s
+}
+
+{ show_filsys	Enter the name, machine, or owning group to see one or more filesystems.
+	Name	s
     or
-	machine s
-	partition s
+	Machine s
+	Partition s
     or
-	group	s
+	Group	s
 }
 ; add/modify
 { add_filsys	Enter the new filesystem information.
-	name	s
-	type	K
-	machine	s
-	remote name s
-	mountpoint s
-	access mode	K
-	comments s
-	owner	s
-	owners	s
-	autocreate B
-	lockertype K
+	Name	s
+	Type	K
+	Machine	s
+	Remote name s
+	Mountpoint s
+	Access mode	K
+	Comments s
+	Owner	s
+	Owners	s
+	Automatically create on fileserver? B
+	Lockertype K
+}
+{ mod_filsys	Enter the new filesystem information.
+	Name	s
+	Type	K
+	Machine	s
+	Remote name s
+	Mountpoint s
+	Access mode	K
+	Comments s
+	Owner	s
+	Owners	s
+	Automatically create on fileserver? B
+	Lockertype K
+}
+{ select_filsys	Enter the name of the filesystem to modify.
+	Name	s
 }
 { del_filsys	Enter the name of the filesystem to delete.
-	name	s
+	Name	s
 }
 { show_fsgroup	Enter the name of the filesyste group to show.
-	name	s
+	Name	s
 }
-; insert/re-order
 { add_fsgroup	Specify the filesystem for the filesystem group and where it goes in sort order.
-	filesystem group name s
-	filesystem name s
-	select filesystem to insert after in sort order k
+	Filesystem group name s
+	Filesystem name s
+	Select filesystem to insert after in sort order k
+}
+{ order_fsgroup	Specify the filesystem in the filesystem group and where it should go in sort order.
+	Filesystem group name s
+	Filesystem name s
+	Select filesystem to insert after in sort order k
 }
 { del_fsgroup	Specify the filesystem to remove from the filesystem group.
-	filesystem group name s
-	filesystem name s
+	Filesystem group name s
+	Filesystem name s
 }
 { show_fs_alias	Specify the alias or real name of the filesystem alias to show.
-	real filesystem name s
+	Real filesystem name s
     or
-	aliased name	s
+	Aliased name	s
 }
-; add/delete
-{ add_fs_alias	Specify the filesystem alias to be added or deleted.
-	real filesystem name s
-	aliased name	s
+{ add_fs_alias	Specify the filesystem alias to be added.
+	Real filesystem name s
+	Aliased name	s
+}
+{ del_fs_alias	Specify the filesystem alias to be deleted.
+	Real filesystem name s
+	Aliased name	s
 }
 
 
 { show_nfs	Specify the machine (and optionally the partition) to be examined.
-	machine	s
+	Machine	s
     or
-	parition s
+	Partition s
 }
-; add/modify
-{ add_nfs	Enter the information for the NFS partition.
-	machine s
-	partition s
-	device	s
-	status	K
-	allocated s
-	size	s
+{ select_nfs	Specify the machine (and optionally the partition) to be modified.
+	Machine	s
+    or
+	Partition s
+}
+{ add_nfs	Enter the information for the new NFS partition.
+	Machine s
+	Partition s
+	Device	s
+	Status	K
+	Group quota? B
+	Allocation (Kbytes) s
+	Size (Kbytes)	s
+}
+{ mod_nfs	Update the information for the NFS partition.
+	Machine s
+	Partition s
+	Device	s
+	Status	K
+	Group quota? B
+	Allocation (Kbytes) s
+	Size (Kbytes)	s
 }
 { del_nfs	Specify the NFS partition to delete.
-	machine s
-	parition s
+	Machine s
+	Partition s
 }
 
 
-{ show_quota	Specify the user, group, and/or filesystem of the desired quota.
-	user	s
+{ show_quota	Specify the filesystem and/or user/group of the desired quota.
+	Filesystem s
     or
-	group	s
+	User	s
     or
-	filesystem s
+	Group	s
 }
-; add/modify
 { add_quota	Enter the quota information.
-	type	K
-	user/group s
-	filesystem s
-	quota	s
+	Filesystem s
+	Quota type	K
+	User/group s
+	Quota (Kbytes)	s
+}
+{ mod_quota	Update the quota information.
+	Filesystem s
+	Quota type	K
+	User/group s
+	Quota (Kbytes)	s
 }
 { del_quota	Specify the quota to delete.
-	type	K
-	user/group s
-	filesystem s
+	Filesystem s
+	Quota type	K
+	User/group s
 }
 ;quota show default
-{ set dquota	Specify the new default quota for new accounts.
-	value	s
+{ set_dquota	Specify the default quota for new accounts.
+	Value (Kbytes)	s
 }
 
 
 { show_list	Specify the name of the list to examine.
-	name	s
+	Name	s
 }
 ;list show all public
 { show_ace_use	Specify the user or list to see what they can administer.
-	type	K
-	member name s
-	search recursively B
+	Access Control Type	K
+	ACE name s
+	Search recursively? B
 }
-; add/modify
-{ add_list	Enter the list information.
-	name	s
-	active	B
-	public	B
-	hidden	B
-	maillist B
-	group	B
-	gid	s
-	owner type K
-	owner name s
-	description s
+{ add_list	Enter the information for the new list.
+	Name	s
+	Active	B
+	Public	B
+	Hidden	B
+	Maillist B
+	Group	B
+	Unix GID	s
+	Owner type K
+	Owner name s
+	Description s
 }
-{ delete_list	Specify the name of the list to delete
-	name	s
+{ mod_list	Enter the list information.
+	Name	s
+	Active	B
+	Public	B
+	Hidden	B
+	Maillist B
+	Group	B
+	Unix GID	s
+	Owner type K
+	Owner name s
+	Description s
 }
-{ show_members	Specify the list name or member name to see memberships.
-	list name s
+{ select_list	Spelect a list to modify by entering its name.
+	Name	s
+}
+{ del_list	Spelect a list to delete by entering its name.
+	Name	s
+}
+{ show_members	Specify the list name or member type and name to see memberships.
+	List name s
     or
-	member type K
-	member name s
-	recursive search B
+	Member type K
+	Member name s
+	Recursive search? B
 }
-; add/delete
-{ add_member	Enter the member information.
-	list	s
-	member type K
-	member name s
+{ add_member	Enter the information to add a member to a list.
+	List name	s
+	Member type K
+	Member name s
+}
+{ del_member	Enter the information to delete a member from a list.
+	List name	s
+	Member type K
+	Member name s
 }
 { del_all_member	Enter a member to remove from all lists.
-	member type K
-	member name s
-	prompt for each deletion B
+	Member type K
+	Member name s
+	Prompt for each deletion? B
 }
 
 
-; show/delete
+; show
 { show_machine	Specify the machine to display.
-	name	s
+	Name	s
 }
-; add/modify
 { add_machine	Enter the information about the machine.
-	name	s
-	type	K
+	Name	s
+	Type	K
+}
+{ select_machine Specify the machine to update.
+	Name	s
+}
+{ mod_machine	Update the information about the machine.
+	Name	s
+	Type	K
+}
+{ del_machine	Select a machine to delete.
+	Name	s
 }
 
 
-; show/delete
+; show
 { show_cluster	Specify the cluster to display.
-	name	s
+	Name	s
 }
-; add/modify
-{ add_cluster	Enter the information about the cluster.
-	name	s
-	description s
-	location s
+{ add_cluster	Enter the information about the new cluster.
+	Name	s
+	Description s
+	Location s
+}
+{ mod_cluster	Update the information about the cluster.
+	Name	s
+	Description s
+	Location s
+}
+{ select_cluster	Select a cluster to modify.
+	Name	s
+}
+{ del_cluster	Select a cluster to delete.
+	Name	s
 }
 { mcmap		Enter a machine or cluster to see its mappings.
-	machine	s
-	cluster s
+	Machine	s
+	Cluster s
 }
-{ add_mcmap	Enter the machine and cluster to change.
-	machine s
-	cluster s
+{ add_mcmap	Enter the machine and cluster to add it to.
+	Machine s
+	Cluster s
+}
+{ del_mcmap	Enter the machine and cluster to remove it from.
+	Machine s
+	Cluster s
 }
 { show_cldata	Enter the cluster name or data label of the desired cluster data.
-	cluster s
-	label s
+	Cluster s
+	Label s
 }
 { add_cldata	Enter the cluster information.
-	cluster s
-	label	s
-	value	s
+	Cluster s
+	Label	s
+	Value	s
 }
 { del_cldata	Specify the cluster information to be deleted.
-	cluster s
-	label	s
+	Cluster s
+	Label	s
+	Value	s
 }
 
 
-; show/delete
-{ show_printer	Specify the desired printer.
-	name	s
+{ show_printer	Specify the desired printer to display.
+	Name	s
 }
-; add/modify
-{ add_printer	Enter the printer information.
-	name	s
-	spooling host	s
-	spool directory s
-	remote name	s
-	authenticate B
-	quota server s
-	price	s
-	comments s
+{ del_printer	Specify the desired printer.
+	Name	s
+}
+{ add_printer	Enter the new printer information.
+	Name	s
+	Spooling host	s
+	Spool directory s
+	Remote name	s
+	Quota server s
+	Authenticate B
+	Price	s
+	Comments s
+}
+{ mod_printer	Update the printer information.
+	Name	s
+	Spooling host	s
+	Spool directory s
+	Remote name	s
+	Quota server s
+	Authenticate B
+	Price	s
+	Comments s
+}
+{ select_printer	Specify the desired printer to modify.
+	Name	s
 }
 
 
 ;server updates show
-{ dcm_enable	Allow Data Control Manager updates?
-	enable	B
+{ dcm_enable	Set Data Control Manager status.
+	Enable updates?	B
 }
-{ trigger_dcm	Start a batch update now?
+{ trigger_dcm	Start a Data Control Manager batch update now.
 	Are You Sure? B
 }
 
 ;service show/delete/clear error/reset
 { show_service	Enter the service name to examine.
-	name	s
+	Name	s
 }
 ; add/modify
 { add_service	Enter the service information.
-	service name s
-	interval (minutes) s
-	destination file s
-	script	s
-	type	K
-	enable	B
-	owner type K
-	owner name s
+	Service name s
+	Interval (minutes) s
+	Destination file s
+	Script	s
+	Type	K
+	Enable	B
+	Owner type K
+	Owner name s
+}
+{ select_service	Enter the name of the service to change.
+	Name	s
 }
 ; show/delete/clear error/reset state
-{ show_host	Enter the host and or service to examine.
-	host name s
-	service name s
+{ show_host	Enter the host and or service name of the service/host tuple to examine.
+	Host name s
+	Service name s
 }
 ; add/modify
 { add_host	Enter the service/host tuple information.
-	host name s
-	service s
-	enable	B
-	value1	s
-	value2	s
-	value3	s
+	Host name s
+	Service s
+	Enable	B
+	Value1	s
+	Value2	s
+	Value3	s
+}
+{ select_host	Enter the host and service name to select a service/host tuple.
+	Host name s
+	Service name s
 }
 
 
 ;misc show stats
 ;misc show clients
 { show_value	Enter the name of the variable to display.
-	variable name s
+	Variable name s
 }
 { show_alias	Enter the alias name, type, or value to display.
-	name	s
-	type	K
-	value	s
+	Name	s
+	Type	K
+	Value	s
 }
 
 
 ; show/delete
 { show_zephyr	Enter the name of the zephyr class to examine.
-	class	s
+	Class	s
 }
 ; add/modify
 { add_zephyr	Enter the zephyr class access information.
-	class	s
+	Class	s
 	XMT type K
 	XMT name s
 	SUB type K
@@ -329,4 +476,16 @@
 	IWS name s
 	IUI type K
 	IUI name s
+}
+{ select_zephyr	Select a zephyr class by name.
+	Class	s
+}
+
+
+{ save_log	Save your log to a file.
+	Filename s
+}
+
+{ sticky_forms Have forms stay up on screen until you click on CANCEL.
+	Yes or no? b
 }

@@ -1,5 +1,5 @@
 .TH BLANCHE 1 "14 Sep 1988" "Project Athena"
-\" RCSID: $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/man/blanche.1,v 1.5 1989-06-01 22:07:49 mar Exp $
+\" RCSID: $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/man/blanche.1,v 1.6 1989-08-21 22:12:43 mar Exp $
 .SH NAME
 blanche \- examine and modify memberships in SMS lists
 .SH SYNOPSIS
@@ -13,7 +13,8 @@ also read a set of list members from a file and synchronize the list
 in SMS to that file.
 
 Whenever a member is specified, it may be specified explicitly, as
-user:username, list:listname, or string:string_text; or the type may
+user:username, list:listname, string:string_text, or
+kerberos:principal_name; or the type may
 be left off if the member name is non ambiguous.  A member having
 punctuation characters (such as at-sign) in it is immediately assumed
 to be a string.  Otherwise,
@@ -24,7 +25,8 @@ list, and finally fall back to string if both of those fail.
 The default output mode is similar, in that usernames are displayed
 without any identifying type, lists are always displayed as
 list:listname, and strings will only be labeled as a string if they do
-not have any punctuation characters in them.
+not have any punctuation characters in them.  Kerberos members will
+always have the type displayed.
 .SH OPTIONS
 .IP \fB-add\ \fImember\ \fRor\ \fB-a\ \fImember\fR:
 This will add the specified member to the target list.  This option
@@ -56,16 +58,21 @@ Display the membership of the target list.  This is the default if no
 other options are specified.
 .IP \fB-users\ \fRor\ \fB-u\fR:
 Only display list members that are users (not lists or strings).  If
-none of \fB-users, -lists, \fRor \fB-strings\fR is specified, then all
+none of \fB-users, -lists, -strings, \fRor \fB-kerberos\fR is specified, then all
 of them will be displayed.
 .IP \fB-lists\ \fRor\ \fB-l\fR:
 Only display list members that are lists (not users or strings).  If
-none of \fB-users, -lists, \fRor \fB-strings\fR is specified, then all
+none of \fB-users, -lists, -strings, \fRor \fB-kerberos\fR is specified, then all
 of them will be displayed.
 .IP \fB-strings\ \fRor\ \fB-s\fR:
 Only display list members that are strings (not users or lists).  If
-none of \fB-users, -lists, \fRor \fB-strings\fR is specified, then all
+none of \fB-users, -lists, -strings, \fRor \fB-kerberos\fR is specified, then all
 of them will be displayed.
+.IP \fB-kerberos\ \fRor\ \fB-k\fR:
+Only display list members that are kerberos principals (not users,
+lists, or strings).  If
+none of \fB-users, -lists, -strings, \fRor \fB-kerberos\fR is
+specified, then all of them will be displayed.
 .IP \fB-recursive\ \fRor\ \fB-r\fR:
 When displaying the membership of the target list, recursively track
 down all lists that are members of the target, and get their
@@ -81,6 +88,9 @@ member added or deleted.
 Do not attempt to perform Kerberos authentication with the SMS server.
 Retrieval operations on not-hidden lists are still possible without
 tickets.
+.IP \fB-server\ \fIhost:port\ \fRor\ \fB-S\ \fIhost:port\fR:
+Use the specified host and port to contact the Moira server instead of
+the default server.  Both may be symbolic names or numbers.
 .IP \fB-debug\ \fRor\ \fB-D\fR:
 Turn on debugging messages.
 

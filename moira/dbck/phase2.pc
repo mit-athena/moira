@@ -1,4 +1,4 @@
-/* $Id: phase2.pc,v 1.10 1999-11-05 16:38:47 danw Exp $
+/* $Id: phase2.pc,v 1.11 1999-11-05 17:05:25 danw Exp $
  *
  * (c) Copyright 1988-1998 by the Massachusetts Institute of Technology.
  * For copying and distribution information, please see the file
@@ -15,7 +15,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase2.pc,v 1.10 1999-11-05 16:38:47 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase2.pc,v 1.11 1999-11-05 17:05:25 danw Exp $");
 
 EXEC SQL WHENEVER SQLERROR DO dbmserr();
 
@@ -35,8 +35,8 @@ int maybe_fixup_unref_string(int sid, int oid, char *oname, char *table,
 			     char *field, char *idfield);
 int maybe_fixup_modby(int sid, int oid, char *oname, char *table,
 		      char *field, char *idfield);
-int maybe_fixup_unref_string2(char *table, char *field, char *cursor, int sid);
-int maybe_fixup_modby2(char *table, char *field, char *cursor, int id);
+int maybe_fixup_unref_string2(char *table, char *field, char *rowid, int sid);
+int maybe_fixup_modby2(char *table, char *field, char *rowid, int id);
 void pobox_check(int id, struct user *u);
 void remove_pobox(int id);
 void fix_smtp_pobox(int id, int sid);
@@ -450,7 +450,7 @@ int maybe_fixup_modby(int sid, int oid, char *oname, char *table,
   return sid;
 }
 
-int maybe_fixup_unref_string2(char *table, char *field, char *cursor, int sid)
+int maybe_fixup_unref_string2(char *table, char *field, char *rowid, int sid)
 {
   int ret = (sid < 0) ? -sid : sid, doit = 0, newid;
   EXEC SQL BEGIN DECLARE SECTION;
@@ -482,8 +482,8 @@ int maybe_fixup_unref_string2(char *table, char *field, char *cursor, int sid)
 
   if (doit)
     {
-      sprintf(stmt_buf, "UPDATE %s SET %s = %d WHERE CURRENT OF %s",
-	      table, field, (sid < 0) ? -ret : ret, cursor);
+      sprintf(stmt_buf, "UPDATE %s SET %s = %d WHERE rowid = '%s'",
+	      table, field, (sid < 0) ? -ret : ret, rowid);
       EXEC SQL EXECUTE IMMEDIATE :stmt_buf;
       rowcount = sqlca.sqlerrd[2];
       if (rowcount == 1)
@@ -495,7 +495,7 @@ int maybe_fixup_unref_string2(char *table, char *field, char *cursor, int sid)
   return (sid < 0) ? -ret : ret;
 }
 
-int maybe_fixup_modby2(char *table, char *field, char *cursor, int id)
+int maybe_fixup_modby2(char *table, char *field, char *rowid, int id)
 {
   EXEC SQL BEGIN DECLARE SECTION;
   char stmt_buf[500];
@@ -503,7 +503,7 @@ int maybe_fixup_modby2(char *table, char *field, char *cursor, int id)
   EXEC SQL END DECLARE SECTION;
 
   if (id < 0)
-    return maybe_fixup_unref_string2(table, field, cursor, id);
+    return maybe_fixup_unref_string2(table, field, rowid, id);
   else
     {
       if (!hash_lookup(users, id))
@@ -512,8 +512,8 @@ int maybe_fixup_modby2(char *table, char *field, char *cursor, int id)
 		 table, field, id);
 	  if (single_fix("Delete", 1))
 	    {
-	      sprintf(stmt_buf, "UPDATE %s SET %s = 0 WHERE CURRENT OF %s",
-		      table, field, cursor);
+	      sprintf(stmt_buf, "UPDATE %s SET %s = 0 WHERE rowid = '%s'",
+		      table, field, rowid);
 	      EXEC SQL EXECUTE IMMEDIATE :stmt_buf;
 	      rowcount = sqlca.sqlerrd[2];
 	      if (rowcount == 1)
@@ -1672,6 +1672,7 @@ void phase2(void)
   struct list *l;
   struct nfsphys *n;
   struct machine *m;
+  char rowid[32];
 
   printf("Phase 2 - Checking references\n");
 
@@ -1746,7 +1747,7 @@ void phase2(void)
   sq5 = sq_create();
 
   EXEC SQL DECLARE csr223 CURSOR FOR
-    SELECT list_id, member_type, member_id, ref_count, direct
+    SELECT list_id, member_type, member_id, ref_count, direct, rowid
     FROM imembers FOR UPDATE OF member_id;
   EXEC SQL OPEN csr223;
   while (1)
@@ -1757,7 +1758,7 @@ void phase2(void)
       EXEC SQL END DECLARE SECTION;
 
       EXEC SQL FETCH csr223 INTO :list_id, :type, :id,
-	:ref_count, :direct;
+	:ref_count, :direct, :rowid;
       if (sqlca.sqlcode)
 	break;
 
@@ -1767,9 +1768,9 @@ void phase2(void)
 	sq_save_unique_data(sq2, (void *)id);
       else if (type[0] == 'L' && !hash_lookup(lists, id))
 	sq_save_unique_data(sq3, (void *)id);
-      else if (type[0] == 'S' && !maybe_fixup_unref_string2("imembers", "member_id", "csr223", id))
+      else if (type[0] == 'S' && !maybe_fixup_unref_string2("imembers", "member_id", rowid, id))
 	sq_save_unique_data(sq4, (void *)id);
-      else if (type[0] == 'K' && !maybe_fixup_unref_string2("imembers", "member_id", "csr223", id))
+      else if (type[0] == 'K' && !maybe_fixup_unref_string2("imembers", "member_id", rowid, id))
 	sq_save_unique_data(sq5, (void *)id);
       else
 	l->members++;
@@ -1785,7 +1786,7 @@ void phase2(void)
   sq1 = sq_create();
   sq2 = sq_create();
   EXEC SQL DECLARE csr224 CURSOR FOR
-    SELECT name, acl_type, acl_id, modby FROM servers
+    SELECT name, acl_type, acl_id, modby, rowid FROM servers
     FOR UPDATE of modby;
   EXEC SQL OPEN csr224;
   while (1)
@@ -1795,11 +1796,11 @@ void phase2(void)
       char name[SERVERS_NAME_SIZE], acl_type[SERVERS_ACL_TYPE_SIZE];
       EXEC SQL END DECLARE SECTION;
 
-      EXEC SQL FETCH csr224 INTO :name, :acl_type, :acl_id, :modby;
+      EXEC SQL FETCH csr224 INTO :name, :acl_type, :acl_id, :modby, :rowid;
       if (sqlca.sqlcode)
 	break;
 
-      maybe_fixup_modby2("servers", "modby", "csr224", modby);
+      maybe_fixup_modby2("servers", "modby", rowid, modby);
       strtrim(acl_type);
       if (!strcmp(acl_type, "USER") && !hash_lookup(users, acl_id))
 	sq_save_data(sq1, (void *)acl_id);
@@ -1813,7 +1814,7 @@ void phase2(void)
   dprintf("Checking serverhosts...\n");
   sq = sq_create();
   EXEC SQL DECLARE csr225 CURSOR FOR
-    SELECT mach_id, modby FROM serverhosts
+    SELECT mach_id, modby, rowid FROM serverhosts
     FOR UPDATE OF modby;
   EXEC SQL OPEN csr225;
   while (1)
@@ -1822,11 +1823,11 @@ void phase2(void)
       int mach_id, modby;
       EXEC SQL END DECLARE SECTION;
 
-      EXEC SQL FETCH csr225 INTO :mach_id, :modby;
+      EXEC SQL FETCH csr225 INTO :mach_id, :modby, :rowid;
       if (sqlca.sqlcode)
 	break;
 
-      maybe_fixup_modby2("serverhosts", "modby", "csr225", modby);
+      maybe_fixup_modby2("serverhosts", "modby", rowid, modby);
       if (!hash_lookup(machines, mach_id))
 	sq_save_data(sq, (void *)mach_id);
     }
@@ -1871,7 +1872,7 @@ void phase2(void)
   sq3 = sq_create();
   sq4 = sq_create();
   EXEC SQL DECLARE csr227 CURSOR FOR
-    SELECT entity_id, type, filsys_id, phys_id, quota, modby
+    SELECT entity_id, type, filsys_id, phys_id, quota, modby, rowid
     FROM quota FOR UPDATE OF modby;
   EXEC SQL OPEN csr227;
   while (1)
@@ -1882,11 +1883,11 @@ void phase2(void)
       EXEC SQL END DECLARE SECTION;
 
       EXEC SQL FETCH csr227 INTO :entity_id, :type, :filsys_id,
-	:phys_id, :quota, :modby;
+	:phys_id, :quota, :modby, :rowid;
       if (sqlca.sqlcode)
 	break;
 
-      maybe_fixup_modby2("quota", "modby", "csr227", modby);
+      maybe_fixup_modby2("quota", "modby", rowid, modby);
       if (type[0] == 'U' && entity_id != 0 && !hash_lookup(users, entity_id))
 	sq_save_data(sq1, (void *)entity_id);
       else if (type[0] == 'G' && !hash_lookup(lists, entity_id))
@@ -1908,7 +1909,7 @@ void phase2(void)
 
   dprintf("Checking hostaccess...\n");
   EXEC SQL DECLARE csr228 CURSOR FOR
-    SELECT mach_id, acl_type, acl_id, modby FROM hostaccess
+    SELECT mach_id, acl_type, acl_id, modby, rowid FROM hostaccess
     FOR UPDATE OF modby;
   EXEC SQL OPEN csr228;
   while (1)
@@ -1918,11 +1919,11 @@ void phase2(void)
       char acl_type[HOSTACCESS_ACL_TYPE_SIZE];
       EXEC SQL END DECLARE SECTION;
 
-      EXEC SQL FETCH csr228 INTO :mach_id, :acl_type, :acl_id, :modby;
+      EXEC SQL FETCH csr228 INTO :mach_id, :acl_type, :acl_id, :modby, :rowid;
       if (sqlca.sqlcode)
 	break;
 
-      maybe_fixup_modby2("hostaccess", "modby", "csr228", modby);
+      maybe_fixup_modby2("hostaccess", "modby", rowid, modby);
       strtrim(acl_type);
       if (!hash_lookup(machines, mach_id))
 	{
@@ -1946,7 +1947,7 @@ void phase2(void)
   sq1 = sq_create();
   sq2 = sq_create();
   EXEC SQL DECLARE csr230 CURSOR FOR
-    SELECT users_id, string_id FROM krbmap
+    SELECT users_id, string_id, rowid FROM krbmap
     FOR UPDATE OF string_id;
   EXEC SQL OPEN csr230;
   while (1)
@@ -1955,13 +1956,13 @@ void phase2(void)
       int users_id, string_id;
       EXEC SQL END DECLARE SECTION;
 
-      EXEC SQL FETCH csr230 INTO :users_id, :string_id;
+      EXEC SQL FETCH csr230 INTO :users_id, :string_id, :rowid;
       if (sqlca.sqlcode)
 	break;
 
       if (!hash_lookup(users, users_id))
 	sq_save_unique_data(sq1, (void *)users_id);
-      else if (!maybe_fixup_unref_string2("krbmap", "string_id", "csr230", string_id))
+      else if (!maybe_fixup_unref_string2("krbmap", "string_id", rowid, string_id))
 	sq_save_unique_data(sq2, (void *)string_id);
     }
   EXEC SQL CLOSE csr230;
@@ -2019,7 +2020,7 @@ void phase2(void)
   sq4 = sq_create();
   sq5 = sq_create();
   EXEC SQL DECLARE csr233 CURSOR FOR
-    SELECT mach_id, loghost, rm, rq, ac, lpc_acl, modby FROM printers;
+    SELECT mach_id, loghost, rm, rq, ac, lpc_acl, modby, rowid FROM printers;
   EXEC SQL OPEN csr233;
   while (1)
     {
@@ -2028,11 +2029,11 @@ void phase2(void)
       EXEC SQL END DECLARE SECTION;
 
       EXEC SQL FETCH csr233 INTO :mach_id, :loghost, :rm, :rq,
-	:lpc_acl, :modby;
+	:lpc_acl, :modby, :rowid;
       if (sqlca.sqlcode)
 	break;
 
-      maybe_fixup_modby2("printers", "modby", "csr233", modby);
+      maybe_fixup_modby2("printers", "modby", rowid, modby);
       if (!hash_lookup(machines, mach_id))
 	sq_save_unique_data(sq1, (void *)mach_id);
       else if (!hash_lookup(machines, rm))

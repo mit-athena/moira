@@ -1,17 +1,17 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/main.c,v 1.14 1989-08-21 22:38:56 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/main.c,v 1.15 1989-08-25 12:36:29 mar Exp $";
 #endif lint
 
-/*	This is the file main.c for the SMS Client, which allows a nieve
- *      user to quickly and easily maintain most parts of the SMS database.
- *	It Contains: The main driver for the SMS Client.
+/*	This is the file main.c for the Moira Client, which allows a nieve
+ *      user to quickly and easily maintain most parts of the Moira database.
+ *	It Contains: The main driver for the Moira Client.
  *	
  *	Created: 	4/12/88
  *	By:		Chris D. Peterson
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/main.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/main.c,v 1.14 1989-08-21 22:38:56 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/main.c,v 1.15 1989-08-25 12:36:29 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -33,6 +33,7 @@
 #include "globals.h"
 
 char * whoami;			/* used by menu.c ugh!!! */
+char * moira_server;
 
 extern Menu sms_top_menu, list_menu, user_menu, dcm_menu;
 
@@ -48,7 +49,7 @@ struct passwd *getpwuid();
 Bool use_menu = TRUE;		/* whether or not we are using a menu. */
 
 /*	Function Name: main
- *	Description: The main driver for the SMS Client.
+ *	Description: The main driver for the Moira Client.
  *	Arguments: argc, argv - standard command line args.
  *	Returns: doesn't return.
  */
@@ -60,7 +61,7 @@ main(argc, argv)
 {
     int status;
     Menu *menu;
-    char *motd, **arg, *server;
+    char *motd, **arg;
 
     if ((user = getlogin()) == NULL) 
 	user = getpwuid((int) getuid())->pw_name;
@@ -75,7 +76,7 @@ main(argc, argv)
 
     verbose = TRUE;
     arg = argv;
-    server = SMS_SERVER;
+    moira_server = SMS_SERVER;
 
     while (++arg - argv < argc) {
 	if (**arg == '-') {
@@ -84,7 +85,7 @@ main(argc, argv)
 	    else if (!strcmp(*arg, "-db"))
 	      if (arg - argv < argc - 1) {
 		  ++arg;
-		  server = *arg;
+		  moira_server = *arg;
 	      } else
 		Usage(argv);
 	    else
@@ -92,19 +93,25 @@ main(argc, argv)
 	}
     }
 
-    if ( status = sms_connect(server) ) 
-	ErrorExit("\nConnection to SMS server failed", status);
+    if ( status = sms_connect(moira_server) ) 
+	ErrorExit("\nConnection to Moira server failed", status);
 
     if ( status = sms_motd(&motd) )
         ErrorExit("\nUnable to check server status", status);
     if (motd) {
-	fprintf(stderr, "The SMS server is currently unavailable:\n%s\n", motd);
+	fprintf(stderr, "The Moira server is currently unavailable:\n%s\n", motd);
 	sms_disconnect();
 	exit(1);
     }
 
-    if ( status = sms_auth(program_name) ) 
-	ErrorExit("\nAuthorization failed -- please run kinit", status);
+    if ( status = sms_auth(program_name) ) {
+	if (status == SMS_USER_AUTH) {
+	    char buf[BUFSIZ];
+	    com_err(program_name, status, "\nPress [RETURN] to continue");
+	    gets(buf);
+	} else
+	  ErrorExit("\nAuthorization failed -- please run kinit", status);
+    }
 
 /*
  * These signals should not be set until just before we fire up the menu

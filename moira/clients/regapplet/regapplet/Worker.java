@@ -152,6 +152,9 @@ public class Worker implements Runnable {
       nextstate = INIT;
       // Moby reset applet
     } catch (MITCipherException e) {
+      applet.showError(true);
+      state = DIALOG;
+      nextstate = INIT;
       e.printStackTrace();
       // Moby reset applet here too.
     } catch (RegAppletException a) {

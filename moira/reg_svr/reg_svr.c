@@ -1,7 +1,7 @@
 /*
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.25 1989-09-01 13:12:43 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.26 1989-09-07 14:59:30 mar Exp $
  *
  *      Copyright (C) 1987, 1988 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -16,7 +16,7 @@
  */
 
 #ifndef lint
-static char *rcsid_reg_svr_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.25 1989-09-01 13:12:43 mar Exp $";
+static char *rcsid_reg_svr_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.26 1989-09-07 14:59:30 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -489,8 +489,9 @@ int do_admin_call(login, passwd, uid)
 	    if (strcmp(admin_errmsg,
 		       "Principal already in kerberos database.") == 0)
 		status = UREG_KRB_TAKEN;
-	    critical_alert(FAIL_INST,"%s is known to Kerberos but not SMS.", 
-			   login);
+	    if (status != ETIMEDOUT)
+	      critical_alert(FAIL_INST,"%s is known to Kerberos but not SMS.", 
+			     login);
 	}
     }
     

@@ -1,4 +1,4 @@
-/* $Id: reg_svr.pc,v 1.13 2002-05-09 03:47:53 zacheiss Exp $
+/* $Id: reg_svr.pc,v 1.14 2002-08-02 10:36:36 zacheiss Exp $
  *
  * Server for user registration with Moira and Kerberos.
  *
@@ -37,7 +37,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.pc,v 1.13 2002-05-09 03:47:53 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.pc,v 1.14 2002-08-02 10:36:36 zacheiss Exp $");
 
 char *whoami, *hostname, *shorthostname;
 
@@ -517,7 +517,10 @@ void SPIN(reg_client *rc, int argc, char **argv)
   if (!rc->username)
     reply(rc, NO_MESSAGE, "GETL", "c", rc->suggestions);
   else
-    reply(rc, FORCED_USERNAME, "GETP", "c", NULL, rc->username);
+    {
+      register_user(rc->uid, rc->username);
+      reply(rc, FORCED_USERNAME, "GETP", "c", NULL, rc->username);
+    }
 }
 
 void LOGN(reg_client *rc, int argc, char **argv)

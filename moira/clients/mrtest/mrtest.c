@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v 1.16 1989-09-20 14:17:15 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v 1.17 1989-12-04 12:47:24 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_test_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v 1.16 1989-09-20 14:17:15 mar Exp $";
+static char *rcsid_test_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v 1.17 1989-12-04 12:47:24 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -22,7 +22,7 @@ static char *rcsid_test_c = "$Header: /afs/.athena.mit.edu/astaff/project/moirad
 
 int ss;
 int recursion = 0;
-extern ss_request_table sms_test;
+extern ss_request_table moira_test;
 extern int sending_version_no;
 
 #ifndef __SABER__
@@ -30,7 +30,7 @@ main(argc, argv)
 	int argc;
 	char **argv;
 #else __SABER__
-sms()
+moira()
 #endif __SABER__
 {	
 	int status;
@@ -39,13 +39,13 @@ sms()
 #ifndef __SABER__
 	whoami = argv[0];
 #else
-	whoami = "sms";
+	whoami = "mrtest";
 #endif __SABER__
 	
 	init_ss_err_tbl();
 
-	ss = ss_create_invocation("sms", "2.0", (char *)NULL,
-				  &sms_test, &status);
+	ss = ss_create_invocation("moira", "2.0", (char *)NULL,
+				  &moira_test, &status);
 	if (status != 0) {
 		com_err(whoami, status, "Unable to create invocation");
 		exit(1);
@@ -115,7 +115,7 @@ test_auth()
 {
 	int status;
 
-	status = sms_auth("smstest");
+	status = sms_auth("mrtest");
 	if (status) ss_perror(ss, status, "");
 }
 

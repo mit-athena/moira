@@ -1,12 +1,12 @@
-	command_table sms_test;
+	command_table moira_test;
 
-	request test_noop, "Ask SMS to do nothing",
+	request test_noop, "Ask Moira to do nothing",
 		noop;
 
-	request test_connect, "Connect to SMS",
+	request test_connect, "Connect to Moira server",
 		connect, c;
 
-	request test_disconnect, "Disconnect from SMS",
+	request test_disconnect, "Disconnect from server",
 		disconnect, d;
 
 	request test_host, "Identify the server host",
@@ -24,10 +24,10 @@
 	request test_query, "Make a query.",
 		query, qy;
 
-	request test_auth, "Authenticate to SMS.",
+	request test_auth, "Authenticate to Moira.",
 		auth, a;
 
-	request test_access, "Check access to an SMS query.",
+	request test_access, "Check access to a Moira query.",
 		access;
 
 	request test_dcm, "Trigger the DCM",

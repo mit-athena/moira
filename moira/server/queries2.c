@@ -1,6 +1,6 @@
 /* This file defines the query dispatch table for version 2 of the protocol
  *
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/queries2.c,v 2.25 1997-01-20 18:26:31 danw Exp $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/queries2.c,v 2.26 1997-08-14 20:22:01 danw Exp $
  *
  * Copyright 1987, 1988 by the Massachusetts Institute of Technology.
  * For copying and distribution information, please see the file
@@ -422,6 +422,24 @@ static char *gubm_fields[] = {
   MIT_ID, CLASS, MOD1, MOD2, MOD3,
 };
 
+static char *gudf_fields[] = {
+  LOGIN,
+  "dirflags",
+};
+
+static struct validate gudf_validate =	
+{
+  VOuser0,
+  2,
+  0,
+  0,
+  0,
+  0,
+  access_user,
+  0,
+  0,
+};
+
 static char *auac_fields[] = {
   LOGIN, UID, SHELL, LAST, FIRST, MIDDLE, STATUS, 
   MIT_ID, CLASS, COMMENTS, SIGNATURE, SECURE,
@@ -574,6 +592,23 @@ static struct validate uust_validate = {
   0,
   USERS_ID,
   0,
+  0,
+  set_modtime_by_id,
+};
+
+static char *uudf_fields[] = {
+  LOGIN,
+  "dirflags",
+};
+
+static struct validate uudf_validate = {
+  VOuser0lock,
+  2,
+  0,
+  0,
+  0,
+  USERS_ID,
+  access_user,
   0,
   set_modtime_by_id,
 };
@@ -2848,6 +2883,21 @@ struct query Queries2[] = {
   },
   
   {
+    /* Q_GUDF - GET_USER_DIRECTORY_FLAGS */
+    "get_user_directory_flags",
+    "gudf",
+    RETRIEVE,
+    "u",
+    USERS_TABLE,
+    "u.dirflags FROM users u",
+    gudf_fields,
+    1,
+    "u.users_id = %d",
+    1,
+    &gudf_validate,
+  },
+
+  {
     /* Q_AUAC - ADD_USER_ACCOUNT */  /* uses prefetch_value() for users_id */
     "add_user_account",
     "auac",
@@ -2967,6 +3017,21 @@ struct query Queries2[] = {
     &uust_validate,
   },
  
+  {
+    /* Q_UUDF - UPDATE_USER_DIRECTORY_FLAGS */
+    "update_user_directory_flags",
+    "uudf",
+    UPDATE,
+    "u",
+    USERS_TABLE,
+    "users SET dirflags = %s",
+    uudf_fields,
+    1,
+    "users_id = %d",
+    1,
+    &uudf_validate,
+  },
+
   {
     /* Q_DUSR - DELETE_USER */ 
     "delete_user",

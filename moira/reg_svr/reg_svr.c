@@ -1,7 +1,7 @@
 /*
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v $
  *      $Author: danw $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.44 1997-09-05 19:14:58 danw Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.45 1998-01-05 14:55:53 danw Exp $
  *
  *      Copyright (C) 1987, 1988 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -16,7 +16,7 @@
  */
 
 #ifndef lint
-static char *rcsid_reg_svr_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.44 1997-09-05 19:14:58 danw Exp $";
+static char *rcsid_reg_svr_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.45 1998-01-05 14:55:53 danw Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -484,13 +484,7 @@ int ureg_kadm_init()
     
     if (status != SUCCESS)
 	com_err(whoami, status, " while get admin tickets");
-#ifdef DEBUG
     else {
-	com_err(whoami, status, "Succeeded in getting admin tickets");
-    }
-#endif
-
-    if (status == SUCCESS) {
 	if ((status = kadm_init_link(PWSERV_NAME, KADM_SINST, krbrealm)) !=
 	    KADM_SUCCESS) {
 	    com_err(whoami, status, " while initializing kadmin connection");

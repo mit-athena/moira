@@ -1,4 +1,4 @@
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/Imakefile,v 1.5 1993-10-25 16:41:17 mar Exp $
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/Imakefile,v 1.6 1994-04-21 14:28:04 tytso Exp $
 #
 # Copyright 1990 by the Massachusetts Institute of Technology.
 #
@@ -28,6 +28,7 @@ all::
 
 world::
 	make ${MFLAGS} clean-imake
+	make ${MFLAGS} imake
 	make ${MFLAGS} Makefile
 	make ${MFLAGS} Makefiles
 	make ${MFLAGS} depend
@@ -37,7 +38,6 @@ world::
 
 world::
 	make ${MFLAGS} clean-imake
-	make ${MFLAGS} imake
 	make ${MFLAGS} Makefile
 	make ${MFLAGS} Makefiles
 	make ${MFLAGS} depend

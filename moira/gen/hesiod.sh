@@ -1,6 +1,6 @@
 #!/bin/sh
 # This script performs updates of hesiod files on hesiod servers.
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/hesiod.sh,v 1.17 1999-09-29 20:38:59 kcr Exp $
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/hesiod.sh,v 1.18 1999-09-29 21:46:26 kcr Exp $
 
 exec >/tmp/moira_update.log 2>&1
 set -x 
@@ -18,7 +18,7 @@ MR_TARERR=47836476
 umask 022
 
 # File that will contain the necessary information to be updated
-TARFILE=/var/tmp/nhesiod.out
+TARFILE=/var/tmp/hesiod.out
 # Directory into which we will empty the tarfile
 SRC_DIR=/etc/athena/_nameserver
 # Directory into which we will put the final product

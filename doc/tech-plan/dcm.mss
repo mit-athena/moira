@@ -1,9 +1,12 @@
 @Comment[
 	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/doc/tech-plan/dcm.mss,v $
 	$Author: ambar $
-	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/doc/tech-plan/dcm.mss,v 1.6 1987-05-29 17:57:42 ambar Exp $
+	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/doc/tech-plan/dcm.mss,v 1.7 1987-05-29 18:26:53 ambar Exp $
 
 	$Log: not supported by cvs2svn $
+Revision 1.6  87/05/29  17:57:42  ambar
+added to the section on security of datagrams.
+
 Revision 1.5  87/05/29  17:47:48  ambar
 replaced "dcm" with "DCM" for consistency.
 
@@ -141,7 +144,6 @@ request.  In partcular, these commands are:
 @end(verbatim)
 
 The complete operation of a DCM intrpretive cycle follows:
-@begin(itemize, spread 1)
 
 The input fields are checked to see if they exist given the query handle.
 Two files are checked.  One file handle.h contains the mapping between
@@ -291,18 +293,19 @@ end header
 	begin query
 		#get all print clusters
 
-		handle = 1 #this is the associated query handle to use
+		handle = 1 #this is the associated query handle
 		input : NULL
 			 #no input
 		output : name
 			#name is a declared variable having the 
-			 structure of the query's associated output 
-			 structure.
+			#structure of the query's associated
+			#output structure.
 		<"cluster = ", name.prcluster>
-			#verbatim info with passed in output variable
+			#verbatim info with passed in
+			#output variable
 	end query
-		#the above query will continue to query until all
-		 fields are found.
+		#the above query will continue to query until
+		#all fields are found.
 	##
 	##query 2, printers by cluster
 	begin query #another query
@@ -325,6 +328,7 @@ end header
 
 The target file would look like the following:
 
+@begin(verbatim)
 #two sharp signs puts data in the target file too
 #query 1, all print clusters
 cluster = e40
@@ -345,7 +349,6 @@ printer type = laser
 print cluster admin
 printer name = juki-admin-1
 printer type = daisy
-
 @end(verbatim)
 
 From a generic database the DCM will take the information, process it into

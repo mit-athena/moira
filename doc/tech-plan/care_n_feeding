@@ -29,6 +29,14 @@ To stop the daemon, send it a SIGTERM or SIGHUP.
 	kill -HUP pid
 
 To restart the daemon, run /u1/sms/bin/startsms.
+You should see three processes in a ps aux after this point:
+ - a "startsms" process (this handles the log)
+ - an "smsd" process (the server daemon)
+ - a "backend" process (the process which actually handles the database).
+
+There may be more than one "backend" process: one for the smsd, one
+for reg_svr (for userreg), and one for the dcm.
+
 
 
 

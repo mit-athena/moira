@@ -1,4 +1,4 @@
-/* $Id: queries2.c,v 2.75 2000-08-10 02:23:50 zacheiss Exp $
+/* $Id: queries2.c,v 2.76 2000-08-25 00:46:14 zacheiss Exp $
  *
  * This file defines the query dispatch table
  *
@@ -1197,7 +1197,7 @@ static char *glin3_fields[] = {
 static char *glin_fields[] = {
   "name",
   "name", "active", "publicflg", "hidden", "maillist", "grouplist", "gid",
-  "nfsgroup", "ace_type", "ace_name", "memacl_type", "memacl_name", 
+  "nfsgroup", "ace_type", "ace_name", "memace_type", "memace_name", 
   "description", "modtime", "modby", "modwith",
 };
 

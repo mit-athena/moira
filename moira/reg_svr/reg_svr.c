@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v $
  *	$Author: wesommer $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.1 1987-07-31 15:48:13 wesommer Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.2 1987-08-22 18:39:45 wesommer Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
@@ -11,10 +11,13 @@
  * 	admin_server, and is a server for the userreg program.
  * 
  *	$Log: not supported by cvs2svn $
+ * Revision 1.1  87/07/31  15:48:13  wesommer
+ * Initial revision
+ * 
  */
 
 #ifndef lint
-static char *rcsid_reg_svr_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.1 1987-07-31 15:48:13 wesommer Exp $";
+static char *rcsid_reg_svr_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.2 1987-08-22 18:39:45 wesommer Exp $";
 #endif lint
 
 #include <stdio.h>
@@ -29,10 +32,19 @@ static char *rcsid_reg_svr_c = "$Header: /afs/.athena.mit.edu/astaff/project/moi
 #include "ureg_err.h"
 #include "ureg_proto.h"
 #include "../../include/sms.h"
+#include "admin_server.h"
+#include "admin_err.h" 
 #include <strings.h>
 
 extern void abort();
+extern char *strdup();
+extern char *malloc();
+extern int krb_err_base;
+extern char admin_errmsg[];
 
+long now;
+#define STAMP { time (&now); printf(ctime(&now)); }
+		       
 struct msg {
     u_long version;
     u_long request;
@@ -43,12 +55,6 @@ struct msg {
 };
 
 static char retval[BUFSIZ];
-
-#if defined(vax) || defined(ibm032) || defined(sun)
-#define MAXINT 0x7fffffff
-#else
-    Hey turkey!  What's the biggest integer on this machine?
-#endif
 
 main()
 {
@@ -61,17 +67,21 @@ main()
     extern int errno;
     u_long seqno;
     struct msg message;
+    extern char *whoami;
+
+    setlinebuf(stderr);
+    whoami = "reg_svr";
     
     init_ureg_err_tbl();
     
     status = sms_connect();
     if (status != 0) {
-	com_err("reg_svr", status, "");
+	com_err("reg_svr", status, " on connect");
 	exit(1);
     }
     status = sms_auth();
     if (status != 0) {
-	com_err("reg_svr", status, "");
+	com_err("reg_svr", status, " on auth");
 	exit(1);
     }
     
@@ -137,21 +147,13 @@ main()
     }
 }
 
-set_password(message)
-    struct msg *message;
-{
-    /* validate, as with verify, that user is who he claims to be */
-    /* validate that state is equal to '1' */
-    /* send set password request to kerberos admin_server */
-    /* reflect reply to client */
-    return 0;
-}
-    
 int got_one;
 int reg_status;
 char *mit_id;
 char *reg_misc;
 int reg_misc_len;
+int user_id;
+
 #define min(a,b) ((a)>(b)?(b):(a))
     
 int validate_idno(message, db_mit_id, first, last)
@@ -161,7 +163,7 @@ int validate_idno(message, db_mit_id, first, last)
 {
     C_Block key;
     Key_schedule sched;
-    char decrypt[BUFSIZ];
+    static char decrypt[BUFSIZ];
     char recrypt[14];
     static char hashid[14];
     char idnumber[BUFSIZ];
@@ -208,9 +210,10 @@ int validate_idno(message, db_mit_id, first, last)
     reg_misc = temp;
     reg_misc_len = len;
     mit_id = hashid;
-    
     return 0;
 }
+
+static int status_in_db;
 
 vfy_callbk(argc, argv, p_message)
     int argc;			/* Should sanity check this.. */
@@ -222,8 +225,9 @@ vfy_callbk(argc, argv, p_message)
     char *firstname, *lastname;
     int status;
     
+#ifdef debug
     printf("Callback: %s %s %s\n", argv[8], argv[5], argv[4]);
-    
+#endif debug
     if (got_one) return 0;
     reg_status = 0;
     
@@ -233,11 +237,14 @@ vfy_callbk(argc, argv, p_message)
 
     status = validate_idno(message, db_mit_id, firstname, lastname);
     if (status) return 0; /* Nope; decryption failed */
-    
-    if (atoi(argv[7]) == 1) {
-	reg_status = UREG_ALREADY_REGISTERED;
+
+    status_in_db = atoi(argv[7]);
+    reg_status = status_in_db;    
+
+    if (status_in_db != 0) {
 	(void) strcpy(retval, argv[0]);
     }
+    user_id = atoi(argv[1]);
     got_one = 1;
     return 0;
 }    
@@ -278,7 +285,8 @@ int verify_user(message)
     
     if (status != 0) goto punt;
 
-    if (reg_status != 0) status = reg_status;
+    if (reg_status == 1) status = UREG_ALREADY_REGISTERED;
+    if (reg_status == 2) status = UREG_NO_PASSWD_YET;
     
 punt:
     return status;
@@ -291,26 +299,36 @@ reserve_user(message)
     int status;
     int i;
     char *login;
+    char uid_buf[20];
     
+    STAMP;
     printf("reserve_user\n");
 
     argv[0] = "gufl";		/* get_user_by_first_and_last */
     argv[1] = message->first;
     argv[2] = message->last;
     got_one = 0;
-
+    
     status = sms_query_internal(3, argv, vfy_callbk, (char *)message);
 
+    STAMP;
+    
     if (status == SMS_NO_MATCH) status = UREG_USER_NOT_FOUND;
     if (!got_one && !status)
 	status = UREG_USER_NOT_FOUND;
 
     if (status != 0) goto punt;
     if (reg_status != 0) {
-	status = reg_status;
+	status = UREG_ALREADY_REGISTERED;
 	goto punt;
     }
-
+    /*
+     * He's made it past this phase already.
+     */
+    if (status_in_db == 2) {
+	status = 0;
+	goto punt;
+    }
     /* Sanity check requested login name. */
     printf("reg_misc_len = %d\n", reg_misc_len);
 
@@ -327,95 +345,139 @@ reserve_user(message)
     login = reg_misc;
     
     /* Send request to kerberos admin_server for login name */
+    /* get keys */
+    printf("get_svc_in_tkt\n");
+    status = get_svc_in_tkt("register", "kerberos", "ATHENA.MIT.EDU",
+			    "changepw", "kerberos",
+			    1, "/etc/srvtab");
+    if (status) {
+	    status += krb_err_base;
+	    goto punt;
+    }
+    STAMP;
+    
+    printf("admin_call\n");
+    /* send set password request to kerberos admin_server */
+    (void) sprintf(uid_buf, "%013d", user_id); /* 13 chars of placebo */
+					       /* for backwards-compat. */
+    
+    status = admin_call(ADMIN_ADD_NEW_KEY_ATTR, login, "", 
+			"", uid_buf);
+
+    if (status) {
+	    if (status == ADMIN_SERVER_ERROR) {
+		    printf("Server error: %s\n", admin_errmsg);
+		    
+		    if (strcmp(admin_errmsg,
+				"Principal already in kerberos database.") ==0)
+			    status = UREG_LOGIN_USED;
+	    }
+	    goto punt;
+    }
+
+    dest_tkt();
     /* If valid: */
-
+    STAMP;
+    
     /* Set login name */
-    set_login(login, mit_id);
-    
+    status = set_login(login, mit_id);
+    if (status) {
+	com_err("set_login", status, 0);
+	goto punt;
+    }
     /* choose post office */
-    choose_pobox(login);
-
-    /* set quota entry, create filsys */
-    alloc_filsys(login);
-
-    /* set filsys and status in SMS database */
-    set_status_filsys(reg_misc, mit_id);
+    STAMP;
     
+    status = choose_pobox(login);
+    if (status) {
+	com_err("choose_pobox", status, 0);
+	goto punt;
+    }
+    /* set quota entry, create filsys */
+    STAMP;
+    
+    status = alloc_filsys(login, SMS_FS_STUDENT, 0, 0);
+    if (status) {
+	com_err("alloc_filsys", status, 0);
+	goto punt;
+    }
+    /* create group */
+    STAMP;
+    
+    status = create_group(login);
+    if (status) {
+	com_err("create_group", status, 0);
+	goto punt;
+    }
+    /* set filsys and status in SMS database */
+    STAMP;
+    
+    status = set_status_filsys(reg_misc, mit_id);
+    if (status) {
+	com_err("set_filsys", status, 0);
+	goto punt;
+    }
 punt:
+    dest_tkt();
+    STAMP;
     printf("reserve_user returning %s\n", error_message(status));
     return status;
 }
 
-extern char *malloc();
-
-char *strdup(cp)
-    char *cp;
+set_password(message)
+    struct msg *message;
 {
-    int len = strlen(cp) + 1;
-    char *np = malloc(len);
-    bcopy(cp, np, len);
-    return np;
-}
-
-static char *pohost;
-static int min_usage;
-
-static po_callbk(argc, argv, argp)
-    int argc;
-    char **argv;
-{
-    if (!isdigit(*argv[6])) {
-	printf("non-digit value_1 field??\n");
-	return 0;	
-    }
-    
-    if (atoi(argv[6]) < min_usage) {
-	min_usage = atoi(argv[6]);
-	if (pohost) free(pohost);
-	pohost = strdup(argv[1]);
-    }
-	
-    return 0;
-}
-
-choose_pobox(login)
-    char *login;
-{
+    char *argv[3];
     int status;
-    static char *argv[3]={
-	"gshi",
-	"pop",
-	"*"
-    };
-    static char *apoa[5] = {
-	"add_pobox",
-	0,
-	"pop",
-	0,
-	0
-    }; 
     
-    pohost = NULL;
-    min_usage = MAXINT;	/* MAXINT */
-    status = sms_query_internal(3, argv, po_callbk,(char *)&min_usage);
-    if (status != 0) {
-	com_err("reg_svr", status, "finding pobox");
-	printf("Can't find postoffices\n");
-	return status;
-    }
-    printf("Chose %s\n", pohost);
-    apoa[1] = apoa[4] = login;
-    apoa[3] = pohost;
-    status = sms_query_internal(5, apoa, abort, 0);
+    printf("set_password\n");
 
-    if (status == SMS_EXISTS) status = 0;
+    /* validate that user is who he claims to be */
+
+    argv[0] = "get_user_by_first_and_last";
+    argv[1] = message->first;
+    argv[2] = message->last;
+    got_one = 0;
     
-    if (status != 0) {
-	com_err("reg_svr", status, "adding pobox");
+    status = sms_query_internal(3, argv, vfy_callbk, (char *)message);
+    
+    if (status == SMS_NO_MATCH) status = UREG_USER_NOT_FOUND;
+    if (!got_one && !status)
+	status = UREG_USER_NOT_FOUND;
+    
+    if (status != 0) goto punt;
+
+    /* validate that state is equal to '2' (login, but no password) */
+
+    if (reg_status != 2) {
+	status = UREG_NO_LOGIN_YET;
+	goto punt;
     }
+
+    printf("password for %s would be set to %s\n", retval ,reg_misc);
+
+    /* get keys */
+    status = get_svc_in_tkt("register", "kerberos", "ATHENA.MIT.EDU",
+			    "changepw", "kerberos",
+			    1, "/etc/srvtab");
+    if (status) {
+	    status += krb_err_base;
+	    goto punt;
+    }
+    /* send set password request to kerberos admin_server */
+    status = admin_call(ADMIN_SET_KDC_PASSWORD, retval, "", 
+			reg_misc, "BBBBBBBBBBBBB");
+
+    if (status) goto punt;
+    dest_tkt();
+    
+    status = set_final_status(retval, mit_id);
+
+    /* reflect reply to client */
+punt:
+    dest_tkt();
     return status;
 }
-
 
 parse_pkt(buf, len, seqnop, messagep)
     char *buf;
@@ -512,12 +574,12 @@ set_login(username, idnumber)
 {
     char *argv[2];
     int status, i;
-    char *retv[12];
+    char *retv[13];
     
     argv[0] = "get_user_by_mitid";
     argv[1] = idnumber;
 
-    for (i=0; i<12; i++) {
+    for (i=0; i<13; i++) {
 	retv[i] = 0;
     }
 
@@ -526,10 +588,15 @@ set_login(username, idnumber)
 
     retv[0] = retv[1];
     retv[1] = username;
+    if (retv[4]) free(retv[4]);
+    retv[4] = "null";		/* No such filesystem */
     
     printf("Update_user(%s, %s)\n", retv[0], retv[1]);
     
     status = sms_query("update_user", 12, retv, abort, 0);
+    retv[1] = 0;
+    retv[4] = 0;
+    
     for (i=1; i<12; i++) {
 	if (retv[i]) free(retv[i]);
 	retv[i] = 0;
@@ -548,12 +615,12 @@ set_status_filsys(username, idnumber)
 {
     char *argv[2];
     int status, i;
-    char *retv[12];
+    char *retv[13];
     
     argv[0] = "get_user_by_mitid";
     argv[1] = idnumber;
 
-    for (i=0; i<12; i++) {
+    for (i=0; i<13; i++) {
 	retv[i] = 0;
     }
 
@@ -579,70 +646,57 @@ set_status_filsys(username, idnumber)
     }
     return status;
 }    
-
-static char *nfs_device;
-static char *nfs_dir;
-static char *nfs_host;
-static int nfs_alloc;
-
-    
-static afcb(argc, argv, argp)
-    int argc;
-    char **argv;
-    char *argp;
-{
-    if ((atoi(argv[3]) & 1) == 0) return 0; /* not free for alloc. */
-    
-    if (atoi(argv[4]) < nfs_alloc) {
-	nfs_alloc = atoi(argv[4]);
-	if (nfs_device) free(nfs_device);
-	if (nfs_dir) free(nfs_dir);
-	if (nfs_host) free(nfs_host);
-	nfs_host = strdup(argv[0]);
-	nfs_device = strdup(argv[1]);
-	nfs_dir = strdup(argv[2]);
-    }
-    return 0;
-}
-
 /*
- * Allocate home filesystem.
+ * Set the status and filsys of user with username "uname" and filesys filsys.
  */
 
-alloc_filsys(login)
+set_final_status(username, idnumber)
+    char *username;
+    char *idnumber;
+{
+    char *argv[2];
+    int status, i;
+    char *retv[13];
+    
+    argv[0] = "get_user_by_mitid";
+    argv[1] = idnumber;
+
+    for (i=0; i<13; i++) {
+	retv[i] = 0;
+    }
+
+    status = sms_query_internal(2, argv, store_user, (char *)(retv+1));
+    if (status) return status;
+
+    retv[0] = retv[1];
+
+    free(retv[8]);
+    retv[8] = "1";
+    
+    printf("Update_user(%s, %s)\n", retv[0], retv[1]);
+    
+    status = sms_query("update_user", 12, retv, abort, 0);
+    retv[8] = 0;
+    for (i=1; i<12; i++) {
+	if (retv[i]) free(retv[i]);
+	retv[i] = 0;
+    }
+    return status;
+}    
+
+create_group(login)
     char *login;
 {
-    static char *argv[] = {
-	"get_all_nfsphys"
-	};
-    static char *alocv[] = {
-	"add_locker",
-	0,
-	0,
-	0,
-	"1024"
-	};
-    
     int status;
-    nfs_alloc = MAXINT;
+    static char *cr[] = {
+	"add_user_group",
+	0,
+    };
     
-    status = sms_query_internal(1, argv, afcb, 0);
-    if (status) {
-	com_err("reg_svr", status, "while doing get_all_nfsphys");
-	return status;
-    }
-    alocv[1] = login;
-    alocv[2] = nfs_host;
-    alocv[3] = nfs_device;
-    printf("add_locker(%s, %s, %s)\n", login, nfs_host, nfs_device);
+    cr[1] = login;
     
-    status = sms_query_internal(5, alocv, abort, 0);
-    if (status) {
-	com_err("reg_svr", status, "while adding locker");
-	return status;
-    }
-}
-
+    return sms_query_internal(2, cr, abort, 0);
+}    
 /*
  * Local Variables:
  * mode: c
@@ -653,3 +707,18 @@ alloc_filsys(login)
  * c-label-offset: -4
  * End:
  */
+char *get_krbhst(a1, a2)
+	char *a1;
+	char *a2;
+{
+	strcpy(a1, "ICARUS.MIT.EDU");
+	return 0;
+}
+
+char *get_krbrlm(a1)
+	char *a1;
+{
+	strcpy(a1, "ATHENA.MIT.EDU");
+	return 0;
+}
+

@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/pobox.c,v 1.15 1990-04-25 12:39:49 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/pobox.c,v 1.16 1990-06-07 17:57:37 mar Exp $";
 #endif lint
 
 /*	This is the file pobox.c for the MOIRA Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/pobox.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/pobox.c,v 1.15 1990-04-25 12:39:49 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/pobox.c,v 1.16 1990-06-07 17:57:37 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -48,6 +48,8 @@ char ** info;
     
     sprintf(buf, "Address: %-10s Box: %-35s Type: %s", info[PO_NAME],
 	    info[PO_BOX], info[PO_TYPE]);
+    Put_message(buf);
+    sprintf(buf, MOD_FORMAT, info[4], info[3], info[5]);
     Put_message(buf);
 }
 
@@ -223,7 +225,7 @@ char **argv;
 	default:
 	    return(DM_NORMAL);	/* ^C hit. */
 	}
-	
+	break;
     default:			/* ^C hit. */
 	type = "NONE";
 	break;

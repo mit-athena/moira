@@ -49,8 +49,8 @@ create table users
 	flag         	INTEGER		DEFAULT 0	NOT NULL,
 	created		DATE		DEFAULT SYSDATE	NOT NULL,
 	creator		INTEGER		DEFAULT 0	NOT NULL,
-	winhomedir	VARCHAR(64)	DEFAULT '[AFS]' NOT NULL,
-	winprofiledir	VARCHAR(64)	DEFAULT '[AFS]' NOT NULL,
+	winhomedir	VARCHAR(260)	DEFAULT '[AFS]' NOT NULL,
+	winprofiledir	VARCHAR(260)	DEFAULT '[AFS]' NOT NULL,
 );
 
 create table krbmap

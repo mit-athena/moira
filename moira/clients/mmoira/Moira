@@ -4,14 +4,6 @@
 *highlightOnEnter:	True
 
 *textwidget.columns:	50
-!*textwidget.translations:	#override \n\
-!				<Key>Return:	next-tab-group()
-!*textwidget.translations:	#override \n\
-!				<Key>Return:	NextOrDoIt()
-!*board*translations:		#override \n\
-!				None<Key>Return:	NextOrDoIt()\n\
-!				<Key>G:		NextOrDoIt()\n\
-!				Ctrl<Key>C:	cancel-form()
 
 *logwidget.editMode:		XmMULTI_LINE_EDIT
 *logwidget.editable:		False
@@ -20,3 +12,46 @@
 *logwidgetSW.y:			40
 *logwidgetSW.width:		673
 
+# The are the additional translations added to every field in a form
+# so that keyboard accelerators and navigation do the right thing.
+*formTranslations:	None<Key>Return:	next-or-do-it()\n\
+			Ctrl<Key>C:		cancel-form()\n\
+			Shift<Key>Return:	execute-form()\n\
+			Meta<Key>?:		help()
+# These are the additional translations added to the Motif text widget
+# for emacs style editing.
+*textTranslations:	<FocusOut>: focusOut() MoiraFocusOut() \n\
+	~Shift ~Ctrl ~Meta ~Alt <Key>osfDelete:	delete-previous-character() \n\
+	~Shift ~Ctrl Meta ~Alt <Key>osfDelete:	kill-previous-word() \n\
+	~Shift ~Ctrl ~Meta Alt <Key>osfDelete:	kill-previous-word() \n\
+        Ctrl<Key>D:             delete-next-character() \n\
+        Meta<Key>D:             kill-next-word() \n\
+        Alt<Key>D:		kill-next-word() \n\
+        Ctrl<Key>K:             kill-to-end-of-line() \n\
+        Ctrl<Key>W:             kill-selection() \n\
+        Ctrl<Key>Y:             unkill() \n\
+        Ctrl<Key>F:             forward-character() \n\
+        Ctrl<Key>B:             backward-character() \n\
+        Ctrl<Key>A:		beginning-of-line() \n\
+	Ctrl<Key>E:		end-of-line() \n\
+        Meta<Key>F:             forward-word() \n\
+        Alt<Key>F:		forward-word() \n\
+        Meta<Key>B:             backward-word() \n\
+        Alt<Key>B:		backward-word() \n\
+	~Shift Meta<Key><:	beginning-of-line() \n\
+	~Shift Alt<Key><:	beginning-of-line() \n\
+	Shift Meta<Key><:	end-of-line() \n\
+	Shift Alt<Key><:	end-of-line() \n\
+	Meta<Key>>:		end-of-line() \n\
+	Alt<Key>>:		end-of-line()
+
+# These are the additional translations added to the Motif text widget
+# for the log window.  The two noop translations are here to avoid
+# nasty interactions with the selection mechanism.  They match the
+# existing translations that involve shifted mouse buttons.
+*logTranslations:	~Ctrl  Shift ~Meta ~Alt<Btn1Down>: moiraRetrieve()\n\
+			~Ctrl ~Meta ~Alt<Btn1Up>: noop()\n\
+			~Ctrl Shift ~Meta ~Alt<Btn1Motion>: noop()\n\
+			~Ctrl  Shift ~Meta ~Alt<Btn2Down>: moiraModify()
+
+*helpFile:		/afs/athena/system/moira/lib/mmoira.helpfile

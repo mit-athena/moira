@@ -1,4 +1,4 @@
-/* $Id: common.pc,v 1.4 2002-09-09 03:41:59 zacheiss Exp $
+/* $Id: common.pc,v 1.5 2003-03-18 22:30:54 zacheiss Exp $
  *
  * Staff/Student load common code
  *
@@ -19,7 +19,7 @@
 EXEC SQL INCLUDE sqlca;
 extern void sqlglm(char *, unsigned int *, unsigned int *);
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/common.pc,v 1.4 2002-09-09 03:41:59 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/common.pc,v 1.5 2003-03-18 22:30:54 zacheiss Exp $");
 
 EXEC SQL BEGIN DECLARE SECTION;
 extern char *prog;
@@ -252,25 +252,11 @@ void newuser(struct entry *e, int secure)
 
   users_id = set_next_users_id();
   uid = set_next_uid();
+  sprintf(login, "#%d", uid);
   if (!strcmp(e->type, "LINCOLN"))
-    {
-      char *p;
-
-      strncpy(login, e->first, 2);
-      login[2] = '\0';
-      /* strip leading zeroes */
-      p = e->id+4;
-      while (*p == '0')
-	p++;
-      strncat(login, p, strlen(p));
-      lowercase(login);
-      st = US_NO_LOGIN_YET_KERBEROS_ONLY;
-    }
+    st = US_NO_LOGIN_YET_KERBEROS_ONLY;
   else
-    {
-      sprintf(login, "#%d", uid);
-      st = US_NO_LOGIN_YET;
-    }
+    st = US_NO_LOGIN_YET;
   last = e->last;
   first = e->first;
   middle = e->middle;

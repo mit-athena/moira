@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/hesiod.qc,v 1.17 1989-08-16 20:40:42 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/hesiod.qc,v 1.18 1989-08-16 21:25:32 mar Exp $
  *
  * This generates the zone files necessary to load a hesiod server.
  * The following zones are generated: passwd, uid, pobox, group,
@@ -382,6 +382,7 @@ do_filsys()
 ##  char name[33], type[9], loc[81], access[2], mount[33], trans[257];
 ##  char *filetime, comments[65];
 ##  int flag1, flag2, flag3, flag4, id, fid;
+    char *index();
 
     sprintf(outf, "%s/filsys.db", HESIOD_DIR);
 

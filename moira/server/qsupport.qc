@@ -1,18 +1,21 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v $
  *	$Author: wesommer $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.2 1987-07-29 16:00:39 wesommer Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.3 1987-07-30 00:26:11 wesommer Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
  *	$Log: not supported by cvs2svn $
+Revision 1.2  87/07/29  16:00:39  wesommer
+Fixed add_locker.
+
 Revision 1.1  87/07/29  15:13:57  wesommer
 Initial revision
 
  */
 
 #ifndef lint
-static char *rcsid_qsupport_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.2 1987-07-29 16:00:39 wesommer Exp $";
+static char *rcsid_qsupport_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.3 1987-07-30 00:26:11 wesommer Exp $";
 #endif lint
 
 #include "query.h"
@@ -56,6 +59,48 @@ access_user(q, argv, cl)
     return(SMS_SUCCESS);
 ##}
     
+/**
+ ** access_pop - same as access_user plus verifies that a user has only one
+ **		 mailbox of type "POP"
+ **
+ ** Inputs:
+ **   argv[0] - users_id
+ **   argv[1] - type
+ **   argv[2] - mach_id
+ **   argv[3] - box
+ **
+ ** Description:
+ **   - if q->name = "add_pobox" and type = "POP", 
+ **        verify that no POP box already exists for user
+ **   - call access_user
+ **
+ **/
+
+access_pop(q, argv, cl)
+    struct query *q;
+    char *argv[];
+    client *cl;
+##{
+##  int users_id;
+##  int mach_id;
+##  char *box;
+##  int exists;
+
+    if (!bcmp(q->name, "add_pobox", 10) && !bcmp(argv[1], "POP", 4)) {
+	users_id = *(int *)argv[0];
+	mach_id = *(int *)argv[2];
+	box = argv[3];
+##      range of p is pobox
+##      repeat retrieve (exists = any(p.#box where p.#users_id = @users_id
+##				      and p.type = "POP" 
+##				      and p.#mach_id = @mach_id
+##				      and p.#box = @box))
+	if (exists) return(SMS_EXISTS);
+    }
+
+    return(access_user(q, argv, cl));
+##}
+
 /**
  ** access_list - check access for adding or deleting list members
  **
@@ -240,6 +285,38 @@ set_finger_modtime(q, argv)
 ##}
 
 /**
+ ** set_pop_usage - incr/decr usage count for pop server in serverhosts talbe
+ **
+ ** Inputs:
+ **   q->name - "add_pobox" or "delete_pobox"
+ **   argv[2] - mach_id
+ **
+ ** Description:
+ **   - incr/decr value field in serverhosts table for pop/mach_id
+ **
+ **/
+
+set_pop_usage(q, argv)
+    struct query *q;
+    char *argv[];
+##{
+##  int mach_id;
+
+    mach_id = *(int *)argv[2];
+##  range of sh is serverhosts
+
+    if (!bcmp(q->name, "add_pobox", 10)) {
+##      repeat replace sh (value1 = sh.value1 + 1)
+##             where sh.service = "pop" and sh.#mach_id = @mach_id
+    } else if (!bcmp(q->name, "delete_pobox", 13)) {
+##      repeat replace sh (value1 = sh.value1 - 1)
+##             where sh.service = "pop" and sh.#mach_id = @mach_id
+    }
+
+    return(SMS_SUCCESS);
+##}
+
+/**
  ** delete_list_members - called after the delete_list query to clean up
  **			  members table.
  **
@@ -320,26 +397,24 @@ grvd_support(q, sq, v, action, actarg)
 ##  char shutdown[33];
 ##  int list_id;
 
-    targv[1] = oper;
-    targv[2] = admin;
-    targv[3] = shutdown;
+    targv[0] = oper;
+    targv[1] = admin;
+    targv[2] = shutdown;
 
 ##  range of l is list
 
     while (sq_get_data(sq, &argv)) {
-	sscanf(argv[1], "%d", &list_id);
+	sscanf(argv[0], "%d", &list_id);
 ##      repeat retrieve (oper = l.name) where l.#list_id = @list_id
-	sscanf(argv[2], "%d", &list_id);
+	sscanf(argv[1], "%d", &list_id);
 ##      repeat retrieve (admin = l.name) where l.#list_id = @list_id
-	sscanf(argv[3], "%d", &list_id);
+	sscanf(argv[2], "%d", &list_id);
 ##      repeat retrieve (shutdown = l.name) where l.#list_id = @list_id
 	
-	targv[0] = argv[0];
-	(*action)(4, targv, actarg);
+	(*action)(3, targv, actarg);
 	free(argv[0]);
 	free(argv[1]);
 	free(argv[2]);
-	free(argv[3]);
     }
 
     sq_destroy(sq);
@@ -360,13 +435,48 @@ set_next_object_id(object)
     char *object;
 ##{
 ##  char *name;
-##  int id;
 
     name = object;
 ##  range of v is values
-##  repeat retrieve (id = v.value) where v.#name = @name
-    id++;
-##  repeat replace v (value = @id) where v.#name = @name
+##  repeat replace v (value = v.value + 1) where v.#name = @name
+    return(SMS_SUCCESS);
+##}
+
+/**
+ ** get_query_need - check modtime of query's associated table against given
+ **                  time and return true if greater (false if not)
+ **
+ ** Inputs:
+ **   argv[0] - query name
+ **   argv[1] - time to compare against
+ **
+ **/
+
+get_query_need(q, argv, action, actarg)
+    struct query *q;
+    register char *argv[];
+    int (*action)();
+##{
+    struct query *q1;
+##  char *last_get_time;
+##  char *table;
+##  int need;
+    char *result;
+    struct query *get_query_by_name();
+
+    q1 = get_query_by_name(argv[0]);
+
+    last_get_time = argv[1];
+    table = q1->rtable;
+
+    if (q1->type != RETRIEVE || table == (char *)0) return(SMS_NO_MATCH);
+
+##  range of tbs is tblstats
+##  repeat retrieve (need = any(tbs.modtime where tbs.#table = @table and
+##				tbs.modtime > @last_get_time))
+    
+    result = (need) ? "true" : "false";
+    (*action)(1, &result, actarg);
     return(SMS_SUCCESS);
 ##}
 
@@ -402,7 +512,7 @@ add_locker(q, argv)
 ##  char *device;
 ##  int quota;
 ##  int rowcount;
-##  char *login;
+##  char login[9];
 ##  char dir[32];
 ##  int allocated;
 ##  char locker[64];
@@ -418,6 +528,7 @@ add_locker(q, argv)
 ##  range of u is users
 ##  range of f is filesys
 ##  range of np is nfsphys
+##  range of tbs is tblstats
 
     /* get login name */
 ##  repeat retrieve (login = u.#login) where u.#users_id = @users_id
@@ -443,15 +554,88 @@ add_locker(q, argv)
 ##             (#label = @login, type = "NFS", #mach_id = @mach_id,
 ##		name = @locker, access = "w", order = 1, #mount = @mount,
 ##		acl_id = @user_acl)
+##  repeat replace tbs (appends = tbs.appends + 1, modtime = "now")
+##             where tbs.table = "filesys"
 
     /* increment usage count in nfsphys table */
     allocated += quota;
 ##  replace np (#allocated = allocated) 
 ##	    where np.#mach_id = mach_id and np.#device = device
+##  repeat replace tbs (updates = tbs.updates + 1, modtime = "now")
+##             where tbs.table = "nfsphys"
 
     /* create nfsquota entry */
 ##  append nfsquota (#users_id = users_id, #mach_id = mach_id,
 ##		     #device = device, #quota = quota)
+##  repeat replace tbs (appends = appends + 1, modtime = "now")
+##             where tbs.table = "nfsquota"
+
+    return(SMS_SUCCESS);
+##}
+
+/**
+ ** delete_locker - special query routine for deleting a user locker
+ **
+ ** Inputs:
+ **   argv[0] - users_id
+ **   argv[1] - machine_id
+ **   argv[2] - device
+ **   argv[3] - quota
+ ** 
+ ** Description:
+ **   - delete filesys entry (label=<login>)
+ **   - decrement allocated in nfsphys by quota
+ **   - delete nfsquota entry
+ **
+ ** Errors:
+ **   - SMS_FILESYS - no filesys exists for user
+ ** 
+ **/
+
+delete_locker(q, argv)
+    register struct query *q;
+    register char *argv[];
+##{
+##  int users_id;
+##  int mach_id;
+##  char *device;
+##  int quota;
+##  int rowcount;
+##  char login[9];
+
+    /* copy arguments */
+    users_id = *(int *)argv[0];
+    mach_id = *(int *)argv[1];
+    device = argv[2];
+    sscanf(argv[3], "%d", &quota);
+
+##  range of u is users
+##  range of f is filesys
+##  range of np is nfsphys
+##  range of nq is nfsquota
+##  range of tbs is tblstats
+
+    /* get login name */
+##  repeat retrieve (login = u.#login) where u.#users_id = @users_id
+
+    /* delete the filesys entry */
+##  repeat delete f where f.label = @login
+##  inquire_equel (rowcount = "rowcount")
+    if (rowcount == 0) return(SMS_FILESYS);
+##  repeat replace tbs (deletes = tbs.deletes + 1, modtime = "now")
+##             where tbs.table = "filesys"
+
+    /* decrement usage count in nfsphys table */
+##  replace np (#allocated = np.#allocated - quota) 
+##	    where np.#mach_id = mach_id and np.#device = device
+##  repeat replace tbs (updates = tbs.updates + 1, modtime = "now")
+##             where tbs.table = "nfsphys"
+
+    /* delete nfsquota entry */
+##  delete nq where nq.#users_id = users_id and nq.#mach_id = mach_id and
+##                  nq.#device = device
+##  repeat replace tbs (deletes = tbs.deletes + 1, modtime = "now")
+##             where tbs.table = "nfsquota"
 
     return(SMS_SUCCESS);
 ##}

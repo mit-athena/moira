@@ -1,4 +1,4 @@
-# $Id: mr_et.et,v 1.24 2000-06-02 19:47:15 zacheiss Exp $
+# $Id: mr_et.et,v 1.25 2000-08-13 04:06:19 zacheiss Exp $
 	error_table sms
 
 ec	MR_NOT_CONNECTED,
@@ -218,5 +218,8 @@ ec	MR_VERSION_HIGH,
 
 ec	MR_RESERVED,
 	"That name is reserved"
+
+ec	MR_QUALITY,
+	"Password is too simple."
 
 	end

@@ -1,13 +1,13 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/hostname.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/hostname.c,v 1.2 1988-09-14 12:16:09 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/hostname.c,v 1.3 1994-09-16 22:01:55 jweiss Exp $
  */
 /*  (c) Copyright 1988 by the Massachusetts Institute of Technology. */
 /*  For copying and distribution information, please see the file */
 /*  <mit-copyright.h>. */
 
 #ifndef lint
-static char *rcsid_hostname_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/hostname.c,v 1.2 1988-09-14 12:16:09 mar Exp $";
+static char *rcsid_hostname_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/hostname.c,v 1.3 1994-09-16 22:01:55 jweiss Exp $";
 #endif	lint
 
 /* PrincipalHostname, borrowed from rcmd.c in Kerberos code */
@@ -17,7 +17,7 @@ static char *rcsid_hostname_c = "$Header: /afs/.athena.mit.edu/astaff/project/mo
 #include <netinet/in.h>
 #include <netdb.h>
 #include <ctype.h>
-#include <strings.h>
+#include <string.h>
 char *
 PrincipalHostname(alias)
      char *alias;
@@ -25,7 +25,7 @@ PrincipalHostname(alias)
      struct hostent *h;
      char *phost = alias;
      if ((h=gethostbyname(alias)) != (struct hostent *)NULL) {
-	  char *p = index(h->h_name, '.');
+	  char *p = strchr(h->h_name, '.');
 	  if (p)
 	       *p = NULL;
 	  p = phost = h->h_name;

@@ -1,14 +1,14 @@
 .TH REG_SVR 8 "30 Nov 1988" "Project Athena"
-\" RCSID: $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/man/reg_svr.8,v 1.3 1988-12-06 14:35:34 mar Exp $
+\" RCSID: $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/man/reg_svr.8,v 1.4 1990-03-08 18:12:36 mar Exp $
 .SH NAME
-reg_svr, startreg \- SMS account registration server
+reg_svr, startreg \- Moira user account registration server
 .SH SYNOPSIS
 .B reg_svr
 .br
 .B startreg
 .SH DESCRIPTION
 The registration server
-must be running on the machine hosting the SMS database for the 
+must be running on the machine hosting the Moira database for the 
 .I userreg
 program to function.  Rather than invoke
 .B reg_svr
@@ -29,11 +29,11 @@ Also, a journal file is kept in
 .B /u1/sms/journal.reg
 logging every successful change of the database in a format that can
 be replayed by
-.I smstest(8).
+.I mrtest(8).
 For the server to be able to function properly, if must be run as root
 and root must have access to the tables through RTI Ingres.  Also,
-Kerberos principal "register.sms" must have permission to create new
-Kerberos principals and set their passwords.
+Kerberos principal "moira.[servername]" must be on the Kerberos admin
+server ACL to create new principals and set their passwords.
 .PP
 .B startreg
 sets its working directory to the root, disconnects from the terminal
@@ -57,8 +57,9 @@ if it is non-zero.
 .br
 /tmp/tkt_ureg \- temporary Kerberos ticket storage.
 .br
-/etc/srvtab \- The dcm must be able to get Kerberos tickets for "register.sms".
+/etc/srvtab \- The dcm must be able to get Kerberos tickets for
+"moira.[hostname]".
 .SH AUTHORS
 Jay Berkenbilt, Bill Sommerfeld
 .SH "SEE ALSO"
-userreg(1), The Project Athena Technical Plan section on SMS.
+userreg(1), The Project Athena Technical Plan section on Moira.

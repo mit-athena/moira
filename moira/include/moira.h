@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/include/moira.h,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/include/moira.h,v 1.11 1989-06-01 21:50:10 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/include/moira.h,v 1.12 1989-06-27 12:40:51 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
@@ -31,7 +31,8 @@
 #define SMS_QUERY 3
 #define SMS_ACCESS 4
 #define SMS_DO_UPDATE 5
-#define SMS_MAX_PROC 5
+#define SMS_MOTD 6
+#define SMS_MAX_PROC 6
 
 /* values used in NFS physical flags */
 #define SMS_FS_STUDENT	0x0001

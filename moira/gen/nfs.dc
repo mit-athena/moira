@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/nfs.dc,v 1.3 1992-12-21 18:03:12 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/nfs.dc,v 1.4 1993-11-24 15:52:13 mar Exp $
  *
  * This generates the files necessary to load an nfs server.
  *
@@ -80,7 +80,7 @@ char **argv;
 int do_nfs()
 {
     EXEC SQL BEGIN DECLARE SECTION;
-    char machname[33], listname[33];
+    char machname[41], listname[33];
     EXEC SQL END DECLARE SECTION;
     struct save_queue *machs, *lists;
     int changed;

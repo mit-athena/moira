@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/nfs.qc,v 1.1 1988-06-27 13:13:24 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/nfs.qc,v 1.2 1988-08-11 20:45:48 mar Exp $
  *
  * This generates the files necessary to load an nfs server.
  */
@@ -14,6 +14,21 @@
 
 #define min(x,y)	((x) < (y) ? (x) : (y))
 
+struct np {
+    char mach[33];
+    char dev[33];
+    char list[33];
+};
+
+struct fs {
+    int nfsphys;
+    char *dir;
+    int owner;
+    int owners;
+    struct qt *quota;
+};
+
+
 char *malloc(), *strsave();
 char *ingres_date_and_time(), *ingres_time(), *ingres_date();
 
@@ -23,6 +38,7 @@ char **argv;
 {
     char cmd[64];
     struct stat sb;
+    int changed = 0;
 
     if (argc > 2) {
 	fprintf(stderr, "usage: %s [outfile]\n", argv[0]);
@@ -32,9 +48,15 @@ char **argv;
 ##  ingres sms
 ##  set lockmode session where readlock = nolock
 
-    do_nfs();
+    changed = do_nfs();
 
 ##  exit
+
+    if (!changed) {
+	fprintf(stderr, "No files updated.\n");
+	if (argc == 2 && stat(argv[1], &sb) == 0)
+	  exit(SMS_NO_CHANGE);
+    }
 
     if (argc == 2) {
 	sprintf(cmd, "cd %s; tar cf %s .", NFS_DIR, argv[1]);
@@ -46,10 +68,13 @@ char **argv;
 }
 
 
-do_nfs()
+/* Generate the files.  Returns zero if nothing changed, non-zero otherwise. */
+
+int do_nfs()
 ##{
 ##  char machname[33], listname[33];
     struct save_queue *machs, *lists;
+    int changed;
 
     machs = sq_create();
     lists = sq_create();
@@ -60,22 +85,50 @@ do_nfs()
       sq_save_unique_string(lists, strsave(listname));
 ##  }
 
-    do_lists(lists);
-    do_machs(machs);
+    changed = do_lists(lists);
+    changed += do_machs(machs);
+    return(changed);
 ##}
 
 
-do_lists(lists)
+/* Make all of the credentials lists that will be needed.  Returns 0 if
+ * no files were actually changed */
+
+int do_lists(lists)
 struct save_queue *lists;
 ##{
     struct save_queue *sq;
-    char file[64], **users, **do_everyone();
+    char file[64], *u;
+    struct hash *users, *do_everyone();
+    struct stat sb;
     FILE *fd;
-##  char *listname, *lsname, lname[33], uname[9];
-##  int uid, id;
+##  char *listname, *lsname, lname[33], uname[9], *filetime;
+##  int uid, id, flag1, flag2, flag3, flag4;
 
+    sprintf(file, "%s/list-", NFS_DIR);
+    if (stat(file, &sb) == 0) {
+	filetime = ingres_date_and_time(sb.st_mtime);
+##	retrieve (flag1 = int4(interval("min", tblstats.modtime - filetime)))
+##		where tblstats.table = "users"
+##	retrieve (flag2 = int4(interval("min", tblstats.modtime - filetime)))
+##		where tblstats.table = "list"
+##	retrieve (flag3 = int4(interval("min", tblstats.modtime - filetime)))
+##		where tblstats.table = "members"
+##	retrieve (flag4 = int4(interval("min", tblstats.modtime - filetime)))
+##		where tblstats.table = "serverhosts"
+	if (flag1 < 0 && flag2 < 0 && flag3 < 0 && flag4 < 0) {
+	    fprintf(stderr, "The lists do not need to be rebuilt.\n");
+	    return(0);
+	}
+    }
+
+    /* build the list of everyone, and store it in a file whose name
+     * corresponds to the empty list.
+     */
     users = do_everyone();
 
+    fprintf(stderr, "Building specific lists\n");
+    /* now do each of the lists used by an NFS server */
 ##  range of l is list
 ##  range of l1 is list
 ##  range of m is members
@@ -100,8 +153,8 @@ struct save_queue *lists;
 ##	    repeat retrieve (id = m.member_id)
 ##		where m.list_id = l1.list_id and l1.name = @lsname and
 ##		      m.member_type = "USER" {
-	      if (users[id])
-		fprintf(fd, "%s\n", users[id]);
+	      if (u = hash_lookup(users, id)) 
+		fprintf(fd, "%s\n", u);
 ##	    }
 	}
 	sq_destroy(sq);
@@ -111,18 +164,34 @@ struct save_queue *lists;
 	}
     }
     sq_destroy(lists);
+    return(1);
 ##}
 
 
-char **do_everyone()
+/*  Build the list of everybody. */
+struct grp {
+    struct grp *next;
+    int id;
+};
+struct user {
+    char name[9];
+    struct grp *lists;
+};
+
+struct hash *do_everyone()
 ##{
-    char **groups, **users, buf[BUFSIZ];
+    char buf[BUFSIZ], *l;
+    struct hash *groups, *users;
+    struct user *u;
+    struct grp *g;
+    struct bucket *b, **p;
 ##  char name[33];
 ##  int gid, id, lid, maxid, uid;
     FILE *fd;
     int first;
     struct save_queue *sq;
 
+    fprintf(stderr, "Building the list of everybody\n");
     sprintf(buf, "%s/list-", NFS_DIR);
     fd = fopen(buf, "w");
     if (!fd) {
@@ -131,20 +200,14 @@ char **do_everyone()
     }
 
     /* make space for group list */
-##  range of l is list
-##  retrieve (maxid = max(l.#list_id))
-    groups = (char **)malloc((maxid + 1) * sizeof(char *));
-    if (groups == NULL) {
-	fprintf(stderr, "unable to malloc space for groups\n");
-	exit(SMS_NO_MEM);
-    }
-    bzero(groups, (maxid + 1) * sizeof(char *));
+    groups = create_hash(15000);
 
     /* retrieve simple groups */
+##  range of l is list
 ##  retrieve (gid = l.#gid, lid = l.list_id)
-##	where l.group != 0 {
-	    sprintf(buf, ":%d", gid);
-	    groups[lid] = strsave(buf);
+##	where l.group != 0 and l.active != 0 {
+      sprintf(buf, ":%d", gid);
+      hash_store(groups, lid, strsave(buf));
 ##  }
 
     /* get special cases: lists that aren't groups themselves but are
@@ -152,79 +215,108 @@ char **do_everyone()
     sq = sq_create();
 ##  range of m is members
 ##  retrieve (gid = list.#gid, lid = l.list_id)
-##	where l.group = 0 and m.member_type = "LIST" and
+##	where l.group = 0 and l.active != 0 and m.member_type = "LIST" and
 ##		m.member_id = l.list_id and m.list_id = list.list_id and
 ##		list.group != 0 {
-    	if (groups[lid]) {
-	    sprintf(buf, "%s:%d", groups[lid], gid);
-	    free(groups[lid]);
-	    groups[lid] = strsave(buf);
-	} else {
-	    sprintf(buf, ":%d", gid);
-	    groups[lid] = strsave(buf);
-	}
-    	sq_save_data(sq, lid);
+      if (l = hash_lookup(groups, lid)) {
+	  sprintf(buf, "%s:%d", l, gid);
+	  free(l);
+      } else {
+	  sprintf(buf, ":%d", gid);
+      }
+      hash_store(groups, lid, strsave(buf));
+      sq_save_data(sq, lid);
 ##  }
+
     while (sq_get_data(sq, &id)) {
-##	repeat retrieve (lid = l.list_id)
-##	    where l.group = 0 and m.member_type = "LIST" and
+##	repeat retrieve (lid = l.list_id, gid = l.#gid)
+##	    where l.group = 0 and l.active != 0 and m.member_type = "LIST" and
 ##		m.member_id = l.list_id and m.list_id = @id {
-	    if (groups[lid]) {
-		sprintf(buf, "%s%s", groups[lid], groups[id]);
-		groups[lid] = strsave(buf);
-	    } else {
-		groups[lid] = strsave(groups[id]);
-	    }
-	    sq_save_unique_data(sq, lid);
-##	}
+	  if (l = hash_lookup(groups, lid)) {
+	      sprintf(buf, "%s%s", l, hash_lookup(groups, id));
+	      free(l);
+	  } else {
+	      strcpy(buf, hash_lookup(groups, id));
+	  }
+	  sq_save_unique_data(sq, lid);
+##      }
     }
     sq_destroy(sq);
-
-##  range of u is users
-##  retrieve (maxid = max(u.#users_id))
-    users = (char **)malloc((maxid + 1) * sizeof(char *));
-    if (users == NULL) {
-	fprintf(stderr, "unable to malloc space for groups\n");
-	exit(SMS_NO_MEM);
-    }
-    bzero(users, (maxid + 1) * sizeof(char *));
 
     /* now do grplists */
-    sq = sq_create();
-##  retrieve (id = u.users_id) where u.status != 0 {
-	sq_save_data(sq, id);
+    users = create_hash(10000);
+##  range of u is users
+##  retrieve (id = u.users_id, name = u.login) where u.status = 1 {
+      u = (struct user *) malloc(sizeof(struct user));
+      strcpy(u->name, strtrim(name));
+      u->lists = NULL;
+      hash_store(users, id, u);
 ##  }
-    while (sq_get_data(sq, &id)) {
-##	repeat retrieve (name = u.login, uid = u.#uid) where u.users_id = @id
-	trim(name);
-	sprintf(buf, "%s:%d", name, uid);
-##	repeat retrieve (lid = m.list_id)
-##		where m.member_type = "USER" and m.member_id = @id {
-	    if (groups[lid])
-	      strcat(buf, groups[lid]);
-##	}
-	users[id] = strsave(buf);
-	fprintf(fd, "%s\n", buf);
+
+##  repeat retrieve (lid = m.list_id, id = m.member_id)
+##	where m.member_type = "USER" {
+      if (u = (struct user *) hash_lookup(users, id)) {
+	  g = (struct grp *) malloc(sizeof(struct grp));
+	  g->next = u->lists;
+	  u->lists = g;
+	  g->id = lid;
+      }
+##  }
+
+    for (p = &(users->data[users->size - 1]); p >= users->data; p--) {
+	for (b = *p; b; b = b->next) {
+	    strcpy(buf, ((struct user *)b->data)->name);
+	    for (g = ((struct user *)b->data)->lists; g; g = g->next)
+	      if (l = hash_lookup(groups, g->id))
+		strcat(buf, l);
+	    /* should free stuff here... */
+	    b->data = strsave(buf);
+	    fprintf(fd, "%s\n", buf);
+	}
     }
+
     fclose(fd);
-    sq_destroy(sq);
-    for (id = 0; id < maxid; id++)
-      if (groups[id])
-	free(groups[id]);
     free(groups);
     return(users);
 ##}
 
 
-do_machs(machs)
+/* Now do each of the servers, linking the credentials list file and 
+ * compiling the quota and dirs files.
+ */
+
+int do_machs(machs)
 struct save_queue *machs;
 ##{
-##  char *machname, listname[33], dev[33], *device, dir[64];
-##  int uid, quota, id, gid;
+##  char *machname, listname[33], dev[33], *device, dir[64], fstype[9];
+##  char *filetime;
+##  int uid, quota, id, gid, flag1, flag2, flag3, flag4;
     char file[64], f1[64], f2[64], *cp, *index();
     int prevuid, quotasum;
     FILE *fd;
+    struct stat sb;
     struct save_queue *sq;
+
+/*
+    sprintf(file, "%s/list-", NFS_DIR);
+    if (stat(file, &sb) == 0) {
+	filetime = ingres_date_and_time(sb.st_mtime);
+ #	retrieve (flag1 = int4(interval("min", tblstats.modtime - filetime)))
+ #		where tblstats.table = "serverhosts"
+ #	retrieve (flag2 = int4(interval("min", tblstats.modtime - filetime)))
+ #		where tblstats.table = "filesys"
+ #	retrieve (flag3 = int4(interval("min", tblstats.modtime - filetime)))
+ #		where tblstats.table = "nfsquota"
+ #	retrieve (flag4 = int4(interval("min", tblstats.modtime - filetime)))
+ #		where tblstats.table = "nfsphys"
+	if (flag1 < 0 && flag2 < 0 && flag3 < 0 && flag4 < 0) {
+	    fprintf(stderr, "The machine files do not need to be rebuilt.\n");
+	    return(0);
+	}
+    }
+*/
+
+    fprintf(stderr, "Building machine files\n");
 
 ##  range of s is serverhosts
 ##  range of m is machine
@@ -234,9 +326,9 @@ struct save_queue *machs;
 ##  range of u is users
 ##  range of l is list
     while (sq_get_data(machs, &machname)) {
-##	repeat retrieve (listname = s.value3)
+##	repeat retrieve (listname = trim(s.value3))
 ##	    where s.mach_id = m.mach_id and m.name = @machname
-	trim(listname);
+	strtrim(machname);
 	sprintf(f1, "%s/list-%s", NFS_DIR, listname);
 	sprintf(f2, "%s/%s.cred", NFS_DIR, machname);
 	unlink(f2); /* ignore errors on this unlink */
@@ -285,10 +377,11 @@ struct save_queue *machs;
 		fprintf(stderr, "cannot open %s for output\n", file);
 		exit(SMS_OCONFIG);
 	    }
-##	    repeat retrieve (dir = trim(f.#name), uid = u.#uid, gid = l.#gid)
+##	    repeat retrieve (dir = trim(f.#name), fstype = trim(f.lockertype),
+##			     uid = u.#uid, gid = l.#gid)
 ##		where f.phys_id = @id and f.owner = u.users_id and 
 ##		      f.owners = l.list_id and f.createflg != 0 {
-	      fprintf(fd, "%s %d %d\n", dir, uid, gid);
+	      fprintf(fd, "%s %d %d %s\n", dir, uid, gid, fstype);
 ##	    }
 	    if (fclose(fd)) {
 		fprintf(stderr, "error closing %s", file);
@@ -297,4 +390,5 @@ struct save_queue *machs;
 	}
 	sq_destroy(sq);
     }
+    return(1);
 ##}

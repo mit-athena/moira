@@ -1,8 +1,3 @@
-@device(postscript)
-@case<genericdevice,
-	ScaleableLaser "@style(FontFamily Helvetiva, Size 12)",
-	X9700 "@style(FontFamily Helvetica12)"
->
 @SubHeading(Strategy)
 
 @define(en=enumerate)

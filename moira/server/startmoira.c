@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/startmoira.c,v $
  *	$Author: wesommer $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/startmoira.c,v 1.1 1987-06-01 03:35:33 wesommer Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/startmoira.c,v 1.2 1987-06-02 20:08:16 wesommer Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
@@ -9,13 +9,17 @@
  *	and then waits for it to exit.
  * 
  *	$Log: not supported by cvs2svn $
+ * Revision 1.1  87/06/01  03:35:33  wesommer
+ * Initial revision
+ * 
  */
 
 #ifndef lint
-static char *rcsid_sms_starter_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/startmoira.c,v 1.1 1987-06-01 03:35:33 wesommer Exp $";
+static char *rcsid_sms_starter_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/startmoira.c,v 1.2 1987-06-02 20:08:16 wesommer Exp $";
 #endif lint
 
 #include <stdio.h>
+#include <strings.h>
 #include <sys/types.h>
 #include <sys/file.h>
 #include <sys/wait.h>
@@ -24,7 +28,7 @@ static char *rcsid_sms_starter_c = "$Header: /afs/.athena.mit.edu/astaff/project
 
 #define SMS_LOG_FILE "/u1/sms/sms.log"
 
-#define SMS_PROG "/u1/sms/rpc/smsd"
+#define SMS_PROG "/u1/sms/server/smsd"
 
 int rdpipe[2];
 char *sigdescr[] = {
@@ -166,9 +170,10 @@ main(argc, argv)
 		time(&foo);
 		time_s = ctime(&foo)+4;
 		time_s[strlen(time_s)-6]='\0';
-		fprintf(log, "%s %s", time_s, buf);
+		fprintf(log, "%s <%d> %s", time_s, pid, buf);
 		fflush(log);
 	} while (!done);
+	exit(0);
 }
 
 

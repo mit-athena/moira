@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_scall.c,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_scall.c,v 1.13 1988-09-13 17:42:28 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_scall.c,v 1.14 1988-12-29 16:36:03 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_sms_scall_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_scall.c,v 1.13 1988-09-13 17:42:28 mar Exp $";
+static char *rcsid_sms_scall_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_scall.c,v 1.14 1988-12-29 16:36:03 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -132,16 +132,6 @@ free_rtn_tuples(cp)
 		if (t1 == cp->last) cp->last = NULL;
 
 		sms_destroy_reply(t1->retval);
-#ifdef notdef
-		if (t1->retval) {
-			register sms_params *p = t1->retval;
-			if (p->sms_flattened)
-				free(p->sms_flattened);
-			if (p->sms_argl)
-				free(p->sms_argl);
-			free(p);
-		}
-#endif notdef
 		delete_operation(t1->op);
 		free(t1);
 	}

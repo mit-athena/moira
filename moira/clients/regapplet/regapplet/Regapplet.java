@@ -14,6 +14,7 @@ import java.io.InputStream;
 import java.io.IOException;
 import java.awt.event.*;
 import java.applet.*;
+import mit.cipher.test;
 import mit.cipher.MITCipherException;
 import mit.cipher.Encap;
 
@@ -46,15 +47,7 @@ public class Regapplet extends Applet {
   Button WordCancelButton = new Button();
   Button LoginCancelButton = new Button();
   Button PasswordCancelButton = new Button();
-  Label Word1Label = new Label();
-  Label Word2Label = new Label();
-  Label Word3Label = new Label();
-  Label Word4Label = new Label();
-  Label Word5Label = new Label();
-  Label Word6Label = new Label();
-  Label Wordtl1 = new Label();
-  Label Wordtl2 = new Label();
-  Label Wordtl3 = new Label();
+  Label WordLabel = new Label();
   TextField Word1 = new TextField("", 6);
   TextField Word2 = new TextField("", 6);
   TextField Word3 = new TextField("", 6);
@@ -137,18 +130,8 @@ public class Regapplet extends Applet {
     NameContButton.setBackground(Color.white);
     NameCancelButton.setLabel("Cancel");
     NameCancelButton.setBackground(Color.white);
-    Word1Label.setText("Please enter the first word");
-    Word1Label.setBackground(Color.white);
-    Word2Label.setText("Please enter the second word");
-    Word2Label.setBackground(Color.white);
-    Word3Label.setText("Please enter the third word");
-    Word3Label.setBackground(Color.white);
-    Word4Label.setText("Please enter the fourth word");
-    Word4Label.setBackground(Color.white);
-    Word5Label.setText("Please enter the fifth word");
-    Word5Label.setBackground(Color.white);
-    Word6Label.setText("Please enter the sixth word");
-    Word6Label.setBackground(Color.white);
+    WordLabel.setText("Key Words:");
+    WordLabel.setBackground(Color.white);
     WordContButton.setLabel("Continue");
     WordContButton.setBackground(Color.white);
     WordCancelButton.setLabel("Cancel");
@@ -221,47 +204,32 @@ public class Regapplet extends Applet {
     WordPanel.add(WordInstructions);
     gridBagLayout1.setConstraints(WordInstructions, new GridBagConstraints2(0, 0, 7, 1, 0.0, 0.0
             ,GridBagConstraints.NORTH, GridBagConstraints.NONE, new Insets(19, 31, 10, 31), 0, 0));
-    WordPanel.add(Word1Label);
-    gridBagLayout1.setConstraints(Word1Label, new GridBagConstraints2(0, 1, 4, 1, 0.0, 0.0
-            ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 10, 0, 0), 0, 0));
-    WordPanel.add(Word2Label);
-    gridBagLayout1.setConstraints(Word2Label, new GridBagConstraints2(0, 2, 4, 1, 0.0, 0.0
-            ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 10, 0, 0), 0, 0));
-    WordPanel.add(Word3Label);
-    gridBagLayout1.setConstraints(Word3Label, new GridBagConstraints2(0, 3, 4, 1, 0.0, 0.0
-            ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 10, 0, 0), 0, 0));
-    WordPanel.add(Word4Label);
-    gridBagLayout1.setConstraints(Word4Label, new GridBagConstraints2(0, 4, 4, 1, 0.0, 0.0
-            ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 10, 0, 0), 0, 0));
-    WordPanel.add(Word5Label);
-    gridBagLayout1.setConstraints(Word5Label, new GridBagConstraints2(0, 5, 4, 1, 0.0, 0.0
-            ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 10, 0, 0), 0, 0));
-    WordPanel.add(Word6Label);
-    gridBagLayout1.setConstraints(Word6Label, new GridBagConstraints2(0, 6, 4, 1, 0.0, 0.0
+    WordPanel.add(WordLabel);
+    gridBagLayout1.setConstraints(WordLabel, new GridBagConstraints2(0, 1, 1, 2, 0.0, 0.0
             ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 10, 0, 0), 0, 0));
     WordPanel.add(Word1);
-    gridBagLayout1.setConstraints(Word1, new GridBagConstraints2(5, 1, 3, 1, 0.0, 0.0
+    gridBagLayout1.setConstraints(Word1, new GridBagConstraints2(1, 1, 1, 1, 0.0, 0.0
             ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 0, 0, 10), 0, 0));
     WordPanel.add(Word2);
-    gridBagLayout1.setConstraints(Word2, new GridBagConstraints2(5, 2, 3, 1, 0.0, 0.0
+    gridBagLayout1.setConstraints(Word2, new GridBagConstraints2(2, 1, 1, 1, 0.0, 0.0
             ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 0, 0, 10), 0, 0));
     WordPanel.add(Word3);
-    gridBagLayout1.setConstraints(Word3, new GridBagConstraints2(5, 3, 3, 1, 0.0, 0.0
+    gridBagLayout1.setConstraints(Word3, new GridBagConstraints2(3, 1, 1, 1, 0.0, 0.0
             ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 0, 0, 10), 0, 0));
     WordPanel.add(Word4);
-    gridBagLayout1.setConstraints(Word4, new GridBagConstraints2(5, 4, 3, 1, 0.0, 0.0
+    gridBagLayout1.setConstraints(Word4, new GridBagConstraints2(1, 2, 1, 1, 0.0, 0.0
             ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 0, 0, 10), 0, 0));
     WordPanel.add(Word5);
-    gridBagLayout1.setConstraints(Word5, new GridBagConstraints2(5, 5, 3, 1, 0.0, 0.0
+    gridBagLayout1.setConstraints(Word5, new GridBagConstraints2(2, 2, 1, 1, 0.0, 0.0
             ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 0, 0, 10), 0, 0));
     WordPanel.add(Word6);
-    gridBagLayout1.setConstraints(Word6, new GridBagConstraints2(5, 6, 3, 1, 0.0, 0.0
+    gridBagLayout1.setConstraints(Word6, new GridBagConstraints2(3, 2, 1, 1, 0.0, 0.0
             ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 0, 0, 10), 0, 0));
     WordPanel.add(WordContButton);
-    gridBagLayout1.setConstraints(WordContButton, new GridBagConstraints2(4, 7, 2, 2, 0.0, 1.0
+    gridBagLayout1.setConstraints(WordContButton, new GridBagConstraints2(2, 3, 2, 2, 0.0, 1.0
             ,GridBagConstraints.NORTH, GridBagConstraints.NONE, new Insets(10, 0, 10, 0), 0, 0));
     WordPanel.add(WordCancelButton);
-    gridBagLayout1.setConstraints(WordCancelButton, new GridBagConstraints2(5, 7, 2, 2, 0.0, 1.0
+    gridBagLayout1.setConstraints(WordCancelButton, new GridBagConstraints2(4, 3, 2, 2, 0.0, 1.0
             ,GridBagConstraints.NORTH, GridBagConstraints.NONE, new Insets(10, 0, 10, 0), 0, 0));
     this.add("LoginPanel", LoginPanel);
     LoginPanel.add(LoginNameBanner);

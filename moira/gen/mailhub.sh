@@ -1,6 +1,6 @@
 #!/bin/sh
 MR_MKCRED=47836474
-cat /usr/lib/local-aliases >> /usr/lib/aliases.new
+cat /usr/lib/local-aliases >> /u1/usr/lib/aliases.new
 /bin/cp /dev/null /u1/usr/lib/aliases.new.dir
 /bin/cp /dev/null /u1/usr/lib/aliases.new.pag
 /usr/lib/sendmail -bi -oA/u1/usr/lib/aliases.new
@@ -20,4 +20,4 @@ kill `/bin/ps ax | /bin/grep "accepting connections" | /bin/grep -v grep | /bin/
 /bin/rm -f $0
 exit 0
 
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/mailhub.sh,v 1.2 1990-11-20 16:47:14 mar Exp $
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/mailhub.sh,v 1.3 1990-11-26 12:55:00 mar Exp $

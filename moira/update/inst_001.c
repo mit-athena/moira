@@ -1,12 +1,16 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/inst_001.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/inst_001.c,v 1.2 1988-08-22 16:19:35 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/inst_001.c,v 1.3 1988-09-14 12:16:13 mar Exp $
  */
+/*  (c) Copyright 1988 by the Massachusetts Institute of Technology. */
+/*  For copying and distribution information, please see the file */
+/*  <mit-copyright.h>. */
 
 #ifndef lint
-static char *rcsid_inst_001_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/inst_001.c,v 1.2 1988-08-22 16:19:35 mar Exp $";
+static char *rcsid_inst_001_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/inst_001.c,v 1.3 1988-09-14 12:16:13 mar Exp $";
 #endif	lint
 
+#include <mit-copyright.h>
 #include <stdio.h>
 #include <gdb.h>
 #include "kludge.h"

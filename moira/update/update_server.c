@@ -1,12 +1,16 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/update_server.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/update_server.c,v 1.2 1988-08-23 11:51:47 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/update_server.c,v 1.3 1988-09-14 12:16:49 mar Exp $
  */
+/*  (c) Copyright 1988 by the Massachusetts Institute of Technology. */
+/*  For copying and distribution information, please see the file */
+/*  <mit-copyright.h>. */
 
 #ifndef lint
-static char *rcsid_dispatch_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/update_server.c,v 1.2 1988-08-23 11:51:47 mar Exp $";
+static char *rcsid_dispatch_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/update_server.c,v 1.3 1988-09-14 12:16:49 mar Exp $";
 #endif	lint
 
+#include <mit-copyright.h>
 #include <stdio.h>
 #include <gdb.h>
 #include <errno.h>

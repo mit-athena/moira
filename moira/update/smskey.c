@@ -1,3 +1,11 @@
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/smskey.c,v 1.2 1988-09-14 12:16:28 mar Exp $ */
+
+/*  (c) Copyright 1988 by the Massachusetts Institute of Technology. */
+/*  For copying and distribution information, please see the file */
+/*  <mit-copyright.h>. */
+
+
+#include <mit-copyright.h>
 #include <stdio.h>
 #include <sys/file.h>
 #include <des.h>

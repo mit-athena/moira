@@ -1,16 +1,18 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/client.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/client.c,v 1.6 1988-08-23 11:46:12 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/client.c,v 1.7 1988-09-14 12:15:51 mar Exp $
  */
 
 #ifndef lint
-static char *rcsid_client2_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/client.c,v 1.6 1988-08-23 11:46:12 mar Exp $";
+static char *rcsid_client2_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/client.c,v 1.7 1988-09-14 12:15:51 mar Exp $";
 #endif	lint
 
 /*
  * MODULE IDENTIFICATION:
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/client.c,v 1.6 1988-08-23 11:46:12 mar Exp $
- *	Copyright 1987 MIT Project Athena.
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/client.c,v 1.7 1988-09-14 12:15:51 mar Exp $
+ *	Copyright 1987, 1988 by the Massachusetts Institute of Technology.
+ *	For copying and distribution information, please see the file
+ *	<mit-copyright.h>.
  * DESCRIPTION:
  *	This code handles the actual distribution of data files
  *	to servers in the SMS server-update program.
@@ -22,6 +24,7 @@ static char *rcsid_client2_c = "$Header: /afs/.athena.mit.edu/astaff/project/moi
  *	sms_update_server
  */
 
+#include <mit-copyright.h>
 #include <stdio.h>
 #include <strings.h>
 #include <gdb.h>

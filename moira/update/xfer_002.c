@@ -1,12 +1,16 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/xfer_002.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/xfer_002.c,v 1.2 1988-08-22 16:21:50 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/xfer_002.c,v 1.3 1988-09-14 12:16:55 mar Exp $
  */
+/*  (c) Copyright 1988 by the Massachusetts Institute of Technology. */
+/*  For copying and distribution information, please see the file */
+/*  <mit-copyright.h>. */
 
 #ifndef lint
-static char *rcsid_xfer_002_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/xfer_002.c,v 1.2 1988-08-22 16:21:50 mar Exp $";
+static char *rcsid_xfer_002_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/xfer_002.c,v 1.3 1988-09-14 12:16:55 mar Exp $";
 #endif	lint
 
+#include <mit-copyright.h>
 #include <stdio.h>
 #include <gdb.h>
 #include <ctype.h>

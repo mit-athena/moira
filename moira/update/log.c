@@ -1,10 +1,13 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/log.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/log.c,v 1.2 1988-08-22 16:21:05 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/log.c,v 1.3 1988-09-14 12:16:18 mar Exp $
  */
+/*  (c) Copyright 1988 by the Massachusetts Institute of Technology. */
+/*  For copying and distribution information, please see the file */
+/*  <mit-copyright.h>. */
 
 #ifndef lint
-static char *rcsid_log_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/log.c,v 1.2 1988-08-22 16:21:05 mar Exp $";
+static char *rcsid_log_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/log.c,v 1.3 1988-09-14 12:16:18 mar Exp $";
 #endif	lint
 
 /*
@@ -18,6 +21,7 @@ static char *rcsid_log_c = "$Header: /afs/.athena.mit.edu/astaff/project/moirade
  * default to tty
  */
 
+#include <mit-copyright.h>
 #include <stdio.h>
 #include "com_err.h"
 #include <varargs.h>

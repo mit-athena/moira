@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/main.c,v 1.17 1990-03-17 17:10:40 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/main.c,v 1.18 1990-11-20 17:50:24 mar Exp $";
 #endif lint
 
 /*	This is the file main.c for the Moira Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/main.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/main.c,v 1.17 1990-03-17 17:10:40 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/main.c,v 1.18 1990-11-20 17:50:24 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -26,6 +26,7 @@
 #include <sys/types.h>
 #include <moira.h>
 #include <menu.h>
+#include <krb_et.h>
 
 #include "mit-copyright.h"
 #include "defs.h"
@@ -109,8 +110,13 @@ main(argc, argv)
 	    char buf[BUFSIZ];
 	    com_err(program_name, status, "\nPress [RETURN] to continue");
 	    gets(buf);
-	} else
-	  ErrorExit("\nAuthorization failed -- please run kinit", status);
+	} else {
+	  if (status >= ERROR_TABLE_BASE_krb &&
+	      status <= ERROR_TABLE_BASE_krb + 256)
+	    ErrorExit("\nAuthorization failed -- please run kinit", status);
+	  else
+	    ErrorExit("\nAuthorization failed.", status);
+	}
     }
 
 /*

@@ -1,4 +1,4 @@
-/* $Id: print.pc,v 1.9 2000-12-13 19:52:19 zacheiss Exp $
+/* $Id: print.pc,v 1.10 2004-06-22 18:26:27 zacheiss Exp $
  *
  * This generates printcaps and other files for Athena print servers
  *
@@ -22,7 +22,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/print.pc,v 1.9 2000-12-13 19:52:19 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/print.pc,v 1.10 2004-06-22 18:26:27 zacheiss Exp $");
 
 char *whoami = "print.gen";
 char *db = "moira/moira";
@@ -213,6 +213,8 @@ void do_host(char *host)
   EXEC SQL CLOSE csr_ac;
   fprintf(out, "\n");
 
+  fprintf(out, "# Allow us to lock out users\n");
+  fprintf(out, "REJECT SERVICE=R USER=</var/spool/printer/users.deny\n");
   fprintf(out, "# Accept authenticated jobs to all other printers\n");
   fprintf(out, "ACCEPT SERVICE=R AUTH=USER,FWD\n");
   fprintf(out, "# Allow authenticated users to lprm their jobs\n");

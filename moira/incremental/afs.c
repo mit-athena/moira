@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/afs.c,v 1.19 1992-05-31 17:40:13 probe Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/afs.c,v 1.20 1992-06-02 16:37:25 probe Exp $
  *
  * Do AFS incremental updates
  *
@@ -11,6 +11,7 @@
 #include <sys/file.h>
 #include <strings.h>
 
+#include <krb.h>
 #include <moira.h>
 #include <moira_site.h>
 
@@ -20,10 +21,11 @@
 #include <afs/ptclient.h>
 #include <afs/pterror.h>
 
+#define STOP_FILE "/moira/afs/noafs"
+
 #define file_exists(file) (access((file), F_OK) == 0)
 
 char *whoami;
-char *cellname = "ATHENA.MIT.EDU";
 
 main(argc, argv)
 char **argv;
@@ -31,9 +33,7 @@ int argc;
 {
     int beforec, afterc, i;
     char *table, **before, **after;
-#ifdef DEBUG
     char buf[1024];
-#endif
 
     for (i = getdtablesize() - 1; i > 2; i--)
       close(i);
@@ -45,7 +45,6 @@ int argc;
     after = &argv[4 + beforec];
     whoami = argv[0];
 
-#ifdef DEBUG
     sprintf(buf, "%s (", table);
     for (i = 0; i < beforec; i++) {
 	if (i > 0)
@@ -59,11 +58,22 @@ int argc;
 	strcat(buf, after[i]);
     }
     strcat(buf, ")\n");
+#ifdef DEBUG
     write(1,buf,strlen(buf));
 #endif
 
     initialize_sms_error_table();
     initialize_krb_error_table();
+
+    for (i=0; file_exists(STOP_FILE); i++) {
+	if (i > 30) {
+	    critical_alert("incremental",
+			   "AFS incremental failed (%s exists): %s",
+			   STOP_FILE, buf);
+	    exit(1);
+	}
+	sleep(60);
+    }
 
     if (!strcmp(table, "users")) {
 	do_user(before, beforec, after, afterc);
@@ -311,6 +321,7 @@ edit_group(op, group, type, member)
     char buf[PR_MAXNAMELEN];
     int (*fn)();
     int code;
+    static char local_realm[REALM_SZ+1] = "";
     extern long pr_AddToGroup(), pr_RemoveUserFromGroup();
 
     fn = op ? pr_AddToGroup : pr_RemoveUserFromGroup;
@@ -318,9 +329,11 @@ edit_group(op, group, type, member)
     /* The following KERBEROS code allows for the use of entities
      * user@foreign_cell.
      */
+    if (!local_realm[0])
+	krb_get_lrealm(local_realm, 1);
     if (!strcmp(type, "KERBEROS")) {
 	p = index(member, '@');
-	if (p && !strcasecmp(p+1, cellname))
+	if (p && !strcasecmp(p+1, local_realm))
 	    *p = 0;
     } else if (strcmp(type, "USER"))
 	return;					/* invalid type */

@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/queries.c,v 1.14 1993-01-05 11:31:49 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/queries.c,v 1.15 1993-01-13 14:07:02 mar Exp $
  */
 
 #include <stdio.h>
@@ -71,8 +71,23 @@ EntryForm *form;
 	count = L_MODTIME;
 	break;
     case MM_MOD_FILSYS:
-	fn = "mod_filsys";
-	count = FS_MODTIME;
+	f = GetAndClearForm("mod_filsys");
+	if (f == NULL) {
+	    display_error("Unknown form in ModifyCallback!\n");
+	    return;
+	}
+	f->extrastuff = form->extrastuff;
+	f->menu = form->menu;
+	StoreField(f, FS_NAME, argv[FS_NAME + offset]);
+	StoreField(f, FS_TYPE, argv[FS_TYPE + offset]);
+	for (i = FS_TYPE+1; i < FS_MODTIME-1; i++)
+	  if (f->inputlines[i+1]->type == FT_BOOLEAN)
+	    f->inputlines[i+1]->returnvalue.booleanvalue =
+	      strcmp(argv[i + offset], "0") ? 1 : 0;
+	  else
+	    StoreField(f, i+1, argv[i + offset]);
+	StoreField(f, FS_TYPE+1, argv[FS_L_TYPE + offset]);
+	return;
 	break;
     case MM_MOD_NFS:
 	f = GetAndClearForm("mod_nfs");
@@ -469,18 +484,24 @@ int remove;
 	form->extrastuff = (caddr_t) sq_create();
 	break;
     case MM_ADD_FILSYS:
-	StoreHost(form, FS_MACHINE, &argv[FS_MACHINE]);
+	for (i = FS_TYPE+1; i < FS_MODTIME-1; i++)
+	  argv[i] = StringValue(form, i+1);
+	argv[FS_L_TYPE] = StringValue(form, FS_TYPE+1);
+	StoreHost(form, FS_MACHINE+1, &argv[FS_MACHINE]);
 	if (!strcmp(stringval(form, FS_TYPE), "FSGROUP") ||
 	    !strcmp(stringval(form, FS_TYPE), "MUL"))
-	  argv[FS_MACHINE] = "\\[NONE\\]";
+	  argv[FS_MACHINE+1] = "\\[NONE\\]";
 	break;
     case MM_MOD_FILSYS:
 	if (!strcmp(form->formname, "mod_filsys")) {
 	    qy = "update_filesys";
-	    for (i = 0; i < FS_MODTIME; i++)
-	      argv[i + 1] = StringValue(form, i);
-	    StoreHost(form, FS_MACHINE, &argv[FS_MACHINE + 1]);
 	    argv[0] = form->extrastuff;
+	    argv[1] = StringValue(form, 0);
+	    argv[2] = StringValue(form, 1);
+	    argv[FS_L_TYPE+1] = StringValue(form, 2);
+	    StoreHost(form, FS_MACHINE+1, &argv[FS_MACHINE + 1]);
+	    for (i = FS_MACHINE+1; i < FS_L_TYPE; i++)
+	      argv[i] = StringValue(form, i);
 	    argc = FS_MODTIME + 1;
 	    break;
 	}
@@ -735,7 +756,7 @@ int remove;
 	retfunc = ModifyCallback;
 	break;
     case MM_SAVE_LOG:
-	if (!write_log_to_file(stringval(form, 0)) && remove)
+	if (!write_log_to_file(stringval(form, 0)) && !tty && remove)
 	  XtUnmanageChild(form->formpointer);
 	return;
     case MM_NEW_VALUE:
@@ -753,7 +774,7 @@ int remove;
 	    else
 	      AppendToLog("DCM started.\n");
 	}
-	if (remove)
+	if (!tty && remove)
 	  XtUnmanageChild(form->formpointer);
 	return;
     }
@@ -808,10 +829,10 @@ int remove;
 	if (f) {
 	    GetKeywords(f, FS_TYPE, "filesys");
 	    sprintf(buf, "fs_access_%s", stringval(f, FS_TYPE));
-	    GetKeywords(f, FS_ACCESS, buf);
-	    GetKeywords(f, FS_L_TYPE, "lockertype");
-	    if (!strcmp(stringval(f, FS_MACHINE), "[NONE]"))
-	      StoreField(f, FS_MACHINE, "\\[NONE\\]");
+	    GetKeywords(f, FS_ACCESS+1, buf);
+	    GetKeywords(f, FS_TYPE+1, "lockertype");
+	    if (!strcmp(stringval(f, FS_MACHINE+1), "[NONE]"))
+	      StoreField(f, FS_MACHINE+1, "\\[NONE\\]");
 	    f->inputlines[FS_TYPE]->valuechanged = MoiraValueChanged;
 	} else
 	  AppendToLog("Done.\n");	  

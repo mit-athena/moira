@@ -1,5 +1,5 @@
 /*
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/cache.dc,v 2.4 1992-08-04 20:12:28 genoa Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/cache.dc,v 2.5 1992-12-30 16:33:14 mar Exp $
  *
  *	Copyright (C) 1989, 1990 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -7,7 +7,7 @@
  */
 
 #ifndef lint
-static char *rcsid_cache_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/cache.dc,v 2.4 1992-08-04 20:12:28 genoa Exp $";
+static char *rcsid_cache_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/cache.dc,v 2.5 1992-12-30 16:33:14 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -235,27 +235,27 @@ char **name;
     switch (*type) {
     case 'U':
     case 'u':
-	EXEC SQL SELECT login INTO :iname FROM users WHERE users_id=:j;
+	EXEC SQL SELECT CHAR(login) INTO :iname FROM users WHERE users_id=:j;
 	break;
     case 'L':
     case 'l':
-	EXEC SQL SELECT name INTO :iname FROM list WHERE list_id=:j;
+	EXEC SQL SELECT CHAR(name) INTO :iname FROM list WHERE list_id=:j;
 	break;
     case 'M':
     case 'm':
-	EXEC SQL SELECT name INTO :iname FROM machine WHERE mach_id=:j;
+	EXEC SQL SELECT CHAR(name) INTO :iname FROM machine WHERE mach_id=:j;
 	break;
     case 'C':
     case 'c':
-	EXEC SQL SELECT name INTO :iname FROM cluster WHERE clu_id=:j;
+	EXEC SQL SELECT CHAR(name) INTO :iname FROM cluster WHERE clu_id=:j;
 	break;
     case 'F':
     case 'f':
-	EXEC SQL SELECT label INTO :iname FROM filesys WHERE filsys_id=:j;
+	EXEC SQL SELECT CHAR(label) INTO :iname FROM filesys WHERE filsys_id=:j;
 	break;
     case 'S':
     case 's':
-	EXEC SQL SELECT string INTO :iname FROM strings WHERE string_id=:j;
+	EXEC SQL SELECT CHAR(string) INTO :iname FROM strings WHERE string_id=:j;
 	break;
     default:
 	return(MR_INTERNAL);

@@ -1,58 +1,42 @@
 /*
- *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_serv.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_serv.c,v 1.4 1991-04-24 10:32:46 mar Exp $
+ * $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_serv.c,v $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_serv.c,v 1.5 1993-04-29 14:56:07 mar Exp $
  */
 
 #ifndef lint
-static char *rcsid_gdb_serv_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_serv.c,v 1.4 1991-04-24 10:32:46 mar Exp $";
+static char *rcsid_gdb_serv_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_serv.c,v 1.5 1993-04-29 14:56:07 mar Exp $";
 #endif	lint
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-/************************************************************************/
-/*	
-/*			   gdb_serv.c
-/*	
-/*	      GDB - Routines to implement the server/client model
-/*		    of connections.
-/*	
-/*	Author: Noah Mendelsohn
-/*	Copyright: 1986 MIT Project Athena 
-/*		For copying and distribution information, please see
-/*	  	the file <mit-copyright.h>.
-/*	
-/************************************************************************/
+/************************************************************************
+ *	
+ *			   gdb_serv.c
+ *	
+ *	      GDB - Routines to implement the server/client model
+ *		    of connections.
+ *	
+ *	Author: Noah Mendelsohn
+ *	Copyright: 1986 MIT Project Athena 
+ *		For copying and distribution information, please see
+ *	  	the file <mit-copyright.h>.
+ *	
+ ************************************************************************/
 
 #include <mit-copyright.h>
 #include <stdio.h>
 #include <strings.h>
 #include "gdb.h"
 #include <sys/ioctl.h>
+#ifdef SOLARIS
+#include <sys/filio.h>
+#endif
 
-	/*----------------------------------------------------------*/
-	/*	
-	/*	The following field names and types describe the
-	/*	tuple sent from clients to servers during negotiation.
-	/*	
-	/*----------------------------------------------------------*/
+	/*----------------------------------------------------------
+	 *	
+	 *	The following field names and types describe the
+	 *	tuple sent from clients to servers during negotiation.
+	 *	
+	 *----------------------------------------------------------*/
 
 char *g_tsv_field_names[] = {"server_id",
 			    "parms",
@@ -92,7 +76,7 @@ FIELD_TYPE g_fsv_ftypes[] = {INTEGER_T,
 #define FSV_SERVER_ID   1
 #define FSV_PARMS       2
 
-
+
 /************************************************************************/
 /*	
 /*			  gdb_i_srv
@@ -118,7 +102,7 @@ gdb_i_srv()
 	gdb_socklen = sizeof(gdb_sockaddr_of_client);
 }
 
-
+
 /************************************************************************/
 /*	
 /*		   start_server_connection (start_server_connection)
@@ -232,7 +216,7 @@ char *parms;
 		return NULL;
 	}
 }
-
+
 /************************************************************************/
 /*	
 /*	  		     g_try_server
@@ -294,7 +278,7 @@ TUPLE *responsep;
 	return;
 }
 
-
+
 /************************************************************************/
 /*	
 /*			g_ask_server
@@ -381,7 +365,8 @@ TUPLE *responsep;
 						/* CON_STOPPING with errno */
 	}
 }
-
+
+
 /************************************************************************/
 /*	
 /*			start_replying_to_client

@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v 1.29 1997-01-29 23:06:16 danw Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v 1.30 1997-06-17 20:11:20 danw Exp $";
 #endif
 
 /*	This is the file lists.c for the MOIRA Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v $
  *      $Author: danw $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v 1.29 1997-01-29 23:06:16 danw Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v 1.30 1997-06-17 20:11:20 danw Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -285,11 +285,34 @@ Bool junk;
 {
     register int stat;
     char ** args;
+    struct qelem *elem = NULL;
     
     if ((args = AskListInfo(info, TRUE)) == NULL) {
 	Put_message("Aborted.");
 	return;
     }
+
+    /*
+     * If the new list name is less than 8 characters, make sure it doesn't
+     * collide with a username.
+     */
+    if ((strlen(args[2]) <= 8) &&
+	do_mr_query("get_user_account_by_login", 1, args + 1,
+		    StoreInfo, (char *) &elem) != MR_NO_MATCH) {
+	    char buf[256];
+
+	    sprintf(buf, "\nA user by the name `%s' already exists in the database.",
+		    args[1]);
+	    Put_message(buf);
+	    Loop(QueueTop(elem), FreeInfo);
+	    FreeQueue(elem);
+	    if (YesNoQuestion("Do you still want to rename this list to that name",
+			      FALSE) != TRUE) {
+		Put_message("List ** NOT ** Updated.");
+		return;
+	    }
+    }
+    
     if ( (stat = do_mr_query("update_list", CountArgs(args), args, 
 			   Scream, (char *) NULL)) != MR_SUCCESS) {
 	com_err(program_name, stat, " in UpdateList.");	
@@ -380,8 +403,12 @@ char **argv;
      */
     if ((strlen(argv[1]) <= 8) &&
 	do_mr_query("get_user_account_by_login", 1, argv + 1,
-		    StoreInfo, (char *) &elem) == 0) {
-	    Put_message("A user by that name already exists in the database.");
+		    StoreInfo, (char *) &elem) != MR_NO_MATCH) {
+	    char buf[256];
+
+	    sprintf(buf, "\nA user by the name `%s' already exists in the database.",
+		    argv[1]);
+	    Put_message(buf);
 	    Loop(QueueTop(elem), FreeInfo);
 	    FreeQueue(elem);
 	    if (YesNoQuestion("Crate a list with the same name",

@@ -1,6 +1,6 @@
 /* This file defines the query dispatch table for version 2 of the protocol
  *
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/queries2.c,v 2.21 1994-01-07 12:06:35 tom Exp $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/queries2.c,v 2.22 1994-01-07 15:50:25 tom Exp $
  *
  * Copyright 1987, 1988 by the Massachusetts Institute of Technology.
  * For copying and distribution information, please see the file
@@ -977,7 +977,7 @@ static struct validate asnt_validate =
     4,
     NAME,
     "name = uppercase(LEFT('%s',SIZE(name)))",
-    3,
+    1,
     SNET_ID,
     0,
     prefetch_value,
@@ -1003,7 +1003,7 @@ static struct validate usnt_validate =
     5,
     NAME,
     "snet_id = %d",
-    4,
+    1,
     SNET_ID,
     0,
     0,

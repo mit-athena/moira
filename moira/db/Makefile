@@ -1,4 +1,4 @@
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/db/Makefile,v 1.9 1990-09-26 09:16:00 kostas Exp $
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/db/Makefile,v 1.10 1990-09-26 09:29:44 kostas Exp $
 
 # (c) Copyright 1988 by the Massachusetts Institute of Technology.
 # For copying and distribution information, please see the file
@@ -6,8 +6,8 @@
 
 
 INGLIB=/usr/rtingres/lib/libqlib /usr/rtingres/lib/compatlib
-SRCS=newmoira.c tables.c imembers.c class.c
-OBJS=newmoira.o tables.o ../server/queries2.o
+SRCS=newmoira.c tables.c imembers.c class.c tables_sql.c
+OBJS=newmoira.o tables.o ../server/queries2.o tables_sql.o
 CFLAGS= -I../include -O
 .SUFFIXES: .qc
 
@@ -40,6 +40,7 @@ class.c: class.qc
 clean:
 	rm -f *.o newmoira.c tables.c newmoira extractdb extract.c class class.c
 	rm -f imembers.c imembers
+	rm -f tables_sql.c
 
 install: newmoira
 	install -c newmoira ../bin
@@ -52,6 +53,7 @@ depend: ${SRCS}
 newmoira.o: newmoira.c ../include/mit-copyright.h /usr/include/stdio.h
 newmoira.o: ../server/query.h
 tables.o: tables.c
+tables_sql.o: tables_sql.c
 imembers.o: imembers.c /usr/include/stdio.h ../include/moira.h
 imembers.o: ../include/mr_et.h
 class.o: class.c ../include/mit-copyright.h ../include/moira.h

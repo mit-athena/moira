@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_scall.c,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_scall.c,v 1.20 1990-06-01 18:46:36 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_scall.c,v 1.21 1992-01-27 17:59:20 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_sms_scall_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_scall.c,v 1.20 1990-06-01 18:46:36 mar Exp $";
+static char *rcsid_sms_scall_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_scall.c,v 1.21 1992-01-27 17:59:20 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -29,6 +29,11 @@ extern int errno;
 
 extern void clist_delete(), do_auth(), do_shutdown();
 void do_call();
+extern int ingres_errno, mr_errcode;
+static int row_count;
+
+/* Put this in a variable so that we can patch it if necessary */
+int max_row_count = 2048;
 
 /*
  * Welcome to the (finite state) machine (highest level).
@@ -175,17 +180,26 @@ retr_callback(argc, argv, p_cp)
 	char *p_cp;
 {
 	register client *cp = (client *)p_cp;
+	mr_params *arg_tmp;
+	returned_tuples *tp;
+	OPERATION op_tmp;
+	register char **nargv;
+	register int i;
+
+	if (row_count++ >= max_row_count) {
+	    ingres_errno = mr_errcode = MR_NO_MEM;
+	    return;
+	}
+
 	/*
 	 * This takes too much advantage of the fact that
 	 * serialization of the data happens during the queue operation.
 	 */
-	mr_params *arg_tmp = (mr_params *)db_alloc(sizeof(mr_params));
-	returned_tuples *tp = (returned_tuples *)
-		db_alloc(sizeof(returned_tuples));
-	register char **nargv = (char **)malloc(argc * sizeof(char *));
-	register int i;
+	arg_tmp = (mr_params *)db_alloc(sizeof(mr_params));
+	tp = (returned_tuples *)db_alloc(sizeof(returned_tuples));
+	nargv = (char **)malloc(argc * sizeof(char *));
 	
-	OPERATION op_tmp = create_operation();
+	op_tmp = create_operation();
 
 	if (mr_trim_args(argc, argv) == MR_NO_MEM) {
 	    com_err(whoami, MR_NO_MEM, "while trimming args");
@@ -262,6 +276,7 @@ do_retr(cl)
 
 	cl->reply.mr_argc = 0;
 	cl->reply.mr_status = 0;
+	row_count = 0;
 
 	queryname = cl->args->mr_argv[0];
 	
@@ -281,6 +296,11 @@ do_retr(cl)
 					  retr_callback,
 					  (char *)cl);
 	}
+	if (row_count >= max_row_count) {
+	    critical_alert("moirad", "attempted query %s with %d rows\n",
+			   queryname, row_count);
+	}
+
 	if (log_flags & LOG_RES)
 		com_err(whoami, 0, "Query complete.");
 }
@@ -354,6 +374,7 @@ client *cl;
     len = read(motd, buffer, sizeof(buffer) - 1);
     close(motd);
     buffer[len] = 0;
+    row_count = 0;
     retr_callback(1, arg, cl);
     cl->reply.mr_status = 0;
 }

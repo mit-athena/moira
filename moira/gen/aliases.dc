@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/aliases.dc,v 1.4 1992-11-17 16:56:20 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/aliases.dc,v 1.5 1992-12-21 18:04:34 mar Exp $
  *
  * This generates the /usr/lib/aliases mail aliases file for the mailhub.
  * The aliases file will contain:
@@ -44,6 +44,7 @@ char **argv;
     initialize_sms_error_table();
 #ifsql INGRES
     EXEC SQL CONNECT moira;
+    EXEC SQL SET LOCKMODE SESSION WHERE LEVEL=TABLE, READLOCK=SHARED;
 #endsql
 #ifsql INFORMIX
     EXEC SQL DATABASE moira;
@@ -142,11 +143,12 @@ get_info()
     EXEC SQL SELECT modtime INTO :buf FROM users WHERE USERS_ID = 0;
 
     fprintf(stderr, "Loading machines\n");
-    machines = create_hash(1000);
+    machines = create_hash(10);
 
     EXEC SQL DECLARE m_cursor CURSOR FOR 
       SELECT mach_id, name 
-	FROM machine;
+      FROM machine
+      ORDER BY mach_id;
     EXEC SQL OPEN m_cursor;
     while (1) {
       EXEC SQL FETCH m_cursor INTO :id, :name;
@@ -162,16 +164,17 @@ get_info()
 
 
     fprintf(stderr, "Loading strings\n");
-    strings = create_hash(2000);
+    strings = create_hash(11001);
 
     EXEC SQL DECLARE s_cursor CURSOR FOR 
-      SELECT string_id, string 
-	FROM strings;
+      SELECT string_id, trim(string) 
+      FROM strings
+      ORDER BY string_id;
     EXEC SQL OPEN s_cursor;
     while (1) {
       EXEC SQL FETCH s_cursor INTO :id, :name;
       if (sqlca.sqlcode != 0) break;
-      hash_store(strings, id, strsave(strtrim(name)));
+      hash_store(strings, id, strsave(name));
     }
     EXEC SQL CLOSE s_cursor;
 
@@ -180,7 +183,8 @@ get_info()
 
     EXEC SQL DECLARE u_cursor CURSOR FOR
       SELECT users_id, login, potype, pop_id, box_id
-	FROM users WHERE status = 1 OR status = 5 OR status = 6;
+      FROM users WHERE status = 1 OR status = 5 OR status = 6
+      ORDER BY users_id;
     EXEC SQL OPEN u_cursor;
     while (1) {
         EXEC SQL FETCH u_cursor INTO :id, :name, :type, :pid, :bid;
@@ -207,13 +211,15 @@ get_info()
 	hash_store(users, id, u);
      }
     EXEC SQL CLOSE u_cursor;
+    EXEC SQL COMMIT;
 
     fprintf(stderr, "Loading lists\n");
     lists = create_hash(15001);
 
     EXEC SQL DECLARE l_cursor CURSOR FOR
       SELECT list_id, name, maillist, description, acl_type, acl_id
-	FROM list WHERE active != 0;
+      FROM list WHERE active != 0
+      ORDER BY list_id;
     EXEC SQL OPEN l_cursor;
     while (1) {
         EXEC SQL FETCH l_cursor INTO :id, :name, :maillistp,
@@ -229,12 +235,14 @@ get_info()
 	hash_store(lists, id, l);
       }
     EXEC SQL CLOSE l_cursor;
+    EXEC SQL COMMIT;
 
     fprintf(stderr, "Loading members\n");
 
     EXEC SQL DECLARE mem_cursor CURSOR FOR
       SELECT list_id, member_type, member_id
-	FROM imembers WHERE direct = 1;
+      FROM imembers WHERE direct = 1
+      ORDER BY list_id;
     EXEC SQL OPEN mem_cursor;
     while (1) {
         EXEC SQL FETCH mem_cursor INTO :id, :type, :mid;

@@ -1,5 +1,5 @@
 #!/moira/bin/perl -Tw
-# $Id: grouper.pl,v 1.4 2000-04-20 22:54:49 zacheiss Exp $
+# $Id: grouper.pl,v 1.5 2000-06-05 01:48:20 zacheiss Exp $
 
 die "Usage: $0 password\n" unless ($#ARGV == 0);
 $whpassword = $ARGV[0];
@@ -58,16 +58,20 @@ foreach $class (@$classes) {
      $base = "\L$term-$class";
      $staff = "$base-staff";
 
-     # check_list(name, owner, export, parent, desc)
-
-     &check_list($base, "registrar", 1, "",
- 		"Automatically-created class participants list for $class");
-     &check_list("$base-reg", "registrar", 0, $base,
- 		"Automatically-generated registered students list for $class");
-     &check_list($staff, $staff, 0, $base,
- 		"Automatically-created teaching staff list for $class");
-     &check_list("$base-others", $staff, 0, $base,
- 		"Automatically-created non-registered students and miscellaneous people list for $class");
+     # check_list(name, owner, export, desc)
+     &check_list($staff, $staff, 0, 
+		 "Teaching staff list for $class");
+     &check_list("$base-reg", $staff, 0,
+		 "*** DO NOT MODIFY *** Automatically-created registered students list for $class");
+     &check_list("$base-others", $staff, 0,
+		 "Non-registered students and miscellaneous people list for $class");
+     &check_list($base, $staff, 1,
+		 "*** DO NOT MODIFY *** Automatically-created participants list for $class");
+     if (!$lists{$base}) {
+	 &add_member($staff, LIST, $base);
+	 &add_member("$base-reg", LIST, $base);
+	 &add_member("$base-others", LIST, $base);
+     }
 }
 
 # Now fill in -reg lists
@@ -128,13 +132,10 @@ $warehouse->disconnect;
 exit 0;
 
 sub check_list {
-    my ( $name, $owner, $export, $parent, $desc ) = @_;
+    my ( $name, $owner, $export, $desc ) = @_;
     if (!$lists{$name}) {
 	print LOG "Creating $name\n";
 	print MRTEST "qy alis $name 1 0 1 $export $export \"create unique GID\" 0 LIST $owner \"$desc\"\n";
-        if ($parent) {
-	    &add_member($name, LIST, $parent);
-	}
     }
 }
 

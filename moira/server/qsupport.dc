@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.dc,v $
  *	$Author: genoa $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.dc,v 2.6 1992-08-09 22:05:17 genoa Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.dc,v 2.7 1992-08-23 21:37:02 genoa Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_qsupport_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.dc,v 2.6 1992-08-09 22:05:17 genoa Exp $";
+static char *rcsid_qsupport_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.dc,v 2.7 1992-08-23 21:37:02 genoa Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -28,9 +28,9 @@ extern char *whoami, *strsave();
 extern int ingres_errno, mr_errcode;
 
 EXEC SQL BEGIN DECLARE SECTION;
-int idummy;
-extern char cdummy[];
 extern char stmt_buf[];
+int idummy;
+extern char cdummy[];           /** Routines which need these vars should use mr_select_any() **/
 EXEC SQL END DECLARE SECTION;
 
 /* Specialized Access Routines */
@@ -72,8 +72,12 @@ access_login(q, argv, cl)
     EXEC SQL END DECLARE SECTION;
 
     build_qual(q->qual, q->argc, argv, qual);
-    EXEC SQL SELECT users_id INTO :id FROM users WHERE :qual;
-
+    if(!strcmp(q->shortname,"guau")) {
+      EXEC SQL SELECT users_id INTO :id FROM users u, strings str WHERE :qual;
+    } else {
+      EXEC SQL SELECT users_id INTO :id FROM users WHERE :qual;
+    }
+    
     if (sqlca.sqlerrd[2] != 1 || id != cl->users_id)
 	return(MR_PERM);
     else
@@ -632,52 +636,58 @@ int setup_dlis(q, argv)
     struct query *q;
     char *argv[];
 {
-    EXEC SQL BEGIN DECLARE SECTION;
-    int flag, id;
-    EXEC SQL END DECLARE SECTION;
+    int flag, id, ec;
 
     id = *(int *)argv[0];
-    EXEC SQL REPEATED SELECT member_id INTO :idummy FROM imembers
-      WHERE member_id = :id AND member_type='LIST';
-    if (sqlca.sqlerrd[2] > 0)
-	return(MR_IN_USE);
-    EXEC SQL REPEATED SELECT member_id INTO :idummy FROM imembers
-      WHERE list_id = :id;
-    if (sqlca.sqlerrd[2] > 0)
-	return(MR_IN_USE);
-    EXEC SQL REPEATED SELECT label INTO :cdummy FROM filesys
-      WHERE owners = :id;
-    if (sqlca.sqlerrd[2] > 0)
-	return(MR_IN_USE);
-    EXEC SQL REPEATED SELECT tag INTO :cdummy FROM capacls
-      WHERE list_id = :id;
-    if (sqlca.sqlerrd[2] > 0)
-	return(MR_IN_USE);
-    EXEC SQL REPEATED SELECT name INTO :cdummy FROM list
-      WHERE acl_id = :id AND acl_type='LIST' AND list_id = :id;
-    if (sqlca.sqlerrd[2] > 0)
-	return(MR_IN_USE);
-    EXEC SQL REPEATED SELECT name INTO :cdummy FROM servers
-      WHERE acl_id = :id AND acl_type='LIST';
-    if (sqlca.sqlerrd[2] > 0)
-	return(MR_IN_USE);
-    EXEC SQL REPEATED SELECT entity_id INTO :idummy FROM quota
-      WHERE entity_id = :id AND type='GROUP';
-    if (sqlca.sqlerrd[2] > 0)
-	return(MR_IN_USE);
-    EXEC SQL REPEATED SELECT acl_id INTO :idummy FROM hostaccess
-      WHERE acl_id = :id AND acl_type='LIST';
-    if (sqlca.sqlerrd[2] > 0)
-	return(MR_IN_USE);
-    EXEC SQL REPEATED SELECT class INTO :cdummy FROM zephyr z
-      WHERE z.xmt_type = 'LIST' AND z.xmt_id = :id
-	 OR z.sub_type = 'LIST' AND z.sub_id = :id
-	 OR z.iws_type = 'LIST' AND z.iws_id = :id
-	 OR z.iui_type = 'LIST' AND z.iui_id = :id;
-    if (sqlca.sqlerrd[2] > 0)
-        return(MR_IN_USE);
-    if (ingres_errno)
-	return(mr_errcode);
+    sprintf(stmt_buf,"SELECT member_id FROM imembers WHERE member_id = %d AND member_type='LIST'",id);
+    if(ec=mr_select_any(stmt_buf)) {
+	if(ec==MR_EXISTS) return(MR_IN_USE); else return(ec);
+    }
+    
+    sprintf(stmt_buf,"SELECT member_id FROM imembers WHERE list_id = %d",id);
+    if(ec=mr_select_any(stmt_buf)) {
+	if(ec==MR_EXISTS) return(MR_IN_USE); else return(ec);
+    }
+
+    sprintf(stmt_buf,"SELECT label FROM filesys WHERE owners = %d",id);
+    if(ec=mr_select_any(stmt_buf)) {
+	if(ec==MR_EXISTS) return(MR_IN_USE); else return(ec);
+    }
+
+    sprintf(stmt_buf,"SELECT tag FROM capacls WHERE list_id = %d",id);
+    if(ec=mr_select_any(stmt_buf)) {
+	if(ec==MR_EXISTS) return(MR_IN_USE); else return(ec);
+    }
+
+    sprintf(stmt_buf,"SELECT name FROM list WHERE acl_id = %d AND acl_type='LIST' AND list_id != %d",id,id);
+    if(ec=mr_select_any(stmt_buf)) {
+	if(ec==MR_EXISTS) return(MR_IN_USE); else return(ec);
+    }
+
+    sprintf(stmt_buf,"SELECT name FROM servers WHERE acl_id = %d AND acl_type='LIST'",id);
+    if(ec=mr_select_any(stmt_buf)) {
+	if(ec==MR_EXISTS) return(MR_IN_USE); else return(ec);
+    }
+
+    sprintf(stmt_buf,"SELECT entity_id FROM quota WHERE entity_id = %d AND type='GROUP'",id);
+    if(ec=mr_select_any(stmt_buf)) {
+	if(ec==MR_EXISTS) return(MR_IN_USE); else return(ec);
+    }
+ 
+    sprintf(stmt_buf,"SELECT acl_id  FROM hostaccess WHERE acl_id = %d AND acl_type='LIST'",id);
+    if(ec=mr_select_any(stmt_buf)) {
+	if(ec==MR_EXISTS) return(MR_IN_USE); else return(ec);
+    }
+
+    sprintf(stmt_buf,"SELECT class FROM zephyr z \
+WHERE z.xmt_type = 'LIST' AND z.xmt_id = %d \
+OR z.sub_type = 'LIST' AND z.sub_id = %d \
+OR z.iws_type = 'LIST' AND z.iws_id = %d \
+OR z.iui_type = 'LIST' AND z.iui_id = %d",id,id,id,id);
+    if(ec=mr_select_any(stmt_buf)) {
+	if(ec==MR_EXISTS) return(MR_IN_USE); else return(ec);
+    }
+
     return(MR_SUCCESS);
 }
 
@@ -690,23 +700,18 @@ int setup_dsin(q, argv)
     struct query *q;
     char **argv;
 {
-    EXEC SQL BEGIN DECLARE SECTION;
-    char *name;
-    EXEC SQL END DECLARE SECTION;
-    char *c;
+    int ec;
 
-    name = argv[0];
-    for(c=name;*c;c++) if(islower(*c)) *c = toupper(*c);
-    EXEC SQL REPEATED SELECT service INTO :cdummy FROM serverhosts
-      WHERE service = :name;
-    if (sqlca.sqlerrd[2] > 0)
-	return(MR_IN_USE);
-    EXEC SQL REPEATED SELECT inprogress INTO :idummy FROM servers
-      WHERE name = :name;
-    if (sqlca.sqlerrd[2] > 0)
-	return(MR_IN_USE);
-    if (ingres_errno)
-	return(mr_errcode);
+    sprintf(stmt_buf,"SELECT service FROM serverhosts WHERE service = UPPERCASE('%s')",argv[0]);
+    if(ec=mr_select_any(stmt_buf)) {
+	if(ec==MR_EXISTS) return(MR_IN_USE); else return(ec);
+    }
+
+    sprintf(stmt_buf,"SELECT inprogress FROM servers WHERE name = UPPERCASE('%s')",argv[0]);
+    if(ec=mr_select_any(stmt_buf)) {
+	if(ec==MR_EXISTS) return(MR_IN_USE); else return(ec);
+    }
+
     return(MR_SUCCESS);
 }
 
@@ -720,19 +725,17 @@ int setup_dshi(q, argv)
     char **argv;
 {
     EXEC SQL BEGIN DECLARE SECTION;
-    int id;
-    char *name, *c;
+    int id, ec;
     EXEC SQL END DECLARE SECTION;
 
-    name = argv[0];
-    for(c=name;*c;c++) if(islower(*c)) *c = toupper(*c);  /* to uppercase */
     id = *(int *)argv[1];
-    EXEC SQL REPEATED SELECT inprogress INTO :idummy FROM serverhosts
-      WHERE service = :name AND mach_id = :id;
-    if (sqlca.sqlerrd[2] > 0)
-	return(MR_IN_USE);
-    if (ingres_errno)
-	return(mr_errcode);
+
+    sprintf(stmt_buf,"SELECT inprogress FROM serverhosts \
+WHERE service = UPPERCASE('%s') AND mach_id = %d",argv[0],id);
+    if(ec=mr_select_any(stmt_buf)) {
+	if(ec==MR_EXISTS) return(MR_IN_USE); else return(ec);
+    }
+
     return(MR_SUCCESS);
 }
 
@@ -787,7 +790,7 @@ setup_afil(q, argv, cl)
 
     sprintf(ftype, "fs_access_%s", type);
     EXEC SQL SELECT trans INTO :cdummy FROM alias
-      WHERE name = :ftype AND type = 'TYPE' and trans = :access;
+      WHERE name = :ftype AND type = 'TYPE' and trans = :access;   /** Use mr_select_any() */
     if (ingres_errno) return(mr_errcode);
     if (sqlca.sqlerrd[2] == 0) return(MR_FILESYS_ACCESS);
 
@@ -982,7 +985,7 @@ setup_dqot(q, argv, cl)
     client *cl;
 {
     EXEC SQL BEGIN DECLARE SECTION;
-    int quota, fs, id;
+    int quota, fs, id, physid;
     char *qtype;
     EXEC SQL END DECLARE SECTION;
 
@@ -997,9 +1000,10 @@ setup_dqot(q, argv, cl)
 
     EXEC SQL REPEATED SELECT quota INTO :quota FROM quota
       WHERE type = :qtype AND entity_id = :id AND filsys_id = :fs;
-    EXEC SQL REPEATED UPDATE nfsphys
-      SET allocated = nfsphys.allocated - :quota
-      WHERE nfsphys_id = filesys.physid AND filesys.filsys_id = :fs;
+    EXEC SQL REPEATED SELECT phys_id INTO :physid FROM filesys 
+      WHERE filsys_id = :fs;
+    EXEC SQL REPEATED UPDATE nfsphys SET allocated = allocated - :quota
+      WHERE nfsphys_id = :physid;
 
     if (ingres_errno) return(mr_errcode);
     return(MR_SUCCESS);
@@ -1411,9 +1415,8 @@ followup_guax(q, sq, v, action, actarg, cl)
 	    login = argv[U_NAME];
 	    EXEC SQL REPEATED SELECT sigdate, sigwho 
 	      INTO :timestamp, :who FROM users
-	      WHERE login = :login;  /** Use LEFT(...,SIZE(...)) here? **/
+	      WHERE login = LEFT(:login,SIZE(login));
 	    /** What about (INGRES) error handling? **/
-	    /** Is this guaranteed to be a singleton select? **/
 	    kname = malloc(1);
             status = id_to_name(who, "STRING", &kname);
             si.timestamp = timestamp;
@@ -1479,6 +1482,10 @@ followup_ausr(q, argv, cl)
         /* skip bytes for timestamp & kname */
         si.rawsig = (unsigned char *) rawsig;
         status = GDSS_Verify(databuf, strlen(databuf), argv[U_SIGNATURE], &si);
+	if (strlen(rawsig) > mr_sig_length) {
+	    com_err(whoami, 0, "GDSS signature too long.");  /** ??? **/
+	    return(MR_INTERNAL);
+	}
         if (status == 0) {
             name = kname_unparse(si.pname, si.pinst, si.prealm);
             status = name_to_id(name, "STRING", &sigwho);
@@ -1569,6 +1576,10 @@ followup_uuac(q, argv, cl)
         /* skip bytes for timestamp & kname */
         si.rawsig = (unsigned char *) rawsig;
         status = GDSS_Verify(databuf, strlen(databuf), argv[U_SIGNATURE+1], &si);
+	if (strlen(rawsig) > mr_sig_length) {
+	    com_err(whoami, 0, "GDSS signature too long.");  /** ??? **/
+	    return(MR_INTERNAL);
+	}
         if (status == 0) {
             name = kname_unparse(si.pname, si.pinst, si.prealm);
             status = name_to_id(name, "STRING", &sigwho);
@@ -1837,7 +1848,7 @@ followup_aqot(q, argv, cl)
     client *cl;
 {
     EXEC SQL BEGIN DECLARE SECTION;
-    int quota, id, fs, who;
+    int quota, id, fs, who, physid;
     char *entity, *qtype;
     EXEC SQL END DECLARE SECTION;
 
@@ -1857,9 +1868,10 @@ followup_aqot(q, argv, cl)
     EXEC SQL REPEATED UPDATE quota
       SET modtime = 'now', modby = :who, modwith = :entity
       WHERE filsys_id = :fs and type = :qtype and entity_id = :id;
-    EXEC SQL REPEATED UPDATE nfsphys
-      SET allocated = allocated + :quota
-      WHERE nfsphys_id = filesys.phys_id AND filesys.filsys_id = :fs;
+    EXEC SQL REPEATED SELECT phys_id INTO :physid FROM filesys
+      WHERE filsys_id = :fs;
+    EXEC SQL REPEATED UPDATE nfsphys SET allocated = allocated + :quota
+      WHERE nfsphys_id = :physid;
     if (ingres_errno) return(mr_errcode);
     return(MR_SUCCESS);
 }
@@ -4009,5 +4021,32 @@ convert_wildcards_uppercase(arg)
 
     return(MR_EXISTS);
 }
+
+
+/* Looks like it's time to build an abstraction barrier, Yogi */
+mr_select_any(stmt)
+    EXEC SQL BEGIN DECLARE SECTION; 
+    char *stmt;
+    EXEC SQL END DECLARE SECTION; 
+{
+    int result=0;
+
+    EXEC SQL PREPARE stmt FROM :stmt;
+    EXEC SQL DESCRIBE stmt INTO :SQLDA;
+    if(SQLDA->sqld==0)                       /* Not a SELECT */
+        return(MR_INTERNAL);        
+    EXEC SQL DECLARE csr CURSOR FOR stmt;
+    EXEC SQL OPEN csr;
+    EXEC SQL FETCH csr USING DESCRIPTOR :SQLDA;
+    if(sqlca.sqlcode==0) 
+        result=MR_EXISTS;
+    else if((sqlca.sqlcode<0) && mr_errcode)
+        result=mr_errcode;
+    else
+        result=0;
+    EXEC SQL CLOSE csr;
+    return(result);
+} 
+
 
 /* eof:qsupport.dc */

@@ -1,5 +1,5 @@
 #!/bin/sh
-# $Id: zephyr.sh,v 1.1 2000-01-06 21:13:52 danw Exp $
+# $Id: zephyr.sh,v 1.2 2000-01-22 03:11:42 danw Exp $
 
 # The following exit codes are defined and MUST BE CONSISTENT with the
 # error codes the library uses:
@@ -35,7 +35,7 @@ done
 # HUP zephyrd if needed
 case $hup in
 yes)
-    pid=`ps -ef | awk '/[^]]zephyrd/ { print $2; }'
+    pid=`ps -ef | awk '/[^\]]zephyrd/ { print $2; }'`
     kill -HUP $pid
     sleep 5
     ;;

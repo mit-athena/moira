@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.4 1988-12-07 18:45:55 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.5 1989-05-05 12:20:40 mar Exp $
  *
  * Command line oriented SMS List tool.
  *
@@ -21,7 +21,7 @@
 #include <sms_app.h>
 
 #ifndef LINT
-static char smslist_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.4 1988-12-07 18:45:55 mar Exp $";
+static char smslist_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.5 1989-05-05 12:20:40 mar Exp $";
 #endif
 
 
@@ -40,7 +40,8 @@ struct member {
 #define argis(a,b) ((strcmp(*arg+1, a) == 0) || (strcmp(*arg+1, b) == 0))
 
 /* flags from command line */
-int infoflg, verbose, syncflg, memberflg, recursflg, debugflg;
+int infoflg, verbose, syncflg, memberflg, recursflg, debugflg, noauth;
+int showusers, showstrings, showlists;
 
 /* various member lists */
 struct save_queue *addlist, *dellist, *memberlist, *synclist;
@@ -67,6 +68,7 @@ char **argv;
 
     /* clear all flags & lists */
     infoflg = verbose = syncflg = memberflg = debugflg = recursflg = 0;
+    noauth = showusers = showstrings = showlists = 0;
     listname = NULL;
     addlist = sq_create();
     dellist = sq_create();
@@ -80,10 +82,18 @@ char **argv;
 	{
 	    if (argis("m", "members"))
 		memberflg++;
+	    else if (argis("u", "users"))
+		showusers++;
+	    else if (argis("s", "strings"))
+		showstrings++;
+	    else if (argis("l", "lists"))
+		showlists++;
 	    else if (argis("D", "debug"))
 		debugflg++;
 	    else if (argis("i","information"))
 	      infoflg++;
+	    else if (argis("n","noauth"))
+	      noauth++;
 	    else if (argis("v","verbose"))
 	      verbose++;
 	    else if (argis("r","recursive"))
@@ -142,13 +152,19 @@ char **argv;
 	  addlist->q_next != addlist || dellist->q_next != dellist))
       memberflg++;
 
+    /* If none of {users,strings,lists} specified, turn them all on */
+    if (!(showusers || showstrings || showlists))
+      showusers = showstrings = showlists = 1;
+
     /* fire up SMS */
     if (status = sms_connect(SMS_SERVER)) {
 	com_err(whoami, status, " unable to connect to SMS");
 	exit(2);
     }
-    if (status = sms_auth("blanche")) {
+    if (!noauth && (status = sms_auth("blanche"))) {
 	com_err(whoami, status, " unable to authenticate to SMS");
+	com_err(whoami, 0,
+		"Try the -noauth flag if you don't need authentication");
 	exit(2);
     }
 
@@ -314,11 +330,15 @@ char **argv;
     fprintf(stderr, "Options are\n");
     fprintf(stderr, "   -v | -verbose\n");
     fprintf(stderr, "   -m | -members\n");
+    fprintf(stderr, "   -u | -users\n");
+    fprintf(stderr, "   -l | -lists\n");
+    fprintf(stderr, "   -s | -strings\n");
     fprintf(stderr, "   -i | -info\n");
     fprintf(stderr, "   -r | -recursive\n");
     fprintf(stderr, "   -a | -add member\n");
     fprintf(stderr, "   -d | -delete member\n");
     fprintf(stderr, "   -f | -file filename\n");
+    fprintf(stderr, "   -n | -noauth\n");
     fprintf(stderr, "   -D | -debug\n");
     exit(1);
 }
@@ -329,24 +349,32 @@ char **argv;
 show_list_member(memberstruct)
 struct member *memberstruct;
 {
-    if (verbose) {
-	char *s;
-	switch (memberstruct->type) {
-	case M_USER:
-	    s = "USER";
-	    break;
-	case M_LIST:
-	    s = "LIST";
-	    break;
-	case M_STRING:
-	    s = "STRING";
-	    break;
-	case M_ANY:
-	    printf("%s\n", memberstruct->name);
-	    return;
-	}
-	printf("%s:%s\n", s, memberstruct->name);
-    } else {
+    char *s;
+
+    switch (memberstruct->type) {
+    case M_USER:
+	if (!showusers)
+	  return;
+	s = "USER";
+	break;
+    case M_LIST:
+	if (!showlists)
+	  return;
+	s = "LIST";
+	break;
+    case M_STRING:
+	if (!showstrings)
+	  return;
+	s = "STRING";
+	break;
+    case M_ANY:
+	printf("%s\n", memberstruct->name);
+	return;
+    }
+
+    if (verbose)
+      printf("%s:%s\n", s, memberstruct->name);
+    else {
 	if (memberstruct->type == M_LIST)
 	  printf("LIST:%s\n", memberstruct->name);
 	else if (memberstruct->type == M_STRING &&

@@ -1,4 +1,4 @@
-/* $Id: mr_scall.c,v 1.35 1998-07-15 20:40:46 danw Exp $
+/* $Id: mr_scall.c,v 1.36 1999-07-17 21:41:40 danw Exp $
  *
  * Do RPC
  *
@@ -24,7 +24,7 @@
 #include <string.h>
 #include <unistd.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_scall.c,v 1.35 1998-07-15 20:40:46 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_scall.c,v 1.36 1999-07-17 21:41:40 danw Exp $");
 
 extern int nclients;
 extern client **clients;
@@ -48,6 +48,7 @@ char *procnames[] = {
   "access",
   "dcm",
   "motd",
+  "proxy",
 };
 
 int newqueries;
@@ -116,6 +117,10 @@ void client_read(client *cl)
 
     case MR_MOTD:
       get_motd(cl);
+      break;
+
+    case MR_PROXY:
+      do_proxy(cl);
       break;
     }
   mr_destroy_reply(cl->req);

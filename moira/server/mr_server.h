@@ -1,4 +1,4 @@
-/* $Id: mr_server.h,v 1.43 1999-06-30 20:56:39 danw Exp $
+/* $Id: mr_server.h,v 1.44 1999-07-17 21:41:40 danw Exp $
  *
  * Copyright (C) 1987-1998 by the Massachusetts Institute of Technology
  * For copying and distribution information, please see the file
@@ -16,14 +16,6 @@
 
 #include <krb.h>
 
-/* This should be in the kerberos header file. */
-
-struct krbname {
-  char name[ANAME_SZ];
-  char inst[INST_SZ];
-  char realm[REALM_SZ];
-};
-
 enum clstate { CL_ACCEPTING, CL_ACTIVE, CL_CLOSING };
 
 /*
@@ -37,10 +29,10 @@ typedef struct _client {
   struct sockaddr_in haddr; 	/* IP address of client */
   enum clstate state;		/* State of the connection */
   char clname[MAX_K_NAME_SZ];	/* Name client authenticated to */
-  struct krbname kname; 	/* Parsed version of the above */
-  char entity[9];		/* client program being used */
+  char entity[USERS_MODWITH_SIZE]; /* client program being used */
   int users_id;			/* Moira-internal ID of authenticated user */
   int client_id;		/* Moira-internal ID of client */
+  int proxy_id;			/* client_id of orig user, if proxied */
   time_t last_time_used;	/* Last time connection used */
   mr_params req;		/* Current request */
   mr_params *tuples;		/* Tuples waiting to send back to client */
@@ -120,6 +112,7 @@ void clist_delete(client *cp);
 
 /* prototypes from mr_sauth.c */
 void do_auth(client *cl);
+void do_proxy(client *cl);
 
 /* prototypes from mr_scall.c */
 void do_client(client *cl);

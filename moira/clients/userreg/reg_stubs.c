@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/reg_stubs.c,v $
  *	$Author: danw $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/reg_stubs.c,v 1.27 1998-01-06 20:39:42 danw Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/reg_stubs.c,v 1.28 1998-01-07 17:13:15 danw Exp $
  *
  *  (c) Copyright 1988 by the Massachusetts Institute of Technology.
  *  For copying and distribution information, please see the file
@@ -9,7 +9,7 @@
  */
 
 #ifndef lint
-static char *rcsid_reg_stubs_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/reg_stubs.c,v 1.27 1998-01-06 20:39:42 danw Exp $";
+static char *rcsid_reg_stubs_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/reg_stubs.c,v 1.28 1998-01-07 17:13:15 danw Exp $";
 #endif
 
 #include <mit-copyright.h>
@@ -81,7 +81,7 @@ int ureg_init(void)
   if (hp == NULL)
     return UNKNOWN_HOST;
 
-  sp = getservbyname("sms_ureg", "udp");
+  sp = getservbyname("moira_ureg", "udp");
 
   if (sp == NULL)
     return UNKNOWN_SERVICE;

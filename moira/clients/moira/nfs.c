@@ -1,9 +1,9 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/nfs.c,v 1.21 1998-01-06 20:39:34 danw Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/nfs.c,v 1.22 1998-01-07 17:13:03 danw Exp $";
 #endif
 
-/*	This is the file nfs.c for the MOIRA Client, which allows a nieve
- *      user to quickly and easily maintain most parts of the MOIRA database.
+/*	This is the file nfs.c for the Moira Client, which allows users
+ *      to quickly and easily maintain most parts of the Moira database.
  *	It Contains: All functions for manipulating NFS Physical directories.
  *
  *	Created: 	5/6/88
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/nfs.c,v $
  *      $Author: danw $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/nfs.c,v 1.21 1998-01-06 20:39:34 danw Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/nfs.c,v 1.22 1998-01-07 17:13:03 danw Exp $
  *
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *

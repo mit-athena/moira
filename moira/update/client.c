@@ -1,21 +1,21 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/client.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/client.c,v 1.20 1998-01-06 20:40:20 danw Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/client.c,v 1.21 1998-01-07 17:13:41 danw Exp $
  */
 
 #ifndef lint
-static char *rcsid_client2_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/client.c,v 1.20 1998-01-06 20:40:20 danw Exp $";
+static char *rcsid_client2_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/client.c,v 1.21 1998-01-07 17:13:41 danw Exp $";
 #endif	lint
 
 /*
  * MODULE IDENTIFICATION:
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/client.c,v 1.20 1998-01-06 20:40:20 danw Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/client.c,v 1.21 1998-01-07 17:13:41 danw Exp $
  *	Copyright 1987, 1988 by the Massachusetts Institute of Technology.
  *	For copying and distribution information, please see the file
  *	<mit-copyright.h>.
  * DESCRIPTION:
  *	This code handles the actual distribution of data files
- *	to servers in the MOIRA server-update program.
+ *	to servers in the Moira server-update program.
  * AUTHOR:
  *	Ken Raeburn (spook@athena.MIT.EDU),
  *		MIT Project Athena/MIT Information Systems.

@@ -1,15 +1,15 @@
 /*
- * Verify that all MOIRA updates are successful
+ * Verify that all Moira updates are successful
  *
  * Copyright 1988, 1991 by the Massachusetts Institute of Technology.
  * For copying and distribution information, see the file "mit-copyright.h".
  *
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrcheck/mrcheck.c,v 1.11 1998-01-05 19:52:17 danw Exp $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrcheck/mrcheck.c,v 1.12 1998-01-07 17:13:11 danw Exp $
  * $Author: danw $
  */
 
 #ifndef lint
-static char *rcsid_chsh_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrcheck/mrcheck.c,v 1.11 1998-01-05 19:52:17 danw Exp $";
+static char *rcsid_chsh_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrcheck/mrcheck.c,v 1.12 1998-01-07 17:13:11 danw Exp $";
 #endif
 
 #include <stdio.h>

@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_connect.c,v $
  *	$Author: danw $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_connect.c,v 1.18 1998-01-06 20:40:01 danw Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_connect.c,v 1.19 1998-01-07 17:13:29 danw Exp $
  *
  *	Copyright (C) 1987, 1990 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -12,7 +12,7 @@
  */
 
 #ifndef lint
-static char *rcsid_sms_connect_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_connect.c,v 1.18 1998-01-06 20:40:01 danw Exp $";
+static char *rcsid_mr_connect_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_connect.c,v 1.19 1998-01-07 17:13:29 danw Exp $";
 #endif
 
 #include <mit-copyright.h>
@@ -27,7 +27,7 @@ static char *mr_server_host = 0;
 /*
  * Open a connection to the mr server.  Looks for the server name
  * 1) passed as an argument, 2) in environment variable, 3) by hesiod
- * 4) compiled in default (from sms_app.h).
+ * 4) compiled in default (from moira_site.h).
  */
 
 int mr_connect(char *server)

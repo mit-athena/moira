@@ -1,9 +1,9 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.42 1998-01-06 20:39:37 danw Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.43 1998-01-07 17:13:09 danw Exp $";
 #endif
 
-/*	This is the file user.c for the MOIRA Client, which allows a nieve
- *      user to quickly and easily maintain most parts of the MOIRA database.
+/*	This is the file user.c for the Moira Client, which allows users
+ *      to quickly and easily maintain most parts of the Moira database.
  *	It Contains: Functions for manipulating user information.
  *
  *	Created: 	5/9/88
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v $
  *      $Author: danw $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.42 1998-01-06 20:39:37 danw Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.43 1998-01-07 17:13:09 danw Exp $
  *
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *

@@ -7,7 +7,7 @@ TAR_FILE=$DIR/moira.tar.Z
 PATH="/etc:/bin:/usr/bin:/usr/etc:/usr/athena/etc"
 
 # The following exit codes are defined and MUST BE CONSISTENT with the
-# MR error codes the library uses:
+# error codes the library uses:
 set MR_MISSINGFILE = 	47836473
 set MR_TARERR = 	47836476
 

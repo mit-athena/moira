@@ -3,17 +3,17 @@
  * and distribution information, see the file "mit-copyright.h".
  *
  * $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chpobox.c,v $
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chpobox.c,v 1.18 1998-01-05 19:52:20 danw Exp $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chpobox.c,v 1.19 1998-01-07 17:13:12 danw Exp $
  * $Author: danw $
  *
  */
 
 #ifndef lint
-static char *rcsid_chpobox_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chpobox.c,v 1.18 1998-01-05 19:52:20 danw Exp $";
+static char *rcsid_chpobox_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chpobox.c,v 1.19 1998-01-07 17:13:12 danw Exp $";
 #endif
 
 /*
- * Talk to the MOIRA database to change a person's home mail machine. This may
+ * Talk to the Moira database to change a person's home mail machine. This may
  * be an Athena machine, or a completely arbitrary address.
  *
  * chpobox with no modifiers reports the current mailbox.
@@ -35,7 +35,7 @@ static char *rcsid_chpobox_c = "$Header: /afs/.athena.mit.edu/astaff/project/moi
 #include <ctype.h>
 #include <errno.h>
 
-/* MOIRA includes */
+/* Moira includes */
 #include <moira.h>
 #include <moira_site.h>
 #include "mit-copyright.h"
@@ -280,7 +280,7 @@ int get_pobox(int argc, char **argv, char *callarg)
 }
 
 /*
- * given a canonicalized machine name, ask the MR server if it is of type
+ * given a canonicalized machine name, ask the Moira server if it is of type
  * pop, or of type local -- if neither, we assume that it's of type foreign.
  */
 char *potype(char *machine)

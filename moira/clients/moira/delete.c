@@ -1,9 +1,9 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/delete.c,v 1.23 1998-01-06 20:39:31 danw Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/delete.c,v 1.24 1998-01-07 17:12:55 danw Exp $";
 #endif
 
-/*	This is the file delete.c for the MOIRA Client, which allows a nieve
- *      user to quickly and easily maintain most parts of the MOIRA database.
+/*	This is the file delete.c for the Moira Client, which allows users
+ *      to quickly and easily maintain most parts of the Moira database.
  *	It Contains: functions for deleting users and lists.
  *
  *	Created: 	5/18/88
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/delete.c,v $
  *      $Author: danw $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/delete.c,v 1.23 1998-01-06 20:39:31 danw Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/delete.c,v 1.24 1998-01-07 17:12:55 danw Exp $
  *
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -573,7 +573,7 @@ void AttemptToDeleteList(char **list_info, Bool ask_first)
 
 /*	Function Name: DeleteList
  *	Description: deletes a list
- *	Arguments: argc, argv - standard MR argc and argv.
+ *	Arguments: argc, argv - standard Moira argc and argv.
  *	Returns: DM Status Code.
  */
 

@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/nfs.pc,v 1.3 1998-01-05 19:52:49 danw Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/nfs.pc,v 1.4 1998-01-07 17:13:19 danw Exp $
  *
  * This generates the files necessary to load an nfs server.
  *
@@ -59,7 +59,7 @@ int main(int argc, char **argv)
   if (argc == 2)
     {
       sprintf(cmd, "cd %s; cp %s/nfs/* .; tar cf %s .",
-	      nfs_dir, SMS_DIR, argv[1]);
+	      nfs_dir, MOIRA_DIR, argv[1]);
       if (system(cmd))
 	exit(MR_TAR_FAIL);
     }

@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/startdcm.c,v $
  *	$Author: danw $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/startdcm.c,v 1.10 1998-01-05 19:52:41 danw Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/startdcm.c,v 1.11 1998-01-07 17:13:16 danw Exp $
  *
  *	Copyright (C) 1987, 1988 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -12,7 +12,7 @@
  */
 
 #ifndef lint
-static char *rcsid_mr_starter_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/startdcm.c,v 1.10 1998-01-05 19:52:41 danw Exp $";
+static char *rcsid_mr_starter_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/startdcm.c,v 1.11 1998-01-07 17:13:16 danw Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -80,7 +80,7 @@ int main(int argc, char *argv)
   sigemptyset(&action.sa_mask);
   sigaction(SIGCHLD, &action, NULL);
 
-  sprintf(buf, "%s/%s.log", SMS_DIR, PROG);
+  sprintf(buf, "%s/%s.log", MOIRA_DIR, PROG);
   logf = open(buf, O_CREAT | O_WRONLY | O_APPEND, 0640);
   if (logf < 0)
     {

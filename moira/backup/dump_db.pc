@@ -1,19 +1,19 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/dump_db.pc,v $
  *	$Author: danw $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/dump_db.pc,v 1.4 1998-01-06 20:39:18 danw Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/dump_db.pc,v 1.5 1998-01-07 17:12:39 danw Exp $
  *
  *	(c) Copyright 1988 by the Massachusetts Institute of Technology.
  *	For copying and distribution information, please see the file
  *	<mit-copyright.h>.
  *
- * 	This program dumps the SMS database to a series of output files
- * which can be later read back into SMS in the event of a crash.
+ * 	This program dumps the Moira database to a series of output files
+ * which can be later read back into Moira in the event of a crash.
  *
  */
 
 #ifndef lint
-static char *rcsid_dump_db_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/dump_db.pc,v 1.4 1998-01-06 20:39:18 danw Exp $";
+static char *rcsid_dump_db_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/dump_db.pc,v 1.5 1998-01-07 17:12:39 danw Exp $";
 #endif lint
 
 #include <stdio.h>

@@ -1,13 +1,13 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v $
  *	$Author: danw $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.37 1998-01-06 20:40:13 danw Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.38 1998-01-07 17:13:37 danw Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
  *	<mit-copyright.h>.
  *
- * 	MOIRA server process.
+ * 	Moira server process.
  *
  * 	Most of this is stolen from ../gdb/tsr.c
  *
@@ -16,7 +16,7 @@
  *
  */
 
-static char *rcsid_mr_main_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.37 1998-01-06 20:40:13 danw Exp $";
+static char *rcsid_mr_main_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.38 1998-01-07 17:13:37 danw Exp $";
 
 #include <mit-copyright.h>
 #include <string.h>
@@ -64,7 +64,7 @@ void mr_setup_signals(void);
 int new_connection(void);
 
 /*
- * Main MOIRA server loop.
+ * Main Moira server loop.
  *
  * Initialize the world, then start accepting connections and
  * making progress on current connections.

@@ -1,9 +1,9 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/quota.c,v 1.25 1998-01-06 20:39:36 danw Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/quota.c,v 1.26 1998-01-07 17:13:07 danw Exp $";
 #endif
 
-/*	This is the file quota.c for the MOIRA Client, which allows a nieve
- *      user to quickly and easily maintain most parts of the MOIRA database.
+/*	This is the file quota.c for the Moira Client, which allows users
+ *      to quickly and easily maintain most parts of the Moira database.
  *	It Contains: Functions for manipulating the quota information.
  *
  *	Created: 	7/10/88
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/quota.c,v $
  *      $Author: danw $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/quota.c,v 1.25 1998-01-06 20:39:36 danw Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/quota.c,v 1.26 1998-01-07 17:13:07 danw Exp $
  *
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *

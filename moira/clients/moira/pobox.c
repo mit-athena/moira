@@ -1,9 +1,9 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/pobox.c,v 1.23 1998-01-06 20:39:35 danw Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/pobox.c,v 1.24 1998-01-07 17:13:05 danw Exp $";
 #endif
 
-/*	This is the file pobox.c for the MOIRA Client, which allows a nieve
- *      user to quickly and easily maintain most parts of the MOIRA database.
+/*	This is the file pobox.c for the Moira Client, which allows users
+ *      to quickly and easily maintain most parts of the Moira database.
  *	It Contains: Functions for handling the poboxes.
  *
  *	Created: 	7/10/88
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/pobox.c,v $
  *      $Author: danw $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/pobox.c,v 1.23 1998-01-06 20:39:35 danw Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/pobox.c,v 1.24 1998-01-07 17:13:05 danw Exp $
  *
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *

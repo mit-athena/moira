@@ -1,9 +1,9 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v 1.40 1998-01-06 20:39:38 danw Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v 1.41 1998-01-07 17:13:10 danw Exp $";
 #endif
 
-/*	This is the file utils.c for the MOIRA Client, which allows a nieve
- *      user to quickly and easily maintain most parts of the MOIRA database.
+/*	This is the file utils.c for the Moira Client, which allows users
+ *      to quickly and easily maintain most parts of the Moira database.
  *	It Contains:  Many useful utility functions.
  *
  *	Created: 	4/25/88
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v $
  *      $Author: danw $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v 1.40 1998-01-06 20:39:38 danw Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v 1.41 1998-01-07 17:13:10 danw Exp $
  *
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -190,7 +190,7 @@ int QueueCount(struct qelem *elem)
 }
 
 /*	Function Name: StoreInfo
- *	Description: Stores information from an moira query into a queue.
+ *	Description: Stores information from a moira query into a queue.
  *	Arguments: argc, argv, - information returned from the query returned
  *                               in argv.
  *                 data - the previous element on the queue, this data will be
@@ -613,7 +613,7 @@ char *atot(char *itime)
 
 /*	Function Name: Print
  *	Description: prints out all the arguments on a single line.
- *	Arguments: argc, argv - the standard MR arguments.
+ *	Arguments: argc, argv - the standard Moira arguments.
  *                 callback - the callback function - NOT USED.
  *	Returns: MR_CONT
  */

@@ -1,17 +1,17 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_srvdata.c,v $
  *	$Author: danw $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_srvdata.c,v 1.10 1998-01-05 19:53:33 danw Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_srvdata.c,v 1.11 1998-01-07 17:13:40 danw Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
  *	<mit-copyright.h>.
  *
- * 	Global variables inside the SMS server.
+ * 	Global variables inside the Moira server.
  */
 
 #ifndef lint
-static char *rcsid_mr_srvdata_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_srvdata.c,v 1.10 1998-01-05 19:53:33 danw Exp $";
+static char *rcsid_mr_srvdata_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_srvdata.c,v 1.11 1998-01-07 17:13:40 danw Exp $";
 #endif lint
 
 #include <mit-copyright.h>

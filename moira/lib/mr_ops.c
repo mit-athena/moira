@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_ops.c,v $
  *	$Author: danw $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_ops.c,v 1.11 1998-01-05 19:53:12 danw Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_ops.c,v 1.12 1998-01-07 17:13:31 danw Exp $
  *
  *	Copyright (C) 1987, 1989, 1990 by the Massachusetts Institute of
  *	Technology
@@ -10,11 +10,11 @@
  *
  * 	This routine is part of the client library.  It handles
  *	the protocol operations: invoking an update and getting the
- *	MR message of the day.
+ *	Moira message of the day.
  */
 
 #ifndef lint
-static char *rcsid_sms_do_update_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_ops.c,v 1.11 1998-01-05 19:53:12 danw Exp $";
+static char *rcsid_mr_do_update_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_ops.c,v 1.12 1998-01-07 17:13:31 danw Exp $";
 #endif
 
 #include <mit-copyright.h>
@@ -48,7 +48,7 @@ int mr_do_update(void)
 }
 
 
-/* Get the MR motd.  This returns an MR status, and motd will either
+/* Get the Moira motd.  This returns a Moira status, and motd will either
  * point to NULL or the motd in a static buffer.
  */
 

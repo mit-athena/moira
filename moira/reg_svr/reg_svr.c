@@ -1,7 +1,7 @@
 /*
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v $
  *      $Author: danw $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.47 1998-01-06 20:40:08 danw Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.48 1998-01-07 17:13:33 danw Exp $
  *
  *      Copyright (C) 1987, 1988 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -16,7 +16,7 @@
  */
 
 #ifndef lint
-static char *rcsid_reg_svr_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.47 1998-01-06 20:40:08 danw Exp $";
+static char *rcsid_reg_svr_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.48 1998-01-07 17:13:33 danw Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -287,7 +287,7 @@ int find_user(struct msg *message)
 
   if (status == SUCCESS)
     {
-      /* Get ready to make an Moira query */
+      /* Get ready to make a Moira query */
       q_name = "get_user_account_by_name";
       q_argc = GUBN_ARGS;	/* #defined in this routine */
       q_argv[0] = message->first;

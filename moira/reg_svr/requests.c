@@ -1,7 +1,7 @@
 /*
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/requests.c,v $
  *      $Author: danw $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/requests.c,v 1.11 1998-01-06 20:40:09 danw Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/requests.c,v 1.12 1998-01-07 17:13:35 danw Exp $
  *
  *      Copyright (C) 1987, 1988 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -14,7 +14,7 @@
  */
 
 #ifndef lint
-static char *rcsid_requests_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/requests.c,v 1.11 1998-01-06 20:40:09 danw Exp $";
+static char *rcsid_requests_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/requests.c,v 1.12 1998-01-07 17:13:35 danw Exp $";
 #endif lint
 
 /*
@@ -74,9 +74,9 @@ void req_initialize(void)
   int i;
 
   /* Get service information from /etc/services */
-  if (!(sp = getservbyname("sms_ureg", "udp")))
+  if (!(sp = getservbyname("moira_ureg", "udp")))
     {
-      com_err(whoami, errno, " unknown service sms_ureg/udp");
+      com_err(whoami, errno, " unknown service moira_ureg/udp");
       exit(1);
     }
 

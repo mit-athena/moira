@@ -1,9 +1,9 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/namespace.c,v 1.7 1998-01-05 19:52:09 danw Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/namespace.c,v 1.8 1998-01-07 17:13:03 danw Exp $";
 #endif
 
-/*	This is the file main.c for the Moira Client, which allows a nieve
- *      user to quickly and easily maintain most parts of the Moira database.
+/*	This is the file main.c for the Moira Client, which allows users
+ *      to quickly and easily maintain most parts of the Moira database.
  *	It Contains: The main driver for the Moira Client.
  *
  *	Created: 	4/12/88
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/namespace.c,v $
  *      $Author: danw $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/namespace.c,v 1.7 1998-01-05 19:52:09 danw Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/namespace.c,v 1.8 1998-01-07 17:13:03 danw Exp $
  *
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *

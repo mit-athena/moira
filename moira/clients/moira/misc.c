@@ -1,5 +1,5 @@
-/*	This is the file misc.c for the MOIRA Client, which allows a naieve
- *      user to quickly and easily maintain most parts of the MOIRA database.
+/*	This is the file misc.c for the Moira Client, which allows a naieve
+ *      to quickly and easily maintain most parts of the Moira database.
  *	It Contains:
  *		TableStats
  *		ShowClients
@@ -10,7 +10,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/misc.c,v $
  *      $Author: danw $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/misc.c,v 1.6 1998-01-05 19:52:08 danw Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/misc.c,v 1.7 1998-01-07 17:13:02 danw Exp $
  *
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -53,7 +53,7 @@ int PrintStats(char **info)
 
 
 /*	Function Name: TableStats
- *	Description: display the MOIRA table statistics
+ *	Description: display the Moira table statistics
  *	Arguments: NONE
  *	Returns: DM_NORMAL
  */

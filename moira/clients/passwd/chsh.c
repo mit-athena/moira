@@ -3,17 +3,17 @@
  * and distribution information, see the file "mit-copyright.h".
  *
  * $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chsh.c,v $
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chsh.c,v 1.18 1998-01-05 19:52:21 danw Exp $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chsh.c,v 1.19 1998-01-07 17:13:13 danw Exp $
  * $Author: danw $
  *
  */
 
 #ifndef lint
-static char *rcsid_chsh_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chsh.c,v 1.18 1998-01-05 19:52:21 danw Exp $";
+static char *rcsid_chsh_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chsh.c,v 1.19 1998-01-07 17:13:13 danw Exp $";
 #endif
 
 /*
- * Talk to the MOIRA database to change a person's login shell.  The chosen
+ * Talk to the Moira database to change a person's login shell.  The chosen
  * shell must exist.  A warning will be issued if the shell is not in
  * /etc/shells.
  *
@@ -34,7 +34,7 @@ static char *rcsid_chsh_c = "$Header: /afs/.athena.mit.edu/astaff/project/moirad
 #include <ctype.h>
 #include <errno.h>
 
-/* MOIRA includes */
+/* Moira includes */
 #include <moira.h>
 #include <moira_site.h>
 #include "mit-copyright.h"
@@ -102,7 +102,7 @@ int chsh(char *uname)
   int status;			/* general purpose exit status */
   int q_argc;			/* argc for mr_query */
   char *q_argv[U_END];		/* argv for mr_query */
-  char *motd;			/* determine MR server status */
+  char *motd;			/* determine Moira server status */
 
   int got_one = 0;		/* have we got a new shell yet? */
   char shell[BUFSIZ];		/* the new shell */

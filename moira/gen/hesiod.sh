@@ -1,11 +1,11 @@
 #!/bin/csh -f
 # This script performs updates of hesiod files on hesiod servers.
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/hesiod.sh,v 1.14 1998-01-05 19:52:44 danw Exp $
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/hesiod.sh,v 1.15 1998-01-07 17:13:17 danw Exp $
 
 set path=(/etc /bin /usr/bin /usr/etc /usr/athena/etc)
 
 # The following exit codes are defined and MUST BE CONSISTENT with the
-# MR error codes the library uses:
+# error codes the library uses:
 set MR_HESFILE = 	47836472
 set MR_MISSINGFILE = 	47836473
 set MR_NAMED = 		47836475

@@ -1,5 +1,5 @@
-/*	This is the file f_defs.h for the SMS Client, which allows a
- *      user to quickly and easily maintain most parts of the SMS database.
+/*	This is the file f_defs.h for the Moira Client, which allows users
+ *      to quickly and easily maintain most parts of the Moira database.
  *	It Contains: useful definitions.
  *
  *	Created: 	4/12/88
@@ -7,7 +7,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/f_defs.h,v $
  *      $Author: danw $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/f_defs.h,v 1.21 1998-01-05 19:52:00 danw Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/f_defs.h,v 1.22 1998-01-07 17:12:56 danw Exp $
  *
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -196,7 +196,7 @@ int NullFunc();			/* NULL return function. */
 int Print();			/* Prints out array of strings. */
 int PrintByType();		/* Prints out array of strings by type. */
 int PrintHelp();		/* Prints out help information. */
-int StoreInfo();		/* Stores info returned from and SMS query
+int StoreInfo();		/* Stores info returned from a Moira query
 				   in a queue. */
 int Scream();			/* Query Return function that yells if called*/
 int ToggleVerboseMode();	/* Turns on and off the verbose variable. */

@@ -1,5 +1,5 @@
-/*	This is the file defs.h for the SMS Client, which allows a nieve
- *      user to quickly and easily maintain most parts of the SMS database.
+/*	This is the file defs.h for the Moira Client, which allows users
+ *      to quickly and easily maintain most parts of the Moira database.
  *	It Contains: useful definitions.
  *
  *	Created: 	4/12/88
@@ -7,7 +7,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/defs.h,v $
  *      $Author: danw $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/defs.h,v 1.12 1998-01-05 19:51:59 danw Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/defs.h,v 1.13 1998-01-07 17:12:53 danw Exp $
  *
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *

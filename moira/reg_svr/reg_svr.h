@@ -1,11 +1,11 @@
 /*
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.h,v $
  *      $Author: danw $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.h,v 1.9 1998-01-05 19:53:19 danw Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.h,v 1.10 1998-01-07 17:13:34 danw Exp $
  *
  *      Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
- *      Server for user registration with MOIRA and Kerberos.
+ *      Server for user registration with Moira and Kerberos.
  *
  *      This file contains all the information needed by all source
  *      files for the user registration server.
@@ -39,7 +39,7 @@
 extern char *whoami;		/* Name of program - used by libraries */
 extern int errno;		/* Unix error number */
 
-/* This structure holds information from the MOIRA database that will be
+/* This structure holds information from the Moira database that will be
    worth holding on to.  An instance of it appears in the formatted
    packet structure. */
 struct db_data
@@ -64,7 +64,7 @@ struct msg
   int encrypted_len;		/* Length of encrypted information in packet */
   char *leftover;		/* Leftover information sent in the packet */
   int leftover_len;		/* Length of leftover information */
-  struct db_data db;		/* Information from the MOIRA database */
+  struct db_data db;		/* Information from the Moira database */
 };
 
 void failure_alert();		/* Log an unexplainable failure */

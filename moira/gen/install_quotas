@@ -5,7 +5,7 @@
 set dev=$1
 
 # Checking for /etc/enforce_quota is transitional code and should be
-# removed when the SMS database has an accurate understanding of what
+# removed when the Moira database has an accurate understanding of what
 # everyone's quotas are.
 if ( -f /etc/enforce_quota ) then
    while (1)
@@ -25,5 +25,5 @@ exit 0
 
 #
 # 	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/install_quotas,v $
-#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/install_quotas,v 1.3 1998-01-05 19:52:46 danw Exp $
+#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/install_quotas,v 1.4 1998-01-07 17:13:18 danw Exp $
 #

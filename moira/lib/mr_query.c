@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_query.c,v $
  *	$Author: danw $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_query.c,v 1.12 1998-01-06 20:40:03 danw Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_query.c,v 1.13 1998-01-07 17:13:32 danw Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_sms_query_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_query.c,v 1.12 1998-01-06 20:40:03 danw Exp $";
+static char *rcsid_mr_query_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_query.c,v 1.13 1998-01-07 17:13:32 danw Exp $";
 #endif
 
 #include <mit-copyright.h>
@@ -40,7 +40,7 @@ int mr_query(char *name, int argc, char **argv,
 }
 
 /*
- * This routine makes an MR query.
+ * This routine makes a Moira query.
  *
  * argv[0] is the query name.
  * argv[1..argc-1] are the query arguments.

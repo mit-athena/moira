@@ -12,7 +12,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/include/moira_site.h,v $
  *      $Author: danw $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/include/moira_site.h,v 1.25 1998-01-05 19:52:54 danw Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/include/moira_site.h,v 1.26 1998-01-07 17:13:23 danw Exp $
  *
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -26,7 +26,7 @@
 #include "mit-copyright.h"
 
 /* Default Moira server to connect to */
-#define MOIRA_SERVER	"MOIRA.MIT.EDU:sms_db"
+#define MOIRA_SERVER	"MOIRA.MIT.EDU:moira_db"
 
 
 #define NAME 0
@@ -372,7 +372,7 @@
 
 /* Directories & files used on the server machine: */
 
-#define SMS_DIR		"/moira"	/* home directory of the system */
+#define MOIRA_DIR	"/moira"	/* home directory of the system */
 #define BIN_DIR		"/moira/bin"	/* where progs live */
 #define DCM_DIR		"/moira/dcm"	/* where DCM output files end up */
 #define LOCK_DIR	"/moira/dcm/locks" /* where DCM puts lock files */

@@ -1,13 +1,13 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/update_server.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/update_server.c,v 1.15 1998-01-06 20:40:23 danw Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/update_server.c,v 1.16 1998-01-07 17:13:42 danw Exp $
  */
 /*  (c) Copyright 1988 by the Massachusetts Institute of Technology. */
 /*  For copying and distribution information, please see the file */
 /*  <mit-copyright.h>. */
 
 #ifndef lint
-static char *rcsid_dispatch_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/update_server.c,v 1.15 1998-01-06 20:40:23 danw Exp $";
+static char *rcsid_dispatch_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/update_server.c,v 1.16 1998-01-07 17:13:42 danw Exp $";
 #endif
 
 #include <mit-copyright.h>
@@ -101,7 +101,7 @@ int main(int argc, char **argv)
   /* wait for connection */
   gdb_init();
   /* If the config file contains a line "port portname", the daemon
-   * will listen on the named port rather than SERVICE_NAME "sms_update"
+   * will listen on the named port rather than SERVICE_NAME "moira_update"
    */
   if (!(p = config_lookup("port")))
     p = SERVICE_NAME;

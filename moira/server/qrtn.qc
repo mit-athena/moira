@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v 1.30 1989-07-19 14:58:47 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v 1.31 1989-08-10 14:18:34 mar Exp $
  *
  *	Copyright (C) 1987, 1988 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_qrtn_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v 1.30 1989-07-19 14:58:47 mar Exp $";
+static char *rcsid_qrtn_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v 1.31 1989-08-10 14:18:34 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -508,7 +508,7 @@ check_query_access(q, argv, cl)
     }
 
     /* check for default access */
-##  range of m is members
+##  range of m is imembers
 ##  repeat retrieve (exists = any(m.#member_id where m.list_id = @acl_id and
 ##                   m.member_type = "USER" and m.#member_id = def_uid))
     if (exists) return(SMS_SUCCESS);
@@ -559,64 +559,29 @@ get_client(cl, client_type, client_id)
     return(SMS_SUCCESS);
 ##}
 
-##find_member(list_type, list_id, member_type, member_id, sq)
+##find_member(list_type, list_id, member_type, member_id)
     char *list_type;
 ##  int list_id;
 ##  char *member_type;
 ##  int member_id;
-    struct save_queue *sq;
 ##{
-##  int exists;
-##  int sublist;
-    int child;
-    struct save_queue *sq_create();
+##  int exists, errorno;
 
     if (!strcmp(strtrim(list_type), strtrim(member_type)) &&
 	list_id == member_id)
 	return(1);
 
     /* see if client is a direct member of list */
+##  range of m is imembers
 ##  repeat retrieve (exists = any(m.#member_id where 
 ##				  m.#list_id = @list_id and
 ##				  m.#member_type = @member_type and 
 ##				  m.#member_id = @member_id))
-    if (exists) return(1);
-
-    /* are there any sub-lists? */
-##  repeat retrieve (exists = any(m.#member_id where m.#list_id = @list_id and
-##                   m.#member_type = "LIST"))
-    if (!exists) return(0);
-
-    /* yes; now recurse through sublists */
-
-    /* create a save queue */
-    if (sq == (struct save_queue *)0) {
-	sq = sq_create();
-	child = 0;
-    } else {
-	child = 1;
-    }
-
-    /* save all sublist ids */
-##  range of m is members
-##  retrieve (sublist = m.#member_id) 
-##      where m.#list_id = list_id and m.#member_type = "LIST"
-##  {
-	 sq_save_unique_data(sq, sublist);
-##  }
-
-    if (child) return(0);
-
-    /* at top-level, check sub-lists for client (breadth-first search) */
-    while (sq_get_data(sq, &sublist)) {
-	exists = find_member(list_type, sublist, member_type, member_id, sq);
-	if (exists) {
-	    sq_destroy(sq);
-	    return(1);
-	}
-    }
-    sq_destroy(sq);
-    return(0);
+##  inquire_equel(errorno = "errorno")
+    if (errorno == 0)
+      return(exists);
+    else
+      return(0);
 ##}
 
 

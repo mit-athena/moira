@@ -1,13 +1,16 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_srvdata.c,v $
  *	$Author: wesommer $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_srvdata.c,v 1.4 1987-07-14 00:38:14 wesommer Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_srvdata.c,v 1.5 1987-07-29 16:03:15 wesommer Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
  * 	Global variables inside the SMS server.
  * 
  *	$Log: not supported by cvs2svn $
+ * Revision 1.4  87/07/14  00:38:14  wesommer
+ * Added log_flags global variable.
+ * 
  * Revision 1.3  87/06/30  20:03:15  wesommer
  * Added local realm global variable.
  * 
@@ -20,7 +23,7 @@
  */
 
 #ifndef lint
-static char *rcsid_sms_srvdata_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_srvdata.c,v 1.4 1987-07-14 00:38:14 wesommer Exp $";
+static char *rcsid_sms_srvdata_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_srvdata.c,v 1.5 1987-07-29 16:03:15 wesommer Exp $";
 #endif lint
 
 #include "sms_server.h"
@@ -82,3 +85,8 @@ char *krb_realm = NULL;
  */
 
 int log_flags = LOG_CONNECT|LOG_REQUESTS|LOG_ARGS|LOG_RES;
+
+/*
+ * Time of last time through main loop.
+ */
+time_t now;

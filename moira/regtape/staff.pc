@@ -1,4 +1,4 @@
-/* $Id: staff.pc,v 1.5 2000-07-27 01:08:32 zacheiss Exp $
+/* $Id: staff.pc,v 1.6 2001-03-16 20:18:18 zacheiss Exp $
  *
  * Load data into Moira from Personnel Office data file
  *
@@ -19,7 +19,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/staff.pc,v 1.5 2000-07-27 01:08:32 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/staff.pc,v 1.6 2001-03-16 20:18:18 zacheiss Exp $");
 
 /* File format is:
  *
@@ -137,7 +137,7 @@ struct entry *get_next_entry(FILE *in)
 {
   static struct entry e;
   static char buf[BUFSIZ];
-  static char name[LEN_NAME + 1], sname[LEN_NAME + 1], id[LEN_ID + 1];
+  static char name[LEN_NAME + 1], id[LEN_ID + 1];
   static char office[LEN_OFFICE + 1], phone[LEN_PHONE + 1];
   static char phone2[LEN_PHONE2 + 1], dept[LEN_DEPT + 1], title[LEN_TITLE + 1];
   int ends_sr, ends_jr, ends_iii, ends_iv, ends_ii, ends_v;
@@ -154,8 +154,6 @@ struct entry *get_next_entry(FILE *in)
   strlcpy(dept, &buf[LOC_DEPT], LEN_DEPT + 1);
   strlcpy(title, &buf[LOC_TITLE], LEN_TITLE + 1);
 
-  strcpy(sname, name);
-  e.name = strtrim(sname);
   p = strchr(name, ',');
   if (p)
     *p = '\0';
@@ -194,6 +192,12 @@ struct entry *get_next_entry(FILE *in)
   FixCase(e.last);
   FixCase(e.first);
   FixCase(e.middle);
+
+  e.name = buf;
+  if (*e.middle)
+    sprintf(e.name, "%s %s %s", e.first, e.middle, e.last);
+  else
+    sprintf(e.name, "%s %s", e.first, e.last);
 
   e.id = id;
   e.haddr = e.hphone = "";

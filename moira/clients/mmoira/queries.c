@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/queries.c,v 1.6 1992-10-22 15:32:49 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/queries.c,v 1.7 1992-10-23 18:59:27 mar Exp $
  */
 
 #include <stdio.h>
@@ -87,11 +87,12 @@ EntryForm *form;
 	StoreField(f, 2, argv[2]);
 	f->inputlines[3]->keywords = nfs_states;
 	for (i = 0; nfs_states[i]; i++)
-	  if ((atoi(nfs_states[i]) & ~MR_FS_GROUPQUOTA) == atoi(argv[3]))
+	  if (atoi(nfs_states[i]) & atoi(argv[3]))
 	    StoreField(f, 3, nfs_states[i]);
-	StoreField(f, 3, argv[3]);
-	if (atoi(argv[3]) && MR_FS_GROUPQUOTA)
+	if (atoi(argv[3]) & MR_FS_GROUPQUOTA)
 	  f->inputlines[4]->returnvalue.booleanvalue = 1;
+	else
+	  f->inputlines[4]->returnvalue.booleanvalue = 0;
 	StoreField(f, 5, argv[4]);
 	StoreField(f, 6, argv[5]);
 	return;
@@ -541,6 +542,12 @@ int remove;
 	if (!strcmp(form->formname, "mod_nfs")) {
 	    qy = "update_nfsphys";
 	    argc = NFS_MODTIME;
+	    StoreHost(form, NFS_NAME, &argv[NFS_NAME]);
+	    sprintf(buf, "%d", atoi(stringval(form, NFS_STATUS)) +
+		    (boolval(form, 4) ? MR_FS_GROUPQUOTA : 0));
+	    argv[NFS_STATUS] = buf;
+	    argv[NFS_ALLOC] = stringval(form, 5);
+	    argv[NFS_SIZE] = stringval(form, 6);
 	    break;
 	}
 	form->extrastuff = (caddr_t) "mod_nfs";
@@ -701,9 +708,7 @@ int remove;
 	    sprintf(buf, "Delete %s %s from list %s?", StringValue(form, 0),
 		    StringValue(form, 1), argv[0]);
 	    if (!boolval(form, 2) ||
-		AskQuestion(buf, "If you answer yes, this member will be deleted from the named list.\n\
-Answer no to avoid the deletion.  In either case, you will continue to\n\
-be prompted with the other lists the member belongs to.")) {
+		AskQuestion(buf, "confirm_del_all")) {
 		i = MoiraQuery("delete_member_from_list", 3, argv,
 			       DisplayCallback, NULL);
 		if (i)
@@ -831,6 +836,8 @@ MenuItem *m;
     case MM_HELP_WILDCARDS:
     case MM_HELP_AUTHORS:
     case MM_HELP_BUGS:
+    case MM_HELP_MOUSE:
+    case MM_HELP_KEYBOARD:
 	help(m->query);
 	return;
     case MM_QUIT:

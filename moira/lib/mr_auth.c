@@ -1,4 +1,4 @@
-/* $Id: mr_auth.c,v 1.23 1998-02-15 17:49:00 danw Exp $
+/* $Id: mr_auth.c,v 1.24 1999-07-17 21:39:38 danw Exp $
  *
  * Handles the client side of the sending of authenticators to the moira server
  *
@@ -17,7 +17,7 @@
 
 #include <krb.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_auth.c,v 1.23 1998-02-15 17:49:00 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_auth.c,v 1.24 1999-07-17 21:39:38 danw Exp $");
 
 /* Authenticate this client with the Moira server.  prog is the name of the
  * client program, and will be recorded in the database.
@@ -59,6 +59,27 @@ int mr_auth(char *prog)
   params.mr_argl[0] = auth.length;
   params.mr_argv[1] = prog;
   params.mr_argl[1] = strlen(prog) + 1;
+
+  if ((status = mr_do_call(&params, &reply)) == MR_SUCCESS)
+    status = reply.u.mr_status;
+
+  mr_destroy_reply(reply);
+
+  return status;
+}
+
+int mr_proxy(char *principal, char *orig_authtype)
+{
+  int status;
+  mr_params params, reply;
+  char *args[2];
+
+  params.u.mr_procno = MR_PROXY;
+  params.mr_argc = 2;
+  params.mr_argv = args;
+  params.mr_argv[0] = principal;
+  params.mr_argv[1] = orig_authtype;
+  params.mr_argl = NULL;
 
   if ((status = mr_do_call(&params, &reply)) == MR_SUCCESS)
     status = reply.u.mr_status;

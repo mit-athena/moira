@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/setquota.c,v $
- *	$Author: wesommer $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/setquota.c,v 1.1 1987-09-04 21:32:47 wesommer Exp $
+ *	$Author: raeburn $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/setquota.c,v 1.2 1988-10-06 10:41:55 raeburn Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
@@ -11,10 +11,13 @@
  * quota system.
  * 	
  *	$Log: not supported by cvs2svn $
+ * Revision 1.1  87/09/04  21:32:47  wesommer
+ * Initial revision
+ * 
  */
 
 #ifndef lint
-static char *rcsid_setquota_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/setquota.c,v 1.1 1987-09-04 21:32:47 wesommer Exp $";
+static char *rcsid_setquota_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/setquota.c,v 1.2 1988-10-06 10:41:55 raeburn Exp $";
 #endif lint
 
 #include <stdio.h>
@@ -31,11 +34,25 @@ main(argc, argv)
 {
 	char *device;
 	int uid;
-	struct dqblk db;
+	struct dqblk db, odb;
+	int uflag = 0;
+	
+	while (argc > 4 && *argv[1] == '-') {
+		switch(argv[1][1]) {
+		case 'u':
+			uflag = 1;
+			--argc;
+			++argv;
+			break;
+		default:
+			goto usage;
+		}
+	}
 	
 	if (argc != 4) {
 	usage:
-		fprintf(stderr, "usage: setquota special uid quota\n\
+		fprintf(stderr, "usage: setquota [-u] special uid quota\n\
+-u means set limit to <quota> + cur usage\n\
 special is a mounted filesystem special device\n\
 quota is in 1KB units\n");
 		exit(1);
@@ -59,6 +76,15 @@ quota is in 1KB units\n");
 	db.dqb_bsoftlimit *= btodb(1024);
 	db.dqb_bhardlimit *= btodb(1024);
 
+	if (uflag) {
+		if (quotactl(Q_GETQUOTA, device, uid, &odb) == 0) {
+			db.dqb_bhardlimit += odb.dqb_curblocks;
+			db.dqb_bsoftlimit += odb.dqb_curblocks;
+			db.dqb_fhardlimit += odb.dqb_curfiles;
+			db.dqb_fsoftlimit += odb.dqb_curfiles;
+		}
+	}
+	
 	if (quotactl(Q_SETQLIM, device, uid, &db) < 0) {
 		fprintf (stderr, "quotactl: %d on ", uid);
 		perror (device);

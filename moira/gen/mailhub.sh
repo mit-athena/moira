@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/mailhub.sh,v 1.11 2002-01-22 14:19:52 zacheiss Exp $
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/mailhub.sh,v 1.12 2002-05-15 20:25:05 zacheiss Exp $
 
 PATH=/sbin:/bin:/usr/sbin:/usr/bin:/etc:/usr/etc:/usr/athena/bin:/usr/local/bin
 export PATH
@@ -34,7 +34,7 @@ fi
 olines=`wc -l $root/etc/aliases |  awk '{print $1}'`
 nlines=`wc -l $root/etc/aliases.new | awk '{print $1}'`
 diff=`expr $nlines - $olines`
-thresh=`expr $nlines / 10`
+thresh=`expr $olines / 10`
 
 # Catch the zero case
 if [ $nlines -eq 0 ]; then

@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/hesiod.qc,v 1.4 1988-08-01 00:02:52 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/hesiod.qc,v 1.5 1988-08-07 22:39:07 mar Exp $
  *
  * This generates the zone files necessary to load a hesiod server.
  * The following zones are generated: passwd, uid, pobox, group,
@@ -46,7 +46,6 @@ char **argv;
 
 ##  ingres sms
 
-##  begin transaction
     changed = do_passwd();
     changed += do_pobox();
     changed += do_filsys();
@@ -55,7 +54,6 @@ char **argv;
     changed += do_sloc();
     changed += do_service();
     changed += do_groups();
-##  end transaction
 
 ##  exit
 
@@ -137,11 +135,11 @@ do_passwd()
 ##	      op = u.office_phone, hp = u.home_phone, id = u.users_id)
 ##	where u.status = 1 {
 	    strtrim(login);
-	    strtrim(fullname);
-	    strtrim(oa);
-	    strtrim(op);
-	    strtrim(hp);
-	    strtrim(shell);
+	    dequote(fullname);
+	    dequote(oa);
+	    dequote(op);
+	    dequote(hp);
+	    dequote(shell);
 	    u = (struct user *) malloc(sizeof(struct user));
 	    strcpy(u->name, login);
 	    u->lists = NULL;
@@ -281,6 +279,7 @@ do_groups()
 
     /* retrieve simple groups */
 ##  range of l is list
+##  begin transaction
 ##  retrieve (name = l.#name, gid = l.#gid, lid = l.list_id)
 ##	where l.group != 0 and l.active != 0 {
 	    strtrim(name);
@@ -351,6 +350,7 @@ do_groups()
 	  g->id = lid;
       }
 ##  }
+##  end transaction
 
     for (p = &(users->data[users->size - 1]); p >= users->data; p--) {
 	for (b = *p; b; b = b->next) {
@@ -445,6 +445,8 @@ do_filsys()
 	    }
 ##  }
 
+
+
 ##  range of a is alias
 ##  retrieve (name = a.#name, trans = a.#trans) where a.#type = "FILESYS" {
     	strtrim(name);
@@ -483,7 +485,7 @@ typedef long	set_mask;
 do_cluster()
 ##{
     FILE *out;
-    char outf[64], outft[64], *mach;
+    char outf[64], outft[64], *mach, machbuf[33], *p;
     struct stat sb;
     time_t ftime;
 ##  int flag1, flag2, flag3, flag4, maxmach, maxclu, mid, cid, id;
@@ -520,6 +522,7 @@ do_cluster()
     get_mach();
 
 ##  range of c is cluster
+##  begin transaction
 ##  retrieve (maxclu = max(c.clu_id))
     setsize = howmany(maxclu, NSETBITS);
 ##  range of m is machine
@@ -554,22 +557,29 @@ do_cluster()
 	    }
 	}
 
-	if (mach = hash_lookup(machines, mid))
-	  fprintf(out, "%s.cluster\tHS CNAME smsinternal-%d.cluster\n",
-		  mach, mid);
+	if (mach = hash_lookup(machines, mid)) {
+	    for (p = machbuf; *mach && *mach != '.'; mach++)
+	      *p++ = *mach;
+	    *p = 0;
+	    fprintf(out, "%s.cluster\tHS CNAME smsinternal-%d.cluster\n",
+		    machbuf, mid);
+	}
 	for (id = mid + 1; id < maxmach; id++) {
 	    if ((ps = machs[id]) && !SET_CMP(ms, ps)) {
 		free(ps);
 		machs[id] = NULL;
-		if (mach = hash_lookup(machines, id))
-		  fprintf(out, "%s.cluster\tHS CNAME smsinternal-%d.cluster\n",
-			  mach, mid);
+		if (mach = hash_lookup(machines, id)) {
+		    for (p = machbuf; *mach && *mach != '.'; mach++)
+		      *p++ = *mach;
+		    *p = 0;
+		    fprintf(out,"%s.cluster\tHS CNAME smsinternal-%d.cluster\n",
+			    machbuf, mid);
+		}
 	    }
 	}
 	free(ms);
 	machs[mid] = NULL;
     }
-    free(machs);
 
 ##  retrieve (name = c.#name, label = d.serv_label, data = d.serv_cluster)
 ##	where c.clu_id = d.clu_id {
@@ -579,6 +589,8 @@ do_cluster()
 	    fprintf(out, "%s.cluster\tHS UNSPECA \"%s %s\"\n",
 		    name, label, data);
 ##  }
+##  end transaction
+    free(machs);
 
     if (fclose(out)) {
 	fprintf(stderr, "Unsuccessful close of cluster.db\n");
@@ -595,7 +607,7 @@ do_printers()
     char outf[64], outft[64];
     struct stat sb;
     time_t ftime;
-##  char name[33], pcap[513], *filetime;
+##  char name[17], rp[17], sd[33], rm[33], *filetime;
 ##  int flag;
 
     sprintf(outf, "%s/printcap.db", HESIOD_DIR);
@@ -621,10 +633,14 @@ do_printers()
     fprintf(stderr, "Building printcap.db\n");
 
 ##  range of p is printcap
-##  retrieve (name = p.#name, pcap = p.#pcap) {
+##  retrieve (name = p.#name, rp = p.#rp, sd = p.dir, rm = machine.#name)
+##    where machine.mach_id = p.mach_id {
 	strtrim(name);
-	strtrim(pcap);
-	fprintf(out, "%s.pcap\tHS UNSPECA \"%s\"\n", name, pcap);
+	strtrim(rp);
+	strtrim(sd);
+	strtrim(rm);
+	fprintf(out, "%s.pcap\tHS UNSPECA \"%s:rp=%s:rm=%s:sd=%s\"\n",
+		name, name, rp, rm, sd);
 ##  }
 
     if (fclose(out)) {

@@ -1,4 +1,4 @@
-/* $Id: qsetup.pc,v 2.43 2001-04-26 21:26:09 zacheiss Exp $
+/* $Id: qsetup.pc,v 2.44 2001-09-13 02:26:42 zacheiss Exp $
  *
  * Query setup routines
  *
@@ -21,7 +21,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsetup.pc,v 2.43 2001-04-26 21:26:09 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsetup.pc,v 2.44 2001-09-13 02:26:42 zacheiss Exp $");
 
 extern char *whoami;
 extern int dbms_errno, mr_errcode;
@@ -229,6 +229,53 @@ int setup_dmac(struct query *q, char *argv[], client *cl)
   return MR_SUCCESS;
 }
 
+/* setup_asnt - verify that the data entered for the subnet is sane.
+ * In particular, make sure that the "low" and "high" addresses are
+ * correctly ordered, i.e., high > low.
+ */
+
+int setup_asnt(struct query *q, char *argv[], client *cl)
+{
+  int high, low, row, status;
+  char *account_number;
+
+  /* Check for asnt or usnt. */
+  if (q->type == APPEND)
+    row = 0;
+  else
+    row = 1;
+
+  low = atoi(argv[row + 7]);
+  high = atoi(argv[row + 8]);
+  status = atoi(argv[row + 2]);
+  account_number = argv[row + 4];
+  
+  /* Don't allow Private subnets to be created without a valid billing
+   * number.
+   */
+  if (status == SNET_STATUS_PRIVATE)
+    {
+      EXEC SQL SELECT account_number FROM accountnumbers
+	WHERE account_number = :account_number;
+      if (sqlca.sqlcode == SQL_NO_MATCH)
+	return MR_ACCOUNT_NUMBER;
+    }
+      
+  /* Special case 0.0.0.0 and 255.255.255.255 */
+  if (!(low == 0 || low == -1 || high == 0 || high == -1))
+    if (low > high)
+      return MR_ADDRESS;
+
+  /* If this is update_subnet, we're done. */
+  if (row == 1)
+    return MR_SUCCESS;
+
+  /* For an add_subnet query, allocate and fill in a new snet_id */
+  if ((mr_errcode = prefetch_value(q, argv, cl)) != MR_SUCCESS)
+    return mr_errcode;
+
+  return MR_SUCCESS;
+}
 
 /* setup_dsnt - verify that the subnet is no longer being referenced
  * and may safely be deleted.
@@ -900,8 +947,10 @@ int setup_ahst(struct query *q, char **argv, client *cl)
 
   if (q->version < 6)
     idx = 0;
-  else
+  else if (q->version >= 6 && q->version < 8)
     idx = 1;
+  else
+    idx = 2;
 
   /* Sanity check name, vendor, model, and os. */
   if ((row == 0 || strcasecmp(argv[1], oldname)) &&

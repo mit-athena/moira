@@ -1,4 +1,4 @@
-# $Id: mr_et.et,v 1.27 2001-05-31 21:35:51 zacheiss Exp $
+# $Id: mr_et.et,v 1.28 2001-09-13 02:24:20 zacheiss Exp $
 	error_table sms
 
 ec	MR_NOT_CONNECTED,
@@ -227,5 +227,8 @@ ec	MR_CONTAINER,
 
 ec	MR_NEW_CONTAINER_NAME,
 	"The new container name is invalid"
+
+ec	MR_ACCOUNT_NUMBER,
+	"No such account number"
 
 	end

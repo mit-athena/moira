@@ -1,4 +1,4 @@
-/* $Id: qfollow.pc,v 2.22 2001-04-26 21:26:07 zacheiss Exp $
+/* $Id: qfollow.pc,v 2.23 2001-09-13 02:26:42 zacheiss Exp $
  *
  * Query followup routines
  *
@@ -20,7 +20,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qfollow.pc,v 2.22 2001-04-26 21:26:07 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qfollow.pc,v 2.23 2001-09-13 02:26:42 zacheiss Exp $");
 
 extern char *whoami, *table_name[];
 extern int dbms_errno, mr_errcode;
@@ -526,13 +526,18 @@ int followup_gsnt(struct query *q, struct save_queue *sq, struct validate *v,
 		  client *cl)
 {
   char **argv;
-  int status;
+  int status, idx;
+
+  if (q->version < 8)
+    idx = 0;
+  else
+    idx = 3;
 
   while (sq_get_data(sq, &argv))
     {
       mr_trim_args(q->vcnt, argv);
 
-      status = fix_ace(argv[7], &argv[8]);
+      status = fix_ace(argv[7 + idx], &argv[8 + idx]);
       if (status && status != MR_NO_MATCH)
 	return status;
     }
@@ -552,8 +557,10 @@ int followup_ghst(struct query *q, struct save_queue *sq, struct validate *v,
 
   if (q->version < 6)
     idx = 0;
-  else
+  else if (q->version >= 6 && q->version < 8)
     idx = 1;
+  else
+    idx = 2;
 
   while (sq_get_data(sq, &argv))
     {

@@ -1,4 +1,4 @@
-/* $Id: moira_site.h,v 1.39 2001-05-31 21:35:12 zacheiss Exp $
+/* $Id: moira_site.h,v 1.40 2001-09-13 02:23:59 zacheiss Exp $
  *
  * This file contains all definitions that allow easy access to
  * elements returned by most of the @i[Moira] queries.  It also defines
@@ -165,22 +165,23 @@
 #define M_LOC		4
 #define M_CONTACT	5
 #define M_BILL_CONTACT  6
-#define M_USE		7
-#define M_STAT		8
-#define M_STAT_CHNG	9
-#define M_SUBNET	10
-#define M_ADDR		11
-#define M_OWNER_TYPE	12
-#define M_OWNER_NAME	13
-#define M_ACOMMENT	14
-#define M_OCOMMENT	15
-#define M_CREATED	16
-#define M_CREATOR	17
-#define M_INUSE		18
-#define M_MODTIME	19
-#define M_MODBY		20
-#define M_MODWITH	21
-#define M_END		22
+#define M_ACCT_NUMBER   7
+#define M_USE		8
+#define M_STAT		9
+#define M_STAT_CHNG	10
+#define M_SUBNET	11
+#define M_ADDR		12
+#define M_OWNER_TYPE	13
+#define M_OWNER_NAME	14
+#define M_ACOMMENT	15
+#define M_OCOMMENT	16
+#define M_CREATED	17
+#define M_CREATOR	18
+#define M_INUSE		19
+#define M_MODTIME	20
+#define M_MODBY		21
+#define M_MODWITH	22
+#define M_END		23
 
 /*  Machine to Cluster mapping */
 
@@ -328,17 +329,27 @@
 
 #define SN_NAME		0
 #define SN_DESC		1
-#define SN_ADDRESS	2
-#define SN_MASK		3
-#define SN_LOW		4
-#define SN_HIGH		5
-#define SN_PREFIX	6
-#define SN_ACE_TYPE	7
-#define SN_ACE_NAME	8
-#define SN_MODTIME	9
-#define SN_MODBY	10
-#define SN_MODWITH	11
-#define SN_END		12
+#define SN_STATUS       2
+#define SN_CONTACT      3
+#define SN_ACCT_NUMBER  4
+#define SN_ADDRESS	5
+#define SN_MASK		6
+#define SN_LOW		7
+#define SN_HIGH		8
+#define SN_PREFIX	9
+#define SN_ACE_TYPE	10
+#define SN_ACE_NAME	11
+#define SN_MODTIME	12
+#define SN_MODBY	13
+#define SN_MODWITH	14
+#define SN_END		15
+
+/* Subnet statuses */
+#define SNET_STATUS_RESERVED        0
+#define SNET_STATUS_BILLABLE        1
+#define SNET_STATUS_PRIVATE         2
+#define SNET_STATUS_RESNET          3
+#define SNET_STATUS_INFRASTRUCTURE  4
 
 /* User Information queries, v3 */
 

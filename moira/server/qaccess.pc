@@ -1,4 +1,4 @@
-/* $Id: qaccess.pc,v 2.23 2001-04-26 21:26:06 zacheiss Exp $
+/* $Id: qaccess.pc,v 2.24 2001-09-13 02:26:42 zacheiss Exp $
  *
  * Check access to queries
  *
@@ -17,7 +17,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qaccess.pc,v 2.23 2001-04-26 21:26:06 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qaccess.pc,v 2.24 2001-09-13 02:26:42 zacheiss Exp $");
 
 extern char *whoami;
 extern int dbms_errno, mr_errcode;
@@ -412,16 +412,19 @@ int access_filesys(struct query *q, char *argv[], client *cl)
 int access_host(struct query *q, char *argv[], client *cl)
 {
   EXEC SQL BEGIN DECLARE SECTION;
-  int mid, sid, id;
+  int mid, sid, id, subnet_status;
   char mtype[MACHINE_OWNER_TYPE_SIZE], stype[SUBNET_OWNER_TYPE_SIZE];
+  char *account_number;
   EXEC SQL END DECLARE SECTION;
   int status, idx;
 
   if (q->version < 6)
     idx = 0;
-  else
+  else if (q->version >= 6 && q->version < 8)
     idx = 1;
-
+  else
+    idx = 2;
+  
   if (q->type == RETRIEVE)
     {
       if (strcmp(argv[0], "*") || strcmp(argv[1], "*") ||
@@ -442,10 +445,23 @@ int access_host(struct query *q, char *argv[], client *cl)
 	return MR_BAD_CHAR;
 
       id = *(int *)argv[8 + idx];
-      EXEC SQL SELECT s.owner_type, s.owner_id
-	INTO :stype, :sid FROM subnet s
+      EXEC SQL SELECT s.owner_type, s.owner_id, s.status
+	INTO :stype, :sid, :subnet_status FROM subnet s
 	WHERE s.snet_id = :id;
       mid = 0;
+
+      /* Non query owner must provide valid billing information. */
+      if (q->version >= 8)
+	{
+	  if (subnet_status == SNET_STATUS_BILLABLE)
+	    {
+	      account_number = argv[7];
+	      EXEC SQL SELECT account_number FROM accountnumbers 
+		WHERE account_number = :account_number;
+	      if (sqlca.sqlcode == SQL_NO_MATCH)
+		return MR_ACCOUNT_NUMBER;
+	    }
+	}
 
       if (find_member(stype, sid, cl))
 	return MR_SUCCESS;
@@ -464,13 +480,26 @@ int access_host(struct query *q, char *argv[], client *cl)
       id = *(int *)argv[0];
       EXEC SQL SELECT m.name, m.use, m.contact, m.billing_contact, m.status, 
 	m.address, m.owner_type, m.owner_id, m.acomment, m.ocomment, m.snet_id,
-	s.owner_type, s.owner_id INTO :name, :use, :contact, :billing_contact,
-	:status, :address, :mtype, :mid, :acomment, :ocomment, :snid, :stype, 
-	:sid
+	s.owner_type, s.owner_id, s.status INTO :name, :use, :contact, 
+	:billing_contact, :status, :address, :mtype, :mid, :acomment, 
+	:ocomment, :snid, :stype, :sid, :subnet_status
 	FROM machine m, subnet s
 	WHERE m.mach_id = :id AND s.snet_id = m.snet_id;
       if (dbms_errno)
 	return mr_errcode;
+
+      /* Non query owner must provide valid billing information. */
+      if (q->version >= 8)
+	{
+	  if (subnet_status == SNET_STATUS_BILLABLE)
+	    {
+	      account_number = argv[8];
+	      EXEC SQL SELECT account_number FROM accountnumbers 
+		WHERE account_number = :account_number;
+	      if (sqlca.sqlcode == SQL_NO_MATCH)
+		return MR_ACCOUNT_NUMBER;
+	    }
+	}
 
       /* non-query-owner cannot change use or ocomment */
       if ((use != atoi(argv[7 + idx])) || (ocomment != *(int *)argv[14 + idx]))

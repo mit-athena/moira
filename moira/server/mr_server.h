@@ -1,4 +1,4 @@
-/* $Id: mr_server.h,v 1.56 2001-04-26 21:26:06 zacheiss Exp $
+/* $Id: mr_server.h,v 1.57 2001-09-13 02:26:42 zacheiss Exp $
  *
  * Copyright (C) 1987-1998 by the Massachusetts Institute of Technology
  * For copying and distribution information, please see the file
@@ -49,7 +49,7 @@ extern char krb_realm[REALM_SZ];
 /* max length of query argument allowed */
 #define ARGLEN	257
 /* Used to setup static argv, maximum argc */
-#define QMAXARGS	22
+#define QMAXARGS	25
 
 /* statistics on number of queries by version number */
 extern int newqueries;
@@ -229,6 +229,7 @@ int setup_dfil(struct query *q, char *argv[], client *cl);
 int setup_aftg(struct query *q, char *argv[], client *cl);
 int setup_dnfp(struct query *q, char *argv[], client *cl);
 int setup_dqot(struct query *q, char *argv[], client *cl);
+int setup_asnt(struct query *q, char *argv[], client *cl);
 int setup_dsnt(struct query *q, char *argv[], client *cl);
 int setup_ahst(struct query *q, char *argv[], client *cl);
 int setup_ahal(struct query *q, char *argv[], client *cl);

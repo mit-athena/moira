@@ -1,4 +1,4 @@
-/* $Id: cluster.c,v 1.53 2001-08-19 02:56:46 zacheiss Exp $
+/* $Id: cluster.c,v 1.54 2001-09-13 02:31:23 zacheiss Exp $
  *
  *	This is the file cluster.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -83,6 +83,14 @@ static char *states[] = {
   "Deleted (3)"
 };
 
+static char *subnet_states[] = {
+  "Reserved (0)",
+  "Billable (1)",
+  "Private (2)",
+  "Resnet (3)",
+  "Infrastructure (4)"
+};
+
 static char *MacState(int state)
 {
   static char buf[BUFSIZ];
@@ -95,7 +103,17 @@ static char *MacState(int state)
   return states[state];
 }
 
+static char *SubnetState(int state)
+{
+  static char buf[BUFSIZ];
 
+  if (state < 0 || state > 4)
+    {
+      sprintf(buf, "Unknown (%d)", state);
+      return buf;
+    }
+  return subnet_states[state];
+}
 
 /* -------------------- Set Defaults -------------------- */
 
@@ -115,6 +133,7 @@ static char **SetMachineDefaults(char **info, char *name)
   info[M_LOC] = strdup(M_DEFAULT_TYPE);
   info[M_CONTACT] = strdup(M_DEFAULT_TYPE);
   info[M_BILL_CONTACT] = strdup(M_DEFAULT_TYPE);
+  info[M_ACCT_NUMBER] = strdup("");
   info[M_USE] = strdup("0");
   info[M_STAT] = strdup("1");
   info[M_SUBNET] = strdup("NONE");
@@ -123,7 +142,7 @@ static char **SetMachineDefaults(char **info, char *name)
   info[M_OWNER_NAME] = strdup("NONE");
   info[M_ACOMMENT] = strdup("");
   info[M_OCOMMENT] = strdup("");
-  info[16] = info[17] = NULL;
+  info[17] = info[18] = NULL;
   return info;
 }
 
@@ -169,8 +188,11 @@ static char **SetSubnetDefaults(char **info, char *name)
 {
   char buf[256];
 
-  info[C_NAME] = strdup(name);
+  info[SN_NAME] = strdup(name);
   info[SN_DESC] = strdup("");
+  info[SN_STATUS] = strdup("1");
+  info[SN_CONTACT] = strdup(DEFAULT_NONE);
+  info[SN_ACCT_NUMBER] = strdup("");
   sprintf(buf, "%ld", ntohl(inet_addr("18.255.0.0")));
   info[SN_ADDRESS] = strdup(buf);
   sprintf(buf, "%ld", ntohl(inet_addr("255.255.0.0")));
@@ -244,7 +266,6 @@ static char *PrintMachInfo(char **info)
 	  MacState(atoi(info[M_STAT])), info[M_STAT_CHNG]);
   Put_message(buf);
   Put_message("");
-
   sprintf(buf, "Vendor:   %-16s    Location:        %s", info[M_VENDOR], 
 	  info[M_LOC]);
   Put_message(buf);
@@ -254,8 +275,8 @@ static char *PrintMachInfo(char **info)
   sprintf(buf, "OS:       %-16s    Billing Contact: %s", info[M_OS],
 	  info[M_BILL_CONTACT]);
   Put_message(buf);
-  Put_message("");
-  sprintf(buf, "Opt: %s", info[M_USE]);
+  sprintf(buf, "Opt:      %-16s    Account Number:  %s", info[M_USE],
+	  info[M_ACCT_NUMBER]);
   Put_message(buf);
   Put_message("");
   sprintf(buf, "Adm cmt: %s", info[M_ACOMMENT]);
@@ -267,6 +288,22 @@ static char *PrintMachInfo(char **info)
   Put_message(buf);
   sprintf(buf, MOD_FORMAT, info[M_MODBY], info[M_MODTIME], info[M_MODWITH]);
   Put_message(buf);
+  /* Do a get_subnet for the machine's subnet.  We need to know if it's
+   *  Private.
+   */
+  args[0] = info[M_SUBNET];
+  stat = do_mr_query("get_subnet", 1, args, StoreInfo, &elem);
+  if (stat)
+    com_err(program_name, stat, " looking up subnet info");
+  if (atoi(((char **)elem->q_data)[2]) == SNET_STATUS_PRIVATE)
+    {
+      Put_message("");
+      sprintf(buf, "Warning:  This host is on a private subnet.");
+      Put_message(buf);
+      sprintf(buf, "Billing information shown is superceded by billing information for the subnet.");
+      Put_message(buf);
+    }
+
   return info[M_NAME];
 }
 
@@ -370,6 +407,12 @@ static char *PrintSubnetInfo(char **info)
   sprintf(buf, "        Network:  %s", info[SN_NAME]);
   Put_message(buf);
   sprintf(buf, "    Description:  %s", info[SN_DESC]);
+  Put_message(buf);
+  sprintf(buf, "         Status:  %s", SubnetState(atoi(info[SN_STATUS])));
+  Put_message(buf);
+  sprintf(buf, "        Contact:  %s", info[SN_CONTACT]);
+  Put_message(buf);
+  sprintf(buf, " Account Number:  %s", info[SN_ACCT_NUMBER]);
   Put_message(buf);
   addr.s_addr = htonl(atoi(info[SN_ADDRESS]));
   mask.s_addr = htonl(atoi(info[SN_MASK]));
@@ -598,6 +641,9 @@ char **AskMCDInfo(char **info, int type, Bool name)
       if (GetValueFromUser("Machine's billing contact", 
 			   &info[M_BILL_CONTACT]) == SUB_ERROR)
 	return NULL;
+      if (GetValueFromUser("Machine's billing account number",
+			   &info[M_ACCT_NUMBER]) == SUB_ERROR)
+	return NULL;
       while (1)
 	{
 	  int i;
@@ -622,58 +668,75 @@ char **AskMCDInfo(char **info, int type, Bool name)
       if (name)
 	{
 	  /* info did not come from SetMachineDefaults(), which does not
-	   * initialize entry 8 (M_STAT_CHNG), therefore we can
+	   * initialize entry 10 (M_STAT_CHNG), therefore we can
 	   * free it.
 	   */
 	  /* This is an update of an existing machine and the structure
 	   * was filled in thru a query to the db which does fill in this
 	   * field.
 	   */
-	  free(info[9]);
+	  free(info[10]);
 	}
 
-      info[9] = info[M_SUBNET];
-      info[10] = info[M_ADDR];
-      info[11] = info[M_OWNER_TYPE];
-      info[12] = info[M_OWNER_NAME];
-      info[13] = info[M_ACOMMENT];
-      info[14] = info[M_OCOMMENT];
+      info[10] = info[M_SUBNET];
+      info[11] = info[M_ADDR];
+      info[12] = info[M_OWNER_TYPE];
+      info[13] = info[M_OWNER_NAME];
+      info[14] = info[M_ACOMMENT];
+      info[15] = info[M_OCOMMENT];
 
       if (name)
 	{
-	  if (GetValueFromUser("Machine's network (or 'none')", &info[9])
+	  if (GetValueFromUser("Machine's network (or 'none')", &info[10])
 	      == SUB_ERROR)
 	    return NULL;
 	}
       if (GetValueFromUser("Machine's address (or 'unassigned' or 'unique')",
-			   &info[10]) == SUB_ERROR)
+			   &info[11]) == SUB_ERROR)
 	return NULL;
-      if (GetTypeFromUser("Machine's owner type", "ace_type", &info[11]) ==
+      if (GetTypeFromUser("Machine's owner type", "ace_type", &info[12]) ==
 	  SUB_ERROR)
 	return NULL;
-      if (strcmp(info[11], "NONE") &&
-	  GetValueFromUser("Owner's Name", &info[12]) == SUB_ERROR)
+      if (strcmp(info[12], "NONE") &&
+	  GetValueFromUser("Owner's Name", &info[13]) == SUB_ERROR)
 	return NULL;
-      if (!strcmp(info[11], "KERBEROS"))
+      if (!strcmp(info[12], "KERBEROS"))
 	  {
 	    char *canon;
 
-	    mrcl_validate_kerberos_member(info[12], &canon);
+	    mrcl_validate_kerberos_member(info[13], &canon);
 	    if (mrcl_get_message())
 	      Put_message(mrcl_get_message());
-	    free(info[12]);
-	    info[12] = canon;
+	    free(info[13]);
+	    info[13] = canon;
 	  }
-      if (GetValueFromUser("Administrative comment", &info[13]) == SUB_ERROR)
+      if (GetValueFromUser("Administrative comment", &info[14]) == SUB_ERROR)
 	return NULL;
-      if (GetValueFromUser("Operational comment", &info[14]) == SUB_ERROR)
+      if (GetValueFromUser("Operational comment", &info[15]) == SUB_ERROR)
 	return NULL;
-      info[15] = NULL;
-      FreeAndClear(&info[16], TRUE);
+      info[16] = NULL;
       FreeAndClear(&info[17], TRUE);
+      FreeAndClear(&info[18], TRUE);
       break;
     case SUBNET:
       if (GetValueFromUser("Network description", &info[SN_DESC]) == SUB_ERROR)
+	return NULL;
+      while (1)
+	{
+	  int i;
+	  if (GetValueFromUser("Network's status (? for help)",
+			       &info[SN_STATUS]) == SUB_ERROR)
+	    return NULL;
+	  if (isdigit(info[SN_STATUS][0]))
+	    break;
+	  Put_message("Valid status numbers:");
+	  for (i = 0; i < 5; i++)
+	    Put_message(subnet_states[i]);
+	}
+      if (GetValueFromUser("Network's contact", &info[SN_CONTACT]) == SUB_ERROR)
+	return NULL;
+      if (GetValueFromUser("Network's billing account number", 
+			   &info[SN_ACCT_NUMBER]) == SUB_ERROR)
 	return NULL;
       if (GetAddressFromUser("Network address", &info[SN_ADDRESS]) == SUB_ERROR)
 	return NULL;
@@ -2009,6 +2072,28 @@ struct mqelem *GetMachineByOwner(char *type, char *name)
       return NULL;
     }
   return QueueTop(elem);
+}
+
+int MachineByAcctNumber(int argc, char **argv)
+{
+  char *args[0], *account_number;
+  int status;
+  struct mqelem *elem = NULL;
+
+  if (GetValueFromUser("Account Number", &account_number) == SUB_ERROR)
+    return DM_NORMAL;
+
+  args[0] = account_number;
+  if (status = do_mr_query("get_host_by_account_number", 1, args, StoreInfo, 
+			   &elem))
+    {
+      com_err(program_name, status, " in get_host_by_account_number");
+      return DM_NORMAL;
+    }
+  Loop(QueueTop(elem), (void (*)(char **)) PrintMachInfo);
+  FreeQueue(elem);
+
+  return DM_NORMAL;
 }
 
 int ShowContainerInfo(int argc, char **argv)

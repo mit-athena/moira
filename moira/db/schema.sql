@@ -64,6 +64,7 @@ create table machine
 	location	VARCHAR(16) 	DEFAULT CHR(0)	NOT NULL,
 	contact		VARCHAR(32) 	DEFAULT CHR(0)	NOT NULL,
 	billing_contact	VARCHAR(32)	DEFAULT CHR(0)	NOT NULL,
+	account_number	VARCHAR(10)	DEFAULT CHR(0)	NOT NULL,	
 	use		INTEGER		DEFAULT 0	NOT NULL,
 	status		INTEGER		DEFAULT 0	NOT NULL,
 	statuschange	DATE    	DEFAULT SYSDATE	NOT NULL,
@@ -93,6 +94,9 @@ create table subnet
 	name		VARCHAR(16) 	DEFAULT CHR(0)	NOT NULL,
 	snet_id		INTEGER		DEFAULT 0	NOT NULL,
 	description	VARCHAR(48) 	DEFAULT CHR(0)	NOT NULL,
+	status		INTEGER		DEFAULT 0	NOT NULL,
+	contact		VARCHAR(32)	DEFAULT CHR(0)	NOT NULL,
+	account_number	VARCHAR(10)	DEFAULT CHR(0)	NOT NULL,
 	saddr		INTEGER		DEFAULT 0	NOT NULL,
 	mask		INTEGER		DEFAULT 0	NOT NULL,
 	low		INTEGER		DEFAULT 0	NOT NULL,
@@ -416,4 +420,9 @@ create table mcntmap
 (
 	mach_id		INTEGER		DEFAULT 0	NOT NULL,
 	cnt_id		INTEGER		DEFAULT 0	NOT NULL
+);
+
+create table accountnumbers
+(
+	account_number	VARCHAR(10)	DEFAULT CHR(0)	NOT NULL
 );

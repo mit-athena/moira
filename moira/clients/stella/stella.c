@@ -31,7 +31,7 @@ typedef unsigned long in_addr_t;
 #include <arpa/inet.h>
 #endif
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/stella/stella.c,v 1.13 2001-08-21 21:56:54 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/stella/stella.c,v 1.14 2001-09-13 02:29:35 zacheiss Exp $");
 
 struct owner_type {
   int type;
@@ -70,7 +70,8 @@ struct string_list *container_add_queue, *container_remove_queue;
 char *hostname, *whoami;
 
 char *newname, *address, *network, *h_status, *vendor, *model;
-char *os, *location, *contact, *billing_contact, *adm_cmt, *op_cmt;
+char *os, *location, *contact, *billing_contact, *account_number;
+char *adm_cmt, *op_cmt;
 
 in_addr_t ipaddress;
 struct owner_type *owner;
@@ -98,7 +99,8 @@ int main(int argc, char **argv)
   update_alias_flag = verbose = noauth = 0;
   list_container_flag = update_container_flag = 0;
   newname = address = network = h_status = vendor = model = NULL;
-  os = location = contact = billing_contact = adm_cmt = op_cmt = NULL;
+  os = location = contact = billing_contact = account_number = adm_cmt = NULL;
+  op_cmt = NULL;
   owner = NULL;
   alias_add_queue = alias_remove_queue = NULL;
   map_add_queue = map_remove_queue = NULL;
@@ -217,6 +219,14 @@ int main(int argc, char **argv)
 	    } else
 	      usage(argv);
 	  }
+	  else if (argis("an", "accountnumber")) {
+	    if (arg - argv < argc - 1) {
+	      arg++;
+	      update_flag++;
+	      account_number = *arg;
+	    } else
+	      usage(argv);
+	  }
 	  else if (argis("ac", "admcmt")) {
 	    if (arg - argv < argc - 1) {
 	      arg++;
@@ -323,7 +333,7 @@ int main(int argc, char **argv)
   }
 
   /* fire up Moira */
-  status = mrcl_connect(server, "stella", 7, !noauth);
+  status = mrcl_connect(server, "stella", 8, !noauth);
   if (status == MRCL_AUTH_ERROR)
     {
       com_err(whoami, 0, "Try the -noauth flag if you don't "
@@ -354,7 +364,7 @@ int main(int argc, char **argv)
       char *argv[30];
       int cnt;
 
-      for (cnt = 0; cnt < 16; cnt++) {
+      for (cnt = 0; cnt < 17; cnt++) {
 	argv[cnt] = "";
       }
 
@@ -372,60 +382,62 @@ int main(int argc, char **argv)
 	argv[5] = contact;
       if (billing_contact)
 	argv[6] = billing_contact;
+      if (account_number)
+	argv[7] = account_number;
       /* The use field always gets set to "0" */
-      argv[7] = "0";
+      argv[8] = "0";
       if (h_status)
-	argv[8] = h_status;
+	argv[9] = h_status;
       else
-	argv[8] = "1";
+	argv[9] = "1";
       if (network)
-	argv[9] = network;
+	argv[10] = network;
       if (address)
-	argv[10] = address;
+	argv[11] = address;
       else
-	argv[10] = "unique";
+	argv[11] = "unique";
       if (adm_cmt)
-	argv[13] = adm_cmt;
+	argv[14] = adm_cmt;
       if (op_cmt)
-	argv[14] = op_cmt;
+	argv[15] = op_cmt;
 
       if (owner)
 	{
-	  argv[12] = owner->name;
+	  argv[13] = owner->name;
 	  switch (owner->type)
 	    {
 	    case M_ANY:
 	    case M_USER:
-	      argv[11] = "USER";
-	      status = wrap_mr_query("add_host", 15, argv, NULL, NULL);
+	      argv[12] = "USER";
+	      status = wrap_mr_query("add_host", 16, argv, NULL, NULL);
 	      if (owner->type != M_ANY || status != MR_USER)
 		break;
 
 	    case M_LIST:
-	      argv[11] = "LIST";
-	      status = wrap_mr_query("add_host", 15, argv, NULL, NULL);
+	      argv[12] = "LIST";
+	      status = wrap_mr_query("add_host", 16, argv, NULL, NULL);
 	      break;
 
 	    case M_KERBEROS:
-	      argv[11] = "KERBEROS";
-	      status = mrcl_validate_kerberos_member(argv[12], &argv[12]);
+	      argv[12] = "KERBEROS";
+	      status = mrcl_validate_kerberos_member(argv[13], &argv[13]);
 	      if (mrcl_get_message())
 		mrcl_com_err(whoami);
-	      status = wrap_mr_query("add_host", 15, argv, NULL, NULL);
+	      status = wrap_mr_query("add_host", 16, argv, NULL, NULL);
 	      break;
 
 	    case M_NONE:
-	      argv[11] = "NONE";
-	      status = wrap_mr_query("add_host", 15, argv, NULL, NULL);
+	      argv[12] = "NONE";
+	      status = wrap_mr_query("add_host", 16, argv, NULL, NULL);
 	      break;
 	    }
 	}
       else
 	{
-	  argv[11] = "NONE";
 	  argv[12] = "NONE";
+	  argv[13] = "NONE";
 
-	  status = wrap_mr_query("add_host", 15, argv, NULL, NULL);
+	  status = wrap_mr_query("add_host", 16, argv, NULL, NULL);
 	}
 
       if (status)
@@ -438,7 +450,7 @@ int main(int argc, char **argv)
   else if (update_flag)
     {
       char *old_argv[30];
-      char *argv[16];
+      char *argv[17];
       char *args[5];
 
       args[0] = canonicalize_hostname(strdup(hostname));
@@ -460,12 +472,13 @@ int main(int argc, char **argv)
       argv[7] = old_argv[6];
       argv[8] = old_argv[7];
       argv[9] = old_argv[8];
-      argv[10] = old_argv[10];
+      argv[10] = old_argv[9];
       argv[11] = old_argv[11];
       argv[12] = old_argv[12];
       argv[13] = old_argv[13];
       argv[14] = old_argv[14];
       argv[15] = old_argv[15];
+      argv[16] = old_argv[16];
 
       argv[0] = canonicalize_hostname(strdup(hostname));
       if (newname)
@@ -482,50 +495,52 @@ int main(int argc, char **argv)
 	argv[6] = contact;
       if (billing_contact)
 	argv[7] = billing_contact;
+      if (account_number)
+	argv[8] = account_number;
       if (h_status)
-	argv[9] = h_status;
+	argv[10] = h_status;
       if (network)
-	argv[10] = network;
+	argv[11] = network;
       if (address)
-	argv[11] = address;
+	argv[12] = address;
       if (adm_cmt)
-	argv[14] = adm_cmt;
+	argv[15] = adm_cmt;
       if (op_cmt)
-	argv[15] = op_cmt;
+	argv[16] = op_cmt;
 
       if (owner)
 	{
-	  argv[13] = owner->name;
+	  argv[14] = owner->name;
 	  switch (owner->type)
 	    {
 	    case M_ANY:
 	    case M_USER:
-	      argv[12] = "USER";
-	      status = wrap_mr_query("update_host", 16, argv, NULL, NULL);
+	      argv[13] = "USER";
+	      status = wrap_mr_query("update_host", 17, argv, NULL, NULL);
 	      if (owner->type != M_ANY || status != MR_USER)
 		break;
 
 	    case M_LIST:
-	      argv[12] = "LIST";
-	      status = wrap_mr_query("update_host", 16, argv, NULL, NULL);
+	      argv[13] = "LIST";
+	      status = wrap_mr_query("update_host", 17, argv, NULL, NULL);
 	      break;
 
 	    case M_KERBEROS:
-	      argv[12] = "KERBEROS";
-	      status = mrcl_validate_kerberos_member(argv[13], &argv[13]);
+	      argv[13] = "KERBEROS";
+	      status = mrcl_validate_kerberos_member(argv[14], &argv[14]);
 	      if (mrcl_get_message())
 		mrcl_com_err(whoami);
-	      status = wrap_mr_query("update_host", 16, argv, NULL, NULL);
+	      status = wrap_mr_query("update_host", 17, argv, NULL, NULL);
 	      break;
 
 	    case M_NONE:
-	      argv[12] = "NONE";
-	      status = wrap_mr_query("update_host", 16, argv, NULL, NULL);
+	      argv[13] = "NONE";
+	      status = wrap_mr_query("update_host", 17, argv, NULL, NULL);
 	      break;
 	    }
 	}
       else
-	status = wrap_mr_query("update_host", 16, argv, NULL, NULL);
+	status = wrap_mr_query("update_host", 17, argv, NULL, NULL);
 
       if (status)
 	com_err(whoami, status, "while updating host.");
@@ -675,6 +690,15 @@ int main(int argc, char **argv)
       show_host_info_unformatted(argv);
     else
       show_host_info(argv);
+    args[0] = argv[M_SUBNET];
+    status = wrap_mr_query("get_subnet", 1, args, store_host_info, argv);
+    if (status)
+      com_err(whoami, status, "while getting subnet information");
+    if (atoi(argv[SN_STATUS]) == SNET_STATUS_PRIVATE)
+      {
+	fprintf(stderr, "\nWarning:  This host is on a private subnet.\n");
+	fprintf(stderr, "Billing information shown is superceded by billing information for the subnet.\n");
+      }
   }
 
   /* list cluster mappings if needed */
@@ -744,18 +768,18 @@ void usage(char **argv)
 	  "-c   | -contact contact");
   fprintf(stderr, USAGE_OPTIONS_FORMAT, "-ac  | -admcmt adm_cmt",
 	  "-bc  | -billingcontact billing_contact");
-  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-A   | -address address",
-	  "-N   | -network network");
-  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-am  | -addmap cluster",
-	  "-dm  | deletemap cluster");
-  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-acn | -addcontainer container",
-	  "-dcn | -deletecontainer container");
-  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-lm  | -listmap",
-	  "-lcn | -listcontainer");
-  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-u   | -unformatted",
-	  "-v   | -verbose");
-  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-n   | -noauth", 
-	  "-db  | -database host[:port]");
+  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-an  | -accountnumber account_number",          "-A   | -address address");
+  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-N   | -network network",
+	  "-am  | -addmap cluster");
+  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-dm  | deletemap cluster",
+	  "-acn | -addcontainer container");
+  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-dcn | -deletecontainer container",
+	  "-lm  | -listmap");
+  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-lcn | -listcontainer",
+	  "-u   | -unformatted");
+  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-v   | -verbose",
+	  "-n   | -noauth");
+  fprintf(stderr, "  %-39s\n" , "-db  | -database host[:port]");
   exit(1);
 }
 
@@ -848,7 +872,8 @@ void show_host_info(char **argv)
 	 argv[M_CONTACT]);
   printf("OS:       %-16s    Billing Contact: %s\n", argv[M_OS], 
 	 argv[M_BILL_CONTACT]);
-  printf("\nOpt: %s\n", argv[M_USE]);
+  printf("Opt:      %-16s    Account Number:  %s\n", argv[M_USE],
+	 argv[M_ACCT_NUMBER]);
   printf("\nAdm cmt: %s\n", argv[M_ACOMMENT]);
   printf("Op cmt:  %s\n", argv[M_OCOMMENT]);
   printf("\n");

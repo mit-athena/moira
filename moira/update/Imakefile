@@ -1,4 +1,4 @@
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/Imakefile,v 1.8 1997-07-03 03:19:47 danw Exp $
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/Imakefile,v 1.9 1997-08-14 20:17:40 danw Exp $
 #
 # Copyright 1990 by the Massachusetts Institute of Technology.
 #
@@ -32,4 +32,4 @@ moira_update.o: ${COBJS}
 #endif
 
 program(update_server, ${SOBJS},${MR_LIBDEP} ${GDB_LIBDEP}, ${CLIBS},${ETCDIR})
-program(update_test, update_test.c ${COBJS}, ${MR_LIBDEP} ${GDB_LIBDEP}, ${CLIBS},${BINDIR})
+program(update_test, update_test.o ${COBJS}, ${MR_LIBDEP} ${GDB_LIBDEP}, ${CLIBS},${BINDIR})

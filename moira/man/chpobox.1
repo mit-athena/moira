@@ -1,29 +1,18 @@
 .TH CHPOBOX 1 "5 Feb 1988" "Project Athena"
-\" RCSID: $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/man/chpobox.1,v 1.6 1998-01-07 17:06:33 danw Exp $
+\" RCSID: $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/man/chpobox.1,v 1.7 2000-01-28 00:39:05 danw Exp $
 .SH NAME
 chpobox \- change address at which user receives mail
 .SH SYNOPSIS
-.B chpobox 
-[
-.B username
-]
-
-or
-
-.B chpobox
-[ \-s 
-.B address
-] [ \-p ] [ -u 
-.B username 
-]
-
+.TP 8
+chpobox [ username ]
+.TP 8
+chpobox [ \-s address | \-S address | \-p ] [ \-u username ]
 .SH DESCRIPTION
 Your post office box is what determines where you will receive
-mail.  It can be of two types: 
-.I POP,
-which is what you have by default, or 
-.I SMTP
-which allows you to specify an alternate address for your mail.
+mail.  It can be of several types: 
+.I POP, IMAP, SMTP, SPLIT
+or
+.IR NONE .
 
 In the first use of this command, the post office box of the
 user whose name corresponds to the single argument
@@ -58,13 +47,18 @@ you would issue the command
 
 .nf
 .nj
-chpobox -s name@host.
+chpobox -s name@host
 .fi
+
+To split mail between your local post office box and a remote address,
+use the
+.B -S
+option.
 
 To restore your post office box to its original Athena default,
 use the 
 .B -p
-flag.  This will set your mailbox to the last post office server
+flag.  This will set your mailbox to the last POP or IMAP server
 it was using.
 .PP
 
@@ -72,6 +66,8 @@ Only one of
 .B -p
 or
 .B -s
+or
+.B -S
 may be used at a time.
 
 Note that the actual change will not take place on the mail hub

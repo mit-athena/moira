@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.19 1989-08-21 12:29:01 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.20 1989-08-31 23:48:45 mar Exp $";
 #endif
 
 /*	This is the file attach.c for the SMS Client, which allows a nieve
@@ -13,7 +13,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.19 1989-08-21 12:29:01 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.20 1989-08-31 23:48:45 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -47,7 +47,6 @@
 #define DEFAULT_TYPE     ("NFS")
 #define DEFAULT_MACHINE  DEFAULT_NONE
 #define DEFAULT_PACK     DEFAULT_NONE
-#define DEFAULT_M_POINT  DEFAULT_NONE
 #define DEFAULT_ACCESS   ("w")
 #define DEFAULT_COMMENTS DEFAULT_COMMENT
 #define DEFAULT_OWNER    (user)
@@ -66,11 +65,14 @@ SetDefaults(info, name)
 char ** info;
 char * name;
 {
+    char buf[BUFSIZ];
+
     info[FS_NAME] =     Strsave(name);
     info[FS_TYPE] =     Strsave(DEFAULT_TYPE);
     info[FS_MACHINE] =  Strsave(DEFAULT_MACHINE);
     info[FS_PACK] =     Strsave(DEFAULT_PACK);
-    info[FS_M_POINT] =  Strsave(DEFAULT_M_POINT);
+    sprintf(buf, "/mit/%s", name);
+    info[FS_M_POINT] =  Strsave(buf);
     info[FS_ACCESS] =   Strsave(DEFAULT_ACCESS);
     info[FS_COMMENTS] = Strsave(DEFAULT_COMMENTS);
     info[FS_OWNER] =    Strsave(DEFAULT_OWNER);
@@ -440,7 +442,7 @@ AddFS(argc, argv)
 char **argv;
 int argc;
 {
-    char *info[MAX_ARGS_SIZE], **args;
+    char *info[MAX_ARGS_SIZE], **args, buf[BUFSIZ];
     int stat;
     extern Menu nfsphys_menu;
 
@@ -477,6 +479,37 @@ int argc;
 	break;
     default:
 	com_err(program_name, stat, " in AddFS");
+    }
+
+    if (stat == SMS_SUCCESS && !strcasecmp(info[FS_L_TYPE], "HOMEDIR")) {
+	static char *val[] = {"def_quota", NULL};
+	static char *def_quota = NULL;
+	char *argv[3];
+	struct qelem *top = NULL;
+
+	if (def_quota == NULL) {
+	    stat = do_sms_query("get_value", CountArgs(val), val,
+				StoreInfo, (char *) &top);
+	    if (stat != SMS_SUCCESS) {
+		com_err(program_name, stat, " getting default quota");
+	    } else {
+		top = QueueTop(top);
+		def_quota = Strsave(((char **)top->q_data)[0]);
+		FreeQueue(top);
+	    }
+	}
+	if (def_quota != NULL) {
+	    sprintf(buf, "Give user %s a quota of %s on filesys %s (Y/N)",
+		    info[FS_NAME], def_quota, info[FS_NAME]);
+	    if (YesNoQuestion(buf, 1)) {
+		argv[Q_LOGIN] = argv[Q_FILESYS] = info[FS_NAME];
+		argv[Q_QUOTA] = def_quota;
+		if ((stat = do_sms_query("add_nfs_quota", 3, argv, Scream,
+					 (char *) NULL)) != SMS_SUCCESS) {
+		    com_err(program_name, stat, " while adding quota");
+		}
+	    }
+	}
     }
 
     FreeInfo(info);

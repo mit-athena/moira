@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_auth.c,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_auth.c,v 1.8 1988-09-13 15:51:56 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_auth.c,v 1.9 1989-06-26 12:38:26 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -12,14 +12,14 @@
  */
 
 #ifndef lint
-static char *rcsid_sms_auth_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_auth.c,v 1.8 1988-09-13 15:51:56 mar Exp $";
+static char *rcsid_sms_auth_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_auth.c,v 1.9 1989-06-26 12:38:26 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
 #include "sms_private.h"
 #include <krb.h>
+#include <krb_et.h>
 
-extern int krb_err_base;
 
 /* Authenticate this client with the SMS server.  prog is the name of the
  * client program, and will be recorded in the database.
@@ -50,7 +50,7 @@ char *prog;
     }
     status = krb_mk_req(&auth, "sms", "sms", realm, 0);
     if (status != KSUCCESS) {
-	status += krb_err_base;
+	status += ERROR_TABLE_BASE_krb;
 	return status;
     } 
     params->sms_version_no = sending_version_no;
@@ -73,14 +73,3 @@ char *prog;
 
     return status;
 }
-
-/*
- * Local Variables:
- * mode: c
- * c-indent-level: 4
- * c-continued-statement-offset: 4
- * c-brace-offset: -4
- * c-argdecl-indent: 4
- * c-label-offset: -4
- * End:
- */

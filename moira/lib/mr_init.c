@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_init.c,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_init.c,v 1.3 1989-06-01 21:44:22 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_init.c,v 1.4 1989-06-26 12:37:17 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -9,7 +9,7 @@
  */
 
 #ifndef lint
-static char *rcsid_sms_init_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_init.c,v 1.3 1989-06-01 21:44:22 mar Exp $";
+static char *rcsid_sms_init_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_init.c,v 1.4 1989-06-26 12:37:17 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -26,8 +26,8 @@ sms_init()
 	if (sms_inited) return;
 	
 	gdb_init();
-	init_sms_err_tbl();
-	init_krb_err_tbl();
+	initialize_sms_error_table();
+	initialize_krb_error_table();
 	link_against_the_moira_version_of_gdb = 0;
 	sms_inited=1;
 }

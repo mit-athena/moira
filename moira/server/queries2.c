@@ -1,6 +1,6 @@
 /* This file defines the query dispatch table for version 2 of the protocol
  *
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/queries2.c,v 1.11 1989-03-21 18:12:32 mar Exp $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/queries2.c,v 1.12 1989-06-14 15:09:47 mar Exp $
  *
  * Copyright 1987, 1988 by the Massachusetts Institute of Technology.
  * For copying and distribution information, please see the file
@@ -137,6 +137,11 @@ static struct valobj VOuser0[] = {
   {V_ID, 0, USERS, LOGIN, USERS_ID, SMS_USER},
 };
 
+static struct valobj VOuser0lock[] = {
+  {V_LOCK, 0, USERS, 0, USERS_ID, SMS_DEADLOCK},
+  {V_ID, 0, USERS, LOGIN, USERS_ID, SMS_USER},
+};
+
 static struct valobj VOmach0[] = {
   {V_ID, 0, MACHINE, NAME, MACH_ID, SMS_MACHINE},
 };
@@ -168,6 +173,7 @@ static struct valobj VOuser0sort[] = {
 };
 
 static struct valobj VOfilsys0user1[] = {
+  {V_LOCK, 0, FILESYS, 0, FILSYS_ID, SMS_DEADLOCK},
   {V_ID, 0, FILESYS, LABEL, FILSYS_ID, SMS_FILESYS},
   {V_ID, 1, USERS, LOGIN, USERS_ID, SMS_USER},
 };
@@ -249,6 +255,7 @@ static char *ausr_fields[] = {
 };
 
 static struct valobj ausr_valobj[] = {
+  {V_LOCK, 0, USERS, 0, USERS_ID, SMS_DEADLOCK},
   {V_CHAR, 0},
   {V_CHAR, 3},
   {V_CHAR, 4},
@@ -259,7 +266,7 @@ static struct valobj ausr_valobj[] = {
 
 static struct validate ausr_validate = {
   ausr_valobj,
-  6,
+  7,
   LOGIN,
   "u.login = \"%s\"",
   1,
@@ -274,8 +281,8 @@ static char *rusr_fields[] = {
 };
 
 static struct validate rusr_validate = {
-  0,
-  0,
+  ausr_valobj,
+  1,
   0,
   0,
   0,
@@ -292,6 +299,7 @@ static char *uusr_fields[] = {
 };
 
 static struct valobj uusr_valobj[] = {
+    {V_LOCK, 0, USERS, 0, USERS_ID, SMS_DEADLOCK},
     {V_ID, 0, USERS, LOGIN, USERS_ID, SMS_USER},
     {V_RENAME, 1, USERS, LOGIN, USERS_ID, SMS_NOT_UNIQUE},
     {V_CHAR, 4},
@@ -303,7 +311,7 @@ static struct valobj uusr_valobj[] = {
 
 static struct validate uusr_validate = {
   uusr_valobj,
-  7,
+  8,
   0,
   0,
   0,
@@ -319,8 +327,8 @@ static char *uush_fields[] = {
 };
 
 static struct validate uush_validate = {
-  VOuser0,
-  1,
+  VOuser0lock,
+  2,
   0,
   0,
   0,
@@ -336,8 +344,8 @@ static char *uust_fields[] = {
 };
 
 static struct validate uust_validate = {
-  VOuser0,
-  1,
+  VOuser0lock,
+  2,
   0,
   0,
   0,
@@ -352,8 +360,8 @@ static char *dusr_fields[] = {
 };
 
 static struct validate dusr_validate = {
-  VOuser0,
-  1,
+  VOuser0lock,
+  2,
   0,
   0,
   0,
@@ -368,12 +376,13 @@ static char *dubu_fields[] = {
 };
 
 static struct valobj dubu_valobj[] = {
+    {V_LOCK, 0, USERS, 0, USERS_ID, SMS_DEADLOCK},
     {V_ID, 0, USERS, UID, USERS_ID, SMS_USER}
 };
 
 static struct validate dubu_validate = {
   dubu_valobj,
-  1,
+  2,
   0,
   0,
   0,
@@ -410,8 +419,8 @@ static char *ufbl_fields[] = {
 };
 
 static struct validate ufbl_validate = {
-  VOuser0,
-  1,
+  VOuser0lock,
+  2,
   0,
   0,
   0,
@@ -459,6 +468,7 @@ static char *spob_fields[] = {
 };
 
 static struct valobj spob_valobj[] = {
+  {V_LOCK, 0, USERS, 0, USERS_ID, SMS_DEADLOCK},
   {V_ID, 0, USERS, LOGIN, USERS_ID, SMS_USER},
   {V_TYPE, 1, "pobox", 0, 0, SMS_TYPE},
 };
@@ -466,7 +476,7 @@ static struct valobj spob_valobj[] = {
 static struct validate spob_validate =	/* SET_POBOX */
 {
   spob_valobj,
-  2,
+  3,
   0,
   0,
   0,
@@ -478,8 +488,8 @@ static struct validate spob_validate =	/* SET_POBOX */
 
 static struct validate spop_validate =	/* SET_POBOX_POP */
 {
-  VOuser0,
-  1,
+  VOuser0lock,
+  2,
   0,
   0,
   0,
@@ -491,8 +501,8 @@ static struct validate spop_validate =	/* SET_POBOX_POP */
 
 static struct validate dpob_validate =	/* DELETE_POBOX */
 {
-  VOuser0,
-  1,
+  VOuser0lock,
+  2,
   0,
   0,
   0,
@@ -513,12 +523,13 @@ static char *amac_fields[] = {
 
 static struct valobj amac_valobj[] = {
   {V_CHAR, 0},
+  {V_LOCK, 0, MACHINE, 0, MACH_ID, SMS_DEADLOCK},
   {V_TYPE, 1, "mac_type", 0, 0, SMS_TYPE},
 };
 
 static struct validate amac_validate = {
   amac_valobj,
-  2,
+  3,
   NAME,
   "m.name = uppercase(\"%s\")",
   1,
@@ -534,6 +545,7 @@ static char *umac_fields[] = {
 };
 
 static struct valobj umac_valobj[] = {
+  {V_LOCK, 0, MACHINE, 0, MACH_ID, SMS_DEADLOCK},
   {V_ID, 0, MACHINE, NAME, MACH_ID, SMS_MACHINE},
   {V_RENAME, 1, MACHINE, NAME, MACH_ID, SMS_NOT_UNIQUE},
   {V_TYPE, 2, "mac_type", 0, 0, SMS_TYPE},
@@ -541,7 +553,7 @@ static struct valobj umac_valobj[] = {
 
 static struct validate umac_validate = {
   umac_valobj,
-  3,
+  4,
   0,
   0,
   0,
@@ -555,9 +567,14 @@ static char *dmac_fields[] = {
   NAME,
 };
 
+static struct valobj dmac_valobj[] = {
+  {V_LOCK, 0, MACHINE, 0, MACH_ID, SMS_DEADLOCK},
+  {V_ID, 0, MACHINE, NAME, MACH_ID, SMS_MACHINE},
+};
+
 static struct validate dmac_validate = {
-  VOmach0,
-  1,
+  dmac_valobj,
+  2,
   0,
   0,
   0,
@@ -576,10 +593,15 @@ static char *aclu_fields[] = {
   NAME, DESC, LOCATION,
 };
   
+static struct valobj aclu_valobj[] = {
+  {V_LOCK, 0, CLUSTER, 0, CLU_ID, SMS_DEADLOCK},
+  {V_CHAR, 0}
+};
+
 static struct validate aclu_validate =	/* for aclu  */
 {
-  VOchar0,
-  1,
+  aclu_valobj,
+  2,
   NAME,
   "c.name = \"%s\"",
   1,
@@ -595,6 +617,7 @@ static char *uclu_fields[] = {
 };
 
 static struct valobj uclu_valobj[] = {
+  {V_LOCK, 0, CLUSTER, 0, CLU_ID, SMS_DEADLOCK},
   {V_ID, 0, CLUSTER, NAME, CLU_ID, SMS_CLUSTER},
   {V_RENAME, 1, CLUSTER, NAME, CLU_ID, SMS_NOT_UNIQUE},
 };
@@ -728,6 +751,7 @@ static char *asin_fields[] = {
 };
 
 static struct valobj asin_valobj[] = {
+  {V_LOCK, 0, MACHINE, 0, MACH_ID, SMS_DEADLOCK},
   {V_CHAR, 0},
   {V_TYPE, 4, "service", 0, 0, SMS_TYPE},
   {V_TYPE, 6, ACE_TYPE, 0, 0, SMS_ACE},
@@ -737,7 +761,7 @@ static struct valobj asin_valobj[] = {
 static struct validate asin_validate =	/* for asin, usin */
 {
   asin_valobj,
-  4,
+  5,
   NAME,
   "s.name = uppercase(\"%s\")",
   1,
@@ -748,8 +772,8 @@ static struct validate asin_validate =	/* for asin, usin */
 };
 
 static struct validate rsve_validate = {
-  0,
-  0,
+  asin_valobj,
+  1,
   NAME,
   "s.name = uppercase(\"%s\")",
   1,
@@ -764,8 +788,8 @@ static char *ssif_fields[] = {
 };
 
 static struct validate ssif_validate = {
-  0,
-  0,
+  asin_valobj,
+  1,
   NAME,
   "s.name = uppercase(\"%s\")",
   1,
@@ -780,8 +804,8 @@ static char *dsin_fields[] = {
 };
 
 static struct validate dsin_validate = {
-  0,
-  0,
+  asin_valobj,
+  1,
   NAME,
   "s.name = uppercase(\"%s\")",
   1,
@@ -840,6 +864,7 @@ static char *ashi_fields[] = {
 };
 
 static struct valobj ashi_valobj[] = {
+  {V_LOCK, 0, MACHINE, 0, MACH_ID, SMS_DEADLOCK},
   {V_NAME, 0, "servers", NAME, 0, SMS_SERVICE},
   {V_ID, 1, MACHINE, NAME, MACH_ID, SMS_MACHINE},
 };
@@ -847,7 +872,7 @@ static struct valobj ashi_valobj[] = {
 static struct validate ashi_validate = /* ashi & ushi */
 {
   ashi_valobj,
-  2,
+  3,
   SERVICE,
   "sh.service = uppercase(\"%s\") and sh.mach_id = %d",
   2,
@@ -860,7 +885,7 @@ static struct validate ashi_validate = /* ashi & ushi */
 static struct validate rshe_validate =	
 {
   ashi_valobj,
-  2,
+  3,
   SERVICE,
   "sh.service = uppercase(\"%s\") and sh.mach_id = %d",
   2,
@@ -873,7 +898,7 @@ static struct validate rshe_validate =
 static struct validate ssho_validate =	
 {
   ashi_valobj,
-  2,
+  3,
   SERVICE,
   "sh.service = uppercase(\"%s\") and sh.mach_id = %d",
   2,
@@ -889,6 +914,7 @@ static char *sshi_fields[] = {
 };
 
 static struct valobj sshi_valobj[] = {
+  {V_LOCK, 0, MACHINE, 0, MACH_ID, SMS_DEADLOCK},
   {V_NAME, 0, "servers", NAME, 0, SMS_SERVICE},
   {V_ID, 1, MACHINE, NAME, MACH_ID, SMS_MACHINE},
 };
@@ -896,7 +922,7 @@ static struct valobj sshi_valobj[] = {
 static struct validate sshi_validate =	
 {
   sshi_valobj,
-  2,
+  3,
   SERVICE,
   "s.service = uppercase(\"%s\") and s.mach_id = %d",
   2,
@@ -913,7 +939,7 @@ static char *dshi_fields[] = {
 static struct validate dshi_validate =	
 {
   ashi_valobj,
-  2,
+  3,
   SERVICE,
   "sh.service = uppercase(\"%s\") and sh.mach_id = %d",
   2,
@@ -1024,6 +1050,7 @@ static char *afil_fields[] = {
 
 static struct valobj afil_valobj[] = {
   {V_CHAR, 0},
+  {V_LOCK, 0, FILESYS, 0, FILSYS_ID, SMS_DEADLOCK},
   {V_TYPE, 1, FILESYS, 0, 0, SMS_FSTYPE},
   {V_ID, 2, MACHINE, NAME, MACH_ID, SMS_MACHINE},
   {V_CHAR, 3},
@@ -1034,7 +1061,7 @@ static struct valobj afil_valobj[] = {
 
 static struct validate afil_validate = {
   afil_valobj,
-  7,
+  8,
   LABEL,
   "fs.label = \"%s\"",
   1,
@@ -1050,6 +1077,7 @@ static char *ufil_fields[] = {
 };
 
 static struct valobj ufil_valobj[] = {
+  {V_LOCK, 0, FILESYS, 0, FILSYS_ID, SMS_DEADLOCK},
   {V_ID, 0, FILESYS, LABEL, FILSYS_ID, SMS_FILESYS},
   {V_RENAME, 1, FILESYS, LABEL, FILSYS_ID, SMS_NOT_UNIQUE},
   {V_TYPE, 2, FILESYS, 0, 0, SMS_FSTYPE},
@@ -1062,7 +1090,7 @@ static struct valobj ufil_valobj[] = {
 
 static struct validate ufil_validate = {
   ufil_valobj,
-  8,
+  9,
   LABEL,
   "fs.filsys_id = %d",
   1,
@@ -1077,12 +1105,13 @@ static char *dfil_fields[] = {
 };
 
 static struct valobj dfil_valobj[] = {
+  {V_LOCK, 0, FILESYS, 0, FILSYS_ID, SMS_DEADLOCK},
   {V_ID, 0, FILESYS, LABEL, FILSYS_ID, SMS_FILESYS},
 };
 
 static struct validate dfil_validate = {
   dfil_valobj,
-  1,
+  2,
   "label",
   "fs.filsys_id = %d",
   1,
@@ -1115,13 +1144,14 @@ static struct validate gfgm_validate = {
 };
 
 static struct valobj aftg_valobj[] = {
+    {V_LOCK, 0, FILESYS, 0, FILSYS_ID, SMS_DEADLOCK},
     {V_ID, 0, FILESYS, LABEL, FILSYS_ID, SMS_FILESYS},
     {V_ID, 1, FILESYS, LABEL, FILSYS_ID, SMS_FILESYS},
 };
 
 static struct validate aftg_validate = {
     aftg_valobj,
-    2,
+    3,
     "group_id",
     "fg.group_id = %d and fg.filsys_id = %d",
     2,
@@ -1218,7 +1248,7 @@ static char *anfq_fields[] = {
 
 static struct validate anfq_validate = {
   VOfilsys0user1,
-  2,
+  3,
   USERS_ID,
   "nq.filsys_id = %d and nq.users_id = %d",
   2,
@@ -1230,7 +1260,7 @@ static struct validate anfq_validate = {
 
 static struct validate unfq_validate = {
   VOfilsys0user1,
-  2,
+  3,
   USERS_ID,
   "nq.filsys_id = %d and nq.users_id = %d",
   2,
@@ -1242,7 +1272,7 @@ static struct validate unfq_validate = {
 
 static struct validate dnfq_validate = {
   VOfilsys0user1,
-  2,
+  3,
   USERS_ID,
   "nq.filsys_id = %d and nq.users_id = %d",
   2,
@@ -1276,6 +1306,7 @@ static char *alis_fields[] = {
 };
 
 static struct valobj alis_valobj[] = {
+  {V_LOCK, 0, LIST, 0, LIST_ID, SMS_DEADLOCK},
   {V_CHAR, 0},
   {V_TYPE, 7, ACE_TYPE, 0, 0, SMS_ACE},
   {V_TYPEDATA, 8, 0, 0, LIST_ID, SMS_ACE},
@@ -1283,7 +1314,7 @@ static struct valobj alis_valobj[] = {
 
 static struct validate alis_validate = {
   alis_valobj,
-  3,
+  4,
   NAME,
   "l.name = \"%s\"",
   1,
@@ -1300,6 +1331,7 @@ static char *ulis_fields[] = {
 };
 
 static struct valobj ulis_valobj[] = {
+  {V_LOCK, 0, LIST, 0, LIST_ID, SMS_DEADLOCK},
   {V_ID, 0, LIST, NAME, LIST_ID, SMS_LIST},
   {V_RENAME, 1, LIST, NAME, LIST_ID, SMS_NOT_UNIQUE},
   {V_TYPE, 8, ACE_TYPE, 0, 0, SMS_ACE},
@@ -1308,7 +1340,7 @@ static struct valobj ulis_valobj[] = {
 
 static struct validate ulis_validate = {
   ulis_valobj,
-  4,
+  5,
   NAME,
   "l.list_id = %d",
   1,
@@ -1339,6 +1371,7 @@ static char *amtl_fields[] = {
 };
 
 static struct valobj amtl_valobj[] = {
+  {V_LOCK, 0, LIST, 0, LIST_ID, SMS_DEADLOCK},
   {V_ID, 0, LIST, NAME, LIST_ID, SMS_LIST},
   {V_TYPE, 1, "member", 0, 0, SMS_TYPE},
   {V_TYPEDATA, 2, 0, 0, 0, SMS_NO_MATCH},
@@ -1347,7 +1380,7 @@ static struct valobj amtl_valobj[] = {
 static struct validate amtl_validate =	/* for amtl and dmfl */
 {
   amtl_valobj,
-  3,
+  4,
   "member_id",
   "m.list_id = %d and m.member_type = \"%s\" and m.member_id = %d",
   3,

@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/nfs.c,v 1.7 1988-07-29 18:36:14 kit Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/nfs.c,v 1.8 1988-08-07 17:21:58 mar Exp $";
 #endif lint
 
 /*	This is the file nfs.c for the SMS Client, which allows a nieve
@@ -10,8 +10,8 @@
  *	By:		Chris D. Peterson
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/nfs.c,v $
- *      $Author: kit $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/nfs.c,v 1.7 1988-07-29 18:36:14 kit Exp $
+ *      $Author: mar $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/nfs.c,v 1.8 1988-08-07 17:21:58 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -35,7 +35,7 @@
 #define TYPE_NFS    "NFS"
 
 #define DEFAULT_DIR    "/mit"
-#define DEFAULT_DEVICE "ra0a"
+#define DEFAULT_DEVICE "/dev/ra1c"
 #define DEFAULT_STATUS DEFAULT_YES /* active. */
 #define DEFAULT_ALLOC  "0"
 #define DEFAULT_SIZE   "0"

@@ -1,21 +1,24 @@
-.TH SMSCHECK 1 "7 Feb 1988" "Project Athena"
-\" RCSID: $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/man/mrcheck.1,v 1.3 1988-12-01 12:42:22 mar Exp $
+.TH MRCHECK 1 "7 Feb 1988" "Project Athena"
+\" RCSID: $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/man/mrcheck.1,v 1.4 1989-01-21 16:45:01 mar Exp $
 .UC 4
 .SH NAME
-smscheck \- verify that SMS updates are successful
+mrcheck \- verify that Moira updates are successful
 .SH SYNOPSIS
-.B smscheck
+.B mrcheck
 .SH DESCRIPTION
-.I Smscheck
-will query the SMS database to determine which services and hosts have
+.I Mrcheck
+will query the Moira database to determine which services and hosts have
 failed updates.  It will display a summary of each, listing the name,
 error code and message, last successful update, and last attempted
 update.  If all services are up-to-date, this will be indicated.
 .PP
 .SH DIAGNOSTICS
 Pay attention to Kerberos diagnostics, as one must be authenticated to
-do most SMS database work.  
+do most Moira database work.  
 .SH AUTHOR
 Mark Rosenstein, MIT Project Athena
 .SH "SEE ALSO"
-sms(1), SMS section of the Project Athena Technical Plan
+moira(1), Moira section of the Project Athena Technical Plan
+.SH NOTES
+Moira was previously called SMS, and is still refered to by this name
+in some places.

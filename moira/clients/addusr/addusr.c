@@ -1,4 +1,4 @@
-/* $Id: addusr.c,v 1.12 1998-08-07 14:22:15 danw Exp $
+/* $Id: addusr.c,v 1.13 1999-01-13 19:57:18 danw Exp $
  *
  * Program to add users en masse to the moira database
  *
@@ -18,7 +18,7 @@
 #include <stdio.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/addusr/addusr.c,v 1.12 1998-08-07 14:22:15 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/addusr/addusr.c,v 1.13 1999-01-13 19:57:18 danw Exp $");
 
 #ifdef ATHENA
 #define DEFAULT_SHELL "/bin/athena/tcsh"
@@ -38,6 +38,7 @@ int duplicate, errors;
 
 void usage(char **argv);
 int usercheck(int argc, char **argv, void *qargv);
+int get_uid(int argc, char **argv, void *qargv);
 
 int main(int argc, char **argv)
 {
@@ -152,36 +153,33 @@ int main(int argc, char **argv)
 	}
     }
 
-  if (!reg_only)
+  /* fire up Moira */
+  if ((status = mr_connect(server)))
     {
-      /* fire up Moira */
-      if ((status = mr_connect(server)))
-	{
-	  com_err(whoami, status, "unable to connect to the Moira server");
-	  exit(2);
-	}
-      if ((status = mr_motd(&motd)))
-	{
-	  com_err(whoami, status, "unable to check server status");
-	  exit(2);
-	}
-      if (motd)
-	{
-	  fprintf(stderr, "The Moira server is currently unavailable:\n%s\n",
-		  motd);
-	  mr_disconnect();
-	  exit(2);
-	}
+      com_err(whoami, status, "unable to connect to the Moira server");
+      exit(2);
+    }
+  if ((status = mr_motd(&motd)))
+    {
+      com_err(whoami, status, "unable to check server status");
+      exit(2);
+    }
+  if (motd)
+    {
+      fprintf(stderr, "The Moira server is currently unavailable:\n%s\n",
+	      motd);
+      mr_disconnect();
+      exit(2);
+    }
 
-      if ((status = mr_auth("addusr")))
+  if ((status = mr_auth("addusr")))
+    {
+      if (status == MR_USER_AUTH)
+	com_err(whoami, status, "");
+      else
 	{
-	  if (status == MR_USER_AUTH)
-	    com_err(whoami, status, "");
-	  else
-	    {
-	      com_err(whoami, status, "unable to authenticate to Moira");
-	      exit(2);
-	    }
+	  com_err(whoami, status, "unable to authenticate to Moira");
+	  exit(2);
 	}
     }
 
@@ -317,13 +315,26 @@ int main(int argc, char **argv)
 	}
       if (reg || reg_only)
 	{
-	  char *rargv[3];
+	  char *gargv[2], *rargv[3], uid[10];
 
-	  rargv[0] = qargv[U_MITID];
+	  uid[0] = '\0';
+	  gargv[0] = qargv[U_FIRST];
+	  gargv[1] = qargv[U_LAST];
+	  status = mr_query("get_user_account_by_name", 2, gargv,
+			    get_uid, &uid);
+	  if (status)
+	    {
+	      com_err(whoami, status, "while looking up uid for %s %s",
+		      qargv[U_FIRST], qargv[U_LAST]);
+	      errors++;
+	      continue;
+	    }
+
+	  rargv[0] = uid;
 	  rargv[1] = login;
 	  rargv[2] = "0";
 
-	  status = mr_query("register_user", 2, rargv, NULL, NULL);
+	  status = mr_query("register_user", 3, rargv, NULL, NULL);
 	  if (status)
 	    {
 	      com_err(whoami, status, "while registering (login) %s %s",
@@ -369,6 +380,22 @@ int usercheck(int argc, char **argv, void *qargv)
     duplicate++;
   else
     duplicate--;
+
+  return MR_CONT;
+}
+
+/* query callback to get uid of a just-added account */
+int get_uid(int argc, char **argv, void *uidv)
+{
+  char *uid = uidv;
+
+  if (uid[0] == '\0')
+    strcpy(uid, argv[U_UID]);
+  else
+    {
+      if (!strcmp(argv[U_MODWITH], "addusr"))
+	strcpy(uid, argv[U_UID]);
+    }
 
   return MR_CONT;
 }

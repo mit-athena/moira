@@ -1,0 +1,18 @@
+.TH UPDATE_SERVER 8 "30 Nov 1988" "Project Athena"
+\" RCSID: $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/man/update_server.8,v 1.1 1988-11-30 13:18:58 mar Exp $
+.SH NAME
+update_server \- daemon which accepts config files from SMS
+.SH SYNOPSIS
+.B update_server
+.SH DESCRIPTION
+An
+.B update_server
+must be started at boot time on each server that is to be updated by
+SMS.  It should be run as root.  It takes no arguments, and will
+detach from the tty and put itself in background.  It attempts to log
+its actions to stdout, so the output should be directed to a file if
+it is needed.
+.SH FILES
+/etc/srvtab \- It must be able to get rcmd Kerberos tickets.
+.SH "SEE ALSO"
+The Project Athena Technical Plan section on SMS.

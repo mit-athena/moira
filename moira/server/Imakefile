@@ -1,4 +1,4 @@
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/Imakefile,v 1.4 1993-12-10 13:56:46 tytso Exp $
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/Imakefile,v 1.5 1996-09-29 20:06:54 danw Exp $
 #
 # Copyright 1990 by the Massachusetts Institute of Technology.
 #
@@ -46,7 +46,11 @@ program(moirad, ${SRVOBJ},${MR_LIBDEP} ${GDB_LIBDEP},\
 	.././gdb/libmrgdb.a  -lcom_err \
 	/mit/gdss/`machtype`/libgdss.a -lkrb -ldes -lhesiod \
 	${SQL_LIB}, ${PROGDIR})
-program(startmoira, startmoira.o,,, ${PROGDIR})
+program(startmoira, startmoira.o,${MR_LIBDEP} ${GDB_LIBDEP},\
+      -L/usr/athena/lib .././lib/libmoira.a -lzephyr \
+      .././gdb/libmrgdb.a -lcom_err \
+      /mit/gdss/`machtype`/libgdss.a -lkrb -ldes -lhesiod \
+      ${SQL_LIB}, ${PROGDIR})
 library_obj_rule()
 install_library_target(mrglue,$(GLUOBJS),$(SRCS),)
 

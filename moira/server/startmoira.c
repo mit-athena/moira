@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/startmoira.c,v $
- *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/startmoira.c,v 1.8 1991-01-15 13:05:18 mar Exp $
+ *	$Author: danw $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/startmoira.c,v 1.9 1996-09-29 20:06:56 danw Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -13,7 +13,7 @@
  */
 
 #ifndef lint
-static char *rcsid_mr_starter_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/startmoira.c,v 1.8 1991-01-15 13:05:18 mar Exp $";
+static char *rcsid_mr_starter_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/startmoira.c,v 1.9 1996-09-29 20:06:56 danw Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -27,6 +27,7 @@ static char *rcsid_mr_starter_c = "$Header: /afs/.athena.mit.edu/astaff/project/
 #include <moira_site.h>
 
 #define PROG	"moirad"
+char *whoami
 
 int rdpipe[2];
 extern char *sys_siglist[];
@@ -42,15 +43,17 @@ cleanup()
 	
 	while (wait3(&stat, WNOHANG, 0) > 0) {
 		if (WIFEXITED(stat)) {
-			if (stat.w_retcode)
+			if (stat.w_retcode) {
 				sprintf(buf,
-					"exited with code %d\n",
+					"moirad exited with code %d\n",
 					stat.w_retcode);
+				send_zgram("startmoira", buf);
 		}
 		if (WIFSIGNALED(stat)) {
-			sprintf(buf, "exited on %s signal%s\n",
+			sprintf(buf, "moirad exited on %s signal%s\n",
 				sys_siglist[stat.w_termsig],
 				(stat.w_coredump?"; Core dumped":0));
+			if(stat.w_coredump) send_zgram("startmoira", buf);
 		}
 		write(rdpipe[1], buf, strlen(buf));
 		close(rdpipe[1]);
@@ -59,6 +62,8 @@ cleanup()
 }
 
 main(argc, argv)
+	int argc;
+	char **argv;
 {
 	char buf[BUFSIZ];
 	FILE *log, *prog;
@@ -69,6 +74,8 @@ main(argc, argv)
 	
 	int nfds = getdtablesize();
 	
+	whoami = argv[0];
+
 	setreuid(0);
 	signal(SIGCHLD, cleanup);
 	

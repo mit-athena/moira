@@ -1,6 +1,6 @@
 /* This file defines the query dispatch table for version 2 of the protocol
  *
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/queries2.c,v 1.13 1989-06-29 18:26:58 mar Exp $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/queries2.c,v 1.14 1989-07-19 15:02:11 mar Exp $
  *
  * Copyright 1987, 1988 by the Massachusetts Institute of Technology.
  * For copying and distribution information, please see the file
@@ -77,7 +77,6 @@ int trigger_dcm();
 int count_members_of_list();
 int get_lists_of_member();
 int register_user();
-int add_user_group();
 
 
 
@@ -1491,22 +1490,6 @@ static struct validate cmol_validate = {
   access_visible_list,
   0,
   count_members_of_list,
-};
-
-static char *augr_fields[] = {
-  LOGIN,
-};
-
-static struct validate augr_validate = {
-  0,
-  0,
-  0,
-  0,
-  0,
-  0,
-  0,
-  0,
-  add_user_group,
 };
 
 static char *gzcl_fields[] = {
@@ -3080,22 +3063,7 @@ struct query Queries2[] = {
     1,
     &cmol_validate,
   },
-#ifdef notdef
-  {
-    /* Q_AUGR - ADD_USER_GROUP */
-    "add_user_group",
-    "augr",
-    APPEND,
-    (char *)0,
-    (char *)0,
-    (char *)0,
-    augr_fields,
-    1,
-    (char *)0,
-    0,
-    &augr_validate,
-  },    
-#endif
+
   {
     /* Q_GZCL - GET_ZEPHYR_CLASS */
     "get_zephyr_class",

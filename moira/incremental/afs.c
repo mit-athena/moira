@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/afs.c,v 1.9 1989-12-14 13:58:40 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/afs.c,v 1.10 1990-03-19 19:39:37 mar Exp $
  *
  * Do AFS incremental updates
  *
@@ -7,8 +7,8 @@
  * <mit-copyright.h>.
  */
 
-#include <sms.h>
-#include <sms_app.h>
+#include <moira.h>
+#include <moira_site.h>
 #include <sys/file.h>
 
 #define file_exists(file) (access((file), F_OK) == 0)

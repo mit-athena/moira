@@ -1,4 +1,4 @@
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/Imakefile,v 1.4 1991-03-24 23:34:03 mar Exp $
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/Imakefile,v 1.5 1992-04-06 18:00:24 mar Exp $
 #
 # Copyright 1990 by the Massachusetts Institute of Technology.
 #
@@ -26,11 +26,11 @@ program(moira, ${MOBJS},${MR_LIBDEP} ${GDB_LIBDEP}, ${CLIBS} -lcurses -ltermcap,
 program(namespace, ${NOBJS},${MR_LIBDEP} ${GDB_LIBDEP}, ${CLIBS} -lcurses -ltermcap,${PROGDIR})
 
 install::
-	$(RM) $(DESTDIR)/usr/athena/listmaint
-	ln -s moira $(DESTDIR)/usr/athena/listmaint
-	$(RM) $(DESTDIR)/usr/athena/dcmmaint
-	ln -s moira $(DESTDIR)/usr/athena/dcmmaint
-	$(RM) $(DESTDIR)/usr/athena/usermaint
-	ln -s moira $(DESTDIR)/usr/athena/usermaint
+	$(RM) $(DESTDIR)$(PROGDIR)/listmaint
+	ln -s moira $(DESTDIR)$(PROGDIR)/listmaint
+	$(RM) $(DESTDIR)$(PROGDIR)/dcmmaint
+	ln -s moira $(DESTDIR)$(PROGDIR)/dcmmaint
+	$(RM) $(DESTDIR)$(PROGDIR)/usermaint
+	ln -s moira $(DESTDIR)$(PROGDIR)/usermaint
 
 depend:: ${CODE}

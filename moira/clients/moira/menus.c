@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menus.c,v 1.27 1997-01-29 23:06:20 danw Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menus.c,v 1.28 1997-06-12 21:04:50 danw Exp $";
 #endif
 
 /*	This is the file menus.c for the MOIRA Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menus.c,v $
  *      $Author: danw $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menus.c,v 1.27 1997-01-29 23:06:20 danw Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menus.c,v 1.28 1997-06-12 21:04:50 danw Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -440,12 +440,12 @@ Menu machine_menu = {
       {"show","Get machine information"},
       {"name","Machine's Name: "}
     } },
-    { ShowMachineQuery, NULLMENU, 4, {
+    { ShowMachineQuery, NULLMENU, 5, {
 	{"query", "Lookup machines"},
 	{"name", "Machine Name (or leave empty to match any): "},
 	{"address", "Address in dotted notation (or leave empty to match any): "},
 	{"location", "Location (or leave empty to match any): "},
-	{"contact", "Contact person (or leave empty to match any): "}
+	{"network", "Network (or leave empty to match any): "}
     } },
     { AddMachine, NULLMENU, 2, {
       {"add","Add a new machine"},

@@ -1,5 +1,5 @@
 
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/mailhub.dc,v 1.2 1992-10-22 15:21:37 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/mailhub.dc,v 1.3 1992-12-21 16:41:13 mar Exp $
  *
  * This generates the /usr/lib/aliases file for the mailhub.
  *
@@ -27,7 +27,7 @@ char *pstrsave();
 char *divide = "##############################################################";
 
 #define ML_WID	72
-#define AL_MAX_WID 896
+#define AL_MAX_WID 592
 
 #define FALSE 0
 #define TRUE (!FALSE)
@@ -47,10 +47,11 @@ char **argv;
     EXEC SQL END DECLARE SECTION;
 
 #ifsql INGRES
-    EXEC SQL CONNECT sms;
+    EXEC SQL CONNECT moira;
+    EXEC SQL SET LOCKMODE SESSION WHERE LEVEL=TABLE, READLOCK=SHARED;
 #endsql
 #ifsql INFORMIX
-    EXEC SQL DATABASE sms;
+    EXEC SQL DATABASE moira;
 #endsql
 
     if (argc == 2) {
@@ -145,6 +146,10 @@ get_info()
     struct list *l, *memberlist;
     register struct member *m;
 
+    /* The following is declarative, not executed,
+     * and so is dependent on where it is in the file,
+     * not in the order of execution of statements.
+     */
     EXEC SQL WHENEVER SQLERROR GOTO sqlerr;
 
     EXEC SQL SELECT modtime INTO :buf FROM users WHERE users_id = 0;
@@ -154,9 +159,9 @@ get_info()
     machines = create_hash(10);
 
     EXEC SQL DECLARE m_cursor CURSOR FOR
-      SELECT m.mach_id, m.name
-      FROM machine m, users u
-      WHERE m.mach_id = u.pop_id;
+      SELECT mach_id, name
+      FROM machine
+      ORDER BY mach_id;
     EXEC SQL OPEN m_cursor;
     while (1) {
 	EXEC SQL FETCH m_cursor INTO :id, :name;
@@ -179,16 +184,17 @@ get_info()
     fprintf(stderr, "Loaded %d machines\n", cnt);
 
     cnt = 0;
-    strings = create_hash(4000);
+    strings = create_hash(11001);
 
     EXEC SQL DECLARE s_cursor CURSOR FOR
-      SELECT string_id, string
-      FROM strings;
+      SELECT string_id, trim(string)
+      FROM strings
+      ORDER BY string_id;
     EXEC SQL OPEN s_cursor;
     while (1) {
 	EXEC SQL FETCH s_cursor INTO :id, :name;
 	if (sqlca.sqlcode != 0) break;
-	if (hash_store(strings, id, pstrsave(strtrim(name))) < 0) {
+	if (hash_store(strings, id, pstrsave(name)) < 0) {
 	    fprintf(stderr, "Out of memory!\n");
 	    exit(MR_NO_MEM);
 	}
@@ -199,12 +205,13 @@ get_info()
     fprintf(stderr, "Loaded %d strings\n", cnt);
 
     cnt = 0;
-    users = create_hash(12001);
+    users = create_hash(13001);
 
     EXEC SQL DECLARE u_cursor CURSOR FOR
       SELECT users_id, login, first, middle, last, potype, pop_id, box_id
       FROM users
-      WHERE status != 3;
+      WHERE status != 3
+      ORDER BY users_id;
     EXEC SQL OPEN u_cursor;
     while (1) {
         EXEC SQL FETCH u_cursor INTO :id, :name, :fname, :mname, :lname,
@@ -233,6 +240,7 @@ get_info()
 	cnt++;
     }
     EXEC SQL CLOSE u_cursor;
+    EXEC SQL COMMIT;
     fprintf(stderr, "Loaded %d users\n", cnt);
 
     cnt = 0;
@@ -241,7 +249,8 @@ get_info()
     EXEC SQL DECLARE l_cursor CURSOR FOR
       SELECT list_id, name, maillist, acl_type, acl_id
       FROM list
-      WHERE active != 0;
+      WHERE active != 0
+      ORDER BY list_id;
     EXEC SQL OPEN l_cursor;
     while (1) {
         EXEC SQL FETCH l_cursor INTO :id, :name, :maillistp, :type, :acl;
@@ -259,6 +268,7 @@ get_info()
 	cnt++;
     }
     EXEC SQL CLOSE l_cursor;
+    EXEC SQL COMMIT;
     fprintf(stderr, "Loaded %d lists\n", cnt);
 
     cnt = 0;
@@ -266,7 +276,8 @@ get_info()
     EXEC SQL DECLARE m_cursor2 CURSOR FOR
       SELECT list_id, member_type, member_id
       FROM imembers
-      WHERE direct = 1;
+      WHERE direct = 1
+      ORDER BY list_id;
     EXEC SQL OPEN m_cursor2;
     while (1) {
         EXEC SQL FETCH m_cursor2 INTO :id, :type, :mid;
@@ -324,8 +335,8 @@ int force;
 	return;
     }
     l->maillist = 2;
-    output_mlist(id, l);
     insert_name(l->name, -1, TRUE, FALSE);
+    output_mlist(id, l);
 
     if (l->acl_t == 'L' && (l1 = (struct list *)hash_lookup(lists, l->acl_id)))
       save_mlist(0, l1, TRUE);

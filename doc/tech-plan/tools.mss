@@ -6,6 +6,14 @@ SMS will include a set of specialized management tools to enable system
 administrators to control system resources.  As the system evolves, more
 management tools will become a part of the SMS's application program
 library.  These tools provide the fundamental administrative use of SMS.
+@i[For each system service there is an administrative interface.] In this 
+section, each interface discussed will provide information on the services
+it effects.  The following diagram:
+
+@blankspace(3 inches)
+
+The user interface is indicated by the left hand side of this diagram, the 
+component surrounded by the dotted line.
 
 In response to complaints about the user interface of current database
 maintenance tools such as madm, gadm, and (to a lesser extent) register,
@@ -503,10 +511,86 @@ END USERS: Administrator.
 A SESSION WITH DCM_MAINT:
 @begin(display)
 
+                     Data Control Manager Maintenance
+ 1. (change_host_info) Modify host-specific info for a server.
+ 2. (add_host_info) Create new entry for the table.
+ 3. (delete_host_info) Remove an entry from the table.
+ 4. (list_host_info) List entries by host or service.
+ 5. (change_service) Modify info for an existing service.
+ 6. (add_service ) Create new service.
+ 7. (delete_service) Remove an entry from the table.
+ 8. (list_service) List services.
+ r. (return      ) Return to previous menu.
+ q. (quit        ) Quit.
+Command: 
+
+Command:1
+       Change table entry [host: ATHENA-PO-1.MIT.EDU, service: ]
+ 1. (show        ) Show values of entry.
+ 2. (last_time   ) Change the last_time field.
+ 3. (success     ) Change the success field.
+ 4. (override    ) Change the override field.
+ 5. (enable      ) Change the enable field.
+ 6. (value1      ) Change the value1 field.
+ 7. (value2      ) Change the value2 field.
+ r. (return      ) Return to previous menu.
+ q. (quit        ) Quit.
+Command: 
+
+
+Command: 2
+Create new entry for the table
+Which host[]:
+Which service[]:
+
+Command: 3
+Remove an entry from the table
+Which host[]:
+Which service[]:
+
+Command:4
+Modify info for an existing service
+Which service[]:
+
+Command: 5
+Modify info for an existing service
+Which service[]:
+
+       Modify existing service
+ 1. (show        ) Show fields of service.
+ 2. (interval    ) Change the interval field.
+ 3. (target_path ) Change the target_path field.
+ 4. (instructions) Change the instructions field.
+ 5. (dfgen       ) Change the dfgen field.
+ r. (return      ) Return to previous menu.
+ q. (quit        ) Quit.
+Command: 
+
+Command: 6
+Create new service
+Which service[]: 
+service_name   interval       target_path    instructions   dfgen
+
+
+Add service to database? [y]:
+Service created
+
+Command: 7
+Remove an entry from the table
+Which service[]:
+No entry found for service .  
+
+Command: 8
+List services
+Which service[]:
+service_name   interval       target_path    instructions   dfgen
+hesiod                       /dev/null      /dev/null
+pop                          /dev/null      /dev/null
+
 @end(display)
 @end(multiple)
-@begin(multiple)
 
+@begin(multiple)
 PROGRAM NAME: LIST_MAINT - List Administration
 
 DESCRIPTION: 

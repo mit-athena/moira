@@ -1,10 +1,10 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_serv.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_serv.c,v 1.3 1991-03-08 10:16:42 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_serv.c,v 1.4 1991-04-24 10:32:46 mar Exp $
  */
 
 #ifndef lint
-static char *rcsid_gdb_serv_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_serv.c,v 1.3 1991-03-08 10:16:42 mar Exp $";
+static char *rcsid_gdb_serv_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_serv.c,v 1.4 1991-04-24 10:32:46 mar Exp $";
 #endif	lint
 
 
@@ -333,6 +333,7 @@ TUPLE *responsep;
 	(void) strcpy(STRING_DATA(*((STRING *)FIELD_FROM_TUPLE(out_tuple,0))),
 		       server_id);
 
+	if (parms == NULL) parms = "";
 	(void) string_alloc((STRING *)FIELD_FROM_TUPLE(out_tuple, TSV_PARMS),
 		     strlen(parms)+1);
 	(void) strcpy(STRING_DATA(*((STRING *)FIELD_FROM_TUPLE(out_tuple,1))),

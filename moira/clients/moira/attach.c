@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.24 1990-04-25 12:45:32 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.25 1990-06-12 16:29:21 mar Exp $";
 #endif
 
 /*	This is the file attach.c for the MOIRA Client, which allows a nieve
@@ -13,7 +13,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.24 1990-04-25 12:45:32 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.25 1990-06-12 16:29:21 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -662,8 +662,8 @@ ChangeFSGroupOrder(argc, argv)
 char **argv;
 int argc;
 {
-    int stat, src, dst;
-    struct qelem *elem = NULL, *top;
+    int stat, src, dst, i;
+    struct qelem *elem = NULL, *top, *tmpelem;
     char buf[BUFSIZ], *bufp, *args[3];
 
     if ((stat = do_mr_query("get_fsgroup_members", 1, argv+1, StoreInfo,
@@ -691,20 +691,34 @@ int argc;
 	    Put_message("Aborted.");
 	    return(DM_NORMAL);
 	}
-	for (elem = top; src-- > 1 && elem->q_forw; elem = elem->q_forw);
-	if (src > 1) {
+	for (elem = top, i = src; i-- > 1 && elem->q_forw; elem = elem->q_forw);
+	if (i > 0) {
 	    Put_message("You entered a number that is too high");
 	    continue;
 	}
 	break;
     }
-    bufp = Strsave("0");
-    stat = GetValueFromUser("Enter number of filesystem it should follow (0 to make it first):", &bufp);
-    dst = atoi(bufp);
-    free(bufp);
-    if (src == dst || src == dst + 1) {
-	Put_message("That has no effect on the sorting order!");
-	return(DM_NORMAL);
+    while (1) {
+	bufp = Strsave("0");
+	stat = GetValueFromUser("Enter number of filesystem it should follow (0 to make it first):", &bufp);
+	dst = atoi(bufp);
+	free(bufp);
+	if (src == dst || src == dst + 1) {
+	    Put_message("That has no effect on the sorting order!");
+	    return(DM_NORMAL);
+	}
+	if (dst < 0) {
+	    Put_message("You must enter a non-negative number.");
+	    continue;
+	}
+	for (tmpelem = top, i = dst;
+	     i-- > 1 && tmpelem->q_forw;
+	     tmpelem = tmpelem->q_forw);
+	if (i > 0) {
+	    Put_message("You entered a number that is too high");
+	    continue;
+	}
+	break;
     }
     args[2] = SortAfter(top, dst);
     args[0] = argv[1];

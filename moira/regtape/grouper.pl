@@ -1,5 +1,5 @@
 #!/moira/bin/perl -Tw
-# $Id: grouper.pl,v 1.6 2000-08-25 00:48:40 zacheiss Exp $
+# $Id: grouper.pl,v 1.7 2000-08-30 18:49:21 zacheiss Exp $
 
 die "Usage: $0 password\n" unless ($#ARGV == 0);
 $whpassword = $ARGV[0];
@@ -51,7 +51,7 @@ while (($user, $mitid) = $sth->fetchrow_array) {
 open(MRTEST, "|$mrtest >/dev/null 2>&1");
 print MRTEST "connect $db\n";
 print MRTEST "auth\n";
-open(LOG, ">$logfile");
+open(LOG, ">>$logfile");
 
 # Create any lists that don't already exist in Moira
 foreach $class (@$classes) {

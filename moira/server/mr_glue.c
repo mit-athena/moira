@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_glue.c,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_glue.c,v 1.7 1988-12-01 15:46:08 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_glue.c,v 1.8 1989-06-14 15:08:08 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -12,7 +12,7 @@
  */
 
 #ifndef lint
-static char *rcsid_sms_glue_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_glue.c,v 1.7 1988-12-01 15:46:08 mar Exp $";
+static char *rcsid_sms_glue_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_glue.c,v 1.8 1989-06-14 15:08:08 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -34,6 +34,7 @@ sms_connect(server)
 char *server;
 {
     register int status;
+    extern int query_timeout;
 
     if (already_connected) return SMS_ALREADY_CONNECTED;
 
@@ -41,6 +42,7 @@ char *server;
     init_krb_err_tbl();
     bzero((char *)&pseudo_client, sizeof(pseudo_client)); /* XXX */
 
+    query_timeout = 0;
     status =  sms_open_database();
     if (!status) already_connected = 1;
     return status;

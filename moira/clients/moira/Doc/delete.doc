@@ -1,0 +1,158 @@
+
+Here is the explanation of the steps involved in deleting users and
+lists, the examples were created using cut and paste, so they should
+reflect what actually is printed to the user.  The one thing that
+something like this can't give you a feel for is how long it takes to
+delete a list or user.  If you let the client do all the work of
+removing references then deleting an average list or user seems to
+take 7 or 8 minutes.
+
+Comments on this, Anyone???
+
+					Chris
+
+------------------------------------------------------------
+			Deleting lists
+------------------------------------------------------------
+	
+Before a list can be sucessfully deleted a number of things must be
+checked, they are:
+
+- This list may be a member of other lists.
+
+- This list may have members of its own.
+
+- This list may be the ACL of another object.
+
+Since the SMS server makes these checks internally we will make an
+attempt to delete the list, and only if this fails with SMS_IN_USE
+will we attempt to check and assist the user in deleting the list.
+
+Once this list has been deleted then some new lists that may be likely
+canidates for deletion, these would be lists of the following types:
+
+- The ACL of this list may now not be in use.
+
+- A list of which this list was a member may now no longer have any members.
+
+In both these cases the lists mentioned should be deleted.
+I suggest, and have implemented the following user interface.
+
+delete list foo:
+
+------------------------------------------------------------
+list kit is the Access Control Entity (ACE) for the following data objects:
+
+FILESYS kit
+LIST kit
+LIST xconq-acl
+LIST plx-acl
+
+The ACE for each of these items must be changed before
+the list kit can be deleted.
+
+Command:
+------------------------------------------------------------
+
+Once this has been changed, we try again, and...
+
+------------------------------------------------------------
+Are you sure that you want to delete the list kit [n]: y
+List kit has 4 members:
+
+USER kit  
+USER kubitron
+USER mar
+LIST xconq
+
+Remove these members from list kit?  [n]: y
+list kit is a member of 2 other list(s).
+
+mar
+xconq
+Remove list kit from these lists?  [n]: y
+List kit deleted.
+
+Delete the unused Access Control Entity (ACE) foo?  [n]: y
+Are you sure that you want to delete the list foo [n]: y  
+
+Delete the empty list xconq?  [n]: 
+Command: 			- ready for next command...
+
+------------------------------------------------------------
+
+and the process continues until all dangling references are cleaned up.
+
+
+------------------------------------------------------------
+			Deleting Users
+------------------------------------------------------------
+
+	Checks must also be made before a user is deleted.
+
+- The user's home filesystem should be deleted. (query first) ?
+
+- The user's group should be deleted. (query first) ?
+
+- Is the user an ACL of any object in the database ?
+
+- Is the user a member of any lists ?
+
+Once again, since the SMS server makes these checks internally
+we will make an attempt to delete the user, and only if this fails
+with SMS_IN_USE will the client attempt to check why it failed and
+assist the user in deleting this user.
+
+If these checks are passed then another attempt will be made
+to delete the user.  This time there should be no way to get an
+SMS_IN_USE error.  Now that the user has been sucessfully deleted,
+one last check is made to clean up dangling references in the database.
+
+- Remove any lists that are now empty due to the user being deleted from them.
+
+NOTE: postoffice and finger info are deleted automatically by the SMS server.
+
+User interface for delete user:
+
+------------------------------------------------------------
+Delete user
+Login name: foo_bar
+Are you sure that you want to delete this user? [n]: y
+
+Delete the filesystem named foo_bar (y/n)? [n]: y
+Filesystem Successfully Deleted.
+
+There is also a list named foo_bar, delete it? [n]: y 
+Are you sure that you want to delete the list foo_bar [n]: y
+List foo_bar has 1 member: 
+
+USER foo_bar
+
+Remove this member from list foo_bar?  [n]: y
+
+user foo_bar is the ACE for the following data objects:
+
+LIST xconq
+
+The ACE for each of these items must be changed before
+the user foo_bar can be deleted.
+
+------------------------------------------------------------
+once this has been done then we try again and get...
+------------------------------------------------------------
+
+user foo_bar is a member of 2 other lists.
+
+kit
+xconq
+
+Remove user foo_bar from these lists?  [n]: 
+
+User foo_bar deleted.
+Command: 
+
+Delete the empty list xconq?  [n]: 
+Are you sure that you want to delete the list bar [n]: y
+List Sucessfully Deleted.
+------------------------------------------------------------
+

@@ -20,10 +20,12 @@
  * Rule for building objects in libraries.
  */
 
-#if defined(mips) || defined(_AIX)
+#if defined(mips) || defined(_AIX) || defined(SOLARIS)
 /*
- * The MIPS & AIX loaders don't have the -X flag or its functionality.
+ * The MIPS, AIX & SOLARIS loaders don't have the -X flag or its functionality.
+ * Solaris to make it worse does not have -x
  */
+#if !defined(SOLARIS)
 #define library_obj_rule()						@@\
 .c.o:									@@\
 	$(CC) PROF_FLAG -c $(CFLAGS) $*.c				@@\
@@ -31,6 +33,15 @@
 	$(CC) -c $(CFLAGS) $*.c						@@\
 	-$(LD) -x -r -o a.out $*.o					@@\
 	$(MV) a.out $*.o
+#else
+#define library_obj_rule()						@@\
+.c.o:									@@\
+	$(CC) PROF_FLAG -c $(CFLAGS) $*.c				@@\
+	$(MV) $*.o profiled/$*.o					@@\
+	$(CC) -c $(CFLAGS) $*.c						@@\
+	-$(LD) -x -r -o a.out $*.o					@@\
+	$(MV) a.out $*.o
+#endif
 #else /* ! mips && ! _AIX */
 #define library_obj_rule()						@@\
 .c.o:									@@\
@@ -62,10 +73,21 @@ ofile: sfile								@@\
 	-$(LD) -x -r -o $*.o a.out					@@\
 	$(RM) a.out x.c
 
+#ifdef USELINT
+#define install_library_lint(libname)					@@\
+all:: concat3(llib-l,libname,.ln)					@@\
+									@@\
+install::								@@\
+	$(INSTALLFILE) concat3(llib-l,libname,.ln) concat4($(DESTDIR)$(LINTLIBDIR)/,llib-l,libname,.ln)	@@\
+
+#else
+#define install_library_lint(libname)
+#endif
+
+
 #define	install_library_target(libname,objs,srcs,lintlibs)		@@\
 									@@\
 all:: concat3(lib,libname,.a) concat3(lib,libname,_p.a)			@@\
-all:: concat3(llib-l,libname,.ln)					@@\
 									@@\
 concat3(lib,libname,.a): objs						@@\
 	$(RM) $@.bak							@@\
@@ -97,7 +119,8 @@ install:: 								@@\
 	$(INSTALLRAW) -c -m 644 concat3(lib,libname,_p.a) concat4($(DESTDIR)$(LIBDIR)/,lib,libname,_p.a)	@@\
 	$(RANLIB) -t concat4($(DESTDIR)$(LIBDIR)/,lib,libname,_p.a)	@@\
 	$(CHMOD) 444 concat4($(DESTDIR)$(LIBDIR)/,lib,libname,_p.a)	@@\
-	$(INSTALLFILE) concat3(llib-l,libname,.ln) concat4($(DESTDIR)$(LINTLIBDIR)/,llib-l,libname,.ln)	@@\
+									@@\
+install_library_lint(libname)						@@\
 
 #else /* !PROFILED_LIBS */
 /*
@@ -129,10 +152,20 @@ ofile: sfile								@@\
 	-$(LD) -x -r -o $*.o a.out					@@\
 	$(RM) a.out x.c
 
+#ifdef USELINT
+#define install_library_lint(libname)					@@\
+all:: concat3(llib-l,libname,.ln)					@@\
+									@@\
+install::								@@\
+	$(INSTALLFILE) concat3(llib-l,libname,.ln) concat4($(DESTDIR)$(LINTLIBDIR)/,llib-l,libname,.ln)	@@\
+
+#else
+#define install_library_lint(libname)
+#endif
+
 #define	install_library_target(libname,objs,srcs,lintlibs)		@@\
 									@@\
 all:: concat3(lib,libname,.a) 						@@\
-all:: concat3(llib-l,libname,.ln)					@@\
 									@@\
 concat3(lib,libname,.a): objs						@@\
 	$(RM) $@.bak							@@\
@@ -154,7 +187,9 @@ install:: 								@@\
 	$(INSTALLRAW) -c -m 644 concat3(lib,libname,.a) concat4($(DESTDIR)$(LIBDIR)/,lib,libname,.a)	@@\
 	$(RANLIB) -t concat4($(DESTDIR)$(LIBDIR)/,lib,libname,.a)	@@\
 	$(CHMOD) 444 concat4($(DESTDIR)$(LIBDIR)/,lib,libname,.a)	@@\
-	$(INSTALLFILE) concat3(llib-l,libname,.ln) concat4($(DESTDIR)$(LINTLIBDIR)/,llib-l,libname,.ln)	@@\
+									@@\
+install_library_lint(libname)						@@\
+
 
 #endif /* PROFILED_LIBS */
 
@@ -165,7 +200,7 @@ install:: 								@@\
 all:: pgm								@@\
 									@@\
 pgm: objs localdeps							@@\
-	$(CC) $(CFLAGS) -o $@ objs syslibs				@@\
+	$(CC) $(CFLAGS) -o $@ objs syslibs $(OSLIBS)			@@\
 									@@\
 clean:: 								@@\
 	$(RM) pgm objs							@@\
@@ -177,7 +212,7 @@ clean:: 								@@\
 #define generate(file,pgm,libs)						@@\
 									@@\
 pgm: concat(pgm,.c) libs						@@\
-	$(HCC) $(HCFLAGS) -o $@ $@.c libs				@@\
+	$(HCC) $(HCFLAGS) -o $@ $@.c libs $(OSLIBS)			@@\
 									@@\
 file: pgm								@@\
 	./pgm file							@@\
@@ -195,12 +230,12 @@ depend:: file
  * Rule for building test programs (something which is not installed)
  */
 
-#define test(pgm,locallibs,syslibs)					@@\
+#define test_program(pgm,locallibs,syslibs)				@@\
 									@@\
 all:: pgm								@@\
 									@@\
 pgm: concat(pgm,.c) locallibs						@@\
-	$(CC) $(CFLAGS) -o $@ $@.c locallibs syslibs			@@\
+	$(CC) $(CFLAGS) -o $@ $@.c locallibs syslibs $(OSLIBS)		@@\
 									@@\
 clean::									@@\
 	$(RM) pgm concat(pgm,.o) 					@@\
@@ -224,7 +259,7 @@ depend:: concat(src,.h)
 concat(tbl,.c): concat(tbl,.ct)						@@\
 	$(MAKE_COMMANDS) concat(tbl,.ct)				@@\
 clean::									@@\
-	$(RM) concat(tbl,.o)
+	$(RM) concat(tbl,.o) concat(tbl,.c)
 
 /*
  * Rule for building some random object module
@@ -292,7 +327,7 @@ clean::									@@\
 all:: pgm								@@\
 									@@\
 pgm: localdeps objs							@@\
-	$(CC) $(CFLAGS) -o $@ objs syslibs				@@\
+	$(CC) $(CFLAGS) -o $@ objs syslibs $(OSLIBS)			@@\
 									@@\
 install::								@@\
 	$(INSTALLPROG) pgm ${DESTDIR}installdir/pgm			@@\
@@ -308,7 +343,7 @@ clean:: 								@@\
 all:: pgm								@@\
 									@@\
 pgm: objs localdeps							@@\
-	$(CC) $(CFLAGS) -o $@ objs syslibs				@@\
+	$(CC) $(CFLAGS) -o $@ objs syslibs $(OSLIBS)			@@\
 									@@\
 install::								@@\
 	$(INSTALLRAW) instopts pgm ${DESTDIR}installdir/pgm		@@\
@@ -406,7 +441,7 @@ Makefiles::								@@\
 	$(AWK) -f $(SRCTOP)/util/imake.includes/ingres.awk < $< > $*.sc	@@\
 									@@\
 .sc.c:									@@\
-	/usr/rtingres/bin/esqlc -p $*
+	/usr/ingres/bin/esqlc -p $*
 #define sqlfile(file)							@@\
 concat(file,.sc): concat(file,.dc)					@@\
 concat(file,.c): concat(file,.sc)					@@\

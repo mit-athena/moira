@@ -1,5 +1,5 @@
 
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/mailhub.dc,v 1.5 1993-07-06 12:01:38 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/mailhub.dc,v 1.6 1993-07-09 16:21:51 mar Exp $
  *
  * This generates the /usr/lib/aliases file for the mailhub.
  *
@@ -123,6 +123,7 @@ struct member {
 struct list {
     char *name;
     char maillist;
+    char *description;
     char acl_t;
     int acl_id;
     struct member *m;
@@ -247,17 +248,18 @@ get_info()
     lists = create_hash(15000);
 
     EXEC SQL DECLARE l_cursor CURSOR FOR
-      SELECT list_id, name, maillist, acl_type, acl_id
+      SELECT list_id, name, maillist, description, acl_type, acl_id
       FROM list
       WHERE active != 0
       ORDER BY list_id;
     EXEC SQL OPEN l_cursor;
     while (1) {
-        EXEC SQL FETCH l_cursor INTO :id, :name, :maillistp, :type, :acl;
+        EXEC SQL FETCH l_cursor INTO :id, :name, :maillistp, :buf, :type, :acl;
         if (sqlca.sqlcode != 0) break;
 	l = (struct list *) perm_malloc(sizeof(struct list));
 	l->name = pstrsave(strtrim(name));
 	l->maillist = maillistp;
+	l->description = pstrsave(strtrim(buf));
 	l->acl_t = type[0];
 	l->acl_id = acl;
 	l->m = (struct member *) NULL;
@@ -535,6 +537,7 @@ register struct list *l;
     register struct member *m;
     register struct user *u;
 
+    put_fill(out, l->description);
     if (l->acl_t ==  'L' &&
 	(l1 = (struct list *) hash_lookup(lists, l->acl_id)))
       fprintf(out, "owner-%s: %s\n%s: ", l->name, l1->name, l->name);
@@ -591,6 +594,53 @@ register char *s;
     }
     lwid += wwid + 2;
     fprintf(out, ", %s", s);
+}
+
+
+put_fill(aliases, string)
+FILE *aliases;
+register char *string;
+{
+    register char *c;
+    register int lwid;
+    register int wwid;
+
+    if (string == 0 || *string == 0) return;
+    fputs("#  ", aliases);
+    lwid = 3;
+
+    while (1) {
+	while (*string && *string == ' ') string++;
+	c = (char *)index(string, ' ');
+	if (c == 0) {
+	    wwid = strlen(string);
+	} else {
+	    wwid = c - string;
+	    *c = 0;
+	}
+
+	if ((lwid + wwid) > ML_WID) {
+	    fputs("\n#  ", aliases);
+	    lwid = 3;
+	    fputs(string, aliases);
+	} else {
+	    fputs(string, aliases);
+	}
+
+	if (c == (char *)0) break;
+	/* add a space after the word */
+	(void) fputc(' ', aliases);
+	wwid++;
+	lwid += wwid;
+	string += wwid;
+	/* add another if after a period */
+	if (*--c == '.') {
+	    (void) fputc(' ', aliases);
+	    lwid++;
+	}
+    }
+
+    (void) fputc('\n', aliases);
 }
 
 

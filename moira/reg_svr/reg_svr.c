@@ -1,7 +1,7 @@
 /*
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.32 1991-06-27 15:05:29 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.33 1992-01-02 14:29:23 mar Exp $
  *
  *      Copyright (C) 1987, 1988 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -16,7 +16,7 @@
  */
 
 #ifndef lint
-static char *rcsid_reg_svr_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.32 1991-06-27 15:05:29 mar Exp $";
+static char *rcsid_reg_svr_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.33 1992-01-02 14:29:23 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -134,6 +134,10 @@ int parse_encrypted(message,data)
    the ID sent accross in the packet.  The information in the packet
    was created in the following way:
 
+   The database used to contain encrypted IDs.  Now we don't encrypt
+   them in the database, although there are still some encrypted IDs
+   there.
+
    The plain text ID number was encrypted via EncryptID() resulting
    in the form that would appear in the Moira database.  This is
    concatinated to the plain text ID so that the ID string contains plain
@@ -142,7 +146,7 @@ int parse_encrypted(message,data)
    thing is then DES encrypted using the encrypted ID as the source of
    the key.
 
-   This routine tries each encrypted ID in the database that belongs
+   This routine tries each ID in the database that belongs
    to someone with this user's first and last name and tries to 
    decrypt the packet with this information.  If it succeeds, it returns 
    zero and initializes all the fields of the formatted packet structure
@@ -209,14 +213,10 @@ int parse_encrypted(message,data)
     /* Find out how much more room there is. */
     len = message->encrypted_len - (temp - decrypt);
     
-    /* Now compare encrypted ID's don't match. */
-    if (strcmp(hashid, data->mit_id)) status = FAILURE;
-    if (status == SUCCESS)
-    {
-	EncryptID(recrypt, idnumber, message->first, message->last);
-	/* Now compare encrypted plain text to ID from database. */
-	if (strcmp(recrypt, data->mit_id)) status = FAILURE;
-    }
+    /* Now compare encrypted ID and clear text ID for a match. */
+    if (strcmp(hashid, data->mit_id) &&
+	strcmp(idnumber, data->mit_id))
+      status = FAILURE;
     
     if (status == SUCCESS)
     {

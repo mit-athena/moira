@@ -1,4 +1,4 @@
-/* $Id: increment.pc,v 2.7 1998-08-27 17:47:37 danw Exp $
+/* $Id: increment.pc,v 2.8 2000-06-08 19:10:04 zacheiss Exp $
  *
  * Deal with incremental updates
  *
@@ -20,7 +20,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/increment.pc,v 2.7 1998-08-27 17:47:37 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/increment.pc,v 2.8 2000-06-08 19:10:04 zacheiss Exp $");
 
 extern char *whoami;
 extern char *table_name[];
@@ -345,7 +345,7 @@ void incremental_update(void)
   EXEC SQL BEGIN DECLARE SECTION;
   char tab[INCREMENTAL_TABLE_NAME_SIZE], serv[INCREMENTAL_SERVICE_SIZE];
   EXEC SQL END DECLARE SECTION;
-  struct iupdate *iu;
+  struct iupdate *iu, *iu_save;
 
   if (!inited)
     {
@@ -376,8 +376,14 @@ void incremental_update(void)
 	  if (!strcmp(c->table, iu->table))
 	    {
 	      iu->service = c->service;
-	      sq_save_data(incremental_exec, iu);
-	      break;
+	      iu_save = xmalloc(sizeof(struct iupdate));
+	      iu_save->service = iu->service;
+	      iu_save->table = iu->table;
+	      iu_save->beforec = iu->beforec;
+	      iu_save->afterc = iu->afterc;
+	      iu_save->before = copy_argv(iu->before, iu->beforec);
+	      iu_save->after = copy_argv(iu->after, iu->afterc);
+	      sq_save_data(incremental_exec, iu_save);
 	    }
 	}
       if (!c)

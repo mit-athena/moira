@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.21 1994-04-15 15:38:00 jweiss Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.22 1994-06-09 14:55:46 jweiss Exp $
  *
  * Command line oriented Moira List tool.
  *
@@ -23,7 +23,7 @@
 #include <moira_site.h>
 
 #ifndef LINT
-static char blanche_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.21 1994-04-15 15:38:00 jweiss Exp $";
+static char blanche_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.22 1994-06-09 14:55:46 jweiss Exp $";
 #endif
 
 
@@ -352,6 +352,20 @@ char **argv;
 	      break;
 	    else if ((status != MR_LIST && status != MR_NO_MATCH) ||
 		     memberstruct->type != M_ANY) {
+	        if (status == MR_PERM && memberstruct->type == M_ANY)  {
+		  /* M_ANY means we've fallen through from the user case
+		   * The fact that we didn't get MR_PERM there indicates
+		   * that we had permission to remove the specified member 
+		   * from the list if it is a user, but not a list.  This is 
+		   * if we are the member in question.  Since we exist as a user
+		   * we must have gotten the MR_NO_MATCH error, so we will
+		   * return that, since it will be less confusing.  However,
+		   * This will generate the wrongerror if the user was trying
+		   * to remove the list with his/her username from a list they
+		   * don't administrate, without explicitly specifying "list:".
+		   */
+		  status = MR_NO_MATCH;
+		}
 		com_err(whoami, status, "while deleting member %s from %s",
 			memberstruct->name, listname);
 		break;

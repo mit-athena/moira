@@ -10,9 +10,9 @@ system would be overwhelming.  It is extremely important, therefore,
 to recognize an input checking mechanism to secure the integrity of
 the data.  
 
-The method of checking input will be done through the application 
-programmers library.  When a user makes a request to add or update
-a field,  the library will check the input against a list of 
+The method of checking input will be done through the SMS server.  
+When a user makes a request to add or update
+a field,  the server will check the input against a list of 
 accepted values for that field.  Therefore,  each field which requires
 input data integrity checking will be associated to a list of
 values.  An error condition will return if the value specified is

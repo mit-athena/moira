@@ -1,7 +1,7 @@
 /*
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v $
- *      $Author: qjb $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.19 1988-10-03 00:18:28 qjb Exp $
+ *      $Author: mar $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.20 1988-12-01 15:07:41 mar Exp $
  *
  *      Copyright (C) 1987, 1988 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -16,7 +16,7 @@
  */
 
 #ifndef lint
-static char *rcsid_reg_svr_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.19 1988-10-03 00:18:28 qjb Exp $";
+static char *rcsid_reg_svr_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.20 1988-12-01 15:07:41 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -57,7 +57,7 @@ main(argc,argv)
     init_ureg_err_tbl();
     
     /* Connect to the SMS server */
-    if ((status = sms_connect()) != SMS_SUCCESS) 
+    if ((status = sms_connect(SMS_SERVER)) != SMS_SUCCESS) 
     {
 	com_err(whoami, status, " on connect");
 	exit(1);
@@ -636,14 +636,3 @@ int set_password(message,retval)
     
     return status;
 }
-    
-/*
- * Local Variables:
- * mode: c
- * c-argdecl-indent: 2
- * c-brace-offset: -4
- * c-continued-statement-offset: 4
- * c-indent-level: 4
- * c-label-offset: -2
- * End:
- */

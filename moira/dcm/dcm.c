@@ -7,11 +7,11 @@
  *
  * $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/dcm.c,v $
  * $Author: mar $
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/dcm.c,v 1.6 1988-09-13 14:06:38 mar Exp $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/dcm.c,v 1.7 1988-12-01 15:05:46 mar Exp $
  */
 
 #ifndef lint
-static char rcsid_dcm_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/dcm.c,v 1.6 1988-09-13 14:06:38 mar Exp $";
+static char rcsid_dcm_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/dcm.c,v 1.7 1988-12-01 15:05:46 mar Exp $";
 #endif lint
 
 #include <stdio.h>
@@ -69,7 +69,7 @@ char *argv[];
 		exit(1);
 	} 
 
-	if (status = sms_connect()) {
+	if (status = sms_connect("")) {
 	    com_err(whoami, status, " on sms_connect");
 	    leave("connect failed");
 	}

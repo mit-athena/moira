@@ -1,6 +1,6 @@
 /**/#	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/util/imake.includes/Imake.rules,v $
 /**/#	$Author: jtkohl $
-/**/#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/util/imake.includes/Imake.rules,v 4.9 1989-01-23 17:36:39 jtkohl Exp $
+/**/#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/util/imake.includes/Imake.rules,v 4.10 1989-03-23 10:26:58 jtkohl Exp $
 /**/#
 
 #ifdef __STDC__
@@ -131,7 +131,7 @@ install:: 								@@\
 	$(INSTALLRAW) -m 644 concat3(lib,libname,.a) concat4($(DESTDIR)$(LIBDIR)/,lib,libname,.a)	@@\
 	$(RANLIB) -t concat4($(DESTDIR)$(LIBDIR)/,lib,libname,.a)	@@\
 	$(CHMOD) 444 concat4($(DESTDIR)$(LIBDIR)/,lib,libname,.a)	@@\
-	$(INSTALLFILE) concat3(llib-l,libname,.ln) concat4($(DESTDIR)$(LINTLIBBDIR)/,llib-l,libname,.ln)	@@\
+	$(INSTALLFILE) concat3(llib-l,libname,.ln) concat4($(DESTDIR)$(LINTLIBDIR)/,llib-l,libname,.ln)	@@\
 
 #endif /* PROFILED_LIBS */
 
@@ -335,7 +335,7 @@ pgm: objs localdeps							@@\
 	$(CC) $(CFLAGS) -o $@ objs syslibs				@@\
 									@@\
 install::								@@\
-	if [ ! -f concat5(${DESTDIR},installdir,/,pgm,.ucb) -a -f concat4(${DESTDIR},installdir,/,pgm) ]; then \ @@\
+	-if [ ! -f concat5(${DESTDIR},installdir,/,pgm,.ucb) -a -f concat4(${DESTDIR},installdir,/,pgm) ]; then \ @@\
 		mv concat4(${DESTDIR},installdir,/,pgm) concat5(${DESTDIR},installdir,/,pgm,.ucb); fi; exit 0 @@\
 	$(INSTALLSUID) pgm concat4(${DESTDIR},installdir,/,pgm)		@@\
 									@@\

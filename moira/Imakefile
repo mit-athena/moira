@@ -1,0 +1,55 @@
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/Imakefile,v 1.1 1990-08-22 13:06:38 mar Exp $
+#
+# Copyright 1990 by the Massachusetts Institute of Technology.
+#
+# For copying and distribution information,
+# please see the file <mit-copyright.h>.
+#
+# Imakefile for top level directory.
+#
+
+#define have_subdirs
+CODE=Imakefile
+CLIENTDIRS=util gdb rpc clients man mrtest update
+SRVRDIRS=server backup db dbck dcm gen reg_svr incremental regtape
+#ifdef SVRBUILD
+SUBDIRS=$(CLIENTDIRS) $(SVRDIRS)
+#else
+SUBDIRS=$(CLIENTDIRS)
+#endif
+
+all:: 
+
+world::
+	make ${MFLAGS} clean-imake
+	make ${MFLAGS} Makefile
+	make ${MFLAGS} Makefiles
+	make ${MFLAGS} depend
+	make ${MFLAGS} all
+
+clean-imake:
+	cd util/imake; make clean
+	cd util/imake; make
+
+imake::
+	cd util/imake; make 
+
+install::
+	-mkdir ${DESTDIR}
+	-mkdir ${DESTDIR}${USRDIR}
+	-mkdir ${DESTDIR}${ETCDIR}
+	-mkdir ${DESTDIR}${PROGDIR}
+	-mkdir ${DESTDIR}${LIBDIR}
+	-mkdir ${DESTDIR}${LINTLIBDIR}
+	-mkdir ${DESTDIR}${INCLDIR}
+	-mkdir ${DESTDIR}${MANDIR}
+	-mkdir ${DESTDIR}${MANDIR}/man1
+	-mkdir ${DESTDIR}${MANDIR}/man3
+	-mkdir ${DESTDIR}${MANDIR}/man5
+	-mkdir ${DESTDIR}${MANDIR}/man8
+	-mkdir ./bin
+
+depend::
+	cd util/makedepend; make
+	cd util/et; make ${MFLAGS} DEPEND=../../$(DEPEND) depend; make ${MFLAGS} all
+	cd util/ss; make ${MFLAGS} DEPEND=../../$(DEPEND) depend; make ${MFLAGS} all

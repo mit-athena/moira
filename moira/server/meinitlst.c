@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/meinitlst.c,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/meinitlst.c,v 1.2 1988-09-13 17:40:40 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/meinitlst.c,v 1.3 1990-04-04 18:28:50 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -9,16 +9,19 @@
  *
  * 	This code is a reverse-engineered version of
  * 	~rtingres/lib/compatlib(meinitlst.o) with a better malloc and
- * 	free.
+ * 	free.  It only works with Ingres version 5 on the vax.
  */
 
 #ifndef lint
-static char *rcsid_meinitlst_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/meinitlst.c,v 1.2 1988-09-13 17:40:40 mar Exp $";
+static char *rcsid_meinitlst_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/meinitlst.c,v 1.3 1990-04-04 18:28:50 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
 #include <sys/errno.h>
 #include <sys/types.h>
+#include <moira_site.h>
+
+#if INGRESVER == 5 && defined(vax)
 
 /*
  * entry points:
@@ -87,8 +90,7 @@ caddr_t realloc(adr, nsize)
 	(void) free(adr);
 	return new_addr;
 }
-#endif notdef
-#ifdef notdef
+
 valloc(size)
 	int size;
 {
@@ -167,3 +169,4 @@ _memalign+df:   addl3   $10,r6,r0
 _memalign+e3:   ret
 */
 #endif notdef
+#endif /* INGRESVER == 5 && defined(vax) */

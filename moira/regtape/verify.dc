@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/verify.dc,v 1.3 1993-07-13 16:46:57 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/verify.dc,v 1.4 1993-07-14 10:36:10 mar Exp $
  *
  * This program will verify signatures on user records in the database.
  */
@@ -11,6 +11,7 @@
 #include <moira_site.h>
 #include <des.h>
 #include <krb.h>
+#include <krb_err.h>
 #include <gdss.h>
 EXEC SQL INCLUDE sqlca;
 
@@ -21,8 +22,9 @@ main(argc, argv)
 int argc;
 char **argv;
 {
-    char buf[BUFSIZ], *usercheck[100], sigbuf[256];
+    char buf[BUFSIZ], *usercheck[100], sigbuf[256], *data;
     SigInfo si;
+    struct save_queue *sq;
     int status, i, wait, check, debug, fix;
     EXEC SQL BEGIN DECLARE SECTION;
     char login[10], mid[32], rawsig[256], who[257];
@@ -64,6 +66,7 @@ char **argv;
 	    if (status != 0)
 	      com_err(program, status + krb_err_base, " in krb_get_pw_in_tkt");
 	}
+	com_err(program, 0, "authenticated OK");
 
 	sms = 0;
 	EXEC SQL SELECT string_id INTO :sms FROM strings 
@@ -73,6 +76,8 @@ char **argv;
 	    dest_tkt();
 	    exit(1);
 	}
+
+	sq = sq_create();
     }
 
     if (check == 0) {
@@ -100,14 +105,29 @@ char **argv;
 	    if (status) {
 		com_err(program, gdss2et(status), "verifying user %s", login);
 	    }
-	    if (fix && status == GDSS_ET_BADSIG) {
+	    if (fix && status == GDSS_E_BADSIG) {
+		sq_save_data(sq, strsave(buf));
+	    }
+	    if (wait) {
+		printf("Next");
+		fflush(stdout);
+		gets(buf);
+	    }
+	}
+	if (fix) {
+	    while (sq_get_data(sq, &data)) {
+		strncpy(login, data, 8);
+		if (index(login, ':'))
+		  *index(login, ':') = 0;
 	    again:
-		status = GDSS_Sign(buf, strlen(buf), sigbuf, &si);
+		com_err(program, 0, "fixing sig for %s", login);
+		status = GDSS_Sign(data, strlen(data), sigbuf, &si);
 		if (status) {
 		    com_err(program, gdss2et(status), "signing data");
 		    continue;
 		}
-		status = GDSS_Verify(data, strlen(data), buf, &si);
+		si.rawsig = (unsigned char *)rawsig;
+		status = GDSS_Verify(data, strlen(data), sigbuf, &si);
 		if (status) {
 		    com_err(program, gdss2et(status), "verifying data");
 		    continue;
@@ -127,11 +147,6 @@ char **argv;
 		    exit(1);
 		}
 		EXEC SQL COMMIT WORK;
-	    }
-	    if (wait) {
-		printf("Next");
-		fflush(stdout);
-		gets(buf);
 	    }
 	}
     } else {
@@ -160,29 +175,23 @@ char **argv;
 		}
 		si.rawsig = NULL;
 		status = GDSS_Verify(buf, strlen(buf), sigbuf, &si);
-		if (status)
-		  com_err(program, gdss2et(status), "verifying user %s", login);
-		else {
-		    com_err(program, 0, "signature verified %s", buf);
-		    if (debug == 2) {
-			hex_dump(sigbuf);
-		    }
-		}
-		if (fix && status == GDSS_ET_BADSIG) {
-		again:
-		    status = GDSS_Sign(buf, strlen(buf), sigbuf, &si);
+		if (fix && status == GDSS_E_BADSIG) {
+		    com_err(program, 0, "fixing signature for %s", login);
+		againagain:
+		    status = GDSS_Sign(buf, strlen(buf), sigbuf);
 		    if (status) {
 			com_err(program, gdss2et(status), "signing data");
 			continue;
 		    }
-		    status = GDSS_Verify(data, strlen(data), buf, &si);
+		    si.rawsig = (unsigned char *) rawsig;
+		    status = GDSS_Verify(buf, strlen(buf), sigbuf, &si);
 		    if (status) {
 			com_err(program, gdss2et(status), "verifying data");
 			continue;
 		    }
 		    if (strlen(rawsig) > 68) {
 			sleep(1);
-			goto again;
+			goto againagain;
 		    }
 
 		    timestamp = si.timestamp;
@@ -195,6 +204,13 @@ char **argv;
 			exit(1);
 		    }
 		    EXEC SQL COMMIT WORK;
+		} else if (status)
+		  com_err(program, gdss2et(status), "verifying user %s", login);
+		else {
+		    com_err(program, 0, "signature verified %s", buf);
+		    if (debug == 2) {
+			hex_dump(sigbuf);
+		    }
 		}
 		if (wait) {
 		    printf("Next");

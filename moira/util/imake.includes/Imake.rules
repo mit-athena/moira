@@ -1,3 +1,8 @@
+/**/#	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/util/imake.includes/Imake.rules,v $
+/**/#	$Author: jtkohl $
+/**/#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/util/imake.includes/Imake.rules,v 4.1 1988-03-18 15:37:13 jtkohl Exp $
+/**/#
+
 #ifdef __STDC__
 #define concat(x,y) x##y
 #define concat3(x,y,z) x##y##z
@@ -57,7 +62,7 @@ concat3(lib,libname,_p.a): objs						@@\
 	cd profiled; $(ARCHIVE) ../$@ objs				@@\
 	$(RANLIB) $@							@@\
 									@@\
-lint: concat3(llib-l,libname,.ln)					@@\
+lint:: concat3(llib-l,libname,.ln)					@@\
 									@@\
 concat3(llib-l,libname,.ln): srcs					@@\
 	$(LINT) concat(-C,libname) $(CFLAGS) srcs lintlibs 		@@\
@@ -69,11 +74,11 @@ clean:: 								@@\
 	$(RM) profiled/*.o						@@\
 									@@\
 install:: 								@@\
-	$(INSTALLFILE) concat3(lib,libname,.a) $(DESTDIR)/$(LIBDIR)	@@\
-	$(RANLIB) concat4($(DESTDIR)/$(LIBDIR),lib,libname,.a)		@@\
-	$(INSTALLFILE) concat3(lib,libname,_p.a) $(DESTDIR)/$(LIBDIR)   @@\
-	$(RANLIB) concat4($(DESTDIR)/$(LIBDIR),lib,libname,_p.a)	@@\
-	$(INSTALLFILE) concat3(llib-l,libname,.ln) $(DESTDIR)/$(LIBDIR)/lint
+	$(INSTALLFILE) concat3(lib,libname,.a) concat4($(DESTDIR)$(LIBDIR)/,lib,libname,.a)	@@\
+	$(RANLIB) concat4($(DESTDIR)$(LIBDIR),lib,libname,.a)		@@\
+	$(INSTALLFILE) concat3(lib,libname,_p.a) concat4($(DESTDIR)$(LIBDIR)/,lib,libname,_p.a)	@@\
+	$(RANLIB) concat4($(DESTDIR)$(LIBDIR),lib,libname,_p.a)		@@\
+	$(INSTALLFILE) concat3(llib-l,libname,.ln) concat4($(DESTDIR)$(LIBDIR)/lint,llib-l,libname,.ln)
 
 /*
  * Rule for building utilities (binaries which don't get installed)
@@ -142,6 +147,46 @@ clean::									@@\
 	$(RM) obj							@@\
 	
 /*
+ * Rule for building some random object module with compile flags and
+ * other dependendcies
+ */
+
+#define host_flag_object(obj,src,flags,localdeps)			@@\
+obj:	src localdeps							@@\
+	$(HCC) $(HCFLAGS) flags -c src					@@\
+									@@\
+clean::									@@\
+	$(RM) obj							@@\
+
+#define ro_flag_object(obj,src,flags,localdeps)				@@\
+obj:	src localdeps							@@\
+	$(CCRO) $(CFLAGS) flags -c src					@@\
+									@@\
+clean::									@@\
+	$(RM) obj							@@\
+	
+/*
+ * Rule for building some random object module with compile flags, an
+ * intermediate output, and some other dependencies
+ */
+
+#define host_cplx_object(obj,interim,src,flags,localdeps)		@@\
+obj:	src localdeps							@@\
+	$(HCC) $(HCFLAGS) flags -c src					@@\
+	$(MV) interim obj						@@\
+									@@\
+clean::									@@\
+	$(RM) obj							@@\
+
+#define ro_cplx_object(obj,interim,src,flags,localdeps)			@@\
+obj:	src localdeps							@@\
+	$(CCRO) $(CFLAGS) flags -c src					@@\
+	$(MV) interim obj						@@\
+									@@\
+clean::									@@\
+	$(RM) obj							@@\
+	
+/*
  * Rule for building a program which is to be installed:
  */
 
@@ -152,7 +197,23 @@ pgm: objs localdeps							@@\
 	$(CC) $(CFLAGS) -o $@ objs localdeps syslibs			@@\
 									@@\
 install::								@@\
-	$(INSTALLPROG) pgm ${DESTDIR}installdir				@@\
+	$(INSTALLPROG) pgm ${DESTDIR}installdir/pgm			@@\
+									@@\
+clean:: 								@@\
+	$(RM) pgm objs							@@\
+
+/*
+ * Rule for building a program which is to be installed setuid root:
+ */
+
+#define suidprogram(pgm,objs,localdeps,syslibs,installdir)		@@\
+all:: pgm								@@\
+									@@\
+pgm: objs localdeps							@@\
+	$(CC) $(CFLAGS) -o $@ objs localdeps syslibs			@@\
+									@@\
+install::								@@\
+	$(INSTALLSUID) pgm ${DESTDIR}installdir/pgm			@@\
 									@@\
 clean:: 								@@\
 	$(RM) pgm objs							@@\
@@ -168,13 +229,14 @@ pgm: objs localdeps							@@\
 	$(CC) $(CFLAGS) -o $@ objs localdeps syslibs			@@\
 									@@\
 install::								@@\
-	$(INSTALLPROG) instopts pgm ${DESTDIR}installdir		@@\
+	$(INSTALLRAW) instopts pgm ${DESTDIR}installdir/pgm		@@\
 									@@\
 clean:: 								@@\
 	$(RM) pgm objs							@@\
 
 /*
- * Rule for installing man pages.
+ * Rule for installing man pages.  Section installing into should match
+ * suffix, or the man page won't show up when using man(1).
  */
 
 #define manpage(section,page)						@@\
@@ -183,12 +245,12 @@ install:: page								@@\
 	$(INSTALLFILE) page concat3(${DESTDIR}${MANDIR}/man,section,/`basename page`) @@\
 
 /*
- * Rule for building makefile dependancies.
+ * Rule for building makefile dependencies.
  */
 
 #define	depend_target()							@@\
 depend:: $(SRCS)							@@\
-	@echo "### Now computing dependancies"				@@\
+	@echo "### Now computing dependencies"				@@\
 	@$(DEPEND) -s "# DO NOT DELETE" $(CFLAGS) $(SRCS)		@@\
 
 #define clean_target()							@@\

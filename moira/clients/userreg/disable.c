@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/disable.c,v 1.3 1988-09-12 17:28:56 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/disable.c,v 1.4 1991-03-08 10:28:41 mar Exp $
  *
  * disabled: check to see if registration is enabled right now.  Most of this
  * code is stolen from the cron daemon.
@@ -13,6 +13,9 @@
 #include <ctype.h>
 #include <sys/types.h>
 #include <sys/time.h>
+#ifdef _AUX_SOURCE
+#include <time.h>
+#endif /* _AUX_SOURCE */
 #include <sys/file.h>
 
 #define	LISTS	(2*BUFSIZ)
@@ -158,7 +161,7 @@ static init()
 static append(fn)
 char *fn;
 {
-	register i, c;
+	register int i, c;
 	register char *cp;
 	register char *ocp;
 	register int n;
@@ -252,10 +255,10 @@ ignore:
 }
 
 static number(c, f)
-register c;
+register char c;
 FILE *f;
 {
-	register n = 0;
+	register int n = 0;
 
 	while (isdigit(c)) {
 		n = n*10 + c - '0';

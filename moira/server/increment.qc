@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/increment.qc,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/increment.qc,v 1.2 1989-08-28 19:15:30 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/increment.qc,v 1.3 1989-09-01 15:02:36 mar Exp $
  *
  *	Copyright (C) 1989 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_qrtn_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/increment.qc,v 1.2 1989-08-28 19:15:30 mar Exp $";
+static char *rcsid_qrtn_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/increment.qc,v 1.3 1989-09-01 15:02:36 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -358,15 +358,15 @@ int argc;
 ##	retrieve (tab = incremental.table, serv = incremental.service) {
     	    c = (struct inc_cache *)malloc(sizeof(struct inc_cache));
 	    c->next = cache;
-	    c->table = strsave(tab);
-	    c->service = strsave(serv);
+	    c->table = strsave(strtrim(tab));
+	    c->service = strsave(strtrim(serv));
 	    cache = c;
 ##	}
     }
 
     for (c = cache; c; c = c->next) {
 	if (!strcmp(c->table, argv[1])) {
-	    sprintf(prog, "/u1/sms/bin/%s.incr", c->table);
+	    sprintf(prog, "/u1/sms/bin/%s.incr", c->service);
 	    argv[0] = prog;
 	    argv[argc] = 0;
 	    pid = vfork();

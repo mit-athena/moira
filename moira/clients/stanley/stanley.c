@@ -21,7 +21,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/stanley/stanley.c,v 1.4 2001-09-26 03:33:50 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/stanley/stanley.c,v 1.5 2001-09-26 04:49:24 zacheiss Exp $");
 
 struct string_list {
   char *string;
@@ -638,6 +638,8 @@ void show_user_info(char **argv)
 
 void show_user_info_unformatted(char **argv)
 {
+  int status;
+
   printf("Login name:            %s\n", argv[U_NAME]);
   printf("Full name:             %s, %s %s\n", argv[U_LAST], argv[U_FIRST], 
 	 argv[U_MIDDLE]);
@@ -647,7 +649,10 @@ void show_user_info_unformatted(char **argv)
   printf("Windows Console Shell: %s\n", argv[U_WINCONSOLESHELL]);
   printf("Account is:            %s\n", UserState(atoi(argv[U_STATE])));
   printf("MIT ID number:         %s\n", argv[U_MITID]);
-  printf("Secure:                %s\n", argv[U_SECURE]);
+  status = atoi(argv[U_STATE]);
+  if (status == 0 || status == 2)
+    printf("Secure:                %s secure Account Coupon to register\n",
+	   atoi(argv[U_SECURE]) ? "Needs" : "Does not need");
   printf("Comments:              %s\n", argv[U_COMMENT]);
   printf("Last mod by:           %s\n", argv[U_MODBY]);
   printf("Last mod on:           %s\n", argv[U_MODTIME]);

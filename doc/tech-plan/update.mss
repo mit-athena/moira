@@ -144,6 +144,7 @@ Updates for which the install command had been issued may get repeated
 if notification of completion was not returned to the SMS.
 
 @end(m)
+@end(en)
 
 @comment[Should this be someplace else?]
 

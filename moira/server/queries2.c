@@ -1,6 +1,6 @@
 /* This file defines the query dispatch table for version 2 of the protocol
  *
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/queries2.c,v 1.17 1989-09-08 15:36:11 mar Exp $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/queries2.c,v 1.18 1989-09-08 17:52:32 mar Exp $
  *
  * Copyright 1987, 1988 by the Massachusetts Institute of Technology.
  * For copying and distribution information, please see the file
@@ -670,7 +670,7 @@ static struct valobj uclu_valobj[] = {
 
 static struct validate uclu_validate = {
   uclu_valobj,
-  2,
+  3,
   0,
   0,
   0,

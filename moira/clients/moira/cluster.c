@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/cluster.c,v 1.26 1994-08-09 19:16:27 tytso Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/cluster.c,v 1.27 1995-09-12 23:20:18 jweiss Exp $";
 #endif lint
 
 /*	This is the file cluster.c for the MOIRA Client, which allows a nieve
@@ -10,8 +10,8 @@
  *	By:		Chris D. Peterson
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/cluster.c,v $
- *      $Author: tytso $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/cluster.c,v 1.26 1994-08-09 19:16:27 tytso Exp $
+ *      $Author: jweiss $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/cluster.c,v 1.27 1995-09-12 23:20:18 jweiss Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -547,13 +547,26 @@ Bool name;
          * The SetMachinedefaults() has been changed to reflect this.
          * pray for us and may we attain enlightenment through structures.  
          */
+
+
+	if(name) {
+	    /* info did not come from SetMachineDefaults(), which does not
+	     * initialize entry 8 (M_STAT_CHNG), therefore we can
+	     * free it.
+	     */
+	    /* This is an update of an existing machine and the structure
+	     * was filled in thru a query to the db which does fill in this
+	     * field.
+	     */
 	    free(info[8]);
-            info[8] = info[M_SUBNET];
-	    info[9] = info[M_ADDR];
-	    info[10] = info[M_OWNER_TYPE];
-	    info[11] = info[M_OWNER_NAME];
-	    info[12] = info[M_ACOMMENT];
-	    info[13] = info[M_OCOMMENT];
+	}
+	
+	info[8] = info[M_SUBNET];
+	info[9] = info[M_ADDR];
+	info[10] = info[M_OWNER_TYPE];
+	info[11] = info[M_OWNER_NAME];
+	info[12] = info[M_ACOMMENT];
+	info[13] = info[M_OCOMMENT];
 
         if(name)
           if (GetValueFromUser("Machine's network (or 'none')", &info[8])

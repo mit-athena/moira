@@ -1,5 +1,5 @@
 /*
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/cache.dc,v 2.12 1997-01-20 18:26:08 danw Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/cache.dc,v 2.13 1997-01-26 18:43:23 danw Exp $
  *
  *	Copyright (C) 1989, 1990 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -7,7 +7,7 @@
  */
 
 #ifndef lint
-static char *rcsid_cache_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/cache.dc,v 2.12 1997-01-20 18:26:08 danw Exp $";
+static char *rcsid_cache_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/cache.dc,v 2.13 1997-01-26 18:43:23 danw Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -334,6 +334,14 @@ void flush_name(name, type)
 
     h = hashname(name, type);
 
+    /* first clear it out of the transaction chain */
+    for (i = &cachehead; i && i->trans; i = i->trans) {
+        if (!strcmp(name, i->trans->name) && type==i->trans->type) {
+	    i->trans = i->trans->trans;
+	}
+    }
+
+    /* now remove it */
     for (i = cachehead.next; i != &cachehead; i = i->next) {
 	if (!strcmp(name, i->name) && type==i->type) {
 	    cachesize--;

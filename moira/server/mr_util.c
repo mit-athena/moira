@@ -1,11 +1,14 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_util.c,v $
  *	$Author: wesommer $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_util.c,v 1.4 1987-06-21 16:42:19 wesommer Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_util.c,v 1.5 1987-06-30 20:05:52 wesommer Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
  *	$Log: not supported by cvs2svn $
+ * Revision 1.4  87/06/21  16:42:19  wesommer
+ * Performance work, rearrangement of include files.
+ * 
  * Revision 1.3  87/06/04  01:35:28  wesommer
  * Added better logging routines.
  * 
@@ -18,7 +21,7 @@
  */
 
 #ifndef lint
-static char *rcsid_sms_util_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_util.c,v 1.4 1987-06-21 16:42:19 wesommer Exp $";
+static char *rcsid_sms_util_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_util.c,v 1.5 1987-06-30 20:05:52 wesommer Exp $";
 #endif lint
 
 #include "sms_server.h"
@@ -28,18 +31,17 @@ static char *rcsid_sms_util_c = "$Header: /afs/.athena.mit.edu/astaff/project/mo
 
 extern char *whoami;
 
-/*
- * XXX WARNING! THIS DOES NO RANGE CHECKING!!!
- * This is a temporary hack...
- */
 char *
-requote(buf, cp)
+requote(buf, cp, len)
 	char *buf;
 	register char *cp;
 {
+	register int count = 0;
 	register char c;
-	*buf++ = '"';
-	for( ; c= *cp; cp++){
+	if (len <= 2) return buf;
+	*buf++ = '"'; count++; len--;
+	for(; (count < 40) && (len > 1) && (c = *cp);
+	    cp++, --len, ++count) {
 		if (c == '\\' || c == '"') *buf++ = '\\';
 		if (isprint(c)) *buf++ = c;
 		else {
@@ -47,14 +49,16 @@ requote(buf, cp)
 			buf = index(buf, '\0');
 		}
 	}
-	*buf++ = '"';
-	*buf = '\0';
+	if (len > 1) { *buf++ = '"'; count++; len--; }
+	if (len > 3) {
+		*buf++ = '.'; count++; len--;
+		*buf++ = '.'; count++; len--;
+		*buf++ = '.'; count++; len--;
+	}
+	if (len > 1) *buf = '\0';
 	return buf;
 }
-/*
- * XXX WARNING! THIS DOES NO RANGE CHECKING!!!
- * This is a temporary hack...
- */
+
 log_args(argc, argv)
 	int argc;
 	char **argv;
@@ -63,12 +67,12 @@ log_args(argc, argv)
 	register int i;
 	register char *bp = buf;
 	
-	for (i = 0; i < argc; i++) {
+	for (i = 0; i < argc && ((buf - bp) + 1024) > 2; i++) {
 		if (i != 0) {
 			*bp++ = ',';
 			*bp++ = ' '; 
 		}
-		bp = requote(bp, argv[i]);
+		bp = requote(bp, argv[i], (buf - bp) + 1024);
 	}
 	*bp = '\0';
 	com_err(whoami, 0, buf);

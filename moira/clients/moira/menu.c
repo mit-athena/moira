@@ -5,7 +5,7 @@
  *
  * $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v $
  * $Author: mar $
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.23 1988-12-27 17:27:08 mar Exp $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.24 1989-06-26 13:42:39 mar Exp $
  *
  * Generic menu system module.
  *
@@ -18,7 +18,7 @@
  */
 
 #ifndef lint
-static char rcsid_menu_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.23 1988-12-27 17:27:08 mar Exp $";
+static char rcsid_menu_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.24 1989-06-26 13:42:39 mar Exp $";
 
 #endif lint
 
@@ -32,6 +32,10 @@ static char rcsid_menu_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moira
 #include <varargs.h>
 #include <com_err.h>
 #include "menu.h"
+
+#ifndef __STDC__
+#define const
+#endif
 
 #define MAX(A,B)	((A) > (B) ? (A) : (B))
 #define MIN(A,B)	((A) < (B) ? (A) : (B))
@@ -65,11 +69,11 @@ Menu *top_menu;			/* Root for command search */
  * curses instead of around it.
  */
 
-int
+void
 menu_com_err_hook(who, code, fmt, args)
-    char *who;
-    int code;
-    char *fmt;
+    const char *who;
+    long code;
+    const char *fmt;
     va_list args;
 {
     char buf[BUFSIZ], *cp;
@@ -103,7 +107,11 @@ Start_menu(m)
     Menu *m;
 {
     struct menu_screen *make_ms();
-    register int (*old_hook)() = set_com_err_hook(menu_com_err_hook);
+#ifdef __STDC__
+    register void (*old_hook)(const char *, long, const char *, va_list) = set_com_err_hook(menu_com_err_hook);
+#else
+    register void (*old_hook)() = set_com_err_hook(menu_com_err_hook);
+#endif
     
     if (initscr() == ERR) {
 	fputs("Can't initialize curses!\n", stderr);
@@ -197,7 +205,7 @@ Do_menu(m, margc, margv)
     int margc;
     char *margv[];
 {
-    struct menu_screen *my_ms, *old_cur_ms;
+    struct menu_screen *my_ms = NULLMS, *old_cur_ms = NULLMS;
     char argvals[MAX_ARGC][MAX_ARGLEN];	/* This is where args are stored */
     char buf[MAX_ARGC * MAX_ARGLEN];
     char *argv[MAX_ARGC];
@@ -375,7 +383,7 @@ int Prompt_input(prompt, buf, buflen)
 {
     int c;
     char *p;
-    int y, x, oldx;
+    int y, x, oldx, oldy;
 
     if (cur_ms != NULLMS) {
 	more_flg = 1;
@@ -388,6 +396,7 @@ int Prompt_input(prompt, buf, buflen)
 	getyx(cur_ms->ms_input, y, x);
 
 	oldx = x;
+	oldy = y;
 	p = buf;
 	while(1) {
 	    (void) wmove(cur_ms->ms_input, y, x);
@@ -411,6 +420,9 @@ int Prompt_input(prompt, buf, buflen)
 		refresh_ms(cur_ms);
 #endif notdef
 		getyx(cur_ms->ms_input, y, x);
+		oldy = y;
+		oldx = x;
+		p = buf;
 		break;
 
 	    case '\n':
@@ -422,12 +434,19 @@ int Prompt_input(prompt, buf, buflen)
 		if (p > buf) {
 		    p--;
 		    x--;
+		    if (x < 0) {
+			(void) wmove(cur_ms->ms_input, y, 0);
+			(void) wclrtoeol(cur_ms->ms_input);
+			y--;
+			x = cur_ms->ms_input->_maxx-1;
+		    }
 		}
 		break;
 	    case CTL('U'):
 	    case CTL('G'):
 	    case CTL('['):
 		x = oldx;
+		y = oldy;
 		p = buf;
 		break;
 	    default:
@@ -436,6 +455,10 @@ int Prompt_input(prompt, buf, buflen)
 		    (void) waddch(cur_ms->ms_input, c);
 		    *p++ = c;
 		    x++;
+		    if (x >= cur_ms->ms_input->_maxx) {
+			x = 0;
+			y++;
+		    }
 		} else
 		    putchar(CTL('G'));
 		break;

@@ -1,4 +1,4 @@
-; $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/forms.txt,v 1.5 1992-10-23 19:05:03 mar Exp $
+; $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/forms.txt,v 1.6 1992-11-04 17:57:48 mar Exp $
 ;
 
 ; { FORM_NAME	INSTRUCTION FIELD
@@ -108,19 +108,21 @@
 	Principal	s
 }
 
-{ show_filsys	Enter the name, machine, or owning group to see one or more filesystems.
+{ show_filsys	Enter the name, machine, owning group, or path to see one or more filesystems.
 	Name	s
     or
 	Machine s
 	Partition s
     or
 	Group	s
+    or
+	Path	s
 }
 ; add/modify
 { add_filsys	Enter the new filesystem information.
 	Name	s
 	Type|filesys	K
-	Machine	s
+	Machine/Cell	s
 	Remote name s
 	Mountpoint s
 	Access mode|fs_access_NFS	K
@@ -133,7 +135,7 @@
 { mod_filsys	Update the filesystem information.
 	Name	s
 	Type|filesys	K
-	Machine	s
+	Machine/Cell	s
 	Remote name s
 	Mountpoint s
 	Access mode|fs_access_NFS	K

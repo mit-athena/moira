@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_server.h,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_server.h,v 1.11 1988-08-05 16:05:46 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_server.h,v 1.12 1988-08-11 17:22:16 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
@@ -84,7 +84,7 @@ extern int log_flags;
 
 
 /* max length of query argument allowed */
-#define ARGLEN	128
+#define ARGLEN	257
 
 /* statistics on number of queries by version number */
 extern int newqueries, oldqueries;

@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/winad/winad.c,v 1.30 2002-08-06 22:09:24 zacheiss Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/winad/winad.c,v 1.31 2002-12-03 21:26:06 zacheiss Exp $
 /* winad.incr arguments examples
  *
  * arguments when moira creates the account - ignored by winad.incr since the account is unusable.
@@ -5102,13 +5102,15 @@ int Moira_container_group_create(char **after)
   argv[L_GROUP] = "1";
   argv[L_GID] = UNIQUE_GID;
   argv[L_NFSGROUP] = "0";
+  argv[L_MAILMAN] = "0";
+  argv[L_MAILMAN_SERVER] = "[NONE]";
   argv[L_DESC] = "auto created container group";
   argv[L_ACE_TYPE] = "USER";
   argv[L_MEMACE_TYPE] = "USER";
   argv[L_ACE_NAME] = "sms";
   argv[L_MEMACE_NAME] = "sms";
 
-  if (rc = mr_query("add_list", 13, argv, NULL, NULL))
+  if (rc = mr_query("add_list", 15, argv, NULL, NULL))
     {
       com_err(whoami, 0, "couldn't create container group %s for container %s: %s",
 	      GroupName, after[CONTAINER_NAME], error_message(rc));
@@ -5152,13 +5154,15 @@ int Moira_container_group_update(char **before, char **after)
       argv[L_GROUP + 1] = "1";
       argv[L_GID + 1] = UNIQUE_GID;
       argv[L_NFSGROUP + 1] = "0";
+      argv[L_MAILMAN + 1] = "0";
+      argv[L_MAILMAN_SERVER + 1] = "[NONE]";
       argv[L_DESC + 1] = "auto created container group";
       argv[L_ACE_TYPE + 1] = "USER";
       argv[L_MEMACE_TYPE + 1] = "USER";
       argv[L_ACE_NAME + 1] = "sms";
       argv[L_MEMACE_NAME + 1] = "sms";
       
-      if (rc = mr_query("update_list", 14, argv, NULL, NULL))
+      if (rc = mr_query("update_list", 16, argv, NULL, NULL))
 	{
 	  com_err(whoami, 0, "couldn't rename container group from %s to %s: %s",
 		  BeforeGroupName, AfterGroupName, error_message(rc));

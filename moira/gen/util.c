@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/util.c,v 1.1 1988-06-20 12:51:49 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/util.c,v 1.2 1988-08-05 19:14:53 mar Exp $
  *
  * Utility routines used by the SMS extraction programs.
  */
@@ -6,42 +6,8 @@
 
 #include <stdio.h>
 #include <sys/time.h>
-
-char *malloc();
-
-
-/* Trim trailing spaces from a string by replacing one of them with a null.
- */
-
-trim(s)
-register char *s;
-{
-    register char *p;
-
-    for (p = s; *s; s++)
-      if (*s != ' ')
-	p = s;
-    if (p != s) {
-	if (*p == ' ')
-	  *p = 0;
-	else
-	  p[1] = 0;
-    }
-}
-
-
-/* return a "saved" copy of the string */
-
-char *strsave(s)
-register char *s;
-{
-    register char *r;
-
-    r = malloc(strlen(s) + 1);
-    strcpy(r, s);
-    return(r);
-}
-
+#include <sms.h>
+#include <sms_app.h>
 
 
 /* ingres_date_and_time: passed a unix time_t, returns a string that ingres
@@ -111,3 +77,43 @@ char *ingres_date(t)
 	}
 }
 
+
+fix_file(targetfile)
+char *targetfile;
+{
+    char oldfile[64], filename[64];
+
+    sprintf(oldfile, "%s.old", targetfile);
+    sprintf(filename, "%s~", targetfile);
+    if (rename(targetfile, oldfile) == 0) {
+	if (rename(filename, targetfile) < 0) {
+	    rename(oldfile, targetfile);
+	    perror("Unable to install new file (rename failed)\n");
+	    fprintf(stderr, "Filename = %s\n", targetfile);
+	    exit(SMS_CCONFIG);
+	}
+    } else {
+	if (rename(filename, targetfile) < 0) {
+	    perror("Unable to rename old file\n");
+	    fprintf(stderr, "Filename = %s\n", targetfile);
+	    exit(SMS_CCONFIG);
+	}
+    }
+    unlink(oldfile);
+}
+
+
+char *dequote(s)
+register char *s;
+{
+    char *last = s;
+
+    while (*s) {
+	if (*s == '"')
+	  *s = '\'';
+	else if (*s != ' ')
+	  last = s;
+	s++;
+    }
+    *(++last) = '\0';
+}

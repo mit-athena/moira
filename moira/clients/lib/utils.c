@@ -1,4 +1,4 @@
-/* $Id: utils.c,v 1.1 1999-05-13 18:52:29 danw Exp $
+/* $Id: utils.c,v 1.2 1999-12-30 17:30:01 danw Exp $
  *
  * Random client utilities.
  *
@@ -17,11 +17,11 @@
 #include <com_err.h>
 #include <krb.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/lib/utils.c,v 1.1 1999-05-13 18:52:29 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/lib/utils.c,v 1.2 1999-12-30 17:30:01 danw Exp $");
 
 extern char *whoami;
 
-int mrcl_connect(char *server, char *client, int auth)
+int mrcl_connect(char *server, char *client, int version, int auth)
 {
   int status;
   char *motd;
@@ -46,6 +46,30 @@ int mrcl_connect(char *server, char *client, int auth)
 	      motd);
       mr_disconnect();
       return MRCL_FAIL;
+    }
+
+  status = mr_version(version);
+  if (status)
+    {
+      if (status == MR_UNKNOWN_PROC)
+	{
+	  if (version > 2)
+	    status == MR_VERSION_HIGH;
+	  else
+	    status == MR_SUCCESS;
+	}
+
+      if (status == MR_VERSION_HIGH)
+	{
+	  com_err(whoami, 0, "Warning: This client is running newer code than the server.");
+	  com_err(whoami, 0, "Some operations may not work.");
+	}
+      else if (status != MR_VERSION_LOW)
+	{
+	  com_err(whoami, status, "while setting query version number.");
+	  mr_disconnect();
+	  return MRCL_FAIL;
+	}
     }
 
   if (auth)

@@ -3,9 +3,12 @@
 #	MIT Project Athena
 #
 #	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/Makefile,v $
-#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/Makefile,v 1.5 1987-08-08 23:38:10 ambar Exp $
-#	$Author: ambar $
+#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/Makefile,v 1.6 1987-12-22 12:50:53 mar Exp $
+#	$Author: mar $
 #	$Log: not supported by cvs2svn $
+# Revision 1.5  87/08/08  23:38:10  ambar
+# passwd now links with smslib
+# 
 # Revision 1.4  87/08/03  05:13:22  wesommer
 # changed libmisc to libcom_err.a
 # 
@@ -51,4 +54,4 @@ install:	${PROGS}
 	install passwd ${DESTDIR}/usr/athena/passwd
 	install chsh ${DESTDIR}/usr/athena/chsh
 	install chfn ${DESTDIR}/usr/athena/chfn
-	install chpobox ${DESTDIR}/usr/athena/chpobox
+#	install chpobox ${DESTDIR}/usr/athena/chpobox

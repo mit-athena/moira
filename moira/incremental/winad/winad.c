@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/winad/winad.c,v 1.32 2003-03-10 09:05:12 zacheiss Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/winad/winad.c,v 1.33 2003-03-11 04:55:55 zacheiss Exp $
 /* winad.incr arguments examples
  *
  * arguments when moira creates the account - ignored by winad.incr since the account is unusable.
@@ -5091,7 +5091,7 @@ int Moira_container_group_create(char **after)
 {
   long rc;
   char GroupName[64];
-  char *argv[13];
+  char *argv[20];
   
   memset(GroupName, '\0', sizeof(GroupName));
   rc = Moira_groupname_create(GroupName, after[CONTAINER_NAME], 
@@ -5132,7 +5132,7 @@ int Moira_container_group_update(char **before, char **after)
   long rc;
   char BeforeGroupName[64];
   char AfterGroupName[64];
-  char *argv[15];
+  char *argv[20];
   
   if (!strcasecmp(after[CONTAINER_NAME], before[CONTAINER_NAME]))
     return(0);

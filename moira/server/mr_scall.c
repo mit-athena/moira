@@ -1,4 +1,4 @@
-/* $Id: mr_scall.c,v 1.32 1998-02-15 17:49:14 danw Exp $
+/* $Id: mr_scall.c,v 1.33 1998-02-23 19:24:32 danw Exp $
  *
  * Do RPC
  *
@@ -24,7 +24,7 @@
 #include <string.h>
 #include <unistd.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_scall.c,v 1.32 1998-02-15 17:49:14 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_scall.c,v 1.33 1998-02-23 19:24:32 danw Exp $");
 
 extern int nclients;
 extern client **clients;
@@ -74,6 +74,7 @@ void client_read(client *cl)
     {
       com_err(whoami, 0, "procno out of range");
       client_reply(cl, MR_UNKNOWN_PROC);
+      mr_destroy_reply(req);
       return;
     }
   log_args(procnames[pn], 2, req.mr_argc, req.mr_argv);
@@ -82,6 +83,7 @@ void client_read(client *cl)
     {
       client_reply(cl, MR_DOWN);
       com_err(whoami, MR_DOWN, "(query refused)");
+      mr_destroy_reply(req);
       return;
     }
 
@@ -92,32 +94,33 @@ void client_read(client *cl)
     {
     case MR_NOOP:
       client_reply(cl, MR_SUCCESS);
-      return;
+      break;
 
     case MR_AUTH:
       do_auth(cl, req);
-      return;
+      break;
 
     case MR_QUERY:
       do_retr(cl, req);
-      return;
+      break;
 
     case MR_ACCESS:
       do_access(cl, req);
-      return;
+      break;
 
     case MR_SHUTDOWN:
       do_shutdown(cl);
-      return;
+      break;
 
     case MR_DO_UPDATE:
       client_reply(cl, MR_PERM);
-      return;
+      break;
 
     case MR_MOTD:
       get_motd(cl);
-      return;
+      break;
     }
+  mr_destroy_reply(req);
 }
 
 /* Set the final return status for a query. We always keep one more

@@ -1,4 +1,4 @@
-/* $Id: cache.pc,v 2.6 1998-02-15 17:49:11 danw Exp $
+/* $Id: cache.pc,v 2.7 1998-02-23 19:24:28 danw Exp $
  *
  * Keep a cache of name/id mappings
  *
@@ -16,7 +16,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/cache.pc,v 2.6 1998-02-15 17:49:11 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/cache.pc,v 2.7 1998-02-23 19:24:28 danw Exp $");
 
 EXEC SQL WHENEVER SQLERROR DO dbmserr();
 
@@ -24,10 +24,9 @@ extern char *whoami;
 
 /* Cache parameters: */
 #define CACHESIZE 101		/* number of cache slots */
-#define NAMESZ 257		/* max size of a name */
 
 struct item {
-  char name[NAMESZ];
+  char name[MAX_FIELD_WIDTH];
   enum tables type;
   int nhash;
   int id;
@@ -135,7 +134,7 @@ int name_to_id(char *name, enum tables type, int *id)
     case SUBNET_TABLE:
       EXEC SQL SELECT snet_id INTO :j FROM subnet WHERE name = UPPER(:iname);
       break;
-    case CLUSTER_TABLE:
+    case CLUSTERS_TABLE:
       EXEC SQL SELECT clu_id INTO :j FROM clusters WHERE name = :iname;
       break;
     case FILESYS_TABLE:
@@ -164,6 +163,8 @@ int name_to_id(char *name, enum tables type, int *id)
   if (cachesize < CACHESIZE)
     {
       i = malloc(sizeof(struct item));
+      if (!i)
+	return MR_SUCCESS;
       cachesize++;
     }
   else
@@ -199,7 +200,7 @@ int id_to_name(int id, enum tables type, char **name)
 {
   struct item *i, *t;
   EXEC SQL BEGIN DECLARE SECTION;
-  char iname[NAMESZ];
+  char iname[MAX_FIELD_WIDTH];
   int j;
   EXEC SQL END DECLARE SECTION;
 
@@ -208,7 +209,7 @@ int id_to_name(int id, enum tables type, char **name)
       if (i->id != id || type != i->type)
 	continue;
       free(*name);
-      *name = strdup(i->name);
+      *name = xstrdup(i->name);
       cachehits++;
       i->next->prev = i->prev;
       i->prev->next = i->next;
@@ -236,7 +237,7 @@ int id_to_name(int id, enum tables type, char **name)
     case SUBNET_TABLE:
       EXEC SQL SELECT name INTO :iname FROM subnet WHERE snet_id = :j;
       break;
-    case CLUSTER_TABLE:
+    case CLUSTERS_TABLE:
       EXEC SQL SELECT name INTO :iname FROM clusters WHERE clu_id = :j;
       break;
     case FILESYS_TABLE:
@@ -252,7 +253,7 @@ int id_to_name(int id, enum tables type, char **name)
     {
       free(*name);
       sprintf(iname, "#%d", j);
-      *name = strdup(iname);
+      *name = xstrdup(iname);
       return MR_NO_MATCH;
     }
   if (sqlca.sqlerrd[2] > 1)
@@ -260,12 +261,14 @@ int id_to_name(int id, enum tables type, char **name)
   if (sqlca.sqlcode)
     return MR_DBMS_ERR;
   free(*name);
-  *name = strdup(strtrim(iname));
+  *name = xstrdup(strtrim(iname));
   if (**name == '#' && type != USERS_TABLE)
     return MR_SUCCESS;
   if (cachesize < CACHESIZE)
     {
       i = malloc(sizeof(struct item));
+      if (!i)
+	return MR_SUCCESS;
       cachesize++;
     }
   else
@@ -315,6 +318,8 @@ int cache_entry(char *name, enum tables type, int id)
   if (cachesize < CACHESIZE)
     {
       i = malloc(sizeof(struct item));
+      if (!i)
+	return MR_SUCCESS;
       cachesize++;
     }
   else

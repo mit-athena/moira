@@ -1,4 +1,4 @@
-/* $Id: mr_util.c,v 1.30 1998-02-15 17:49:16 danw Exp $
+/* $Id: mr_util.c,v 1.31 1998-02-23 19:24:33 danw Exp $
  *
  * Copyright (C) 1987-1998 by the Massachusetts Institute of Technology
  * For copying and distribution information, please see the file
@@ -13,64 +13,71 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_util.c,v 1.30 1998-02-15 17:49:16 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_util.c,v 1.31 1998-02-23 19:24:33 danw Exp $");
 
 extern char *whoami;
 
-char *requote(char *buf, char *cp, int len)
+char *requote(char *cp)
 {
-  int count = 0;
-  unsigned char c;
-  if (len <= 2)
-    return buf;
-  *buf++ = '"';
-  count++;
-  len--;
-  for (; (count < 258) && (len > 1) && (c = *cp); cp++, --len, ++count)
+  int len = 0;
+  char *out = xmalloc(4 * strlen(cp) + 3), *op = out;
+
+  *op++ = '"';
+  len++;
+  while (*cp)
     {
-      if (c == '\\' || c == '"')
-	*buf++ = '\\';
-      if (isprint(c))
-	*buf++ = c;
+      if (*cp == '\\' || *cp == '"')
+	{
+	  *op++ = '\\';
+	  len++;
+	}
+      if (isprint(*cp))
+	{
+	  *op++ = *cp++;
+	  len++;
+	}
       else
 	{
-	  sprintf(buf, "\\%03o", c);
-	  buf = strchr(buf, '\0');
+	  sprintf(op, "\\%03o", *cp++);
+	  op += 4;
+	  len += 4;
 	}
     }
-  if (len > 1)
-    {
-      *buf++ = '"';
-      count++;
-      len--;
-    }
-  if (len > 1)
-    *buf = '\0';
-  return buf;
+
+  strcpy(op, "\"");
+  len += 2;
+
+  out = realloc(out, len); /* shrinking, so can't fail */
+  return out;
 }
 
 void log_args(char *tag, int version, int argc, char **argv)
 {
-  char buf[BUFSIZ];
-  int i;
+  char *buf, **qargv;
+  int i, len;
   char *bp;
 
-  i = strlen(tag);
-  sprintf(buf, "%s[%d]: ", tag, version);
-  for (bp = buf; *bp; bp++)
-    ;
+  qargv = xmalloc(argc * sizeof(char *));
 
-  for (i = 0; i < argc && ((buf - bp) + BUFSIZ) > 2; i++)
+  for (i = len = 0; i < argc; i++)
     {
-      if (i != 0)
-	{
-	  *bp++ = ',';
-	  *bp++ = ' ';
-	}
-      bp = requote(bp, argv[i], (buf - bp) + BUFSIZ);
+      qargv[i] = requote(argv[i]);
+      len += strlen(qargv[i]) + 2;
     }
-  *bp = '\0';
-  com_err(whoami, 0, "%s", buf);
+
+  buf = xmalloc(len + 1);
+
+  for (i = 0, *buf = '\0'; i < argc; i++)
+    {
+      if (i)
+	strcat(buf, ", ");
+      strcat(buf, qargv[i]);
+      free(qargv[i]);
+    }
+  free(qargv);
+
+  com_err(whoami, 0, "%s[%d]: %s", tag, version, buf);
+  free(buf);
 }
 
 void mr_com_err(const char *whoami, long code, const char *fmt, va_list pvar)
@@ -141,11 +148,9 @@ char **mr_copy_args(char **argv, int argc)
   char **a;
   int i;
 
-  a = malloc(argc * sizeof(char *));
-  if (!a)
-    return a;
+  a = xmalloc(argc * sizeof(char *));
   for (i = 0; i < argc; i++)
-    a[i] = strdup(argv[i]);
+    a[i] = xstrdup(argv[i]);
   return a;
 }
 
@@ -165,6 +170,17 @@ void *xmalloc(size_t bytes)
 void *xrealloc(void *ptr, size_t bytes)
 {
   void *buf = realloc(ptr, bytes);
+
+  if (buf)
+    return buf;
+
+  critical_alert("moirad", "Out of memory");
+  exit(1);
+}
+
+char *xstrdup(char *str)
+{
+  char *buf = strdup(str);
 
   if (buf)
     return buf;

@@ -1,4 +1,4 @@
-/* $Id: mr_glue.c,v 1.24 1998-02-15 17:49:12 danw Exp $
+/* $Id: mr_glue.c,v 1.25 1998-02-23 19:24:29 danw Exp $
  *
  * Glue routines to allow the database stuff to be linked in to
  * a program expecting a library level interface.
@@ -23,7 +23,7 @@
 
 extern char *krb_get_lrealm(char *, int);
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_glue.c,v 1.24 1998-02-15 17:49:12 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_glue.c,v 1.25 1998-02-23 19:24:29 danw Exp $");
 
 static int already_connected = 0;
 
@@ -86,7 +86,7 @@ int mr_noop(void)
 int mr_auth(char *prog)
 {
   struct passwd *pw;
-  char buf[1024];
+  char buf[MAX_K_NAME_SZ];
 
   CHECK_CONNECTED;
   pw = getpwuid(getuid());
@@ -154,7 +154,7 @@ struct query pseudo_query = {
 int trigger_dcm(struct query *q, char *argv[], client *cl)
 {
   int pid, status;
-  char prog[128];
+  char prog[MAXPATHLEN];
 
   if ((status = check_query_access(&pseudo_query, 0, cl)))
     return status;

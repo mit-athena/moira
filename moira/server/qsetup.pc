@@ -1,4 +1,4 @@
-/* $Id: qsetup.pc,v 2.10 1998-02-15 17:49:19 danw Exp $
+/* $Id: qsetup.pc,v 2.11 1998-02-23 19:24:37 danw Exp $
  *
  * Query setup routines
  *
@@ -21,7 +21,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsetup.pc,v 2.10 1998-02-15 17:49:19 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsetup.pc,v 2.11 1998-02-23 19:24:37 danw Exp $");
 
 extern char *whoami;
 extern int dbms_errno, mr_errcode;
@@ -132,7 +132,7 @@ int setup_spop(struct query *q, char *argv[], client *cl)
 {
   EXEC SQL BEGIN DECLARE SECTION;
   int id, mid;
-  char type[9];
+  char type[USERS_POTYPE_SIZE];
   EXEC SQL END DECLARE SECTION;
 
   id = *(int *)argv[0];
@@ -156,7 +156,7 @@ int setup_dpob(struct query *q, char *argv[], client *cl)
 {
   EXEC SQL BEGIN DECLARE SECTION;
   int id, user;
-  char type[9];
+  char type[USERS_POTYPE_SIZE];
   EXEC SQL END DECLARE SECTION;
 
   user = *(int *)argv[0];
@@ -497,7 +497,7 @@ int setup_afil(struct query *q, char *argv[], client *cl)
   int mach_id;
   EXEC SQL BEGIN DECLARE SECTION;
   int ok;
-  char ftype[32], *rwaccess;
+  char ftype[FILESYS_TYPE_SIZE + 10], *rwaccess;
   EXEC SQL END DECLARE SECTION;
 
   type = argv[1];
@@ -535,7 +535,7 @@ int setup_ufil(struct query *q, char *argv[], client *cl)
   char *type, *name;
   EXEC SQL BEGIN DECLARE SECTION;
   int fid, total, who, ok;
-  char *entity, ftype[32], *access;
+  char *entity, ftype[FILESYS_TYPE_SIZE + 10], *access;
   short int total_null;
   EXEC SQL END DECLARE SECTION;
 
@@ -608,7 +608,7 @@ int setup_ufil(struct query *q, char *argv[], client *cl)
 int check_nfs(int mach_id, char *name, char *access)
 {
   EXEC SQL BEGIN DECLARE SECTION;
-  char dir[81];
+  char dir[NFSPHYS_DIR_SIZE];
   int mid = mach_id;
   EXEC SQL END DECLARE SECTION;
   int status;
@@ -849,7 +849,8 @@ int prefetch_filesys(struct query *q, char **argv, client *cl)
 int setup_ahst(struct query *q, char **argv, client *cl)
 {
   EXEC SQL BEGIN DECLARE SECTION;
-  char *name, oldname[41], vendor[17], model[25], os[17];
+  char *name, oldname[MACHINE_NAME_SIZE], vendor[MACHINE_VENDOR_SIZE];
+  char *model[MACHINE_MODEL_SIZE], os[MACHINE_OS_SIZE];
   int value, id, saddr, mask, high, low, cnt;
   EXEC SQL END DECLARE SECTION;
   int row;

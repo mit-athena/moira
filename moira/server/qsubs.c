@@ -1,4 +1,4 @@
-/* $Id: qsubs.c,v 1.15 1998-02-15 17:49:19 danw Exp $
+/* $Id: qsubs.c,v 1.16 1998-02-23 19:24:37 danw Exp $
  *
  * Copyright (C) 1987-1998 by the Massachusetts Institute of Technology
  * For copying and distribution information, please see the file
@@ -11,7 +11,7 @@
 
 #include <stdlib.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsubs.c,v 1.15 1998-02-15 17:49:19 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsubs.c,v 1.16 1998-02-23 19:24:37 danw Exp $");
 
 extern struct query Queries2[];
 extern int QueryCount2;
@@ -61,7 +61,7 @@ void list_queries(int (*action)(int, char *[], void *), void *actarg)
   count = QueryCount2;
   if (!squeries2)
     {
-      sq = malloc(count * sizeof(struct query *));
+      sq = xmalloc(count * sizeof(struct query *));
       squeries2 = sq;
       q = Queries2;
       for (i = count; --i >= 0; )

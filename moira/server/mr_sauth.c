@@ -1,4 +1,4 @@
-/* $Id: mr_sauth.c,v 1.25 1998-02-15 17:49:13 danw Exp $
+/* $Id: mr_sauth.c,v 1.26 1998-02-23 19:24:31 danw Exp $
  *
  * Handle server side of authentication
  *
@@ -19,7 +19,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_sauth.c,v 1.25 1998-02-15 17:49:13 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_sauth.c,v 1.26 1998-02-23 19:24:31 danw Exp $");
 
 extern char *whoami, *host;
 
@@ -62,7 +62,7 @@ void do_auth(client *cl, mr_params req)
 
   if (!rcache)
     {
-      rcache = malloc(sizeof(replay_cache));
+      rcache = xmalloc(sizeof(replay_cache));
       memset(rcache, 0, sizeof(replay_cache));
     }
 
@@ -84,7 +84,7 @@ void do_auth(client *cl, mr_params req)
 
   /* add new entry */
   time(&now);
-  rcnew = malloc(sizeof(replay_cache));
+  rcnew = xmalloc(sizeof(replay_cache));
   memcpy(&(rcnew->auth), &auth, sizeof(KTEXT_ST));
   rcnew->expires = now + 2 * CLOCK_SKEW;
   rcnew->next = rcache->next;
@@ -106,7 +106,9 @@ void do_auth(client *cl, mr_params req)
   memcpy(cl->kname.name, ad.pname, ANAME_SZ);
   memcpy(cl->kname.inst, ad.pinst, INST_SZ);
   memcpy(cl->kname.realm, ad.prealm, REALM_SZ);
-  strcpy(cl->clname, kname_unparse(ad.pname, ad.pinst, ad.prealm));
+  strncpy(cl->clname, kname_unparse(ad.pname, ad.pinst, ad.prealm),
+	  sizeof(cl->clname));
+  cl->clname[sizeof(cl->clname) - 1] = '\0';
 
   if (ad.pinst[0] == 0 && !strcmp(ad.prealm, krb_realm))
     ok = 1;

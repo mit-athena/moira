@@ -1,4 +1,4 @@
-/* $Id: mr_server.h,v 1.33 1998-02-15 17:49:14 danw Exp $
+/* $Id: mr_server.h,v 1.34 1998-02-23 19:24:32 danw Exp $
  *
  * Copyright (C) 1987-1998 by the Massachusetts Institute of Technology
  * For copying and distribution information, please see the file
@@ -8,6 +8,7 @@
 #include <moira.h>
 #include <mr_private.h>
 #include <moira_site.h>
+#include <moira_schema.h>
 
 #include <netinet/in.h>
 
@@ -127,13 +128,14 @@ void sigshut(int);
 void do_shutdown(client *cl);
 
 /* prototypes from mr_util.c */
-char *requote(char *buf, char *cp, int len);
+char *requote(char *buf);
 void log_args(char *tag, int version, int argc, char **argv);
 void mr_com_err(const char *whoami, long code, const char *fmt, va_list pvar);
 int mr_trim_args(int argc, char **argv);
 char **mr_copy_args(char **argv, int argc);
 void *xmalloc(size_t);
 void *xrealloc(void *, size_t);
+char *xstrdup(char *);
 
 /* prototypes from qaccess.pc */
 int access_user(struct query *q, char *argv[], client *cl);

@@ -1,4 +1,4 @@
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/Imakefile,v 1.9 1998-02-15 17:49:10 danw Exp $
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/Imakefile,v 1.10 1998-02-23 19:24:28 danw Exp $
 #
 # Copyright 1990 by the Massachusetts Institute of Technology.
 #
@@ -25,7 +25,7 @@ CODE= startmoira.c mr_main.c mr_sauth.c mr_scall.c \
 SRVOBJ=mr_main.o mr_sauth.o mr_scall.o mr_shutdown.o \
 	mr_util.o qrtn.o queries2.o qsupport.o qsubs.o \
 	increment.o cache.o qvalidate.o \
-	qaccess.o qsetup.o qfollow.o
+	qaccess.o qsetup.o qfollow.o ../db/moira_schema.o
 GLUOBJS=mr_glue.o qrtn.o queries2.o qsupport.o qsubs.o \
 	../lib/mr_et.o mr_sauth.o \
 	../lib/krb_et.o mr_util.o increment.o cache.o \

@@ -1,4 +1,4 @@
-/* $Id: qaccess.pc,v 2.8 1998-02-08 18:42:37 danw Exp $
+/* $Id: qaccess.pc,v 2.9 1998-02-23 19:24:33 danw Exp $
  *
  * Check access to queries
  *
@@ -17,14 +17,10 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qaccess.pc,v 2.8 1998-02-08 18:42:37 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qaccess.pc,v 2.9 1998-02-23 19:24:33 danw Exp $");
 
 extern char *whoami;
 extern int dbms_errno, mr_errcode;
-
-EXEC SQL BEGIN DECLARE SECTION;
-extern char stmt_buf[];
-EXEC SQL END DECLARE SECTION;
 
 EXEC SQL WHENEVER SQLERROR DO dbmserr();
 
@@ -98,7 +94,7 @@ int access_login(struct query *q, char *argv[], client *cl)
  * Inputs: argv[0] - list_id
  *	    q - query name
  *	    argv[2] - member ID (only for queries "amtl" and  "dmfl")
- *	    argv[7] - group IID (only for query "ulis")
+ *	    argv[7] - group ID (only for query "ulis")
  *          cl - client name
  *
  * - check that client is a member of the access control list
@@ -110,7 +106,7 @@ int access_list(struct query *q, char *argv[], client *cl)
 {
   EXEC SQL BEGIN DECLARE SECTION;
   int list_id, acl_id, flags, gid, users_id;
-  char acl_type[9], name[33], *newname;
+  char acl_type[LIST_ACL_TYPE_SIZE], name[LIST_NAME_SIZE], *newname;
   EXEC SQL END DECLARE SECTION;
   int status;
 
@@ -173,7 +169,7 @@ int access_visible_list(struct query *q, char *argv[], client *cl)
 {
   EXEC SQL BEGIN DECLARE SECTION;
   int list_id, acl_id, flags ;
-  char acl_type[9];
+  char acl_type[LIST_ACL_TYPE_SIZE];
   EXEC SQL END DECLARE SECTION;
   int status;
 
@@ -207,7 +203,7 @@ int access_vis_list_by_name(struct query *q, char *argv[], client *cl)
 {
   EXEC SQL BEGIN DECLARE SECTION;
   int acl_id, flags, rowcount;
-  char acl_type[9], *listname;
+  char acl_type[LIST_ACL_TYPE_SIZE], *listname;
   EXEC SQL END DECLARE SECTION;
   int status;
 
@@ -279,7 +275,7 @@ int access_service(struct query *q, char *argv[], client *cl)
 {
   EXEC SQL BEGIN DECLARE SECTION;
   int acl_id;
-  char *name, acl_type[9];
+  char *name, acl_type[LIST_ACL_TYPE_SIZE];
   EXEC SQL END DECLARE SECTION;
   int status;
   char *c;
@@ -339,7 +335,7 @@ int access_host(struct query *q, char *argv[], client *cl)
 {
   EXEC SQL BEGIN DECLARE SECTION;
   int mid, sid, id;
-  char mtype[9], stype[9];
+  char mtype[MACHINE_OWNER_TYPE_SIZE], stype[SUBNET_OWNER_TYPE_SIZE];
   EXEC SQL END DECLARE SECTION;
   int status;
 
@@ -373,7 +369,7 @@ int access_host(struct query *q, char *argv[], client *cl)
     {
       EXEC SQL BEGIN DECLARE SECTION;
       int status, acomment, use, ocomment, snid;
-      char contact[33], address[33];
+      char contact[MACHINE_CONTACT_SIZE], address[MACHINE_ADDRESS_SIZE];
       EXEC SQL END DECLARE SECTION;
 
       id = *(int *)argv[0];
@@ -432,7 +428,7 @@ int access_ahal(struct query *q, char *argv[], client *cl)
 {
   EXEC SQL BEGIN DECLARE SECTION;
   int cnt, id, mid, sid;
-  char mtype[256], stype[256];
+  char mtype[MACHINE_OWNER_TYPE_SIZE], stype[SUBNET_OWNER_TYPE_SIZE];
   EXEC SQL END DECLARE SECTION;
   int status;
 

@@ -1,4 +1,4 @@
-/* $Id: qsupport.pc,v 2.8 1998-02-05 22:51:50 danw Exp $
+/* $Id: qsupport.pc,v 2.9 1998-02-23 19:24:38 danw Exp $
  *
  * Special query routines
  *
@@ -18,7 +18,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.pc,v 2.8 1998-02-05 22:51:50 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.pc,v 2.9 1998-02-23 19:24:38 danw Exp $");
 
 extern char *whoami, *table_name[];
 extern int dbms_errno, mr_errcode;
@@ -51,7 +51,7 @@ int set_pobox(struct query *q, char **argv, client *cl)
 {
   EXEC SQL BEGIN DECLARE SECTION;
   int user, id;
-  char *box, potype[9];
+  char *box, potype[USERS_POTYPE_SIZE];
   EXEC SQL END DECLARE SECTION;
   int status;
 
@@ -113,9 +113,11 @@ int get_list_info(struct query *q, char **aargv, client *cl,
 {
   char *argv[13];
   EXEC SQL BEGIN DECLARE SECTION;
-  char *name, acl_type[9], listname[33], active[5], public[5], hidden[5];
-  char maillist[5], grouplist[5], gid_str[6], desc[256];
-  char modtime[27], modwith[9];
+  char *name, acl_type[LIST_ACL_TYPE_SIZE], listname[LIST_NAME_SIZE];
+  char active[5], public[5], hidden[5];
+  char maillist[5], grouplist[5], gid_str[LIST_GID_SIZE];
+  char desc[LIST_DESCRIPTION_SIZE], modtime[LIST_MODTIME_SIZE];
+  char modwith[LIST_MODWITH_SIZE];
   int id, rowcount, acl_id, hid, modby_id;
   EXEC SQL END DECLARE SECTION;
   int returned, status;
@@ -184,13 +186,13 @@ int get_list_info(struct query *q, char **aargv, client *cl,
 	{
 	  status = 0;
 	  free(argv[8]);
-	  argv[8] = strdup("NONE");
+	  argv[8] = xstrdup("NONE");
 	}
       else
 	{
 	  status = 0;
 	  free(argv[8]);
-	  argv[8] = strdup("???");
+	  argv[8] = xstrdup("???");
 	}
       if (status && status != MR_NO_MATCH)
 	return status;
@@ -227,7 +229,7 @@ int add_member_to_list(struct query *q, char **argv, client *cl)
 {
   EXEC SQL BEGIN DECLARE SECTION;
   int id, lid, mid, error, who, ref, rowcnt;
-  char *mtype, dtype[9], *entity;
+  char *mtype, dtype[IMEMBERS_MEMBER_TYPE_SIZE], *entity;
   EXEC SQL END DECLARE SECTION;
   int ancestors[MAXLISTDEPTH], aref[MAXLISTDEPTH], acount, a;
   int descendants[MAXLISTDEPTH], dref[MAXLISTDEPTH], dcount, d;
@@ -409,7 +411,7 @@ int delete_member_from_list(struct query *q, char **argv, client *cl)
 {
   EXEC SQL BEGIN DECLARE SECTION;
   int id, lid, mid, cnt, error, who, ref;
-  char *mtype, dtype[9], *entity;
+  char *mtype, dtype[IMEMBERS_MEMBER_TYPE_SIZE], *entity;
   EXEC SQL END DECLARE SECTION;
   int ancestors[MAXLISTDEPTH], aref[MAXLISTDEPTH], acount, a;
   int descendants[MAXLISTDEPTH], dref[MAXLISTDEPTH], dcount, d;
@@ -681,7 +683,7 @@ int get_ace_internal(char *atype, int aid,
   char *rargv[2];
   int found = 0;
   EXEC SQL BEGIN DECLARE SECTION;
-  char name[33], *type = atype;
+  char name[LIST_NAME_SIZE], *type = atype;
   int id = aid;
   EXEC SQL END DECLARE SECTION;
 
@@ -850,7 +852,8 @@ int get_lists_of_member(struct query *q, char *argv[], client *cl,
   EXEC SQL BEGIN DECLARE SECTION;
   char *atype;
   int aid;
-  char name[33], active[5], public[5], hidden[5], maillist[5], grouplist[5];
+  char name[LIST_NAME_SIZE];
+  char active[5], public[5], hidden[5], maillist[5], grouplist[5];
   EXEC SQL END DECLARE SECTION;
 
   atype = argv[0];
@@ -984,7 +987,7 @@ int gmol_internal(struct query *q, char *argv[], client *cl,
 {
   EXEC SQL BEGIN DECLARE SECTION;
   int list_id, direct;
-  char member_name[129];
+  char member_name[MAX_FIELD_WIDTH];
   EXEC SQL END DECLARE SECTION;
   char *targv[2];
 
@@ -1218,7 +1221,8 @@ int qualified_get_serverhost(struct query *q, char *argv[], client *cl,
 int register_user(struct query *q, char **argv, client *cl)
 {
   EXEC SQL BEGIN DECLARE SECTION;
-  char *login, *entity, directory[129], machname[33];
+  char *login, *entity;
+  char directory[FILESYS_NAME_SIZE], machname[MACHINE_NAME_SIZE];
   int who, rowcount, mid, uid, users_id, utype, list_id;
   int ostatus, nstatus, fsidval;
   static int m_id = 0, def_quota = 0;

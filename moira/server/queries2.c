@@ -1,4 +1,4 @@
-/* $Id: queries2.c,v 2.32 1998-02-15 17:49:22 danw Exp $
+/* $Id: queries2.c,v 2.33 1998-02-23 19:24:41 danw Exp $
  *
  * This file defines the query dispatch table for version 2 of the protocol
  *
@@ -67,16 +67,6 @@ static char USERS_ID[] = "users_id";
 static char UID[] = "unix_uid";
 static char ZEPH[] = "zephyr";
 static char ZEPH_ID[] = "xmt_id";
-
-/* Table Names */
-char *table_name[] = {
-  "none", USERS, "krbmap", MACHINE, "hostalias", SUBNET, CLUSTER,
-  "mcmap", "svc", LIST, "imembers", SERVERS, "serverhosts", FILESYS,
-  "fsgroup", "nfsphys", "quota", ZEPH, HOSTACCESS, "strings", "services",
-  PRINTCAP, "palladium", "capacls", "alias", "numvalues", "tblstats",
-  "incremental"};
-int num_tables = 27;
-
 
 /* VALOBJS
  * These are commonly used validation objects, defined here so that they
@@ -149,7 +139,7 @@ static struct valobj VOmach0[] = {
 };
 
 static struct valobj VOclu0[] = {
-  {V_ID, 0, CLUSTER_TABLE, NAME, CLU_ID, MR_CLUSTER},
+  {V_ID, 0, CLUSTERS_TABLE, NAME, CLU_ID, MR_CLUSTER},
 };
 
 static struct valobj VOlist0[] = {
@@ -1062,10 +1052,10 @@ static char *aclu_fields[] = {
 };
 
 static struct valobj aclu_valobj[] = {
-  {V_LOCK, 0, CLUSTER_TABLE, 0, CLU_ID, MR_DEADLOCK},
-  {V_CHAR, 0, CLUSTER_TABLE, NAME},
-  {V_LEN, 1, CLUSTER_TABLE, DESC},
-  {V_LEN, 2, CLUSTER_TABLE, LOCATION},
+  {V_LOCK, 0, CLUSTERS_TABLE, 0, CLU_ID, MR_DEADLOCK},
+  {V_CHAR, 0, CLUSTERS_TABLE, NAME},
+  {V_LEN, 1, CLUSTERS_TABLE, DESC},
+  {V_LEN, 2, CLUSTERS_TABLE, LOCATION},
 };
 
 static struct validate aclu_validate =
@@ -1087,11 +1077,11 @@ static char *uclu_fields[] = {
 };
 
 static struct valobj uclu_valobj[] = {
-  {V_LOCK, 0, CLUSTER_TABLE, 0, CLU_ID, MR_DEADLOCK},
-  {V_ID, 0, CLUSTER_TABLE, NAME, CLU_ID, MR_CLUSTER},
-  {V_RENAME, 1, CLUSTER_TABLE, NAME, CLU_ID, MR_NOT_UNIQUE},
-  {V_LEN, 2, CLUSTER_TABLE, DESC},
-  {V_LEN, 3, CLUSTER_TABLE, LOCATION},
+  {V_LOCK, 0, CLUSTERS_TABLE, 0, CLU_ID, MR_DEADLOCK},
+  {V_ID, 0, CLUSTERS_TABLE, NAME, CLU_ID, MR_CLUSTER},
+  {V_RENAME, 1, CLUSTERS_TABLE, NAME, CLU_ID, MR_NOT_UNIQUE},
+  {V_LEN, 2, CLUSTERS_TABLE, DESC},
+  {V_LEN, 3, CLUSTERS_TABLE, LOCATION},
 };
 
 static struct validate uclu_validate = {
@@ -1140,7 +1130,7 @@ static struct validate gmcm_validate = { gmcm_valobj, 4 };
 static struct valobj amtc_valobj[] =	/* ADD_MACHINE_TO_CLUSTER */
 {					/* DELETE_MACHINE_FROM_CLUSTER */
   {V_ID, 0, MACHINE_TABLE, NAME, MACH_ID, MR_MACHINE},
-  {V_ID, 1, CLUSTER_TABLE, NAME, CLU_ID, MR_CLUSTER},
+  {V_ID, 1, CLUSTERS_TABLE, NAME, CLU_ID, MR_CLUSTER},
 };
 
 static struct validate amtc_validate = /* for amtc and dmfc */
@@ -1167,7 +1157,7 @@ static char *acld_fields[] = {
 
 static struct valobj acld_valobj[] =
 {
-  {V_ID, 0, CLUSTER_TABLE, NAME, CLU_ID, MR_CLUSTER},
+  {V_ID, 0, CLUSTERS_TABLE, NAME, CLU_ID, MR_CLUSTER},
   {V_CHAR, 1, SVC_TABLE, "serv_label"},
   {V_CHAR, 2, SVC_TABLE, "serv_cluster"}
 };
@@ -1187,7 +1177,7 @@ static struct validate acld_validate =
 
 static struct valobj dcld_valobj[] =
 {
-  {V_ID, 0, CLUSTER_TABLE, NAME, CLU_ID, MR_CLUSTER},
+  {V_ID, 0, CLUSTERS_TABLE, NAME, CLU_ID, MR_CLUSTER},
 };
 
 static struct validate dcld_validate =
@@ -3340,7 +3330,7 @@ struct query Queries2[] = {
     "gclu",
     RETRIEVE,
     "c",
-    CLUSTER_TABLE,
+    CLUSTERS_TABLE,
     "name, description, location, TO_CHAR(modtime, 'DD-mon-YYYY HH24:MI:SS'), modby, modwith FROM clusters",
     gclu_fields,
     6,
@@ -3355,7 +3345,7 @@ struct query Queries2[] = {
     "aclu",
     APPEND,
     "c",
-    CLUSTER_TABLE,
+    CLUSTERS_TABLE,
     "INTO clusters (name, description, location, clu_id) VALUES ('%s', NVL('%s', CHR(0)), NVL('%s', CHR(0)), %s)",
     aclu_fields,
     3,
@@ -3370,7 +3360,7 @@ struct query Queries2[] = {
     "uclu",
     UPDATE,
     "c",
-    CLUSTER_TABLE,
+    CLUSTERS_TABLE,
     "clusters SET name = '%s', description = NVL('%s', CHR(0)), location = NVL('%s', CHR(0))",
     uclu_fields,
     3,
@@ -3385,7 +3375,7 @@ struct query Queries2[] = {
     "dclu",
     DELETE,
     "c",
-    CLUSTER_TABLE,
+    CLUSTERS_TABLE,
     NULL,
     dclu_fields,
     0,

@@ -1,4 +1,4 @@
-/* $Id: qfollow.pc,v 2.6 1998-02-15 17:49:17 danw Exp $
+/* $Id: qfollow.pc,v 2.7 1998-02-23 19:24:34 danw Exp $
  *
  * Query followup routines
  *
@@ -23,7 +23,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qfollow.pc,v 2.6 1998-02-15 17:49:17 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qfollow.pc,v 2.7 1998-02-23 19:24:34 danw Exp $");
 
 extern char *whoami, *table_name[];
 extern int dbms_errno, mr_errcode;
@@ -31,8 +31,6 @@ extern int dbms_errno, mr_errcode;
 EXEC SQL BEGIN DECLARE SECTION;
 extern char stmt_buf[];
 EXEC SQL END DECLARE SECTION;
-
-static void hex_dump(unsigned char *p);
 
 EXEC SQL WHENEVER SQLERROR DO dbmserr();
 
@@ -334,14 +332,14 @@ int followup_guax(struct query *q, struct save_queue *sq, struct validate *v,
   int i, j;
   char **argv;
 #ifdef GDSS
-  unsigned char sigbuf[256];
+  unsigned char sigbuf[512];
   char *kname;
   SigInfo  si;
   EXEC SQL BEGIN DECLARE SECTION;
   int timestamp, who;
   char *login;
-  char rsig[256];
-  EXEC SQL VAR rsig IS STRING(256);
+  char rsig[USERS_SIGNATURE_SIZE];
+  EXEC SQL VAR rsig IS STRING(USERS_SIGNATURE_SIZE);
   EXEC SQL END DECLARE SECTION;
 #endif /* GDSS */
   int id, status;
@@ -365,17 +363,17 @@ int followup_guax(struct query *q, struct save_queue *sq, struct validate *v,
 	    WHERE login = :login;
 	  if (dbms_errno)
 	    return mr_errcode;
-	  kname = malloc(1);
+	  kname = malloc(0);
 	  status = id_to_name(who, STRINGS_TABLE, &kname);
 	  si.timestamp = timestamp;
 	  si.SigInfoVersion = 0; /* XXXXX this isn't used */
 	  kname_parse(si.pname, si.pinst, si.prealm, kname);
 	  free(kname);
-	  si.rawsig = (unsigned char *)strdup(rsig);
+	  si.rawsig = (unsigned char *)xstrdup(rsig);
 	  GDSS_Recompose(&si, sigbuf);
 	  free(si.rawsig);
 	  free(argv[U_SIGNATURE]);
-	  argv[U_SIGNATURE] = strdup(sigbuf);
+	  argv[U_SIGNATURE] = xstrdup(sigbuf);
 	}
 #endif /* GDSS */
       (*action)(q->vcnt, argv, actarg);
@@ -404,12 +402,12 @@ int followup_ausr(struct query *q, char *argv[], client *cl)
   EXEC SQL BEGIN DECLARE SECTION;
   int who, status;
   char *login, *entity, *name;
-  char fullname[129];
+  char fullname[USERS_FIRST_SIZE + USERS_MIDDLE_SIZE + USERS_LAST_SIZE];
   EXEC SQL END DECLARE SECTION;
 #ifdef GDSS
-  char databuf[32];
+  char databuf[USERS_LOGIN_SIZE + USERS_CLEARID_SIZE];
   EXEC SQL BEGIN DECLARE SECTION;
-  char rawsig[128];
+  char rawsig[512];
   int sigwho, timestamp;
   EXEC SQL END DECLARE SECTION;
   SigInfo si;
@@ -499,9 +497,9 @@ int followup_uuac(struct query *q, char *argv[], client *cl)
   char *entity, *name;
   EXEC SQL END DECLARE SECTION;
 #ifdef GDSS
-  char databuf[32];
+  char databuf[USERS_LOGIN_SIZE + USERS_CLEARID_SIZE];
   EXEC SQL BEGIN DECLARE SECTION;
-  char rawsig[128];
+  char rawsig[512];
   char *login;
   int sigwho, timestamp;
   EXEC SQL END DECLARE SECTION;
@@ -515,7 +513,7 @@ int followup_uuac(struct query *q, char *argv[], client *cl)
 #ifdef GDSS
   if (q->vcnt == U_MODTIME && *argv[U_SIGNATURE + 1])
     {
-      login = malloc(1);
+      login = malloc(0);
       status = id_to_name(id, USERS_TABLE, &login);
       sprintf(databuf, "%s:%s", login, argv[U_MITID + 1]);
       free(login);
@@ -670,13 +668,13 @@ int followup_gsnt(struct query *q, struct save_queue *sq, struct validate *v,
 	{
 	  status = 0;
 	  free(argv[idx]);
-	  argv[idx] = strdup("NONE");
+	  argv[idx] = xstrdup("NONE");
 	}
       else
 	{
 	  status = 0;
 	  free(argv[idx]);
-	  argv[idx] = strdup("???");
+	  argv[idx] = xstrdup("???");
 	}
       if (status && status != MR_NO_MATCH)
 	return status;
@@ -750,13 +748,13 @@ int followup_ghst(struct query *q, struct save_queue *sq, struct validate *v,
 	{
 	  status = 0;
 	  free(argv[idx]);
-	  argv[idx] = strdup("NONE");
+	  argv[idx] = xstrdup("NONE");
 	}
       else
 	{
 	  status = 0;
 	  free(argv[idx]);
-	  argv[idx] = strdup("???");
+	  argv[idx] = xstrdup("???");
 	}
       if (status && status != MR_NO_MATCH)
 	return status;
@@ -817,20 +815,20 @@ int followup_glin(struct query *q, struct save_queue *sq, struct validate *v,
 	{
 	  status = 0;
 	  free(argv[idx]);
-	  argv[idx] = strdup("NONE");
+	  argv[idx] = xstrdup("NONE");
 	}
       else
 	{
 	  status = 0;
 	  free(argv[idx]);
-	  argv[idx] = strdup("???");
+	  argv[idx] = xstrdup("???");
 	}
       if (status && status != MR_NO_MATCH)
 	return status;
 
       if (!strcmp(q->shortname, "glin") && atoi(argv[6]) == -1)
 	{
-	  argv[6] = realloc(argv[6], strlen(UNIQUE_GID) + 1);
+	  argv[6] = xrealloc(argv[6], strlen(UNIQUE_GID) + 1);
 	  strcpy(argv[6], UNIQUE_GID);
 	}
 
@@ -887,19 +885,19 @@ int followup_gqot(struct query *q, struct save_queue *sq, struct validate *v,
 	      break;
 	    case 'A':
 	      free(argv[2]);
-	      argv[2] = strdup("system:anyuser");
+	      argv[2] = xstrdup("system:anyuser");
 	      break;
 	    default:
 	      id = atoi(argv[2]);
-	      argv[2] = malloc(8);
+	      argv[2] = xmalloc(8);
 	      sprintf(argv[2], "%d", id);
 	    }
 	}
       id = atoi(argv[idx]);
       free(argv[idx]);
-      argv[idx] = malloc(256);
+      argv[idx] = xmalloc(id ? NFSPHYS_DIR_SIZE : FILESYS_NAME_SIZE);
       name = argv[idx];
-      memset(name, 0, 256);
+      name[0] = '\0';
       if (id == 0)
 	{
 	  label = argv[0];
@@ -1138,13 +1136,13 @@ int followup_gzcl(struct query *q, struct save_queue *sq, struct validate *v,
 	    {
 	      status = 0;
 	      free(argv[i + 1]);
-	      argv[i + 1] = strdup("NONE");
+	      argv[i + 1] = xstrdup("NONE");
 	    }
 	  else
 	    {
 	      status = 0;
 	      free(argv[i + 1]);
-	      argv[i + 1] = strdup("???");
+	      argv[i + 1] = xstrdup("???");
 	    }
 	  if (status && status != MR_NO_MATCH)
 	    return status;
@@ -1196,13 +1194,13 @@ int followup_gsha(struct query *q, struct save_queue *sq, struct validate *v,
 	{
 	  status = 0;
 	  free(argv[2]);
-	  argv[2] = strdup("NONE");
+	  argv[2] = xstrdup("NONE");
 	}
       else
 	{
 	  status = 0;
 	  free(argv[2]);
-	  argv[2] = strdup("???");
+	  argv[2] = xstrdup("???");
 	}
       if (status && status != MR_NO_MATCH)
 	return status;
@@ -1234,7 +1232,7 @@ int _sdl_followup(struct query *q, char *argv[], client *cl)
 int trigger_dcm(struct query *q, char *argv[], client *cl)
 {
   pid_t pid;
-  char prog[128];
+  char prog[MAXPATHLEN];
 
   sprintf(prog, "%s/startdcm", BIN_DIR);
   pid = vfork();

@@ -1,4 +1,4 @@
-/* $Id: increment.pc,v 2.4 1998-02-15 17:49:11 danw Exp $
+/* $Id: increment.pc,v 2.5 1998-02-23 19:24:29 danw Exp $
  *
  * Deal with incremental updates
  *
@@ -20,7 +20,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/increment.pc,v 2.4 1998-02-15 17:49:11 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/increment.pc,v 2.5 1998-02-23 19:24:29 danw Exp $");
 
 extern char *whoami;
 extern char *table_name[];
@@ -56,7 +56,6 @@ struct iupdate {
 };
 
 void next_incremental(void);
-char **copy_argv(char **argv, int argc);
 void free_argv(char **argv, int argc);
 int table_num(char *table);
 
@@ -71,8 +70,8 @@ void incremental_init(void)
 
   for (i = 0; i < MAXARGC; i++)
     {
-      before[i] = malloc(ARGLEN);
-      after[i] = malloc(ARGLEN);
+      before[i] = xmalloc(MAX_FIELD_WIDTH);
+      after[i] = xmalloc(MAX_FIELD_WIDTH);
     }
 }
 
@@ -104,7 +103,7 @@ void incremental_before(enum tables table, char *qual, char **argv)
       dosql(before);
       beforec = 2;
       break;
-    case CLUSTER_TABLE:
+    case CLUSTERS_TABLE:
       sprintf(stmt_buf, "SELECT c.name, c.description, c.location "
 	      "FROM clusters c WHERE %s", qual);
       dosql(before);
@@ -222,7 +221,7 @@ void incremental_after(enum tables table, char *qual, char **argv)
       dosql(after);
       afterc = 2;
       break;
-    case CLUSTER_TABLE:
+    case CLUSTERS_TABLE:
       sprintf(stmt_buf, "SELECT c.name, c.description, c.location "
 	      "FROM clusters c WHERE %s", qual);
       dosql(after);
@@ -311,12 +310,12 @@ void incremental_after(enum tables table, char *qual, char **argv)
       break;
     }
 
-  iu = malloc(sizeof(struct iupdate));
+  iu = xmalloc(sizeof(struct iupdate));
   iu->table = table_name[table];
   iu->beforec = beforec;
-  iu->before = copy_argv(before, beforec);
+  iu->before = mr_copy_args(before, beforec);
   iu->afterc = afterc;
-  iu->after = copy_argv(after, afterc);
+  iu->after = mr_copy_args(after, afterc);
   sq_save_data(incremental_sq, iu);
 }
 
@@ -343,7 +342,7 @@ void incremental_update(void)
   static struct inc_cache *cache;
   struct inc_cache *c;
   EXEC SQL BEGIN DECLARE SECTION;
-  char tab[17], serv[17];
+  char tab[INCREMENTAL_TABLE_NAME_SIZE], serv[INCREMENTAL_SERVICE_SIZE];
   EXEC SQL END DECLARE SECTION;
   struct iupdate *iu;
 
@@ -359,10 +358,10 @@ void incremental_update(void)
 	  EXEC SQL FETCH inc INTO :tab, :serv;
 	  if (sqlca.sqlcode)
 	    break;
-	  c = malloc(sizeof(struct inc_cache));
+	  c = xmalloc(sizeof(struct inc_cache));
 	  c->next = cache;
-	  c->table = strdup(strtrim(tab));
-	  c->service = strdup(strtrim(serv));
+	  c->table = xstrdup(strtrim(tab));
+	  c->service = xstrdup(strtrim(serv));
 	  cache = c;
 	}
       EXEC SQL CLOSE inc;
@@ -377,7 +376,14 @@ void incremental_update(void)
 	    {
 	      iu->service = c->service;
 	      sq_save_data(incremental_exec, iu);
+	      break;
 	    }
+	}
+      if (!c)
+	{
+	  free_argv(iu->before, iu->beforec);
+	  free_argv(iu->after, iu->afterc);
+	  free(iu);
 	}
     }
   if (inc_running == 0)
@@ -388,7 +394,7 @@ void incremental_update(void)
 void next_incremental(void)
 {
   struct iupdate *iu;
-  char *argv[MAXARGC * 2 + 4], cafter[3], cbefore[3], prog[BUFSIZ];
+  char *argv[MAXARGC * 2 + 4], cafter[3], cbefore[3], prog[MAXPATHLEN];
   int i;
   sigset_t sigs;
 
@@ -459,14 +465,6 @@ void incremental_flush(void)
   incremental_sq = sq_create();
 }
 
-
-char **copy_argv(char **argv, int argc)
-{
-  char **ret = malloc(sizeof(char *) * argc);
-  while (--argc >= 0)
-    ret[argc] = strdup(strtrim(argv[argc]));
-  return ret;
-}
 
 void free_argv(char **argv, int argc)
 {

@@ -1,4 +1,4 @@
-/* $Id: qrtn.pc,v 2.9 1998-02-15 17:49:18 danw Exp $
+/* $Id: qrtn.pc,v 2.10 1998-02-23 19:24:36 danw Exp $
  *
  * Query-processing routines
  *
@@ -20,13 +20,11 @@
 EXEC SQL INCLUDE sqlca;  /* SQL Communications Area */
 EXEC SQL INCLUDE sqlda;  /* SQL Descriptor Area */
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.pc,v 2.9 1998-02-15 17:49:18 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.pc,v 2.10 1998-02-23 19:24:36 danw Exp $");
 
 SQLDA *mr_sqlda;
 EXEC SQL BEGIN DECLARE SECTION;
 int mr_sig_length;
-int idummy;
-char cdummy[MR_CDUMMY_LEN];
 char stmt_buf[MR_STMTBUF_LEN];
 EXEC SQL END DECLARE SECTION;
 
@@ -96,7 +94,7 @@ int mr_open_database(void)
 
       /* initialize local argv */
       for (i = 0; i < 16; i++)
-	Argv[i] = malloc(ARGLEN);
+	Argv[i] = xmalloc(MAX_FIELD_WIDTH);
 
       mr_sqlda = mr_alloc_sqlda();
 
@@ -386,7 +384,7 @@ out:
 	  EXEC SQL COMMIT WORK;
 	  if (journal)
 	    {
-	      char buf[1024];
+	      char *buf;
 	      int i;
 	      extern time_t now;
 
@@ -397,8 +395,9 @@ out:
 		{
 		  if (i != 0)
 		    putc(' ', journal);
-		  requote(buf, argv_ro[i], sizeof(buf));
+		  buf = requote(argv_ro[i]);
 		  fputs(buf, journal);
+		  free(buf);
 		}
 	      putc('\n', journal);
 	      fflush(journal);
@@ -513,7 +512,7 @@ int mr_verify_query(client *cl, struct query *q, int argc, char *argv_ro[])
   /* copy the arguments into a local argv that we can modify */
   for (i = 0; i < argc; i++)
     {
-      for (to = Argv[i], fr = argv_ro[i], stop = to + ARGLEN; (*fr) && (to < stop);)
+      for (to = Argv[i], fr = argv_ro[i], stop = to + MAX_FIELD_WIDTH; (*fr) && (to < stop);)
 	*to++ = *fr++;
 
       if (*fr)
@@ -976,7 +975,7 @@ void dosql(char *buffers[])
     {
       mr_sqlda->V[i] = buffers[i];
       mr_sqlda->T[i] = 97;
-      mr_sqlda->L[i] = ARGLEN;
+      mr_sqlda->L[i] = MAX_FIELD_WIDTH;
     }
   EXEC SQL FETCH inc_crs USING DESCRIPTOR mr_sqlda;
 
@@ -1016,7 +1015,7 @@ int do_for_all_rows(char *query, int count,
     {
       mr_sqlda->V[i] = sqlbuffer[i];
       mr_sqlda->T[i] = 97;
-      mr_sqlda->L[i] = ARGLEN;
+      mr_sqlda->L[i] = MAX_FIELD_WIDTH;
     }
 
   while (1)

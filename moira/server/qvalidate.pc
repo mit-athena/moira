@@ -1,4 +1,4 @@
-/* $Id: qvalidate.pc,v 2.9 1998-02-15 17:49:25 danw Exp $
+/* $Id: qvalidate.pc,v 2.10 1998-02-23 19:24:43 danw Exp $
  *
  * Argument validation routines
  *
@@ -20,7 +20,7 @@
 EXEC SQL INCLUDE sqlca;
 EXEC SQL INCLUDE sqlda;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qvalidate.pc,v 2.9 1998-02-15 17:49:25 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qvalidate.pc,v 2.10 1998-02-23 19:24:43 danw Exp $");
 
 extern char *whoami, *table_name[], *sqlbuffer[QMAXARGS];
 extern int dbms_errno, mr_errcode;
@@ -209,7 +209,7 @@ int validate_id(struct query *q, char *argv[], struct valobj *vo)
 
   if ((tbl == USERS_TABLE && !strcmp(namefield, "login")) ||
       tbl == MACHINE_TABLE || tbl == SUBNET_TABLE || tbl == FILESYS_TABLE ||
-      tbl == LIST_TABLE || tbl == CLUSTER_TABLE || tbl == STRINGS_TABLE)
+      tbl == LIST_TABLE || tbl == CLUSTERS_TABLE || tbl == STRINGS_TABLE)
     {
       if (tbl == MACHINE_TABLE || tbl == SUBNET_TABLE)
 	{
@@ -566,7 +566,7 @@ SQLDA *mr_alloc_sqlda(void)
 
   for (j = 0; j < QMAXARGS; j++)
     {
-      it->V[j] = sqlbuffer[j] = malloc(ARGLEN);
+      it->V[j] = sqlbuffer[j] = xmalloc(ARGLEN);
       it->T[j] = 97; /* 97 = CHARZ = null-terminated string */
       it->L[j] = ARGLEN;
     }

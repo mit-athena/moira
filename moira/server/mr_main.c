@@ -1,4 +1,4 @@
-/* $Id: mr_main.c,v 1.40 1998-02-15 17:49:12 danw Exp $
+/* $Id: mr_main.c,v 1.41 1998-02-23 19:24:30 danw Exp $
  *
  * Moira server process.
  *
@@ -30,7 +30,7 @@
 
 #include <krb.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.40 1998-02-15 17:49:12 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.41 1998-02-23 19:24:30 danw Exp $");
 
 extern char *krb_get_lrealm(char *, int);
 
@@ -135,7 +135,7 @@ int main(int argc, char **argv)
       com_err(whoami, errno, "Unable to get local hostname");
       exit(1);
     }
-  host = canonicalize_hostname(strdup(uts.nodename));
+  host = canonicalize_hostname(xstrdup(uts.nodename));
   for (p = host; *p && *p != '.'; p++)
     {
       if (isupper(*p))
@@ -148,7 +148,7 @@ int main(int argc, char **argv)
    */
   nclients = 0;
   clientssize = 10;
-  clients = malloc(clientssize * sizeof(client *));
+  clients = xmalloc(clientssize * sizeof(client *));
 
   mr_setup_signals();
 

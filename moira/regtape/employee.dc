@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/employee.dc,v 1.1 1990-01-18 14:06:42 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/employee.dc,v 1.2 1990-01-19 14:32:25 mar Exp $
  */
 
 #include <stdio.h>
@@ -241,7 +241,7 @@ struct entry *e;
 	    strncpy(oaddr, buf, 16);
 	    oaddr[16] = 0;
 	    changed++;
-	} else
+	} else if (strncmp(strtrim(oaddr), buf, 15))
 	  nochange++;
     } else {
 	if (strncmp(strtrim(oaddr), buf, 15))
@@ -261,7 +261,7 @@ struct entry *e;
 	if (ophone[0] == ' ') {
 	    strncpy(ophone, buf, 16);
 	    ophone[16] = 0;
-	} else
+	} else if (strncmp(strtrim(ophone), buf, 11))
 	  nochange++;
     } else {
 	if (strncmp(strtrim(ophone), buf, 11))
@@ -274,7 +274,7 @@ struct entry *e;
 	if (dept[0] == ' ') {
 	    strncpy(dept, e->dept, 12);
 	    dept[12] = 0;
-	} else
+	} else if (strncmp(strtrim(dept), e->dept, 11))
 	  nochange++;
     } else {
 	if (strncmp(strtrim(dept), e->dept, 11))

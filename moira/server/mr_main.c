@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v $
  *	$Author: wesommer $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.9 1987-06-21 16:39:54 wesommer Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.10 1987-06-30 20:02:26 wesommer Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
@@ -14,6 +14,9 @@
  * 	Let the reader beware.
  * 
  *	$Log: not supported by cvs2svn $
+ * Revision 1.9  87/06/21  16:39:54  wesommer
+ * Performance work, rearrangement of include files.
+ * 
  * Revision 1.8  87/06/09  18:44:45  wesommer
  * modified error handling.
  * 
@@ -40,7 +43,7 @@
  * 
  */
 
-static char *rcsid_sms_main_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.9 1987-06-21 16:39:54 wesommer Exp $";
+static char *rcsid_sms_main_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.10 1987-06-30 20:02:26 wesommer Exp $";
 
 #include <strings.h>
 #include <sys/errno.h>
@@ -112,6 +115,8 @@ main(argc, argv)
 	}
 	gdb_debug(0); /* this can be patched, if necessary, to enable */
 		      /* GDB level debugging .. */
+	krb_realm = malloc(REALM_SZ);
+	get_krbrlm(krb_realm, 1);
 	
 	/*
 	 * Database initialization.
@@ -270,7 +275,9 @@ new_connection()
 	cp->args = NULL;
 	cp->clname = NULL;
 	cp->reply.sms_argv = NULL;
-
+	cp->first = NULL;
+	cp->last = NULL;
+	
 	newconn = NULL;
 	
 	cp->pending_op = create_operation();

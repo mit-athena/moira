@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/cluster.c,v 1.29 1997-05-29 16:50:04 danw Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/cluster.c,v 1.30 1998-01-05 14:49:21 danw Exp $";
 #endif
 
 /*	This is the file cluster.c for the MOIRA Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/cluster.c,v $
  *      $Author: danw $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/cluster.c,v 1.29 1997-05-29 16:50:04 danw Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/cluster.c,v 1.30 1998-01-05 14:49:21 danw Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -63,7 +63,6 @@ static char *states[] = { "Reserved (0)",
 			  "Active (1)",
 			  "None (2)",
 			  "Deleted (3)" };
-static char *uses[]   = { "none (0)"};
                           
 static char *MacState(state)
 int state;
@@ -143,13 +142,13 @@ char ** info, *name;
 
     info[C_NAME] = Strsave(name);
     info[SN_DESC] = Strsave("");
-    sprintf(buf, "%d", ntohl(inet_addr("18.255.0.0")));
+    sprintf(buf, "%ld", ntohl(inet_addr("18.255.0.0")));
     info[SN_ADDRESS] = Strsave(buf);
-    sprintf(buf, "%d", ntohl(inet_addr("255.255.0.0")));
+    sprintf(buf, "%ld", ntohl(inet_addr("255.255.0.0")));
     info[SN_MASK] = Strsave(buf);
-    sprintf(buf, "%d", ntohl(inet_addr(S_DEFAULT_LOW)));
+    sprintf(buf, "%ld", ntohl(inet_addr(S_DEFAULT_LOW)));
     info[SN_LOW] = Strsave(buf);
-    sprintf(buf, "%d", ntohl(inet_addr(S_DEFAULT_HIGH)));
+    sprintf(buf, "%ld", ntohl(inet_addr(S_DEFAULT_HIGH)));
     info[SN_HIGH] = Strsave(buf);
     info[SN_PREFIX] = Strsave("");
     info[SN_ACE_TYPE] = Strsave("LIST");
@@ -851,7 +850,7 @@ Bool junk;
 			      args, Scream, NULL)) != 0)
 	com_err(program_name, stat, " in UpdateMachine.");
     else
-	Put_message("Machine sucessfully updated.");
+	Put_message("Machine successfully updated.");
 }
 
 /*	Function Name: UpdateMachine
@@ -1016,13 +1015,8 @@ char *s;
 #endif
 
     if (!def_domain) {
-#ifdef POSIX
 	(void) uname(&name);
-	strncpy(buf, name.nodename, sizeof(buf));
-#else
-	gethostname(buf, sizeof(buf));
-#endif
-	hp = gethostbyname(buf);
+	hp = gethostbyname(name.nodename);
 	cp = (char *) strchr(hp->h_name, '.');
 	if (cp)
 	  def_domain = strsave(++cp);
@@ -1070,9 +1064,7 @@ int argc;
 char ** argv;
 {
     int stat;
-    char *machine, *cluster, temp_buf[BUFSIZ], *args[10];
-    Bool add_it, one_machine, one_cluster;
-    struct qelem * melem, *mtop, *celem, *ctop;
+    char *args[10];
 
     args[0] = partial_canonicalize_hostname(strsave(argv[1]));
     args[1] = canonicalize_hostname(strsave(argv[2]));
@@ -1422,7 +1414,7 @@ Bool one_subnet;
 	    Put_message(temp_buf);
 	}
 	else {
-	    sprintf(temp_buf, "subnet %s sucesfully deleted.", 
+	    sprintf(temp_buf, "subnet %s successfully deleted.", 
 		    info[C_NAME]);
 	    Put_message(temp_buf);
 	}
@@ -1668,7 +1660,7 @@ Bool one_cluster;
 		Put_message(temp_buf);
 	    }
 	    else {
-		sprintf(temp_buf, "cluster %s sucesfully deleted.", 
+		sprintf(temp_buf, "cluster %s successfully deleted.", 
 			info[C_NAME]);
 		Put_message(temp_buf);
 	    }
@@ -1774,7 +1766,7 @@ Bool one_item;
 	    Put_message("Data not removed.");
 	}
 	else
-	    Put_message("Removal sucessful.");
+	    Put_message("Removal successful.");
     }
 }
 

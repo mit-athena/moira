@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.39 1997-10-07 03:29:25 danw Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.40 1998-01-05 14:49:23 danw Exp $";
 #endif
 
 /*	This is the file user.c for the MOIRA Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v $
  *      $Author: danw $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.39 1997-10-07 03:29:25 danw Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.40 1998-01-05 14:49:23 danw Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -210,11 +210,11 @@ AskUserInfo(info, name)
 char ** info;
 Bool name;
 {
-    int siglen, i;
+    int i;
 #ifdef GDSS
     SigInfo si;
 #endif
-    char temp_buf[BUFSIZ], *newname, *temp_ptr, *sig, sig_buf[BUFSIZ];
+    char temp_buf[BUFSIZ], *newname;
 
     if (name) {
 	sprintf(temp_buf,"\nChanging Attributes of user %s.\n",info[U_NAME]);
@@ -301,7 +301,7 @@ Bool name;
 	struct timeval tv;
 
 	gettimeofday(&tv, (struct timezone *)NULL);
-	sprintf(buf, "%d", tv.tv_sec);
+	sprintf(buf, "%ld", (long) tv.tv_sec);
 	free(info[U_SECURE]);
 	info[U_SECURE] = strsave(buf);
     }
@@ -452,8 +452,6 @@ AddNewUser()
 	Put_message("Aborted.");
 	return(DM_NORMAL);
     }
-    if (args == NULL)
-      return(DM_NORMAL);
     if ( (status = do_mr_query("add_user_account", CountArgs(args), 
 				args, Scream, (char *) NULL)) != MR_SUCCESS)
 	com_err(program_name, status, " in add_user_account");

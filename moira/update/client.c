@@ -1,15 +1,15 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/client.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/client.c,v 1.4 1988-08-04 18:20:28 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/client.c,v 1.5 1988-08-11 13:59:11 mar Exp $
  */
 
 #ifndef lint
-static char *rcsid_client2_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/client.c,v 1.4 1988-08-04 18:20:28 mar Exp $";
+static char *rcsid_client2_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/client.c,v 1.5 1988-08-11 13:59:11 mar Exp $";
 #endif	lint
 
 /*
  * MODULE IDENTIFICATION:
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/client.c,v 1.4 1988-08-04 18:20:28 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/client.c,v 1.5 1988-08-11 13:59:11 mar Exp $
  *	Copyright 1987 MIT Project Athena.
  * DESCRIPTION:
  *	This code handles the actual distribution of data files
@@ -34,7 +34,7 @@ static char *rcsid_client2_c = "$Header: /afs/.athena.mit.edu/astaff/project/moi
 #include <krb.h>
 
 extern char *malloc();
-extern int errno;
+extern int errno, dbg;
 
 static char buf[BUFSIZ];
 static int code;
@@ -245,6 +245,9 @@ execute(path)
     code = receive_object(conn, (char *)&response, INTEGER_T);
     if (code)
 	return(connection_errno(conn));
+    if (dbg & DBG_TRACE)
+      com_err(whoami, 0, "execute returned %x (%d)",
+	      response, response.w_retcode);
     if (response.w_retcode) {
 /****************************************************************
  * The following line is there because the current update servers

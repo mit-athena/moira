@@ -1,5 +1,7 @@
-#!/bin/csh -f
+#!/bin/csh -f -x
 # This script performs updates of hesiod files on hesiod servers.  
+# 	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/hesiod.sh,v $
+echo	'$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/hesiod.sh,v 1.7 1988-12-29 19:07:25 mar Exp $'
 
 # The following exit codes are defined and MUST BE CONSISTENT with the
 # SMS error codes the library uses:
@@ -8,12 +10,16 @@ set SMS_MISSINGFILE = 	47836473
 set SMS_NAMED = 	47836475
 set SMS_TARERR = 	47836476
 
+umask 22
+
 # File that will contain the necessary information to be updated
 set TARFILE=/tmp/hesiod.out
 # Directory into which we will empty the tarfile
 set SRC_DIR=/etc/athena/_nameserver
 # Directory into which we will put the final product
 set DEST_DIR=/etc/athena/nameserver
+# Files to verify nameserver loaded
+set CHECKFILES="passwd.db pobox.db cluster.db grplist.db group.db"
 
 # Create the destination directory if it doesn't exist
 if (! -d $DEST_DIR) then
@@ -22,21 +28,14 @@ if (! -d $DEST_DIR) then
    /bin/chmod 755 $DEST_DIR
 endif
 
-# There is reason for $SRC_DIR and $DEST_DIR to be on the same disk
-# parition, so find out where $DEST_DIR is and put $SRC_DIR there too.
-set old = $cwd
-chdir $DEST_DIR
-# Don't use $cwd; it won't follow the link
-set CUR_DIR = `pwd`
-set SRC_DIR_TMP = $CUR_DIR:h/_nameserver
-if (! -d $SRC_DIR_TMP) then
-   /bin/rm -f $SRC_DIR_TMP
-   /bin/mkdir $SRC_DIR_TMP
-   /bin/chmod 755 $SRC_DIR_TMP
+# If $SRC_DIR does not already exist, make sure that it gets created
+# on the same parition as $DEST_DIR.
+if (! -d $SRC_DIR) then
+	chdir $DEST_DIR
+	mkdir ../_nameserver
+	chdir ../_nameserver
+	if ($SRC_DIR != `pwd`) ln -s `pwd` $SRC_DIR
 endif
-if ($SRC_DIR_TMP != $SRC_DIR) ln -s $SRC_DIR_TMP $SRC_DIR
-cd $old
-unset old SRC_DIR_TMP
 
 # Alert if tarfile doesn't exist
 if (! -r $TARFILE) exit $SMS_MISSINGFILE
@@ -74,10 +73,6 @@ rm -f /etc/named.pid
 # Restart named.
 (unlimit; /etc/named)
 
-# Before trying to reimpliment this timeout mechanism using interrupts, 
-# be sure to check and make sure that it will work on both types of 
-# machines.  As of 6.0B, RT csh didn't respond correctly to onintr.
-#
 # This timeout is implemented by having the shell check TIMEOUT times
 # for the existance of /etc/named.pid and to sleep INTERVAL seconds
 # between each check.
@@ -94,13 +89,21 @@ end
 # Did it time out?
 if ($i == $TIMEOUT) exit $SMS_NAMED
 
+# Verify that the nameserver is answering queries for the new data
+cd $DEST_DIR
+foreach f ( $CHECKFILES )
+        set temp=`tac $f | egrep -v '^;' | head -1`
+        set hes=`/bin/echo $temp | awk '{print $1}'`
+        set ent=`echo $hes | rev | sed 's/\(.*\)\.\(.*\)/\2/' | rev`
+        set type=`echo $hes | rev | sed 's/\(.*\)\.\(.*\)/\1/' | rev`
+        hesinfo $ent $type > /dev/null
+	if ($status == 1) then
+                exit $SMS_HESFILE
+        endif
+end
+
 # Clean up!
 /bin/rm -f $TARFILE
 /bin/rm -f $0
 
 exit 0
-
-#
-# 	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/hesiod.sh,v $
-#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/hesiod.sh,v 1.6 1988-08-06 16:41:53 qjb Exp $
-#

@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/stats.dc,v 1.1 1991-10-04 15:30:06 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/stats.dc,v 1.1.1.1 1992-09-15 01:12:23 genoa Exp $
  *
  * This generates a list of how many lockers are on each NFS server
  * for statistics gathering purposes.
@@ -37,10 +37,10 @@ char **argv;
     EXEC SQL END DECLARE SECTION;
 
 #ifsql INGRES
-    EXEC SQL CONNECT sms;
+    EXEC SQL CONNECT moira;
 #endsql
 #ifsql INFORMIX
-    EXEC SQL DATABASE sms;
+    EXEC SQL DATABASE moira;
 #endsql
 
     if (argc == 2) {
@@ -67,6 +67,10 @@ char **argv;
 	outf = NULL;
     }
 
+    /* The following is declarative, not executed,
+     * and so is dependent on where it is in the file,
+     * not in the order of execution of statements.
+     */
     EXEC SQL WHENEVER SQLERROR GOTO sqlerr;
 
     machines = create_hash(1000);
@@ -85,7 +89,7 @@ char **argv;
     EXEC SQL DECLARE x CURSOR FOR
       SELECT DISTINCT f.mach_id, count(f.filsys_id)
       FROM filesys f
-	WHERE f.type="NFS"
+	WHERE f.type='NFS'
       GROUP BY f.mach_id;
     EXEC SQL OPEN x;
     while (1) {

@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/prlogger.dc,v 1.1 1991-09-03 15:39:48 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/prlogger.dc,v 1.1.1.1 1992-09-15 01:09:53 genoa Exp $
  *
  * This generates a list of active users for the prlogger
  *
@@ -33,10 +33,10 @@ char **argv;
     EXEC SQL END DECLARE SECTION;
 
 #ifsql INGRES
-    EXEC SQL CONNECT sms;
+    EXEC SQL CONNECT moira;
 #endsql
 #ifsql INFORMIX
-    EXEC SQL DATABASE sms;
+    EXEC SQL DATABASE moira;
 #endsql
 
     if (argc == 2) {
@@ -62,10 +62,14 @@ char **argv;
 	outf = NULL;
     }
 
+    /* The following is declarative, not executed,
+     * and so is dependent on where it is in the file,
+     * not in the order of execution of statements.
+     */
     EXEC SQL WHENEVER SQLERROR GOTO sqlerr;
 
     EXEC SQL DECLARE x CURSOR FOR 
-      SELECT login, mit_year FROM users WHERE status = 1;
+      SELECT login, affiliation FROM users WHERE status = 1;
     EXEC SQL OPEN x;
     while (1) {
 	EXEC SQL FETCH x INTO :login, :class;

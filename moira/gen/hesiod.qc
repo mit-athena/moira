@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/hesiod.qc,v 1.7 1988-08-20 20:05:03 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/hesiod.qc,v 1.8 1988-08-30 15:12:25 mar Exp $
  *
  * This generates the zone files necessary to load a hesiod server.
  * The following zones are generated: passwd, uid, pobox, group,
@@ -19,6 +19,7 @@
 #define min(x,y)	((x) < (y) ? (x) : (y))
 struct hash *machines = NULL;
 struct hash *users = NULL;
+char *whoami = "hesiod.gen";
 
 struct grp {
     struct grp *next;
@@ -39,11 +40,14 @@ char **argv;
     char cmd[64];
     struct stat sb;
     int changed = 0;
+    int ingerr();
 
     if (argc > 2) {
 	fprintf(stderr, "usage: %s [outfile]\n", argv[0]);
 	exit(SMS_ARGS);
     }
+
+    IIseterr(ingerr);
 
 ##  ingres sms
 
@@ -72,6 +76,32 @@ char **argv;
     }
 
     exit(SMS_SUCCESS);
+}
+
+
+/*
+ * ingerr: (supposedly) called when Ingres indicates an error.
+ * I have not yet been able to get this to work to intercept a
+ * database open error.
+ */
+#define INGRES_DEADLOCK 4700
+
+static int ingerr(num)
+    int *num;
+{
+    char buf[256];
+    int ingres_errno;
+
+    switch (*num) {
+    case INGRES_DEADLOCK:
+	ingres_errno = SMS_DEADLOCK;
+	break;
+    default:
+	ingres_errno = SMS_INGRES_ERR;
+    }
+    com_err(whoami, SMS_INGRES_ERR, " code %d\n", *num);
+    critical_alert("DCM", "Hesiod build encountered INGRES ERROR %d", *num);
+    exit(ingres_errno);
 }
 
 
@@ -223,7 +253,7 @@ do_pobox()
 do_groups()
 ##{
     FILE *iout, *gout, *lout;
-    char ioutf[64], goutf[64], loutf[64], buf[256], *l;
+    char ioutf[64], goutf[64], loutf[64], buf[512], *l;
     struct hash *groups;
     register struct bucket *b, **p;
     struct grp *g;
@@ -301,7 +331,7 @@ do_groups()
     sq = sq_create();
 ##  range of m is members
 ##  retrieve (name = list.#name, gid = list.#gid, lid = l.list_id)
-##	where l.group = 0 and l.active != 0 and m.member_type = "LIST" and
+##	where l.active != 0 and list.active != 0 and m.member_type = "LIST" and
 ##		m.member_id = l.list_id and m.list_id = list.list_id and
 ##		list.group != 0 {
 	strtrim(name);
@@ -312,21 +342,20 @@ do_groups()
 	    sprintf(buf, "%s:%d", name, gid);
 	}
 	hash_store(groups, lid, strsave(buf));
-    	sq_save_data(sq, lid);
+    	sq_save_unique_data(sq, lid);
 ##  }
 
     while (sq_get_data(sq, &id)) {
-##	repeat retrieve (name = l.#name, gid = l.#gid, lid = l.list_id)
-##	    where l.group = 0 and m.member_type = "LIST" and
-##		m.member_id = l.list_id and m.list_id = @id {
-	    strtrim(name);
+##	repeat retrieve (lid = l.list_id) where m.member_type = "LIST" and
+##		m.list_id = @id and m.member_id = l.list_id and l.active != 0 {
 	    if (l = hash_lookup(groups, lid)) {
-		sprintf(buf, "%s:%s:%d", l, name, gid);
+		sprintf(buf, "%s:%s", l, hash_lookup(groups, id));
 		free(l);
+		l = strsave(buf);
 	    } else {
-		sprintf(buf, "%s:%d", name, gid);
+		l = hash_lookup(groups, id);
 	    }
-	    hash_store(groups, lid, strsave(buf));
+	    hash_store(groups, lid, l);
 	    sq_save_unique_data(sq, lid);
 ##	}
     }
@@ -346,7 +375,8 @@ do_groups()
 
 ##  repeat retrieve (lid = m.list_id, id = m.member_id)
 ##	where m.member_type = "USER" {
-      if (u = (struct user *) hash_lookup(users, id)) {
+      if ((u = (struct user *) hash_lookup(users, id)) &&
+	  (hash_lookup(groups, lid) != NULL)) {
 	  g = (struct grp *) malloc(sizeof(struct grp));
 	  g->next = u->lists;
 	  u->lists = g;
@@ -357,12 +387,22 @@ do_groups()
 
     for (p = &(users->data[users->size - 1]); p >= users->data; p--) {
 	for (b = *p; b; b = b->next) {
-	    fprintf(lout, "%s.grplist\tHS UNSPECA \"",
+	    i = 0;
+	    sprintf(buf, "%s.grplist\tHS UNSPECA \"",
 		    ((struct user *)b->data)->name);
 	    for (g = ((struct user *)b->data)->lists; g; g = g->next)
-	      if (l = hash_lookup(groups, g->id))
-		fprintf(lout, "%s%s", l, g->next ? ":" : "");
-	    fputs("\"\n", lout);
+	      if (l = hash_lookup(groups, g->id)) {
+		  i++;
+		  strcat(buf, l);
+		  if (g->next)
+		    strcat(buf, ":");
+	      }
+	    strcat(buf, "\"\n");
+	    /* Do duplicate detection here */
+	    if (i > 1) {
+		remove_duplicate_groups(buf);
+	    }
+	    fputs(buf, lout);
 	}
     }
 
@@ -390,6 +430,39 @@ do_groups()
     fix_file(loutf);
     return(1);
 ##}
+
+
+#define MAXGROUPS 256
+
+remove_duplicate_groups(p)
+register char *p;
+{
+    register char *pp;
+    char *index();
+    register int *mp;
+    int memory[MAXGROUPS], i, *mg = &memory[MAXGROUPS-1];
+
+    bzero(memory, MAXGROUPS * sizeof(int));
+    while (p = index(p, ':')) {
+	i = atoi(++p);
+	for (mp = memory; *mp && mp < mg; mp++)
+	  if (*mp == i) {
+	      if (p = index(p, ':'))
+		strcpy(pp, ++p);
+	      else {
+		  strcpy(--pp, "\"\n");
+	      }
+	      p = pp;
+	      break;
+	  }
+	if (*mp == i)
+	  continue;
+	*mp = i;
+	if (!(p = index(p, ':')))
+	  return;
+	pp = ++p;
+    }
+}
 
 
 do_filsys()

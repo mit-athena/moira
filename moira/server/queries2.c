@@ -1,4 +1,4 @@
-/* $Id: queries2.c,v 2.73 2000-06-29 18:22:54 zacheiss Exp $
+/* $Id: queries2.c,v 2.74 2000-08-10 02:03:58 zacheiss Exp $
  *
  * This file defines the query dispatch table
  *
@@ -2438,12 +2438,16 @@ static struct validate aacl_validate =
 };
 
 static char *gsvc_fields[] = {
-  "service",
+  "service", "protocol",
   "service", "protocol", "port", "description", "modtime", "modby", "modwith",
 };
 
 static char *asvc_fields[] = {
   "service", "protocol", "port", "description",
+};
+
+static char *dsvc_fields[] = {
+  "service", "protocol",
 };
 
 static struct valobj asvc_valobj[] = {
@@ -2457,12 +2461,24 @@ static struct validate asvc_validate = {
   asvc_valobj,
   4,
   "name",
-  "name = '%s'",
-  1,
+  "name = '%s' AND protocol = '%s'",
+  2,
   0,
   0,
   0,
-  set_modtime,
+  set_service_modtime,
+};
+
+static struct validate dsvc_validate = {
+  asvc_valobj,
+  2,
+  "name",
+  "name = '%s' AND protocol = '%s'",
+  2,
+  0,
+  0,
+  0,
+  0,
 };
 
 static char *gprn_fields[] = {
@@ -5406,8 +5422,8 @@ struct query Queries[] = {
     "name, protocol, port, description, TO_CHAR(modtime, 'DD-mon-YYYY HH24:MI:SS'), modby, modwith FROM services",
     gsvc_fields,
     7,
-    "name LIKE '%s'",
-    1,
+    "name LIKE '%s' AND protocol LIKE '%s'",
+    2,
     "name",
     &VDfix_modby,
   },
@@ -5438,12 +5454,12 @@ struct query Queries[] = {
     "ss",
     SERVICES_TABLE,
     0,
-    asvc_fields,
+    dsvc_fields,
     0,
-    "name = '%s'",
-    1,
+    "name = '%s' AND protocol = '%s'",
+    2,
     NULL,
-    &asvc_validate,
+    &dsvc_validate,
   },
 
   {

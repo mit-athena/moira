@@ -1,4 +1,4 @@
-/* $Id: qfollow.pc,v 2.16 2000-04-21 19:47:40 zacheiss Exp $
+/* $Id: qfollow.pc,v 2.17 2000-08-10 02:03:58 zacheiss Exp $
  *
  * Query followup routines
  *
@@ -20,7 +20,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qfollow.pc,v 2.16 2000-04-21 19:47:40 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qfollow.pc,v 2.17 2000-08-10 02:03:58 zacheiss Exp $");
 
 extern char *whoami, *table_name[];
 extern int dbms_errno, mr_errcode;
@@ -280,6 +280,28 @@ int set_zephyr_modtime(struct query *q, char *argv[], client *cl)
   return MR_SUCCESS;
 }
 
+/* sets the modtime on an entry in services table, where argv[0] contains
+ * the service name.
+ */
+
+int set_service_modtime(struct query *q, char *argv[], client *cl)
+{
+  EXEC SQL BEGIN DECLARE SECTION;
+  char *service, *protocol, *entity;
+  int who;
+  EXEC SQL END DECLARE SECTION;
+
+  entity = cl->entity;
+  who = cl->client_id; 
+
+  service = argv[0];
+  protocol = argv[1];
+
+  EXEC SQL UPDATE services SET modtime = SYSDATE, modby = :who,
+    modwith = :entity WHERE name = :service AND protocol = :protocol;
+
+  return MR_SUCCESS;
+}
 
 /* fixes the modby field.  This will be the second to last thing in the
  * argv, the argv length is determined from the query structure.  It is

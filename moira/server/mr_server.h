@@ -1,4 +1,4 @@
-/* $Id: mr_server.h,v 1.52 2000-06-29 18:22:54 zacheiss Exp $
+/* $Id: mr_server.h,v 1.53 2000-08-10 02:03:58 zacheiss Exp $
  *
  * Copyright (C) 1987-1998 by the Massachusetts Institute of Technology
  * For copying and distribution information, please see the file
@@ -199,6 +199,7 @@ int set_serverhost_modtime(struct query *q, char *argv[], client *cl);
 int set_nfsphys_modtime(struct query *q, char *argv[], client *cl);
 int set_filesys_modtime(struct query *q, char *argv[], client *cl);
 int set_zephyr_modtime(struct query *q, char *argv[], client *cl);
+int set_service_modtime(struct query *q, char *argv[], client *cl);
 int _sdl_followup(struct query *q, char *argv[], client *cl);
 int trigger_dcm(struct query *q, char *argv[], client *cl);
 

@@ -1,4 +1,4 @@
-#	$Id: db2bkup.awk,v 1.15 2000-10-25 20:39:47 zacheiss Exp $
+#	$Id: db2bkup.awk,v 1.16 2004-10-19 03:43:59 zacheiss Exp $
 #
 #	This converts the file used to originally create the database
 #	into a program to back it up.
@@ -41,7 +41,7 @@ NF>=2 {
 	vname[count] = $1;
 	printf "  /* %s */\n", $0;
 	if ($2 ~ /INTEGER/ || $2 ~ /SMALLINT/ || $2 ~ /INTEGER1/) {
-		printf "  int\tt_%s;\n", vname[count];
+		printf "  char\tt_%s[39];\n", vname[count];
 		vtype[count]="int";
 	} else if ($2 ~ /CHAR\([0-9]*\)/) {
 		t = split($2, temp, "(");
@@ -72,6 +72,8 @@ NF>=2 {
 		}
 		if(vtype[i] ~ /date/) {
 			printf "    TO_CHAR(%s, 'DD-mon-YYYY HH24:MI:SS')", vname[i];
+		} else if(vtype[i] ~ /int/) {
+		  	printf "    TO_CHAR(%s)", vname[i];
 		} else printf "    %s", vname[i];
 	}
 	printf " FROM %s;\n", tablename;
@@ -86,7 +88,7 @@ NF>=2 {
 	printf "      if (sqlca.sqlcode != 0)\n        break;\n";
 	for (i = 0; i < count; i++) {
 		if (i != 0) print "      dump_sep(f);";
-		if (vtype[i] ~ /str/ || vtype[i] ~ /date/) {
+		if (vtype[i] ~ /str/ || vtype[i] ~ /date/ || vtype[i] ~ /int/) {
 			printf "      dump_str(f, endtrim(t_%s));\n", vname[i];
 		} else {
 			printf "      dump_%s(f, t_%s);\n", vtype[i], vname[i];

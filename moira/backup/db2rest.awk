@@ -1,4 +1,4 @@
-#	$Id: db2rest.awk,v 1.10 2000-10-25 20:39:47 zacheiss Exp $
+#	$Id: db2rest.awk,v 1.11 2004-10-19 03:43:59 zacheiss Exp $
 #
 #	This converts the file used to originally create the database
 #	into a program to restore it from a backup.
@@ -42,7 +42,7 @@ NF >= 2 {
 	vname[count] = $1;
 	printf "  /* %s */\n", $0;
 	if ($2 ~ /INTEGER/ || $2 ~ /SMALLINT/ || $2 ~ /INTEGER1/) {
-		printf "  int\tt_%s;\n", vname[count];
+		printf "  char\tt_%s[39];\n", vname[count];
 		vtype[count]="int";
 	} else if ($2 ~ /CHAR\([0-9]*\)/) {
 		t = split($2, temp, "(");
@@ -71,7 +71,7 @@ NF >= 2 {
 	for (i = 0; i < count; i++) {
 		if (i != 0) print "      parse_sep(f);";
 		if (vtype[i] ~ /int/) {
-			printf("      t_%s = parse_int(f);\n", vname[i]);
+			printf("      parse_str(f, t_%s, 39);\n", vname[i]);
 		} else if (vtype[i] ~ /date/) {
 			printf "      parse_str(f, t_%s, 26);\n", vname[i];
 		} else {
@@ -92,7 +92,7 @@ NF >= 2 {
 		if (vtype[i] ~ /date/) {
 			printf "          TO_DATE(NVL(:t_%s,TO_CHAR(SYSDATE, 'DD_mon-YYYY HH24:MI:SS')), 'DD-mon-YYYY HH24:MI:SS')", vname[i];
 		} else if(vtype[i] ~ /int/) {
-			printf "          :t_%s", vname[i];
+		        printf "          TO_NUMBER(:t_%s)", vname[i];
 		} else {
 			printf "          NVL(:t_%s,CHR(0))", vname[i];
 		}

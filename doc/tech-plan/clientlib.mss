@@ -1,9 +1,12 @@
 @Comment[
 	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/doc/tech-plan/clientlib.mss,v $
 	$Author: pjlevine $
-	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/doc/tech-plan/clientlib.mss,v 1.3 1987-06-18 17:03:10 pjlevine Exp $
+	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/doc/tech-plan/clientlib.mss,v 1.4 1987-06-19 10:25:09 pjlevine Exp $
 
 	$Log: not supported by cvs2svn $
+Revision 1.3  87/06/18  17:03:10  pjlevine
+pjlevine adds a few words of wisdom
+
 Revision 1.2  87/06/18  15:53:41  wesommer
 Added specs for low level library.
 
@@ -23,6 +26,8 @@ uses the SMS protocol for modularity and consistency.
 The SMS application library provides access to SMS through a simple
 set of procedure calls.  The library is layered on top of GDB, and
 itself consists of several layers.
+Please see Addendum (section 9), subsection @ref(Applib), for complete
+list of application library routines.
 
 @subsection (Error Handling) 
 

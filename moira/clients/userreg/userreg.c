@@ -2,7 +2,7 @@
  * $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.c,v $
  * $Author: mar $
  * $Locker:  $
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.c,v 1.13 1989-08-29 13:26:05 mar Exp $ 
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.c,v 1.14 1989-09-13 16:54:24 mar Exp $ 
  *
  *  (c) Copyright 1988 by the Massachusetts Institute of Technology.
  *  For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char    *rcsid_userreg_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.c,v 1.13 1989-08-29 13:26:05 mar Exp $";
+static char    *rcsid_userreg_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.c,v 1.14 1989-09-13 16:54:24 mar Exp $";
 #endif	lint
 
 #include <mit-copyright.h>
@@ -404,7 +404,7 @@ gfirst()
 	/* input the first name */
 	char            buf[FIRST_NAME_SIZE+2];
 
-	signal(SIGALRM, restart);
+	signal(SIGALRM, fix_display);
 	input("Enter first Name:", buf, FIRST_NAME_SIZE+1,
 	      FIRSTNAME_TIMEOUT, TRUE);
 	strncpy(user.u_first, buf, FIRST_NAME_SIZE);

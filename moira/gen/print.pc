@@ -1,4 +1,4 @@
-/* $Id: print.pc,v 1.7 2000-02-09 22:55:13 mwhitson Exp $
+/* $Id: print.pc,v 1.8 2000-11-17 10:30:13 zacheiss Exp $
  *
  * This generates printcaps and other files for Athena print servers
  *
@@ -22,7 +22,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/print.pc,v 1.7 2000-02-09 22:55:13 mwhitson Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/print.pc,v 1.8 2000-11-17 10:30:13 zacheiss Exp $");
 
 char *whoami = "print.gen";
 char *db = "moira/moira";
@@ -160,10 +160,11 @@ void do_host(char *host)
   fprintf(out, "ACCEPT SERVICE=X,S,Q,P\nACCEPT LPC=status,lpq,printcap\n\n");
 
   fprintf(out, "# Only trust certain host keys to forward jobs/commands\n");
-  fprintf(out, "REJECT AUTHFROM=?* PRINTER=</var/spool/printer/queues.secure "
-	  "NOT AUTHFROM=</var/spool/printer/hostkeys.allow\n");
-  fprintf(out, "REJECT AUTHFROM=?* AUTHJOB "
-	  "NOT AUTHFROM=</var/spool/printer/hostkeys.allow\n\n");
+  fprintf(out, "REJECT SERVICE=R AUTHFROM=?* "
+	  "PRINTER=</var/spool/printer/queues.secure "
+	  "NOT AUTHFROM=</var/spool/printer/hostkeys.allow FORWARD\n");
+  fprintf(out, "REJECT SERVICE=R AUTHFROM=?* AUTHJOB "
+	  "NOT AUTHFROM=</var/spool/printer/hostkeys.allow FORWARD\n\n");
 
   fprintf(out, "# Allow root to control and remove jobs\n");
   fprintf(out, "ACCEPT SERVICE=C,R SERVER REMOTEUSER=root\n\n");
@@ -218,7 +219,7 @@ void do_host(char *host)
   fprintf(out, "ACCEPT SERVICE=M AUTH=USER,FWD AUTHJOB AUTHSAMEUSER\n\n");
 
   fprintf(out, "# Reject unauthentic print/lprm requests to authenticated queues\n");
-  fprintf(out, "REJECT SERVICE=R,M "
+  fprintf(out, "REJECT SERVICE=R,M NOT AUTH"
 	  "PRINTER=</var/spool/printer/queues.secure\n\n");
 
   fprintf(out, "# Reject unauthentic print requests from off MITnet\n");
@@ -229,7 +230,7 @@ void do_host(char *host)
   
   fprintf(out, "# Reject any other lpc, or lprm. Accept all else\n");
   fprintf(out, "REJECT SERVICE=C,M\n");
-  fprintf(out, "DEFAULT ACCEPT");
+  fprintf(out, "DEFAULT ACCEPT\n");
   tarfile_end(tf);
 
   /* list of kerberized queues */

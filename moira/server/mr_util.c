@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_util.c,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_util.c,v 1.19 1992-07-08 16:57:49 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_util.c,v 1.20 1993-11-10 15:32:24 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -9,7 +9,7 @@
  */
 
 #ifndef lint
-static char *rcsid_mr_util_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_util.c,v 1.19 1992-07-08 16:57:49 mar Exp $";
+static char *rcsid_mr_util_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_util.c,v 1.20 1993-11-10 15:32:24 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -111,7 +111,7 @@ char **argv;
     register unsigned char *p, *lastch;
 
     for (arg = argv; argc--; arg++) {
-	for (lastch = p = *arg; *p; p++) {
+	for (lastch = p = (unsigned char *) *arg; *p; p++) {
 	    /* If any byte in the string has the high bit set, assume
 	     * that it is binary and we do not want to trim it.
 	     * Setting p = lastch will cause us not to trim the string

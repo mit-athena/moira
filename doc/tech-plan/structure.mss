@@ -1,14 +1,15 @@
-@part[structure, root "sms.mss"]
+@part[structure, root "moira.mss"]
 @newpage()
 @MajorSection(Data Fields and Relationships)
+@tag(database_fields)
 
-The knowledge base of SMS enables system services and servers to be updated
+The knowledge base of Moira enables system services and servers to be updated
 with correct information.  The database has the reponsibility of storing
 information which will be transmitted to the services.  The database will
 not, however, be responsible for knowing the format of data to be sent.
 This information will be inherent to the Data Control Manager.  Specific
 fields of the database are organized to represent the needs of system.  
-The current SMS database is comprised of the following tables:
+The current Moira database is comprised of the following tables:
 
 @Begin(Description)
 
@@ -29,65 +30,80 @@ not the same as the Unix uid.
 Ultimately, this field will be removed and uids will be assigned arbitrarily
 for each client-server connection.
 
+@I(shell)@\the user's default shell.
+
 @I(last, first, middle)@\The user's full name, broken down for convenient
 indexing. 
 
-@I(shell)@\the user's default shell.
-
-@I(home)@\name of the users home file system.
-
-@I(status)@\contains flags for the user.  The only currently defined flag is
-bit 0, which when set indicates that the user is active.  (An active user is
-one who has been assigned system resources such as a mailbox, a home
-directory, and who may be a member of one or more lists.)
+@I(status)@\contains the user's account status.  Currently defined
+statuses are:
+@format{
+0 - Not registered, but registerable
+1 - Active account
+2 - Half-registered
+3 - Marked for deletion
+4 - Not registerable
+}
+Only accounts in state 1 will have their information show up in
+database extracts for system services.
 
 @I(mit_id)@\the user's encrypted MIT id.
 
 @I(mit_year)@\a student's academic year, not modifiable by the student.
-Used for Athean administrative purposes.
+Used for Athena administrative purposes.
 
-@I(expdate)@\the expiration date of the user and the user's resources (the user
-becomes inactive.)
+@I(modtime)@\the time that this record was last modified (or created).
 
-@I(modtime)@\the time that the user record was last modified (or created).
+@I(modby)@\the person who modified this record last.
 
-@End(Description)
-
-See Section @Ref(Users) for the list of queries associated with this table.
-
-There are no entries for password and primary gid because these are
-being subsumed by other services (Kerberos, ACLS).]
-
-@C(finger)@\@Multiple[This table contains the "finger" information for users.  
-
-@Begin(Description)
-@I(users_id)@\corresponds to the users_id in the users table.
+@I(modwith)@\the service that modified this record last.
 
 @I(fullname)@\the user's full name.
 
 @I(nickname)@\the user's nickname.
 
-@I(home_address)@\home address.
+@I(home_addr)@\home address.
 
 @I(home_phone)@\home phone.
 
-@I(mit_address)@\MIT address; this is for on-campus students' living addresses.
+@I(office_addr)@\office address.
 
-@I(mit_phone)@\MIT phone.
+@I(office_phone)@\office phone.
 
-@I(office)@\office address.
+@I(mit_dept)@\MIT address; this is for on-campus students' living addresses.
 
-@I(affiliation)@\one of undergraduate, graduate, staff, faculty, other.
+@I(mit_affil)@\one of undergraduate, graduate, staff, faculty, other.
 
-@I(department)@\student's major or employee's department.
+@I(fmodtime)@\time finger record was last modified.
 
-@I(year)@\student's year or "G".
+@I(fmodby)@\person who made this modification.
 
-@I(modtime)@\time finger record was last modified.
+@I(fmodwith)@\service that made this modification.
 
-See Section @Ref(Finger) for the list of queries associated with this table.
+@I(potype)@\mailbox type: one of POP, SMTP, or NONE.
 
-@End(Description)]
+@I(pop_id)@\Machine ID of current or last known POP server.
+
+@I(box_id)@\String ID of box name if type is SMTP.
+
+@I(pmodtime)@\time pobox record was last modified.
+
+@I(pmodby)@\person who made this modification.
+
+@I(pmodwith)@\service that made this modification.
+
+@I(gid)@\@i([unused]) intended for optimized user groups, but never implemented.
+
+@I(uglist_id)@\@i([unused]) intended for optimized user groups, but never implemented.
+
+@I(ugdefault)@\@i([unused]) intended for optimized user groups, but never implemented.
+
+@End(Description)
+
+See Section @Ref(Users) for the list of queries associated with this table.
+
+There is no entry for a password because it is being subsumed by another 
+service (Kerberos).]
 
 @C(machine)@\@Multiple[Machine Information.  
 
@@ -95,24 +111,22 @@ See Section @Ref(Finger) for the list of queries associated with this table.
 
 @I(name)@\the canonical hostname.
 
-@I(machine_id)@\an internal database id for this record.
+@I(mach_id)@\an internal database id for this record.
 
-@I(type)@\machine type: VS, RTPC, VAX
+@I(type)@\machine type: VAX, RT
 
-@I(model)@\machine model: VS2, VS2000, RTFLOOR, RTDESK, 750, 785.
+@I(modtime)@\the time that this record was last modified (or created).
 
-@I(status)@\machine status: PUBLIC, PRIVATE, SERVER, TIMESHARE.
+@I(modby)@\the person who modified this record last.
 
-@I(serial)@\serial number.
-
-@I(sys_type)@\system type (for use by release engineering and operations).
+@I(modwith)@\the service that modified this record last.
 
 @End(Description)
 
 See Section @Ref(Machine) for the list of queries associated with this table.
 ]
 
-@C(cluster)@\@Multiple[Cluster Infomation.  There are several named clusters
+@C(cluster)@\@Multiple[Cluster Infomation. There are several named clusters
 throughout Athena that correspond roughly to subnets and/or geographical
 areas.
 
@@ -120,25 +134,31 @@ areas.
 
 @I(name)@\cluster name.
 
-@I(description)@\cluster description.
+@I(clu_id)@\internal database identifier for this record.
+
+@I(desc)@\cluster description.
 
 @I(location)@\cluster location.
 
-@I(cluster_id)@\internal database identifier for this record.
+@I(modtime)@\the time that this record was last modified (or created).
+
+@I(modby)@\the person who modified this record last.
+
+@I(modwith)@\the service that modified this record last.
 
 @End(Description)
 
 See Section @Ref(Cluster) for the list of queries associated with this
 table.]
 
-@C(machclumap)@\@Multiple[Machine-Cluster Map.  This tables is used to
+@C(mcmap)@\@Multiple[Machine-Cluster Map. This tables is used to
 assign machines to clusters.
 
 @Begin(Description)
 
-@I(cluster_id)@\cluster id.
+@I(mach_id)@\machine id.
 
-@I(machine_id)@\machine id.
+@I(clu_id)@\cluster id.
 
 @End(Description)
 
@@ -154,378 +174,27 @@ particular cluster.
 
 @Begin(Description)
 
-@I(cluster_id)@\references an entry in the cluster table.
+@I(clu_id)@\references an entry in the cluster table.
 
-@I(serv_label)@\label of a service cluster type (e.g. "prcluster", "usrlib",
-"syslib")  
+@I(serv_label)@\label of a service cluster type (e.g. "usrlib",
+"syslib", "zephyr")
 
-@I(serv_cluster)@\specific service cluster name (e.g. "e40-prcluster")
+@I(serv_cluster)@\specific service cluster data (e.g. "bldgw20-vssys")
 
 @End(Description)
 
 See Section @Ref(Svc) for the list of queries associated with this table.
 ]
 
-@C(prclumap)@\@Multiple[This table provides a mapping between printer
-service cluster names and printer names.
-
-@Begin(Description)
-
-@I(prcluster)@\printer cluster name
-
-@I(p_id)@\printer id.
-
-@End(Description)
-
-See Section @Ref(Prclusters) for the list of queries associated with this
-table.
-]
-
-@C(servers)@\@Multiple[Server Information.  This table contains information
-needed by the Data Control Manager or applications for each known server.
-
-@Begin(Description)
-
-@I(service_name)@\name of service.
-
-@I(update_int)@\server update interval in minutes (for DCM).
-
-@I(target_file)@\target file on server for DCM generated server files.
-
-@I(dfgen)@\time of server file generation 
-
-@I(script)@\shell script used by servers for particular use.
-
-@End(Description)
-
-See Section @Ref(Servers) for the list of queries associated with this table.
-]
-
-@C(Hosts)@\@Multiple[Server to Host mapping table.  Used by the
-Data Control Manager to map a server to a list of server hosts.]
-
-@Begin(Description)
-
-@I(service_name)@\name of service.
-
-@I(mach_id)@\Machine id for a host containing the service.
-
-@I(enable)@\Enable switch for DCM. This switch controls whether or not 
-the DCM updates a server. (0 - Do not Update, 1 - Update)
-
-@I(override)@\Override time (minutes).  Used by DCM and update mechanism to
-indicate that an update has failed.  This time is used to update services
-at a different time from the default update interval time.  (-1 - Use
-the default interval time, 0 or greater - Use the override interval).
-
-@I(ltt)@\Last time tried.  Used by dcm, this field is adjusted each time
-a service is attemted to be updated, regardless of success or failure.
-
-@I(success)@\Flag indicating successful completion of server update.
-
-@I(value1)@\server-specific data used by applications (i.e., number of servers
-permitted per machine).
-
-@I(value2)@\additional server-specific data.
-
-@End(Description)
-
-See Section @Ref(Servers) for the list of queries associated with this
-table.
-]
-
-@C(services)@\@Multiple[TCP/UDP Port Information.  This is the information
-currently in /etc/services.  In a workstation environment with SMS and the
-Hesiod name server, service information will be obtained from the name
-server.
-
-@Begin(Description)
-
-@I(service)@\service name.
-
-@I(protocol)@\protocol: one of TCP, UDP.
-
-@I(port)@\port number.
-
-@I(description)@\description of service.
-
-@End(Description)
-
-See Section @Ref(Services) for the list of queries associated with this
-table.
-]
-
-@C(filesys)@\@Multiple[File System Information.  This section desribes the file
-system information necessary for a workstation to attach a file system.
-
-@Begin(Description)
-
-@I(label)@\a unique name for an attachable file system.
-
-@I(type)@\currently one of RVD, NFS, or RFS.
-
-@I(machine_id)@\file server machine.
-
-@I(name)@\name of file system on the server.
-
-@I(mount)@\default mount point for file system.
-
-@I(access)@\default access mode for file system.
-
-@End(Description)
-
-See Section @Ref(Filesys) for the list of queries associated with this table.
-]
-
-@C(rvdsrv)@\@Multiple[RVD Server Information.  This table contains the top
-level access control lists for each rvd server.  Any other per-server
-information should be added here.
-
-@Begin(Description)
-
-@I(machine_id)@\server machine.
-
-@I(operations_acl)@\operations access control list.
-
-@I(admin_acl)@\administrative access control list.
-
-@I(shutdown_acl)@\shutdown access control list.
-
-@End(Description)
-
-See Section @Ref(Rvdsrv) for the list of queries associated with this table.
-]
-
-@C(rvdphys)@\@Multiple[Physical device partition table.
-
-@Begin(Description)
-
-@I(machine_id)@\server machine.
-
-@I(device)@\rvd physical device.
-
-@I(size)@\size in 512-byte blocks.
-
-@I(created)@\creation time.
-
-@I(modified)@\modification time.
-
-@End(Description)
-
-See Section @Ref(Rvdphys) for the list of queries associated with this table.
-]
-
-@C(rvdvirt)@\@Multiple[Virtual device table.  This table contains the list of
-virtual devices for each rvd server machine.  Information per device
-includes the rvd physical device it resides on, its name, unique pack id,
-owner (@i<users> id), access control lists for the device (@i<rocap, excap,
-shcap>), allowable access modes, the offset within the physical device, its
-size, a @i(machine) id for a host that has default access to the device, and
-the creation and modifications dates for the device.
-
-@Begin(Description)
-
-@I(machine_id)@\server machine.
-
-@I(device)@\rvd physical device.
-
-@I(name)@\virtual device name.
-
-@I(packid)@\unique pack id.
-
-@I(owner)@\owner (currently an arbitrary string, should be a @C(users) entry
-id.) 
-
-@I(rocap, excap, shcap)@\currently three passwords providing read-only,
-exclusive, and shared accesss to the file system.  These should be condensed
-into one access control list id.  The access control list would indicate
-read and write access (shared access has never been implemented).
-
-@I(modes)@\allowable access modes for device.
-
-@I(offset)@\offset of virtual device into physical device (in blocks).
-
-@I(blocks)@\size of virtual device.
-
-@I(ownhost)@\name of host from which device may be mounted without a
-password (not used with acl's?).
-
-@I(created)@\creation time.
-
-@I(modified)@\modification time.
-
-@End(Description)
-
-See Section @Ref(Rvdvirt) for the list of queries associated with this table.
-]
-
-@C(nfsphys)@\@Multiple[NFS Server Information.  This table contains for each
-nfs server machine a list of the physical device partitions from which
-directories may be exported.  For each such partition an access control list
-is provided.
-
-@Begin(Description)
-
-@I(machine_id)@\server machine.
-
-@I(device)@\file system name.
-
-@I(dir)@\top-level directory of device.
-
-@I(allocated)@\number of quota units allocated to this device.
-
-@I(size)@\capacity of this device in quota units.
-
-@End(Description)
-
-See Section @Ref(Nfsphys) for the list of queries associated with this table.
-]
-
-@C(nfsquota)@\@Multiple[NFS Server Quota Information.  This table contains
-per user per server quota information.
-
-@Begin(Description)
-
-@I(machine_id)@\nfs server machine.
-
-@I(device)@\nfs server file system.
-
-@I(users_id)@\user id.
-
-@I(quota)@\user quota in quota units.
-
-@End(Description)
-
-See Section @Ref(Nfsquota) for the list of queries associated with this
-table.
-]
-
-@C(printer)@\@Multiple[Printer Information.
-
-@Begin(Description)
-
-@I(name)@\a unique printer name.
-
-@I(printer_id)@\internal database identifier for this record.
-
-@I(type)@\printer hardware type: one of LPS40, 3812, LN03, LN01, etc.
-
-@I(description)@\description of this printer.
-
-@End(Description)
-
-See Section @Ref(Printer) for the list of queries associated with this table.
-]
-
-@C(queue)@\@Multiple[Printer queues.  This table contains a list of unique
-queue names and the attributes of each queue.  Attributes of queue are its
-@i(ability), a status string (used by MDQS servers), and an access control
+@C(list)@\@Multiple[Lists are used as a general purpose means of
+grouping serveral objects togther.  This table contains descriptive
+information for each list; the @c[members] table contains the the list
+of objects that are in the list.  The ability to add or delete objects
+in a list is controlled by an access control entity associated with
+the list.  The access control entity may be a USER, a LIST, or NONE.
+An access control entity names the user or list of users who have the
+capability to manipulate the object specifying the access control
 list.
-
-@Begin(Description)
-
-@I(name)@\unique queue name.
-
-@I(queue_id)@\internal database id for this queue.
-
-@I(machine_id)@\server machine.
-
-@I(abilities)@\printer abilities associated with this queue (stored as an
-integer bitmask).
-
-@I(default)@\flag indicating whether this printer should be treated as a
-default printer.
-
-@I(status)@\queue status string (used by MDQS).
-
-@End(Description)
-
-See Section @Ref(Queue) for the list of queries associated with this table.
-]
-
-@C(pqm)@\@Multiple[Printer to queue mapping.  This table provides the mapping
-between printers and queues.
-
-@Begin(Description)
-
-@I(printer_id)@\printer id.
-
-@I(queue_id)@\queue id.
-
-@End(Description)
-
-See Section @Ref(Pqm) for the list of queries associated with this table.
-]
-
-@C(qdev)@\@Multiple[MDQS device information.  Each MDQS server has a device
-table that assigns a logical name and status information to each known
-physical printer device.
-
-@Begin(Description)
-
-@I(machine_id)@\MDQS server machine.
-
-@I(qdev_id)@\internal database id for this device.
-
-@I(name)@\logical name of device.
-
-@I(device)@\physcial device name (e.g.: /dev/lp0)
-
-@I(status)@\status string kept by MDQS.
-
-@End(Description)
-
-See Section @Ref(Qdev) for the list of queries associated with this table.
-]
-
-@C(qdm)@\@Multiple[MDQS queue to device mapping.  This table ties together
-the queue and device information for each MDQS server.  Printer names are
-not actually known to MDQS; printer to queue mapping is handled by Hesiod
-using the @C(pqm) table information described above.
-
-@Begin(Description)
-
-@I(machine_id)@\MDQS server machine.
-
-@I(queue_id)@\queue id.
-
-@I(device_id)@\device id.
-
-@I(server)@\name of a server program to invoke for jobs using this queue and
-device. 
-
-@End(Description)
-
-See Section @Ref(Qdm) for the list of queries associated with this table.
-]
-
-@C(pobox)@\@Multiple[Post Office Information.  This list matches users with
-one or more post office boxes.  A post office box is identified by its type
-(POP, LOCAL), the machine on which the box resides, and the box name on that
-machine.
-
-@Begin(Description)
-
-@I(users_id)@\id for a @C(users) entry.
-
-@I(type)@\mailbox type: one of POP, LOCAL, or FOREIGN.
-
-@I(machine_id)@\post office server machine (or string_id if type is FOREIGN).
-
-@I(box)@\mailbox name on server.
-
-@End(Description)
-
-See Section @Ref(Pobox) for the list of queries associated with this table.
-]
-
-@C(list)@\@Multiple[Lists are used as a general purpose means of grouping
-serveral objects togther.  This table contains descriptive information for
-each list; the @c[members] table contains the the list of objects that are
-in the list.  The ability to add or delete objects in a list is controlled
-by an access control list associated with the list.  An access control list,
-which is itself a list, contains as members a set of users who have the
-capability to manipulate the object specifying the access control list.
 
 @Begin(Description)
 
@@ -533,23 +202,38 @@ capability to manipulate the object specifying the access control list.
 
 @I(list_id)@\internal database id for this list.
 
-@I(flags)@\currently one or more of ACTIVE, PUBLIC, HIDDEN.  (These flags
-are used for mailing lists.)
+@I(active)@\Indicates this list should be extracted in service updates.
 
-@I(description)@\description of list.
+@I(public)@\Indicates any user may add or delete themselves as
+members of this list.
 
-@I(acl_id)@\a list id for the administrators' list.
+@I(hidden)@\Indicates that neither the list information or membership
+may be divulged to anyone who is not an administrator of this list.
 
-@I(creator)@\users id of the creator of this list.
+@I(maillist)@\Indicates that this list is a maillist.
 
-@I(expdate)@\expiration date of list.
+@I(group)@\Indicates that this list is a unix group.
 
-@I(modtime)@\time list was last modified (@c(list) entry or @C(members)
-entry). 
+@I(gid)@\Unix GID, if this list is a unix group.  This will have value
+-1 to indicate: assign a unique GID if this list is ever made a unix
+group.
+
+@I(desc)@\description of list.
+
+@I(acl_type)@\Type of access control entity: LIST, USER, or NONE.
+
+@I(acl_id)@\Access control entity identifier; a list ID, user ID, or
+ignored if type is NONE.
+
+@I(modtime)@\the time that this record was last modified (or created).
+
+@I(modby)@\the person who modified this record last.
+
+@I(modwith)@\the service that modified this record last.
 
 @End(Description)
 
-See Section @Ref(List) for the list of queries associated with this table.
+See Section @Ref(Lists) for the list of queries associated with this table.
 ]
 
 @C(members)@\@Multiple[List members.  Members are specified by a member type
@@ -569,8 +253,289 @@ id.)
 See Section @Ref(Members) for the list of queries associated with this table.
 ]
 
+@C(servers)@\@Multiple[Server Information. This table contains information
+needed by the Data Control Manager or applications for each known
+service to be updated.
+
+@Begin(Description)
+
+@I(name)@\name of service.
+
+@I(update_int)@\server update interval in minutes (for DCM).
+
+@I(target_file)@\where on the server being updated to put the file
+generated by the DCM.
+
+@I(script)@\where on Moira to find the shell script which will install
+new configuration files on a server.
+
+@I(dfgen)@\time of last server file generation.
+
+@I(dfcheck)@\time of last check to see if server files needed to be
+generated.
+
+@I(type)@\service type: UNIQUE or REPLICAT(ed).
+
+@I(enable)@\Enable switch for DCM. This switch controls whether or not 
+the DCM generates files for this service. (0 - Do not Update, 1 - Update)
+
+@I(inprogress)@\indicator that a DCM is generating new configuration
+files for this service right now.
+
+@I(harderror)@\indication that an error has occured while generating
+files (or while propogating files is service type is replicated).
+This is not a boolean, but the actual error number.
+
+@I(errmsg)@\a text description of the @i(harderror) reported above.
+
+@I(acl_type)@\type of access control entity for this service.
+
+@I(acl_id)@\id of access control entity for this service.
+
+@I(modtime)@\the time that this record was last modified (or created).
+
+@I(modby)@\the person who modified this record last.
+
+@I(modwith)@\the service that modified this record last.
+
+@End(Description)
+
+See Section @Ref(Servers) for the list of queries associated with this table.
+]
+
+@C(serverhosts)@\@Multiple[Server to Host mapping table. Used by the
+Data Control Manager to map a server to a list of server hosts.
+
+@Begin(Description)
+
+@I(service)@\name of service.
+
+@I(mach_id)@\Machine id for a host containing the service.
+
+@I(success)@\Flag indicating successful completion of most recent
+server update.
+
+@I(enable)@\Enable switch for DCM. This switch controls whether or not 
+the DCM updates a server. (0 - Do not Update, 1 - Update)
+
+@I(override)@\Override flag.  Used by DCM and update mechanism to
+indicate that it should attempt to update this host, even if the
+necessary time interval has not elapsed.
+
+@I(inprogress)@\indicator that a DCM is updating this host right now.
+
+@I(hosterror)@\indication that an error has occured while updating
+this host.  This is not a boolean, but the actual error number.
+
+@I(hosterrmsg)@\a text description of the @i(hosterror) reported above.
+
+@I(ltt)@\Last time tried.  Used by the DCM, this field is adjusted
+each time a service is attemted to be updated, regardless of success
+or failure.
+
+@I(lts)@\Last time successful.  This records the last time the DCM
+successfully updated the server.
+
+@I(value1)@\server-specific integer data used by applications (i.e.,
+number of servers permitted per machine).
+
+@I(value2)@\additional server-specific integer data.
+
+@I(value3)@\additional server-specific string data.
+
+@I(modtime)@\the time that this record was last modified (or created).
+
+@I(modby)@\the person who modified this record last.
+
+@I(modwith)@\the service that modified this record last.
+
+@End(Description)
+
+See Section @Ref(Servers) for the list of queries associated with this
+table.
+]
+
+@C(filesys)@\@Multiple[File System Information.  This section desribes the file
+system information necessary for a workstation to attach a file system.
+
+@Begin(Description)
+
+@I(label)@\a name for an attachable file system.  This is not
+necessarily unique.
+
+@I(order)@\an integer used to indicate sort-order for multiple
+filesystems with the same label.  Also, (@i(label, order)) tuples are
+unique among filesystems.
+
+@I(filsys_id)@\internal database identifier for the filesystem record.
+
+@I(phys_id)@\internal database identifier for the phsical partition
+containing the logical filesystem.  For filesystems of type NFS this
+is an nfsphys_id.  For other types, it is unused.
+
+@I(type)@\currently one of RVD, NFS, or ERR.
+
+@I(mach_id)@\file server machine.
+
+@I(name)@\name of file system on the server.  For type RVD, this is
+the pack name.  For type NFS, this is the directory name on the server.
+
+@I(mount)@\default mount point for file system.
+
+@I(access)@\default access mode for file system.
+
+@I(comments)@\any special notes about the filesystem.
+
+@I(owner)@\this is the users_id of the owner of the filesystem.  If
+the filesystem is automatically created, this user will own it.
+
+@I(owners)@\this is the list_id of the owning group of the filesystem.
+If the filesystem is automatically created, this group will own it.
+
+@I(createflg)@\indicates that the filesystem should be automatically
+created if it does not already exist.
+
+@I(lockertype)@\one of HOMEDIR, PROJECT, COURSE, SYSTEM, etc.  This
+may affect what is done when a filesystem is automatically created.
+
+@I(modtime)@\the time that this record was last modified (or created).
+
+@I(modby)@\the person who modified this record last.
+
+@I(modwith)@\the service that modified this record last.
+
+@End(Description)
+
+See Section @Ref(Filesys) for the list of queries associated with this table.
+]
+
+@C(nfsphys)@\@Multiple[NFS Server Information.  This table contains for each
+nfs server machine a list of the physical device partitions from which
+directories may be exported.  For each such partition an access control list
+is provided.
+
+@Begin(Description)
+
+@I(nfsphys_id)@\internal database identifier of this parition.
+
+@I(mach_id)@\server machine.
+
+@I(dir)@\top-level directory of device.
+
+@I(device)@\partition name.
+
+@I(status)@\a bit field encoding what the parition is used for.
+Current assignments are:@format{
+bit 0 (LSB) - Student lockers
+bit 1 -       Faculty lockers
+bit 2 -       Staff lockers
+bit 3 -       Miscellaneous
+}
+
+@I(allocated)@\number of quota units allocated to this device.
+
+@I(size)@\capacity of this device in quota units.
+
+@I(modtime)@\the time that this record was last modified (or created).
+
+@I(modby)@\the person who modified this record last.
+
+@I(modwith)@\the service that modified this record last.
+
+@End(Description)
+
+See Section @Ref(Nfsphys) for the list of queries associated with this table.
+]
+
+@C(nfsquota)@\@Multiple[NFS Server Quota Information.  This table contains
+per user per server quota information.
+
+@Begin(Description)
+
+@I(users_id)@\user id of account this quota belongs to.
+
+@I(filsys_id)@\filesys_id of logical filesystem this quota applies to.
+
+@I(phys_id)@\nfsphys_id of partition that filesystem resides on.  This
+is redundant information, here for performance reasons.
+
+@I(quota)@\user quota in quota units.
+
+@I(modtime)@\the time that this record was last modified (or created).
+
+@I(modby)@\the person who modified this record last.
+
+@I(modwith)@\the service that modified this record last.
+
+@End(Description)
+
+See Section @Ref(Nfsquota) for the list of queries associated with this
+table.
+]
+
+@C(zephyr)@\@Multiple[Zephyr class access control list information.
+This table contains an entry for each controlled class.  Each records
+records an access control entity for each of the four functions of
+that class.
+
+@Begin(Description)
+
+@I(class)@\name of the zephyr class.
+
+@I(xmt_type)@\access control entity type for transmit
+
+@I(xmt_id)@\access control entity id for transmit
+
+@I(sub_type)@\access control entity type for subscriptions
+
+@I(sub_id)@\access control entity id for subscriptions
+
+@I(iws_type)@\access control entity type for instance wildcard specification
+
+@I(iws_id)@\access control entity id for instance wildcard specification
+
+@I(iui_type)@\access control entity type for instance UID identity
+
+@I(iui_id)@\access control entity id for instance UID identity
+
+@I(modtime)@\the time that this record was last modified (or created).
+
+@I(modby)@\the person who modified this record last.
+
+@I(modwith)@\the service that modified this record last.
+
+@End(Description)
+
+See Section @Ref(Zephyr) for the list of queries associated with this table.
+]
+
+@C(hostaccess)@\@Multiple[This table contains the necessary
+information for Moira to be generating /.klogin or /etc/passwd files.
+It associates an access control entity with a machine.
+
+@Begin(Description)
+
+@I(mach_id)@\machine.
+
+@I(acl_type)@\access control entity type
+
+@I(acl_id)@\access control entity id
+
+@I(modtime)@\the time that this record was last modified (or created).
+
+@I(modby)@\the person who modified this record last.
+
+@I(modwith)@\the service that modified this record last.
+
+@End(Description)
+
+See Section @Ref(Hostaccess) for the list of queries associated with this
+table.
+]
+
 @C(strings)@\@Multiple[Used for list members of @i(string) type.  An
-optimization for dealing with (usually long) foreign mail addresses.
+optimization for dealing with foreign mail addresses in poboxes or as
+list members.
 
 @Begin(Description)
 
@@ -578,65 +543,76 @@ optimization for dealing with (usually long) foreign mail addresses.
 
 @I(string)@\string.
 
-@I(refc)@\Reference count.  A single string can be a member of multiple
-lists.  When the reference count goes to zero, the string is deleted.
-
 @End(Description)
 
 See Section @Ref(Strings) for the list of queries associated with this table.
 ]
 
-@C(maillists)@\@Multiple[This table contains the set of list ids for the
-lists which are to be used as mailing lists.
+@C(services)@\@Multiple[TCP/UDP Port Information.  This is the information
+currently in /etc/services.  In a workstation environment with Moira and the
+Hesiod name server, service information will be obtained from the name
+server.
 
 @Begin(Description)
 
-@I(list_id)@\a list id.
+@I(name)@\service name.
+
+@I(protocol)@\protocol: one of TCP, UDP.
+
+@I(port)@\port number.
+
+@I(desc)@\description of service.
+
+@I(modtime)@\the time that this record was last modified (or created).
+
+@I(modby)@\the person who modified this record last.
+
+@I(modwith)@\the service that modified this record last.
 
 @End(Description)
 
-See Section @Ref(Maillists) for the list of queries associated with this
+See Section @Ref(Services) for the list of queries associated with this
 table.
 ]
 
-@C(groups)@\@Multiple[This table contains the set of list ids for the lists
-which are to be used as groups.
+@C(printcap)@\@Multiple[Printer capability table.  This contains the
+information currently in /etc/printcap.
 
 @Begin(Description)
 
-@I(list_id)@\a list id.
+@I(name)@\a unique printer name.
 
-@I(gid)@\unix gid.
+@I(mach_id)@\server machine.
 
-@End(Description)
+@I(dir)@\spooling directory
 
-See Section @Ref(Groups) for the list of queries associated with this table.
-]
+@I(rp)@\remote printer name
 
-@C(acls)@\@Multiple[This table contains a set of service, list id pairs
-which define the access control lists that are needed for each service.
+@I(comments)@\description of service.
 
-@Begin(Description)
+@I(modtime)@\the time that this record was last modified (or created).
 
-@I(service)@\service name.
+@I(modby)@\the person who modified this record last.
 
-@I(list_id)@\a list id.
+@I(modwith)@\the service that modified this record last.
 
 @End(Description)
 
-See Section @Ref(Acls) for the list of queries associated with this table.
+See Section @Ref(Printcap) for the list of queries associated with this
+table.
 ]
 
 @C(capacls)@\@Multiple[This table associates access control lists with
 particular capabilities.  An important use of this table is for defining the
-access allowed for executing each of the SMS predefined queries.  Each query
+access allowed for executing each of the Moira predefined queries.  Each query
 name appears as a capability name in this list.
 
 @Begin(Description)
 
-@I(capability)@\a string.
+@I(capability)@\a string, usually the full name of a query.
 
-@I(tag)@\four character tag name for this capability.
+@I(tag)@\four character tag name for this capability, usually the
+short name of a query.
 
 @I(list_id)@\a list id.
 
@@ -647,20 +623,32 @@ See Section @Ref(Capacls) for the list of queries associated with this table.
 
 @C(alias)@\@Multiple[Aliases are used by several different services to
 provide alternative names for objects or a mapping one type of object and
-another.  Some examples of alias usage are printer aliases, service aliases,
-cluster aliases, file system aliases, and print cluster to printer maps.  As
-an integrity constraint it is required that all aliases be of a known type.
-The list of known alias types is actually stored in the database as the set
-of translations of aliases with name "alias" and type "type".  Therefore, it
-is also quite easy to add new alias types.  Another use of the "type" alias
-type is for storing known field values for validated table fields.
+another.  They are also used to record legal values for type-checked
+fields, and type translations of some type fields.
+
+Some examples of alias usage are file system aliases, service
+aliases, and printer aliases.  Each alias of this form will have the
+alias as the @i(name), a @i(type) of PRINTER, SERVICE, or FILESYS, and
+a @i(trans) of the real name of the object.
+
+All type-checking aliases are of @i(type) TYPE.  The @i(name) is the
+name of the type-checked field, and the @i(trans) is a possible value
+for that field.  Some type-checked fields are "alias", "boolean",
+"class", "filesys", etc.  For example, alias types themselves are
+typechecked, so that one cannot store an alias of type @b(aliastype)
+unless there is an alias entry of the form (alias, TYPE, aliastype).
+
+Type translations are used to record things like the data stored with
+an SMTP pobox is of type string.  These aliases have a @i(name) which
+is the type string the user enters, a @i(type) of TYPEDATA, and a
+@i(trans) of the actual data type, i.e. user, list, string, machine, etc.
 
 @Begin(Description)
 
 @I(name)@\alias name.
 
-@I(type)@\alias type: currently one of TYPE, PRINTER, SERVICE, CLUSTER,
-FILESYS, PRCLUSTER, MACH-CLU-MAP.
+@I(type)@\alias type: currently one of TYPE, PRINTER, SERVICE,
+FILESYS, TYPEDATA.
 
 @I(trans)@\alias translation.
 
@@ -669,7 +657,10 @@ FILESYS, PRCLUSTER, MACH-CLU-MAP.
 See Section @Ref(Alias) for the list of queries associated with this table.
 ]
 
-@C(values)@\@Multiple[Values needed by the server or application programs.
+@C(values)@\@Multiple[Values needed by the server or application
+programs.  These are hints for the next ID number to assign, some
+state variables such as the dcm enable flag, and values such as the
+default quota for new users.
 
 @Begin(Description)
 
@@ -682,24 +673,25 @@ See Section @Ref(Alias) for the list of queries associated with this table.
 See Section @Ref(Values) for the list of queries associated with this table.
 ]
 
-@C(tblstats)@\@Multiple[Table Statistics.  For each table in the SMS
-database statistics are kept for the number of retrieves, appends, updates,
-and delete performed on the table.  In addition, the last modification time
-is kept.
+@C(tblstats)@\@Multiple[Table Statistics.  For each table in the Moira
+database statistics are kept for the number of appends, updates, and
+deletes performed on the table.  In addition, the last modification
+time of the table is kept.
 
 @Begin(Description)
 
 @I(table)@\table name.
 
-@I(retrieves)@\count of retrievals on this table.
+@I(modtime)@\time of last modification (append, update, or delete).
+
+@I(retrieves)@\@i(obsolete) count of retrievals on this table.  This
+is unused now for performance reasons.
 
 @I(appends)@\count of additions to this table.
 
 @I(updates)@\count of updates to this table.
 
 @I(deletes)@\count of deletions to this table.
-
-@I(modtime)@\time of last modification (append, update, or delete).
 
 @End(Description)
 

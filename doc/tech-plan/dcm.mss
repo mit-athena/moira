@@ -1,80 +1,186 @@
-@part[dcm, root="sms.mss"]
+@part[dcm, root="moira.mss"]
 @Section(The Data Control Manager)
 
 The data control manager, or DCM, is a program responsible for
-distributing information to servers. Basically, the DCM is invoked by
-cron at times which are relevant to the data update needs of each
-server.  The update frequency is stored in the SMS database.  A
-server/host relationship is unique to each update time.  Through the SMS
-query mechanism, the DCM extracts SMS data and converts it to server
-dependent form.  The conversion of database specific information to site
-specific information is done through a server description file, a
-SMS-unique language which is used to describe the personality of a
-target service.
+distributing information to servers.  Basically, the DCM is invoked
+regularly by cron at intervals which become the minimum update time
+for any service.  Whenever the DCM runs, it will determine which
+services and hosts should be updated now.  The update frequency is
+stored in the Moira database.  A server/host relationship is unique to
+each update time.  Through the Moira query mechanism, the DCM extracts
+Moira data and converts it to server dependent form.  The conversion of
+the Moira data to the server-specific format is done by a sub-program
+specific to that service.
 
-When invoked the DCM will perform some preliminary operations to
-establish the relationship between the SMS data and each server.
-The very first time the DCM is called, a table is constructed (as a disk file) 
-describing the relationship between servers and update frequency.
-The table will be the primary mechanism used by the DCM for recognizing
-the servers which need updating at given times.  As a note here,
-crontab will invoke the DCM at a pre-established time interval,
-say every 15 minutes.  Obviously, the maximum update time will be limited to
-the time interval the DCM is being invoked at.  Every interval,
-the DCM will search the constructed table and determine whether or 
-not a server's update time is within the current time range.  The table
-has the following components:
+@Subsection(DCM Operation)
 
-@begin(verbatim)
+On startup, the DCM first checks for the existance of the disable file
+@i(/etc/nodcm); if this file exists, it exits quietly.  Next it
+connects to the database and authenticates as @b(root).  Then it
+retrieves the value of @b(dcm_enable) from the values relation of the
+database; if this value is zero, it will exit, logging this action.
 
-Last time|Success|Time    |Server|Hostname|Target  |Override|Enable|
-tried    |       |interval|      |        |Pathname|        |      |
-update   |       |        |      |        |        |        |      |
+Next, the DCM scans the services table.  This table contains:
 
-@end(verbatim)
+@begin(description)
 
-A description of each field follows:
-@begin(itemize, spread 0)
+Name@\The name of each service.
 
-@i[Last Time of Update] - This field holds the time when a last 
-successful update occurred.  This time will be used against 
-the current time to determine if the interval criteria has been met.
+Type@\The type of service.  Currently defined service types are
+@b(unique) and @b(replicat)ed.  This type affects some parts of the
+update algorythm, described below.
 
-@i[Success] - Flag for indicating whether or not the last time tried was
-successful. 0-fail, 1-success
+ACE type and ACE name@\These specify the access control entity which
+owns the service.  The type may be @b(list), @b(user), or @b(none).
+The name will then be a list name, a login name, or @b(none),
+respectively.  The owner is allowed to manipulate the service or
+service/host tuples supporting that service.
 
-@i[Time interval] - Derived from the SMS database.  Gives the interval
-update time for each server's information needs.
+Interval@\Gives the minimum time between updates of this service, in
+minutes.
 
-@i[Server] - This is the server name.  Derived from SMS database.
+Target@\The name of the target file on the servers.  This is where Moira
+will deposit the new configuration files.
 
-@i[Hostname] - This is the host name where the server resides. Derived from
-the SMS database.
+Script@\This is the name of the script file on Moira which will be
+executed on the server to install the new configuration files.
 
-@i[Target Pathname] - Gives the location of the file which needs to be 
-updated on the target or server end.  Derived from the SMS database.
+DFGen@\This is the time that the data files were last generated for
+this service.  It is stored as a unix format time (number of seconds
+since January 1, 1970 GMT).
 
-@i[Override] - Provides an automatic facility for the authorized
-user to invoke a used-once mechanism for overriding the established
-time interval.  The facility will be very useful when a server has received
-bogus data and needs updating immediately.  After the DCM uses this
-value, the field is reset to -1.
-		Value: -1 - Use established time interval.
-			0 and greater - New once-used interval.
+DFCheck@\This is the time that the data files were last checked to see
+if they needed to be regenerated.  It is stored as a unix format time.
 
-@i[Enable] - This switch allows the authorized user to turn the update
-facility on or off.  
-		Value: 0 - Off, Non-zero - On.
-@end(itemize)
+Enable@\This boolean flag indicates if updates should be performed on
+this service.  It may be set and cleared by the user.
 
-Each time the DCM is invoked, a search through this table will 
-indicate which servers need updating.  Once located, the DCM will
-use the server/hostname combination to identify the server description
-files to process. 
-Of course, if the enable switch is off, the 
-update will not occur.  
+InProgress@\This boolean flag indicates that an update is currently in
+progress for this service.  It is set and cleared by only by the DCM.
+It is @b(not) relyed upon for locking.
 
-@SubSection(DCM Operation)
+Harderror@\This field records the error number of any hard errors that
+occur during an update. 
+
+Errmsg@\This is a textual representation of the error reported in
+@i(harderror).
+
+ModTime@\The time this data was created or last modified.  This refers
+only to modification by a user, not by the DCM.
+
+ModBy@\The user name of who last modified this record.
+
+ModWith@\The name of the application that was used for the last
+modification.
+
+@end(description)
+
+Each time the DCM is invoked, a search through this table will
+indicate which servers need updating.  It will first identify those
+services which are @i(enable)d, do not have @i(hard errors), have a
+non-zero @i(interval), and do have a generator module.  For each of
+these services, it compares @i(dfcheck) and the update @i(interval)
+against the current time.  If it is time for another update, it will
+obtain an exclusive lock on the service, set the @i(inprogress) flag,
+then run the generator.
+
+The generator is a sub-program that does the actual extract.  Each
+generator lives in @i(/u1/sms/bin/@p(service).gen).  A generator takes
+as an argument the name of the output file it should generate.  It's
+exit status will be zero on success, otherwise the number of any
+error.  Note that a common ``error'' for a generator is
+@t(MR_NO_CHANGE), indicating that nothing in the database has changed
+and the data files were not re-built.
+
+If the generator finishes without error, @i(dfgen) and @i(dfcheck) are
+updated to the current time.  If the generator exits indicating that
+nothing has changed, only @i(dfcheck) is updated to the current time.
+If there is a soft error (an expected error that might go away if we
+try again later) then the @i(error_message) is updated to reflect
+this, but @i(hard error) is not set.  If there is a hard error, the
+@i(hard_error) and @i(error_message) are set, and a zephyr message is
+sent to class @b(MOIRA) instance @b(DCM) indicating this error.  After
+this attempt, the lock on the service is released.
+
+For each of the services which passed the initial check above
+(@i(enable)d, no @i(hard errors), non-zero @i(interval), and a
+generator exists) regardless of the result of attempting to build data
+files, or even if it was time to build data files, the hosts will be
+scanned.  The serverhost table contains:
+@begin(description)
+
+Service@\The name of the service.
+
+Machine@\The name of the machine supporting this service.
+
+Enable@\A boolean indicating that this host should be updated.
+
+Override@\A boolean indicating that this host should be updated as
+soon as possible, disregarding the service time interval.
+
+Success@\A boolean indicating that the last attempted update was
+successful.
+
+InProgress@\A boolean indicating that this host is currently being
+udpated. 
+
+HostError@\This field recrods the error number of any hard errors that
+occur during an update.
+
+Errmsg@\This is a textual representation of the error report in
+@i(hosterror).
+
+LastTry@\This is the time that the DCM last attempted to update this
+host.  It is stored as a unix format time.
+
+LastSuccess@\This is the time of the last successful DCM update of
+this host.  It is stored as a unix format time.
+
+Value1@\This is service specific information, stored as an integer.
+For POP servers, it is the number of poboxes assigned to this server.
+
+Value2@\This is service specific information, stored as an integer.
+For POP servers, it is the maximum number of poboxes that may be
+assigned to this server.
+
+Value3@\This is service specific information, stored as a string.  For
+NFS servers, it indicates who should be in the credentials file.
+
+ModTime@\The time this data was created or last modified.  This refers
+only to modification by a user, not by the DCM.
+
+ModBy@\The user name of who last modified this record.
+
+ModWith@\The name of the application that was used for the last
+modification.
+
+@end(description)
+
+During the host scan, the DCM first locks the service.  It will lock
+it exclusively if the service @i(type) is @b(replicated), otherwise it
+will acquire a shared lock.  Then the DCM makes a list of hosts which
+are @i(enabled), do not have @i(hard errors), and have not been
+successfully updated sine the data files were generated for this
+service (or @i(override) is set).  It will then step through these
+hosts, updating them.  The first part of an update is to obtain an
+exclusive lock on the host and set the @i(inprogress) bit.  Then it
+sends the generated file to the @i(target) file on the host and then
+executes the @i(script) on that host.  The exit value of the script is
+reported back, with zero being success and anything else being the
+error number.  If the update is successful, the @i(last_time_tried)
+and @i(last_time_successfull) are updated.  If there is a soft fail,
+then just the @i(last_time_tried) is updated, and the
+@i(error_message) is recorded.  If there is a hard failure, then a
+soft fail is taken, plus @i(hard_error) is set and a zephyrgram and
+mail are sent about it.  If there is a hard failure and the service is
+@b(replicat)ed, then the error code & message are also set in the
+service record so that no more updates will be attempted to hosts
+supporting this service.  Then the host lock is freed.
+
+When the host scan is complete, the service lock is freed, and the
+service scan continues with the next service.
+
+@Begin(Comment)
 
 The data control manager acts as an interpreter on the SDF's, or as
 an initiator of executable programs.  The basic
@@ -82,7 +188,7 @@ mechanism is for the DCM to read the above entry table, determine which
 servers need updating and then locate the appropriate SDF for interpretation.
 The breakdown of the SDF is a procedure based primarily on the associated
 query handle and it's associated input and output structure.  The output of the
-DCM is a file stored on the SMS host which is exactly the same
+DCM is a file stored on the Moira host which is exactly the same
 format of the server-based file.  The update mechanism takes this localized
 data and ships it over the net. 
 
@@ -95,10 +201,10 @@ the distribution and generation of server-specific files.
 @SubSection(Server Description Files)
 
 The server description files, or SDF, are files which contains a unique
-description of each server SMS updates.  The SDF description has
-been developed to make support of SMS and the addition of
-new services a reasonably easy process.  The demand of SMS support is
-clearly rising.  Without an easy method of adding new servers, SMS
+description of each server Moira updates.  The SDF description has
+been developed to make support of Moira and the addition of
+new services a reasonably easy process.  The demand of Moira support is
+clearly rising.  Without an easy method of adding new servers, Moira
 is circumvented in search for easier methods of service support.
 To date, there are over 15 different files which need generation and
 propagation.  With the support of zephyr this number will likely double
@@ -222,3 +328,5 @@ printer type = daisy
 From a generic database the DCM will take the information, process it into
 localized form, and cache it locally.  From here, the server update mechanism
 grabs the file and serves it over the net.
+
+@end(comment)

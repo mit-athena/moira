@@ -166,7 +166,7 @@ named owl.PS in the current working directory.
 @Modify(Itemize, LeftMargin +3ems, Indent -3ems, RightMargin 3 ems)
 @Modify(MajorHeading, flushleft)
 @Modify(Heading, flushleft)
-@Modify(SubHeading, flushleft, above 2, FaceCode P)
+@Modify(SubHeading, flushleft, above 2)
 @Define(ParagraphHeading, flushleft, Above 0.3inch, Break before)
 @Modify(Enumerate,
         LeftMargin +3ems, Indent 0,
@@ -264,8 +264,7 @@ named owl.PS in the current working directory.
 @comment[
 	@picture(height = .4 inches, ScaleableLaser = owl.PS)
 ]
-@message[
-(Sorry, can't include owl.  Oh well....)
+@message[(Sorry, can't include owl.  Oh well....)
 ]
 @title[@parm(plansection)]
 @imbed(title,

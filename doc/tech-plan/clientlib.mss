@@ -1,33 +1,13 @@
 @Comment[
 	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/doc/tech-plan/clientlib.mss,v $
-	$Author: wesommer $
-	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/doc/tech-plan/clientlib.mss,v 1.7 1987-07-13 23:51:58 wesommer Exp $
-
-	$Log: not supported by cvs2svn $
-Revision 1.6  87/06/23  15:34:50  wesommer
-Added documentation for sms_access.
-
-Revision 1.5  87/06/19  11:54:29  ambar
-scribe fixes.
-
-Revision 1.4  87/06/19  10:25:09  pjlevine
-pjlevine adds applib addendum reference
-
-Revision 1.3  87/06/18  17:03:10  pjlevine
-pjlevine adds a few words of wisdom
-
-Revision 1.2  87/06/18  15:53:41  wesommer
-Added specs for low level library.
-
-Revision 1.1  87/05/20  14:40:45  wesommer
-Initial revision
-
+	$Author: danw $
+	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/doc/tech-plan/clientlib.mss,v 1.8 2000-01-21 17:20:56 danw Exp $
 ]
-@part(clientlib, root="sms.mss")
+@part(clientlib, root="moira.mss")
 @Section(The Application Library)
 
-The SMS application library provides access to SMS through a simple
-set of remote procedure calls to the SMS server.  The library is
+The Moira application library provides access to Moira through a simple
+set of remote procedure calls to the Moira server.  The library is
 layered on top of Noah Mendohlson's GDB library, and also uses Ken
 Raeburn's com_err library to provide a coherant way to return error
 status codes to applications.
@@ -83,52 +63,54 @@ instead.  This can be used to, for example, route error messages to
 @t[syslog] or to display them using a dialogue box in a window-system
 environment.
 
-@subsection(SMS application library calls)
-The SMS library contains the following routines:
+@subsection(Moira application library calls)
+The Moira library contains the following routines:
 
 @begin(programexample) 
-int sms_connect(); 
+int mr_connect(); 
 @end(programexample)
 
-Connects to the SMS server.  This returns an error code, or zero on
+Connects to the Moira server.  This returns an error code, or zero on
 success.  This does not attempt to authenticate the user, since for
 simple read-only queries which may not need authentication, the
 overhead of authentication can be comparable to that of the query.
 This can return a number of operational error conditions, such as
 ECONNREFUSED (Connection refused), ETIMEDOUT (Connection timed out),
-or SMS_ALREADY_CONNECTED if a connection already exists.
+or MR_ALREADY_CONNECTED if a connection already exists.
 
 @begin(programexample)
-int sms_auth();
+int mr_auth(clientname);
+char *clientname
 @end(programexample)
-Attempts to authenticate the user to the system.  It can return
+Attempts to authenticate the user to the system.  @t[Clientname] is
+the name of the program acting on behalf of the user. @t[mr_auth] can return
 Kerberos failures, either local or remote (for example, "can't find
-ticket" or "ticket expired"), SMS_NOT_CONNECTED if @t[sms_connect] was
-not called or was not successful, or SMS_ABORTED if the attempt to
+ticket" or "ticket expired"), MR_NOT_CONNECTED if @t[mr_connect] was
+not called or was not successful, or MR_ABORTED if the attempt to
 send or recieve data failed (and the connection is now closed).
 
 @begin(programexample)
-int sms_disconnect();
+int mr_disconnect();
 @end(programexample)
-This drops the connection to SMS.  The only error code it currently
-can return is SMS_NOT_CONNECTED, if no connection was there in the
+This drops the connection to Moira.  The only error code it currently
+can return is MR_NOT_CONNECTED, if no connection was there in the
 first place.
 
 @begin(programexample)
-int sms_noop();
+int mr_noop();
 @end(programexample) 
-This attempts to do a handshake with SMS (for testing and performance
-measurement).  It can return SMS_NOT_CONNECTED or SMS_ABORTED if not
+This attempts to do a handshake with Moira (for testing and performance
+measurement).  It can return MR_NOT_CONNECTED or MR_ABORTED if not
 successful.
 
 @begin(programexample)
-int sms_access(name, argc, argv)
+int mr_access(name, argc, argv)
 @\char *name;@\@\/* Name of query */
 @\int argc;@\/* Number of arguments provided */
 @\char *argv[];@\@\/* Argument vector */
 @end(programexample)
 
-This routine checks the user's access to an SMS query named @t[name],
+This routine checks the user's access to an Moira query named @t[name],
 with arguments @t<argv[0]>...@t<argv[argc-1]>.  It does not actually
 process the query.  This is included to give applications a "hint" as
 to whether or not the particular query will succeed, so that they
@@ -136,7 +118,7 @@ won't bother to prompt the user for a large number of arguments if the
 query is doomed to failure.
 
 @begin(programexample)
-int sms_query(name, argc, argv, callproc, callarg)
+int mr_query(name, argc, argv, callproc, callarg)
 @\char *name;@\@\/* Name of query */
 @\int argc;@\/* Number of arguments provided */
 @\char *argv[];@\@\/* Argument vector */
@@ -144,21 +126,28 @@ int sms_query(name, argc, argv, callproc, callarg)
 @\caddr_t callarg;@\/* Additional argument
 @\@\ * to callback routine */
 @end(programexample)
-This runs an SMS query named @i[name] with arguments 
+This runs an Moira query named @i[name] with arguments 
 @t{argv[0]}...@t{argv[argc-1]}.  For each returned tuple of data, 
 @t[callproc] is called with three arguments: the number of elements in
 the tuple, a pointer to an array of characters (the data), and
 @t[callarg].
 
-@begin(comment)
-We punted this, didn't we?
+@subsection(Other provided routines)
 
-@Subsection(Higher level application library) The upper layer consists
-of query-handle specific routines, such as "retrieve finger
-information by login name" or "get all servers".  The actual
-specifications for these routines depend on exactly what query handles
-are available; it is intended that these routines should be easy to
-write in terms of the previous library.  The use and description of
-the application library can be found in Addendum, section @ref(applib)
+The Moira library also contains a number of other routines which are
+used both by the servers and some of the clients.  These include
+@begin(itemize, spread 0) 
 
-@end(comment)
+convert between flags integer and human-readable string
+
+canonicalize hostname
+
+string utility routines - trim whitespace, save a copy
+
+hash table abstraction
+
+simple queue abstraction
+
+a menu package used for some of the clients
+@end(itemize)
+These routines are documented in the provided manualpage @t(moira.3).

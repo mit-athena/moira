@@ -1,41 +1,30 @@
-@part[serverarr, root="sms.mss"]
+@part[serverarr, root="moira.mss"]
+@Define(hesverbatim=verbatim, Above 1, size -2,
+	LeftMargin -1 inch, group)
 @section(Server Arrangement)
 
-Currently, sms acts to update a variety of servers.  Although the data 
+Currently, Moira acts to update a variety of servers.  Although the data 
 control manager performs this update task, each server requires a 
 different set of update parameters.  To date, the DCM uses c programs,
 not SDFs, to implement the construction of the server specific files. 
 Each c program is checked in via the dcm_maint program.   The DCM then
 calls the appropriate module when the update interval is reached.
 
-For each server file propagated, ther is at least one application 
-interface which provides the capability to manipulate the sms database.
-Since the sms database acts as a single point of contact, the
+For each server file propagated, there is at least one application 
+interface which provides the capability to manipulate the Moira database.
+Since the Moira database acts as a single point of contact, the
 changes made to the database are reflected in the contents of 
 recipient servers. 
 
-The following diagram:
-
-@blankspace(3 inches)
-
-This section focusses on the above component contained within
-the dotted-lined box.  This section of the system is the server side,
-receiving propagated data.  Reference, however, is made to 
-each application interface which ultimately effects the server contents.
-
-The services which sms now supports are:
+The services which Moira now supports are:
 @begin(itemize, spread .5)
 Hesiod - The athena nameserver.
-
-RVD - Remote virtual disk.
 
 NFS - Network file system.
 
 /usr/lib/aliases - Mail Service.
 
-MDQS - Multiple device queueing system. (currently not avaliable)
-
-Zephyr - The athena notification service. (currently not available)
+Zephyr - The athena notification service.
 @end(itemize)
 
 @SubSection(Server Assumptions)
@@ -73,8 +62,8 @@ Service:@\@U(Hesiod)
 
 Description:@\@Multiple[The hesiod server is a primary source of contact for
 many athena operations.  It is reponsible for providing information reliably
-and quickly.  SMS's responsibility to hesiod is to provide authoritative
-data.  Hesiod uses a BIND data format in all of it's data files.  SMS will
+and quickly.  Moira's responsibility to hesiod is to provide authoritative
+data.  Hesiod uses a BIND data format in all of it's data files.  Moira will
 provide BIND format to hesiod.  There are several files which hesiod uses.
 To date, they are known to include the following:
 
@@ -82,27 +71,32 @@ To date, they are known to include the following:
 
 cluster.db
 
-service.db 
+filsys.db
 
-printers.db
+gid.db
 
-lpr.db
+group.db
 
-pobox.db
-
-sloc.db
-
-rvdtab.db
+grplist.db
 
 passwd.db
 
+pobox.db
+
 printcap.db
+
+service.db 
+
+sloc.db
+
+uid.db
+
 @End(Itemize)
 
 Each of these files are described in detail below.  The hesiod server uses
 these files from virtual memory on the target machine.  The server
 automatically loads the files from disk into memory when it is started.
-SMS will propagate hesiod files to the target disk and the run a shell script 
+Moira will propagate hesiod files to the target disk and the run a shell script 
 which will kill the running server and then restart it, causing the newly
 updated files to be read into memory. 
 
@@ -114,449 +108,294 @@ For additional technical information on @i[hesiod], please refer to the
 Hesiod technical plan.
 ]
 
-Propagation interval:@\6 Hours, 0:00, 6:00, 12:00, 18:00
+Propagation interval:@\6 Hours
 
-Data format:@\BIND
+Data format:@\tar file of several BIND files
 
 Target locations:@\
 @begin(Format, Above 0, Below 0) 
-JASON.MIT.EDU: /etc/athena/nameserver
-ZEUS.MIT.EDU: /etc/athena/nameserver
-MENELAUS.MIT.EDU: /etc/athena/nameserver
+SUOMI.MIT.EDU: /tmp/hesiod.out
 @end(Format)
 
 Files:@\
-@Begin(Display, LeftMargin 0, RightMargin 0)
-@B(HESIOD.DB) - Hesiod data 
+@Begin(Description, LeftMargin +0)
 
-Description:
-   Contains hesiod specific data.                 
+@B(CLUSTER.DB)@\Cluster data
 
-Queries used:
-   NOT CREATED FROM SMS QUERY
+Description:@\Cluster.db holds the relationships between machines,
+clusters, and services to service clusters.  It must be possible to
+look up a cluster by name, and find all of the cluster data.  It must
+also be possible to look up a machine by name, and get the union of
+all of the cluster data for each cluster the machine is a member of.
 
-How modified:
-   EDITOR by system administrator.
+Queries used:@\
 
-Client(s):
-   Hesiod
+Client(s):@\save_cluster_info
 
-Example contents:
-@Begin(Verbatim)
-   ; Hesiod-specific cache data (for ATHENA.MIT.EDU)
-   ; pointers to Hesiod name servers
-   ;
-   NS.ATHENA.MIT.EDU. 99999999 HS NS JASON.MIT.EDU.
-   NS.ATHENA.MIT.EDU. 99999999 HS NS ZEUS.MIT.EDU.
-   NS.ATHENA.MIT.EDU. 99999999 HS NS MENELAUS.MIT.EDU.
-   ;
-   ; Hesiod address records (simply duplicates of IN address records)
-   ;
-   JASON.MIT.EDU.     99999999 HS  A 18.71.0.7
-   ZEUS.MIT.EDU.      99999999 HS  A 18.58.0.2
-   MENELAUS.MIT.EDU.  99999999 HS  A 18.72.0.7
-   ;
-   ; Internet address records for the same Hesiod servers
-   ; required because of implementations of gethostbyname() which
-   ; use C_ANY/T_A queries.
-   ;
-   JASON.MIT.EDU.     99999999 IN  A 18.71.0.7
-   ZEUS.MIT.EDU.      99999999 IN  A 18.58.0.2
-   MENELAUS.MIT.EDU.  99999999 IN  A 18.72.0.7
-   ;
-@End(Verbatim)
-
+Example contents:@\
+@Begin(HesVerbatim)
+; lines for per-cluster info (both vs and rt) (type UNSPECA)
+; and a line for each machine (CNAME referring to one of the lines
+; above) 
+;
+bldge40-vs.cluster HS UNSPECA "zephyr neskaya.mit.edu"
+bldge40-rt.cluster HS UNSPECA "zephyr neskaya.mit.edu"
+bldge40-vs.cluster HS UNSPECA "lpr e40"
+bldge40-rt.cluster HS UNSPECA "lpr e40"
+TOTO.cluster	   HS CNAME bldge40-vs.cluster   
+SCARECROW.cluster  HS CNAME bldge40-rt.cluster
+@End(hesVerbatim)
+Note that a machine may be in more than one cluster.  In this case, a
+pseudo-cluster will be made by Moira which has as its cluster data, the
+union of the data of each of the other clusters this machine is in.
+Then the machine in question will be CNAME'd into this pseudo-cluster.
 @Hinge()
-@B(CLUSTER.DB) - Cluster data
 
-Description:
-   Cluster.db holds the relationships between machines,
-   clusters, and services to service clusters.           
+@B(FILSYS.DB)@\filesystems
+
+Description@\These are all of the filesystem entries needed to find
+and attach NFS lockers and RVDs by name.  Each entry contains the name
+of the filesystem, its name on the fileserver (directory name for NFS
+filesystems, or packname for RVDs), the name of the server, the
+default attach mode (r = read-only, w = read/write), and the default
+client mount point.
 
 Queries used:
-   get_all_service_clusers()@ @ -->@ @ 
-       (cluster, service_label, service_cluster)
-   get_machine_to_cluster_map(*,*)@ @ -->@ @ (machine, cluster)
 
-How modified:
-   cluster_maint
-
-Client(s):
+Clients(s):@\attach
 
 Example contents:
-@Begin(Verbatim, Above 1)
-   ; Cluster info for timesharing machines and workstations
-   ; format is:
-   ; lines for per-cluster info (both vs and rt) (type UNSPECA)
-   ; followed by line for each machine (CNAME referring to one 
-   ; of the lines above)
-   ;
-   ; E40 cluster
-   ;
-   bldge40-vs.cluster HS UNSPECA "zephyr neskaya.mit.edu"
-   bldge40-rt.cluster HS UNSPECA "zephyr neskaya.mit.edu"
-   bldge40-vs.cluster HS UNSPECA "lpr e40"
-   bldge40-rt.cluster HS UNSPECA "lpr e40"
-   ;
-@End(Verbatim)
-
-
+@Begin(hesVerbatim)
+aab.filsys      HS UNSPECA "NFS /mit/aab charon w /mit/aab"
+aabiyaba.filsys HS UNSPECA "NFS /mit/aabiyaba eurydice w /mit/aabiyaba"
+ade.filsys      HS UNSPECA "RVD ade helen r /mnt/ade"
+@End(hesVerbatim)
 @Hinge()
-@B(SERVICE.DB) - services
 
-Description:
-   Holds the relationship between a canonical service name and
-   its physical protocol, port, and tranlation.
+@B(GID.DB)@\group IDs
+
+Description:@\This file maps group ID numbers to the group names.
+There is an entry in this file for each entry in the group.db file,
+pointing to a corresponding entry in the group.db file.
 
 Queries used:
-   get_all_services@ @ -->@ @ (service, protocol, port, description)
-   get_alias(*, SERVICE)@ @ -->@ @ (name, type, translation)
 
-How modified:
-   service_maint
-
-Client(s):
-
+Clients(s):
 
 Example contents:
-@Begin(Verbatim, Above 1)
-   ;
-   ; Network services, Internet style
-   ;
-   echo.service    HS      UNSPECA "echo tcp 7"
-   echo.service    HS      UNSPECA "echo udp 7"
-   discard.service HS      UNSPECA "discard tcp 9 sink null"
-   sink.service    HS      CNAME   discard.service
-   null.service    HS      CNAME   discard.service
-   discard.service HS      UNSPECA "discard udp 9 sink null"
-   systat.service  HS      UNSPECA "systat tcp 11 users"
-   users.service   HS      CNAME   systat.service
-   daytime.service HS      UNSPECA "daytime tcp 13"
-@End(Verbatim)
-
-
+@Begin(hesVerbatim)
+10914.gid       HS CNAME babette.group
+10915.gid       HS CNAME 14.31.group
+10916.gid       HS CNAME abarba.group
+10917.gid       HS CNAME mga.group
+10918.gid       HS CNAME rs1maint.group
+10919.gid       HS CNAME pjd.group
+@End(hesVerbatim)
 @Hinge()
-@B(PASSWD.DB) - username and group information
 
-Description:
-@Begin(Text, Above 0, Below 0, Spacing 1, Spread 0, LeftMargin +2, Indent 0)
-This file is used as a template for toehold. Its contents
-are username, uid, gid (all users get gid = 101), fullname,
-home filesys (now limited to /mit/<username>), and shell.
-@End(Text)
+@B(GROUP.DB)@\unix groups
+
+Description:@\This file maps group names to their unix group ID
+numbers.  The returned entries are of the same form as lines in an
+/etc/group file, although none of the members are actually filled in.
+An entry is only placed in this file if the group is marked @i(active)
+in the Moira database.
 
 Queries used:
-   get_all_active_logins()@ @ -->@ @ returns all active logins.           
 
-How modified:
-   ueser_maint
-   userreg@ @ -->@ @ initial info
-   attach_maint
-
-Client(s):
-   Toehold
+Clients(s):
 
 Example contents:
-@Begin(Verbatim, Above 1)
-   pjlevine.passwd HS    UNSPECA \
-       "pjlevine:*:1:101:Peter J. Levine,,,,:/mit/pjlevine:/bin/csh"
-@End(Verbatim)
-
-
+@Begin(hesVerbatim)
+babette.group   HS UNSPECA "babette:*:10914:"
+14.31.group     HS UNSPECA "14.31:*:10915:"
+abarba.group    HS UNSPECA "abarba:*:10916:"
+mga.group       HS UNSPECA "mga:*:10917:"
+rs1maint.group  HS UNSPECA "rs1maint:*:10918:"
+pjd.group       HS UNSPECA "pjd:*:10919:"
+@End(hesVerbatim)
 @Hinge()
-@B(PRINTERS.DB) - MDQS printer info
 
-Description:
-   Maps printer clusters to physical locations.
+@B(GRPLIST.DB)@\group lists
+
+Description:@\This file lists the groups that each user is a member
+of.  Each entry consists of a colon-separated list of colon-separated
+pairs of groupname, group id.  No meaning is placed on the order of
+the groups listed.  Only users whose @i(status) is active will have
+entries generated, and only groups that are marked @i(active) in Moira
+will be output.
 
 Queries used:
-   get_all_printer_clusters()@ @ -->@ @ (cluster)
-   get_printers_of_cluster(cluster)@ @ -->@ @ 
-       (pname, qname, serverhost, ability, hwtype)
 
-How modified:
-   printer_maint
-
-Client(s):
-   MDQS
+Clients(s):@\login
 
 Example contents:
-@Begin(Verbatim, Above 1)
-    ; MDQS Hesiod printer info
-    ;
-    ; prclusterlist returns all print clusters
-    ;
-    *.prclusterlist HS UNSPECA bldge40
-    *.prclusterlist HS UNSPECA bldg1
-    *.prclusterlist HS UNSPECA bldgw20
-@End(Verbatim)
-
+@Begin(hesVerbatim)
+mtalford.grplist  HS UNSPECA "mtalford:5904:3_d0004:689"
+mswelsh.grplist	  HS UNSPECA "mswelsh:5901:13_461t:867:13_461sa:868:13_012t:800"
+mstai.grplist     HS UNSPECA "mstai:5899"
+@End(hesVerbatim)
 @Hinge()
-@B(LPR.DB) - lpr printer info
 
-Description:
-   Line printer information.
+@B(PASSWD.DB)@\password entries
+
+Description:@\This file contains lines similar to those found in
+/etc/passwd for each active user of Athena.  Only users whose
+@i(status) is active will have entries generated.
 
 Queries used:
-   NOT GENERATED BY SMS
 
-How modified:
-   HAND
+Clients(s):@\login
 
 Example contents:
-
-
+@Begin(hesVerbatim)
+babette.passwd  HS UNSPECA "babette:*:6530:101:Harmon C Fowler,,,,:/mit/babette
+:/bin/csh"
+abarba.passwd   HS UNSPECA "abarba:*:6531:101:Angela Barba,,,,:/mit/abarba:/bin
+/csh"
+mga.passwd      HS UNSPECA "mga:*:6532:101:Gerhard Messmer,,,,:/mit/mga:/bin/cs
+h"
+kazimi.passwd   HS UNSPECA "kazimi:*:6533:101:Martin Zimmermann,,,,:/mit/kazimi
+:/bin/csh"
+pjd.passwd      HS UNSPECA "pjd:*:6535:101:Peter J Delaney,,,,:/mit/pjd:/bin/cs
+h"
+@End(hesVerbatim)
 @Hinge()
-@B(PRINTCAP.DB) - line printer information
 
-Description:
-   Line printer info, derived from /etc/printcap
+@B(POBOX.DB)@\Post Office Box locations
+
+Description:@\This file locates each user's post office box.  Only
+active users whose pobox type is "POP" will have entries output.
 
 Queries used:
-   NOT GENERATED BY SMS
 
-How modified:
-   HAND
+Clients(s):@\inc, movemail
 
 Example contents:
-
+@Begin(hesVerbatim)
+babette.pobox   HS UNSPECA "POP ATHENA-PO-2.MIT.EDU babette"
+abarba.pobox    HS UNSPECA "POP ATHENA-PO-1.MIT.EDU abarba"
+mga.pobox       HS UNSPECA "POP ATHENA-PO-1.MIT.EDU mga"
+kazimi.pobox    HS UNSPECA "POP ATHENA-PO-2.MIT.EDU kazimi"
+@End(hesVerbatim)
 @Hinge()
-@B(POBOX.DB) - post office info
 
-Description: 
-   Contains a username to post office mapping.
+@B(PRINTCAP.DB)@\printer capability entries
+
+Description:@\This file contains the information from the standard
+/etc/printcap file.
 
 Queries used:
-   get_all_poboxes()@ @ -->@ @ (login, type, machine, box)
 
-How modified:
-   userreg
-   usermaint
-   chpobox
-
-Client(s):
+Clients(s):@\lpr, lpq, lprm
 
 Example contents:
-@Begin(Verbatim, Above 1)
-   abbate.pobox     HS UNSPECA "POP e40-po.mit.edu abbate"
-   ackerman.pobox   HS UNSPECA "POP e40-po.mit.edu ackerman"
-   ajericks.pobox   HS UNSPECA "POP e40-po.mit.edu ajericks"
-   ambar.pobox      HS UNSPECA "POP e40-po.mit.edu ambar"
-   andrew.pobox     HS UNSPECA "POP e40-po.mit.edu andrew"
-   annette.pobox    HS UNSPECA "POP e40-po.mit.edu annette"
-   austin.pobox     HS UNSPECA "POP e40-po.mit.edu austin"
-@End(Verbatim)
-
-
+@Begin(hesVerbatim)
+linus.pcap      HS UNSPECA "linus:rp=linus:rm=BLANKET.MIT.EDU:sd=/usr/spool/pri
+nter/linus"
+la-pika.pcap    HS UNSPECA "la-pika:rp=la-pika:rm=EVE.PIKA.MIT.EDU:sd=/usr/spoo
+l/printer/la-pika"
+ln03-pika.pcap  HS UNSPECA "ln03-pika:rp=ln03-pika:rm=EVE.PIKA.MIT.EDU:sd=/usr/
+spool/printer/ln03-pika"
+helios.pcap     HS UNSPECA "helios:rp=helios:rm=M16-034-P.MIT.EDU:sd=/usr/spool
+/printer/helios"
+@End(hesVerbatim)
 @Hinge()
-@B(SLOC.DB) - service location
 
-Description:
-   This file maps a service name to a machine name.
+@B(SERVICE.DB)@\network service map
+
+Description:@\This file contains the information from the standard
+/etc/services file.  It comes from the services relation of the
+database, and the aliases.
 
 Queries used:
-   get_server_locations(*)@ @ -->@ @ (server, location)
 
-How modified:
-   dcm_maint
-
-Client(s):
+Clients(s):
 
 Example contents:
-@Begin(Verbatim, Above 1)
-   lcprimaryhost.sloc   HS      UNSPECA matisse.mit.edu
-   olctesthost.sloc     HS      UNSPECA castor.mit.edu
-   kerberos.sloc        HS      UNSPECA kerberos.mit.edu
-   ;
-   zephyr.sloc          HS      UNSPECA neskaya.mit.edu
-   zephyr.sloc          HS      UNSPECA arilinn.mit.edu
-   zephyr.sloc          HS      UNSPECA hobbes.mit.edu
-   zephyr.sloc          HS      UNSPECA orpheus.mit.edu
-@End(Verbatim)
-
-
+@Begin(hesVerbatim)
+gdb_test3.service       HS UNSPECA "gdb_test3 tcp 2253"
+qotd.service    HS UNSPECA "qotd tcp 17"
+rpc_ns.service  HS UNSPECA "rpc_ns udp 32767"
+smtp.service    HS UNSPECA "smtp tcp 25"
+X1.service      HS UNSPECA "X1 tcp 5801"
+@End(hesVerbatim)
 @Hinge()
-@B(FILESYS.DB) - Filesystem info
 
-Description:
-@Begin(Text, Above 0, Below 0, Spacing 1, Spread 0, LeftMargin +2, Indent 0)
-This file contains all the filesystems and their related 
-information.  The information presented in this file
-is a filesystem name relating to the following information:
-filesystem type, server name, filesystem name, default mount
-point, and access mode.    
-@End(Text)
+@B(SLOC.DB)@\service location information
+
+Description:@\This file identifies which hosts support which
+services.  It is a listing of DCM service/host tuples, indexed by
+service.
 
 Queries used:
-   get_all_filesys()@ @ -->@ @ (label, type, machine, name, mount, access)
-   get_alias(*, FILESYS)@ @ -->@ @ (name, type, trans)
 
-How modified:
-   attach_maint   
-   user_reg@ @ -->@ @ associates user to a new filesys.
-
-Client(s):
-   attach
+Clients(s):@\zhm, chpobox, get_message
 
 Example contents:
-@Begin(Verbatim, Above 1)
-   NewrtStaffTool.filsys   HS      UNSPECA 
-       "RVD NewrtStaffTool helen r /mit/StaffTools"
-   NewvsStaffTool.filsys   HS      UNSPECA 
-       "RVD NewvsStaffTool helen r /mit/StaffTools"
-   Saltzer.filsys          HS      UNSPECA 
-       "RVD Saltzer helen r /mnt"
-   athena-backup.filsys    HS      UNSPECA 
-       "RVD athena-backup castor r /mnt"
-@End(Verbatim)
+@Begin(hesVerbatim)
+ATHENA_MESSAGE.sloc     HS UNSPECA BITSY.MIT.EDU
+FOO.sloc        HS UNSPECA TOTO.MIT.EDU
+GMOTD.sloc      HS UNSPECA BITSY.MIT.EDU
+HESIOD.sloc     HS UNSPECA KIWI.MIT.EDU
+HESIOD.sloc     HS UNSPECA SUOMI.MIT.EDU
+LOCAL.sloc      HS UNSPECA HACTAR.MIT.EDU
+@End(hesVerbatim)
+@Hinge()
 
-Update mechanism:
-@Begin(Text, Above 0, Below 0, Spacing 1, Spread 0, LeftMargin +2, Indent 0)
-Updating hesiod is a relatively simple process.  Every
-six hours the DCM will initiate a build on each of the above files(assuming
-the informtion has changed).  Once a file is constructed, the update
-mechanism will transport the file to each of the above machine.
-@End(Text)
-@end(Display)
-@NewPage()
+@B(UID.DB)@\user ID mappings
 
-Service:@\@U(RVD)
-
-Description:@\Multiple[The nature of RVD servers recognizes a very different
-approach from that of the hesiod discussion.  The RVD mechanism is updated
-through two different means.  The first method is for RVD_MAINT (an
-application interface) to talk to the RVD server directly.  This program is
-described in detail in the section Specialized Management Interfaces.  The
-important note here is that the RVD is updated by feeding the server
-directly with specific information, not complete files.  The current program
-vdbdb performs the updating process to each RVD server.  RVD_MAINT will use
-the same protocol.  This process affords instantaneous changes to RVD's.
-
-Secondly, when invoked, RVD_MAINT will also communicate with the sms database.
-This communication path will allow the updating of all the fields necessary
-to create rvddb, a RVD server specific file.  The generation of this file is
-inherent to the DCM. 
-If information has changed (via RVD_MAINT),
-the dcm will invoke a module which creates an rvddb file.  This file
-is then propagated to the relevant RVD server.  This file resides on the
-target disk and is used in the event of server failure.
-
-During a session with RVD_MAINT an administrator may make several changes
-to the RVD server.  These changes will go into effect immediately.  In addition
-to rvddb, a few acls must be present with the propagation.  These files are:
-
-@Begin(Itemize, Spread 0)
-/site/rvd/acl/AD.acl
-
-/site/rvd/acl/OP.acl
-
-/site/rvd/acl/SH.acl
-
-/site/rvd/acl/file.acl - where file is host-packname.
-@End(Itemize)
-
-RVD support can best be illustrated by the following diagram:
-@blankspace(3 inches)
-
-The discussion which follows describes the generation and contents of the
-rvddb file.
-]
-
-Propagation interval:@\15 minutes, hour aligned
-
-Data Format:@\RVD specific,  ASCII
-
-Target Machines:@\
-@begin(Format)
-andromache
-gaea
-hactar
-helen
-jinx
-m4-035-s
-m4-035-v
-m4-035-w
-oath
-persephone
-prak
-slartibartfast
-socrates
-zarquon
-calliope
-polyhymnia
-@end(format)
-
-Target Path:@\/site/rvd/rvddb 
-
-File(s):@\
-@Begin(Display, LeftMargin 0, RightMargin 0)
-@B(RVDDB) - RVD specific file
-
-Description:
-@Begin(Text, Above 0, Below 0, Spacing 1, Spread 0, LeftMargin +2, Indent 0)
-RVDDB is athe rvd specific file which is used by an rvd server.
-This file is only used in the event of a catastrophic failure
-with the rvd server.  Nonetheless, this file represents all of the
-information integral to rvd servers.  
-@End(Text)
+Description:@\This file maps unix user IDs to the user password
+entries.  There is a corresponding entry in this file for every entry
+in the passwd.db file.
 
 Queries used:
-   get_@^rvd_server(machine)@ @ -->
-@\(oper_acl, admin_acl, shutdown_acl)
-   get_all_rvd_physical(machine)@ @ -->
-@\(device, size, created, modified)
-   get_all_rvd_virtual(machine)@ @ -->
-@\(name, device, packid, owner, rocap, excap, shcap,
-@\ modes, offset, size, created, modified, ownhost)
-   get_members_of_list(list)@ @ -->
-@\(member_type, member_name)
 
-How modified:
-   rvd_maint
+Clients(s):
 
-Client(s):
-   RVD server.
+Example contents:
+@Begin(hesVerbatim)
+6530.uid        HS CNAME babette.passwd
+6531.uid        HS CNAME abarba.passwd
+6532.uid        HS CNAME mga.passwd
+6533.uid        HS CNAME kazimi.passwd
+6535.uid        HS CNAME pjd.passwd
+@End(hesVerbatim)
+@end(Description)
 
-Content example:
-@Begin(Verbatim, Above 1)
-     operation = add_physical |
-     filename = /dev/	      |
-     blocks=		      | - This is the header 
-     created=		      |   unique to each physical
-     modified=		      |   disk on a machine
-
-     operation = add_virtual  |
-     physical=		      |
-     name=		      |
-     owner=		      |
-     rocap=		      | - This is the information
-     excap=		      |   unique to each virtual
-     shcap=		      |   disk.
-     modes=		      |  
-     offset=		      |   Block gets repeated n 
-     blocks=		      |   times.
-     created=		      |   Where n is the number
-     modified=		      |   of allocated RVDs on a 
-     ownhost=		      |   physical disk.
-     uid=		      |
-@end(Verbatim)
-@End(Display)
-@NewPage()
 
 Service:@\@U(NFS)
 
-Description:@\@Multiple[Sms supports two files which are necessary
+Description:@\@Multiple[Moira supports three files which are necessary
 components of NFS operation.  These files are:
 
 @Begin(Itemize, Spread 0)
-/site/nfsid
+/usr/etc/credentials
 
-/mit/quota
+The quotas file
+
+The directories file
 @End(Itemize)
+
+The credentials file determines access permissions to files on the NFS
+server.  It contains mappings from user name to unix UID and a group
+list.  This file can be generated from a list in the Moira database, or
+may contain all active users.  Which credentials file is loaded on a
+particular server is determined by the value3 field of the serverhost
+relation.  If this field is non-blank, it specifies the list whose
+membership will appear in the credentials file.  If the field is
+blank, then all active users will appear in the credentials file.
+
+The quotas and directories files are in a private format to Moira, which
+is understood by the shell script which updates quotas and creates
+directories.  The quotas file contains many tuples matching a unix UID
+with a quota.  The directories file lists directory name, owning user,
+owning group, and directory type.  The type is used to control the
+directory mode and which init files are loaded into it.
 
 These files reside on the NFS target machine and are used to allocate NFS 
 directories on a per user basis.  The mechanism employed is for all
-programs to communicate to the sms database, and then for the dcm to handle
+programs to communicate to the Moira database, and then for the dcm to handle
 the propagation and creating of NFS lockers.  The best illustration of this 
 process is indicated by the following example:
 
@@ -566,9 +405,9 @@ type a 'real' login name and a password.  In addition, the userreg
 program will allocate, automatically, for the user a post office and
 an NFS directory.  However, the user will not benefit from this
 allocation for a maximum of six hours.  This lag time is due to the
-operation of sms and its creation of NFS lockers.  During registration,
+operation of Moira and its creation of NFS lockers.  During registration,
 the userreg program communicates exclusively with
-the sms database for NFS allocation.  Since the NFS file generation
+the Moira database for NFS allocation.  Since the NFS file generation
 is started by the DCM every 6 hours, the real change is not noticed
 for a period of time.  When the 6 hour time is reached the DCM will
 create the above two files and send them to the appropriate
@@ -577,119 +416,173 @@ script which reads the /mit/quota file and then creates the NFS directory.
 The basic operation of the script is:
 
 @Begin(Format, Above 1, LeftMargin +4)
-mkdir <username> - using /mit/quota file
-chown  <UID> - using /site/nfsid
-setquota <quota> - using /mit/quota
+mkdir <username>, chown, chgrp, chmod - using directories file
+setquota <quota> - using quotas file
 @End(Format)
 ]
 
-Propagation interval:@\6 hours, 0:00, 6:00, 12:00, 18:00
+Propagation interval:@\12 hours
 
 Data Format:@\ASCII
 
 Client(s):@\
 @begin(Format)
 NFS server
-sms shell script for creating directories and user quotas.   
+Moira shell script for creating directories and user quotas.   
 @end(Format)
 
 Files updated:@\
-@Begin(Display, LeftMargin 0)
-@B(/SITE/NFSID) - username to uid/gid mapping.
+@Begin(Description, LeftMargin +0)
 
-Description:
-@Begin(Text, Above 0, Below 0, Spacing 1, Spread 0, LeftMargin +2, Indent 0)
-This file is used for both the nfs server information and
-for the sms shell script.  It provides a username to uid/gid
-mapping.  The file is distributed to every NFS server and 
-is identical on all.
-@End(Text)
+@B(CREDENTIALS)@\username to uid/gid mapping.
+
+Description:@\ This file is used for both the NFS server information
+and for the Moira shell script.  It provides a username to uid/gid
+mapping.  A master credentials file is generated which contains all
+active users.  In addition, smaller credentials files may be produced
+if necessary, with their membership taken from an Moira list.  Each line
+is an entry consisting of the username, uid, and the gid of each group
+the user is in.  Each field is separated by a colon.
 
 Queries used:
-   get_all_active_users()@ @ -->@ @ (login, uid)
-   get_gids_of_user(login)@ @ -->@ @ (gid)
-
-How updated:
-   created at registation time with userreg.
-   maintained with user_maint.  
 
 Contents example:
-@Begin(Verbatim, Above 1, Below 1)
-   <username> <UID> <GID1, GID2,...GID32>
-@End(Verbatim)
-   where: @^username is the user's login name (Ex: pjlevine)
-@\UID is the users id number (Ex: 123456)
-@\GIDn are the groups in which the user is a member
-@\     (max 32)
-@TabClear()
+@Begin(hesVerbatim)
+mtarriol:15786:5905
+mtalford:14956:5904:689
+mswelsh:13764:5901:867:868:800
+mstai:9296:5899
+@End(hesVerbatim)
 @Hinge()
-@B(/MIT/QUOTA) - file containing username to quota mapping.
 
-Description:
-@Begin(Text, Above 0, Below 0, Spacing 1, Spread 0, LeftMargin +2, Indent 0)
-This file contains the mapping between username and quota.
-The file is distributed to each filesystem on the recipient 
-machine.  The contents of this file is used to create
-the NFS directory on the target machine.  Each of the file's 
-contents is unique to the filesystem which it represents.
-@End(Text)
+@B(QUOTAS)@\file containing user to quota mapping.
+
+Description:@\ This file contains the mapping between username and
+quota.  The file is distributed to each filesystem on the recipient
+machine.  Each entry contains a unix uid and a quota.  Each of the
+file's contents is unique to the filesystem which it represents.
 
 Queries used:
-   get_all_nfsphys()@ @ -->@ @ (machine, dir, status, allocated, size)
-   get_nfs_quotas(machine, device)@ @ -->@ @ (login, quota)
-
-How updated:
-   created at registation time with userreg.
-   maintained with user_maint.  
 
 Contents example:
-@Begin(Verbatim, Above 1, Below 1)
-   <username> <quota>
-@End(Verbatim)
-   where: @^username is the user's login name (Ex. pjlevine)
-@\quota is the per user allocation (in Mbytes)
-@TabClear()
-@end(display)
+@Begin(hesVerbatim)
+219 600
+567 600
+1251 600
+1282 600
+1312 600
+@End(hesVerbatim)
+@Hinge()
 
-@NewPage()
+@B(DIRECTORIES)@\file containing info for creating NFS lockers
+
+Description:@\This file contains the info necessary to create lockers.
+Only lockers with the @i(autocreate) flag set will be output.  The
+file is distributed to each filesystem on the recipient machine.  Each
+entry contains a directory name, owning uid and gid, and a locker
+type.  If the directory does not already exist, it will be created
+with the specified ownership.  If the type is "HOMEDIR", it will be
+loaded with the default init files as well.
+
+Queries used:
+
+Contents example:
+@Begin(hesVerbatim)
+/mit/lockers/test1 6526 10912 HOMEDIR
+/mit/lockers/babette 6530 10914 HOMEDIR
+/mit/lockers/kazimi 6533 10923 HOMEDIR
+/mit/lockers/mastein 14489 10928 HOMEDIR
+@End(hesVerbatim)
+@End(Description)
+
+
 Service:@\@U(Mail)
 
-Description:@\The generation of /usr/lib/aliases is a process which makes
-use of a currently existing program aliasbld.c.  This program 
-is called by the dcm every 24 hours.  The hooks into the sms database
-are the significant changes made to aliasbld.c.  The /usr/lib/aliases
-file is created and propagated to athena.mit.edu.  Only one file and
-one propagation is required.  The use of /usr/lib/alaises file
-is done manually by executing a shell script extract_aliases.  The use, 
-however, is not an sms-related function or responsibility.
+Description:@\ The /usr/lib/aliases file is created and propagated to
+athena.mit.edu.  Only one file and one propagation is required.  This
+file is not automatically installed on the mailhub because the mail
+spool must be disabled during the switchover.  A second file is also
+propigated to the mail hub.  This is a complete password file so that
+the finger server on the mailhub will know about everybody.
 
-Data Type:@\ASCII
+Data Type:@\ASCII (sendmail aliases format)
 
-Propagation interval:@\24 hours, 3:00
+Propagation interval:@\24 hours
 
 Target:@\ATHENA.MIT.EDU
 
 File(s):@\
 
+@Begin(Description, LeftMargin +0)
 
-@Begin(Display, LeftMargin 0)
+@B(/USR/LIB/ALIASES)@\mail forwarding information
 
-@B(/USR/LIB/ALIASES) - mail forwarding information
-
-Description:
+Description:@\This file contains both mailing lists and post office
+boxes.  Mailing lists are output only if the list is marked @i(active)
+in the Moira database.  Poboxes are only output if the user's account is
+active.
 
 Queries Used:
-   get_all_maillists()@ @ -->@ @ (list)
-   get_members_of_list(list)@ @ -->@ @ (member_type, member_name)
-   get_all_poboxes()@ @ -->@ @ (login, type, machine, box) 
-
-How updated:
-   listmaint@ @ -->@ @ for all mail list info.
-   user_maint@ @ -->@ @ for pobox info.
-   userreg@ @ -->@ @ initial info for poboxes.
 
 Contents example:
-@end(display)
+@Begin(hesVerbatim)
+#  Video Users
+owner-video-users: paul
+video-users: smyser, paul, mwsmith, davis, rubin@@media-lab.mit.edu,
+        gid@@media-lab.mit.edu, danapple, agarvin
 
+babette: babette@@ATHENA-PO-2.LOCAL
+yvette: yvette@@ATHENA-PO-2.LOCAL
+test1: test1@@ATHENA-PO-2.LOCAL
+@End(hesVerbatim)
+@Hinge()
+
+@B(/ETC/PASSWD)@\user account file
+
+Description:@\This is a standard format unix password file.  It
+contains an entry for every active account at Athena.
+
+Queries Used:
+
+Contents example:
+@Begin(hesVerbatim)
+test1:*:6526:101:Test One,,,:/mit/test1:/bin/csh
+babette:*:6530:101:Harmon C Fowler,,,:/mit/babette:/bin/csh
+abarba:*:6531:101:Angela Barba,,,:/mit/abarba:/bin/csh
+mga:*:6532:101:Gerhard Messmer,,,:/mit/mga:/bin/csh
+kazimi:*:6533:101:Martin Zimmermann,,,:/mit/kazimi:/bin/csh
+pjd:*:6535:101:Peter J Delaney,,,:/mit/pjd:/bin/csh
+@End(hesVerbatim)
+@End(Description)
+
+
+Service:@\@U(ZEPHYR)
+
+Description:@\The zephyr system has access control lists associated
+with some actions on some classes of message.  Moira updates these
+access control lists on the zephyr servers from lists stored in Moira.
+
+Data Type:@\A tar file of ASCII acl files.
+
+Propagation interval:@\24 hours
+
+Target:each of the zephyr servers.
+
+File(s):@\
+@Begin(Description, LeftMargin +0)
+
+@b(*.ACL)@\zephyr ACL file
+
+Description:@\For each existing ACE (even if it is empty), the
+membership will be output, one entry per line.  Recursive lists will
+be expanded.
+
+Queries Used:
+
+Contents example:
+@Begin(hesVerbatim)
+*.*@@*
+@End(hesVerbatim)
+@End(Description)
 @End(Description)
 

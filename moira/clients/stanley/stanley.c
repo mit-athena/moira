@@ -21,7 +21,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/stanley/stanley.c,v 1.3 2001-09-26 03:00:51 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/stanley/stanley.c,v 1.4 2001-09-26 03:33:50 zacheiss Exp $");
 
 struct string_list {
   char *string;
@@ -659,6 +659,7 @@ void usage(char **argv)
 #define USAGE_OPTIONS_FORMAT "  %-39s%s\n"
   fprintf(stderr, "Usage: %s username [options]\n", argv[0]);
   fprintf(stderr, "Options are\n");
+  fprintf(stderr, "  %-39s\n", "-i   | -info");
   fprintf(stderr, USAGE_OPTIONS_FORMAT, "-C   | -create",
           "-D   | -deact");
   fprintf(stderr, USAGE_OPTIONS_FORMAT, "-r   | -register",

@@ -1,6 +1,6 @@
 /* This file defines the query dispatch table for version 2 of the protocol
  *
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/queries2.c,v 2.26 1997-08-14 20:22:01 danw Exp $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/queries2.c,v 2.27 1997-09-05 20:12:37 danw Exp $
  *
  * Copyright 1987, 1988 by the Massachusetts Institute of Technology.
  * For copying and distribution information, please see the file
@@ -1617,7 +1617,7 @@ static struct valobj asin_valobj[] = {
   {V_RLOCK, 0, USERS_TABLE, 0, USERS_ID, MR_DEADLOCK},
   {V_LOCK, 0, MACHINE_TABLE, 0, MACH_ID, MR_DEADLOCK},
   {V_RLOCK, 0, LIST_TABLE, 0, LIST_ID, MR_DEADLOCK},
-  {V_CHAR, 0, SERVERS_TABLE, SERVICE},
+  {V_CHAR, 0, SERVERS_TABLE, NAME},
   {V_LEN, 2, SERVERS_TABLE, "target_file"},
   {V_LEN, 3, SERVERS_TABLE, "script"},
   {V_TYPE, 4, 0, "service", 0, MR_TYPE},

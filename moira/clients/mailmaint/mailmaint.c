@@ -1,10 +1,10 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v 1.10 1988-06-02 17:36:39 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v 1.11 1988-08-11 14:58:32 mar Exp $
  */
 
 #ifndef lint
-static char rcsid_mailmaint_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v 1.10 1988-06-02 17:36:39 mar Exp $";
+static char rcsid_mailmaint_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v 1.11 1988-08-11 14:58:32 mar Exp $";
 #endif lint
 
 /***********************************************************************/
@@ -270,7 +270,7 @@ show_list_info()
 
     show_text(DISPROW, STARTCOL, "Show information about a list.\n\r");
     buf = calloc((unsigned)1024, 1);
-    if (Prompt("Enter List Name: ", buf, LISTSIZE) == 1) {
+    if (Prompt("Enter List Name: ", buf, LISTSIZE, 1) == 1) {
 	Put_message("\n\r");
 	if (fetch_list_info(buf, current_li) == 0) {
 	    (void) sprintf(buf, "Description: %s\n\r", current_li->desc);
@@ -344,7 +344,7 @@ start_display_buff(buff)
 	currow++;
 	mvcur(0, 0, currow, STARTCOL);
 	refresh();
-	if (Prompt("--RETURN for more, ctl-c to exit--", buffer, 1) == 0) {
+	if (Prompt("--RETURN for more, ctl-c to exit--", buffer, 1, 0) == 0) {
 	    Put_message("Flushing query...");
 	    moreflg = 1;
 	    return (0);
@@ -368,7 +368,7 @@ add_member()
 
     show_text(DISPROW, STARTCOL, "Add yourself to a list\n\r");
     buf = calloc(LISTMAX, 1);
-    if (Prompt("Enter List Name: ", buf, LISTSIZE) == 1) {
+    if (Prompt("Enter List Name: ", buf, LISTSIZE, 1) == 1) {
 	Put_message("\r\n");
 	argv[0] = strsave(buf);
 	argv[1] = strsave("user");
@@ -398,7 +398,7 @@ delete_member()
 
     show_text(DISPROW, STARTCOL, "Remove yourself from a list\n\r");
     buf = calloc(LISTMAX, 1);
-    if (Prompt("Enter List Name: ", buf, LISTSIZE) == 1) {
+    if (Prompt("Enter List Name: ", buf, LISTSIZE, 1) == 1) {
 	Put_message("\r\n");
 	argv[0] = strsave(buf);
 	argv[1] = strsave("user");
@@ -532,7 +532,7 @@ list_members()
     mvcur(0, 0, DISPROW, STARTCOL);
     refresh();
     buf = calloc(LISTMAX, 1);
-    if (Prompt("Enter List Name: ", buf, LISTSIZE) == 1) {
+    if (Prompt("Enter List Name: ", buf, LISTSIZE, 1) == 1) {
 	(void) sprintf(buffer, "The members of list '%s' are:", buf);
 	show_text(DISPROW + 1, STARTCOL, buffer);
 	argv[0] = buf;
@@ -588,7 +588,7 @@ start_display(buff)
 	currow++;
 	mvcur(0, 0, currow, STARTCOL);
 	refresh();
-	if (Prompt("--RETURN for more, ctl-c to exit--", buffer, 1) == 0) {
+	if (Prompt("--RETURN for more, ctl-c to exit--", buffer, 1, 0) == 0) {
 	    Put_message("Flushing query...");
 	    moreflg = 1;
 	    return (0);
@@ -856,10 +856,11 @@ get_list_info(argc, argv)
 /****************************************************/
 /* Prompt the user for input */
 int 
-Prompt(prompt, buf, buflen)
+Prompt(prompt, buf, buflen, crok)
     char *prompt;
     char *buf;
     int buflen;
+    int crok;
 {
     int c;
     char *p;
@@ -881,7 +882,8 @@ Prompt(prompt, buf, buflen)
 	    return (0);
 	case '\n':
 	case '\r':
-	    Put_message("\r");
+	    if (crok)
+		Put_message("\r");
 	    *p = '\0';
 	    if (strlen(buf) < 1)/* only \n or \r in buff */
 		return (-1);

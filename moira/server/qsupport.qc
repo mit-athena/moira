@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.41 1989-09-01 15:01:07 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.42 1989-09-04 17:12:43 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_qsupport_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.41 1989-09-01 15:01:07 mar Exp $";
+static char *rcsid_qsupport_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.42 1989-09-04 17:12:43 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -2608,7 +2608,7 @@ register_user(q, argv, cl)
 ##  inquire_equel(rowcount = "rowcount");
     if (rowcount != 1)
       return(SMS_INTERNAL);
-    incremental_after("members", 0, argv);
+    incremental_after("members", 0, aargv);
     com_err(whoami, 0, "group list created");
 
     /* decide where to put filesystem */
@@ -2677,7 +2677,7 @@ register_user(q, argv, cl)
     aargv[0] = login;
     aargv[1] = login;
     sprintf(buffer, "nq.users_id = %d and nq.filsys_id = values.value and values.name = \"filsys_id\"", users_id);
-    incremental_after("nfsquota", buffer, argv);
+    incremental_after("nfsquota", buffer, aargv);
     com_err(whoami, 0, "quota of %d assigned", quota);
     if (ingres_errno) return(sms_errcode);
 

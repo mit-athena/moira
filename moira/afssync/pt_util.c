@@ -185,8 +185,9 @@ char **argv;
     initialize_acfg_error_table();
 
     if (wflag) {
+	struct usr_list *u;
+
 	while(fgets(buffer, sizeof(buffer), dfp)) {
-	    struct usr_list *u;
 	    int id, oid, cid, flags, quota, uid;
 	    char name[PR_MAXNAMELEN], mem[PR_MAXNAMELEN];
 
@@ -197,7 +198,7 @@ char **argv;
 		if (u) {
 		    i = PR_INewEntry(u->cid, u->name, u->uid, u->oid);
 		    u->uid = 0;
-		    if (i && i!=PRIDEXIST) {
+		    if (i) {
 			fprintf(stderr, "Error while creating %s: %s\n",
 				name, error_message(i));
 			continue;
@@ -213,7 +214,8 @@ char **argv;
 		}
 		i = PR_AddToGroup(NULL,uid,id);
 		if (i==0 || i==PRIDEXIST) continue;
-		fprintf(stderr, "Error while adding %s to %s\n", mem, name);
+		fprintf(stderr, "Error while adding %s to %s: %s\n",
+			mem, name, error_message(i));
 	    } else {
 		sscanf(buffer, "%s %d/%d %d %d %d",
 		       name, &flags, &quota, &id, &oid, &cid);
@@ -241,9 +243,14 @@ char **argv;
 				      flags >> PRIVATE_SHIFT,
 				      quota, 0, 0, 0);
 		if (i)
-		    fprintf(stderr, "Error while setting flags on %s\n", name);
+		    fprintf(stderr, "Error while setting flags on %s: %s\n",
+			    name, error_message(i));
 	    }
 	}
+	for (u=usr_head; u; u=u->next)
+	    if (u->uid)
+		fprintf(stderr, "Error while creating %s: %s\n",
+			u->name, error_message(PRBADNAM));
     } else {
 	for (i = 0; i < HASHSIZE; i++) {
 	    offset = nflag ? ntohl(prh.nameHash[i]) : ntohl(prh.idHash[i]);

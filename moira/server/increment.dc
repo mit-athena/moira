@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/increment.dc,v $
  *	$Author: genoa $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/increment.dc,v 2.2 1992-08-04 12:02:02 genoa Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/increment.dc,v 2.3 1992-08-04 20:28:08 genoa Exp $
  *
  *	Copyright (C) 1989 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_increment_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/increment.dc,v 2.2 1992-08-04 12:02:02 genoa Exp $";
+static char *rcsid_increment_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/increment.dc,v 2.3 1992-08-04 20:28:08 genoa Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -155,6 +155,17 @@ char **argv;
 	  INTO :barg0, :barg1, :barg2, :barg3, :barg4, :barg5, :barg6, 
             :barg7, :barg8, :barg9, :barg10
 	  FROM filesys WHERE :qual;
+        name = malloc(0);
+        id = atoi(barg2);
+        id_to_name(id, "MACHINE", &name);
+        strcpy(barg2, name);
+        id = atoi(barg7);
+        id_to_name(id, "USER", &name);
+        strcpy(barg7, name);
+        id = atoi(barg8);
+        id_to_name(id, "LIST", &name);
+        strcpy(barg8, name);
+        free(name);
 	beforec = 11;
     } else if (!strcmp(table, "quota")) {
 	strcpy(barg0, "?");
@@ -256,6 +267,17 @@ EXEC SQL END DECLARE SECTION;
           INTO :aarg0, :aarg1, :aarg2, :aarg3, :aarg4, :aarg5, :aarg6,
 	      :aarg7, :aarg8, :aarg9, :aarg10
           FROM filesys fs WHERE :qual;
+        name = malloc(0);
+        id = atoi(aarg2);
+        id_to_name(id, "MACHINE", &name);
+        strcpy(aarg2, name);
+        id = atoi(aarg7);
+        id_to_name(id, "USER", &name);
+        strcpy(aarg7, name);
+        id = atoi(aarg8);
+        id_to_name(id, "LIST", &name);
+        strcpy(aarg8, name);
+        free(name);
 	afterc = 11;
     } else if (!strcmp(table, "quota")) {
 	strcpy(aarg0, "?");

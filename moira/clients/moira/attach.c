@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.28 1991-01-04 16:50:22 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.29 1991-01-11 11:30:21 mar Exp $";
 #endif
 
 /*	This is the file attach.c for the MOIRA Client, which allows a nieve
@@ -13,7 +13,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.28 1991-01-04 16:50:22 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.29 1991-01-11 11:30:21 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -845,7 +845,8 @@ char **argv;
         return(DM_NORMAL);
     }
 
-    args[ALIAS_TRANS]= args[ALIAS_END] = NULL;	/* set to NULL initially. */
+    args[ALIAS_TRANS]= Strsave("");
+    args[ALIAS_END] = NULL;
     if (GetValueFromUser("Which filesystem will this alias point to?",
 			 &args[ALIAS_TRANS]) == SUB_ERROR)
       return(DM_NORMAL);

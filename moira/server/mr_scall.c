@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_scall.c,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_scall.c,v 1.14 1988-12-29 16:36:03 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_scall.c,v 1.15 1989-04-21 19:06:37 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_sms_scall_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_scall.c,v 1.14 1988-12-29 16:36:03 mar Exp $";
+static char *rcsid_sms_scall_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_scall.c,v 1.15 1989-04-21 19:06:37 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -292,6 +292,8 @@ trigger_dcm(dummy0, dummy1, cl)
 	pid = vfork();
 	switch (pid) {
 	case 0:
+	    	for (dummy0 = getdtablesize() - 1; dummy0 > 2; dummy0--)
+		  close(dummy0);
 		execl("/u1/sms/bin/startdcm", "startdcm", 0);
 		exit(1);
 		

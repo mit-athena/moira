@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.22 2000-11-30 23:27:36 zacheiss Exp $
+# $Id: Makefile.in,v 1.23 2001-06-19 22:39:39 zacheiss Exp $
 
 SHELL=/bin/sh
 @SET_MAKE@
@@ -32,15 +32,15 @@ LIB_TARGET=libdcm.a
 
 OBJS=	acl.o boot.o dhcp.o directory.o hesiod.o hosts.o mailhub.o \
 	ndb.o network.o nfs.o pobox.o postoffice.o print.o \
-	warehouse.o www.o zephyr.o
+	warehouse.o winad.o www.o zephyr.o
 
 CFILES= acl.c boot.c dhcp.c directory.c hesiod.c hosts.c mailhub.c \
 	ndb.c network.c nfs.c pobox.c postoffice.c print.c \
-	warehouse.c www.c zephyr.c
+	warehouse.c winad.o www.c zephyr.c
 
 TARGET=	acl.gen boot.gen dhcp.gen directory.gen hesiod.gen hosts.gen \
 	mailhub.gen ndb.gen network.gen nfs.gen pobox.gen \
-	postoffice.gen print.gen warehouse.gen www.gen zephyr.gen
+	postoffice.gen print.gen warehouse.gen winad.gen www.gen zephyr.gen
 
 SCRIPTS=boot.sh ca.gen dhcp.sh hesiod.sh mailhub.sh ndb.sh nfs.sh null.sh \
 	postoffice.sh print.sh sapprint.gen sapprint.sh spwatch.gen \
@@ -124,3 +124,5 @@ postoffice.gen: postoffice.o libdcm.a $(MR_LIBDEP)
 www.gen: www.o libdcm.a $(MR_LIBDEP)
 	$(CC) -o $@ $(LDFLAGS) www.o libdcm.a $(SQL_LIBS) $(LIBS)
 
+winad.gen: winad.o libdcm.a $(MR_LIBDEP)
+	$(CC) -o $@ $(LDFLAGS) winad.o libdcm.a $(SQL_LIBS) $(LIBS)

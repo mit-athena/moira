@@ -1,6 +1,6 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/util.c,v 1.4 1988-09-13 14:31:06 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/util.c,v 1.5 1990-03-19 19:07:45 mar Exp $
  *
- * Utility routines used by the SMS extraction programs.
+ * Utility routines used by the MOIRA extraction programs.
  *
  *  (c) Copyright 1988 by the Massachusetts Institute of Technology.
  *  For copying and distribution information, please see the file
@@ -11,8 +11,8 @@
 #include <mit-copyright.h>
 #include <stdio.h>
 #include <sys/time.h>
-#include <sms.h>
-#include <sms_app.h>
+#include <moira.h>
+#include <moira_site.h>
 
 
 /* ingres_date_and_time: passed a unix time_t, returns a string that ingres
@@ -95,13 +95,13 @@ char *targetfile;
 	    rename(oldfile, targetfile);
 	    perror("Unable to install new file (rename failed)\n");
 	    fprintf(stderr, "Filename = %s\n", targetfile);
-	    exit(SMS_CCONFIG);
+	    exit(MR_CCONFIG);
 	}
     } else {
 	if (rename(filename, targetfile) < 0) {
 	    perror("Unable to rename old file\n");
 	    fprintf(stderr, "Filename = %s\n", targetfile);
-	    exit(SMS_CCONFIG);
+	    exit(MR_CCONFIG);
 	}
     }
     unlink(oldfile);

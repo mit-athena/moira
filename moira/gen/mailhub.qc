@@ -1,5 +1,5 @@
 
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/mailhub.qc,v 1.4 1990-03-13 15:22:03 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/mailhub.qc,v 1.5 1990-03-19 19:06:11 mar Exp $
  *
  * This generates the /usr/lib/aliases file for the mailhub.
  *
@@ -12,8 +12,8 @@
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>
-#include <sms.h>
-#include <sms_app.h>
+#include <moira.h>
+#include <moira_site.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/time.h>
@@ -56,18 +56,18 @@ char **argv;
 	    if (flag < 0) {
 		fprintf(stderr, "File %s does not need to be rebuilt.\n",
 			argv[1]);
-		exit(SMS_NO_CHANGE);
+		exit(MR_NO_CHANGE);
 	    }
 	}
 	targetfile = argv[1];
 	sprintf(filename, "%s~", targetfile);
 	if ((out = fopen(filename, "w")) == NULL) {
 	    fprintf(stderr, "unable to open %s for output\n", filename);
-	    exit(SMS_OCONFIG);
+	    exit(MR_OCONFIG);
 	}
     } else if (argc != 1) {
 	fprintf(stderr, "usage: %s [outfile]\n", argv[0]);
-	exit(SMS_ARGS);
+	exit(MR_ARGS);
     }
 
     fprintf(out, "%s\n# Aliases File Extract of %s", divide, ctime(&tm));
@@ -89,12 +89,12 @@ char **argv;
 
     if (fclose(out)) {
 	perror("close failed");
-	exit(SMS_CCONFIG);
+	exit(MR_CCONFIG);
     }
 
     if (argc == 2)
       fix_file(targetfile);
-    exit(SMS_SUCCESS);
+    exit(MR_SUCCESS);
 }
 
 
@@ -113,12 +113,12 @@ static int ingerr(num)
 
     switch (*num) {
     case INGRES_DEADLOCK:
-	ingres_errno = SMS_DEADLOCK;
+	ingres_errno = MR_DEADLOCK;
 	break;
     default:
-	ingres_errno = SMS_INGRES_ERR;
+	ingres_errno = MR_INGRES_ERR;
     }
-    com_err(whoami, SMS_INGRES_ERR, " code %d\n", *num);
+    com_err(whoami, MR_INGRES_ERR, " code %d\n", *num);
     critical_alert("DCM", "Alias build encountered INGRES ERROR %d", *num);
     exit(ingres_errno);
 }
@@ -176,7 +176,7 @@ get_info()
       if (hash_store(machines, id, strsave(name)) < 0) {
 #endif
 	  fprintf(stderr, "Out of memory!\n");
-	  exit(SMS_NO_MEM);
+	  exit(MR_NO_MEM);
       }
       cnt++;
 ##  }
@@ -187,7 +187,7 @@ get_info()
 ##  retrieve (id = strings.string_id, name = strings.string) {
 	if (hash_store(strings, id, strsave(strtrim(name))) < 0) {
 	    fprintf(stderr, "Out of memory!\n");
-	    exit(SMS_NO_MEM);
+	    exit(MR_NO_MEM);
 	}
 	cnt++;
 ##  }
@@ -218,7 +218,7 @@ get_info()
 	  u->pobox = (char *) NULL;
 	if (hash_store(users, id, u) < 0) {
 	    fprintf(stderr, "Out of memory!\n");
-	    exit(SMS_NO_MEM);
+	    exit(MR_NO_MEM);
 	}
 	cnt++;
 ##  }
@@ -238,7 +238,7 @@ get_info()
 	l->m = (struct member *) NULL;
 	if (hash_store(lists, id, l) < 0) {
 	    fprintf(stderr, "Out of memory!\n");
-	    exit(SMS_NO_MEM);
+	    exit(MR_NO_MEM);
 	}
 	cnt++;
 ##  }
@@ -353,7 +353,7 @@ int copy;
     if (ns == NULL) {
 	if ((ns = (struct names *) perm_malloc(sizeof(struct names))) == NULL) {
 	    fprintf(stderr, "ran out of memory inserting name (sorting)\n");
-	    exit(SMS_NO_MEM);
+	    exit(MR_NO_MEM);
 	}
 	if (copy)
 	  ns->name = strsave(s);
@@ -363,7 +363,7 @@ int copy;
 	ns->id = id;
 	if (hash_store(names, code, ns) < 0) {
 	    fprintf(stderr, "Out of memory!\n");
-	    exit(SMS_NO_MEM);
+	    exit(MR_NO_MEM);
 	}
 	return;
     }
@@ -376,7 +376,7 @@ int copy;
 	if ((ns->next = (struct names *) perm_malloc(sizeof(struct names)))
 	    	== NULL) {
 	    fprintf(stderr, "ran out of memory insterting name (sorting)\n");
-	    exit(SMS_NO_MEM);
+	    exit(MR_NO_MEM);
 	}
 	ns = ns->next;
 	if (copy)

@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/mitdir.qc,v 1.2 1990-01-12 16:27:25 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/mitdir.qc,v 1.3 1990-03-19 19:06:15 mar Exp $
  *
  * This generates the input file for the mkdirdb program for the MIT.EDU
  * mailhub.
@@ -12,8 +12,8 @@
 #include <mit-copyright.h>
 #include <stdio.h>
 #include <string.h>
-#include <sms.h>
-#include <sms_app.h>
+#include <moira.h>
+#include <moira_site.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/time.h>
@@ -49,18 +49,18 @@ char **argv;
 	    if (flag1 < 0) {
 		fprintf(stderr, "File %s does not need to be rebuilt.\n",
 			argv[1]);
-		exit(SMS_NO_CHANGE);
+		exit(MR_NO_CHANGE);
 	    }
 	}
 	targetfile = argv[1];
 	sprintf(filename, "%s~", targetfile);
 	if ((out = fopen(filename, "w")) == NULL) {
 	    fprintf(stderr, "unable to open %s for output\n", filename);
-	    exit(SMS_OCONFIG);
+	    exit(MR_OCONFIG);
 	}
     } else if (argc != 1) {
 	fprintf(stderr, "usage: %s [outfile]\n", argv[0]);
-	exit(SMS_ARGS);
+	exit(MR_ARGS);
     }
 
 ##  begin transaction
@@ -70,12 +70,12 @@ char **argv;
 
     if (fclose(out)) {
 	perror("close failed");
-	exit(SMS_CCONFIG);
+	exit(MR_CCONFIG);
     }
 
     if (argc == 2)
       fix_file(targetfile);
-    exit(SMS_SUCCESS);
+    exit(MR_SUCCESS);
 }
 
 
@@ -94,12 +94,12 @@ static int ingerr(num)
 
     switch (*num) {
     case INGRES_DEADLOCK:
-	ingres_errno = SMS_DEADLOCK;
+	ingres_errno = MR_DEADLOCK;
 	break;
     default:
-	ingres_errno = SMS_INGRES_ERR;
+	ingres_errno = MR_INGRES_ERR;
     }
-    com_err(whoami, SMS_INGRES_ERR, " code %d\n", *num);
+    com_err(whoami, MR_INGRES_ERR, " code %d\n", *num);
     critical_alert("DCM", "Alias build encountered INGRES ERROR %d", *num);
     exit(ingres_errno);
 }

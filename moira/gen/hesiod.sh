@@ -1,14 +1,14 @@
 #!/bin/csh -f -x
 # This script performs updates of hesiod files on hesiod servers.  
 # 	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/hesiod.sh,v $
-echo	'$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/hesiod.sh,v 1.9 1990-02-27 18:21:22 mar Exp $'
+echo	'$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/hesiod.sh,v 1.10 1990-03-19 19:06:02 mar Exp $'
 
 # The following exit codes are defined and MUST BE CONSISTENT with the
-# SMS error codes the library uses:
-set SMS_HESFILE = 	47836472
-set SMS_MISSINGFILE = 	47836473
-set SMS_NAMED = 	47836475
-set SMS_TARERR = 	47836476
+# MR error codes the library uses:
+set MR_HESFILE = 	47836472
+set MR_MISSINGFILE = 	47836473
+set MR_NAMED = 		47836475
+set MR_TARERR = 	47836476
 
 umask 22
 
@@ -36,7 +36,7 @@ if (! -d $SRC_DIR) then
 endif
 
 # Alert if tarfile doesn't exist
-if (! -r $TARFILE) exit $SMS_MISSINGFILE
+if (! -r $TARFILE) exit $MR_MISSINGFILE
 
 # Empty the tar file one file at a time and move each file to the
 # appropriate place only if it is not zero length. 
@@ -48,14 +48,14 @@ foreach  file (`/bin/tar tf $TARFILE | awk '{print $1}' | sed 's;/$;;'`)
    echo extracting $file
    /bin/tar xf $TARFILE $file
    # Don't put up with errors extracting the information
-   if ($status) exit $SMS_TARERR
+   if ($status) exit $MR_TARERR
    # Make sure the file is not zero-length
    if (! -z $file) then
       /bin/mv -f $file $DEST_DIR
-      if ($status != 0) exit $SMS_HESFILE
+      if ($status != 0) exit $MR_HESFILE
    else
       /bin/rm -f $file
-      exit $SMS_MISSINGFILE
+      exit $MR_MISSINGFILE
    endif
 end
 
@@ -87,7 +87,7 @@ while ($i < $TIMEOUT)
 end
 
 # Did it time out?
-if ($i == $TIMEOUT) exit $SMS_NAMED
+if ($i == $TIMEOUT) exit $MR_NAMED
 
 # Clean up!
 /bin/rm -f $TARFILE

@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/nfs.qc,v 1.17 1990-03-08 23:22:32 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/nfs.qc,v 1.18 1990-03-19 19:07:10 mar Exp $
  *
  * This generates the files necessary to load an nfs server.
  *
@@ -9,8 +9,8 @@
 
 #include <mit-copyright.h>
 #include <stdio.h>
-#include <sms.h>
-#include <sms_app.h>
+#include <moira.h>
+#include <moira_site.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/time.h>
@@ -34,7 +34,7 @@ char **argv;
 
     if (argc > 2) {
 	fprintf(stderr, "usage: %s [outfile]\n", argv[0]);
-	exit(SMS_ARGS);
+	exit(MR_ARGS);
     }
 
     IIseterr(ingerr);
@@ -51,17 +51,17 @@ char **argv;
     if (!changed) {
 	fprintf(stderr, "No files updated.\n");
 	if (argc == 2 && stat(argv[1], &sb) == 0)
-	  exit(SMS_NO_CHANGE);
+	  exit(MR_NO_CHANGE);
     }
 
     if (argc == 2) {
 	sprintf(cmd, "cd %s; cp %s/nfs/* .; tar cf %s .",
 		nfs_dir, SMS_DIR, argv[1]);
 	if (system(cmd))
-	  exit(SMS_TAR_FAIL);
+	  exit(MR_TAR_FAIL);
     }
 
-    exit(SMS_SUCCESS);
+    exit(MR_SUCCESS);
 }
 
 
@@ -80,12 +80,12 @@ static int ingerr(num)
 
     switch (*num) {
     case INGRES_DEADLOCK:
-	ingres_errno = SMS_DEADLOCK;
+	ingres_errno = MR_DEADLOCK;
 	break;
     default:
-	ingres_errno = SMS_INGRES_ERR;
+	ingres_errno = MR_INGRES_ERR;
     }
-    com_err(whoami, SMS_INGRES_ERR, " code %d\n", *num);
+    com_err(whoami, MR_INGRES_ERR, " code %d\n", *num);
     critical_alert("DCM", "NFS build encountered INGRES ERROR %d", *num);
     exit(ingres_errno);
 }
@@ -168,7 +168,7 @@ struct save_queue *lists;
 	fd = fopen(file, "w");
 	if (!fd) {
 	    fprintf(stderr, "cannot open %s for output\n", file);
-	    exit(SMS_OCONFIG);
+	    exit(MR_OCONFIG);
 	}
 ##	repeat retrieve (id = m.member_id)
 ##	    where m.list_id = l1.list_id and l1.name = @listname and
@@ -178,7 +178,7 @@ struct save_queue *lists;
 ##	}
 	if (fclose(fd)) {
 	    fprintf(stderr, "error closing %s\n", file);
-	    exit(SMS_CCONFIG);
+	    exit(MR_CCONFIG);
 	}
     }
 /* don't free here either
@@ -218,7 +218,7 @@ struct hash *do_everyone()
     fd = fopen(buf, "w");
     if (!fd) {
 	fprintf(stderr, "cannot open %s for output\n", buf);
-	exit(SMS_OCONFIG);
+	exit(MR_OCONFIG);
     }
 
     /* make space for group list */
@@ -312,7 +312,7 @@ struct save_queue *machs;
 	unlink(f2); /* ignore errors on this unlink */
 	if (link(f1, f2)) {
 	    fprintf(stderr, "Cannot link %s to %s\n", f1, f2);
-	    exit(SMS_OCONFIG);
+	    exit(MR_OCONFIG);
 	}
 	hash_store(machines, id, machname);
     }
@@ -334,7 +334,7 @@ struct save_queue *machs;
 	  fd = fopen(file, "w");
 	  if (!fd) {
 	      fprintf(stderr, "cannot open %s for output\n", file);
-	      exit(SMS_OCONFIG);
+	      exit(MR_OCONFIG);
 	  }
 	  prevuid = -1;
 	  quotasum = 0;
@@ -352,7 +352,7 @@ struct save_queue *machs;
       fprintf(fd, "%d %d\n", prevuid, quotasum);
     if (fclose(fd)) {
 	fprintf(stderr, "error closing %s", file);
-	exit(SMS_CCONFIG);
+	exit(MR_CCONFIG);
     }
 
     olddev = oldmach = -1;
@@ -373,14 +373,14 @@ struct save_queue *machs;
 	  fd = fopen(file, "w");
 	  if (!fd) {
 	      fprintf(stderr, "cannot open %s for output\n", file);
-	      exit(SMS_OCONFIG);
+	      exit(MR_OCONFIG);
 	  }
       }
       fprintf(fd, "%s %d %d %s\n", strtrim(dir), uid, gid, strtrim(fstype));
 ##  }
     if (fclose(fd)) {
 	fprintf(stderr, "error closing %s", file);
-	exit(SMS_CCONFIG);
+	exit(MR_CCONFIG);
     }
 ##  end transaction
     return(1);

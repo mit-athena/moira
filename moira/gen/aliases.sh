@@ -1,5 +1,5 @@
 #!/bin/sh
-SMS_MKCRED=47836474
+MR_MKCRED=47836474
 if [ `hostname`x != MITx ]; then
 	/bin/diff /usr/lib/aliases /usr/lib/aliases.new > /tmp/aliasdiff
 	fi
@@ -7,7 +7,7 @@ if [ `hostname`x != MITx ]; then
 /bin/cp /dev/null /usr/lib/aliases.new.pag
 /usr/lib/sendmail -bi -oA/usr/lib/aliases.new
 if [ $? != 0 ]; then
-	exit $SMS_MKCRED
+	exit $MR_MKCRED
 	fi
 if [ `hostname`x = MITx ]; then
 	kill `/bin/ps ax | /bin/grep "accepting connections" | /bin/grep -v grep | /bin/awk '{print $1}'`
@@ -22,4 +22,4 @@ if [ `hostname`x = MITx ]; then
 /bin/rm -f $0
 exit 0
 
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/aliases.sh,v 1.3 1989-12-12 11:50:46 mar Exp $
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/aliases.sh,v 1.4 1990-03-19 19:05:53 mar Exp $

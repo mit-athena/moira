@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/hesiod.qc,v 1.24 1990-03-08 23:21:40 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/hesiod.qc,v 1.25 1990-03-19 19:05:56 mar Exp $
  *
  * This generates the zone files necessary to load a hesiod server.
  * The following zones are generated: passwd, uid, pobox, group,
@@ -11,8 +11,8 @@
 
 #include <mit-copyright.h>
 #include <stdio.h>
-#include <sms.h>
-#include <sms_app.h>
+#include <moira.h>
+#include <moira_site.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/time.h>
@@ -55,7 +55,7 @@ char **argv;
 
     if (argc > 2) {
 	fprintf(stderr, "usage: %s [outfile]\n", argv[0]);
-	exit(SMS_ARGS);
+	exit(MR_ARGS);
     }
 
     IIseterr(ingerr);
@@ -79,17 +79,17 @@ char **argv;
     if (!changed) {
 	fprintf(stderr, "No files updated.\n");
 	if (argc == 2 && stat(argv[1], &sb) == 0)
-	  exit(SMS_NO_CHANGE);
+	  exit(MR_NO_CHANGE);
     }
 
     if (argc == 2) {
 	fprintf(stderr, "Building tar file.\n");
 	sprintf(cmd, "cd %s; tar cf %s .", hesiod_dir, argv[1]);
 	if (system(cmd))
-	  exit(SMS_TAR_FAIL);
+	  exit(MR_TAR_FAIL);
     }
 
-    exit(SMS_SUCCESS);
+    exit(MR_SUCCESS);
 }
 
 
@@ -107,12 +107,12 @@ static int ingerr(num)
 
     switch (*num) {
     case INGRES_DEADLOCK:
-	ingres_errno = SMS_DEADLOCK;
+	ingres_errno = MR_DEADLOCK;
 	break;
     default:
-	ingres_errno = SMS_INGRES_ERR;
+	ingres_errno = MR_INGRES_ERR;
     }
-    com_err(whoami, SMS_INGRES_ERR, " code %d\n", *num);
+    com_err(whoami, MR_INGRES_ERR, " code %d\n", *num);
     critical_alert("DCM", "Hesiod build encountered INGRES ERROR %d", *num);
     exit(ingres_errno);
 }
@@ -167,19 +167,19 @@ do_passwd()
     pout = fopen(poutft, "w");
     if (!pout) {
 	perror("cannot open passwd.db~ for write");
-	exit(SMS_OCONFIG);
+	exit(MR_OCONFIG);
     }
     sprintf(uoutft, "%s~", uoutf);
     uout = fopen(uoutft, "w");
     if (!uout) {
 	perror("cannot open uid.db~ for write");
-	exit(SMS_OCONFIG);
+	exit(MR_OCONFIG);
     }
     sprintf(boutft, "%s~", boutf);
     bout = fopen(boutft, "w");
     if (!bout) {
 	perror("cannot open pobox.db for write");
-	exit(SMS_OCONFIG);
+	exit(MR_OCONFIG);
     }
 
     fprintf(stderr, "Building passwd.db, uid.db, and pobox.db\n");
@@ -214,7 +214,7 @@ do_passwd()
 
     if (fclose(pout) || fclose(uout) || fclose(bout)) {
 	fprintf(stderr, "Unsuccessful file close of passwd.db, uid.db, or pobox.db\n");
-	exit(SMS_CCONFIG);
+	exit(MR_CCONFIG);
     }
     fix_file(poutf);
     fix_file(uoutf);
@@ -260,19 +260,19 @@ do_groups()
     iout = fopen(buf, "w");
     if (!iout) {
 	perror("cannot open gid.db for write");
-	exit(SMS_OCONFIG);
+	exit(MR_OCONFIG);
     }
     sprintf(buf, "%s~", goutf);
     gout = fopen(buf, "w");
     if (!gout) {
 	perror("cannot open group.db for write");
-	exit(SMS_OCONFIG);
+	exit(MR_OCONFIG);
     }
     sprintf(buf, "%s~", loutf);
     lout = fopen(buf, "w");
     if (!lout) {
 	perror("cannot open grplist.db for write");
-	exit(SMS_OCONFIG);
+	exit(MR_OCONFIG);
     }
 
     fprintf(stderr, "Building gid.db, group.db, and grplist.db\n");
@@ -342,7 +342,7 @@ do_groups()
 
     if (fclose(iout) || fclose(gout) || fclose(lout)) {
 	fprintf(stderr, "Unsuccessful close of gid.db, group.db, or grplist.db\n");
-	exit(SMS_CCONFIG);
+	exit(MR_CCONFIG);
     }
     fix_file(ioutf);
     fix_file(goutf);
@@ -387,7 +387,7 @@ do_filsys()
     out = fopen(outft, "w");
     if (!out) {
 	perror("cannot open filsys.db for write");
-	exit(SMS_OCONFIG);
+	exit(MR_OCONFIG);
     }
 
     fprintf(stderr, "Building filsys.db\n");
@@ -469,7 +469,7 @@ do_filsys()
 
     if (fclose(out)) {
 	fprintf(stderr, "Unsuccessful close of filsys.db\n");
-	exit(SMS_CCONFIG);
+	exit(MR_CCONFIG);
     }
     fix_file(outf);
     return(1);
@@ -541,7 +541,7 @@ do_cluster()
     out = fopen(outft, "w");
     if (!out) {
 	perror("cannot open cluster.db for write");
-	exit(SMS_OCONFIG);
+	exit(MR_OCONFIG);
     }
 
     fprintf(stderr, "Building cluster.db\n");
@@ -581,7 +581,7 @@ do_cluster()
 		      strtrim(label);
 		      strtrim(data);
 		      fprintf(out,
-			      "smsinternal-%d.cluster\tHS %s \"%s %s\"\n",
+			      "mrinternal-%d.cluster\tHS %s \"%s %s\"\n",
 			      mid, HTYPE, label, data);
 ##		  }
 		}
@@ -602,7 +602,7 @@ do_cluster()
 	      fprintf(out, "%s.cluster\tHS CNAME %s.cluster\n",
 		      machbuf, name);
 	    else
-	      fprintf(out, "%s.cluster\tHS CNAME smsinternal-%d.cluster\n",
+	      fprintf(out, "%s.cluster\tHS CNAME mrinternal-%d.cluster\n",
 		      machbuf, mid);
 	}
 	for (id = mid + 1; id < maxmach; id++) {
@@ -618,7 +618,7 @@ do_cluster()
 			      machbuf, name);
 		    else
 		      fprintf(out,
-			      "%s.cluster\tHS CNAME smsinternal-%d.cluster\n",
+			      "%s.cluster\tHS CNAME mrinternal-%d.cluster\n",
 			      machbuf, mid);
 		}
 	    }
@@ -640,7 +640,7 @@ do_cluster()
 
     if (fclose(out)) {
 	fprintf(stderr, "Unsuccessful close of cluster.db\n");
-	exit(SMS_CCONFIG);
+	exit(MR_CCONFIG);
     }
     fix_file(outf);
     return(1);
@@ -673,7 +673,7 @@ do_printcap()
     out = fopen(outft, "w");
     if (!out) {
 	perror("cannot open printcap.db for write");
-	exit(SMS_OCONFIG);
+	exit(MR_OCONFIG);
     }
 
     fprintf(stderr, "Building printcap.db\n");
@@ -691,7 +691,7 @@ do_printcap()
 
     if (fclose(out)) {
 	fprintf(stderr, "Unsuccessful close of pcap.db\n");
-	exit(SMS_CCONFIG);
+	exit(MR_CCONFIG);
     }
     fix_file(outf);
     return(1);
@@ -726,7 +726,7 @@ do_palladium()
     out = fopen(outft, "w");
     if (!out) {
 	perror("cannot open palladium.db for write");
-	exit(SMS_OCONFIG);
+	exit(MR_OCONFIG);
     }
 
     fprintf(stderr, "Building palladium.db\n");
@@ -749,7 +749,7 @@ do_palladium()
 
     if (fclose(out)) {
 	fprintf(stderr, "Unsuccessful close of palladium.db\n");
-	exit(SMS_CCONFIG);
+	exit(MR_CCONFIG);
     }
     fix_file(outf);
     return(1);
@@ -784,7 +784,7 @@ do_sloc()
     out = fopen(outft, "w");
     if (!out) {
 	perror("cannot open sloc.db for write");
-	exit(SMS_OCONFIG);
+	exit(MR_OCONFIG);
     }
 
     fprintf(stderr, "Building sloc.db\n");
@@ -800,7 +800,7 @@ do_sloc()
 
     if (fclose(out)) {
 	fprintf(stderr, "Unsuccessful close of sloc.db\n");
-	exit(SMS_CCONFIG);
+	exit(MR_CCONFIG);
     }
 
     fix_file(outf);
@@ -833,7 +833,7 @@ do_service()
     out = fopen(outft, "w");
     if (!out) {
 	perror("cannot open service.db for write");
-	exit(SMS_OCONFIG);
+	exit(MR_OCONFIG);
     }
 
     fprintf(stderr, "Building service.db\n");
@@ -856,7 +856,7 @@ do_service()
 
     if (fclose(out)) {
 	fprintf(stderr, "Unsuccessful close of service.db\n");
-	exit(SMS_CCONFIG);
+	exit(MR_CCONFIG);
     }
     fix_file(outf);
     return(1);

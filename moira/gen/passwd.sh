@@ -1,10 +1,10 @@
 #!/bin/sh
-SMS_MKCRED=47836474
+MR_MKCRED=47836474
 /site/lookup/db_update
 if [ $? != 0 ]; then
-	exit $SMS_MKCRED
+	exit $MR_MKCRED
 	fi
 /bin/rm -f $0
 exit 0
 
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/passwd.sh,v 1.1 1989-08-27 20:35:10 mar Exp $
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/passwd.sh,v 1.2 1990-03-19 19:07:39 mar Exp $

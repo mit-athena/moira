@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.4 1988-06-29 20:11:24 kit Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.5 1988-07-08 18:24:39 kit Exp $";
 #endif
 
 /*	This is the file attach.c for allmaint, the SMS client that allows
@@ -14,7 +14,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v $
  *      $Author: kit $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.4 1988-06-29 20:11:24 kit Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.5 1988-07-08 18:24:39 kit Exp $
  *	
  *  	Copyright 1987, 1988 by the Massachusetts Institute of Technology.
  *
@@ -172,11 +172,12 @@ char ** info;
     sprintf(print_buf, "User Ownership: %-30s Group Ownership: %s",
 	    info[FS_OWNER], info[FS_OWNERS]);
     Put_message(print_buf);
-    sprintf(print_buf, "Auto Create %-34s Locker Type: %s",info[FS_CREATE], 
+    sprintf(print_buf, "Auto Create: %-34s Locker Type: %s",
+	    atoi(info[FS_CREATE]) ? "ON" : "OFF", 
 	    info[FS_L_TYPE]);
     Put_message(print_buf);
-    sprintf(print_buf, "Last Modified at %s, by %s with %s",
-	    info[FS_MODTIME], info[FS_MODBY], info[FS_MODWITH]);
+    sprintf(print_buf, MOD_FORMAT, info[FS_MODBY], info[FS_MODTIME], 
+	    info[FS_MODWITH]);
     Put_message(print_buf);
     return(info[FS_NAME]);
 }
@@ -220,7 +221,7 @@ Bool name;
     GetValueFromUser("Comments about this Filesystem", &info[FS_COMMENTS]);
     GetValueFromUser("Filesystem's owner (user)", &info[FS_OWNER]);
     GetValueFromUser("Filesystem's owners (group)", &info[FS_OWNERS]);
-    GetValueFromUser("Automatically create this filsystem (0/1)",
+    GetYesNoValueFromUser("Automatically create this filsystem",
 		     &info[FS_CREATE]);
     GetValueFromUser("Filesystem's lockertype", &info[FS_L_TYPE]);
 

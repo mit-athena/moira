@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/cluster.c,v 1.4 1988-06-29 20:11:35 kit Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/cluster.c,v 1.5 1988-07-08 18:24:51 kit Exp $";
 #endif lint
 
 /*	This is the file cluseter.c for allmaint, the SMS client that allows
@@ -12,7 +12,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/cluster.c,v $
  *      $Author: kit $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/cluster.c,v 1.4 1988-06-29 20:11:35 kit Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/cluster.c,v 1.5 1988-07-08 18:24:51 kit Exp $
  *	
  *  	Copyright 1987, 1988 by the Massachusetts Institute of Technology.
  *
@@ -101,8 +101,7 @@ char ** info;
     Put_message("");
     sprintf(buf, "Machine: %-30s Type: %s", info[M_NAME], info[M_TYPE]);
     Put_message(buf);
-    sprintf(buf, "Last Modified at %s, by %s with %s",info[M_MODTIME],
-	    info[M_MODBY], info[M_MODWITH]);
+    sprintf(buf, MOD_FORMAT, info[M_MODBY], info[M_MODTIME], info[M_MODWITH]);
     Put_message(buf);
     return(info[M_NAME]);
 }
@@ -127,8 +126,7 @@ char ** info;
     Put_message(buf);
     sprintf(buf, "Location:    %s", info[C_LOCATION]);
     Put_message(buf);
-    sprintf(buf, "Last Modified at %s, by %s with %s",info[C_MODTIME],
-	    info[C_MODBY], info[C_MODWITH]);
+    sprintf(buf, MOD_FORMAT, info[C_MODBY], info[C_MODTIME], info[C_MODWITH]);
     Put_message(buf);
     return(info[C_NAME]);
 }

@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v 1.4 1988-06-29 20:13:16 kit Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v 1.5 1988-07-08 18:26:38 kit Exp $";
 #endif lint
 
 /*	This is the file utils.c for allmaint, the SMS client that allows
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v $
  *      $Author: kit $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v 1.4 1988-06-29 20:13:16 kit Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v 1.5 1988-07-08 18:26:38 kit Exp $
  *	
  *  	Copyright 1987, 1988 by the Massachusetts Institute of Technology.
  *
@@ -32,9 +32,6 @@
 #include "infodefs.h"
 
 #include <netdb.h>		/* for gethostbyname. */
-/* #include <ctype.h> */
-/* #include <varargs.h> */
-/* #include <sys/types.h> */
 
 /*	Function Name: FreeInfo
  *	Description: Frees all elements of a NULL terminated arrary of char*'s
@@ -434,19 +431,124 @@ char * name;
  *	Arguments: prompt - prompt for user.
  *                 pointer - pointer to default value, will be returned
  *                          as new value.
- *	Returns: none.
+ *	Returns: SUB_ERROR if break hit (^C).
  */
 
-void
+int
 GetValueFromUser(prompt, pointer)
 char * prompt, ** pointer;
 {
     char buf[BUFSIZ];
 
-    PromptWithDefault(prompt, buf, BUFSIZ, *pointer);
+    if (PromptWithDefault(prompt, buf, BUFSIZ, *pointer) == -1)
+	return(FALSE);
+
     if (*pointer != NULL)
 	free(*pointer);
     *pointer = Strsave(buf);
+    return(TRUE);
+}
+
+/*	Function Name: GetYesNoValueFromUser
+ *	Description: This function gets a value from a user for the field
+ *                   specified.
+ *	Arguments: prompt - prompt for user.
+ *                 pointer - pointer to default value, will be returned
+ *                          as new value.
+ *	Returns: SUB_ERROR if break hit (^C).
+ */
+
+int
+GetYesNoValueFromUser(prompt, pointer)
+char * prompt, ** pointer;
+{
+    char user_prompt[BUFSIZ];
+    Bool default_val;
+
+    if ( strcmp (*pointer, DEFAULT_YES) == 0 )
+	default_val = TRUE;
+    else
+	default_val = FALSE;
+    
+    sprintf(user_prompt, "%s (y/n)", prompt);
+
+    switch (YesNoQuestion(user_prompt, default_val)) {
+    case TRUE:
+	if (*pointer != NULL)
+	    free(*pointer);
+	*pointer = Strsave("1");
+	break;
+    case FALSE:
+	if (*pointer != NULL)
+	    free(*pointer);
+	*pointer = Strsave("0");
+	break;
+    case -1:
+    default:
+	return(FALSE);
+    }
+    return(TRUE);
+}
+
+/*	Function Name: GetFSVal
+ *	Description: asks about a specific filesystem value.
+ *	Arguments: name - string for this type of filesystem.
+ *                 mask - mask for this type of filesystem.
+ *                 current - current filesystem state. (for defaults).
+ *                 new - new filesystem state.
+ *	Returns: TRUE if successful.
+ */
+
+static Bool
+GetFSVal(name, mask, current, new)
+char * name;
+int mask, current, *new;
+{
+    char temp_buf[BUFSIZ];
+    sprintf(temp_buf, "Is this a %s filsystem", name);
+    switch (YesNoQuestion(temp_buf, ( (mask & current) == mask) )) {
+    case TRUE:
+	*new |= mask;
+	break;
+    case FALSE:
+	break;			/* zero by default. */
+    default:
+	return(FALSE);
+    }
+    return(TRUE);
+}
+
+/*	Function Name: GetFSTypes
+ *	Description: Allows user to specify filsystem types.
+ *	Arguments: current - current value of filsystem, freed here.
+ *	Returns: SUB_ERROR on ^C.
+ */
+
+int
+GetFSTypes(current)
+char **  current;
+{
+    int c_value, new_val = 0;	/* current value of filesys type (int). */
+    char ret_value[BUFSIZ];
+
+    if (*current == NULL)
+	c_value = 0;
+    else 
+	c_value = atoi(*current);
+
+    if (GetFSVal("student", SMS_FS_STUDENT, c_value, &new_val) == FALSE)
+	return(SUB_ERROR);
+    if (GetFSVal("faculty", SMS_FS_FACULTY, c_value, &new_val) == FALSE)
+	return(SUB_ERROR);
+    if (GetFSVal("staff", SMS_FS_STAFF, c_value, &new_val) == FALSE)
+	return(SUB_ERROR);
+    if (GetFSVal("miscellaneous", SMS_FS_MISC, c_value, &new_val) == FALSE)
+	return(SUB_ERROR);
+
+    FreeAndClear(current, TRUE);
+    sprintf(ret_value, "%d", new_val);
+    *current = Strsave(ret_value);
+    return(SUB_NORMAL);
 }
 
 /*	Function Name: CanonicalizeHostname

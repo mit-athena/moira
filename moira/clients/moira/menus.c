@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menus.c,v 1.4 1988-06-29 20:12:42 kit Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menus.c,v 1.5 1988-07-08 18:25:50 kit Exp $";
 #endif lint
 
 /*	This is the file menu.c for allmaint, the SMS client that allows
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menus.c,v $
  *      $Author: kit $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menus.c,v 1.4 1988-06-29 20:12:42 kit Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menus.c,v 1.5 1988-07-08 18:25:50 kit Exp $
  *	
  *  	Copyright 1987, 1988 by the Massachusetts Institute of Technology.
  *
@@ -365,25 +365,21 @@ Menu nfsmaint_top_menu = {
   "NFS Maintenence",
   5,
   {
-    { ShowNFSService, NULLMENU, 3, {
+    { ShowNFSService, NULLMENU, 2, {
       { "show", "Show an NFS server" },
       { "machine", "Machine Name: "},
-      { "device", "Directory: "}
     } },
-    { AddNFSService, NULLMENU, 3, {
+    { AddNFSService, NULLMENU, 2, {
       { "add", "Add NFS server" },
       { "machine", "Machine Name: "},
-      { "device", "Directory: "}
     } },
-    { UpdateNFSService, NULLMENU, 3, {
+    { UpdateNFSService, NULLMENU, 2, {
       { "update", "Update NFS server"},
       { "machine", "Machine Name: "},
-      { "device", "Directory: "}
     } },
-    { DeleteNFSService, NULLMENU, 3, {
+    { DeleteNFSService, NULLMENU, 2, {
       { "delete", "Delete NFS server"},
       {"machine", "Machine Name: "},
-      {"device", "Directory: "}
     } },
     SIMPLEFUNC("verbose", "Toggle Verbosity of Delete", ToggleVerboseMode),
 /*    SIMPLEFUNC("help", "Help", NFSHelp), */
@@ -450,36 +446,46 @@ Menu servmenu = {
  * Usermaint menu.
  */
 
+Menu usermaint_pobox_menu = {
+  NULLFUNC,
+  NULLFUNC,
+  "Edit User Post Office Boxes",
+  3,
+  {
+    {GetUserPOBox, NULLMENU, 2, {
+      {"show", "Show a user's post office box"},
+      {"login name", "login name: "}
+    } },
+    {SetUserPOBox, NULLMENU, 2, {
+      {"set", "Set (Add or Change) a user's post office box"},
+      {"login name", "login name: "}
+    } },
+    {RemoveUserPOBox, NULLMENU, 2, {
+      {"remove", "Remove a user's post office box"},
+      {"login name", "login name: "}
+    } },
+  }
+};
+    
 Menu usermaint_quota_menu = {
   NULLFUNC,
   NULLFUNC,
-  "Edit User Quotas and Server Machines",
+  "Edit User and Default Quotas",
   6,
   {
     SIMPLEFUNC("shdef", "Show default user quota (in KB)", ShowDefaultQuota),
-    {ShowUserQuota, NULLMENU, 2, {
-       {"shquota", "Show a user's quota (in KB)"},
-       {"login", "Login name: "}
-     } },
     {ChangeDefaultQuota, NULLMENU, 2, {
       {"chdef", "Change default user quota"},
       {"quota", "New quota (in KB): "}
     } },
-    {ChangeUserQuota, NULLMENU, 2, {
-      {"chquota", "Change a user's disk quota"},
-      {"user", "Login name: "}
-    } },
-    {AddUserLocker, NULLMENU, 5, {
-      {"create", "Create a quota & locker for a user"},
-      {"login", "User's login name: "},
-      {"machine", "Server host name: "},
-      {"device", "Directory on host: /[dir]/[login] "},
-      {"quota", "Quota in KB: "}
-    } },
-    {DeleteUserLocker, NULLMENU, 2, {
-      {"del", "Delete a user's quota & locker - BROKEN 6/10/88 CDP"},
-      {"login", "User's login: "}
-    } }
+    SIMPLEFUNC("shquota", "Show a user's disk quota on a filesytem",
+	       ShowUserQuota),
+    SIMPLEFUNC("addquota", "Add a new disk quota for user on a filesytem",
+	       AddUserQuota),
+    SIMPLEFUNC("chquota", "Change a user's disk quota on a filesytem",
+	       ChangeUserQuota),
+    SIMPLEFUNC("rmquota", "Remove a user's disk quota on a filesytem",
+	       RemoveUserQuota),
   } 
 };
 
@@ -487,46 +493,29 @@ Menu usermaint_top_menu = {
   NULLFUNC,
   NULLFUNC,
   "SMS User Maintenance",
-  8,
+  9,
   {
     {ShowUserByLogin, NULLMENU, 2, {
        {"login", "Show user information by login name"},
        {"login name", "Desired login name: "}
      } },
     {ShowUserByName, NULLMENU, 3, {
-      {"full", "Show user information by name"},
+      {"name", "Show user information by name"},
       {"first", "First name: "},
       {"last", "Last name: "}
     } },
     {ShowUserByClass, NULLMENU, 2, {
-       {"login", "Show names of users in a given class"},
+       {"class", "Show names of users in a given class"},
        {"login name", "Desired class: "}
      } },    
-    {ModifyUser, NULLMENU, 2, {
+    {UpdateUser, NULLMENU, 2, {
       {"modify", "Change all user fields"},
       {"login", "Login name: "}
     } },
 /*    SIMPLEFUNC("chpw", "Change a user's password", change_user_password), */
-    {ChangeUserPOBox, NULLMENU, 2, {
-      {"chpobox", "Change a user's post office box"},
-      {"login name", "login name: "}
-    } },
-/*    {enter_user, NULLMENU, 6, {
-      {"enter", "Enter unregistered user"},
-      {"first", "User's first name: "},
-      {"middle", "User's middle initial: "},
-      {"last", "User's last name: "},
-      {"mit_id", "User's MIT ID: "},
-      {"mit_year", "User's MIT year: "}
-    } },
-    {reg_user, NULLMENU, 5, {
-      {"register", "Register unregistered user"},
-      {"first", "User's first name: "},
-      {"last", "User's last name: "},
-      {"mit_id", "User's MIT ID: "},
-      {"login", "Login name to assign: "}
-    } },
- */
+    SIMPLEFUNC("adduser", "Add a new user to the database", 
+	       AddNewUser),
+    SIMPLEFUNC("register", "Register a user", RegisterUser),
     {DeleteUser, NULLMENU, 2, {
       {"delete", "Delete user"},
       {"login", "Login name: "}
@@ -535,6 +524,7 @@ Menu usermaint_top_menu = {
       {"udelete", "Delete user by uid"},
       {"uid", "User ID (not MIT ID!): "}
     } },
+    SUBMENU("pobox", "User PO Boxes", &usermaint_pobox_menu),
     SUBMENU("quota", "User Quotas", &usermaint_quota_menu),
   }
 };

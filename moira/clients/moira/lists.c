@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v 1.4 1988-06-29 20:12:22 kit Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v 1.5 1988-07-08 18:25:32 kit Exp $";
 #endif lint
 
 /*	This is the file lists.c for allmaint, the SMS client that allows
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v $
  *      $Author: kit $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v 1.4 1988-06-29 20:12:22 kit Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v 1.5 1988-07-08 18:25:32 kit Exp $
  *	
  *  	Copyright 1987, 1988 by the Massachusetts Institute of Technology.
  *
@@ -33,7 +33,7 @@
 #define LIST    0
 #define MEMBERS 1
 #define GLOM    2
-#define ACL_USE 3
+#define ACE_USE 3
 
 #define DEFAULT_ACTIVE      DEFAULT_YES
 #define DEFAULT_PUBLIC      DEFAULT_YES
@@ -41,29 +41,29 @@
 #define DEFAULT_MAILLIST    DEFAULT_YES
 #define DEFAULT_GROUP       DEFAULT_NO
 #define DEFAULT_GID         UNIQUE_GID
-#define DEFAULT_ACL_TYPE    "user"
-#define DEFAULT_ACL_NAME    (user)
+#define DEFAULT_ACE_TYPE    "user"
+#define DEFAULT_ACE_NAME    (user)
 #define DEFAULT_DESCRIPTION DEFAULT_COMMENT
 
 /* globals only for this file. */
 
 static char current_list[BUFSIZ];
 
-/*	Function Name: PrintListAcl
- *	Description: This function prints the list acl information.
+/*	Function Name: PrintListAce
+ *	Description: This function prints the list ace information.
  *	Arguments: info - an info structure.
  *	Returns: none.
  */
 
 static void
-PrintListAcl(info)
+PrintListAce(info)
 char ** info;
 {
     char buf[BUFSIZ];
 
     Put_message(" ");
-    sprintf(buf, "Item Administered: %-20s Name: %s", info[ACL_TYPE], 
-	    info[ACL_NAME]);
+    sprintf(buf, "Item Administered: %-20s Name: %s", info[ACE_TYPE], 
+	    info[ACE_NAME]);
     Put_message(buf);
 }
 
@@ -96,11 +96,11 @@ char ** info;
     else
 	Put_message("This list is NOT a Group.");
 
-    if (strcmp(info[L_ACL_TYPE],"NONE") == 0)
+    if (strcmp(info[L_ACE_TYPE],"NONE") == 0)
 	Put_message("This list has no Administrator, how strange?!");
     else {
 	sprintf(buf, "The Administrator of this list is the %s: %s",
-		info[L_ACL_TYPE], info[L_ACL_NAME]);
+		info[L_ACE_TYPE], info[L_ACE_NAME]);
 	Put_message(buf);
     }
 
@@ -109,8 +109,7 @@ char ** info;
 		   atoi(info[L_PUBLIC]) ? "public" : "private",
 		   atoi(info[L_HIDDEN]) ? "hidden" : "visible");
     (void) Put_message(buf);
-    (void) sprintf(buf, "Last modification at %s, by %s using the program %s",
-		   info[L_MODTIME], info[L_MODBY], info[L_MODWITH]);
+    sprintf(buf, MOD_FORMAT, info[L_MODBY], info[L_MODTIME], info[L_MODWITH]);
     (void) Put_message(buf);
 }
 
@@ -157,12 +156,12 @@ char * name1, *name2;
 	    return (NULL);
 	}
 	break;
-    case ACL_USE:
+    case ACE_USE:
 	args[0] = name1; 	
 	args[1] = name2; 	
-	if ( (status =  sms_query("get_acl_use", 2, args,
+	if ( (status =  sms_query("get_ace_use", 2, args,
 			       StoreInfo, (char *) &elem)) != 0) {
-	    com_err(program_name, status, " in get_acl_use");
+	    com_err(program_name, status, " in get_ace_use");
 	    return (NULL);
 	}
 	break;
@@ -193,26 +192,26 @@ Bool name;
 
     if (name) {
 	newname = Strsave(info[L_NAME]);
-	GetValueFromUser("The new name for this list.", &newname);
+	GetValueFromUser("The new name for this list", &newname);
     }
-    GetValueFromUser("Is this list active (1/0): ", &info[L_ACTIVE]);
-    GetValueFromUser("Is this list public (1/0): ", &info[L_PUBLIC]);
-    GetValueFromUser("Is this list hidden (1/0): ", &info[L_HIDDEN]);
-    GetValueFromUser("Is this a maillist  (1/0): ", &info[L_MAILLIST]);
-    GetValueFromUser("is this a group     (1/0): ", &info[L_GROUP]);
+    GetYesNoValueFromUser("Is this an active list", &info[L_ACTIVE]);
+    GetYesNoValueFromUser("Is this a public list", &info[L_PUBLIC]);
+    GetYesNoValueFromUser("Is this a hidden list", &info[L_HIDDEN]);
+    GetYesNoValueFromUser("Is this a maillist", &info[L_MAILLIST]);
+    GetYesNoValueFromUser("is this a group", &info[L_GROUP]);
     if (atoi(info[L_GROUP]))
 	GetValueFromUser("What is the GID for this group.", &info[L_GID]);
 
     GetValueFromUser("What Type of Administrator (none, user, list): ",
-		     &info[L_ACL_TYPE]);
-    if ( (strcmp(info[L_ACL_TYPE], "USER") == 0) || 
-	(strcmp(info[L_ACL_TYPE], "user") == 0) )
+		     &info[L_ACE_TYPE]);
+    if ( (strcmp(info[L_ACE_TYPE], "USER") == 0) || 
+	(strcmp(info[L_ACE_TYPE], "user") == 0) )
 	GetValueFromUser("Who will be the administrator of this list: ",
-			 &info[L_ACL_NAME]);
-    if ( (strcmp(info[L_ACL_TYPE], "LIST") == 0) ||
-	(strcmp(info[L_ACL_TYPE], "list") == 0) )
+			 &info[L_ACE_NAME]);
+    if ( (strcmp(info[L_ACE_TYPE], "LIST") == 0) ||
+	(strcmp(info[L_ACE_TYPE], "list") == 0) )
        GetValueFromUser("Which group will be the administrator of this list: ",
-			 &info[L_ACL_NAME]);
+			 &info[L_ACE_NAME]);
     GetValueFromUser("Description: ", &info[L_DESC]);
 
     FreeAndClear(&info[L_MODTIME], TRUE);
@@ -320,8 +319,8 @@ char * name;
    info[L_MAILLIST] = Strsave(DEFAULT_MAILLIST);
    info[L_GROUP] =    Strsave(DEFAULT_GROUP);
    info[L_GID] =      Strsave(DEFAULT_GID);
-   info[L_ACL_TYPE] = Strsave(DEFAULT_ACL_TYPE);
-   info[L_ACL_NAME] = Strsave(DEFAULT_ACL_NAME);
+   info[L_ACE_TYPE] = Strsave(DEFAULT_ACE_TYPE);
+   info[L_ACE_NAME] = Strsave(DEFAULT_ACE_NAME);
    info[L_DESC] =     Strsave(DEFAULT_DESCRIPTION);
    info[L_MODTIME] = info[L_MODBY] = info[L_MODWITH] = info[L_END] = NULL;
    return(info);
@@ -410,7 +409,8 @@ char **argv;
 {
     char temp_buf[BUFSIZ];
     char *list_name = argv[1];
-    
+    register int stat;    
+
     if (!ValidName(list_name))
 	return(DM_QUIT);
 
@@ -422,6 +422,22 @@ char **argv;
 	if (YesNoQuestion(temp_buf, TRUE) != TRUE )
 	    return(DM_QUIT);
     }
+    else 
+	/* All we want to know is if it exists. */
+	switch( (stat = sms_query("count_members_of_list", 1, argv + 1,
+				   NullFunc, (char *) NULL))) {
+	case SMS_SUCCESS:
+	    break;
+	case SMS_LIST:
+	    Put_message("This list does not exist.");
+	    return(DM_QUIT);
+	case SMS_ACCESS:
+	    Put_message("You are not allowed to view this list.");
+	    return(DM_QUIT);
+	default:
+	    com_err(program_name, stat, " in get_list_info");
+	    return(DM_QUIT);
+	}
 
     (void) sprintf(temp_buf, 
 		   "Change/Display membership of '%s'", list_name);
@@ -770,8 +786,8 @@ ListByAdministrator()
     }
     name = Strsave(buf);
 
-    top = GetListInfo(ACL_USE, type, name);
-    Loop(top, PrintListAcl);
+    top = GetListInfo(ACE_USE, type, name);
+    Loop(top, PrintListAce);
 
     FreeQueue(top);
     return (DM_NORMAL);

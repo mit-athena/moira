@@ -1,4 +1,4 @@
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/addusr/Imakefile,v 1.1 1992-07-06 15:09:04 mar Exp $
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/addusr/Imakefile,v 1.2 1997-01-29 22:59:49 danw Exp $
 #
 # Copyright 1992 by the Massachusetts Institute of Technology.
 #
@@ -13,7 +13,7 @@ SRCDIR=${SRCTOP}/clients/addusr
 CODE=${SRCS} Imakefile
 OBJS=addusr.o reg_stubs.o
 
-program(addusr,${OBJS},${MR_LIBDEP} ${GDB_LIBDEP}, -lkadm ${CLIBS},${PROGDIR})
+program(addusr,${OBJS},${MR_LIBDEP} ${GDB_LIBDEP}, -lkadm ${CLIBS} ${CRYPT},${PROGDIR})
 
 reg_stubs.c: ../userreg/reg_stubs.c
 	cp ../userreg/reg_stubs.c reg_stubs.c

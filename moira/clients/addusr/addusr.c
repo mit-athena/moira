@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/addusr/addusr.c,v 1.5 1995-11-21 15:36:55 jweiss Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/addusr/addusr.c,v 1.6 1997-01-29 22:59:50 danw Exp $
  *
  * Program to add users en batch to the moira database
  *
@@ -21,7 +21,7 @@
 #include <moira_site.h>
 
 #ifndef LINT
-static char adduser_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/addusr/addusr.c,v 1.5 1995-11-21 15:36:55 jweiss Exp $";
+static char adduser_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/addusr/addusr.c,v 1.6 1997-01-29 22:59:50 danw Exp $";
 #endif
 
 #ifdef ATHENA
@@ -317,7 +317,7 @@ char **argv;
     fprintf(stderr, "   -R | -register (and add to database)\n");
     fprintf(stderr, "   -v | -verbose\n");
     fprintf(stderr, "   -d | -nodupcheck (don't check for duplicates)\n");
-    fprintf(stderr, "   -S | -server servername\n");
+    fprintf(stderr, "   -db | -database host:port\n");
     exit(1);
 }
 

@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/db/newmoira.dc,v 1.5 1993-10-25 16:51:54 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/db/newmoira.dc,v 1.6 1993-11-18 17:19:46 mar Exp $
  *
  * Creates a new sms database
  *
@@ -234,6 +234,14 @@ char **argv;
       VALUES ('[NONE]', 'NONE');
     if (ingres_errno) {
 	printf("Unable to install 0 machine\n");
+	EXEC SQL INQUIRE_SQL (:buffer = ERRORTEXT);
+	printf("SQL error: %s\n",buffer);
+	exit(1);
+    }
+    EXEC SQL INSERT INTO subnet (name)
+      VALUES ('NONE');
+    if (ingres_errno) {
+	printf("Unable to install 0 subnet\n");
 	EXEC SQL INQUIRE_SQL (:buffer = ERRORTEXT);
 	printf("SQL error: %s\n",buffer);
 	exit(1);

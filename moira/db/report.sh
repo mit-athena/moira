@@ -8,9 +8,9 @@ mkdir ${TMPDIR}
 cd ${TMPDIR}
 
 awk -F\| '$8 != 3 {print $10} \
-	($8==1 || $8==6) && $25=="POP" {pop += 1} \
-	($8==1 || $8==6) && $25=="SMTP" {smtp += 1} \
-	($8==1 || $8==6) && $25=="NONE" {nopob += 1} \
+	($8==1 || $8==6) && $26=="POP" {pop += 1} \
+	($8==1 || $8==6) && $26=="SMTP" {smtp += 1} \
+	($8==1 || $8==6) && $26=="NONE" {nopob += 1} \
 	END {	nopob -= 1; total = pop + smtp + nopob; \
 		printf("%5d Active users by pobox:\n", total) > "pobox.summary"; \
 		printf("\t%5d POP boxes\t\t%2d%%\n", pop, (100 * pop + total/2)/total) > "pobox.summary"; \
@@ -53,6 +53,7 @@ awk -F\| ' \
 		printf("\t%5d AFS\t%2d%%\n", t["AFS"], (100 * t["AFS"] + total/2)/total); \
 		printf("\t%5d RVD\t%2d%%\n", t["RVD"], (100 * t["RVD"] + total/2)/total); \
 		printf("\t%5d FSGROUP\t%2d%%\n", t["FSGROUP"], (100 * t["FSGROUP"] + total/2)/total); \
+		printf("\t%5d MUL\t%2d%%\n", t["MUL"], (100 * t["MUL"] + total/2)/total); \
 		printf("\t%5d ERROR\t%2d%%\n\n", t["ERR"], (100 * t["ERR"] + total/2)/total); \
 		printf("%d Filesystems by locker type:\n", total); \
 		printf("\t%5d HOMEDIR\t%2d%%\n", l["HOMEDIR"], (100 * l["HOMEDIR"] + total/2)/total); \

@@ -84,3 +84,7 @@ create index i_prn_loc on printers (location);
 create index i_prn_con on printers (contact);
 
 create index i_cap_tag on capacls (tag);
+
+create index i_usersids_usid on usersids (users_id);
+
+create index i_listsids_lid on listsids (list_id);

@@ -380,3 +380,17 @@ create table incremental
 	table_name	VARCHAR(16)	DEFAULT CHR(0)	NOT NULL,
 	service		VARCHAR(16) 	DEFAULT CHR(0)	NOT NULL
 );
+
+create table usersids
+(
+	users_id	INTEGER		DEFAULT 0	NOT NULL,
+	sid		VARCHAR(64)	DEFAULT CHR(0)	NOT NULL,
+	created		DATE		DEFAULT SYSDATE	NOT NULL
+);
+
+create table listsids
+(
+	list_id		INTEGER		DEFAULT 0	NOT NULL,
+	sid		VARCHAR(64)	DEFAULT CHR(0)	NOT NULL,
+	created		DATE		DEFAULT SYSDATE	NOT NULL
+);

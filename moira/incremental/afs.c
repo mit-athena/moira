@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/afs.c,v 1.17 1992-05-30 20:17:09 probe Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/afs.c,v 1.18 1992-05-30 22:46:05 probe Exp $
  *
  * Do AFS incremental updates
  *
@@ -171,7 +171,9 @@ int afterc;
 {
     int agid, bgid;
     long code, id;
+    char hostname[64];
     char g1[PR_MAXNAMELEN], g2[PR_MAXNAMELEN];
+    char *av[2];
 
     agid = bgid = 0;
     if (beforec > L_GID && atoi(before[L_ACTIVE]) && atoi(before[L_GROUP]))
@@ -224,17 +226,28 @@ int afterc;
 	if (code) {
 	    critical_alert("incremental",
 			   "Couldn't create group %s (id %d): %s",
-			   after[L_NAME], -agid, error_message(code));
+			   after[L_NAME], id, error_message(code));
 	    return;
 	}
 
 	/* We need to make sure the group is properly populated */
 	if (beforec < L_ACTIVE || atoi(before[L_ACTIVE]) == 0) return;
 
-	/* XXX - To be implemented */
-	critical_alert("incremental",
-		       "Status change for list %s; membership may be wrong",
-		       after[L_NAME]);
+	gethostname(hostname, sizeof(hostname));
+	code = mr_connect(hostname);
+	if (!code) code = mr_auth("afs.incr");
+	if (code) {
+	    critical_alert("incremental",
+			   "Error contacting Moira server to resolve %s: %s",
+			   after[L_NAME], error_message(code));
+	    return;
+	}
+	av[0] = "LIST";
+	av[1] = after[L_NAME];
+	get_members(2, av, after[L_NAME]);
+
+	mr_disconnect();
+	return;
     }
 }
 
@@ -259,57 +272,73 @@ int afterc;
 	return;
     }
 
+    if (afterc) 
+	edit_group(1, after[LM_LIST], after[LM_TYPE], after[LM_MEMBER]);
+    if (beforec)
+	edit_group(0, after[LM_LIST], after[LM_TYPE], after[LM_MEMBER]);
+}
+
+
+get_members(ac, av, group)
+    int ac;
+    char *av[];
+    char *group;
+{
+    int code=0;
+
+    if (strcmp(av[0], "LIST")) {
+	sleep(1);				/* give the ptserver room */
+	edit_group(1, group, av[0], av[1]);
+    } else {
+	code = mr_query("get_members_of_list", 1, &av[1], get_members, group);
+	if (code)
+	    critical_alert("incremental",
+			   "Couldn't retrieve full membership of %s: %s",
+			   group, error_message(code));
+    }
+    return code;
+}
+
+
+edit_group(op, group, type, member)
+    int op;
+    char *group;
+    char *type;
+    char *member;
+{
+    char *p = 0;
+    char buf[PR_MAXNAMELEN];
+    int (*fn)();
+    int code;
+    extern long pr_AddToGroup(), pr_RemoveUserFromGroup();
+
+    fn = op ? pr_AddToGroup : pr_RemoveUserFromGroup;
+    
     /* The following KERBEROS code allows for the use of entities
      * user@foreign_cell.
      */
-    if (afterc && !strcmp(after[LM_TYPE], "KERBEROS")) {
-	p = index(after[LM_MEMBER], '@');
+    if (!strcmp(type, "KERBEROS")) {
+	p = index(member, '@');
 	if (p && !strcasecmp(p+1, cellname))
 	    *p = 0;
-    }
-    if (beforec && !strcmp(before[LM_TYPE], "KERBEROS")) {
-	p = index(before[LM_MEMBER], '@');
-	if (p && !strcasecmp(p+1, cellname))
-	    *p = 0;
-    }
+    } else if (strcmp(type, "USER"))
+	return;					/* invalid type */
 
-    if (afterc) {
-	if (!strcmp(after[LM_TYPE], "KERBEROS")) {
-	    p = index(after[LM_MEMBER], '@');
-	    if (p && !strcasecmp(p+1, cellname))
-		*p = 0;
-	} else if (strcmp(after[LM_TYPE], "USER"))
-	    return;				/* invalid type */
-
-	code = pr_AddToGroup(after[LM_MEMBER], after[LM_LIST]);
-	if (code) {
-	    if (strcmp(after[LM_TYPE], "KERBEROS") || code != PRNOENT) {
-		critical_alert("incremental",
-			       "Couldn't add %s to %s: %s",
-			       after[LM_MEMBER], after[LM_LIST],
-			       error_message(code));
-		return;
-	    }
-	}
-    }
-
-    if (beforec) {
-	if (!strcmp(before[LM_TYPE], "KERBEROS")) {
-	    p = index(before[LM_MEMBER], '@');
-	    if (p && !strcasecmp(p+1, cellname))
-		*p = 0;
-	} else if (strcmp(before[LM_TYPE], "USER"))
-	    return;				/* invalid type */
-
-	code = pr_RemoveUserFromGroup(before[LM_MEMBER], before[LM_LIST]);
-	if (code && code != PRNOENT) {
+    strcpy(buf, "system:");
+    strcat(buf, group);
+    code = (*fn)(member, buf);
+    if (code) {
+	if (op==0 && code == PRNOENT) return;
+	if (op==1 && code == PRIDEXIST) return;
+	if (strcmp(type, "KERBEROS") || code != PRNOENT) {
 	    critical_alert("incremental",
-			   "Couldn't remove %s from %s: %s",
-			   before[LM_MEMBER], before[LM_LIST],
+			   "Couldn't %s %s %s %s: %s",
+			   op ? "add" : "remove", member,
+			   op ? "to" : "from", buf,
 			   error_message(code));
-	    return;
 	}
     }
+    if (p) *p = '@';
 }
 
 

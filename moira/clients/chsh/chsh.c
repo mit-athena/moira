@@ -1,4 +1,4 @@
-/* $Id: chsh.c,v 1.2 2000-05-01 08:18:01 zacheiss Exp $
+/* $Id: chsh.c,v 1.3 2000-07-12 02:02:47 zacheiss Exp $
  *
  * Talk to the Moira database to change a person's login shell.  The chosen
  * shell must exist.  A warning will be issued if the shell is not in
@@ -26,20 +26,19 @@
 
 #define argis(a, b) (!strcmp(*arg + 1, a) || !strcmp(*arg + 1, b))
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/chsh/chsh.c,v 1.2 2000-05-01 08:18:01 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/chsh/chsh.c,v 1.3 2000-07-12 02:02:47 zacheiss Exp $");
 
 void usage(void);
-int chsh(char *uname);
-int get_shell(int argc, char **argv, void *uname);
-int get_winshell(int argc, char **argv, void *uname);
-int get_fmodtime(int argc, char **argv, void *uname);
+int get_shell(int argc, char **argv, void *username);
+int get_winshell(int argc, char **argv, void *username);
+int get_fmodtime(int argc, char **argv, void *username);
 void check_shell(char *shell);
 #ifndef HAVE_GETUSERSHELL
 char *getusershell(void);
 #endif
 
 char *whoami;
-char *uname;
+char *username;
 
 int main(int argc, char *argv[])
 {
@@ -78,16 +77,16 @@ int main(int argc, char *argv[])
 		usage();
 	    }
 	}
-      else if (uname == NULL)
-	uname = *arg;
+      else if (username == NULL)
+	username = *arg;
       else
 	usage();
     }
 
-  if (!uname)
+  if (!username)
     {
-      uname = mrcl_krb_user();
-      if (!uname)
+      username = mrcl_krb_user();
+      if (!username)
 	exit(1);
     }
 
@@ -102,7 +101,7 @@ int main(int argc, char *argv[])
 
   /* First, do an access check */
 
-  q_argv[USH_NAME] = uname;
+  q_argv[USH_NAME] = username;
   q_argv[USH_SHELL] = "junk";
   q_argc = USH_END;
 
@@ -112,15 +111,15 @@ int main(int argc, char *argv[])
       exit(2);
     }
 
-  printf("Changing login shell for %s.\n", uname);
+  printf("Changing login shell for %s.\n", username);
 
   /* Display current information */
   
-  q_argv[NAME] = uname;
+  q_argv[NAME] = username;
   q_argc = NAME + 1;
   
   if ((status = mr_query("get_finger_by_login", q_argc, q_argv,
-			 get_fmodtime, uname)))
+			 get_fmodtime, username)))
     {
       com_err(whoami, status, "while getting user information.");
       exit(2);
@@ -129,7 +128,7 @@ int main(int argc, char *argv[])
   if (unixflg)
     {
       if ((status = mr_query("get_user_account_by_login", q_argc, q_argv,
-			     get_shell, uname)))
+			     get_shell, username)))
 	{
 	  com_err(whoami, status, "while getting user information.");
 	  exit(2);
@@ -153,7 +152,7 @@ int main(int argc, char *argv[])
       
       printf("Changing shell to %s...\n", shell);
       
-      q_argv[USH_NAME] = uname;
+      q_argv[USH_NAME] = username;
       q_argv[USH_SHELL] = shell;
       q_argc = USH_END;
       if ((status = mr_query("update_user_shell", q_argc, q_argv, NULL, NULL)))
@@ -167,7 +166,7 @@ int main(int argc, char *argv[])
   else if (windowsflg)
     {
       if ((status = mr_query("get_user_account_by_login", q_argc, q_argv,
-			     get_winshell, uname)))
+			     get_winshell, username)))
 	{
 	  com_err(whoami, status, "while getting user information.");
 	  exit(2);
@@ -188,7 +187,7 @@ int main(int argc, char *argv[])
       
       printf("Changing Windows shell to %s...\n", shell);
       
-      q_argv[USH_NAME] = uname;
+      q_argv[USH_NAME] = username;
       q_argv[USH_SHELL] = shell;
       q_argc = USH_END;
       if ((status = mr_query("update_user_windows_shell", q_argc, q_argv,
@@ -206,45 +205,45 @@ int main(int argc, char *argv[])
   return 0;
 }
 
-int get_shell(int argc, char **argv, void *uname)
+int get_shell(int argc, char **argv, void *username)
 {
   /* We'll just take the first information we get since login names
      cannot be duplicated in the database. */
 
-  if (argc < U_END || strcmp(argv[U_NAME], uname))
+  if (argc < U_END || strcmp(argv[U_NAME], username))
     {
       fprintf(stderr, "Some internal error has occurred.  Try again.\n");
       exit(3);
     }
 
-  printf("Current shell for %s is %s.\n", (char *)uname, argv[U_SHELL]);
+  printf("Current shell for %s is %s.\n", (char *)username, argv[U_SHELL]);
 
   return MR_ABORT;		/* Don't pay attention to other matches. */
 }
 
-int get_winshell(int argc, char **argv, void *uname)
+int get_winshell(int argc, char **argv, void *username)
 {
   /* We'll just take the first information we get since login names
      cannot be duplicated in the database. */
 
-  if (argc < U_END || strcmp(argv[U_NAME], uname))
+  if (argc < U_END || strcmp(argv[U_NAME], username))
     {
       fprintf(stderr, "Some internal error has occurred.  Try again.\n");
       exit(3);
     }
 
-  printf("Current Windows shell for %s is %s.\n", (char *)uname, 
+  printf("Current Windows shell for %s is %s.\n", (char *)username, 
 	 argv[U_WINCONSOLESHELL]);
 
   return MR_ABORT;		/* Don't pay attention to other matches. */
 }
 
-int get_fmodtime(int argc, char **argv, void *uname)
+int get_fmodtime(int argc, char **argv, void *username)
 {
   /* We'll just take the first information we get since login names
      cannot be duplicated in the database. */
 
-  if (argc < F_END || strcmp(argv[F_NAME], uname))
+  if (argc < F_END || strcmp(argv[F_NAME], username))
     {
       fprintf(stderr, "Some internal error has occurred.  Try again.\n");
       exit(3);

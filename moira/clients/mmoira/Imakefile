@@ -1,4 +1,4 @@
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/Imakefile,v 1.2 1993-10-25 16:45:26 mar Exp $
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/Imakefile,v 1.3 1997-01-29 23:03:24 danw Exp $
 #
 # Copyright 1991 by the Massachusetts Institute of Technology.
 #
@@ -8,12 +8,6 @@
 # Imakefile for moira client.
 #
 
-#ifdef GDSS
-GDSSLIB = /mit/gdss/`machtype`/libgdss.a 
-GDSSINC = -I/mit/gdss/include
-#endif
-
-
 SRCS=	main.c formup.c form_setup.c \
 	queries.c help.c stubs.c display.c tty.c parser.c
 CODE=${SRCS} Imakefile mmoira.h data.h menus.txt menus.awk forms.txt \
@@ -21,12 +15,11 @@ CODE=${SRCS} Imakefile mmoira.h data.h menus.txt menus.awk forms.txt \
 SRCDIR=${SRCTOP}/clients/mmoira
 OBJS = form_data.o form_setup.o menu_data.o main.o formup.o \
 	queries.o help.o stubs.o display.o tty.o parser.o
-MOTIF = /mit/motif
-INCLUDE= -I$(BUILDTOP)/include -I$(BUILDTOP)/lib -I$(MOTIF)/include \
-	-I/usr/athena/include ${GDSSINC} -I.
+INCLUDE= -I$(BUILDTOP)/include -I$(BUILDTOP)/lib -I$(XDIR)/include \
+	-I$(MOTIFINC) -I/usr/athena/include ${GDSSINC} -I.
 DEFINES= -D_NO_PROTO
 
-program(mmoira, ${OBJS},${MR_LIBDEP} ${GDB_LIBDEP},${GDSSLIB} ${CLIBS} -L$(MOTIF)/`machtype`lib -lXm -lXt -lX11,${PROGDIR})
+program(mmoira, ${OBJS},${MR_LIBDEP} ${GDB_LIBDEP},${LIBGDSS} ${CLIBS} -L$(XDIR)/lib -L$(MOTIFLIB) -lXm -lXt -lX11,${PROGDIR})
 
 form_data.c: forms.txt forms.awk
 	awk -f forms.awk forms.txt > form_data.c

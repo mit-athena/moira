@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/tty.c,v 1.4 1993-10-25 16:35:48 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/tty.c,v 1.5 1997-01-29 23:03:28 danw Exp $
  *
  *  	Copyright 1992 by the Massachusetts Institute of Technology.
  *
@@ -11,7 +11,11 @@
 #include	<string.h>
 #include	<sys/types.h>
 #include	<sys/signal.h>
+#ifdef POSIX
+#include	<termios.h>
+#else
 #include	<sgtty.h>
+#endif
 #include	<sys/ioctl.h>
 #include	<ctype.h>
 #include	<X11/Intrinsic.h>
@@ -19,7 +23,7 @@
 #include	"mmoira.h"
 #include	"parser.h"
 
-static char rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/tty.c,v 1.4 1993-10-25 16:35:48 mar Exp $";
+static char rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/tty.c,v 1.5 1997-01-29 23:03:28 danw Exp $";
 
 
 struct parse_node *TtyCommands = NULL, *TtyRoot = NULL;
@@ -28,8 +32,11 @@ extern int NumMenus;
 extern MenuItem MenuRoot;
 char prompt[] = "moira> ";
 
+#ifdef POSIX
+static struct termios otty, ntty;
+#else
 static struct sgttyb otty, ntty;
-
+#endif
 
 TtyMainLoop()
 {
@@ -45,13 +52,19 @@ TtyMainLoop()
     sleep(10);
 #endif /* DEBUG */
 
-#ifndef POSIX
+#ifdef POSIX
+    tcgetattr(0, &otty);
+    ntty = otty;
+    ntty.c_lflag &= ~(ICANON|ECHO);
+    ntty.c_cc[VTIME] = 0;
+    ntty.c_cc[VMIN] = 1;
+#else
     ioctl(0, TIOCFLUSH, &arg);
-#endif
     ioctl(0, TIOCGETP, &otty);
     ntty = otty;
     ntty.sg_flags |= RAW;
     ntty.sg_flags &= ~ECHO;
+#endif
     raw_mode();
 
     while (1) {
@@ -61,12 +74,20 @@ TtyMainLoop()
 
 cooked_mode()
 {
+#ifdef POSIX
+    tcsetattr (0, TCSANOW, &otty);
+#else
     ioctl(0, TIOCSETP, &otty);
+#endif
 }
 
 raw_mode()
 {
+#ifdef POSIX
+    tcsetattr (0, TCSANOW, &ntty);
+#else
     ioctl(0, TIOCSETP, &ntty);
+#endif
 }
 
 static NumWords(s)

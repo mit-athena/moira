@@ -1,7 +1,8 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/form_setup.c,v 1.12 1993-10-25 16:35:24 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/form_setup.c,v 1.13 1997-01-29 23:03:26 danw Exp $
  */
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <ctype.h>
 #include <string.h>
 #include <sys/types.h>
@@ -98,7 +99,6 @@ char **argv;
 char ***info;
 {
     int i;
-    char *malloc();
 
     *info = (char **)malloc((argc + 1) * sizeof(char *));
     for (i = 0; i < argc; i++)

@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.dc,v $
  *	$Author: kostas $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.dc,v 1.7 1990-10-01 13:37:40 kostas Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.dc,v 1.8 1990-10-01 14:58:29 kostas Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_qsupport_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.dc,v 1.7 1990-10-01 13:37:40 kostas Exp $";
+static char *rcsid_qsupport_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.dc,v 1.8 1990-10-01 14:58:29 kostas Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -59,7 +59,7 @@ access_login(q, argv, cl)
     EXEC SQL BEGIN DECLARE SECTION;
     int id;
     char qual[256];
-    char stmt_1_str[256];
+    char stmt_1_str[SQL_LONG_STR];
     EXEC SQL END DECLARE SECTION;
 
     EXEC SQL DECLARE stmt_1 STATEMENT;
@@ -2741,7 +2741,7 @@ int qualified_get(q, argv, action, actarg, start, range, field, flags)
     EXEC SQL BEGIN DECLARE SECTION;
     char name[33], qual[256], *rvar, *rtbl, *rfield;
     int rowcount, i;
-    char stmt_2_str[256];
+    char stmt_2_str[SQL_LONG_STR];
     EXEC SQL END DECLARE SECTION;
     char *rargv[1], buf[32];
 
@@ -2802,7 +2802,7 @@ int qualified_get_serverhost(q, argv, cl, action, actarg)
     EXEC SQL BEGIN DECLARE SECTION;
     char sname[33], mname[33], qual[256];
     int rowcount, i;
-    char stmt_3_str[256];
+    char stmt_3_str[SQL_LONG_STR];
     EXEC SQL END DECLARE SECTION;
     char *rargv[2], buf[32];
 

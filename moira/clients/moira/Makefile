@@ -7,7 +7,7 @@
 # 
 #       $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/Makefile,v $
 #       $Author: mar $
-#       $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/Makefile,v 1.12 1990-03-17 17:09:42 mar Exp $
+#       $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/Makefile,v 1.13 1991-03-08 10:26:24 mar Exp $
 # 	
 #   	Copyright 1987, 1988 by the Massachusetts Institute of Technology.
 # 
@@ -27,16 +27,22 @@ LIBS = ${MOIRALIB} -lcurses -ltermcap -lkrb -ldes -lhesiod
 
 SRCS = utils.c attach.c cluster.c delete.c globals.c lists.c main.c \
 	menu.c menus.c nfs.c pobox.c quota.c user.c dcmmaint.c printer.c \
-	misc.c
+	misc.c zephyr.c
 OBJS = attach.o cluster.o delete.o globals.o lists.o main.o menu.o \
 	menus.o nfs.o pobox.o quota.o user.o utils.o dcmmaint.o printer.o \
-	misc.o
+	misc.o zephyr.o
+NOBJS = namespace.o globals.o lists.o menu.o \
+	pobox.o user.o utils.o misc.o
 
-all:		moira
+all:		moira namespace
 
 moira:	 	${OBJS}
 		rm -f moira
 		cc ${CFLAGS} ${LDFLAGS} -o moira ${OBJS} ${LIBS}
+
+namespace:	${NOBJS}
+		rm -f namespace
+		cc ${CFLAGS} ${LDFLAGS} -o namespace ${NOBJS} ${LIBS}
 
 lint:
 	lint -I../../include *.c

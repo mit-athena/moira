@@ -2,7 +2,7 @@
 # 	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/Makefile,v $
 #	$Author: mar $
 #	$Locker:  $
-#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/Makefile,v 1.9 1990-03-17 17:24:38 mar Exp $
+#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/Makefile,v 1.10 1991-03-08 10:29:33 mar Exp $
 #
 # (c) Copyright 1988 by the Massachusetts Institute of Technology.
 # For copying and distribution information, please see the file
@@ -18,7 +18,7 @@ all: userreg
 userreg: userreg.o display.o reg_stubs.o disable.o
 	cc ${CFLAGS} -o $@ userreg.o display.o reg_stubs.o disable.o \
 		-L../../lib -lcom_err -lkrb -ldes -lmoira -lcurses \
-		-ltermcap -lhesiod
+		-ltermcap -lhesiod -lkadm
 
 userreg.o display.o: userreg.h files.h
 

@@ -1,4 +1,4 @@
-/* $Id: print.pc,v 1.6 2000-01-06 21:13:51 danw Exp $
+/* $Id: print.pc,v 1.7 2000-02-09 22:55:13 mwhitson Exp $
  *
  * This generates printcaps and other files for Athena print servers
  *
@@ -22,7 +22,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/print.pc,v 1.6 2000-01-06 21:13:51 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/print.pc,v 1.7 2000-02-09 22:55:13 mwhitson Exp $");
 
 char *whoami = "print.gen";
 char *db = "moira/moira";
@@ -38,6 +38,8 @@ int main(int argc, char **argv)
   EXEC SQL BEGIN DECLARE SECTION;
   char name[MACHINE_NAME_SIZE];
   EXEC SQL END DECLARE SECTION;
+
+  init_acls();
 
   EXEC SQL CONNECT :db;
 
@@ -155,13 +157,39 @@ void do_host(char *host)
 		      "daemon", "daemon", now);
   fprintf(out, "# Allow anybody to connect, get status, list queue, or "
 	  "print (once a\n# job is spooled)\n");
-  fprintf(out, "ACCEPT SERVICE=X,S,Q,P\nACCEPT LPC=status,lpq\n\n");
+  fprintf(out, "ACCEPT SERVICE=X,S,Q,P\nACCEPT LPC=status,lpq,printcap\n\n");
 
   fprintf(out, "# Only trust certain host keys to forward jobs/commands\n");
   fprintf(out, "REJECT AUTHFROM=?* PRINTER=</var/spool/printer/queues.secure "
 	  "NOT AUTHFROM=</var/spool/printer/hostkeys.allow\n");
   fprintf(out, "REJECT AUTHFROM=?* AUTHJOB "
 	  "NOT AUTHFROM=</var/spool/printer/hostkeys.allow\n\n");
+
+  fprintf(out, "# Allow root to control and remove jobs\n");
+  fprintf(out, "ACCEPT SERVICE=C,R SERVER REMOTEUSER=root\n\n");
+
+  fprintf(out, "# Allow admins to control and remove jobs\n");
+  fprintf(out, "ACCEPT SERVICE=C,R AUTH=USER AUTHUSER=</var/spool/printer/lpcaccess.top\n\n");
+
+  fprintf(out, "# Printer-specific LPC ACLs\n");
+  EXEC SQL DECLARE csr_lpc CURSOR FOR
+    SELECT rp, duplexname FROM printers
+    WHERE rm = :rm AND lpc_acl != 0;
+  EXEC SQL OPEN csr_lpc;
+  while (1)
+    {
+      EXEC SQL FETCH csr_lpc INTO :name, :duplexname;
+      if (sqlca.sqlcode)
+	break;
+
+      strtrim(name);
+      strtrim(duplexname);
+      fprintf(out, "ACCEPT SERVICE=C,R PRINTER=%s%s%s AUTH=USER "
+	      "AUTHUSER=</var/spool/printer/%s/lpcaccess\n",
+	      name, *duplexname ? "," : "", duplexname, name);
+    }
+  EXEC SQL CLOSE csr_lpc;
+  fprintf(out, "\n");
 
   fprintf(out, "# Reject jobs from unauthorized users to restricted queues\n");
   EXEC SQL DECLARE csr_ac CURSOR FOR
@@ -199,32 +227,6 @@ void do_host(char *host)
   fprintf(out, "# Accept unauthentic print requests if same user and on MITnet\n");
   fprintf(out, "ACCEPT SERVICE=M NOT AUTHJOB SAMEUSER REMOTEIP=</var/spool/printer/masks.allow\n\n");
   
-  fprintf(out, "# Allow root to control and remove jobs\n");
-  fprintf(out, "ACCEPT SERVICE=C SERVER REMOTEUSER=root\n\n");
-
-  fprintf(out, "# Allow admins to control and remove jobs\n");
-  fprintf(out, "ACCEPT SERVICE=C AUTH=USER AUTHUSER=</var/spool/printer/lpcaccess.top\n\n");
-
-  fprintf(out, "# Printer-specific LPC ACLs\n");
-  EXEC SQL DECLARE csr_lpc CURSOR FOR
-    SELECT rp, duplexname FROM printers
-    WHERE rm = :rm AND lpc_acl != 0;
-  EXEC SQL OPEN csr_lpc;
-  while (1)
-    {
-      EXEC SQL FETCH csr_lpc INTO :name, :duplexname;
-      if (sqlca.sqlcode)
-	break;
-
-      strtrim(name);
-      strtrim(duplexname);
-      fprintf(out, "ACCEPT SERVICE=C PRINTER=%s%s%s AUTH=USER "
-	      "AUTHUSER=</var/spool/printer/%s/lpcaccess\n",
-	      name, *duplexname ? "," : "", duplexname, name);
-    }
-  EXEC SQL CLOSE csr_lpc;
-  fprintf(out, "\n");
-
   fprintf(out, "# Reject any other lpc, or lprm. Accept all else\n");
   fprintf(out, "REJECT SERVICE=C,M\n");
   fprintf(out, "DEFAULT ACCEPT");

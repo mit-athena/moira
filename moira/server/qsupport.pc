@@ -1,4 +1,4 @@
-/* $Id: qsupport.pc,v 2.27 2000-08-15 00:06:44 zacheiss Exp $
+/* $Id: qsupport.pc,v 2.28 2000-09-20 17:48:34 zacheiss Exp $
  *
  * Special query routines
  *
@@ -18,7 +18,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.pc,v 2.27 2000-08-15 00:06:44 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.pc,v 2.28 2000-09-20 17:48:34 zacheiss Exp $");
 
 extern char *whoami, *table_name[];
 extern int dbms_errno, mr_errcode;
@@ -328,13 +328,13 @@ int add_member_to_list(struct query *q, char **argv, client *cl)
 		{
 		  EXEC SQL INSERT INTO imembers
 		    (list_id, member_type, member_id, tag, direct, ref_count)
-		    VALUES (:lid, :mtype, :mid, :tag, 1, 1);
+		    VALUES (:lid, :mtype, :mid, :tag, 1, :ref);
 		}
 	      else
 		{
 		  EXEC SQL INSERT INTO imembers
 		    (list_id, member_type, member_id, tag, direct, ref_count)
-		    VALUES (:lid, :mtype, :mid, :tag, 0, 1);
+		    VALUES (:lid, :mtype, :mid, :tag, 0, :ref);
 		}
 	      iargv[0] = (char *)lid;
 	      iargv[1] = mtype;

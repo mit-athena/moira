@@ -15,6 +15,15 @@ if (open(TMP,"/afs/athena.mit.edu/service/afs_data")) {
 }
 
 chop(@new_data);
+
+for (@new_data) {
+    ($c,$as,$ap) = split(/\s+/,$_);
+    ($as) = gethostbyname($as) unless ($c =~ /^\#/);
+    $c =~ tr/a-z/A-Z/;
+    $as =~ tr/a-z/A-Z/;
+    $ap =~ s:^([^/]):/vicep\1:;
+    $ok{"$c $as $ap"} = 1;
+}
 for (@new_data) {
     $as = $ap = 0;
     if ($_ !~ /^\#/) {
@@ -30,6 +39,7 @@ for (@new_data) {
     truncate(SRV, 0);
     for (@afs_data) {
 	($c2,$as2,$ap2) = split(/\s+/,$_);
+	next unless ($c2 =~ /^\#/ || $ok{"$c2 $as2 $ap2"});
 	print SRV $_ unless ($c eq $c2 && $as eq $as2 && $ap eq $ap2);
     }
     &afs_unlock;

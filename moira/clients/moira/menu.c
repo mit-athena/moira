@@ -4,9 +4,13 @@
  * "mit-copyright.h".
  *
  * $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v $
- * $Author: poto $
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.5 1987-08-07 18:09:46 poto Exp $
+ * $Author: jtkohl $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.6 1987-08-17 11:55:23 jtkohl Exp $
  * $Log: not supported by cvs2svn $
+ * Revision 1.5  87/08/07  18:09:46  poto
+ * will not enter menu if ->m_entry returns DM_QUIT;
+ * the command args from a submenu command will be passed on to ->m_entry();
+ * 
  * Revision 1.4  87/08/05  14:48:04  ambar
  * added latest set of hackery, to fix missing
  * newlines, and not being able to quit out of
@@ -33,17 +37,19 @@
  */
 
 #ifndef lint
-static char rcsid_menu_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.5 1987-08-07 18:09:46 poto Exp $";
+static char rcsid_menu_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.6 1987-08-17 11:55:23 jtkohl Exp $";
 
 #endif lint
 
 #include <stdio.h>
+#include <signal.h>
 #include <curses.h>
 #include <ctype.h>
 #include "menu.h"
 
-#define MAX(A,B) ((A) > (B) ? (A) : (B))
-#define MIN(A,B) ((A) < (B) ? (A) : (B))
+#define MAX(A,B)	((A) > (B) ? (A) : (B))
+#define MIN(A,B)	((A) < (B) ? (A) : (B))
+#define CTL(ch)		((ch) & 037)
 
 #define MIN_INPUT 2		/* Minimum number of lines for input window */
 
@@ -81,12 +87,23 @@ Start_menu(m)
     }
     raw();			/* We parse & print everything ourselves */
     noecho();
-    cur_ms = make_ms(0);	/* So we always have some current menu_screen */
+    cur_ms = make_ms(0);	/* So we always have some current */
+				/* menu_screen */ 
     top_menu = m;
     /* Run the menu */
-    (void) Do_menu(m, 0, (char **) NULL);
+    (void) Do_menu(m, -1, (char **) NULL);
+    Cleanup_menu();
+}
+
+Cleanup_menu()
+{
+    if (cur_ms) {
+	wclear(cur_ms->ms_screen);
+	wrefresh(cur_ms->ms_screen);
+    }
     endwin();
 }
+    
 
 /* Like Start_menu, except it doesn't print menus and doesn't use curses */
 Start_no_menu(m)
@@ -95,7 +112,7 @@ Start_no_menu(m)
     cur_ms = NULLMS;
     top_menu = m;
     /* Run the menu */
-    (void) Do_menu(m, 0, (char **) NULL);
+    (void) Do_menu(m, -1, (char **) NULL);
 }
 
 /*
@@ -146,6 +163,8 @@ destroy_ms(ms)
 
 /*
  * This guy actually puts up the menu
+ * Note: if margc < 0, no 'r' option will be displayed (i.e., on the
+ * top level menu)
  */
 int 
 Do_menu(m, margc, margv)
@@ -161,8 +180,8 @@ Do_menu(m, margc, margv)
     int i;
     struct menu_line *command, *Find_command();
     int argc;
-    int quitflag;
-
+    int quitflag, is_topmenu = (margc < 0);
+    
     /* Entry function gets called with old menu_screen still current */
     if (m->m_entry != NULLFUNC)
 	if (m->m_entry(m, margc, margv) == DM_QUIT)
@@ -172,7 +191,7 @@ Do_menu(m, margc, margv)
     if (cur_ms != NULLMS) {
 	/* Get a menu_screen */
 	old_cur_ms = cur_ms;
-	cur_ms = my_ms = make_ms(m->m_length + 2);
+	cur_ms = my_ms = make_ms(m->m_length + 1 + (is_topmenu?0:1));
 
 	/* Now print the title and the menu */
 	(void) wclear(my_ms->ms_menu);
@@ -189,8 +208,11 @@ Do_menu(m, margc, margv)
 			   m->m_lines[line].ml_doc);
 	}
 	(void) wmove(my_ms->ms_menu, line++, 0);
-	(void) waddstr(my_ms->ms_menu, " r. (return      ) Return to previous menu.");
-	(void) wmove(my_ms->ms_menu, line, 0);
+	if (!is_topmenu) {
+	    (void) waddstr(my_ms->ms_menu,
+			   " r. (return      ) Return to previous menu.");
+	    (void) wmove(my_ms->ms_menu, line, 0);
+	}
 	(void) waddstr(my_ms->ms_menu, " q. (quit        ) Quit.");
 
     }
@@ -202,7 +224,8 @@ Do_menu(m, margc, margv)
 	if (cur_ms != NULL)
 	    touchwin(my_ms->ms_screen);
 	/* Get a command */
-	Prompt_input("Command: ", buf, sizeof(buf));
+	if (!Prompt_input("Command: ", buf, sizeof(buf)))
+	    continue;
 	/* Parse it into the argument list */
 	/* If there's nothing there, try again */
 	/* Initialize argv */
@@ -214,9 +237,10 @@ Do_menu(m, margc, margv)
 	if ((line = atoi(argv[0])) > 0 && line <= m->m_length) {
 	    command = &m->m_lines[line - 1];
 	}
-	else if (!strcmp(argv[0], "r")
+	else if ((!is_topmenu &&
+		  (!strcmp(argv[0], "r")
+		   || !strcmp(argv[0], "return")))
 		 || !strcmp(argv[0], "q")
-		 || !strcmp(argv[0], "return")
 		 || !strcmp(argv[0], "quit")) {
 	    /* here if it's either return or quit */
 	    if (cur_ms != NULLMS) {
@@ -248,8 +272,9 @@ Do_menu(m, margc, margv)
 	}
 	/* Get remaining arguments, if any */
 	for (; argc < command->ml_argc; argc++) {
-	    Prompt_input(command->ml_args[argc].ma_prompt,
-			 argvals[argc], sizeof(argvals[argc]));
+	    if (!Prompt_input(command->ml_args[argc].ma_prompt,
+			      argvals[argc], sizeof(argvals[argc])))
+		goto punt_command;
 	}
 	if (command->ml_function != NULLFUNC) {
 	    /* If it's got a function, call it */
@@ -272,11 +297,13 @@ Do_menu(m, margc, margv)
 		m->m_exit(m);
 	    return (DM_QUIT);
 	}
+    punt_command:
+	;
     }
 }
 
 /* Prompt the user for input in the input window of cur_ms */
-Prompt_input(prompt, buf, buflen)
+int Prompt_input(prompt, buf, buflen)
     char *prompt;
     char *buf;
     int buflen;
@@ -302,16 +329,17 @@ Prompt_input(prompt, buf, buflen)
 	    refresh_ms(cur_ms);
 	    c = getchar();
 	    switch (c) {
-	    case 'L' & 037:
-		(void) wmove(cur_ms->ms_input, 0, 0);
-		getyx(cur_ms->ms_input, y, x);
-
-		touchwin(cur_ms->ms_screen);
+	    case CTL('C'):
+		return 0;
+	    case CTL('Z'):
+		kill(getpid(), SIGTSTP);
+		touchwin(curscr);
+		break;
+	    case CTL('L'):
 		(void) wclear(cur_ms->ms_input);
 		(void) waddstr(cur_ms->ms_input, prompt);
+		wrefresh(curscr);
 		getyx(cur_ms->ms_input, y, x);
-		refresh_ms(cur_ms);
-
 		break;
 	    case '\n':
 	    case '\r':
@@ -322,7 +350,7 @@ Prompt_input(prompt, buf, buflen)
 		refresh_ms(cur_ms);
 		*p = '\0';
 		Start_paging();
-		return;
+		return 1;
 	    case '\b':
 	    case '\177':
 		if (p > buf) {
@@ -330,25 +358,29 @@ Prompt_input(prompt, buf, buflen)
 		    x--;
 		}
 		break;
-	    case 'U' & 037:
-	    case '\007':
-	    case '\033':
+	    case CTL('U'):
+	    case CTL('G'):
+	    case CTL('['):
 		x = oldx;
 		p = buf;
 		break;
 	    default:
-		(void) waddch(cur_ms->ms_input, c);
-		*p++ = c;
-		x++;
+		if (isprint(c)) {
+		    (void) waddch(cur_ms->ms_input, c);
+		    *p++ = c;
+		    x++;
+		} else
+		    putchar(CTL('G'));
 		break;
 	    }
 	}
     }
     else {
 	printf("%s", prompt);
-	(void) gets(buf);
+	if (gets(buf) == NULL)
+	    return 0;
 	Start_paging();
-	return;
+	return 1;
     }
 }
 

@@ -16,7 +16,7 @@ if [ $? != 0 ]; then
 	exit $MR_MKCRED
 fi
 
-kill `ps -el | grep "sendmail" | egrep -v "grep|mqueue.stall" | awk '{print $4}'`
+kill `ps -ef | grep "sendmail" | egrep -v "grep|mqueue.stall" | awk '{print $2}'`
 sleep 60
 
 mv $root/etc/aliases $root/etc/aliases.old
@@ -35,4 +35,4 @@ sh /etc/init.d/sendmail start
 rm -f $0
 exit 0
 
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/mailhub.sh,v 1.9 2001-06-04 21:07:49 zacheiss Exp $
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/mailhub.sh,v 1.10 2001-11-24 00:08:46 zacheiss Exp $

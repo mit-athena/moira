@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.29 1992-08-14 12:59:41 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.30 1992-09-18 15:06:01 mar Exp $";
 #endif lint
 
 /*	This is the file user.c for the MOIRA Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.29 1992-08-14 12:59:41 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.30 1992-09-18 15:06:01 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -312,9 +312,22 @@ Bool name;
 	if (i != GDSS_SUCCESS) {
 	    free(info[U_SIGNATURE]);
 	    info[U_SIGNATURE] = malloc(GDSS_Sig_Size() * 2);
+	sign_again:
 	    i = GDSS_Sign(temp_buf, strlen(temp_buf), info[U_SIGNATURE]);
 	    if (i != GDSS_SUCCESS)
 	      com_err(program_name, gdss2et(i), "Failed to create signature");
+	    else {
+		unsigned char buf[256];
+		si.rawsig = buf;
+		i = GDSS_Verify(temp_buf, strlen(temp_buf),
+				info[U_SIGNATURE], &si);
+		if (strlen(buf) > 68) {
+#ifdef DEBUG
+		    Put_message("Signature too long, trying again");
+#endif /* DEBUG */
+		    goto sign_again;
+		}
+	    }
 #ifdef DEBUG
 	    Put_message("Made signature:");hex_dump(info[U_SIGNATURE]);
 	} else {

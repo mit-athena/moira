@@ -1,7 +1,7 @@
 /*
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.38 1992-06-01 13:56:35 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.39 1992-06-24 18:02:37 mar Exp $
  *
  *      Copyright (C) 1987, 1988 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -16,7 +16,7 @@
  */
 
 #ifndef lint
-static char *rcsid_reg_svr_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.38 1992-06-01 13:56:35 mar Exp $";
+static char *rcsid_reg_svr_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.39 1992-06-24 18:02:37 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -1018,9 +1018,15 @@ char *retval;
 #endif
 
     if (strcmp(id, argv[U_MITID + 1])) {
-	status = UREG_USER_NOT_FOUND;
-	com_err(whoami, status, "IDs mismatch: %s, %s", id, argv[U_MITID + 1]);
-	return status;
+	char buf[32];
+
+	EncryptID(buf, id, argv[U_FIRST+1], argv[U_LAST+1]);
+	if (strcmp(buf, argv[U_MITID + 1])) {
+	    status = UREG_USER_NOT_FOUND;
+	    com_err(whoami, status, "IDs mismatch: %s (%s), %s", id, buf,
+		    argv[U_MITID + 1]);
+	    return status;
+	}
     }
 
     /* now do actual password setting stuff */

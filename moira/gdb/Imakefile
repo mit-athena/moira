@@ -1,4 +1,4 @@
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/Imakefile,v 1.1 1990-08-27 14:49:08 mar Exp $
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/Imakefile,v 1.2 1991-03-08 10:18:28 mar Exp $
 #
 # Copyright 1990 by the Massachusetts Institute of Technology.
 #
@@ -15,7 +15,7 @@ OBJECTS	= gdb.o gdb_struct.o gdb_stype.o gdb_trans.o gdb_trans2.o \
 	gdb_conn.o gdb_ops.o gdb_serv.o gdb_fserv.o gdb_db.o gdb_debug.o
 
 SRCDIR=$(SRCTOP)/gdb
-CODE=$(SRCS) Imakefile gdb.h gdb_lib.h dbserv.qc
+CODE=$(SRCS) Imakefile gdb_lib.h
 
 all::
 

@@ -29,6 +29,7 @@ fi
 
 chmod 644 *
 
+rm -f $tarfile
 rm -f $0
 exit 0
 

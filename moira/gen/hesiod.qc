@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/hesiod.qc,v 1.6 1988-08-09 20:14:13 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/hesiod.qc,v 1.7 1988-08-20 20:05:03 mar Exp $
  *
  * This generates the zone files necessary to load a hesiod server.
  * The following zones are generated: passwd, uid, pobox, group,
@@ -11,6 +11,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/time.h>
+#include <ctype.h>
 
 
 #define HESIOD_DIR	"/u1/sms/dcm/hesiod"
@@ -394,7 +395,8 @@ do_groups()
 do_filsys()
 ##{
     FILE *out;
-    char outf[64], outft[64], *mach;
+    char outf[64], outft[64], *mach, machbuf[128];
+    register char *p;
     struct stat sb;
     time_t ftime;
 ##  char name[33], type[9], loc[33], access[2], mount[33], trans[257];
@@ -437,9 +439,17 @@ do_filsys()
 		strtrim(loc);
 		strtrim(access);
 		strtrim(mount);
-		if (mach = hash_lookup(machines, id))
-		  fprintf(out, "%s.filsys\tHS UNSPECA \"%s %s %s %s %s\"\n",
-			  name, type, loc, mach, access, mount);
+		if (mach = hash_lookup(machines, id)) {
+		    for (p = machbuf; *mach && *mach != '.'; mach++) {
+			if (isupper(*mach))
+			  *p++ = tolower(*mach);
+			else
+			  *p++ = *mach;
+			*p = 0;
+		    }
+		    fprintf(out, "%s.filsys\tHS UNSPECA \"%s %s %s %s %s\"\n",
+			    name, type, loc, machbuf, access, mount);
+		}
 	    } else {
 		strtrim(comments);
 		fprintf(out, "%s.filsys\tHS UNSPECA \"ERR %s\"\n",

@@ -3,13 +3,13 @@
  * and distribution information, see the file "mit-copyright.h". 
  *
  * $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chpobox.c,v $
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chpobox.c,v 1.8 1988-12-01 14:47:38 mar Exp $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chpobox.c,v 1.9 1989-04-12 19:11:42 mar Exp $
  * $Author: mar $
  *
  */
 
 #ifndef lint
-static char *rcsid_chpobox_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chpobox.c,v 1.8 1988-12-01 14:47:38 mar Exp $";
+static char *rcsid_chpobox_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chpobox.c,v 1.9 1989-04-12 19:11:42 mar Exp $";
 #endif not lint
 
 /*
@@ -56,7 +56,7 @@ main(argc, argv)
 {
     struct passwd *pwd;
     char *smsarg[3], buf[BUFSIZ];
-    char *potype();
+    char *potype(), *index();
     char *address, *uname, *machine;
     uid_t u;
     char *canonicalize_hostname();
@@ -150,7 +150,7 @@ main(argc, argv)
 		    whoami, address);
 	    goto show;
 	}
-	smsarg[2] = canonicalize_hostname(machine);
+	smsarg[2] = canonicalize_hostname(strsave(machine));
 	smsarg[1] = potype(smsarg[2]);
 	if (!strcmp(smsarg[1], "POP")) {
 	    if (strcmp(address, uname)) {
@@ -160,16 +160,21 @@ main(argc, argv)
 		goto show;
 	    }
 	} else if (!strcmp(smsarg[1], "LOCAL")) {
+	    strcat(address, "@");
+	    strcat(address, smsarg[2]);
 	    smsarg[2] = address;
-	    *(--machine) = '@';
-	    address = index(machine, '.');
-	    if (address == NULL)
-	      address = &machine[strlen(machine)];
-	    sprintf(address, ".LOCAL");
+	    if ((address = index(address, '@')) &&
+		(address = index(address, '.')))
+	      *address = 0;
+	    strcat(smsarg[2], ".LOCAL");
 	    smsarg[1] = "SMTP";
 	} else if (smsarg[1]) {
+	    if (*machine != '"' && strcasecmp(smsarg[2], machine))
+	      printf("Warning: hostname %s canonicalized to %s\n",
+		     machine, smsarg[2]);
+	    strcat(address, "@");
+	    strcat(address, smsarg[2]);
 	    smsarg[2] = address;
-	    *(--machine) = '@';
 	} else
 	  goto show;
 	status = sms_query("set_pobox", 3, smsarg, scream, NULL);

@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.6 1998-12-16 19:42:50 danw Exp $
+# $Id: Makefile.in,v 1.7 1999-01-27 19:40:13 danw Exp $
 
 SHELL=/bin/sh
 @SET_MAKE@
@@ -27,18 +27,18 @@ BUILDTOP=..
 mrbindir=@mrbindir@
 
 GDSS_OBJS=warehouse.o
-OBJS=	util.o moddiff.o hesiod.o nfs.o mailhub.o pobox.o \
-	hosts.o network.o directory.o ndb.o @GDSS_OBJS@
+OBJS=	util.o moddiff.o tar.o boot.o hesiod.o nfs.o mailhub.o pobox.o \
+	print.o hosts.o network.o directory.o ndb.o @GDSS_OBJS@
 
 GDSS_CFILES=warehouse.c
-CFILES= moddiff.c hesiod.c nfs.c mailhub.c pobox.c \
+CFILES= moddiff.c boot.c hesiod.c nfs.c mailhub.c pobox.c print.c \
 	hosts.c network.c directory.c ndb.c @GDSS_CFILES@
 
 GDSS_TARGET=warehouse.gen
-TARGET=	hesiod.gen nfs.gen mailhub.gen pobox.gen hosts.gen \
-	network.gen directory.gen ndb.gen @GDSS_TARGET@
+TARGET=	boot.gen hesiod.gen nfs.gen mailhub.gen pobox.gen hosts.gen \
+	print.gen network.gen directory.gen ndb.gen @GDSS_TARGET@
 
-SCRIPTS=hesiod.sh mailhub.sh nfs.sh null.sh warehouse.sh
+SCRIPTS=boot.sh hesiod.sh mailhub.sh nfs.sh null.sh print.sh warehouse.sh
 
 .SUFFIXES: .pc
 
@@ -85,3 +85,9 @@ network.gen: network.o util.o moddiff.o $(MR_LIBDEP)
 
 warehouse.gen: warehouse.o util.o moddiff.o $(MR_LIBDEP) $(GDSS_LIBDEP)
 	$(CC) -o $@ $(LDFLAGS) warehouse.o util.o moddiff.o $(SQL_LIBS) $(GDSS_LIBS) $(LIBS)
+
+print.gen: print.o util.o moddiff.o tar.o $(MR_LIBDEP)
+	$(CC) -o $@ $(LDFLAGS) print.o util.o moddiff.o tar.o $(SQL_LIBS) $(LIBS)
+
+boot.gen: boot.o util.o moddiff.o tar.o $(MR_LIBDEP)
+	$(CC) -o $@ $(LDFLAGS) boot.o util.o moddiff.o tar.o $(SQL_LIBS) $(LIBS)

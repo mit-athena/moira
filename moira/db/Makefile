@@ -1,4 +1,4 @@
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/db/Makefile,v 1.5 1989-12-04 13:04:37 mar Exp $
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/db/Makefile,v 1.6 1989-12-15 17:35:36 mar Exp $
 
 # (c) Copyright 1988 by the Massachusetts Institute of Technology.
 # For copying and distribution information, please see the file
@@ -15,7 +15,7 @@ CFLAGS= -I../include -O
 	rm -f $*.c
 	/usr/rtingres/bin/eqc -p $*
 
-all: newmoira class convert imembers
+all: newmoira class imembers
 
 imembers: imembers.o
 	cc -o imembers imembers.o ../lib/libsms.a ${INGLIB}

@@ -1,6 +1,6 @@
 #
 # 	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/Makefile,v $
-#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/Makefile,v 1.1 1987-08-22 17:55:51 wesommer Exp $
+#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/Makefile,v 1.2 1987-08-22 17:58:25 wesommer Exp $
 #
 
 #
@@ -39,7 +39,7 @@ LIBS=	-L../lib -lgdb -lkrb -ldes -lcom_err
 all:	server sms_update.o test
 
 clean:	
-	-rm -f ${COBJS} ${SOBJS} ${COMOBJS}
+	-rm -f ${COBJS} ${SOBJS} ${COMOBJS} client.o
 	-rm -f server sms_update.o test test.o smsu_int.h
 	-rm -f core a.out *~ \#*
 

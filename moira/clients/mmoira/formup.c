@@ -1,3 +1,5 @@
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/formup.c,v 1.7 1992-10-22 15:36:25 mar Exp $ */
+
 #include	<stdio.h>
 #include	<X11/StringDefs.h>
 #include	<X11/IntrinsicP.h>
@@ -6,22 +8,29 @@
 #include	<X11/CoreP.h>
 #include	<Xm/Xm.h>
 #include	<Xm/BulletinB.h>
+#include	<Xm/BulletinBP.h>
 #include	<Xm/Label.h>
 #include	<Xm/Text.h>
+#include	<Xm/TextP.h>
 #include	<Xm/PushB.h>
 #include	<Xm/PushBG.h>
 #include	<Xm/CascadeB.h>
 #include	<Xm/ToggleB.h>
 #include	<Xm/ToggleBG.h>
 #include	<Xm/RowColumn.h>
+#include	<Xm/RowColumnP.h>
 #include	<Xm/Separator.h>
 #include	<Xm/Traversal.h>
 #include	"mmoira.h"
 
-static char rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/formup.c,v 1.6 1992-10-13 11:24:55 mar Exp $";
+static char rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/formup.c,v 1.7 1992-10-22 15:36:25 mar Exp $";
 
+#ifndef MAX
 #define	MAX(a,b)	((a > b) ? a : b)
+#endif
+#ifndef MIN
 #define	MIN(a,b)	((a < b) ? a : b)
+#endif
 
 int	hpad = 10;
 int	vpad = 5;
@@ -37,6 +46,7 @@ void	string_callback();
 void	boolean_callback();
 void	menu_callback();
 void	newvalue();
+void	MoiraFocusOut();
 EntryForm *WidgetToForm();
 
 extern void	UpdateForm();
@@ -46,6 +56,10 @@ extern int	AppendToLog();
 extern void	MakeWatchCursor();
 extern void	MakeNormalCursor();
 extern Widget	SetupLogWidget();
+
+static XtActionsRec myactions[] = {
+    { "MoiraFocusOut", MoiraFocusOut },
+};
 
 
 void
@@ -187,7 +201,7 @@ EntryForm	*spec;
 
 	n = 0;
 	XtSetArg(wargs[n], XmNautoUnmanage, False);		n++;
-	bb = XmCreateBulletinBoardDialog(parent, "board", wargs, n);
+	bb = XmCreateBulletinBoardDialog(parent, spec->formname, wargs, n);
 	MapWidgetToForm(bb, spec);
 
 	spec->formpointer = bb;
@@ -279,6 +293,9 @@ EntryForm	*spec;
 	UserPrompt      **myinputlines = spec->inputlines;
 	int		foo = 30;
 	Widget		children[20];
+	static XtTranslations trans = NULL;
+#define newtrans "<FocusOut>: focusOut() MoiraFocusOut()"
+
 
 	for (	current = (*myinputlines), localy = 0,  i = 0;
 		current; 
@@ -349,6 +366,13 @@ EntryForm	*spec;
 						parent, wargs, n);
 			XtAddCallback(	children[i], XmNvalueChangedCallback,
 				string_callback, current);
+			if (trans == NULL) {
+			    XtAppAddActions(XtWidgetToApplicationContext(children[i]),
+					    myactions, XtNumber(myactions));
+
+			    trans = XtParseTranslationTable(newtrans);
+			}
+			XtOverrideTranslations(children[i], trans);
 			if (current->returnvalue.stringvalue) {
 				XmTextSetString (children[i], current->returnvalue.stringvalue);
 			}
@@ -430,17 +454,18 @@ UserPrompt	*prompt;
 Dimension	*pheight;
 EntryForm	*spec;
 {
-	Widget	radioparent, child;
+	Widget	radioparent, child = NULL;
 	char	*current;
 	Arg	wargs[10];
 	int	count, n;
 	XmString	label;	/* accursed compound string required */
 	Dimension	height, width;
-	char	**keywords;
+	char	**keywords, *null[2];
 
 	if (!prompt->keywords) {
 		fprintf (stderr, "Warning:  No list of keywords for widget\n");
-		return;
+		prompt->keywords = null;
+		null[0] = NULL;
 	}
 	for (	count = 0, keywords = prompt->keywords;
 		*keywords; 
@@ -490,11 +515,70 @@ EntryForm	*spec;
 ** five times this, or the actual number of children, whichever is lesser.
 */
 
-	GETSIZE (child);
+	if (child) {
+	    GETSIZE (child);
+	} else
+	  height = 10;
 	*pheight = (height * MIN(5, count)) + vpad; 
 
 	return(radioparent);
 }
+
+
+/* This is called when the list of keywords changes.  The old radio box
+ * will be destroyed and a new one created.
+ */
+
+RemakeRadioField(form, field)
+EntryForm *form;
+int field;
+{
+    Dimension x, y, parent_y, oldheight, newheight;
+    Arg wargs[4];
+    Widget w;
+    XmBulletinBoardWidget bb;
+    XmRowColumnWidget rc;
+    static XtTranslations trans = NULL;
+    extern char form_override_table[];
+    int i;
+
+    XtSetArg(wargs[0], XtNx, &x);
+    XtSetArg(wargs[1], XtNy, &y);
+    XtSetArg(wargs[2], XtNheight, &oldheight);
+    XtGetValues(form->inputlines[field]->mywidget, wargs, 3);
+    XtUnmanageChild(form->inputlines[field]->mywidget);
+    form->inputlines[field]->mywidget = w =
+      MakeRadioField(form->formpointer, form->inputlines[field],
+		     &newheight, form);
+    XtSetArg(wargs[0], XtNx, x);
+    XtSetArg(wargs[1], XtNy, y);
+    XtSetValues(w, wargs, 2);
+    MapWidgetToForm(w, form);
+    XmAddTabGroup(w);
+    if (newheight > oldheight) {
+	bb = (XmBulletinBoardWidget) form->formpointer;
+	parent_y = y;
+	for (i = 0; i < bb->composite.num_children; i++) {
+	    XtSetArg(wargs[0], XtNy, &y);
+	    XtGetValues(bb->composite.children[i], wargs, 1);
+	    if (y > parent_y) {
+		y = (y + newheight) - oldheight;
+		XtSetArg(wargs[0], XtNy, y);
+		XtSetValues(bb->composite.children[i], wargs, 1);
+	    }
+	}
+    }
+
+    if (trans == NULL)
+      trans = XtParseTranslationTable(form_override_table);
+    XtOverrideTranslations(w, trans);
+    rc = (XmRowColumnWidget) w;
+    for (i = 0; i < rc->composite.num_children; i++)
+      XtOverrideTranslations(rc->composite.children[i], trans);
+
+    XtManageChild(w);
+}
+
 
 MakeButtons(parent, pheight, pwidth, spec)
 Widget		parent;
@@ -656,11 +740,44 @@ XmAnyCallbackStruct	*call_data;
 /*		printf ("Replacing old value of selection, '%s', with '%s'\n",
 				current->returnvalue.stringvalue,
 				newvalue);
-*/		strcpy(current->returnvalue.stringvalue, newvalue);
+		strcpy(current->returnvalue.stringvalue, newvalue);
 		if (current->valuechanged)
 		  (*current->valuechanged)(WidgetToForm(w), current);
-	}
+*/	}
 	XtFree(newvalue);
+}
+
+
+void MoiraFocusOut(w, event, p, n)
+Widget w;
+XEvent *event;
+String *p;
+Cardinal *n;
+{
+    char  *newvalue;
+    UserPrompt *current = NULL;
+    EntryForm *f;
+    XmTextRec *tr = (XmTextRec *)w;
+    int i;
+
+    if (tr->core.self != w || tr->core.widget_class != xmTextWidgetClass)
+      return;
+    newvalue = XmTextGetString(w);
+    f = WidgetToForm(w);
+    for (i = 0; f->inputlines[i]; i++)
+      if (f->inputlines[i]->mywidget == w) 
+	current = f->inputlines[i];
+    if (current == NULL) {
+	fprintf(stderr, "Couldn't find prompt structure!\n");
+	return;
+    }
+
+    if (strcmp(current->returnvalue.stringvalue, newvalue)) {
+	strcpy(current->returnvalue.stringvalue, newvalue);
+	if (current->valuechanged)
+	  (*current->valuechanged)(f, current);
+    }
+    XtFree(newvalue);
 }
 
 
@@ -716,6 +833,7 @@ Cardinal *count;
 
     next = _XmFindNextTabGroup(w);
     if (next == w) {
+	MoiraFocusOut(w, event, argv, count);
 	form = WidgetToForm(w);
 	MoiraFormComplete(NULL, form);
     } else {
@@ -747,8 +865,10 @@ Cardinal *count;
     EntryForm *form;
 
     form = WidgetToForm(w);
-    if (form)
-      MoiraFormComplete(NULL, form);
+    if (form) {
+	MoiraFocusOut(w, event, argv, count);
+	MoiraFormComplete(NULL, form);
+    }
 }
 
 

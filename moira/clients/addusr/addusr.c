@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/addusr/addusr.c,v 1.3 1993-01-26 15:36:36 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/addusr/addusr.c,v 1.4 1993-10-25 17:02:26 mar Exp $
  *
  * Program to add users en batch to the moira database
  *
@@ -12,6 +12,7 @@
  */
 
 #include <mit-copyright.h>
+#include <string.h>
 #include <stdio.h>
 #include <ctype.h>
 #include <des.h>
@@ -20,7 +21,7 @@
 #include <moira_site.h>
 
 #ifndef LINT
-static char adduser_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/addusr/addusr.c,v 1.3 1993-01-26 15:36:36 mar Exp $";
+static char adduser_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/addusr/addusr.c,v 1.4 1993-10-25 17:02:26 mar Exp $";
 #endif
 
 /* flags from command line */
@@ -33,7 +34,6 @@ int reg_only, reg, verbose, nodupcheck;
 char *whoami;
 int duplicate, errors;
 
-extern char *index();
 extern char *FixCase(), *RemoveHyphens(), *strtrim();
 extern int errno;
 int usercheck(), scream();
@@ -172,7 +172,7 @@ char **argv;
 	/* Last name is first thing on line */
 	last = buf;
 	/* First name follows a comma */
-	p = index(last, ',');
+	p = strchr(last, ',');
 	if (!p) {
 	    com_err(whoami, MR_BAD_CHAR, "Missing comma on line %d", lineno);
 	    errors++;

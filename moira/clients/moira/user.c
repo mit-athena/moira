@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.14 1988-12-07 18:50:41 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.15 1989-08-21 22:37:49 mar Exp $";
 #endif lint
 
 /*	This is the file user.c for the SMS Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.14 1988-12-07 18:50:41 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.15 1989-08-21 22:37:49 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -24,6 +24,7 @@
 #include <sms.h>
 #include <sms_app.h>
 #include <menu.h>
+#include <ctype.h>
 
 #include "mit-copyright.h"
 #include "defs.h"
@@ -45,16 +46,18 @@
  *	Returns: pointer to statically allocated string.
  */
 
-static char *states[] = { "Not registered",
+static char *states[] = { "Registerable",
 			  "Active",
-			  "Half registered",
-			  "Marked for deletion",
-			  "Not registerable" };
+			  "Half Registered",
+			  "Deleted",
+			  "Not registerable",
+			  "Enrolled/Registerable",
+			  "Enrolled/Not Registerable" };
 
 static char *UserState(state)
 int state;
 {
-    if (state < 0 || state > 4)
+    if (state < 0 || state >= US_END)
 	return("Unknown");
     return(states[state]);
 }
@@ -90,12 +93,12 @@ char ** info;
     char name[BUFSIZ], buf[BUFSIZ];
 
     sprintf(name, "%s, %s %s", info[U_LAST], info[U_FIRST], info[U_MIDDLE]);
-    sprintf(buf, "Login name: %-10s Full name: %s", info[U_NAME], name);
+    sprintf(buf, "Login name: %-20s Full name: %s", info[U_NAME], name);
     Put_message(buf);
-    sprintf(buf, "User id: %-13s Login shell %-15s Class: %s", 
+    sprintf(buf, "User id: %-23s Login shell %-10s Class: %s", 
 	    info[U_UID], info[U_SHELL], info[U_CLASS]);
     Put_message(buf);
-    sprintf(buf, "Account is: %-10s Encrypted MIT ID number: %s",
+    sprintf(buf, "Account is: %-20s Encrypted MIT ID number: %s",
 	    UserState(atoi(info[U_STATE])), info[U_MITID]);
     Put_message(buf);
     sprintf(buf, MOD_FORMAT, info[U_MODBY], info[U_MODTIME],info[U_MODWITH]);
@@ -178,7 +181,17 @@ Bool name;
 	GetValueFromUser("User's first name", &info[U_FIRST]);
 	GetValueFromUser("User's middle name", &info[U_MIDDLE]);
     }
-    GetValueFromUser("User's status", &info[U_STATE]);
+    while (1) {
+	int i;
+	GetValueFromUser("User's status (? for help)", &info[U_STATE]);
+	if (isdigit(info[U_STATE][0]))
+	  break;
+	Put_message("Valid status numbers:");
+	for (i = 0; i < US_END; i++) {
+	    sprintf(temp_buf, "  %d: %s", i, states[i]);
+	    Put_message(temp_buf);
+	}
+    }
     temp_ptr = Strsave(info[U_MITID]);
     Put_message("User's MIT ID number (type a new unencrypted number, or keep same encryption)");
     GetValueFromUser("", &temp_ptr);
@@ -693,4 +706,94 @@ char **argv;
 
     FreeQueue(top);
     return (DM_NORMAL);
+}
+
+
+/*	Function Name: GetKrbmap
+ *	Description: Shows user <-> Kerberos mappings
+ *	Arguments: argc, argv - argv[1] contains the user login name,
+ *		argv[2] contains the principal
+ *	Returns: none.
+ */
+
+/* ARGSUSED */
+int
+GetKrbmap(argc, argv)
+int argc;
+char **argv;
+{
+    int stat;
+    struct qelem *elem = NULL;
+    char buf[BUFSIZ];
+
+    if ((stat = do_sms_query("get_kerberos_user_map", 2, &argv[1],
+			     StoreInfo, (char *)&elem)) != 0) {
+	com_err(program_name, stat, " in GetKrbMap.");
+	return(DM_NORMAL);
+    }
+
+    elem = QueueTop(elem);
+    Put_message("");
+    while (elem != NULL) {
+	char **info = (char **) elem->q_data;
+	sprintf(buf, "User: %-9s Principal: %s",
+		info[KMAP_USER], info[KMAP_PRINCIPAL]);
+	Put_message(buf);
+	elem = elem->q_forw;
+    }
+
+    FreeQueue(QueueTop(elem));
+    return(DM_NORMAL);
+}
+
+
+/*	Function Name: AddKrbmap
+ *	Description: Add a new user <-> Kerberos mapping
+ *	Arguments: argc, argv - argv[1] contains the user login name,
+ *		argv[2] contains the principal
+ *	Returns: none.
+ */
+
+/* ARGSUSED */
+int
+AddKrbmap(argc, argv)
+int argc;
+char **argv;
+{
+    int stat;
+
+    if (!index(argv[KMAP_PRINCIPAL + 1], '@')) {
+	Put_message("Please specify a realm for the kerberos principal.");
+	return(DM_NORMAL);
+    }
+    if ((stat = do_sms_query("add_kerberos_user_map", 2, &argv[1],
+			     Scream, NULL)) != 0) {
+	com_err(program_name, stat, " in AddKrbMap.");
+	if (stat == SMS_EXISTS)
+	  Put_message("No user or principal may have more than one mapping.");
+    }
+    return(DM_NORMAL);
+}
+
+
+/*	Function Name: DeleteKrbmap
+ *	Description: Remove a user <-> Kerberos mapping
+ *	Arguments: argc, argv - argv[1] contains the user login name,
+ *		argv[2] contains the principal
+ *	Returns: none.
+ */
+
+/* ARGSUSED */
+int
+DeleteKrbmap(argc, argv)
+int argc;
+char **argv;
+{
+    int stat;
+
+    if ((stat = do_sms_query("delete_kerberos_user_map", 2, &argv[1],
+			     Scream, NULL)) != 0) {
+	com_err(program_name, stat, " in DeleteKrbMap.");
+    }
+    return(DM_NORMAL);
 }

@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/db/class.qc,v 1.1 1988-09-12 17:39:45 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/db/class.qc,v 1.2 1990-03-19 18:37:06 mar Exp $
  *
  *  Counts how many member of each class exist in the database.
  *
@@ -8,7 +8,7 @@
  */
 
 #include <mit-copyright.h>
-#include <sms.h>
+#include <moira.h>
 
 
 main()

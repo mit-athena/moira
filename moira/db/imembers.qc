@@ -1,6 +1,6 @@
 
 #include <stdio.h>
-#include <sms.h>
+#include <moira.h>
 
 struct mem {
     int parent;

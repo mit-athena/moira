@@ -1,4 +1,4 @@
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/db/Makefile,v 1.7 1990-02-14 11:37:59 mar Exp $
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/db/Makefile,v 1.8 1990-03-19 18:36:58 mar Exp $
 
 # (c) Copyright 1988 by the Massachusetts Institute of Technology.
 # For copying and distribution information, please see the file
@@ -18,7 +18,7 @@ CFLAGS= -I../include -O
 all: newmoira class imembers
 
 imembers: imembers.o
-	cc -o imembers imembers.o ../lib/libsms.a ${INGLIB}
+	cc -o imembers imembers.o ../lib/libmoira.a ${INGLIB}
 imembers.c: imembers.qc
 
 newmoira: ${OBJS}
@@ -30,7 +30,7 @@ tables.c: newdb db2tbls.awk
 	awk -f db2tbls.awk < newdb > tables.c
 
 class: class.o
-	cc -o class class.o ../lib/libsms.a ${INGLIB}
+	cc -o class class.o ../lib/libmoira.a ${INGLIB}
 
 class.c: class.qc
 
@@ -49,7 +49,7 @@ depend: ${SRCS}
 newmoira.o: newmoira.c ../include/mit-copyright.h /usr/include/stdio.h
 newmoira.o: ../server/query.h
 tables.o: tables.c
-imembers.o: imembers.c /usr/include/stdio.h ../include/sms.h
-imembers.o: ../include/sms_et.h
-class.o: class.c ../include/mit-copyright.h ../include/sms.h
-class.o: ../include/sms_et.h
+imembers.o: imembers.c /usr/include/stdio.h ../include/moira.h
+imembers.o: ../include/mr_et.h
+class.o: class.c ../include/mit-copyright.h ../include/moira.h
+class.o: ../include/mr_et.h

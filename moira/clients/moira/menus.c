@@ -1,4 +1,4 @@
-/* $Id: menus.c,v 1.42 2000-08-03 21:49:14 zacheiss Exp $
+/* $Id: menus.c,v 1.43 2000-08-10 02:29:44 zacheiss Exp $
  *
  *	This is the file menus.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -22,7 +22,7 @@
 
 #include <stdio.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menus.c,v 1.42 2000-08-03 21:49:14 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menus.c,v 1.43 2000-08-10 02:29:44 zacheiss Exp $");
 
 /* ------------------------- Second Tier Menus ------------------------- */
 
@@ -308,6 +308,34 @@ Menu host_menu = {
   }
 };
 
+/* User Reservations Menu */
+Menu reservations_menu = {
+  NULLFUNC,
+  NULLFUNC,
+  "User Reservations Menu",
+  4,
+  {
+    { GetUserReservations, NULLMENU, 2, {
+      { "get", "Get User Reservations" },
+      { "login name", "User login name: " },
+    } },
+    { AddUserReservation, NULLMENU, 3, {
+      { "add", "Add User Reservation" },
+      { "login name", "User login name: " },
+      { "reservation", "Reservation: " },
+    } },
+    { DelUserReservation, NULLMENU, 3, {
+      { "delete", "Delete User Reservation" },
+      { "login name", "User login name: " },
+      { "reservation", "Reservation: " },
+    } },
+    { GetUserByReservation, NULLMENU, 2, {
+      { "getres", "Get Users by Reservation" },
+      { "reservation", "Reservation: " },
+    } },
+  }
+};
+
 /* ------------------------- First Tier Menus ------------------------- */
 
 /*
@@ -586,7 +614,7 @@ Menu user_menu = {
   NULLFUNC,
   NULLFUNC,
   "User Menu",
-  11,
+  12,
   {
     {ShowUserByLogin, NULLMENU, 2, {
        {"login", "Show user information by login name"},
@@ -622,6 +650,7 @@ Menu user_menu = {
     } },
     SUBMENU("pobox", "Post Office Box Menu", &pobox_menu),
     SUBMENU("krbmap", "User Kerberos Mappings", &krbmap_menu),
+    SUBMENU("reservations", "User Reservations Menu", &reservations_menu),
   }
 };
 

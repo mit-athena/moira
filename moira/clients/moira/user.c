@@ -1,4 +1,4 @@
-/* $Id: user.c,v 1.61 2000-04-21 19:48:57 zacheiss Exp $
+/* $Id: user.c,v 1.62 2000-08-10 02:29:44 zacheiss Exp $
  *
  *	This is the file user.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -27,7 +27,7 @@
 
 #include <krb.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.61 2000-04-21 19:48:57 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.62 2000-08-10 02:29:44 zacheiss Exp $");
 
 void CorrectCapitalization(char **name);
 char **AskUserInfo(char **info, Bool name);
@@ -996,3 +996,135 @@ int DeleteKrbmap(int argc, char **argv)
     com_err(program_name, stat, " in DeleteKrbMap.");
   return DM_NORMAL;
 }
+
+int GetUserReservations(int argc, char **argv)
+{
+  int stat;
+  struct mqelem *elem = NULL, *top;
+  char buf[BUFSIZ];
+
+  if ((stat = do_mr_query("get_user_reservations", 1, &argv[1],
+			  StoreInfo, &elem)))
+    {
+      com_err(program_name, stat, " in GetUserReservations.");
+      return DM_NORMAL;
+    }
+
+  top = elem = QueueTop(elem);
+  Put_message("");
+  if (!elem)
+    Put_message("No reservations for that user.");
+  while (elem)
+    {
+      char **info = elem->q_data;
+      sprintf(buf, "Reservation: %s", info[0]);
+      Put_message(buf);
+      elem = elem->q_forw;
+    }
+
+  FreeQueue(QueueTop(top));
+  return DM_NORMAL;  
+}
+
+int AddUserReservation(int argc, char **argv)
+{
+  int stat;
+  char buf[BUFSIZ];
+  
+  stat = do_mr_query("add_user_reservation", 2, &argv[1],
+		     NULL, NULL);
+    if (stat == MR_STRING)
+      {
+	sprintf(buf, "The reservation %s is not valid.", argv[2]);
+	Put_message(buf);
+	PrintReservationTypes();
+      }
+    else
+      com_err(program_name, stat, " in AddUserReservation.");
+  
+  return DM_NORMAL;
+}
+
+int DelUserReservation(int argc, char **argv)
+{
+  int stat;
+  char buf[BUFSIZ];
+
+  stat = do_mr_query("delete_user_reservation", 2, &argv[1],
+		     NULL, NULL);
+  if (stat == MR_STRING)
+    {
+      sprintf(buf, "The reservation %s is not valid.", argv[2]);
+      Put_message(buf);
+      PrintReservationTypes();
+    }
+  else
+    com_err(program_name, stat, " in DelUserReservation.");
+  
+  return DM_NORMAL;
+}
+
+int GetUserByReservation(int argc, char **argv)
+{
+  int stat;
+  struct mqelem *elem = NULL, *top;
+  char buf[BUFSIZ];
+
+  stat = do_mr_query("get_user_by_reservation", 1, &argv[1],
+		     StoreInfo, &elem);
+  if (stat == MR_STRING)
+    {
+      sprintf(buf, "The reservation %s is not valid.", argv[1]);
+      Put_message(buf);
+      PrintReservationTypes();
+      return DM_NORMAL;
+    }
+  else
+    {
+      com_err(program_name, stat, " in GetUserByReservation.");
+      return DM_NORMAL;
+    }
+  
+  top = elem = QueueTop(elem);
+  Put_message("");
+  while (elem)
+    {
+      char **info = elem->q_data;
+      sprintf(buf, "User: %s", info[0]);
+      Put_message(buf);
+      elem = elem->q_forw;
+    }
+
+  FreeQueue(QueueTop(top));
+  return DM_NORMAL;  
+}
+
+void PrintReservationTypes(void)
+{
+  int stat;
+  struct mqelem *elem = NULL, *top;
+  char buf[BUFSIZ];
+  char *qargs[2];
+
+  Put_message("Valid types of reservations are: ");
+  Put_message("");
+  qargs[0] = "*";
+  qargs[1] = "RESERVE";
+  qargs[2] = "*";
+  if ((stat = do_mr_query("get_alias", 3, &qargs[0],
+			  StoreInfo, &elem)))
+    {
+      com_err(program_name, stat, "in PrintReservationTypes.");
+    }
+  top = elem = QueueTop(elem);
+  while (elem)
+    {
+      char **info = elem->q_data;
+      sprintf(buf, "%s", info[2]);
+      Put_message(buf);
+      elem = elem->q_forw;
+    }
+
+  FreeQueue(QueueTop(top));  
+}
+

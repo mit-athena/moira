@@ -1,4 +1,4 @@
-/* $Id: f_defs.h,v 1.31 2000-03-30 21:59:53 zacheiss Exp $
+/* $Id: f_defs.h,v 1.32 2000-08-10 02:29:43 zacheiss Exp $
  *
  *	This is the file f_defs.h for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -148,6 +148,11 @@ int AddKrbmap(int argc, char **argv);
 int DeleteKrbmap(int argc, char **argv);
 int GetDirFlags(int argc, char **argv);
 int SetDirFlags(int argc, char **argv);
+int GetUserReservations(int argc, char **argv);
+int AddUserReservation(int argc, char **argv);
+int DelUserReservation(int argc, char **argv);
+int GetUserByReservation(int argc, char **argv);
+void PrintReservationTypes(void);
 
 /* printer.c */
 int GetPrn(int argc, char **argv);

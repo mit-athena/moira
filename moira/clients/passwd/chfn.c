@@ -3,17 +3,17 @@
  * and distribution information, see the file "mit-copyright.h".
  *
  * $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chfn.c,v $
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chfn.c,v 1.14 1998-01-05 19:52:20 danw Exp $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chfn.c,v 1.15 1998-01-07 17:01:56 danw Exp $
  * $Author: danw $
  *
  */
 
 #ifndef lint
-static char *rcsid_chfn_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chfn.c,v 1.14 1998-01-05 19:52:20 danw Exp $";
+static char *rcsid_chfn_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chfn.c,v 1.15 1998-01-07 17:01:56 danw Exp $";
 #endif
 
 /*
- * Talk to the MOIRA database to change a person's GECOS information.
+ * Talk to the Moira database to change a person's GECOS information.
  *
  * chfn with no modifiers changes the information of the user who is
  * running the program.
@@ -34,7 +34,7 @@ static char *rcsid_chfn_c = "$Header: /afs/.athena.mit.edu/astaff/project/moirad
 #include <ctype.h>
 #include <errno.h>
 
-/* MOIRA includes */
+/* Moira includes */
 #include <moira.h>
 #include <moira_site.h>
 #include "mit-copyright.h"
@@ -112,7 +112,7 @@ int chfn(char *uname)
   int status;			/* general purpose exit status */
   int q_argc;			/* argc for mr_query */
   char *q_argv[F_END];		/* argv for mr_query */
-  char *motd;			/* for MR server status */
+  char *motd;			/* for Moira server status */
   int i;
 
   int get_user_info();
@@ -329,11 +329,11 @@ void get_new_info(struct finger_info *old_info, struct finger_info *new_info)
 
   GETINFO("Full name", fullname, FALSE);
   GETINFO("Nickname", nickname, FALSE);
-  GETINFO("Home address (Ex: Atkinson 304)", home_address, FALSE);
+  GETINFO("Home address (Ex: EC Bemis 514)", home_address, FALSE);
   GETINFO("Home phone number (Ex: 3141592)", home_phone, TRUE);
   GETINFO("Office address (Exs: E40-342 or 2-108)",
 	  office_address, FALSE);
-  GETINFO("Office phone (Ex: 3-1300)", office_phone, TRUE);
+  GETINFO("Office phone (Ex: 3-7619)", office_phone, TRUE);
   GETINFO("MIT department (Exs: 9, Biology, Information Services)",
 	  mit_department, FALSE);
   GETINFO("MIT year (Exs: 1989, '91, Faculty, Grad)", mit_year, FALSE);

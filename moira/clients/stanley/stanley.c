@@ -21,7 +21,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/stanley/stanley.c,v 1.9 2003-05-14 13:07:35 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/stanley/stanley.c,v 1.10 2003-08-26 16:35:11 zacheiss Exp $");
 
 struct string_list {
   char *string;
@@ -444,12 +444,12 @@ int main(int argc, char **argv)
       status = wrap_mr_query("get_list_info", 1, args, save_query_info, argv);
       if (status == MR_SUCCESS)
 	{
-	  for (i = 13; i > 0; i--)
+	  for (i = 15; i > 0; i--)
 	    argv[i + 1] = argv[i];
 	  argv[1] = username;
 	  argv[L_ACTIVE + 1] = "0";
 	  
-	  status = wrap_mr_query("update_list", 14, argv, NULL, NULL);
+	  status = wrap_mr_query("update_list", 16, argv, NULL, NULL);
 	  if (status)
 	    {
 	      com_err(whoami, status, "while updating list, "

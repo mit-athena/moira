@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menus.c,v 1.17 1990-04-04 11:15:31 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menus.c,v 1.18 1990-06-13 12:42:07 mar Exp $";
 #endif lint
 
 /*	This is the file menus.c for the MOIRA Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menus.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menus.c,v 1.17 1990-04-04 11:15:31 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menus.c,v 1.18 1990-06-13 12:42:07 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -52,7 +52,7 @@ Menu cluster_data_menu = {
       {"data", "The data to be added: "},
     } },
     { RemoveClusterData, NULLMENU, 3, {
-      {"delete", "Remove Data to a given Cluster"},
+      {"delete", "Remove Data from a given Cluster"},
       {"clus", "Cluster's Name: "},
       {"label", "Label Identifing the data: "},
     } }, 

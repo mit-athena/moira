@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/delete.c,v 1.18 1990-07-14 16:05:51 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/delete.c,v 1.19 1992-04-30 16:18:33 mar Exp $";
 #endif lint
 
 /*	This is the file delete.c for the MOIRA Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/delete.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/delete.c,v 1.18 1990-07-14 16:05:51 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/delete.c,v 1.19 1992-04-30 16:18:33 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -159,13 +159,12 @@ Bool verbose;
 		    "is the ACE for the following data objects:");
 	    Put_message(buf);
 	    Put_message("");
-	    while (local != NULL) {
+	    for (; local != NULL; local = local->q_forw) {
 		info = (char **) local->q_data;
 		if (!strcmp(info[0], "LIST") &&
 		    !strcmp(info[1], name))
 		    continue;
 		Print(CountArgs(info), info, NULL);
-		local = local->q_forw;
 	    }
 	    Put_message("");
 	    Put_message(

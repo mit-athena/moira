@@ -1,11 +1,18 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v 1.13 1988-01-04 12:02:13 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v 1.14 1988-01-14 13:37:57 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
  *	$Log: not supported by cvs2svn $
+ * Revision 1.14  88/01/14  13:14:37  mar
+ * 1. separate access checking from setup routines
+ * 2. check max argument length
+ * 
+ * Revision 1.13  88/01/04  12:02:13  mar
+ * moved transaction start before pre-routines (wesommer)
+ * 
  * Revision 1.13  87/11/12  18:13:12  wesommer
  * Move transaction boundary to include the pre routine.
  * 
@@ -48,7 +55,7 @@
  */
 
 #ifndef lint
-static char *rcsid_qrtn_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v 1.13 1988-01-04 12:02:13 mar Exp $";
+static char *rcsid_qrtn_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v 1.14 1988-01-14 13:37:57 mar Exp $";
 #endif lint
 
 #include "query.h"
@@ -81,7 +88,7 @@ int sms_open_database()
 
     /* initialize local argv */
     for (i = 0; i < 16; i++)
-	Argv[i] = (char *)malloc(128);
+	Argv[i] = (char *)malloc(ARGLEN);
 
     IIseterr(ingerr);
 	
@@ -103,52 +110,14 @@ sms_check_access(cl, name, argc, argv_ro)
     int argc;
     char *argv_ro[];
 {
-    register struct query *q;
-    register int argreq;
-    register int status;
-    register struct validate *v;
-    register int i;
-    register int privileged;
+    struct query *q;
     struct query *get_query_by_name();
-    int access_user();
-    int access_pop();
-    int access_list();
 
     q = get_query_by_name(name);
-    if (q == (struct query *)0) return(SMS_NO_HANDLE);
-    v = q->validate;
+    if (q == (struct query *)0)
+	return(SMS_NO_HANDLE);
 
-    /* copy the arguments into a local argv that we can modify */
-    for (i = 0; i < argc; i++)
-	strcpy(Argv[i], argv_ro[i]);
-
-    /* check initial query access */
-    status = check_query_access(q, Argv, cl);
-    privileged = (status == SMS_SUCCESS) ? 1 : 0;
-    if (status != SMS_SUCCESS && !(v && (v->pre_rtn == access_user ||
-					 v->pre_rtn == access_pop ||
-					 v->pre_rtn == access_list))) 
-	return(status);
-
-    /* check argument count */
-    argreq = q->argc;
-    if (q->type == UPDATE || q->type == APPEND) argreq += q->vcnt;
-    if (argc != argreq) return(SMS_ARGS);
-
-    /* validate arguments */
-    if (v && v->valobj) {
-	status = validate_fields(q, Argv, v->valobj, v->objcnt);
-	if (status != SMS_SUCCESS) return(status);
-    }
-
-    /* perform special query access check */
-    if (v && v->pre_rtn) {
-	status = (*v->pre_rtn)(q, Argv, cl, 1);
-	if (status != SMS_SUCCESS && (status != SMS_PERM || !privileged)) 
-	    return(status);
-    }
-
-    return(SMS_SUCCESS);
+    return(sms_verify_query(cl, q, argc, argv_ro));
 }
 
 sms_process_query(cl, name, argc, argv_ro, action, actarg)
@@ -160,11 +129,8 @@ sms_process_query(cl, name, argc, argv_ro, action, actarg)
     char *actarg;
 {
     register struct query *q;
-    register int i;
     register int status;
-    register int argreq;
     register struct validate *v;
-    int privileged;
     char qual[256];
     char sort[32];
     char *pqual;
@@ -175,13 +141,6 @@ sms_process_query(cl, name, argc, argv_ro, action, actarg)
     int sq_save_args();
     struct save_queue *sq_create();
     char *build_sort();
-    int access_user();
-    int access_pop();
-    int access_list();
-
-    /* copy the arguments into a local argv that we can modify */
-    for (i = 0; i < argc; i++)
-	strcpy(Argv[i], argv_ro[i]);
 
     /* list queries command */
     if (!strcmp(name, "_list_queries")) {
@@ -191,7 +150,7 @@ sms_process_query(cl, name, argc, argv_ro, action, actarg)
 
     /* help query command */
     if (!strcmp(name, "_help")) {
-	q = get_query_by_name(Argv[0]);
+	q = get_query_by_name(argv_ro[0]);
 	if (q == (struct query *)0) return(SMS_NO_HANDLE);
 	help_query(q, action, actarg);
 	return(SMS_SUCCESS);
@@ -205,34 +164,14 @@ sms_process_query(cl, name, argc, argv_ro, action, actarg)
     if (q->type != RETRIEVE)
 ##      begin transaction
 
-	/* check query access */
-    status = check_query_access(q, Argv, cl);
-    privileged = (status == SMS_SUCCESS) ? 1 : 0;
-    if (!privileged && !(status == SMS_PERM &&
-			 (v && (v->pre_rtn == access_user ||
-				v->pre_rtn == access_pop ||
-				v->pre_rtn == access_list))))
+    /* setup argument vector, verify access and arguments */
+    if ((status = sms_verify_query(cl, q, argc, argv_ro)) != SMS_SUCCESS)
 	goto out;
-
-    /* check argument count */
-    argreq = q->argc;
-    if (q->type == UPDATE || q->type == APPEND) argreq += q->vcnt;
-    if (argc != argreq) {
-	status = SMS_ARGS;
-	goto out;
-    }
-	
-
-    /* validate arguments */
-    if (v && v->valobj) {
-	status = validate_fields(q, Argv, v->valobj, v->objcnt);
-	if (status != SMS_SUCCESS) goto out;
-    }
 
     /* perform any special query pre-processing */
     if (v && v->pre_rtn) {
 	status = (*v->pre_rtn)(q, Argv, cl, 0);
-	if (status != SMS_SUCCESS && (status != SMS_PERM || !privileged))
+	if (status != SMS_SUCCESS)
 	    goto out;
     }
 
@@ -453,6 +392,59 @@ build_sort(v, sort)
     }
 
     return ((*sort) ? sort : 0);
+}
+
+
+/* Build arguement vector, verify query and arguments */
+
+sms_verify_query(cl, q, argc, argv_ro)
+    client *cl;
+    struct query *q;
+    int argc;
+    char *argv_ro[];
+{
+    register int argreq;
+    register int status;
+    register struct validate *v = q->validate;
+    register int i;
+    register int privileged = 0;
+
+    /* copy the arguments into a local argv that we can modify */
+    for (i = 0; i < argc; i++) {
+	if (strlen(argv_ro[i]) < ARGLEN)
+	    strcpy(Argv[i], argv_ro[i]);
+	else
+	    return(SMS_ARG_TOO_LONG);
+    }
+
+    /* check initial query access */
+    status = check_query_access(q, Argv, cl);
+    if (status != SMS_SUCCESS && status != SMS_PERM)
+	return(status);
+    if (status == SMS_SUCCESS)
+	privileged++;
+
+    /* check argument count */
+    argreq = q->argc;
+    if (q->type == UPDATE || q->type == APPEND) argreq += q->vcnt;
+    if (argc != argreq) return(SMS_ARGS);
+
+    /* validate arguments */
+    if (v && v->valobj) {
+	status = validate_fields(q, Argv, v->valobj, v->objcnt);
+	if (status != SMS_SUCCESS) return(status);
+    }
+
+    /* perform special query access check */
+    if (!privileged && v && v->acs_rtn) {
+	status = (*v->acs_rtn)(q, Argv, cl);
+	if (status != SMS_SUCCESS && status != SMS_PERM)
+	    return(status);
+	if (status == SMS_SUCCESS)
+	    privileged++;
+    }
+
+    return(privileged ? SMS_SUCCESS : SMS_PERM);
 }
 
 check_query_access(q, argv, cl)

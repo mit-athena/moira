@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/increment.dc,v $
  *	$Author: genoa $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/increment.dc,v 2.4 1992-08-23 21:37:02 genoa Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/increment.dc,v 2.5 1992-10-17 21:16:07 genoa Exp $
  *
  *	Copyright (C) 1989 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_increment_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/increment.dc,v 2.4 1992-08-23 21:37:02 genoa Exp $";
+static char *rcsid_increment_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/increment.dc,v 2.5 1992-10-17 21:16:07 genoa Exp $";
 #endif lint
 
 #include <fcntl.h>
@@ -126,20 +126,20 @@ char **argv;
     beforetable = table;
 
     if (!strcmp(table, "users")) {
-	EXEC SQL SELECT login, CHAR(uid), shell, last, first, middle, 
-	    CHAR(status), clearid, type
+	EXEC SQL SELECT u.login, CHAR(u.uid), u.shell, u.last, u.first, u.middle, 
+	    CHAR(u.status), u.clearid, u.type
 	  INTO :barg0, :barg1, :barg2, :barg3, :barg4, :barg5, :barg6,
 	    :barg7, :barg8
-	  FROM users WHERE :qual;
+	  FROM users u WHERE :qual;
 	beforec = 9;
     } else if (!strcmp(table, "machine")) {
-	EXEC SQL SELECT name, type INTO :barg0, :barg1 FROM machine
+	EXEC SQL SELECT n.name, n.type INTO :barg0, :barg1 FROM machine m
 	  WHERE :qual;
 	beforec = 2;
     } else if (!strcmp(table, "cluster")) {
-	EXEC SQL SELECT name, description, location 
+	EXEC SQL SELECT c.name, c.description, c.location 
 	  INTO :barg0, :barg1, :barg2
-	  FROM cluster WHERE :qual;
+	  FROM cluster c WHERE :qual;
 	beforec = 3;
     } else if (!strcmp(table, "mcmap")) {
 	strcpy(barg0, argv[0]);
@@ -151,11 +151,12 @@ char **argv;
 	strcpy(barg2, argv[2]);
 	beforec = 3;
     } else if (!strcmp(table, "filesys")) {
-	EXEC SQL SELECT label, type, CHAR(mach_id), name, mount, access,
-	    comments, CHAR(owner), CHAR(owners), CHAR(createflg), lockertype
+	EXEC SQL SELECT fs.label, fs.type, CHAR(fs.mach_id), fs.name, 
+	    fs.mount, fs.access, fs.comments, CHAR(fs.owner), CHAR(fs.owners),
+            CHAR(fs.createflg), fs.lockertype
 	  INTO :barg0, :barg1, :barg2, :barg3, :barg4, :barg5, :barg6, 
             :barg7, :barg8, :barg9, :barg10
-	  FROM filesys WHERE :qual;
+	  FROM filesys fs WHERE :qual;
         name = malloc(0);
         id = atoi(barg2);
         id_to_name(id, "MACHINE", &name);
@@ -172,18 +173,18 @@ char **argv;
 	strcpy(barg0, "?");
 	strcpy(barg1, argv[1]);
 	strcpy(barg2, "?");
-	sprintf(buffer, "%s and filesys.filsys_id = quota.filsys_id", qual);
+	sprintf(buffer, "%s AND fs.filsys_id = q.filsys_id", qual);
 	qual = buffer;
-	EXEC SQL SELECT CHAR(quota.quota), filesys.name INTO :barg3, :barg4
-	  FROM quota, filesys WHERE :qual;
+	EXEC SQL SELECT CHAR(q.quota), fs.name INTO :barg3, :barg4
+	  FROM quota q, filesys fs WHERE :qual;
 	beforec = 5;
     } else if (!strcmp(table, "list")) {
-	EXEC SQL SELECT name, CHAR(active), CHAR(publicflg), CHAR(hidden),
-	    CHAR(maillist), CHAR(grouplist), CHAR(gid), acl_type,
-	    CHAR(acl_id), description
+	EXEC SQL SELECT l.name, CHAR(l.active), CHAR(l.publicflg), 
+	    CHAR(l.hidden), CHAR(l.maillist), CHAR(l.grouplist), CHAR(l.gid), 
+	    l.acl_type, CHAR(l.acl_id), l.description
 	  INTO :barg0, :barg1, :barg2, :barg3, :barg4, :barg5, :barg6,
-	     :barg7, :barg8, :barg9
-	  FROM list WHERE :qual;
+	    :barg7, :barg8, :barg9
+	  FROM list l WHERE :qual;
 	beforec = 10;
     } else if (!strcmp(table, "members")) {
 	id = (int) argv[0];
@@ -238,20 +239,20 @@ EXEC SQL END DECLARE SECTION;
     char **copy_argv();
 
     if (!strcmp(table, "users")) {
-	EXEC SQL SELECT login, CHAR(uid), shell, last, first, middle,
-	    CHAR(status), clearid, type
+	EXEC SQL SELECT u.login, CHAR(u.uid), u.shell, u.last, u.first, 
+	    u.middle, CHAR(u.status), u.clearid, u.type
 	  INTO :aarg0, :aarg1, :aarg2, :aarg3, :aarg4, :aarg5,
 	    :aarg6, :aarg7, :aarg8
-	  FROM users WHERE :qual;
+	  FROM users u WHERE :qual;
 	afterc = 9;
     } else if (!strcmp(table, "machine")) {
-	EXEC SQL SELECT name, type INTO :aarg0, :aarg1
-	  FROM machine WHERE :qual;
+	EXEC SQL SELECT m.name, m.type INTO :aarg0, :aarg1
+	  FROM machine m WHERE :qual;
 	afterc = 2;
     } else if (!strcmp(table, "cluster")) {
-	EXEC SQL SELECT name, description, location 
+	EXEC SQL SELECT c.name, c.description, c.location 
 	  INTO :aarg0, :aarg1, :aarg2
-	  FROM cluster WHERE :qual;
+	  FROM cluster c WHERE :qual;
 	afterc = 3;
     } else if (!strcmp(table, "mcmap")) {
 	strcpy(aarg0, argv[0]);
@@ -263,8 +264,9 @@ EXEC SQL END DECLARE SECTION;
 	strcpy(aarg2, argv[2]);
 	afterc = 3;
     } else if (!strcmp(table, "filesys")) {
-        EXEC SQL SELECT CHAR(label), type, CHAR(mach_id), name, mount, access,
-	    comments, CHAR(owner), CHAR(owners), CHAR(createflg), lockertype
+        EXEC SQL SELECT CHAR(fs.label), fs.type, CHAR(fs.mach_id), fs.name, 
+	    fs.mount, fs.access, fs.comments, CHAR(fs.owner), CHAR(fs.owners),
+	    CHAR(fs.createflg), fs.lockertype
           INTO :aarg0, :aarg1, :aarg2, :aarg3, :aarg4, :aarg5, :aarg6,
 	      :aarg7, :aarg8, :aarg9, :aarg10
           FROM filesys fs WHERE :qual;
@@ -284,18 +286,18 @@ EXEC SQL END DECLARE SECTION;
 	strcpy(aarg0, "?");
 	strcpy(aarg1, argv[1]);
 	strcpy(aarg2, "?");
-	sprintf(buffer, "%s and filesys.filsys_id = quota.filsys_id", qual);
+	sprintf(buffer, "%s and fs.filsys_id = q.filsys_id", qual);
 	qual = buffer;
-	EXEC SQL SELECT CHAR(quota.quota), filesys.name INTO :aarg3, :aarg4
-	  FROM quota, filesys WHERE :qual;
+	EXEC SQL SELECT CHAR(q.quota), fs.name INTO :aarg3, :aarg4
+	  FROM quota q, filesys fs WHERE :qual;
 	afterc = 5;
     } else if (!strcmp(table, "list")) {
-	EXEC SQL SELECT name, CHAR(active), CHAR(publicflg), CHAR(hidden),
-	    CHAR(maillist), CHAR(grouplist), CHAR(gid), acl_type,
-	    CHAR(acl_id), description
+	EXEC SQL SELECT l.name, CHAR(l.active), CHAR(l.publicflg), 
+	    CHAR(l.hidden), CHAR(l.maillist), CHAR(l.grouplist), CHAR(l.gid), 
+            l.acl_type, CHAR(l.acl_id), l.description
 	  INTO :aarg0, :aarg1, :aarg2, :aarg3, :aarg4, :aarg5, :aarg6,
 	     :aarg7, :aarg8, :aarg9
-	  FROM list WHERE :qual;
+	  FROM list l WHERE :qual;
 	afterc = 10;
     } else if (!strcmp(table, "members")) {
 	id = (int) argv[0];

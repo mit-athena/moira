@@ -1,10 +1,10 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_struct.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_struct.c,v 1.2 1988-09-13 14:26:27 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_struct.c,v 1.3 1990-03-17 00:26:16 mar Exp $
  */
 
 #ifndef lint
-static char *rcsid_gdb_struct_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_struct.c,v 1.2 1988-09-13 14:26:27 mar Exp $";
+static char *rcsid_gdb_struct_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_struct.c,v 1.3 1990-03-17 00:26:16 mar Exp $";
 #endif	lint
 
 
@@ -61,7 +61,7 @@ static char *rcsid_gdb_struct_c = "$Header: /afs/.athena.mit.edu/astaff/project/
 #include "gdb.h"
 
 extern char *malloc();
-extern int   free();
+extern void   free();
 
 /************************************************************************/
 /*	

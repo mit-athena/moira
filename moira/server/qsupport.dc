@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.dc,v $
  *	$Author: kostas $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.dc,v 1.5 1990-09-25 11:34:13 kostas Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.dc,v 1.6 1990-10-01 11:53:37 kostas Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,14 +10,15 @@
  */
 
 #ifndef lint
-static char *rcsid_qsupport_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.dc,v 1.5 1990-09-25 11:34:13 kostas Exp $";
+static char *rcsid_qsupport_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.dc,v 1.6 1990-10-01 11:53:37 kostas Exp $";
 #endif lint
 
 #include <mit-copyright.h>
 #include "query.h"
 #include "mr_server.h"
 #include <ctype.h>
-EXEC SQL INCLUDE sqlca;
+EXEC SQL INCLUDE SQLCA;  /* SQL Communications Area */
+EXEC SQL INCLUDE SQLDA;  /* SQL Descriptor Area */
 
 extern char *whoami, *strsave();
 extern int ingres_errno, mr_errcode;
@@ -58,11 +59,17 @@ access_login(q, argv, cl)
     EXEC SQL BEGIN DECLARE SECTION;
     int id;
     char qual[256];
+    char stmt_1_str[256];
     EXEC SQL END DECLARE SECTION;
+
+    EXEC SQL DECLARE stmt_1 STATEMENT;
 
     build_qual(q->qual, q->argc, argv, qual);
 
-    EXEC SQL SELECT users_id INTO :id FROM users WHERE qual;
+    sprintf(stmt_1_str, 
+            "EXEC SQL SELECT users_id INTO %s FROM users WHERE %s",
+            id, qual );
+    EXEC SQL EXECUTE stmt_1;
 
     if (sqlca.sqlcode < 0 || sqlca.sqlerrd[2] != 1 || id != cl->users_id)
         return(MR_PERM);
@@ -2732,8 +2739,12 @@ int qualified_get(q, argv, action, actarg, start, range, field, flags)
     EXEC SQL BEGIN DECLARE SECTION;
     char name[33], qual[256], *rvar, *rtbl, *rfield;
     int rowcount, i;
+    char stmt_2_str[256];
     EXEC SQL END DECLARE SECTION;
     char *rargv[1], buf[32];
+
+    EXEC SQL DECLARE stmt_2 STATEMENT;
+    EXEC SQL DECLARE r9_cursor CURSOR FOR stmt_2;
 
     strcpy(qual, start);
     for (i = 0; i < q->argc; i++) {
@@ -2750,10 +2761,13 @@ int qualified_get(q, argv, action, actarg, start, range, field, flags)
     rvar = range;
     rtbl = q->rtable;
     rfield = field;
-    EXEC SQL DECLARE r9_cursor CURSOR FOR
-         SELECT R.rfield
-         FROM RTBL R
-         WHERE qual;
+
+    sprintf( stmt_2_str, "SELECT %s FROM RTBL R WHERE %s",
+             R.rfield, qual );
+
+    EXEC SQL PREPARE stmt_2 FROM :stmt_2_str;
+    EXEC SQL DESCRIBE stnt_2 INTO SQLDA;
+
     EXEC SQL OPEN r9_cursor;
     while (1) {
       EXEC SQL FETCH r9_cursor INTO :name;
@@ -2786,8 +2800,12 @@ int qualified_get_serverhost(q, argv, cl, action, actarg)
     EXEC SQL BEGIN DECLARE SECTION;
     char sname[33], mname[33], qual[256];
     int rowcount, i;
+    char stmt_3_str[256];
     EXEC SQL END DECLARE SECTION;
     char *rargv[2], buf[32];
+
+    EXEC SQL DECLARE stmt_3 STATEMENT;
+    EXEC SQL DECLARE s9_cursor CURSOR FOR stmt_3;
 
     sprintf(qual, "machine.mach_id = sh.mach_id and sh.service = uppercase(\"%s\")",
 	    argv[0]);
@@ -2803,10 +2821,12 @@ int qualified_get_serverhost(q, argv, cl, action, actarg)
       
     rargv[0] = sname;
     rargv[1] = mname;
-    EXEC SQL DECLARE s9_cursor CURSOR FOR
-         SELECT S.service, M.name
-         FROM SERVERHOSTS S, MACHINE M
-         WHERE qual;
+    sprintf( stmt_3_str, 
+             "SELECT S.service, M.name FROM SERVERHOSTS S, MACHINE M WHERE %s",
+             qual );
+    EXEC SQL PREPARE stmt_3 FROM :stmt_3_str;
+    EXEC SQL DESCRIBE stnt_3 INTO SQLDA;
+
     EXEC SQL OPEN s9_cursor;
     while (1) {
       EXEC SQL FETCH s9_cursor INTO :sname, :mname;

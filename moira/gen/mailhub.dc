@@ -1,4 +1,5 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/mailhub.dc,v 1.1.1.1 1992-09-14 23:59:25 genoa Exp $
+
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/mailhub.dc,v 1.2 1992-10-22 15:21:37 mar Exp $
  *
  * This generates the /usr/lib/aliases file for the mailhub.
  *
@@ -46,10 +47,10 @@ char **argv;
     EXEC SQL END DECLARE SECTION;
 
 #ifsql INGRES
-    EXEC SQL CONNECT moira;
+    EXEC SQL CONNECT sms;
 #endsql
 #ifsql INFORMIX
-    EXEC SQL DATABASE moira;
+    EXEC SQL DATABASE sms;
 #endsql
 
     if (argc == 2) {
@@ -144,10 +145,6 @@ get_info()
     struct list *l, *memberlist;
     register struct member *m;
 
-    /* The following is declarative, not executed,
-     * and so is dependent on where it is in the file,
-     * not in the order of execution of statements.
-     */
     EXEC SQL WHENEVER SQLERROR GOTO sqlerr;
 
     EXEC SQL SELECT modtime INTO :buf FROM users WHERE users_id = 0;
@@ -327,8 +324,8 @@ int force;
 	return;
     }
     l->maillist = 2;
-    insert_name(l->name, -1, TRUE, FALSE);
     output_mlist(id, l);
+    insert_name(l->name, -1, TRUE, FALSE);
 
     if (l->acl_t == 'L' && (l1 = (struct list *)hash_lookup(lists, l->acl_id)))
       save_mlist(0, l1, TRUE);

@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/students.dc,v 1.6 1990-01-30 18:08:23 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/students.dc,v 1.7 1990-02-13 16:04:10 mar Exp $
  */
 
 #include <stdio.h>
@@ -228,7 +228,8 @@ struct entry *e;
 	newuser(e);
 	return;
     }
-    if (strcmp(e->class, strtrim(class)) && strcmp(class, "STAFF")) {
+    if (strcmp(e->class, strtrim(class)) &&
+	strcmp(class, "STAFF") && strcmp(class, "SIPB")) {
 	com_err(whoami, 0, "updating class for user %s %s from %s to %s",
 		first, last, class, e->class);
 	strcpy(class, e->class);

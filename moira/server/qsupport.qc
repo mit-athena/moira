@@ -1,11 +1,15 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v $
- *	$Author: mike $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.12 1987-08-29 00:05:54 mike Exp $
+ *	$Author: wesommer $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.13 1987-09-01 16:24:01 wesommer Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
  *	$Log: not supported by cvs2svn $
+Revision 1.12  87/08/29  00:05:54  mike
+Fixed bug in check_nfs.
+Added code to upcasify machine names in validate_id.
+
 Revision 1.11  87/08/28  14:55:45  mike
 Modified delete_locker to require only one argument, the login name.
 Modified get_groups_of_all_users and get_all_poboxes to disable INGRES
@@ -47,7 +51,7 @@ Initial revision
  */
 
 #ifndef lint
-static char *rcsid_qsupport_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.12 1987-08-29 00:05:54 mike Exp $";
+static char *rcsid_qsupport_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.13 1987-09-01 16:24:01 wesommer Exp $";
 #endif lint
 
 #include "query.h"
@@ -525,6 +529,7 @@ set_list_modtime_by_id(q, argv)
 
     list_id = *(int *)argv[0];
 ##  repeat replace list (modtime = "now") where list.#list_id = @list_id
+##  repeat replace list (modtime = "now") where list.#acl_id = @list_id
     return(SMS_SUCCESS);
 ##}
 
@@ -564,6 +569,7 @@ followup_amtl(q, argv)
     list_id = *(int *)argv[0];
 
 ##  repeat replace list (modtime = "now") where list.#list_id = @list_id
+##  repeat replace list (modtime = "now") where list.#acl_id = @list_id
 
     /* if query is not amtl or if member_type is not LIST then return */
     if (bcmp(q->shortname, "amtl", 4) || bcmp(argv[1], "LIST", 4)) 

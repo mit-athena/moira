@@ -5,11 +5,24 @@ Currently, sms acts to update a variety of servers.  Although the data
 control manager performs this update task, each server requires a 
 different set of update parameters.  To date, the DCM uses c programs,
 not SDFs, to implement the construction of the server specific files. 
-Each c program is checked in via the server_maint program.   The DCM then
+Each c program is checked in via the dcm_maint program.   The DCM then
 calls the appropriate module when the update interval is reached.
-This section details the method 
-by which every sms-supported server is updated.  In addition, a 
-description of the data being sent and how it is retrieved is discussed.
+
+For each server file propagated, ther is at least one application 
+interface which provides the capability to manipulate the sms database.
+Since the sms database acts as a single point of contact, the
+changes made to the database are reflected in the contents of 
+recipient servers. 
+
+The following diagram:
+
+@blankspace(3 inches)
+
+This section focusses on the above component contained within
+the dotted-lined box.  This section of the system is the server side,
+receiving propagated data.  Reference, however, is made to 
+each application interface which ultimately effects the server contents.
+
 The services which sms now supports are:
 @begin(itemize, spread 1)
 Hesiod - The athena nameserver.
@@ -27,9 +40,29 @@ Zephyr - The athena notification service. (currently not available)
 
 @subsection(Server Assumptions)
 
-The requirements of each server suggests a level of detail describing 
-server location, update mechanism, data format, and file structure.
-The following assumptions are identified:
+The requirements of each server suggests a level of detail describing
+the following:
+@begin(itemize, spread 1)
+Service name.
+
+Service description.
+
+Propagation interval.
+
+Data format.
+
+Target location.
+
+Generated files.
+
+File description.
+
+Queries used to generate the file (including fields queried).
+
+How the file is modified (application interface).
+
+Example of file contents.
+@end(itemize)
 @begin(itemize, spread 1)
 Service: Hesiod
 
@@ -54,9 +87,9 @@ sloc.db
 
 rvdtab.db
 
-zephyr.db
+passwd.db
 
-file_exchange.db
+printcap.db
 @end(itemize)
 
 Each of these files are described in detail below.  The hesiod server uses
@@ -70,64 +103,125 @@ With hesiod, all target machines receive identical files.  Practically,
 therefore, the DCM will prepare only one set of files and then will
 propagate to several target hosts.
 
+For additional technical information on @i[hesiod], please refer to the
+Hesiod technical plan.
+
 Propagation interval : 6 Hours, 0:00, 6:00, 12:00, 18:00
 
 Data format : BIND
 
 Target locations : 
-JASON.MIT.EDU
-ZEUS.MIT.EDU
-MENELAUS.MIT.EDU
+JASON.MIT.EDU: /etc/athena/nameserver
+ZEUS.MIT.EDU: /etc/athena/nameserver
+MENELAUS.MIT.EDU: /etc/athena/nameserver
 
-Files updated:
-Target File Path: /etc/athena/nameserver (for all files)
+@begin(display)
+   HESIOD.DB - Hesiod data 
+        Description:
 
-hesiod.db - Hesiod data 
-queries used:
-NOT CREATED FROM SMS QUERY
+        Queries used:
+             NOT CREATED FROM SMS QUERY
+        How modified:
+             EDITOR by system administrator.
+        Example contents:
 
-cluster.db - cluster data
-queries used:
-get_all_service_clusers() -> (cluster, service_label, service_cluster)
-get_machine_to_cluster_map(*,*) -> (machine, cluster)
 
-service.db - services
-queries used:
-get_all_services -> (service, protocol, port, description)
-get_alias(*, service) -> (name, type, translation)
+   CLUSTER.DB - Cluster data
+        Description:
 
-passwd.db - password
-queries used:
-NOT CREATED FROM SMS QUERY
+        Queries used:
+             get_all_service_clusers() -> 
+                 (cluster, service_label, service_cluster)
+             get_machine_to_cluster_map(*,*) -> (machine, cluster)
+        How modified:
 
-printers.db - MDQS printer info
-queries used:
-get_all_printer_clusters() -> (cluster)
-get_printers_of_cluster(cluster) -> (pname, qname, serverhost, ability, hwtype)
+        Example contents:
 
-lpr.db - lpr printer info
-queries used:
-NOT USED
 
-printcap.db
-queries used:
-NOT USED
+   SERVICE.DB - services
+        Description:
 
-pobox.db - post office info
-queries used:
-get_poboxes_pop(*)
-get_poboxes_local(*)
-get_poboxes_foreign(*) -> (login, type, machine, box)
+        Queries used:
+             get_all_services -> (service, protocol, port, description)
+             get_alias(*, service) -> (name, type, translation)
+        How modified:
 
-sloc.db - service location
-queries used:
-get_server_location(*) -> (server, location)
+        Example contents:
 
-rvdtab.db - RVD info
-queries used:
-get_all_filesys() -> (label, type, machine, name, mount, access)
-get_alias(*, FILESYS) -> (name, type, trans)
 
+   PASSWD.DB - password
+        Description:
+
+        Queries used:
+
+        How modified:
+
+        Example contents:
+
+   PRINTERS.DB - MDQS printer info
+        Description:
+
+        Queries used:
+             get_all_printer_clusters() -> (cluster)
+             get_printers_of_cluster(cluster) -> 
+                 (pname, qname, serverhost, ability, hwtype)
+
+        How modified:
+
+        Example contents:
+
+   LPR.DB - lpr printer info
+        Description:
+
+        Queries used:
+
+        How modified:
+
+        Example contents:
+
+   PINTCAP.DB - line printer information
+        Description:
+
+        Queries used:
+
+        How modified:
+
+        Example contents:
+
+   POBOX.DB - post office info
+        Description:
+
+        Queries used:
+             get_poboxes_pop(*)
+             get_poboxes_local(*)
+             get_poboxes_foreign(*) -> (login, type, machine, box)
+
+        How modified:
+
+        Example contents:
+
+   SLOC.DB - service location
+        Description:
+
+        Queries used:
+             get_server_location(*) -> (server, location)
+
+        How modified:
+
+        Example contents:
+
+   RVDTAB.DB - RVD info
+        Description:
+
+        Queries used:
+             get_all_filesys() -> (label, type, machine, name, mount, access)
+             get_alias(*, FILESYS) -> (name, type, trans)
+       
+        How modified:
+
+        Example contents:
+
+@end(display)
 Update mechanism:
 Updating hesiod is a relatively simple process.  Every six
 hours the DCM will initiate a build on each of the above

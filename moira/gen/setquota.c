@@ -1,7 +1,7 @@
 /*
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/setquota.c,v $
  *      $Author: jnrees $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/setquota.c,v 1.4 1990-01-27 19:48:05 jnrees Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/setquota.c,v 1.5 1990-03-06 15:59:08 jnrees Exp $
  *
  *      Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
@@ -11,6 +11,10 @@
  * quota system.
  *
  *      $Log: not supported by cvs2svn $
+ * Revision 1.4  90/01/27  19:48:05  jnrees
+ * Grows quotas file if necessary
+ * Allows setting quota for a range of uid's.
+ * 
  * Revision 1.3  88/10/06  10:46:08  raeburn
  * (mar) Don't expire timers on users currently over quota.
  *
@@ -20,7 +24,7 @@
  */
 
 #ifndef lint
-static char *rcsid_setquota_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/setquota.c,v 1.4 1990-01-27 19:48:05 jnrees Exp $";
+static char *rcsid_setquota_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/setquota.c,v 1.5 1990-03-06 15:59:08 jnrees Exp $";
 #endif lint
 
 #include <stdio.h>
@@ -119,9 +123,9 @@ quota is in 1KB units\n");
 	  }
 
 	  db.dqb_bsoftlimit = soft_quota;
-	  db.dqb_bhardlimit = db.dqb_bsoftlimit * 1.2;
-	  db.dqb_fsoftlimit = soft_quota * .5;
-	  db.dqb_fhardlimit = db.dqb_fsoftlimit * 1.2;
+	  db.dqb_bhardlimit = (db.dqb_bsoftlimit * 6) / 5;
+	  db.dqb_fsoftlimit = soft_quota / 2;
+	  db.dqb_fhardlimit = (db.dqb_fsoftlimit * 6) / 5;
 	  db.dqb_btimelimit = odb.dqb_btimelimit;
 	  db.dqb_ftimelimit = odb.dqb_ftimelimit;
 

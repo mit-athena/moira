@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/afs.c,v 1.28 1992-07-16 22:11:23 probe Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/afs.c,v 1.29 1992-07-17 15:07:33 probe Exp $
  *
  * Do AFS incremental updates
  *
@@ -22,6 +22,7 @@
 #include <afs/pterror.h>
 
 #define STOP_FILE "/moira/afs/noafs"
+#define TRY_PR 2
 
 #define file_exists(file) (access((file), F_OK) == 0)
 
@@ -98,7 +99,7 @@ char *cmd;
 
     while (success == 0 && tries < 2) {
 	if (tries++)
-	    sleep(5*60);
+	    sleep(90);
 	com_err(whoami, 0, "Executing command: %s", cmd);
 	if (system(cmd) == 0)
 	    success++;
@@ -114,6 +115,7 @@ add_user_lists(ac, av, user)
     char *user;
 {
     if (atoi(av[5])) {
+	sleep(1);				/* give ptserver some time */
 	edit_group(1, av[0], "USER", user);
     }
 }
@@ -125,7 +127,7 @@ int beforec;
 char **after;
 int afterc;
 {
-    int astate, bstate, auid, buid, code;
+    int astate, bstate, auid, buid, code, tries;
     char hostname[64];
     char *av[2];
 
@@ -156,7 +158,13 @@ int afterc;
     
     if (astate == bstate) {
 	/* Only a modify has to be done */
-	code = pr_ChangeEntry(before[U_NAME], after[U_NAME], auid, "");
+	tries = 0;
+	while (code=pr_ChangeEntry(before[U_NAME], after[U_NAME], auid, "")) {
+	    if (++tries > TRY_PR)
+		break;
+	    if (code == UNOQUORUM) { sleep(90); continue; }
+	    sleep(2);
+	}
 	if (code) {
 	    critical_alert("incremental",
 			   "Couldn't change user %s (id %d) to %s (id %d): %s",
@@ -166,7 +174,13 @@ int afterc;
 	return;
     }
     if (bstate == 1) {
-	code = pr_DeleteByID(buid);
+	tries = 0;
+	while (code = pr_DeleteByID(buid)) {
+	    if (++tries > TRY_PR)
+		break;
+	    if (code == UNOQUORUM) { sleep(90); continue; }
+	    sleep(2);
+	}
 	if (code && code != PRNOENT) {
 	    critical_alert("incremental",
 			   "Couldn't delete user %s (id %d): %s",
@@ -175,13 +189,19 @@ int afterc;
 	return;
     }
     if (astate == 1) {
-	code = pr_CreateUser(after[U_NAME], &auid);
+	tries = 0;
+	while (code = pr_CreateUser(after[U_NAME], &auid)) {
+	    if (++tries > TRY_PR)
+		break;
+	    if (code == UNOQUORUM) { sleep(90); continue; }
+	    sleep(2);
+	}
 	if (code) {
 	    critical_alert("incremental",
 			   "Couldn't create user %s (id %d): %s",
 			   after[U_NAME], auid, error_message(code));
+	    return;
 	}
-	sleep(1);				/* give ptserver some time */
 
 	if (beforec) {
 	    /* Reactivating a user; get his group list */
@@ -217,7 +237,7 @@ char **after;
 int afterc;
 {
     register int agid, bgid;
-    int ahide, bhide;
+    int ahide, bhide, tries;
     long code, id;
     char hostname[64];
     char g1[PR_MAXNAMELEN], g2[PR_MAXNAMELEN];
@@ -250,7 +270,13 @@ int afterc;
 	    strcpy(g2, "system:");
 	    strcat(g1, before[L_NAME]);
 	    strcat(g2, after[L_NAME]);
-	    code = pr_ChangeEntry(g1, g2, -agid, "");
+	    tries = 0;
+	    while (code = pr_ChangeEntry(g1, g2, -agid, "")) {
+		if (++tries > TRY_PR)
+		    break;
+		if (code == UNOQUORUM) { sleep(90); continue; }
+		sleep(2);
+	    }
 	    if (code) {
 		critical_alert("incremental",
 			       "Couldn't change group %s (id %d) to %s (id %d): %s",
@@ -259,10 +285,16 @@ int afterc;
 	    }
 	}
 	if (ahide != bhide) {
-	    code = pr_SetFieldsEntry
-		(-agid, PR_SF_ALLBITS,
-		 (ahide ? PRP_STATUS_ANY : PRP_GROUP_DEFAULT) >> PRIVATE_SHIFT,
-		 0 /*ngroups*/, 0 /*nusers*/);
+	    tries = 0;
+	    while (code = pr_SetFieldsEntry
+		   (-agid, PR_SF_ALLBITS,
+		    (ahide ?PRP_STATUS_ANY :PRP_GROUP_DEFAULT)>>PRIVATE_SHIFT,
+		    0 /*ngroups*/, 0 /*nusers*/)) {
+		if (++tries > TRY_PR)
+		    break;
+		if (code == UNOQUORUM) { sleep(90); continue; }
+		sleep(2);
+	    }
 	    if (code) {
 		critical_alert("incremental",
 			       "Couldn't set flags of group %s: %s",
@@ -272,7 +304,13 @@ int afterc;
 	return;
     }
     if (bgid) {
-	code = pr_DeleteByID(-bgid);
+	tries = 0;
+	while (code = pr_DeleteByID(-bgid)) {
+	    if (++tries > TRY_PR)
+		break;
+	    if (code == UNOQUORUM) { sleep(90); continue; }
+	    sleep(2);
+	}
 	if (code && code != PRNOENT) {
 	    critical_alert("incremental",
 			   "Couldn't delete group %s (id %d): %s",
@@ -285,7 +323,13 @@ int afterc;
 	strcat(g1, after[L_NAME]);
 	strcpy(g2, "system:administrators");
 	id = -agid;
-	code = pr_CreateGroup(g1, g2, &id);
+	tries = 0;
+	while (code = pr_CreateGroup(g1, g2, &id)) {
+	    if (++tries > TRY_PR)
+		break;
+	    if (code == UNOQUORUM) { sleep(90); continue; }
+	    sleep(2);
+	}
 	if (code) {
 	    critical_alert("incremental",
 			   "Couldn't create group %s (id %d): %s",
@@ -293,10 +337,16 @@ int afterc;
 	    return;
 	}
 	if (ahide) {
-	    code = pr_SetFieldsEntry
-		(-agid, PR_SF_ALLBITS,
-		 (ahide ? PRP_STATUS_ANY : PRP_GROUP_DEFAULT) >> PRIVATE_SHIFT,
-		 0 /*ngroups*/, 0 /*nusers*/);
+	    tries = 0;
+	    while (code = pr_SetFieldsEntry
+		   (-agid, PR_SF_ALLBITS,
+		    (ahide ?PRP_STATUS_ANY :PRP_GROUP_DEFAULT)>>PRIVATE_SHIFT,
+		    0 /*ngroups*/, 0 /*nusers*/)) {
+		if (++tries > TRY_PR)
+		    break;
+		if (code == UNOQUORUM) { sleep(90); continue; }
+		sleep(2);
+	    }
 	    if (code) {
 		critical_alert("incremental",
 			       "Couldn't set flags of group %s: %s",
@@ -363,6 +413,7 @@ get_members(ac, av, group)
     int code=0;
 
     if (strcmp(av[0], "LIST")) {
+	sleep(1);				/* give ptserver some time */
 	edit_group(1, group, av[0], av[1]);
     } else {
 	code = mr_query("get_end_members_of_list", 1, &av[1],
@@ -386,6 +437,7 @@ edit_group(op, group, type, member)
     char buf[PR_MAXNAMELEN];
     int (*fn)();
     int code;
+    int tries = 0;
     static char local_realm[REALM_SZ+1] = "";
     extern long pr_AddToGroup(), pr_RemoveUserFromGroup();
 
@@ -406,7 +458,12 @@ edit_group(op, group, type, member)
     strcpy(buf, "system:");
     strcat(buf, group);
     sleep(1);					/* give ptserver some time */
-    code = (*fn)(member, buf);
+    while (code = (*fn)(member, buf)) {
+	if (++tries > TRY_PR)
+	    break;
+	if (code == UNOQUORUM) { sleep(90); continue; }
+	sleep(2);
+    }
     if (code) {
 	if (op==0 && code == PRNOENT) return;
 	if (op==1 && code == PRIDEXIST) return;

@@ -2,7 +2,7 @@
 # This script performs nfs updates on servers.
 #
 # $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/nfs.sh,v $
-echo '$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/nfs.sh,v 1.7 1989-06-02 12:04:46 mar Exp $'
+echo '$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/nfs.sh,v 1.8 1989-12-13 17:16:40 mar Exp $'
 
 # The following exit codes are defined and MUST BE CONSISTENT with the
 # SMS error codes the library uses:
@@ -47,6 +47,8 @@ foreach type (dirs quotas)
       set dev=`echo $i |  sed "s,.${type},," | sed "s,${uchost}.,," | sed "s,@,/,g"`
       echo ${uchost}:$dev
       ./install_${type} $dev < $i
+      if ($status) exit $status
+      if ($type == quotas) ./zero_quotas $dev < $i
       if ($status) exit $status
    end
 end

@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qaccess.dc,v $
  *	$Author: tom $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qaccess.dc,v 1.4 1993-12-29 13:49:34 tom Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qaccess.dc,v 1.5 1993-12-29 15:11:01 tom Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_qsupport_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qaccess.dc,v 1.4 1993-12-29 13:49:34 tom Exp $";
+static char *rcsid_qsupport_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qaccess.dc,v 1.5 1993-12-29 15:11:01 tom Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -405,6 +405,9 @@ access_ahal(q, argv, cl)
     char *client_type;
     int status, client_id;
 
+    if (q->type == RETRIEVE)
+      return(MR_SUCCESS);
+
     id = *(int *)argv[1];
 
     EXEC SQL SELECT count(name) INTO :cnt from hostalias WHERE mach_id = :id;
@@ -415,7 +418,6 @@ access_ahal(q, argv, cl)
      */
     if (q->type == APPEND && cnt >= 2)
       return(MR_PERM);
-
     EXEC SQL SELECT m.owner_type, m.owner_id, s.owner_type, s.owner_id
       INTO :mtype, :mid, :stype, :sid FROM machine m, subnet s
       WHERE m.mach_id=:id and s.snet_id=m.snet_id;

@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/hesiod.pc,v 1.1 1997-01-29 23:18:55 danw Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/hesiod.pc,v 1.2 1997-05-31 03:28:20 danw Exp $
  *
  * This generates the zone files necessary to load a hesiod server.
  * The following zones are generated: passwd, uid, pobox, group,
@@ -22,10 +22,10 @@ EXEC SQL INCLUDE sqlca;
 
 
 #ifndef HTYPE
-#define HTYPE "UNSPECA"
+#define HTYPE "TXT"
 #endif
 #ifndef HCLASS
-#define HCLASS "HS"
+#define HCLASS "IN"
 #endif
 
 #ifndef HESIOD_SUBDIR

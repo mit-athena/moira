@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.9 1988-08-07 17:51:26 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.10 1988-08-09 19:46:52 mar Exp $";
 #endif lint
 
 /*	This is the file user.c for the SMS Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.9 1988-08-07 17:51:26 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.10 1988-08-09 19:46:52 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -512,7 +512,7 @@ Bool one_item;
 
     if (one_item) {
 	sprintf(txt_buf, "Deactivate user %s (y/n)", info[NAME]);
-	if (!YesNoQuestion(txt_buf, 1))
+	if (!YesNoQuestion(txt_buf, 2))
 	    return;
     }
 
@@ -629,7 +629,7 @@ char *argv[];
 	return(DM_NORMAL);
 
     if (!PromptWithDefault("Print full information, or just the names (f/n)?",
-			   buf, 1, "f"))
+			   buf, 2, "f"))
 	return(DM_NORMAL);
 
     switch(buf[0]) {

@@ -1,5 +1,5 @@
 /*
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/include/gdb.h,v 1.6 1992-12-01 11:39:59 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/include/gdb.h,v 1.7 1996-09-29 20:13:14 danw Exp $
  */
 
 /************************************************************************
@@ -405,7 +405,7 @@ typedef struct rel_dat *RELATION;		/* handle on a relation */
 #define GDB_BIND_RETRY_INTERVAL 10		/* Number of seconds to wait */
 						/* between attempts to bind */
 						/* the listening socket */
-#define GDB_MAX_CONNECTIONS 25			/* maximum number of */
+#define GDB_MAX_CONNECTIONS 40			/* maximum number of */
 						/* connections that */
 						/* any one process can */
 						/* control simultaneously */

@@ -1,5 +1,5 @@
 
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/mailhub.dc,v 1.9 1994-08-19 16:48:01 delgado Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/mailhub.dc,v 1.10 1994-08-31 15:54:26 nocuser Exp $
  *
  * This generates the /usr/lib/aliases file for the mailhub.
  *
@@ -155,7 +155,6 @@ get_info()
 
     /* Get Locks */
 
-    EXEC SQL SELECT modtime INTO :buf FROM imembers WHERE list_id = 0;
     EXEC SQL SELECT modtime INTO :buf FROM users WHERE users_id = 0;
     EXEC SQL SELECT modtime INTO :buf FROM list WHERE list_id = 0;
 
@@ -317,7 +316,7 @@ get_info()
     return;
  sqlerr:
     com_err(whoami, MR_INGRES_ERR, " code %d\n", sqlca.sqlcode);
-    critical_alert("DCM", "Hesiod build encountered DATABASE ERROR %d",
+    critical_alert("DCM", "Mailhub build encountered DATABASE ERROR %d",
 		   sqlca.sqlcode);
     exit(MR_INGRES_ERR);
 }
@@ -572,11 +571,16 @@ register char *s;
 {
     register wwid;
     static int cont = 1;
+    char str[8];
 
     wwid = strlen(s);
 
     if (!bol && awid + wwid + 2 > AL_MAX_WID) {
-	fprintf(out, ",\n\tcontinuation%d\ncontinuation%d: ", cont, cont);
+	sprintf(str, "%c%c%c%c%c%c", random() % 26 + 97, random() % 26 + 97,
+                                     random() % 26 + 97, random() % 26 + 97,
+				     random() % 26 + 97, random() % 26 + 97);
+	str[6] = '\0';			
+	fprintf(out, ",\n\tcont%d-%s\ncont%d-%s: ", cont, str, cont, str);
 	cont++;
 	awid = lwid = 17 + wwid;
 	fputs(s, out);

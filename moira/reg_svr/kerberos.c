@@ -1,4 +1,4 @@
-/* $Id: kerberos.c,v 1.2 1998-07-31 22:50:02 danw Exp $
+/* $Id: kerberos.c,v 1.3 1998-07-31 22:51:17 danw Exp $
  *
  * Kerberos routines for registration server
  *
@@ -36,7 +36,7 @@
 krb5_context context;
 #endif
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/kerberos.c,v 1.2 1998-07-31 22:50:02 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/kerberos.c,v 1.3 1998-07-31 22:51:17 danw Exp $");
 
 extern char *hostname, *shorthostname;
 
@@ -124,7 +124,7 @@ long register_kerberos(char *username, char *password)
   realm_params.realm = KERBEROS_TEST_REALM;
   realm_params.mask = KADM5_CONFIG_REALM;
 #else
-  admin_princ = REG_SVR_PRINC
+  admin_princ = REG_SVR_PRINCIPAL;
   realm_params.mask = 0;
 #endif
 

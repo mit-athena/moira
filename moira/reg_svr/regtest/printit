@@ -1,0 +1,11 @@
+#!/bin/csh -f
+
+while (1)
+	set input = `echo $<`
+	if ($#input < 2) break
+
+	echo $input | cat message.head - message.tail >> lpr.out
+	echo "" >> lpr.out
+end
+
+lpr lpr.out

@@ -1,0 +1,13 @@
+      Welcome to the Fall '89 Project Athena Registration Test.
+
+If you can find a free workstation, please use the "Click here to
+register for an account" button on xlogin.  If you are already logged
+in to your workstation, in an xterm that is at least 24x80 characters
+large, first do "access_on", then enter the command "rlogin [your
+workstation] -l register", then the password "athena" when it prompts
+for it (please use rlogin and not telnet so that the TERMCAP
+environment variable gets set).
+
+Please note the time when you start.  Follow the screen prompts for
+the registration.  You should be registering as:
+

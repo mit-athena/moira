@@ -1,0 +1,34 @@
+Bugs
+----
+
+"Query complete." is printed twice after alis, dlis, and others.
+fflush() before the vfork(), strangely, does not fix this.
+
+The _exit() in next_incremental() may allow memory leakage from the 
+incremental updates, as well as leaving other things (?) not cleaned up.
+Maybe this should be investigated.
+
+Timeouts may sometimes be other errors.  Need to parse the error message
+string when the error number is 39100 to figure out if it is a timeout or not.
+
+gnfq/gqot do not handle wildcards in <login>/<name>.  (Could they?
+Do they need it?) They do handle wildcards for filesystem names.
+
+
+Try to improve performance:
+---------------------------
+gqot/dqot
+
+
+Improvements
+------------
+
+Add case insensitivity: List names, others(?)
+
+Abstraction for string retrieval
+
+
+Other
+-----
+
+rsve, dsin, sshi have range variable problems

@@ -1,0 +1,286 @@
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/report.dc,v 1.1 1996-07-02 02:11:31 danw Exp $
+ *
+ * This generates some useful reports.
+ *
+ *  (c) Copyright 1993 by the Massachusetts Institute of Technology.
+ *  For copying and distribution information, please see the file
+ *  <mit-copyright.h>.
+ */
+
+#include <mit-copyright.h>
+#include <stdio.h>
+#include <moira.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <sys/time.h>
+EXEC SQL INCLUDE sqlca;
+
+extern int errno;
+char *whoami = "report.gen";
+FILE *out = stdout;
+
+struct user {
+    char name[9];
+    int uid;
+    int status;
+};
+struct hash *users = NULL;
+struct hash *kmaps = NULL;
+
+main(argc, argv)
+int argc;
+char **argv;
+{
+    char *outf = NULL, outft[64], *p, buf[256];
+    struct stat sb;
+    struct timeval now;
+    int flag1, flag2, i;
+    struct hash *aliases = NULL;
+    struct hash *nets = NULL;
+    struct user *u;
+
+    EXEC SQL BEGIN DECLARE SECTION;
+    int id, sid, status, uid, ustatus, owner, creator, modby;
+    char login[9];
+    char name[65], vendor[33], model[33], os[33], addr[17];
+    char location[17], owner_type[16];
+    char schange[25], modtime[25], modwith[33], created[25];
+    EXEC SQL END DECLARE SECTION;
+
+#ifsql INGRES
+    EXEC SQL CONNECT moira;
+    EXEC SQL SET LOCKMODE SESSION WHERE LEVEL=TABLE, READLOCK=SHARED;
+#endsql
+#ifsql INFORMIX
+    EXEC SQL DATABASE moira;
+#endsql
+
+    if (argc == 2) 
+      {
+	if (stat(argv[1], &sb) == 0) 
+	  {
+	    if (ModDiff(&flag1, "machine", sb.st_mtime) ||
+		ModDiff(&flag2, "subnet", sb.st_mtime))
+	      exit(MR_DATE);
+	    if (flag1 < 0 && flag2 < 0) 
+	      {
+		fprintf(stderr, "File %s does not need to be rebuilt.\n",
+			argv[1]);
+		exit(MR_NO_CHANGE);
+	      }
+	  }
+	outf = argv[1];
+	sprintf(outft, "%s~", outf);
+	if ((out = fopen(outft, "w")) == NULL) 
+	  {
+	    fprintf(stderr, "unable to open %s for output\n", outf);
+	    exit(MR_OCONFIG);
+	  }
+      } else if (argc != 1) 
+	{
+	  fprintf(stderr, "usage: %s [outfile]\n", argv[0]);
+	  exit(MR_ARGS);
+	} else 
+	  {
+	    outf = NULL;
+	  }
+    
+    EXEC SQL WHENEVER SQLERROR GOTO sqlerr;
+
+    users = create_hash(12001);
+
+    /* 
+     * suck in user table
+     */
+
+    EXEC SQL SELECT modtime INTO :name FROM users WHERE users_id = 0;
+
+    EXEC SQL DECLARE u_cursor CURSOR FOR
+      SELECT login, uid, users_id, status
+      FROM users;
+    EXEC SQL OPEN u_cursor;
+    
+    while (1) 
+      {
+        EXEC SQL FETCH u_cursor INTO :login, :uid, :id, :ustatus;
+	if (sqlca.sqlcode != 0) break;
+	strtrim(login);
+	u = (struct user *) malloc(sizeof(struct user));
+	strcpy(u->name, login);
+	u->uid = uid;
+	u->status = ustatus;
+	hash_store(users, id, u);
+      }
+
+    EXEC SQL CLOSE u_cursor;
+
+    /*
+     * suck in host alias table
+     */
+
+    EXEC SQL SELECT modtime INTO :name FROM machine WHERE mach_id = 0;
+    
+    gettimeofday(&now, NULL);
+    
+    fprintf(out, "# Moira host table dump generated at %s\n",
+	    ctime(&now.tv_sec));
+
+    EXEC SQL DECLARE y CURSOR FOR SELECT
+      mach_id, name FROM hostalias;
+    EXEC SQL OPEN y;
+
+    aliases = create_hash(1001);
+    while (1) 
+      {
+	EXEC SQL FETCH y INTO :id, :name;
+	
+	if (sqlca.sqlcode != 0) break;
+	if (id == 0) continue;
+	if (p = hash_lookup(aliases, id)) 
+	  {
+	    sprintf(buf, "%s,%s", p, name);
+	    hash_update(aliases, id, strsave(buf));
+	    free(p);
+	  } else
+	    hash_store(aliases, id, strsave(name));
+      }
+
+    EXEC SQL CLOSE y;
+
+    
+    /*
+     * suck in network table
+     */
+
+    EXEC SQL SELECT modtime INTO :name FROM subnet WHERE snet_id = 0;
+
+    EXEC SQL DECLARE n_cursor CURSOR FOR SELECT
+      snet_id, name FROM subnet;
+    EXEC SQL OPEN n_cursor;
+
+    nets = create_hash(301);
+    while (1) 
+      {
+	EXEC SQL FETCH n_cursor INTO :id, :name;
+	
+	if (sqlca.sqlcode != 0) break;
+	if (id == 0) continue;
+	hash_store(nets, id, strsave(name));
+      }
+
+    EXEC SQL CLOSE n_cursor;
+
+    /*
+     * dump machine table
+     */
+
+
+    EXEC SQL DECLARE x CURSOR FOR SELECT 
+      name, mach_id, status, statuschange, vendor, model, os, address,  location, snet_id, owner_type, owner_id, modby, modtime, modwith, created, creator
+      FROM machine;
+    EXEC SQL OPEN x;
+
+    while (1) 
+      {
+        EXEC SQL FETCH x INTO :name, :id, :status, :schange, :vendor, :model, :os, :addr, :location, :sid, :owner_type, :owner, :modby, :modtime, :modwith, :created, :creator;
+
+	if (sqlca.sqlcode != 0) break;
+	if (id == 0) continue;
+
+	if (p = hash_lookup(aliases, id))
+	  sprintf(buf, "%s,%s", name, p);
+	else
+	  strcpy(buf, name);
+
+	fprintf(out, "HOST|%s|", buf);
+	if(p = hash_lookup(nets, sid))
+	  fprintf(out, "%s|", strtrim(p));
+	else
+	  if(sid == 0)
+	    fprintf(out, "NONE|");
+	  else
+	    fprintf(out, "%d|", sid);
+	   
+	fprintf(out, "%s|%s|", strtrim(addr), 
+		status == 3 ? "deleted" :
+		status == 2 ? "none" : status == 1 ? "active" : status == 0 ?
+		"reserved" : "unknown");
+	
+	fprintf(out, "%s|", strtrim(schange));
+	fprintf(out, "%s|", strtrim(location));
+	fprintf(out, "%s|", strtrim(vendor));
+	fprintf(out, "%s|", strtrim(model));
+	fprintf(out, "%s|", strtrim(os));
+	
+	print_user(strtrim(owner_type), owner);
+	print_user("STRING", creator);
+	fprintf(out, "%s|", strtrim(created));
+	print_user("STRING", modby < 0 ? -modby : modby);
+
+	fprintf(out, "%s|", strtrim(modtime));
+	fprintf(out, "%s|", strtrim(modwith));
+	fprintf(out, "\n");
+      }
+
+    EXEC SQL CLOSE x;
+#ifsql INGRES
+    EXEC SQL DISCONNECT;
+#endsql
+#ifsql INFORMIX
+    EXEC SQL CLOSE DATABASE;
+#endsql
+
+    fprintf(out, "# End of Report\n");
+    if (fclose(out)) {
+	perror("close failed");
+	exit(MR_CCONFIG);
+    }
+    if (outf)
+      fix_file(outf);
+    exit(MR_SUCCESS);
+
+ sqlerr:
+    com_err(whoami, MR_INGRES_ERR, " code %d\n", sqlca.sqlcode);
+#ifsql INGRES
+    if (sqlca.sqlcode == 17700 || sqlca.sqlcode == -37000)
+      exit(MR_DEADLOCK);
+#endsql
+    critical_alert("DCM", "Report build encountered INGRES ERROR %d",
+		   sqlca.sqlcode);
+    exit(MR_INGRES_ERR);
+}
+
+
+print_user(type, user)
+     char *type;
+     unsigned int user;
+{
+  struct user *u;
+  char *c;
+  EXEC SQL BEGIN DECLARE SECTION;
+  int id;
+  char name[128];
+  EXEC SQL END DECLARE SECTION;
+
+  if(strcmp(type, "USER") == 0)
+    {
+      if(u = (struct user *) hash_lookup(users, user))
+	fprintf(out, "USER %s|", u->name);
+      else
+	fprintf(out, "USER %d|", user);
+    }
+  else 
+    if(id == 0)
+      fprintf(out, "smsuser|");
+    else
+      {
+	id = user;
+	EXEC SQL SELECT string INTO :name FROM strings WHERE string_id = :id;
+	if (sqlca.sqlcode == 0)
+	  fprintf(out, "%s|", strtrim(name));
+	else
+	  fprintf(out, "UNKNOWN|");
+      }
+ sqlerr:
+  return;
+}

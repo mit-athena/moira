@@ -1,4 +1,4 @@
-/* $Id: qsupport.pc,v 2.19 2000-01-28 00:31:58 danw Exp $
+/* $Id: qsupport.pc,v 2.20 2000-03-14 21:50:17 zacheiss Exp $
  *
  * Special query routines
  *
@@ -18,7 +18,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.pc,v 2.19 2000-01-28 00:31:58 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.pc,v 2.20 2000-03-14 21:50:17 zacheiss Exp $");
 
 extern char *whoami, *table_name[];
 extern int dbms_errno, mr_errcode;
@@ -1184,7 +1184,7 @@ int qualified_get_serverhost(struct query *q, char *argv[], client *cl,
 /* register_user - change user's login name and allocate a pobox, group,
  * filesystem, and quota for them.  The user's status must start out as 0,
  * and is left as 2.  Arguments are: user's UID, new login name, and
- * pobox type ("POP" or numeric = POP, "IMAP" = IMAP)
+ * pobox type ("POP" = POP, "IMAP" or numeric = IMAP)
  */
 
 int register_user(struct query *q, char **argv, client *cl)
@@ -1196,6 +1196,7 @@ int register_user(struct query *q, char **argv, client *cl)
   int who, rowcount, mid, uid, users_id;
   int ostatus, nstatus, fsidval, popid;
   int npid, tmp;
+  int po_exists = 0;
   static int m_id, def_quota, def_imap_quota, list_id;
   EXEC SQL END DECLARE SECTION;
   char buffer[256], *aargv[3];
@@ -1250,11 +1251,30 @@ int register_user(struct query *q, char **argv, client *cl)
   if (rowcount > 0)
     return MR_IN_USE;
   EXEC SQL SELECT COUNT(label) INTO :rowcount FROM filesys
-    WHERE label = :login OR label = :login || '.po';
+    WHERE label = :login;
   if (dbms_errno)
     return mr_errcode;
   if (rowcount > 0)
     return MR_IN_USE;
+  EXEC SQL SELECT COUNT(label) INTO :rowcount  
+    FROM filesys WHERE label = :login || '.po';
+  if (dbms_errno)
+    return mr_errcode;
+  if (rowcount > 0)
+    {
+      EXEC SQL SELECT owner INTO :tmp FROM filesys 
+	WHERE label = :login || '.po';
+      if (dbms_errno)
+	return mr_errcode;
+      if ((ostatus == 0) || (tmp != users_id))
+	return MR_IN_USE;
+      EXEC SQL SELECT count(potype) INTO :rowcount FROM users WHERE
+	login = :login AND potype = 'IMAP';
+      if (dbms_errno)
+	return mr_errcode;
+      if (rowcount > 0)
+	po_exists = 1;
+    }
   EXEC SQL SELECT COUNT(name) INTO :rowcount FROM alias
     WHERE ( name = :login OR name = :login || '.po' )
     AND type = 'FILESYS';
@@ -1264,123 +1284,133 @@ int register_user(struct query *q, char **argv, client *cl)
     return MR_IN_USE;
   com_err(whoami, 0, "login name OK");
 
+  EXEC SQL SELECT COUNT(potype) INTO :rowcount FROM users WHERE
+    login = :login AND potype = 'POP';
+  if (dbms_errno)
+    return mr_errcode;
+  if (rowcount > 0)
+    po_exists = 1;
+
   /* choose type and location for pobox */
-  if (!strcmp(potype, "IMAP"))
+  if (!po_exists)
     {
+      if (!strcmp(potype, "POP"))
+	{
+
+	  EXEC SQL DECLARE csr130 CURSOR FOR
+	    SELECT sh.mach_id, m.name FROM serverhosts sh, machine m
+	    WHERE sh.service = 'POP' AND sh.mach_id = m.mach_id
+	    AND sh.value2 - sh.value1 =
+	    (SELECT MAX(value2 - value1) FROM serverhosts WHERE service = 'POP');
+	  if (dbms_errno)
+	    return mr_errcode;
+	  EXEC SQL OPEN csr130;
+	  if (dbms_errno)
+	    return mr_errcode;
+	  EXEC SQL FETCH csr130 INTO :popid, :machname;
+	  if (sqlca.sqlerrd[2] == 0)
+	    {
+	      EXEC SQL CLOSE csr130;
+	      if (dbms_errno)
+		return mr_errcode;
+	      return MR_NO_POBOX;
+	    }
+	  else
+	    {
+	      EXEC SQL CLOSE csr130;
+	      if (dbms_errno)
+		return mr_errcode;
+	    }
+      
+	  EXEC SQL UPDATE users SET potype = 'POP', pop_id = :popid
+	    WHERE users_id = :users_id;
+	  com_err(whoami, 0, "pobox set to POP:%s", strtrim(machname));
+	}	  
+      else
+	{
       /* Select all IMAP nfsphys entries in order of increasing
-       * (allocated - partsize). Since partsize will always be larger
-       * than allocated, this number will always be negative, and
-       * the first row fetched (which is the only one we take)
-       * will be the partition with the most unallocated space.
+       * (allocated - partsize).  The partitions will almost always be 
+       * overallocated, but we choose the one that is the least 
+       * overallocated.
        */
-      EXEC SQL DECLARE csr_rusr_imap CURSOR FOR
-	SELECT np.allocated - np.partsize, np.nfsphys_id, np.mach_id,
-	np.dir, m.name FROM serverhosts sh, nfsphys np, machine m
-	WHERE sh.service = 'POSTOFFICE' AND sh.mach_id = np.mach_id
-	AND m.mach_id = np.mach_id
-	ORDER BY 1;
-      if (dbms_errno)
-	return mr_errcode;
-      EXEC SQL OPEN csr_rusr_imap;
-      if (dbms_errno)
-	return mr_errcode;
-      EXEC SQL FETCH csr_rusr_imap INTO :tmp, :npid, :mid, :dir, :machname;
-      if (sqlca.sqlerrd[2] == 0 || tmp + def_imap_quota > 0)
-	{
-	  EXEC SQL CLOSE csr_rusr_imap;
+	  potype = "IMAP";
+	  
+	  EXEC SQL DECLARE csr_rusr_imap CURSOR FOR
+	    SELECT np.allocated - np.partsize, np.nfsphys_id, np.mach_id,
+	    np.dir, m.name FROM serverhosts sh, nfsphys np, machine m
+	    WHERE sh.service = 'POSTOFFICE' AND sh.mach_id = np.mach_id
+	    AND m.mach_id = np.mach_id
+	    ORDER BY 1;
 	  if (dbms_errno)
 	    return mr_errcode;
-	  return MR_NO_POBOX;
-	}
-      else
-	{
-	  EXEC SQL CLOSE csr_rusr_imap;
+	  EXEC SQL OPEN csr_rusr_imap;
 	  if (dbms_errno)
 	    return mr_errcode;
-	}
+	  EXEC SQL FETCH csr_rusr_imap INTO :tmp, :npid, :mid, :dir, :machname;
+	  if (sqlca.sqlerrd[2] == 0)
+	    {
+	      EXEC SQL CLOSE csr_rusr_imap;
+	      if (dbms_errno)
+		return mr_errcode;
+	      return MR_NO_POBOX;
+	    }
+	  else
+	    {
+	      EXEC SQL CLOSE csr_rusr_imap;
+	      if (dbms_errno)
+		return mr_errcode;
+	    }
 
-      /* create filesystem */
-      if (set_next_object_id("filsys_id", FILESYS_TABLE, 0))
-	return MR_NO_ID;
-      incremental_clear_before();
+	  /* create filesystem */
+	  if (set_next_object_id("filsys_id", FILESYS_TABLE, 0))
+	    return MR_NO_ID;
+	  incremental_clear_before();
 
-      EXEC SQL SELECT value INTO :popid FROM numvalues
-	WHERE numvalues.name = 'filsys_id';
-      EXEC SQL INSERT INTO filesys
-	(filsys_id, phys_id, label, type, mach_id, name,
-	 mount, rwaccess, comments, owner, owners, createflg,
-	 lockertype, modtime, modby, modwith)
-	VALUES
-	(:popid, :npid, :login || '.po', 'IMAP', :mid, :dir,
-	 CHR(0), 'w', 'IMAP box', :users_id, :list_id, 1,
-	 'IMAP', SYSDATE, :who, :entity);
+	  EXEC SQL SELECT value INTO :popid FROM numvalues
+	    WHERE numvalues.name = 'filsys_id';
+	  EXEC SQL INSERT INTO filesys
+	    (filsys_id, phys_id, label, type, mach_id, name,
+	     mount, rwaccess, comments, owner, owners, createflg,
+	     lockertype, modtime, modby, modwith)
+	    VALUES
+	    (:popid, :npid, :login || '.po', 'IMAP', :mid, :dir,
+	     CHR(0), 'w', 'IMAP box', :users_id, :list_id, 1,
+	     'IMAP', SYSDATE, :who, :entity);
 
-      if (dbms_errno)
-	return mr_errcode;
-      if (sqlca.sqlerrd[2] != 1)
-	return MR_INTERNAL;
-      sprintf(buffer, "fs.filsys_id = %d", popid);
-      incremental_after(FILESYS_TABLE, buffer, 0);
-
-      /* set quota */
-      incremental_clear_before();
-      EXEC SQL INSERT INTO quota
-	(entity_id, filsys_id, type, quota, phys_id, modtime, modby, modwith)
-	VALUES (:users_id, :popid, 'USER', :def_imap_quota, :npid,
-		SYSDATE, :who, :entity);
-      if (dbms_errno)
-	return mr_errcode;
-      if (sqlca.sqlerrd[2] != 1)
-	return MR_INTERNAL;
-      aargv[0] = login;
-      aargv[1] = "USER";
-      aargv[2] = login;
-      sprintf(buffer, "q.entity_id = %d and q.filsys_id = %d and "
-	      "q.type = 'USER'", users_id, popid);
-      incremental_after(QUOTA_TABLE, buffer, aargv);
-      if (dbms_errno)
-	return mr_errcode;
-
-      EXEC SQL UPDATE nfsphys SET allocated = allocated + :def_imap_quota
-	WHERE nfsphys_id = :npid;
-
-      EXEC SQL UPDATE users SET potype = 'IMAP', imap_id = :popid
-	WHERE users_id = :users_id;
-      com_err(whoami, 0, "pobox set to IMAP:%s:%s", strtrim(machname),
-	      strtrim(dir));
-    }
-  else
-    {
-      potype = "POP";
-
-      EXEC SQL DECLARE csr130 CURSOR FOR
-	SELECT sh.mach_id, m.name FROM serverhosts sh, machine m
-	WHERE sh.service = 'POP' AND sh.mach_id = m.mach_id
-	AND sh.value2 - sh.value1 =
-	(SELECT MAX(value2 - value1) FROM serverhosts WHERE service = 'POP');
-      if (dbms_errno)
-	return mr_errcode;
-      EXEC SQL OPEN csr130;
-      if (dbms_errno)
-	return mr_errcode;
-      EXEC SQL FETCH csr130 INTO :popid, :machname;
-      if (sqlca.sqlerrd[2] == 0)
-	{
-	  EXEC SQL CLOSE csr130;
 	  if (dbms_errno)
 	    return mr_errcode;
-	  return MR_NO_POBOX;
-	}
-      else
-	{
-	  EXEC SQL CLOSE csr130;
+	  if (sqlca.sqlerrd[2] != 1)
+	    return MR_INTERNAL;
+	  sprintf(buffer, "fs.filsys_id = %d", popid);
+	  incremental_after(FILESYS_TABLE, buffer, 0);
+
+	  /* set quota */
+	  incremental_clear_before();
+	  EXEC SQL INSERT INTO quota
+	    (entity_id, filsys_id, type, quota, phys_id, modtime, modby, modwith)
+	    VALUES (:users_id, :popid, 'USER', :def_imap_quota, :npid,
+		    SYSDATE, :who, :entity);
 	  if (dbms_errno)
 	    return mr_errcode;
-	}
+	  if (sqlca.sqlerrd[2] != 1)
+	    return MR_INTERNAL;
+	  aargv[0] = login;
+	  aargv[1] = "USER";
+	  aargv[2] = login;
+	  sprintf(buffer, "q.entity_id = %d and q.filsys_id = %d and "
+		  "q.type = 'USER'", users_id, popid);
+	  incremental_after(QUOTA_TABLE, buffer, aargv);
+	  if (dbms_errno)
+	    return mr_errcode;
 
-      EXEC SQL UPDATE users SET potype = 'POP', pop_id = :popid
-	WHERE users_id = :users_id;
-      com_err(whoami, 0, "pobox set to POP:%s", strtrim(machname));
+	  EXEC SQL UPDATE nfsphys SET allocated = allocated + :def_imap_quota
+	    WHERE nfsphys_id = :npid;
+
+	  EXEC SQL UPDATE users SET potype = 'IMAP', imap_id = :popid
+	    WHERE users_id = :users_id;
+	  com_err(whoami, 0, "pobox set to IMAP:%s:%s", strtrim(machname),
+		  strtrim(dir));
+	}
     }
   
   /* change login name, set pobox */
@@ -1398,7 +1428,11 @@ int register_user(struct query *q, char **argv, client *cl)
     return mr_errcode;
   if (sqlca.sqlerrd[2] != 1)
     return MR_INTERNAL;
-  set_pop_usage(mid, 1);
+  
+  /* Only update usage count if we created a POP pobox. */
+  if (!strcmp(potype, "POP") && !po_exists)
+    set_pop_usage(mid, 1);
+  
   com_err(whoami, 0, "set login name to %s", login);
   incremental_after(USERS_TABLE, buffer, 0);
 
@@ -1461,8 +1495,6 @@ int register_user(struct query *q, char **argv, client *cl)
     return mr_errcode;
   return MR_SUCCESS;
 }
-
-
 
 /** set_pop_usage - incr/decr usage count for pop server in serverhosts talbe
  **

@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/main.c,v 1.7 1988-07-30 17:30:17 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/main.c,v 1.8 1988-10-13 13:58:38 mar Exp $";
 #endif lint
 
 /*	This is the file main.c for the SMS Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/main.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/main.c,v 1.7 1988-07-30 17:30:17 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/main.c,v 1.8 1988-10-13 13:58:38 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -34,7 +34,7 @@
 
 char * whoami;			/* used by menu.c ugh!!! */
 
-extern Menu sms_top_menu, list_menu, user_menu;
+extern Menu sms_top_menu, list_menu, user_menu, dcm_menu;
 
 #ifndef DEBUG
 static void SignalHandler();
@@ -111,6 +111,8 @@ main(argc, argv)
       menu = &list_menu;
     else if (!strcmp(program_name, "usermaint"))
       menu = &user_menu;
+    else if (!strcmp(program_name, "dcmmaint"))
+      menu = &dcm_menu;
     else
       menu = &sms_top_menu;
 

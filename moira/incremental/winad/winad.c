@@ -1,6 +1,5 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/winad/winad.c,v 1.21 2001-07-24 20:50:32 zacheiss Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/winad/winad.c,v 1.22 2001-07-29 15:15:59 zacheiss Exp $
 /* winad.incr arguments examples
- *
  *
  * arguments when moira creates the account - ignored by winad.incr since the account is unusable.
  * users 0 11 #45198 45198 /bin/cmd cmd Last First Middle 0 950000001 2000 121049
@@ -74,12 +73,21 @@
  * arguments for deleting a group/list
  * list 11 0 listname 1 1 0 0 0 -1 NONE 0 description 92616
  *   name, active, publicflg, hidden, maillist, grouplist, gid, acl_type, acl_id, description, moiraListId
-
+ *
  * arguments for adding a file system
  * filesys 0 12 username AFS ATHENA.MIT.EDU /afs/athena.mit.edu/user/n/e/username /mit/username w descripton username wheel 1 HOMEDIR 101727
  *
  * arguments for deleting a file system
  * filesys 12 0 username AFS ATHENA.MIT.EDU /afs/athena.mit.edu/user/n/e/username /mit/username w descripton username wheel 1 HOMEDIR 101727
+ *
+ * arguments when moira creates a container (OU).
+ * containers 0 7 machines/test/bottom description location contact USER 105316 2222
+ *
+ * arguments when moira deletes a container (OU).
+ * containers 7 0 machines/test/bottom description location contact USER 105316 2222
+ * 
+ * arguments when moira modifies a container information (OU).
+ * containers 7 7 machines/test/bottom description location contact USER 105316 2222 machines/test/bottom description1 location contact USER 10531 2222
 */
 #include <mit-copyright.h>
 #ifdef _WIN32
@@ -216,6 +224,15 @@ typedef struct _SID {
 #define AD_NO_OU_FOUND            -8
 #define AD_NO_USER_FOUND          -9
 
+/* container arguments */
+#define CONTAINER_NAME     0
+#define CONTAINER_DESC     1
+#define CONTAINER_LOCATION 2
+#define CONTAINER_CONTACT  3
+#define CONTAINER_TYPE     4
+#define CONTAINER_ID       5
+#define CONTAINER_ROWID    6
+
 typedef struct lk_entry {
   int     op;
   int     length;
@@ -253,6 +270,8 @@ char  group_ou_root[] = "OU=lists,OU=moira";
 char  group_ou_security[] = "OU=group,OU=lists,OU=moira";
 char  group_ou_neither[] = "OU=special,OU=lists,OU=moira";
 char  group_ou_both[] = "OU=mail,OU=group,OU=lists,OU=moira";
+char  orphans_machines_ou[] = "OU=Machines,OU=Orphans";
+char  orphans_other_ou[] = "OU=Other,OU=Orphans";
 char *whoami;
 char ldap_domain[256];
 int  mr_connections = 0;
@@ -273,6 +292,22 @@ int ad_connect(LDAP **ldap_handle, char *ldap_domain, char *dn_path,
 void ad_kdc_disconnect();
 void check_winad(void);
 int check_user(LDAP *ldap_handle, char *dn_path, char *UserName, char *MoiraId);
+/* containers */
+int container_adupdate(LDAP *ldap_handle, char *dn_path, char *dName, 
+                       char *distinguishedName, int count, char **av);
+void container_check(LDAP *ldap_handle, char *dn_path, char *name);
+int container_create(LDAP *ldap_handle, char *dn_path, int count, char **av);
+int container_delete(LDAP *ldap_handle, char *dn_path, int count, char **av);
+int container_get_distinguishedName(LDAP *ldap_handle, char *dn_path, 
+                                     char *distinguishedName, int count, char **av);
+void container_get_dn(char *src, char *dest);
+void container_get_name(char *src, char *dest);
+int container_move_objects(LDAP *ldap_handle, char *dn_path, char *dName);
+int container_rename(LDAP *ldap_handle, char *dn_path, int beforec, char **before, 
+                     int afterc, char **after);
+int container_update(LDAP *ldap_handle, char *dn_path, int beforec, char **before,
+                     int afterc, char **after);
+
 int filesys_process(LDAP *ldap_handle, char *dn_path, char *fs_name, 
                     char *fs_type, char *fs_pack, int operation);
 int get_group_membership(char *group_membership, char *group_ou, 
@@ -319,6 +354,8 @@ int check_string(char *s);
 void convert_b_to_a(char *string, UCHAR *binary, int length);
 int mr_connect_cl(char *server, char *client, int version, int auth);
 
+void do_container(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
+             char **before, int beforec, char **after, int afterc);
 void do_filesys(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
              char **before, int beforec, char **after, int afterc);
 void do_list(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
@@ -435,14 +472,43 @@ int main(int argc, char **argv)
   else if (!strcmp(table, "filesys"))
     do_filesys(ldap_handle, dn_path, ldap_domain, before, beforec, after,
                afterc);
-/*
-  else if (!strcmp(table, "quota"))
-    do_quota(before, beforec, after, afterc);
-*/
-
+  else if (!strcmp(table, "containers"))
+    do_container(ldap_handle, dn_path, ldap_domain, before, beforec, after,
+                 afterc);
   ad_kdc_disconnect();
   rc = ldap_unbind_s(ldap_handle);
   exit(0);
+}
+
+void do_container(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
+             char **before, int beforec, char **after, int afterc)
+{
+
+  if ((beforec == 0) && (afterc == 0))
+    return;
+
+  if ((beforec != 0) && (afterc == 0)) /*delete a new container*/
+    {
+      com_err(whoami, 0, "deleting container %s", before[CONTAINER_NAME]);
+      container_delete(ldap_handle, dn_path, beforec, before);
+      return;
+    }
+  if ((beforec == 0) && (afterc != 0)) /*create a container*/
+    {
+      com_err(whoami, 0, "creating container %s", before[CONTAINER_NAME]);
+      container_check(ldap_handle, dn_path, after[CONTAINER_NAME]);
+      container_create(ldap_handle, dn_path, afterc, after);
+      return;
+    }
+
+  if (strcasecmp(before[CONTAINER_NAME], after[CONTAINER_NAME]))
+    {
+      com_err(whoami, 0, "renaming container %s to %s", before[CONTAINER_NAME], after[CONTAINER_NAME]);
+      container_rename(ldap_handle, dn_path, beforec, before, afterc, after);
+      return;
+    }
+  container_update(ldap_handle, dn_path, beforec, before, afterc, after);
+  return;
 }
 
 void do_filesys(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
@@ -1082,6 +1148,8 @@ void do_user(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
   if ((rc = check_user(ldap_handle, dn_path, before[U_NAME], 
                        before_user_id)) == AD_NO_USER_FOUND)
     {
+      if (!check_string(after[U_NAME]))
+        return;
       if (rc = moira_connect())
         {
           critical_alert("AD incremental", 
@@ -1234,7 +1302,11 @@ int linklist_build(LDAP *ldap_handle, char *dn_path, char *search_exp,
   if ((rc = ldap_search_s(ldap_handle, dn_path, LDAP_SCOPE_SUBTREE, 
                           search_exp, attr_array, 0, &ldap_entry))
       != LDAP_SUCCESS)
-    return(0);
+      {
+        if (rc != LDAP_SIZELIMIT_EXCEEDED)
+          return(0);
+      }
+
   rc = retrieve_entries(ldap_handle, ldap_entry, linklist_base, linklist_count);
 
   ldap_msgfree(ldap_entry);
@@ -1774,7 +1846,6 @@ int group_create(int ac, char **av, void *ptr)
   char *objectClass_v[] = {"top", "group", NULL};
   char info[256];
   char *samAccountName_v[] = {NULL, NULL};
-  char *managedBy_v[] = {NULL, NULL};
   char *altSecurityIdentities_v[] = {NULL, NULL};
   char *member_v[] = {NULL, NULL};
   char *name_v[] = {NULL, NULL};
@@ -1896,7 +1967,7 @@ int group_create(int ac, char **av, void *ptr)
 
   sprintf(filter, "(sAMAccountName=%s)", sam_group_name);
   if (strlen(call_args[5]) != 0)
-    sprintf(filter, "(&(objectClass=group) (mitMoiraId=%s))", call_args[5]);
+    sprintf(filter, "(&(objectClass=group)(mitMoiraId=%s))", call_args[5]);
   attr_array[0] = "objectSid";
   attr_array[1] = NULL;
   group_count = 0;
@@ -2113,11 +2184,8 @@ int member_remove(LDAP *ldap_handle, char *dn_path, char *group_name,
   rc = ldap_modify_s(ldap_handle, distinguished_name, mods);
   for (i = 0; i < n; i++)
     free(mods[i]);
-  if ((!strcmp(UserOu, kerberos_ou)) || (!strcmp(UserOu, contact_ou)))
-    {
-      if (rc == LDAP_UNWILLING_TO_PERFORM)
-        rc = LDAP_SUCCESS;
-    }
+  if (rc == LDAP_UNWILLING_TO_PERFORM)
+    rc = LDAP_SUCCESS;
   if (rc != LDAP_SUCCESS)
     {
       com_err(whoami, 0, "LDAP server unable to modify list %s members : %s",
@@ -3293,7 +3361,7 @@ int process_group(LDAP *ldap_handle, char *dn_path, char *MoiraId,
             }
           linklist_free(group_base);
           return(AD_MULTIPLE_GROUPS_FOUND);
-        } 
+        }
       ptr = group_base;
       while (ptr != NULL)
         {
@@ -3588,6 +3656,608 @@ int check_user(LDAP *ldap_handle, char *dn_path, char *UserName, char *MoiraId)
     {
       rc = user_rename(ldap_handle, dn_path, SamAccountName, 
                        UserName);
+    }
+  return(0);
+}
+
+void container_get_dn(char *src, char *dest)
+{
+  char *sPtr;
+  char *array[20];
+  char name[256];
+  int  n;
+
+  memset(array, '\0', 20 * sizeof(array[0]));
+
+  if (strlen(src) == 0)
+    return;
+  strcpy(name, src);
+  sPtr = name;
+  n = 0;
+  array[n] = name;
+  ++n;
+  while (*sPtr)
+    {
+      if ((*sPtr) == '/')
+        {
+          (*sPtr) = '\0';
+          ++sPtr;
+          array[n] = sPtr;
+          ++n;
+        }
+      else
+        ++sPtr;
+    }
+  strcpy(dest, "OU=");
+  while (n != 0)
+    {
+      strcat(dest, array[n-1]);
+      --n;
+      if (n > 0)
+        {
+          strcat(dest, ",OU=");
+        }
+    }
+  return;
+}
+
+void container_get_name(char *src, char *dest)
+{
+  char *sPtr;
+  char *dPtr;
+
+  if (strlen(src) == 0)
+    return;
+  sPtr = src;
+  dPtr = src;
+  while (*sPtr)
+    {
+      if ((*sPtr) == '/')
+        {
+          dPtr = sPtr;
+          ++dPtr;
+        }
+      ++sPtr;
+    }
+  strcpy(dest, dPtr);
+  return;
+}
+
+void container_check(LDAP *ldap_handle, char *dn_path, char *name)
+{
+  char cName[256];
+  char *av[7];
+  int  i;
+  int  rc;
+
+  strcpy(cName, name);
+  for (i = 0; i < (int)strlen(cName); i++)
+    {
+      if (cName[i] == '/')
+        {
+          cName[i] = '\0';
+          av[CONTAINER_NAME] = cName;
+          av[CONTAINER_DESC] = "";
+          av[CONTAINER_LOCATION] = "";
+          av[CONTAINER_CONTACT] = "";
+          av[CONTAINER_TYPE] = "";
+          av[CONTAINER_ID] = "";
+          av[CONTAINER_ROWID] = "";
+          rc = container_create(ldap_handle, dn_path, 7, av);
+          if (rc == LDAP_SUCCESS)
+            {
+              com_err(whoami, 0, "container %s created without a mitMoiraId", cName);
+            }
+          cName[i] = '/';
+        }
+    }
+
+}
+
+int container_rename(LDAP *ldap_handle, char *dn_path, int beforec, char **before, 
+                     int afterc, char **after)
+{
+  char      dName[256];
+  char      cName[256];
+  char      new_cn[128];
+  char      new_dn_path[256];
+  char      temp[256];
+  char      distinguishedName[256];
+  char      *pPtr;
+  int       rc;
+  int       i;
+
+  memset(cName, '\0', sizeof(cName));
+  container_get_name(after[CONTAINER_NAME], cName);
+  if (!check_string(cName))
+    {
+      com_err(whoami, 0, "invalid LDAP container name %s", cName);
+      return(AD_INVALID_NAME);
+    }
+
+  memset(distinguishedName, '\0', sizeof(distinguishedName));
+  if (rc = container_get_distinguishedName(ldap_handle, dn_path, distinguishedName, beforec, before))
+    return(rc);
+  if (strlen(distinguishedName) == 0)
+    {
+      rc = container_create(ldap_handle, dn_path, afterc, after);
+      return(rc);
+    }
+
+  strcpy(temp, after[CONTAINER_NAME]);
+  pPtr = NULL;
+  for (i = 0; i < (int)strlen(temp); i++)
+    {
+      if (temp[i] == '/')
+        {
+          pPtr = &temp[i];
+        }
+    }
+  if (pPtr != NULL)
+    (*pPtr) = '\0';
+
+  container_get_dn(temp, dName);
+  sprintf(new_dn_path, "%s,%s", dName, dn_path);
+  sprintf(new_cn, "OU=%s", cName);
+
+  container_check(ldap_handle, dn_path, after[CONTAINER_NAME]);
+
+  if ((rc = ldap_rename_s(ldap_handle, distinguishedName, new_cn, new_dn_path,
+                          TRUE, NULL, NULL)) != LDAP_SUCCESS)
+    {
+      com_err(whoami, 0, "couldn't rename container from %s to %s : %s",
+              before[CONTAINER_NAME], after[CONTAINER_NAME], ldap_err2string(rc));
+      return(rc);
+    }
+
+  memset(dName, '\0', sizeof(dName));
+  container_get_dn(after[CONTAINER_NAME], dName);
+  rc = container_adupdate(ldap_handle, dn_path, dName, "", afterc, after);
+  return(rc);
+}
+
+int container_delete(LDAP *ldap_handle, char *dn_path, int count, char **av)
+{
+  char      distinguishedName[256];
+  int       rc;
+
+  memset(distinguishedName, '\0', sizeof(distinguishedName));
+  if (rc = container_get_distinguishedName(ldap_handle, dn_path, distinguishedName, count, av))
+    return(rc);
+  if (strlen(distinguishedName) == 0)
+    return(0);
+  if ((rc = ldap_delete_s(ldap_handle, distinguishedName)) != LDAP_SUCCESS)
+    {
+      if (rc == LDAP_NOT_ALLOWED_ON_NONLEAF)
+        container_move_objects(ldap_handle, dn_path, distinguishedName);
+      else
+        com_err(whoami, 0, "unable to delete container %s from AD : %s",
+                av[CONTAINER_NAME], ldap_err2string(rc));
+    }
+  return(rc);
+}
+int container_create(LDAP *ldap_handle, char *dn_path, int count, char **av)
+{
+  char      *attr_array[3];
+  LK_ENTRY  *group_base;
+  int       group_count;
+  LDAPMod   *mods[20];
+  char      *objectClass_v[] = {"top", 
+                           "organizationalUnit", 
+                           NULL};
+
+  char *ou_v[] = {NULL, NULL};
+  char *name_v[] = {NULL, NULL};
+  char *moiraId_v[] = {NULL, NULL};
+  char *desc_v[] = {NULL, NULL};
+  char *managedBy_v[] = {NULL, NULL};
+  char dName[256];
+  char cName[256];
+  char managedByDN[256];
+  char filter[256];
+  char temp[256];
+  int  n;
+  int  i;
+  int  rc;
+
+  memset(filter, '\0', sizeof(filter));
+  memset(dName, '\0', sizeof(dName));
+  memset(cName, '\0', sizeof(cName));
+  memset(managedByDN, '\0', sizeof(managedByDN));
+  container_get_dn(av[CONTAINER_NAME], dName);
+  container_get_name(av[CONTAINER_NAME], cName);
+
+  if ((strlen(cName) == 0) || (strlen(dName) == 0))
+    {
+      com_err(whoami, 0, "invalid LDAP container name %s", cName);
+      return(AD_INVALID_NAME);
+    }
+
+  if (!check_string(cName))
+    {
+      com_err(whoami, 0, "invalid LDAP container name %s", cName);
+      return(AD_INVALID_NAME);
+    }
+
+  n = 0;
+  ADD_ATTR("objectClass", objectClass_v, LDAP_MOD_ADD);
+  name_v[0] = cName;
+  ADD_ATTR("name", name_v, LDAP_MOD_ADD);
+  ou_v[0] = cName;
+  ADD_ATTR("ou", ou_v, LDAP_MOD_ADD);
+  if (strlen(av[CONTAINER_ROWID]) != 0)
+    {
+      moiraId_v[0] = av[CONTAINER_ROWID];
+      ADD_ATTR("mitMoiraId", moiraId_v, LDAP_MOD_ADD);
+    }
+  if (strlen(av[CONTAINER_DESC]) != 0)
+    {
+      desc_v[0] = av[CONTAINER_DESC];
+      ADD_ATTR("description", desc_v, LDAP_MOD_ADD);
+    }
+  if ((strlen(av[CONTAINER_TYPE]) != 0) && (strlen(av[CONTAINER_ID]) != 0))
+    {
+      if (!strcasecmp(av[CONTAINER_TYPE], "USER"))
+        {
+          sprintf(filter, "(&(objectClass=user)(mitMoiraId=%s))", av[CONTAINER_ID]);
+        }
+      if (!strcasecmp(av[CONTAINER_TYPE], "LIST"))
+        {
+          sprintf(filter, "(&(objectClass=group)(mitMoiraId=%s))", av[CONTAINER_ID]);
+        }
+      if (strlen(filter) != 0)
+        {
+          attr_array[0] = "distinguishedName";
+          attr_array[1] = NULL;
+          group_count = 0;
+          group_base = NULL;
+          if ((rc = linklist_build(ldap_handle, dn_path, filter, attr_array,
+                                   &group_base, &group_count)) == LDAP_SUCCESS)
+            {
+              if (group_count == 1)
+                {
+                  strcpy(managedByDN, group_base->value);
+                  managedBy_v[0] = managedByDN;
+                  ADD_ATTR("managedBy", managedBy_v, LDAP_MOD_ADD);
+                }
+              linklist_free(group_base);
+              group_base = NULL;
+              group_count = 0;
+            }
+        }
+    }
+  mods[n] = NULL;
+
+  sprintf(temp, "%s,%s", dName, dn_path);
+  rc = ldap_add_ext_s(ldap_handle, temp, mods, NULL, NULL);
+  for (i = 0; i < n; i++)
+    free(mods[i]);
+  if ((rc != LDAP_SUCCESS) && (rc != LDAP_ALREADY_EXISTS))
+    {
+      com_err(whoami, 0, "couldn't create container %s : %s",
+              cName, ldap_err2string(rc));
+      return(rc);
+    }
+  if (rc == LDAP_ALREADY_EXISTS)
+    {
+      if (strlen(av[CONTAINER_ROWID]) != 0)
+        rc = container_adupdate(ldap_handle, dn_path, dName, "", count, av);
+    }
+  return(rc);
+}
+
+int container_update(LDAP *ldap_handle, char *dn_path, int beforec, char **before, 
+                     int afterc, char **after)
+{
+  char distinguishedName[256];
+  int  rc;
+
+  memset(distinguishedName, '\0', sizeof(distinguishedName));
+  if (rc = container_get_distinguishedName(ldap_handle, dn_path, distinguishedName, afterc, after))
+    return(rc);
+  if (strlen(distinguishedName) == 0)
+    {
+      rc = container_create(ldap_handle, dn_path, afterc, after);
+      return(rc);
+    }
+
+  container_check(ldap_handle, dn_path, after[CONTAINER_NAME]);
+  rc = container_adupdate(ldap_handle, dn_path, "", distinguishedName, afterc, after);
+
+  return(rc);
+}
+
+int container_get_distinguishedName(LDAP *ldap_handle, char *dn_path, char *distinguishedName, int count, char **av)
+{
+  char      *attr_array[3];
+  LK_ENTRY  *group_base;
+  int       group_count;
+  char      dName[256];
+  char      cName[256];
+  char      filter[512];
+  int       rc;
+
+  memset(filter, '\0', sizeof(filter));
+  memset(dName, '\0', sizeof(dName));
+  memset(cName, '\0', sizeof(cName));
+  container_get_dn(av[CONTAINER_NAME], dName);
+  container_get_name(av[CONTAINER_NAME], cName);
+
+  if (strlen(dName) == 0)
+    {
+      com_err(whoami, 0, "invalid LDAP container name %s", av[CONTAINER_NAME]);
+      return(AD_INVALID_NAME);
+    }
+
+  if (!check_string(cName))
+    {
+      com_err(whoami, 0, "invalid LDAP container name %s", cName);
+      return(AD_INVALID_NAME);
+    }
+
+  sprintf(filter, "(&(objectClass=organizationalUnit)(mitMoiraId=%s))", av[CONTAINER_ROWID]);
+  attr_array[0] = "distinguishedName";
+  attr_array[1] = NULL;
+  group_count = 0;
+  group_base = NULL;
+  if ((rc = linklist_build(ldap_handle, dn_path, filter, attr_array, 
+                           &group_base, &group_count)) == LDAP_SUCCESS)
+    {
+      if (group_count == 1)
+        {
+          strcpy(distinguishedName, group_base->value);
+        }
+      linklist_free(group_base);
+      group_base = NULL;
+      group_count = 0;
+    }
+  if (strlen(distinguishedName) == 0)
+    {
+      sprintf(filter, "(&(objectClass=organizationalUnit)(distinguishedName=%s,%s))", dName, dn_path);
+      attr_array[0] = "distinguishedName";
+      attr_array[1] = NULL;
+      group_count = 0;
+      group_base = NULL;
+      if ((rc = linklist_build(ldap_handle, dn_path, filter, attr_array, 
+                               &group_base, &group_count)) == LDAP_SUCCESS)
+        {
+          if (group_count == 1)
+            {
+              strcpy(distinguishedName, group_base->value);
+            }
+          linklist_free(group_base);
+          group_base = NULL;
+          group_count = 0;
+        }
+    }
+  return(0);
+}
+
+int container_adupdate(LDAP *ldap_handle, char *dn_path, char *dName, 
+                       char *distinguishedName, int count, char **av)
+{
+  char      *attr_array[5];
+  LK_ENTRY  *group_base;
+  LK_ENTRY  *pPtr;
+  LDAPMod   *mods[20];
+  int       group_count;
+  char      filter[512];
+  char      temp[256];
+  char      *moiraId_v[] = {NULL, NULL};
+  char      *desc_v[] = {NULL, NULL};
+  char      *managedBy_v[] = {NULL, NULL};
+  char      managedByDN[256];
+  char      moiraId[64];
+  char      desc[256];
+  int       rc;
+  int       i;
+  int       n;
+
+
+  strcpy(temp, distinguishedName);
+  if (strlen(dName) != 0)
+    sprintf(temp, "%s,%s", dName, dn_path);
+
+  sprintf(filter, "(&(objectClass=organizationalUnit)(distinguishedName=%s))", temp);
+  if (strlen(av[CONTAINER_ID]) != 0)
+    sprintf(filter, "(&(objectClass=organizationalUnit)(mitMoiraId=%s))", av[CONTAINER_ROWID]);
+  attr_array[0] = "mitMoiraId";
+  attr_array[1] = "description";
+  attr_array[2] = "managedBy";
+  attr_array[3] = NULL;
+  group_count = 0;
+  group_base = NULL;
+  if ((rc = linklist_build(ldap_handle, dn_path, filter, attr_array, 
+                           &group_base, &group_count)) != LDAP_SUCCESS)
+    {
+      com_err(whoami, 0, "couldn't retreive container info for %s : %s",
+              av[CONTAINER_NAME], ldap_err2string(rc));
+      return(rc);
+    }
+  memset(managedByDN, '\0', sizeof(managedByDN));
+  memset(moiraId, '\0', sizeof(moiraId));
+  memset(desc, '\0', sizeof(desc));
+  pPtr = group_base;
+  while (pPtr)
+    {
+      if (!strcasecmp(pPtr->attribute, "description"))
+        strcpy(desc, pPtr->value);
+      if (!strcasecmp(pPtr->attribute, "managedBy"))
+        strcpy(managedByDN, pPtr->value);
+      if (!strcasecmp(pPtr->attribute, "mitMoiraId"))
+        strcpy(moiraId, pPtr->value);
+      pPtr = pPtr->next;
+    }
+  linklist_free(group_base);
+  group_base = NULL;
+  group_count = 0;
+
+  n = 0;
+  if (strlen(av[CONTAINER_ROWID]) != 0)
+    {
+      moiraId_v[0] = av[CONTAINER_ROWID];
+      ADD_ATTR("mitMoiraId", moiraId_v, LDAP_MOD_REPLACE);
+    }
+  if (strlen(av[CONTAINER_DESC]) != 0)
+    {
+      desc_v[0] = av[CONTAINER_DESC];
+      ADD_ATTR("description", desc_v, LDAP_MOD_REPLACE);
+    }
+  else
+    {
+      if (strlen(desc) != 0)
+        {
+          desc_v[0] = NULL;
+          ADD_ATTR("description", desc_v, LDAP_MOD_REPLACE);
+        }
+    }
+  if ((strlen(av[CONTAINER_TYPE]) != 0) && (strlen(av[CONTAINER_ID]) != 0))
+    {
+      if (!strcasecmp(av[CONTAINER_TYPE], "USER"))
+        {
+          sprintf(filter, "(&(objectClass=user)(mitMoiraId=%s))", av[CONTAINER_ID]);
+        }
+      if (!strcasecmp(av[CONTAINER_TYPE], "LIST"))
+        {
+          sprintf(filter, "(&(objectClass=group)(mitMoiraId=%s))", av[CONTAINER_ID]);
+        }
+      if (strlen(filter) != 0)
+        {
+          attr_array[0] = "distinguishedName";
+          attr_array[1] = NULL;
+          group_count = 0;
+          group_base = NULL;
+          if ((rc = linklist_build(ldap_handle, dn_path, filter, attr_array,
+                                   &group_base, &group_count)) == LDAP_SUCCESS)
+            {
+              if (group_count == 1)
+                {
+                  strcpy(managedByDN, group_base->value);
+                  managedBy_v[0] = managedByDN;
+                  ADD_ATTR("managedBy", managedBy_v, LDAP_MOD_REPLACE);
+                }
+              else
+                {
+                  if (strlen(managedByDN) != 0)
+                    {
+                      managedBy_v[0] = NULL;
+                      ADD_ATTR("managedBy", managedBy_v, LDAP_MOD_REPLACE);
+                    }
+                }
+              linklist_free(group_base);
+              group_base = NULL;
+              group_count = 0;
+            }
+        }
+      else
+        {
+          if (strlen(managedByDN) != 0)
+            {
+              managedBy_v[0] = NULL;
+              ADD_ATTR("managedBy", managedBy_v, LDAP_MOD_REPLACE);
+            }
+        }
+    }
+  mods[n] = NULL;
+  if (n == 0)
+    return(LDAP_SUCCESS);
+
+  strcpy(temp, distinguishedName);
+  if (strlen(dName) != 0)
+    sprintf(temp, "%s,%s", dName, dn_path);
+  rc = ldap_modify_s(ldap_handle, temp, mods);
+  for (i = 0; i < n; i++)
+    free(mods[i]);
+  if (rc != LDAP_SUCCESS)
+    {
+        com_err(whoami, 0, "couldn't modify container info for %s : %s",
+              av[CONTAINER_NAME], ldap_err2string(rc));
+      return(rc);
+    }
+  return(rc);
+}
+
+int container_move_objects(LDAP *ldap_handle, char *dn_path, char *dName)
+{
+  char      *attr_array[3];
+  LK_ENTRY  *group_base;
+  LK_ENTRY  *pPtr;
+  int       group_count;
+  char      filter[512];
+  char      new_cn[128];
+  char      temp[256];
+  int       rc;
+  int       NumberOfEntries = 10;
+  int       i;
+  int       count;
+
+  rc = ldap_set_option(ldap_handle, LDAP_OPT_SIZELIMIT, &NumberOfEntries);
+
+  for (i = 0; i < 3; i++)
+    {
+      memset(filter, '\0', sizeof(filter));
+      if (i == 0)
+        {
+          strcpy(filter, "(!(|(objectClass=computer)(objectClass=organizationalUnit)))");
+          attr_array[0] = "cn";
+          attr_array[1] = NULL;
+        }
+      else if (i == 1)
+        {
+          strcpy(filter, "(objectClass=computer)");
+          attr_array[0] = "cn";
+          attr_array[1] = NULL;
+        }
+      else
+        {
+          strcpy(filter, "(objectClass=organizationalUnit)");
+          attr_array[0] = "ou";
+          attr_array[1] = NULL;
+        }
+
+      while (1)
+        {
+          if ((rc = linklist_build(ldap_handle, dName, filter, attr_array, 
+                                   &group_base, &group_count)) != LDAP_SUCCESS)
+            {
+              break;
+            }
+          if (group_count == 0)
+            break;
+          pPtr = group_base;
+          while(pPtr)
+            {
+              if (!strcasecmp(pPtr->attribute, "cn"))
+                {
+                  sprintf(new_cn, "cn=%s", pPtr->value);
+                  if (i == 0)
+                    sprintf(temp, "%s,%s", orphans_other_ou, dn_path);
+                  if (i == 1)
+                    sprintf(temp, "%s,%s", orphans_machines_ou, dn_path);
+                  count = 1;
+                  while (1)
+                    {
+                      rc = ldap_rename_s(ldap_handle, pPtr->dn, new_cn, temp,
+                                         TRUE, NULL, NULL);
+                      if (rc == LDAP_ALREADY_EXISTS)
+                        {
+                          sprintf(new_cn, "cn=%s_%d", pPtr->value, count);
+                          ++count;
+                        }
+                      else
+                        break;
+                    }
+                }
+              else if (!strcasecmp(pPtr->attribute, "ou"))
+                {
+                  rc = ldap_delete_s(ldap_handle, pPtr->dn);
+                }
+              pPtr = pPtr->next;
+            }
+          linklist_free(group_base);
+          group_base = NULL;
+          group_count = 0;
+        }
     }
   return(0);
 }

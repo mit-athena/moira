@@ -1,4 +1,4 @@
-/* $Id: main.c,v 1.39 2000-04-19 23:15:35 zacheiss Exp $
+/* $Id: main.c,v 1.40 2000-06-09 19:35:57 zacheiss Exp $
  *
  *	This is the file main.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -26,7 +26,7 @@
 #include <unistd.h>
 #endif /* HAVE_UNISTD_H */
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/main.c,v 1.39 2000-04-19 23:15:35 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/main.c,v 1.40 2000-06-09 19:35:57 zacheiss Exp $");
 
 static void ErrorExit(char *buf, int status);
 static void Usage(void);
@@ -106,7 +106,8 @@ int main(int argc, char **argv)
 	}
     }
 
-  if (mrcl_connect(moira_server, program_name, 3, 0) != MRCL_SUCCESS)
+  if (mrcl_connect(moira_server, program_name, QUERY_VERSION, 0) 
+      != MRCL_SUCCESS)
     exit(1);
 
   if ((status = mr_auth(program_name)))

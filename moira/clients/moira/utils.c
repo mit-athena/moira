@@ -1,4 +1,4 @@
-/* $Id: utils.c,v 1.48 2000-04-12 06:02:29 jweiss Exp $
+/* $Id: utils.c,v 1.49 2000-06-09 19:35:57 zacheiss Exp $
  *
  *	This is the file utils.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -14,6 +14,7 @@
 
 #include <mit-copyright.h>
 #include <moira.h>
+#include <mrclient.h>
 #include <moira_site.h>
 #include "defs.h"
 #include "f_defs.h"
@@ -33,7 +34,7 @@
 #include <string.h>
 #include <time.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v 1.48 2000-04-12 06:02:29 jweiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v 1.49 2000-06-09 19:35:57 zacheiss Exp $");
 
 /*	Function Name: AddQueue
  *	Description: Adds an element to a queue
@@ -882,8 +883,8 @@ int do_mr_query(char *name, int argc, char **argv,
   status = mr_query(name, argc, argv, proc, hint);
   if (status != MR_ABORTED && status != MR_NOT_CONNECTED)
     return status;
-  status = mr_connect(moira_server);
-  if (status)
+  status = mrcl_connect(moira_server, whoami, QUERY_VERSION, 0);
+  if (status != MRCL_SUCCESS)
     {
       com_err(whoami, status, " while re-connecting to server %s",
 	      moira_server);

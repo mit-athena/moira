@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.2 1999-07-12 16:20:43 danw Exp $
+# $Id: Makefile.in,v 1.3 2000-08-10 02:05:35 zacheiss Exp $
 
 SHELL=/bin/sh
 
@@ -14,7 +14,7 @@ VPATH=@srcdir@
 SRCTOP=@top_srcdir@
 BUILDTOP=../..
 
-OBJS=pobox.o utils.o
+OBJS=error.o mail.o member.o pobox.o utils.o
 
 .c.o:
 	$(CC) -c $(ALL_CFLAGS) $<

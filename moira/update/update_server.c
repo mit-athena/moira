@@ -1,13 +1,13 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/update_server.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/update_server.c,v 1.7 1990-03-19 13:02:36 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/update_server.c,v 1.8 1992-08-25 14:46:20 mar Exp $
  */
 /*  (c) Copyright 1988 by the Massachusetts Institute of Technology. */
 /*  For copying and distribution information, please see the file */
 /*  <mit-copyright.h>. */
 
 #ifndef lint
-static char *rcsid_dispatch_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/update_server.c,v 1.7 1990-03-19 13:02:36 mar Exp $";
+static char *rcsid_dispatch_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/update_server.c,v 1.8 1992-08-25 14:46:20 mar Exp $";
 #endif	lint
 
 #include <mit-copyright.h>
@@ -15,6 +15,7 @@ static char *rcsid_dispatch_c = "$Header: /afs/.athena.mit.edu/astaff/project/mo
 #include <gdb.h>
 #include <errno.h>
 #include <strings.h>
+#include <pwd.h>
 #include <moira.h>
 #include <sys/file.h>
 #include <sys/ioctl.h>
@@ -24,6 +25,7 @@ extern int auth_001(), inst_001();
 extern int xfer_002(), exec_002();
 
 extern int sync_proc(), quit();
+extern char *config_lookup();
 
 extern void gdb_debug();
 extern int exit(), abort(), errno;
@@ -37,7 +39,7 @@ int have_authorization = 0;
 int have_file = 0;
 int have_instructions = 0;
 int done = 0;
-
+int uid = 0;
 
 #define send_int(n) \
      (_send_int=(n),send_object(conn,(char *)&_send_int,INTEGER_T))
@@ -55,18 +57,9 @@ struct _dt {
      { (char *)NULL, abort }
 };
 
-/*
- * general scratch space -- useful for building
- * error messages et al...
- */
+/* general scratch space -- useful for building error messages et al... */
 char buf[BUFSIZ];
-err(code, fmt)
-     int code;
-     char *fmt;
-{
-     sprintf(buf, fmt, error_message(code));
-     mr_log_error(buf);
-}
+
 
 main(argc, argv)
      int argc;
@@ -74,6 +67,7 @@ main(argc, argv)
 {
      STRING str;
      struct _dt *d;
+     char *p;
      int n;
 
 #ifdef DEBUG
@@ -91,16 +85,18 @@ main(argc, argv)
 	  fprintf(stderr, "Usage:  %s\n", whoami);
 	  exit(1);
      }
-     /* well, sort of... */
 
 #ifndef DEBUG
-     if (fork())
-       exit(0);
-     n = open("/dev/tty", O_RDWR|FNDELAY);
-     if (n > 0) {
-	 (void) ioctl(n, TIOCNOTTY, (char *)NULL);
-	 (void) close(n);
-     }
+     if (!config_lookup("nofork")) {
+	 if (fork())
+	   exit(0);
+	 n = open("/dev/tty", O_RDWR|FNDELAY);
+	 if (n > 0) {
+	     (void) ioctl(n, TIOCNOTTY, (char *)NULL);
+	     (void) close(n);
+	 }
+     } else
+       gdb_debug(GDB_NOFORK);
 #endif
 
      umask(0022);
@@ -110,10 +106,39 @@ main(argc, argv)
 
      /* wait for connection */
      gdb_init();
-     conn = create_forking_server(SERVICE_NAME, 0);
+     /* If the config file contains a line "port portname", the daemon
+      * will listen on the named port rather than SERVICE_NAME "sms_update"
+      */
+     if ((p = config_lookup("port")) == NULL)
+       p = SERVICE_NAME;
+     conn = create_forking_server(p, 0);
+
+     /* If the config file contains a line "user username", the
+      * daemon will run with that user's UID.
+      */
+     if (p = config_lookup("user")) {
+	 struct passwd *pw;
+	 pw = getpwnam(p);
+	 if (pw == 0) {
+	     com_err(whoami, errno, "Unable to find user %s\n", p);
+	     exit(1);
+	 }
+	 uid = pw->pw_uid;
+     }
+
+     /* If the config file contains a line "chroot /dir/name", the
+      * daemon will run chrooted to that directory.
+      */
+     if (p = config_lookup("chroot")) {
+	 if (chroot(p) < 0) {
+	     com_err(whoami, errno, "unable to chroot to %s", p);
+	     exit(1);
+	 }
+     }
+
      if (!conn) {
-	  err(errno, "%s: can't get connection");
-	  exit(1);
+	 com_err(whoami, errno, "can't get connection");
+	 exit(1);
      }
      if (connection_status(conn) == CON_STOPPED) {
 	 com_err(whoami, connection_errno(conn), ": can't get connection");
@@ -126,9 +151,9 @@ main(argc, argv)
 	  register char *cp;
 	  code = receive_object(conn, (char *)&str, STRING_T);
 	  if (code) {
-	       err(connection_errno(conn), "%s: receiving command");
-	       sever_connection(conn);
-	       exit(1);
+	      com_err(whoami, connection_errno(conn), "receiving command");
+	      sever_connection(conn);
+	      exit(1);
 	  }
 	  cp = index(STRING_DATA(str), ' ');
 	  if (cp)
@@ -148,7 +173,7 @@ main(argc, argv)
 	  mr_log_error(buf);
 	  code = send_int(MR_UNKNOWN_PROC);
 	  if (code) {
-	      err(connection_errno(conn), "%s: sending UNKNOWN_PROC");
+	      com_err(whoami, connection_errno(conn), "sending UNKNOWN_PROC");
 	  }
      ok:
 	  string_free(&str);
@@ -208,8 +233,7 @@ quit(str)
 lose(msg)
     char *msg;
 {
-    sprintf(buf, "%s: %s", error_message(code), msg);
-    mr_log_error(buf);
+    com_err(whoami, code, msg);
     if (conn)
 	sever_connection(conn);
     exit(1);

@@ -1,7 +1,7 @@
 #!/bin/csh -f
 # This script performs nfs updates on servers.
 #
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/nfs.sh,v 1.17 1997-08-25 18:23:01 danw Exp $
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/nfs.sh,v 1.18 1997-12-22 21:34:27 danw Exp $
 
 # The following exit codes are defined and MUST BE CONSISTENT with the
 # MR error codes the library uses:
@@ -61,6 +61,9 @@ end
 rm -f /usr/etc/credentials.new
 cp ${uchost}.cred /usr/etc/credentials.new
 if ($status) exit $MR_NOCRED
+if (-e /usr/etc/credentials.local) then
+    cat /usr/etc/credentials.local >> /usr/etc/credentials.new
+endif
 
 # After this point, if /tmp gets cleared out by reactivate (which
 # happens on a combined server/workstation) we don't care.

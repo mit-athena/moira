@@ -4,6 +4,24 @@
 @MajorSection(Predefined Queries - List of Database Interfaces)
 @Label(Queries)
 
+All access to the database is provided through the application
+library/database server interface.  This interface provides a limited set of
+predefined, named queries, which allows for tightly controlled access to
+database information.  Queries fall into four classes: retrieve, update,
+delete, and append.  An attempt has been made to define a set of queries
+that provide sufficient flexibility to meet all of the needs of the Data
+Control Manager and each of the indivual application programs.  However,
+since the database can be modified and extended in the future, the server
+and application library have been designed to allow for the easy addtion of
+queries.  
+
+Providing a generallized layer of functions affords SMS the capability
+of being database independent.  Today, we are using INGRES; however,
+in the future, if a different database is required, the application
+interface will not change.  The only change needed at that point will
+be a new SMS server, linking the pre-defined queries to a new
+set of data manipulation procedures.  
+
 The following list of queries are a predefined list.  This list provides
 the mechanism for reading, writing, updating, and deleting information
 in the database.

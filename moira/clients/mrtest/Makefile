@@ -1,6 +1,6 @@
 #
 # 	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/Makefile,v $
-#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/Makefile,v 1.1 1987-08-22 18:32:06 wesommer Exp $
+#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/Makefile,v 1.2 1987-08-23 01:43:47 wesommer Exp $
 #
 
 
@@ -29,6 +29,7 @@ clean:
 	rm -f *.o core \#* *~ gmon.out
 	rm -f smstest smsfinger
 
-	
-
-
+install:
+	install smstest ../bin
+# NOT /usr/athena!!!
+	install smsfinger ../bin

@@ -1,6 +1,6 @@
 #
 # 	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/Makefile,v $
-#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/Makefile,v 1.3 1987-08-22 23:46:47 wesommer Exp $
+#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/Makefile,v 1.4 1987-08-23 01:43:34 wesommer Exp $
 #
 
 #
@@ -42,6 +42,11 @@ clean:
 	-rm -f ${COBJS} ${SOBJS} ${COMOBJS} client.o
 	-rm -f server sms_update.o test test.o smsu_int.h
 	-rm -f core a.out *~ \#*
+
+install:
+# This is probably wrong..
+	install server ../bin/update_server
+	install test ../bin/update_test
 
 lint:
 	lint ${LINTFLAGS} ${SSRCS} ${COMSRCS}

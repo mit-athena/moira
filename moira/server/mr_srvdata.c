@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_srvdata.c,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_srvdata.c,v 1.7 1988-09-13 17:42:16 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_srvdata.c,v 1.8 1989-06-27 16:01:27 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -11,7 +11,7 @@
  */
 
 #ifndef lint
-static char *rcsid_sms_srvdata_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_srvdata.c,v 1.7 1988-09-13 17:42:16 mar Exp $";
+static char *rcsid_sms_srvdata_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_srvdata.c,v 1.8 1989-06-27 16:01:27 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -63,6 +63,9 @@ char buf1[BUFSIZ];
  * if this is non-null)
  */
 char *takedown=NULL;
+
+/* States for putting the server to sleep & waking it up again. */
+int dormant = AWAKE;
 
 /*
  * The name of the local Kerberos realm

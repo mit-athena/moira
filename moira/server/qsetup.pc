@@ -1,4 +1,4 @@
-/* $Id: qsetup.pc,v 2.45 2001-09-13 02:52:02 zacheiss Exp $
+/* $Id: qsetup.pc,v 2.46 2001-09-15 19:53:29 zacheiss Exp $
  *
  * Query setup routines
  *
@@ -21,7 +21,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsetup.pc,v 2.45 2001-09-13 02:52:02 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsetup.pc,v 2.46 2001-09-15 19:53:29 zacheiss Exp $");
 
 extern char *whoami;
 extern int dbms_errno, mr_errcode;
@@ -253,7 +253,8 @@ int setup_asnt(struct query *q, char *argv[], client *cl)
   /* Don't allow Private subnets to be created without a valid billing
    * number.
    */
-  if (status == SNET_STATUS_PRIVATE)
+  if (status == SNET_STATUS_PRIVATE_10MBPS || 
+      status == SNET_STATUS_PRIVATE_100MBPS)
     {
       EXEC SQL SELECT account_number FROM accountnumbers
 	WHERE account_number = :account_number;

@@ -1,7 +1,7 @@
 /*
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.33 1992-01-02 14:29:23 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.34 1992-01-02 17:30:45 mar Exp $
  *
  *      Copyright (C) 1987, 1988 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -16,7 +16,7 @@
  */
 
 #ifndef lint
-static char *rcsid_reg_svr_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.33 1992-01-02 14:29:23 mar Exp $";
+static char *rcsid_reg_svr_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.34 1992-01-02 17:30:45 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -172,8 +172,15 @@ int parse_encrypted(message,data)
        because of the DES encryption routines. */
     decrypt_len = (long)message->encrypted_len;
     
-    /* Get key from the one-way encrypted ID in the Moira database */
-    des_string_to_key(data->mit_id, key);
+    /* Get key from the possibly one-way encrypted ID in the Moira database */
+    if (data->mit_id[0] >= '0' && data->mit_id[0] <= '9') {
+	char buf[32];
+
+	EncryptID(buf, data->mit_id, message->first, message->last);
+	des_string_to_key(buf, key);
+    } else
+      des_string_to_key(data->mit_id, key);
+
     /* Get schedule from key */
     des_key_sched(key, sched);
     /* Decrypt information from packet using this key.  Since decrypt_len

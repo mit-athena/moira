@@ -1,4 +1,4 @@
-/* $Id: pobox.c,v 1.28 1999-05-13 18:57:09 danw Exp $
+/* $Id: pobox.c,v 1.29 1999-11-17 18:36:26 danw Exp $
  *
  *	This is the file pobox.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -24,7 +24,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/pobox.c,v 1.28 1999-05-13 18:57:09 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/pobox.c,v 1.29 1999-11-17 18:36:26 danw Exp $");
 
 #define FOREIGN_BOX ("SMTP")
 #define LOCAL_BOX ("POP")
@@ -39,11 +39,21 @@ static void PrintPOBox(char **info)
 {
   char buf[BUFSIZ];
 
-  sprintf(buf, "Address: %-10s Box: %-35s Type: %s", info[PO_NAME],
+  sprintf(buf, "User: %-10s Box: %-35s Type: %s", info[PO_NAME],
 	  info[PO_BOX], info[PO_TYPE]);
   Put_message(buf);
-  sprintf(buf, MOD_FORMAT, info[4], info[3], info[5]);
-  Put_message(buf);
+  if (info[6])
+    {
+      sprintf(buf, "Address: %s", info[PO_ADDR]);
+      Put_message(buf);
+      sprintf(buf, MOD_FORMAT, info[5], info[4], info[6]);
+      Put_message(buf);
+    }
+  else
+    {
+      sprintf(buf, MOD_FORMAT, info[4], info[3], info[5]);
+      Put_message(buf);
+    }
 }
 
 /*	Function Name: RealPrintPOMachines

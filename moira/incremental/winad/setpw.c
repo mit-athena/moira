@@ -50,10 +50,9 @@ Abstract:
 #include <ldap.h>
 #ifdef _WIN32
 #include <wshelper.h>
-#include "k5-int.h"
-#include "adm_err.h"
 #include "krb5_err.h"
 #else
+#include "port-sockets.h"
 #include <sys/socket.h>
 #include <netdb.h>
 #include <sys/select.h>
@@ -79,6 +78,8 @@ Abstract:
 #endif
 
 #ifdef _WIN32
+extern krb5_error_code decode_krb5_error
+	(const krb5_data *output, krb5_error **rep);
 #define sleep(Seconds) Sleep(Seconds * 1000)
 #define gethostbyname(Server) rgethostbyname(Server)
 #endif
@@ -96,7 +97,7 @@ Abstract:
 #endif
 #endif /* _WIN32 && !__CYGWIN32__ */
 
-static const char rcsid[] = "$Id: setpw.c,v 1.5 2003-07-29 20:22:34 zacheiss Exp $";
+static const char rcsid[] = "$Id: setpw.c,v 1.6 2004-07-26 20:16:41 zacheiss Exp $";
 
 static int frequency[26][26] =
 { {4, 20, 28, 52, 2, 11, 28, 4, 32, 4, 6, 62, 23, 167, 2, 14, 0, 83, 76, 
@@ -189,7 +190,7 @@ static int total_sum = 11646;
 int get_krb5_error(krb5_error_code rc, char *in, char *out);
 int ad_connect(LDAP **ldap_handle, char *ldap_domain, char *dn_path, 
                char *Win2kPassword, char *Win2kUser, char *default_server, 
-               int connect_to_kdc, char **ServerList, int *IgnoreServerListError);
+               int connect_to_kdc, char **ServerList);
 int ad_kdc_connect(char *connectedServer);
 int ad_server_connect(char *connectedServer, char *domain);
 void ad_kdc_disconnect();
@@ -201,8 +202,11 @@ int locate_ldap_server(char *domain, char **server_name);
 
 long myrandom();
 void generate_password(char *password);
+
+#ifdef WIN32
 krb5_error_code encode_krb5_setpw
         PROTOTYPE((const krb5_setpw *rep, krb5_data ** code));
+#endif
 
 krb5_error_code make_setpw_req(krb5_context context,  krb5_auth_context auth_context,
                                   krb5_data *ap_req, krb5_principal targprinc,
@@ -264,7 +268,6 @@ krb5_error_code get_setpw_rep(krb5_context context, krb5_auth_context auth_conte
   krb5_data        clearresult;
   krb5_error       *krberror;
   krb5_replay_data replay;
-  krb5_keyblock    *tmp;
   krb5_ap_rep_enc_part *ap_rep_enc;
 
   if (packet->length < 4)
@@ -282,7 +285,7 @@ krb5_error_code get_setpw_rep(krb5_context context, krb5_auth_context auth_conte
   /* verify length */
   plen = (*ptr++ & 0xff);
   plen = (plen<<8) | (*ptr++ & 0xff);
-  if (plen != packet->length)
+  if (plen != (int)packet->length)
     return(KRB5KRB_AP_ERR_MODIFIED);
   vno = (*ptr++ & 0xff);
   vno = (vno<<8) | (*ptr++ & 0xff);
@@ -307,11 +310,8 @@ krb5_error_code get_setpw_rep(krb5_context context, krb5_auth_context auth_conte
       /* XXX there's no api to do this right. The problem is that
          if there's a remote subkey, it will be used.  This is
          not what the spec requires */
-      tmp = auth_context->remote_subkey;
-      auth_context->remote_subkey = NULL;
       ret = krb5_rd_priv(context, auth_context, &cipherresult, &clearresult,
                          &replay);
-      auth_context->remote_subkey = tmp;
       if (ret)
         return(ret);
     }
@@ -465,7 +465,7 @@ krb5_error_code kdc_set_password(krb5_context context, krb5_ccache ccache,
     {
       if ((cc = sendto(kdc_socket, chpw_snd.data, chpw_snd.length, 0,
                        NULL,
-                       0)) != chpw_snd.length)
+                       0)) != (int)chpw_snd.length)
         {
           code = KDC_SEND_ERROR;
           sleep(1);
@@ -687,7 +687,7 @@ int get_krb5_error(krb5_error_code rc, char *in, char *out)
 
 int ad_connect(LDAP **ldap_handle, char *ldap_domain, char *dn_path, 
                char *Win2kPassword, char *Win2kUser, char *default_server,
-               int connect_to_kdc, char **ServerList, int *IgnoreServerListError)
+               int connect_to_kdc, char **ServerList)
 {
   int         i;
   int         k;
@@ -699,19 +699,23 @@ int ad_connect(LDAP **ldap_handle, char *ldap_domain, char *dn_path,
   int         Max_wait_time = 500;
   int         Max_size_limit = LDAP_NO_LIMIT;
 
-  if (ldap_domain == NULL)
-    ldap_domain = "win.mit.edu";
+  if (strlen(ldap_domain) == 0)
+      return(1);
+
   convert_domain_to_dn(ldap_domain, dn_path);
   if (strlen(dn_path) == 0)
-    return(1);
+      return(1);
 
   Count = 0;
   while (ServerList[Count] != NULL)
       ++Count;
 
+  if ((Count == 0) && (connect_to_kdc))
+      return(1);
+
   memset(server_name, 0, sizeof(server_name[0]) * MAX_SERVER_NAMES);
   if (locate_ldap_server(ldap_domain, server_name) == -1)
-      return(2);
+      return(1);
 
   for (i = 0; i < MAX_SERVER_NAMES; i++)
     {
@@ -766,6 +770,7 @@ int ad_connect(LDAP **ldap_handle, char *ldap_domain, char *dn_path,
                   if (!ad_server_connect(ServerList[i], ldap_domain))
                     {
                       ldap_unbind_s((*ldap_handle));
+                      (*ldap_handle) = NULL;
                       continue;
                     }
                 }
@@ -774,15 +779,14 @@ int ad_connect(LDAP **ldap_handle, char *ldap_domain, char *dn_path,
               strcpy(connected_server, ServerList[i]);
               break;
             }
-        }
-      if ((i == 0) && ((*IgnoreServerListError) == 0))
-        {
-          (*IgnoreServerListError) = -1;
-          return(1);
+          else
+            {
+              (*ldap_handle) = NULL;
+            }
         }
     }
-  if (i >= MAX_SERVER_NAMES)
-    return(3);
+  if ((*ldap_handle) == NULL)
+    return(1);
   return(0);
 }
 

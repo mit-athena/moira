@@ -6,9 +6,6 @@ Module Name:
 --*/
 
 
-krb5_error_code krb5_set_password
-  KRB5_PROTOTYPE((krb5_context, krb5_ccache, char *, char *, char *, int *));
-
 typedef struct _krb5_setpw {
   krb5_magic      magic;
   krb5_data       newpasswd;

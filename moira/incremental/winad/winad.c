@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/winad/winad.c,v 1.40 2004-04-20 19:25:37 zacheiss Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/winad/winad.c,v 1.41 2004-07-26 20:16:41 zacheiss Exp $
 /* winad.incr arguments examples
  *
  * arguments when moira creates the account - ignored by winad.incr since the account is unusable.
@@ -114,7 +114,6 @@
 #include <moira_site.h>
 #include <mrclient.h>
 #include <krb5.h>
-#include <krb.h>
 #include <gsssasl.h>
 #include <gssldap.h>
 #include "kpasswd.h"
@@ -204,8 +203,11 @@ typedef struct _SID {
 #define ADS_GROUP_TYPE_UNIVERSAL_GROUP      0x00000008
 #define ADS_GROUP_TYPE_SECURITY_ENABLED     0x80000000
 
-#define QUERY_VERSION -1
-#define PRIMARY_REALM "ATHENA.MIT.EDU"
+#define QUERY_VERSION   -1
+#define PRIMARY_REALM   "ATHENA.MIT.EDU"
+#define PRIMARY_DOMAIN  "win.mit.edu"
+#define PRODUCTION_PRINCIPAL "sms"
+#define TEST_PRINCIPAL       "smstest"
 
 #define SUBSTITUTE  1
 #define REPLACE     2
@@ -294,10 +296,22 @@ typedef struct lk_entry {
   DelMods[i++]->mod_values = NULL
 
 #define DOMAIN_SUFFIX   "MIT.EDU"
-#define DOMAIN  "DOMAIN: "
-#define SERVER  "SERVER: "
-#define MSSFU   "SFU: "
+#define DOMAIN  "DOMAIN:"
+#define PRINCIPALNAME  "PRINCIPAL:"
+#define SERVER  "SERVER:"
+#define MSSFU   "SFU:"
 #define SFUTYPE "30"
+
+char    PrincipalName[128];
+#ifndef _WIN32
+#define KRB5CCNAME "KRB5CCNAME=/tmp/krb5cc_winad.incr"
+#define KRBTKFILE "KRBTKFILE=/tmp/tkt_winad.incr"
+#define KEYTABFILE "/etc/krb5.keytab"
+#else
+#define KRB5CCNAME "KRB5CCNAME=\\tmp\\krb5cc_winad.incr"
+#define KRBTKFILE "KRBTKFILE=\\tmp\\tkt_winad.incr"
+#define KEYTABFILE "\\keytabs\\krb5.keytab"
+#endif
 
 LK_ENTRY *member_base = NULL;
 LK_ENTRY *sid_base = NULL;
@@ -322,6 +336,7 @@ int  callback_rc;
 char default_server[256];
 static char tbl_buf[1024];
 int  UseSFU30 = 0;
+int  NoChangeConfigFile;
 
 extern int set_password(char *user, char *password, char *domain);
 
@@ -332,8 +347,9 @@ int ad_get_group(LDAP *ldap_handle, char *dn_path, char *group_name,
 void AfsToWinAfs(char* path, char* winPath);
 int ad_connect(LDAP **ldap_handle, char *ldap_domain, char *dn_path, 
                char *Win2kPassword, char *Win2kUser, char *default_server,
-               int connect_to_kdc, char **ServerList, int *IgnoreMasterSeverError);
+               int connect_to_kdc, char **ServerList);
 void ad_kdc_disconnect();
+int ad_server_connect(char *connectedServer, char *domain);
 int attribute_update(LDAP *ldap_handle, char *distinguished_name, 
                       char *attribute_value, char *attribute, char *user_name);
 int BEREncodeSecurityBits(ULONG uBits, char *pBuffer);
@@ -384,6 +400,8 @@ int process_lists(int ac, char **av, void *ptr);
 int ProcessGroupSecurity(LDAP *ldap_handle, char *dn_path, char *TargetGroupName, 
                          int HiddenGroup, char *AceType, char *AceName);
 int ProcessMachineName(int ac, char **av, void *ptr);
+void ReadConfigFile();
+void StringTrim(char *StringToTrim);
 int user_create(int ac, char **av, void *ptr);
 int user_change_status(LDAP *ldap_handle, char *dn_path, 
                        char *user_name, char *MoiraId, int operation);
@@ -473,6 +491,10 @@ int moira_disconnect(void);
 int moira_connect(void);
 void print_to_screen(const char *fmt, ...);
 int GetMachineName(char *MachineName);
+int tickets_get_k5();
+int get_tickets();
+int destroy_cache(void);
+int dest_tkt(void);
 
 int main(int argc, char **argv)
 {
@@ -481,17 +503,12 @@ int main(int argc, char **argv)
   int             afterc;
   int             i;
   int             j;
-  int             Count;
-  int             k;
   int             OldUseSFU30;
-  int             IgnoreServerListError;
   char            *table;
   char            **before;
   char            **after;
   LDAP            *ldap_handle;
-  FILE            *fptr;
   char            dn_path[256];
-  char            temp[32];
 
   whoami = ((whoami = (char *)strrchr(argv[0], '/')) ? whoami+1 : argv[0]);
 
@@ -525,113 +542,51 @@ int main(int argc, char **argv)
     }
   com_err(whoami, 0, "%s", tbl_buf);
 
-  check_winad();
-
+  memset(PrincipalName, '\0', sizeof(PrincipalName));
   memset(ldap_domain, '\0', sizeof(ldap_domain));
   memset(ServerList, '\0', sizeof(ServerList[0]) * MAX_SERVER_NAMES);
-  memset(temp, '\0', sizeof(temp));
   UseSFU30 = 0;
-  OldUseSFU30 = 0;
-  Count = 0;
+  NoChangeConfigFile = 0;
 
-  if ((fptr = fopen(WINADCFG, "r")) != NULL)
-    {
-      while (fgets(temp, sizeof(temp), fptr) != 0)
-        {
-          for (i = 0; i < (int)strlen(temp); i++)
-              temp[i] = toupper(temp[i]);
-          if (temp[strlen(temp) - 1] == '\n')
-              temp[strlen(temp) - 1] = '\0';
-          if (!strncmp(temp, DOMAIN, strlen(DOMAIN)))
-            {
-              if (strlen(temp) > (strlen(DOMAIN)))
-                {
-                  strcpy(ldap_domain, &temp[strlen(DOMAIN)]);
-                }
-            }
-          else if (!strncmp(temp, SERVER, strlen(SERVER)))
-            {
-              if (strlen(temp) > (strlen(SERVER)))
-                {
-                  ServerList[Count] = calloc(1, 256);
-                  strcpy(ServerList[Count], &temp[strlen(SERVER)]);
-                  ++Count;
-                }
-            }
-          else if (!strncmp(temp, MSSFU, strlen(MSSFU)))
-            {
-              if (strlen(temp) > (strlen(MSSFU)))
-                {
-                  if (!strcmp(&temp[strlen(MSSFU)], SFUTYPE))
-                      UseSFU30 = 1;
-                }
-            }
-          else
-            {
-              strcpy(ldap_domain, temp);
-            }
-        }
-      fclose(fptr);
-    }
+  check_winad();
 
-  if (strlen(ldap_domain) == 0)
-    strcpy(ldap_domain, "win.mit.edu");
-  /* zero trailing newline, if there is one. */
-  if (ldap_domain[strlen(ldap_domain) - 1] == '\n')
-    ldap_domain[strlen(ldap_domain) - 1] = '\0';
+  ReadConfigFile();
+  OldUseSFU30 = UseSFU30;
+
+  get_tickets();
 
   initialize_sms_error_table();
   initialize_krb_error_table();
-
-  IgnoreServerListError = 0;
-  if (ServerList[0] == NULL)
-    {
-      IgnoreServerListError = 1;
-      GetServerList(ldap_domain, ServerList);
-    }
-  for (i = 0; i < MAX_SERVER_NAMES; i++)
-    {
-      if (ServerList[i] != 0)
-        {
-          if (ServerList[i][strlen(ServerList[i]) - 1] == '\n')
-                ServerList[i][strlen(ServerList[i]) - 1] = '\0';
-          strcat(ServerList[i], ".");
-          strcat(ServerList[i], ldap_domain);
-          for (k = 0; k < (int)strlen(ServerList[i]); k++)
-              ServerList[i][k] = toupper(ServerList[i][k]);
-        }
-    }
 
   memset(default_server, '\0', sizeof(default_server));
   memset(dn_path, '\0', sizeof(dn_path));
   for (i = 0; i < 5; i++)
     {
+      ldap_handle = (LDAP *)NULL;
       if (!(rc = ad_connect(&ldap_handle, ldap_domain, dn_path, "", "", 
-                            default_server, 1, ServerList, &IgnoreServerListError)))
+                            default_server, 1, ServerList)))
          break;
-      if (IgnoreServerListError < 0)
+      if (ldap_handle == NULL)
         {
-          GetServerList(ldap_domain, ServerList);
-          for (j = 0; j < MAX_SERVER_NAMES; j++)
+          if (!NoChangeConfigFile)
             {
-              if (ServerList[j] != NULL)
+              for (j = 0; j < MAX_SERVER_NAMES; j++)
                 {
-                  if (ServerList[j][strlen(ServerList[j]) - 1] == '\n')
-                        ServerList[j][strlen(ServerList[j]) - 1] = '\0';
-                  strcat(ServerList[j], ".");
-                  strcat(ServerList[j], ldap_domain);
-                  for (k = 0; k < (int)strlen(ServerList[j]); k++)
-                      ServerList[j][k] = toupper(ServerList[j][k]);
+                  if (ServerList[j] != NULL)
+                    {
+                      free(ServerList[j]);
+                      ServerList[j] = NULL;
+                    }
                 }
+              GetServerList(ldap_domain, ServerList);
             }
-          IgnoreServerListError = 1;
-          --i;
         }
-      sleep(2);
     }
-  if (rc)
+
+  if ((rc) || (ldap_handle == NULL))
     {
   	  critical_alert("incremental", "winad.incr cannot connect to any server in domain %s", ldap_domain);
+      destroy_cache();
       exit(1);
     }
 
@@ -658,7 +613,8 @@ int main(int argc, char **argv)
                afterc);
   if (OldUseSFU30 != UseSFU30)
     {
-      GetServerList(ldap_domain, ServerList);
+      if (!NoChangeConfigFile)
+          GetServerList(ldap_domain, ServerList);
     }
   ad_kdc_disconnect();
   for (i = 0; i < MAX_SERVER_NAMES; i++)
@@ -670,6 +626,7 @@ int main(int argc, char **argv)
         }
     }
   rc = ldap_unbind_s(ldap_handle);
+  destroy_cache();
   exit(0);
 }
 
@@ -3374,8 +3331,21 @@ int user_create(int ac, char **av, void *ptr)
     {
       if ((rc = set_password(sam_name, "", ldap_domain)) != 0)
         {
-          com_err(whoami, 0, "Unable to set password for user %s : %ld",
-                  user_name, rc);
+          ad_kdc_disconnect();
+          tickets_get_k5();
+          if (!ad_server_connect(default_server, ldap_domain))
+            {
+              com_err(whoami, 0, "Unable to set password for user %s : %s",
+                      user_name, "cannot get changepw ticket from windows domain");
+            }
+          else
+            {
+              if ((rc = set_password(sam_name, "", ldap_domain)) != 0)
+                {
+                  com_err(whoami, 0, "Unable to set password for user %s : %ld",
+                          user_name, rc);
+                }
+            }
         }
     }
   sprintf(filter, "(sAMAccountName=%s)", av[U_NAME]);
@@ -5825,7 +5795,7 @@ int GetServerList(char *ldap_domain, char **ServerList)
   int             UseSFU30;
   int             Count;
   int             i;
-  int             IgnoreServerListError;
+  int             k;
   int             ServerListFound;
   char            default_server[256];
   char            dn_path[256];
@@ -5848,9 +5818,8 @@ int GetServerList(char *ldap_domain, char **ServerList)
           ServerList[i] = NULL;
         }
     }
-  IgnoreServerListError = 1;
   if (rc = ad_connect(&ldap_handle, ldap_domain, dn_path, "", "", default_server, 0, 
-                      ServerList, &IgnoreServerListError))
+                      ServerList))
       return(1);
   memset(ServerList, '\0', sizeof(ServerList[0]) * MAX_SERVER_NAMES);
   group_count = 0;
@@ -5940,19 +5909,34 @@ int GetServerList(char *ldap_domain, char **ServerList)
 
   if ((fptr = fopen(WINADCFG, "w+")) != NULL)
     {
-      fprintf(fptr, "%s%s\n", DOMAIN, ldap_domain);
+      fprintf(fptr, "%s %s\n", DOMAIN, ldap_domain);
+      if (strlen(PrincipalName) != 0)
+          fprintf(fptr, "%s %s\n", PRINCIPALNAME, PrincipalName);
       if (UseSFU30)
-          fprintf(fptr, "%s%s\n", MSSFU, SFUTYPE);
+          fprintf(fptr, "%s %s\n", MSSFU, SFUTYPE);
       for (i = 0; i < MAX_SERVER_NAMES; i++)
         {
           if (ServerList[i] != NULL)
             {
-              fprintf(fptr, "%s%s\n", SERVER, ServerList[i]);
+              fprintf(fptr, "%s %s\n", SERVER, ServerList[i]);
             }
         }
       fclose(fptr);
     }
   ldap_unbind_s(ldap_handle);
+
+  for (i = 0; i < MAX_SERVER_NAMES; i++)
+    {
+      if (ServerList[i] != NULL)
+        {
+          if (ServerList[i][strlen(ServerList[i]) - 1] == '\n')
+              ServerList[i][strlen(ServerList[i]) - 1] = '\0';
+          strcat(ServerList[i], ".");
+          strcat(ServerList[i], ldap_domain);
+          for (k = 0; k < (int)strlen(ServerList[i]); k++)
+              ServerList[i][k] = toupper(ServerList[i][k]);
+        }
+    }
 
   return(0);
 }
@@ -5997,4 +5981,206 @@ int attribute_update(LDAP *ldap_handle, char *distinguished_name,
       free(mods[0]);
     }
   return(rc);
+}
+
+int tickets_get_k5()
+{
+    char temp[128];
+    char KinitPath[128];
+    int  retval;
+    int  i;
+    static char EnvVar[128];
+    static char EnvVar1[128];
+
+    strcpy(EnvVar, KRB5CCNAME);
+    retval = putenv(EnvVar);
+    strcpy(EnvVar1, KRBTKFILE);
+    retval = putenv(EnvVar1);
+
+    for (i = 0; i < (int)strlen(PrincipalName); i++)
+        PrincipalName[i] = tolower(PrincipalName[i]);
+    if (strlen(PrincipalName) == 0)
+    {
+        strcpy(PrincipalName, PRODUCTION_PRINCIPAL);
+        if (strcmp(ldap_domain, PRIMARY_DOMAIN))
+            strcpy(PrincipalName, TEST_PRINCIPAL);
+    }
+
+    memset(KinitPath, '\0',sizeof(KinitPath));
+#ifndef _WIN32
+    strcpy(KinitPath, "/usr/athena/bin/");
+#endif
+    sprintf(temp, "%skinit -k -t %s %s", KinitPath, KEYTABFILE, PrincipalName);
+    retval = system(temp);
+    if (retval)
+        return(-1);
+    return(0);
+}
+
+int get_tickets()
+{
+
+    if (tickets_get_k5())
+    {
+        sleep(1);
+        if (tickets_get_k5())
+        {
+            critical_alert("AD incremental", "%s",
+                           "winad.incr incremental failed (unable to get kerberos tickets)");
+            exit(1);
+        }
+    }
+    return(0);
+}
+
+int destroy_cache(void)
+{
+  krb5_context		context;
+  krb5_ccache			cache;
+  krb5_error_code	rc;
+
+  context = NULL;
+  cache = NULL;
+  if (!krb5_init_context(&context))
+    {
+      if (!krb5_cc_default(context, &cache))
+        rc = krb5_cc_destroy(context, cache);
+    }
+  if (context != NULL)
+    krb5_free_context(context);
+  dest_tkt();
+
+  return(rc);
+}
+
+
+void StringTrim(char *StringToTrim)
+{
+    char    *cPtr;
+    char    temp[256];
+    int     i;
+
+    if (strlen(StringToTrim) == 0)
+        return;
+
+    cPtr = StringToTrim;
+    while (isspace(*cPtr))
+    {
+        ++cPtr;
+    }
+    strcpy(temp, cPtr);
+    if (strlen(temp) == 0)
+    {
+        strcpy(StringToTrim, temp);
+        return;
+    }
+    while (1)
+    {
+        i = strlen(temp);
+        if (i == 0)
+            break;
+        if (!isspace(temp[i-1]))
+            break;
+        temp[i-1] = '\0';
+    }
+
+    strcpy(StringToTrim, temp);
+    return;
+}
+
+void ReadConfigFile()
+{
+    int     Count;
+    int     i;
+    int     k;
+    char    temp[256];
+    char    temp1[256];
+    FILE    *fptr;
+
+    Count = 0;
+
+    if ((fptr = fopen(WINADCFG, "r")) != NULL)
+    {
+        while (fgets(temp, sizeof(temp), fptr) != 0)
+        {
+            for (i = 0; i < (int)strlen(temp); i++)
+                temp[i] = toupper(temp[i]);
+            if (temp[strlen(temp) - 1] == '\n')
+                temp[strlen(temp) - 1] = '\0';
+            StringTrim(temp);
+            if (strlen(temp) == 0)
+                continue;
+            if (!strncmp(temp, DOMAIN, strlen(DOMAIN)))
+            {
+                if (strlen(temp) > (strlen(DOMAIN)))
+                {
+                    strcpy(ldap_domain, &temp[strlen(DOMAIN)]);
+                    StringTrim(ldap_domain);
+                }
+            }
+            else if (!strncmp(temp, PRINCIPALNAME, strlen(PRINCIPALNAME)))
+            {
+                if (strlen(temp) > (strlen(PRINCIPALNAME)))
+                {
+                    strcpy(PrincipalName, &temp[strlen(PRINCIPALNAME)]);
+                    StringTrim(PrincipalName);
+                }
+            }
+            else if (!strncmp(temp, SERVER, strlen(SERVER)))
+            {
+                if (strlen(temp) > (strlen(SERVER)))
+                {
+                    ServerList[Count] = calloc(1, 256);
+                    strcpy(ServerList[Count], &temp[strlen(SERVER)]);
+                    StringTrim(ServerList[Count]);
+                    ++Count;
+                }
+            }
+            else if (!strncmp(temp, MSSFU, strlen(MSSFU)))
+            {
+                if (strlen(temp) > (strlen(MSSFU)))
+                {
+                    strcpy(temp1, &temp[strlen(MSSFU)]);
+                    StringTrim(temp1);
+                    if (!strcmp(temp1, SFUTYPE))
+                        UseSFU30 = 1;
+                }
+            }
+            else if (!strcasecmp(temp, "NOCHANGE"))
+            {
+                NoChangeConfigFile = 1;
+            }
+            else
+            {
+                if (strlen(ldap_domain) != 0)
+                {
+                    memset(ldap_domain, '\0', sizeof(ldap_domain));
+                    break;
+                }
+                if (strlen(temp) != 0)
+                    strcpy(ldap_domain, temp);
+            }
+        }
+        fclose(fptr);
+    }
+
+    if (strlen(ldap_domain) == 0)
+    {
+        critical_alert("incremental", "%s",
+                       "winad.incr cannot run due to a configuration error in winad.cfg");
+        exit(1);
+    }
+    if (Count == 0)
+        return;
+    for (i = 0; i < Count; i++)
+    {
+        if (ServerList[i] != 0)
+        {
+            strcat(ServerList[i], ".");
+            strcat(ServerList[i], ldap_domain);
+            for (k = 0; k < (int)strlen(ServerList[i]); k++)
+                ServerList[i][k] = toupper(ServerList[i][k]);
+        }
+    }
+
 }

@@ -1,4 +1,4 @@
-/* $Id: printng.pc,v 1.1 1999-06-02 22:23:02 danw Exp $
+/* $Id: printng.pc,v 1.2 1999-06-02 23:10:31 danw Exp $
  *
  * This generates printcaps and other files for Athena print servers
  *
@@ -22,7 +22,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/printng.pc,v 1.1 1999-06-02 22:23:02 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/printng.pc,v 1.2 1999-06-02 23:10:31 danw Exp $");
 
 char *whoami = "printng.gen";
 char *db = "moira/moira";
@@ -282,6 +282,19 @@ void do_host(char *host)
 	  tarfile_end(tf);
 	}
     }
+
+  /* lpcaccess.top */
+  EXEC SQL SELECT ps.lpc_acl INTO :lpc_acl
+    FROM printservers ps, machine m
+    WHERE m.name = :spoolhost AND m.mach_id = ps.mach_id;
+  if (!sqlca.sqlcode && lpc_acl)
+    {
+      out = tarfile_start(tf, "/var/spool/printer/lpcaccess.top",
+			  0755, 1, 1, "daemon", "daemon", now);
+      dump_acl(out, lpc_acl, 1);
+      tarfile_end(tf);
+    }
+
   EXEC SQL CLOSE csr_spool;
 
   tarfile_close(tf);
@@ -330,16 +343,16 @@ void dump_acl(FILE *out, int id, int realms)
 	  if (at)
 	    {
 	      if (dot && dot < at)
-		fprintf(out, "%.*s/%s", dot - princ, princ, dot + 1);
+		fprintf(out, "%.*s/%s\n", dot - princ, princ, dot + 1);
 	      else
-		fprintf(out, "%s", princ);
+		fprintf(out, "%s\n", princ);
 	    }
 	  else
 	    {
 	      if (dot)
-		fprintf(out, "%.*s/%s@ATHENA.MIT.EDU", dot - princ, princ);
+		fprintf(out, "%.*s/%s@ATHENA.MIT.EDU\n", dot - princ, princ);
 	      else
-		fprintf(out, "%s@ATHENA.MIT.EDU", princ);
+		fprintf(out, "%s@ATHENA.MIT.EDU\n", princ);
 	    }
 	}
     }

@@ -1,4 +1,4 @@
-/* $Id: pobox.c,v 1.2 2000-02-21 21:16:32 zacheiss Exp $
+/* $Id: pobox.c,v 1.3 2000-02-22 17:45:50 rbasch Exp $
  *
  * Shared routines for pobox changing.
  *
@@ -17,7 +17,7 @@
 
 #include <com_err.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/lib/pobox.c,v 1.2 2000-02-21 21:16:32 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/lib/pobox.c,v 1.3 2000-02-22 17:45:50 rbasch Exp $");
 
 enum { POTYPE_ERROR, POTYPE_POP, POTYPE_LOCAL, POTYPE_MAILHUB, POTYPE_SMTP };
 static int potype(char *machine);
@@ -62,7 +62,7 @@ int mrcl_validate_pobox_smtp(char *user, char *address, char **ret)
 	}
       else
 	{
-	  com_err(whoami, 0, "No hostname in address \"%s\".", address);
+	  com_err(whoami, 0, "No hostname in address \"%s@\".", p);
 	  status = MRCL_REJECT;
 	  goto cleanup;
 	}

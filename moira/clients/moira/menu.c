@@ -5,7 +5,7 @@
  *
  * $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v $
  * $Author: danw $
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.46 1998-01-06 20:39:34 danw Exp $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.47 1998-01-07 17:00:03 danw Exp $
  *
  * Generic menu system module.
  *
@@ -18,7 +18,7 @@
  */
 
 #ifndef lint
-static char rcsid_menu_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.46 1998-01-06 20:39:34 danw Exp $";
+static char rcsid_menu_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.47 1998-01-07 17:00:03 danw Exp $";
 #endif
 
 #include <mit-copyright.h>
@@ -730,24 +730,11 @@ struct menu_line *Find_command(Menu *m, char *command)
 
 int toggle_logging(int argc, char *argv[])
 {
-  int pid;
   char buf[BUFSIZ];
 
   if (!log_file)
     {
-      pid = getpid();
-      if (!whoami)
-	{
-	  Put_message("I've lost my SENSE of DIRECTION!  I have no IDEA who I AM!");
-	  Put_message("My God... You've turned him into a DEMOCRAT!!");
-	  Put_message("		-- Doonesbury");
-	  Put_message("");
-	  Put_message("translation:  your log file can be found in \"/usr/tmp/a.out.pid\".");
-	  whoami = "a.out";
-	  sprintf(buf, "/usr/tmp/%s-log.%d", whoami, pid);
-	}
-      else
-	sprintf(buf, "/usr/tmp/%s-log.%d", whoami, pid);
+      sprintf(buf, "/var/tmp/%s-log.%ld", whoami, (long)getpid());
 
       /* open the file */
       log_file = fopen(buf, "a");

@@ -1,4 +1,4 @@
-/* $Id: main.c,v 1.40 2000-06-09 19:35:57 zacheiss Exp $
+/* $Id: main.c,v 1.41 2001-04-26 21:36:44 zacheiss Exp $
  *
  *	This is the file main.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -26,13 +26,14 @@
 #include <unistd.h>
 #endif /* HAVE_UNISTD_H */
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/main.c,v 1.40 2000-06-09 19:35:57 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/main.c,v 1.41 2001-04-26 21:36:44 zacheiss Exp $");
 
 static void ErrorExit(char *buf, int status);
 static void Usage(void);
 static void Signal_Handler(int sig);
 static void CatchInterrupt(int sig);
 static void SetHandlers(void);
+static char* get_program_name(char *arg);
 
 char *whoami;			/* used by menu.c ugh!!! */
 char *moira_server;
@@ -56,11 +57,7 @@ int main(int argc, char **argv)
   Menu *menu;
   char **arg;
 
-  if (!(program_name = strrchr(argv[0], '/')))
-    program_name = argv[0];
-  else
-    program_name++;
-  program_name = strdup(program_name);
+  program_name = get_program_name(argv[0]);
   whoami = strdup(program_name); /* used by menu.c,  ugh !!! */
 
   user = mrcl_krb_user();
@@ -239,5 +236,30 @@ static void SetHandlers(void)
   else
 #endif
       signal(SIGINT, CatchInterrupt);
+}
+#endif
+
+#ifdef _WIN32
+static char* get_program_name(char *arg)
+{
+  char* prog;
+  char* ext;
+  prog = max(max(strrchr(arg, '/'), strrchr(arg, '\\')) + 1, arg);
+  prog = _strlwr(prog);
+  prog = strdup(prog);
+  ext = strrchr(prog, '.');
+  if (ext && !strcmp(ext, ".exe"))
+    *ext = 0;
+  return prog;
+}
+#else
+static char* get_program_name(char *arg)
+{
+  char* prog;
+  if (!(prog = strrchr(arg, '/')))
+    prog = arg;
+  else
+    prog++;
+  return strdup(prog);
 }
 #endif

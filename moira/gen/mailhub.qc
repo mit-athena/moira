@@ -1,5 +1,5 @@
 
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/mailhub.qc,v 1.2 1990-01-12 16:26:51 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/mailhub.qc,v 1.3 1990-02-15 15:04:10 mar Exp $
  *
  * This generates the /usr/lib/aliases file for the mailhub.
  *
@@ -321,8 +321,8 @@ int dummy;
     insert_name(u->last, id, FALSE, FALSE);
     sprintf(buffer, "%s_%s", u->first, u->last);
     insert_name(buffer, id, FALSE, TRUE);
-    sprintf(buffer, "%c_%s", u->first[0], u->last);
-    insert_name(buffer, id, FALSE, TRUE);
+/*    sprintf(buffer, "%c_%s", u->first[0], u->last);
+    insert_name(buffer, id, FALSE, TRUE); */
     if (u->mi) {
 	sprintf(buffer, "%s_%c_%s", u->first, u->mi, u->last);
 	insert_name(buffer, id, FALSE, TRUE);

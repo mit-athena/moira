@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.26 1995-10-26 22:56:08 jweiss Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.27 1996-10-10 20:28:44 danw Exp $
  *
  * Command line oriented Moira List tool.
  *
@@ -17,13 +17,14 @@
 #include <mit-copyright.h>
 #include <errno.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <ctype.h>
 #include <string.h>
 #include <moira.h>
 #include <moira_site.h>
 
 #ifndef LINT
-static char blanche_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.26 1995-10-26 22:56:08 jweiss Exp $";
+static char blanche_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.27 1996-10-10 20:28:44 danw Exp $";
 #endif
 
 
@@ -306,9 +307,18 @@ char **argv;
 	    membervec[1] = "LIST";
 	    status = mr_query("add_member_to_list", 3, membervec,
 			       scream, NULL);
-	    if (status == MR_SUCCESS)
-	      break;
-	    else if (status != MR_LIST || memberstruct->type != M_ANY) {
+	    if (status == MR_SUCCESS) {
+	        if (!strcmp(membervec[0], getenv("USER"))) {
+		    fprintf(stderr, "\nWARNING: \"LIST:%s\" was just added to list \"%s\".\n",
+			    membervec[2], membervec[0]);
+		    fprintf(stderr, "If you meant to add yourself to the list \"%s\", type:\n", membervec[2]);
+		    fprintf(stderr, "\tblanche %s -d %s\t(to undo this)\n",
+			    membervec[0], membervec[2]);
+		    fprintf(stderr, "\tblanche %s -a %s\t(to add yourself to that list)\n",
+			    membervec[2], membervec[0]);
+		}
+	        break;
+	    } else if (status != MR_LIST || memberstruct->type != M_ANY) {
 		com_err(whoami, status, "while adding member %s to %s",
 			memberstruct->name, listname);
 		break;
@@ -391,10 +401,15 @@ char **argv;
 	    membervec[1] = "STRING";
 	    status = mr_query("delete_member_from_list", 3, membervec,
 			       scream, NULL);
-	    if (status == MR_STRING && memberstruct->type == M_ANY)
+	    if (status == MR_STRING && memberstruct->type == M_ANY) {
 	      com_err(whoami, 0, " Unable to find member %s to delete from %s",
 		      memberstruct->name, listname);
-	    else if (status != MR_SUCCESS)
+	      if (!strcmp(membervec[0], getenv("USER"))) {
+		fprintf(stderr, "(If you were trying to remove yourself from the list \"%s\",\n", membervec[2]);
+		fprintf(stderr, "the correct command is \"blanche %s -d %s\".)\n",
+			membervec[2], membervec[0]);
+	      }
+	    } else if (status != MR_SUCCESS)
 	      com_err(whoami, status, "while deleting member %s from %s",
 		      memberstruct->name, listname);
 	    break;
@@ -447,7 +462,7 @@ char **argv;
     fprintf(stderr, "   -dl | -deletelist filename\n");
     fprintf(stderr, "   -f | -file filename\n");
     fprintf(stderr, "   -n | -noauth\n");
-    fprintf(stderr, "   -S | -server host[:port]\n");
+    fprintf(stderr, "   -db | -server host[:port]\n");
     fprintf(stderr, "   -D | -debug\n");
     exit(1);
 }

@@ -174,7 +174,7 @@ modtime on the user, finger and pobox records. Errors: MR\_NOT\_UNIQUE
 MR\_BAD\_CLASS ``Specified class is not known'' if the class is not in the
 alias database.
 
-\item[register\_user, rusr](uid, login, pobox_type)
+\item[register\_user, rusr](uid, login, pobox\_type)
 
 Registers a user. This consists of changing their username, and creating
 a pobox, a filesystem, and a quota for them.  The user is identified by
@@ -569,19 +569,20 @@ existing piece of data for the cluster.
 \begin{description}
 
 \item[get\_list\_info, glin](list) $\rightarrow$ list, active, public, hidden,
-maillist, group, gid, nfsgroup, ace\_type, ace\_name, description, modtime, modby,
+maillist, group, gid, nfsgroup, ace\_type, ace\_name, memace\_type,
+memace\_name, description, modtime, modby,
 modwith
 
 Returns information about the named list.  The {\em list} name may
 contain wildcards.  {\em active, public, hidden, maillist, group}, and
-{\em nfsgroup} are booleans returned as integers (0 is false, non-zero is
-true).  The {\em ace-type} is either {\bf USER}, {\bf LIST}, or {\bf NONE},
-and the {\em ace\_name} will be either a login name, a list name, or
-{\bf NONE}, respectively.  This query is allowed if the list is not
-hidden or the user executing the query is on the ACE of the target
-list.  If the user executing this query is on the query ACL, he may
-use wildcards in the {\em list} name, otherwise wildcards are not
-allowed.
+{\em nfsgroup} are booleans returned as integers (0 is false, non-zero
+is true).  The {\em ace\_type} and {\em memace\_type} are either {\bf
+USER}, {\bf LIST}, or {\bf NONE}, and the {\em ace\_name} and {\em
+memace\_name} will be either a login name, a list name, or {\bf NONE}.
+This query is allowed if the list is not hidden or the user executing
+the query is on the ACE or the Membership ACL of the target list.  If
+the user executing this query is on the query ACL, he may use wildcards
+in the {\em list} name, otherwise wildcards are not allowed.
 
 \item[expand\_list\_names, exln](list) $\rightarrow$ list
 
@@ -589,46 +590,48 @@ Expands wildcards in a {\em list} name.  A name is passed which may
 contain wildcards, and a set of matching names are returned.
 
 \item[add\_list, alis](list, active, public, hidden, maillist, group, gid,
-nfsgroup, ace\_type, ace\_name, description)
+nfsgroup, ace\_type, ace\_name, memace\_type, memace\_name, description)
 
-Creates a new list and adds it to the database. The {\em list} name
-must be unique among existing list names. {\em active, public, hidden,
-maillist, group}, and {\em nfsgroup} are booleans passed as integers (0 is
-false, non-zero is true). If {\em group} is true and {\em gid} is {\bf
-UNIQUE\_GID} as defined in {\em $\langle$moira.h$\rangle$}, a new
-unique group ID will be assigned, otherwise the integer value given
-for {\em gid} will be assigned to the GID. The {\em ace-type} is
-either {\bf USER}, {\bf LIST}, or {\bf NONE}, and the {\em ace\_name}
-will be either a login name, a list name, or {\bf NONE}, respectively.
-The access list may be the list that is being created
-(self-referential). The list modtime will be set. Errors: MR\_EXISTS
-``Record already exists'' if a list already exists by that name, MR\_ACE
-``No such access control entity'' if the {\em ace\_type} is not {\bf
-USER}, {\bf LIST}, or {\bf NONE}, or if the {\em ace\_name} cannot be
-resolved relative to the {\em ace\_type}.
+Creates a new list and adds it to the database. The {\em list} name must
+be unique among existing list names. {\em active, public, hidden,
+maillist, group}, and {\em nfsgroup} are booleans passed as integers (0
+is false, non-zero is true). If {\em group} is true and {\em gid} is
+{\bf UNIQUE\_GID} as defined in {\em $\langle$moira.h$\rangle$}, a new
+unique group ID will be assigned, otherwise the integer value given for
+{\em gid} will be assigned to the GID. The {\em ace\_type} and {\em
+memace\_type} are either {\bf USER}, {\bf LIST}, or {\bf NONE}, and the
+{\em ace\_name} and {\em memace\_name} will be either a login name, a
+list name, or {\bf NONE}.  The access list and membership ACL may be the
+list that is being created (self-referential). The list modtime will be
+set. Errors: MR\_EXISTS ``Record already exists'' if a list already
+exists by that name, MR\_ACE ``No such access control entity'' if the
+{\em ace\_type} is not {\bf USER}, {\bf LIST}, or {\bf NONE}, or if the
+{\em ace\_name} cannot be resolved relative to the {\em ace\_type}.
 
 \item[update\_list, ulis](list, newname, active, public, hidden, maillist,
-group, gid, nfsgroup, ace\_type, ace\_name, description)
+group, gid, nfsgroup, ace\_type, ace\_name, memace\_type, memace\_name,
+description)
 
 Allows the list information and attributes to be changed. This is not
-equivalent to deleting the list and creating a new one, since
-references to the old name will still apply to the new name if it is
-renamed. The {\em list} name must match exactly one list. The {\em new
-name} must either match the old name or be unique among list names in
-the database. The {\em active, public, hidden, maillist, group}, and {\em
+equivalent to deleting the list and creating a new one, since references
+to the old name will still apply to the new name if it is renamed. The
+{\em list} name must match exactly one list. The {\em new name} must
+either match the old name or be unique among list names in the
+database. The {\em active, public, hidden, maillist, group}, and {\em
 nfsgroup} flags should be 0 if the flag is false, or non-zero if it is
 true. The {\em gid} may be {\bf UNIQUE\_GID} as defined in {\em
 $\langle$moira.h$\rangle$}, in which case a new unique GID will be
-assigned. The {\em ace-type} is either {\bf USER}, {\bf LIST}, or {\bf
-NONE}, and the {\em ace\_name} will be either a login name, a list
-name, or {\bf NONE}, respectively. The list modtime will be set. This
-query may be executed by anyone on the ACE of the target list. Errors:
-MR\_LIST ``No such list'' if the named list does not match exactly one
-list, MR\_NOT\_UNIQUE ``Arguments not unique'' if the new list name
-doesn't either match the old one or is unique, MR\_ACE ``No such access
-control entity'' if the {\em ace\_type} is not {\bf USER}, {\bf LIST},
-or {\bf NONE}, or if the {\em ace\_name} cannot be resolved relative to
-the {\em ace\_type}.
+assigned. The {\em ace\_type} and {\em memace\_type} are either {\bf
+USER}, {\bf LIST}, or {\bf NONE}, and the {\em ace\_name} and {\em
+memace\_name} will be either a login name, a list name, or {\bf
+NONE}. The list modtime will be set; being on the Membership ACL is not
+sufficient.  This query may be executed by anyone on the ACE of the
+target list. Errors: MR\_LIST ``No such list'' if the named list does
+not match exactly one list, MR\_NOT\_UNIQUE ``Arguments not unique'' if
+the new list name doesn't either match the old one or is unique, MR\_ACE
+``No such access control entity'' if the {\em ace\_type} is not {\bf
+USER}, {\bf LIST}, or {\bf NONE}, or if the {\em ace\_name} cannot be
+resolved relative to the {\em ace\_type}.
 
 \item[delete\_list, dlis](list)
 
@@ -644,26 +647,28 @@ MR\_IN\_USE ``Object is in use'' if the list is still being referenced.
 Adds a member to a list.  The specified {\em list} must match exactly
 one list.  Type must be either {\bf USER}, {\bf LIST}, or {\bf STRING}.
 {\em member} is either a login name, a list name, or a text string,
-respectively.  The modtime on the list is updated.  This query may
-be executed by: anyone adding themselves as a {\em USER} to a list with the
-{\em public} bit set or anyone on the ACE of the list being modified.
-Errors: MR\_LIST ``No such list'' if the named list does not exist,
-MR\_TYPE ``Invalid type'' if the member {\em type} is not {\bf USER}, {\bf LIST}, or
-{\bf STRING}, or MR\_NO\_MATCH ``No records in database match query'' if the
-{\em member} name cannot be resolved with the member {\em type}.
+respectively.  The modtime on the list is updated.  This query may be
+executed by: anyone adding themselves as a {\em USER} to a list with the
+{\em public} bit set or anyone on the ACE or Membership ACL of the list
+being modified.  Errors: MR\_LIST ``No such list'' if the named list
+does not exist, MR\_TYPE ``Invalid type'' if the member {\em type} is
+not {\bf USER}, {\bf LIST}, or {\bf STRING}, or MR\_NO\_MATCH ``No
+records in database match query'' if the {\em member} name cannot be
+resolved with the member {\em type}.
 
 \item[delete\_member\_from\_list, dmfl](list, type, member)
 
-Deletes a member from a list.  The specified {\em list} must match exactly
-one list.  The specified {\em type} and {\em member} must exactly match an
-existing member of that list.  The modtime on the list is updated.
-This query may be executed by anyone deleting themselves as a {\bf USER}
-from a list with the {\em public} bit set or anyone on the ACE of the list
-being modified.  Errors: MR\_LIST ``No such list'' if the named list
-does not exist, MR\_TYPE ``Invalid type'' if the member type is not
-{\bf USER}, {\bf LIST}, or {\bf STRING}, or MR\_NO\_MATCH ``No records in database
-match query'' if the {\em member} name cannot be resolved with the member
-{\em type} or if there is no such member in the list.
+Deletes a member from a list.  The specified {\em list} must match
+exactly one list.  The specified {\em type} and {\em member} must
+exactly match an existing member of that list.  The modtime on the list
+is updated.  This query may be executed by anyone deleting themselves as
+a {\bf USER} from a list with the {\em public} bit set or anyone on the
+ACE or Membership ACL of the list being modified.  Errors: MR\_LIST ``No
+such list'' if the named list does not exist, MR\_TYPE ``Invalid type''
+if the member type is not {\bf USER}, {\bf LIST}, or {\bf STRING}, or
+MR\_NO\_MATCH ``No records in database match query'' if the {\em member}
+name cannot be resolved with the member {\em type} or if there is no
+such member in the list.
 
 \item[get\_ace\_use, gaus](ace\_type, ace\_name) $\rightarrow$ object\_type, object\_name
 
@@ -1338,11 +1343,11 @@ entity.
 Updates the information about who has access to a given machine.  The
 {\em machine} name must match exactly one existing machine.
 
-\item[get\_service, gsvc](service) $\rightarrow$ service, protocol, port, description
+\item[get\_service, gsvc](service, protocol) $\rightarrow$ service, protocol, port, description
 
-Retrieves information about a network service.  The service name may
-contain wildcards.  It is safe for this query's ACL to be the list
-containing everybody.
+Retrieves information about a network service.  The service name and
+protocol may contain wildcards.  It is safe for this query's ACL to be
+the list containing everybody.
 
 \item[add\_service, asvc](service, protocol, port, description)
 
@@ -1351,10 +1356,10 @@ service name must not match any existing services.  The protocol must
 be listed as a ``protocol'' in the aliases database, currently ``UDP'' and
 ``TCP''.
 
-\item[delete\_service, dsvc](service)
+\item[delete\_service, dsvc](service, protocol)
 
 Deletes information about a network service from the database.  The
-service name must match exactly one existing service.
+service name must match an existing (service, protocol) pair.
 
 \item[get\_printcap\_entry, gpce](printer) $\rightarrow$ printer, spool\_host,
 spool\_directory, rprinter, quotaserver, authenticate, price, comments,

@@ -5,8 +5,11 @@
  *
  * $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v $
  * $Author: wesommer $
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.2 1987-08-03 04:16:51 wesommer Exp $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.3 1987-08-03 05:10:34 wesommer Exp $
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  87/08/03  04:16:51  wesommer
+ * Here's another, which is probably better.
+ * 
  * Revision 1.1  87/07/31  18:02:23  ambar
  * Initial revision
  * 
@@ -22,7 +25,7 @@
  */
 
 #ifndef lint
-static char rcsid_menu_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.2 1987-08-03 04:16:51 wesommer Exp $";
+static char rcsid_menu_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.3 1987-08-03 05:10:34 wesommer Exp $";
 #endif lint
 
 #include <stdio.h>

@@ -2,6 +2,7 @@
 ** Stub functions
 */
 
+#include	<ctype.h>
 #include	<X11/StringDefs.h>
 #include	<X11/Intrinsic.h>
 #include	<X11/IntrinsicP.h>
@@ -10,13 +11,15 @@
 #include	<X11/CompositeP.h>
 #include	<X11/cursorfont.h>
 #include        <Xm/Text.h>
+#include	<Xm/MessageB.h>
 #include	"mmoira.h"
 #include	<sys/file.h>
 
-static char rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/stubs.c,v 1.8 1992-10-23 18:58:16 mar Exp $";
+static char rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/stubs.c,v 1.9 1992-10-28 16:04:04 mar Exp $";
 
 void	extra_help_callback();
 extern EntryForm *MoiraForms[];
+static DoMoiraSelect(), DoReference();
 
 static Widget	logwidget = NULL;
 
@@ -197,6 +200,9 @@ int modify;
 	       !strcmp(type2, "lpr Data")) {
 	DoReference(name, "select_printer", MM_MOD_PCAP, MM_SHOW_PCAP,
 		    "get_printcap_entry", modify);
+    } else if (!strcmp(type, "Service")) {
+	DoReference(name, "select_service", MM_MOD_SERVICE, MM_SHOW_SERVICE,
+		    "get_server_info", modify);
     } else {
 	XBell(XtDisplay(w), 100);
     }
@@ -503,7 +509,7 @@ XtPointer ret;
 XtPointer dummy;
 {
     int *ip = (int *)ret;
-    *ret = 1;
+    *ip = 1;
 }
 
 void noCallback(w, ret, dummy)
@@ -512,7 +518,7 @@ XtPointer ret;
 XtPointer dummy;
 {
     int *ip = (int *)ret;
-    *ret = -1;
+    *ip = -1;
 }
 
 
@@ -530,6 +536,7 @@ char *text, *helpname;
 	int		n;
 	static XmString        label, yes = NULL, no;
 	XEvent	event;
+	XtAppContext _XtDefaultAppContext();
 
 	if (!yes) {
 	    yes = XmStringCreate("Yes", XmSTRING_DEFAULT_CHARSET);

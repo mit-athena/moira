@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/aliases.qc,v 1.11 1989-12-08 18:23:05 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/aliases.qc,v 1.12 1989-12-11 17:46:57 mar Exp $
  *
  * This generates the /usr/lib/aliases mail aliases file for the mailhub.
  * The aliases file will contain:
@@ -137,10 +137,10 @@ struct member {
     int list_id;
 };
 struct list {
-    char name[33];
+    char *name;
     char maillist;
     char acl_t;
-    char description[256];
+    char *description;
     int acl_id;
     struct member *m;
 };
@@ -165,8 +165,8 @@ get_info()
 ##  retrieve (id = machine.mach_id, name = machine.#name) {
       if (s = index(name, '.'))
 	*s = 0;
-      sprintf(buf, "%s.LOCAL", name);
-      hash_store(machines, id, strsave(buf));
+      strcat(name, ".LOCAL");
+      hash_store(machines, id, strsave(name));
 ##  }
 
     fprintf(stderr, "Loading strings\n");
@@ -176,39 +176,43 @@ get_info()
 ##  }
 
     fprintf(stderr, "Loading users\n");
-    users = create_hash(15000);
+    users = create_hash(12001);
 ##  range of u is users
 ##  retrieve (id = u.users_id, name = u.login, type = u.potype,
 ##	      pid = u.pop_id, bid = u.box_id) 
 ##    	where u.status = 1 or u.status = 5 or u.status = 6 {
 	u = (struct user *) malloc(sizeof(struct user));
 	strcpy(u->login, strtrim(name));
-	u->pobox = (char *) NULL;
 	if (type[0] == 'P') {
 	    if (s = hash_lookup(machines, pid)) {
 		sprintf(buf, "%s@%s", name, s);
 		u->pobox = strsave(buf);
 	    } else {
+		u->pobox = (char *) NULL;
 		fprintf(stderr, "User %s's pobox is on a missing machine!\n",
 			u->login);
 	    }
 	} else if (type[0] ==  'S') {
-	    if ((u->pobox = hash_lookup(strings, bid)) == NULL)
-	      fprintf(stderr, "User %s's pobox string is missing!\n", u->login);
-	}
+	    if ((u->pobox = hash_lookup(strings, bid)) == NULL) {
+		u->pobox = (char *) NULL;
+		fprintf(stderr, "User %s's pobox string is missing!\n",
+			u->login);
+	    }
+	} else
+	  u->pobox = (char *) NULL;
 	hash_store(users, id, u);
 ##  }
 
     fprintf(stderr, "Loading lists\n");
-    lists = create_hash(15000);
+    lists = create_hash(15001);
 ##  range of l is list
 ##  retrieve (id = l.list_id, name = l.#name, maillistp = l.maillist,
 ##	      buf = l.desc, type = l.acl_type, acl = l.acl_id)
 ##    where l.active != 0 {
 	l = (struct list *) malloc(sizeof(struct list));
-	strcpy(l->name, strtrim(name));
+	l->name = strsave(strtrim(name));
 	l->maillist = maillistp;
-	strcpy(l->description, strtrim(buf));
+	l->description = strsave(strtrim(buf));
 	l->acl_t = type[0];
 	l->acl_id = acl;
 	l->m = (struct member *) NULL;
@@ -222,21 +226,22 @@ get_info()
 ##    	where m.direct = 1  {
 	if (l = (struct list *) hash_lookup(lists, id)) {
 	    m = (struct member *) malloc(sizeof(struct member));
-	    m->name = (char *) NULL;
-	    if (type[0] == 'U') {
+	    if (type[0] == 'U' &&
+		(u = (struct user *) hash_lookup(users, mid))) {
 		m->list_id = 0;
-		if (u = (struct user *) hash_lookup(users, mid))
-		  m->name = u->login;
-	    } else if (type[0] == 'L') {
+		m->name = u->login;
+		m->next = l->m;
+		l->m = m;
+	    } else if (type[0] == 'L' &&
+		       (memberlist = (struct list *) hash_lookup(lists, mid))) {
 		m->list_id = mid;
-		if (memberlist = (struct list *) hash_lookup(lists, mid))
-		  m->name = memberlist->name;
-	    } else if (type[0] == 'S') {
+		m->name = memberlist->name;
+		m->next = l->m;
+		l->m = m;
+	    } else if (type[0] == 'S' &&
+		       (s = hash_lookup(strings, mid))) {
 		m->list_id = 0;
-		if (s = hash_lookup(strings, mid))
-		  m->name = s;
-	    }
-	    if (m->name != (char *) NULL) {
+		m->name = s;
 		m->next = l->m;
 		l->m = m;
 	    }
@@ -247,11 +252,11 @@ get_info()
 
 save_mlist(id, l, force)
 int id;
-struct list *l;
+register struct list *l;
 int force;
 {
     register struct member *m;
-    register struct list *l1;
+    struct list *l1;
 
     if (l->maillist == 2 ||
 	(l->maillist == 0 && !force))
@@ -277,10 +282,10 @@ int force;
 
 int lwid, bol, awid;
 
-output_mlist(id, l, out)
+output_mlist(id, l, dummy)
 int id;
 register struct list *l;
-FILE *out;
+int dummy;
 {
     struct list *l1;
     register struct member *m;
@@ -329,19 +334,20 @@ register char *s;
     register wwid;
     static int cont = 1;
 
-    strtrim(s);
     wwid = strlen(s);
 
     if (!bol && awid + wwid + 2 > AL_MAX_WID) {
 	fprintf(out, ",\n\tcontinuation-%d\ncontinuation-%d: ", cont, cont);
 	cont++;
-	awid = lwid = bol = 17;
+	awid = lwid = 17 + wwid;
+	fputs(s, out);
+	return;
     }
 
     if (bol) {
 	lwid += wwid;
 	awid = lwid;
-	fprintf(out, "%s", s);
+	fputs(s, out);
 	bol = 0;
 	return;
     }

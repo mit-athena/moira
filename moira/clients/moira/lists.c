@@ -1,4 +1,4 @@
-/* $Id: lists.c,v 1.45 2001-03-02 04:44:57 zacheiss Exp $
+/* $Id: lists.c,v 1.46 2001-04-04 23:19:49 zacheiss Exp $
  *
  *	This is the file lists.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -24,7 +24,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v 1.45 2001-03-02 04:44:57 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v 1.46 2001-04-04 23:19:49 zacheiss Exp $");
 
 struct mqelem *GetListInfo(int type, char *name1, char *name2);
 char **AskListInfo(char **info, Bool name);
@@ -232,17 +232,26 @@ char **AskListInfo(char **info, Bool name)
 	return NULL;
     }
 
-  if (GetTypeFromUser("What Type of Administrator", "ace_type",
-		      &info[L_ACE_TYPE]) == SUB_ERROR)
-    return NULL;
-  if (strcasecmp(info[L_ACE_TYPE], "NONE") &&
-      strcasecmp(info[L_ACE_TYPE], "none"))
-    {
-      sprintf(temp_buf, "Which %s will be the administrator of this list: ",
-	      info[L_ACE_TYPE]);
-      if (GetValueFromUser(temp_buf, &info[L_ACE_NAME]) == SUB_ERROR)
-	return NULL;
-    }
+  do {
+    if (GetTypeFromUser("What Type of Administrator", "ace_type",
+			&info[L_ACE_TYPE]) == SUB_ERROR)
+      return NULL;
+    if (strcasecmp(info[L_ACE_TYPE], "none"))
+      {
+	sprintf(temp_buf, "Which %s will be the administrator of this list: ",
+		info[L_ACE_TYPE]);
+	if (GetValueFromUser(temp_buf, &info[L_ACE_NAME]) == SUB_ERROR)
+	  return NULL;
+      }
+    else
+      {
+	Put_message("Setting the administrator of this list to 'NONE'");
+	Put_message("will make you unable to further modify the list.");
+	if (YesNoQuestion("Do you really want to do this?", FALSE) == TRUE)
+	  break;
+      }
+  } while (!strcasecmp(info[L_ACE_TYPE], "none"));
+	
   if (!strcasecmp(info[L_ACE_TYPE], "kerberos"))
     {
       char *canon;
@@ -256,8 +265,7 @@ char **AskListInfo(char **info, Bool name)
   if (GetTypeFromUser("What Type of Membership Administrator", "ace_type",
 		      &info[L_MEMACE_TYPE]) == SUB_ERROR)
     return NULL;
-  if (strcasecmp(info[L_MEMACE_TYPE], "NONE") &&
-      strcasecmp(info[L_MEMACE_TYPE], "none"))
+  if (strcasecmp(info[L_MEMACE_TYPE], "none"))
     {
       sprintf(temp_buf, "Which %s will be the membership administrator of this list: ",
 	      info[L_MEMACE_TYPE]);

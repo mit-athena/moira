@@ -1,4 +1,4 @@
-/* $Id: blanche.c,v 1.60 2002-12-03 21:23:13 zacheiss Exp $
+/* $Id: blanche.c,v 1.61 2003-03-12 00:43:32 zacheiss Exp $
  *
  * Command line oriented Moira List tool.
  *
@@ -20,7 +20,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.60 2002-12-03 21:23:13 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.61 2003-03-12 00:43:32 zacheiss Exp $");
 
 struct member {
   int type;
@@ -501,8 +501,15 @@ int main(int argc, char **argv)
 	argv[L_NFSGROUP + 1] = nfsgroup ? "1" : "0";
       if (mailman != -1)
 	argv[L_MAILMAN + 1] = mailman ? "1" : "0";
+
+      /* If someone toggled the mailman bit, but didn't specify a server,
+       * default to [ANY].
+       */
       if (mailman_server)
 	argv[L_MAILMAN_SERVER + 1] = mailman_server;
+      else if ((mailman == 1) && !strcmp(argv[L_MAILMAN_SERVER + 1], "[NONE]"))
+	argv[L_MAILMAN_SERVER + 1] = "[ANY]";
+
       if (desc)
 	argv[L_DESC + 1] = desc;
 

@@ -1,15 +1,15 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/client.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/client.c,v 1.15 1997-01-29 23:28:59 danw Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/client.c,v 1.16 1997-07-03 03:19:45 danw Exp $
  */
 
 #ifndef lint
-static char *rcsid_client2_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/client.c,v 1.15 1997-01-29 23:28:59 danw Exp $";
+static char *rcsid_client2_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/client.c,v 1.16 1997-07-03 03:19:45 danw Exp $";
 #endif	lint
 
 /*
  * MODULE IDENTIFICATION:
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/client.c,v 1.15 1997-01-29 23:28:59 danw Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/client.c,v 1.16 1997-07-03 03:19:45 danw Exp $
  *	Copyright 1987, 1988 by the Massachusetts Institute of Technology.
  *	For copying and distribution information, please see the file
  *	<mit-copyright.h>.
@@ -40,6 +40,7 @@ static char *rcsid_client2_c = "$Header: /afs/.athena.mit.edu/astaff/project/moi
 #include <krb.h>
 
 extern int errno, dbg;
+extern C_Block session;
 
 static char buf[BUFSIZ];
 static int code;
@@ -161,7 +162,7 @@ char *instructions;
 	goto update_failed;
     }
     
-    code = send_file(pathname, target_path, 0);
+    code = send_file(pathname, target_path, 1);
     if (code)
       goto update_failed;
 
@@ -192,8 +193,6 @@ char *instructions;
 #undef ASSERT
 }
 
-
-static
 send_auth(host_name)
 char *host_name;
 {
@@ -202,12 +201,13 @@ char *host_name;
     STRING data;
     register int code;
     int response;
+    int auth_version = 2;
     
     code = get_mr_update_ticket(host_name, ticket);
     if (code) {
 	return(code);
     }
-    STRING_DATA(data) = "AUTH_001";
+    STRING_DATA(data) = "AUTH_002";
     MAX_STRING_SIZE(data) = 9;
     code = send_object(conn, (char *)&data, STRING_T);
     if (code) {
@@ -218,7 +218,20 @@ char *host_name;
 	return(connection_errno(conn));
     }
     if (response) {
-	return(response);
+	STRING_DATA(data) = "AUTH_001";
+	MAX_STRING_SIZE(data) = 9;
+	code = send_object(conn, (char *)&data, STRING_T);
+	if (code) {
+	    return(connection_errno(conn));
+	}
+	code = receive_object(conn, (char *)&response, INTEGER_T);
+	if (code) {
+	    return(connection_errno(conn));
+	}
+	if (response) {
+	    return(response);
+	}
+	auth_version = 1;
     }
     STRING_DATA(data) = (char *)ticket->dat;
     MAX_STRING_SIZE(data) = ticket->length;
@@ -233,10 +246,34 @@ char *host_name;
     if (response) {
 	return(response);
     }
+    
+    if (auth_version == 2) {
+	des_key_schedule sched;
+	C_Block enonce;
+
+	code = receive_object(conn, (char *)&data, STRING_T);
+	if (code) {
+	    return(connection_errno(conn));
+	}
+	des_key_sched(&session, &sched);
+	des_ecb_encrypt(STRING_DATA(data), enonce, sched, 1);
+	STRING_DATA(data) = enonce;
+	code = send_object(conn, (char *)&data, STRING_T);
+	if (code) {
+	    return(connection_errno(conn));
+	}
+	code = receive_object(conn, (char *)&response, INTEGER_T);
+	if (code) {
+	    return(connection_errno(conn));
+	}
+	if (response) {
+	    return(response);
+	}
+    }
+
     return(MR_SUCCESS);
 }
 
-static
 execute(path)
     char *path;
 {
@@ -252,8 +289,6 @@ execute(path)
     code = receive_object(conn, (char *)&response, INTEGER_T);
     if (code)
 	return(connection_errno(conn));
-    if (dbg & DBG_TRACE)
-      com_err(whoami, response, "execute returned %d", response);
     if (response)
       return(response);
     return(MR_SUCCESS);

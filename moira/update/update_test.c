@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/update_test.c,v 1.4 1997-01-29 23:29:06 danw Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/update_test.c,v 1.5 1997-07-03 03:19:46 danw Exp $
  *
  * Test client for update_server protocol.
  * 
@@ -124,78 +124,4 @@ usage()
     fprintf(stderr, "\t-x\t\texecutes last instructions\n");
     fprintf(stderr, "\t-X file\t\texecutes file\n");
     exit(1);
-}
-
-send_auth(host_name)
-char *host_name;
-{
-    KTEXT_ST ticket_st;
-    KTEXT ticket = &ticket_st;
-    STRING data;
-    register int code;
-    int response;
-    
-    code = get_mr_update_ticket(host_name, ticket);
-    if (code) {
-	return(code);
-    }
-    STRING_DATA(data) = "AUTH_001";
-    MAX_STRING_SIZE(data) = 9;
-    code = send_object(conn, (char *)&data, STRING_T);
-    if (code) {
-	return(connection_errno(conn));
-    }
-    code = receive_object(conn, (char *)&response, INTEGER_T);
-    if (code) {
-	return(connection_errno(conn));
-    }
-    if (response) {
-	return(response);
-    }
-    STRING_DATA(data) = (char *)ticket->dat;
-    MAX_STRING_SIZE(data) = ticket->length;
-    code = send_object(conn, (char *)&data, STRING_T);
-    if (code) {
-	return(connection_errno(conn));
-    }
-    code = receive_object(conn, (char *)&response, INTEGER_T);
-    if (code) {
-	return(connection_errno(conn));
-    }
-    if (response) {
-	com_err(whoami, response, "Permission to connect denied");
-	return(response);
-    }
-    return(MR_SUCCESS);
-}
-
-execute(path)
-    char *path;
-{
-    int response;
-    STRING data;
-    register int code;
-    
-    string_alloc(&data, BUFSIZ);
-    sprintf(STRING_DATA(data), "EXEC_002 %s", path);
-    code = send_object(conn, (char *)&data, STRING_T);
-    if (code)
-	return(connection_errno(conn));
-    code = receive_object(conn, (char *)&response, INTEGER_T);
-    if (code)
-	return(connection_errno(conn));
-    if (response)
-      return(response);
-    return(MR_SUCCESS);
-}
-
-send_quit()
-{
-    STRING str;
-    if (!conn)
-	return;
-    string_alloc(&str, 5);
-    (void) strcpy(STRING_DATA(str), "quit");
-    (void) send_object(conn, (char *)&str, STRING_T);
-    string_free(&str);
 }

@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/include/mr_proto.h,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/include/mr_proto.h,v 1.4 1990-03-17 15:57:31 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/include/mr_proto.h,v 1.5 1990-03-17 16:31:32 mar Exp $
  *
  *	Copyright (C) 1987, 1990 by the Massachusetts Institute of Technology
  *
@@ -9,7 +9,7 @@
 
 #include <stdio.h>
 #include <gdb.h>
-#include <sms.h>
+#include <moira.h>
 
 typedef struct mr_params {
 	u_long mr_size;

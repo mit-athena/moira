@@ -5,7 +5,7 @@
  *
  * $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v $
  * $Author: mar $
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.27 1990-03-17 00:19:53 mar Exp $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.28 1990-04-09 18:03:56 mar Exp $
  *
  * Generic menu system module.
  *
@@ -18,7 +18,7 @@
  */
 
 #ifndef lint
-static char rcsid_menu_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.27 1990-03-17 00:19:53 mar Exp $";
+static char rcsid_menu_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.28 1990-04-09 18:03:56 mar Exp $";
 
 #endif lint
 
@@ -63,6 +63,8 @@ struct menu_screen {
 #define NULLMS ((struct menu_screen *) 0)
 
 Menu *top_menu;			/* Root for command search */
+int parsed_argc;		/* used by extern routines to get additional */
+char **parsed_argv;		/*   comand line input */
 
 /*
  * Hook function to cause error messages to be printed through
@@ -212,9 +214,16 @@ Do_menu(m, margc, margv)
     int toggle_logging();
     
     /* Entry function gets called with old menu_screen still current */
-    if (m->m_entry != NULLFUNC)
+    if (m->m_entry != NULLFUNC) {
 	if (m->m_entry(m, margc, margv) == DM_QUIT)
 	    return DM_NORMAL;
+	if (parsed_argc > 0) {
+	    margc = parsed_argc + 1;
+	    margv = --parsed_argv;
+	}
+    }
+
+    parsed_argc = 0;
 
     /* The following get run only in curses mode */
     if (cur_ms != NULLMS) {
@@ -274,22 +283,32 @@ Do_menu(m, margc, margv)
 	/* This is here because we may be coming from another menu */
 	if (cur_ms != NULL)
 	    touchwin(my_ms->ms_screen);
-	/* Get a command */
-	if (!Prompt_input("Command: ", buf, sizeof(buf))) {
-	    if (cur_ms == NULLMS &&
-		feof(stdin))
-	      sprintf(buf, "quit");
-	    else
+	if (margc > 1) {
+	    /* Initialize argv */
+	    for (argc = 0; argc < MAX_ARGC; argc++)
+	      argv[argc] = argvals[argc];
+	    argc = margc - 1;
+	    for (i = 1; i < margc; i++)
+	      strcpy(argvals[i - 1], margv[i]);
+	    margc = 0;
+	} else {
+	    /* Get a command */
+	    if (!Prompt_input("Command: ", buf, sizeof(buf))) {
+		if (cur_ms == NULLMS &&
+		    feof(stdin))
+		  sprintf(buf, "quit");
+		else
+		  continue;
+	    }
+	    /* Parse it into the argument list */
+	    /* If there's nothing there, try again */
+	    /* Initialize argv */
+	    for (argc = 0; argc < MAX_ARGC; argc++)
+	      argv[argc] = argvals[argc];
+
+	    if ((argc = Parse_words(buf, argv, MAX_ARGLEN)) == 0)
 	      continue;
 	}
-	/* Parse it into the argument list */
-	/* If there's nothing there, try again */
-	/* Initialize argv */
-	for (argc = 0; argc < MAX_ARGC; argc++)
-	    argv[argc] = argvals[argc];
-
-	if ((argc = Parse_words(buf, argv, MAX_ARGLEN)) == 0)
-	    continue;
 	if ((line = atoi(argv[0])) > 0 && line <= m->m_length) {
 	    command = &m->m_lines[line - 1];
 	}
@@ -349,6 +368,8 @@ Do_menu(m, margc, margv)
 			      argvals[argc], sizeof(argvals[argc])))
 		goto punt_command;
 	}
+	parsed_argc = argc - command->ml_argc;
+	parsed_argv = &(argv[command->ml_argc]);
 	if (command->ml_function != NULLFUNC) {
 	    /* If it's got a function, call it */
 	    quitflag = command->ml_function(argc, argv);
@@ -368,10 +389,11 @@ Do_menu(m, margc, margv)
 	    }
 	    if (m->m_exit != NULLFUNC)
 		m->m_exit(m);
+	    parsed_argc = 0;
 	    return (DM_QUIT);
 	}
     punt_command:
-	;
+	parsed_argc = 0;
     }
 }
 

@@ -1,7 +1,7 @@
 /*
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.16 1988-08-11 20:43:38 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.17 1988-09-07 15:02:46 mar Exp $
  *
  *      Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
@@ -14,7 +14,7 @@
  */
 
 #ifndef lint
-static char *rcsid_reg_svr_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.16 1988-08-11 20:43:38 mar Exp $";
+static char *rcsid_reg_svr_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.17 1988-09-07 15:02:46 mar Exp $";
 #endif lint
 
 #include "reg_svr.h"
@@ -514,13 +514,13 @@ int reserve_user(message,retval)
 	    status = UREG_INVALID_UNAME;
     }
     if (status == SUCCESS)
-	if ((login[0] == '.') || (login[1] == '_'))
+	if (login[1] == '_')
 	    status = UREG_INVALID_UNAME;
     if (status == SUCCESS)
     {
 	for (i = 0; i < strlen(login); i++)
-	    if (!islower(login[i]) && !isdigit(login[i]) &&
-		(login[i] != '_') && (login[i] != '.'))
+	    if (!islower(login[i]) && !isdigit(login[i]) && 
+		(login[i] != '_'))
 	    {
 		status = UREG_INVALID_UNAME;
 		break;

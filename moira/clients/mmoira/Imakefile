@@ -1,4 +1,4 @@
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/Imakefile,v 1.1 1993-01-26 15:38:14 mar Exp $
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/Imakefile,v 1.2 1993-10-25 16:45:26 mar Exp $
 #
 # Copyright 1991 by the Massachusetts Institute of Technology.
 #
@@ -7,6 +7,12 @@
 #
 # Imakefile for moira client.
 #
+
+#ifdef GDSS
+GDSSLIB = /mit/gdss/`machtype`/libgdss.a 
+GDSSINC = -I/mit/gdss/include
+#endif
+
 
 SRCS=	main.c formup.c form_setup.c \
 	queries.c help.c stubs.c display.c tty.c parser.c
@@ -17,10 +23,10 @@ OBJS = form_data.o form_setup.o menu_data.o main.o formup.o \
 	queries.o help.o stubs.o display.o tty.o parser.o
 MOTIF = /mit/motif
 INCLUDE= -I$(BUILDTOP)/include -I$(BUILDTOP)/lib -I$(MOTIF)/include \
-	-I/usr/athena/include -I/mit/gdss/include -I.
-DEFINES= -DGDSS -D_NO_PROTO
+	-I/usr/athena/include ${GDSSINC} -I.
+DEFINES= -D_NO_PROTO
 
-program(mmoira, ${OBJS},${MR_LIBDEP} ${GDB_LIBDEP},/mit/gdss/`machtype`/libgdss.a ${CLIBS} -L$(MOTIF)/`machtype`lib -lXm -lXt -lX11,${PROGDIR})
+program(mmoira, ${OBJS},${MR_LIBDEP} ${GDB_LIBDEP},${GDSSLIB} ${CLIBS} -L$(MOTIF)/`machtype`lib -lXm -lXt -lX11,${PROGDIR})
 
 form_data.c: forms.txt forms.awk
 	awk -f forms.awk forms.txt > form_data.c

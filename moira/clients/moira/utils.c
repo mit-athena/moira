@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v 1.31 1991-03-08 10:20:43 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v 1.32 1992-04-06 17:20:02 mar Exp $";
 #endif lint
 
 /*	This is the file utils.c for the MOIRA Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v 1.31 1991-03-08 10:20:43 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v 1.32 1992-04-06 17:20:02 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -498,10 +498,11 @@ char * prompt, ** pointer;
  * a difference that makes no difference, IS no difference.
  */
 
-    if (strcmp(buf, *pointer) != 0) { 
-	if (*pointer != NULL)
+    if (*pointer != NULL) {
+	if (strcmp(buf, *pointer) != 0) { 
 	    free(*pointer);
-	*pointer = Strsave(buf);
+	    *pointer = Strsave(buf);
+	}
     }
     return(SUB_NORMAL);
 }

@@ -2,7 +2,7 @@
 # 	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/Makefile,v $
 #	$Author: mar $
 #	$Locker:  $
-#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/Makefile,v 1.11 1988-09-13 14:46:27 mar Exp $
+#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/Makefile,v 1.12 1989-06-05 14:01:27 mar Exp $
 #
 # (c) Copyright 1988 by the Massachusetts Institute of Technology.
 # For copying and distribution information, please see the file
@@ -20,7 +20,7 @@ reg_svr: $(OBJS)
 		-lsms -lcom_err -lkrb -ldes -lzephyr \
 		/usr/rtingres/lib/libqlib /usr/rtingres/lib/compatlib
 
-reg_svr.o requests.o: reg_svr.h ureg_proto.h
+reg_svr.o requests.o: reg_svr.h
 
 startreg: startreg.c
 	cc -o startreg startreg.c

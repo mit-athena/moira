@@ -1,6 +1,6 @@
 /* This file defines the query dispatch table for version 2 of the protocol
  *
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/queries2.c,v 1.7 1988-08-16 00:34:25 mar Exp $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/queries2.c,v 1.8 1988-08-25 19:24:21 mar Exp $
  *
  * Copyright 1987, 1988 by the Massachusetts Institute of Technology.
  */
@@ -656,7 +656,6 @@ static char *acld_fields[] = {
 static struct valobj acld_valobj[] =
 {
   {V_ID, 0, CLUSTER, NAME, CLU_ID, SMS_CLUSTER},
-  {V_TYPE, 1, "slabel", 0, 0, SMS_TYPE},
   {V_CHAR, 2},
 };
 

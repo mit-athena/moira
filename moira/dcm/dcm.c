@@ -7,11 +7,11 @@
  *
  * $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/dcm.c,v $
  * $Author: danw $
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/dcm.c,v 1.18 1997-01-29 23:13:53 danw Exp $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/dcm.c,v 1.19 1997-07-07 22:49:13 danw Exp $
  */
 
 #ifndef lint
-static char rcsid_dcm_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/dcm.c,v 1.18 1997-01-29 23:13:53 danw Exp $";
+static char rcsid_dcm_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/dcm.c,v 1.19 1997-07-07 22:49:13 danw Exp $";
 #endif lint
 
 #include <stdio.h>
@@ -34,7 +34,7 @@ static char rcsid_dcm_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moirad
 
 extern int log_flags, errno;
 int gqval();
-
+char *whoami;
 
 /* declared global so that we can get the current time from different places. */
 struct timeval tv;
@@ -169,8 +169,7 @@ do_services()
     qargv[1] = "dontcare";
     qargv[2] = "false";
     sq = sq_create();
-    if (status = mr_query_with_retry("qualified_get_server", 3, qargv,
-				      qgetsv, sq)) {
+    if (status = mr_query("qualified_get_server", 3, qargv, qgetsv, sq)) {
 	com_err(whoami, status, " getting services");
 	leave("query failed");
     }
@@ -189,8 +188,7 @@ do_services()
 	sprintf(dfgen_cmd, "exec %s %s/%s.out",
 		dfgen_prog, DCM_DIR, service);
 	gettimeofday(&tv, &tz);
-	if (status = mr_query_with_retry("get_server_info", 1, qargv,
-					  getsvinfo, &svc)) {
+	if (status = mr_query("get_server_info", 1, qargv, getsvinfo, &svc)) {
 	    com_err(whoami, status, " getting service %s info, skipping to next service", service);
 	    continue;
 	}
@@ -212,8 +210,8 @@ do_services()
 		qargv[3] = strsave("1");
 		qargv[4] = strsave("0");
 		qargv[5] = strsave("");
-		status = mr_query_with_retry("set_server_internal_flags", 6,
-					      qargv, scream, NULL);
+		status = mr_query("set_server_internal_flags", 6,
+				  qargv, scream, NULL);
 		if (status != MR_SUCCESS) {
 		    com_err(whoami, status, " setting server state");
 		    goto free_service;
@@ -264,8 +262,8 @@ do_services()
 	    free_service:
 		free(qargv[3]);
 		qargv[3] = strsave("0");
-		status = mr_query_with_retry("set_server_internal_flags", 6,
-					      qargv, scream, NULL);
+		status = mr_query("set_server_internal_flags", 6,
+				  qargv, scream, NULL);
 		if (status)
 		  com_err(whoami, status, " setting service state");
 		close(lock_fd);
@@ -348,8 +346,7 @@ struct service *svc;
     argv[1] = "TRUE";
     argv[2] = argv[3] = argv[4] = "DONTCARE";
     argv[5] = "FALSE";
-    status = mr_query_with_retry("qualified_get_server_host", 6, argv,
-				  qgethost, sq);
+    status = mr_query("qualified_get_server_host", 6, argv, qgethost, sq);
     if (status == MR_NO_MATCH) {
 	return;
     } else if (status) {
@@ -360,8 +357,8 @@ struct service *svc;
 	if (dbg & DBG_TRACE)
 	  com_err(whoami, 0, "checking %s...", machine);
 	argv[1] = machine;
-	status = mr_query_with_retry("get_server_host_info", 2, argv,
-				      gethostinfo, &shost);
+	status = mr_query("get_server_host_info", 2, argv,
+			  gethostinfo, &shost);
 	if (status) {
 	    com_err(whoami,status, " getting server_host_info for %s", machine);
 	    goto free_mach;
@@ -384,8 +381,7 @@ struct service *svc;
 	argv[6] = strsave("");
 	argv[7] = itoa(tv.tv_sec);
 	argv[8] = itoa(shost.lastsuccess);
-	status = mr_query_with_retry("set_server_host_internal", 9, argv,
-				      scream, NULL);
+	status = mr_query("set_server_host_internal", 9, argv, scream, NULL);
 	if (status != MR_SUCCESS) {
 	    com_err(whoami,status," while setting internal state for %s:%s",
 		    svc->service, machine);
@@ -421,8 +417,8 @@ struct service *svc;
 		qargv[3] = strsave("0");
 		qargv[4] = itoa(svc->harderror);
 		qargv[5] = strsave(svc->errmsg);
-		status = mr_query_with_retry("set_server_internal_flags",
-					      6, qargv, scream, NULL);
+		status = mr_query("set_server_internal_flags",
+				  6, qargv, scream, NULL);
 		if (status)
 		  com_err(whoami, status, " setting service state again");
 		free(qargv[0]);
@@ -432,8 +428,8 @@ struct service *svc;
 		free(qargv[4]);
 		free(qargv[5]);
 		close(lock_fd);
-		status = mr_query_with_retry("set_server_host_internal",
-					      9, argv,scream,NULL);
+		status = mr_query("set_server_host_internal",
+				  9, argv,scream,NULL);
 		free(argv[2]);
 		free(argv[5]);
 		if (status)
@@ -442,8 +438,7 @@ struct service *svc;
 	    }
 	}
 	close(lock_fd);
-	status = mr_query_with_retry("set_server_host_internal", 9, argv,
-				      scream, NULL);
+	status = mr_query("set_server_host_internal", 9, argv, scream, NULL);
 	if (status)
 	  com_err(whoami, status, " setting host state again");
 /*	free(argv[2]);

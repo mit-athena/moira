@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/utils.c,v $
  *	$Author: danw $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/utils.c,v 1.8 1997-01-29 23:13:55 danw Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/utils.c,v 1.9 1997-07-07 22:49:14 danw Exp $
  *
  * 
  * 	Utility functions used by the DCM.
@@ -12,7 +12,7 @@
  */
 
 #ifndef lint
-static char *rcsid_utils_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/utils.c,v 1.8 1997-01-29 23:13:55 danw Exp $";
+static char *rcsid_utils_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/utils.c,v 1.9 1997-07-07 22:49:14 danw Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -116,23 +116,4 @@ int exclusive;
     } else if (dbg & DBG_VERBOSE) 
       com_err(whoami, 0, "%s now locked\n", lock);
     return fd;
-}
-
-
-int mr_query_with_retry(name, argc, argv, proc, hint)
-char *name;
-int argc;
-char **argv;
-int (*proc)();
-char *hint;
-{
-    int status, tries;
-
-    for (tries = 0; tries < DEADLOCK_TRIES; tries++) {
-	status = mr_query(name, argc, argv, proc, hint);
-	if (status != MR_DEADLOCK)
-	  return(status);
-	sleep(DEADLOCK_WAIT);
-    }
-    return(status);
 }

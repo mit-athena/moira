@@ -1,6 +1,6 @@
 #	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_et.et,v $
 #	$Author: mar $
-#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_et.et,v 1.8 1988-01-14 13:54:54 mar Exp $
+#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_et.et,v 1.9 1988-08-05 00:09:12 mar Exp $
 #
 	error_table sms
 
@@ -35,7 +35,7 @@ ec 	SMS_ALREADY_CONNECTED,
 	"Already connected to sms"
 
 ec	SMS_ARGS,
-	"Insufficient number of arguments"
+	"Incorrect number of arguments"
 
 ec	SMS_NOT_UNIQUE,
 	"Arguments not unique"
@@ -82,8 +82,8 @@ ec	SMS_QUEUE,
 ec	SMS_DEVICE,
 	"No such device"
 
-ec	SMS_ACL,
-	"No such access control list"
+ec	SMS_ACE,
+	"No such access control entity"
 
 ec	SMS_NFSPHYS,
 	"Machine/device pair not in nfsphys"
@@ -95,18 +95,101 @@ ec	SMS_QUERY_NOT_REENTRANT,
 	"Cannot do query from callback routine"
 
 ec	SMS_RVD,
-	"no such rvd"
+	"No such rvd"
 
 ec	SMS_NFS,
-	"specified directory not exported"
+	"Specified directory not exported"
 
 ec	SMS_FILESYS_ACCESS,
-	"invalid filesys access"
+	"Invalid filesys access"
 
 ec	SMS_USER_GROUP,
-	"list is a user group"
+	"List is a user group"
 
 ec	SMS_ARG_TOO_LONG,
 	"An argument is too long"
+
+# These appear only in version 2 of the protocol and later:
+
+ec	SMS_NO_MEM,
+	"Server ran out of memory"
+
+ec	SMS_IN_USE,
+	"Object is in use"
+
+ec	SMS_BAD_CLASS,
+	"Specified class is not known"
+
+ec	SMS_INTERNAL,
+	"SMS internal consistency failure"
+
+ec	SMS_BAD_CHAR,
+	"Illegal character in argument"
+
+ec	SMS_BAD_GROUP,
+	"Invalid group ID"
+
+ec	SMS_WILDCARD,
+	"Wildcards not allowed in this case"
+
+ec	SMS_NO_CHANGE,
+	"The database has not changed, files not rebuilt"
+
+ec	SMS_TAR_FAIL,
+	"Unable to build archive of config files"
+
+ec	SMS_OCONFIG,
+	"Unable to open DCM file"
+
+ec	SMS_CCONFIG,
+	"Error closing DCM output file"
+
+ec	SMS_FSTYPE,
+	"Unknown filesys type"
+
+ec	SMS_INTEGER,
+	"String could not be parsed as an integer"
+
+ec	SMS_NO_ID,
+	"Cannot allocate new ID"
+
+ec	SMS_NO_FILESYS,
+	"Cannot find space for filesys"
+
+ec	SMS_NO_POBOX,
+	"Cannot find space for pobox"
+
+ec	SMS_NO_QUOTA,
+	"No default quota specified"
+
+ec	SMS_USER_AUTH,
+	"Cannot find you in the database, access will be restricted"
+
+ec	SMS_DEADLOCK,
+	"Database deadlock; try again later"
+
+ec	SMS_NOCRED,
+	"Unable to install new credentials files"
+
+ec	SMS_SETQUOTA,
+	"Failure setting user quota"
+
+ec	SMS_HESFILE,
+	"Failure updating hesiod file (probably disk full)"
+
+ec	SMS_MISSINGFILE,
+	"Did not receive file for update"
+
+ec	SMS_MKCRED,
+	"mkcred failed while updating NFS credentials"
+
+ec	SMS_NAMED,
+	"name daemon failed to start"
+
+ec	SMS_TARERR,
+	"Tar of update file failed (disk full?)"
+
+ec	SMS_PROTO,
+	"Failed to put prototype files in new locker"
 
 	end

@@ -1,16 +1,15 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/inst_001.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/inst_001.c,v 1.1 1987-08-22 17:54:32 wesommer Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/inst_001.c,v 1.2 1988-08-22 16:19:35 mar Exp $
  */
 
 #ifndef lint
-static char *rcsid_inst_001_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/inst_001.c,v 1.1 1987-08-22 17:54:32 wesommer Exp $";
+static char *rcsid_inst_001_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/inst_001.c,v 1.2 1988-08-22 16:19:35 mar Exp $";
 #endif	lint
 
 #include <stdio.h>
-#include "gdb.h"
+#include <gdb.h>
 #include "kludge.h"
-#include "sms_update_int.h"
 
 STRING instructions = { 0, 0 };
 extern CONNECTION conn;
@@ -39,5 +38,7 @@ inst_001(str)
      have_instructions = 1;
      if (send_ok())
 	  lose("sending okay after instructions");
-     dprintf(("got instructions: %s\n", STRING_DATA(instructions)));
+#ifdef DEBUG
+     printf("got instructions: %s\n", STRING_DATA(instructions));
+#endif
 }

@@ -3,6 +3,10 @@
 BUGS
 ------------
 
+- Manual Page needs writing.
+
+- User Guide needs writing.
+
 - Test this on the RT.
 
 Minor Changes
@@ -25,6 +29,8 @@ Major Fixes and Additions
 
 -  Fix the D*** Menu Package.
    a) It loses when the machine runs out of memory.
+
+-  An online help system needs to be worked out.
 
 -  Add DCM Menu and functions.
 

@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v 1.6 1988-07-27 19:21:35 kit Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v 1.7 1988-07-29 18:42:43 kit Exp $";
 #endif lint
 
 /*	This is the file utils.c for the SMS Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v $
  *      $Author: kit $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v 1.6 1988-07-27 19:21:35 kit Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v 1.7 1988-07-29 18:42:43 kit Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -293,12 +293,12 @@ YesNoQuestion(prompt, bool_def)
 char *prompt;
 int bool_def;
 {
-    char ans;
+    char ans[2];
 
     while (TRUE) {
-	if (!PromptWithDefault(prompt, &ans, 1, bool_def ? "y" : "n"))
+	if (!PromptWithDefault(prompt, ans, 2, bool_def ? "y" : "n"))
 	    return(-1);
-	switch (ans) {
+	switch (ans[0]) {
 	case 'n':
 	case 'N':
 	    return(FALSE);
@@ -326,12 +326,12 @@ YesNoQuitQuestion(prompt, bool_def)
 char *prompt;
 int bool_def;
 {
-    char ans;
+    char ans[2];
 
     while (TRUE) {
-	if (!PromptWithDefault(prompt, &ans, 1, bool_def ? "y" : "n"))
+	if (!PromptWithDefault(prompt, ans, 2, bool_def ? "y" : "n"))
 	    return(-1);
-	switch (ans) {
+	switch (ans[0]) {
 	case 'n':
 	case 'N':
 	    return(FALSE);

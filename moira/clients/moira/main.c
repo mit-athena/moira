@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/main.c,v 1.9 1988-11-28 14:55:55 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/main.c,v 1.10 1988-11-28 15:03:52 mar Exp $";
 #endif lint
 
 /*	This is the file main.c for the SMS Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/main.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/main.c,v 1.9 1988-11-28 14:55:55 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/main.c,v 1.10 1988-11-28 15:03:52 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -65,6 +65,10 @@ main(argc, argv)
 	user = getpwuid((int) getuid())->pw_name;
     user = (user && strlen(user)) ? Strsave(user) : "";
 
+    if ((program_name = rindex(argv[0], '/')) == NULL)
+      program_name = argv[0];
+    else
+      program_name++;
     program_name = Strsave(program_name);
     whoami = Strsave(program_name); /* used by menu.c,  ugh !!! */
 
@@ -78,12 +82,8 @@ main(argc, argv)
 	use_menu = FALSE;
       else 
 	Usage();
-				/* Fall Through. */
+      break;
     case 1:
-      if ((program_name = rindex(argv[0], '/')) == NULL)
-	program_name = argv[0];
-      else
-	program_name++;
       break;
     default:
       Usage();

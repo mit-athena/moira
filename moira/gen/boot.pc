@@ -1,4 +1,4 @@
-/* $Id: boot.pc,v 1.6 1999-03-30 20:03:31 danw Exp $
+/* $Id: boot.pc,v 1.7 1999-06-15 19:14:22 danw Exp $
  *
  * This generates the bootptab and associated files.
  *
@@ -22,7 +22,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/boot.pc,v 1.6 1999-03-30 20:03:31 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/boot.pc,v 1.7 1999-06-15 19:14:22 danw Exp $");
 
 char *whoami = "boot.gen";
 char *db = "moira/moira";
@@ -132,7 +132,7 @@ int main(int argc, char **argv)
 	      "\t:ht=ethernet:\\\n\t:ha=%s:\\\n\t:ip=%s:\\\n"
 	      "\t:lg=%s:\\\n\t:vm=rfc1048:",
 	      shortname, location, contact, name, net, hwaddr, addr, logaddr);
-      if (!strcmp(hwtype, "HP"))
+      if (!strncmp(hwtype, "HP", 2))
 	fprintf(out, "\\\n\t:T144=\"/hp/%s\":", shortname);
       fprintf(out, "\n\n");
     }
@@ -144,7 +144,7 @@ int main(int argc, char **argv)
     SELECT LOWER(m.name), m.hwaddr, m2.address, m3.address, pr.type,
     pr.location, pr.contact, TO_CHAR(pr.modtime, :unixtime_fmt)
     FROM printers pr, machine m, machine m2, machine m3
-    WHERE pr.hwtype = 'HP' AND pr.mach_id != 0
+    WHERE pr.hwtype LIKE 'HP%' AND pr.mach_id != 0
     AND pr.mach_id = m.mach_id AND pr.rm = m2.mach_id
     AND pr.loghost = m3.mach_id AND pr.type != 'ALIAS';
   EXEC SQL OPEN csr_boot2;

@@ -1,4 +1,4 @@
-@part[user_reg, root "sms.mss"]
+@part[userreg, root "sms.mss"]
 @section(New User Registration)
 
 A new student must be able to get an athena account without any
@@ -30,7 +30,7 @@ The SMS database server machine runs a special "registration server"
 process, which listens on a well known UDP port for user registration
 requests.  There are currently three defined requests:
 
-@begin(display)
+@begin(display, Size -2)
 verify_user, First Last, {IDnumber, hashIDnumber}@-{hashIDnumber}
 grab_login, First Last, {IDnumber, hashIDnumber, login}@-{hashIDnumber}
 set_password, First Last, {IDnumber, hashIDnumber, password}@-{hashIDnumber}
@@ -74,5 +74,3 @@ set_password request to the registration server, which decrypts it and
 forwards it to Kerberos.  At this point, pending propagation of
 information to hesiod, the mail hub, and the user's home fileserver,
 the user has been established.
-
-

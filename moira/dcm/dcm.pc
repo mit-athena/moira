@@ -1,4 +1,4 @@
-/* $Id: dcm.pc,v 1.10 1998-07-24 15:24:34 danw Exp $
+/* $Id: dcm.pc,v 1.11 1998-09-10 18:27:23 danw Exp $
  *
  * The Data Control Manager for Moira.
  *
@@ -27,7 +27,7 @@
 EXEC SQL INCLUDE sqlca;
 void sqlglm(char *, unsigned int *, unsigned int *);
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/dcm.pc,v 1.10 1998-07-24 15:24:34 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/dcm.pc,v 1.11 1998-09-10 18:27:23 danw Exp $");
 
 int generate_service(char *name, int force);
 void do_hosts(char *service);
@@ -314,7 +314,7 @@ void do_hosts(char *service)
       EXEC SQL DECLARE csr_hst2 CURSOR FOR
 	SELECT m.name, m.mach_id FROM machine m, serverhosts sh
 	WHERE sh.service = UPPER(:service) AND sh.inprogress = 1
-	AND sh.mach_id = m.mach_id;
+	AND sh.enable = 1 AND sh.hosterror = 0 AND sh.mach_id = m.mach_id;
       EXEC SQL OPEN csr_hst2;
       sq = sq_create();
 

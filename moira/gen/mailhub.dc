@@ -1,5 +1,5 @@
 
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/mailhub.dc,v 1.8 1994-03-08 13:00:04 tom Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/mailhub.dc,v 1.9 1994-08-19 16:48:01 delgado Exp $
  *
  * This generates the /usr/lib/aliases file for the mailhub.
  *
@@ -153,6 +153,9 @@ get_info()
      */
     EXEC SQL WHENEVER SQLERROR GOTO sqlerr;
 
+    /* Get Locks */
+
+    EXEC SQL SELECT modtime INTO :buf FROM imembers WHERE list_id = 0;
     EXEC SQL SELECT modtime INTO :buf FROM users WHERE users_id = 0;
     EXEC SQL SELECT modtime INTO :buf FROM list WHERE list_id = 0;
 

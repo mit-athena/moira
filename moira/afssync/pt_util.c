@@ -30,8 +30,8 @@
 #include "vis.h"
 
 #define IDHash(x) (abs(x) % HASHSIZE)
-#define print_id(x) ( ((flags&DO_SYS)==0 && (x<-32767 || x>97536)) || \
-		      ((flags&DO_OTR)==0 && (x>-32768 && x<97537)))
+#define print_id(x) ( ((flags&DO_SYS)==0 && (x<-65535 || x>97536)) || \
+		      ((flags&DO_OTR)==0 && (x>-65536 && x<97537)))
 
 extern char *optarg;
 extern int optind;

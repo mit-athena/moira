@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/aliases.qc,v 1.6 1988-09-13 14:30:30 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/aliases.qc,v 1.7 1989-06-08 15:55:09 mar Exp $
  *
  * This generates the /usr/lib/aliases mail aliases file for the mailhub.
  * The aliases file will contain:
@@ -45,6 +45,7 @@ char **argv;
 
     IIseterr(ingerr);
 ##  ingres sms
+##  set lockmode session where level = table
 
     if (argc == 2) {
 	if (stat(argv[1], &sb) == 0) {
@@ -153,6 +154,10 @@ get_info()
     register struct list *l;
     register struct member *m;
     register struct list *memberlist;
+
+    /* get locks */
+##  retrieve (buf = list.modtime) where list.list_id = 0
+##  retrieve (buf = users.modtime) where users.users_id = 0
 
     fprintf(stderr, "Loading machines\n");
     machines = create_hash(1000);

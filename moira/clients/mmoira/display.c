@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/display.c,v 1.3 1991-06-05 11:22:06 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/display.c,v 1.4 1992-10-09 18:06:06 mar Exp $
  */
 
 #include <stdio.h>
@@ -83,12 +83,16 @@ EntryForm *form;
 	break;
     case MM_SHOW_FILSYS:
     case MM_SHOW_FSGROUP:
-	if (!strcmp(info[FS_TYPE], "FSGROUP")) {
+	if (!strcmp(info[FS_TYPE], "FSGROUP") ||
+	    !strcmp(info[FS_TYPE], "MUL")) {
 	    int stat;
 	    char **argv;
 	    struct save_queue *sq;
 
-	    sprintf(buf,"%20s Filesystem Group: %s\n", " ", info[FS_NAME]);
+	    sprintf(buf,"%20s %s: %s\n", " ", 
+		    strcmp(info[FS_TYPE], "MUL") ?
+		    	"Filesystem Group" : "Multiple Filesystem",
+		    info[FS_NAME]);
 	    AppendToLog(buf);
 
 	    sprintf(buf,"Comments: %s\n",info[FS_COMMENTS]);

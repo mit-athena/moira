@@ -1,6 +1,6 @@
 #
 # 	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/Makefile,v $
-#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/Makefile,v 1.7 1989-07-12 18:07:09 mar Exp $
+#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/Makefile,v 1.8 1989-12-04 12:48:18 mar Exp $
 #
 # (c) Copyright 1988 by the Massachusetts Institute of Technology.
 # For copying and distribution information, please see the file
@@ -10,25 +10,36 @@
 LIBS = ../rpc/libsms.a ../gdb/libgdb.a 
 LLIBS= -L../lib -lkrb -ldes -lss -lcom_err -lm -lc 
 
+SRCS= test.c
+
 COPTS= -O
 
 INCDIRS=-I../include
 
 CFLAGS= ${INCDIRS} ${COPTS}
 
-.SUFFIXES: .ct
+.SUFFIXES: .ct .c .o
 
 .ct.o: ; ../ss/make_commands $*.ct
 
-all: smstest
+all: mrtest
 
-smstest: test_cmds.o test.o ${LIBS} 
-	rm -f smstest
+mrtest: test_cmds.o test.o ${LIBS} 
+	rm -f mrtest
 	cc ${COPTS} -o $@ test_cmds.o test.o ${LIBS} ${LLIBS}
 
 clean:
 	rm -f *.o core \#* *~ gmon.out
-	rm -f smstest
+	rm -f mrtest
 
-install: smstest
-	install -s smstest ${DESTDIR}/usr/etc/smstest
+install: mrtest
+	install -s mrtest ${DESTDIR}/usr/etc/mrtest
+
+depend:
+	mkdep ${CFLAGS} ${SRCS}
+
+# DO NOT DELETE THIS LINE -- mkdep uses it.
+
+test.o: test.c ../include/mit-copyright.h /usr/include/stdio.h
+test.o: /usr/include/sys/file.h /usr/include/ctype.h ../include/sms.h
+test.o: ../include/sms_et.h ../include/ss.h

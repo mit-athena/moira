@@ -1,7 +1,7 @@
 /*
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v $
- *      $Author: qjb $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.28 1990-01-12 15:38:06 qjb Exp $
+ *      $Author: mar $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.29 1990-02-15 15:56:40 mar Exp $
  *
  *      Copyright (C) 1987, 1988 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -16,7 +16,7 @@
  */
 
 #ifndef lint
-static char *rcsid_reg_svr_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.28 1990-01-12 15:38:06 qjb Exp $";
+static char *rcsid_reg_svr_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.29 1990-02-15 15:56:40 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -422,7 +422,9 @@ int ureg_kadm_init()
 {
     unsigned int status = SUCCESS;	 /* Return status */
     static char krbrealm[REALM_SZ];	 /* kerberos realm name */
+    static char hostbuf[BUFSIZ], *host;	 /* local hostname in principal fmt */
     static int inited = 0;
+    char *p;
 
 #ifdef DEBUG
     com_err(whoami, 0, "Entering ureg_kadm_init");
@@ -436,11 +438,18 @@ int ureg_kadm_init()
 	    com_err(whoami, status, " fetching kerberos realm");
 	    exit(1);
 	}
+	if (gethostname(hostbuf, sizeof(hostbuf)) < 0)
+	  com_err(whoami, errno, "getting local hostname");
+	host = canonicalize_hostname(strsave(hostbuf));
+	for (p = host; *p && *p != '.'; p++)
+	  if (isupper(*p))
+	    *p = tolower(*p);
+	*p = 0;
     }
 
     /* Get keys for interacting with Kerberos admin server. */
     /* principal, instance, realm, service, service instance, life, file */
-    if (status = krb_get_svc_in_tkt("register", "sms", krbrealm, PWSERV_NAME,
+    if (status = krb_get_svc_in_tkt(MOIRA_SNAME, host, krbrealm, PWSERV_NAME,
 				    KADM_SINST, 1, KEYFILE))
 	status += krb_err_base;
     

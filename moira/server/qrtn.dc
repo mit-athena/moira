@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.dc,v $
  *	$Author: genoa $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.dc,v 2.8 1992-12-06 19:40:58 genoa Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.dc,v 2.9 1992-12-07 09:47:45 genoa Exp $
  *
  *	Copyright (C) 1987, 1988 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,10 +10,11 @@
  */
 
 #ifndef lint
-static char *rcsid_qrtn_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.dc,v 2.8 1992-12-06 19:40:58 genoa Exp $";
+static char *rcsid_qrtn_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.dc,v 2.9 1992-12-07 09:47:45 genoa Exp $";
 #endif lint
 
 #include <mit-copyright.h>
+#include <string.h>
 #include "query.h"
 #include "mr_server.h"
 EXEC SQL INCLUDE sqlca;  /* SQL Communications Area */
@@ -717,6 +718,91 @@ EXEC SQL END DECLARE SECTION;
     return ((rowcount == 0) ? MR_NO_MATCH : MR_SUCCESS);
 }
 
+char *sqlstrstr(str,pat)
+    char *str;
+    char *pat;
+{
+    register char *p=pat;
+    
+    do {
+	if(*str=='\'') {    /* Skip over single-quote delimited substrings */ 
+	    while(*++str && (*str!='\'')) 
+		; 
+	    continue;
+	}
+	if(*str==*p) {
+	    register char *s;
+	    s=str; 
+	    while(*++p && (*++s==*p))
+		; 
+	    if(*p) p=pat;  /* failed */
+	}
+    } while(*p && *++str);
+
+    if(!*str) str=NULL;
+    return(str);
+}
+
+void optimize_sql_stmt(buf)
+char *buf;
+{
+    char *point=buf, *pat, *eopat, *esc1, *esc2, *csr;
+
+    for(point=buf; point=sqlstrstr(point,"LIKE"); point++)  {
+	/* Now pointing to string "LIKE" */
+
+	/* Look at next word */
+	for(pat=point+4; *pat==' '; pat++) ;
+
+	/* Is it a single-quote delimited string? */
+	if(*pat!='\'') continue;
+
+	/* look for "escape" clause - save escape character */
+	/* 1. Find end of pattern */
+	for(eopat=pat+1; 1; eopat++) {
+	    if(*eopat=='\'') {
+		if(eopat[1]=='\'')  /* single-quote is self-escaping */
+		    eopat++;
+		else
+		    break;
+	    }
+	}
+
+	/* 2. Look at next word */
+	for(esc1=eopat; *++esc1==' ';) ;
+
+	/* 3. esc1=0 if not "ESCAPE '?'", where the ? may be any character. */
+	if(strncmp(esc1,"ESCAPE",6)) esc1=NULL;
+
+	if(esc1) {
+	    for(esc2=esc1+6; *esc2==' '; esc2++) ;
+	    
+	    if(*esc2++!='\'') continue; /* Bad SQL syntax. Skip. */
+	    /* esc2 now points at the escape character itself */
+	    if(esc2[1]!='\'') continue; /* Weird escape string. Skip. */
+	} else {
+	    esc2="\\";
+	}
+
+	/* Is pattern free from special characters? */
+	for(csr=pat; csr<eopat; csr++) 
+	    if((*csr=='%') || (*csr=='_') || (*csr==*esc2)) break;
+	if(csr!=eopat) continue; /* Uses pattern matching. Skip. */
+
+	/* Optimize the query statement */
+	/* 1. Change "LIKE" to " =  " */
+	memcpy(point," =  ",4);
+	
+	/* 2. Change "ESCAPE" to "      " */
+	if(esc1) {
+	    memset(esc1,' ',6);
+	    /* 3. Change  "'*'" to "   " */
+	    /*    (Changes '''' to "    ") */
+	    if(esc2) memset(esc2-1,' ',(*esc2=='\'')?4:3); 
+	}
+    }
+}
+
 build_sql_stmt(result_buf,cmd,targetlist,argv,qual)
     char *result_buf;
     char *cmd;
@@ -758,6 +844,8 @@ build_sql_stmt(result_buf,cmd,targetlist,argv,qual)
 	} else *res++ = *fmt;                            /* text -> result buffer */
     }
     *res='\0';
+
+    optimize_sql_stmt(result_buf);
 }
 
 do_update(q, argv, qual, action, actarg)

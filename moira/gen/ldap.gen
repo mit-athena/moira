@@ -1,6 +1,6 @@
 #!/moira/bin/perl -Tw
 
-# $Id: ldap.gen,v 1.3 2004-04-17 19:23:52 zacheiss Exp $
+# $Id: ldap.gen,v 1.4 2004-04-20 06:35:57 zacheiss Exp $
 
 use DBI;
 
@@ -19,7 +19,7 @@ $dbh = DBI->connect("dbi:Oracle:moira", "moira", "moira")
     || exit $MR_DBMS_ERR;
 
 $sth = $dbh->prepare("SELECT login, first, middle, last, clearid FROM users " .
-		     "WHERE status = 1");
+		     "WHERE status = 1 OR status = 9");
 
 $sth->execute;
 
@@ -88,7 +88,7 @@ while (($name) = $sth0->fetchrow_array) {
                          "WHERE l.name = " . $dbh->quote($name) .
                          "AND i.list_id = l.list_id " .
                          "AND i.member_id = u.users_id " .
-                         "AND u.status = 1 " .
+                         "AND (u.status = 1 OR u.status = 9)" .
                          "AND member_type = 'USER'")
                          || exit $MR_DBMS_ERR;
     $sth->execute;

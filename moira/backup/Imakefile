@@ -1,4 +1,4 @@
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/Imakefile,v 1.1 1993-07-14 10:38:15 mar Exp $
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/Imakefile,v 1.2 1993-07-14 13:30:26 mar Exp $
 #
 # Copyright 1990 by the Massachusetts Institute of Technology.
 #
@@ -12,7 +12,7 @@ SRCS= dump_db.c bkup1.c bkup.c dumprest.c rest_db.c rest1.c rest.c
 SRCDIR=${SRCTOP}/backup
 CODE= db2bkup.awk db2rest.awk dump_db.h dump_db.dc dumprest.dc \
 	nightly.sh report.sh rest_db.dc
-BOBJS= dump_db.o bkup1.o bkup.o dumprest.o 
+BOBJS= dump_db.o bkup1.o bkupfix.o dumprest.o 
 ROBJS= rest_db.o rest1.o rest.o dumprest.o
 sqlrule()
 
@@ -30,7 +30,10 @@ clean::
 sqlfile(dump_db)
 sqlfile(rest_db)
 sqlfile(dumprest)
-sqlfile_with_esqlc_fix(bkup)
+sqlfile(bkup)
 sqlfile(bkup1)
 sqlfile(rest)
 sqlfile(rest1)
+
+bkupfix.c: bkup.c
+	esqlc_fix.pl bkup.c > bkupfix.c

@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_util.c,v $
- *	$Author: tytso $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_util.c,v 1.21 1993-12-10 13:51:12 tytso Exp $
+ *	$Author: danw $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_util.c,v 1.22 1996-09-29 19:58:09 danw Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -9,7 +9,7 @@
  */
 
 #ifndef lint
-static char *rcsid_mr_util_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_util.c,v 1.21 1993-12-10 13:51:12 tytso Exp $";
+static char *rcsid_mr_util_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_util.c,v 1.22 1996-09-29 19:58:09 danw Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -29,7 +29,7 @@ requote(buf, cp, len)
 	register unsigned char c;
 	if (len <= 2) return buf;
 	*buf++ = '"'; count++; len--;
-	for(; (count < 40) && (len > 1) && (c = *cp);
+	for(; (count < 258) && (len > 1) && (c = *cp);
 	    cp++, --len, ++count) {
 		if (c == '\\' || c == '"') *buf++ = '\\';
 		if (isprint(c)) *buf++ = c;
@@ -39,11 +39,6 @@ requote(buf, cp, len)
 		}
 	}
 	if (len > 1) { *buf++ = '"'; count++; len--; }
-	if (len > 3 && count >= 40) {
-		*buf++ = '.'; count++; len--;
-		*buf++ = '.'; count++; len--;
-		*buf++ = '.'; count++; len--;
-	}
 	if (len > 1) *buf = '\0';
 	return buf;
 }
@@ -62,12 +57,12 @@ log_args(tag, version, argc, argv)
 	sprintf(buf, "%s[%d]: ", tag, version);
 	for (bp = buf; *bp; bp++);
        
-	for (i = 0; i < argc && ((buf - bp) + 1024) > 2; i++) {
+	for (i = 0; i < argc && ((buf - bp) + BUFSIZ) > 2; i++) {
 		if (i != 0) {
 			*bp++ = ',';
 			*bp++ = ' '; 
 		}
-		bp = requote(bp, argv[i], (buf - bp) + 1024);
+		bp = requote(bp, argv[i], (buf - bp) + BUFSIZ);
 	}
 	*bp = '\0';
 	com_err(whoami, 0, "%s", buf);

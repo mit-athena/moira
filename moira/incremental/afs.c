@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/afs.c,v 1.7 1989-10-06 14:13:34 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/afs.c,v 1.8 1989-11-28 16:27:56 mar Exp $
  *
  * Do AFS incremental updates
  *
@@ -9,11 +9,6 @@
 
 #include <sms.h>
 #include <sms_app.h>
-#include <sys/param.h>
-#include <krb.h>
-#include <krb_et.h>
-#include <afs/auth.h>
-#include <pwd.h>
 #include <sys/file.h>
 
 #define file_exists(file) (access((file), F_OK) == 0)
@@ -26,12 +21,14 @@ main(argc, argv)
 char **argv;
 int argc;
 {
-    int beforec, afterc;
+    int beforec, afterc, i;
     char *table, **before, **after;
 #ifdef DEBUG
     char buf[1024];
-    int i;
 #endif
+
+    for (i = getdtablesize() - 1; i > 2; i--)
+      close(i);
 
     table = argv[1];
     beforec = atoi(argv[2]);
@@ -73,7 +70,6 @@ int argc;
     } else if (!strcmp(table, "nfsquota")) {
 	do_quota(before, beforec, after, afterc);
     }
-    unlog();
     exit(0);
 }
 
@@ -81,49 +77,12 @@ int argc;
 do_cmd(cmd)
 char *cmd;
 {
-    char realm[REALM_SZ + 1];
-    static int inited = 0;
-    int success = 0, tries = 0, fd, cc;
-    CREDENTIALS *c, *get_ticket();
-    struct passwd *pw;
-    char buf[128], localcell[128], *p, *index();
+    int success = 0, tries = 0;
 
     while (success == 0 && tries < 3) {
-	if (!inited) {
-	    if (krb_get_lrealm(realm) != KSUCCESS)
-	      (void) strcpy(realm, KRB_REALM);
-	    sprintf(buf, "/tmp/tkt_%d_afsinc", getpid());
-	    krb_set_tkt_string(buf);
-
-	    if ((fd = open("/usr/vice/etc/ThisCell", O_RDONLY, 0)) < 0) {
-		critical_alert("incremental", "unable to find AFS cell");
-		unlog();
-		exit(1);
-	    }
-	    if ((cc = read(fd, localcell, sizeof(localcell))) < 0) {
-		critical_alert("incremental", "unable to read AFS cell");
-		unlog();
-		exit(1);
-	    }
-	    close(fd);
-	    p = index(localcell, '\n');
-	    if (p) *p = 0;
-
-	    if (((pw = getpwnam("smsdba")) == NULL) ||
-		((c = get_ticket("sms", "", realm, localcell)) == NULL) ||
-		(setpag() < 0) ||
-		(setreuid(pw->pw_uid, pw->pw_uid) < 0) ||
-		aklog(c, localcell)) {
-		com_err(whoami, 0, "failed to authenticate");
-	    } else
-	      inited++;
-	}
-
-	if (inited) {
-	    com_err(whoami, 0, "Executing command: %s", cmd);
-	    if (system(cmd) == 0)
-	      success++;
-	}
+	com_err(whoami, 0, "Executing command: %s", cmd);
+	if (system(cmd) == 0)
+	  success++;
 	if (!success) {
 	    tries++;
 	    sleep(5 * 60);
@@ -167,7 +126,6 @@ int afterc;
     if (beforec > U_UID && afterc > U_UID &&
 	strcmp(before[U_UID], after[U_UID])) {
 	/* change UID, & possibly user name here */
-	unlog();
 	exit(1);
     }
 
@@ -280,62 +238,4 @@ int afterc;
 	do_cmd(cmd);
 	return;
     }
-}
-
-
-CREDENTIALS *get_ticket(name, instance, realm, cell)
-char *name;
-char *instance;
-char *realm;
-char *cell;
-{
-    static CREDENTIALS c;
-    int status;
-
-    status = krb_get_svc_in_tkt(name, instance, realm,
-				"krbtgt", realm, 1, KEYFILE);
-    if (status != 0) {
-	com_err(whoami, status+ERROR_TABLE_BASE_krb, "getting initial ticket from srvtab");
-	return(NULL);
-    }
-    status = krb_get_cred("afs", cell, realm, &c);
-    if (status != 0) {
-	status = get_ad_tkt("afs", cell, realm, 255);
-	if (status == 0)
-	  status = krb_get_cred("afs", cell, realm, &c);
-    }
-    if (status != 0) {
-	com_err(whoami, status+ERROR_TABLE_BASE_krb, "getting service ticket");
-	return(NULL);
-    }
-    return(&c);
-}
-
-
-aklog(c, cell)
-CREDENTIALS *c;
-char *cell;
-{
-	struct ktc_principal aserver;
-	struct ktc_token atoken;
-	
-	atoken.kvno = c->kvno;
-	strcpy(aserver.name, "afs");
-	strcpy(aserver.instance, "");
-	strcpy(aserver.cell, cell);
-
-	atoken.startTime = c->issue_date;
-	atoken.endTime = c->issue_date + (c->lifetime * 5 * 60);
-	bcopy (c->session, &atoken.sessionKey, 8);
-	atoken.ticketLen = c->ticket_st.length;
-	bcopy (c->ticket_st.dat, atoken.ticket, atoken.ticketLen);
-	
-	return(ktc_SetToken(&aserver, &atoken, NULL));
-}
-
-
-unlog()
-{
-    ktc_ForgetToken("afs");
-    dest_tkt();
 }

@@ -1,4 +1,4 @@
-/* $Id: mr_main.c,v 1.43 1998-03-31 16:08:07 danw Exp $
+/* $Id: mr_main.c,v 1.44 1998-04-06 15:59:21 danw Exp $
  *
  * Moira server process.
  *
@@ -30,7 +30,7 @@
 
 #include <krb.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.43 1998-03-31 16:08:07 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.44 1998-04-06 15:59:21 danw Exp $");
 
 extern char *krb_get_lrealm(char *, int);
 
@@ -414,6 +414,13 @@ void mr_setup_signals(void)
 
   action.sa_handler = gowakeup;
   if (sigaction(SIGUSR2, &action, NULL) < 0)
+    {
+      com_err(whoami, errno, "Unable to establish signal handlers.");
+      exit(1);
+    }
+
+  action.sa_handler = SIG_IGN;
+  if (sigaction(SIGPIPE, &action, NULL) < 0)
     {
       com_err(whoami, errno, "Unable to establish signal handlers.");
       exit(1);

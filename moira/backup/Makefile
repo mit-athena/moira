@@ -10,7 +10,7 @@ EQLIBS = /usr/rtingres/lib/libqlib /usr/rtingres/lib/compatlib
 	cc -c ${CFLAGS} $*.c
 	rm -f $*.c
 
-all: smsbackup smsrestore counts salvager #copy_backups
+all: smsbackup smsrestore # counts copy_backups
 
 smsbackup: dump_db.o bkup1.o bkup.o dumprest.o
 	cc -o $@ ${CFLAGS} dump_db.o bkup1.o bkup.o dumprest.o ${EQLIBS}
@@ -46,9 +46,9 @@ lint:
 clean:
 	rm -f *.o smsbackup bkup.qc bkup1.qc smsrestore rest.qc rest1.qc
 	rm -f core *~
-	rm -f copy_backups counts salvager
+	rm -f copy_backups counts
 	rm -f bkup.c bkup1.c counts.c dump_db.c dumprest.c
-	rm -f rest.c rest1.c rest_db.c salvager.c
+	rm -f rest.c rest1.c rest_db.c
 
 install:
 	install smsbackup ../bin/smsbackup

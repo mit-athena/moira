@@ -1,6 +1,6 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v 1.32 1994-04-27 13:58:15 jweiss Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v 1.33 1995-04-04 19:53:45 jweiss Exp $
  */
 
 /*  (c) Copyright 1988 by the Massachusetts Institute of Technology. */
@@ -8,7 +8,7 @@
 /*  <mit-copyright.h>. */
 
 #ifndef lint
-static char rcsid_mailmaint_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v 1.32 1994-04-27 13:58:15 jweiss Exp $";
+static char rcsid_mailmaint_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v 1.33 1995-04-04 19:53:45 jweiss Exp $";
 #endif lint
 
 /***********************************************************************/
@@ -476,7 +476,7 @@ show_all()
     show_text(DISPROW, STARTCOL, "This function may take a \
 while... proceed? [y] ");
     c = getchar() & 0x7f;
-    if (c == 'y' || c == 'Y' || c == '\n') {
+    if (c == 'y' || c == 'Y' || c == '\n' || c == '\r') {
 	move(DISPROW + 1, STARTCOL);
 	addstr("Processing query...please hold");
 	refresh();

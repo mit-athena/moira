@@ -1,6 +1,6 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v 1.30 1993-10-22 16:10:19 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v 1.31 1994-04-13 13:14:40 jweiss Exp $
  */
 
 /*  (c) Copyright 1988 by the Massachusetts Institute of Technology. */
@@ -8,7 +8,7 @@
 /*  <mit-copyright.h>. */
 
 #ifndef lint
-static char rcsid_mailmaint_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v 1.30 1993-10-22 16:10:19 mar Exp $";
+static char rcsid_mailmaint_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v 1.31 1994-04-13 13:14:40 jweiss Exp $";
 #endif lint
 
 /***********************************************************************/
@@ -89,7 +89,7 @@ MENU *main_menu, *help_menu;
 int position[2], oldpos[2];
 int level, found_some, currow, page, num_members;
 int moreflg, toggle, first_time;
-char *uname;
+char *username;
 
 /* This crock is because the original code was very broken and this makes
  * it work.  Someday, we should abandon the code or fix it right.
@@ -115,7 +115,7 @@ main(argc, argv)
 	whoami = argv[0];
     else
 	whoami++;
-    uname = calloc(20, 1);
+    username = calloc(20, 1);
     if ((current_li = (List_info *) malloc(sizeof(List_info)))
 	== (List_info *) NULL) {
 	(void) sprintf(buf, ": allocating list info");
@@ -129,14 +129,14 @@ main(argc, argv)
 	current_li->modby = (char *) NULL;
 	current_li->modwith = (char *) NULL;
     }
-    if ((uname = getlogin()) == NULL) {
+    if ((username = getlogin()) == NULL) {
 	struct passwd *getpwuid();
 
-	uname = getpwuid((int) getuid())->pw_name;
+	username = getpwuid((int) getuid())->pw_name;
     }
-    uname = (uname && strlen(uname)) ? strsave(uname) : "";
+    username = (username && strlen(username)) ? strsave(username) : "";
 
-    printf("Connecting to database for %s...please hold on.\n", uname);
+    printf("Connecting to database for %s...please hold on.\n", username);
 
     status = mr_connect(NULL);
     if (status) {
@@ -395,14 +395,14 @@ add_member()
 	display_buff("\n");
 	argv[0] = strsave(buf);
 	argv[1] = strsave("user");
-	argv[2] = strsave(uname);
+	argv[2] = strsave(username);
 	if (status = mr_query("add_member_to_list", 3, argv,
 			       scream, (char *) NULL)) {
 	    display_buff("\n");
 	    com_err(whoami, status, " found.\n");
 	}
 	else {
-	    (void) sprintf(buf, "User %s added to list\n", uname);
+	    (void) sprintf(buf, "User %s added to list\n", username);
 	    show_text(DISPROW + 3, STARTCOL, buf);
 	}
 	currow = DISPROW + 4;
@@ -424,14 +424,14 @@ delete_member()
 	display_buff("\n");
 	argv[0] = strsave(buf);
 	argv[1] = strsave("user");
-	argv[2] = strsave(uname);
+	argv[2] = strsave(username);
 	if (status = mr_query("delete_member_from_list", 3, argv,
 			       scream, (char *) NULL)) {
 	    display_buff("\n");
 	    com_err(whoami, status, " found.\n");
 	}
 	else {
-	    (void) sprintf(buf, "User %s deleted from list\n", uname);
+	    (void) sprintf(buf, "User %s deleted from list\n", username);
 	    show_text(DISPROW + 3, STARTCOL, buf);
 	}
 	currow = DISPROW + 4;
@@ -448,9 +448,9 @@ list_by_member()
     char *buf;
 
     nargv[1] = strsave("ruser");
-    nargv[2] = strsave(uname);
+    nargv[2] = strsave(username);
     buf = calloc(BUFSIZ, 1);
-    (void) sprintf(buf, "%s is on the following lists:\n", uname);
+    (void) sprintf(buf, "%s is on the following lists:\n", username);
     show_text(DISPROW, STARTCOL, buf);
     mvcur(0, 0, currow, STARTCOL);
     refresh();
@@ -691,7 +691,7 @@ pack_main_menu()
     main_menu->items = (char **) malloc((unsigned) sizeof(char *) * main_menu->num_items);
 
     buf = calloc(50, 1);
-    (void) sprintf(buf, "Mail List Program for %s", uname);
+    (void) sprintf(buf, "Mail List Program for %s", username);
     main_menu->title = strsave(buf);
     main_menu->items[0] = strsave("1.  Show all public mailing lists.");
     main_menu->items[1] = strsave("2.  Get all members of a mailing list.");

@@ -4,8 +4,8 @@
 /**/# Ignore this message if you are not using imake.
 /**/#
 /**/#	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/util/imake.includes/Imake.tmpl,v $
-/**/#	$Author: shanzer $
-/**/#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/util/imake.includes/Imake.tmpl,v 4.2 1988-10-06 18:05:44 shanzer Exp $
+/**/#	$Author: steiner $
+/**/#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/util/imake.includes/Imake.tmpl,v 4.3 1988-12-09 15:41:52 steiner Exp $
 /**/#
 
 #ifndef NEW_TOP
@@ -16,18 +16,14 @@ NEWTOP=NEW_TOP
 BUILDTOP=NEW_TOP
 #endif
 
+/* The makedepend program */
 DEPEND=$(BUILDTOP)/util/makedepend/makedepend
+/* The Imake command line */
 IMAKE=$(BUILDTOP)/util/imake/imake -I$(BUILDTOP)/util/imake.includes
-
-KRB_LIB=$(BUILDTOP)/lib/krb/libkrb.a
-DES_LIB=$(BUILDTOP)/lib/des/libdes.a
-KRB_ADM=$(BUILDTOP)/lib/kadm/libkadm.a
-KDB_LIB=$(BUILDTOP)/lib/kdb/libkdb.a
-COM_ERR=-lcom_err
 
 INCLUDE= -I$(BUILDTOP)/include
 CFLAGS=$(DBG) $(INCLUDE) $(DEFINES) $(GLOBAL_CDEFS)
-
+LINTFLAGS=$(INCLUDE) $(DEFINES) $(GLOBAL_CDEFS)
 #include "config.Imakefile"
  
 #include "Imake.rules"

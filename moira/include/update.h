@@ -11,8 +11,6 @@ struct update_desc {
      int override;		/* override interval */
      int enable;		/* can we update at all? */
      char *instructions;	/* script pathname */
-     char *value1, *value2;	/* these come from the database */
-     int dfgen;
 };
 
 char *whoami;
@@ -22,3 +20,4 @@ extern char sms_data_dir[];
 #define log_INFO  1
 #define log_WARNING 2
 #define log_ERROR 3
+int log_priority;

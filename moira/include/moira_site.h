@@ -12,7 +12,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/include/moira_site.h,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/include/moira_site.h,v 1.14 1990-02-05 12:38:14 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/include/moira_site.h,v 1.15 1990-03-07 14:37:49 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -35,6 +35,8 @@
 #define ZEPHYR
 /*   log errors via syslog */
 /* #define SYSLOG */
+/*   Athena local hacks -- other sites probably don't want this */
+#define ATHENA
 
 
 #define NAME 0

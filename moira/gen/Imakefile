@@ -1,4 +1,4 @@
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/Imakefile,v 1.6 1997-01-29 23:18:52 danw Exp $
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/Imakefile,v 1.7 1997-02-06 18:58:30 tytso Exp $
 #
 # Copyright 1993 by the Massachusetts Institute of Technology.
 #
@@ -12,26 +12,26 @@ SRCDIR = $(SRCTOP)/gen
 #ifdef GDSS
 SRCS = util.c moddiff.c passwd.c hesiod.c \
 	nfs.c mailhub.c sis.c pobox.c \
-	hosts.c network.c
+	hosts.c network.c warehouse.c
 OBJS = util.o moddiff.o passwd.o hesiod.o \
 	nfs.o mailhub.o sis.o pobox.o \
-	hosts.o network.o
+	hosts.o network.o warehouse.o
 CODE = util.c moddiff.pc passwd.pc hesiod.pc \
 	nfs.pc mailhub.pc sis.pc pobox.pc \
-	hosts.pc network.pc
+	hosts.pc network.pc warehouse.pc
 LIBS =  -L/usr/athena/lib ../lib/libmoira.a -lcom_err -lzephyr \
 	../server/libmrglue.a $(LIBGDSS) -lkrb -ldes -lhesiod ${SQL_LIB}
 DEFINES = $(GDSSINC)
 #else /* GDSS */
 SRCS = util.c moddiff.c passwd.c hesiod.c \
 	nfs.c mailhub.c pobox.c \
-	hosts.c network.c
+	hosts.c network.c warehouse.c
 OBJS = util.o moddiff.o passwd.o hesiod.o \
 	nfs.o mailhub.o pobox.o \
-	hosts.o network.o
+	hosts.o network.o warehouse.o
 CODE = util.c moddiff.pc passwd.pc hesiod.pc \
 	nfs.pc mailhub.pc pobox.pc \
-	hosts.pc network.pc
+	hosts.pc network.pc warehouse.pc
 LIBS =  -L/usr/athena/lib ../lib/libmoira.a -lcom_err -lzephyr \
 	../server/libmrglue.a -lkrb -ldes -lhesiod ${SQL_LIB}
 DEFINES =
@@ -57,3 +57,6 @@ program(hosts.gen, hosts.o util.o moddiff.o,${MR_LIBDEP},${LIBS},${PROGDIR})
 sqlfile(hosts)
 program(network.gen, network.o util.o moddiff.o,${MR_LIBDEP},${LIBS},${PROGDIR})
 sqlfile(network)
+program(warehouse.gen, warehouse.o util.o moddiff.o,${MR_LIBDEP},${LIBS},${PROGDIR})
+sqlfile(warehouse)
+

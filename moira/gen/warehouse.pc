@@ -1,0 +1,135 @@
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/warehouse.pc,v 1.1 1997-02-06 18:58:31 tytso Exp $
+ *
+ * This generates a database extract from the users table for the MIT
+ * Warehouse.
+ *
+ *  (c) Copyright 1992 by the Massachusetts Institute of Technology.
+ *  For copying and distribution information, please see the file
+ *  <mit-copyright.h>.
+ */
+
+#include <mit-copyright.h>
+#include <stdio.h>
+#include <moira.h>
+#include <moira_site.h>
+#include <des.h>
+#include <krb.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <sys/time.h>
+#include <sys/file.h>
+#include <string.h>
+#include <ctype.h>
+#include <fcntl.h>
+EXEC SQL INCLUDE sqlca;
+
+extern int errno;
+char *whoami = "warehouse.gen";
+char *db = "moira/moira";
+
+main(argc, argv)
+int argc;
+char **argv;
+{
+    int out = 1 /* stdout */;
+    char *outf = NULL, outft[64];
+    struct stat sb;
+    int flag1;
+    struct timeval now;
+    EXEC SQL BEGIN DECLARE SECTION;
+    char login[9], signature[68], clearid[17], kname[257];
+    EXEC SQL VAR signature IS STRING(68);
+    char last[17], first[17], middle[17], type[9];
+    int sigdate, sigwho;
+    struct { char clearid[17];
+	     char login[12];
+	     char last[17];
+	     char middle[17];
+	     char first[17];
+	     char sigdate[12];
+	     char sigwho[60];
+	     char signature[69];
+	 } outrec;
+    EXEC SQL END DECLARE SECTION;
+
+    initialize_sms_error_table ();
+
+    EXEC SQL CONNECT :db;
+
+    if (argc == 2) {
+	if (stat(argv[1], &sb) == 0) {
+	    if (ModDiff (&flag1, "users", sb.st_mtime) == 0 &&
+		flag1 < 0) {
+		fprintf(stderr, "File %s does not need to be rebuilt.\n",
+			argv[1]);
+		exit(MR_NO_CHANGE);
+	    }
+	}
+	outf = argv[1];
+	sprintf(outft, "%s~", outf);
+	if ((out = open(outft, O_WRONLY|O_APPEND|O_CREAT|O_TRUNC, 0666)) < 0) {
+	    fprintf(stderr, "unable to open %s for output\n", outf);
+	    exit(MR_OCONFIG);
+	}
+    } else if (argc != 1) {
+	fprintf(stderr, "usage: %s [outfile]\n", argv[0]);
+	exit(MR_ARGS);
+    } else {
+	outf = NULL;
+    }
+
+    /* The following is declarative, not executed,
+     * and so is dependent on where it is in the file,
+     * not in the order of execution of statements.
+     */
+    EXEC SQL WHENEVER SQLERROR GOTO sqlerr;
+
+    EXEC SQL DECLARE x CURSOR FOR
+      SELECT u.clearid, u.login, u.last, u.first, u.middle, u.type, 
+		u.sigdate, u.sigwho, u.signature
+      FROM users u WHERE u.status = 1 or u.status=5 or u.status=6;
+    EXEC SQL OPEN x;
+    while (1) {
+	EXEC SQL FETCH x INTO :clearid, :login, :last, :first,
+		:middle, :type, :sigdate, :sigwho, :signature;
+	if (sqlca.sqlcode != 0) break;
+	if (!isdigit(id[1])) continue;
+	strtrim(login);
+	strtrim(clearid);
+	strtrim(last);
+	strtrim(first);
+	strtrim(middle);
+	strtrim(type);
+	memset(&outrec, 0, sizeof(outrec));
+	strcpy(outrec.login, login);
+	strcpy(outrec.id, id);
+	strcpy(outrec.last, last);
+	strcpy(outrec.first, first);
+	strcpy(outrec.middle, middle);
+	strcpy(outrec.type, type);
+	if (sigwho) {
+		sprintf(outrec.sigdate, "%d", sigdate);
+		memcpy(outrec.signature, signature, sizeof(signature));
+		EXEC SQL SELECT string from strings 
+			WHERE string_id = :sigwho
+			INTO :kname;
+		strcpy(outrec.sigwho, kname);
+	}
+	write(out, &outrec, sizeof(outrec));
+    }
+    EXEC SQL CLOSE x;
+
+    EXEC SQL COMMIT;
+
+    if (close(out)) {
+	perror("close failed");
+	exit(MR_CCONFIG);
+    }
+    if (outf)
+      fix_file(outf);
+    exit(MR_SUCCESS);
+
+ sqlerr:
+    db_error(sqlca.sqlcode);
+    exit(MR_DBMS_ERR);
+}

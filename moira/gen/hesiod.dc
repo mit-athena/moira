@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/hesiod.dc,v 1.7 1993-01-04 12:27:47 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/hesiod.dc,v 1.8 1993-03-02 17:16:37 mar Exp $
  *
  * This generates the zone files necessary to load a hesiod server.
  * The following zones are generated: passwd, uid, pobox, group,
@@ -782,15 +782,17 @@ do_printcap()
     time_t ftime;
     EXEC SQL BEGIN DECLARE SECTION;
     char name[17], rp[17], sd[33];
-    int flag, ka, pc, rm, rq;
+    int flag1, flag2, ka, pc, rm, rq;
     EXEC SQL END DECLARE SECTION;
 
     sprintf(outf, "%s/printcap.db", hesiod_dir);
 
     if (stat(outf, &sb) == 0) {
 	ftime = sb.st_mtime;
-	if (ModDiff (&flag, "printcap", ftime)) exit (MR_DATE);
-	if (flag < 0) {
+	if (ModDiff (&flag1, "printcap", ftime)
+	    || ModDiff (&flag2, "machine", ftime))
+	  exit (MR_DATE);
+	if (flag1 < 0 && flag2 < 0) {
 	    fprintf(stderr, "File printcap.db does not need to be rebuilt.\n");
 	    return(0);
       }

@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v 1.29 1989-06-30 15:49:07 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v 1.30 1989-07-19 14:58:47 mar Exp $
  *
  *	Copyright (C) 1987, 1988 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_qrtn_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v 1.29 1989-06-30 15:49:07 mar Exp $";
+static char *rcsid_qrtn_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v 1.30 1989-07-19 14:58:47 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -828,14 +828,22 @@ sanity_check_queries()
 {
     register int i;
     int maxv = 0, maxa = 0;
+#ifdef MULTIPROTOCOLS
     extern int QueryCount1, QueryCount2;
     extern struct query Queries1[], Queries2[];
+#else
+    extern int QueryCount2;
+    extern struct query Queries2[];
+#endif MULTIPROTOCOLS
+
 #define MAX(x,y) ((x) > (y) ? (x) : (y))
 
+#ifdef MULTIPROTOCOLS
     for (i = 0; i < QueryCount1; i++) {
 	maxv = MAX(maxv, Queries1[i].vcnt);
 	maxa = MAX(maxa, Queries1[i].argc);
     }
+#endif MULTIPROTOCOLS
     for (i = 0; i < QueryCount2; i++) {
 	maxv = MAX(maxv, Queries2[i].vcnt);
 	maxa = MAX(maxa, Queries2[i].argc);

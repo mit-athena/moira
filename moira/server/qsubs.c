@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsubs.c,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsubs.c,v 1.7 1988-09-13 17:42:22 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsubs.c,v 1.8 1989-07-19 15:00:12 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,15 +10,20 @@
  */
 
 #ifndef lint
-static char *rcsid_qsubs_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsubs.c,v 1.7 1988-09-13 17:42:22 mar Exp $";
+static char *rcsid_qsubs_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsubs.c,v 1.8 1989-07-19 15:00:12 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
 #include <sms.h>
 #include "query.h"
 
+#ifdef MULTIPROTOCOLS
 extern struct query Queries1[], Queries2[];
 extern int QueryCount1, QueryCount2;
+#else
+extern struct query Queries2[];
+extern int QueryCount2;
+#endif MULTIPROTOCOLS
 
 struct query *
 get_query_by_name(name, version)
@@ -28,13 +33,17 @@ get_query_by_name(name, version)
     register struct query *q;
     register int i;
 
+#ifdef MULTIPROTOCOLS
     if (version == SMS_VERSION_1) {
 	q = Queries1;
 	i = QueryCount1;
     } else {
+#endif
 	q = Queries2;
 	i = QueryCount2;
+#ifdef MULTIPROTOCOLS
     }	
+#endif
 
     if (strlen(name) == 4) {
 	while (--i >= 0) {
@@ -58,7 +67,9 @@ list_queries(version, action, actarg)
 {
   register struct query *q;
   register int i;
+#ifdef MULTIPROTOCOLS
   static struct query **squeries1 = (struct query **)0;
+#endif
   static struct query **squeries2 = (struct query **)0;
   register struct query **sq;
   char qnames[80];
@@ -66,6 +77,7 @@ list_queries(version, action, actarg)
   int count;
   int qcmp();
 
+#ifdef MULTIPROTOCOLS
   if (version == SMS_VERSION_1) {
       count = QueryCount1;
       if (squeries1 == (struct query **)0) {
@@ -78,6 +90,7 @@ list_queries(version, action, actarg)
       }
       sq = squeries1;
   } else {
+#endif
       count = QueryCount2;
       if (squeries2 == (struct query **)0) {
 	  sq = (struct query **)malloc(count * sizeof (struct query *));
@@ -88,7 +101,9 @@ list_queries(version, action, actarg)
 	  qsort(squeries2, count, sizeof (struct query *), qcmp);
       }
       sq = squeries2;
+#ifdef MULTIPROTOCOLS
   }
+#endif
 
   qnp = qnames;
   for (i = count; --i >= 0; sq++) {

@@ -10,7 +10,7 @@
              LN = cp
         DESTDIR = 
          SRCDIR = /mit/kerberos/src
-        SOURCES = imake.c ccflags.c Makefile
+        SOURCES = ${SRCDIR}/util/imake/imake.c ${SRCDIR}/util/imake/ccflags.c ${SRCDIR}/util/imake/Makefile
 
 all: imake
 
@@ -42,5 +42,5 @@ config: $(SOURCES)
 	-mkdir $(DESTDIR)/util
 	-mkdir $(DESTDIR)/util/imake
 	for i in $(SOURCES); do \
-		$(RM) ${DESTDIR}/util/imake/$$i; \
-		$(LN) $$i ${DESTDIR}/util/imake/$$i; done
+		$(RM) ${DESTDIR}/util/imake/`basename $$i`; \
+		$(LN) $$i ${DESTDIR}/util/imake/`basename $$i`; done

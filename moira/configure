@@ -1686,7 +1686,7 @@ else
 	 if test ! -d util; then
 	     mkdir util
 	 fi
-	 GDSS_CPPFLAGS="-I$gdss/include"
+	 GDSS_CPPFLAGS='-I$(SRCTOP)/util/gdss/include'
 	 GDSS_LIBS='-L$(BUILDTOP)/util/gdss/lib -lgdss'
      else
          gdss=no
@@ -2549,6 +2549,20 @@ fi
     case $PRO_C_INCLUDES in
 	*INCLUDE='$(BUILDTOP)/db'*) ;;
 	*) PRO_C_INCLUDES=INCLUDE='$(BUILDTOP)/db'\ $PRO_C_INCLUDES ;;
+    esac
+
+
+
+    
+    case $CPPFLAGS in
+	*-I'$(srcdir)'*) ;;
+	*) CPPFLAGS=-I'$(srcdir)'\ $CPPFLAGS ;;
+    esac
+
+    
+    case $PRO_C_INCLUDES in
+	*INCLUDE='$(srcdir)'*) ;;
+	*) PRO_C_INCLUDES=INCLUDE='$(srcdir)'\ $PRO_C_INCLUDES ;;
     esac
 
 

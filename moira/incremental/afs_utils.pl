@@ -1,8 +1,6 @@
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/afs_utils.pl,v 1.15 1997-01-20 18:24:17 danw Exp $
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/afs_utils.pl,v 1.16 1998-11-16 00:26:06 danw Exp $
 
-# kludge kludge kludge
-sub __STDC__ {0;}
-require "fcntl.ph";
+use Fcntl;
 
 $afsbin="/moira/bin";
 $vos="$afsbin/vos";

@@ -7,7 +7,7 @@
 # 
 #       $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/Makefile,v $
 #       $Author: mar $
-#       $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/Makefile,v 1.7 1989-01-23 14:02:45 mar Exp $
+#       $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/Makefile,v 1.8 1989-06-01 13:07:18 mar Exp $
 # 	
 #   	Copyright 1987, 1988 by the Massachusetts Institute of Technology.
 # 
@@ -51,7 +51,7 @@ install: moira
 clean:	
 	rm -f *.o *~
 	rm -f moira
-
+	cd Doc; make clean
 
 # Typing 'make saber' at the command line will allow load and link against the
 # correct libraries when using saber C.

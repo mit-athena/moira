@@ -1,6 +1,6 @@
 /* This file defines the query dispatch table for version 2 of the protocol
  *
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/queries2.c,v 1.6 1988-08-05 16:10:05 mar Exp $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/queries2.c,v 1.7 1988-08-16 00:34:25 mar Exp $
  *
  * Copyright 1987, 1988 by the Massachusetts Institute of Technology.
  */
@@ -2714,7 +2714,7 @@ struct query Queries2[] = {
     "%c = filesys.label, %c = users.login, %c = text(nq.quota), %c = nfsphys.dir, %c = machine.name, %c = nq.modtime, %c = text(nq.modby), %c = nq.modwith",
     gnfq_fields,
     8,
-    "filesys.label = \"%s\" and nq.users_id = %d and filesys.filsys_id = nq.filsys_id and nfsphys.nfsphys_id = filesys.phys_id and machine.mach_id = filesys.mach_id and users.users_id = nq.users_id",
+    "filesys.label = \"%s\" and nq.users_id = %d and filesys.filsys_id = nq.filsys_id and nfsphys.nfsphys_id = nq.phys_id and machine.mach_id = filesys.mach_id and users.users_id = nq.users_id",
     2,
     &gnfq_validate,
   },
@@ -2729,7 +2729,7 @@ struct query Queries2[] = {
     "%c = filesys.label, %c = users.login, %c = text(nq.quota), %c = nfsphys.dir, %c = machine.name",
     gnqp_fields,
     5,
-    "filesys.mach_id = %d and nfsphys.dir = \"%s\" and nq.filsys_id = filesys.filsys_id and nfsphys.nfsphys_id = filesys.phys_id and users.users_id = nq.users_id and machine.mach_id = filesys.mach_id",
+    "nfsphys.mach_id = %d and nfsphys.dir = \"%s\" and nq.phys_id = nfsphys.nfsphys_id and filesys.filsys_id = nq.filsys_id and users.users_id = nq.users_id and machine.mach_id = nfsphys.mach_id",
     2,
     &VDmach,
   },
@@ -2741,11 +2741,11 @@ struct query Queries2[] = {
     APPEND,
     "nq",
     "nfsquota",
-    "filsys_id = %i4, users_id = %i4, quota = int4(%c)",
+    "filsys_id = filesys.filsys_id, users_id = %i4, quota = int4(%c), phys_id = filesys.phys_id",
     anfq_fields,
-    3,
-    (char *)0,
-    0,
+    2,
+    "filesys.filsys_id = %d",
+    1,
     &anfq_validate,
   },
 

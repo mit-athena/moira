@@ -1,10 +1,11 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/dcmmaint.c,v 1.1 1988-08-30 17:47:46 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/dcmmaint.c,v 1.2 1988-09-02 12:39:19 mar Exp $
  */
 
 #include <stdio.h>
 #include <strings.h>
 #include <ctype.h>
 #include <sms.h>
+#include <sms_app.h>
 #include <menu.h>
 
 #include "mit-copyright.h"
@@ -13,10 +14,9 @@
 #include "globals.h"
 #include "infodefs.h"
 
-char *whoami;
-
+extern char *whoami;
 static char buf[BUFSIZ];
-char *unparse_interval(), *canonicalize_hostname(), *pgets(), *strsave();
+char *unparse_interval(), *canonicalize_hostname(), *pgets();
 char *atot();
 
 #define DCM_ENABLE_FLAG 0
@@ -30,7 +30,7 @@ int *hint;
     return(SMS_CONT);
 }
 
-enabledcm(argc, argv)
+EnableDcm(argc, argv)
 int argc;
 char **argv;
 {
@@ -146,14 +146,10 @@ char *pgets(prompt, def)
 char *prompt;
 char *def;
 {
-    char ibuf[BUFSIZ], pbuf[BUFSIZ];
+    char ibuf[BUFSIZ];
 
-    sprintf(pbuf, "%s [%s]: ", prompt, def);
-    Prompt_input(pbuf, ibuf, BUFSIZ);
-    if (!strlen(ibuf))
-      return(strsave(def));
-    else
-      return(strsave(ibuf));
+    PromptWithDefault(prompt, ibuf, BUFSIZ, def);
+    return(strsave(ibuf));
 }
 
 
@@ -412,7 +408,7 @@ int *count;
 }
 
 
-inprogress()
+InProgress()
 {
     char *argv[6];
     int status, count = 0;
@@ -439,7 +435,7 @@ inprogress()
     return(DM_NORMAL);
 }
 
-failed()
+DcmFailed()
 {
     char *argv[6];
     int status, count = 0;
@@ -467,7 +463,7 @@ failed()
 }
 
 
-dcm()
+Dcm()
 {
     int status;
     if (status = sms_do_update())

@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/help.c,v 1.3 1992-10-19 18:07:40 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/help.c,v 1.4 1992-10-28 16:06:43 mar Exp $
  *
  *  	Copyright 1991 by the Massachusetts Institute of Technology.
  *
@@ -74,7 +74,7 @@ EntryForm *form;
      */
     count = 0;
     for (p = form->inputlines; *p; p++)
-      if (!p->insensitive)
+      if (!((*p)->insensitive))
 	count++;
     while (count-- > 1)
       _XmMgrTraversal(form->formpointer, XmTRAVERSE_PREV_TAB_GROUP);

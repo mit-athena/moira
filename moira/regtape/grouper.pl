@@ -1,5 +1,5 @@
 #!/moira/bin/perl -Tw
-# $Id: grouper.pl,v 1.7 2000-08-30 18:49:21 zacheiss Exp $
+# $Id: grouper.pl,v 1.8 2001-08-13 20:58:55 zacheiss Exp $
 
 die "Usage: $0 password\n" unless ($#ARGV == 0);
 $whpassword = $ARGV[0];
@@ -65,7 +65,7 @@ foreach $class (@$classes) {
 		 "*** DO NOT MODIFY *** Automatically-created registered students list for $class");
      &check_list("$base-others", $staff, 0,
 		 "Non-registered students and miscellaneous people list for $class");
-     &check_list($base, $staff, 1,
+     &check_list($base, $staff, 0,
 		 "*** DO NOT MODIFY *** Automatically-created participants list for $class");
      if (!$lists{$base}) {
 	 &add_member($staff, LIST, $base);

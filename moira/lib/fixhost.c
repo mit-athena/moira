@@ -1,4 +1,4 @@
-/* $Id: fixhost.c,v 1.17 1998-02-08 20:37:51 danw Exp $
+/* $Id: fixhost.c,v 1.18 1998-02-24 18:28:40 danw Exp $
  *
  * Canonicalize a hostname
  *
@@ -22,7 +22,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/fixhost.c,v 1.17 1998-02-08 20:37:51 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/fixhost.c,v 1.18 1998-02-24 18:28:40 danw Exp $");
 
 /*
  * Canonicalize hostname:
@@ -54,7 +54,7 @@ char *canonicalize_hostname(char *host)
       return tbuf;
     }
 
-  if (strchr(host, '*') || strchr(host, '?'))
+  if (strchr(host, '*') || strchr(host, '?') || !strcmp(host, "[NONE]"))
     return host;
 
   hp = gethostbyname(host);

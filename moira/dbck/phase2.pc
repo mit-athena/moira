@@ -1,4 +1,4 @@
-/* $Id: phase2.pc,v 1.12 1999-11-16 20:33:45 danw Exp $
+/* $Id: phase2.pc,v 1.13 2000-01-11 18:04:28 danw Exp $
  *
  * (c) Copyright 1988-1998 by the Massachusetts Institute of Technology.
  * For copying and distribution information, please see the file
@@ -15,7 +15,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase2.pc,v 1.12 1999-11-16 20:33:45 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase2.pc,v 1.13 2000-01-11 18:04:28 danw Exp $");
 
 EXEC SQL WHENEVER SQLERROR DO dbmserr();
 
@@ -530,6 +530,8 @@ int maybe_fixup_modby2(char *table, char *field, char *rowid, int id)
 
 void pobox_check(int id, struct user *u)
 {
+  struct filesys *fs;
+
   switch (u->potype)
     {
     case 'P':
@@ -544,6 +546,7 @@ void pobox_check(int id, struct user *u)
 	    }
 	}
       break;
+
     case 'S':
       if (hash_lookup(string_dups, u->pobox_id))
 	{
@@ -570,6 +573,31 @@ void pobox_check(int id, struct user *u)
 	    }
 	}
       break;
+
+    case 'I':
+      fs = hash_lookup(filesys, u->pobox_id);
+      if (!fs)
+	{
+	  printf("User %s(%s) has P.O.Box on non-existant filesystem %d\n",
+		 u->login, u->fullname, u->pobox_id);
+	  if (single_fix("Delete", 0))
+	    {
+	      remove_pobox(u->users_id);
+	      u->potype = 'N';
+	    }
+	}
+      else if (fs->type != 'I')
+	{
+	  printf("User %s(%s) has IMAP P.O.Box on non-IMAP filesystem %s\n",
+		 u->login, u->fullname, fs->name);
+	  if (single_fix("Delete", 0))
+	    {
+	      remove_pobox(u->users_id);
+	      u->potype = 'N';
+	    }
+	}
+      break;
+
     default:
       ;
     }
@@ -1162,7 +1190,7 @@ void check_fs(int id, void *filesys, void *hint)
 	}
     }
 
-  if (f->type == 'N')
+  if (f->type == 'N' || f->type == 'I')
     {
       if (!hash_lookup(nfsphys, f->phys_id))
 	{

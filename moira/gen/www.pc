@@ -1,4 +1,4 @@
-/* $Id: www.pc,v 1.1 2000-01-10 21:56:35 danw Exp $
+/* $Id: www.pc,v 1.2 2000-01-10 22:05:54 danw Exp $
  *
  * This generates the web server user & group data.
  *
@@ -21,7 +21,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/www.pc,v 1.1 2000-01-10 21:56:35 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/www.pc,v 1.2 2000-01-10 22:05:54 danw Exp $");
 
 
 #ifndef WWW_SUBDIR
@@ -174,22 +174,38 @@ void filsys(FILE *out)
   char *c;
   EXEC SQL BEGIN DECLARE SECTION;
   char label[FILESYS_LABEL_SIZE], path[FILESYS_NAME_SIZE];
-  int status;
+  char type[FILESYS_TYPE_SIZE], key[FSGROUP_KEY_SIZE];
+  int status, fid;
   EXEC SQL END DECLARE SECTION;
 
   EXEC SQL WHENEVER SQLERROR GOTO sqlerr;
 
   EXEC SQL DECLARE filsys_cursor CURSOR FOR
-    SELECT label, name FROM filesys WHERE type='AFS' ORDER by label;
+    SELECT label, name, type, filsys_id FROM filesys
+    WHERE type='AFS' or type='FSGROUP'
+    ORDER by label;
   EXEC SQL OPEN filsys_cursor;
-
   while (1)
     {
-      EXEC SQL FETCH filsys_cursor INTO :label, :path;
+      EXEC SQL FETCH filsys_cursor INTO :label, :path, :type, :fid;
       if (sqlca.sqlcode)
  	break;
+
       if (!*strtrim(label))
 	continue;
+
+      if (!strcmp(strtrim(type), "FSGROUP"))
+	{
+	  EXEC SQL DECLARE group_cursor CURSOR FOR
+	    SELECT f.name, g.key FROM filesys f, fsgroup g
+	    WHERE f.filsys_id = g.filsys_id AND f.type='AFS'
+	    AND g.group_id = :fid
+	    ORDER BY g.key;
+	  EXEC SQL OPEN group_cursor;
+	  EXEC SQL FETCH group_cursor INTO :path, :key;
+	  EXEC SQL CLOSE group_cursor;
+	}
+
       if (!*strtrim(path))
 	continue;
       fprintf(out, "%s:%s\n", label, path);

@@ -1,5 +1,5 @@
 
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/mailhub.qc,v 1.5 1990-03-19 19:06:11 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/mailhub.qc,v 1.6 1990-04-10 16:05:21 mar Exp $
  *
  * This generates the /usr/lib/aliases file for the mailhub.
  *
@@ -23,6 +23,7 @@ extern int errno;
 char *whoami = "mailhub.gen";
 char *ingres_date_and_time();
 char *perm_malloc();
+char *pstrsave();
 char *divide = "##############################################################";
 
 #define ML_WID	72
@@ -170,11 +171,9 @@ get_info()
       if (s = index(name, '.'))
 	*s = 0;
 #ifdef ATHENA
-      sprintf(buf, "%s.LOCAL", name);
-      if (hash_store(machines, id, strsave(buf)) < 0) {
-#else
-      if (hash_store(machines, id, strsave(name)) < 0) {
+      strcat(name, ".LOCAL");
 #endif
+      if (hash_store(machines, id, pstrsave(name)) < 0) {
 	  fprintf(stderr, "Out of memory!\n");
 	  exit(MR_NO_MEM);
       }
@@ -185,7 +184,7 @@ get_info()
     cnt = 0;
     strings = create_hash(2000);
 ##  retrieve (id = strings.string_id, name = strings.string) {
-	if (hash_store(strings, id, strsave(strtrim(name))) < 0) {
+	if (hash_store(strings, id, pstrsave(strtrim(name))) < 0) {
 	    fprintf(stderr, "Out of memory!\n");
 	    exit(MR_NO_MEM);
 	}
@@ -201,9 +200,9 @@ get_info()
 ##	      type = u.potype, pid = u.pop_id, bid = u.box_id) 
 ##	where u.status != 3 {
 	u = (struct user *) perm_malloc(sizeof(struct user));
-	u->login = strsave(strtrim(name));
-	u->first = strsave(strtrim(fname));
-	u->last  = strsave(strtrim(lname));
+	u->login = pstrsave(strtrim(name));
+	u->first = pstrsave(strtrim(fname));
+	u->last  = pstrsave(strtrim(lname));
 	if (mname[0] != ' ')
 	  u->mi = mname[0];
 	else
@@ -211,7 +210,7 @@ get_info()
 
 	if (type[0] == 'P' && (s = hash_lookup(machines, pid))) {
 	    sprintf(buf, "%s@%s", strtrim(name), s);
-	    u->pobox = strsave(buf);
+	    u->pobox = pstrsave(buf);
 	} else if (type[0] ==  'S') {
 	    u->pobox = hash_lookup(strings, bid);
 	} else
@@ -231,7 +230,7 @@ get_info()
 ##	      type = l.acl_type, acl = l.acl_id)
 ##    where l.active != 0 {
 	l = (struct list *) perm_malloc(sizeof(struct list));
-	l->name = strsave(strtrim(name));
+	l->name = pstrsave(strtrim(name));
 	l->maillist = maillistp;
 	l->acl_t = type[0];
 	l->acl_id = acl;
@@ -356,7 +355,7 @@ int copy;
 	    exit(MR_NO_MEM);
 	}
 	if (copy)
-	  ns->name = strsave(s);
+	  ns->name = pstrsave(s);
 	else
 	  ns->name = s;
 	ns->keep = nodups;
@@ -380,7 +379,7 @@ int copy;
 	}
 	ns = ns->next;
 	if (copy)
-	  ns->name = strsave(s);
+	  ns->name = pstrsave(s);
 	else
 	  ns->name = s;
 	ns->keep = nodups;
@@ -497,6 +496,9 @@ FILE *out;
     else if (l->acl_t ==  'U' &&
 	     (u = (struct user *) hash_lookup(users, l->acl_id)))
       fprintf(out, "owner-%s: %s\n%s: ", l->name, u->login, l->name);
+    else
+      fprintf(out, "%s: ", l->name);
+      
 
     lwid = strlen(l->name) + 2;
     bol = 1;
@@ -586,3 +588,25 @@ unsigned size;
     return(ret);
 }
 
+
+/*
+ * Make a (permenant) copy of a string.
+ */
+char *
+pstrsave(s)
+    char *s;
+{
+    register int len;
+    register char *p;
+    /* Kludge for sloppy string semantics */
+    if (!s) {
+	    printf("NULL != \"\" !!!!\r\n");
+	    p = perm_malloc(1);
+	    *p = '\0';
+	    return p;
+    }
+    len = strlen(s) + 1;
+    p = perm_malloc((u_int)len);
+    if (p) bcopy(s, p, len);
+    return p;
+}

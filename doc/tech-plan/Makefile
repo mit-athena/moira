@@ -3,7 +3,7 @@
 #
 LIB= owl.PS plan.mak
 SRC= sms.mss intro.mss structure.mss protocol.mss tools.mss deploy.mss \
-	dcm.mss clientlib.mss server.mss 
+	dcm.mss clientlib.mss server.mss addendum.mss db_analysis.mss
 
 all: plan
 

@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v $
  *	$Author: danw $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v 1.32 1997-01-01 21:19:25 danw Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v 1.33 1997-01-16 01:27:17 danw Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_test_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v 1.32 1997-01-01 21:19:25 danw Exp $";
+static char *rcsid_test_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v 1.33 1997-01-16 01:27:17 danw Exp $";
 #endif /* lint */
 
 #include <mit-copyright.h>
@@ -98,7 +98,7 @@ char *mr_gets(char *prompt, char *buf, size_t len)
 {
   char *in;
 #ifdef USE_READLINE
-  if(isatty(0)) {
+  if(isatty(0) && isatty(1)) {
     in=readline(prompt);
     
     if (!in) return NULL;

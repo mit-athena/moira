@@ -1,6 +1,6 @@
 /* This file defines the query dispatch table for version 2 of the protocol
  *
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/queries2.c,v 2.0 1992-06-21 01:11:47 genoa Exp $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/queries2.c,v 2.1 1992-06-22 22:59:17 genoa Exp $
  *
  * Copyright 1987, 1988 by the Massachusetts Institute of Technology.
  * For copying and distribution information, please see the file
@@ -1413,7 +1413,7 @@ static struct validate dnfq_validate = {
 
 static char *glin_fields[] = {
   NAME,
-  NAME, "active", "public", "hidden", "maillist", "isgroup", "gid",
+  NAME, "active", "public", "hidden", "maillist", "grouplist", "gid",
   ACE_TYPE, ACE_NAME, DESC, MOD1, MOD2, MOD3,
 };
 
@@ -1430,7 +1430,7 @@ static struct validate glin_validate = {
 };
 
 static char *alis_fields[] = {
-  NAME, "active", "public", "hidden", "maillist", "isgroup", "gid",
+  NAME, "active", "public", "hidden", "maillist", "grouplist", "gid",
   ACE_TYPE, ACE_NAME, DESC,
 };
 
@@ -1455,7 +1455,7 @@ static struct validate alis_validate = {
 
 static char *ulis_fields[] = {
   NAME,
-  "newname", "active", "public", "hidden", "maillist", "isgroup", "gid",
+  "newname", "active", "public", "hidden", "maillist", "grouplist", "gid",
   ACE_TYPE, ACE_NAME, DESC,
 };
 
@@ -1555,7 +1555,7 @@ static struct validate gaus_validate = {
 };
 
 static char *qgli_fields[] = {
-    "active", "public", "hidden", "maillist", "isgroup",
+    "active", "public", "hidden", "maillist", "grouplist",
     "list",
 };
 
@@ -1598,7 +1598,7 @@ static struct validate gmol_validate = {
 
 static char *glom_fields[] = {
   "member_type", "member_name",
-  "list_name", "active", "public", "hidden", "maillist", "isgroup",
+  "list_name", "active", "public", "hidden", "maillist", "grouplist",
 };
 
 static struct valobj glom_valobj[] = {
@@ -1889,7 +1889,7 @@ static char *gval_fields[] = {
 };
 
 static struct valobj gval_valobj[] = {
-  {V_NAME, 0, "values_tbl", NAME, 0, MR_NO_MATCH},
+  {V_NAME, 0, "numvalues", NAME, 0, MR_NO_MATCH},
 };
 
 static struct validate gval_validate = {
@@ -1913,7 +1913,7 @@ static struct validate aval_validate =	/* for aval, uval, and dval */
   VOchar0,
   1,
   NAME,
-  "values_tbl.name = \"%s\"",
+  "numvalues.name = \"%s\"",
   1,
   0,
   0,
@@ -1926,7 +1926,7 @@ static char *dval_fields[] = {
 };
 
 static char *gats_fields[] = {
-  "tbl", "retrieves", "appends", "updates", "deletes", MOD1, MOD2, MOD3,
+  "table_name", "retrieves", "appends", "updates", "deletes", MOD1, MOD2, MOD3,
 };
 
 
@@ -1941,10 +1941,10 @@ struct query Queries2[] = {
     RETRIEVE,
     "u",
     USERS,
-    "u.login, text(u.uid), u.shell, u.last, u.first, u.middle",
+    "login, text(uid), shell, last, first, middle FROM users",
     galo_fields,
     6,
-    "u.users_id != 0",
+    "users_id != 0",
     0,
     0,
   },
@@ -1956,10 +1956,10 @@ struct query Queries2[] = {
     RETRIEVE,
     "u",
     USERS,
-    "u.login, text(u.uid), u.shell, u.last, u.first, u.middle",
+    "login, text(uid), shell, last, first, middle FROM users",
     galo_fields,
     6,
-    "u.status = 1",
+    "status = 1",
     0,
     0,
   },
@@ -1971,10 +1971,10 @@ struct query Queries2[] = {
     RETRIEVE,
     "u",
     USERS,
-    "u.login, text(u.uid), u.shell, u.last, u.first, u.middle, text(u.status), u.mit_id, u.mit_year, u.modtime, text(u.modby), u.modwith",
+    "login, text(uid), shell, last, first, middle, text(status), mit_id, mit_year, modtime, text(modby), modwith FROM users",
     gubl_fields,
     12,
-    "u.login = '%s' and u.users_id != 0",
+    "login = '%s' and users_id != 0",
     1,
     &gubx_validate,
   },
@@ -1986,10 +1986,10 @@ struct query Queries2[] = {
     RETRIEVE,
     "u",
     USERS,
-    "u.login, text(u.uid), u.shell, u.last, u.first, u.middle, text(u.status), u.mit_id, u.mit_year, u.modtime, text(u.modby), u.modwith",
+    "login, text(uid), shell, last, first, middle, text(status), mit_id, mit_year, modtime, text(modby), modwith FROM users",
     gubu_fields,
     12,
-    "u.uid = %s and u.users_id != 0",
+    "uid = %s and users_id != 0",
     1,
     &gubx_validate,
   },
@@ -2001,10 +2001,10 @@ struct query Queries2[] = {
     RETRIEVE,
     "u",
     USERS,
-    "u.login, text(u.uid), u.shell, u.last, u.first, u.middle, text(u.status), u.mit_id, u.mit_year, u.modtime, text(u.modby), u.modwith",
+    "login, text(uid), shell, last, first, middle, text(status), mit_id, mit_year, modtime, text(modby), modwith FROM users",
     gubn_fields,
     12,
-    "u.first = '%s' and u.last = '%s' and u.users_id != 0",
+    "first = '%s' and last = '%s' and users_id != 0",
     2,
     &VDsortf,
   },
@@ -2016,10 +2016,10 @@ struct query Queries2[] = {
     RETRIEVE,
     "u",
     USERS,
-    "u.login, text(u.uid), u.shell, u.last, u.first, u.middle, text(u.status), u.mit_id, u.mit_year, u.modtime, text(u.modby), u.modwith",
+    "login, text(uid), shell, last, first, middle, text(status), mit_id, mit_year, modtime, text(modby), modwith FROM users",
     gubc_fields,
     12,
-    "u.mit_year = uppercase('%s') and u.users_id != 0",
+    "mit_year = uppercase('%s') and u.users_id != 0",
     1,
     &VDsortf,
   },
@@ -2031,25 +2031,25 @@ struct query Queries2[] = {
     RETRIEVE,
     "u",
     USERS,
-    "u.login, text(u.uid), u.shell, u.last, u.first, u.middle, text(u.status), u.mit_id, u.mit_year, u.modtime, text(u.modby), u.modwith",
+    "login, text(uid), shell, last, first, middle, text(status), mit_id, mit_year, modtime, text(modby), modwith FROM users",
     gubm_fields,
     12,
-    "u.mit_id = '%s' and u.users_id != 0",
+    "mit_id = '%s' and users_id != 0",
     1,
     &VDsortf,
   },
 
   {
-    /* Q_AUSR - ADD_USER */  /** Problems with two refs to values_tbl */
+    /* Q_AUSR - ADD_USER */  /** Needs subselect */
     "add_user",
     "ausr",
     APPEND,
     "u",
     USERS,
-    "(login, users_id, uid, shell, last, first, middle, status, mit_id, mit_year) VALUES ( '%s', values_tbl.value, %s, '%s', '%s',  '%s',  '%s',  %s, '%s',  '%s')",
+    "(login, users_id, uid, shell, last, first, middle, status, mit_id, mit_year) VALUES ( '%s', numvalues.value, %s, '%s', '%s',  '%s',  '%s',  %s, '%s',  '%s')",
     ausr_fields,
     9,
-    "values_tbl.name = \"users_id\"",
+    "numvalues.name = 'users_id'",
     0,
     &ausr_validate,
   },
@@ -2346,10 +2346,10 @@ struct query Queries2[] = {
     APPEND,
     "m",
     MACHINE,
-    "(name, mach_id, type) VALUES (uppercase('%s'),values_tbl.value,'%s')",
+    "(name, mach_id, type) VALUES (uppercase('%s'),numvalues.value,'%s')",
     amac_fields,
     2,
-    "values_tbl.name = 'mach_id'",
+    "numvalues.name = 'mach_id'",
     0,
     &amac_validate,
   },
@@ -2406,10 +2406,10 @@ struct query Queries2[] = {
     APPEND,
     "c",
     CLUSTER,
-    "(name, clu_id, desc, location) VALUES ('%s',values_tbl.value,'%s','%s')",
+    "(name, clu_id, desc, location) VALUES ('%s',numvalues.value,'%s','%s')",
     aclu_fields,
     3,
-    "values_tbl.name = 'clu_id'",
+    "numvalues.name = 'clu_id'",
     0,
     &aclu_validate,
   },
@@ -2901,10 +2901,10 @@ struct query Queries2[] = {
     APPEND,
     "fs",
     FILESYS,
-    "(filsys_id, label, type, mach_id, name, mount, access, comments, owner, owners, createflg, lockertype) VALUES (values_tbl.value,'%s','%s',%d,'%s','%s','%s','%s',%d,%d,%s,'%s')",
+    "(filsys_id, label, type, mach_id, name, mount, access, comments, owner, owners, createflg, lockertype) VALUES (numvalues.value,'%s','%s',%d,'%s','%s','%s','%s',%d,%d,%s,'%s')",
     afil_fields,
     11,
-    "values_tbl.name = 'filsys_id'",
+    "numvalues.name = 'filsys_id'",
     0,
     &afil_validate,
   },
@@ -3021,10 +3021,10 @@ struct query Queries2[] = {
     APPEND,
     "np",
     "nfsphys",
-    "(nfsphys_id, mach_id, dir, device, status, allocated, size) VALUES (values_tbl.value, %d, '%s', '%s', %s, %s, %s)",
+    "(nfsphys_id, mach_id, dir, device, status, allocated, size) VALUES (numvalues.value, %d, '%s', '%s', %s, %s, %s)",
     ganf_fields,
     6,
-    "values_tbl.name = 'nfsphys_id'",
+    "numvalues.name = 'nfsphys_id'",
     0,
     &anfp_validate,
   },
@@ -3261,10 +3261,10 @@ struct query Queries2[] = {
     APPEND,
     "l",
     LIST, 
-    "(list_id, name, active, public, hidden, maillist, isgroup, gid, acl_type, acl_id, desc) VALUES (values_tbl.value,'%s',%s,%s,%s,%s,%s,%s,'%s',%d,'%s')",
+    "(list_id, name, active, public, hidden, maillist, grouplist, gid, acl_type, acl_id, desc) VALUES (numvalues.value,'%s',%s,%s,%s,%s,%s,%s,'%s',%d,'%s')",
     alis_fields,
     10,
-    "values_tbl.name = 'list_id'",
+    "numvalues.name = 'list_id'",
     0,
     &alis_validate,
   },
@@ -3276,7 +3276,7 @@ struct query Queries2[] = {
     UPDATE,
     "l",
     LIST,
-    "SET name='%s', active=%s, public=%s, hidden=%s, maillist=%s, isgroup=%s, gid=%s, acl_type='%s', acl_id=%d, desc='%s'",
+    "SET name='%s', active=%s, public=%s, hidden=%s, maillist=%s, grouplist=%s, gid=%s, acl_type='%s', acl_id=%d, desc='%s'",
     ulis_fields,
     10,
     "list.list_id = %d",
@@ -3695,7 +3695,7 @@ struct query Queries2[] = {
     "aval",
     APPEND,
     "v",
-    "values_tbl",
+    "numvalues",
     "(name, value) VALUES ('%s', %s)",
     aval_fields,
     2,
@@ -3710,7 +3710,7 @@ struct query Queries2[] = {
     "uval",
     UPDATE,
     "v",
-    "values_tbl",
+    "numvalues",
     "SET value = %s",
     aval_fields,
     1,
@@ -3725,7 +3725,7 @@ struct query Queries2[] = {
     "dval",
     DELETE,
     "v",
-    "values_tbl",
+    "numvalues",
     (char *)0,
     dval_fields,
     0,
@@ -3741,7 +3741,7 @@ struct query Queries2[] = {
     RETRIEVE,
     "tbs",
     "tblstats",
-    "tbs.table, text(tbs.retrieves), text(tbs.appends), text(tbs.updates), text(tbs.deletes), tbs.modtime",
+    "tbs.table_name, text(tbs.retrieves), text(tbs.appends), text(tbs.updates), text(tbs.deletes), tbs.modtime",
     gats_fields,
     6,
     (char *)0,

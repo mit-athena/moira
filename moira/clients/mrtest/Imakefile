@@ -1,0 +1,17 @@
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/Imakefile,v 1.1 1990-08-27 15:07:55 mar Exp $
+#
+# Copyright 1990 by the Massachusetts Institute of Technology.
+#
+# For copying and distribution information,
+# please see the file <mit-copyright.h>.
+#
+# Imakefile for mrtest.
+#
+
+SRCS=	test.c
+SRCDIR=${SRCTOP}/mrtest
+CODE=${SRCS} Imakefile test_cmds.ct
+OBJS=	test.o test_cmds.o
+
+mk_cmds(test_cmds)
+program(mrtest, ${OBJS},${MR_LIBDEP} ${GDB_LIBDEP}, ${CLIBS}, ${PROGDIR})

@@ -1,0 +1,37 @@
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/man/Imakefile,v 1.1 1990-08-27 15:04:44 mar Exp $
+#
+# Copyright 1990 by the Massachusetts Institute of Technology.
+#
+# For copying and distribution information,
+# please see the file <mit-copyright.h>.
+#
+# Imakefile for manual pages.
+#
+
+SRCDIR=${SRCTOP}/man
+CODE=blanche.1 chfn.1 chpobox.1 chsh.1 dcmmaint.1 listmaint.1 \
+	mailmaint.1 moira.1 mrcheck.1 usermaint.1 userreg.1 \
+	moira.3 \
+	dcm.8 mrtest.8 reg_svr.8 moirad.8 startdcm.8 startreg.8 \
+	startmoira.8 update_server.8
+
+manpage(1,blanche.1)
+manpage(1,chfn.1)
+manpage(1,chpobox.1)
+manpage(1,chsh.1)
+manpage(1,dcmmaint.1)
+manpage(1,listmaint.1)
+manpage(1,mailmaint.1)
+manpage(1,moira.1)
+manpage(1,mrcheck.1)
+manpage(1,usermaint.1)
+manpage(1,userreg.1)
+manpage(3,moira.3)
+manpage(8,dcm.8)
+manpage(8,mrtest.8)
+manpage(8,reg_svr.8)
+manpage(8,moirad.8)
+manpage(8,startdcm.8)
+manpage(8,startreg.8)
+manpage(8,startmoira.8)
+manpage(8,update_server.8)

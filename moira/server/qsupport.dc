@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.dc,v $
- *	$Author: kostas $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.dc,v 1.8 1990-10-01 14:58:29 kostas Exp $
+ *	$Author: genoa $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.dc,v 1.9 1992-06-08 15:20:17 genoa Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,13 +10,15 @@
  */
 
 #ifndef lint
-static char *rcsid_qsupport_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.dc,v 1.8 1990-10-01 14:58:29 kostas Exp $";
+static char *rcsid_qsupport_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.dc,v 1.9 1992-06-08 15:20:17 genoa Exp $";
 #endif lint
 
 #include <mit-copyright.h>
 #include "query.h"
+#include "sql_defs.h"
 #include "mr_server.h"
 #include <ctype.h>
+
 EXEC SQL INCLUDE SQLCA;  /* SQL Communications Area */
 EXEC SQL INCLUDE SQLDA;  /* SQL Descriptor Area */
 

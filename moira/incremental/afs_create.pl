@@ -96,6 +96,7 @@ sub athena_proc
     # CONTRIB   <user> all system:anyuser rl
     # COURSE    <user> all <group> all system:facdev all system:authuser rl
     # HOMEDIR   <user> all
+    # LEASE	<user> all
     # PROJECT   <user> all <group> all
     # REF       <user> all system:anyuser rl
     # SW        <user> all system:swmaint all system:authuser rl
@@ -110,7 +111,7 @@ sub athena_proc
     push(@acl,"system:swmaint all") if ($type =~ /^(SW)/);
     push(@acl,"system:administrators all") if ($type =~ /^(SYSTEM)/);
     push(@acl,"$user all")
-	if ($uid != 0 && $type =~ /^(ACTIVITY|APROJ|AREF|CONTRIB|COURSE|HOMEDIR|PROJECT|REF|SW|UROP)/);
+	if ($uid != 0 && $type =~ /^(ACTIVITY|APROJ|AREF|CONTRIB|COURSE|HOMEDIR|LEASE|PROJECT|REF|SW|UROP)/);
     push(@acl,"system:$group all")
 	if ($gid != 0 && $type =~ /^(ACTIVITY|APROJ|COURSE|PROJECT|UROP)/);
     push(@acl,"system:$group rl") if ($gid != 0 && $type =~ /^(AREF)/);

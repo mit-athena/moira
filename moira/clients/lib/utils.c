@@ -1,4 +1,4 @@
-/* $Id: utils.c,v 1.4 2000-03-29 20:49:15 zacheiss Exp $
+/* $Id: utils.c,v 1.5 2001-03-02 07:33:53 zacheiss Exp $
  *
  * Random client utilities.
  *
@@ -31,7 +31,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/lib/utils.c,v 1.4 2000-03-29 20:49:15 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/lib/utils.c,v 1.5 2001-03-02 07:33:53 zacheiss Exp $");
 
 extern char *whoami;
 
@@ -116,6 +116,7 @@ char *mrcl_krb_user(void)
     {
       /* In case mr_init hasn't been called yet. */
       initialize_krb_error_table();
+      status += ERROR_TABLE_BASE_krb;
       com_err(whoami, status, "reading Kerberos ticket file.");
       return NULL;
     }

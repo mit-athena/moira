@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/critical.c,v 1.12 1991-03-08 10:31:31 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/critical.c,v 1.13 1993-10-22 14:01:20 mar Exp $
  *
  * Log and send a zephyrgram about any critical errors.
  *
@@ -18,6 +18,7 @@
 #ifdef SYSLOG
 #include <syslog.h>
 #endif
+#include <string.h>
 
 
 /* mode to create the file with */
@@ -79,7 +80,11 @@ char *msg;
 #ifdef ZEPHYR
     ZNotice_t znotice;
 
+#ifdef POSIX
+    memset (&znotice, 0, sizeof (znotice));
+#else
     bzero (&znotice, sizeof (znotice));
+#endif
     znotice.z_kind = UNSAFE;
     znotice.z_class = "MOIRA";
     znotice.z_class_inst = inst;

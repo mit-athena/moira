@@ -1,4 +1,4 @@
-/* $Id: mrtest.c,v 1.41 1998-05-26 18:13:49 danw Exp $
+/* $Id: mrtest.c,v 1.42 1998-12-29 02:11:27 danw Exp $
  *
  * Bare-bones Moira client
  *
@@ -24,9 +24,9 @@
 #include "history.h"
 #endif
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v 1.41 1998-05-26 18:13:49 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v 1.42 1998-12-29 02:11:27 danw Exp $");
 
-int recursion = 0, interactive;
+int recursion = 0, quote_output = 0, interactive;
 int count, quit = 0, cancel = 0;
 char *whoami;
 sigjmp_buf jb;
@@ -54,9 +54,24 @@ int main(int argc, char **argv)
 {
   char cmdbuf[BUFSIZ];
   struct sigaction action;
+  int c;
 
   whoami = argv[0];
   interactive = (isatty(0) && isatty(1));
+
+  while ((c = getopt(argc, argv, "q")) != -1)
+    {
+      switch (c)
+	{
+	case 'q':
+	  quote_output = 1;
+	  break;
+
+	default:
+	  fprintf(stderr, "Usage: mrtest [-q]\n");
+	  exit (1);
+	}
+    }
 
   initialize_sms_error_table();
   initialize_krb_error_table();
@@ -373,7 +388,20 @@ int print_reply(int argc, char **argv, void *hint)
     {
       if (i != 0)
 	printf(", ");
-      printf("%s", argv[i]);
+      if (quote_output)
+	{
+	  unsigned char *p;
+
+	  for (p = (unsigned char *)argv[i]; *p; p++)
+	    {
+	      if (isprint(*p) && *p != '\\' && *p != ',')
+		putc(*p, stdout);
+	      else
+		printf("\\%03o", *p);
+	    }
+	}
+      else
+	printf("%s", argv[i]);
     }
   printf("\n");
   count++;

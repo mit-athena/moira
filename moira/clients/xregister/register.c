@@ -1,8 +1,9 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/xregister/register.c,v 1.1 1990-07-31 18:43:01 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/xregister/register.c,v 1.2 1996-07-02 02:22:09 danw Exp $
  */
 
 #include <stdio.h>
 #include <errno.h>
+#include <Wc/WcCreate.h>
 #include <X11/Intrinsic.h>
 #include <X11/Xaw/Box.h>
 #include <X11/Xaw/Command.h>
@@ -15,7 +16,7 @@
 #include <X11/Xlib.h>
 
 
-int quit(), help(), again(), go();
+int help(), again(), go();
 void advance_focus(), retreat_focus();
 char fname[128], mname[128], lname[128], iname[128], uname[128], pname[128];
 Widget TopWidget;
@@ -40,6 +41,7 @@ int argc;
 char **argv;
 {
     Widget table, w, box;
+    XtAppContext app;
     Arg args[10];
     Cardinal arg_cnt;
     Cursor cursor;
@@ -49,15 +51,12 @@ char **argv;
 			     (unsigned int *)&argc, argv);
 
     XtGetApplicationResources(TopWidget, NULL, NULL, 0, NULL);
-    box = XtCreateManagedWidget("box", formWidgetClass, TopWidget, args, 0);
-    XtCreateManagedWidget("title", labelWidgetClass, box, args, 0);
-    XtCreateManagedWidget("logo", labelWidgetClass, box, args, 0);
-    XtCreateManagedWidget("info", asciiTextWidgetClass, box, args, 0);
-    XtCreateManagedWidget("fnamel", labelWidgetClass, box, args, 0);
-    XtCreateManagedWidget("mnamel", labelWidgetClass, box, args, 0);
-    XtCreateManagedWidget("lnamel", labelWidgetClass, box, args, 0);
-    XtCreateManagedWidget("idl", labelWidgetClass, box, args, 0);
-    XtCreateManagedWidget("loginl", labelWidgetClass, box, args, 0);
+    app = XtWidgetToApplicationContext(TopWidget);
+    AriRegisterAthena(app);
+    WcWidgetCreation(TopWidget);
+
+    XtRealizeWidget(TopWidget);
+    XtMainLoop();
 
     XtAddActions(field_actions, 2);
     fname[0] = 0;
@@ -85,18 +84,8 @@ char **argv;
     XtAddCallback(w, XtNcallback, go, NULL);
     w = XtCreateManagedWidget("again", commandWidgetClass, box, args, 0);
     XtAddCallback(w, XtNcallback, again, NULL);
-    w = XtCreateManagedWidget("quit", commandWidgetClass, box, args, 0);
-    XtAddCallback(w, XtNcallback, quit, NULL);
-
-    XtRealizeWidget(TopWidget);
-    XtMainLoop();
 }
 
-
-quit()
-{
-    exit(0);
-}
 
 remove_popup(ignored, w, ignored1)
 Widget ignored;

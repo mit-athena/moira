@@ -1,4 +1,4 @@
-/* $Id: queries2.c,v 2.58 1999-10-31 20:52:19 danw Exp $
+/* $Id: queries2.c,v 2.59 1999-11-02 02:34:44 danw Exp $
  *
  * This file defines the query dispatch table for version 2 of the protocol
  *
@@ -1499,6 +1499,18 @@ static char *gfsl_fields[] = {
   "label",
   "label", "type", "machine", "name", "mount", "access", "comments",
   "owner", "owners", "create", "lockertype", "modtime", "modby", "modwith",
+};
+
+static struct validate gfsl_validate = {
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  access_filesys,
+  0,
+  followup_fix_modby,
 };
 
 static char *gfsm_fields[] = {
@@ -3900,7 +3912,7 @@ struct query Queries2[] = {
     "fs.label LIKE '%s' AND fs.mach_id = m.mach_id AND fs.owner = u.users_id AND fs.owners = l.list_id",
     1,
     "fs.label",
-    &VDfix_modby,
+    &gfsl_validate,
   },
 
   {

@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase4.qc,v 1.4 1989-07-19 14:04:19 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase4.qc,v 1.5 1989-09-11 11:46:39 mar Exp $
  *
  *  (c) Copyright 1988 by the Massachusetts Institute of Technology.
  *  For copying and distribution information, please see the file
@@ -9,7 +9,7 @@
 #include <sms.h>
 #include "dbck.h"
 
-static char phase4_qc_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase4.qc,v 1.4 1989-07-19 14:04:19 mar Exp $";
+static char phase4_qc_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase4.qc,v 1.5 1989-09-11 11:46:39 mar Exp $";
 
 
 count_boxes(id, u, boxes)
@@ -122,6 +122,8 @@ count_only_setup()
 ##	      id2 = u.pop_id, id3 = u.box_id) 
 ##    where u.potype = "POP" {
     	u = (struct user *) malloc(sizeof(struct user));
+	if (u == NULL)
+	  out_of_mem("storing users");
 	strcpy(u->login, strtrim(name));
 	u->potype = buf[0];
 	sprintf(buf, "%s, %s", strtrim(last), strtrim(first));
@@ -146,6 +148,8 @@ count_only_setup()
 ##  range of m is machine
 ##  retrieve (id = m.mach_id, name = m.#name) {
     	m = (struct machine *) malloc(sizeof(struct machine));
+	if (m == NULL)
+	  out_of_mem("storing machines");
 	strcpy(m->name, strtrim(name));
 	m->mach_id = id;
 	hash_store(machines, id, m);
@@ -156,6 +160,8 @@ count_only_setup()
 ##  retrieve (id = nfsphys.nfsphys_id, name = nfsphys.dir,
 ##	      id2 = nfsphys.mach_id, id3 = nfsphys.allocated) {
     	n = (struct nfsphys *) malloc(sizeof(struct nfsphys));
+	if (n == NULL)
+	  out_of_mem("storing nfsphys");
 	strcpy(n->dir, strtrim(name));
 	n->mach_id = id2;
 	n->nfsphys_id = id;

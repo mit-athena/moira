@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.pc,v $
  *	$Author: danw $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.pc,v 2.3 1997-09-17 16:59:52 danw Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.pc,v 2.4 1997-10-01 19:57:10 danw Exp $
  *
  *	Copyright (C) 1987, 1988 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_qrtn_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.pc,v 2.3 1997-09-17 16:59:52 danw Exp $";
+static char *rcsid_qrtn_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.pc,v 2.4 1997-10-01 19:57:10 danw Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -460,9 +460,12 @@ int mr_verify_query(cl, q, argc, argv_ro)
 
     privileged = 0;
 
+    /* check argument count */
+    argreq = q->argc;
+    if (q->type == UPDATE || q->type == APPEND) argreq += q->vcnt;
+    if (argc != argreq) return(MR_ARGS);
+
     /* copy the arguments into a local argv that we can modify */
-    if (argc >= QMAXARGS)
-      return(MR_ARGS);
     for (i = 0; i < argc; i++) {
 	for (to=Argv[i], fr=argv_ro[i], stop=to+ARGLEN; (*fr) && (to<stop);)
 	  *to++ = *fr++;
@@ -481,11 +484,6 @@ int mr_verify_query(cl, q, argc, argv_ro)
 	return(status);
     if (status == MR_SUCCESS)
 	privileged++;
-
-    /* check argument count */
-    argreq = q->argc;
-    if (q->type == UPDATE || q->type == APPEND) argreq += q->vcnt;
-    if (argc != argreq) return(MR_ARGS);
 
     /* validate arguments */
     if (v && v->valobj) {

@@ -1,14 +1,14 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v 1.22 1988-09-07 15:14:40 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v 1.23 1988-09-08 14:26:40 mar Exp $
  *
  *	Copyright (C) 1987, 1988 by the Massachusetts Institute of Technology
  * 
  */
 
 #ifndef lint
-static char *rcsid_qrtn_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v 1.22 1988-09-07 15:14:40 mar Exp $";
+static char *rcsid_qrtn_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v 1.23 1988-09-08 14:26:40 mar Exp $";
 #endif lint
 
 #include "query.h"
@@ -69,6 +69,7 @@ int sms_open_database()
 	
     /* open the database */
 ##  ingres sms
+##  set lockmode session where readlock = exclusive
     return ingres_errno;
 }
 
@@ -308,7 +309,9 @@ out:
 		fflush(journal);
 	    }
 	} else {
-##          abort		/* it never happened */
+	    if (status != SMS_DEADLOCK) {
+##		abort		/* it never happened */
+	    }
 	}
     }
 

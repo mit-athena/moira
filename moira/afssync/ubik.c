@@ -1,10 +1,11 @@
-/* $Id: ubik.c,v 1.3 1992-06-07 04:19:28 probe Exp $ */
+/* $Id: ubik.c,v 1.4 1997-01-20 18:10:47 danw Exp $ */
 
 #include <sys/types.h>
 #include <netinet/in.h>
 
 #include <lock.h>
 #define UBIK_INTERNALS
+#include <stds.h>
 #include <ubik.h>
 #include <rx/xdr.h>
 #include "print.h"
@@ -89,7 +90,7 @@ int ubik_GetVersion(dummy, ver)
 int dummy;
 struct ubik_version *ver;
 {
-    bzero(ver, sizeof(struct ubik_version));
+    memset(ver, 0, sizeof(struct ubik_version));
     return(0);
 }
 
@@ -134,7 +135,7 @@ long len;
 	return(1);
     }
     if (status < len)
-      bzero(&buf[status], len - status);
+      memset(&buf[status], 0, len - status);
     return(0);
 }
 

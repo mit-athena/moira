@@ -43,7 +43,7 @@ char **argv;
     char file[512];
     register struct ubik_hdr *uh;
     int didit;
-    setlinebuf(stdout);
+    setvbuf(stdout, NULL, _IOLBF, BUFSIZ);
     strcpy(file, "/usr/afs/db/prdb.DB0");
     while ((cc = getopt(argc, argv, "f:gnc")) != EOF) {
 	switch (cc) {
@@ -82,7 +82,7 @@ char **argv;
     if (ntohl(uh->magic) != UBIK_MAGIC)
 	fprintf(stderr, "ptdump: %s: Bad UBIK_MAGIC. Is %x should be %x\n",
 		file, ntohl(uh->magic), UBIK_MAGIC);
-    bcopy(&uh->version, &uv, sizeof(struct ubik_version));
+    memcpy(&uv, &uh->version, sizeof(struct ubik_version));
     fprintf(stderr, "Ubik Version is: %D.%d\n",
 	    uv.epoch, uv.counter);
     if (read(fd, &prh, sizeof(struct prheader)) < 0) {

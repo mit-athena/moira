@@ -8,7 +8,7 @@ OBJS= ptutils.o utils.o ubik.o
 SRCS= ptutils.c utils.c ubik.c
 CODE= $(SRCS) migrate.qc sync.dc
 
-AFSDIR = /mit/afsdev/bld/dest
+AFSDIR = /mit/afsuser
 AFSLIBS=$(AFSDIR)/lib/afs/libprot.a   $(AFSDIR)/lib/afs/libauth.a \
 	$(AFSDIR)/lib/libubik.a       $(AFSDIR)/lib/afs/util.a \
 	$(AFSDIR)/lib/librxkad.a      $(AFSDIR)/lib/afs/libsys.a \

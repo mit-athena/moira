@@ -7,7 +7,7 @@ BKUPDIRDIR=/u3/sms_backup
 PATH=/bin:/usr/bin:/usr/ucb:/usr/new; export PATH
 chdir ${BKUPDIRDIR}
 
-/u1/sms/bin/counts </dev/null	
+# /u1/sms/bin/counts </dev/null	
 
 if [ -d in_progress ] 
 then

@@ -1,4 +1,4 @@
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/Imakefile,v 1.4 1993-10-21 15:16:44 mar Exp $
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/Imakefile,v 1.5 1993-10-25 16:41:17 mar Exp $
 #
 # Copyright 1990 by the Massachusetts Institute of Technology.
 #
@@ -75,10 +75,10 @@ depend:: et ss
 #endif
 
 et:
-	cd util/et; make ${MFLAGS} DEPEND="$(BUILDTOP)/$(DEPEND)" depend; make ${MFLAGS} all
+	cd util/et; make ${MFLAGS} DEPEND="$(BUILDTOP)/../../$(DEPEND)" depend; make ${MFLAGS} all
 
 ss:
-	cd util/ss; make ${MFLAGS} DEPEND="$(BUILDTOP)/$(DEPEND)" depend; make ${MFLAGS} all
+	cd util/ss; make ${MFLAGS} DEPEND="$(BUILDTOP)/../../$(DEPEND)" depend; make ${MFLAGS} all
 
 makedepend:
 	cd util/makedepend; make

@@ -1,6 +1,6 @@
 #	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/Makefile,v $
 #	$Author: mar $
-#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/Makefile,v 1.6 1990-01-10 18:22:56 mar Exp $
+#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/Makefile,v 1.7 1990-02-14 11:23:34 mar Exp $
 #
 # (c) Copyright 1988 by the Massachusetts Institute of Technology.
 # For copying and distribution information, please see the file
@@ -37,8 +37,8 @@ clean:
 	rm -f dcm startdcm .saber
 
 install: dcm startdcm
-	install dcm ${SMS_DIR}/bin/dcm
-	install startdcm ${SMS_DIR}/bin/startdcm
+	install -c dcm ${SMS_DIR}/bin/dcm
+	install -c startdcm ${SMS_DIR}/bin/startdcm
 
 lint:
 	lint ${INCDIR} ${DCM_SRCS} | grep -v "possible pointer alignment"

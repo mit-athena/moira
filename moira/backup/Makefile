@@ -1,4 +1,4 @@
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/Makefile,v 1.7 1989-12-04 12:10:16 mar Exp $
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/Makefile,v 1.8 1990-02-14 11:27:44 mar Exp $
 #
 # (c) Copyright 1988 by the Massachusetts Institute of Technology.
 # For copying and distribution information, please see the file
@@ -49,9 +49,9 @@ clean:
 	rm -f rest.c rest1.c rest_db.c
 
 install:
-	install mrbackup ../bin/mrbackup
-	install mrrestore ../bin/mrrestore
-	install nightly.sh ../bin/nightly.sh
+	install -c mrbackup ../bin/mrbackup
+	install -c mrrestore ../bin/mrrestore
+	install -c nightly.sh ../bin/nightly.sh
 
 depend: ${SRCS}
 	mkdep ${CFLAGS} ${SRCS}

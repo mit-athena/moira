@@ -1,7 +1,7 @@
 #
 # 	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/Makefile,v $
 #	$Author: mar $
-#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/Makefile,v 1.9 1989-12-13 17:47:53 mar Exp $
+#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/Makefile,v 1.10 1990-02-14 11:23:17 mar Exp $
 #
 # Revised makefile for GDB library.
 #
@@ -55,11 +55,11 @@ llib-lgdb.ln: ${LIBSRC}
 	lint -Cgdb ${GDBCSRCS}
 
 install:
-	install -m 644 libgdb.a ${DESTDIR}/usr/athena/lib/libsmsgdb.a
+	install -c -m 644 libgdb.a ${DESTDIR}/usr/athena/lib/libsmsgdb.a
 	ranlib ${DESTDIR}/usr/athena/lib/libsmsgdb.a
-	install -m 644 libgdb_p.a ${DESTDIR}/usr/athena/lib/libsmsgdb_p.a
+	install -c -m 644 libgdb_p.a ${DESTDIR}/usr/athena/lib/libsmsgdb_p.a
 	ranlib ${DESTDIR}/usr/athena/lib/libsmsgdb_p.a
-	install -m 644 llib-lgdb.ln ${DESTDIR}/usr/lib/lint/llib-lsmsgdb.ln
+	install -c -m 644 llib-lgdb.ln ${DESTDIR}/usr/lib/lint/llib-lsmsgdb.ln
 
 #
 # Random demo programs

@@ -1,8 +1,8 @@
 #
 # 	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/Makefile,v $
-#	$Author: qjb $
+#	$Author: mar $
 #	$Locker:  $
-#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/Makefile,v 1.16 1990-01-12 15:39:56 qjb Exp $
+#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/Makefile,v 1.17 1990-02-14 11:23:00 mar Exp $
 #
 # (c) Copyright 1988 by the Massachusetts Institute of Technology.
 # For copying and distribution information, please see the file
@@ -32,8 +32,8 @@ clean: /tmp
 	rm -f unreg_user.c unreg_user
 
 install: all
-	install reg_svr ../bin/reg_svr
-	install startreg ../bin/startreg
+	install -c reg_svr ../bin/reg_svr
+	install -c startreg ../bin/startreg
 
 depend:
 	mkdep ${CFLAGS} ${SRCS}

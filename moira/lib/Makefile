@@ -1,6 +1,6 @@
 #	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/Makefile,v $
 #	$Author: mar $
-#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/Makefile,v 1.10 1989-12-13 17:43:40 mar Exp $
+#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/Makefile,v 1.11 1990-02-14 11:25:09 mar Exp $
 #
 #	Makefile for SMS library.
 #
@@ -26,9 +26,9 @@ LINTFLAGS= -uhv
 ALL=libsms.a llib-lsms.ln # libsms_p.a
 
 .c.o:
-#	${CC} -c -pg ${CFLAGS} $*.c
-#	ld -x -r $*.o
-#	mv a.out profiled/$*.o
+	${CC} -c -pg ${CFLAGS} $*.c
+	ld -x -r $*.o
+	mv a.out profiled/$*.o
 	${CC} -c ${CFLAGS} $*.c
 	ld -x -r $*.o
 	mv a.out $*.o
@@ -38,7 +38,7 @@ all: ${ALL}
 libsms.a: ${LIBOBJ}
 	ar cruv $@ `lorder ${LIBOBJ} | tsort`
 	ranlib $@
-#	(cd profiled; ar cruv ../libsms_p.a ${LIBOBJ}; ranlib ../libsms_p.a)
+	(cd profiled; ar cruv ../libsms_p.a ${LIBOBJ}; ranlib ../libsms_p.a)
 
 smslib.dvi: smslib.tex
 	latex smslib.tex
@@ -63,11 +63,11 @@ clean:
 
 
 install:
-	install -m 644 libsms.a ${DESTDIR}/usr/athena/lib/libsms.a
+	install -c -m 644 libsms.a ${DESTDIR}/usr/athena/lib/libsms.a
 	ranlib ${DESTDIR}/usr/athena/lib/libsms.a
-#	install -m 644 libsms_p.a ${DESTDIR}/usr/athena/lib/libsms_p.a
-#	ranlib ${DESTDIR}/usr/athena/lib/libsms_p.a
-	install -m 644 llib-lsms.ln ${DESTDIR}/usr/lib/lint/llib-lsms.ln
+	install -c -m 644 libsms_p.a ${DESTDIR}/usr/athena/lib/libsms_p.a
+	ranlib ${DESTDIR}/usr/athena/lib/libsms_p.a
+	install -c -m 644 llib-lsms.ln ${DESTDIR}/usr/lib/lint/llib-lsms.ln
 
 TAGS:	$(CFILES)
 	-etags $(CFILES)

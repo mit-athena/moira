@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.16 1991-05-14 18:08:01 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.17 1992-03-26 13:35:42 mar Exp $
  *
  * Command line oriented Moira List tool.
  *
@@ -21,7 +21,7 @@
 #include <moira_site.h>
 
 #ifndef LINT
-static char blanche_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.16 1991-05-14 18:08:01 mar Exp $";
+static char blanche_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.17 1992-03-26 13:35:42 mar Exp $";
 #endif
 
 
@@ -66,7 +66,7 @@ char **argv;
     char **arg = argv;
     char *membervec[3], *motd;
     struct member *memberstruct;
-    char *server = NULL;
+    char *server = NULL, *p;
 
     /* clear all flags & lists */
     infoflg = verbose = syncflg = memberflg = debugflg = recursflg = 0;
@@ -236,6 +236,40 @@ char **argv;
 
     /* Process the add list */
     while (sq_get_data(addlist, &memberstruct)) {
+	/* canonicalize string if necessary */
+	if (memberstruct->type == M_STRING &&
+	    (p = index(memberstruct->name, '@'))) {
+	    char *host = canonicalize_hostname(strsave(++p));
+	    static char **mailhubs = NULL;
+	    char *argv[4];
+	    int i, collect();
+
+	    if (!mailhubs) {
+		argv[0] = "mailhub";
+		argv[1] = "TYPE";
+		argv[2] = "*";
+		mailhubs = (char **)malloc(sizeof(char *));
+		mailhubs[0] = NULL;
+		status = mr_query("get_alias", 3, argv, collect, &mailhubs);
+		if (status != MR_SUCCESS && status != MR_NO_MATCH) {
+		    com_err(whoami, status,
+			    " while reading list of MAILHUB servers");
+		    mailhubs[0] = NULL;
+		}
+	    }
+	    for (i = 0; p = mailhubs[i]; i++) {
+		if (!strcasecmp(p, host)) {
+		    host = strsave(memberstruct->name);
+		    *(index(memberstruct->name, '@')) = 0;
+		    memberstruct->type = M_ANY;
+		    fprintf(stderr, "Warning: \"STRING:%s\" converted to \"%s\" because it is a local name.\n",
+			    host, memberstruct->name);
+		    break;
+		}
+	    }
+	    free(host);
+	}
+	/* now continue adding member */
 	membervec[0] = listname;
 	membervec[2] = memberstruct->name;
 	if (verbose) {
@@ -594,6 +628,23 @@ struct save_queue *queue;
 }
 
 
+/* Collect the possible expansions of the alias MAILHUB */
+
+int collect(argc, argv, list)
+int argc;
+char **argv;
+char ***list;
+{
+    int i;
+
+    for (i = 0; (*list)[i]; i++);
+    *list = (char **)realloc(*list, (i + 2) * sizeof(char *));
+    (*list)[i] = strsave(argv[2]);
+    (*list)[i+1] = NULL;
+    return(MR_CONT);
+}
+
+
 /* Parse a line of input, fetching a member.  NULL is returned if a member
  * is not found.  ';' is a comment character.
  */
@@ -637,13 +688,13 @@ register char *s;
 	    m->name = s;
 	}
 	m->name = strsave(m->name);
-	return(m);
+    } else {
+	m->name = strsave(s);
+	if (index(s, '@') || index(s, '!') || index(s, '%') || index(s, ' '))
+	  m->type = M_STRING;
+	else
+	  m->type = M_ANY;
     }
-    m->name = strsave(s);
-    if (index(s, '@') || index(s, '!') || index(s, '%') || index(s, ' '))
-      m->type = M_STRING;
-    else
-      m->type = M_ANY;
     return(m);
 }
 

@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.11 1988-09-01 14:00:12 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.12 1988-09-01 15:41:43 mar Exp $";
 #endif
 
 /*	This is the file attach.c for the SMS Client, which allows a nieve
@@ -13,7 +13,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.11 1988-09-01 14:00:12 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.12 1988-09-01 15:41:43 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -325,12 +325,26 @@ Bool junk;
 {
     int stat;
     char ** args = AskFSInfo(info, TRUE);
+    extern Menu nfsphys_menu;
 
-    if ( (stat = sms_query("update_filesys", CountArgs(args), 
-			   args, NullFunc, NULL)) != 0)
-	com_err(program_name, stat, ", filesystem not updated");
-    else
-	Put_message("filesystem sucessfully updated.");
+    stat = sms_query("update_filesys", CountArgs(args), args, NullFunc, NULL);
+    switch (stat) {
+    case SMS_NFS:
+	Put_message("That NFS filesystem is not exported.");
+	if (YesNoQuestion("Fix this now (Y/N)")) {
+	    Do_menu(&nfsphys_menu, 0, NULL);
+	    if (YesNoQuestion("Retry filesystem update now (Y/N)")) {
+		if (stat = sms_query("update_filesys", CountArgs(args), args,
+				     NullFunc, NULL))
+		    com_err(program_name, stat, " filesystem not updated");
+		else
+		    Put_message("filesystem sucessfully updated.");
+	    }
+	}
+	break;
+    default:
+	com_err(program_name, stat, " in AddFS");
+    }
 }
 
 /*	Function Name: ChangeFS
@@ -366,6 +380,7 @@ int argc;
 {
     char *info[MAX_ARGS_SIZE], **args;
     int stat;
+    extern Menu nfsphys_menu;
 
     if ( !ValidName(argv[1]) )
 	return(DM_NORMAL);
@@ -381,9 +396,24 @@ int argc;
 
     args = AskFSInfo(SetDefaults(info, argv[1]), FALSE );
 
-    if ( (stat = sms_query("add_filesys", CountArgs(args), args, 
-			 NullFunc, NULL)) != 0)
+    stat = sms_query("add_filesys", CountArgs(args), args, NullFunc, NULL);
+    switch (stat) {
+    case SMS_NFS:
+	Put_message("That NFS filesystem is not exported.");
+	if (YesNoQuestion("Fix this now (Y/N)")) {
+	    Do_menu(&nfsphys_menu, 0, NULL);
+	    if (YesNoQuestion("Retry filesystem creation now (Y/N)")) {
+		if (stat = sms_query("add_filesys", CountArgs(args), args,
+				     NullFunc, NULL))
+		    com_err(program_name, stat, " in AddFS");
+		else
+		    Put_message("Created.");
+	    }
+	}
+	break;
+    default:
 	com_err(program_name, stat, " in AddFS");
+    }
 
     FreeInfo(info);
     return (DM_NORMAL);

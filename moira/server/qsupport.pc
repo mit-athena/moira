@@ -1,4 +1,4 @@
-/* $Id: qsupport.pc,v 2.22 2000-03-19 19:42:40 zacheiss Exp $
+/* $Id: qsupport.pc,v 2.23 2000-03-30 22:01:56 zacheiss Exp $
  *
  * Special query routines
  *
@@ -18,7 +18,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.pc,v 2.22 2000-03-19 19:42:40 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.pc,v 2.23 2000-03-30 22:01:56 zacheiss Exp $");
 
 extern char *whoami, *table_name[];
 extern int dbms_errno, mr_errcode;
@@ -671,7 +671,7 @@ int get_ace_internal(char *atype, int aid,
   char *rargv[2];
   int found = 0;
   EXEC SQL BEGIN DECLARE SECTION;
-  char name[LIST_NAME_SIZE], *type = atype;
+  char name[MAX_FIELD_WIDTH], *type = atype;
   int id = aid;
   EXEC SQL END DECLARE SECTION;
 
@@ -781,48 +781,213 @@ int get_ace_internal(char *atype, int aid,
     SELECT name FROM machine m, hostaccess ha
     WHERE m.mach_id = ha.mach_id AND ha.acl_type = :type
     AND ha.acl_id = :id;
-    if (dbms_errno)
-	return mr_errcode;
-    EXEC SQL OPEN csr115;
-    if (dbms_errno)
-	return mr_errcode;
-    while (1)
-      {
-	EXEC SQL FETCH csr115 INTO :name;
-	if (sqlca.sqlcode)
-	  break;
-	(*action)(2, rargv, actarg);
-	found++;
-      }
-    EXEC SQL CLOSE csr115;
+  if (dbms_errno)
+    return mr_errcode;
+  EXEC SQL OPEN csr115;
+  if (dbms_errno)
+    return mr_errcode;
+  while (1)
+    {
+      EXEC SQL FETCH csr115 INTO :name;
+      if (sqlca.sqlcode)
+	break;
+      (*action)(2, rargv, actarg);
+      found++;
+    }
+  EXEC SQL CLOSE csr115;
 
-    rargv[0] = "ZEPHYR";
-    EXEC SQL DECLARE csr116 CURSOR FOR
-      SELECT class FROM zephyr z
-      WHERE z.xmt_type = :type AND z.xmt_id = :id
-      OR z.sub_type = :type AND z.sub_id = :id
-      OR z.iws_type = :type AND z.iws_id = :id
-      OR z.iui_type = :type AND z.iui_id = :id;
-    if (dbms_errno)
-      return mr_errcode;
-    EXEC SQL OPEN csr116;
-    if (dbms_errno)
-      return mr_errcode;
-    while (1)
-      {
-	EXEC SQL FETCH csr116 INTO :name;
-	if (sqlca.sqlcode)
-	  break;
-	(*action)(2, rargv, actarg);
-	found++;
-      }
-    EXEC SQL CLOSE csr116;
+  rargv[0] = "MACHINE";
+  EXEC SQL DECLARE csr115a CURSOR FOR
+    SELECT name FROM machine m
+    WHERE m.owner_type = :type
+    AND m.owner_id = :id;
+  if (dbms_errno)
+    return mr_errcode;
+  EXEC SQL OPEN csr115a;
+  if (dbms_errno)
+    return mr_errcode;
+  while (1)
+    {
+      EXEC SQL FETCH csr115a INTO :name;
+      if (sqlca.sqlcode)
+	break;
+      (*action)(2, rargv, actarg);
+      found++;
+    }
+  EXEC SQL CLOSE csr115a;
 
-    if (!found)
-      return MR_NO_MATCH;
-    return MR_SUCCESS;
+  rargv[0] = "ZEPHYR";
+  EXEC SQL DECLARE csr116 CURSOR FOR
+    SELECT class FROM zephyr z
+    WHERE z.xmt_type = :type AND z.xmt_id = :id
+    OR z.sub_type = :type AND z.sub_id = :id
+    OR z.iws_type = :type AND z.iws_id = :id
+    OR z.iui_type = :type AND z.iui_id = :id;
+  if (dbms_errno)
+    return mr_errcode;
+  EXEC SQL OPEN csr116;
+  if (dbms_errno)
+    return mr_errcode;
+  while (1)
+    {
+      EXEC SQL FETCH csr116 INTO :name;
+      if (sqlca.sqlcode)
+	break;
+      (*action)(2, rargv, actarg);
+      found++;
+    }
+  EXEC SQL CLOSE csr116;
+  
+  if (!found)
+    return MR_NO_MATCH;
+  return MR_SUCCESS;
 }
 
+/* ghbo_internal */
+int ghbo_internal(char *atype, int aid,
+		  int (*action)(int, char *[], void *), void *actarg)
+{
+  char *rargv[1];
+  int found = 0;
+  EXEC SQL BEGIN DECLARE SECTION;
+  char name[MACHINE_NAME_SIZE], *type = atype;
+  int id = aid;
+  EXEC SQL END DECLARE SECTION;
+
+  rargv[0] = name;
+  EXEC SQL DECLARE csr115b CURSOR FOR
+    SELECT name FROM machine m
+    WHERE m.owner_type = :type
+    AND m.owner_id = :id;
+  if (dbms_errno)
+    return mr_errcode;
+  EXEC SQL OPEN csr115b;
+  if (dbms_errno)
+    return mr_errcode;
+  while (1)
+    {
+      EXEC SQL FETCH csr115b INTO :name;
+      if (sqlca.sqlcode)
+	break;
+      (*action)(1, rargv, actarg);
+      found++;
+    }
+  EXEC SQL CLOSE csr115b;
+  
+  if (!found)
+    return MR_NO_MATCH;
+  return MR_SUCCESS;
+}
+
+/* get_host_by_owner - like gaus but limited to hosts */
+int get_host_by_owner(struct query *q, char *argv[], client *cl,
+		      int (*action)(int, char *[], void *), void *actarg)
+{
+  int found = 0;
+  EXEC SQL BEGIN DECLARE SECTION;
+  char *atype;
+  int aid, listid, id;
+  EXEC SQL END DECLARE SECTION;
+  struct save_queue *sq;
+
+  atype = argv[0];
+  aid = *(int *)argv[1];
+  if (!strcmp(atype, "LIST") || !strcmp(atype, "USER") ||
+      !strcmp(atype, "KERBEROS"))
+    return ghbo_internal(atype, aid, action, actarg);
+
+  sq = sq_create();
+  if (!strcmp(atype, "RLIST"))
+    {
+      sq_save_data(sq, (void *)aid);
+      /* get all the list_id's of containing lists */
+      EXEC SQL DECLARE csr107q CURSOR FOR
+	SELECT list_id FROM imembers
+	WHERE member_type = 'LIST' AND member_id = :aid;
+      if (dbms_errno)
+	return mr_errcode;
+      EXEC SQL OPEN csr107q;
+      if (dbms_errno)
+	return mr_errcode;
+      while (1)
+	{
+	  EXEC SQL FETCH csr107q INTO :listid;
+	  if (sqlca.sqlcode)
+	    break;
+	  sq_save_unique_data(sq, (void *)listid);
+	}
+      EXEC SQL CLOSE csr107q;
+      /* now process each one */
+      while (sq_get_data(sq, &id))
+	{
+	  if (ghbo_internal("LIST", id, action, actarg) == MR_SUCCESS)
+	    found++;
+	}
+    }
+
+  if (!strcmp(atype, "RUSER"))
+    {
+      EXEC SQL DECLARE csr108q CURSOR FOR
+	SELECT list_id FROM imembers
+	WHERE member_type = 'USER' AND member_id = :aid;
+      if (dbms_errno)
+	return mr_errcode;
+      EXEC SQL OPEN csr108q;
+      if (dbms_errno)
+	return mr_errcode;
+      while (1)
+	{
+	  EXEC SQL FETCH csr108q INTO :listid;
+	  if (sqlca.sqlcode)
+	    break;
+	  sq_save_data(sq, (void *)listid);
+	}
+      EXEC SQL CLOSE csr108q;
+      /* now process each one */
+      while (sq_get_data(sq, &id))
+	{
+	  if (ghbo_internal("LIST", id, action, actarg) == MR_SUCCESS)
+	    found++;
+	}
+      if (ghbo_internal("USER", aid, action, actarg) == MR_SUCCESS)
+	found++;
+    }
+
+  if (!strcmp(atype, "RKERBEROS"))
+    {
+      EXEC SQL DECLARE csr109q CURSOR FOR
+	SELECT list_id FROM imembers
+	WHERE member_type = 'KERBEROS' AND member_id = :aid;
+      if (dbms_errno)
+	return mr_errcode;
+      EXEC SQL OPEN csr109q;
+      if (dbms_errno)
+	return mr_errcode;
+      while (1)
+	{
+	  EXEC SQL FETCH csr109q INTO :listid;
+	  if (sqlca.sqlcode)
+	    break;
+	  sq_save_data(sq, (void *)listid);
+	}
+      EXEC SQL CLOSE csr109q;
+      /* now process each one */
+      while (sq_get_data(sq, &id))
+	{
+	  if (ghbo_internal("LIST", id, action, actarg) == MR_SUCCESS)
+	    found++;
+	}
+      if (ghbo_internal("KERBEROS", aid, action, actarg) == MR_SUCCESS)
+	found++;
+    }
+
+  sq_destroy(sq);
+  if (dbms_errno)
+    return mr_errcode;
+  if (!found)
+    return MR_NO_MATCH;
+  return MR_SUCCESS;
+}
 
 /* get_lists_of_member - given a type and a name, return the name and flags
  * of all of the lists of the given member.  The member_type is one of

@@ -1,4 +1,4 @@
-/* $Id: mr_server.h,v 1.50 2000-01-28 00:03:33 danw Exp $
+/* $Id: mr_server.h,v 1.51 2000-03-30 22:01:55 zacheiss Exp $
  *
  * Copyright (C) 1987-1998 by the Massachusetts Institute of Technology
  * For copying and distribution information, please see the file
@@ -236,6 +236,8 @@ int register_user(struct query *q, char *argv[], client *cl);
 int do_user_reservation(struct query *q, char *argv[], client *cl);
 
 int get_ace_use(struct query *q, char **argv, client *cl,
+		int (*action)(int, char *[], void *), void *actarg);
+int get_host_by_owner(struct query *q, char **argv, client *cl,
 		int (*action)(int, char *[], void *), void *actarg);
 int qualified_get_lists(struct query *q, char **argv, client *cl,
 			int (*action)(int, char *[], void *), void *actarg);

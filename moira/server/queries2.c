@@ -1,4 +1,4 @@
-/* $Id: queries2.c,v 2.68 2000-01-28 00:03:36 danw Exp $
+/* $Id: queries2.c,v 2.69 2000-03-30 22:01:56 zacheiss Exp $
  *
  * This file defines the query dispatch table
  *
@@ -1183,6 +1183,28 @@ static struct validate gaus_validate = {
   access_member,
   0,
   get_ace_use,
+};
+
+static char *ghbo_fields[] = {
+  "ace_type", "ace_name",
+  "name",
+};
+
+static struct valobj ghbo_valobj[] = {
+  {V_TYPE, 0, 0, "gaus", 0, MR_TYPE},
+  {V_TYPEDATA, 1, 0, 0, 0, MR_NO_MATCH},
+};
+
+static struct validate ghbo_validate = {
+  ghbo_valobj,
+  2,
+  0,
+  0,
+  0,
+  0,
+  access_member,
+  0,
+  get_host_by_owner,
 };
 
 static char *qgli_fields[] = {
@@ -3738,6 +3760,23 @@ struct query Queries[] = {
     2,
     NULL,
     &gaus_validate,
+  },
+
+  {
+    /* Q_GHBO - GET_HOST_BY_OWNER */
+    "get_host_by_owner",
+    "ghbo",
+    2,
+    RETRIEVE,
+    0,
+    0,
+    0,
+    ghbo_fields,
+    1,
+    0,
+    2,
+    NULL,
+    &ghbo_validate,
   },
 
   {

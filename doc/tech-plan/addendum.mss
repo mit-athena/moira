@@ -27,30 +27,36 @@ indicating that permission was denied for the query.
 
 @B(get_all_logins)
   Args: none
-  Returns: {login, shell, home, last, first, middle, status, expdate, modtime}
+  Returns: {login, uid, shell, home, last, first, middle}
 
 @B(get_user_by_login)
   Args: (login(*))
-  Returns: {login, shell, home, last, first, middle, status, mit_id, expdate,
-	    modtime}
+  Returns: {login, uid, shell, home, last, first, middle, status, 
+	    mit_id, mit_year, expdate, modtime}
   Errors: SMS_NO_MATCH
 
 @B(get_user_by_firstname)
   Args: (firstname(*))
-  Returns: {login, shell, home, last, first, middle, status, mit_id, expdate,
-	    modtime}
+  Returns: {login, uid, shell, home, last, first, middle, status, 
+	    mit_id, mit_year, expdate, modtime}
   Errors: SMS_NO_MATCH
 
 @B(get_user_by_lastname)
   Args: (lastname(*))
-  Returns: {login, shell, home, last, first, middle, status, mit_id, expdate,
-	    modtime}
+  Returns: {login, uid, shell, home, last, first, middle, status, 
+	    mit_id, mit_year, expdate, modtime}
   Errors: SMS_NO_MATCH
 
 @B(get_user_by_first_and_last)
   Args: (firstname(*), lastname(*))
-  Returns: {login, shell, home, last, first, middle, status, mit_id, expdate,
-	    modtime}
+  Returns: {login, uid, shell, home, last, first, middle, status, 
+	    mit_id, mit_year, expdate, modtime}
+  Errors: SMS_NO_MATCH
+
+@B(get_user_by_year)
+  Args: (year)
+  Returns: {login, uid, shell, home, last, first, middle, status, 
+	    mit_id, mit_year, expdate, modtime}
   Errors: SMS_NO_MATCH
 
 @B(update_user_shell)
@@ -72,7 +78,8 @@ indicating that permission was denied for the query.
   Errors: SMS_NO_MATCH, SMS_NOT_UNIQUE, SMS_FILESYS
 
 @B(add_user)
-  Args: (login, shell, home, last, first, middle, status, mit_id, expdate)
+  Args: (login, uid, shell, home, last, first, middle, status, 
+	 mit_id, mit_year, expdate)
   Returns: none
   Integrity: application must check for valid shell and status values; home
 	     must be a valid filesys entry; expdate must be reasonable;
@@ -81,7 +88,8 @@ indicating that permission was denied for the query.
   Side Effects: blank finger entry created
 
 @B(update_user)
-  Args: (login, shell, home, last, first, middle, status, mit_id, expdate)
+  Args: (login, uid, shell, home, last, first, middle, status, 
+	 mit_id, mit_year, expdate)
   Returns: none
   Integrity: application must check for valid shell and status values; home
 	     must be a valid filesys entry; expdate must be reasonable;
@@ -324,6 +332,30 @@ indicating that permission was denied for the query.
 @label(Rvdsrv)
 @label(Rvdphys)
 @label(Rvdvirt)
+
+@B(get_rvd_server)
+  Args: (machine)
+  Returns: {machine, oper, admin, shutdown}
+  Errors: SMS_NO_MATCH
+
+@B(add_rvd_server)
+  Args: (machine, oper, admin, shutdown)
+  Returns: none
+  Integrity: oper, admin, and shutdown must be valid list names.
+  Errors: SMS_EXISTS, SMS_MACHINE, SMS_LIST
+
+@B(update_rvd_server)
+  Args: (machine, oper, admin, shutdown)
+  Returns: none
+  Integrity: oper, admin, and shutdown must be valid list names.
+  Errors: SMS_LIST
+
+@B(delete_rvd_server)
+  Args: (machine)
+  Returns: none
+  Errors: SMS_NO_MATCH, SMS_NOT_UNIQUE
+  Side Effects: deletes all rvd_physical and rvd_virtual entries associated
+		with the server.
 
 @B(get_rvd_physical)
   Args: (machine)

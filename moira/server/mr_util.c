@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_util.c,v $
  *	$Author: danw $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_util.c,v 1.25 1997-09-05 19:15:05 danw Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_util.c,v 1.26 1997-09-10 03:38:50 danw Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -9,7 +9,7 @@
  */
 
 #ifndef lint
-static char *rcsid_mr_util_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_util.c,v 1.25 1997-09-05 19:15:05 danw Exp $";
+static char *rcsid_mr_util_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_util.c,v 1.26 1997-09-10 03:38:50 danw Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -122,7 +122,7 @@ char **argv;
 	    if (isspace(*lastch))
 	      *lastch = 0;
 	    else
-	      *(++lastch) = 0;
+	      if (*(++lastch)) *lastch = 0;
 	}
     }
     return(0);

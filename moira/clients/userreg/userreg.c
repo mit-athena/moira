@@ -2,7 +2,7 @@
  * $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.c,v $
  * $Author: mar $
  * $Locker:  $
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.c,v 1.20 1990-04-09 19:08:33 mar Exp $ 
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.c,v 1.21 1990-09-10 12:33:40 mar Exp $ 
  *
  *  (c) Copyright 1988 by the Massachusetts Institute of Technology.
  *  For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char    *rcsid_userreg_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.c,v 1.20 1990-04-09 19:08:33 mar Exp $";
+static char    *rcsid_userreg_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.c,v 1.21 1990-09-10 12:33:40 mar Exp $";
 #endif	lint
 
 #include <mit-copyright.h>
@@ -619,7 +619,9 @@ do_replace()
 	} else return 0;
 }
 
+#ifndef _toupper
 #define _toupper(c) ((c) & ~0x20)
+#endif
 
 lenient_strcmp(string1, string2)
 	register char  *string1, *string2;

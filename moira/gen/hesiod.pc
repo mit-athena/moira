@@ -1,4 +1,4 @@
-/* $Id: hesiod.pc,v 1.16 1999-11-16 04:47:29 danw Exp $
+/* $Id: hesiod.pc,v 1.17 2000-04-19 23:12:52 zacheiss Exp $
  *
  * This generates the zone files necessary to load a hesiod server.
  * The following zones are generated: passwd, uid, pobox, group,
@@ -23,7 +23,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/hesiod.pc,v 1.16 1999-11-16 04:47:29 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/hesiod.pc,v 1.17 2000-04-19 23:12:52 zacheiss Exp $");
 
 #ifndef HTYPE
 #define HTYPE "TXT"
@@ -418,8 +418,7 @@ int do_groups(void)
       EXEC SQL DECLARE u_cursor2 CURSOR FOR
 	SELECT users_id, login
 	FROM users
-	WHERE status = 1 OR status = 2
-	ORDER BY users_id;
+	WHERE status = 1 OR status = 2;
       EXEC SQL OPEN u_cursor2;
       while (1)
 	{
@@ -435,10 +434,10 @@ int do_groups(void)
     }
 
   EXEC SQL DECLARE i_cursor CURSOR FOR
-    SELECT list_id, member_id
-    FROM imembers
-    WHERE member_type = 'USER'
-    ORDER BY list_id;
+    SELECT m.list_id, m.member_id
+    FROM imembers m, list l 
+    WHERE m.member_type = 'USER'
+    AND m.list_id = l.list_id AND l.grouplist = 1 AND l.nfsgroup = 1;
   EXEC SQL OPEN i_cursor;
   while (1)
     {

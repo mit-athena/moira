@@ -1,11 +1,14 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_util.c,v $
  *	$Author: wesommer $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_util.c,v 1.6 1987-07-06 16:09:07 wesommer Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_util.c,v 1.7 1987-07-14 00:39:47 wesommer Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
  *	$Log: not supported by cvs2svn $
+ * Revision 1.6  87/07/06  16:09:07  wesommer
+ * Only print ... if the string is too long..
+ * 
  * Revision 1.5  87/06/30  20:05:52  wesommer
  * Added range checking.
  * 
@@ -24,7 +27,7 @@
  */
 
 #ifndef lint
-static char *rcsid_sms_util_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_util.c,v 1.6 1987-07-06 16:09:07 wesommer Exp $";
+static char *rcsid_sms_util_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_util.c,v 1.7 1987-07-14 00:39:47 wesommer Exp $";
 #endif lint
 
 #include "sms_server.h"
@@ -62,7 +65,8 @@ requote(buf, cp, len)
 	return buf;
 }
 
-log_args(argc, argv)
+log_args(tag, argc, argv)
+	char *tag;
 	int argc;
 	char **argv;
 {
@@ -70,6 +74,12 @@ log_args(argc, argv)
 	register int i;
 	register char *bp = buf;
 	
+	i = strlen(tag);
+	bcopy(tag, bp, i+1);
+	bp += i;
+	*bp++ =':';
+	*bp++ =' ';
+       
 	for (i = 0; i < argc && ((buf - bp) + 1024) > 2; i++) {
 		if (i != 0) {
 			*bp++ = ',';

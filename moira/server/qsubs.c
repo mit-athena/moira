@@ -1,18 +1,21 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsubs.c,v $
- *	$Author: wesommer $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsubs.c,v 1.3 1987-08-22 17:44:39 wesommer Exp $
+ *	$Author: mike $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsubs.c,v 1.4 1987-08-29 00:04:14 mike Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
  *	$Log: not supported by cvs2svn $
+ * Revision 1.3  87/08/22  17:44:39  wesommer
+ * Cleaning up after mike again.
+ * 
  * Revision 1.2  87/06/08  03:08:15  wesommer
  * Reindented; added header.
  * 
  */
 
 #ifndef lint
-static char *rcsid_qsubs_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsubs.c,v 1.3 1987-08-22 17:44:39 wesommer Exp $";
+static char *rcsid_qsubs_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsubs.c,v 1.4 1987-08-29 00:04:14 mike Exp $";
 #endif lint
 
 #include "query.h"
@@ -264,6 +267,18 @@ sq_save_unique_data(sq, data)
 
     for (q = sq->q_next; q != sq; q = sq->q_next)
 	if (q->q_data == data) return;
+
+    sq_save_data(sq, data);
+}
+
+sq_save_unique_string(sq, data)
+    register struct save_queue *sq;
+    char *data;
+{
+    register struct save_queue *q;
+
+    for (q = sq->q_next; q != sq; q = sq->q_next)
+	if (!strcmp(q->q_data, data)) return;
 
     sq_save_data(sq, data);
 }

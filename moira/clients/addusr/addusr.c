@@ -1,4 +1,4 @@
-/* $Id: addusr.c,v 1.11 1998-08-07 14:10:56 danw Exp $
+/* $Id: addusr.c,v 1.12 1998-08-07 14:22:15 danw Exp $
  *
  * Program to add users en masse to the moira database
  *
@@ -18,7 +18,7 @@
 #include <stdio.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/addusr/addusr.c,v 1.11 1998-08-07 14:10:56 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/addusr/addusr.c,v 1.12 1998-08-07 14:22:15 danw Exp $");
 
 #ifdef ATHENA
 #define DEFAULT_SHELL "/bin/athena/tcsh"
@@ -184,9 +184,6 @@ int main(int argc, char **argv)
 	    }
 	}
     }
-
-  if (reg || reg_only)
-    ureg_init();
 
   qargv[U_NAME] = UNIQUE_LOGIN;
   qargv[U_UID] = UNIQUE_UID;

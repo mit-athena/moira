@@ -1,4 +1,4 @@
-/* $Id: chsh.c,v 1.22 1998-05-26 18:13:51 danw Exp $
+/* $Id: chsh.c,v 1.23 1998-10-30 18:10:35 kcr Exp $
  *
  * Talk to the Moira database to change a person's login shell.  The chosen
  * shell must exist.  A warning will be issued if the shell is not in
@@ -25,12 +25,13 @@
 
 #include <krb.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chsh.c,v 1.22 1998-05-26 18:13:51 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chsh.c,v 1.23 1998-10-30 18:10:35 kcr Exp $");
 
 int usage(void);
 int leave(int status);
 int chsh(char *uname);
 int get_shell(int argc, char **argv, void *uname);
+int get_fmodtime(int argc, char **argv, void *uname);
 void check_shell(char *shell);
 #ifndef HAVE_GETUSERSHELL
 char *getusershell(void);
@@ -146,6 +147,13 @@ int chsh(char *uname)
   q_argv[NAME] = uname;
   q_argc = NAME + 1;
 
+  if ((status = mr_query("get_finger_by_login", q_argc, q_argv,
+			 get_fmodtime, uname)))
+    {
+      com_err(whoami, status, " while getting user information.");
+      leave(2);
+    }
+
   if ((status = mr_query("get_user_account_by_login", q_argc, q_argv,
 			 get_shell, uname)))
     {
@@ -197,9 +205,24 @@ int get_shell(int argc, char **argv, void *uname)
       leave(3);
     }
 
-  printf("Account information last changed on %s\n", argv[U_MODTIME]);
-  printf("by user %s with %s.\n", argv[U_MODBY], argv[U_MODWITH]);
   printf("Current shell for %s is %s.\n", (char *)uname, argv[U_SHELL]);
+
+  return MR_ABORT;		/* Don't pay attention to other matches. */
+}
+
+int get_fmodtime(int argc, char **argv, void *uname)
+{
+  /* We'll just take the first information we get since login names
+     cannot be duplicated in the database. */
+
+  if (argc < F_END || strcmp(argv[F_NAME], uname))
+    {
+      fprintf(stderr, "Some internal error has occurred.  Try again.\n");
+      leave(3);
+    }
+
+  printf("Finger information last changed on %s\n", argv[F_MODTIME]);
+  printf("by user %s with %s.\n", argv[F_MODBY], argv[F_MODWITH]);
 
   return MR_ABORT;		/* Don't pay attention to other matches. */
 }

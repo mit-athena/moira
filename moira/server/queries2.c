@@ -1,4 +1,4 @@
-/* $Id: queries2.c,v 2.55 1999-05-25 21:14:53 danw Exp $
+/* $Id: queries2.c,v 2.56 1999-06-22 00:45:29 danw Exp $
  *
  * This file defines the query dispatch table for version 2 of the protocol
  *
@@ -4419,7 +4419,7 @@ struct query Queries2[] = {
     "pr.name, pr.type, pr.hwtype, pr.duplexname, m1.name, m2.name, m3.name, pr.rp, m4.name, pr.ka, pr.pc, l1.name, l2.name, pr.banner, pr.location, pr.contact, TO_CHAR(pr.modtime, 'DD-mon-YYYY HH24:MI:SS'), pr.modby, pr.modwith FROM printers pr, machine m1, machine m2, machine m3, machine m4, list l1, list l2",
     gpbd_fields,
     19,
-    "m1.hwaddr LIKE '%s' AND m1.mach_id = pr.mach_id AND m2.mach_id = pr.loghost AND m3.mach_id = pr.rm AND m4.mach_id = pr.rq AND l1.list_id = pr.ac AND l2.list_id = pr.lpc_acl",
+    "m1.hwaddr LIKE LOWER('%s') AND m1.mach_id = pr.mach_id AND m2.mach_id = pr.loghost AND m3.mach_id = pr.rm AND m4.mach_id = pr.rq AND l1.list_id = pr.ac AND l2.list_id = pr.lpc_acl",
     1,
     "pr.name",
     &VDfix_modby,

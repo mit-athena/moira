@@ -9,7 +9,7 @@ Copyright (C) 1999  Microsoft Corporation.  All rights reserved.
 
 Module Name:
 
-    ksetpw.c
+    setpw.c
 
 Abstract:
 
@@ -41,35 +41,44 @@ Abstract:
  * 
  */
 
+
 #define NEED_SOCKETS
 #include <krb5.h>
 #include <krb.h>
+#include <ldap.h>
 #ifdef _WIN32
+#include <wshelper.h>
 #include "k5-int.h"
 #include "adm_err.h"
 #include "krb5_err.h"
-#endif
-#include <auth_con.h>
-#include "kpasswd.h"
-
-#ifndef _WIN32
+#else
 #include <sys/socket.h>
 #include <netdb.h>
 #include <sys/select.h>
 #endif
-
+#include <auth_con.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
 #include <sys/timeb.h>
 #include <errno.h>
+#include "kpasswd.h"
+#include "gsssasl.h"
+#include "gssldap.h"
 
 #define PW_LENGTH 25
+#define KDC_PORT  464
+#define ULONG     unsigned long
 
 #ifndef krb5_is_krb_error
 #define krb5_is_krb_error(dat)\
-        ((dat) && (dat)->length && ((dat)->data[0] == 0x7e ||\
-        (dat)->data[0] == 0x5e))
+            ((dat) && (dat)->length && ((dat)->data[0] == 0x7e ||\
+            (dat)->data[0] == 0x5e))
+#endif
+
+#ifdef _WIN32
+#define sleep(Seconds) Sleep(Seconds * 1000)
+#define gethostbyname(Server) rgethostbyname(Server)
 #endif
 
 /* Win32 defines. */
@@ -85,7 +94,7 @@ Abstract:
 #endif
 #endif /* _WIN32 && !__CYGWIN32__ */
 
-static const char rcsid[] = "$Id: setpw.c,v 1.2 2001-03-20 17:41:55 zacheiss Exp $";
+static const char rcsid[] = "$Id: setpw.c,v 1.3 2001-04-23 02:11:22 zacheiss Exp $";
 
 static int frequency[26][26] =
 { {4, 20, 28, 52, 2, 11, 28, 4, 32, 4, 6, 62, 23, 167, 2, 14, 0, 83, 76, 
@@ -162,18 +171,38 @@ static int start_freq [26] =
 /*
  * This MUST be equal to the sum of all elements in the above array.
  */
+
+struct sockaddr_in  kdc_server;
+SOCKET              kdc_socket;
+krb5_context        context;
+krb5_ccache         ccache;
+krb5_auth_context   auth_context = NULL;
+krb5_data           ap_req;
+krb5_creds          *credsp = NULL;
+krb5_creds          creds;
+char                connected_server[128];
+
 static int total_sum = 11646;
+
+int get_krb5_error(krb5_error_code rc, char *in, char *out);
+int ad_connect(LDAP **ldap_handle, char *ldap_domain, char *dn_path, 
+               char *Win2kPassword, char *Win2kUser, char *default_server, 
+               int connect_to_kdc);
+int ad_kdc_connect(char *connectedServer);
+int ad_server_connect(char *connectedServer, char *domain);
+void ad_kdc_disconnect();
+int compare_elements(const void *arg1, const void *arg2);
+int convert_domain_to_dn(char *domain, char *dnp);
+int set_password(char *user, char *password, char *domain);
+
+int locate_ldap_server(char *domain, char **server_name);
 
 long myrandom();
 void generate_password(char *password);
-int set_password(char *user, char *domain);
 krb5_error_code encode_krb5_setpw
-  PROTOTYPE((const krb5_setpw *rep, krb5_data ** code));
-krb5_error_code 
-krb5_locate_kpasswd(krb5_context context, const krb5_data *realm,
-                    struct sockaddr **addr_pp, int *naddrs);
+        PROTOTYPE((const krb5_setpw *rep, krb5_data ** code));
 
-krb5_error_code krb5_mk_setpw_req(krb5_context context,  krb5_auth_context auth_context,
+krb5_error_code make_setpw_req(krb5_context context,  krb5_auth_context auth_context,
                                   krb5_data *ap_req, krb5_principal targprinc,
                                   char *passwd, krb5_data *packet)
 {
@@ -185,7 +214,7 @@ krb5_error_code krb5_mk_setpw_req(krb5_context context,  krb5_auth_context auth_
   char             *ptr;
   register int     count = 2;
 
-  memset (&setpw, 0, sizeof(krb5_setpw));
+  memset(&setpw, 0, sizeof(krb5_setpw));
   if (ret = krb5_auth_con_setflags(context, auth_context,
                                    KRB5_AUTH_CONTEXT_DO_SEQUENCE))
     return(ret);
@@ -214,12 +243,15 @@ krb5_error_code krb5_mk_setpw_req(krb5_context context,  krb5_auth_context auth_
   ptr += ap_req->length;
   /* krb-priv of password */
   memcpy(ptr, cipherpw.data, cipherpw.length);
+  free(cipherpw.data);
+/*  krb5_free_data_contents(context, &cipherpw);*/
+  krb5_free_data(context, encoded_setpw);
   return(0);
 }
 
-krb5_error_code krb5_rd_setpw_rep(krb5_context context, krb5_auth_context auth_context,
-                                  krb5_data *packet, int *result_code,
-                                  krb5_data *result_data)
+krb5_error_code get_setpw_rep(krb5_context context, krb5_auth_context auth_context,
+                              krb5_data *packet, int *result_code,
+                              krb5_data *result_data)
 {
   char             *ptr;
   int              plen;
@@ -285,8 +317,10 @@ krb5_error_code krb5_rd_setpw_rep(krb5_context context, krb5_auth_context auth_c
     {
       cipherresult.data = ptr;
       cipherresult.length = (packet->data + packet->length) - ptr;
+
       if (ret = krb5_rd_error(context, &cipherresult, &krberror))
         return(ret);
+
       clearresult = krberror->e_data;
     }
   if (clearresult.length < 2)
@@ -307,7 +341,7 @@ krb5_error_code krb5_rd_setpw_rep(krb5_context context, krb5_auth_context auth_c
   if ((ap_rep.length == 0) && (*result_code == KRB5_KPASSWD_SUCCESS))
     {
       ret = KRB5KRB_AP_ERR_MODIFIED;
-      goto cleanup;
+        goto cleanup;
     }
   result_data->length = (clearresult.data + clearresult.length) - ptr;
   if (result_data->length)
@@ -316,184 +350,155 @@ krb5_error_code krb5_rd_setpw_rep(krb5_context context, krb5_auth_context auth_c
       memcpy(result_data->data, ptr, result_data->length);
     }
   else
-    result_data->data = NULL;
+      result_data->data = NULL;
   ret = 0;
 cleanup:
   if (ap_rep.length)
     free(clearresult.data);
   else
-    krb5_free_error(context, krberror);
+      krb5_free_error(context, krberror);
   return(ret);
 }
 
-krb5_error_code krb5_set_password(krb5_context context, krb5_ccache ccache,
+krb5_error_code kdc_set_password(krb5_context context, krb5_ccache ccache,
                                   char *newpw, char *user, char *domain,
                                   int *result_code)
 {
-  krb5_auth_context auth_context;
-  krb5_data         ap_req;
-  krb5_data         chpw_req;
-  krb5_data         chpw_rep;
+  krb5_data         chpw_snd;
+  krb5_data         chpw_rcv;
   krb5_data         result_string;
   krb5_address      local_kaddr;
   krb5_address      remote_kaddr;
   char              userrealm[256];
   char              temp[256];
   krb5_error_code   code;
-  krb5_creds        creds;
-  krb5_creds        *credsp;
-  struct sockaddr   *addr_p;
   struct sockaddr   local_addr;
   struct sockaddr   remote_addr;
-  struct sockaddr   tmp_addr;
-  SOCKET            s1;
-  SOCKET            s2;
   int               i;
-  int               out;
   int               addrlen;
   int               cc;
   int               local_result_code;
-  int               tmp_len;
-  int               error_count;
+  int               nfds;
   krb5_principal    targprinc;
-  int               count;
-  int               last_count;
+  struct timeval    TimeVal;
+  fd_set            readfds;
 
-  auth_context = NULL;
-  addr_p = NULL;
-  credsp = NULL;
   memset(&local_addr, 0, sizeof(local_addr));
   memset(&local_kaddr, 0, sizeof(local_kaddr));
   memset(&result_string, 0, sizeof(result_string));
   memset(&remote_kaddr, 0, sizeof(remote_kaddr));
-  memset(&chpw_req, 0, sizeof(krb5_data));
-  memset(&chpw_rep, 0, sizeof(krb5_data));
-  memset(&ap_req, 0, sizeof(krb5_data));
-  auth_context = NULL;
-  memset(&creds, 0, sizeof(creds));
+  memset(&chpw_snd, 0, sizeof(krb5_data));
+  memset(&chpw_rcv, 0, sizeof(krb5_data));
   memset(userrealm, '\0', sizeof(userrealm));
   targprinc = NULL;
+
+  chpw_rcv.length = 1500;
+  chpw_rcv.data = (char *) calloc(1, chpw_rcv.length);
+
   for (i = 0; i < (int)strlen(domain); i++)
     userrealm[i] = toupper(domain[i]);
 
   sprintf(temp, "%s@%s", user, userrealm);
   krb5_parse_name(context, temp, &targprinc);
 
-  sprintf(temp, "%s@%s", "kadmin/changepw", userrealm);
-  if (code = krb5_parse_name(context, temp, &creds.server))
-    goto cleanup;
+  if (credsp == NULL)
+    {
+      memset(&creds, 0, sizeof(creds));
+      memset(&ap_req, 0, sizeof(krb5_data));
+      sprintf(temp, "%s@%s", "kadmin/changepw", userrealm);
+      if (code = krb5_parse_name(context, temp, &creds.server))
+        goto cleanup;
+      if (code = krb5_cc_get_principal(context, ccache, &creds.client))
+        goto cleanup;
+      if (code = krb5_get_credentials(context, 0, ccache, &creds, &credsp))
+        goto cleanup;
+      if (code = krb5_mk_req_extended(context, &auth_context, AP_OPTS_USE_SUBKEY,
+                                      NULL, credsp, &ap_req))
+        goto cleanup;
+    }
 
-  if (code = krb5_cc_get_principal(context, ccache, &creds.client))
-    goto cleanup;
-  if (code = krb5_get_credentials(context, 0, ccache, &creds, &credsp))
-    goto cleanup;
-  if (code = krb5_mk_req_extended(context, &auth_context, AP_OPTS_USE_SUBKEY,
-                                  NULL, credsp, &ap_req))
-    goto cleanup;
-  if (code = krb5_locate_kpasswd(context, &targprinc->realm, &addr_p, &out))
-    goto cleanup;
-  if (out == 0)
-    {     /* Couldn't resolve any KPASSWD names */
-      code = 1;
+  addrlen = sizeof(local_addr);
+  if (getsockname(kdc_socket, &local_addr, &addrlen) < 0)
+    {
+      code = KDC_GETSOCKNAME_ERROR;
       goto cleanup;
     }
-
-  if ((s1 = socket(AF_INET, SOCK_DGRAM, 0)) == INVALID_SOCKET)
+  if (((struct sockaddr_in *)&local_addr)->sin_addr.s_addr != 0)
     {
-      free(addr_p);
-      return(errno);
+      local_kaddr.addrtype = ADDRTYPE_INET;
+      local_kaddr.length =
+        sizeof(((struct sockaddr_in *) &local_addr)->sin_addr);
+      local_kaddr.contents = 
+        (char *) &(((struct sockaddr_in *) &local_addr)->sin_addr);
     }
-  if ((s2 = socket(AF_INET, SOCK_DGRAM, 0)) == INVALID_SOCKET)
+  else
     {
-      closesocket(s1);
-      free(addr_p);
-      return(errno);
+      krb5_address **addrs;
+      krb5_os_localaddr(context, &addrs);
+      local_kaddr.magic = addrs[0]->magic;
+      local_kaddr.addrtype = addrs[0]->addrtype;
+      local_kaddr.length = addrs[0]->length;
+      local_kaddr.contents = calloc(1, addrs[0]->length);
+      memcpy(local_kaddr.contents, addrs[0]->contents, addrs[0]->length);
+      krb5_free_addresses(context, addrs);
     }
-  error_count = 0;
-  for (i=0; i<out; i++)
+
+  addrlen = sizeof(remote_addr);
+  if (getpeername(kdc_socket, &remote_addr, &addrlen) < 0)
     {
-      if (connect(s2, &addr_p[i], sizeof(addr_p[i])) == SOCKET_ERROR)
-        continue;
-      addrlen = sizeof(local_addr);
-      if (getsockname(s2, &local_addr, &addrlen) < 0)
-        continue;
-      if (((struct sockaddr_in *)&local_addr)->sin_addr.s_addr != 0)
+      code = KDC_GETPEERNAME_ERROR;
+      goto cleanup;
+    }
+  remote_kaddr.addrtype = ADDRTYPE_INET;
+  remote_kaddr.length = sizeof(((struct sockaddr_in *) &remote_addr)->sin_addr);
+  remote_kaddr.contents = (char *) &(((struct sockaddr_in *) &remote_addr)->sin_addr);
+
+  if (code = krb5_auth_con_setaddrs(context, auth_context, &local_kaddr, NULL))
+    goto cleanup;
+  if (code = make_setpw_req(context, auth_context, &ap_req,
+                               targprinc, newpw, &chpw_snd))
+    goto cleanup;
+
+  for (i = 0; i < 3; i++)
+    {
+      if ((cc = sendto(kdc_socket, chpw_snd.data, chpw_snd.length, 0,
+                       NULL,
+                       0)) != chpw_snd.length)
         {
-printf("1\n");
-          local_kaddr.addrtype = ADDRTYPE_INET;
-          local_kaddr.length =
-            sizeof(((struct sockaddr_in *) &local_addr)->sin_addr);
-          local_kaddr.contents = 
-            (char *) &(((struct sockaddr_in *) &local_addr)->sin_addr);
-        }
-      else
-        {
-          krb5_address **addrs;
-          krb5_os_localaddr(context, &addrs);
-          local_kaddr.magic = addrs[0]->magic;
-          local_kaddr.addrtype = addrs[0]->addrtype;
-          local_kaddr.length = addrs[0]->length;
-          local_kaddr.contents = calloc(1, addrs[0]->length);
-          memcpy(local_kaddr.contents, addrs[0]->contents, addrs[0]->length);
-          krb5_free_addresses(context, addrs);
-        }
-
-      addrlen = sizeof(remote_addr);
-      if (getpeername(s2, &remote_addr, &addrlen) < 0)
-         continue;
-      remote_kaddr.addrtype = ADDRTYPE_INET;
-      remote_kaddr.length =
-        sizeof(((struct sockaddr_in *) &remote_addr)->sin_addr);
-      remote_kaddr.contents = 
-        (char *) &(((struct sockaddr_in *) &remote_addr)->sin_addr);
-
-      if (code = krb5_auth_con_setaddrs(context, auth_context, &local_kaddr, NULL))
-        goto cleanup;
-      if (code = krb5_mk_setpw_req(context, auth_context, &ap_req,
-                                   targprinc, newpw, &chpw_req))
-        goto cleanup;
-
-      if ((cc = sendto(s1, chpw_req.data, chpw_req.length, 0,
-                       (struct sockaddr *) &addr_p[i],
-                       sizeof(addr_p[i]))) != chpw_req.length)
-        continue;
-
-      if (chpw_req.data != NULL)
-        free(chpw_req.data);
-      chpw_rep.length = 1500;
-      chpw_rep.data = (char *) calloc(1, chpw_rep.length);
-
-      tmp_len = sizeof(tmp_addr);
-      last_count = 0;
-      while (1)
-        {
-          cc = recvfrom(s1, chpw_rep.data, chpw_rep.length, MSG_PEEK, 
-                        &tmp_addr, &tmp_len);
-          if ((last_count == cc) && (cc != 0))
-            break;
-          last_count = cc;
-          if (cc == 0)
-            {
-              if (last_count == -1)
-                break;
-              last_count = -1;
-            }
+          code = KDC_SEND_ERROR;
           sleep(1);
+          continue;
         }
-      if ((cc = recvfrom(s1, chpw_rep.data, chpw_rep.length, 0, &tmp_addr, &tmp_len)) < 0)
+
+      TimeVal.tv_sec = 3;
+      TimeVal.tv_usec = 0;
+      FD_ZERO(&readfds);
+      FD_SET(kdc_socket, &readfds);
+      nfds = kdc_socket + 1;
+      code = select(nfds, &readfds, NULL, NULL, &TimeVal);
+      if ((code == 0) || (code == SOCKET_ERROR))
         {
-          code = errno;
-          goto cleanup;
+          code = KDC_RECEIVE_TIMEOUT;
+          sleep(1);
+          continue;
         }
-      chpw_rep.length = cc;
-      if (code = krb5_auth_con_setaddrs(context, auth_context, NULL,
-                                            &remote_kaddr))
+
+      if ((cc = recvfrom(kdc_socket, chpw_rcv.data, chpw_rcv.length, 0, 
+                         NULL, NULL)) < 0)
         {
-          goto cleanup;
+          code = KDC_RECEIVE_TIMEOUT;
+          sleep(1);
+          continue;
+        }
+      chpw_rcv.length = cc;
+      if (code = krb5_auth_con_setaddrs(context, auth_context, NULL, &remote_kaddr))
+        {
+          sleep(1);
+          continue;
         }
       local_result_code = 0;
-      code = krb5_rd_setpw_rep(context, auth_context, &chpw_rep,
-                               &local_result_code, &result_string);
+      code = get_setpw_rep(context, auth_context, &chpw_rcv,
+                           &local_result_code, &result_string);
 
       if (local_result_code)
         {
@@ -501,51 +506,38 @@ printf("1\n");
             local_result_code = KRB5_KPASSWD_SUCCESS;
           *result_code = local_result_code;
         }
-      if (chpw_rep.data != NULL)
-        free(chpw_rep.data);
-      break;
-
+      if ((code == 0) && (local_result_code == 0))
+        break;
+      sleep(1);
     }
+
 cleanup:
-  closesocket(s1);
-  closesocket(s2);
-  if (addr_p != NULL)
-    free(addr_p);
-  if (auth_context != NULL)
-    krb5_auth_con_free(context, auth_context);
-  if (ap_req.data != NULL)
-    free(ap_req.data);
-  krb5_free_cred_contents(context, &creds);
-  if (credsp != NULL)
-    krb5_free_creds(context, credsp);
+  if (chpw_snd.data != NULL)
+    free(chpw_snd.data);
+  if (chpw_rcv.data != NULL)
+    free(chpw_rcv.data);
   if (targprinc != NULL)
     krb5_free_principal(context, targprinc);
   return(code);
 }
 
-int set_password(char *user, char *domain)
+int set_password(char *user, char *password, char *domain)
 {
-  krb5_context    context;
-  krb5_ccache     ccache;
   int             res_code;
   krb5_error_code retval;
   char            pw[PW_LENGTH+1];
 
-  if (retval = krb5_init_context(&context))
-    return retval;
-  if (retval = krb5_cc_default(context, &ccache))
-    return(retval);
-
   memset(pw, '\0', sizeof(pw));
-  generate_password(pw);
+  if (strlen(password) != 0)
+    strcpy(pw, password);
+  else
+    generate_password(pw);
   res_code = 0;
-  retval = krb5_set_password(context, ccache, pw, user, domain, &res_code);
+  retval = kdc_set_password(context, ccache, pw, user, domain, &res_code);
 
-  krb5_cc_close(context, ccache);
-  krb5_free_context(context);
-  if (retval)
-    return(retval);
-  return(res_code);
+  if (res_code)
+    return(res_code);
+  return(retval);
 }
 
 void generate_password(char *password)
@@ -607,3 +599,299 @@ long myrandom()
     }
   return (rand());
 }
+
+int get_krb5_error(krb5_error_code rc, char *in, char *out)
+{
+  int krb5Error;
+  int retval;
+
+  retval = 1;
+
+  if (rc < 0)
+    {
+      krb5Error = ((int)(rc & 255));
+      sprintf(out, "%s: %s(%ld)", in, error_message(rc), krb5Error);
+    }
+  else
+    {
+      switch (rc)
+        {
+          case KDC_RECEIVE_TIMEOUT:
+            {
+              retval = 0;
+              sprintf(out, "%s: %s(%d)", in, "Receive timeout", rc);
+              break;
+            }
+          case KDC_RECEIVE_ERROR:
+            {
+              retval = 0;
+              sprintf(out, "%s: %s(%d)", in, "Receive error", rc);
+              break;
+            }
+          case KRB5_KPASSWD_MALFORMED:
+            {
+              sprintf(out, "%s: %s(%d)", in, "malformed password", rc);
+              break;
+            }
+          case KRB5_KPASSWD_HARDERROR:
+            {
+              sprintf(out, "%s: %s(%d)", in, "hard error", rc);
+              break;
+            }
+          case KRB5_KPASSWD_AUTHERROR:
+            {
+              retval = 0;
+              sprintf(out, "%s: %s(%d)", in, "authentication error", rc);
+              break;
+            }
+          case KRB5_KPASSWD_SOFTERROR:
+            {
+              retval = 0;
+              sprintf(out, "%s: %s(%d)", in, "soft error", rc);
+              break;
+            }
+          case KRB5_KPASSWD_ACCESSDENIED:
+            {
+              sprintf(out, "%s: %s(%d)", in, "Access denied", rc);
+              break;
+            }
+          case KDC_SEND_ERROR:
+            {
+              retval = 0;
+              sprintf(out, "%s: %s(%d)", in, "Send error", rc);
+              break;
+            }
+          case KDC_GETSOCKNAME_ERROR:
+            {
+              retval = 0;
+              sprintf(out, "%s: %s(%d)", in, "Socket error - getsockname", rc);
+              break;
+            }
+          case KDC_GETPEERNAME_ERROR:
+            {
+              retval = 0;
+              sprintf(out, "%s: %s(%d)", in, "Socket error - getpeername", rc);
+              break;
+            }
+          default:
+            {
+              sprintf(out, "%s: %s(%d)", in, "unknown error", rc);
+              break;
+            }
+        }
+    }
+  return(retval);
+}
+
+int ad_connect(LDAP **ldap_handle, char *ldap_domain, char *dn_path, 
+               char *Win2kPassword, char *Win2kUser, char *default_server,
+               int connect_to_kdc)
+{
+  int         i;
+  int         j;
+  char        *server_name[MAX_SERVER_NAMES];
+  char        server_array[MAX_SERVER_NAMES][256];
+  static char temp[128];
+  ULONG       version = LDAP_VERSION3;
+  ULONG       rc;
+  int         Max_wait_time = 500;
+  int         Max_size_limit = LDAP_NO_LIMIT;
+
+  if (ldap_domain == NULL)
+    ldap_domain = "win.mit.edu";
+  convert_domain_to_dn(ldap_domain, dn_path);
+  if (strlen(dn_path) == 0)
+    return(1);
+
+  memset(server_name, 0, sizeof(server_name[0]) * MAX_SERVER_NAMES);
+  memset(server_array, 0, sizeof(server_array[0]) * MAX_SERVER_NAMES);
+  if (strlen(default_server) == 0)
+    {
+      if (locate_ldap_server(ldap_domain, server_name) == -1)
+        return(2);
+      j = 0;
+      for (i = 0; i < MAX_SERVER_NAMES; i++)
+        {
+          if (server_name[i] != NULL)
+            {
+              strcpy(server_array[i], server_name[i]);
+              free(server_name[i]);
+              j++;
+            }
+        }
+      if (j == 0)
+        return(2);
+#ifdef _WIN32
+      qsort((void *)server_array, (size_t)j, sizeof(server_array[0]), compare_elements);
+#endif
+    }
+  else
+    strcpy(server_array[0], default_server);
+
+  for (i = 0; i < MAX_SERVER_NAMES; i++)
+    {
+      if (strlen(server_array[i]) != 0)
+        {
+          if (((*ldap_handle) = ldap_open(server_array[i], LDAP_PORT)) != NULL)
+            {
+              rc = ldap_set_option((*ldap_handle), LDAP_OPT_PROTOCOL_VERSION, &version);
+              rc = ldap_set_option((*ldap_handle), LDAP_OPT_TIMELIMIT, 
+                                   (void *)&Max_wait_time);
+              rc = ldap_set_option((*ldap_handle), LDAP_OPT_SIZELIMIT, 
+                                   (void *)&Max_size_limit);
+              rc = ldap_set_option((*ldap_handle), LDAP_OPT_REFERRALS, LDAP_OPT_OFF);
+              rc = ldap_adgssapi_bind((*ldap_handle), dn_path, GSSSASL_PRIVACY_PROTECTION);
+              if (rc == LDAP_SUCCESS)
+                {
+                  if (connect_to_kdc)
+                    {
+                      if (!ad_server_connect(server_array[i], ldap_domain))
+                        {
+                          ldap_unbind_s((*ldap_handle));
+                          continue;
+                        }
+                    }
+                  if (strlen(default_server) == 0)
+                    strcpy(default_server, server_array[i]);
+                  strcpy(connected_server, server_array[i]);
+                  break;
+                }
+            }
+        }
+    }
+  if (i >= MAX_SERVER_NAMES)
+    return(3);
+  return(0);
+}
+
+int ad_server_connect(char *connectedServer, char *domain)
+{
+  krb5_error_code   rc;
+  krb5_creds        creds;
+  krb5_creds        *credsp;
+  char              temp[256];
+  char              userrealm[256];
+  int               i;
+  unsigned short    port = KDC_PORT;
+
+  context = NULL;
+  credsp = NULL;
+  memset(&ccache, 0, sizeof(ccache));
+  memset(&creds, 0, sizeof(creds));
+  memset(userrealm, '\0', sizeof(userrealm));
+
+  rc = 0;
+  if (krb5_init_context(&context))
+    goto cleanup;
+  if (krb5_cc_default(context, &ccache))
+    goto cleanup;
+
+  for (i = 0; i < (int)strlen(domain); i++)
+    userrealm[i] = toupper(domain[i]);
+  sprintf(temp, "%s@%s", "kadmin/changepw", userrealm);
+  if (krb5_parse_name(context, temp, &creds.server))
+    goto cleanup;
+  if (krb5_cc_get_principal(context, ccache, &creds.client))
+    goto cleanup;
+  if (krb5_get_credentials(context, 0, ccache, &creds, &credsp))
+    goto cleanup;
+
+  rc = ad_kdc_connect(connectedServer);
+
+
+cleanup:
+  if (!rc)
+    {
+      krb5_cc_close(context, ccache);
+      krb5_free_context(context);
+    }
+  krb5_free_cred_contents(context, &creds);
+  if (credsp != NULL)
+    krb5_free_creds(context, credsp);
+  return(rc);
+}
+
+
+int ad_kdc_connect(char *connectedServer)
+{
+  struct hostent  *hp;
+  int             rc;
+
+  rc = 0;
+  hp = gethostbyname(connectedServer);
+  if (hp == NULL)
+    goto cleanup;
+  memset(&kdc_server, 0, sizeof(kdc_server));
+  memcpy(&(kdc_server.sin_addr),hp->h_addr_list[0],hp->h_length);
+  kdc_server.sin_family = hp->h_addrtype;
+  kdc_server.sin_port = htons(KDC_PORT);
+
+  if ((kdc_socket = socket(AF_INET, SOCK_DGRAM, 0)) == INVALID_SOCKET)
+    goto cleanup;
+  if (connect(kdc_socket, (struct sockaddr*)&kdc_server, sizeof(kdc_server)) == SOCKET_ERROR)
+    goto cleanup;
+  rc = 1;
+
+cleanup:
+  return(rc);
+}
+
+void ad_kdc_disconnect()
+{
+
+  if (auth_context != NULL)
+    {
+      krb5_auth_con_free(context, auth_context);
+      if (ap_req.data != NULL)
+        free(ap_req.data);
+      krb5_free_cred_contents(context, &creds);
+      if (credsp != NULL)
+        krb5_free_creds(context, credsp);
+    }
+  credsp = NULL;
+  auth_context = NULL;
+  if (context != NULL)
+    {
+      krb5_cc_close(context, ccache);
+      krb5_free_context(context);
+    }
+  closesocket(kdc_socket);
+
+}
+
+int convert_domain_to_dn(char *domain, char *dnp)
+{
+  char    *fp;
+  char    *dp;
+  char    dn[512];
+
+  memset(dn, '\0', sizeof(dn));    
+  strcpy(dn, "dc=");
+  dp = dn+3;
+  for (fp = domain; *fp; fp++)
+    {
+      if (*fp == '.') 
+        {
+          strcpy(dp, ",dc=");
+          dp += 4;
+        }
+      else
+        *dp++ = *fp;
+    }
+
+  strcpy(dnp, dn);
+  return 0;
+}
+
+int compare_elements(const void *arg1, const void *arg2)
+{
+  int rc;
+
+  rc = strcmp((char*)arg1, (char*)arg2);
+  if (rc < 0)
+    return(1);
+  if (rc > 0)
+    return(-1);
+  return(rc);
+}
+

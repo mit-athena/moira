@@ -9,6 +9,7 @@ Abstract:
 --*/
 
 #include <krb5.h>
+#include <ldap.h>
 #ifdef _WIN32
 #include "asn1_make.h"
 #endif
@@ -31,10 +32,6 @@ Abstract:
 #endif
 #endif
 
-#ifndef T_SRV
-#define T_SRV 33
-#endif
-
 #ifndef _WIN32
 typedef krb5_octet asn1_octet;
 typedef krb5_error_code asn1_error_code;
@@ -42,10 +39,10 @@ typedef struct code_buffer_rep {
   char *base, *bound, *next;
 } asn1buf;
 typedef enum { UNIVERSAL = 0x00, APPLICATION = 0x40,
-		 CONTEXT_SPECIFIC = 0x80, PRIVATE = 0xC0 } asn1_class;
+               CONTEXT_SPECIFIC = 0x80, PRIVATE = 0xC0 } asn1_class;
 #endif
 
-static const char rcsid[] = "$Id: krb5_utils.c,v 1.2 2000-11-21 16:42:02 zacheiss Exp $";
+static const char rcsid[] = "$Id: krb5_utils.c,v 1.3 2001-04-23 02:11:22 zacheiss Exp $";
 
 asn1_error_code asn1_encode_realm(asn1buf *buf, const krb5_principal val, 
                                   int *retlen);
@@ -135,131 +132,3 @@ krb5_error_code encode_krb5_setpw(const krb5_setpw *rep,
   krb5_cleanup();
 }
 
-krb5_error_code
-krb5_locate_dns_srv(krb5_context context, const krb5_data *realm,
-                    const char *service, const char *protocol,
-                    struct sockaddr **addr_pp, int *naddrs)
-{
-  int             len;
-  int             out;
-  int             j;
-  int             count;
-  unsigned char   reply[1024];
-  struct hostent  *hp;
-  unsigned char   *p;
-  char            host[128];
-  int             status;
-  int             priority;
-  int             weight;
-  u_short         port;
-  struct sockaddr *addr_p = NULL;
-  struct sockaddr_in *sin_p;
-    
-  out = 0;
-  addr_p = (struct sockaddr *)malloc (sizeof (struct sockaddr));
-  if (addr_p == NULL)
-	  return(ENOMEM);
-  count = 1;
-
-#ifdef HAVE_SNPRINTF
-  snprintf(host, sizeof(host), "%s.%s.%*s.",
-	         service, protocol, realm->length, realm->data);
-#else
-  sprintf(host, "%s.%s.%*s.",
-	        service, protocol, realm->length, realm->data);
-#endif
-  len = res_search(host, C_IN, T_SRV, reply, sizeof(reply));
-  if (len >=0)
-    {
-  	  p = reply;
-	    p += sizeof(HEADER);
-	    status = dn_expand(reply, reply + len, p, host, sizeof(host));
-  	  if (status < 0)
-	      goto out;
-	    p += status;
-  	  p += 4;
-  	  while (p < reply + len)
-        {
-	        int type, class, ttl, size;
-	        status = dn_expand(reply, reply + len, p, host, sizeof(host));
-	        if (status < 0)
-		        goto out;
-  	      p += status;
-	        type = (p[0] << 8) | p[1];
-	        p += 2;
-	        class = (p[0] << 8) | p[1];
-	        p += 2;
-  	      ttl = (p[0] << 24) | (p[1] << 16) | (p[2] << 8) | p[3];
-	        p += 4;
-	        size = (p[0] << 8) | p[1];
-	        p += 2;
-	        if (type == T_SRV)
-            {
-		          status = dn_expand(reply, reply + len, p + 6, host, sizeof(host));
-  		        if (status < 0)
-	  	          goto out;
-		          priority = (p[0] << 8) | p[1];
-		          weight = (p[2] << 8) | p[3];
-		          port = (p[4] << 8) | p[5];
-  		        hp = (struct hostent *)gethostbyname(host);
-	  	        if (hp != 0)
-                {
-		              switch (hp->h_addrtype)
-                    {
-#ifdef KRB5_USE_INET
-		                  case AF_INET:
-			                  for (j=0; hp->h_addr_list[j]; j++)
-                          {
-			                      sin_p = (struct sockaddr_in *) &addr_p[out++];
-			                      memset ((char *)sin_p, 0, sizeof(struct sockaddr));
-			                      sin_p->sin_family = hp->h_addrtype;
-			                      sin_p->sin_port = htons(port);
-			                      memcpy((char *)&sin_p->sin_addr,
-				                    (char *)hp->h_addr_list[j],
-  				                  sizeof(struct in_addr));
-	  		                    if (out+1 >= count)
-                              {
-			  	                      count += 5;
-				                        addr_p = (struct sockaddr *)
-				                        realloc ((char *)addr_p,
-					                      sizeof(struct sockaddr) * count);
-				                        if (!addr_p)
-				                          goto out;
-			                        }
-			                    }
-			                  break;
-#endif
-  		                default:
-	  		                break;
-		                }
-		            }
-		          p += size;
-	          }
-	      }
-    }
-    
-out:
-  if (out == 0)
-    {
-     free(addr_p);
-     return(KRB5_REALM_CANT_RESOLVE);
-    }
-
-  *addr_pp = addr_p;
-  *naddrs = out;
-  return(0);
-}
-
-krb5_error_code 
-krb5_locate_kpasswd(krb5_context context, const krb5_data *realm,
-                    struct sockaddr **addr_pp, int *naddrs)
-{
-  krb5_error_code code;
-	code = krb5_locate_dns_srv(context, realm, "_kpasswd", "_tcp",
-	                           addr_pp, naddrs);
-  if (code)
-    code = krb5_locate_dns_srv(context, realm, "_kpasswd", "_udp",
-                               addr_pp, naddrs);
-
-  return(code);
-}

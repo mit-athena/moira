@@ -1,4 +1,4 @@
-/* $Id: menu.c,v 1.55 1999-05-13 18:57:08 danw Exp $
+/* $Id: menu.c,v 1.56 1999-08-04 15:10:23 danw Exp $
  *
  * Generic menu system module.
  *
@@ -21,7 +21,7 @@
 #include <string.h>
 #include <unistd.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.55 1999-05-13 18:57:08 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.56 1999-08-04 15:10:23 danw Exp $");
 
 #ifdef MAX
 #undef MAX
@@ -131,6 +131,8 @@ void Start_menu(Menu *m)
     {
 #ifdef CURSES_HAS_NEWTERM
       set_term(scrn);
+      endwin();
+      initscr();
 #endif
       raw();		/* We parse & print everything ourselves */
       noecho();

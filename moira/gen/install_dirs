@@ -1,0 +1,95 @@
+#!/bin/csh -f
+# This script installs new directories on NFS servers. 
+
+# The following exit codes are defined and MUST BE CONSISTENT with the
+# SMS error codes the library uses:
+set SMS_PROTO = 47836477
+
+set path=(/etc /bin /usr/bin /usr/etc)
+
+# Find out what device we're working on
+set dev = $1
+
+set TMPSTOR = /tmp/tmpstor	# Temporary area for user . files
+set USERTAR = /tmp/proto.tar	# Tarfile for user . files
+
+# Give ourselves a fresh work area
+rm -rf $USERTAR
+rm -rf $TMPSTOR
+mkdir $TMPSTOR
+if ($status) exit SMS_PROTO
+
+# Make a tarfile containing the user prototype files for future use.
+(cd /usr/prototype_user;tar cf - .) | (cd $TMPSTOR; tar xpf -)
+# Remove the welcome file.  This may change.
+rm -f $TMPSTOR/welcome
+chmod -R 444 $TMPSTOR
+chmod 700 $TMPSTOR/Mail
+(cd $TMPSTOR; tar cf $USERTAR .)
+if ($status) exit SMS_PROTO
+rm -rf $TMPSTOR
+
+# So that the new directories get the right protections.
+umask 66
+
+while (1)
+   # Do this until there are no more lines of input
+   set input = `echo $<`
+   if ($#input != 4) break
+
+   set dir = $input[1]
+   set uid = $input[2]
+   set gid = $input[3]
+   set type = $input[4]
+
+   # Don't do anything if the directory already exists
+   if (-d $dir) continue
+
+   while (1)
+      set tmpdir = $dir:h/_$dir:t
+      # Don't clobber this directory if it exists.
+      if (-d $tmpdir) then
+         continue
+      else
+         mkdir $tmpdir
+         # At some point it may be wise to check the status here and 
+         # return a soft failure, but the current protocol doesn't
+         # support this
+         break
+      endif
+   end
+   if (! -d $tmpdir) continue
+   chown $uid.$gid $tmpdir
+
+   # At some point, we may wish to add a more elegant way of handling 
+   # locker types.  The current arrangement allows for easy adding of 
+   # default actions here.
+   switch ($type)
+      case HOMEDIR:
+         
+         # ***** Remove this when /etc/encorce_quota becomes obsolete!
+         # Give this filesystem a 600K quota
+         setquota -u $dev $uid 600
+         # *****
+
+         # Give user prototype files
+         # sms_untar is a setuid argv[1] tar xfp -
+         (cd $tmpdir; sms_untar $uid < $USERTAR)
+         if ($status) set WARN
+         breaksw      
+      default:
+         breaksw
+   endsw
+
+   mv $tmpdir $dir
+   ### Soft failure when ready
+end
+
+# Cleanup
+rm -f $USERTAR
+exit 0
+
+#
+# 	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/install_dirs,v $
+#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/install_dirs,v 1.1 1988-08-05 14:26:28 qjb Exp $
+#

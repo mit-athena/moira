@@ -1,4 +1,4 @@
-/* $Id: get_file.c,v 1.17 1998-02-15 17:49:28 danw Exp $
+/* $Id: get_file.c,v 1.18 1998-10-21 19:27:51 danw Exp $
  *
  * Copyright (C) 1988-1998 by the Massachusetts Institute of Technology.
  * For copying and distribution information, please see the file
@@ -14,11 +14,12 @@
 #include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
 
 #include <des.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/get_file.c,v 1.17 1998-02-15 17:49:28 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/get_file.c,v 1.18 1998-10-21 19:27:51 danw Exp $");
 
 #ifndef MIN
 #define MIN(a, b)    (((a) < (b)) ? (a) : (b))

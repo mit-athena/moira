@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.54 1990-06-07 17:52:37 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.55 1990-06-13 12:45:03 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_qsupport_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.54 1990-06-07 17:52:37 mar Exp $";
+static char *rcsid_qsupport_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.55 1990-06-13 12:45:03 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -331,10 +331,15 @@ setup_ausr(q, argv, cl)
 ##  int nuid, rowcount;
 ##  char *mit_id;
 
+#ifdef notdef
+    /* this is currently disabled because we need an index on ID's
+     * before it can run in finite time.
+     */
     mit_id = argv[U_MITID];
 ##  retrieve (rowcount = any(u.#mit_id where u.#mit_id = mit_id))
     if (ingres_errno) return(mr_errcode);
     if (rowcount) return(MR_EXISTS);
+#endif notdef
 
     if (!strcmp(argv[1], UNIQUE_UID) || atoi(argv[1]) == -1) {
 	if (set_next_object_id("uid", "users"))
@@ -1806,7 +1811,7 @@ get_list_info(q, aargv, cl, action, actarg)
  * how many different ancestors a member is allowed to have.
  */
 
-#define MAXLISTDEPTH	100
+#define MAXLISTDEPTH	1024
 
 int add_member_to_list(q, argv, cl)
     struct query *q;

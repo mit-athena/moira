@@ -1,19 +1,58 @@
 #!/bin/sh
-PATH=/bin:/usr/ucb:/usr/bin
+#
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/mailhub.sh,v 1.11 2002-01-22 14:19:52 zacheiss Exp $
+
+PATH=/sbin:/bin:/usr/sbin:/usr/bin:/etc:/usr/etc:/usr/athena/bin:/usr/local/bin
+export PATH
+
+if [ -d /var/athena ] && [ -w /var/athena ]; then
+    exec >/var/athena/moira_update.log 2>&1
+else
+    exec >/tmp/moira_update.log 2>&1
+fi
+
+# The following exit codes are defined and MUST BE CONSISTENT with
+# error codes the library uses:
+MR_MKCRED=47836474
+MR_MISSINGFILE=47836473
+MR_NOCRED=47836470
+
 root=/usr/local/sendmail
 
-MR_MKCRED=47836474
+if [ -r $root/etc/aliases.new ]; then
+    chmod 644 $root/etc/aliases.new
+else
+    exit $MR_MISSINGFILE
+fi
 
-cat $root/etc/aliases.legacy > $root/etc/aliases.tmp
-cat $root/etc/aliases.new >> $root/etc/aliases.tmp
-cat $root/etc/aliases.local >> $root/etc/aliases.tmp
-mv $root/etc/aliases.tmp $root/etc/aliases.new
+if [ ! -r $root/etc/aliases ]; then
+    logger -p mail.error -t mailhub.sh "No current aliases file, aborting."
+    exit $MR_NOCRED
+fi
+
+# Play it safe and be sure we have reasonable data
+olines=`wc -l $root/etc/aliases |  awk '{print $1}'`
+nlines=`wc -l $root/etc/aliases.new | awk '{print $1}'`
+diff=`expr $nlines - $olines`
+thresh=`expr $nlines / 10`
+
+# Catch the zero case
+if [ $nlines -eq 0 ]; then
+    logger -p mail.error -t mailhub.sh "Recieved empty aliases file, aborting."
+    exit $MR_MISSINGFILE
+fi
+
+# If its a greater than 10% shift bomb out to be safe
+if [ $diff -gt $thresh ]; then
+    logger -p mail.error -t mailhub.sh "Alias changes threshold exceeded, aborting."
+    exit $MR_NOCRED
+fi
 
 cp /dev/null $root/etc/aliases.new.db
 
 $root/sbin/sendmail -bi -oA$root/etc/aliases.new
 if [ $? != 0 ]; then
-	exit $MR_MKCRED
+    exit $MR_MKCRED
 fi
 
 kill `ps -ef | grep "sendmail" | egrep -v "grep|mqueue.stall" | awk '{print $2}'`
@@ -24,15 +63,14 @@ mv $root/etc/aliases.db $root/etc/aliases.old.db
 mv $root/etc/aliases.new $root/etc/aliases
 mv $root/etc/aliases.new.db $root/etc/aliases.db
 
-cd /usr/spool/mqueue
-rm -f xf* tf* lf* nf*
-
-#$root/sbin/sendmail -bd
-#$root/sbin/sendmail -q20m
-
 sh /etc/init.d/sendmail start
+
+# Make sure the sendmail daemons are indeed running
+ps -ef | grep sendmail | grep -v grep > /dev/null 2>&1
+if [ $? -ne 0 ]; then
+    logger -p mail.error -t mailhub.sh "Sendmail failed to restart."
+    exit $MR_MKCRED
+fi
 
 rm -f $0
 exit 0
-
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/mailhub.sh,v 1.10 2001-11-24 00:08:46 zacheiss Exp $

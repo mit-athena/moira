@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.pc,v $
  *	$Author: danw $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.pc,v 2.2 1997-06-17 20:20:26 danw Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.pc,v 2.3 1997-07-03 08:27:13 danw Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_qsupport_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.pc,v 2.2 1997-06-17 20:20:26 danw Exp $";
+static char *rcsid_qsupport_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.pc,v 2.3 1997-07-03 08:27:13 danw Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -585,7 +585,7 @@ int get_ace_use(q, argv, cl, action, actarg)
 	  found++;
     }
 
-    if (!strcmp(atype, "RKERBERO")) {
+    if (!strcmp(atype, "RKERBEROS")) {
 	EXEC SQL DECLARE csr109 CURSOR FOR
 	  SELECT list_id FROM imembers
 	    WHERE member_type='KERBEROS' AND member_id = :aid;

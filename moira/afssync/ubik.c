@@ -1,4 +1,4 @@
-/* $Id: ubik.c,v 1.4 1997-01-20 18:10:47 danw Exp $ */
+/* $Id: ubik.c,v 1.5 2002-04-30 01:59:32 zacheiss Exp $ */
 
 #include <sys/types.h>
 #include <netinet/in.h>
@@ -139,17 +139,7 @@ long len;
     return(0);
 }
 
-
-/* Global declarations from ubik.c */
-long ubik_quorum=0;
-struct ubik_dbase *ubik_dbase=0;
-struct ubik_stats ubik_stats;
-long ubik_host;
-long ubik_epochTime = 0;
-long urecovery_state = 0;
-
 struct rx_securityClass *ubik_sc[3];
-
 
 /* Other declarations */
 

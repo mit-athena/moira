@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/dump_db.dc,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/dump_db.dc,v 1.3 1992-08-11 11:33:22 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/dump_db.dc,v 1.4 1993-07-14 12:07:26 mar Exp $
  *
  *	(c) Copyright 1988 by the Massachusetts Institute of Technology.
  *	For copying and distribution information, please see the file
@@ -13,7 +13,7 @@
  */
 
 #ifndef lint
-static char *rcsid_dump_db_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/dump_db.dc,v 1.3 1992-08-11 11:33:22 mar Exp $";
+static char *rcsid_dump_db_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/dump_db.dc,v 1.4 1993-07-14 12:07:26 mar Exp $";
 #endif lint
 
 #include <stdio.h>
@@ -83,6 +83,39 @@ dump_str(f, str)
 {
     char  *strtrim();
     register char *ibp = strtrim(str);
+    register int c;		/* PCC doesn't put chars in registers.. */
+    register int t;
+
+    for (; c = (unsigned char) *ibp; ibp++) {
+	switch(act[c]) {
+	case 1:
+	    if (putc1('\\', f) < 0) wpunt();
+	    /* fall thru.. */
+	case 0:
+	    if (putc1(c, f) < 0) wpunt();
+	    
+	    break;
+	case 2:
+	    if (putc1('\\', f) < 0) wpunt();	    
+	    t = ((c>>6)&7) + '0';
+	    if (putc1(t,f) < 0) wpunt();
+	    t = ((c>>3)&7) + '0';
+	    if (putc1(t,f) < 0) wpunt();
+	    t = (c&7) + '0';
+	    if (putc1(t,f) < 0) wpunt();
+	    break;
+	    
+	default:
+	    punt("Can't get here");
+	}
+    }
+}
+
+dump_bin(f, str)
+    register FILE *f;
+    register char *str;
+{
+    register char *ibp = str;
     register int c;		/* PCC doesn't put chars in registers.. */
     register int t;
 

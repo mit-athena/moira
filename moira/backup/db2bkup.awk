@@ -1,5 +1,5 @@
 #	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/db2bkup.awk,v $
-#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/db2bkup.awk,v 1.4 1993-07-14 10:38:50 mar Exp $
+#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/db2bkup.awk,v 1.5 1993-07-14 12:07:19 mar Exp $
 #
 #	This converts the file used to originally create the database
 #	into a program to back it up.
@@ -40,7 +40,11 @@ NF>=2 {
 		t = split(temp[2], temp2, ")")
 		if (t != 2) printf "Can't parse %s\n", temp[2];
 		printf "\tchar\tt_%s[%d];\n", vname[count], temp2[1]+1;
-		vtype[count]="str"
+		if ($1 == "signature") {
+			vtype[count]="bin"
+		} else {
+			vtype[count]="str"
+		}
 	} else if ($2 ~ /DATE/) {
 		printf "\tchar\tt_%s[26];\n", vname[count]
 		vtype[count]="str"

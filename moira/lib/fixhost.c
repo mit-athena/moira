@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/fixhost.c,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/fixhost.c,v 1.8 1990-04-05 17:45:11 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/fixhost.c,v 1.9 1991-03-08 11:29:35 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -9,27 +9,21 @@
  */
 
 #ifndef lint
-static char *rcsid_fixhost_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/fixhost.c,v 1.8 1990-04-05 17:45:11 mar Exp $";
+static char *rcsid_fixhost_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/fixhost.c,v 1.9 1991-03-08 11:29:35 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
-#include <arpa/nameser.h>
-#if defined(sun) || defined(AIX386)
-#include <resolv.h>
-#else
-#include <arpa/resolv.h>
-#endif
 #include <netdb.h>
 #include <stdio.h>
 #include <strings.h>
 #include <ctype.h>
+#include <moira.h>
 
 extern char *malloc();
 extern char *realloc();
-extern char *strsave();
 
 /*
  * Canonicalize hostname:
@@ -78,7 +72,18 @@ canonicalize_hostname(host)
 	    has_dot |= (c == '.');
 	}
 	if (!has_dot) {
-	    (void) sprintf(tbuf, "%s.%s", host, _res.defdname);
+	    static char *domain = NULL;
+
+	    if (domain == NULL) {
+		gethostname(tbuf, sizeof(tbuf));
+		hp = gethostbyname(tbuf);
+		cp = index(hp->h_name, '.');
+		if (cp)
+		  domain = strsave(++cp);
+		else
+		  domain = "";
+	    }
+	    (void) sprintf(tbuf, "%s.%s", host, domain);
 	    free(host);
 	    host = strsave(tbuf);
 	}

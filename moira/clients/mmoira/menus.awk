@@ -1,4 +1,4 @@
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/menus.awk,v 1.2 1991-06-05 13:17:32 mar Exp $
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/menus.awk,v 1.3 1992-10-13 11:14:07 mar Exp $
 
 BEGIN		{ numfields = 0; nummenus = 0;
 		  printf("/* This file is machine generated, do not edit. */");
@@ -15,13 +15,17 @@ $1 == "="	{ if (menuname != "") {
 			for (i = 0; i < count; i++)
 				printf("\t&menu%d,\n", save[i]);
 			printf("\t(MenuItem *) NULL\n};\n");
-			printf("static MenuItem menu%d = { \"%s\", menu%dsub };\n", \
-			menuno, menuname, menuno);
+			printf("static MenuItem menu%d = { \"%s\", menu%dsub, %s };\n", \
+			menuno, menuname, menuno, menuaccel);
 		  }
 
 		  menuname = $2;
-		  for (i = 3; i <= NF; i++)
+		  for (i = 3; (i <= NF) && (substr($i, 0, 1) != "\""); i++)
 			menuname = sprintf("%s %s", menuname, $i);
+		  if (substr($i, 0, 1) == "\"")
+			menuaccel = $i;
+		  else
+			menuaccel = "NULL";
 		  count = 0;
 		  next
 		}
@@ -30,7 +34,12 @@ $NF == "}"	{ itemname = $1;
 		  for (i = 2; i <= NF && $i != "{"; i++)
 			itemname = sprintf("%s %s", itemname, $i);
 		  menuno = nummenus++;
-		  printf("static MenuItem menu%d = { \"%s\", NULL, %s \"%s\", \"%s\", %d };\n", \
+		  if (i + 5 < NF)
+		    printf("static MenuItem menu%d = { \"%s\", NULL, %s, %s \"%s\", \"%s\", %d };\n", \
+			menuno, itemname, $(i + 5), \
+			$(i + 1), $(i + 2), $(i + 3), $(i + 4));
+		  else
+		  printf("static MenuItem menu%d = { \"%s\", NULL, NULL, %s \"%s\", \"%s\", %d };\n", \
 			menuno, itemname, \
 			$(i + 1), $(i + 2), $(i + 3), $(i + 4));
 		  save[count++] = menuno;

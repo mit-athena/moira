@@ -4,7 +4,7 @@
 #
 #
 BKUPDIRDIR=/u3/sms_backup
-PATH=/bin:/usr/bin:/usr/ucb:/usr/new; export PATH
+PATH=/bin:/athena/bin:/usr/athena/bin:/usr/bin:/usr/ucb:/usr/new; export PATH
 chdir ${BKUPDIRDIR}
 
 # /moira/bin/counts </dev/null	

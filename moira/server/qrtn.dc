@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.dc,v $
- *	$Author: genoa $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.dc,v 2.9 1992-12-07 09:47:45 genoa Exp $
+ *	$Author: mar $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.dc,v 2.10 1992-12-30 16:53:34 mar Exp $
  *
  *	Copyright (C) 1987, 1988 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_qrtn_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.dc,v 2.9 1992-12-07 09:47:45 genoa Exp $";
+static char *rcsid_qrtn_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.dc,v 2.10 1992-12-30 16:53:34 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -144,6 +144,7 @@ int mr_open_database()
         return(mr_errcode);
 
     EXEC SQL SELECT SIZE(signature) INTO :mr_sig_length FROM users WHERE users_id=0; /* Harmless on second open */
+    EXEC SQL COMMIT WORK;
     if(ingres_errno)
         return(mr_errcode);
 
@@ -969,6 +970,7 @@ int *uid;
     EXEC SQL SELECT km.users_id, km.string_id INTO :u_id, :k_id
       FROM krbmap km, strings str
       WHERE km.string_id = str.string_id AND str.string = :krbname;
+    EXEC SQL COMMIT WORK;
 
     if (ingres_errno) return(mr_errcode);
     

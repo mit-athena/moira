@@ -1,7 +1,7 @@
 # Makefile for SMS 2.0 include files
 #
 #	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/include/Makefile,v $
-#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/include/Makefile,v 1.2 1990-02-14 11:41:36 mar Exp $
+#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/include/Makefile,v 1.3 1990-02-15 14:18:09 mar Exp $
 #	$Author: mar $
 #
 # (c) Copyright 1988 by the Massachusetts Institute of Technology.
@@ -17,3 +17,6 @@ install: ${FILES}
 	install -c -m 644 sms.h ${DESTDIR}/usr/include/sms.h
 	install -c -m 644 sms_app.h ${DESTDIR}/usr/include/sms_app.h
 	install -c -m 644 sms_et.h ${DESTDIR}/usr/include/sms_et.h
+
+depend:
+

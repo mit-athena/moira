@@ -1,4 +1,4 @@
-/* $Id: send_file.c,v 1.14 1998-02-15 17:49:28 danw Exp $
+/* $Id: send_file.c,v 1.15 2001-01-08 19:28:12 zacheiss Exp $
  *
  * Copyright (C) 1988-1998 by the Massachusetts Institute of Technology.
  * For copying and distribution information, please see the file
@@ -20,7 +20,7 @@
 #include <des.h>
 #include <update.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/send_file.c,v 1.14 1998-02-15 17:49:28 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/send_file.c,v 1.15 2001-01-08 19:28:12 zacheiss Exp $");
 
 extern des_cblock session;
 
@@ -41,7 +41,7 @@ extern des_cblock session;
  *  1 on error (file not found, etc)
  */
 
-int send_file(int conn, char *pathname, char *target_path, int encrypt)
+int mr_send_file(int conn, char *pathname, char *target_path, int encrypt)
 {
   int n, fd, code, n_to_send, i;
   char data[UPDATE_BUFSIZ], enc[UPDATE_BUFSIZ];

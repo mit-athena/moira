@@ -1,4 +1,4 @@
-/* $Id: update_test.c,v 1.10 1998-05-26 18:14:23 danw Exp $
+/* $Id: update_test.c,v 1.11 2001-01-08 19:28:12 zacheiss Exp $
  *
  * Test client for update_server protocol.
  *
@@ -39,7 +39,7 @@ int main(int argc, char **argv)
       exit(1);
     }
 
-  code = send_auth(conn, host);
+  code = mr_send_auth(conn, host);
   if (code)
     com_err(whoami, code, "attempting authorization");
 
@@ -55,7 +55,7 @@ int main(int argc, char **argv)
 	  file = argv[++i];
 	  rfile = argv[++i];
 	  fprintf(stderr, "Sending file %s to %s as %s\n", file, host, rfile);
-	  send_file(conn, file, rfile, 0);
+	  mr_send_file(conn, file, rfile, 0);
 	  break;
 	case 'S':
 	  if (i + 2 >= argc)
@@ -64,7 +64,7 @@ int main(int argc, char **argv)
 	  rfile = argv[++i];
 	  fprintf(stderr, "Sending (encrypted) file %s to %s as %s\n",
 		  file, host, rfile);
-	  send_file(conn, file, rfile, 1);
+	  mr_send_file(conn, file, rfile, 1);
 	  break;
 	case 'i':
 	  if (i + 1 >= argc)
@@ -79,7 +79,7 @@ int main(int argc, char **argv)
 	  mktemp(ibuf);
 	  fprintf(stderr, "Sending instructions %s to %s as %s\n",
 		  file, host, ibuf);
-	  send_file(conn, file, ibuf, 0);
+	  mr_send_file(conn, file, ibuf, 0);
 	  break;
 	case 'I':
 	  if (i + 2 >= argc)
@@ -89,7 +89,7 @@ int main(int argc, char **argv)
 	  strcpy(ibuf, rfile);
 	  fprintf(stderr, "Sending instructions %s to %s as %s\n",
 		  file, host, ibuf);
-	  send_file(conn, file, ibuf, 0);
+	  mr_send_file(conn, file, ibuf, 0);
 	  break;
 	case 'x':
 	  if (!ibuf)
@@ -98,7 +98,7 @@ int main(int argc, char **argv)
 	      usage();
 	    }
 	  fprintf(stderr, "Executing instructions %s on %s\n", ibuf, host);
-	  code = execute(conn, ibuf);
+	  code = mr_execute(conn, ibuf);
 	  if (code)
 	    com_err(whoami, code, "executing");
 	  break;
@@ -107,7 +107,7 @@ int main(int argc, char **argv)
 	    usage();
 	  file = argv[++i];
 	  fprintf(stderr, "Executing instructions %s on %s\n", file, host);
-	  code = execute(conn, file);
+	  code = mr_execute(conn, file);
 	  if (code)
 	    com_err(whoami, code, "executing");
 	  break;
@@ -117,7 +117,7 @@ int main(int argc, char **argv)
 	  usage();
 	}
     }
-  send_quit(conn);
+  mr_send_quit(conn);
   close(conn);
   exit(code);
 }

@@ -2,7 +2,7 @@
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/display.c,v $
  *	$Author: mar $
  *	$Locker:  $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/display.c,v 1.9 1991-07-01 14:29:49 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/display.c,v 1.10 1991-07-26 14:46:58 mar Exp $
  *
  *  (c) Copyright 1988 by the Massachusetts Institute of Technology.
  *  For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_display_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/display.c,v 1.9 1991-07-01 14:29:49 mar Exp $";
+static char *rcsid_display_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/display.c,v 1.10 1991-07-26 14:46:58 mar Exp $";
 #endif	lint
 
 #include <mit-copyright.h>
@@ -20,12 +20,12 @@ static char *rcsid_display_c = "$Header: /afs/.athena.mit.edu/astaff/project/moi
 #include "userreg.h"
 
 #define DESC_WIDTH 18
-#define HEADER "*** Project Athena User Registration ***"
+#define HEADER "*** Athena User Account Registration ***"
 #if defined(vax) || defined(mips)
 #define HELP   " Press the key above RETURN to delete a character.  Press Ctrl-C to start over."
 #endif
 #ifndef HELP
-#define HELP   " Press backspace to delete a character.  Press Ctrl-C to start over."
+#define HELP   "    Press backspace to delete a character.  Press Ctrl-C to start over."
 #endif
 #define BORDER_CHAR '-'
 #define MIN_COLS 80
@@ -337,22 +337,23 @@ display_text_line (line)
 char *line;
 {
   if (line) {
-    waddstr (displayw, line);
-    waddch (displayw, '\n');
-    wrefresh (displayw);
-  }
-  else {
-    werase (displayw);
+      waddstr (displayw, line);
+      waddch (displayw, '\n');
+  } else {
+      werase (displayw);
   }
   wrefresh (displayw);
 }
 
-/* Display_text displays a canned message from a file */
-display_text (filename)
+/* Display_text displays a canned message from a file.  The string
+ * will get imbedded in any %s's in the text.
+ */
+display_text(filename, string)
 char *filename;
+char *string;
 {
   FILE * fp;
-  char  buf[100];
+  char  buf[100], buf1[110];
 
   werase (displayw);
   if ((fp = fopen (filename, "r")) == NULL) {
@@ -361,11 +362,14 @@ char *filename;
   }
 
   while (fgets (buf, 100, fp)) {
-  /* get rid of the newline */
-    buf[strlen (buf) - 1] = 0;
-    display_text_line (buf);
+      /* get rid of the newline */
+      buf[strlen (buf) - 1] = 0;
+      sprintf(buf1, buf, string);
+      waddstr(displayw, buf1);
+      waddch(displayw, '\n');
   }
 
+  wrefresh(displayw);
   fclose (fp);
 }
 

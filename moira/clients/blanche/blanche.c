@@ -1,4 +1,4 @@
-/* $Id: blanche.c,v 1.41 1999-09-21 22:59:21 jweiss Exp $
+/* $Id: blanche.c,v 1.42 1999-12-14 20:13:59 danw Exp $
  *
  * Command line oriented Moira List tool.
  *
@@ -20,7 +20,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.41 1999-09-21 22:59:21 jweiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.42 1999-12-14 20:13:59 danw Exp $");
 
 struct member {
   int type;
@@ -403,7 +403,10 @@ int main(int argc, char **argv)
 	status = mr_query("update_list", 11, argv, NULL, NULL);
 
       if (status)
-	com_err(whoami, status, "while updating list.");
+	{
+	  com_err(whoami, status, "while updating list.");
+	  success = 0;
+	}
       else if (newname)
 	listname = newname;
     }
@@ -413,13 +416,19 @@ int main(int argc, char **argv)
     {
       status = mr_query("get_list_info", 1, &listname, show_list_info, NULL);
       if (status)
-	com_err(whoami, status, "while getting list information");
+	{
+	  com_err(whoami, status, "while getting list information");
+	  success = 0;
+	}
       if (verbose && !memberflg)
 	{
 	  status = mr_query("count_members_of_list", 1, &listname,
 			    show_list_count, NULL);
 	  if (status)
-	    com_err(whoami, status, "while getting list count");
+	    {
+	      com_err(whoami, status, "while getting list count");
+	      success = 0;
+	    }
 	}
     }
 

@@ -1,4 +1,4 @@
-/* $Id: sendrecv.c,v 1.3 1998-03-03 23:20:03 danw Exp $
+/* $Id: sendrecv.c,v 1.4 1998-03-26 20:34:03 danw Exp $
  *
  * socket layer for update_server
  *
@@ -17,10 +17,10 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/sendrecv.c,v 1.3 1998-03-03 23:20:03 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/sendrecv.c,v 1.4 1998-03-26 20:34:03 danw Exp $");
 
-#define putlong(cp, l) { cp[0] = l >> 24; cp[1] = l >> 16; cp[2] = l >> 8; cp[3] = l; }
-#define getlong(cp, l) l = ((cp[0] * 256 + cp[1]) * 256 + cp[2]) * 256 + cp[3]
+#define putlong(cp, l) { ((unsigned char *)cp)[0] = l >> 24; ((unsigned char *)cp)[1] = l >> 16; ((unsigned char *)cp)[2] = l >> 8; ((unsigned char *)cp)[3] = l; }
+#define getlong(cp, l) l = ((((unsigned char *)cp)[0] * 256 + ((unsigned char *)cp)[1]) * 256 + ((unsigned char *)cp)[2]) * 256 + ((unsigned char *)cp)[3]
 
 extern void fail(int conn, int err, char *msg);
 

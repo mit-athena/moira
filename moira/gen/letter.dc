@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/letter.dc,v 1.4 1992-06-23 10:43:32 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/letter.dc,v 1.5 1992-07-16 10:35:15 mar Exp $
  *
  * This generates confirmation letters to people who recently set
  * their secure instance passwords.
@@ -179,6 +179,7 @@ int when;
 	for (p = a2; *p; p++);		/* find end of string */
 	for (p--; isdigit(*p); p--)
 	  p[2] = p[1];
+	p[2] = p[1];
 	p[1] = ' ';
 	/* Backup to previous space, start of state */
 	for (; *a2 != ' '; a2--);

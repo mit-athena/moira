@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v 1.34 1989-09-01 15:01:57 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v 1.35 1989-09-13 15:30:03 mar Exp $
  *
  *	Copyright (C) 1987, 1988 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_qrtn_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v 1.34 1989-09-01 15:01:57 mar Exp $";
+static char *rcsid_qrtn_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v 1.35 1989-09-13 15:30:03 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -125,7 +125,7 @@ sms_process_query(cl, name, argc, argv_ro, action, actarg)
     char sort[32];
     char *pqual;
     char *psort;
-##  char *table;
+##  char *table, *rvar;
     struct save_queue *sq;
     struct query *get_query_by_name();
     int sq_save_args();
@@ -300,11 +300,13 @@ sms_process_query(cl, name, argc, argv_ro, action, actarg)
 	/* if q->rvar = NULL, perform post_rtn only */
 	if (q->rvar) {
 	    build_qual(q->qual, q->argc, Argv, qual);
+	    table = q->rtable;
+	    rvar = q->rvar;
+##	    range of rvar is table
 	    incremental_before(q->rtable, qual, argv_ro);
 	    status = do_delete(q, qual, action, actarg);
 	    incremental_clear_after();
 	    if (status != SMS_SUCCESS) break;
-	    table = q->rtable;
 ##	    repeat replace tblstats (deletes = tblstats.deletes + 1,
 ##				     modtime = "now")
 ##		where tblstats.#table = @table

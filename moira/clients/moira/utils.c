@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v 1.14 1988-12-01 14:58:16 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v 1.15 1988-12-07 18:50:50 mar Exp $";
 #endif lint
 
 /*	This is the file utils.c for the SMS Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v 1.14 1988-12-01 14:58:16 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v 1.15 1988-12-07 18:50:50 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -22,6 +22,7 @@
 #include <stdio.h>
 #include <strings.h>
 #include <sms.h>
+#include <sms_app.h>
 #include <menu.h>
 #include <ctype.h>
 
@@ -29,7 +30,6 @@
 #include "defs.h"
 #include "f_defs.h"
 #include "globals.h"
-#include "infodefs.h"
 
 #include <netdb.h>		/* for gethostbyname. */
 

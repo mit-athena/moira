@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/delete.c,v 1.11 1988-10-03 13:04:00 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/delete.c,v 1.12 1988-12-07 18:48:54 mar Exp $";
 #endif lint
 
 /*	This is the file delete.c for the SMS Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/delete.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/delete.c,v 1.11 1988-10-03 13:04:00 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/delete.c,v 1.12 1988-12-07 18:48:54 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -22,13 +22,13 @@
 #include <stdio.h>
 #include <strings.h>
 #include <sms.h>
+#include <sms_app.h>
 #include <menu.h>
 
 #include "mit-copyright.h"
 #include "defs.h"
 #include "f_defs.h"
 #include "globals.h"
-#include "infodefs.h"
 
 /*	Function Name: CheckListForDeletion
  *	Description: Check one of the lists in which we just removed a member.

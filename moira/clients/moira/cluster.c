@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/cluster.c,v 1.12 1988-10-05 11:40:11 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/cluster.c,v 1.13 1988-12-07 18:48:35 mar Exp $";
 #endif lint
 
 /*	This is the file cluster.c for the SMS Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/cluster.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/cluster.c,v 1.12 1988-10-05 11:40:11 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/cluster.c,v 1.13 1988-12-07 18:48:35 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -24,13 +24,13 @@
 #include <stdio.h>
 #include <strings.h>
 #include <sms.h>
+#include <sms_app.h>
 #include <menu.h>
 
 #include "mit-copyright.h"
 #include "defs.h"
 #include "f_defs.h"
 #include "globals.h"
-#include "infodefs.h"
 
 #define MACHINE  0
 #define CLUSTER  1

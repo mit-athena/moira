@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/dcmmaint.c,v 1.4 1988-10-05 11:41:21 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/dcmmaint.c,v 1.5 1988-12-07 18:48:47 mar Exp $
  *
  * Copyright 1987, 1988 by the Massachusetts Institute of Technology.
  * For copying and distribution information, please see the file
@@ -16,7 +16,6 @@
 #include "defs.h"
 #include "f_defs.h"
 #include "globals.h"
-#include "infodefs.h"
 
 extern char *whoami;
 static char buf[BUFSIZ];

@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/printer.c,v 1.3 1988-10-03 13:05:55 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/printer.c,v 1.4 1988-12-07 18:50:29 mar Exp $";
 #endif lint
 
 /*	This is the file printer.c for the SMS Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/printer.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/printer.c,v 1.3 1988-10-03 13:05:55 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/printer.c,v 1.4 1988-12-07 18:50:29 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -23,13 +23,13 @@
 #include <strings.h>
 #include <ctype.h>
 #include <sms.h>
+#include <sms_app.h>
 #include <menu.h>
 
 #include "mit-copyright.h"
 #include "defs.h"
 #include "f_defs.h"
 #include "globals.h"
-#include "infodefs.h"
 
 #define PCAP_NAME      	0
 #define PCAP_SPOOL_HOST	1

@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v 1.16 1988-11-22 12:25:22 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v 1.17 1988-12-07 18:49:03 mar Exp $";
 #endif lint
 
 /*	This is the file lists.c for the SMS Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v 1.16 1988-11-22 12:25:22 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v 1.17 1988-12-07 18:49:03 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -22,13 +22,13 @@
 #include <stdio.h>
 #include <strings.h>
 #include <sms.h>
+#include <sms_app.h>
 #include <menu.h>
 
 #include "mit-copyright.h"
 #include "defs.h"
 #include "f_defs.h"
 #include "globals.h"
-#include "infodefs.h"
 
 #define LIST    0
 #define MEMBERS 1

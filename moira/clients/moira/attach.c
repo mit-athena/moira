@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.14 1988-10-03 13:03:17 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.15 1988-12-07 18:48:16 mar Exp $";
 #endif
 
 /*	This is the file attach.c for the SMS Client, which allows a nieve
@@ -13,7 +13,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.14 1988-10-03 13:03:17 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.15 1988-12-07 18:48:16 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -24,13 +24,13 @@
 #include <stdio.h>
 #include <strings.h>
 #include <sms.h>
+#include <sms_app.h>
 #include <menu.h>
 
 #include "mit-copyright.h"
 #include "defs.h"
 #include "f_defs.h"
 #include "globals.h"
-#include "infodefs.h"
 
 #define FS_ALIAS_TYPE "FILESYS"
 

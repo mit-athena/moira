@@ -4,8 +4,8 @@
  * "mit-copyright.h".
  *
  * $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v $
- * $Author: ambar $
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.11 1987-09-01 15:58:56 ambar Exp $
+ * $Author: wesommer $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.12 1987-09-03 03:20:29 wesommer Exp $
  *
  * Generic menu system module.
  *
@@ -18,7 +18,7 @@
  */
 
 #ifndef lint
-static char rcsid_menu_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.11 1987-09-01 15:58:56 ambar Exp $";
+static char rcsid_menu_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.12 1987-09-03 03:20:29 wesommer Exp $";
 
 #endif lint
 
@@ -29,6 +29,7 @@ static char rcsid_menu_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moira
 #include <ctype.h>
 #include <strings.h>
 #include <varargs.h>
+#include <com_err.h>
 #include "menu.h"
 
 #define MAX(A,B)	((A) > (B) ? (A) : (B))
@@ -54,6 +55,39 @@ struct menu_screen {
 Menu *top_menu;			/* Root for command search */
 
 /*
+ * Hook function to cause error messages to be printed through
+ * curses instead of around it.
+ */
+
+int
+menu_com_err_hook(who, code, fmt, args)
+    char *who;
+    int code;
+    char *fmt;
+    va_list args;
+{
+    char buf[BUFSIZ], *cp;
+
+    FILE _strbuf;
+
+    (void) strcpy(buf, who);
+    for (cp = buf; *cp; cp++);
+    *cp++ = ':';
+    *cp++ = ' ';
+    if (code) {
+	(void) strcpy(cp, error_message(code));
+	while (*cp)
+	    cp++;
+    }
+    _strbuf._flag = _IOWRT + _IOSTRG;
+    _strbuf._ptr = cp;
+    _strbuf._cnt = BUFSIZ - (cp - buf);
+    _doprnt(fmt, args, &_strbuf);
+    (void) putc('\0', &_strbuf);
+    Put_message(buf);
+}
+
+/*
  * Start_menu takes a menu as an argument.  It initializes curses u.s.w.,
  * and a quit in any submenu should unwind back to here.  (it might not,
  * if user functions which run their own menus don't cooperate.)
@@ -63,18 +97,21 @@ Start_menu(m)
     Menu *m;
 {
     struct menu_screen *make_ms();
-
+    register int (*old_hook)() = set_com_err_hook(menu_com_err_hook);
+    
     if (initscr() == ERR) {
 	fputs("Can't initialize curses!\n", stderr);
 	Start_no_menu(m);
+    } else {
+	(void) raw();		/* We parse & print everything ourselves */
+	(void) noecho();
+	cur_ms = make_ms(0);	/* So we always have some current */
+	/* menu_screen */ 
+	top_menu = m;
+	/* Run the menu */
+	(void) Do_menu(m, -1, (char **) NULL);
     }
-    (void) raw();		/* We parse & print everything ourselves */
-    (void) noecho();
-    cur_ms = make_ms(0);	/* So we always have some current */
-				/* menu_screen */ 
-    top_menu = m;
-    /* Run the menu */
-    (void) Do_menu(m, -1, (char **) NULL);
+    (void) set_com_err_hook(old_hook);
     Cleanup_menu();
 }
 
@@ -185,19 +222,23 @@ Do_menu(m, margc, margv)
 	(void) wstandend(my_ms->ms_title);
 
 	for (line = 0; line < m->m_length; line++) {
+	    int len = strlen(m->m_lines[line].ml_command);
+	    if (len > 12) len=12;
+	    
 	    (void) wmove(my_ms->ms_menu, line, 0);
-	    (void) wprintw(my_ms->ms_menu, "%2d. (%-12s) %s.", line + 1,
+	    
+	    (void) wprintw(my_ms->ms_menu, "%2d. (%s)%*s %s.", line + 1,
 			   m->m_lines[line].ml_command,
+			   12-len, "",
 			   m->m_lines[line].ml_doc);
 	}
 	(void) wmove(my_ms->ms_menu, line++, 0);
 	if (!is_topmenu) {
 	    (void) waddstr(my_ms->ms_menu,
-			   " r. (return      ) Return to previous menu.");
+			   " r. (return)       Return to previous menu.");
 	    (void) wmove(my_ms->ms_menu, line, 0);
 	}
-	(void) waddstr(my_ms->ms_menu, " q. (quit        ) Quit.");
-
+	(void) waddstr(my_ms->ms_menu, " q. (quit)         Quit.");
     }
 
     for (;;) {
@@ -308,7 +349,6 @@ int Prompt_input(prompt, buf, buflen)
 	oldx = x;
 	p = buf;
 	while(1) {
-/*	for (p = buf; p - buf < buflen;) { */
 	    (void) wmove(cur_ms->ms_input, y, x);
 	    (void) wclrtoeol(cur_ms->ms_input);
 	    refresh_ms(cur_ms);
@@ -326,9 +366,11 @@ int Prompt_input(prompt, buf, buflen)
 		(void) wrefresh(curscr);
 		getyx(cur_ms->ms_input, y, x);
 		break;
+
 	    case '\n':
 	    case '\r':
 		goto end_input;
+		/* these should be obtained by doing ioctl() on tty */
 	    case '\b':
 	    case '\177':
 		if (p > buf) {
@@ -360,14 +402,17 @@ int Prompt_input(prompt, buf, buflen)
 	refresh_ms(cur_ms);
 	*p = '\0';
 	Start_paging();
-	return 1;
+	goto gotit;
     } else {
 	printf("%s", prompt);
 	if (gets(buf) == NULL)
 	    return 0;
 	Start_paging();
-	return 1;
+	goto gotit;
     }
+gotit:
+    strcpy(buf, strtrim(buf));
+    return 1;
 }
 
 /* Prompt the user for input in the input window of cur_ms, but don't echo
@@ -633,34 +678,6 @@ Find_command(command)
     else {
 	return (find_command_from(command, top_menu, MAX_MENU_DEPTH));
     }
-}
-
-void 
-sms_com_err_hook(who, code, fmt, args)
-    char *who;
-    int code;
-    char *fmt;
-    va_list args;
-{
-    char buf[BUFSIZ], *cp;
-
-    FILE _strbuf;
-
-    (void) strcpy(buf, who);
-    for (cp = buf; *cp; cp++);
-    *cp++ = ':';
-    *cp++ = ' ';
-    if (code) {
-	(void) strcpy(cp, error_message(code));
-	while (*cp)
-	    cp++;
-    }
-    _strbuf._flag = _IOWRT + _IOSTRG;
-    _strbuf._ptr = cp;
-    _strbuf._cnt = BUFSIZ - (cp - buf);
-    _doprnt(fmt, args, &_strbuf);
-    (void) putc('\0', &_strbuf);
-    Put_message(buf);
 }
 
 /*

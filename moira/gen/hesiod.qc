@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/hesiod.qc,v 1.5 1988-08-07 22:39:07 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/hesiod.qc,v 1.6 1988-08-09 20:14:13 mar Exp $
  *
  * This generates the zone files necessary to load a hesiod server.
  * The following zones are generated: passwd, uid, pobox, group,
@@ -97,6 +97,7 @@ do_passwd()
     time_t ftime;
     struct user *u;
 ##  char login[9], shell[33], fullname[33], oa[17], op[13], hp[17], *filetime;
+##  char nn[17];
 ##  int uid, flag, id;
 
     sprintf(poutf, "%s/passwd.db", HESIOD_DIR);
@@ -131,11 +132,12 @@ do_passwd()
     users = create_hash(10000);
 ##  range of u is users
 ##  retrieve (login = u.#login, uid = u.#uid, shell = u.#shell,
-##	      fullname = u.#fullname, oa = u.office_addr,
+##	      fullname = u.#fullname, nn = u.nickname, oa = u.office_addr,
 ##	      op = u.office_phone, hp = u.home_phone, id = u.users_id)
 ##	where u.status = 1 {
 	    strtrim(login);
 	    dequote(fullname);
+	    dequote(nn);
 	    dequote(oa);
 	    dequote(op);
 	    dequote(hp);
@@ -144,8 +146,8 @@ do_passwd()
 	    strcpy(u->name, login);
 	    u->lists = NULL;
 	    hash_store(users, id, u);
-    	    fprintf(pout, "%s.passwd\tHS UNSPECA \"%s:*:%d:101:%s,%s,%s,%s:/mit/%s:%s\"\n",
-		    login, login, uid, fullname, oa, op, hp, login, shell);
+    	    fprintf(pout, "%s.passwd\tHS UNSPECA \"%s:*:%d:101:%s,%s,%s,%s,%s:/mit/%s:%s\"\n",
+		    login, login, uid, fullname, nn, oa, op, hp, login, shell);
 	    fprintf(uout, "%d.uid\tHS CNAME %s.passwd\n", uid, login);
 ##  }
 

@@ -1,0 +1,338 @@
+/*
+ *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qaccess.dc,v $
+ *	$Author: mar $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qaccess.dc,v 1.1 1993-11-01 12:04:28 mar Exp $
+ *
+ *	Copyright (C) 1987 by the Massachusetts Institute of Technology
+ *	For copying and distribution information, please see the file
+ *	<mit-copyright.h>.
+ *
+ */
+
+#ifndef lint
+static char *rcsid_qsupport_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qaccess.dc,v 1.1 1993-11-01 12:04:28 mar Exp $";
+#endif lint
+
+#include <mit-copyright.h>
+#include "query.h"
+#include "mr_server.h"
+#include <ctype.h>
+EXEC SQL INCLUDE sqlca;
+EXEC SQL INCLUDE sqlda;
+#include "qrtn.h"
+
+extern char *whoami;
+extern int ingres_errno, mr_errcode;
+
+EXEC SQL BEGIN DECLARE SECTION;
+extern char stmt_buf[];
+EXEC SQL END DECLARE SECTION;
+
+EXEC SQL WHENEVER SQLERROR CALL ingerr;
+
+
+/* Specialized Access Routines */
+
+/* access_user - verify that client name equals specified login name
+ *
+ *  - since field validation routines are called first, a users_id is
+ *    now in argv[0] instead of the login name.
+ */
+
+access_user(q, argv, cl)
+    struct query *q;
+    char *argv[];
+    client *cl;
+{
+    if (cl->users_id != *(int *)argv[0])
+	return(MR_PERM);
+    else
+	return(MR_SUCCESS);
+}
+
+
+
+/* access_login - verify that client name equals specified login name
+ *
+ *   argv[0...n] contain search info.  q->
+ */
+
+access_login(q, argv, cl)
+    struct query *q;
+    char *argv[];
+    client *cl;
+{
+    EXEC SQL BEGIN DECLARE SECTION;
+    int id;
+    char qual[256];
+    EXEC SQL END DECLARE SECTION;
+
+    build_qual(q->qual, q->argc, argv, qual);
+    if (!strncmp(q->name,"get_user_account",strlen("get_user_account"))) {
+	EXEC SQL SELECT users_id INTO :id FROM users u, strings str WHERE :qual;
+    } else {
+	EXEC SQL SELECT users_id INTO :id FROM users u WHERE :qual;
+    }
+
+    if (sqlca.sqlerrd[2] != 1 || id != cl->users_id)
+	return(MR_PERM);
+    else
+	return(MR_SUCCESS);
+}
+
+
+
+/* access_list - check access for most list operations
+ *
+ * Inputs: argv[0] - list_id
+ *	    q - query name
+ *	    argv[2] - member ID (only for queries "amtl" and  "dmfl")
+ *	    argv[7] - group IID (only for query "ulis")
+ *          cl - client name
+ *
+ * - check that client is a member of the access control list
+ * - OR, if the query is add_member_to_list or delete_member_from_list
+ *	and the list is public, allow access if client = member
+ */
+
+access_list(q, argv, cl)
+    struct query *q;
+    char *argv[];
+    client *cl;
+{
+    EXEC SQL BEGIN DECLARE SECTION;
+    int list_id, acl_id, flags, gid;
+    char acl_type[9];
+    EXEC SQL END DECLARE SECTION;
+    char *client_type;
+    int client_id, status;
+
+    list_id = *(int *)argv[0];
+    EXEC SQL SELECT acl_id, acl_type, gid, publicflg
+      INTO :acl_id, :acl_type, :gid, :flags
+      FROM list
+      WHERE list_id = :list_id;
+
+    if (sqlca.sqlerrd[2] != 1)
+      return(MR_INTERNAL);
+
+    /* parse client structure */
+    if ((status = get_client(cl, &client_type, &client_id)) != MR_SUCCESS)
+	return(status);
+
+    /* if amtl or dmfl and list is public allow client to add or delete self */
+    if (((!strcmp("amtl", q->shortname) && flags) ||
+	 (!strcmp("dmfl", q->shortname))) &&
+	(!strcmp("USER", argv[1]))) {
+	if (*(int *)argv[2] == client_id) return(MR_SUCCESS);
+    /* if update_list, don't allow them to change the GID */
+    } else if (!strcmp("ulis", q->shortname)) {
+	if ((!strcmp(argv[7], UNIQUE_GID) && (gid != -1)) ||
+	    (strcmp(argv[7], UNIQUE_GID) && (gid != atoi(argv[7]))))
+	  return(MR_PERM);
+    }
+
+    /* check for client in access control list */
+    status = find_member(acl_type, acl_id, client_type, client_id, 0);
+    if (!status) return(MR_PERM);
+
+    return(MR_SUCCESS);
+}
+
+
+/* access_visible_list - allow access to list only if it is not hidden,
+ *	or if the client is on the ACL
+ *
+ * Inputs: argv[0] - list_id
+ *         cl - client identifier
+ */
+
+access_visible_list(q, argv, cl)
+    struct query *q;
+    char *argv[];
+    client *cl;
+{
+    EXEC SQL BEGIN DECLARE SECTION;
+    int list_id, acl_id, flags ;
+    char acl_type[9];
+    EXEC SQL END DECLARE SECTION;
+    char *client_type;
+    int client_id, status;
+
+    list_id = *(int *)argv[0];
+    EXEC SQL SELECT hidden, acl_id, acl_type
+      INTO :flags, :acl_id, :acl_type
+      FROM list
+      WHERE list_id = :list_id;
+    if (sqlca.sqlerrd[2] != 1)
+      return(MR_INTERNAL);
+    if (!flags)
+        return(MR_SUCCESS);
+
+    /* parse client structure */
+    if ((status = get_client(cl, &client_type, &client_id)) != MR_SUCCESS)
+	return(status);
+
+    /* check for client in access control list */
+    status = find_member(acl_type, acl_id, client_type, client_id, 0);
+    if (!status)
+	return(MR_PERM);
+
+    return(MR_SUCCESS);
+}
+
+
+/* access_vis_list_by_name - allow access to list only if it is not hidden,
+ *	or if the client is on the ACL
+ *
+ * Inputs: argv[0] - list name
+ *         cl - client identifier
+ */
+
+access_vis_list_by_name(q, argv, cl)
+    struct query *q;
+    char *argv[];
+    client *cl;
+{
+    EXEC SQL BEGIN DECLARE SECTION;
+    int acl_id, flags, rowcount;
+    char acl_type[9], *listname;
+    EXEC SQL END DECLARE SECTION;
+    char *client_type;
+    int client_id, status;
+
+    listname = argv[0];
+    EXEC SQL SELECT hidden, acl_id, acl_type INTO :flags, :acl_id, :acl_type
+      FROM list WHERE name = :listname;
+
+    rowcount=sqlca.sqlerrd[2];
+    if (rowcount > 1)
+      return(MR_WILDCARD);
+    if (rowcount == 0)
+      return(MR_NO_MATCH);
+    if (!flags)
+	return(MR_SUCCESS);
+
+    /* parse client structure */
+    if ((status = get_client(cl, &client_type, &client_id)) != MR_SUCCESS)
+	return(status);
+
+    /* check for client in access control list */
+    status = find_member(acl_type, acl_id, client_type, client_id, 0);
+    if (!status)
+	return(MR_PERM);
+
+    return(MR_SUCCESS);
+}
+
+
+/* access_member - allow user to access member of type "USER" and name matches
+ * username, or to access member of type "LIST" and list is one that user is
+ * on the acl of, or the list is visible.
+ */
+
+access_member(q, argv, cl)
+    struct query *q;
+    char *argv[];
+    client *cl;
+{
+    if (!strcmp(argv[0], "LIST") || !strcmp(argv[0], "RLIST"))
+      return(access_visible_list(q, &argv[1], cl));
+
+    if (!strcmp(argv[0], "USER") || !strcmp(argv[0], "RUSER")) {
+	if (cl->users_id == *(int *)argv[1])
+	  return(MR_SUCCESS);
+    }
+
+    if (!strcmp(argv[0], "KERBEROS") || !strcmp(argv[0], "RKERBERO")) {
+        if (cl->client_id == *(int *)argv[1])
+	  return(MR_SUCCESS);
+    }
+
+    return(MR_PERM);
+}
+
+
+/* access_qgli - special access routine for Qualified_get_lists.  Allows
+ * access iff argv[0] == "TRUE" and argv[2] == "FALSE".
+ */
+
+access_qgli(q, argv, cl)
+    struct query *q;
+    char *argv[];
+    client *cl;
+{
+    if (!strcmp(argv[0], "TRUE") && !strcmp(argv[2], "FALSE"))
+      return(MR_SUCCESS);
+    return(MR_PERM);
+}
+
+
+/* access_service - allow access if user is on ACL of service.  Don't
+ * allow access if a wildcard is used.
+ */
+
+access_service(q, argv, cl)
+    struct query *q;
+    char *argv[];
+    client *cl;
+{
+    EXEC SQL BEGIN DECLARE SECTION;
+    int acl_id;
+    char *name, acl_type[9];
+    EXEC SQL END DECLARE SECTION;
+    int client_id, status;
+    char *client_type, *c;
+
+    name = argv[0];
+    for(c=name;*c;c++) if(islower(*c)) *c = toupper(*c);  /* uppercasify */
+    EXEC SQL SELECT acl_id, acl_type INTO :acl_id, :acl_type FROM servers
+      WHERE name = :name;
+    if (sqlca.sqlerrd[2] > 1)
+      return(MR_PERM);
+
+    /* parse client structure */
+    if ((status = get_client(cl, &client_type, &client_id)) != MR_SUCCESS)
+	return(status);
+
+    /* check for client in access control list */
+    status = find_member(acl_type, acl_id, client_type, client_id, 0);
+    if (!status) return(MR_PERM);
+
+    return(MR_SUCCESS);
+}
+
+
+/* access_filesys - verify that client is owner or on owners list of filesystem
+ *	named by argv[0]
+ */
+
+access_filesys(q, argv, cl)
+    struct query *q;
+    char *argv[];
+    client *cl;
+{
+    EXEC SQL BEGIN DECLARE SECTION;
+    int users_id, list_id;
+    char *name;
+    EXEC SQL END DECLARE SECTION;
+    int status, client_id;
+    char *client_type;
+
+    name = argv[0];
+    EXEC SQL SELECT owner, owners INTO :users_id, :list_id FROM filesys
+      WHERE label = :name;
+
+    if (sqlca.sqlerrd[2] != 1)
+      return(MR_PERM);
+    if (users_id == cl->users_id)
+      return(MR_SUCCESS);
+    if ((status = get_client(cl, &client_type, &client_id)) != MR_SUCCESS)
+      return(status);
+    status = find_member("LIST", list_id, client_type, client_id, 0);
+    if (status)
+      return(MR_SUCCESS);
+    else
+      return(MR_PERM);
+}
+

@@ -1,0 +1,1250 @@
+/*
+ *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qfollow.dc,v $
+ *	$Author: mar $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qfollow.dc,v 1.1 1993-11-01 12:04:19 mar Exp $
+ *
+ *	Copyright (C) 1987 by the Massachusetts Institute of Technology
+ *	For copying and distribution information, please see the file
+ *	<mit-copyright.h>.
+ *
+ */
+
+#ifndef lint
+static char *rcsid_qsupport_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qfollow.dc,v 1.1 1993-11-01 12:04:19 mar Exp $";
+#endif lint
+
+#include <mit-copyright.h>
+#include "query.h"
+#include "mr_server.h"
+#include <ctype.h>
+#ifdef GDSS
+#include "gdss.h"
+#endif /* GDSS */
+EXEC SQL INCLUDE sqlca;
+EXEC SQL INCLUDE sqlda;
+#include "qrtn.h"
+
+extern char *whoami, *strsave();
+extern int ingres_errno, mr_errcode;
+
+EXEC SQL BEGIN DECLARE SECTION;
+extern char stmt_buf[];
+EXEC SQL END DECLARE SECTION;
+
+EXEC SQL WHENEVER SQLERROR CALL ingerr;
+
+
+/* FOLLOWUP ROUTINES */
+
+/* generic set_modtime routine.  This takes the table name from the query,
+ * and will update the modtime, modby, and modwho fields in the entry in
+ * the table whose name field matches argv[0].
+ */
+
+set_modtime(q, argv, cl)
+    struct query *q;
+    char *argv[];
+    client *cl;
+{
+    char *name, *entity, *table;
+    int who;
+
+    entity = cl->entity;
+    who = cl->client_id;
+    table = q->rtable;
+    name = argv[0];
+
+    sprintf(stmt_buf,"UPDATE %s SET modtime = 'now', modby = %d, modwith = '%s' WHERE %s.name = LEFT('%s',SIZE(%s.name))",table,who,entity,table,name,table);
+    EXEC SQL EXECUTE IMMEDIATE :stmt_buf;
+
+    return(MR_SUCCESS);
+}
+
+/* generic set_modtime_by_id routine.  This takes the table name from
+ * the query, and the id name from the validate record,
+ * and will update the modtime, modby, and modwho fields in the entry in
+ * the table whose id matches argv[0].
+ */
+
+set_modtime_by_id(q, argv, cl)
+    struct query *q;
+    char **argv;
+    client *cl;
+{
+    char *entity, *table, *id_name;
+    int who, id;
+
+    entity = cl->entity;
+    who = cl->client_id;
+    table = q->rtable;
+    id_name = q->validate->object_id;
+
+    id = *(int *)argv[0];
+    sprintf(stmt_buf,"UPDATE %s SET modtime = 'now', modby = %d, \
+modwith = '%s' WHERE %s.%s = %d",table,who,entity,table,id_name,id);
+    EXEC SQL EXECUTE IMMEDIATE :stmt_buf;
+    return(MR_SUCCESS);
+}
+
+
+/* Sets the finger modtime on a user record.  The users_id will be in argv[0].
+ */
+
+set_finger_modtime(q, argv, cl)
+    struct query *q;
+    char *argv[];
+    client *cl;
+{
+    EXEC SQL BEGIN DECLARE SECTION;
+    int users_id, who;
+    char *entity;
+    EXEC SQL END DECLARE SECTION;
+
+    entity = cl->entity;
+    who = cl->client_id;
+    users_id = *(int *)argv[0];
+
+    EXEC SQL UPDATE users SET fmodtime='now', fmodby = :who, fmodwith = :entity
+      WHERE users.users_id = :users_id;
+
+   return(MR_SUCCESS);
+}
+
+
+/* Sets the pobox modtime on a user record.  The users_id will be in argv[0].
+ */
+
+set_pobox_modtime(q, argv, cl)
+    struct query *q;
+    char **argv;
+    client *cl;
+{
+    EXEC SQL BEGIN DECLARE SECTION;
+    int users_id, who;
+    char *entity;
+    EXEC SQL END DECLARE SECTION;
+
+    entity = cl->entity;
+    who = cl->client_id;
+    users_id = *(int *)argv[0];
+
+    EXEC SQL UPDATE users SET pmodtime='now', pmodby = :who, pmodwith = :entity
+      WHERE users.users_id = :users_id;
+
+    return(MR_SUCCESS);
+}
+
+
+/* Like set_modtime, but uppercases the name first.
+ */
+
+set_uppercase_modtime(q, argv, cl)
+    struct query *q;
+    char **argv;
+    client *cl;
+{
+    char *name, *entity, *table;
+    int who;
+
+    entity = cl->entity;
+    who = cl->client_id;
+    table = q->rtable;
+    name = argv[0];
+
+    sprintf(stmt_buf,"UPDATE %s SET modtime = 'now', modby = %d, modwith = '%s' WHERE %s.name = UPPERCASE(LEFT('%s',SIZE(%s.name)))",table,who,entity,table,name,table);
+    EXEC SQL EXECUTE IMMEDIATE :stmt_buf;
+
+    return(MR_SUCCESS);
+}
+
+
+/* Sets the modtime on the machine whose mach_id is in argv[0].  This routine
+ * is necessary for add_machine_to_cluster becuase the table that query
+ * operates on is "mcm", not "machine".
+ */
+
+set_mach_modtime_by_id(q, argv, cl)
+    struct query *q;
+    char **argv;
+    client *cl;
+{
+    EXEC SQL BEGIN DECLARE SECTION;
+    char *entity;
+    int who, id;
+    EXEC SQL END DECLARE SECTION;
+
+    entity = cl->entity;
+    who = cl->client_id;
+    id = *(int *)argv[0];
+    EXEC SQL UPDATE machine SET modtime='now', modby = :who, modwith = :entity
+      WHERE machine.mach_id = :id;
+
+    return(MR_SUCCESS);
+}
+
+
+/* Sets the modtime on the cluster whose mach_id is in argv[0].  This routine
+ * is necessary for add_cluster_data and delete_cluster_data becuase the
+ * table that query operates on is "svc", not "cluster".
+ */
+
+set_cluster_modtime_by_id(q, argv, cl)
+    struct query *q;
+    char **argv;
+    client *cl;
+{
+    EXEC SQL BEGIN DECLARE SECTION;
+    char *entity;
+    int who, id;
+    EXEC SQL END DECLARE SECTION;
+
+    entity = cl->entity;
+    who = cl->client_id;
+
+    id = *(int *)argv[0];
+    EXEC SQL UPDATE cluster SET modtime='now', modby = :who, modwith = :entity
+      WHERE cluster.clu_id = :id;
+    return(MR_SUCCESS);
+}
+
+
+/* sets the modtime on the serverhost where the service name is in argv[0]
+ * and the mach_id is in argv[1].
+ */
+
+set_serverhost_modtime(q, argv, cl)
+    struct query *q;
+    char **argv;
+    client *cl;
+{
+    EXEC SQL BEGIN DECLARE SECTION;
+    char *entity, *serv;
+    int who, id;
+    EXEC SQL END DECLARE SECTION;
+
+    entity = cl->entity;
+    who = cl->client_id;
+
+    serv = argv[0];
+    id = *(int *)argv[1];
+    EXEC SQL UPDATE serverhosts
+      SET modtime = 'now', modby = :who, modwith = :entity
+      WHERE service = :serv AND mach_id = :id;
+    return(MR_SUCCESS);
+}
+
+
+/* sets the modtime on the nfsphys where the mach_id is in argv[0] and the
+ * directory name is in argv[1].
+ */
+
+set_nfsphys_modtime(q, argv, cl)
+    struct query *q;
+    char **argv;
+    client *cl;
+{
+    EXEC SQL BEGIN DECLARE SECTION;
+    char *entity, *dir;
+    int who, id;
+    EXEC SQL END DECLARE SECTION;
+
+    entity = cl->entity;
+    who = cl->client_id;
+
+    id = *(int *)argv[0];
+    dir = argv[1];
+    EXEC SQL UPDATE nfsphys SET modtime = 'now', modby = :who, modwith = :entity
+      WHERE dir = :dir AND mach_id = :id;
+    return(MR_SUCCESS);
+}
+
+
+/* sets the modtime on a filesystem, where argv[0] contains the filesys
+ * label.
+ */
+
+set_filesys_modtime(q, argv, cl)
+    struct query *q;
+    char *argv[];
+    client *cl;
+{
+    EXEC SQL BEGIN DECLARE SECTION;
+    char *label, *entity;
+    int who;
+    extern int _var_phys_id;
+
+    EXEC SQL END DECLARE SECTION;
+
+    entity = cl->entity;
+    who = cl->client_id;
+
+    label = argv[0];
+    if (!strcmp(q->shortname, "ufil"))
+      label = argv[1];
+
+    EXEC SQL UPDATE filesys SET modtime = 'now', modby = :who,
+        modwith = :entity, phys_id = :_var_phys_id
+      WHERE label = LEFT(:label,SIZE(label));
+    return(MR_SUCCESS);
+}
+
+
+/* sets the modtime on a zephyr class, where argv[0] contains the class
+ * name.
+ */
+
+set_zephyr_modtime(q, argv, cl)
+    struct query *q;
+    char *argv[];
+    client *cl;
+{
+    EXEC SQL BEGIN DECLARE SECTION;
+    char *class, *entity;
+    int who;
+    EXEC SQL END DECLARE SECTION;
+
+    entity = cl->entity;
+    who = cl->client_id;
+
+    class = argv[0];
+
+    EXEC SQL UPDATE zephyr SET modtime = 'now', modby = :who, modwith = :entity
+      WHERE class = LEFT(:class,SIZE(class));
+
+    return(MR_SUCCESS);
+}
+
+
+/* fixes the modby field.  This will be the second to last thing in the
+ * argv, the argv length is determined from the query structure.  It is
+ * passed as a pointer to an integer.  This will either turn it into a
+ * username, or # + the users_id.
+ */
+followup_fix_modby(q, sq, v, action, actarg, cl)
+    struct query *q;
+    register struct save_queue *sq;
+    struct validate *v;
+    register int (*action)();
+    register int actarg;
+    client *cl;
+{
+    register int i, j;
+    char **argv, *malloc();
+    int id, status;
+
+    i = q->vcnt - 2;
+    while (sq_get_data(sq, &argv)) {
+	id = atoi(argv[i]);
+	if (id > 0)
+	  status = id_to_name(id, "USER", &argv[i]);
+	else
+	  status = id_to_name(-id, "STRING", &argv[i]);
+	if (status && status != MR_NO_MATCH)
+	  return(status);
+	(*action)(q->vcnt, argv, actarg);
+	for (j = 0; j < q->vcnt; j++)
+	  free(argv[j]);
+	free(argv);
+    }
+    sq_destroy(sq);
+    return(MR_SUCCESS);
+}
+
+
+/* After retrieving a user account, fix the modby field and signature.
+ * The modby field is the second to last thing in the
+ * argv, the argv length is determined from the query structure.  It is
+ * passed as a pointer to an integer.  This will either turn it into a
+ * username, or # + the users_id.  Only "gua*" queries have a signature,
+ * these are ones with U_END return values.  "gub*" queries also use this
+ * routine but don't have a signature.
+ */
+followup_guax(q, sq, v, action, actarg, cl)
+    struct query *q;
+    register struct save_queue *sq;
+    struct validate *v;
+    register int (*action)();
+    register int actarg;
+    client *cl;
+{
+    register int i, j;
+    char **argv, *malloc();
+#ifdef GDSS
+    unsigned char sigbuf[256];
+    char *kname;
+    SigInfo  si;
+    EXEC SQL BEGIN DECLARE SECTION; 
+    int timestamp, who;
+    char *login;
+    varchar struct { short data_size; char data_buf[257];} rsig;
+    EXEC SQL END DECLARE SECTION; 
+#endif /* GDSS */
+    int id, status;
+
+    i = q->vcnt - 2;
+    while (sq_get_data(sq, &argv)) {
+#ifdef DEBUG
+	com_err(whoami, 0, "argv[SIGNATURE] = \"%s\"", argv[U_SIGNATURE]);
+#endif /* DEBUG */
+	id = atoi(argv[i]);
+	if (id > 0)
+	  status = id_to_name(id, "USER", &argv[i]);
+	else
+	  status = id_to_name(-id, "STRING", &argv[i]);
+	if (status && status != MR_NO_MATCH)
+	  return(status);
+#ifdef GDSS
+	if (q->vcnt == U_END && strlen(argv[U_SIGNATURE])) {
+	    login = argv[U_NAME];
+	    EXEC SQL REPEATED SELECT signature, sigdate, sigwho 
+	      INTO :rsig, :timestamp, :who FROM users
+	      WHERE login = :login;
+	    /** What about (INGRES) error handling? **/
+	    kname = malloc(1);
+            status = id_to_name(who, "STRING", &kname);
+            si.timestamp = timestamp;
+	    si.SigInfoVersion = 0; /* XXXXX this isn't used */
+	    kname_parse(si.pname, si.pinst, si.prealm, kname);
+            free(kname);
+	    rsig.data_buf[rsig.data_size] = 0;
+            si.rawsig = (unsigned char *)strsave(rsig.data_buf);
+	    if (log_flags & LOG_GDSS)
+	      com_err(whoami, 0, "rawsig length = %d, sig=\"%s\"", strlen(si.rawsig), si.rawsig);
+	    GDSS_Recompose(&si, sigbuf);
+	    free(si.rawsig);
+	    free(argv[U_SIGNATURE]);
+	    argv[U_SIGNATURE] = strsave(sigbuf);
+	    if (log_flags & LOG_GDSS)
+	      com_err(whoami, 0, "generated signature length %d", strlen(sigbuf));
+	}
+#endif /* GDSS */
+	(*action)(q->vcnt, argv, actarg);
+	for (j = 0; j < q->vcnt; j++)
+	  free(argv[j]);
+	free(argv);
+    }
+    sq_destroy(sq);
+    return(MR_SUCCESS);
+}
+
+
+/**
+ ** followup_ausr - add finger and pobox entries, set_user_modtime
+ **
+ ** Inputs:
+ **	argv[0] - login (add_user)
+ **	argv[3] - last name
+ **	argv[4] - first name
+ **	argv[5] - middle name
+ **
+ **/
+
+followup_ausr(q, argv, cl)
+    struct query *q;
+    char *argv[];
+    client *cl;
+{
+    EXEC SQL BEGIN DECLARE SECTION;
+    int who, status, id;
+    char *login, *entity, *src, *dst, *name;
+    char fullname[129];
+    EXEC SQL END DECLARE SECTION;
+#ifdef GDSS
+    char databuf[32], *kname_unparse();
+    EXEC SQL BEGIN DECLARE SECTION;
+    char rawsig[128];
+    int sigwho, timestamp;
+    EXEC SQL END DECLARE SECTION;
+    SigInfo si;
+#endif /* GDSS */
+
+    /* build fullname */
+    if (strlen(argv[4]) && strlen(argv[5]))
+	sprintf(fullname, "%s %s %s", argv[4], argv[5], argv[3]);
+    else if (strlen(argv[4]))
+	sprintf(fullname, "%s %s", argv[4], argv[3]);
+    else
+	sprintf(fullname, "%s", argv[3]);
+
+#ifdef GDSS
+      if (q->vcnt == U_END && *argv[U_SIGNATURE]) {
+	/* unquote ' chars in signature */
+	for (dst = src = argv[U_SIGNATURE]; *src; ) {
+	    if (*src == '\'')
+	      src++;
+	    *dst++ = *src++;
+	}
+	*dst = 0;
+        sprintf(databuf, "%s:%s", argv[U_NAME], argv[U_MITID]);
+        /* skip bytes for timestamp & kname */
+        si.rawsig = (unsigned char *) rawsig;
+        status = GDSS_Verify(databuf, strlen(databuf), argv[U_SIGNATURE], &si);
+	if (strlen(rawsig) > mr_sig_length) {
+	    com_err(whoami, 0, "GDSS signature would be truncated.");  /** untested **/
+	    return(MR_INTERNAL);
+	}
+        if (status == 0) {
+            name = kname_unparse(si.pname, si.pinst, si.prealm);
+            status = name_to_id(name, "STRING", &sigwho);
+            if (status == MR_NO_MATCH) {
+	      sigwho=add_string(name);
+            } else if (status)
+              return(status);
+            timestamp = si.timestamp;
+        } else {
+	    if (log_flags & LOG_GDSS)
+	      hex_dump(argv[U_SIGNATURE]);
+	    return(gdss2et(status));
+	}
+      } else {
+        rawsig[0] = 0;
+        sigwho = 0;
+        timestamp = 0;
+      }
+#endif /* GDSS */
+
+    login = argv[0];
+    who = cl->client_id;
+    entity = cl->entity;
+
+    /* create finger entry, pobox & set modtime on user */
+#ifdef GDSS
+    EXEC SQL REPEATED UPDATE users
+      SET modtime='now', modby=:who, modwith = :entity,
+          fullname = :fullname, affiliation = type,
+          signature = :rawsig, sigdate = :timestamp, sigwho = :sigwho,
+          fmodtime='now', fmodby = :who, fmodwith = :entity,
+          potype='NONE', pmodtime='now', pmodby = :who, pmodwith = :entity
+      WHERE login = :login;
+#else /* GDSS */
+    EXEC SQL REPEATED UPDATE users
+      SET modtime='now', modby=:who, modwith = :entity,
+          fullname = :fullname, affiliation = type,
+          fmodtime='now', fmodby = :who, fmodwith = :entity,
+          potype='NONE', pmodtime='now', pmodby = :who, pmodwith = :entity
+      WHERE login = :login;
+#endif /* GDSS */
+
+    return(MR_SUCCESS);
+}
+
+
+/**
+ ** followup_uusr - do signature, set_user_modtime
+ **
+ ** Inputs:
+ **   argv[0] - login (add_user)
+ **   argv[U_SIGNATURE] - sig
+ **
+ **/
+
+followup_uuac(q, argv, cl)
+    struct query *q;
+    char *argv[];
+    client *cl;
+{
+    EXEC SQL BEGIN DECLARE SECTION; 
+    int who, status, id;
+    char *entity, *name, *src, *dst;
+    EXEC SQL END DECLARE SECTION; 
+#ifdef GDSS
+    char databuf[32], *kname_unparse();
+    EXEC SQL BEGIN DECLARE SECTION; 
+    char rawsig[128];
+    char *login;
+    int sigwho, timestamp;
+    EXEC SQL END DECLARE SECTION; 
+    SigInfo si;
+#endif /* GDSS */
+    
+    id = *(int *)argv[0];
+    who = cl->client_id;
+    entity = cl->entity;
+    
+#ifdef GDSS
+    if (q->vcnt == U_MODTIME && *argv[U_SIGNATURE + 1]) {
+	/* unquote ' chars in signature */
+	for (dst = src = argv[U_SIGNATURE+1]; *src; ) {
+	    if (*src == '\'')
+	      src++;
+	    *dst++ = *src++;
+	}
+	*dst = 0;
+        login = malloc(1);
+        status = id_to_name(id, "USER", &login);
+        sprintf(databuf, "%s:%s", login, argv[U_MITID+1]);
+        free(login);
+        /* skip bytes for timestamp & kname */
+        si.rawsig = (unsigned char *) rawsig;
+#ifdef DEBUG
+	com_err(whoami, 0, "verifying sig");
+#endif /* DEBUG */
+        status = GDSS_Verify(databuf, strlen(databuf), argv[U_SIGNATURE+1], &si);
+#ifdef DEBUG
+	com_err(whoami, 0, "verified");
+#endif /* DEBUG */
+	if (strlen(rawsig) > mr_sig_length) {
+	    com_err(whoami, 0, "GDSS signature would be truncated.");  /** untested **/
+	    return(MR_INTERNAL);
+	}
+        if (status == 0) {
+            name = kname_unparse(si.pname, si.pinst, si.prealm);
+            status = name_to_id(name, "STRING", &sigwho);
+            if (status == MR_NO_MATCH) {
+	      sigwho=add_string(name);
+            } else if (status)
+              return(status);
+            timestamp = si.timestamp;
+        } else {
+	    if (log_flags & LOG_GDSS)
+	      hex_dump(argv[U_SIGNATURE+1]);
+	    return(gdss2et(status));
+	}
+    } else {
+        rawsig[0] = 0;
+        sigwho = 0;
+        timestamp = 0;
+    }
+#endif /* GDSS */
+ 
+    /* create finger entry, pobox & set modtime on user */
+
+#ifdef GDSS
+    EXEC SQL REPEATED UPDATE users SET modtime='now', modby = :who, modwith = :entity,
+        signature = :rawsig, sigdate = :timestamp, sigwho = :sigwho
+      WHERE users_id = :id;
+#else /* GDSS */
+    EXEC SQL REPEATED UPDATE users SET modtime='now', modby = :who, modwith = :entity
+      WHERE users_id = :id;
+#endif /* GDSS */
+    return(MR_SUCCESS);
+}
+ 
+ 
+/* followup_gpob: fixes argv[2] based on the IDs currently there and the
+ * type in argv[1].  Then completes the upcall to the user.
+ *
+ * argv[2] is of the form "123:234" where the first integer is the machine
+ * ID if it is a pop box, and the second is the string ID if it is an SMTP
+ * box.  argv[1] should be "POP", "SMTP", or "NONE".  Boxes of type NONE
+ * are skipped.
+ */
+
+followup_gpob(q, sq, v, action, actarg, cl)
+    register struct query *q;
+    register struct save_queue *sq;
+    register struct validate *v;
+    register int (*action)();
+    int actarg;
+    client *cl;
+{
+    char **argv, *index();
+    char *ptype, *p;
+    int mid, sid, status, i;
+
+    /* for each row */
+    while (sq_get_data(sq, &argv)) {
+	mr_trim_args(2, argv);
+	ptype = argv[1];
+	p = index(argv[2], ':');
+	*p++ = 0;
+	mid = atoi(argv[2]);
+	sid = atoi(p);
+
+	if (!strcmp(ptype, "POP")) {
+	    status = id_to_name(mid, "MACHINE", &argv[2]);
+	    if (status == MR_NO_MATCH)
+	      return(MR_MACHINE);
+	} else if (!strcmp(ptype, "SMTP")) {
+	    status = id_to_name(sid, "STRING", &argv[2]);
+	    if (status == MR_NO_MATCH)
+	      return(MR_STRING);
+	} else /* ptype == "NONE" */ {
+	    goto skip;
+	}
+	if (status) return(status);
+
+	if (!strcmp(q->shortname, "gpob")) {
+	    sid = atoi(argv[4]);
+	    if (sid > 0)
+	      status = id_to_name(sid, "USER", &argv[4]);
+	    else
+	      status = id_to_name(-sid, "STRING", &argv[4]);
+	}
+	if (status && status != MR_NO_MATCH) return(status);
+
+	(*action)(q->vcnt, argv, actarg);
+    skip:
+	/* free saved data */
+	for (i = 0; i < q->vcnt; i++)
+	    free(argv[i]);
+	free(argv);
+    }
+
+    sq_destroy(sq);
+    return (MR_SUCCESS);
+}
+
+
+/* followup_gsnt: fix the ace_name in argv[7].  argv[6] will contain the
+ * ace_type: "LIST", "USER", or "NONE".  Decode the id in argv[7] into the
+ * proper name based on the type, and repace that string in the argv.
+ * Also fixes the modby field by called followup_fix_modby.
+ */
+
+followup_gsnt(q, sq, v, action, actarg, cl)
+    register struct query *q;
+    register struct save_queue *sq;
+    register struct validate *v;
+    register int (*action)();
+    int actarg;
+    client *cl;
+{
+    char **argv, *malloc(), *realloc(), *type;
+    int id, i, idx, status;
+
+    idx = 7;
+
+    while (sq_get_data(sq, &argv)) {
+	mr_trim_args(q->vcnt, argv);
+
+	id = atoi(argv[i = q->vcnt - 2]);
+	if (id > 0)
+	  status = id_to_name(id, "USER", &argv[i]);
+	else
+	  status = id_to_name(-id, "STRING", &argv[i]);
+	if (status && status != MR_NO_MATCH)
+	  return(status);
+
+	id = atoi(argv[idx]);
+	type = argv[idx - 1];
+
+	if (!strcmp(type, "LIST")) {
+	    status = id_to_name(id, "LIST", &argv[idx]);
+	} else if (!strcmp(type, "USER")) {
+	    status = id_to_name(id, "USER", &argv[idx]);
+	} else if (!strcmp(type, "KERBEROS")) {
+	    status = id_to_name(id, "STRING", &argv[idx]);
+	} else if (!strcmp(type, "NONE")) {
+	    status = 0;
+	    free(argv[idx]);
+	    argv[idx] = strsave("NONE");
+	} else {
+	    status = 0;
+	    free(argv[idx]);
+	    argv[idx] = strsave("???");
+	}
+	if (status && status != MR_NO_MATCH)
+	  return(status);
+
+	/* send the data */
+	(*action)(q->vcnt, argv, actarg);
+
+	/* free saved data */
+	for (i = 0; i < q->vcnt; i++)
+	    free(argv[i]);
+	free(argv);
+    }
+
+    sq_destroy(sq);
+    return (MR_SUCCESS);
+}
+
+
+/* followup_glin: fix the ace_name in argv[8].  argv[7] will contain the
+ * ace_type: "LIST", "USER", or "NONE".  Decode the id in argv[8] into the
+ * proper name based on the type, and repace that string in the argv.
+ * Also fixes the modby field by called followup_fix_modby.
+ */
+
+followup_glin(q, sq, v, action, actarg, cl)
+    register struct query *q;
+    register struct save_queue *sq;
+    register struct validate *v;
+    register int (*action)();
+    int actarg;
+    client *cl;
+{
+    char **argv, *malloc(), *realloc(), *type;
+    int id, i, idx, status;
+
+    idx = 8;
+    if (!strcmp(q->shortname, "gsin"))
+      idx = 12;
+
+    while (sq_get_data(sq, &argv)) {
+	mr_trim_args(q->vcnt, argv);
+
+	id = atoi(argv[i = q->vcnt - 2]);
+	if (id > 0)
+	  status = id_to_name(id, "USER", &argv[i]);
+	else
+	  status = id_to_name(-id, "STRING", &argv[i]);
+	if (status && status != MR_NO_MATCH)
+	  return(status);
+
+	id = atoi(argv[idx]);
+	type = argv[idx - 1];
+
+	if (!strcmp(type, "LIST")) {
+	    status = id_to_name(id, "LIST", &argv[idx]);
+	} else if (!strcmp(type, "USER")) {
+	    status = id_to_name(id, "USER", &argv[idx]);
+	} else if (!strcmp(type, "KERBEROS")) {
+	    status = id_to_name(id, "STRING", &argv[idx]);
+	} else if (!strcmp(type, "NONE")) {
+	    status = 0;
+	    free(argv[idx]);
+	    argv[idx] = strsave("NONE");
+	} else {
+	    status = 0;
+	    free(argv[idx]);
+	    argv[idx] = strsave("???");
+	}
+	if (status && status != MR_NO_MATCH)
+	  return(status);
+
+	if (!strcmp(q->shortname, "glin") && atoi(argv[6]) == -1) {
+	    argv[6] = realloc(argv[6], strlen(UNIQUE_GID) + 1);
+	    strcpy(argv[6], UNIQUE_GID);
+	}
+
+	/* send the data */
+	(*action)(q->vcnt, argv, actarg);
+
+	/* free saved data */
+	for (i = 0; i < q->vcnt; i++)
+	    free(argv[i]);
+	free(argv);
+    }
+
+    sq_destroy(sq);
+    return (MR_SUCCESS);
+}
+
+
+/* followup_gqot: Fix the entity name, directory name & modby fields
+ *   argv[0] = filsys_id
+ *   argv[1] = type
+ *   argv[2] = entity_id
+ *   argv[3] = ascii(quota)
+ */
+
+followup_gqot(q, sq, v, action, actarg, cl)
+    struct query *q;
+    register struct save_queue *sq;
+    struct validate *v;
+    register int (*action)();
+    register int actarg;
+    client *cl;
+{
+    register int j;
+    char **argv, *malloc();
+    EXEC SQL BEGIN DECLARE SECTION;
+    int id;
+    char *name, *label;
+    EXEC SQL END DECLARE SECTION;
+    int status, idx;
+
+    if (!strcmp(q->name, "get_quota") ||
+	!strcmp(q->name, "get_quota_by_filesys"))
+      idx = 4;
+    else
+      idx = 3;
+    while (sq_get_data(sq, &argv)) {
+	if (idx == 4) {
+	    switch (argv[1][0]) {
+	    case 'U':
+		status = id_to_name(atoi(argv[2]), "USER", &argv[2]);
+		break;
+	    case 'G':
+	    case 'L':
+		status = id_to_name(atoi(argv[2]), "LIST", &argv[2]);
+		break;
+	    case 'A':
+		free(argv[2]);
+		argv[2] = strsave("system:anyuser");
+		break;
+	    default:
+		id = atoi(argv[2]);
+		argv[2] = malloc(8);
+		sprintf(argv[2], "%d", id);
+	    }
+	}
+	id = atoi(argv[idx]);
+	free(argv[idx]);
+	argv[idx] = malloc(256);
+	name = argv[idx];
+	if (id == 0) {
+	    label = argv[0];
+	    EXEC SQL REPEATED SELECT name INTO :name FROM filesys
+	      WHERE label = :label;
+	} else {
+	    EXEC SQL REPEATED SELECT dir INTO :name FROM nfsphys
+	      WHERE nfsphys_id = :id;
+	}
+	if (sqlca.sqlerrd[2] != 1) {
+	    sprintf(argv[idx], "#%d", id);
+	}
+
+	id = atoi(argv[idx+3]);
+	if (id > 0)
+	  status = id_to_name(id, "USER", &argv[idx+3]);
+	else
+	  status = id_to_name(-id, "STRING", &argv[idx+3]);
+	if (status && status != MR_NO_MATCH)
+	  return(status);
+	(*action)(q->vcnt, argv, actarg);
+	for (j = 0; j < q->vcnt; j++)
+	  free(argv[j]);
+	free(argv);
+    }
+    sq_destroy(sq);
+    return(MR_SUCCESS);
+}
+
+
+/* followup_aqot: Add allocation to nfsphys after creating quota.
+ *   argv[0] = filsys_id
+ *   argv[1] = type if "add_quota" or "update_quota"
+ *   argv[2 or 1] = id
+ *   argv[3 or 2] = ascii(quota)
+ */
+
+followup_aqot(q, argv, cl)
+    struct query  *q;
+    char **argv;
+    client *cl;
+{
+    EXEC SQL BEGIN DECLARE SECTION;
+    int quota, id, fs, who, physid;
+    char *entity, *qtype, *table_name;
+    EXEC SQL END DECLARE SECTION;
+    char incr_qual[60];
+    char *incr_argv[2];
+    int status;
+
+    table_name=q->rtable;
+    fs = *(int *)argv[0];
+    EXEC SQL REPEATED SELECT phys_id INTO :physid FROM filesys
+      WHERE filsys_id = :fs;
+    if(ingres_errno)
+	return(mr_errcode);
+
+    if (!strcmp(q->shortname, "aqot") || !strcmp(q->shortname, "uqot")) {
+	qtype = argv[1];
+	id = *(int *)argv[2];
+	quota = atoi(argv[3]);
+	sprintf(incr_qual,"q.filsys_id = %d",fs);
+    } else {
+	qtype = "USER";
+	id = *(int *)argv[1];
+	quota = atoi(argv[2]);
+	sprintf(incr_qual,"q.filsys_id=%d AND q.type='%s' AND q.entity_id=%d",
+		fs,qtype,id);
+    }
+
+    /* quota case of incremental_{before|after} only looks at slot 1 */
+    incr_argv[1]=qtype;
+
+    /* Follows one of many possible gross hacks to fix these particular
+     * conflicts between what is possible in the query table and what 
+     * is possible in SQL.    
+     */
+    if(q->type==APPEND) {
+	incremental_clear_before();
+	EXEC SQL INSERT INTO quota 
+	    (filsys_id, type, entity_id, quota, phys_id) 
+	  VALUES (:fs, :qtype, :id, :quota, :physid);
+	incremental_after(table_name, incr_qual, incr_argv);    
+    } else {
+	incremental_before(table_name, incr_qual, incr_argv);
+	EXEC SQL UPDATE quota SET quota = :quota
+	  WHERE filsys_id = :fs AND type = :qtype AND entity_id = :id;
+	status = mr_errcode;
+	incremental_after(table_name, incr_qual, incr_argv);
+    }
+
+    if (ingres_errno)
+	return(mr_errcode);
+    flush_name(argv[0], q->rtable);  
+    if(q->type==APPEND) {
+        EXEC SQL UPDATE tblstats SET appends = appends + 1, modtime = 'now'
+	  WHERE table_name = :table_name;
+    } else {
+        EXEC SQL UPDATE tblstats SET updates = updates + 1, modtime = 'now'
+	  WHERE table_name = :table_name;
+    }
+	
+    /* Proceed with original followup */
+    who = cl->client_id;
+    entity = cl->entity;
+
+    EXEC SQL REPEATED UPDATE quota
+      SET modtime = 'now', modby = :who, modwith = :entity
+      WHERE filsys_id = :fs and type = :qtype and entity_id = :id;
+    EXEC SQL REPEATED UPDATE nfsphys SET allocated = allocated + :quota
+      WHERE nfsphys_id = :physid;
+    if (ingres_errno) return(mr_errcode);
+    return(MR_SUCCESS);
+}
+
+
+/* Necessitated by the requirement of a correlation name by the incremental
+ * routines, since query table deletes don't provide one. 
+ */
+followup_dqot(q,argv,cl)
+    struct query *q;
+    char **argv;
+    struct client *cl;
+{
+    char *qtype;
+    int id, fs;
+    char *incr_argv[2];
+    EXEC SQL BEGIN DECLARE SECTION; 
+    char incr_qual[80];
+    char *tblname;
+    EXEC SQL END DECLARE SECTION; 
+
+    fs = *(int *)argv[0];
+    if (!strcmp(q->shortname, "dqot")) {
+	qtype = argv[1];
+	id = *(int *)argv[2];
+    } else {
+	qtype = "USER";
+	id = *(int *)argv[1];
+    }
+    sprintf(incr_qual,"q.filsys_id=%d AND q.type='%s' AND q.entity_id=%d",
+	    fs,qtype,id);
+
+    /* quota case of incremental_{before|after} only looks at slot 1 */
+    incr_argv[1]=qtype;
+
+    incremental_before(q->rtable, incr_qual, incr_argv);
+    EXEC SQL DELETE FROM quota q WHERE :incr_qual;
+    incremental_clear_after();
+
+    if (ingres_errno) 
+	return(mr_errcode);
+    flush_name(argv[0], q->rtable);
+
+    tblname = q->rtable;
+    EXEC SQL UPDATE tblstats SET deletes = deletes + 1, modtime = 'now'
+      WHERE table_name = :tblname;
+    return(MR_SUCCESS);
+}
+
+
+followup_gpce(q, sq, v, action, actarg, cl)
+    struct query *q;
+    register struct save_queue *sq;
+    struct validate *v;
+    register int (*action)();
+    register int actarg;
+    client *cl;
+{
+    register int i, j;
+    char **argv, *malloc();
+    int id, status;
+
+    i = q->vcnt - 2;
+    while (sq_get_data(sq, &argv)) {
+	id = atoi(argv[PCAP_QSERVER]);
+	status = id_to_name(id, "MACHINE", &argv[PCAP_QSERVER]);
+	if (status) return (status);
+	id = atoi(argv[i]);
+	if (id > 0)
+	  status = id_to_name(id, "USER", &argv[i]);
+	else
+	  status = id_to_name(-id, "STRING", &argv[i]);
+	if (status && status != MR_NO_MATCH)
+	  return(status);
+	(*action)(q->vcnt, argv, actarg);
+	for (j = 0; j < q->vcnt; j++)
+	  free(argv[j]);
+	free(argv);
+    }
+    sq_destroy(sq);
+    return(MR_SUCCESS);
+}
+
+
+/* followup_gzcl:
+ */
+
+followup_gzcl(q, sq, v, action, actarg, cl)
+    register struct query *q;
+    register struct save_queue *sq;
+    register struct validate *v;
+    register int (*action)();
+    int actarg;
+    client *cl;
+{
+    int id, i, status;
+    char **argv;
+
+    while (sq_get_data(sq, &argv)) {
+	mr_trim_args(q->vcnt, argv);
+
+	id = atoi(argv[i = q->vcnt - 2]);
+	if (id > 0)
+	  status = id_to_name(id, "USER", &argv[i]);
+	else
+	  status = id_to_name(-id, "STRING", &argv[i]);
+	if (status && status != MR_NO_MATCH)
+	  return(status);
+
+	for (i = 1; i < 8; i+=2) {
+	    id = atoi(argv[i+1]);
+	    if (!strcmp(argv[i], "LIST")) {
+		status = id_to_name(id, "LIST", &argv[i+1]);
+	    } else if (!strcmp(argv[i], "USER")) {
+		status = id_to_name(id, "USER", &argv[i+1]);
+	    } else if (!strcmp(argv[i], "KERBEROS")) {
+		status = id_to_name(id, "STRING", &argv[i+1]);
+	    } else if (!strcmp(argv[i], "NONE")) {
+		status = 0;
+		free(argv[i+1]);
+		argv[i+1] = strsave("NONE");
+	    } else {
+		status = 0;
+		free(argv[i+1]);
+		argv[i+1] = strsave("???");
+	    }
+	    if (status && status != MR_NO_MATCH)
+	      return(status);
+	}
+
+	/* send the data */
+	(*action)(q->vcnt, argv, actarg);
+
+	/* free saved data */
+	for (i = 0; i < q->vcnt; i++)
+	    free(argv[i]);
+	free(argv);
+    }
+    sq_destroy(sq);
+    return(MR_SUCCESS);
+}
+
+
+/* followup_gsha:
+ */
+
+followup_gsha(q, sq, v, action, actarg, cl)
+    register struct query *q;
+    register struct save_queue *sq;
+    register struct validate *v;
+    register int (*action)();
+    int actarg;
+    client *cl;
+{
+    char **argv;
+    int i, id, status;
+
+    while (sq_get_data(sq, &argv)) {
+	mr_trim_args(q->vcnt, argv);
+
+	id = atoi(argv[4]);
+	if (id > 0)
+	  status = id_to_name(id, "USER", &argv[4]);
+	else
+	  status = id_to_name(-id, "STRING", &argv[4]);
+	if (status && status != MR_NO_MATCH)
+	  return(status);
+
+	id = atoi(argv[2]);
+	if (!strcmp(argv[1], "LIST")) {
+	    status = id_to_name(id, "LIST", &argv[2]);
+	} else if (!strcmp(argv[1], "USER")) {
+	    status = id_to_name(id, "USER", &argv[2]);
+	} else if (!strcmp(argv[1], "KERBEROS")) {
+	    status = id_to_name(id, "STRING", &argv[2]);
+	} else if (!strcmp(argv[1], "NONE")) {
+	    status = 0;
+	    free(argv[2]);
+	    argv[2] = strsave("NONE");
+	} else {
+	    status = 0;
+	    free(argv[2]);
+	    argv[2] = strsave("???");
+	}
+	if (status && status != MR_NO_MATCH)
+	  return(status);
+
+	/* send the data */
+	(*action)(q->vcnt, argv, actarg);
+
+	/* free saved data */
+	for (i = 0; i < q->vcnt; i++)
+	    free(argv[i]);
+	free(argv);
+    }
+    sq_destroy(sq);
+    return(MR_SUCCESS);
+}
+
+
+int _sdl_followup(q, argv, cl)
+    struct query *q;
+    char **argv;
+    client *cl;
+{
+    int i;
+    i = atoi(argv[0]);
+    log_flags = i;
+    if (i & LOG_SQL) {
+	EXEC SQL set printqry;
+    } else {
+	EXEC SQL set noprintqry;
+    }
+    return(MR_SUCCESS);
+}
+
+
+static hex_dump(p)
+unsigned  char *p;
+{
+    char buf[BUFSIZ];
+    int i;
+
+    fprintf(stderr, "Size: %d\n", strlen(p));
+    while (strlen(p) >= 8) {
+	fprintf(stderr, "%02x %02x %02x %02x %02x %02x %02x %02x\n",
+		p[0], p[1], p[2], p[3], p[4], p[5], p[6], p[7]);
+	p += 8;
+    }
+    switch (strlen(p)) {
+    case 7:
+	fprintf(stderr, "%02x %02x %02x %02x %02x %02x %02x\n",
+		p[0], p[1], p[2], p[3], p[4], p[5], p[6]);
+	break;
+    case 6:
+	fprintf(stderr, "%02x %02x %02x %02x %02x %02x\n",
+		p[0], p[1], p[2], p[3], p[4], p[5]);
+	break;
+    case 5:
+	fprintf(stderr, "%02x %02x %02x %02x %02x\n",
+		p[0], p[1], p[2], p[3], p[4]);
+	break;
+    case 4:
+	fprintf(stderr, "%02x %02x %02x %02x\n",
+		p[0], p[1], p[2], p[3]);
+	break;
+    case 3:
+	fprintf(stderr, "%02x %02x %02x\n",
+		p[0], p[1], p[2]);
+	break;
+    case 2:
+	fprintf(stderr, "%02x %02x\n",
+		p[0], p[1]);
+	break;
+    case 1:
+	fprintf(stderr, "%02x\n",
+		p[0]);
+	break;
+    default:
+	return;
+    }
+}
+

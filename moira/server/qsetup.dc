@@ -1,0 +1,801 @@
+/*
+ *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsetup.dc,v $
+ *	$Author: mar $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsetup.dc,v 1.1 1993-11-01 12:04:34 mar Exp $
+ *
+ *	Copyright (C) 1987 by the Massachusetts Institute of Technology
+ *	For copying and distribution information, please see the file
+ *	<mit-copyright.h>.
+ *
+ */
+
+#ifndef lint
+static char *rcsid_qsupport_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsetup.dc,v 1.1 1993-11-01 12:04:34 mar Exp $";
+#endif lint
+
+#include <mit-copyright.h>
+#include "query.h"
+#include "mr_server.h"
+#include <ctype.h>
+#ifdef GDSS
+#include "gdss.h"
+#endif /* GDSS */
+EXEC SQL INCLUDE sqlca;
+EXEC SQL INCLUDE sqlda;
+#include "qrtn.h"
+
+extern char *whoami, *strsave();
+extern int ingres_errno, mr_errcode;
+
+EXEC SQL BEGIN DECLARE SECTION;
+extern char stmt_buf[];
+EXEC SQL END DECLARE SECTION;
+
+EXEC SQL WHENEVER SQLERROR CALL ingerr;
+
+
+/* Setup Routines */
+
+/* Setup routine for add_user
+ *
+ * Inputs: argv[0] - login
+ *         argv[1] - uid
+ *
+ * Description:
+ *
+ * - if argv[1] == UNIQUE_UID then set argv[1] = next(uid)
+ * - if argv[0] == UNIQUE_LOGIN then set argv[0] = "#<uid>"
+ */
+
+setup_ausr(q, argv, cl)
+    struct query *q;
+    register char *argv[];
+    client *cl;
+{
+    int row;
+    EXEC SQL BEGIN DECLARE SECTION;
+    int nuid;
+    EXEC SQL END DECLARE SECTION;
+
+    if (!strcmp(q->shortname, "uusr") || !strcmp(q->shortname, "uuac"))
+      row = 2;
+    else
+      row = 1;
+    if (!strcmp(argv[row], UNIQUE_UID) || atoi(argv[row]) == -1) {
+	if (set_next_object_id("uid", "users", 1))
+	  return(MR_INGRES_ERR);
+	EXEC SQL SELECT value INTO :nuid FROM numvalues WHERE name = 'uid';
+	if (sqlca.sqlerrd[2] != 1)
+	  return(MR_INTERNAL);
+	sprintf(argv[row], "%d", nuid);
+    }
+
+    if (!strcmp(argv[0], UNIQUE_LOGIN) || atoi(argv[row]) == -1) {
+	sprintf(argv[0], "#%s", argv[row]);
+    }
+
+    if((mr_errcode=prefetch_value(q,argv,cl))!=MR_SUCCESS)
+      return(mr_errcode);
+
+    return(MR_SUCCESS);
+}
+
+
+/* setup_dusr - verify that the user is no longer being referenced
+ * and may safely be deleted.
+ */
+
+int setup_dusr(q, argv)
+    struct query *q;
+    char **argv;
+{
+    EXEC SQL BEGIN DECLARE SECTION;
+    int flag, id, cnt;
+    EXEC SQL END DECLARE SECTION;
+
+    id = *(int *)argv[0];
+
+    /* For now, only allow users to be deleted if their status is 0 */
+    EXEC SQL REPEATED SELECT status INTO :flag FROM users
+      WHERE users_id = :id;
+    if (flag != 0 && flag != 4)
+      return(MR_IN_USE);
+
+    EXEC SQL REPEATED DELETE FROM quota WHERE entity_id = :id AND type='USER';
+    EXEC SQL REPEATED DELETE FROM krbmap WHERE users_id = :id;
+    EXEC SQL REPEATED SELECT COUNT(member_id) INTO :cnt FROM imembers
+      WHERE member_id = :id AND member_type = 'USER';
+    if (cnt > 0)
+	return(MR_IN_USE);
+    EXEC SQL REPEATED SELECT COUNT(label) INTO :cnt FROM filesys 
+	WHERE owner = :id;
+    if (cnt > 0)
+	return(MR_IN_USE);
+    EXEC SQL REPEATED SELECT COUNT(name) INTO :cnt FROM list
+      WHERE acl_id = :id AND acl_type = 'USER';
+    if (cnt > 0)
+	return(MR_IN_USE);
+    EXEC SQL REPEATED SELECT COUNT(name) INTO :cnt FROM servers
+      WHERE acl_id = :id AND acl_type = 'USER';
+    if (cnt > 0)
+	return(MR_IN_USE);
+    EXEC SQL REPEATED SELECT COUNT(acl_id) INTO :cnt FROM hostaccess
+      WHERE acl_id = :id AND acl_type = 'USER';
+    if (cnt > 0)
+	return(MR_IN_USE);
+    if (ingres_errno)
+	return(mr_errcode);
+    return(MR_SUCCESS);
+}
+
+
+/* setup_spop: verify that there is already a valid POP machine_id in the
+ * pop_id field.  Also take care of keeping track of the post office usage.
+ */
+int setup_spop(q, argv)
+struct query *q;
+char **argv;
+{
+    EXEC SQL BEGIN DECLARE SECTION;
+    int id, mid, flag;
+    char type[9];
+    EXEC SQL END DECLARE SECTION;
+
+    id = *(int *)argv[0];
+    EXEC SQL REPEATED SELECT potype, pop_id INTO :type, :mid FROM users
+      WHERE users_id = :id;
+    if(sqlca.sqlerrd[2] = 0)
+      return(MR_MACHINE);
+    EXEC SQL REPEATED SELECT mach_id INTO :mid FROM machine
+      WHERE mach_id = :mid;
+    if (sqlca.sqlerrd[2] = 0)
+      return(MR_MACHINE);
+    if (strcmp(strtrim(type), "POP"))
+      set_pop_usage(mid, 1);
+    return(MR_SUCCESS);
+}
+
+
+/* setup_dpob:  Take care of keeping track of the post office usage.
+ */
+int setup_dpob(q, argv)
+     struct query *q;
+     char **argv;
+{
+    EXEC SQL BEGIN DECLARE SECTION;
+    int id, user;
+    char type[9];
+    EXEC SQL END DECLARE SECTION;
+
+    user = *(int *)argv[0];
+    EXEC SQL REPEATED SELECT potype, pop_id INTO :type, :id FROM users
+      WHERE users_id = :user;
+    if (ingres_errno) return(mr_errcode);
+
+    if (!strcmp(strtrim(type), "POP"))
+      set_pop_usage(id, -1);
+    return(MR_SUCCESS);
+}
+
+
+/* setup_dmac - verify that the machine is no longer being referenced
+ * and may safely be deleted.
+ */
+
+int setup_dmac(q, argv)
+    struct query *q;
+    char **argv;
+{
+    EXEC SQL BEGIN DECLARE SECTION;
+    int flag, id, cnt;
+    EXEC SQL END DECLARE SECTION;
+
+    id = *(int *)argv[0];
+    EXEC SQL REPEATED SELECT COUNT(login) INTO :cnt FROM users
+      WHERE potype='POP' AND pop_id = :id;
+    if (cnt > 0)
+	return(MR_IN_USE);
+    EXEC SQL REPEATED SELECT COUNT(mach_id) INTO :cnt FROM serverhosts
+      WHERE mach_id = :id;
+    if (cnt > 0)
+	return(MR_IN_USE);
+    EXEC SQL REPEATED SELECT COUNT(mach_id) INTO :cnt FROM nfsphys
+      WHERE mach_id = :id;
+    if (cnt > 0)
+	return(MR_IN_USE);
+    EXEC SQL REPEATED SELECT COUNT(mach_id) INTO :cnt FROM hostaccess
+      WHERE mach_id = :id;
+    if (cnt > 0)
+	return(MR_IN_USE);
+    EXEC SQL REPEATED SELECT COUNT(mach_id) INTO :cnt FROM printcap
+      WHERE mach_id = :id;
+    if (cnt > 0)
+	return(MR_IN_USE);
+    EXEC SQL REPEATED SELECT COUNT(quotaserver) INTO :cnt FROM printcap
+      WHERE quotaserver = :id;
+    if (cnt > 0)
+	return(MR_IN_USE);
+    EXEC SQL REPEATED SELECT COUNT(mach_id) INTO :cnt FROM palladium
+      WHERE mach_id = :id;
+    if (cnt > 0)
+	return(MR_IN_USE);
+
+    EXEC SQL REPEATED DELETE FROM mcmap WHERE mach_id = :id;
+    if (ingres_errno) return(mr_errcode);
+    return(MR_SUCCESS);
+}
+
+
+/* setup_dsnt - verify that the subnet is no longer being referenced
+ * and may safely be deleted.
+ */
+
+int setup_dsnt(q, argv)
+    struct query *q;
+    char **argv;
+{
+    EXEC SQL BEGIN DECLARE SECTION;
+    int flag, id, cnt = 0;
+    EXEC SQL END DECLARE SECTION;
+
+#ifdef notdef
+    id = *(int *)argv[0];
+    EXEC SQL REPEATED SELECT COUNT(mach_id) INTO :cnt FROM machine
+      WHERE snet_id = :id;
+    if (cnt > 0)
+	return(MR_IN_USE);
+#endif
+    return(MR_SUCCESS);
+}
+
+
+/* setup_dclu - verify that the cluster is no longer being referenced
+ * and may safely be deleted.
+ */
+
+int setup_dclu(q, argv)
+    struct query *q;
+    char **argv;
+{
+    EXEC SQL BEGIN DECLARE SECTION;
+    int id, cnt;
+    EXEC SQL END DECLARE SECTION;
+
+    id = *(int *)argv[0];
+    EXEC SQL REPEATED SELECT COUNT(mach_id) INTO :cnt FROM mcmap
+      WHERE clu_id = :id;
+    if (cnt > 0)
+	return(MR_IN_USE);
+    EXEC SQL REPEATED SELECT COUNT(clu_id) INTO :cnt FROM svc
+      WHERE clu_id = :id;
+    if (cnt > 0)
+	return(MR_IN_USE);
+    if (ingres_errno)
+	return(mr_errcode);
+    return(MR_SUCCESS);
+}
+
+
+/* setup_alis - if argv[5] is non-zero and argv[6] is UNIQUE_ID, then allocate
+ * a new gid and put it in argv[6].  Otherwise if argv[6] is UNIQUE_ID but
+ * argv[5] is not, then remember that UNIQUE_ID is being stored by putting
+ * a -1 there.  Remember that this is also used for ulis, with the indexes
+ * at 6 & 7.  Also check that the list name does not contain uppercase
+ * characters, control characters, @, or :.
+ */
+
+static int badlistchars[] = {
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, /* ^@ - ^O */
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, /* ^P - ^_ */
+    1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, /* SPACE - / */
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, /* 0 - ? */
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, /* @ - O */
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, /* P - _ */
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, /* ` - o */
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, /* p - ^? */
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+};
+
+int setup_alis(q, argv, cl)
+    struct query *q;
+    char *argv[];
+    client *cl;
+{
+    EXEC SQL BEGIN DECLARE SECTION;
+    int ngid;
+    EXEC SQL END DECLARE SECTION;
+    char *malloc();
+    unsigned char *p;
+    int idx;
+
+    if (!strcmp(q->shortname, "alis"))
+      idx = 0;
+    else if (!strcmp(q->shortname, "ulis"))
+      idx = 1;
+
+    for (p = (unsigned char *) argv[idx]; *p; p++)
+      if (badlistchars[*p])
+        return(MR_BAD_CHAR);
+ 
+    if (!strcmp(argv[6 + idx], UNIQUE_GID) || atoi(argv[6 + idx]) == -1) {
+	if (atoi(argv[5 + idx])) {
+	    if (set_next_object_id("gid", "list", 1))
+	      return(MR_INGRES_ERR);
+	    EXEC SQL REPEATED SELECT value INTO :ngid FROM numvalues
+	      WHERE name = 'gid';
+	    if (ingres_errno) return(mr_errcode);
+	    sprintf(argv[6 + idx], "%d", ngid);
+	} else {
+	    strcpy(argv[6 + idx], "-1");
+	}
+    }
+
+    if((mr_errcode=prefetch_value(q,argv,cl))!=MR_SUCCESS)
+      return(mr_errcode);
+
+    return(MR_SUCCESS);
+}
+
+
+/* setup_dlis - verify that the list is no longer being referenced
+ * and may safely be deleted.
+ */
+
+int setup_dlis(q, argv)
+    struct query *q;
+    char *argv[];
+{
+    int flag, id, ec;
+
+    id = *(int *)argv[0];
+    sprintf(stmt_buf,"SELECT member_id FROM imembers WHERE member_id = %d AND member_type='LIST'",id);
+    if(ec=mr_select_any(stmt_buf)) {
+	if(ec==MR_EXISTS) return(MR_IN_USE); else return(ec);
+    }
+    
+    sprintf(stmt_buf,"SELECT member_id FROM imembers WHERE list_id = %d",id);
+    if(ec=mr_select_any(stmt_buf)) {
+	if(ec==MR_EXISTS) return(MR_IN_USE); else return(ec);
+    }
+
+    sprintf(stmt_buf,"SELECT label FROM filesys WHERE owners = %d",id);
+    if(ec=mr_select_any(stmt_buf)) {
+	if(ec==MR_EXISTS) return(MR_IN_USE); else return(ec);
+    }
+
+    sprintf(stmt_buf,"SELECT tag FROM capacls WHERE list_id = %d",id);
+    if(ec=mr_select_any(stmt_buf)) {
+	if(ec==MR_EXISTS) return(MR_IN_USE); else return(ec);
+    }
+
+    sprintf(stmt_buf,"SELECT name FROM list WHERE acl_id = %d AND acl_type='LIST' AND list_id != %d",id,id);
+    if(ec=mr_select_any(stmt_buf)) {
+	if(ec==MR_EXISTS) return(MR_IN_USE); else return(ec);
+    }
+
+    sprintf(stmt_buf,"SELECT name FROM servers WHERE acl_id = %d AND acl_type='LIST'",id);
+    if(ec=mr_select_any(stmt_buf)) {
+	if(ec==MR_EXISTS) return(MR_IN_USE); else return(ec);
+    }
+
+    sprintf(stmt_buf,"SELECT entity_id FROM quota WHERE entity_id = %d AND type='GROUP'",id);
+    if(ec=mr_select_any(stmt_buf)) {
+	if(ec==MR_EXISTS) return(MR_IN_USE); else return(ec);
+    }
+ 
+    sprintf(stmt_buf,"SELECT acl_id  FROM hostaccess WHERE acl_id = %d AND acl_type='LIST'",id);
+    if(ec=mr_select_any(stmt_buf)) {
+	if(ec==MR_EXISTS) return(MR_IN_USE); else return(ec);
+    }
+
+    sprintf(stmt_buf,"SELECT class FROM zephyr z \
+WHERE z.xmt_type = 'LIST' AND z.xmt_id = %d \
+OR z.sub_type = 'LIST' AND z.sub_id = %d \
+OR z.iws_type = 'LIST' AND z.iws_id = %d \
+OR z.iui_type = 'LIST' AND z.iui_id = %d",id,id,id,id);
+    if(ec=mr_select_any(stmt_buf)) {
+	if(ec==MR_EXISTS) return(MR_IN_USE); else return(ec);
+    }
+
+    return(MR_SUCCESS);
+}
+
+
+/* setup_dsin - verify that the service is no longer being referenced
+ * and may safely be deleted.
+ */
+
+int setup_dsin(q, argv)
+    struct query *q;
+    char **argv;
+{
+    EXEC SQL BEGIN DECLARE SECTION;     
+    int ec;
+    char *svrname;
+    EXEC SQL END DECLARE SECTION;
+
+    sprintf(stmt_buf,"SELECT service FROM serverhosts WHERE service = UPPERCASE('%s')",argv[0]);
+    if(ec=mr_select_any(stmt_buf)) {
+	if(ec==MR_EXISTS) 
+	    return(MR_IN_USE); 
+	else 
+	    return(ec);
+    }
+
+    svrname=argv[0];
+    EXEC SQL SELECT inprogress INTO :ec FROM servers 
+      WHERE name=UPPERCASE(:svrname);
+    if(ingres_errno) 
+	return(mr_errcode);
+    if(ec) 
+	return(MR_IN_USE); 
+
+    return(MR_SUCCESS);
+}
+
+
+/* setup_dshi - verify that the service-host is no longer being referenced
+ * and may safely be deleted.
+ */
+
+int setup_dshi(q, argv)
+    struct query *q;
+    char **argv;
+{
+    EXEC SQL BEGIN DECLARE SECTION;
+    int id, ec;
+    char *svrname;
+    EXEC SQL END DECLARE SECTION;
+
+    svrname=argv[0];
+    id = *(int *)argv[1];
+
+    EXEC SQL SELECT inprogress INTO :ec FROM serverhosts 
+      WHERE service=UPPERCASE(:svrname) AND mach_id = :id;
+    if(ingres_errno) 
+	return(mr_errcode);
+    if(ec) 
+	return(MR_IN_USE); 
+
+
+    return(MR_SUCCESS);
+}
+
+
+/**
+ ** setup_add_filesys - verify existance of referenced file systems
+ **
+ ** Inputs:     Add
+ **   argv[1] - type
+ **   argv[2] - mach_id
+ **   argv[3] - name
+ **   argv[5] - access
+ **
+ ** Description:
+ **   - for type = RVD:
+ **	   * allow anything
+ **   - for type = NFS:
+ **        * extract directory prefix from name
+ **        * verify mach_id/dir in nfsphys
+ **        * verify access in {r, w, R, W}
+ **
+ **  Side effect: sets variable _var_phys_id to the ID of the physical
+ **	filesystem (nfsphys_id for NFS, 0 for RVD)
+ **
+ ** Errors:
+ **   MR_NFS - specified directory not exported
+ **   MR_FILESYS_ACCESS - invalid filesys access
+ **
+ **/
+
+EXEC SQL BEGIN DECLARE SECTION;
+int _var_phys_id;
+EXEC SQL END DECLARE SECTION;
+
+setup_afil(q, argv, cl)
+    struct query *q;
+    char *argv[];
+    client *cl;
+{
+    char *type, *name;
+    int mach_id;
+    EXEC SQL BEGIN DECLARE SECTION;
+    int ok;
+    char ftype[32], *access;
+    EXEC SQL END DECLARE SECTION;
+
+    type = argv[1];
+    mach_id = *(int *)argv[2];
+    name = argv[3];
+    access = argv[5];
+    _var_phys_id = 0;
+
+    sprintf(ftype, "fs_access_%s", type);
+    EXEC SQL SELECT COUNT(trans) INTO :ok FROM alias
+	WHERE name = :ftype AND type = 'TYPE' and trans = :access;   
+    if (ingres_errno) return(mr_errcode);
+    if (ok == 0) return(MR_FILESYS_ACCESS);
+
+    if((mr_errcode=prefetch_value(q,argv,cl))!=MR_SUCCESS)
+      return(mr_errcode);
+
+    if (!strcmp(type, "NFS"))
+	return (check_nfs(mach_id, name, access));
+
+    return(MR_SUCCESS);
+}
+
+
+/* Verify the arguments, depending on the FStype.  Also, if this is an
+ * NFS filesystem, then update any quotas for that filesystem to reflect
+ * the new phys_id.
+ */
+
+setup_ufil(q, argv, cl)
+    struct query *q;
+    char *argv[];
+    client *cl;
+{
+    int mach_id, status;
+    char *type, *name;
+    EXEC SQL BEGIN DECLARE SECTION;
+    int fid, total, who, ok;
+    char *entity, ftype[32], *access;
+    short int total_null;
+    EXEC SQL END DECLARE SECTION;
+
+    _var_phys_id = 0;
+    type = argv[2];
+    mach_id = *(int *)argv[3];
+    name = argv[4];
+    access = argv[6];
+    fid = *(int *)argv[0];
+    who = cl->client_id;
+    entity = cl->entity;
+
+    sprintf(ftype, "fs_access_%s", type);
+    EXEC SQL SELECT COUNT(trans) INTO :ok FROM alias
+      WHERE name = :ftype AND type='TYPE' AND trans = :access;
+    if (ingres_errno) return(mr_errcode);
+    if (ok == 0) return(MR_FILESYS_ACCESS);
+
+    EXEC SQL SELECT type INTO :ftype FROM filesys
+      WHERE filsys_id = :fid;
+    strtrim(ftype);
+    if (ingres_errno) return(mr_errcode);
+
+    if (!strcmp(type, "NFS")) {
+	status = check_nfs(mach_id, name, access);
+	EXEC SQL UPDATE quota SET phys_id = :_var_phys_id
+	  WHERE filsys_id = :fid;
+	if (ingres_errno) return(mr_errcode);
+	return(status);
+    } else if (!strcmp(type, "AFS") && strcmp(ftype, "AFS")) {
+	total = 0;
+	EXEC SQL REPEATED DELETE FROM quota
+	  WHERE type = 'ANY' AND filsys_id = :fid;
+	EXEC SQL SELECT SUM (quota) INTO :total:total_null FROM quota
+	  WHERE filsys_id = :fid AND phys_id != 0;
+	if (ingres_errno) return(mr_errcode);
+	if (!total_null && (total != 0)) {
+/*
+ *             append quota (quota = total, filsys_id = fid,
+ *			     phys_id = 0, entity_id = 0, type = "ANY",
+ *			     modtime = "now", modby = who, modwith = entity)
+ */
+	    EXEC SQL INSERT INTO quota (quota, filsys_id, phys_id, entity_id,
+					type, modtime, modby, modwith)
+	      VALUES (:total, :fid, 0, 0,
+		      'ANY', 'now', :who, :entity) ;
+	    if (ingres_errno) return(mr_errcode);
+	}
+    } else {
+	EXEC SQL UPDATE quota SET phys_id = 0 WHERE filsys_id = :fid;
+	if (ingres_errno) return(mr_errcode);
+    }
+    return(MR_SUCCESS);
+}
+
+
+/* Find the NFS physical partition that the named directory is on.
+ * This is done by comparing the dir against the mount point of the
+ * partition.  To make sure we get the correct match when there is
+ * more than one, we sort the query in reverse order by dir name.
+ */
+
+check_nfs(mach_id, name, access)
+    EXEC SQL BEGIN DECLARE SECTION;
+    int mach_id;
+    EXEC SQL END DECLARE SECTION;
+    char *name;
+    char *access;
+{
+    EXEC SQL BEGIN DECLARE SECTION;
+    char dir[81];
+    EXEC SQL END DECLARE SECTION;
+    char caccess;
+    register int status;
+    register char *cp1;
+    register char *cp2;
+
+    status = MR_NFS;
+    EXEC SQL DECLARE csr101 CURSOR FOR
+      SELECT nfsphys_id, TRIM (dir) FROM nfsphys
+	WHERE mach_id = :mach_id
+	ORDER BY 2 DESC;
+    if (ingres_errno)
+	return(mr_errcode);
+    EXEC SQL OPEN csr101;
+    if (ingres_errno)
+	return(mr_errcode);
+    while(1) {
+	EXEC SQL FETCH csr101 INTO :_var_phys_id, :dir;
+	if(sqlca.sqlcode != 0) break;
+	cp1 = name;
+	cp2 = dir;
+	while (*cp2) {
+	    if (*cp1++ != *cp2) break;
+	    cp2++;
+	}
+	if (*cp2 == 0) {
+	    status = MR_SUCCESS;
+	    break;
+	}
+    }
+    EXEC SQL CLOSE csr101;
+    if (ingres_errno)
+	return(mr_errcode);
+    return(status);
+}
+
+
+/* setup_dfil: free any quota records and fsgroup info associated with
+ * a filesystem when it is deleted.  Also adjust the allocation numbers.
+ */
+
+setup_dfil(q, argv, cl)
+    struct query  *q;
+    char **argv;
+    client *cl;
+{
+    EXEC SQL BEGIN DECLARE SECTION;
+    int id, total, phys_id;
+    short int none;
+    EXEC SQL END DECLARE SECTION;
+
+    id = *(int *)argv[0];
+    EXEC SQL REPEATED SELECT SUM (quota) INTO :total:none FROM quota
+      WHERE filsys_id = :id;
+
+    if(none) total=0;
+
+    /** What if there are multiple phys_id's per f/s? (bad data) **/
+    EXEC SQL REPEATED SELECT phys_id INTO :phys_id FROM filesys
+      WHERE filsys_id = :id;
+    EXEC SQL REPEATED UPDATE nfsphys SET allocated = allocated - :total
+      WHERE nfsphys_id = :phys_id;
+
+    if(!none) {
+	EXEC SQL REPEATED DELETE FROM quota WHERE filsys_id = :id;
+    }
+    EXEC SQL REPEATED DELETE FROM fsgroup WHERE filsys_id = :id;
+    EXEC SQL REPEATED DELETE FROM fsgroup WHERE group_id = :id;
+    if (ingres_errno) return(mr_errcode);
+    return(MR_SUCCESS);
+}
+
+
+/* setup_dnfp: check to see that the nfs physical partition does not have
+ * any filesystems assigned to it before allowing it to be deleted.
+ */
+
+setup_dnfp(q, argv, cl)
+    struct query  *q;
+    char **argv;
+    client *cl;
+{
+    EXEC SQL BEGIN DECLARE SECTION;
+    int id, cnt;
+    char *dir;
+    EXEC SQL END DECLARE SECTION;
+
+    id = *(int *)argv[0];
+    dir = argv[1];
+    EXEC SQL REPEATED SELECT fs.tid INTO :cnt FROM filesys fs, nfsphys np
+      WHERE fs.mach_id = :id AND fs.phys_id = np.nfsphys_id
+	AND np.mach_id = :id AND np.dir = :dir;
+    if (cnt > 0)
+      return(MR_IN_USE);
+    if (ingres_errno)
+      return(mr_errcode);
+    return(MR_SUCCESS);
+}
+
+
+/* setup_dqot: Remove allocation from nfsphys before deleting quota.
+ *   argv[0] = filsys_id
+ *   argv[1] = type if "update_quota" or "delete_quota"
+ *   argv[2 or 1] = users_id or list_id
+ */
+
+setup_dqot(q, argv, cl)
+    struct query  *q;
+    char **argv;
+    client *cl;
+{
+    EXEC SQL BEGIN DECLARE SECTION;
+    int quota, fs, id, physid;
+    char *qtype;
+    EXEC SQL END DECLARE SECTION;
+
+    fs = *(int *)argv[0];
+    if (!strcmp(q->name, "update_quota") || !strcmp(q->name, "delete_quota")) {
+	qtype = argv[1];
+	id = *(int *)argv[2];
+    } else {
+	qtype = "USER";
+	id = *(int *)argv[1];
+    }
+
+    EXEC SQL REPEATED SELECT quota INTO :quota FROM quota
+      WHERE type = :qtype AND entity_id = :id AND filsys_id = :fs;
+    EXEC SQL REPEATED SELECT phys_id INTO :physid FROM filesys 
+      WHERE filsys_id = :fs;
+    EXEC SQL REPEATED UPDATE nfsphys SET allocated = allocated - :quota
+      WHERE nfsphys_id = :physid;
+
+    if (ingres_errno) return(mr_errcode);
+    return(MR_SUCCESS);
+}
+
+
+/* setup_sshi: don't exclusive lock the machine table during
+ * set_server_host_internal.
+ */
+/** Not allowed under (INGRES) SQL **/
+setup_sshi(q, argv, cl)
+    struct query  *q;
+    char **argv;
+    client *cl;
+{
+#if 0
+#ifsql INGRES
+    EXEC SQL set lockmode session where readlock = system;
+#endsql
+#endif
+    return(MR_SUCCESS);
+}
+
+
+/* setup add_kerberos_user_mapping: add the string to the string
+ * table if necessary.
+ */
+
+setup_akum(q, argv, cl)
+struct query *q;
+char **argv;
+client *cl;
+{
+    EXEC SQL BEGIN DECLARE SECTION;
+    int id, rowcount;
+    char *name;
+    EXEC SQL END DECLARE SECTION;
+
+    name = argv[1];
+    if (name_to_id(name, "STRING", &id) != MR_SUCCESS) {
+	if (q->type != APPEND) return(MR_STRING);
+	id=add_string(name);
+	cache_entry(name, "STRING", id);
+    }
+    if (ingres_errno) return(mr_errcode);
+    *(int *)argv[1] = id;
+    return(MR_SUCCESS);
+}
+

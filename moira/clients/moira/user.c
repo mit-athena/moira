@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.18 1990-03-17 17:11:25 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.19 1990-04-09 18:04:33 mar Exp $";
 #endif lint
 
 /*	This is the file user.c for the MOIRA Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.18 1990-03-17 17:11:25 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.19 1990-04-09 18:04:33 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -466,7 +466,7 @@ RegisterUser()
     }
 
     if ( ((login = args[1] = GetLoginName()) == NULL) ||
-	( GetFSTypes(&fstype) == SUB_ERROR ) ) {
+	( GetFSTypes(&fstype, FALSE) == SUB_ERROR ) ) {
 	FreeInfo(args);	   /* This work because the NULL temination is ok. */
 	return(DM_NORMAL);
     }

@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/nfs.c,v 1.14 1990-04-02 20:00:01 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/nfs.c,v 1.15 1990-04-09 18:04:17 mar Exp $";
 #endif lint
 
 /*	This is the file nfs.c for the MOIRA Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/nfs.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/nfs.c,v 1.14 1990-04-02 20:00:01 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/nfs.c,v 1.15 1990-04-09 18:04:17 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -133,7 +133,7 @@ char ** info;
     /* Also need name of the machine in this structure. */
 
     GetValueFromUser("Device for this filsystem", &info[NFS_DEVICE]); 
-    GetFSTypes(&info[NFS_STATUS]);
+    GetFSTypes(&info[NFS_STATUS], TRUE);
     GetValueFromUser("Allocated Space for this filsystem:",&info[NFS_ALLOC]);
     GetValueFromUser("Size of this Filsystem:",&info[NFS_SIZE]);
 

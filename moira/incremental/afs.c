@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/afs.c,v 1.48 1993-05-04 16:15:19 probe Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/afs.c,v 1.49 1993-05-05 09:47:41 probe Exp $
  *
  * Do AFS incremental updates
  *
@@ -78,12 +78,13 @@ int argc;
     for (i = getdtablesize() - 1; i > 2; i--)
       close(i);
 
+    whoami = ((whoami = rindex(argv[0], '/')) ? whoami++ : argv[0]);
+
     table = argv[1];
     beforec = atoi(argv[2]);
     before = &argv[4];
     afterc = atoi(argv[3]);
     after = &argv[4 + beforec];
-    whoami = argv[0];
 
     setlinebuf(stdout);
 
@@ -469,6 +470,7 @@ add_user_lists(ac, av, user)
 {
     if (atoi(av[L_ACTIVE]) && atoi(av[L_GROUP]))	/* active group ? */
 	edit_group(1, av[L_NAME], "USER", user);
+    return 0;
 }
 
 
@@ -478,6 +480,7 @@ add_list_members(ac, av, group)
     char *group;
 {
     edit_group(1, group, av[0], av[1]);
+    return 0;
 }
 
 
@@ -487,6 +490,7 @@ check_user(ac, av, ustate)
     int *ustate;
 {
     *ustate = atoi(av[U_STATE]);
+    return 0;
 }
 
 
@@ -538,6 +542,7 @@ edit_group(op, group, type, member)
     com_err(whoami, 0, "%s %s %s group %s",
 	   (op ? "Adding" : "Removing"), member,
 	   (op ? "to" : "from"), group);
+    code = 0;
     code=pr_try(op ? pr_AddToGroup : pr_RemoveUserFromGroup, member, buf);
     if (code) {
 	if (op==1 && code == PRIDEXIST) return;	/* Already added */
@@ -588,7 +593,7 @@ long pr_try(fn, a1, a2, a3, a4, a5, a6, a7, a8)
 #endif
 
     check_afs();
-    
+
     if (initd) {
 	code=pr_Initialize(0, AFSCONF_CLIENTNAME, 0);
     } else {
@@ -663,8 +668,12 @@ moira_connect()
     long code;
 
     if (!mr_connections++) {
+#ifdef DEBUG
+	code = mr_connect("moira");
+#else
 	gethostname(hostname, sizeof(hostname));
 	code = mr_connect(hostname);
+#endif
 	if (!code) code = mr_auth("afs.incr");
 	return code;    
     }

@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.dc,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.dc,v 2.10 1992-12-30 16:53:34 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.dc,v 2.11 1993-03-02 18:27:45 mar Exp $
  *
  *	Copyright (C) 1987, 1988 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_qrtn_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.dc,v 2.10 1992-12-30 16:53:34 mar Exp $";
+static char *rcsid_qrtn_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.dc,v 2.11 1993-03-02 18:27:45 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -35,6 +35,7 @@ int ingres_errno = 0;
 int mr_errcode = 0;
 EXEC SQL BEGIN DECLARE SECTION; 
 int query_timeout = 30;
+char *database = "moira";
 EXEC SQL END DECLARE SECTION;
 extern char *whoami;
 extern FILE *journal;
@@ -129,7 +130,7 @@ int mr_open_database()
 
     /* open the database */
 #ifsql INGRES
-    EXEC SQL CONNECT moira;
+    EXEC SQL CONNECT :database;
     if(ingres_errno) 
       return (ingres_errno);
     EXEC SQL set lockmode session where level = table, timeout = :query_timeout;

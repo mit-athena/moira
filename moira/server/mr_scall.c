@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_scall.c,v $
  *	$Author: danw $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_scall.c,v 1.25 1997-01-29 23:27:09 danw Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_scall.c,v 1.26 1997-07-03 02:52:07 danw Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_sms_scall_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_scall.c,v 1.25 1997-01-29 23:27:09 danw Exp $";
+static char *rcsid_sms_scall_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_scall.c,v 1.26 1997-07-03 02:52:07 danw Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -35,7 +35,7 @@ extern int dbms_errno, mr_errcode;
 static int row_count;
 
 /* Put this in a variable so that we can patch it if necessary */
-int max_row_count = 2048;
+int max_row_count = 4096;
 
 /*
  * Welcome to the (finite state) machine (highest level).

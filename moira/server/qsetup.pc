@@ -1,4 +1,4 @@
-/* $Id: qsetup.pc,v 2.42 2000-12-19 07:32:46 zacheiss Exp $
+/* $Id: qsetup.pc,v 2.43 2001-04-26 21:26:09 zacheiss Exp $
  *
  * Query setup routines
  *
@@ -21,7 +21,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsetup.pc,v 2.42 2000-12-19 07:32:46 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsetup.pc,v 2.43 2001-04-26 21:26:09 zacheiss Exp $");
 
 extern char *whoami;
 extern int dbms_errno, mr_errcode;
@@ -220,6 +220,10 @@ int setup_dmac(struct query *q, char *argv[], client *cl)
     return MR_IN_USE;
 
   EXEC SQL DELETE FROM mcmap WHERE mach_id = :id;
+  if (dbms_errno)
+    return mr_errcode;
+
+  EXEC SQL DELETE FROM mcntmap WHERE mach_id = :id;
   if (dbms_errno)
     return mr_errcode;
   return MR_SUCCESS;
@@ -1254,6 +1258,42 @@ int setup_dpsv(struct query *q, char **argv, client *cl)
   if (cnt > 0)
     return MR_IN_USE;
 
+  return MR_SUCCESS;
+}
+
+int setup_dcon(struct query *q, char *argv[], client *cl)
+{
+  EXEC SQL BEGIN DECLARE SECTION;
+  int id, cnt;
+  char containername[CONTAINERS_NAME_SIZE];
+  EXEC SQL END DECLARE SECTION;
+
+  id = *(int *)argv[0];
+  /* check to see if there are machines in this container */
+  EXEC SQL SELECT COUNT(mach_id) INTO :cnt FROM mcntmap
+    WHERE cnt_id = :id;
+  if (cnt > 0)
+    return MR_IN_USE;
+
+  /* check to see if there are subcontainers in this container */
+
+  /* get the container name */
+  
+  EXEC SQL SELECT name INTO :containername
+    FROM containers
+    WHERE cnt_id = :id; 
+
+  /* trim off the trailing spaces */
+   strcpy(containername, strtrim(containername));
+
+  EXEC SQL SELECT COUNT(cnt_id) INTO :cnt FROM containers
+    WHERE name LIKE :containername || '/' || '%';
+
+  if (cnt > 0)
+    return MR_IN_USE;
+
+  if (dbms_errno)
+    return mr_errcode;
   return MR_SUCCESS;
 }
 

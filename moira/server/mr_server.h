@@ -1,4 +1,4 @@
-/* $Id: mr_server.h,v 1.55 2000-09-25 22:48:48 zacheiss Exp $
+/* $Id: mr_server.h,v 1.56 2001-04-26 21:26:06 zacheiss Exp $
  *
  * Copyright (C) 1987-1998 by the Massachusetts Institute of Technology
  * For copying and distribution information, please see the file
@@ -152,6 +152,7 @@ int access_ahal(struct query *q, char *argv[], client *cl);
 int access_snt(struct query *q, char *argv[], client *cl);
 int access_printer(struct query *q, char *argv[], client *cl);
 int access_zephyr(struct query *q, char *argv[], client *cl);
+int access_container(struct query *q, char *argv[], client *cl);
 
 /* prototypes from qfollow.pc */
 int followup_fix_modby(struct query *q, struct save_queue *sq,
@@ -185,6 +186,9 @@ int followup_ghst(struct query *q, struct save_queue *sq, struct validate *v,
 		  int (*action)(int, char **, void *), void *actarg,
 		  client *cl);
 int followup_gpsv(struct query *q, struct save_queue *sq, struct validate *v,
+		  int (*action)(int, char **, void *), void *actarg,
+		  client *cl);
+int followup_gcon(struct query *q, struct save_queue *sq, struct validate *v,
 		  int (*action)(int, char **, void *), void *actarg,
 		  client *cl);
 
@@ -231,6 +235,7 @@ int setup_ahal(struct query *q, char *argv[], client *cl);
 int setup_uhha(struct query *q, char *argv[], client *cl);
 int setup_aprn(struct query *q, char *argv[], client *cl);
 int setup_dpsv(struct query *q, char *argv[], client *cl);
+int setup_dcon(struct query *q, char *argv[], client *cl);
 
 /* prototypes from qsupport.pc */
 int set_pobox(struct query *q, char *argv[], client *cl);
@@ -240,6 +245,7 @@ int delete_member_from_list(struct query *q, char *argv[], client *cl);
 int tag_member_of_list(struct query *q, char *argv[], client *cl);
 int register_user(struct query *q, char *argv[], client *cl);
 int do_user_reservation(struct query *q, char *argv[], client *cl);
+int update_container(struct query *q, char *argv[], client *cl);
 
 int get_ace_use(struct query *q, char **argv, client *cl,
 		int (*action)(int, char *[], void *), void *actarg);
@@ -263,6 +269,13 @@ int get_user_reservations(struct query *q, char **argv, client *cl,
 int get_user_by_reservation(struct query *q, char **argv, client *cl,
 			    int (*action)(int, char *[], void *),
 			    void *actarg);
+int get_machines_of_container(struct query *q, char **argv, client *cl,
+			    int (*action)(int, char *[], void *),
+			    void *actarg);
+int get_subcontainers_of_container(struct query *q, char **argv, client *cl,
+			    int (*action)(int, char *[], void *),
+			    void *actarg);
+
 
 /* prototypes from qvalidate.pc */
 int validate_fields(struct query *q, char *argv[], struct valobj *vo, int n);

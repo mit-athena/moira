@@ -1,4 +1,4 @@
-/* $Id: qfollow.pc,v 2.21 2001-04-01 05:31:13 zacheiss Exp $
+/* $Id: qfollow.pc,v 2.22 2001-04-26 21:26:07 zacheiss Exp $
  *
  * Query followup routines
  *
@@ -20,7 +20,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qfollow.pc,v 2.21 2001-04-01 05:31:13 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qfollow.pc,v 2.22 2001-04-26 21:26:07 zacheiss Exp $");
 
 extern char *whoami, *table_name[];
 extern int dbms_errno, mr_errcode;
@@ -967,3 +967,29 @@ int trigger_dcm(struct query *q, char *argv[], client *cl)
       return MR_SUCCESS;
     }
 }
+
+/* followup_gcon: fix the ace_name, memace_name, and modby */
+
+int followup_gcon(struct query *q, struct save_queue *sq, struct validate *v,
+		  int (*action)(int, char *[], void *), void *actarg,
+		  client *cl)
+{
+  char **argv;
+  int status;
+
+  while (sq_get_data(sq, &argv))
+  {
+    mr_trim_args(q->vcnt, argv);
+
+    status = fix_ace(argv[4], &argv[5]);
+    if (status && status != MR_NO_MATCH)
+	    return status;
+      
+	  status = fix_ace(argv[6], &argv[7]);
+	  if (status && status != MR_NO_MATCH)
+	    return status;
+	}
+
+  return followup_fix_modby(q, sq, v, action, actarg, cl);
+}
+

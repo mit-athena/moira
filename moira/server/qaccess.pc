@@ -1,4 +1,4 @@
-/* $Id: qaccess.pc,v 2.22 2001-03-14 20:51:44 zacheiss Exp $
+/* $Id: qaccess.pc,v 2.23 2001-04-26 21:26:06 zacheiss Exp $
  *
  * Check access to queries
  *
@@ -17,7 +17,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qaccess.pc,v 2.22 2001-03-14 20:51:44 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qaccess.pc,v 2.23 2001-04-26 21:26:06 zacheiss Exp $");
 
 extern char *whoami;
 extern int dbms_errno, mr_errcode;
@@ -619,3 +619,66 @@ int access_zephyr(struct query *q, char *argv[], client *cl)
     return MR_PERM;
 }
 
+/* access_container - check access for most container operations
+ *
+ * Inputs: argv[0] - cnt_id
+ *	    q - query name	  
+ *          cl - client name
+ *
+ * - check if that client is a member of the access control list
+ * - OR, if the query is add_machine_to_container or delete_machine_from_container
+ *	check if the client is a memeber of the mem_acl list
+ * - if the query is update_container and the container is to be renamed and
+ *   it is a top-level container, only priviledged users can do it
+ */
+
+int access_container(struct query *q, char *argv[], client *cl)
+{
+  EXEC SQL BEGIN DECLARE SECTION;
+  int cnt_id, acl_id, memacl_id;
+  char acl_type[CONTAINERS_ACL_TYPE_SIZE], memacl_type[CONTAINERS_ACL_TYPE_SIZE];
+  char name[CONTAINERS_NAME_SIZE], *newname;
+  EXEC SQL END DECLARE SECTION;
+  int status;
+
+  cnt_id = *(int *)argv[0];
+  
+  /* if amcn or dmcn, container id is the second argument */
+  if (strcmp(q->shortname, "amcn") == 0 || strcmp(q->shortname, "dmcn") == 0)
+	cnt_id = *(int *)argv[1];
+
+  EXEC SQL SELECT acl_id, acl_type, memacl_id, memacl_type, name
+    INTO :acl_id, :acl_type, :memacl_id, :memacl_type, :name
+    FROM containers
+    WHERE cnt_id = :cnt_id;
+
+  if (sqlca.sqlerrd[2] != 1)
+    return MR_INTERNAL;
+
+   /* trim off the trailing spaces */
+   strcpy(name, strtrim(name));
+
+  /* if the query is update_container and the containers is to be renamed
+   * and it is a top-level container, only dbadmin can do it */
+  if (!strcmp(q->shortname, "ucon"))
+  {
+    newname = argv[1];
+    if (strcmp(name, newname) && strchr(name, '/') == NULL)
+      return MR_PERM;
+  }
+
+  /* check for client in access control list and return success right 
+   * away if it's there. */
+  if (find_member(acl_type, acl_id, cl))
+    return MR_SUCCESS;
+
+  /* If not amcn, dmcn, we lose. */
+  if (strcmp(q->shortname, "amcn") && strcmp(q->shortname, "dmcn"))
+    return MR_PERM;
+
+  if (find_member(memacl_type, memacl_id, cl))
+    return MR_SUCCESS;
+
+  /* Otherwise fail. */
+  return MR_PERM;
+}

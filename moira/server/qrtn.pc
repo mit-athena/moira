@@ -1,4 +1,4 @@
-/* $Id: qrtn.pc,v 2.22 2001-04-01 05:31:17 zacheiss Exp $
+/* $Id: qrtn.pc,v 2.23 2001-04-26 21:26:08 zacheiss Exp $
  *
  * Query-processing routines
  *
@@ -20,7 +20,7 @@
 EXEC SQL INCLUDE sqlca;  /* SQL Communications Area */
 EXEC SQL INCLUDE sqlda;  /* SQL Descriptor Area */
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.pc,v 2.22 2001-04-01 05:31:17 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.pc,v 2.23 2001-04-26 21:26:08 zacheiss Exp $");
 
 SQLDA *mr_sqlda;
 EXEC SQL BEGIN DECLARE SECTION;
@@ -1010,6 +1010,9 @@ int name_to_id(char *name, enum tables type, int *id)
 	}
       EXEC SQL SELECT string_id INTO :j FROM strings WHERE string = :iname;
       break;
+    case CONTAINERS_TABLE:
+      EXEC SQL SELECT cnt_id INTO :j FROM containers WHERE name = :iname;
+      break;
     default:
       return MR_INTERNAL;
     }
@@ -1063,6 +1066,9 @@ int id_to_name(int id, enum tables type, char **name)
       break;
     case STRINGS_TABLE:
       EXEC SQL SELECT string INTO :iname FROM strings WHERE string_id = :j;
+      break;
+    case CONTAINERS_TABLE:
+      EXEC SQL SELECT name INTO :iname FROM containers WHERE cnt_id = :j;
       break;
     default:
       return MR_INTERNAL;

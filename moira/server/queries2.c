@@ -1,4 +1,4 @@
-/* $Id: queries2.c,v 2.82 2000-12-19 07:32:47 zacheiss Exp $
+/* $Id: queries2.c,v 2.83 2001-04-26 21:26:11 zacheiss Exp $
  *
  * This file defines the query dispatch table
  *
@@ -40,6 +40,10 @@ static struct valobj VOlist0[] = {
 
 static struct valobj VOfilesys0[] = {
   {V_ID, 0, FILESYS_TABLE, "label", "filsys_id", MR_FILESYS},
+};
+
+static struct valobj VOcon0[] = {
+	{V_ID, 0, CONTAINERS_TABLE, "name", "cnt_id", MR_CONTAINER},
 };
 
 static struct valobj VOnum0[] = {
@@ -3108,7 +3112,163 @@ static char *gdds_fields[] = {
   "sid",
 };
 
-
+static char *gcon_fields[] = {
+  "name",
+  "name", "description", "location", "contact",
+  "ace_type", "ace_name", "memace_type", "memace_name", "modtime", "modby", "modwith",
+};
+
+static struct validate gcon_validate = {
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  followup_gcon,
+};
+
+static char *acon_fields[] = {
+  "name", "description", "location", "contact",
+  "ace_type", "ace_name", "memace_type", "memace_name",
+};
+
+static struct valobj acon_valobj[] = {
+  {V_CHAR, 0, CONTAINERS_TABLE, "name"},
+  {V_LEN, 1, CONTAINERS_TABLE, "description"},
+  {V_CHAR, 2, CONTAINERS_TABLE, "location"},
+  {V_CHAR, 3, CONTAINERS_TABLE, "contact"},
+  {V_TYPE, 4, 0, "ace_type", 0, MR_ACE},
+  {V_TYPEDATA, 5, 0, 0, 0, MR_ACE},
+  {V_TYPE, 6, 0, "ace_type", 0, MR_ACE},
+  {V_TYPEDATA, 7, 0, 0, 0, MR_ACE},
+};
+
+static struct validate acon_validate =
+{
+  acon_valobj,
+  8,
+  "name",
+  "name = '%s'",
+  1,
+  "cnt_id",
+  0,
+  prefetch_value,
+  set_modtime,
+};
+
+static char *ucon_fields[] = {
+  "name",
+  "newname", "description", "location", "contact",
+  "ace_type", "ace_name", "memace_type", "memace_name",
+};
+
+static struct valobj ucon_valobj[] = {
+  {V_ID, 0, CONTAINERS_TABLE, "name", "cnt_id", MR_CONTAINER},
+  {V_RENAME, 1, CONTAINERS_TABLE, "name", "cnt_id", MR_NOT_UNIQUE},
+  {V_LEN, 2, CONTAINERS_TABLE, "description"},
+  {V_CHAR, 3, CONTAINERS_TABLE, "location"},
+  {V_CHAR, 4, CONTAINERS_TABLE, "contact"},
+  {V_TYPE, 5, 0, "ace_type", 0, MR_ACE},
+  {V_TYPEDATA, 6, 0, 0, 0, MR_ACE},
+  {V_TYPE, 7, 0, "ace_type", 0, MR_ACE},
+  {V_TYPEDATA, 8, 0, 0, 0, MR_ACE},
+};
+
+static struct validate ucon_validate =
+{
+  ucon_valobj,
+  9,
+  0,
+  0,
+  0,
+  0,
+  access_container,
+  0,
+  update_container,
+};
+
+static char *dcon_fields[] = {
+  "name",
+};
+
+static struct validate dcon_validate =
+{
+  VOcon0,
+  1,
+  0,
+  0,
+  0,
+  0,
+  0,
+  setup_dcon,
+  0,
+};
+
+static char *amcn_fields[] = {
+  "machine", "container",
+};
+
+static struct valobj amcn_valobj[] =	/* ADD_MACHINE_TO_CONTAINER */
+{					/* DELETE_MACHINE_FROM_CONTAINER */
+  {V_ID, 0, MACHINE_TABLE, "name", "mach_id", MR_MACHINE},
+  {V_ID, 1, CONTAINERS_TABLE, "name", "cnt_id", MR_CONTAINER},
+};
+
+static struct validate amcn_validate = /* for amtn and dmfn */
+{
+  amcn_valobj,
+  2,
+  "mach_id",
+  "mach_id = %d and cnt_id = %d",
+  2,
+  0,
+  access_container,
+  0,
+  set_mach_modtime_by_id,
+};
+
+static char *gmoc_fields[] = {
+  "container",
+  "isrecursive",
+	"machine",
+  "container",
+};
+
+static struct validate gmoc_validate = 
+{
+  VOcon0,
+  1,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  get_machines_of_container,
+};
+
+static char *gsoc_fields[] = {
+  "container",
+  "isrecursive",
+	"subcontainer",
+};
+
+static struct validate gsoc_validate = 
+{
+  VOcon0,
+  1,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  get_subcontainers_of_container,
+};
+
 /* Generalized Query Definitions */
 
 /* Multiple versions of the same query MUST be listed in ascending
@@ -6424,6 +6584,159 @@ struct query Queries[] = {
     0,
     NULL,
     NULL,
+  },
+
+  {
+    /* Q_GCON - GET_CONTAINER, v7 */
+    "get_container",
+    "gcon",
+    7,
+    RETRIEVE,
+    "c",
+    CONTAINERS_TABLE,
+    "name, description, location, contact, acl_type, acl_id, memacl_type, memacl_id, TO_CHAR(modtime, 'DD-mon-YYYY HH24:MI:SS'), modby, modwith FROM containers",
+    gcon_fields,
+    11,
+    "name = '%s' AND cnt_id != 0",
+    1,
+    NULL,
+    &gcon_validate,
+  },
+
+  {
+    /* Q_ACON - ADD_CONTAINER, v7 */ /* uses prefetch_value() for cnt_id */
+    "add_container",
+    "acon",
+    7,
+    APPEND,
+    "c",
+    CONTAINERS_TABLE,
+    "INTO containers (name, description, location, contact, acl_type, acl_id, memacl_type, memacl_id, cnt_id) VALUES ('%s', NVL('%s', CHR(0)), NVL('%s', CHR(0)), NVL('%s', CHR(0)), '%s', %d, '%s', %d, %s)",
+    acon_fields,
+    8,
+    0,
+    0,
+    NULL,
+    &acon_validate,
+  },
+
+  {
+    /* Q_UCON - UPDATE_CONTAINER, v7 */
+    "update_container",
+    "ucon",
+    7,
+    UPDATE,
+    0,
+    CONTAINERS_TABLE,
+    0,
+    ucon_fields,
+    8,
+    0,
+    1,
+    NULL,
+    &ucon_validate,
+  },
+
+  {
+    /* Q_DCON - DELETE_CONTAINER, v7 */
+    "delete_container",
+    "dcon",
+    7,
+    DELETE,
+    "c",
+    CONTAINERS_TABLE,
+    NULL,
+    dcon_fields,
+    0,
+    "cnt_id = %d",
+    1,
+    NULL,
+    &dcon_validate,
+  },
+
+  {
+    /* Q_AMCN - ADD_MACHINE_TO_CONTAINER, v7 */
+    "add_machine_to_container",
+    "amcn",
+    7,
+    APPEND,
+    "mcn",
+    MCNTMAP_TABLE,
+    "INTO mcntmap (mach_id, cnt_id) VALUES (%d, %d)",
+    amcn_fields,
+    2,
+    0,
+    0,
+    NULL,
+    &amcn_validate,
+  },
+
+  {
+    /* Q_DMCN - DELETE_MACHINE_FROM_CONTAINER, v7 */
+    "delete_machine_from_container",
+    "dmcn",
+    7,
+    DELETE,
+    "mcn",
+    MCNTMAP_TABLE,
+    0,
+    amcn_fields,
+    0,
+    "mach_id = %d AND cnt_id = %d",
+    2,
+    NULL,
+    &amcn_validate,
+  },
+
+  {
+    /* Q_GMNM - GET_MACHINE_TO_CONTAINER_MAP, v7 */
+    "get_machine_to_container_map",
+    "gmnm",
+    7,
+    RETRIEVE,
+    "mcn",
+    MCNTMAP_TABLE,
+    "c.name FROM machine m, containers c, mcntmap mcn",
+    amcn_fields,
+    1,
+    "m.name = UPPER('%s') AND mcn.cnt_id = c.cnt_id AND mcn.mach_id = m.mach_id",
+    1,
+    NULL,
+    NULL,
+  },
+
+  {
+    /* Q_GMOC - GET_MACHINES_OF_CONTAINER, v7 */
+    "get_machines_of_container",
+    "gmoc",
+    7,
+    RETRIEVE,
+    NULL,
+    MCNTMAP_TABLE,
+    NULL,
+    gmoc_fields,
+    2,
+    NULL,
+    2,
+    NULL,
+    &gmoc_validate,
+  },
+
+  {
+    /* Q_GSOC - GET_SUBCONTAINERS_OF_CONTAINER, v7 */
+    "get_subcontainers_of_container",
+    "gsoc",
+    7,
+    RETRIEVE,
+    NULL,
+    CONTAINERS_TABLE,
+    NULL,
+    gsoc_fields,
+    1,
+    NULL,
+    2,
+    NULL,
+    &gsoc_validate,
   },
 
 };

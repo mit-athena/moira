@@ -1,4 +1,4 @@
-/* $Id: qsupport.pc,v 2.32 2001-04-01 05:31:20 zacheiss Exp $
+/* $Id: qsupport.pc,v 2.33 2001-04-26 21:26:10 zacheiss Exp $
  *
  * Special query routines
  *
@@ -18,7 +18,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.pc,v 2.32 2001-04-01 05:31:20 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.pc,v 2.33 2001-04-26 21:26:10 zacheiss Exp $");
 
 extern char *whoami, *table_name[];
 extern int dbms_errno, mr_errcode;
@@ -1849,5 +1849,234 @@ int get_user_by_reservation(struct query *q, char **argv, client *cl,
     }
   EXEC SQL CLOSE csr_gubr;
 
+  return MR_SUCCESS;
+}
+
+int update_container(struct query *q, char *argv[], client *cl)
+{
+  EXEC SQL BEGIN DECLARE SECTION;
+  int cnt_id, acl_id, memacl_id, who;
+  char name[CONTAINERS_NAME_SIZE], newchildname[CONTAINERS_NAME_SIZE];
+  char* newname, *entity, *description, *location, *contact, *acl_type, *memacl_type;
+  EXEC SQL END DECLARE SECTION;
+  char* tmpchar;
+  int cnt, childid;
+  char childname[CONTAINERS_NAME_SIZE];
+
+  cnt_id = *(int *)argv[0];
+  newname = argv[1];
+  description = argv[2];
+  location = argv[3];
+  contact = argv[4];
+  acl_type = argv[5];
+  acl_id = *(int *)argv[6];
+  memacl_type = argv[7];
+  memacl_id = *(int *)argv[8];
+  entity = cl->entity;
+  who = cl->client_id;
+
+  EXEC SQL SELECT name INTO :name
+    FROM containers
+    WHERE cnt_id = :cnt_id; 
+
+  /* trim off the trailing spaces */
+   strcpy(name, strtrim(name));
+
+  /* if we are renaming the container */
+  if (strcmp(name, newname))
+  {
+    /* make sure that only the name part of the name has been changed */
+    tmpchar = strrchr(name, '/');
+    /* not a top-level name */
+    if (tmpchar)
+    {
+      cnt = tmpchar - name + 1;
+      /* the parent part of the old and new name should be identical */
+      if (strncmp(name, newname, cnt))
+        return MR_NEW_CONTAINER_NAME;
+    }
+    /* top level name, new name should be a top level name too */
+    else
+    {
+      if (strrchr(newname, '/'))
+        return MR_NEW_CONTAINER_NAME;
+    }
+
+    /* update the name for this container */
+    EXEC SQL UPDATE containers
+      SET name = :newname
+    WHERE cnt_id = :cnt_id;
+
+    if (dbms_errno)
+      return mr_errcode;
+
+    /* get names for its child containers */
+    EXEC SQL DECLARE csr_ucon CURSOR FOR
+      SELECT name, cnt_id FROM containers WHERE name LIKE :name || '/' || '%';
+  
+    EXEC SQL OPEN csr_ucon;
+    if (dbms_errno)
+      return mr_errcode;
+
+    while (1)
+    {
+      EXEC SQL FETCH csr_ucon INTO :childname, :childid;
+      if (sqlca.sqlcode)
+	      break;
+      
+      /* concatenate the new parent name with the existing sub-container name
+       * we get the sub-containers new name */
+      tmpchar = childname + strlen(name);
+      strcpy(newchildname, newname);
+      strcat(newchildname, tmpchar);
+
+      /* update the name */
+      EXEC SQL UPDATE containers
+        SET name = :newchildname, modtime = SYSDATE, modby = :who, modwith = :entity
+      WHERE cnt_id = :childid;
+
+      if (sqlca.sqlcode)
+        break;
+    }
+  
+    EXEC SQL CLOSE csr_ucon; 
+    if (dbms_errno)
+      return mr_errcode;
+  }
+
+  /* update the remaining fields */
+  EXEC SQL UPDATE containers 
+    SET description = NVL(:description, CHR(0)), location = NVL(:location, CHR(0)), 
+      contact = NVL(:contact, CHR(0)), acl_type = :acl_type, acl_id = :acl_id, 
+      memacl_type = :memacl_type, memacl_id = :memacl_id, 
+      modtime = SYSDATE, modby = :who, modwith = :entity
+    WHERE cnt_id = :cnt_id;
+
+  if (dbms_errno)
+    return mr_errcode;
+    
+  return MR_SUCCESS;
+}
+
+int get_machines_of_container(struct query *q, char *argv[], client *cl,
+			int (*action)(int, char *[], void *), void *actarg)
+{
+  EXEC SQL BEGIN DECLARE SECTION;
+  int cnt_id, isrecursive;
+  char machinename[MACHINE_NAME_SIZE], containername[CONTAINERS_NAME_SIZE];
+  char *qs;
+  EXEC SQL END DECLARE SECTION;
+
+  char querystring[512], tmp [256];
+  char *rargv[2];
+  int found = 0;
+  
+  rargv[0] = machinename;
+  rargv[1] = containername;
+
+  cnt_id = *(int *)argv[0];
+  isrecursive = *(int *)argv[1];
+
+  /* get the container name */
+  
+  EXEC SQL SELECT name INTO :containername
+    FROM containers
+    WHERE cnt_id = :cnt_id; 
+
+  /* trim off the trailing spaces */
+  strcpy(containername, strtrim(containername));
+
+  strcpy(querystring, "SELECT a.name, b.name FROM machine a, containers b, mcntmap c ");
+  strcat(querystring, "WHERE a.mach_id = c.mach_id AND b.cnt_id = c.cnt_id ");
+  
+  if (!isrecursive)
+    sprintf(tmp, "AND b.cnt_id = %d ", cnt_id);
+  else
+    sprintf(tmp, "AND (b.cnt_id = %d OR b.name LIKE '%s/%%') ", cnt_id, containername);
+
+  strcat(querystring, tmp);
+  strcat(querystring, "ORDER BY b.name, a.name");
+
+  qs = querystring;
+
+  EXEC SQL PREPARE stmt FROM :qs;
+  if (sqlca.sqlcode)
+    return MR_INTERNAL;
+  EXEC SQL DECLARE curs_gmnm CURSOR FOR stmt;
+  EXEC SQL OPEN curs_gmnm;
+  
+   while (1)
+	{
+	  EXEC SQL FETCH curs_gmnm INTO :machinename, :containername;
+	  if (sqlca.sqlcode)
+	    break;
+	  (*action)(2, rargv, actarg);
+	  found++;
+	}
+
+  EXEC SQL CLOSE curs_gmnm;
+  if (!found)
+    return MR_NO_MATCH;
+  return MR_SUCCESS;
+}
+
+int get_subcontainers_of_container(struct query *q, char *argv[], client *cl,
+			int (*action)(int, char *[], void *), void *actarg)
+{
+  EXEC SQL BEGIN DECLARE SECTION;
+  int cnt_id, isrecursive;
+  char containername[CONTAINERS_NAME_SIZE], subcontainername[CONTAINERS_NAME_SIZE];
+  char *qs;
+  EXEC SQL END DECLARE SECTION;
+
+  char querystring[512], tmp [256];
+  char *rargv[1];
+  int found = 0;
+  
+  rargv[0] = subcontainername;
+
+  cnt_id = *(int *)argv[0];
+  isrecursive = *(int *)argv[1];
+
+  /* get the container name */
+  
+  EXEC SQL SELECT name INTO :containername
+    FROM containers
+    WHERE cnt_id = :cnt_id; 
+
+  /* trim off the trailing spaces */
+  strcpy(containername, strtrim(containername));
+
+  strcpy(querystring, "SELECT name FROM containers ");
+  
+  if (!isrecursive)
+    sprintf(tmp, "WHERE name LIKE '%s/%%' and name NOT LIKE '%s/%%/%%' ", containername, 
+        containername);
+  else
+    sprintf(tmp, "WHERE name LIKE '%s/%%' ", containername);
+
+  strcat(querystring, tmp);
+  strcat(querystring, "ORDER BY name");
+
+  qs = querystring;
+
+  EXEC SQL PREPARE stmt FROM :qs;
+  if (sqlca.sqlcode)
+    return MR_INTERNAL;
+  EXEC SQL DECLARE curs_gsoc CURSOR FOR stmt;
+  EXEC SQL OPEN curs_gsoc;
+  
+   while (1)
+	{
+	  EXEC SQL FETCH curs_gsoc INTO :subcontainername;
+	  if (sqlca.sqlcode)
+	    break;
+	  (*action)(1, rargv, actarg);
+	  found++;
+	}
+
+  EXEC SQL CLOSE curs_gsoc;
+  if (!found)
+    return MR_NO_MATCH;
   return MR_SUCCESS;
 }

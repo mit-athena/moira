@@ -1,3 +1,4 @@
+
 @part[deploy, root "sms.mss"]
 @MajorSection(Deployment, Integration, and Scheduling)
 
@@ -20,76 +21,42 @@ will not support time sharing.  This then assumes that the old database
 will support the time sharing environment as long as it still
 exists.
 
-The following development schedule is planned:
+@subsection(Deployment)
 
-@Begin(Itemize)
+SMS is a system which does not operate in peices.  For every service,
+there is a corresponding application interface.  For every service,
+there is a field in the database; and, for every service, there
+is a consumer.  The deployment and testing of SMS is a difficult
+and sensitive process.  Basically, once SMS is committed to
+support Athena, everything must be in place.  There is no redundancy.
+For example, the support of hesiod alone requires seven application
+programs and the generation and propagation of
+nine different files.  Tetsing the system components individually 
+is a relatively
+straight forward process; testing the complete system and 
+simulating real usage patterns is much more difficult.  At this time,
+a plan is being drafted which will present the testing and deployment
+schedule for SMS.
 
-March 12 - 27 : Finish the technical plan.  Distribute to Athena staff and
-gather comments.
+A suitable plan, under consideration, is to provide a dummy database
+which will be a test bed for SMS.  Staff members at Athena will be
+notified of this database.  For a week's time this database will be
+tested as a dummy, allowing staff time to flush out bugs.  ALL
+CHANGES MADE TO THIS DATABASE WILL NOT BE PERMANENT.  This means
+that if I change my 'finger' information in this dummy database,
+it will not be affected in the real world.  Testing must first occur in a 
+closed-cell environment, where potential snags will not disrupt
+the day-to-day operations of Athena.  Each application program
+will be tested in as realistic of an environment as possible.
+Userreg, the new student registration program, is especially
+important.  This program will see great demand during the
+first week of school and therefore must work without a problem.
+There will be no time for debugging userreg after school starts.
+Therefore, userreg will be stressed by having many staff members
+try to use the program all at the same time.  This will attempt to
+simulate a worst case scenario of operation.
 
-March 30 - April 10 : Begin design and implementation of SMS data base and
-Data Control Manager Operation.  Study the process of bringing information
-over from Athenareg.
-
-April 13 - 24 : Start the first implementation of SMS database.  Use INGRES
-to build tuples and corresponding fields.  Study the actual use of remote
-administrative operation and determine the priority of the SMS protocol.
-Begin DCM development.(April 20 pjlevine runs BAA Marathon).
-
-April 27 - May 8 : Database development is at the point where clients can
-begin to access information.  DCM development continues as it can be tested
-with queries made to SMS database.  SMS protocol defined and development of
-SMS server begins.
-
-May 11 - 25 : Database development finalizing with real data being ported
-from Athenareg.  Begin to see need for application management tools.  Speak
-with operations regarding the use of specialized tools needed for effective
-data manipulation.  SMS server and remote applications defined.  Application
-library functions studied. Local management application developed for
-manipulating SMS data on the SMS machine.
-
-June 1 - 12 : Database complete.  Begin thorough testing and debugging of
-the database and its effectiveness. Limited DCM operation: feeds information
-to Hesiod, the Athena name server.  SMS server and protocol see limited use
-as they are tested to support remote applications.  Remote applications use
-parts of the application library. All network operation uses Kerberos for
-data security. Operations begin to manipulate, locally, SMS data directly
-through management interface.
-
-June 15 - 26 : Database is tested and fully operational.  Study the effects
-of adding new items as the Athena plant becomes more complex.  SMS server
-near completion with remote applications performing limited tasks.  The DCM
-becomes more robust and starts to feed information to other services.
-
-June 29 - July 10 : Operations update all relevant fields in SMS along with
-maintaining athenareg.  The DCM now supports more servers and has the
-capability of manipulating generic information into many different site
-specific formats.  SMS protocol and server complete.  SMS capable of
-supporting remote application.
-
-** July 1 - Operational SMS for deployment.  Capable of supporting system
-servers.  Current user utilities (i.e., chhome, madm, finger, etc.)
-converted to use SMS application library.
-
-July 13 - 31 : Application library documentation begins.  Remote
-applications are developed in response to the needs of the community.
-Operations recognize the use of more tools and begin to rely on SMS
-exclusively service management.
-
-August 3 - 14 : Testing and debugging phase for remote applications and
-management tools.  Begin to see what the next phase of development SMS will
-go through.  Documentation and support of product begins.
-
-August 17 - 28 : Time sharing becomes a thing of the past.  SMS is used
-exclusively for Athena service management.  Begin next development phase.
-
-@End(Itemize)
-
-The above schedule reflects an optimal approach toward SMS development and
-deployment.  Certainly, as fundamental dates slip, sequential time deadlines
-become more unrealistic.  The constant evolution of the product during its
-development phase will also reflect much added detail to this technical
-plan.
+The deployment plan will be flushed out forthcoming.
 
 @MajorSection(Long Term Support Strategy)
 

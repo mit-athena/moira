@@ -1,11 +1,14 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.17 1988-01-04 12:09:00 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.18 1988-01-14 12:00:38 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
  *	$Log: not supported by cvs2svn $
+Revision 1.17  88/01/04  12:09:00  mar
+fixup pobox access checking & make id assignment more paranoid (wesommer)
+
 Revision 1.16  87/11/12  18:16:56  wesommer
 Add support for delete_user_by_uid.
 Fix access_pop.
@@ -73,7 +76,7 @@ Initial revision
  */
 
 #ifndef lint
-static char *rcsid_qsupport_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.17 1988-01-04 12:09:00 mar Exp $";
+static char *rcsid_qsupport_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.18 1988-01-14 12:00:38 mar Exp $";
 #endif lint
 
 #include "query.h"
@@ -249,20 +252,15 @@ access_maillist(q, argv, cl)
  **
  **/
 
-setup_add_group(q, argv, cl, access_check)
+setup_add_group(q, argv, cl)
     struct query *q;
     char *argv[];
     client *cl;
-    int access_check;
 ##{
 ##  int ngid;
 ##  int exists;
 ##  int rowcount;
        int status;
-
-    status = access_list(q, argv, cl);
-
-    if (status != SMS_SUCCESS || access_check) return(status);
 
 ##  range of g is groups
 ##  range of v is values
@@ -292,16 +290,13 @@ setup_add_group(q, argv, cl, access_check)
  **
  **/
 
-setup_add_user(q, argv, cl, access_check)
+setup_add_user(q, argv, cl)
     struct query *q;
     register char *argv[];
     client *cl;
-    int access_check;
 ##{
 ##  int nuid;
 ##  int exists;
-
-    if (access_check) return(SMS_SUCCESS);
 
     if (!bcmp(argv[1], "#", 2)) {
 ##      range of u is users
@@ -800,18 +795,15 @@ add_new_quota(q, argv)
     return(SMS_SUCCESS);
 ##}
 
-delete_current_quota(q, argv, cl, access_check)
+delete_current_quota(q, argv, cl)
     struct query *q;
     register char *argv[];
     client *cl;
-    int access_check;
 ##{
 ##  int mach_id;
 ##  int users_id;
 ##  char *device;
 ##  int quota;
-
-    if (access_check) return(SMS_SUCCESS);
 
     mach_id = *(int *)argv[0];
     device = argv[1];
@@ -1103,7 +1095,8 @@ get_query_need(q, argv, action, actarg)
     last_get_time = argv[1];
     table = q1->rtable;
 
-    if (q1->type != RETRIEVE) return(SMS_NO_MATCH);
+    if (q1 == NULL || q1->type != RETRIEVE || table == NULL)
+	return(SMS_NO_MATCH);
 
 ##  range of tbs is tblstats
 ##  repeat retrieve (need = any(tbs.modtime where tbs.#table = @table and

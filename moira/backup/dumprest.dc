@@ -1,0 +1,41 @@
+/*
+ *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/dumprest.dc,v $
+ *	$Author: mar $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/dumprest.dc,v 1.1 1992-08-10 14:42:10 mar Exp $
+ *
+ *  (c) Copyright 1988 by the Massachusetts Institute of Technology.
+ *  For copying and distribution information, please see the file
+ *  <mit-copyright.h>.
+ *
+ */
+
+#ifndef lint
+static char *rcsid_dumprest_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/dumprest.dc,v 1.1 1992-08-10 14:42:10 mar Exp $";
+#endif lint
+
+#include <stdio.h>
+#include <sys/file.h>
+#include <strings.h>
+#include <mit-copyright.h>
+
+punt(msg)
+	char *msg;
+{
+	perror(msg);
+##	exit
+	exit(1);
+}
+
+
+
+
+/*
+ * Local Variables:
+ * mode: c
+ * c-indent-level: 4
+ * c-continued-statement-offset: 4
+ * c-brace-offset: -4
+ * c-argdecl-indent: 4
+ * c-label-offset: -4
+ * End:
+ */

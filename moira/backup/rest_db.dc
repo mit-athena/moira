@@ -1,0 +1,198 @@
+/*
+ *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/rest_db.dc,v $
+ *	$Author: mar $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/rest_db.dc,v 1.1 1992-08-10 14:43:44 mar Exp $
+ *
+ *  (c) Copyright 1988 by the Massachusetts Institute of Technology.
+ *  For copying and distribution information, please see the file
+ *  <mit-copyright.h>.
+ * 
+ */
+
+#ifndef lint
+static char *rcsid_rest_db_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/rest_db.dc,v 1.1 1992-08-10 14:43:44 mar Exp $";
+#endif lint
+
+#include <sys/file.h>
+#include <stdio.h>
+#include <ctype.h>
+#include <mit-copyright.h>
+#include "dump_db.h"
+
+
+/*ARGSUSED*/
+main(argc, argv)
+    int argc;
+    char **argv;
+{
+    char buf[BUFSIZ];
+    char *prefix;
+    
+    if (!yes_or_no("Do you *REALLY* want to wipe the SMS database?")) {
+	printf("I didn't think so\n");
+	exit(1);
+    }
+    if (!yes_or_no("Have you initialized an empty database named smstemp?")) {
+	printf("You should have\n");
+	exit(1);
+    }
+    
+    printf("Opening database: ");
+    (void) fflush(stdout);
+##	ingres smstemp
+
+    printf(" done\n");
+
+    printf("Prefix of backup to restore: ");
+    (void) fflush(stdout);
+    if (gets(buf) == NULL) {
+	return 1;
+    }
+    prefix = buf;
+    	
+    if (!yes_or_no("Are you SURE?")) {
+	printf("I didn't think so\n");
+	exit(1);
+    }
+    do_restores(prefix);
+    printf("Restore complete\n");
+##	exit
+    exit(0);
+    /*NOTREACHED*/
+}
+
+yes_or_no(prompt)
+    char *prompt;
+{
+    char buf[BUFSIZ];
+    int ret;
+    
+    int tt = open("/dev/tty", O_RDWR, 0);
+    FILE *o, *i;
+    
+    register char *cp;
+    
+    if (tt < 0) return 0;
+    
+    (void) fflush(stdout);
+    (void) fflush(stderr);
+    o = fdopen(dup(tt), "w");    
+    i = fdopen(dup(tt), "r");
+    (void) close(tt);    
+
+    for (;;) {
+	fprintf(o, "%s (yes or no): ", prompt);
+	(void) fflush(o);
+	if (fgets(buf, BUFSIZ, i) == NULL) goto err;
+	for (cp = buf; *cp; cp++) {
+	    if (isupper(*cp)) *cp=tolower(*cp);
+	}
+	if (strcmp(buf, "yes\n") == 0) {
+	    ret = 1; goto out;
+	}
+	if (strcmp(buf, "no\n") == 0) {
+	    ret = 0; goto out;
+	}
+    }
+
+err:
+    ret = 0;
+
+out:
+    (void) fclose(o);
+    (void) fclose(i);
+    return ret;
+}
+
+int parse_int(f)
+    register FILE *f;
+{
+    register int c;
+    register int val = 0;
+    register int sign = 1;
+    while ((c = getc(f)) != EOF && c != SEP_CHAR && c != '\n') {
+	if (c == '-') sign = -1;
+	else if (isdigit(c)) {
+	    val *= 10;
+	    val += (c - '0');
+	} else (void) fprintf(stderr,"non-digit in numeric field\n");
+    }
+    (void) ungetc(c, f);
+    return(val * sign);
+}
+
+void parse_str(f, buf, len)
+    register FILE *f;
+    register char *buf;
+    register int len;		/* incl trailing NULL */
+{
+    register int c;
+
+    while ((c = getc(f)) != EOF && c != SEP_CHAR && c != '\n' && len > 0) {
+	if (c == '\\') {
+	    c = getc(f);
+	    if (isdigit(c)) {
+		/* Expect three-digit octal number.. */
+		register int c1, c2;
+		c1 = getc(f);
+		c2 = getc(f);
+		if (!isdigit(c1) || !isdigit(c2)) 
+		    punt("Broken \\###");
+		/* Convert to ASCII code: */
+		*buf++ =  (((c-'0')<<6) + ((c1-'0')<<3) + c2-'0');
+	    } else if (c == '\\' || c == SEP_CHAR) {
+		*buf++ = c;
+		--len;
+	    } else punt ("Broken '\\'");
+	} else {
+	    *buf++ = c;
+	    --len;
+	}
+    }
+    if (c == EOF)
+	return;
+    
+    if (c != EOF && c != SEP_CHAR && c != '\n') {
+	fprintf(stderr, "Field too wide, truncated\n");
+	while ((c = getc(f)) != EOF && c != SEP_CHAR && c != '\n');
+	(void) ungetc(c, f);
+    } else {
+	*buf++ = 0;
+	(void) ungetc(c, f);
+    }
+}
+    
+void parse_sep(f)
+    FILE *f;
+{
+    if (getc(f) != SEP_CHAR) punt("Expected Separator");
+}
+void parse_nl(f)
+    FILE *f;
+{
+    if (getc(f) != '\n') punt("Expected newline");
+}
+
+
+FILE *open_file(prefix, suffix)
+    char *prefix, *suffix;
+{
+    char name[BUFSIZ];
+    int fd;
+    FILE *f;
+    
+    (void) strcpy(name, prefix);
+    (void) strcat(name, suffix);
+
+    fd = open(name, O_RDONLY, 0);
+    if (fd < 0) {
+	punt(name);
+    }
+    f = fdopen(fd, "r");
+    if (f == NULL) {
+	fprintf(stderr, "fdopen of ");
+	punt(name);
+    }
+    fprintf(stderr, "Working on %s\n", name);
+    return(f);
+}

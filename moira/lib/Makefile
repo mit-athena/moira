@@ -1,19 +1,19 @@
 #	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/Makefile,v $
 #	$Author: mar $
-#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/Makefile,v 1.5 1989-02-08 16:38:51 mar Exp $
+#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/Makefile,v 1.6 1989-06-28 13:56:37 mar Exp $
 #
 #	Makefile for SMS library.
 #
 LIBSRC=sms_auth.c sms_call.c sms_connect.c sms_data.c sms_init.c \
 	sms_query.c sms_param.c sms_access.c menu.c admin_call.c \
-	sms_do_update.c fixname.c strs.c fixhost.c nfsparttype.c \
+	sms_ops.c fixname.c strs.c fixhost.c nfsparttype.c \
 	sq.c hash.c idno.c critical.c
 
 CFILES=${LIBSRC}
 
 LIBOBJ=sms_auth.o sms_call.o sms_connect.o sms_data.o sms_init.o \
 	sms_query.o sms_param.o sms_access.o menu.o admin_call.o \
-	sms_do_update.o	fixname.o strs.o fixhost.o nfsparttype.o \
+	sms_ops.o fixname.o strs.o fixhost.o nfsparttype.o \
 	sq.o hash.o idno.o critical.o \
 	sms_et.o ureg_err.o krb_et.o admin_err.o
 
@@ -24,12 +24,12 @@ INCDIRS=-I../include
 CFLAGS= ${INCDIRS} ${COPTS}
 LINTFLAGS= -uhv
 
-ALL=libsms.a llib-lsms.ln libsms_p.a
+ALL=libsms.a llib-lsms.ln # libsms_p.a
 
 .c.o:
-	${CC} -c -pg ${CFLAGS} $*.c
-	ld -x -r $*.o
-	mv a.out profiled/$*.o
+#	${CC} -c -pg ${CFLAGS} $*.c
+#	ld -x -r $*.o
+#	mv a.out profiled/$*.o
 	${CC} -c ${CFLAGS} $*.c
 	ld -x -r $*.o
 	mv a.out $*.o
@@ -39,30 +39,22 @@ all: ${ALL}
 libsms.a: ${LIBOBJ}
 	ar cruv $@ `lorder ${LIBOBJ} | tsort`
 	ranlib $@
-	(cd profiled; ar cruv ../libsms_p.a ${LIBOBJ}; ranlib ../libsms_p.a)
+#	(cd profiled; ar cruv ../libsms_p.a ${LIBOBJ}; ranlib ../libsms_p.a)
 
 smslib.dvi: smslib.tex
 	latex smslib.tex
 
-krb_et.o: krb_et.et
+krb_et.c krb_et.h: krb_et.et
 	../et/compile_et krb_et.et
-	cp krb_et.o profiled/krb_et.o
 
-sms_et.o: sms_et.et
+sms_et.c sms_et.h: sms_et.et
 	../et/compile_et sms_et.et
-	cp sms_et.o profiled/sms_et.o
 
-sms_et.h: sms_et.o
-
-ureg_err.o ureg_err.h: ureg_err.et
+ureg_err.c ureg_err.h: ureg_err.et
 	../et/compile_et ureg_err.et
-	cp ureg_err.o profiled/ureg_err.o
 
-admin_err.o: admin_err.et
+admin_err.c admin_err.h: admin_err.et
 	../et/compile_et admin_err.et
-	cp admin_err.o profiled/admin_err.o
-
-admin_err.h: admin_err.o
 
 ../include/sms_et.h: sms_et.h
 
@@ -76,8 +68,8 @@ clean:
 install:
 	install -m 644 libsms.a ${DESTDIR}/usr/athena/lib/libsms.a
 	ranlib ${DESTDIR}/usr/athena/lib/libsms.a
-	install -m 644 libsms_p.a ${DESTDIR}/usr/athena/lib/libsms_p.a
-	ranlib ${DESTDIR}/usr/athena/lib/libsms_p.a
+#	install -m 644 libsms_p.a ${DESTDIR}/usr/athena/lib/libsms_p.a
+#	ranlib ${DESTDIR}/usr/athena/lib/libsms_p.a
 	-mkdir ${DESTDIR}/usr/athena/lib/lint
 	install -m 644 llib-lsms.ln ${DESTDIR}/usr/athena/lib/lint/llib-lsms.ln
 
@@ -110,61 +102,62 @@ depend: $(CFILES) sms_et.h admin_err.h ureg_err.h
 # the last constant line in the makefile should be...
 # DO NOT DELETE THIS LINE
 
-sms_auth.o: sms_auth.c ../include/mit-copyright.h sms_private.h sms_proto.h
-sms_auth.o: /usr/include/stdio.h ../include/gdb.h /usr/include/sys/types.h
-sms_auth.o: /usr/include/sys/time.h /usr/include/time.h ../include/sms.h
-sms_auth.o: ../include/sms_et.h /usr/include/krb.h ../include/mit-copyright.h
-sms_auth.o: /usr/include/des.h ../include/mit-copyright.h
-sms_auth.o: /usr/include/des_conf.h ../include/mit-copyright.h
-sms_call.o: sms_call.c ../include/mit-copyright.h sms_private.h sms_proto.h
-sms_call.o: /usr/include/stdio.h ../include/gdb.h /usr/include/sys/types.h
-sms_call.o: /usr/include/sys/time.h /usr/include/time.h ../include/sms.h
-sms_call.o: ../include/sms_et.h
+sms_auth.o: sms_auth.c ../include/mit-copyright.h sms_private.h
+sms_auth.o: ../include/sms_proto.h /usr/include/stdio.h ../include/gdb.h
+sms_auth.o: /usr/include/sys/types.h /usr/include/sys/time.h
+sms_auth.o: /usr/include/time.h ../include/sms.h ../include/sms_et.h
+sms_auth.o: /usr/include/krb.h ../include/mit-copyright.h /usr/include/des.h
+sms_auth.o: ../include/mit-copyright.h /usr/include/des_conf.h
+sms_auth.o: ../include/mit-copyright.h ../include/krb_et.h
+sms_call.o: sms_call.c ../include/mit-copyright.h sms_private.h
+sms_call.o: ../include/sms_proto.h /usr/include/stdio.h ../include/gdb.h
+sms_call.o: /usr/include/sys/types.h /usr/include/sys/time.h
+sms_call.o: /usr/include/time.h ../include/sms.h ../include/sms_et.h
 sms_connect.o: sms_connect.c ../include/mit-copyright.h sms_private.h
-sms_connect.o: sms_proto.h /usr/include/stdio.h ../include/gdb.h
+sms_connect.o: ../include/sms_proto.h /usr/include/stdio.h ../include/gdb.h
 sms_connect.o: /usr/include/sys/types.h /usr/include/sys/time.h
 sms_connect.o: /usr/include/time.h ../include/sms.h ../include/sms_et.h
-sms_data.o: sms_data.c ../include/mit-copyright.h sms_private.h sms_proto.h
-sms_data.o: /usr/include/stdio.h ../include/gdb.h /usr/include/sys/types.h
-sms_data.o: /usr/include/sys/time.h /usr/include/time.h ../include/sms.h
-sms_data.o: ../include/sms_et.h
-sms_init.o: sms_init.c ../include/mit-copyright.h sms_private.h sms_proto.h
-sms_init.o: /usr/include/stdio.h ../include/gdb.h /usr/include/sys/types.h
-sms_init.o: /usr/include/sys/time.h /usr/include/time.h ../include/sms.h
-sms_init.o: ../include/sms_et.h
-sms_query.o: sms_query.c ../include/mit-copyright.h sms_private.h sms_proto.h
-sms_query.o: /usr/include/stdio.h ../include/gdb.h /usr/include/sys/types.h
-sms_query.o: /usr/include/sys/time.h /usr/include/time.h ../include/sms.h
-sms_query.o: ../include/sms_et.h
-sms_param.o: sms_param.c ../include/mit-copyright.h sms_private.h sms_proto.h
+sms_data.o: sms_data.c ../include/mit-copyright.h sms_private.h
+sms_data.o: ../include/sms_proto.h /usr/include/stdio.h ../include/gdb.h
+sms_data.o: /usr/include/sys/types.h /usr/include/sys/time.h
+sms_data.o: /usr/include/time.h ../include/sms.h ../include/sms_et.h
+sms_init.o: sms_init.c ../include/mit-copyright.h sms_private.h
+sms_init.o: ../include/sms_proto.h /usr/include/stdio.h ../include/gdb.h
+sms_init.o: /usr/include/sys/types.h /usr/include/sys/time.h
+sms_init.o: /usr/include/time.h ../include/sms.h ../include/sms_et.h
+sms_query.o: sms_query.c ../include/mit-copyright.h sms_private.h
+sms_query.o: ../include/sms_proto.h /usr/include/stdio.h ../include/gdb.h
+sms_query.o: /usr/include/sys/types.h /usr/include/sys/time.h
+sms_query.o: /usr/include/time.h ../include/sms.h ../include/sms_et.h
+sms_param.o: sms_param.c ../include/mit-copyright.h /usr/include/sys/types.h
+sms_param.o: /usr/include/netinet/in.h sms_private.h ../include/sms_proto.h
 sms_param.o: /usr/include/stdio.h ../include/gdb.h /usr/include/sys/types.h
 sms_param.o: /usr/include/sys/time.h /usr/include/time.h ../include/sms.h
-sms_param.o: ../include/sms_et.h /usr/include/sys/types.h
-sms_param.o: /usr/include/netinet/in.h
-sms_access.o: sms_access.c ../include/mit-copyright.h sms_private.h sms_proto.h
-sms_access.o: /usr/include/stdio.h ../include/gdb.h /usr/include/sys/types.h
-sms_access.o: /usr/include/sys/time.h /usr/include/time.h ../include/sms.h
-sms_access.o: ../include/sms_et.h
+sms_param.o: ../include/sms_et.h
+sms_access.o: sms_access.c ../include/mit-copyright.h sms_private.h
+sms_access.o: ../include/sms_proto.h /usr/include/stdio.h ../include/gdb.h
+sms_access.o: /usr/include/sys/types.h /usr/include/sys/time.h
+sms_access.o: /usr/include/time.h ../include/sms.h ../include/sms_et.h
 menu.o: menu.c ../include/mit-copyright.h /usr/include/sys/types.h
 menu.o: /usr/include/stdio.h /usr/include/signal.h /usr/include/curses.h
 menu.o: /usr/include/stdio.h /usr/include/sgtty.h /usr/include/sys/ioctl.h
 menu.o: /usr/include/sys/ttychars.h /usr/include/sys/ttydev.h
 menu.o: /usr/include/ctype.h /usr/include/strings.h /usr/include/varargs.h
-menu.o: ../include/com_err.h ../include/mit-sipb-copyright.h ../include/menu.h
+menu.o: ../include/com_err.h ../include/menu.h
 admin_call.o: admin_call.c ../include/mit-copyright.h /usr/include/sys/errno.h
 admin_call.o: /usr/include/sys/types.h /usr/include/sys/time.h
 admin_call.o: /usr/include/time.h /usr/include/sys/ioctl.h
 admin_call.o: /usr/include/sys/ttychars.h /usr/include/sys/ttydev.h
 admin_call.o: /usr/include/sys/socket.h /usr/include/netinet/in.h
 admin_call.o: /usr/include/netdb.h /usr/include/strings.h /usr/include/ctype.h
-admin_call.o: /usr/include/stdio.h admin_err.h admin_server.h prot.h
-admin_call.o: /usr/include/krb.h ../include/mit-copyright.h /usr/include/des.h
-admin_call.o: ../include/mit-copyright.h /usr/include/des_conf.h
-admin_call.o: ../include/mit-copyright.h
-sms_do_update.o: sms_do_update.c ../include/mit-copyright.h sms_private.h
-sms_do_update.o: sms_proto.h /usr/include/stdio.h ../include/gdb.h
-sms_do_update.o: /usr/include/sys/types.h /usr/include/sys/time.h
-sms_do_update.o: /usr/include/time.h ../include/sms.h ../include/sms_et.h
+admin_call.o: /usr/include/stdio.h admin_err.h ../include/admin_server.h
+admin_call.o: ../include/prot.h /usr/include/krb.h ../include/mit-copyright.h
+admin_call.o: /usr/include/des.h ../include/mit-copyright.h
+admin_call.o: /usr/include/des_conf.h ../include/mit-copyright.h krb_et.h
+sms_ops.o: sms_ops.c ../include/mit-copyright.h sms_private.h
+sms_ops.o: ../include/sms_proto.h /usr/include/stdio.h ../include/gdb.h
+sms_ops.o: /usr/include/sys/types.h /usr/include/sys/time.h /usr/include/time.h
+sms_ops.o: ../include/sms.h ../include/sms_et.h
 fixname.o: fixname.c ../include/mit-copyright.h /usr/include/strings.h
 fixname.o: /usr/include/ctype.h
 strs.o: strs.c ../include/mit-copyright.h /usr/include/sys/types.h
@@ -189,3 +182,6 @@ critical.o: /usr/include/zephyr/zephyr_err.h /usr/include/zephyr/zephyr_conf.h
 critical.o: /usr/include/zephyr/mit-copyright.h /usr/include/errno.h
 critical.o: /usr/include/sys/types.h /usr/include/netinet/in.h
 critical.o: /usr/include/sys/time.h /usr/include/time.h /usr/include/stdio.h
+critical.o: /usr/include/krb.h ../include/mit-copyright.h /usr/include/des.h
+critical.o: ../include/mit-copyright.h /usr/include/des_conf.h
+critical.o: ../include/mit-copyright.h

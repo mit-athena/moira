@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/nfs.dc,v 1.1 1990-08-20 11:20:41 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/nfs.dc,v 1.2 1991-01-15 13:10:30 mar Exp $
  *
  * This generates the files necessary to load an nfs server.
  *
@@ -172,7 +172,7 @@ struct save_queue *lists;
 	      fprintf(fd, "%s\n", u);
 	}
 	EXEC SQL CLOSE m_cursor;
-	if (fclose(fd)) {
+	if (fclose(fd) == EOF) {
 	    fprintf(stderr, "error closing %s\n", file);
 	    exit(MR_CCONFIG);
 	}
@@ -380,7 +380,7 @@ struct save_queue *machs;
     EXEC SQL CLOSE q_cursor;
     if (quotasum)
       fprintf(fd, "%d %d\n", prevuid, quotasum);
-    if (fd != stdin && fclose(fd)) {
+    if (fd != stdin && fclose(fd) == EOF) {
 	fprintf(stderr, "error closing %s", file);
 	exit(MR_CCONFIG);
       }
@@ -425,7 +425,7 @@ struct save_queue *machs;
     EXEC SQL CLOSE q_cursor2;
     if (quotasum)
       fprintf(fd, "%d %d\n", prevuid, quotasum);
-    if (fd != stdin && fclose(fd)) {
+    if (fd != stdin && fclose(fd) == EOF) {
 	fprintf(stderr, "error closing %s", file);
 	exit(MR_CCONFIG);
       }
@@ -463,7 +463,7 @@ struct save_queue *machs;
 	fprintf(fd, "%s %d %d %s\n", strtrim(dir), uid, gid, strtrim(fstype));
     }    
     EXEC SQL CLOSE q_cursor3;
-    if (fclose(fd)) {
+    if (fclose(fd) == EOF) {
 	fprintf(stderr, "error closing %s", file);
 	exit(MR_CCONFIG);
     }

@@ -1,4 +1,4 @@
-/* $Id: user.c,v 1.63 2000-08-13 05:47:11 zacheiss Exp $
+/* $Id: user.c,v 1.64 2001-01-04 06:25:01 zacheiss Exp $
  *
  *	This is the file user.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -27,7 +27,7 @@
 
 #include <krb.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.63 2000-08-13 05:47:11 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.64 2001-01-04 06:25:01 zacheiss Exp $");
 
 void CorrectCapitalization(char **name);
 char **AskUserInfo(char **info, Bool name);
@@ -169,7 +169,7 @@ void CorrectCapitalization(char **name)
     {
       Put_message("You entered a name which does not follow the capitalization conventions.");
       sprintf(temp_buf, "Correct it to \"%s\"", fixname);
-      if (YesNoQuestion(temp_buf, 1) == TRUE)
+      if (YesNoQuestion(temp_buf, 0) == TRUE)
 	{
 	  free(*name);
 	  *name = strdup(fixname);

@@ -1,100 +1,122 @@
-#!/bin/csh -f
+#!/bin/sh
 # This script performs updates of hesiod files on hesiod servers.
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/hesiod.sh,v 1.16 1998-05-21 17:34:16 danw Exp $
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/hesiod.sh,v 1.17 1999-09-29 20:38:59 kcr Exp $
 
-set path=(/etc /bin /usr/bin /usr/etc /usr/athena/etc)
+exec >/tmp/moira_update.log 2>&1
+set -x 
+
+PATH=/etc:/bin:/usr/bin:/usr/etc:/usr/athena/etc
+export PATH
 
 # The following exit codes are defined and MUST BE CONSISTENT with the
 # error codes the library uses:
-set MR_HESFILE = 	47836472
-set MR_MISSINGFILE = 	47836473
-set MR_NAMED = 		47836475
-set MR_TARERR = 	47836476
+MR_HESFILE=47836472
+MR_MISSINGFILE=47836473
+MR_NAMED=47836475
+MR_TARERR=47836476
 
-umask 22
+umask 022
 
 # File that will contain the necessary information to be updated
-set TARFILE=/var/tmp/hesiod.out
+TARFILE=/var/tmp/nhesiod.out
 # Directory into which we will empty the tarfile
-set SRC_DIR=/etc/athena/_nameserver
+SRC_DIR=/etc/athena/_nameserver
 # Directory into which we will put the final product
-set DEST_DIR=/etc/athena/nameserver
+DEST_DIR=/etc/athena/nameserver
+
+NAMED=/etc/athena/named
+NAMED_PID=/var/athena/named.pid
 
 # Create the destination directory if it doesn't exist
-if (! -d $DEST_DIR) then
+if test ! -d $DEST_DIR
+then
    rm -f $DEST_DIR
    mkdir $DEST_DIR
    chmod 755 $DEST_DIR
-endif
+fi
 
 # If $SRC_DIR does not already exist, make sure that it gets created
 # on the same parition as $DEST_DIR.
-if (! -d $SRC_DIR) then
+if test ! -d $SRC_DIR
+then
 	chdir $DEST_DIR
 	mkdir ../_nameserver
 	chdir ../_nameserver
-	if ($SRC_DIR != `pwd`) then
+	if test $SRC_DIR != `pwd`
+	then
 		ln -s `pwd` $SRC_DIR
-	endif
-endif
+	fi
+fi
+
+# make sure SRC_DIR is empty
+/bin/rm -rf $SRC_DIR/*
 
 # Alert if tarfile doesn't exist
-if (! -r $TARFILE) exit $MR_MISSINGFILE
+if test ! -r $TARFILE 
+then
+	exit $MR_MISSINGFILE
+fi
 
-# Empty the tar file one file at a time and move each file to the
-# appropriate place only if it is not zero length.
 cd $SRC_DIR
-foreach  file (`tar tf $TARFILE | awk '{print $1}' | sed 's;/$;;'`)
-   if (. == $file) continue
-
-   rm -rf $file
-   echo extracting $file
-   tar xf $TARFILE $file
-   # Don't put up with errors extracting the information
-   if ($status) exit $MR_TARERR
+tar xvf $TARFILE
+# Don't put up with errors extracting the information
+if test $? -ne 0
+then
+   exit $MR_TARERR
+fi
+for file in *
+do
    # Make sure the file is not zero-length
-   if (! -z $file) then
+   if test ! -z $file
+   then
       mv -f $file $DEST_DIR
-      if ($status != 0) exit $MR_HESFILE
+      if test $? -ne 0
+      then
+          exit $MR_HESFILE
+      fi
    else
       rm -f $file
       exit $MR_MISSINGFILE
-   endif
-end
+   fi
+done
 
 # Kill off the current named and remove the named.pid file.  It is
 # important that this file be removed since the script uses its
 # existance as evidence that named as has been successfully restarted.
 
 # First, get statistics
-rm -f /usr/tmp/named.stats
-ln -s /var/named.stats /usr/tmp/named.stats
-kill -6 `cat /etc/named.pid`
+kill -ILL `cat $NAMED_PID`
 sleep 1
-# Use /bin/kill because, due to a bug in some versions of csh, failure
-# of a builtin will cause the script to abort
-kill -KILL `cat /etc/named.pid`
-rm -f /etc/named.pid
+kill -KILL `cat $NAMED_PID`
+rm -f $NAMED_PID
 
 # Restart named.
-/usr/sbin/in.named
+$NAMED
 echo named started
 
+sleep 1
 # This timeout is implemented by having the shell check TIMEOUT times
-# for the existance of /etc/named.pid and to sleep INTERVAL seconds
+# for the existance of $NAMED_PID and to sleep INTERVAL seconds
 # between each check.
 
-set TIMEOUT=60			# number of INTERVALS until timeout
-set INTERVAL=60			# number of seconds between checks
-set i = 0
-while ($i < $TIMEOUT)
+TIMEOUT=60			# number of INTERVALS until timeout
+INTERVAL=60			# number of seconds between checks
+i=0
+while test $i -lt $TIMEOUT
+do
+   if test -f $NAMED_PID
+   then
+	break
+   fi
    sleep $INTERVAL
-   if (-f /etc/named.pid) break
-   @ i++
-end
+   i=`expr $i + 1`
+done
 echo out of timeout loop
 # Did it time out?
-if ($i == $TIMEOUT) exit $MR_NAMED
+if test $i -eq $TIMEOUT 
+then
+	exit $MR_NAMED
+fi
 echo no timeout
 # Clean up!
 rm -f $TARFILE

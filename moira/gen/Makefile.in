@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.17 2000-02-21 21:15:50 zacheiss Exp $
+# $Id: Makefile.in,v 1.18 2000-02-27 19:10:54 zacheiss Exp $
 
 SHELL=/bin/sh
 @SET_MAKE@
@@ -42,7 +42,7 @@ TARGET=	acl.gen boot.gen directory.gen hesiod.gen hosts.gen \
 	mailhub.gen ndb.gen network.gen nfs.gen pobox.gen \
 	postoffice.gen print.gen warehouse.gen www.gen zephyr.gen
 
-SCRIPTS=boot.sh hesiod.sh mailhub.sh nfs.sh null.sh \
+SCRIPTS=boot.sh hesiod.sh mailhub.sh ndb.sh nfs.sh null.sh \
 	postoffice.sh print.sh sapprint.gen sapprint.sh warehouse.sh \
 	www.sh zephyr.sh install_dirs install_quotas zero_quotas
 

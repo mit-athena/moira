@@ -1,4 +1,4 @@
-/* $Id: mr_scall.c,v 1.37 1999-12-30 17:27:14 danw Exp $
+/* $Id: mr_scall.c,v 1.38 2000-01-06 21:43:40 danw Exp $
  *
  * Do RPC
  *
@@ -24,7 +24,7 @@
 #include <string.h>
 #include <unistd.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_scall.c,v 1.37 1999-12-30 17:27:14 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_scall.c,v 1.38 2000-01-06 21:43:40 danw Exp $");
 
 extern int nclients;
 extern client **clients;
@@ -77,8 +77,7 @@ void client_read(client *cl)
     {
       com_err(whoami, 0, "procno out of range");
       client_reply(cl, MR_UNKNOWN_PROC);
-      mr_destroy_reply(cl->req);
-      return;
+      goto out;
     }
   log_args(procnames[pn], 2, cl->req.mr_argc, cl->req.mr_argv);
 
@@ -86,8 +85,7 @@ void client_read(client *cl)
     {
       client_reply(cl, MR_DOWN);
       com_err(whoami, MR_DOWN, "(query refused)");
-      mr_destroy_reply(cl->req);
-      return;
+      goto out;
     }
 
   /* make sure this gets cleared before every operation */
@@ -131,6 +129,8 @@ void client_read(client *cl)
       do_version(cl);
       break;
     }
+
+out:
   mr_destroy_reply(cl->req);
   memset(&cl->req, 0, sizeof(mr_params));
 }

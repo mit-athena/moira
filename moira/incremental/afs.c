@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/afs.c,v 1.12 1990-06-07 13:04:34 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/afs.c,v 1.13 1990-06-15 12:22:13 mar Exp $
  *
  * Do AFS incremental updates
  *
@@ -13,7 +13,7 @@
 
 #define file_exists(file) (access((file), F_OK) == 0)
 
-char prs[64], fs[64];
+char pts[64], fs[64];
 
 char *whoami;
 
@@ -56,7 +56,7 @@ int argc;
 
     initialize_sms_error_table();
     initialize_krb_error_table();
-    sprintf(prs, "%s/prs", BIN_DIR);
+    sprintf(pts, "%s/pts", BIN_DIR);
     sprintf(fs, "%s/fs", BIN_DIR);
 
     if (!strcmp(table, "users")) {
@@ -113,12 +113,12 @@ int afterc;
     if (astate != 1 && bstate != 1)
       return;
     if (astate == 1 && bstate != 1) {
-	sprintf(cmd, "%s newuser -name %s -id %s",
-		prs, after[U_NAME], after[U_UID]);
+	sprintf(cmd, "%s createuser -name %s -id %s",
+		pts, after[U_NAME], after[U_UID]);
 	do_cmd(cmd);
 	return;
     } else if (astate != 1 && bstate == 1) {
-	sprintf(cmd, "%s delete %s", prs, before[U_NAME]);
+	sprintf(cmd, "%s delete -name %s", pts, before[U_NAME]);
 	do_cmd(cmd);
 	return;
     }
@@ -131,8 +131,8 @@ int afterc;
 
     if (beforec > U_NAME && afterc > U_NAME &&
 	strcmp(before[U_NAME], after[U_NAME])) {
-	sprintf(cmd, "%s chname -oldname %s -newname %s",
-		prs, before[U_NAME], after[U_NAME]);
+	sprintf(cmd, "%s rename -oldname %s -newname %s",
+		pts, before[U_NAME], after[U_NAME]);
 	do_cmd(cmd);
     }
 }
@@ -156,13 +156,13 @@ int afterc;
 
     if (bgid == 0 && agid != 0) {
 	sprintf(cmd,
-		"%s create -name system:%s -id %s -owner system:administrators",
-		prs, after[L_NAME], after[L_GID]);
+		"%s creategroup -name system:%s -owner system:administrators -id -%s",
+		pts, after[L_NAME], after[L_GID]);
 	do_cmd(cmd);
 	return;
     }
     if (agid == 0 && bgid != 0) {
-	sprintf(cmd, "%s delete -name system:%s", prs, before[L_NAME]);
+	sprintf(cmd, "%s delete -name system:%s", pts, before[L_NAME]);
 	do_cmd(cmd);
 	return;
     }
@@ -170,8 +170,8 @@ int afterc;
       return;
     if (strcmp(before[L_NAME], after[L_NAME])) {
 	sprintf(cmd,
-		"%s chname -oldname system:%s -newname system:%s",
-		prs, before[L_NAME], after[L_NAME]);
+		"%s rename -oldname system:%s -newname system:%s",
+		pts, before[L_NAME], after[L_NAME]);
 	do_cmd(cmd);
 	return;
     }
@@ -187,14 +187,14 @@ int afterc;
     char cmd[512];
 
     if (beforec == 0 && !strcmp(after[LM_TYPE], "USER")) {
-	sprintf(cmd, "%s add -user %s -group system:%s",
-		prs, after[LM_MEMBER], after[LM_LIST]);
+	sprintf(cmd, "%s adduser -user %s -group system:%s",
+		pts, after[LM_MEMBER], after[LM_LIST]);
 	do_cmd(cmd);
 	return;
     }
     if (afterc == 0 && !strcmp(before[LM_TYPE], "USER")) {
-	sprintf(cmd, "%s remove -user %s -group system:%s",
-		prs, before[LM_MEMBER], before[LM_LIST]);
+	sprintf(cmd, "%s removeuser -user %s -group system:%s",
+		pts, before[LM_MEMBER], before[LM_LIST]);
 	do_cmd(cmd);
 	return;
     }
@@ -231,7 +231,7 @@ int afterc;
 	strncmp("/afs", after[Q_DIRECTORY], 4))
       return;
 
-    sprintf(cmd, "%s setquota -dir %s -quota %s", fs,
+    sprintf(cmd, "%s setquota -dir %s -max %s", fs,
 	    after[Q_DIRECTORY], after[Q_QUOTA]);
     do_cmd(cmd);
     return;

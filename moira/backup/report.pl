@@ -1,5 +1,5 @@
 #!/moira/bin/perl
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/report.pl,v 1.1 2000-06-05 05:58:37 zacheiss Exp $
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/report.pl,v 1.2 2003-04-05 07:24:04 jweiss Exp $
 
 chdir($ARGV[0]);
 
@@ -97,7 +97,9 @@ undef %CLASS;
 	  "Not registerable (4)",
 	  "Enrolled/Registerable (5)",
 	  "Enrolled/Not Registerable (6)",
-	  "Half Enrolled (7)" );
+	  "Half Enrolled (7)",
+	  "Registerable, krb only (8)",
+	  "Active, Kerberos only (9)" );
 
 undef @values;
 printf("%5d Users by status:\n", $total);

@@ -1,7 +1,7 @@
 /*
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.22 1989-06-28 16:33:02 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.23 1989-08-16 21:50:29 mar Exp $
  *
  *      Copyright (C) 1987, 1988 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -16,7 +16,7 @@
  */
 
 #ifndef lint
-static char *rcsid_reg_svr_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.22 1989-06-28 16:33:02 mar Exp $";
+static char *rcsid_reg_svr_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.23 1989-08-16 21:50:29 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -70,13 +70,13 @@ main(argc,argv)
 	exit(1);
     }
     
-    if (status = get_krbrlm(krbrealm, 1)) {
+    if (status = krb_get_lrealm(krbrealm, 1)) {
 	status += ERROR_TABLE_BASE_krb;
 	com_err(whoami, status, " fetching kerberos realm");
 	exit(1);
     }
     
-    if (status = get_krbhst(krbhst, krbrealm, 1)) {
+    if (status = krb_get_krbhst(krbhst, krbrealm, 1)) {
 	status += ERROR_TABLE_BASE_krb;
 	com_err(whoami, status, " fetching kerberos hostname");
 	exit(1);
@@ -422,7 +422,7 @@ int ureg_get_tkt()
 
     /* Get keys for interacting with Kerberos admin server. */
     /* principal, instance, realm, service, service instance, life, file */
-    if (status = get_svc_in_tkt("register", "sms", krbrealm, "changepw", 
+    if (status = krb_get_svc_in_tkt("register", "sms", krbrealm, "changepw", 
 				krbhst, 1, KEYFILE))
 	status += ERROR_TABLE_BASE_krb;
 
@@ -483,7 +483,7 @@ int do_admin_call(login, passwd, uid)
     }
     
     dest_tkt();
-    com_err(whoami,status," returned from do_adin_call");
+    com_err(whoami,status," returned from do_admin_call");
     return status;
 }
 

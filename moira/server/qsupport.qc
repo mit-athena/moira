@@ -1,14 +1,14 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.22 1988-08-03 18:36:13 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.23 1988-08-05 16:06:13 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
  */
 
 #ifndef lint
-static char *rcsid_qsupport_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.22 1988-08-03 18:36:13 mar Exp $";
+static char *rcsid_qsupport_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.23 1988-08-05 16:06:13 mar Exp $";
 #endif lint
 
 #include "query.h"
@@ -2320,7 +2320,7 @@ validate_row(q, argv, v)
     table = q->rtable;
     name = v->field;
 
-    if (log_flags & LOG_RES)
+    if (log_flags & LOG_VALID)
 	/* tell the logfile what we're doing */
 	com_err(whoami, 0, "validating row: %s", qual);
     
@@ -2343,48 +2343,48 @@ validate_fields(q, argv, vo, n)
     while (--n >= 0) {
 	switch (vo->type) {
 	case V_NAME:
-	    if (log_flags & LOG_RES)
+	    if (log_flags & LOG_VALID)
 		com_err(whoami, 0, "validating %s in %s: %s", 
 		    vo->namefield, vo->table, argv[vo->index]);
 	    status = validate_name(argv, vo);
 	    break;
 
 	case V_ID:
-	    if (log_flags & LOG_RES)
+	    if (log_flags & LOG_VALID)
 		com_err(whoami, 0, "validating %s in %s: %s", 
 		    vo->idfield, vo->table, argv[vo->index]);
 	    status = validate_id(argv, vo);
 	    break;
 
 	case V_DATE:
-	    if (log_flags & LOG_RES)
+	    if (log_flags & LOG_VALID)
 		com_err(whoami, 0, "validating date: %s", argv[vo->index]);
 	    status = validate_date(argv, vo);
 	    break;
 
 	case V_TYPE:
-	    if (log_flags & LOG_RES)
+	    if (log_flags & LOG_VALID)
 		com_err(whoami, 0, "validating %s type: %s",
 		    vo->table, argv[vo->index]);
 	    status = validate_type(argv, vo);
 	    break;
 
 	case V_TYPEDATA:
-	    if (log_flags & LOG_RES)
+	    if (log_flags & LOG_VALID)
 		com_err(whoami, 0, "validating typed data (%s): %s",
 		    argv[vo->index - 1], argv[vo->index]);
 	    status = validate_typedata(q, argv, vo);
 	    break;
 
 	case V_RENAME:
-	    if (log_flags & LOG_RES)
+	    if (log_flags & LOG_VALID)
 	        com_err(whoami, 0, "validating rename %s in %s",
 			argv[vo->index], vo->table);
 	    status = validate_rename(argv, vo);
 	    break;
 
 	case V_CHAR:
-	    if (log_flags & LOG_RES)
+	    if (log_flags & LOG_VALID)
 	      com_err(whoami, 0, "validating chars: %s", argv[vo->index]);
 	    status = validate_chars(argv[vo->index]);
 	    break;

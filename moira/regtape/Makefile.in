@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.6 1998-10-30 18:19:01 danw Exp $
+# $Id: Makefile.in,v 1.7 1999-01-09 05:50:35 danw Exp $
 
 SHELL=/bin/sh
 @SET_MAKE@
@@ -28,15 +28,15 @@ SRCTOP=@top_srcdir@
 BUILDTOP=..
 mrbindir=@mrbindir@
 
-STUDENTS_OBJS=students.o
-EMPLOYEE_OBJS=employee.o
+STUDENT_OBJS=student.o
+STAFF_OBJS=staff.o
 VOTE_OBJS=vote.o
 SIGN_OBJS=sign.o
 VERIFY_OBJS=verify.o
 
-CFILES=students.c employee.c vote.c sign.c verify.c
+CFILES=student.c staff.c vote.c sign.c verify.c
 
-TARGET=students employee vote sign verify
+TARGET=student staff vote sign verify
 
 .SUFFIXES: .pc
 
@@ -49,7 +49,7 @@ TARGET=students employee vote sign verify
 all: $(TARGET)
 
 clean:
-	rm -f $(STDENTS_OBJS) $(EMPLOYEE_OBJS) $(VOTE_OBJS)
+	rm -f $(STDENTS_OBJS) $(STAFF_OBJS) $(VOTE_OBJS)
 	rm -f $(VERIFY_OBJS) $(SIGN_OBJS) $(CFILES) $(TARGET)
 
 depend: $(CFILES)
@@ -57,11 +57,11 @@ depend: $(CFILES)
 install: all
 	@set -x; for p in $(TARGET); do $(INSTALL_PROGRAM) $$p $(mrbindir); done
 
-students: $(STUDENTS_OBJS) $(MR_LIBDEP)
-	$(CC) -o $@ $(LDFLAGS) $(STUDENTS_OBJS) $(SQL_LIBS) $(LIBS)
+student: $(STUDENT_OBJS) $(MR_LIBDEP)
+	$(CC) -o $@ $(LDFLAGS) $(STUDENT_OBJS) $(SQL_LIBS) $(LIBS)
 
-employee: $(EMPLOYEE_OBJS) $(MR_LIBDEP)
-	$(CC) -o $@ $(LDFLAGS) $(EMPLOYEE_OBJS) $(SQL_LIBS) $(LIBS)
+staff: $(STAFF_OBJS) $(MR_LIBDEP)
+	$(CC) -o $@ $(LDFLAGS) $(STAFF_OBJS) $(SQL_LIBS) $(LIBS)
 
 vote: $(VOTE_OBJS) $(MR_LIBDEP)
 	$(CC) -o $@ $(LDFLAGS) $(VOTE_OBJS) $(SQL_LIBS) $(LIBS)

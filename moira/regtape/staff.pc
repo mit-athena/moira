@@ -1,4 +1,4 @@
-/* $Id: employee.pc,v 1.16 1999-01-09 05:47:55 danw Exp $
+/* $Id: staff.pc,v 1.1 1999-01-09 05:51:05 danw Exp $
  *
  * Load data into Moira from Personnel Office data file
  *
@@ -19,7 +19,7 @@
 EXEC SQL INCLUDE sqlca;
 extern void sqlglm(char *, unsigned int *, unsigned int *);
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/employee.pc,v 1.16 1999-01-09 05:47:55 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/staff.pc,v 1.1 1999-01-09 05:51:05 danw Exp $");
 
 #define WHO 11859		/* root */
 #define PROG "emp-tape"

@@ -1,4 +1,4 @@
-/* $Id: students.pc,v 1.9 1998-08-13 18:20:53 danw Exp $
+/* $Id: student.pc,v 1.1 1999-01-09 05:51:23 danw Exp $
  *
  * Load data into Moira from Registrar's Office data file
  *
@@ -21,7 +21,7 @@
 EXEC SQL INCLUDE sqlca;
 extern void sqlglm(char *, unsigned int *, unsigned int *);
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/students.pc,v 1.9 1998-08-13 18:20:53 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/student.pc,v 1.1 1999-01-09 05:51:23 danw Exp $");
 
 #define WHO 11859		/* root */
 #define PROG "stu-tape"

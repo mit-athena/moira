@@ -1,4 +1,4 @@
-/* $Id: cluster.c,v 1.46 2000-12-19 07:34:04 zacheiss Exp $
+/* $Id: cluster.c,v 1.47 2000-12-20 09:40:09 zacheiss Exp $
  *
  *	This is the file cluster.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -600,6 +600,16 @@ char **AskMCDInfo(char **info, int type, Bool name)
       if (strcmp(info[11], "NONE") &&
 	  GetValueFromUser("Owner's Name", &info[12]) == SUB_ERROR)
 	return NULL;
+      if (!strcmp(info[11], "KERBEROS"))
+	  {
+	    char *canon;
+
+	    mrcl_validate_kerberos_member(info[12], &canon);
+	    if (mrcl_get_message())
+	      Put_message(mrcl_get_message());
+	    free(info[12]);
+	    info[12] = canon;
+	  }
       if (GetValueFromUser("Administrative comment", &info[13]) == SUB_ERROR)
 	return NULL;
       if (GetValueFromUser("Operational comment", &info[14]) == SUB_ERROR)
@@ -655,6 +665,16 @@ char **AskMCDInfo(char **info, int type, Bool name)
       if (strcmp(info[SN_ACE_TYPE], "NONE") &&
 	  GetValueFromUser("Owner name", &info[SN_ACE_NAME]) == SUB_ERROR)
 	return NULL;
+      if (!strcmp(info[SN_ACE_TYPE], "KERBEROS"))
+	  {
+	    char *canon;
+
+	    mrcl_validate_kerberos_member(info[SN_ACE_NAME], &canon);
+	    if (mrcl_get_message())
+	      Put_message(mrcl_get_message());
+	    free(info[SN_ACE_NAME]);
+	    info[SN_ACE_NAME] = canon;
+	  }
       FreeAndClear(&info[SN_MODTIME], TRUE);
       FreeAndClear(&info[SN_MODBY], TRUE);
       FreeAndClear(&info[SN_MODWITH], TRUE);

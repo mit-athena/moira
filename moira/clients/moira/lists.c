@@ -1,4 +1,4 @@
-/* $Id: lists.c,v 1.43 2000-08-10 02:25:57 zacheiss Exp $
+/* $Id: lists.c,v 1.44 2000-12-20 09:40:10 zacheiss Exp $
  *
  *	This is the file lists.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -24,7 +24,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v 1.43 2000-08-10 02:25:57 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v 1.44 2000-12-20 09:40:10 zacheiss Exp $");
 
 struct mqelem *GetListInfo(int type, char *name1, char *name2);
 char **AskListInfo(char **info, Bool name);
@@ -243,7 +243,16 @@ char **AskListInfo(char **info, Bool name)
       if (GetValueFromUser(temp_buf, &info[L_ACE_NAME]) == SUB_ERROR)
 	return NULL;
     }
-
+  if (!strcasecmp(info[L_ACE_TYPE], "kerberos"))
+    {
+      char *canon;
+      
+      mrcl_validate_kerberos_member(info[L_ACE_NAME], &canon);
+      if (mrcl_get_message())
+	Put_message(mrcl_get_message());
+      free(info[L_ACE_NAME]);
+      info[L_ACE_NAME] = canon;
+    }
   if (GetTypeFromUser("What Type of Membership Administrator", "ace_type",
 		      &info[L_MEMACE_TYPE]) == SUB_ERROR)
     return NULL;
@@ -255,7 +264,16 @@ char **AskListInfo(char **info, Bool name)
       if (GetValueFromUser(temp_buf, &info[L_MEMACE_NAME]) == SUB_ERROR)
 	return NULL;
     }
+  if (!strcasecmp(info[L_MEMACE_TYPE], "kerberos"))
+    {
+      char *canon;
 
+      mrcl_validate_kerberos_member(info[L_MEMACE_NAME], &canon);
+      if (mrcl_get_message())
+	Put_message(mrcl_get_message());
+      free(info[L_MEMACE_NAME]);
+      info[L_MEMACE_NAME] = canon;
+    }
   if (GetValueFromUser("Description: ", &info[L_DESC]) == SUB_ERROR)
     return NULL;
 

@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menus.c,v 1.7 1988-07-29 18:36:01 kit Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menus.c,v 1.8 1988-08-07 17:52:04 mar Exp $";
 #endif lint
 
 /*	This is the file menus.c for the SMS Client, which allows a nieve
@@ -10,8 +10,8 @@
  *	By:		Chris D. Peterson
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menus.c,v $
- *      $Author: kit $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menus.c,v 1.7 1988-07-29 18:36:01 kit Exp $
+ *      $Author: mar $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menus.c,v 1.8 1988-08-07 17:52:04 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -401,14 +401,18 @@ Menu user_menu = {
     SIMPLEFUNC("adduser", "Add a new user to the database", 
 	       AddNewUser),
     SIMPLEFUNC("register", "Register a user", RegisterUser),
+    {DeactivateUser, NULLMENU, 2, {
+      {"deactivate", "Deactivate user"},
+      {"login", "Login name: "},
+    } },
     {DeleteUser, NULLMENU, 2, {
-      {"delete", "Delete user"},
+      {"expunge", "Expunge user"},
       {"login", "Login name: "}
     } },
-    {DeleteUserByUid, NULLMENU, 2, {
+/*    {DeleteUserByUid, NULLMENU, 2, {
       {"udelete", "Delete user by uid"},
       {"uid", "User ID (not MIT ID!): "}
-    } },
+    } }, */
     SUBMENU("pobox", "Post Office Box Menu", &pobox_menu),
     SUBMENU("quota", "Quota Menu", &quota_menu),
     SIMPLEFUNC("verbose", "Toggle Verbosity of Delete", ToggleVerboseMode)

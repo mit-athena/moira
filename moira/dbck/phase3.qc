@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase3.qc,v 1.3 1988-09-26 15:21:04 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase3.qc,v 1.4 1989-09-11 12:15:03 mar Exp $
  *
  *  (c) Copyright 1988 by the Massachusetts Institute of Technology.
  *  For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
 
 #define NULL 0
 
-static char phase3_qc_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase3.qc,v 1.3 1988-09-26 15:21:04 mar Exp $";
+static char phase3_qc_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase3.qc,v 1.4 1989-09-11 12:15:03 mar Exp $";
 
 
 empty_list_check(id, l, hint)
@@ -27,16 +27,16 @@ struct list *l;
  * increments the string reference count.
  */
 
-int string_check(id)
+struct string *string_check(id)
 int id;
 {
     register struct string *s;
 
     s = (struct string *) hash_lookup(strings, id);
     if (s == NULL)
-      return(0);
+      return(s);
     s->refc++;
-    return(1);
+    return(s);
 }
 
 

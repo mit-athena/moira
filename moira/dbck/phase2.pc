@@ -1,4 +1,4 @@
-/* $Id: phase2.pc,v 1.16 2000-01-26 18:22:19 danw Exp $
+/* $Id: phase2.pc,v 1.17 2000-03-05 08:27:38 kcr Exp $
  *
  * (c) Copyright 1988-1998 by the Massachusetts Institute of Technology.
  * For copying and distribution information, please see the file
@@ -15,7 +15,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase2.pc,v 1.16 2000-01-26 18:22:19 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase2.pc,v 1.17 2000-03-05 08:27:38 kcr Exp $");
 
 EXEC SQL WHENEVER SQLERROR DO dbmserr();
 
@@ -1367,7 +1367,7 @@ void check_ps(int id, void *printserver, void *hint)
       printf("Printserver on non-existant machine %d\n", id);
       if (single_fix("Delete", 0))
 	{
-	  single_delete("printserver", "mach_id", id);
+	  single_delete("printservers", "mach_id", id);
 	  return;
 	}
       else
@@ -1376,7 +1376,7 @@ void check_ps(int id, void *printserver, void *hint)
   else
     name = m->name;      
 
-  ps->modby = maybe_fixup_modby(ps->modby, id, name, "printserver",
+  ps->modby = maybe_fixup_modby(ps->modby, id, name, "printservers",
 				"modby", "mach_id");
   ps->printer_types = maybe_fixup_unref_string(ps->printer_types, id, name,
 					       "printservers", "printer_types",

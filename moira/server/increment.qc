@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/increment.qc,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/increment.qc,v 1.1 1989-08-28 15:12:31 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/increment.qc,v 1.2 1989-08-28 19:15:30 mar Exp $
  *
  *	Copyright (C) 1989 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_qrtn_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/increment.qc,v 1.1 1989-08-28 15:12:31 mar Exp $";
+static char *rcsid_qrtn_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/increment.qc,v 1.2 1989-08-28 19:15:30 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -40,7 +40,7 @@ static char *after[MAXARGC];
 static int afterc;
 
 /* structures to save entire sets of incremental changes */
-struct save_queue *incremental_sq;
+struct save_queue *incremental_sq = NULL;
 struct iupdate {
     char *table;
     int beforec;
@@ -88,7 +88,8 @@ incremental_init()
     aarg12 = after[12];
     aarg13 = after[13];
     aarg14 = after[14];
-    incremental_sq = sq_create();
+    if (incremental_sq == NULL)
+      incremental_sq = sq_create();
 }
 
 
@@ -329,34 +330,61 @@ incremental_update()
 }
 
 
-/* THIS IS WRONG.  We should keep a table of services getting incremental
- * updates.  But for now, just assume AFS
+/* Actually start incremental updates.  This caches the update table
+ * the first time it is called.
  */
+
+struct inc_cache {
+    struct inc_cache *next;
+    char *table;
+    char *service;
+};
+
 
 invoke_updates(argv, argc)
 char **argv;
 int argc;
-{
+##{
+    static int inited = 0;
+    static struct inc_cache *cache;
+    struct inc_cache *c;
+##  char tab[17], serv[17];
     int pid, i;
-    char *prog;
+    char prog[64];
 
-    prog = "/u1/sms/bin/afs.incr";
-    argv[0] = prog;
-    argv[argc] = 0;
-    pid = vfork();
-    switch (pid) {
-    case 0:
-	for (i = getdtablesize() - 1; i > 2; i--)
-	  close(i);
-	execv(prog, argv);
-	exit(1);
-    case -1:
-	com_err(whoami, 0, "Failed to start incremental update");
-	return;
-    default:
-	return;
+    if (!inited) {
+	inited++;
+
+##	retrieve (tab = incremental.table, serv = incremental.service) {
+    	    c = (struct inc_cache *)malloc(sizeof(struct inc_cache));
+	    c->next = cache;
+	    c->table = strsave(tab);
+	    c->service = strsave(serv);
+	    cache = c;
+##	}
     }
-}
+
+    for (c = cache; c; c = c->next) {
+	if (!strcmp(c->table, argv[1])) {
+	    sprintf(prog, "/u1/sms/bin/%s.incr", c->table);
+	    argv[0] = prog;
+	    argv[argc] = 0;
+	    pid = vfork();
+	    switch (pid) {
+	    case 0:
+		for (i = getdtablesize() - 1; i > 2; i--)
+		  close(i);
+		execv(prog, argv);
+		exit(1);
+	    case -1:
+		com_err(whoami, 0, "Failed to start incremental update");
+		return;
+	    default:
+		return;
+	    }
+	}
+    }
+##}
 
 
 /* Called when the current transaction is aborted to throw away any queued

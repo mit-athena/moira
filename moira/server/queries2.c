@@ -1,6 +1,6 @@
 /* This file defines the query dispatch table for version 2 of the protocol
  *
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/queries2.c,v 2.27 1997-09-05 20:12:37 danw Exp $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/queries2.c,v 2.28 1997-09-10 03:40:25 danw Exp $
  *
  * Copyright 1987, 1988 by the Massachusetts Institute of Technology.
  * For copying and distribution information, please see the file
@@ -424,7 +424,7 @@ static char *gubm_fields[] = {
 
 static char *gudf_fields[] = {
   LOGIN,
-  "dirflags",
+  "dirsuppress", "dirremote"
 };
 
 static struct validate gudf_validate =	
@@ -598,7 +598,7 @@ static struct validate uust_validate = {
 
 static char *uudf_fields[] = {
   LOGIN,
-  "dirflags",
+  "dirsuppress", "dirremote"
 };
 
 static struct validate uudf_validate = {
@@ -2889,9 +2889,9 @@ struct query Queries2[] = {
     RETRIEVE,
     "u",
     USERS_TABLE,
-    "u.dirflags FROM users u",
+    "u.dirsuppress, u.dirremote FROM users u",
     gudf_fields,
-    1,
+    2,
     "u.users_id = %d",
     1,
     &gudf_validate,
@@ -3024,9 +3024,9 @@ struct query Queries2[] = {
     UPDATE,
     "u",
     USERS_TABLE,
-    "users SET dirflags = %s",
+    "users SET dirsuppress = %s, dirremote = %s",
     uudf_fields,
-    1,
+    2,
     "users_id = %d",
     1,
     &uudf_validate,

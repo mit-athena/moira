@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/pobox.c,v 1.7 1988-07-29 18:36:23 kit Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/pobox.c,v 1.8 1988-08-07 18:40:21 qjb Exp $";
 #endif lint
 
 /*	This is the file pobox.c for the SMS Client, which allows a nieve
@@ -10,8 +10,8 @@
  *	By:		Chris D. Peterson
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/pobox.c,v $
- *      $Author: kit $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/pobox.c,v 1.7 1988-07-29 18:36:23 kit Exp $
+ *      $Author: qjb $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/pobox.c,v 1.8 1988-08-07 18:40:21 qjb Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -78,7 +78,7 @@ PrintPOMachines()
     struct qelem * top = NULL;
     
     if ( (status = sms_query("get_server_locations", CountArgs(args), args,
-			     StoreInfo, &top)) != SMS_SUCCESS) {
+			     StoreInfo, (char *)&top)) != SMS_SUCCESS) {
 	com_err(program_name, status, " in get_server_locations.");
 	return(SUB_ERROR);
     }
@@ -108,7 +108,8 @@ char ** argv;
     if (!ValidName(argv[1]))
 	return(DM_NORMAL);
     
-    switch (status = sms_query("get_pobox", 1, argv + 1, StoreInfo, &top)) {
+    switch (status = sms_query("get_pobox", 1, argv + 1, StoreInfo, 
+			       (char *)&top)) {
     case SMS_NO_MATCH:
 	Put_message("This user has no P.O. Box.");
 	break;

@@ -1,4 +1,4 @@
-$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/helpfile,v 1.2 1992-11-09 14:38:25 mar Exp $
+$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/helpfile,v 1.3 1992-12-10 10:47:34 mar Exp $
 *no_more_help
 Sorry, no further help is available.
 *show_user
@@ -338,9 +338,9 @@ select that item.
 
 When you are filling out a form, ENTER will advance you to the next
 field if there is more than one field in the form.  If there is only
-one field, ENTER is equivalent to clicking on OK.  SHIFT-ENTER is the
-same as clicking on OK.  ^C in a form is the same as clicking on
-CANCEL.  Meta-? is the same as clicking on HELP.
+one field, ENTER is equivalent to clicking on OK.  META-ENTER or
+SHIFT-ENTER is the same as clicking on OK.  ^C in a form is the same
+as clicking on CANCEL.  Meta-? is the same as clicking on HELP.
 *bugs
 Please report bugs in this program by sending email to:
                      bug-moira@mit.edu 
@@ -356,8 +356,8 @@ capitalization style so that the register program can find users.  So
 even though for a few names it may not look right, we strongly suggest
 that you follow what this program suggests.
 *confirm_del_all
-If you answer yes, this member will be deleted from the named list.\n\
-Answer no to avoid the deletion.  In either case, you will continue to\n\
+If you answer yes, this member will be deleted from the named list.
+Answer no to avoid the deletion.  In either case, you will continue to
 be prompted with the other lists the member belongs to.
 *show_filsys
 This will display information about a filesystem.  The filesystem may
@@ -497,12 +497,10 @@ matching quotas will be displayed.
 Note that quotas on AFS filesystems are of type ANY and will not match
 User or Group quotas.
 *add_quota
-[First enter the name of the filesystem.  The program will then
+First enter the name of the filesystem.  The program will then
 indicate whether this filesystem should have a type ANY quota (i.e. it
 is in AFS), a type GROUP quota (i.e. it is in NFS on a group quota
-partition), or type USER (anything else).]
-
-THIS DOES NOT WORK.  For now, you have to set the quota type by hand.
+partition), or type USER (anything else).
 
 If this is a user or group quota, you will have to fill in the name of
 the user or group.  Finally, enter the actual quota value in Kilobytes.

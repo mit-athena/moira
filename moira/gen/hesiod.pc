@@ -1,4 +1,4 @@
-/* $Id: hesiod.pc,v 1.11 1999-05-12 15:21:23 danw Exp $
+/* $Id: hesiod.pc,v 1.12 1999-05-26 17:19:50 danw Exp $
  *
  * This generates the zone files necessary to load a hesiod server.
  * The following zones are generated: passwd, uid, pobox, group,
@@ -23,7 +23,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/hesiod.pc,v 1.11 1999-05-12 15:21:23 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/hesiod.pc,v 1.12 1999-05-26 17:19:50 danw Exp $");
 
 #ifndef HTYPE
 #define HTYPE "TXT"
@@ -902,17 +902,18 @@ int do_printcap(void)
   EXEC SQL BEGIN DECLARE SECTION;
   char name[PRINTERS_NAME_SIZE], duplexname[PRINTERS_DUPLEXNAME_SIZE];
   char rp[PRINTERS_RP_SIZE], type[PRINTERS_TYPE_SIZE];
-  char duplexrp[PRINTERS_RP_SIZE];
-  int flag1, flag2, ka, pc, rm, rq;
+  char duplexrp[PRINTERS_RP_SIZE], pskind[PRINTSERVERS_KIND_SIZE];
+  int flag1, flag2, ka, rm;
   EXEC SQL END DECLARE SECTION;
-  char *rmname, *rqname;
+  char *rmname;
 
   sprintf(outf, "%s/printcap.db", hesiod_dir);
 
   if (stat(outf, &sb) == 0)
     {
       ftime = sb.st_mtime;
-      if (ModDiff (&flag1, "printcap", ftime)
+      if (ModDiff (&flag1, "printers", ftime)
+	  || ModDiff (&flag2, "printservers", ftime)
 	  || ModDiff (&flag2, "machine", ftime))
 	exit(MR_DATE);
       if (flag1 < 0 && flag2 < 0)
@@ -934,28 +935,34 @@ int do_printcap(void)
   get_mach();
 
   EXEC SQL DECLARE p_cursor2 CURSOR FOR
-    SELECT name, duplexname, type, rp, rm, ka, pc, rq
-    FROM printers;
+    SELECT p.name, p.duplexname, p.type, p.rp, p.rm, p.ka, ps.kind
+    FROM printers p, printservers ps
+    WHERE p.rm = ps.mach_id;
   EXEC SQL OPEN p_cursor2;
   while (1)
     {
       EXEC SQL FETCH p_cursor2 INTO :name, :duplexname, :type,
-	:rp, :rm, :ka, :pc, :rq;
+	:rp, :rm, :ka, :pskind;
       if (sqlca.sqlcode)
 	break;
       if (!(rmname = hash_lookup(machines, rm)))
 	continue;
-      rqname = rq ? hash_lookup(machines, rq) : NULL;
       strtrim(name);
       if (!valid(name))
 	continue;
       strtrim(rp);
-      fprintf(out, "%s.pcap\t%s %s \"%s:rp=%s:rm=%s:ka#%d:pc#%d",
-	      name, HCLASS, HTYPE, name, rp, rmname, ka, pc);
-      if (rqname)
-	fprintf(out, ":rq=%s\"\n", rqname);
-      else
-	fputs("\"\n", out);
+      fprintf(out, "%s.pcap\t%s %s \"%s:rp=%s:rm=%s:ka#%d:",
+	      name, HCLASS, HTYPE, name, rp, rmname, ka);
+
+      strtrim(pskind);
+      if (!strcmp(pskind, "BSD"))
+	fprintf(out, "auth=none:remote_support=RQM:");
+      else if (!strcmp(pskind, "ATHENA"))
+	fprintf(out, "auth=kerberos4:az:remote_support=RQM:");
+      else if (!strcmp(pskind, "LPRNG"))
+	fprintf(out, "auth=kerberos5:xn:");
+
+      fputs("\"\n", out);
 
       strtrim(duplexname);
       if (!valid(duplexname))
@@ -968,13 +975,18 @@ int do_printcap(void)
 	}
       else
 	strcpy(duplexrp, duplexname);
-      fprintf(out, "%s.pcap\t%s %s \"%s:rp=%s:rm=%s:ka#%d:pc#%d",
+      fprintf(out, "%s.pcap\t%s %s \"%s:rp=%s:rm=%s:ka#%d:",
 	      duplexname, HCLASS, HTYPE, duplexname, duplexrp,
-	      rmname, ka, pc);
-      if (rqname)
-	fprintf(out, ":rq=%s\"\n", rqname);
-      else
-	fputs("\"\n", out);
+	      rmname, ka);
+
+      if (!strcmp(pskind, "BSD"))
+	fprintf(out, "auth=none:remote_support=RQM:");
+      else if (!strcmp(pskind, "ATHENA"))
+	fprintf(out, "auth=kerberos4:az:remote_support=RQM:");
+      else if (!strcmp(pskind, "LPRNG"))
+	fprintf(out, "auth=kerberos5:xn:");
+
+      fputs("\"\n", out);
     }
   EXEC SQL CLOSE p_cursor2;
 

@@ -1,5 +1,5 @@
 .TH STELLA 1 "10 Feb 2000" "MIT Athena"
-\" RCSID: $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/man/stella.1,v 1.4 2000-12-19 07:34:21 zacheiss Exp $
+\" RCSID: $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/man/stella.1,v 1.5 2001-08-16 21:46:13 zacheiss Exp $
 .SH NAME
 stella \- examine and modify information about hosts in Moira
 .SH SYNOPSIS
@@ -72,6 +72,9 @@ left off if the owner name is non ambiguous.
 will try first as a user, and if that fails will try the member as a
 list.
 
+.IP \fB-unformatted\ \fRor\ \fB-u\fR
+Display host information with each field on a seperate line, in the 
+form "fieldname: value".
 .IP \fB-verbose\ \fRor\ \fB-v\fR
 Give more information.  With this flag, stella will display the
 queries it is making to the moira server.

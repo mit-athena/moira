@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_sauth.c,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_sauth.c,v 1.17 1990-03-19 15:41:59 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_sauth.c,v 1.18 1990-03-28 15:27:25 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_sms_sauth_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_sauth.c,v 1.17 1990-03-19 15:41:59 mar Exp $";
+static char *rcsid_sms_sauth_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_sauth.c,v 1.18 1990-03-28 15:27:25 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -77,8 +77,8 @@ do_auth(cl)
 	else
 	  ok = 0;
 	/* this is in a separate function because it accesses the database */
-	set_krb_mapping(cl->clname, ad.pname, ok,
-			&cl->client_id, &cl->users_id);
+	status = set_krb_mapping(cl->clname, ad.pname, ok,
+				 &cl->client_id, &cl->users_id);
 
 	if (cl->args->mr_version_no == MR_VERSION_2) {
 	    bcopy(cl->args->mr_argv[1], cl->entity, 8);
@@ -91,7 +91,9 @@ do_auth(cl)
 	if (log_flags & LOG_RES)
 	    com_err(whoami, 0, "Auth to %s using %s, uid %d cid %d",
 		    cl->clname, cl->entity, cl->users_id, cl->client_id);
-	if (cl->users_id == 0)
+	if (status != MR_SUCCESS)
+	  cl->reply.mr_status = status;
+	else if (cl->users_id == 0)
 	  cl->reply.mr_status = MR_USER_AUTH;
 }
 

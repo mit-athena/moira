@@ -1,4 +1,4 @@
-/* $Id: phase2.pc,v 1.8 1999-01-27 19:36:01 danw Exp $
+/* $Id: phase2.pc,v 1.9 1999-05-26 17:02:28 danw Exp $
  *
  * (c) Copyright 1988-1998 by the Massachusetts Institute of Technology.
  * For copying and distribution information, please see the file
@@ -15,7 +15,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase2.pc,v 1.8 1999-01-27 19:36:01 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase2.pc,v 1.9 1999-05-26 17:02:28 danw Exp $");
 
 EXEC SQL WHENEVER SQLERROR DO dbmserr();
 
@@ -28,8 +28,8 @@ int show_printer_spool(void *id);
 int show_printer_quota(void *id);
 int show_printer_ac(void *id);
 int show_printer_lpc_acl(void *id);
-int fix_printer_ac(void *id);
-int fix_printer_lpc_acl(void *id);
+void fix_printer_ac(void *id);
+void fix_printer_lpc_acl(void *id);
 void user_check(int id, void *user, void *hint);
 int maybe_fixup_unref_string(int sid, int oid, char *oname, char *table,
 			     char *field, char *idfield);
@@ -194,12 +194,12 @@ int show_printer_loghost(void *id)
   char name[PRINTERS_NAME_SIZE];
   EXEC SQL END DECLARE SECTION;
 
-  EXEC SQL DECLARE csr235 CURSOR FOR
+  EXEC SQL DECLARE csr236 CURSOR FOR
     SELECT name FROM printers WHERE loghost = :iid;
-  EXEC SQL OPEN csr235;
+  EXEC SQL OPEN csr236;
   while (1)
     {
-      EXEC SQL FETCH csr235 INTO :name;
+      EXEC SQL FETCH csr236 INTO :name;
       if (sqlca.sqlcode)
 	break;
 
@@ -209,7 +209,7 @@ int show_printer_loghost(void *id)
       printf("Printer %s, non-existant spool machine %d in printers table\n",
 	     name, iid);
     }
-  EXEC SQL CLOSE csr235;
+  EXEC SQL CLOSE csr236;
   return found;
 }
 
@@ -220,12 +220,12 @@ int show_printer_spool(void *id)
   char name[PRINTERS_NAME_SIZE];
   EXEC SQL END DECLARE SECTION;
 
-  EXEC SQL DECLARE csr235 CURSOR FOR
+  EXEC SQL DECLARE csr237 CURSOR FOR
     SELECT name FROM printers WHERE rm = :iid;
-  EXEC SQL OPEN csr235;
+  EXEC SQL OPEN csr237;
   while (1)
     {
-      EXEC SQL FETCH csr235 INTO :name;
+      EXEC SQL FETCH csr237 INTO :name;
       if (sqlca.sqlcode)
 	break;
 
@@ -235,7 +235,7 @@ int show_printer_spool(void *id)
       printf("Printer %s, non-existant spool machine %d in printers table\n",
 	     name, iid);
     }
-  EXEC SQL CLOSE csr235;
+  EXEC SQL CLOSE csr237;
   return found;
 }
 
@@ -246,12 +246,12 @@ int show_printer_quota(void *id)
   char name[PRINTERS_NAME_SIZE];
   EXEC SQL END DECLARE SECTION;
 
-  EXEC SQL DECLARE csr236 CURSOR FOR
+  EXEC SQL DECLARE csr238 CURSOR FOR
     SELECT name FROM printers WHERE rq = :iid;
-  EXEC SQL OPEN csr236;
+  EXEC SQL OPEN csr238;
   while (1)
     {
-      EXEC SQL FETCH csr236 INTO :name;
+      EXEC SQL FETCH csr238 INTO :name;
       if (sqlca.sqlcode)
 	break;
 
@@ -261,7 +261,7 @@ int show_printer_quota(void *id)
       printf("Printer %s, non-existant quota server %d in printers table\n",
 	     name, iid);
     }
-  EXEC SQL CLOSE csr236;
+  EXEC SQL CLOSE csr238;
   return found;
 }
 
@@ -272,12 +272,12 @@ int show_printer_ac(void *id)
   char name[PRINTERS_NAME_SIZE];
   EXEC SQL END DECLARE SECTION;
 
-  EXEC SQL DECLARE csr236 CURSOR FOR
+  EXEC SQL DECLARE csr239 CURSOR FOR
     SELECT name FROM printers WHERE ac = :iid;
-  EXEC SQL OPEN csr236;
+  EXEC SQL OPEN csr239;
   while (1)
     {
-      EXEC SQL FETCH csr236 INTO :name;
+      EXEC SQL FETCH csr239 INTO :name;
       if (sqlca.sqlcode)
 	break;
 
@@ -287,7 +287,7 @@ int show_printer_ac(void *id)
       printf("Printer %s, non-existant restrict list %d in printers table\n",
 	     name, iid);
     }
-  EXEC SQL CLOSE csr236;
+  EXEC SQL CLOSE csr239;
   return found;
 }
 
@@ -298,12 +298,12 @@ int show_printer_lpc_acl(void *id)
   char name[PRINTERS_NAME_SIZE];
   EXEC SQL END DECLARE SECTION;
 
-  EXEC SQL DECLARE csr236 CURSOR FOR
+  EXEC SQL DECLARE csr240 CURSOR FOR
     SELECT name FROM printers WHERE lpc_acl = :iid;
-  EXEC SQL OPEN csr236;
+  EXEC SQL OPEN csr240;
   while (1)
     {
-      EXEC SQL FETCH csr236 INTO :name;
+      EXEC SQL FETCH csr240 INTO :name;
       if (sqlca.sqlcode)
 	break;
 
@@ -313,11 +313,11 @@ int show_printer_lpc_acl(void *id)
       printf("Printer %s, non-existant lpc ACL %d in printers table\n",
 	     name, iid);
     }
-  EXEC SQL CLOSE csr236;
+  EXEC SQL CLOSE csr240;
   return found;
 }
 
-void fix_printer_ac(int id)
+void fix_printer_ac(void *id)
 {
   EXEC SQL BEGIN DECLARE SECTION;
   int rowcount, iid = (int)id;
@@ -332,7 +332,7 @@ void fix_printer_ac(int id)
   modified("printers");
 }
 
-void fix_printer_lpc_acl(int id)
+void fix_printer_lpc_acl(void *id)
 {
   EXEC SQL BEGIN DECLARE SECTION;
   int rowcount, iid = (int)id;
@@ -1665,34 +1665,6 @@ int show_krb_str(void *id)
   return found;
 }
 
-int show_pdm_mach(void *id)
-{
-  EXEC SQL BEGIN DECLARE SECTION;
-  char name[PALLADIUM_NAME_SIZE];
-  int iid = (int)id;
-  EXEC SQL END DECLARE SECTION;
-  int found = 1;
-
-  EXEC SQL DECLARE csr220 CURSOR FOR
-    SELECT name FROM palladium
-    WHERE mach_id = :iid;
-  EXEC SQL OPEN csr220;
-  while (1)
-    {
-      EXEC SQL FETCH csr220 INTO :name;
-      if (sqlca.sqlcode)
-	break;
-
-      strtrim(name);
-      printf("Palladium server/supervisor %s is on non-existant machine %d\n",
-	     name, iid);
-      found = 0;
-    }
-  EXEC SQL CLOSE csr220;
-  return found;
-}
-
-
 void phase2(void)
 {
   struct save_queue *sq, *sq1, *sq2, *sq3, *sq4, *sq5;
@@ -2052,7 +2024,7 @@ void phase2(void)
   while (1)
     {
       EXEC SQL BEGIN DECLARE SECTION;
-      int mach_id, loghost, rm, rq, ac, lpc_acl, modby
+      int mach_id, loghost, rm, rq, ac, lpc_acl, modby;
       EXEC SQL END DECLARE SECTION;
 
       EXEC SQL FETCH csr233 INTO :mach_id, :loghost, :rm, :rq,
@@ -2075,8 +2047,9 @@ void phase2(void)
 	if (!hash_lookup(machines, loghost))
 	  {
 	    show_printer_loghost((void *)loghost);
-	    cantfix();
+	    cant_fix();
 	  }
+      }
     }
   EXEC SQL CLOSE csr233;
   generic_delete(sq1, show_printer_mach, "printers", "mach_id", 1);
@@ -2085,3 +2058,4 @@ void phase2(void)
   generic_fix(sq4, show_printer_ac, "Clear", fix_printer_ac, 1);
   generic_fix(sq5, show_printer_lpc_acl, "Clear", fix_printer_lpc_acl, 1);
 }
+ 

@@ -1,4 +1,4 @@
-/* $Id: qsupport.pc,v 2.28 2000-09-20 17:48:34 zacheiss Exp $
+/* $Id: qsupport.pc,v 2.29 2000-09-27 03:33:16 zacheiss Exp $
  *
  * Special query routines
  *
@@ -18,7 +18,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.pc,v 2.28 2000-09-20 17:48:34 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.pc,v 2.29 2000-09-27 03:33:16 zacheiss Exp $");
 
 extern char *whoami, *table_name[];
 extern int dbms_errno, mr_errcode;
@@ -866,7 +866,8 @@ int get_ace_internal(char *atype, int aid,
     WHERE z.xmt_type = :type AND z.xmt_id = :id
     OR z.sub_type = :type AND z.sub_id = :id
     OR z.iws_type = :type AND z.iws_id = :id
-    OR z.iui_type = :type AND z.iui_id = :id;
+    OR z.iui_type = :type AND z.iui_id = :id
+    OR z.owner_type = :type AND z.owner_id = :id;
   if (dbms_errno)
     return mr_errcode;
   EXEC SQL OPEN csr116;

@@ -1,4 +1,4 @@
-/* $Id: qsetup.pc,v 2.39 2000-08-15 00:06:44 zacheiss Exp $
+/* $Id: qsetup.pc,v 2.40 2000-09-27 03:33:15 zacheiss Exp $
  *
  * Query setup routines
  *
@@ -21,7 +21,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsetup.pc,v 2.39 2000-08-15 00:06:44 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsetup.pc,v 2.40 2000-09-27 03:33:15 zacheiss Exp $");
 
 extern char *whoami;
 extern int dbms_errno, mr_errcode;
@@ -433,7 +433,8 @@ int setup_dlis(struct query *q, char *argv[], client *cl)
     WHERE z.xmt_type = 'LIST' AND z.xmt_id = :id
     OR z.sub_type = 'LIST' AND z.sub_id = :id
     OR z.iws_type = 'LIST' AND z.iws_id = :id
-    OR z.iui_type = 'LIST' AND z.iui_id = :id;
+    OR z.iui_type = 'LIST' AND z.iui_id = :id
+    OR z.owner_type = 'LIST' and z.owner_id = :id;
   if (cnt > 0)
     return MR_IN_USE;
 

@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_util.c,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_util.c,v 1.14 1988-09-13 17:42:36 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_util.c,v 1.15 1989-08-16 20:47:49 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -9,7 +9,7 @@
  */
 
 #ifndef lint
-static char *rcsid_sms_util_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_util.c,v 1.14 1988-09-13 17:42:36 mar Exp $";
+static char *rcsid_sms_util_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_util.c,v 1.15 1989-08-16 20:47:49 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -121,21 +121,4 @@ char **argv;
 	}
     }
     return(0);
-}
-
-
-trim(s)
-register char *s;
-{
-    register char *p;
-
-    for (p = s; *s; s++)
-      if (*s != ' ')
-	p = s;
-    if (p != s) {
-	if (*p == ' ')
-	  *p = 0;
-	else
-	  p[1] = 0;
-    }
 }

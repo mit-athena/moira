@@ -99,6 +99,7 @@ sub athena_proc
     # COURSE    <user> all <group> all system:facdev all system:authuser rl
     # HOMEDIR   <user> all
     # LEASE	<user> all
+    # ORG	<user> all <group> all system:cwisfac all
     # PROJECT   <user> all <group> all
     # REF       <user> all system:anyuser rl
     # SW        <user> all system:swmaint all system:authuser rl
@@ -111,11 +112,12 @@ sub athena_proc
     @acl=("system:expunge ld");
     push(@acl,"system:facdev all") if ($type =~ /^(COURSE|UROP)/);
     push(@acl,"system:swmaint all") if ($type =~ /^(SW)/);
+    push(@acl,"system:cwisfac all") if ($type =~ /^(ORG)/);
     push(@acl,"system:administrators all") if ($type =~ /^(SYSTEM)/);
     push(@acl,"$user all")
-	if ($uid != 0 && $type =~ /^(ACTIVITY|APROJ|AREF|CONTRIB|COURSE|HOMEDIR|LEASE|PROJECT|REF|SW|UROP)/);
+	if ($uid != 0 && $type =~ /^(ACTIVITY|APROJ|AREF|CONTRIB|COURSE|HOMEDIR|LEASE|ORG|PROJECT|REF|SW|UROP)/);
     push(@acl,"system:$group all")
-	if ($gid != 0 && $type =~ /^(ACTIVITY|APROJ|COURSE|PROJECT|UROP)/);
+	if ($gid != 0 && $type =~ /^(ACTIVITY|APROJ|COURSE|ORG|PROJECT|UROP)/);
     push(@acl,"system:$group rl") if ($gid != 0 && $type =~ /^(AREF)/);
     push(@acl,"system:authuser rl")
 	if ($type =~ /^(COURSE|SW|UROP)/);
@@ -133,6 +135,15 @@ sub athena_proc
     } elsif ($type =~ /HOMEDIR|UROP/) {
 	chown($uid,0,$path) ||
 	    die "Unable to set volume ownership\n";
+    }
+
+    if ($type eq "ORG") {
+	mkdir("$path/www",0755) || die "Unable to create subdirectories\n";
+	system("$fs sa $path @acl system:anyuser rl -clear") &&
+	    die "Unable to set acl on www directory\n";
+
+	system("$fs sa $path @acl system:anyuser l -clear") &&
+	    die "Unable to set acl on top-level directory\n";
     }
 
     if ($type eq "HOMEDIR") {

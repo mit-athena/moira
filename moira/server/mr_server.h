@@ -1,4 +1,4 @@
-/* $Id: mr_server.h,v 1.49 2000-01-11 19:50:02 danw Exp $
+/* $Id: mr_server.h,v 1.50 2000-01-28 00:03:33 danw Exp $
  *
  * Copyright (C) 1987-1998 by the Massachusetts Institute of Technology
  * For copying and distribution information, please see the file
@@ -187,7 +187,6 @@ int followup_gpsv(struct query *q, struct save_queue *sq, struct validate *v,
 int followup_ausr(struct query *q, char *argv[], client *cl);
 int followup_aqot(struct query *q, char *argv[], client *cl);
 int followup_dqot(struct query *q, char *argv[], client *cl);
-int followup_uuac(struct query *q, char *argv[], client *cl);
 
 int set_modtime(struct query *q, char *argv[], client *cl);
 int set_modtime_by_id(struct query *q, char *argv[], client *cl);

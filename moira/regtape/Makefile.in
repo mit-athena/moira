@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.9 2000-01-20 19:18:49 danw Exp $
+# $Id: Makefile.in,v 1.10 2000-01-28 00:03:31 danw Exp $
 
 SHELL=/bin/sh
 @SET_MAKE@
@@ -15,10 +15,8 @@ PRO_C_OPTS=@PRO_C_OPTS@
 PRO_C_FLAGS=$(PRO_C_OPTS) $(PRO_C_DEFS) $(PRO_C_INCLUDES)
 LDFLAGS=@LDFLAGS@
 SQL_LIBS=@SQL_LIBS@
-GDSS_LIBS=@GDSS_LIBS@
 LIBS=@LIBS@
 MR_LIBDEP=@MR_LIBDEP@
-GDSS_LIBDEP=@GDSS_LIBDEP@
 INSTALL=@INSTALL@
 INSTALL_PROGRAM=@INSTALL_PROGRAM@
 
@@ -31,12 +29,10 @@ mrbindir=@mrbindir@
 STUDENT_OBJS=student.o
 STAFF_OBJS=staff.o
 VOTE_OBJS=vote.o
-SIGN_OBJS=sign.o
-VERIFY_OBJS=verify.o
 
-CFILES=student.c staff.c vote.c sign.c verify.c
+CFILES=student.c staff.c vote.c
 
-TARGET=student staff vote sign verify
+TARGET=student staff vote
 
 .SUFFIXES: .pc
 
@@ -50,7 +46,7 @@ all: $(TARGET)
 
 clean:
 	rm -f $(STDENTS_OBJS) $(STAFF_OBJS) $(VOTE_OBJS)
-	rm -f $(VERIFY_OBJS) $(SIGN_OBJS) $(CFILES) $(TARGET)
+	rm -f $(CFILES) $(TARGET)
 
 cleandir distclean: clean
 	rm -f Makefile
@@ -68,10 +64,3 @@ staff: $(STAFF_OBJS) $(MR_LIBDEP)
 
 vote: $(VOTE_OBJS) $(MR_LIBDEP)
 	$(CC) -o $@ $(LDFLAGS) $(VOTE_OBJS) $(SQL_LIBS) $(LIBS)
-
-sign: $(SIGN_OBJS) $(MR_LIBDEP) $(GDSS_LIBDEP)
-	$(CC) -o $@ $(LDFLAGS) $(SIGN_OBJS) $(SQL_LIBS) $(GDSS_LIBS) $(LIBS)
-
-verify: $(VERIFY_OBJS) $(MR_LIBDEP) $(GDSS_LIBDEP)
-	$(CC) -o $@ $(LDFLAGS) $(VERIFY_OBJS) $(SQL_LIBS) $(GDSS_LIBS) $(LIBS)
-

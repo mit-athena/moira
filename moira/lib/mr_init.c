@@ -1,4 +1,4 @@
-/* $Id: mr_init.c,v 1.11 1998-02-15 17:49:03 danw Exp $
+/* $Id: mr_init.c,v 1.12 2000-01-28 00:03:30 danw Exp $
  *
  * Initialize libmoira
  *
@@ -11,7 +11,7 @@
 #include <moira.h>
 #include "mr_private.h"
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_init.c,v 1.11 1998-02-15 17:49:03 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_init.c,v 1.12 2000-01-28 00:03:30 danw Exp $");
 
 int mr_inited = 0;
 
@@ -22,7 +22,6 @@ void mr_init(void)
 
   initialize_sms_error_table();
   initialize_krb_error_table();
-  initialize_gdss_error_table();
   initialize_ureg_error_table();
   mr_inited = 1;
 }

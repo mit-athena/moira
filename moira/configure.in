@@ -173,47 +173,6 @@ if test "$zephyr" != no; then
     MR_DEFINE(HAVE_ZEPHYR)
 fi
 
-# GDSS support (default: build util/gdss if present)
-AC_MSG_CHECKING(for GDSS)
-AC_TRY_RUN([ int main() { return sizeof(long)!=4; } ], :, with_gdss=no, with_gdss=no)
-AC_ARG_WITH(gdss,
-    [  --with-gdss=PREFIX      Specify location of GDSS],
-    [gdss="$withval"
-     if test "$gdss" != no; then
-       MR_INCLUDE("$gdss/include")
-       GDSS_LIBS="-L$gdss/lib -lgdss"
-     fi],
-    [if test -d $srcdir/util/gdss; then
-         gdss=$srcdir/util/gdss
-	 GDSS_SUBDIR=util/gdss
-	 GDSS_OUTPUT_FILES="util/gdss/Makefile util/gdss/lib/Makefile \
-	     util/gdss/lib/crypto/Makefile util/gdss/lib/crypto/bignum/Makefile \
-	     util/gdss/lib/crypto/algorithm/Makefile"
-	 # autoconf can't deal with creating util/gdss if util doesn't exist
-	 if test ! -d util; then
-	     mkdir util
-	 fi
-	 MR_INCLUDE('$(SRCTOP)/util/gdss/include')
-	 GDSS_LIBS='-L$(BUILDTOP)/util/gdss/lib -lgdss'
-	 GDSS_LIBDEP='$(BUILDTOP)/util/gdss/lib/libgdss.a'
-     else
-         gdss=no
-     fi])
-AC_MSG_RESULT($gdss)
-if test "$gdss" != no; then
-    GDSS_OBJS='$(GDSS_OBJS)'
-    GDSS_CFILES='$(GDSS_CFILES)'
-    GDSS_TARGET='$(GDSS_TARGET)'
-    MR_DEFINE(HAVE_GDSS)
-fi
-AC_SUBST(GDSS_CPPFLAGS)
-AC_SUBST(GDSS_LIBS)
-AC_SUBST(GDSS_SUBDIR)
-AC_SUBST(GDSS_OBJS)
-AC_SUBST(GDSS_CFILES)
-AC_SUBST(GDSS_TARGET)
-AC_SUBST(GDSS_LIBDEP)
-
 # RSAREF support (default: build util/rsaref if present)
 AC_MSG_CHECKING(for RSAREF)
 AC_ARG_WITH(rsaref,
@@ -416,4 +375,4 @@ AC_OUTPUT(Makefile lib/Makefile include/Makefile clients/Makefile \
 	  clients/mrtest/Makefile clients/passwd/Makefile
 	  update/Makefile man/Makefile \
 	  $SERVER_OUTPUT_FILES $AFS_OUTPUT_FILES \
-	  $GDSS_OUTPUT_FILES $RSAREF_OUTPUT_FILES)
+	  $RSAREF_OUTPUT_FILES)

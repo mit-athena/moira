@@ -1,4 +1,4 @@
-/* $Id: queries2.c,v 2.67 2000-01-11 19:50:03 danw Exp $
+/* $Id: queries2.c,v 2.68 2000-01-28 00:03:36 danw Exp $
  *
  * This file defines the query dispatch table
  *
@@ -94,7 +94,7 @@ static struct validate gubl_validate =
   0,
   access_login,
   0,
-  followup_guax,
+  followup_fix_modby,
 };
 
 static char *guau_fields[] = {
@@ -121,7 +121,7 @@ static struct validate guan_validate =
   0,
   0,
   0,
-  followup_guax,
+  followup_fix_modby,
 };
 
 static char *guac_fields[] = {
@@ -282,7 +282,7 @@ static struct validate uuac_validate = {
   "users_id",
   0,
   setup_ausr,
-  followup_uuac,
+  set_modtime_by_id,
 };
 
 static struct validate uusr_validate = {
@@ -2554,7 +2554,7 @@ struct query Queries[] = {
     RETRIEVE,
     "u",
     USERS_TABLE,
-    "u.login, u.unix_uid, u.shell, u.last, u.first, u.middle, u.status, u.clearid, u.type, str.string, u.signature, u.secure, TO_CHAR(u.modtime, 'DD-mon-YYYY HH24:MI:SS'), u.modby, u.modwith FROM users u, strings str",
+    "u.login, u.unix_uid, u.shell, u.last, u.first, u.middle, u.status, u.clearid, u.type, str.string, CHR(0), u.secure, TO_CHAR(u.modtime, 'DD-mon-YYYY HH24:MI:SS'), u.modby, u.modwith FROM users u, strings str",
     gual_fields,
     15,
     "u.login LIKE '%s' AND u.users_id != 0 AND u.comments = str.string_id",
@@ -2571,7 +2571,7 @@ struct query Queries[] = {
     RETRIEVE,
     "u",
     USERS_TABLE,
-    "u.login, u.unix_uid, u.shell, u.last, u.first, u.middle, u.status, u.clearid, u.type, str.string, u.signature, u.secure, TO_CHAR(u.modtime, 'DD-mon-YYYY HH24:MI:SS'), u.modby, u.modwith FROM users u, strings str",
+    "u.login, u.unix_uid, u.shell, u.last, u.first, u.middle, u.status, u.clearid, u.type, str.string, CHR(0), u.secure, TO_CHAR(u.modtime, 'DD-mon-YYYY HH24:MI:SS'), u.modby, u.modwith FROM users u, strings str",
     guau_fields,
     15,
     "u.unix_uid = %s AND u.users_id != 0 AND u.comments = str.string_id",
@@ -2588,7 +2588,7 @@ struct query Queries[] = {
     RETRIEVE,
     "u",
     USERS_TABLE,
-    "u.login, u.unix_uid, u.shell, u.last, u.first, u.middle, u.status, u.clearid, u.type, str.string, u.signature, u.secure, TO_CHAR(u.modtime, 'DD-mon-YYYY HH24:MI:SS'), u.modby, u.modwith FROM users u, strings str",
+    "u.login, u.unix_uid, u.shell, u.last, u.first, u.middle, u.status, u.clearid, u.type, str.string, CHR(0), u.secure, TO_CHAR(u.modtime, 'DD-mon-YYYY HH24:MI:SS'), u.modby, u.modwith FROM users u, strings str",
     guan_fields,
     15,
     "u.first LIKE '%s' AND u.last LIKE '%s' AND u.users_id != 0 and u.comments = str.string_id",
@@ -2605,7 +2605,7 @@ struct query Queries[] = {
     RETRIEVE,
     "u",
     USERS_TABLE,
-    "u.login, u.unix_uid, u.shell, u.last, u.first, u.middle, u.status, u.clearid, u.type, str.string, u.signature, u.secure, TO_CHAR(u.modtime, 'DD-mon-YYYY HH24:MI:SS'), u.modby, u.modwith FROM users u, strings str",
+    "u.login, u.unix_uid, u.shell, u.last, u.first, u.middle, u.status, u.clearid, u.type, str.string, CHR(0), u.secure, TO_CHAR(u.modtime, 'DD-mon-YYYY HH24:MI:SS'), u.modby, u.modwith FROM users u, strings str",
     guac_fields,
     15,
     "u.type = UPPER('%s') AND u.users_id != 0 AND u.comments = str.string_id",
@@ -2622,7 +2622,7 @@ struct query Queries[] = {
     RETRIEVE,
     "u",
     USERS_TABLE,
-    "u.login, u.unix_uid, u.shell, u.last, u.first, u.middle, u.status, u.clearid, u.type, str.string, u.signature, u.secure, TO_CHAR(u.modtime, 'DD-mon-YYYY HH24:MI:SS'), u.modby, u.modwith FROM users u, strings str",
+    "u.login, u.unix_uid, u.shell, u.last, u.first, u.middle, u.status, u.clearid, u.type, str.string, CHR(0), u.secure, TO_CHAR(u.modtime, 'DD-mon-YYYY HH24:MI:SS'), u.modby, u.modwith FROM users u, strings str",
     guam_fields,
     15,
     "u.clearid LIKE '%s' AND u.users_id != 0 AND u.comments = str.string_id",
@@ -2724,7 +2724,10 @@ struct query Queries[] = {
     APPEND,
     "u",
     USERS_TABLE,
-    "INTO users (login, unix_uid, shell, last, first, middle, status, clearid, type, comments, signature, secure, users_id) VALUES ('%s', %s, '%s', NVL('%s', CHR(0)), NVL('%s', CHR(0)), NVL('%s', CHR(0)), %s, NVL('%s', CHR(0)), '%s', %d, LENGTH(NVL('%s', CHR(0))), %s, %s)", /* followup_ausr fixes signature field */
+    /* We set signature to "NVL(CHR(0), '%s')", which is to say, "CHR(0)",
+     * but using up one argv element.
+     */
+    "INTO users (login, unix_uid, shell, last, first, middle, status, clearid, type, comments, signature, secure, users_id) VALUES ('%s', %s, '%s', NVL('%s', CHR(0)), NVL('%s', CHR(0)), NVL('%s', CHR(0)), %s, NVL('%s', CHR(0)), '%s', %d, NVL(CHR(0), '%s'), %s, %s)",
     auac_fields,
     12,
     NULL,
@@ -2775,7 +2778,8 @@ struct query Queries[] = {
     UPDATE,
     "u",
     USERS_TABLE,
-    "users SET login = '%s', unix_uid = %s, shell = '%s', last = NVL('%s', CHR(0)), first = NVL('%s', CHR(0)), middle = NVL('%s', CHR(0)), status = %s, clearid = NVL('%s', CHR(0)), type = '%s', comments = %d, signature = LENGTH(NVL('%s', CHR(0))), secure = %s", /* followup_uuac fixes signature */
+    /* See comment in auac about signature. */
+    "users SET login = '%s', unix_uid = %s, shell = '%s', last = NVL('%s', CHR(0)), first = NVL('%s', CHR(0)), middle = NVL('%s', CHR(0)), status = %s, clearid = NVL('%s', CHR(0)), type = '%s', comments = %d, signature = NVL(CHR(0), '%s'), secure = %s",
     uuac_fields,
     12,
     "users_id = %d",

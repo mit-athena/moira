@@ -1,4 +1,4 @@
-/* $Id: main.c,v 1.36 1999-12-30 17:30:35 danw Exp $
+/* $Id: main.c,v 1.37 2000-01-28 00:03:23 danw Exp $
  *
  *	This is the file main.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -27,7 +27,7 @@
 
 #include <krb.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/main.c,v 1.36 1999-12-30 17:30:35 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/main.c,v 1.37 2000-01-28 00:03:23 danw Exp $");
 
 static void ErrorExit(char *buf, int status);
 static void Usage(void);
@@ -147,8 +147,6 @@ int main(int argc, char **argv)
       act.sa_handler = CatchInterrupt;
       sigaction(SIGINT, &act, NULL);
     }
-
-  initialize_gdss_error_table();
 
   if (!strcmp(program_name, "listmaint"))
     menu = &list_menu;

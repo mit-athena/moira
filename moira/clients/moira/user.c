@@ -1,4 +1,4 @@
-/* $Id: user.c,v 1.54 1999-09-03 14:21:04 danw Exp $
+/* $Id: user.c,v 1.55 2000-01-28 00:03:24 danw Exp $
  *
  *	This is the file user.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -28,11 +28,8 @@
 #include <time.h>
 
 #include <krb.h>
-#ifdef HAVE_GDSS
-#include <gdss.h>
-#endif
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.54 1999-09-03 14:21:04 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.55 2000-01-28 00:03:24 danw Exp $");
 
 void CorrectCapitalization(char **name);
 char **AskUserInfo(char **info, Bool name);
@@ -107,9 +104,6 @@ static void PrintUserInfo(char **info)
 {
   char name[BUFSIZ], buf[BUFSIZ];
   int status;
-#ifdef HAVE_GDSS
-  SigInfo si;
-#endif
 
   sprintf(name, "%s, %s %s", info[U_LAST], info[U_FIRST], info[U_MIDDLE]);
   sprintf(buf, "Login name: %-20s Full name: %s", info[U_NAME], name);
@@ -118,18 +112,8 @@ static void PrintUserInfo(char **info)
 	  info[U_UID], info[U_SHELL], info[U_CLASS]);
   Put_message(buf);
 
-#ifdef HAVE_GDSS
-  sprintf(buf, "%s:%s", info[U_NAME], info[U_MITID]);
-  si.rawsig = NULL;
-  status = GDSS_Verify((unsigned char *)buf, strlen(buf),
-		       (unsigned char *)info[U_SIGNATURE], &si);
-#else /* GDSS */
-  status = 0;
-#endif /* GDSS */
-
-  sprintf(buf, "Account is: %-20s MIT ID number: %s Signed: %s",
-	  UserState(atoi(info[U_STATE])), info[U_MITID],
-	  *info[U_SIGNATURE] ? (status ? "Bad" : "Yes") : "No");
+  sprintf(buf, "Account is: %-20s MIT ID number: %s",
+	  UserState(atoi(info[U_STATE])), info[U_MITID]);
   Put_message(buf);
   status = atoi(info[U_STATE]);
   if (status == 0 || status == 2)
@@ -205,9 +189,6 @@ void CorrectCapitalization(char **name)
 char **AskUserInfo(char **info, Bool name)
 {
   int i, state;
-#ifdef HAVE_GDSS
-  SigInfo si;
-#endif
   char temp_buf[BUFSIZ], *newname;
 
   if (name)
@@ -325,41 +306,7 @@ char **AskUserInfo(char **info, Bool name)
 	}
     }
 
-  /* Sign record */
-#ifdef HAVE_GDSS
-  if (strcmp(info[U_NAME], UNIQUE_LOGIN))
-    {
-      if (name)
-	sprintf(temp_buf, "%s:%s", newname, info[U_MITID]);
-      else
-	sprintf(temp_buf, "%s:%s", info[U_NAME], info[U_MITID]);
-      si.rawsig = NULL;
-      i = GDSS_Verify((unsigned char *)temp_buf, strlen(temp_buf),
-		      (unsigned char *)info[U_SIGNATURE], &si);
-      /* If it's already signed OK, don't resign it. */
-      if (i != GDSS_SUCCESS)
-	{
-	  free(info[U_SIGNATURE]);
-	  info[U_SIGNATURE] = malloc(GDSS_Sig_Size() * 2);
-	sign_again:
-	  i = GDSS_Sign((unsigned char *)temp_buf, strlen(temp_buf),
-			(unsigned char *)info[U_SIGNATURE]);
-	  if (i != GDSS_SUCCESS)
-	    com_err(program_name, gdss2et(i), "Failed to create signature");
-	  else
-	    {
-	      unsigned char buf[256];
-	      si.rawsig = buf;
-	      i = GDSS_Verify((unsigned char *)temp_buf, strlen(temp_buf),
-			      (unsigned char *)info[U_SIGNATURE], &si);
-	      if (strlen((char *)buf) > 68)
-		goto sign_again;
-	    }
-	}
-    }
-#else /* GDSS */
   info[U_SIGNATURE] = strdup("");
-#endif /* GDSS */
 
   FreeAndClear(&info[U_MODTIME], TRUE);
   FreeAndClear(&info[U_MODBY], TRUE);

@@ -1,4 +1,4 @@
-/* $Id: moira.h,v 1.26 1999-12-30 17:21:22 danw Exp $
+/* $Id: moira.h,v 1.27 2000-01-28 00:03:27 danw Exp $
  *
  * Copyright (C) 1987-1998 by the Massachusetts Institute of Technology
  *
@@ -13,7 +13,6 @@
 #include <com_err.h>
 #include "mr_et.h"
 #include "krb_et.h"
-#include "gdss_et.h"
 #include "ureg_err.h"
 #define MR_SUCCESS 0		/* Query was successful */
 
@@ -90,9 +89,6 @@ void LookForO(char *nm);
 void TrimTrailingSpace(char *ip);
 void GetMidInit(char *nm, char *mi);
 void RemoveHyphens(char *str);
-
-/* prototypes from gdss_convert.c */
-int gdss2et(int code);
 
 /* prototypes from hash.c */
 struct hash *create_hash(int size);

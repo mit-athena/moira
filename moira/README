@@ -17,7 +17,6 @@ Here are the steps for building the Moira source.
 	 --with-krb4=PREFIX (required)
 	 --with-hesiod=PREFIX
 	 --with-zephyr=PREFIX
-	 --with-gdss=PREFIX (defaults to util/gdss, if present)
 	 --with-oracle=PREFIX (defaults to $ORACLE_HOME, if present)
 	 --with-afs=PREFIX (defaults to /usr/afsws, if present)
 	 --with-readline=PREFIX

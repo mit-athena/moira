@@ -1,4 +1,4 @@
-/* $Id: qrtn.pc,v 2.20 2000-01-11 19:46:03 danw Exp $
+/* $Id: qrtn.pc,v 2.21 2000-01-28 00:03:36 danw Exp $
  *
  * Query-processing routines
  *
@@ -20,11 +20,10 @@
 EXEC SQL INCLUDE sqlca;  /* SQL Communications Area */
 EXEC SQL INCLUDE sqlda;  /* SQL Descriptor Area */
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.pc,v 2.20 2000-01-11 19:46:03 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.pc,v 2.21 2000-01-28 00:03:36 danw Exp $");
 
 SQLDA *mr_sqlda;
 EXEC SQL BEGIN DECLARE SECTION;
-int mr_sig_length;
 char stmt_buf[MR_STMTBUF_LEN];
 int proxy_acl;
 EXEC SQL END DECLARE SECTION;
@@ -114,10 +113,6 @@ int mr_open_database(void)
   if (dbms_errno)
     return mr_errcode;
 
-  EXEC SQL SELECT data_length INTO :mr_sig_length FROM user_tab_columns
-    WHERE table_name = 'USERS' and column_name = 'SIGNATURE';
-  if (dbms_errno)
-    return mr_errcode;
   EXEC SQL SELECT list_id INTO :proxy_acl FROM capacls
     WHERE capability = 'proxy';
   if (dbms_errno)

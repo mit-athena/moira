@@ -1,4 +1,4 @@
-/* $Id: qfollow.pc,v 2.12 2000-01-05 05:21:47 danw Exp $
+/* $Id: qfollow.pc,v 2.13 2000-01-28 00:03:33 danw Exp $
  *
  * Query followup routines
  *
@@ -17,13 +17,10 @@
 #include <ctype.h>
 #include <stdlib.h>
 #include <string.h>
-#ifdef GDSS
-#include "gdss.h"
-#endif /* GDSS */
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qfollow.pc,v 2.12 2000-01-05 05:21:47 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qfollow.pc,v 2.13 2000-01-28 00:03:33 danw Exp $");
 
 extern char *whoami, *table_name[];
 extern int dbms_errno, mr_errcode;
@@ -316,76 +313,6 @@ int followup_fix_modby(struct query *q, struct save_queue *sq,
   return MR_SUCCESS;
 }
 
-
-/* After retrieving a user account, fix the modby field and signature.
- * The modby field is the second to last thing in the
- * argv, the argv length is determined from the query structure.  It is
- * passed as a pointer to an integer.  This will either turn it into a
- * username, or # + the users_id.  Only "gua*" queries have a signature,
- * these are ones with U_END return values.  "gub*" queries also use this
- * routine but don't have a signature.
- */
-int followup_guax(struct query *q, struct save_queue *sq, struct validate *v,
-		  int (*action)(int, char *[], void *), void *actarg,
-		  client *cl)
-{
-  int i, j;
-  char **argv;
-#ifdef GDSS
-  unsigned char sigbuf[512];
-  char *kname;
-  SigInfo  si;
-  EXEC SQL BEGIN DECLARE SECTION;
-  int timestamp, who;
-  char *login;
-  char rsig[USERS_SIGNATURE_SIZE];
-  EXEC SQL VAR rsig IS STRING(USERS_SIGNATURE_SIZE);
-  EXEC SQL END DECLARE SECTION;
-#endif /* GDSS */
-  int id, status;
-
-  i = q->vcnt - 2;
-  while (sq_get_data(sq, &argv))
-    {
-      id = atoi(argv[i]);
-      if (id > 0)
-	status = id_to_name(id, USERS_TABLE, &argv[i]);
-      else
-	status = id_to_name(-id, STRINGS_TABLE, &argv[i]);
-      if (status && status != MR_NO_MATCH)
-	return status;
-#ifdef GDSS
-      if (q->vcnt == U_END && strlen(argv[U_SIGNATURE]))
-	{
-	  login = strtrim(argv[U_NAME]);
-	  EXEC SQL SELECT signature, sigdate, sigwho
-	    INTO :rsig, :timestamp, :who FROM users
-	    WHERE login = :login;
-	  if (dbms_errno)
-	    return mr_errcode;
-	  kname = malloc(0);
-	  status = id_to_name(who, STRINGS_TABLE, &kname);
-	  si.timestamp = timestamp;
-	  si.SigInfoVersion = 0; /* XXXXX this isn't used */
-	  kname_parse(si.pname, si.pinst, si.prealm, kname);
-	  free(kname);
-	  si.rawsig = (unsigned char *)xstrdup(rsig);
-	  GDSS_Recompose(&si, sigbuf);
-	  free(si.rawsig);
-	  free(argv[U_SIGNATURE]);
-	  argv[U_SIGNATURE] = xstrdup(sigbuf);
-	}
-#endif /* GDSS */
-      (*action)(q->vcnt, argv, actarg);
-      for (j = 0; j < q->vcnt; j++)
-	free(argv[j]);
-      free(argv);
-    }
-  sq_destroy(sq);
-  return MR_SUCCESS;
-}
-
-
 /**
  ** followup_ausr - add finger and pobox entries, set_user_modtime
  **
@@ -404,14 +331,6 @@ int followup_ausr(struct query *q, char *argv[], client *cl)
   char *login, *entity, *name;
   char fullname[USERS_FIRST_SIZE + USERS_MIDDLE_SIZE + USERS_LAST_SIZE];
   EXEC SQL END DECLARE SECTION;
-#ifdef GDSS
-  char databuf[USERS_LOGIN_SIZE + USERS_CLEARID_SIZE];
-  EXEC SQL BEGIN DECLARE SECTION;
-  char rawsig[512];
-  int sigwho, timestamp;
-  EXEC SQL END DECLARE SECTION;
-  SigInfo si;
-#endif /* GDSS */
 
   /* build fullname */
   if (strlen(argv[4]) && strlen(argv[5]))
@@ -421,145 +340,20 @@ int followup_ausr(struct query *q, char *argv[], client *cl)
   else
     sprintf(fullname, "%s", argv[3]);
 
-#ifdef GDSS
-  if (q->vcnt == U_END && *argv[U_SIGNATURE])
-    {
-      sprintf(databuf, "%s:%s", argv[U_NAME], argv[U_MITID]);
-      /* skip bytes for timestamp & kname */
-      si.rawsig = (unsigned char *) rawsig;
-      status = GDSS_Verify(databuf, strlen(databuf), argv[U_SIGNATURE], &si);
-      if (strlen(rawsig) > mr_sig_length)
-	{
-	  com_err(whoami, 0, "GDSS signature would be truncated.");
-	  return MR_INTERNAL;
-	}
-      if (status == 0)
-	{
-	  name = kname_unparse(si.pname, si.pinst, si.prealm);
-	  status = name_to_id(name, STRINGS_TABLE, &sigwho);
-	  if (status == MR_NO_MATCH)
-	    sigwho = add_string(name);
-	  else if (status)
-	    return status;
-	  timestamp = si.timestamp;
-        }
-      else
-	return gdss2et(status);
-    }
-  else
-    {
-      rawsig[0] = '\0';
-      sigwho = 0;
-      timestamp = 0;
-    }
-#endif /* GDSS */
-
   login = argv[0];
   who = cl->client_id;
   entity = cl->entity;
 
   /* create finger entry, pobox & set modtime on user */
-#ifdef GDSS
-  EXEC SQL UPDATE users
-    SET modtime = SYSDATE, modby = :who, modwith = :entity,
-    fullname = NVL(:fullname, CHR(0)), affiliation = type,
-    signature = NVL(:rawsig, CHR(0)), sigdate = :timestamp,
-    sigwho = :sigwho, fmodtime = SYSDATE, fmodby = :who,
-    fmodwith = :entity, potype = 'NONE', pmodtime = SYSDATE,
-    pmodby = :who, pmodwith = :entity
-    WHERE login = :login;
-#else /* GDSS */
   EXEC SQL UPDATE users
     SET modtime = SYSDATE, modby = :who, modwith = :entity,
     fullname = NVL(:fullname, CHR(0)), affiliation = type,
     fmodtime = SYSDATE, fmodby = :who, fmodwith = :entity,
     potype = 'NONE', pmodtime = SYSDATE, pmodby = :who, pmodwith = :entity
     WHERE login = :login;
-#endif /* GDSS */
 
   return MR_SUCCESS;
 }
-
-
-/**
- ** followup_uuac - do signature, set_user_modtime
- **
- ** Inputs:
- **   argv[0] - login (add_user)
- **   argv[U_SIGNATURE] - sig
- **
- **/
-
-int followup_uuac(struct query *q, char *argv[], client *cl)
-{
-  EXEC SQL BEGIN DECLARE SECTION;
-  int who, status, id;
-  char *entity, *name;
-  EXEC SQL END DECLARE SECTION;
-#ifdef GDSS
-  char databuf[USERS_LOGIN_SIZE + USERS_CLEARID_SIZE];
-  EXEC SQL BEGIN DECLARE SECTION;
-  char rawsig[512];
-  char *login;
-  int sigwho, timestamp;
-  EXEC SQL END DECLARE SECTION;
-  SigInfo si;
-#endif /* GDSS */
-
-  id = *(int *)argv[0];
-  who = cl->client_id;
-  entity = cl->entity;
-
-#ifdef GDSS
-  if (q->vcnt == U_MODTIME && *argv[U_SIGNATURE + 1])
-    {
-      login = malloc(0);
-      status = id_to_name(id, USERS_TABLE, &login);
-      sprintf(databuf, "%s:%s", login, argv[U_MITID + 1]);
-      free(login);
-      /* skip bytes for timestamp & kname */
-      si.rawsig = (unsigned char *) rawsig;
-      status = GDSS_Verify(databuf, strlen(databuf), argv[U_SIGNATURE + 1],
-			   &si);
-      if (strlen(rawsig) > mr_sig_length)
-	{
-	  com_err(whoami, 0, "GDSS signature would be truncated.");
-	  return MR_INTERNAL;
-	}
-      if (status == 0)
-	{
-	  name = kname_unparse(si.pname, si.pinst, si.prealm);
-	  status = name_to_id(name, STRINGS_TABLE, &sigwho);
-	  if (status == MR_NO_MATCH)
-	    sigwho = add_string(name);
-	  else if (status)
-	    return status;
-	  timestamp = si.timestamp;
-        }
-      else
-	return gdss2et(status);
-    }
-  else
-    {
-      rawsig[0] = '\0';
-      sigwho = 0;
-      timestamp = 0;
-    }
-#endif /* GDSS */
-
-  /* create finger entry, pobox & set modtime on user */
-
-#ifdef GDSS
-  EXEC SQL UPDATE users SET modtime = SYSDATE, modby = :who, modwith = :entity,
-    signature = NVL(:rawsig, CHR(0)), sigdate = :timestamp, sigwho = :sigwho
-    WHERE users_id = :id;
-#else /* GDSS */
-  EXEC SQL UPDATE users SET modtime = SYSDATE, modby = :who, modwith = :entity
-    WHERE users_id = :id;
-#endif /* GDSS */
-  return MR_SUCCESS;
-}
-
 
 /* followup_gpob: fixes argv[2] and argv[3] based on the pobox type.
  * Then completes the upcall to the user.

@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.15 2000-01-20 20:13:14 danw Exp $
+# $Id: Makefile.in,v 1.16 2000-01-28 00:03:25 danw Exp $
 
 SHELL=/bin/sh
 @SET_MAKE@
@@ -14,9 +14,8 @@ PRO_C_INCLUDES=@PRO_C_INCLUDES@
 PRO_C_OPTS=@PRO_C_OPTS@
 PRO_C_FLAGS=$(PRO_C_OPTS) $(PRO_C_DEFS) $(PRO_C_INCLUDES)
 LDFLAGS=@LDFLAGS@
-LIBS=@SQL_LIBS@ @GDSS_LIBS@ @LIBS@
+LIBS=@SQL_LIBS@ @LIBS@
 MR_LIBDEP=@MR_LIBDEP@
-GDSS_LIBDEP=@GDSS_LIBDEP@
 INSTALL=@INSTALL@
 INSTALL_PROGRAM=@INSTALL_PROGRAM@
 RANLIB=@RANLIB@
@@ -31,20 +30,17 @@ LIB_OBJS=util.o moddiff.o tar.o genacl.o
 LIB_CFILES=moddiff.c genacl.c
 LIB_TARGET=libdcm.a
 
-GDSS_OBJS=warehouse.o
 OBJS=	acl.o boot.o directory.o hesiod.o hosts.o mailhub.o \
 	ndb.o network.o nfs.o pobox.o postoffice.o print.o \
-	www.o zephyr.o @GDSS_OBJS@
+	warehouse.o www.o zephyr.o
 
-GDSS_CFILES=warehouse.c
 CFILES= acl.c boot.c directory.c hesiod.c hosts.c mailhub.c \
 	ndb.c network.c nfs.c pobox.c postoffice.c print.c \
-	www.c zephyr.c @GDSS_CFILES@
+	warehouse.c www.c zephyr.c
 
-GDSS_TARGET=warehouse.gen
 TARGET=	acl.gen boot.gen directory.gen hesiod.gen hosts.gen \
 	mailhub.gen ndb.gen network.gen nfs.gen pobox.gen \
-	postoffice.gen print.gen www.gen zephyr.gen @GDSS_TARGET@
+	postoffice.gen print.gen warehouse.gen www.gen zephyr.gen
 
 SCRIPTS=boot.sh hesiod.sh mailhub.sh nfs.sh null.sh \
 	postoffice.sh print.sh sapprint.gen sapprint.sh warehouse.sh \
@@ -100,8 +96,8 @@ pobox.gen: pobox.o libdcm.a $(MR_LIBDEP)
 network.gen: network.o libdcm.a $(MR_LIBDEP)
 	$(CC) -o $@ $(LDFLAGS) network.o libdcm.a $(SQL_LIBS) $(LIBS)
 
-warehouse.gen: warehouse.o libdcm.a $(MR_LIBDEP) $(GDSS_LIBDEP)
-	$(CC) -o $@ $(LDFLAGS) warehouse.o libdcm.a $(SQL_LIBS) $(GDSS_LIBS) $(LIBS)
+warehouse.gen: warehouse.o libdcm.a $(MR_LIBDEP)
+	$(CC) -o $@ $(LDFLAGS) warehouse.o libdcm.a $(SQL_LIBS) $(LIBS)
 
 print.gen: print.o libdcm.a $(MR_LIBDEP)
 	$(CC) -o $@ $(LDFLAGS) print.o libdcm.a $(SQL_LIBS) $(LIBS)

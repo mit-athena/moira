@@ -1,6 +1,6 @@
 #	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_et.et,v $
-#	$Author: mar $
-#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_et.et,v 1.18 1993-11-02 15:19:23 mar Exp $
+#	$Author: danw $
+#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_et.et,v 1.19 1997-01-20 18:03:35 danw Exp $
 #
 	error_table sms
 
@@ -19,8 +19,8 @@ ec	MR_ABORTED,
 ec	MR_UNKNOWN_PROC,
 	"Unknown procedure"
 
-ec	MR_INGRES_ERR,
-	"Ingres system error occurred"
+ec	MR_DBMS_ERR,
+	"DBMS system error occurred"
 
 ec	MR_MORE_DATA,
 	"More data is available from Moira"
@@ -201,7 +201,7 @@ ec	MR_DOWN,
 ec	MR_LISTLOOP,
 	"Lists are not allowed to contain themselves as members"
 
-ec	MR_INGRES_SOFTFAIL,
+ec	MR_DBMS_SOFTFAIL,
 	"Temporary database failure, try again"
 
 ec	MR_COREDUMP,

@@ -12,7 +12,7 @@ local ($c,$as,$ap,$total,$used,$alloc);
 &afs_lock;
 truncate(SRV, 0);
 
-if (open(TMP,"/afs/athena/service/afs_data")) {
+if (open(TMP,"/afs/athena.mit.edu/service/afs_data")) {
     @afs_data = <TMP>;
     close(TMP);
 }

@@ -1,7 +1,7 @@
 /*
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v $
- *      $Author: qjb $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.12 1988-08-02 16:44:58 qjb Exp $
+ *      $Author: mar $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.13 1988-08-02 21:14:29 mar Exp $
  *
  *      Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
@@ -10,47 +10,10 @@
  *      This program is a client of the SMS server and the Kerberos
  *      admin_server, and is a server for the userreg program.
  * 
- *      $Log: not supported by cvs2svn $
- * Revision 1.11  88/08/02  01:41:38  qjb
- * Yet another almost finished version.  Ready for attack of kerberos problems
- * and testing.
- * 
- * Revision 1.10  88/08/01  18:17:58  qjb
- * Almost finished version supporting new SMS protocol.
- * Kerberos problems.
- * 
- * Revision 1.9  88/07/26  14:50:40  qjb
- * Added comments and did some cleaning up in preparation for rewrite.
- * This version will not run; the last version that will is 1.8.
- * 
- * Revision 1.8  88/07/20  15:39:25  mar
- * find realm at runtime; don't use hard-coded one
- * 
- * Revision 1.7  88/02/08  15:08:15  mar
- * Moved header file locations
- * 
- * Revision 1.6  87/09/21  15:19:11  wesommer
- * Allow numbers, _, and . as legal characters in the username.
- * 
- * Revision 1.5  87/09/10  22:18:32  wesommer
- * Clean up output format.
- * 
- * Revision 1.4  87/09/04  23:33:19  wesommer
- * Deleted test scaffolding (second oops.)
- * 
- * Revision 1.3  87/09/03  03:05:18  wesommer
- * Version used for userreg tests.
- * 
- * Revision 1.2  87/08/22  18:39:45  wesommer
- * User registration server.
- * 
- * Revision 1.1  87/07/31  15:48:13  wesommer
- * Initial revision
- * 
  */
 
 #ifndef lint
-static char *rcsid_reg_svr_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.12 1988-08-02 16:44:58 qjb Exp $";
+static char *rcsid_reg_svr_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.13 1988-08-02 21:14:29 mar Exp $";
 #endif lint
 
 #include <stdio.h>
@@ -94,7 +57,6 @@ static char *rcsid_reg_svr_c = "$Header: /afs/.athena.mit.edu/astaff/project/moi
 #define DEBUG
 /* This MUST be correct!  There isn't a good way of getting this without
    hardcoding that would not make testing impractical. */
-#define KRB_HOST "dodo"
 
 extern char *strdup();
 extern char *malloc();
@@ -131,6 +93,10 @@ struct msg
     int leftover_len;		/* Length of leftover information */
     struct db_data db;		/* Information from the SMS database */
 };
+
+static char krbhst[BUFSIZ];	/* kerberos server name */
+static char krbrealm[REALM_SZ];	/* kerberos realm name */
+
 
 main(argc,argv)
   int argc;
@@ -199,6 +165,24 @@ main(argc,argv)
     {
 	com_err(whoami, status, " on auth");
 	exit(1);
+    }
+
+    if (status = get_krbrlm(krbrealm, 1)) {
+	status += krb_err_base;
+	com_err(whoami, status, " fetching kerberos realm");
+	exit(1);
+    }
+
+    if (status = get_krbhst(krbhst, krbrealm, 1)) {
+	status += krb_err_base;
+	com_err(whoami, status, " fetching kerberos hostname");
+	exit(1);
+    } else {
+	char *s;
+	for (s = krbhst; *s && *s != '.'; s++)
+	    if (isupper(*s))
+		*s = tolower(*s);
+	*s = 0;
     }
 
     /* Use com_err or output to stderr for all log messages. */    
@@ -722,18 +706,13 @@ int verify_user(message,retval)
 	
 int ureg_get_tkt()
 {
-    char realm[REALM_SZ];	/* Kerberos realm */
     int status = SUCCESS;	/* Return status */
 
     /* Get keys for interacting with Kerberos admin server. */
-    if ((status = get_krbrlm(realm, 1)) != KSUCCESS) 
+    /* principal, instance, realm, service, service instance, life, file */
+    if (status = get_svc_in_tkt("register", "sms", krbrealm, "changepw", 
+				krbhst, 1, KEYFILE))
 	status += krb_err_base;
-
-    if (status == SUCCESS)
-	/* principal, instance, realm, service, service instance, life, file */
-	if (status = get_svc_in_tkt("register", "sms", realm, "changepw", 
-				    KRB_HOST,	1, KEYFILE))
-	    status += krb_err_base;
 
     return status;
 }
@@ -767,7 +746,7 @@ int do_admin_call(login, passwd, uid)
 	   password. */
 	/* 13 chars of placebo for backwards-compatability ### */
 	bzero(uid_buf,sizeof(uid_buf));
-	(void) sprintf(uid_buf, "%013d", uid);
+	(void) sprintf(uid_buf, "%13s", uid);
 	
 	if ((status = admin_call(ADMIN_ADD_NEW_KEY_ATTR, login, 
 				 "", passwd, uid_buf)) != KSUCCESS)

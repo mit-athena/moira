@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/students.dc,v 1.16 1992-08-25 18:03:12 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/students.dc,v 1.17 1993-01-04 14:46:26 mar Exp $
  */
 
 #include <stdio.h>
@@ -7,10 +7,11 @@
 #include <sys/time.h>
 #include <moira.h>
 #include <moira_site.h>
+EXEC SQL INCLUDE sqlca;
 
 
-##define WHO 11859		/* root */
-##define PROG "stu-tape"
+#define WHO 11859		/* root */
+#define PROG "stu-tape"
 
 #define MAX_ID_VALUE	31999
 #define MIN_ID_VALUE	101
@@ -80,7 +81,7 @@ int newfinger = 0;
 main(argc, argv)
 int argc;
 char **argv;
-##{
+{
     FILE *in;
     struct entry *e, *get_next_entry();
     int i, wait = 0;
@@ -114,11 +115,11 @@ char **argv;
     setlinebuf(stdout);
     setlinebuf(stderr);
 
-##  ingres sms
-##  range of u is users
+    EXEC SQL CONNECT moira;
 
     while (e = get_next_entry(in)) {
 	process_entry(e);
+	EXEC SQL COMMIT;
 	if (wait) {
 	    printf("Next");
 	    fflush(stdout);
@@ -126,9 +127,8 @@ char **argv;
 	}
     }
 
-##  exit
     exit(0);
-##}
+}
 
 
 struct entry *get_next_entry(in)
@@ -233,13 +233,15 @@ FILE *in;
 
 process_entry(e)
 struct entry *e;
-##{
+{
     int changed, nochange, encrypted;
     char buf[BUFSIZ], *from, *to;
-##  char *first, *last, *eid, *title, *sid, *name, *rname, *rdept, *rtitle;
-##  char *rophone, *rhphone;
-##  char class[9], haddr[128], hphone[33], ophone[33], dept[33], raddr[128];
-##  int id, status;
+    EXEC SQL BEGIN DECLARE SECTION;
+    char *first, *last, *eid, *title, *sid, *name, *rname, *rdept, *rtitle;
+    char *rophone, *rhphone;
+    char class[9], haddr[128], hphone[33], ophone[33], dept[33], raddr[128];
+    int id, status;
+    EXEC SQL END DECLARE SECTION;
 
     first = e->first;
     if (strlen(first) > 16)
@@ -253,15 +255,15 @@ struct entry *e;
     encrypted = 0;
 
 /* Get user info */
-##  repeat retrieve (id = u.users_id, class = u.mit_year, haddr = u.home_addr,
-##	      hphone = u.home_phone, ophone = u.office_phone,
-##	      status = u.#status, dept = u.mit_dept)
-##	where u.#last = @last and u.#first = @first and u.mit_id = @sid
+    EXEC SQL SELECT users_id, type, home_addr, home_phone, office_phone, status, department
+      INTO :id, :class, :haddr, :hphone, :ophone, :status, :dept
+      FROM users
+      WHERE last = :last and first = :first and clearid = :sid;
     if (id == 0) {
-##	repeat retrieve (id = u.users_id, class = u.mit_year, haddr = u.home_addr,
-##	      hphone = u.home_phone, ophone = u.office_phone,
-##	      status = u.#status, dept = u.mit_dept)
-##	where u.#last = @last and u.#first = @first and u.mit_id = @eid
+	EXEC SQL SELECT users_id, type, home_addr, home_phone, office_phone, status, department
+	  INTO :id, :class, :haddr, :hphone, :ophone, :status, :dept
+	  FROM users
+	  WHERE last = :last and first = :first and clearid = :eid;
 	encrypted++;
 	if (id == 0) {
 	    newuser(e);
@@ -280,9 +282,10 @@ struct entry *e;
 	if (status == US_NOT_ALLOWED) status = US_NO_LOGIN_YET;
 	if (status == US_ENROLL_NOT_ALLOWED) status = US_ENROLLED;
 	strcpy(class, e->class);
-##	repeat replace u (mit_year = @class, #status = @status,
-##		   modtime = "now", modby = WHO, modwith = PROG)
-##	    where u.users_id = @id
+	EXEC SQL UPDATE users
+	  SET type = :class, status = :status, modtime = 'now',
+	    modby = WHO, modwith = PROG
+	  WHERE users_id = :id;   
     }
 
     /* Deal with updating the finger info if necessary */
@@ -383,42 +386,58 @@ struct entry *e;
 	strcat(raddr, " ");
 	strcat(raddr, e->dorm);
     }
+    strcat(raddr, "|");
     if (*e->city) {
-	strcat(raddr, " ");
 	strcat(raddr, e->city);
-    }
-    FixCase(raddr);
-    if (*e->state) {
-	strcat(raddr, " ");
-	strcat(raddr, e->state);
+	FixCase(raddr);
+	if (*e->state) {
+	    strcat(raddr, " ");
+	    if (isupper(e->state[0]) && isupper(e->state[1]) &&
+		isdigit(e->state[2]) && isdigit(e->state[3]) &&
+		isdigit(e->state[4]) && isdigit(e->state[5]) &&
+		isdigit(e->state[6])) {
+		sprintf(buf, "%c%c  %s", e->state[0],e->state[1],
+			&(e->state[2]));
+		strcat(raddr, buf);
+	    } else
+	      strcat(raddr, e->state);
+	}
+    } else {
+	FixCase(raddr);
+	strcat(raddr, "MIT INTERDEPARTMENTAL MAIL");
     }
     if (changed) {
 	com_err(whoami, 0, "updating finger for %s %s", first, last);
-##	repeat replace u (home_addr = @haddr, home_phone = @hphone,
-##		   office_phone = @ophone, #mit_dept = @dept,
-##		   fmodtime = "now", fmodby = WHO, fmodwith = PROG,
-##		   xname = @name, xdept = @rdept, xtitle = @rtitle,
-##		   xaddress = @raddr, xphone1 = @rhphone, xphone2 = @rophone,
-##		   xmodtime = date("now"), mit_id = @sid)
-##	    where u.users_id = @id
+	EXEC SQL REPEATED UPDATE users
+	  SET home_addr = :haddr, home_phone = :hphone,
+	    office_phone = :ophone, department = :dept,
+	    fmodtime = 'now', fmodby = WHO, fmodwith = PROG,
+	    xname = :name, xdept = :rdept, xtitle = :rtitle,
+	    xaddress = :raddr, xphone1 = :rhphone, xphone2 = :rophone,
+	    xmodtime = date('now'), clearid = :sid
+	  WHERE users_id = :id;
     }  else {
-##	repeat replace u (xname = @name, xdept = @rdept, xtitle = @rtitle,
-##		   xaddress = @raddr, xphone1 = @rhphone, xphone2 = @rophone,
-##		   xmodtime = date("now"), mit_id = @sid)
-##	    where u.users_id = @id
+	EXEC SQL REPEATED UPDATE users
+	  SET xname = :name, xdept = :rdept, xtitle = :rtitle,
+	    xaddress = :raddr, xphone1 = :rhphone, xphone2 = :rophone,
+	    xmodtime = date('now'), clearid = :sid
+	  WHERE users_id = :id;
     }
-##}
+}
 
 
 newuser(e)
 struct entry *e;
-##{
+{
     char buf[512], *from, *to;
-##  int id, uid;
-##  char *last, *first, *class, *middle, login[9], *sid, fullname[65];
-##  char haddr[81], hphone[17], ophone[13], dept[24], *title;
+    EXEC SQL BEGIN DECLARE SECTION;
+    int id, uid, who;
+    char *last, *first, *class, *middle, login[9], *sid, fullname[65], *prog;
+    char haddr[81], hphone[17], ophone[13], dept[24], *title, raddr[81], *name;
+    EXEC SQL END DECLARE SECTION;
 
-
+    who = WHO;
+    prog = PROG;
     strcpy(buf, e->address);
     if (*e->dorm) {
 	strcat(buf, " ");
@@ -466,55 +485,79 @@ struct entry *e;
       sprintf(fullname, "%s %s %s", first, middle, last);
     else
       sprintf(fullname, "%s %s", first, last);
-    
-##  append users (#login = login, users_id = id, #uid = uid, shell = "/bin/csh",
-##		  #last = last, #first = first, #middle = middle, status = 0,
-##		  #mit_id = sid, #mit_year = class,
-##		  modtime = "now", modby = WHO, modwith = PROG,
-##		  #fullname = fullname, home_addr = haddr, home_phone = hphone,
-##		  office_phone = ophone, #mit_dept = dept,
-##		  fmodtime = "now", fmodby = WHO, fmodwith = PROG,
-##		  potype = "NONE",
-##		  xname = fullname, xdept = dept, xtitle = title,
-##		  xaddress = haddr, xphone1 = hphone, xphone2 = ophone,
-##		  xmodtime = date("now"))
-
+    name = e->name;
+    strcpy(raddr, e->address);
+    if (*e->dorm) {
+	strcat(raddr, " ");
+	strcat(raddr, e->dorm);
+    }
+    strcat(raddr, "|");
+    if (*e->city) {
+	strcat(raddr, e->city);
+	FixCase(raddr);
+	if (*e->state) {
+	    strcat(raddr, " ");
+	    if (isupper(e->state[0]) && isupper(e->state[1]) &&
+		isdigit(e->state[2]) && isdigit(e->state[3]) &&
+		isdigit(e->state[4]) && isdigit(e->state[5]) &&
+		isdigit(e->state[6])) {
+		sprintf(buf, "%c%c  %s", e->state[0],e->state[1],
+			&(e->state[2]));
+		strcat(raddr, buf);
+	    } else
+	      strcat(raddr, e->state);
+	}
+    } else {
+	FixCase(raddr);
+	strcat(raddr, "MIT INTERDEPARTMENTAL MAIL");
+    }
+    EXEC SQL INSERT INTO users
+      (login, users_id, uid, shell, last, first, middle, status,
+       clearid, type, modtime, modby, modwith, fullname, home_addr,
+       home_phone, office_phone, department, fmodtime, fmodby, fmodwith,
+       potype, xname, xdept, xtitle, xaddress, xphone1, xphone2, xmodtime)
+      VALUES (:login, :id, :uid, '/bin/csh', :last, :first, :middle, 0,
+	      :sid, :class, 'now', :who, :prog, :fullname, :haddr, :hphone,
+	      :ophone, :dept, 'now', :who, :prog, 'NONE', :name, :dept,
+	      :title, :raddr, :hphone, :ophone, date('now'));
     com_err(whoami, 0, "adding user %s %s", e->first, e->last);
-##}
+}
 
 
 set_next_object_id(object, limit)
     char *object;
     int limit;
-##{
-##  char *name;
-##  int rowcount, exists, value;
+{
+    EXEC SQL BEGIN DECLARE SECTION;
+    char *name;
+    int rowcount, flag, value;
+    EXEC SQL END DECLARE SECTION;
 
     name = object;
-##  begin transaction
-##  repeat retrieve (value = values.#value) where values.#name = @name
-##  inquire_equel(rowcount = "rowcount")
-    if (rowcount != 1) {
-##	abort
-	return(0);
+    EXEC SQL SELECT value INTO :value FROM numvalues WHERE name = :name;
+    if (sqlca.sqlerrd[2] != 1) {
+	EXEC SQL ROLLBACK;
+	com_err(whoami, MR_INTERNAL, "values table inconsistancy");
+	exit(1);
     }
 
-##  retrieve (exists = any(users.name where users.name = value))
-##  inquire_equel(rowcount = "rowcount")
-    if (rowcount != 1) {
-##	abort
-	return(0);
-    }
-    while (exists) {
+    flag = 0;
+    EXEC SQL SELECT :name INTO :flag FROM users WHERE :name = :value;
+    if (sqlca.sqlerrd[2] == 0)
+      flag = 0;
+    while (flag) {
 	value++;
 	if (limit && value > MAX_ID_VALUE)
 	    value = MIN_ID_VALUE;
-##	retrieve (exists = any(users.name where users.name = value))
+	flag = 0;
+	EXEC SQL SELECT :name INTO :flag FROM users WHERE :name = :value;
+	if (sqlca.sqlerrd[2] == 0)
+	  flag = 0;
     }
 
-##  repeat replace values (#value = @value) where values.#name = @name
-##  end transaction
+    value++;
+    if (limit && value > MAX_ID_VALUE)
+      value = MIN_ID_VALUE;
+    EXEC SQL REPEATED UPDATE numvalues SET value = :value WHERE name = :name;
     return(value);
-##}
-
-
+}

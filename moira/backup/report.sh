@@ -1,4 +1,5 @@
 #!/moira/bin/perl
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/report.sh,v 1.3 1992-08-13 17:38:39 mar Exp $
 
 chdir("/u1/sms_backup/backup_1");
 
@@ -12,7 +13,7 @@ open(MACHINES, "machine") || die "Cannot open machine file for input.\n";
 $total = 0;
 
 while (<MACHINES>) {
-    split(/\|/);
+    split(/\|/, $_, 4);
     $TYPES{$_[2]}++;
     $total++;
 }
@@ -20,7 +21,7 @@ while (<MACHINES>) {
 close(MACHINES);
 delete $TYPES{"NONE"};
 
-printf("%5d Machines by type:\n", $total);
+printf("%5d Machines by type (both workstations & servers):\n", $total);
 grep(push(@values, sprintf("   %5d %-8s %2d%%\n", $TYPES{$_}, $_, (100 * $TYPES{$_} + $total/2)/$total)), keys(%TYPES));
 print reverse sort(@values);
 print "\n";
@@ -38,7 +39,7 @@ while (<CLUSTERS>) {
 close(CLUSTERS);
 delete $TYPES{"NONE"};
 
-printf("%5d Clusters\n", $total);
+printf("%5d Clusters\n\n", $total);
 
 
 open(PRINTCAP, "printcap") || die "Cannot open printcap file for input.\n";
@@ -46,7 +47,7 @@ open(PRINTCAP, "printcap") || die "Cannot open printcap file for input.\n";
 $total = 0;
 
 while (<PRINTCAP>) {
-    split(/\|/);
+    split(/\|/, $_, 7);
     if ($_[5]) { $auth++;  }
     $total++;
 }
@@ -63,7 +64,8 @@ open(USERS, "users") || die "Cannot open users file for input.\n";
 $total = 0;
 
 while (<USERS>) {
-    split(/\|/);
+    s/\|/\e/g; s/\\\e/\|/g;
+    split(/\e/, $_, $27);
     $total++; $STATUS{$_[7]}++;
     if ($_[7] != 3) { $classtotal++; $CLASS{$_[9]}++; }
     if ($_[7] == 1) { $CLASSA{$_[9]}++; }
@@ -74,15 +76,17 @@ close(USERS);
 delete $STATUS{"NONE"};
 delete $CLASS{""};
 
-sub bytotal { substr($b, 9, 5) <=> substr($a, 9, 5); }
+sub bytotal { substr($b, 12, 5) <=> substr($a, 12, 5); }
 undef @values;
 printf("%5d Non-deactivated users by class:\n", $classtotal);
 printf("   class    total %%total active %%active\n");
+printf("            in DB      accounts in class\n");
 grep(push(@values, sprintf("   %-8s %5d   %2d    %5d   %3d\n",
 		$_, $CLASS{$_}, (100 * $CLASS{$_} + $classtotal/2)/$classtotal,
 		$CLASSA{$_}, (100 * $CLASSA{$_} + $CLASS{$_}/2)/$CLASS{$_})),
 	keys(%CLASS));
 print sort bytotal @values;
+printf("   Totals   %5d  100    %5d\n", $classtotal, $STATUS{'1'});
 print "\n";
 undef %CLASS;
 
@@ -105,7 +109,7 @@ undef @STATUS;
 
 undef @values;
 printf("%5d Active or enrolled users by pobox type:\n", $pototal);
-grep(push(@values, sprintf("   %5d %-8s %2d%%\n", $POTYPE{$_}, $_, (100 * $POTYPE{$_} + $total/2)/$total)), keys(%POTYPE));
+grep(push(@values, sprintf("   %5d %-8s %2d%%\n", $POTYPE{$_}, $_, (100 * $POTYPE{$_} + $pototal/2)/$pototal)), keys(%POTYPE));
 print reverse sort(@values);
 print "\n";
 undef %POTYPE;
@@ -117,7 +121,7 @@ open(LISTS, "list") || die "Cannot open list file for input.\n";
 $total = 0;
 
 while (<LISTS>) {
-    split(/\|/);
+    split(/\|/, $_, 8);
     $total++;
     if ($_[2]) { $active++; }
     if ($_[3]) { $public++; }
@@ -127,7 +131,7 @@ while (<LISTS>) {
 }
 close(LISTS);
 
-printf("%5d Lists:\n", $total);
+printf("%5d Lists (non-exclusive attributes):\n", $total);
 printf("   %5d %-9s %2d%%\n",$active, "active", (100 * $active + $total/2)/$total);
 printf("   %5d %-9s %2d%%\n",$public, "public", (100 * $public + $total/2)/$total);
 printf("   %5d %-9s %2d%%\n",$hidden, "hidden", (100 * $hidden + $total/2)/$total);
@@ -140,7 +144,7 @@ open(FILSYS, "filesys") || die "Cannot open filesys file for input.\n";
 
 $total = 0;
 while (<FILSYS>) {
-    split(/\|/);
+    split(/\|/, $_, 15);
     $total++;
     $FSTYPE{$_[4]}++;
     $LTYPE{$_[13]}++;
@@ -166,14 +170,37 @@ print "\n";
 undef %LTYPE;
 
 
+open(QUOTA, "quota") || die "Cannot open quota file for input.\n";
+
+$total = 0;
+while (<QUOTA>) {
+    split(/\|/, $_, 6);
+    $total++;
+    $QTYPE{$_[1]}++;
+#    $QVALUE{$_[4]/100}++;
+}
+close(QUOTA);
+# remove dummy entry
+
+undef @values;
+printf("%5d Quotas by type:\n", $total);
+grep(push(@values, sprintf("   %5d %-8s %2d%%\n", $QTYPE{$_}, $_, (100 * $QTYPE{$_} + $total/2)/$total)), keys(%QTYPE));
+print reverse sort(@values);
+print "\n";
+undef %QTYPE;
+
+#undef @values;
+#printf("%5d Quotas by value:\n", $total);
+#printf("   Quota Occurances\n");
+#foreach $value (sort {$a<=>$b} keys(%QVALUE)) {
+#	$total += $QVALUE{$value};
+#	if 
+#}
+#grep(push(@values, sprintf("   %5d %6d\n", $_, $QVALUE{$_})), sort {$a <=> $b} keys(%QVALUE));
+#print sort(@values);
+#print "\n";
+#undef %QVALUE;
+
+
 exit 0;
 
-
-sub print_stats {
-	local(@values);
-	local(%data);
-	print "print_stats called with ", $_[0], $_[1];
-	%data = $_[1];
-	grep(push(@values, sprintf($_[0], $data{$_}, $_, (100 * $data{$_} + $total/2)/$total)), keys(%data));
-	print reverse sort(@values);
-}

@@ -1,3 +1,11 @@
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/Makefile,v 1.2 1988-12-29 18:50:35 mar Exp $
+# Database consistency checker
+#
+# (c) Copyright 1988 by the Massachusetts Institute of Technology.
+# For copying and distribution information, please see the file
+# <mit-copyright.h>.
+
+
 .SUFFIXES:
 .SUFFIXES: .o .c .qc
 CFLAGS= -I../include -g
@@ -33,3 +41,6 @@ clean:
 	rm -f *.o 
 	rm -f dbck.c fix.c phase1.c phase2.c phase3.c phase4.c dbck
 	rm -f core *~
+
+install: dbck
+	install dbck ../bin/dbck

@@ -1,0 +1,83 @@
+.TH DCM 8 "30 Nov 1988" "Project Athena"
+\" RCSID: $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/man/dcm.8,v 1.1 1988-11-30 13:45:26 mar Exp $
+.SH NAME
+dcm \- build config files from SMS database and update servers
+.br
+startdcm \- start a dcm running, capturing log files
+.SH SYNOPSIS
+.B dcm
+[-d level]
+.br
+.B startdcm
+.SH DESCRIPTION
+The
+.B dcm
+must be run periodically on the SMS server.  It is usually run every
+15 minutes by the
+.I cron
+daemon.  Rather than invoke
+.B dcm
+directly, cron runs
+.B startdcm,
+which starts the dcm running in the proper working directory and
+captures logging messages.
+.PP
+The
+.B dcm
+may be disabled by the presence of the file
+.I /etc/nodcm
+or by setting the value of
+.I dcm_enable
+to zero in the SMS database.  Debug mode may be enabled in the dcm by
+specifying an integer on the command line or by setting the
+environment variable
+.B DEBUG.
+The command line value will override the environment variable.  Three
+bits are currently defined in the debug value: DBG_PLAIN = 01,
+DBG_VERBOSE = 02, DBG_TRACE = 04.  Logging is done to standard output.
+If critical errors are detected, they are logged to
+.B /u1/sms/critical.log
+and in a zephyrgram to class
+.B SMS
+instance
+.B DCM
+in addition to standard output.
+For the actual generation of config files, the
+.B dcm
+will for off generator programs of the form
+.B /u1/sms/bin/\fIservice\fB.gen.
+Each generator takes as an argument the name of the output file to
+produce.  Many of them also require working directories in
+.B /u1/sms/dcm/\fIservice\fB.
+A generator exits with a status code defined in
+.I <sms_et.h>.
+In particular,
+.B SMS_NO_CHANGE
+is a common exit status if the database hasn't changed since the last
+time this generator was run.
+.PP
+.B startdcm
+sets its working directory to the root, disconnects from the terminal
+and puts itself in the background.  It then starts
+.B /u1/sms/bin/dcm,
+and will capture lines the dcm writes to standard output and log them
+in
+.B /u1/sms/dcm.log
+along with a timestamp.
+.B startdcm
+will also log the exit status of the
+.B dcm
+if it is non-zero.
+.SH FILES
+/u1/sms/dcm.log
+.br
+/u1/sms/critical.log
+.br
+/u1/sms/dcm/locks/* \- empty files will be created here for advisory locks.
+.br
+/u1/sms/bin/*.gen \- service file generators will be searched for
+here.
+.br
+/etc/srvtab \- The dcm must be able to get Kerberos tickets for "rcmd.sms".
+.SH "SEE ALSO"
+The Project Athena Technical Plan section on SMS.

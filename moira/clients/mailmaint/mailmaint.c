@@ -1,6 +1,6 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v 1.14 1988-12-01 14:55:17 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v 1.15 1989-01-09 20:01:06 mar Exp $
  */
 
 /*  (c) Copyright 1988 by the Massachusetts Institute of Technology. */
@@ -8,7 +8,7 @@
 /*  <mit-copyright.h>. */
 
 #ifndef lint
-static char rcsid_mailmaint_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v 1.14 1988-12-01 14:55:17 mar Exp $";
+static char rcsid_mailmaint_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v 1.15 1989-01-09 20:01:06 mar Exp $";
 #endif lint
 
 /***********************************************************************/
@@ -444,6 +444,7 @@ list_by_member()
 	Put_message("\r\n");
 	com_err(whoami, status, " in get_lists_of_member");
     }
+    currow++;
     show_text(currow, STARTCOL, "Press any Key to continue...");
     (void) getchar();
     clrwin(DISPROW);

@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.38 1997-08-14 20:22:49 danw Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.39 1997-10-07 03:29:25 danw Exp $";
 #endif
 
 /*	This is the file user.c for the MOIRA Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v $
  *      $Author: danw $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.38 1997-08-14 20:22:49 danw Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.39 1997-10-07 03:29:25 danw Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -737,28 +737,31 @@ Bool one_item;
 	Put_message(txt_buf);
     } else if (YesNoQuestion("Also deactivate matching list and filesystem (y/n)",
 			     FALSE) == TRUE) {
-	if (status = do_mr_query("get_list_info", 1, &(info[NAME]),
-				 StoreInfo, (char *) &elem)) {
+	status = do_mr_query("get_list_info", 1, &(info[NAME]),
+			     StoreInfo, (char *) &elem);
+	if (status == MR_SUCCESS) {
+	    args =(char **) (QueueTop(elem)->q_data);
+	    free(args[L_ACTIVE]);
+	    args[L_ACTIVE] = strsave("0");
+	    FreeAndClear(&args[L_MODTIME], TRUE);
+	    FreeAndClear(&args[L_MODBY], TRUE);
+	    FreeAndClear(&args[L_MODWITH], TRUE);
+	    SlipInNewName(args, args[L_NAME]);
+	    if (status = do_mr_query("update_list", CountArgs(args), args,
+				     Scream, (char *) NULL)) {
+		com_err(program_name, status, " updating list, not deactivating list or filesystem");
+		FreeInfo(args);
+		FreeQueue(elem);
+		return;
+	    }
+	    FreeInfo(args);
+	    FreeQueue(elem);
+	    elem = (struct qelem *) NULL;
+	} else if (status != MR_NO_MATCH) {
 	    com_err(program_name, status, " getting list info, not deactivating list or filesystem");
 	    return;
 	}
-	args =(char **) (QueueTop(elem)->q_data);
-	free(args[L_ACTIVE]);
-	args[L_ACTIVE] = strsave("0");
-	FreeAndClear(&args[L_MODTIME], TRUE);
-	FreeAndClear(&args[L_MODBY], TRUE);
-	FreeAndClear(&args[L_MODWITH], TRUE);
-	SlipInNewName(args, args[L_NAME]);
-	if (status = do_mr_query("update_list", CountArgs(args), args,
-				 Scream, (char *) NULL)) {
-	    com_err(program_name, status, " updating list, not deactivating list or filesystem");
-	    FreeInfo(args);
-	    FreeQueue(elem);
-	    return;
-	}
-	FreeInfo(args);
-	FreeQueue(elem);
-	elem = (struct qelem *) NULL;
+
 	if (status = do_mr_query("get_filesys_by_label", 1, &(info[NAME]),
 				 StoreInfo, (char *) &elem)) {
 	    com_err(program_name, status, " getting filsys info, not deactivating filesystem");

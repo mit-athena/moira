@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/increment.dc,v $
- *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/increment.dc,v 2.10 1993-11-10 15:33:29 mar Exp $
+ *	$Author: tytso $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/increment.dc,v 2.11 1993-12-10 13:46:14 tytso Exp $
  *
  *	Copyright (C) 1989 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_increment_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/increment.dc,v 2.10 1993-11-10 15:33:29 mar Exp $";
+static char *rcsid_increment_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/increment.dc,v 2.11 1993-12-10 13:46:14 tytso Exp $";
 #endif lint
 
 #include <fcntl.h>
@@ -21,7 +21,6 @@ static char *rcsid_increment_dc = "$Header: /afs/.athena.mit.edu/astaff/project/
 EXEC SQL INCLUDE sqlca;
 
 extern char *whoami;
-char *malloc();
 
 int inc_pid = 0;
 int inc_running = 0;
@@ -197,8 +196,12 @@ char **argv;
 	strcpy(barg0, name);
 	strcpy(barg1, argv[1]);
 	id = (int) argv[2];
+	beforec = 9;
 	if (!strcmp(barg1, "USER")) {
 	    id_to_name(id, barg1, &name);
+	    EXEC SQL SELECT CHAR(status) INTO :barg9 FROM users 
+		WHERE users_id=:id;
+	    beforec = 10;
 	} else if (!strcmp(barg1, "LIST")) {
 	    id_to_name(id, barg1, &name);
 	} else if (!strcmp(barg1, "STRING")) {
@@ -208,7 +211,6 @@ char **argv;
 	}
 	strcpy(barg2, name);
 	free(name);
-	beforec = 9;
     } /* else
       com_err(whoami, 0, "unknown table in incremental_before"); */
 }
@@ -313,8 +315,12 @@ EXEC SQL END DECLARE SECTION;
 	strcpy(aarg0, name);
 	strcpy(aarg1, argv[1]);
 	id = (int) argv[2];
+	afterc = 9;
 	if (!strcmp(aarg1, "USER")) {
 	    id_to_name(id, aarg1, &name);
+	    EXEC SQL SELECT CHAR(status) INTO :aarg9 FROM users 
+		WHERE users_id=:id;
+	    afterc = 10;
 	} else if (!strcmp(aarg1, "LIST")) {
 	    id_to_name(id, aarg1, &name);
 	} else if (!strcmp(aarg1, "STRING")) {
@@ -324,7 +330,6 @@ EXEC SQL END DECLARE SECTION;
 	}
 	strcpy(aarg2, name);
 	free(name);
-	afterc = 9;
     } else if (!strcmp(table, "clear")) {
 	afterc = 0;
 	table = beforetable;

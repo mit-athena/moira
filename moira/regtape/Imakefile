@@ -1,4 +1,4 @@
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/Imakefile,v 1.1 1993-01-04 15:58:18 mar Exp $
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/Imakefile,v 1.2 1993-01-04 16:40:01 mar Exp $
 
 # Copyright 1992 by the Massachusetts Institute of Technology.
 #
@@ -13,8 +13,10 @@ sqlrule()
 
 program(students, students.o rafnu.o,,$(CLIBS) $(SQL_LIB), $(PROGDIR))
 program(employee, employee.o rafnu.o,,$(CLIBS) $(SQL_LIB), $(PROGDIR))
-program(sign, sign.o rafnu.o,,$(CLIBS) $(SQL_LIB), $(PROGDIR))
+program(verify, verify.o rafnu.o,,/mit/gdss/`machtype`/libgdss.a $(CLIBS) $(SQL_LIB), $(PROGDIR))
+program(sign, sign.o rafnu.o,,/mit/gdss/`machtype`/libgdss.a $(CLIBS) $(SQL_LIB), $(PROGDIR))
 
 sqlfile(students)
 sqlfile(employee)
 sqlfile(sign)
+sqlfile(verify)

@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/delete.c,v 1.12 1988-12-07 18:48:54 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/delete.c,v 1.13 1989-04-21 19:11:46 mar Exp $";
 #endif lint
 
 /*	This is the file delete.c for the SMS Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/delete.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/delete.c,v 1.12 1988-12-07 18:48:54 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/delete.c,v 1.13 1989-04-21 19:11:46 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -515,10 +515,29 @@ Bool ask_first;
 	 * what to do we will query and then do it.
 	 */
 	
-	if ( (CheckIfAce(name, "list", ask_first) == SUB_NORMAL) &&
-	    (RemoveMembersOfList(name, ask_first) == SUB_NORMAL) &&
+	if ((CheckIfAce(name, "list", ask_first) != SUB_NORMAL) ||
 	    (RemoveItemFromLists(name, "list",
-				 &member_of, ask_first) == SUB_NORMAL) &&
+				 &member_of, ask_first) != SUB_NORMAL))
+	  break;
+	/*
+	 * If the list is it's own ACL, then make the person performing
+	 * the delete the owner before removing this person from the list
+	 */
+	if (!strcmp(list_info[L_ACE_TYPE], "LIST") &&
+	    !strcmp(list_info[L_ACE_NAME], list_info[L_NAME])) {
+	      free(list_info[L_ACE_TYPE]);
+	      free(list_info[L_ACE_NAME]);
+	      list_info[L_ACE_TYPE] = Strsave("USER");
+	      list_info[L_ACE_NAME] = Strsave(user);
+	      SlipInNewName(list_info, Strsave(list_info[L_NAME]));
+	      if ((status = do_sms_query("update_list", CountArgs(list_info)-3,
+				       list_info, Scream, (char *) NULL))
+		    != SMS_SUCCESS) {
+		  com_err(program_name, status, " while updating list owner");
+		  Put_message("List may be only partly deleted.");
+	      }
+	}
+	if ((RemoveMembersOfList(name, ask_first) == SUB_NORMAL) &&
 	    (RealDeleteList(name) == SUB_NORMAL) ) 
 	{		/* if... */
 	    CheckAce(list_info[L_ACE_TYPE], list_info[L_ACE_NAME], ask_first);

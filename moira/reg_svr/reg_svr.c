@@ -1,7 +1,7 @@
 /*
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.31 1990-03-19 19:29:56 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.32 1991-06-27 15:05:29 mar Exp $
  *
  *      Copyright (C) 1987, 1988 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -16,7 +16,7 @@
  */
 
 #ifndef lint
-static char *rcsid_reg_svr_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.31 1990-03-19 19:29:56 mar Exp $";
+static char *rcsid_reg_svr_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.32 1991-06-27 15:05:29 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -187,6 +187,15 @@ int parse_encrypted(message,data)
        correct key, there is no guarantee that a null will occur
        anywhere in the string. */
     (void) strncpy(idnumber,decrypt,(int)decrypt_len);
+    /* Check that the idnumber of a mismatched decryption doesn't overflow
+     * the buffer.
+     */
+    if (strlen(idnumber) != 9) {
+#ifdef DEBUG
+	com_err(whoami, 0, "idnumber wrong size, probable user mismatch\n");
+#endif
+	return(FAILURE);
+    }
     /* Point temp to the end of the plain text ID number. */
     temp = decrypt + strlen(idnumber) + 1;
     /* Find out how much more packet there is. */

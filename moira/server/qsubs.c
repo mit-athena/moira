@@ -1,15 +1,18 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsubs.c,v $
  *	$Author: wesommer $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsubs.c,v 1.2 1987-06-08 03:08:15 wesommer Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsubs.c,v 1.3 1987-08-22 17:44:39 wesommer Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
  *	$Log: not supported by cvs2svn $
+ * Revision 1.2  87/06/08  03:08:15  wesommer
+ * Reindented; added header.
+ * 
  */
 
 #ifndef lint
-static char *rcsid_qsubs_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsubs.c,v 1.2 1987-06-08 03:08:15 wesommer Exp $";
+static char *rcsid_qsubs_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsubs.c,v 1.3 1987-08-22 17:44:39 wesommer Exp $";
 #endif lint
 
 #include "query.h"
@@ -46,13 +49,98 @@ get_query_by_name(name)
     return((struct query *)0);
 }
 
+list_queries(action, actarg)
+    int (*action)();
+    int actarg;
+{
+  register struct query *q;
+  register int i;
+  static struct query **squeries = (struct query **)0;
+  register struct query **sq;
+  char qnames[80];
+  char *qnp;
+  int qcmp();
+
+  if (squeries == (struct query **)0)
+    {
+      sq = (struct query **)malloc(QueryCount * sizeof (struct query *));
+      squeries = sq;
+      q = Queries;
+      for (i = QueryCount; --i >= 0; )
+	*sq++ = q++;
+      qsort(squeries, QueryCount, sizeof (struct query *), qcmp);
+    }
+
+  q = Queries;
+  sq = squeries;
+
+  qnp = qnames;
+  for (i = QueryCount; --i >= 0; sq++) {
+      sprintf(qnames, "%s (%s)", (*sq)->name, (*sq)->shortname);
+      (*action)(1, &qnp, actarg);
+  }
+}
+
+help_query(q, action, actarg)
+    register struct query *q;
+    int (*action)();
+    int actarg;
+{
+    register int argcount;
+    register int i;
+    char argn[32];
+    char qname[80];
+    char *argv[32];
+
+    argcount = q->argc;
+    if (q->type == UPDATE || q->type == APPEND) argcount += q->vcnt;
+
+    switch (argcount) {
+    case 0:
+	sprintf(qname, "      %s ()", q->shortname);
+	argv[0] = qname;
+	(*action)(1, argv, actarg);
+	break;
+
+    case 1:
+	sprintf(qname, "      %s (%s)", q->shortname, q->fields[0]);
+	argv[0] = qname;
+	(*action)(1, argv, actarg);
+	break;
+
+    case 2:
+	sprintf(qname, "      %s (%s, %s)", q->shortname, q->fields[0],
+		q->fields[1]);
+	argv[0] = qname;
+	(*action)(1, argv, actarg);
+	break;
+
+    default:
+	sprintf(qname, "      %s (%s", q->shortname, q->fields[0]);
+	argv[0] = qname;
+	argcount--;
+	for (i = 1; i < argcount; i++) argv[i] = q->fields[i];
+	sprintf(argn, "%s)", q->fields[argcount]);
+	argv[argcount] = argn;
+	(*action)(argcount+1, argv, actarg);
+	break;
+    }
+}
+
+qcmp(q1, q2)
+    struct query **q1;
+    struct query **q2;
+{
+  return(strcmp((*q1)->name, (*q2)->name));
+}
+
 get_input_fields(q, argc, argv)
     register struct query *q;
     int *argc;
     char ***argv;
 {
     *argv = q->fields;
-    *argc = q->sargc + q->argc;
+    *argc = q->argc;
     if (q->type == UPDATE || q->type == APPEND)
 	*argc += q->vcnt;
 }
@@ -64,7 +152,7 @@ get_output_fields(q, argc, argv)
 {
     if (q->type == RETRIEVE) {
 	*argc = q->vcnt;
-	*argv = &q->fields[q->sargc + q->argc];
+	*argv = &q->fields[q->argc];
     } else {
 	*argc = 0;
 	*argv = (char **)0;
@@ -84,7 +172,7 @@ get_field(q, argv, name)
     if (q->type != RETRIEVE) return((char *)0);
 
     if (*name == '*') name++;
-    fp = &q->fields[q->sargc + q->argc];
+    fp = &q->fields[q->argc];
     for (i = 0; i < q->vcnt; i++)     {
 	field = *fp++;
 	if (*field == '*') field++;
@@ -104,7 +192,7 @@ put_field(q, argv, name, value)
     register int i;
     register int n;
 
-    n = q->sargc + q->argc;
+    n = q->argc;
     if (q->type == UPDATE || q->type == APPEND) n += q->vcnt;
 
     if (*name == '*') name++;
@@ -147,6 +235,37 @@ sq_save_data(sq, data)
     sq->q_prev->q_next = q;
     sq->q_prev = q;
     q->q_data = data;
+}
+
+sq_save_args(argc, argv, sq)
+    register struct save_queue *sq;
+    register int argc;
+    register char *argv[];
+{
+    register char **argv_copy;
+    register int i;
+    register int n;
+
+    argv_copy = (char **)malloc(argc * sizeof (char *));
+    for (i = 0; i < argc; i++) {
+	n = strlen(argv[i]) + 1;
+	argv_copy[i] = (char *)malloc(n);
+	bcopy(argv[i], argv_copy[i], n);
+    }
+
+    sq_save_data(sq, argv_copy);
+}
+
+sq_save_unique_data(sq, data)
+    register struct save_queue *sq;
+    char *data;
+{
+    register struct save_queue *q;
+
+    for (q = sq->q_next; q != sq; q = sq->q_next)
+	if (q->q_data == data) return;
+
+    sq_save_data(sq, data);
 }
 
 sq_get_data(sq, data)

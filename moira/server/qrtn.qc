@@ -1,14 +1,14 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v 1.17 1988-07-23 19:24:32 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v 1.18 1988-07-31 01:09:22 mar Exp $
  *
  *	Copyright (C) 1987, 1988 by the Massachusetts Institute of Technology
  * 
  */
 
 #ifndef lint
-static char *rcsid_qrtn_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v 1.17 1988-07-23 19:24:32 mar Exp $";
+static char *rcsid_qrtn_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v 1.18 1988-07-31 01:09:22 mar Exp $";
 #endif lint
 
 #include "query.h"
@@ -215,9 +215,11 @@ sms_process_query(cl, name, argc, argv_ro, action, actarg)
 	    status = do_update(q, &Argv[q->argc], qual, action, actarg);
 	    if (status != SMS_SUCCESS) break;
 	    table = q->rtable;
-##	    repeat replace tblstats (updates = tblstats.updates + 1,
-##				     modtime = "now")
-##		where tblstats.#table = @table
+	    if (strcmp(q->shortname, "sshi") && strcmp(q->shortname, "ssif")) {
+##		repeat replace tblstats (updates = tblstats.updates + 1,
+##					 modtime = "now")
+##		    where tblstats.#table = @table
+	    }
 	}
 
 	/* execute followup routine (if any) */

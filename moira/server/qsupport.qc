@@ -1,15 +1,18 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v $
  *	$Author: wesommer $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.1 1987-07-29 15:13:57 wesommer Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.2 1987-07-29 16:00:39 wesommer Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
  *	$Log: not supported by cvs2svn $
+Revision 1.1  87/07/29  15:13:57  wesommer
+Initial revision
+
  */
 
 #ifndef lint
-static char *rcsid_qsupport_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.1 1987-07-29 15:13:57 wesommer Exp $";
+static char *rcsid_qsupport_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.2 1987-07-29 16:00:39 wesommer Exp $";
 #endif lint
 
 #include "query.h"
@@ -437,7 +440,7 @@ add_locker(q, argv)
     sprintf(locker, "%s/%s", dir, login);
     sprintf(mount, "/mit/%s", login);
 ##  repeat append filesys 
-##             (#users_id = @users_id, type = "NFS", #mach_id = @mach_id,
+##             (#label = @login, type = "NFS", #mach_id = @mach_id,
 ##		name = @locker, access = "w", order = 1, #mount = @mount,
 ##		acl_id = @user_acl)
 
@@ -448,7 +451,7 @@ add_locker(q, argv)
 
     /* create nfsquota entry */
 ##  append nfsquota (#users_id = users_id, #mach_id = mach_id,
-##		     device = #device, #quota = quota)
+##		     #device = device, #quota = quota)
 
     return(SMS_SUCCESS);
 ##}

@@ -1,4 +1,4 @@
-/* $Id: defs.h,v 1.18 2000-08-10 02:25:57 zacheiss Exp $
+/* $Id: defs.h,v 1.19 2000-09-25 22:53:39 zacheiss Exp $
  *
  *	This is the file defs.h for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -50,7 +50,7 @@ typedef int Bool;
 
 /* What version of the queries are we asking for? */
 
-#define QUERY_VERSION 4
+#define QUERY_VERSION 5
 
 /* This is unimplemented in the menu stuff, but would be nice. */
 

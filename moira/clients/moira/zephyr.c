@@ -1,4 +1,4 @@
-/* $Id: zephyr.c,v 1.11 2000-01-07 21:14:06 danw Exp $
+/* $Id: zephyr.c,v 1.12 2000-09-25 22:53:39 zacheiss Exp $
  *
  * Zephyr ACL routines for the Moira client
  *
@@ -18,7 +18,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/zephyr.c,v 1.11 2000-01-07 21:14:06 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/zephyr.c,v 1.12 2000-09-25 22:53:39 zacheiss Exp $");
 
 void RealDeleteZephyr(char **info, Bool one_item);
 
@@ -31,10 +31,12 @@ static char **SetDefaults(char **info, char *name)
   info[ZA_SUB_TYPE] = strdup("NONE");
   info[ZA_IWS_TYPE] = strdup("NONE");
   info[ZA_IUI_TYPE] = strdup("NONE");
+  info[ZA_OWNER_TYPE] = strdup("NONE");
   info[ZA_XMT_ID] = strdup("");
   info[ZA_SUB_ID] = strdup("");
   info[ZA_IWS_ID] = strdup("");
   info[ZA_IUI_ID] = strdup("");
+  info[ZA_OWNER_ID] = strdup("");
   info[ZA_MODTIME] = info[ZA_MODBY] = info[ZA_MODWITH] = NULL;
   info[ZA_END] = NULL;
   return info;
@@ -71,16 +73,24 @@ static char *PrintZephyrInfo(char **info)
   sprintf(buf, "        Zephyr class: %s", info[ZA_CLASS]);
   Put_message(buf);
   sprintf(buf, "Transmit ACL:           %s %s", info[ZA_XMT_TYPE],
-	  strcasecmp(info[ZA_XMT_TYPE], "NONE") ? info[ZA_XMT_ID] : "");
+	  (strcasecmp(info[ZA_XMT_TYPE], "NONE") && 
+	   strcasecmp(info[ZA_XMT_TYPE], "ALL")) ? info[ZA_XMT_ID] : "");
   Put_message(buf);
   sprintf(buf, "Subscription ACL:       %s %s", info[ZA_SUB_TYPE],
-	  strcasecmp(info[ZA_SUB_TYPE], "NONE") ? info[ZA_SUB_ID] : "");
+	  (strcasecmp(info[ZA_SUB_TYPE], "NONE") && 
+	   strcasecmp(info[ZA_SUB_TYPE], "ALL")) ? info[ZA_SUB_ID] : "");
   Put_message(buf);
   sprintf(buf, "Instance Wildcard ACL:  %s %s", info[ZA_IWS_TYPE],
-	  strcasecmp(info[ZA_IWS_TYPE], "NONE") ? info[ZA_IWS_ID] : "");
+	  (strcasecmp(info[ZA_IWS_TYPE], "NONE") && 
+	   strcasecmp(info[ZA_IWS_TYPE], "ALL")) ? info[ZA_IWS_ID] : "");
   Put_message(buf);
   sprintf(buf, "Instance Indentity ACL: %s %s", info[ZA_IUI_TYPE],
-	  strcasecmp(info[ZA_IUI_TYPE], "NONE") ? info[ZA_IUI_ID] : "");
+	  (strcasecmp(info[ZA_IUI_TYPE], "NONE") && 
+	   strcasecmp(info[ZA_IUI_TYPE], "ALL")) ? info[ZA_IUI_ID] : "");
+  Put_message(buf);
+  sprintf(buf, "Owner:                  %s %s", info[ZA_OWNER_TYPE], 
+	  (strcasecmp(info[ZA_OWNER_TYPE], "NONE") && 
+	   strcasecmp(info[ZA_OWNER_TYPE], "ALL")) ? info[ZA_OWNER_ID] : "");
   Put_message(buf);
   sprintf(buf, MOD_FORMAT, info[ZA_MODBY], info[ZA_MODTIME], info[ZA_MODWITH]);
   Put_message(buf);
@@ -151,6 +161,15 @@ static char **AskZephyrInfo(char **info, Bool rename)
     {
       sprintf(buf, "Which %s: ", info[ZA_IUI_TYPE]);
       if (GetValueFromUser(buf, &info[ZA_IUI_ID]) == SUB_ERROR)
+	return NULL;
+    }
+  if (GetTypeFromUser("What kind of Administrator", "ace_type",
+		      &info[ZA_OWNER_TYPE]) == SUB_ERROR)
+    return NULL;
+  if (strcasecmp(info[ZA_OWNER_TYPE], "NONE"))
+    {
+      sprintf(buf, "Which %s: ", info[ZA_OWNER_TYPE]);
+      if (GetValueFromUser(buf, &info[ZA_OWNER_ID]) == SUB_ERROR)
 	return NULL;
     }
   FreeAndClear(&info[ZA_MODTIME], TRUE);

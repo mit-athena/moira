@@ -1,0 +1,315 @@
+*no_more_help
+Sorry, no further help is available.
+*show_user
+This will display information about a user in the database.  The user
+may or may not have an active account.
+
+Users may be retrieved in four ways:
++ by login name (may use wildcards)
++ by Unix UID (must match exactly)
++ by first and/or last names (may use wildcards)
++ by class (please do not specify a class with too many people in it)
+
+Fill in the desired field(s), mouse on "OK", and moira will retrieve
+any matching users.  Moira will look to see which field(s) you
+filled in, and perform one of the for retrievals mentioned above.
+*add_user
+Specify all of the information to add a new user to the database.  The
+user need not have an active useraccount.
+
++ specify a login name of 3 to 8 characters, or the special value
+  "create unique login" to have moira choose one for you
++ specify a number for the UID, or the special value "create unique UID"
+  to have moira choose one for you.
++ Moira has a set of standard capitalization rules it uses on users'
+  real names.  If you attempt to enter names capitalized differently,
+  Moira will complain.  You may override this, but if you do so, the
+  register program may not work for that user.
++ the ID number will be one-way encrypted before being stored in the
+  database.  If you wish to enter the encrypted ID directly, enclose
+  it in double-quotes.
++ to create a fully active user account, enter a user here as status
+  "Registerable", then use the "register" option on the "user" menu to
+  complete the user account.
+*register_user
+This will turn an entry for a user in the database to a fully
+functioning account.  The user may be selected in two ways:
+
++ specify the real name of the user (with wildcards allowed) in the
+  first name and last name fields.  This must match only one user in
+  the database.
++ specify the unix UID of the desired user.
+
+Be sure to fill in a login name which is not in use.  The suggested
+name is
+  first initial, middle initial, first six characters of last name
+but must be eight or fewer characters long.
+*select_user
+Specify the login name of the user to be modified.  Wildcards may
+be used, but your specification must match exactly one user.
+*mod_user
+Change any fields desired, then mouse on "OK" to modify the user
+entry.  You may even change the login name.
+
++ You may change the UID to the special value "create unique UID"
+  to have moira choose another one for you.
++ Moira has a set of standard capitalization rules it uses on users'
+  real names.  If you attempt to enter names capitalized differently,
+  Moira will complain.  You may override this, but if you do so, the
+  register program may not work for that user.
++ the ID number will be one-way encrypted before being stored in the
+  database.  To enter an already encrypted ID, type double-quotes (")
+  around it.
++ If you are just changing the account status, in the future remember
+  that the "deactivate" choice of the "user" menu is a quick way to
+  set the status to "3 - Deleted".
+*deactivate_user
+Specify the login name of the user to be deactivated.
+
+Deactivating a user makes their account no longer usable.  They will
+show up with an account status of "3 - Marked for Deletion".  However,
+all of their information will still be in the database so that the
+account can be turned back on if necessary.  Since they are still in
+the database, their login name and UID may not be re-used.  You may
+wish to make the user's group list no longer active and deny access to
+their locker at the same time.
+
+At some point in the future, deactivated accounts should be expunged,
+either in bulk or with the "expunge" option of the "user" menu.
+*expunge_user
+Specify the login name of the user to be expunged.
+
+This will remove the user's record from the Moira database (but not
+from Kerberos).  Once this is done, the login name and UID may be
+reused.  It is a good idea to leave users in the deactivated state for
+a while before expunging them so that the name and ID are not reused
+right away, and the account can be reactivated if necessary.
+
+At Project Athena, we have decided that expunging individual accounts
+is a bad idea, so any account which has ever been active may not be
+expunged this way.  These accounts must be removed in bulk by the
+Moira administrator.
+*show_finger
+Specify a login name to select a user whose finger information will be
+displayed.  This information will exist for users whose accounts are
+not yet active, as it is loaded at the same time as the users
+themselves.
+*select_finger
+Specify the login name of the user whose finger information is to be
+modified.  Wildcards may be used, but your specification must match
+exactly one user.
+*mod_finger
+Enter the new information about the user.  This information will
+appear where the finger program can see it.  
+
+You may set your name as it appears to other users to anything you
+want.  Please keep it something resembling your real name.  Our
+operations staff can find out the real name of the owner of an
+account.
+
+The rest of the information is optional, and is initialized to
+information from the administration.  If you do not want this
+information to appear for you, type spaces over it.  Please do not
+enter incorrect information.
+
+Note that commas (,) and colons (:) are not allowed in these
+responses.  This is due to how the information is manipulated later.
+We suggest that you use a semicolon (;) to separate parts of your
+address.
+*select_pobox
+Enter the login name of a user to see what that user's P. O. Box or
+mail forwarding is set to.
+*set_pobox
+This allows you to set where a user receives their mail.  Specify the
+login name to select a user.
+
++ If the type is POP, then the user will receive their mail on a post
+  office (POP) server.  Select one of the POP servers listed below.
++ If the type is SMTP, then the user will have their mail forwarded
+  somewhere else.  Type the destination address in the "SMTP Address"
+  field.
++ If the type is NONE, the user will be unable to recieve mail.  This
+  is the same as deleting the P. O. Box.
+
+Note that if the user has had their mail forwarded, and wants to
+recieve it locally again, you should not use this form; select the
+"reset" option from the "pobox" menu to select the same POP server
+that they previously used.
+
+To add new POP servers to the list, add them as POP servers in the
+servers submenu of the updates menu.
+*reset_pobox
+This option will change a user's mail setting to receiving on a local
+POP server.  The server chosen will be the same one that the user has
+used in the past.  If the user is already receiving their mail
+locally, or has never had a POP box, then you will get an error.  Use
+the "set" option of the "pobox" menu for more general mail
+manipulation.
+*del_pobox
+If you delete a user's P. O. Box, they will not be able to receive
+mail.  This normally should not be done.  To go ahead and delete a
+users mailbox, enter their login name.
+*show_krbmap
+This will display user to kerberos principal mappings.  You may
+specify the mappings to be displayed by entering a login name, a
+principal name, or both.  Either field may contain wildcards.
+*add_krbmap
+This will add a new user to kerberos mapping to the database.  You
+must fill in both fields, entering a login name and a kerberos
+principal.
+
+Note that the principal is case sensitive, and should be entered with
+the realm in uppercase.  If the principal name contains a periods or
+at-signs other than as separators between the name, instance and
+realm, be sure to escape them with backslashes (\).
+*del_krbmap
+This will remove a mapping from the database.  You must fill in both
+fields, exactly matching an existing kerberos mapping.
+
+Note that the principal is case sensitive, and should be entered with
+the realm in uppercase.  If the principal name contains a periods or
+at-signs other than as separators between the name, instance and
+realm, be sure to escape them with backslashes (\).
+*show_machine
+This will show you the information about one or more machines (hosts)
+in the database.  Wildcards may be used in the name.  If no wildcards
+are used, the name you type will be canonicalized by the domain name
+system before being looked up in the database.  To bypass this
+canonicalization, put the name inside a pair of double-quotes.  All
+machine name comparisons are case-insensitive.
+*add_machine
+This will add a new machine (host) to the database.  The name you type
+will be canonicalized by the domain name system.  To bypass this
+canonicalization, put the name inside a pair of double-quotes.  Each
+machine must be of one of the defined types.
+
+Note that type "AFS" is used with pseudo-machines that are used as AFS
+cellname indicators.
+*select_machine
+Enter the name of the machine (host) to modify or delete.  Wildcards
+may be used in the name.  If no wildcards are used, the name you type
+will be canonicalized by the domain name system before being looked up
+in the database.  To bypass this canonicalization, put the name inside
+a pair of double-quotes.  All machine name comparisons are
+case-insensitive.
+*mod_machine
+You may change the name and/or type of the machine.  The name you type
+will be canonicalized by the domain name system.  To bypass this
+canonicalization, put the name inside a pair of double-quotes.  Each
+machine must be of one of the defined types.
+
+Note that type "AFS" is used with pseudo-machines that are used as AFS
+cellname indicators.
+*authors
+This moira client was written by Mark Rosenstein and Andy Oakland of
+MIT Project Athena.
+*about_moira
+Moira is a system configuration manager for distributed systems.  This
+program is the user interface part of the system, and allows you to
+manipulate everything moira knows about.
+
+The top menu bar lists the kinds of things moira knows about, and
+clicking the mouse on one of them will display a menu of operations
+supported for that kind of object.  Some of these menus have submenus
+for related objects.
+
+When you select a menu item, a form will be displayed.  Fill out any
+desired parts of the form:
+ + put the correct value in any text fields
+ + click on the appropriate choice in keyword fields
+ + click on the value to toggle booleans between True and False
+ + typing TAB will forward you to the next field
+When you are done, click the mouse on "OK".  If you are retrieving
+information from the database, the results will be displayed in the
+window underneath the form.  Each form has a help message specific to
+that form that you can see by clicking the mouse on "HELP".  If you
+click on "CANCEL", the form will disappear without doing anything.
+*add_new_value
+This will allow you to add a new keyword which can be specified for
+the field in the previous form.  Moira type fields are checked against
+a list of legal values, but this list itself can easily be changed.
+However, this should not be done lightly.  Be sure you know what you
+are doing and really want this new value before adding it.
+
+To have a keyword value removed, ask the Moira system administrator.
+*wildcards
+Wildcards are allowed in most fields when looking things up in the
+database.  Asterisk "*" will match zero or more characters, so that
+"Rose*" will match "Rose", "Rosen", "Rosenberg" or "Rosenstein".
+
+Be careful about using wildcards where your query will match too much
+data in the database.  You probably do not want to retrieve 1000
+items, and doing so will cause the server to take a long time and
+possibly require more resources than are available.
+*del_all_member
+This will allow you to remove a particular member from all lists that
+member belongs to.  You may specify any type of member, but must
+exactly match that member without wildcards.
+
+This program can prompt you for each deletion, or simply do them all.
+*del_mem_confirm
+If you answer yes, this member will be deleted from the named list.
+Answer no to avoid the deletion.  In either case, you will continue to
+be prompted with the other lists the member belongs to.
+*mouse
+You may also retrieve or modify objects by using the mouse to click on
+them where they appear in the log window.  Regular mouse clicks will
+do selections as they do in most X applications.  But if you hold down
+SHIFT and click the first moust button, it will retrieve the
+referenced object.  And if you hold down SHIFT and click the second
+mouse button, it will pull up the window to modify the referenced
+object.  If you click the mouse on something the program doesn't
+recognize as an object, it will beep at you.
+
+For example, when you show information about a filesystem, a paragraph
+is added to the log that starts with "Filesystem: foo".  If you click
+on the name (foo in the example), it will reference that filesystem
+again.  The paragraph about the filesystem also mentions a machine, a
+user (the owner), a group (the owners), and another user (who last
+modified the info).  You can click on any of these names to select the
+object being referred to.
+*keyboard
+There are keyboard accelerators for many of the mouse actions.
+
+For chosing items from the menubar, if you hold down META and type the
+letter which is underlined in each word, you will select that menu.
+Then typing the letter underlined in any of the items in the menu will
+select that item.
+
+When you are filling out a form, ENTER will advance you to the next
+field if there is more than one field in the form.  If there is only
+one field, ENTER is equivalent to mousing on OK.  ^C in a form is the
+same as mousing on CANCEL.
+*bugs
+Please report bugs in this program by sending email to:
+                     bug-moira@mit.edu 
+Please be sure to mention what kind of computer you were running it
+on, and any other necessary information so that we can repeat the bug
+before we fix it.
+*save_log
+Enter a file name here, and the current contents of the log file will
+be written out to that file.
+*fixcase
+It is important that names in the Moira database all follow the same
+capitalization style so that the register program can find users.  So
+even though for a few names it may not look right, we strongly suggest
+that you follow what this program suggests.
+*confirm_del_all
+If you answer yes, this member will be deleted from the named list.\n\
+Answer no to avoid the deletion.  In either case, you will continue to\n\
+be prompted with the other lists the member belongs to.
+*show_filsys
+This will display information about a filesystem.  The filesystem may
+be of any protocol type and may be a filesystem group or multiple
+filesystem entry as well.
+
+Filesystems may be retireved in any of four ways:
++ by the name of the filesystem (may use wildcards)
++ by the name of the fileserver (machine) (must match exactly)
++ by the actual partition of an NFS server (specify machine and
+  partition, both must match exactly)
++ by the owning group of the filesystem (must match exactly)
+
+Fill in the desired field(s), click on "OK", and moira will retrieve
+any matching filesystems.  Moira will look to see which field(s) you
+filled in, and perform one of the for retrievals mentioned above.

@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/pobox.c,v 1.10 1988-09-01 14:02:38 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/pobox.c,v 1.11 1988-10-03 13:05:29 mar Exp $";
 #endif lint
 
 /*	This is the file pobox.c for the SMS Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/pobox.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/pobox.c,v 1.10 1988-09-01 14:02:38 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/pobox.c,v 1.11 1988-10-03 13:05:29 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -77,8 +77,8 @@ PrintPOMachines()
     static char * args[] = {"pop", NULL};
     struct qelem * top = NULL;
     
-    if ( (status = sms_query("get_server_locations", CountArgs(args), args,
-			     StoreInfo, (char *)&top)) != SMS_SUCCESS) {
+    if ( (status = do_sms_query("get_server_locations", CountArgs(args), args,
+				StoreInfo, (char *)&top)) != SMS_SUCCESS) {
 	com_err(program_name, status, " in get_server_locations.");
 	return(SUB_ERROR);
     }
@@ -108,8 +108,8 @@ char ** argv;
     if (!ValidName(argv[1]))
 	return(DM_NORMAL);
     
-    switch (status = sms_query("get_pobox", 1, argv + 1, StoreInfo, 
-			       (char *)&top)) {
+    switch (status = do_sms_query("get_pobox", 1, argv + 1, StoreInfo, 
+				  (char *)&top)) {
     case SMS_NO_MATCH:
 	Put_message("This user has no P.O. Box.");
 	break;
@@ -180,8 +180,8 @@ char **argv;
 	type = LOCAL_BOX;
 	switch (YesNoQuestion("Use Previous Local Box (y/n)", TRUE)) {
 	case TRUE:
-	    switch (status = sms_query("set_pobox_pop", 1, 
-				       &local_user, Scream, NULL)) {
+	    switch (status = do_sms_query("set_pobox_pop", 1, 
+					  &local_user, Scream, NULL)) {
 	    case SMS_SUCCESS:
 		return(DM_NORMAL);
 	    case SMS_MACHINE:
@@ -232,8 +232,8 @@ char **argv;
     args[PO_TYPE] = type;
     args[PO_BOX] = box;
     args[PO_END] = NULL;
-    if ( (status = sms_query("set_pobox", CountArgs(args), args, 
-			     Scream, NULL)) != SMS_SUCCESS )
+    if ( (status = do_sms_query("set_pobox", CountArgs(args), args, 
+				Scream, NULL)) != SMS_SUCCESS )
 	com_err(program_name, status, " in ChangeUserPOBox");
     else
 	Put_message("PO Box assigned.");
@@ -263,38 +263,11 @@ char ** argv;
 	    "Are you sure that you want to remove %s's PO Box (y/n)", argv[1]);
     
     if (Confirm(temp_buf)) {
-	if ( (status = sms_query("delete_pobox", 1, argv + 1, Scream, NULL)) !=
-	    SMS_SUCCESS)
+	if ( (status = do_sms_query("delete_pobox", 1, argv + 1,
+				    Scream, NULL)) != SMS_SUCCESS)
 	    com_err(program_name, status, "in delete_pobox.");
 	else
 	    Put_message("PO Box removed.");
     }
     return(DM_NORMAL);
 }
-
-/*
- * Local Variables:
- * mode: c
- * c-indent-level: 4
- * c-continued-statement-offset: 4
- * c-brace-offset: -4
- * c-argdecl-indent: 4
- * c-label-offset: -4
- * End:
- */
-
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    

@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.13 1988-09-02 12:25:42 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.14 1988-10-03 13:03:17 mar Exp $";
 #endif
 
 /*	This is the file attach.c for the SMS Client, which allows a nieve
@@ -13,7 +13,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.13 1988-09-02 12:25:42 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.14 1988-10-03 13:03:17 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -94,22 +94,22 @@ char *name;
 
     switch (type) {
     case LABEL:
-	if ( (stat = sms_query("get_filesys_by_label", 1, &name,
-			       StoreInfo, (char *)&elem)) != 0) {
+	if ( (stat = do_sms_query("get_filesys_by_label", 1, &name,
+				  StoreInfo, (char *)&elem)) != 0) {
 	    com_err(program_name, stat, NULL);
 	    return(NULL);
 	}
 	break;
     case MACHINE:
-	if ( (stat = sms_query("get_filesys_by_machine", 1, &name,
-			       StoreInfo, (char *)&elem)) != 0) {
+	if ( (stat = do_sms_query("get_filesys_by_machine", 1, &name,
+				  StoreInfo, (char *)&elem)) != 0) {
 	    com_err(program_name, stat, NULL);
 	    return(NULL);
 	}
 	break;
     case GROUP:
-	if ( (stat = sms_query("get_filesys_by_group", 1, &name,
-			       StoreInfo, (char *)&elem)) != 0) {
+	if ( (stat = do_sms_query("get_filesys_by_group", 1, &name,
+				  StoreInfo, (char *)&elem)) != 0) {
 	    com_err(program_name, stat, NULL);
 	    return(NULL);
 	}
@@ -118,8 +118,8 @@ char *name;
 	args[ALIAS_NAME] = name;
 	args[ALIAS_TYPE] = FS_ALIAS_TYPE;
 	args[ALIAS_TRANS] = "*";
-	if ( (stat = sms_query("get_alias", 3, args, StoreInfo, 
-			       (char *) &elem)) != 0) {
+	if ( (stat = do_sms_query("get_alias", 3, args, StoreInfo, 
+				  (char *) &elem)) != 0) {
 	    com_err(program_name, stat, " in get_alias.");
 	    return(NULL);
 	}
@@ -280,8 +280,8 @@ Bool one_item;
     sprintf(temp_buf, "Are you sure that you want to delete filesystem %s",
 	    info[FS_NAME]);
     if(!one_item || Confirm(temp_buf)) {
-	if ( (stat = sms_query("delete_filesys", 1,
-			       &info[FS_NAME], Scream, NULL)) != 0)
+	if ( (stat = do_sms_query("delete_filesys", 1,
+				  &info[FS_NAME], Scream, NULL)) != 0)
 	    com_err(program_name, stat, " filesystem not deleted.");
 	else
 	    Put_message("Filesystem deleted.");
@@ -327,15 +327,16 @@ Bool junk;
     char ** args = AskFSInfo(info, TRUE);
     extern Menu nfsphys_menu;
 
-    stat = sms_query("update_filesys", CountArgs(args), args, NullFunc, NULL);
+    stat = do_sms_query("update_filesys", CountArgs(args), args,
+			NullFunc, NULL);
     switch (stat) {
     case SMS_NFS:
 	Put_message("That NFS filesystem is not exported.");
 	if (YesNoQuestion("Fix this now (Y/N)")) {
 	    Do_menu(&nfsphys_menu, 0, NULL);
 	    if (YesNoQuestion("Retry filesystem update now (Y/N)")) {
-		if (stat = sms_query("update_filesys", CountArgs(args), args,
-				     NullFunc, NULL))
+		if (stat = do_sms_query("update_filesys", CountArgs(args), args,
+					NullFunc, NULL))
 		    com_err(program_name, stat, " filesystem not updated");
 		else
 		    Put_message("filesystem sucessfully updated.");
@@ -387,8 +388,8 @@ int argc;
     if ( !ValidName(argv[1]) )
 	return(DM_NORMAL);
 
-    if ( (stat = sms_query("get_filesys_by_label", 1, argv + 1,
-			   NullFunc, NULL)) == 0) {
+    if ( (stat = do_sms_query("get_filesys_by_label", 1, argv + 1,
+			      NullFunc, NULL)) == 0) {
 	Put_message ("A Filesystem by that name already exists.");
 	return(DM_NORMAL);
     } else if (stat != SMS_NO_MATCH) {
@@ -398,15 +399,15 @@ int argc;
 
     args = AskFSInfo(SetDefaults(info, argv[1]), FALSE );
 
-    stat = sms_query("add_filesys", CountArgs(args), args, NullFunc, NULL);
+    stat = do_sms_query("add_filesys", CountArgs(args), args, NullFunc, NULL);
     switch (stat) {
     case SMS_NFS:
 	Put_message("That NFS filesystem is not exported.");
 	if (YesNoQuestion("Fix this now (Y/N)")) {
 	    Do_menu(&nfsphys_menu, 0, NULL);
 	    if (YesNoQuestion("Retry filesystem creation now (Y/N)")) {
-		if (stat = sms_query("add_filesys", CountArgs(args), args,
-				     NullFunc, NULL))
+		if (stat = do_sms_query("add_filesys", CountArgs(args), args,
+					NullFunc, NULL))
 		    com_err(program_name, stat, " in AddFS");
 		else
 		    Put_message("Created.");
@@ -480,8 +481,8 @@ char **argv;
  * print out values, free memory used and then exit.
  */
 
-    if ( (stat = sms_query("get_alias", 3, args, StoreInfo, 
-			   (char *)&elem)) == 0) {
+    if ( (stat = do_sms_query("get_alias", 3, args, StoreInfo, 
+			      (char *)&elem)) == 0) {
 	top = elem = QueueTop(elem);
 	while (elem != NULL) {
 	    info = (char **) elem->q_data;	    
@@ -502,7 +503,7 @@ char **argv;
     GetValueFromUser("Which filesystem will this alias point to?",
 		     &args[ALIAS_TRANS]);
 
-    if ( (stat = sms_query("add_alias", 3, args, NullFunc, NULL)) != 0)
+    if ( (stat = do_sms_query("add_alias", 3, args, NullFunc, NULL)) != 0)
 	com_err(program_name, stat, " in CreateFSAlias.");
 
     FreeInfo(args);
@@ -533,8 +534,8 @@ Bool one_item;
 	    "Are you sure that you want to delete the filesystem alias %s",
 	    info[ALIAS_NAME]);
     if(!one_item || Confirm(temp_buf)) {
-	if ( (stat = sms_query("delete_alias", CountArgs(info),
-			       info, Scream, NULL)) != 0 )
+	if ( (stat = do_sms_query("delete_alias", CountArgs(info),
+				  info, Scream, NULL)) != 0 )
 	    com_err(program_name, stat, " filesystem alias not deleted.");
 	else
 	    Put_message("Filesystem alias deleted.");
@@ -588,14 +589,3 @@ AttachHelp()
 
     return(PrintHelp(message));
 }
-
-/* 
- * Local Variables:
- * mode: c
- * c-indent-level: 4
- * c-continued-statement-offset: 4
- * c-brace-offset: -4
- * c-argdecl-indent: 4
- * c-label-offset: -4
- * End:
- */

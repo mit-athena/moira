@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/quota.c,v 1.7 1988-07-29 18:36:29 kit Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/quota.c,v 1.8 1988-10-03 13:05:35 mar Exp $";
 #endif lint
 
 /*	This is the file quota.c for the SMS Client, which allows a nieve
@@ -10,8 +10,8 @@
  *	By:		Chris D. Peterson
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/quota.c,v $
- *      $Author: kit $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/quota.c,v 1.7 1988-07-29 18:36:29 kit Exp $
+ *      $Author: mar $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/quota.c,v 1.8 1988-10-03 13:05:35 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -53,8 +53,8 @@ Bool override;
   static char *val[] = {"def_quota", NULL};
 
   if (override || (def_quota == NULL)) {
-    if ( (status = sms_query("get_value", CountArgs(val), 
-			   val, StoreInfo, (char *) &top)) != SMS_SUCCESS) {
+    if ( (status = do_sms_query("get_value", CountArgs(val), val,
+				StoreInfo, (char *) &top)) != SMS_SUCCESS) {
 	com_err(program_name, status, " in ShowDefaultQuota");
 	if (def_quota == NULL) {
 	  Put_message("No default Quota Found, setting default to 0.");
@@ -195,8 +195,8 @@ char *argv[];
 	    "change the default quota for all new users");
     if(Confirm(temp_buf)) {
 	newval[1] = argv[1];
-	if ( (status = sms_query("update_value", CountArgs(newval), 
-			       newval, Scream, NULL)) == SMS_SUCCESS ) {
+	if ( (status = do_sms_query("update_value", CountArgs(newval), 
+				    newval, Scream, NULL)) == SMS_SUCCESS ) {
 	  FreeAndClear(&def_quota, TRUE);
 	  def_quota = Strsave(argv[1]);
 	}
@@ -227,8 +227,8 @@ ShowUserQuota()
   if ( (args = GetQuotaArgs(FALSE) ) == NULL)
     return(DM_NORMAL);
 
-  if ( (status = sms_query("get_nfs_quota", CountArgs(args), args,
-			   StoreInfo, (char *) &top)) != SMS_SUCCESS)
+  if ( (status = do_sms_query("get_nfs_quota", CountArgs(args), args,
+			      StoreInfo, (char *) &top)) != SMS_SUCCESS)
     com_err(program_name, status, " in get_nfs_quota");
   
   FreeInfo(args);		/* done with args free them. */
@@ -256,8 +256,8 @@ AddUserQuota()
   if ( (args = GetQuotaArgs(TRUE) ) == NULL)
     return(DM_NORMAL);
 
-  if ( (status = sms_query("add_nfs_quota", CountArgs(args), args,
-			   Scream, (char *) NULL)) != SMS_SUCCESS)
+  if ( (status = do_sms_query("add_nfs_quota", CountArgs(args), args,
+			      Scream, (char *) NULL)) != SMS_SUCCESS)
     com_err(program_name, status, " in get_nfs_quota");
   
   FreeInfo(args);
@@ -281,8 +281,8 @@ char ** info;
   sprintf(temp_buf, "New quota for filesystem %s (in KB)", info[Q_FILESYS]);
   GetValueFromUser(temp_buf, &info[Q_QUOTA]);
   
-  if (status = sms_query("update_nfs_quota", 3, info,
-			 Scream, (char *) NULL) != SMS_SUCCESS) {
+  if (status = do_sms_query("update_nfs_quota", 3, info,
+			    Scream, (char *) NULL) != SMS_SUCCESS) {
     com_err(program_name, status, " in update_nfs_quota");
     sprintf(temp_buf,"Could not perform quota change on %s",
 	    info[Q_FILESYS]); 
@@ -306,8 +306,8 @@ ChangeUserQuota()
   if ( (args = GetQuotaArgs(FALSE) ) == NULL)
     return(DM_NORMAL);
 
-  if ( (status = sms_query("get_nfs_quota", 2, args,
-			   StoreInfo, (char *) &top)) != SMS_SUCCESS)
+  if ( (status = do_sms_query("get_nfs_quota", 2, args,
+			      StoreInfo, (char *) &top)) != SMS_SUCCESS)
     com_err(program_name, status, " in get_nfs_quota");
   
   FreeInfo(args);		/* done with args, free them. */
@@ -340,8 +340,8 @@ Bool one_item;
 	  info[Q_LOGIN], info[Q_FILESYS]);
 
   if (!one_item || Confirm(temp_buf)) {
-    if ( (status = sms_query("delete_nfs_quota", 2, info,
-			     Scream, (char *) NULL)) != SMS_SUCCESS)
+    if ( (status = do_sms_query("delete_nfs_quota", 2, info,
+				Scream, (char *) NULL)) != SMS_SUCCESS)
       com_err(program_name, status, " in delete_nfs_quota");
     else
       Put_message("Quota sucessfully removed.");
@@ -366,8 +366,8 @@ RemoveUserQuota()
   if ( (args = GetQuotaArgs(FALSE) ) == NULL)
     return(DM_NORMAL);
 
-  if ( (status = sms_query("get_nfs_quota", 2, args,
-			   StoreInfo, (char *) &top)) != SMS_SUCCESS)
+  if ( (status = do_sms_query("get_nfs_quota", 2, args,
+			      StoreInfo, (char *) &top)) != SMS_SUCCESS)
     com_err(program_name, status, " in get_nfs_quota");
 
   FreeInfo(args);

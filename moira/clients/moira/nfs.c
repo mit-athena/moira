@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/nfs.c,v 1.9 1988-08-07 17:26:01 qjb Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/nfs.c,v 1.10 1988-10-03 13:05:05 mar Exp $";
 #endif lint
 
 /*	This is the file nfs.c for the SMS Client, which allows a nieve
@@ -10,8 +10,8 @@
  *	By:		Chris D. Peterson
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/nfs.c,v $
- *      $Author: qjb $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/nfs.c,v 1.9 1988-08-07 17:26:01 qjb Exp $
+ *      $Author: mar $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/nfs.c,v 1.10 1988-10-03 13:05:05 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -178,8 +178,8 @@ char **argv;
     if ( (args[1] = GetDirName()) == NULL)
 	return(DM_NORMAL);
     
-    if ( (stat = sms_query("get_nfsphys", 2, args,
-			   StoreInfo, (char *)  &elem)) != SMS_SUCCESS)
+    if ( (stat = do_sms_query("get_nfsphys", 2, args,
+			      StoreInfo, (char *)  &elem)) != SMS_SUCCESS)
 	com_err(program_name, stat, " in ShowNFSServices.");
     free(args[1]);		/* prevents memory leaks. */
 
@@ -213,8 +213,8 @@ int argc;
     if (!ValidName(args[0]) || !ValidName(args[1]))
 	return(DM_NORMAL);
     
-    if ( (stat = sms_query("get_nfsphys", 2, args,
-			   NullFunc, (char *) NULL)) == SMS_SUCCESS)
+    if ( (stat = do_sms_query("get_nfsphys", 2, args,
+			      NullFunc, (char *) NULL)) == SMS_SUCCESS)
 	Put_message("This service already exists.");
     if (stat != SMS_NO_MATCH) 
 	com_err(program_name, stat, " in get_nfsphys.");
@@ -230,8 +230,8 @@ int argc;
 
     add_args = AskNFSInfo(info);
     
-    if ((stat = sms_query("add_nfsphys", CountArgs(add_args), add_args,
-			   Scream, (char *) NULL)) != 0) 
+    if ((stat = do_sms_query("add_nfsphys", CountArgs(add_args), add_args,
+			     Scream, (char *) NULL)) != 0) 
 	com_err(program_name, stat, " in AdsNFSService");
     
     FreeInfo(info);
@@ -255,8 +255,8 @@ Bool junk;
     register int stat;
     
     args = AskNFSInfo(info);
-    if ((stat = sms_query("update_nfsphys", CountArgs(args), args,
-			  Scream, (char *)NULL)) != SMS_SUCCESS) 
+    if ((stat = do_sms_query("update_nfsphys", CountArgs(args), args,
+			     Scream, (char *)NULL)) != SMS_SUCCESS) 
 	com_err(program_name, stat, (char *) NULL);
 }
 
@@ -283,8 +283,8 @@ int argc;
     if ( (args[1] = GetDirName()) == NULL)
 	return(DM_NORMAL);
 
-    if ( (stat = sms_query("get_nfsphys", 2, args,
-			   StoreInfo, (char *) &elem)) != SMS_SUCCESS) {
+    if ( (stat = do_sms_query("get_nfsphys", 2, args,
+			      StoreInfo, (char *) &elem)) != SMS_SUCCESS) {
 	com_err(program_name, stat, " in UpdateNFSService.");
 	return (DM_NORMAL);
     }
@@ -342,11 +342,11 @@ Bool one_item;
 	args[0] = info[NFS_NAME];
 	args[1] = info[NFS_DIR];
 	args[2] = NULL;
-	switch(stat = sms_query("get_filesys_by_nfsphys", CountArgs(args), 
-			 args, StoreInfo, (char *)&elem)) {
+	switch(stat = do_sms_query("get_filesys_by_nfsphys", CountArgs(args), 
+				   args, StoreInfo, (char *)&elem)) {
 	case SMS_NO_MATCH:	/* it is unused, delete it. */
-	    if ( (stat = sms_query("delete_nfsphys", 2, info, Scream, 
-				   (char *) NULL )) != SMS_SUCCESS)
+	    if ( (stat = do_sms_query("delete_nfsphys", 2, info, Scream, 
+				      (char *) NULL )) != SMS_SUCCESS)
 		com_err(program_name, stat, " in DeleteNFSService");
 	    else
 		Put_message("Physical Filesystem Deleted.");
@@ -392,8 +392,8 @@ char **argv;
     if ( (args[1] = GetDirName()) == NULL)
 	return(DM_NORMAL);
 
-    switch(stat = sms_query("get_nfsphys", 2, args, 
-			    StoreInfo, (char *) &elem)) {
+    switch(stat = do_sms_query("get_nfsphys", 2, args, 
+			       StoreInfo, (char *) &elem)) {
     case SMS_NO_MATCH:
 	Put_message("This filsystem does not exist!");
 	return(DM_NORMAL);
@@ -411,14 +411,3 @@ char **argv;
     FreeQueue(elem);
     return(DM_NORMAL);
 }    
-
-/*
- * Local Variables:
- * mode: c
- * c-indent-level: 4
- * c-continued-statement-offset: 4
- * c-brace-offset: -4
- * c-argdecl-indent: 4
- * c-label-offset: -4
- * End:
- */

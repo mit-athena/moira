@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.11 1988-09-01 16:02:47 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.12 1988-10-03 13:05:43 mar Exp $";
 #endif lint
 
 /*	This is the file user.c for the SMS Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.11 1988-09-01 16:02:47 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.12 1988-10-03 13:05:43 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -207,8 +207,8 @@ char *name1, *name2;
     switch(type) {
     case LOGIN:
 	args[0] = name1;
-	if ( (status = sms_query("get_user_by_login", 1, args,
-			       StoreInfo, (char *) &elem)) != 0) {
+	if ( (status = do_sms_query("get_user_by_login", 1, args,
+				    StoreInfo, (char *) &elem)) != 0) {
 	    com_err(program_name, status, 
 		    " when attempting to get_user_by_login.");
       	    return (NULL);		 
@@ -216,8 +216,8 @@ char *name1, *name2;
 	break;
     case UID:
 	args[0] = name1;
-	if ( (status = sms_query("get_user_by_uid", 1, args,
-			       StoreInfo, (char *) &elem)) != 0) {
+	if ( (status = do_sms_query("get_user_by_uid", 1, args,
+				    StoreInfo, (char *) &elem)) != 0) {
 	    com_err(program_name, status, 
 		    " when attempting to get_user_by_uid.");
 	    return (NULL);	
@@ -226,8 +226,8 @@ char *name1, *name2;
     case BY_NAME:
 	args[0] = name1;
 	args[1] = name2;    
-	if ( (status = sms_query("get_user_by_name", 2, args,
-			       StoreInfo, (char *) &elem)) != 0) {
+	if ( (status = do_sms_query("get_user_by_name", 2, args,
+				    StoreInfo, (char *) &elem)) != 0) {
 	    com_err(program_name, status, 
 		    " when attempting to get_user_by_name.");
 	    return (NULL);	
@@ -235,8 +235,8 @@ char *name1, *name2;
 	break;
     case CLASS:
 	args[0] = name1;
-	if ( (status = sms_query("get_user_by_class", 1, args,
-			       StoreInfo, (char *) &elem)) != 0) {
+	if ( (status = do_sms_query("get_user_by_class", 1, args,
+				    StoreInfo, (char *) &elem)) != 0) {
 	    com_err(program_name, status, 
 		    " when attempting to get_user_by_class.");
 	    return (NULL);	
@@ -260,8 +260,8 @@ AddNewUser()
     char ** args, *info[MAX_ARGS_SIZE];
 
     args = AskUserInfo(SetUserDefaults(info), FALSE);
-    if ( (status = sms_query("add_user", CountArgs(args), 
-			     args, Scream, (char *) NULL)) != SMS_SUCCESS)
+    if ( (status = do_sms_query("add_user", CountArgs(args), 
+				args, Scream, (char *) NULL)) != SMS_SUCCESS)
 	com_err(program_name, status, " in add_user");
     else
 	Put_message("New user added to database.");
@@ -336,8 +336,8 @@ GetUidNumberFromName()
     args[0] = first;
     args[1] = last;
     
-    switch (status = sms_query("get_user_by_name", 2, args,
-			       StoreInfo, (char *) &top)) {
+    switch (status = do_sms_query("get_user_by_name", 2, args,
+				  StoreInfo, (char *) &top)) {
     case SMS_SUCCESS:
 	break;
     case SMS_NO_MATCH:
@@ -433,8 +433,8 @@ RegisterUser()
     args[2] = fstype;
     args[3] = NULL;
     
-    switch (status = sms_query("register_user", CountArgs(args),
-			       args, Scream, (char *) NULL)) {
+    switch (status = do_sms_query("register_user", CountArgs(args),
+				  args, Scream, (char *) NULL)) {
     case SMS_SUCCESS:
 	sprintf(temp_buf, "User %s successfully registered.", login);
 	Put_message(temp_buf);
@@ -470,8 +470,8 @@ Bool junk;
     char error_buf[BUFSIZ];
     char ** args = AskUserInfo(info, TRUE);
     
-    if ( (status = sms_query("update_user", CountArgs(args), 
-			     args, Scream, (char *) NULL)) != SMS_SUCCESS) {
+    if ( (status = do_sms_query("update_user", CountArgs(args), 
+				args, Scream, (char *) NULL)) != SMS_SUCCESS) {
 	com_err(program_name, status, " in ModifyFields");
 	sprintf(error_buf, "User %s not updated due to errors.", info[NAME]);
 	Put_message(error_buf);
@@ -523,8 +523,8 @@ Bool one_item;
 
     qargs[0] = info[NAME];
     qargs[1] = "3";
-    if ((status = sms_query("update_user_status", 2, qargs, Scream,
-			    (char *) NULL)) != SMS_SUCCESS) {
+    if ((status = do_sms_query("update_user_status", 2, qargs, Scream,
+			       (char *) NULL)) != SMS_SUCCESS) {
 	com_err(program_name, status, " in update_user_status");
 	sprintf(txt_buf, "User %s not deactivated due to errors.", info[NAME]);
 	Put_message(txt_buf);
@@ -578,8 +578,8 @@ char **argv;
     if(!ValidName(argv[1]))
 	return(DM_NORMAL);
     
-    if ( (status = sms_query("get_user_by_uid", 1, argv+1, StoreInfo,
-			     (char * ) &elem)) != SMS_SUCCESS)
+    if ( (status = do_sms_query("get_user_by_uid", 1, argv+1, StoreInfo,
+				(char * ) &elem)) != SMS_SUCCESS)
 	com_err(program_name, status, " in get_user_by_uid");
     
     info = (char **) elem->q_data;
@@ -672,14 +672,3 @@ char **argv;
     FreeQueue(top);
     return (DM_NORMAL);
 }
-
-/*
- * Local Variables:
- * mode: c
- * c-indent-level: 4
- * c-continued-statement-offset: 4
- * c-brace-offset: -4
- * c-argdecl-indent: 4
- * c-label-offset: -4
- * End:
- */

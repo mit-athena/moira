@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/printer.c,v 1.2 1988-08-30 18:45:02 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/printer.c,v 1.3 1988-10-03 13:05:55 mar Exp $";
 #endif lint
 
 /*	This is the file printer.c for the SMS Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/printer.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/printer.c,v 1.2 1988-08-30 18:45:02 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/printer.c,v 1.3 1988-10-03 13:05:55 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -85,8 +85,8 @@ char *name;
     int stat;
     struct qelem *elem = NULL;
 
-    if ( (stat = sms_query("get_printcap", 1, &name,
-			   StoreInfo, (char *)&elem)) != 0) {
+    if ( (stat = do_sms_query("get_printcap", 1, &name,
+			      StoreInfo, (char *)&elem)) != 0) {
 	    com_err(program_name, stat, NULL);
 	    return(NULL);
     }
@@ -195,8 +195,8 @@ Bool one_item;
     int stat;
     char temp_buf[BUFSIZ];
 
-    if ( (stat = sms_query("delete_printcap", 1,
-			   &info[FS_NAME], Scream, NULL)) != 0)
+    if ( (stat = do_sms_query("delete_printcap", 1,
+			      &info[FS_NAME], Scream, NULL)) != 0)
 	    com_err(program_name, stat, " printcap entry not deleted.");
     else
 	    Put_message("Printcap entry deleted.");
@@ -240,8 +240,8 @@ int argc;
     if ( !ValidName(argv[1]) )
 	return(DM_NORMAL);
 
-    if ( (stat = sms_query("get_printcap", 1, argv + 1,
-			   NullFunc, NULL)) == 0) {
+    if ( (stat = do_sms_query("get_printcap", 1, argv + 1,
+			      NullFunc, NULL)) == 0) {
 	Put_message ("A Printer by that name already exists.");
 	return(DM_NORMAL);
     } else if (stat != SMS_NO_MATCH) {
@@ -251,8 +251,8 @@ int argc;
 
     args = AskPcapInfo(SetDefaults(info, argv[1]));
 
-    if ( (stat = sms_query("add_printcap", CountArgs(args), args, 
-			 NullFunc, NULL)) != 0)
+    if ( (stat = do_sms_query("add_printcap", CountArgs(args), args, 
+			      NullFunc, NULL)) != 0)
 	com_err(program_name, stat, " in AddPcap");
 
     FreeInfo(info);
@@ -273,14 +273,14 @@ Bool one_item;
 {
     int stat;
 
-    if ((stat = sms_query("delete_printcap", 1, &info[FS_NAME],
-			  Scream, NULL)) != 0) {
+    if ((stat = do_sms_query("delete_printcap", 1, &info[FS_NAME],
+			     Scream, NULL)) != 0) {
 	com_err(program_name, stat, " printcap entry not deleted.");
 	return(DM_NORMAL);
     }
     AskPcapInfo(info);
-    if ((stat = sms_query("add_printcap", CountArgs(info), info,
-			  NullFunc, NULL)) != 0)
+    if ((stat = do_sms_query("add_printcap", CountArgs(info), info,
+			     NullFunc, NULL)) != 0)
 	com_err(program_name, stat, " in ChngPcap");
     return(DM_NORMAL);
 }
@@ -302,16 +302,3 @@ ChngPcap(argc, argv)
     FreeQueue(elem);
     return(DM_NORMAL);
 }
-
-
-/*
- * Local Variables:
- * mode: c
- * c-indent-level: 4
- * c-continued-statement-offset: 4
- * c-brace-offset: -4
- * c-argdecl-indent: 4
- * c-label-offset: -4
- * End:
- */
-

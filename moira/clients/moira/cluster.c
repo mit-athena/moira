@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/cluster.c,v 1.9 1988-09-01 14:01:39 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/cluster.c,v 1.10 1988-10-03 13:03:43 mar Exp $";
 #endif lint
 
 /*	This is the file cluster.c for the SMS Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/cluster.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/cluster.c,v 1.9 1988-09-01 14:01:39 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/cluster.c,v 1.10 1988-10-03 13:03:43 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -186,15 +186,15 @@ char * name1, *name2;
 
     switch (type) {
     case MACHINE:
-	if ( (stat = sms_query("get_machine", 1, &name1,
-			       StoreInfo, (char *)&elem)) != 0) {
+	if ( (stat = do_sms_query("get_machine", 1, &name1,
+				  StoreInfo, (char *)&elem)) != 0) {
 	    com_err(program_name, stat, " in get_machine.");
 	    return(NULL);
 	}
 	break;
     case CLUSTER:
-	if ( (stat = sms_query("get_cluster",  1, &name1,
-			       StoreInfo, (char *)&elem)) != 0) {
+	if ( (stat = do_sms_query("get_cluster",  1, &name1,
+				  StoreInfo, (char *)&elem)) != 0) {
 	    com_err(program_name, stat, " in get_cluster.");
 	    return(NULL);
 	}
@@ -202,8 +202,8 @@ char * name1, *name2;
     case MAP:
 	args[MAP_MACHINE] = name1;
 	args[MAP_CLUSTER] = name2;
-	if ( (stat = sms_query("get_machine_to_cluster_map", 2, args,
-			       StoreInfo, (char *)&elem)) != 0) {
+	if ( (stat = do_sms_query("get_machine_to_cluster_map", 2, args,
+				  StoreInfo, (char *)&elem)) != 0) {
 	    com_err(program_name, stat, " in get_machine_to_cluster_map.");
 	    return(NULL);
 	}
@@ -211,8 +211,8 @@ char * name1, *name2;
     case DATA:
 	args[CD_NAME] = name1;
 	args[CD_LABEL] = name2;
-	if ( (stat = sms_query("get_cluster_data", 2, args,
-			       StoreInfo, (char *)&elem)) != 0) {
+	if ( (stat = do_sms_query("get_cluster_data", 2, args,
+				  StoreInfo, (char *)&elem)) != 0) {
 	    com_err(program_name, stat, " in get_cluster_data.");
 	    return(NULL);
 	}
@@ -349,7 +349,7 @@ char **argv;
  */
     name =  CanonicalizeHostname(argv[1]);
 
-    if ( (stat = sms_query("get_machine", 1, &name, NullFunc, NULL)) == 0) {
+    if ( (stat = do_sms_query("get_machine", 1, &name, NullFunc, NULL)) == 0) {
 	Put_message("This machine already exists.");
 	return(DM_NORMAL);
     }
@@ -364,8 +364,8 @@ char **argv;
  * Actually create the new Machine.
  */
     
-    if ( (stat = sms_query("add_machine", CountArgs(args), 
-			   args, Scream, NULL)) != 0)
+    if ( (stat = do_sms_query("add_machine", CountArgs(args), 
+			      args, Scream, NULL)) != 0)
 	com_err(program_name, stat, " in AddMachine.");
 
     FreeInfo(info);
@@ -387,8 +387,8 @@ Bool junk;
 {
     register int stat;
     char ** args = AskMCDInfo(info, MACHINE, TRUE);
-    if ( (stat = sms_query("update_machine", CountArgs(args), 
-			   args, Scream, NULL)) != 0)
+    if ( (stat = do_sms_query("update_machine", CountArgs(args), 
+			      args, Scream, NULL)) != 0)
 	com_err(program_name, stat, " in UpdateMachine.");
     else
 	Put_message("Machine sucessfully updated.");
@@ -435,8 +435,8 @@ Bool ask_user;
     ret_value = SUB_NORMAL;	/* initialize ret_value. */
     args[0] = name;
     args[1] = "*";
-    stat = sms_query("get_machine_to_cluster_map", 2, args, 
-			 StoreInfo, (char *)&elem);
+    stat = do_sms_query("get_machine_to_cluster_map", 2, args, 
+			StoreInfo, (char *)&elem);
     if (stat && stat != SMS_NO_MATCH) {
 	com_err(program_name, stat, " in get_machine_to_cluster_map.");
 	return(DM_NORMAL);
@@ -463,8 +463,8 @@ Bool ask_user;
 	if (delete_it) {
 	    while (elem != NULL) {
 		char **info = (char **) elem->q_data;
-		if ( (stat = sms_query( "delete_machine_from_cluster",
-				       2, info, Scream, NULL)) != 0) {
+		if ( (stat = do_sms_query( "delete_machine_from_cluster",
+					  2, info, Scream, NULL)) != 0) {
 		    ret_value = SUB_ERROR;
 		    com_err(program_name, stat, 
 			    " in delete_machine_from_cluster.");
@@ -500,8 +500,8 @@ Bool one_machine;
 	    info[M_NAME]);
     if(!one_machine || Confirm(temp_buf)) {
 	if (CheckAndRemoveFromCluster(info[M_NAME], TRUE) != SUB_ERROR) {
-	    if ( (stat = sms_query("delete_machine", 1,
-				   &info[M_NAME], Scream, NULL)) != 0) {
+	    if ( (stat = do_sms_query("delete_machine", 1,
+				      &info[M_NAME], Scream, NULL)) != 0) {
 		com_err(program_name, stat, " in DeleteMachine.");
 		sprintf(temp_buf, "%s ** NOT ** deleted.", 
 			info[M_NAME]);
@@ -592,8 +592,8 @@ char ** argv;
 	    if (add_it) {
 		args[0] = minfo[M_NAME];
 		args[1] = cinfo[C_NAME];
-		stat = sms_query("add_machine_to_cluster", 2, args,
-				 Scream, NULL);
+		stat = do_sms_query("add_machine_to_cluster", 2, args,
+				    Scream, NULL);
 		switch (stat) {
 		case SMS_SUCCESS:
 		    break;
@@ -637,8 +637,8 @@ Bool one_map;
     sprintf(temp_buf, "Remove %s from the cluster %s", 
 	    info[MAP_MACHINE], info[MAP_MACHINE]);
     if (!one_map || Confirm(temp_buf)) {
-	if ( (stat = sms_query("delete_machine_from_cluster", 2, 
-			       info, Scream, NULL)) != 0 )
+	if ( (stat = do_sms_query("delete_machine_from_cluster", 2, 
+				  info, Scream, NULL)) != 0 )
 	    com_err(program_name, stat, " in delete_machine_from_cluster");
 	else {
 	    sprintf(temp_buf, "%s has been removed from the cluster %s.",
@@ -671,8 +671,8 @@ char ** argv;
     args[MAP_CLUSTER] = argv[2];
     args[MAP_END] = NULL;
 
-    stat = sms_query("get_machine_to_cluster_map", CountArgs(args), args,
-		     StoreInfo, (char *)&elem);
+    stat = do_sms_query("get_machine_to_cluster_map", CountArgs(args), args,
+			StoreInfo, (char *)&elem);
     if (stat == SMS_NO_MATCH) {
 	sprintf(buf, "The machine %s is not is the cluster %s.",
 		args[MAP_MACHINE], args[MAP_CLUSTER]);
@@ -732,8 +732,8 @@ char ** argv;
     if (!ValidName(name))
 	return(DM_NORMAL);
 
-    if ( (stat = sms_query("get_cluster", 1, &name, 
-			   NullFunc, NULL)) == SMS_SUCCESS) {
+    if ( (stat = do_sms_query("get_cluster", 1, &name, 
+			      NullFunc, NULL)) == SMS_SUCCESS) {
 	Put_message("This cluster already exists.");
 	return(DM_NORMAL);
     }
@@ -745,8 +745,8 @@ char ** argv;
 /*
  * Actually create the new Cluster.
  */
-    if ( (stat = sms_query("add_cluster", CountArgs(args), 
-			   args, Scream, NULL)) != 0)
+    if ( (stat = do_sms_query("add_cluster", CountArgs(args), 
+			      args, Scream, NULL)) != 0)
 	com_err(program_name, stat, " in AddCluster.");
 
     FreeInfo(info);
@@ -768,8 +768,8 @@ Bool junk;
 {
     register int stat;
     char ** args = AskMCDInfo(info, CLUSTER, TRUE);
-    if ( (stat = sms_query("update_cluster", CountArgs(args), 
-			   args, Scream, NULL)) != 0)
+    if ( (stat = do_sms_query("update_cluster", CountArgs(args), 
+			      args, Scream, NULL)) != 0)
 	com_err(program_name, stat, " in UpdateCluster.");
     else
 	Put_message("Cluster successfully updated.");
@@ -817,8 +817,8 @@ Bool ask_first;
     ret_value = SUB_NORMAL;
     args[MAP_MACHINE] = "*";
     args[MAP_CLUSTER] = name;
-    stat = sms_query("get_machine_to_cluster_map", 2, args, 
-			 StoreInfo, (char *)&elem);
+    stat = do_sms_query("get_machine_to_cluster_map", 2, args, 
+			StoreInfo, (char *)&elem);
     if (stat && stat != SMS_NO_MATCH) {
 	com_err(program_name, stat, " in get_machine_to_cluster_map.");
 	return(DM_NORMAL);
@@ -852,8 +852,8 @@ Bool ask_first;
 	    elem = top;
 	    while (elem != 0) {
 		char **info = (char **) elem->q_data;
-		if ( (stat = sms_query( "delete_machine_from_cluster",
-				       2, info, Scream, NULL)) != 0) {
+		if ( (stat = do_sms_query("delete_machine_from_cluster",
+					  2, info, Scream, NULL)) != 0) {
 		    ret_value = SUB_ERROR;
 		    com_err(program_name, stat, 
 			    " in delete_machine_from_cluster.");
@@ -890,8 +890,8 @@ Bool one_cluster;
 	    info[C_NAME]);
     if (!one_cluster || Confirm(temp_buf)) {
 	if (CheckAndRemoveMachines(info[C_NAME], TRUE) != SUB_ERROR) {
-	    if ( (stat = sms_query("delete_cluster", 1,
-				   &info[C_NAME], Scream, NULL)) != 0) {
+	    if ( (stat = do_sms_query("delete_cluster", 1,
+				      &info[C_NAME], Scream, NULL)) != 0) {
 		com_err(program_name, stat, " in delete_cluster.");
 		sprintf(temp_buf, "Cluster %s ** NOT ** deleted.", 
 			info[C_NAME]);
@@ -971,8 +971,8 @@ char ** argv;
 { 
     int stat;
 
-    if( (stat = sms_query("add_cluster_data", 3, argv + 1,
-			  Scream, (char *) NULL)) != 0)
+    if( (stat = do_sms_query("add_cluster_data", 3, argv + 1,
+			     Scream, (char *) NULL)) != 0)
 	com_err(program_name, stat, " in AddClusterData.");
 
 }
@@ -998,8 +998,8 @@ Bool one_item;
     temp_ptr = "Are you sure that you want to remove this cluster (y/n) ?";
     if (!one_item) PrintClusterData(info);
     if (!one_item || Confirm(temp_ptr)) {
-	if( (stat = sms_query("delete_cluster_data", 3, info,
-			      Scream, (char *) NULL)) != 0) {
+	if( (stat = do_sms_query("delete_cluster_data", 3, info,
+				 Scream, (char *) NULL)) != 0) {
 	    com_err(program_name, stat, " in DeleteClusterData.");
 	    Put_message("Data not removed.");
 	}
@@ -1059,17 +1059,3 @@ char **argv;
     FreeQueue(top);
     return(DM_NORMAL);
 }
-
-/* 
- * Local Variables:
- * mode: c
- * c-indent-level: 4
- * c-continued-statement-offset: 4
- * c-brace-offset: -4
- * c-argdecl-indent: 4
- * c-label-offset: -4
- * End:
- */
-
-
-

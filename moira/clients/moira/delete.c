@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/delete.c,v 1.10 1988-08-07 21:34:08 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/delete.c,v 1.11 1988-10-03 13:04:00 mar Exp $";
 #endif lint
 
 /*	This is the file delete.c for the SMS Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/delete.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/delete.c,v 1.10 1988-08-07 21:34:08 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/delete.c,v 1.11 1988-10-03 13:04:00 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -47,8 +47,8 @@ Bool verbose;
     int status;
     char *args[2], buf[BUFSIZ], **info;
 
-    if ( (status = sms_query("count_members_of_list", 1, &name, StoreInfo,
-			     (char *) &elem)) != 0) {
+    if ( (status = do_sms_query("count_members_of_list", 1, &name, StoreInfo,
+				(char *) &elem)) != 0) {
 	com_err(program_name, status, 
 		" in DeleteList (count_members_of_list).");
 	return;
@@ -91,7 +91,7 @@ Bool verbose;
  
     args[0] = type;
     args[1] = name;
-    status = sms_query("get_ace_use", 2, args, NullFunc,  (char *) NULL);
+    status = do_sms_query("get_ace_use", 2, args, NullFunc, (char *) NULL);
     if (status != SMS_NO_MATCH)
 	return;			/* If this query fails the ace will
 				   not be deleted even if it is empty. */
@@ -133,8 +133,8 @@ Bool verbose;
 
     args[0] = type;
     args[1] = name;
-    switch (status = sms_query("get_ace_use", 2, args,
-			       StoreInfo, (char *) &elem)) {
+    switch (status = do_sms_query("get_ace_use", 2, args,
+				  StoreInfo, (char *) &elem)) {
     case SMS_NO_MATCH:
 	return(DM_NORMAL);
     case SMS_SUCCESS:
@@ -202,8 +202,8 @@ int verbose;
  * Get all list of which this item is a member, and store them in a queue.
  */
 
-    status = sms_query("get_lists_of_member", 2, args, StoreInfo,
-		       (char *) elem);
+    status = do_sms_query("get_lists_of_member", 2, args, StoreInfo,
+			  (char *) elem);
 
     if (status == SMS_NO_MATCH)
 	return(SUB_NORMAL);
@@ -251,8 +251,8 @@ int verbose;
     while (local != NULL) {
 	char ** info = (char **) local->q_data;
 	args[DM_LIST] = info[GLOM_NAME];
-	if ( (status = sms_query("delete_member_from_list",
-				 3, args, Scream, NULL)) != 0) {
+	if ( (status = do_sms_query("delete_member_from_list",
+				    3, args, Scream, NULL)) != 0) {
 	    com_err(program_name, status, " in delete_member\nAborting\n");
 	    FreeQueue(*elem);
 	    return(SUB_ERROR);
@@ -280,8 +280,8 @@ Bool verbose;
 /* 
  * Get the members of this list.
  */
-    status = sms_query("get_members_of_list", 1, &name, StoreInfo,
-		       (char *) &elem);
+    status = do_sms_query("get_members_of_list", 1, &name, StoreInfo,
+			  (char *) &elem);
     if (status == SMS_NO_MATCH) 
 	return(SUB_NORMAL);
 
@@ -324,8 +324,8 @@ Bool verbose;
 	char ** info = (char **) local->q_data;
 	args[1] = info[0];
 	args[2] = info[1];
-	if ( (status = sms_query("delete_member_from_list",
-				 3, args, Scream, NULL)) != 0) {
+	if ( (status = do_sms_query("delete_member_from_list",
+				    3, args, Scream, NULL)) != 0) {
 	    com_err(program_name, status, " in delete_member\nAborting\n");
 	    FreeQueue(elem);
 	    return(SUB_ERROR);
@@ -352,7 +352,7 @@ Bool verbose;
     int status, ans;
     char buf[BUFSIZ], *args[10];
 
-    status = sms_query("get_list_info", 1, &name, NullFunc, (char *) NULL);
+    status = do_sms_query("get_list_info", 1, &name, NullFunc, (char *) NULL);
     if (status == 0) {
 	if (verbose) {
 	    sprintf(buf, "There is also a list named %s, delete it?", name);
@@ -393,8 +393,8 @@ Bool verbose;
     int status;
     char buf[BUFSIZ];
     
-    switch (status = sms_query("get_filesys_by_label", 1, &name, NullFunc, 
-		       (char *) NULL)) {
+    switch (status = do_sms_query("get_filesys_by_label", 1, &name, NullFunc, 
+				  (char *) NULL)) {
     case SMS_NO_MATCH:
 	break;
     case SMS_SUCCESS:
@@ -411,8 +411,8 @@ Bool verbose;
 		return(SUB_ERROR);
 	    }
 	}
-	if ( (status = sms_query("delete_filesys", 1, &name, Scream,
-				 (char *) NULL) ) != SMS_SUCCESS) {
+	if ( (status = do_sms_query("delete_filesys", 1, &name, Scream,
+				    (char *) NULL) ) != SMS_SUCCESS) {
 	    com_err(program_name, status, " in delete_filesys.");
 	    return(SUB_ERROR);
 	}
@@ -439,8 +439,8 @@ char * name;
     char buf[BUFSIZ];
     int status;
 
-    if ( (status = sms_query("delete_user", 1, &name, Scream, 
-			     (char *) NULL)) != SMS_SUCCESS) {
+    if ( (status = do_sms_query("delete_user", 1, &name, Scream, 
+				(char *) NULL)) != SMS_SUCCESS) {
 	com_err(program_name, status, ": user not deleted");
 	return(SUB_ERROR);
     }
@@ -462,8 +462,8 @@ char * name;
     char buf[BUFSIZ];
     int status;
 
-    if ( (status = sms_query("delete_list", 1, &name, Scream, 
-			     (char *) NULL)) != SMS_SUCCESS) {
+    if ( (status = do_sms_query("delete_list", 1, &name, Scream, 
+				(char *) NULL)) != SMS_SUCCESS) {
 	com_err(program_name, status, ": list not deleted");
 	return(SUB_ERROR);
     }
@@ -502,8 +502,8 @@ Bool ask_first;
      * 3) This list is not an ace of another object.
      */
     
-    switch (status = sms_query("delete_list", 1, &name,
-			       Scream, (char *) NULL)) {
+    switch (status = do_sms_query("delete_list", 1, &name,
+				  Scream, (char *) NULL)) {
     case SMS_SUCCESS:
 	Put_message("List Sucessfully Deleted.");
 	CheckAce(list_info[L_ACE_TYPE], list_info[L_ACE_NAME], ask_first);
@@ -557,8 +557,8 @@ char *argv[];
 
     list = NULL;
     
-    switch(status = sms_query("get_list_info", 1, argv + 1,
-			      StoreInfo, (char *) &list)){
+    switch(status = do_sms_query("get_list_info", 1, argv + 1,
+				 StoreInfo, (char *) &list)){
     case SMS_SUCCESS:
 	break;
 /*    case SMS_NO_WILDCARD:
@@ -625,7 +625,7 @@ char ** argv;
     if (!Confirm("Are you sure that you want to delete this user?"))
 	return(DM_NORMAL);
 
-    status = sms_query("delete_user", 1, &name, Scream, (char *) NULL);
+    status = do_sms_query("delete_user", 1, &name, Scream, (char *) NULL);
     if (status != SMS_IN_USE && status != 0) {
 	com_err(program_name, status, ": user not deleted");	
 	return(DM_NORMAL);
@@ -674,14 +674,3 @@ char ** argv;
 #endif
     return(DM_NORMAL);
 }
-    
-/*
- * Local Variables:
- * mode: c
- * c-indent-level: 4
- * c-continued-statement-offset: 4
- * c-brace-offset: -4
- * c-argdecl-indent: 4
- * c-label-offset: -4
- * End:
- */

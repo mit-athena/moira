@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase1.dc,v 1.5 1993-02-09 18:35:25 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase1.dc,v 1.6 1993-10-21 15:07:36 mar Exp $
  *
  *  (c) Copyright 1988 by the Massachusetts Institute of Technology.
  *  For copying and distribution information, please see the file
@@ -11,7 +11,7 @@
 EXEC SQL INCLUDE sqlca;
 
 
-static char phase1_qc_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase1.dc,v 1.5 1993-02-09 18:35:25 mar Exp $";
+static char phase1_qc_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase1.dc,v 1.6 1993-10-21 15:07:36 mar Exp $";
 
 
 show_user_id(u)
@@ -533,6 +533,7 @@ phase1()
 
     if (!fast) {
 
+	dprintf("Checking for duplicate strings...\n");
 	EXEC SQL DECLARE csr112 CURSOR FOR
 	    SELECT s1.string_id, s1.string FROM strings s1, strings s2
 		WHERE s1.string=s2.string AND s1.tid != s2.tid;

@@ -1,6 +1,6 @@
 #
 # 	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/Makefile,v $
-#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/Makefile,v 1.2 1987-08-22 17:58:25 wesommer Exp $
+#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/Makefile,v 1.3 1987-08-22 23:46:47 wesommer Exp $
 #
 
 #
@@ -56,7 +56,7 @@ sms_update.o:	${COBJS} ${COMOBJS}
 	-chmod -x sms_update.o
 
 smsu_int.o smsu_int.h: smsu_int.et
-	../lib/et/compile_et smsu_int
+	compile_et smsu_int
 
 test.o: test.c
 	-rm -f test.o

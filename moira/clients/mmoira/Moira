@@ -1,0 +1,22 @@
+*traversalOn:		True
+*keyboardFocusPolicy:	explicit
+*highlightThickness:	2
+*highlightOnEnter:	True
+
+*textwidget.columns:	50
+!*textwidget.translations:	#override \n\
+!				<Key>Return:	next-tab-group()
+!*textwidget.translations:	#override \n\
+!				<Key>Return:	NextOrDoIt()
+!*board*translations:		#override \n\
+!				None<Key>Return:	NextOrDoIt()\n\
+!				<Key>G:		NextOrDoIt()\n\
+!				Ctrl<Key>C:	cancel-form()
+
+*logwidget.editMode:		XmMULTI_LINE_EDIT
+*logwidget.editable:		False
+*logwidget.scrollHorizontal:	False
+*logwidget.rows:		24
+*logwidgetSW.y:			40
+*logwidgetSW.width:		673
+

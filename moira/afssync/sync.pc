@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/afssync/sync.pc,v 1.4 2000-10-11 06:16:46 zacheiss Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/afssync/sync.pc,v 1.5 2001-10-23 21:43:59 zacheiss Exp $
  *
  *
  *  (c) Copyright 1989 by the Massachusetts Institute of Technology.
@@ -161,7 +161,7 @@ do_groups()
 {
     EXEC SQL BEGIN DECLARE SECTION;
     char name[33], string[129];
-    int gid, id, lid, hide, ustatus, root_flag;
+    int gid, id, lid, hide, ustatus;
     EXEC SQL END DECLARE SECTION;
 
     long status, pos;
@@ -260,29 +260,19 @@ do_groups()
 		    FROM strings WHERE string_id = :id;
 
 		aid = 0;
-		root_flag = 0;
-		ustatus = NULL;
 		strtrim(string);
 
-		if (p = strchr(string, '@')) 
-		  {
+		if (p = (char *)index(string, '@')) {
 		    *p = 0;
-		    if (strcmp(p+1, "ATHENA.MIT.EDU")) 
-		      aid = -1;
-		  } 
-		else aid = -1;
+		    if (strcmp(p+1, "ATHENA.MIT.EDU")) aid = -1;
+		} else aid = -1;
 
-		p = strchr(string, '.');
-		if ((!p) && (strlen(string) < 9))
-		  strcpy(name, string);
-		else if ((p-string) < 9 && !strcmp(p+1, "root"))
-		  {
+		if ((p = (char *)index(string, '.')) && (p-string) < 9 &&
+		    !strcmp(p+1, "root"))
+		{
 		    strncpy(name, string, p-string);
 		    name[p-string] = 0;
-		    root_flag = 1;
-		  }
-		else
-		  aid = -1;
+		} else aid = -1;
 
 		if (aid == 0) {
 		    EXEC SQL DECLARE k_cursor2 CURSOR FOR
@@ -291,18 +281,10 @@ do_groups()
 			WHERE login = :name
 			ORDER BY unix_uid;
 		    EXEC SQL OPEN k_cursor2;
-		    while (1) 
-		    {
-		      if (sqlca.sqlcode) 
-			break;
-		      EXEC SQL FETCH k_cursor2 INTO :lid, :ustatus;
-		      if (ustatus==1 || ustatus==2)
-			  {
-			    if (root_flag == 1)
-			      aid = lid+65536;
-			    else
-			      aid = lid;
-			  }
+		    while (1) {
+			if (sqlca.sqlcode) break;
+			EXEC SQL FETCH k_cursor2 INTO :lid, :ustatus;
+			if (ustatus==1 || ustatus==2) aid = lid+65536;
 		    }
 		    EXEC SQL CLOSE k_cursor2;
 		}

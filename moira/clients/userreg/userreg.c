@@ -2,7 +2,7 @@
  * $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.c,v $
  * $Author: mar $
  * $Locker:  $
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.c,v 1.16 1990-03-13 13:13:44 mar Exp $ 
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.c,v 1.17 1990-03-15 14:31:01 mar Exp $ 
  *
  *  (c) Copyright 1988 by the Massachusetts Institute of Technology.
  *  For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char    *rcsid_userreg_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.c,v 1.16 1990-03-13 13:13:44 mar Exp $";
+static char    *rcsid_userreg_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.c,v 1.17 1990-03-15 14:31:01 mar Exp $";
 #endif	lint
 
 #include <mit-copyright.h>
@@ -451,13 +451,14 @@ glast()
 gpass()
 {
 	/* input password */
-	char            new_password[PASSWORD_SIZE+1];
-	char            new_password_again[PASSWORD_SIZE+1];
+	char            new_password[PASSWORD_SIZE * 2 + 1];
+	char            new_password_again[PASSWORD_SIZE * 2 + 1];
 
 do_input:
 	signal(SIGALRM, restart);
 	input_no_echo("Enter password:", new_password,
-		      PASSWORD_SIZE, NEW_PASSWORD_TIMEOUT);
+		      enrollment ? PASSWORD_SIZE * 2 : PASSWORD_SIZE,
+		      NEW_PASSWORD_TIMEOUT);
 	if (strlen(new_password) < 4) {
 		display_text_line("Please use a password of at least 4 characters.");
 		goto do_input;
@@ -465,7 +466,8 @@ do_input:
 	wfeep();
 	signal(SIGALRM, restart);
 	input_no_echo("Enter your password again:", new_password_again,
-		      PASSWORD_SIZE, REENTER_PASSWORD_TIMEOUT);
+		      enrollment ? PASSWORD_SIZE * 2 : PASSWORD_SIZE,
+		      REENTER_PASSWORD_TIMEOUT);
 	if (strcmp(new_password, new_password_again)) {
 		display_text_line("Sorry, the two passwords you just typed in don't match.");
 		display_text_line("Please try again.");

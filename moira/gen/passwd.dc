@@ -1,10 +1,11 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/passwd.dc,v 1.2 1988-06-20 12:51:30 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/passwd.dc,v 1.3 1988-07-29 15:49:50 mar Exp $
  *
  * This generates a master /etc/passwd containing all active (status != 0)
  * accounts.
  */
 
 #include <stdio.h>
+#include <sms.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/time.h>
@@ -18,6 +19,7 @@ int argc;
 char **argv;
 {
     FILE *out = stdout;
+    char *outf, outft[64];
     struct stat sb;
 ##  char login[9], shell[33], fullname[33], oa[17], op[13], hp[17], *filetime;
 ##  int uid, error, flag;
@@ -32,16 +34,20 @@ char **argv;
 	    if (flag < 0) {
 		fprintf(stderr, "File %s does not need to be rebuilt.\n",
 			argv[1]);
-		exit(0);
+		exit(SMS_NO_CHANGE);
 	    }
 	}
-	if ((out = fopen(argv[1], "w")) == NULL) {
-	    fprintf(stderr, "unable to open %s for output\n", argv[1]);
-	    exit(errno);
+	outf = argv[1];
+	sprintf(outft, "%s~", outf);
+	if ((out = fopen(outft, "w")) == NULL) {
+	    fprintf(stderr, "unable to open %s for output\n", outf);
+	    exit(SMS_OCONFIG);
 	}
     } else if (argc != 1) {
 	fprintf(stderr, "usage: %s [outfile]\n", argv[0]);
-	exit(-1);
+	exit(SMS_ARGS);
+    } else {
+	outf = NULL;
     }
 
 ##  set lockmode on users where readlock = nolock
@@ -50,7 +56,7 @@ char **argv;
 ##  retrieve (login = u.#login, uid = u.#uid, shell = u.#shell,
 ##	      fullname = u.#fullname, oa = u.office_addr,
 ##	      op = u.office_phone, hp = u.home_phone)
-##	where u.status != 0 sort by #login {
+##	where u.status = 1 {
 	    trim(login);
 	    trim(fullname);
 	    trim(oa);
@@ -63,14 +69,16 @@ char **argv;
 ##  inquire_equel(error = "errorno")
     if (error)  {
 	fprintf(out, "Ingres error %d\n", error);
-	exit(error);
+	exit(SMS_INGRES_ERR);
     }
 
 ##  exit
 
     if (fclose(out)) {
 	perror("close failed");
-	exit(errno);
+	exit(SMS_CCONFIG);
     }
-    exit(0);
+    if (outf)
+      fix_file(outf);
+    exit(SMS_SUCCESS);
 }

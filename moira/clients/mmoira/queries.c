@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/queries.c,v 1.5 1992-10-19 17:13:35 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/queries.c,v 1.6 1992-10-22 15:32:49 mar Exp $
  */
 
 #include <stdio.h>
@@ -8,6 +8,9 @@
 #include <netdb.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <X11/IntrinsicP.h>
+#include <X11/CoreP.h>
+#include <X11/CompositeP.h>
 #include <Xm/Xm.h>
 #include "mmoira.h"
 #ifdef GDSS
@@ -434,8 +437,85 @@ int remove;
 	form->extrastuff = (caddr_t) "mod_filsys";
 	retfunc = ModifyCallback;
 	break;
+    case MM_MOV_FSGROUP:
+	argv[1] = strsave(stringval(form, 1));
+	s = index(argv[1], ' ');
+	if (s) *s = 0;
+	i = MoiraQuery("remove_filesys_from_fsgroup", 2, argv, ModifyCallback,
+		       (char *)form);
+	if (i) {
+	    com_err(program_name, i, " removing filesystem from FS group");
+	    return;
+	}
+	argc = 3;
+	/* fall through to: */
     case MM_ADD_FSGROUP:
-	
+	/* find the two keys to sort between */
+	argv[2] = strsave(argv[2]);
+	s = index(argv[2], ' ');
+	if (s) {
+	    argv[2] = s+2;
+	    s = index(argv[2], ')');
+	    if (s) *s = 0;
+	} else
+	  argv[2] = "";
+	if (*argv[2] == 0) argv[2] = "A";
+	/* Finding the after key is gross.  We look through the widgets
+	 * in the radiobox to find the one selected and the one after
+	 * it.  The name of the widget is also the member name.
+	 */
+	{ 
+	    Widget w, kid;
+	    CompositeRec *cr;
+
+	    argv[3] = "";
+	    cr = (CompositeRec *)form->inputlines[2]->mywidget;
+	    for (i = 0; i < cr->composite.num_children; i++) {
+		kid = cr->composite.children[i];
+		if (!strcmp(XtName(kid), stringval(form, 2))) {
+		    i++;
+		    if (i < cr->composite.num_children) {
+			argv[3] = strsave(XtName(cr->composite.children[i]));
+			s = index(argv[3], ' ');
+			if (s) {
+			    argv[3] = s+2;
+			    s = index(argv[3], ')');
+			    if (s) *s = 0;
+			} else
+			  argv[3] = "";
+		    }
+		    break;
+		}
+	    }
+	}
+	if (*argv[3] == 0) argv[3] = "Z";
+#ifdef DEBUG
+	printf("Got before key of \"%s\" and after key of \"%s\"\n",
+	       argv[2], argv[3]);
+#endif /* DEBUG */
+	/* copy the matching chars */
+	for  (s = buf; *argv[2] && *argv[2] == *argv[3]; argv[3]++)
+	  *s++ = *argv[2]++;
+	/* and set the last char */
+	if (*argv[2] == 0)
+	  *argv[2] = i = 'A';
+	else
+	  i = argv[2][1];
+	if (i == 0) i = 'A';
+	if (*argv[3] == 0) *argv[3] = 'Z';
+	if (*argv[3] - *argv[2] > 1) {
+	    *s++ = (*argv[3] + *argv[2])/2;
+	} else {
+	    *s++ = *argv[2];
+	    *s++ = (i + 'Z')/2;
+	}
+	*s = 0;
+	argv[2] = strsave(buf);
+	break;
+    case MM_DEL_FSGROUP:
+	argv[1] = strsave(stringval(form, 1));
+	s = index(argv[1], ' ');
+	if (s) *s = 0;
 	break;
     case MM_SHOW_FS_ALIAS:
     case MM_ADD_FS_ALIAS:

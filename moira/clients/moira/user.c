@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.37 1997-01-29 23:06:27 danw Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.38 1997-08-14 20:22:49 danw Exp $";
 #endif
 
 /*	This is the file user.c for the MOIRA Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v $
  *      $Author: danw $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.37 1997-01-29 23:06:27 danw Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.38 1997-08-14 20:22:49 danw Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -1044,6 +1044,105 @@ char **argv;
 }
 
 
+/*	Function Name: GetDirFlags
+ *	Description: Shows MITdir listing preferences
+ *	Arguments: argc, argv - argv[1] contains the user login name
+ *	Returns: none.
+ */
+
+/* ARGSUSED */
+int
+GetDirFlags(argc, argv)
+int argc;
+char **argv;
+{
+    int stat, flags;
+    struct qelem *elem = NULL;
+    char buf[BUFSIZ], **info;
+
+    if (!ValidName(argv[1]))
+	return(DM_NORMAL);
+    
+    if ((stat = do_mr_query("get_user_directory_flags", 1, &argv[1],
+			     StoreInfo, (char *)&elem)) != 0) {
+	com_err(program_name, stat, " in GetDirFlags.");
+	return(DM_NORMAL);
+    }
+
+    info = (char **) QueueTop(elem)->q_data;
+    flags = atoi(info[0]);
+    FreeQueue(QueueTop(elem));
+
+    Put_message("");
+    sprintf(buf, "User: %s", argv[1]);
+    Put_message(buf);
+    if (flags & DIRFLAGS_SUPPRESS) {
+	Put_message("Does NOT appear in the on-line directory.");
+    } else {
+	Put_message("Does appear in the on-line directory.");
+	if (flags & DIRFLAGS_NONLOCAL) {
+	    Put_message("Is listed with non-MIT.EDU email address (if known)");
+	} else {
+	    Put_message("Is listed with MIT.EDU email address.");
+	}
+    }
+
+    return(DM_NORMAL);
+}
+
+/*	Function Name: SetDirFlags
+ *	Description: Update online directory preferences
+ *	Arguments: argc, argv - the login name of the user in argv[1].
+ *	Returns: DM_NORMAL.
+ */
+
+int
+SetDirFlags(argc, argv)
+int argc;
+char **argv;
+{
+    int stat, flags;
+    char **info, buf[BUFSIZ], *args[2];
+    struct qelem *elem = NULL;
+
+    if (!ValidName(argv[1]))
+	return(DM_NORMAL);
+    
+    /* Fetch current prefs */
+    if ((stat = do_mr_query("get_user_directory_flags", 1, &argv[1],
+			     StoreInfo, (char *)&elem)) != 0) {
+	com_err(program_name, stat, " in GetDirFlags.");
+	return(DM_NORMAL);
+    }
+    info = (char **) QueueTop(elem)->q_data;
+    flags = atoi(info[0]);
+    FreeQueue(QueueTop(elem));
+
+    sprintf(buf, "List %s in the on-line directory (y/n)", argv[1]);
+    if (YesNoQuestion(buf, !(flags & DIRFLAGS_SUPPRESS)))
+	flags &= ~DIRFLAGS_SUPPRESS;
+    else
+	flags |= DIRFLAGS_SUPPRESS;
+
+    sprintf(buf, "List MIT.EDU email address even when mail is forwarded elsewhere? (y/n)");
+    if (YesNoQuestion(buf, !(flags & DIRFLAGS_NONLOCAL)))
+	flags &= ~DIRFLAGS_NONLOCAL;
+    else
+	flags |= DIRFLAGS_NONLOCAL;
+
+    args[0] = argv[1];
+    sprintf(buf, "%d", flags);
+    args[1] = buf;
+    if ( (stat = do_mr_query("update_user_directory_flags", 2,
+			       args, Scream, NULL)) != MR_SUCCESS)
+	com_err(program_name, stat, " in SetDirFlags");
+    else
+	Put_message("Directory preferences set.");
+
+    return (DM_NORMAL);
+}
+
+#ifdef DEBUG
 hex_dump(p)
 unsigned  char *p;
 {
@@ -1092,3 +1191,4 @@ unsigned  char *p;
     }
     Put_message(buf);
 }
+#endif

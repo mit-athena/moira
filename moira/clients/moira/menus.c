@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menus.c,v 1.28 1997-06-12 21:04:50 danw Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menus.c,v 1.29 1997-08-14 20:22:48 danw Exp $";
 #endif
 
 /*	This is the file menus.c for the MOIRA Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menus.c,v $
  *      $Author: danw $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menus.c,v 1.28 1997-06-12 21:04:50 danw Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menus.c,v 1.29 1997-08-14 20:22:48 danw Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -561,6 +561,23 @@ Menu krbmap_menu = {
     }
 };
 
+Menu mitdir_menu = {
+    NULLFUNC,
+    NULLFUNC,
+    "MIT On-line Directory Preferences Menu",
+    2,
+    {
+	{ GetDirFlags, NULLMENU, 2, {
+	    { "show", "Show Directory Preferences" },
+	    { "login", "Login name: " },
+	} },
+	{ SetDirFlags, NULLMENU, 2, {
+	    { "change", "Change Directory Preference" },
+	    { "login", "Login name: " },
+	} },
+    }
+};
+
 /*
  * User Menu
  */
@@ -569,7 +586,7 @@ Menu user_menu = {
   NULLFUNC,
   NULLFUNC,
   "User Menu",
-  11,
+  12,
   {
     {ShowUserByLogin, NULLMENU, 2, {
        {"login", "Show user information by login name"},
@@ -605,6 +622,7 @@ Menu user_menu = {
     } },
     SUBMENU("pobox", "Post Office Box Menu", &pobox_menu),
     SUBMENU("krbmap", "User Kerberos Mappings", &krbmap_menu),
+    SUBMENU("mitdir", "MIT On-line Directory Preferences", &mitdir_menu),
   }
 };
 

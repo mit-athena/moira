@@ -6,8 +6,8 @@
  *	By:		Chris D. Peterson
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/f_defs.h,v $
- *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/f_defs.h,v 1.19 1993-11-10 15:42:20 mar Exp $
+ *      $Author: danw $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/f_defs.h,v 1.20 1997-08-14 20:22:47 danw Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -144,6 +144,8 @@ int DeleteUserByUid();		/* detete a user by uid. */
 int GetKrbmap();		/* fetch a user->kerberos mapping */
 int AddKrbmap();
 int DeleteKrbmap();
+int GetDirFlags();
+int SetDirFlags();
 
 /* printer.c */
 int AddPcap();

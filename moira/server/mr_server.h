@@ -1,11 +1,14 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_server.h,v $
- *	$Author: wesommer $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_server.h,v 1.7 1987-07-29 16:03:30 wesommer Exp $
+ *	$Author: mar $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_server.h,v 1.8 1988-01-14 13:12:06 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
  *	$Log: not supported by cvs2svn $
+ * Revision 1.7  87/07/29  16:03:30  wesommer
+ * Added last_time_used field to client structure.
+ * 
  * Revision 1.6  87/07/14  00:36:40  wesommer
  * Added debugging options.
  * 
@@ -95,3 +98,6 @@ extern int log_flags;
 #define LOG_RESP		0x0008
 #define LOG_RES			0x0010
 
+
+/* max length of query argument allowed */
+#define ARGLEN	128

@@ -1,10 +1,10 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v 1.4 1987-09-01 18:07:42 ambar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v 1.5 1987-09-03 02:58:00 wesommer Exp $
  */
 
 #ifndef lint
-static char rcsid_mailmaint_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v 1.4 1987-09-01 18:07:42 ambar Exp $";
+static char rcsid_mailmaint_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v 1.5 1987-09-03 02:58:00 wesommer Exp $";
 
 #endif lint
 
@@ -84,22 +84,10 @@ main(argc, argv)
 
     int use_menu = 1;
     char buf[BUFSIZ];
-    extern void sms_com_err_hook();
 
     init_sms_err_tbl();
     init_krb_err_tbl();
-    set_com_err_hook(sms_com_err_hook);
 
-    /*
-     * This shouldn't be here.... the experienced user will catch the error
-     * -- the inexperienced one will just be confused. 
-     *
-     * if (getenv("TERM") == (char *) NULL) { Put_message("Please set your TERM
-     * environment variable\n"); goto punt; } if (getenv("TERMCAP") == (char
-     * *) NULL) { Put_message("Please set your TERMCAP environment
-     * variable\n"); goto punt; } 
-     *
-     */
     if ((whoami = rindex(argv[0], '/')) == NULL)
 	whoami = argv[0];
     else
@@ -158,12 +146,10 @@ lines, %d columns)\n", LINES, COLS);
 	cls();
 	endwin();
     }
-    sms_disconnect();
     exit(0);
 
 punt:
     com_err(whoami, status, buf);
-/*	sms_disconnect(); */
     exit(1);
 }
 
@@ -291,7 +277,7 @@ show_list_info()
 	    currow++;
 	}
 	show_text(currow, STARTCOL, "Press any Key to continue...");
-	c = getchar();
+	(void) getchar();
     }
     clrwin(DISPROW);
 }
@@ -385,7 +371,7 @@ add_member()
 	}
 	currow = DISPROW + 4;
 	show_text(DISPROW + 4, STARTCOL, "Press any Key to continue...");
-	c = getchar();
+	(void) getchar();
     }
     clrwin(DISPROW);
 }
@@ -419,7 +405,7 @@ delete_member()
 	}
 	currow = DISPROW + 4;
 	show_text(DISPROW + 4, STARTCOL, "Press any Key to continue...");
-	c = getchar();
+	(void) getchar();
     }
     clrwin(DISPROW);
 }
@@ -444,7 +430,7 @@ list_by_member()
 	com_err(whoami, status, " in get_lists_of_member");
     }
     show_text(currow, STARTCOL, "Press any Key to continue...");
-    c = getchar();
+    (void) getchar();
     clrwin(DISPROW);
     return;
 }
@@ -621,7 +607,7 @@ end_display()
     show_text(currow, STARTCOL, buffer);
     currow++;
     show_text(currow, STARTCOL, "Press any key to continue...");
-    c = getchar();
+    (void) getchar();
     clrwin(DISPROW);
 
 }
@@ -891,7 +877,7 @@ Prompt(prompt, buf, buflen)
 	case '\r':
 	    Put_message("\r");
 	    *p = '\0';
-	    if (strlen(buf) < 1)/* only /n or /r in buff */
+	    if (strlen(buf) < 1)/* only \n or \r in buff */
 		return (-1);
 	    else
 		return (1);

@@ -22,7 +22,7 @@ If the two udebugs show that the version changed, lather-rinse-repeat.
 to extract and prepare the personal groups and special user entries in
 the old prdb for being reincorporated into the new prdb.
 
-	awk -F\| '$8 == 3 {print $1}' /backup/backup_1/users > /tmp/deactivated
+	awk -F\| '$9 == 3 {print $1}' /backup/backup_1/users > /tmp/deactivated
 	perl -e 'for(`cat /tmp/deactivated`) { chop; $ex{$_}=1;} \
 		$punt=0; foreach $L (`cat prdb.extra.sort`){ \
 		@w=split(/ /,$L);  $_=$w[0]; if ( /:/ ) \
@@ -77,7 +77,7 @@ creations and list additions.  (To start over, do both the `cp` and
 `pt_util` again.)  You can filter out the "User or group doesn't exist"
 type of lines that were caused by a user deactivation with something
 like:
-	awk -F\| '$8 == 3 {print $1}' /backup/backup_1/users > /tmp/deactivated
+	awk -F\| '$9 == 3 {print $1}' /backup/backup_1/users > /tmp/deactivated
 	perl -e 'for(`cat /tmp/deactivated`){ chop; $ex{$_}=1;} \
 		foreach $L (`cat prdb.extra.err`){ $f=0; \
 		@w=split(/[ :]/,$L); for(@w){ $f=1 if $ex{$_}; } \
@@ -118,7 +118,7 @@ rm /moira/afs/noafs and try again later.)
 to watch the status of the servers to make sure things are going well,
 where "prill" is preferred db server (the sync site).
 
-Make sure the beacons are working, and that once quorom is established
+Make sure the beacons are working, and that once quorum is established
 (~90 seconds) that the servers are resynchronizing their notions of
 the databases and that the "dbcurrent" and "up" fields all become set
 and the state goes to "1f".  Also, if "sdi" isn't running, watch out
@@ -134,7 +134,7 @@ appropriately to the saved ones using `pts setmax`.
 	pts ex system:administrators
 as a good spot check, especially since it has special people.
 (also spot check one of the personal groups and perhaps, something like
-the membership of rcmd.ronald-ann)
+the membership of rcmd.reynelda)
 
 	rm /moira/afs/noafs
 to remove the lock file and let Moira's afs incrementals continue.

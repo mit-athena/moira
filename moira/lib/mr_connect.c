@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_connect.c,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_connect.c,v 1.9 1988-09-13 15:52:09 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_connect.c,v 1.10 1988-12-01 15:10:11 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -12,7 +12,7 @@
  */
 
 #ifndef lint
-static char *rcsid_sms_connect_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_connect.c,v 1.9 1988-09-13 15:52:09 mar Exp $";
+static char *rcsid_sms_connect_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_connect.c,v 1.10 1988-12-01 15:10:11 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -22,7 +22,8 @@ static char *rcsid_sms_connect_c = "$Header: /afs/.athena.mit.edu/astaff/project
  * Open a connection to the sms server.
  */
 
-int sms_connect()
+int sms_connect(server)
+char *server;
 {
     extern int errno;
 	
@@ -34,7 +35,9 @@ int sms_connect()
      * number/name.
      */
     errno = 0;
-    _sms_conn = start_server_connection(SMS_GDB_SERV, ""); 
+    if (!server || (strlen(server) == 0))
+      server = SMS_GDB_SERV;
+    _sms_conn = start_server_connection(server, ""); 
     if (_sms_conn == NULL)
 	return errno;
     if (connection_status(_sms_conn) == CON_STOPPED) {
@@ -75,14 +78,3 @@ int sms_noop()
 
     return status;
 }
-
-/*
- * Local Variables:
- * mode: c
- * c-indent-level: 4
- * c-continued-statement-offset: 4
- * c-brace-offset: -4
- * c-argdecl-indent: 4
- * c-label-offset: -4
- * End:
- */

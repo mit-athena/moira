@@ -7,15 +7,11 @@ BUGS
 
 - User Guide needs writing.
 
-- Test this on the RT.
-
 Minor Changes
 -------------
 
 -  Add Kerberos code to register user.
  
--  Misc. caching, like list member types - get them from server.
-
 -  Exit Updates in Ask*Info on ^C. (use return vales).
 
 -  re-organize the files
@@ -32,22 +28,9 @@ Major Fixes and Additions
 
 -  An online help system needs to be worked out.
 
--  Add DCM Menu and functions.
-
--  Add misc. Menu and functions.
-
--  Add printers Menu and functions.
-
 -  Add writing to file on "> <filename>".
 
 Wish List
 ---------
 
 -  Create X interface.
-
--  Have client check types so that user does not have to
-   type in the entire user entry of he misspells the class field.
-   e.g add_user ( class)
-
-   Same applies for the list member types, and others I am sure.
-

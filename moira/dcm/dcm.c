@@ -7,11 +7,11 @@
  *
  * $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/dcm.c,v $
  * $Author: mar $
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/dcm.c,v 1.1 1988-08-07 22:42:09 mar Exp $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/dcm.c,v 1.2 1988-08-09 19:16:12 mar Exp $
  */
 
 #ifndef lint
-static char rcsid_dcm_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/dcm.c,v 1.1 1988-08-07 22:42:09 mar Exp $";
+static char rcsid_dcm_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/dcm.c,v 1.2 1988-08-09 19:16:12 mar Exp $";
 #endif lint
 
 #include <stdio.h>
@@ -91,7 +91,6 @@ char *argv[];
 	} 
 
 	/* do it! */
-	send_zgram("info", "DCM starting up");
 	do_services();
 	errno = 0;
 	leave("");

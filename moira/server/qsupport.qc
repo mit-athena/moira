@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.53 1990-05-31 17:13:39 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.54 1990-06-07 17:52:37 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_qsupport_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.53 1990-05-31 17:13:39 mar Exp $";
+static char *rcsid_qsupport_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.54 1990-06-07 17:52:37 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -573,8 +573,8 @@ int setup_dlis(q, argv)
 ##			servers.acl_type = "LIST"))
     if (flag)
 	return(MR_IN_USE);
-##  repeat retrieve (flag = any(quotas.entity_id where quotas.entity_id=@id and
-##			quotas.type = "GROUP"))
+##  repeat retrieve (flag = any(quota.entity_id where quota.entity_id=@id and
+##			quota.type = "GROUP"))
     if (flag)
 	return(MR_IN_USE);
 ##  repeat retrieve (flag=any(hostaccess.acl_id where hostaccess.acl_id=@id and
@@ -2737,7 +2737,8 @@ register_user(q, argv, cl)
     if (rowcount != 1)
       return(MR_INTERNAL);
     aargv[0] = login;
-    aargv[1] = login;
+    aargv[1] = "USER";
+    aargv[2] = login;
     sprintf(buffer, "q.entity_id = %d and q.filsys_id = values.value and q.type = \"USER\" and values.name = \"filsys_id\"", users_id);
     incremental_after("quota", buffer, aargv);
     com_err(whoami, 0, "quota of %d assigned", quota);

@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/queries.c,v 1.13 1992-12-31 14:21:29 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/queries.c,v 1.14 1993-01-05 11:31:49 mar Exp $
  */
 
 #include <stdio.h>
@@ -275,7 +275,6 @@ int remove;
 
     for (i = 0; form->inputlines[i]; i++)
       argv[i] = StringValue(form, i);
-    form->extrastuff = NULL;
     qy = form->menu->query;
     argc = form->menu->argc;
 

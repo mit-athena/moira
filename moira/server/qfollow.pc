@@ -1,4 +1,4 @@
-/* $Id: qfollow.pc,v 2.8 1999-01-27 19:35:19 danw Exp $
+/* $Id: qfollow.pc,v 2.9 1999-05-25 21:14:50 danw Exp $
  *
  * Query followup routines
  *
@@ -23,7 +23,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qfollow.pc,v 2.8 1999-01-27 19:35:19 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qfollow.pc,v 2.9 1999-05-25 21:14:50 danw Exp $");
 
 extern char *whoami, *table_name[];
 extern int dbms_errno, mr_errcode;
@@ -561,32 +561,6 @@ int followup_uuac(struct query *q, char *argv[], client *cl)
 }
 
 
-/* followp_aprn: update counts in serverhosts. Also set modtime for aprn. */
-int followup_aprn(struct query *q, char *argv[], client *cl)
-{
-  EXEC SQL BEGIN DECLARE SECTION;
-  int mid, delta;
-  EXEC SQL END DECLARE SECTION;
-
-  /* See if we're doing aprn or dprn */
-  if (q->name[0] == 'a')
-    {
-      delta = 1;
-      set_modtime(q, argv, cl);
-    }
-  else
-    delta = -1;
-
-  mid = *(int *)argv[PRN_RM];
-
-  EXEC SQL UPDATE serverhosts SET value1 = value1 + :delta
-    WHERE service = 'PRINT' AND mach_id = :mid;
-  if (dbms_errno)
-    return mr_errcode;
-
-  return MR_SUCCESS;
-}
-
 /* followup_gpob: fixes argv[2] based on the IDs currently there and the
  * type in argv[1].  Then completes the upcall to the user.
  *
@@ -872,6 +846,39 @@ int followup_glin(struct query *q, struct save_queue *sq, struct validate *v,
   return MR_SUCCESS;
 }
 
+int followup_gpsv(struct query *q, struct save_queue *sq, struct validate *v,
+		  int (*action)(int, char *[], void *), void *actarg,
+		  client *cl)
+{
+  char **argv, *type;
+  int id, i, status;
+
+  while (sq_get_data(sq, &argv))
+    {
+      mr_trim_args(q->vcnt, argv);
+
+      id = atoi(argv[PRINTSERVER_OWNER_NAME]);
+      type = argv[PRINTSERVER_OWNER_TYPE];
+
+      if (!strcmp(type, "LIST"))
+	status = id_to_name(id, LIST_TABLE, &argv[PRINTSERVER_OWNER_NAME]);
+      else if (!strcmp(type, "USER"))
+	status = id_to_name(id, USERS_TABLE, &argv[PRINTSERVER_OWNER_NAME]);
+      else if (!strcmp(type, "KERBEROS"))
+	status = id_to_name(id, STRINGS_TABLE, &argv[PRINTSERVER_OWNER_NAME]);
+      else
+	{
+	  status = 0;
+	  free(argv[PRINTSERVER_OWNER_NAME]);
+	  argv[PRINTSERVER_OWNER_NAME] = xstrdup("NONE");
+	}
+      if (status && status != MR_NO_MATCH)
+	return status;
+    }
+
+  return followup_fix_modby(q, sq, v, action, actarg, cl);
+}
+  
 
 /* followup_gqot: Fix the entity name, directory name & modby fields
  *   argv[0] = filsys_id

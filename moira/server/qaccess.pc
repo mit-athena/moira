@@ -1,4 +1,4 @@
-/* $Id: qaccess.pc,v 2.11 1998-12-14 18:53:34 danw Exp $
+/* $Id: qaccess.pc,v 2.12 1999-05-25 21:14:49 danw Exp $
  *
  * Check access to queries
  *
@@ -17,7 +17,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qaccess.pc,v 2.11 1998-12-14 18:53:34 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qaccess.pc,v 2.12 1999-05-25 21:14:49 danw Exp $");
 
 extern char *whoami;
 extern int dbms_errno, mr_errcode;
@@ -472,7 +472,6 @@ int access_ahal(struct query *q, char *argv[], client *cl)
 }
 
 
-
 /* access_snt - check for retrieving network structure
  */
 
@@ -482,4 +481,27 @@ int access_snt(struct query *q, char *argv[], client *cl)
     return MR_SUCCESS;
 
   return MR_PERM;
+}
+
+
+/* access_printer */
+int access_printer(struct query *q, char *argv[], client *cl)
+{
+  EXEC SQL BEGIN DECLARE SECTION;
+  char type[PRINTSERVERS_OWNER_TYPE_SIZE];
+  int id, mach_id;
+  EXEC SQL END DECLARE SECTION;
+  int status;
+
+  mach_id = *(int *)argv[PRN_RM];
+  EXEC SQL SELECT owner_type, owner_id INTO :type, :id
+    FROM printservers WHERE mach_id = :mach_id;
+  if (sqlca.sqlcode)
+    return MR_PERM;
+
+  status = find_member(type, id, cl);
+  if (status)
+    return MR_SUCCESS;
+  else
+    return MR_PERM;
 }

@@ -1,4 +1,4 @@
-/* $Id: mr_server.h,v 1.41 1999-01-27 19:35:18 danw Exp $
+/* $Id: mr_server.h,v 1.42 1999-05-25 21:14:48 danw Exp $
  *
  * Copyright (C) 1987-1998 by the Massachusetts Institute of Technology
  * For copying and distribution information, please see the file
@@ -155,6 +155,7 @@ int access_filesys(struct query *q, char *argv[], client *cl);
 int access_host(struct query *q, char *argv[], client *cl);
 int access_ahal(struct query *q, char *argv[], client *cl);
 int access_snt(struct query *q, char *argv[], client *cl);
+int access_printer(struct query *q, char *argv[], client *cl);
 
 /* prototypes from qfollow.pc */
 int followup_fix_modby(struct query *q, struct save_queue *sq,
@@ -184,9 +185,11 @@ int followup_gsnt(struct query *q, struct save_queue *sq, struct validate *v,
 int followup_ghst(struct query *q, struct save_queue *sq, struct validate *v,
 		  int (*action)(int, char **, void *), void *actarg,
 		  client *cl);
+int followup_gpsv(struct query *q, struct save_queue *sq, struct validate *v,
+		  int (*action)(int, char **, void *), void *actarg,
+		  client *cl);
 
 int followup_ausr(struct query *q, char *argv[], client *cl);
-int followup_aprn(struct query *q, char *argv[], client *cl);
 int followup_aqot(struct query *q, char *argv[], client *cl);
 int followup_dqot(struct query *q, char *argv[], client *cl);
 int followup_uuac(struct query *q, char *argv[], client *cl);
@@ -229,6 +232,7 @@ int setup_ahst(struct query *q, char *argv[], client *cl);
 int setup_ahal(struct query *q, char *argv[], client *cl);
 int setup_uhha(struct query *q, char *argv[], client *cl);
 int setup_aprn(struct query *q, char *argv[], client *cl);
+int setup_dpsv(struct query *q, char *argv[], client *cl);
 
 /* prototypes from qsupport.pc */
 int set_pobox(struct query *q, char *argv[], client *cl);

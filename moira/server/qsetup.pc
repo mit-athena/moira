@@ -1,4 +1,4 @@
-/* $Id: qsetup.pc,v 2.28 1999-02-01 21:37:05 danw Exp $
+/* $Id: qsetup.pc,v 2.29 1999-05-25 21:14:51 danw Exp $
  *
  * Query setup routines
  *
@@ -21,7 +21,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsetup.pc,v 2.28 1999-02-01 21:37:05 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsetup.pc,v 2.29 1999-05-25 21:14:51 danw Exp $");
 
 extern char *whoami;
 extern int dbms_errno, mr_errcode;
@@ -221,7 +221,7 @@ int setup_dmac(struct query *q, char *argv[], client *cl)
     WHERE rq = :id;
   if (cnt > 0)
     return MR_IN_USE;
-  EXEC SQL SELECT COUNT(mach_id) INTO :cnt FROM palladium
+  EXEC SQL SELECT COUNT(mach_id) INTO :cnt FROM printservers
     WHERE mach_id = :id;
   if (cnt > 0)
     return MR_IN_USE;
@@ -430,6 +430,17 @@ int setup_dlis(struct query *q, char *argv[], client *cl)
     OR z.sub_type = 'LIST' AND z.sub_id = :id
     OR z.iws_type = 'LIST' AND z.iws_id = :id
     OR z.iui_type = 'LIST' AND z.iui_id = :id;
+  if (cnt > 0)
+    return MR_IN_USE;
+
+  EXEC SQL SELECT COUNT(name) INTO :cnt FROM printers
+    WHERE lpc_acl = :id OR ac = :id;
+  if (cnt > 0)
+    return MR_IN_USE;
+
+  EXEC SQL SELECT COUNT(mach_id) INTO :cnt FROM printservers
+    WHERE owner_type = 'LIST' AND owner_id = :id
+    OR lpc_acl = :id;
   if (cnt > 0)
     return MR_IN_USE;
 
@@ -1097,42 +1108,73 @@ int setup_uhha(struct query *q, char **argv, client *cl)
  */
 int setup_aprn(struct query *q, char **argv, client *cl)
 {
-  int best = -1;
+  int best = -1, row;
   char *p;
   EXEC SQL BEGIN DECLARE SECTION;
   int mid, usage, count;
-  char types[SERVERHOSTS_VALUE3_SIZE], *hwaddr, *name;
+  char types[STRINGS_STRING_SIZE], *hwaddr, *name, *duplexname, *oldname;
   EXEC SQL END DECLARE SECTION;
 
-  name = argv[PRN_NAME];
+  /* Check for aprn or uprn. */
+  if (q->type == APPEND)
+    row = 0;
+  else
+    row = 1;
+
+  name = argv[PRN_NAME + row];
+  duplexname = argv[PRN_DUPLEXNAME + row];
+  oldname = argv[0];
+
   if (!*name)
     return MR_BAD_CHAR;
   else
     {
-      EXEC SQL SELECT COUNT(name) INTO :count FROM printers
-	WHERE name = :name OR duplexname = :name;
+      if (q->type == APPEND)
+	{
+	  EXEC SQL SELECT COUNT(name) INTO :count FROM printers
+	    WHERE name = :name OR duplexname = :name;
+	}
+      else
+	{
+	  EXEC SQL SELECT COUNT(name) INTO :count FROM printers
+	    WHERE ( name = :name OR duplexname = :name )
+	    AND name != :oldname;
+	}
       if (dbms_errno)
 	return mr_errcode;
       if (count)
 	return MR_NOT_UNIQUE;
     }
 
-  name = argv[PRN_DUPLEXNAME];
-  if (*name)
+  if (*duplexname)
     {
-      EXEC SQL SELECT COUNT(name) INTO :count FROM printers
-	WHERE name = :name OR duplexname = :name;
+      if (q->type == APPEND)
+	{
+	  EXEC SQL SELECT COUNT(name) INTO :count FROM printers
+	    WHERE name = :duplexname OR duplexname = :duplexname;
+	}
+      else
+	{
+	  EXEC SQL SELECT COUNT(name) INTO :count FROM printers
+	    WHERE ( name = :duplexname OR duplexname = :duplexname )
+	    AND name != :oldname;
+	}
+
       if (dbms_errno)
 	return mr_errcode;
       if (count)
 	return MR_NOT_UNIQUE;
     }
 
-  if (*(int *)argv[PRN_RM] == -1)
+  if (!strcmp(name, duplexname))
+    return MR_NOT_UNIQUE;
+
+  mid = *(int *)argv[PRN_RM + row];
+  if (mid == -1)
     {
       EXEC SQL DECLARE csr_rm CURSOR FOR
-	SELECT mach_id, value1, value3 FROM serverhosts
-	WHERE service = 'PRINT';
+	SELECT ps.mach_id, s.string FROM printservers ps, strings s
+	WHERE ps.printer_types = s.string_id;
       if (dbms_errno)
 	return mr_errcode;
       EXEC SQL OPEN csr_rm;
@@ -1141,20 +1183,23 @@ int setup_aprn(struct query *q, char **argv, client *cl)
 
       while (1)
 	{
-	  EXEC SQL FETCH csr_rm INTO :mid, :usage, :types;
+	  EXEC SQL FETCH csr_rm INTO :mid, :types;
 	  if (sqlca.sqlcode)
 	    break;
 
-	  if (best > 0 && usage > best)
-	    continue;
-
 	  for (p = strtok(types, ", "); p; p = strtok(NULL, ", "))
 	    {
-	      if (!strcasecmp(argv[PRN_TYPE], p))
+	      if (!strcasecmp(argv[PRN_TYPE + row], p))
 		{
-		  best = usage;
-		  *(int *)argv[PRN_RM] = mid;
-		  break;
+		  EXEC SQL SELECT COUNT(name) INTO :usage
+		    FROM printers WHERE mach_id = :mid;
+
+		  if (best > 0 && usage < best)
+		    {
+		      best = usage;
+		      *(int *)argv[PRN_RM + row] = mid;
+		      break;
+		    }
 		}
 	    }
 	}
@@ -1165,6 +1210,23 @@ int setup_aprn(struct query *q, char **argv, client *cl)
       if (best == -1)
 	return MR_SERVICE;
     }
+
+  return MR_SUCCESS;
+}
+
+int setup_dpsv(struct query *q, char **argv, client *cl)
+{
+  int id;
+  EXEC SQL BEGIN DECLARE SECTION;
+  int cnt;
+  EXEC SQL END DECLARE SECTION;
+
+  id = *(int *)argv[0];
+
+  EXEC SQL SELECT COUNT(rm) INTO :cnt FROM printers
+    WHERE rm = :id;
+  if (cnt > 0)
+    return MR_IN_USE;
 
   return MR_SUCCESS;
 }

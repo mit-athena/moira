@@ -1,4 +1,4 @@
-/* $Id: queries2.c,v 2.54 1999-02-06 18:44:47 danw Exp $
+/* $Id: queries2.c,v 2.55 1999-05-25 21:14:53 danw Exp $
  *
  * This file defines the query dispatch table for version 2 of the protocol
  *
@@ -2141,9 +2141,48 @@ static struct validate aprn_validate = {
   "name = '%s'",
   1,
   0,
-  0,
+  access_printer,
   setup_aprn,
-  followup_aprn,
+  set_modtime,
+};
+
+static char *uprn_fields[] = {
+  "printer",
+  "printer", "type", "hwtype", "duplexname", "hostname",
+  "loghost", "rm", "rp", "rq", "ka", "pc", "ac", "lpc_acl",
+  "banner", "location", "contact",
+};
+
+static struct valobj uprn_valobj[] = {
+  {V_CHAR, 0, PRINTERS_TABLE, "name"},
+  {V_CHAR, 1, PRINTERS_TABLE, "name"},
+  {V_TYPE, 2, 0, "printertype", 0, MR_TYPE},
+  {V_TYPE, 3, 0, "printerhwtype", 0, MR_TYPE},
+  {V_CHAR, 4, PRINTERS_TABLE, "duplexname"},
+  {V_ID, 5, MACHINE_TABLE, "name", "mach_id", MR_MACHINE},
+  {V_ID, 6, MACHINE_TABLE, "name", "mach_id", MR_MACHINE},
+  {V_ID, 7, MACHINE_TABLE, "name", "mach_id", MR_MACHINE},
+  {V_CHAR, 8, PRINTERS_TABLE, "rp"},
+  {V_ID, 9, MACHINE_TABLE, "name", "mach_id", MR_MACHINE},
+  {V_NUM, 10},
+  {V_NUM, 11},
+  {V_ID, 12, LIST_TABLE, "name", "list_id", MR_LIST},
+  {V_ID, 13, LIST_TABLE, "name", "list_id", MR_LIST},
+  {V_NUM, 14},
+  {V_CHAR, 15, PRINTERS_TABLE, "location"},
+  {V_CHAR, 16, PRINTERS_TABLE, "contact"},
+};
+
+static struct validate uprn_validate = {
+  uprn_valobj,
+  16,
+  "name",
+  "name = '%s'",
+  1,
+  0,
+  access_printer,
+  setup_aprn,
+  set_modtime,
 };
 
 static struct validate dprn_validate = {
@@ -2153,10 +2192,73 @@ static struct validate dprn_validate = {
   "name = '%s'",
   1,
   0,
+  access_printer,
   0,
   0,
-  followup_aprn,
 };
+
+static char *gpsv_fields[] = {
+  "host",
+  "host", "kind", "printer_types", "owner_type", "owner_name",
+  "lpc_acl", "modtime", "modby", "modwith"
+};
+
+static struct valobj gpsv_valobj[] = {
+  {V_ID, 0, MACHINE_TABLE, "name", "mach_id", MR_MACHINE},
+};
+
+static struct validate gpsv_validate = {
+  gpsv_valobj,
+  1,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  followup_gpsv,
+};
+
+static char *apsv_fields[] = {
+  "host", "kind", "printer_types", "owner_type", "owner_name", "lpc_acl"
+};
+
+static struct valobj apsv_valobj[] = {
+  {V_ID, 0, MACHINE_TABLE, "name", "mach_id", MR_MACHINE},
+  {V_TYPE, 1, 0, "lpd_kind", 0, MR_TYPE},
+  {V_ID, 2, STRINGS_TABLE, "string", "string_id", MR_STRING},
+  {V_TYPE, 3, 0, "ace_type", 0, MR_ACE},
+  {V_TYPEDATA, 4, 0, 0, 0, MR_ACE},
+  {V_ID, 5, LIST_TABLE, "name", "list_id", MR_LIST},
+};
+
+static struct validate apsv_validate = {
+  apsv_valobj,
+  6,
+  "mach_id",
+  "mach_id = %d",
+  1,
+  "mach_id",
+  0,
+  0,
+  set_modtime_by_id,
+};
+
+static char *dpsv_fields[] = {
+  "host",
+};
+
+static struct validate dpsv_validate = {
+  gpsv_valobj,
+  1,
+  "mach_id",
+  "mach_id = %d",
+  1,
+  0,
+  0,
+  setup_dpsv,
+  0,
+};  
 
 static char *gali_fields[] = {
   "name", "type", "trans",
@@ -4404,6 +4506,22 @@ struct query Queries2[] = {
   },
 
   {
+    /* Q_UPRN - UPDATE_PRINTER */
+    "update_printer",
+    "uprn",
+    UPDATE,
+    "pr",
+    PRINTERS_TABLE,
+    "printers SET name = '%s', type = '%s', hwtype = '%s', duplexname = NVL('%s', CHR(0)), mach_id = %d, loghost = %d, rm = %d, rp = NVL('%s', CHR(0)), rq = %d, ka = %d, pc = %d, ac = %d, lpc_acl = %d, banner = %d, location = NVL('%s', CHR(0)), contact = NVL('%s', CHR(0))",
+    uprn_fields,
+    16,
+    0,
+    0,
+    NULL,
+    &uprn_validate,
+  },
+
+  {
     /* Q_DPRN - DELETE_PRINTER */
     "delete_printer",
     "dprn",
@@ -4417,6 +4535,70 @@ struct query Queries2[] = {
     1,
     NULL,
     &dprn_validate,
+  },
+
+  {
+    /* Q_GPSV - GET_PRINT_SERVER */
+    "get_print_server",
+    "gpsv",
+    RETRIEVE,
+    "ps",
+    PRINTSERVERS_TABLE,
+    "m.name, ps.kind, s.string, ps.owner_type, ps.owner_id, l.name, TO_CHAR(ps.modtime, 'DD-mon-YYYY HH24:MI:SS'), ps.modby, ps.modwith FROM printservers ps, machine m, strings s, list l",
+    gpsv_fields,
+    9,
+    "ps.mach_id = %d AND m.mach_id = ps.mach_id AND s.string_id = ps.printer_types AND l.list_id = ps.lpc_acl",
+    1,
+    NULL,
+    &gpsv_validate,
+  },
+
+  {
+    /* Q_APSV - ADD_PRINT_SERVER */
+    "add_print_server",
+    "apsv",
+    APPEND,
+    "ps",
+    PRINTSERVERS_TABLE,
+    "INTO printservers (mach_id, kind, printer_types, owner_type, owner_id, lpc_acl) VALUES (%d, '%s', %d, '%s', %d, %d)",
+    apsv_fields,
+    6,
+    0,
+    0,
+    NULL,
+    &apsv_validate,
+  },
+
+  {
+    /* Q_UPSV - UPDATE_PRINT_SERVER */
+    "update_print_server",
+    "upsv",
+    UPDATE,
+    "ps",
+    PRINTSERVERS_TABLE,
+    "printservers SET kind = '%s', printer_types = %d, owner_type = '%s', owner_id = %d, lpc_acl = %d",
+    apsv_fields,
+    5,
+    "mach_id = %d",
+    1,
+    NULL,
+    &apsv_validate,
+  },
+
+  {
+    /* Q_DPSV - DELETE_PRINT_SERVER */
+    "delete_print_server",
+    "dpsv",
+    DELETE,
+    "ps",
+    PRINTSERVERS_TABLE,
+    0,
+    dpsv_fields,
+    0,
+    "mach_id = %d",
+    1,
+    NULL,
+    &dpsv_validate,
   },
 
   {

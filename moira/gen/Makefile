@@ -1,6 +1,6 @@
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/Makefile,v 1.8 1990-01-12 16:29:07 mar Exp $
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/Makefile,v 1.9 1990-03-07 17:57:42 mar Exp $
 
-SRCS= passwd.c aliases.c hesiod.c nfs.c mailhub.c mitdir.c util.c
+SRCS= passwd.c aliases.c hesiod.c nfs.c mailhub.c mitdir.c util.c setquota.c
 LIBS= -L../lib -lsms -lcom_err -lzephyr -lkrb -ldes \
 	 /usr/rtingres/lib/libqlib /usr/rtingres/lib/compatlib
 CFLAGS= -I../include -O
@@ -10,7 +10,7 @@ CFLAGS= -I../include -O
 	rm -f $*.c
 	/usr/rtingres/bin/eqc -p $*
 
-all: passwd.gen aliases.gen hesiod.gen nfs.gen mailhub.gen mitdir.gen
+all: passwd.gen aliases.gen hesiod.gen nfs.gen mailhub.gen mitdir.gen setquota
 
 passwd.gen: passwd.o util.o
 	cc -o passwd.gen passwd.o util.o ${LIBS}
@@ -41,6 +41,9 @@ mitdir.gen: mitdir.o util.o
 	cc -o mitdir.gen mitdir.o util.o ${LIBS}
 
 mitdir.o: mitdir.c
+
+setquota: setquota.o
+	cc -o setquota setquota.o
 
 clean:
 	rm -f *.o 
@@ -100,3 +103,9 @@ mitdir.o: /usr/include/sys/time.h
 util.o: util.c ../include/mit-copyright.h /usr/include/stdio.h
 util.o: /usr/include/sys/time.h /usr/include/sys/time.h ../include/sms.h
 util.o: ../include/sms_et.h ../include/sms_app.h
+setquota.o: setquota.c /usr/include/stdio.h /usr/include/ctype.h
+setquota.o: /usr/include/mntent.h /usr/include/sys/file.h
+setquota.o: /usr/include/sys/param.h /usr/include/machine/machparam.h
+setquota.o: /usr/include/sys/signal.h /usr/include/sys/types.h
+setquota.o: /usr/include/sys/time.h /usr/include/sys/time.h
+setquota.o: /usr/include/ufs/quota.h

@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/zephyr.c,v 1.3 1991-03-08 10:20:23 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/zephyr.c,v 1.4 1994-08-09 19:16:55 tytso Exp $
  *
  * Zephyr ACL routines for the Moira client
  *
@@ -9,7 +9,7 @@
  */
 
 #include <stdio.h>
-#include <strings.h>
+#include <string.h>
 #include <ctype.h>
 #include <moira.h>
 #include <moira_site.h>

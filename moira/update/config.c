@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/config.c,v 1.2 1992-09-22 14:35:14 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/config.c,v 1.3 1993-10-19 12:12:39 mar Exp $
  *
  * Routines to handle configuration file for Moira's update_server.
  * These routines must load the file into memory rather than parse
@@ -16,6 +16,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/file.h>
+#include <fcntl.h>
 #include <moira.h>
 
 

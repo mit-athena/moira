@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.33 1989-03-21 18:14:15 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.34 1989-06-14 15:11:46 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_qsupport_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.33 1989-03-21 18:14:15 mar Exp $";
+static char *rcsid_qsupport_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.34 1989-06-14 15:11:46 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -20,6 +20,7 @@ static char *rcsid_qsupport_qc = "$Header: /afs/.athena.mit.edu/astaff/project/m
 
 
 extern char *whoami, *strsave();
+extern int ingres_errno, sms_errcode;
 
 
 /* Specialized Access Routines */
@@ -2167,14 +2168,14 @@ register_user(q, argv, cl)
 
     /* check new login name */
 ##  repeat retrieve (flag = any(u.#login where u.#login = @login))
-    if (flag)
-      return(SMS_IN_USE);
+    if (ingres_errno) return(sms_errcode);
+    if (flag) return(SMS_IN_USE);
 ##  repeat retrieve (flag = any(l.#name where l.#name = @login))
-    if (flag)
-      return(SMS_IN_USE);
+    if (ingres_errno) return(sms_errcode);
+    if (flag) return(SMS_IN_USE);
 ##  repeat retrieve (flag = any(filesys.#label where filesys.#label = @login))
-    if (flag)
-      return(SMS_IN_USE);
+    if (ingres_errno) return(sms_errcode);
+    if (flag) return(SMS_IN_USE);
     com_err(whoami, 0, "new login name OK");
 
     /* choose place for pobox, put in mid */
@@ -2343,6 +2344,7 @@ validate_row(q, argv, v)
     /* look for the record */
 ##  range of rvar is table
 ##  retrieve (rowcount = count(rvar.name where qual))
+    if (ingres_errno) return(sms_errcode);
     if (rowcount == 0) return(SMS_NO_MATCH);
     if (rowcount > 1) return(SMS_NOT_UNIQUE);
     return(SMS_EXISTS);
@@ -2409,6 +2411,9 @@ validate_fields(q, argv, vo, n)
 	    status = SMS_EXISTS;
 	    break;
 
+	case V_LOCK:
+	    status = lock_table(vo);
+	    break;
 	}
 
 	if (status != SMS_EXISTS) return(status);
@@ -2473,9 +2478,11 @@ validate_id(argv, vo)
     idfield = vo->idfield;
     if (!strcmp(namefield, "uid")) {
 ##    retrieve (id = table.idfield) where table.namefield = int4(name)
+      if (ingres_errno) return(sms_errcode);
 ##    inquire_equel (rowcount = "rowcount")
     } else {
 ##    retrieve (id = table.idfield) where table.namefield = name
+      if (ingres_errno) return(sms_errcode);
 ##    inquire_equel (rowcount = "rowcount")
     }
     if (rowcount != 1) return(vo->error);
@@ -2503,6 +2510,7 @@ validate_name(argv, vo)
     }
 ##  retrieve (rowcount = countu(table.namefield 
 ##            where table.namefield = name))
+    if (ingres_errno) return(sms_errcode);
     return ((rowcount == 1) ? SMS_EXISTS : vo->error);
 ##}
 
@@ -2546,12 +2554,14 @@ struct valobj *vo;
 	if (!strcmp(argv[vo->index], argv[vo->index - 1]))
 	  return(SMS_EXISTS);
 ##	retrieve (id = any(table.namefield where table.namefield = name))
+	if (ingres_errno) return(sms_errcode);
 	if (id)
 	  return(vo->error);
 	else
 	  return(SMS_EXISTS);
     }
 ##  retrieve (id = table.idfield) where table.namefield = name
+    if (ingres_errno) return(sms_errcode);
     if (id == -1 || id == *(int *)argv[vo->index - 1])
       return(SMS_EXISTS);
     else
@@ -2581,6 +2591,7 @@ validate_type(argv, vo)
 ##  repeat retrieve (exists = any(a.trans where a.name = @typename and
 ##				      a.type = "TYPE" and
 ##				      a.trans = @value))
+    if (ingres_errno) return(sms_errcode);
     return (exists ? SMS_EXISTS : vo->error);
 ##}
 
@@ -2608,6 +2619,7 @@ validate_typedata(q, argv, vo)
     /* get corresponding data type associated with field type name */
 ##  repeat retrieve (data_type = alias.trans) 
 ##         where alias.#name = @field_type and alias.type = "TYPEDATA"
+    if (ingres_errno) return(sms_errcode);
 ##  inquire_equel (rowcount = "rowcount")
     if (rowcount != 1) return(SMS_TYPE);
 
@@ -2668,6 +2680,26 @@ validate_typedata(q, argv, vo)
     *(int *)argv[vo->index] = id;
     
     return (SMS_EXISTS);
+##}
+
+
+/* Lock the table named by the validation object */
+
+lock_table(vo)
+struct valobj *vo;
+##{
+##  char *table, *idfield;
+##  int rowcount;
+
+    table = vo->table;
+    idfield = vo->idfield;
+##  replace table (modtime = "now") where table.idfield = 0
+    if (ingres_errno) return(sms_errcode);
+##  inquire_equel (rowcount = "rowcount")
+    if (rowcount != 1)
+      return(vo->error);
+    else
+      return(SMS_EXISTS);
 ##}
 
 

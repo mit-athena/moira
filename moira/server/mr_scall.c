@@ -1,11 +1,14 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_scall.c,v $
  *	$Author: wesommer $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_scall.c,v 1.7 1987-07-14 00:39:01 wesommer Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_scall.c,v 1.8 1987-07-16 15:43:19 wesommer Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
  *	$Log: not supported by cvs2svn $
+ * Revision 1.7  87/07/14  00:39:01  wesommer
+ * Rearranged loggin.
+ * 
  * Revision 1.6  87/06/30  20:04:43  wesommer
  * Free returned tuples when possible.
  * 
@@ -28,7 +31,7 @@
  */
 
 #ifndef lint
-static char *rcsid_sms_scall_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_scall.c,v 1.7 1987-07-14 00:39:01 wesommer Exp $";
+static char *rcsid_sms_scall_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_scall.c,v 1.8 1987-07-16 15:43:19 wesommer Exp $";
 #endif lint
 
 #include <krb.h>
@@ -37,6 +40,7 @@ static char *rcsid_sms_scall_c = "$Header: /afs/.athena.mit.edu/astaff/project/m
 extern char buf1[];
 extern int nclients;
 extern char *whoami;
+extern char *malloc();
 
 extern void clist_delete(), do_auth(), do_shutdown();
 void do_call();
@@ -136,9 +140,9 @@ free_rtn_tuples(cp)
 		register returned_tuples *t1=temp;
 		temp = t1->next;
 		if (t1 == cp->last) cp->last = NULL;
-#ifdef notdef
+
 		sms_destroy_reply(t1->retval);
-#endif notdef
+#ifdef notdef
 		if (t1->retval) {
 			register sms_params *p = t1->retval;
 			if (p->sms_flattened)
@@ -147,6 +151,7 @@ free_rtn_tuples(cp)
 				free(p->sms_argl);
 			free(p);
 		}
+#endif notdef
 		delete_operation(t1->op);
 		free(t1);
 	}
@@ -154,8 +159,8 @@ free_rtn_tuples(cp)
 }	
 
 retr_callback(argc, argv, p_cp)
-	int argc;
-	char **argv;
+	register int argc;
+	register char **argv;
 	char *p_cp;
 {
 	register client *cp = (client *)p_cp;
@@ -166,6 +171,8 @@ retr_callback(argc, argv, p_cp)
 	sms_params *arg_tmp = (sms_params *)db_alloc(sizeof(sms_params));
 	returned_tuples *tp = (returned_tuples *)
 		db_alloc(sizeof(returned_tuples));
+	register char **nargv = (char **)malloc(argc * sizeof(char *));
+	register int i;
 	
 	OPERATION op_tmp = create_operation();
 
@@ -178,7 +185,12 @@ retr_callback(argc, argv, p_cp)
 	
 	arg_tmp->sms_status = SMS_MORE_DATA;
 	arg_tmp->sms_argc = argc;
-	arg_tmp->sms_argv = argv;
+	arg_tmp->sms_argv = nargv;
+	for (i = 0; i < argc; i++) {
+		register int len = strlen(argv[i]) + 1;
+		nargv[i] = malloc(len);
+		bcopy(argv[i], nargv[i], len);
+	}
 	arg_tmp->sms_flattened = (char *)NULL;
 	arg_tmp->sms_argl = (int *)NULL;
 

@@ -1,4 +1,4 @@
-/* $Id: qfollow.pc,v 2.10 1999-11-02 02:32:32 danw Exp $
+/* $Id: qfollow.pc,v 2.11 1999-11-17 18:37:27 danw Exp $
  *
  * Query followup routines
  *
@@ -23,7 +23,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qfollow.pc,v 2.10 1999-11-02 02:32:32 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qfollow.pc,v 2.11 1999-11-17 18:37:27 danw Exp $");
 
 extern char *whoami, *table_name[];
 extern int dbms_errno, mr_errcode;
@@ -561,14 +561,12 @@ int followup_uuac(struct query *q, char *argv[], client *cl)
 }
 
 
-/* followup_gpob: fixes argv[2] based on the IDs currently there and the
- * type in argv[1].  Then completes the upcall to the user.
+/* followup_gpob: fixes argv[2] and argv[3] based on the pobox type.
+ * Then completes the upcall to the user.
  *
- * argv[2] is of the form "123:234" where the first integer is the
- * machine ID if it is a pop box or filesys ID if it is an imap box,
- * and the second is the string ID if it is an SMTP box. argv[1]
- * should be "POP", "SMTP", "IMAP", or "NONE". Boxes of type NONE are
- * skipped.
+ * argv[2] is the users_id on input and should be converted to the
+ * pobox name on output. argv[3] is empty on input and should be
+ * converted to an email address on output.
  */
 
 int followup_gpob(struct query *q, struct save_queue *sq, struct validate *v,
@@ -578,50 +576,69 @@ int followup_gpob(struct query *q, struct save_queue *sq, struct validate *v,
   char **argv;
   char *ptype, *p;
   int mid, sid, status, i;
+  EXEC SQL BEGIN DECLARE SECTION;
+  int users_id;
+  char mach[MACHINE_NAME_SIZE], fs[FILESYS_LABEL_SIZE];
+  char str[STRINGS_STRING_SIZE];
+  EXEC SQL END DECLARE SECTION;
 
   /* for each row */
   while (sq_get_data(sq, &argv))
     {
-      mr_trim_args(2, argv);
+      mr_trim_args(4, argv);
       ptype = argv[1];
-      p = strchr(argv[2], ':');
-      *p++ = '\0';
-      mid = atoi(argv[2]);
-      sid = atoi(p);
+      users_id = atoi(argv[2]);
 
       if (!strcmp(ptype, "POP"))
 	{
-	  status = id_to_name(mid, MACHINE_TABLE, &argv[2]);
-	  if (status == MR_NO_MATCH)
+	  EXEC SQL SELECT m.name INTO :mach FROM machine m, users u
+	    WHERE u.users_id = :users_id AND u.pop_id = m.mach_id;
+	  if (sqlca.sqlcode)
 	    return MR_MACHINE;
+	  free(argv[2]);
+	  argv[2] = xstrdup(strtrim(mach));
+	  free(argv[3]);
+	  argv[3] = xmalloc(strlen(argv[0]) + strlen(argv[2]) + 2);
+	  sprintf(argv[3], "%s@%s", argv[0], argv[2]);
 	}
       else if (!strcmp(ptype, "SMTP"))
 	{
-	  status = id_to_name(sid, STRINGS_TABLE, &argv[2]);
-	  if (status == MR_NO_MATCH)
+	  EXEC SQL SELECT s.string INTO :str FROM strings s, users u
+	    WHERE u.users_id = :users_id AND u.box_id = s.string_id;
+	  if (sqlca.sqlcode)
 	    return MR_STRING;
+	  free(argv[2]);
+	  free(argv[3]);
+	  argv[2] = xstrdup(strtrim(str));
+	  argv[3] = xstrdup(str);
 	}
       else if (!strcmp(ptype, "IMAP"))
 	{
-	  status = id_to_name(mid, FILESYS_TABLE, &argv[2]);
-	  if (status == MR_NO_MATCH)
+	  EXEC SQL SELECT f.label, m.name INTO :fs, :mach
+	    FROM filesys f, machine m, users u
+	    WHERE u.users_id = :users_id AND f.filsys_id = u.imap_id
+	    AND f.mach_id = m.mach_id;
+	  if (sqlca.sqlcode)
 	    return MR_FILESYS;
+	  free(argv[2]);
+	  argv[2] = xstrdup(strtrim(fs));
+	  free(argv[3]);
+	  argv[3] = xmalloc(strlen(argv[0]) + strlen(strtrim(mach)) + 2);
+	  sprintf(argv[3], "%s@%s", argv[0], mach);
 	}
       else /* ptype == "NONE" */
 	goto skip;
-      if (status)
-	return status;
 
       if (!strcmp(q->shortname, "gpob"))
 	{
-	  sid = atoi(argv[4]);
+	  sid = atoi(argv[5]);
 	  if (sid > 0)
-	    status = id_to_name(sid, USERS_TABLE, &argv[4]);
+	    status = id_to_name(sid, USERS_TABLE, &argv[5]);
 	  else
-	    status = id_to_name(-sid, STRINGS_TABLE, &argv[4]);
+	    status = id_to_name(-sid, STRINGS_TABLE, &argv[5]);
+	  if (status && status != MR_NO_MATCH)
+	    return status;
 	}
-      if (status && status != MR_NO_MATCH)
-	return status;
 
       (*action)(q->vcnt, argv, actarg);
     skip:

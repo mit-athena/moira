@@ -1,4 +1,4 @@
-/* $Id: queries2.c,v 2.62 1999-11-16 22:56:05 danw Exp $
+/* $Id: queries2.c,v 2.63 1999-11-17 18:37:28 danw Exp $
  *
  * This file defines the query dispatch table for version 2 of the protocol
  *
@@ -453,7 +453,7 @@ static struct validate ufbl_validate = {
 
 static char *gpob_fields[] = {
   "login",
-  "login", "type", "box", "modtime", "modby", "modwith",
+  "login", "type", "box", "address", "modtime", "modby", "modwith",
 };
 
 static struct validate gpob_validate = {
@@ -2882,9 +2882,9 @@ struct query Queries2[] = {
     RETRIEVE,
     "u",
     USERS_TABLE,
-    "login, potype, users_id, TO_CHAR(pmodtime, 'DD-mon-YYYY HH24:MI:SS'), pmodby, pmodwith FROM users",
+    "login, potype, users_id, CHR(0), TO_CHAR(pmodtime, 'DD-mon-YYYY HH24:MI:SS'), pmodby, pmodwith FROM users",
     gpob_fields,
-    6,
+    7,
     "users_id = %d",
     1,
     "login",

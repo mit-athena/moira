@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.31 1988-10-03 15:33:07 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.32 1989-01-03 17:15:20 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_qsupport_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.31 1988-10-03 15:33:07 mar Exp $";
+static char *rcsid_qsupport_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.32 1989-01-03 17:15:20 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -2170,7 +2170,7 @@ register_user(q, argv, cl)
 ##  repeat retrieve (flag = any(l.#name where l.#name = @login))
     if (flag)
       return(SMS_IN_USE);
-##  repeat retrieve (flag = any(filesys.#name where filesys.#name = @login))
+##  repeat retrieve (flag = any(filesys.#label where filesys.#label = @login))
     if (flag)
       return(SMS_IN_USE);
     com_err(whoami, 0, "new login name OK");

@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/winad/winad.c,v 1.20 2001-07-20 21:33:26 zacheiss Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/winad/winad.c,v 1.21 2001-07-24 20:50:32 zacheiss Exp $
 /* winad.incr arguments examples
  *
  *
@@ -2359,15 +2359,21 @@ int user_update(LDAP *ldap_handle, char *dn_path, char *user_name,
       i = 0;
       while (hp[i] != NULL)
         {
-          sscanf(hp[i], "%*s %s", cPath);
-          if (strlen(cPath) && strnicmp(cPath, AFS, strlen(AFS)) == 0)
+          if (sscanf(hp[i], "%*s %s", cPath))
             {
-              sscanf(hp[i], "%*s %*s %*s %*s %s", cWeight);
-              if (atoi(cWeight) < last_weight)
+              if (strnicmp(cPath, AFS, strlen(AFS)) == 0)
                 {
-                  strcpy(path, cPath);
-                  last_weight = (int)atoi(cWeight);
-                } 
+                  if (sscanf(hp[i], "%*s %*s %*s %*s %s", cWeight))
+                    {
+                      if (atoi(cWeight) < last_weight)
+                        {
+                          strcpy(path, cPath);
+                          last_weight = (int)atoi(cWeight);
+                        }
+                    }
+                  else 
+                    strcpy(path, cPath);
+                }
             }
           ++i;
         }

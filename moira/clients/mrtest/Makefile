@@ -1,7 +1,10 @@
 #
 # 	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/Makefile,v $
-#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/Makefile,v 1.4 1988-07-21 15:06:22 mar Exp $
+#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/Makefile,v 1.5 1988-09-14 12:03:39 mar Exp $
 #
+# (c) Copyright 1988 by the Massachusetts Institute of Technology.
+# For copying and distribution information, please see the file
+# <mit-copyright.h>.
 
 
 LIBS = ../rpc/libsms.a ../gdb/libgdb.a 
@@ -19,13 +22,9 @@ CFLAGS= ${INCDIRS} ${COPTS}
 
 all: smstest
 
-smstest: test_cmds.o test.o execute_cmd.o ${LIBS} 
+smstest: test_cmds.o test.o ${LIBS} 
 	rm -f smstest
-	cc ${COPTS} -o $@ test_cmds.o test.o execute_cmd.o \
-		${LIBS} ${LLIBS}
-
-execute_cmd.o: execute_cmd.c
-	cc -I/paris/source/4.3/athena.lib/ss -O -c execute_cmd.c
+	cc ${COPTS} -o $@ test_cmds.o test.o ${LIBS} ${LLIBS}
 
 clean:
 	rm -f *.o core \#* *~ gmon.out

@@ -1,9 +1,9 @@
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/afssync/Makefile,v 1.1 1989-09-26 12:10:47 mar Exp $
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/afssync/Makefile,v 1.2 1990-04-13 17:36:59 mar Exp $
 
 CFLAGS = -I/mit/afsdev/build/vax/include -I../include -O
 
 OBJS = prprocs.o prutils.o utils.o ubik.o
-LIBS= -L../lib -lsms -lcom_err \
+LIBS= -L../lib -lmoira -lcom_err \
 	 /usr/rtingres/lib/libqlib /usr/rtingres/lib/compatlib
 
 .SUFFIXES: .qc

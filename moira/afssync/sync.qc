@@ -1,10 +1,7 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/afssync/sync.qc,v 1.2 1989-09-26 12:11:04 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/afssync/sync.qc,v 1.3 1990-04-13 17:34:45 mar Exp $
  *
- * This generates the zone files necessary to load a hesiod server.
- * The following zones are generated: passwd, uid, pobox, group,
- * grplist, gid, filsys, cluster, pcap, sloc, service.
  *
- *  (c) Copyright 1988 by the Massachusetts Institute of Technology.
+ *  (c) Copyright 1989 by the Massachusetts Institute of Technology.
  *  For copying and distribution information, please see the file
  *  <mit-copyright.h>.
  */
@@ -16,8 +13,8 @@
 #include "print.h"
 #include "prserver.h"
 #include "prerror.h"
-#include <sms.h>
-#include <sms_app.h>
+#include <moira.h>
+#include <moira_site.h>
 #include <ctype.h>
 
 #define USERSMS 14487
@@ -39,7 +36,7 @@ char **argv;
 
     if (argc != 2) {
 	fprintf(stderr, "usage: %s outfile\n", argv[0]);
-	exit(SMS_ARGS);
+	exit(MR_ARGS);
     }
 
     dbase_fd = open(argv[1], O_RDWR|O_CREAT, 0660);
@@ -57,14 +54,14 @@ char **argv;
     do_passwd();
     status = PR_AddToGroup(NULL, USERSMS, SYSADMINID);
     if (status) {
-	prserror(status, "adding SMS to system:administrators", 0, 0);
+	prserror(status, "adding MR to system:administrators", 0, 0);
     }
     do_groups();
 
 ##  end transaction
 ##  exit
 
-    exit(SMS_SUCCESS);
+    exit(MR_SUCCESS);
 }
 
 
@@ -83,12 +80,12 @@ static int ingerr(num)
 
     switch (*num) {
     case INGRES_DEADLOCK:
-	ingres_errno = SMS_DEADLOCK;
+	ingres_errno = MR_DEADLOCK;
 	break;
     default:
-	ingres_errno = SMS_INGRES_ERR;
+	ingres_errno = MR_INGRES_ERR;
     }
-    com_err(whoami, SMS_INGRES_ERR, " code %d\n", *num);
+    com_err(whoami, MR_INGRES_ERR, " code %d\n", *num);
     exit(ingres_errno);
 }
 

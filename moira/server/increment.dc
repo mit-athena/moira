@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/increment.dc,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/increment.dc,v 2.8 1993-03-15 16:40:53 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/increment.dc,v 2.9 1993-05-21 14:51:13 mar Exp $
  *
  *	Copyright (C) 1989 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_increment_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/increment.dc,v 2.8 1993-03-15 16:40:53 mar Exp $";
+static char *rcsid_increment_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/increment.dc,v 2.9 1993-05-21 14:51:13 mar Exp $";
 #endif lint
 
 #include <fcntl.h>
@@ -188,8 +188,10 @@ char **argv;
 	beforec = 10;
     } else if (!strcmp(table, "members")) {
 	id = (int) argv[0];
-	EXEC SQL SELECT CHAR(grouplist) INTO :barg3 FROM list 
-	  WHERE list_id = :id;
+ 	EXEC SQL SELECT CHAR(active), CHAR(publicflg), CHAR(hidden),
+		CHAR(maillist), CHAR(grouplist), CHAR(gid)
+		INTO :barg3, :barg4, :barg5, :barg6, :barg7, :barg8
+		FROM list WHERE list_id = :id;
 	name = malloc(0);
 	id_to_name(id, "LIST", &name);
 	strcpy(barg0, name);
@@ -206,7 +208,7 @@ char **argv;
 	}
 	strcpy(barg2, name);
 	free(name);
-	beforec = 4;
+	beforec = 9;
     } /* else
       com_err(whoami, 0, "unknown table in incremental_before"); */
 }
@@ -302,8 +304,10 @@ EXEC SQL END DECLARE SECTION;
 	afterc = 10;
     } else if (!strcmp(table, "members")) {
 	id = (int) argv[0];
-	EXEC SQL SELECT CHAR(grouplist) INTO :aarg3 FROM list
-	  WHERE list_id = :id;
+ 	EXEC SQL SELECT CHAR(active), CHAR(publicflg), CHAR(hidden),
+		CHAR(maillist), CHAR(grouplist), CHAR(gid)
+		INTO :aarg3, :aarg4, :aarg5, :aarg6, :aarg7, :aarg8
+		FROM list WHERE list_id = :id;
 	name = malloc(0);
 	id_to_name(id, "LIST", &name);
 	strcpy(aarg0, name);
@@ -320,7 +324,7 @@ EXEC SQL END DECLARE SECTION;
 	}
 	strcpy(aarg2, name);
 	free(name);
-	afterc = 4;
+	afterc = 9;
     } else if (!strcmp(table, "clear")) {
 	afterc = 0;
 	table = beforetable;

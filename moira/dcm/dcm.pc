@@ -1,4 +1,4 @@
-/* $Id: dcm.pc,v 1.12 1999-01-27 19:45:07 danw Exp $
+/* $Id: dcm.pc,v 1.13 1999-06-25 15:06:06 danw Exp $
  *
  * The Data Control Manager for Moira.
  *
@@ -27,7 +27,7 @@
 EXEC SQL INCLUDE sqlca;
 void sqlglm(char *, unsigned int *, unsigned int *);
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/dcm.pc,v 1.12 1999-01-27 19:45:07 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/dcm.pc,v 1.13 1999-06-25 15:06:06 danw Exp $");
 
 int generate_service(char *name, int force);
 void do_hosts(char *service);
@@ -357,13 +357,7 @@ void do_hosts(char *service)
 		}
 
 	      if (type == REPLICATED)
-		{
-		  /* We're giving up, so clear the inprogress flag on
-		     any hosts in this service we haven't gotten to yet */
-		  EXEC SQL UPDATE serverhosts SET inprogress = 0
-		    WHERE service = UPPER(:service);
-		  break;
-		}
+		break;
 	    }
 	  else
 	    {
@@ -374,6 +368,15 @@ void do_hosts(char *service)
 	  EXEC SQL COMMIT;
 	}
       EXEC SQL CLOSE csr_hst2;
+    }
+
+  if (type == REPLICATED)
+    {
+      /* Clear inprogress flag on any hosts we started but didn't
+       * finish.
+       */
+      EXEC SQL UPDATE serverhosts SET inprogress = 0
+	WHERE service = UPPER(:service);
     }
 
   EXEC SQL WHENEVER SQLERROR DO dbmserr();

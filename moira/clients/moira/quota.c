@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/quota.c,v 1.15 1990-03-17 17:11:18 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/quota.c,v 1.16 1990-04-04 11:35:52 mar Exp $";
 #endif lint
 
 /*	This is the file quota.c for the MOIRA Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/quota.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/quota.c,v 1.15 1990-03-17 17:11:18 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/quota.c,v 1.16 1990-04-04 11:35:52 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -35,7 +35,7 @@ static char * def_quota = NULL;
 #define DEFAULT_FILESYS DEFAULT_NONE
 #define DEFAULT_USER user	/* this is the user who started moira. */
 #define NOBODY	"\\[nobody\\]"
-#define OLDNOBODY	"[nobody]"
+#define DEFAULT_QTYPE   "USER"
 
 
 /*	Function Name: GetDefaultUserQuota
@@ -103,13 +103,15 @@ static char *
 PrintQuota(info)
 char ** info;
 {
-    char buf[BUFSIZ], *user;
+    char buf[BUFSIZ];
 
-    user = info[Q_LOGIN];
-    if (!strcmp(user, "[nobody]"))
-      user = "[anybody]";
     Put_message("");
-    sprintf(buf, "Filsystem: %-45s User: %s",info[Q_FILESYS], user);
+
+    if (!strcmp(info[Q_TYPE], "ANY"))
+      sprintf(buf, "Filesystem: %s", info[Q_FILESYS]);
+    else
+      sprintf(buf, "Filesystem: %-45s %s %s", info[Q_FILESYS],
+	      info[Q_TYPE], info[Q_NAME]);
     Put_message(buf);
     sprintf(buf, "Machine: %-20s Directory: %-15s",
 		   info[Q_MACHINE], info[Q_DIRECTORY]);
@@ -168,25 +170,33 @@ Bool quota;
   }
 
   args[Q_FILESYS] = Strsave(DEFAULT_FILESYS);
-  args[Q_LOGIN] = Strsave(DEFAULT_USER);
+  args[Q_TYPE] = Strsave(DEFAULT_QTYPE);
+  args[Q_NAME] = Strsave(DEFAULT_USER);
   if (quota) {
     args[Q_QUOTA] = Strsave(GetDefaultUserQuota(FALSE));
-    args[3] = NULL;		/* NULL terminate. */
+    args[Q_QUOTA+1] = NULL;	/* NULL terminate. */
   }
   else 
-    args[2] = NULL;		/* NULL terminate. */
+    args[Q_NAME+1] = NULL;	/* NULL terminate. */
 
   /* Get filesystem. */
 
   GetValueFromUser("Filesystem", &args[Q_FILESYS]);
   if (quota && !ValidName(args[Q_FILESYS]))
     return(NULL);
-
-  /* Get and check username. */
+ 
   if (afsfilesys(args[Q_FILESYS])) {
-      args[Q_LOGIN] = strsave(NOBODY);
-  } else {
-      GetValueFromUser("Username", &args[Q_LOGIN]);
+    args[Q_TYPE] = strsave("ANY");
+    args[Q_NAME] = strsave(NOBODY);
+  }
+  else {
+    GetTypeFromUser("Quota type", "quota_type", &args[Q_TYPE]);
+    if (!cistrcmp(args[Q_TYPE], "ANY")){
+      Put_message("Not an AFS filesystem.");
+      return(NULL);
+    }
+    GetValueFromUser("Name", &args[Q_NAME]);
+    if (!ValidName(args[Q_NAME])) return(NULL);
   }
 
   if (quota) {			/* Get and check quota. */
@@ -195,8 +205,6 @@ Bool quota;
   }
   return(args);
 }  
-
-/* ------------------------- Show Quota Info ------------------------- */
 
 /*	Function Name: ShowDefaultQuota
  *	Description: This prints out a default quota for the system.
@@ -250,16 +258,17 @@ char *argv[];
     return (DM_NORMAL);
 }
 
-/* ------------------------- User Quotas ------------------------- */
+/* ------------------------ Filesystem Quotas -------------------- */
 
-/*	Function Name: ShowUserQuota
- *	Description: Shows the quota of a user.
- *	Arguments: none
- *	Returns: DM_NORMAL
+/*      Function Name: GetQuota
+ *      Description: Shows the quota of a filesystem w.r.t.
+ *                   a group, user, or anybody (AFS)
+ *      Arguments: none
+ *      Returns: DM_NORMAL
  */
 
 int
-ShowUserQuota()
+GetQuota()
 {
   struct qelem *top = NULL;
   register int status;
@@ -268,28 +277,64 @@ ShowUserQuota()
   if ( (args = GetQuotaArgs(FALSE) ) == NULL)
     return(DM_NORMAL);
 
-  if ( (status = do_mr_query("get_nfs_quota", CountArgs(args), args,
-			      StoreInfo, (char *) &top)) != MR_SUCCESS)
-    com_err(program_name, status, " in get_nfs_quota");
-  
-  FreeInfo(args);		/* done with args free them. */
+  if (( status = do_mr_query("get_quota", CountArgs(args), args,
+			     StoreInfo, (char *) &top)) != MR_SUCCESS)
+    com_err(program_name, status, " in get_quota");
+
+  FreeInfo(args);
   free(args);
 
   top = QueueTop(top);
   Loop(top, (void *) PrintQuota);
-  
+
   FreeQueue(top);
-  return (DM_NORMAL);
+  return(DM_NORMAL);
 }
 
-/*	Function Name: AddUserQuota
- *	Description: Adds a new quota entry to the database.
- *	Arguments: argc, argv - name of the filesystem in argv[1].
- *	Returns: DM_NORMAL
+/*        Function Name: GetQuotaByFilesys
+ *        Description: Shows all quotas associated with the
+ *                     given filesystem
+ *        Arguments: none
+ *        Returns: DM_NORMAL
  */
 
 int
-AddUserQuota()
+GetQuotaByFilesys()
+{
+  struct qelem *top = NULL;
+  register int status;
+  char **args = (char**)malloc(2*sizeof(char*));
+
+  if (args == NULL) {
+    Put_message("Could not allocate memory in GetQuotaByFilesys.");
+    return(DM_NORMAL);
+  }
+
+  args[0] = args[1] = NULL;
+  GetValueFromUser("Filesystem", &args[0]);
+
+  if (( status = do_mr_query("get_quota_by_filesys", 1, args,
+			     StoreInfo, (char *) &top)) != MR_SUCCESS)
+    com_err(program_name, status, " in get_quota_by_filesys");
+
+  FreeInfo(args);
+  free(args);
+
+  top = QueueTop(top);
+  Loop(top, (void *) PrintQuota);
+
+  FreeQueue(top);
+  return(DM_NORMAL);
+}
+
+/*        Function Name: AddQuota
+ *        Description: Adds a new quota record for a filesystem
+ *                     w.r.t. a user, group, or anybody (AFS).
+ *        Arguments: None
+ *        Returns: DM_NORMAL
+ */
+int
+AddQuota()
 {
   char ** args;
   register int status;
@@ -297,23 +342,23 @@ AddUserQuota()
   if ( (args = GetQuotaArgs(TRUE) ) == NULL)
     return(DM_NORMAL);
 
-  if ( (status = do_mr_query("add_nfs_quota", CountArgs(args), args,
+  if ( (status = do_mr_query("add_quota", CountArgs(args), args,
 			      Scream, (char *) NULL)) != MR_SUCCESS)
-    com_err(program_name, status, " in get_nfs_quota");
+    com_err(program_name, status, " in add_quota");
   
   FreeInfo(args);
   free(args);
   return(DM_NORMAL);
 }
 
-/*	Function Name: RealUpdateUser
- *	Description: Performs the actual update of the user information.
- *	Arguments: info - the information nesc. to update the user.
+/*	Function Name: RealUpdateQuota
+ *	Description: Performs the actual update of the quota
+ *	Arguments: info - the information nesc. to update the quota.
  *	Returns: none.
  */
 
 static void
-RealUpdateUser(info)
+RealUpdateQuota(info)
 char ** info;
 {
   register int status;
@@ -321,28 +366,25 @@ char ** info;
 
   sprintf(temp_buf, "New quota for filesystem %s (in KB)", info[Q_FILESYS]);
   GetValueFromUser(temp_buf, &info[Q_QUOTA]);
-  if (!strcmp(info[Q_LOGIN], OLDNOBODY)) {
-      free(info[Q_LOGIN]);
-      info[Q_LOGIN] = strsave(NOBODY);
-  }
-  
-  if (status = do_mr_query("update_nfs_quota", 3, info,
+
+  if (status = do_mr_query("update_quota", 4, info,
 			    Scream, (char *) NULL) != MR_SUCCESS) {
-    com_err(program_name, status, " in update_nfs_quota");
+    com_err(program_name, status, " in update_quota");
     sprintf(temp_buf,"Could not perform quota change on %s",
 	    info[Q_FILESYS]); 
     Put_message(temp_buf);
   }
 }
-  
-/*	Function Name: ChangeUserQuota
- *	Description: This function allows quotas to be updated.
- *	Arguments: none.
- *	Returns: DM_NORMAL.
+
+/*        Function Name: UpdateQuota
+ *        Description: Updates an existing quota for a filesytem
+ *                     w.r.t. a user, group, or anybody.
+ *        Arguments: None
+ *        Returns: DM_NORMAL
  */
 
 int
-ChangeUserQuota()
+UpdateQuota()
 {
   int status;
   char **args;
@@ -351,43 +393,50 @@ ChangeUserQuota()
   if ( (args = GetQuotaArgs(FALSE) ) == NULL)
     return(DM_NORMAL);
 
-  if ( (status = do_mr_query("get_nfs_quota", 2, args,
+  if ( (status = do_mr_query("get_quota", CountArgs(args), args,
 			      StoreInfo, (char *) &top)) != MR_SUCCESS)
-    com_err(program_name, status, " in get_nfs_quota");
+    com_err(program_name, status, " in get_quota");
   
   FreeInfo(args);		/* done with args, free them. */
   free(args);
   top = QueueTop(top);
-  Loop(top, RealUpdateUser);
+  Loop(top, RealUpdateQuota);
 
   FreeQueue(top);
   return (DM_NORMAL);
 }
-  
-/*	Function Name: RealRemoveUserQuota
- *	Description: Actually removes the user quota.
- *	Arguments: info - all information about this user quota.
+
+
+/*	Function Name: RealDeleteQuota
+ *	Description: Actually removes the quota
+ *	Arguments: info - all information about this quota.
  *                 one_item - true if there is only one item in the queue, and
  *                            we should confirm.
  *	Returns: none.
  */
 
 static void
-RealRemoveUserQuota(info, one_item)
+RealDeleteQuota(info, one_item)
 char ** info;
 Bool one_item;
 {
   register int status;
   char temp_buf[BUFSIZ];
 
-  sprintf(temp_buf,
-	  "Do you really want to delete the user %s's quota on filesystem %s",
-	  info[Q_LOGIN], info[Q_FILESYS]);
+  if (!strcmp(info[Q_TYPE], "ANY"))
+    sprintf(temp_buf,
+	    "Do you really want to delete the quota on %s",
+	    info[Q_FILESYS]);
+  else
+    sprintf(temp_buf,
+	    "Do you really want to delete the %s %s's quota on %s",
+	    (strcmp(info[Q_TYPE], "USER") ? "group" : "user"),
+	    info[Q_NAME], info[Q_FILESYS]);
 
   if (!one_item || Confirm(temp_buf)) {
-    if ( (status = do_mr_query("delete_nfs_quota", 2, info,
+    if ( (status = do_mr_query("delete_quota", 3, info,
 				Scream, (char *) NULL)) != MR_SUCCESS)
-      com_err(program_name, status, " in delete_nfs_quota");
+      com_err(program_name, status, " in delete_quota");
     else
       Put_message("Quota sucessfully removed.");
   }
@@ -395,14 +444,15 @@ Bool one_item;
     Put_message("Aborted.");
 }
 
-/*	Function Name: RemoveUserQuota
- *	Description: Removes a users quota on a given filsystem
- *	Arguments: none.
- *	Returns: DM_NORMAL.
+/*        Function Name: DeleteQuota
+ *        Description: Removes the quota record for a filesystem
+ *                     w.r.t. a user, group, or anybody.
+ *        Arguments: None
+ *        Returns: DM_NORMAL
  */
 
 int
-RemoveUserQuota()
+DeleteQuota()
 {
   register int status;
   char **args;
@@ -411,16 +461,18 @@ RemoveUserQuota()
   if ( (args = GetQuotaArgs(FALSE) ) == NULL)
     return(DM_NORMAL);
 
-  if ( (status = do_mr_query("get_nfs_quota", 2, args,
+  if ( (status = do_mr_query("get_quota", 3, args,
 			      StoreInfo, (char *) &top)) != MR_SUCCESS)
-    com_err(program_name, status, " in get_nfs_quota");
+    com_err(program_name, status, " in get_quota");
 
   FreeInfo(args);
   free(args);
   top = QueueTop(top);
-  QueryLoop(top, PrintQuota, RealRemoveUserQuota,
-	    "Delete This users quota on filesystem");
+  QueryLoop(top, PrintQuota, RealDeleteQuota,
+	    "Delete this quota on filesystem");
 
   FreeQueue(top);
   return(DM_NORMAL);
 }
+
+  

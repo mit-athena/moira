@@ -1,4 +1,4 @@
-/* $Id: mr_connect.c,v 1.26 1998-08-13 19:24:12 danw Exp $
+/* $Id: mr_connect.c,v 1.27 1998-08-20 14:45:26 danw Exp $
  *
  * This routine is part of the client library.  It handles
  * creating a connection to the moira server.
@@ -28,7 +28,7 @@
 #include <hesiod.h>
 #endif
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_connect.c,v 1.26 1998-08-13 19:24:12 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_connect.c,v 1.27 1998-08-20 14:45:26 danw Exp $");
 
 int _mr_conn = 0;
 static char *mr_server_host = NULL;
@@ -284,6 +284,9 @@ int mr_accept(int s, struct sockaddr_in *sin)
   return status;
 }
 
+/* mr_cont_accept returns 0 if it has failed, an fd if it has succeeded,
+   or -1 if it is still making progress */
+
 int mr_cont_accept(int conn, char **buf, int *nread)
 {
   long len, more;
@@ -294,7 +297,7 @@ int mr_cont_accept(int conn, char **buf, int *nread)
       if (read(conn, lbuf, 4) != 4)
 	{
 	  close(conn);
-	  return -1;
+	  return 0;
 	}
       getlong(lbuf, len);
       len += 4;

@@ -1,4 +1,4 @@
-/* $Id: phase2.pc,v 1.11 1999-11-05 17:05:25 danw Exp $
+/* $Id: phase2.pc,v 1.12 1999-11-16 20:33:45 danw Exp $
  *
  * (c) Copyright 1988-1998 by the Massachusetts Institute of Technology.
  * For copying and distribution information, please see the file
@@ -15,7 +15,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase2.pc,v 1.11 1999-11-05 17:05:25 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase2.pc,v 1.12 1999-11-16 20:33:45 danw Exp $");
 
 EXEC SQL WHENEVER SQLERROR DO dbmserr();
 
@@ -473,7 +473,7 @@ int maybe_fixup_unref_string2(char *table, char *field, char *rowid, int sid)
     {
       printf("%s entry has a %s with non-existant string %d\n",
 	     table, field, ret);
-      if (single_fix("Delete", 1))
+      if (single_fix("Clear", 1))
 	{
 	  ret = 0;
 	  doit = 1;
@@ -510,7 +510,7 @@ int maybe_fixup_modby2(char *table, char *field, char *rowid, int id)
 	{
 	  printf("%s entry has a %s with non-existant user %d\n",
 		 table, field, id);
-	  if (single_fix("Delete", 1))
+	  if (single_fix("Clear", 1))
 	    {
 	      sprintf(stmt_buf, "UPDATE %s SET %s = 0 WHERE rowid = '%s'",
 		      table, field, rowid);
@@ -1418,10 +1418,9 @@ int show_quota_nolist(void *id)
 void fix_quota_nouser(void *id)
 {
   EXEC SQL BEGIN DECLARE SECTION;
-  int iid = (int)id, rowcount, id1;
+  int iid = (int)id, rowcount;
   EXEC SQL END DECLARE SECTION;
 
-  id1 = ((struct filesys *)hash_lookup(filesys, iid))->phys_id;
   EXEC SQL DELETE FROM quota
     WHERE entity_id = :iid AND type = 'USER';
   rowcount = sqlca.sqlerrd[2];
@@ -1435,10 +1434,9 @@ void fix_quota_nouser(void *id)
 void fix_quota_nolist(void *id)
 {
   EXEC SQL BEGIN DECLARE SECTION;
-  int iid = (int)id, rowcount, id1;
+  int iid = (int)id, rowcount;
   EXEC SQL END DECLARE SECTION;
 
-  id1 = ((struct filesys *)hash_lookup(filesys, iid))->phys_id;
   EXEC SQL DELETE FROM quota WHERE entity_id = :iid AND type = 'GROUP';
   rowcount = sqlca.sqlerrd[2];
   if (rowcount > 0)
@@ -1768,9 +1766,9 @@ void phase2(void)
 	sq_save_unique_data(sq2, (void *)id);
       else if (type[0] == 'L' && !hash_lookup(lists, id))
 	sq_save_unique_data(sq3, (void *)id);
-      else if (type[0] == 'S' && !maybe_fixup_unref_string2("imembers", "member_id", rowid, id))
+      else if (type[0] == 'S' && !maybe_fixup_unref_string2("imembers", "member_id", strtrim(rowid), id))
 	sq_save_unique_data(sq4, (void *)id);
-      else if (type[0] == 'K' && !maybe_fixup_unref_string2("imembers", "member_id", rowid, id))
+      else if (type[0] == 'K' && !maybe_fixup_unref_string2("imembers", "member_id", strtrim(rowid), id))
 	sq_save_unique_data(sq5, (void *)id);
       else
 	l->members++;
@@ -1800,7 +1798,7 @@ void phase2(void)
       if (sqlca.sqlcode)
 	break;
 
-      maybe_fixup_modby2("servers", "modby", rowid, modby);
+      maybe_fixup_modby2("servers", "modby", strtrim(rowid), modby);
       strtrim(acl_type);
       if (!strcmp(acl_type, "USER") && !hash_lookup(users, acl_id))
 	sq_save_data(sq1, (void *)acl_id);
@@ -1827,7 +1825,7 @@ void phase2(void)
       if (sqlca.sqlcode)
 	break;
 
-      maybe_fixup_modby2("serverhosts", "modby", rowid, modby);
+      maybe_fixup_modby2("serverhosts", "modby", strtrim(rowid), modby);
       if (!hash_lookup(machines, mach_id))
 	sq_save_data(sq, (void *)mach_id);
     }
@@ -1887,7 +1885,7 @@ void phase2(void)
       if (sqlca.sqlcode)
 	break;
 
-      maybe_fixup_modby2("quota", "modby", rowid, modby);
+      maybe_fixup_modby2("quota", "modby", strtrim(rowid), modby);
       if (type[0] == 'U' && entity_id != 0 && !hash_lookup(users, entity_id))
 	sq_save_data(sq1, (void *)entity_id);
       else if (type[0] == 'G' && !hash_lookup(lists, entity_id))
@@ -1923,7 +1921,7 @@ void phase2(void)
       if (sqlca.sqlcode)
 	break;
 
-      maybe_fixup_modby2("hostaccess", "modby", rowid, modby);
+      maybe_fixup_modby2("hostaccess", "modby", strtrim(rowid), modby);
       strtrim(acl_type);
       if (!hash_lookup(machines, mach_id))
 	{
@@ -1962,7 +1960,7 @@ void phase2(void)
 
       if (!hash_lookup(users, users_id))
 	sq_save_unique_data(sq1, (void *)users_id);
-      else if (!maybe_fixup_unref_string2("krbmap", "string_id", rowid, string_id))
+      else if (!maybe_fixup_unref_string2("krbmap", "string_id", strtrim(rowid), string_id))
 	sq_save_unique_data(sq2, (void *)string_id);
     }
   EXEC SQL CLOSE csr230;
@@ -2028,12 +2026,12 @@ void phase2(void)
       int mach_id, loghost, rm, rq, ac, lpc_acl, modby;
       EXEC SQL END DECLARE SECTION;
 
-      EXEC SQL FETCH csr233 INTO :mach_id, :loghost, :rm, :rq,
+      EXEC SQL FETCH csr233 INTO :mach_id, :loghost, :rm, :rq, :ac,
 	:lpc_acl, :modby, :rowid;
       if (sqlca.sqlcode)
 	break;
 
-      maybe_fixup_modby2("printers", "modby", rowid, modby);
+      maybe_fixup_modby2("printers", "modby", strtrim(rowid), modby);
       if (!hash_lookup(machines, mach_id))
 	sq_save_unique_data(sq1, (void *)mach_id);
       else if (!hash_lookup(machines, rm))

@@ -1,14 +1,14 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.25 1988-08-16 00:29:57 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.26 1988-08-24 18:00:31 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
  */
 
 #ifndef lint
-static char *rcsid_qsupport_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.25 1988-08-16 00:29:57 mar Exp $";
+static char *rcsid_qsupport_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.26 1988-08-24 18:00:31 mar Exp $";
 #endif lint
 
 #include "query.h"
@@ -681,7 +681,7 @@ setup_ufil(q, argv)
     if (!strcmp(type, "NFS")) {
 	status = check_nfs(mach_id, name, access);
 	fid = *(int *)argv[0];
-##	replace nfsquota (phys_id = var_phys_id) where nfsquota.filesys_id = fid
+##	replace nfsquota (phys_id = var_phys_id) where nfsquota.filsys_id = fid
 	return(status);
     } else
       return(SMS_SUCCESS);

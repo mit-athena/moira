@@ -1,112 +1,179 @@
-#!/bin/sh
+#!/moira/bin/perl
 
-PATH=/etc:/usr/ucb:/bin:/usr/bin:.:/etc/athena:/bin/athena
+chdir("/u1/sms_backup/backup_1");
 
-DATADIR=$1
-TMPDIR=/tmp/report.tmp
-mkdir ${TMPDIR}
-cd ${TMPDIR}
+($sec, $min, $hour, $mday, $month) = localtime($^T);
+@MONTHS = ( "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+	 "Jul", "Aug", "Sep", "Oct", "Nov", "Dec" );
+printf("\t\t\tMOIRA SUMMARY for %s %d\n\n", $MONTHS[$month], $mday);
 
-awk -F\| '$8 != 3 {print $10} \
-	($8==1 || $8==6) && $25=="POP" {pop += 1} \
-	($8==1 || $8==6) && $25=="SMTP" {smtp += 1} \
-	($8==1 || $8==6) && $25=="NONE" {nopob += 1} \
-	END {	nopob -= 1; total = pop + smtp + nopob; \
-		printf("%5d Active users by pobox:\n", total) > "pobox.summary"; \
-		printf("\t%5d POP boxes\t\t%2d%%\n", pop, (100 * pop + total/2)/total) > "pobox.summary"; \
-		printf("\t%5d foreign boxes\t%2d%%\n", smtp, (100 * smtp + total/2)/total) > "pobox.summary"; \
-		printf("\t%5d without boxes\t%2d%%\n", nopob, (100 * nopob + total/2)/total) > "pobox.summary";} \
-' < ${DATADIR}/users | sort | uniq -c | sort -r -n > ./users.all
-awk -F\| '$8==1 {print $10}' < ${DATADIR}/users | sort | uniq -c | sort -r -n > ./users.active
+open(MACHINES, "machine") || die "Cannot open machine file for input.\n";
 
-cat ./users.active ./users.all | awk \
-'	BEGIN {all=0; lastx=100000;}
-	all==0 && lastx<$1 {all += 1} \
-	all==0 && NF==2 {active[$2]=$1; lastx=$1} \
-	all==1 && NF==2 {printf("\t%-8s %5d  %5d  %3d\n", $2, $1, active[$2], (100 * active[$2] + $1/2)/$1)} \
-' | grep -v "%" | sort +2rn | (echo "	class    total active    %"; cat - -) > ./users.summary
+$total = 0;
 
-awk '{total+=$2;active+=$3}\
-END {printf("\t%-8s %5d  %5d\n", "Totals", total, active)}' < ./users.summary > ./users.summary1
-cat users.summary1 >> users.summary
+while (<MACHINES>) {
+    split(/\|/);
+    $TYPES{$_[2]}++;
+    $total++;
+}
 
-awk -F\| ' \
-	NR != 1 {total += 1; active += $3; public += $4; \
-		hidden += $5; maillist += $6; group += $7;} \
-	END {	printf("%d Lists:\n", total); \
-		printf("\t%5d active\t%2d%%\n", active, (100 * active)/total); \
-		printf("\t%5d public\t%2d%%\n", public, (100 * public)/total); \
-		printf("\t%5d hidden\t%2d%%\n", hidden, (100 * hidden)/total); \
-		printf("\t%5d maillists\t%2d%%\n", maillist, (100 * maillist)/total); \
-		printf("\t%5d groups\t%2d%%\n", group, (100 * group)/total);} \
-' < ${DATADIR}/list > ./list.summary
+close(MACHINES);
+delete $TYPES{"NONE"};
 
-awk '{total+=1}\
-END {printf("%5d Clusters\n", total)}' < ${DATADIR}/cluster > ./cluster.summary
+printf("%5d Machines by type:\n", $total);
+grep(push(@values, sprintf("   %5d %-8s %2d%%\n", $TYPES{$_}, $_, (100 * $TYPES{$_} + $total/2)/$total)), keys(%TYPES));
+print reverse sort(@values);
+print "\n";
+undef %TYPES;
 
 
-awk -F\| ' \
-	NR != 1 {total += 1; t[$5] += 1; l[$14] += 1;} \
-	$2!=0	{printf("%s\n",$2) > "filesys.phys" } \
-	END{	printf("%d Filesystems by protocol type:\n", total); \
-		printf("\t%5d NFS\t%2d%%\n", t["NFS"], (100 * t["NFS"] + total/2)/total); \
-		printf("\t%5d AFS\t%2d%%\n", t["AFS"], (100 * t["AFS"] + total/2)/total); \
-		printf("\t%5d RVD\t%2d%%\n", t["RVD"], (100 * t["RVD"] + total/2)/total); \
-		printf("\t%5d FSGROUP\t%2d%%\n", t["FSGROUP"], (100 * t["FSGROUP"] + total/2)/total); \
-		printf("\t%5d ERROR\t%2d%%\n\n", t["ERR"], (100 * t["ERR"] + total/2)/total); \
-		printf("%d Filesystems by locker type:\n", total); \
-		printf("\t%5d HOMEDIR\t%2d%%\n", l["HOMEDIR"], (100 * l["HOMEDIR"] + total/2)/total); \
-		printf("\t%5d SYSTEM\t%2d%%\n", l["SYSTEM"], (100 * l["SYSTEM"])/total); \
-		printf("\t%5d PROJECT\t%2d%%\n", l["PROJECT"], (100 * l["PROJECT"] + total/2)/total); \
-		printf("\t%5d COURSE\t%2d%%\n", l["COURSE"], (100 * l["COURSE"])/total); \
-		printf("\t%5d PERSONAL\t%2d%%\n", l["PERSONAL"], (100 * l["PERSONAL"] + total/2)/total); \
-		printf("\t%5d ACTIVITY\t%2d%%\n", l["ACTIVITY"], (100 * l["ACTIVITY"] + total/2)/total); \
-		printf("\t%5d EXTERN\t%2d%%\n", l["EXTERN"], (100 * l["EXTERN"] + total/2)/total); \
-		printf("\t%5d OTHER\t%2d%%\n", l["OTHER"], (100 * l["OTHER"])/total); \
- } \
-' < ${DATADIR}/filesys > ./filesys.summary
+open(CLUSTERS, "cluster") || die "Cannot open cluster file for input.\n";
 
-awk -F\| 'NR!=1 {total += 1; print $3} \
-	END {printf("%5d Machines by type (workstations and servers):\n", total)>"machine.summary"} \
-'< ${DATADIR}/machine | sort | uniq -c | sort -r -n > machine.types
-awk '{printf("\t%-8s %4d\n", $2, $1)}' < machine.types >> machine.summary
+$total = 0;
 
-sort ./filesys.phys | uniq -c | awk '{printf("%s %s\n", $2, $1)}' > phys.num
-awk -F\| '{printf("%s %s\n", $2, $1)}' < ${DATADIR}/machine | sort > machine.num
-sed 's/\|/ /g' < ${DATADIR}/nfsphys | sort | join - phys.num | awk '{printf("%s %s %s %s\n", $2, $4, $6, $12)}' | sort | join - machine.num | awk '$3>0&&$4>0{printf("\t%8d    %4d    %s:%s\n", $3, $4, $5, $2)}' | sort -n -r > phys.usage
+while (<CLUSTERS>) {
+    $total++;
+}
 
-awk -F\| ' \
-	NR != 1 {total += 1; auth += $6} \
-	END {	printf("%5d Printers, %d with authentication (%d%%)\n", \
-			total, auth, (100 * auth)/total) } \
-' < ${DATADIR}/printcap > ./printcap.summary
+close(CLUSTERS);
+delete $TYPES{"NONE"};
 
-echo "			MOIRA SUMMARY" for `ls -ls ${DATADIR}/values | awk '{printf("%s %s", $6, $7)}'` > ./report.out
-echo "" >> report.out
-cat machine.summary >> report.out
-echo "" >> report.out
-cat cluster.summary >> report.out
-echo "" >> report.out
-cat printcap.summary >> report.out
-echo "" >> report.out
-awk '{printf("%5d Users by class (total in database, registered for use, %% registered):\n", $2)}' < users.summary1 >> report.out
-cat users.summary >> report.out
-echo "" >> report.out
-cat pobox.summary >> report.out
-echo "" >> report.out
-cat list.summary >> report.out
-echo "" >> report.out
-cat filesys.summary >> report.out
-echo "" >> report.out
-awk '{total+=1}\
-END {printf("%5d NFS Physical partitions in use (only those with quota shown):\n", total)}' < ${DATADIR}/nfsphys >> report.out
-echo '	allocated| no. of | Server and partition' >> report.out
-echo '	  quota  |lockers |' >> report.out
-cat phys.usage >> report.out
+printf("%5d Clusters\n", $total);
 
-cp report.out ${DATADIR}/report
 
-cd /
-rm -rf ${TMPDIR}
+open(PRINTCAP, "printcap") || die "Cannot open printcap file for input.\n";
 
-exit 0
+$total = 0;
+
+while (<PRINTCAP>) {
+    split(/\|/);
+    if ($_[5]) { $auth++;  }
+    $total++;
+}
+
+close(PRINTCAP);
+
+printf("%5d Printers, %d with authentication (%d%%).\n\n", $total, $auth,
+	(100 * $auth + $total/2)/$total);
+
+
+if (1) {
+open(USERS, "users") || die "Cannot open users file for input.\n";
+
+$total = 0;
+
+while (<USERS>) {
+    split(/\|/);
+    $total++; $STATUS{$_[7]}++;
+    if ($_[7] != 3) { $classtotal++; $CLASS{$_[9]}++; }
+    if ($_[7] == 1) { $CLASSA{$_[9]}++; }
+    if ($_[7] == 1 || $_[7] == 6) { $pototal++; $POTYPE{$_[25]}++; }
+}
+
+close(USERS);
+delete $STATUS{"NONE"};
+delete $CLASS{""};
+
+sub bytotal { substr($b, 9, 5) <=> substr($a, 9, 5); }
+undef @values;
+printf("%5d Non-deactivated users by class:\n", $classtotal);
+printf("   class    total %%total active %%active\n");
+grep(push(@values, sprintf("   %-8s %5d   %2d    %5d   %3d\n",
+		$_, $CLASS{$_}, (100 * $CLASS{$_} + $classtotal/2)/$classtotal,
+		$CLASSA{$_}, (100 * $CLASSA{$_} + $CLASS{$_}/2)/$CLASS{$_})),
+	keys(%CLASS));
+print sort bytotal @values;
+print "\n";
+undef %CLASS;
+
+@STATUS = ("Registerable (0)",
+	  "Active (1)",
+	  "Half Registered (2)",
+	  "Deleted (3)",
+	  "Not registerable (4)",
+	  "Enrolled/Registerable (5)",
+	  "Enrolled/Not Registerable (6)",
+	  "Half Enrolled (7)" );
+
+undef @values;
+printf("%5d Users by status:\n", $total);
+grep(push(@values, sprintf("   %5d %-29s %2d%%\n", $STATUS{$_}, $STATUS[$_], (100 * $STATUS{$_} + $total/2)/$total)), keys(%STATUS));
+print reverse sort(@values);
+print "\n";
+undef %STATUS;
+undef @STATUS;
+
+undef @values;
+printf("%5d Active or enrolled users by pobox type:\n", $pototal);
+grep(push(@values, sprintf("   %5d %-8s %2d%%\n", $POTYPE{$_}, $_, (100 * $POTYPE{$_} + $total/2)/$total)), keys(%POTYPE));
+print reverse sort(@values);
+print "\n";
+undef %POTYPE;
+
+}
+
+open(LISTS, "list") || die "Cannot open list file for input.\n";
+
+$total = 0;
+
+while (<LISTS>) {
+    split(/\|/);
+    $total++;
+    if ($_[2]) { $active++; }
+    if ($_[3]) { $public++; }
+    if ($_[4]) { $hidden++; }
+    if ($_[5]) { $maillist++; }
+    if ($_[6]) { $group++; }
+}
+close(LISTS);
+
+printf("%5d Lists:\n", $total);
+printf("   %5d %-9s %2d%%\n",$active, "active", (100 * $active + $total/2)/$total);
+printf("   %5d %-9s %2d%%\n",$public, "public", (100 * $public + $total/2)/$total);
+printf("   %5d %-9s %2d%%\n",$hidden, "hidden", (100 * $hidden + $total/2)/$total);
+printf("   %5d %-9s %2d%%\n",$maillist, "maillist", (100 * $maillist + $total/2)/$total);
+printf("   %5d %-9s %2d%%\n",$group, "group", (100 * $group + $total/2)/$total);
+print "\n";
+
+
+open(FILSYS, "filesys") || die "Cannot open filesys file for input.\n";
+
+$total = 0;
+while (<FILSYS>) {
+    split(/\|/);
+    $total++;
+    $FSTYPE{$_[4]}++;
+    $LTYPE{$_[13]}++;
+}
+close(FILSYS);
+# remove dummy entry
+delete $LTYPE{""};
+$FSTYPE{"ERR"}--;
+$total--;
+
+undef @values;
+printf("%5d Filesystems by protocol type:\n", $total);
+grep(push(@values, sprintf("   %5d %-8s %2d%%\n", $FSTYPE{$_}, $_, (100 * $FSTYPE{$_} + $total/2)/$total)), keys(%FSTYPE));
+print reverse sort(@values);
+print "\n";
+undef %FSTYPE;
+
+undef @values;
+printf("%5d Filesystems by locker type:\n", $total);
+grep(push(@values, sprintf("   %5d %-8s %2d%%\n", $LTYPE{$_}, $_, (100 * $LTYPE{$_} + $total/2)/$total)), keys(%LTYPE));
+print reverse sort(@values);
+print "\n";
+undef %LTYPE;
+
+
+exit 0;
+
+
+sub print_stats {
+	local(@values);
+	local(%data);
+	print "print_stats called with ", $_[0], $_[1];
+	%data = $_[1];
+	grep(push(@values, sprintf($_[0], $data{$_}, $_, (100 * $data{$_} + $total/2)/$total)), keys(%data));
+	print reverse sort(@values);
+}

@@ -1,4 +1,4 @@
-/* $Id: addusr.c,v 1.18 2000-04-21 19:48:35 zacheiss Exp $
+/* $Id: addusr.c,v 1.19 2001-06-05 19:55:20 zacheiss Exp $
  *
  * Program to add users en masse to the moira database
  *
@@ -19,7 +19,7 @@
 #include <stdio.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/addusr/addusr.c,v 1.18 2000-04-21 19:48:35 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/addusr/addusr.c,v 1.19 2001-06-05 19:55:20 zacheiss Exp $");
 
 #ifdef ATHENA
 #define DEFAULT_SHELL "/bin/athena/tcsh"
@@ -268,7 +268,7 @@ int main(int argc, char **argv)
 		{
 		  com_err(whoami, status,
 			  "checking to see if user %s %s already exists",
-			  qargv[0], qargv[1]);
+			  qargv[U_FIRST], qargv[U_LAST]);
 		  com_err(whoami, 0, "NOT ADDING USER");
 		  errors++;
 		  continue;
@@ -276,7 +276,7 @@ int main(int argc, char **argv)
 	      if (duplicate > 0)
 		{
 		  com_err(whoami, MR_EXISTS, "user %s %s already exists",
-			  qargv[0], qargv[1]);
+			  qargv[U_FIRST], qargv[U_LAST]);
 		  com_err(whoami, 0, "NOT ADDING USER");
 		  errors++;
 		  continue;

@@ -17,47 +17,68 @@
 #include	<Xm/Separator.h>
 #include	"mmoira.h"
 
+static char rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/formup.c,v 1.3 1991-05-31 16:46:33 mar Exp $";
+
 #define	PADDING		10
 #define	MAX(a,b)	((a > b) ? a : b)
 #define	MIN(a,b)	((a < b) ? a : b)
 
-extern Widget toplevel;
+Widget	entryformwidget;
 
-void	map_menu_widget();
 void	manage_widget();
 Widget	CreateForm();
 Widget	CreateMenu();
 Widget	BuildMenuTree();
 Widget	MakeRadioField();
-void	button_callback();
+int	button_callback();
 void	radio_callback();
-void	boolean_callback();
 void	string_callback();
+void	boolean_callback();
 void	menu_callback();
-void	post_menu_handler();
+
+extern int	PopupErrorMessage();
+extern void	PopupHelpWindow();
+extern int	AppendToLog();
+extern void	UpdateForm();
+extern void	MakeWatchCursor();
+extern void	MakeNormalCursor();
+extern Widget	SetupLogWidget();
 
 
-DisplayForm(spec)
-EntryForm	*spec;
+void
+manage_widget(w, widget, call_data)
+Widget	w, widget;
+XmAnyCallbackStruct	*call_data;
 {
-	Widget	w;
+	XtManageChild(widget);	
+}
 
-	w = CreateForm(toplevel, spec);
-	XtManageChild(w);
+int
+button_callback(w, form, call_data)
+Widget	w;
+EntryForm *form;
+XmAnyCallbackStruct	*call_data;
+{
+	char	output[100];
+	MakeWatchCursor();
+/*	sprintf (output, "Button %x was hit...\n", w);
+	AppendToLog(output);
+	PopupErrorMessage("Sorry, no functionality here!\n"); */
+	XtUnmanageChild(form->formpointer);	
+	MakeNormalCursor();
+}
+
+
+Widget
+BuildMenuTree(topW, spec)
+Widget		topW;
+MenuItem	*spec;
+{
+	return (CreateMenu(topW, spec->submenu, XmHORIZONTAL));
 }
 
 /*
 ** Read the specification and put up a menu to match...
-**
-** Something in here is making a bad button grab...It either gets the
-** error, 
-**        "BadAccess (attempt to access private resource denied)
-**         Major opcode of failed request:  28 (X_GrabButton)
-**
-** or puts up the menu and permanently grabs the pointer!
-**
-** All Motif pulldown menus are replaced with homebrews until I get an
-** updated widget set to try out.
 */
 
 Widget
@@ -72,43 +93,21 @@ int		orientation;
 	Arg		wargs[10];
 	int		n;
 	XmString	label;		/* !@#$%^ compound string required */
-	int		mark = 0;
 
 	label = XmStringCreate(	"Complete junk", XmSTRING_DEFAULT_CHARSET);
 
 	n = 0;
 	XtSetArg(wargs[n], XmNlabelString, label);	n++;
 
-	if (orientation == XmHORIZONTAL)
-		if (mark) {
-			menuparent = XmCreateMenuBar(	parent, "randommenu", 
-						wargs, n);
-			XtManageChild(menuparent);
-		}
-		else
-		menuparent = XmCreatePopupMenu(	parent, "randommenu", 
-						wargs, n);
+	if (orientation == XmHORIZONTAL) {
+		XtSetArg(wargs[n], XmNspacing, 5);	n++;
+		menuparent = XmCreateMenuBar(	parent, "randommenu", 
+					wargs, n);
+		XtManageChild(menuparent);
+	}
 	else
 		menuparent = XmCreatePulldownMenu(parent, "randommenu", 
 						wargs, n);
-
-#ifdef OLDCODE
-	XtSetArg(wargs[n], XtNmappedWhenManaged, False);	n++;
-	shellparent = XtCreateApplicationShell(	"shellparent", 
-						transientShellWidgetClass,
-						wargs, n);
-
-	n = 0;
-	if (orientation)
-		XtSetArg(wargs[n], XtNorientation, orientation);	n++;
-	menuparent = XtCreateManagedWidget (	"row", 
-					xmRowColumnWidgetClass,
-					shellparent, wargs, n);
-						
-#endif
-
-	XtAddEventHandler (	parent, ButtonPressMask, FALSE,
-				post_menu_handler, menuparent);
 
 	for (	curmenuitem = (*spec);
 		curmenuitem;
@@ -135,9 +134,6 @@ int		orientation;
 					xmCascadeButtonWidgetClass,
 					menuparent, wargs, n);
 
-			XtAddCallback(	childbutton, XmNactivateCallback,
-					map_menu_widget, childmenu);
-
 		}
 
 		else {
@@ -150,36 +146,9 @@ int		orientation;
 					menu_callback, curmenuitem);
 		}
 	}
-	XtRealizeWidget(menuparent);
 
 	return (menuparent);
 }
-
-void
-post_menu_handler(w, menu, event)
-Widget	w;
-Widget	menu;
-XEvent	*event;
-{
-	Arg	wargs[10];
-	int	n;
-	Widget	button;
-
-	n = 0;
-	XtSetArg(wargs[n], XmNwhichButton, &button);      n++;
-	XtGetValues(menu, wargs, n);
-
-	if ((Widget) (event->xbutton.button) == button) {
-		XmMenuPosition (menu, event);
-		XtManageChild(menu);
-	}
-
-	else {
-/*		printf ("Ignoring hit from 'wrong' button\n"); */
-	}
-}
-
-
 
 /*
 ** Read the specification and put up a form to match...
@@ -217,10 +186,6 @@ EntryForm	*spec;
 	n = 0;
 	XtSetArg(wargs[n], XmNautoUnmanage, FALSE);		n++;
 	bb = XmCreateBulletinBoardDialog(parent, "board", wargs, n);
-
-/*
-	XmAddTabGroup(bb);
-*/
 
 	spec->formpointer = bb;
 
@@ -299,9 +264,6 @@ EntryForm	*spec;
 	int		foo = 30;
 	Widget		children[20];
 
-/*
-	XmAddTabGroup(parent);
-*/
 	for (	current = (*myinputlines), localy = 0,  i = 0;
 		current; 
 		myinputlines++, current = (*myinputlines), i++) {
@@ -426,9 +388,9 @@ Dimension	*pheight;
 	char	**keywords;
 
 
-	if (!prompt->keywords) {
+	if (!keywords) {
 		fprintf (stderr, "Warning:  No list of keywords for widget\n");
-		return((Widget) NULL);
+		return;
 	}
 	for (	count = 0, keywords = prompt->keywords;
 		*keywords; 
@@ -443,6 +405,8 @@ Dimension	*pheight;
 */
 
 	n = 0;
+	XtSetArg(wargs[n], XmNspacing, 0);	n++;
+
 	if (count > 5) {
 		printf ("Special case:  Asking for %d columns\n",1 + count/5);
 		XtSetArg(wargs[n], XmNnumColumns, 1 + count / 5);		n++;
@@ -464,7 +428,7 @@ Dimension	*pheight;
 			XtSetArg(wargs[n], XmNset, False);	n++;
 		}
 		child = XtCreateManagedWidget(	current,
-						xmToggleButtonGadgetClass,
+						xmToggleButtonWidgetClass,
 						radioparent, wargs, n);
 
 		XtAddCallback(	child, XmNvalueChangedCallback,
@@ -547,57 +511,6 @@ EntryForm	*spec;
 }
 
 void
-map_menu_widget(w, widget, call_data)
-Widget	w, widget;
-XmAnyCallbackStruct	*call_data;
-{
-	Arg		wargs[10];
-	int		n;
-	Position	x, y;
-	Widget		foo;
-
-	
-	for (	x = 0, y = 0, foo = w->core.parent;
-		foo;
-		foo = foo->core.parent) {
-
-		x += foo->core.x;
-		y += foo->core.y;
-	}
-
-/*
-	if (w->core.parent)
-		x += w->core.parent->core.width;
-*/
-	x += w->core.width;
-	y += w->core.y;
-
-	n = 0;
-	XtSetArg(wargs[n], XtNx, x);		n++;
-	XtSetArg(wargs[n], XtNy, y);		n++;
-	XtSetValues(widget, wargs, n);
-
-	XtMapWidget(widget);	
-}
-
-void
-manage_widget(w, widget, call_data)
-Widget	w, widget;
-XmAnyCallbackStruct	*call_data;
-{
-	XtManageChild(widget);	
-}
-
-void
-button_callback(w, form, call_data)
-Widget	w;
-EntryForm *form;
-XmAnyCallbackStruct	*call_data;
-{
-	XtUnmanageChild(form->formpointer);	
-}
-
-void
 radio_callback(w, client_data, call_data)
 Widget	w;
 XmAnyCallbackStruct	*client_data;
@@ -625,12 +538,13 @@ XmAnyCallbackStruct	*call_data;
 ** Fortunately, I was smart enough to use the button label as the name 
 ** of the widget, and I can extract it via XtName().  Thanks, Motif!
 */
+	if (strcmp(prompt->returnvalue.stringvalue, XtName(w))) {
+		printf ("Replacing old value of selection, '%s', with '%s'\n",
+				prompt->returnvalue.stringvalue,
+				XtName(w));
+		strcpy(prompt->returnvalue.stringvalue, XtName(w));
+	}
 
-	printf ("Replacing old value of selection, '%s', with '%s'\n",
-			prompt->returnvalue.stringvalue,
-			XtName(w));
-
-	strcpy(prompt->returnvalue.stringvalue, XtName(w));
 }
 
 void
@@ -676,9 +590,11 @@ XmAnyCallbackStruct	*call_data;
 /*	printf 	("menu_callback: item '%s', op %d and string '%s'\n", 
 			itemhit->label, 
 			itemhit->operation, 
-			itemhit->form); */
+			itemhit->form);
+	XtManageChild(entryformwidget);	 */
 	MoiraMenuRequest(itemhit);
 }
+
 
 void
 string_callback(w, client_data, call_data)
@@ -691,9 +607,11 @@ XmAnyCallbackStruct	*call_data;
 
 	newvalue = XmTextGetString(w);
 
-	printf ("Replacing old value of selection, '%s', with '%s'\n",
-			current->returnvalue.stringvalue,
-			newvalue);
-	strcpy(current->returnvalue.stringvalue, newvalue);
+	if (strcmp(current->returnvalue.stringvalue, newvalue)) {
+		printf ("Replacing old value of selection, '%s', with '%s'\n",
+				current->returnvalue.stringvalue,
+				newvalue);
+		strcpy(current->returnvalue.stringvalue, newvalue);
+	}
 	XtFree(newvalue);
 }

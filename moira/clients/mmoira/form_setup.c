@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/form_setup.c,v 1.1 1991-05-30 21:58:14 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/form_setup.c,v 1.2 1991-05-31 16:46:26 mar Exp $
  */
 
 #include <stdio.h>
@@ -82,7 +82,8 @@ MenuItem	*menu;
 	break;
     case MM_ADD_QUOTA:
     case MM_DEL_QUOTA:
-	GetKeywords(f, 0, "quota_type");
+    case MM_MOD_QUOTA:
+	GetKeywords(f, 1, "quota_type");
 	break;
     case MM_SHOW_ACE_USE:
 	StoreField(f, 0, "USER");
@@ -223,6 +224,20 @@ char *value;
 }
 
 
+char *StringValue(form, field)
+EntryForm *form;
+int field;
+{
+    switch (form->inputlines[field]->type) {
+    case FT_STRING:
+    case FT_KEYWORD:
+	return(stringval(form, field));
+    case FT_BOOLEAN:
+	return(boolval(form, field) ? "1" : "0");
+    }
+}
+
+
 /* Helper routine for GetKeywords() */
 
 static get_alias(argc, argv, sq)
@@ -329,10 +344,3 @@ char *name;
     form->inputlines[field]->keywords = ce->values;
     return(0);
 }
-
-
-/********** temporary *8********/
-
-display_error(s)
-char *s;
-{ fprintf(stderr, "%s\n", s); }

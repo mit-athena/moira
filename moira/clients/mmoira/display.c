@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/display.c,v 1.1 1991-05-31 13:03:27 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/display.c,v 1.2 1991-05-31 16:46:16 mar Exp $
  */
 
 #include <stdio.h>
@@ -288,6 +288,5 @@ EntryForm *form;
 	}
 	AppendToLog("\n");
     }
-    AppendToLog("\n");
     return(MR_CONT);
 }

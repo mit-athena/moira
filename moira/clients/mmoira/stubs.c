@@ -2,9 +2,16 @@
 ** Stub functions
 */
 
+#include	<X11/StringDefs.h>
 #include	<X11/Intrinsic.h>
-#include	"mmoira.h"
+#include	<X11/IntrinsicP.h>
+#include	<X11/Core.h>
+#include	<X11/CoreP.h>
+#include	<X11/CompositeP.h>
+#include	"data.h"
 #include        <Xm/Text.h>
+
+void	extra_help_callback();
 
 static Widget	logwidget = NULL;
 
@@ -12,12 +19,21 @@ Widget
 SetupLogWidget(parent)
 Widget	parent;
 {
+	Arg		wargs[10];
+	int		n;
+
 	if (logwidget)
 		return (logwidget);
 	
-	logwidget = XtCreateManagedWidget("logwidget", 
-						xmTextWidgetClass,
-						parent, NULL, 0);
+	n = 0;
+	XtSetArg(wargs[n], XmNeditMode, XmMULTI_LINE_EDIT);	n++;
+	XtSetArg(wargs[n], XmNeditable, False);			n++;
+
+	logwidget = XmCreateScrolledText(	parent,
+						"logwidget", 
+						wargs, n);
+	XtManageChild(logwidget);
+
 	return (logwidget);
 }
 
@@ -26,17 +42,35 @@ Widget	parent;
 **
 ** Given a char* pointing to an error message, possibly with imbedded
 ** newlines, display the text in a popup window and put two buttons
-** at the bottom of the window, labelled "OK" and "Abort."  Pop down
+** at the bottom of the window, labelled "OK" and "Cancel."  Pop down
 ** when one of the buttons is pressed.
 **
-** Return 0 if "OK" is pressed, 1 for "Abort."
+** Return 0 if "OK" is pressed, 1 for "Cancel."
 */
 
-int
-PopupErrorMessage(text)
+Boolean
+PopupErrorMessage(text, extrahelp)
 char	*text;
+char	*extrahelp;
 {
-	printf ("STUB:  error, %s\n",text);
+	Widget		child;
+	Arg		wargs[10];
+	int		n;
+	XmString        label;          /* !@#$%^ compound string required */
+
+
+	label = XmStringCreateLtoR( text, XmSTRING_DEFAULT_CHARSET);
+
+	n = 0;
+	XtSetArg(wargs[n], XmNmessageString, label);		n++;
+
+	child = (Widget) XmCreateErrorDialog(logwidget, "errormessage", wargs, n);
+	if (extrahelp) 
+		XtAddCallback (child, XmNhelpCallback, extra_help_callback, extrahelp);
+	else
+		XtUnmanageChild(XmMessageBoxGetChild (child, XmDIALOG_HELP_BUTTON));
+	XtUnmanageChild(XmMessageBoxGetChild (child, XmDIALOG_CANCEL_BUTTON));
+	XtManageChild(child);
 }
 
 /*
@@ -52,7 +86,22 @@ void
 PopupHelpWindow(text)
 char	*text;
 {
-	printf ("STUB:  help message, %s\n",text);
+	Widget		child;
+	Arg		wargs[10];
+	int		n;
+	XmString        label;          /* !@#$%^ compound string required */
+
+
+	label = XmStringCreateLtoR( text, XmSTRING_DEFAULT_CHARSET);
+
+	n = 0;
+	XtSetArg(wargs[n], XmNmessageString, label);		n++;
+
+	child = (Widget) XmCreateMessageDialog(logwidget, "helpmessage", wargs, n);
+	XtUnmanageChild(XmMessageBoxGetChild (child, XmDIALOG_CANCEL_BUTTON));
+	XtUnmanageChild(XmMessageBoxGetChild (child, XmDIALOG_HELP_BUTTON));
+
+	XtManageChild(child);
 }
 
 /*
@@ -73,19 +122,7 @@ char	*text;
 	XtFree(string);
 
 	XmTextReplace(logwidget, pos, pos, text);
-	
-}
-
-/*
-** Given a pointer to a form, update the displayed values of the input 
-** fields and their sensitivity.  QUESTION:  Should I also map the form?
-*/
-
-void
-UpdateForm(formptr)
-EntryForm	*formptr;
-{
-	printf ("STUB:  Updated form %s\n", formptr->formname);
+	XmTextSetCursorPosition(logwidget, pos + strlen(text));
 }
 
 void
@@ -96,4 +133,76 @@ MakeWatchCursor()
 void
 MakeNormalCursor()
 {
+}
+
+/*
+** Move through the fields of the spec and make certain that the
+** form's widgets actually reflect the current values.
+*/
+
+void
+UpdateForm(spec)
+EntryForm	*spec;
+{
+	UserPrompt      **myinputlines = spec->inputlines;
+	UserPrompt	*current;
+	Arg		wargs[10];
+	int		n, kidcount;
+	Widget		kid;
+
+	for (	current = (*myinputlines);
+		current; 
+		myinputlines++, current = (*myinputlines)) {
+
+
+		switch (current->type) {
+		case FT_STRING:
+			if (current->returnvalue.stringvalue) {
+				XmTextSetString (current->mywidget, current->returnvalue.stringvalue);
+			}
+			break;
+
+		case FT_BOOLEAN:
+			n = 0;
+			XtSetArg(wargs[n], XmNset, current->returnvalue.booleanvalue);	n++;
+			XtSetValues (current->mywidget, wargs, n);
+			break;
+
+		case FT_KEYWORD:
+			kidcount = ((CompositeRec *)(current->mywidget))->
+					composite.num_children;
+			printf ("Keyword field has %d children\n", kidcount);
+
+			while(kidcount--) {
+				n = 0;
+				kid = ((CompositeRec *)(current->mywidget))->
+					composite.children[kidcount];
+				if (!strcmp (XtName(kid), current->returnvalue.stringvalue)) {
+					XtSetArg(wargs[n], XmNset, True);
+					n++;
+				}
+				else {
+					XtSetArg(wargs[n], XmNset, False);
+					n++;
+				}
+				XtSetValues (kid, wargs, n);
+			}
+			break;
+
+		case FT_NUMBER:
+			break;
+		}
+		n = 0;
+		XtSetArg(wargs[n], XtNsensitive, !(current->insensitive));		n++;
+		XtSetValues (current->mywidget, wargs, n);
+	}
+}
+
+void
+extra_help_callback(w, client_data, call_data)
+Widget	w;
+char	*client_data;
+XmAnyCallbackStruct	*call_data;
+{
+	PopupHelpWindow(client_data);
 }

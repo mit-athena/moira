@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/queries.c,v 1.1 1991-05-31 13:02:44 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/queries.c,v 1.2 1991-05-31 16:46:54 mar Exp $
  */
 
 #include <stdio.h>
@@ -88,10 +88,9 @@ EntryForm *form;
     argc = -1;
 
     for (i = 0; form->inputlines[i]; i++)
-      if (form->inputlines[i]->type == FT_BOOLEAN)
-	argv[i] = boolval(form, i) ? "1" : "0";
-      else
-	argv[i] = stringval(form, i);
+      argv[i] = StringValue(form, i);
+    qy = form->menu->query;
+    argc = form->menu->argc;
 
     switch (form->menu->operation) {
     case MM_SHOW_USER:
@@ -109,7 +108,7 @@ EntryForm *form;
 	    argc = 1;
 	} else if (*stringval(form, 1) == 0 &&
 		   *stringval(form, 2) == 0) {
-	    DisplayError("Must fill in at least one blank.");
+	    display_error("Must fill in at least one blank.");
 	    return;
 	} else {
 	    if (*stringval(form, 1) == 0)
@@ -123,14 +122,12 @@ EntryForm *form;
 	}
 	break;
     case MM_ADD_USER:
-	qy = "add_user";
 	argv[U_STATE][1] = 0;
 	if (argv[U_MITID][0] == '"')
 	  strcpy(argv[U_MITID], stringval(form, U_MITID) + 1,
 		 strlen(stringval(form, U_MITID) - 2));
 	else
 	  EncryptID(argv[U_MITID], argv[U_MITID], argv[U_FIRST], argv[U_LAST]);
-	argc = U_MODTIME;
 	break;
     case MM_REGISTER:
 	if (*stringval(form, 2)) {
@@ -160,7 +157,7 @@ EntryForm *form;
 	if (!strcmp(form->formname, "mod_user")) {
 	    qy = "update_user";
 	    for (i = 0; i < U_MODTIME; i++)
-	      argv[i + 1] = stringval(form, i);
+	      argv[i + 1] = StringValue(form, i);
 	    argv[0] = form->extrastuff;
 	    argv[U_STATE + 1][1] = 0;
 	    if (argv[U_MITID + 1][0] == '"') {
@@ -172,116 +169,58 @@ EntryForm *form;
 	    argc = U_MODTIME + 1;
 	    break;
 	}
-	qy = "get_user_by_login";
-	argv[0] = stringval(form, 0);
-	argc = 1;
 	form->extrastuff = (caddr_t) "mod_user";
 	retfunc = ModifyCallback;
 	break;
     case MM_DEACTIVATE:
-	qy = "update_user_status";
-	argv[0] = stringval(form, 0);
 	argv[1] = "3";
-	argc = 2;
 	break;
     case MM_EXPUNGE:
 	display_error("Expunge is not yet implemented");
 	return;
 	break;
-    case MM_SHOW_FINGER:
-	qy = "get_finger_by_login";
-	argc = 1;
-	break;
     case MM_MOD_FINGER:
 	if (!strcmp(form->formname, "mod_finger")) {
 	    qy = "update_finger_by_login";
 	    for (i = 0; i < F_MODTIME - 1; i++)
-	      argv[i + 1] = stringval(form, i);
+	      argv[i + 1] = StringValue(form, i);
 	    argv[0] = form->extrastuff;
 	    argc = F_MODTIME;
 	    break;
 	}
-	qy = "get_finger_by_login";
-	argc = 1;
 	form->extrastuff = (caddr_t) "mod_finger";
 	retfunc = ModifyCallback;
 	break;
     case MM_SHOW_KRBMAP:
-	qy = "get_krbmap";
 	if (!*stringval(form, 0))
 	  argv[0] = "*";
 	if (!*stringval(form, 1))
 	  argv[1] = "*";
-	argc = 2;
-	break;
-    case MM_ADD_KRBMAP:
-	qy = "add_krbmap";
-	argc = 2;
-	break;
-    case MM_DEL_KRBMAP:
-	qy = "delete_krbmap";
-	argc = 2;
-	break;
-    case MM_SHOW_POBOX:
-	qy = "get_pobox";
-	argc = 1;
 	break;
     case MM_SET_POBOX:
-	qy = "set_pobox";
 	if (!strcmp(argv[1], "POP"))
 	  argv[2] = stringval(form, 3);
-	argc = 3;
-	break;
-    case MM_RESET_POBOX:
-	qy = "set_pobox_pop";
-	argc = 1;
-	break;
-    case MM_DEL_POBOX:
-	qy = "set_pobox";
-	argv[0] = stringval(form, 0);
-	argv[1] = "NONE";
-	argv[2] = "";
-	argc = 3;
-	break;
-    case MM_SHOW_LIST:
-	qy = "get_list_info";
-	argc = 1;
 	break;
     case MM_SHOW_ACE_USE:
-	qy = "get_ace_use";
 	if (boolval(form, 2)) {
 	    sprintf(buf, "R%s", stringval(form, 0));
 	    argv[0] = buf;
 	}
-	argc = 2;
-	break;
-    case MM_ADD_LIST:
-	qy = "add_list";
-	argc = L_MODTIME;
 	break;
     case MM_MOD_LIST:
 	if (!strcmp(form->formname, "mod_list")) {
 	    qy = "update_list";
 	    for (i = 0; i < L_MODTIME; i++)
-	      argv[i + 1] = stringval(form, i);
+	      argv[i + 1] = StringValue(form, i);
 	    argv[0] = form->extrastuff;
 	    argc = L_MODTIME + 1;
 	    break;
 	}
-	qy = "get_list_info";
-	argc = 1;
 	form->extrastuff = (caddr_t) "mod_list";
 	retfunc = ModifyCallback;
 	break;
-    case MM_DEL_LIST:
-	qy = "delete_list";
-	argc = 1;
-	break;
     case MM_SHOW_MEMBERS:
-	if (*stringval(form, 0)) {
-	    qy = "get_members_of_list";
-	    argc = 1;
-	} else {
+	if (!*stringval(form, 0)) {
 	    qy = "get_lists_of_member";
 	    argv[0] = stringval(form, 1);
 	    if (boolval(form, 3)) {
@@ -291,14 +230,6 @@ EntryForm *form;
 	    argv[1] = stringval(form, 2);
 	    argc = 2;
 	}
-	break;
-    case MM_ADD_MEMBER:
-	qy = "add_member_to_list";
-	argc = 3;
-	break;
-    case MM_DEL_MEMBER:
-	qy = "delete_member_from_list";
-	argc = 3;
 	break;
     case MM_DEL_ALL_MEMBER:
 	display_error("Not yet implemented.");
@@ -326,28 +257,59 @@ EntryForm *form;
 	}
 	break;
     case MM_ADD_FILSYS:
-	qy = "add_filesys";
 	argv[FS_MACHINE] = canonicalize_hostname(stringval(form, FS_MACHINE));
 	if (!strcmp(stringval(form, FS_TYPE), "AFS") ||
 	    !strcmp(stringval(form, FS_TYPE), "FSGROUP"))
 	  argv[FS_MACHINE] = "\\[NONE\\]";
-	argc = FS_MODTIME;
 	break;
     case MM_MOD_FILSYS:
 	if (!strcmp(form->formname, "mod_filsys")) {
 	    qy = "update_filsys";
 	    for (i = 0; i < FS_MODTIME; i++)
-	      argv[i + 1] = stringval(form, i);
+	      argv[i + 1] = StringValue(form, i);
 	    argv[0] = form->extrastuff;
 	    argc = FS_MODTIME + 1;
 	    break;
 	}
-	qy = "get_filesys_by_label";
-	argv[0] = stringval(form, 0);
-	argc = 1;
 	form->extrastuff = (caddr_t) "mod_filsys";
 	retfunc = ModifyCallback;
 	break;
+    case MM_SHOW_QUOTA:
+	if (!*stringval(form, 0))
+	  argv[0] = "*";
+	if (*stringval(form, 1)) {
+	    argv[1] = "USER";
+	    argv[2] = stringval(form, 1);
+	} else if (*stringval(form, 2)) {
+	    argv[1] = "GROUP";
+	    argv[2] = stringval(form, 2);
+	} else if (!*stringval(form, 0)) {
+	    display_error("Must specify something.");
+	    return;
+	} else {
+	    qy = "get_quota_by_filesys";
+	    argc = 1;
+	}
+	break;
+    case MM_SHOW_MACH:
+    case MM_ADD_MACH:
+    case MM_DEL_MACH:
+	argv[0] = canonicalize_hostname(stringval(form, 0));	
+	break;
+    case MM_MOD_MACH:
+	if (!strcmp(form->formname, "mod_machine")) {
+	    qy = "update_machine";
+	    for (i = 0; i < M_MODTIME; i++)
+	      argv[i + 1] = StringValue(form, i);
+	    argv[0] = form->extrastuff;
+	    argc = M_MODTIME + 1;
+	    break;
+	}
+	argv[0] = canonicalize_hostname(stringval(form, 0));	
+	form->extrastuff = (caddr_t) "mod_machine";
+	retfunc = ModifyCallback;
+	break;
+
     }
 
     if (argc == -1) {
@@ -400,6 +362,12 @@ EntryForm *form;
 	} else
 	  AppendToLog("Done.\n");	  
 	break;
+    case MM_MOD_MACH:
+	if (f)
+	  GetKeywords(f, 1, "mac_type");
+	else
+	  AppendToLog("Done.\n");	  
+	break;
     case MM_ADD_HOST:
     case MM_DEL_HOST:
     case MM_CLEAR_HOST:
@@ -447,11 +415,14 @@ EntryForm *form;
     case MM_REGISTER:
     case MM_DEACTIVATE:
     case MM_EXPUNGE:
+    case MM_RESET_POBOX:
 	AppendToLog("Done.\n");
     }
 
     if (f)
       DisplayForm(f);
+    else
+      AppendToLog("\n");
 }
 
 
@@ -465,19 +436,17 @@ MenuItem *m;
     retfunc = DisplayCallback;
     argc = -1;
     dummy.menu = m;
+    qy = m->query;
+    argc = m->argc;
 
     switch (m->operation) {
     case MM_SHOW_MAILLIST:
-	qy = "qualified_get_lists";
 	argv[0] = argv[1] = argv[3] = "TRUE";
 	argv[2] = "FALSE";
 	argv[4] = "DONTCARE";
-	argc = 5;
 	break;
     case MM_SHOW_DQUOTA:
-	qy = "get_value";
 	argv[0] = "def_quota";
-	argc = 1;
 	break;
     case MM_SHOW_DCM:
 	AppendToLog("Services and Hosts with failed updates:");
@@ -492,14 +461,6 @@ MenuItem *m;
 	argv[4] = "TRUE";
 	argc = 6;
 	break;
-    case MM_STATS:
-	qy = "get_all_table_stats";
-	argc = 0;
-	break;
-    case MM_CLIENTS:
-	qy = "_list_users";
-	argc = 0;
-	break;
     }
     if (argc == -1) {
 	display_error("Unknown function in menu callback.\n");
@@ -512,4 +473,4 @@ MenuItem *m;
 
 
 /******* temporary ********/
-DisplayError(msg) char *msg; { fprintf(stderr, "%s\n", msg); }
+display_error(msg) char *msg; { PopupErrorMessage(msg, "Sorry, no help is available"); }

@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.31 1991-10-29 15:44:44 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.32 1992-04-10 16:17:37 mar Exp $";
 #endif
 
 /*	This is the file attach.c for the MOIRA Client, which allows a nieve
@@ -13,7 +13,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.31 1991-10-29 15:44:44 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.32 1992-04-10 16:17:37 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -26,6 +26,8 @@
 #include <moira.h>
 #include <moira_site.h>
 #include <menu.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 
 #include "mit-copyright.h"
 #include "defs.h"
@@ -53,6 +55,7 @@
 #define DEFAULT_OWNERS   (user)
 #define DEFAULT_CREATE   DEFAULT_YES
 #define DEFAULT_L_TYPE   ("PROJECT")
+#define DEFAULT_CELL	 ("athena.mit.edu")
 
 /*	Function Name: SetDefaults
  *	Description: sets the default values for filesystem additions.
@@ -233,6 +236,34 @@ char ** info;
     return(info[FS_NAME]);
 }
 
+
+char *canonicalize_cell(c)
+char *c;
+{
+    struct stat stbuf;
+    char path[512];
+    int count;
+
+    sprintf(path, "/afs/%s", c);
+    if (lstat(path, &stbuf) || !stbuf.st_mode&S_IFLNK)
+      return(c);
+    count = readlink(path, path, sizeof(path));
+    if (count < 1) return(c);
+    path[count] = 0;
+    free(c);
+    return(strsave(path));
+}
+
+
+int GetAliasValue(argc, argv, retval)
+int argc;
+char **argv;
+char **retval;
+{
+    *retval = strsave(argv[2]);
+    return(MR_CONT);
+}
+
 /*	Function Name: AskFSInfo.
  *	Description: This function askes the user for information about a 
  *                   machine and saves it into a structure.
@@ -248,7 +279,7 @@ char ** info;
 Bool name;
 {
     char temp_buf[BUFSIZ], *newname, access_type[32];
-    int fsgroup = 0;
+    int fsgroup = 0, newdefaults = 0;
 
     Put_message("");
     sprintf(temp_buf, "Changing Attributes of filesystem %s.", 
@@ -263,13 +294,16 @@ Bool name;
 	  return(NULL);
     }
 
+    strcpy(temp_buf, info[FS_TYPE]);
     if (GetTypeFromUser("Filesystem's Type", "filesys", &info[FS_TYPE]) ==
 	SUB_ERROR)
       return(NULL);
     if (!strcasecmp(info[FS_TYPE], "FSGROUP") ||
 	!strcasecmp(info[FS_TYPE], "MUL"))
       fsgroup++;
-    if (fsgroup || !strcasecmp(info[FS_TYPE], "AFS")) {
+    if (strcasecmp(info[FS_TYPE], temp_buf))
+      newdefaults++;
+    if (fsgroup) {
 	free(info[FS_MACHINE]);
 	info[FS_MACHINE] = Strsave(NO_MACHINE);
     } else {
@@ -277,12 +311,61 @@ Bool name;
 	    free(info[FS_MACHINE]);
 	    info[FS_MACHINE] = Strsave(NO_MACHINE);
 	}
-	if (GetValueFromUser("Filesystem's Machine", &info[FS_MACHINE]) ==
-	    SUB_ERROR)
-	  return(NULL);
-	info[FS_MACHINE] = canonicalize_hostname(info[FS_MACHINE]);
+	if (!strcasecmp(info[FS_TYPE], "AFS")) {
+	    if (!name || newdefaults) {
+		free(info[FS_MACHINE]);
+		info[FS_MACHINE] = strsave(DEFAULT_CELL);
+	    }
+	    if (GetValueFromUser("Filesystem's Cell", &info[FS_MACHINE]) ==
+		SUB_ERROR)
+	      return(NULL);
+	    info[FS_MACHINE] = canonicalize_cell(info[FS_MACHINE]);
+	} else {
+	    if (GetValueFromUser("Filesystem's Machine", &info[FS_MACHINE]) ==
+		SUB_ERROR)
+	      return(NULL);
+	    info[FS_MACHINE] = canonicalize_hostname(info[FS_MACHINE]);
+	}
     }
     if (!fsgroup) {
+	if (!strcasecmp(info[FS_TYPE], "AFS")) {
+	    char *path, *args[3], *p;
+	    int status, depth, i;
+	    if (GetTypeFromUser("Filesystem's lockertype", "lockertype",
+				&info[FS_L_TYPE]) == SUB_ERROR)
+	      return(NULL);
+	    if (!name || newdefaults) {
+		free(info[FS_PACK]);
+		lowercase(info[FS_MACHINE]);
+		sprintf(temp_buf, "%s:%s", info[FS_MACHINE], info[FS_L_TYPE]);
+		args[0] = temp_buf;
+		args[1] = "AFSPATH";
+		args[2] = "*";
+		path = "???";
+		status = do_mr_query("get_alias", 3, args,
+				     GetAliasValue, &path);
+		if (status == MR_SUCCESS) {
+		    p = index(path, ':');
+		    if (p) {
+			*p = 0;
+			depth = atoi(++p);
+		    } else
+		      depth = 0;
+		    sprintf(temp_buf, "/afs/%s/%s", info[FS_MACHINE], path);
+		    for (p=info[FS_NAME]; *p && (p-info[FS_NAME])<depth; p++) {
+			strcat(temp_buf, "/x");
+			temp_buf[strlen(temp_buf)-1] = *p;
+		    }
+		    strcat(temp_buf, "/");
+		    strcat(temp_buf, info[FS_NAME]);
+		    free(path);
+		} else {
+		    sprintf(temp_buf, "/afs/%s/%s/%s", info[FS_MACHINE],
+			    lowercase(info[FS_L_TYPE]), info[FS_NAME]);
+		}
+		info[FS_PACK] = strsave(temp_buf);
+	    }
+	}
 	if (GetValueFromUser("Filesystem's Pack Name", &info[FS_PACK]) ==
 	    SUB_ERROR)
 	  return(NULL);
@@ -307,9 +390,11 @@ Bool name;
       if (GetYesNoValueFromUser("Automatically create this filesystem",
 				&info[FS_CREATE]) == SUB_ERROR)
 	return(NULL);
-    if (GetTypeFromUser("Filesystem's lockertype", "lockertype",
-			&info[FS_L_TYPE]) == SUB_ERROR)
-      return(NULL);
+    if (strcasecmp(info[FS_TYPE], "AFS")) {
+	if (GetTypeFromUser("Filesystem's lockertype", "lockertype",
+			    &info[FS_L_TYPE]) == SUB_ERROR)
+	  return(NULL);
+    }
 
     FreeAndClear(&info[FS_MODTIME], TRUE);
     FreeAndClear(&info[FS_MODBY], TRUE);
@@ -320,6 +405,7 @@ Bool name;
 
     return(info);
 }
+
 
 /* --------------- Filesystem Menu ------------- */
 

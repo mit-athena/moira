@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/pobox.c,v 1.8 1988-08-07 18:40:21 qjb Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/pobox.c,v 1.9 1988-08-11 20:28:19 mar Exp $";
 #endif lint
 
 /*	This is the file pobox.c for the SMS Client, which allows a nieve
@@ -10,8 +10,8 @@
  *	By:		Chris D. Peterson
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/pobox.c,v $
- *      $Author: qjb $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/pobox.c,v 1.8 1988-08-07 18:40:21 qjb Exp $
+ *      $Author: mar $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/pobox.c,v 1.9 1988-08-11 20:28:19 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -150,7 +150,7 @@ char * local_user;
 	return( Strsave(temp_buf) );
     }
     Put_message("Could not get machines to choose from, quitting.");
-    return(NULL);
+    return((char *) SUB_ERROR);
 }
 
 /*	Function Name: SetUserPOBox
@@ -185,7 +185,8 @@ char **argv;
 	    case SMS_SUCCESS:
 		return(DM_NORMAL);
 	    case SMS_MACHINE:
-		if ( (temp_box = GetNewLocalPOBox(local_user)) == SUB_NORMAL) {
+		if ( (temp_box = GetNewLocalPOBox(local_user)) !=
+		    	(char *) SUB_ERROR) {
 		    strcpy(box, temp_box);
 		    free(temp_box);
 		}
@@ -196,13 +197,15 @@ char **argv;
 		com_err(program_name, status, "in set_pobox_pop.");
 		return(DM_NORMAL);
 	    }
+	    break;
 	case FALSE:
-		if ( (temp_box = GetNewLocalPOBox(local_user)) == SUB_NORMAL) {
-		    strcpy(box, temp_box);
-		    free(temp_box);
-		}
-		else
-		    return(DM_NORMAL);
+	    if ( (temp_box = GetNewLocalPOBox(local_user)) !=
+			(char *) SUB_ERROR) {
+		strcpy(box, temp_box);
+		free(temp_box);
+	    }
+	    else
+		return(DM_NORMAL);
 	    break;
 	default:
 	    return(DM_NORMAL);
@@ -221,18 +224,20 @@ char **argv;
 	    return(DM_NORMAL);	/* ^C hit. */
 	}
 	
-	args[PO_NAME] = local_user;
-	args[PO_TYPE] = type;
-	args[PO_BOX] = box;
-	args[PO_END] = NULL;
-	if ( (status = sms_query("set_pobox", CountArgs(args), args, 
-				 Scream, NULL)) != SMS_SUCCESS )
-	    com_err(program_name, status, " in ChangeUserPOBox");
-	else
-	    Put_message("PO Box assigned.");
     default:			/* ^C hit. */
 	break;
     }
+
+    args[PO_NAME] = local_user;
+    args[PO_TYPE] = type;
+    args[PO_BOX] = box;
+    args[PO_END] = NULL;
+    if ( (status = sms_query("set_pobox", CountArgs(args), args, 
+			     Scream, NULL)) != SMS_SUCCESS )
+	com_err(program_name, status, " in ChangeUserPOBox");
+    else
+	Put_message("PO Box assigned.");
+
     return (DM_NORMAL);
 }
 

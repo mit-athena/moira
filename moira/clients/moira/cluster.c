@@ -1,4 +1,4 @@
-/* $Id: cluster.c,v 1.49 2001-05-31 21:34:31 zacheiss Exp $
+/* $Id: cluster.c,v 1.50 2001-07-28 07:54:40 zacheiss Exp $
  *
  *	This is the file cluster.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -1848,8 +1848,16 @@ int ShowClusterData(int argc, char **argv)
 
 int AddClusterData(int argc, char **argv)
 {
-  int stat;
+  int stat, i;
 
+  for (i = 1; i < 4; i++)
+    {
+      if (IS_EMPTY(argv[i]))
+	{
+	  Put_message("Cluster data cannot be an empty string.");
+	  return DM_NORMAL;
+	}
+    }
   if ((stat = do_mr_query("add_cluster_data", 3, argv + 1, NULL, NULL)))
     com_err(program_name, stat, " in AddClusterData.");
   return DM_NORMAL;

@@ -1,9 +1,9 @@
 /*
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_fserv.c,v 1.6 1993-04-29 15:03:13 mar Exp $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_fserv.c,v 1.7 1993-05-04 18:08:24 mar Exp $
  */
 
 #ifndef lint
-static char *rcsid_gdb_fserv_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_fserv.c,v 1.6 1993-04-29 15:03:13 mar Exp $";
+static char *rcsid_gdb_fserv_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_fserv.c,v 1.7 1993-05-04 18:08:24 mar Exp $";
 #endif	lint
 
 
@@ -173,7 +173,7 @@ void
 gdb_reaper()
 {
 #ifdef POSIX
-	int status
+	int status;
 #else
 	union wait status;
 #endif

@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menus.c,v 1.9 1988-08-30 18:44:03 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menus.c,v 1.10 1988-09-01 16:03:24 mar Exp $";
 #endif lint
 
 /*	This is the file menus.c for the SMS Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menus.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menus.c,v 1.9 1988-08-30 18:44:03 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menus.c,v 1.10 1988-09-01 16:03:24 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -51,11 +51,10 @@ Menu cluster_data_menu = {
       {"label", "Label Identifing the data: "},
       {"data", "The data to be added: "},
     } },
-    { RemoveClusterData, NULLMENU, 4, {
+    { RemoveClusterData, NULLMENU, 3, {
       {"delete", "Remove Data to a given Cluster"},
       {"clus", "Cluster's Name: "},
       {"label", "Label Identifing the data: "},
-      {"data", "The data to be removed: "},
     } }, 
     SIMPLEFUNC("verbose", "Toggle Verbosity of Delete", ToggleVerboseMode)
   }

@@ -1,4 +1,4 @@
-/* $Id: moira_site.h,v 1.41 2001-09-15 19:51:07 zacheiss Exp $
+/* $Id: moira_site.h,v 1.42 2001-10-17 21:33:13 zacheiss Exp $
  *
  * This file contains all definitions that allow easy access to
  * elements returned by most of the @i[Moira] queries.  It also defines
@@ -371,7 +371,9 @@
 #define U_MODTIME 13
 #define U_MODBY   14
 #define U_MODWITH 15
-#define U_END     16
+#define U_CREATED 16
+#define U_CREATOR 17
+#define U_END     18
 
 /* User states (the value of argv[U_STATE] from a user query) */
 

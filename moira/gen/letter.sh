@@ -1,5 +1,5 @@
 #!/bin/sh
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/letter.sh,v 1.3 1992-06-23 17:05:45 mar Exp $
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/letter.sh,v 1.4 1992-07-16 15:06:08 mar Exp $
 # This script prints the letters confirming registration for the extra
 # kerberos principal.
 
@@ -11,6 +11,7 @@ PATH=/bin:/bin/athena:/usr/ucb:/usr/bin/athena:/usr/athena; export PATH
 printer=linus
 newfile=/tmp/letter.out
 savefile=/u1/letter.save
+holdfile=/u1/letter.hold
 
 # These are not normally local, so may need to point somewhere else
 lpquota=lpquota
@@ -23,13 +24,20 @@ if [ "`echo $last | $colrm 1 4 | $colrm 7`" = \
 	mv $newfile $savefile
 else
 	if [ -s $savefile ]; then
+		if [ ! -f $holdfile ]; then
+			(echo "Reg_extra letters failed to print yesterday"; \
+			ls -l $savefile; \
+			echo $last) | /bin/mail dbadmin thorne
+		fi
 		cat $newfile >> $savefile
-		echo "Reg_extra letter printing error" | /bin/mail dbadmin
 	else
 		mv $newfile $savefile
 	fi
 fi
+rm -f $holdfile
 
-$lpr -P$printer -h $savefile
+if [ "`$lpr -P$printer -h $savefile`"x = "Printer queue is disabled."x ]; then
+	touch $holdfile
+fi
 
 exit 0

@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.30 1997-01-16 02:50:46 danw Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.31 1997-07-03 09:22:03 danw Exp $
  *
  * Command line oriented Moira List tool.
  *
@@ -24,7 +24,7 @@
 #include <moira_site.h>
 
 #ifndef LINT
-static char blanche_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.30 1997-01-16 02:50:46 danw Exp $";
+static char blanche_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.31 1997-07-03 09:22:03 danw Exp $";
 #endif
 
 
@@ -66,7 +66,7 @@ main(argc, argv)
 int argc;
 char **argv;
 {
-    int status;
+    int status, success;
     char **arg = argv;
     char *membervec[3], *motd;
     struct member *memberstruct;
@@ -81,6 +81,8 @@ char **argv;
     memberlist = sq_create();
     synclist = sq_create();
     whoami = argv[0];
+
+    success = 1;
 
     /* parse args, building addlist, dellist, & synclist */
     while (++arg - argv < argc) {
@@ -293,6 +295,7 @@ char **argv;
 	    else if (status != MR_USER || memberstruct->type != M_ANY) {
 		com_err(whoami, status, "while adding member %s to %s",
 			memberstruct->name, listname);
+		success = 0;
 		break;
 	    }
 	case M_LIST:
@@ -313,15 +316,18 @@ char **argv;
 	    } else if (status != MR_LIST || memberstruct->type != M_ANY) {
 		com_err(whoami, status, "while adding member %s to %s",
 			memberstruct->name, listname);
+		success = 0;
 		break;
 	    }
 	case M_STRING:
 	    membervec[1] = "STRING";
 	    status = mr_query("add_member_to_list", 3, membervec,
 			       scream, NULL);
-	    if (status != MR_SUCCESS)
+	    if (status != MR_SUCCESS) {
 	      com_err(whoami, status, "while adding member %s to %s",
 		      memberstruct->name, listname);
+	      success = 0;
+	    }
 	    else if (!strchr(memberstruct->name, '@') &&
 		     !strchr(memberstruct->name, '!') &&
 		     !strchr(memberstruct->name, '%')) {
@@ -335,9 +341,11 @@ char **argv;
 	    membervec[1] = "KERBEROS";
 	    status = mr_query("add_member_to_list", 3, membervec,
 			       scream, NULL);
-	    if (status != MR_SUCCESS)
+	    if (status != MR_SUCCESS) {
 	      com_err(whoami, status, "while adding member %s to %s",
 		      memberstruct->name, listname);
+	      success = 0;
+	    }
 	}
     }
 
@@ -361,6 +369,7 @@ char **argv;
 		     memberstruct->type != M_ANY) {
 		com_err(whoami, status, "while deleting member %s from %s",
 			memberstruct->name, listname);
+		success = 0;
 		break;
 	    }
 	case M_LIST:
@@ -387,6 +396,7 @@ char **argv;
 		}
 		com_err(whoami, status, "while deleting member %s from %s",
 			memberstruct->name, listname);
+		success = 0;
 		break;
 	    }
 	case M_STRING:
@@ -396,22 +406,27 @@ char **argv;
 	    if (status == MR_STRING && memberstruct->type == M_ANY) {
 	      com_err(whoami, 0, " Unable to find member %s to delete from %s",
 		      memberstruct->name, listname);
+	      success = 0;
 	      if (!strcmp(membervec[0], getenv("USER"))) {
 		fprintf(stderr, "(If you were trying to remove yourself from the list \"%s\",\n", membervec[2]);
 		fprintf(stderr, "the correct command is \"blanche %s -d %s\".)\n",
 			membervec[2], membervec[0]);
 	      }
-	    } else if (status != MR_SUCCESS)
+	    } else if (status != MR_SUCCESS) {
 	      com_err(whoami, status, "while deleting member %s from %s",
 		      memberstruct->name, listname);
+	      success = 0;
+	    }
 	    break;
 	case M_KERBEROS:
 	    membervec[1] = "KERBEROS";
 	    status = mr_query("delete_member_from_list", 3, membervec,
 			       scream, NULL);
-	    if (status != MR_SUCCESS)
+	    if (status != MR_SUCCESS) {
 	      com_err(whoami, status, "while deleting member %s from %s",
 		      memberstruct->name, listname);
+	      success = 0;
+	    }
 	}
     }
 
@@ -432,7 +447,7 @@ char **argv;
 
     /* We're done! */
     mr_disconnect();
-    exit(0);
+    exit(success?0:1);
 }
 
 usage(argv)
@@ -666,8 +681,10 @@ struct save_queue *queue;
     while (fgets(buf, BUFSIZ, in))
       if (memberstruct = parse_member(buf))
 	sq_save_data(queue, memberstruct);
-    if (!feof(in))
+    if (!feof(in)) {
       com_err(whoami, errno, "while reading from %s", filename);
+      exit(2);
+    }
 }
 
 

@@ -1,10 +1,10 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v 1.7 1987-09-15 16:06:30 ambar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v 1.8 1987-10-29 01:50:10 ambar Exp $
  */
 
 #ifndef lint
-static char rcsid_mailmaint_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v 1.7 1987-09-15 16:06:30 ambar Exp $";
+static char rcsid_mailmaint_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v 1.8 1987-10-29 01:50:10 ambar Exp $";
 #endif lint
 
 /***********************************************************************/
@@ -31,7 +31,7 @@ static char rcsid_mailmaint_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/
 #define CTL(ch)  ((ch) & 037)
 #define MAX(A,B) ((A) > (B) ? (A) : (B))
 
-static char *whoami;
+char *whoami;		/* should not be static, for logging package */
 static int status;
 static void scream();
 extern char *strsave();

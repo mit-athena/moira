@@ -1,4 +1,4 @@
-/* $Id $
+/* $Id: mr_connect.c,v 1.21 1998-02-08 19:31:19 danw Exp $
  *
  * This routine is part of the client library.  It handles
  * creating a connection to the moira server.
@@ -19,7 +19,7 @@
 
 #include <hesiod.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_connect.c,v 1.20 1998-02-05 22:51:27 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_connect.c,v 1.21 1998-02-08 19:31:19 danw Exp $");
 
 static char *mr_server_host = 0;
 

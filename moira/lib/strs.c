@@ -1,4 +1,4 @@
-/* $Id $
+/* $Id: strs.c,v 1.16 1998-02-08 19:31:23 danw Exp $
  *
  * Miscellaneous string functions.
  *
@@ -12,7 +12,7 @@
 
 #include <ctype.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/strs.c,v 1.15 1998-02-05 22:51:32 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/strs.c,v 1.16 1998-02-08 19:31:23 danw Exp $");
 
 /*
  * Trim whitespace off both ends of a string.

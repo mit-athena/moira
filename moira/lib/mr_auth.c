@@ -1,4 +1,4 @@
-/* $Id $
+/* $Id: mr_auth.c,v 1.22 1998-02-08 19:31:18 danw Exp $
  *
  * Handles the client side of the sending of authenticators to the moira server
  *
@@ -16,7 +16,7 @@
 
 #include <krb.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_auth.c,v 1.21 1998-02-07 17:50:30 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_auth.c,v 1.22 1998-02-08 19:31:18 danw Exp $");
 
 /* Authenticate this client with the Moira server.  prog is the name of the
  * client program, and will be recorded in the database.

@@ -1,7 +1,4 @@
-#	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_et.et,v $
-#	$Author: danw $
-#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_et.et,v 1.20 1998-01-05 19:53:11 danw Exp $
-#
+# $Id: mr_et.et,v 1.21 1998-02-08 19:31:20 danw Exp $
 	error_table sms
 
 ec	MR_NOT_CONNECTED,

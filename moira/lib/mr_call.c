@@ -1,4 +1,4 @@
-/* $Id $
+/* $Id: mr_call.c,v 1.13 1998-02-08 19:31:19 danw Exp $
  *
  * Pass an mr_params off to the Moira server and get a reply
  *
@@ -11,7 +11,7 @@
 #include <moira.h>
 #include "mr_private.h"
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_call.c,v 1.12 1998-02-05 22:51:26 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_call.c,v 1.13 1998-02-08 19:31:19 danw Exp $");
 
 int mr_do_call(struct mr_params *params, struct mr_params **reply)
 {

@@ -1,4 +1,4 @@
-/* $Id $
+/* $Id: mr_query.c,v 1.15 1998-02-08 19:31:22 danw Exp $
  *
  * Perform a Moira query
  *
@@ -15,7 +15,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_query.c,v 1.14 1998-02-05 22:51:30 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_query.c,v 1.15 1998-02-08 19:31:22 danw Exp $");
 
 int mr_query_internal(int argc, char **argv,
 		      int (*callback)(int, char **, void *), void *callarg);

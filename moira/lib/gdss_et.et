@@ -1,4 +1,4 @@
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/gdss_et.et,v 1.1 1992-06-24 17:08:45 mar Exp $
+# $Id: gdss_et.et,v 1.2 1998-02-08 19:31:16 danw Exp $
 # GDSS doesn't use com_err internally, have to convert codes with gdss2et()
 
 	error_table gdss

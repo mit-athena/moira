@@ -1,4 +1,4 @@
-/* $Id $
+/* $Id: gdss_convert.c,v 1.4 1998-02-08 19:31:16 danw Exp $
  *
  * Convert from GDSS error codes to com_err error codes
  *
@@ -12,7 +12,7 @@
 
 #include <gdss_et.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/gdss_convert.c,v 1.3 1998-02-05 22:51:22 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/gdss_convert.c,v 1.4 1998-02-08 19:31:16 danw Exp $");
 
 int gdss2et(int code)
 {

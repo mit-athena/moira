@@ -1,4 +1,4 @@
-/* $Id $
+/* $Id: mr_access.c,v 1.12 1998-02-08 19:31:18 danw Exp $
  *
  * Check access to a Moira query
  *
@@ -14,7 +14,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_access.c,v 1.11 1998-02-05 22:51:25 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_access.c,v 1.12 1998-02-08 19:31:18 danw Exp $");
 
 int mr_access_internal(int argc, char **argv);
 

@@ -1,4 +1,4 @@
-/* $Id $
+/* $Id: mr_private.h,v 1.10 1998-02-08 19:31:21 danw Exp $
  *
  * Private declarations of the Moira library.
  *

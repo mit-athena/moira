@@ -1,4 +1,4 @@
-/* $Id $
+/* $Id: fixhost.c,v 1.16 1998-02-08 19:31:15 danw Exp $
  *
  * Canonicalize a hostname
  *
@@ -22,7 +22,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/fixhost.c,v 1.15 1998-02-05 22:51:21 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/fixhost.c,v 1.16 1998-02-08 19:31:15 danw Exp $");
 
 /*
  * Canonicalize hostname:

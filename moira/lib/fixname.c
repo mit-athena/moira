@@ -1,4 +1,4 @@
-/* $Id $
+/* $Id: fixname.c,v 1.12 1998-02-08 19:31:16 danw Exp $
  *
  * Put a name into Moira-canonical form
  *
@@ -13,7 +13,7 @@
 #include <ctype.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/fixname.c,v 1.11 1998-02-05 22:51:22 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/fixname.c,v 1.12 1998-02-08 19:31:16 danw Exp $");
 
 #define LAST_LEN		100
 #define FIRST_LEN		100

@@ -1,4 +1,4 @@
-/* $Id $
+/* $Id: idno.c,v 1.7 1998-02-08 19:31:17 danw Exp $
  *
  * Routines to deal with MIT IDs
  *

@@ -1,4 +1,4 @@
-/* $Id $
+/* $Id: nfsparttype.c,v 1.10 1998-02-08 19:31:22 danw Exp $
  *
  * Deal with NFS partition types
  *
@@ -15,7 +15,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/nfsparttype.c,v 1.9 1998-02-05 22:51:31 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/nfsparttype.c,v 1.10 1998-02-08 19:31:22 danw Exp $");
 
 struct pair {
   int type;

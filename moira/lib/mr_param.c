@@ -1,4 +1,4 @@
-/* $Id $
+/* $Id: mr_param.c,v 1.13 1998-02-08 19:31:21 danw Exp $
  *
  * Deal with mrgdb (bleah!)
  *
@@ -18,7 +18,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_param.c,v 1.12 1998-02-05 22:51:29 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_param.c,v 1.13 1998-02-08 19:31:21 danw Exp $");
 
 /*
  * GDB operations to send and recieve RPC requests and replies.

@@ -1,4 +1,4 @@
-/* $Id $
+/* $Id: mr_data.c,v 1.10 1998-02-08 19:31:20 danw Exp $
  *
  * A few variables
  *
@@ -11,7 +11,7 @@
 #include <moira.h>
 #include "mr_private.h"
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_data.c,v 1.9 1998-02-05 22:51:28 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_data.c,v 1.10 1998-02-08 19:31:20 danw Exp $");
 
 CONNECTION _mr_conn;
 

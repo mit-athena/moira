@@ -1,13 +1,13 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/ticket.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/ticket.c,v 1.11 1992-12-30 17:46:33 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/ticket.c,v 1.12 1993-01-27 11:23:26 mar Exp $
  */
 /*  (c) Copyright 1988 by the Massachusetts Institute of Technology. */
 /*  For copying and distribution information, please see the file */
 /*  <mit-copyright.h>. */
 
 #ifndef lint
-static char *rcsid_ticket_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/ticket.c,v 1.11 1992-12-30 17:46:33 mar Exp $";
+static char *rcsid_ticket_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/ticket.c,v 1.12 1993-01-27 11:23:26 mar Exp $";
 #endif	lint
 
 #include <mit-copyright.h>
@@ -83,7 +83,8 @@ get_mr_tgt()
     init();
     linst[0] = '\0';
     strcpy(kinst, "krbtgt");
-    code = krb_get_svc_in_tkt(master, linst, realm, kinst, realm, 1, srvtab);
+    code = krb_get_svc_in_tkt(master, linst, realm, kinst, realm,
+			      DEFAULT_TKT_LIFE, srvtab);
     if (!code)
 	return(0);
     else

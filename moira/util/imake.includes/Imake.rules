@@ -1,6 +1,6 @@
 /**/#	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/util/imake.includes/Imake.rules,v $
 /**/#	$Author: jtkohl $
-/**/#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/util/imake.includes/Imake.rules,v 4.12 1989-07-10 11:10:08 jtkohl Exp $
+/**/#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/util/imake.includes/Imake.rules,v 4.13 1989-07-27 19:07:51 jtkohl Exp $
 /**/#
 
 #ifdef __STDC__
@@ -58,10 +58,14 @@ all:: concat3(lib,libname,.a) concat3(lib,libname,_p.a)			@@\
 all:: concat3(llib-l,libname,.ln)					@@\
 									@@\
 concat3(lib,libname,.a): objs						@@\
+	$(RM) $@.bak							@@\
+	-$(MV) $@ $@.bak						@@\
 	$(ARCHIVE) $@ objs						@@\
 	$(RANLIB) $@							@@\
 									@@\
 concat3(lib,libname,_p.a): objs						@@\
+	$(RM) $@.bak							@@\
+	-$(MV) $@ $@.bak						@@\
 	cd profiled; $(ARCHIVE) ../$@ objs				@@\
 	$(RANLIB) $@							@@\
 									@@\
@@ -114,6 +118,8 @@ all:: concat3(lib,libname,.a) 						@@\
 all:: concat3(llib-l,libname,.ln)					@@\
 									@@\
 concat3(lib,libname,.a): objs						@@\
+	$(RM) $@.bak							@@\
+	-$(MV) $@ $@.bak						@@\
 	$(ARCHIVE) $@ objs						@@\
 	$(RANLIB) $@							@@\
 									@@\

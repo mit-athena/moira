@@ -155,7 +155,8 @@ Administrators.
 
 @Begin(Multiple)
 
-PROGRAM NAME: USER_MAINT - Adding/changing user information.  
+PROGRAM NAME: USER_MAINT - Adding/changing user information, including NFS 
+quota information.  
 
 DESCRIPTION: Presently, there are two
 programs which the system administrator uses to register a new user:
@@ -243,14 +244,15 @@ get_value - for default PO allocation
 manipulates the following field:
 (value) VALUE relation.
 
-In the SERVERS, relation the @i[value] field represents the 
+In the SERVERS relation, the @i[value] field represents the 
 total currently allocated
 space (but not necessarily used).  In the VALUE relation, the @i[value]
 field represents the default nfs quota for a user (used in new user home
 allocation).
 For example, if 20 users have been 
 allocated to a machine
-and each has a fielsys quota of 2 Meg, then the value field will
+and each has a fielsys quota of 2 Meg, then the value field (SERVER relation) 
+will
 be 40 Meg.  If the server reports back that its free space is
 80 Meg, then another 20 users can be given allocated space on this
 disk.  As long as the free space minus the allocated space is greater
@@ -416,11 +418,14 @@ END USERS: Administrator.  Staff.
 @end(multiple)
 @begin(multiple)
 
-PROGRAM NAME: MAIL_MAINT - Mail Administration
+PROGRAM NAME: LIST_MAINT - List Administration
 
 DESCRIPTION: 
-This program handles mailing lists, in all of their
-infinite variety.  It is similar in function to the current madm.
+This program handles mailing lists, group lists, and ACL administration.
+The general approach to this program is to identify the list type 
+which will need updating.  The program is, among otther things, a 
+combination of the current madm and gadm programs.
+
 
 PRE-DEFINED QUERIES USED:
 @begin(itemize, spread 0)
@@ -444,6 +449,16 @@ add_member_to_list
 delete_member_from_list
 
 get_members_of_list
+
+get_acl_by_machine
+
+add_acl_to_machine
+
+get_all_groups
+
+add_group
+
+delete_group
 @end(itemize)
 
 manipulates the following fields:
@@ -452,6 +467,12 @@ manipulates the following fields:
 (list_id, member_type, member_id) MEMBERS relation
 
 (member_id, string) STRINGS relation
+
+(list_id, machine_id) ACLS relation
+
+(capability, list_id) CAPACLS relation
+
+(list_id) GROUPS relation
 
 END USERS: Administrator. Staff. Students.
 @end(multiple)

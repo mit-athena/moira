@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.30 1988-09-13 17:43:17 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.31 1988-10-03 15:33:07 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_qsupport_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.30 1988-09-13 17:43:17 mar Exp $";
+static char *rcsid_qsupport_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.31 1988-10-03 15:33:07 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -891,25 +891,24 @@ set_pobox_modtime(q, argv, cl)
 ##}
 
 
-/* Sets the modtime on a machine record.  The machine name is in argv[0].
- * This routine is different from the generic set_modtime in that the
- * name is uppercased first.
+/* Like set_modtime, but uppercases the name first.
  */
 
-set_mach_modtime(q, argv, cl)
+set_uppercase_modtime(q, argv, cl)
     struct query *q;
     char **argv;
     client *cl;
 ##{
-##  char *host, *entity;
+##  char *name, *entity, *table;
 ##  int who;
 
     entity = cl->entity;
     who = cl->users_id;
+    table = q->rtable;
+    name = argv[0];
 
-    host = argv[0];
-##  repeat replace m (modtime = "now", modby = @who, modwith = @entity)
-##	 where m.name = uppercase(@host)
+##  replace table (modtime = "now", modby = who, modwith = entity)
+##	 where table.#name = uppercase(name)
     return(SMS_SUCCESS);
 ##}
 

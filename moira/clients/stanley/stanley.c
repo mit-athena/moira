@@ -21,7 +21,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/stanley/stanley.c,v 1.5 2001-09-26 04:49:24 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/stanley/stanley.c,v 1.6 2001-09-26 05:57:49 zacheiss Exp $");
 
 struct string_list {
   char *string;
@@ -176,7 +176,7 @@ int main(int argc, char **argv)
 	    } else
 	      usage(argv);
 	  }
-	  else if (argis("I", "clearid")) {
+	  else if (argis("I", "mitid")) {
 	    if (arg - argv < argc - 1) {
 	      arg++;
 	      update_flag++;
@@ -676,7 +676,7 @@ void usage(char **argv)
   fprintf(stderr, USAGE_OPTIONS_FORMAT, "-F   | -first firstname",
 	  "-L   | -last lastname");
   fprintf(stderr, USAGE_OPTIONS_FORMAT, "-M   | -middle middlename",
-	  "-I   | -clearid mitid");
+	  "-I   | -mitid mitid");
   fprintf(stderr, USAGE_OPTIONS_FORMAT, "-cl  | -class class",
 	  "-c   | -comment comment");
   fprintf(stderr, USAGE_OPTIONS_FORMAT, "-6   | -secure 0|1",

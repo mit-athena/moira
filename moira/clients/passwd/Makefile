@@ -3,10 +3,14 @@
 #	MIT Project Athena
 #
 #	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/Makefile,v $
-#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/Makefile,v 1.8 1988-08-07 21:33:08 mar Exp $
+#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/Makefile,v 1.9 1988-09-12 17:15:12 mar Exp $
 #	$Author: mar $
 # 
+# (c) Copyright 1988 by the Massachusetts Institute of Technology.
+# For copying and distribution information, please see the file
+# <mit-copyright.h>.
 #
+
 DESTDIR=
 DEFINES = -O
 CFLAGS = -I../../include ${DEFINES}
@@ -15,7 +19,7 @@ BINDIR = ${DESTDIR}/bin
 
 SMSLIB = -L../../lib -lsms -lgdb -lcom_err -lkrb -ldes
 
-PROGS= chfn chsh # chpobox
+PROGS= chfn chsh chpobox
 
 all: 	${PROGS}
 

@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/pobox.dc,v 1.2 1992-12-21 17:57:53 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/pobox.dc,v 1.3 1993-09-13 16:40:23 mar Exp $
  *
  * This generates a list of everyone's poboxes for the mitdir.
  *
@@ -79,7 +79,7 @@ char **argv;
 	strtrim(login);
 	strtrim(id);
 	if (isdigit(id[0]))
-	  fprintf(out, "%s %s@ATHENA.MIT.EDU\n", id, login);
+	  fprintf(out, "%s %s@MIT.EDU\n", id, login);
     }
 
     EXEC SQL CLOSE x;

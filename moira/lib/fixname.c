@@ -1,4 +1,4 @@
-/* $Id: fixname.c,v 1.14 1998-08-13 18:23:41 danw Exp $
+/* $Id: fixname.c,v 1.15 1998-12-20 21:23:18 danw Exp $
  *
  * Put a name into Moira-canonical form
  *
@@ -13,7 +13,7 @@
 #include <ctype.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/fixname.c,v 1.14 1998-08-13 18:23:41 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/fixname.c,v 1.15 1998-12-20 21:23:18 danw Exp $");
 
 #define LAST_LEN		100
 #define FIRST_LEN		100
@@ -50,19 +50,27 @@ void FixName(char *ilnm, char *ifnm, char *last, char *first, char *middle)
 
 void FixCase(char *p)
 {
-  int cflag;	/* convert to lcase, unless at start or following */
-		/* a space or punctuation mark (e.g., '-') */
+  int up;	/* Should next letter be uppercase */
+  int pos;	/* Position within word */
 
-  for (cflag = 0; *p; p++)
+  for (up = 1, pos = 1; *p; p++, pos++)
     {
-      if (cflag && isupper(*p))
+      if (!up && isupper(*p))
 	*p = tolower(*p);
-      else if (!cflag && islower(*p))
+      else if (up && islower(*p))
 	*p = toupper(*p);
-      if (isalpha(*p))
-	cflag = 1;
+
+      if (isalpha(*p))		/* If letter, next letter should be lower */
+	up = 0;
+      else if (isspace(*p))	/* If space, next letter should be upper */
+	{
+	  pos = 0;
+	  up = 1;
+	}
+      else if (*p == '\'')	/* If ', next letter should be upper only */
+	up = (pos == 2);	/* if the ' is the 2nd char in the name */
       else
-	cflag = 0;
+	up = 1;			/* If other punctuation (eg, -), upper */
     }
 }
 

@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/cluster.c,v 1.18 1990-04-25 12:34:59 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/cluster.c,v 1.19 1990-07-13 17:34:56 mar Exp $";
 #endif lint
 
 /*	This is the file cluster.c for the MOIRA Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/cluster.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/cluster.c,v 1.18 1990-04-25 12:34:59 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/cluster.c,v 1.19 1990-07-13 17:34:56 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -188,7 +188,12 @@ char * name1, *name2;
     case MACHINE:
 	if ( (stat = do_mr_query("get_machine", 1, &name1,
 				  StoreInfo, (char *)&elem)) != 0) {
-	    com_err(program_name, stat, " in get_machine.");
+	    if (stat == MR_NO_MATCH) {
+		char buf[128];
+		sprintf(buf, "Machine '%s' is not in the database.", name1);
+		Put_message(buf);
+	    } else
+	      com_err(program_name, stat, " in get_machine.");
 	    return(NULL);
 	}
 	break;
@@ -237,7 +242,7 @@ char ** info;
 int type;
 Bool name;
 {
-    char temp_buf[BUFSIZ], *newname;
+    char temp_buf[BUFSIZ], *newname, *oldnewname;
 
     switch (type) {
     case MACHINE:
@@ -259,13 +264,23 @@ Bool name;
 	switch (type) {
 	case MACHINE:
 	    newname = Strsave(info[M_NAME]);
-	    GetValueFromUser("The new name for this machine? ", &newname);
+	    if (GetValueFromUser("The new name for this machine? ", &newname) ==
+		SUB_ERROR)
+	      return(NULL);
+	    oldnewname = Strsave(newname);
 	    newname = canonicalize_hostname(newname);
+	    if (strcasecmp(newname, oldnewname)) {
+		sprintf(temp_buf, "Warning: '%s' canonicalized to '%s'\n",
+			oldnewname, newname);
+		Put_message(temp_buf);
+	    }
+	    free(oldnewname);
 	    break;
 	case CLUSTER:
 	    newname = Strsave(info[C_NAME]);
-	    GetValueFromUser("The new name for this cluster? ",
-			     &newname);
+	    if (GetValueFromUser("The new name for this cluster? ",
+				 &newname) == SUB_ERROR)
+	      return(NULL);
 	    break;
 	default:
 	    Put_message("Unknown type in AskMCDInfo, programmer botch");
@@ -275,21 +290,30 @@ Bool name;
 
     switch(type) {
     case MACHINE:
-	GetTypeFromUser("Machine's Type", "mac_type", &info[M_TYPE]);
+	if (GetTypeFromUser("Machine's Type", "mac_type", &info[M_TYPE]) ==
+	    SUB_ERROR)
+	  return(NULL);
 	FreeAndClear(&info[M_MODTIME], TRUE);
 	FreeAndClear(&info[M_MODBY], TRUE);
 	FreeAndClear(&info[M_MODWITH], TRUE);
 	break;
     case CLUSTER:
-	GetValueFromUser("Cluster's Description:", &info[C_DESCRIPT]);
-	GetValueFromUser("Cluster's Location:", &info[C_LOCATION]);
+	if (GetValueFromUser("Cluster's Description:", &info[C_DESCRIPT]) ==
+	    SUB_ERROR)
+	  return(NULL);
+	if (GetValueFromUser("Cluster's Location:", &info[C_LOCATION]) ==
+	    SUB_ERROR)
+	  return(NULL);
 	FreeAndClear(&info[C_MODTIME], TRUE);
 	FreeAndClear(&info[C_MODBY], TRUE);
 	FreeAndClear(&info[C_MODWITH], TRUE);
 	break;
     case DATA:
-	GetValueFromUser("Label defining this data?", &info[CD_LABEL]);
-	GetValueFromUser("The data itself ? ", &info[CD_DATA]);
+	if (GetValueFromUser("Label defining this data?", &info[CD_LABEL]) ==
+	    SUB_ERROR)
+	  return(NULL);
+	if (GetValueFromUser("The data itself ? ", &info[CD_DATA]) == SUB_ERROR)
+	  return(NULL);
 	break;
     }
 
@@ -339,7 +363,7 @@ AddMachine(argc, argv)
 int argc;
 char **argv;
 {
-    char **args, *info[MAX_ARGS_SIZE], *name;
+    char **args, *info[MAX_ARGS_SIZE], *name, buf[256];
     int stat;
 
     if (!ValidName(argv[1]))	/* Checks for wildcards. */
@@ -350,17 +374,23 @@ char **argv;
     name =  canonicalize_hostname(strsave(argv[1]));
 
     if ( (stat = do_mr_query("get_machine", 1, &name, NullFunc, NULL)) == 0) {
-	Put_message("This machine already exists.");
+	sprintf(buf, "The machine '%s' already exists.", name);
+	Put_message(buf);
 	free(name);
 	return(DM_NORMAL);
     }
     else if (stat != MR_NO_MATCH) {
-	com_err(program_name, stat, " in AddMachine.");
+	com_err(program_name, stat,
+		" while checking machine '%s' in AddMachine.", name);
 	free(name);
 	return(DM_NORMAL);
     }
 
-    args = AskMCDInfo(SetMachineDefaults(info, name), MACHINE, FALSE);
+    if ((args = AskMCDInfo(SetMachineDefaults(info, name), MACHINE, FALSE)) ==
+	NULL) {
+	Put_message("Aborted.");
+	return(DM_NORMAL);
+    }
 
 /*
  * Actually create the new Machine.
@@ -390,6 +420,10 @@ Bool junk;
 {
     register int stat;
     char ** args = AskMCDInfo(info, MACHINE, TRUE);
+    if (args == NULL) {
+	Put_message("Aborted.");
+	return;
+    }
     if ( (stat = do_mr_query("update_machine", CountArgs(args), 
 			      args, Scream, NULL)) != 0)
 	com_err(program_name, stat, " in UpdateMachine.");
@@ -566,6 +600,11 @@ char ** argv;
     struct qelem * melem, *mtop, *celem, *ctop;
 
     machine = canonicalize_hostname(strsave(argv[1]));
+    if (strcasecmp(machine, argv[1])) {
+	sprintf(temp_buf, "Warning: '%s' canonicalized to '%s'.",
+		argv[1], machine);
+	Put_message(temp_buf);
+    }
     cluster = argv[2];
 
     celem = ctop = GetMCInfo(CLUSTER,  cluster, (char *) NULL);
@@ -679,6 +718,11 @@ char ** argv;
     register int stat;
 
     args[MAP_MACHINE] = canonicalize_hostname(strsave(argv[1]));
+    if (strcasecmp(args[MAP_MACHINE], argv[1])) {
+	sprintf(temp_buf, "Warning: '%s' canonicalized to '%s'.",
+		argv[1], args[MAP_MACHINE]);
+	Put_message(temp_buf);
+    }
     args[MAP_CLUSTER] = argv[2];
     args[MAP_END] = NULL;
 
@@ -754,7 +798,13 @@ char ** argv;
 	com_err(program_name, stat, " in AddCluster.");
 	return(DM_NORMAL);
     }
-    args = AskMCDInfo(SetClusterDefaults(info, name), CLUSTER, FALSE);
+    if ((args = AskMCDInfo(SetClusterDefaults(info, name), CLUSTER, FALSE)) ==
+	NULL) {
+	Put_message("Aborted.");
+	FreeInfo(info);
+	return(DM_NORMAL);
+    }
+
 /*
  * Actually create the new Cluster.
  */
@@ -781,6 +831,10 @@ Bool junk;
 {
     register int stat;
     char ** args = AskMCDInfo(info, CLUSTER, TRUE);
+    if (args == NULL) {
+	Put_message("Aborted.");
+	return;
+    }
     if ( (stat = do_mr_query("update_cluster", CountArgs(args), 
 			      args, Scream, NULL)) != 0)
 	com_err(program_name, stat, " in UpdateCluster.");
@@ -1062,6 +1116,11 @@ char **argv;
     char *tmpname;
 
     tmpname = canonicalize_hostname(strsave(argv[1]));
+    if (strcasecmp(tmpname, argv[1])) {
+	sprintf(temp_buf, "Warning: '%s' canonicalized to '%s'.",
+		argv[1], tmpname);
+	Put_message(temp_buf);
+    }
     top = elem = GetMCInfo(MAP, tmpname, argv[2]);
   
     Put_message("");		/* blank line on screen */

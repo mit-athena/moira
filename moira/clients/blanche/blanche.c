@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.6 1989-06-28 11:54:47 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.7 1989-08-21 21:57:59 mar Exp $
  *
  * Command line oriented SMS List tool.
  *
@@ -21,7 +21,7 @@
 #include <sms_app.h>
 
 #ifndef LINT
-static char smslist_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.6 1989-06-28 11:54:47 mar Exp $";
+static char smslist_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.7 1989-08-21 21:57:59 mar Exp $";
 #endif
 
 
@@ -35,13 +35,14 @@ struct member {
 #define M_USER		1
 #define M_LIST		2
 #define M_STRING	3
+#define M_KERBEROS	4
 
 /* argument parsing macro */
 #define argis(a,b) ((strcmp(*arg+1, a) == 0) || (strcmp(*arg+1, b) == 0))
 
 /* flags from command line */
 int infoflg, verbose, syncflg, memberflg, recursflg, debugflg, noauth;
-int showusers, showstrings, showlists;
+int showusers, showstrings, showkerberos, showlists;
 
 /* various member lists */
 struct save_queue *addlist, *dellist, *memberlist, *synclist;
@@ -65,10 +66,11 @@ char **argv;
     char **arg = argv;
     char *membervec[3], *motd;
     struct member *memberstruct;
+    char *server = SMS_SERVER;
 
     /* clear all flags & lists */
     infoflg = verbose = syncflg = memberflg = debugflg = recursflg = 0;
-    noauth = showusers = showstrings = showlists = 0;
+    noauth = showusers = showstrings = showkerberos = showlists = 0;
     listname = NULL;
     addlist = sq_create();
     dellist = sq_create();
@@ -88,6 +90,8 @@ char **argv;
 		showstrings++;
 	    else if (argis("l", "lists"))
 		showlists++;
+	    else if (argis("k", "kerberos"))
+	      	showkerberos++;
 	    else if (argis("D", "debug"))
 		debugflg++;
 	    else if (argis("i","information"))
@@ -98,6 +102,12 @@ char **argv;
 	      verbose++;
 	    else if (argis("r","recursive"))
 	      recursflg++;
+	    else if (argis("S","server"))
+		if (arg - argv < argc - 1) {
+		    ++arg;
+		    server = *arg;
+		} else
+		    usage(argv);
 	    else if (argis("a","add"))
 		if (arg - argv < argc - 1) {
 		    ++arg;
@@ -152,12 +162,12 @@ char **argv;
 	  addlist->q_next != addlist || dellist->q_next != dellist))
       memberflg++;
 
-    /* If none of {users,strings,lists} specified, turn them all on */
-    if (!(showusers || showstrings || showlists))
-      showusers = showstrings = showlists = 1;
+    /* If none of {users,strings,lists,kerberos} specified, turn them all on */
+    if (!(showusers || showstrings || showlists || showkerberos))
+      showusers = showstrings = showlists = showkerberos = 1;
 
     /* fire up SMS */
-    if (status = sms_connect(SMS_SERVER)) {
+    if (status = sms_connect(server)) {
 	com_err(whoami, status, " unable to connect to SMS");
 	exit(2);
     }
@@ -263,6 +273,14 @@ char **argv;
 	    if (status != SMS_SUCCESS)
 	      com_err(whoami, status, " while adding member %s to %s",
 		      memberstruct->name, listname);
+	    break;
+	case M_KERBEROS:
+	    membervec[1] = "KERBEROS";
+	    status = sms_query("add_member_to_list", 3, membervec,
+			       scream, NULL);
+	    if (status != SMS_SUCCESS)
+	      com_err(whoami, status, " while adding member %s to %s",
+		      memberstruct->name, listname);
 	}
     }
 
@@ -310,6 +328,14 @@ char **argv;
 	    else if (status != SMS_SUCCESS)
 	      com_err(whoami, status, " while deleteing member %s from %s",
 		      memberstruct->name, listname);
+	    break;
+	case M_KERBEROS:
+	    membervec[1] = "KERBEROS";
+	    status = sms_query("delete_member_from_list", 3, membervec,
+			       scream, NULL);
+	    if (status != SMS_SUCCESS)
+	      com_err(whoami, status, " while deleteing member %s from %s",
+		      memberstruct->name, listname);
 	}
     }
 
@@ -343,12 +369,14 @@ char **argv;
     fprintf(stderr, "   -u | -users\n");
     fprintf(stderr, "   -l | -lists\n");
     fprintf(stderr, "   -s | -strings\n");
+    fprintf(stderr, "   -k | -kerberos\n");
     fprintf(stderr, "   -i | -info\n");
     fprintf(stderr, "   -r | -recursive\n");
     fprintf(stderr, "   -a | -add member\n");
     fprintf(stderr, "   -d | -delete member\n");
     fprintf(stderr, "   -f | -file filename\n");
     fprintf(stderr, "   -n | -noauth\n");
+    fprintf(stderr, "   -S | -server host:port\n");
     fprintf(stderr, "   -D | -debug\n");
     exit(1);
 }
@@ -377,6 +405,11 @@ struct member *memberstruct;
 	  return;
 	s = "STRING";
 	break;
+    case M_KERBEROS:
+	if (!showkerberos)
+	  return;
+	s = "KERBEROS";
+	break;
     case M_ANY:
 	printf("%s\n", memberstruct->name);
 	return;
@@ -387,6 +420,8 @@ struct member *memberstruct;
     else {
 	if (memberstruct->type == M_LIST)
 	  printf("LIST:%s\n", memberstruct->name);
+	else if (memberstruct->type == M_KERBEROS)
+	  printf("KERBEROS:%s\n", memberstruct->name);
 	else if (memberstruct->type == M_STRING &&
 		 !index(memberstruct->name, '@'))
 	  printf("STRING:%s\n", memberstruct->name);
@@ -512,6 +547,9 @@ struct save_queue *q;
     case 'S':
 	m->type = M_STRING;
 	break;
+    case 'K':
+	m->type = M_KERBEROS;
+	break;
     }
     m->name = strsave(argv[1]);
     sq_save_data(q, m);
@@ -560,6 +598,8 @@ register char *s;
 	  m->type = M_LIST;
 	else if (!strcasecmp("string", s))
 	  m->type = M_STRING;
+	else if (!strcasecmp("kerberos", s))
+	  m->type = M_KERBEROS;
 	else {
 	    m->type = M_STRING;
 	    *(--p) = ':';

@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/hesiod.dc,v 1.6 1992-12-30 00:26:23 probe Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/hesiod.dc,v 1.7 1993-01-04 12:27:47 mar Exp $
  *
  * This generates the zone files necessary to load a hesiod server.
  * The following zones are generated: passwd, uid, pobox, group,
@@ -197,7 +197,7 @@ do_passwd()
       SELECT login, uid, shell, fullname, nickname, office_addr,
       	     office_phone, home_phone, users_id, pop_id, potype, status
       FROM users
-      WHERE status = 1 or status = 6
+      WHERE status = 1 or status = 5 or status = 6
       ORDER BY users_id;
     EXEC SQL OPEN u_cursor;
     while (1) {

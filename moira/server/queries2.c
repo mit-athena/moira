@@ -1,4 +1,4 @@
-/* $Id: queries2.c,v 2.60 1999-11-16 20:49:44 danw Exp $
+/* $Id: queries2.c,v 2.61 1999-11-16 20:54:10 danw Exp $
  *
  * This file defines the query dispatch table for version 2 of the protocol
  *
@@ -1532,7 +1532,7 @@ static struct validate gfsm_validate = {
 };
 
 static char *gfsn_fields[] = {
-  "machine", "parition",
+  "machine", "partition",
   "label", "type", "machine", "name", "mount", "access", "comments",
   "owner", "owners", "create", "lockertype", "modtime", "modby", "modwith",
 };
@@ -3941,7 +3941,7 @@ struct query Queries2[] = {
     "fs.label, fs.type, m.name, fs.name, fs.mount, fs.rwaccess, fs.comments, u.login, l.name, fs.createflg, fs.lockertype, TO_CHAR(fs.modtime, 'DD-mon-YYYY HH24:MI:SS'), fs.modby, fs.modwith FROM filesys fs, machine m, users u, list l, nfsphys np",
     gfsn_fields,
     14,
-    "fs.mach_id = %d AND m.mach_id = fs.mach_id AND fs.owner = u.users_id AND fs.owners = l.list_id AND np.nfsphys_id = fs.phys_id AND np.dir LIKE '%s' AND fs.type = 'NFS'",
+    "fs.mach_id = %d AND m.mach_id = fs.mach_id AND fs.owner = u.users_id AND fs.owners = l.list_id AND np.nfsphys_id = fs.phys_id AND np.dir LIKE '%s'",
     2,
     "fs.label",
     &gfsn_validate,

@@ -1,4 +1,4 @@
-/* $Id: qsetup.pc,v 2.33 1999-09-03 22:02:32 danw Exp $
+/* $Id: qsetup.pc,v 2.34 1999-11-16 20:54:10 danw Exp $
  *
  * Query setup routines
  *
@@ -21,7 +21,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsetup.pc,v 2.33 1999-09-03 22:02:32 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsetup.pc,v 2.34 1999-11-16 20:54:10 danw Exp $");
 
 extern char *whoami;
 extern int dbms_errno, mr_errcode;
@@ -513,7 +513,7 @@ int setup_dshi(struct query *q, char *argv[], client *cl)
  ** Description:
  **   - for type = RVD:
  **	   * allow anything
- **   - for type = NFS:
+ **   - for type = NFS/IMAP:
  **        * extract directory prefix from name
  **        * verify mach_id/dir in nfsphys
  **        * verify rwaccess in {r, w, R, W}
@@ -557,7 +557,7 @@ int setup_afil(struct query *q, char *argv[], client *cl)
   if ((mr_errcode = prefetch_value(q, argv, cl)) != MR_SUCCESS)
     return mr_errcode;
 
-  if (!strcmp(type, "NFS"))
+  if (!strcmp(type, "NFS") || !strcmp(type, "IMAP"))
     return check_nfs(mach_id, name, rwaccess);
 
   return MR_SUCCESS;
@@ -601,7 +601,7 @@ int setup_ufil(struct query *q, char *argv[], client *cl)
   if (dbms_errno)
     return mr_errcode;
 
-  if (!strcmp(type, "NFS"))
+  if (!strcmp(type, "NFS") || !strcmp(type, "IMAP"))
     {
       status = check_nfs(mach_id, name, access);
       EXEC SQL UPDATE quota SET phys_id = :_var_phys_id

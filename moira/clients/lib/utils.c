@@ -1,4 +1,4 @@
-/* $Id: utils.c,v 1.3 2000-01-06 21:26:33 danw Exp $
+/* $Id: utils.c,v 1.4 2000-03-29 20:49:15 zacheiss Exp $
  *
  * Random client utilities.
  *
@@ -11,13 +11,27 @@
 #include <moira.h>
 #include <mrclient.h>
 
-#include <stdlib.h>
-#include <stdio.h>
-
 #include <com_err.h>
 #include <krb.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/lib/utils.c,v 1.3 2000-01-06 21:26:33 danw Exp $");
+#include <sys/types.h>
+
+#ifdef HAVE_UNAME
+#include <sys/utsname.h>
+#endif
+
+#ifndef _WIN32
+#include <sys/socket.h>
+#include <netdb.h>
+#include <netinet/in.h>
+#endif /* _WIN32 */
+
+#include <ctype.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/lib/utils.c,v 1.4 2000-03-29 20:49:15 zacheiss Exp $");
 
 extern char *whoami;
 
@@ -107,4 +121,45 @@ char *mrcl_krb_user(void)
     }
 
   return pname;
+}
+
+char *partial_canonicalize_hostname(char *s)
+{
+  char buf[256], *cp;
+  static char *def_domain = NULL;
+
+  if (!def_domain)
+    {
+      if (mr_host(buf, sizeof(buf)) == MR_SUCCESS)
+	{
+	  cp = strchr(buf, '.');
+	  if (cp)
+	    def_domain = strdup(++cp);
+	}
+      else
+	{
+	  struct hostent *hp;
+#ifdef HAVE_UNAME
+	  struct utsname name;
+	  uname(&name);
+	  hp = gethostbyname(name.nodename);
+#else
+	  char	name[256];
+	  gethostname(name, sizeof(name));
+	  name[sizeof(name)-1] = 0;
+	  hp = gethostbyname(name);
+#endif /* HAVE_UNAME */
+	  cp = strchr(hp->h_name, '.');
+	  if (cp)
+	    def_domain = strdup(++cp);
+	}
+      if (!def_domain)
+	def_domain = "";
+    }
+
+  if (strchr(s, '.') || strchr(s, '*'))
+    return s;
+  sprintf(buf, "%s.%s", s, def_domain);
+  free(s);
+  return strdup(buf);
 }

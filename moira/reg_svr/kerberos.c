@@ -1,4 +1,4 @@
-/* $Id: kerberos.c,v 1.5 2000-08-13 04:06:41 zacheiss Exp $
+/* $Id: kerberos.c,v 1.6 2004-07-20 08:11:25 zacheiss Exp $
  *
  * Kerberos routines for registration server
  *
@@ -21,6 +21,9 @@
 
 #include <com_err.h>
 
+#define KRB5_DEPRECATED 1
+#define KRB5_PRIVATE 1
+
 #ifdef KRB4
 #include <des.h>
 #include <kadm.h>
@@ -36,7 +39,7 @@
 krb5_context context;
 #endif
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/kerberos.c,v 1.5 2000-08-13 04:06:41 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/kerberos.c,v 1.6 2004-07-20 08:11:25 zacheiss Exp $");
 
 extern char *hostname, *shorthostname;
 

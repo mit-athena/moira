@@ -1,4 +1,4 @@
-/* $Id: lists.c,v 1.49 2002-08-06 22:08:31 zacheiss Exp $
+/* $Id: lists.c,v 1.50 2002-09-25 20:44:57 zacheiss Exp $
  *
  *	This is the file lists.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -24,7 +24,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v 1.49 2002-08-06 22:08:31 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v 1.50 2002-09-25 20:44:57 zacheiss Exp $");
 
 struct mqelem *GetListInfo(int type, char *name1, char *name2);
 char **AskListInfo(char **info, Bool name);
@@ -192,6 +192,7 @@ struct mqelem *GetListInfo(int type, char *name1, char *name2)
 char **AskListInfo(char **info, Bool name)
 {
   char temp_buf[BUFSIZ], *newname;
+  int status;
 
   Put_message(" ");
   sprintf(temp_buf, "Setting information of list %s.", info[L_NAME]);
@@ -258,9 +259,11 @@ char **AskListInfo(char **info, Bool name)
     {
       char *canon;
       
-      mrcl_validate_kerberos_member(info[L_ACE_NAME], &canon);
+      status = mrcl_validate_kerberos_member(info[L_ACE_NAME], &canon);
       if (mrcl_get_message())
 	Put_message(mrcl_get_message());
+      if (status == MRCL_REJECT)
+	return NULL;
       free(info[L_ACE_NAME]);
       info[L_ACE_NAME] = canon;
     }
@@ -278,9 +281,11 @@ char **AskListInfo(char **info, Bool name)
     {
       char *canon;
 
-      mrcl_validate_kerberos_member(info[L_MEMACE_NAME], &canon);
+      status = mrcl_validate_kerberos_member(info[L_MEMACE_NAME], &canon);
       if (mrcl_get_message())
 	Put_message(mrcl_get_message());
+      if (status == MRCL_REJECT)
+	return NULL;
       free(info[L_MEMACE_NAME]);
       info[L_MEMACE_NAME] = canon;
     }
@@ -721,9 +726,11 @@ int AddMember(int argc, char **argv)
     {
       char *canon;
 
-      mrcl_validate_kerberos_member(args[LM_MEMBER], &canon);
+      status = mrcl_validate_kerberos_member(args[LM_MEMBER], &canon);
       if (mrcl_get_message())
 	Put_message(mrcl_get_message());
+      if (status == MRCL_REJECT)
+	return DM_NORMAL;
       free(args[LM_MEMBER]);
       args[LM_MEMBER] = canon;
     }

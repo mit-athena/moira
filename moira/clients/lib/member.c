@@ -1,4 +1,4 @@
-/* $Id: member.c,v 1.4 2001-08-24 05:57:07 zacheiss Exp $
+/* $Id: member.c,v 1.5 2002-09-25 20:44:54 zacheiss Exp $
  *
  * Shared routines for playing with list membership.
  *
@@ -19,7 +19,7 @@
 
 #include <krb.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/lib/member.c,v 1.4 2001-08-24 05:57:07 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/lib/member.c,v 1.5 2002-09-25 20:44:54 zacheiss Exp $");
 
 static char default_realm[REALM_SZ];
 
@@ -71,6 +71,16 @@ int mrcl_validate_kerberos_member(char *str, char **ret)
   char *p;
 
   mrcl_clear_message();
+
+  for (p = str; *p; p++)
+    {
+      if (isspace(*p) || *p == ',')
+	{
+	  mrcl_set_message("KERBEROS member \"%s\" may not contain whitespace "
+			   "or commas.", str);
+	  return MRCL_REJECT;
+	}
+    }
 
   p = strchr(str, '@');
   if (!p)

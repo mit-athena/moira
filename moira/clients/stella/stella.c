@@ -31,7 +31,7 @@ typedef unsigned long in_addr_t;
 #include <arpa/inet.h>
 #endif
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/stella/stella.c,v 1.18 2002-01-16 21:40:47 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/stella/stella.c,v 1.19 2002-09-25 20:44:59 zacheiss Exp $");
 
 struct owner_type {
   int type;
@@ -423,6 +423,8 @@ int main(int argc, char **argv)
 	      status = mrcl_validate_kerberos_member(argv[13], &argv[13]);
 	      if (mrcl_get_message())
 		mrcl_com_err(whoami);
+	      if (status == MRCL_REJECT)
+		exit(1);
 	      status = wrap_mr_query("add_host", 16, argv, NULL, NULL);
 	      break;
 
@@ -530,6 +532,8 @@ int main(int argc, char **argv)
 	      status = mrcl_validate_kerberos_member(argv[14], &argv[14]);
 	      if (mrcl_get_message())
 		mrcl_com_err(whoami);
+	      if (status == MRCL_REJECT)
+		exit(1);
 	      status = wrap_mr_query("update_host", 17, argv, NULL, NULL);
 	      break;
 

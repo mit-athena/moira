@@ -1,4 +1,4 @@
-/* $Id: blanche.c,v 1.58 2002-03-03 10:19:15 zacheiss Exp $
+/* $Id: blanche.c,v 1.59 2002-09-25 20:44:52 zacheiss Exp $
  *
  * Command line oriented Moira List tool.
  *
@@ -20,7 +20,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.58 2002-03-03 10:19:15 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.59 2002-09-25 20:44:52 zacheiss Exp $");
 
 struct member {
   int type;
@@ -391,6 +391,8 @@ int main(int argc, char **argv)
 						     &argv[L_MEMACE_NAME]);
 	      if (mrcl_get_message())
 		mrcl_com_err(whoami);
+	      if (status == MRCL_REJECT)
+		exit(1);
 	    }
 	}
       else 
@@ -419,6 +421,8 @@ int main(int argc, char **argv)
 						     &argv[L_ACE_NAME]);
 	      if (mrcl_get_message())
 		mrcl_com_err(whoami);
+	      if (status == MRCL_REJECT)
+		exit(1);
 	      status = mr_query("add_list", 13, argv, NULL, NULL);
 	      break;
 	    case M_NONE:
@@ -490,6 +494,8 @@ int main(int argc, char **argv)
 						     &argv[L_MEMACE_NAME + 1]);
 	      if (mrcl_get_message())
 		mrcl_com_err(whoami);
+	      if (status == MRCL_REJECT)
+		exit(1);
 	    }
 	}
 
@@ -516,6 +522,8 @@ int main(int argc, char **argv)
 						     &argv[L_ACE_NAME + 1]);
 	      if (mrcl_get_message())
 		mrcl_com_err(whoami);
+	      if (status == MRCL_REJECT)
+		exit(1);
 	      status = mr_query("update_list", 14, argv, NULL, NULL);
 	      break;
 	    case M_NONE:
@@ -729,6 +737,11 @@ int main(int argc, char **argv)
 	  status = mrcl_validate_kerberos_member(membervec[2], &membervec[2]);
 	  if (mrcl_get_message())
 	    mrcl_com_err(whoami);
+	  if (status == MRCL_REJECT)
+	    {
+	      success = 0;
+	      break;
+	    }
 	  status = mr_query("add_tagged_member_to_list", 4, membervec,
 			    NULL, NULL);
 	  if (status != MR_SUCCESS)

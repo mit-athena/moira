@@ -1,4 +1,4 @@
-/* $Id: cluster.c,v 1.64 2002-08-02 10:32:25 zacheiss Exp $
+/* $Id: cluster.c,v 1.65 2002-09-25 20:44:57 zacheiss Exp $
  *
  *	This is the file cluster.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -562,6 +562,7 @@ struct mqelem *GetMCInfo(int type, char *name1, char *name2)
 char **AskMCDInfo(char **info, int type, Bool name)
 {
   char temp_buf[BUFSIZ], *newname, *oldnewname;
+  int status;
 
   switch (type)
     {
@@ -712,9 +713,11 @@ char **AskMCDInfo(char **info, int type, Bool name)
 	  {
 	    char *canon;
 
-	    mrcl_validate_kerberos_member(info[13], &canon);
+	    status = mrcl_validate_kerberos_member(info[13], &canon);
 	    if (mrcl_get_message())
 	      Put_message(mrcl_get_message());
+	    if (status == MRCL_REJECT)
+	      return NULL;
 	    free(info[13]);
 	    info[13] = canon;
 	  }
@@ -794,9 +797,11 @@ char **AskMCDInfo(char **info, int type, Bool name)
 	  {
 	    char *canon;
 
-	    mrcl_validate_kerberos_member(info[SN_ACE_NAME], &canon);
+	    status = mrcl_validate_kerberos_member(info[SN_ACE_NAME], &canon);
 	    if (mrcl_get_message())
 	      Put_message(mrcl_get_message());
+	    if (status == MRCL_REJECT)
+	      return NULL;
 	    free(info[SN_ACE_NAME]);
 	    info[SN_ACE_NAME] = canon;
 	  }
@@ -848,6 +853,8 @@ char **AskMCDInfo(char **info, int type, Bool name)
 	  mrcl_validate_kerberos_member(info[CON_OWNER_NAME], &canon);
 	  if (mrcl_get_message())
 	    Put_message(mrcl_get_message());
+	  if (status == MRCL_REJECT)
+	    return NULL;
 	  free(info[CON_OWNER_NAME]);
 	  info[CON_OWNER_NAME] = canon;
 	}
@@ -865,6 +872,8 @@ char **AskMCDInfo(char **info, int type, Bool name)
 	  mrcl_validate_kerberos_member(info[CON_MEMACE_NAME], &canon);
 	  if (mrcl_get_message())
 	    Put_message(mrcl_get_message());
+	  if (status == MRCL_REJECT)
+	    return NULL;
 	  free(info[CON_MEMACE_NAME]);
 	  info[CON_MEMACE_NAME] = canon;
 	}

@@ -21,7 +21,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/stella/stella.c,v 1.3 2000-03-22 21:23:40 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/stella/stella.c,v 1.4 2000-03-29 20:05:10 zacheiss Exp $");
 
 struct owner_type {
   int type;
@@ -463,7 +463,7 @@ int main(int argc, char **argv)
       char *alias = q->string;
       char *args[2];
 
-      args[0] = canonicalize_hostname(strdup(alias));
+      args[0] = partial_canonicalize_hostname(strdup(alias));
       args[1] = canonicalize_hostname(strdup(hostname));
       status = wrap_mr_query("add_hostalias", 2, args, NULL, NULL);
       if (status) {
@@ -483,7 +483,7 @@ int main(int argc, char **argv)
       char *alias = q->string;
       char *args[2];
 
-      args[0] = canonicalize_hostname(strdup(alias));
+      args[0] = partial_canonicalize_hostname(strdup(alias));
       args[1] = canonicalize_hostname(strdup(hostname));
       status = wrap_mr_query("delete_hostalias", 2, args, NULL, NULL);
       if (status) {

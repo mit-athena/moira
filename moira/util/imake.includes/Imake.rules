@@ -255,12 +255,6 @@ clean::									@@\
 									@@\
 depend:: concat(src,.h)
 
-#define mk_cmds(tbl)							@@\
-concat(tbl,.c): concat(tbl,.ct)						@@\
-	$(MAKE_COMMANDS) concat(tbl,.ct)				@@\
-clean::									@@\
-	$(RM) concat(tbl,.o) concat(tbl,.c)
-
 /*
  * Rule for building some random object module
  */

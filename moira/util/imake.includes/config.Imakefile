@@ -105,7 +105,6 @@ MANDIR= /usr/athena/man
 
 /* Define USELOCALLIBS if you already have built and installed in
  * your environment the following libraries and associated tools:
-	ss
 	com_err
  */
 #define USELOCALLIBS
@@ -196,28 +195,6 @@ COM_ERR = $(BUILDTOP)/util/et/libcom_err.a
  */
 #ifndef USELOCALLIBS
 COM_ERR_DEP = $(COM_ERR)
-#endif
-/*
- * The name of a command which compiles command tables.
- */
-#ifdef USELOCALLIBS
-MAKE_COMMANDS= mk_cmds
-#else
-MAKE_COMMANDS= $(BUILDTOP)/util/ss/mk_cmds
-#endif
-/*
- * Loader argument to get the ss library
- */
-#ifdef USELOCALLIBS
-SS_LIB = -lss
-#else
-SS_LIB = $(BUILDTOP)/util/ss/libss.a
-#endif
-/*
- * Dependency name for SS_LIB, if any
- */
-#ifndef USELOCALLIBS
-SS_LIBDEP = $(SS_LIB)
 #endif
 
 LLIB = -L/usr/athena/lib

@@ -1,4 +1,4 @@
-/* $Id: fixname.c,v 1.15 1998-12-20 21:23:18 danw Exp $
+/* $Id: fixname.c,v 1.16 2004-02-15 01:54:32 zacheiss Exp $
  *
  * Put a name into Moira-canonical form
  *
@@ -13,7 +13,7 @@
 #include <ctype.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/fixname.c,v 1.15 1998-12-20 21:23:18 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/fixname.c,v 1.16 2004-02-15 01:54:32 zacheiss Exp $");
 
 #define LAST_LEN		100
 #define FIRST_LEN		100
@@ -48,7 +48,7 @@ void FixName(char *ilnm, char *ifnm, char *last, char *first, char *middle)
   strncpy(first, ifnm, FIRST_LEN);
 }
 
-void FixCase(char *p)
+void FixCase(unsigned char *p)
 {
   int up;	/* Should next letter be uppercase */
   int pos;	/* Position within word */
@@ -69,6 +69,8 @@ void FixCase(char *p)
 	}
       else if (*p == '\'')	/* If ', next letter should be upper only */
 	up = (pos == 2);	/* if the ' is the 2nd char in the name */
+      else if (*p >= 0x80)      /* If the high bit is set, don't touch it. */
+	up = 0;
       else
 	up = 1;			/* If other punctuation (eg, -), upper */
     }

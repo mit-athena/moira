@@ -1,4 +1,4 @@
-/* $Id: moira.h,v 1.30 2003-04-09 23:53:10 zacheiss Exp $
+/* $Id: moira.h,v 1.31 2004-02-15 01:54:32 zacheiss Exp $
  *
  * Copyright (C) 1987-1998 by the Massachusetts Institute of Technology
  *
@@ -90,7 +90,7 @@ char *canonicalize_hostname(char *s);
 
 /* prototypes from fixname.c */
 void FixName(char *ilnm, char *ifnm, char *last, char *first, char *middle);
-void FixCase(char *p);
+void FixCase(unsigned char *p);
 void LookForJrAndIII(char *nm, int *pends_jr, int *pends_sr,
 		     int *pends_ii, int *pends_iii,
 		     int *pends_iv, int *pends_v);

@@ -1,15 +1,18 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_sauth.c,v $
  *	$Author: wesommer $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_sauth.c,v 1.1 1987-06-02 20:06:57 wesommer Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_sauth.c,v 1.2 1987-06-04 01:34:35 wesommer Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
  *	$Log: not supported by cvs2svn $
+ * Revision 1.1  87/06/02  20:06:57  wesommer
+ * Initial revision
+ * 
  */
 
 #ifndef lint
-static char *rcsid_sms_sauth_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_sauth.c,v 1.1 1987-06-02 20:06:57 wesommer Exp $";
+static char *rcsid_sms_sauth_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_sauth.c,v 1.2 1987-06-04 01:34:35 wesommer Exp $";
 #endif lint
 
 extern int krb_err_base;
@@ -40,7 +43,11 @@ do_auth(cl)
 	char buf[REALM_SZ+INST_SZ+ANAME_SZ];
 	extern int krb_err_base;
 	
+	com_err(whoami, 0, "Processing auth: ");
+	log_args(cl->args->sms_argc, cl->args->sms_argv);
+
 	auth.length = cl->args->sms_argl[0];
+
 	bcopy(cl->args->sms_argv[0], (char *)auth.dat, auth.length);
 	auth.mbz = 0;
 	

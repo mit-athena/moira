@@ -1,4 +1,4 @@
-/* $Id: qsetup.pc,v 2.31 1999-07-09 03:52:36 danw Exp $
+/* $Id: qsetup.pc,v 2.32 1999-07-27 16:39:00 danw Exp $
  *
  * Query setup routines
  *
@@ -21,7 +21,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsetup.pc,v 2.31 1999-07-09 03:52:36 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsetup.pc,v 2.32 1999-07-27 16:39:00 danw Exp $");
 
 extern char *whoami;
 extern int dbms_errno, mr_errcode;
@@ -1174,7 +1174,10 @@ int setup_aprn(struct query *q, char **argv, client *cl)
     {
       EXEC SQL DECLARE csr_rm CURSOR FOR
 	SELECT ps.mach_id, s.string FROM printservers ps, strings s
-	WHERE ps.printer_types = s.string_id;
+	WHERE ps.mach_id IN
+	( SELECT mach_id FROM serverhosts WHERE service = 'PRINT'
+	  AND enable = 1 )
+	AND ps.printer_types = s.string_id;
       if (dbms_errno)
 	return mr_errcode;
       EXEC SQL OPEN csr_rm;

@@ -21,7 +21,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/stanley/stanley.c,v 1.2 2001-09-26 02:51:00 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/stanley/stanley.c,v 1.3 2001-09-26 03:00:51 zacheiss Exp $");
 
 struct string_list {
   char *string;
@@ -638,8 +638,6 @@ void show_user_info(char **argv)
 
 void show_user_info_unformatted(char **argv)
 {
-  int status;
-
   printf("Login name:            %s\n", argv[U_NAME]);
   printf("Full name:             %s, %s %s\n", argv[U_LAST], argv[U_FIRST], 
 	 argv[U_MIDDLE]);

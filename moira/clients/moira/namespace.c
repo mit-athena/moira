@@ -1,4 +1,4 @@
-/* $Id: namespace.c,v 1.13 2001-05-20 10:22:10 zacheiss Exp $
+/* $Id: namespace.c,v 1.14 2001-06-06 18:33:26 zacheiss Exp $
  *
  *	This is the file main.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -25,7 +25,7 @@
 
 #include <krb.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/namespace.c,v 1.13 2001-05-20 10:22:10 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/namespace.c,v 1.14 2001-06-06 18:33:26 zacheiss Exp $");
 
 static void ErrorExit(char *buf, int status);
 static void Usage(void);
@@ -185,6 +185,10 @@ int main(int argc, char **argv)
     program_name++;
   program_name = strdup(program_name);
   whoami = strdup(program_name); /* used by menu.c,  ugh !!! */
+
+  user = mrcl_krb_user();
+  if (!user)
+    exit(1);
 
   verbose = TRUE;
   arg = argv;

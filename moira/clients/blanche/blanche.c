@@ -1,4 +1,4 @@
-/* $Id: blanche.c,v 1.53 2000-08-25 23:08:28 zacheiss Exp $
+/* $Id: blanche.c,v 1.54 2000-12-20 09:39:18 zacheiss Exp $
  *
  * Command line oriented Moira List tool.
  *
@@ -20,7 +20,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.53 2000-08-25 23:08:28 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.54 2000-12-20 09:39:18 zacheiss Exp $");
 
 struct member {
   int type;
@@ -380,6 +380,13 @@ int main(int argc, char **argv)
 	    }
 	  argv[L_MEMACE_TYPE] = typename[memacl->type];
 	  argv[L_MEMACE_NAME] = memacl->name;
+	  if (memacl->type == M_KERBEROS)
+	    {
+	      status = mrcl_validate_kerberos_member(argv[L_MEMACE_NAME],
+						     &argv[L_MEMACE_NAME]);
+	      if (mrcl_get_message())
+		mrcl_com_err(whoami);
+	    }
 	}
       else 
 	argv[L_MEMACE_TYPE] = argv[L_MEMACE_NAME] = "NONE";
@@ -403,6 +410,10 @@ int main(int argc, char **argv)
 
 	    case M_KERBEROS:
 	      argv[L_ACE_TYPE] = "KERBEROS";
+	      status = mrcl_validate_kerberos_member(argv[L_ACE_NAME], 
+						     &argv[L_ACE_NAME]);
+	      if (mrcl_get_message())
+		mrcl_com_err(whoami);
 	      status = mr_query("add_list", 13, argv, NULL, NULL);
 	      break;
 	    }
@@ -464,6 +475,13 @@ int main(int argc, char **argv)
 	    }
 	  argv[L_MEMACE_TYPE + 1] = typename[memacl->type];
 	  argv[L_MEMACE_NAME + 1] = memacl->name;
+	  if (memacl->type == M_KERBEROS)
+	    {
+	      status = mrcl_validate_kerberos_member(argv[L_MEMACE_NAME + 1],
+						     &argv[L_MEMACE_NAME + 1]);
+	      if (mrcl_get_message())
+		mrcl_com_err(whoami);
+	    }
 	}
 
       if (owner)
@@ -485,6 +503,10 @@ int main(int argc, char **argv)
 
 	    case M_KERBEROS:
 	      argv[L_ACE_TYPE + 1] = "KERBEROS";
+	      status = mrcl_validate_kerberos_member(argv[L_ACE_NAME + 1],
+						     &argv[L_ACE_NAME + 1]);
+	      if (mrcl_get_message())
+		mrcl_com_err(whoami);
 	      status = mr_query("update_list", 14, argv, NULL, NULL);
 	      break;
 	    }

@@ -1,5 +1,5 @@
 .TH ADDUSR 1 "12 Jan 1996" "Project Athena"
-\" RCSID: $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/man/addusr.1,v 1.4 1998-07-29 18:51:25 danw Exp $
+\" RCSID: $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/man/addusr.1,v 1.5 1998-08-07 14:11:21 danw Exp $
 .SH NAME
 addusr \- add and/or register users in Moira
 .SH SYNOPSIS
@@ -25,12 +25,11 @@ also cannot have spaces, although it may have hyphens in it.  The
 capitalization of the names is not important as it will be corrected
 before entering into the database.  If the operation specified for
 .B addusr
-includes registering users, then there are two additional tokens on
+includes registering users, then there is one additional token on
 the end of the line:
 .nf
-  lastname, firstname middlename idnumber loginname password
+  lastname, firstname middlename idnumber loginname
 .fi
-Note that neither the loginname nor the password may contain spaces.
 .SH OPTIONS
 .IP \fB-file\ \fIfilename\ \fRor\ \fB-f\ \fIfilename\fR:
 This specifies the file that will be read for the list of users to
@@ -55,10 +54,13 @@ Athena the default is \fI/bin/athena/tcsh\fR, elsewhere it is likely to be
 \fI/bin/csh\fR.
 .IP \fB-register\ \fRor\ \fB-R\fR:
 This instructs \fBaddusr\fR to both add the users to the database and
-then to immediately register them.
+then to immediately register them. The users will be left
+"half-registered", meaning that they have everything but a Kerberos
+principal.
 .IP \fB-reg_only\ \fRor\ \fB-r\fR:
-This instructs \fBaddusr\fR to register the users without attempting
-to add them to the database.  They must already exist in the database.
+This instructs \fBaddusr\fR to (half-) register the users without
+attempting to add them to the database. They must already exist in the
+database.
 .IP \fB-verbose\ \fRor\ \fB-v\fR:
 This causes \fBaddusr\fR to print messages about each operation as it
 performs it.

@@ -1,6 +1,6 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v 1.35 1997-01-29 23:01:15 danw Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v 1.36 1998-01-05 14:46:54 danw Exp $
  */
 
 /*  (c) Copyright 1988 by the Massachusetts Institute of Technology. */
@@ -8,7 +8,7 @@
 /*  <mit-copyright.h>. */
 
 #ifndef lint
-static char rcsid_mailmaint_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v 1.35 1997-01-29 23:01:15 danw Exp $";
+static char rcsid_mailmaint_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v 1.36 1998-01-05 14:46:54 danw Exp $";
 #endif
 
 /***********************************************************************/
@@ -118,7 +118,6 @@ main(argc, argv)
 	whoami = argv[0];
     else
 	whoami++;
-    username = calloc(20, 1);
     if ((current_li = (List_info *) malloc(sizeof(List_info)))
 	== (List_info *) NULL) {
 	(void) sprintf(buf, ": allocating list info");
@@ -979,11 +978,6 @@ menu_err_hook(who, code, fmt, args)
 	while (*cp)
 	    cp++;
     }
-#ifdef HAS_VSPRINTF
     vsprintf(cp, fmt, args);
-#else
-    /* can do this because we never pass more than 1 arg here anyway... */
-    sprintf(cp, fmt, args);
-#endif
     display_buff(buf);
 }

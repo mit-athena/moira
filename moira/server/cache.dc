@@ -1,5 +1,5 @@
 /*
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/cache.dc,v 2.10 1993-10-28 15:20:34 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/cache.dc,v 2.11 1993-11-01 12:06:26 mar Exp $
  *
  *	Copyright (C) 1989, 1990 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -7,7 +7,7 @@
  */
 
 #ifndef lint
-static char *rcsid_cache_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/cache.dc,v 2.10 1993-10-28 15:20:34 mar Exp $";
+static char *rcsid_cache_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/cache.dc,v 2.11 1993-11-01 12:06:26 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -114,6 +114,7 @@ int *id;
     char *iname;
     int j, rowcount;
     EXEC SQL END DECLARE SECTION;
+    char key;
     int h, ctr;
 
     h = hashname(name, type);
@@ -135,8 +136,12 @@ int *id;
 
     cachemisses++;
     iname = name;
+    key = *type;
 
-    switch (*type) {
+    if (!strcasecmp(type, "subnet"))
+      key = 'N';
+
+    switch (key) {
     case 'U':
     case 'u':
 	if (index(iname, '@') || (strlen(iname) > 8)) {
@@ -153,8 +158,8 @@ int *id;
     case 'm':
 	EXEC SQL SELECT mach_id INTO :j FROM machine WHERE name=UPPERCASE(:iname);
 	break;
-    case 'S':
-    case 's':
+    case 'N':
+    case 'n':
 	EXEC SQL SELECT snet_id INTO :j FROM subnet WHERE name=UPPERCASE(:iname);
 	break;
     case 'C':
@@ -222,6 +227,7 @@ char **name;
     char iname[NAMESZ];
     int j, rowcount;
     EXEC SQL END DECLARE SECTION;
+    char key;
     int ctr;
 
     for (i = cachehead.next; i != &cachehead; i = i->next) {
@@ -240,8 +246,11 @@ char **name;
 
     cachemisses++;
     j = id;
+    key = *type;
+    if (!strcasecmp(type, "subnet"))
+      key = 'N';
 
-    switch (*type) {
+    switch (key) {
     case 'U':
     case 'u':
 	EXEC SQL SELECT CHAR(login) INTO :iname FROM users WHERE users_id=:j;
@@ -254,8 +263,8 @@ char **name;
     case 'm':
 	EXEC SQL SELECT CHAR(name) INTO :iname FROM machine WHERE mach_id=:j;
 	break;
-    case 'S':
-    case 's':
+    case 'N':
+    case 'n':
 	EXEC SQL SELECT CHAR(name) INTO :iname FROM subnet WHERE snet_id=:j;
 	break;
     case 'C':

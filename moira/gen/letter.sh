@@ -1,5 +1,5 @@
 #!/bin/sh
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/letter.sh,v 1.1 1992-06-18 14:52:55 mar Exp $
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/letter.sh,v 1.2 1992-06-22 11:02:58 mar Exp $
 # This script prints the letters confirming registration for the extra
 # kerberos principal.
 
@@ -22,8 +22,12 @@ if [ "`echo $last | $colrm 1 4 | $colrm 7`" = \
      "`ls -l $savefile | $colrm 1 32 | $colrm 7`" ]; then
 	mv $newfile $savefile
 else
-	cat $newfile >> $savefile
-	echo "Reg_extra letter printing error" | /bin/mail dbadmin
+	if [ -s $savefile ]; then
+		cat $newfile >> $savefile
+		echo "Reg_extra letter printing error" | /bin/mail dbadmin
+	else
+		mv $newfile $savefile
+	fi
 fi
 
 $lpr -P$printer -h $savefile

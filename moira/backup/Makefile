@@ -5,7 +5,7 @@ CFLAGS= -O
 EQLIBS = /usr/rtingres/lib/libqlib /usr/rtingres/lib/compatlib
 
 .qc.o:
-	eqc $*.qc
+	/usr/rtingres/bin/eqc $*.qc
 	rm -f $*.o
 	cc -c ${CFLAGS} $*.c
 	rm -f $*.c

@@ -39,7 +39,6 @@ install:
 Makefiles:
 
 config: $(SOURCES)
-	-mkdir $(DESTDIR)/util
 	-mkdir $(DESTDIR)/util/imake
 	for i in $(SOURCES); do \
 		$(RM) ${DESTDIR}/util/imake/`basename $$i`; \

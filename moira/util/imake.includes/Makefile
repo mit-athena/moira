@@ -1,6 +1,6 @@
 #	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/util/imake.includes/Makefile,v $
 #	$Author: jtkohl $
-#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/util/imake.includes/Makefile,v 4.1 1989-01-22 11:03:54 jtkohl Exp $
+#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/util/imake.includes/Makefile,v 4.2 1989-04-11 10:30:57 jtkohl Exp $
 #
 # Copyright 1988 by the Massachusetts Institute of Technology.
 #
@@ -19,7 +19,6 @@ LN = ln -s
 RM = rm -f
 
 config: $(SOURCES)
-	-mkdir $(DESTDIR)/util
 	-mkdir $(DESTDIR)/util/imake.includes
 	for i in $(CPSOURCES); do \
 		$(RM) ${DESTDIR}/util/imake.includes/`basename $$i`; \

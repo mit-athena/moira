@@ -1,6 +1,6 @@
 # $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/util/makedepend/Imakefile,v $
 # $Author: jtkohl $
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/util/makedepend/Imakefile,v 4.2 1989-01-17 11:57:21 jtkohl Exp $
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/util/makedepend/Imakefile,v 4.3 1989-04-11 10:31:26 jtkohl Exp $
 #
 # Copyright 1987 by the Massachusetts Institute of Technology.
 #
@@ -79,7 +79,6 @@ clean::
 	$(RM) cpp.c cpy.? yylex.c
 
 config: $(SOURCES)
-	-mkdir $(DESTDIR)/util
 	-mkdir $(DESTDIR)/util/makedepend
 	for i in $(SOURCES); do \
 		$(RM) ${DESTDIR}/util/makedepend/`basename $$i`; \

@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/include/moira.h,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/include/moira.h,v 1.14 1990-03-17 16:02:42 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/include/moira.h,v 1.15 1990-03-17 16:30:56 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
@@ -12,13 +12,13 @@
 
 /* return values from queries (and error codes) */
 
-#include "sms_et.h"
+#include "mr_et.h"
 #define MR_SUCCESS 0		/* Query was successful */
 
 #define MR_VERSION_1 1		/* Version in use from 7/87 to 4/88 */
 #define MR_VERSION_2 2		/* After 4/88, new query lib */
 
-/* return values for sms server calls, used by clients */
+/* return values for Moira server calls, used by clients */
 
 #define MR_CONT 0		/* Everything okay, continue sending values. */
 #define MR_ABORT -1		/* Something went wrong don't send anymore

@@ -12,7 +12,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/include/moira_site.h,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/include/moira_site.h,v 1.16 1990-03-12 17:27:02 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/include/moira_site.h,v 1.17 1990-03-17 16:31:12 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -20,13 +20,13 @@
  *	see the file mit-copyright.h
  */
 
-#ifndef _sms_app_
-#define _sms_app_
+#ifndef _moira_site_
+#define _moira_site_
 
 #include "mit-copyright.h"
 
 /* Default Moira server to connect to */
-#define SMS_SERVER	"SMS.MIT.EDU:sms_db"
+#define MOIRA_SERVER	"MOIRA.MIT.EDU:sms_db"
 
 /* Compile-time options: */
 /*   used hesiod looking up Moira server name */
@@ -329,7 +329,7 @@
 #define JOURNAL		"/u1/sms/journal"
 #define REGJOURNAL	"/u1/sms/journal.reg"
 #define NODCMFILE	"/etc/nodcm"	/* flag to inhibit DCM running */
-#define SMS_MOTD_FILE	"/etc/smsdown"	/* make the server go to sleep */
+#define MOIRA_MOTD_FILE	"/etc/smsdown"	/* make the server go to sleep */
 
 
-#endif _sms_app_		/* Do not add anything after this line. */
+#endif _moira_site_		/* Do not add anything after this line. */

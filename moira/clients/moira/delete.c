@@ -1,4 +1,4 @@
-/* $Id: delete.c,v 1.28 1998-05-26 18:13:43 danw Exp $
+/* $Id: delete.c,v 1.29 1998-07-09 19:03:43 danw Exp $
  *
  *	This is the file delete.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -23,7 +23,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/delete.c,v 1.28 1998-05-26 18:13:43 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/delete.c,v 1.29 1998-07-09 19:03:43 danw Exp $");
 
 int CheckListForDeletion(char *name, Bool verbose);
 void CheckAce(char *type, char *name, Bool verbose);
@@ -376,7 +376,7 @@ int DeleteUserGroup(char *name, Bool verbose)
 	    }
 	  if (ans < 0)
 	    {
-	      Put_message("Aborting...\n");
+	      Put_message("Aborting...");
 	      return SUB_ERROR;
 	    }
 	}
@@ -416,12 +416,12 @@ int DeleteHomeFilesys(char *name, Bool verbose)
 	  switch (YesNoQuestion(buf, FALSE))
 	    {
 	    case FALSE:
-	      Put_message("Filesystem Not Deleted, continuing...\n");
+	      Put_message("Filesystem Not Deleted, continuing...");
 	      return SUB_NORMAL;
 	    case TRUE:
 	      break;
 	    default:
-	      Put_message("Filesystem Not Deleted, aborting...\n\n");
+	      Put_message("Filesystem Not Deleted, aborting...");
 	      return SUB_ERROR;
 	    }
 	}

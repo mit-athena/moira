@@ -1,4 +1,4 @@
-/* $Id: utils.c,v 1.44 1998-03-10 21:09:45 danw Exp $
+/* $Id: utils.c,v 1.45 1998-07-09 19:03:44 danw Exp $
  *
  *	This is the file utils.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -31,7 +31,7 @@
 #include <string.h>
 #include <time.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v 1.44 1998-03-10 21:09:45 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v 1.45 1998-07-09 19:03:44 danw Exp $");
 
 /*	Function Name: AddQueue
  *	Description: Adds an element to a queue
@@ -385,9 +385,9 @@ int ToggleVerboseMode(int argc, char **argv)
   verbose = !verbose;
 
   if (verbose)
-    Put_message("Delete functions will first confirm\n");
+    Put_message("Delete functions will first confirm");
   else
-    Put_message("Delete functions will be silent\n");
+    Put_message("Delete functions will be silent");
 
   return DM_NORMAL;
 }

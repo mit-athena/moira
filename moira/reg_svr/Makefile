@@ -2,7 +2,7 @@
 # 	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/Makefile,v $
 #	$Author: mar $
 #	$Locker:  $
-#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/Makefile,v 1.12 1989-06-05 14:01:27 mar Exp $
+#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/Makefile,v 1.13 1989-08-16 21:53:07 mar Exp $
 #
 # (c) Copyright 1988 by the Massachusetts Institute of Technology.
 # For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
 
 
 CFLAGS= -O -I../include
-OBJS = requests.o reg_svr.o
+OBJS = requests.o reg_svr.o admin_call.o
 
 all: reg_svr startreg
 

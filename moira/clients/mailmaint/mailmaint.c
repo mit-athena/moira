@@ -1,10 +1,10 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v 1.11 1988-08-11 14:58:32 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v 1.12 1988-08-14 20:02:27 mar Exp $
  */
 
 #ifndef lint
-static char rcsid_mailmaint_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v 1.11 1988-08-11 14:58:32 mar Exp $";
+static char rcsid_mailmaint_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v 1.12 1988-08-14 20:02:27 mar Exp $";
 #endif lint
 
 /***********************************************************************/
@@ -894,15 +894,15 @@ Prompt(prompt, buf, buflen, crok)
 	    if (p > buf) {
 		p--;
 		x--;
-		Put_message("\b");
-		Put_message(" ");
-		Put_message("\b");
+		printf("\b \b");
 	    }
 	    break;
 	case CTL('U'):
 	case CTL('G'):
 	case CTL('['):
 	    x = oldx;
+	    while (p-- > buf)
+		printf("\b \b");
 	    p = buf;
 	    break;
 	default:

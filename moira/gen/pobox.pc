@@ -1,4 +1,4 @@
-/* $Id: pobox.pc,v 1.5 1998-03-10 21:23:03 danw Exp $
+/* $Id: pobox.pc,v 1.6 1999-11-23 16:04:33 danw Exp $
  *
  * This generates a list of everyone's poboxes for the mitdir.
  *
@@ -21,7 +21,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/pobox.pc,v 1.5 1998-03-10 21:23:03 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/pobox.pc,v 1.6 1999-11-23 16:04:33 danw Exp $");
 
 char *whoami = "pobox.gen";
 char *db = "moira/moira";
@@ -76,7 +76,7 @@ int main(int argc, char **argv)
 
   EXEC SQL DECLARE x CURSOR FOR SELECT
     clearid, login
-    FROM users WHERE status != 3 and potype = 'POP';
+    FROM users WHERE status != 3 AND potype != 'NONE' AND potype != 'SMTP';
   EXEC SQL OPEN x;
   while (1)
     {

@@ -21,7 +21,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/stella/stella.c,v 1.2 2000-03-15 22:44:13 rbasch Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/stella/stella.c,v 1.3 2000-03-22 21:23:40 zacheiss Exp $");
 
 struct owner_type {
   int type;
@@ -396,7 +396,7 @@ int main(int argc, char **argv)
 
       argv[0] = canonicalize_hostname(strdup(hostname));
       if (newname)
-	argv[1] = newname;
+	argv[1] = canonicalize_hostname(strdup(newname));
       if (vendor)
 	argv[2] = vendor;
       if (model)

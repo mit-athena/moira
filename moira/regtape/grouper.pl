@@ -1,10 +1,11 @@
 #!/moira/bin/perl -Tw
-# $Id: grouper.pl,v 1.3 2000-04-19 23:14:45 zacheiss Exp $
+# $Id: grouper.pl,v 1.4 2000-04-20 22:54:49 zacheiss Exp $
 
 die "Usage: $0 password\n" unless ($#ARGV == 0);
 $whpassword = $ARGV[0];
 $db = "";
 $mrtest = "mrtest";
+$logfile = "/moira/grouper.log";
 $ENV{'PATH'} = "/moira/bin";
 use DBI;
 
@@ -50,6 +51,7 @@ while (($user, $mitid) = $sth->fetchrow_array) {
 open(MRTEST, "|$mrtest");
 print MRTEST "connect $db\n";
 print MRTEST "auth\n";
+open(LOG, ">$logfile");
 
 # Create any lists that don't already exist in Moira
 foreach $class (@$classes) {
@@ -94,7 +96,7 @@ foreach $class (@$classes) {
 	$login = $users{$mitid};
 	next if !$login;
 	if (!$mstudents{$login}) {
-	    print "Adding $login to $clist\n";
+	    print LOG "Adding $login to $clist\n";
 	    &add_member($login, USER, $clist);
 	    $changed = 1;
 	} else {
@@ -105,7 +107,7 @@ foreach $class (@$classes) {
     # Everyone in wstudents will have been removed from mstudents
     # now, so delete the remaining users since they don't belong
     foreach $login (keys(%mstudents)) {
-	print "Deleting $login from $clist\n";
+	print LOG "Deleting $login from $clist\n";
 	&del_member($login, USER, $clist);
 	$changed = 1;
     }
@@ -119,6 +121,7 @@ foreach $class (@$classes) {
 
 print MRTEST "quit\n";
 close(MRTEST);
+close(LOG);
 $moira->disconnect;
 $warehouse->disconnect;
 
@@ -127,7 +130,7 @@ exit 0;
 sub check_list {
     my ( $name, $owner, $export, $parent, $desc ) = @_;
     if (!$lists{$name}) {
-	print "Creating $name\n";
+	print LOG "Creating $name\n";
 	print MRTEST "qy alis $name 1 0 1 $export $export \"create unique GID\" 0 LIST $owner \"$desc\"\n";
         if ($parent) {
 	    &add_member($name, LIST, $parent);

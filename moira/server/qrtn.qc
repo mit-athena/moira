@@ -1,11 +1,14 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v $
- *	$Author: mike $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v 1.8 1987-08-10 16:22:26 mike Exp $
+ *	$Author: wesommer $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v 1.9 1987-08-22 17:47:38 wesommer Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
  *	$Log: not supported by cvs2svn $
+ * Revision 1.8  87/08/10  16:22:26  mike
+ * wesommer modified error reporting.
+ * 
  * Revision 1.7  87/08/04  01:49:20  wesommer
  * Rearranged messages.
  * 
@@ -22,7 +25,7 @@
  */
 
 #ifndef lint
-static char *rcsid_qrtn_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v 1.8 1987-08-10 16:22:26 mike Exp $";
+static char *rcsid_qrtn_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v 1.9 1987-08-22 17:47:38 wesommer Exp $";
 #endif lint
 
 #include "query.h"
@@ -86,6 +89,7 @@ sms_check_access(cl, name, argc, argv_ro)
     struct query *get_query_by_name();
     int access_user();
     int access_pop();
+    int access_list();
 
     q = get_query_by_name(name);
     if (q == (struct query *)0) return(SMS_NO_HANDLE);
@@ -99,7 +103,8 @@ sms_check_access(cl, name, argc, argv_ro)
     status = check_query_access(q, Argv, cl);
     privileged = (status == SMS_SUCCESS) ? 1 : 0;
     if (status != SMS_SUCCESS && !(v && (v->pre_rtn == access_user ||
-					 v->pre_rtn == access_pop))) 
+					 v->pre_rtn == access_pop ||
+					 v->pre_rtn == access_list))) 
 	return(status);
 
     /* check argument count */
@@ -138,13 +143,18 @@ sms_process_query(cl, name, argc, argv_ro, action, actarg)
     register struct validate *v;
     int privileged;
     char qual[256];
+    char sort[32];
     char *pqual;
+    char *psort;
 ##  char *table;
     struct save_queue *sq;
     struct query *get_query_by_name();
     int sq_save_args();
     struct save_queue *sq_create();
+    char *build_sort();
     int access_user();
+    int access_pop();
+    int access_list();
 
     /* copy the arguments into a local argv that we can modify */
     for (i = 0; i < argc; i++)
@@ -172,7 +182,10 @@ sms_process_query(cl, name, argc, argv_ro, action, actarg)
     /* check query access */
     status = check_query_access(q, Argv, cl);
     privileged = (status == SMS_SUCCESS) ? 1 : 0;
-    if (status != SMS_SUCCESS && !(v && (v->pre_rtn == access_user)))
+    if (!privileged && !(status == SMS_PERM &&
+			 (v && (v->pre_rtn == access_user ||
+				v->pre_rtn == access_pop ||
+				v->pre_rtn == access_list))))
 	return(status);
 
     /* check argument count */
@@ -212,13 +225,20 @@ sms_process_query(cl, name, argc, argv_ro, action, actarg)
 	    pqual = 0;
 	}
 
+	/* build "sort" clause if needed */
+	if (v && v->valobj) {
+	    psort = build_sort(v, sort);
+	} else {
+	    psort = 0;
+	}
+
 	/* if there is a followup routine, then we must save the results */
 	/* of the first query for use by the followup routine */
-	/* if q->rtable = NULL, perform post_rtn only */
-	if (table = q->rtable) {
+	/* if q->rvar = NULL, perform post_rtn only */
+	if (q->rvar) {
 	    if (v && v->post_rtn) {
 		sq = sq_create();
-		status = do_retrieve(q, pqual, sq_save_args, sq);
+		status = do_retrieve(q, pqual, psort, sq_save_args, sq);
 		if (status != SMS_SUCCESS) {
 		    sq_destroy(sq);
 		    break;
@@ -226,9 +246,10 @@ sms_process_query(cl, name, argc, argv_ro, action, actarg)
 		status = (*v->post_rtn)(q, sq, v, action, actarg);
 	    } else {
 		/* normal retrieve */
-		status = do_retrieve(q, pqual, action, actarg);
+		status = do_retrieve(q, pqual, psort, action, actarg);
 	    }
 	    if (status != SMS_SUCCESS) break;
+	    table = q->rtable;
 ##          repeat replace tblstats (retrieves = tblstats.retrieves + 1)
 ##                 where tblstats.#table = @table
 	} else {
@@ -245,11 +266,12 @@ sms_process_query(cl, name, argc, argv_ro, action, actarg)
 	}
 
 	/* build "where" clause and perform update */
-	/* if q->rtable = NULL, perform post_rtn only */
-	if (table = q->rtable) {
+	/* if q->rvar = NULL, perform post_rtn only */
+	if (q->rvar) {
 	    build_qual(q->qual, q->argc, Argv, qual);
 	    status = do_update(q, &Argv[q->argc], qual, action, actarg);
 	    if (status != SMS_SUCCESS) break;
+	    table = q->rtable;
 ##	    repeat replace tblstats (updates = tblstats.updates + 1,
 ##				     modtime = "now")
 ##		where tblstats.#table = @table
@@ -270,11 +292,20 @@ sms_process_query(cl, name, argc, argv_ro, action, actarg)
 	/* increment id number if necessary */
 	if (v->object_id) set_next_object_id(v->object_id);
 
+	/* build "where" clause if needed */
+	if (q->qual) {
+	    build_qual(q->qual, q->argc, Argv, qual);
+	    pqual = qual;
+	} else {
+	    pqual = 0;
+	}
+
 	/* perform the append */
-	/* if q->rtable = NULL, perform post_rtn only */
-	if (table = q->rtable) {
-	    status = do_append(q, &Argv[q->argc], action, actarg);
+	/* if q->rvar = NULL, perform post_rtn only */
+	if (q->rvar) {
+	    status = do_append(q, &Argv[q->argc], pqual, action, actarg);
 	    if (status != SMS_SUCCESS) break;
+	    table = q->rtable;
 ##	    repeat replace tblstats (appends = tblstats.appends + 1,
 ##				     modtime = "now")
 ##		where tblstats.#table = @table
@@ -292,11 +323,12 @@ sms_process_query(cl, name, argc, argv_ro, action, actarg)
 	}
 
 	/* build "where" clause and perform delete */
-	/* if q->rtable = NULL, perform post_rtn only */
-	if (table = q->rtable) {
+	/* if q->rvar = NULL, perform post_rtn only */
+	if (q->rvar) {
 	    build_qual(q->qual, q->argc, Argv, qual);
 	    status = do_delete(q, qual, action, actarg);
 	    if (status != SMS_SUCCESS) break;
+	    table = q->rtable;
 ##	    repeat replace tblstats (deletes = tblstats.deletes + 1,
 ##				     modtime = "now")
 ##		where tblstats.#table = @table
@@ -363,6 +395,31 @@ build_qual(fmt, argc, argv, qual)
     }
 }
 
+char *
+build_sort(v, sort)
+    register struct validate *v;
+    char *sort;
+{
+    register struct valobj *vo;
+    register int n;
+    char elem[16];
+
+    n = v->objcnt;
+    vo = v->valobj;
+    *sort = 0;
+
+    while (--n >= 0) {
+	if (vo->type == V_SORT) {
+	    sprintf(elem, "RET_VAR%d", vo->index + 1);
+	    if (*sort) strcat(sort, ", ");
+	    strcat(sort, elem);
+	}
+	vo++;
+    }
+
+    return ((*sort) ? sort : 0);
+}
+
 check_query_access(q, argv, cl)
     struct query *q;
     char *argv[];
@@ -372,6 +429,7 @@ check_query_access(q, argv, cl)
 ##  int acl_id;
 ##  int exists;
 ##  int rowcount;
+##  int errorno;
 ##  static int def_uid;
     int status;
     int client_id;
@@ -380,7 +438,8 @@ check_query_access(q, argv, cl)
     /* get query access control list */
     name = q->shortname;
 ##  repeat retrieve (acl_id = capacls.list_id) where capacls.tag = @name
-##  inquire_equel (rowcount = "rowcount")
+##  inquire_equel (rowcount = "rowcount", errorno = "errorno")
+    if (errorno != 0) return(SMS_INGRES_ERR);
     if (rowcount == 0) return(SMS_PERM);
 
     /* initialize default uid */
@@ -491,16 +550,19 @@ get_client(cl, client_type, client_id)
     }
 ##}
 
-do_retrieve(q, qual, action, actarg)
+do_retrieve(q, pqual, psort, action, actarg)
     register struct query *q;
-    char *qual;
+    char *pqual;
+    char *psort;
     int (*action)();
     char *actarg;
 ##{
 ##  char *rvar;
 ##  char *rtable;
 ##  char *cqual;
+##  char *csort;
 ##  int rowcount;
+##  int errorno;
 
     if (q->rvar) {
 	rvar = q->rvar;
@@ -508,21 +570,40 @@ do_retrieve(q, qual, action, actarg)
 ##     	range of rvar is rtable
     }
 
-    if (qual) {
-	cqual = qual;
-##      retrieve unique (param (q->tlist, q->vaddr)) where cqual
-##      {
-	     (*action)(q->vcnt, q->vaddr, actarg);
-##      }
+    if (psort) {
+	csort = psort;
+	if (pqual) {
+	    cqual = pqual;
+##          retrieve unique (param (q->tlist, q->vaddr)) where cqual
+##                   sort by csort
+##          {
+		 (*action)(q->vcnt, q->vaddr, actarg);
+##          }
+	} else {
+##          retrieve unique (param (q->tlist, q->vaddr))
+##                   sort by csort
+##          {
+		 (*action)(q->vcnt, q->vaddr, actarg);
+##          }
+	}
+
     } else {
-##      retrieve unique (param (q->tlist, q->vaddr))
-##      {
-	     (*action)(q->vcnt, q->vaddr, actarg);
-##      }
+	if (pqual) {
+	    cqual = pqual;
+##          retrieve unique (param (q->tlist, q->vaddr)) where cqual
+##          {
+		 (*action)(q->vcnt, q->vaddr, actarg);
+##          }
+	} else {
+##          retrieve unique (param (q->tlist, q->vaddr))
+##          {
+		 (*action)(q->vcnt, q->vaddr, actarg);
+##          }
+	}
     }
 
-##  inquire_equel (rowcount = "rowcount")
-
+##  inquire_equel (rowcount = "rowcount", errorno = "errorno")
+    if (errorno != 0) return(SMS_INGRES_ERR);
     return ((rowcount == 0) ? SMS_NO_MATCH : SMS_SUCCESS);
 ##}
 
@@ -537,6 +618,7 @@ do_update(q, argv, qual, action, actarg)
 ##  char *rtable;
 ##  char *cqual;
 ##  int rowcount;
+##  int errorno;
       
     rvar = q->rvar;
     rtable = q->rtable;
@@ -546,30 +628,36 @@ do_update(q, argv, qual, action, actarg)
 ##  replace rvar (param (q->tlist, argv))
 ##  where cqual
 
+##  inquire_equel (errorno = "errorno")
+    if (errorno != 0) return(SMS_INGRES_ERR);
     return(SMS_SUCCESS);
 ##}
 
-do_append(q, argv, action, actarg)
+do_append(q, argv, pqual, action, actarg)
     register struct query *q;
     char *argv[];
+    char *pqual;
     int (*action)();
     char *actarg;
 ##{
 ##  char *rvar;
 ##  char *rtable;
 ##  char *cqual;
+##  int errorno;
 
     rvar = q->rvar;
     rtable = q->rtable;
 ##  range of rvar is rtable
 
-    if (q->qual) {
-	cqual = q->qual;
+    if (pqual) {
+	cqual = pqual;
 ##      append to rtable (param (q->tlist, argv)) where cqual
     } else {
 ##      append to rtable (param (q->tlist, argv))
     }
 
+##  inquire_equel (errorno = "errorno")
+    if (errorno != 0) return(SMS_INGRES_ERR);
     return(SMS_SUCCESS);
 ##}
 
@@ -582,6 +670,7 @@ do_delete(q, qual, action, actarg)
 ##  char *rvar;
 ##  char *rtable;
 ##  char *cqual;
+##  int errorno;
 
     rvar = q->rvar;
     rtable = q->rtable;
@@ -590,6 +679,8 @@ do_delete(q, qual, action, actarg)
     cqual = qual;
 ##  delete rvar where cqual
 
+##  inquire_equel (errorno = "errorno")
+    if (errorno != 0) return(SMS_INGRES_ERR);
     return(SMS_SUCCESS);
 ##}
 

@@ -1,4 +1,4 @@
-/* $Id: winad.pc,v 1.1 2001-06-19 22:39:40 zacheiss Exp $
+/* $Id: winad.pc,v 1.2 2001-07-03 18:29:24 zacheiss Exp $
  *
  * This generates the user, list, list membership, filesys data
  * for windows active directory update
@@ -256,6 +256,7 @@ int do_groupmembership(void)
   EXEC SQL DECLARE list_cursor CURSOR FOR
     SELECT list_id
     FROM list
+    WHERE active != 0
     ORDER BY list_id;
   EXEC SQL OPEN list_cursor;
   while (1)

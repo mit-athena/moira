@@ -1,6 +1,6 @@
 #!/moira/bin/perl -Tw
 
-# $Id: ip-billing.gen,v 1.5 2002-02-05 17:32:45 zacheiss Exp $
+# $Id: ip-billing.gen,v 1.6 2002-03-20 04:02:09 zacheiss Exp $
 # The following exit codes are defined and MUST BE CONSISTENT with the
 # error codes the library uses:
 $MR_DBMS_ERR = 47836421;
@@ -96,12 +96,70 @@ while (($saddr, $name, $contact, $accountnumber, $modtime) =
     $count++;
 }
 
-# +NETWK-0
+# +NETWK-DORM
 $sth = $dbh->prepare("SELECT m.address, m.location, m.name, m.contact, " .
 		     "m.account_number, m.created, m.modtime FROM " .
 		     "machine m, subnet s WHERE m.status = 1 " .
 		     "AND m.snet_id = s.snet_id AND " .
-		     "(s.status = 4 OR s.status = 5 OR s.status = 6) " .
+		     "s.status = 5 AND m.address != 'unassigned' " .
+		     "ORDER BY m.address")
+    || exit $MR_DBMS_ERR;
+
+$sth->execute || exit $MR_DBMS_ERR;
+
+while (($address, $location, $name, $contact, $accountnumber, $created, $modtime) = 
+       $sth->fetchrow_array) { 
+    $row = "$address\t$location\t$name\t$contact\t$accountnumber\t+NETWK-DORM\t$created\t$modtime\n";
+    $row =~ s/\0//g;
+    print DAT $row;
+    $count++;
+}
+
+# +NETWK-FSILG
+$sth = $dbh->prepare("SELECT m.address, m.location, m.name, m.contact, " .
+                     "m.account_number, m.created, m.modtime FROM " .
+                     "machine m, subnet s WHERE m.status = 1 " .
+                     "AND m.snet_id = s.snet_id AND " .
+                     "s.status = 8 AND m.address != 'unassigned' " .
+                     "ORDER BY m.address")
+    || exit $MR_DBMS_ERR;
+
+$sth->execute || exit $MR_DBMS_ERR;
+
+while (($address, $location, $name, $contact, $accountnumber, $created, $modtime) = 
+       $sth->fetchrow_array) { 
+    $row = "$address\t$location\t$name\t$contact\t$accountnumber\t+NETWK-FSILG\t$created\t$modtime\n";
+    $row =~ s/\0//g;
+    print DAT $row;
+    $count++;
+}
+
+# +NETWK-OCS
+$sth = $dbh->prepare("SELECT m.address, m.location, m.name, m.contact, " .
+		     "m.account_number, m.created, m.modtime FROM " .
+		     "machine m, subnet s WHERE m.status = 1 " .
+		     "AND m.snet_id = s.snet_id AND " .
+		     "s.status = 6 AND s.name LIKE '%-DHREG' " .
+		     "AND m.address != 'unassigned' ORDER BY m.address")
+    || exit $MR_DBMS_ERR;
+
+$sth->execute || exit $MR_DBMS_ERR;
+
+while (($address, $location, $name, $contact, $accountnumber, $created, $modtime) =
+       $sth->fetchrow_array) {
+    $row = "$address\t$location\t$name\t$contact\t$accountnumber\t+NETWK-OCS\t$created\t$modtime\n";
+    $row =~ s/\0//g;
+    print DAT $row;
+    $count++;
+}
+
+# +NETWK-0
+$sth = $dbh->prepare("SELECT m.address, m.location, m.name, m.contact, " .
+		     "m.account_number, m.created, m.modtime FROM " .
+		     "machine m, subnet s WHERE m.status = 1 " .
+		     "AND m.snet_id = s.snet_id AND " .  
+		     "(s.status = 4 OR s.status = 6) AND " .
+		     "s.name NOT LIKE '%-DHREG' " .
 		     "AND m.address != 'unassigned' ORDER BY m.address") 
     || exit $MR_DBMS_ERR;
 

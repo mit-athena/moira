@@ -1,21 +1,25 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_scall.c,v $
  *	$Author: wesommer $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_scall.c,v 1.2 1987-06-03 16:07:50 wesommer Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_scall.c,v 1.3 1987-06-04 01:35:01 wesommer Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
  *	$Log: not supported by cvs2svn $
+ * Revision 1.2  87/06/03  16:07:50  wesommer
+ * Fixes for lint.
+ * 
  * Revision 1.1  87/06/02  20:07:10  wesommer
  * Initial revision
  * 
  */
 
 #ifndef lint
-static char *rcsid_sms_scall_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_scall.c,v 1.2 1987-06-03 16:07:50 wesommer Exp $";
+static char *rcsid_sms_scall_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_scall.c,v 1.3 1987-06-04 01:35:01 wesommer Exp $";
 #endif lint
 
 #include <krb.h>
+#include <errno.h>
 #include "sms_private.h"
 #include "sms_server.h"
 extern char buf1[];
@@ -65,10 +69,7 @@ char *procnames[] = {
 	 "noop",
 	 "auth",
 	 "shutdown",
-	 "retrieve",
-	 "append",
-	 "delete",
-	 "edit",
+	 "query",
 	 };
 #endif notdef
 
@@ -102,11 +103,10 @@ do_call(cl)
 	case SMS_AUTH:
 		do_auth(cl);
 		return;
-#ifdef notdef
-	case SMS_RETRIEVE:
+
+	case SMS_QUERY:
 		do_retr(cl);
 		return;
-#endif notdef
 
 	case SMS_SHUTDOWN:
 		do_shutdown(cl);
@@ -114,10 +114,58 @@ do_call(cl)
 	}
 }
 
-#ifdef notdef
+retr_callback(argc, argv, p_cp)
+	int argc;
+	char **argv;
+	char *p_cp;
+{
+	register client *cp = (client *)p_cp;
+	/* XXX MEM when are these freed?? */
+	/*
+	 * This takes too much advantage of the fact that
+	 * serialization of the data happens during the queue operation.
+	 */
+	sms_params *arg_tmp = (sms_params *)db_alloc(sizeof(sms_params));
+	OPERATION op_tmp = create_operation();
+	
+
+#ifdef notdef			/* We really don't want this logged */
+	com_err(whoami, 0, "Returning next data:");
+	log_args(argc, argv);
+#endif notdef
+	
+	arg_tmp->sms_status = SMS_MORE_DATA;
+	arg_tmp->sms_argc = argc;
+	arg_tmp->sms_argv = argv;
+	arg_tmp->sms_flattened = (char *)NULL;
+	arg_tmp->sms_argl = (int *)NULL;
+	reset_operation(op_tmp);
+	initialize_operation(op_tmp, sms_start_send, (char *)arg_tmp,
+			     (int (*)())NULL);
+	queue_operation(cp->con, CON_OUTPUT, op_tmp);
+}
+
+
 do_retr(cl)
 	client *cl;
 {
+	cl->reply.sms_argc = 0;
+	cl->reply.sms_status = 0;
+
+	if (!cl->clname) {
+		com_err(whoami, 0, "Unauthenticated query rejected");
+		cl->reply.sms_status = EACCES;
+		return;
+	}
+	com_err(whoami, 0, "Processing query: ");
+	log_args(cl->args->sms_argc, cl->args->sms_argv);
 	
+	sms_process_query(cl->args->sms_argv[0],
+			  cl->args->sms_argc-1,
+			  cl->args->sms_argv+1,
+			  retr_callback,
+			  (char *)cl);
+
+	com_err(whoami, 0, "Query complete.");
 }
-#endif notdef
+

@@ -1,4 +1,5 @@
 @part[sysmodel, root "sms.mss"]
+@newpage()
 @MajorSection(System Model)
 
 The model is derived from requirements listed in the previous section.  As

@@ -6,8 +6,8 @@
  *	By:		Chris D. Peterson
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/include/moira_site.h,v $
- *      $Author: kit $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/include/moira_site.h,v 1.7 1988-07-29 18:35:52 kit Exp $
+ *      $Author: qjb $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/include/moira_site.h,v 1.8 1988-08-02 00:07:35 qjb Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -186,5 +186,12 @@
 #define U_MODWITH 11
 #define U_END     12
 
-#endif _infodefs_		/* Do not add anything after this line. */
+/* User states (the value of argv[U_STATE] from a user query) */
+#define US_NO_LOGIN_YET 0
+#define US_REGISTERED   1
+#define US_NO_PASSWD    2
+#define US_DELETED      3
+#define US_NOT_ALLOWED  4
+#define US_END          5
 
+#endif _infodefs_		/* Do not add anything after this line. */

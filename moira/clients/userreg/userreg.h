@@ -1,8 +1,8 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.h,v $
- *	$Author: mar $
+ *	$Author: danw $
  *	$Locker:  $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.h,v 1.7 1991-07-26 14:52:34 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.h,v 1.8 1997-01-29 23:12:31 danw Exp $
  */
 
 #include <stdio.h>
@@ -71,4 +71,3 @@ extern  display_text ();
 /* Global variables */
 extern struct user  user,
                     db_user;
-char typed_mit_id[100];

@@ -1,4 +1,4 @@
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/Imakefile,v 1.6 1996-08-01 08:57:55 jweiss Exp $
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/Imakefile,v 1.7 1997-01-29 23:12:21 danw Exp $
 #
 # Copyright 1990 by the Massachusetts Institute of Technology.
 #
@@ -16,6 +16,6 @@ SCRIPTS= register xregister
 CODE=${SRCS} ${TEXT} ${SCRIPTS} Imakefile files.h userreg.h
 OBJS=	userreg.o display.o reg_stubs.o disable.o
 
-program(userreg, ${OBJS},${MR_LIBDEP} ${GDB_LIBDEP}, -lkadm ${CLIBS} ${CURSES},${PROGDIR})
+program(userreg, ${OBJS},${MR_LIBDEP} ${GDB_LIBDEP}, -lkadm ${CLIBS} ${CRYPT} ${CURSES},${PROGDIR})
 
 depend:: ${CODE}

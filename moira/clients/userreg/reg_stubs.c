@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/reg_stubs.c,v $
- *	$Author: jweiss $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/reg_stubs.c,v 1.23 1994-04-29 19:55:56 jweiss Exp $
+ *	$Author: danw $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/reg_stubs.c,v 1.24 1997-01-29 23:12:29 danw Exp $
  *
  *  (c) Copyright 1988 by the Massachusetts Institute of Technology.
  *  For copying and distribution information, please see the file
@@ -9,11 +9,12 @@
  */
 
 #ifndef lint
-static char *rcsid_reg_stubs_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/reg_stubs.c,v 1.23 1994-04-29 19:55:56 jweiss Exp $";
-#endif lint
+static char *rcsid_reg_stubs_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/reg_stubs.c,v 1.24 1997-01-29 23:12:29 danw Exp $";
+#endif
 
 #include <mit-copyright.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <sys/types.h>
 #include <sys/time.h>
 #include <sys/socket.h>
@@ -28,6 +29,7 @@ static char *rcsid_reg_stubs_c = "$Header: /afs/.athena.mit.edu/astaff/project/m
 #include <errno.h>
 #include <moira.h>
 #include <moira_site.h>
+#include <hesiod.h>
 #include "ureg_err.h"
 #include "ureg_proto.h"
 #include <string.h>
@@ -52,7 +54,6 @@ ureg_init()
     char **p, *s;
     struct hostent *hp;
     struct sockaddr_in s_in;
-    extern char *getenv(), **hes_resolve();
     
     initialize_ureg_error_table();
     initialize_krb_error_table(); 
@@ -68,7 +69,7 @@ ureg_init()
 	p = hes_resolve("registration", "sloc");
 	if (p) host = *p;
     }
-#endif HESIOD
+#endif
     if (!host || (strlen(host) == 0)) {
 	host = strsave(MOIRA_SERVER);
 	s = strchr(host, ':');
@@ -91,7 +92,7 @@ ureg_init()
     memcpy((char *)&s_in.sin_addr, hp->h_addr, sizeof(struct in_addr));
     s_in.sin_family = AF_INET;
 
-    if (connect(reg_sock, &s_in, sizeof(s_in)) < 0)
+    if (connect(reg_sock, (struct sockaddr *)&s_in, sizeof(s_in)) < 0)
 	return errno;
     return 0;
 }
@@ -352,7 +353,7 @@ do_secure_operation(login, idnumber, passwd, newpasswd, opcode)
 
 }
 
-static do_call(buf, len, seq_no, login)
+do_call(buf, len, seq_no, login)
     char *buf;
     char *login;
     int seq_no;
@@ -384,7 +385,8 @@ static do_call(buf, len, seq_no, login)
 		break;
 	    else if (rtn < 0) return errno;
 	
-	    len = recvfrom(reg_sock, ibuf, BUFSIZ, 0, &s_in, &addrlen);
+	    len = recvfrom(reg_sock, ibuf, BUFSIZ, 0,
+			   (struct sockaddr *)&s_in, &addrlen);
 	    if (len < 0) return errno;
 	    if (len < 12) return UREG_BROKEN_PACKET;
 	    memcpy((char *)&vno, ibuf, sizeof(long));

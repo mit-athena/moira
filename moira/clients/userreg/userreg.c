@@ -1,8 +1,8 @@
 /*
  * $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.c,v $
- * $Author: jweiss $
+ * $Author: danw $
  * $Locker:  $
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.c,v 1.29 1996-08-15 00:58:45 jweiss Exp $ 
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.c,v 1.30 1997-01-29 23:12:30 danw Exp $ 
  *
  *  (c) Copyright 1988 by the Massachusetts Institute of Technology.
  *  For copying and distribution information, please see the file
@@ -10,8 +10,8 @@
  */
 
 #ifndef lint
-static char    *rcsid_userreg_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.c,v 1.29 1996-08-15 00:58:45 jweiss Exp $";
-#endif	lint
+static char    *rcsid_userreg_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.c,v 1.30 1997-01-29 23:12:30 danw Exp $";
+#endif
 
 #include <mit-copyright.h>
 #include <string.h>
@@ -38,7 +38,6 @@ static char    *rcsid_userreg_c = "$Header: /afs/.athena.mit.edu/astaff/project/
 
 struct user     user, db_user;
 struct alias    alias;
-char            typed_mit_id[100];
 char		realm[REALM_SZ];
 jmp_buf         redo;
 int             restart();
@@ -49,6 +48,7 @@ int		user_has_login = 0;
 int             already_registered = 0;
 int		enrollment = 0;
 extern char *disabled();
+char typed_mit_id[100];
 
 fix_display(sig)
 {

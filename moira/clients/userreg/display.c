@@ -1,8 +1,8 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/display.c,v $
- *	$Author: jweiss $
+ *	$Author: danw $
  *	$Locker:  $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/display.c,v 1.11 1996-08-15 00:57:51 jweiss Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/display.c,v 1.12 1997-01-29 23:12:24 danw Exp $
  *
  *  (c) Copyright 1988 by the Massachusetts Institute of Technology.
  *  For copying and distribution information, please see the file
@@ -10,8 +10,8 @@
  */
 
 #ifndef lint
-static char *rcsid_display_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/display.c,v 1.11 1996-08-15 00:57:51 jweiss Exp $";
-#endif	lint
+static char *rcsid_display_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/display.c,v 1.12 1997-01-29 23:12:24 danw Exp $";
+#endif
 
 #include <mit-copyright.h>
 #include <stdio.h>
@@ -21,7 +21,7 @@ static char *rcsid_display_c = "$Header: /afs/.athena.mit.edu/astaff/project/moi
 
 #define DESC_WIDTH 18
 #define HEADER "*** Athena User Account Registration ***"
-#if defined(vax) || defined(ultrix)
+#if defined(ultrix)
 #define HELP   " Press the key above RETURN to delete a character.  Press Ctrl-C to start over."
 #endif
 #ifndef HELP
@@ -34,6 +34,7 @@ static char *rcsid_display_c = "$Header: /afs/.athena.mit.edu/astaff/project/moi
 WINDOW * displayw, *queryw;
 WINDOW * dataw, *helpw;
 WINDOW * fnamew, *midw, *lnamew, *idw, *loginw;
+extern char typed_mit_id[100];
 
 /* Set up the windows and subwindows on the display */
 setup_display () {
@@ -199,7 +200,9 @@ retry:
 	if (i) {
 	  i--;
 	  if (echop) {
-	    wmove (queryw, queryw -> _cury, queryw -> _curx - 1);
+	    int x, y;
+	    getyx(queryw, y, x);
+	    wmove (queryw, y, x - 1);
 	    wclrtoeol (queryw);
 	    wrefresh (queryw);
 	  }
@@ -271,8 +274,7 @@ askyn(prompt)
   mvwaddstr (queryw, 0, 0, prompt);
   wrefresh (queryw);
 
-  xpos = queryw->_curx;
-  ypos = queryw->_cury;
+  getyx(queryw, ypos, xpos);
   answer = 2;			/* No answer. */
   
   /* Reset interval timer for y/n question. */

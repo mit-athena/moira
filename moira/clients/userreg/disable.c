@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/disable.c,v 1.5 1991-07-12 16:33:40 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/disable.c,v 1.6 1997-01-29 23:12:22 danw Exp $
  *
  * disabled: check to see if registration is enabled right now.  Most of this
  * code is stolen from the cron daemon.
@@ -106,7 +106,7 @@ char **msg;
     return(ctime(&itime));
 }
 
-static char *
+char *
 cmp(p, v)
 char *p;
 {
@@ -143,7 +143,7 @@ char *p;
 	return(cp);
 }
 
-static init()
+init()
 {
 	/*
 	 * Don't free in case was longer than LISTS.  Trades off
@@ -157,7 +157,7 @@ static init()
 	listend = list;
 }
 
-static append(fn)
+append(fn)
 char *fn;
 {
 	register int i, c;
@@ -253,7 +253,7 @@ ignore:
 	goto loop;
 }
 
-static number(c, f)
+number(c, f)
 register char c;
 FILE *f;
 {

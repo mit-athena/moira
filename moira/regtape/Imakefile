@@ -1,0 +1,20 @@
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/Imakefile,v 1.1 1993-01-04 15:58:18 mar Exp $
+
+# Copyright 1992 by the Massachusetts Institute of Technology.
+#
+# For copying and distribution information,
+# please see the file <mit-copyright.h>.
+#
+# Imakefile for moira regtape programs.
+
+SRCS= students.c employee.c sign.c rafnu.c
+CODE= students.dc employee.dc sign.dc rafnu.c
+sqlrule()
+
+program(students, students.o rafnu.o,,$(CLIBS) $(SQL_LIB), $(PROGDIR))
+program(employee, employee.o rafnu.o,,$(CLIBS) $(SQL_LIB), $(PROGDIR))
+program(sign, sign.o rafnu.o,,$(CLIBS) $(SQL_LIB), $(PROGDIR))
+
+sqlfile(students)
+sqlfile(employee)
+sqlfile(sign)

@@ -1,4 +1,4 @@
-/* $Id: printng.pc,v 1.5 1999-07-06 14:45:50 danw Exp $
+/* $Id: printng.pc,v 1.6 1999-09-03 01:51:01 mwhitson Exp $
  *
  * This generates printcaps and other files for Athena print servers
  *
@@ -22,7 +22,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/printng.pc,v 1.5 1999-07-06 14:45:50 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/printng.pc,v 1.6 1999-09-03 01:51:01 mwhitson Exp $");
 
 char *whoami = "printng.gen";
 char *db = "moira/moira";
@@ -141,9 +141,11 @@ void do_host(char *host)
 
       if (*duplexname)
 	{
-	  fprintf(out, "%s\n\t:server:bq=%s:cm=%s duplex queue\n"
-		  "\t:ifhp=model=%s:tc=%s\n\n", duplexname, rp, rp,
-		  lowerhwtype, duptc);
+	  fprintf(out, "%s\n\t:server:bq=%s:cm=%s duplex queue\n\t", 
+		  duplexname, rp, rp);
+	  if (!strncmp(hwtype, "HP", 2))
+	    fprintf(out, ":ifhp=model=%s", lowerhwtype);
+	  fprintf(out, ":tc=%s\n\n", duptc);
 	}
     }
   EXEC SQL CLOSE csr_printcap;

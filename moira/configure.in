@@ -11,17 +11,23 @@ AC_DEFUN(MR_EXTEND, [
 ])
 
 AC_CANONICAL_HOST
+# SO_LDFLAGS setting below is a great big ick.
+# But it beats sucking in libtool for one small part of the source tree.
 case $host_os in
 solaris*)
 	short_os=solaris
+	SO_LDFLAGS="-G"
 	;;
 irix*)
 	short_os=irix
+	SO_LDFLAGS="-shared"
 	;;
 linux*)
 	short_os=linux
+	SO_LDFLAGS="-shared"
 	;;
 esac
+AC_SUBST(SO_LDFLAGS)
 
 dnl Define for both C and Pro*C
 AC_DEFUN(MR_DEFINE, [

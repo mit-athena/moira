@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v 1.19 1990-03-17 17:26:01 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v 1.20 1990-04-09 15:02:25 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_test_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v 1.19 1990-03-17 17:26:01 mar Exp $";
+static char *rcsid_test_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v 1.20 1990-04-09 15:02:25 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -49,6 +49,10 @@ moira()
 	if (status != 0) {
 		com_err(whoami, status, "Unable to create invocation");
 		exit(1);
+	}
+	if (argc > 1) {
+	    argv++;
+	    ss_execute_command(ss, argv);
 	}
 	ss_listen(ss, &status);
 	if (status != 0) {

@@ -1,11 +1,17 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v $
  *	$Author: mike $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.10 1987-08-25 15:56:54 mike Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.11 1987-08-28 14:55:45 mike Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
  *	$Log: not supported by cvs2svn $
+Revision 1.10  87/08/25  15:56:54  mike
+- Fixed bugs in get_groups_of_all_users
+- Added tblstats updates to add_user_group
+- Added routines: add_hostaccess (ashi), delete_hostaccess (dshi),
+  followup_ushp, and followup_usha
+
 Revision 1.9  87/08/22  17:41:34  wesommer
 More of Mike's changes. 
 
@@ -36,7 +42,7 @@ Initial revision
  */
 
 #ifndef lint
-static char *rcsid_qsupport_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.10 1987-08-25 15:56:54 mike Exp $";
+static char *rcsid_qsupport_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.11 1987-08-28 14:55:45 mike Exp $";
 #endif lint
 
 #include "query.h"
@@ -1211,11 +1217,12 @@ add_locker(q, argv)
  **
  ** Inputs:
  **   argv[0] - users_id
- **   argv[1] - machine_id
- **   argv[2] - device
- **   argv[3] - quota
  ** 
  ** Description:
+ **   - get login name from users_id
+ **   - get filesys entry from login
+ **   - use filesys.mach_id and filesys.name to determine machine/device
+ **     pair for nfsphys and nfsquota
  **   - delete filesys entry (label=<login>)
  **   - decrement allocated in nfsphys by quota
  **   - delete nfsquota entry
@@ -1231,16 +1238,15 @@ delete_locker(q, argv)
 ##{
 ##  int users_id;
 ##  int mach_id;
-##  char *device;
 ##  int quota;
 ##  int rowcount;
 ##  char login[9];
+##  char lname[64];
+##  char ndev[32];
+    register char *c;
 
     /* copy arguments */
     users_id = *(int *)argv[0];
-    mach_id = *(int *)argv[1];
-    device = argv[2];
-    sscanf(argv[3], "%d", &quota);
 
 ##  range of u is users
 ##  range of f is filesys
@@ -1251,22 +1257,37 @@ delete_locker(q, argv)
     /* get login name */
 ##  repeat retrieve (login = u.#login) where u.#users_id = @users_id
 
-    /* delete the filesys entry */
-##  repeat delete f where f.label = @login
+    /* get mach_id and locker name from filesys entry; then delete it */
+##  repeat retrieve (mach_id = f.#mach_id, lname = f.#name)
+##         where f.#label = @login
 ##  inquire_equel (rowcount = "rowcount")
     if (rowcount == 0) return(SMS_FILESYS);
+##  repeat delete f where f.#label = @login
+
+    /* get prefix directory */
+    c = (char *)rindex(lname, '/');
+    *c = 0;
+
+    /* get nfs device */
+##  repeat retrieve (ndev = np.device) 
+##         where np.#mach_id = @mach_id and np.dir = @lname
+
+    /* get quota from nfsquota entry; then delete entry */
+##  repeat retrieve (quota = nq.#quota)
+##         where nq.#mach_id = @mach_id and nq.#device = @ndev and
+##               nq.#users_id = @users_id
+##  repeat delete nq where nq.#mach_id = @mach_id and nq.#device = @ndev and
+##                  nq.#users_id = @users_id
+
+    /* decrement nfsphys.allocated */
+##  repeat replace np (allocated = np.allocated - @quota)
+##         where np.#mach_id = @mach_id and np.#device = @ndev
+
+    /* adjust table statistics */
 ##  repeat replace tbs (deletes = tbs.deletes + 1, modtime = "now")
 ##             where tbs.table = "filesys"
-
-    /* decrement usage count in nfsphys table */
-##  replace np (#allocated = np.#allocated - quota) 
-##	    where np.#mach_id = mach_id and np.#device = device
 ##  repeat replace tbs (updates = tbs.updates + 1, modtime = "now")
 ##             where tbs.table = "nfsphys"
-
-    /* delete nfsquota entry */
-##  delete nq where nq.#users_id = users_id and nq.#mach_id = mach_id and
-##                  nq.#device = device
 ##  repeat replace tbs (deletes = tbs.deletes + 1, modtime = "now")
 ##             where tbs.table = "nfsquota"
 
@@ -1460,6 +1481,8 @@ get_groups_of_all_users(q, argv, action, actarg)
 ##  range of m is members
 ##  range of g is groups
 
+##  set lockmode session where readlock = nolock
+
 ##  repeat retrieve (login = u.#login, group = l.name, gid = text(g.#gid))
 ##         where m.member_type = "USER" and m.member_id = u.users_id and
 ##               u.status != 0 and m.list_id = g.list_id and
@@ -1470,6 +1493,7 @@ get_groups_of_all_users(q, argv, action, actarg)
 ##  }
 
 ##  inquire_equel (errorno = "errorno")
+##  set lockmode session where readlock = system
 
     return((errorno) ? SMS_INGRES_ERR : SMS_SUCCESS);
 ##}
@@ -1498,6 +1522,8 @@ get_all_poboxes(q, argv, action, actarg)
     targv[3] = box;
 
     targv[1] = "LOCAL";
+
+##  set lockmode session where readlock = nolock
 ##  range of p is pobox
 ##  repeat retrieve (login=users.#login, machine = #machine.name, box=p.#box)
 ##             where p.type = "LOCAL" and p.users_id = users.users_id
@@ -1521,6 +1547,7 @@ get_all_poboxes(q, argv, action, actarg)
 ##  {
 	 (*action)(4, targv, actarg);
 ##  }
+##  set lockmode session where readlock = system
 
     return(SMS_SUCCESS);
 ##}

@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v $
  *	$Author: wesommer $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.7 1987-06-08 02:44:44 wesommer Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.8 1987-06-09 18:44:45 wesommer Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
@@ -14,6 +14,9 @@
  * 	Let the reader beware.
  * 
  *	$Log: not supported by cvs2svn $
+ * Revision 1.7  87/06/08  02:44:44  wesommer
+ * Minor lint fix.
+ * 
  * Revision 1.6  87/06/03  17:41:00  wesommer
  * Added startup support.
  * 
@@ -34,7 +37,7 @@
  * 
  */
 
-static char *rcsid_sms_main_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.7 1987-06-08 02:44:44 wesommer Exp $";
+static char *rcsid_sms_main_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.8 1987-06-09 18:44:45 wesommer Exp $";
 
 #include <strings.h>
 #include <sys/errno.h>
@@ -105,7 +108,9 @@ main(argc, argv)
 		com_err(whoami, 0, "GDB initialization failed.");
 		exit(1);
 	}
-
+	gdb_debug(0); /* this can be patched, if necessary, to enable */
+		      /* GDB level debugging .. */
+	
 	/*
 	 * Database initialization.
 	 */
@@ -189,7 +194,11 @@ main(argc, argv)
 		 * Handle any new connections.
 		 */
 		if (OP_DONE(listenop)) {
-			if ((status = new_connection()) != 0) {
+			if (OP_STATUS(listenop) == OP_CANCELLED) {
+				com_err(whoami, errno, "Error on listen");
+				exit(1);
+
+			} else if ((status = new_connection()) != 0) {
 				com_err(whoami, errno,
 					"Error on listening operation.");
 				/*
@@ -234,7 +243,7 @@ do_listen()
 int
 new_connection()
 {
-	register client *cp = (client *)malloc(sizeof *cp);
+	register client *cp;
 	static counter = 0;
 	
 	/*
@@ -251,7 +260,7 @@ new_connection()
 	/*
 	 * Set up the new connection and reply to the client
 	 */
-
+	cp = (client *)malloc(sizeof *cp);
 	cp->state = CL_STARTING;
 	cp->action = CL_ACCEPT;
 	cp->con = newconn;
@@ -351,6 +360,7 @@ clist_delete(cp)
 
 	reset_operation(cp->pending_op);
 	delete_operation(cp->pending_op);
+	sever_connection(cp->con);
 	free((char *)cp);
 }
 

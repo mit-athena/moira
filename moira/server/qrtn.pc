@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.pc,v $
  *	$Author: danw $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.pc,v 2.4 1997-10-01 19:57:10 danw Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.pc,v 2.5 1998-01-05 14:59:11 danw Exp $
  *
  *	Copyright (C) 1987, 1988 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_qrtn_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.pc,v 2.4 1997-10-01 19:57:10 danw Exp $";
+static char *rcsid_qrtn_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.pc,v 2.5 1998-01-05 14:59:11 danw Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -772,18 +772,17 @@ int do_delete(q, qual, action, actarg)
  **/
 
 int set_next_object_id(object, table, limit)
-EXEC SQL BEGIN DECLARE SECTION;
      char *object;
-EXEC SQL END DECLARE SECTION;
      enum tables table;
      int limit;
 {
     EXEC SQL BEGIN DECLARE SECTION; 
     int value;
+    char *obj = object;
     EXEC SQL END DECLARE SECTION;
     int starting_value;
     
-    EXEC SQL SELECT value INTO :value FROM numvalues WHERE name = :object;
+    EXEC SQL SELECT value INTO :value FROM numvalues WHERE name = :obj;
     if (sqlca.sqlerrd[2] != 1)
 	return(MR_NO_ID);
 
@@ -807,7 +806,7 @@ EXEC SQL END DECLARE SECTION;
 
     if (LOG_RES)
         com_err(whoami, 0, "setting ID %s to %d", object, value);
-    EXEC SQL UPDATE numvalues SET value = :value WHERE name = :object;
+    EXEC SQL UPDATE numvalues SET value = :value WHERE name = :obj;
     return(MR_SUCCESS);
 }
 
@@ -920,14 +919,15 @@ void dosql(buffers)
 }
 
 int do_for_all_rows(query, count, action, actarg)
-EXEC SQL BEGIN DECLARE SECTION;
      char *query;
-EXEC SQL END DECLARE SECTION;
      int count, (*action)(), actarg;
 {
   int i, rowcount=0;
+  EXEC SQL BEGIN DECLARE SECTION;
+  char *q = query;
+  EXEC SQL END DECLARE SECTION;
 
-  EXEC SQL PREPARE stmt FROM :query;
+  EXEC SQL PREPARE stmt FROM :q;
   if(sqlca.sqlcode) return;
   EXEC SQL DECLARE curs CURSOR FOR stmt;
   EXEC SQL OPEN curs;

@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qvalidate.pc,v $
  *	$Author: danw $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qvalidate.pc,v 2.3 1997-07-03 07:52:31 danw Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qvalidate.pc,v 2.4 1998-01-05 14:59:13 danw Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_qsupport_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qvalidate.pc,v 2.3 1997-07-03 07:52:31 danw Exp $";
+static char *rcsid_qsupport_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qvalidate.pc,v 2.4 1998-01-05 14:59:13 danw Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -635,13 +635,11 @@ int convert_wildcards_uppercase(arg)
 /*  Adds a string to the string table.  Returns the id number.
  * 
  */
-int add_string(name)
-    EXEC SQL BEGIN DECLARE SECTION; 
-    char *name;
-    EXEC SQL END DECLARE SECTION;
+int add_string(nm)
+    char *nm;
 {
     EXEC SQL BEGIN DECLARE SECTION;
-    char buf[256];
+    char buf[256], *name = nm;
     int id;
     EXEC SQL END DECLARE SECTION; 
 
@@ -649,7 +647,7 @@ int add_string(name)
     id++;
     EXEC SQL UPDATE numvalues SET value = :id WHERE name = 'strings_id';
     
-    EXEC SQL INSERT INTO strings (string_id, string) VALUES (:id, :name);
+    EXEC SQL INSERT INTO strings (string_id, string) VALUES (:id, :nm);
  
     return(id);
 }

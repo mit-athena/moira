@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.pc,v $
  *	$Author: danw $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.pc,v 2.5 1997-09-05 20:13:00 danw Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.pc,v 2.6 1998-01-05 14:59:13 danw Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_qsupport_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.pc,v 2.5 1997-09-05 20:13:00 danw Exp $";
+static char *rcsid_qsupport_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.pc,v 2.6 1998-01-05 14:59:13 danw Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -622,15 +622,14 @@ int get_ace_use(q, argv, cl, action, actarg)
  */
 
 int get_ace_internal(atype, aid, action, actarg)
-EXEC SQL BEGIN DECLARE SECTION;
      char *atype;
-EXEC SQL END DECLARE SECTION;
      int aid, (*action)(), actarg;
 {
     char *rargv[2];
     int found = 0;
     EXEC SQL BEGIN DECLARE SECTION;
-    char name[33];
+    char name[33], *type = atype;
+    int id = aid;
     EXEC SQL END DECLARE SECTION;
 
     rargv[1] = name;
@@ -638,7 +637,7 @@ EXEC SQL END DECLARE SECTION;
 	rargv[0] = "FILESYS";
 	EXEC SQL DECLARE csr110 CURSOR FOR
 	  SELECT label FROM filesys
-	    WHERE owners = :aid;
+	    WHERE owners = :id;
 	if (dbms_errno)
 	    return(mr_errcode);
 	EXEC SQL OPEN csr110;
@@ -655,7 +654,7 @@ EXEC SQL END DECLARE SECTION;
 	rargv[0] = "QUERY";
 	EXEC SQL DECLARE csr111 CURSOR FOR
 	  SELECT capability FROM capacls
-	    WHERE list_id = :aid ;
+	    WHERE list_id = :id ;
 	if (dbms_errno)
 	    return(mr_errcode);
 	EXEC SQL OPEN csr111;
@@ -672,7 +671,7 @@ EXEC SQL END DECLARE SECTION;
 	rargv[0] = "FILESYS";
 	EXEC SQL DECLARE csr112 CURSOR FOR
 	  SELECT label FROM filesys
-	    WHERE owner = :aid;
+	    WHERE owner = :id;
 	if (dbms_errno)
 	    return(mr_errcode);
 	EXEC SQL OPEN csr112;
@@ -690,7 +689,7 @@ EXEC SQL END DECLARE SECTION;
     rargv[0] = "LIST";
     EXEC SQL DECLARE csr113 CURSOR FOR
       SELECT name FROM list
-	WHERE acl_type = :atype AND acl_id = :aid;
+	WHERE acl_type = :type AND acl_id = :id;
     if (dbms_errno)
 	return(mr_errcode);
     EXEC SQL OPEN csr113;
@@ -707,7 +706,7 @@ EXEC SQL END DECLARE SECTION;
     rargv[0] = "SERVICE";
     EXEC SQL DECLARE csr114 CURSOR FOR
       SELECT name FROM servers
-	WHERE acl_type = :atype AND acl_id = :aid;
+	WHERE acl_type = :type AND acl_id = :id;
     if (dbms_errno)
 	return(mr_errcode);
     EXEC SQL OPEN csr114;
@@ -724,8 +723,8 @@ EXEC SQL END DECLARE SECTION;
     rargv[0] = "HOSTACCESS";
     EXEC SQL DECLARE csr115 CURSOR FOR
       SELECT name FROM machine m, hostaccess ha
-	WHERE m.mach_id = ha.mach_id AND ha.acl_type = :atype
-	  AND ha.acl_id = :aid;
+	WHERE m.mach_id = ha.mach_id AND ha.acl_type = :type
+	  AND ha.acl_id = :id;
     if (dbms_errno)
 	return(mr_errcode);
     EXEC SQL OPEN csr115;
@@ -742,10 +741,10 @@ EXEC SQL END DECLARE SECTION;
     rargv[0] = "ZEPHYR";
     EXEC SQL DECLARE csr116 CURSOR FOR
       SELECT class FROM zephyr z
-	WHERE z.xmt_type = :atype AND z.xmt_id = :aid
-	  OR z.sub_type = :atype AND z.sub_id = :aid
-	  OR z.iws_type = :atype AND z.iws_id = :aid
-          OR z.iui_type = :atype AND z.iui_id = :aid;
+	WHERE z.xmt_type = :type AND z.xmt_id = :id
+	  OR z.sub_type = :type AND z.sub_id = :id
+	  OR z.iws_type = :type AND z.iws_id = :id
+          OR z.iui_type = :type AND z.iui_id = :id;
     if (dbms_errno)
 	return(mr_errcode);
     EXEC SQL OPEN csr116;
@@ -1315,13 +1314,14 @@ int register_user(q, argv, cl)
  **/
 
 int set_pop_usage(id, cnt)
-EXEC SQL BEGIN DECLARE SECTION;
     int id, cnt;
-EXEC SQL END DECLARE SECTION;
 {
+    EXEC SQL BEGIN DECLARE SECTION;
+    int iid = id, icnt = cnt;
+    EXEC SQL END DECLARE SECTION;
 
-    EXEC SQL UPDATE serverhosts SET value1 = value1 + :cnt
-      WHERE serverhosts.service = 'POP' AND serverhosts.mach_id = :id;
+    EXEC SQL UPDATE serverhosts SET value1 = value1 + :icnt
+      WHERE serverhosts.service = 'POP' AND serverhosts.mach_id = :iid;
 
     if (dbms_errno) return(mr_errcode);
     return(MR_SUCCESS);

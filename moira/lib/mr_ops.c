@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_ops.c,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_ops.c,v 1.4 1989-06-27 14:30:23 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_ops.c,v 1.5 1989-06-28 11:23:02 mar Exp $
  *
  *	Copyright (C) 1987, 1989 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -13,7 +13,7 @@
  */
 
 #ifndef lint
-static char *rcsid_sms_do_update_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_ops.c,v 1.4 1989-06-27 14:30:23 mar Exp $";
+static char *rcsid_sms_do_update_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_ops.c,v 1.5 1989-06-28 11:23:02 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -92,5 +92,9 @@ char **motd;
     }	
  punt:
     sms_destroy_reply(reply);
-    return(status);
+    /* for backwards compatability */
+    if (status == SMS_UNKNOWN_PROC)
+      return(0);
+    else
+      return(status);
 }

@@ -1,9 +1,9 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/passwd.dc,v 1.9 1990-03-19 19:07:32 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/passwd.dc,v 1.10 1990-08-17 10:31:32 mar Exp $
  *
  * This generates a master /etc/passwd containing all active (status != 0)
  * accounts.
  *
- *  (c) Copyright 1988 by the Massachusetts Institute of Technology.
+ *  (c) Copyright 1988, 1990 by the Massachusetts Institute of Technology.
  *  For copying and distribution information, please see the file
  *  <mit-copyright.h>.
  */
@@ -14,9 +14,9 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/time.h>
+EXEC SQL INCLUDE sqlca;
 
 extern int errno;
-char *ingres_date_and_time();
 char *whoami = "passwd.gen";
 
 
@@ -27,20 +27,24 @@ char **argv;
     FILE *out = stdout;
     char *outf, outft[64];
     struct stat sb;
-##  char login[9], shell[33], fullname[33], oa[17], op[13], hp[17], *filetime;
-##  char nickname[17];
-##  int uid, error, flag;
-    int ingerr();
+    int flag;
+    EXEC SQL BEGIN DECLARE SECTION;
+    char login[9], shell[33], fullname[33], oa[17], op[13], hp[17];
+    char nickname[17];
+    int uid;
+    EXEC SQL END DECLARE SECTION;
 
-    IIseterr(ingerr);
-##  ingres sms
-##  set lockmode session where level = table
+#ifsql INGRES
+    EXEC SQL CONNECT sms;
+#endsql
+#ifsql INFORMIX
+    EXEC SQL DATABASE sms;
+#endsql
 
     if (argc == 2) {
 	if (stat(argv[1], &sb) == 0) {
-	    filetime = ingres_date_and_time(sb.st_mtime);
-##	    retrieve (flag = int4(interval("min", tblstats.modtime - filetime)))
-##		where tblstats.table = "users"
+	    if (ModDiff (&flag, "users", sb.st_mtime))
+	      exit(MR_DATE);
 	    if (flag < 0) {
 		fprintf(stderr, "File %s does not need to be rebuilt.\n",
 			argv[1]);
@@ -60,29 +64,32 @@ char **argv;
 	outf = NULL;
     }
 
-##  range of u is users
-##  retrieve (login = u.#login, uid = u.#uid, shell = u.#shell,
-##	      fullname = u.#fullname, oa = u.office_addr,
-##	      nickname = u.#nickname,
-##	      op = u.office_phone, hp = u.home_phone)
-##	where u.status = 1 {
-	    strtrim(login);
-	    strtrim(fullname);
-	    strtrim(nickname);
-	    strtrim(oa);
-	    strtrim(op);
-	    strtrim(hp);
-	    strtrim(shell);
-    	    fprintf(out, "%s:*:%d:101:%s,%s,%s,%s,%s:/mit/%s:%s\n",
-		    login, uid, fullname, nickname, oa, op, hp, login, shell);
-##  }
-##  inquire_equel(error = "errorno")
-    if (error)  {
-	fprintf(out, "Ingres error %d\n", error);
-	exit(MR_INGRES_ERR);
+    EXEC SQL WHENEVER SQLERROR GOTO sqlerr;
+
+    EXEC SQL DECLARE x CURSOR FOR SELECT 
+      login, uid, shell, fullname, office_addr, nickname,
+      office_phone, home_phone
+	FROM users WHERE status = 1;
+    EXEC SQL OPEN x;
+    while (1) {
+	EXEC SQL FETCH x INTO :login, :uid, :shell, :fullname, :oa, :nickname,
+	:op, :hp;
+	if (sqlca.sqlcode != 0) break;
+	strtrim(login);
+	strtrim(fullname);
+	strtrim(nickname);
+	strtrim(oa);
+	strtrim(op);
+	strtrim(hp);
+	strtrim(shell);
+	fprintf(out, "%s:*:%d:101:%s,%s,%s,%s,%s:/mit/%s:%s\n",
+		login, uid, fullname, nickname, oa, op, hp, login, shell);
     }
 
-##  exit
+    EXEC SQL CLOSE x;
+#ifsql INGRES
+    EXEC SQL DISCONNECT;
+#endsql
 
     if (fclose(out)) {
 	perror("close failed");
@@ -91,30 +98,10 @@ char **argv;
     if (outf)
       fix_file(outf);
     exit(MR_SUCCESS);
-}
 
-
-/*
- * ingerr: (supposedly) called when Ingres indicates an error.
- * I have not yet been able to get this to work to intercept a
- * database open error.
- */
-#define INGRES_DEADLOCK 4700
-
-static int ingerr(num)
-    int *num;
-{
-    char buf[256];
-    int ingres_errno;
-
-    switch (*num) {
-    case INGRES_DEADLOCK:
-	ingres_errno = MR_DEADLOCK;
-	break;
-    default:
-	ingres_errno = MR_INGRES_ERR;
-    }
-    com_err(whoami, MR_INGRES_ERR, " code %d\n", *num);
-    critical_alert("DCM", "Passwd build encountered INGRES ERROR %d", *num);
-    exit(ingres_errno);
+ sqlerr:
+    com_err(whoami, MR_INGRES_ERR, " code %d\n", sqlca.sqlcode);
+    critical_alert("DCM", "Passwd build encountered INGRES ERROR %d",
+		   sqlca.sqlcode);
+    exit(MR_INGRES_ERR);
 }

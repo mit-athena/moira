@@ -1,6 +1,6 @@
 #!/bin/sh
 # This script performs updates of the web server.
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/www.sh,v 1.2 2000-05-08 18:30:31 zacheiss Exp $
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/www.sh,v 1.3 2000-05-24 04:29:03 danw Exp $
 
 PATH=/sbin:/bin:/usr/sbin:/usr/bin:/etc:/usr/etc:/usr/athena/bin:/usr/local/bin
 export PATH
@@ -17,6 +17,7 @@ MR_HESFILE=47836472
 MR_MISSINGFILE=47836473
 MR_NAMED=47836475
 MR_TARERR=47836476
+MR_MKCRED=47836474
 
 umask 22
 
@@ -57,7 +58,7 @@ for file in `tar tf $TARFILE | awk '{print $1}' | sed 's;/$;;'` ; do
 		fi
 		$BIN_DIR/dbmanage $file import $file.db 
 		if [ $? != 0 ]; then
-			exit $MR_TARERR
+			exit $MR_MKCRED
 		fi
 		mv $DEST_DIR/$file $SRC_DIR/save/$file
 		mv $DEST_DIR/$file.db $SRC_DIR/save/$file.db

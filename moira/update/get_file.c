@@ -1,19 +1,19 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/get_file.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/get_file.c,v 1.1 1987-08-22 17:54:13 wesommer Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/get_file.c,v 1.2 1988-08-22 16:18:17 mar Exp $
  */
 
 #ifndef lint
-static char *rcsid_get_file_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/get_file.c,v 1.1 1987-08-22 17:54:13 wesommer Exp $";
+static char *rcsid_get_file_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/get_file.c,v 1.2 1988-08-22 16:18:17 mar Exp $";
 #endif	lint
 
 #include <stdio.h>
-#include "gdb.h"
+#include <gdb.h>
 #include <ctype.h>
 #include <sys/param.h>
 #include <sys/file.h>
+#include <sms.h>
 #include "update.h"
-#include "smsu_int.h"
 #include "kludge.h"
 
 extern CONNECTION conn;
@@ -67,7 +67,7 @@ get_file(pathname, file_size, checksum)
     int found_checksum;
     
     if (!have_authorization) {
-	reject_call(SMSU_NO_AUTH);
+	reject_call(SMS_PERM);
 	return(1);
     }
     if (done)			/* re-initialize data */
@@ -135,9 +135,9 @@ get_file(pathname, file_size, checksum)
 	report_error("re-opening file for checksum verification");
 	return(1);
     }
-    found_checksum = checksum_fd(fd);
+    found_checksum = checksum_file(pathname);
     if (checksum != found_checksum) {
-	code = SMSU_CHECKSUM;
+	code = SMS_MISSINGFILE;
 	com_err(whoami, code, ": expected = %d, found = %d",
 		checksum, found_checksum);
 	report_error("checksum error");

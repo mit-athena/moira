@@ -1,4 +1,4 @@
-/* $Id: menu.c,v 1.58 2000-03-15 22:44:04 rbasch Exp $
+/* $Id: menu.c,v 1.59 2000-03-16 22:23:49 zacheiss Exp $
  *
  * Generic menu system module.
  *
@@ -26,6 +26,7 @@
 #ifdef _WIN32
 #include <windows.h>
 #include <conio.h>
+#include <process.h>
 #ifdef getchar
 #undef getchar
 #endif
@@ -33,7 +34,7 @@
 #define getpid _getpid
 #endif /* _WIN32 */
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.58 2000-03-15 22:44:04 rbasch Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.59 2000-03-16 22:23:49 zacheiss Exp $");
 
 #ifdef MAX
 #undef MAX

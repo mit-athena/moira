@@ -1,4 +1,4 @@
-/* $Id: mr_server.h,v 1.42 1999-05-25 21:14:48 danw Exp $
+/* $Id: mr_server.h,v 1.43 1999-06-30 20:56:39 danw Exp $
  *
  * Copyright (C) 1987-1998 by the Massachusetts Institute of Technology
  * For copying and distribution information, please see the file
@@ -61,8 +61,8 @@ extern char krb_realm[REALM_SZ];
 /* statistics on number of queries by version number */
 extern int newqueries;
 
-/* Maximum and minimum values that will ever be chosen for IDs */
-#define MAX_ID_VALUE	31999
+/* Maximum and minimum values that will be used for uids and gids */
+#define MAX_ID_VALUE	65535
 #define MIN_ID_VALUE	100
 
 /* Sleepy states for the server! */

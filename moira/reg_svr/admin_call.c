@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/admin_call.c,v $
- *	$Author: qjb $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/admin_call.c,v 1.5 1988-08-01 00:42:54 qjb Exp $
+ *	$Author: mar $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/admin_call.c,v 1.6 1988-08-02 15:38:33 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
@@ -10,25 +10,10 @@
  * 	Original version written by Jeffery I. Schiller, January 1987
  *	Completely gutted and rewritten by Bill Sommerfeld, August 1987
  *
- *	$Log: not supported by cvs2svn $
- * Revision 1.4  87/09/09  14:59:06  wesommer
- * Allocate a new socket each time rather than keeping one around, 
- * due to protocol problems.
- * 
- * Revision 1.3  87/09/04  22:30:34  wesommer
- * Un-crock the KDC host (oops -- this one got distributed!!).
- * 
- * Revision 1.2  87/08/22  17:13:59  wesommer
- * Make admin_errmsg external rather than static.
- * Crock up KDC host.
- * 
- * Revision 1.1  87/08/07  13:50:37  wesommer
- * Initial revision
- * 
  */
 
 #ifndef lint
-static char *rcsid_admin_call_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/admin_call.c,v 1.5 1988-08-01 00:42:54 qjb Exp $";
+static char *rcsid_admin_call_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/admin_call.c,v 1.6 1988-08-02 15:38:33 mar Exp $";
 #endif lint
 
 #include <sys/errno.h>
@@ -62,6 +47,7 @@ static struct sockaddr_in my_addr;    /* address bound to admin_fd. */
 static int my_addr_len;		/* size of above address. */
 
 static char krbrlm[REALM_SZ];	/* Local kerberos realm */
+static char krbhost[BUFSIZ];	/* Name of server for local realm */
 char admin_errmsg[BUFSIZ]; /* Server error message */
 
 /*
@@ -86,7 +72,11 @@ int admin_call_init()
 	 * Locate server.
 	 */
 
-	hp = gethostbyname(KERB_HOST);
+	if (status = get_krbhst(krbhost, krbrlm, 1)) {
+	    status += krb_err_base;
+	    goto punt;
+	}
+	hp = gethostbyname(krbhost);
 	if (!hp) {
 	    status = ADMIN_UNKNOWN_HOST;
 	    goto punt;

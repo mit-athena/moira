@@ -1,4 +1,4 @@
-/* $Id: qrtn.pc,v 2.13 1998-03-25 17:59:51 danw Exp $
+/* $Id: qrtn.pc,v 2.14 1998-04-01 03:04:21 danw Exp $
  *
  * Query-processing routines
  *
@@ -20,7 +20,7 @@
 EXEC SQL INCLUDE sqlca;  /* SQL Communications Area */
 EXEC SQL INCLUDE sqlda;  /* SQL Descriptor Area */
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.pc,v 2.13 1998-03-25 17:59:51 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.pc,v 2.14 1998-04-01 03:04:21 danw Exp $");
 
 SQLDA *mr_sqlda;
 EXEC SQL BEGIN DECLARE SECTION;
@@ -501,11 +501,11 @@ char *build_qual(char *fmt_buf, int argc, char *argv[])
 	    }
 
 	  /* if no pattern characters, write over "LIKE" with " =  " */
-	  if (!pattern)
+	  if (!pattern && !escape)
 	    memcpy(likepos, " =  ", 4);
 
 	  fmt = arg + 2;
-	  while (*fmt != ' ')
+	  while (*fmt && *fmt != ' ')
 	    *res++ = *fmt++;
 
 	  if (escape)

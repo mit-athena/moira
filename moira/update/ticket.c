@@ -1,10 +1,10 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/ticket.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/ticket.c,v 1.2 1987-08-28 19:05:51 wesommer Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/ticket.c,v 1.3 1988-08-04 14:25:03 mar Exp $
  */
 
 #ifndef lint
-static char *rcsid_ticket_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/ticket.c,v 1.2 1987-08-28 19:05:51 wesommer Exp $";
+static char *rcsid_ticket_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/ticket.c,v 1.3 1988-08-04 14:25:03 mar Exp $";
 #endif	lint
 
 #include <stdio.h>
@@ -12,21 +12,29 @@ static char *rcsid_ticket_c = "$Header: /afs/.athena.mit.edu/astaff/project/moir
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <strings.h>
-#include "sms_update_int.h"
-#include "com_err.h"
-#include "kludge.h"
+#include <update.h>
+#include <com_err.h>
 
 /* too bad we can't set the pathname easily */
-/*static char tkt_pathname[] = "/tmp/tkt:sms";*/
-static char *srvtab = SRVTAB; /* default == /etc/srvtab */
+static char *srvtab = KEYFILE; /* default == /etc/srvtab */
 static char realm[REALM_SZ];
 static char master[] = "sms";
 static char service[] = "rcmd";
 
 extern char *tkt_string(), *PrincipalHostname();
-static int initialized = 0;
+extern int krb_err_base;
 
-#define init() { if (!initialized) { get_krbrlm(realm,0); initialized=1; }}
+static init()
+{
+    static int initialized = 0;
+
+    if (!initialized) {
+	get_krbrlm(realm, 1);
+	init_krb_err_tbl();
+	initialized=1;
+    }
+}
+
 
 int
 get_sms_update_ticket(host, ticket)
@@ -41,20 +49,20 @@ get_sms_update_ticket(host, ticket)
      init();
      strcpy(phost, PrincipalHostname(host));
  try_it:
-     code = mk_ap_req(ticket, service, phost, realm, (long)0);
+     code = krb_mk_req(ticket, service, phost, realm, (long)0);
+     if (code)
+       code += krb_err_base;
      if (pass == 1) {
 	 /* maybe we're taking too long? */
 	 if ((code = get_sms_tgt()) != 0) {
 	     /* don't need phost buffer any more */
-	     sprintf(phost, "%s: can't get Kerberos TGT",
-		     error_message(code));
-	     sms_log_error(phost);
+	     com_err(whoami, code, " can't get Kerberos TGT");
 	     return(code);
 	 }
 	 pass++;
 	 goto try_it;
      }
-     return(krb_err_frob(code));
+     return(code);
 }
 
 int
@@ -66,5 +74,5 @@ get_sms_tgt()
     if (!code)
 	return(0);
     else
-	return(krb_err_frob(code));
+	return(code + krb_err_base);
 }

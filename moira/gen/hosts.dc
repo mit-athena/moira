@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/hosts.dc,v 1.1 1993-11-22 14:32:25 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/hosts.dc,v 1.2 1993-11-23 17:09:14 mar Exp $
  *
  * This generates the hstath.txt hosttable.
  *
@@ -78,6 +78,7 @@ char **argv;
     while (1) {
 	EXEC SQL FETCH y INTO :id, :name;
 	if (sqlca.sqlcode != 0) break;
+	if (id == 0) continue;
 	if (*strtrim(name) == 0) continue;
 	if ((i = strlen(name)) < 9 || strcmp(&name[i-8], ".MIT.EDU")) {
 	    fprintf(stderr, "Name %s not in MIT domain\n", name);
@@ -87,8 +88,8 @@ char **argv;
 	}
 	if (p = hash_lookup(aliases, id)) {
 	    sprintf(buf, "%s,%s", p, name);
-	    free(p);
 	    hash_update(aliases, id, strsave(buf));
+	    free(p);
 	} else
 	  hash_store(aliases, id, strsave(name));
     }
@@ -100,6 +101,7 @@ char **argv;
     while (1) {
 	EXEC SQL FETCH x INTO :name, :id, :vendor, :model, :os, :addr;
 	if (sqlca.sqlcode != 0) break;
+	if (id == 0) continue;
 	if (*strtrim(name) == 0) continue;
 	if ((i = strlen(name)) < 9 || strcmp(&name[i-8], ".MIT.EDU")) {
 	    fprintf(stderr, "Name %s not in MIT domain\n", name);

@@ -1,5 +1,5 @@
 #!/moira/bin/perl -Tw
-# $Id: grouper.pl,v 1.9 2001-09-09 04:28:42 zacheiss Exp $
+# $Id: grouper.pl,v 1.10 2003-09-08 03:25:21 zacheiss Exp $
 
 die "Usage: $0 password\n" unless ($#ARGV == 0);
 $whpassword = $ARGV[0];
@@ -135,7 +135,7 @@ sub check_list {
     my ( $name, $owner, $export, $desc ) = @_;
     if (!$lists{$name}) {
 	print LOG "Creating $name\n";
-	print MRTEST "qy alis $name 0 0 1 $export $export \"create unique GID\" 0 LIST $owner NONE NONE \"$desc\"\n";
+	print MRTEST "qy alis $name 0 0 1 $export $export \"create unique GID\" 0 0 [NONE] LIST $owner NONE NONE \"$desc\"\n";
     }
 }
 

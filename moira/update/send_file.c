@@ -1,10 +1,10 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/send_file.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/send_file.c,v 1.2 1988-08-04 14:24:00 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/send_file.c,v 1.3 1988-08-23 11:47:36 mar Exp $
  */
 
 #ifndef lint
-static char *rcsid_send_file_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/send_file.c,v 1.2 1988-08-04 14:24:00 mar Exp $";
+static char *rcsid_send_file_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/send_file.c,v 1.3 1988-08-23 11:47:36 mar Exp $";
 #endif	lint
 
 #include <stdio.h>
@@ -94,6 +94,7 @@ char *target_path;
 	close(fd);
 	return(n);
     }
+
     while (n_to_send > 0) {
 #ifdef	DEBUG
 	printf("n_to_send = %d\n", n_to_send);
@@ -123,6 +124,22 @@ char *target_path;
 	}
 	if (n) {
 	    com_err(whoami, n, " from remote server during transmission of %s",
+		    pathname);
+	    close(fd);
+	    return(n);
+	}
+    }
+    if (statb.st_size == 0) {
+	code = receive_object(conn, (char *)&n, INTEGER_T);
+	if (code) {
+	    com_err(whoami, connection_errno(conn),
+		    " awaiting ACK remote server after transmission of %s",
+		    pathname);
+	    close(fd);
+	    return(code);
+	}
+	if (n) {
+	    com_err(whoami, n, " from remote server after transmission of %s",
 		    pathname);
 	    close(fd);
 	    return(n);

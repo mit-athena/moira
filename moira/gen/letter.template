@@ -1,272 +1,39 @@
-%!PS-Adobe-1.0
-%%Creator: Toto:mar (Mark A. Rosenstein,,E40-338M,31530,7822001)
-%%Title: stdin (ditroff)
-%%CreationDate: Tue Jun 16 22:15:23 1992
-%%EndComments
-% Start of psdit.pro -- prolog for ditroff translator
-% Copyright (c) 1985,1987 Adobe Systems Incorporated. All Rights Reserved. 
-% GOVERNMENT END USERS: See Notice file in TranScript library directory
-% -- probably /usr/lib/ps/Notice
-% RCS: $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/letter.template,v 1.1 1992-06-18 14:20:20 mar Exp $
-/$DITroff 140 dict def $DITroff begin
-/fontnum 1 def /fontsize 10 def /fontheight 10 def /fontslant 0 def
-/xi {0 72 11 mul translate 72 resolution div dup neg scale 0 0 moveto
-  /fontnum 1 def /fontsize 10 def /fontheight 10 def /fontslant 0 def F
-  /pagesave save def}def
-/PB{save /psv exch def currentpoint translate
-  resolution 72 div dup neg scale 0 0 moveto}def
-/PE{psv restore}def
-/m1 matrix def /m2 matrix def /m3 matrix def /oldmat matrix def
-/tan{dup sin exch cos div}bind def
-/point{resolution 72 div mul}bind def
-/dround	{transform round exch round exch itransform}bind def
-/xT{/devname exch def}def
-/xr{/mh exch def /my exch def /resolution exch def}def
-/xp{}def
-/xs{docsave restore end}def
-/xt{}def
-/xf{/fontname exch def /slotno exch def fontnames slotno get fontname eq not
- {fonts slotno fontname findfont put fontnames slotno fontname put}if}def
-/xH{/fontheight exch def F}bind def
-/xS{/fontslant exch def F}bind def
-/s{/fontsize exch def /fontheight fontsize def F}bind def
-/f{/fontnum exch def F}bind def
-/F{fontheight 0 le {/fontheight fontsize def}if
-   fonts fontnum get fontsize point 0 0 fontheight point neg 0 0 m1 astore
-   fontslant 0 ne{1 0 fontslant tan 1 0 0 m2 astore m3 concatmatrix}if
-   makefont setfont .04 fontsize point mul 0 dround pop setlinewidth}bind def
-/X{exch currentpoint exch pop moveto show}bind def
-/N{3 1 roll moveto show}bind def
-/Y{exch currentpoint pop exch moveto show}bind def
-/S /show load def
-/ditpush{}def/ditpop{}def
-/AX{3 -1 roll currentpoint exch pop moveto 0 exch ashow}bind def
-/AN{4 2 roll moveto 0 exch ashow}bind def
-/AY{3 -1 roll currentpoint pop exch moveto 0 exch ashow}bind def
-/AS{0 exch ashow}bind def
-/MX{currentpoint exch pop moveto}bind def
-/MY{currentpoint pop exch moveto}bind def
-/MXY /moveto load def
-/cb{pop}def	% action on unknown char -- nothing for now
-/n{}def/w{}def
-/p{pop showpage pagesave restore /pagesave save def}def
-/abspoint{currentpoint exch pop add exch currentpoint pop add exch}def
-/dstroke{currentpoint stroke moveto}bind def
-/Dl{2 copy gsave rlineto stroke grestore rmoveto}bind def
-/arcellipse{oldmat currentmatrix pop
- currentpoint translate 1 diamv diamh div scale /rad diamh 2 div def
- rad 0 rad -180 180 arc oldmat setmatrix}def
-/Dc{gsave dup /diamv exch def /diamh exch def arcellipse dstroke 
-    grestore diamh 0 rmoveto}def
-/De{gsave /diamv exch def /diamh exch def arcellipse dstroke
-    grestore diamh 0 rmoveto}def
-/Da{currentpoint /by exch def /bx exch def /fy exch def /fx exch def
-   /cy exch def /cx exch def /rad cx cx mul cy cy mul add sqrt def
-   /ang1 cy neg cx neg atan def /ang2 fy fx atan def cx bx add cy by add
-   2 copy rad ang1 ang2 arcn stroke exch fx add exch fy add moveto}def
-/Barray 200 array def % 200 values in a wiggle
-/D~{mark}def
-/D~~{counttomark Barray exch 0 exch getinterval astore /Bcontrol exch def pop
- /Blen Bcontrol length def Blen 4 ge Blen 2 mod 0 eq and
- {Bcontrol 0 get Bcontrol 1 get abspoint /Ycont exch def /Xcont exch def
-  Bcontrol 0 2 copy get 2 mul put Bcontrol 1 2 copy get 2 mul put
-  Bcontrol Blen 2 sub 2 copy get 2 mul put
-  Bcontrol Blen 1 sub 2 copy get 2 mul put
-  /Ybi /Xbi currentpoint 3 1 roll def def 0 2 Blen 4 sub
-  {/i exch def
-   Bcontrol i get 3 div Bcontrol i 1 add get 3 div
-   Bcontrol i get 3 mul Bcontrol i 2 add get add 6 div
-   Bcontrol i 1 add get 3 mul Bcontrol i 3 add get add 6 div
-   /Xbi Xcont Bcontrol i 2 add get 2 div add def
-   /Ybi Ycont Bcontrol i 3 add get 2 div add def
-   /Xcont Xcont Bcontrol i 2 add get add def
-   /Ycont Ycont Bcontrol i 3 add get add def
-   Xbi currentpoint pop sub Ybi currentpoint exch pop sub rcurveto
-  }for dstroke}if}def
-end
-/ditstart{$DITroff begin
- /nfonts 60 def			% NFONTS makedev/ditroff dependent!
- /fonts[nfonts{0}repeat]def
- /fontnames[nfonts{()}repeat]def
-/docsave save def
-}def
-
-ditstart
-(psc)xT
-576 1 1 xr
-1(Times-Roman)xf 1 f
-2(Times-Italic)xf 2 f
-3(Times-Bold)xf 3 f
-4(Times-BoldItalic)xf 4 f
-5(Helvetica)xf 5 f
-6(Helvetica-Bold)xf 6 f
-7(Courier)xf 7 f
-8(Courier-Bold)xf 8 f
-9(Symbol)xf 9 f
-10 s
-1 f
+%!
+%%Page: 1 1
 % switch to color papertray
 1 statusdict /setpapertray get exec
-xi
-%%EndProlog
 
-%%Page: 1 1
-10 s 0 xH 0 xS 1 f
-720 672(Athena)N
-972(User)X
-1144(Accounts)X
-720 768(MIT)N
-907(Room)X
-1122(11-124H)X
-720 864(77)N
-820(Massachusetts)X
-1303(Ave)X
-720 960(Cambridge,)N
-1116(MA)X
-1305(02139)X
-12 s
-1248 1464(%n)N
-1248 1576(%a1)N
-1248 1688(%a2)N
+/Times-Roman findfont 10 scalefont setfont
+92 708 moveto(Athena User Accounts)show
+92 696 moveto(MIT Room 11-124H)show
+92 684 moveto(77 Massachusetts Ave)show
+92 672 moveto(Cambridge, MA  02139)show
+/Times-Roman findfont 12 scalefont setfont
+155 610 moveto(%n)show
+155 596 moveto(%a1)show
+155 582 moveto(%a2)show
 
-showpage pagesave restore
+showpage
+
+%%Page: 2 2
 % switch back to white paper
 3 statusdict /setpapertray get exec
-xi
-%%Page: 2 2
 
-12 s 0 xH 0 xS 1 f
-720 912(From:)N
-979(Information)X
-1463(Systems)X
-864 1024(Athena)N
-1166(User)X
-1371(Accounts)X
-720 1248(To:)N
-926(%n)X
-2992(%d)X
-1008 1696(This)N
-1203(letter)X
-1426(is)X
-1514(to)X
-1613(con\256rm)X
-1936(that)X
-2105(`%l' registered for a second Athena password)X
-%2562(registered)X
-%2966(for)X
-%3102(a)X
-%3169(second)X
-%3460(Athena)X
-%3762(password)X
-720 1808(using the reg_extra program.)N
-1008 2032(If)N
-1096(you)X
-1264(did)X
-1411(not)X
-1558(do)X
-1678(this,)X
-1865(then)X
-2055(there)X
-2272(is)X
-2360(reason)X
-2635(to)X
-2734(believe)X
-3037(your)X
-3237(account)X
-3561(has)X
-3713(been)X
-720 2144(compromised,)N
-1292(so)X
-1401(contact)X
-1704(Athena)X
-2006(User)X
-2211(Accounts)X
-2598(immediately)X
-3105(by)X
-3225(calling)X
-3512(x3-1325,)X
-720 2256(sending)N
-1043(mail)X
-1239(to)X
-1338(<accounts@mit.edu>,)X
-2211(or)X
-2315(stopping)X
-2670(by)X
-2790(11-124H)X
-3155(between)X
-3500(the)X
-3642(hours)X
-3879(of)X
-3983(2)X
-4055(to)X
-720 2368(5.)N
-1008 2592(The)N
-1182(password)X
-1568(will)X
-1742(not)X
-1889(take)X
-2074(effect)X
-2318(for)X
-2454(two)X
-2622(weeks)X
-2886(from)X
-3097(the)X
-3239(date)X
-3424(above.)X
-3702(Remember,)X
-720 2704(the)N
-862(second)X
-1153(Athena)X
-1455(password)X
-1841(\("extra")X
-2168(instance\))X
-2540(will)X
-2714(allow)X
-2952(access)X
-3222(to)X
-3321(your)X
-3521(grades)X
-3796(and,)X
-720 2816(potentially,)N
-1181(other)X
-1403(sensitive)X
-1764(information.)X
-2267(It)X
-2350(is)X
-2438(important)X
-2837(that)X
-3006(you)X
-3174(keep)X
-3380(all)X
-3501(passwords)X
-720 2928(private,)N
-1036(since)X
-1258(they)X
-1448(will)X
-1622(be)X
-1737(used)X
-1937(to)X
-2036(give)X
-2226(you access to more and more critical functions.)X
-%2640(to)X
-%2739(more)X
-%2961(and)X
-%3124(more)X
-%3346(critical)X
-%3639(functions.)X
-1008 3152(If)N
-1096(you)X
-1264(have)X
-1470(any)X
-1633(question)X
-1983(please)X
-2248(contact)X
-2551(Athena)X
-2853(User)X
-3058(Accounts.)X
+/Times-Roman findfont 12 scalefont setfont
+92 678 moveto(From: Information Systems)show
+124 666 moveto(Athena User Accounts)show
+92 637 moveto(To: %n)show
+375 637 moveto(%d)show
+120 580 moveto(This letter is to con\256rm that `%l' registered for a second Athena password)show
+92 568 moveto(using the reg_extra program.)show
+120 538 moveto(If you did not do this, then there is reason to believe your account has been)show
+92 526 moveto(compromised, so contact Athena User Accounts immediately by calling x3-1325,)show
+92 514 moveto(sending mail to <accounts@mit.edu>, or stopping by 11-124H between the hours of)show
+92 502 moveto(2 to 5.)show
+120 468 moveto(The password will not take effect for two weeks from the date above.  Remember,)show
+92 456 moveto(the second Athena password \(``extra'' instance\) will allow access to your grades and,)show
+92 444 moveto(potentially, other sensitive information.  It is important that you keep all passwords)show
+92 432 moveto(private, since they will be used to give you access to more and more critical functions.)show
+120 398 moveto(If you have any question please contact Athena User Accounts.)show
 
-2 p
-%%Trailer
-xt
-
-xs
+showpage

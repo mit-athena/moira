@@ -1,4 +1,4 @@
-/* $Id: qsetup.pc,v 2.23 1998-12-14 18:53:35 danw Exp $
+/* $Id: qsetup.pc,v 2.24 1998-12-28 17:42:13 danw Exp $
  *
  * Query setup routines
  *
@@ -21,7 +21,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsetup.pc,v 2.23 1998-12-14 18:53:35 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsetup.pc,v 2.24 1998-12-28 17:42:13 danw Exp $");
 
 extern char *whoami;
 extern int dbms_errno, mr_errcode;
@@ -32,7 +32,8 @@ EXEC SQL END DECLARE SECTION;
 
 EXEC SQL WHENEVER SQLERROR DO dbmserr();
 
-
+int hostname_check(char *name);
+int hostinfo_check(char *name, int num);
 int prefetch_value(struct query *q, char **argv, client *cl);
 int check_nfs(int mach_idx, char *name, char *access);
 
@@ -306,7 +307,8 @@ static int badlistchars[] = {
 int setup_alis(struct query *q, char *argv[], client *cl)
 {
   EXEC SQL BEGIN DECLARE SECTION;
-  int ngid;
+  int ngid, cnt;
+  char *name;
   EXEC SQL END DECLARE SECTION;
   unsigned char *p;
   int idx, err;
@@ -315,6 +317,7 @@ int setup_alis(struct query *q, char *argv[], client *cl)
     idx = 0;
   else if (!strcmp(q->shortname, "ulis"))
     idx = 1;
+  name = argv[idx];
 
   if (idx == 1)
     {
@@ -326,11 +329,18 @@ int setup_alis(struct query *q, char *argv[], client *cl)
 	return MR_PERM;
     }
 
-  for (p = (unsigned char *) argv[idx]; *p; p++)
+  for (p = (unsigned char *) name; *p; p++)
     {
       if (badlistchars[*p])
 	return MR_BAD_CHAR;
     }
+
+  /* Check that it doesn't conflict with a pre-existing weirdly-cased
+   * name. */
+  EXEC SQL SELECT COUNT(name) INTO :cnt FROM list
+    WHERE LOWER(name) = :name;
+  if (cnt)
+    return MR_EXISTS;
 
   if (!strcmp(argv[6 + idx], UNIQUE_GID) || atoi(argv[6 + idx]) == -1)
     {
@@ -863,13 +873,13 @@ int setup_ahst(struct query *q, char **argv, client *cl)
       !hostname_check(argv[row]))
     return MR_BAD_CHAR;
   if ((row == 0 || strcasecmp(argv[2], vendor)) &&
-      !hostinfo_check(argv[row + 1]))
+      !hostinfo_check(argv[row + 1], 0))
     return MR_BAD_CHAR;
   if ((row == 0 || strcasecmp(argv[3], model)) &&
-      !hostinfo_check(argv[row + 2]))
+      !hostinfo_check(argv[row + 2], 1))
     return MR_BAD_CHAR;
   if ((row == 0 || strcasecmp(argv[4], os)) &&
-      !hostinfo_check(argv[row + 3]))
+      !hostinfo_check(argv[row + 3], 0))
     return MR_BAD_CHAR;
 
   /* check for duplicate name */
@@ -1075,18 +1085,19 @@ int hostname_check(char *name)
   return 1;
 }
 
-int hostinfo_check(char *info)
+int hostinfo_check(char *info, int num)
 {
   char *p;
 
   if (!*info)
     return 1;
 
-  /* Sanity check host hostinfo: must start with a letter, contain
-   * only letters, numerals, and hyphen, and not end with a hyphen.
+  /* Sanity check host hostinfo: must start with a letter (or number
+   * if num is true), contain only letters, numerals, and hyphen, and
+   * not end with a hyphen.
    */
 
-  if (!isalpha(*info))
+  if (!isalpha(*info) && (!num || !isdigit(*info)))
     return 0;
   for (p = info; *p; p++)
     {

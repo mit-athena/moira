@@ -3,17 +3,17 @@
  * and distribution information, see the file "mit-copyright.h". 
  *
  * $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chsh.c,v $
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chsh.c,v 1.7 1990-03-17 00:37:48 mar Exp $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chsh.c,v 1.8 1990-03-17 17:19:12 mar Exp $
  * $Author: mar $
  *
  */
 
 #ifndef lint
-static char *rcsid_chsh_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chsh.c,v 1.7 1990-03-17 00:37:48 mar Exp $";
+static char *rcsid_chsh_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chsh.c,v 1.8 1990-03-17 17:19:12 mar Exp $";
 #endif not lint
 
 /*
- * Talk to the SMS database to change a person's login shell.  The chosen
+ * Talk to the MOIRA database to change a person's login shell.  The chosen
  * shell must exist.  A warning will be issued if the shell is not in 
  * /etc/shells.
  * 
@@ -33,9 +33,9 @@ static char *rcsid_chsh_c = "$Header: /afs/.athena.mit.edu/astaff/project/moirad
 #include <ctype.h>
 #include <errno.h>
 
-/* SMS includes */
-#include <sms.h>
-#include <sms_app.h>
+/* MOIRA includes */
+#include <moira.h>
+#include <moira_site.h>
 #include "mit-copyright.h"
 
 char *whoami;
@@ -86,10 +86,10 @@ main(argc, argv)
 
 leave(status)
   int status;
-  /* This should be called rather than exit once connection to sms server
+  /* This should be called rather than exit once connection to moira server
      has been established. */
 {
-    sms_disconnect();
+    mr_disconnect();
     exit(status);
 }
 
@@ -103,9 +103,9 @@ chsh(uname)
   char *uname;
 {
     int status;			/* general purpose exit status */
-    int q_argc;			/* argc for sms_query */
-    char *q_argv[U_END];	/* argv for sms_query */
-    char *motd;			/* determine SMS server status */
+    int q_argc;			/* argc for mr_query */
+    char *q_argv[U_END];	/* argv for mr_query */
+    char *motd;			/* determine MR server status */
 
     int got_one = 0;		/* have we got a new shell yet? */
     char shell[BUFSIZ];		/* the new shell */
@@ -114,13 +114,13 @@ chsh(uname)
 
     /* Try each query.  If we ever fail, print error message and exit. */
 
-    status = sms_connect(NULL);
+    status = mr_connect(NULL);
     if (status) {
 	com_err(whoami, status, " while connecting to Moira");
 	exit(1);
     }
 
-    status = sms_motd(&motd);
+    status = mr_motd(&motd);
     if (status) {
         com_err(whoami, status, " unable to check server status");
 	leave(1);
@@ -130,7 +130,7 @@ chsh(uname)
 	leave(1);
     }
 
-    status = sms_auth("chsh");	/* Don't use argv[0] - too easy to fake */
+    status = mr_auth("chsh");	/* Don't use argv[0] - too easy to fake */
     if (status) {
 	com_err(whoami, status, 
 		" while authenticating -- run \"kinit\" and try again.");
@@ -143,7 +143,7 @@ chsh(uname)
     q_argv[USH_SHELL] = "junk";
     q_argc = USH_END;
 
-    if (status = sms_access("update_user_shell", q_argc, q_argv))
+    if (status = mr_access("update_user_shell", q_argc, q_argv))
     {
 	com_err(whoami, status, "; shell not\nchanged.");
 	leave(2);
@@ -156,7 +156,7 @@ chsh(uname)
     q_argv[NAME] = uname;
     q_argc = NAME + 1;
 
-    if ((status = sms_query("get_user_by_login", q_argc, q_argv, 
+    if ((status = mr_query("get_user_by_login", q_argc, q_argv, 
 			    get_shell, (char *) uname)))
     {
 	com_err(whoami, status, " while getting user information.");
@@ -184,7 +184,7 @@ chsh(uname)
     q_argv[USH_NAME] = uname;
     q_argv[USH_SHELL] = shell;	
     q_argc = USH_END;
-    if (status = sms_query("update_user_shell", q_argc, q_argv, 
+    if (status = mr_query("update_user_shell", q_argc, q_argv, 
 			   scream, (char *) NULL))
     {
 	com_err(whoami, status, " while changing shell.");
@@ -192,7 +192,7 @@ chsh(uname)
     }
 
     printf("Shell successfully changed.\n");
-    sms_disconnect();
+    mr_disconnect();
 
     return(0);
 }
@@ -215,7 +215,7 @@ get_shell(argc, argv, uname)
     printf("by user %s with %s.\n", argv[U_MODBY], argv[U_MODWITH]);
     printf("Current shell for %s is %s.\n", uname, argv[U_SHELL]); 
     
-    return(SMS_ABORT);		/* Don't pay attention to other matches. */
+    return(MR_ABORT);		/* Don't pay attention to other matches. */
 }
     
 void check_shell(shell)

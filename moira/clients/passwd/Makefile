@@ -1,9 +1,9 @@
-# Makefile for SMS clients passwd/chfn/chpobox/chsh
+# Makefile for MOIRA clients passwd/chfn/chpobox/chsh
 #
 #	MIT Project Athena
 #
 #	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/Makefile,v $
-#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/Makefile,v 1.11 1990-02-14 11:31:48 mar Exp $
+#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/Makefile,v 1.12 1990-03-17 17:20:44 mar Exp $
 #	$Author: mar $
 # 
 # (c) Copyright 1988 by the Massachusetts Institute of Technology.
@@ -17,20 +17,20 @@ CFLAGS = -I../../include ${DEFINES}
 CONFDIR = ${DESTDIR}/usr/athena
 BINDIR = ${DESTDIR}/bin
 
-SMSLIB = -L../../lib -lsms -lgdb -lcom_err -lkrb -ldes -lhesiod
+MOIRALIB = -L../../lib -lmoira -lgdb -lcom_err -lkrb -ldes -lhesiod
 
 PROGS= chfn chsh chpobox
 
 all: 	${PROGS}
 
 chfn:	chfn.o
-	cc -o chfn chfn.o ${SMSLIB}
+	cc -o chfn chfn.o ${MOIRALIB}
 
 chpobox:	chpobox.o
-	cc -o chpobox chpobox.o ${SMSLIB}
+	cc -o chpobox chpobox.o ${MOIRALIB}
 
 chsh:	chsh.o
-	cc -o chsh chsh.o ${SMSLIB}
+	cc -o chsh chsh.o ${MOIRALIB}
 
 lint:
 	lint *.c
@@ -52,14 +52,14 @@ depend:
 chfn.o: chfn.c /usr/include/sys/types.h /usr/include/stdio.h
 chfn.o: /usr/include/strings.h /usr/include/sys/file.h ../../include/krb.h
 chfn.o: ../../include/mit-copyright.h ../../include/des.h
-chfn.o: /usr/include/ctype.h /usr/include/errno.h ../../include/sms.h
-chfn.o: /usr/include/sms_et.h ../../include/sms_app.h
+chfn.o: /usr/include/ctype.h /usr/include/errno.h ../../include/moira.h
+chfn.o: ../../include/mr_et.h ../../include/moira_site.h
 chpobox.o: chpobox.c /usr/include/sys/types.h /usr/include/stdio.h
 chpobox.o: /usr/include/pwd.h /usr/include/strings.h /usr/include/ctype.h
-chpobox.o: /usr/include/errno.h ../../include/sms.h /usr/include/sms_et.h
-chpobox.o: ../../include/sms_app.h ../../include/mit-copyright.h
+chpobox.o: /usr/include/errno.h ../../include/moira.h ../../include/mr_et.h
+chpobox.o: ../../include/moira_site.h ../../include/mit-copyright.h
 chsh.o: chsh.c /usr/include/sys/types.h /usr/include/stdio.h
 chsh.o: /usr/include/strings.h /usr/include/sys/file.h ../../include/krb.h
 chsh.o: ../../include/mit-copyright.h ../../include/des.h
-chsh.o: /usr/include/ctype.h /usr/include/errno.h ../../include/sms.h
-chsh.o: /usr/include/sms_et.h ../../include/sms_app.h
+chsh.o: /usr/include/ctype.h /usr/include/errno.h ../../include/moira.h
+chsh.o: ../../include/mr_et.h ../../include/moira_site.h

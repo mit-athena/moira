@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v 1.18 1990-02-05 13:03:08 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v 1.19 1990-03-17 17:26:01 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,14 +10,14 @@
  */
 
 #ifndef lint
-static char *rcsid_test_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v 1.18 1990-02-05 13:03:08 mar Exp $";
+static char *rcsid_test_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v 1.19 1990-03-17 17:26:01 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
 #include <stdio.h>
 #include <sys/file.h>
 #include <ctype.h>
-#include <sms.h>
+#include <moira.h>
 #include <ss.h>
 
 int ss;
@@ -60,18 +60,18 @@ moira()
 
 test_noop()
 {
-	int status = sms_noop();
+	int status = mr_noop();
 	if (status) ss_perror(ss, status, "");
 }
 
 test_new()
 {
-	sending_version_no = SMS_VERSION_2;
+	sending_version_no = MR_VERSION_2;
 }
 
 test_old()
 {
-	sending_version_no = SMS_VERSION_1;
+	sending_version_no = MR_VERSION_1;
 }
 
 test_connect(argc, argv)
@@ -84,13 +84,13 @@ char *argv[];
 	if (argc > 1) {
 	    server = argv[1];
 	}
-	status = sms_connect(server);
+	status = mr_connect(server);
 	if (status) ss_perror(ss, status, "");
 }
 
 test_disconnect()
 {
-	int status = sms_disconnect();
+	int status = mr_disconnect();
 	if (status) ss_perror(ss, status, "");
 }
 
@@ -101,7 +101,7 @@ test_host()
 
         bzero(host, sizeof(host));
 
-	if (status = sms_host(host, sizeof(host) - 1))
+	if (status = mr_host(host, sizeof(host) - 1))
 	    ss_perror(ss, status, "");
 	else
 	    printf("You are connected to host %s\n", host);
@@ -111,7 +111,7 @@ test_auth()
 {
 	int status;
 
-	status = sms_auth("mrtest");
+	status = mr_auth("mrtest");
 	if (status) ss_perror(ss, status, "");
 }
 
@@ -230,7 +230,7 @@ print_reply(argc, argv)
 	}
 	printf("\n");
 	count++;
-	return(SMS_CONT);
+	return(MR_CONT);
 }
 
 test_query(argc, argv)
@@ -244,7 +244,7 @@ test_query(argc, argv)
 	}
 
 	count = 0;
-	status = sms_query(argv[1], argc-2, argv+2, print_reply, (char *)NULL);
+	status = mr_query(argv[1], argc-2, argv+2, print_reply, (char *)NULL);
 	printf("%d tuple%s\n", count, ((count == 1) ? "" : "s"));
 	if (status) ss_perror(ss, status, "");
 }
@@ -258,7 +258,7 @@ test_access(argc, argv)
 		ss_perror(ss, 0, "Usage: access handle [ args ... ]");
 		return;
 	}
-	status = sms_access(argv[1], argc-2, argv+2);
+	status = mr_access(argv[1], argc-2, argv+2);
 	if (status) ss_perror(ss, status, "");
 }
 
@@ -269,7 +269,7 @@ test_dcm(argc, argv)
 {
 	int status;
 
-	if (status = sms_do_update())
+	if (status = mr_do_update())
 	  ss_perror(ss, status, " while triggering dcm");
 }
 
@@ -281,7 +281,7 @@ test_motd(argc, argv)
 	int status;
 	char *motd;
 
-	if (status = sms_motd(&motd))
+	if (status = mr_motd(&motd))
 	  ss_perror(ss, status, " while getting motd");
 	if (motd)
 	  printf("%s\n", motd);

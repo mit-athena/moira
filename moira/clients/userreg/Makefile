@@ -2,7 +2,7 @@
 # 	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/Makefile,v $
 #	$Author: mar $
 #	$Locker:  $
-#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/Makefile,v 1.8 1990-02-28 12:13:38 mar Exp $
+#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/Makefile,v 1.9 1990-03-17 17:24:38 mar Exp $
 #
 # (c) Copyright 1988 by the Massachusetts Institute of Technology.
 # For copying and distribution information, please see the file
@@ -17,7 +17,7 @@ all: userreg
 
 userreg: userreg.o display.o reg_stubs.o disable.o
 	cc ${CFLAGS} -o $@ userreg.o display.o reg_stubs.o disable.o \
-		-L../../lib -lcom_err -lkrb -ldes -lsms -lcurses \
+		-L../../lib -lcom_err -lkrb -ldes -lmoira -lcurses \
 		-ltermcap -lhesiod
 
 userreg.o display.o: userreg.h files.h
@@ -56,8 +56,8 @@ reg_stubs.o: reg_stubs.c ../../include/mit-copyright.h /usr/include/stdio.h
 reg_stubs.o: /usr/include/sys/types.h /usr/include/sys/time.h
 reg_stubs.o: /usr/include/sys/time.h /usr/include/sys/socket.h
 reg_stubs.o: /usr/include/netinet/in.h /usr/include/netdb.h
-reg_stubs.o: ../../include/des.h /usr/include/errno.h ../../include/sms.h
-reg_stubs.o: ../../include/sms_et.h ../../include/sms_app.h
+reg_stubs.o: ../../include/des.h /usr/include/errno.h ../../include/moira.h
+reg_stubs.o: ../../include/mr_et.h ../../include/moira_site.h
 reg_stubs.o: ../../include/ureg_err.h ../../include/ureg_proto.h
 reg_stubs.o: /usr/include/strings.h
 disable.o: disable.c ../../include/mit-copyright.h /usr/include/stdio.h

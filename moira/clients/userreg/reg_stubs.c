@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/reg_stubs.c,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/reg_stubs.c,v 1.14 1990-03-17 00:50:18 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/reg_stubs.c,v 1.15 1990-03-17 17:24:31 mar Exp $
  *
  *  (c) Copyright 1988 by the Massachusetts Institute of Technology.
  *  For copying and distribution information, please see the file
@@ -9,7 +9,7 @@
  */
 
 #ifndef lint
-static char *rcsid_reg_stubs_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/reg_stubs.c,v 1.14 1990-03-17 00:50:18 mar Exp $";
+static char *rcsid_reg_stubs_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/reg_stubs.c,v 1.15 1990-03-17 17:24:31 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -21,8 +21,8 @@ static char *rcsid_reg_stubs_c = "$Header: /afs/.athena.mit.edu/astaff/project/m
 #include <netdb.h>
 #include <des.h>
 #include <errno.h>
-#include <sms.h>
-#include <sms_app.h>
+#include <moira.h>
+#include <moira_site.h>
 #include "ureg_err.h"
 #include "ureg_proto.h"
 #include <strings.h>
@@ -54,7 +54,7 @@ ureg_init()
     }
 #endif HESIOD
     if (!host || (strlen(host) == 0)) {
-	host = strsave(SMS_SERVER);
+	host = strsave(MOIRA_SERVER);
 	s = index(host, ':');
 	if (s) *s = 0;
     }

@@ -3,17 +3,17 @@
  * and distribution information, see the file "mit-copyright.h". 
  *
  * $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chfn.c,v $
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chfn.c,v 1.7 1990-02-14 11:32:14 mar Exp $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chfn.c,v 1.8 1990-03-17 17:19:04 mar Exp $
  * $Author: mar $
  *
  */
 
 #ifndef lint
-static char *rcsid_chfn_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chfn.c,v 1.7 1990-02-14 11:32:14 mar Exp $";
+static char *rcsid_chfn_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chfn.c,v 1.8 1990-03-17 17:19:04 mar Exp $";
 #endif not lint
 
 /*
- * Talk to the SMS database to change a person's GECOS information.
+ * Talk to the MOIRA database to change a person's GECOS information.
  * 
  * chfn with no modifiers changes the information of the user who is 
  * running the program.
@@ -34,9 +34,9 @@ static char *rcsid_chfn_c = "$Header: /afs/.athena.mit.edu/astaff/project/moirad
 #include <ctype.h>
 #include <errno.h>
 
-/* SMS includes */
-#include <sms.h>
-#include <sms_app.h>
+/* MOIRA includes */
+#include <moira.h>
+#include <moira_site.h>
 #include "mit-copyright.h"
 
 char *whoami;
@@ -97,10 +97,10 @@ main(argc, argv)
 
 leave(status)
   int status;
-  /* This should be called rather than exit once connection to sms server
+  /* This should be called rather than exit once connection to moira server
      has been established. */
 {
-    sms_disconnect();
+    mr_disconnect();
     exit(status);
 }
 
@@ -114,9 +114,9 @@ chfn(uname)
   char *uname;
 {
     int status;			/* general purpose exit status */
-    int q_argc;			/* argc for sms_query */
-    char *q_argv[F_END];	/* argv for sms_query */
-    char *motd;			/* for SMS server status */
+    int q_argc;			/* argc for mr_query */
+    char *q_argv[F_END];	/* argv for mr_query */
+    char *motd;			/* for MR server status */
     int i;
 
     int get_user_info();
@@ -127,13 +127,13 @@ chfn(uname)
 
     /* Try each query.  If we ever fail, print error message and exit. */
 
-    status = sms_connect(NULL);
+    status = mr_connect(NULL);
     if (status) {
 	com_err(whoami, status, " while connecting to Moira");
 	exit(1);
     }
 
-    status = sms_motd(&motd);
+    status = mr_motd(&motd);
     if (status) {
         com_err(whoami, status, " unable to check server status");
 	leave(1);
@@ -143,7 +143,7 @@ chfn(uname)
 	leave(1);
     }
 
-    status = sms_auth("chfn");	/* Don't use argv[0] - too easy to fake */
+    status = mr_auth("chfn");	/* Don't use argv[0] - too easy to fake */
     if (status) {
 	com_err(whoami, status, 
 		" while authenticating -- run \"kinit\" and try again.");
@@ -157,7 +157,7 @@ chfn(uname)
 	q_argv[i] = "junk";
     q_argc = F_MODTIME;		/* one more than the last updatable field */
     
-    if (status = sms_access("update_finger_by_login", q_argc, q_argv)) {
+    if (status = mr_access("update_finger_by_login", q_argc, q_argv)) {
 	com_err(whoami, status, "; finger\ninformation not changed.");
 	leave(2);
     }
@@ -168,7 +168,7 @@ chfn(uname)
 
     q_argv[NAME] = uname;
     q_argc = NAME + 1;
-    if (status = sms_query("get_finger_by_login", q_argc, q_argv, 
+    if (status = mr_query("get_finger_by_login", q_argc, q_argv, 
 		       get_user_info, (char *) &old_info))
     {
 	com_err(whoami, status, " while getting user information.");
@@ -194,7 +194,7 @@ chfn(uname)
     q_argv[F_MIT_AFFIL] = new_info.mit_year;
     q_argc = F_MODTIME;		/* First non-update query argument */
 
-    if (status = sms_query("update_finger_by_login", q_argc, q_argv,
+    if (status = mr_query("update_finger_by_login", q_argc, q_argv,
 			   scream, (char *)NULL))
     {
 	com_err(whoami, status, " while updating finger information.");
@@ -232,7 +232,7 @@ get_user_info(argc, argv, message)
     
     /* Only pay attention to the first match since login names are
        unique in the database. */
-    return(SMS_ABORT);
+    return(MR_ABORT);
 }
 
 char *ask(question, def_val, phone_num)

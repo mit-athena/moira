@@ -3,17 +3,17 @@
  * and distribution information, see the file "mit-copyright.h". 
  *
  * $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chpobox.c,v $
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chpobox.c,v 1.12 1990-02-14 11:32:28 mar Exp $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chpobox.c,v 1.13 1990-03-17 17:19:09 mar Exp $
  * $Author: mar $
  *
  */
 
 #ifndef lint
-static char *rcsid_chpobox_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chpobox.c,v 1.12 1990-02-14 11:32:28 mar Exp $";
+static char *rcsid_chpobox_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chpobox.c,v 1.13 1990-03-17 17:19:09 mar Exp $";
 #endif not lint
 
 /*
- * Talk to the SMS database to change a person's home mail machine. This may
+ * Talk to the MOIRA database to change a person's home mail machine. This may
  * be an Athena machine, or a completely arbitrary address.
  * 
  * chpobox with no modifiers reports the current mailbox.
@@ -35,9 +35,9 @@ static char *rcsid_chpobox_c = "$Header: /afs/.athena.mit.edu/astaff/project/moi
 #include <ctype.h>
 #include <errno.h>
 
-/* SMS includes */
-#include <sms.h>
-#include <sms_app.h>
+/* MOIRA includes */
+#include <moira.h>
+#include <moira_site.h>
 #include "mit-copyright.h"
 
 char *getlogin();
@@ -55,7 +55,7 @@ main(argc, argv)
     char *argv[];
 {
     struct passwd *pwd;
-    char *smsarg[3], buf[BUFSIZ];
+    char *mrarg[3], buf[BUFSIZ];
     char *potype(), *index();
     char *address, *uname, *machine, *motd;
     uid_t u;
@@ -120,30 +120,30 @@ main(argc, argv)
 	    (void) strcpy(uname, pwd->pw_name);
 	}
     }
-    smsarg[0] = uname;
+    mrarg[0] = uname;
 
-    status = sms_connect(NULL);
+    status = mr_connect(NULL);
     if (status) {
 	com_err(whoami, status, " while connecting to Moira");
 	exit(1);
     }
 
-    status = sms_motd(&motd);
+    status = mr_motd(&motd);
     if (status) {
-	sms_disconnect();
+	mr_disconnect();
         com_err(whoami, status, " unable to check server status");
 	exit(1);
     }
     if (motd) {
 	fprintf(stderr, "The Moira server is currently unavailable:\n%s\n", motd);
-	sms_disconnect();
+	mr_disconnect();
 	exit(1);
     }
 
-    status = sms_auth("chpobox");
+    status = mr_auth("chpobox");
     if (status) {
 	com_err(whoami, status, " while authenticating -- run \"kinit\" and try again.");
-	sms_disconnect();
+	mr_disconnect();
 	exit(1);
     }
 
@@ -162,41 +162,41 @@ main(argc, argv)
 		    whoami, address);
 	    goto show;
 	}
-	smsarg[2] = canonicalize_hostname(strsave(machine));
-	smsarg[1] = potype(smsarg[2]);
-	if (!strcmp(smsarg[1], "POP")) {
+	mrarg[2] = canonicalize_hostname(strsave(machine));
+	mrarg[1] = potype(mrarg[2]);
+	if (!strcmp(mrarg[1], "POP")) {
 	    if (strcmp(address, uname)) {
 		fprintf(stderr,
 			"%s: the name on the POP box must match the username\n",
 			whoami);
 		goto show;
 	    }
-	} else if (!strcmp(smsarg[1], "LOCAL")) {
+	} else if (!strcmp(mrarg[1], "LOCAL")) {
 	    strcat(address, "@");
-	    strcat(address, smsarg[2]);
-	    smsarg[2] = address;
+	    strcat(address, mrarg[2]);
+	    mrarg[2] = address;
 	    if ((address = index(address, '@')) &&
 		(address = index(address, '.')))
 	      *address = 0;
-	    strcat(smsarg[2], ".LOCAL");
-	    smsarg[1] = "SMTP";
-	} else if (smsarg[1]) {
-	    if (*machine != '"' && strcasecmp(smsarg[2], machine))
+	    strcat(mrarg[2], ".LOCAL");
+	    mrarg[1] = "SMTP";
+	} else if (mrarg[1]) {
+	    if (*machine != '"' && strcasecmp(mrarg[2], machine))
 	      printf("Warning: hostname %s canonicalized to %s\n",
-		     machine, smsarg[2]);
+		     machine, mrarg[2]);
 	    strcat(address, "@");
-	    strcat(address, smsarg[2]);
-	    smsarg[2] = address;
+	    strcat(address, mrarg[2]);
+	    mrarg[2] = address;
 	} else
 	  goto show;
-	status = sms_query("set_pobox", 3, smsarg, scream, NULL);
+	status = mr_query("set_pobox", 3, mrarg, scream, NULL);
 	if (status)
 	  com_err(whoami, status,
 		  " while setting pobox for %s to type %s, box %s",
-		  smsarg[0], smsarg[1], smsarg[2]);
+		  mrarg[0], mrarg[1], mrarg[2]);
     } else if (prevpop) {
-	status = sms_query("set_pobox_pop", 1, smsarg, scream, NULL);
-	if (status == SMS_MACHINE) {
+	status = mr_query("set_pobox_pop", 1, mrarg, scream, NULL);
+	if (status == MR_MACHINE) {
 	    fprintf(stderr,
 		    "Moira has no record of a previous POP box for %s\n", uname);
 	} else if (status != 0)
@@ -207,12 +207,12 @@ main(argc, argv)
      * get current box
      */
 show:
-    status = sms_query("get_pobox", 1, smsarg, get_pobox, NULL);
-    if (status == SMS_NO_MATCH)
+    status = mr_query("get_pobox", 1, mrarg, get_pobox, NULL);
+    if (status == MR_NO_MATCH)
       printf("User %s has no pobox.\n", uname);
     else if (status != 0)
       com_err(whoami, status, " while retrieving current mailbox");
-    sms_disconnect();
+    mr_disconnect();
     exit(0);
 }
 
@@ -220,7 +220,7 @@ show:
 scream()
 {
     com_err(whoami, 0, "Unexpected return value from Moira -- programmer botch");
-    sms_disconnect();
+    mr_disconnect();
     exit(1);
 }
 
@@ -245,7 +245,7 @@ get_pobox(argc, argv, callarg)
 }
 
 /*
- * given a canonicalized machine name, ask the SMS server if it is of type
+ * given a canonicalized machine name, ask the MR server if it is of type
  * pop, or of type local -- if neither, we assume that it's of type foreign. 
  */
 char *
@@ -257,9 +257,9 @@ potype(machine)
 
     match = 0;
     service[0] = "POP";
-    status = sms_query("get_server_locations", 1, service,
+    status = mr_query("get_server_locations", 1, service,
 		       check_match, machine);
-    if (status && (status != SMS_NO_MATCH)) {
+    if (status && (status != MR_NO_MATCH)) {
 	com_err(whoami, status, " while reading list of POP servers");
 	return(NULL);
     }
@@ -267,9 +267,9 @@ potype(machine)
 	return ("POP");
 
     service[0] = "LOCAL";
-    status = sms_query("get_server_locations", 1, service,
+    status = mr_query("get_server_locations", 1, service,
 		       check_match, machine);
-    if (status && (status != SMS_NO_MATCH)) {
+    if (status && (status != MR_NO_MATCH)) {
 	com_err(whoami, status, " while reading list of LOCAL servers");
 	return(NULL);
     }

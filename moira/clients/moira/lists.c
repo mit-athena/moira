@@ -1,4 +1,4 @@
-/* $Id: lists.c,v 1.36 1998-03-10 21:09:37 danw Exp $
+/* $Id: lists.c,v 1.37 1999-03-10 14:54:44 danw Exp $
  *
  *	This is the file lists.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -23,7 +23,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v 1.36 1998-03-10 21:09:37 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v 1.37 1999-03-10 14:54:44 danw Exp $");
 
 struct mqelem *GetListInfo(int type, char *name1, char *name2);
 char **AskListInfo(char **info, Bool name);
@@ -397,7 +397,7 @@ int AddList(int argc, char **argv)
       Put_message(buf);
       Loop(QueueTop(elem), FreeInfo);
       FreeQueue(elem);
-      if (YesNoQuestion("Crate a list with the same name", FALSE) != TRUE)
+      if (YesNoQuestion("Create a list with the same name", FALSE) != TRUE)
 	return SUB_ERROR;
     }
 

@@ -1,13 +1,13 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/exec_002.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/exec_002.c,v 1.7 1990-03-19 13:02:19 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/exec_002.c,v 1.8 1990-06-08 10:53:02 mar Exp $
  */
 /*  (c) Copyright 1988 by the Massachusetts Institute of Technology. */
 /*  For copying and distribution information, please see the file */
 /*  <mit-copyright.h>. */
 
 #ifndef lint
-static char *rcsid_exec_002_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/exec_002.c,v 1.7 1990-03-19 13:02:19 mar Exp $";
+static char *rcsid_exec_002_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/exec_002.c,v 1.8 1990-06-08 10:53:02 mar Exp $";
 #endif	lint
 
 #include <mit-copyright.h>
@@ -44,6 +44,7 @@ exec_002(str)
 	    exit(1);
 	return;
     case 0:
+	sigsetmask(mask);
 	execlp(str, str, (char *)NULL);
 	n = errno;
 	sigsetmask(mask);

@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_private.h,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_private.h,v 1.5 1990-03-17 16:37:21 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_private.h,v 1.6 1991-03-08 10:32:50 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
@@ -36,7 +36,7 @@ extern char *malloc();
 #ifndef htonl
 extern u_long htonl(), ntohl();
 extern u_short htons(), ntohs();
-#endif htonl
+#endif /* htonl */
 
 
 

@@ -1,6 +1,6 @@
 #	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/Makefile,v $
 #	$Author: mar $
-#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/Makefile,v 1.6 1989-06-28 13:56:37 mar Exp $
+#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/Makefile,v 1.7 1989-06-28 14:57:17 mar Exp $
 #
 #	Makefile for SMS library.
 #
@@ -61,6 +61,7 @@ admin_err.c admin_err.h: admin_err.et
 clean:
 	rm -f ${ALL}
 	rm -f *.o *~ admin_err.h sms_et.h krb_et.h ureg_err.h profiled/*.o \#*
+	rm -f krb_et.c sms_et.c ureg_err.c admin_err.c
 	rm -f *.PS *.aux *.dvi *.log
 	rm -f *.bak
 
@@ -82,7 +83,7 @@ lint:	${CFILES} llib-lsms.ln
 llib-lsms.ln:	${LIBSRC}
 	lint -Csms $(LINTFLAGS) $(INCDIRS) ${LIBSRC}
 
-depend: $(CFILES) sms_et.h admin_err.h ureg_err.h
+depend: $(CFILES) sms_et.h admin_err.h ureg_err.h krb_et.h
 	$(CC) -M $(CFLAGS) $(CFILES) | \
 	sed -e 's; ./; ;' \
 	    -e ':loop' \
@@ -108,7 +109,7 @@ sms_auth.o: /usr/include/sys/types.h /usr/include/sys/time.h
 sms_auth.o: /usr/include/time.h ../include/sms.h ../include/sms_et.h
 sms_auth.o: /usr/include/krb.h ../include/mit-copyright.h /usr/include/des.h
 sms_auth.o: ../include/mit-copyright.h /usr/include/des_conf.h
-sms_auth.o: ../include/mit-copyright.h ../include/krb_et.h
+sms_auth.o: ../include/mit-copyright.h krb_et.h
 sms_call.o: sms_call.c ../include/mit-copyright.h sms_private.h
 sms_call.o: ../include/sms_proto.h /usr/include/stdio.h ../include/gdb.h
 sms_call.o: /usr/include/sys/types.h /usr/include/sys/time.h

@@ -1,0 +1,77 @@
+modify users to cbtree unique on users_id
+index on users is i_usr_login (login)
+modify i_usr_login to btree
+index on users is i_usr_name (first, last)
+modify i_usr_name to cbtree on first, last
+index on users is i_usr_last (last, first)
+modify i_usr_name to cbtree on last, first
+index on users is i_usr_uid (uid)
+modify i_usr_uid to btree
+index on users is i_usr_pop (pop_id)
+modify i_usr_pop to btree
+
+modify machine to cbtree unique on mach_id
+index on machine is i_mac_name (name)
+modify i_mac_name to btree
+
+modify cluster to cbtree unique on clu_id
+index on cluster is i_clu_name (name)
+modify i_clu_name to btree
+
+modify mcmap to cbtree on clu_id
+index on mcmap is i_mcm_mach (mach_id)
+modify i_mcm_mach to cbtree
+
+modify svc to cbtree on clu_id
+
+modify servers to btree on name
+
+modify serverhosts to btree on service
+index on serverhosts is i_sho_mach (mach_id)
+modify i_sho_mach to cbtree
+
+modify list to cbtree unique on list_id
+index on list is i_lis_name (name)
+modify i_lis_name to btree
+index on list is i_lis_mail (maillist)
+index on list is i_lis_group (group)
+index on list is i_lis_gid (gid)
+modify i_lis_gid to btree
+
+modify members to cbtree on member_id, member_type
+index on members is i_mem_list (list_id)
+modify i_mem_list to hash
+
+modify strings to cbtree unique on string_id
+index on strings is i_str_name (string)
+modify i_str_name to hash
+
+modify nfsphys to cbtree unique on nfsphys_id
+index on nfsphys is i_nfs_mach (mach_id)
+modify i_nfs_mach to btree
+
+modify filesys to cbtree unique on filsys_id
+index on filesys is i_fil_name (label)
+modify i_fil_name to cbtree
+index on filesys is i_fil_mach (mach_id)
+modify i_fil_mach to btree
+index on filesys is i_fil_phys (phys_id)
+modify i_fil_phys to cbtree
+index on filesys is i_fil_grp (owners)
+modify i_fil_grp to btree
+
+modify nfsquota to cbtree on users_id
+index on nfsquota is i_nfq_fil (filsys_id)
+modify i_nfq_fil to cbtree
+index on nfsquota is i_nfq_phys (phys_id)
+modify i_nfq_phys to cbtree
+
+modify zephyr to cbtree unique on class
+
+modify hostaccess to cbtree unique on mach_id
+
+modify printcap to cbtree on name
+index on printcap is i_pcp_mach (mach_id)
+modify i_pcp_mach to btree
+
+modify capacls to cbtree on tag

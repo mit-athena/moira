@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.dc,v $
  *	$Author: genoa $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.dc,v 2.9 1992-10-17 23:20:44 genoa Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.dc,v 2.10 1992-10-20 00:40:27 genoa Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_qsupport_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.dc,v 2.9 1992-10-17 23:20:44 genoa Exp $";
+static char *rcsid_qsupport_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.dc,v 2.10 1992-10-20 00:40:27 genoa Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -72,8 +72,12 @@ access_login(q, argv, cl)
     EXEC SQL END DECLARE SECTION;
 
     build_qual(q->qual, q->argc, argv, qual);
-    EXEC SQL SELECT users_id INTO :id FROM users u, strings str WHERE :qual;
-    
+    if (!strncmp(q->name,"get_user_account",strlen("get_user_account"))) {
+	EXEC SQL SELECT users_id INTO :id FROM users u, strings str WHERE :qual;
+    } else {
+	EXEC SQL SELECT users_id INTO :id FROM users u WHERE :qual;
+    }
+
     if (sqlca.sqlerrd[2] != 1 || id != cl->users_id)
 	return(MR_PERM);
     else
@@ -2457,12 +2461,12 @@ int delete_member_from_list(q, argv, cl)
 		incremental_clear_after();
 	    } else if (a == 0 && d == 0) {
 		EXEC SQL UPDATE imembers
-		  SET ref_count = refcount - :ref, direct = 0
+		  SET ref_count = ref_count - :ref, direct = 0
 		  WHERE list_id = :lid AND member_id = :mid
 		    AND member_type = :mtype;
 	    } else {
 		EXEC SQL UPDATE imembers
-		  SET ref_count = refcount - :ref
+		  SET ref_count = ref_count - :ref
 		  WHERE list_id = :lid AND member_id = :mid
 		    AND member_type = :mtype;
 	    }
@@ -2665,7 +2669,7 @@ get_ace_internal(atype, aid, action, actarg)
     rargv[0] = "HOSTACCESS";
     EXEC SQL DECLARE csr115 CURSOR FOR
       SELECT name FROM machine m, hostaccess ha
-	WHERE mach_id = ha.mach_id AND ha.acl_type = :atype
+	WHERE m.mach_id = ha.mach_id AND ha.acl_type = :atype
 	  AND ha.acl_id = :aid;
     EXEC SQL OPEN csr115;
     while(1) {
@@ -2791,7 +2795,7 @@ int get_lists_of_member(q, argv, cl, action, actarg)
  * where clause based on the arguments, then doing a retrieve.
  */
 
-static char *lflags[5] = { "active", "publicflg", "hidden", "maillist", "group" };
+static char *lflags[5] = { "active", "publicflg", "hidden", "maillist", "grouplist" };
 
 int qualified_get_lists(q, argv, cl, action, actarg)
     struct query *q;
@@ -3061,7 +3065,7 @@ int qualified_get(q, argv, action, actarg, start, range, field, flags)
     }
 
     rargv[0] = SQLDA->sqlvar[0].sqldata;
-    sprintf(stmt_buf,"SELECT %s.%s FROM %s %s WHERE %s",q->rtable,field,q->rtable,q->rvar,qual);
+    sprintf(stmt_buf,"SELECT %s.%s FROM %s %s WHERE %s",q->rtable,field,q->rtable,q->rvar,qual); /** Should first rtabl be rvar ??? **/
     EXEC SQL PREPARE stmt INTO :SQLDA USING NAMES FROM :stmt_buf;
     if(sqlca.sqlcode)
       return(MR_INTERNAL);

@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v 1.16 1989-06-01 21:37:01 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v 1.17 1989-06-01 22:01:36 mar Exp $";
 #endif lint
 
 /*	This is the file utils.c for the SMS Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v 1.16 1989-06-01 21:37:01 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v 1.17 1989-06-01 22:01:36 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -725,6 +725,7 @@ char * query_string;
     Bool one_item;
     char temp_buf[BUFSIZ], *name;
 
+    elem = QueueTop(elem);
     one_item = (QueueCount(elem) == 1);
     while (elem != NULL) {
 	char **info = (char **) elem->q_data;

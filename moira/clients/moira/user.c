@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.6 1988-07-27 19:21:24 kit Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.7 1988-07-29 18:33:23 kit Exp $";
 #endif lint
 
 /*	This is the file user.c for the SMS Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v $
  *      $Author: kit $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.6 1988-07-27 19:21:24 kit Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.7 1988-07-29 18:33:23 kit Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -546,7 +546,7 @@ int argc;
 char *argv[];
 {
     struct qelem *top;
-    char buf;
+    char buf[BUFSIZ];
 
     top = GetUserInfo(BY_NAME, argv[1], argv[2]);
 
@@ -554,10 +554,10 @@ char *argv[];
 	return(DM_NORMAL);
 
     if (!PromptWithDefault("Print full information, or just the names (f/n)?",
-			   &buf, 1, "f"))
+			   buf, 1, "f"))
 	return(DM_NORMAL);
 
-    switch(buf) {
+    switch(buf[0]) {
     case 'F':
     case 'f':
 	Loop(top, PrintUserInfo);

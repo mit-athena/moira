@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/cluster.c,v 1.15 1989-06-01 21:20:47 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/cluster.c,v 1.16 1989-07-13 16:17:49 mar Exp $";
 #endif lint
 
 /*	This is the file cluster.c for the SMS Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/cluster.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/cluster.c,v 1.15 1989-06-01 21:20:47 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/cluster.c,v 1.16 1989-07-13 16:17:49 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -718,13 +718,10 @@ int argc;
 char ** argv;
 {
     struct qelem *top;
-    char *tmpname;
 
-    tmpname = canonicalize_hostname(strsave(argv[1]));
-    top = GetMCInfo(CLUSTER, tmpname, (char *) NULL);
+    top = GetMCInfo(CLUSTER, argv[1], (char *) NULL);
     Loop(top, (void *) PrintClusterInfo);
     FreeQueue(top);
-    free(tmpname);
     return(DM_NORMAL);
 }
 

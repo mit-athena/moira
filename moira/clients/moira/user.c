@@ -1,4 +1,4 @@
-/* $Id: user.c,v 1.58 2000-03-15 22:44:06 rbasch Exp $
+/* $Id: user.c,v 1.59 2000-03-22 21:20:58 zacheiss Exp $
  *
  *	This is the file user.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -27,7 +27,7 @@
 
 #include <krb.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.58 2000-03-15 22:44:06 rbasch Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.59 2000-03-22 21:20:58 zacheiss Exp $");
 
 void CorrectCapitalization(char **name);
 char **AskUserInfo(char **info, Bool name);
@@ -557,6 +557,10 @@ int RegisterUser(int argc, char **argv)
   char *login, *potype = NULL;
   char temp_buf[BUFSIZ];
   int status;
+
+  int i;
+  for (i = 0; i < MAX_ARGS_SIZE; i++)
+	  args[i] = NULL;
 
   Put_message("This function has NO kerberos support, so strange things");
   Put_message("may happen if you use it to register a user.");

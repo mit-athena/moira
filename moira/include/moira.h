@@ -1,11 +1,14 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/include/moira.h,v $
- *	$Author: wesommer $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/include/moira.h,v 1.6 1987-08-22 17:11:59 wesommer Exp $
+ *	$Author: kit $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/include/moira.h,v 1.7 1988-04-19 14:30:47 kit Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
  *	$Log: not supported by cvs2svn $
+ * Revision 1.6  87/08/22  17:11:59  wesommer
+ * Added flags for user filesystems.
+ * 
  * Revision 1.5  87/08/02  21:50:25  wesommer
  * Added function prototypes.
  * 
@@ -22,7 +25,8 @@
 
 #include "sms_et.h"
 
-#define SMS_VERSION_1 1
+#define SMS_VERSION_1 1		/* Version in use from 7/87 to 4/88 */
+#define SMS_VERSION_2 2		/* After 4/88, new query lib */
 
 #define SMS_NOOP 0
 #define SMS_AUTH 1

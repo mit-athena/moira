@@ -105,7 +105,7 @@ of the Hesiod nameservice and Zephyr notification services if they are
 present in your system.
 
 There are a number of client programs available, which can be run on
-any workstation.  These include
+any workstation.  These include:
 \begin{itemize}
 \item moira (listmaint, usermaint, and dcmmaint are part of this)
 \item mmoira
@@ -120,8 +120,8 @@ any workstation.  These include
 The text in this document assumes that you are using the {\bf moira}
 client program unless otherwise indicated.  References are also made
 at various points to the actual moira queries.  These are listed in a
-separate document, {\em Moira Queries}.  Queries may be used with the
-{\bf mrtest} program.
+separate document, {\em Moira Queries}.  Queries may be used directly
+with the {\bf mrtest} program.
 
 Moira can be used by everyone on the system, but some operations
 require specific privileges.  Different parts of moira
@@ -295,7 +295,7 @@ within moira.  Lists can contain several kinds of members.  Those you
 are most likely to see are users, which name users of the local
 system, and strings, which are external mail addresses.  Another list
 may be a member of a list as well, in which case every member of that
-sub-list is also a member of this list.
+sub-list is also a member of the first list.
 
 To find out which lists you belong to, you can use choice three.  Note
 that you may be a member of some groups in addition to mailing lists,
@@ -303,11 +303,12 @@ and these will be displayed at the same time.  To find out more about
 any list, you can select option four.
 
 Finally, choices five and six allow you to put your username on a list
-or take yourself off.  Note that you can only do this to lists that
-are public or that you administer, so you may get a ``permission
+or take yourself off.  Note that you can only add yourself to lists
+that are public or that you administer, so you may get a ``permission
 denied'' error.  In this case, you will have to ask either the
 administrator of that specific list, or a user accounts consultant to
-make the change.
+make the change.  You can always remove yourself from a list, even if
+you did not have access to add yourself.
 
 \subsection{For More Sophisticated Users}
 
@@ -1271,7 +1272,7 @@ normally done by the system {\tt rc} files.  You can check to see if
 Ingres is running by doing a {\tt ps}, and look for processes {\tt
 iigcn, iigcc, dmfrcp, dmfacp}, and {\tt iidbms}.  If Ingres is not
 running, be sure to check the log files in {\it /usr/ingres} and {\it
-/usr/ingres/files} before trying to start it again, and your next
+/usr/ingres/files} before trying to start it again, because your next
 attempt to start it will erase the logs containing the original error.
 Ingres is started by running {\tt /usr/ingres/utility/iistartup}.
 
@@ -1290,9 +1291,12 @@ for any errors that may be important.
 {\bf Moirad} is normally started using {\bf startmoira}.
 \index{startmoira}  It is not necessary to do this, it is a
 convenience program to avoid having to always have the proper
-environment to start the moira server.  {\bf Startmoira} will connect to
+environment to start the moira server.  {\bf Startmoira} will change to
 the root directory, then run {\bf moirad} capturing the logging
 information, timestamping it, and writing it to {\em /moira/moira.log}.
+
+Remember to re-enable {\bf} DCM updates, both by removing {\em
+/etc/nodcm} and by setting to 1 the {\bf Enable} flag in the database.
 
 \subsection{Shutting Down the Server}
 
@@ -1338,18 +1342,19 @@ force the server to exit.
 
 There are a number of things the system manager must do to keep user
 account management running smoothly.  These include loading new users
-into the database, deleting old accounts, and some general cleanup.
+into the database, deleting old accounts, and performing some general cleanup.
 
 \subsection{User Account Tapes}
 
 \index{students}\index{employee}\index{regtape}\index{User accounts}
 Much of the general cleanup and maintenance of user accounts is done
-via the {\bf students} and {\bf employee} programs.  These programs each
-process tapes of information obtained from the registrar and personnel
-offices.  Operation of each program is the same, although the format
-of the two tapes is slightly different.
+via the {\bf students} and {\bf employee} programs.  These programs
+each process ``tapes'' (actually regular files) of information
+obtained from the registrar and personnel offices.  Operation of each
+program is the same, although the format of the two tapes is slightly
+different.
 
-These programs process records one at a time.  They takes the input
+These programs process records one at a time.  They take the input
 records and parses them, then use the ID as a key to lookup the user.
 If the user is not already in the database, he is added.  If he is
 already there, the class, status, and address fields are checked and
@@ -1495,7 +1500,7 @@ time moira updates the system services.
 \subsection{Signatures}
 
 \index{signatures}
-Every active user account must be signed to properly be authenticated.
+Every active user account must be signed to be properly authenticated.
 Whenever someone modifies an account through one of the moira clients,
 a signature is generated using that user's Kerberos tickets.  But
 accounts created by the {\bf reg\_svr} cannot be signed, because there
@@ -1587,7 +1592,7 @@ up.  The moira database consistency checker is run to catch any
 dangling references to these now-deleted accounts.
 \end{enumerate}
 
-\section{Updates}
+\section{Server Updates}
 
 \index{updates}\index{dcm}\index{data control manager}
 Keeping tabs on the regular moira updates of system servers is one of
@@ -1602,10 +1607,11 @@ configure it to run regularly, perhaps as often as every 15 minutes,
 or only run {\bf dcm}s at certain times of the day.  \athena\ Because
 the database is read-locked for the duration of a service update, we
 only run updates at night.  This means that changes made during the
-day are not visible until the following day.  We invoke the {\bf dcm}
-hourly between 11pm and 5am.  Invoking it many times gives parallelism
-for updates that take a long time and guarantees retries in the case
-of transient failures.
+day are not visible until the following day.  We currently invoke
+several {\bf dcm} processes near 12:30am, then one more hourly until
+4:30am.  Invoking it many times gives parallelism for updates that
+take a long time and guarantees retries in the case of transient
+failures.
 
 {\bf Cron} actually runs {\bf startdcm}\index{startdcm}, which is a
 program that launches the dcm after connecting to the root directory
@@ -1620,10 +1626,10 @@ environment to start the {\bf dcm}.
 \index{service}
 For each service moira supports, the following information is kept:
 \begin{description}
-\item[name] Up to 16 characters long, case in-sensitive.
+\item[name] Up to 16 characters long, case insensitive.
 \item[update interval] The minimum amount of time between updates of this
-service. Displayed as hh:mm:ss, but new values are input in minutes
-only.
+service.  Displayed as hh:mm:ss, but new values are input in minutes
+only.  Setting the interval to 0 prevents {\bf dcm} updates.
 \item[target file] Where on each server to put the file generated.
 \item[script] Name of the script file on the moira server to be sent over to
 the server and executed during the server update.  \athena\ This is
@@ -1692,7 +1698,7 @@ successful or not.
 this host.
 \item[override/normal] This indicates a priority on the next update.
 Setting the override flag causes a {\bf dcm} to be started immediately,
-and this service/host will updated even if the service interval has
+and this service/host will be updated even if the service interval has
 not yet passed.  This flag may be set by the user, but is only cleared
 by the {\bf dcm}.
 \item[inprogress/idle] This read-only flag indicates that an update is in

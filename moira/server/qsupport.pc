@@ -1,4 +1,4 @@
-/* $Id: qsupport.pc,v 2.35 2001-07-27 08:18:10 zacheiss Exp $
+/* $Id: qsupport.pc,v 2.36 2001-07-29 15:14:27 zacheiss Exp $
  *
  * Special query routines
  *
@@ -18,7 +18,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.pc,v 2.35 2001-07-27 08:18:10 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.pc,v 2.36 2001-07-29 15:14:27 zacheiss Exp $");
 
 extern char *whoami, *table_name[];
 extern int dbms_errno, mr_errcode;
@@ -1862,6 +1862,7 @@ int update_container(struct query *q, char *argv[], client *cl)
   char* tmpchar;
   int cnt, childid;
   char childname[CONTAINERS_NAME_SIZE];
+  char *qual;
 
   cnt_id = *(int *)argv[0];
   newname = argv[1];
@@ -1901,6 +1902,10 @@ int update_container(struct query *q, char *argv[], client *cl)
       if (strrchr(newname, '/'))
         return MR_NEW_CONTAINER_NAME;
     }
+
+    qual = xmalloc(CONTAINERS_NAME_SIZE + 10);
+    sprintf(qual, "name = '%s'", name);
+    incremental_before(CONTAINERS_TABLE, qual, argv);
 
     /* update the name for this container */
     EXEC SQL UPDATE containers
@@ -1955,6 +1960,9 @@ int update_container(struct query *q, char *argv[], client *cl)
 
   if (dbms_errno)
     return mr_errcode;
+
+  sprintf(qual, "name = '%s'", newname);
+  incremental_after(CONTAINERS_TABLE, qual, argv);
     
   return MR_SUCCESS;
 }

@@ -1,4 +1,4 @@
-/* $Id: increment.pc,v 2.10 2001-07-08 04:03:52 zacheiss Exp $
+/* $Id: increment.pc,v 2.11 2001-07-29 15:14:26 zacheiss Exp $
  *
  * Deal with incremental updates
  *
@@ -20,7 +20,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/increment.pc,v 2.10 2001-07-08 04:03:52 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/increment.pc,v 2.11 2001-07-29 15:14:26 zacheiss Exp $");
 
 extern char *whoami;
 extern char *table_name[];
@@ -109,6 +109,13 @@ void incremental_before(enum tables table, char *qual, char **argv)
 	      "c.clu_id FROM clusters c WHERE %s", qual);
       dosql(before);
       beforec = 4;
+      break;
+    case CONTAINERS_TABLE:
+      sprintf(stmt_buf, "SELECT c.name, c.description, c.location, c.contact, "
+	      "c.acl_type, c.acl_id, c.cnt_id FROM containers c WHERE %s", 
+	      qual);
+      dosql(before);
+      beforec = 7;
       break;
     case MCMAP_TABLE:
       strcpy(before[0], argv[0]);
@@ -242,6 +249,13 @@ void incremental_after(enum tables table, char *qual, char **argv)
 	      "c.clu_id FROM clusters c WHERE %s", qual);
       dosql(after);
       afterc = 4;
+      break;
+    case CONTAINERS_TABLE:
+      sprintf(stmt_buf, "SELECT c.name, c.description, c.location, c.contact, "
+	      "c.acl_type, c.acl_id, c.cnt_id FROM containers c WHERE %s",
+	      qual);
+      dosql(after);
+      afterc = 7;
       break;
     case MCMAP_TABLE:
       strcpy(after[0], argv[0]);

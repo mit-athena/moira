@@ -1,4 +1,4 @@
-/* $Id: namespace.c,v 1.12 1998-10-21 19:25:09 danw Exp $
+/* $Id: namespace.c,v 1.13 2001-05-20 10:22:10 zacheiss Exp $
  *
  *	This is the file main.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -14,6 +14,7 @@
 
 #include <mit-copyright.h>
 #include <moira.h>
+#include <mrclient.h>
 #include "defs.h"
 #include "f_defs.h"
 #include "globals.h"
@@ -24,7 +25,7 @@
 
 #include <krb.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/namespace.c,v 1.12 1998-10-21 19:25:09 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/namespace.c,v 1.13 2001-05-20 10:22:10 zacheiss Exp $");
 
 static void ErrorExit(char *buf, int status);
 static void Usage(void);
@@ -223,30 +224,9 @@ int main(int argc, char **argv)
 	}
     }
 
-  if ((status = mr_connect(moira_server)))
-    ErrorExit("\nConnection to Moira server failed", status);
-
-  /* do this now since calling mr_connect initialized the krb error table
-   * for us.
-   */
-  if ((status = tf_init(TKT_FILE, R_TKT_FIL)) ||
-      (status = tf_get_pname(pname)))
-    {
-      com_err(whoami, status, "cannot find your ticket file");
-      exit(1);
-    }
-  tf_close();
-  user = strdup(pname);
-
-  if ((status = mr_motd(&motd)))
-    ErrorExit("\nUnable to check server status", status);
-  if (motd)
-    {
-      fprintf(stderr, "The Moira server is currently unavailable:\n%s\n",
-	      motd);
-      mr_disconnect();
-      exit(1);
-    }
+  if (mrcl_connect(moira_server, program_name, QUERY_VERSION, 0)
+      != MRCL_SUCCESS)
+    exit(1);
 
   if ((status = mr_auth(program_name)))
     {

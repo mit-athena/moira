@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_glue.c,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_glue.c,v 1.12 1989-09-08 15:30:24 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_glue.c,v 1.13 1989-12-21 17:56:08 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -12,7 +12,7 @@
  */
 
 #ifndef lint
-static char *rcsid_sms_glue_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_glue.c,v 1.12 1989-09-08 15:30:24 mar Exp $";
+static char *rcsid_sms_glue_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_glue.c,v 1.13 1989-12-21 17:56:08 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -91,7 +91,8 @@ char *prog;
     strcat(buf, "@");
     strcat(buf, pseudo_client.kname.realm);
     strcpy(pseudo_client.clname, buf);
-    pseudo_client.users_id = get_users_id(pseudo_client.kname.name);
+    pseudo_client.users_id = 0;
+    name_to_id(pseudo_client.kname.name, "USER", &pseudo_client.users_id);
     pseudo_client.client_id = pseudo_client.users_id;
     strcpy(pseudo_client.entity, prog);
     pseudo_client.args = (sms_params *) malloc(sizeof(sms_params));

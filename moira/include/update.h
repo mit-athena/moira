@@ -9,10 +9,10 @@
    of 8 to prevent the data from being zero-padded. */
 #define UPDATE_BUFSIZ ((BUFSIZ + 7) & ~7)
 
-int send_file(int conn, char *pathname, char *target_path, int encrypt);
-int send_auth(int conn, char *hostname);
-int execute(int conn, char *path);
-void send_quit(int conn);
+int mr_send_file(int conn, char *pathname, char *target_path, int encrypt);
+int mr_send_auth(int conn, char *hostname);
+int mr_execute(int conn, char *path);
+void mr_send_quit(int conn);
 
 #include <krb.h>
 int get_mr_update_ticket(char *host, KTEXT ticket);

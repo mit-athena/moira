@@ -46,6 +46,12 @@ struct symtab	predefs[] = {
 #ifdef VMS
 	{"VMS", NULL},
 #endif
+#ifdef ultrix
+	{"ultrix", NULL},
+#endif
+#ifdef mips
+	{"mips", NULL},
+#endif
 	{NULL, NULL}
 };
 
@@ -62,14 +68,13 @@ int	width = 78;
 boolean	printed = FALSE;
 boolean	verbose = FALSE;
 boolean	show_where_not = FALSE;
-#if defined (mips) && defined (SYSTYPE_SYSV)
-void  catch();
-#else /* !(mips && SYSTYPE_SYSV) */
-#ifdef ultrix
-void  catch();
+
+#if defined(POSIX) || (defined(mips) && defined(SYSTYPE_SYSV))
+typedef void sigreturn_t;
 #else
-int   catch();
+typedef int sigreturn_t;
 #endif
+sigreturn_t catch();
 
 struct sigvec sig_vec = {
 	catch,

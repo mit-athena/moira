@@ -282,6 +282,7 @@ if test "$java" != no; then
     WEBMOIRA_OUTPUT_FILES="webmoira/Makefile"
 fi
 AC_SUBST(JAVA_CPPFLAGS)
+AC_SUBST(WEBMOIRA_SUBDIRS)
 
 # LDAP support
 AC_MSG_CHECKING(for LDAP)

@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/admin_call.c,v $
  *	$Author: wesommer $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/admin_call.c,v 1.3 1987-09-04 22:30:34 wesommer Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/admin_call.c,v 1.4 1987-09-09 14:59:06 wesommer Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
@@ -11,6 +11,9 @@
  *	Completely gutted and rewritten by Bill Sommerfeld, August 1987
  *
  *	$Log: not supported by cvs2svn $
+ * Revision 1.3  87/09/04  22:30:34  wesommer
+ * Un-crock the KDC host (oops -- this one got distributed!!).
+ * 
  * Revision 1.2  87/08/22  17:13:59  wesommer
  * Make admin_errmsg external rather than static.
  * Crock up KDC host.
@@ -21,7 +24,7 @@
  */
 
 #ifndef lint
-static char *rcsid_admin_call_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/admin_call.c,v 1.3 1987-09-04 22:30:34 wesommer Exp $";
+static char *rcsid_admin_call_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/admin_call.c,v 1.4 1987-09-09 14:59:06 wesommer Exp $";
 #endif lint
 
 #include <sys/errno.h>
@@ -68,8 +71,7 @@ int admin_call_init()
     if (!inited) {
 	struct hostent *hp;	/* host to talk to */
 	struct servent *sp;	/* service to talk to */
-	int on = 1;		/* ioctl argument */
-	
+
 	init_kadm_err_tbl();
 	if (status = get_krbrlm(krbrlm, 1)) {
 	    status += krb_err_base;
@@ -95,39 +97,6 @@ int admin_call_init()
 	bcopy((char *)hp->h_addr, (char *)&admin_addr.sin_addr, hp->h_length);
 	admin_addr.sin_port = sp->s_port;
 
-	/*
-	 * Set up socket.
-	 */
-
-	admin_fd = socket(hp->h_addrtype, SOCK_DGRAM, 0);
-	if (admin_fd < 0) {
-	    status = errno;
-	    goto punt;
-	}
-
-	bzero((char *)&my_addr, sizeof(my_addr));
-
-	my_addr.sin_family = admin_addr.sin_family;
-	my_addr.sin_addr.s_addr = gethostid();
-
-	if (bind(admin_fd, &my_addr, sizeof(my_addr)) < 0) {
-	    status = errno;
-	    goto punt;
-	}
-
-	my_addr_len = sizeof(my_addr);
-
-	if (getsockname(admin_fd, (struct sockaddr *)&my_addr,
-			&my_addr_len) < 0) {
-	    status = errno;
-	    goto punt;
-	}
-
-	if (ioctl(admin_fd, FIONBIO, (char *)&on) < 0) {
-	    status = errno;
-	    goto punt;
-	}
-	
 	inited = 1;
     }
     return 0;
@@ -174,6 +143,8 @@ admin_call(opcode, pname, old_passwd, new_passwd, crypt_passwd)
 
     struct sockaddr rec_addr;	/* Address we got reply from */
     int rec_addr_len;		/* Length of that address */
+    int on = 1;			/* ioctl argument */
+	
     
     if (!inited) {
 	status = admin_call_init();
@@ -230,6 +201,39 @@ admin_call(opcode, pname, old_passwd, new_passwd, crypt_passwd)
 	goto bad;
     }
 
+    /*
+     * Set up socket.
+     */
+
+    admin_fd = socket(admin_addr.sin_family, SOCK_DGRAM, 0);
+    if (admin_fd < 0) {
+	status = errno;
+	goto bad;
+    }
+
+    bzero((char *)&my_addr, sizeof(my_addr));
+    
+    my_addr.sin_family = admin_addr.sin_family;
+    my_addr.sin_addr.s_addr = gethostid();
+
+    if (bind(admin_fd, &my_addr, sizeof(my_addr)) < 0) {
+	status = errno;
+	goto bad;
+    }
+
+    my_addr_len = sizeof(my_addr);
+
+    if (getsockname(admin_fd, (struct sockaddr *)&my_addr,
+		    &my_addr_len) < 0) {
+	status = errno;
+	goto bad;
+    }
+
+    if (ioctl(admin_fd, FIONBIO, (char *)&on) < 0) {
+	status = errno;
+	goto bad;
+    }
+	
     /*
      * Encrypt the message using the session key.
      * Since this contains passwords, it must be kept from prying eyes.
@@ -380,6 +384,12 @@ bad:
     bzero((char *)sess_key, sizeof(sess_key));
     bzero((char *)sess_sched, sizeof(sess_sched));
     bzero(pvt_buf, sizeof(pvt_buf));
+        
+    if (admin_fd >= 0) {
+	(void) close(admin_fd);
+	admin_fd = -1;
+    }
+
     return status;
 }
 

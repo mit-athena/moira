@@ -1,16 +1,19 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsubs.c,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsubs.c,v 1.6 1988-06-30 12:44:22 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsubs.c,v 1.7 1988-09-13 17:42:22 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
+ *	For copying and distribution information, please see the file
+ *	<mit-copyright.h>.
  *
  */
 
 #ifndef lint
-static char *rcsid_qsubs_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsubs.c,v 1.6 1988-06-30 12:44:22 mar Exp $";
+static char *rcsid_qsubs_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsubs.c,v 1.7 1988-09-13 17:42:22 mar Exp $";
 #endif lint
 
+#include <mit-copyright.h>
 #include <sms.h>
 #include "query.h"
 

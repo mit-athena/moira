@@ -1,20 +1,22 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/meinitlst.c,v $
- *	$Author: wesommer $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/meinitlst.c,v 1.1 1987-08-22 17:29:33 wesommer Exp $
+ *	$Author: mar $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/meinitlst.c,v 1.2 1988-09-13 17:40:40 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
+ *	For copying and distribution information, please see the file
+ *	<mit-copyright.h>.
  *
  * 	This code is a reverse-engineered version of
  * 	~rtingres/lib/compatlib(meinitlst.o) with a better malloc and
  * 	free.
- *	$Log: not supported by cvs2svn $
  */
 
 #ifndef lint
-static char *rcsid_meinitlst_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/meinitlst.c,v 1.1 1987-08-22 17:29:33 wesommer Exp $";
+static char *rcsid_meinitlst_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/meinitlst.c,v 1.2 1988-09-13 17:40:40 mar Exp $";
 #endif lint
 
+#include <mit-copyright.h>
 #include <sys/errno.h>
 #include <sys/types.h>
 

@@ -1,16 +1,18 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_util.c,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_util.c,v 1.13 1988-08-03 18:57:57 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_util.c,v 1.14 1988-09-13 17:42:36 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
- *
+ *	For copying and distribution information, please see the file
+ *	<mit-copyright.h>.
  */
 
 #ifndef lint
-static char *rcsid_sms_util_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_util.c,v 1.13 1988-08-03 18:57:57 mar Exp $";
+static char *rcsid_sms_util_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_util.c,v 1.14 1988-09-13 17:42:36 mar Exp $";
 #endif lint
 
+#include <mit-copyright.h>
 #include "sms_server.h"
 
 #include <ctype.h>

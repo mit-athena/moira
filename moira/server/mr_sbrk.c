@@ -1,16 +1,18 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_sbrk.c,v $
- *	$Author: wesommer $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_sbrk.c,v 1.1 1987-06-21 16:42:40 wesommer Exp $
+ *	$Author: mar $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_sbrk.c,v 1.2 1988-09-13 17:42:07 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
- *
- *	$Log: not supported by cvs2svn $
+ *	For copying and distribution information, please see the file
+ *	<mit-copyright.h>.
  */
 
 #ifndef lint
-static char *rcsid_sms_sbrk_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_sbrk.c,v 1.1 1987-06-21 16:42:40 wesommer Exp $";
+static char *rcsid_sms_sbrk_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_sbrk.c,v 1.2 1988-09-13 17:42:07 mar Exp $";
 #endif lint
+
+#include <mit-copyright.h>
 
 /*
  * The following routine is a kludge around a deficiency in the Ingres

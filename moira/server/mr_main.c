@@ -1,10 +1,11 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.18 1988-08-05 16:09:00 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.19 1988-09-13 17:40:51 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
- *
+ *	For copying and distribution information, please see the file
+ *	<mit-copyright.h>.
  *
  * 	SMS server process.
  *
@@ -15,8 +16,9 @@
  * 
  */
 
-static char *rcsid_sms_main_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.18 1988-08-05 16:09:00 mar Exp $";
+static char *rcsid_sms_main_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.19 1988-09-13 17:40:51 mar Exp $";
 
+#include <mit-copyright.h>
 #include <strings.h>
 #include <sys/errno.h>
 #include <sys/signal.h>

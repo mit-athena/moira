@@ -1,26 +1,22 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/startmoira.c,v $
- *	$Author: wesommer $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/startmoira.c,v 1.3 1987-08-22 17:30:58 wesommer Exp $
+ *	$Author: mar $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/startmoira.c,v 1.4 1988-09-13 17:41:04 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
+ *	For copying and distribution information, please see the file
+ *	<mit-copyright.h>.
  *
  * 	This program starts the sms server in a "clean" environment.
  *	and then waits for it to exit.
  * 
- *	$Log: not supported by cvs2svn $
- * Revision 1.2  87/06/02  20:08:16  wesommer
- * Changed logging, location of daemon to run.
- * 
- * Revision 1.1  87/06/01  03:35:33  wesommer
- * Initial revision
- * 
  */
 
 #ifndef lint
-static char *rcsid_sms_starter_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/startmoira.c,v 1.3 1987-08-22 17:30:58 wesommer Exp $";
+static char *rcsid_sms_starter_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/startmoira.c,v 1.4 1988-09-13 17:41:04 mar Exp $";
 #endif lint
 
+#include <mit-copyright.h>
 #include <stdio.h>
 #include <strings.h>
 #include <sys/types.h>

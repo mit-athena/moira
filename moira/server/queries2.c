@@ -1,10 +1,13 @@
 /* This file defines the query dispatch table for version 2 of the protocol
  *
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/queries2.c,v 1.8 1988-08-25 19:24:21 mar Exp $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/queries2.c,v 1.9 1988-09-13 17:41:45 mar Exp $
  *
  * Copyright 1987, 1988 by the Massachusetts Institute of Technology.
+ * For copying and distribution information, please see the file
+ * <mit-copyright.h>.
  */
 
+#include <mit-copyright.h>
 #include "query.h"
 #include "sms_et.h"
 

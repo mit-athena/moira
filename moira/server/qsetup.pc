@@ -1,4 +1,4 @@
-/* $Id: qsetup.pc,v 2.46 2001-09-15 19:53:29 zacheiss Exp $
+/* $Id: qsetup.pc,v 2.47 2001-10-17 21:34:06 zacheiss Exp $
  *
  * Query setup routines
  *
@@ -21,7 +21,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsetup.pc,v 2.46 2001-09-15 19:53:29 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsetup.pc,v 2.47 2001-10-17 21:34:06 zacheiss Exp $");
 
 extern char *whoami;
 extern int dbms_errno, mr_errcode;
@@ -91,6 +91,12 @@ int setup_ausr(struct query *q, char *argv[], client *cl)
   if ((mr_errcode = prefetch_value(q, argv, cl)) != MR_SUCCESS)
     return mr_errcode;
 
+  /* If this is an UPDATE query, we're done. */
+  if (row == 2)
+    return MR_SUCCESS;
+
+  /* For an add query, we need to fill in the creator id. */
+  sprintf(argv[q->argc + q->vcnt + 1], "%d", cl->client_id);
   return MR_SUCCESS;
 }
 

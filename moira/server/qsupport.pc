@@ -1,4 +1,4 @@
-/* $Id: qsupport.pc,v 2.38 2001-07-30 18:01:12 zacheiss Exp $
+/* $Id: qsupport.pc,v 2.39 2001-10-17 21:34:06 zacheiss Exp $
  *
  * Special query routines
  *
@@ -18,7 +18,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.pc,v 2.38 2001-07-30 18:01:12 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.pc,v 2.39 2001-10-17 21:34:06 zacheiss Exp $");
 
 extern char *whoami, *table_name[];
 extern int dbms_errno, mr_errcode;
@@ -1627,7 +1627,8 @@ int register_user(struct query *q, char **argv, client *cl)
     nstatus = 1;
   EXEC SQL UPDATE users SET login = :login, status = :nstatus,
     modtime = SYSDATE, modby = :who, modwith = :entity,
-    pmodtime = SYSDATE, pmodby = :who, pmodwith = :entity
+    pmodtime = SYSDATE, pmodby = :who, pmodwith = :entity,
+    created = SYSDATE, creator = :who
     WHERE users_id = :users_id;
 
   if (dbms_errno)

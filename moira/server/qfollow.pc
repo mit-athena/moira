@@ -1,4 +1,4 @@
-/* $Id: qfollow.pc,v 2.23 2001-09-13 02:26:42 zacheiss Exp $
+/* $Id: qfollow.pc,v 2.24 2001-10-17 21:34:06 zacheiss Exp $
  *
  * Query followup routines
  *
@@ -20,7 +20,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qfollow.pc,v 2.23 2001-09-13 02:26:42 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qfollow.pc,v 2.24 2001-10-17 21:34:06 zacheiss Exp $");
 
 extern char *whoami, *table_name[];
 extern int dbms_errno, mr_errcode;
@@ -999,4 +999,50 @@ int followup_gcon(struct query *q, struct save_queue *sq, struct validate *v,
 
   return followup_fix_modby(q, sq, v, action, actarg, cl);
 }
+
+/* followup_get_user:  fix the modby and creator.
+ * This assumes that the modby and creator fields are always 
+ * in the same relative position in the argv.
+ */
+
+int followup_get_user(struct query *q, struct save_queue *sq, struct 
+		      validate *v, int (*action)(int, char *[], void *),
+		      void *actarg, client *cl)
+{
+  char **argv;
+  int i, j, k, status, id;
+
+  i = q->vcnt - 4;
+  j = q->vcnt - 1;
+  while (sq_get_data(sq, &argv))
+    {
+      mr_trim_args(q->vcnt, argv);
+
+      id = atoi(argv[i]);
+      if (id > 0)
+	status = id_to_name(id, USERS_TABLE, &argv[i]);
+      else
+	status = id_to_name(-id, STRINGS_TABLE, &argv[i]);
+      if (status && status != MR_NO_MATCH)
+	return status;
+
+      id = atoi(argv[j]);
+      if (id > 0)
+	status = id_to_name(id, USERS_TABLE, &argv[j]);
+      else
+	status = id_to_name(-id, STRINGS_TABLE, &argv[j]);
+      if (status && status != MR_NO_MATCH)
+	return status;
+
+      (*action)(q->vcnt, argv, actarg);
+      for (k = 0; k < q->vcnt; k++)
+	free(argv[k]);
+      free(argv);
+    }
+  sq_destroy(sq);
+  return MR_SUCCESS;
+}
+
+
+
 

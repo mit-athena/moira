@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/afs.c,v 1.46 1993-02-22 03:35:22 probe Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/afs.c,v 1.47 1993-03-15 17:45:23 probe Exp $
  *
  * Do AFS incremental updates
  *
@@ -102,7 +102,7 @@ int argc;
     }
     strcat(tbl_buf, ")");
 #ifdef DEBUG
-    printf("%s\n", tbl_buf);
+    com_err(whoami, 0, "%s", tbl_buf);
 #endif
 
     initialize_sms_error_table();
@@ -152,6 +152,9 @@ int afterc;
 
     if (astate == bstate) {
 	/* Only a modify has to be done */
+	com_err(whoami, 0, "Changing user %s (uid %d) to %s (uid %d)",
+	       before[U_NAME], buid, after[U_NAME], auid);
+
 	code = pr_try(pr_ChangeEntry, before[U_NAME], after[U_NAME], auid, "");
 	if (code) {
 	    critical_alert("incremental",
@@ -162,6 +165,9 @@ int afterc;
 	return;
     }
     if (bstate == 1) {
+	com_err(whoami, 0, "Deleting user %s (uid %d)",
+	       before[U_NAME], buid);
+
 	code = pr_try(pr_DeleteByID, buid);
 	if (code && code != PRNOENT) {
 	    critical_alert("incremental",
@@ -171,6 +177,10 @@ int afterc;
 	return;
     }
     if (astate == 1) {
+	com_err(whoami, 0, "%s user %s (uid %d)",
+	       ((bstate != 0) ? "Reactivating" : "Creating"),
+	       after[U_NAME], auid);
+	
 	code = pr_try(pr_CreateUser, after[U_NAME], &auid);
 	if (code) {
 	    critical_alert("incremental",
@@ -235,6 +245,10 @@ int afterc;
 	    strcpy(g2, "system:");
 	    strcat(g1, before[L_NAME]);
 	    strcat(g2, after[L_NAME]);
+
+	    com_err(whoami, 0, "Changing group %s (gid %d) to %s (gid %d)",
+		   before[L_NAME], bgid, after[L_NAME], agid);
+
 	    code = pr_try(pr_ChangeEntry, g1, g2, -agid, "");
 	    if (code) {
 		critical_alert("incremental",
@@ -244,6 +258,9 @@ int afterc;
 	    }
 	}
 	if (ahide != bhide) {
+	    com_err(whoami, 0, "Making group %s (gid %d) %s",
+		   after[L_NAME], agid,
+		   (ahide ? "hidden" : "visible"));
 	    code = pr_try(pr_SetFieldsEntry, -agid, PR_SF_ALLBITS,
 			  (ahide ? PRP_STATUS_ANY : PRP_GROUP_DEFAULT) >>PRIVATE_SHIFT,
 			  0 /*ngroups*/, 0 /*nusers*/);
@@ -256,6 +273,8 @@ int afterc;
 	return;
     }
     if (bgid) {
+	com_err(whoami, 0, "Deleting group %s (gid %d)",
+	       before[L_NAME], bgid);
 	code = pr_try(pr_DeleteByID, -bgid);
 	if (code && code != PRNOENT) {
 	    critical_alert("incremental",
@@ -269,6 +288,8 @@ int afterc;
 	strcat(g1, after[L_NAME]);
 	strcpy(g2, "system:administrators");
 	id = -agid;
+	com_err(whoami, 0, "Creating %s group %s (gid %d)",
+	       (ahide ? "hidden" : "visible"), after[L_NAME], agid);
 	code = pr_try(pr_CreateGroup, g1, g2, &id);
 	if (code) {
 	    critical_alert("incremental",
@@ -323,7 +344,7 @@ int afterc;
 	(afterc < 4 || !atoi(after[LM_END])))
 	return;
 
-    if (afterc) 
+    if (afterc)
 	edit_group(1, after[LM_LIST], after[LM_TYPE], after[LM_MEMBER]);
     if (beforec)
 	edit_group(0, before[LM_LIST], before[LM_TYPE], before[LM_MEMBER]);
@@ -514,6 +535,9 @@ edit_group(op, group, type, member)
 
     strcpy(buf, "system:");
     strcat(buf, group);
+    com_err(whoami, 0, "%s %s %s group %s",
+	   (op ? "Adding" : "Removing"), member,
+	   (op ? "to" : "from"), group);
     code=pr_try(op ? pr_AddToGroup : pr_RemoveUserFromGroup, member, buf);
     if (code) {
 	if (op==1 && code == PRIDEXIST) return;	/* Already added */

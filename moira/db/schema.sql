@@ -124,7 +124,7 @@ create table svc
 (
 	clu_id		INTEGER		DEFAULT 0	NOT NULL,
 	serv_label	VARCHAR(16) 	DEFAULT CHR(0)	NOT NULL,
-	serv_cluster	VARCHAR(32) 	DEFAULT CHR(0)	NOT NULL
+	serv_cluster	VARCHAR(128) 	DEFAULT CHR(0)	NOT NULL
 );
 
 create table list

@@ -1,4 +1,4 @@
-/* $Id: hesiod.pc,v 1.5 1998-02-05 22:51:08 danw Exp $
+/* $Id: hesiod.pc,v 1.6 1998-02-08 17:27:48 danw Exp $
  *
  * This generates the zone files necessary to load a hesiod server.
  * The following zones are generated: passwd, uid, pobox, group,
@@ -23,7 +23,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/hesiod.pc,v 1.5 1998-02-05 22:51:08 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/hesiod.pc,v 1.6 1998-02-08 17:27:48 danw Exp $");
 
 #ifndef HTYPE
 #define HTYPE "TXT"
@@ -666,7 +666,7 @@ sqlerr:
 int do_cluster(void)
 {
   FILE *out;
-  char outf[64], outft[64], *mach, machbuf[41], *p;
+  char outf[64], outft[64], *mach, machbuf[64], clubuf[64], *p;
   struct stat sb;
   time_t ftime;
   EXEC SQL BEGIN DECLARE SECTION;
@@ -674,7 +674,6 @@ int do_cluster(void)
   char name[41], label2[17], data[33];
   EXEC SQL END DECLARE SECTION;
   set_mask **machs, *ms, *ps;
-  int oneclu;
 
   sprintf(outf, "%s/cluster.db", hesiod_dir);
 
@@ -739,7 +738,7 @@ int do_cluster(void)
       ms = machs[mid];
       if (nbitsset(ms) > 1)
 	{
-	  oneclu = 0;
+	  sprintf(clubuf, "mrinternal-%d", mid);
 	  for (cid = 1; cid < maxclu; cid++)
 	    {
 	      if (SET_ISSET(cid, ms))
@@ -756,8 +755,8 @@ int do_cluster(void)
 			break;
 		      strtrim(label2);
 		      strtrim(data);
-		      fprintf(out, "mrinternal-%d.cluster\t%s %s \"%s %s\"\n",
-			      mid, HCLASS, HTYPE, label2, data);
+		      fprintf(out, "%s.cluster\t%s %s \"%s %s\"\n",
+			      clubuf, HCLASS, HTYPE, label2, data);
 		    }
 		  EXEC SQL CLOSE d_cursor;
 		}
@@ -765,29 +764,26 @@ int do_cluster(void)
 	}
       else
 	{
-	  oneclu = 1;
 	  for (cid = 1; cid < maxclu; cid++)
 	    if (SET_ISSET(cid, ms))
 	      break;
 
 	  EXEC SQL SELECT name INTO :name FROM clusters WHERE clu_id = :cid;
 	  strtrim(name);
+	  strcpy(clubuf, name);
 	}
 
       if ((mach = hash_lookup(machines, mid)))
 	{
+	  fprintf(out, "%s.cluster\t%s CNAME %s.cluster\n",
+		  mach, HCLASS, clubuf);
 	  for (p = machbuf; *mach && *mach != '.'; mach++)
 	    *p++ = *mach;
-	  *p = '\0';
-	  if (oneclu)
+	  if (!strcasecmp(mach, ".mit.edu"))
 	    {
+	      *p = '\0';
 	      fprintf(out, "%s.cluster\t%s CNAME %s.cluster\n",
-		      machbuf, HCLASS, name);
-	    }
-	  else
-	    {
-	      fprintf(out, "%s.cluster\t%s CNAME mrinternal-%d.cluster\n",
-		      machbuf, HCLASS, mid);
+		      machbuf, HCLASS, clubuf);
 	    }
 	}
       for (id = mid + 1; id < maxmach; id++)
@@ -798,19 +794,15 @@ int do_cluster(void)
 	      machs[id] = NULL;
 	      if ((mach = hash_lookup(machines, id)))
 		{
+		  fprintf(out, "%s.cluster\t%s CNAME %s.cluster\n",
+			  mach, HCLASS, clubuf);
 		  for (p = machbuf; *mach && *mach != '.'; mach++)
 		    *p++ = *mach;
-		  *p = '\0';
-		  if (oneclu)
+		  if (!strcasecmp(mach, ".mit.edu"))
 		    {
+		      *p = '\0';
 		      fprintf(out, "%s.cluster\t%s CNAME %s.cluster\n",
-			      machbuf, HCLASS, name);
-		    }
-		  else
-		    {
-		      fprintf(out,
-			      "%s.cluster\t%s CNAME mrinternal-%d.cluster\n",
-			      machbuf, HCLASS, mid);
+			      machbuf, HCLASS, clubuf);
 		    }
 		}
 	    }

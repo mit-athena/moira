@@ -1,4 +1,4 @@
-/* $Id: hosts.pc,v 1.3 1998-02-05 22:51:09 danw Exp $
+/* $Id: hosts.pc,v 1.4 1998-02-08 17:27:49 danw Exp $
  *
  * This generates the hstath.txt hosttable.
  *
@@ -24,7 +24,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/hosts.pc,v 1.3 1998-02-05 22:51:09 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/hosts.pc,v 1.4 1998-02-08 17:27:49 danw Exp $");
 
 char *whoami = "hosts.gen";
 char *db = "moira/moira";
@@ -97,9 +97,10 @@ int main(int argc, char **argv)
 	continue;
       if (!*strtrim(name))
 	continue;
-      if ((i = strlen(name)) < 9 || strcmp(&name[i - 8], ".MIT.EDU"))
+      if ((i = strlen(name)) < 9 || !strchr(name, '.') ||
+	  strcmp(strchr(name, '.'), ".MIT.EDU"))
 	{
-	  fprintf(stderr, "Name %s not in MIT domain\n", name);
+	  fprintf(stderr, "Ignoring alias %s\n", name);
 	  continue;
 	}
       else
@@ -127,8 +128,12 @@ int main(int argc, char **argv)
 	continue;
       if (!*strtrim(name))
 	continue;
-      if ((i = strlen(name)) < 9 || strcmp(&name[i - 8], ".MIT.EDU"))
-	continue;
+      if ((i = strlen(name)) < 9 || !strchr(name, '.') ||
+	  strcmp(strchr(name, '.'), ".MIT.EDU"))
+	{
+	  fprintf(stderr, "Ignoring machine %s\n", name);
+	  continue;
+	}
       else
 	name[i - 8] = 0;
       strtrim(vendor);

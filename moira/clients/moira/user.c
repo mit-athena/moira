@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.23 1991-01-10 16:08:27 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.24 1991-03-08 10:21:06 mar Exp $";
 #endif lint
 
 /*	This is the file user.c for the MOIRA Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.23 1991-01-10 16:08:27 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.24 1991-03-08 10:21:06 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -171,7 +171,7 @@ AskUserInfo(info, name)
 char ** info;
 Bool name;
 {
-    char temp_buf[BUFSIZ], fixname[BUFSIZ], *newname, *temp_ptr;
+    char temp_buf[BUFSIZ], *newname, *temp_ptr;
 
     if (name) {
 	sprintf(temp_buf,"\nChanging Attributes of user %s.\n",info[U_NAME]);

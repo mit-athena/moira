@@ -1,11 +1,11 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/rafnu.c,v $
- *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/rafnu.c,v 1.2 1990-01-30 16:07:39 mar Exp $
+ *	$Author: danw $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/rafnu.c,v 1.3 1997-09-05 19:15:02 danw Exp $
  */
 
 #ifndef lint
-static char *rcsid_rafnu_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/rafnu.c,v 1.2 1990-01-30 16:07:39 mar Exp $";
+static char *rcsid_rafnu_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/rafnu.c,v 1.3 1997-09-05 19:15:02 danw Exp $";
 
 #endif	lint
 
@@ -32,6 +32,11 @@ static char *rcsid_rafnu_c = "$Header: /afs/.athena.mit.edu/astaff/project/moira
 
 #include <stdio.h>
 #include <ctype.h>
+#ifdef USE_CRYPT_H
+#include <crypt.h>
+#else
+#include <unistd.h>
+#endif
 
 #define LAST_LEN		15
 #define FIRST_LEN		15
@@ -69,10 +74,6 @@ ReadAndFixNextUser(s, querc, querv)
     int ends_iv = 0;		/* 1 if name ends in "IV" */
     char salt[2];
     register char *p;
-    char *strcat();
-    char *strcpy();
-    char *strncpy();
-    char *crypt();
 
     for (;;) {			/* ... well, at least until we get a good
 				 * input line */

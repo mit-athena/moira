@@ -1,13 +1,13 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/auth_002.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/auth_002.c,v 1.2 1997-09-02 22:23:01 danw Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/auth_002.c,v 1.3 1997-09-05 19:15:07 danw Exp $
  */
 /*  (c) Copyright 1988 by the Massachusetts Institute of Technology. */
 /*  For copying and distribution information, please see the file */
 /*  <mit-copyright.h>. */
 
 #ifndef lint
-static char *rcsid_auth_002_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/auth_002.c,v 1.2 1997-09-02 22:23:01 danw Exp $";
+static char *rcsid_auth_002_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/auth_002.c,v 1.3 1997-09-05 19:15:07 danw Exp $";
 #endif
 
 #include <mit-copyright.h>
@@ -129,7 +129,7 @@ auth_002(str)
 	code = connection_errno(conn);
 	goto auth_failed;
     }
-    des_key_sched(&ad.session, &sched);
+    des_key_sched(ad.session, sched);
     des_ecb_encrypt(STRING_DATA(data), nonce2, sched, 0);
     if (memcmp(nonce, nonce2, sizeof(nonce)))
 	goto auth_failed;

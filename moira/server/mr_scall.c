@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_scall.c,v $
  *	$Author: danw $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_scall.c,v 1.26 1997-07-03 02:52:07 danw Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_scall.c,v 1.27 1997-09-05 19:15:03 danw Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_sms_scall_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_scall.c,v 1.26 1997-07-03 02:52:07 danw Exp $";
+static char *rcsid_sms_scall_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_scall.c,v 1.27 1997-09-05 19:15:03 danw Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -19,6 +19,7 @@ static char *rcsid_sms_scall_c = "$Header: /afs/.athena.mit.edu/astaff/project/m
 #include <sys/file.h>
 #include <fcntl.h>
 #include <string.h>
+#include <netinet/in.h>
 #include <arpa/inet.h>
 #include <krb.h>
 #include <errno.h>

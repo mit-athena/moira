@@ -1,10 +1,10 @@
 /*
  * $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_conn.c,v $
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_conn.c,v 1.7 1997-01-29 23:16:39 danw Exp $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_conn.c,v 1.8 1997-09-05 19:14:50 danw Exp $
  */
 
 #ifndef lint
-static char *rcsid_gdb_conn_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_conn.c,v 1.7 1997-01-29 23:16:39 danw Exp $";
+static char *rcsid_gdb_conn_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_conn.c,v 1.8 1997-09-05 19:14:50 danw Exp $";
 #endif
 
 /************************************************************************
@@ -275,7 +275,7 @@ char *id;
 {
 	int peer;				/* socket for talking to
 						   peer */
-	int on = 1;				/* flag for ioctl */
+	char on = 1;				/* flag for ioctl */
 	struct sockaddr_in target;		/* build the peer address */
 						/* here */
 	struct hostent *peer_host; 		/* host where peer is */

@@ -1,7 +1,7 @@
 /*
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/requests.c,v $
  *      $Author: danw $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/requests.c,v 1.8 1997-01-29 23:25:30 danw Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/requests.c,v 1.9 1997-09-05 19:15:00 danw Exp $
  *
  *      Copyright (C) 1987, 1988 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -14,7 +14,7 @@
  */
 
 #ifndef lint
-static char *rcsid_requests_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/requests.c,v 1.8 1997-01-29 23:25:30 danw Exp $";
+static char *rcsid_requests_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/requests.c,v 1.9 1997-09-05 19:15:00 danw Exp $";
 #endif lint
 
 /*
@@ -94,7 +94,7 @@ void req_initialize()
     sin.sin_addr.s_addr = INADDR_ANY;
     
     /* Bind a name to the socket */
-    if (bind(s, &sin, sizeof(sin)) < 0) 
+    if (bind(s, (struct sockaddr *)&sin, sizeof(sin)) < 0) 
     {
 	com_err(whoami,errno," bind");
 	exit(1);
@@ -122,7 +122,7 @@ int handle_retransmitted()
 #endif
 	    status = TRUE;
 	    (void) sendto(s, requests[i].out_pkt, requests[i].out_pktlen, 
-			  0, &sin, addrlen);
+			  0, (struct sockaddr *)&sin, addrlen);
 	    break;
 	}
     }
@@ -143,7 +143,8 @@ void respond(status,text)
     if (format_pkt(CUR_REQ.out_pkt, &(CUR_REQ.out_pktlen), 
 		   CUR_REQ.seqno, status, text))
 	com_err(whoami,0,"Client error message was truncated.");
-    (void) sendto(s, CUR_REQ.out_pkt, CUR_REQ.out_pktlen, 0, &sin, addrlen);
+    (void) sendto(s, CUR_REQ.out_pkt, CUR_REQ.out_pktlen, 0,
+		  (struct sockaddr *)&sin, addrlen);
 
     cur_request_index = NEXT_INDEX(cur_request_index);
 }
@@ -161,7 +162,8 @@ void get_request(message)
 	com_err(whoami, 0, "*** Ready for next request ***");
 	addrlen = sizeof(sin);
 	/* Receive a packet */
-	if ((pktlen = recvfrom(s,packet,sizeof(packet),0,&sin,&addrlen)) < 0) 
+	if ((pktlen = recvfrom(s,packet,sizeof(packet),0,
+			       (struct sockaddr *)&sin,&addrlen)) < 0) 
 	{
 	    com_err(whoami, errno, " recvfrom");
 	    /* Don't worry if error is interrupted system call. */

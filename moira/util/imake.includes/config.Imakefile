@@ -17,7 +17,7 @@ OSDEFS= -DPOSIX
 #endif
 
 #ifdef sgi
-OSDEFS= -DPOSIX -DUSE_CRYPT_H -DSYSV
+OSDEFS= -DPOSIX -DSYSV
 #endif
 
 #if defined(SOLARIS)
@@ -209,10 +209,14 @@ MOTIFINC= /mit/motif/include
 MOTIFLIB= /mit/motif/`machtype`lib
 #endif
 
-/* where crypt is, if not libc */
+/* where crypt is, if not libc and unistd.h */
 #ifdef __NetBSD__
 CRYPT= -lcrypt
 #endif
+#if defined(sgi) || defined(SOLARIS)
+#define USE_CRYPT_H
+#endif
+
 
 /*
  * The name of a command which builds an object library.

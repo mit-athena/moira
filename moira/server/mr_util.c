@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_util.c,v $
  *	$Author: danw $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_util.c,v 1.24 1997-01-29 23:27:11 danw Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_util.c,v 1.25 1997-09-05 19:15:05 danw Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -9,7 +9,7 @@
  */
 
 #ifndef lint
-static char *rcsid_mr_util_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_util.c,v 1.24 1997-01-29 23:27:11 danw Exp $";
+static char *rcsid_mr_util_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_util.c,v 1.25 1997-09-05 19:15:05 danw Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -70,10 +70,10 @@ void log_args(tag, version, argc, argv)
 }
 	
 void mr_com_err(whoami, code, fmt, pvar)
-	char *whoami;
-	int code;
-	char *fmt;
-	caddr_t pvar;
+	const char *whoami;
+	long code;
+	const char *fmt;
+	va_list pvar;
 {
 	extern client *cur_client;
 	

@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v 1.36 1997-01-29 23:06:28 danw Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v 1.37 1997-09-05 19:14:43 danw Exp $";
 #endif
 
 /*	This is the file utils.c for the MOIRA Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v $
  *      $Author: danw $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v 1.36 1997-01-29 23:06:28 danw Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v 1.37 1997-09-05 19:14:43 danw Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -642,10 +642,10 @@ char *str;
 char *atot(itime)
 char *itime;
 {
-    int time;
+    time_t time;
     char *ct, *ctime();
 
-    time = atoi(itime);
+    time = (time_t)atoi(itime);
     ct = ctime(&time);
     ct[24] = 0;
     return(&ct[4]);

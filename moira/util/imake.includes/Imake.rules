@@ -176,7 +176,7 @@ ORADEFS= DEFINE=HESIOD DEFINE=ZEPHYR DEFINE=GDSS DEFINE=ATHENA
 #define sqlrule()							@@\
 .SUFFIXES: .pc								@@\
 .pc.c:									@@\
-	/usr/oracle/bin/proc INAME=$*.pc INCLUDE=$(BUILDTOP)/include INCLUDE=$(BUILDTOP)/lib INCLUDE=$(INCLDIR) $(ORADEFS)
+	/usr/oracle/bin/proc INAME=$*.pc INCLUDE=$(BUILDTOP)/include INCLUDE=$(BUILDTOP)/lib INCLUDE=$(INCLDIR) $(ORADEFS) $(ORAINCLUDES)
 #define sqlfile(file)							@@\
 concat(file,.c): concat(file,.pc)					@@\
 clean::									@@\

@@ -1,7 +1,7 @@
 /*
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v $
  *      $Author: danw $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.43 1997-01-29 23:25:28 danw Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.44 1997-09-05 19:14:58 danw Exp $
  *
  *      Copyright (C) 1987, 1988 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -16,7 +16,7 @@
  */
 
 #ifndef lint
-static char *rcsid_reg_svr_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.43 1997-01-29 23:25:28 danw Exp $";
+static char *rcsid_reg_svr_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.44 1997-09-05 19:14:58 danw Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -32,6 +32,7 @@ static char *rcsid_reg_svr_c = "$Header: /afs/.athena.mit.edu/astaff/project/moi
 #include <kadm_err.h>
 #include <krb_err.h>
 #include <errno.h>
+#include <com_err.h>
 #include "moira.h"
 #include "moira_site.h"
 #include "reg_svr.h"
@@ -394,7 +395,7 @@ int verify_user(message,retval)
 	/* If the information sent over in the packet did not point to a
 	   valid user, the mit_id field in the formatted packet structure
 	   will be empty. */
-	if (message->db.mit_id[0] == NULL)
+	if (message->db.mit_id[0] == '\0')
 	    status = UREG_USER_NOT_FOUND;
 	/* If the user was found but the registration has already started,
 	   use this as the status */
@@ -846,7 +847,7 @@ char *retval;
 
 	q_argv[0] = message->db.uid;
 	status = mr_query("get_user_account_by_uid", 1, q_argv,
-			  getuserinfo, q_argv);
+			  getuserinfo, (char *)q_argv);
 	if (status != SUCCESS) {
 	    com_err(whoami, status, " while getting user info");
 	    return(status);
@@ -929,7 +930,8 @@ char *retval;
     com_err(whoami, 0, "checking status of secure password for %s",
 	    message->first);
     argv[0] = message->first;
-    status = mr_query("get_user_account_by_login", 1, argv, getuserinfo, argv);
+    status = mr_query("get_user_account_by_login", 1, argv, getuserinfo,
+		      (char *)argv);
     if (status != SUCCESS) {
 	com_err(whoami, status, " while getting user info");
 	return(status);
@@ -957,6 +959,7 @@ char *retval;
     struct timeval now;
     static int inited = 0;
     static char *host;
+    extern char *krb_get_phost(char *);
 
     if (!inited) {
 	inited++;
@@ -967,7 +970,8 @@ char *retval;
 
     com_err(whoami, 0, "setting secure passwd for %s", message->first);
     argv[0] = message->first;
-    status = mr_query("get_user_account_by_login", 1, argv, getuserinfo, argv);
+    status = mr_query("get_user_account_by_login", 1, argv, getuserinfo,
+		      (char *)argv);
     if (status != SUCCESS) {
 	com_err(whoami, status, " while getting user info");
 	return(status);
@@ -1058,7 +1062,8 @@ char *retval;
     argv[1] = buf;
     gettimeofday(&now, NULL);
     sprintf(buf, "%d", now.tv_sec);
-    status = mr_query("update_user_security_status", 2, argv, getuserinfo, argv);
+    status = mr_query("update_user_security_status", 2, argv, getuserinfo,
+		      (char *)argv);
     if (status != SUCCESS) {
 	com_err(whoami, status, " while updating user status");
 	return(status);

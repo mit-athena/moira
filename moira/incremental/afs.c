@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/afs.c,v 1.56 1997-07-14 20:21:58 danw Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/afs.c,v 1.57 1997-09-05 19:14:54 danw Exp $
  *
  * Do AFS incremental updates
  *
@@ -587,7 +587,7 @@ edit_group(op, group, type, member)
 	    /* Check whether the member being added is an active user */
 	    code = moira_connect();
 	    if (!code) code = mr_query("get_user_by_login", 1, &member,
-				       check_user, &ustate);
+				       check_user, (char *)&ustate);
 	    if (code) {
 		critical_alert("incremental",
 			       "Error contacting Moira server to lookup user %s: %s",

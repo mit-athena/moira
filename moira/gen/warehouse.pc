@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/warehouse.pc,v 1.3 1997-02-14 19:21:01 tytso Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/warehouse.pc,v 1.4 1997-09-05 19:14:52 danw Exp $
  *
  * This generates a database extract from the users table for the MIT
  * Warehouse.
@@ -40,7 +40,7 @@ char **argv;
 {
     int out = 1 /* stdout */;
     char *outf = NULL, outft[64];
-    char *control_fn[80], cmd[256];
+    char control_fn[80], cmd[256];
     FILE *f;
     struct stat sb;
     int flag1;

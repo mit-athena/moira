@@ -1,4 +1,4 @@
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/Imakefile,v 1.7 1997-01-29 23:26:02 danw Exp $
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/Imakefile,v 1.8 1997-09-05 19:15:01 danw Exp $
 
 # Copyright 1992 by the Massachusetts Institute of Technology.
 #
@@ -10,7 +10,11 @@
 SRCS= students.c employee.c sign.c verify.c vote.c rafnu.c
 CODE= students.pc employee.pc sign.pc verify.pc vote.pc rafnu.c
 SRCDIR = $(SRCTOP)/regtape
+#ifdef USE_CRYPT_H
+DEFINES = $(GDSSINC) -DUSE_CRYPT_H
+#else
 DEFINES = $(GDSSINC)
+#endif
 sqlrule()
 
 program(students, students.o rafnu.o,,$(CLIBS) $(SQL_LIB), $(PROGDIR))

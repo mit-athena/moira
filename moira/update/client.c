@@ -1,15 +1,15 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/client.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/client.c,v 1.16 1997-07-03 03:19:45 danw Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/client.c,v 1.17 1997-09-05 19:15:08 danw Exp $
  */
 
 #ifndef lint
-static char *rcsid_client2_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/client.c,v 1.16 1997-07-03 03:19:45 danw Exp $";
+static char *rcsid_client2_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/client.c,v 1.17 1997-09-05 19:15:08 danw Exp $";
 #endif	lint
 
 /*
  * MODULE IDENTIFICATION:
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/client.c,v 1.16 1997-07-03 03:19:45 danw Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/client.c,v 1.17 1997-09-05 19:15:08 danw Exp $
  *	Copyright 1987, 1988 by the Massachusetts Institute of Technology.
  *	For copying and distribution information, please see the file
  *	<mit-copyright.h>.
@@ -255,7 +255,7 @@ char *host_name;
 	if (code) {
 	    return(connection_errno(conn));
 	}
-	des_key_sched(&session, &sched);
+	des_key_sched(session, sched);
 	des_ecb_encrypt(STRING_DATA(data), enonce, sched, 1);
 	STRING_DATA(data) = enonce;
 	code = send_object(conn, (char *)&data, STRING_T);

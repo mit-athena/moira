@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_server.h,v $
  *	$Author: danw $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_server.h,v 1.28 1997-07-08 19:51:15 danw Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_server.h,v 1.29 1997-09-05 19:15:04 danw Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
@@ -16,6 +16,7 @@
 #include <krb.h>
 #include <com_err.h>
 #include <stdlib.h>
+#include <stdarg.h>
 
 typedef struct returned_tuples {
 	struct returned_tuples *next;
@@ -188,6 +189,6 @@ void do_shutdown(client *cl);
 /* prototypes from mr_util.c */
 char *requote(char *buf, char *cp, int len);
 void log_args(char *tag, int version, int argc, char **argv);
-void mr_com_err(char *whoami, int code, char *fmt, caddr_t pvar);
+void mr_com_err(const char *whoami, long code, const char *fmt, va_list pvar);
 int mr_trim_args(int argc, char **argv);
 char **mr_copy_args(char **argv, int argc);

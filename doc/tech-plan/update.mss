@@ -21,8 +21,7 @@ the SMS database.  (Building the data file is handled with a locking
 strategy that ensures that "the" data file available for distribution
 is not an incomplete one.  The new data file is placed in position for
 transfer once it is complete using the @f(rename) system
-call.)@foot(Does this mean that SMS can only update one file at any one
-time? -- AMBAR)
+call.)
 
 Extract from SMS the list of server machines to update, and the
 instructions for installing the file.  Perform the remaining steps
@@ -67,9 +66,7 @@ erroneous installation.
 Send a signal to a specified process.  The process_id is assumed to be
 recorded in a file; the pathname of this file is a parameter to this
 instruction.  The process_id is read out of the file at the time of
-execution of this instruction.@foot(Does this mean that we're going to
-have to be keeping around lots more @f(daemon.pid) files than we do now?
--- AMBAR)
+execution of this instruction.
 
 Execute a supplied command.
 
@@ -157,3 +154,12 @@ machine crashes, it may not be able to come up to full operational
 capacity if it relies on the databases which have been corrupted; in
 this case, it is possible that the database may not be easily
 replacable.  Manual intervention would be required for recovery.
+
+@SubHeading(Robustness Engineering)
+
+In the event of a catostrophic system crash, SMS must have the
+capability to be brought up with consistent data.  There are a
+list of scenarios which indicate that a rather complex set of
+tools are needed to address this isssue.  Thought will
+be given in order that the system reliably is restored.
+

@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/afs.c,v 1.29 1992-07-17 15:07:33 probe Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/afs.c,v 1.30 1992-07-17 15:10:59 probe Exp $
  *
  * Do AFS incremental updates
  *
@@ -22,7 +22,8 @@
 #include <afs/pterror.h>
 
 #define STOP_FILE "/moira/afs/noafs"
-#define TRY_PR 2
+#define PR_TRIES 2
+#define PR_DELAY 5
 
 #define file_exists(file) (access((file), F_OK) == 0)
 
@@ -160,10 +161,10 @@ int afterc;
 	/* Only a modify has to be done */
 	tries = 0;
 	while (code=pr_ChangeEntry(before[U_NAME], after[U_NAME], auid, "")) {
-	    if (++tries > TRY_PR)
+	    if (++tries > PR_TRIES)
 		break;
 	    if (code == UNOQUORUM) { sleep(90); continue; }
-	    sleep(2);
+	    sleep(PR_DELAY);
 	}
 	if (code) {
 	    critical_alert("incremental",
@@ -176,10 +177,10 @@ int afterc;
     if (bstate == 1) {
 	tries = 0;
 	while (code = pr_DeleteByID(buid)) {
-	    if (++tries > TRY_PR)
+	    if (++tries > PR_TRIES)
 		break;
 	    if (code == UNOQUORUM) { sleep(90); continue; }
-	    sleep(2);
+	    sleep(PR_DELAY);
 	}
 	if (code && code != PRNOENT) {
 	    critical_alert("incremental",
@@ -191,10 +192,10 @@ int afterc;
     if (astate == 1) {
 	tries = 0;
 	while (code = pr_CreateUser(after[U_NAME], &auid)) {
-	    if (++tries > TRY_PR)
+	    if (++tries > PR_TRIES)
 		break;
 	    if (code == UNOQUORUM) { sleep(90); continue; }
-	    sleep(2);
+	    sleep(PR_DELAY);
 	}
 	if (code) {
 	    critical_alert("incremental",
@@ -272,10 +273,10 @@ int afterc;
 	    strcat(g2, after[L_NAME]);
 	    tries = 0;
 	    while (code = pr_ChangeEntry(g1, g2, -agid, "")) {
-		if (++tries > TRY_PR)
+		if (++tries > PR_TRIES)
 		    break;
 		if (code == UNOQUORUM) { sleep(90); continue; }
-		sleep(2);
+		sleep(PR_DELAY);
 	    }
 	    if (code) {
 		critical_alert("incremental",
@@ -290,10 +291,10 @@ int afterc;
 		   (-agid, PR_SF_ALLBITS,
 		    (ahide ?PRP_STATUS_ANY :PRP_GROUP_DEFAULT)>>PRIVATE_SHIFT,
 		    0 /*ngroups*/, 0 /*nusers*/)) {
-		if (++tries > TRY_PR)
+		if (++tries > PR_TRIES)
 		    break;
 		if (code == UNOQUORUM) { sleep(90); continue; }
-		sleep(2);
+		sleep(PR_DELAY);
 	    }
 	    if (code) {
 		critical_alert("incremental",
@@ -306,10 +307,10 @@ int afterc;
     if (bgid) {
 	tries = 0;
 	while (code = pr_DeleteByID(-bgid)) {
-	    if (++tries > TRY_PR)
+	    if (++tries > PR_TRIES)
 		break;
 	    if (code == UNOQUORUM) { sleep(90); continue; }
-	    sleep(2);
+	    sleep(PR_DELAY);
 	}
 	if (code && code != PRNOENT) {
 	    critical_alert("incremental",
@@ -325,10 +326,10 @@ int afterc;
 	id = -agid;
 	tries = 0;
 	while (code = pr_CreateGroup(g1, g2, &id)) {
-	    if (++tries > TRY_PR)
+	    if (++tries > PR_TRIES)
 		break;
 	    if (code == UNOQUORUM) { sleep(90); continue; }
-	    sleep(2);
+	    sleep(PR_DELAY);
 	}
 	if (code) {
 	    critical_alert("incremental",
@@ -342,10 +343,10 @@ int afterc;
 		   (-agid, PR_SF_ALLBITS,
 		    (ahide ?PRP_STATUS_ANY :PRP_GROUP_DEFAULT)>>PRIVATE_SHIFT,
 		    0 /*ngroups*/, 0 /*nusers*/)) {
-		if (++tries > TRY_PR)
+		if (++tries > PR_TRIES)
 		    break;
 		if (code == UNOQUORUM) { sleep(90); continue; }
-		sleep(2);
+		sleep(PR_DELAY);
 	    }
 	    if (code) {
 		critical_alert("incremental",
@@ -459,10 +460,10 @@ edit_group(op, group, type, member)
     strcat(buf, group);
     sleep(1);					/* give ptserver some time */
     while (code = (*fn)(member, buf)) {
-	if (++tries > TRY_PR)
+	if (++tries > PR_TRIES)
 	    break;
 	if (code == UNOQUORUM) { sleep(90); continue; }
-	sleep(2);
+	sleep(PR_DELAY);
     }
     if (code) {
 	if (op==0 && code == PRNOENT) return;

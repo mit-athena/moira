@@ -1,5 +1,5 @@
 #! /bin/sh
-# $Id: printng.sh,v 1.1 1999-06-02 22:23:03 danw Exp $
+# $Id: printng.sh,v 1.2 1999-06-20 07:20:31 jweiss Exp $
 
 # The following exit codes are defined and MUST BE CONSISTENT with the
 # error codes the library uses:
@@ -24,7 +24,8 @@ tar xf $TARFILE || exit $MR_TARERR
 
 # Build full printcap and spools
 cat $PCLOCAL $PCGEN > $PRINTCAP
-/usr/athena/bin/checkpc -f
+/usr/athena/etc/checkpc -f
+/usr/athena/etc/lpc reread
 
 # cleanup
 test -f $TARFILE && rm -f $TARFILE

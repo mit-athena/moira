@@ -1,9 +1,9 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.20 1989-08-31 23:48:45 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.21 1990-03-17 17:09:54 mar Exp $";
 #endif
 
-/*	This is the file attach.c for the SMS Client, which allows a nieve
- *      user to quickly and easily maintain most parts of the SMS database.
+/*	This is the file attach.c for the MOIRA Client, which allows a nieve
+ *      user to quickly and easily maintain most parts of the MOIRA database.
  *	It Contains: Functions for maintaining data used by Hesiod 
  *                   to map courses/projects/users to their file systems, 
  *                   and maintain filesys info. 
@@ -13,7 +13,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.20 1989-08-31 23:48:45 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.21 1990-03-17 17:09:54 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -23,8 +23,8 @@
 
 #include <stdio.h>
 #include <strings.h>
-#include <sms.h>
-#include <sms_app.h>
+#include <moira.h>
+#include <moira_site.h>
 #include <menu.h>
 
 #include "mit-copyright.h"
@@ -101,21 +101,21 @@ char *name;
 
     switch (type) {
     case LABEL:
-	if ( (stat = do_sms_query("get_filesys_by_label", 1, &name,
+	if ( (stat = do_mr_query("get_filesys_by_label", 1, &name,
 				  StoreInfo, (char *)&elem)) != 0) {
 	    com_err(program_name, stat, NULL);
 	    return(NULL);
 	}
 	break;
     case MACHINE:
-	if ( (stat = do_sms_query("get_filesys_by_machine", 1, &name,
+	if ( (stat = do_mr_query("get_filesys_by_machine", 1, &name,
 				  StoreInfo, (char *)&elem)) != 0) {
 	    com_err(program_name, stat, NULL);
 	    return(NULL);
 	}
 	break;
     case GROUP:
-	if ( (stat = do_sms_query("get_filesys_by_group", 1, &name,
+	if ( (stat = do_mr_query("get_filesys_by_group", 1, &name,
 				  StoreInfo, (char *)&elem)) != 0) {
 	    com_err(program_name, stat, NULL);
 	    return(NULL);
@@ -125,7 +125,7 @@ char *name;
 	args[ALIAS_NAME] = name;
 	args[ALIAS_TYPE] = FS_ALIAS_TYPE;
 	args[ALIAS_TRANS] = "*";
-	if ( (stat = do_sms_query("get_alias", 3, args, StoreInfo, 
+	if ( (stat = do_mr_query("get_alias", 3, args, StoreInfo, 
 				  (char *) &elem)) != 0) {
 	    com_err(program_name, stat, " in get_alias.");
 	    return(NULL);
@@ -194,9 +194,9 @@ char ** info;
 		info[FS_MODWITH]);
 	Put_message(print_buf);
 	Put_message("Containing the filesystems (in order):");
-	if ((stat = do_sms_query("get_fsgroup_members", 1, &info[FS_NAME],
+	if ((stat = do_mr_query("get_fsgroup_members", 1, &info[FS_NAME],
 				 StoreInfo, (char *)&elem)) != 0) {
-	    if (stat == SMS_NO_MATCH)
+	    if (stat == MR_NO_MATCH)
 	      Put_message("    [no members]");
 	    else
 	      com_err(program_name, stat, NULL);
@@ -341,7 +341,7 @@ Bool one_item;
     sprintf(temp_buf, "Are you sure that you want to delete filesystem %s",
 	    info[FS_NAME]);
     if(!one_item || Confirm(temp_buf)) {
-	if ( (stat = do_sms_query("delete_filesys", 1,
+	if ( (stat = do_mr_query("delete_filesys", 1,
 				  &info[FS_NAME], Scream, NULL)) != 0)
 	    com_err(program_name, stat, " filesystem not deleted.");
 	else
@@ -388,15 +388,15 @@ Bool junk;
     char ** args = AskFSInfo(info, TRUE);
     extern Menu nfsphys_menu;
 
-    stat = do_sms_query("update_filesys", CountArgs(args), args,
+    stat = do_mr_query("update_filesys", CountArgs(args), args,
 			NullFunc, NULL);
     switch (stat) {
-    case SMS_NFS:
+    case MR_NFS:
 	Put_message("That NFS filesystem is not exported.");
 	if (YesNoQuestion("Fix this now (Y/N)")) {
 	    Do_menu(&nfsphys_menu, 0, NULL);
 	    if (YesNoQuestion("Retry filesystem update now (Y/N)")) {
-		if (stat = do_sms_query("update_filesys", CountArgs(args), args,
+		if (stat = do_mr_query("update_filesys", CountArgs(args), args,
 					NullFunc, NULL))
 		    com_err(program_name, stat, " filesystem not updated");
 		else
@@ -404,7 +404,7 @@ Bool junk;
 	    }
 	}
 	break;
-    case SMS_SUCCESS:
+    case MR_SUCCESS:
 	break;
     default:
 	com_err(program_name, stat, " in UpdateFS");
@@ -449,25 +449,25 @@ int argc;
     if ( !ValidName(argv[1]) )
 	return(DM_NORMAL);
 
-    if ( (stat = do_sms_query("get_filesys_by_label", 1, argv + 1,
+    if ( (stat = do_mr_query("get_filesys_by_label", 1, argv + 1,
 			      NullFunc, NULL)) == 0) {
 	Put_message ("A Filesystem by that name already exists.");
 	return(DM_NORMAL);
-    } else if (stat != SMS_NO_MATCH) {
+    } else if (stat != MR_NO_MATCH) {
 	com_err(program_name, stat, " in AddFS");
 	return(DM_NORMAL);
     } 
 
     args = AskFSInfo(SetDefaults(info, argv[1]), FALSE );
 
-    stat = do_sms_query("add_filesys", CountArgs(args), args, NullFunc, NULL);
+    stat = do_mr_query("add_filesys", CountArgs(args), args, NullFunc, NULL);
     switch (stat) {
-    case SMS_NFS:
+    case MR_NFS:
 	Put_message("That NFS filesystem is not exported.");
 	if (YesNoQuestion("Fix this now (Y/N)")) {
 	    Do_menu(&nfsphys_menu, 0, NULL);
 	    if (YesNoQuestion("Retry filesystem creation now (Y/N)")) {
-		if (stat = do_sms_query("add_filesys", CountArgs(args), args,
+		if (stat = do_mr_query("add_filesys", CountArgs(args), args,
 					NullFunc, NULL))
 		    com_err(program_name, stat, " in AddFS");
 		else
@@ -475,22 +475,22 @@ int argc;
 	    }
 	}
 	break;
-    case SMS_SUCCESS:
+    case MR_SUCCESS:
 	break;
     default:
 	com_err(program_name, stat, " in AddFS");
     }
 
-    if (stat == SMS_SUCCESS && !strcasecmp(info[FS_L_TYPE], "HOMEDIR")) {
+    if (stat == MR_SUCCESS && !strcasecmp(info[FS_L_TYPE], "HOMEDIR")) {
 	static char *val[] = {"def_quota", NULL};
 	static char *def_quota = NULL;
 	char *argv[3];
 	struct qelem *top = NULL;
 
 	if (def_quota == NULL) {
-	    stat = do_sms_query("get_value", CountArgs(val), val,
+	    stat = do_mr_query("get_value", CountArgs(val), val,
 				StoreInfo, (char *) &top);
-	    if (stat != SMS_SUCCESS) {
+	    if (stat != MR_SUCCESS) {
 		com_err(program_name, stat, " getting default quota");
 	    } else {
 		top = QueueTop(top);
@@ -504,8 +504,8 @@ int argc;
 	    if (YesNoQuestion(buf, 1)) {
 		argv[Q_LOGIN] = argv[Q_FILESYS] = info[FS_NAME];
 		argv[Q_QUOTA] = def_quota;
-		if ((stat = do_sms_query("add_nfs_quota", 3, argv, Scream,
-					 (char *) NULL)) != SMS_SUCCESS) {
+		if ((stat = do_mr_query("add_nfs_quota", 3, argv, Scream,
+					 (char *) NULL)) != MR_SUCCESS) {
 		    com_err(program_name, stat, " while adding quota");
 		}
 	    }
@@ -585,16 +585,16 @@ int argc;
     struct qelem *elem = NULL;
     char buf[BUFSIZ], *args[5], *bufp;
 
-    if ((stat = do_sms_query("get_fsgroup_members", 1, argv+1, StoreInfo,
+    if ((stat = do_mr_query("get_fsgroup_members", 1, argv+1, StoreInfo,
 			     (char *)&elem)) != 0) {
-	if (stat != SMS_NO_MATCH)
+	if (stat != MR_NO_MATCH)
 	  com_err(program_name, stat, " in AddFSToGroup");
     }
     if (elem == NULL) {
 	args[0] = argv[1];
 	args[1] = argv[2];
 	args[2] = "M";
-	stat = do_sms_query("add_filesys_to_fsgroup", 3, args, Scream, NULL);
+	stat = do_mr_query("add_filesys_to_fsgroup", 3, args, Scream, NULL);
 	if (stat)
 	  com_err(program_name, stat, " in AddFSToGroup");
 	return(DM_NORMAL);
@@ -612,8 +612,8 @@ int argc;
     FreeQueue(QueueTop(elem));
     args[0] = argv[1];
     args[1] = argv[2];
-    stat = do_sms_query("add_filesys_to_fsgroup", 3, args, Scream, NULL);
-    if (stat == SMS_EXISTS) {
+    stat = do_mr_query("add_filesys_to_fsgroup", 3, args, Scream, NULL);
+    if (stat == MR_EXISTS) {
 	Put_message("That filesystem is already a member of the group.");
 	Put_message("Use the order command if you want to change the sorting order.");
     } else if (stat)
@@ -640,7 +640,7 @@ int argc;
     sprintf(buf, "Delete filesystem %s from FS group %s", argv[2], argv[1]);
     if (!Confirm(buf))
       return(DM_NORMAL);
-    if ((stat = do_sms_query("remove_filesys_from_fsgroup", 2, argv+1,
+    if ((stat = do_mr_query("remove_filesys_from_fsgroup", 2, argv+1,
 			     Scream, NULL)) != 0) {
 	com_err(program_name, stat, ", not removed.");
     }
@@ -663,9 +663,9 @@ int argc;
     struct qelem *elem = NULL, *top;
     char buf[BUFSIZ], *bufp, *args[3];
 
-    if ((stat = do_sms_query("get_fsgroup_members", 1, argv+1, StoreInfo,
+    if ((stat = do_mr_query("get_fsgroup_members", 1, argv+1, StoreInfo,
 			     (char *)&elem)) != 0) {
-	if (stat == SMS_NO_MATCH) {
+	if (stat == MR_NO_MATCH) {
 	    sprintf(buf, "Ether %s is not a filesystem group or it has no members", argv[1]);
 	    Put_message(buf);
 	} else
@@ -706,12 +706,12 @@ int argc;
     args[2] = SortAfter(top, dst);
     args[0] = argv[1];
     args[1] = ((char **)elem->q_data)[0];
-    if ((stat = do_sms_query("remove_filesys_from_fsgroup", 2, args,
+    if ((stat = do_mr_query("remove_filesys_from_fsgroup", 2, args,
 			     Scream, NULL)) != 0) {
 	com_err(program_name, stat, " in ChangeFSGroupOrder");
 	return(DM_NORMAL);
     }
-    if ((stat = do_sms_query("add_filesys_to_fsgroup", 3, args,
+    if ((stat = do_mr_query("add_filesys_to_fsgroup", 3, args,
 			     Scream, NULL)) != 0) {
 	com_err(program_name, stat, " in ChangeFSGroupOrder");
     }
@@ -776,7 +776,7 @@ char **argv;
  * print out values, free memory used and then exit.
  */
 
-    if ( (stat = do_sms_query("get_alias", 3, args, StoreInfo, 
+    if ( (stat = do_mr_query("get_alias", 3, args, StoreInfo, 
 			      (char *)&elem)) == 0) {
 	top = elem = QueueTop(elem);
 	while (elem != NULL) {
@@ -789,7 +789,7 @@ char **argv;
 	FreeQueue(top);
 	return(DM_NORMAL);
     }
-    else if ( stat != SMS_NO_MATCH) {
+    else if ( stat != MR_NO_MATCH) {
 	com_err(program_name, stat, " in CreateFSAlias.");
         return(DM_NORMAL);
     }
@@ -798,7 +798,7 @@ char **argv;
     GetValueFromUser("Which filesystem will this alias point to?",
 		     &args[ALIAS_TRANS]);
 
-    if ( (stat = do_sms_query("add_alias", 3, args, NullFunc, NULL)) != 0)
+    if ( (stat = do_mr_query("add_alias", 3, args, NullFunc, NULL)) != 0)
 	com_err(program_name, stat, " in CreateFSAlias.");
 
     FreeInfo(args);
@@ -829,7 +829,7 @@ Bool one_item;
 	    "Are you sure that you want to delete the filesystem alias %s",
 	    info[ALIAS_NAME]);
     if(!one_item || Confirm(temp_buf)) {
-	if ( (stat = do_sms_query("delete_alias", CountArgs(info),
+	if ( (stat = do_mr_query("delete_alias", CountArgs(info),
 				  info, Scream, NULL)) != 0 )
 	    com_err(program_name, stat, " filesystem alias not deleted.");
 	else

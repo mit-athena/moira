@@ -1,9 +1,9 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menus.c,v 1.15 1989-08-28 23:21:55 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menus.c,v 1.16 1990-03-17 17:10:48 mar Exp $";
 #endif lint
 
-/*	This is the file menus.c for the SMS Client, which allows a nieve
- *      user to quickly and easily maintain most parts of the SMS database.
+/*	This is the file menus.c for the MOIRA Client, which allows a nieve
+ *      user to quickly and easily maintain most parts of the MOIRA database.
  *	It Contains: All menu definitions.
  *	
  *	Created: 	4/11/88
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menus.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menus.c,v 1.15 1989-08-28 23:21:55 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menus.c,v 1.16 1990-03-17 17:10:48 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -667,10 +667,10 @@ Menu misc_menu = {
 /* ------------------------- Root Menu ------------------------- */
 
 /* 
- * Sms top menu
+ * Moira top menu
  */
 
-Menu sms_top_menu = {
+Menu moira_top_menu = {
   NULLFUNC,
   NULLFUNC,
   "Moira Database Manipulation",

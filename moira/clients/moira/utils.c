@@ -1,9 +1,9 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v 1.20 1989-10-16 17:17:17 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v 1.21 1990-03-17 17:11:31 mar Exp $";
 #endif lint
 
-/*	This is the file utils.c for the SMS Client, which allows a nieve
- *      user to quickly and easily maintain most parts of the SMS database.
+/*	This is the file utils.c for the MOIRA Client, which allows a nieve
+ *      user to quickly and easily maintain most parts of the MOIRA database.
  *	It Contains:  Many useful utility functions.
  *	
  *	Created: 	4/25/88
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v 1.20 1989-10-16 17:17:17 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v 1.21 1990-03-17 17:11:31 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -21,8 +21,8 @@
 
 #include <stdio.h>
 #include <strings.h>
-#include <sms.h>
-#include <sms_app.h>
+#include <moira.h>
+#include <moira_site.h>
 #include <menu.h>
 #include <ctype.h>
 
@@ -179,7 +179,7 @@ struct qelem * elem;
 }
 
 /*	Function Name: StoreInfo
- *	Description: Stores information from an sms query into a queue.
+ *	Description: Stores information from an moira query into a queue.
  *	Arguments: argc, argv, - information returned from the query returned
  *                               in argv.
  *                 data - the previous element on the queue, this data will be
@@ -187,7 +187,7 @@ struct qelem * elem;
  *                        If NULL then a new queue will be created.  This value
  *                        is updated to the current element at the end off the
  *                        call.
- *	Returns: SMS_CONT, or SMS_ABORT if it has problems.
+ *	Returns: MR_CONT, or MR_ABORT if it has problems.
  */
 
 int
@@ -205,7 +205,7 @@ char * data;
 	Put_message("Could Not allocate more memory.");
 	FreeQueue(*old_elem);
 	*old_elem = (struct qelem *) NULL;
-	return(SMS_ABORT);
+	return(MR_ABORT);
     }
 
     for (count = 0; count < argc; count++)
@@ -216,7 +216,7 @@ char * data;
     AddQueue(new_elem, *old_elem);
 
     *old_elem = new_elem;
-    return(SMS_CONT);
+    return(MR_CONT);
 }
 
 /*	Function Name: CountArgs
@@ -252,7 +252,7 @@ Scream()
 {
     com_err(program_name, 0,
 	    "\nA Moira update returned a value -- programmer botch\n");
-    sms_disconnect();
+    mr_disconnect();
     exit(1);
 }
 
@@ -417,13 +417,13 @@ ToggleVerboseMode()
 /*	Function Name: NullFunc
  *	Description:  dummy callback routine 
  *	Arguments: none
- *	Returns: SMS_CONT
+ *	Returns: MR_CONT
  */
 
 int
 NullFunc()
 {
-    return(SMS_CONT);
+    return(MR_CONT);
 }
 
 /*	Function Name: SlipInNewName
@@ -569,13 +569,13 @@ char **  current;
     else 
 	c_value = atoi(*current);
 
-    if (GetFSVal("student", SMS_FS_STUDENT, c_value, &new_val) == FALSE)
+    if (GetFSVal("student", MR_FS_STUDENT, c_value, &new_val) == FALSE)
 	return(SUB_ERROR);
-    if (GetFSVal("faculty", SMS_FS_FACULTY, c_value, &new_val) == FALSE)
+    if (GetFSVal("faculty", MR_FS_FACULTY, c_value, &new_val) == FALSE)
 	return(SUB_ERROR);
-    if (GetFSVal("staff", SMS_FS_STAFF, c_value, &new_val) == FALSE)
+    if (GetFSVal("staff", MR_FS_STAFF, c_value, &new_val) == FALSE)
 	return(SUB_ERROR);
-    if (GetFSVal("miscellaneous", SMS_FS_MISC, c_value, &new_val) == FALSE)
+    if (GetFSVal("miscellaneous", MR_FS_MISC, c_value, &new_val) == FALSE)
 	return(SUB_ERROR);
 
     FreeAndClear(current, TRUE);
@@ -604,9 +604,9 @@ char *str;
 
 /*	Function Name: Print
  *	Description: prints out all the arguments on a single line.
- *	Arguments: argc, argv - the standard SMS arguments.
+ *	Arguments: argc, argv - the standard MR arguments.
  *                 callback - the callback function - NOT USED.
- *	Returns: SMS_CONT
+ *	Returns: MR_CONT
  */
 
 /* ARGSUSED */
@@ -624,16 +624,16 @@ char **argv, *callback;
 	(void) sprintf(buf,"%s %s",buf,argv[i]);
     (void) Put_message(buf);
 
-    return (SMS_CONT);
+    return (MR_CONT);
 }
 
 /*	Function Name: PrintByType
  *	Description: This function prints all members of the type specified
  *                   by the callback arg, unless the callback is NULL, in which
  *                   case it prints all members.
- *	Arguments: argc, argc - normal arguments for sms_callback function. 
+ *	Arguments: argc, argc - normal arguments for mr_callback function. 
  *                 callback - either a type of member or NULL.
- *	Returns: SMS_CONT or SMS_QUIT.
+ *	Returns: MR_CONT or MR_QUIT.
  */
 
 /*ARGSUSED*/
@@ -646,7 +646,7 @@ char **argv, *callback;
 	return( Print(argc, argv, callback) );
     if (strcmp(argv[0], callback) == 0) 
 	return( Print(argc, argv, callback) );
-    return(SMS_CONT);
+    return(MR_CONT);
 }
 
 /*	Function Name: PrintHelp
@@ -790,7 +790,7 @@ char *tname;
     argv[1] = "TYPE";
     argv[2] = "*";
     elem = NULL;
-    if (stat = do_sms_query("get_alias", 3, argv, StoreInfo, (char *)&elem)) {
+    if (stat = do_mr_query("get_alias", 3, argv, StoreInfo, (char *)&elem)) {
 	com_err(program_name, stat, " in GetTypeValues");
 	return(NULL);
     }
@@ -868,7 +868,7 @@ char  **pointer;
 	for (p = argv[2]; *p; p++)
 	    if (islower(*p))
 		*p = toupper(*p);
-	if (stat = do_sms_query("add_alias", 3, argv, Scream, NULL)) {
+	if (stat = do_mr_query("add_alias", 3, argv, Scream, NULL)) {
 	    com_err(program_name, stat, " in add_alias");
 	} else {
 	    elem = (struct qelem *) malloc(sizeof(struct qelem));
@@ -882,7 +882,7 @@ char  **pointer;
 }
 
 
-do_sms_query(name, argc, argv, proc, hint)
+do_mr_query(name, argc, argv, proc, hint)
 char *name;
 int argc;
 char **argv;
@@ -892,23 +892,23 @@ char *hint;
     int status;
     extern char *whoami, *moira_server;
 
-    status = sms_query(name, argc, argv, proc, hint);
-    if (status != SMS_ABORTED && status != SMS_NOT_CONNECTED)
+    status = mr_query(name, argc, argv, proc, hint);
+    if (status != MR_ABORTED && status != MR_NOT_CONNECTED)
       return(status);
-    status = sms_connect(moira_server);
+    status = mr_connect(moira_server);
     if (status) {
 	com_err(whoami, status, " while re-connecting to server %s",
 		moira_server);
-	return(SMS_ABORTED);
+	return(MR_ABORTED);
     }
-    status = sms_auth(whoami);
+    status = mr_auth(whoami);
     if (status) {
 	com_err(whoami, status, " while re-authenticating to server %s",
 		moira_server);
-	sms_disconnect();
-	return(SMS_ABORTED);
+	mr_disconnect();
+	return(MR_ABORTED);
     }
-    status = sms_query(name, argc, argv, proc, hint);
+    status = mr_query(name, argc, argv, proc, hint);
     return(status);
 }
 

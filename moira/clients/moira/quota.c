@@ -1,9 +1,9 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/quota.c,v 1.14 1989-12-21 19:22:13 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/quota.c,v 1.15 1990-03-17 17:11:18 mar Exp $";
 #endif lint
 
-/*	This is the file quota.c for the SMS Client, which allows a nieve
- *      user to quickly and easily maintain most parts of the SMS database.
+/*	This is the file quota.c for the MOIRA Client, which allows a nieve
+ *      user to quickly and easily maintain most parts of the MOIRA database.
  *	It Contains: Functions for manipulating the quota information.
  *	
  *	Created: 	7/10/88
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/quota.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/quota.c,v 1.14 1989-12-21 19:22:13 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/quota.c,v 1.15 1990-03-17 17:11:18 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -21,8 +21,8 @@
 
 #include <stdio.h>
 #include <strings.h>
-#include <sms.h>
-#include <sms_app.h>
+#include <moira.h>
+#include <moira_site.h>
 #include <menu.h>
 
 #include "mit-copyright.h"
@@ -33,14 +33,14 @@
 static char * def_quota = NULL;	
   
 #define DEFAULT_FILESYS DEFAULT_NONE
-#define DEFAULT_USER user	/* this is the user who started sms. */
+#define DEFAULT_USER user	/* this is the user who started moira. */
 #define NOBODY	"\\[nobody\\]"
 #define OLDNOBODY	"[nobody]"
 
 
 /*	Function Name: GetDefaultUserQuota
- *	Description: gets the user quota from sms, and caches the value.
- *	Arguments: override - if true, go to sms and override the cache.
+ *	Description: gets the user quota from moira, and caches the value.
+ *	Arguments: override - if true, go to moira and override the cache.
  *	Returns: none.
  *      NOTE: Using a queue here is pretty useless, but StoreInfo expects
  *            one, and it works, so why fuck with it.
@@ -56,8 +56,8 @@ Bool override;
   static char *val[] = {"def_quota", NULL};
 
   if (override || (def_quota == NULL)) {
-    if ( (status = do_sms_query("get_value", CountArgs(val), val,
-				StoreInfo, (char *) &top)) != SMS_SUCCESS) {
+    if ( (status = do_mr_query("get_value", CountArgs(val), val,
+				StoreInfo, (char *) &top)) != MR_SUCCESS) {
 	com_err(program_name, status, " in ShowDefaultQuota");
 	if (def_quota == NULL) {
 	  Put_message("No default Quota Found, setting default to 0.");
@@ -141,9 +141,9 @@ char *name;
     if (index(name, '*') || index(name, '?') || index(name, '\\'))
       return(0);
     argv[0] = name;
-    status = do_sms_query("get_filesys_by_label", 1, argv,
+    status = do_mr_query("get_filesys_by_label", 1, argv,
 			  afsfilsyshelper, &ret);
-    if (status == SMS_SUCCESS)
+    if (status == MR_SUCCESS)
       return(ret);
     return(0);
     
@@ -236,8 +236,8 @@ char *argv[];
 	    "change the default quota for all new users");
     if(Confirm(temp_buf)) {
 	newval[1] = argv[1];
-	if ( (status = do_sms_query("update_value", CountArgs(newval), 
-				    newval, Scream, NULL)) == SMS_SUCCESS ) {
+	if ( (status = do_mr_query("update_value", CountArgs(newval), 
+				    newval, Scream, NULL)) == MR_SUCCESS ) {
 	  FreeAndClear(&def_quota, TRUE);
 	  def_quota = Strsave(argv[1]);
 	}
@@ -268,8 +268,8 @@ ShowUserQuota()
   if ( (args = GetQuotaArgs(FALSE) ) == NULL)
     return(DM_NORMAL);
 
-  if ( (status = do_sms_query("get_nfs_quota", CountArgs(args), args,
-			      StoreInfo, (char *) &top)) != SMS_SUCCESS)
+  if ( (status = do_mr_query("get_nfs_quota", CountArgs(args), args,
+			      StoreInfo, (char *) &top)) != MR_SUCCESS)
     com_err(program_name, status, " in get_nfs_quota");
   
   FreeInfo(args);		/* done with args free them. */
@@ -297,8 +297,8 @@ AddUserQuota()
   if ( (args = GetQuotaArgs(TRUE) ) == NULL)
     return(DM_NORMAL);
 
-  if ( (status = do_sms_query("add_nfs_quota", CountArgs(args), args,
-			      Scream, (char *) NULL)) != SMS_SUCCESS)
+  if ( (status = do_mr_query("add_nfs_quota", CountArgs(args), args,
+			      Scream, (char *) NULL)) != MR_SUCCESS)
     com_err(program_name, status, " in get_nfs_quota");
   
   FreeInfo(args);
@@ -326,8 +326,8 @@ char ** info;
       info[Q_LOGIN] = strsave(NOBODY);
   }
   
-  if (status = do_sms_query("update_nfs_quota", 3, info,
-			    Scream, (char *) NULL) != SMS_SUCCESS) {
+  if (status = do_mr_query("update_nfs_quota", 3, info,
+			    Scream, (char *) NULL) != MR_SUCCESS) {
     com_err(program_name, status, " in update_nfs_quota");
     sprintf(temp_buf,"Could not perform quota change on %s",
 	    info[Q_FILESYS]); 
@@ -351,8 +351,8 @@ ChangeUserQuota()
   if ( (args = GetQuotaArgs(FALSE) ) == NULL)
     return(DM_NORMAL);
 
-  if ( (status = do_sms_query("get_nfs_quota", 2, args,
-			      StoreInfo, (char *) &top)) != SMS_SUCCESS)
+  if ( (status = do_mr_query("get_nfs_quota", 2, args,
+			      StoreInfo, (char *) &top)) != MR_SUCCESS)
     com_err(program_name, status, " in get_nfs_quota");
   
   FreeInfo(args);		/* done with args, free them. */
@@ -385,8 +385,8 @@ Bool one_item;
 	  info[Q_LOGIN], info[Q_FILESYS]);
 
   if (!one_item || Confirm(temp_buf)) {
-    if ( (status = do_sms_query("delete_nfs_quota", 2, info,
-				Scream, (char *) NULL)) != SMS_SUCCESS)
+    if ( (status = do_mr_query("delete_nfs_quota", 2, info,
+				Scream, (char *) NULL)) != MR_SUCCESS)
       com_err(program_name, status, " in delete_nfs_quota");
     else
       Put_message("Quota sucessfully removed.");
@@ -411,8 +411,8 @@ RemoveUserQuota()
   if ( (args = GetQuotaArgs(FALSE) ) == NULL)
     return(DM_NORMAL);
 
-  if ( (status = do_sms_query("get_nfs_quota", 2, args,
-			      StoreInfo, (char *) &top)) != SMS_SUCCESS)
+  if ( (status = do_mr_query("get_nfs_quota", 2, args,
+			      StoreInfo, (char *) &top)) != MR_SUCCESS)
     com_err(program_name, status, " in get_nfs_quota");
 
   FreeInfo(args);

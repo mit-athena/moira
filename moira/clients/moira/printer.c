@@ -1,9 +1,9 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/printer.c,v 1.7 1989-08-25 14:01:14 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/printer.c,v 1.8 1990-03-17 17:11:12 mar Exp $";
 #endif lint
 
-/*	This is the file printer.c for the SMS Client, which allows a nieve
- *      user to quickly and easily maintain most parts of the SMS database.
+/*	This is the file printer.c for the MOIRA Client, which allows a nieve
+ *      user to quickly and easily maintain most parts of the MOIRA database.
  *	It Contains: Functions for handling the printers.
  *	
  *	Created: 	8/16/88
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/printer.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/printer.c,v 1.7 1989-08-25 14:01:14 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/printer.c,v 1.8 1990-03-17 17:11:12 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -22,8 +22,8 @@
 #include <stdio.h>
 #include <strings.h>
 #include <ctype.h>
-#include <sms.h>
-#include <sms_app.h>
+#include <moira.h>
+#include <moira_site.h>
 #include <menu.h>
 
 #include "mit-copyright.h"
@@ -75,7 +75,7 @@ char *name;
     int stat;
     struct qelem *elem = NULL;
 
-    if ( (stat = do_sms_query("get_printcap", 1, &name,
+    if ( (stat = do_mr_query("get_printcap", 1, &name,
 			      StoreInfo, (char *)&elem)) != 0) {
 	    com_err(program_name, stat, NULL);
 	    return(NULL);
@@ -183,7 +183,7 @@ Bool one_item;
     int stat;
     char temp_buf[BUFSIZ];
 
-    if ( (stat = do_sms_query("delete_printcap", 1,
+    if ( (stat = do_mr_query("delete_printcap", 1,
 			      &info[PCAP_NAME], Scream, NULL)) != 0)
 	    com_err(program_name, stat, " printcap entry not deleted.");
     else
@@ -228,18 +228,18 @@ int argc;
     if ( !ValidName(argv[1]) )
 	return(DM_NORMAL);
 
-    if ( (stat = do_sms_query("get_printcap", 1, argv + 1,
+    if ( (stat = do_mr_query("get_printcap", 1, argv + 1,
 			      NullFunc, NULL)) == 0) {
 	Put_message ("A Printer by that name already exists.");
 	return(DM_NORMAL);
-    } else if (stat != SMS_NO_MATCH) {
+    } else if (stat != MR_NO_MATCH) {
 	com_err(program_name, stat, " in AddPcap");
 	return(DM_NORMAL);
     } 
 
     args = AskPcapInfo(SetDefaults(info, argv[1]));
 
-    if ( (stat = do_sms_query("add_printcap", CountArgs(args), args, 
+    if ( (stat = do_mr_query("add_printcap", CountArgs(args), args, 
 			      NullFunc, NULL)) != 0)
 	com_err(program_name, stat, " in AddPcap");
 
@@ -261,13 +261,13 @@ Bool one_item;
 {
     int stat;
 
-    if ((stat = do_sms_query("delete_printcap", 1, &info[PCAP_NAME],
+    if ((stat = do_mr_query("delete_printcap", 1, &info[PCAP_NAME],
 			     Scream, NULL)) != 0) {
 	com_err(program_name, stat, " printcap entry not deleted.");
 	return(DM_NORMAL);
     }
     AskPcapInfo(info);
-    if ((stat = do_sms_query("add_printcap", CountArgs(info), info,
+    if ((stat = do_mr_query("add_printcap", CountArgs(info), info,
 			     NullFunc, NULL)) != 0)
 	com_err(program_name, stat, " in ChngPcap");
     return(DM_NORMAL);
@@ -377,7 +377,7 @@ char *name;
     int status;
     struct qelem *elem = NULL;
 
-    if ((status = do_sms_query("get_palladium", 1, &name, StoreInfo, &elem))
+    if ((status = do_mr_query("get_palladium", 1, &name, StoreInfo, &elem))
 	!= 0) {
 	com_err(program_name, status, NULL);
 	return(NULL);
@@ -392,13 +392,13 @@ Bool one_item;
 {
     int status;
 
-    if ((status = do_sms_query("delete_palladium", 1, &info[PD_NAME],
+    if ((status = do_mr_query("delete_palladium", 1, &info[PD_NAME],
 			       Scream, NULL)) != 0) {
 	com_err(program_name, status, " palladium entry not deleted.");
 	return(DM_NORMAL);
     }
     AskPalladiumInfo(info);
-    if ((status = do_sms_query("add_palladium", CountArgs(info), info,
+    if ((status = do_mr_query("add_palladium", CountArgs(info), info,
 			       NullFunc, NULL)) != 0)
       com_err(program_name, status, " in ChngPalladium");
     return(DM_NORMAL);
@@ -421,7 +421,7 @@ Bool one_item;
     int stat;
     char temp_buf[BUFSIZ];
 
-    if ( (stat = do_sms_query("delete_palladium", 1,
+    if ( (stat = do_mr_query("delete_palladium", 1,
 			      &info[PD_NAME], Scream, NULL)) != 0)
 	    com_err(program_name, stat, " palladium entry not deleted.");
     else
@@ -453,18 +453,18 @@ char **argv;
     if (!ValidName(argv[1]))
       return(DM_NORMAL);
 
-    if ((status = do_sms_query("get_palladium", 1, &argv[1], NullFunc, NULL))
+    if ((status = do_mr_query("get_palladium", 1, &argv[1], NullFunc, NULL))
 	== 0) {
 	Put_message("A server or supervisor by that name already exists.");
 	return(DM_NORMAL);
-    } else if (status != SMS_NO_MATCH) {
+    } else if (status != MR_NO_MATCH) {
 	com_err(program_name, status, " in AddPalladium");
 	return(DM_NORMAL);
     }
 
     args = AskPalladiumInfo(SetPdDefaults(info, argv[1]));
 
-    if ((status = do_sms_query("add_palladium", CountArgs(args), args,
+    if ((status = do_mr_query("add_palladium", CountArgs(args), args,
 			       Scream, NULL)) != 0)
       com_err(program_name, status, " in AddPalladium");
 
@@ -505,7 +505,7 @@ char **argv;
     qargv[0] = argv[1];
     qargv[1] = "PALLADIUM";
     qargv[2] = argv[2];
-    if ((status = do_sms_query("get_alias", 3, qargv, StoreInfo, &elem)) != 0) {
+    if ((status = do_mr_query("get_alias", 3, qargv, StoreInfo, &elem)) != 0) {
 	com_err(program_name, status, " in ShowPalladiumAlias");
 	return(DM_NORMAL);
     }
@@ -532,7 +532,7 @@ char **argv;
     qargv[0] = argv[1];
     qargv[1] = "PALLADIUM";
     qargv[2] = argv[2];
-    if ((status = do_sms_query("add_alias", 3, qargv, Scream, NULL)) != 0)
+    if ((status = do_mr_query("add_alias", 3, qargv, Scream, NULL)) != 0)
       com_err(program_name, status, " in AddPalladiumAlias");
     return(DM_NORMAL);
 }
@@ -547,7 +547,7 @@ char **argv;
     qargv[0] = argv[1];
     qargv[1] = "PALLADIUM";
     qargv[2] = argv[2];
-    if ((status = do_sms_query("delete_alias", 3, qargv, Scream, NULL)) != 0)
+    if ((status = do_mr_query("delete_alias", 3, qargv, Scream, NULL)) != 0)
       com_err(program_name, status, " in DeletePalladiumAlias");
     return(DM_NORMAL);
 }

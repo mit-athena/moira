@@ -1,17 +1,17 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/globals.c,v 1.5 1988-07-29 18:31:13 kit Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/globals.c,v 1.6 1990-03-17 17:10:31 mar Exp $";
 #endif lint
 
-/*	This is the file globals.c for the SMS Client, which allows a nieve
- *      user to quickly and easily maintain most parts of the SMS database.
+/*	This is the file globals.c for the Moira Client, which allows a nieve
+ *      user to quickly and easily maintain most parts of the Moira database.
  *	It Contains:  globals variable definitions.
  *	
  *	Created: 	4/12/88
  *	By:		Chris D. Peterson
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/globals.c,v $
- *      $Author: kit $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/globals.c,v 1.5 1988-07-29 18:31:13 kit Exp $
+ *      $Author: mar $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/globals.c,v 1.6 1990-03-17 17:10:31 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *

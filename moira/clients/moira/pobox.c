@@ -1,9 +1,9 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/pobox.c,v 1.13 1989-06-01 21:52:47 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/pobox.c,v 1.14 1990-03-17 17:11:09 mar Exp $";
 #endif lint
 
-/*	This is the file pobox.c for the SMS Client, which allows a nieve
- *      user to quickly and easily maintain most parts of the SMS database.
+/*	This is the file pobox.c for the MOIRA Client, which allows a nieve
+ *      user to quickly and easily maintain most parts of the MOIRA database.
  *	It Contains: Functions for handling the poboxes.
  *	
  *	Created: 	7/10/88
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/pobox.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/pobox.c,v 1.13 1989-06-01 21:52:47 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/pobox.c,v 1.14 1990-03-17 17:11:09 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -22,8 +22,8 @@
 #include <stdio.h>
 #include <strings.h>
 #include <ctype.h>
-#include <sms.h>
-#include <sms_app.h>
+#include <moira.h>
+#include <moira_site.h>
 #include <menu.h>
 
 #include "mit-copyright.h"
@@ -37,7 +37,7 @@
 /*	Function Name: PrintPOBox
  *	Description: Yet another specialized print function.
  *	Arguments: info - all info about this PO_box.
- *	Returns: SMS_CONT
+ *	Returns: MR_CONT
  */
 
 static void
@@ -77,8 +77,8 @@ PrintPOMachines()
     static char * args[] = {"pop", NULL};
     struct qelem * top = NULL;
     
-    if ( (status = do_sms_query("get_server_locations", CountArgs(args), args,
-				StoreInfo, (char *)&top)) != SMS_SUCCESS) {
+    if ( (status = do_mr_query("get_server_locations", CountArgs(args), args,
+				StoreInfo, (char *)&top)) != MR_SUCCESS) {
 	com_err(program_name, status, " in get_server_locations.");
 	return(SUB_ERROR);
     }
@@ -108,12 +108,12 @@ char ** argv;
     if (!ValidName(argv[1]))
 	return(DM_NORMAL);
     
-    switch (status = do_sms_query("get_pobox", 1, argv + 1, StoreInfo, 
+    switch (status = do_mr_query("get_pobox", 1, argv + 1, StoreInfo, 
 				  (char *)&top)) {
-    case SMS_NO_MATCH:
+    case MR_NO_MATCH:
 	Put_message("This user has no P.O. Box.");
 	break;
-    case SMS_SUCCESS:
+    case MR_SUCCESS:
 	sprintf(buf,"Current pobox for user %s: \n", argv[1]);
 	Put_message("");
 	top = QueueTop(top);
@@ -180,11 +180,11 @@ char **argv;
 	type = LOCAL_BOX;
 	switch (YesNoQuestion("Use Previous Local Box (y/n)", TRUE)) {
 	case TRUE:
-	    switch (status = do_sms_query("set_pobox_pop", 1, 
+	    switch (status = do_mr_query("set_pobox_pop", 1, 
 					  &local_user, Scream, NULL)) {
-	    case SMS_SUCCESS:
+	    case MR_SUCCESS:
 		return(DM_NORMAL);
-	    case SMS_MACHINE:
+	    case MR_MACHINE:
 		if ( (temp_box = GetNewLocalPOBox(local_user)) !=
 		    	(char *) SUB_ERROR) {
 		    strcpy(box, temp_box);
@@ -232,8 +232,8 @@ char **argv;
     args[PO_TYPE] = type;
     args[PO_BOX] = box;
     args[PO_END] = NULL;
-    if ( (status = do_sms_query("set_pobox", CountArgs(args), args, 
-				Scream, NULL)) != SMS_SUCCESS )
+    if ( (status = do_mr_query("set_pobox", CountArgs(args), args, 
+				Scream, NULL)) != MR_SUCCESS )
 	com_err(program_name, status, " in ChangeUserPOBox");
     else
 	Put_message("PO Box assigned.");
@@ -263,8 +263,8 @@ char ** argv;
 	    "Are you sure that you want to remove %s's PO Box (y/n)", argv[1]);
     
     if (Confirm(temp_buf)) {
-	if ( (status = do_sms_query("delete_pobox", 1, argv + 1,
-				    Scream, NULL)) != SMS_SUCCESS)
+	if ( (status = do_mr_query("delete_pobox", 1, argv + 1,
+				    Scream, NULL)) != MR_SUCCESS)
 	    com_err(program_name, status, "in delete_pobox.");
 	else
 	    Put_message("PO Box removed.");

@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/main.c,v 1.16 1990-02-14 12:22:51 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/main.c,v 1.17 1990-03-17 17:10:40 mar Exp $";
 #endif lint
 
 /*	This is the file main.c for the Moira Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/main.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/main.c,v 1.16 1990-02-14 12:22:51 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/main.c,v 1.17 1990-03-17 17:10:40 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -24,7 +24,7 @@
 #include <stdio.h>
 #include <strings.h>
 #include <sys/types.h>
-#include <sms.h>
+#include <moira.h>
 #include <menu.h>
 
 #include "mit-copyright.h"
@@ -35,7 +35,7 @@
 char * whoami;			/* used by menu.c ugh!!! */
 char * moira_server;
 
-extern Menu sms_top_menu, list_menu, user_menu, dcm_menu;
+extern Menu moira_top_menu, list_menu, user_menu, dcm_menu;
 
 #ifndef DEBUG
 static void SignalHandler();
@@ -93,19 +93,19 @@ main(argc, argv)
 	}
     }
 
-    if ( status = sms_connect(moira_server) ) 
+    if ( status = mr_connect(moira_server) ) 
 	ErrorExit("\nConnection to Moira server failed", status);
 
-    if ( status = sms_motd(&motd) )
+    if ( status = mr_motd(&motd) )
         ErrorExit("\nUnable to check server status", status);
     if (motd) {
 	fprintf(stderr, "The Moira server is currently unavailable:\n%s\n", motd);
-	sms_disconnect();
+	mr_disconnect();
 	exit(1);
     }
 
-    if ( status = sms_auth(program_name) ) {
-	if (status == SMS_USER_AUTH) {
+    if ( status = mr_auth(program_name) ) {
+	if (status == MR_USER_AUTH) {
 	    char buf[BUFSIZ];
 	    com_err(program_name, status, "\nPress [RETURN] to continue");
 	    gets(buf);
@@ -131,7 +131,7 @@ main(argc, argv)
     else if (!strcmp(program_name, "dcmmaint"))
       menu = &dcm_menu;
     else
-      menu = &sms_top_menu;
+      menu = &moira_top_menu;
 
     if (use_menu) {		/* Start menus that execute program */
         Start_paging();
@@ -141,7 +141,7 @@ main(argc, argv)
     else			/* Start program without menus. */
 	Start_no_menu(menu);
 
-    sms_disconnect();
+    mr_disconnect();
     exit(0);
 }
 
@@ -158,7 +158,7 @@ int status;
 char * buf;    
 {
     com_err(program_name, status, buf);
-    sms_disconnect();
+    mr_disconnect();
     exit(1);
 }
 
@@ -188,7 +188,7 @@ SignalHandler()
     Put_message("Signal caught - exiting");
     if (use_menu)
       Cleanup_menu();
-    sms_disconnect();
+    mr_disconnect();
     exit(1);
 }
 #endif DEBUG

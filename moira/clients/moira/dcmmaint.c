@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/dcmmaint.c,v 1.6 1989-08-21 12:29:45 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/dcmmaint.c,v 1.7 1990-03-17 17:10:15 mar Exp $
  *
  * Copyright 1987, 1988 by the Massachusetts Institute of Technology.
  * For copying and distribution information, please see the file
@@ -8,8 +8,8 @@
 #include <stdio.h>
 #include <strings.h>
 #include <ctype.h>
-#include <sms.h>
-#include <sms_app.h>
+#include <moira.h>
+#include <moira_site.h>
 #include <menu.h>
 
 #include "mit-copyright.h"
@@ -30,7 +30,7 @@ char **argv;
 char **info;
 {
     info[1] = strsave(argv[0]);
-    return(SMS_CONT);
+    return(MR_CONT);
 }
 
 EnableDcm(argc, argv)
@@ -41,10 +41,10 @@ char **argv;
     char *info[3];
 
     info[0] = "dcm_enable";
-    if (status = do_sms_query("get_value", 1, info, genable, info))
+    if (status = do_mr_query("get_value", 1, info, genable, info))
       com_err(whoami, status, " while getting value of dcm_enable");
     GetValueFromUser("Enable value", &info[1]);
-    if (status = do_sms_query("update_value", 2, info, Scream, NULL))
+    if (status = do_mr_query("update_value", 2, info, Scream, NULL))
       com_err(whoami, status, " while updating value of dcm_enable");
     FreeAndClear(&info[0], FALSE);
     FreeAndClear(&info[1], TRUE);
@@ -81,7 +81,7 @@ char **argv;
 	    atoi(argv[SVC_INPROGRESS]) ? "InProgress" : "Idle", tmp);
     Put_message(buf);
     Put_message("");
-    return(SMS_CONT);
+    return(MR_CONT);
 }
 
 
@@ -93,7 +93,7 @@ char **argv;
     int status;	
  
     qargv[0] = argv[1];
-    if (status = do_sms_query("get_server_info", 1, qargv, shserv, NULL))
+    if (status = do_mr_query("get_server_info", 1, qargv, shserv, NULL))
       com_err(whoami, status, " while getting server info");
     return(DM_NORMAL);
 }
@@ -117,7 +117,7 @@ char **argv;
 
     initserv(argv[1], info);
     askserv(info);
-    if (status = do_sms_query("add_server_info", 8, info, Scream, NULL))
+    if (status = do_mr_query("add_server_info", 8, info, Scream, NULL))
       com_err(whoami, status, " while updating server info");
     FreeInfo(info);
     return(DM_NORMAL);
@@ -151,7 +151,7 @@ char **cargv;
     cargv[SC_ACE_TYPE] = strsave(argv[SVC_ACE_TYPE]);
     cargv[SC_ACE_NAME] = strsave(argv[SVC_ACE_NAME]);
     cargv[SC_END] = NULL;
-    return(SMS_CONT);
+    return(MR_CONT);
 }
 
 initserv(name, argv)
@@ -164,7 +164,7 @@ char **argv;
     argv[SC_INTERVAL] = strsave("1440");
     sprintf(tmp, "/tmp/%s.out", name);
     argv[SC_TARGET] = strsave(tmp);
-    sprintf(tmp, "/u1/sms/bin/%s.sh", name);
+    sprintf(tmp, "/u1/mr/bin/%s.sh", name);
     argv[SC_SCRIPT] = strsave(tmp);
     argv[SC_TYPE] = strsave("UNIQUE");
     argv[SC_ENABLE] = strsave("1");
@@ -182,13 +182,13 @@ char **argv;
     int status;
 
     qargv[0] = (char *)argv[1];
-    if (status = do_sms_query("get_server_info", 1,
+    if (status = do_mr_query("get_server_info", 1,
 			      qargv, gserv, (char *)qargv)) {
 	com_err(whoami, status, " while getting server info");
 	return(DM_NORMAL);
     }
     askserv(qargv);
-    if (status = do_sms_query("update_server_info", 8, qargv, Scream, NULL))
+    if (status = do_mr_query("update_server_info", 8, qargv, Scream, NULL))
       com_err(whoami, status, " while updating server info");
     return(DM_NORMAL);
 }
@@ -221,7 +221,7 @@ char **argv;
     free(ltt);
     Put_message(buf);
     Put_message("");
-    return(SMS_CONT);
+    return(MR_CONT);
 }
 
 
@@ -234,7 +234,7 @@ char **argv;
 
     qargv[SHI_SERVICE] = argv[1];
     qargv[SHI_MACHINE] = canonicalize_hostname(argv[2]);
-    if (status = do_sms_query("get_server_host_info", 2, qargv, shhost, NULL))
+    if (status = do_mr_query("get_server_host_info", 2, qargv, shhost, NULL))
       com_err(whoami, status, " getting server/host info");
     return(DM_NORMAL);
 }
@@ -245,7 +245,7 @@ int argc;
 char  **argv;
 {
     int status;
-    if (status = do_sms_query("reset_server_error", 1, &argv[1], Scream, NULL))
+    if (status = do_mr_query("reset_server_error", 1, &argv[1], Scream, NULL))
       com_err(whoami, status, " while resetting server error");
     return(DM_NORMAL);
 }
@@ -267,7 +267,7 @@ char **argv;
     qargv[3] = "0";
     qargv[4] = "0";
     qargv[5] = "";
-    if (status = do_sms_query("set_server_internal_flags", 6, qargv,
+    if (status = do_mr_query("set_server_internal_flags", 6, qargv,
 			      Scream, NULL))
       com_err(whoami, status, " while resetting server error");
     return(DM_NORMAL);
@@ -281,7 +281,7 @@ char  **argv;
     int status;
 
     argv[2] = canonicalize_hostname(argv[2]);
-    if (status = do_sms_query("reset_server_host_error", 2, &argv[1],
+    if (status = do_mr_query("reset_server_host_error", 2, &argv[1],
 			      Scream, NULL))
       com_err(whoami, status, " while resetting server/host error");
     return(DM_NORMAL);
@@ -308,7 +308,7 @@ char **argv;
     qargv[6] = "";
     qargv[7] = "0";
     qargv[8] = "0";
-    if (status = do_sms_query("set_server_host_internal", 9, qargv,
+    if (status = do_mr_query("set_server_host_internal", 9, qargv,
 			      Scream, NULL))
       com_err(whoami, status, " while resetting server/host error");
     return(DM_NORMAL);
@@ -322,7 +322,7 @@ char  **argv;
     int status;
 
     argv[2] = canonicalize_hostname(argv[2]);
-    if (status = do_sms_query("set_server_host_override", 2, &argv[1],
+    if (status = do_mr_query("set_server_host_override", 2, &argv[1],
 			      Scream, NULL))
       com_err(whoami, status, " while setting server/host override");
     return(DM_NORMAL);
@@ -341,7 +341,7 @@ char **cargv;
     cargv[SHI_VALUE2] = strsave(argv[SH_VALUE2]);
     cargv[SHI_VALUE3] = strsave(argv[SH_VALUE3]);
     cargv[SHI_END] = NULL;
-    return(SMS_CONT);
+    return(MR_CONT);
 }
 
 
@@ -376,13 +376,13 @@ char **argv;
 
     info[SHI_SERVICE] = strsave(argv[1]);
     info[SHI_MACHINE] = strsave(canonicalize_hostname(argv[2]));
-    if (status = do_sms_query("get_server_host_info", 2, info, ghost, 
+    if (status = do_mr_query("get_server_host_info", 2, info, ghost, 
 			      (char *)info)) {
 	com_err(whoami, status, " while getting server/host info");
 	return(DM_NORMAL);
     }
     askhost(info);
-    if (status = do_sms_query("update_server_host_info", SHI_END, info,
+    if (status = do_mr_query("update_server_host_info", SHI_END, info,
 			      Scream, NULL))
       com_err(whoami, status, " while updating server/host info");
     FreeInfo(info);
@@ -401,7 +401,7 @@ char **argv;
     info[SHI_MACHINE] = strsave(canonicalize_hostname(argv[2]));
     inithost(info);
     askhost(info);
-    if (status = do_sms_query("add_server_host_info", 6, info, Scream, NULL))
+    if (status = do_mr_query("add_server_host_info", 6, info, Scream, NULL))
       com_err(whoami, status, " while adding server/host info");
     FreeInfo(info);
     return(DM_NORMAL);
@@ -414,7 +414,7 @@ char **argv;
 {
     int status;
 
-    if (status = do_sms_query("delete_server_info", 1, &argv[1], Scream, NULL))
+    if (status = do_mr_query("delete_server_info", 1, &argv[1], Scream, NULL))
       com_err(whoami, status, " while deleting server info");
     return(DM_NORMAL);
 }
@@ -427,7 +427,7 @@ char **argv;
     int status;
 
     argv[2] = canonicalize_hostname(argv[2]);
-    if (status = do_sms_query("delete_server_host_info", 2, &argv[1],
+    if (status = do_mr_query("delete_server_host_info", 2, &argv[1],
 			      Scream, NULL))
       com_err(whoami, status, " while deleting server/host info");
     return(DM_NORMAL);
@@ -442,7 +442,7 @@ int *count;
     sprintf(buf, "Service %s", argv[0]);
     Put_message(buf);
     (*count)++;
-    return(SMS_CONT);
+    return(MR_CONT);
 }
 
 phost(argc, argv, count)
@@ -453,7 +453,7 @@ int *count;
     sprintf(buf, "Host %s:%s", argv[0], argv[1]);
     Put_message(buf);
     (*count)++;
-    return(SMS_CONT);
+    return(MR_CONT);
 }
 
 
@@ -464,16 +464,16 @@ InProgress()
 
     argv[0] = argv[2] = "DONTCARE";
     argv[1] = "TRUE";
-    if ((status = do_sms_query("qualified_get_server", 3, argv, pserv, 
+    if ((status = do_mr_query("qualified_get_server", 3, argv, pserv, 
 			       (char *)&count)) &&
-	status != SMS_NO_MATCH)
+	status != MR_NO_MATCH)
       com_err(whoami, status, " while getting servers");
     argv[0] = "*";
     argv[1] = argv[2] = argv[3] = argv[5] = "DONTCARE";
     argv[4] = "TRUE";
-    if ((status = do_sms_query("qualified_get_server_host",6,argv,phost,
+    if ((status = do_mr_query("qualified_get_server_host",6,argv,phost,
 			       (char *)&count)) &&
-	status != SMS_NO_MATCH)
+	status != MR_NO_MATCH)
       com_err(whoami, status, " while getting server/hosts");
     if (!count)
       strcpy(buf, "Nothing is in progress at this time");
@@ -491,16 +491,16 @@ DcmFailed()
 
     argv[0] = argv[1] = "DONTCARE";
     argv[2] = "TRUE";
-    if ((status = do_sms_query("qualified_get_server", 3, argv, pserv, 
+    if ((status = do_mr_query("qualified_get_server", 3, argv, pserv, 
 			       (char *)&count)) &&
-	status != SMS_NO_MATCH)
+	status != MR_NO_MATCH)
       com_err(whoami, status, " while getting servers");
     argv[0] = "*";
     argv[1] = argv[2] = argv[3] = argv[4] = "DONTCARE";
     argv[5] = "TRUE";
-    if ((status = do_sms_query("qualified_get_server_host",6,argv,phost,
+    if ((status = do_mr_query("qualified_get_server_host",6,argv,phost,
 			       (char *)&count)) &&
-	status != SMS_NO_MATCH)
+	status != MR_NO_MATCH)
       com_err(whoami, status, " while getting server/hosts");
     if (!count)
       strcpy(buf, "Nothing has failed at this time");
@@ -515,7 +515,7 @@ DcmFailed()
 Dcm()
 {
     int status;
-    if (status = sms_do_update())
+    if (status = mr_do_update())
       com_err(whoami, status, " while triggering update");
     return(DM_NORMAL);
 }

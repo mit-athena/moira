@@ -1,9 +1,9 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/nfs.c,v 1.12 1989-06-01 21:23:50 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/nfs.c,v 1.13 1990-03-17 17:11:05 mar Exp $";
 #endif lint
 
-/*	This is the file nfs.c for the SMS Client, which allows a nieve
- *      user to quickly and easily maintain most parts of the SMS database.
+/*	This is the file nfs.c for the MOIRA Client, which allows a nieve
+ *      user to quickly and easily maintain most parts of the MOIRA database.
  *	It Contains: All functions for manipulating NFS Physical directories.
  *	
  *	Created: 	5/6/88
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/nfs.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/nfs.c,v 1.12 1989-06-01 21:23:50 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/nfs.c,v 1.13 1990-03-17 17:11:05 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -21,8 +21,8 @@
 
 #include <stdio.h>
 #include <strings.h>
-#include <sms.h>
-#include <sms_app.h>
+#include <moira.h>
+#include <moira_site.h>
 #include <menu.h>
 
 #include "mit-copyright.h"
@@ -73,23 +73,23 @@ char ** info;
     
     status_buf[0] = '\0';	/* clear string. */
 
-    if (status & SMS_FS_STUDENT) {
+    if (status & MR_FS_STUDENT) {
 	strcat(status_buf, "Student");
 	is_one = TRUE;
     }
-    if (status & SMS_FS_FACULTY) {
+    if (status & MR_FS_FACULTY) {
 	if (is_one)
 	    strcat(status_buf, " and ");
 	strcat(status_buf, "Faculty");
 	is_one = TRUE;
     }
-    if (status & SMS_FS_STAFF) {
+    if (status & MR_FS_STAFF) {
 	if (is_one)
 	    strcat(status_buf, " and ");
 	strcat(status_buf, "Staff");
 	is_one = TRUE;
     }
-    if (status & SMS_FS_MISC) {
+    if (status & MR_FS_MISC) {
 	if (is_one)
 	    strcat(status_buf, " and ");
 	strcat(status_buf, "Miscellaneous");
@@ -178,8 +178,8 @@ char **argv;
     if ( (args[1] = GetDirName()) == NULL)
 	return(DM_NORMAL);
     
-    if ( (stat = do_sms_query("get_nfsphys", 2, args,
-			      StoreInfo, (char *)  &elem)) != SMS_SUCCESS)
+    if ( (stat = do_mr_query("get_nfsphys", 2, args,
+			      StoreInfo, (char *)  &elem)) != MR_SUCCESS)
 	com_err(program_name, stat, " in ShowNFSServices.");
     free(args[0]);
     free(args[1]);		/* prevents memory leaks. */
@@ -214,10 +214,10 @@ int argc;
     if (!ValidName(args[0]) || !ValidName(args[1]))
 	return(DM_NORMAL);
     
-    if ( (stat = do_sms_query("get_nfsphys", 2, args,
-			      NullFunc, (char *) NULL)) == SMS_SUCCESS)
+    if ( (stat = do_mr_query("get_nfsphys", 2, args,
+			      NullFunc, (char *) NULL)) == MR_SUCCESS)
 	Put_message("This service already exists.");
-    if (stat != SMS_NO_MATCH) 
+    if (stat != MR_NO_MATCH) 
 	com_err(program_name, stat, " in get_nfsphys.");
     
     info[NFS_NAME]   = Strsave(args[0]);
@@ -231,7 +231,7 @@ int argc;
 
     add_args = AskNFSInfo(info);
     
-    if ((stat = do_sms_query("add_nfsphys", CountArgs(add_args), add_args,
+    if ((stat = do_mr_query("add_nfsphys", CountArgs(add_args), add_args,
 			     Scream, (char *) NULL)) != 0) 
 	com_err(program_name, stat, " in AdsNFSService");
     
@@ -257,8 +257,8 @@ Bool junk;
     register int stat;
     
     args = AskNFSInfo(info);
-    if ((stat = do_sms_query("update_nfsphys", CountArgs(args), args,
-			     Scream, (char *)NULL)) != SMS_SUCCESS) 
+    if ((stat = do_mr_query("update_nfsphys", CountArgs(args), args,
+			     Scream, (char *)NULL)) != MR_SUCCESS) 
 	com_err(program_name, stat, (char *) NULL);
 }
 
@@ -285,8 +285,8 @@ int argc;
     if ( (args[1] = GetDirName()) == NULL)
 	return(DM_NORMAL);
 
-    if ( (stat = do_sms_query("get_nfsphys", 2, args,
-			      StoreInfo, (char *) &elem)) != SMS_SUCCESS) {
+    if ( (stat = do_mr_query("get_nfsphys", 2, args,
+			      StoreInfo, (char *) &elem)) != MR_SUCCESS) {
 	com_err(program_name, stat, " in UpdateNFSService.");
 	return (DM_NORMAL);
     }
@@ -345,16 +345,16 @@ Bool one_item;
 	args[0] = info[NFS_NAME];
 	args[1] = info[NFS_DIR];
 	args[2] = NULL;
-	switch(stat = do_sms_query("get_filesys_by_nfsphys", CountArgs(args), 
+	switch(stat = do_mr_query("get_filesys_by_nfsphys", CountArgs(args), 
 				   args, StoreInfo, (char *)&elem)) {
-	case SMS_NO_MATCH:	/* it is unused, delete it. */
-	    if ( (stat = do_sms_query("delete_nfsphys", 2, info, Scream, 
-				      (char *) NULL )) != SMS_SUCCESS)
+	case MR_NO_MATCH:	/* it is unused, delete it. */
+	    if ( (stat = do_mr_query("delete_nfsphys", 2, info, Scream, 
+				      (char *) NULL )) != MR_SUCCESS)
 		com_err(program_name, stat, " in DeleteNFSService");
 	    else
 		Put_message("Physical Filesystem Deleted.");
 	    break;
-	case SMS_SUCCESS:	/* it is used, print filesys's that use it. */
+	case MR_SUCCESS:	/* it is used, print filesys's that use it. */
 	    elem = QueueTop(elem);
 	    Put_message("The following fileystems are using this partition,");
 	    Put_message("and must be removed before it can be deleted.");
@@ -395,12 +395,12 @@ char **argv;
     if ( (args[1] = GetDirName()) == NULL)
 	return(DM_NORMAL);
 
-    switch(stat = do_sms_query("get_nfsphys", 2, args, 
+    switch(stat = do_mr_query("get_nfsphys", 2, args, 
 			       StoreInfo, (char *) &elem)) {
-    case SMS_NO_MATCH:
+    case MR_NO_MATCH:
 	Put_message("This filsystem does not exist!");
 	return(DM_NORMAL);
-    case SMS_SUCCESS:
+    case MR_SUCCESS:
 	break;
     default:
 	com_err(program_name, stat, " in DeleteNFSService");

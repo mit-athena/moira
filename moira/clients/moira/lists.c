@@ -1,9 +1,9 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v 1.20 1989-10-12 12:32:26 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v 1.21 1990-03-17 17:10:35 mar Exp $";
 #endif lint
 
-/*	This is the file lists.c for the SMS Client, which allows a nieve
- *      user to quickly and easily maintain most parts of the SMS database.
+/*	This is the file lists.c for the MOIRA Client, which allows a nieve
+ *      user to quickly and easily maintain most parts of the MOIRA database.
  *	It Contains: All list manipulation functions, except delete.
  *	
  *	Created: 	4/12/88
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v 1.20 1989-10-12 12:32:26 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v 1.21 1990-03-17 17:10:35 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -21,8 +21,8 @@
 
 #include <stdio.h>
 #include <strings.h>
-#include <sms.h>
-#include <sms_app.h>
+#include <moira.h>
+#include <moira_site.h>
 #include <menu.h>
 
 #include "mit-copyright.h"
@@ -132,7 +132,7 @@ char * name1, *name2;
     switch(type) {
     case LIST:
 	args[0] = name1;
-	if ( (status = do_sms_query("get_list_info", 1, args,
+	if ( (status = do_mr_query("get_list_info", 1, args,
 			       StoreInfo, (char *) &elem)) != 0) {
 	    com_err(program_name, status, " in get_list_info");
 	    return (NULL);
@@ -140,7 +140,7 @@ char * name1, *name2;
 	break;
     case MEMBERS:
 	args[0] = name1;
-	if ( (status = do_sms_query("get_members_of_list", 1, args,
+	if ( (status = do_mr_query("get_members_of_list", 1, args,
 			       StoreInfo, (char *) &elem)) != 0) {
 	    com_err(program_name, status, " in get_members_of_list");
 	    return (NULL);
@@ -149,7 +149,7 @@ char * name1, *name2;
     case GLOM:
 	args[0] = name1; 	
 	args[1] = name2; 	
-	if ( (status =  do_sms_query("get_lists_of_member", 2, args,
+	if ( (status =  do_mr_query("get_lists_of_member", 2, args,
 			       StoreInfo, (char *) &elem)) != 0) {
 	    com_err(program_name, status, " in get_list_of_members");
 	    return (NULL);
@@ -158,7 +158,7 @@ char * name1, *name2;
     case ACE_USE:
 	args[0] = name1; 	
 	args[1] = name2; 	
-	if ( (status =  do_sms_query("get_ace_use", 2, args,
+	if ( (status =  do_mr_query("get_ace_use", 2, args,
 			       StoreInfo, (char *) &elem)) != 0) {
 	    com_err(program_name, status, " in get_ace_use");
 	    return (NULL);
@@ -270,8 +270,8 @@ Bool junk;
     char ** args;
     
     args = AskListInfo(info, TRUE);
-    if ( (stat = do_sms_query("update_list", CountArgs(args), args, 
-			   Scream, (char *) NULL)) != SMS_SUCCESS) {
+    if ( (stat = do_mr_query("update_list", CountArgs(args), args, 
+			   Scream, (char *) NULL)) != MR_SUCCESS) {
 	com_err(program_name, stat, " in UpdateList.");	
 	Put_message("List ** NOT ** Updated.");
     }
@@ -343,10 +343,10 @@ char **argv;
 
     if (!ValidName(argv[1]))
       return(DM_NORMAL);
-    status = do_sms_query("get_list_info", 1, argv + 1, NullFunc, 
+    status = do_mr_query("get_list_info", 1, argv + 1, NullFunc, 
 		       (char *) NULL);
-    if (status != SMS_NO_MATCH) {
-	if (status == SMS_SUCCESS)
+    if (status != MR_NO_MATCH) {
+	if (status == MR_SUCCESS)
 	    Put_message("This list already exists.");
 	else
 	    com_err(program_name, status, " in AddList.");	
@@ -355,8 +355,8 @@ char **argv;
 
     add_args = AskListInfo(SetDefaults(info,argv[1]), FALSE);
 
-    if ( (status = do_sms_query("add_list", CountArgs(add_args), add_args,
-			     Scream, (char *) NULL)) != SMS_SUCCESS) {
+    if ( (status = do_mr_query("add_list", CountArgs(add_args), add_args,
+			     Scream, (char *) NULL)) != MR_SUCCESS) {
 	com_err(program_name, status, " in AddList.");	
 	Put_message("List Not Created.");
 	ret_code = SUB_ERROR;
@@ -426,14 +426,14 @@ char **argv;
     }
     else 
 	/* All we want to know is if it exists. */
-	switch( (stat = do_sms_query("count_members_of_list", 1, argv + 1,
+	switch( (stat = do_mr_query("count_members_of_list", 1, argv + 1,
 				   NullFunc, (char *) NULL))) {
-	case SMS_SUCCESS:
+	case MR_SUCCESS:
 	    break;
-	case SMS_LIST:
+	case MR_LIST:
 	    Put_message("This list does not exist.");
 	    return(DM_QUIT);
-	case SMS_PERM:
+	case MR_PERM:
 	    Put_message("You are not allowed to view this list.");
 	    break;
 	default:
@@ -483,7 +483,7 @@ char * type;
     args[1] = NULL;
 
     found_some = FALSE;
-    if ( (status = do_sms_query("get_members_of_list", CountArgs(args), args, 
+    if ( (status = do_mr_query("get_members_of_list", CountArgs(args), args, 
 			     PrintByType, type)) != 0) {
 	com_err(program_name, status, " in ListMembersByType");
 	return(DM_NORMAL);
@@ -596,9 +596,9 @@ AddMember()
     if ( GetMemberInfo("add", args) == SUB_ERROR )
 	return(DM_NORMAL);
 
-    if ( (status = do_sms_query("add_member_to_list", CountArgs(args), args,
-			   Scream, NULL)) != SMS_SUCCESS) {
-	if (status == SMS_EXISTS) {
+    if ( (status = do_mr_query("add_member_to_list", CountArgs(args), args,
+			   Scream, NULL)) != MR_SUCCESS) {
+	if (status == MR_EXISTS) {
 	    sprintf(temp_buf, "The %s %s is already a member of LIST %s.",
 		    args[LM_TYPE], args[LM_MEMBER], args[LM_LIST]);
 	    Put_message(temp_buf);
@@ -627,7 +627,7 @@ DeleteMember()
 	return(DM_NORMAL);
 
     if (Confirm("Are you sure you want to delete this member?") ) {
-	if (status = do_sms_query("delete_member_from_list", CountArgs(args),
+	if (status = do_mr_query("delete_member_from_list", CountArgs(args),
 			       args, Scream, NULL))
 	    com_err(program_name, status, " in DeleteMember");
 	else
@@ -681,7 +681,7 @@ InterRemoveItemFromLists()
 	    args[DM_LIST] = info[GLOM_NAME];
 	    args[DM_TYPE] = type;
 	    args[DM_MEMBER] = name;
-	    if ( (status = do_sms_query("delete_member_from_list", 3, args,
+	    if ( (status = do_mr_query("delete_member_from_list", 3, args,
 			       Scream, (char *) NULL)) != 0)
 		/* should probabally check to delete list. */
 		com_err(program_name, status, " in delete_member");
@@ -803,7 +803,7 @@ ListAllGroups()
 
     if (YesNoQuestion("This query will take a while, Do you wish to continue?",
 		       TRUE) == TRUE )
-	if (status = do_sms_query("qualified_get_lists", 5, args,
+	if (status = do_mr_query("qualified_get_lists", 5, args,
 			       Print, (char *) NULL) != 0)
 	    com_err(program_name, status, " in ListAllGroups");
     return (DM_NORMAL);
@@ -828,7 +828,7 @@ ListAllMailLists()
 
     if (YesNoQuestion("This query will take a while. Do you wish to continue?",
 		       TRUE) == TRUE )
-	if (status = do_sms_query("qualified_get_lists", 5, args,
+	if (status = do_mr_query("qualified_get_lists", 5, args,
 			       Print, (char *) NULL) != 0)
 	    com_err(program_name, status, " in ListAllGroups");
 
@@ -854,7 +854,7 @@ ListAllPublicMailLists()
 
     if (YesNoQuestion("This query will take a while. Do you wish to continue?",
 		       TRUE) == TRUE )
-	if (status = do_sms_query("qualified_get_lists", 5, args,
+	if (status = do_mr_query("qualified_get_lists", 5, args,
 			       Print, (char *) NULL) != 0)
 	    com_err(program_name, status, " in ListAllGroups");
 

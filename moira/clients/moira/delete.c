@@ -1,9 +1,9 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/delete.c,v 1.15 1990-03-07 17:02:59 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/delete.c,v 1.16 1990-03-17 17:10:23 mar Exp $";
 #endif lint
 
-/*	This is the file delete.c for the SMS Client, which allows a nieve
- *      user to quickly and easily maintain most parts of the SMS database.
+/*	This is the file delete.c for the MOIRA Client, which allows a nieve
+ *      user to quickly and easily maintain most parts of the MOIRA database.
  *	It Contains: functions for deleting users and lists.
  *	
  *	Created: 	5/18/88
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/delete.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/delete.c,v 1.15 1990-03-07 17:02:59 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/delete.c,v 1.16 1990-03-17 17:10:23 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -21,8 +21,8 @@
 
 #include <stdio.h>
 #include <strings.h>
-#include <sms.h>
-#include <sms_app.h>
+#include <moira.h>
+#include <moira_site.h>
 #include <menu.h>
 
 #include "mit-copyright.h"
@@ -47,7 +47,7 @@ Bool verbose;
     int status;
     char *args[2], buf[BUFSIZ], **info;
 
-    if ( (status = do_sms_query("count_members_of_list", 1, &name, StoreInfo,
+    if ( (status = do_mr_query("count_members_of_list", 1, &name, StoreInfo,
 				(char *) &elem)) != 0) {
 	com_err(program_name, status, 
 		" in DeleteList (count_members_of_list).");
@@ -91,8 +91,8 @@ Bool verbose;
  
     args[0] = type;
     args[1] = name;
-    status = do_sms_query("get_ace_use", 2, args, NullFunc, (char *) NULL);
-    if (status != SMS_NO_MATCH)
+    status = do_mr_query("get_ace_use", 2, args, NullFunc, (char *) NULL);
+    if (status != MR_NO_MATCH)
 	return;			/* If this query fails the ace will
 				   not be deleted even if it is empty. */
     if (verbose) {
@@ -133,11 +133,11 @@ Bool verbose;
 
     args[0] = type;
     args[1] = name;
-    switch (status = do_sms_query("get_ace_use", 2, args,
+    switch (status = do_mr_query("get_ace_use", 2, args,
 				  StoreInfo, (char *) &elem)) {
-    case SMS_NO_MATCH:
+    case MR_NO_MATCH:
 	return(DM_NORMAL);
-    case SMS_SUCCESS:
+    case MR_SUCCESS:
 	local = elem = QueueTop(elem);
 	info = (char **) local->q_data;
 	if (QueueCount(elem) == 1 &&
@@ -202,13 +202,13 @@ int verbose;
  * Get all list of which this item is a member, and store them in a queue.
  */
 
-    status = do_sms_query("get_lists_of_member", 2, args, StoreInfo,
+    status = do_mr_query("get_lists_of_member", 2, args, StoreInfo,
 			  (char *) elem);
 
-    if (status == SMS_NO_MATCH)
+    if (status == MR_NO_MATCH)
 	return(SUB_NORMAL);
 
-    if (status != SMS_SUCCESS) {	
+    if (status != MR_SUCCESS) {	
 	com_err(program_name, status, " in DeleteList (get_lists_of_member).");
 	return(SUB_ERROR);
     }
@@ -251,7 +251,7 @@ int verbose;
     while (local != NULL) {
 	char ** info = (char **) local->q_data;
 	args[DM_LIST] = info[GLOM_NAME];
-	if ( (status = do_sms_query("delete_member_from_list",
+	if ( (status = do_mr_query("delete_member_from_list",
 				    3, args, Scream, NULL)) != 0) {
 	    com_err(program_name, status, " in delete_member\nAborting\n");
 	    FreeQueue(*elem);
@@ -280,9 +280,9 @@ Bool verbose;
 /* 
  * Get the members of this list.
  */
-    status = do_sms_query("get_members_of_list", 1, &name, StoreInfo,
+    status = do_mr_query("get_members_of_list", 1, &name, StoreInfo,
 			  (char *) &elem);
-    if (status == SMS_NO_MATCH) 
+    if (status == MR_NO_MATCH) 
 	return(SUB_NORMAL);
 
     if (status != 0) {	
@@ -324,7 +324,7 @@ Bool verbose;
 	char ** info = (char **) local->q_data;
 	args[1] = info[0];
 	args[2] = info[1];
-	if ( (status = do_sms_query("delete_member_from_list",
+	if ( (status = do_mr_query("delete_member_from_list",
 				    3, args, Scream, NULL)) != 0) {
 	    com_err(program_name, status, " in delete_member\nAborting\n");
 	    FreeQueue(elem);
@@ -341,7 +341,7 @@ Bool verbose;
  *	Arguments: name - the name of the list to delete.
  *                 verbose - flag that if TRUE queries the user to
  *                           ask if list should be deleted.
- *	Returns: SMS_ERROR if there is an error.
+ *	Returns: MR_ERROR if there is an error.
  */
 
 int
@@ -352,7 +352,7 @@ Bool verbose;
     int status, ans;
     char buf[BUFSIZ], *args[10];
 
-    status = do_sms_query("get_list_info", 1, &name, NullFunc, (char *) NULL);
+    status = do_mr_query("get_list_info", 1, &name, NullFunc, (char *) NULL);
     if (status == 0) {
 	if (verbose) {
 	    sprintf(buf, "There is also a list named %s, delete it?", name);
@@ -371,7 +371,7 @@ Bool verbose;
 	    args[1] = name;
 	    DeleteList(2, args);
     }
-    else if (status != SMS_NO_MATCH) {
+    else if (status != MR_NO_MATCH) {
 	com_err(program_name, status, " Aborting Delete User.");	
 	return(SUB_ERROR);
     }
@@ -393,11 +393,11 @@ Bool verbose;
     int status;
     char buf[BUFSIZ];
     
-    switch (status = do_sms_query("get_filesys_by_label", 1, &name, NullFunc, 
+    switch (status = do_mr_query("get_filesys_by_label", 1, &name, NullFunc, 
 				  (char *) NULL)) {
-    case SMS_NO_MATCH:
+    case MR_NO_MATCH:
 	break;
-    case SMS_SUCCESS:
+    case MR_SUCCESS:
 	if (verbose) {
 	    sprintf(buf, "Delete the filesystem named %s (y/n)?", name);
 	    switch (YesNoQuestion(buf, FALSE)) {
@@ -411,8 +411,8 @@ Bool verbose;
 		return(SUB_ERROR);
 	    }
 	}
-	if ( (status = do_sms_query("delete_filesys", 1, &name, Scream,
-				    (char *) NULL) ) != SMS_SUCCESS) {
+	if ( (status = do_mr_query("delete_filesys", 1, &name, Scream,
+				    (char *) NULL) ) != MR_SUCCESS) {
 	    com_err(program_name, status, " in delete_filesys.");
 	    return(SUB_ERROR);
 	}
@@ -439,8 +439,8 @@ char * name;
     char buf[BUFSIZ];
     int status;
 
-    if ( (status = do_sms_query("delete_user", 1, &name, Scream, 
-				(char *) NULL)) != SMS_SUCCESS) {
+    if ( (status = do_mr_query("delete_user", 1, &name, Scream, 
+				(char *) NULL)) != MR_SUCCESS) {
 	com_err(program_name, status, ": user not deleted");
 	return(SUB_ERROR);
     }
@@ -462,8 +462,8 @@ char * name;
     char buf[BUFSIZ];
     int status;
 
-    if ( (status = do_sms_query("delete_list", 1, &name, Scream, 
-				(char *) NULL)) != SMS_SUCCESS) {
+    if ( (status = do_mr_query("delete_list", 1, &name, Scream, 
+				(char *) NULL)) != MR_SUCCESS) {
 	com_err(program_name, status, ": list not deleted");
 	return(SUB_ERROR);
     }
@@ -502,13 +502,13 @@ Bool ask_first;
      * 3) This list is not an ace of another object.
      */
     
-    switch (status = do_sms_query("delete_list", 1, &name,
+    switch (status = do_mr_query("delete_list", 1, &name,
 				  Scream, (char *) NULL)) {
-    case SMS_SUCCESS:
+    case MR_SUCCESS:
 	Put_message("List Sucessfully Deleted.");
 	CheckAce(list_info[L_ACE_TYPE], list_info[L_ACE_NAME], ask_first);
 	break;
-    case SMS_IN_USE:
+    case MR_IN_USE:
 	/* 
 	 * This list is in use.  Try to find out why, 
 	 * and for the cases where we have a good idea of 
@@ -530,9 +530,9 @@ Bool ask_first;
 	      list_info[L_ACE_TYPE] = Strsave("USER");
 	      list_info[L_ACE_NAME] = Strsave(user);
 	      SlipInNewName(list_info, Strsave(list_info[L_NAME]));
-	      if ((status = do_sms_query("update_list", CountArgs(list_info)-3,
+	      if ((status = do_mr_query("update_list", CountArgs(list_info)-3,
 				       list_info, Scream, (char *) NULL))
-		    != SMS_SUCCESS) {
+		    != MR_SUCCESS) {
 		  com_err(program_name, status, " while updating list owner");
 		  Put_message("List may be only partly deleted.");
 	      }
@@ -559,7 +559,7 @@ Bool ask_first;
 
 /*	Function Name: DeleteList
  *	Description: deletes a list
- *	Arguments: argc, argv - standard SMS argc and argv.
+ *	Arguments: argc, argv - standard MR argc and argv.
  *	Returns: DM Status Code.
  */
 
@@ -576,15 +576,15 @@ char *argv[];
 
     list = NULL;
     
-    switch(status = do_sms_query("get_list_info", 1, argv + 1,
+    switch(status = do_mr_query("get_list_info", 1, argv + 1,
 				 StoreInfo, (char *) &list)){
-    case SMS_SUCCESS:
+    case MR_SUCCESS:
 	break;
-/*    case SMS_NO_WILDCARD:
+/*    case MR_NO_WILDCARD:
 	Put_message("Wildcards are not accepted here.");
 	return(DM_NORMAL);
-*/  case SMS_NO_MATCH:
-    case SMS_LIST:
+*/  case MR_NO_MATCH:
+    case MR_LIST:
 	Put_message("There is no list that matches that name.");
 	return(DM_NORMAL);
     default:
@@ -644,8 +644,8 @@ char ** argv;
     if (!Confirm("Are you sure that you want to delete this user?"))
 	return(DM_NORMAL);
 
-    status = do_sms_query("delete_user", 1, &name, Scream, (char *) NULL);
-    if (status != SMS_IN_USE && status != 0) {
+    status = do_mr_query("delete_user", 1, &name, Scream, (char *) NULL);
+    if (status != MR_IN_USE && status != 0) {
 	com_err(program_name, status, ": user not deleted");	
 	return(DM_NORMAL);
     }
@@ -660,7 +660,7 @@ char ** argv;
     Put_message("Sorry, registered users cannot be deleted from the database.");
     Put_message("Deactivate the user now, and the system manager will expunge later.");
 #ifdef notdef
-    else if (status == SMS_IN_USE) {
+    else if (status == MR_IN_USE) {
 
 /*
  * Check:

@@ -1,5 +1,5 @@
-/*	This is the file misc.c for the SMS Client, which allows a naieve
- *      user to quickly and easily maintain most parts of the SMS database.
+/*	This is the file misc.c for the MOIRA Client, which allows a naieve
+ *      user to quickly and easily maintain most parts of the MOIRA database.
  *	It Contains: 
  *		TableStats
  *		ShowClients
@@ -10,7 +10,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/misc.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/misc.c,v 1.2 1988-12-07 18:49:46 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/misc.c,v 1.3 1990-03-17 17:11:01 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -20,8 +20,8 @@
 
 #include <stdio.h>
 #include <strings.h>
-#include <sms.h>
-#include <sms_app.h>
+#include <moira.h>
+#include <moira_site.h>
 #include <menu.h>
 #include <sys/types.h>
 #include <netdb.h>
@@ -54,7 +54,7 @@ char **info;
 
 
 /*	Function Name: TableStats
- *	Description: display the SMS table statistics
+ *	Description: display the MOIRA table statistics
  *	Arguments: NONE
  *	Returns: DM_NORMAL
  */
@@ -64,7 +64,7 @@ int TableStats()
     int status;
     struct qelem *elem = NULL;
 
-    if (status = do_sms_query("get_all_table_stats", 0, NULL,
+    if (status = do_mr_query("get_all_table_stats", 0, NULL,
 			      StoreInfo, (char *)&elem)) {
 	com_err(program_name, status, " in TableStats");
 	return(DM_NORMAL);
@@ -103,7 +103,7 @@ char **info;
 
 
 /*	Function Name: ShowClients
- *	Description: show clients actively using SMS
+ *	Description: show clients actively using MR
  *	Arguments: NONE
  *	Returns: DM_NORMAL
  */
@@ -113,7 +113,7 @@ int ShowClients()
     int status;
     struct qelem *elem = NULL;
 
-    if (status = do_sms_query("_list_users", 0, NULL,
+    if (status = do_mr_query("_list_users", 0, NULL,
 			      StoreInfo, (char *) &elem)) {
 	com_err(program_name, status, " in ShowClients");
 	return(DM_NORMAL);
@@ -140,7 +140,7 @@ char **info;
 
 
 /*	Function Name: ShowValue
- *	Description: get a variable value from SMS
+ *	Description: get a variable value from MR
  *	Arguments: variable name
  *	Returns: DM_NORMAL
  */
@@ -152,7 +152,7 @@ char **argv;
     int status;
     struct qelem *elem = NULL;
 
-    if (status = do_sms_query("get_value", 1, &argv[1],
+    if (status = do_mr_query("get_value", 1, &argv[1],
 			      StoreInfo, (char *) &elem)) {
 	com_err(program_name, status, " in ShowValue");
 	return(DM_NORMAL);
@@ -196,7 +196,7 @@ char **argv;
     info[0] = argv[1];
     info[1] = argv[2];
     info[2] = "*";
-    if (status = do_sms_query("get_alias", 3, info,
+    if (status = do_mr_query("get_alias", 3, info,
 			      StoreInfo, (char *) &elem)) {
 	com_err(program_name, status, " in ShowAlias");
 	return(DM_NORMAL);

@@ -1,9 +1,9 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.17 1990-03-12 17:35:50 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.18 1990-03-17 17:11:25 mar Exp $";
 #endif lint
 
-/*	This is the file user.c for the SMS Client, which allows a nieve
- *      user to quickly and easily maintain most parts of the SMS database.
+/*	This is the file user.c for the MOIRA Client, which allows a nieve
+ *      user to quickly and easily maintain most parts of the MOIRA database.
  *	It Contains: Functions for manipulating user information.
  *	
  *	Created: 	5/9/88
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.17 1990-03-12 17:35:50 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.18 1990-03-17 17:11:25 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -21,8 +21,8 @@
 
 #include <stdio.h>
 #include <strings.h>
-#include <sms.h>
-#include <sms_app.h>
+#include <moira.h>
+#include <moira_site.h>
 #include <menu.h>
 #include <ctype.h>
 
@@ -162,7 +162,7 @@ Bool name;
 	GetValueFromUser("User's middle name", &info[U_MIDDLE]);
 	argv[0] = info[U_FIRST];
 	argv[1] = info[U_LAST];
-	if (do_sms_query("get_user_by_name", 2, argv,
+	if (do_mr_query("get_user_by_name", 2, argv,
 			 StoreInfo, (char *) &elem) == 0) {
 	    Put_message("A user by that name already exists in the database.");
 	    Loop(QueueTop(elem), PrintUserInfo);
@@ -245,7 +245,7 @@ char *name1, *name2;
     switch(type) {
     case LOGIN:
 	args[0] = name1;
-	if ( (status = do_sms_query("get_user_by_login", 1, args,
+	if ( (status = do_mr_query("get_user_by_login", 1, args,
 				    StoreInfo, (char *) &elem)) != 0) {
 	    com_err(program_name, status, 
 		    " when attempting to get_user_by_login.");
@@ -254,7 +254,7 @@ char *name1, *name2;
 	break;
     case UID:
 	args[0] = name1;
-	if ( (status = do_sms_query("get_user_by_uid", 1, args,
+	if ( (status = do_mr_query("get_user_by_uid", 1, args,
 				    StoreInfo, (char *) &elem)) != 0) {
 	    com_err(program_name, status, 
 		    " when attempting to get_user_by_uid.");
@@ -264,7 +264,7 @@ char *name1, *name2;
     case BY_NAME:
 	args[0] = name1;
 	args[1] = name2;    
-	if ( (status = do_sms_query("get_user_by_name", 2, args,
+	if ( (status = do_mr_query("get_user_by_name", 2, args,
 				    StoreInfo, (char *) &elem)) != 0) {
 	    com_err(program_name, status, 
 		    " when attempting to get_user_by_name.");
@@ -273,7 +273,7 @@ char *name1, *name2;
 	break;
     case CLASS:
 	args[0] = name1;
-	if ( (status = do_sms_query("get_user_by_class", 1, args,
+	if ( (status = do_mr_query("get_user_by_class", 1, args,
 				    StoreInfo, (char *) &elem)) != 0) {
 	    com_err(program_name, status, 
 		    " when attempting to get_user_by_class.");
@@ -300,8 +300,8 @@ AddNewUser()
     args = AskUserInfo(SetUserDefaults(info), FALSE);
     if (args == NULL)
       return(DM_NORMAL);
-    if ( (status = do_sms_query("add_user", CountArgs(args), 
-				args, Scream, (char *) NULL)) != SMS_SUCCESS)
+    if ( (status = do_mr_query("add_user", CountArgs(args), 
+				args, Scream, (char *) NULL)) != MR_SUCCESS)
 	com_err(program_name, status, " in add_user");
     else
 	Put_message("New user added to database.");
@@ -376,11 +376,11 @@ GetUidNumberFromName()
     args[0] = first;
     args[1] = last;
     
-    switch (status = do_sms_query("get_user_by_name", 2, args,
+    switch (status = do_mr_query("get_user_by_name", 2, args,
 				  StoreInfo, (char *) &top)) {
-    case SMS_SUCCESS:
+    case MR_SUCCESS:
 	break;
-    case SMS_NO_MATCH:
+    case MR_NO_MATCH:
 	Put_message("There is no user in the database with that name.");
 	return(NULL);
     default:
@@ -473,14 +473,14 @@ RegisterUser()
     args[2] = fstype;
     args[3] = NULL;
     
-    switch (status = do_sms_query("register_user", CountArgs(args),
+    switch (status = do_mr_query("register_user", CountArgs(args),
 				  args, Scream, (char *) NULL)) {
-    case SMS_SUCCESS:
+    case MR_SUCCESS:
 	sprintf(temp_buf, "User %s successfully registered.", login);
 	Put_message(temp_buf);
 	SetUserPassword(login);
 	break;
-    case SMS_IN_USE:
+    case MR_IN_USE:
 	GiveBackLogin(login);
 	sprintf(temp_buf, "The username %s is already in use.", login);
 	Put_message(temp_buf);
@@ -510,8 +510,8 @@ Bool junk;
     char error_buf[BUFSIZ];
     char ** args = AskUserInfo(info, TRUE);
     
-    if ( (status = do_sms_query("update_user", CountArgs(args), 
-				args, Scream, (char *) NULL)) != SMS_SUCCESS) {
+    if ( (status = do_mr_query("update_user", CountArgs(args), 
+				args, Scream, (char *) NULL)) != MR_SUCCESS) {
 	com_err(program_name, status, " in ModifyFields");
 	sprintf(error_buf, "User %s not updated due to errors.", info[NAME]);
 	Put_message(error_buf);
@@ -563,8 +563,8 @@ Bool one_item;
 
     qargs[0] = info[NAME];
     qargs[1] = "3";
-    if ((status = do_sms_query("update_user_status", 2, qargs, Scream,
-			       (char *) NULL)) != SMS_SUCCESS) {
+    if ((status = do_mr_query("update_user_status", 2, qargs, Scream,
+			       (char *) NULL)) != MR_SUCCESS) {
 	com_err(program_name, status, " in update_user_status");
 	sprintf(txt_buf, "User %s not deactivated due to errors.", info[NAME]);
 	Put_message(txt_buf);
@@ -602,7 +602,7 @@ char **argv;
  *	Description: Deletes the user given a uid number.
  *	Arguments: argc, argv - uid if user in argv[1].
  *	Returns: DM_NORMAL.
- *      NOTES: This just gets the username from the sms server 
+ *      NOTES: This just gets the username from the mr server 
  *             and performs a DeleteUser().
  */
 
@@ -618,8 +618,8 @@ char **argv;
     if(!ValidName(argv[1]))
 	return(DM_NORMAL);
     
-    if ( (status = do_sms_query("get_user_by_uid", 1, argv+1, StoreInfo,
-				(char * ) &elem)) != SMS_SUCCESS)
+    if ( (status = do_mr_query("get_user_by_uid", 1, argv+1, StoreInfo,
+				(char * ) &elem)) != MR_SUCCESS)
 	com_err(program_name, status, " in get_user_by_uid");
     
     info = (char **) elem->q_data;
@@ -731,7 +731,7 @@ char **argv;
     struct qelem *elem = NULL, *top;
     char buf[BUFSIZ];
 
-    if ((stat = do_sms_query("get_kerberos_user_map", 2, &argv[1],
+    if ((stat = do_mr_query("get_kerberos_user_map", 2, &argv[1],
 			     StoreInfo, (char *)&elem)) != 0) {
 	com_err(program_name, stat, " in GetKrbMap.");
 	return(DM_NORMAL);
@@ -771,10 +771,10 @@ char **argv;
 	Put_message("Please specify a realm for the kerberos principal.");
 	return(DM_NORMAL);
     }
-    if ((stat = do_sms_query("add_kerberos_user_map", 2, &argv[1],
+    if ((stat = do_mr_query("add_kerberos_user_map", 2, &argv[1],
 			     Scream, NULL)) != 0) {
 	com_err(program_name, stat, " in AddKrbMap.");
-	if (stat == SMS_EXISTS)
+	if (stat == MR_EXISTS)
 	  Put_message("No user or principal may have more than one mapping.");
     }
     return(DM_NORMAL);
@@ -796,7 +796,7 @@ char **argv;
 {
     int stat;
 
-    if ((stat = do_sms_query("delete_kerberos_user_map", 2, &argv[1],
+    if ((stat = do_mr_query("delete_kerberos_user_map", 2, &argv[1],
 			     Scream, NULL)) != 0) {
 	com_err(program_name, stat, " in DeleteKrbMap.");
     }

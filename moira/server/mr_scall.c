@@ -1,15 +1,18 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_scall.c,v $
  *	$Author: wesommer $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_scall.c,v 1.1 1987-06-02 20:07:10 wesommer Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_scall.c,v 1.2 1987-06-03 16:07:50 wesommer Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
  *	$Log: not supported by cvs2svn $
+ * Revision 1.1  87/06/02  20:07:10  wesommer
+ * Initial revision
+ * 
  */
 
 #ifndef lint
-static char *rcsid_sms_scall_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_scall.c,v 1.1 1987-06-02 20:07:10 wesommer Exp $";
+static char *rcsid_sms_scall_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_scall.c,v 1.2 1987-06-03 16:07:50 wesommer Exp $";
 #endif lint
 
 #include <krb.h>
@@ -42,7 +45,7 @@ do_client(cp)
 	case CL_SEND:
 		/* Start recieving next request */
 		initialize_operation(cp->pending_op, sms_start_recv,
-				     (char *)&cp->args, NULL);
+				     (char *)&cp->args, (int (*)())NULL);
 		queue_operation(cp->con, CON_INPUT, cp->pending_op);
 		cp->action = CL_RECEIVE;
 		break;
@@ -50,7 +53,7 @@ do_client(cp)
 		/* Data is here. Process it & start it heading back */
 		do_call(cp); /* This may block for a while. */
 		initialize_operation(cp->pending_op, sms_start_send,
-				     (char *)&cp->reply, NULL);
+				     (char *)&cp->reply, (int (*)())NULL);
 		queue_operation(cp->con, CON_OUTPUT, cp->pending_op);
 		cp->action = CL_SEND;
 		break;

@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v $
  *	$Author: wesommer $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.4 1987-06-02 20:05:11 wesommer Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.5 1987-06-03 16:07:17 wesommer Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
@@ -14,6 +14,9 @@
  * 	Let the reader beware.
  * 
  *	$Log: not supported by cvs2svn $
+ * Revision 1.4  87/06/02  20:05:11  wesommer
+ * Bug fixes on memory allocation.
+ * 
  * Revision 1.3  87/06/01  04:34:27  wesommer
  * Changed returned error code.
  * 
@@ -25,7 +28,7 @@
  * 
  */
 
-static char *rcsid_sms_main_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.4 1987-06-02 20:05:11 wesommer Exp $";
+static char *rcsid_sms_main_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.5 1987-06-03 16:07:17 wesommer Exp $";
 
 #include <strings.h>
 #include <sys/errno.h>
@@ -92,7 +95,10 @@ main(argc, argv)
 	/*
 	 * GDB initialization.
 	 */
-	gdb_init();
+	if(gdb_init() != 0) {
+		com_err(whoami, 0, "GDB initialization failed.");
+		exit(1);
+	}
 
 	/*
 	 * Set up client array handler.
@@ -133,7 +139,21 @@ main(argc, argv)
 		/*
 		 * Block until something happens.
 		 */
-		op_select_any(op_list, 0, NULL, NULL, NULL, NULL);
+#ifdef notdef
+		com_err(whoami, 0, "tick");
+#endif notdef
+		errno = 0;
+		status = op_select_any(op_list, 0,
+				       (fd_set *)NULL, (fd_set *)NULL,
+				       (fd_set *)NULL, (struct timeval *)NULL);
+
+		if (status == -1) {
+			com_err(whoami, errno, "error from op_select");
+			continue;
+		} else if (status != -2) {
+			com_err(whoami, 0, "wrong return from op_select_any");
+			continue;
+		}
 		if (takedown) break;
 #ifdef notdef
 		fprintf(stderr, "    tick\n");
@@ -153,7 +173,7 @@ main(argc, argv)
 		 * Handle any new connections.
 		 */
 		if (OP_DONE(listenop)) {
-			if ((status = new_connection(listenop)) != 0) {
+			if ((status = new_connection()) != 0) {
 				com_err(whoami, errno,
 					"Error on listening operation.");
 				/*
@@ -195,8 +215,7 @@ do_listen()
  * It sets up a new client and adds it to the list of currently active clients.
  */
 int
-new_connection(listenop)
-	OPERATION listenop;
+new_connection()
 {
 	register client *cp = (client *)malloc(sizeof *cp);
 	static counter = 0;

@@ -1,4 +1,4 @@
-create table users 
+CREATE TABLE users 
 (
         login           CHAR( 8 ),
         users_id        INTEGER,
@@ -34,13 +34,13 @@ create table users
         ugdefault       SMALLINT
 )
 
-create table krbmap
+CREATE TABLE krbmap
 (
         users_id        INTEGER,
         string_id       INTEGER
 )
 
-create table machine 
+CREATE TABLE machine 
 (
         name            CHAR( 32 ),
         mach_id         INTEGER,
@@ -50,7 +50,7 @@ create table machine
         modwith         CHAR( 8 )
 )
 
-create table cluster 
+CREATE TABLE cluster 
 (
         name            CHAR( 32 ),
         clu_id          INTEGER,
@@ -61,20 +61,20 @@ create table cluster
         modwith         CHAR( 8 )
 )
 
-create table mcmap 
+CREATE TABLE mcmap 
 (
         mach_id         INTEGER,
         clu_id          INTEGER
 )
 
-create table svc 
+CREATE TABLE svc 
 (
         clu_id          INTEGER,
         serv_label      CHAR( 16 ),
         serv_cluster    CHAR( 32 )
 )
 
-create table list 
+CREATE TABLE list 
 (
         name            CHAR( 32 ),
         list_id         INTEGER,
@@ -91,7 +91,7 @@ create table list
         modby           INTEGER,
         modwith         CHAR( 8 )
 )
-create table imembers 
+CREATE TABLE imembers 
 (
         list_id         INTEGER,
         member_type     CHAR( 8 ),
@@ -100,7 +100,7 @@ create table imembers
         direct          SMALLINT
 )
 
-create table servers 
+CREATE TABLE servers 
 (
         name            CHAR( 16 ),
         update_int      INTEGER,
@@ -120,7 +120,7 @@ create table servers
         modwith         CHAR( 8 )
 )
 
-create table serverhosts 
+CREATE TABLE serverhosts 
 (
         service          CHAR( 16 ),
         mach_id          INTEGER,
@@ -140,7 +140,7 @@ create table serverhosts
         modwith          CHAR( 8 )
 )
 
-create table filesys 
+CREATE TABLE filesys 
 (
         filsys_id        INTEGER,
         phys_id          INTEGER,
@@ -161,14 +161,14 @@ create table filesys
         modwith          CHAR( 8 )
 )
 
-create table fsgroup
+CREATE TABLE fsgroup
 (
         group_id         INTEGER,
         filsys_id        INTEGER,
         key              CHAR( 8 )
 )
 
-create table nfsphys 
+CREATE TABLE nfsphys 
 (
         nfsphys_id       INTEGER,
         mach_id          INTEGER,
@@ -182,7 +182,7 @@ create table nfsphys
         modwith          CHAR( 8 )
 )
 
-create table quota 
+CREATE TABLE quota 
 (
         filsys_id        INTEGER,
         type             CHAR( 8 ),
@@ -194,7 +194,7 @@ create table quota
         modwith          CHAR( 8 )
 )
 
-create table zephyr 
+CREATE TABLE zephyr 
 (
         class            CHAR( 16 ),
         xmt_type         CHAR( 8 ),
@@ -210,7 +210,7 @@ create table zephyr
         modwith          CHAR( 8 )
 )
 
-create table hostaccess 
+CREATE TABLE hostaccess 
 (
         mach_id          INTEGER,
         acl_type         CHAR( 8 ),
@@ -220,13 +220,13 @@ create table hostaccess
         modwith          CHAR( 8 )
 )
 
-create table strings 
+CREATE TABLE strings 
 (
         string_id        INTEGER,
         string           CHAR( 128 )
 )
 
-create table services 
+CREATE TABLE services 
 (
         name             CHAR( 16 ),
         protocol         CHAR( 8 ),
@@ -237,7 +237,7 @@ create table services
         modwith          CHAR( 8 )
 )
 
-create table printcap 
+CREATE TABLE printcap 
 (
         name             CHAR( 16 ),
         mach_id          INTEGER,
@@ -249,7 +249,7 @@ create table printcap
         modwith          CHAR( 8 )
 )
 
-create table palladium
+CREATE TABLE palladium
 (
         name             CHAR( 32 ),
         ident            INTEGER,
@@ -259,27 +259,27 @@ create table palladium
         modwith          CHAR( 8 )
 )
 
-create table capacls 
+CREATE TABLE capacls 
 (
         capability       CHAR( 32 ),
         tag              CHAR( 4 ),
         list_id          INTEGER
 )
 
-create table alias 
+CREATE TABLE alias 
 (
         name             CHAR( 32 ),
         type             CHAR( 16 ),
         trans            CHAR( 128 )
 )
 
-create table values 
+CREATE TABLE values 
 (
         name             CHAR( 32 ),
         value            INTEGER
 )
 
-create table tblstats 
+CREATE TABLE tblstats 
 (
         table            CHAR( 12 ),
         modtime          DATE,
@@ -289,7 +289,7 @@ create table tblstats
         deletes          INTEGER
 )
 
-create table incremental
+CREATE TABLE incremental
 (
         table            CHAR( 16 ),
         service          CHAR( 16 )

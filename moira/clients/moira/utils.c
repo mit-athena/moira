@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v 1.11 1988-10-03 17:51:24 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v 1.12 1988-10-05 13:00:09 mar Exp $";
 #endif lint
 
 /*	This is the file utils.c for the SMS Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v 1.11 1988-10-03 17:51:24 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v 1.12 1988-10-05 13:00:09 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -804,7 +804,7 @@ char *tname;
     argv[1] = "TYPE";
     argv[2] = "*";
     elem = NULL;
-    if (stat = sms_query("get_alias", 3, argv, StoreInfo, (char *)&elem)) {
+    if (stat = do_sms_query("get_alias", 3, argv, StoreInfo, (char *)&elem)) {
 	com_err(program_name, stat, " in GetTypeValues");
 	return(NULL);
     }
@@ -882,7 +882,7 @@ char  **pointer;
 	for (p = argv[2]; *p; p++)
 	    if (islower(*p))
 		*p = toupper(*p);
-	if (stat = sms_query("add_alias", 3, argv, Scream, NULL)) {
+	if (stat = do_sms_query("add_alias", 3, argv, Scream, NULL)) {
 	    com_err(program_name, stat, " in add_alias");
 	} else {
 	    elem = (struct qelem *) malloc(sizeof(struct qelem));
@@ -907,7 +907,7 @@ char *hint;
     extern char *whoami;
 
     status = sms_query(name, argc, argv, proc, hint);
-    if (status != SMS_ABORTED)
+    if (status != SMS_ABORTED && status != SMS_NOT_CONNECTED)
       return(status);
     status = sms_connect();
     if (status) {
@@ -917,6 +917,7 @@ char *hint;
     status = sms_auth(whoami);
     if (status) {
 	com_err(whoami, status, " while re-authenticating to server");
+	sms_disconnect();
 	return(SMS_ABORTED);
     }
     status = sms_query(name, argc, argv, proc, hint);

@@ -32,8 +32,6 @@ AC_PROG_MAKE_SET
 
 if test "$athena" = true; then
     enable_athena=yes
-    with_readline=/mit/gnu
-    unset with_com_err
     prefix=/afs/athena.mit.edu/system/moira
     bindir=$prefix/arch/$ATHENA_SYS/bin
     sbindir=$bindir
@@ -324,13 +322,23 @@ AC_SUBST(AFS_SUBDIRS)
 AC_CHECKING(for GNU readline...)
 AC_ARG_WITH(readline,
     [  --with-readline=PREFIX  Specify location of GNU readline],
-    [readline="$withval"],
-    [AC_CHECK_LIB(readline, readline, [readline=yes], :, -ltermcap)])
+    [readline="$withval"; AC_MSG_RESULT($withval)],
+    [AC_CHECK_LIB(readline, readline, [readline=yes],
+	[if test "$athena" = true; then
+	     unset ac_cv_lib_readline_readline
+	     AC_CHECK_LIB(readline, readline, [readline=/mit/gnu], :,
+	         -L/mit/gnu/lib -ltermcap)
+	 fi],
+	-ltermcap)])
 if test "$readline" != no; then
     if test "$readline" != yes; then
-	READLINE_CPPFLAGS="-I$readline/include -I$readline/include/readline -DHAVE_READLINE"
-	READLINE_LIBS="-L$readline/lib -lreadline -ltermcap"
+	READLINE_CPPFLAGS="-I$readline/include -I$readline/include/readline"
+	READLINE_LIBS="-L$readline/lib"
+    else
+	READLINE_CPPFLAGS="-I/usr/include/readline"
     fi
+    READLINE_CPPFLAGS="$READLINE_CPPFLAGS -DHAVE_READLINE"
+    READLINE_LIBS="$READLINE_LIBS -lreadline -ltermcap"
 fi
 AC_SUBST(READLINE_CPPFLAGS)
 AC_SUBST(READLINE_LIBS)
@@ -403,9 +411,10 @@ MR_LIBDEP='$(BUILDTOP)/lib/libmoira.a'
 AC_SUBST(MR_LIBDEP)
 
 AC_OUTPUT(Makefile lib/Makefile include/Makefile clients/Makefile \
-	  clients/addusr/Makefile clients/blanche/Makefile \
-	  clients/mailmaint/Makefile clients/moira/Makefile \
-	  clients/mrcheck/Makefile clients/mrtest/Makefile \
-	  clients/passwd/Makefile update/Makefile man/Makefile \
+	  clients/lib/Makefile clients/addusr/Makefile \
+	  clients/blanche/Makefile clients/mailmaint/Makefile
+	  clients/moira/Makefile clients/mrcheck/Makefile
+	  clients/mrtest/Makefile clients/passwd/Makefile
+	  update/Makefile man/Makefile \
 	  $SERVER_OUTPUT_FILES $AFS_OUTPUT_FILES \
 	  $GDSS_OUTPUT_FILES $RSAREF_OUTPUT_FILES)

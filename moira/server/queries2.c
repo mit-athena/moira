@@ -1,6 +1,6 @@
 /* This file defines the query dispatch table for version 2 of the protocol
  *
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/queries2.c,v 1.12 1989-06-14 15:09:47 mar Exp $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/queries2.c,v 1.13 1989-06-29 18:26:58 mar Exp $
  *
  * Copyright 1987, 1988 by the Massachusetts Institute of Technology.
  * For copying and distribution information, please see the file
@@ -40,6 +40,7 @@ int setup_ufil();
 int setup_dfil();
 int setup_dnfp();
 int setup_dnfq();
+int setup_sshi();
 
 /* Query Followup Routines */
 int followup_fix_modby();
@@ -914,21 +915,19 @@ static char *sshi_fields[] = {
 };
 
 static struct valobj sshi_valobj[] = {
-  {V_LOCK, 0, MACHINE, 0, MACH_ID, SMS_DEADLOCK},
   {V_NAME, 0, "servers", NAME, 0, SMS_SERVICE},
-  {V_ID, 1, MACHINE, NAME, MACH_ID, SMS_MACHINE},
 };
 
 static struct validate sshi_validate =	
 {
   sshi_valobj,
-  3,
-  SERVICE,
-  "s.service = uppercase(\"%s\") and s.mach_id = %d",
-  2,
+  1,
   0,
   0,
   0,
+  0,
+  0,
+  setup_sshi,
   0,
 };
 
@@ -2492,7 +2491,7 @@ struct query Queries2[] = {
     "override = int1(%c), success = int1(%c), inprogress = int1(%c), hosterror = int1(%c), hosterrmsg = %c, ltt = int4(%c), lts = int4(%c)",
     sshi_fields,
     7,
-    "s.service = uppercase(\"%s\") and s.mach_id = %d",
+    "s.service = uppercase(\"%s\") and s.mach_id = machine.mach_id and machine.name = \"%s\"",
     2,
     &sshi_validate,
   },

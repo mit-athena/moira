@@ -5,7 +5,7 @@
  *
  * $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v $
  * $Author: mar $
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.24 1989-06-26 13:42:39 mar Exp $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.25 1989-08-08 15:35:03 mar Exp $
  *
  * Generic menu system module.
  *
@@ -18,7 +18,7 @@
  */
 
 #ifndef lint
-static char rcsid_menu_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.24 1989-06-26 13:42:39 mar Exp $";
+static char rcsid_menu_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.25 1989-08-08 15:35:03 mar Exp $";
 
 #endif lint
 
@@ -280,8 +280,13 @@ Do_menu(m, margc, margv)
 	if (cur_ms != NULL)
 	    touchwin(my_ms->ms_screen);
 	/* Get a command */
-	if (!Prompt_input("Command: ", buf, sizeof(buf)))
-	    continue;
+	if (!Prompt_input("Command: ", buf, sizeof(buf))) {
+	    if (cur_ms == NULLMS &&
+		feof(stdin))
+	      sprintf(buf, "quit");
+	    else
+	      continue;
+	}
 	/* Parse it into the argument list */
 	/* If there's nothing there, try again */
 	/* Initialize argv */

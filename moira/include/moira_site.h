@@ -1,9 +1,9 @@
 /*
  * This file contains all definitions that allow easy access to 
- * elements returned by most of the @i[SMS] queries.  It also defines
+ * elements returned by most of the @i[Moira] queries.  It also defines
  * the default server location and the directories used on the server.
  *
- * If the order of the arguments in the @i[SMS] queries change (again)
+ * If the order of the arguments in the @i[Moira] queries change (again)
  * then all that needs to be changed are the values of these items 
  * and all should be well, (hopefully :-).
  *
@@ -12,7 +12,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/include/moira_site.h,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/include/moira_site.h,v 1.15 1990-03-07 14:37:49 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/include/moira_site.h,v 1.16 1990-03-12 17:27:02 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -25,7 +25,7 @@
 
 #include "mit-copyright.h"
 
-/* Default SMS server to connect to */
+/* Default Moira server to connect to */
 #define SMS_SERVER	"SMS.MIT.EDU:sms_db"
 
 /* Compile-time options: */
@@ -308,7 +308,8 @@
 #define US_NOT_ALLOWED  4
 #define US_ENROLLED	5
 #define US_ENROLL_NOT_ALLOWED 6
-#define US_END          7
+#define US_HALF_ENROLLED 7
+#define US_END          8
 
 /* User shell queries */
 

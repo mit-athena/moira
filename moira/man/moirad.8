@@ -1,34 +1,34 @@
-.TH SMSD 8 "30 Nov 1988" "Project Athena"
-\" RCSID: $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/man/moirad.8,v 1.4 1990-03-08 18:37:56 mar Exp $
+.TH MOIRAD 8 "30 Nov 1988" "Project Athena"
+\" RCSID: $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/man/moirad.8,v 1.5 1990-03-20 11:28:03 mar Exp $
 .SH NAME
-smsd, startsms \- Moira query daemon
+moirad, startmoira \- Moira query daemon
 .SH SYNOPSIS
-.B smsd
+.B moirad
 .br
-.B startsms
+.B startmoira
 .SH DESCRIPTION
 The Moira server
 must be running on the machine hosting the Moira database for any of the
 Moira clients to function.  Rather than invoke
-.B smsd
+.B moirad
 directly, it is started by
-.B startsms,
+.B startmoira,
 which starts the daemon running in the proper working directory and
 captures logging messages.
 .PP
 Logging is done to standard output.
 How much gets logged by
-.B smsd
+.B moirad
 is controlled by the variable
 .I log_flags
 which is compiled into the file
-.I sms_srvdata.c.
+.I mr_srvdata.c.
 If critical errors are detected, they are logged to
 .B /u1/sms/critical.log
 and in a zephyrgram to class
-.B SMS
+.B MOIRA
 instance
-.B SMS
+.B MOIRA
 in addition to standard output.
 Also, a journal file is kept in
 .B /u1/sms/journal
@@ -53,20 +53,20 @@ the
 .B /etc/smsdown
 file are returned as the Moira motd.
 .PP
-.B startsms
+.B startmoira
 sets its working directory to the root, disconnects from the terminal
 and puts itself in the background.  It then starts
-.B /u1/sms/bin/smsd,
+.B /u1/sms/bin/moirad,
 and will capture lines the server writes to standard output and log them
 in
-.B /u1/sms/sms.log
+.B /u1/sms/moira.log
 along with a timestamp.
-.B startsms
+.B startmoira
 will also log the exit status of the
-.B smsd
+.B moirad
 if it is non-zero.
 .SH FILES
-/u1/sms/sms.log
+/u1/sms/moira.log
 .br
 /u1/sms/critical.log
 .br

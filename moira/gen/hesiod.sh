@@ -1,6 +1,6 @@
 #!/bin/csh -f
 # This script performs updates of hesiod files on hesiod servers.  
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/hesiod.sh,v 1.11 1991-09-03 15:46:21 mar Exp $
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/hesiod.sh,v 1.12 1992-12-30 17:36:41 mar Exp $
 
 set path=(/etc /bin /usr/bin /usr/etc /usr/athena/etc)
 
@@ -67,6 +67,7 @@ end
 # existance as evidence that named as has been successfully restarted.
 
 # First, get statistics
+ln -s /site/named.stats /usr/tmp/named.stats
 kill -IOT `cat /etc/named.pid`
 sleep 1
 # Use /bin/kill because, due to a bug in some versions of csh, failure

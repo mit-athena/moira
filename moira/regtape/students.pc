@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/students.pc,v 1.3 1997-03-27 15:57:06 danw Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/students.pc,v 1.4 1997-06-24 21:12:14 danw Exp $
  */
 
 #include <stdio.h>
@@ -300,11 +300,13 @@ struct entry *e;
     }
 
     /* See if class changed: if it's different, and the value in the database
-     * is not STAFF or SIPB, then update the database.  Since they were on the
+     * is not STAFF or SIPBMEM, and the value from the tape is actually
+     * meaningful, then update the database.  Since they were on the
      * students tape, make the account usable.
      */
     if (strcmp(e->class, strtrim(class)) &&
-	strcmp(class, "STAFF") && strcmp(class, "SIPB")) {
+	strcmp(class, "STAFF") && strcmp(class, "SIPBMEM") &&
+	e->year[0]) {
 	com_err(whoami, 0, "updating class for user %s %s from %s to %s",
 		first, last, class, e->class);
 	if (status == US_NOT_ALLOWED) status = US_NO_LOGIN_YET;

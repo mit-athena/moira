@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.28 1996-10-17 20:54:28 danw Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.29 1996-10-24 00:23:26 danw Exp $
  *
  * Command line oriented Moira List tool.
  *
@@ -24,7 +24,7 @@
 #include <moira_site.h>
 
 #ifndef LINT
-static char blanche_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.28 1996-10-17 20:54:28 danw Exp $";
+static char blanche_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.29 1996-10-24 00:23:26 danw Exp $";
 #endif
 
 
@@ -461,7 +461,7 @@ char **argv;
     fprintf(stderr, "   -dl | -deletelist filename\n");
     fprintf(stderr, "   -f | -file filename\n");
     fprintf(stderr, "   -n | -noauth\n");
-    fprintf(stderr, "   -db | -server host[:port]\n");
+    fprintf(stderr, "   -db | -database host[:port]\n");
     fprintf(stderr, "   -D | -debug\n");
     exit(1);
 }

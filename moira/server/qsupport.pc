@@ -1,4 +1,4 @@
-/* $Id: qsupport.pc,v 2.43 2002-08-02 15:12:27 zacheiss Exp $
+/* $Id: qsupport.pc,v 2.44 2002-08-02 15:21:27 zacheiss Exp $
  *
  * Special query routines
  *
@@ -18,7 +18,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.pc,v 2.43 2002-08-02 15:12:27 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.pc,v 2.44 2002-08-02 15:21:27 zacheiss Exp $");
 
 extern char *whoami, *table_name[];
 extern int dbms_errno, mr_errcode;
@@ -2054,7 +2054,7 @@ int get_machines_of_container(struct query *q, char *argv[], client *cl,
   if (!isrecursive)
     sprintf(tmp, "AND b.cnt_id = %d ", cnt_id);
   else
-    sprintf(tmp, "AND (b.cnt_id = %d OR b.name LIKE LOWER('%s/%%')) ", 
+    sprintf(tmp, "AND (b.cnt_id = %d OR LOWER(b.name) LIKE LOWER('%s/%%')) ", 
 	    cnt_id, containername);
 
   strcat(querystring, tmp);

@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v 1.9 1988-08-31 19:31:39 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v 1.10 1988-09-01 16:04:37 mar Exp $";
 #endif lint
 
 /*	This is the file utils.c for the SMS Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v 1.9 1988-08-31 19:31:39 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v 1.10 1988-09-01 16:04:37 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -23,6 +23,7 @@
 #include <strings.h>
 #include <sms.h>
 #include <menu.h>
+#include <ctype.h>
 
 #include "mit-copyright.h"
 #include "defs.h"
@@ -276,8 +277,10 @@ char *def;
     (void) sprintf(tmp, "%s [%s]: ", prompt, def ? def : "");
     ans = Prompt_input(tmp, buf, buflen);
     if (ans == 0) {
-	if (YesNoQuestion("Are you sure you want to exit", 1))
+	if (YesNoQuestion("Are you sure you want to exit", 1)) {
+	    Cleanup_menu();
 	    exit(0);
+	}
 	Put_message("Continuing input...");
 	return(PromptWithDefault(prompt, buf, buflen, def));
     }
@@ -773,6 +776,125 @@ char ** info;
 {
     return(info[NAME]);
 }
+
+
+/*	Function Name: GetTypeValues
+ *	Description: gets legal values for a typed object, keeping a cache
+ *	Arguments: type name
+ *	Returns: argv of values
+ */
+
+struct qelem *
+GetTypeValues(tname)
+char *tname;
+{
+    int stat;
+    char *argv[3], *p, **pp, *strsave();
+    struct qelem *elem, *oelem;
+    static struct qelem *cache = NULL;
+    struct cache_elem { char *cache_name; struct qelem *cache_data; } *ce;
+
+    for (elem = cache; elem; elem = elem->q_forw) {
+	ce = (struct cache_elem *)elem->q_data;
+	if (!strcmp(ce->cache_name, tname))
+	    return(ce->cache_data);
+    }
+
+    argv[0] = tname;
+    argv[1] = "TYPE";
+    argv[2] = "*";
+    elem = NULL;
+    if (stat = sms_query("get_alias", 3, argv, StoreInfo, (char *)&elem)) {
+	com_err(program_name, stat, " in GetTypeValues");
+	return(NULL);
+    }
+    oelem = elem;
+    for (elem = QueueTop(elem); elem; elem = elem->q_forw) {
+	pp = (char **) elem->q_data;
+	p = strsave(pp[2]);
+	FreeInfo(pp);
+	elem->q_data = p;
+    }
+    elem = (struct qelem *) malloc(sizeof(struct qelem));
+    ce = (struct cache_elem *) malloc(sizeof(struct cache_elem));
+    ce->cache_name = tname;
+    ce->cache_data = QueueTop(oelem);
+    elem->q_data = (char  *)ce;
+    AddQueue(elem, cache);
+    cache = QueueTop(elem);
+    return(ce->cache_data);
+}
+
+
+/*	Function Name: GetTypeFromUser
+ *	Description: gets a typed value from the user
+ *	Arguments: prompt string, type name, buffer pointer
+ *	Returns: 
+ */
+
+GetTypeFromUser(prompt, tname, pointer)
+char *prompt;
+char *tname;
+char  **pointer;
+{
+    char def[BUFSIZ], buffer[BUFSIZ], *p, *argv[3];
+    struct qelem *elem;
+    int stat;
+
+    strcpy(def, *pointer);
+    strcpy(buffer, prompt);
+    strcat(buffer, " (");
+    for (elem = GetTypeValues(tname); elem; elem = elem->q_forw) {
+	strcat(buffer, elem->q_data);
+	if (elem->q_forw)
+	    strcat(buffer, ", ");
+    }
+    strcat(buffer, ")");
+    if (strlen(buffer) > 64)
+	sprintf(buffer, "%s (? for help)", prompt);
+    GetValueFromUser(buffer, pointer);
+    if (**pointer == '?') {
+	sprintf(buffer, "Type %s is one of:", tname);
+	Put_message(buffer);
+	for (elem = GetTypeValues(tname); elem; elem = elem->q_forw) {
+	    Put_message(elem->q_data);
+	}
+	*pointer = strsave(def);
+	return(GetTypeFromUser(prompt, tname, pointer));
+    }
+    for (elem = GetTypeValues(tname); elem; elem = elem->q_forw) {
+	if (!cistrcmp(elem->q_data, *pointer))
+	    return(SUB_NORMAL);
+    }
+    sprintf(buffer, "\"%s\" is not a legal value for %s.  Use one of:",
+	    *pointer, tname);
+    Put_message(buffer);
+    for (elem = GetTypeValues(tname); elem; elem = elem->q_forw) {
+	Put_message(elem->q_data);
+    }
+    sprintf(buffer, "Are you sure you want \"%s\" to be a legal %s",
+	    *pointer, tname);
+    if (YesNoQuestion("Do you want this to be a new legal value", 0) &&
+	YesNoQuestion(buffer, 0)) {
+	argv[0] = tname;
+	argv[1] = "TYPE";
+	argv[2] = *pointer;
+	for (p = argv[2]; *p; p++)
+	    if (islower(*p))
+		*p = toupper(*p);
+	if (stat = sms_query("add_alias", 3, argv, Scream, NULL)) {
+	    com_err(program_name, stat, " in add_alias");
+	} else {
+	    elem = (struct qelem *) malloc(sizeof(struct qelem));
+	    elem->q_data = strsave(*pointer);
+	    AddQueue(elem, GetTypeValues(tname));
+	    Put_message("Done.");
+	}
+    }
+    *pointer = strsave(def);
+    return(GetTypeFromUser(prompt, tname, pointer));
+}
+
 
 /*
  * Local Variables:

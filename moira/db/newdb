@@ -89,15 +89,16 @@ create members
 )
 create servers 
 (
-	service		= c16,
+	name		= c16,
 	update_int	= i4,
 	target_file	= c64,
 	script		= c128,
-	dfgen		= date,
+	dfgen		= i4,
+	dfcheck		= i4,
 	type		= c8,
 	enable		= i1,
 	inprogress	= i1,
-	harderror	= i1,
+	harderror	= i4,
 	errmsg		= c80,
 	acl_type	= c8,
 	acl_id		= i4,
@@ -113,10 +114,10 @@ create serverhosts
 	enable		= i1,
 	override	= i1,
 	inprogress	= i1,
-	hosterror	= i1,
+	hosterror	= i4,
 	hosterrmsg	= c80,
-	ltt		= date,
-	lts		= date,
+	ltt		= i4,
+	lts		= i4,
 	value1		= i4,
 	value2		= i4,
 	value3		= c32,
@@ -127,6 +128,7 @@ create serverhosts
 create filesys 
 (
 	filsys_id	= i4,
+	phys_id		= i4,
 	label		= c16,
 	order		= i2,
 	type		= c8,
@@ -145,7 +147,7 @@ create filesys
 )
 create nfsphys 
 (
-	nfspys_id	= i4,
+	nfsphys_id	= i4,
 	mach_id		= i4,
 	device		= c16,
 	dir		= c16,
@@ -159,8 +161,8 @@ create nfsphys
 create nfsquota 
 (
 	users_id	= i4,
-	mach_id		= i4,
-	device		= c16,
+	filsys_id	= i4,
+	phys_id		= i4,
 	quota		= i4,
 	modtime		= date,
 	modby		= i4,
@@ -208,7 +210,13 @@ create services
 create printcap 
 (
 	name		= c16,
-	pcap		= text(512)
+	mach_id		= i4,
+	dir		= c32,
+	rp		= c16,
+	comments	= c64,
+	modtime		= date,
+	modby		= i4,
+	modwith		= c8
 )
 create capacls 
 (

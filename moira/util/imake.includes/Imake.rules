@@ -1,6 +1,6 @@
 /**/#	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/util/imake.includes/Imake.rules,v $
-/**/#	$Author: wesommer $
-/**/#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/util/imake.includes/Imake.rules,v 4.8 1989-01-18 21:06:35 wesommer Exp $
+/**/#	$Author: jtkohl $
+/**/#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/util/imake.includes/Imake.rules,v 4.9 1989-01-23 17:36:39 jtkohl Exp $
 /**/#
 
 #ifdef __STDC__
@@ -210,6 +210,12 @@ clean::									@@\
 	comp_et(src)							@@\
 									@@\
 depend:: concat(src,.h)
+
+#define mk_cmds(tbl)							@@\
+concat(tbl,.o): concat(tbl,.ct)						@@\
+	$(MAKE_COMMANDS) concat(tbl,.ct)				@@\
+clean::									@@\
+	$(RM) concat(src,.o)
 
 /*
  * Rule for building some random object module

@@ -1,0 +1,73 @@
+.TH MAILMAINT 1 "28 Jan 1988" "Project Athena"
+\" RCSID: $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/man/mailmaint.1,v 1.1 1988-01-28 14:56:41 mar Exp $
+.SH NAME
+mailmaint \- maintain mailing lists for a user
+.SH SYNOPSIS
+.B mailmaint
+.SH DESCRIPTION
+.I maintmaint allows a user to examine public mailing lists and add or
+remove him/herself from such lists.  It does this through the SMS
+system.
+.PP
+When started, it will display a menu with the following options:
+.in +5
+.nf
+1. Show all mailing lists.
+2. Get all members of a mailing list.
+3. Display lists of which you are a member.
+4. Show description of list.
+5. Add yourself to a mailing list.
+6. Delete yourself from a mailing list.
+.in -5
+.fi
+.PP
+The first option will display all mailing lists which are not
+explicitly hidden.  The second option will display the members of a
+named list.  The third will display the names of the lists you belong
+to.  The next option will give a description of any list that you
+name.
+.PP
+The next two options allow you to add or delete yourself to or from
+public mailing lists.  If the person creating a mailing list has not
+made it public, you will not be allowed to change it.  Even if it is
+public, you can only add or delete yourself, you cannot affect the
+others on the list.  For other list operations (which are only allowed
+to the administrators of a list), see 
+.I listmaint(1).
+.SH MENU OPERATION
+Each of the menus presented works in the same way:  A list of possible
+choices is presented, each preceded by a number.  The title of the
+function is displayed at the top of the screen, centered, and the
+current choice is highlighted.  To make a choice, press the number of
+the choice, which will then be highlighted.  To confirm this
+choice, press the return key.
+.PP
+There will usually be a 
+.I Quit
+option and a 
+.I Return to previous level
+option available in each menu.  The exception to this is during mailing
+list creation; a type for the list must be selected from a menu.
+Typing the interrupt character (normally CTRL-C) or the return key
+during a database access or while being prompted for a menu
+selection will act the same as a
+.I Quit.
+Typing the interrupt character
+during a text input will cancel the operation and return to
+the most recent menu.
+.PP
+If information is needed that cannot be entered via a menu (e.g. a
+description of the mailing list's purpose and/or use), the user will be
+prompted for such information.
+.SH ENVIRONMENT
+.TP
+KRBTKFILE
+path name of your Kerberos ticket.  SMS decides who you are and what you
+can do based on your Kerberos tickets, and nothing else.
+.TP
+TERMCAP
+information about the capabilities of the terminal and how to use them.
+.SH SEE ALSO
+listmaint(1)
+.SH AUTHOR
+Peter J. Levine, MIT Project Athena

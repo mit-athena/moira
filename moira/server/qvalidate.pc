@@ -1,4 +1,4 @@
-/* $Id: qvalidate.pc,v 2.12 1998-03-17 19:29:56 danw Exp $
+/* $Id: qvalidate.pc,v 2.13 1998-03-17 21:35:58 danw Exp $
  *
  * Argument validation routines
  *
@@ -20,7 +20,7 @@
 EXEC SQL INCLUDE sqlca;
 EXEC SQL INCLUDE sqlda;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qvalidate.pc,v 2.12 1998-03-17 19:29:56 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qvalidate.pc,v 2.13 1998-03-17 21:35:58 danw Exp $");
 
 extern char *whoami, *table_name[], *sqlbuffer[QMAXARGS];
 extern int dbms_errno, mr_errcode;
@@ -37,8 +37,6 @@ int validate_type(char *argv[], struct valobj *vo);
 int validate_typedata(struct query *, char *argv[], struct valobj *vo);
 int validate_len(char *argv[], struct valobj *vo);
 int validate_num(char *argv[], struct valobj *vo);
-int lock_table(struct valobj *vo);
-int readlock_table(struct valobj *vo);
 int convert_wildcards_uppercase(char *arg);
 
 extern SQLDA *sqlald(int, int, int);
@@ -111,14 +109,6 @@ int validate_fields(struct query *q, char *argv[], struct valobj *vo, int n)
 
 	case V_NUM:
 	  status = validate_num(argv, vo);
-	  break;
-
-	case V_LOCK:
-	  status = lock_table(vo);
-	  break;
-
-        case V_RLOCK:
-	  status = readlock_table(vo);
 	  break;
 
         case V_WILD:
@@ -486,44 +476,6 @@ int validate_len(char *argv[], struct valobj *vo)
     return MR_ARG_TOO_LONG;
 
   return MR_EXISTS;
-}
-
-/* Lock the table named by the validation object */
-
-int lock_table(struct valobj *vo)
-{
-#ifdef DO_LOCKING
-  sprintf(stmt_buf, "LOCK TABLE %s IN EXCLUSIVE MODE", table_name[vo->table]);
-  EXEC SQL EXECUTE IMMEDIATE :stmt_buf;
-  if (dbms_errno)
-    return mr_errcode;
-  else
-#endif
-    return MR_EXISTS;
-}
-
-/*
- * Get a read lock on the table by accessing the magic lock
- * record.  Certain tables are constructed so that they contain
- * an id field whose value is zero and a modtime field.  We
- * manipulate the modtime field of the id 0 record to effect
- * locking of the table
- */
-
-int readlock_table(struct valobj *vo)
-{
-#ifdef DO_LOCKING
-  sprintf(stmt_buf, "LOCK TABLE %s IN SHARE MODE", table_name[vo->table]);
-  EXEC SQL EXECUTE IMMEDIATE :stmt_buf;
-
-  if (dbms_errno)
-    return mr_errcode;
-  if (sqlca.sqlcode)
-    return vo->error;
-#endif
-  return MR_EXISTS;  /* validate_fields expects us to return
-		      * this value if everything went okay
-		      */
 }
 
 /* Make sure the data is numeric */

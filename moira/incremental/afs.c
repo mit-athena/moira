@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/afs.c,v 1.20 1992-06-02 16:37:25 probe Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/afs.c,v 1.21 1992-06-02 16:54:43 probe Exp $
  *
  * Do AFS incremental updates
  *
@@ -43,9 +43,11 @@ int argc;
     before = &argv[4];
     afterc = atoi(argv[3]);
     after = &argv[4 + beforec];
-    whoami = argv[0];
 
-    sprintf(buf, "%s (", table);
+    whoami = (whoami = rindex(argv[0], '/') ? ++whoami : argv[0]);
+
+    strcpy(buf, table);
+    strcat(buf, " (");
     for (i = 0; i < beforec; i++) {
 	if (i > 0)
 	  strcat(buf, ",");
@@ -57,9 +59,8 @@ int argc;
 	  strcat(buf, ",");
 	strcat(buf, after[i]);
     }
-    strcat(buf, ")\n");
 #ifdef DEBUG
-    write(1,buf,strlen(buf));
+    printf("%s\n", buf);
 #endif
 
     initialize_sms_error_table();

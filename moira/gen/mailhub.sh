@@ -3,7 +3,7 @@ PATH=/bin:/usr/ucb:/usr/bin
 
 MR_MKCRED=47836474
 
-cat /usr/lib/local-aliases >> /u1/usr/lib/aliases.new
+cat /u1/usr/lib/local-aliases >> /u1/usr/lib/aliases.new
 cp /dev/null /u1/usr/lib/aliases.new.dir
 cp /dev/null /u1/usr/lib/aliases.new.pag
 /usr/lib/sendmail -bi -oA/u1/usr/lib/aliases.new
@@ -23,4 +23,4 @@ mv /u1/usr/lib/aliases.new.pag /u1/usr/lib/aliases.pag
 rm -f $0
 exit 0
 
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/mailhub.sh,v 1.4 1991-09-03 15:47:12 mar Exp $
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/mailhub.sh,v 1.5 1992-06-22 11:15:23 mar Exp $

@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/display.c,v 1.6 1992-10-23 19:06:23 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/display.c,v 1.7 1992-11-04 17:58:25 mar Exp $
  */
 
 #include <stdio.h>
@@ -347,18 +347,16 @@ EntryForm *form;
 	AppendToLog(buf);
 	break;
     case MM_SHOW_SERVICE:
-	AppendToLog("Name       Type     Owner       Modified\n");
 	sprintf(name, "%s:%s", info[SVC_ACE_TYPE], info[SVC_ACE_NAME]);
-	sprintf(buf, "%-10s %-8s %-11s by %s on %s with %s\n",
-		info[SVC_SERVICE], info[SVC_TYPE], name, info[SVC_MODBY],
-		info[SVC_MODTIME], info[SVC_MODWITH]);
+	sprintf(buf, "Service: %-10s Type: %-8s   Owner: %-11s\n",
+		info[SVC_SERVICE], info[SVC_TYPE], name);
 	AppendToLog(buf);
-	sprintf(buf, "  Interval %s, Target:%s, Script:%s\n",
+	sprintf(buf, "Interval %s, Target:%s, Script:%s\n",
 		unparse_interval(atoi(info[SVC_INTERVAL])), info[SVC_TARGET],
 		info[SVC_SCRIPT]);
 	AppendToLog(buf);
 	strcpy(name, atot(info[SVC_DFGEN]));
-	sprintf(buf, "  Generated %s; Last Checked %s\n", name,
+	sprintf(buf, "Generated %s; Last Checked %s\n", name,
 		atot(info[SVC_DFCHECK]));
 	AppendToLog(buf);
 	if (atoi(info[SVC_HARDERROR]))
@@ -366,13 +364,20 @@ EntryForm *form;
 		  info[SVC_ERRMSG]);
 	else
 	  strcpy(name, "No error");
-	sprintf(buf, "  %s/%s/%s\n",
+	sprintf(buf, "%s/%s/%s\n",
 		atoi(info[SVC_ENABLE]) ? "Enabled" : "Disabled",
 		atoi(info[SVC_INPROGRESS]) ? "InProgress" : "Idle", name);
+	AppendToLog(buf);
+	sprintf(buf, MOD_FORMAT, info[SVC_MODBY], info[SVC_MODTIME],
+		info[SVC_MODWITH]);
 	AppendToLog(buf);
 	break;
     case MM_SHOW_ACE_USE:
 	sprintf(buf, "%s: %s\n", info[0], info[1]);
+	AppendToLog(buf);
+	break;
+    case MM_SHOW_FS_ALIAS:
+	sprintf(buf, "Alias: %s; Real name %s\n", info[0], info[2]);
 	AppendToLog(buf);
 	break;
     default:

@@ -1,4 +1,4 @@
-/* $Id: queries2.c,v 2.57 1999-08-06 18:46:12 danw Exp $
+/* $Id: queries2.c,v 2.58 1999-10-31 20:52:19 danw Exp $
  *
  * This file defines the query dispatch table for version 2 of the protocol
  *
@@ -3974,7 +3974,7 @@ struct query Queries2[] = {
     APPEND,
     "fs",
     FILESYS_TABLE,
-    "INTO filesys (label, type, mach_id, name, mount, rwaccess, comments, owner, owners, createflg, lockertype, filsys_id) VALUES ('%s', '%s', %d, NVL('%s', CHR(0)), '%s', '%s', NVL('%s', CHR(0)), %d, %d, %s, '%s', %s)",
+    "INTO filesys (label, type, mach_id, name, mount, rwaccess, comments, owner, owners, createflg, lockertype, filsys_id) VALUES ('%s', '%s', %d, NVL('%s', CHR(0)), NVL('%s', CHR(0)), '%s', NVL('%s', CHR(0)), %d, %d, %s, '%s', %s)",
     afil_fields,
     11,
     0,
@@ -3990,7 +3990,7 @@ struct query Queries2[] = {
     UPDATE,
     "fs",
     FILESYS_TABLE,
-    "filesys SET label = '%s', type = '%s', mach_id = %d, name = NVL('%s', CHR(0)), mount = '%s', rwaccess = '%s', comments = NVL('%s', CHR(0)), owner = %d, owners = %d, createflg = %s, lockertype = '%s'",
+    "filesys SET label = '%s', type = '%s', mach_id = %d, name = NVL('%s', CHR(0)), mount = NVL('%s', CHR(0)), rwaccess = '%s', comments = NVL('%s', CHR(0)), owner = %d, owners = %d, createflg = %s, lockertype = '%s'",
     ufil_fields,
     11,
     "filsys_id = %d",

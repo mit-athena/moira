@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/critical.c,v 1.1 1988-08-03 16:58:23 qjb Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/critical.c,v 1.2 1988-08-03 20:19:14 mar Exp $
  *
  * Log and send a zephyrgram about any critical errors.
  */
@@ -26,7 +26,7 @@ void critical_alert(instance, msg, args)
      was stolen from sprintf(). */
 {
     FILE _bufstr;		/* For _doprnt() */
-    int crit;			/* File descriptor for critical log file */
+    FILE *crit;			/* FILE for critical log file */
     char buf[BUFSIZ];		/* Holds the formatted message */
 
     /* Put the fully formatted message into buf */
@@ -40,11 +40,17 @@ void critical_alert(instance, msg, args)
     send_zgram(instance, buf);
 
     /* Log message to critical file */
-    if ((crit = open(CRITERRLOG, 
-		     O_WRONLY | O_APPEND | O_CREAT, LOGFILEMODE)) >= 0)
+    if ((crit = fopen(CRITERRLOG, "a")) != (FILE *)NULL) 
     {
-	write(crit,buf,strlen(buf));
-	close(crit);
+	long t;
+	char  *time_s;
+
+	time(&t);
+	time_s = ctime(&t) + 4;
+	time_s[strlen(time_s)-6] = '\0';
+
+	fprintf(crit, "%s <%d> %s\n", time_s, getpid(), buf);
+	fclose(crit);
     }
 }
 

@@ -1,4 +1,4 @@
-/* $Id: queries2.c,v 2.47 1998-08-07 18:39:26 danw Exp $
+/* $Id: queries2.c,v 2.48 1998-09-04 03:01:50 danw Exp $
  *
  * This file defines the query dispatch table for version 2 of the protocol
  *
@@ -199,7 +199,7 @@ static struct valobj auac_valobj[] = {
   {V_CHAR, 7, USERS_TABLE, "clearid"},
   {V_TYPE, 8, 0, "class", 0, MR_BAD_CLASS},
   {V_ID, 9, STRINGS_TABLE, "string", "string_id", MR_NO_MATCH},
-  {V_NUM, 10},
+  {V_NUM, 11},
 };
 
 static struct validate auac_validate = {

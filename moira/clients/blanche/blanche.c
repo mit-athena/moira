@@ -1,4 +1,4 @@
-/* $Id: blanche.c,v 1.38 1998-03-10 21:22:37 danw Exp $
+/* $Id: blanche.c,v 1.39 1998-03-26 21:24:28 danw Exp $
  *
  * Command line oriented Moira List tool.
  *
@@ -19,7 +19,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.38 1998-03-10 21:22:37 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.39 1998-03-26 21:24:28 danw Exp $");
 
 struct member {
   int type;
@@ -306,6 +306,16 @@ int main(int argc, char **argv)
 		  " Try the -noauth flag if you don't need authentication");
 	  exit(2);
 	}
+    }
+
+  /* check for username/listname clash */
+  if (createflag || (setinfo && newname && strcmp(newname, listname)))
+    {
+      status = mr_query("get_user_account_by_login", 1,
+			createflag ? &listname : &newname,
+			NULL, NULL);
+      if (status != MR_NO_MATCH)
+	fprintf(stderr, "WARNING: A user by that name already exists.\n");
     }
 
   /* create if needed */

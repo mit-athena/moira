@@ -1,4 +1,4 @@
-# $Id: mr_et.et,v 1.22 1999-12-30 17:28:50 danw Exp $
+# $Id: mr_et.et,v 1.23 2000-05-24 04:27:02 danw Exp $
 	error_table sms
 
 ec	MR_NOT_CONNECTED,
@@ -172,7 +172,7 @@ ec	MR_SETQUOTA,
 	"Failure setting user quota"
 
 ec	MR_HESFILE,
-	"Failure updating hesiod file (probably disk full)"
+	"Unable to copy hesiod file into nameserver directory"
 
 ec	MR_MISSINGFILE,
 	"Did not receive file for update"
@@ -184,7 +184,7 @@ ec	MR_NAMED,
 	"name daemon failed to start"
 
 ec	MR_TARERR,
-	"Tar of update file failed (disk full?)"
+	"Unable to extract DCM files"
 
 ec	MR_PROTO,
 	"Failed to put prototype files in new locker"

@@ -3059,7 +3059,8 @@ trap 'rm -fr `echo "Makefile lib/Makefile include/Makefile clients/Makefile \
 	  clients/chpobox/Makefile clients/chsh/Makefile \
 	  clients/mailmaint/Makefile clients/moira/Makefile \
 	  clients/mrcheck/Makefile clients/mrtest/Makefile \
-	  clients/stella/Makefile update/Makefile man/Makefile \
+	  clients/stanley/Makefile clients/stella/Makefile\
+	   update/Makefile man/Makefile \
 	  $SERVER_OUTPUT_FILES $WINAD_OUTPUT_FILES $AFS_OUTPUT_FILES \
 	  $RSAREF_OUTPUT_FILES" | sed "s/:[^ ]*//g"` conftest*; exit 1' 1 2 15
 EOF
@@ -3181,7 +3182,8 @@ CONFIG_FILES=\${CONFIG_FILES-"Makefile lib/Makefile include/Makefile clients/Mak
 	  clients/chpobox/Makefile clients/chsh/Makefile \
 	  clients/mailmaint/Makefile clients/moira/Makefile \
 	  clients/mrcheck/Makefile clients/mrtest/Makefile \
-	  clients/stella/Makefile update/Makefile man/Makefile \
+	  clients/stanley/Makefile clients/stella/Makefile\
+	   update/Makefile man/Makefile \
 	  $SERVER_OUTPUT_FILES $WINAD_OUTPUT_FILES $AFS_OUTPUT_FILES \
 	  $RSAREF_OUTPUT_FILES"}
 EOF

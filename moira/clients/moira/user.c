@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.28 1992-06-26 18:35:21 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.29 1992-08-14 12:59:41 mar Exp $";
 #endif lint
 
 /*	This is the file user.c for the MOIRA Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.28 1992-06-26 18:35:21 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.29 1992-08-14 12:59:41 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -119,6 +119,8 @@ char ** info;
     status = GDSS_Verify(buf, strlen(buf), info[U_SIGNATURE], &si);
 #ifdef DEBUG
     hex_dump(info[U_SIGNATURE]);
+    sprintf(buf, "GDSS_Verify => %d", status);
+    Put_message(buf);
 #endif /* DEBUG */
 #else /* GDSS */
     status = 0;
@@ -300,7 +302,10 @@ Bool name;
     /* Sign record */
 #ifdef GDSS
     if (strcmp(info[U_NAME], UNIQUE_LOGIN)) {
-	sprintf(temp_buf, "%s:%s", info[U_NAME], info[U_MITID]);
+	if (name)
+	  sprintf(temp_buf, "%s:%s", newname, info[U_MITID]);
+	else
+	  sprintf(temp_buf, "%s:%s", info[U_NAME], info[U_MITID]);
 	si.rawsig = NULL;
 	i = GDSS_Verify(temp_buf, strlen(temp_buf), info[U_SIGNATURE], &si);
 	/* If it's already signed OK, don't resign it. */
@@ -676,7 +681,8 @@ Bool one_item;
 {
     register int status;
     char txt_buf[BUFSIZ];
-    char * qargs[2];
+    char * qargs[2], **args;
+    struct qelem *elem = NULL;
 
     if (one_item) {
 	sprintf(txt_buf, "Deactivate user %s (y/n)", info[NAME]);
@@ -691,6 +697,55 @@ Bool one_item;
 	com_err(program_name, status, " in update_user_status");
 	sprintf(txt_buf, "User %s not deactivated due to errors.", info[NAME]);
 	Put_message(txt_buf);
+    } else if (YesNoQuestion("Also deactivate matching list and filesystem (y/n)",
+			     FALSE) == TRUE) {
+	if (status = do_mr_query("get_list_info", 1, &(info[NAME]),
+				 StoreInfo, (char *) &elem)) {
+	    com_err(program_name, status, " getting list info, not deactivating list or filesystem");
+	    return;
+	}
+	args =(char **) (QueueTop(elem)->q_data);
+	free(args[L_ACTIVE]);
+	args[L_ACTIVE] = strsave("0");
+	FreeAndClear(&args[L_MODTIME], TRUE);
+	FreeAndClear(&args[L_MODBY], TRUE);
+	FreeAndClear(&args[L_MODWITH], TRUE);
+	SlipInNewName(args, args[L_NAME]);
+	if (status = do_mr_query("update_list", CountArgs(args), args,
+				 Scream, (char *) NULL)) {
+	    com_err(program_name, status, " updating list, not deactivating list or filesystem");
+	    FreeInfo(args);
+	    FreeQueue(elem);
+	    return;
+	}
+	FreeInfo(args);
+	FreeQueue(elem);
+	elem = (struct qelem *) NULL;
+	if (status = do_mr_query("get_filesys_by_label", 1, &(info[NAME]),
+				 StoreInfo, (char *) &elem)) {
+	    com_err(program_name, status, " getting filsys info, not deactivating filesystem");
+	    FreeInfo(args);
+	    FreeQueue(elem);
+	    return;
+	}
+	args = (char **) (QueueTop(elem)->q_data);
+	free(args[FS_TYPE]);
+	args[FS_TYPE] = strsave("ERR");
+	free(args[FS_COMMENTS]);
+	args[FS_COMMENTS] = strsave("Locker disabled; call 3-1325 for help");
+	FreeAndClear(&args[FS_MODTIME], TRUE);
+	FreeAndClear(&args[FS_MODBY], TRUE);
+	FreeAndClear(&args[FS_MODWITH], TRUE);
+	SlipInNewName(args, args[FS_NAME]);
+	if (status = do_mr_query("update_filesys", CountArgs(args), args,
+				 Scream, (char *) NULL)) {
+	    com_err(program_name, status, " updating filesystem, not deactivating filesystem");
+	    FreeInfo(args);
+	    FreeQueue(elem);
+	    return;
+	}
+	FreeInfo(args);
+	FreeQueue(elem);
     }
 }
 

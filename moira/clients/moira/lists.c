@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v 1.18 1989-08-04 16:09:55 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v 1.19 1989-08-21 12:30:25 mar Exp $";
 #endif lint
 
 /*	This is the file lists.c for the SMS Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v 1.18 1989-08-04 16:09:55 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v 1.19 1989-08-21 12:30:25 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -190,8 +190,12 @@ Bool name;
     Put_message(" ");
 
     if (name) {
-	newname = Strsave(info[L_NAME]);
-	GetValueFromUser("The new name for this list", &newname);
+	while (1) {
+	    newname = Strsave(info[L_NAME]);
+	    GetValueFromUser("The new name for this list", &newname);
+	    if (ValidName(newname))
+	      break;
+	}
     }
     GetYesNoValueFromUser("Is this an active list", &info[L_ACTIVE]);
     GetYesNoValueFromUser("Is this a public list", &info[L_PUBLIC]);
@@ -339,6 +343,8 @@ char **argv;
     static char *info[MAX_ARGS_SIZE], **add_args;
     int status, ret_code = SUB_NORMAL;
 
+    if (!ValidName(argv[1]))
+      return(DM_NORMAL);
     status = do_sms_query("get_list_info", 1, argv + 1, NullFunc, 
 		       (char *) NULL);
     if (status != SMS_NO_MATCH) {

@@ -1,9 +1,9 @@
 /*
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_fserv.c,v 1.4 1991-04-24 10:47:39 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_fserv.c,v 1.5 1992-04-06 17:53:24 mar Exp $
  */
 
 #ifndef lint
-static char *rcsid_gdb_fserv_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_fserv.c,v 1.4 1991-04-24 10:47:39 mar Exp $";
+static char *rcsid_gdb_fserv_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_fserv.c,v 1.5 1992-04-06 17:53:24 mar Exp $";
 #endif	lint
 
 
@@ -165,7 +165,11 @@ int (*validate)();
 /*	Called on SIGCHILD to reap all dead children.
 /*	
 /************************************************************************/
+#ifndef sun
 int
+#else
+void
+#endif
 gdb_reaper()
 {
 	union wait status;
@@ -198,5 +202,14 @@ gdb_reaper()
 int
 g_do_signals()
 {
-	(void) signal(SIGCHLD, gdb_reaper);
+#ifdef sun
+    struct sigvec act;
+
+    act.sv_handler = gdb_reaper;
+    act.sv_mask = 0;
+    act.sv_flags = 0;
+    (void) sigvec(SIGCHLD, &act, NULL);
+#else /* sun */
+    (void) signal(SIGCHLD, gdb_reaper);
+#endif 
 }

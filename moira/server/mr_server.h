@@ -1,11 +1,14 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_server.h,v $
  *	$Author: wesommer $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_server.h,v 1.5 1987-06-30 20:05:14 wesommer Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_server.h,v 1.6 1987-07-14 00:36:40 wesommer Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
  *	$Log: not supported by cvs2svn $
+ * Revision 1.5  87/06/30  20:05:14  wesommer
+ * Added parsed kerberos principal name.
+ * 
  * Revision 1.4  87/06/21  16:42:07  wesommer
  * Performance work, rearrangement of include files.
  * 
@@ -75,3 +78,16 @@ typedef struct _client {
 #define CL_SEND 2
 
 extern char *krb_realm;
+
+/*
+ * Debugging options.
+ */
+
+extern int log_flags;
+
+#define LOG_CONNECT		0x0001
+#define LOG_REQUESTS		0x0002
+#define LOG_ARGS		0x0004
+#define LOG_RESP		0x0008
+#define LOG_RES			0x0010
+

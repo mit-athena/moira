@@ -1,24 +1,39 @@
-TARFILE=/tmp/nfs
-TMPDIR=/tmp/nfs.dir
-if [ ! -d $TMPDIR ]; then
-	/bin/rm -f $TMPDIR
-	/bin/mkdir $TMPDIR
-	/bin/chmod 755 $TMPDIR
-fi
-# cd $TMPDIR; tar xf $TARFILE
-for QFILE in $TMPDIR/\\*; do
-	while :; do
-		read login dir uid gid quota
-		if [ $? != 0 ]; then exit 0; fi
-		path=$dir/$login
-		echo mkdir $path
-		echo chown $uid $path
-		echo chgrp $gid $path
-		echo setquota `expr $QFILE : '[^\]*\(.*\)' \
-| sed 's,\\\\,/,g'` $uid $quota
-	done <$QFILE
-done
-#
-# 	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/nfs.sh,v $
-#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/nfs.sh,v 1.2 1987-09-05 18:32:18 poto Exp $
-#
+#!/bin/csh -f
+set path=(/bin /usr/bin /etc /usr/etc )
+set TARFILE=/tmp/nfs
+set TMPDIR=/tmp/nfs.dir
+
+if ( ! -d $TMPDIR ) then
+	rm -f $TMPDIR
+	mkdir $TMPDIR
+	chmod 755 $TMPDIR
+endif
+
+cd $TMPDIR
+tar xf $TARFILE
+if ($status) exit 1
+
+set uchost=`hostname|tr a-z A-Z`.MIT.EDU
+set uchostrev=`echo $uchost | rev`
+
+foreach i ( ${uchost}* )
+	set t1=`echo $i | rev`
+	set dev=`basename $t1 :$uchostrev | rev | sed 's;@;/;g'`
+
+	echo ${uchost}:$dev
+
+	./install_fs $dev < $i
+end
+
+# build new credentials file.
+rm -f /usr/etc/credentials.new
+cp credentials /usr/etc/credentials.new
+if ($status) exit 1
+
+/usr/etc/mkcred /usr/etc/credentials.new
+if ($status) exit 1
+
+foreach e ( "" .dir .pag)
+	mv /usr/etc/credentials.new$e /usr/etc/credentials$e
+end
+

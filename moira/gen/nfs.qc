@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/nfs.qc,v 1.3 1988-08-19 14:42:01 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/nfs.qc,v 1.4 1988-08-30 16:56:11 mar Exp $
  *
  * This generates the files necessary to load an nfs server.
  */
@@ -29,6 +29,7 @@ struct fs {
 };
 
 
+char *whoami = "nfs.gen";
 char *malloc(), *strsave();
 char *ingres_date_and_time(), *ingres_time(), *ingres_date();
 
@@ -39,14 +40,15 @@ char **argv;
     char cmd[64];
     struct stat sb;
     int changed = 0;
+    int ingerr();
 
     if (argc > 2) {
 	fprintf(stderr, "usage: %s [outfile]\n", argv[0]);
 	exit(SMS_ARGS);
     }
 
+    IIseterr(ingerr);
 ##  ingres sms
-##  set lockmode session where readlock = nolock
 
     changed = do_nfs();
 
@@ -59,12 +61,38 @@ char **argv;
     }
 
     if (argc == 2) {
-	sprintf(cmd, "cd %s; tar cf %s .", NFS_DIR, argv[1]);
+	sprintf(cmd, "cd %s; cp /u1/sms/bin/install_* .; tar cf %s .", NFS_DIR, argv[1]);
 	if (system(cmd))
 	  exit(SMS_TAR_FAIL);
     }
 
     exit(SMS_SUCCESS);
+}
+
+
+/*
+ * ingerr: (supposedly) called when Ingres indicates an error.
+ * I have not yet been able to get this to work to intercept a
+ * database open error.
+ */
+#define INGRES_DEADLOCK 4700
+
+static int ingerr(num)
+    int *num;
+{
+    char buf[256];
+    int ingres_errno;
+
+    switch (*num) {
+    case INGRES_DEADLOCK:
+	ingres_errno = SMS_DEADLOCK;
+	break;
+    default:
+	ingres_errno = SMS_INGRES_ERR;
+    }
+    com_err(whoami, SMS_INGRES_ERR, " code %d\n", *num);
+    critical_alert("DCM", "NFS build encountered INGRES ERROR %d", *num);
+    exit(ingres_errno);
 }
 
 
@@ -189,7 +217,7 @@ struct hash *do_everyone()
 ##  char name[33];
 ##  int gid, id, lid, maxid, uid;
     FILE *fd;
-    int first;
+    int i;
     struct save_queue *sq;
 
     fprintf(stderr, "Building the list of everybody\n");
@@ -216,7 +244,7 @@ struct hash *do_everyone()
     sq = sq_create();
 ##  range of m is members
 ##  retrieve (gid = list.#gid, lid = l.list_id)
-##	where l.group = 0 and l.active != 0 and m.member_type = "LIST" and
+##	where l.active != 0 and list.active != 0 and m.member_type = "LIST" and
 ##		m.member_id = l.list_id and m.list_id = list.list_id and
 ##		list.group != 0 {
       if (l = hash_lookup(groups, lid)) {
@@ -230,15 +258,17 @@ struct hash *do_everyone()
 ##  }
 
     while (sq_get_data(sq, &id)) {
-##	repeat retrieve (lid = l.list_id, gid = l.#gid)
-##	    where l.group = 0 and l.active != 0 and m.member_type = "LIST" and
-##		m.member_id = l.list_id and m.list_id = @id {
+##	repeat retrieve (lid = l.list_id) where l.active != 0 and
+##		m.member_type = "LIST" and m.member_id = l.list_id and
+##		m.list_id = @id {
 	  if (l = hash_lookup(groups, lid)) {
 	      sprintf(buf, "%s%s", l, hash_lookup(groups, id));
 	      free(l);
+	      l = strsave(buf);
 	  } else {
-	      strcpy(buf, hash_lookup(groups, id));
+	      l = hash_lookup(groups, id);
 	  }
+	  hash_store(groups, lid, l);
 	  sq_save_unique_data(sq, lid);
 ##      }
     }
@@ -258,7 +288,8 @@ struct hash *do_everyone()
 
 ##  repeat retrieve (lid = m.list_id, id = m.member_id)
 ##	where m.member_type = "USER" {
-      if (u = (struct user *) hash_lookup(users, id)) {
+      if ((u = (struct user *) hash_lookup(users, id)) &&
+	  (hash_lookup(groups, lid) != NULL)) {
 	  g = (struct grp *) malloc(sizeof(struct grp));
 	  g->next = u->lists;
 	  u->lists = g;
@@ -268,12 +299,18 @@ struct hash *do_everyone()
 
     for (p = &(users->data[users->size - 1]); p >= users->data; p--) {
 	for (b = *p; b; b = b->next) {
+	    i = 0;
 	    u = (struct user *)b->data;
 	    sprintf(buf, "%s:%d", u->name, u->uid);
 	    for (g = u->lists; g; g = g->next)
-	      if (l = hash_lookup(groups, g->id))
-		strcat(buf, l);
+	      if (l = hash_lookup(groups, g->id)) {
+		  i++;
+		  strcat(buf, l);
+	      }
 	    /* should free stuff here... */
+	    if (i > 1) {
+		remove_duplicate_groups(buf);
+	    }
 	    b->data = strsave(buf);
 	    fprintf(fd, "%s\n", buf);
 	}
@@ -283,6 +320,36 @@ struct hash *do_everyone()
     free(groups);
     return(users);
 ##}
+
+#define MAXGROUPS 256
+
+remove_duplicate_groups(p)
+register char *p;
+{
+    register char *pp;
+    char *index();
+    register int *mp;
+    int memory[MAXGROUPS], i, *mg = &memory[MAXGROUPS-1];
+
+    bzero(memory, MAXGROUPS * sizeof(int));
+    p = index(p, ':');
+    p++;
+    while (p = index(p, ':')) {
+	i = atoi(++p);
+	pp = p;
+	for (mp = memory; *mp && mp < mg; mp++)
+	  if (*mp == i) {
+	      if (p = index(p, ':'))
+		strcpy(pp, ++p);
+	      else {
+		  *(--pp) = 0;
+	      }
+	      p = pp - 2;
+	      break;
+	  }
+	*mp = i;
+    }
+}
 
 
 /* Now do each of the servers, linking the credentials list file and 

@@ -5,7 +5,7 @@
  *
  * $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v $
  * $Author: danw $
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.43 1997-01-29 23:06:18 danw Exp $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.44 1997-09-01 19:40:43 danw Exp $
  *
  * Generic menu system module.
  *
@@ -18,7 +18,7 @@
  */
 
 #ifndef lint
-static char rcsid_menu_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.43 1997-01-29 23:06:18 danw Exp $";
+static char rcsid_menu_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.44 1997-09-01 19:40:43 danw Exp $";
 #endif
 
 #include <mit-copyright.h>
@@ -241,7 +241,8 @@ Do_menu(m, margc, margv)
 	cur_ms = my_ms = make_ms(m->m_length + 2 + (is_topmenu ? 0 : 1));
 
 	/* Now print the title and the menu */
-	(void) wclear(my_ms->ms_menu);
+	(void) wclear(my_ms->ms_screen);
+	(void) wrefresh(my_ms->ms_screen);
 	(void) wmove(my_ms->ms_title, 0, MAX(0, (COLS -
 						 strlen(m->m_title)) >> 1));
 	(void) wstandout(my_ms->ms_title);
@@ -289,8 +290,10 @@ Do_menu(m, margc, margv)
 	/* This will be set by a return val from func or submenu */
 	quitflag = DM_NORMAL;
 	/* This is here because we may be coming from another menu */
-	if (cur_ms != NULL)
+	if (cur_ms != NULL) {
 	    touchwin(my_ms->ms_screen);
+	    wrefresh(my_ms->ms_screen);
+	}
 	if (margc > 1) {
 	    /* Initialize argv */
 	    for (argc = 0; argc < MAX_ARGC; argc++)
@@ -439,7 +442,7 @@ int Prompt_input(prompt, buf, buflen)
 	p = buf;
 	while(1) {
 	    (void) wmove(cur_ms->ms_input, y, x);
-		(void) touchwin(cur_ms->ms_screen);
+	    (void) touchwin(cur_ms->ms_screen);
 	    (void) wclrtoeol(cur_ms->ms_input);
 	    (void) wrefresh(cur_ms->ms_input);
 	    c = getchar() & 0x7f;
@@ -449,14 +452,14 @@ int Prompt_input(prompt, buf, buflen)
 		return 0;
 	    case CTL('Z'):
 		(void) kill(getpid(), SIGTSTP);
-		touchwin(curscr);
+		touchwin(cur_ms->ms_screen);
 		break;
 	    case CTL('L'):
 		(void) wclear(cur_ms->ms_input);
+		(void) wmove(cur_ms->ms_input, 0, 0);
 		(void) waddstr(cur_ms->ms_input, prompt);
 		(void) touchwin(cur_ms->ms_input);
-		(void) move(LINES - 1, 0);
-		(void) wrefresh(curscr);
+		(void) wrefresh(cur_ms->ms_screen);
 		getyx(cur_ms->ms_input, y, x);
 		oldy = y;
 		oldx = x;
@@ -520,7 +523,7 @@ int Prompt_input(prompt, buf, buflen)
 	goto gotit;
     } else {
 	printf("%s", prompt);
-	if (gets(buf) == NULL)
+	if (fgets(buf, buflen, stdin) == NULL)
 	    return 0;
 	if (interrupt) {
 	    interrupt = 0;

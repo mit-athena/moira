@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/main.c,v 1.26 1997-01-29 23:06:17 danw Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/main.c,v 1.27 1997-09-01 19:40:42 danw Exp $";
 #endif
 
 /*	This is the file main.c for the Moira Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/main.c,v $
  *      $Author: danw $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/main.c,v 1.26 1997-01-29 23:06:17 danw Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/main.c,v 1.27 1997-09-01 19:40:42 danw Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -119,7 +119,7 @@ main(argc, argv)
 	if (status == MR_USER_AUTH) {
 	    char buf[BUFSIZ];
 	    com_err(program_name, status, "\nPress [RETURN] to continue");
-	    gets(buf);
+	    fgets(buf, BUFSIZ, stdin);
 	} else {
 	  if (status >= ERROR_TABLE_BASE_krb &&
 	      status <= ERROR_TABLE_BASE_krb + 256)

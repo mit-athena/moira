@@ -33,7 +33,7 @@
 #include "ptserver.h"
 #include "pterror.h"
 
-RCSID ("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/afssync/ptutils.c,v 1.6 1992-06-07 13:26:17 probe Exp $")
+RCSID ("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/afssync/ptutils.c,v 1.7 1992-06-28 16:39:50 probe Exp $")
 
 extern struct ubik_dbase *dbase;
 extern struct afsconf_dir *prdir;
@@ -83,7 +83,7 @@ static long CorrectGroupName (ut, aname, cid, oid, cname)
     struct prentry tentry;
 
     if (strlen (aname) >= PR_MAXNAMELEN) return PRBADNAM;
-    admin = pr_noAuth || IsAMemberOf (ut, cid, SYSADMINID);
+    admin = pr_noAuth || (cid==SYSADMINID) || IsAMemberOf(ut, cid, SYSADMINID);
 
     if (oid == 0) oid = cid;
 
@@ -1045,6 +1045,79 @@ long Initdb()
     return PRSUCCESS;
 }
 
+/*
+ * FUNCTION
+ * 	fixOwnerChain
+ *
+ * DESCRIPTION
+ * This function follows the "owned" and "nextOwned" chains and verifies
+ * that the data is consistent.  The chain is only traversed as far as is
+ * necessary for efficiency reasons:
+ * o Follow the "nextOwned" chain only if we had to adjust ourself
+ *   (either renaming ourself or adjusting the owner id)
+ * o Follow the "owned" chain if we had to adjust ourself (see above), or
+ *   we are the parent that started this mess (tentry->id == oldid/newid)
+ */
+
+long fixOwnerChain(at,loc,tentry,oldid,newid)
+    struct ubik_trans *at;
+    struct prentry *tentry;
+    long loc, oldid, newid;
+{
+    char name[PR_MAXNAMELEN];
+    struct prentry nentry;
+    long pos;
+    register long code;
+    int nextOwn = 0;
+
+    if (newid && oldid != newid) {
+	if (tentry->owner == oldid) tentry->owner = newid;
+	if (tentry->creator == oldid) tentry->creator = newid;
+
+	/* If our owner has changed, continue along the nextOwned chain */
+	if (tentry->owner == newid) nextOwn=1;
+    }
+    
+    strcpy(name, tentry->name);
+    code=CorrectGroupName(at,name,tentry->creator,tentry->owner,tentry->name);
+    if (code) return code;
+    if (strcmp(name, tentry->name)) {
+
+	/* If we had to rename ourself, there are probably others
+	 * along the nextOwned chain that have to do the same.  */
+	nextOwn = 1;
+
+	pos = FindByName(at,tentry->name);
+	if (pos) return PREXIST;
+
+	code = RemoveFromNameHash (at, name, &loc);
+	if (code) return code;
+	code = AddToNameHash(at,tentry->name,loc);
+	if (code) return code;
+    }
+
+    code = pr_WriteEntry(at, 0, loc, tentry);
+    if (code) return code;
+
+    if ((loc = tentry->owned) &&
+	(nextOwn || (newid && tentry->id == newid) || (tentry->id == oldid))) {
+
+	code = pr_ReadEntry(at,0,loc,&nentry);
+	if (code) return code;
+	code = fixOwnerChain(at, loc, &nentry, oldid, newid);
+	if (code) return code;
+    }
+
+    if (nextOwn && (loc = tentry->nextOwned)) {
+
+	code = pr_ReadEntry(at,0,loc,&nentry);
+	if (code) return code;
+	code = fixOwnerChain(at, loc, &nentry, oldid, newid);
+	if (code) return code;
+    }
+    return PRSUCCESS;
+}
+
 long ChangeEntry (at, aid, cid, name, oid, newid)
   struct ubik_trans *at;
   long aid;
@@ -1053,9 +1126,10 @@ long ChangeEntry (at, aid, cid, name, oid, newid)
   long oid;
   long newid;
 {
-    register long code;
+    register long code, nptr, i;
     long pos;
-    struct prentry tentry;
+    struct prentry tentry, gentry;
+    struct contentry centry;
     long loc;
     long oldowner;
     char holder[PR_MAXNAMELEN];
@@ -1096,6 +1170,43 @@ long ChangeEntry (at, aid, cid, name, oid, newid)
 	/* get current data */
 	code = pr_ReadEntry(at,0,loc,&tentry);
 	if (code) return PRDBFAIL;
+
+        for (i=0;i<PRSIZE;i++) {
+	    if (tentry.entries[i] == PRBADID) continue;
+	    if (tentry.entries[i] == 0) break;
+	    if (pos = FindByID(at, tentry.entries[i])) {
+		code = pr_ReadEntry(at,0,pos,&gentry);
+		if (code) return PRDBFAIL;
+		code = AddToEntry(at,&gentry,pos,newid);
+		if (code) return PRDBFAIL;
+		code = RemoveFromEntry(at,aid,tentry.entries[i]);
+		if (code) return PRDBFAIL;
+	    } else {
+		fprintf(stderr, "ChangeEntry: %d: Couldn't locate group %d\n",
+		    newid, tentry.entries[i]);
+		return PRDBFAIL;
+	    }
+	}
+	nptr = tentry.next;
+	while (nptr) {
+	    /* look through cont entries */
+	    code = pr_ReadCoEntry(at,0,nptr,&centry);
+	    if (code != 0) return code;
+	    for (i=0;i<COSIZE;i++) {
+		if (centry.entries[i] == PRBADID) continue;
+		if (centry.entries[i] == 0) break;
+		if (pos = FindByID(at, centry.entries[i])) {
+		    code = pr_ReadEntry(at,0,pos,&gentry);
+		    if (code) return PRDBFAIL;
+		    code = AddToEntry(at,&gentry,pos,newid);
+		    if (code) return PRDBFAIL;
+		    code = RemoveFromEntry(at,aid,centry.entries[i]);
+		    if (code) return PRDBFAIL;
+		} else
+		    return PRDBFAIL;
+	    }
+	    nptr = centry.next;
+	}
     }
 
 #ifdef CROSS_CELL
@@ -1177,7 +1288,7 @@ long ChangeEntry (at, aid, cid, name, oid, newid)
 	if (code != PRSUCCESS) return code;
 nameOK:;
     }
-    return PRSUCCESS;
+    return (fixOwnerChain(at, loc, &tentry, aid, newid));
 }
 
 #ifdef CROSS_CELL

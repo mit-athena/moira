@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/quota.c,v 1.19 1990-07-13 15:51:44 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/quota.c,v 1.20 1991-10-29 14:57:21 mar Exp $";
 #endif lint
 
 /*	This is the file quota.c for the MOIRA Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/quota.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/quota.c,v 1.19 1990-07-13 15:51:44 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/quota.c,v 1.20 1991-10-29 14:57:21 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -320,7 +320,8 @@ GetQuotaByFilesys()
     return(DM_NORMAL);
   }
 
-  args[0] = args[1] = NULL;
+  args[0] = Strsave("");
+  args[1] = NULL;
   if (GetValueFromUser("Filesystem", &args[0]) == SUB_ERROR)
     return(DM_NORMAL);
 

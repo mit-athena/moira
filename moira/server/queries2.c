@@ -1,4 +1,4 @@
-/* $Id: queries2.c,v 2.85 2001-05-23 21:31:40 zacheiss Exp $
+/* $Id: queries2.c,v 2.86 2001-07-20 22:12:25 zacheiss Exp $
  *
  * This file defines the query dispatch table
  *
@@ -3286,6 +3286,11 @@ static struct validate gsoc_validate =
   0,
   get_subcontainers_of_container,
 };
+
+static char *gtlc_fields[] = {
+  "name",
+};
+
 
 /* Generalized Query Definitions */
 
@@ -6755,6 +6760,23 @@ struct query Queries[] = {
     2,
     NULL,
     &gsoc_validate,
+  },
+
+  {
+    /* Q_GTLC - GET_TOPLEVEL_CONTAINERS, v8 */
+    "get_toplevel_containers",
+    "gtlc",
+    8,
+    RETRIEVE,
+    "c",
+    CONTAINERS_TABLE,
+    "name FROM containers",
+    gtlc_fields,
+    1,
+    "name NOT LIKE '%%/%%'",
+    0,
+    "name",
+    NULL,
   },
 
 };

@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/reg_stubs.c,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/reg_stubs.c,v 1.20 1992-06-01 15:45:29 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/reg_stubs.c,v 1.21 1993-10-22 17:15:20 mar Exp $
  *
  *  (c) Copyright 1988 by the Massachusetts Institute of Technology.
  *  For copying and distribution information, please see the file
@@ -9,7 +9,7 @@
  */
 
 #ifndef lint
-static char *rcsid_reg_stubs_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/reg_stubs.c,v 1.20 1992-06-01 15:45:29 mar Exp $";
+static char *rcsid_reg_stubs_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/reg_stubs.c,v 1.21 1993-10-22 17:15:20 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -30,7 +30,7 @@ static char *rcsid_reg_stubs_c = "$Header: /afs/.athena.mit.edu/astaff/project/m
 #include <moira_site.h>
 #include "ureg_err.h"
 #include "ureg_proto.h"
-#include <strings.h>
+#include <string.h>
 #include <ctype.h>
 
 static int reg_sock = -1;
@@ -51,7 +51,7 @@ ureg_init()
     struct servent *sp;
     char **p, *s;
     struct hostent *hp;
-    struct sockaddr_in sin;
+    struct sockaddr_in s_in;
     extern char *getenv(), **hes_resolve();
     
     initialize_ureg_error_table();
@@ -71,7 +71,7 @@ ureg_init()
 #endif HESIOD
     if (!host || (strlen(host) == 0)) {
 	host = strsave(MOIRA_SERVER);
-	s = index(host, ':');
+	s = strchr(host, ':');
 	if (s) *s = 0;
     }
     hp = gethostbyname(host);
@@ -86,12 +86,12 @@ ureg_init()
     reg_sock = socket(AF_INET, SOCK_DGRAM, 0);
     if (reg_sock < 0) return errno;
 
-    bzero((char *)&sin, sizeof(sin));
-    sin.sin_port = sp->s_port;
-    bcopy(hp->h_addr, (char *)&sin.sin_addr, sizeof(struct in_addr));
-    sin.sin_family = AF_INET;
+    memset((char *)&s_in, 0, sizeof(sin));
+    s_in.sin_port = sp->s_port;
+    memcpy((char *)&s_in.sin_addr, hp->h_addr, sizeof(struct in_addr));
+    s_in.sin_family = AF_INET;
 
-    if (connect(reg_sock, &sin, sizeof(sin)) < 0)
+    if (connect(reg_sock, &s_in, sizeof(s_in)) < 0)
 	return errno;
     return 0;
 }
@@ -109,14 +109,14 @@ verify_user(first, last, idnumber, hashidnumber, login)
     register int len;
     char crypt_src[1024];
     
-    bcopy((char *)&version, bp, sizeof(int));
+    memcpy(bp, (char *)&version, sizeof(int));
     bp += sizeof(int);
     seq_no++;
-    bcopy((char *)&seq_no, bp, sizeof(int));
+    memcpy(bp, (char *)&seq_no, sizeof(int));
 
     bp += sizeof(int);
 
-    bcopy((char *)&call, bp, sizeof(int));
+    memcpy(bp, (char *)&call, sizeof(int));
 
     bp += sizeof(int);
 
@@ -127,9 +127,9 @@ verify_user(first, last, idnumber, hashidnumber, login)
     bp += strlen(bp)+1;
 
     len = strlen(idnumber) + 1;
-    bcopy(idnumber, crypt_src, len);
+    memcpy(crypt_src, idnumber, len);
 
-    bcopy(hashidnumber, crypt_src+len, 13);
+    memcpy(crypt_src+len, hashidnumber, 13);
 
     des_string_to_key(hashidnumber, key);
     des_key_sched(key, ks);
@@ -154,14 +154,14 @@ do_operation(first, last, idnumber, hashidnumber, data, opcode)
     char crypt_src[1024];
     char *cbp;
     
-    bcopy((char *)&version, bp, sizeof(int));
+    memcpy(bp, (char *)&version, sizeof(int));
     bp += sizeof(int);
     seq_no++;
-    bcopy((char *)&seq_no, bp, sizeof(int));
+    memcpy(bp, (char *)&seq_no, sizeof(int));
 
     bp += sizeof(int);
 
-    bcopy((char *)&call, bp, sizeof(int));
+    memcpy(bp, (char *)&call, sizeof(int));
 
     bp += sizeof(int);
 
@@ -174,14 +174,14 @@ do_operation(first, last, idnumber, hashidnumber, data, opcode)
     len = strlen(idnumber) + 1;
     cbp = crypt_src;
     
-    bcopy(idnumber, crypt_src, len);
+    memcpy(crypt_src, idnumber, len);
     cbp += len;
     
-    bcopy(hashidnumber, cbp, 14);
+    memcpy(cbp, hashidnumber, 14);
     cbp += 14;
     
     len = strlen(data) + 1;
-    bcopy(data, cbp, len);
+    memcpy(cbp, data, len);
     cbp += len;
 
     len = cbp - crypt_src;
@@ -359,8 +359,8 @@ static do_call(buf, len, seq_no, login)
 	timeout.tv_usec = 0;
 	do {
 	    int rtn;
-	    struct sockaddr_in sin;
-	    int addrlen = sizeof(sin);
+	    struct sockaddr_in s_in;
+	    int addrlen = sizeof(s_in);
 	    int vno;
 	    int sno;
 	    int stat;
@@ -370,20 +370,20 @@ static do_call(buf, len, seq_no, login)
 		break;
 	    else if (rtn < 0) return errno;
 	
-	    len = recvfrom(reg_sock, ibuf, BUFSIZ, 0, &sin, &addrlen);
+	    len = recvfrom(reg_sock, ibuf, BUFSIZ, 0, &s_in, &addrlen);
 	    if (len < 0) return errno;
 	    if (len < 12) return UREG_BROKEN_PACKET;
-	    bcopy(ibuf, (char *)&vno, sizeof(long));
+	    memcpy((char *)&vno, ibuf, sizeof(long));
 	    vno = ntohl((u_long)vno);
 	    if (vno != 1) continue;
-	    bcopy(ibuf + 4, (char *)&sno, sizeof(long));
+	    memcpy((char *)&sno, ibuf + 4, sizeof(long));
 
 	    if (sno != seq_no) continue;
 
-	    bcopy(ibuf + 8, (char *)&stat, sizeof(long));
+	    memcpy((char *)&stat, ibuf + 8, sizeof(long));
 	    stat = ntohl((u_long)stat);
 	    if (login && len > 12) {
-		bcopy(ibuf+12, login, len-12);
+		memcpy(login, ibuf+12, len-12);
 		login[len-12] = '\0';
 	    } else if (login)
 		*login = '\0';

@@ -1,4 +1,4 @@
-/* $Id: critical.c,v 1.20 1998-05-26 18:14:08 danw Exp $
+/* $Id: critical.c,v 1.21 2000-09-21 07:36:40 zacheiss Exp $
  *
  * Log and send a zephyrgram about any critical errors.
  *
@@ -28,7 +28,7 @@ extern Code_t ZSendNotice(ZNotice_t *notice, Z_AuthProc cert_routine);
 #endif
 #include <time.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/critical.c,v 1.20 1998-05-26 18:14:08 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/critical.c,v 1.21 2000-09-21 07:36:40 zacheiss Exp $");
 
 /* mode to create the file with */
 #define LOGFILEMODE	0644
@@ -116,7 +116,7 @@ void send_zgram(char *inst, char *msg)
   if (buf)
     {
       sprintf(buf, "MOIRA: %s %s", inst, msg);
-      syslog(LOG_ERR, buf);
+      syslog(LOG_ERR, "%s", buf);
       free(buf);
     }
 #endif

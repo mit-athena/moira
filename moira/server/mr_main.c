@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.28 1990-03-19 15:41:44 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.29 1990-06-13 12:44:14 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -16,7 +16,7 @@
  * 
  */
 
-static char *rcsid_mr_main_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.28 1990-03-19 15:41:44 mar Exp $";
+static char *rcsid_mr_main_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.29 1990-06-13 12:44:14 mar Exp $";
 
 #include <mit-copyright.h>
 #include <strings.h>
@@ -213,9 +213,11 @@ main(argc, argv)
 				if (errno == EWOULDBLOCK) {
 					do_reset_listen();
 				} else {
+				    	static int count = 0;
 					com_err(whoami, errno,
-						" error on listen");
-					exit(1);
+						" error (%d) on listen", count);
+					if (count++ > 10)
+					  exit(1);
 				}
 			} else if ((status = new_connection()) != 0) {
 				com_err(whoami, errno,

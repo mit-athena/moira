@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/afssync/sync.fast.qc,v 1.2 1992-07-05 13:05:24 probe Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/afssync/sync.fast.qc,v 1.3 1993-02-05 03:32:39 probe Exp $
  *
  *
  *  (c) Copyright 1989 by the Massachusetts Institute of Technology.
@@ -53,6 +53,8 @@ char **argv;
     
     int status;
     int ingerr();
+
+    strcpy(db, "sms");
 
     if (!strcmp(argv[1], "-db")) {
 	strncpy(db, argv[2], sizeof(db)-1);
@@ -117,24 +119,24 @@ do_passwd()
 	    else {
 		bzero(&tentry, sizeof(tentry));
 		strcpy(tentry.name, login);
-		tentry.id = uid;
-		tentry.owner = SYSADMINID;
-		tentry.creator = SYSADMINID;
-		tentry.flags = PRQUOTA;
-		tentry.ngroups = tentry.nusers = 20;
-		if (tentry.id > ntohl(cheader.maxID))
-		    cheader.maxID = htonl(tentry.id);
+		tentry.id = htonl(uid);
+		tentry.owner = htonl(SYSADMINID);
+		tentry.creator = htonl(SYSADMINID);
+		tentry.flags = htonl(PRQUOTA);
+		tentry.ngroups = tentry.nusers = htonl(20);
+		if (uid > ntohl(cheader.maxID))
+		    cheader.maxID = tentry.id;
 		usercount++;
 
-		i = IDHash(tentry.id);
-		tentry.nextID = ntohl(cheader.idHash[i]);
+		i = IDHash(uid);
+		tentry.nextID = cheader.idHash[i];
 		cheader.idHash[i] = htonl(pos);
 
 		i = NameHash(tentry.name);
-		tentry.nextName = ntohl(cheader.nameHash[i]);
+		tentry.nextName = cheader.nameHash[i];
 		cheader.nameHash[i] = htonl(pos);
 		
-		pr_WriteEntry(0, 0, pos, &tentry);
+		pr_Write(0, 0, pos, &tentry, sizeof(tentry));
 
 		u = (struct entry *)malloc(sizeof(struct entry));
 		u->id = uid;
@@ -182,32 +184,32 @@ do_groups()
 	    sprintf(namebuf, "system:%s", name);
 	    aid = -gid;
 
-	    if (aid==ANYUSERID || aid==AUTHUSERID)
+	    if (aid==ANYUSERID || aid==AUTHUSERID || aid==SYSADMINID)
 		status = PRIDEXIST;
 	    else {
 		bzero(&gentry, sizeof(gentry));
 		strcpy(gentry.name, namebuf);
-		gentry.id = aid;
-		gentry.owner = SYSADMINID;
-		gentry.creator = SYSADMINID;
+		gentry.id = htonl(aid);
+		gentry.owner = htonl(SYSADMINID);
+		gentry.creator = htonl(SYSADMINID);
 		if (hide)
-		    gentry.flags = PRGRP|PRACCESS|PRP_STATUS_ANY;
+		    gentry.flags = htonl(PRGRP|PRACCESS|PRP_STATUS_ANY);
 		else
-		    gentry.flags = PRGRP;
-		if (gentry.id < ntohl(cheader.maxGroup))
-		    cheader.maxGroup = htonl(gentry.id);
+		    gentry.flags = htonl(PRGRP);
+		if (aid < ntohl(cheader.maxGroup))
+		    cheader.maxGroup = gentry.id;
 		groupcount++;
 
-		i = IDHash(gentry.id);
-		gentry.nextID = ntohl(cheader.idHash[i]);
+		i = IDHash(aid);
+		gentry.nextID = cheader.idHash[i];
 		cheader.idHash[i] = htonl(pos);
 
 		i = NameHash(gentry.name);
-		gentry.nextName = ntohl(cheader.nameHash[i]);
+		gentry.nextName = cheader.nameHash[i];
 		cheader.nameHash[i] = htonl(pos);
 
-		pr_WriteEntry(0, 0, pos, &gentry);
-		AddToOwnerChain(0,gentry.id,gentry.owner);
+		pr_Write(0, 0, pos, &gentry, sizeof(gentry));
+		AddToOwnerChain(0, aid, SYSADMINID);
 
 		g = (struct entry *)malloc(sizeof(struct entry));
 		g->id = aid;
@@ -220,7 +222,7 @@ do_groups()
 	    if (status)
 		fprintf(stderr, "Error adding group %s id %d: %s\n",
 			namebuf, aid, error_message(status));
-	    else
+	    if (status==0 || (status==PRIDEXIST && aid==SYSADMINID))
 		hash_store(groups, lid, g);
 
 ##  }
@@ -256,7 +258,7 @@ do_groups()
 	    uentry.count = htonl(i);
 	    pr_Write(0, 0, u->pos, &uentry, sizeof(uentry));
 	    if (m) {
-		pr_ReadEntry(0, 0, g->pos, &gentry);
+		pr_ReadEntry(0, 0, u->pos, &uentry);
 		while (m) {
 		    AddToEntry(0, &uentry, u->pos, m->group->id);
 		    m = m->unext;

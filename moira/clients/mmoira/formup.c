@@ -17,7 +17,7 @@
 #include	<Xm/Separator.h>
 #include	"mmoira.h"
 
-static char rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/formup.c,v 1.4 1991-06-04 14:33:08 mar Exp $";
+static char rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/formup.c,v 1.5 1991-06-05 12:15:12 mar Exp $";
 
 #define	MAX(a,b)	((a > b) ? a : b)
 #define	MIN(a,b)	((a < b) ? a : b)
@@ -54,15 +54,30 @@ XmAnyCallbackStruct	*call_data;
 }
 
 int
-button_callback(w, f, call_data)
-Widget	w;
-EntryForm *f;
+button_callback(w, client_data, call_data)
+Widget		w;
+EntryForm	*client_data;
 XmAnyCallbackStruct	*call_data;
 {
 	char	output[100];
 	static int	mode = 0;
 
-	XtUnmanageChild(f->formpointer);	
+/*	sprintf (output, "Button %x was hit...\n", w);
+	if (mode) {
+		MakeWatchCursor(toplevel);
+		MakeWatchCursor(entryformwidget);
+		mode = 0;
+	}
+	else {
+		MakeNormalCursor(toplevel);
+		MakeNormalCursor(entryformwidget);
+		mode = 1;
+	}
+	AppendToLog(output);
+	PopupErrorMessage("Sorry, no functionality here!\nSecond line", "No further help is available");
+*/
+	XtUnmanageChild(client_data->formpointer);
+
 }
 
 
@@ -167,10 +182,11 @@ EntryForm	*spec;
 	Widget		shellparent;
 
 	if (spec->formpointer) {
-		printf ("Form %s already exists\n", spec->formname);
 		UpdateForm(spec);
 		return(spec->formpointer);
 	}
+
+	height_so_far = vpad;
 
 #define GETSIZE(foo)	n = 0; \
 			XtSetArg(wargs[n], XtNwidth, &width);	n++; \
@@ -205,7 +221,7 @@ EntryForm	*spec;
 	XtSetArg(wargs[n], XmNlabelString, label);		n++;
 	XtSetArg(wargs[n], XtNx, 0);				n++;
 	XtSetArg(wargs[n], XtNy, height_so_far);		n++;
-	instructionW = XtCreateManagedWidget(	"title",
+	instructionW = XtCreateManagedWidget(	"instructions",
 				xmLabelWidgetClass,
 				bb, wargs, n);
 	GETSIZE(instructionW);
@@ -221,10 +237,10 @@ EntryForm	*spec;
 	MakeButtons(bb, &height, &width, spec);
 	STORESIZE;
 
-#ifdef FORMTITLES
 /*
 ** Center the title of the form
 */
+#ifdef FORMTITLES
 	n = 0;
 	XtSetArg(wargs[n], XtNwidth, &width);			n++;
 	XtGetValues (titleW, wargs, n);
@@ -235,6 +251,16 @@ EntryForm	*spec;
 	XtSetArg(wargs[n], XtNx, x);				n++;
 	XtSetValues (titleW, wargs, n);
 #endif
+	n = 0;
+	XtSetArg(wargs[n], XtNwidth, &width);			n++;
+	XtGetValues (instructionW, wargs, n);
+
+	x = (width_so_far - width) / 2;
+
+	n = 0;
+	XtSetArg(wargs[n], XtNx, x);				n++;
+	XtSetValues (instructionW, wargs, n);
+
 	return((Widget) bb);
 }
 
@@ -301,10 +327,10 @@ EntryForm	*spec;
 			!(current->insensitive));		n++;
 		switch (current->type) {
 		case FT_STRING:
-			children[i] = XtCreateManagedWidget(	"child",
+			children[i] = XtCreateManagedWidget(	"textwidget",
 						xmTextWidgetClass,
 						parent, wargs, n);
-			XtAddCallback(	children[i], XmNlosingFocusCallback,
+			XtAddCallback(	children[i], XmNvalueChangedCallback,
 				string_callback, current);
 			if (current->returnvalue.stringvalue) {
 				XmTextSetString (children[i], current->returnvalue.stringvalue);
@@ -316,7 +342,8 @@ EntryForm	*spec;
 			break;
 
 		case FT_BOOLEAN:
-			XtSetArg(wargs[n], XmNset, current->returnvalue.booleanvalue);	n++;
+			XtSetArg(wargs[n], XmNset,
+				 current->returnvalue.booleanvalue ? True : False);	n++;
 
 			if (current->returnvalue.booleanvalue)
 				label = XmStringCreate(	"(True)", XmSTRING_DEFAULT_CHARSET);
@@ -410,8 +437,7 @@ Dimension	*pheight;
 	XtSetArg(wargs[n], XmNspacing, 0);	n++;
 
 	if (count > 5) {
-		printf ("Special case:  Asking for %d columns\n",1 + count/5);
-		XtSetArg(wargs[n], XmNnumColumns, 1 + count / 5);		n++;
+		XtSetArg(wargs[n], XmNnumColumns, 1 + (count-1) / 5);		n++;
 		XtSetArg(wargs[n], XmNorientation, XmVERTICAL);	n++;
 		XtSetArg(wargs[n], XmNpacking, XmPACK_COLUMN);	n++;
 	}
@@ -423,7 +449,8 @@ Dimension	*pheight;
 		n = 0;
 		label = XmStringCreate(current, XmSTRING_DEFAULT_CHARSET);
 		XtSetArg(wargs[n], XmNlabelString, label);	n++;
-		if (!strcmp (current, prompt->returnvalue.stringvalue)) {
+		if ((prompt->returnvalue.stringvalue) &&
+			(!strcmp (current, prompt->returnvalue.stringvalue))) {
 			XtSetArg(wargs[n], XmNset, True);	n++;
 		}
 		else {
@@ -443,7 +470,7 @@ Dimension	*pheight;
 */
 
 	GETSIZE (child);
-	*pheight = (height * MIN(5, count));
+	*pheight = (height * MIN(5, count)) + vpad; 
 
 	return(radioparent);
 }
@@ -531,10 +558,8 @@ XmAnyCallbackStruct	*call_data;
 ** Fortunately, I was smart enough to use the button label as the name 
 ** of the widget, and I can extract it via XtName().  Thanks, Motif!
 */
-	if (strcmp(prompt->returnvalue.stringvalue, XtName(w))) {
-		printf ("Replacing old value of selection, '%s', with '%s'\n",
-				prompt->returnvalue.stringvalue,
-				XtName(w));
+	if (prompt->returnvalue.stringvalue &&
+			(strcmp(prompt->returnvalue.stringvalue, XtName(w)))) {
 		strcpy(prompt->returnvalue.stringvalue, XtName(w));
 	}
 
@@ -580,6 +605,12 @@ XmAnyCallbackStruct	*call_data;
 {
 	MenuItem	*itemhit = (MenuItem *) client_data;
 
+/*	printf 	("menu_callback: item '%s', op %d and string '%s'\n", 
+			itemhit->label, 
+			itemhit->operation, 
+			itemhit->form);
+	XtManageChild(entryformwidget);	
+*/
 	MoiraMenuRequest(itemhit);
 }
 
@@ -596,10 +627,10 @@ XmAnyCallbackStruct	*call_data;
 	newvalue = XmTextGetString(w);
 
 	if (strcmp(current->returnvalue.stringvalue, newvalue)) {
-		printf ("Replacing old value of selection, '%s', with '%s'\n",
+/*		printf ("Replacing old value of selection, '%s', with '%s'\n",
 				current->returnvalue.stringvalue,
 				newvalue);
-		strcpy(current->returnvalue.stringvalue, newvalue);
+*/		strcpy(current->returnvalue.stringvalue, newvalue);
 	}
 	XtFree(newvalue);
 }

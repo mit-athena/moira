@@ -154,11 +154,12 @@ sub athena_proc
 	die "Unable to get uid for user\n" unless ($uid);
 
 	chmod(0755, $path);
-	mkdir("$path/Public",0755) && chown($uid,0,"$path/Public") &&
+	mkdir("$path/Public",0755) && mkdir("$path/www",0755) &&
 	    mkdir("$path/Private",0700) && mkdir("$path/Mail", 0700) &&
-		chown($uid,0,"$path/Public","$path/Private","$path/Mail") ||
-		    die "Unable to create subdirectories\n";
-	system("$fs sa $path/Public @acl system:anyuser rl -clear") &&
+		chown($uid,0,"$path/Public","$path/www",
+		      "$path/Private","$path/Mail") ||
+			  die "Unable to create subdirectories\n";
+	system("$fs sa -dir $path/Public $path/www -acl @acl system:anyuser rl -clear") &&
 	    die "Unable to set acl on Public directory";
 	system("$fs sa -dir $path/Private $path/Mail -acl @acl -clear") &&
 	    die "Unable to set acl on Private and/or Mail directories\n";

@@ -1,4 +1,4 @@
-# $Id: mr_et.et,v 1.29 2002-08-02 10:30:32 zacheiss Exp $
+# $Id: mr_et.et,v 1.30 2002-12-03 21:14:57 zacheiss Exp $
 	error_table sms
 
 ec	MR_NOT_CONNECTED,
@@ -231,7 +231,7 @@ ec	MR_NEW_CONTAINER_NAME,
 ec	MR_ACCOUNT_NUMBER,
 	"No such account number"
 
-ec    MR_CONTAINER_NO_PARENT,
+ec      MR_CONTAINER_NO_PARENT,
 	"Parent container does not exist"
 
 	end

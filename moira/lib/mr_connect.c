@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_connect.c,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_connect.c,v 1.11 1989-08-16 11:23:21 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_connect.c,v 1.12 1989-10-06 19:07:42 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -12,11 +12,12 @@
  */
 
 #ifndef lint
-static char *rcsid_sms_connect_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_connect.c,v 1.11 1989-08-16 11:23:21 mar Exp $";
+static char *rcsid_sms_connect_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_connect.c,v 1.12 1989-10-06 19:07:42 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
 #include "sms_private.h"
+#include <sms_app.h>
 #include <strings.h>
 
 static char *sms_server_host = 0;
@@ -40,7 +41,7 @@ char *server;
      */
     errno = 0;
     if (!server || (strlen(server) == 0))
-      server = SMS_GDB_SERV;
+      server = SMS_SERVER;
     _sms_conn = start_server_connection(server, ""); 
     if (_sms_conn == NULL)
 	return errno;

@@ -1,4 +1,4 @@
-; $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/menus.txt,v 1.5 1992-10-22 15:33:13 mar Exp $
+; $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/menus.txt,v 1.6 1992-10-23 18:59:52 mar Exp $
 ;
 
 ; = menu name "mnemonic"
@@ -145,9 +145,9 @@
 = ?help "?"
 	about moira	{ MM_HELP_MOIRA, 0 about_moira 0 "?" }
 	wildcards	{ MM_HELP_WILDCARDS, 0 wildcards 0 "w" }
-	using the mouse { MM_HELP_MOUSE, 0, mouse 0 "m" }
-	using the keyboard { MM_HELP_KEYBOARD, 0, keyboard 0 "k" }
-	reporting bugs	{ MM_HELP_BUGS, 0, bugs 0 "b" }
+	using the mouse { MM_HELP_MOUSE, 0 mouse 0 "m" }
+	using the keyboard { MM_HELP_KEYBOARD, 0 keyboard 0 "k" }
+	reporting bugs	{ MM_HELP_BUGS, 0 bugs 0 "b" }
 	authors		{ MM_HELP_AUTHORS, 0 authors 0 "a" }
 
 = file "i"

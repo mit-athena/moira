@@ -1,8 +1,8 @@
 /*
  * $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.c,v $
- * $Author: mar $
+ * $Author: jweiss $
  * $Locker:  $
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.c,v 1.27 1993-10-25 16:39:26 mar Exp $ 
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.c,v 1.28 1996-07-29 22:51:29 jweiss Exp $ 
  *
  *  (c) Copyright 1988 by the Massachusetts Institute of Technology.
  *  For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char    *rcsid_userreg_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.c,v 1.27 1993-10-25 16:39:26 mar Exp $";
+static char    *rcsid_userreg_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.c,v 1.28 1996-07-29 22:51:29 jweiss Exp $";
 #endif	lint
 
 #include <mit-copyright.h>
@@ -20,10 +20,10 @@ static char    *rcsid_userreg_c = "$Header: /afs/.athena.mit.edu/astaff/project/
 #include <sys/time.h>
 #include <setjmp.h>
 #include <ctype.h>
-#include <krb.h>
-#include <des.h>
 #include <kadm.h>
 #include <kadm_err.h>
+#include <krb.h>
+#include <des.h>
 #include <errno.h>
 #include "userreg.h"
 #include "ureg_err.h"

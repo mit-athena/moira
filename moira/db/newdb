@@ -133,7 +133,7 @@ create filesys
 	order		= i2,
 	type		= c8,
 	mach_id		= i4,
-	name		= c32,
+	name		= c80,
 	mount		= c32,
 	access		= c1,
 	comments	= c64,

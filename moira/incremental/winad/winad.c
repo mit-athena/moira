@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/winad/winad.c,v 1.39 2004-02-29 06:48:29 zacheiss Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/winad/winad.c,v 1.40 2004-04-20 19:25:37 zacheiss Exp $
 /* winad.incr arguments examples
  *
  * arguments when moira creates the account - ignored by winad.incr since the account is unusable.
@@ -3046,7 +3046,10 @@ int user_update(LDAP *ldap_handle, char *dn_path, char *user_name,
   linklist_free(group_base);
   group_count = 0;
 
-  rc = attribute_update(ldap_handle, distinguished_name, MitId, "employeeID", user_name);
+  if ((strlen(MitId) != 0) && (MitId[0] == '9'))
+    rc = attribute_update(ldap_handle, distinguished_name, MitId, "employeeID", user_name);
+  else
+    rc = attribute_update(ldap_handle, distinguished_name, "none", "employeeID", user_name);
   rc = attribute_update(ldap_handle, distinguished_name, Uid, "uid", user_name);
   rc = attribute_update(ldap_handle, distinguished_name, MoiraId, "mitMoiraId", user_name);
 
@@ -3337,7 +3340,7 @@ int user_create(int ac, char **av, void *ptr)
           ADD_ATTR("msSFU30UidNumber", uid_v, LDAP_MOD_ADD);
         }
     }
-  if (strlen(av[U_MITID]) != 0)
+  if ((strlen(av[U_MITID]) != 0) && (av[U_MITID][0] == '9'))
       mitid_v[0] = av[U_MITID];
   else
       mitid_v[0] = "none";

@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/warehouse.pc,v 1.2 1997-02-07 19:44:09 tytso Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/warehouse.pc,v 1.3 1997-02-14 19:21:01 tytso Exp $
  *
  * This generates a database extract from the users table for the MIT
  * Warehouse.
@@ -28,16 +28,25 @@ extern int errno;
 char *whoami = "sis.gen";
 char *db = "moira/moira";
 
+#ifndef WAREHOUSE_SUBDIR
+#define WAREHOUSE_SUBDIR "warehouse"
+#endif
+
+char warehouse_dir[128];
+
 main(argc, argv)
 int argc;
 char **argv;
 {
     int out = 1 /* stdout */;
     char *outf = NULL, outft[64];
+    char *control_fn[80], cmd[256];
+    FILE *f;
     struct stat sb;
     int flag1;
     SigInfo si;
     struct timeval now;
+    int records = 0;
     EXEC SQL BEGIN DECLARE SECTION;
     char login[9], sig[257], id[17], kname[257];
     EXEC SQL VAR sig IS STRING(257);
@@ -49,6 +58,8 @@ char **argv;
     EXEC SQL END DECLARE SECTION;
 
     initialize_sms_error_table ();
+
+    sprintf(warehouse_dir, "%s/%s", DCM_DIR, WAREHOUSE_SUBDIR);
 
     EXEC SQL CONNECT :db;
 
@@ -62,7 +73,7 @@ char **argv;
 	    }
 	}
 	outf = argv[1];
-	sprintf(outft, "%s~", outf);
+	sprintf(outft, "%s/username_id.map", warehouse_dir);
 	if ((out = open(outft, O_WRONLY|O_APPEND|O_CREAT|O_TRUNC, 0666)) < 0) {
 	    fprintf(stderr, "unable to open %s for output\n", outf);
 	    exit(MR_OCONFIG);
@@ -83,7 +94,9 @@ char **argv;
     EXEC SQL DECLARE x CURSOR FOR
       SELECT u.login, u.clearid, u.signature, u.sigdate, s.string, u.sigwho
       FROM users u, strings s
-	WHERE u.status = 1 and u.sigwho = s.string_id;
+	WHERE (u.status = 1 or u.status=2 or u.status=5 or
+	       u.status=6 or u.status=7) 
+		 and u.sigwho = s.string_id;
     EXEC SQL OPEN x;
     while (1) {
 	EXEC SQL FETCH x INTO :login, :id, :sig, :timestamp, :kname, :sigwho;
@@ -104,6 +117,7 @@ char **argv;
 		GDSS_Recompose(&si, outrec.sig);
 	}
 	write(out, &outrec, sizeof(outrec));
+	records++;
     }
     EXEC SQL CLOSE x;
 
@@ -113,8 +127,27 @@ char **argv;
 	perror("close failed");
 	exit(MR_CCONFIG);
     }
-    if (outf)
-      fix_file(outf);
+    sprintf(control_fn, "%s/username_id.ctl", warehouse_dir);
+
+    f = fopen(control_fn, "w");
+    if (!f) {
+	perror("creating username_id control file");
+	exit(MR_OCONFIG);
+    }
+    fprintf(f, "username_id.map --- Moira feed for MIT Data Warehouse\n");
+    fprintf(f, "%d records\n", records);
+    fprintf(f, "%d bytes\n", records * (12+12+256));
+    fprintf(f, "Full feed\n");
+    fprintf(f, "Fixed format -- binary\n");
+    fclose(f);
+    if (outf) {
+	fprintf(stderr, "Building tar file.\n");
+	sprintf(cmd, "(cd %s; tar cf - . ) | compress > %s", 
+		warehouse_dir, outf);
+	if (system(cmd))
+	  exit(MR_TAR_FAIL);
+    }
+    
     exit(MR_SUCCESS);
 
  sqlerr:

@@ -1,6 +1,6 @@
 /**/#	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/util/imake.includes/Imake.rules,v $
-/**/#	$Author: steiner $
-/**/#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/util/imake.includes/Imake.rules,v 4.6 1988-12-19 15:23:38 steiner Exp $
+/**/#	$Author: jtkohl $
+/**/#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/util/imake.includes/Imake.rules,v 4.7 1989-01-05 14:22:05 jtkohl Exp $
 /**/#
 
 #ifdef __STDC__
@@ -364,6 +364,7 @@ print:: ${CODE}								@@\
 src:: ${CODE}								@@\
 									@@\
 ${CODE}:								@@\
+	$(RM) $@							@@\
 	-$(LN) ${SRCDIR}/$@ $@
 
 #define do_subdirs_no_imakefile(subdirs)				@@\

@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v $
  *	$Author: wesommer $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.4 1987-09-04 23:33:19 wesommer Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.5 1987-09-10 22:18:32 wesommer Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
@@ -11,6 +11,9 @@
  * 	admin_server, and is a server for the userreg program.
  * 
  *	$Log: not supported by cvs2svn $
+ * Revision 1.4  87/09/04  23:33:19  wesommer
+ * Deleted test scaffolding (second oops.)
+ * 
  * Revision 1.3  87/09/03  03:05:18  wesommer
  * Version used for userreg tests.
  * 
@@ -23,7 +26,7 @@
  */
 
 #ifndef lint
-static char *rcsid_reg_svr_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.4 1987-09-04 23:33:19 wesommer Exp $";
+static char *rcsid_reg_svr_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.5 1987-09-10 22:18:32 wesommer Exp $";
 #endif lint
 
 #include <stdio.h>
@@ -49,7 +52,6 @@ extern int krb_err_base;
 extern char admin_errmsg[];
 
 long now;
-#define STAMP { time (&now); printf(ctime(&now)); }
 		       
 struct msg {
     u_long version;
@@ -114,8 +116,7 @@ main()
     }
     
     for (;;) {
-	printf("waiting..");
-	fflush(stdout);
+	com_err("reg_svr", 0, "Ready for next request");
 	addrlen = sizeof(sin);
 	bzero(retval, BUFSIZ);
 	len = recvfrom(s, buf, BUFSIZ, 0, &sin, &addrlen);
@@ -180,30 +181,12 @@ int validate_idno(message, db_mit_id, first, last)
     int len;
 
     int i;
-#ifdef notdef
-    for (i = 0; i < message->sealed_len; i++) {
-	printf("%02x ", (unsigned char)message->sealed[i]);
-    }
-    printf("\n");
-#endif notdef
     mit_id = 0;
     
     string_to_key(db_mit_id, key);
     key_sched(key, sched);
     pcbc_encrypt(message->sealed, decrypt, message->sealed_len, sched, key, 0);
 
-#ifdef notdef
-    for (i = 0; i < message->sealed_len; i++) {
-	printf("%02x ", (unsigned char)decrypt[i]);
-    }
-    printf("\n");
-    for (i = 0; i < message->sealed_len; i++) {
-	if (isprint(decrypt[i])) 
-	    printf("%c  ", (unsigned char)decrypt[i]);
-	else printf(".  ");
-    }
-    printf("\n");
-#endif notdef
     (void) strncpy(idnumber, decrypt, message->sealed_len);
     temp = decrypt + strlen(idnumber) + 1;
     len = message->sealed_len - (temp - decrypt);
@@ -234,9 +217,6 @@ vfy_callbk(argc, argv, p_message)
     char *firstname, *lastname;
     int status;
     
-#ifdef debug
-    printf("Callback: %s %s %s\n", argv[8], argv[5], argv[4]);
-#endif debug
     if (got_one) return 0;
     reg_status = 0;
     
@@ -280,7 +260,8 @@ int verify_user(message)
     char *argv[3];
     int status;
     
-    printf("verify_user\n");
+    com_err("reg_svr", 0, " verify_user %s %s\n",
+	    message->first, message->last);
     argv[0] = "get_user_by_first_and_last";
     argv[1] = message->first;
     argv[2] = message->last;
@@ -310,8 +291,8 @@ reserve_user(message)
     char *login;
     char uid_buf[20];
     
-    STAMP;
-    printf("reserve_user\n");
+    com_err("reg_svr", 0, " reserve_user %s %s\n",
+	    message->first, message->last);
 
     argv[0] = "gufl";		/* get_user_by_first_and_last */
     argv[1] = message->first;
@@ -320,8 +301,6 @@ reserve_user(message)
     
     status = sms_query_internal(3, argv, vfy_callbk, (char *)message);
 
-    STAMP;
-    
     if (status == SMS_NO_MATCH) status = UREG_USER_NOT_FOUND;
     if (!got_one && !status)
 	status = UREG_USER_NOT_FOUND;
@@ -338,8 +317,6 @@ reserve_user(message)
 	status = 0;
 	goto punt;
     }
-    /* Sanity check requested login name. */
-    printf("reg_misc_len = %d\n", reg_misc_len);
 
     for (i = 0; i < reg_misc_len && reg_misc[i]; i++) {
 	if (!islower(reg_misc[i])) {
@@ -355,17 +332,14 @@ reserve_user(message)
     
     /* Send request to kerberos admin_server for login name */
     /* get keys */
-    printf("get_svc_in_tkt\n");
-    status = get_svc_in_tkt("register", "kerberos", "ATHENA.MIT.EDU",
+    status = get_svc_in_tkt("register", "sms", "ATHENA.MIT.EDU",
 			    "changepw", "kerberos",
 			    1, "/etc/srvtab");
     if (status) {
 	    status += krb_err_base;
 	    goto punt;
     }
-    STAMP;
     
-    printf("admin_call\n");
     /* send set password request to kerberos admin_server */
     (void) sprintf(uid_buf, "%013d", user_id); /* 13 chars of placebo */
 					       /* for backwards-compat. */
@@ -386,7 +360,6 @@ reserve_user(message)
 
     dest_tkt();
     /* If valid: */
-    STAMP;
     
     /* Set login name */
     status = set_login(login, mit_id);
@@ -397,7 +370,6 @@ reserve_user(message)
 	goto punt;
     }
     /* choose post office */
-    STAMP;
     
     status = choose_pobox(login);
     if (status) {
@@ -405,7 +377,6 @@ reserve_user(message)
 	goto punt;
     }
     /* create group */
-    STAMP;
     
     status = create_group(login);
     if (status == SMS_LIST) status = UREG_LOGIN_USED;
@@ -415,7 +386,6 @@ reserve_user(message)
 	goto punt;
     }
     /* set quota entry, create filsys */
-    STAMP;
     
     status = alloc_filsys(login, SMS_FS_STUDENT, 0, 0);
     if (status == SMS_FILESYS_EXISTS) status = UREG_LOGIN_USED;
@@ -424,7 +394,6 @@ reserve_user(message)
 	goto punt;
     }
     /* set filsys and status in SMS database */
-    STAMP;
     
     status = set_status_filsys(reg_misc, mit_id);
     if (status) {
@@ -433,8 +402,8 @@ reserve_user(message)
     }
 punt:
     dest_tkt();
-    STAMP;
-    printf("reserve_user returning %s\n", error_message(status));
+
+    com_err("reg_svr", status, " returned from reserve_user");
     return status;
 }
 
@@ -443,8 +412,10 @@ set_password(message)
 {
     char *argv[3];
     int status;
+    char uid_buf[10];
     
-    printf("set_password\n");
+    com_err("reg_svr", 0, " set_password %s %s\n",
+	    message->first, message->last);
 
     /* validate that user is who he claims to be */
 
@@ -468,19 +439,20 @@ set_password(message)
 	goto punt;
     }
 
-    printf("password for %s would be set to %s\n", retval ,reg_misc);
-
     /* get keys */
-    status = get_svc_in_tkt("register", "kerberos", "ATHENA.MIT.EDU",
+    status = get_svc_in_tkt("register", "sms", "ATHENA.MIT.EDU",
 			    "changepw", "kerberos",
 			    1, "/etc/srvtab");
     if (status) {
 	    status += krb_err_base;
 	    goto punt;
     }
+
+    (void) sprintf(uid_buf, "%013d", user_id); /* 13 chars of placebo */
+					       /* for backwards-compat. */
     /* send set password request to kerberos admin_server */
-    status = admin_call(ADMIN_SET_KDC_PASSWORD, retval, "", 
-			reg_misc, "BBBBBBBBBBBBB");
+    status = admin_call(ADMIN_ADD_NEW_KEY_ATTR, retval, "", 
+			reg_misc, uid_buf);
 
     if (status) goto punt;
     dest_tkt();

@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/delete.c,v 1.14 1990-03-07 12:14:57 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/delete.c,v 1.15 1990-03-07 17:02:59 mar Exp $";
 #endif lint
 
 /*	This is the file delete.c for the SMS Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/delete.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/delete.c,v 1.14 1990-03-07 12:14:57 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/delete.c,v 1.15 1990-03-07 17:02:59 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -657,7 +657,8 @@ char ** argv;
     }
 /* Design decision not to allow registered users to be deleted.
  */
-    Put_message("Sorry, registered users cannot be deleted.");
+    Put_message("Sorry, registered users cannot be deleted from the database.");
+    Put_message("Deactivate the user now, and the system manager will expunge later.");
 #ifdef notdef
     else if (status == SMS_IN_USE) {
 

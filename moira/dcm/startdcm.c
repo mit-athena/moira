@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/startdcm.c,v $
  *	$Author: danw $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/startdcm.c,v 1.7 1997-01-22 22:54:43 danw Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/startdcm.c,v 1.8 1997-01-29 23:13:54 danw Exp $
  *
  *	Copyright (C) 1987, 1988 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -12,12 +12,13 @@
  */
 
 #ifndef lint
-static char *rcsid_mr_starter_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/startdcm.c,v 1.7 1997-01-22 22:54:43 danw Exp $";
+static char *rcsid_mr_starter_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/startdcm.c,v 1.8 1997-01-29 23:13:54 danw Exp $";
 #endif lint
 
 #include <mit-copyright.h>
+#include <errno.h>
 #include <stdio.h>
-#include <strings.h>
+#include <string.h>
 #include <sys/types.h>
 #include <sys/file.h>
 #include <sys/wait.h>
@@ -26,13 +27,14 @@ static char *rcsid_mr_starter_c = "$Header: /afs/.athena.mit.edu/astaff/project/
 #include <fcntl.h>
 #include <sys/resource.h>
 #include <moira_site.h>
+#include <time.h>
 
 #define PROG 	"dcm"
 
 int rdpipe[2];
 extern int errno;
 
-cleanup()
+void cleanup()
 {
 	int stat, serrno = errno;
 	char buf[BUFSIZ];
@@ -125,7 +127,6 @@ main(argc, argv)
 	
 	do {
 		char *time_s;
-		extern char *ctime();
 		long foo;
 		
 		done = 0;

@@ -7,19 +7,21 @@
  *
  * $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/dcm.c,v $
  * $Author: danw $
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/dcm.c,v 1.17 1997-01-20 18:22:17 danw Exp $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/dcm.c,v 1.18 1997-01-29 23:13:53 danw Exp $
  */
 
 #ifndef lint
-static char rcsid_dcm_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/dcm.c,v 1.17 1997-01-20 18:22:17 danw Exp $";
+static char rcsid_dcm_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/dcm.c,v 1.18 1997-01-29 23:13:53 danw Exp $";
 #endif lint
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <update.h>
 #include <sys/file.h>
 #include <sys/time.h>
 #include <sys/wait.h>
 #include <sys/stat.h>
+#include <time.h>
 #include <fcntl.h>
 #include <signal.h>
 #include <ctype.h>
@@ -28,14 +30,10 @@ static char rcsid_dcm_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moirad
 #include "dcm.h"
 #include "mit-copyright.h"
 #include <unistd.h>
+#include <com_err.h>
 
-extern char *ctime();
-extern char *getenv();
-extern int log_flags;
-extern char *error_message();
-char *itoa();
+extern int log_flags, errno;
 int gqval();
-long time();
 
 
 /* declared global so that we can get the current time from different places. */

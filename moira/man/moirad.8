@@ -1,15 +1,15 @@
 .TH SMSD 8 "30 Nov 1988" "Project Athena"
-\" RCSID: $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/man/moirad.8,v 1.3 1989-06-28 17:31:33 mar Exp $
+\" RCSID: $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/man/moirad.8,v 1.4 1990-03-08 18:37:56 mar Exp $
 .SH NAME
-smsd, startsms \- SMS query daemon
+smsd, startsms \- Moira query daemon
 .SH SYNOPSIS
 .B smsd
 .br
 .B startsms
 .SH DESCRIPTION
-The SMS server
-must be running on the machine hosting the SMS database for any of the
-SMS clients to function.  Rather than invoke
+The Moira server
+must be running on the machine hosting the Moira database for any of the
+Moira clients to function.  Rather than invoke
 .B smsd
 directly, it is started by
 .B startsms,
@@ -34,7 +34,7 @@ Also, a journal file is kept in
 .B /u1/sms/journal
 logging every successful change of the database in a format that can
 be replayed by
-.I smstest(8).
+.I mrtest(8).
 For the server to be able to function properly, if must be run as root
 and root must have access to the tables through RTI Ingres.
 .PP
@@ -51,7 +51,7 @@ file is removed, the database will be re-opened.  To force an
 immediate reopening, send the server a USR2 signal.  The contents of
 the
 .B /etc/smsdown
-file are returned as the SMS motd.
+file are returned as the Moira motd.
 .PP
 .B startsms
 sets its working directory to the root, disconnects from the terminal
@@ -74,6 +74,7 @@ if it is non-zero.
 .br
 /etc/smsdown
 .br
-/etc/srvtab \- The dcm must be able to get Kerberos tickets for "sms.sms".
+/etc/srvtab \- The server must be able to get Kerberos tickets for
+"moira.[servername]".
 .SH "SEE ALSO"
-The Project Athena Technical Plan section on SMS.
+The Project Athena Technical Plan section on Moira.

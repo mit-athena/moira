@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/form_setup.c,v 1.2 1991-05-31 16:46:26 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/form_setup.c,v 1.3 1991-06-05 11:22:47 mar Exp $
  */
 
 #include <stdio.h>
@@ -235,6 +235,21 @@ int field;
     case FT_BOOLEAN:
 	return(boolval(form, field) ? "1" : "0");
     }
+}
+
+
+StoreHost(form, field, dest)
+EntryForm *form;
+int field;
+char **dest;
+{
+    char *s;
+
+    s = strsave(stringval(form, 0));
+    s = canonicalize_hostname(s);
+    StoreField(form, 0, s);
+    free(s);
+    *dest = stringval(form, 0);
 }
 
 

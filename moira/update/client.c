@@ -1,15 +1,15 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/client.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/client.c,v 1.7 1988-09-14 12:15:51 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/client.c,v 1.8 1989-08-21 21:45:36 mar Exp $
  */
 
 #ifndef lint
-static char *rcsid_client2_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/client.c,v 1.7 1988-09-14 12:15:51 mar Exp $";
+static char *rcsid_client2_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/client.c,v 1.8 1989-08-21 21:45:36 mar Exp $";
 #endif	lint
 
 /*
  * MODULE IDENTIFICATION:
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/client.c,v 1.7 1988-09-14 12:15:51 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/client.c,v 1.8 1989-08-21 21:45:36 mar Exp $
  *	Copyright 1987, 1988 by the Massachusetts Institute of Technology.
  *	For copying and distribution information, please see the file
  *	<mit-copyright.h>.
@@ -30,6 +30,7 @@ static char *rcsid_client2_c = "$Header: /afs/.athena.mit.edu/astaff/project/moi
 #include <gdb.h>
 #include <sys/param.h>
 #include <sys/wait.h>
+#include <sys/socket.h>
 #include <update.h>
 #include <errno.h>
 #include <dcm.h>
@@ -112,6 +113,7 @@ char *instructions;
     (((str) != (char *)NULL) && (strlen(str) != 0))
 
     char *service_address, *service_updated, *pathname;
+    int on;
     
     /* some sanity checking of arguments while we build data */
     ASSERT(NONNULL(machine), SMS_INTERNAL, " null host name");
@@ -148,6 +150,8 @@ char *instructions;
 		" can't connect to update %s", service_address);
 	return(SMS_CANT_CONNECT);
     }
+    on = 1;
+    setsockopt(conn->in.fd, SOL_SOCKET, SO_KEEPALIVE, &on, sizeof(on));
     
     /* send authenticators */
     code = send_auth(machine);

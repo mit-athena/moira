@@ -1,0 +1,17 @@
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/include/Imakefile,v 1.1 1991-03-08 11:06:31 mar Exp $
+#
+# Copyright 1990 by the Massachusetts Institute of Technology.
+#
+# For copying and distribution information,
+# please see the file <mit-copyright.h>.
+#
+# Imakefile for include.
+#
+
+CODE=Imakefile dcm.h gdb.h mit-copyright.h mit-sipb-copyright.h \
+	moira.h moira_site.h mr_proto.h update.h ureg_proto.h
+SRCDIR=$(SRCTOP)/include
+
+all::
+
+depend:: ${CODE}

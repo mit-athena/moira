@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/aliases.qc,v 1.4 1988-08-20 20:41:56 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/aliases.qc,v 1.5 1988-08-30 14:05:41 mar Exp $
  *
  * This generates the /usr/lib/aliases mail aliases file for the mailhub.
  * The aliases file will contain:
@@ -22,6 +22,7 @@
 
 char *divide = "########################################################################";
 extern int errno;
+char *whoami = "aliases.gen";
 char *ingres_date_and_time();
 
 
@@ -35,7 +36,9 @@ char **argv;
     struct stat sb;
 ##  int flag1, flag2, flag3;
 ##  char *filetime;
+    int ingerr();
 
+    IIseterr(ingerr);
 ##  ingres sms
 
     if (argc == 2) {
@@ -87,6 +90,32 @@ char **argv;
     if (argc == 2)
       fix_file(targetfile);
     exit(SMS_SUCCESS);
+}
+
+
+/*
+ * ingerr: (supposedly) called when Ingres indicates an error.
+ * I have not yet been able to get this to work to intercept a
+ * database open error.
+ */
+#define INGRES_DEADLOCK 4700
+
+static int ingerr(num)
+    int *num;
+{
+    char buf[256];
+    int ingres_errno;
+
+    switch (*num) {
+    case INGRES_DEADLOCK:
+	ingres_errno = SMS_DEADLOCK;
+	break;
+    default:
+	ingres_errno = SMS_INGRES_ERR;
+    }
+    com_err(whoami, SMS_INGRES_ERR, " code %d\n", *num);
+    critical_alert("DCM", "Alias build encountered INGRES ERROR %d", *num);
+    exit(ingres_errno);
 }
 
 

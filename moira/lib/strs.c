@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/strs.c,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/strs.c,v 1.6 1990-05-02 13:12:11 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/strs.c,v 1.7 1990-08-02 13:59:40 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -11,7 +11,7 @@
  */
 
 #ifndef lint
-static char *rcsid_strs_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/strs.c,v 1.6 1990-05-02 13:12:11 mar Exp $";
+static char *rcsid_strs_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/strs.c,v 1.7 1990-08-02 13:59:40 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -72,4 +72,18 @@ char *strtrim(save)
     }
     *t = '\0';
     return s;
+}
+
+
+/* Modify a string for all of the letters to be uppercase. */
+
+char *uppercase(s)
+char *s;
+{
+    register char *p;
+
+    for (p = s; *p; p++)
+      if (islower(*p))
+	*p = toupper(*p);
+    return(s);
 }

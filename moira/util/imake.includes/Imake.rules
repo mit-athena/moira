@@ -1,6 +1,6 @@
 /**/#	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/util/imake.includes/Imake.rules,v $
 /**/#	$Author: steiner $
-/**/#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/util/imake.includes/Imake.rules,v 4.5 1988-12-16 09:36:53 steiner Exp $
+/**/#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/util/imake.includes/Imake.rules,v 4.6 1988-12-19 15:23:38 steiner Exp $
 /**/#
 
 #ifdef __STDC__
@@ -323,7 +323,7 @@ clean:: 								@@\
 #define manpage(section,page)						@@\
 all::									@@\
 install:: page								@@\
-	$(INSTALLFILE) page concat3(${DESTDIR}${MANDIR}/man,section,/`basename page`) @@\
+	$(INSTALLFILE) page concat4(${DESTDIR}${MANDIR}/man,section,/,`basename page`) @@\
 
 /*
  * Rule for building makefile dependencies.

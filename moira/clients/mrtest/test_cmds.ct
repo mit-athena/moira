@@ -1,3 +1,10 @@
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/test_cmds.ct,v 1.9 1991-05-07 16:40:30 mar Exp $
+#
+#	Copyright (C) 1991 by the Massachusetts Institute of Technology
+#	For copying and distribution information, please see the file
+#	<mit-copyright.h>.
+
+
 	command_table moira_test;
 
 	request test_noop, "Ask Moira to do nothing",
@@ -35,6 +42,13 @@
 
 	request test_script, "Read commands from a script.",
 		script, s;
+
+	request test_test, "Read commands from a test-file.",
+		test, t;
+
+	request test_query_compare,
+		"[Internal use only:] query and compare data.",
+		_compare_query;
 
 	request	ss_self_identify, "Identify the subsystem.",
 		".",

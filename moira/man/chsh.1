@@ -1,5 +1,5 @@
 .TH CHSH 1 "1 Feb 1988" "Project Athena"
-\" RCSID: $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/man/chsh.1,v 1.5 1990-03-08 18:00:35 mar Exp $
+\" RCSID: $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/man/chsh.1,v 1.6 1998-01-07 17:08:24 danw Exp $
 .SH NAME
 chsh \- change user login shell
 .SH SYNOPSIS
@@ -9,9 +9,6 @@ chsh \- change user login shell
 This command changes the login shell associated with
 .IR username
 (your own name by default).
-If no command interpreter is specified, then the login shell reverts
-to the default login shell
-.B /bin/sh.
 While you can specify any program as a command interpreter, be
 cautious about specifying a program that won't let you change your
 login shell to something else (i.e., a noninteractive program like
@@ -21,7 +18,7 @@ When invoked,
 .B chsh
 displays the current shell, and prompts for the new one.
 .PP
-The actual change will take place a couple of hours later.
+The actual change will take place overnight.
 Users may only change their own information unless they are
 Moira database administrators.
 .SH AUTHOR

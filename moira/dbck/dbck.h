@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/dbck.h,v 1.1 1988-09-25 21:48:07 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/dbck.h,v 1.2 1988-09-26 14:41:01 mar Exp $
  *
  * Declarations for SMS database consistancy checker
  *
@@ -15,7 +15,7 @@
 #define MODE_PREEN 3
 #define MODE_YES 4
 
-extern int debug, mode, fast, dcmenable;
+extern int debug, mode, fast, dcmenable, warn;
 extern struct hash *users, *machines, *clusters, *lists;
 extern struct hash *filesys, *nfsphys, *strings;
 

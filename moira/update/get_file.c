@@ -1,13 +1,13 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/get_file.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/get_file.c,v 1.10 1992-09-22 13:42:13 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/get_file.c,v 1.11 1993-04-29 14:46:22 mar Exp $
  */
 /*  (c) Copyright 1988 by the Massachusetts Institute of Technology. */
 /*  For copying and distribution information, please see the file */
 /*  <mit-copyright.h>. */
 
 #ifndef lint
-static char *rcsid_get_file_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/get_file.c,v 1.10 1992-09-22 13:42:13 mar Exp $";
+static char *rcsid_get_file_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/get_file.c,v 1.11 1993-04-29 14:46:22 mar Exp $";
 #endif	lint
 
 #include <mit-copyright.h>
@@ -16,6 +16,7 @@ static char *rcsid_get_file_c = "$Header: /afs/.athena.mit.edu/astaff/project/mo
 #include <ctype.h>
 #include <sys/param.h>
 #include <sys/file.h>
+#include <fcntl.h>
 #include <des.h>
 #include <krb.h>
 #include <moira.h>

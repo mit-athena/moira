@@ -1,7 +1,7 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/mailhub.qc,v 1.1 1989-06-28 13:52:59 mar Exp $
+
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/mailhub.qc,v 1.2 1990-01-12 16:26:51 mar Exp $
  *
- * This generates the /usr/lib/aliases file for the mailhub, and an additional
- * information file for helper programs that send back error messages.
+ * This generates the /usr/lib/aliases file for the mailhub.
  *
  *  (c) Copyright 1988 by the Massachusetts Institute of Technology.
  *  For copying and distribution information, please see the file
@@ -18,10 +18,17 @@
 #include <sys/stat.h>
 #include <sys/time.h>
 
+
 extern int errno;
-char *whoami = "aliases.gen";
+char *whoami = "mailhub.gen";
 char *ingres_date_and_time();
-char *divide = "################################################################\n";
+char *divide = "##############################################################";
+
+#define ML_WID	72
+#define AL_MAX_WID 896
+
+#define FALSE 0
+#define TRUE (!FALSE)
 
 
 main(argc, argv)
@@ -74,6 +81,7 @@ char **argv;
     sort_info();
 
     fprintf(stderr, "Dumping information\n");
+    do_lists(out);
     do_people(out);
 
     fprintf(out, "\n%s\n# End of aliases file\n", divide);
@@ -114,37 +122,46 @@ static int ingerr(num)
     exit(ingres_errno);
 }
 
-struct hash *users, *machines, *strings, *names;
+struct hash *users, *machines, *strings, *lists, *names;
 struct user {
     char *login;
-    unsigned short status;
     char *first;
     char *last;
     char mi;
-    char *fullname;
-    char *addr;
     char *pobox;
-    int id;
 };
-#define MAXIDS 10
+struct member {
+    struct member *next;
+    char *name;
+    int list_id;
+};
+struct list {
+    char *name;
+    char maillist;
+    char acl_t;
+    int acl_id;
+    struct member *m;
+};
 struct names {
     char *name;
     struct names *next;
-    int ids[MAXIDS];
-    short count;
+    int keep:1;
+    int id:31;
 };
 
 
 get_info()
 ##{
-##  int id, pid, bid, stat, cnt;
-##  char name[129], type[9], fname[17], mname[17], lname[17], year[9];
-##  char dept[13], oaddr[17], ophone[13], buf[257], haddr[17], hphone[13];
-    char *s, *depttmp, *savedat(), *office_addr, *office_phone;
+##  int id, pid, bid, stat, cnt, maillistp, acl, mid;
+##  char name[129], type[9], fname[17], mname[17], lname[17], buf[257];
+    char *s;
     register struct user *u;
+    struct list *l, *memberlist;
+    register struct member *m;
 
     /* get locks */
 ##  retrieve (buf = users.modtime) where users.users_id = 0
+##  retrieve (buf = list.modtime) where list.list_id = 0
 
     cnt = 0;
     machines = create_hash(1000);
@@ -152,7 +169,10 @@ get_info()
       if (s = index(name, '.'))
 	*s = 0;
       sprintf(buf, "%s.LOCAL", name);
-      hash_store(machines, id, strsave(buf));
+      if (hash_store(machines, id, strsave(buf)) < 0) {
+	  fprintf(stderr, "Out of memory!\n");
+	  exit(SMS_NO_MEM);
+      }
       cnt++;
 ##  }
     fprintf(stderr, "Loaded %d machines\n", cnt);
@@ -160,22 +180,22 @@ get_info()
     cnt = 0;
     strings = create_hash(2000);
 ##  retrieve (id = strings.string_id, name = strings.string) {
-	hash_store(strings, id, strsave(strtrim(name)));
+	if (hash_store(strings, id, strsave(strtrim(name))) < 0) {
+	    fprintf(stderr, "Out of memory!\n");
+	    exit(SMS_NO_MEM);
+	}
 	cnt++;
 ##  }
     fprintf(stderr, "Loaded %d strings\n", cnt);
 
     cnt = 0;
-    users = create_hash(15000);
+    users = create_hash(12001);
 ##  range of u is users
-##  retrieve (id = u.users_id, name = u.login, stat = u.status,
-##	      fname = u.first, mname = u.middle, lname = u.last,
-##	      year = u.mit_year, dept = u.mit_dept,
-##	      oaddr = u.office_addr, ophone = u.office_phone,
-##	      haddr = u.home_addr, hphone = u.home_phone,
-##	      type = u.potype, pid = u.pop_id, bid = u.box_id) {
+##  retrieve (id = u.users_id, name = u.login, fname = u.first,
+##	      mname = u.middle, lname = u.last,
+##	      type = u.potype, pid = u.pop_id, bid = u.box_id) 
+##	where u.status != 3 {
 	u = (struct user *) malloc(sizeof(struct user));
-	u->status = stat;
 	u->login = strsave(strtrim(name));
 	u->first = strsave(strtrim(fname));
 	u->last  = strsave(strtrim(lname));
@@ -183,91 +203,113 @@ get_info()
 	  u->mi = mname[0];
 	else
 	  u->mi = 0;
-	if (atoi(year) > 1900)
-	  depttmp = "Undergraduate";
-	else
-	  depttmp = strtrim(dept);
-	sprintf(buf, "%s, %s %c; ID: %s; Dept: %s %s",
-		u->last, u->first, u->mi ? u->mi : ' ',
-		u->login, depttmp, strtrim(year));
-	u->fullname = strsave(buf);
 
-	office_addr = strtrim(oaddr);
-	if (*office_addr == 0) {
-	    office_addr = strtrim(haddr);
-	}
-	office_phone = strtrim(ophone);
-	if (*office_phone == 0) {
-	    office_phone = strtrim(hphone);
-	}
-
-	if (*office_addr) {
-	    sprintf(buf, "%s; %s",
-		    office_addr, office_phone);
-	    u->addr = strsave(buf);
+	if (type[0] == 'P' && (s = hash_lookup(machines, pid))) {
+	    sprintf(buf, "%s@%s", strtrim(name), s);
+	    u->pobox = strsave(buf);
+	} else if (type[0] ==  'S') {
+	    u->pobox = hash_lookup(strings, bid);
 	} else
-	  u->addr = NULL;
-
-	u->id = 0;
-	u->pobox = (char *) NULL;
-	if (stat != 3) {
-	    if (type[0] == 'P') {
-		if (s = hash_lookup(machines, pid)) {
-		    sprintf(buf, "%s@%s", strtrim(name), s);
-		    u->pobox = strsave(buf);
-		} else {
-		    fprintf(stderr,
-			    "User %s's pobox is on a missing machine!\n",
-			    u->login);
-		}
-	    } else if (type[0] ==  'S') {
-		if ((u->pobox = hash_lookup(strings, bid)) == NULL)
-		  fprintf(stderr,
-			  "User %s's pobox string is missing!\n",
-			  u->login);
-	    }
+	  u->pobox = (char *) NULL;
+	if (hash_store(users, id, u) < 0) {
+	    fprintf(stderr, "Out of memory!\n");
+	    exit(SMS_NO_MEM);
 	}
-	hash_store(users, id, u);
 	cnt++;
 ##  }
     fprintf(stderr, "Loaded %d users\n", cnt);
+
+    cnt = 0;
+    lists = create_hash(15000);
+##  range of l is list
+##  retrieve (id = l.list_id, name = l.#name, maillistp = l.maillist,
+##	      type = l.acl_type, acl = l.acl_id)
+##    where l.active != 0 {
+	l = (struct list *) malloc(sizeof(struct list));
+	l->name = strsave(strtrim(name));
+	l->maillist = maillistp;
+	l->acl_t = type[0];
+	l->acl_id = acl;
+	l->m = (struct member *) NULL;
+	if (hash_store(lists, id, l) < 0) {
+	    fprintf(stderr, "Out of memory!\n");
+	    exit(SMS_NO_MEM);
+	}
+	cnt++;
+##  }
+    fprintf(stderr, "Loaded %d lists\n", cnt);
+
+    cnt = 0;
+##  range of m is imembers
+##  retrieve (id = m.list_id, type = m.member_type, mid = m.member_id)
+##    	where m.direct = 1  {
+	cnt++;
+	if (l = (struct list *) hash_lookup(lists, id)) {
+	    m = (struct member *) malloc(sizeof(struct member));
+	    if (type[0] == 'U' &&
+		(u = (struct user *) hash_lookup(users, mid))) {
+		m->list_id = 0;
+		m->name = u->login;
+		m->next = l->m;
+		l->m = m;
+	    } else if (type[0] == 'L' && 
+		       (memberlist = (struct list *) hash_lookup(lists, mid))) {
+		m->list_id = mid;
+		m->name = memberlist->name;
+		m->next = l->m;
+		l->m = m;
+	    } else if (type[0] == 'S' &&
+		       (s = hash_lookup(strings, mid))) {
+		m->list_id = 0;
+		m->next = l->m;
+		l->m = m;
+		m->name = s;
+	    }
+	}
+##  }
+    fprintf(stderr, "Loaded %d members\n", cnt);
 ##}
 
 
-char *savedat(s)
-register char *s;
+save_mlist(id, l, force)
+int id;
+struct list *l;
+int force;
 {
-    char buf[256];
-    register char *ss = &buf[0];
-    char *lastchar = NULL;
+    register struct member *m;
+    register struct list *l1;
 
-    while (isspace(*s))
-      s++;
-    if (*s == 0)
-      return("");
+    if (l->maillist == 2 ||
+	l->maillist == 3 ||
+	(l->maillist == 0 && !force))
+      return;
 
-    for (; *s; s++) {
-	if (isspace(*s)) {
-	    *ss++ = '_';
-	} else if (islower(*s)) {
-	    *ss++ = toupper(*s);
-	    lastchar = ss;
-	} else {
-	    *ss++ = *s;
-	    lastchar = ss;
-	}
+    if (l->m && l->m->next == NULL &&
+	!strcasecmp(l->name, l->m->name)) {
+	l->maillist = 3;
+	return;
     }
-    if (lastchar)
-      *lastchar = 0;
-    *ss = 0;
-    if ((ss = (char *) malloc(strlen(buf)+1)) == NULL) {
-	fprintf(stderr, "ran out of memory saving data\n");
-	exit(1);
+    l->maillist = 2;
+    insert_name(l->name, -id, TRUE, FALSE);
+
+    if (l->acl_t == 'L' && (l1 = (struct list *)hash_lookup(lists, l->acl_id)))
+      save_mlist(0, l1, TRUE);
+    
+    for (m = l->m; m; m = m->next) {
+	if (m->list_id && (l1 = (struct list *)hash_lookup(lists, m->list_id)))
+	  save_mlist(0, l1, TRUE);
     }
-    strcpy(ss, buf);
-    return(ss);
 }
 
+
+insert_login(id, u, dummy)
+int id;
+struct user *u;
+int dummy;
+{
+    if (u->pobox && u->login[0] != '#')
+      insert_name(u->login, id, TRUE, FALSE);
+}
 
 void insert_names(id, u, dummy)
 int id;
@@ -276,22 +318,24 @@ int dummy;
 {
     char buffer[256];
 
-    if (u->status != 0 && u->status != 4)
-      insert_name(u->login, id);
-    insert_name(u->last, id);
+    insert_name(u->last, id, FALSE, FALSE);
     sprintf(buffer, "%s_%s", u->first, u->last);
-    insert_name(buffer, id);
+    insert_name(buffer, id, FALSE, TRUE);
+    sprintf(buffer, "%c_%s", u->first[0], u->last);
+    insert_name(buffer, id, FALSE, TRUE);
     if (u->mi) {
 	sprintf(buffer, "%s_%c_%s", u->first, u->mi, u->last);
-	insert_name(buffer, id);
+	insert_name(buffer, id, FALSE, TRUE);
     }
 }
 
 int incount = 0;
 
-insert_name(s, id)
+insert_name(s, id, nodups, copy)
 char *s;
 int id;
+int nodups;
+int copy;
 {
     int code;
     register struct names *ns;
@@ -304,12 +348,18 @@ int id;
     if (ns == NULL) {
 	if ((ns = (struct names *) malloc(sizeof(struct names))) == NULL) {
 	    fprintf(stderr, "ran out of memory inserting name (sorting)\n");
-	    exit(1);
+	    exit(SMS_NO_MEM);
 	}
-	ns->name = strsave(s);
-	ns->count = 1;
-	ns->ids[0] = id;
-	hash_store(names, code, ns);
+	if (copy)
+	  ns->name = strsave(s);
+	else
+	  ns->name = s;
+	ns->keep = nodups;
+	ns->id = id;
+	if (hash_store(names, code, ns) < 0) {
+	    fprintf(stderr, "Out of memory!\n");
+	    exit(SMS_NO_MEM);
+	}
 	return;
     }
     if (strcasecmp(ns->name, s)) {
@@ -320,21 +370,21 @@ int id;
 	}
 	if ((ns->next = (struct names *)malloc(sizeof(struct names))) == NULL) {
 	    fprintf(stderr, "ran out of memory insterting name (sorting)\n");
-	    exit(1);
+	    exit(SMS_NO_MEM);
 	}
 	ns = ns->next;
-	ns->name = strsave(s);
-	ns->count = 1;
-	ns->ids[0] = id;
-	hash_store(names, code, ns);
+	if (copy)
+	  ns->name = strsave(s);
+	else
+	  ns->name = s;
+	ns->keep = nodups;
+	ns->id = id;
 	return;
     }
  foundns:
-    if (ns->count < MAXIDS - 1) {
-	ns->ids[ns->count++] = id;
-	return;
-    }
-    ns->count++;
+    if (nodups || ns->keep)
+      return;
+    ns->id = 0;
 }
 
 
@@ -344,13 +394,11 @@ register char *s;
     register int result;
     register int c;
 
-    for (result = 0; *s; s++) {
-	if (isupper(*s))
-	  c = tolower(*s);
-	else
-	  c = *s;
+    for (result = 0; c = *s; s++) {
+	if (isupper(c))
+	  c = *s = tolower(c);
 /*	result = result * 31 + *s; */
-	result = (result << 5) - result + c - 'a';
+	result = (result << 5) - result + c - '`';
     }
     return(result < 0 ? -result : result);
 }
@@ -358,14 +406,13 @@ register char *s;
 
 sort_info()
 {
-    names = create_hash(10000);
+    names = create_hash(20001);
+    hash_step(users, insert_login, NULL);
+    hash_step(lists, save_mlist, FALSE);
     hash_step(users, insert_names, NULL);
     fprintf(stderr, "Inserted %d names\n", incount);
 }
 
-
-static long offset;
-static FILE *msgs;
 
 output_data(dummy, nms, out)
 int dummy;
@@ -378,51 +425,108 @@ FILE *out;
 
     incount++;
     for (ns = nms; ns; ns = ns->next) {
-	if (strlen(ns->name) < 2)
-	  continue;
-	if (ns->count == 1) {
-	    u = (struct user *) hash_lookup(users, ns->ids[0]);
+	if (ns->name[0] == 0 || ns->name[1] == 0) {
+	    fprintf(stderr, "punting %s due to short name\n", ns->name);
+	    continue;
+	}
+	if (ns->id > 0) {
+	    u = (struct user *) hash_lookup(users, ns->id);
 	    if (u->pobox) {
 		fprintf(out, "%s: %s\n", ns->name, u->pobox);
-		continue;
+	    } else {
+		fprintf(out, "%s: =%s=@nobox\n", ns->name, ns->name);
 	    }
-	    if (u->id == 0) {
-		u->id = offset;
-		if (*u->addr) {
-		    fprintf(msgs, "%s\n  %s\n\001", u->fullname, u->addr);
-		    offset += strlen(u->fullname) + strlen(u->addr) + 5;
-		} else {
-		    fprintf(msgs, "%s\n\001", u->fullname);
-		    offset += strlen(u->fullname) + 2;
-		}
-	    }
-	    fprintf(out, "%s: +%d+@no_po_box\n", ns->name, u->id);
-	} else 	if (ns->count < 10) {
-	    fprintf(out, "%s: +%d+@ambiguous\n", ns->name, offset);
-	    for (i = 0; i < ns->count; i++) {
-		u = (struct user *) hash_lookup(users, ns->ids[i]);
-		fprintf(msgs, "%s\n", u->fullname);
-		offset += strlen(u->fullname) + 1;
-	    }
-	    fputs("\001", msgs);
-	    offset++;
-	} else {
-	    fprintf(out, "%s: +%d+@too_many\n", ns->name, ns->count);
+	} else if (ns->id == 0) {
+	    fprintf(out, "%s: =%s=@ambig\n", ns->name, ns->name);
 	}
     }
 }
 
 
+int lwid, bol, awid;
+
+output_mlist(id, l, out)
+int id;
+register struct list *l;
+FILE *out;
+{
+    struct list *l1;
+    register struct member *m;
+    register struct user *u;
+
+    if (l->maillist != 2)
+      return;
+    if (l->acl_t ==  'L' &&
+	(l1 = (struct list *) hash_lookup(lists, l->acl_id)))
+      fprintf(out, "owner-%s: %s\n", l->name, l1->name);
+    else if (l->acl_t ==  'U' &&
+	     (u = (struct user *) hash_lookup(users, l->acl_id)))
+      fprintf(out, "owner-%s: %s\n", l->name, u->login);
+
+    fprintf(out, "%s: ", l->name);
+    lwid = strlen(l->name) + 2;
+    bol = 1;
+    for (m = l->m; m; m = m->next) {
+	do_member(out, m->name);
+    }
+    if (l->m == (struct member *)NULL)
+      fprintf(out, "/dev/null");
+    fprintf(out, "\n\n");
+    incount++;
+}
+
+
+/* print out strings separated by commas, doing line breaks as appropriate */
+
+do_member(out, s)
+FILE *out;
+register char *s;
+{
+    register wwid;
+    static int cont = 1;
+
+    wwid = strlen(s);
+
+    if (!bol && awid + wwid + 2 > AL_MAX_WID) {
+	fprintf(out, ",\n\tcontinuation-%d\ncontinuation-%d: ", cont, cont);
+	cont++;
+	awid = lwid = 17 + wwid;
+	fputs(s, out);
+	return;
+    }
+
+    if (bol) {
+	lwid += wwid;
+	awid = lwid;
+	fputs(s, out);
+	bol = 0;
+	return;
+    }
+    if (lwid + wwid + 2 > ML_WID) {
+	fprintf(out, ",\n\t%s", s);
+	awid += lwid + wwid + 2;
+	lwid = wwid + 8;
+	return;
+    }
+    lwid += wwid + 2;
+    fprintf(out, ", %s", s);
+}
+
+
+do_lists(out)
+FILE *out;
+{
+    incount = 0;
+    fprintf(out, "\n%s\n# Mailing lists\n%s\n", divide, divide);
+    hash_step(lists, output_mlist, out);
+    fprintf(stderr, "Output %d lists\n", incount);
+}
+
 do_people(out)
 FILE *out;
 {
     incount = 0;
-    msgs = fopen("aliases.strings", "w");
-    fputs(msgs, "\001");
-    offset = 1;
-
+    fprintf(out, "\n%s\n# People\n%s\n", divide, divide);
     hash_step(names, output_data, out);
-    fputs("\n", msgs);
-    fclose(msgs);
     fprintf(stderr, "Output %d entries\n", incount);
 }

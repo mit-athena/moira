@@ -1,4 +1,4 @@
-/* $Id: qsetup.pc,v 2.52 2002-12-03 21:22:26 zacheiss Exp $
+/* $Id: qsetup.pc,v 2.53 2003-01-02 01:06:34 zacheiss Exp $
  *
  * Query setup routines
  *
@@ -21,7 +21,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsetup.pc,v 2.52 2002-12-03 21:22:26 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsetup.pc,v 2.53 2003-01-02 01:06:34 zacheiss Exp $");
 
 extern char *whoami;
 extern int dbms_errno, mr_errcode;
@@ -493,6 +493,21 @@ int setup_alis(struct query *q, char *argv[], client *cl)
 
 	  if (best == -1)
 	    return MR_SERVICE;
+	}
+    }
+  else
+    {
+      /* Client too old to know about the mailman code.
+       * Use existing value of mailman boolean in the table.
+       */
+      EXEC SQL SELECT mailman INTO :mailman FROM list WHERE name = :name;
+      if (mailman)
+	{
+	  EXEC SQL SELECT  COUNT(name) INTO :cnt FROM list
+	    WHERE (name = :name || '-admin' OR name = :name || '-owner' OR
+		   name = :name || '-request');
+	  if (cnt)
+	    return MR_EXISTS;
 	}
     }
 

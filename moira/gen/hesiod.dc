@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/hesiod.dc,v 1.8 1993-03-02 17:16:37 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/hesiod.dc,v 1.9 1993-03-02 17:45:40 mar Exp $
  *
  * This generates the zone files necessary to load a hesiod server.
  * The following zones are generated: passwd, uid, pobox, group,
@@ -25,6 +25,11 @@ EXEC SQL INCLUDE sqlca;
 #else
 #define HTYPE "TXT"
 #endif
+
+/* max number of bytes of a data record that can be returned in a hesiod 
+ * query.  This is 512 - overhead (~66) [derived empirically]
+ */
+#define MAXHESSIZE 446
 
 char hesiod_dir[64];
 
@@ -263,7 +268,7 @@ do_groups()
     time_t ftime;
     EXEC SQL BEGIN DECLARE SECTION;
     char name[33];
-    int gid, id, lid, flag1, flag2, flag3;
+    int gid, id, lid, flag1, flag2, flag3, len;
     EXEC SQL END DECLARE SECTION;
 
     /* open files */
@@ -388,10 +393,18 @@ do_groups()
 	      continue;
 	    fprintf(lout, "%s.grplist\tHS %s \"",
 		    ((struct user *)b->data)->name, HTYPE);
+	    len = 0;
 	    for (; g; g = g->next) {
-		fputs(g->lid, lout);
-		if (g->next)
-		  putc(':', lout);
+		if (len + strlen(g->lid) + 1 < MAXHESSIZE) {
+		    fputs(g->lid, lout);
+		    if (g->next)
+		      putc(':', lout);
+		    len += strlen(g->lid) + 1;
+		} else {
+		    com_err(whoami, 0, "truncated grp list for user %s",
+			    ((struct user *)b->data)->name);
+		    break;
+		}
 	    }
 	    fputs("\"\n", lout);
 	}

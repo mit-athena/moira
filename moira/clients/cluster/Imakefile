@@ -1,0 +1,10 @@
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/cluster/Imakefile,v 1.1 1991-09-08 18:29:28 mar Exp $
+
+SRCS= cluster.c AriRegAll.c
+OBJS= cluster.o AriRegAll.o
+CODE= ${SRCS} Imakefile
+INCLUDE= -I/mit/xdm/src/wcl
+XLIBS= /mit/xdm/@sys/wcl/libWc.a \
+	-L/mit/x11/`machtype`lib -lXaw -lXmu -lXt -lXext -lX11 -lm
+
+program(cluster, ${OBJS},,${XLIBS} ${CLIBS},${PROGDIR})

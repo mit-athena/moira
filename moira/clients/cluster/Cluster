@@ -1,0 +1,85 @@
+! $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/cluster/Cluster,v 1.1 1991-09-08 18:29:22 mar Exp $
+
+cluster.wcChildren:		toplevel
+
+! Program resources
+
+! Widget tree
+
+*toplevel.wcClass:		formWidgetClass
+*toplevel.wcChildren:		buttons, clusters, machines
+
+*buttons.wcClass:		formWidgetClass
+*buttons.wcChildren:		quit, help
+*buttons.borderWidth:		0
+*quit.wcClass:			commandWidgetClass
+*quit.callback:			WcExitCB(0)
+*help.wcClass:			commandWidgetClass
+*help.fromHoriz:		*quit
+
+*clusters.wcClass:		formWidgetClass
+*clusters.wcChildren:		clutitle, cget, cclear, \
+				clufltrl, clufilter, clusterlist
+*clusters.fromVert:		*buttons
+
+*clutitle.wcClass:		labelWidgetClass
+*clutitle.label:		Clusters
+*clutitle.borderWidth:		0
+*cget.wcClass:			commandWidgetClass
+*cget.fromVert:			*clutitle
+*cget.label:			get
+*cget.callback:			getClusters
+*cclear.wcClass:		commandWidgetClass
+*cclear.fromVert:		*clutitle
+*cclear.fromHoriz:		*cget
+*cclear.label:			clear
+!*cclear.callback:		
+*clufltrl.wcClass:		labelWidgetClass
+*clufltrl.label:		filter:
+*clufltrl.fromVert:		*cget
+*clufltrl.borderWidth:		0
+*clufilter.wcClass:		asciiTextWidgetClass
+*clufilter.fromVert:		*cget
+*clufilter.fromHoriz:		*clufltrl
+*clufilter*length:		8
+*clufilter*string:		*
+*clufilter*editType:		edit
+*clufilter*useStringInPlace:	True
+
+*clusterlist.wcClass:		listWidgetClass
+*clusterlist.fromVert:		*clufilter
+*clusterlist.Columns:		1
+*clusterlist.height:		300
+*clusterlist.width:		200
+*clusterlist.numberStrings:	0
+*clusterlist.verticalList:	True
+!*clusterlist*scrollVertical:	always
+!*clusterlist*displayCaret:	False
+!*clusterlist*editType:		edit
+
+*machines.wcClass:		formWidgetClass
+*machines.wcChildren:		mactitle, macfltrl, macfilter, machinelist
+*machines.fromVert:		*buttons
+*machines.fromHoriz:		*clusters
+
+*mactitle.wcClass:		labelWidgetClass
+*mactitle.label:		Machines
+*mactitle.borderWidth:		0
+*macfltrl.wcClass:		labelWidgetClass
+*macfltrl.label:		filter:
+*macfltrl.fromVert:		*mactitle
+*macfltrl.borderWidth:		0
+*macfilter.wcClass:		asciiTextWidgetClass
+*macfilter.fromVert:		*mactitle
+*macfilter.fromHoriz:		*macfltrl
+*macfilter*length:		8
+*macfilter*string:		*
+*macfilter*editType:		edit
+*macfilter*useStringInPlace:	True
+
+*machinelist.wcClass:		asciiTextWidgetClass
+*machinelist.fromVert:		*macfilter
+*machinelist.height:		300
+*machinelist.width:		200
+*machinelist*scrollVertical:	always
+*machinelist*displayCaret:	False

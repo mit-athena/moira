@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/afs.c,v 1.43 1993-02-02 18:12:43 probe Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/afs.c,v 1.44 1993-02-02 18:21:26 probe Exp $
  *
  * Do AFS incremental updates
  *
@@ -297,9 +297,8 @@ int afterc;
 			   after[L_NAME], error_message(code));
 	    return;
 	}
-	av[0] = "LIST";
-	av[1] = after[L_NAME];
-	code = mr_query("get_end_members_of_list", 2, av,
+	av[0] = after[L_NAME];
+	code = mr_query("get_end_members_of_list", 1, av,
 			add_list_members, after[L_NAME]);
 	if (code)
 	    critical_alert("incremental",

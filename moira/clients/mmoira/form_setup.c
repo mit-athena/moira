@@ -1,10 +1,11 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/form_setup.c,v 1.3 1991-06-05 11:22:47 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/form_setup.c,v 1.4 1992-10-13 11:27:31 mar Exp $
  */
 
 #include <stdio.h>
 #include <moira.h>
 #include <moira_site.h>
 #include <Xm/Xm.h>
+#include <X11/StringDefs.h>
 #include "mmoira.h"
 
 
@@ -27,6 +28,112 @@ char *nfs_states[] = { "0 - Not Allocated",
 			  "4 - Staff",
 			  "8 - Miscellaneous",
 		          NULL};
+
+
+MoiraValueChanged(f, p)
+EntryForm *f;
+UserPrompt *p;
+{
+    char buf[1024], fixname[128];
+#define maybechange(f, n, v)	{if (f->inputlines[n]->insensitive != v) { f->inputlines[n]->insensitive=v; f->inputlines[n]->changed = True; }}
+
+    switch (f->menu->operation) {
+    case MM_ADD_LIST:
+    case MM_MOD_LIST:
+	maybechange(f, L_GID, !boolval(f, L_GROUP));
+	if (!strcmp(stringval(f, L_ACE_TYPE), "NONE"))
+	  maybechange(f, L_ACE_NAME, True)
+	else
+	  maybechange(f, L_ACE_NAME, False)
+	break;
+    case MM_ADD_FILSYS:
+    case MM_MOD_FILSYS:
+	if (!strcmp(stringval(f, FS_TYPE), "FSGROUP") ||
+		   !strcmp(stringval(f, FS_TYPE), "MUL") ||
+		   !strcmp(stringval(f, FS_TYPE), "ERR")) {
+	    maybechange(f, FS_MACHINE, True);
+	    maybechange(f, FS_PACK, True);
+	    maybechange(f, FS_M_POINT, True);
+	    maybechange(f, FS_ACCESS, True);
+	    maybechange(f, FS_CREATE, True);
+	} else if (!strcmp(stringval(f, FS_TYPE), "NFS") ||
+		   !strcmp(stringval(f, FS_TYPE), "RVD")) {
+	    maybechange(f, FS_MACHINE, False);
+	    maybechange(f, FS_PACK, False);
+	    maybechange(f, FS_M_POINT, False);
+	    maybechange(f, FS_ACCESS, False);
+	    maybechange(f, FS_CREATE, False);
+	} else if (!strcmp(stringval(f, FS_TYPE), "AFS")) {
+	    maybechange(f, FS_MACHINE, True);
+	    maybechange(f, FS_PACK, False);
+	    maybechange(f, FS_M_POINT, False);
+	    maybechange(f, FS_ACCESS, False);
+	    maybechange(f, FS_CREATE, True);
+	}
+	break;
+    case MM_SET_POBOX:
+	if (!strcmp(stringval(f, PO_TYPE), "POP")) {
+	    maybechange(f, 2, True);
+	    maybechange(f, 3, False);
+	} else if (!strcmp(stringval(f, PO_TYPE), "SMTP")) {
+	    maybechange(f, 2, False);
+	    maybechange(f, 3, True);
+	} else if (!strcmp(stringval(f, PO_TYPE), "NONE")) {
+	    maybechange(f, 2, True);
+	    maybechange(f, 3, True);
+	}
+	break;
+    case MM_ADD_QUOTA:
+    case MM_MOD_QUOTA:
+	if (!strcmp(stringval(f, Q_TYPE), "ANY"))
+	  maybechange(f, Q_NAME, True)
+	else
+	  maybechange(f, Q_NAME, False)
+	break;
+    case MM_ADD_ZEPHYR:
+    case MM_MOD_ZEPHYR:
+	if (!strcmp(stringval(f, ZA_XMT_TYPE), "NONE"))
+	  maybechange(f, ZA_XMT_ID, True)
+	else
+	  maybechange(f, ZA_XMT_ID, False)
+	if (!strcmp(stringval(f, ZA_SUB_TYPE), "NONE"))
+	  maybechange(f, ZA_SUB_ID, True)
+	else
+	  maybechange(f, ZA_SUB_ID, False)
+	if (!strcmp(stringval(f, ZA_IWS_TYPE), "NONE"))
+	  maybechange(f, ZA_IWS_ID, True)
+	else
+	  maybechange(f, ZA_IWS_ID, False)
+	if (!strcmp(stringval(f, ZA_IUI_TYPE), "NONE"))
+	  maybechange(f, ZA_IUI_ID, True)
+	else
+	  maybechange(f, ZA_IUI_ID, False)
+	break;
+    case MM_ADD_USER:
+	strcpy(fixname, stringval(f, U_LAST));
+	FixCase(fixname);
+	sprintf(buf, "You entered a name which does not follow the capitalization conventions.\nCorrect it to \"%s\"?", fixname);
+	if (strcmp(fixname, stringval(f, U_LAST)) &&
+	    AskQuestion(buf, "fixcase"))
+	  StoreField(f, U_LAST, fixname);
+	strcpy(fixname, stringval(f, U_FIRST));
+	FixCase(fixname);
+	sprintf(buf, "You entered a name which does not follow the capitalization conventions.\nCorrect it to \"%s\"?", fixname);
+	if (strcmp(fixname, stringval(f, U_FIRST)) &&
+	    AskQuestion(buf, "fixcase"))
+	  StoreField(f, U_FIRST, fixname);
+	strcpy(fixname, stringval(f, U_MIDDLE));
+	FixCase(fixname);
+	sprintf(buf, "You entered a name which does not follow the capitalization conventions.\nCorrect it to \"%s\"?", fixname);
+	if (strcmp(fixname, stringval(f, U_MIDDLE)) &&
+	    AskQuestion(buf, "fixcase"))
+	  StoreField(f, U_MIDDLE, fixname);
+	break;
+    default:
+	return;
+    }
+    UpdateForm(f);
+}
 
 
 /* Called when a menu item is selected. */
@@ -55,11 +162,15 @@ MenuItem	*menu;
 	StoreField(f, U_SHELL, "/bin/csh");
 	StoreField(f, U_STATE, user_states[US_NO_LOGIN_YET]);
 	f->inputlines[U_STATE]->keywords = user_states;
+	f->inputlines[U_LAST]->valuechanged = MoiraValueChanged;
+	f->inputlines[U_FIRST]->valuechanged = MoiraValueChanged;
+	f->inputlines[U_MIDDLE]->valuechanged = MoiraValueChanged;
 	GetKeywords(f, U_CLASS, "class");
 	break;
     case MM_SET_POBOX:
 	GetKeywords(f, 1, "pobox");
 	GetKeywords(f, 3, "poserver");
+	f->inputlines[PO_TYPE]->valuechanged = MoiraValueChanged;
 	break;
     case MM_ADD_FILSYS:
 	StoreField(f, FS_TYPE, "NFS");
@@ -71,6 +182,7 @@ MenuItem	*menu;
 	GetKeywords(f, FS_TYPE, "filesys");
 	GetKeywords(f, FS_ACCESS, "fs_access_NFS");
 	GetKeywords(f, FS_L_TYPE, "lockertype");
+	f->inputlines[FS_TYPE]->valuechanged = MoiraValueChanged;
 	break;
     case MM_ADD_NFS:
 	StoreField(f, 1, "/u1/lockers");
@@ -84,6 +196,7 @@ MenuItem	*menu;
     case MM_DEL_QUOTA:
     case MM_MOD_QUOTA:
 	GetKeywords(f, 1, "quota_type");
+	f->inputlines[Q_TYPE]->valuechanged = MoiraValueChanged;
 	break;
     case MM_SHOW_ACE_USE:
 	StoreField(f, 0, "USER");
@@ -95,6 +208,9 @@ MenuItem	*menu;
 	StoreField(f, L_GID, UNIQUE_GID);
 	StoreField(f, L_ACE_TYPE, "USER");
 	GetKeywords(f, L_ACE_TYPE, "ace_type");
+	f->inputlines[L_GID]->insensitive = True;
+	f->inputlines[L_GROUP]->valuechanged = MoiraValueChanged;
+	f->inputlines[L_ACE_TYPE]->valuechanged = MoiraValueChanged;
 	break;
     case MM_SHOW_MEMBERS:
 	GetKeywords(f, 1, "member");
@@ -133,6 +249,10 @@ MenuItem	*menu;
 	GetKeywords(f, 3, "ace_type");
 	GetKeywords(f, 5, "ace_type");
 	GetKeywords(f, 7, "ace_type");
+	f->inputlines[ZA_XMT_TYPE]->valuechanged = MoiraValueChanged;
+	f->inputlines[ZA_SUB_TYPE]->valuechanged = MoiraValueChanged;
+	f->inputlines[ZA_IWS_TYPE]->valuechanged = MoiraValueChanged;
+	f->inputlines[ZA_IUI_TYPE]->valuechanged = MoiraValueChanged;
 	break;
     }
 
@@ -165,7 +285,8 @@ char *name;
     EntryForm **fp;
     UserPrompt *p, **pp;
     static BottomButton **buttons = NULL;
-    int MoiraFormComplete(), button_callback(), help_form_callback();
+    int MoiraFormComplete(), MoiraFormApply();
+    int button_callback(), help_form_callback();
 
     for (fp = MoiraForms; *fp; fp++)
       if (!strcmp((*fp)->formname, name))
@@ -195,17 +316,20 @@ char *name;
 	}
     }
     if (buttons == NULL) {
-	buttons = (BottomButton **)malloc(4 * sizeof(BottomButton *));
+	buttons = (BottomButton **)malloc(5 * sizeof(BottomButton *));
 	buttons[0] = (BottomButton *)malloc(sizeof(BottomButton));
 	buttons[0]->label = "OK";
 	buttons[0]->returnfunction = MoiraFormComplete;
 	buttons[1] = (BottomButton *)malloc(sizeof(BottomButton));
-	buttons[1]->label = "Cancel";
-	buttons[1]->returnfunction = button_callback;
+	buttons[1]->label = "Apply";
+	buttons[1]->returnfunction = MoiraFormApply;
 	buttons[2] = (BottomButton *)malloc(sizeof(BottomButton));
-	buttons[2]->label = "Help";
-	buttons[2]->returnfunction = help_form_callback;
-	buttons[3] = NULL;
+	buttons[2]->label = "Cancel";
+	buttons[2]->returnfunction = button_callback;
+	buttons[3] = (BottomButton *)malloc(sizeof(BottomButton));
+	buttons[3]->label = "Help";
+	buttons[3]->returnfunction = help_form_callback;
+	buttons[4] = NULL;
     }
     (*fp)->buttons = buttons;
     return(*fp);
@@ -221,6 +345,10 @@ char *value;
 {
     strncpy(form->inputlines[field]->returnvalue.stringvalue,
 	    value, MAXFIELDSIZE);
+    if (form->inputlines[field]->mywidget) {
+	XmTextSetString (form->inputlines[field]->mywidget,
+			 form->inputlines[field]->returnvalue.stringvalue);
+    }
 }
 
 
@@ -284,14 +412,16 @@ struct save_queue *sq;
  * field of the form.  Returns 0 if successful, -1 if not.
  */
 
+static struct save_queue *cache = NULL;
+struct cache_elem { char *name; char **values; };
+
 int GetKeywords(form, field, name)
 EntryForm *form;
 int field;
 char *name;
 {
-    static struct save_queue *cache = NULL;
     struct save_queue *sq, *s;
-    struct cache_elem { char *name; char **values; } *ce;
+    struct cache_elem *ce;
     int i, size, stat;
     char *argv[4];
 
@@ -358,4 +488,58 @@ char *name;
     /* and return answer */
     form->inputlines[field]->keywords = ce->values;
     return(0);
+}
+
+CacheNewValue(form, field, name, value)
+EntryForm *form;
+int field;
+char *name;
+char *value;
+{
+    struct save_queue *sq;
+    struct cache_elem *ce;
+    int size, dummy;
+    Dimension x, y;
+    Arg wargs[3];
+    Widget w, MakeRadioField();
+
+    cache->q_lastget = NULL;
+
+    /* find entry in cache */
+    while (sq_get_data(cache, &ce))
+      if (!strcmp(ce->name, name))
+	break;
+
+    /* get its size */
+    for (size = 0; ce->values[size]; size++);
+
+    /* add new keyword */
+    ce->values = (char **)realloc(ce->values, sizeof(char *) * (size + 2));
+    ce->values[size] = strsave(value);
+    ce->values[size + 1] = NULL;
+
+#ifdef DEBUG	
+    printf("CacheNewValue(%x, %d, %s, %s)\n", form, field, name, value);
+    printf("  form is %x (%s)\n", form, form->formname);
+    printf("  field is %d (%s)\n", field, form->inputlines[field]->prompt);
+    printf("  keywords: ");
+    for (size = 0; ce->values[size]; size++) printf("%s ", ce->values[size]);
+    printf("\n");
+#endif /* DEBUG */
+
+    /* new update form */
+    form->inputlines[field]->keywords = ce->values;
+    XtSetArg(wargs[0], XtNx, &x);
+    XtSetArg(wargs[1], XtNy, &y);
+    XtGetValues(form->inputlines[field]->mywidget, wargs, 2);
+    XtUnmanageChild(form->inputlines[field]->mywidget);
+    form->inputlines[field]->mywidget = w =
+      MakeRadioField(form->formpointer, form->inputlines[field],
+		     &dummy, form);
+    XtSetArg(wargs[0], XtNx, x);
+    XtSetArg(wargs[1], XtNy, y);
+    XtSetValues(w, wargs, 2);
+    MapWidgetToForm(w, form);
+    XmAddTabGroup(w);
+    XtManageChild(w);
 }

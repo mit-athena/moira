@@ -3,9 +3,12 @@
 #	MIT Project Athena
 #
 #	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/Makefile,v $
-#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/Makefile,v 1.4 1987-08-03 05:13:22 wesommer Exp $
-#	$Author: wesommer $
+#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/Makefile,v 1.5 1987-08-08 23:38:10 ambar Exp $
+#	$Author: ambar $
 #	$Log: not supported by cvs2svn $
+# Revision 1.4  87/08/03  05:13:22  wesommer
+# changed libmisc to libcom_err.a
+# 
 # Revision 1.3  87/08/02  19:46:26  ambar
 # changed name of chhome to chpobox
 # 
@@ -26,7 +29,7 @@ PROGS= passwd chfn chpobox chsh
 all: 	${PROGS}
 
 passwd:	passwd.o
-	cc -o passwd passwd.o -lkrb -ldes
+	cc -o passwd passwd.o ${SMSLIB} -lkrb -ldes
 
 chfn:	chfn.o
 	cc -o chfn chfn.o ${SMSLIB} -lkrb -ldes

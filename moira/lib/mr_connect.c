@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_connect.c,v $
- *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_connect.c,v 1.15 1993-10-22 14:16:07 mar Exp $
+ *	$Author: danw $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_connect.c,v 1.16 1997-01-29 23:24:16 danw Exp $
  *
  *	Copyright (C) 1987, 1990 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -12,13 +12,15 @@
  */
 
 #ifndef lint
-static char *rcsid_sms_connect_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_connect.c,v 1.15 1993-10-22 14:16:07 mar Exp $";
-#endif lint
+static char *rcsid_sms_connect_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_connect.c,v 1.16 1997-01-29 23:24:16 danw Exp $";
+#endif
 
 #include <mit-copyright.h>
 #include "mr_private.h"
 #include <moira_site.h>
 #include <string.h>
+#include <stdlib.h>
+#include <hesiod.h>
 
 static char *mr_server_host = 0;
 
@@ -33,7 +35,6 @@ char *server;
 {
     extern int errno;
     char *p, **pp, sbuf[256];
-    extern char *getenv(), **hes_resolve();
 	
     if (!mr_inited) mr_init();
     if (_mr_conn) return MR_ALREADY_CONNECTED;
@@ -47,7 +48,7 @@ char *server;
 	pp = hes_resolve("moira", "sloc");
 	if (pp) server = *pp;
     }
-#endif HESIOD
+#endif
 
     if (!server || (strlen(server) == 0)) {
 	server = MOIRA_SERVER;

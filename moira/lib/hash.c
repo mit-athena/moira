@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/hash.c,v 1.10 1993-10-22 14:10:47 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/hash.c,v 1.11 1997-01-29 23:24:09 danw Exp $
  *
  * Generic hash table routines.  Uses integer keys to store char * values.
  *
@@ -11,10 +11,11 @@
 #include <ctype.h>
 #include <moira.h>
 #include <string.h>
+#include <stdlib.h>
 
-extern char *malloc();
-
+#ifndef NULL
 #define NULL 0
+#endif
 #define hash_func(h, key) (key >= 0 ? (key % h->size) : (-key % h->size))
 
 /* Create a hash table.  The size is just a hint, not a maximum. */

@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_private.h,v $
- *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_private.h,v 1.6 1991-03-08 10:32:50 mar Exp $
+ *	$Author: danw $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_private.h,v 1.7 1997-01-29 23:24:19 danw Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
@@ -27,16 +27,3 @@ extern int sending_version_no;
 #define EVER (;;)
 	
 #define CHECK_CONNECTED {if (!_mr_conn) return MR_NOT_CONNECTED;}
-
-/*
- * There should be an include file for these..
- */
-	
-extern char *malloc();
-#ifndef htonl
-extern u_long htonl(), ntohl();
-extern u_short htons(), ntohs();
-#endif /* htonl */
-
-
-

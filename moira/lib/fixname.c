@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/fixname.c,v $
- *	$Author: jweiss $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/fixname.c,v 1.6 1994-09-16 16:30:10 jweiss Exp $
+ *	$Author: danw $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/fixname.c,v 1.7 1997-01-29 23:24:09 danw Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -9,8 +9,8 @@
  */
 
 #ifndef lint
-static char *rcsid_fixname_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/fixname.c,v 1.6 1994-09-16 16:30:10 jweiss Exp $";
-#endif lint
+static char *rcsid_fixname_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/fixname.c,v 1.7 1997-01-29 23:24:09 danw Exp $";
+#endif
 
 #include <mit-copyright.h>
 #include <string.h>
@@ -48,7 +48,7 @@ void FixName(ilnm, ifnm, last, first, middle)
 #ifdef notdef
 		/* okay, finish up first name */
 	AppendJrOrIII(ifnm, &ends_jr, &ends_ii, &ends_iii, &ends_iv, &ends_v);
-#endif notdef
+#endif
 	strncpy(first, ifnm, FIRST_LEN);
 }
 

@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/idno.c,v 1.3 1993-10-22 14:12:17 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/idno.c,v 1.4 1997-01-29 23:24:10 danw Exp $
  *
  * Routines to encrypt ID's
  *
@@ -10,7 +10,12 @@
 #include <mit-copyright.h>
 #include <string.h>
 #include <ctype.h>
-
+#ifdef POSIX
+#include <unistd.h>
+#endif
+#ifdef USE_CRYPT_H
+#include <crypt.h>
+#endif
 
 /*	Function Name: RemoveHyphens
  *	Description: Removes all hyphens from the string passed to it.
@@ -42,7 +47,6 @@ EncryptID(sbuf, idnumber, first, last)
 char *sbuf, *idnumber, *first, *last;
 {
     char salt[3];
-    extern char *crypt();
 
     RemoveHyphens(idnumber);
     salt[0] = tolower(last[0]);

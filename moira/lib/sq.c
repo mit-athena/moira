@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/sq.c,v 1.8 1996-08-12 20:59:35 danw Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/sq.c,v 1.9 1997-01-29 23:24:22 danw Exp $
  *
  * Generic Queue Routines
  *
@@ -10,8 +10,7 @@
 #include <mit-copyright.h>
 #include <moira.h>
 #include <string.h>
-
-extern char *malloc();
+#include <stdlib.h>
 
 struct save_queue *
 sq_create()
@@ -77,7 +76,7 @@ sq_save_unique_data(sq, data)
     register struct save_queue *q;
 
     for (q = sq->q_next; q != sq; q = q->q_next)
-	if (q->q_data == data) return;
+	if (q->q_data == data) return 1;
 
     return sq_save_data(sq, data);
 }
@@ -90,7 +89,7 @@ sq_save_unique_string(sq, data)
     register struct save_queue *q;
 
     for (q = sq->q_next; q != sq; q = q->q_next)
-	if (!strcmp(q->q_data, data)) return;
+	if (!strcmp(q->q_data, data)) return 1;
 
     return sq_save_data(sq, data);
 }

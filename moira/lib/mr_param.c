@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_param.c,v $
- *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_param.c,v 1.7 1993-10-22 14:18:10 mar Exp $
+ *	$Author: danw $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_param.c,v 1.8 1997-01-29 23:24:19 danw Exp $
  *
  *	Copyright (C) 1987, 1990 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,14 +10,15 @@
  */
 
 #ifndef lint
-static char *rcsid_sms_param_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_param.c,v 1.7 1993-10-22 14:18:10 mar Exp $";
-#endif lint
+static char *rcsid_sms_param_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_param.c,v 1.8 1997-01-29 23:24:19 danw Exp $";
+#endif
 
 #include <mit-copyright.h>
 #include <sys/types.h>
 #include <netinet/in.h>
 #include "mr_private.h"
 #include <string.h>
+#include <stdlib.h>
 
 /*
  * GDB operations to send and recieve RPC requests and replies.
@@ -69,10 +70,10 @@ mr_start_send(op, hcon, arg)
      * At least for now, each argument is a string, which is
      * sent as a count of bytes followed by the bytes
      * (including the trailing '\0'), padded
-     * to a longword boundary.
+     * to a 32-bit boundary.
      */
 
-    mr_size = 4 * sizeof(long);
+    mr_size = 4 * sizeof(int32);
 
     argl = (int *)malloc((unsigned)(sizeof(int) * arg->mr_argc));
 
@@ -85,9 +86,9 @@ mr_start_send(op, hcon, arg)
 	    argl[i] = len = arg->mr_argl[i];
 	else
 	    argl[i] = len = strlen(arg->mr_argv[i]) + 1;
-	mr_size += sizeof(long) + len;
-	/* Round up to next longword boundary.. */
-	mr_size = sizeof(long) * howmany(mr_size, sizeof(long));
+	mr_size += sizeof(int32) + len;
+	/* Round up to next 32-bit boundary.. */
+	mr_size = sizeof(int32) * howmany(mr_size, sizeof(int32));
     }
 	
     arg->mr_flattened = buf = malloc(mr_size);
@@ -96,30 +97,24 @@ mr_start_send(op, hcon, arg)
 	
     arg->mr_size = mr_size;
 	
-    /*
-     * This is gross.  Any better suggestions, anyone?
-     * It should work on the RT's, since malloc is guaranteed to
-     * return a pointer which is aligned correctly for any data.
-     */
-
-    ((long *)buf)[0] = htonl(mr_size);
-    ((long *)buf)[1] = htonl(arg->mr_version_no);
-    ((long *)buf)[2] = htonl(arg->mr_procno);
-    ((long *)buf)[3] = htonl(arg->mr_argc);
+    ((int32 *)buf)[0] = htonl(mr_size);
+    ((int32 *)buf)[1] = htonl(arg->mr_version_no);
+    ((int32 *)buf)[2] = htonl(arg->mr_procno);
+    ((int32 *)buf)[3] = htonl(arg->mr_argc);
 
     /*
      * bp is a pointer into the point in the buffer to put
      * the next argument.
      */
 	
-    bp = (char *)(((long *)buf) + 4);
+    bp = (char *)(((int32 *)buf) + 4);
 	
     for (i = 0; i<arg->mr_argc; ++i) {
 	len = argl[i];
-	*((long *)bp) = htonl(len);
-	bp += sizeof(long);
+	*((int32 *)bp) = htonl(len);
+	bp += sizeof(int32);
 	memcpy(bp, arg->mr_argv[i], len);
-	bp += sizeof(long) * howmany(len, sizeof(long));
+	bp += sizeof(int32) * howmany(len, sizeof(int32));
     }
     op->fcn.cont = mr_cont_send;
     arg->mr_size = mr_size;
@@ -148,7 +143,7 @@ mr_cont_recv(op, hcon, argp)
 	case S_RECV_START:
 	    arg->mr_state = S_RECV_DATA;
 	    if (gdb_receive_data(hcon, (caddr_t)&arg->mr_size,
-				 sizeof(long)) == OP_COMPLETE)
+				 sizeof(int32)) == OP_COMPLETE)
 		continue;
 	    done = TRUE;
 	    break;
@@ -161,11 +156,11 @@ mr_cont_recv(op, hcon, argp)
 	    }
 	    arg->mr_flattened = malloc(arg->mr_size);
 	    arg->mr_state = S_DECODE_DATA;
-	    memcpy(arg->mr_flattened, (caddr_t)&arg->mr_size, sizeof(long));
+	    memcpy(arg->mr_flattened, (caddr_t)&arg->mr_size, sizeof(int32));
 			
 	    if (gdb_receive_data(hcon,
-				 arg->mr_flattened + sizeof(long),
-				 arg->mr_size - sizeof(long))
+				 arg->mr_flattened + sizeof(int32),
+				 arg->mr_size - sizeof(int32))
 		== OP_COMPLETE)
 		continue;
 	    done = TRUE;
@@ -187,7 +182,7 @@ mr_cont_recv(op, hcon, argp)
 			
 	    for (i = 0; i<arg->mr_argc; ++i) {
 		u_short nlen = ntohl(* (int *) cp);
-		cp += sizeof (long);
+		cp += sizeof (int32);
 		if (cp + nlen > arg->mr_flattened + arg->mr_size) {
 		    free(arg->mr_flattened);
 		    arg->mr_flattened = NULL;
@@ -196,7 +191,7 @@ mr_cont_recv(op, hcon, argp)
 		arg->mr_argv[i] = (char *)malloc(nlen);
 		memcpy(arg->mr_argv[i], cp, nlen);
 		arg->mr_argl[i]=nlen;
-		cp += sizeof(long) * howmany(nlen, sizeof(long));
+		cp += sizeof(int32) * howmany(nlen, sizeof(int32));
 	    }
 	    free(arg->mr_flattened);
 	    arg->mr_flattened = NULL;

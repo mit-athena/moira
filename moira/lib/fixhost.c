@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/fixhost.c,v $
- *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/fixhost.c,v 1.10 1993-10-22 14:09:29 mar Exp $
+ *	$Author: danw $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/fixhost.c,v 1.11 1997-01-29 23:24:08 danw Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -9,8 +9,8 @@
  */
 
 #ifndef lint
-static char *rcsid_fixhost_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/fixhost.c,v 1.10 1993-10-22 14:09:29 mar Exp $";
-#endif lint
+static char *rcsid_fixhost_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/fixhost.c,v 1.11 1997-01-29 23:24:08 danw Exp $";
+#endif
 
 #include <mit-copyright.h>
 #include <sys/types.h>
@@ -18,15 +18,13 @@ static char *rcsid_fixhost_c = "$Header: /afs/.athena.mit.edu/astaff/project/moi
 #include <netinet/in.h>
 #include <netdb.h>
 #include <stdio.h>
+#include <stdlib.h>
 #ifdef POSIX
 #include <sys/utsname.h>
 #endif
 #include <string.h>
 #include <ctype.h>
 #include <moira.h>
-
-extern char *malloc();
-extern char *realloc();
 
 /*
  * Canonicalize hostname:

@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/strs.c,v $
- *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/strs.c,v 1.10 1993-10-22 14:21:45 mar Exp $
+ *	$Author: danw $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/strs.c,v 1.11 1997-01-29 23:24:22 danw Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -11,15 +11,14 @@
  */
 
 #ifndef lint
-static char *rcsid_strs_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/strs.c,v 1.10 1993-10-22 14:21:45 mar Exp $";
-#endif lint
+static char *rcsid_strs_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/strs.c,v 1.11 1997-01-29 23:24:22 danw Exp $";
+#endif
 
 #include <mit-copyright.h>
 #include <sys/types.h>
+#include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
-
-extern char *malloc(), *realloc();
 
 /*
  * Random string functions which should be in the C library..
@@ -36,7 +35,6 @@ strsave(s)
     register char *p;
     /* Kludge for sloppy string semantics */
     if (!s) {
-	    printf("NULL != \"\" !!!!\r\n");
 	    p = malloc(1);
 	    *p = '\0';
 	    return p;

@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/critical.c,v 1.13 1993-10-22 14:01:20 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/critical.c,v 1.14 1997-01-29 23:24:07 danw Exp $
  *
  * Log and send a zephyrgram about any critical errors.
  *
@@ -19,7 +19,8 @@
 #include <syslog.h>
 #endif
 #include <string.h>
-
+#include <time.h>
+#include <com_err.h>
 
 /* mode to create the file with */
 #define LOGFILEMODE	0644
@@ -33,7 +34,7 @@ extern char *whoami;
  * whoami to be defined and contain the name of the calling program.
  * It's a kludge that it takes a max of 8 arguments in a way that
  * isn't necessarily portable, but varargs doesn't work here and we
- * don't have vsprintf().
+ * don't necessarily have vsprintf().
  */
 
 void critical_alert(instance, msg, arg1, arg2, arg3, arg4,
@@ -53,7 +54,7 @@ void critical_alert(instance, msg, arg1, arg2, arg3, arg4,
     /* Log message to critical file */
     if ((crit = fopen(CRITERRLOG, "a")) != (FILE *)NULL) 
     {
-	long t, time();
+	time_t t;
 	char  *time_s;
 
 	time(&t);

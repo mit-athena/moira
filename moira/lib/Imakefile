@@ -1,4 +1,4 @@
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/Imakefile,v 1.3 1993-10-21 15:17:49 mar Exp $
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/Imakefile,v 1.4 1997-01-29 23:24:06 danw Exp $
 #
 # Copyright 1990 by the Massachusetts Institute of Technology.
 #
@@ -36,7 +36,7 @@ comp_et_depend(gdss_et)
 depend:: ${CODE}
 
 library_obj_rule()
-install_library_target(moira,$(OBJECTS),$(SRCS),${MR_LINTLIB})
+install_library_target(moira,$(OBJECTS),$(SRCS))
 
 install::
 	-mkdir ${DESTDIR}${INCLDIR}

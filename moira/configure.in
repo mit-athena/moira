@@ -228,7 +228,7 @@ if test "$oracle" != no; then
 	    ;;
     esac
     SVRSUBDIRS='$(SVRDIRS)'
-    SERVER_OUTPUT_FILES="db/Makefile server/Makefile backup/Makefile dbck/Makefile dcm/Makefile gen/Makefile reg_svr/Makefile regtape/Makefile"
+    SERVER_OUTPUT_FILES="db/Makefile server/Makefile backup/Makefile dbck/Makefile dcm/Makefile gen/Makefile incremental/Makefile reg_svr/Makefile regtape/Makefile"
     PRO_C=$oracle/bin/proc
     PRO_C_OPTS=CODE=ANSI_C
     PRO_C_DEFS="DEFINE=_PROC_ $PRO_C_DEFS"
@@ -239,6 +239,31 @@ AC_SUBST(PRO_C_INCLUDES)
 AC_SUBST(PRO_C_OPTS)
 AC_SUBST(SQL_LIBS)
 AC_SUBST(SVRSUBDIRS)
+
+# LDAP support
+AC_MSG_CHECKING(for LDAP)
+AC_ARG_WITH(ldap,
+    [  --with-ldap=PREFIX      Specify location of LDAP libs (for server)],
+    [ ldap="$withval"], 
+    [if test -n "$LDAP_HOME" -a -d "$LDAP_HOME"; then
+         ldap=$LDAP_HOME
+     else
+	 ldap=no
+     fi])
+AC_MSG_RESULT($ldap)
+if test "$ldap" != no -a "$oracle" != no; then
+    if test "$ldap" != yes; then
+        LDAP_CPPFLAGS="-I$ldap/include"
+	LDAP_LIBS="-L$ldap/lib"
+    fi
+    MR_DEFINE(HAVE_LDAP)
+
+    WINAD_SUBDIRS="winad"
+    WINAD_OUTPUT_FILES="incremental/winad/Makefile"
+fi
+AC_SUBST(LDAP_CPPFLAGS)
+AC_SUBST(LDAP_LIBS)
+AC_SUBST(WINAD_SUBDIRS)
 
 # AFS support
 AC_MSG_CHECKING(for AFS)
@@ -264,10 +289,10 @@ if test "$afs" != no -a "$oracle" != no; then
 		 $AFS_LIBS -lrx -llwp -lsys $AFS_EXTRA_LIBS)
     MR_DEFINE(HAVE_AFS)
 
-    AFS_SUBDIRS="incremental"
-    AFS_OUTPUT_FILES="incremental/Makefile"
+    AFS_SUBDIRS="afs"
+    AFS_OUTPUT_FILES="incremental/afs/Makefile"
     if test -d $srcdir/afssync; then
-	AFS_SUBDIRS="$AFS_SUBDIRS afssync"
+	AFS_SYNCDIR="afssync"
 	AFS_OUTPUT_FILES="$AFS_OUTPUT_FILES afssync/Makefile"
     fi
 fi
@@ -277,6 +302,7 @@ AC_SUBST(AFS_LIBS)
 AC_SUBST(AFS_EXTRA_LIBS)
 AC_SUBST(AFS_DIR)
 AC_SUBST(AFS_SUBDIRS)
+AC_SUBST(AFS_SYNCDIR)
 
 # GNU readline
 AC_CHECKING(for GNU readline...)
@@ -379,4 +405,5 @@ AC_OUTPUT(Makefile lib/Makefile include/Makefile clients/Makefile \
 	  clients/mailmaint/Makefile clients/moira/Makefile \
 	  clients/mrcheck/Makefile clients/mrtest/Makefile \
 	  clients/stella/Makefile update/Makefile man/Makefile \
-	  $SERVER_OUTPUT_FILES $AFS_OUTPUT_FILES $RSAREF_OUTPUT_FILES)
+	  $SERVER_OUTPUT_FILES $WINAD_OUTPUT_FILES $AFS_OUTPUT_FILES \
+	  $RSAREF_OUTPUT_FILES)

@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.9 2000-01-28 00:03:20 danw Exp $
+# $Id: Makefile.in,v 1.10 2000-06-06 04:41:14 zacheiss Exp $
 
 SHELL=/bin/sh
 @SET_MAKE@
@@ -13,7 +13,7 @@ mandir=@mandir@
 mrbindir=@mrbindir@
 
 CLIENTDIRS=include lib clients update man
-SVRDIRS=db server backup dbck dcm gen regtape @AFS_SUBDIRS@ @RSAREF_SUBDIRS@
+SVRDIRS=db server backup dbck dcm gen regtape incremental @AFS_SYNCDIR@ @RSAREF_SUBDIRS@
 DEPDIRS=@COM_ERR_SUBDIR@
 
 SUBDIRS=$(CLIENTDIRS) @SVRSUBDIRS@

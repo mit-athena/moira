@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/moddiff.dc,v 1.1 1990-08-20 11:02:39 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/moddiff.dc,v 1.2 1991-09-03 15:38:55 mar Exp $
  *
  *  (c) Copyright 1990 by the Massachusetts Institute of Technology.
  *  For copying and distribution information, please see the file
@@ -38,7 +38,11 @@ time_t ModTime;
 
     *flag = 0;
     tbl_name = tbl;
-    EXEC SQL SELECT MODTIME INTO :filetime FROM tblstats WHERE tbl = :tbl_name;
+    EXEC SQL SELECT modtime INTO :filetime FROM tblstats WHERE tbl = :tbl_name;
+    if (sqlca.sqlcode != 0) {
+	fprintf(stderr, "Query failed: %d\n", sqlca.sqlcode);
+	return(MR_DATE);
+    }
     if (Date2Sec (filetime, &filetimeno)) {
 	fprintf(stderr,"Unable to parse mod. date for file %s\n", tbl);
 	return(MR_DATE);
@@ -60,8 +64,16 @@ struct timeval *UTime;
 {
     int Day, Month, Year, Hour, Minute, Sec, Err, TotalDays, Iter;
 
+#ifdef DEBUG
+    printf("Date2Sec(\"%s\", %d.%d)\n", DS, UTime->tv_sec, UTime->tv_usec);
+#endif
     Err = ParseDateString (DS, &Day, &Month, &Year, &Hour, &Minute,&Sec);
+#ifdef DEBUG
+    printf("date=%d/%d/%d %d:%d:%d, err=%d\n", Day, Month, Year,
+	   Hour, Minute, Sec, Err);
+#endif
     if (Err) return (Err);
+
     if (Year < 1970) {
 	for (TotalDays = 0, Iter = 1969; Iter > Year; Iter--) {
 	    TotalDays += NumdaysY(Iter);}
@@ -151,7 +163,7 @@ int *Day, *Month, *Year, *Hour, *Minute, *Sec;
 
     M = (char *)malloc(strlen(DS));
     D = (char *)malloc(strlen(DS));
-    if (!(M && D)) return (0);
+    if (!(M && D)) return (1);
     Gotten = sscanf (DS, "%[^-]-%[^-]-%d %d:%d:%d", D, M, &Y, &H, &Min, &S);
     if (Gotten < 3) 
       Gotten = sscanf (DS, "%[^/]/%[^/]/%d %d:%d:%d", D, M, &Y, &H, &Min, &S);

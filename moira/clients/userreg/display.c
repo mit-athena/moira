@@ -2,7 +2,7 @@
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/display.c,v $
  *	$Author: mar $
  *	$Locker:  $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/display.c,v 1.5 1989-07-19 15:34:08 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/display.c,v 1.6 1989-08-29 13:22:04 mar Exp $
  *
  *  (c) Copyright 1988 by the Massachusetts Institute of Technology.
  *  For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_display_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/display.c,v 1.5 1989-07-19 15:34:08 mar Exp $";
+static char *rcsid_display_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/display.c,v 1.6 1989-08-29 13:22:04 mar Exp $";
 #endif	lint
 
 #include <mit-copyright.h>
@@ -22,7 +22,7 @@ static char *rcsid_display_c = "$Header: /afs/.athena.mit.edu/astaff/project/moi
 #define DESC_WIDTH 18
 #define HEADER "*** Project Athena User Registration ***"
 #if defined(vax) || defined(mips)
-#define HELP   " Press the key marked <X| to delete a character.  Press Ctrl-C to start over."
+#define HELP   " Press the key above RETURN to delete a character.  Press Ctrl-C to start over."
 #endif
 #ifndef HELP
 #define HELP   " Press backspace to delete a character.  Press Ctrl-C to start over."
@@ -191,6 +191,7 @@ retry:
 	/* We're in raw mode, so EOF means disaster */
 	exit(1);
 	break;
+    delchar:
       case '\177': 		/* Delete */
       case '\010': 		/* Backspace */
 	if (i) {
@@ -222,11 +223,12 @@ retry:
 	break;
     }
     if (valuep && i >= maxsize) {
+      wfeep();
       wprintw (displayw,
   "You are not allowed to type more than %d characters for this answer.\n",
-	  maxsize);
+	  maxsize-1);
       wrefresh (displayw);
-      goto retry;
+      goto delchar;
     }
  }
 

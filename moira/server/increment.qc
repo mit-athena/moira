@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/increment.qc,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/increment.qc,v 1.10 1990-06-07 17:51:16 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/increment.qc,v 1.11 1990-06-13 12:43:40 mar Exp $
  *
  *	Copyright (C) 1989 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_qrtn_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/increment.qc,v 1.10 1990-06-07 17:51:16 mar Exp $";
+static char *rcsid_qrtn_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/increment.qc,v 1.11 1990-06-13 12:43:40 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -145,9 +145,9 @@ char **argv;
 ##	  where qual
 	beforec = 11;
     } else if (!strcmp(table, "quota")) {
-	barg0 = "?";
-	barg1 = argv[1];
-	barg2 = "?";
+	strcpy(barg0, "?");
+	strcpy(barg1, argv[1]);
+	strcpy(barg2, "?");
 	sprintf(buffer, "%s and filesys.filsys_id = q.filsys_id", qual);
 	qual = buffer;
 ##	range of q is quota

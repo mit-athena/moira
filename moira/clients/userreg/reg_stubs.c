@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/reg_stubs.c,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/reg_stubs.c,v 1.15 1990-03-17 17:24:31 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/reg_stubs.c,v 1.16 1990-04-09 14:25:16 mar Exp $
  *
  *  (c) Copyright 1988 by the Massachusetts Institute of Technology.
  *  For copying and distribution information, please see the file
@@ -9,7 +9,7 @@
  */
 
 #ifndef lint
-static char *rcsid_reg_stubs_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/reg_stubs.c,v 1.15 1990-03-17 17:24:31 mar Exp $";
+static char *rcsid_reg_stubs_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/reg_stubs.c,v 1.16 1990-04-09 14:25:16 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -42,7 +42,9 @@ ureg_init()
     extern char *getenv(), **hes_resolve();
     
     initialize_ureg_error_table();
-    
+    initialize_krb_error_table(); 
+    initialize_sms_error_table();
+   
     seq_no = getpid();
 
     host = NULL;

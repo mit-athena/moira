@@ -1,14 +1,14 @@
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/forms.awk,v 1.3 1991-06-05 13:17:56 mar Exp $
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/forms.awk,v 1.4 1992-12-10 10:41:39 mar Exp $
 
-BEGIN		{ numfields = 0; numforms = 0;
+BEGIN		{ numfields = 0; numforms = 0; orfield = 0;
 		  printf("/* This file is machine generated, do not edit. */");
 		  printf("\n#include <Xm/Text.h>\n");
 		  printf("#include \"mmoira.h\"\n\n");
 		}
 
-/^;/		{ next }
-NF == 0		{ next }
-NF == 1 && $1 == "or" { next }
+/^;/		{ next; }
+NF == 0		{ next; }
+NF == 1 && $1 == "or" { orfield = 1; next; }
 
 $1 == "{"	{ formname = sprintf("form%d", numforms);
 		  formrealname = $2;
@@ -16,7 +16,7 @@ $1 == "{"	{ formname = sprintf("form%d", numforms);
 		  instructions = $3;
 		  for (i = 4; i <= NF; i++)
 			instructions = sprintf("%s %s", instructions, $i);
-		  next
+		  next;
 		}
 
 $1 == "}"	{ printf("static UserPrompt *%s_fields[] = {\n", formname);
@@ -35,7 +35,12 @@ $NF == "s" || $NF == "S" \
 		{ printf("static UserPrompt %s_fld%d = { \"", \
 			formname, numfields);
 		  for (i = 1; i < NF; i++) printf("%s ", $i);
-		  printf("\", FT_STRING };\n");
+		  if (orfield) {
+			printf("\", FT_STRING, True };\n");
+			orfield = 0;
+		  } else {
+			printf("\", FT_STRING, False };\n");
+		  }
 		  numfields++;
 		  next
 		}
@@ -44,7 +49,12 @@ $NF == "b" || $NF == "B" \
 		{ printf("static UserPrompt %s_fld%d = { \"", \
 			formname, numfields);
 		  for (i = 1; i < NF; i++) printf("%s ", $i);
-		  printf("\", FT_BOOLEAN };\n");
+		  if (orfield) {
+			printf("\", FT_BOOLEAN, True };\n");
+			orfield = 0;
+		  } else {
+			printf("\", FT_BOOLEAN, False };\n");
+		  }
 		  numfields++;
 		  next
 		}
@@ -53,7 +63,12 @@ $NF == "k" || $NF == "K" \
 		{ printf("static UserPrompt %s_fld%d = { \"", \
 			formname, numfields);
 		  for (i = 1; i < NF; i++) printf("%s ", $i);
-		  printf("\", FT_KEYWORD };\n");
+		  if (orfield) {
+			printf("\", FT_KEYWORD, True };\n");
+			orfield = 0;
+		  } else {
+			printf("\", FT_KEYWORD, False };\n");
+		  }
 		  numfields++;
 		  next
 		}

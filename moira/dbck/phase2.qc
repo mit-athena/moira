@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase2.qc,v 1.6 1989-07-19 14:37:41 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase2.qc,v 1.7 1989-09-11 12:10:19 mar Exp $
  *
  *  (c) Copyright 1988 by the Massachusetts Institute of Technology.
  *  For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
 #include <sms.h>
 #include "dbck.h"
 
-static char phase2_qc_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase2.qc,v 1.6 1989-07-19 14:37:41 mar Exp $";
+static char phase2_qc_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase2.qc,v 1.7 1989-09-11 12:10:19 mar Exp $";
 
 
 show_mcm_mach(id)
@@ -148,18 +148,18 @@ show_member_list(id)
 int id;
 ##{
 ##  int mid, iid = id, found = 1;
-##  char mtype[9], *name;
+##  char mtype[9], *name = "";
 
-##  retrieve (mtype = member.member_type, mid = member.member_id)
-##	where member.list_id = iid {
+##  retrieve (mtype = imembers.member_type, mid = imembers.member_id)
+##	where imembers.list_id = iid and imembers.direct = 1 {
       strtrim(mtype);
       found = 0;
       if (mtype[0] == 'L')
-	strcpy(name, ((struct list *) hash_lookup(lists, mid))->name);
+	name = ((struct list *) hash_lookup(lists, mid))->name;
       else if (mtype[0] == 'U')
-	strcpy(name, ((struct user *) hash_lookup(users, mid))->login);
-      else if (mtype[0] == 'S')
-	strcpy(name, ((struct string *) hash_lookup(strings, mid))->name);
+	name = ((struct user *) hash_lookup(users, mid))->login;
+      else if (mtype[0] == 'S' || mtype[0] == 'K')
+	name = ((struct string *) hash_lookup(strings, mid))->name;
       printf("Non-existant list %d has member %s %s\n", iid, mtype, name);
 ##  }
     return(found);
@@ -171,8 +171,9 @@ int id;
 ##  int lid, iid = id, found = 1;
 ##  char name[33];
 
-##  retrieve (lid = members.list_id)
-##	where members.member_id = iid and members.member_type = "USER" {
+##  retrieve (lid = imembers.list_id)
+##	where imembers.member_id = iid and imembers.member_type = "USER" and
+##	      imembers.direct = 1 {
       found = 0;
       printf("List %s has non-existant user member, id %d\n",
 	     ((struct list *)hash_lookup(lists, lid))->name, iid);
@@ -186,8 +187,9 @@ int id;
 ##  int lid, iid = id, found = 1;
 ##  char name[33];
 
-##  retrieve (lid = members.list_id)
-##	where members.member_id = iid and members.member_type = "LIST" {
+##  retrieve (lid = imembers.list_id)
+##	where imembers.member_id = iid and imembers.member_type = "LIST" and
+##	      imembers.direct = 1 {
       found = 0;
       printf("List %s has non-existant list member, id %d\n",
 	     ((struct list *)hash_lookup(lists, lid))->name, iid);
@@ -201,10 +203,28 @@ int id;
 ##  int lid, iid = id, found = 1;
 ##  char name[33];
 
-##  retrieve (lid = members.list_id)
-##	where members.member_id = iid and members.member_type = "STRING" {
+##  retrieve (lid = imembers.list_id)
+##	where imembers.member_id = iid and imembers.member_type = "STRING" and
+##	      imembers.direct = 1 {
       found = 0;
       printf("List %s has non-existant string member, id %d\n",
+	     ((struct list *)hash_lookup(lists, lid))->name, iid);
+##  }
+    return(found);
+##}
+
+
+show_mem_krb(id)
+int id;
+##{
+##  int lid, iid = id, found = 1;
+##  char name[33];
+
+##  retrieve (lid = imembers.list_id)
+##	where imembers.member_id = iid and imembers.member_type = "KERBEROS" and
+##	      imembers.direct = 1 {
+      found = 0;
+      printf("List %s has non-existant kerberos member, id %d\n",
 	     ((struct list *)hash_lookup(lists, lid))->name, iid);
 ##  }
     return(found);
@@ -216,14 +236,14 @@ int id;
 ##{
 ##  int rowcount;
 
-##  delete members where members.member_type = "USER" and
-##	members.member_id = id
+##  delete imembers where imembers.member_type = "USER" and
+##	imembers.member_id = id and imembers.direct = 1
 ##  inquire_equel(rowcount = "rowcount");
     if (rowcount > 0)
       printf("%d entr%s deleted\n", rowcount, rowcount==1?"y":"ies");
     else
       printf("Not deleted\n");
-    modified("members");
+    modified("imembers");
 ##}
 
 ##del_mem_list(id)
@@ -231,14 +251,14 @@ int id;
 ##{
 ##  int rowcount;
 
-##  delete members where members.member_type = "LIST" and
-##	members.member_id = id
+##  delete imembers where imembers.member_type = "LIST" and
+##	imembers.member_id = id and imembers.direct = 1
 ##  inquire_equel(rowcount = "rowcount");
     if (rowcount > 0)
       printf("%d entr%s deleted\n", rowcount, rowcount==1?"y":"ies");
     else
       printf("Not deleted\n");
-    modified("members");
+    modified("imembers");
 ##}
 
 ##del_mem_str(id)
@@ -246,14 +266,30 @@ int id;
 ##{
 ##  int rowcount;
 
-##  delete members where members.member_type = "STRING" and
-##	members.member_id = id
+##  delete imembers where imembers.member_type = "STRING" and
+##	imembers.member_id = id and imembers.direct = 1
 ##  inquire_equel(rowcount = "rowcount");
     if (rowcount > 0)
       printf("%d entr%s deleted\n", rowcount, rowcount==1?"y":"ies");
     else
       printf("Not deleted\n");
-    modified("members");
+    modified("imembers");
+##}
+
+
+##del_mem_krb(id)
+##int id;
+##{
+##  int rowcount;
+
+##  delete imembers where imembers.member_type = "KERBEROS" and
+##	imembers.member_id = id and imembers.direct = 1
+##  inquire_equel(rowcount = "rowcount");
+    if (rowcount > 0)
+      printf("%d entr%s deleted\n", rowcount, rowcount==1?"y":"ies");
+    else
+      printf("Not deleted\n");
+    modified("imembers");
 ##}
 
 
@@ -326,6 +362,8 @@ int hint;
 		f->mach_id = 0;
 	    }
 	}
+    }
+    if (f->type == 'N' || f->type == 'R' || f->type == 'A') {
 	if (!hash_lookup(users, f->owner)) {
 	    printf("Filesys %s with bad owning user %d\n", f->name, f->owner);
 	    if (single_fix("Fix", 1)) {
@@ -392,6 +430,8 @@ int hint;
 			  printf("Not created\n");
 			modified("nfsphys");
 			n = (struct nfsphys *)malloc(sizeof(struct nfsphys));
+			if (n == NULL)
+			  out_of_mem("storing new nfsphys");
 			strcpy(n->dir, dir);
 			n->mach_id = id3;
 			n->nfsphys_id = id1;
@@ -455,6 +495,9 @@ struct filesys *f;
 	break;
     case 'R':
 	t = "RVD";
+	break;
+    case 'A':
+	t = "AFS";
 	break;
     case 'E':
 	t = "ERR";
@@ -627,12 +670,67 @@ fix_quota_nofs(id)
 ##}
 
 
+##show_krb_usr(id)
+##int id;
+##{
+##  int found = 1, id1;
+    struct string *s;
+    char *ss;
+
+##  retrieve (id1 = krbmap.string_id) where krbmap.users_id = id {
+	if (s = ((struct string *)hash_lookup(strings, id1)))
+	  ss = s->name;
+	else
+	  ss = "[unknown]";
+	found = 0;
+	printf("Kerberos map for non-existant user %d to principal %s\n",
+	       id, s);
+##  }
+    return(found);
+##}
+
+
+##show_krb_str(id)
+##int id;
+##{
+##  int found = 1, id1;
+    struct user *u;
+    char *s;
+
+##  retrieve (id1 = krbmap.users_id) where krbmap.string_id = id {
+	if (u = ((struct user *)hash_lookup(users, id1)))
+	  s = u->login;
+	else
+	  s = "[???]";
+	found = 0;
+	printf("Kerberos map for user %s (%d) to non-existant string %d\n",
+	       s, id1, id);
+##  }
+    return(found);
+##}
+
+
+##show_pdm_mach(id)
+##int id;
+##{
+##  char name[33];
+    int found = 1;
+
+##  retrieve (name = palladium.#name) where palladium.mach_id = id {
+	strtrim(name);
+        printf("Palladium server/supervisor %s is on non-existant machine %d\n",
+	       name, id);
+	found = 0;
+##  }
+    return(found);
+##}
+
 
 phase2()
 ##{
 ##  int id1, id2, id3, id4, id5;
 ##  char type[9], name[33];
-    struct save_queue *sq, *sq1, *sq2, *sq3, *sq4;
+    struct save_queue *sq, *sq1, *sq2, *sq3, *sq4, *sq5;
     struct filesys *f;
     struct list *l;
     struct nfsphys *n;
@@ -672,24 +770,28 @@ phase2()
     sq2 = sq_create();
     sq3 = sq_create();
     sq4 = sq_create();
-##  range of m is members
-##  retrieve (id1 = m.list_id, type = m.member_type, id2 = m.member_id) {
-	strtrim(type);
+    sq5 = sq_create();
+##  range of m is imembers
+##  retrieve (id1 = m.list_id, type = m.member_type, id2 = m.member_id,
+##	      id3 = m.ref_count, id4 = m.direct) {
 	if ((l = (struct list *) hash_lookup(lists, id1)) == NULL)
 	  sq_save_unique_data(sq1, id1);
+	else if (type[0] == 'U' && !hash_lookup(users, id2))
+	  sq_save_unique_data(sq2, id2);
+	else if (type[0] == 'L' && !hash_lookup(lists, id2))
+	  sq_save_unique_data(sq3, id2);
+	else if (type[0] == 'S' && !string_check(id2))
+	  sq_save_unique_data(sq4, id2);
+	else if (type[0] == 'K' && !string_check(id2))
+	  sq_save_unique_data(sq5, id2);
 	else
 	  l->members++;
-	if (!strcmp(type, "USER") && !hash_lookup(users, id2))
-	  sq_save_unique_data(sq2, id2);
-	else if (!strcmp(type, "LIST") && !hash_lookup(lists, id2))
-	  sq_save_unique_data(sq3, id2);
-	else if (!strcmp(type, "STRING") && !string_check(id2))
-	  sq_save_unique_data(sq4, id2);
 ##  }
     generic_delete(sq1, show_member_list, "members", "list_id", 1);
     generic_fix(sq2, show_mem_user, "Delete", del_mem_user, 1);
     generic_fix(sq3, show_mem_list, "Delete", del_mem_list, 1);
     generic_fix(sq4, show_mem_str, "Delete", del_mem_str, 1);
+    generic_fix(sq5, show_mem_krb, "Delete", del_mem_krb, 1);
 
     dprintf("Checking servers...\n");
     sq1 = sq_create();
@@ -742,7 +844,7 @@ phase2()
     sq3 = sq_create();
 ##  retrieve (id1 = nfsquota.users_id, id2 = nfsquota.filsys_id,
 ##	      id3 = nfsquota.phys_id, id4 = nfsquota.quota) {
-	if (!hash_lookup(users, id1))
+	if (id1 != 0 && !hash_lookup(users, id1))
 	  sq_save_data(sq1, id1);
 	else if (!(f = (struct filesys *) hash_lookup(filesys, id2)))
 	  sq_save_data(sq2, id2);
@@ -775,6 +877,29 @@ phase2()
 	    printf("Not fixing this error\n");
 	}
 ##  }
+
+    dprintf("Checking palladium...\n");
+    sq1 = sq_create();
+##  range of p is palladium
+##  retrieve (id1 = p.mach_id) {
+	if (!hash_lookup(machines, id1)) {
+	    sq_save_unique_data(sq1, id1);
+	}
+##  }
+    generic_delete(sq1, show_pdm_mach, "palladium", "mach_id", 1);
+
+    dprintf("Checking krbmap...\n");
+    sq1 = sq_create();
+    sq2 = sq_create();
+##  range of k is krbmap
+##  retrieve (id1 = k.users_id, id2 = k.string_id) {
+    	if (!hash_lookup(users, id1))
+	  sq_save_unique_data(sq1, id1);
+	if (!string_check(id2))
+	  sq_save_unique_data(sq2, id2);
+##  }
+    generic_delete(sq1, show_krb_usr, "krbmap", "users_id", 1);
+    generic_delete(sq2, show_krb_str, "krbmap", "string_id", 1);
 
     dprintf("Checking capacls...\n");
 ##  retrieve (id1 = capacls.list_id, name = capacls.tag) {

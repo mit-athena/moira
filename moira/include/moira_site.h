@@ -12,7 +12,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/include/moira_site.h,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/include/moira_site.h,v 1.19 1990-07-31 12:19:29 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/include/moira_site.h,v 1.20 1991-03-08 11:04:45 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -27,18 +27,6 @@
 
 /* Default Moira server to connect to */
 #define MOIRA_SERVER	"MOIRA.MIT.EDU:sms_db"
-
-/* Compile-time options: */
-/*   used hesiod looking up Moira server name */
-#define HESIOD
-/*   log errors via zephyr */
-#define ZEPHYR
-/*   log errors via syslog */
-/* #define SYSLOG */
-/*   Athena local hacks -- other sites probably don't want this */
-#define ATHENA
-/* Ingres version number */
-#define INGRESVER 5
 
 
 #define NAME 0
@@ -355,4 +343,4 @@
 #define MOIRA_MOTD_FILE	"/etc/smsdown"	/* make the server go to sleep */
 
 
-#endif _moira_site_		/* Do not add anything after this line. */
+#endif /* _moira_site_ */	     /* Do not add anything after this line. */

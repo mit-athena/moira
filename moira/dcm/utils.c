@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/utils.c,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/utils.c,v 1.4 1989-11-28 17:08:52 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/utils.c,v 1.5 1990-02-14 15:29:54 mar Exp $
  *
  * 
  * 	Utility functions used by the DCM.
@@ -12,17 +12,17 @@
  */
 
 #ifndef lint
-static char *rcsid_utils_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/utils.c,v 1.4 1989-11-28 17:08:52 mar Exp $";
+static char *rcsid_utils_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/utils.c,v 1.5 1990-02-14 15:29:54 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
 #include <stdio.h>
 #include <strings.h>
+#include <errno.h>
 #include <varargs.h>
 #include <sys/types.h>
 #include <sys/time.h>
 #include <sys/file.h>
-#include <zephyr/zephyr.h>
 #include <sms.h>
 #include <sms_app.h>
 #include "dcm.h"

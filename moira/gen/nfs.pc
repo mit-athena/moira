@@ -1,4 +1,4 @@
-/* $Id: nfs.pc,v 1.7 1998-02-23 19:23:45 danw Exp $
+/* $Id: nfs.pc,v 1.8 1998-07-14 01:29:54 danw Exp $
  *
  * This generates the files necessary to load an nfs server.
  *
@@ -23,7 +23,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/nfs.pc,v 1.7 1998-02-23 19:23:45 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/nfs.pc,v 1.8 1998-07-14 01:29:54 danw Exp $");
 
 #define min(x, y)	((x) < (y) ? (x) : (y))
 
@@ -304,7 +304,7 @@ void do_everyone(void)
       for (b = *p; b; b = b->next)
 	{
 	  u = (struct user *)b->data;
-	  sprintf(buf, "%s:%d", u->name, u->uid);
+	  sprintf(buf, "%s:%d:101", u->name, u->uid);
 	  for (g = u->lists; g; g = g->next)
 	    strcat(buf, g->lid);
 	  b->data = strdup(buf);

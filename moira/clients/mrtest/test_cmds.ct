@@ -24,6 +24,9 @@
 	request test_access, "Check access to an SMS query.",
 		access;
 
+	request test_dcm, "Trigger the DCM",
+		dcm;
+
 	request test_script, "Read commands from a script.",
 		script, s;
 

@@ -1,11 +1,14 @@
 .TH MOIRA 1 "29 Nov 1988" "Project Athena"
-\" RCSID: $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/man/moira.1,v 1.3 1989-01-21 16:39:10 mar Exp $
+\" RCSID: $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/man/moira.1,v 1.4 1989-08-21 22:17:27 mar Exp $
 .SH NAME
 moira, listmaint, usermaint, dcmmaint \- maintain information stored in moira
 .SH SYNOPSIS
 .B moira
 [
 .BI \-nomenu
+] [
+.BI \-db
+.I host:port
 ]
 .SH DESCRIPTION
 .I Moira
@@ -16,10 +19,14 @@ or
 .B dcmmaint,
 .I moira
 will immediately drop into the appropriate sub-menu.
-There is only one option:
+It a database is specified on the command line, that server will be
+contacted rather than the compiled-in default.  The host and port may
+both be symbolic names or numbers.
+The option:
 .TP
 .BI \-nomenu
-Do not take over the screen.  With this option specified, the screen
+will cause moira to not take over the screen.  With this option
+specified, the screen
 will be handled like a printing terminal.  Each menu will be displayed
 only once.  Typing '?' will cause a menu to be redisplayed.
 .PP

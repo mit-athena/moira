@@ -1,14 +1,14 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.21 1988-07-31 01:12:08 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.22 1988-08-03 18:36:13 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
  */
 
 #ifndef lint
-static char *rcsid_qsupport_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.21 1988-07-31 01:12:08 mar Exp $";
+static char *rcsid_qsupport_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.22 1988-08-03 18:36:13 mar Exp $";
 #endif lint
 
 #include "query.h"
@@ -345,6 +345,12 @@ int setup_dusr(q, argv)
 ##  int flag, id;
 
     id = *(int *)argv[0];
+
+    /* For now, only allow users to be deleted if their status is 0 */
+##  repeat retrieve (flag = u.status) where u.users_id = @id
+    if (flag != 0)
+      return(SMS_IN_USE);
+
 ##  repeat delete nfsquota where nfsquota.users_id = @id
 ##  repeat retrieve (flag = any(members.member_id where members.member_id=@id
 ##			 and members.member_type = "USER"))
@@ -436,6 +442,9 @@ int setup_dmac(q, argv)
     if (flag)
 	return(SMS_IN_USE);
 ##  repeat retrieve (flag = any(hostaccess.mach_id where hostaccess.mach_id=@id))
+    if (flag)
+	return(SMS_IN_USE);
+##  repeat retrieve (flag = any(pcap.mach_id where pcap.mach_id=@id))
     if (flag)
 	return(SMS_IN_USE);
 
@@ -2396,7 +2405,7 @@ validate_fields(q, argv, vo, n)
 
 /* validate_chars: verify that there are no illegal characters in
  * the string.  Legal characters are printing chars other than 
- * ", *, ?, [ and ].
+ * ", *, ?, \, [ and ].
  */
 static int illegalchars[] = {
     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, /* ^@ - ^O */
@@ -2404,7 +2413,7 @@ static int illegalchars[] = {
     0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, /* SPACE - / */
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, /* 0 - ? */
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, /* @ - O */
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, /* P - _ */
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, /* P - _ */
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, /* ` - o */
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, /* p - ^? */
     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
@@ -2675,6 +2684,4 @@ char *name;
 
 sanity_check_database()
 ##{
-##  replace servers (inprogress = 0)
-##  replace serverhosts (inprogress = 0)
 ##}

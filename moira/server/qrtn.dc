@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.dc,v $
  *	$Author: genoa $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.dc,v 2.3 1992-07-15 18:01:11 genoa Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.dc,v 2.4 1992-08-04 12:02:02 genoa Exp $
  *
  *	Copyright (C) 1987, 1988 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_qrtn_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.dc,v 2.3 1992-07-15 18:01:11 genoa Exp $";
+static char *rcsid_qrtn_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.dc,v 2.4 1992-08-04 12:02:02 genoa Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -540,17 +540,23 @@ mr_verify_query(cl, q, argc, argv_ro)
     register struct validate *v = q->validate;
     register int i;
     register int privileged = 0;
-    int len;
+    register char *to,*fr,*stop;
 
     /* copy the arguments into a local argv that we can modify */
     if (argc >= QMAXARGS)
       return(MR_ARGS);
     for (i = 0; i < argc; i++) {
-	if ((len = strlen(argv_ro[i])) < ARGLEN)
-	    strcpy(Argv[i], argv_ro[i]);
-	else
-	    return(MR_ARG_TOO_LONG);
-	if (Argv[i][len-1] == '\\')
+	/* Single quotes must be doubled for SQL */
+	for (to=Argv[i], fr=argv_ro[i], stop=to+ARGLEN; (*fr) && (to<stop);) {
+	    if(*fr=='\'') 
+	      *to++ = *fr;
+	    *to++ = *fr++;
+	}
+	if (*fr) 
+	  return(MR_ARG_TOO_LONG);
+	*to='\0';
+
+	if (*--to == '\\')
 	  return(MR_BAD_CHAR);
     }
 
@@ -717,10 +723,8 @@ EXEC SQL END DECLARE SECTION;
     build_sql_stmt(stmt_buf,"SELECT",q->tlist,vaddrs,pqual);
     if(psort) { strcat(stmt_buf," ORDER BY "); strcat(stmt_buf,psort); }
     EXEC SQL PREPARE stmt INTO :SQLDA USING NAMES FROM :stmt_buf; 
-    if(ingres_errno) 
-      return(mr_errcode);
-    if((mr_errcode=mr_check_SQLDA(SQLDA)) != MR_SUCCESS) 
-      return(mr_errcode);
+    if(sqlca.sqlcode)
+      return(MR_INTERNAL);
     EXEC SQL DECLARE csr001 CURSOR FOR stmt;
     EXEC SQL OPEN csr001;
     rowcount = 0;
@@ -744,36 +748,37 @@ build_sql_stmt(result_buf,cmd,targetlist,argv,qual)
     char *qual;
 {
     char fmt_buf[MR_STMTBUF_LEN];
-    char tmp_buf[16];
-    register char *res=result_buf, *tmp=tmp_buf, *fmt=fmt_buf;
-    register int state;
+    register char *res, *fmt;
 
-    sprintf(fmt_buf,"%s %s",cmd,targetlist);
-    if(qual) { strcat(fmt_buf," WHERE "); strcat(fmt_buf,qual); }
+    if(qual)
+      sprintf(fmt_buf,"%s %s WHERE %s",cmd,targetlist,qual);
+    else
+      sprintf(fmt_buf,"%s %s",cmd,targetlist);
 
-    for(state=0;*fmt != '\0';fmt++) {
-	switch(state) {
-	  case 0:
-	    if(*fmt=='%') {                          /* formatting -> tmp */
-		*tmp++ = *fmt;
-		state=1;
-	    } else *res++ = *fmt;                    /* text -> res */
-	    break;
-	  case 1:
-	    if((*fmt=='%') && (tmp==tmp_buf+1)) {    /* %% -> % */
-		*res++ = *fmt;           
-		tmp=tmp_buf;
-		state=0;
-	    } else if(isalpha(*fmt) && (*fmt!='h') && (*fmt!='l')) {  /* end of formatting */
-		*tmp++ = *fmt;
-		*tmp='\0';
-		tmp=tmp_buf;
-		sprintf(res,tmp_buf,*argv++);        /* print to result buffer */
-		while(*++res) ;
-		state=0;
-	    } else *tmp++ = *fmt;    /* keep copying the formatting to tmp */
-	    break;
-	}
+    for(res=result_buf, fmt=fmt_buf; *fmt; fmt++) {
+	if(*fmt=='%') {
+	    if(*++fmt) {
+		switch(*fmt) {                       
+		  case '%':                              /* %% -> % */
+		    *res++ = *fmt;           
+		    break;
+		  case 's':
+		    if(*argv[0]) {
+			*res='\0';
+			strcat(res,*argv);
+			while(*++res) ;
+		    }
+		    argv++;
+		    break;
+		  case 'd':
+		    sprintf(res,"%d",*(int *)*argv++);   /* print to result buffer */
+		    while(*++res) ;
+		    break;
+		  default:                               /* Swallow other %? pairs */
+		    break;
+		}
+	    } else break;
+	} else *res++ = *fmt;                            /* text -> result buffer */
     }
     *res='\0';
 }
@@ -852,6 +857,8 @@ set_next_object_id(object, table_name, limit)
 
 	sprintf(stmt_buf,"SELECT %s FROM %s WHERE %s=%d",object,table_name,object,value);  
 	EXEC SQL PREPARE stmt INTO :SQLDA USING NAMES FROM :stmt_buf; 
+	if(sqlca.sqlcode)
+	  return(MR_INTERNAL);
 	EXEC SQL DECLARE csr002 CURSOR FOR stmt;
 	EXEC SQL OPEN csr002;
 	EXEC SQL FETCH csr002 USING DESCRIPTOR :SQLDA;

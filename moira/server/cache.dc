@@ -1,5 +1,5 @@
 /*
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/cache.dc,v 2.2 1992-07-15 18:00:18 genoa Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/cache.dc,v 2.3 1992-08-04 12:02:02 genoa Exp $
  *
  *	Copyright (C) 1989, 1990 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -7,7 +7,7 @@
  */
 
 #ifndef lint
-static char *rcsid_cache_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/cache.dc,v 2.2 1992-07-15 18:00:18 genoa Exp $";
+static char *rcsid_cache_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/cache.dc,v 2.3 1992-08-04 12:02:02 genoa Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -146,7 +146,7 @@ int *id;
 	break;
     case 'M':
     case 'm':
-	EXEC SQL SELECT mach_id INTO :j FROM machine WHERE name=uppercase(:iname);
+	EXEC SQL SELECT mach_id INTO :j FROM machine WHERE name=UPPERCASE(:iname);
 	break;
     case 'C':
     case 'c':

@@ -2,7 +2,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.dc,v $
  *	$Author: genoa $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.dc,v 2.3 1992-07-15 18:01:15 genoa Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.dc,v 2.4 1992-08-04 12:02:02 genoa Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -11,7 +11,7 @@
  */
 
 #ifndef lint
-static char *rcsid_qsupport_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.dc,v 2.3 1992-07-15 18:01:15 genoa Exp $";
+static char *rcsid_qsupport_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.dc,v 2.4 1992-08-04 12:02:02 genoa Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -641,10 +641,10 @@ int setup_dlis(q, argv)
     if (sqlca.sqlerrd[2] > 0)
 	return(MR_IN_USE);
     EXEC SQL REPEATED SELECT class INTO :cdummy FROM zephyr z
-      WHERE zephyr.xmt_type = 'LIST' AND z.xmt_id = :id 
-	OR z.sub_type = 'LIST' AND z.sub_id = :id 
-	OR z.iws_type = 'LIST' AND z.iws_id = :id
-	OR z.iui_type = 'LIST' AND z.iui_id = :id;
+      WHERE z.xmt_type = 'LIST' AND z.xmt_id = :id 
+	 OR z.sub_type = 'LIST' AND z.sub_id = :id 
+	 OR z.iws_type = 'LIST' AND z.iws_id = :id
+	 OR z.iui_type = 'LIST' AND z.iui_id = :id;
     if (sqlca.sqlerrd[2] > 0)
         return(MR_IN_USE);
     if (ingres_errno)
@@ -914,6 +914,26 @@ setup_dfil(q, argv, cl)
 }
 
 
+/* setup_aftg: needed only because using the query table would
+ * create an invalid SQL statement.  *sigh*  Basically just validates
+ * that the first argument has type 'FSGROUP' in table 'filesys'.
+ */
+
+setup_aftg(q, argv, cl)
+    struct query  *q;
+    char **argv;
+    client *cl;
+{
+    EXEC SQL SELECT filsys_id INTO :idummy FROM filesys
+      WHERE type='FSGROUP';
+
+    if (sqlca.sqlcode != 0)
+      return(MR_NO_MATCH);    /* Is there a better error code to return? */
+
+    return(MR_SUCCESS);
+}
+
+
 /* setup_dnfp: check to see that the nfs physical partition does not have
  * any filesystems assigned to it before allowing it to be deleted.
  */
@@ -1044,8 +1064,7 @@ set_modtime(q, argv, cl)
     table = q->rtable;
     name = argv[0];
 
-    sprintf(stmt_buf,"UPDATE %s SET modtime = 'now', modby = %d, \
-modwith = '%s' WHERE %s.name = '%s'",table,who,entity,table,name);
+    sprintf(stmt_buf,"UPDATE %s SET modtime = 'now', modby = %d, modwith = '%s' WHERE %s.name = LEFT('%s',SIZE(%s.name))",table,who,entity,table,name,table);
     EXEC SQL EXECUTE IMMEDIATE :stmt_buf;
 
     return(MR_SUCCESS);
@@ -1119,8 +1138,8 @@ set_pobox_modtime(q, argv, cl)
     who = cl->client_id;
     users_id = *(int *)argv[0];
 
-    EXEC SQL UPDATE users SET pmodtime='now', pmodby = :who, pmodwith = entity
-      WHERE users.users_id = users_id;
+    EXEC SQL UPDATE users SET pmodtime='now', pmodby = :who, pmodwith = :entity
+      WHERE users.users_id = :users_id;
 
     return(MR_SUCCESS);
 }
@@ -1134,17 +1153,15 @@ set_uppercase_modtime(q, argv, cl)
     char **argv;
     client *cl;
 {
-    char *name, *entity, *table, *c;
+    char *name, *entity, *table;
     int who;
 
     entity = cl->entity;
     who = cl->client_id;
     table = q->rtable;
     name = argv[0];
-    for(c=name;*c;c++) if(islower(*c)) *c = toupper(*c);  /** INGRES has an uppercase() functiuons, but it's not portable. */
 
-    sprintf(stmt_buf,"UPDATE %s SET modtime = 'now', modby = %d, \
-modwith = '%s' WHERE %s.name = '%s'",table,who,entity,table,name);
+    sprintf(stmt_buf,"UPDATE %s SET modtime = 'now', modby = %d, modwith = '%s' WHERE %s.name = UPPERCASE(LEFT('%s',SIZE(%s.name)))",table,who,entity,table,name,table);
     EXEC SQL EXECUTE IMMEDIATE :stmt_buf;
     
     return(MR_SUCCESS);
@@ -1275,7 +1292,7 @@ set_filesys_modtime(q, argv, cl)
 
     EXEC SQL UPDATE filesys SET modtime = 'now', modby = :who, 
         modwith = :entity, phys_id = :var_phys_id
-      WHERE label = :label;
+      WHERE label = LEFT(:label,SIZE(label));
     return(MR_SUCCESS);
 }
 
@@ -1300,7 +1317,7 @@ set_zephyr_modtime(q, argv, cl)
     class = argv[0];
 
     EXEC SQL UPDATE zephyr SET modtime = 'now', modby = :who, modwith = :entity
-      WHERE class = :class;
+      WHERE class = LEFT(:class,SIZE(class));
     
     return(MR_SUCCESS);
 }
@@ -1509,7 +1526,7 @@ followup_gpob(q, sq, v, action, actarg, cl)
 {
     char **argv, *index();
     char *ptype, *p;
-    int mid, sid, status;
+    int mid, sid, status, i;
 
     /* for each row */
     while (sq_get_data(sq, &argv)) {
@@ -1545,9 +1562,8 @@ followup_gpob(q, sq, v, action, actarg, cl)
 	(*action)(q->vcnt, argv, actarg);
     skip:
 	/* free saved data */
-	free(argv[0]);
-	free(argv[1]);
-	free(argv[4]);
+	for (i = 0; i < q->vcnt; i++) 
+	    free(argv[i]);
 	free(argv);
     }
 
@@ -1992,10 +2008,11 @@ get_list_info(q, aargv, cl, action, actarg)
 
     returned = rowcount = 0;
     name = aargv[0];
+    convert_wildcards(name);
 
     sq = sq_create();
     EXEC SQL DECLARE csr102 CURSOR FOR SELECT list_id FROM list 
-      WHERE name = :name;
+      WHERE name LIKE :name ESCAPE '*';
     EXEC SQL OPEN csr102;
     while(1)
     {
@@ -2018,17 +2035,6 @@ get_list_info(q, aargv, cl, action, actarg)
 	if (id == 0)
 	  continue;
 	argv[6] = gid_str;
-/*
- *	repeat retrieve (listname = l.#name, active = text(l.#active), 
- *		public = text(l.#public), hidden = text(l.#hidden),
- *		hid = l.#hidden, maillist = text(l.#maillist),
- *		group = text(l.#group), gid = text(l.#gid),
- *		acl_type = trim(l.#acl_type), acl_id = l.#acl_id,
- *		desc = l.#desc, modtime = l.#modtime, modby_id = l.#modby,
- *		modwith =l.#modwith)
- *	    where l.list_id = :id
- */
-	/** Won't the TRIM() die a horrible INGRES death? **/
 	EXEC SQL REPEATED SELECT name, CHAR(active), CHAR(publicflg),
 	    CHAR(hidden), hidden, CHAR(maillist), CHAR(grouplist), CHAR(gid),
 	    TRIM(acl_type), acl_id, description, CHAR(modtime), modby, modwith 
@@ -2105,11 +2111,6 @@ int add_member_to_list(q, argv, cl)
     mtype = argv[1];
     mid = *(int *)argv[2];
     /* if the member is already a direct member of the list, punt */
-/*
- *  repeat retrieve (exists = any(m.list_id where m.list_id=@lid and 
- *			   m.member_id = :mid and m.member_type = :mtype
- *			   and m.direct = 1))
- */
     EXEC SQL REPEATED SELECT list_id INTO :idummy FROM imembers 
       WHERE list_id = :lid AND member_id = :mid 
 	AND member_type = :mtype AND direct = 1;
@@ -2196,14 +2197,9 @@ int add_member_to_list(q, argv, cl)
 	    if (mid == lid && !strcmp(mtype, "LIST")) {
 		return(MR_LISTLOOP);
 	    }
-/*
- *	    repeat retrieve (exists = any(m.ref_count where m.list_id = :lid
- *					 and m.member_id = :mid
- *					 and m.member_type = :mtype))
- */
 	    EXEC SQL REPEATED SELECT ref_count INTO :idummy FROM imembers
 	      WHERE list_id = :lid AND member_id = :mid 
-		AND m.member_type = :mtype;
+		AND member_type = :mtype;
 	    ref = aref[a] * dref[d];
 	    if (sqlca.sqlerrd[2] > 0) {
 		if (a == 0 && d == 0) {
@@ -2267,11 +2263,6 @@ int delete_member_from_list(q, argv, cl)
     mtype = argv[1];
     mid = *(int *)argv[2];
     /* if the member is not a direct member of the list, punt */
-/*
- *  repeat retrieve (exists = any(m.list_id where m.list_id=@lid and 
- *			   m.member_id = :mid and m.member_type = :mtype
- *			   and m.direct = 1))
- */
     EXEC SQL REPEATED SELECT list_id INTO :idummy FROM imembers
       WHERE list_id = :lid AND member_id = :mid 
 	AND member_type = :mtype AND direct = 1;
@@ -2648,13 +2639,6 @@ int get_lists_of_member(q, argv, cl, action, actarg)
     rargv[4] = maillist;
     rargv[5] = grouplist;
     if (direct) {
-/*
- *    repeat retrieve (name = list.#name, active = text(list.#active), 
- *		     public = text(list.#public), hidden = text(list.#hidden),
- *		     maillist = text(list.#maillist), group = text(list.#group))
- *		where list.list_id = m.list_id and m.direct = 1 and
- *		      m.member_type = :atype and m.member_id = :aid 
- */
 	EXEC SQL DECLARE csr117a CURSOR FOR 
 	  SELECT name, CHAR(active), CHAR(publicflg), CHAR(hidden), 
   	      CHAR(maillist), CHAR(grouplist)
@@ -2939,8 +2923,8 @@ int qualified_get(q, argv, action, actarg, start, range, field, flags)
     rargv[0] = SQLDA->sqlvar[0].sqldata;
     sprintf(stmt_buf,"SELECT %s.%s FROM %s %s WHERE %s",q->rtable,field,q->rtable,q->rvar,qual);
     EXEC SQL PREPARE stmt INTO :SQLDA USING NAMES FROM :stmt_buf; 
-    if((mr_errcode=mr_check_SQLDA(SQLDA)) != MR_SUCCESS)
-      return(mr_errcode);
+    if(sqlca.sqlcode)
+      return(MR_INTERNAL);
     EXEC SQL DECLARE csr123 CURSOR FOR stmt;
     EXEC SQL OPEN csr123;
     while(1) {
@@ -3029,7 +3013,7 @@ register_user(q, argv, cl)
     EXEC SQL BEGIN DECLARE SECTION; 
     char *login, dir[65], *entity, *directory, machname[33];
     int who, rowcount, mid, uid, users_id, flag, utype, nid, list_id, quota;
-    int size, alloc, pid, m_id, ostatus, nstatus, gidval, fsidval;
+    int size, alloc, pid, m_id, ostatus, nstatus, gidval, fsidval, npidval;
     EXEC SQL END DECLARE SECTION; 
     char buffer[256], *aargv[3];
     int maxsize;
@@ -3053,28 +3037,36 @@ register_user(q, argv, cl)
 
     /* check new login name */
     EXEC SQL REPEATED SELECT login INTO :cdummy FROM users 
-      WHERE login = :login AND users_id != :users_id;
+      WHERE login = LEFT(:login,SIZE(login)) AND users_id != :users_id;
     if (ingres_errno) return(mr_errcode);
     if (sqlca.sqlerrd[2] > 0) return(MR_IN_USE);
     EXEC SQL REPEATED SELECT name INTO :cdummy FROM list
-      WHERE name = :login;
+      WHERE name = LEFT(:login,SIZE(name));
     if (ingres_errno) return(mr_errcode);
     if (sqlca.sqlerrd[2] > 0) return(MR_IN_USE);
     EXEC SQL REPEATED SELECT label INTO :cdummy FROM filesys
-      WHERE label = :login;
+      WHERE label = LEFT(:login,SIZE(label));
     if (ingres_errno) return(mr_errcode);
     if (sqlca.sqlerrd[2] > 0) return(MR_IN_USE);
     com_err(whoami, 0, "login name OK");
 
     /* choose place for pobox, put in mid */
-    EXEC SQL REPEATED SELECT sh.mach_id, m.name
-      INTO :mid, :machname FROM serverhosts sh, machine m
-      WHERE sh.service='POP'  AND sh.value2 - sh.value1 =
-	(SELECT MAX(value2 - value1) FROM serverhosts
-	   WHERE service = 'POP');
-    if (ingres_errno) return(mr_errcode);
-    if (sqlca.sqlerrd[2] == 0)
-      return(MR_NO_POBOX);
+    EXEC SQL DECLARE csr130 CURSOR FOR 
+      SELECT sh.mach_id, m.name FROM serverhosts sh, machine m
+      WHERE sh.service='POP' AND sh.mach_id=m.mach_id
+	AND sh.value2 - sh.value1 =
+	  (SELECT MAX(value2 - value1) FROM serverhosts
+	    WHERE service = 'POP');
+    EXEC SQL OPEN csr130;
+    EXEC SQL FETCH csr130 INTO :mid, :machname;
+    if (sqlca.sqlerrd[2] == 0) {
+	EXEC SQL CLOSE csr130;
+	if (ingres_errno) return(mr_errcode);
+	return(MR_NO_POBOX);
+    } else {
+	EXEC SQL CLOSE csr130;
+	if (ingres_errno) return(mr_errcode);
+    }
 
     /* change login name, set pobox */
     sprintf(buffer, "users.users_id = %d", users_id);
@@ -3117,7 +3109,7 @@ register_user(q, argv, cl)
     if (ingres_errno) return(mr_errcode);
     if (sqlca.sqlerrd[2] != 1)
       return(MR_INTERNAL);
-    sprintf(buffer, "l.list_id = %d", list_id);
+    sprintf(buffer, "list_id = %d", list_id);
     incremental_after("list", buffer, 0);
     aargv[0] = (char *) list_id;
     aargv[1] = "USER";
@@ -3135,12 +3127,13 @@ register_user(q, argv, cl)
     maxsize = 0;
     directory = NULL;
     EXEC SQL DECLARE csr125 CURSOR FOR
-      SELECT mach_id, trim(nfsphys.dir), nfsphys_id, status, size, allocated
+      SELECT mach_id, trim(dir), nfsphys_id, status, partsize, allocated
 	FROM nfsphys;
     EXEC SQL OPEN csr125;
     while(1) {
 	EXEC SQL FETCH csr125 INTO :mid, :dir, :nid, :flag, :size, :alloc;
-	if(sqlca.sqlcode != 0) break;
+	if(sqlca.sqlcode) 
+	  break;
 	if ((flag & utype) && (size != 0) && (size - alloc > maxsize)) {
 	    maxsize = size - alloc;
 	    if (directory)
@@ -3172,9 +3165,8 @@ register_user(q, argv, cl)
     if (ingres_errno) return(mr_errcode);
     if (sqlca.sqlerrd[2]  != 1)
       return(MR_INTERNAL);
-    incremental_after("filesys", 
-        "fs.filsys_id = numvalues.value and numvalues.name = 'filsys_id'",
-		      0);
+    sprintf(buffer,"fs.filsys_id = %d",fsidval);
+    incremental_after("filesys", buffer, 0);
     com_err(whoami, 0, "filesys on mach %d in %s/%s", m_id,
 	    directory, login);
 
@@ -3185,8 +3177,6 @@ register_user(q, argv, cl)
     if (sqlca.sqlerrd[2] != 1)
       return(MR_NO_QUOTA);
     incremental_clear_before();
-    EXEC SQL SELECT value INTO :fsidval FROM numvalues
-      WHERE numvalues.name = 'filsys_id';
     EXEC SQL REPEATED INSERT INTO quota 
         (entity_id, filsys_id, type, quota, phys_id, modtime, modby, modwith)
       VALUES
@@ -3194,17 +3184,17 @@ register_user(q, argv, cl)
     if (ingres_errno) return(mr_errcode);
     if (sqlca.sqlerrd[2] != 1)
       return(MR_INTERNAL);
+    EXEC SQL SELECT phys_id INTO :npidval FROM filesys
+      WHERE filsys_id=:fsidval;
     EXEC SQL REPEATED UPDATE nfsphys SET allocated=allocated + :quota
-      WHERE nfsphys_id = filesys.phys_id 
-	AND filesys.filsys_id = numvalues.value
-	AND numvalues.name = 'filsys_id';
+      WHERE nfsphys.nfsphys_id = :npidval;
     if (ingres_errno) return(mr_errcode);
     if (sqlca.sqlerrd[2] != 1)
       return(MR_INTERNAL);
     aargv[0] = login;
     aargv[1] = "USER";
     aargv[2] = login;
-    sprintf(buffer, "q.entity_id = %d and q.filsys_id = numvalues.value and q.type = 'USER' and numvalues.name = 'filsys_id'", users_id);
+    sprintf(buffer, "q.entity_id = %d and q.filsys_id = %d and q.type = 'USER'", users_id, fsidval);
     incremental_after("quota", buffer, aargv);
     com_err(whoami, 0, "quota of %d assigned", quota);
     if (ingres_errno) return(mr_errcode);
@@ -3263,12 +3253,6 @@ validate_row(q, argv, v)
     /* build where clause */
     build_qual(v->qual, v->argc, argv, qual);
 
-#ifdef NEVER
-    /** I'm pretty sure we don't need this now */
-    /* setup ingres variables */
-    name = v->field;
-#endif
-
     if (log_flags & LOG_VALID)
 	/* tell the logfile what we're doing */
 	com_err(whoami, 0, "validating row: %s", qual);
@@ -3276,6 +3260,8 @@ validate_row(q, argv, v)
     /* look for the record */
     sprintf(stmt_buf,"SELECT COUNT (*) FROM %s WHERE %s",q->rtable,qual);
     EXEC SQL PREPARE stmt INTO :SQLDA USING NAMES FROM :stmt_buf; 
+    if(sqlca.sqlcode)
+      return(MR_INTERNAL);
     EXEC SQL DECLARE csr126 CURSOR FOR stmt;
     EXEC SQL OPEN csr126;
     EXEC SQL FETCH csr126 USING DESCRIPTOR :SQLDA;
@@ -3352,6 +3338,15 @@ validate_fields(q, argv, vo, n)
 	case V_LOCK:
 	    status = lock_table(vo);
 	    break;
+
+	case V_WILD:
+	    status = convert_wildcards(argv[vo->index]);
+	    break;
+
+	case V_UPWILD:
+	    status = convert_wildcards_uppercase(argv[vo->index]);
+	    break;
+
 	}
 
 	if (status != MR_EXISTS) return(status);
@@ -3447,6 +3442,8 @@ validate_id(q, argv, vo)
 	sprintf(stmt_buf,"SELECT %s FROM %s WHERE %s = '%s'",idfield,tbl,namefield,name);
     }
     EXEC SQL PREPARE stmt INTO :SQLDA USING NAMES FROM :stmt_buf; 
+    if(sqlca.sqlcode)
+      return(MR_INTERNAL);
     EXEC SQL DECLARE csr127 CURSOR FOR stmt;
     EXEC SQL OPEN csr127;
     rowcount=0;
@@ -3460,8 +3457,8 @@ validate_id(q, argv, vo)
     if (ingres_errno) 
       return(mr_errcode);
 
-    if (rowcount != 1) return(vo->error);
-    *argv[vo->index] = *SQLDA->sqlvar[0].sqldata;
+    if (rowcount != 1) return(vo->error); 
+    bcopy(SQLDA->sqlvar[0].sqldata,argv[vo->index],sizeof(int));
     return(MR_EXISTS);
 }
 
@@ -3486,6 +3483,8 @@ validate_name(argv, vo)
     sprintf(stmt_buf,"SELECT DISTINCT COUNT(*) FROM %s WHERE %s.%s = '%s'",
 	    tbl,tbl,namefield,name);
     EXEC SQL PREPARE stmt INTO :SQLDA USING NAMES FROM :stmt_buf; 
+    if(sqlca.sqlcode) 
+      return(MR_INTERNAL);
     EXEC SQL DECLARE csr128 CURSOR FOR stmt;
     EXEC SQL OPEN csr128;
     EXEC SQL FETCH csr128 USING DESCRIPTOR :SQLDA; 
@@ -3507,9 +3506,6 @@ validate_date(argv, vo)
     EXEC SQL END DECLARE SECTION; 
 
     idate = argv[vo->index];
-/*
- *  retrieve (dd = interval("years", date(idate) - date("today")))
- */
     EXEC SQL SELECT interval('years',date(:idate)-date('today')) INTO :dd;
 
     if (sqlca.sqlcode != 0 || dd > 5.0) return(MR_DATE);
@@ -3542,12 +3538,11 @@ struct valobj *vo;
     if (idfield == 0) {
 	if (!strcmp(argv[vo->index], argv[vo->index - 1]))
 	  return(MR_EXISTS);
-/*
- *	retrieve (id = any(table.namefield where table.namefield = name))
- */
-	sprintf(stmt_buf,"SELECT %s FROM %s WHERE %s.%s = '%s'",
-		namefield,tbl,tbl,namefield,name);
+	sprintf(stmt_buf,"SELECT %s FROM %s WHERE %s = LEFT('%s',SIZE(%s))",
+		namefield,tbl,namefield,name,namefield);
 	EXEC SQL PREPARE stmt INTO :SQLDA USING NAMES FROM :stmt_buf; 
+	if(sqlca.sqlcode)
+	  return(MR_INTERNAL);
         EXEC SQL DECLARE csr129 CURSOR FOR stmt;
 	EXEC SQL OPEN csr129;
         EXEC SQL FETCH csr129 USING DESCRIPTOR :SQLDA; 
@@ -3740,23 +3735,13 @@ MR_SQLDA_T *mr_alloc_SQLDA()
 }
 
 
-/* Use mr_check_SQLDA before OPEN CURSOR or EXECUTE */
-mr_check_SQLDA(da)
-    MR_SQLDA_T *da;
-{
-    if(da->sqld > da->sqln) {
-	com_err(whoami, MR_INTERNAL,
-                "Internal arg count error preparing for dynamic query");
-        return(MR_INTERNAL);
-    }
-
-    return(MR_SUCCESS);
-}
-
 /* Use this after FETCH USING DESCRIPTOR one or more 
  * result columns may contain NULLs.  This routine is
  * not currently needed, since db/schema creates all
  * columns with a NOT NULL WITH DEFAULT clause.
+ *
+ * This is currently dead flesh, since no Moira columns
+ * allow null values; all use default values.
  */
 mr_fix_nulls_in_SQLDA(da)
     MR_SQLDA_T *da;
@@ -3821,6 +3806,92 @@ prefetch_value(q,argv,cl)
     sprintf(argv[argc],"%d",value);
 
     return(MR_SUCCESS);
+}
+
+/* prefetch_filesys():
+ * Fetches the phys_id from filesys based on the filsys_id in argv[0].
+ * Appends the filsys_id and the phys_id to the argv so they can be
+ * referenced in an INSERT into a table other than filesys.  Also
+ * see comments at prefetch_value().
+ *
+ * Assumes the existence of a row where filsys_id = argv[0], since a
+ * filesys label has already been resolved to a filsys_id. 
+ */
+prefetch_filesys(q,argv,cl)
+    struct query *q;
+    char **argv;
+    client *cl;
+{
+    EXEC SQL BEGIN DECLARE SECTION; 
+    int fid,phid;
+    EXEC SQL END DECLARE SECTION; 
+    int argc;
+
+    fid = *(int *)argv[0];
+    EXEC SQL SELECT phys_id INTO :phid FROM filesys WHERE filsys_id = :fid;
+    if(ingres_errno) return(mr_errcode);
+
+    argc=q->argc+q->vcnt;
+    sprintf(argv[argc++],"%d",fid);
+    sprintf(argv[argc],"%d",phid);
+
+    return(MR_SUCCESS);
+}
+
+/* Convert normal Unix-style wildcards to SQL voodoo */
+convert_wildcards(arg)
+    char *arg;
+{
+    static char buffer[QMAXARGSIZE];
+    register char *s, *d;
+
+    for(d=buffer,s=arg;*s;s++) {
+	switch(*s) {
+	  case '*': *d++='%'; *d++='%'; break;
+	  case '?': *d++='_'; break;
+	  case '_':
+	  case '[': 
+	  case ']': *d++='*'; *d++ = *s; break;
+	  case '%': *d++='*'; *d++='%'; *d++='%'; break;
+	  default: *d++ = *s; break;
+	}
+    }
+    *d='\0';
+
+    /* Copy back into argv */
+    strcpy(arg,buffer);
+
+    return(MR_EXISTS);
+}
+
+/* This version includes uppercase conversion, for things like gmac.
+ * This is necessary because "LIKE" doesn't work with "uppercase()".
+ * Including it in a wildcard routine saves making two passes over
+ * the argument string. 
+ */
+convert_wildcards_uppercase(arg)
+    char *arg;
+{
+    static char buffer[QMAXARGSIZE];
+    register char *s, *d;
+
+    for(d=buffer,s=arg;*s;s++) {
+	switch(*s) {
+	  case '*': *d++='%'; *d++='%'; break;
+	  case '?': *d++='_'; break;
+	  case '_':
+	  case '[': 
+	  case ']': *d++='*'; *d++ = *s; break;
+	  case '%': *d++='*'; *d++='%'; *d++='%'; break;
+	  default: *d++=toupper(*s); break;       /* This is the only diff. */
+	}
+    }
+    *d='\0';
+
+    /* Copy back into argv */
+    strcpy(arg,buffer);
+ 
+    return(MR_EXISTS);
 }
 
 /* eof:qsupport.dc */

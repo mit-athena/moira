@@ -1,4 +1,4 @@
-#	$Id: db2bkup.awk,v 1.14 2000-03-10 20:55:03 zacheiss Exp $
+#	$Id: db2bkup.awk,v 1.15 2000-10-25 20:39:47 zacheiss Exp $
 #
 #	This converts the file used to originally create the database
 #	into a program to back it up.
@@ -49,9 +49,9 @@ NF>=2 {
 		t = split(temp[2], temp2, ")");
 		if (t != 2) printf "Can't parse %s\n", temp[2];
 		printf "  char\tt_%s[%d];\n", vname[count], temp2[1]+1;
-		if ($1 == "signature") {
+		if ($1 == "signature" || $1 == "sid") {
 			vtype[count]="bin";
-			printf "  EXEC SQL VAR t_signature IS STRING(%d);\n", temp2[1]+1;
+			printf "  EXEC SQL VAR t_%s IS STRING(%d);\n", vname[count], temp2[1]+1;
 		} else {
 			vtype[count]="str";
 		}

@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/hesiod.dc,v 1.4 1991-07-01 16:07:50 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/hesiod.dc,v 1.5 1992-12-21 18:05:06 mar Exp $
  *
  * This generates the zone files necessary to load a hesiod server.
  * The following zones are generated: passwd, uid, pobox, group,
@@ -63,10 +63,11 @@ char **argv;
     sprintf(hesiod_dir, "%s/hesiod", DCM_DIR);
 
 #ifsql INGRES
-    EXEC SQL CONNECT sms;
+    EXEC SQL CONNECT moira;
+    EXEC SQL SET LOCKMODE SESSION WHERE LEVEL=TABLE, READLOCK=SHARED;
 #endsql
 #ifsql INFORMIX
-    EXEC SQL DATABASE sms;
+    EXEC SQL DATABASE moira;
 #endsql
 
     changed = do_passwd();
@@ -114,8 +115,9 @@ get_mach()
 
     machines = create_hash(1000);
     EXEC SQL DECLARE m_cursor CURSOR FOR
-      SELECT NAME, MACH_ID
-	FROM MACHINE;
+      SELECT name, mach_id
+      FROM machine
+      ORDER BY mach_id;
     EXEC SQL OPEN m_cursor;
     while (1) {
         EXEC SQL FETCH m_cursor INTO :name, :id;
@@ -130,6 +132,7 @@ get_mach()
     }
     EXEC SQL CLOSE m_cursor;
 #ifsql INGRES
+    EXEC SQL COMMIT;
 #endsql
 #ifsql INFORMIX
     EXEC SQL COMMIT WORK;
@@ -194,7 +197,8 @@ do_passwd()
       SELECT login, uid, shell, fullname, nickname, office_addr,
       	     office_phone, home_phone, users_id, pop_id, potype, status
       FROM users
-      WHERE status = 1 or status = 6;
+      WHERE status = 1 or status = 6
+      ORDER BY users_id;
     EXEC SQL OPEN u_cursor;
     while (1) {
         EXEC SQL FETCH u_cursor INTO :login, :uid, :shell, :fullname, :nn,
@@ -230,6 +234,7 @@ do_passwd()
     }
     EXEC SQL CLOSE u_cursor;
 #ifsql INGRES
+    EXEC SQL COMMIT;
 #endsql
 #ifsql INFORMIX
     EXEC SQL COMMIT WORK;
@@ -302,6 +307,9 @@ do_groups()
     /* make space for group list */
     groups = create_hash(15001);
 
+    /* The following WHENEVER is declarative, not executed,
+     * and applies for the remainder of this file only.
+     */
     EXEC SQL WHENEVER SQLERROR GOTO sqlerr;
 
     /* get lock records */
@@ -310,8 +318,9 @@ do_groups()
 
     EXEC SQL DECLARE l_cursor CURSOR FOR
       SELECT name, gid, list_id
-	FROM list
-	  WHERE grp != 0 AND active != 0;
+      FROM list
+      WHERE grouplist != 0 AND active != 0
+      ORDER BY list_id;
     EXEC SQL OPEN l_cursor;
     while (1) {
 	EXEC SQL FETCH l_cursor INTO :name, :gid, :lid;
@@ -333,8 +342,9 @@ do_groups()
 	users = create_hash(12001);
 	EXEC SQL DECLARE u_cursor2 CURSOR FOR
 	  SELECT users_id, login
-	    FROM users
-	      WHERE status = 1;
+	  FROM users
+	  WHERE status = 1
+	  ORDER BY users_id;
 	EXEC SQL OPEN u_cursor2;
         while (1) {
 	    EXEC SQL FETCH u_cursor2 INTO :id, :name;
@@ -349,8 +359,9 @@ do_groups()
 
     EXEC SQL DECLARE i_cursor CURSOR FOR
       SELECT list_id, member_id
-	FROM imembers
-	  WHERE member_type = "USER";
+      FROM imembers
+      WHERE member_type = 'USER'
+      ORDER BY list_id;
     EXEC SQL OPEN i_cursor;
     while (1) {
 	EXEC SQL FETCH i_cursor INTO :lid, :id;
@@ -365,6 +376,7 @@ do_groups()
     }
     EXEC SQL CLOSE i_cursor;
 #ifsql INGRES
+    EXEC SQL COMMIT;
 #endsql
 #ifsql INFORMIX
     EXEC SQL COMMIT WORK;
@@ -445,7 +457,8 @@ do_filsys()
 
     EXEC SQL DECLARE f_cursor CURSOR FOR
       SELECT label, type, name, mach_id, access, mount, comments, filsys_id
-	FROM filesys;
+      FROM filesys
+      ORDER BY filsys_id;
     EXEC SQL OPEN f_cursor;
     while (1) {
 	EXEC SQL FETCH f_cursor INTO :name, :type, :loc, :id, :access, 
@@ -480,8 +493,8 @@ do_filsys()
 	  SELECT DISTINCT f.type, f.name, f.mach_id, f.access, f.mount,
 		f.comments, f.label, g.key
 	  FROM filesys f, fsgroup g
-	    WHERE f.filsys_id = g.filsys_id AND g.group_id = :fid
-	    ORDER BY key, label;
+	  WHERE f.filsys_id = g.filsys_id AND g.group_id = :fid
+	  ORDER BY key, label;
 	EXEC SQL OPEN f_cursor2;
         while (1) {
             EXEC SQL FETCH f_cursor2 INTO :type, :loc, :id, :access,:mount,
@@ -510,8 +523,8 @@ do_filsys()
 
     EXEC SQL DECLARE a_cursor CURSOR FOR
       SELECT name, trans
-	FROM alias
-	  WHERE type = "FILESYS";
+      FROM alias
+      WHERE type = 'FILESYS';
     EXEC SQL OPEN a_cursor;
     while (1) {
         EXEC SQL FETCH a_cursor INTO :name, :trans;
@@ -521,6 +534,7 @@ do_filsys()
     }
     EXEC SQL CLOSE a_cursor;
 #ifsql INGRES
+    EXEC SQL COMMIT;
 #endsql
 #ifsql INFORMIX
     EXEC SQL COMMIT WORK;
@@ -618,7 +632,8 @@ do_cluster()
 
     EXEC SQL DECLARE p_cursor CURSOR FOR
       SELECT mach_id, clu_id
-	FROM mcmap;
+      FROM mcmap
+      ORDER BY mach_id;
     EXEC SQL OPEN p_cursor;
     while (1) {
         EXEC SQL FETCH p_cursor INTO :mid, :cid;
@@ -714,6 +729,7 @@ do_cluster()
     }
     free(machs);
 #ifsql INGRES
+    EXEC SQL COMMIT;
 #endsql
 #ifsql INFORMIX
     EXEC SQL COMMIT WORK;
@@ -784,6 +800,7 @@ do_printcap()
     }
     EXEC SQL CLOSE p_cursor2;
 #ifsql INGRES
+    EXEC SQL COMMIT;
 #endsql
 #ifsql INFORMIX
     EXEC SQL COMMIT WORK;
@@ -853,7 +870,7 @@ do_palladium()
     EXEC SQL DECLARE a_cursor2 CURSOR FOR
       SELECT name, trans
       FROM alias
-      WHERE type = "PALLADIUM";
+      WHERE type = 'PALLADIUM';
     EXEC SQL OPEN a_cursor2; 
     while (1) { 
         EXEC SQL FETCH a_cursor2 INTO :name, :trans;
@@ -864,6 +881,7 @@ do_palladium()
     }
     EXEC SQL CLOSE a_cursor2;
 #ifsql INGRES
+    EXEC SQL COMMIT;
 #endsql
 #ifsql INFORMIX
     EXEC SQL COMMIT WORK;
@@ -930,6 +948,7 @@ do_sloc()
     }
     EXEC SQL CLOSE s_cursor;
 #ifsql INGRES
+    EXEC SQL COMMIT;
 #endsql
 #ifsql INFORMIX
     EXEC SQL COMMIT WORK;
@@ -998,7 +1017,7 @@ do_service()
     EXEC SQL DECLARE a_cursor3 CURSOR FOR
       SELECT name, trans
       FROM alias
-      WHERE type = "SERVICE";
+      WHERE type = 'SERVICE';
     EXEC SQL OPEN a_cursor3; 
     while (1) { 
         EXEC SQL FETCH a_cursor3 INTO :service, :altserv;
@@ -1009,6 +1028,7 @@ do_service()
     }
     EXEC SQL CLOSE a_cursor3;
 #ifsql INGRES
+    EXEC SQL COMMIT;
 #endsql
 #ifsql INFORMIX
     EXEC SQL COMMIT WORK;

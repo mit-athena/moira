@@ -21,7 +21,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/stella/stella.c,v 1.7 2000-10-18 20:38:43 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/stella/stella.c,v 1.8 2000-12-19 07:33:46 zacheiss Exp $");
 
 struct owner_type {
   int type;
@@ -58,7 +58,7 @@ struct string_list *map_add_queue, *map_remove_queue;
 char *hostname, *whoami;
 
 char *newname, *address, *network, *h_status, *vendor, *model;
-char *os, *location, *contact, *adm_cmt, *op_cmt;
+char *os, *location, *contact, *billing_contact, *adm_cmt, *op_cmt;
 
 struct owner_type *owner;
 
@@ -82,7 +82,7 @@ int main(int argc, char **argv)
   info_flag = update_flag = create_flag = list_map_flag = update_map_flag = 0;
   update_alias_flag = verbose = noauth = 0;
   newname = address = network = h_status = vendor = model = NULL;
-  os = location = contact = adm_cmt = op_cmt = NULL;
+  os = location = contact = billing_contact = adm_cmt = op_cmt = NULL;
   owner = NULL;
   alias_add_queue = alias_remove_queue = NULL;
   map_add_queue = map_remove_queue = NULL;
@@ -192,6 +192,14 @@ int main(int argc, char **argv)
 	    } else
 	      usage(argv);
 	  }
+	  else if (argis("bc", "billingcontact")) {
+	    if (arg - argv < argc - 1) {
+	      arg++;
+	      update_flag++;
+	      billing_contact = *arg;
+	    } else
+	      usage(argv);
+	  }
 	  else if (argis("ac", "admcmt")) {
 	    if (arg - argv < argc - 1) {
 	      arg++;
@@ -275,7 +283,7 @@ int main(int argc, char **argv)
   }
 
   /* fire up Moira */
-  status = mrcl_connect(server, "stella", 2, !noauth);
+  status = mrcl_connect(server, "stella", 6, !noauth);
   if (status == MRCL_AUTH_ERROR)
     {
       com_err(whoami, 0, "Try the -noauth flag if you don't "
@@ -290,7 +298,7 @@ int main(int argc, char **argv)
       char *argv[30];
       int cnt;
 
-      for (cnt = 0; cnt < 15; cnt++) {
+      for (cnt = 0; cnt < 16; cnt++) {
 	argv[cnt] = "";
       }
 
@@ -306,57 +314,59 @@ int main(int argc, char **argv)
 	argv[4] = location;
       if (contact)
 	argv[5] = contact;
+      if (billing_contact)
+	argv[6] = billing_contact;
       /* The use field always gets set to "0" */
-      argv[6] = "0";
+      argv[7] = "0";
       if (h_status)
-	argv[7] = h_status;
+	argv[8] = h_status;
       else
-	argv[7] = "1";
+	argv[8] = "1";
       if (network)
-	argv[8] = network;
+	argv[9] = network;
       if (address)
-	argv[9] = address;
+	argv[10] = address;
       else
-	argv[9] = "unique";
+	argv[10] = "unique";
       if (adm_cmt)
-	argv[12] = adm_cmt;
+	argv[13] = adm_cmt;
       if (op_cmt)
-	argv[13] = op_cmt;
+	argv[14] = op_cmt;
 
       if (owner)
 	{
-	  argv[11] = owner->name;
+	  argv[12] = owner->name;
 	  switch (owner->type)
 	    {
 	    case M_ANY:
 	    case M_USER:
-	      argv[10] = "USER";
-	      status = wrap_mr_query("add_host", 14, argv, NULL, NULL);
+	      argv[11] = "USER";
+	      status = wrap_mr_query("add_host", 15, argv, NULL, NULL);
 	      if (owner->type != M_ANY || status != MR_USER)
 		break;
 
 	    case M_LIST:
-	      argv[10] = "LIST";
-	      status = wrap_mr_query("add_host", 14, argv, NULL, NULL);
+	      argv[11] = "LIST";
+	      status = wrap_mr_query("add_host", 15, argv, NULL, NULL);
 	      break;
 
 	    case M_KERBEROS:
-	      argv[10] = "KERBEROS";
-	      status = wrap_mr_query("add_host", 14, argv, NULL, NULL);
+	      argv[11] = "KERBEROS";
+	      status = wrap_mr_query("add_host", 15, argv, NULL, NULL);
 	      break;
 
 	    case M_NONE:
-	      argv[10] = "NONE";
-	      status = wrap_mr_query("add_host", 14, argv, NULL, NULL);
+	      argv[11] = "NONE";
+	      status = wrap_mr_query("add_host", 15, argv, NULL, NULL);
 	      break;
 	    }
 	}
       else
 	{
-	  argv[10] = "NONE";
 	  argv[11] = "NONE";
+	  argv[12] = "NONE";
 
-	  status = wrap_mr_query("add_host", 14, argv, NULL, NULL);
+	  status = wrap_mr_query("add_host", 15, argv, NULL, NULL);
 	}
 
       if (status)
@@ -390,12 +400,13 @@ int main(int argc, char **argv)
       argv[6] = old_argv[5];
       argv[7] = old_argv[6];
       argv[8] = old_argv[7];
-      argv[9] = old_argv[9];
+      argv[9] = old_argv[8];
       argv[10] = old_argv[10];
       argv[11] = old_argv[11];
       argv[12] = old_argv[12];
       argv[13] = old_argv[13];
       argv[14] = old_argv[14];
+      argv[15] = old_argv[15];
 
       argv[0] = canonicalize_hostname(strdup(hostname));
       if (newname)
@@ -410,47 +421,49 @@ int main(int argc, char **argv)
 	argv[5] = location;
       if (contact)
 	argv[6] = contact;
+      if (billing_contact)
+	argv[7] = billing_contact;
       if (h_status)
-	argv[8] = h_status;
+	argv[9] = h_status;
       if (network)
-	argv[9] = network;
+	argv[10] = network;
       if (address)
-	argv[10] = address;
+	argv[11] = address;
       if (adm_cmt)
-	argv[13] = adm_cmt;
+	argv[14] = adm_cmt;
       if (op_cmt)
-	argv[14] = op_cmt;
+	argv[15] = op_cmt;
 
       if (owner)
 	{
-	  argv[12] = owner->name;
+	  argv[13] = owner->name;
 	  switch (owner->type)
 	    {
 	    case M_ANY:
 	    case M_USER:
-	      argv[11] = "USER";
-	      status = wrap_mr_query("update_host", 15, argv, NULL, NULL);
+	      argv[12] = "USER";
+	      status = wrap_mr_query("update_host", 16, argv, NULL, NULL);
 	      if (owner->type != M_ANY || status != MR_USER)
 		break;
 
 	    case M_LIST:
-	      argv[11] = "LIST";
-	      status = wrap_mr_query("update_host", 15, argv, NULL, NULL);
+	      argv[12] = "LIST";
+	      status = wrap_mr_query("update_host", 16, argv, NULL, NULL);
 	      break;
 
 	    case M_KERBEROS:
-	      argv[11] = "KERBEROS";
-	      status = wrap_mr_query("update_host", 15, argv, NULL, NULL);
+	      argv[12] = "KERBEROS";
+	      status = wrap_mr_query("update_host", 16, argv, NULL, NULL);
 	      break;
 
 	    case M_NONE:
-	      argv[11] = "NONE";
-	      status = wrap_mr_query("update_host", 15, argv, NULL, NULL);
+	      argv[12] = "NONE";
+	      status = wrap_mr_query("update_host", 16, argv, NULL, NULL);
 	      break;
 	    }
 	}
       else
-	status = wrap_mr_query("update_host", 15, argv, NULL, NULL);
+	status = wrap_mr_query("update_host", 16, argv, NULL, NULL);
 
       if (status)
 	com_err(whoami, status, "while updating host.");
@@ -606,15 +619,15 @@ void usage(char **argv)
   fprintf(stderr, USAGE_OPTIONS_FORMAT, "-oc  | -opcmt op_cmt",
 	  "-c   | -contact contact");
   fprintf(stderr, USAGE_OPTIONS_FORMAT, "-ac  | -admcmt adm_cmt",
-	  "-A   | -address address");
-  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-am  | -addmap cluster",
+	  "-bc  | -billingcontact billing_contact");
+  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-A   | -address address",
 	  "-N   | -network network");
-  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-dm  | -deletemap cluster",
-	  "-lm  | -listmap");
-  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-db  | -database host[:port]",
-	  "-n   | -noauth");
+  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-am  | -addmap cluster",
+	  "-dm  | deletemap cluster");
+  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-lm  | -listmap",
+	  "-db  | -database host[:port]");
   fprintf(stderr, USAGE_OPTIONS_FORMAT, "-v   | -verbose",
-	  "");
+	  "-n   | -noauth");
   exit(1);
 }
 
@@ -691,11 +704,13 @@ void show_host_info(char **argv)
   printf("Status:   %-16s    Changed:    %s\n",
           MacState(atoi(argv[M_STAT])), argv[M_STAT_CHNG]);
   printf("\n");
-
-  printf("Vendor:   %-16s    Model:      %-20s  OS:  %s\n",
-          argv[M_VENDOR], argv[M_MODEL], argv[M_OS]);
-  printf("Location: %-16s    Contact:    %-20s  Opt: %s\n",
-          argv[M_LOC], argv[M_CONTACT], argv[M_USE]);
+  printf("Vendor:   %-16s    Location:        %s\n", argv[M_VENDOR], 
+	 argv[M_LOC]);
+  printf("Model:    %-16s    Contact:         %s\n", argv[M_MODEL], 
+	 argv[M_CONTACT]);
+  printf("OS:       %-16s    Billing Contact: %s\n", argv[M_OS], 
+	 argv[M_BILL_CONTACT]);
+  printf("\nOpt: %s\n", argv[M_USE]);
   printf("\nAdm cmt: %s\n", argv[M_ACOMMENT]);
   printf("Op cmt:  %s\n", argv[M_OCOMMENT]);
   printf("\n");

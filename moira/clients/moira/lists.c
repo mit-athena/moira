@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v 1.7 1988-07-29 18:31:27 kit Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v 1.8 1988-09-01 16:05:58 mar Exp $";
 #endif lint
 
 /*	This is the file lists.c for the SMS Client, which allows a nieve
@@ -10,8 +10,8 @@
  *	By:		Chris D. Peterson
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v $
- *      $Author: kit $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v 1.7 1988-07-29 18:31:27 kit Exp $
+ *      $Author: mar $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v 1.8 1988-09-01 16:05:58 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -202,8 +202,7 @@ Bool name;
     if (atoi(info[L_GROUP]))
 	GetValueFromUser("What is the GID for this group.", &info[L_GID]);
 
-    GetValueFromUser("What Type of Administrator (none, user, list): ",
-		     &info[L_ACE_TYPE]);
+    GetTypeFromUser("What Type of Administrator", "ace_type",&info[L_ACE_TYPE]);
     if ( (strcmp(info[L_ACE_TYPE], "USER") == 0) || 
 	(strcmp(info[L_ACE_TYPE], "user") == 0) )
 	GetValueFromUser("Who will be the administrator of this list: ",
@@ -433,7 +432,7 @@ char **argv;
 	    return(DM_QUIT);
 	case SMS_ACCESS:
 	    Put_message("You are not allowed to view this list.");
-	    return(DM_QUIT);
+	    break;
 	default:
 	    com_err(program_name, stat, " in get_list_info");
 	    return(DM_QUIT);
@@ -561,18 +560,12 @@ char *action, **ret_argv;
 
     ret_argv[LM_LIST] = Strsave(current_list);
 
-    PromptWithDefault("Type of member (user, list, or string)",
-			ret_buf, BUFSIZ, "user");
-    ret_argv[LM_TYPE]= Strsave(ret_buf);
-
-/*
- * A type check needs to be added here, to see if we match the
- * allowable types, currently (user, list, and string). 
- */
+    ret_argv[LM_TYPE] = Strsave("user");
+    GetTypeFromUser("Type of member", "member", &ret_argv[LM_TYPE]);
 
     sprintf(temp_buf,"Name of %s to %s", ret_argv[LM_TYPE], action);
-    PromptWithDefault(temp_buf, ret_buf, BUFSIZ, user);
-    ret_argv[LM_MEMBER] = Strsave(ret_buf);
+    ret_argv[LM_MEMBER] = Strsave(user);
+    GetValueFromUser(temp_buf, &ret_argv[LM_MEMBER]);
     ret_argv[LM_END] = NULL;		/* NULL terminate this list. */
 
     if (!ValidName( ret_argv[LM_MEMBER] ) ) {

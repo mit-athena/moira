@@ -1,4 +1,4 @@
-/* $Id: dhcp.pc,v 1.1 2000-07-27 02:13:34 zacheiss Exp $
+/* $Id: dhcp.pc,v 1.2 2000-08-17 05:52:49 zacheiss Exp $
  *
  * This generates the dhcpd.conf.pring and associated files.
  *
@@ -22,7 +22,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/dhcp.pc,v 1.1 2000-07-27 02:13:34 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/dhcp.pc,v 1.2 2000-08-17 05:52:49 zacheiss Exp $");
 
 char *whoami = "dhcp.gen";
 char *db = "moira/moira";
@@ -80,9 +80,9 @@ int main(int argc, char **argv)
   sprintf(filename, "%s/dhcp.out", DCM_DIR);
   tf = tarfile_open(filename);
 
-  /* Build dhcp.conf.print */
+  /* Build dhcpd.conf.print */
 
-  out = tarfile_start(tf, "/var/boot/dhcp.conf.print", 0755, 0, 0,
+  out = tarfile_start(tf, "/var/boot/dhcpd.conf.print", 0755, 0, 0,
 		      "root", "root", now);
   ohwaddr[0] = '\0';
   EXEC SQL DECLARE csr_boot CURSOR FOR

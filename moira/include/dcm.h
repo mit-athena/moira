@@ -1,6 +1,6 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/include/dcm.h,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/include/dcm.h,v 1.6 1993-03-25 10:27:55 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/include/dcm.h,v 1.7 1997-01-29 23:21:13 danw Exp $
  */
 
 #define UPCALL_CONT	0
@@ -16,8 +16,6 @@
 
 #define UMASK		0007
 
-extern char *malloc(), *calloc(), *realloc();
-extern int errno;
 extern char *whoami;
 
 #define DBG_PLAIN	01
@@ -86,6 +84,7 @@ extern void scream();
 extern char *strsave();
 extern long file_last_mod_time();
 extern long current_time();
+extern char *itoa();
 #define file_exists(file) (access((file), F_OK) == 0)
 
 /*--> update.c <--*/

@@ -13,14 +13,12 @@ struct update_desc {
      char *instructions;	/* script pathname */
 };
 
-char *whoami;
 extern char sms_data_dir[];
 
 #define log_DEBUG 0
 #define log_INFO  1
 #define log_WARNING 2
 #define log_ERROR 3
-int log_priority;
 
 #define SERVICE_NAME "sms_update"
 #define	UPDATE_BUFSIZ	BUFSIZ

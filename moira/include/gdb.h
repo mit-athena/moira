@@ -1,5 +1,5 @@
 /*
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/include/gdb.h,v 1.7 1996-09-29 20:13:14 danw Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/include/gdb.h,v 1.8 1997-01-29 23:21:15 danw Exp $
  */
 
 /************************************************************************
@@ -54,7 +54,14 @@ typedef long fd_mask;
 typedef struct fd_set {fd_mask fds_bits[howmany(FD_SETSIZE, NFDBITS)];} fd_set;
 #endif 
 
-
+/* 32-bit type for consistency in data sent across the network */
+#ifdef SIXTYFOUR
+#define int32 int
+#define uint32 u_int
+#else
+#define int32 long
+#define uint32 u_long
+#endif
 
 	/*----------------------------------------------------------*
 	 *	
@@ -207,6 +214,7 @@ union gdb_prop_union {
 						/* integer */
 	int (*f)();				/* as a function pointer */
 	char *cp;				/* character pointer  */
+	char *(*cpf)();				/* string function pointer */
 };
 
 #define TYPE_PROPERTY_COUNT 8			/* number of properties */
@@ -226,8 +234,8 @@ union gdb_prop_union {
 #define ALIGNMENT_PROPERTY 1			/* integer */
 #define NULL_PROPERTY 2				/* function */
 #define CODED_LENGTH_PROPERTY 3			/* function */
-#define ENCODE_PROPERTY 4			/* function */
-#define DECODE_PROPERTY 5			/* function */
+#define ENCODE_PROPERTY 4			/* string function */
+#define DECODE_PROPERTY 5			/* string function */
 #define FORMAT_PROPERTY 6			/* function */
 #define NAME_PROPERTY 7				/* char pointer */
 
@@ -295,7 +303,7 @@ struct tupld_var {				/* the variable length */
 						/* included in this length */
 };
 struct tupl_desc {
-	long id;				/* this should say TPD\0 */
+	int32 id;				/* this should say TPD\0 */
 	int ref_count;				/* when this goes to zero, */
 						/* the descriptor may really */
 						/* be reclaimed */
@@ -338,7 +346,7 @@ struct tuple_dat {
 						/* tuples are linked, as in */
 						/* a relation.  Convention is*/
 						/* double linked, circular.*/
-	long id;				/* should say TUP\0  */
+	int32 id;				/* should say TUP\0  */
 	TUPLE_DESCRIPTOR desc;			/* pointer to the descriptor */
 	char data[1];				/* data goes here, word */
 						/* aligned.  Should be [] */
@@ -369,7 +377,7 @@ struct rel_dat {
 						/* as the first fields in */
 						/* both rel_dat and tuple_dat*/
 						/* a minor non-portability */
-	long id;				/* should contain REL\0  */
+	int32 id;				/* should contain REL\0  */
 	TUPLE_DESCRIPTOR desc;			/* descriptor for the tuples */
 						/* in this relation. Should */
 						/* == that in each tuple */
@@ -447,7 +455,7 @@ struct half_con_data {
 						/* OPSTATUS. tells whether */
 						/* transmit/receive is */
 						/* pending.*/
-	long flags;				/* bit flags */
+	int32 flags;				/* bit flags */
 #define HCON_PROGRESS 0x00000001		/* used by selection */
 						/* routines to detect */
 						/* progress */
@@ -505,7 +513,7 @@ typedef struct half_con_data *HALF_CONNECTION;
 #define GDB_CON_ID 0x434f4e00 /*"CON"*/
 
 struct con_data {
-	long	id;				/* should contain CON\0  */
+	int32	id;				/* should contain CON\0  */
 	int status;				/* See definitions below. */
 						/* Do not confuse with */
 						/* the status sub-fields of */
@@ -605,7 +613,7 @@ extern fd_set last_crfds, last_cwfds, last_cefds;/* these file desc. bit */
 
 struct oper_data {
 	struct oper_data *next, *prev;		/* forward and back chain */
-	long id;				/* should contain OPR\0  */
+	int32 id;				/* should contain OPR\0  */
 	int tag;				/* unique identifier for */
 						/* this operation */
 	int status;				/* current state of this */
@@ -927,7 +935,7 @@ extern int gdb_socklen;				/* length of above */
 #define GDB_DB_ID 0x44420000			/* eye catcher */
 
 struct db_struct {
-	long id;				/* eye catcher */
+	int32 id;				/* eye catcher */
 	CONNECTION connection;			/* the GDB connection */
 						/* used to get at this */
 						/* database */

@@ -5,10 +5,16 @@
  *
  * Somewhat based on blanche
  *
- * Copyright (C) 2000 by the Massachusetts Institute of Technology.
+ * Copyright (C) 2000, 2001 by the Massachusetts Institute of Technology.
  * For copying and distribution information, please see the file
  * <mit-copyright.h>.
  */
+
+#include <sys/types.h>
+#include <sys/socket.h>
+
+#include <netinet/in.h>
+#include <arpa/inet.h>
 
 #include <mit-copyright.h>
 #include <moira.h>
@@ -21,7 +27,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/stella/stella.c,v 1.11 2001-08-16 21:31:42 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/stella/stella.c,v 1.12 2001-08-20 23:23:52 zacheiss Exp $");
 
 struct owner_type {
   int type;
@@ -62,6 +68,7 @@ char *hostname, *whoami;
 char *newname, *address, *network, *h_status, *vendor, *model;
 char *os, *location, *contact, *billing_contact, *adm_cmt, *op_cmt;
 
+in_addr_t ipaddress;
 struct owner_type *owner;
 
 void usage(char **argv);
@@ -320,6 +327,22 @@ int main(int argc, char **argv)
     }
   if (status)
     exit(2);
+
+  /* Perform the lookup by IP address if that's what we've been handed */
+  if ((ipaddress=inet_addr(hostname)) != -1) {
+    char *args[5];
+    char *argv[30];
+
+    args[1] = strdup(hostname);
+    args[0] = args[2] = args[3] = "*";
+    status = wrap_mr_query("get_host", 4, args, store_host_info, argv);
+
+    if (status) {
+      com_err(whoami, status, "while looking up IP address.");
+    } else {
+      hostname = argv[0];
+    }
+  }
 
   /* create if needed */
   if (create_flag)

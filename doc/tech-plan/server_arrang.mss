@@ -138,7 +138,7 @@ Files:
            ; Hesiod-specific cache data (for ATHENA.MIT.EDU)
            ;
            ;       $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/doc/tech-plan/server_arrang.mss,v $      
-           ;       $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/doc/tech-plan/server_arrang.mss,v 1.7 1987-08-05 18:20:19 pjlevine Exp $
+           ;       $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/doc/tech-plan/server_arrang.mss,v 1.8 1987-08-05 23:14:05 mike Exp $
            ; pointers to Hesiod name servers
            NS.ATHENA.MIT.EDU. 99999999 HS  NS          JASON.MIT.EDU.
            NS.ATHENA.MIT.EDU. 99999999 HS  NS          ZEUS.MIT.EDU.

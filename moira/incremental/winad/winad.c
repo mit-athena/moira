@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/winad/winad.c,v 1.38 2004-02-18 16:17:43 zacheiss Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/winad/winad.c,v 1.39 2004-02-29 06:48:29 zacheiss Exp $
 /* winad.incr arguments examples
  *
  * arguments when moira creates the account - ignored by winad.incr since the account is unusable.
@@ -1013,7 +1013,7 @@ void do_list(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
         return;
       if (afterc > L_LIST_DESC)
         {
-          strcpy(list_id, before[L_LIST_ID]);
+          strcpy(list_id, after[L_LIST_ID]);
         }
       security_flag = 0;
       get_group_membership(group_membership, group_ou, &security_flag, after);

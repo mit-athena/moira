@@ -67,8 +67,12 @@ close(FS);
 &fatal("Can't get information about $p") if ($?);
 @tmp = (split(/ /,$_));
 if ($tmp[$#tmp] !~ /user\../) {
-    system("$vos release $tmp[$#tmp] -cell $cell >/dev/null") &&
-	&fatal("Can't release $tmp[$#tmp] in cell $cell");
+    $tries = 0; $code = 1;
+    while ($tries<3 && $code) {
+	$code = system("$vos release $tmp[$#tmp] -cell $cell >/dev/null");
+	$tries++;
+    }
+    warn "Couldn't release $tmp[$#tmp] in cell $cell" if ($code) # Don't treat as fatal.
 }
 
 # Update the quota records.

@@ -1,4 +1,4 @@
-/* $Id: qfollow.pc,v 2.15 2000-04-19 23:11:51 zacheiss Exp $
+/* $Id: qfollow.pc,v 2.16 2000-04-21 19:47:40 zacheiss Exp $
  *
  * Query followup routines
  *
@@ -20,7 +20,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qfollow.pc,v 2.15 2000-04-19 23:11:51 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qfollow.pc,v 2.16 2000-04-21 19:47:40 zacheiss Exp $");
 
 extern char *whoami, *table_name[];
 extern int dbms_errno, mr_errcode;
@@ -318,9 +318,9 @@ int followup_fix_modby(struct query *q, struct save_queue *sq,
  **
  ** Inputs:
  **	argv[0] - login (add_user)
- **	argv[3] - last name
- **	argv[4] - first name
- **	argv[5] - middle name
+ **	argv[U_LAST] - last name
+ **	argv[U_FIRST] - first name
+ **	argv[U_MIDDLE] - middle name
  **
  **/
 
@@ -333,12 +333,13 @@ int followup_ausr(struct query *q, char *argv[], client *cl)
   EXEC SQL END DECLARE SECTION;
 
   /* build fullname */
-  if (strlen(argv[4]) && strlen(argv[5]))
-    sprintf(fullname, "%s %s %s", argv[4], argv[5], argv[3]);
-  else if (strlen(argv[4]))
-    sprintf(fullname, "%s %s", argv[4], argv[3]);
+  if (strlen(argv[U_FIRST]) && strlen(argv[U_MIDDLE]))
+    sprintf(fullname, "%s %s %s", argv[U_FIRST], argv[U_MIDDLE], 
+	    argv[U_LAST]);
+  else if (strlen(argv[U_FIRST]))
+    sprintf(fullname, "%s %s", argv[U_FIRST], argv[U_LAST]);
   else
-    sprintf(fullname, "%s", argv[3]);
+    sprintf(fullname, "%s", argv[U_LAST]);
 
   login = argv[0];
   who = cl->client_id;

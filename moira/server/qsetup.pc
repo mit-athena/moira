@@ -1,4 +1,4 @@
-/* $Id: qsetup.pc,v 2.36 2000-01-11 19:50:25 danw Exp $
+/* $Id: qsetup.pc,v 2.37 2000-04-21 19:47:40 zacheiss Exp $
  *
  * Query setup routines
  *
@@ -21,7 +21,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsetup.pc,v 2.36 2000-01-11 19:50:25 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsetup.pc,v 2.37 2000-04-21 19:47:40 zacheiss Exp $");
 
 extern char *whoami;
 extern int dbms_errno, mr_errcode;
@@ -62,9 +62,18 @@ int setup_ausr(struct query *q, char *argv[], client *cl)
   else
     row = 1;
 
-  if (strlen(argv[row + 2]) + strlen(argv[row + 3]) +
-      strlen(argv[row + 4]) + 2 > USERS_FULLNAME_SIZE)
-    return MR_ARG_TOO_LONG;
+  if (q->version > 2)
+    {
+      if (strlen(argv[row + 3]) + strlen(argv[row + 4]) +
+	  strlen(argv[row + 5]) + 2 > USERS_FULLNAME_SIZE)
+	return MR_ARG_TOO_LONG;
+    }
+  else
+    {
+      if (strlen(argv[row + 2]) + strlen(argv[row + 3]) +
+	  strlen(argv[row + 4]) + 2 > USERS_FULLNAME_SIZE)
+	return MR_ARG_TOO_LONG;
+    }
 
   if (!strcmp(argv[row], UNIQUE_UID) || atoi(argv[row]) == -1)
     {

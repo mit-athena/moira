@@ -16,3 +16,6 @@ x9700: sms.x9700
 
 sms.x9700: ${LIB} ${SRC}
 	scribe sms.mss -device x9700
+
+clean:
+	rm -f *.x9700 *.PS *.err *~ *.aux

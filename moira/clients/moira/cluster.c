@@ -1,4 +1,4 @@
-/* $Id: cluster.c,v 1.62 2002-03-20 04:01:00 zacheiss Exp $
+/* $Id: cluster.c,v 1.63 2002-03-20 12:55:43 zacheiss Exp $
  *
  *	This is the file cluster.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -737,7 +737,7 @@ char **AskMCDInfo(char **info, int type, Bool name)
 	  if (isdigit(info[SN_STATUS][0]))
 	    break;
 	  Put_message("Valid status numbers:");
-	  for (i = 0; i < 8; i++)
+	  for (i = 0; i < 9; i++)
 	    Put_message(subnet_states[i]);
 	}
       if (GetValueFromUser("Network's contact", &info[SN_CONTACT]) == SUB_ERROR)

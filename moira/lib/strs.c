@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/strs.c,v $
  *	$Author: wesommer $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/strs.c,v 1.2 1987-09-03 02:29:18 wesommer Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/strs.c,v 1.3 1987-09-03 02:35:50 wesommer Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
@@ -9,7 +9,7 @@
  */
 
 #ifndef lint
-static char *rcsid_strs_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/strs.c,v 1.2 1987-09-03 02:29:18 wesommer Exp $";
+static char *rcsid_strs_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/strs.c,v 1.3 1987-09-03 02:35:50 wesommer Exp $";
 #endif lint
 
 #include <sys/types.h>
@@ -35,7 +35,7 @@ strsave(s)
     if (!s) {
 	    printf("NULL != \"\" !!!!\r\n");
 	    p = malloc(1);
-	    *p = "\0";
+	    *p = '\0';
 	    return p;
     }
     len = strlen(s) + 1;

@@ -1,4 +1,4 @@
-; $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/menus.txt,v 1.6 1992-10-23 18:59:52 mar Exp $
+; $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/menus.txt,v 1.7 1992-11-04 17:56:59 mar Exp $
 ;
 
 ; = menu name "mnemonic"
@@ -90,7 +90,7 @@
 	show		{ MM_SHOW_QUOTA, show_quota get_quota 3 "s" }
 	add		{ MM_ADD_QUOTA, add_quota add_quota 4 "a" }
 	modify		{ MM_MOD_QUOTA, mod_quota update_quota 4 "m" }
-	delete		{ MM_DEL_QUOTA, show_quota delete_quota 3 "d" }
+	delete		{ MM_DEL_QUOTA, del_quota delete_quota 3 "d" }
 	show default	{ MM_SHOW_DQUOTA, 0 get_value 1 "w" }
 	set default	{ MM_SET_DQUOTA, set_dquota set_value 2 "t" }
 

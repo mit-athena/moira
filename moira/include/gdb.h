@@ -1,6 +1,5 @@
 /*
- *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/include/gdb.h,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/include/gdb.h,v 1.2 1988-07-31 18:25:54 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/include/gdb.h,v 1.3 1990-09-10 16:33:26 mar Exp $
  */
 
 /************************************************************************
@@ -1405,7 +1404,7 @@ extern int  (*gdb_fmv)();
 #define   start_db_query			gdb_sdbq
 #else
 #define op_select_any  op_select
-#endif DUMB_7_CHAR_LOADER
+#endif /* DUMB_7_CHAR_LOADER */
 
 extern char *string_alloc();
 extern int   string_free();

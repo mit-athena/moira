@@ -1,7 +1,7 @@
 #
 # 	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/Makefile,v $
 #	$Author: mar $
-#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/Makefile,v 1.7 1989-07-13 17:13:49 mar Exp $
+#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/Makefile,v 1.8 1989-08-16 20:36:06 mar Exp $
 #
 # Revised makefile for GDB library.
 #
@@ -160,6 +160,7 @@ ftp: tar.file
 
 clean:
 	rm -f *.o libgdb.a libgdb_p.a tar.file *.PS *.err \#* *~ profiled/*.o
+	rm -f llib-lgdb.ln TAGS
 
 depend: $(GDBCSRCS)
 	$(CC) -M $(CFLAGS) $(GDBCSRCS) | \

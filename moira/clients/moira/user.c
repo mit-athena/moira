@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.33 1993-09-22 11:49:55 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.34 1994-08-09 19:13:41 tytso Exp $";
 #endif lint
 
 /*	This is the file user.c for the MOIRA Client, which allows a nieve
@@ -10,8 +10,8 @@
  *	By:		Chris D. Peterson
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v $
- *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.33 1993-09-22 11:49:55 mar Exp $
+ *      $Author: tytso $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.34 1994-08-09 19:13:41 tytso Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -20,7 +20,7 @@
  */
 
 #include <stdio.h>
-#include <strings.h>
+#include <string.h>
 #include <moira.h>
 #include <moira_site.h>
 #include <menu.h>
@@ -368,6 +368,14 @@ Bool name;
  *                 name2 - other name, only used in get user by first and last.
  *                         (wildcards okay).
  *	Returns: the first element of the queue containing the user info.
+ *
+ * Note: if we are checking a login name, if the length is greater
+ * than 8 characters, we immediately print a "no such user" error.
+ * This gets around a bug in Ingres, where a non-existent 8 character
+ * username returns a "no such user" error instantaneously, but a 9
+ * character username takes 5-6 minutes.  :-(  We will need to change
+ * this if we ever make a username longer than 8 characters.
+ * Unlikely, but....
  */
 
 struct qelem *
@@ -381,6 +389,11 @@ char *name1, *name2;
 
     switch(type) {
     case LOGIN:
+	if (strlen(name1) > 8) {
+	    com_err(program_name, MR_USER,
+		    " when attempting to get_user_acount_by_login.");
+	    return (NULL);
+        }
 	args[0] = name1;
 	if ( (status = do_mr_query("get_user_account_by_login", 1, args,
 				    StoreInfo, (char *) &elem)) != 0) {
@@ -997,7 +1010,7 @@ char **argv;
 {
     int stat;
 
-    if (!index(argv[KMAP_PRINCIPAL + 1], '@')) {
+    if (!strchr(argv[KMAP_PRINCIPAL + 1], '@')) {
 	Put_message("Please specify a realm for the kerberos principal.");
 	return(DM_NORMAL);
     }

@@ -128,8 +128,8 @@ if test "$krb4" != yes; then
 elif test -d /usr/include/kerberosIV; then
     MR_INCLUDE(/usr/include/kerberosIV)
 fi
-AC_CHECK_LIB(crypto, main, crypto="crypto",
-             [AC_CHECK_LIB(k5crypto, main, crypto="k5crypto")])
+AC_CHECK_LIB(k5crypto, main, crypto="k5crypto",
+             [AC_CHECK_LIB(crypto, main, crypto="crypto")])
 AC_CHECK_LIB(krb4, krb_rd_req,
 	     [KRB4_LIBS="-lkrb4 -ldes425 -lkrb5 -l${crypto}"],
 	     [AC_CHECK_LIB(krb, krb_rd_req,

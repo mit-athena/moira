@@ -1,7 +1,7 @@
 /*
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.37 1992-05-19 17:19:34 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.38 1992-06-01 13:56:35 mar Exp $
  *
  *      Copyright (C) 1987, 1988 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -16,7 +16,7 @@
  */
 
 #ifndef lint
-static char *rcsid_reg_svr_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.37 1992-05-19 17:19:34 mar Exp $";
+static char *rcsid_reg_svr_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.38 1992-06-01 13:56:35 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -1038,7 +1038,7 @@ char *retval;
     kv.key_low = htonl(lkey[0]);
     kv.key_high = htonl(lkey[1]);
     strcpy(kv.name, message->first);
-    strcpy(kv.instance, "secure");
+    strcpy(kv.instance, "extra");
 
     if ((status = kadm_add(&kv)) != KADM_SUCCESS) {
 	com_err(whoami, status, " while creating kerberos principal");

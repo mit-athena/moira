@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.32 1992-04-10 16:17:37 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.33 1992-04-22 18:02:31 mar Exp $";
 #endif
 
 /*	This is the file attach.c for the MOIRA Client, which allows a nieve
@@ -13,7 +13,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.32 1992-04-10 16:17:37 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.33 1992-04-22 18:02:31 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -28,6 +28,7 @@
 #include <menu.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <ctype.h>
 
 #include "mit-copyright.h"
 #include "defs.h"
@@ -352,9 +353,26 @@ Bool name;
 		    } else
 		      depth = 0;
 		    sprintf(temp_buf, "/afs/%s/%s", info[FS_MACHINE], path);
-		    for (p=info[FS_NAME]; *p && (p-info[FS_NAME])<depth; p++) {
-			strcat(temp_buf, "/x");
-			temp_buf[strlen(temp_buf)-1] = *p;
+		    if (depth >= 0) {
+			for (p=info[FS_NAME]; *p&&(p-info[FS_NAME])<depth; p++) {
+			    if (islower(*p)) {
+				strcat(temp_buf, "/x");	
+				temp_buf[strlen(temp_buf)-1] = *p;
+			    } else
+			      strcat(temp_buf, "/other");
+			}
+		    } else if (depth = -1) {
+			if (isdigit(info[FS_NAME][0])) {
+			    strcat(temp_buf, "/");
+			    depth = strlen(temp_buf);
+			    for (p = info[FS_NAME]; *p && isdigit(*p); p++) {
+				temp_buf[depth++] = *p;
+				temp_buf[depth] = 0;
+			    }
+			} else
+			  strcat(temp_buf, "/other");
+		    } else {
+			/* no default */
 		    }
 		    strcat(temp_buf, "/");
 		    strcat(temp_buf, info[FS_NAME]);

@@ -1,4 +1,4 @@
-/* $Id: addusr.c,v 1.9 1998-03-10 21:22:32 danw Exp $
+/* $Id: addusr.c,v 1.10 1998-07-29 18:48:54 danw Exp $
  *
  * Program to add users en masse to the moira database
  *
@@ -18,7 +18,7 @@
 #include <stdio.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/addusr/addusr.c,v 1.9 1998-03-10 21:22:32 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/addusr/addusr.c,v 1.10 1998-07-29 18:48:54 danw Exp $");
 
 #ifdef ATHENA
 #define DEFAULT_SHELL "/bin/athena/tcsh"
@@ -28,7 +28,7 @@ RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/cl
 
 /* flags from command line */
 char *class, *comment, *status_str, *shell, *filename;
-int reg_only, reg, verbose, nodupcheck;
+int reg_only, reg, verbose, nodupcheck, securereg;
 
 /* argument parsing macro */
 #define argis(a, b) (!strcmp(*arg + 1, a) || !strcmp(*arg + 1, b))
@@ -55,7 +55,7 @@ int main(int argc, char **argv)
   FILE *input;
 
   /* clear all flags & lists */
-  reg_only = reg = verbose = lineno = nodupcheck = errors = 0;
+  reg_only = reg = verbose = lineno = nodupcheck = errors = securereg = 0;
   server = NULL;
   filename = "-";
   shell = DEFAULT_SHELL;
@@ -110,6 +110,8 @@ int main(int argc, char **argv)
 	      else
 		usage(argv);
 	    }
+	  else if (argis("6", "secure"))
+	    securereg++;
 	  else if (argis("r", "reg_only"))
 	    reg_only++;
 	  else if (argis("R", "register"))
@@ -200,7 +202,7 @@ int main(int argc, char **argv)
   qargv[U_CLASS] = class;
   qargv[U_COMMENT] = comment;
   qargv[U_SIGNATURE] = "";
-  qargv[U_SECURE] = "0";
+  qargv[U_SECURE] = securereg ? "1" : "0";
   while (fgets(buf, BUFSIZ, input))
     {
       /* throw away terminating newline */

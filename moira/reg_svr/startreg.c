@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/startreg.c,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/startreg.c,v 1.2 1988-09-13 14:46:21 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/startreg.c,v 1.3 1989-09-08 18:30:44 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -12,7 +12,7 @@
  */
 
 #ifndef lint
-static char *rcsid_sms_starter_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/startreg.c,v 1.2 1988-09-13 14:46:21 mar Exp $";
+static char *rcsid_sms_starter_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/startreg.c,v 1.3 1989-09-08 18:30:44 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -23,10 +23,9 @@ static char *rcsid_sms_starter_c = "$Header: /afs/.athena.mit.edu/astaff/project
 #include <sys/wait.h>
 #include <sys/signal.h>
 #include <sys/ioctl.h>
+#include <sms_app.h>
 
-#define SMS_LOG_FILE "/u1/sms/reg_svr.log"
-
-#define SMS_PROG "/u1/sms/bin/reg_svr"
+#define PROG	"reg_svr"
 
 int rdpipe[2];
 char *sigdescr[] = {
@@ -106,9 +105,10 @@ main(argc, argv)
 	setreuid(0);
 	signal(SIGCHLD, cleanup);
 	
-	logf = open(SMS_LOG_FILE, O_CREAT|O_WRONLY|O_APPEND, 0640);
+	sprintf(buf, "%s/%s.log", SMS_DIR, PROG);
+	logf = open(buf, O_CREAT|O_WRONLY|O_APPEND, 0640);
 	if (logf<0) {
-		perror(SMS_LOG_FILE);
+		perror(buf);
 		exit(1);
 	}
 	inf = open("/dev/null", O_RDONLY , 0);
@@ -131,6 +131,7 @@ main(argc, argv)
 	tty = open("/dev/tty");
 	ioctl(tty, TIOCNOTTY, 0);
 	close(tty);
+	sprintf(buf, "%s/%s", BIN_DIR, PROG);
 	
 	if ((pid = fork()) == 0) {
 		
@@ -138,7 +139,7 @@ main(argc, argv)
 		dup2(rdpipe[1], 1);
 		dup2(1,2);
 		for (i = 3; i <nfds; i++) close(i);
-		execl(SMS_PROG, "reg_svr", 0);
+		execl(buf, PROG, 0);
 		perror("cannot run reg_svr");
 		exit(1);
 	}

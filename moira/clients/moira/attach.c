@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.9 1988-08-11 13:27:08 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.10 1988-08-12 18:15:36 mar Exp $";
 #endif
 
 /*	This is the file attach.c for the SMS Client, which allows a nieve
@@ -13,7 +13,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.9 1988-08-11 13:27:08 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.10 1988-08-12 18:15:36 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -43,12 +43,12 @@
 #define DEFAULT_MACHINE  DEFAULT_NONE
 #define DEFAULT_PACK     DEFAULT_NONE
 #define DEFAULT_M_POINT  DEFAULT_NONE
-#define DEFAULT_ACCESS   ("r")
+#define DEFAULT_ACCESS   ("w")
 #define DEFAULT_COMMENTS DEFAULT_COMMENT
 #define DEFAULT_OWNER    (user)
 #define DEFAULT_OWNERS   (user)
 #define DEFAULT_CREATE   DEFAULT_YES
-#define DEFAULT_L_TYPE   ("HOMEDIR")
+#define DEFAULT_L_TYPE   ("PROJECT")
 
 /*	Function Name: SetDefaults
  *	Description: sets the default values for filesystem additions.

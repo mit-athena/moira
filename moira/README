@@ -1,4 +1,4 @@
-README file for creating Moira
+README file for creating Moira*
 
 This is the root directory of MIT Athena's Moira service management
 system source code.
@@ -27,14 +27,36 @@ Here are the steps for building the Moira source.
     directories and copies Makefiles into them.
 
 3.  Cd to util/imake.includes.  Read through config.Imakefile, turning
-    on appropriate flags for your installation.  Note that we are not
-    liscensed to distribute gdss, so it is not included in this
-    distribution.  Therefore you will probably not want to define
-    it.  Change SRCTOP appropriately.
+    on appropriate flags for your installation, and setting the paths
+    to your include files, libs, etc for Kerberos Hesiod and Zephyr.*
+    Note that we are not licensed to distribute gdss, so it is not
+    included in this distribution.  Therefore you will probably not
+    want to define it.  Change SRCTOP appropriately.
 
-4.  Still in the top of the object directory (/foo/bar/baz
+4.  Cd to include.  Read through moira_site.h adjusting the paths to
+    what you want on your system.  Also change the #define of
+    MOIRA_SERVER to be the name of the server you are planning on
+    using.
+
+5.  Still in the top of the object directory (/foo/bar/baz
     of Step 1), type "make world" (or "make world  SRCDIR=/x/y/z).
 
-5.  Run "make install".  You may want to check that programs
+    Note: the mmoira client uses X11r4 and motif 1.1.
+
+    Notes on building the server: When building the server (if you are
+    using Ingres) make sure to define the environment variable
+    II_SYSTEM appropriately, and add the ingres/bin directory to your
+    path.  Building the server also requires having perl in your path.
+    It is only used in one place, in order to get around an ingres
+    bug that sets certain field sizes incorrectly when doing an ascii
+    dump of the database, causing data to be lost.  The perl script is
+    src/backup/esql_fix.pl.
+
+6.  Run "make install".  You may want to check that programs
     are installed where you want.  Then add the appropriate
     directories to your PATH environment variable.
+
+* Moira and Hesiod are registered trademarks of the Massachusetts
+Institute of Technology (MIT).  Kerberos, and Zephyr are trademarks of
+MIT.  No commercial use of these trademarks may be made without prior
+written permission from MIT.

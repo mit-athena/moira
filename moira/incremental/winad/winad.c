@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/winad/winad.c,v 1.19 2001-07-16 22:19:04 zacheiss Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/winad/winad.c,v 1.20 2001-07-20 21:33:26 zacheiss Exp $
 /* winad.incr arguments examples
  *
  *
@@ -2285,11 +2285,14 @@ int user_update(LDAP *ldap_handle, char *dn_path, char *user_name,
   int  n;
   int  rc;
   int  i;
+  int  last_weight;
   u_int userAccountControl = UF_NORMAL_ACCOUNT | UF_DONT_EXPIRE_PASSWD | UF_PASSWD_CANT_CHANGE;
   char filter[128];
   char *attr_array[3];
+  char cWeight[3];
   char **hp;
   char path[256];
+  char cPath[256];
   char temp[256];
   char winPath[256];
   char winProfile[256];
@@ -2348,20 +2351,40 @@ int user_update(LDAP *ldap_handle, char *dn_path, char *user_name,
   n = 0;
   if ((hp = hes_resolve(user_name, "filsys")) != NULL)
     {
+      memset(cWeight, 0, sizeof(cWeight));
+      memset(cPath, 0, sizeof(cPath));
       memset(path, 0, sizeof(path));
       memset(winPath, 0, sizeof(winPath));
-      sscanf(hp[0], "%*s %s", path);
-      if (strlen(path) && strnicmp(path, AFS, strlen(AFS)) == 0)
+      last_weight = 1000;
+      i = 0;
+      while (hp[i] != NULL)
         {
-          AfsToWinAfs(path, winPath);
-          homedir_v[0] = winPath;
-          ADD_ATTR("homeDirectory", homedir_v, LDAP_MOD_REPLACE);
-          strcpy(winProfile, winPath);
-          strcat(winProfile, "\\.winprofile");
-          winProfile_v[0] = winProfile;
-          ADD_ATTR("profilePath", winProfile_v, LDAP_MOD_REPLACE);
-          drives_v[0] = "H:";
-          ADD_ATTR("homeDrive", drives_v, LDAP_MOD_REPLACE);
+          sscanf(hp[i], "%*s %s", cPath);
+          if (strlen(cPath) && strnicmp(cPath, AFS, strlen(AFS)) == 0)
+            {
+              sscanf(hp[i], "%*s %*s %*s %*s %s", cWeight);
+              if (atoi(cWeight) < last_weight)
+                {
+                  strcpy(path, cPath);
+                  last_weight = (int)atoi(cWeight);
+                } 
+            }
+          ++i;
+        }
+      if (strlen(path))
+        {
+          if (!strnicmp(path, AFS, strlen(AFS)))
+            {
+              AfsToWinAfs(path, winPath);
+              homedir_v[0] = winPath;
+              ADD_ATTR("homeDirectory", homedir_v, LDAP_MOD_REPLACE);
+              strcpy(winProfile, winPath);
+              strcat(winProfile, "\\.winprofile");
+              winProfile_v[0] = winProfile;
+              ADD_ATTR("profilePath", winProfile_v, LDAP_MOD_REPLACE);
+              drives_v[0] = "H:";
+              ADD_ATTR("homeDrive", drives_v, LDAP_MOD_REPLACE);
+            }
         }
     }
   uid_v[0] = Uid;

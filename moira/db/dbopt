@@ -60,6 +60,10 @@ modify i_fil_phys to cbtree
 index on filesys is i_fil_grp (owners)
 modify i_fil_grp to btree
 
+modify fsgroup to cbtree on group_id
+index on fsgroup is i_fsg_filsys (filsys_id)
+modify i_fsg_filsys to btree
+
 modify nfsquota to cbtree on users_id
 index on nfsquota is i_nfq_fil (filsys_id)
 modify i_nfq_fil to cbtree

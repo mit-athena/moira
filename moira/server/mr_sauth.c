@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_sauth.c,v $
- *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_sauth.c,v 1.18 1990-03-28 15:27:25 mar Exp $
+ *	$Author: tytso $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_sauth.c,v 1.19 1993-12-10 14:00:49 tytso Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_sms_sauth_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_sauth.c,v 1.18 1990-03-28 15:27:25 mar Exp $";
+static char *rcsid_sms_sauth_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_sauth.c,v 1.19 1993-12-10 14:00:49 tytso Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -21,7 +21,6 @@ static char *rcsid_sms_sauth_c = "$Header: /afs/.athena.mit.edu/astaff/project/m
 
 extern char buf1[];
 extern char *whoami;
-extern char *malloc();
 
 char *kname_unparse();
 
@@ -81,7 +80,7 @@ do_auth(cl)
 				 &cl->client_id, &cl->users_id);
 
 	if (cl->args->mr_version_no == MR_VERSION_2) {
-	    bcopy(cl->args->mr_argv[1], cl->entity, 8);
+	    strncpy(cl->entity, cl->args->mr_argv[1], 8);
 	    cl->entity[8] = 0;
 	} else {
 	    strcpy(cl->entity, "???");

@@ -7,7 +7,7 @@
 # 
 #       $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/Makefile,v $
 #       $Author: mar $
-#       $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/Makefile,v 1.8 1989-06-01 13:07:18 mar Exp $
+#       $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/Makefile,v 1.9 1989-10-11 23:08:21 mar Exp $
 # 	
 #   	Copyright 1987, 1988 by the Massachusetts Institute of Technology.
 # 
@@ -16,7 +16,7 @@
 # 
 
 DESTDIR=
-CFLAGS = -I../../include -O
+CFLAGS = -I../../include -I. -O
 LDFLAGS =  -L../../lib
 CONFDIR = ${DESTDIR}/usr/athena
 BINDIR = ${DESTDIR}/bin
@@ -26,9 +26,11 @@ LIBS = ${SMSLIB} -lcurses -ltermcap -lkrb -ldes
 
 
 SRCS = utils.c attach.c cluster.c delete.c globals.c lists.c main.c \
-	menus.c nfs.c pobox.c quota.c user.c dcmmaint.c printer.c misc.c
-OBJS = attach.o cluster.o delete.o globals.o lists.o main.o menus.o nfs.o \
-       pobox.o quota.o user.o utils.o dcmmaint.o printer.o misc.o
+	menu.c menus.c nfs.c pobox.c quota.c user.c dcmmaint.c printer.c \
+	misc.c
+OBJS = attach.o cluster.o delete.o globals.o lists.o main.o menu.o \
+	menus.o nfs.o pobox.o quota.o user.o utils.o dcmmaint.o printer.o \
+	misc.o
 
 all:		moira
 

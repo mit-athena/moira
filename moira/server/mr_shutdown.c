@@ -1,20 +1,22 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_shutdown.c,v $
  *	$Author: wesommer $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_shutdown.c,v 1.1 1987-06-02 20:07:18 wesommer Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_shutdown.c,v 1.2 1987-06-21 16:42:12 wesommer Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
  *	$Log: not supported by cvs2svn $
+ * Revision 1.1  87/06/02  20:07:18  wesommer
+ * Initial revision
+ * 
  */
 
 #ifndef lint
-static char *rcsid_sms_shutdown_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_shutdown.c,v 1.1 1987-06-02 20:07:18 wesommer Exp $";
+static char *rcsid_sms_shutdown_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_shutdown.c,v 1.2 1987-06-21 16:42:12 wesommer Exp $";
 #endif lint
 
 #include <strings.h>
 #include <sys/errno.h>
-#include "sms_private.h"
 #include "sms_server.h"
 
 extern char *takedown;

@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v $
  *	$Author: wesommer $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.8 1987-06-09 18:44:45 wesommer Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.9 1987-06-21 16:39:54 wesommer Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
@@ -14,6 +14,9 @@
  * 	Let the reader beware.
  * 
  *	$Log: not supported by cvs2svn $
+ * Revision 1.8  87/06/09  18:44:45  wesommer
+ * modified error handling.
+ * 
  * Revision 1.7  87/06/08  02:44:44  wesommer
  * Minor lint fix.
  * 
@@ -37,12 +40,11 @@
  * 
  */
 
-static char *rcsid_sms_main_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.8 1987-06-09 18:44:45 wesommer Exp $";
+static char *rcsid_sms_main_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.9 1987-06-21 16:39:54 wesommer Exp $";
 
 #include <strings.h>
 #include <sys/errno.h>
 #include <sys/signal.h>
-#include "sms_private.h"
 #include "sms_server.h"
 
 extern CONNECTION newconn, listencon;
@@ -249,12 +251,12 @@ new_connection()
 	/*
 	 * Make sure there's been no error
 	 */
-	if(OP_STATUS(listenop) != OP_COMPLETE ||
-	   newconn == NULL) {
+	if(OP_STATUS(listenop) != OP_COMPLETE) {
 		return errno;
-#ifdef notdef
-		exit(8); /* XXX */
-#endif notdef
+	}
+	
+	if (newconn == NULL) {
+		return SMS_NOT_CONNECTED;
 	}
 
 	/*
@@ -357,7 +359,7 @@ clist_delete(cp)
 	free((char *)clients);
 	clients = clients_n;
 	clients_n = NULL;
-
+	oplist_delete(op_list, cp->pending_op);
 	reset_operation(cp->pending_op);
 	delete_operation(cp->pending_op);
 	sever_connection(cp->con);
@@ -387,3 +389,24 @@ oplist_append(oplp, op)
 	(*oplp) = newlist;
 }
 
+
+oplist_delete(oplp, op)
+	LIST_OF_OPERATIONS oplp;
+	register OPERATION op;
+{
+	register OPERATION *s;
+	register int c;
+	
+	for (s = oplp->op, c=oplp->count; c; --c, ++s) {
+		if (*s == op) {
+			while (c > 0) {
+				*s = *(s+1);
+				++s;
+				--c;
+			}
+			oplp->count--;
+			return;
+		}
+	}
+	abort();
+}

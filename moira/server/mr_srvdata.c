@@ -1,20 +1,22 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_srvdata.c,v $
  *	$Author: wesommer $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_srvdata.c,v 1.1 1987-06-02 20:07:25 wesommer Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_srvdata.c,v 1.2 1987-06-21 16:42:16 wesommer Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
  * 	Global variables inside the SMS server.
  * 
  *	$Log: not supported by cvs2svn $
+ * Revision 1.1  87/06/02  20:07:25  wesommer
+ * Initial revision
+ * 
  */
 
 #ifndef lint
-static char *rcsid_sms_srvdata_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_srvdata.c,v 1.1 1987-06-02 20:07:25 wesommer Exp $";
+static char *rcsid_sms_srvdata_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_srvdata.c,v 1.2 1987-06-21 16:42:16 wesommer Exp $";
 #endif lint
 
-#include "sms_private.h"
 #include "sms_server.h"
 
 /*

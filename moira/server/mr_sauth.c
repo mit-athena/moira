@@ -1,24 +1,26 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_sauth.c,v $
  *	$Author: wesommer $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_sauth.c,v 1.2 1987-06-04 01:34:35 wesommer Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_sauth.c,v 1.3 1987-06-21 16:40:10 wesommer Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
  *	$Log: not supported by cvs2svn $
+ * Revision 1.2  87/06/04  01:34:35  wesommer
+ * Added logging of arguments for some perverse reason.
+ * 
  * Revision 1.1  87/06/02  20:06:57  wesommer
  * Initial revision
  * 
  */
 
 #ifndef lint
-static char *rcsid_sms_sauth_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_sauth.c,v 1.2 1987-06-04 01:34:35 wesommer Exp $";
+static char *rcsid_sms_sauth_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_sauth.c,v 1.3 1987-06-21 16:40:10 wesommer Exp $";
 #endif lint
 
 extern int krb_err_base;
 #include <krb.h>
 #include <strings.h>
-#include "sms_private.h"
 #include "sms_server.h"
 
 extern char buf1[];

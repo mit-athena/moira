@@ -1,11 +1,14 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_scall.c,v $
  *	$Author: wesommer $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_scall.c,v 1.3 1987-06-04 01:35:01 wesommer Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_scall.c,v 1.4 1987-06-21 16:42:00 wesommer Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
  *	$Log: not supported by cvs2svn $
+ * Revision 1.3  87/06/04  01:35:01  wesommer
+ * Added a working query request handler.
+ * 
  * Revision 1.2  87/06/03  16:07:50  wesommer
  * Fixes for lint.
  * 
@@ -15,12 +18,11 @@
  */
 
 #ifndef lint
-static char *rcsid_sms_scall_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_scall.c,v 1.3 1987-06-04 01:35:01 wesommer Exp $";
+static char *rcsid_sms_scall_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_scall.c,v 1.4 1987-06-21 16:42:00 wesommer Exp $";
 #endif lint
 
 #include <krb.h>
 #include <errno.h>
-#include "sms_private.h"
 #include "sms_server.h"
 extern char buf1[];
 extern int nclients;
@@ -127,7 +129,6 @@ retr_callback(argc, argv, p_cp)
 	 */
 	sms_params *arg_tmp = (sms_params *)db_alloc(sizeof(sms_params));
 	OPERATION op_tmp = create_operation();
-	
 
 #ifdef notdef			/* We really don't want this logged */
 	com_err(whoami, 0, "Returning next data:");
@@ -151,12 +152,13 @@ do_retr(cl)
 {
 	cl->reply.sms_argc = 0;
 	cl->reply.sms_status = 0;
-
+#ifdef notdef
 	if (!cl->clname) {
 		com_err(whoami, 0, "Unauthenticated query rejected");
 		cl->reply.sms_status = EACCES;
 		return;
 	}
+#endif notdef
 	com_err(whoami, 0, "Processing query: ");
 	log_args(cl->args->sms_argc, cl->args->sms_argv);
 	

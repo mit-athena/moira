@@ -2,7 +2,7 @@
  * $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.c,v $
  * $Author: jweiss $
  * $Locker:  $
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.c,v 1.28 1996-07-29 22:51:29 jweiss Exp $ 
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.c,v 1.29 1996-08-15 00:58:45 jweiss Exp $ 
  *
  *  (c) Copyright 1988 by the Massachusetts Institute of Technology.
  *  For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char    *rcsid_userreg_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.c,v 1.28 1996-07-29 22:51:29 jweiss Exp $";
+static char    *rcsid_userreg_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.c,v 1.29 1996-08-15 00:58:45 jweiss Exp $";
 #endif	lint
 
 #include <mit-copyright.h>
@@ -300,7 +300,7 @@ dolook()
 		display_text_line("You are already registered.  An account for you probably already exists");
 		display_text_line("(if not, it will appear within 12 hours).");
 		display_text_line("");
-		display_text_line("Refer to the document 'Getting Started on Athena' for help logging in.");
+		display_text_line("Refer to the document 'Working on Athena' for help logging in.");
 		strcpy(user.u_login, db_user.u_login);
 		sprintf(line, "Remember, the username you chose was '%s'",
 			db_user.u_login);

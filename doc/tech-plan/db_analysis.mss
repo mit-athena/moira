@@ -1,4 +1,4 @@
-@part[db_analysis, root="sms.mss"]
+@part[db, root="sms.mss"]
 @subsection(Input Data Checking)
 
 The integrity of the data in an authoritative data system like SMS is

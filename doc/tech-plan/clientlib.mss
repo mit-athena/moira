@@ -1,9 +1,12 @@
 @Comment[
 	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/doc/tech-plan/clientlib.mss,v $
-	$Author: pjlevine $
-	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/doc/tech-plan/clientlib.mss,v 1.4 1987-06-19 10:25:09 pjlevine Exp $
+	$Author: ambar $
+	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/doc/tech-plan/clientlib.mss,v 1.5 1987-06-19 11:54:29 ambar Exp $
 
 	$Log: not supported by cvs2svn $
+Revision 1.4  87/06/19  10:25:09  pjlevine
+pjlevine adds applib addendum reference
+
 Revision 1.3  87/06/18  17:03:10  pjlevine
 pjlevine adds a few words of wisdom
 
@@ -40,16 +43,17 @@ table name).  UNIX system call error codes are included in this
 system.  By convention, zero indicates success, or no error.  The
 following routines may be useful to applications programmers who wish
 to display the reasons for failure of a routine.
-
+@tabclear
+@tabdivide(8)
 @begin(programexample)
 char *error_message(code)
-@\int code;
+int code;
 @end(programexample)
 Returns the error message string associated with @t[code].
 
 @begin(programexample)
 void com_err(whoami, code, message)
-@\char *whoami;@\@\/* what routine encountered the error */
+@\char *whoami;@\/* what routine encountered the error */
 @\int code;/* An error code */
 @\char *message; /* printed after the error message */
 @\int code;
@@ -62,7 +66,8 @@ If @t[code] is zero, nothing is printed for the error message.
 
 @begin(programexample)
 void set_com_err_hook(hook)
-@\void (*hook)();@\@\/* Function to call instead of printing to stderr */
+@\void (*hook)();@\/* Function 
+@\@\ * to call instead of printing to stderr */
 @end(programexample)
 
 If this routine is called with a non-NULL argument, it will cause
@@ -112,12 +117,13 @@ successful.
 @begin(programexample)
 int sms_query(name, argc, argv, callproc, callarg)
 @\char *name;@\@\/* Name of query */
-@\int argc;@\@\/* Number of arguments provided */
+@\int argc;@\/* Number of arguments provided */
 @\char *argv[];@\@\/* Argument vector */
-@\int (*callproc)();@\@\Routine to call on each reply */
-@\caddr_t callarg;@\@\/* Additional argument to callback routine */
+@\int (*callproc)();@\Routine to call on each reply */
+@\caddr_t callarg;@\/* Additional argument
+@\@\ * to callback routine */
 @end(programexample)
-This runs an SMS query named @[name] with arguments 
+This runs an SMS query named @i[name] with arguments 
 @t{argv[0]}...@t{argv[argc-1]}.  For each returned tuple of data, 
 @t[callproc] is called with three arguments: the number of elements in
 the tuple, a pointer to an array of characters (the data), and

@@ -7,11 +7,11 @@
  *
  * $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/dcm.c,v $
  * $Author: mar $
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/dcm.c,v 1.5 1988-08-19 18:03:00 mar Exp $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/dcm.c,v 1.6 1988-09-13 14:06:38 mar Exp $
  */
 
 #ifndef lint
-static char rcsid_dcm_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/dcm.c,v 1.5 1988-08-19 18:03:00 mar Exp $";
+static char rcsid_dcm_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/dcm.c,v 1.6 1988-09-13 14:06:38 mar Exp $";
 #endif lint
 
 #include <stdio.h>
@@ -353,82 +353,76 @@ struct service *svc;
 	      com_err(whoami, 0, "not updating %s:%s", svc->service, machine);
 	    goto free_mach;
 	}
-	if (!shost.success || shost.override ||
-	    shost.lasttry + svc->interval <= tv.tv_sec) {
-	    lock_fd = maybe_lock_update(SMS_DIR, machine, svc->service, 1);
-	    if (lock_fd < 0)
-	      goto free_mach;
-	    argv[0] = svc->service;
-	    argv[1] = machine;
-	    argv[2] = argv[3] = argv[5] = "0";
-	    argv[4] = "1";
-	    argv[6] = strsave("");
-	    argv[7] = itoa(tv.tv_sec);
-	    argv[8] = itoa(shost.lastsuccess);
-	    status = sms_query("set_server_host_internal", 9, argv,scream,NULL);
-	    if (status != SMS_SUCCESS) {
-		com_err(whoami,status," while setting internal state for %s:%s",
-			svc->service, machine);
-		goto free_mach;
-	    }
-	    status = sms_update_server(svc->service, machine, svc->target,
-				       svc->script);
-	    if (status == SMS_SUCCESS) {
-		argv[2] = "0";
-		argv[3] = "1";
-		free(argv[8]);
-		argv[8] = itoa(tv.tv_sec);
-	    } else if (SOFT_FAIL(status)) {
-		free(argv[6]);
-		argv[6] = strsave(error_message(status));
-	    } else { /* HARD_FAIL */
-		argv[2] = itoa(shost.override);
-		argv[5] = itoa(status);
-		free(argv[6]);
-		argv[6] = strsave(error_message(status));
-		critical_alert("DCM", "DCM updating %s:%s: %s",
-			       machine, svc->service, argv[6]);
-		if (!strcmp(svc->type, "REPLICAT")) {
-		    char *qargv[6];
 
-		    svc->harderror = status;
-		    svc->errmsg = strsave(argv[6]);
-		    qargv[0] = strsave(svc->service);
-		    qargv[1] = itoa(svc->dfgen);
-		    qargv[2] = itoa(svc->dfcheck);
-		    qargv[3] = strsave("0");
-		    qargv[4] = itoa(svc->harderror);
-		    qargv[5] = strsave(svc->errmsg);
-		    status = sms_query("set_server_internal_flags",
-				       6, qargv, scream, NULL);
-		    free(qargv[0]);
-		    free(qargv[1]);
-		    free(qargv[2]);
-		    free(qargv[3]);
-		    free(qargv[4]);
-		    free(qargv[5]);
-		    close(lock_fd);
-		    free(argv[2]);
-		    argv[4] = "0";
-		    free(argv[5]);
-		    status = sms_query("set_server_host_internal",
-				       9, argv,scream,NULL);
-		    return(-1);
-		}
-		free(argv[2]);
-		free(argv[5]);
-	    }
-	    argv[4] = "0";
-	    close(lock_fd);
-	    status = sms_query("set_server_host_internal", 9, argv,scream,NULL);
-	} else {
-	    if (dbg & DBG_TRACE)
-	      com_err(whoami, 0, "not updating %s", machine);
+	lock_fd = maybe_lock_update(SMS_DIR, machine, svc->service, 1);
+	if (lock_fd < 0)
+	  goto free_mach;
+	argv[0] = svc->service;
+	argv[1] = machine;
+	argv[2] = argv[3] = argv[5] = "0";
+	argv[4] = "1";
+	argv[6] = strsave("");
+	argv[7] = itoa(tv.tv_sec);
+	argv[8] = itoa(shost.lastsuccess);
+	status = sms_query("set_server_host_internal", 9, argv,scream,NULL);
+	if (status != SMS_SUCCESS) {
+	    com_err(whoami,status," while setting internal state for %s:%s",
+		    svc->service, machine);
+	    goto free_mach;
 	}
+	status = sms_update_server(svc->service, machine, svc->target,
+				   svc->script);
+	if (status == SMS_SUCCESS) {
+	    argv[2] = "0";
+	    argv[3] = "1";
+	    free(argv[8]);
+	    argv[8] = itoa(tv.tv_sec);
+	} else if (SOFT_FAIL(status)) {
+	    free(argv[6]);
+	    argv[6] = strsave(error_message(status));
+	} else { /* HARD_FAIL */
+	    argv[2] = itoa(shost.override);
+	    argv[5] = itoa(status);
+	    free(argv[6]);
+	    argv[6] = strsave(error_message(status));
+	    critical_alert("DCM", "DCM updating %s:%s: %s",
+			   machine, svc->service, argv[6]);
+	    if (!strcmp(svc->type, "REPLICAT")) {
+		char *qargv[6];
+
+		svc->harderror = status;
+		svc->errmsg = strsave(argv[6]);
+		qargv[0] = strsave(svc->service);
+		qargv[1] = itoa(svc->dfgen);
+		qargv[2] = itoa(svc->dfcheck);
+		qargv[3] = strsave("0");
+		qargv[4] = itoa(svc->harderror);
+		qargv[5] = strsave(svc->errmsg);
+		status = sms_query("set_server_internal_flags",
+				   6, qargv, scream, NULL);
+		free(qargv[0]);
+		free(qargv[1]);
+		free(qargv[2]);
+		free(qargv[3]);
+		free(qargv[4]);
+		free(qargv[5]);
+		close(lock_fd);
+		free(argv[2]);
+		argv[4] = "0";
+		free(argv[5]);
+		status = sms_query("set_server_host_internal",
+				   9, argv,scream,NULL);
+		return(-1);
+	    }
+	    free(argv[2]);
+	    free(argv[5]);
+	}
+	argv[4] = "0";
+	close(lock_fd);
+	status = sms_query("set_server_host_internal", 9, argv,scream,NULL);
     free_mach:
 	free(machine);
 	close(lock_fd);
     }
     return(0);
 }
-

@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v 1.14 1988-11-01 17:03:03 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v 1.15 1988-11-21 14:32:51 mar Exp $";
 #endif lint
 
 /*	This is the file lists.c for the SMS Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v 1.14 1988-11-01 17:03:03 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v 1.15 1988-11-21 14:32:51 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -724,9 +724,9 @@ ListByMember()
     }
     name = Strsave(buf);
 
-    maillist = YesNoQuestion("Show only Lists that are Maillists (y/n) ?",
+    maillist = YesNoQuestion("Show Lists that are Maillists (y/n) ?",
 			     TRUE);
-    group = YesNoQuestion("Show only Lists that are Groups (y/n) ?", TRUE);
+    group = YesNoQuestion("Show Lists that are Groups (y/n) ?", TRUE);
 
     elem = top = GetListInfo(GLOM, type, name);
 

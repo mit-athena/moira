@@ -315,7 +315,7 @@ AC_ARG_WITH(readline,
     [AC_CHECK_LIB(readline, readline, [readline=yes], :, -ltermcap)])
 if test "$readline" != no; then
     if test "$readline" != yes; then
-	READLINE_CPPFLAGS="-I$readline/include/readline -DHAVE_READLINE"
+	READLINE_CPPFLAGS="-I$readline/include -I$readline/include/readline -DHAVE_READLINE"
 	READLINE_LIBS="-L$readline/lib -lreadline -ltermcap"
     fi
 fi

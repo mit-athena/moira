@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.23 1989-06-28 14:02:59 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.24 1989-08-25 14:41:09 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -16,7 +16,7 @@
  * 
  */
 
-static char *rcsid_sms_main_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.23 1989-06-28 14:02:59 mar Exp $";
+static char *rcsid_sms_main_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.24 1989-08-25 14:41:09 mar Exp $";
 
 #include <mit-copyright.h>
 #include <strings.h>
@@ -107,7 +107,7 @@ main(argc, argv)
 	gdb_debug(0); /* this can be patched, if necessary, to enable */
 		      /* GDB level debugging .. */
 	krb_realm = malloc(REALM_SZ);
-	get_krbrlm(krb_realm, 1);
+	krb_get_lrealm(krb_realm, 1);
 	
 	/*
 	 * Database initialization.  Only init if database should be open.
@@ -189,7 +189,8 @@ main(argc, argv)
 				       (fd_set *)NULL, (struct timeval *)NULL);
 
 		if (status == -1) {
-		    	com_err(whoami, errno, " error from op_select");
+		    	if (errno != EINTR)
+			  com_err(whoami, errno, " error from op_select");
 			continue;
 		} else if (status != -2) {
 			com_err(whoami, 0, " wrong return from op_select_any");
@@ -327,7 +328,7 @@ new_connection()
 	cp->con = newconn;
 	cp->id = counter++;
 	cp->args = NULL;
-	cp->clname = NULL;
+	cp->clname[0] = NULL;
 	cp->reply.sms_argv = NULL;
 	cp->first = NULL;
 	cp->last = NULL;
@@ -476,12 +477,8 @@ void reapchild()
     union wait status;
     int pid;
 
-    if (takedown || dormant == ASLEEP)
-      return;
     while ((pid = wait3(&status, WNOHANG, (struct rusage *)0)) > 0) {
-	if  (status.w_termsig == 0 && status.w_retcode == 0)
-	  com_err(whoami, 0, "child exited successfully");
-	else
+	if  (!takedown && (status.w_termsig != 0 || status.w_retcode != 0))
 	  com_err(whoami, 0, "%d: child exits with signal %d status %d",
 		  pid, status.w_termsig, status.w_retcode);
     }

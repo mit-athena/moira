@@ -1,4 +1,4 @@
-/* $Id: queries2.c,v 2.96 2002-12-03 21:22:26 zacheiss Exp $
+/* $Id: queries2.c,v 2.97 2003-05-14 13:07:36 zacheiss Exp $
  *
  * This file defines the query dispatch table
  *
@@ -86,11 +86,19 @@ static char *gual2_fields[] = {
   "modtime", "modby", "modwith",
 };
 
+static char *gual3_fields[] = {
+  "login",
+  "login", "unix_uid", "shell", "winconsoleshell", "last", "first", "middle",
+  "status", "clearid", "class", "comments", "signature", "secure", "modtime",
+  "modby", "modwith", "created", "creator",
+};
+
 static char *gual_fields[] = {
   "login",
-  "login", "unix_uid", "shell", "winconsoleshell", "last", "first", "middle", 
+  "login", "unix_uid", "shell", "winconsoleshell", "last", "first", "middle",
   "status", "clearid", "class", "comments", "signature", "secure",
-  "modtime", "modby", "modwith", "created", "creator",
+  "winhomedir", "winprofiledir", "modtime", "modby", "modwith", "created",
+  "creator",
 };
 
 static char *gubl2_fields[] = {
@@ -139,11 +147,19 @@ static char *guau2_fields[] = {
   "modtime", "modby", "modwith",
 };
 
-static char *guau_fields[] = {
+static char *guau3_fields[] = {
   "unix_uid",
   "login", "unix_uid", "shell", "winconsoleshell", "last", "first", "middle", 
   "status", "clearid", "class", "comments", "signature", "secure",
   "modtime", "modby", "modwith", "created", "creator",
+};
+
+static char *guau_fields[] = {
+  "unix_uid",
+  "login", "unix_uid", "shell", "winconsoleshell", "last", "first", "middle",
+  "status", "clearid", "class", "comments", "signature", "secure", 
+  "winhomedir", "winprofiledir", "modtime", "modby", "modwith", "created",
+  "creator",
 };
 
 static char *guan2_fields[] = {
@@ -153,11 +169,19 @@ static char *guan2_fields[] = {
   "modtime", "modby", "modwith",
 };
 
-static char *guan_fields[] = {
+static char *guan3_fields[] = {
   "first", "last",
   "login", "unix_uid", "shell", "winconsoleshell", "last", "first", "middle", 
   "status", "clearid", "class", "comments", "signature", "secure",
   "modtime", "modby", "modwith", "created", "creator",
+};
+
+static char *guan_fields[] = {
+  "first", "last",
+  "login", "unix_uid", "shell", "winconsoleshell", "last", "first", "middle",
+  "status", "clearid", "class", "comments", "signature", "secure",
+  "winhomedir", "winprofiledir", "modtime", "modby", "modwith", "created",
+  "creator",
 };
 
 static struct validate guan2_validate =
@@ -193,11 +217,19 @@ static char *guac2_fields[] = {
   "modtime", "modby", "modwith",
 };
 
-static char *guac_fields[] = {
+static char *guac3_fields[] = {
   "class",
   "login", "unix_uid", "shell", "winconsoleshell", "last", "first", "middle", 
   "status", "clearid", "class", "comments", "signature", "secure",
   "modtime", "modby", "modwith", "created", "creator",
+};
+
+static char *guac_fields[] = {
+  "class",
+  "login", "unix_uid", "shell", "winconsoleshell", "last", "first", "middle",
+  "status", "clearid", "class", "comments", "signature", "secure",
+  "winhomedir", "winprofiledir", "modtime", "modby", "modwith", "created",
+  "creator",
 };
 
 static char *guam2_fields[] = {
@@ -207,11 +239,19 @@ static char *guam2_fields[] = {
   "modtime", "modby", "modwith",
 };
 
-static char *guam_fields[] = {
+static char *guam3_fields[] = {
   "clearid",
   "login", "unix_uid", "shell", "winconsoleshell", "last", "first", "middle", 
   "status", "clearid", "class", "comments", "signature", "secure",
   "modtime", "modby", "modwith", "created", "creator", 
+};
+
+static char *guam_fields[] = {
+  "clearid",
+  "login", "unix_uid", "shell", "winconsoleshell", "last", "first", "middle",
+  "status", "clearid", "class", "comments", "signature", "secure",
+  "winhomedir", "winprofiledir", "modtime", "modby", "modwith", "created",
+  "creator", 
 };
 
 static char *gubu2_fields[] = {
@@ -323,9 +363,15 @@ static char *auac2_fields[] = {
   "clearid", "class", "comments", "signature", "secure",
 };
 
-static char *auac_fields[] = {
+static char *auac3_fields[] = {
   "login", "unix_uid", "shell", "winconsoleshell", "last", "first", 
   "middle", "status", "clearid", "class", "comments", "signature", "secure",
+};
+
+static char *auac_fields[] = {
+  "login", "unix_uid", "shell", "winconsoleshell", "last", "first", "middle",
+  "status", "clearid", "class", "comments", "signature", "secure",
+  "winhomedir", "winprofiledir",
 };
 
 static struct valobj auac2_valobj[] = {
@@ -342,7 +388,7 @@ static struct valobj auac2_valobj[] = {
   {V_NUM, 11},
 };
 
-static struct valobj auac_valobj[] = {
+static struct valobj auac3_valobj[] = {
   {V_CHAR, 0, USERS_TABLE, "login"},
   {V_NUM, 1},
   {V_CHAR, 2, USERS_TABLE, "shell"},
@@ -357,6 +403,23 @@ static struct valobj auac_valobj[] = {
   {V_NUM, 12},
 };
 
+static struct valobj auac_valobj[] = {
+  {V_CHAR, 0, USERS_TABLE, "login"},
+  {V_NUM, 1},
+  {V_CHAR, 2, USERS_TABLE, "shell"},
+  {V_CHAR, 3, USERS_TABLE, "winconsoleshell"},
+  {V_CHAR, 4, USERS_TABLE, "last"},
+  {V_CHAR, 5, USERS_TABLE, "first"},
+  {V_CHAR, 6, USERS_TABLE, "middle"},
+  {V_NUM, 7},
+  {V_CHAR, 8, USERS_TABLE, "clearid"},
+  {V_TYPE, 9, 0, "class", 0, MR_BAD_CLASS},
+  {V_ID, 10, STRINGS_TABLE, "string", "string_id", MR_NO_MATCH},
+  {V_NUM, 12},
+  {V_LEN, 13, USERS_TABLE, "winhomedir"},
+  {V_LEN, 14, USERS_TABLE, "winprofiledir"},
+};
+
 static struct validate auac2_validate = {
   auac2_valobj,
   11,
@@ -369,9 +432,21 @@ static struct validate auac2_validate = {
   followup_ausr,
 };
 
+static struct validate auac3_validate = {
+  auac3_valobj,
+  12,
+  "login",
+  "login = '%s'",
+  1,
+  "users_id",
+  0,
+  setup_ausr,
+  followup_ausr,
+};
+
 static struct validate auac_validate = {
   auac_valobj,
-  12,
+  14,
   "login",
   "login = '%s'",
   1,
@@ -393,9 +468,21 @@ static struct validate ausr2_validate = {
   followup_ausr,
 };
 
+static struct validate ausr3_validate = {
+  auac3_valobj,
+  10,
+  "login",
+  "login = '%s'",
+  1,
+  "users_id",
+  0,
+  setup_ausr,
+  followup_ausr,
+};
+
 static struct validate ausr_validate = {
   auac_valobj,
-  10,
+  12,
   "login",
   "login = '%s'",
   1,
@@ -432,10 +519,17 @@ static char *uuac2_fields[] = {
   "clearid", "class", "comments", "signature", "secure",
 };
 
-static char *uuac_fields[] = {
+static char *uuac3_fields[] = {
   "login",
   "newlogin", "unix_uid", "shell", "winconsoleshell", "last", "first", 
   "middle", "status", "clearid", "class", "comments", "signature", "secure",
+};
+
+static char *uuac_fields[] = {
+  "login",
+  "newlogin", "unix_uid", "shell", "winconsoleshell", "last", "first",
+  "middle", "status", "clearid", "class", "comments", "signature", "secure",
+  "winhomedir", "winprofiledir",
 };
 
 static struct valobj uuac2_valobj[] = {
@@ -453,7 +547,7 @@ static struct valobj uuac2_valobj[] = {
   {V_NUM, 12},
 };
   
-static struct valobj uuac_valobj[] = {
+static struct valobj uuac3_valobj[] = {
   {V_ID, 0, USERS_TABLE, "login", "users_id", MR_USER},
   {V_RENAME, 1, USERS_TABLE, "login", "users_id", MR_NOT_UNIQUE},
   {V_NUM, 2},
@@ -469,6 +563,24 @@ static struct valobj uuac_valobj[] = {
   {V_NUM, 13},
 };
 
+static struct valobj uuac_valobj[] = {
+  {V_ID, 0, USERS_TABLE, "login", "users_id", MR_USER},
+  {V_RENAME, 1, USERS_TABLE, "login", "users_id", MR_NOT_UNIQUE},
+  {V_NUM, 2},
+  {V_CHAR, 3, USERS_TABLE, "shell"},
+  {V_CHAR, 4, USERS_TABLE, "winconsoleshell"},
+  {V_CHAR, 5, USERS_TABLE, "first"},
+  {V_CHAR, 6, USERS_TABLE, "last"},
+  {V_CHAR, 7, USERS_TABLE, "middle"},
+  {V_NUM, 8},
+  {V_CHAR, 9, USERS_TABLE, "clearid"},
+  {V_TYPE, 10, 0, "class", 0, MR_BAD_CLASS},
+  {V_ID, 11, STRINGS_TABLE, "string", "string_id", MR_NO_MATCH},
+  {V_NUM, 13},
+  {V_LEN, 14, USERS_TABLE, "winhomedir"},
+  {V_LEN, 15, USERS_TABLE, "winprofiledir"},
+};
+
 static struct validate uuac2_validate = {
   uuac2_valobj,
   12,
@@ -481,9 +593,21 @@ static struct validate uuac2_validate = {
   set_modtime_by_id,
 };
 
+static struct validate uuac3_validate = {
+  uuac3_valobj,
+  13,
+  0,
+  0,
+  0,
+  "users_id",
+  0,
+  setup_ausr,
+  set_modtime_by_id,
+};
+
 static struct validate uuac_validate = {
   uuac_valobj,
-  13,
+  15,
   0,
   0,
   0,
@@ -505,9 +629,21 @@ static struct validate uusr2_validate = {
   set_modtime_by_id,
 };
 
+static struct validate uusr3_validate = {
+  uuac3_valobj,
+  11,
+  0,
+  0,
+  0,
+  "users_id",
+  0,
+  setup_ausr,
+  set_modtime_by_id,
+};
+
 static struct validate uusr_validate = {
   uuac_valobj,
-  11,
+  13,
   0,
   0,
   0,
@@ -3803,8 +3939,25 @@ struct query Queries[] = {
     "u",
     USERS_TABLE,
     "u.login, u.unix_uid, u.shell, u.winconsoleshell, u.last, u.first, u.middle, u.status, u.clearid, u.type, str.string, CHR(0), u.secure, TO_CHAR(u.modtime, 'DD-mon-YYYY HH24:MI:SS'), u.modby, u.modwith, TO_CHAR(u.created, 'DD-mon-YYYY HH24:MI:SS'), u.creator FROM users u, strings str",
-    gual_fields,
+    gual3_fields,
     18,
+    "u.login LIKE '%s' AND u.users_id != 0 AND u.comments = str.string_id",
+    1,
+    "u.login",
+    &gubl_validate,
+  },
+
+  {
+    /* Q_GUAL - GET_USER_ACCOUNT_BY_LOGIN, v11 */
+    "get_user_account_by_login",
+    "gual",
+    11,
+    RETRIEVE,
+    "u",
+    USERS_TABLE,
+    "u.login, u.unix_uid, u.shell, u.winconsoleshell, u.last, u.first, u.middle, u.status, u.clearid, u.type, str.string, CHR(0), u.secure, u.winhomedir, u.winprofiledir, TO_CHAR(u.modtime, 'DD-mon-YYYY HH24:MI:SS'), u.modby, u.modwith, TO_CHAR(u.created, 'DD-mon-YYYY HH24:MI:SS'), u.creator FROM users u, strings str",
+    gual_fields,
+    20,
     "u.login LIKE '%s' AND u.users_id != 0 AND u.comments = str.string_id",
     1,
     "u.login",
@@ -3837,13 +3990,30 @@ struct query Queries[] = {
     "u",
     USERS_TABLE,
     "u.login, u.unix_uid, u.shell, u.winconsoleshell, u.last, u.first, u.middle, u.status, u.clearid, u.type, str.string, CHR(0), u.secure, TO_CHAR(u.modtime, 'DD-mon-YYYY HH24:MI:SS'), u.modby, u.modwith, TO_CHAR(u.created, 'DD-mon-YYYY HH24:MI:SS'), u.creator FROM users u, strings str",
-    guau_fields,
+    guau3_fields,
     18,
     "u.unix_uid = %s AND u.users_id != 0 AND u.comments = str.string_id",
     1,
     "u.login",
     &gubu_validate,
   },
+
+  {
+    /* Q_GUAU - GET_USER_ACCOUNT_BY_UID, v11 */
+    "get_user_account_by_uid",
+    "guau",
+    11,
+    RETRIEVE,
+    "u",
+    USERS_TABLE,
+    "u.login, u.unix_uid, u.shell, u.winconsoleshell, u.last, u.first, u.middle, u.status, u.clearid, u.type, str.string, CHR(0), u.secure, u.winhomedir, u.winprofiledir, TO_CHAR(u.modtime, 'DD-mon-YYYY HH24:MI:SS'), u.modby, u.modwith, TO_CHAR(u.created, 'DD-mon-YYYY HH24:MI:SS'), u.creator FROM users u, strings str",
+    guau_fields,
+    20,
+    "u.unix_uid = %s AND u.users_id != 0 AND u.comments = str.string_id",
+    1,
+    "u.login",
+    &gubu_validate,
+  }, 
 
   {
     /* Q_GUAN - GET_USER_ACCOUNT_BY_NAME, v2 */
@@ -3871,8 +4041,25 @@ struct query Queries[] = {
     "u",
     USERS_TABLE,
     "u.login, u.unix_uid, u.shell, u.winconsoleshell, u.last, u.first, u.middle, u.status, u.clearid, u.type, str.string, CHR(0), u.secure, TO_CHAR(u.modtime, 'DD-mon-YYYY HH24:MI:SS'), u.modby, u.modwith, TO_CHAR(u.created, 'DD-mon-YYYY HH24:MI:SS'), u.creator FROM users u, strings str",
-    guan_fields,
+    guan3_fields,
     18,
+    "u.first LIKE '%s' AND u.last LIKE '%s' AND u.users_id != 0 and u.comments = str.string_id",
+    2,
+    "u.login",
+    &guan_validate,
+  },
+
+  {
+    /* Q_GUAN - GET_USER_ACCOUNT_BY_NAME, v11 */
+    "get_user_account_by_name",
+    "guan",
+    11,
+    RETRIEVE,
+    "u",
+    USERS_TABLE,
+    "u.login, u.unix_uid, u.shell, u.winconsoleshell, u.last, u.first, u.middle, u.status, u.clearid, u.type, str.string, CHR(0), u.secure, u.winhomedir, u.winprofiledir, TO_CHAR(u.modtime, 'DD-mon-YYYY HH24:MI:SS'), u.modby, u.modwith, TO_CHAR(u.created, 'DD-mon-YYYY HH24:MI:SS'), u.creator FROM users u, strings str",
+    guan_fields,
+    20,
     "u.first LIKE '%s' AND u.last LIKE '%s' AND u.users_id != 0 and u.comments = str.string_id",
     2,
     "u.login",
@@ -3905,8 +4092,25 @@ struct query Queries[] = {
     "u",
     USERS_TABLE,
     "u.login, u.unix_uid, u.shell, u.winconsoleshell, u.last, u.first, u.middle, u.status, u.clearid, u.type, str.string, CHR(0), u.secure, TO_CHAR(u.modtime, 'DD-mon-YYYY HH24:MI:SS'), u.modby, u.modwith, TO_CHAR(u.created, 'DD-mon-YYYY HH24:MI:SS'), u.creator FROM users u, strings str",
-    guac_fields,
+    guac3_fields,
     18,
+    "u.type = UPPER('%s') AND u.users_id != 0 AND u.comments = str.string_id",
+    1,
+    "u.login",
+    &guan_validate,
+  },
+
+  {
+    /* Q_GUAC - GET_USER_ACCOUNT_BY_CLASS, v11 */
+    "get_user_account_by_class",
+    "guac",
+    11,
+    RETRIEVE,
+    "u",
+    USERS_TABLE,
+    "u.login, u.unix_uid, u.shell, u.winconsoleshell, u.last, u.first, u.middle, u.status, u.clearid, u.type, str.string, CHR(0), u.secure, u.winhomedir, u.winprofiledir, TO_CHAR(u.modtime, 'DD-mon-YYYY HH24:MI:SS'), u.modby, u.modwith, TO_CHAR(u.created, 'DD-mon-YYYY HH24:MI:SS'), u.creator FROM users u, strings str",
+    guac_fields,
+    20,
     "u.type = UPPER('%s') AND u.users_id != 0 AND u.comments = str.string_id",
     1,
     "u.login",
@@ -3941,6 +4145,23 @@ struct query Queries[] = {
     "u.login, u.unix_uid, u.shell, u.winconsoleshell, u.last, u.first, u.middle, u.status, u.clearid, u.type, str.string, CHR(0), u.secure, TO_CHAR(u.modtime, 'DD-mon-YYYY HH24:MI:SS'), u.modby, u.modwith, TO_CHAR(u.created, 'DD-mon-YYYY HH24:MI:SS'), u.creator FROM users u, strings str",
     guam_fields,
     18,
+    "u.clearid LIKE '%s' AND u.users_id != 0 AND u.comments = str.string_id",
+    1,
+    "u.login",
+    &guan_validate,
+  },
+
+  {
+    /* Q_GUAM - GET_USER_ACCOUNT_BY_MITID, v11 */
+    "get_user_account_by_id",
+    "guai",
+    11,
+    RETRIEVE,
+    "u",
+    USERS_TABLE,
+    "u.login, u.unix_uid, u.shell, u.winconsoleshell, u.last, u.first, u.middle, u.status, u.clearid, u.type, str.string, CHR(0), u.secure, u.winhomedir, u.winprofiledir, TO_CHAR(u.modtime, 'DD-mon-YYYY HH24:MI:SS'), u.modby, u.modwith, TO_CHAR(u.created, 'DD-mon-YYYY HH24:MI:SS'), u.creator FROM users u, strings str",
+    guam_fields,
+    20,
     "u.clearid LIKE '%s' AND u.users_id != 0 AND u.comments = str.string_id",
     1,
     "u.login",
@@ -4149,8 +4370,28 @@ struct query Queries[] = {
      * but using up one argv element.
      */
     "INTO users (login, unix_uid, shell, winconsoleshell, last, first, middle, status, clearid, type, comments, signature, secure, users_id, created, creator) VALUES ('%s', %s, '%s', NVL('%s', CHR(0)), NVL('%s', CHR(0)), NVL('%s', CHR(0)), NVL('%s', CHR(0)), %s, NVL('%s', CHR(0)), '%s', %d, NVL(CHR(0), '%s'), %s, %s, SYSDATE, %s)",
-    auac_fields,
+    auac3_fields,
     13,
+    NULL,
+    0,
+    NULL,
+    &auac3_validate,
+  },
+
+  {
+    /* Q_AUAC - ADD_USER_ACCOUNT, v11 */  /* uses prefetch_value() for users_id */
+    "add_user_account",
+    "auac",
+    11,
+    APPEND,
+    "u",
+    USERS_TABLE,
+    /* We set signature to "NVL(CHR(0), '%s')", which is to say, "CHR(0)",
+     * but using up one argv element.
+     */
+    "INTO users (login, unix_uid, shell, winconsoleshell, last, first, middle, status, clearid, type, comments, signature, secure, winhomedir, winprofiledir, users_id, created, creator) VALUES ('%s', %s, '%s', NVL('%s', CHR(0)), NVL('%s', CHR(0)), NVL('%s', CHR(0)), NVL('%s', CHR(0)), %s, NVL('%s', CHR(0)), '%s', %d, NVL(CHR(0), '%s'), %s, NVL('%s', CHR(0)), NVL('%s', CHR(0)), %s, SYSDATE, %s)",
+    auac_fields,
+    15,
     NULL,
     0,
     NULL,
@@ -4183,8 +4424,25 @@ struct query Queries[] = {
     "u",
     USERS_TABLE,
     "INTO users (login, unix_uid, shell, winconsoleshell, last, first, middle, status, clearid, type, comments, signature, secure, users_id, created, creator) VALUES ('%s', %s, '%s', NVL('%s', CHR(0)), NVL('%s', CHR(0)), NVL('%s', CHR(0)), %s, NVL('%s', CHR(0)), '%s', 0, CHR(0), 0, %s, SYSDATE, %s)",
-    auac_fields,
+    auac3_fields,
     10,
+    0,
+    0,
+    NULL,
+    &ausr3_validate,
+  },
+
+  {
+    /* Q_AUSR - ADD_USER, v11 */  /* uses prefetch_value() for users_id */
+    "add_user",
+    "ausr",
+    11,
+    APPEND,
+    "u",
+    USERS_TABLE,
+    "INTO users (login, unix_uid, shell, winconsoleshell, last, first, middle, status, clearid, type, comments, signature, secure, winhomedir, winprofiledir, users_id, created, creator) VALUES ('%s', %s, '%s', NVL('%s', CHR(0)), NVL('%s', CHR(0)), NVL('%s', CHR(0)), %s, NVL('%s', CHR(0)), '%s', 0, CHR(0), 0, NVL('%s', CHR(0)), NVL('%s', CHR(0)), %s, SYSDATE, %s)",
+    auac_fields,
+    12,
     0,
     0,
     NULL,
@@ -4236,8 +4494,26 @@ struct query Queries[] = {
     USERS_TABLE,
     /* See comment in auac about signature. */
     "users SET login = '%s', unix_uid = %s, shell = '%s', winconsoleshell = '%s', last = NVL('%s', CHR(0)), first = NVL('%s', CHR(0)), middle = NVL('%s', CHR(0)), status = %s, clearid = NVL('%s', CHR(0)), type = '%s', comments = %d, signature = NVL(CHR(0), '%s'), secure = %s",
-    uuac_fields,
+    uuac3_fields,
     13,
+    "users_id = %d",
+    1,
+    NULL,
+    &uuac3_validate,
+  },
+
+  {
+    /* Q_UUAC - UPDATE_USER_ACCOUNT, v11 */
+    "update_user_account",
+    "uuac",
+    11,
+    UPDATE,
+    "u",
+    USERS_TABLE,
+    /* See comment in auac about signature. */
+    "users SET login = '%s', unix_uid = %s, shell = '%s', winconsoleshell = '%s', last = NVL('%s', CHR(0)), first = NVL('%s', CHR(0)), middle = NVL('%s', CHR(0)), status = %s, clearid = NVL('%s', CHR(0)), type = '%s', comments = %d, signature = NVL(CHR(0), '%s'), secure = %s, winhomedir = NVL('%s', CHR(0)), winprofiledir = NVL('%s', CHR(0))",
+    uuac_fields,
+    15,
     "users_id = %d",
     1,
     NULL,
@@ -4270,8 +4546,25 @@ struct query Queries[] = {
     "u",
     USERS_TABLE,
     "users SET login = '%s', unix_uid = %s, shell = '%s', winconsoleshell = '%s', last = NVL('%s', CHR(0)), first = NVL('%s', CHR(0)), middle = NVL('%s', CHR(0)), status = %s, clearid = NVL('%s', CHR(0)),  type = '%s'",
-    uuac_fields,
+    uuac3_fields,
     10,
+    "users_id = %d",
+    1,
+    NULL,
+    &uusr3_validate,
+  },
+
+  {
+    /* Q_UUSR - UPDATE_USER, v11 */
+    "update_user",
+    "uusr",
+    11,
+    UPDATE,
+    "u",
+    USERS_TABLE,
+    "users SET login = '%s', unix_uid = %s, shell = '%s', winconsoleshell = '%s', last = NVL('%s', CHR(0)), first = NVL('%s', CHR(0)), middle = NVL('%s', CHR(0)), status = %s, clearid = NVL('%s', CHR(0)),  type = '%s', winhomedir = NVL('%s', CHR(0)), winprofiledir = NVL('%s', CHR(0)) ",
+    uuac_fields,
+    12,
     "users_id = %d",
     1,
     NULL,

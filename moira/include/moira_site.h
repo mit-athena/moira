@@ -1,4 +1,4 @@
-/* $Id: moira_site.h,v 1.47 2002-12-03 21:22:55 zacheiss Exp $
+/* $Id: moira_site.h,v 1.48 2003-05-14 13:07:35 zacheiss Exp $
  *
  * This file contains all definitions that allow easy access to
  * elements returned by most of the @i[Moira] queries.  It also defines
@@ -357,7 +357,7 @@
 #define SNET_STATUS_PRIVATE_1000MBPS 7
 #define SNET_STATUS_RESNET_FSILG     8
 
-/* User Information queries, v3 */
+/* User Information queries, v11 */
 
 #define U_NAME    0
 #define U_UID     1
@@ -372,12 +372,14 @@
 #define U_COMMENT 10
 #define U_SIGNATURE 11
 #define U_SECURE  12
-#define U_MODTIME 13
-#define U_MODBY   14
-#define U_MODWITH 15
-#define U_CREATED 16
-#define U_CREATOR 17
-#define U_END     18
+#define U_WINHOMEDIR 13
+#define U_WINPROFILEDIR 14
+#define U_MODTIME 15
+#define U_MODBY   16
+#define U_MODWITH 17
+#define U_CREATED 18
+#define U_CREATOR 19
+#define U_END     20
 
 /* User states (the value of argv[U_STATE] from a user query) */
 

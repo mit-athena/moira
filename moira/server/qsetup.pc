@@ -1,4 +1,4 @@
-/* $Id: qsetup.pc,v 2.55 2003-03-12 00:42:55 zacheiss Exp $
+/* $Id: qsetup.pc,v 2.56 2003-05-14 13:07:36 zacheiss Exp $
  *
  * Query setup routines
  *
@@ -21,7 +21,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsetup.pc,v 2.55 2003-03-12 00:42:55 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsetup.pc,v 2.56 2003-05-14 13:07:36 zacheiss Exp $");
 
 extern char *whoami;
 extern int dbms_errno, mr_errcode;
@@ -74,6 +74,30 @@ int setup_ausr(struct query *q, char *argv[], client *cl)
       if (strlen(argv[row + 2]) + strlen(argv[row + 3]) +
 	  strlen(argv[row + 4]) + 2 > USERS_FULLNAME_SIZE)
 	return MR_ARG_TOO_LONG;
+    }
+
+  if (q->version > 10)
+    {
+      /* For both winhomedir and winprofiledir, we allow values of the
+       * following forms:
+       *
+       * [AFS] - Magic token for AFS home directory.
+       * [LOCAL] - Magic token for AD default local values, i.e. C:\<mumble>
+       * UNC pathname - \\<something>
+       * local pathname - <drive letter>:<something>
+       */
+
+      if ((strcasecmp(argv[row + 12], "[AFS]")) &&
+	  (strcasecmp(argv[row + 12], "[LOCAL]")) &&
+	  (!(argv[row + 12][0] == '\\' && argv[row + 12][1] == '\\')) &&
+	  (!(isalpha(*argv[row + 12]) && (argv[row + 12][1] == ':'))))
+	return MR_BAD_CHAR;
+      
+      if ((strcasecmp(argv[row + 13], "[AFS]")) &&
+	  (strcasecmp(argv[row + 13], "[LOCAL]")) &&
+	  (!(argv[row + 13][0] == '\\' && argv[row + 13][1] == '\\')) &&
+	  (!(isalpha(*argv[row + 13]) && (argv[row + 13][1] == ':'))))
+	return MR_BAD_CHAR;
     }
 
   if (!strcmp(argv[row], UNIQUE_UID) || atoi(argv[row]) == -1)

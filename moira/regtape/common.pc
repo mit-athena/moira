@@ -1,4 +1,4 @@
-/* $Id: common.pc,v 1.5 2003-03-18 22:30:54 zacheiss Exp $
+/* $Id: common.pc,v 1.6 2003-05-14 13:07:36 zacheiss Exp $
  *
  * Staff/Student load common code
  *
@@ -19,7 +19,7 @@
 EXEC SQL INCLUDE sqlca;
 extern void sqlglm(char *, unsigned int *, unsigned int *);
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/common.pc,v 1.5 2003-03-18 22:30:54 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/common.pc,v 1.6 2003-05-14 13:07:36 zacheiss Exp $");
 
 EXEC SQL BEGIN DECLARE SECTION;
 extern char *prog;
@@ -281,7 +281,7 @@ void newuser(struct entry *e, int secure)
      department, home_addr, home_phone, office_addr, office_phone, fmodtime,
      fmodby, fmodwith, potype, pmodtime, pmodby, pmodwith,
      xname, xdept, xtitle, xaddress, xphone1, xphone2, xmodtime, secure,
-     created, creator)
+     created, creator, winhomedir, winprofiledir)
     VALUES (:login, :users_id, :uid, '/bin/athena/tcsh', 'cmd',
 	    NVL(:last, CHR(0)), NVL(:first, CHR(0)), NVL(:middle, CHR(0)),
 	    :st, NVL(:id, CHR(0)), NVL(:type, CHR(0)), SYSDATE, :who, :prog,
@@ -292,7 +292,7 @@ void newuser(struct entry *e, int secure)
 	    NVL(SUBSTR(:name, 0, :xnlen), CHR(0)), NVL(:dept, CHR(0)),
 	    NVL(:xtitle, CHR(0)), NVL(:xaddress, CHR(0)),
 	    NVL(:xphone1, CHR(0)), NVL(:xphone2, CHR(0)), SYSDATE, :issecure,
-	    SYSDATE, :who);
+	    SYSDATE, :who, '[AFS]', '[AFS]');
   if (sqlca.sqlcode)
     {
       dbmserr("adding user", sqlca.sqlcode);

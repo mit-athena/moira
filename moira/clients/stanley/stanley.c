@@ -21,7 +21,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/stanley/stanley.c,v 1.8 2002-03-29 02:24:49 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/stanley/stanley.c,v 1.9 2003-05-14 13:07:35 zacheiss Exp $");
 
 struct string_list {
   char *string;
@@ -40,7 +40,7 @@ struct string_list *reservation_add_queue, *reservation_remove_queue;
 char *username, *whoami;
 
 char *newlogin, *uid, *shell, *winshell, *last, *first, *middle, *u_status;
-char *clearid, *class, *comment, *secure;
+char *clearid, *class, *comment, *secure, *winhomedir, *winprofiledir;
 
 static char *states[] = {
   "Registerable (0)",
@@ -88,6 +88,7 @@ int main(int argc, char **argv)
   list_res_flag = update_res_flag = unformatted_flag = verbose = noauth = 0;
   newlogin = uid = shell = winshell = last = first = middle = NULL;
   u_status = clearid = class = comment = secure = NULL;
+  winhomedir = winprofiledir = NULL;
   reservation_add_queue = reservation_remove_queue = NULL;
   whoami = argv[0];
 
@@ -210,6 +211,22 @@ int main(int argc, char **argv)
 	    } else
 	      usage(argv);
 	  }
+	  else if (argis("wh", "winhomedir")) {
+	    if (arg - argv < argc - 1) {
+	      arg++;
+	      update_flag++;
+	      winhomedir = *arg;
+	    } else
+	      usage(argv);
+	  }
+	  else if (argis("wp", "winprofiledir")) {
+	    if (arg - argv < argc - 1) {
+	      arg++;
+	      update_flag++;
+	      winprofiledir = *arg;
+	    } else
+	      usage(argv);
+	  }
 	  else if (argis("ar", "addreservation")) {
 	    if (arg - argv < argc - 1) {
 	      arg++;
@@ -264,7 +281,7 @@ int main(int argc, char **argv)
   }
 
   /* fire up Moira */
-  status = mrcl_connect(server, "stanley", 8, !noauth);
+  status = mrcl_connect(server, "stanley", 11, !noauth);
   if (status == MRCL_AUTH_ERROR)
     {
       com_err(whoami, 0, "Try the -noauth flag if you don't "
@@ -321,8 +338,16 @@ int main(int argc, char **argv)
 	argv[U_SECURE] = secure;
       else
 	argv[U_SECURE] = "0";
+      if (winhomedir)
+	argv[U_WINHOMEDIR] = winhomedir;
+      else
+	argv[U_WINHOMEDIR] = "[AFS]";
+      if (winprofiledir)
+	argv[U_WINPROFILEDIR] = winprofiledir;
+      else
+	argv[U_WINPROFILEDIR] = "[AFS]";
 
-      status = wrap_mr_query("add_user_account", 13, argv, NULL, NULL);
+      status = wrap_mr_query("add_user_account", 15, argv, NULL, NULL);
       if (status)
 	{
 	  com_err(whoami, status, "while adding user account.");
@@ -358,6 +383,8 @@ int main(int argc, char **argv)
       argv[11] = old_argv[10];
       argv[12] = old_argv[11];
       argv[13] = old_argv[12];
+      argv[14] = old_argv[13];
+      argv[15] = old_argv[14];
       
       argv[0] = username;
       if (newlogin)
@@ -384,8 +411,12 @@ int main(int argc, char **argv)
 	argv[11] = comment;
       if (secure)
 	argv[13] = secure;
+      if (winhomedir)
+	argv[14] = winhomedir;
+      if (winprofiledir)
+	argv[15] = winprofiledir;
 
-      status = wrap_mr_query("update_user_account", 14, argv, NULL, NULL);
+      status = wrap_mr_query("update_user_account", 16, argv, NULL, NULL);
 
       if (status)
 	com_err(whoami, status, "while updating user.");
@@ -627,6 +658,8 @@ void show_user_info(char **argv)
 	 argv[U_WINCONSOLESHELL]);
   printf("Account is: %-20s MIT ID number: %s\n",
 	 UserState(atoi(argv[U_STATE])), argv[U_MITID]);
+  printf("Windows Home Directory: %s\n", argv[U_WINHOMEDIR]);
+  printf("Windows Profile Directory: %s\n", argv[U_WINPROFILEDIR]);
   status = atoi(argv[U_STATE]);
   if (status == 0 || status == 2)
     {
@@ -643,25 +676,27 @@ void show_user_info_unformatted(char **argv)
 {
   int status;
 
-  printf("Login name:            %s\n", argv[U_NAME]);
-  printf("Full name:             %s, %s %s\n", argv[U_LAST], argv[U_FIRST], 
+  printf("Login name:                %s\n", argv[U_NAME]);
+  printf("Full name:                 %s, %s %s\n", argv[U_LAST], argv[U_FIRST],
 	 argv[U_MIDDLE]);
-  printf("User id:               %s\n", argv[U_UID]);
-  printf("Class:                 %s\n", argv[U_CLASS]);
-  printf("Login shell:           %s\n", argv[U_SHELL]);
-  printf("Windows Console Shell: %s\n", argv[U_WINCONSOLESHELL]);
-  printf("Account is:            %s\n", UserState(atoi(argv[U_STATE])));
-  printf("MIT ID number:         %s\n", argv[U_MITID]);
+  printf("User id:                   %s\n", argv[U_UID]);
+  printf("Class:                     %s\n", argv[U_CLASS]);
+  printf("Login shell:               %s\n", argv[U_SHELL]);
+  printf("Windows Console Shell:     %s\n", argv[U_WINCONSOLESHELL]);
+  printf("Account is:                %s\n", UserState(atoi(argv[U_STATE])));
+  printf("MIT ID number:             %s\n", argv[U_MITID]);
+  printf("Windows Home Directory:    %s\n", argv[U_WINHOMEDIR]);
+  printf("Windows Profile Directory: %s\n", argv[U_WINPROFILEDIR]);
   status = atoi(argv[U_STATE]);
   if (status == 0 || status == 2)
-    printf("Secure:                %s secure Account Coupon to register\n",
+    printf("Secure:                  %s secure Account Coupon to register\n",
 	   atoi(argv[U_SECURE]) ? "Needs" : "Does not need");
-  printf("Comments:              %s\n", argv[U_COMMENT]);
-  printf("Created by:            %s\n", argv[U_CREATOR]);
-  printf("Created on:            %s\n", argv[U_CREATED]);
-  printf("Last mod by:           %s\n", argv[U_MODBY]);
-  printf("Last mod on:           %s\n", argv[U_MODTIME]);
-  printf("Last mod with:         %s\n", argv[U_MODWITH]);
+  printf("Comments:                  %s\n", argv[U_COMMENT]);
+  printf("Created by:                %s\n", argv[U_CREATOR]);
+  printf("Created on:                %s\n", argv[U_CREATED]);
+  printf("Last mod by:               %s\n", argv[U_MODBY]);
+  printf("Last mod on:               %s\n", argv[U_MODTIME]);
+  printf("Last mod with:             %s\n", argv[U_MODWITH]);
 }
 
 void usage(char **argv)
@@ -688,6 +723,8 @@ void usage(char **argv)
 	  "-lr  | -listreservation");
   fprintf(stderr, USAGE_OPTIONS_FORMAT, "-ar  | -addreservation reservation",
 	  "-dr  | -deletereservation reservation");
+  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-wh  | -winhomedir winhomedir",
+	  "-wp  | -winprofiledir winprofiledir");
   fprintf(stderr, USAGE_OPTIONS_FORMAT, "-u   | -unformatted",
 	  "-n   | -noauth");
   fprintf(stderr, USAGE_OPTIONS_FORMAT, "-v   | -verbose",

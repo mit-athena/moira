@@ -1,4 +1,4 @@
-/* $Id: user.c,v 1.66 2002-03-29 02:24:49 zacheiss Exp $
+/* $Id: user.c,v 1.67 2003-05-14 13:07:34 zacheiss Exp $
  *
  *	This is the file user.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -27,7 +27,7 @@
 
 #include <krb.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.66 2002-03-29 02:24:49 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.67 2003-05-14 13:07:34 zacheiss Exp $");
 
 void CorrectCapitalization(char **name);
 char **AskUserInfo(char **info, Bool name);
@@ -47,6 +47,8 @@ struct mqelem *GetUserInfo(int type, char *name1, char *name2);
 #define DEFAULT_CLASS "?"
 
 #define DEFAULT_WINCONSOLESHELL "cmd"
+#define DEFAULT_WINHOMEDIR "[AFS]"
+#define DEFAULT_WINPROFILEDIR "[AFS]"
 
 /*	Function Name: UserState
  *	Description: Convert a numeric state into a descriptive string.
@@ -118,6 +120,10 @@ static void PrintUserInfo(char **info)
   sprintf(buf, "Account is: %-20s MIT ID number: %s",
 	  UserState(atoi(info[U_STATE])), info[U_MITID]);
   Put_message(buf);
+  sprintf(buf, "Windows Home Directory: %s", info[U_WINHOMEDIR]);
+  Put_message(buf);
+  sprintf(buf, "Windows Profile Directory: %s", info[U_WINPROFILEDIR]);
+  Put_message(buf);
   status = atoi(info[U_STATE]);
   if (status == 0 || status == 2)
     {
@@ -154,6 +160,8 @@ static char **SetUserDefaults(char **info)
   info[U_COMMENT] = strdup("");
   info[U_SIGNATURE] = strdup("");
   info[U_SECURE] = strdup("0");
+  info[U_WINHOMEDIR] = strdup(DEFAULT_WINHOMEDIR);
+  info[U_WINPROFILEDIR] = strdup(DEFAULT_WINPROFILEDIR);
   info[U_MODTIME] = info[U_MODBY] = info[U_MODWITH] = info[U_END] = NULL;
   info[U_CREATED] = info[U_CREATOR] = NULL;
   return info;
@@ -298,6 +306,14 @@ char **AskUserInfo(char **info, Bool name)
       SUB_ERROR)
     return NULL;
   if (GetValueFromUser("Comments", &info[U_COMMENT]) == SUB_ERROR)
+    return NULL;
+
+  if (GetValueFromUser("Windows Home Directory", &info[U_WINHOMEDIR]) ==
+      SUB_ERROR)
+    return NULL;
+
+  if (GetValueFromUser("Windows Profile Directory", &info[U_WINPROFILEDIR]) ==
+      SUB_ERROR)
     return NULL;
 
   state = atoi(info[U_STATE]);

@@ -7,11 +7,11 @@
  *
  * $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/dcm.c,v $
  * $Author: mar $
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/dcm.c,v 1.9 1989-08-21 21:54:17 mar Exp $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/dcm.c,v 1.10 1989-08-31 18:57:51 mar Exp $
  */
 
 #ifndef lint
-static char rcsid_dcm_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/dcm.c,v 1.9 1989-08-21 21:54:17 mar Exp $";
+static char rcsid_dcm_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/dcm.c,v 1.10 1989-08-31 18:57:51 mar Exp $";
 #endif lint
 
 #include <stdio.h>
@@ -19,6 +19,7 @@ static char rcsid_dcm_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moirad
 #include <sys/file.h>
 #include <sys/time.h>
 #include <sys/wait.h>
+#include <signal.h>
 #include <ctype.h>
 #include <sms.h>
 #include <sms_app.h>
@@ -154,7 +155,7 @@ do_services()
     struct save_queue *sq, *sq_create();
     char *service, dfgen_prog[64], dfgen_cmd[128];
     struct service svc;
-    int status, lock_fd, ex;
+    int status, lock_fd, ex, (*cstat)();
     struct timezone tz;
     register char *p;
     union wait waits;
@@ -215,7 +216,9 @@ do_services()
 		}
 	    
 		com_err(whoami, status, " running %s", dfgen_prog);
+		cstat = signal(SIGCHLD, SIG_DFL);
 		waits.w_status = system(dfgen_cmd);
+		signal(SIGCHLD, cstat);
 		if (waits.w_termsig) {
 		    status = SMS_TAR_FAIL;
 		    com_err(whoami, status, " %s exited on signal %d",

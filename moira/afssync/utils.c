@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/afssync/utils.c,v 1.5 1992-05-31 20:25:07 probe Exp $";
+static char rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/afssync/utils.c,v 1.6 1992-06-07 12:27:30 probe Exp $";
 #endif
 
 /*	
@@ -766,6 +766,9 @@ long gid;
     long i;
     long loc;
 
+    /* special case sysadmin */
+    if (gid==SYSADMINID && aid==SYSADMINID) return 1;
+    
     /* special case anyuser and authuser */
     if (gid == ANYUSERID) return 1;
     if (gid == AUTHUSERID && aid != ANONYMOUSID) return 1;

@@ -1,4 +1,4 @@
-/* $Id: qfollow.pc,v 2.9 1999-05-25 21:14:50 danw Exp $
+/* $Id: qfollow.pc,v 2.10 1999-11-02 02:32:32 danw Exp $
  *
  * Query followup routines
  *
@@ -23,7 +23,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qfollow.pc,v 2.9 1999-05-25 21:14:50 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qfollow.pc,v 2.10 1999-11-02 02:32:32 danw Exp $");
 
 extern char *whoami, *table_name[];
 extern int dbms_errno, mr_errcode;
@@ -564,10 +564,11 @@ int followup_uuac(struct query *q, char *argv[], client *cl)
 /* followup_gpob: fixes argv[2] based on the IDs currently there and the
  * type in argv[1].  Then completes the upcall to the user.
  *
- * argv[2] is of the form "123:234" where the first integer is the machine
- * ID if it is a pop box, and the second is the string ID if it is an SMTP
- * box.  argv[1] should be "POP", "SMTP", or "NONE".  Boxes of type NONE
- * are skipped.
+ * argv[2] is of the form "123:234" where the first integer is the
+ * machine ID if it is a pop box or filesys ID if it is an imap box,
+ * and the second is the string ID if it is an SMTP box. argv[1]
+ * should be "POP", "SMTP", "IMAP", or "NONE". Boxes of type NONE are
+ * skipped.
  */
 
 int followup_gpob(struct query *q, struct save_queue *sq, struct validate *v,
@@ -599,6 +600,12 @@ int followup_gpob(struct query *q, struct save_queue *sq, struct validate *v,
 	  status = id_to_name(sid, STRINGS_TABLE, &argv[2]);
 	  if (status == MR_NO_MATCH)
 	    return MR_STRING;
+	}
+      else if (!strcmp(ptype, "IMAP"))
+	{
+	  status = id_to_name(mid, FILESYS_TABLE, &argv[2]);
+	  if (status == MR_NO_MATCH)
+	    return MR_FILESYS;
 	}
       else /* ptype == "NONE" */
 	goto skip;

@@ -5,7 +5,7 @@
  *
  * $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v $
  * $Author: mar $
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.29 1990-06-12 16:29:49 mar Exp $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.30 1990-07-11 15:40:17 mar Exp $
  *
  * Generic menu system module.
  *
@@ -18,7 +18,7 @@
  */
 
 #ifndef lint
-static char rcsid_menu_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.29 1990-06-12 16:29:49 mar Exp $";
+static char rcsid_menu_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.30 1990-07-11 15:40:17 mar Exp $";
 
 #endif lint
 
@@ -220,6 +220,9 @@ Do_menu(m, margc, margv)
 	if (parsed_argc > 0) {
 	    margc = parsed_argc + 1;
 	    margv = --parsed_argv;
+	} else {
+	    margc--;
+	    margv++;
 	}
     }
 
@@ -346,7 +349,8 @@ Do_menu(m, margc, margv)
 	/* finally, try to find it using Find_command */
 	else if ((command = Find_command(m, argvals[0])) ==
 		 (struct menu_line *) 0) {
-	    Put_message("Command not recognized");
+	    sprintf(buf, "Command not recognized: %s\n", argvals[0]);
+	    Put_message(buf);
 	    continue;
 	}
 	/* If we got to here, command is a valid menu_line */
@@ -675,7 +679,7 @@ char *msg;
 		(void) wstandend(cur_ms->ms_input);
 		refresh_ms(cur_ms);
 		chr = getchar() & 0x7f;/* We do care what it is */
-		if (chr == 'q' || chr == 'Q') {
+		if (chr == 'q' || chr == 'Q' || chr == 3 /* ^C */) {
 		    more_flg = 0;
 		    return;
 		}

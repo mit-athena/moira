@@ -53,7 +53,7 @@ create table krbmap
 
 create table machine
 (
-	name		VARCHAR(40) 	DEFAULT CHR(0)	NOT NULL,
+	name		VARCHAR(255) 	DEFAULT CHR(0)	NOT NULL,
 	mach_id		INTEGER		DEFAULT 0	NOT NULL,
 	vendor		VARCHAR(16) 	DEFAULT CHR(0)	NOT NULL,
 	model		VARCHAR(24) 	DEFAULT CHR(0)	NOT NULL,
@@ -79,7 +79,7 @@ create table machine
 
 create table hostalias
 (
-	name		VARCHAR(40) 	DEFAULT CHR(0)	NOT NULL,
+	name		VARCHAR(255) 	DEFAULT CHR(0)	NOT NULL,
 	mach_id		INTEGER	 	DEFAULT 0	NOT NULL
 );
 

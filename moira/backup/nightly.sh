@@ -7,7 +7,7 @@ BKUPDIRDIR=/u3/sms_backup
 PATH=/bin:/usr/bin:/usr/ucb:/usr/new; export PATH
 chdir ${BKUPDIRDIR}
 
-# /u1/sms/bin/counts </dev/null	
+# /moira/bin/counts </dev/null	
 
 if [ -d in_progress ] 
 then
@@ -24,13 +24,15 @@ else
 	echo "Cannot create backup directory"
 	exit 1
 fi
-if /u1/sms/bin/mrbackup ${BKUPDIRDIR}/in_progress/
+if /moira/bin/mrbackup ${BKUPDIRDIR}/in_progress/
 then
 	echo "Backup successful"
 else
 	echo "Backup failed!"
 	exit 1
 fi
+
+/moira/bin/report.sh ${BKUPDIRDIR}/in_progress
 
 if [ -d stale ]
 then
@@ -51,13 +53,13 @@ echo
 echo -n "deleting last backup"
 rm -rf stale
 echo "Shipping over the net:"
-su smsdba -fc "rdist -c ${BKUPDIRDIR} themis:/site/sms/sms_backup"
-su smsdba -fc "rdist -c ${BKUPDIRDIR} odysseus:/site/sms/sms_backup"
+rcp -rp ${BKUPDIRDIR}/* oregano:/var/moira
+rcp -rp ${BKUPDIRDIR}/* plover:/backup/moira
 
-if [ "`/usr/bin/find /u1/sms/critical.log -mtime -1 -print`" = "/u1/sms/critical.log" ]; then
+if [ "`/usr/bin/find /moira/critical.log -mtime -1 -print`" = "/moira/critical.log" ]; then
 	(/bin/echo "To: dbadmin";\
 	 /bin/echo "Subject: Moira update status";\
-	 /usr/ucb/tail /u1/sms/critical.log) | /bin/mail dbadmin
+	 /usr/ucb/tail /moira/critical.log) | /bin/mail dbadmin
 fi
 
 exit 0

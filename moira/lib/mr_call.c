@@ -1,18 +1,21 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_call.c,v $
  *	$Author: wesommer $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_call.c,v 1.3 1987-06-01 03:33:54 wesommer Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_call.c,v 1.4 1987-06-04 01:32:18 wesommer Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
  *	$Log: not supported by cvs2svn $
+ * Revision 1.3  87/06/01  03:33:54  wesommer
+ * Added destroy_reply.
+ * 
  * Revision 1.2  87/05/31  22:03:37  wesommer
  * Fixed numerous bugs; still shaky.
  * 
  */
 
 #ifndef lint
-static char *rcsid_sms_call_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_call.c,v 1.3 1987-06-01 03:33:54 wesommer Exp $";
+static char *rcsid_sms_call_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_call.c,v 1.4 1987-06-04 01:32:18 wesommer Exp $";
 #endif lint
 
 #include "sms_private.h"
@@ -30,7 +33,7 @@ static sms_abort_recv() {}
  * write of the next bunch of data.
  */
 
-static sms_cont_send(op, hcon, arg)
+sms_cont_send(op, hcon, arg)
 	OPERATION op;
 	HALF_CONNECTION hcon;
 	struct sms_params *arg;
@@ -128,7 +131,7 @@ sms_start_send(op, hcon, arg)
 	else return OP_RUNNING;
 }	
 	
-static sms_cont_recv(op, hcon, argp)
+sms_cont_recv(op, hcon, argp)
 	OPERATION op;
 	HALF_CONNECTION hcon;
 	sms_params **argp;
@@ -199,6 +202,9 @@ sms_start_recv(op, hcon, argp)
 	register sms_params *arg = *argp;
 	if (!arg) {
 		*argp = arg = (sms_params *)db_alloc(sizeof(sms_params));
+		arg->sms_argl = NULL;
+		arg->sms_argv = NULL;
+		arg->sms_flattened = NULL;
 	}
 	arg->sms_state = S_RECV_START;
 	op->fcn.cont = sms_cont_recv;
@@ -218,15 +224,17 @@ sms_do_call(parms, reply)
 	if (!_sms_recv_op)
 		_sms_recv_op = create_operation();
 
-	gdb_inop(_sms_send_op, sms_start_send, parms, sms_abort_send);
-	gdb_qop(_sms_conn, CON_OUTPUT, _sms_send_op);
+	initialize_operation(_sms_send_op, sms_start_send, parms,
+			     sms_abort_send);
+	queue_operation(_sms_conn, CON_OUTPUT, _sms_send_op);
 
-	gdb_inop(_sms_recv_op, sms_start_recv, reply, sms_abort_recv);
-	gdb_qop(_sms_conn, CON_INPUT, _sms_recv_op);
+	initialize_operation(_sms_recv_op, sms_start_recv, reply,
+			     sms_abort_recv);
+	queue_operation(_sms_conn, CON_INPUT, _sms_recv_op);
 
 	/* Block until operation done. */
-	gdb_cmpo(_sms_send_op);
-	gdb_cmpo(_sms_recv_op);
+	complete_operation(_sms_send_op);
+	complete_operation(_sms_recv_op);
 	/* Look at results */
 	if (OP_STATUS(_sms_recv_op) != OP_COMPLETE) {
 		return SMS_ABORTED;

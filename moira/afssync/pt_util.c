@@ -27,11 +27,7 @@
 #include "ptint.h"
 #include "ptserver.h"
 #include "pterror.h"
-#ifdef HAVE_STRVIS
-#include <strvis.h>
-#else
 #include "vis.h"
-#endif
 
 #define IDHash(x) (abs(x) % HASHSIZE)
 #define print_id(x) ( ((flags&DO_SYS)==0 && (x<-32767 || x>97536)) || \
@@ -256,8 +252,8 @@ char **argv;
 		    exit(1);
 		  }
 		strunvis(str, name);
-		strcpy(name, str);
-
+		strncpy(name, str, PR_MAXNAMELEN);
+		name[PR_MAXNAMELEN] = '\0';
 		if (FindByID(0, id))
 		    code = PRIDEXIST;
 		else
@@ -463,7 +459,16 @@ void fix_pre(pre)
 	exit(1);
       }
     strvis(str, pre->name, VIS_WHITE);
-    strcpy(pre->name, str);
+    if (strlen(str) > PR_MAXNAMELEN) 
+      {
+	fprintf(stderr, "encoding greater than PR_MAXNAMELEN!\n");
+	fprintf(stderr, "groupname %s will not be encoded!\n", pre->name);
+      }
+    else 
+      {
+	strncpy(pre->name, str, PR_MAXNAMELEN);
+	pre->name[PR_MAXNAMELEN] = '\0';
+      }
     pre->flags = ntohl(pre->flags);
     pre->id = ntohl(pre->id);
     pre->cellid = ntohl(pre->cellid);

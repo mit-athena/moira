@@ -1,3 +1,5 @@
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/afs_utils.pl,v 1.9 1993-06-03 16:55:50 mar Exp $
+
 $afsbin="/moira/bin";
 $vos="$afsbin/vos";
 $pts="$afsbin/pts";
@@ -16,6 +18,7 @@ $LOCK_UN=8;
      "CONTRIB", "contrib",
      "COURSE", "course",
      "HOMEDIR", "user",
+     "LEASE", "dept",
      "PROJECT", "project",
      "REF", "ref",
      "SW", "sw",

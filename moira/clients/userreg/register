@@ -1,10 +1,15 @@
 #!/bin/csh -f 
-set path=( /mit/register/@sys $path )
-if ( `machtype`x != sun4x ) then
+
+set machtype=`machtype`
+
+if ( (${machtype}x != sun4x) && (${machtype}x != sgix) ) then
 	stty dec
 endif
 
-reset
+if ( ${machtype}x != "sgix" ) then
+	reset
+endif
+
 setenv SHELL csh
 
 if ( ${?TERM} == 0 ) then
@@ -30,8 +35,10 @@ end
 cd /mit/register
 
 while (1)
-	/mit/register/@sys/userreg
-	reset
+	/mit/register/arch/@sys/bin/userreg
+	if ( ${machtype}x != "sgix") then
+		reset
+	endif
 	echo -n "Do you want to register another user? "
 	set answer = $<
 	if ("${answer}x" =~ [nN]*) exit 0

@@ -1,6 +1,6 @@
 /* This file defines the query dispatch table for version 2 of the protocol
  *
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/queries2.c,v 1.3 1988-07-23 19:42:42 mar Exp $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/queries2.c,v 1.4 1988-07-31 16:35:17 mar Exp $
  *
  * Copyright 1987, 1988 by the Massachusetts Institute of Technology.
  */
@@ -47,6 +47,7 @@ int followup_amtl();
 int followup_anfq();
 int followup_gzcl();
 int followup_gsha();
+int followup_gnfq();
 
 int set_modtime();
 int set_modtime_by_id();
@@ -674,7 +675,7 @@ static struct validate acld_validate =	/* ADD_CLUSTER_DATA */
 
 static char *gsin_fields[] = {
   SERVICE,
-  SERVICE, "update_int", "target_file", "script", "dfgen",
+  SERVICE, "update_int", "target_file", "script", "dfgen", "dfcheck",
   TYPE, "enable", "inprogress", "harderror", "errmsg",
   ACE_TYPE, ACE_NAME, MOD1, MOD2, MOD3,
 };
@@ -753,7 +754,7 @@ static struct validate rsve_validate = {
 };
 
 static char *ssif_fields[] = {
-  SERVICE, "dfgen", "inprogress", "harderror", "errmsg",
+  SERVICE, "dfgen", "dfcheck", "inprogress", "harderror", "errmsg",
 };
 
 static struct validate ssif_validate = {
@@ -891,7 +892,7 @@ static struct validate sshi_validate =
   sshi_valobj,
   2,
   SERVICE,
-  "sh.service = uppercase(\"%s\") and sh.mach_id = %d",
+  "s.service = uppercase(\"%s\") and s.mach_id = %d",
   2,
   0,
   0,
@@ -2196,9 +2197,9 @@ struct query Queries2[] = {
     RETRIEVE,
     "s",
     "servers",
-    "%c = s.name, %c = text(s.update_int), %c = s.target_file, %c = s.script, %c = text(s.dfgen), %c = s.type, %c = text(s.enable), %c = text(s.inprogress), %c = text(s.harderror), %c = s.errmsg, %c = s.acl_type, %c = text(s.acl_id), %c = s.modtime, %c = text(s.modby), %c = s.modwith",
+    "%c = s.name, %c = text(s.update_int), %c = s.target_file, %c = s.script, %c = text(s.dfgen), %c = text(s.dfcheck), %c = s.type, %c = text(s.enable), %c = text(s.inprogress), %c = text(s.harderror), %c = s.errmsg, %c = s.acl_type, %c = text(s.acl_id), %c = s.modtime, %c = text(s.modby), %c = s.modwith",
     gsin_fields,
-    15,
+    16,
     "s.name = uppercase(\"%s\")",
     1,
     &gsin_validate,
@@ -2256,7 +2257,7 @@ struct query Queries2[] = {
     UPDATE,
     "s",
     "servers",
-    "harderror = 0",
+    "harderror = 0, dfcheck = s.dfgen",
     dsin_fields,
     0,
     "s.name = uppercase(\"%s\")",
@@ -2271,9 +2272,9 @@ struct query Queries2[] = {
     UPDATE,
     "s",
     "servers",
-    "dfgen = int4(%c), inprogress = int1(%c), harderror = int1(%c), errmsg = %c",
+    "dfgen = int4(%c), dfcheck = int4(%c), inprogress = int1(%c), harderror = int1(%c), errmsg = %c",
     ssif_fields,
-    4,
+    5,
     "s.name = uppercase(\"%s\")",
     1,
     &ssif_validate,
@@ -2389,12 +2390,12 @@ struct query Queries2[] = {
     "set_server_host_internal",
     "sshi",
     UPDATE,
-    "sh",
+    "s",
     "serverhosts",
     "override = int1(%c), success = int1(%c), inprogress = int1(%c), hosterror = int1(%c), hosterrmsg = %c, ltt = int4(%c), lts = int4(%c)",
     sshi_fields,
     7,
-    "sh.service = uppercase(\"%s\") and sh.mach_id = %d",
+    "s.service = uppercase(\"%s\") and s.mach_id = %d",
     2,
     &sshi_validate,
   },
@@ -2694,7 +2695,7 @@ struct query Queries2[] = {
     "%c = filesys.label, %c = users.login, %c = text(nq.quota), %c = nfsphys.dir, %c = machine.name, %c = nq.modtime, %c = text(nq.modby), %c = nq.modwith",
     gnfq_fields,
     8,
-    "filesys.label = \"%s\" and users.users_id = %d and filesys.phys_id = nfsphys.nfsphys_id and machine.mach_id = filesys.mach_id and users.users_id = nq.users_id and filesys.filsys_id = nq.filsys_id",
+    "filesys.label = \"%s\" and nq.users_id = %d and filesys.filsys_id = nq.filsys_id and nfsphys.nfsphys_id = filesys.phys_id and machine.mach_id = filesys.mach_id and users.users_id = nq.users_id",
     2,
     &gnfq_validate,
   },
@@ -2938,7 +2939,7 @@ struct query Queries2[] = {
     1,
     &cmol_validate,
   },
-
+#ifdef notdef
   {
     /* Q_AUGR - ADD_USER_GROUP */
     "add_user_group",
@@ -2953,7 +2954,7 @@ struct query Queries2[] = {
     0,
     &augr_validate,
   },    
-
+#endif
   {
     /* Q_GZCL - GET_ZEPHYR_CLASS */
     "get_zephyr_class",

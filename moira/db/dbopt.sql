@@ -5,6 +5,7 @@ create index i_usr_last on  users (last, first);
 create index i_usr_uid on  users (unix_uid);
 create index i_usr_pop on  users (pop_id);
 create index i_usr_clearid on users (clearid);
+create index i_usr_resv on users (reservations);
 
 create unique index i_krb_usid on krbmap  (users_id);
 create index i_krb_str on  krbmap (string_id);

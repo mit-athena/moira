@@ -1,4 +1,4 @@
-/* $Id: kerberos.c,v 1.4 1998-07-31 22:52:40 danw Exp $
+/* $Id: kerberos.c,v 1.5 2000-08-13 04:06:41 zacheiss Exp $
  *
  * Kerberos routines for registration server
  *
@@ -36,7 +36,7 @@
 krb5_context context;
 #endif
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/kerberos.c,v 1.4 1998-07-31 22:52:40 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/kerberos.c,v 1.5 2000-08-13 04:06:41 zacheiss Exp $");
 
 extern char *hostname, *shorthostname;
 
@@ -149,6 +149,10 @@ cleanup:
 
   if (status == KADM5_DUP)
     return MR_IN_USE;
+  else if (status == KADM5_PASS_Q_TOOSHORT || 
+	   status == KADM5_PASS_Q_CLASS ||
+	   status == KADM5_PASS_Q_DICT)
+    return MR_QUALITY;
   else return status;
 }
 #endif

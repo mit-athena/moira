@@ -1,4 +1,4 @@
-/* $Id: reg_svr.pc,v 1.6 2000-03-14 21:50:51 zacheiss Exp $
+/* $Id: reg_svr.pc,v 1.7 2000-08-13 04:06:41 zacheiss Exp $
  *
  * Server for user registration with Moira and Kerberos.
  *
@@ -37,7 +37,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.pc,v 1.6 2000-03-14 21:50:51 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.pc,v 1.7 2000-08-13 04:06:41 zacheiss Exp $");
 
 char *whoami, *hostname, *shorthostname;
 
@@ -595,7 +595,12 @@ void PSWD(reg_client *rc, int argc, char **argv)
     }
 
   status = register_kerberos(rc->username, password);
-  if (status == MR_IN_USE)
+  if (status == MR_QUALITY)
+    {
+      reply(rc, PASSWORD_SIMPLE, "GETP", "c", NULL);
+      return;
+    }
+  else if (status == MR_IN_USE)
     {
       reply(rc, RESERVED_USERNAME_UNAVAILABLE, "INIT", "c", NULL,
 	    rc->username);

@@ -1,4 +1,4 @@
-/* $Id: mr_connect.c,v 1.33 2000-03-15 22:44:19 rbasch Exp $
+/* $Id: mr_connect.c,v 1.34 2000-12-14 05:17:19 zacheiss Exp $
  *
  * This routine is part of the client library.  It handles
  * creating a connection to the moira server.
@@ -39,7 +39,7 @@
 #include <hesiod.h>
 #endif
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_connect.c,v 1.33 2000-03-15 22:44:19 rbasch Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_connect.c,v 1.34 2000-12-14 05:17:19 zacheiss Exp $");
 
 #define DEFAULT_SERV "moira_db"
 #define DEFAULT_PORT 775
@@ -140,6 +140,7 @@ int mr_connect_internal(char *server, char *port)
   char *host = NULL;
   int fd = SOCKET_ERROR;
   int ok = 0;
+  int on = 1; /* Value variable for setsockopt() */
 
   shost = gethostbyname(server);
   if (!shost)
@@ -175,6 +176,9 @@ int mr_connect_internal(char *server, char *port)
 
   fd = socket(AF_INET, SOCK_STREAM, 0);
   if (fd < 0)
+    goto cleanup;
+
+  if (setsockopt(fd, SOL_SOCKET, SO_KEEPALIVE, (char *)&on, sizeof(int)) < 0)
     goto cleanup;
 
   if (connect(fd, (struct sockaddr *)&target, sizeof(target)) < 0)

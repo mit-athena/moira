@@ -1,9 +1,12 @@
 @Comment[
 	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/doc/tech-plan/dcm.mss,v $
-	$Author: spook $
-	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/doc/tech-plan/dcm.mss,v 1.12 1987-06-19 16:20:55 spook Exp $
+	$Author: pjlevine $
+	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/doc/tech-plan/dcm.mss,v 1.13 1987-08-05 17:19:52 pjlevine Exp $
 
 	$Log: not supported by cvs2svn $
+Revision 1.12  87/06/19  16:20:55  spook
+Removed update stuff (moving to update.mss).
+
 Revision 1.11  87/06/19  11:27:34  pjlevine
 pjlevine adds words of wisdom
 

@@ -5,7 +5,7 @@
  *
  * $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v $
  * $Author: mar $
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.20 1988-08-11 20:47:21 mar Exp $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.21 1988-09-08 15:32:55 mar Exp $
  *
  * Generic menu system module.
  *
@@ -18,7 +18,7 @@
  */
 
 #ifndef lint
-static char rcsid_menu_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.20 1988-08-11 20:47:21 mar Exp $";
+static char rcsid_menu_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.21 1988-09-08 15:32:55 mar Exp $";
 
 #endif lint
 
@@ -111,8 +111,7 @@ Start_menu(m)
 	(void) raw();		/* We parse & print everything ourselves */
 	(void) noecho();
 	cur_ms = make_ms(0);	/* So we always have some current */
-	/* menu_screen */ 
-	top_menu = m;
+				/* menu_screen */ 
 	/* Run the menu */
 	(void) Do_menu(m, -1, (char **) NULL);
     }
@@ -136,7 +135,6 @@ Start_no_menu(m)
 {
     cur_ms = NULLMS;
     COLS = 80;
-    top_menu = m;
     /* Run the menu */
     (void) Do_menu(m, -1, (char **) NULL);
 }
@@ -318,7 +316,7 @@ Do_menu(m, margc, margv)
 	    continue;
 	} 
 	/* finally, try to find it using Find_command */
-	else if ((command = Find_command(argvals[0])) ==
+	else if ((command = Find_command(m, argvals[0])) ==
 		 (struct menu_line *) 0) {
 	    Put_message("Command not recognized");
 	    continue;
@@ -708,10 +706,11 @@ find_command_from(c, m, d)
 	if (!strcmp(c, m->m_lines[line].ml_command)) {
 	    return (&m->m_lines[line]);
 	}
-	else if (m->m_lines[line].ml_submenu != NULLMENU
-		 && (maybe =
-		   find_command_from(c, m->m_lines[line].ml_submenu, d - 1))
-		 != (struct menu_line *) 0) {
+    }
+    for (line = 0; line < m->m_length; line++) {
+	if (m->m_lines[line].ml_submenu != NULLMENU  &&
+	    (maybe = find_command_from(c, m->m_lines[line].ml_submenu, d - 1))
+		!= (struct menu_line *) 0) {
 	    return (maybe);
 	}
     }
@@ -723,14 +722,15 @@ find_command_from(c, m, d)
 /* And returns a pointer to a menu_line with the specified command name */
 /* It returns (struct menu_line *) 0 if none is found */
 struct menu_line *
-Find_command(command)
+Find_command(m, command)
+    Menu *m;
     char *command;
 {
-    if (top_menu == NULLMENU) {
+    if (m == NULLMENU) {
 	return ((struct menu_line *) 0);
     }
     else {
-	return (find_command_from(command, top_menu, MAX_MENU_DEPTH));
+	return (find_command_from(command, m, MAX_MENU_DEPTH));
     }
 }
 

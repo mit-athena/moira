@@ -221,7 +221,7 @@ clean::									@@\
 depend:: concat(src,.h)
 
 #define mk_cmds(tbl)							@@\
-concat(tbl,.o): concat(tbl,.ct)						@@\
+concat(tbl,.c): concat(tbl,.ct)						@@\
 	$(MAKE_COMMANDS) concat(tbl,.ct)				@@\
 clean::									@@\
 	$(RM) concat(tbl,.o)

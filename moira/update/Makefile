@@ -1,6 +1,6 @@
 #
 # 	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/Makefile,v $
-#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/Makefile,v 1.8 1988-09-14 12:15:28 mar Exp $
+#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/Makefile,v 1.9 1988-12-27 18:23:29 mar Exp $
 #
 
 #
@@ -45,8 +45,8 @@ clean:
 	-rm -f update_server sms_update.o
 	-rm -f core a.out *~ \#*
 
-install:
-	install update_server ../bin/update_server
+install: update_server
+	install -s update_server ${DESTDIR}/usr/etc/update_server
 
 lint:
 	lint ${LINTFLAGS} ${SSRCS}
@@ -79,71 +79,74 @@ depend:
 # the last line in the makefile should be...
 # DO NOT DELETE THIS LINE
 
-update_server.o: update_server.c /usr/include/stdio.h ../include/gdb.h
-update_server.o: /usr/include/sys/types.h /usr/include/sys/time.h
-update_server.o: /usr/include/time.h /usr/include/errno.h
-update_server.o: /usr/include/strings.h ../include/sms.h ../include/sms_et.h
-update_server.o: /usr/include/sys/file.h /usr/include/sys/ioctl.h
-update_server.o: /usr/include/sys/ttychars.h /usr/include/sys/ttydev.h update.h
-update_server.o: kludge.h
-auth_001.o: auth_001.c /usr/include/stdio.h /usr/include/strings.h
-auth_001.o: ../include/gdb.h /usr/include/sys/types.h /usr/include/sys/time.h
-auth_001.o: /usr/include/time.h kludge.h /usr/include/krb.h
-auth_001.o: ../include/mit-copyright.h /usr/include/des.h
+update_server.o: update_server.c ../include/mit-copyright.h
+update_server.o: /usr/include/stdio.h ../include/gdb.h /usr/include/sys/types.h
+update_server.o: /usr/include/sys/time.h /usr/include/time.h
+update_server.o: /usr/include/errno.h /usr/include/strings.h ../include/sms.h
+update_server.o: ../include/sms_et.h /usr/include/sys/file.h
+update_server.o: /usr/include/sys/ioctl.h /usr/include/sys/ttychars.h
+update_server.o: /usr/include/sys/ttydev.h update.h kludge.h
+auth_001.o: auth_001.c ../include/mit-copyright.h /usr/include/stdio.h
+auth_001.o: /usr/include/strings.h ../include/gdb.h /usr/include/sys/types.h
+auth_001.o: /usr/include/sys/time.h /usr/include/time.h kludge.h
+auth_001.o: /usr/include/krb.h ../include/mit-copyright.h /usr/include/des.h
 auth_001.o: ../include/mit-copyright.h /usr/include/des_conf.h
 auth_001.o: ../include/mit-copyright.h /usr/include/netinet/in.h
 auth_001.o: /usr/include/errno.h
-inst_001.o: inst_001.c /usr/include/stdio.h ../include/gdb.h
-inst_001.o: /usr/include/sys/types.h /usr/include/sys/time.h
+inst_001.o: inst_001.c ../include/mit-copyright.h /usr/include/stdio.h
+inst_001.o: ../include/gdb.h /usr/include/sys/types.h /usr/include/sys/time.h
 inst_001.o: /usr/include/time.h kludge.h
-xfer_002.o: xfer_002.c /usr/include/stdio.h ../include/gdb.h
-xfer_002.o: /usr/include/sys/types.h /usr/include/sys/time.h
+xfer_002.o: xfer_002.c ../include/mit-copyright.h /usr/include/stdio.h
+xfer_002.o: ../include/gdb.h /usr/include/sys/types.h /usr/include/sys/time.h
 xfer_002.o: /usr/include/time.h /usr/include/ctype.h /usr/include/sys/param.h
 xfer_002.o: /usr/include/machine/machparam.h /usr/include/signal.h
 xfer_002.o: /usr/include/sys/types.h /usr/include/sys/file.h
 xfer_002.o: /usr/include/strings.h ../include/sms.h ../include/sms_et.h
 xfer_002.o: kludge.h
-exec_002.o: exec_002.c /usr/include/stdio.h /usr/include/sys/wait.h
-exec_002.o: /usr/include/signal.h ../include/gdb.h /usr/include/sys/types.h
-exec_002.o: /usr/include/sys/time.h /usr/include/time.h ../include/sms.h
-exec_002.o: ../include/sms_et.h update.h kludge.h
-hostname.o: hostname.c /usr/include/stdio.h /usr/include/sys/types.h
-hostname.o: /usr/include/netinet/in.h /usr/include/netdb.h /usr/include/ctype.h
-hostname.o: /usr/include/strings.h
-log.o: log.c /usr/include/stdio.h ../include/com_err.h
-log.o: ../include/mit-sipb-copyright.h /usr/include/varargs.h update.h
-log.o: /usr/include/krb.h ../include/mit-copyright.h /usr/include/des.h
-log.o: ../include/mit-copyright.h /usr/include/des_conf.h
-log.o: ../include/mit-copyright.h
-get_file.o: get_file.c /usr/include/stdio.h ../include/gdb.h
-get_file.o: /usr/include/sys/types.h /usr/include/sys/time.h
+exec_002.o: exec_002.c ../include/mit-copyright.h /usr/include/stdio.h
+exec_002.o: /usr/include/sys/wait.h /usr/include/signal.h ../include/gdb.h
+exec_002.o: /usr/include/sys/types.h /usr/include/sys/time.h
+exec_002.o: /usr/include/time.h ../include/sms.h ../include/sms_et.h update.h
+exec_002.o: kludge.h
+hostname.o: hostname.c ../include/mit-copyright.h /usr/include/stdio.h
+hostname.o: /usr/include/sys/types.h /usr/include/netinet/in.h
+hostname.o: /usr/include/netdb.h /usr/include/ctype.h /usr/include/strings.h
+log.o: log.c ../include/mit-copyright.h /usr/include/stdio.h
+log.o: ../include/com_err.h ../include/mit-sipb-copyright.h
+log.o: /usr/include/varargs.h update.h /usr/include/krb.h
+log.o: ../include/mit-copyright.h /usr/include/des.h ../include/mit-copyright.h
+log.o: /usr/include/des_conf.h ../include/mit-copyright.h
+get_file.o: get_file.c ../include/mit-copyright.h /usr/include/stdio.h
+get_file.o: ../include/gdb.h /usr/include/sys/types.h /usr/include/sys/time.h
 get_file.o: /usr/include/time.h /usr/include/ctype.h /usr/include/sys/param.h
 get_file.o: /usr/include/machine/machparam.h /usr/include/signal.h
 get_file.o: /usr/include/sys/types.h /usr/include/sys/file.h ../include/sms.h
 get_file.o: ../include/sms_et.h update.h kludge.h
-checksum.o: checksum.c /usr/include/stdio.h /usr/include/sys/file.h
-client.o: client.c /usr/include/stdio.h /usr/include/strings.h ../include/gdb.h
-client.o: /usr/include/sys/types.h /usr/include/sys/time.h /usr/include/time.h
-client.o: /usr/include/sys/param.h /usr/include/machine/machparam.h
-client.o: /usr/include/signal.h /usr/include/sys/types.h
-client.o: /usr/include/sys/wait.h ../include/update.h /usr/include/errno.h
-client.o: ../include/dcm.h ../include/sms.h ../include/sms_et.h
-client.o: /usr/include/krb.h ../include/mit-copyright.h /usr/include/des.h
-client.o: ../include/mit-copyright.h /usr/include/des_conf.h
+checksum.o: checksum.c ../include/mit-copyright.h /usr/include/stdio.h
+checksum.o: /usr/include/sys/file.h
+client.o: client.c ../include/mit-copyright.h /usr/include/stdio.h
+client.o: /usr/include/strings.h ../include/gdb.h /usr/include/sys/types.h
+client.o: /usr/include/sys/time.h /usr/include/time.h /usr/include/sys/param.h
+client.o: /usr/include/machine/machparam.h /usr/include/signal.h
+client.o: /usr/include/sys/types.h /usr/include/sys/wait.h ../include/update.h
+client.o: /usr/include/errno.h ../include/dcm.h ../include/sms.h
+client.o: ../include/sms_et.h /usr/include/krb.h ../include/mit-copyright.h
+client.o: /usr/include/des.h ../include/mit-copyright.h /usr/include/des_conf.h
 client.o: ../include/mit-copyright.h
-ticket.o: ticket.c /usr/include/stdio.h /usr/include/krb.h
-ticket.o: ../include/mit-copyright.h /usr/include/des.h
+ticket.o: ticket.c ../include/mit-copyright.h /usr/include/stdio.h
+ticket.o: /usr/include/krb.h ../include/mit-copyright.h /usr/include/des.h
 ticket.o: ../include/mit-copyright.h /usr/include/des_conf.h
 ticket.o: ../include/mit-copyright.h /usr/include/sys/types.h
 ticket.o: /usr/include/sys/stat.h /usr/include/strings.h ../include/update.h
 ticket.o: ../include/com_err.h ../include/mit-sipb-copyright.h
-send_file.o: send_file.c /usr/include/stdio.h ../include/com_err.h
-send_file.o: ../include/mit-sipb-copyright.h ../include/gdb.h
-send_file.o: /usr/include/sys/types.h /usr/include/sys/time.h
+send_file.o: send_file.c ../include/mit-copyright.h /usr/include/stdio.h
+send_file.o: ../include/com_err.h ../include/mit-sipb-copyright.h
+send_file.o: ../include/gdb.h /usr/include/sys/types.h /usr/include/sys/time.h
 send_file.o: /usr/include/time.h ../include/dcm.h ../include/sms.h
 send_file.o: ../include/sms_et.h /usr/include/sys/file.h
 send_file.o: /usr/include/sys/stat.h ../include/update.h
-checksum.o: checksum.c /usr/include/stdio.h /usr/include/sys/file.h
-hostname.o: hostname.c /usr/include/stdio.h /usr/include/sys/types.h
-hostname.o: /usr/include/netinet/in.h /usr/include/netdb.h /usr/include/ctype.h
-hostname.o: /usr/include/strings.h
+checksum.o: checksum.c ../include/mit-copyright.h /usr/include/stdio.h
+checksum.o: /usr/include/sys/file.h
+hostname.o: hostname.c ../include/mit-copyright.h /usr/include/stdio.h
+hostname.o: /usr/include/sys/types.h /usr/include/netinet/in.h
+hostname.o: /usr/include/netdb.h /usr/include/ctype.h /usr/include/strings.h

@@ -28,7 +28,7 @@ sub afs_lock
     open(SRV,"+<$afs_data") || die "Unable to open $afs_data\n";
     select((select(SRV), $|=1)[$[]);
     flock(SRV, $LOCK_EX) || die "Unable to lock $afs_data\n";
-    die "Temporary status file: $afs_save exists... abortin\n"
+    die "Temporary status file: $afs_save exists... aborting\n"
 	if (-f $afs_save);
     open(SRV2, ">$afs_save");
     @afs_data = <SRV>;
@@ -64,19 +64,10 @@ sub afs_find
     for (@afs_data) {
 	local ($a, $asrv, $apart, $t, $total, $used, $alloc) = split(/\s+/,$_);
 	next if ($a ne $cell || !$total || $type !~ /$t/);
+	$alloc = $used if ($alloc < $used);
 	$j = 2*$total - $used - $alloc;
 	@max = ($asrv,$apart,$j) if (! @max || $j > $max[2]);
     }
-
-#    truncate(SRV, 0);
-#    for (@afs_data) {
-#	($a, $asrv, $apart, $t, $total, $used, $alloc) = split(/\s+/,$_);
-#	if ($a eq $cell && $asrv eq $max[0] && $apart eq $max[1]) {
-#	    $alloc += $quota;
-#	    $_ = join(' ',$a,$asrv,$apart,$t, $total,$used,$alloc);
-#	}
-#	print SRV "$_\n";
-#    }
 
     &afs_unlock;
     return(@max);

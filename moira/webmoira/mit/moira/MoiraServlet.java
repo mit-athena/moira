@@ -1009,8 +1009,6 @@ public class MoiraServlet extends HttpServlet {
 	    mc = connect();
 	    mc.proxy(kname);
 	    tk = new StreamTokenizer(new StringReader(member));
-	    mc.done();
-	    mc = null;
 	    tk.wordChars('@', '@');
 	    tk.wordChars('0', '9');
 	    tk.wordChars('_', '_');
@@ -1037,7 +1035,7 @@ public class MoiraServlet extends HttpServlet {
 	    if (!addheader) 	// We didn't seem to be able to add anyone
 		msg += "<tr><td>No one added!</td></tr>\r\n";
 	    msg += "</table>\r\n";
-	    mc.disconnect();
+	    mc.done();
 	    mc = null;
 	} catch (MoiraException e) {
 	    if (tk != null)

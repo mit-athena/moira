@@ -1,5 +1,5 @@
 .TH MITCH 1 "22 Jan 2003" "MIT Athena"
-\" RCSID: $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/man/mitch.1,v 1.1 2003-02-04 04:42:04 zacheiss Exp $
+\" RCSID: $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/man/mitch.1,v 1.2 2003-02-05 18:42:51 zacheiss Exp $
 .SH NAME
 mitch \- examine and modify informtion about containers in Moira
 .SH SYNOPSIS
@@ -11,7 +11,7 @@ supports all container modification commands and options to list, add,
 and remove machines to and from containers.
 
 If no options are specified, it will assume \fI-info\fR, which will
-result in all information about the specified user being displayed.
+result in all information about the specified container being displayed.
 
 .SH OPTIONS
 
@@ -24,7 +24,7 @@ Update the description field for the specified container to \fIdescription\fR.
 .IP \fB-location\ \fIlocation\ \fRor\ \fB-l\ \fIlocation\fR
 Update the location field for the specified container to \fIlocation\fR.
 .IP \fB-contact\ \fIcontact\ \fRor\ \fB-c\ \fIcontact\fR
-Update the contact field for the specified container to\fIcontainct\fR.
+Update the contact field for the specified container to \fIcontact\fR.
 
 .IP \fB-owner\ \fIowner\ \fRor\ \fB-O\ \fIowner\fR
 Set the owner of the specified container to \fIowner\fR.
@@ -33,14 +33,14 @@ You may specify an owner explicitly, as user:username, list:listname, or
 kerberos:principal_name; or the type may be left off if the owner name
 is non ambiguous.
 .B Mitch
-will try first as a user, and if that fails will try the member as a
+will try first as a user, and if that fails will try the owner as a
 list.
 
 .IP \fB-memacl\ \fImembership_acl\ \fRor\ \fB-MA\ \fImembership_acl\fR
 Set the mebership acl of the container; members of this acl will be
 allowed to add and remove members of the container, but not update any
 other characteristics. The membership acl is specified like a list
-member, except that it can never be a string.  To return a list to
+member, except that it can never be a string.  To return a container to
 having default membership access control conditions, set the membership
 acl to "NONE".
 
@@ -52,7 +52,7 @@ public container.)
 Display container information with each field on a seperate line, in the
 form "fieldname: value".
 .IP \fB-verbose\ \fRor\ \fB-v\fR
-Give more information.  With this flag, stanley will display the
+Give more information.  With this flag, mitch will display the
 queries it is making to the moira server.
 .IP \fB-noauth\ \fRor\ \fB-n\fR
 Do not attempt to perform Kerberos authentication with the Moira server.
@@ -87,7 +87,7 @@ This will list the machines that are members of the container. Use the
 flag for a recursive listing.
 .IP \fB-addmach\ \fIhostname\ \fRor\ \fB-am\ \fIhostname\fR
 This will add \fIhostname\fR to the specified container.
-.IP \fB-deletemach\ \fIhostname\fRor \ \fB-dm\ \fIhostname\fR
+.IP \fB-deletemach\ \fIhostname\ \fRor\ \fB-dm\ \fIhostname\fR
 This will remove \fIhostname\fR from the specified container.
 
 .IP \fB-listsub\ \fRor\ \fB-ls\fR

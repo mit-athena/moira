@@ -25,7 +25,7 @@ else
 	exit $MR_TARERR
 fi
 
-chmod 644 username_id.*
+chmod 640 username_id.*
 
 rm -f $0
 echo removed self

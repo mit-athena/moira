@@ -1,6 +1,6 @@
 #!/moira/bin/perl -Tw
 
-# $Id: ldap.gen,v 1.4 2004-04-20 06:35:57 zacheiss Exp $
+# $Id: ldap.gen,v 1.5 2004-06-07 19:26:52 zacheiss Exp $
 
 use DBI;
 
@@ -75,45 +75,36 @@ close(OUT);
 
 open(OUT, ">$outdir/groups") || exit $MR_OCONFIG;
 
-$sth0 = $dbh->prepare("SELECT DISTINCT l.name FROM list l, imembers i " .
-                      "WHERE i.member_type = 'LIST' " .
-                      "AND i.member_id = l.list_id " .
-                      "AND l.grouplist = 1 " .
-                      "ORDER BY l.name") || exit $MR_DBMS_ERR;
+$sth0 = $dbh->prepare("SELECT name FROM list WHERE active = 1 " .
+		      "AND grouplist = 1")
+    || exit $MR_DBMS_ERR;
+
 $sth0->execute;
 
 while (($name) = $sth0->fetchrow_array) {
-    $sth = $dbh->prepare("SELECT UNIQUE i.member_id " .
-                         "FROM imembers i, list l, users u " .
-                         "WHERE l.name = " . $dbh->quote($name) .
-                         "AND i.list_id = l.list_id " .
-                         "AND i.member_id = u.users_id " .
-                         "AND (u.status = 1 OR u.status = 9)" .
-                         "AND member_type = 'USER'")
-                         || exit $MR_DBMS_ERR;
+    $sth = $dbh->prepare("SELECT UNIQUE u.login FROM users u, imembers i, " .
+			 "list l WHERE l.name = " . $dbh->quote($name) .
+			 "AND l.list_id = i.list_id " .
+			 "AND i.member_type = 'USER' " .
+			 "AND i.member_id = u.users_id") || exit $MR_DBMS_ERR;
     $sth->execute;
 
     $members = 0;
-    while (($id) = $sth->fetchrow_array) {
-       if(!$members) {
-           $row = "dn: cn=$name,ou=groups,dc=mit,dc=edu\n";
-           $row .= "objectClass: top\n";
-           $row .= "objectClass: groupOfUniqueNames\n";
-           $row .= "cn: $name\n";
-           $row =~ s/\0//g;
-           print OUT $row;
+    while (($member) = $sth->fetchrow_array) {
+	if(!$members) {
+	    $row = "dn: cn=$name,ou=groups,dc=mit,dc=edu\n";
+	    $row .= "objectClass: top\n";
+	    $row .= "objectClass: groupOfUniqueNames\n";
+	    $row .= "cn: $name\n";
+	    $row =~ s/\0//g;
+	    print OUT $row;
 
-           $members = 1;
-       }
+	    $members = 1;
+	}
 
-       ($member) = $dbh->selectrow_array("SELECT login FROM users " .
-                                         "WHERE users_id = " .
-                                         $dbh->quote($id)) ||
-                                             exit $MR_DBMS_ERR;
-
-       $row = "uniqueMember: uid=$member,ou=users,dc=mit,dc=edu\n";
-       $row =~ s/\0//g;
-       print OUT $row;
+	$row = "uniqueMember: uid=$member,ou=users,dc=mit,dc=edu\n";
+	$row =~ s/\0//g;
+	print OUT $row;
     }
 
     print OUT "\n";

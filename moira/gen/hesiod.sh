@@ -1,6 +1,6 @@
 #!/bin/csh -f
 # This script performs updates of hesiod files on hesiod servers.
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/hesiod.sh,v 1.15 1998-01-07 17:13:17 danw Exp $
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/hesiod.sh,v 1.16 1998-05-21 17:34:16 danw Exp $
 
 set path=(/etc /bin /usr/bin /usr/etc /usr/athena/etc)
 
@@ -77,10 +77,7 @@ kill -KILL `cat /etc/named.pid`
 rm -f /etc/named.pid
 
 # Restart named.
-# mv /etc/named.pid /etc/named.pid.restart
-#(unlimit; /etc/named&)
-/etc/named
-#sleep 5
+/usr/sbin/in.named
 echo named started
 
 # This timeout is implemented by having the shell check TIMEOUT times

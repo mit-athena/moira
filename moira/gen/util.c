@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/util.c,v 1.7 1993-04-20 10:58:02 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/util.c,v 1.8 1993-04-20 12:04:22 mar Exp $
  *
  * Utility routines used by the MOIRA extraction programs.
  *
@@ -64,6 +64,8 @@ register char *s;
 db_error(code)
 int code;
 {
+    extern char *whoami;
+
     com_err(whoami, MR_INGRES_ERR, " code %d\n", code);
     if (code == -49900 || code == -37000 || code == 17700)
       exit(MR_DEADLOCK);

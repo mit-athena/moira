@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/namespace.c,v 1.1 1991-01-04 17:00:10 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/namespace.c,v 1.2 1991-01-11 11:58:32 mar Exp $";
 #endif lint
 
 /*	This is the file main.c for the Moira Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/namespace.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/namespace.c,v 1.1 1991-01-04 17:00:10 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/namespace.c,v 1.2 1991-01-11 11:58:32 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -36,6 +36,7 @@
 
 char * whoami;			/* used by menu.c ugh!!! */
 char * moira_server;
+int interrupt = 0;
 int NewListHelp();
 
 /*
@@ -167,7 +168,7 @@ Menu namespace_menu = {
 
 
 #ifndef DEBUG
-static void SignalHandler();
+static void SignalHandler(), CatchInterrupt();
 #endif DEBUG
 
 static void ErrorExit(), Usage();
@@ -257,8 +258,11 @@ main(argc, argv)
 
 #ifndef DEBUG
     (void) signal(SIGHUP, SignalHandler);
-    (void) signal(SIGINT, SignalHandler); 
     (void) signal(SIGQUIT, SignalHandler);
+    if (use_menu)
+      (void) signal(SIGINT, SignalHandler); 
+    else
+      (void) signal(SIGINT, CatchInterrupt); 
 #endif DEBUG
 
     menu = &namespace_menu;
@@ -320,6 +324,14 @@ SignalHandler()
       Cleanup_menu();
     mr_disconnect();
     exit(1);
+}
+
+
+static void
+CatchInterrupt()
+{
+    Put_message("Interrupt! Press RETURN to continue");
+    interrupt = 1;
 }
 #endif DEBUG
 

@@ -5,7 +5,7 @@
  *
  * $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v $
  * $Author: mar $
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.32 1991-01-10 15:57:07 mar Exp $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.33 1991-01-11 11:58:05 mar Exp $
  *
  * Generic menu system module.
  *
@@ -18,7 +18,7 @@
  */
 
 #ifndef lint
-static char rcsid_menu_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.32 1991-01-10 15:57:07 mar Exp $";
+static char rcsid_menu_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.33 1991-01-11 11:58:05 mar Exp $";
 
 #endif lint
 
@@ -47,6 +47,7 @@ static char rcsid_menu_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moira
 
 #define MIN_INPUT 2		/* Minimum number of lines for input window */
 
+extern int interrupt;		/* will be set if ^C is received */
 extern FILE *fdopen();
 extern int getpid();
 extern char *calloc();
@@ -514,6 +515,10 @@ int Prompt_input(prompt, buf, buflen)
 	printf("%s", prompt);
 	if (gets(buf) == NULL)
 	    return 0;
+	if (interrupt) {
+	    interrupt = 0;
+	    return 0;
+	}
 	Start_paging();
 	goto gotit;
     }

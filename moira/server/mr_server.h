@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_server.h,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_server.h,v 1.20 1990-03-19 15:42:13 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_server.h,v 1.21 1991-07-23 10:11:22 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
@@ -90,7 +90,7 @@ extern int log_flags;
 extern int newqueries, oldqueries;
 
 /* Maximum and minimum values that will ever be chosen for IDs */
-#define MAX_ID_VALUE	32765
+#define MAX_ID_VALUE	31999
 #define MIN_ID_VALUE	100
 
 /* Sleepy states for the server! */

@@ -148,6 +148,7 @@ what you give them.   Help stamp out software-hoarding!  */
 #include <sys/time.h>
 #include <sys/resource.h>
 #endif /* BSD42 */
+#include <moira_site.h>
 
 #ifdef scribblecheck
 #define rcheck
@@ -283,9 +284,15 @@ int m_blocksize(a_block)
 {
   return(((struct mhead *)a_block-1)->mh_nbytes);
 }
+
+#if INGRESVER == 5 && defined(vax)
+/* This is here to pull in our private version of meinitlst.o
+ * so that we don't try to get the buggy Ingres 5.0 one.
+ */
 extern int MEinitLists();
 
 static int (*foo)() = MEinitLists;
+#endif
 	
 
 /****************************************************************
@@ -361,16 +368,17 @@ morecore (nu)			/* ask system for more memory */
   nblks = 1;
   if ((siz = nu) < 8)
     nblks = 1 << ((siz = 8) - nu);
-#ifdef notdef
+#if INGRESVER == 5 && defined(vax)
+  {
+      char *tcp;	  
+      if (MEalloc(1, 1 << (siz+3), &tcp))
+	return;			/* No more room! */
+      cp = tcp;
+  }
+#else /* INGRESVER == 5 && defined(vax) */
   if ((cp = sbrk (1 << (siz + 3))) == (char *) -1)
     return;			/* no more room! */
-#endif notdef
-  {
-     char *tcp;	  
-     if (MEalloc(1, 1 << (siz+3), &tcp))
-       return;			/* No more room! */
-     cp = tcp;
-  }
+#endif /* INGRESVER == 5 && defined(vax) */
   if ((int) cp & 7)
     {		/* shouldn't happen, but just in case */
       cp = (char *) (((int) cp + 8) & ~7);

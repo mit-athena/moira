@@ -1,20 +1,20 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/xfer_002.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/xfer_002.c,v 1.1 1987-08-22 17:55:34 wesommer Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/xfer_002.c,v 1.2 1988-08-22 16:21:50 mar Exp $
  */
 
 #ifndef lint
-static char *rcsid_xfer_002_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/xfer_002.c,v 1.1 1987-08-22 17:55:34 wesommer Exp $";
+static char *rcsid_xfer_002_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/xfer_002.c,v 1.2 1988-08-22 16:21:50 mar Exp $";
 #endif	lint
 
 #include <stdio.h>
-#include "gdb.h"
+#include <gdb.h>
 #include <ctype.h>
 #include <sys/param.h>
 #include <sys/file.h>
-#include "smsu_int.h"
-#include "kludge.h"
 #include <strings.h>
+#include <sms.h>
+#include "kludge.h"
 
 extern CONNECTION conn;
 char buf[BUFSIZ];
@@ -57,7 +57,7 @@ xfer_002(str)
 	str++;
     if (!*str) {
     failure:
-	reject_call(SMSU_BAD_ARGS);
+	reject_call(SMS_ARGS);
 	return;
     }
     file_size = atoi(str);
@@ -74,7 +74,7 @@ xfer_002(str)
 	goto failure;
     pathname = str;
     if (!have_authorization) {
-	reject_call(SMSU_NO_AUTH);
+	reject_call(SMS_PERM);
 	return;
     }
     if (done)			/* re-initialize data */

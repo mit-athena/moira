@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/increment.dc,v $
  *	$Author: genoa $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/increment.dc,v 1.1 1992-06-21 16:59:16 genoa Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/increment.dc,v 2.0 1992-06-22 23:09:21 genoa Exp $
  *
  *	Copyright (C) 1989 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_increment_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/increment.dc,v 1.1 1992-06-21 16:59:16 genoa Exp $";
+static char *rcsid_increment_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/increment.dc,v 2.0 1992-06-22 23:09:21 genoa Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -130,14 +130,24 @@ char **argv;
  */
 	EXEC SQL SELECT login, uid, shell, last, first, middle, 
 	    text(u.status), mit_id, mit_year
+	  INTO :barg0, :barg1, :barg2, :barg3, :barg4, :barg5, :barg6,
+	    :barg7, :barg8
 	  FROM users WHERE :qual;
 	beforec = 9;
     } else if (!strcmp(table, "machine")) {
-##	retrieve (barg0 = m.name, barg1 = m.type) where qual
+/*
+ *	retrieve (barg0 = m.name, barg1 = m.type) where qual
+ */
+	EXEC SQL SELECT name, type INTO :barg0, :barg1 FROM machine
+	  WHERE :qual;
 	beforec = 2;
     } else if (!strcmp(table, "cluster")) {
-##	retrieve (barg0 = c.name, barg1 = c.desc, barg2 = c.location)
-##	  	where qual
+/*
+ *	retrieve (barg0 = c.name, barg1 = c.desc, barg2 = c.location)
+ *	  	where qual
+ */
+	EXEC SQL SELECT name, desc, location INTO :barg0, :barg1, :barg2
+	  FROM cluster WHERE :qual;
 	beforec = 3;
     } else if (!strcmp(table, "mcmap")) {
 	strcpy(barg0, argv[0]);
@@ -149,34 +159,57 @@ char **argv;
 	strcpy(barg2, argv[2]);
 	beforec = 3;
     } else if (!strcmp(table, "filesys")) {
-##	range of fs is filesys
-##	retrieve (barg0 = fs.label, barg1 = fs.type, barg2 = text(fs.mach_id),
-##		  barg3 = fs.name, barg4 = fs.mount, barg5 = fs.access,
-##		  barg6 = fs.comments, barg7 = text(fs.owner),
-##		  barg8 = text(fs.owners), barg9 = text(fs.createflg),
-##		  barg10 = fs.lockertype)
-##	  where qual
+/*
+ *	range of fs is filesys
+ *	retrieve (barg0 = fs.label, barg1 = fs.type, barg2 = text(fs.mach_id),
+ *		  barg3 = fs.name, barg4 = fs.mount, barg5 = fs.access,
+ *		  barg6 = fs.comments, barg7 = text(fs.owner),
+ *		  barg8 = text(fs.owners), barg9 = text(fs.createflg),
+ *		  barg10 = fs.lockertype)
+ *	  where qual
+ */
+	EXEC SQL SELECT label, type, text(mach_id), name, mount, access,
+	    comments, text(owner), text(owners), text(createflag), lockertype
+	  INTO :barg0, :barg1, :barg2, :barg3, :barg4, :barg5, :barg6, 
+            :barg7, :barg8, :barg9, :barg10
+	  FROM filesys WHERE :qual;
 	beforec = 11;
     } else if (!strcmp(table, "quota")) {
 	strcpy(barg0, "?");
 	strcpy(barg1, argv[1]);
 	strcpy(barg2, "?");
-	sprintf(buffer, "%s and filesys.filsys_id = q.filsys_id", qual);
+	sprintf(buffer, "%s and fs.filsys_id = q.filsys_id", qual);
 	qual = buffer;
-##	range of q is quota
-##	retrieve (barg3 = text(q.quota), barg4 = filesys.name) where qual
+/*
+ *	range of q is quota
+ *	retrieve (barg3 = text(q.quota), barg4 = filesys.name) where qual
+ */
+	EXEC SQL SELECT q.quota, fs.name INTO :barg3, :barg4
+	  FROM quota q, filesys fs WHERE :qual;
 	beforec = 5;
     } else if (!strcmp(table, "list")) {
-##	retrieve (barg0 = l.name, barg1 = text(l.active),
-##		  barg2 = text(l.public), barg3 = text(l.hidden),
-##		  barg4 = text(l.maillist), barg5 = text(l.group),
-##		  barg6 = text(l.gid), barg7 = l.acl_type,
-##		  barg8 = text(l.acl_id), barg9 = l.desc)
-##	  where qual
+/*
+ *	retrieve (barg0 = l.name, barg1 = text(l.active),
+ *		  barg2 = text(l.public), barg3 = text(l.hidden),
+ *		  barg4 = text(l.maillist), barg5 = text(l.group),
+ *		  barg6 = text(l.gid), barg7 = l.acl_type,
+ *		  barg8 = text(l.acl_id), barg9 = l.desc)
+ *	  where qual
+ */
+	EXEC SQL SELECT name, text(active), text(public), text(hidden),
+	    text(maillist), text(grouplist), text(gid), acl_type,
+	    text(acl_id), desc
+	  INTO :barg0, :barg1, :barg2, :barg3, :barg4, :barg5, :barg6,
+	     :barg7, :barg8, :barg9
+	  FROM list WHERE :qual;
 	beforec = 10;
     } else if (!strcmp(table, "members")) {
 	id = (int) argv[0];
-##	retrieve (barg3 = text(list.group)) where list.list_id = id
+/*
+ *	retrieve (barg3 = text(list.group)) where list.list_id = id
+ */
+	EXEC SQL SELECT text(list.group) INTO :barg3 FROM list 
+	  WHERE list_id = :id;
 	name = malloc(0);
 	id_to_name(id, "LIST", &name);
 	strcpy(barg0, name);
@@ -196,7 +229,7 @@ char **argv;
 	beforec = 4;
     } /* else
       com_err(whoami, 0, "unknown table in incremental_before"); */
-##}
+}
 
 
 incremental_clear_before()
@@ -211,29 +244,48 @@ incremental_clear_after()
 
 
 
-##incremental_after(table, qual, argv)
-##char *table;
-##char *qual;
+incremental_after(table, qual, argv)
+EXEC SQL BEGIN DECLARE SECTION; 
+char *table;
+char *qual;
+EXEC SQL END DECLARE SECTION; 
 char **argv;
-##{
+{
     char buffer[2048], *name;
-##  int id, i;
+EXEC SQL BEGIN DECLARE SECTION; 
+    int id, i;
+EXEC SQL END DECLARE SECTION; 
     struct iupdate *iu;
     char **copy_argv();
 
     if (!strcmp(table, "users")) {
-##	retrieve (aarg0 = u.login, aarg1 = text(u.uid),
-##		  aarg2 = u.shell, aarg3 = u.last, aarg4 = u.first,
-##		  aarg5 = u.middle, aarg6 = text(u.status),
-##		  aarg7 = u.mit_id, aarg8 = u.mit_year)
-##		where qual
+/*
+ *	retrieve (aarg0 = u.login, aarg1 = text(u.uid),
+ *		  aarg2 = u.shell, aarg3 = u.last, aarg4 = u.first,
+ *		  aarg5 = u.middle, aarg6 = text(u.status),
+ *		  aarg7 = u.mit_id, aarg8 = u.mit_year)
+ *		where qual
+ */
+	EXEC SQL SELECT login, uid, shell, last, first, middle,
+	    text(status), mit_id, mit_year
+	  INTO :aarg0, :aarg1, :aarg2, :aarg3, :aarg4, :aarg5,
+	    :aarg6, :aarg7, :aarg8
+	  FROM users WHERE :qual;
 	afterc = 9;
     } else if (!strcmp(table, "machine")) {
-##	retrieve (aarg0 = m.name, aarg1 = m.type) where qual
+/*
+ *	retrieve (aarg0 = m.name, aarg1 = m.type) where qual
+ */
+	EXEC SQL SELECT name, type INTO :aarg0, :aarg1
+	  FROM machine WHERE :qual;
 	afterc = 2;
     } else if (!strcmp(table, "cluster")) {
-##	retrieve (aarg0 = c.name, aarg1 = c.desc, aarg2 = c.location)
-##	  	where qual
+/*
+ *	retrieve (aarg0 = c.name, aarg1 = c.desc, aarg2 = c.location)
+ *	  	where qual
+ */
+	EXEC SQL SELECT name, desc, location INTO :aarg0, :aarg1, :aarg2
+	  FROM cluster WHERE :qual;
 	afterc = 3;
     } else if (!strcmp(table, "mcmap")) {
 	strcpy(aarg0, argv[0]);
@@ -245,35 +297,58 @@ char **argv;
 	strcpy(aarg2, argv[2]);
 	afterc = 3;
     } else if (!strcmp(table, "filesys")) {
-##	range of fs is filesys
-##	retrieve (aarg0 = fs.label, aarg1 = fs.type,
-##		  aarg2 = text(fs.mach_id),
-##		  aarg3 = fs.name, aarg4 = fs.mount, aarg5 = fs.access,
-##		  aarg6 = fs.comments, aarg7 = text(fs.owner),
-##		  aarg8 = text(fs.owners), aarg9 = text(fs.createflg),
-##		  aarg10 = fs.lockertype)
-##	  where qual
+/*
+ *	range of fs is filesys
+ *	retrieve (aarg0 = fs.label, aarg1 = fs.type,
+ *		  aarg2 = text(fs.mach_id),
+ *		  aarg3 = fs.name, aarg4 = fs.mount, aarg5 = fs.access,
+ *		  aarg6 = fs.comments, aarg7 = text(fs.owner),
+ *		  aarg8 = text(fs.owners), aarg9 = text(fs.createflg),
+ *		  aarg10 = fs.lockertype)
+ *	  where qual
+ */
+        EXEC SQL SELECT label, type, text(mach_id), name, mount, access,
+	    comments, text(owner), text(owners), text(createflag), lockertype
+          INTO :aarg0, :aarg1, :aarg2, :aarg3, :aarg4, :aarg5, :aarg6,
+	      :aarg7, :aarg8, :aarg9, :aarg10
+          FROM filesys fs WHERE :qual;
 	afterc = 11;
     } else if (!strcmp(table, "quota")) {
 	strcpy(aarg0, "?");
 	strcpy(aarg1, argv[1]);
 	strcpy(aarg2, "?");
-	sprintf(buffer, "%s and filesys.filsys_id = q.filsys_id", qual);
+	sprintf(buffer, "%s and fs.filsys_id = q.filsys_id", qual);
 	qual = buffer;
-##	range of q is quota
-##	retrieve (aarg3 = text(q.quota), aarg4 = filesys.name) where qual
+/*
+ *	range of q is quota
+ *	retrieve (aarg3 = text(q.quota), aarg4 = filesys.name) where qual
+ */
+	EXEC SQL SELECT text(q.quota), fs.name INTO :aarg3, :aarg4
+	  FROM quota q, filesys fs WHERE :qual;
 	afterc = 5;
     } else if (!strcmp(table, "list")) {
-##	retrieve (aarg0 = l.name, aarg1 = text(l.active),
-##		  aarg2 = text(l.public), aarg3 = text(l.hidden),
-##		  aarg4 = text(l.maillist), aarg5 = text(l.group),
-##		  aarg6 = text(l.gid), aarg7 = l.acl_type,
-##		  aarg8 = text(l.acl_id), aarg9 = l.desc)
-##	  where qual
+/*
+ *	retrieve (aarg0 = l.name, aarg1 = text(l.active),
+ *		  aarg2 = text(l.public), aarg3 = text(l.hidden),
+ *		  aarg4 = text(l.maillist), aarg5 = text(l.group),
+ *		  aarg6 = text(l.gid), aarg7 = l.acl_type,
+ *		  aarg8 = text(l.acl_id), aarg9 = l.desc)
+ *	  where qual
+ */
+	EXEC SQL SELECT name, text(active), text(public), text(hidden),
+	    text(maillist), text(grouplist), text(gid), acl_type,
+	    text(acl_id), desc
+	  INTO :aarg0, :aarg1, :aarg2, :aarg3, :aarg4, :aarg5, :aarg6,
+	     :aarg7, :aarg8, :aarg9
+	  FROM list WHERE :qual;
 	afterc = 10;
     } else if (!strcmp(table, "members")) {
 	id = (int) argv[0];
-##	retrieve (aarg3 = text(list.group)) where list.list_id = id
+/*
+ *	retrieve (aarg3 = text(list.group)) where list.list_id = id
+ */
+	EXEC SQL SELECT text(list.group) INTO :aarg3 FROM list
+	  WHERE list_id = :id;
 	name = malloc(0);
 	id_to_name(id, "LIST", &name);
 	strcpy(aarg0, name);
@@ -327,7 +402,7 @@ char **argv;
     strcat(buffer, "])");
     com_err(whoami, 0, buffer);
 #endif DEBUG
-##}
+}
 
 
 /* Called when the current transaction is committed to start any queued

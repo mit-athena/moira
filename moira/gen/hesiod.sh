@@ -1,7 +1,7 @@
 #!/bin/csh -f -x
 # This script performs updates of hesiod files on hesiod servers.  
 # 	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/hesiod.sh,v $
-echo	'$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/hesiod.sh,v 1.8 1989-09-26 18:27:32 mar Exp $'
+echo	'$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/hesiod.sh,v 1.9 1990-02-27 18:21:22 mar Exp $'
 
 # The following exit codes are defined and MUST BE CONSISTENT with the
 # SMS error codes the library uses:
@@ -18,8 +18,6 @@ set TARFILE=/tmp/hesiod.out
 set SRC_DIR=/etc/athena/_nameserver
 # Directory into which we will put the final product
 set DEST_DIR=/etc/athena/nameserver
-# Files to verify nameserver loaded-if empty, no check is done
-set CHECKFILES=""
 
 # Create the destination directory if it doesn't exist
 if (! -d $DEST_DIR) then
@@ -71,7 +69,9 @@ end
 rm -f /etc/named.pid
 
 # Restart named.
-(unlimit; /etc/named)
+(unlimit; /etc/named&)
+sleep 5
+mv /etc/named.pid /etc/named.pid.restart
 
 # This timeout is implemented by having the shell check TIMEOUT times
 # for the existance of /etc/named.pid and to sleep INTERVAL seconds
@@ -88,19 +88,6 @@ end
 
 # Did it time out?
 if ($i == $TIMEOUT) exit $SMS_NAMED
-
-# Verify that the nameserver is answering queries for the new data
-cd $DEST_DIR
-foreach f ( $CHECKFILES )
-        set temp=`tac $f | egrep -v '^;' | head -1`
-        set hes=`/bin/echo $temp | awk '{print $1}'`
-        set ent=`echo $hes | rev | sed 's/\(.*\)\.\(.*\)/\2/' | rev`
-        set type=`echo $hes | rev | sed 's/\(.*\)\.\(.*\)/\1/' | rev`
-        hesinfo $ent $type > /dev/null
-	if ($status == 1) then
-                exit $SMS_HESFILE
-        endif
-end
 
 # Clean up!
 /bin/rm -f $TARFILE

@@ -1,4 +1,4 @@
-/* $Id: mailhub.pc,v 1.8 1999-01-18 21:44:34 danw Exp $
+/* $Id: mailhub.pc,v 1.9 1999-01-19 03:25:44 danw Exp $
  *
  * This generates the /usr/lib/aliases file for the mailhub.
  *
@@ -22,7 +22,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/mailhub.pc,v 1.8 1999-01-18 21:44:34 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/mailhub.pc,v 1.9 1999-01-19 03:25:44 danw Exp $");
 
 char *whoami = "mailhub.gen";
 char *db = "moira/moira";
@@ -36,7 +36,7 @@ char *divide = "##############################################################";
 
 FILE *out = stdout;
 
-struct hash *users, *machines, *strings, *lists, *names;
+struct hash *users, *machines, *strings, *lists;
 struct user {
   char *login;
   char *pobox;
@@ -54,20 +54,11 @@ struct list {
   int acl_id;
   struct member *m;
 };
-struct names {
-  char *name;
-  struct names *next;
-  int keep;
-  int id;
-};
 
 void get_info(void);
 void save_mlist(int id, void *list, void *force);
-void insert_login(int id, void *user, void *hint);
-void insert_name(char *s, int id, int nodups, int copy);
-int hashstr(char *s);
-void sort_info(void);
-void output_data(int dummy, void *names, void *out);
+int check_string(char *s);
+void output_login(int dummy, void *names, void *out);
 void output_mlist(int id, struct list *l);
 void put_fill(FILE *aliases, char *string);
 void do_people(void);
@@ -119,11 +110,15 @@ int main(int argc, char **argv)
 
   EXEC SQL COMMIT;
 
-  fprintf(stderr, "Sorting Info\n");
-  sort_info();
+  incount = 0;
+  fprintf(out, "\n%s\n# Mailing lists\n%s\n\n", divide, divide);
+  hash_step(lists, save_mlist, FALSE);
+  fprintf(stderr, "Output %d lists\n", incount);
 
-  fprintf(stderr, "Dumping information\n");
-  do_people();
+  incount = 0;
+  fprintf(out, "\n%s\n# People\n%s\n\n", divide, divide);
+  hash_step(users, output_login, out);
+  fprintf(stderr, "Output %d users\n", incount);
 
   fprintf(out, "\n%s\n# End of aliases file\n", divide);
 
@@ -242,6 +237,8 @@ void get_info(void)
 	u->pobox = hash_lookup(strings, bid);
       else
 	u->pobox = NULL;
+
+      check_string(u->login);
       if (hash_store(users, id, u) < 0)
 	{
 	  fprintf(stderr, "Out of memory!\n");
@@ -339,16 +336,17 @@ void save_mlist(int id, void *list, void *force)
   struct member *m;
   struct list *l = list, *l1;
 
-  if (l->maillist > 1 || (l->maillist == 0 && !force))
+  if (l->maillist > 1 || (l->maillist == 0 && !force) ||
+      !check_string(l->name))
     return;
 
+  /* If user group appears on list, replace with user. */
   if (l->m && l->m->next == NULL && !strcasecmp(l->name, l->m->name))
     {
       l->maillist = 3;
       return;
     }
   l->maillist = 2;
-  insert_name(l->name, -1, TRUE, FALSE);
   output_mlist(id, l);
 
   if (l->acl_t == 'L' && (l1 = hash_lookup(lists, l->acl_id)))
@@ -361,156 +359,14 @@ void save_mlist(int id, void *list, void *force)
     }
 }
 
-
-void insert_login(int id, void *user, void *hint)
+void output_login(int dummy, void *user, void *out)
 {
   struct user *u = user;
-  if (u->pobox && u->login[0] != '#')
-    insert_name(u->login, id, TRUE, FALSE);
-}
-
-void insert_name(char *s, int id, int nodups, int copy)
-{
-  int code;
-  struct names *ns;
 
   incount++;
-  code = hashstr(s);
-  ns = hash_lookup(names, code);
-  if (!ns)
-    {
-      if (!(ns = malloc(sizeof(struct names))))
-	{
-	  fprintf(stderr, "ran out of memory inserting name (sorting)\n");
-	  exit(MR_NO_MEM);
-	}
-      if (copy)
-	ns->name = strdup(s);
-      else
-	ns->name = s;
-      ns->keep = nodups;
-      ns->id = id;
-      ns->next = NULL;
-      if (hash_store(names, code, ns) < 0)
-	{
-	  fprintf(stderr, "Out of memory!\n");
-	  exit(MR_NO_MEM);
-	}
-      return;
-    }
-  if (strcasecmp(ns->name, s))
-    {
-      while (ns->next)
-	{
-	  ns = ns->next;
-	  if (!strcasecmp(ns->name, s))
-	    goto foundns;
-	}
-      if (!(ns->next = malloc(sizeof(struct names))))
-	{
-	  fprintf(stderr, "ran out of memory insterting name (sorting)\n");
-	  exit(MR_NO_MEM);
-	}
-      ns = ns->next;
-      if (copy)
-	ns->name = strdup(s);
-      else
-	ns->name = s;
-      ns->keep = nodups;
-      ns->id = id;
-      ns->next = NULL;
-      return;
-    }
-foundns:
-  if (nodups || ns->keep)
-    {
-      if (nodups && ns->keep)
-	fprintf(stderr, "duplicated name: %s\n", s);
-      return;
-    }
-  ns->id = 0;
+  if (u->pobox && check_string(u->login) && u->login[0] != '#')
+    fprintf(out, "%s: %s\n", u->login, u->pobox);
 }
-
-
-/* Illegal chars: ! " % ( ) , / : ; < = > @ [ \ ] ^ { | } */
-
-static int illegalchars[] = {
-  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, /* ^@ - ^O */
-  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, /* ^P - ^_ */
-  0, 1, 1, 0, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0, 0, 1, /* SPACE - / */
-  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, /* 0 - ? */
-  1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, /* @ - O */
-  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, /* P - _ */
-  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, /* ` - o */
-  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 1, /* p - ^? */
-  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-};
-
-
-/* While hashing the string, punt any illegal characters */
-
-int hashstr(char *s)
-{
-  int result;
-  int c;
-
-  for (result = 0; (c = *s); s++)
-    {
-      if (illegalchars[c])
-	{
-	  char *p;
-	  for (p = s; *p; p++)
-	    *p = p[1];
-	  continue;
-	}
-      if (isupper(c))
-	c = *s = tolower(c);
-      result = (result << 5) - result + c - '`';
-    }
-  return result < 0 ? -result : result;
-}
-
-
-void sort_info(void)
-{
-  names = create_hash(20001);
-  hash_step(users, insert_login, NULL);
-  incount = 0;
-  fprintf(out, "\n%s\n# Mailing lists\n%s\n", divide, divide);
-  hash_step(lists, save_mlist, FALSE);
-  fprintf(stderr, "Output %d lists\n", incount);
-}
-
-
-void output_data(int dummy, void *names, void *out)
-{
-  struct names *ns, *nms = names;
-  struct user *u;
-
-  incount++;
-  for (ns = nms; ns; ns = ns->next)
-    {
-      if (!ns->name[0] || !ns->name[1])
-	{
-	  fprintf(stderr, "punting %s due to short name\n", ns->name);
-	  continue;
-	}
-      if (ns->id > 0)
-	{
-	  u = hash_lookup(users, ns->id);
-	  if (u->pobox)
-	    fprintf(out, "%s: %s\n", ns->name, u->pobox);
-	}
-    }
-}
-
 
 void output_mlist(int id, struct list *l)
 {
@@ -628,10 +484,37 @@ void put_fill(FILE *aliases, char *string)
 }
 
 
-void do_people(void)
+/* Illegal chars: this should correspond to the array used by
+ * setup_alis. */
+
+static int illegalchars[] = {
+  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, /* ^@ - ^O */
+  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, /* ^P - ^_ */
+  1, 1, 1, 0, 0, 1, 0, 0, 1, 1, 1, 0, 1, 0, 0, 1, /* SPACE - / */
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, /* 0 - ? */
+  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, /* @ - O */
+  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, /* P - _ */
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, /* ` - o */
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 1, /* p - ^? */
+  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+};
+
+int check_string(char *s)
 {
-  incount = 0;
-  fprintf(out, "\n%s\n# People\n%s\n", divide, divide);
-  hash_step(names, output_data, out);
-  fprintf(stderr, "Output %d entries\n", incount);
+  for (; *s; s++)
+    {
+      if (isupper(*s))
+	*s = tolower(*s);
+
+      if (illegalchars[(unsigned) *s])
+	return 0;
+    }
+  return 1;
 }

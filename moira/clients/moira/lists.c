@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v 1.12 1988-09-30 17:08:30 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v 1.13 1988-10-03 17:49:04 mar Exp $";
 #endif lint
 
 /*	This is the file lists.c for the SMS Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v 1.12 1988-09-30 17:08:30 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v 1.13 1988-10-03 17:49:04 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -61,8 +61,7 @@ char ** info;
 {
     char buf[BUFSIZ];
 
-    Put_message(" ");
-    sprintf(buf, "Item Administered: %-20s Name: %s", info[ACE_TYPE], 
+    sprintf(buf, "Item: %-20s Name: %s", info[ACE_TYPE], 
 	    info[ACE_NAME]);
     Put_message(buf);
 }

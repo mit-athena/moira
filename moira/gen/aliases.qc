@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/aliases.qc,v 1.14 1990-03-19 19:05:48 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/aliases.qc,v 1.15 1990-04-10 12:42:07 mar Exp $
  *
  * This generates the /usr/lib/aliases mail aliases file for the mailhub.
  * The aliases file will contain:
@@ -110,7 +110,6 @@ char **argv;
 static int ingerr(num)
     int *num;
 {
-    char buf[256];
     int ingres_errno;
 
     switch (*num) {
@@ -270,29 +269,27 @@ int force;
 	return;
     }
     l->maillist = 2;
-    output_mlist(id, l, out);
+    output_mlist(id, l);
 
     if (l->acl_t == 'L' && (l1 = (struct list *)hash_lookup(lists, l->acl_id)))
       save_mlist(0, l1, 1);
     
     for (m = l->m; m; m = m->next) {
 	if (m->list_id && (l1 = (struct list *)hash_lookup(lists, m->list_id)))
-	  save_mlist(0, l1, 0);
+	  save_mlist(0, l1, 1);
     }
 }
 
 
 int lwid, bol, awid;
 
-output_mlist(id, l, dummy)
+output_mlist(id, l)
 int id;
 register struct list *l;
-int dummy;
 {
     struct list *l1;
     register struct member *m;
     struct user *u;
-    int id;
 
     put_fill(out, l->description);
     if (l->acl_t ==  'L') {
@@ -380,9 +377,6 @@ FILE *out;
 do_poboxes(out)
 FILE *out;
 {
-    register char *p;
-    char *index();
-
     fprintf(out, "\n%s\n# User Poboxes\n%s\n", divide, divide);
 
     hash_step(users, do_pobox, out);

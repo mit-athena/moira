@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/afssync/ptutils.c,v 1.1 1989-09-23 18:46:15 mar Exp $ */
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/afssync/ptutils.c,v 1.2 1989-09-23 18:47:07 mar Exp $ */
 /* $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/afssync/ptutils.c,v $ */
 
 
@@ -21,6 +21,7 @@
 #include <stdio.h>
 #include <strings.h>
 #include <lock.h>
+#define UBIK_INTERNALS
 #include <ubik.h>
 #include <rx/xdr.h>
 #include "print.h"
@@ -512,6 +513,7 @@ Initdb()
     static long initd=0;
     static struct ubik_version curver;
     struct ubik_version newver;
+    struct ubik_hdr header;
 
     /* init the database.  We'll try reading it, but if we're starting from scratch, we'll have to do a write transaction. */
 
@@ -526,14 +528,6 @@ Initdb()
 	initd = 1;
 	bzero(&curver,sizeof(curver));
     }
-    code = ubik_GetVersion(tt,&newver);
-    if (vcmp(curver,newver) == 0) {
-	/* same version */
-	code = ubik_EndTrans(tt);
-	if (code) return code;
-	return PRSUCCESS;
-    }
-    bcopy(&newver,&curver,sizeof(struct ubik_version));
     len = sizeof(cheader);
     code = pr_Read(tt, 0, 0, (char *) &cheader, len);
     if (code != 0) {
@@ -550,11 +544,21 @@ Initdb()
     /* else we need to build a database */
     code = ubik_EndTrans(tt);
     if (code) return code;
+    printf("Creating new database\n");
     code = ubik_BeginTrans(dbase,UBIK_WRITETRANS, &tt);
     if (code) return code;
     code = ubik_SetLock(tt,1,1,LOCKWRITE);
     if (code) {
 	ubik_AbortTrans(tt);
+	return code;
+    }
+    header.magic = htonl(UBIK_MAGIC);
+    header.pad1 = 0;
+    header.size = 0;
+    header.version.epoch = header.version.counter = htonl(1);
+    code = pr_Write(tt, 0, -(HDRSIZE), (char *)&header, sizeof(header));
+    if (code != 0) {
+	printf("prserver: couldn't write ubik header - code is %d.\n", code);
 	return code;
     }
     cheader.headerSize = htonl(sizeof(cheader));
@@ -765,7 +769,3 @@ long newid;
     }
     return PRSUCCESS;
 }
-
-	
-
-    

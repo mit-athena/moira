@@ -1,18 +1,18 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/include/gdb.h,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/include/gdb.h,v 1.1 1987-08-02 22:16:41 wesommer Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/include/gdb.h,v 1.2 1988-07-31 18:25:54 mar Exp $
  */
 
-/************************************************************************/
-/*	
-/*			gdb.h
-/*	
-/*	Includes for the global database facility (gdb)
-/*	
-/*	Author: Noah Mendelsohn
-/*	Copyright: 1986 MIT Project Athena
-/*	
-/************************************************************************/
+/************************************************************************
+ *	
+ *			gdb.h
+ *	
+ *	Includes for the global database facility (gdb)
+ *	
+ *	Author: Noah Mendelsohn
+ *	Copyright: 1986 MIT Project Athena
+ *	
+ ************************************************************************/
 
 /*
  * Note: following include may safely be done redundantly, so it doesn't
@@ -52,29 +52,29 @@
 
 
 
-	/*----------------------------------------------------------*/
-	/*	
-	/*			GDB_GIVEUP
-	/*	
-	/*	This macro is called with a string argument whenever a
-	/*	fatal error is encounterd.  If you re-define this
-	/*	macro, you can control the disposition of fatal gdb
-	/*	errors.
-	/*	
-	/*	The gdb library must be recompiled for the change to
-	/*	take effect.  That will have to be fixed sometime.
-	/*	
-	/*----------------------------------------------------------*/
+	/*----------------------------------------------------------*
+	 *	
+	 *			GDB_GIVEUP
+	 *	
+	 *	This macro is called with a string argument whenever a
+	 *	fatal error is encounterd.  If you re-define this
+	 *	macro, you can control the disposition of fatal gdb
+	 *	errors.
+	 *	
+	 *	The gdb library must be recompiled for the change to
+	 *	take effect.  That will have to be fixed sometime.
+	 *	
+	 *----------------------------------------------------------*/
 
 #define GDB_GIVEUP(errormsg) g_givup(errormsg);
 
-	/*----------------------------------------------------------*/
-	/*	
-	/*	                GDB_ROUNDUP
-	/*	
-	/*	Round a number up to the next specified boundary.
-	/*	
-	/*----------------------------------------------------------*/
+	/*----------------------------------------------------------*
+	 *	
+	 *	                GDB_ROUNDUP
+	 *	
+	 *	Round a number up to the next specified boundary.
+	 *	
+	 *----------------------------------------------------------*/
 
 #define GDB_ROUNDUP(n,b) ((((n)+(b)-1)/(b))*(b))
 
@@ -94,13 +94,13 @@ extern FILE *gdb_log;				/* file descriptor for */
  * and should be severed.
  */
 extern int gdb_conok;					
-/************************************************************************/
-/*	
-/*			    USER IDENTIFICATION
-/*	
-/*	gdb_init puts the user's i.d. and hostname as strings here.
-/*	
-/************************************************************************/
+/************************************************************************
+ *	
+ *			    USER IDENTIFICATION
+ *	
+ *	gdb_init puts the user's i.d. and hostname as strings here.
+ *	
+ ************************************************************************/
 
 extern char *gdb_uname;				/* user's string name */
 extern char *gdb_host;				/* name of local host */
@@ -108,27 +108,27 @@ extern char *gdb_host;				/* name of local host */
 
 
 
-/************************************************************************/
-/*	
-/*	
-/*			  TYPE MANAGEMENT
-/*	
-/*	Declarations used to control the definition and use of 'types'
-/*	as supported by the global database system.  Most of the 
-/*	declarations for 'System Defined Types' will not be of concern
-/*	to typical users, with the exception of the type names like
-/*	INTEGER_T which are defined below.
-/*	
-/*	In this implementation, user defined types are added
-/*	dynamically during execution by calling the appropriate
-/*	functions.  The define GDB_MAX_TYPES below sets the maximum
-/*	total number of types, including both system and user defined,
-/*	which the system can support for any one application.  When
-/*	GDB_MAX_TYPES is changed, the libary must be re-built.  Space
-/*	for a two dimensional array, with one word for each property
-/*	of each possible type, is allocated statically in the library.
-/*	
-/************************************************************************/
+/************************************************************************
+ *	
+ *	
+ *			  TYPE MANAGEMENT
+ *	
+ *	Declarations used to control the definition and use of 'types'
+ *	as supported by the global database system.  Most of the 
+ *	declarations for 'System Defined Types' will not be of concern
+ *	to typical users, with the exception of the type names like
+ *	INTEGER_T which are defined below.
+ *	
+ *	In this implementation, user defined types are added
+ *	dynamically during execution by calling the appropriate
+ *	functions.  The define GDB_MAX_TYPES below sets the maximum
+ *	total number of types, including both system and user defined,
+ *	which the system can support for any one application.  When
+ *	GDB_MAX_TYPES is changed, the libary must be re-built.  Space
+ *	for a two dimensional array, with one word for each property
+ *	of each possible type, is allocated statically in the library.
+ *	
+ ************************************************************************/
 
 
 /*
@@ -145,16 +145,16 @@ typedef int FIELD_TYPE;				/* data needed to repre- */
 						/* a row index in the type */
 						/* definition table */
 
-	/*----------------------------------------------------------*/
-	/*	
-	/*		System defined types
-	/*	
-	/*	WARNING: Any changes to these type definitions must be
-	/*	carefully matched with the initializations in the
-	/*	gdb_i_stype routine in gdb_stype.c.  Mistakes in these
-	/*	tables may be VERY difficult to debug.  Be careful!
-	/*	
-	/*----------------------------------------------------------*/
+	/*----------------------------------------------------------
+	 *	
+	 *		System defined types
+	 *	
+	 *	WARNING: Any changes to these type definitions must be
+	 *	carefully matched with the initializations in the
+	 *	gdb_i_stype routine in gdb_stype.c.  Mistakes in these
+	 *	tables may be VERY difficult to debug.  Be careful!
+	 *	
+	 *----------------------------------------------------------*/
 
 /*
  * Primitive types for ingres data
@@ -182,11 +182,11 @@ typedef int FIELD_TYPE;				/* data needed to repre- */
 
 #define SYSTEM_TYPE_COUNT 8
 
-	/*----------------------------------------------------------*/
-	/*	
-	/*		Type descriptor tables
-	/*	
-	/*----------------------------------------------------------*/
+	/*----------------------------------------------------------
+	 *	
+	 *		Type descriptor tables
+	 *	
+	 *----------------------------------------------------------*/
 
 /*
  * 			gdb_prop_union
@@ -245,31 +245,31 @@ extern gdb_type_def g_type_table[GDB_MAX_TYPES];
 extern int gdb_n_types;				/* number of entries in */
 						/* table */
 
-	/*----------------------------------------------------------*/
-	/*	
-	/*	    Macros for accessing properties
-	/*	
-	/*----------------------------------------------------------*/
+	/*----------------------------------------------------------
+	 *	
+	 *	    Macros for accessing properties
+	 *	
+	 *----------------------------------------------------------*/
 
 #define INT_PROPERTY(type, prop) (g_type_table[type][prop].i) 
 #define STR_PROPERTY(type, prop) (g_type_table[type][prop].cp) 
 #define FCN_PROPERTY(type, prop) (*g_type_table[type][prop].f) 
 
 
-/************************************************************************/
-/*	
-/*			   STRUCTURED DATA
-/*	
-/*	Stuff needed to declare and manage TUPLES, TUPLE_DESCRIPTORS
-/*	and RELATIONS.
-/*	
-/************************************************************************/
+/************************************************************************
+ *	
+ *			   STRUCTURED DATA
+ *	
+ *	Stuff needed to declare and manage TUPLES, TUPLE_DESCRIPTORS
+ *	and RELATIONS.
+ *	
+ ************************************************************************/
 
-	/*----------------------------------------------------------*/
-	/*	
-	/*		   TUPLE_DESCRIPTOR
-	/*	
-	/*----------------------------------------------------------*/
+	/*----------------------------------------------------------
+	 *	
+	 *		   TUPLE_DESCRIPTOR
+	 *	
+	 *----------------------------------------------------------*/
 
 #define GDB_DESC_ID 0x54504400			/* "TPD" */
 
@@ -312,16 +312,16 @@ typedef struct tupl_desc *TUPLE_DESCRIPTOR;	/* use this to declare a */
 
 #define gdb_descriptor_length(num_flds) (sizeof(struct tupl_desc) + ((num_flds)-1) * sizeof(struct tupld_var))
 
-	/*----------------------------------------------------------*/
-	/*	
-	/*			TUPLE
-	/*	
-	/*	tuple_dat is allocated by the create_tuple routine.
-	/*	
-	/*	TUPLE may be used in user code to declare a handle
-	/*	on a tuple.
-	/*	
-	/*----------------------------------------------------------*/
+	/*----------------------------------------------------------
+	 *	
+	 *			TUPLE
+	 *	
+	 *	tuple_dat is allocated by the create_tuple routine.
+	 *	
+	 *	TUPLE may be used in user code to declare a handle
+	 *	on a tuple.
+	 *	
+	 *----------------------------------------------------------*/
 
 #define GDB_TUP_ID 0x54555000
 
@@ -340,17 +340,17 @@ struct tuple_dat {
 };
 
 
-	/*----------------------------------------------------------*/
-	/*	
-	/*		      RELATION
-	/*	
-	/*	rel_dat is allocated by the create_relation
-	/*	routine.
-	/*	
-	/*	RELATION may be used in user code to declare a handle
-	/*	on a relation.
-	/*	
-	/*----------------------------------------------------------*/
+	/*----------------------------------------------------------
+	 *	
+	 *		      RELATION
+	 *	
+	 *	rel_dat is allocated by the create_relation
+	 *	routine.
+	 *	
+	 *	RELATION may be used in user code to declare a handle
+	 *	on a relation.
+	 *	
+	 *----------------------------------------------------------*/
 
 #define GDB_REL_ID 0x52454c00
 
@@ -372,18 +372,18 @@ struct rel_dat {
 
 typedef struct rel_dat *RELATION;		/* handle on a relation */
 
-/************************************************************************/
-/*	
-/*		      transport LAYER DECLARATIONS
-/*	
-/*	Declares the state maintenance structures for full duplex 
-/*	connections with asynchronous transmission capability.  Most
-/*	users need only know that the type CONNECTION is defined, and
-/*	that it may be treated as a pointer for most purposes (i.e. it
-/*	is compact, and copying it does not actually copy the connection
-/*	state.)
-/*	
-/************************************************************************/
+/************************************************************************
+ *	
+ *		      transport LAYER DECLARATIONS
+ *	
+ *	Declares the state maintenance structures for full duplex 
+ *	connections with asynchronous transmission capability.  Most
+ *	users need only know that the type CONNECTION is defined, and
+ *	that it may be treated as a pointer for most purposes (i.e. it
+ *	is compact, and copying it does not actually copy the connection
+ *	state.)
+ *	
+ ************************************************************************/
 
 #define GDB_PROTOCOL_VERSION 0x01		/* version of the gdb */
 						/* protocols that we're */
@@ -414,16 +414,16 @@ typedef struct rel_dat *RELATION;		/* handle on a relation */
 #define GDB_MAX_SOCK_WRITE 0x00ffffff
 #endif
 
-	/*----------------------------------------------------------*/
-	/*	
-	/*	     Declarations for HALF_CONNECTIONS
-	/*	
-	/*	Each full duplex connection has associated with it 
-	/*	two simplex half-connections, each of which 
-	/*	has its own queue of pending operations.  The
-	/*	following describes the state of a half-connection.
-	/*	
-	/*----------------------------------------------------------*/
+	/*----------------------------------------------------------
+	 *	
+	 *	     Declarations for HALF_CONNECTIONS
+	 *	
+	 *	Each full duplex connection has associated with it 
+	 *	two simplex half-connections, each of which 
+	 *	has its own queue of pending operations.  The
+	 *	following describes the state of a half-connection.
+	 *	
+	 *----------------------------------------------------------*/
 
 struct half_con_data {
        /*
@@ -490,11 +490,11 @@ struct half_con_data {
 typedef struct half_con_data *HALF_CONNECTION;
 
 
-	/*----------------------------------------------------------*/
-	/*	
-	/*	     Declarations for CONNECTIONS
-	/*	
-	/*----------------------------------------------------------*/
+	/*----------------------------------------------------------
+	 *	
+	 *	     Declarations for CONNECTIONS
+	 *	
+	 *----------------------------------------------------------*/
 
 #define GDB_CON_ID 0x434f4e00 /*"CON"*/
 
@@ -545,26 +545,26 @@ typedef struct con_data *CONNECTION;		/* the only externally */
 						/* session*/
 
 
-	/*----------------------------------------------------------*/
-	/*	
-	/*			gdb_cons
-	/*	
-	/*	This is the array of connection control data 
-	/*	structures for gdb.  Every connection has its 
-	/*	structure stored here, but they are in no 
-	/*	particular order.  Because the connection data
-	/*	itself cannot be moved (due to possible dangling
-	/*	pointers), there may be some unused connections 
-	/*	in the middle of this array.  gdb_mcons is the
-	/*	1 based number of the highest connection which is
-	/*	actually in use at this time.  This is a considerable
-	/*	optimization for the typical case where very few
-	/*	are in use, and turnover is low.
-	/*	
-	/*	These are externs for globals defined in gdb_lib.h
-	/*	and included by gdb.c.
-	/*	
-	/*----------------------------------------------------------*/
+	/*----------------------------------------------------------
+	 *	
+	 *			gdb_cons
+	 *	
+	 *	This is the array of connection control data 
+	 *	structures for gdb.  Every connection has its 
+	 *	structure stored here, but they are in no 
+	 *	particular order.  Because the connection data
+	 *	itself cannot be moved (due to possible dangling
+	 *	pointers), there may be some unused connections 
+	 *	in the middle of this array.  gdb_mcons is the
+	 *	1 based number of the highest connection which is
+	 *	actually in use at this time.  This is a considerable
+	 *	optimization for the typical case where very few
+	 *	are in use, and turnover is low.
+	 *	
+	 *	These are externs for globals defined in gdb_lib.h
+	 *	and included by gdb.c.
+	 *	
+	 *----------------------------------------------------------*/
 
 extern int  gdb_mcons;				/* one based number of the */
 						/* highest connection */
@@ -589,11 +589,11 @@ fd_set last_crfds, last_cwfds, last_cefds;	/* these file desc. bit */
 						/* connection related */
 						/* fd's */
 
-	/*----------------------------------------------------------*/
-	/*	
-	/*			OPERATIONS
-	/*	
-	/*----------------------------------------------------------*/
+	/*----------------------------------------------------------
+	 *	
+	 *			OPERATIONS
+	 *	
+	 *----------------------------------------------------------*/
 
 #define GDB_OP_ID 0x4f505200
 
@@ -652,38 +652,38 @@ typedef OPERATION_DATA *OPERATION;		/* a handle on an operation */
 						/* this is what most */
 						/* applications will use */
 
-	/*----------------------------------------------------------*/
-	/*	
-	/*	          STATES OF AN OPERATION
-	/*	
-	/*	These represent the state of an asynchronous, queued
-	/*	operation.  For convenience of the application programmer,
-	/*	some of these are folded together when queried through the
-	/*	operation_status routine.  In particular, operation status
-	/*	returns only one of:
-	/*	
-	/*	OP_NOT_RUNNING, OP_RUNNING, OP_COMPLETE,  or 
-	/*	OP_CANCELLED.
-	/*	
-	/*	Any other status is reported as OP_RUNNING.  This is
-	/*	done on the assumption that it makes correct coding
-	/*	of applications less error-prone, as there are fewer
-	/*	cases to check, and most of them would not be of 
-	/*	interest anyway.
-	/*	
-	/*	Note that OP_CANCELLED may be generated by the system
-	/*	even when no explicit request for cancellation has been
-	/*	issued.  For example, this may occur when a connection
-	/*	is severed unexpectedly.
-	/*	
-	/*	WARNING:  If you change any of the following, be sure
-	/*	to make the equivalent changes to gdb_debug.c.
-	/*	
-	/*	We also define here certain standard values of OP_RESULT,
-	/*	since some return conventions presume that op_status 
-	/*	and op_result values are orthogonal.
-	/*	
-	/*----------------------------------------------------------*/
+	/*----------------------------------------------------------
+	 *	
+	 *	          STATES OF AN OPERATION
+	 *	
+	 *	These represent the state of an asynchronous, queued
+	 *	operation.  For convenience of the application programmer,
+	 *	some of these are folded together when queried through the
+	 *	operation_status routine.  In particular, operation status
+	 *	returns only one of:
+	 *	
+	 *	OP_NOT_RUNNING, OP_RUNNING, OP_COMPLETE,  or 
+	 *	OP_CANCELLED.
+	 *	
+	 *	Any other status is reported as OP_RUNNING.  This is
+	 *	done on the assumption that it makes correct coding
+	 *	of applications less error-prone, as there are fewer
+	 *	cases to check, and most of them would not be of 
+	 *	interest anyway.
+	 *	
+	 *	Note that OP_CANCELLED may be generated by the system
+	 *	even when no explicit request for cancellation has been
+	 *	issued.  For example, this may occur when a connection
+	 *	is severed unexpectedly.
+	 *	
+	 *	WARNING:  If you change any of the following, be sure
+	 *	to make the equivalent changes to gdb_debug.c.
+	 *	
+	 *	We also define here certain standard values of OP_RESULT,
+	 *	since some return conventions presume that op_status 
+	 *	and op_result values are orthogonal.
+	 *	
+	 *----------------------------------------------------------*/
 
 #define OP_SUCCESS     0			/* this value is actually */
 						/* used only in result */
@@ -722,11 +722,11 @@ typedef OPERATION_DATA *OPERATION;		/* a handle on an operation */
 						/* queueing a new operation */
 						/* ahead of itself */
 
-	/*----------------------------------------------------------*/
-	/*	
-	/*		     LIST_OF_OPERATIONS
-	/*	
-	/*----------------------------------------------------------*/
+	/*----------------------------------------------------------
+	 *	
+	 *		     LIST_OF_OPERATIONS
+	 *	
+	 *----------------------------------------------------------*/
 
 struct oper_list {
 	int	count;				/* number of operations */
@@ -741,22 +741,22 @@ typedef struct oper_list *LIST_OF_OPERATIONS;	/* handle on a list */
 #define size_of_list_of_operations(n)					\
 		(sizeof(struct oper_list) + (n-1)*sizeof(OPERATION))
 
-	/*----------------------------------------------------------*/
-	/*	
-	/*			gdb_notime
-	/*	
-	/*	Pass this to select when doing a poll.
-	/*	
-	/*----------------------------------------------------------*/
+	/*----------------------------------------------------------
+	 *	
+	 *			gdb_notime
+	 *	
+	 *	Pass this to select when doing a poll.
+	 *	
+	 *----------------------------------------------------------*/
 
 extern struct timeval gdb_notime;
 
 
-/************************************************************************/
-/*	
-/*		CHECKING ROUTINES IMPLEMENTED AS MACROS
-/*	
-/************************************************************************/
+/************************************************************************
+ *	
+ *		CHECKING ROUTINES IMPLEMENTED AS MACROS
+ *	
+ ************************************************************************/
 
 extern char g_errstr[150];			/* build emsgs here */
 
@@ -793,50 +793,50 @@ extern char g_errstr[150];			/* build emsgs here */
 
 
 
-/************************************************************************/
-/*	
-/*		TRANSPORT ROUTINES IMPLEMENTED AS MACROS
-/*	
-/************************************************************************/
+/************************************************************************
+ *	
+ *		TRANSPORT ROUTINES IMPLEMENTED AS MACROS
+ *	
+ ************************************************************************/
 
-	/*----------------------------------------------------------*/
-	/*	
-	/*		   connection_status
-	/*	
-	/*	Returns the status of the indicated connection.
-	/*	Possible return values are:
-	/*	
-	/*		CON_STOPPED	never started or terminated
-	/*		CON_UP		currently usable
-	/*		CON_STARTING    transient state on way up
-	/*		CON_STOPPING    transient state on way down
-	/*	
-	/*----------------------------------------------------------*/
+	/*----------------------------------------------------------
+	 *	
+	 *		   connection_status
+	 *	
+	 *	Returns the status of the indicated connection.
+	 *	Possible return values are:
+	 *	
+	 *		CON_STOPPED	never started or terminated
+	 *		CON_UP		currently usable
+	 *		CON_STARTING    transient state on way up
+	 *		CON_STOPPING    transient state on way down
+	 *	
+	 *----------------------------------------------------------*/
 
 #define connection_status(con) ((con)->status)
 
-	/*----------------------------------------------------------*/
-	/*	
-	/*		   connection_errno
-	/*	
-	/*	When a connection dies due to an error on a system
-	/*	call, the corresponding errno is recorded in the 
-	/*	connection descriptor.  This macro returns that value.
-	/*	
-	/*----------------------------------------------------------*/
+	/*----------------------------------------------------------
+	 *	
+	 *		   connection_errno
+	 *	
+	 *	When a connection dies due to an error on a system
+	 *	call, the corresponding errno is recorded in the 
+	 *	connection descriptor.  This macro returns that value.
+	 *	
+	 *----------------------------------------------------------*/
 
 #define connection_errno(con) ((con)->errno)
 
 
 
-/************************************************************************/
-/*	
-/*		       SERVER/CLIENT MANAGEMENT
-/*	
-/*	Definitions used in starting and maintaining communication 
-/*	between servers and clients (as opposed to peers.)
-/*	
-/************************************************************************/
+/************************************************************************
+ *	
+ *		       SERVER/CLIENT MANAGEMENT
+ *	
+ *	Definitions used in starting and maintaining communication 
+ *	between servers and clients (as opposed to peers.)
+ *	
+ ************************************************************************/
 
 #define GDB_MAX_SERVER_RETRIES 3		/* maximum number of times */
 						/* clients will accept */
@@ -858,25 +858,25 @@ extern TUPLE_DESCRIPTOR gdb_fmsrv;		/* descriptor for request */
 						/* can exchange between */
 						/* server and client*/
 
-	/*----------------------------------------------------------*/
-	/*	
-	/*	The following are values returned in the disposition
-	/*	field of the response tuple to indicate what the
-	/*	server has decided to do about the connection 
-	/*	request.
-	/*	
-	/*----------------------------------------------------------*/
+	/*----------------------------------------------------------
+	 *	
+	 *	The following are values returned in the disposition
+	 *	field of the response tuple to indicate what the
+	 *	server has decided to do about the connection 
+	 *	request.
+	 *	
+	 *----------------------------------------------------------*/
 
 #define GDB_ACCEPTED 1
 #define GDB_REFUSED  2
 #define GDB_FORWARDED 3
 
-	/*----------------------------------------------------------*/
-	/*	
-	/*	Global variables inherited by a child from a server
-	/*	parent.
-	/*	
-	/*----------------------------------------------------------*/
+	/*----------------------------------------------------------
+	 *	
+	 *	Global variables inherited by a child from a server
+	 *	parent.
+	 *	
+	 *----------------------------------------------------------*/
 
 extern TUPLE gdb_client_tuple;			/* request tuple sent from */
 						/* the client */
@@ -890,33 +890,33 @@ extern int gdb_socklen;				/* length of above */
 
 
 
-/************************************************************************/
-/*	
-/*			DATABASE MANAGEMENT
-/*	
-/*	This layer of GDB provides access to the services of a relational
-/*	database from anywhere in a GDB network.
-/*	
-/************************************************************************/
+/************************************************************************
+ *	
+ *			DATABASE MANAGEMENT
+ *	
+ *	This layer of GDB provides access to the services of a relational
+ *	database from anywhere in a GDB network.
+ *	
+ ************************************************************************/
 
-	/*----------------------------------------------------------*/
-	/*	
-	/*			GDB_DB_SERVICE
-	/*	
-	/*	The name of the service, as found in /etc/services,
-	/*	for GDB database servers.
-	/*	
-	/*----------------------------------------------------------*/
+	/*----------------------------------------------------------
+	 *	
+	 *			GDB_DB_SERVICE
+	 *	
+	 *	The name of the service, as found in /etc/services,
+	 *	for GDB database servers.
+	 *	
+	 *----------------------------------------------------------*/
 
 #define GDB_DB_SERVICE "#9420"
 
-	/*----------------------------------------------------------*/
-	/*	
-	/*			DATABASE
-	/*	
-	/*	Describes a client's active connection to a database.
-	/*	
-	/*----------------------------------------------------------*/
+	/*----------------------------------------------------------
+	 *	
+	 *			DATABASE
+	 *	
+	 *	Describes a client's active connection to a database.
+	 *	
+	 *----------------------------------------------------------*/
 
 #define GDB_DB_ID 0x44420000			/* eye catcher */
 
@@ -940,19 +940,19 @@ struct db_struct {
 
 typedef struct db_struct *DATABASE;
 
-	/*----------------------------------------------------------*/
-	/*	
-	/*	Return codes from DB operations
-	/*	
-	/*----------------------------------------------------------*/
+	/*----------------------------------------------------------
+	 *	
+	 *	Return codes from DB operations
+	 *	
+	 *----------------------------------------------------------*/
 
 #define DB_NO_SUCH_OP 3
 
-	/*----------------------------------------------------------*/
-	/*	
-	/*	Parameters which limit sizes of things
-	/*	
-	/*----------------------------------------------------------*/
+	/*----------------------------------------------------------
+	 *	
+	 *	Parameters which limit sizes of things
+	 *	
+	 *----------------------------------------------------------*/
 
 #define GDB_MAX_QUERY_SIZE 2048			/* length of the longest */
 						/* substituted query */
@@ -971,51 +971,51 @@ typedef struct db_struct *DATABASE;
 						/* is taken for max size of */
 						/* each during query. */
 
-	/*----------------------------------------------------------*/
-	/*	
-	/*	Return codes from database operations
-	/*	
-	/*----------------------------------------------------------*/
+	/*----------------------------------------------------------
+	 *	
+	 *	Return codes from database operations
+	 *	
+	 *----------------------------------------------------------*/
 
 #define DB_PARSE_FAIL (-3)			/* couldn't parse */
 						/* the request string*/
 
 
-/************************************************************************/
-/*	
-/*			DATABASE OPERATIONS IMPLEMENTED
-/*			        AS MACROS
-/*	
-/************************************************************************/
+/************************************************************************
+ *	
+ *			DATABASE OPERATIONS IMPLEMENTED
+ *			        AS MACROS
+ *	
+ ************************************************************************/
 
-	/*----------------------------------------------------------*/
-	/*	
-	/*			DB_STATUS
-	/*	
-	/*----------------------------------------------------------*/
+	/*----------------------------------------------------------
+	 *	
+	 *			DB_STATUS
+	 *	
+	 *----------------------------------------------------------*/
 
 #define DB_STATUS(dbhandle) ((dbhandle)->status)
 
 
 
 
-/************************************************************************/
-/*	
-/*			STRING MANAGEMENT
-/*	
-/*	To allow dynamic manipulation of strings in gdb without
-/*	excessive memory re-allocation, we define a string as a
-/*	counted byte space.  Though this space will frequently be used
-/*	to store a standard null terminated string, that is not
-/*	required.
-/*	
-/*	Current representation for a string is a pointer followed by
-/*	an integer length.  A null pointer indicates a null string, in
-/*	which case the length is arbitrary.  Any other pointer is to
-/*	memory which was allocated by db_alloc in which must be free'd
-/*	eventually with db_free.
-/*	
-/************************************************************************/
+/************************************************************************
+ *	
+ *			STRING MANAGEMENT
+ *	
+ *	To allow dynamic manipulation of strings in gdb without
+ *	excessive memory re-allocation, we define a string as a
+ *	counted byte space.  Though this space will frequently be used
+ *	to store a standard null terminated string, that is not
+ *	required.
+ *	
+ *	Current representation for a string is a pointer followed by
+ *	an integer length.  A null pointer indicates a null string, in
+ *	which case the length is arbitrary.  Any other pointer is to
+ *	memory which was allocated by db_alloc in which must be free'd
+ *	eventually with db_free.
+ *	
+ ************************************************************************/
 
 typedef struct str_dat {
 	char *ptr;				/* pointer to the data */
@@ -1025,34 +1025,34 @@ typedef struct str_dat {
 						/* string stored there) */
 } STRING;
 
-	/*----------------------------------------------------------*/
-	/*	
-	/*	Macros for manipulating strings.  These return
-	/*	the actual data from the string and the size of
-	/*	the data space respectively.  To get the length of
-	/*	the null terminated string which might be stored 
-	/*	there, use strlen(STRING_DATA(string)).
-	/*	
-	/*----------------------------------------------------------*/
+	/*----------------------------------------------------------
+	 *	
+	 *	Macros for manipulating strings.  These return
+	 *	the actual data from the string and the size of
+	 *	the data space respectively.  To get the length of
+	 *	the null terminated string which might be stored 
+	 *	there, use strlen(STRING_DATA(string)).
+	 *	
+	 *----------------------------------------------------------*/
 
 
 #define STRING_DATA(str) ((str).ptr)
 #define MAX_STRING_SIZE(str) ((str).length)
 
 
-/************************************************************************/
-/*	
-/*			MEMORY ALLOCATION
-/*	
-/*	db_alloc and db_free are the externally visible names of
-/*	the memory allocation services.  These actually call the 
-/*	routines pointed to by the vectors gdb_amv and gdb_fmv, which
-/*	default to the supplied routines gdb_am and gdb_fm.  Users
-/*	may supply their own memory allocation by storing over the
-/*	vectors.  This may be done prior to calling gdb_init to 
-/*	insure that all dynamic memory is controlled by the user.
-/*	
-/************************************************************************/
+/************************************************************************
+ *	
+ *			MEMORY ALLOCATION
+ *	
+ *	db_alloc and db_free are the externally visible names of
+ *	the memory allocation services.  These actually call the 
+ *	routines pointed to by the vectors gdb_amv and gdb_fmv, which
+ *	default to the supplied routines gdb_am and gdb_fm.  Users
+ *	may supply their own memory allocation by storing over the
+ *	vectors.  This may be done prior to calling gdb_init to 
+ *	insure that all dynamic memory is controlled by the user.
+ *	
+ ************************************************************************/
 
 #define db_alloc (*gdb_amv)
 #define db_free  (*gdb_fmv)
@@ -1064,17 +1064,17 @@ extern char *((*gdb_amv)());
 extern int  (*gdb_fmv)();
 
 
-/************************************************************************/
-/*	
-/*	      STRUCTURED DATA ROUTINES IMPLEMENTED AS MACROS
-/*	
-/************************************************************************/
+/************************************************************************
+ *	
+ *	      STRUCTURED DATA ROUTINES IMPLEMENTED AS MACROS
+ *	
+ ************************************************************************/
 
-	/*----------------------------------------------------------*/
-	/*	
-	/*	             ADD_TUPLE_TO_RELATION
-	/*	
-	/*----------------------------------------------------------*/
+	/*----------------------------------------------------------
+	 *	
+	 *	             ADD_TUPLE_TO_RELATION
+	 *	
+	 *----------------------------------------------------------*/
 
 #define ADD_TUPLE_TO_RELATION(relation, tuple) 			\
 	{							\
@@ -1084,11 +1084,11 @@ extern int  (*gdb_fmv)();
 		(tuple)->prev->next = tuple;                    \
         }
 
-	/*----------------------------------------------------------*/
-	/*	
-	/*	             ADD_TUPLE_AFTER_TUPLE
-	/*	
-	/*----------------------------------------------------------*/
+	/*----------------------------------------------------------
+	 *	
+	 *	             ADD_TUPLE_AFTER_TUPLE
+	 *	
+	 *----------------------------------------------------------*/
 
 #define ADD_TUPLE_AFTER_TUPLE(relation, tuple, prev_tuple)	\
 	{								\
@@ -1098,11 +1098,11 @@ extern int  (*gdb_fmv)();
 		(prev_tuple)->next = tuple;                    		\
         }
 
-	/*----------------------------------------------------------*/
-	/*	
-	/*	          REMOVE_TUPLE_FROM_RELATION
-	/*	
-	/*----------------------------------------------------------*/
+	/*----------------------------------------------------------
+	 *	
+	 *	          REMOVE_TUPLE_FROM_RELATION
+	 *	
+	 *----------------------------------------------------------*/
 
 #define REMOVE_TUPLE_FROM_RELATION(relation, tuple) 			\
 	{								\
@@ -1111,97 +1111,97 @@ extern int  (*gdb_fmv)();
         }
 
 
-	/*----------------------------------------------------------*/
-	/*	
-	/*	           DESCRIPTOR_FROM_TUPLE
-	/*	
-	/*----------------------------------------------------------*/
+	/*----------------------------------------------------------
+	 *	
+	 *	           DESCRIPTOR_FROM_TUPLE
+	 *	
+	 *----------------------------------------------------------*/
 
 #define DESCRIPTOR_FROM_TUPLE(tuple) ((tuple)->desc)
 
-	/*----------------------------------------------------------*/
-	/*	
-	/*	           DESCRIPTOR_FROM_RELATION
-	/*	
-	/*----------------------------------------------------------*/
+	/*----------------------------------------------------------
+	 *	
+	 *	           DESCRIPTOR_FROM_RELATION
+	 *	
+	 *----------------------------------------------------------*/
 
 #define DESCRIPTOR_FROM_RELATION(relation) ((relation)->desc)
 
-	/*----------------------------------------------------------*/
-	/*	
-	/*		   REFERENCE_TUPLE_DESCRIPTOR
-	/*	
-	/*	Bumps the reference count for a tuple descriptor.
-	/*	Intended only for internal use of GDB.
-	/*	
-	/*----------------------------------------------------------*/
+	/*----------------------------------------------------------
+	 *	
+	 *		   REFERENCE_TUPLE_DESCRIPTOR
+	 *	
+	 *	Bumps the reference count for a tuple descriptor.
+	 *	Intended only for internal use of GDB.
+	 *	
+	 *----------------------------------------------------------*/
 
 #define REFERENCE_TUPLE_DESCRIPTOR(tpd) (++((tpd)->ref_count))
 
-	/*----------------------------------------------------------*/
-	/*	
-	/*		   UNREFERENCE_TUPLE_DESCRIPTOR
-	/*	
-	/*	Decrements the reference count for a tuple descriptor.
-	/*	Intended only for internal use of GDB.  Warning: it
-	/*	is the user's responsibility to use delete_tuple_descriptor
-	/*	instead of this macro in any situation in which the
-	/*	reference count might go to zero.
-	/*	
-	/*----------------------------------------------------------*/
+	/*----------------------------------------------------------
+	 *	
+	 *		   UNREFERENCE_TUPLE_DESCRIPTOR
+	 *	
+	 *	Decrements the reference count for a tuple descriptor.
+	 *	Intended only for internal use of GDB.  Warning: it
+	 *	is the user's responsibility to use delete_tuple_descriptor
+	 *	instead of this macro in any situation in which the
+	 *	reference count might go to zero.
+	 *	
+	 *----------------------------------------------------------*/
 
 #define UNREFERENCE_TUPLE_DESCRIPTOR(tpd) (--((tpd)->ref_count))
 
-	/*----------------------------------------------------------*/
-	/*	
-	/*	                 FIELD_FROM_TUPLE
-	/*	
-	/*----------------------------------------------------------*/
+	/*----------------------------------------------------------
+	 *	
+	 *	                 FIELD_FROM_TUPLE
+	 *	
+	 *----------------------------------------------------------*/
 
 #define FIELD_FROM_TUPLE(tuple, field_index)				\
 	(((tuple)->data) + (((tuple)->desc)->var[field_index].offset))
 
-	/*----------------------------------------------------------*/
-	/*	
-	/*	                FIELD_OFFSET_IN_TUPLE
-	/*	
-	/*----------------------------------------------------------*/
+	/*----------------------------------------------------------
+	 *	
+	 *	                FIELD_OFFSET_IN_TUPLE
+	 *	
+	 *----------------------------------------------------------*/
 
 #define FIELD_OFFSET_IN_TUPLE(tuple_descriptor, field_index)		\
 	((tuple_descriptor)->var[field_index].offset)
 
-	/*----------------------------------------------------------*/
-	/*	
-	/*	                FIELD_TYPE_IN_TUPLE
-	/*	
-	/*----------------------------------------------------------*/
+	/*----------------------------------------------------------
+	 *	
+	 *	                FIELD_TYPE_IN_TUPLE
+	 *	
+	 *----------------------------------------------------------*/
 
 #define FIELD_TYPE_IN_TUPLE(tuple_descriptor, field_index)		\
 	((tuple_descriptor)->var[field_index].type)
 
-	/*----------------------------------------------------------*/
-	/*	
-	/*	              FIRST_TUPLE_IN_RELATION
-	/*	
-	/*----------------------------------------------------------*/
+	/*----------------------------------------------------------
+	 *	
+	 *	              FIRST_TUPLE_IN_RELATION
+	 *	
+	 *----------------------------------------------------------*/
 
 #define FIRST_TUPLE_IN_RELATION(relation)				\
 	(((relation)->first) == (TUPLE)relation ? NULL : (relation)-> first)
 
-	/*----------------------------------------------------------*/
-	/*	
-	/*			NEXT_TUPLE_IN_RELATION
-	/*	
-	/*----------------------------------------------------------*/
+	/*----------------------------------------------------------
+	 *	
+	 *			NEXT_TUPLE_IN_RELATION
+	 *	
+	 *----------------------------------------------------------*/
 
 #define NEXT_TUPLE_IN_RELATION(relation, prev)				\
 	(((prev)->next) == (TUPLE)relation ? NULL : prev->next )
 
-	/*----------------------------------------------------------*/
-	/*	
-	/*			PREV_TUPLE_IN_RELATION
-	/*	
-	/*----------------------------------------------------------*/
+	/*----------------------------------------------------------
+	 *	
+	 *			PREV_TUPLE_IN_RELATION
+	 *	
+	 *----------------------------------------------------------*/
 
 #define PREV_TUPLE_IN_RELATION(relation, next)				\
 	(((next)->prev) == (TUPLE) relation ? NULL : next->prev)
@@ -1209,94 +1209,94 @@ extern int  (*gdb_fmv)();
 
 
 
-/************************************************************************/
-/*	
-/*	TRANSPORT and OPERATION SERVICES IMPLEMENTED AS MACROS
-/*	
-/************************************************************************/
+/************************************************************************
+ *	
+ *	TRANSPORT and OPERATION SERVICES IMPLEMENTED AS MACROS
+ *	
+ ************************************************************************/
 
-	/*----------------------------------------------------------*/
-	/*	
-	/*	             OPERATION_FROM_DATA
-	/*	
-	/*	Given OPERATION_DATA, return the corresponding handle
-	/*	of type OPERATION.  Currently, OPERATION is just
-	/*	implemented as a pointer to OPERATION_DATA.
-	/*	
-	/*----------------------------------------------------------*/
+	/*----------------------------------------------------------
+	 *	
+	 *	             OPERATION_FROM_DATA
+	 *	
+	 *	Given OPERATION_DATA, return the corresponding handle
+	 *	of type OPERATION.  Currently, OPERATION is just
+	 *	implemented as a pointer to OPERATION_DATA.
+	 *	
+	 *----------------------------------------------------------*/
 
 #define OPERATION_FROM_DATA(op_data)					\
 	((OPERATION)&(op_data))
 
-	/*----------------------------------------------------------*/
-	/*	
-	/*	                 OP_TAG
-	/*	
-	/*	Return the tag for a given operation.
-	/*	
-	/*----------------------------------------------------------*/
+	/*----------------------------------------------------------
+	 *	
+	 *	                 OP_TAG
+	 *	
+	 *	Return the tag for a given operation.
+	 *	
+	 *----------------------------------------------------------*/
 
 #define OP_TAG(operation) ((operation)->tag)
 
-	/*----------------------------------------------------------*/
-	/*	
-	/*		       OP_STATUS
-	/*	
-	/*	Return the status of a given operation.  Note that
-	/*	status describes an operations progress through 
-	/*	execution.  It has the same values for all operations.
-	/*	Result describes the final outcome of an operation.
-	/*	It's values depend on the particular operation which
-	/*	was attempted.  
-	/*	
-	/*----------------------------------------------------------*/
+	/*----------------------------------------------------------
+	 *	
+	 *		       OP_STATUS
+	 *	
+	 *	Return the status of a given operation.  Note that
+	 *	status describes an operations progress through 
+	 *	execution.  It has the same values for all operations.
+	 *	Result describes the final outcome of an operation.
+	 *	It's values depend on the particular operation which
+	 *	was attempted.  
+	 *	
+	 *----------------------------------------------------------*/
 
 #define OP_STATUS(operation) ((operation)->status)
 
-	/*----------------------------------------------------------*/
-	/*	
-	/*			OP_DONE
-	/*	
-	/*	True iff the operation is either OP_COMPLETE or
-	/*	OP_CANCELLED.
-	/*	
-	/*----------------------------------------------------------*/
+	/*----------------------------------------------------------
+	 *	
+	 *			OP_DONE
+	 *	
+	 *	True iff the operation is either OP_COMPLETE or
+	 *	OP_CANCELLED.
+	 *	
+	 *----------------------------------------------------------*/
 
 #define OP_DONE(op) ((op)->status == OP_COMPLETE || (op)->status == OP_CANCELLED)
 
-	/*----------------------------------------------------------*/
-	/*	
-	/*		       OP_RESULT
-	/*	
-	/*	Return the result of a given operation.  Note that
-	/*	status describes an operations progress through 
-	/*	execution.  It has the same values for all operations.
-	/*	Result describes the final outcome of an operation.
-	/*	It's values depend on the particular operation which
-	/*	was attempted. The special result value -1 is used 
-	/*	to indicate an invalid value for result.  Generally,
-	/*	-1 is returned when result is accidently queried at
-	/*	a time when OP_STATUS != OPERATION_COMPLETE.
-	/*	
-	/*----------------------------------------------------------*/
+	/*----------------------------------------------------------
+	 *	
+	 *		       OP_RESULT
+	 *	
+	 *	Return the result of a given operation.  Note that
+	 *	status describes an operations progress through 
+	 *	execution.  It has the same values for all operations.
+	 *	Result describes the final outcome of an operation.
+	 *	It's values depend on the particular operation which
+	 *	was attempted. The special result value -1 is used 
+	 *	to indicate an invalid value for result.  Generally,
+	 *	-1 is returned when result is accidently queried at
+	 *	a time when OP_STATUS != OPERATION_COMPLETE.
+	 *	
+	 *----------------------------------------------------------*/
 
 #define OP_RESULT(operation) ((operation)->result)
 
 
-/************************************************************************/
-/*	
-/*			Debugging Interfaces
-/*	
-/************************************************************************/
+/************************************************************************
+ *	
+ *			Debugging Interfaces
+ *	
+ ************************************************************************/
 
-	/*----------------------------------------------------------*/
-	/*	
-	/*	The following operation codes my be passed to 
-	/*	gdb_debug to set special debugging modes of operation.
-	/*	
-	/*	Note that most of these are toggles
-	/*	
-	/*----------------------------------------------------------*/
+	/*----------------------------------------------------------
+	 *	
+	 *	The following operation codes my be passed to 
+	 *	gdb_debug to set special debugging modes of operation.
+	 *	
+	 *	Note that most of these are toggles
+	 *	
+	 *----------------------------------------------------------*/
 
 #define GDB_LOG 	0x00000001		/* turn on tracing to */
 						/* log file */
@@ -1304,26 +1304,26 @@ extern int  (*gdb_fmv)();
 						/* servers */
 
 
-/************************************************************************/
-/*	
-/*	Things which have to be at the end because they require
-/*	the various types to be defined first.
-/*	
-/************************************************************************/
+/************************************************************************
+ *	
+ *	Things which have to be at the end because they require
+ *	the various types to be defined first.
+ *	
+ ************************************************************************/
 
 
 #ifdef DUMB_7_CHAR_LOADER
-	/*----------------------------------------------------------*/
-	/*	
-	/*	          Long Names for Routines
-	/*	
-	/*	External names in Unix must generally be unique
-	/*	within the first 7 characters or so, at least for
-	/*	some versions of ld.  To account for this without
-	/*	making all our routine names terribly short and
-	/*	cryptic, we use the following defines.
-	/*	
-	/*----------------------------------------------------------*/
+	/*----------------------------------------------------------
+	 *	
+	 *	          Long Names for Routines
+	 *	
+	 *	External names in Unix must generally be unique
+	 *	within the first 7 characters or so, at least for
+	 *	some versions of ld.  To account for this without
+	 *	making all our routine names terribly short and
+	 *	cryptic, we use the following defines.
+	 *	
+	 *----------------------------------------------------------*/
 
 #define string_alloc 			gdb_sta
 #define string_free 			gdb_stf
@@ -1436,11 +1436,11 @@ extern int send_object();
 extern int receive_object();
 
 
-	/*----------------------------------------------------------*/
-	/*	
-	/*	Other routines requiring extern to avoid forward
-	/*	reference to non integer type functions.
-	/*	
-	/*----------------------------------------------------------*/
+	/*----------------------------------------------------------
+	 *	
+	 *	Other routines requiring extern to avoid forward
+	 *	reference to non integer type functions.
+	 *	
+	 *----------------------------------------------------------*/
 
 extern CONNECTION g_make_con();

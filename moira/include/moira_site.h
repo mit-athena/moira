@@ -12,7 +12,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/include/moira_site.h,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/include/moira_site.h,v 1.17 1990-03-17 16:31:12 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/include/moira_site.h,v 1.18 1990-04-04 11:30:27 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -37,6 +37,8 @@
 /* #define SYSLOG */
 /*   Athena local hacks -- other sites probably don't want this */
 #define ATHENA
+/* Ingres version number */
+#define INGRESVER 5
 
 
 #define NAME 0
@@ -186,11 +188,14 @@
 #define PCAP_SPOOL_HOST	1
 #define PCAP_SPOOL_DIR	2
 #define PCAP_RPRINTER	3
-#define PCAP_COMMENTS	4
-#define PCAP_MODTIME	5
-#define PCAP_MODBY	6
-#define PCAP_MODWITH	7
-#define PCAP_END	8
+#define PCAP_QSERVER	4
+#define PCAP_AUTH	5
+#define PCAP_PRICE	6
+#define PCAP_COMMENTS	7
+#define PCAP_MODTIME	8
+#define PCAP_MODBY	9
+#define PCAP_MODWITH	10
+#define PCAP_END	11
 
 /* Palladium queries */
 
@@ -212,14 +217,15 @@
 /* Quota queries */
 
 #define Q_FILESYS   0
-#define Q_LOGIN     1
-#define Q_QUOTA     2
-#define Q_DIRECTORY 3  
-#define Q_MACHINE   4
-#define Q_MODTIME   5
-#define Q_MODBY     6
-#define Q_MODWITH   7
-#define Q_END       8
+#define Q_TYPE      1
+#define Q_NAME      2
+#define Q_QUOTA     3  
+#define Q_DIRECTORY 4
+#define Q_MACHINE   5
+#define Q_MODTIME   6
+#define Q_MODBY     7
+#define Q_MODWITH   8
+#define Q_END       9
 
 /* Service info */
 

@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/members.dc,v 1.1 1992-11-19 23:49:54 genoa Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/members.dc,v 1.2 1993-10-21 15:07:11 mar Exp $
  */
 
 #include <stdio.h>
@@ -8,6 +8,8 @@
 #define FIXERRORS
 
 #define max(x, y)	((x) > (y) ? (x) : (y))
+
+EXEC SQL INCLUDE sqlca;
 
 struct member {
     int	list_id;
@@ -47,7 +49,7 @@ int debug = 0, records = 0;
 main(argc, argv)
 int argc;
 char **argv;
-##{
+{
     char buf[256];
 
 #ifdef DEBUG
@@ -55,9 +57,11 @@ char **argv;
       debug = atoi(argv[1]);
 #endif DEBUG
 
-##  ingres sms
-##  begin transaction
-##  range of m is imembers
+/*  ingres sms */
+    EXEC SQL CONNECT moira;
+/*  begin transaction */
+/*  range of m is imembers */
+    /* No equivalent */
 
     lists = create_hash(10000);
     members = create_hash(10000);
@@ -77,37 +81,50 @@ char **argv;
     fgets(buf, sizeof(buf), stdin);
     if (buf[0] == 'Y' || buf[0] == 'y') {
 	printf("Ending transaction\n");
-##	end transaction
+/*	end transaction */
+	EXEC SQL COMMIT WORK;
     } else {
 #endif FIXERRORS
 	printf("Aborting transaction\n");
-##	abort
+/*	abort */
+	EXEC SQL ROLLBACK WORK;
 #ifdef FIXERRORS
     }
 #endif FIXERRORS
 
-##  exit
+/*  exit */
+    /* No equivalent (?) */
     printf("Done.\n");
 
     exit(0);
-##}
+}
 
 
 
 load_members()
-##{
+{
     struct member *m, *m1, *md, *ma;
     struct member_list *descendants, *ancestors, *desc, *ance, la, ld;
-##  int list_id, member_id, ref_count, ref;
-##  char mtype[9];
+    EXEC SQL BEGIN DECLARE SECTION; 
+    int list_id, member_id, ref_count, ref;
+    char mtype[9];
+    EXEC SQL END DECLARE SECTION; 
     struct save_queue *sq;
 
     printf("Loading members\n");
     sq = sq_create();
 
-##  retrieve (list_id = m.#list_id, member_id = m.#member_id,
-##	      mtype = m.#member_type, ref_count = m.#ref_count)
-##	where m.direct = 1 {
+/*  retrieve (list_id = m.#list_id, member_id = m.#member_id,
+ *	      mtype = m.#member_type, ref_count = m.#ref_count)
+ *	where m.direct = 1 {  */
+    EXEC SQL DECLARE csrm1 CURSOR FOR
+	SELECT list_id, member_id, member_type, ref_count FROM imembers
+	    WHERE direct=1;
+    EXEC SQL OPEN csrm1;
+    while(1) {
+	EXEC SQL FETCH csrm1 INTO :list_id, :member_id, :mtype, :ref_count;
+	if(sqlca.sqlcode != 0) break; 
+
 #ifdef DEBUG
       if (debug > 5)
 	printf("Working on list %d member %s %d refc %d\n",
@@ -189,16 +206,19 @@ load_members()
       }
       sq_destroy(sq);
       sq = sq_create();
-##  }
+    }
+    EXEC SQL CLOSE csrm1; 
     printf("created %d records\n", records);
-##}
+}
 
 verify_members()
-##{
+{
     struct member *m;
     struct save_queue *sq;
-##  int list_id, member_id, ref_count, dflag;
-##  char mtype[9];
+    EXEC SQL BEGIN DECLARE SECTION; 
+    int list_id, member_id, ref_count, dflag;
+    char mtype[9];
+    EXEC SQL END DECLARE SECTION; 
     int errxtra, errbref, errbdir;
 #ifdef DEBUG
     int ref0, ref1, ref2, ref3, refg;
@@ -213,9 +233,18 @@ verify_members()
     db0 = db1 = db2 = db3 = dbg = 0;
 #endif DEBUG
     sq = sq_create();
-##  retrieve (list_id = m.#list_id, member_id = m.#member_id,
-##	      mtype = m.member_type, ref_count = m.#ref_count,
-##	      dflag = m.#direct) {
+/*  retrieve (list_id = m.#list_id, member_id = m.#member_id,
+ *	      mtype = m.member_type, ref_count = m.#ref_count,
+ *	      dflag = m.#direct) { */
+    EXEC SQL DECLARE csrm2 CURSOR FOR
+	SELECT list_id, member_id, member_type, ref_count, direct 
+	    FROM imembers;
+    EXEC SQL OPEN csrm2;
+    while(1) {
+	EXEC SQL FETCH csrm2 
+	    INTO :list_id, :member_id, :mtype, :ref_count, :dflag;
+	if(sqlca.sqlcode != 0) break; 
+
 #ifdef DEBUG
       if (debug > 1)
 	switch (ref_count) {
@@ -255,7 +284,8 @@ verify_members()
 	      errbdir++;
 	  }
       }
-##  }
+    }
+    EXEC SQL CLOSE csrm2; 
     printf("Found %d extra records, %d bad ref counts, %d bad direct flags\n",
 	   errxtra, errbref, errbdir);
 #ifdef DEBUG
@@ -266,16 +296,18 @@ verify_members()
 	       ref0, ref1, ref2, ref3, refg);
     }
 #endif DEBUG
-##}
+}
 
 
 fix_members()
-##{
+{
     struct member *m;
     struct save_queue *sq;
     int errmis = 0;
-##  int list_id, member_id, rowcount;
-##  char mtype[9];
+    EXEC SQL BEGIN DECLARE SECTION; 
+    int list_id, member_id, rowcount;
+    char mtype[9];
+    EXEC SQL END DECLARE SECTION; 
     char buf[512];
 
     /* fix any errors */
@@ -297,15 +329,17 @@ fix_members()
     	printf("  List: %d, Member: %s %d, Refc: %d, Direct %d\n",
 	       list_id, mtype, member_id, m->frefc, m->fdirect);
 #ifdef FIXERRORS
-##	delete m where m.#list_id = list_id and m.#member_id = member_id
-##		and m.member_type = mtype
-##	inquire_equel(rowcount = "rowcount")
+/*	delete m where m.#list_id = list_id and m.#member_id = member_id
+ *		and m.member_type = mtype */
+	EXEC SQL DELETE FROM imembers WHERE list_id = :list_id AND
+	    member_id = :member_id AND member_type = :mtype;
+	EXEC SQL INQUIRE_SQL(:rowcount = rowcount); 
 	printf("  %d rows deleted\n", rowcount);
 #endif FIXERRORS
     }
     if (errmis > 0)
       printf("Added %d missing records\n", errmis);
-##}
+}
 
 
 insert_list(m)
@@ -403,9 +437,11 @@ void fix_member(dummy, l, errmis)
 int dummy;
 struct member_list *l;
 int *errmis;
-##{
-##  int list_id, member_id, ref_count, dflag, rowcount;
-##  char *mtype;
+{
+    EXEC SQL BEGIN DECLARE SECTION; 
+    int list_id, member_id, ref_count, dflag, rowcount;
+    char *mtype;
+    EXEC SQL END DECLARE SECTION; 
     char buf[2];
     register struct member *m;
 
@@ -437,10 +473,13 @@ int *errmis;
 		   list_id, mtype, member_id, ref_count, dflag);
 	    (*errmis)++;
 #ifdef FIXERRORS
-##	    append imembers (#list_id = list_id, #member_id = member_id,
-##			     member_type = mtype, #ref_count = ref_count,
-##			     direct = dflag);
-##	    inquire_equel(rowcount = "rowcount")
+/*	    append imembers (#list_id = list_id, #member_id = member_id,
+ *			     member_type = mtype, #ref_count = ref_count,
+ *			     direct = dflag); */
+	    EXEC SQL INSERT INTO imembers (list_id, member_id, 
+	        member_type, ref_count, direct)
+	      VALUES (:list_id, :member_id, :mtype, :ref_count, :dflag);
+	    EXEC SQL INQUIRE_SQL(:rowcount = rowcount); 
 	    printf("  %d rows added\n", rowcount);
 #endif FIXERRORS
 	    continue;
@@ -463,14 +502,18 @@ int *errmis;
 	printf("  List: %d, Member: %s %d, Refc: %d, Direct %d\n",
 	       list_id, mtype, member_id, ref_count, dflag);
 #ifdef FIXERRORS
-##	replace m (#ref_count = m.#ref_count + ref_count, direct = dflag)
-##	  where m.#list_id = list_id and m.#member_id = member_id and
-##	    m.member_type = mtype
-##	inquire_equel(rowcount = "rowcount");
+/*	replace m (#ref_count = m.#ref_count + ref_count, direct = dflag)
+ *	  where m.#list_id = list_id and m.#member_id = member_id and
+ *	    m.member_type = mtype */
+	EXEC SQL UPDATE imembers 
+	    SET ref_count=ref_count+:ref_count, direct = :dflag 
+	    WHERE list_id = :list_id AND member_id = :member_id AND
+		member_tpe = :mtype;
+	EXEC SQL INQUIRE_SQL(:rowcount = rowcount); 
 	printf("  %d rows fixed\n", rowcount);
 #endif FIXERRORS
     }
-##}
+}
 
 
 struct member *allocmember()

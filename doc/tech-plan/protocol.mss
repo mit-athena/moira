@@ -1,9 +1,12 @@
 @Comment[
 	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/doc/tech-plan/protocol.mss,v $
 	$Author: wesommer $
-	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/doc/tech-plan/protocol.mss,v 1.3 1987-05-20 15:18:55 wesommer Exp $
+	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/doc/tech-plan/protocol.mss,v 1.4 1987-06-23 15:53:50 wesommer Exp $
 
 	$Log: not supported by cvs2svn $
+Revision 1.3  87/05/20  15:18:55  wesommer
+Added some stuff about GDB and why we're using it.
+
 Revision 1.2  87/05/20  14:39:59  wesommer
 Split non-protocol sections into separate parts.
 
@@ -21,35 +24,52 @@ interface to SMS for client applications.  This network interface provides
 support for remote application programs and the mechanism for communication
 between client and server over the network.  A typical scenario might be for
 a mail list administrator to make a change in his mailing list from a public
-workststion.  This change would be registered in the SMS database.  Once
+workstation.  This change would be registered in the SMS database.  Once
 changed, this information would be available to the Data Control Manager for
 use in updating system resources, such as the post office server.
 @end(comment)
 
-All communication with the SMS database is done through the SMS
-server, using a relatively simple remote procedure call protocol built
-on top of GDB@cite(GDB).  SUN RPC was considered but rejected, as it
-does not handle easy and asynchronous movement of large quantities of
-data such as might be returned by a complicated query.
+The SMS protocol is a remote procedure call protocol layered on top of
+TCP/IP.  Clients of SMS make a connection to a well known port
+(T.B.S.), send requests over that stream, and received replies.  Note:
+the precise byte-level encoding of the protocol is not yet specified
+here.
 
-The SMS server runs as one or more UNIX processes on the SMS database
-machine.  It listens for TCP/IP connections on the SMS service port
-(T.B.D.), and processes remote procedure call requests on each
-connection it accepts.
+Each request consists of a major request number, and several counted
+strings of bytes.  Each reply consists of a single number (an error
+code) followed by zero or more "tuples" (the result of a query)
+each of which consists of several counted strings of bytes.
+Requests and replies also contain a version number, to allow
+clean handling of version skew.
 
-One of the major concerns for efficiency in SMS is the time it takes
-to start up an application's connection to the server. The limiting
-factor for Athenareg, SMS's predecessor, is the time it takes to start
-up two processes: the user information daemon, and the Ingres back end
-subprocess which it uses to access the database.  As starting up a
-backend process is a rather heavyweight operation, the SMS server does
-this only once, at the start up time of the daemon.
+The following major requests are defined for SMS.  It should be noted
+that each "handle" (named database action) defines its own signature
+of arguments and results.  Also, the server may refuse to perform any
+of these actions based on the authenticated identity of the user
+making the request.
 
-GDB allows the programmer to set up a single process server which
-handles multiple simultaneous TCP connections, through the use of
-non-blocking I/O.  The SMS server will be able to make progress
-reading RPC requests and sending replies simultaneously, which is
-important if a reasonably large amount of data (larger than the TCP
-window size) is to be sent back.
+@begin(description)
+Noop@\Do nothing.  This is useful for testing and profiling of the RPC
+layer and the server in general.
 
+Authenticate@\There is one argument, a Kerberos@Cite(KRB) authenticator.
+All requests received after this request should be performed on behalf
+of the principal identified by the authenticator.
 
+Query@\There are a variable number of arguments.  The first is the
+name of a pre-defined query (a "query handle"), and the rest are
+arguments to that query.  If the query is allowed, any retrieved data
+are passed back as several return values, each with an error code of
+SMS_MORE_DATA indicating that there are more tuples coming.
+
+Access@\There are a variable number of arguments.  The first is the
+name of a pre-defined query useable for the "query" request, and the
+rest are query arguments.  The server returns a reply with a zero
+error code if the query would have been allowed, or a reply with a
+non-zero error code explaining the reason why the query was rejected.
+
+Shut down server@\Requests that the server cleanly shut down.  This
+gets one argument, a string, which is entered into the server log
+before the server shuts down as an explanation for the shutdown.
+
+@end(description)

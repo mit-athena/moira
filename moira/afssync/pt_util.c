@@ -15,6 +15,7 @@
 #include <ctype.h>
 #include <string.h>
 #include <sys/file.h>
+#include <stdlib.h>
 
 #include <afs/param.h>
 #include <lock.h>
@@ -26,6 +27,11 @@
 #include "ptint.h"
 #include "ptserver.h"
 #include "pterror.h"
+#ifdef HAVE_STRVIS
+#include <strvis.h>
+#else
+#include "vis.h"
+#endif
 
 #define IDHash(x) (abs(x) % HASHSIZE)
 #define print_id(x) ( ((flags&DO_SYS)==0 && (x<-32767 || x>97536)) || \
@@ -100,6 +106,7 @@ char **argv;
     struct ubik_hdr *uh;
     char *dfile = 0;
     char *pfile = "/usr/afs/db/prdb.DB0";
+    char *str;
     
     while ((cc = getopt(argc, argv, "wugmxsnp:d:")) != EOF) {
 	switch (cc) {
@@ -241,6 +248,15 @@ char **argv;
 	    } else {
 		sscanf(buffer, "%s %d/%d %d %d %d",
 		       name, &flags, &quota, &id, &oid, &cid);
+
+		str = malloc(strlen(name) + 1);
+		if (!str)
+		  {
+		    fprintf(stderr, "malloc failed!");
+		    exit(1);
+		  }
+		strunvis(str, name);
+		strcpy(name, str);
 
 		if (FindByID(0, id))
 		    code = PRIDEXIST;
@@ -439,7 +455,15 @@ void fix_pre(pre)
     struct prentry *pre;
 {
     register int i;
-    
+    char *str = malloc(4 * strlen(pre->name) + 1);
+
+    if (!str)
+      {
+	fprintf(stderr, "malloc failed in fix_pre()!");
+	exit(1);
+      }
+    strvis(str, pre->name, VIS_WHITE);
+    strcpy(pre->name, str);
     pre->flags = ntohl(pre->flags);
     pre->id = ntohl(pre->id);
     pre->cellid = ntohl(pre->cellid);

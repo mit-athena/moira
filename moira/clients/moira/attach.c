@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.33 1992-04-22 18:02:31 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.34 1992-05-20 17:41:48 mar Exp $";
 #endif
 
 /*	This is the file attach.c for the MOIRA Client, which allows a nieve
@@ -13,7 +13,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.33 1992-04-22 18:02:31 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.34 1992-05-20 17:41:48 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -461,7 +461,7 @@ char **argv;
 {
     struct qelem *top;
 
-    argv[1] = canonicalize_hostname(argv[1]);
+    argv[1] = canonicalize_hostname(strsave(argv[1]));
     top = GetFSInfo(MACHINE, argv[1]); /* get info. */
     Loop(top, (void *) PrintFSInfo);
     FreeQueue(top);		/* clean the queue. */

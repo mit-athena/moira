@@ -1,15 +1,15 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/client.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/client.c,v 1.3 1988-08-04 14:30:42 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/client.c,v 1.4 1988-08-04 18:20:28 mar Exp $
  */
 
 #ifndef lint
-static char *rcsid_client2_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/client.c,v 1.3 1988-08-04 14:30:42 mar Exp $";
+static char *rcsid_client2_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/client.c,v 1.4 1988-08-04 18:20:28 mar Exp $";
 #endif	lint
 
 /*
  * MODULE IDENTIFICATION:
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/client.c,v 1.3 1988-08-04 14:30:42 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/client.c,v 1.4 1988-08-04 18:20:28 mar Exp $
  *	Copyright 1987 MIT Project Athena.
  * DESCRIPTION:
  *	This code handles the actual distribution of data files
@@ -53,7 +53,7 @@ CONNECTION conn;
  * RETURN VALUE:
  *	void
  * SIDE EFFECTS:
- *	Initializes GDB library and SMSU error table.
+ *	Initializes GDB library.
  * PROBLEMS:
  *
  */
@@ -64,7 +64,6 @@ initialize()
 
     if (!initialized) {
 	gdb_init();
-	init_smsU_err_tbl();
 	initialized++;
     }
 }

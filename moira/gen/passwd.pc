@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/passwd.dc,v 1.14 1997-01-20 18:23:00 danw Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/passwd.pc,v 1.1 1997-01-29 23:19:07 danw Exp $
  *
  * This generates a master /etc/passwd containing all active (status != 0)
  * accounts.

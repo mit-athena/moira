@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/nfs.dc,v 1.5 1997-01-20 18:22:59 danw Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/nfs.pc,v 1.1 1997-01-29 23:19:04 danw Exp $
  *
  * This generates the files necessary to load an nfs server.
  *

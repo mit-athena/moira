@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/pobox.dc,v 1.6 1997-01-20 18:23:01 danw Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/pobox.pc,v 1.1 1997-01-29 23:19:10 danw Exp $
  *
  * This generates a list of everyone's poboxes for the mitdir.
  *

@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/hosts.dc,v 1.8 1997-01-20 18:22:51 danw Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/hosts.pc,v 1.1 1997-01-29 23:18:57 danw Exp $
  *
  * This generates the hstath.txt hosttable.
  *

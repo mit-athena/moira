@@ -1,11 +1,14 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_server.h,v $
  *	$Author: wesommer $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_server.h,v 1.6 1987-07-14 00:36:40 wesommer Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_server.h,v 1.7 1987-07-29 16:03:30 wesommer Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
  *	$Log: not supported by cvs2svn $
+ * Revision 1.6  87/07/14  00:36:40  wesommer
+ * Added debugging options.
+ * 
  * Revision 1.5  87/06/30  20:05:14  wesommer
  * Added parsed kerberos principal name.
  * 
@@ -60,6 +63,7 @@ typedef struct _client {
 	char *clname;		/* Name client authenticated to */
 	struct krbname kname; 	/* Parsed version of the above */
 	returned_tuples *first, *last;
+	time_t last_time_used;  /* Last time connection used */
 } client;
 
 /*

@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/form_setup.c,v 1.9 1992-12-10 10:41:02 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/form_setup.c,v 1.10 1993-01-05 11:32:17 mar Exp $
  */
 
 #include <stdio.h>
@@ -634,6 +634,7 @@ char *name;
 	buttons[4] = NULL;
     }
     (*fp)->buttons = buttons;
+    (*fp)->extrastuff = NULL;
     return(*fp);
 }
 

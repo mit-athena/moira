@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/increment.qc,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/increment.qc,v 1.9 1990-03-30 19:20:40 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/increment.qc,v 1.10 1990-06-07 17:51:16 mar Exp $
  *
  *	Copyright (C) 1989 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_qrtn_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/increment.qc,v 1.9 1990-03-30 19:20:40 mar Exp $";
+static char *rcsid_qrtn_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/increment.qc,v 1.10 1990-06-07 17:51:16 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -145,15 +145,9 @@ char **argv;
 ##	  where qual
 	beforec = 11;
     } else if (!strcmp(table, "quota")) {
-	strcpy(barg0, argv[0]);
-	if (!strcmp(argv[1], "USER") || !strcmp(argv[1], "GROUP") ||
-	    !strcmp(argv[1], "LIST") || !strcmp(argv[1], "ANY")) {
-	    strcpy(barg1, argv[1]);
-	    strcpy(barg2, argv[2]);
-	} else {
-	    strcpy(barg1, "USER");
-	    strcpy(barg2, argv[1]);
-	}
+	barg0 = "?";
+	barg1 = argv[1];
+	barg2 = "?";
 	sprintf(buffer, "%s and filesys.filsys_id = q.filsys_id", qual);
 	qual = buffer;
 ##	range of q is quota
@@ -247,9 +241,9 @@ char **argv;
 ##	  where qual
 	afterc = 11;
     } else if (!strcmp(table, "quota")) {
-	strcpy(aarg0, argv[0]);
+	strcpy(aarg0, "?");
 	strcpy(aarg1, argv[1]);
-	strcpy(aarg2, argv[2]);
+	strcpy(aarg2, "?");
 	sprintf(buffer, "%s and filesys.filsys_id = q.filsys_id", qual);
 	qual = buffer;
 ##	range of q is quota

@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/queries.c,v 1.15 1993-01-13 14:07:02 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/queries.c,v 1.16 1993-10-21 14:53:47 mar Exp $
  */
 
 #include <stdio.h>
@@ -871,6 +871,25 @@ int remove;
 	}
 	AppendToLog("Done.\n");
 	break;
+    case MM_ADD_FILSYS:
+	if (!f) {
+	    AppendToLog("Done.\n");
+	    if (AskQuestion("Add a quota for this filesystem?",
+			    "quota_after_filsys")) {
+		f = GetAndClearForm("add_quota");
+		GetKeywords(f, 1, "quota_type");
+		f->inputlines[Q_FILESYS]->valuechanged = MoiraValueChanged;
+		f->inputlines[Q_TYPE]->valuechanged = MoiraValueChanged;
+		StoreField(f, 0, argv[0]);
+		if (!strcmp(argv[1], "AFS"))
+		  StoreField(f, 1, "ANY");
+		if (tty)
+		  TtyForm(f);
+		else
+		  DisplayForm(f);
+	    }
+	}
+	break;
     case MM_SHOW_FILSYS:
     case MM_SHOW_FSGROUP:
 	while (sq_get_data(form->extrastuff, &aargv)) {
@@ -904,6 +923,7 @@ int remove;
     case MM_ADD_LIST:
     case MM_DEL_LIST:
     case MM_ADD_QUOTA:
+    case MM_MOD_QUOTA:
     case MM_DEL_QUOTA:
     case MM_SET_DQUOTA:
     case MM_ADD_NFS:
@@ -913,7 +933,6 @@ int remove;
     case MM_ADD_FSGROUP:
     case MM_MOV_FSGROUP:
     case MM_DEL_FSGROUP:
-    case MM_ADD_FILSYS:
     case MM_DEL_FILSYS:
     case MM_ADD_KRBMAP:
     case MM_DEL_KRBMAP:

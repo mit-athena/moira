@@ -1,4 +1,4 @@
-/* $Id: mr_connect.c,v 1.35 2001-07-18 02:47:50 zacheiss Exp $
+/* $Id: mr_connect.c,v 1.36 2003-04-24 18:38:55 zacheiss Exp $
  *
  * This routine is part of the client library.  It handles
  * creating a connection to the moira server.
@@ -45,7 +45,7 @@ struct hostent * WINAPI rgethostbyname(char *name);
 #endif
 #endif
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_connect.c,v 1.35 2001-07-18 02:47:50 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_connect.c,v 1.36 2003-04-24 18:38:55 zacheiss Exp $");
 
 #define DEFAULT_SERV "moira_db"
 #define DEFAULT_PORT 775
@@ -332,6 +332,9 @@ int mr_accept(int s, struct sockaddr_in *sin)
       if (conn < 0 && errno != EINTR
 #ifdef ERESTART
 	  && errno != ERESTART
+#endif
+#ifdef ECONNABORTED
+	  && errno != ECONNABORTED
 #endif
 	  )
 	return -1;

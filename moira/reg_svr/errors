@@ -48,7 +48,7 @@ Office in N42-105A, x3-1325.
 # 9 FOUND
 OK. I've found you in the database: %s, account class %s.
 # 10 FORCED_USERNAME
-OK. I've found you in the database: %s, account class %s.
+OK. I've verified your identity.
 
 The username "%s" has previously been reserved for this account.
 # 11 BAD_SIX_WORDS

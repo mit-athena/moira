@@ -1,13 +1,13 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/ticket.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/ticket.c,v 1.5 1989-06-26 09:09:25 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/ticket.c,v 1.6 1989-08-16 11:27:55 mar Exp $
  */
 /*  (c) Copyright 1988 by the Massachusetts Institute of Technology. */
 /*  For copying and distribution information, please see the file */
 /*  <mit-copyright.h>. */
 
 #ifndef lint
-static char *rcsid_ticket_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/ticket.c,v 1.5 1989-06-26 09:09:25 mar Exp $";
+static char *rcsid_ticket_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/ticket.c,v 1.6 1989-08-16 11:27:55 mar Exp $";
 #endif	lint
 
 #include <mit-copyright.h>
@@ -34,7 +34,8 @@ static init()
     static int initialized = 0;
 
     if (!initialized) {
-	get_krbrlm(realm, 1);
+	if (krb_get_lrealm(realm, 1))
+	    strcpy(realm, KRB_REALM);
 	initialize_krb_error_table();
 	initialized=1;
     }

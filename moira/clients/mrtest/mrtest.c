@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v 1.12 1989-04-21 15:02:54 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v 1.13 1989-06-26 12:08:46 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_test_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v 1.12 1989-04-21 15:02:54 mar Exp $";
+static char *rcsid_test_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v 1.13 1989-06-26 12:08:46 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -43,8 +43,6 @@ sms()
 #endif __SABER__
 	
 	init_ss_err_tbl();
-	init_sms_err_tbl();
-	init_krb_err_tbl();
 
 	ss = ss_create_invocation("sms", "2.0", (char *)NULL,
 				  &sms_test, &status);

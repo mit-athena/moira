@@ -1,4 +1,4 @@
-/* $Id: queries2.c,v 2.78 2000-10-18 19:20:44 zacheiss Exp $
+/* $Id: queries2.c,v 2.79 2000-10-25 20:38:43 zacheiss Exp $
  *
  * This file defines the query dispatch table
  *
@@ -2945,6 +2945,75 @@ static struct validate _sdl_validate =
   _sdl_followup,
 };
 
+static char *gusl_fields[] = {
+  "login",
+  "login", "sid", "created",
+};
+
+static struct validate gusl_validate =
+{
+  VOuser0,
+  1,
+  NULL,
+  NULL,
+  0,
+  0,
+  0,
+  0,
+  0,
+};
+
+static char *glsn_fields[] = {
+  "name",
+  "name", "sid", "created",
+};
+
+static struct validate glsn_validate = 
+{
+  VOlist0,
+  1,
+  NULL,
+  NULL,
+  0,
+  0,
+  0,
+  0,
+  0,
+};
+
+static char *ausl_fields[] = {
+  "login", "sid",
+};
+
+static struct validate ausl_validate =
+{
+  VOuser0,
+  1,
+  "sid",
+  "sid = '%s'",
+  1,
+  0,
+  0,
+  0,
+  0,
+};
+
+static char *alsn_fields[] = {
+  "name", "sid",
+};
+
+static struct validate alsn_validate =
+{
+  VOlist0,
+  1,
+  "sid",
+  "sid = '%s'",
+  1,
+  0,
+  0,
+  0,
+  0,
+};
 
 
 /* Generalized Query Definitions */
@@ -6109,6 +6178,74 @@ struct query Queries[] = {
     0,
     NULL,
     &_sdl_validate,
+  },
+
+  {
+    /* Q_GUSL - GET_USER_SIDS_BY_LOGIN, v4 */
+    "get_user_sids_by_login",
+    "gusl",
+    4,
+    RETRIEVE,
+    "s",
+    USERSIDS_TABLE,
+    "u.login, us.sid, TO_CHAR(us.created, 'YYYY-MM-DD HH24:MI:SS') FROM users u, usersids us",
+    gusl_fields,
+    3,
+    "us.users_id = %d AND u.users_id = us.users_id",
+    1,
+    "us.created",
+    &gusl_validate,
+  },
+
+  {
+    /* Q_AUSL - ADD_USER_SID_BY_LOGIN, v4 */
+    "add_user_sid_by_login",
+    "ausl",
+    4,
+    APPEND,
+    "s",
+    USERSIDS_TABLE,
+    "INTO usersids (users_id, sid) VALUES (%d, '%s')",
+    ausl_fields,
+    2,
+    NULL,
+    0,
+    NULL,
+    &ausl_validate,
+  },
+  
+  {
+    /* Q_GLSN - GET_LIST_SIDS_BY_NAME, v4 */
+    "get_list_sids_by_name",
+    "glsn",
+    4,
+    RETRIEVE,
+    "s",
+    LISTSIDS_TABLE,
+    "l.name, ls.sid, TO_CHAR(ls.created, 'YYYY-MM-DD HH24:MI:SS') FROM list l, listsids ls",
+    glsn_fields,
+    3,
+    "ls.list_id = %d AND l.list_id = ls.list_id",
+    1,
+    "created",
+    &glsn_validate,
+  },
+
+  {
+    /* Q_ALSN - ADD_LIST_SID_BY_NAME, v4 */
+    "add_list_sid_by_name",
+    "alsn",
+    4,
+    APPEND,
+    "s",
+    LISTSIDS_TABLE,
+    "INTO listsids (list_id, sid) VALUES (%d, '%s')",
+    alsn_fields,
+    2,
+    NULL,
+    0,
+    NULL,
+    &alsn_validate,
   },
 
 };

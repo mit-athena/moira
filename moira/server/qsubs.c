@@ -1,4 +1,4 @@
-/* $Id: qsubs.c,v 1.17 1999-12-30 17:27:14 danw Exp $
+/* $Id: qsubs.c,v 1.18 2000-01-11 05:57:31 danw Exp $
  *
  * Copyright (C) 1987-1998 by the Massachusetts Institute of Technology
  * For copying and distribution information, please see the file
@@ -11,7 +11,7 @@
 
 #include <stdlib.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsubs.c,v 1.17 1999-12-30 17:27:14 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsubs.c,v 1.18 2000-01-11 05:57:31 danw Exp $");
 
 extern struct query Queries[];
 extern int QueryCount;
@@ -46,37 +46,35 @@ struct query *get_query_by_name(char *name, int version)
   return NULL;
 }
 
-void list_queries(int (*action)(int, char *[], void *), void *actarg)
+void list_queries(client *cl, int (*action)(int, char *[], void *),
+		  void *actarg)
 {
-  struct query *q;
-  int i;
-  static struct query **squeries2 = NULL;
-  struct query **sq;
+  static struct query **squeries = NULL;
+  static int qcount;
+  struct query *q, **sq;
   char qnames[80];
   char *qnp;
-  int count;
+  int i;
 
-  if (!squeries2)
+  if (!squeries)
     {
-      sq = xmalloc(count * sizeof(struct query *));
-      squeries2 = sq;
+      squeries = sq = xmalloc(QueryCount * sizeof(struct query *));
       q = Queries;
       for (i = 0; i < QueryCount; i++)
 	{
+	  if (q->version > cl->version)
+	    continue;
 	  if (i > 0 && strcmp((*sq)->name, q->name))
-	    {
-	      sq++;
-	      count++;
-	    }
+	    sq++;
 	  *sq = q++;
 	}
-      count++;
-      qsort(squeries2, count, sizeof(struct query *), qcmp);
+      qcount = (sq - squeries) + 1;
+      qsort(squeries, qcount, sizeof(struct query *), qcmp);
     }
-  sq = squeries2;
+  sq = squeries;
 
   qnp = qnames;
-  for (i = count; --i >= 0; sq++)
+  for (i = qcount; --i >= 0; sq++)
     {
       sprintf(qnames, "%s (%s)", (*sq)->name, (*sq)->shortname);
       (*action)(1, &qnp, actarg);

@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/util.c,v 1.9 1997-01-20 18:23:05 danw Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/util.c,v 1.10 1997-09-05 20:13:49 danw Exp $
  *
  * Utility routines used by the MOIRA extraction programs.
  *
@@ -68,6 +68,11 @@ int code;
     extern char *whoami;
     char buf[256];
     int bufsize=256, len=0;
+
+    if (code == -1013) {
+	com_err(whoami, 0, "build cancelled by user");
+	exit(MR_ABORT);
+    }
 
     com_err(whoami, MR_DBMS_ERR, " code %d\n", code);
     sqlglm(buf, &bufsize, &len);

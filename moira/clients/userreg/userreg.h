@@ -2,7 +2,7 @@
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.h,v $
  *	$Author: wesommer $
  *	$Locker:  $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.h,v 1.2 1987-08-23 01:50:12 wesommer Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.h,v 1.3 1987-09-03 03:04:18 wesommer Exp $
  */
 
 #include <stdio.h>
@@ -31,9 +31,9 @@ struct alias {
 #define SUCCESS 0
 #define FAILURE 1
 #define NOT_FOUND 2
-#define FIRST_NAME_SIZE 16
-#define LAST_NAME_SIZE 16
-#define MID_INIT_SIZE 16
+#define FIRST_NAME_SIZE 17
+#define LAST_NAME_SIZE 17
+#define MID_INIT_SIZE 17
 #define LOGIN_SIZE 9
 #define PASSWORD_SIZE 9
 

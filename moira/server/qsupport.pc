@@ -1,4 +1,4 @@
-/* $Id: qsupport.pc,v 2.23 2000-03-30 22:01:56 zacheiss Exp $
+/* $Id: qsupport.pc,v 2.24 2000-06-01 21:51:02 zacheiss Exp $
  *
  * Special query routines
  *
@@ -18,7 +18,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.pc,v 2.23 2000-03-30 22:01:56 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.pc,v 2.24 2000-06-01 21:51:02 zacheiss Exp $");
 
 extern char *whoami, *table_name[];
 extern int dbms_errno, mr_errcode;
@@ -87,7 +87,8 @@ int set_pobox(struct query *q, char **argv, client *cl)
       /* If going from SMTP or NONE to SPLIT, make sure we have a valid
        * POP or IMAP box.
        */
-      if (!strcmp(potype, "SMTP") || !strcmp(potype, "NONE"))
+      if ((!strcmp(potype, "SMTP") || !strcmp(potype, "NONE")) && 
+	   !strcmp(argv[1], "SPLIT"))
 	{
 	  status = set_pobox_pop(q, argv, cl);
 	  if (status)

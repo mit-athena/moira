@@ -1,5 +1,5 @@
 
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/mailhub.dc,v 1.7 1993-11-23 17:32:42 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/mailhub.dc,v 1.8 1994-03-08 13:00:04 tom Exp $
  *
  * This generates the /usr/lib/aliases file for the mailhub.
  *
@@ -573,7 +573,7 @@ register char *s;
     wwid = strlen(s);
 
     if (!bol && awid + wwid + 2 > AL_MAX_WID) {
-	fprintf(out, ",\n\tcontinuation-%d\ncontinuation-%d: ", cont, cont);
+	fprintf(out, ",\n\tcontinuation%d\ncontinuation%d: ", cont, cont);
 	cont++;
 	awid = lwid = 17 + wwid;
 	fputs(s, out);

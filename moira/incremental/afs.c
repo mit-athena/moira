@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/afs.c,v 1.30 1992-07-17 15:10:59 probe Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/afs.c,v 1.31 1992-07-23 21:17:14 probe Exp $
  *
  * Do AFS incremental updates
  *
@@ -22,8 +22,8 @@
 #include <afs/pterror.h>
 
 #define STOP_FILE "/moira/afs/noafs"
-#define PR_TRIES 2
-#define PR_DELAY 5
+#define PR_TRIES 3
+#define PR_DELAY 15
 
 #define file_exists(file) (access((file), F_OK) == 0)
 
@@ -513,7 +513,7 @@ int afterc;
     if (afterc < FS_CREATE) {
 	if (!strcmp(before[FS_TYPE], "AFS"))
 	    critical_alert("incremental",
-			   "Could not delete AFS filesystem %s: Operation not supported\n",
+			   "Could not delete AFS filesystem %s: Operation not supported",
 			   before[FS_NAME]);
 	return;
     }
@@ -521,11 +521,11 @@ int afterc;
     if (!strcmp(after[FS_TYPE], "AFS")) {
 	if (strcmp(before[FS_TYPE], "AFS")) {
 	    critical_alert("incremental",
-			   "Cannot convert %s to an AFS filesystem: Operation not supported\n",
+			   "Cannot convert %s to an AFS filesystem: Operation not supported",
 			   after[FS_NAME]);
 	} else {
 	    critical_alert("incremental",
-			   "Cannot change attributes of AFS filesystem %s: Operation not supported\n",
+			   "Cannot change attributes of AFS filesystem %s: Operation not supported",
 			   after[FS_NAME]);
 	}
 	return;

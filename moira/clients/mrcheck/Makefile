@@ -1,4 +1,4 @@
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrcheck/Makefile,v 1.3 1990-01-10 18:30:47 mar Exp $
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrcheck/Makefile,v 1.4 1990-02-14 11:34:40 mar Exp $
 # (c) Copyright 1988 by the Massachusetts Institute of Technology.
 # For copying and distribution information, please see the file
 # <mit-copyright.h>.
@@ -10,7 +10,7 @@ CONFDIR = ${DESTDIR}/usr/athena
 BINDIR = ${DESTDIR}/bin
 
 SMSLIB = ${LDFLAGS} -lsms -lgdb -lcom_err
-LIBS = ${SMSLIB} -lcurses -ltermcap -lkrb -ldes
+LIBS = ${SMSLIB} -lkrb -ldes -lhesiod
 
 
 SRCS =	mrcheck.c
@@ -32,7 +32,7 @@ clean:
 	rm -f mrcheck
 
 install:	${PROGS}
-	install -s mrcheck ${DESTDIR}/usr/athena/mrcheck
+	install -c -s mrcheck ${DESTDIR}/usr/athena/mrcheck
 
 depend:
 	mkdep ${CFLAGS} ${SRCS}

@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/winad/winad.c,v 1.33 2003-03-11 04:55:55 zacheiss Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/winad/winad.c,v 1.34 2003-05-21 17:21:55 zacheiss Exp $
 /* winad.incr arguments examples
  *
  * arguments when moira creates the account - ignored by winad.incr since the account is unusable.
@@ -6,13 +6,13 @@
  *   login, unix_uid, shell, winconsoleshell, last, first, middle, status, mitid, type, moiraid
  *
  * arguments for creating or updating a user account 
- * users 11 11 username 45206 /bin/cmd cmd Last First Middle 2 950000001 STAFF 121058 username 45206 /bin/cmd cmd Last First Middle 1 950000001 STAFF 121058
- * users 11 11 #45206 45206 /bin/cmd cmd Last First Middle 0 950000001 STAFF 121058 newuser 45206 /bin/cmd cmd Last First Middle 2 950000001 STAFF 121058
+ * users 11 11 username 45206 /bin/cmd cmd Last First Middle 2 950000001 STAFF 121058  PathToHomeDir PathToProfileDir username 45206 /bin/cmd cmd Last First Middle 1 950000001 STAFF 121058 PathToHomeDir PathToProfileDir
+ * users 11 11 #45206 45206 /bin/cmd cmd Last First Middle 0 950000001 STAFF 121058  PathToHomeDir PathToProfileDir newuser 45206 /bin/cmd cmd Last First Middle 2 950000001 STAFF 121058 PathToHomeDir PathToProfileDir
  *   login, unix_uid, shell, winconsoleshell, last, first, middle, status, mitid, type, moiraid
  *
  * arguments for deactivating/deleting a user account
- * users 11 11 username 45206 /bin/cmd cmd Last First Middle 1 950000001 STAFF 121058 username 45206 /bin/cmd cmd Last First Middle 3 950000001 STAFF 121058
- * users 11 11 username 45206 /bin/cmd cmd Last First Middle 2 950000001 STAFF 121058 username 45206 /bin/cmd cmd Last First Middle 3 950000001 STAFF 121058
+ * users 11 11 username 45206 /bin/cmd cmd Last First Middle 1 950000001 STAFF 121058  PathToHomeDir PathToProfileDir username 45206 /bin/cmd cmd Last First Middle 3 950000001 STAFF 121058 PathToHomeDir PathToProfileDir
+ * users 11 11 username 45206 /bin/cmd cmd Last First Middle 2 950000001 STAFF 121058  PathToHomeDir PathToProfileDir username 45206 /bin/cmd cmd Last First Middle 3 950000001 STAFF 121058 PathToHomeDir PathToProfileDir
  *   login, unix_uid, shell, winconsoleshell, last, first, middle, status, mitid, type, moiraid
  *
  * arguments for reactivating a user account
@@ -21,7 +21,7 @@
  *   login, unix_uid, shell, winconsoleshell, last, first, middle, status, mitid, type, moiraid
  *
  * arguments for changing user name
- * users 11 11 oldusername 45206 /bin/cmd cmd Last First Middle 1 950000001 STAFF 121058 newusername 45206 /bin/cmd cmd Last First Middle 1 950000001 STAFF 121058
+ * users 11 11 oldusername 45206 /bin/cmd cmd Last First Middle 1 950000001 STAFF 121058 PathToHomeDir PathToProfileDir newusername 45206 /bin/cmd cmd Last First Middle 1 950000001 STAFF 121058 PathToHomeDir PathToProfileDir
  *   login, unix_uid, shell, winconsoleshell, last, first, middle, status, mitid, type, moiraid
  *
  * arguments for expunging a user
@@ -286,6 +286,14 @@ typedef struct lk_entry {
   mods[n]->mod_type = t; 		\
   mods[n++]->mod_values = v
 
+#define DEL_ATTR(t, o) 		\
+  DelMods[i] = malloc(sizeof(LDAPMod));	\
+  DelMods[i]->mod_op = o;	\
+  DelMods[i]->mod_type = t; 		\
+  DelMods[i++]->mod_values = NULL
+
+#define DOMAIN_SUFFIX   "MIT.EDU"
+
 LK_ENTRY *member_base = NULL;
 LK_ENTRY *sid_base = NULL;
 LK_ENTRY **sid_ptr = NULL;
@@ -307,6 +315,7 @@ int  mr_connections = 0;
 int  callback_rc;
 char default_server[256];
 static char tbl_buf[1024];
+int  UseSFU30 = 0;
 
 extern int set_password(char *user, char *password, char *domain);
 
@@ -365,6 +374,7 @@ int process_group(LDAP *ldap_handle, char *dn_path, char *MoiraId,
 int process_lists(int ac, char **av, void *ptr);
 int ProcessGroupSecurity(LDAP *ldap_handle, char *dn_path, char *TargetGroupName, 
                          int HiddenGroup, char *AceType, char *AceName);
+int ProcessMachineName(int ac, char **av, void *ptr);
 int user_create(int ac, char **av, void *ptr);
 int user_change_status(LDAP *ldap_handle, char *dn_path, 
                        char *user_name, char *MoiraId, int operation);
@@ -373,7 +383,8 @@ int user_delete(LDAP *ldap_handle, char *dn_path,
 int user_rename(LDAP *ldap_handle, char *dn_path, char *before_user_name, 
                 char *user_name);
 int user_update(LDAP *ldap_handle, char *dn_path, char *user_name,
-                char *uid, char *MitId, char *MoiraId, int State);
+                char *uid, char *MitId, char *MoiraId, int State,
+                char *WinHomeDir, char *WinProfileDir);
 void change_to_lower_case(char *ptr);
 int contact_create(LDAP *ld, char *bind_path, char *user, char *group_ou);
 int group_create(int ac, char **av, void *ptr);
@@ -402,7 +413,13 @@ int member_remove(LDAP *ldap_handle, char *dn_path, char *group_name,
 int populate_group(LDAP *ldap_handle, char *dn_path, char *group_name, 
                    char *group_ou, char *group_membership, 
                    int group_security_flag, char *MoiraId);
+int SetHomeDirectory(LDAP *ldap_handle, char *user_name, char *DistinguishedName,
+                     char *WinHomeDir, char *WinProfileDir,
+                     char **homedir_v, char **winProfile_v,
+                     char **drives_v, LDAPMod **mods, 
+                     int OpType, int n);
 int sid_update(LDAP *ldap_handle, char *dn_path);
+void SwitchSFU(LDAPMod **mods, int *UseSFU30, int n);
 int check_string(char *s);
 int check_container_name(char* s);
 void convert_b_to_a(char *string, UCHAR *binary, int length);
@@ -446,6 +463,7 @@ void get_distinguished_name(LDAP *ldap_handle, LDAPMessage *ldap_entry,
 int moira_disconnect(void);
 int moira_connect(void);
 void print_to_screen(const char *fmt, ...);
+int GetMachineName(char *MachineName);
 
 int main(int argc, char **argv)
 {
@@ -459,6 +477,7 @@ int main(int argc, char **argv)
   LDAP            *ldap_handle;
   FILE            *fptr;
   char            dn_path[256];
+  char            temp[32];
 
   whoami = ((whoami = (char *)strrchr(argv[0], '/')) ? whoami+1 : argv[0]);
 
@@ -490,9 +509,18 @@ int main(int argc, char **argv)
   check_winad();
 
   memset(ldap_domain, '\0', sizeof(ldap_domain));
+  memset(temp, '\0', sizeof(temp));
+  UseSFU30 = 0;
   if ((fptr = fopen(WINADCFG, "r")) != NULL)
     {
-      fread(ldap_domain, sizeof(char), sizeof(ldap_domain), fptr);
+      if (fscanf(fptr, "%s\n", ldap_domain) != 0)
+        {
+          if (fscanf(fptr, "%s\n", temp) != 0)
+            {
+              if (!strcasecmp(temp, "SFU30"))
+                UseSFU30 = 1;
+            }
+        }
       fclose(fptr);
     }
   if (strlen(ldap_domain) == 0)
@@ -549,7 +577,8 @@ void do_mcntmap(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
 {
     char    MoiraContainerName[128];
     char    ADContainerName[128];
-    char    MachineName[128];
+    char    MachineName[1024];
+    char    OriginalMachineName[1024];
     long    rc;
     int     DeleteMachine;
     char    MoiraContainerGroup[64];
@@ -571,38 +600,48 @@ void do_mcntmap(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
 
     if ((beforec != 0) && (afterc == 0)) /*remove a machine*/
     {
+        strcpy(OriginalMachineName, before[OU_MACHINE_NAME]);
         strcpy(MachineName, before[OU_MACHINE_NAME]);
-	strcpy(MoiraContainerGroup, before[OU_CONTAINER_GROUP]);
-	DeleteMachine = 1;
-        com_err(whoami, 0, "removing machine %s from %s", MachineName, before[OU_CONTAINER_NAME]);
+        strcpy(MoiraContainerGroup, before[OU_CONTAINER_GROUP]);
+        DeleteMachine = 1;
+        com_err(whoami, 0, "removing machine %s from %s", OriginalMachineName, before[OU_CONTAINER_NAME]);
     }
     else if ((beforec == 0) && (afterc != 0)) /*add a machine*/
     {
+        strcpy(OriginalMachineName, after[OU_MACHINE_NAME]);
         strcpy(MachineName, after[OU_MACHINE_NAME]);
-	strcpy(MoiraContainerGroup, after[OU_CONTAINER_GROUP]);
-        com_err(whoami, 0, "adding machine %s to container %s", MachineName, after[OU_CONTAINER_NAME]);
+        strcpy(MoiraContainerGroup, after[OU_CONTAINER_GROUP]);
+        com_err(whoami, 0, "adding machine %s to container %s", OriginalMachineName, after[OU_CONTAINER_NAME]);
     }
     else
       {
-	moira_disconnect();
+        moira_disconnect();
         return;
       }
 
+    rc = GetMachineName(MachineName);
+    if (strlen(MachineName) == 0)
+    {
+        moira_disconnect();
+        com_err(whoami, 0, "Unable to find alais for machine %s in Moira", OriginalMachineName);
+        return;
+    }
     Moira_process_machine_container_group(MachineName, MoiraContainerGroup,
 					  DeleteMachine);
     if (machine_check(ldap_handle, dn_path, MachineName))
     {
-        com_err(whoami, 0, "machine %s not found in AD.", MachineName);
-	moira_disconnect();
+        com_err(whoami, 0, "machine %s (alias %s) not found in AD.", OriginalMachineName, MachineName);
+        moira_disconnect();
         return;
     }
     memset(MoiraContainerName, '\0', sizeof(MoiraContainerName));
     machine_get_moira_container(ldap_handle, dn_path, MachineName, MoiraContainerName);
     if (strlen(MoiraContainerName) == 0)
     {
-        com_err(whoami, 0, "machine %s container not found in Moira - moving to orphans OU.", MachineName);
+        com_err(whoami, 0, "machine %s (alias %s) container not found in Moira - moving to orphans OU.",
+                OriginalMachineName, MachineName);
         machine_move_to_ou(ldap_handle, dn_path, MachineName, orphans_machines_ou);
-	moira_disconnect();
+        moira_disconnect();
         return;
     }
     container_get_dn(MoiraContainerName, ADContainerName);
@@ -1306,7 +1345,9 @@ void do_member(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
 }
 
 
-#define U_USER_ID 10
+#define U_USER_ID    10
+#define U_HOMEDIR    11
+#define U_PROFILEDIR 12
 
 void do_user(LDAP *ldap_handle, char *dn_path, char *ldap_hostname, 
              char **before, int beforec, char **after, 
@@ -1410,7 +1451,8 @@ void do_user(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
   com_err(whoami, 0, "updating user %s information", after[U_NAME]);
   rc = user_update(ldap_handle, dn_path, after[U_NAME],
                    after[U_UID], after[U_MITID], 
-                   after_user_id, atoi(after[U_STATE]));
+                   after_user_id, atoi(after[U_STATE]),
+                   after[U_HOMEDIR], after[U_PROFILEDIR]);
   return;
 }
 
@@ -2805,12 +2847,13 @@ int contact_create(LDAP *ld, char *bind_path, char *user, char *group_ou)
 }
 
 int user_update(LDAP *ldap_handle, char *dn_path, char *user_name,
-                char *Uid, char *MitId, char *MoiraId, int State)
+                char *Uid, char *MitId, char *MoiraId, int State,
+                char *WinHomeDir, char *WinProfileDir)
 {
   LDAPMod   *mods[20];
   LK_ENTRY  *group_base;
   int  group_count;
-  char distinguished_name[256];
+  char distinguished_name[512];
   char *mitMoiraId_v[] = {NULL, NULL};
   char *uid_v[] = {NULL, NULL};
   char *mitid_v[] = {NULL, NULL};
@@ -2822,17 +2865,11 @@ int user_update(LDAP *ldap_handle, char *dn_path, char *user_name,
   int  n;
   int  rc;
   int  i;
-  int  last_weight;
+  int  OldUseSFU30;
   u_int userAccountControl = UF_NORMAL_ACCOUNT | UF_DONT_EXPIRE_PASSWD | UF_PASSWD_CANT_CHANGE;
   char filter[128];
   char *attr_array[3];
-  char cWeight[3];
-  char **hp;
-  char path[256];
-  char cPath[256];
   char temp[256];
-  char winPath[256];
-  char winProfile[256];
 
   if (!check_string(user_name))
     {
@@ -2886,55 +2923,18 @@ int user_update(LDAP *ldap_handle, char *dn_path, char *user_name,
   linklist_free(group_base);
   group_count = 0;
   n = 0;
-  if ((hp = hes_resolve(user_name, "filsys")) != NULL)
-    {
-      memset(cWeight, 0, sizeof(cWeight));
-      memset(cPath, 0, sizeof(cPath));
-      memset(path, 0, sizeof(path));
-      memset(winPath, 0, sizeof(winPath));
-      last_weight = 1000;
-      i = 0;
-      while (hp[i] != NULL)
-        {
-          if (sscanf(hp[i], "%*s %s", cPath))
-            {
-              if (strnicmp(cPath, AFS, strlen(AFS)) == 0)
-                {
-                  if (sscanf(hp[i], "%*s %*s %*s %*s %s", cWeight))
-                    {
-                      if (atoi(cWeight) < last_weight)
-                        {
-                          strcpy(path, cPath);
-                          last_weight = (int)atoi(cWeight);
-                        }
-                    }
-                  else 
-                    strcpy(path, cPath);
-                }
-            }
-          ++i;
-        }
-      if (strlen(path))
-        {
-          if (!strnicmp(path, AFS, strlen(AFS)))
-            {
-              AfsToWinAfs(path, winPath);
-              homedir_v[0] = winPath;
-              ADD_ATTR("homeDirectory", homedir_v, LDAP_MOD_REPLACE);
-              strcpy(winProfile, winPath);
-              strcat(winProfile, "\\.winprofile");
-              winProfile_v[0] = winProfile;
-              ADD_ATTR("profilePath", winProfile_v, LDAP_MOD_REPLACE);
-              drives_v[0] = "H:";
-              ADD_ATTR("homeDrive", drives_v, LDAP_MOD_REPLACE);
-            }
-        }
-    }
   uid_v[0] = Uid;
   if (strlen(Uid) == 0)
     uid_v[0] = NULL;
   ADD_ATTR("uid", uid_v, LDAP_MOD_REPLACE);
-  ADD_ATTR("uidNumber", uid_v, LDAP_MOD_REPLACE);
+  if (!UseSFU30)
+    {
+      ADD_ATTR("uidNumber", uid_v, LDAP_MOD_REPLACE);
+    }
+  else
+    {
+      ADD_ATTR("msSFU30UidNumber", uid_v, LDAP_MOD_REPLACE);
+    }
   mitid_v[0] = MitId;
   if (strlen(MitId) == 0)
     mitid_v[0] = NULL;
@@ -2948,25 +2948,26 @@ int user_update(LDAP *ldap_handle, char *dn_path, char *user_name,
   sprintf(userAccountControlStr, "%ld", userAccountControl);
   userAccountControl_v[0] = userAccountControlStr;
   ADD_ATTR("userAccountControl", userAccountControl_v, LDAP_MOD_REPLACE);
+
+  n = SetHomeDirectory(ldap_handle, user_name, distinguished_name, WinHomeDir, 
+                       WinProfileDir, homedir_v, winProfile_v,
+                       drives_v, mods, LDAP_MOD_REPLACE, n);
+
   mods[n] = NULL;
   if ((rc = ldap_modify_s(ldap_handle, distinguished_name, mods)) != LDAP_SUCCESS)
     {
-      com_err(whoami, 0, "Couldn't modify user data for %s : %s",
-              user_name, ldap_err2string(rc));
+        OldUseSFU30 = UseSFU30;
+        SwitchSFU(mods, &UseSFU30, n);
+        if (OldUseSFU30 != UseSFU30)
+            rc = ldap_modify_s(ldap_handle, distinguished_name, mods);
+        if (rc)
+        {
+            com_err(whoami, 0, "Couldn't modify user data for %s : %s",
+                user_name, ldap_err2string(rc));
+        }
     }
   for (i = 0; i < n; i++)
     free(mods[i]);
-
-  if (hp != NULL)
-    {
-      i = 0;
-      while (hp[i])
-        {
-          free(hp[i]);
-          i++;
-        }
-    }
-
   return(rc);
 }
 
@@ -3143,6 +3144,9 @@ int user_create(int ac, char **av, void *ptr)
   char *userAccountControl_v[] = {NULL, NULL};
   char *uid_v[] = {NULL, NULL};
   char *mitid_v[] = {NULL, NULL};
+  char *homedir_v[] = {NULL, NULL};
+  char *winProfile_v[] = {NULL, NULL};
+  char *drives_v[] = {NULL, NULL};
   char userAccountControlStr[80];
   char temp[128];
   u_int userAccountControl = UF_NORMAL_ACCOUNT | UF_DONT_EXPIRE_PASSWD | UF_PASSWD_CANT_CHANGE;
@@ -3150,9 +3154,12 @@ int user_create(int ac, char **av, void *ptr)
   int  rc;
   int  i;
   int  group_count;
+  int  OldUseSFU30;
   char filter[128];
   char *attr_array[3];
   char **call_args;
+  char WinHomeDir[1024];
+  char WinProfileDir[1024];
 
   call_args = ptr;
 
@@ -3163,6 +3170,10 @@ int user_create(int ac, char **av, void *ptr)
       return(AD_INVALID_NAME);
     }
 
+  memset(WinHomeDir, '\0', sizeof(WinHomeDir));
+  memset(WinProfileDir, '\0', sizeof(WinProfileDir));
+  strcpy(WinHomeDir, av[U_WINHOMEDIR]);
+  strcpy(WinProfileDir, av[U_WINPROFILEDIR]);
   strcpy(user_name, av[U_NAME]);
   sprintf(upn, "%s@%s", user_name, ldap_domain);
   sprintf(sam_name, "%s", av[U_NAME]);
@@ -3189,7 +3200,7 @@ int user_create(int ac, char **av, void *ptr)
   ADD_ATTR("name", name_v, LDAP_MOD_ADD);
   ADD_ATTR("displayName", name_v, LDAP_MOD_ADD);
   ADD_ATTR("description", desc_v, LDAP_MOD_ADD);
-  if (strlen(call_args[2]) != 0)
+  if (strlen(call_args[2]) != 0)    
     {
       mitMoiraId_v[0] = call_args[2];
       ADD_ATTR("mitMoiraId", mitMoiraId_v, LDAP_MOD_ADD);
@@ -3199,16 +3210,36 @@ int user_create(int ac, char **av, void *ptr)
     {
       uid_v[0] = av[U_UID];
       ADD_ATTR("uid", uid_v, LDAP_MOD_ADD);
-      ADD_ATTR("uidNumber", uid_v, LDAP_MOD_ADD);
+      if (!UseSFU30)
+        {
+          ADD_ATTR("uidNumber", uid_v, LDAP_MOD_ADD);
+        }
+      else
+        {
+          ADD_ATTR("msSFU30UidNumber", uid_v, LDAP_MOD_ADD);
+        }
     }
   if (strlen(av[U_MITID]) != 0)
       mitid_v[0] = av[U_MITID];
   else
       mitid_v[0] = "none";
   ADD_ATTR("employeeID", mitid_v, LDAP_MOD_ADD);
+
+  n = SetHomeDirectory((LDAP *)call_args[0], user_name, new_dn, WinHomeDir, 
+                       WinProfileDir, homedir_v, winProfile_v,
+                       drives_v, mods, LDAP_MOD_ADD, n);
+
   mods[n] = NULL;
 
   rc = ldap_add_ext_s((LDAP *)call_args[0], new_dn, mods, NULL, NULL);
+  if ((rc != LDAP_SUCCESS) && (rc != LDAP_ALREADY_EXISTS))
+  {
+      OldUseSFU30 = UseSFU30;
+      SwitchSFU(mods, &UseSFU30, n);
+      if (OldUseSFU30 != UseSFU30)
+          rc = ldap_add_ext_s((LDAP *)call_args[0], new_dn, mods, NULL, NULL);
+  }
+
   for (i = 0; i < n; i++)
     free(mods[i]);
   if ((rc != LDAP_SUCCESS) && (rc != LDAP_ALREADY_EXISTS))
@@ -4940,16 +4971,25 @@ int get_machine_ou(LDAP *ldap_handle, char *dn_path, char *member, char *machine
   char dn[256];
   char temp[256];
   char *pPtr;
+  char NewMachineName[1024];
   int   rc;
 
+  strcpy(NewMachineName, member);
+  rc = GetMachineName(NewMachineName);
+  if (strlen(NewMachineName) == 0)
+    {
+      com_err(whoami, 0, "Unable to find alais for machine %s in Moira", member);
+      return(1);
+    }
+
   pPtr = NULL;
-  pPtr = strchr(member, '.');
+  pPtr = strchr(NewMachineName, '.');
   if (pPtr != NULL)
     (*pPtr) = '\0';
 
   group_base = NULL;
   group_count = 0;
-  sprintf(filter, "(sAMAccountName=%s$)", member);
+  sprintf(filter, "(sAMAccountName=%s$)", NewMachineName);
   attr_array[0] = "cn";
   attr_array[1] = NULL;
   sprintf(temp, "%s", dn_path);
@@ -4963,7 +5003,7 @@ int get_machine_ou(LDAP *ldap_handle, char *dn_path, char *member, char *machine
   if (group_count != 1)
     {
       com_err(whoami, 0, "LDAP server couldn't process machine %s : machine not found in AD",
-              member);
+              NewMachineName);
       return(1);
     }
   strcpy(dn, group_base->dn);
@@ -5014,6 +5054,13 @@ int machine_move_to_ou(LDAP *ldap_handle, char * dn_path, char *MoiraMachineName
     group_base = NULL;
 
     strcpy(MachineName, MoiraMachineName);
+    rc = GetMachineName(MachineName);
+    if (strlen(MachineName) == 0)
+    {
+        com_err(whoami, 0, "Unable to find alais for machine %s in Moira", MoiraMachineName);
+        return(1);
+    }
+
     cPtr = strchr(MachineName, '.');
     if (cPtr != NULL)
         (*cPtr) = '\0';
@@ -5023,7 +5070,7 @@ int machine_move_to_ou(LDAP *ldap_handle, char * dn_path, char *MoiraMachineName
     if ((rc = linklist_build(ldap_handle, dn_path, filter, attr_array, &group_base, &group_count)) != 0)
     {
         com_err(whoami, 0, "LDAP server couldn't process machine %s : %s",
-                MachineName, ldap_err2string(rc));
+                MoiraMachineName, ldap_err2string(rc));
         return(1);
     }
 
@@ -5033,7 +5080,7 @@ int machine_move_to_ou(LDAP *ldap_handle, char * dn_path, char *MoiraMachineName
     group_base = NULL;
     if (group_count != 1)
     {
-        com_err(whoami, 0, "Unable to find machine %s in AD: %s", MachineName);
+        com_err(whoami, 0, "Unable to find machine %s in AD: %s", MoiraMachineName);
         return(1);
     }
     sprintf(NewOu, "%s,%s", DestinationOu, dn_path);
@@ -5337,7 +5384,6 @@ int Moira_getContainerGroup(int ac, char **av, void *ptr)
 int Moira_getGroupName(char *origContainerName, char *GroupName,
 		       int ParentFlag)
 {
-  int  i;
   char ContainerName[64];
   char *argv[3];
   char *call_args[3];
@@ -5398,4 +5444,261 @@ int Moira_process_machine_container_group(char *MachineName, char* GroupName,
 	      MachineName, GroupName, error_message(rc));
     }
   return(0);
+}
+
+int GetMachineName(char *MachineName)
+{
+	char    *args[2];
+    char    NewMachineName[1024];
+    char    *szDot;
+    int     rc = 0;
+    int     i;
+    DWORD   dwLen = 0;
+    char    *call_args[2];
+
+    // If the address happens to be in the top-level MIT domain, great!
+    strcpy(NewMachineName, MachineName);
+    for (i = 0; i < (int)strlen(NewMachineName); i++)
+        NewMachineName[i] = toupper(NewMachineName[i]);
+    szDot = strchr(NewMachineName,'.');
+    if ((szDot) && (!strcasecmp(szDot+1, DOMAIN_SUFFIX)))
+    {
+        return(0);
+    }
+   	
+    // If not, see if it has a Moira alias in the top-level MIT domain.
+    memset(NewMachineName, '\0', sizeof(NewMachineName));
+	args[0] = "*";
+    args[1] = MachineName;
+    call_args[0] = NewMachineName;
+    call_args[1] = NULL;
+    if (rc = mr_query("get_hostalias", 2, args, ProcessMachineName, call_args))
+    {
+        com_err(whoami, 0, "couldn't resolve machine name %s : %s",
+                MachineName, error_message(rc));
+        strcpy(MachineName, "");
+        return(0);
+    }
+
+    if (strlen(NewMachineName) != 0)
+        strcpy(MachineName, NewMachineName);
+    else
+        strcpy(MachineName, "");
+    return(0);
+
+}
+
+int ProcessMachineName(int ac, char **av, void *ptr)
+{
+    char    **call_args;
+    char    MachineName[1024];
+    char    *szDot;
+    int     i;
+
+    call_args = ptr;
+    if (strlen(call_args[0]) == 0)
+    {
+        strcpy(MachineName, av[0]);
+        for (i = 0; i < (int)strlen(MachineName); i++)
+            MachineName[i] = toupper(MachineName[i]);
+        szDot = strchr(MachineName,'.');
+        if ((szDot) && (!strcasecmp(szDot+1,DOMAIN_SUFFIX)))
+        {
+            strcpy(call_args[0], MachineName);
+        }
+    }
+    return(0);
+}
+
+void SwitchSFU(LDAPMod **mods, int *UseSFU30, int n)
+{
+    int i;
+
+    if (*UseSFU30)
+    {
+        for (i = 0; i < n; i++)
+        {
+            if (!strcmp(mods[i]->mod_type, "msSFU30UidNumber"))
+                mods[i]->mod_type = "uidNumber";
+        }
+        (*UseSFU30) = 0;
+    }
+    else
+    {
+        for (i = 0; i < n; i++)
+        {
+            if (!strcmp(mods[i]->mod_type, "uidNumber"))
+                mods[i]->mod_type = "msSFU30UidNumber";
+        }
+        (*UseSFU30) = 1;
+    }
+}
+
+int SetHomeDirectory(LDAP *ldap_handle, char *user_name, char *DistinguishedName,
+                     char *WinHomeDir, char *WinProfileDir,
+                     char **homedir_v, char **winProfile_v,
+                     char **drives_v, LDAPMod **mods, 
+                     int OpType, int n)
+{
+    char **hp;
+    char cWeight[3];
+    char cPath[1024];
+    char path[1024];
+    char winPath[1024];
+    char winProfile[1024];
+    char homeDrive[8];
+    int  last_weight;
+    int  i;
+    int  rc;
+    LDAPMod *DelMods[20];
+
+    memset(homeDrive, '\0', sizeof(homeDrive));
+    memset(path, '\0', sizeof(path));
+    memset(winPath, '\0', sizeof(winPath));
+    memset(winProfile, '\0', sizeof(winProfile));
+    hp = NULL;
+    if ((!strcasecmp(WinHomeDir, "[afs]")) || (!strcasecmp(WinProfileDir, "[afs]")))
+    {
+        if ((hp = hes_resolve(user_name, "filsys")) != NULL)
+        {
+            memset(cWeight, 0, sizeof(cWeight));
+            memset(cPath, 0, sizeof(cPath));
+            last_weight = 1000;
+            i = 0;
+            while (hp[i] != NULL)
+            {
+                if (sscanf(hp[i], "%*s %s", cPath))
+                {
+                    if (strnicmp(cPath, AFS, strlen(AFS)) == 0)
+                    {
+                        if (sscanf(hp[i], "%*s %*s %*s %*s %s", cWeight))
+                        {
+                            if (atoi(cWeight) < last_weight)
+                            {
+                                strcpy(path, cPath);
+                                last_weight = (int)atoi(cWeight);
+                            }
+                        }
+                        else 
+                            strcpy(path, cPath);
+                    }
+                }
+              ++i;
+            }
+            if (strlen(path))
+            {
+                if (!strnicmp(path, AFS, strlen(AFS)))
+                {
+                    AfsToWinAfs(path, winPath);
+                    strcpy(winProfile, winPath);
+                    strcat(winProfile, "\\.winprofile");
+                }
+            }
+        }
+    }
+
+    if (hp != NULL)
+    {
+        i = 0;
+        while (hp[i])
+        {
+            free(hp[i]);
+            i++;
+        }
+    }
+
+    if (!strcasecmp(WinHomeDir, "[local]"))
+        memset(winPath, '\0', sizeof(winPath));
+    else if (!strcasecmp(WinHomeDir, "[afs]"))
+    {
+        strcpy(homeDrive, "H:");
+    }
+    else
+    {
+        strcpy(winPath, WinHomeDir);
+        if (!strncmp(WinHomeDir, "\\\\", 2))
+        {
+            strcpy(homeDrive, "H:");
+        }        
+    }
+
+    // nothing needs to be done if WinProfileDir is [afs].
+    if (!strcasecmp(WinProfileDir, "[local]"))
+        memset(winProfile, '\0', sizeof(winProfile));
+    else if (strcasecmp(WinProfileDir, "[afs]"))
+    {
+        strcpy(winProfile, WinProfileDir);
+    }
+
+    if (strlen(winProfile) != 0)
+    {
+        if (winProfile[strlen(winProfile) - 1] == '\\')
+            winProfile[strlen(winProfile) - 1] = '\0';
+    }
+    if (strlen(winPath) != 0)
+    {
+        if (winPath[strlen(winPath) - 1] == '\\')
+            winPath[strlen(winPath) - 1] = '\0';
+    }
+
+    if ((winProfile[1] == ':') && (strlen(winProfile) == 2))
+        strcat(winProfile, "\\");
+    if ((winPath[1] == ':') && (strlen(winPath) == 2))
+        strcat(winPath, "\\");
+
+    if (strlen(winPath) == 0)
+    {
+        if (OpType == LDAP_MOD_REPLACE)
+        {
+            i = 0;
+            DEL_ATTR("homeDirectory", LDAP_MOD_DELETE);
+            DelMods[i] = NULL;
+            //unset homeDirectory attribute for user.
+            rc = ldap_modify_s(ldap_handle, DistinguishedName, DelMods);
+            free(DelMods[0]);
+        }
+    }
+    else
+    {
+        homedir_v[0] = strdup(winPath);
+        ADD_ATTR("homeDirectory", homedir_v, OpType);
+    }
+
+    if (strlen(winProfile) == 0)
+    {
+        if (OpType == LDAP_MOD_REPLACE)
+        {
+            i = 0;
+            DEL_ATTR("profilePath", LDAP_MOD_DELETE);
+            DelMods[i] = NULL;
+            //unset profilePate attribute for user.
+            rc = ldap_modify_s(ldap_handle, DistinguishedName, DelMods);
+            free(DelMods[0]);
+        }
+    }
+    else
+    {
+        winProfile_v[0] = strdup(winProfile);
+        ADD_ATTR("profilePath", winProfile_v, OpType);
+    }
+
+    if (strlen(homeDrive) == 0)
+    {
+        if (OpType == LDAP_MOD_REPLACE)
+        {
+            i = 0;
+            DEL_ATTR("homeDrive", LDAP_MOD_DELETE);
+            DelMods[i] = NULL;
+            //unset homeDrive attribute for user
+            rc = ldap_modify_s(ldap_handle, DistinguishedName, DelMods);
+            free(DelMods[0]);
+        }
+    }
+    else
+    {
+        drives_v[0] = strdup(homeDrive);
+        ADD_ATTR("homeDrive", drives_v, OpType);
+    }
+
+    return(n);
 }

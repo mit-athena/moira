@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/cache.qc,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/cache.qc,v 1.1 1989-12-28 17:02:43 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/cache.qc,v 1.2 1990-01-30 18:05:37 mar Exp $
  *
  *	Copyright (C) 1989 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_qsupport_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/cache.qc,v 1.1 1989-12-28 17:02:43 mar Exp $";
+static char *rcsid_qsupport_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/cache.qc,v 1.2 1990-01-30 18:05:37 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -24,7 +24,7 @@ extern int ingres_errno, sms_errcode;
 
 /*** NOTE **************************************************************
  *
- *	This code depends each type starting with a unique letter.  If
+ *    This code depends on each type starting with a unique letter.  If
  *    any new types are added to the system that begin with the same
  *    letter as one of the existing types:
  *		User
@@ -46,21 +46,17 @@ extern int ingres_errno, sms_errcode;
 struct item {
     char name[NAMESZ];
     char type[9];
+    int nhash;
     int id;
-    int use;
+    struct item *next;
+    struct item *prev;
 };
 
-static struct item  cache[CACHESIZE];
-static struct item *ncache[CACHESIZE];
-static struct item *icache[CACHESIZE];
+static struct item cachehead;
+static int cachesize;
 
-/* use counter for implementing LRU */
-static int use = 1;
 /* statistics counters */
 int cachehits = 0, cachemisses = 0;
-
-/* ID hash function */
-#define hashid(id, type) (((id) + *(type)) % CACHESIZE)
 
 
 /* Name hash function. */
@@ -73,7 +69,7 @@ char *type;
 
     while (*name)
       val = val<<5 - val + *name++ - '`';
-    return(val % CACHESIZE);
+    return(val);
 }
 
 
@@ -83,18 +79,22 @@ char *type;
 
 flush_cache()
 {
-    int i;
+    register struct item *i;
 
     if (cachehits + cachemisses != 0)
       com_err(whoami, 0, "Flushing cache; %d hits, %d misses, %d%% hit rate",
 	      cachehits, cachemisses,
 	      (100 * cachehits) / (cachehits + cachemisses));
-    cachehits = cachemisses = 0;
-    for (i = 0; i < CACHESIZE; i++) {
-	cache[i].use = 0;
-	ncache[i] = NULL;
-	icache[i] = NULL;
+    else
+      cachehead.next = cachehead.prev = &cachehead;
+    cachehits = cachemisses = cachesize = 0;
+    for (i = cachehead.next; i != &cachehead; i = i->next) {
+	if (i->prev != &cachehead)
+	  free(i->prev);
     }
+    if (cachehead.prev != &cachehead)
+      free(cachehead.prev);
+    cachehead.next = cachehead.prev = &cachehead;
 }
 
 
@@ -107,16 +107,25 @@ char *name;
 char *type;
 int *id;
 ##{
-    struct item *i, *mini;
+    register struct item *i;
 ##  char *iname;
 ##  int j, rowcount;
-    int ctr, minv;
+    int h, ctr;
 
-    i = ncache[hashname(name, type)];
-    if (i && !strcmp(name, i->name) && !strcasecmp(type, i->type)) {
+    h = hashname(name, type);
+    for (i = cachehead.next; i != &cachehead; i = i->next) {
+	if (i->nhash != h ||
+	    strcmp(name, i->name) ||
+	    strcasecmp(type, i->type))
+	  continue;
 	*id = i->id;
-	i->use = use++;
 	cachehits++;
+	i->next->prev = i->prev;
+	i->prev->next = i->next;
+	i->next = cachehead.next;
+	i->prev = &cachehead;
+	cachehead.next->prev = i;
+	cachehead.next = i;
 	return(SMS_SUCCESS);
     }
 
@@ -160,20 +169,22 @@ int *id;
     *id = j;
     if (name[0] == '#' && !strcasecmp(type, "USER"))
       return(SMS_SUCCESS);
-    minv = use;
-    for (i = &cache[0]; i < &cache[CACHESIZE]; i++) {
-	if (i->use < minv) {
-	    minv = i->use;
-	    mini = i;
-	    if (minv == 0)
-	      break;
-	}
+    if (cachesize < CACHESIZE) {
+	i = (struct item *) malloc(sizeof(struct item));
+	cachesize++;
+    } else {
+	i = cachehead.prev;
+	cachehead.prev = i->prev;
+	i->prev->next = &cachehead;
     }
-    mini->id = j;
-    mini->use = use++;
-    strcpy(mini->name, name);
-    strcpy(mini->type, type);
-    ncache[hashname(name, type)] = icache[hashid(j, type)] = mini;
+    strcpy(i->name, name);
+    strcpy(i->type, type);
+    i->nhash = h;
+    i->id = j;
+    i->next = cachehead.next;
+    i->prev = &cachehead;
+    cachehead.next->prev = i;
+    cachehead.next = i;
     return(SMS_SUCCESS);
 ##}
 
@@ -188,17 +199,22 @@ int id;
 char *type;
 char **name;
 ##{
-    struct item *i, *mini;
+    register struct item *i;
 ##  char iname[NAMESZ];
 ##  int j, rowcount;
-    int ctr, minv;
+    int ctr;
 
-    i = icache[hashid(id, type)];
-    if (i && id == i->id && !strcasecmp(type, i->type)) {
+    for (i = cachehead.next; i != &cachehead; i = i->next) {
+	if (i->id != id || strcasecmp(type, i->type)) continue;
 	free(*name);
 	*name = strsave(i->name);
-	i->use = use++;
 	cachehits++;
+	i->next->prev = i->prev;
+	i->prev->next = i->next;
+	i->next = cachehead.next;
+	i->prev = &cachehead;
+	cachehead.next->prev = i;
+	cachehead.next = i;
 	return(SMS_SUCCESS);
     }
 
@@ -247,20 +263,22 @@ char **name;
     *name = strsave(strtrim(iname));
     if (**name == '#' && !strcasecmp(type, "USER"))
       return(SMS_SUCCESS);
-    minv = use;
-    for (i = &cache[0]; i < &cache[CACHESIZE]; i++) {
-	if (i->use < minv) {
-	    minv = i->use;
-	    mini = i;
-	    if (minv == 0)
-	      break;
-	}
+    if (cachesize < CACHESIZE) {
+	i = (struct item *) malloc(sizeof(struct item));
+	cachesize++;
+    } else {
+	i = cachehead.prev;
+	cachehead.prev = i->prev;
+	i->prev->next = &cachehead;
     }
-    mini->id = id;
-    mini->use = use++;
-    strcpy(mini->name, *name);
-    strcpy(mini->type, type);
-    ncache[hashname(name, type)] = icache[hashid(id, type)] = mini;
+    strcpy(i->name, *name);
+    strcpy(i->type, type);
+    i->nhash = hashname(*name, type);
+    i->id = id;
+    i->next = cachehead.next;
+    i->prev = &cachehead;
+    cachehead.next->prev = i;
+    cachehead.next = i;
     return(SMS_SUCCESS);
 ##}
 
@@ -274,31 +292,28 @@ char *name;
 char *type;
 int id;
 {
-    int minv;
-    struct item *i, *mini;
+    register struct item *i;
 
-    i = icache[hashid(id, type)];
-    if (i->id == id &&
-	!strcasecmp(i->type, type) &&
-	!strcmp(i->name, name))
-      return(SMS_SUCCESS);
-    minv = use;
-    if (i)
-      mini = i;
-    else
-      for (i = &cache[0]; i < &cache[CACHESIZE]; i++) {
-	  if (i->use < minv) {
-	      minv = i->use;
-	      mini = i;
-	      if (minv == 0)
-		break;
-	  }
-      }
-    mini->id = id;
-    mini->use = use++;
-    strcpy(mini->name, name);
-    strcpy(mini->type, type);
-    ncache[hashname(name, type)] = icache[hashid(id, type)] = mini;
+    for (i = cachehead.next; i != &cachehead; i = i->next)
+      if (i->id == id && !strcmp(i->type, type))
+	return(SMS_SUCCESS);
+    if (cachesize < CACHESIZE) {
+	i = (struct item *) malloc(sizeof(struct item));
+	cachesize++;
+    } else {
+	i = cachehead.prev;
+	cachehead.prev = i->prev;
+	i->prev->next = &cachehead;
+    }
+    strcpy(i->name, name);
+    strcpy(i->type, type);
+    i->nhash = hashname(name, type);
+    i->id = id;
+    i->next = cachehead.next;
+    i->prev = &cachehead;
+    cachehead.next->prev = i;
+    cachehead.next = i;
+    return(SMS_SUCCESS);
 }
 
 
@@ -308,13 +323,18 @@ flush_name(name, type)
 char *name;
 char *type;
 {
-    struct item *i;
+    int h;
+    register struct item *i;
 
-    i = ncache[hashname(name, type)];
-    if (i && !strcmp(name, i->name) && !strcasecmp(type, i->type)) {
-	ncache[hashname(name, type)] = NULL;
-	icache[hashid(i->id, type)] = NULL;
-	i->use = 0;
-	return(SMS_SUCCESS);
+    h = hashname(name, type);
+
+    for (i = cachehead.next; i != &cachehead; i = i->next) {
+	if (!strcmp(name, i->name) && !strcasecmp(type, i->type)) {
+	    cachesize--;
+	    i->next->prev = i->prev;
+	    i->prev->next = i->next;
+	    free(i);
+	    return(SMS_SUCCESS);
+	}
     }
 }

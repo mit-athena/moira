@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/afs.c,v 1.57 1997-09-05 19:14:54 danw Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/afs.c,v 1.58 1998-01-05 14:54:24 danw Exp $
  *
  * Do AFS incremental updates
  *
@@ -574,7 +574,6 @@ edit_group(op, group, type, member)
     com_err(whoami, 0, "%s %s %s group %s",
 	   (op ? "Adding" : "Removing"), member,
 	   (op ? "to" : "from"), group);
-    code = 0;
     code=pr_try(op ? pr_AddToGroup : pr_RemoveUserFromGroup, member, buf);
     if (code) {
 	if (op==1 && code == PRIDEXIST) return;	/* Already added */

@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_glue.c,v $
  *	$Author: wesommer $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_glue.c,v 1.3 1987-08-22 17:31:56 wesommer Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_glue.c,v 1.4 1987-09-21 15:17:09 wesommer Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
@@ -9,6 +9,9 @@
  * 	a program expecting a library level interface.
  * 
  * 	$Log: not supported by cvs2svn $
+ * Revision 1.3  87/08/22  17:31:56  wesommer
+ * Fix a "fall-through".
+ * 
  * Revision 1.2  87/07/29  16:03:58  wesommer
  * Initialize krb_realm.
  * 
@@ -18,7 +21,7 @@
  */
 
 #ifndef lint
-static char *rcsid_sms_glue_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_glue.c,v 1.3 1987-08-22 17:31:56 wesommer Exp $";
+static char *rcsid_sms_glue_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_glue.c,v 1.4 1987-09-21 15:17:09 wesommer Exp $";
 #endif lint
 
 #include "sms_server.h"
@@ -30,6 +33,7 @@ static int already_connected = 0;
 
 static client pseudo_client;
 extern int krb_err_base;
+extern char *malloc();
 
 sms_connect()
 {
@@ -66,7 +70,8 @@ sms_auth()
 {
     struct passwd *pw;
     extern char *krb_realm;
-
+    char buf[1024];
+    
     CHECK_CONNECTED;
     pw = getpwuid(getuid());
     if (!pw) return (KDC_PR_UNKNOWN + krb_err_base); /* XXX hack (we 
@@ -76,6 +81,12 @@ sms_auth()
     strcpy(pseudo_client.kname.name, pw->pw_name);
     get_krbrlm(pseudo_client.kname.realm, 1);
     krb_realm = pseudo_client.kname.realm;
+
+    strcpy(buf, pw->pw_name);
+    strcat(buf, "@");
+    strcat(buf, pseudo_client.kname.realm);
+    pseudo_client.clname = malloc(strlen(buf)+1);
+    strcpy(pseudo_client.clname, buf);
     return 0;
 }
 

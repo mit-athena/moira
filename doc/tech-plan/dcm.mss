@@ -1,9 +1,12 @@
 @Comment[
 	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/doc/tech-plan/dcm.mss,v $
 	$Author: ambar $
-	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/doc/tech-plan/dcm.mss,v 1.3 1987-05-29 03:27:37 ambar Exp $
+	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/doc/tech-plan/dcm.mss,v 1.4 1987-05-29 14:29:29 ambar Exp $
 
 	$Log: not supported by cvs2svn $
+Revision 1.3  87/05/29  03:27:37  ambar
+fixed scribe error
+
 Revision 1.2  87/05/29  03:14:20  ambar
 Added in Peter's changes.
 
@@ -15,15 +18,16 @@ Initial revision
 @part[dcm, root="sms.mss"]
 @Section(The Data Control Manager)
 
-The data control manager, or DCM, is a program responsible for distributing
-information to servers. Basically, the DCM is invoked by crontab at times
-which are relevant to the data update needs of each server.  The update 
-frequency is stored in the sms database.  A server/host relationship
-is unique to each update time.  Through the sms query mechanism, the dcm
-extracts sms data and converts it to server dependent form.  The conversion
-of database specific information to site specific information is done
-through a server description file, a sms-unique language which is 
-used to describe the personality of a target service.  
+The data control manager, or DCM, is a program responsible for
+distributing information to servers. Basically, the DCM is invoked by
+cron at times which are relevant to the data update needs of each
+server.  The update frequency is stored in the sms database.  A
+server/host relationship is unique to each update time.  Through the sms
+query mechanism, the dcm extracts sms data and converts it to server
+dependent form.  The conversion of database specific information to site
+specific information is done through a server description file, a
+sms-unique language which is used to describe the personality of a
+target service.
 
 When invoked the dcm will perform some preliminary operations to
 establish the relationship between the sms data and each server.
@@ -40,9 +44,9 @@ has the following components:
 
 @begin(verbatim)
 
-Last time | Time     | Server | Hostname | Target   |Override | Enable |
-of update | interval |        |          | Pathname |         |        |
-          |          |        |          |          |         |        |
+Last time|Success|Time    |Server|Hostname|Target  |Override|Enable|
+tried    |       |interval|      |        |Pathname|        |      |
+update   |       |        |      |        |        |        |      |
 
 @end(verbatim)
 
@@ -52,6 +56,9 @@ A description of each field follows:
 @i[Last Time of Update] - This field holds the time when a last 
 successful update occured.  This time will be used against 
 the current time to determine if the interval criteria has been met.
+
+@i[Success] - Flag for indicating whether or not the last time tried was
+successful. 0-fail, 1-success
 
 @i[Time interval] - Dervived from the sms database.  Gives the interval
 update time for each server's information needs.
@@ -83,6 +90,139 @@ use the server/hostname combination to identify the server description
 files to process. 
 Of course, if the enable switch is off, the 
 update will not occur.  
+
+@SubSection(DCM Operation)
+
+The data control manager acts as an interpreter on the SDF's.  The basic
+mechanism is for the DCM to read the above entry table, determine which
+servers need updating and then locate the appropriate SDF for interpretation.
+The breakdown of the SDF is a procedure based primarily on the associated
+query handle and it's associated input and output structure.  The ouput of the
+DCM is a file stored on the sms host which is exactly the same
+format of the server-based file.  The update mechanism takes this localized
+data and ships it over the net. 
+
+The most used statements in an SDF are the commands which set up a query 
+request.  In partcular, these commands are:
+
+@begin(verbatim)
+
+		Begin query
+			handle: handle number
+			input: field1 = "string", field2 = "string2"
+			output: var1
+		End query
+
+	Where:
+		handle number -  is the associated handle of the query.
+		input - is the input to be entered with the query.
+		output - is the output cache for the query result.
+
+		field1 and field2 - refer to the precise structure fields
+			found in struct.h, the sms input file of associated
+			query handles and input structures.
+		var1 - the canonical name given to the buffer whose contents
+			will contain the output of this query.
+
+		
+		"string1" and "string2" - these refer to verbatim input.
+			NOTE: on subsequent queries, the output of a 
+				previous query can become the input of
+				current query.  The input variable is
+				referenced through the same canonical name
+				as was used in a previous output 
+				statement.
+@end(verbatim)
+
+The complete operation of a DCM intrpretive cycle follows:
+@begin(itemize, spread 1)
+
+The input fields are checked to see if they exist given the query handle.
+Two files are checked.  One file handle.h contains the mapping between
+the query handle and the input structure name. Its format is:
+@begin(verbatim)
+
+		HANDLE.H
+	HANDLE		STRUCT NAME
+	  1, 		_struct1
+	  2,		_struct2
+	  3, 		_struct3
+	  n, 		_structn
+
+@end(verbatim)
+
+Once a handle is associated with a given structure name, the file struct.h
+is checked to see that the input fields map to the same fields in the
+input structure definition.  This file defines the queries expected by every
+request to the data base based on query handle.
+
+The file struct.h has the following format:
+
+@begin(verbatim)
+
+	struct _struct1 {
+		char *field1;
+		char *field2;
+	};
+
+	struct _struct2 {
+		char *field1;
+		char *field2;
+	};
+
+	struct _struct3 {
+		char *field1;
+		char *field2;
+	};
+
+	struct _structn {
+		char *field1;
+		char *field2;
+	};
+
+@end(verbatim)
+
+Provided the fields are located, a local structure is filled.  The structure
+contains a snapshot of the local environment.  The structure, _qstruct,
+provides the dcm with the ability to allocate and generate a memory block
+which is identical to the expected input structure required by each
+query request.  _Qstruct has the following components:
+
+@begin(verbatim)
+
+typedef struct _input {
+	char type;	/* type of input verbatim or variable */	
+	int input_offset;/* offset into current handle struct */
+	char *input;	/* local input name */
+	int where_from_handle;	/* where the input came from */
+	int where_from_offset;
+}INPUT;
+
+typedef struct _qstruct {
+	int lineno;	/* line number */
+	int handle;	/* query handle */
+	int structpos;	/* where the structure is in struct.h */
+	INPUT *input[MAXVAR];	/* points to input vars */
+	char *output;   /* local output name */
+	struct _qstruct *next;	/* pointer to next struct */
+	struct _qstruct *last;	/* pointer to previous struct */
+}QSTRUCT;
+
+@end(verbatim)
+
+With the above structure filled, the dcm simply generates a memory
+block with the exact components expected by the query.  This 
+application allows for the addition of query handles and input
+structures without having to recompile the dcm.  Basically,
+by parsing the struct.h file and understanding the attributes
+of a given structure, the DCM is capable of making a memory 
+image of the structure and then passing the memory image and not 
+the structure itself to the query routine.
+
+The converse is applied on output.  The canonical output name is
+used to map a memory image of the output structure.  This structure
+stays resident throuought the DCM operation and can be referenced
+by subsequent query requests.  
 
 @SubSection(Server Description Files)
 
@@ -179,7 +319,6 @@ end header
 
 The target file would look like the following:
 
-@begin(verbatim)
 #two sharp signs puts data in the target file too
 #query 1, all print clusters
 cluster = e40
@@ -202,7 +341,6 @@ printer name = juki-admin-1
 printer type = daisy
 
 @end(verbatim)
-
 
 From a generic database the DCM will take the information, process it into
 localized form, and cache it locally.  From here, the server update mechanism

@@ -1,6 +1,6 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v 1.35 1993-11-10 15:39:46 mar Exp $";
-#endif lint
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v 1.36 1997-01-29 23:06:28 danw Exp $";
+#endif
 
 /*	This is the file utils.c for the MOIRA Client, which allows a nieve
  *      user to quickly and easily maintain most parts of the MOIRA database.
@@ -10,8 +10,8 @@
  *	By:		Chris D. Peterson
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v $
- *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v 1.35 1993-11-10 15:39:46 mar Exp $
+ *      $Author: danw $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v 1.36 1997-01-29 23:06:28 danw Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -33,6 +33,7 @@
 #include <netdb.h>		/* for gethostbyname. */
 #include <sys/types.h>
 #include <netinet/in.h>
+#include <arpa/inet.h>
 
 
 /*	Function Name: AddQueue

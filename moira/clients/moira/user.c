@@ -1,6 +1,6 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.36 1995-11-21 14:10:17 jweiss Exp $";
-#endif lint
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.37 1997-01-29 23:06:27 danw Exp $";
+#endif
 
 /*	This is the file user.c for the MOIRA Client, which allows a nieve
  *      user to quickly and easily maintain most parts of the MOIRA database.
@@ -10,8 +10,8 @@
  *	By:		Chris D. Peterson
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v $
- *      $Author: jweiss $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.36 1995-11-21 14:10:17 jweiss Exp $
+ *      $Author: danw $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.37 1997-01-29 23:06:27 danw Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -68,7 +68,7 @@ static char *states[] = { "Registerable (0)",
 static char *UserState(state)
 int state;
 {
-    char buf[BUFSIZ];
+    static char buf[BUFSIZ];
 
     if (state < 0 || state >= US_END) {
 	sprintf(buf, "Unknown (%d)", state);
@@ -373,13 +373,6 @@ Bool name;
  *                         (wildcards okay).
  *	Returns: the first element of the queue containing the user info.
  *
- * Note: if we are checking a login name, if the length is greater
- * than 8 characters, we immediately print a "no such user" error.
- * This gets around a bug in Ingres, where a non-existent 8 character
- * username returns a "no such user" error instantaneously, but a 9
- * character username takes 5-6 minutes.  :-(  We will need to change
- * this if we ever make a username longer than 8 characters.
- * Unlikely, but....
  */
 
 struct qelem *
@@ -393,11 +386,6 @@ char *name1, *name2;
 
     switch(type) {
     case LOGIN:
-	if (strlen(name1) > 8) {
-	    com_err(program_name, MR_USER,
-		    " when attempting to get_user_acount_by_login.");
-	    return (NULL);
-        }
 	args[0] = name1;
 	if ( (status = do_mr_query("get_user_account_by_login", 1, args,
 				    StoreInfo, (char *) &elem)) != 0) {

@@ -1,6 +1,6 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/nfs.c,v 1.18 1994-08-09 19:16:49 tytso Exp $";
-#endif lint
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/nfs.c,v 1.19 1997-01-29 23:06:22 danw Exp $";
+#endif
 
 /*	This is the file nfs.c for the MOIRA Client, which allows a nieve
  *      user to quickly and easily maintain most parts of the MOIRA database.
@@ -10,8 +10,8 @@
  *	By:		Chris D. Peterson
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/nfs.c,v $
- *      $Author: tytso $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/nfs.c,v 1.18 1994-08-09 19:16:49 tytso Exp $
+ *      $Author: danw $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/nfs.c,v 1.19 1997-01-29 23:06:22 danw Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *

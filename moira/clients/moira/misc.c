@@ -9,8 +9,8 @@
  *	By:		Mark A. Rosenstein
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/misc.c,v $
- *      $Author: tytso $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/misc.c,v 1.4 1994-08-09 19:16:47 tytso Exp $
+ *      $Author: danw $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/misc.c,v 1.5 1997-01-29 23:06:21 danw Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -88,7 +88,7 @@ char **info;
     struct hostent *host_entry;
 
     host_address = inet_addr(info[1]);
-    if (host_address != NULL) {
+    if (host_address != 0) {
 	host_entry = gethostbyaddr((char *) &host_address, 4, AF_INET);
 	if (host_entry != NULL) {
 	    free(info[1]);

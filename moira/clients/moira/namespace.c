@@ -1,6 +1,6 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/namespace.c,v 1.4 1993-10-22 16:21:25 mar Exp $";
-#endif lint
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/namespace.c,v 1.5 1997-01-29 23:06:21 danw Exp $";
+#endif
 
 /*	This is the file main.c for the Moira Client, which allows a nieve
  *      user to quickly and easily maintain most parts of the Moira database.
@@ -10,8 +10,8 @@
  *	By:		Chris D. Peterson
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/namespace.c,v $
- *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/namespace.c,v 1.4 1993-10-22 16:21:25 mar Exp $
+ *      $Author: danw $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/namespace.c,v 1.5 1997-01-29 23:06:21 danw Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -166,8 +166,8 @@ Menu namespace_menu = {
 
 
 #ifndef DEBUG
-static void SignalHandler(), CatchInterrupt();
-#endif DEBUG
+static void Signal_Handler(), CatchInterrupt();
+#endif
 
 static void ErrorExit(), Usage();
 char *getlogin();
@@ -261,7 +261,7 @@ main(argc, argv)
 #ifdef POSIX
     sigemptyset(&act.sa_mask);
     act.sa_flags = 0;
-    act.sa_handler= (void (*)()) SignalHandler;
+    act.sa_handler= (void (*)()) Signal_Handler;
     (void) sigaction(SIGHUP, &act, NULL);
     (void) sigaction(SIGQUIT, &act, NULL);
     if (use_menu)
@@ -271,10 +271,10 @@ main(argc, argv)
 	(void) sigaction(SIGINT, &act, NULL); 
     }
 #else
-    (void) signal(SIGHUP, SignalHandler);
-    (void) signal(SIGQUIT, SignalHandler);
+    (void) signal(SIGHUP, Signal_Handler);
+    (void) signal(SIGQUIT, Signal_Handler);
     if (use_menu)
-      (void) signal(SIGINT, SignalHandler); 
+      (void) signal(SIGINT, Signal_Handler); 
     else
       (void) signal(SIGINT, CatchInterrupt); 
 #endif /* POSIX */
@@ -325,14 +325,14 @@ Usage()
 }
 
 #ifndef DEBUG
-/*	Function Name: SignalHandler
+/*	Function Name: Signal_Handler
  *	Description: This function cleans up from a signal interrupt.
  *	Arguments: none.
  *	Returns: doesn't
  */
 
 static void
-SignalHandler()
+Signal_Handler()
 {
     Put_message("Signal caught - exiting");
     if (use_menu)
@@ -348,7 +348,7 @@ CatchInterrupt()
     Put_message("Interrupt! Press RETURN to continue");
     interrupt = 1;
 }
-#endif DEBUG
+#endif
 
 
 /* Dummy routine to be able to link against the rest of the moira client */
@@ -356,7 +356,7 @@ CatchInterrupt()
 DeleteUser()
 {
     return(DM_QUIT);
-};
+}
 
 
 int

@@ -1,6 +1,6 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/cluster.c,v 1.27 1995-09-12 23:20:18 jweiss Exp $";
-#endif lint
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/cluster.c,v 1.28 1997-01-29 23:06:12 danw Exp $";
+#endif
 
 /*	This is the file cluster.c for the MOIRA Client, which allows a nieve
  *      user to quickly and easily maintain most parts of the MOIRA database.
@@ -10,8 +10,8 @@
  *	By:		Chris D. Peterson
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/cluster.c,v $
- *      $Author: jweiss $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/cluster.c,v 1.27 1995-09-12 23:20:18 jweiss Exp $
+ *      $Author: danw $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/cluster.c,v 1.28 1997-01-29 23:06:12 danw Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -68,7 +68,7 @@ static char *uses[]   = { "none (0)"};
 static char *MacState(state)
 int state;
 {
-    char buf[BUFSIZ];
+    static char buf[BUFSIZ];
 
     if (state < 0 || state > 3) {
 	sprintf(buf, "Unknown (%d)", state);
@@ -790,7 +790,7 @@ char **argv;
 
     name = strsave(""); /* want to put prefix here */
     if (GetValueFromUser("Machine name", &name) == SUB_ERROR)
-          return(NULL);
+          return(0);
 
     name =  canonicalize_hostname(strsave(name));
 

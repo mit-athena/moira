@@ -1,4 +1,4 @@
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/Imakefile,v 1.8 1994-09-16 22:12:13 jweiss Exp $
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/Imakefile,v 1.9 1997-01-29 23:06:09 danw Exp $
 #
 # Copyright 1990 by the Massachusetts Institute of Technology.
 #
@@ -22,9 +22,8 @@ NOBJS=	namespace.o globals.o lists.o menu.o \
 OBJS=	${MOBJS} ${NOBJS}
 INCLUDE= -I$(BUILDTOP)/include -I$(BUILDTOP)/lib ${GDSSINC} -I/usr/athena/include -I.
 
-
-program(moira, ${MOBJS},${MR_LIBDEP} ${GDB_LIBDEP}, ${LIBGDSS} ${CLIBS} ${CURSES},${PROGDIR})
-program(namespace, ${NOBJS},${MR_LIBDEP} ${GDB_LIBDEP}, ${LIBGDSS} ${CLIBS} ${CURSES},${PROGDIR})
+program(moira, ${MOBJS},${MR_LIBDEP} ${GDB_LIBDEP}, ${LIBGDSS} ${CLIBS} ${CRYPT} ${CURSES},${PROGDIR})
+program(namespace, ${NOBJS},${MR_LIBDEP} ${GDB_LIBDEP}, ${LIBGDSS} ${CLIBS} ${CRYPT} ${CURSES},${PROGDIR})
 
 install::
 	$(RM) $(DESTDIR)$(PROGDIR)/listmaint

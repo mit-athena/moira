@@ -5,7 +5,7 @@
  *
  * $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v $
  * $Author: danw $
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.42 1997-01-16 01:26:51 danw Exp $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.43 1997-01-29 23:06:18 danw Exp $
  *
  * Generic menu system module.
  *
@@ -18,24 +18,25 @@
  */
 
 #ifndef lint
-static char rcsid_menu_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.42 1997-01-16 01:26:51 danw Exp $";
-
-#endif lint
+static char rcsid_menu_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.43 1997-01-29 23:06:18 danw Exp $";
+#endif
 
 #include <mit-copyright.h>
 #include <sys/types.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <signal.h>
 #include <curses.h>
 #ifdef POSIX
 #include <unistd.h>
 #include <termios.h>
+#include <stdarg.h>
+#else
+#include <sgtty.h>
+#include <varargs.h>
 #endif /* POSIX */
 #include <ctype.h>
-#ifndef sun
-#include <varargs.h>
-#endif
 #include <com_err.h>
 #include <moira.h>
 #include "menu.h"
@@ -51,19 +52,10 @@ static char rcsid_menu_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moira
 #define MIN_INPUT 2		/* Minimum number of lines for input window */
 
 extern int interrupt;		/* will be set if ^C is received */
-extern FILE *fdopen();
-#ifndef sgi
-extern int getpid();
-#endif
-extern char *calloc();
 extern char *whoami;
 
 FILE *log_file = (FILE *) NULL;		/* file stream of log file */
 int more_flg = 1;
-
-#ifdef POSIX
-extern char *malloc();
-#endif
 
 /* Structure for holding current displayed menu */
 struct menu_screen {
@@ -119,7 +111,7 @@ Start_menu(m)
 {
     struct menu_screen *make_ms();
 #ifdef __STDC__
-    register void (*old_hook)(const char *, long, const char *, va_list) = set_com_err_hook(menu_com_err_hook);
+    register void (*old_hook)(const char *, long, const char *, va_list) = set_com_err_hook((void (*) (const char *, long, const char *, va_list))menu_com_err_hook);
 #else
     register void (*old_hook)() = set_com_err_hook(menu_com_err_hook);
 #endif
@@ -484,7 +476,11 @@ int Prompt_input(prompt, buf, buflen)
 			(void) wmove(cur_ms->ms_input, y, 0);
 			(void) wclrtoeol(cur_ms->ms_input);
 			y--;
-			x = cur_ms->ms_input->_maxx-1;
+#ifdef __NetBSD__
+			x = cur_ms->ms_input->maxx - 1;
+#else
+			x = cur_ms->ms_input->_maxx - 1;
+#endif
 		    }
 		}
 		break;
@@ -501,7 +497,11 @@ int Prompt_input(prompt, buf, buflen)
 		    (void) waddch(cur_ms->ms_input, c);
 		    *p++ = c;
 		    x++;
+#ifdef __NetBSD__
+		    if (x >= cur_ms->ms_input->maxx) {
+#else
 		    if (x >= cur_ms->ms_input->_maxx) {
+#endif
 			x = 0;
 			y++;
 		    }
@@ -532,113 +532,6 @@ int Prompt_input(prompt, buf, buflen)
 gotit:
     strcpy(buf, strtrim(buf));
     return 1;
-}
-
-/* Prompt the user for input in the input window of cur_ms, but don't echo
-   and allow some control characters */
-int Password_input(prompt, buf, buflen)
-    char *prompt;
-    char *buf;
-    int buflen;
-{
-    int c;
-    char *p;
-    int y, x, oldx;
-
-    if (cur_ms != NULLMS) {
-	more_flg = 1;
-	getyx(cur_ms->ms_input, y, x);
-	(void) wmove(cur_ms->ms_input, y, 0);
-
-	touchwin(cur_ms->ms_screen);
-	refresh_ms(cur_ms);
-	(void) waddstr(cur_ms->ms_input, prompt);
-	getyx(cur_ms->ms_input, y, x);
-
-	oldx = x;
-	for (p = buf; p - buf < buflen;) {
-	    (void) wmove(cur_ms->ms_input, y, x);
-	    (void) wclrtoeol(cur_ms->ms_input);
-	    refresh_ms(cur_ms);
-	    c = getchar() & 0x7f;
-	    switch (c) {
-	    case CTL('C'):
-		return 0;
-	    case CTL('Z'):
-		(void) kill(getpid(), SIGTSTP);
-		touchwin(curscr);
-		break;
-	    case CTL('L'):
-		(void) wclear(cur_ms->ms_input);
-		(void) waddstr(cur_ms->ms_input, prompt);
-		refresh_ms(cur_ms);
-		(void) move(LINES - 1, 0);
-		(void) wrefresh(curscr);
-		getyx(cur_ms->ms_input, y, x);
-		break;
-	    case '\n':
-	    case '\r':
-		(void) waddch(cur_ms->ms_input, '\n');
-
-		(void) wclrtoeol(cur_ms->ms_input);
-		refresh_ms(cur_ms);
-		*p = '\0';
-		Start_paging();
-		return 1;
-	    case '\b':
-	    case '\177':
-		if (p > buf) {
-		    p--;
-		    x--;
-		}
-		break;
-	    case CTL('U'):
-		x = oldx;
-		p = buf;
-		break;
-	    default:
-		*p++ = c;
-		break;
-	    }
-	}
-    }
-    else {
-#ifdef POSIX
-	struct termios ttybuf, nttybuf;
-#else
-	struct sgttyb ttybuf, nttybuf;
-#endif /* POSIX */
-	printf("%s", prompt);
-	/* turn off echoing */
-#ifdef POSIX
-	tcgetattr(0, &ttybuf);
-	nttybuf = ttybuf;
-	nttybuf.c_lflag &= ~ECHO;
-	tcsetattr(0, TCSANOW, &nttybuf);
-	if (gets(buf) == NULL) {
-	    tcsetattr(0, TCSANOW, &ttybuf);
-	    putchar('\n');
-	    return 0;
-	}
-	putchar('\n');
-	(void) ioctl(0, TCSETA, (char *)&ttybuf);
-#else
-	(void) ioctl(0, TIOCGETP, (char *)&ttybuf);
-	nttybuf = ttybuf;
-	nttybuf.sg_flags &= ~ECHO;
-	(void)ioctl(0, TIOCSETP, (char *)&nttybuf);
-	if (gets(buf) == NULL) {
-	    (void) ioctl(0, TIOCSETP, (char *)&ttybuf);
-	    putchar('\n');
-	    return 0;
-	}
-	putchar('\n');
-	(void) ioctl(0, TIOCSETP, (char *)&ttybuf);
-#endif /* POSIX */
-	Start_paging();
-	return 1;
-    }
-    return 0;
 }
 
 int lines_left;

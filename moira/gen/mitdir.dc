@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/mitdir.dc,v 1.1 1990-08-20 11:18:07 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/mitdir.dc,v 1.1.1.1 1992-09-15 00:11:15 genoa Exp $
  *
  * This generates the input file for the mkdirdb program for the MIT.EDU
  * mailhub.
@@ -40,10 +40,10 @@ char **argv;
     initialize_sms_error_table();
 
 #ifsql INGRES
-    EXEC SQL CONNECT sms;
+    EXEC SQL CONNECT moira;
 #endsql
 #ifsql INFORMIX
-    EXEC SQL DATABASE sms;
+    EXEC SQL DATABASE moira;
 #endsql
 
     if (argc == 2) {
@@ -100,6 +100,10 @@ FILE *out;
     char affil[5];
     EXEC SQL END DECLARE SECTION;
 
+    /* The following is declarative, not executed,
+     * and so is dependent on where it is in the file,
+     * not in the order of execution of statements.
+     */
     EXEC SQL WHENEVER SQLERROR GOTO sqlerr;
 
     /* get locks */
@@ -119,7 +123,7 @@ FILE *out;
 
     EXEC SQL DECLARE u_cursor1 CURSOR FOR
       SELECT users_id, login, first, middle, last,
-	     mit_year, mit_dept, office_addr, office_phone,
+	     affiliation, department, office_addr, office_phone,
 	     home_addr, home_phone, potype, box_id
       FROM users
       WHERE status != 3;

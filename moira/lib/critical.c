@@ -20,12 +20,13 @@ extern Code_t ZSendNotice(ZNotice_t *notice, Z_AuthProc cert_routine);
 #include <moira.h>
 #include <moira_site.h>
 
+#include <stdio.h>
 #include <string.h>
 #ifdef SYSLOG
 #include <syslog.h>
 #endif
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/critical.c,v 1.16 1998-02-05 22:51:21 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/critical.c,v 1.17 1998-02-07 17:50:30 danw Exp $");
 
 /* mode to create the file with */
 #define LOGFILEMODE	0644

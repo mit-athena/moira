@@ -15,10 +15,8 @@
 #include <string.h>
 
 #include <krb.h>
-extern char *krb_realmofhost(char *);
-extern int krb_mk_req(KTEXT, char *, char *, char *, int);
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_auth.c,v 1.20 1998-02-05 22:51:26 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_auth.c,v 1.21 1998-02-07 17:50:30 danw Exp $");
 
 /* Authenticate this client with the Moira server.  prog is the name of the
  * client program, and will be recorded in the database.

@@ -4,8 +4,8 @@
  * "mit-copyright.h".
  *
  * $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v $
- * $Author: ambar $
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.14 1987-10-29 01:21:15 ambar Exp $
+ * $Author: mar $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.15 1988-01-26 16:39:03 mar Exp $
  *
  * Generic menu system module.
  *
@@ -18,7 +18,7 @@
  */
 
 #ifndef lint
-static char rcsid_menu_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.14 1987-10-29 01:21:15 ambar Exp $";
+static char rcsid_menu_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.15 1988-01-26 16:39:03 mar Exp $";
 
 #endif lint
 
@@ -135,6 +135,7 @@ Start_no_menu(m)
     Menu *m;
 {
     cur_ms = NULLMS;
+    COLS = 80;
     top_menu = m;
     /* Run the menu */
     (void) Do_menu(m, -1, (char **) NULL);
@@ -249,6 +250,20 @@ Do_menu(m, margc, margv)
 			   " t. (toggle)       Toggle logging on and off.");
 	(void) wmove(my_ms->ms_menu, line, 0);
 	(void) waddstr(my_ms->ms_menu, " q. (quit)         Quit.");
+    } else {
+	Put_message(m->m_title);
+	for (line = 0; line < m->m_length; line++) {
+	    sprintf(buf, "%2d. (%s)%*s %s.", line + 1,
+		    m->m_lines[line].ml_command,
+		    12 - strlen(m->m_lines[line].ml_command), "",
+		    m->m_lines[line].ml_doc);
+	    Put_message(buf);
+	}
+	if (!is_topmenu)
+	    Put_message(" r. (return)       Return to previous menu.");
+	Put_message(" t. (toggle)       Toggle logging on and off.");
+	Put_message(" q. (quit)         Quit.");
+	Put_message(" ?.                Print this information.");
     }
 
     for (;;) {
@@ -283,6 +298,20 @@ Do_menu(m, margc, margv)
 	    if (m->m_exit != NULLFUNC)
 		m->m_exit(m);
 	    return (*argv[0] == 'r' ? DM_NORMAL : DM_QUIT);
+	}
+	else if (argv[0][0] == '?') {
+	    for (line = 0; line < m->m_length; line++) {
+		sprintf(buf, "%2d. (%s)%*s %s.", line + 1,
+			m->m_lines[line].ml_command,
+			12 - strlen(m->m_lines[line].ml_command), "",
+			m->m_lines[line].ml_doc);
+		Put_message(buf);
+	    }
+	    if (!is_topmenu)
+		Put_message(" r. (return)       Return to previous menu.");
+	    Put_message(" t. (toggle)       Toggle logging on and off.");
+	    Put_message(" q. (quit)         Quit.");
+	    continue;
 	}
 	else if (!strcmp(argv[0], "t") || !strcmp(argv[0], "toggle")) {
 	    toggle_logging(argc, argv);
@@ -730,7 +759,7 @@ toggle_logging(argc, argv)
 	    (void) sprintf(buf, "/usr/tmp/%s-log.%d", whoami, pid);
 
 	/* open the file */
-	log_file = fopen(&buf,"a");
+	log_file = fopen(buf,"a");
 
 	if (log_file == (FILE *) NULL)
 	    Put_message("Open of log file failed.  Logging is not on.");

@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/quota.c,v 1.9 1988-12-07 18:50:35 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/quota.c,v 1.10 1989-08-25 12:38:02 mar Exp $";
 #endif lint
 
 /*	This is the file quota.c for the SMS Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/quota.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/quota.c,v 1.9 1988-12-07 18:50:35 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/quota.c,v 1.10 1989-08-25 12:38:02 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -34,6 +34,8 @@ static char * def_quota = NULL;
   
 #define DEFAULT_FILESYS DEFAULT_NONE
 #define DEFAULT_USER user	/* this is the user who started sms. */
+#define NOBODY	"\\[nobody\\]"
+
 
 /*	Function Name: GetDefaultUserQuota
  *	Description: gets the user quota from sms, and caches the value.
@@ -100,15 +102,48 @@ static char *
 PrintQuota(info)
 char ** info;
 {
-    char buf[BUFSIZ];
+    char buf[BUFSIZ], *user;
+
+    user = info[Q_LOGIN];
+    if (!strcmp(user, "[nobody]"))
+      user = "[anybody]";
     Put_message("");
-    sprintf(buf, "Filsystem: %-45s User: %s",info[Q_FILESYS], info[Q_LOGIN]);
+    sprintf(buf, "Filsystem: %-45s User: %s",info[Q_FILESYS], user);
     Put_message(buf);
-    sprintf(buf, "Machine: %-20s Directory: %-15s Quota: %s",
-		   info[Q_MACHINE], info[Q_DIRECTORY], info[Q_QUOTA]);
+    sprintf(buf, "Machine: %-20s Directory: %-15s",
+		   info[Q_MACHINE], info[Q_DIRECTORY]);
+    Put_message(buf);
+    sprintf(buf, "Quota: %s", info[Q_QUOTA]);
     Put_message(buf);
     return(info[Q_FILESYS]);
 }
+
+
+afsfilsyshelper(argc, argv, hint)
+int argc;
+char **argv;
+int *hint;
+{
+    *hint = !strcmp(argv[FS_TYPE], "AFS");
+    return(0);
+}
+
+
+int afsfilesys(name)
+char *name;
+{
+    int status, ret = 0;
+    char *argv[1];
+
+    argv[0] = name;
+    status = do_sms_query("get_filesys_by_label", 1, argv,
+			  afsfilsyshelper, &ret);
+    if (status == SMS_SUCCESS)
+      return(ret);
+    return(0);
+    
+}
+
 
 /*	Function Name: GetQuotaArgs
  *	Description: gets quota args from the user
@@ -139,14 +174,16 @@ Bool quota;
   /* Get filesystem. */
 
   GetValueFromUser("Filesystem", &args[Q_FILESYS]);
-  if (quota)			/* We need an exact entry. */
-    if (!ValidName(args[Q_FILESYS]))
-      return(NULL);
+  if (quota && !ValidName(args[Q_FILESYS]))
+    return(NULL);
 
   /* Get and check username. */
-
-  GetValueFromUser("Username", &args[Q_LOGIN]);
-  if (!ValidName(args[Q_LOGIN])) return(NULL);
+  if (afsfilesys(args[Q_FILESYS])) {
+      args[Q_LOGIN] = strsave(NOBODY);
+  } else {
+      GetValueFromUser("Username", &args[Q_LOGIN]);
+      if (!ValidName(args[Q_LOGIN])) return(NULL);
+  }
 
   if (quota) {			/* Get and check quota. */
     GetValueFromUser("Quota", &args[Q_QUOTA]);

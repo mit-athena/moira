@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v 1.8 1988-09-01 16:05:58 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v 1.9 1988-09-02 12:37:52 mar Exp $";
 #endif lint
 
 /*	This is the file lists.c for the SMS Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v 1.8 1988-09-01 16:05:58 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v 1.9 1988-09-02 12:37:52 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -430,7 +430,7 @@ char **argv;
 	case SMS_LIST:
 	    Put_message("This list does not exist.");
 	    return(DM_QUIT);
-	case SMS_ACCESS:
+	case SMS_PERM:
 	    Put_message("You are not allowed to view this list.");
 	    break;
 	default:

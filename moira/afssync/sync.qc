@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/afssync/sync.qc,v 1.1 1989-09-24 15:35:23 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/afssync/sync.qc,v 1.2 1989-09-26 12:11:04 mar Exp $
  *
  * This generates the zone files necessary to load a hesiod server.
  * The following zones are generated: passwd, uid, pobox, group,
@@ -20,6 +20,7 @@
 #include <sms_app.h>
 #include <ctype.h>
 
+#define USERSMS 14487
 
 #define min(x,y)	((x) < (y) ? (x) : (y))
 struct hash *users = NULL;
@@ -33,6 +34,7 @@ main(argc, argv)
 int argc;
 char **argv;
 {
+    int status;
     int ingerr();
 
     if (argc != 2) {
@@ -53,6 +55,10 @@ char **argv;
 ##  begin transaction
 
     do_passwd();
+    status = PR_AddToGroup(NULL, USERSMS, SYSADMINID);
+    if (status) {
+	prserror(status, "adding SMS to system:administrators", 0, 0);
+    }
     do_groups();
 
 ##  end transaction

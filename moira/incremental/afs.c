@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/afs.c,v 1.40 1992-11-09 15:41:09 probe Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/afs.c,v 1.41 1993-01-29 16:08:47 probe Exp $
  *
  * Do AFS incremental updates
  *
@@ -58,6 +58,15 @@ extern long pr_AddToGroup();
 extern long pr_RemoveUserFromGroup();
 
 static char tbl_buf[1024];
+static struct member {
+	int op;
+	char list[33];
+	char type[9];
+	char member[129];
+	struct member *next;
+} *member_head = 0;
+
+static int mr_connections=0;
 
 main(argc, argv)
 char **argv;
@@ -434,8 +443,8 @@ add_user_lists(ac, av, user)
     char *av[];
     char *user;
 {
-    if (atoi(av[5]))
-	edit_group(1, av[0], "USER", user);
+    if (atoi(av[L_ACTIVE]) && atoi(av[L_GROUP]))	/* active group ? */
+	edit_group(1, av[L_NAME], "USER", user);
 }
 
 
@@ -446,16 +455,11 @@ get_members(ac, av, group)
 {
     int code=0;
 
-    if (strcmp(av[0], "LIST")) {
-	edit_group(1, group, av[0], av[1]);
-    } else {
-	code = mr_query("get_end_members_of_list", 1, &av[1],
-			get_members, group);
-	if (code)
-	    critical_alert("incremental",
-			   "Couldn't retrieve full membership of %s: %s",
-			   group, error_message(code));
-    }
+    code = mr_query("get_end_members_of_list", 1, &av[1], get_members, group);
+    if (code)
+	critical_alert("incremental",
+		       "Couldn't retrieve full membership of %s: %s",
+		       group, error_message(code));
     return code;
 }
 
@@ -465,7 +469,7 @@ check_user(ac, av, ustate)
     char *av[];
     int *ustate;
 {
-    *ustate = atoi(av[6]);
+    *ustate = atoi(av[U_STATE]);
 }
 
 
@@ -479,6 +483,7 @@ edit_group(op, group, type, member)
     char buf[PR_MAXNAMELEN];
     int code, ustate;
     static char local_realm[REALM_SZ+1] = "";
+    struct member *m;
 
     /* The following KERBEROS code allows for the use of entities
      * user@foreign_cell.
@@ -491,6 +496,25 @@ edit_group(op, group, type, member)
 	    *p = 0;
     } else if (strcmp(type, "USER"))
 	return;					/* invalid type */
+
+    /* Cannot risk doing another query during a callback */
+    /* We could do this simply for type USER, but eventually this may also
+     * dynamically add KERBEROS types to the prdb, and we will need to do
+     * a query to look up the uid of the null-instance user */
+    if (mr_connections) {
+	m = (struct member *)malloc(sizeof(struct member));
+	if (!m) {
+	    critical_alert("incremental", "Out of memory");
+	    exit(1);
+	}
+	m->op = op;
+	strcpy(m->list, group);
+	strcpy(m->type, type);
+	strcpy(m->member, member);
+	m->next = member_head;
+	member_head = m;
+	return;
+    }
 
     strcpy(buf, "system:");
     strcat(buf, group);
@@ -602,8 +626,6 @@ check_afs()
 }
 
 
-static int mr_connections=0;
-
 moira_connect()
 {
     static char hostname[64];
@@ -620,7 +642,14 @@ moira_connect()
 
 moira_disconnect()
 {
+    struct member *m;
+    
     if (!--mr_connections) {
+	for (m=member_head; m; m=member_head) {
+	    edit_group(m->op, m->list, m->type, m->member);
+	    member_head = m->next;
+	    free(m);
+	}
 	mr_disconnect();
     }
     return 0;

@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v 1.22 1991-03-08 10:29:56 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v 1.23 1991-05-07 16:39:47 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_test_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v 1.22 1991-03-08 10:29:56 mar Exp $";
+static char *rcsid_test_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v 1.23 1991-05-07 16:39:47 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -25,23 +25,16 @@ int ss;
 int recursion = 0;
 extern ss_request_table moira_test;
 extern int sending_version_no;
+int count;
 
-#ifndef __SABER__
 main(argc, argv)
 	int argc;
 	char **argv;
-#else __SABER__
-moira()
-#endif __SABER__
 {	
 	int status;
 	char *whoami;
 	
-#ifndef __SABER__
 	whoami = argv[0];
-#else
-	whoami = "mrtest";
-#endif __SABER__
 	
 	init_ss_err_tbl();
 	initialize_sms_error_table();
@@ -223,7 +216,6 @@ char *concat(str1, str2)
 	return rtn;
 }
 
-static int count;
 
 
 print_reply(argc, argv)

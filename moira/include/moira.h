@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/include/moira.h,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/include/moira.h,v 1.17 1990-06-13 12:40:57 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/include/moira.h,v 1.18 1991-03-08 11:04:08 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
@@ -87,7 +87,7 @@ char *hash_lookup(struct hash *h, int key);
 char *strsave(char *s);
 char *strtrim(char *s);
 char *canonicalize_hostname(char *s);
-#else !__STDC__
+#else /* !__STDC__ */
 int mr_connect();
 int mr_disconnect();
 int mr_host();
@@ -102,6 +102,6 @@ char *hash_lookup();
 char *strsave();
 char *strtrim();
 char *canonicalize_hostname();
-#endif __STDC__
+#endif  /* __STDC__ */
 
-#endif _moira_h_		/* Do Not Add Anything after this line. */
+#endif /* _moira_h_ */		/* Do Not Add Anything after this line. */

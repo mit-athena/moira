@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase2.dc,v 1.2 1993-01-12 22:11:20 genoa Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase2.dc,v 1.3 1993-01-13 12:23:16 mar Exp $
  *
  *  (c) Copyright 1988 by the Massachusetts Institute of Technology.
  *  For copying and distribution information, please see the file
@@ -11,7 +11,7 @@
 #include "dbck.h"
 EXEC SQL INCLUDE sqlca;
 
-static char phase2_qc_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase2.dc,v 1.2 1993-01-12 22:11:20 genoa Exp $";
+static char phase2_qc_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase2.dc,v 1.3 1993-01-13 12:23:16 mar Exp $";
 
 
 show_mcm_mach(id)
@@ -1159,11 +1159,10 @@ phase2()
     sq3 = sq_create();
     sq4 = sq_create();
     sq5 = sq_create();
-/*  range of m is imembers
- *  retrieve (id1 = m.list_id, type = m.member_type, id2 = m.member_id,
- *	      id3 = m.ref_count, id4 = m.direct) {  */
+
     EXEC SQL DECLARE csr223 CURSOR FOR
-	SELECT list_id, member_type, member_id, ref_count, direct FROM imembers;
+	SELECT list_id, member_type, member_id, ref_count, direct 
+	FROM imembers ORDER BY list_id;
     EXEC SQL OPEN csr223;
     while(1) {
 	EXEC SQL FETCH csr223 INTO :id1, :type, :id2, :id3, :id4;

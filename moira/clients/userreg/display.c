@@ -1,8 +1,8 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/display.c,v $
- *	$Author: mar $
+ *	$Author: jweiss $
  *	$Locker:  $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/display.c,v 1.10 1991-07-26 14:46:58 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/display.c,v 1.11 1996-08-15 00:57:51 jweiss Exp $
  *
  *  (c) Copyright 1988 by the Massachusetts Institute of Technology.
  *  For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_display_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/display.c,v 1.10 1991-07-26 14:46:58 mar Exp $";
+static char *rcsid_display_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/display.c,v 1.11 1996-08-15 00:57:51 jweiss Exp $";
 #endif	lint
 
 #include <mit-copyright.h>
@@ -21,7 +21,7 @@ static char *rcsid_display_c = "$Header: /afs/.athena.mit.edu/astaff/project/moi
 
 #define DESC_WIDTH 18
 #define HEADER "*** Athena User Account Registration ***"
-#if defined(vax) || defined(mips)
+#if defined(vax) || defined(ultrix)
 #define HELP   " Press the key above RETURN to delete a character.  Press Ctrl-C to start over."
 #endif
 #ifndef HELP

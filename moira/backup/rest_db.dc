@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/rest_db.dc,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/rest_db.dc,v 1.1 1992-08-10 14:43:44 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/rest_db.dc,v 1.2 1993-07-14 10:40:12 mar Exp $
  *
  *  (c) Copyright 1988 by the Massachusetts Institute of Technology.
  *  For copying and distribution information, please see the file
@@ -10,13 +10,14 @@
  */
 
 #ifndef lint
-static char *rcsid_rest_db_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/rest_db.dc,v 1.1 1992-08-10 14:43:44 mar Exp $";
+static char *rcsid_rest_db_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/rest_db.dc,v 1.2 1993-07-14 10:40:12 mar Exp $";
 #endif lint
 
 #include <sys/file.h>
 #include <stdio.h>
 #include <ctype.h>
 #include <mit-copyright.h>
+EXEC SQL INCLUDE sqlca;
 #include "dump_db.h"
 
 
@@ -27,19 +28,34 @@ main(argc, argv)
 {
     char buf[BUFSIZ];
     char *prefix;
-    
+    EXEC SQL BEGIN DECLARE SECTION;
+    char *db;
+    EXEC SQL END DECLARE SECTION;
+
+    if (argc != 2) {
+	fprintf(stderr, "Usage: %s database\n", argv[0]);
+	exit(1);
+    }
+    db = argv[1];
+
     if (!yes_or_no("Do you *REALLY* want to wipe the SMS database?")) {
 	printf("I didn't think so\n");
 	exit(1);
     }
-    if (!yes_or_no("Have you initialized an empty database named smstemp?")) {
+    sprintf(buf, "Have you initialized an empty database named %s?", db);
+    if (!yes_or_no(buf)) {
 	printf("You should have\n");
 	exit(1);
     }
     
     printf("Opening database: ");
     (void) fflush(stdout);
-##	ingres smstemp
+    EXEC SQL CONNECT :db;
+    if (sqlca.sqlcode != 0) {
+	com_err(argv[0], 0, "Ingres database open failed");
+	exit(1);
+    }
+    EXEC SQL SET AUTOCOMMIT ON;
 
     printf(" done\n");
 
@@ -56,7 +72,8 @@ main(argc, argv)
     }
     do_restores(prefix);
     printf("Restore complete\n");
-##	exit
+    EXEC SQL COMMIT;
+    EXEC SQL DISCONNECT;
     exit(0);
     /*NOTREACHED*/
 }
@@ -181,6 +198,8 @@ FILE *open_file(prefix, suffix)
     int fd;
     FILE *f;
     
+    EXEC SQL COMMIT WORK;
+
     (void) strcpy(name, prefix);
     (void) strcat(name, suffix);
 

@@ -1,4 +1,4 @@
-/* $Id: qsupport.pc,v 2.48 2003-09-03 18:39:25 zacheiss Exp $
+/* $Id: qsupport.pc,v 2.49 2004-08-05 23:56:25 zacheiss Exp $
  *
  * Special query routines
  *
@@ -18,7 +18,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.pc,v 2.48 2003-09-03 18:39:25 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.pc,v 2.49 2004-08-05 23:56:25 zacheiss Exp $");
 
 extern char *whoami, *table_name[];
 extern int dbms_errno, mr_errcode;
@@ -1486,17 +1486,17 @@ int register_user(struct query *q, char **argv, client *cl)
 
       EXEC SQL SELECT mach_id INTO :m_id FROM machine
 	WHERE name = 'ATHENA.MIT.EDU';
-
-      EXEC SQL SELECT value INTO :def_quota FROM numvalues
-	WHERE name = 'def_quota';
-      if (sqlca.sqlerrd[2] != 1)
-	return MR_NO_QUOTA;
-
-      EXEC SQL SELECT value INTO :def_imap_quota FROM numvalues
-	WHERE name = 'def_imap_quota';
-      if (sqlca.sqlerrd[2] != 1)
-	return MR_NO_QUOTA;
     }
+
+  EXEC SQL SELECT value INTO :def_quota FROM numvalues
+    WHERE name = 'def_quota';
+  if (sqlca.sqlerrd[2] != 1)
+    return MR_NO_QUOTA;
+
+  EXEC SQL SELECT value INTO :def_imap_quota FROM numvalues
+    WHERE name = 'def_imap_quota';
+  if (sqlca.sqlerrd[2] != 1)
+    return MR_NO_QUOTA;
 
   entity = cl->entity;
   who = cl->client_id;

@@ -395,3 +395,25 @@ create table listsids
 	sid		VARCHAR(64)	DEFAULT CHR(0)	NOT NULL,
 	created		DATE		DEFAULT SYSDATE	NOT NULL
 );
+
+create table containers
+(
+	name		VARCHAR(255) 	DEFAULT CHR(0)	NOT NULL,
+	cnt_id		INTEGER		DEFAULT 0	NOT NULL,
+	description	VARCHAR(255) 	DEFAULT CHR(0)	NOT NULL,
+	location	VARCHAR(64) 	DEFAULT CHR(0)	NOT NULL,
+	contact		VARCHAR(32) 	DEFAULT CHR(0)	NOT NULL,
+	acl_type	VARCHAR(8) 	DEFAULT CHR(0)	NOT NULL,
+	acl_id		INTEGER		DEFAULT 0	NOT NULL,
+	memacl_type	VARCHAR(8)	DEFAULT 'NONE'	NOT NULL,
+	memacl_id	INTEGER		DEFAULT 0	NOT NULL,
+	modtime		DATE    	DEFAULT SYSDATE	NOT NULL,
+	modby		INTEGER		DEFAULT 0	NOT NULL,
+	modwith		VARCHAR(8) 	DEFAULT CHR(0)	NOT NULL
+);
+
+create table mcntmap
+(
+	mach_id		INTEGER		DEFAULT 0	NOT NULL,
+	cnt_id		INTEGER		DEFAULT 0	NOT NULL
+);

@@ -28,3 +28,5 @@ drop table tblstats;
 drop table incremental;
 drop table usersids;
 drop table listsids;
+drop table containers;
+drop table mcntmap;

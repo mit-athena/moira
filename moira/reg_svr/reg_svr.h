@@ -67,11 +67,3 @@ char *xstrdup(char *);
 int read_hmac_key(void);
 unsigned short *init_rand(void *);
 void getwordlist(char *input, char *words[]);
-
-
-/* XXX Stuff for testing */
-#define KERBEROS_TEST_REALM "ZONE.MIT.EDU"
-#undef REG_SVR_PRINCIPAL
-#define REG_SVR_PRINCIPAL "rcmd"
-#undef REG_SVR_INSTANCE
-#define REG_SVR_INSTANCE "this-too-shall-pass"

@@ -1,27 +1,61 @@
 package mit.moira;
 
-public class MoiraConnect {
+public class Moira {
     boolean connected = false;
     boolean isauth = false;
-    Object LOCK;
-
     String server = "";
-    MoiraConnect() {
+    boolean isValid = true;
+
+    protected static Object LOCK = new Object();
+    protected static boolean isAvailable = true;
+
+    public static Moira getInstance(String server) {
+	synchronized (LOCK) {
+	    while (!isAvailable) {
+		try {
+		    LOCK.wait();
+		} catch (InterruptedException ie) {
+		}
+	    }
+	    isAvailable = false;
+	    return new Moira(server);
+	}
+    }
+		
+    protected static void returnInstance() {
+	synchronized(LOCK) {
+	    isAvailable = true;
+	    LOCK.notify();
+	}
     }
 
-    public MoiraConnect(String server, Object lock) {
+    public synchronized void done() {
+	if (!isValid) return;	// Don't make noise...
+	try {
+	    disconnect();
+	} catch (MoiraException m) {
+	}
+	isValid = false;
+	returnInstance();
+    }
+
+    protected Moira() {
+    }
+
+    protected Moira(String server) {
 	this.server = server;
-	this.LOCK = lock;
     }
 
-    public void connect() throws MoiraException {
+    public synchronized void connect() throws MoiraException {
+	if (!isValid) throw new MoiraException("Attempt to use stale Moira Object");
 	if (!connected) {
 	    MoiraConnectInternal.connect(server);
 	    connected = true;
 	}
     }
 	    
-    public void auth() throws MoiraException {
+    public synchronized void auth() throws MoiraException {
+	if (!isValid) throw new MoiraException("Attempt to use stale Moira Object");
 	if (!isauth) {
 	    synchronized(LOCK) {
 		MoiraConnectInternal.auth();
@@ -30,11 +64,13 @@ public class MoiraConnect {
 	}
     }
 
-    public void proxy(String user) throws MoiraException {
+    public synchronized void proxy(String user) throws MoiraException {
+	if (!isValid) throw new MoiraException("Attempt to use stale Moira Object");
 	MoiraConnectInternal.proxy(user);
     }
 	    
-    public void disconnect() {
+    public synchronized void disconnect() throws MoiraException {
+	if (!isValid) throw new MoiraException("Attempt to use stale Moira Object");
 	if (connected) {
 	    MoiraConnectInternal.disconnect();
 	    connected = false;
@@ -42,7 +78,8 @@ public class MoiraConnect {
 	}
     }
 
-    public ListInfo get_list_info(String list) throws MoiraException {
+    public synchronized ListInfo get_list_info(String list) throws MoiraException {
+	if (!isValid) throw new MoiraException("Attempt to use stale Moira Object");
 	if (!connected) throw new MoiraException("Not Connected");
 	String [] args = new String[1];
 	args[0] = list;
@@ -54,7 +91,8 @@ public class MoiraConnect {
 	return (new ListInfo(entry[0], entry[1], entry[2], entry[3], entry[4], entry[5], entry[6], entry[7], entry[8], entry[9], entry[10], entry[11], entry[12]));
     }
 
-    void update_list_info(String list, ListInfo info) throws MoiraException {
+    public synchronized void update_list_info(String list, ListInfo info) throws MoiraException {
+	if (!isValid) throw new MoiraException("Attempt to use stale Moira Object");
 	if (!connected) throw new MoiraException("Not Connected");
 	String [] args = new String[11];
 	args[0] = list;
@@ -72,7 +110,8 @@ public class MoiraConnect {
 	return;
     }
 
-    void delete_member_from_list(String list, String type, String member) throws MoiraException {
+    public synchronized void delete_member_from_list(String list, String type, String member) throws MoiraException {
+	if (!isValid) throw new MoiraException("Attempt to use stale Moira Object");
 	if (!connected) throw new MoiraException("Not Connected");
 	String [] args = new String[3];
 	args[0] = list;
@@ -82,7 +121,8 @@ public class MoiraConnect {
 	return;
     }
 
-    void add_member_to_list(String list, String type, String member) throws MoiraException {
+    public synchronized void add_member_to_list(String list, String type, String member) throws MoiraException {
+	if (!isValid) throw new MoiraException("Attempt to use stale Moira Object");
 	if (!connected) throw new MoiraException("Not Connected");
 	String [] args = new String[3];
 	args[0] = list;
@@ -92,7 +132,19 @@ public class MoiraConnect {
 	return;
     }
 
-    public Member [] get_members_of_list(String list) throws MoiraException {
+    public synchronized String [] get_user_by_login(String user) throws MoiraException {
+	if (!isValid) throw new MoiraException("Attempt to use stale Moira Object");
+	if (!connected) throw new MoiraException("Not Connected");
+	String [] args = new String[1];
+	args[0] = user;
+	Object [] retinternal = MoiraConnectInternal.mr_query("get_user_by_login", args);
+	if (retinternal == null) return (null);
+	String [] entry = (String []) retinternal[0];
+	return(entry);
+    }
+
+    public synchronized Member [] get_members_of_list(String list) throws MoiraException {
+	if (!isValid) throw new MoiraException("Attempt to use stale Moira Object");
 	if (!connected) throw new MoiraException("Not Connected");
 	String [] args = new String[1];
 	args[0] = list;
@@ -105,6 +157,12 @@ public class MoiraConnect {
 	}
 	return (retval);
     }
+
+    public void finalize() {
+	if (isValid) System.err.println("Moira object finalized while valid!");
+	else System.err.println("Moira object finalized (normally)");
+    }
+
 }
 
 class MoiraConnectInternal {

@@ -4,7 +4,6 @@ import java.util.Date;
 import java.io.IOException;
 
 public class Kticket implements Runnable {
-    Object LOCK;
     String name;
     String instance;
     String realm;
@@ -12,11 +11,10 @@ public class Kticket implements Runnable {
     Runtime r;
     Date renewTime;
 
-    Kticket(String name, String instance, String realm, Object lock) {
+    Kticket(String name, String instance, String realm) {
 	this.name = name;
 	this.instance = instance;
 	this.realm = realm;
-	this.LOCK = lock;
 	r = Runtime.getRuntime();
 	renewTime = new Date();
     }
@@ -38,27 +36,30 @@ public class Kticket implements Runnable {
     }
 
     public void renew() {
-	synchronized(LOCK) {
-	    try {
-		Process p = r.exec("/usr/athena/bin/kinit -k -t /mit/jis/javahacking/moira/KEY " + name + "/" + instance + "@" + realm);
-		p.waitFor();
-	    } catch (IOException e) {
-		e.printStackTrace();
-	    } catch (InterruptedException i) {
-	    }
+	Moira m = null;
+	try {
+	    m = Moira.getInstance("MOIRA.MIT.EDU"); // Host doesn't matter, we won't be making a connection!
+				// We are getting a Moira instance so that no
+				// other thread will have one and we can safely
+				// modify the ticket file
+	    Process p = r.exec("/usr/athena/bin/kinit -k -t /mit/jis/javahacking/moira/KEY " + name + "/" + instance + "@" + realm);
+	    p.waitFor();
+	} catch (IOException e) {
+	    e.printStackTrace();
+	} catch (InterruptedException i) {
+	} finally {
+	    m.done();		// Release Moira object
 	}
     }
 
     public void destroy() {
 	dostop = true;
-	synchronized(LOCK) {
-	    try {
-		Process p = r.exec("/usr/athena/bin/kdestroy");
-		p.waitFor();
-	    } catch (IOException e) {
-		e.printStackTrace();
-	    } catch (InterruptedException i) {
-	    }
+	try {
+	    Process p = r.exec("/usr/athena/bin/kdestroy");
+	    p.waitFor();
+	} catch (IOException e) {
+	    e.printStackTrace();
+	} catch (InterruptedException i) {
 	}
     }
 }

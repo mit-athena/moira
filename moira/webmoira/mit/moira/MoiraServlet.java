@@ -13,9 +13,7 @@ import java.util.ResourceBundle;
 
 public class MoiraServlet extends HttpServlet {
     static final String MOIRA_SERVER = "moira.mit.edu";
-    Object LOCK = new Object();	// Used to synchronize Moira authentication
-				// with the ticket fetching thread
-    Kticket kt = new Kticket("jis5", "foobar", "ATHENA.MIT.EDU", LOCK);
+    Kticket kt = new Kticket("jis5", "foobar", "ATHENA.MIT.EDU");
     boolean ktinit = false;
     private static final int MAXDISPLAY = 10;
     Hashtable FileParts = new Hashtable();
@@ -270,12 +268,12 @@ public class MoiraServlet extends HttpServlet {
 	if (offset < 0) showall = true;
 
 	if (members == null) {
-	    MoiraConnect mc = null;
+	    Moira mc = null;
 	    try {
 		mc = connect();
 		mc.proxy(kname);
 		members = mc.get_members_of_list(arg);
-		mc.disconnect();
+		mc.done();	// Done will disconnect
 		mc = null;
 		if (members != null)
 		    session.putValue("members", members);
@@ -297,7 +295,7 @@ public class MoiraServlet extends HttpServlet {
 		    e.printStackTrace();
 		}
 	    } finally {
-		if (mc != null) mc.disconnect();
+		if (mc != null) mc.done();
 	    }
 	}
 
@@ -316,7 +314,7 @@ public class MoiraServlet extends HttpServlet {
 	}
 	for (int i = offset; i < len; i++) {
 	    msg += "<tr><td>" + members[i].getMemberType() + "</td>";
-	    msg += "<td>" + members[i].getMemberId() + "</td></tr>\r\n";
+	    msg += "<td>" + quote(members[i].getMemberId()) + "</td></tr>\r\n";
 	}
 	msg += "</table></td><td>&nbsp;</td></tr><tr>\r\n";
 	if ((offset > 0) && !showall) {
@@ -401,7 +399,7 @@ public class MoiraServlet extends HttpServlet {
 
 	HttpSession session = request.getSession(true);
 
-	MoiraConnect mc = null;
+	Moira mc = null;
 	ListInfo li = null;
 	try {
 	    mc = connect();
@@ -418,11 +416,7 @@ public class MoiraServlet extends HttpServlet {
 	    msg += "!>\r\n";
 	    return (msg);
 	} finally {
-	    try {
-		if (mc != null) mc.disconnect();
-		mc = null;
-	    } catch (Exception e) {
-	    }
+	    if (mc != null) mc.done();
 	}
 
 	String list_description = "";
@@ -451,7 +445,7 @@ public class MoiraServlet extends HttpServlet {
 
 	HttpSession session = request.getSession(true);
 
-	MoiraConnect mc = null;
+	Moira mc = null;
 	boolean found = false;
 	boolean sublists = false;
 	Member [] members = null;
@@ -471,8 +465,6 @@ public class MoiraServlet extends HttpServlet {
 		    }
 		}
 	    }
-	    mc.disconnect();
-	    mc = null;
 	} catch (MoiraException m) {
 	    try {
 		msg = "<P><b>\r\n";
@@ -490,7 +482,7 @@ public class MoiraServlet extends HttpServlet {
 		e.printStackTrace();
 	    }
 	} finally {
-	    if (mc != null) mc.disconnect();
+	    if (mc != null) mc.done();
 	}
 	msg = "You are " + (found ? "" : "not ") + "a member of the list <b>" + arg + "</b>.<br>\r\n";
 	if (!found && sublists)
@@ -523,7 +515,7 @@ public class MoiraServlet extends HttpServlet {
 	if (listname == null) {
 	    return("<p>Could not find list name (shouldn't happen).</p>");
 	}
-	MoiraConnect mc = null;
+	Moira mc = null;
 	try {
 	    mc = connect();
 	    mc.proxy(kname);
@@ -543,10 +535,7 @@ public class MoiraServlet extends HttpServlet {
 	    msg += "!>\r\n";
 	    return (msg);
 	} finally {
-	    try {
-		if (mc != null) mc.disconnect();
-	    } catch (Exception e) {
-	    }
+	    if (mc != null) mc.done();
 	}
 	if (add) msg = "You have been added to the <b>" + listname + "</b> list.";
 	else msg = "You have been removed from the <b>" + listname + "</b> list.";
@@ -566,7 +555,7 @@ public class MoiraServlet extends HttpServlet {
 
 	HttpSession session = request.getSession(true);
 
-	MoiraConnect mc = null;
+	Moira mc = null;
 	try {
 	    mc = connect();
 	    mc.proxy(kname);
@@ -578,7 +567,7 @@ public class MoiraServlet extends HttpServlet {
 	    for (int i = 0; i < members.length; i++) {
 		del[i] = new Delmember(members[i]);
 	    }
-	    mc.disconnect();
+	    mc.done();
 	    mc = null;
 	    session.putValue("list", arg);
 	    session.removeValue("members"); // In case left over from previous call
@@ -599,7 +588,7 @@ public class MoiraServlet extends HttpServlet {
 		e.printStackTrace();
 	    }
 	} finally {
-	    if (mc != null) mc.disconnect();
+	    if (mc != null) mc.done();
 	}
 	return (do_remdisplay(qv, request, response, del, 0));
     }
@@ -627,7 +616,7 @@ public class MoiraServlet extends HttpServlet {
 	    msg += "<tr><td><input type=checkbox name=selected value=\" " + i + "\"";
 	    if (del[i].marked) msg += " checked";
 	    msg += "></td><td>" + del[i].member.getMemberType() + "</td>";
-	    msg += "<td>" + del[i].member.getMemberId() + "</td></tr>\r\n";
+	    msg += "<td>" + quote(del[i].member.getMemberId()) + "</td></tr>\r\n";
 	}
 	msg += "</table></td>\r\n";
 	msg += "<td><input type=hidden name=operation value=delmembers></td></tr>\r\n";
@@ -728,7 +717,7 @@ public class MoiraServlet extends HttpServlet {
 	for (int i = 0; i < del.length; i++) {
 	    if (del[i].marked) {
 		msg += "<tr><td>" + del[i].member.getMemberType() + "</td>";
-		msg += "<td>" + del[i].member.getMemberId() + "</td></tr>\r\n";
+		msg += "<td>" + quote(del[i].member.getMemberId()) + "</td></tr>\r\n";
 	    }
 	}
 	msg += "</table>\r\n";
@@ -760,7 +749,7 @@ public class MoiraServlet extends HttpServlet {
 	Vector problems = new Vector();
 	Vector success = new Vector();
 
-	MoiraConnect mc = null;
+	Moira mc = null;
 	try {
 	    mc = connect();
 	    mc.proxy(kname);
@@ -771,7 +760,7 @@ public class MoiraServlet extends HttpServlet {
 			success.addElement(del[i].member);
 		    }
 		} catch (MoiraException m) {
-		    problems.addElement("<tr><td>" + del[i].member.getMemberId() + "</td><td>" + m.getMessage() + "</td></tr>\r\n");
+		    problems.addElement("<tr><td>" + quote(del[i].member.getMemberId()) + "</td><td>" + m.getMessage() + "</td></tr>\r\n");
 		}
 	    }
 	} catch (MoiraException m) {
@@ -785,10 +774,7 @@ public class MoiraServlet extends HttpServlet {
 	    msg += "!>\r\n";
 	    return (msg);
 	} finally {
-	    try {
-		if (mc != null) mc.disconnect();
-	    } catch (Exception e) {
-	    }
+	    if (mc != null) mc.done();
 	}
 
 	msg = "";
@@ -796,7 +782,7 @@ public class MoiraServlet extends HttpServlet {
 	    msg += "<h2>Deleted the following:</h2>\r\n";
 	    msg += "<table border=1 cellpadding=2>\r\n";
 	    for (int i = 0; i < success.size(); i++) {
-		msg += "<tr><td>" + ((Member)success.elementAt(i)).getMemberId() + "</td></tr>\r\n";
+		msg += "<tr><td>" + quote(((Member)success.elementAt(i)).getMemberId()) + "</td></tr>\r\n";
 	    }
 	    msg += "</table>\r\n";
 	}
@@ -825,7 +811,7 @@ public class MoiraServlet extends HttpServlet {
 	HttpSession session = request.getSession(true);
 
 	String msg = "";
-	MoiraConnect mc = null;
+	Moira mc = null;
 	ListInfo li = null;
 	try {
 	    mc = connect();
@@ -842,10 +828,7 @@ public class MoiraServlet extends HttpServlet {
 	    msg += "!>\r\n";
 	    return (msg);
 	} finally {
-	    try {
-		if (mc != null) mc.disconnect();
-	    } catch (Exception e) {
-	    }
+	    if (mc != null) mc.done();
 	}
 	if (li == null) {
 	    return("Did not find list info.");
@@ -875,7 +858,7 @@ public class MoiraServlet extends HttpServlet {
 	HttpSession session = request.getSession(true);
 
 	String msg = "";
-	MoiraConnect mc = null;
+	Moira mc = null;
 	ListInfo li = null;
 	try {
 	    mc = connect();
@@ -892,10 +875,7 @@ public class MoiraServlet extends HttpServlet {
 	    msg += "!>\r\n";
 	    return (msg);
 	} finally {
-	    try {
-		if (mc != null) mc.disconnect();
-	    } catch (Exception e) {
-	    }
+	    if (mc != null) mc.done();
 	}
 	if (li == null) {
 	    return("Did not find list info.");
@@ -968,13 +948,11 @@ public class MoiraServlet extends HttpServlet {
 	if (tmp != null)
 	    li.ace_name = tmp;
 
-	MoiraConnect mc = null;
+	Moira mc = null;
 	try {
 	    mc = connect();
 	    mc.proxy(kname);
 	    mc.update_list_info(li.name, li);
-	    mc.disconnect();
-	    mc = null;
 	} catch (MoiraException e) {
 	    String msg;
 	    if (e.getMessage().startsWith("No such list")) {
@@ -994,10 +972,7 @@ public class MoiraServlet extends HttpServlet {
 	    msg += "!>\r\n";
 	    return (msg);
 	} finally {
-	    try {
-		if (mc != null) mc.disconnect();
-	    } catch (Exception e) {
-	    }
+	    if (mc != null) mc.done();
 	}
 	String msg = "<b>Update of " + li.name + " succeeded</b><p>\r\n";
 	qv.put("list", li.name);
@@ -1023,7 +998,7 @@ public class MoiraServlet extends HttpServlet {
 	if (member == null || type == null || member.equals("")) {
 	    return("<p>No names selected to be added!</p>");
 	}
-	MoiraConnect mc = null;
+	Moira mc = null;
 	StreamTokenizer tk = null;
 	msg += "<table border=1 cellpadding=2>\r\n";
 	boolean addheader = false;
@@ -1033,6 +1008,8 @@ public class MoiraServlet extends HttpServlet {
 	    mc = connect();
 	    mc.proxy(kname);
 	    tk = new StreamTokenizer(new StringReader(member));
+	    mc.done();
+	    mc = null;
 	    tk.wordChars('@', '@');
 	    tk.wordChars('0', '9');
 	    tk.wordChars('_', '_');
@@ -1077,10 +1054,7 @@ public class MoiraServlet extends HttpServlet {
 	} catch (IOException e) {
 	    e.printStackTrace(); // Shouldn't happen
 	} finally {
-	    try {
-		if (mc != null) mc.disconnect();
-	    } catch (Exception e) {
-	    }
+	    if (mc != null) mc.done();
 	}
 	if (problems.size() != 0) {
 	    msg += "<p>There were difficulties adding the following users:<br>\r\n";
@@ -1294,39 +1268,51 @@ public class MoiraServlet extends HttpServlet {
      * @return A Moira Connection Object
      * @exception MoiraException on any error
      */
-    protected MoiraConnect connect() throws MoiraException {
-	MoiraConnect retval = null;
+    protected Moira connect() throws MoiraException {
+	Moira retval = null;
+	boolean error = true;
 	int count = 0;
-	while (count++ < 10) {	// Got to stop at some point!
-	    retval = new MoiraConnect(MOIRA_SERVER, LOCK);
-	    retval.connect();
-	    try {
-		retval.auth();
-		return (retval); // No exception, return. yeah!
-	    } catch (MoiraException m) {
-		if ((m.getCode() != KE_RD_AP_BADD) || (count > 8)) {
-		    if (retval != null) {
-			try {
-			    retval.disconnect();
-			} catch (Exception e) {
-			}
-		    }
-		    throw m;	// Re-throw if not the error we expect or we are looping
-		}
-	    }
-	    if (retval != null) {
+	try {
+	    while (count++ < 10) {	// Got to stop at some point!
+		retval = Moira.getInstance(MOIRA_SERVER);	    
+		retval.connect();
 		try {
-		    retval.disconnect();
-		} catch (Exception e) {
+		    retval.auth();
+		    error = false;
+		    return (retval); // No exception, return. yeah!
+		} catch (MoiraException m) {
+		    if ((m.getCode() != KE_RD_AP_BADD) || (count > 8)) {
+			throw m;	// Re-throw if not the error we expect or we are looping
+		    }
 		}
-		retval = null;
+		if (retval != null) {
+		    retval.done();
+		    retval = null;
+		}
+		System.err.println("MoiraServlet: Forced Renewal...");
+		kt.renew();		// Renew tickets
 	    }
-	    System.err.println("MoiraServlet: Forced Renewal...");
-	    kt.renew();		// Renew tickets
+	    // Fell through, count exceeded
+	    throw new MoiraException("Cannot authenticate successfully to Moira");
+	} finally {
+	    if (error && (retval != null)) retval.done();
 	}
-	return (null);
     }
 
+    public static String quote(String value) {
+        if (value.indexOf('<') == -1 &&
+	    value.indexOf('>') == -1) return (value); // Nothing to quote
+	StringBuffer buf = new StringBuffer(value.length() + 10);
+	for (int i = 0; i < value.length(); i++) {
+	    char c = value.charAt(i);
+	    if (c != '<' && c != '>') buf.append(c);
+	    else {
+		if (c == '<') buf.append("&lt;");
+		if (c == '>') buf.append("&gt;");
+	    }
+	}
+	return (new String(buf));
+    }
 }
 
 class Delmember {

@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.4 2001-10-09 14:15:53 zacheiss Exp $
+# $Id: Makefile.in,v 1.5 2001-10-21 18:43:58 jis Exp $
 
 SHELL=/bin/sh
 @SET_MAKE@
@@ -24,7 +24,7 @@ prefix=@prefix@
 exec_prefix=@exec_prefix@
 bindir=@bindir@
 
-CLASSES= mit/moira/AuthenticationError.class mit/moira/Coder.class mit/moira/Delmember.class mit/moira/Kticket.class mit/moira/ListInfo.class mit/moira/Member.class mit/moira/MoiraConnect.class mit/moira/MoiraConnectInternal.class mit/moira/MoiraException.class mit/moira/MoiraServlet.class
+CLASSES= mit/moira/AuthenticationError.class mit/moira/Coder.class mit/moira/Delmember.class mit/moira/Kticket.class mit/moira/ListInfo.class mit/moira/Member.class mit/moira/Moira.class mit/moira/MoiraConnectInternal.class mit/moira/MoiraException.class mit/moira/MoiraServlet.class
 OBJ=     moirai.o
 SOBJ=    mit/moira/libmoirajava.so
 SOBJG=   mit/moira/libmoirajava_g.so

@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.12 1990-03-17 16:48:52 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.13 1990-04-06 17:01:20 mar Exp $
  *
  * Command line oriented Moira List tool.
  *
@@ -21,7 +21,7 @@
 #include <moira_site.h>
 
 #ifndef LINT
-static char blanche_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.12 1990-03-17 16:48:52 mar Exp $";
+static char blanche_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.13 1990-04-06 17:01:20 mar Exp $";
 #endif
 
 
@@ -182,10 +182,14 @@ char **argv;
     }
 
     if (!noauth && (status = mr_auth("blanche"))) {
-	com_err(whoami, status, "unable to authenticate to Moira");
-	com_err(whoami, 0,
-		" Try the -noauth flag if you don't need authentication");
-	exit(2);
+	if (status == MR_USER_AUTH)
+	  com_err(whoami, status, "");
+	else {
+	    com_err(whoami, status, "unable to authenticate to Moira");
+	    com_err(whoami, 0,
+		    " Try the -noauth flag if you don't need authentication");
+	    exit(2);
+	}
     }
 
     /* display list info if requested to */

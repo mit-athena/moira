@@ -1,4 +1,4 @@
-/* $Id: hosts.pc,v 1.6 1998-04-21 20:32:41 danw Exp $
+/* $Id: hosts.pc,v 1.7 1999-01-28 17:50:57 danw Exp $
  *
  * This generates the hstath.txt hosttable.
  *
@@ -24,7 +24,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/hosts.pc,v 1.6 1998-04-21 20:32:41 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/hosts.pc,v 1.7 1999-01-28 17:50:57 danw Exp $");
 
 char *whoami = "hosts.gen";
 char *db = "moira/moira";
@@ -119,15 +119,14 @@ int main(int argc, char **argv)
 
   EXEC SQL DECLARE x CURSOR FOR SELECT
     name, mach_id, vendor, model, os, address
-    FROM machine WHERE status = 1 ORDER BY address;
+    FROM machine WHERE status = 1 AND mach_id > 0
+    ORDER BY address;
   EXEC SQL OPEN x;
   while (1)
     {
       EXEC SQL FETCH x INTO :name, :id, :vendor, :model, :os, :addr;
       if (sqlca.sqlcode)
 	break;
-      if (id == 0)
-	continue;
       if (!*strtrim(name))
 	continue;
       if ((i = strlen(name)) < 9 || !strchr(name, '.') ||

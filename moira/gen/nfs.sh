@@ -1,7 +1,7 @@
 #!/bin/csh -f
 # This script performs nfs updates on servers.
 #
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/nfs.sh,v 1.21 1998-04-16 19:02:07 danw Exp $
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/nfs.sh,v 1.22 1999-01-20 00:11:02 danw Exp $
 
 # The following exit codes are defined and MUST BE CONSISTENT with the
 # error codes the library uses:
@@ -66,24 +66,8 @@ endif
 
 # After this point, if /tmp gets cleared out by reactivate (which
 # happens on a combined server/workstation) we don't care.
-
-if ("`uname -sr`" =~ SunOS*5*) then
-    mkdir /usr/etc/credtmp
-    mount -F tmpfs swap /usr/etc/credtmp
-    ln -s /usr/etc/credentials.new /usr/etc/credtmp/credentials.new
-    mkcred /usr/etc/credtmp/credentials.new
-    if ($status) then
-	umount /usr/etc/credtmp
-	rmdir /usr/etc/credtmp
-	exit $MR_MKCRED
-    endif
-    mv /usr/etc/credtmp/credentials.new.{dir,pag} /usr/etc/
-    umount /usr/etc/credtmp
-    rmdir /usr/etc/credtmp
-else
-    mkcred /usr/etc/credentials.new
-    if ($status) exit $MR_MKCRED
-endif
+mkcred /usr/etc/credentials.new
+if ($status) exit $MR_MKCRED
 
 # Try to install the files
 foreach e ( "" .dir .pag)

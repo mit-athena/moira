@@ -1,5 +1,5 @@
 #!/moira/bin/perl
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/report.sh,v 1.6 1997-01-20 18:14:13 danw Exp $
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/report.sh,v 1.7 1999-01-29 18:38:35 danw Exp $
 
 chdir($ARGV[0]);
 
@@ -42,17 +42,17 @@ delete $TYPES{"NONE"};
 printf("%5d Clusters\n\n", $total);
 
 
-open(PRINTCAP, "printcap") || die "Cannot open printcap file for input.\n";
+open(PRINTERS, "printers") || die "Cannot open printers file for input.\n";
 
 $total = 0;
 
-while (<PRINTCAP>) {
-    split(/\|/, $_, 7);
-    if ($_[5]) { $auth++;  }
+while (<PRINTERS>) {
+    split(/\|/, $_, 11);
+    if ($_[9]) { $auth++; }
     $total++;
 }
 
-close(PRINTCAP);
+close(PRINTERS);
 
 printf("%5d Printers, %d with authentication (%d%%).\n\n", $total, $auth,
 	(100 * $auth + $total/2)/$total);

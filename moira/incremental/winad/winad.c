@@ -1,7 +1,7 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/winad/winad.c,v 1.5 2001-01-04 09:02:09 zacheiss Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/winad/winad.c,v 1.6 2001-01-18 18:17:20 zacheiss Exp $
 /* test parameters for creating a user account - done 
- * users 10 10 testacc 31275 sh cmd Lastname Firstname Middlename 0 950000000 STAFF testacc 31275 sh cmd Lastname Firstname Middlename 2 950000000 STAFF
- * users 10 10 testacc 31275 sh cmd Lastname Firstname Middlename 2 950000000 STAFF testacc 31275 sh cmd Lastname Firstname Middlename 1 950000000 STAFF
+ * users 10 10 a_chen 31275 sh cmd Lastname Firstname Middlename 0 950000000 STAFF a_chen 31275 sh cmd Lastname Firstname Middlename 2 950000000 STAFF
+ * users 10 10 a_chen 31275 sh cmd Lastname Firstname Middlename 2 950000000 STAFF a_chen 31275 sh cmd Lastname Firstname Middlename 1 950000000 STAFF
  *   login, unix_uid, shell, winconsoleshell, last, first, middle, status, clearid, type
  *
  * test parameters for deactivating/deleting a user account - done
@@ -444,7 +444,7 @@ void do_list(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
       callback_rc = 0;
       if (rc = mr_query("get_list_info", 1, av, group_rename, call_args))
         {
-           if (rc != LDAP_NO_SUCH_OBJECT)
+           if (callback_rc != LDAP_NO_SUCH_OBJECT)
              {
                critical_alert("AD incremental",
                               "Could not change list %s to %s : %s",
@@ -651,35 +651,40 @@ void do_user(LDAP *ldap_handle, LDAPMessage *ldap_entry, char *ldap_hostname,
           if (rc = mr_query("get_user_account_by_login", 1, av, user_update,
                             call_args))
             {
-              critical_alert("AD incremental",
-                             "Could not update user %s info : %s",
-                             before[U_NAME], 
-                             error_message(rc));
+              if (callback_rc != LDAP_NO_SUCH_OBJECT)
+                {
+                  critical_alert("AD incremental",
+                                 "Could not update user %s info : %s",
+                                 before[U_NAME], 
+                                 error_message(rc));
+                  goto cleanup;
+                }
             }
-          goto cleanup;
         }
-      com_err(whoami, 0, "Changing user %s to %s", before[U_NAME],
-              after[U_NAME]);
-      av[0] = after[U_NAME];
-      call_args[0] = (char *)ldap_handle;
-      call_args[1] = dn_path;
-      call_args[2] = (char *)MEMBER_ACTIVATE;
-      call_args[3] = before[U_NAME];
-      sid_base = NULL;
-      sid_ptr = &sid_base;
-      callback_rc = 0;
-      if (rc = mr_query("get_user_account_by_login", 1, av, user_rename,
-                        call_args))
+      else
         {
-          if (rc != LDAP_NO_SUCH_OBJECT)
+          com_err(whoami, 0, "Changing user %s to %s", before[U_NAME],
+                  after[U_NAME]);
+          av[0] = after[U_NAME];
+          call_args[0] = (char *)ldap_handle;
+          call_args[1] = dn_path;
+          call_args[2] = (char *)MEMBER_ACTIVATE;
+          call_args[3] = before[U_NAME];
+          sid_base = NULL;
+          sid_ptr = &sid_base;
+          callback_rc = 0;
+          if (rc = mr_query("get_user_account_by_login", 1, av, user_rename,
+                            call_args))
             {
-              critical_alert("AD incremental",
-                             "Could not change user %s to %s : %s",
-                             before[U_NAME], 
-                             after[U_NAME], error_message(rc));
-              goto cleanup;
+              if (callback_rc != LDAP_NO_SUCH_OBJECT)
+                {
+                  critical_alert("AD incremental",
+                                 "Could not change user %s to %s : %s",
+                                 before[U_NAME], 
+                                 after[U_NAME], error_message(rc));
+                  goto cleanup;
+                }
             }
-          callback_rc = LDAP_NO_SUCH_OBJECT;
         }
       if (callback_rc != LDAP_NO_SUCH_OBJECT)
         goto cleanup;
@@ -2004,6 +2009,7 @@ int user_update(int ac, char **av, void *ptr)
       critical_alert("AD incremental - user update",
                      "LDAP server unable to find user %s in AD.",
                       user_name);
+      callback_rc = LDAP_NO_SUCH_OBJECT;
       goto cleanup;
     }
   strcpy(distinguished_name, group_base->dn);

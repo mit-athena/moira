@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/aliases.qc,v 1.7 1989-06-08 15:55:09 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/aliases.qc,v 1.8 1989-08-09 17:57:14 mar Exp $
  *
  * This generates the /usr/lib/aliases mail aliases file for the mailhub.
  * The aliases file will contain:
@@ -53,7 +53,7 @@ char **argv;
 ##	    retrieve (flag1 = int4(interval("min",tblstats.modtime - filetime)))
 ##		where tblstats.table = "list"
 ##	    retrieve (flag2 = int4(interval("min",tblstats.modtime - filetime)))
-##		where tblstats.table = "members"
+##		where tblstats.table = "imembers"
 ##	    retrieve (flag3 = int4(interval("min",tblstats.modtime - filetime)))
 ##		where tblstats.table = "users"
 	    if (flag1 < 0 && flag2 < 0 && flag3 < 0) {
@@ -215,8 +215,9 @@ get_info()
 
 
     fprintf(stderr, "Loading members\n");
-##  range of m is members
-##  retrieve (id = m.list_id, type = m.member_type, mid = m.member_id) {
+##  range of m is imembers
+##  retrieve (id = m.list_id, type = m.member_type, mid = m.member_id)
+##    	where m.direct = 1  {
 	if (l = (struct list *) hash_lookup(lists, id)) {
 	    m = (struct member *) malloc(sizeof(struct member));
 	    m->name = (char *) NULL;

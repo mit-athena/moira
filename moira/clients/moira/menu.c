@@ -5,7 +5,7 @@
  *
  * $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v $
  * $Author: mar $
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.26 1990-01-19 18:02:30 mar Exp $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.27 1990-03-17 00:19:53 mar Exp $
  *
  * Generic menu system module.
  *
@@ -18,7 +18,7 @@
  */
 
 #ifndef lint
-static char rcsid_menu_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.26 1990-01-19 18:02:30 mar Exp $";
+static char rcsid_menu_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.27 1990-03-17 00:19:53 mar Exp $";
 
 #endif lint
 
@@ -66,19 +66,18 @@ Menu *top_menu;			/* Root for command search */
 
 /*
  * Hook function to cause error messages to be printed through
- * curses instead of around it.
+ * curses instead of around it.  Takes at most 5 args to the
+ * printf string (crock...)
  */
 
 void
-menu_com_err_hook(who, code, fmt, args)
+menu_com_err_hook(who, code, fmt, arg1, arg2, arg3, arg4, arg5)
     const char *who;
     long code;
     const char *fmt;
-    va_list args;
+    caddr_t arg1, arg2, arg3, arg4, arg5;
 {
     char buf[BUFSIZ], *cp;
-
-    FILE _strbuf;
 
     (void) strcpy(buf, who);
     for (cp = buf; *cp; cp++);
@@ -89,11 +88,7 @@ menu_com_err_hook(who, code, fmt, args)
 	while (*cp)
 	    cp++;
     }
-    _strbuf._flag = _IOWRT + _IOSTRG;
-    _strbuf._ptr = cp;
-    _strbuf._cnt = BUFSIZ - (cp - buf);
-    _doprnt(fmt, args, &_strbuf);
-    (void) putc('\0', &_strbuf);
+    sprintf(cp, fmt, arg1, arg2, arg3, arg4, arg5);
     Put_message(buf);
 }
 

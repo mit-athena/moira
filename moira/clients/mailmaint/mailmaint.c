@@ -1,6 +1,6 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v 1.19 1989-08-28 23:18:40 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v 1.20 1989-11-28 19:53:09 mar Exp $
  */
 
 /*  (c) Copyright 1988 by the Massachusetts Institute of Technology. */
@@ -8,7 +8,7 @@
 /*  <mit-copyright.h>. */
 
 #ifndef lint
-static char rcsid_mailmaint_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v 1.19 1989-08-28 23:18:40 mar Exp $";
+static char rcsid_mailmaint_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v 1.20 1989-11-28 19:53:09 mar Exp $";
 #endif lint
 
 /***********************************************************************/
@@ -18,7 +18,6 @@ static char rcsid_mailmaint_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/
 /***********************************************************************/
 #include <stdio.h>
 #include <pwd.h>
-#include <menu.h>
 #include <signal.h>
 #include <strings.h>
 #include <curses.h>
@@ -29,6 +28,7 @@ static char rcsid_mailmaint_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/
 #include <sms.h>
 #include <sms_app.h>
 #include <mit-copyright.h>
+
 
 #define STARTCOL 0
 #define STARTROW 3
@@ -161,12 +161,12 @@ main(argc, argv)
     if (use_menu) {
 	(void) initscr();
 	if ((LINES < 24) || (COLS < 60)) {
-	    Put_message("Display window too small.\n\n");
+	    display_buff("Display window too small.\n\n");
 	    (void) sprintf(buf, "Current window parameters are (%d \
 lines, %d columns)\n", LINES, COLS);
-	    Put_message(buf);
-	    Put_message("Please resize your window\n");
-	    Put_message("to at least 24 lines and 60 columns.\n");
+	    display_buff(buf);
+	    display_buff("Please resize your window\n");
+	    display_buff("to at least 24 lines and 60 columns.\n");
 	    exit(0);
 	}
 	raw();
@@ -292,7 +292,7 @@ show_list_info()
     show_text(DISPROW, STARTCOL, "Show information about a list.\n\r");
     buf = calloc((unsigned)1024, 1);
     if (Prompt("Enter List Name: ", buf, LISTSIZE, 1) == 1) {
-	Put_message("\n\r");
+	display_buff("\n\r");
 	if (fetch_list_info(buf, current_li) == 0) {
 	    (void) sprintf(buf, "Description: %s\n\r", current_li->desc);
 	    if (strlen(buf) > 60)
@@ -366,7 +366,7 @@ start_display_buff(buff)
 	mvcur(0, 0, currow, STARTCOL);
 	refresh();
 	if (Prompt("--RETURN for more, ctl-c to exit--", buffer, 1, 0) == 0) {
-	    Put_message("Flushing query...");
+	    display_buff("Flushing query...");
 	    moreflg = 1;
 	    return (0);
 	}
@@ -389,13 +389,13 @@ add_member()
     show_text(DISPROW, STARTCOL, "Add yourself to a list\n\r");
     buf = calloc(LISTMAX, 1);
     if (Prompt("Enter List Name: ", buf, LISTSIZE, 1) == 1) {
-	Put_message("\r\n");
+	display_buff("\r\n");
 	argv[0] = strsave(buf);
 	argv[1] = strsave("user");
 	argv[2] = strsave(uname);
 	if (status = sms_query("add_member_to_list", 3, argv,
 			       scream, (char *) NULL)) {
-	    Put_message("\r\n");
+	    display_buff("\r\n");
 	    com_err(whoami, status, " found.\n");
 	}
 	else {
@@ -418,13 +418,13 @@ delete_member()
     show_text(DISPROW, STARTCOL, "Remove yourself from a list\n\r");
     buf = calloc(LISTMAX, 1);
     if (Prompt("Enter List Name: ", buf, LISTSIZE, 1) == 1) {
-	Put_message("\r\n");
+	display_buff("\r\n");
 	argv[0] = strsave(buf);
 	argv[1] = strsave("user");
 	argv[2] = strsave(uname);
 	if (status = sms_query("delete_member_from_list", 3, argv,
 			       scream, (char *) NULL)) {
-	    Put_message("\r\n");
+	    display_buff("\r\n");
 	    com_err(whoami, status, " found.\n");
 	}
 	else {
@@ -453,7 +453,7 @@ list_by_member()
     refresh();
     if (status = sms_query("get_lists_of_member", 2, nargv + 1,
 			   print_1, (char *) NULL)) {
-	Put_message("\r\n");
+	display_buff("\r\n");
 	com_err(whoami, status, " in get_lists_of_member");
     }
     currow++;
@@ -492,7 +492,7 @@ print_1(argc, argv, callback)
 {
     char buf[BUFSIZ];
 
-    /* no newline 'cause Put_message adds one */
+    /* no newline 'cause display_buff adds one */
     (void) sprintf(buf, "%s\r", argv[0]);
     (void) start_display(buf);
 
@@ -531,12 +531,12 @@ list_all_groups()
     first_time = 1;
     if (status = sms_query("qualified_get_lists", 5, argv,
 			   print_all, (char *) NULL)) {
-	Put_message("\r\n");
+	display_buff("\r\n");
 	com_err(whoami, status, " in list_all_groups\n");
     }
     end_display();
 
-    return (DM_NORMAL);		/* HA! */
+    return (0);
 }
 
 /****************************************************/
@@ -557,7 +557,7 @@ list_members()
 	argv[0] = buf;
 	if (status = sms_query("get_members_of_list", 1, argv,
 			       print_2, (char *) NULL)) {
-	    Put_message("\r\n");
+	    display_buff("\r\n");
 	    com_err(whoami, status, " found.\n");
 	    currow++;
 	}
@@ -573,7 +573,7 @@ list_members()
 	return(0);
     }
     clrwin(DISPROW);
-    return (DM_NORMAL);		/* HA! */
+    return (0);
 }
 
 /****************************************************/
@@ -608,7 +608,7 @@ start_display(buff)
 	mvcur(0, 0, currow, STARTCOL);
 	refresh();
 	if (Prompt("--RETURN for more, ctl-c to exit--", buffer, 1, 0) == 0) {
-	    Put_message("Flushing query...");
+	    display_buff("Flushing query...");
 	    moreflg = 1;
 	    return (0);
 	}
@@ -902,7 +902,7 @@ Prompt(prompt, buf, buflen, crok)
 	case '\n':
 	case '\r':
 	    if (crok)
-		Put_message("\r");
+		display_buff("\r");
 	    *p = '\0';
 	    if (strlen(buf) < 1)/* only \n or \r in buff */
 		return (-1);
@@ -970,5 +970,5 @@ menu_err_hook(who, code, fmt, args)
     _strbuf._cnt = BUFSIZ - (cp - buf);
     _doprnt(fmt, args, &_strbuf);
     (void) putc('\0', &_strbuf);
-    Put_message(buf);
+    display_buff(buf);
 }

@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/afs.c,v 1.32 1992-07-27 20:25:46 probe Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/afs.c,v 1.33 1992-07-28 14:59:31 probe Exp $
  *
  * Do AFS incremental updates
  *
@@ -180,7 +180,7 @@ int afterc;
 	    av[1] = after[U_NAME];
 	    code = mr_query("get_lists_of_member", 2, av,
 			    add_user_lists, after[U_NAME]);
-	    if (code)
+	    if (code && code != MR_NO_MATCH)
 		critical_alert("incremental",
 			       "Couldn't retrieve membership of user %s: %s",
 			       after[U_NAME], error_message(code));

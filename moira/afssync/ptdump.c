@@ -43,6 +43,7 @@ char **argv;
     char file[512];
     register struct ubik_hdr *uh;
     int didit;
+    setlinebuf(stdout);
     strcpy(file, "/usr/afs/db/prdb.DB0");
     while ((cc = getopt(argc, argv, "f:gnc")) != EOF) {
 	switch (cc) {
@@ -168,6 +169,7 @@ int fd;
     printf("Group: %s\n", pre->name);
     for (i = 0; i < PRSIZE; i++) {
 	if (pre->entries[i] == 0) break;
+	if (pre->entries[i] == PRBADID) continue;
 	printf("   Member:  %s\n", id_to_name(pre->entries[i], fd));
     }
     if (i == PRSIZE) {
@@ -179,6 +181,7 @@ int fd;
 	    for (i = 0; i < COSIZE; i++) {
 		prco.entries[i] = ntohl(prco.entries[i]);
 		if (prco.entries[i] == 0) break;
+		if (prco.entries[i] == PRBADID) continue;
 		printf("   Member(co):  %s\n", id_to_name(prco.entries[i], fd));
 	    }
 	    if ((i == COSIZE) && prco.next)

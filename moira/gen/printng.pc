@@ -1,4 +1,4 @@
-/* $Id: printng.pc,v 1.4 1999-06-30 20:39:50 danw Exp $
+/* $Id: printng.pc,v 1.5 1999-07-06 14:45:50 danw Exp $
  *
  * This generates printcaps and other files for Athena print servers
  *
@@ -22,7 +22,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/printng.pc,v 1.4 1999-06-30 20:39:50 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/printng.pc,v 1.5 1999-07-06 14:45:50 danw Exp $");
 
 char *whoami = "printng.gen";
 char *db = "moira/moira";
@@ -199,7 +199,7 @@ void do_host(char *host)
   fprintf(out, "ACCEPT SERVICE=M NOT AUTHJOB SAMEUSER REMOTEIP=</var/spool/printer/masks.allow\n\n");
   
   fprintf(out, "# Allow root to control and remove jobs\n");
-  fprintf(out, "ACCEPT SERVICE=M SERVER REMOTEUSER=root\n\n");
+  fprintf(out, "ACCEPT SERVICE=C SERVER REMOTEUSER=root\n\n");
 
   fprintf(out, "# Allow admins to control and remove jobs\n");
   fprintf(out, "ACCEPT SERVICE=C AUTH=USER AUTHUSER=</var/spool/printer/lpcaccess.top\n\n");

@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_glue.c,v $
- *	$Author: wesommer $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_glue.c,v 1.4 1987-09-21 15:17:09 wesommer Exp $
+ *	$Author: mar $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_glue.c,v 1.5 1988-06-30 14:39:30 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
@@ -9,6 +9,9 @@
  * 	a program expecting a library level interface.
  * 
  * 	$Log: not supported by cvs2svn $
+ * Revision 1.4  87/09/21  15:17:09  wesommer
+ * Also need to initialize pseudo_client.clname.
+ * 
  * Revision 1.3  87/08/22  17:31:56  wesommer
  * Fix a "fall-through".
  * 
@@ -21,19 +24,21 @@
  */
 
 #ifndef lint
-static char *rcsid_sms_glue_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_glue.c,v 1.4 1987-09-21 15:17:09 wesommer Exp $";
+static char *rcsid_sms_glue_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_glue.c,v 1.5 1988-06-30 14:39:30 mar Exp $";
 #endif lint
 
 #include "sms_server.h"
 #include <krb.h>		/* XXX for error codes */
 #include <pwd.h>
+#include "query.h"
+
 static int already_connected = 0;
 
 #define CHECK_CONNECTED { if (!already_connected) return SMS_NOT_CONNECTED; }
 
 static client pseudo_client;
-extern int krb_err_base;
-extern char *malloc();
+extern int krb_err_base, errno;
+extern char *malloc(), *whoami;
 
 sms_connect()
 {
@@ -66,11 +71,12 @@ sms_noop()
 /*
  * This routine is rather bogus, as it only fills in who you claim to be.
  */
-sms_auth()
+sms_auth(prog)
+char *prog;
 {
     struct passwd *pw;
     extern char *krb_realm;
-    char buf[1024];
+    char buf[1024], *strsave();
     
     CHECK_CONNECTED;
     pw = getpwuid(getuid());
@@ -87,8 +93,27 @@ sms_auth()
     strcat(buf, pseudo_client.kname.realm);
     pseudo_client.clname = malloc(strlen(buf)+1);
     strcpy(pseudo_client.clname, buf);
+    pseudo_client.users_id = get_users_id(pseudo_client.kname.name);
+    pseudo_client.entity = strsave(prog);
     return 0;
 }
+
+struct hint {
+    int (*proc)();
+    char *hint;
+};
+
+callback(argc, argv, arg)
+int argc;
+char **argv;
+struct hint *arg;
+{
+    if (sms_trim_args(argc, argv) == SMS_NO_MEM) {
+	com_err(whoami, SMS_NO_MEM, "while trimmming args");
+    }
+    (*arg->proc)(argc, argv, arg->hint);
+}
+
 
 int sms_query(name, argc, argv, callproc, callarg)
     char *name;		/* Query name */
@@ -97,8 +122,12 @@ int sms_query(name, argc, argv, callproc, callarg)
     int (*callproc)();	/* Callback procedure */
     char *callarg;		/* Callback argument */
 {
+    struct hint hints;
+
+    hints.proc = callproc;
+    hints.hint = callarg;
     return sms_process_query(&pseudo_client, name, argc, argv,
-			     callproc, callarg);
+			     callback, &hints);
 }
 
 int sms_access(name, argc, argv)
@@ -115,8 +144,12 @@ int sms_query_internal(argc, argv, callproc, callarg)
     int (*callproc)();
     char *callarg;
 {
+    struct hint hints;
+
+    hints.proc = callproc;
+    hints.hint = callarg;
     return sms_process_query(&pseudo_client, argv[0], argc-1, argv+1,
-			     callproc, callarg);
+			     callback, &hints);
 }
 
 int sms_access_internal(argc, argv)
@@ -131,6 +164,40 @@ sms_shutdown(why)
 {
     fprintf(stderr, "Sorry, not implemented\n");
 }
+
+
+/* trigger_dcm is also used as a followup routine to the 
+ * set_server_host_override query, hence the two dummy arguments.
+ */
+
+struct query pseudo_query = {
+	"trigger_dcm",
+	"tdcm",
+};
+
+trigger_dcm(dummy0, dummy1, cl)
+	int dummy0, dummy1;
+	client *cl;
+{
+	register int pid, status;
+	
+	if (status = check_query_access(&pseudo_query, 0, cl))
+	    return(status);
+
+	pid = vfork();
+	switch (pid) {
+	case 0:
+		execl("/u1/sms/bin/startdcm", "startdcm", 0);
+		exit(1);
+		
+	case -1:
+		return(errno);
+
+	default:
+		return(SMS_SUCCESS);
+	}
+}
+
 
 /*
  * Local Variables:

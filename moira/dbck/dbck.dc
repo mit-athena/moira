@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/dbck.dc,v 1.3 1993-02-09 16:46:08 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/dbck.dc,v 1.4 1993-10-21 15:08:02 mar Exp $
  *
  * Moira database consistency checker
  *
@@ -14,7 +14,7 @@
 #include "dbck.h"
 
 
-static char dbck_qc_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/dbck.dc,v 1.3 1993-02-09 16:46:08 mar Exp $";
+static char dbck_qc_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/dbck.dc,v 1.4 1993-10-21 15:08:02 mar Exp $";
 
 
 int debug = 0;
@@ -113,10 +113,14 @@ EXEC SQL END DECLARE SECTION;
 
     if (!countonly) {
 	phase1();
+	EXEC SQL COMMIT WORK;
 	phase2();
+	EXEC SQL COMMIT WORK;
 	phase3();
+	EXEC SQL COMMIT WORK;
     } else {
 	count_only_setup();
+	EXEC SQL COMMIT WORK;
     }
     phase4();
 

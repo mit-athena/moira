@@ -145,6 +145,12 @@ create filesys
 	modby		= i4,
 	modwith		= c8
 )
+create fsgroup
+(
+	group_id	= i4,
+	filsys_id	= i4,
+	key		= c8
+)
 create nfsphys 
 (
 	nfsphys_id	= i4,

@@ -1,7 +1,7 @@
 /*
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.35 1992-05-13 13:19:03 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.36 1992-05-13 14:24:18 mar Exp $
  *
  *      Copyright (C) 1987, 1988 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -16,7 +16,7 @@
  */
 
 #ifndef lint
-static char *rcsid_reg_svr_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.35 1992-05-13 13:19:03 mar Exp $";
+static char *rcsid_reg_svr_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.36 1992-05-13 14:24:18 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -275,7 +275,7 @@ int db_callproc(argc,argv,queue)
     {
 	critical_alert
 	    (FAIL_INST,
-	     "Wrong number of arguments returned from get_user_by_name.");
+	     "Wrong number of arguments returned from get_user_account_by_name.");
 	status = MR_ABORT;
     }
     else
@@ -322,7 +322,7 @@ int find_user(message)
     if (status == SUCCESS)
     {
 	/* Get ready to make an Moira query */
-	q_name = "get_user_by_name";
+	q_name = "get_user_account_by_name";
 	q_argc = GUBN_ARGS;	/* #defined in this routine */
 	q_argv[0] = message->first;
 	q_argv[1] = message->last;
@@ -779,6 +779,7 @@ char **argv;
 char **qargv;
 {
     int status = SUCCESS;
+    int  i;
 
     if (argc != U_END) {
 	critical_alert(FAIL_INST,
@@ -786,14 +787,8 @@ char **qargv;
 	status = MR_ABORT;
     } else {
 	qargv[U_NAME] = strsave(argv[U_NAME]);
-	qargv[U_UID+1] = strsave(argv[U_UID]);
-	qargv[U_SHELL+1] = strsave(argv[U_SHELL]);
-	qargv[U_LAST+1] = strsave(argv[U_LAST]);
-	qargv[U_FIRST+1] = strsave(argv[U_FIRST]);
-	qargv[U_MIDDLE+1] = strsave(argv[U_MIDDLE]);
-	qargv[U_STATE+1] = strsave(argv[U_STATE]);
-	qargv[U_MITID+1] = strsave(argv[U_MITID]);
-	qargv[U_CLASS+1] = strsave(argv[U_CLASS]);
+	for (i = 1; i < U_MODTIME; i++)
+	  qargv[i+1] = strsave(argv[i]);
 	qargv[U_MODTIME+1] = NULL;
     }
     return(status);
@@ -849,14 +844,15 @@ char *retval;
 	/* Now that we have a valid user with a valid login... */
 
 	q_argv[0] = message->db.uid;
-	status = mr_query("get_user_by_uid", 1, q_argv, getuserinfo, q_argv);
+	status = mr_query("get_user_account_by_uid", 1, q_argv,
+			  getuserinfo, q_argv);
 	if (status != SUCCESS) {
 	    com_err(whoami, status, " while getting user info");
 	    return(status);
 	}
 	q_argv[U_NAME+1] = login;
 	q_argv[U_STATE+1] = "7";
-	status = mr_query("update_user", U_MODTIME+1, q_argv,
+	status = mr_query("update_user_account", U_MODTIME+1, q_argv,
 			   null_callproc, NULL);
 	switch (status)
 	{
@@ -870,7 +866,7 @@ char *retval;
 	    status = UREG_MISC_ERROR;
 	    break;
 	  default:
-	    critical_alert(FAIL_INST,"%s returned from update_user.",
+	    critical_alert(FAIL_INST,"%s returned from update_user_account.",
 			   error_message(status));
 	    status = UREG_MISC_ERROR;
 	    break;

@@ -3,16 +3,13 @@
  * and distribution information, see the file "mit-copyright.h". 
  *
  * $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chpobox.c,v $
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chpobox.c,v 1.2 1987-08-02 19:51:53 ambar Exp $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chpobox.c,v 1.3 1987-09-12 14:50:16 ambar Exp $
  * $Author: ambar $
- * $Log: not supported by cvs2svn $
- * Revision 1.1  87/08/02  19:47:52  ambar
- * Initial revision
  *
  */
 
 #ifndef lint
-static char *rcsid_chpobox_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chpobox.c,v 1.2 1987-08-02 19:51:53 ambar Exp $";
+static char *rcsid_chpobox_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chpobox.c,v 1.3 1987-09-12 14:50:16 ambar Exp $";
 #endif not lint
 
 /*
@@ -159,7 +156,7 @@ run \"kinit\" and try again.");
      * set up some bogus arguments to feed to sms_access 
      */
     pobox.login = uname;
-    pobox.type = "foreign";
+    pobox.type = "FOREIGN";
     pobox.box = "foo";
     pobox.machine = "baz.bat.quux";
     return_args = crunch_pobox_args(pobox);
@@ -188,9 +185,9 @@ email address.", uname);
 	    exit(1);
 	}			/* now machine points to the machine name,
 				 * and address points to the "box" name */
-	pobox.machine = canon(machine);	/* canonicalize the machine name			 */
-	if (machine == (char *) NULL) {	/* nameserver failed in canon 		 */
-	    (void) sprintf(buf, "\nNameserver transaction \
+	pobox.machine = canon(machine);	/* canonicalize the machine name */
+	if (pobox.machine == (char *) NULL) {/* nameserver failed in canon */
+	    (void) sprintf(buf, "\nNameserver lookup \
 failed.\nI cannot change your mailbox at this time.  Please try again \
 later.\n");
 	    goto punt;
@@ -285,7 +282,7 @@ get_machine(argc, argv, callarg)
     pobox->machine = ds(argv[2]);
     pobox->box = ds(argv[3]);
 
-    printf("\ntype: %s\naddress: %s@%s\n", pobox->type,
+    printf("type: %s\naddress: %s@%s\n", pobox->type,
 	   pobox->box, pobox->machine);
     return (0);
 }
@@ -407,7 +404,7 @@ canon(machine)
 
     hostinfo = gethostbyname(machine);
     if (hostinfo != (struct hostent *) NULL)
-	machine = hostinfo->h_name;
+	machine = ds(hostinfo->h_name);
     else			/* gethostbyname failed; this should be very
 				 * rare, since we're dealing with local
 				 * hosts, so no fancy error recovery.

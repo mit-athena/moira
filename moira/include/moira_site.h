@@ -1,4 +1,4 @@
-/* $Id: moira_site.h,v 1.27 1998-02-05 22:51:17 danw Exp $
+/* $Id: moira_site.h,v 1.28 1999-01-27 19:34:22 danw Exp $
  *
  * This file contains all definitions that allow easy access to
  * elements returned by most of the @i[Moira] queries.  It also defines
@@ -183,32 +183,29 @@
 #define NFS_MODWITH 8
 #define NFS_END     9
 
-/* Printcap queries */
+/* Printer queries */
 
-#define PCAP_NAME      	0
-#define PCAP_SPOOL_HOST	1
-#define PCAP_SPOOL_DIR	2
-#define PCAP_RPRINTER	3
-#define PCAP_QSERVER	4
-#define PCAP_AUTH	5
-#define PCAP_PRICE	6
-#define PCAP_COMMENTS	7
-#define PCAP_MODTIME	8
-#define PCAP_MODBY	9
-#define PCAP_MODWITH	10
-#define PCAP_END	11
+#define PRN_NAME	0
+#define PRN_TYPE	1
+#define PRN_HWTYPE	2
+#define PRN_DUPLEXNAME	3
+#define PRN_HOSTNAME	4
+#define PRN_LOGHOST	5
+#define PRN_RM		6
+#define PRN_RP		7
+#define PRN_RQ		8
+#define PRN_KA		9
+#define PRN_PC		10
+#define PRN_AC		11
+#define PRN_LPC_ACL	12
+#define PRN_LOCATION	13
+#define PRN_CONTACT	14
+#define PRN_MODTIME	15
+#define PRN_MODBY	16
+#define PRN_MODWITH	17
+#define PRN_END		18
 
-/* Palladium queries */
-
-#define PD_NAME		0
-#define PD_IDENT	1
-#define PD_HOST		2
-#define PD_MODTIME	3
-#define PD_MODBY	4
-#define PD_MODWITH	5
-#define PD_END		6
-
-/* PO box infomarion queries */
+/* PO box information queries */
 
 #define PO_NAME    0
 #define PO_TYPE    1

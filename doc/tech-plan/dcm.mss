@@ -1,9 +1,12 @@
-@Comment[
+Comment[
 	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/doc/tech-plan/dcm.mss,v $
 	$Author: pjlevine $
-	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/doc/tech-plan/dcm.mss,v 1.13 1987-08-05 17:19:52 pjlevine Exp $
+	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/doc/tech-plan/dcm.mss,v 1.14 1987-08-05 18:02:04 pjlevine Exp $
 
 	$Log: not supported by cvs2svn $
+Revision 1.13  87/08/05  17:19:52  pjlevine
+*** empty log message ***
+
 Revision 1.12  87/06/19  16:20:55  spook
 Removed update stuff (moving to update.mss).
 
@@ -120,7 +123,8 @@ update will not occur.
 
 @SubSection(DCM Operation)
 
-The data control manager acts as an interpreter on the SDF's.  The basic
+The data control manager acts as an interpreter on the SDF's, or as
+an initiator of executable programs.  The basic
 mechanism is for the DCM to read the above entry table, determine which
 servers need updating and then locate the appropriate SDF for interpretation.
 The breakdown of the SDF is a procedure based primarily on the associated
@@ -129,131 +133,23 @@ DCM is a file stored on the SMS host which is exactly the same
 format of the server-based file.  The update mechanism takes this localized
 data and ships it over the net. 
 
-The most used statements in an SDF are the commands which set up a query 
-request.  In particular, these commands are:
-
-@begin(verbatim)
-
-		Begin query
-			handle: handle number
-			input: field1 = "string", field2 = "string2"
-			output: var1
-		End query
-
-	Where:
-		handle number -  is the associated handle of the query.
-		input - is the input to be entered with the query.
-		output - is the output cache for the query result.
-
-		field1 and field2 - refer to the precise structure fields
-			found in struct.h, the SMS input file of associated
-			query handles and input structures.
-		var1 - the canonical name given to the buffer whose contents
-			will contain the output of this query.
-
-		
-		"string1" and "string2" - these refer to verbatim input.
-			NOTE: on subsequent queries, the output of a 
-				previous query can become the input of
-				current query.  The input variable is
-				referenced through the same canonical name
-				as was used in a previous output 
-				statement.
-@end(verbatim)
-
-The complete operation of a DCM interpretive cycle follows:
-
-The input fields are checked to see if they exist given the query handle.
-Two files are checked.  One file handle.h contains the mapping between
-the query handle and the input structure name. Its format is:
-@begin(verbatim)
-
-		HANDLE.H
-	HANDLE		STRUCT NAME
-	  1, 		_struct1
-	  2,		_struct2
-	  3, 		_struct3
-	  n, 		_structn
-
-@end(verbatim)
-
-Once a handle is associated with a given structure name, the file struct.h
-is checked to see that the input fields map to the same fields in the
-input structure definition.  This file defines the queries expected by every
-request to the data base based on query handle.
-
-The file struct.h has the following format:
-
-@begin(verbatim)
-
-	struct _struct1 {
-		char *field1;
-		char *field2;
-	};
-
-	struct _struct2 {
-		char *field1;
-		char *field2;
-	};
-
-	struct _struct3 {
-		char *field1;
-		char *field2;
-	};
-
-	struct _structn {
-		char *field1;
-		char *field2;
-	};
-
-@end(verbatim)
-
-Provided the fields are located, a local structure is filled.  The structure
-contains a snapshot of the local environment.  The structure, _qstruct,
-provides the DCM with the ability to allocate and generate a memory block
-which is identical to the expected input structure required by each
-query request.  _Qstruct has the following components:
-
-@begin(verbatim)
-
-typedef struct _input {
-	char type;	/* type of input verbatim or variable */	
-	int input_offset;/* offset into current handle struct */
-	char *input;	/* local input name */
-	int where_from_handle;	/* where the input came from */
-	int where_from_offset;
-}INPUT;
-
-typedef struct _qstruct {
-	int lineno;	/* line number */
-	int handle;	/* query handle */
-	int structpos;	/* where the structure is in struct.h */
-	INPUT *input[MAXVAR];	/* points to input vars */
-	char *output;   /* local output name */
-	struct _qstruct *next;	/* pointer to next struct */
-	struct _qstruct *last;	/* pointer to previous struct */
-}QSTRUCT;
-
-@end(verbatim)
-
-With the above structure filled, the DCM simply generates a memory
-block with the exact components expected by the query.  This 
-application allows for the addition of query handles and input
-structures without having to recompile the DCM.  Basically,
-by parsing the struct.h file and understanding the attributes
-of a given structure, the DCM is capable of making a memory 
-image of the structure and then passing the memory image and not 
-the structure itself to the query routine.
-
-The converse is applied on output.  The canonical output name is
-used to map a memory image of the output structure.  This structure
-stays resident throughout the DCM operation and can be referenced
-by subsequent query requests.  
+The DCM is capable of accepting either SDF or executable format.  Currently all
+programs the DCM calls are written in C.
+ 
+The DCM, therefore, is an application program designed to orchestrate
+the distribution and generation of server-specific files.
 
 @SubSection(Server Description Files)
 
 The server description files, or SDF, are files which contains a unique
-description of each server SMS updates.
+description of each server SMS updates.  The SDF description has
+been developed to make support of SMS and the addition of
+new services a reasonably easy process.  The demand of SMS support is
+clearly rising.  Without an easy method of adding new servers, SMS
+is circumvented in search for easier methods of service support.
+To date, there are over 15 different files which need generation and
+propagation.  With the support of zephyr this number will likely double
+(propagation of at least 20 more different acls).
 
 Hand created, these files hold information, in English-like syntax, 
 which the DCM uses for

@@ -36,9 +36,6 @@
 #include <stdio.h>
 #include <time.h>
 #include <sys/types.h>
-#ifndef SYSV
-#include <sys/timeb.h>
-#endif
 
 #include "BigZ.h"
 #include "BigRSA.h"

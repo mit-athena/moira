@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.6 1998-08-27 17:13:32 danw Exp $
+# $Id: Makefile.in,v 1.7 1998-09-03 22:56:23 danw Exp $
 
 SHELL=/bin/sh
 @SET_MAKE@
@@ -17,7 +17,7 @@ LDFLAGS=@LDFLAGS@
 SQL_LIBS=@SQL_LIBS@
 LIBS=@RSAREF_LIBS@ @REG_SVR_LIBS@ @LIBS@
 MR_LIBDEP=@MR_LIBDEP@
-RSA_LIBDEP=@RSA_LIBDEP@
+RSAREF_LIBDEP=@RSAREF_LIBDEP@
 INSTALL=@INSTALL@
 INSTALL_PROGRAM=@INSTALL_PROGRAM@
 
@@ -56,7 +56,7 @@ install: all
 	$(INSTALL_PROGRAM) reg_svr $(mrbindir)
 	$(INSTALL_PROGRAM) startreg $(mrbindir)
 
-reg_svr: $(REG_OBJS) $(MR_LIBDEP) $(RSA_LIBDEP)
+reg_svr: $(REG_OBJS) $(MR_LIBDEP) $(RSAREF_LIBDEP)
 	$(CC) -o $@ $(LDFLAGS) $(REG_OBJS) $(SQL_LIBS) $(LIBS)
 
 startreg: $(START_OBJS)

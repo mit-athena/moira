@@ -70,55 +70,71 @@ With hesiod, all target machines receive identical files.  Practically,
 therefore, the DCM will prepare only one set of files and then will
 propagate to several target hosts.
 
-Source modules used:
-
-Source file path:
-
 Propagation interval : 6 Hours, 0:00, 6:00, 12:00, 18:00
 
 Data format : BIND
 
 Target locations : 
-@\@\JASON.MIT.EDU
-@\@\ZEUS.MIT.EDU
-@\@\MENELAUS.MIT.EDU
+JASON.MIT.EDU
+ZEUS.MIT.EDU
+MENELAUS.MIT.EDU
 
 Files updated:
-@\@\Target File Path: /etc/athena/nameserver (for all files)
+Target File Path: /etc/athena/nameserver (for all files)
 
-@\@\hesiod.db - Hesiod data 
-@\@\query support:
-@\@\@\
-@\@\cluster.db - cluster data
-@\@\query support:
-@\@\@\@\@\service.db - services
-@\@\passwd.db - password
-@\@\query support:
-@\@\@\@\@\printers.db - MDQS printer info
-@\@\query support:
-@\@\@\@\@\lpr.db - lpr printer info
-@\@\printcap.db
-@\@\query support:
-@\@\@\@\@\pobox.db - post office info
-@\@\query support:
-@\@\@\@\@\sloc.db - service location
-@\@\query support:
-@\@\@\@\@\rvdtab.db - RVD info
-@\@\query support:
-@\@\@\@\@\zephyr.db - zephyr info
-@\@\query support:
-@\@\@\@\@\file_exchange.db - file exchange
-@\@\query support:
-@end(itemize)
+hesiod.db - Hesiod data 
+queries used:
+NOT CREATED FROM SMS QUERY
+
+cluster.db - cluster data
+queries used:
+get_all_service_clusers() -> (cluster, service_label, service_cluster)
+get_machine_to_cluster_map(*,*) -> (machine, cluster)
+
+service.db - services
+queries used:
+get_all_services -> (service, protocol, port, description)
+get_alias(*, service) -> (name, type, translation)
+
+passwd.db - password
+queries used:
+NOT CREATED FROM SMS QUERY
+
+printers.db - MDQS printer info
+queries used:
+get_all_printer_clusters() -> (cluster)
+get_printers_of_cluster(cluster) -> (pname, qname, serverhost, ability, hwtype)
+
+lpr.db - lpr printer info
+queries used:
+NOT USED
+
+printcap.db
+queries used:
+NOT USED
+
+pobox.db - post office info
+queries used:
+get_poboxes_pop(*)
+get_poboxes_local(*)
+get_poboxes_foreign(*) -> (login, type, machine, box)
+
+sloc.db - service location
+queries used:
+get_server_location(*) -> (server, location)
+
+rvdtab.db - RVD info
+queries used:
+get_all_filesys() -> (label, type, machine, name, mount, access)
+get_alias(*, FILESYS) -> (name, type, trans)
 
 Update mechanism:
-
 Updating hesiod is a relatively simple process.  Every six
 hours the DCM will initiate a build on each of the above
 files(assuming the informtion has changed).  Once a file
 is constructed, the update mechanism will transport the file
 to each of the above machine.   
-
+@end(itemize)
 
 Service : RVD
 
@@ -152,20 +168,26 @@ tiem interval is barely significant.
 RVD support can best be illustrated by the following diagram:
 @blankspace(3 inches)
 
-
-
 The discussion which follows describes the generation and contents of the
 rvddb file.
 @begin(itemize, spread 1)
-Source Modules used:
 
 Propagation interval: 15 minutes, hour aligned
 
 Data Format : RVD specific,  ASCII
 
-Locations : 
-@end(itemize)
+Target Machines:
 
+Target Path:
+
+FILE : rvddb
+Queries used:
+get_rvd_servers(machine) -> (oper, admin, shutdown)
+get_rvd_physical(machine) -> (device, size, created, modified)
+get_all_rvd)_virtual(machine) -> (name, device, packid, ownert, rocap
+(excap, shcap, modes, offset, size, created, modified, ownhost)
+get_members_of_list(list) -> (member_type, member_name)
+@end(itemize)
 
 Service: NFS
 
@@ -208,33 +230,30 @@ setquota <quota> - using /mit/quota
 @end(itemize)
 
 @begin(itemize, spread 1)
-Source Modules used:
-
 Propagation interval : 6 hours, 0:00, 6:00, 12:00, 18:00
 
 Data Format : ASCII
 
-Locations : 
-
 Files updated:
-
-@\@\/site/nfsid - this file contains the following format:
-
+/site/nfsid - this file contains the following format:
 <username> <UID> <GID1, GID2,...GID16>
-
 where: username is the user's login name (Ex: pjlevine)
 @\UID is the users id number (Ex: 123456)
 @\GIDn is the groups which the user is a member (max 16)
-
 This file is distributed to every NFS server and contains all users.
 
-@\@\/mit/quota - file containing username to quota mapping.
+QUERY USED:
+get_all_logins() -> (login, uid, shell, home, last, first, middle)
 
+/mit/quota - file containing username to quota mapping.
 Its format:
-
-@\<username> <quota>
+<username> <quota>
 where: username is the user's login name (Ex. pjlevine)
-@\quota is the per user allocation (in Mbytes)
+quota is the per user allocation (in Mbytes)
+
+QUEIES USED:
+get_all_nfsphys() -> (machine, dir, status, allocated, size)
+get_nfs_quotas(machine, device) -> (login, quota)
 @end(itemize)
 
 @begin(itemize, spread 1)
@@ -257,4 +276,6 @@ Propagation interval: 24 hours, 3:00
 Target: ATHENA.MIT.EDU:/usr/lib/aliases
 
 Queries used:
+(to be furnished)
+
 @end(itemize)

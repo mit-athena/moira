@@ -1,6 +1,6 @@
 /* This file defines the query dispatch table for version 2 of the protocol
  *
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/queries2.c,v 1.4 1988-07-31 16:35:17 mar Exp $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/queries2.c,v 1.5 1988-08-01 00:26:37 mar Exp $
  *
  * Copyright 1987, 1988 by the Massachusetts Institute of Technology.
  */
@@ -1660,7 +1660,7 @@ struct query Queries2[] = {
     "%c = u.login, %c = text(u.uid), %c = u.shell, %c = u.last, %c = u.first, %c = u.middle",
     galo_fields,
     6,
-    "u.status == 1",
+    "u.status = 1",
     0,
     0,
   },

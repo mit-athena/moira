@@ -1,6 +1,6 @@
 /* This file defines the query dispatch table for version 2 of the protocol
  *
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/queries2.c,v 1.2 1988-07-11 18:26:08 mar Exp $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/queries2.c,v 1.3 1988-07-23 19:42:42 mar Exp $
  *
  * Copyright 1987, 1988 by the Massachusetts Institute of Technology.
  */
@@ -35,8 +35,6 @@ int setup_dshi();
 int setup_afil();
 int setup_ufil();
 int setup_dfil();
-int setup_ssif();
-int setup_sshi();
 int setup_dnfp();
 int setup_dnfq();
 
@@ -759,14 +757,14 @@ static char *ssif_fields[] = {
 };
 
 static struct validate ssif_validate = {
-  VOdate1,
-  1,
+  0,
+  0,
   NAME,
   "s.name = uppercase(\"%s\")",
   1,
   0,
   0,
-  setup_ssif,
+  0,
   0,
 };
 
@@ -886,20 +884,18 @@ static char *sshi_fields[] = {
 static struct valobj sshi_valobj[] = {
   {V_NAME, 0, "servers", NAME, 0, SMS_SERVICE},
   {V_ID, 1, MACHINE, NAME, MACH_ID, SMS_MACHINE},
-  {V_DATE, 7, 0, 0, 0, SMS_DATE},
-  {V_DATE, 8, 0, 0, 0, SMS_DATE},
 };
 
 static struct validate sshi_validate =	
 {
   sshi_valobj,
-  4,
+  2,
   SERVICE,
   "sh.service = uppercase(\"%s\") and sh.mach_id = %d",
   2,
   0,
   0,
-  setup_sshi,
+  0,
   0,
 };
 
@@ -1663,7 +1659,7 @@ struct query Queries2[] = {
     "%c = u.login, %c = text(u.uid), %c = u.shell, %c = u.last, %c = u.first, %c = u.middle",
     galo_fields,
     6,
-    "u.status != 0",
+    "u.status == 1",
     0,
     0,
   },
@@ -2200,7 +2196,7 @@ struct query Queries2[] = {
     RETRIEVE,
     "s",
     "servers",
-    "%c = s.name, %c = text(s.update_int), %c = s.target_file, %c = s.script, %c = s.dfgen, %c = s.type, %c = text(s.enable), %c = text(s.inprogress), %c = text(s.harderror), %c = s.errmsg, %c = s.acl_type, %c = text(s.acl_id), %c = s.modtime, %c = text(s.modby), %c = s.modwith",
+    "%c = s.name, %c = text(s.update_int), %c = s.target_file, %c = s.script, %c = text(s.dfgen), %c = s.type, %c = text(s.enable), %c = text(s.inprogress), %c = text(s.harderror), %c = s.errmsg, %c = s.acl_type, %c = text(s.acl_id), %c = s.modtime, %c = text(s.modby), %c = s.modwith",
     gsin_fields,
     15,
     "s.name = uppercase(\"%s\")",
@@ -2275,7 +2271,7 @@ struct query Queries2[] = {
     UPDATE,
     "s",
     "servers",
-    "dfgen = %c, inprogress = int1(%c), harderror = int1(%c), errmsg = %c",
+    "dfgen = int4(%c), inprogress = int1(%c), harderror = int1(%c), errmsg = %c",
     ssif_fields,
     4,
     "s.name = uppercase(\"%s\")",
@@ -2305,7 +2301,7 @@ struct query Queries2[] = {
     RETRIEVE,
     "sh",
     "serverhosts",
-    "%c = sh.service, %c = machine.name, %c = text(sh.enable), %c = text(sh.override), %c = text(sh.success), %c = text(sh.inprogress), %c = text(sh.hosterror), %c = sh.hosterrmsg, %c = sh.ltt, %c = sh.lts, %c = text(sh.value1), %c = text(sh.value2), %c = sh.value3, %c = sh.modtime, %c = text(sh.modby), %c = sh.modwith",
+    "%c = sh.service, %c = machine.name, %c = text(sh.enable), %c = text(sh.override), %c = text(sh.success), %c = text(sh.inprogress), %c = text(sh.hosterror), %c = sh.hosterrmsg, %c = text(sh.ltt), %c = text(sh.lts), %c = text(sh.value1), %c = text(sh.value2), %c = sh.value3, %c = sh.modtime, %c = text(sh.modby), %c = sh.modwith",
     gshi_fields,
     16,
     "sh.service = uppercase(\"%s\") and machine.name = uppercase(\"%s\") and machine.mach_id = sh.mach_id",
@@ -2395,7 +2391,7 @@ struct query Queries2[] = {
     UPDATE,
     "sh",
     "serverhosts",
-    "override = int1(%c), success = int1(%c), inprogress = int1(%c), hosterror = int1(%c), hosterrmsg = %c, ltt = %c, lts = %c",
+    "override = int1(%c), success = int1(%c), inprogress = int1(%c), hosterror = int1(%c), hosterrmsg = %c, ltt = int4(%c), lts = int4(%c)",
     sshi_fields,
     7,
     "sh.service = uppercase(\"%s\") and sh.mach_id = %d",

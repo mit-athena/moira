@@ -1,4 +1,4 @@
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/Imakefile,v 1.4 1991-05-07 16:43:15 mar Exp $
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/Imakefile,v 1.5 1993-06-28 15:31:05 mar Exp $
 #
 # Copyright 1990 by the Massachusetts Institute of Technology.
 #
@@ -8,16 +8,16 @@
 # Imakefile for mrtest.
 #
 
-SRCS=	mrtest.c test.c comp.c
+SRCS=	mrtest.c tst.c comp.c
 SRCDIR=${SRCTOP}/clients/mrtest
 CODE=${SRCS} Imakefile test_cmds.ct blah.h
-OBJS=	mrtest.o test_cmds.o test.o comp.o
+OBJS=	mrtest.o test_cmds.o tst.o comp.o
 INCLUDE= -I$(BUILDTOP)/include -I$(BUILDTOP)/lib -I$(BUILDTOP)/util/ss
 
 program(mrtest, ${OBJS},${MR_LIBDEP} ${GDB_LIBDEP}, ${CLIBS} ${SS_LIB},${PROGDIR})
 mk_cmds(test_cmds)
 
-test.o: mr_err_array.h
+tst.o: mr_err_array.h
 
 mr_err_array.h:
 	${RM} mr_err_array.h

@@ -56,7 +56,7 @@ else
 	exit 1
 fi
 
-/moira/bin/report.sh ${BKUPDIRDIR}/in_progress > ${BKUPDIRDIR}/in_progress/report
+/moira/bin/report.pl ${BKUPDIRDIR}/in_progress > ${BKUPDIRDIR}/in_progress/report
 
 if [ -d stale ]
 then

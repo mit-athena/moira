@@ -1,5 +1,5 @@
 #!/moira/bin/perl
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/report.sh,v 1.8 2000-06-05 05:01:49 jweiss Exp $
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/report.pl,v 1.1 2000-06-05 05:58:37 zacheiss Exp $
 
 chdir($ARGV[0]);
 

@@ -1,13 +1,13 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/auth_002.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/auth_002.c,v 1.3 1997-09-05 19:15:07 danw Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/auth_002.c,v 1.4 1998-01-05 14:59:45 danw Exp $
  */
 /*  (c) Copyright 1988 by the Massachusetts Institute of Technology. */
 /*  For copying and distribution information, please see the file */
 /*  <mit-copyright.h>. */
 
 #ifndef lint
-static char *rcsid_auth_002_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/auth_002.c,v 1.3 1997-09-05 19:15:07 danw Exp $";
+static char *rcsid_auth_002_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/auth_002.c,v 1.4 1998-01-05 14:59:45 danw Exp $";
 #endif
 
 #include <mit-copyright.h>
@@ -51,14 +51,12 @@ auth_002(str)
      char *str;
 {
     STRING data;
-    char host[BUFSIZ], realm[REALM_SZ];
+    char realm[REALM_SZ];
     char aname[ANAME_SZ], ainst[INST_SZ], arealm[REALM_SZ];
     AUTH_DAT ad;
     char *p, *first, *config_lookup();
     KTEXT_ST ticket_st;
-#ifdef POSIX
     struct utsname name;
-#endif
     des_key_schedule sched;
     C_Block nonce, nonce2;
 
@@ -69,17 +67,12 @@ auth_002(str)
 	code = connection_errno(conn);
 	lose("awaiting Kerberos authenticators");
     }
-#ifdef POSIX
     (void) uname(&name);
-    strncpy(host, name.nodename, sizeof(host));
-#else
-    gethostname(host, sizeof(host));
-#endif
     ticket_st.mbz = 0;
     ticket_st.length = MAX_STRING_SIZE(data);
     memcpy(ticket_st.dat, STRING_DATA(data), MAX_STRING_SIZE(data));
     code = krb_rd_req(&ticket_st, service,
-		      krb_get_phost(host), 0,
+		      krb_get_phost(name.nodename), 0,
 		      &ad, KEYFILE);
     if (code) {
 	code += ERROR_TABLE_BASE_krb;

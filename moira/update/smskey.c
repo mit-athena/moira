@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/smskey.c,v 1.2 1988-09-14 12:16:28 mar Exp $ */
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/smskey.c,v 1.3 1998-01-05 14:59:45 danw Exp $ */
 
 /*  (c) Copyright 1988 by the Massachusetts Institute of Technology. */
 /*  For copying and distribution information, please see the file */
@@ -8,6 +8,7 @@
 #include <mit-copyright.h>
 #include <stdio.h>
 #include <sys/file.h>
+#include <fcntl.h>
 #include <des.h>
 int debug=0;			/* goddamn des library breakage */
 char string[] = "sms\0\0Athena\0\1";

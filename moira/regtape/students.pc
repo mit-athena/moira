@@ -1,4 +1,4 @@
-/* $Id: students.pc,v 1.7 1998-02-23 19:24:01 danw Exp $
+/* $Id: students.pc,v 1.8 1998-08-07 15:45:08 danw Exp $
  *
  * Load data into Moira from Registrar's Office data file
  *
@@ -21,7 +21,7 @@
 EXEC SQL INCLUDE sqlca;
 extern void sqlglm(char *, unsigned int *, unsigned int *);
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/students.pc,v 1.7 1998-02-23 19:24:01 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/students.pc,v 1.8 1998-08-07 15:45:08 danw Exp $");
 
 #define WHO 11859		/* root */
 #define PROG "stu-tape"
@@ -691,7 +691,8 @@ void newuser(struct entry *e)
     (login, users_id, unix_uid, shell, last, first, middle, status,
      clearid, type, modtime, modby, modwith, fullname, home_addr,
      home_phone, office_phone, department, fmodtime, fmodby, fmodwith,
-     potype, xname, xdept, xtitle, xaddress, xphone1, xphone2, xmodtime)
+     potype, xname, xdept, xtitle, xaddress, xphone1, xphone2, xmodtime,
+     secure)
     VALUES (:login, :id, :uid, '/bin/athena/tcsh', NVL(:last, CHR(0)),
 	    NVL(:first, CHR(0)), NVL(:middle, CHR(0)), 0, NVL(:sid, CHR(0)),
 	    NVL(:class, CHR(0)), SYSDATE, :who, :prog, NVL(:fullname, CHR(0)),
@@ -699,7 +700,7 @@ void newuser(struct entry *e)
 	    NVL(:dept, CHR(0)), SYSDATE, :who, :prog, 'NONE',
 	    NVL(:name, CHR(0)), NVL(:dept, CHR(0)), NVL(:title, CHR(0)),
 	    NVL(:raddr, CHR(0)), NVL(:hphone, CHR(0)), NVL(:ophone, CHR(0)),
-	    SYSDATE);
+	    SYSDATE, 1);
   if (sqlca.sqlcode)
     {
       dbmserr("adding user", sqlca.sqlcode);

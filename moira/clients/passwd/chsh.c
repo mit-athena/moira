@@ -3,13 +3,13 @@
  * and distribution information, see the file "mit-copyright.h". 
  *
  * $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chsh.c,v $
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chsh.c,v 1.12 1993-10-22 16:37:48 mar Exp $
- * $Author: mar $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chsh.c,v 1.13 1995-11-21 16:55:17 jweiss Exp $
+ * $Author: jweiss $
  *
  */
 
 #ifndef lint
-static char *rcsid_chsh_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chsh.c,v 1.12 1993-10-22 16:37:48 mar Exp $";
+static char *rcsid_chsh_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chsh.c,v 1.13 1995-11-21 16:55:17 jweiss Exp $";
 #endif not lint
 
 /*
@@ -264,7 +264,7 @@ usage()
     exit(1);
 }
 
-#if defined(ultrix) || defined(_AIX)
+#if defined(ultrix) || defined(_AIX) || defined(sgi)
 char *getusershell()
 {
     static int count = 1;
@@ -275,6 +275,8 @@ char *getusershell()
     case 2:
 	return("/bin/csh");
     case 3:
+	return("/bin/athena/tcsh");
+    case 4:
 	return(NULL);
     default:
 	count = 1;

@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/afs.c,v 1.39 1992-10-29 18:37:17 probe Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/afs.c,v 1.40 1992-11-09 15:41:09 probe Exp $
  *
  * Do AFS incremental updates
  *
@@ -58,7 +58,6 @@ extern long pr_AddToGroup();
 extern long pr_RemoveUserFromGroup();
 
 static char tbl_buf[1024];
-static char hostname[64];
 
 main(argc, argv)
 char **argv;
@@ -173,9 +172,7 @@ int afterc;
 
 	if (bstate != 0) {
 	    /* Reactivating a user; get his group list */
-	    gethostname(hostname, sizeof(hostname));
-	    code = mr_connect(hostname);
-	    if (!code) code = mr_auth("afs.incr");
+	    code = moira_connect();
 	    if (code) {
 		critical_alert("incremental",
 			       "Error contacting Moira server to retrieve grouplist of user %s: %s",
@@ -190,7 +187,7 @@ int afterc;
 		critical_alert("incremental",
 			       "Couldn't retrieve membership of user %s: %s",
 			       after[U_NAME], error_message(code));
-	    mr_disconnect();
+	    moira_disconnect();
 	}
 	return;
     }
@@ -284,9 +281,7 @@ int afterc;
 	/* We need to make sure the group is properly populated */
 	if (beforec < L_ACTIVE) return;
 
-	gethostname(hostname, sizeof(hostname));
-	code = mr_connect(hostname);
-	if (!code) code = mr_auth("afs.incr");
+	code = moira_connect();
 	if (code) {
 	    critical_alert("incremental",
 			   "Error contacting Moira server to resolve %s: %s",
@@ -297,7 +292,7 @@ int afterc;
 	av[1] = after[L_NAME];
 	get_members(2, av, after[L_NAME]);
 
-	mr_disconnect();
+	moira_disconnect();
 	return;
     }
 }
@@ -509,9 +504,7 @@ edit_group(op, group, type, member)
 		return;
 
 	    /* Check whether the member being added is an active user */
-	    gethostname(hostname, sizeof(hostname));
-	    code = mr_connect(hostname);
-	    if (!code) code = mr_auth("afs.incr");
+	    code = moira_connect();
 	    if (!code) code = mr_query("get_user_by_login", 1, &member,
 				       check_user, &ustate);
 	    if (code) {
@@ -519,7 +512,7 @@ edit_group(op, group, type, member)
 			       "Error contacting Moira server to lookup user %s: %s",
 			       member, error_message(code));
 	    }
-	    mr_disconnect();
+	    moira_disconnect();
 	    if (!code && ustate!=1 && ustate!=2) return; /* inactive user */
 	}
 
@@ -606,4 +599,29 @@ check_afs()
 	}
 	sleep(60);
     }
+}
+
+
+static int mr_connections=0;
+
+moira_connect()
+{
+    static char hostname[64];
+    long code;
+
+    if (!mr_connections++) {
+	gethostname(hostname, sizeof(hostname));
+	code = mr_connect(hostname);
+	if (!code) code = mr_auth("afs.incr");
+	return code;    
+    }
+    return 0;
+}
+
+moira_disconnect()
+{
+    if (!--mr_connections) {
+	mr_disconnect();
+    }
+    return 0;
 }

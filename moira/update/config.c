@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/config.c,v 1.3 1993-10-19 12:12:39 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/config.c,v 1.4 1997-02-02 21:17:01 danw Exp $
  *
  * Routines to handle configuration file for Moira's update_server.
  * These routines must load the file into memory rather than parse
@@ -12,6 +12,7 @@
 
 #include <mit-copyright.h>
 #include <stdio.h>
+#include <string.h>
 #include <ctype.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -77,13 +78,8 @@ static init()
 	return(MR_NO_MEM);
     }
     count = 0;
-    for (p = start = config_buf; *p; p++) {
-	if (*p != '\n')
-	  continue;
-	*p++ = '\0';
-	config_keys[count++] = start;
-	start = p;
-	if (!*p) break;
+    for (p = strtok(config_buf, "\n"); p; p = strtok(NULL, "\n")) {
+	config_keys[count++] = p;
     }
     config_keys[count] = NULL;
     for (count = 0; config_keys[count]; count++) {

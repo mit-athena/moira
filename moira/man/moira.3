@@ -1,8 +1,9 @@
-.TH SMS 3 "29 Nov 1988"
+.TH SMS 3 "8 Jan 1989"
 .FM mit
 .SH NAME
 sms_connect, sms_host, sms_auth, sms_disconnect, sms_noop, sms_access,
-sms_query, sms_do_update, sms_motd, format_filesys_type, parse_filesys_type,
+sms_query, sms_do_update, sms_motd, sms_set_alternate_input,
+format_filesys_type, parse_filesys_type,
 canonicalize_hostname, strsave, strtrim, sq_create, sq_destroy,
 sq_get_data, sq_save_args, sq_save_data, sq_save_unique_data,
 sq_save_unique_string, Start_paging, Stop_paging, Start_menu,
@@ -45,6 +46,10 @@ Protocol functions
 .B	char *callarg;
 
 .B int sms_do_update();
+
+.B int sms_set_alternate_input(fd, proc)
+.B	int fd;
+.B	void (*proc)();
 .TP
 Data manipulation
 .B char *format_filesys_type(fs_status);
@@ -187,6 +192,16 @@ as
 
 .B sms_do_update
 triggers a DCM update immediately on the SMS server.
+
+.B sms_set_alternate_input
+tells the Moira library that you want to allow some asynchronus
+actions while a query is being processed.  During query processing, if
+any data is available to be read on the specified file descriptor,
+then the specified function will be called to handle it.  For
+instance, calling sms_set_alternate_input with the connection to the X
+server and a routine which will dispatch X events will allow a toolkit
+application to handle mouse and expose events while a query is being
+processed.
 .TP
 Data manipulation
 .B format_filesys_type
@@ -321,4 +336,4 @@ Technical Plan
 The error codes returned are those defined in <sms_et.h>, or
 <krb_et.h>.  They may be easily decoded using the com_err library.
 .SH RESTRICTIONS
-COPYRIGHT 1987,1988 Massachusetts Institute of Technology
+COPYRIGHT 1987,1988,1989 Massachusetts Institute of Technology

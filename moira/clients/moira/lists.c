@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v 1.22 1990-04-25 12:37:03 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v 1.23 1990-07-14 16:21:41 mar Exp $";
 #endif lint
 
 /*	This is the file lists.c for the MOIRA Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v 1.22 1990-04-25 12:37:03 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v 1.23 1990-07-14 16:21:41 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -192,27 +192,44 @@ Bool name;
     if (name) {
 	while (1) {
 	    newname = Strsave(info[L_NAME]);
-	    GetValueFromUser("The new name for this list", &newname);
+	    if (GetValueFromUser("The new name for this list", &newname) ==
+		SUB_ERROR)
+	      return(NULL);
 	    if (ValidName(newname))
 	      break;
 	}
     }
-    GetYesNoValueFromUser("Is this an active list", &info[L_ACTIVE]);
-    GetYesNoValueFromUser("Is this a public list", &info[L_PUBLIC]);
-    GetYesNoValueFromUser("Is this a hidden list", &info[L_HIDDEN]);
-    GetYesNoValueFromUser("Is this a maillist", &info[L_MAILLIST]);
-    GetYesNoValueFromUser("Is this a group", &info[L_GROUP]);
+    if (GetYesNoValueFromUser("Is this an active list", &info[L_ACTIVE]) ==
+	SUB_ERROR)
+      return(NULL);
+    if (GetYesNoValueFromUser("Is this a public list", &info[L_PUBLIC]) ==
+	SUB_ERROR)
+      return(NULL);
+    if (GetYesNoValueFromUser("Is this a hidden list", &info[L_HIDDEN]) ==
+	SUB_ERROR)
+      return(NULL);
+    if (GetYesNoValueFromUser("Is this a maillist", &info[L_MAILLIST]) ==
+	SUB_ERROR)
+      return(NULL);
+    if (GetYesNoValueFromUser("Is this a group", &info[L_GROUP]) == SUB_ERROR)
+      return(NULL);
     if (atoi(info[L_GROUP]))
-	GetValueFromUser("What is the GID for this group.", &info[L_GID]);
+      if (GetValueFromUser("What is the GID for this group.", &info[L_GID]) ==
+	  SUB_ERROR)
+	return(NULL);
 
-    GetTypeFromUser("What Type of Administrator", "ace_type",&info[L_ACE_TYPE]);
+    if (GetTypeFromUser("What Type of Administrator", "ace_type",
+			&info[L_ACE_TYPE]) == SUB_ERROR)
+      return(NULL);
     if ((strcasecmp(info[L_ACE_TYPE], "NONE") != 0) &&
 	(strcasecmp(info[L_ACE_TYPE], "none") != 0)) {
 	sprintf(temp_buf, "Which %s will be the administrator of this list: ",
 		info[L_ACE_TYPE]);
-	GetValueFromUser(temp_buf, &info[L_ACE_NAME]);
+	if (GetValueFromUser(temp_buf, &info[L_ACE_NAME]) == SUB_ERROR)
+	  return(NULL);
     }
-    GetValueFromUser("Description: ", &info[L_DESC]);
+    if (GetValueFromUser("Description: ", &info[L_DESC]) == SUB_ERROR)
+      return(NULL);
 
     FreeAndClear(&info[L_MODTIME], TRUE);
     FreeAndClear(&info[L_MODBY], TRUE);
@@ -269,7 +286,10 @@ Bool junk;
     register int stat;
     char ** args;
     
-    args = AskListInfo(info, TRUE);
+    if ((args = AskListInfo(info, TRUE)) == NULL) {
+	Put_message("Aborted.");
+	return;
+    }
     if ( (stat = do_mr_query("update_list", CountArgs(args), args, 
 			   Scream, (char *) NULL)) != MR_SUCCESS) {
 	com_err(program_name, stat, " in UpdateList.");	
@@ -353,7 +373,10 @@ char **argv;
 	return(SUB_ERROR);
     }
 
-    add_args = AskListInfo(SetDefaults(info,argv[1]), FALSE);
+    if ((add_args = AskListInfo(SetDefaults(info,argv[1]), FALSE)) == NULL) {
+	Put_message("Aborted.");
+	return(SUB_ERROR);
+    }
 
     if ( (status = do_mr_query("add_list", CountArgs(add_args), add_args,
 			     Scream, (char *) NULL)) != MR_SUCCESS) {
@@ -566,11 +589,14 @@ char *action, **ret_argv;
     ret_argv[LM_LIST] = Strsave(current_list);
 
     ret_argv[LM_TYPE] = Strsave("user");
-    GetTypeFromUser("Type of member", "member", &ret_argv[LM_TYPE]);
+    if (GetTypeFromUser("Type of member", "member", &ret_argv[LM_TYPE]) ==
+	SUB_ERROR)
+      return(SUB_ERROR);
 
     sprintf(temp_buf,"Name of %s to %s", ret_argv[LM_TYPE], action);
     ret_argv[LM_MEMBER] = Strsave(user);
-    GetValueFromUser(temp_buf, &ret_argv[LM_MEMBER]);
+    if (GetValueFromUser(temp_buf, &ret_argv[LM_MEMBER]) == SUB_ERROR)
+      return(SUB_ERROR);
     ret_argv[LM_END] = NULL;		/* NULL terminate this list. */
 
     if (strcasecmp(ret_argv[LM_TYPE], "string") &&
@@ -653,17 +679,17 @@ int
 InterRemoveItemFromLists()
 {
     register int status;
-    char type[BUFSIZ], name[BUFSIZ], *args[10], buf[BUFSIZ];
+    char *type, *name, *args[10], buf[BUFSIZ];
     struct qelem *top, *elem;
 
-    if ( !(PromptWithDefault("Type of member (user, list, string)", type, 
-			    BUFSIZ, "user")) )
+    type = strsave("USER");
+    if (GetTypeFromUser("Type of member", "member", &type) == SUB_ERROR)
 	return(DM_NORMAL);
     
     sprintf(buf, "Name of %s", type);
-    if ( !(PromptWithDefault(buf, name, BUFSIZ, user)) ) {
-	return(DM_NORMAL);
-    }
+    name = strsave(user);
+    if (GetValueFromUser(buf, &name) == SUB_ERROR)
+      return(DM_NORMAL);
 
     if (!ValidName(name))
 	return(DM_NORMAL);
@@ -714,24 +740,25 @@ ListByMember()
     Bool maillist, group;
     struct qelem *top, *elem;
 
-    if ( !(PromptWithDefault("Type of member (user, list, string)", buf, 
-			    BUFSIZ, "user")) )
+    type = strsave("USER");
+    if (GetTypeFromUser("Type of member", "member", &type) == SUB_ERROR)
 	return(DM_NORMAL);
+    
+    sprintf(buf, "Name of %s", type);
+    name = strsave(user);
+    if (GetValueFromUser(buf, &name) == SUB_ERROR)
+      return(DM_NORMAL);
 
     /* What we really want is a recursive search */
-    sprintf(temp_buf, "R%s", buf); 
-    type = Strsave(temp_buf);
+    sprintf(temp_buf, "R%s", type);
+    free(type); type = Strsave(temp_buf);
 
-    sprintf(temp_buf, "Name of %s", buf);
-    if ( !(PromptWithDefault(temp_buf, buf, BUFSIZ, user)) ) {
-	free(type);
-	return(DM_NORMAL);
-    }
-    name = Strsave(buf);
-
-    maillist = YesNoQuestion("Show Lists that are Maillists (y/n) ?",
-			     TRUE);
-    group = YesNoQuestion("Show Lists that are Groups (y/n) ?", TRUE);
+    if ((maillist = YesNoQuestion("Show Lists that are Maillists (y/n) ?",
+				  TRUE)) == -1)
+      return(DM_NORMAL);
+    if ((group = YesNoQuestion("Show Lists that are Groups (y/n) ?",
+			       TRUE)) == -1)
+      return(DM_NORMAL);
 
     elem = top = GetListInfo(GLOM, type, name);
 
@@ -759,24 +786,27 @@ ListByAdministrator()
     char buf[BUFSIZ], temp_buf[BUFSIZ], *type, *name;
     struct qelem *top;
 
-    if ( !(PromptWithDefault("Type of member (user, list, string)", buf, 
-			    BUFSIZ, "user")) )
+    type = strsave("USER");
+    if (GetTypeFromUser("Type of member", "member", &type) == SUB_ERROR)
 	return(DM_NORMAL);
-
-    if ( YesNoQuestion("Do you want a recursive search (y/n)", FALSE) == 1 ) {
-	sprintf(temp_buf, "R%s", buf);	/* "USER" to "RUSER" etc. */
-	type = Strsave(temp_buf);
-    }
-    else 
-	type = Strsave(buf);
     
-    sprintf(temp_buf, "Name of %s", buf);
-    if ( !(PromptWithDefault(temp_buf, buf, BUFSIZ, user)) ) {
+    sprintf(buf, "Name of %s", type);
+    name = strsave(user);
+    if (GetValueFromUser(buf, &name) == SUB_ERROR)
+      return(DM_NORMAL);
+
+    switch (YesNoQuestion("Do you want a recursive search (y/n)", FALSE)) {
+    case TRUE:
+	sprintf(temp_buf, "R%s", type);	/* "USER" to "RUSER" etc. */
 	free(type);
+	type = Strsave(temp_buf);
+	break;
+    case FALSE:
+	break;
+    default:
 	return(DM_NORMAL);
     }
-    name = Strsave(buf);
-
+    
     top = GetListInfo(ACE_USE, type, name);
     Loop(top, PrintListAce);
 

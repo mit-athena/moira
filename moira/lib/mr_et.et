@@ -1,0 +1,27 @@
+	error_table sms
+
+ec	SMS_NOT_CONNECTED,
+	"Not connected to SMS server"
+
+ec	SMS_CANT_CONNECT,
+	"Can't connect to SMS server"
+
+ec	SMS_VERSION_MISMATCH,
+	"SMS version mismatch"
+
+ec	SMS_ABORTED,
+	"SMS operation aborted"
+
+ec	SMS_UNKNOWN_PROC,
+	"Unknown procedure"
+
+ec	SMS_INGRES_ERR,
+	"Ingres system error occurred"
+
+ec	SMS_MORE_DATA,
+	"More data is available from SMS"
+
+ec	SMS_NO_MATCH,
+	"No records in database match query"
+
+	end

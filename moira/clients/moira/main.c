@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/main.c,v 1.21 1992-06-26 18:34:13 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/main.c,v 1.22 1992-11-07 22:40:40 probe Exp $";
 #endif lint
 
 /*	This is the file main.c for the Moira Client, which allows a nieve
@@ -10,8 +10,8 @@
  *	By:		Chris D. Peterson
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/main.c,v $
- *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/main.c,v 1.21 1992-06-26 18:34:13 mar Exp $
+ *      $Author: probe $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/main.c,v 1.22 1992-11-07 22:40:40 probe Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -48,11 +48,7 @@ char *getlogin();
 uid_t getuid();
 struct passwd *getpwuid();
 
-#ifdef _AIX
-Bool use_menu = FALSE;		/* whether or not we are using a menu. */
-#else
 Bool use_menu = TRUE;		/* whether or not we are using a menu. */
-#endif
 
 /*	Function Name: main
  *	Description: The main driver for the Moira Client.

@@ -1,5 +1,5 @@
 #!/moira/bin/perl -Tw
-# $Id: grouper.pl,v 1.5 2000-06-05 01:48:20 zacheiss Exp $
+# $Id: grouper.pl,v 1.6 2000-08-25 00:48:40 zacheiss Exp $
 
 die "Usage: $0 password\n" unless ($#ARGV == 0);
 $whpassword = $ARGV[0];
@@ -48,7 +48,7 @@ while (($user, $mitid) = $sth->fetchrow_array) {
 ($root_id) = $moira->selectrow_array("SELECT users_id FROM users ".
 				   "WHERE login = 'root'");
 
-open(MRTEST, "|$mrtest");
+open(MRTEST, "|$mrtest >/dev/null 2>&1");
 print MRTEST "connect $db\n";
 print MRTEST "auth\n";
 open(LOG, ">$logfile");
@@ -135,7 +135,7 @@ sub check_list {
     my ( $name, $owner, $export, $desc ) = @_;
     if (!$lists{$name}) {
 	print LOG "Creating $name\n";
-	print MRTEST "qy alis $name 1 0 1 $export $export \"create unique GID\" 0 LIST $owner \"$desc\"\n";
+	print MRTEST "qy alis $name 1 0 1 $export $export \"create unique GID\" 0 LIST $owner NONE NONE \"$desc\"\n";
     }
 }
 

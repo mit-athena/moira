@@ -5,17 +5,14 @@
 #include	<ctype.h>
 #include	<X11/StringDefs.h>
 #include	<X11/Intrinsic.h>
-#include	<X11/IntrinsicP.h>
 #include	<X11/Core.h>
-#include	<X11/CoreP.h>
-#include	<X11/CompositeP.h>
 #include	<X11/cursorfont.h>
 #include        <Xm/Text.h>
 #include	<Xm/MessageB.h>
 #include	"mmoira.h"
 #include	<sys/file.h>
 
-static char rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/stubs.c,v 1.10 1992-11-04 17:55:17 mar Exp $";
+static char rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/stubs.c,v 1.11 1992-11-09 17:20:16 mar Exp $";
 
 void	extra_help_callback();
 extern EntryForm *MoiraForms[];
@@ -171,7 +168,7 @@ int modify;
 		    "get_list_info", modify);
     } else if (!strcasecmp(type, "MACHINE") ||
 	       !strcmp(type, "host") ||
-	       !strcmp(type, "Server") ||
+	       !strcasecmp(type, "Server") ||
 	       !strcmp(type, "on") ||
 	       !strcmp(type, "Box")) {
 	DoReference(name, "select_machine", MM_MOD_MACH, MM_SHOW_MACH,
@@ -184,6 +181,9 @@ int modify;
 	       !strcmp(type2, "syslib Data")) {
 	DoReference(name, "select_filsys", MM_MOD_FILSYS, MM_SHOW_FILSYS,
 		    "get_filesys_by_label", modify);
+    } else if (!strcmp(type2, "Filesystem Group")) {
+	DoReference(name, "order_fsgroup", MM_MOV_FSGROUP, MM_SHOW_FSGROUP,
+		    "get_filesys_by_label", modify);
     } else if (!strcmp(type, "Printer") ||
 	       !strcmp(type2, "lpr Data")) {
 	DoReference(name, "select_printer", MM_MOD_PCAP, MM_SHOW_PCAP,
@@ -191,7 +191,15 @@ int modify;
     } else if (!strcmp(type, "Service")) {
 	DoReference(name, "select_service", MM_MOD_SERVICE, MM_SHOW_SERVICE,
 		    "get_server_info", modify);
-    } else {
+/* This code isn't complete, and it's not clear that we really want it...
+    } else if (!strcmp(type, "Packname")) {
+	char name2[256];
+	sprintf(name2, "%s:%s", type2, name);
+	p = rindex(name2, '/');
+	if (p) *p = 0;
+	DoReference(name, "select_nfs", MM_MOD_NFS, MM_SHOW_NFS,
+		    "get_nfsphys", modify);
+*/  } else {
 	XBell(XtDisplay(w), 100);
     }
     XtFree(log);
@@ -222,14 +230,20 @@ int modify;
 	m.operation = modop;
 	m.query = query;
 	m.argc = 1;
-	MoiraFormApply(0, form);
+	if (showop == MM_SHOW_FSGROUP) {
+	    DisplayForm(form);
+	    MoiraValueChanged(form, form->inputlines[0]);
+	} else
+	  MoiraFormApply(0, form);
     } else {
 	f.menu = &m;
-	if (showop == MM_SHOW_FILSYS) f.extrastuff = (caddr_t) sq_create();
+	if (showop == MM_SHOW_FILSYS ||
+	    showop == MM_SHOW_FSGROUP) f.extrastuff = (caddr_t) sq_create();
 	argv[0] = name;
 	m.operation = showop;
 	status = MoiraQuery(query, 1, argv, DisplayCallback, &f);
-	if (showop == MM_SHOW_FILSYS) {
+	if (showop == MM_SHOW_FILSYS ||
+	    showop == MM_SHOW_FSGROUP) {
 	    while (sq_get_data(f.extrastuff, &aargv)) {
 		ShowFilsys(aargv);
 	    }
@@ -338,8 +352,8 @@ char	*text;
 
 	XmTextReplace(logwidget, pos, pos, text);
 	XmTextSetCursorPosition(logwidget, pos + strlen(text));
-	if (pos > MAXLOGSIZE) {
-	    for (p = &string[pos - MAXLOGSIZE]; *p && *p != '\n'; p++);
+	if (pos > resources.maxlogsize) {
+	    for (p = &string[pos-resources.maxlogsize]; *p && *p != '\n'; p++);
 	    if (*p)
 	      pos = p - string;
 	    XmTextReplace(logwidget, 0, pos, "");
@@ -424,13 +438,10 @@ EntryForm	*spec;
 			break;
 
 		case FT_KEYWORD:
-			kidcount = ((CompositeRec *)(current->mywidget))->
-					composite.num_children;
-
+			kidcount = NumChildren(current->mywidget);
 			while(kidcount--) {
 				n = 0;
-				kid = ((CompositeRec *)(current->mywidget))->
-					composite.children[kidcount];
+				kid = NthChild(current->mywidget, kidcount);
 				if (current->returnvalue.stringvalue &&
 					(!strcmp (XtName(kid), current->returnvalue.stringvalue))) {
 					XtSetArg(wargs[n], XmNset, True);

@@ -1,5 +1,5 @@
 #!/moira/bin/perl
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/report.sh,v 1.7 1999-01-29 18:38:35 danw Exp $
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/report.sh,v 1.8 2000-06-05 05:01:49 jweiss Exp $
 
 chdir($ARGV[0]);
 
@@ -65,11 +65,11 @@ $total = 0;
 
 while (<USERS>) {
     s/\|/\e/g; s/\\\e/\|/g;
-    split(/\e/, $_, $27);
-    $total++; $STATUS{$_[7]}++;
-    if ($_[7] != 3) { $classtotal++; $CLASS{$_[9]}++; }
-    if ($_[7] == 1) { $CLASSA{$_[9]}++; }
-    if ($_[7] == 1 || $_[7] == 6) { $pototal++; $POTYPE{$_[25]}++; }
+    split(/\e/, $_, 28);
+    $total++; $STATUS{$_[8]}++;
+    if ($_[8] != 3) { $classtotal++; $CLASS{$_[10]}++; }
+    if ($_[8] == 1) { $CLASSA{$_[10]}++; }
+    if ($_[8] == 1 || $_[8] == 6) { $pototal++; $POTYPE{$_[26]}++; }
 }
 
 close(USERS);

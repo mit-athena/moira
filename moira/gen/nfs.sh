@@ -1,7 +1,7 @@
 #!/bin/csh -f
 # This script performs nfs updates on servers.
 #
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/nfs.sh,v 1.16 1996-07-08 19:24:10 dkk Exp $
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/nfs.sh,v 1.17 1997-08-25 18:23:01 danw Exp $
 
 # The following exit codes are defined and MUST BE CONSISTENT with the
 # MR error codes the library uses:
@@ -13,9 +13,9 @@ set path=(/etc /bin /usr/bin /usr/etc /usr/athena/etc)
 set nonomatch
 
 # The file containg the information for the update
-set TARFILE=/tmp/nfs.out
+set TARFILE=/var/tmp/nfs.out
 # The directory into which we will empty the tarfile
-set SRC_DIR=/tmp/nfs.dir
+set SRC_DIR=/var/tmp/nfs.dir
 
 # Alert if the tarfile does not exist
 if (! -r $TARFILE) then
@@ -52,7 +52,7 @@ foreach type (dirs quotas)
 	if ($type == quotas) ./zero_quotas $dev < $i
 	if ($status) exit $status
 	# save the files used here for later debugging
-	mv $i /tmp
+	mv $i /var/tmp
      endif
    end
 end

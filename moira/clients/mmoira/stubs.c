@@ -15,7 +15,7 @@
 #include	"mmoira.h"
 #include	<sys/file.h>
 
-static char rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/stubs.c,v 1.9 1992-10-28 16:04:04 mar Exp $";
+static char rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/stubs.c,v 1.10 1992-11-04 17:55:17 mar Exp $";
 
 void	extra_help_callback();
 extern EntryForm *MoiraForms[];
@@ -78,18 +78,6 @@ static XtActionsRec myactions[] = {
 };
 
 
-/* These are the additional translations added to the Motif text widget
- * for the log window.  The two noop translations are here to avoid
- * nasty interactions with the selection mechanism.  They match the
- * existing translations that involve shifted mouse buttons.
- */
-
-#define newtrans "~Ctrl  Shift ~Meta ~Alt<Btn1Down>: moiraRetrieve()\n\
-	~Ctrl ~Meta ~Alt<Btn1Up>: noop()\n\
-	~Ctrl Shift ~Meta ~Alt<Btn1Motion>: noop()\n\
-	~Ctrl  Shift ~Meta ~Alt<Btn2Down>: moiraModify()"
-
-
 /* Create the log window, and setup the translation table to taking
  * mouse clicks in it.
  */
@@ -116,7 +104,7 @@ Widget	parent;
 
 	XtAppAddActions(XtWidgetToApplicationContext(logwidget),
 			myactions, XtNumber(myactions));
-	trans = XtParseTranslationTable(newtrans);
+	trans = XtParseTranslationTable(resources.log_trans);
 	XtOverrideTranslations(logwidget, trans);
 	return (logwidget);
 }

@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/increment.qc,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/increment.qc,v 1.6 1989-12-28 17:11:11 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/increment.qc,v 1.7 1990-03-02 16:59:32 mar Exp $
  *
  *	Copyright (C) 1989 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_qrtn_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/increment.qc,v 1.6 1989-12-28 17:11:11 mar Exp $";
+static char *rcsid_qrtn_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/increment.qc,v 1.7 1990-03-02 16:59:32 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -363,6 +363,9 @@ next_incremental()
     struct iupdate *iu;
     char *argv[MAXARGC * 2 + 4], cafter[3], cbefore[3], prog[BUFSIZ];
     int i;
+
+    if (incremental_exec == NULL)
+      incremental_init();
 
     if (sq_empty(incremental_exec) ||
 	(inc_running && now - inc_started < INC_TIMEOUT))

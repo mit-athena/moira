@@ -1,23 +1,24 @@
 /*
  * $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.c,v $
- * $Author: wesommer $
+ * $Author: mar $
  * $Locker:  $
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.c,v 1.6 1987-09-21 15:21:09 wesommer Exp $ 
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.c,v 1.7 1988-07-31 17:31:09 mar Exp $ 
  */
 
 #ifndef lint
-static char    *rcsid_userreg_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.c,v 1.6 1987-09-21 15:21:09 wesommer Exp $";
+static char    *rcsid_userreg_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.c,v 1.7 1988-07-31 17:31:09 mar Exp $";
 #endif	lint
 
 #include <curses.h>
-#include "userreg.h"
 #include <signal.h>
 #include <sys/time.h>
 #include <setjmp.h>
 #include <ctype.h>
-#include "ureg_err.h"
 #include <krb.h>
 #include <errno.h>
+#include "userreg.h"
+#include "ureg_err.h"
+
 #define EXIT -1
 
 
@@ -117,7 +118,7 @@ main(argc, argv)
 					gmi();
 				display_text_line(0);
 				sprintf(line,
-					"You entered your last name as \"%s\"", user.u_last);
+					"You entered your family name as \"%s\"", user.u_last);
 				display_text_line(line);
 				if (askyn("Do you want to change it? ") == YES) {
 					glast();
@@ -263,6 +264,7 @@ negotiate_login()
 	char            line[100];
 	char            old_login[LOGIN_SIZE];
 	char            old_password[PASSWORD_SIZE];
+	char		realm[REALM_SZ];
 	int		i;
 	char *cp;
 	
@@ -301,7 +303,11 @@ negotiate_login()
 		 * usernames, all in use, we first try and see if this
 		 * guy is known to Kerberos.
 		 */
-		result = get_in_tkt(user.u_login, "", "ATHENA.MIT.EDU", "krbtgt", "ATHENA.MIT.EDU", "");
+		if ((result = get_krbrlm(realm, 1)) != KSUCCESS) {
+		    display_text_line("Can't get kerberos realm, giving up");
+		    continue;
+		}
+		result = get_in_tkt(user.u_login, "", realm, "krbtgt", realm, "");
 		timer_on();
 		if (result != KDC_PR_UNKNOWN) {
 		in_use:
@@ -367,7 +373,7 @@ glast()
 	char            buf[100];
 
 	signal(SIGALRM, restart);
-	input("Enter last Name:", buf, 100, LASTNAME_TIMEOUT);
+	input("Enter family Name:", buf, 100, LASTNAME_TIMEOUT);
 	strncpy(user.u_last, buf, LAST_NAME_SIZE);
 	user.u_last[LAST_NAME_SIZE - 1] = '\0';
 	canon_name(user.u_last);

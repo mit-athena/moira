@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v 1.33 1989-08-31 12:47:49 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v 1.34 1989-09-01 15:01:57 mar Exp $
  *
  *	Copyright (C) 1987, 1988 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_qrtn_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v 1.33 1989-08-31 12:47:49 mar Exp $";
+static char *rcsid_qrtn_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v 1.34 1989-09-01 15:01:57 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -317,6 +317,12 @@ sms_process_query(cl, name, argc, argv_ro, action, actarg)
     }
 
 out:
+    if (status == SMS_SUCCESS && ingres_errno != 0) {
+	com_err(whoami, SMS_INTERNAL, "Server didn't notice INGRES ERROR %d",
+		       ingres_errno);
+	status = sms_errcode;
+    }
+
     if (q->type != RETRIEVE) {
         if (status == SMS_SUCCESS) {
 ##          end transaction	/* commit to this */
@@ -346,12 +352,6 @@ out:
 	    incremental_flush();
 	}
 ##      set lockmode session where readlock = system
-    }
-
-    if (status == SMS_SUCCESS && ingres_errno != 0) {
-	critical_alert("SMS", "Server didn't notice INGRES ERROR %d",
-		       ingres_errno);
-	status = SMS_INTERNAL;
     }
 
     if (status != SMS_SUCCESS && log_flags & LOG_RES)

@@ -1,4 +1,4 @@
-/* $Id: lists.c,v 1.40 2000-04-19 23:15:35 zacheiss Exp $
+/* $Id: lists.c,v 1.41 2000-08-10 01:58:40 zacheiss Exp $
  *
  *	This is the file lists.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -23,7 +23,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v 1.40 2000-04-19 23:15:35 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v 1.41 2000-08-10 01:58:40 zacheiss Exp $");
 
 struct mqelem *GetListInfo(int type, char *name1, char *name2);
 char **AskListInfo(char **info, Bool name);
@@ -843,7 +843,7 @@ int InterRemoveItemFromLists(int argc, char **argv)
 int ListByMember(int argc, char **argv)
 {
   char buf[BUFSIZ], temp_buf[BUFSIZ], *type, *name, **info;
-  Bool maillist, group;
+  Bool maillist, group, neither;
   struct mqelem *top, *elem;
 
   type = strdup("USER");
@@ -867,6 +867,10 @@ int ListByMember(int argc, char **argv)
 			     TRUE)) == -1)
     return DM_NORMAL;
 
+  if ((neither = YesNoQuestion("Show Lists that are neither Maillists nor Groups (y/n) ?",
+			       TRUE)) == -1)
+    return DM_NORMAL;
+
   elem = top = GetListInfo(GLOM, type, name);
 
   while (elem)
@@ -874,6 +878,9 @@ int ListByMember(int argc, char **argv)
       info = elem->q_data;
       if ((maillist == TRUE && !strcmp(info[GLOM_MAILLIST], "1")) ||
 	  (group == TRUE && !strcmp(info[GLOM_GROUP], "1")))
+	Put_message(info[GLOM_NAME]);
+      if (neither == TRUE && !strcmp(info[GLOM_MAILLIST], "0") &&
+	   !strcmp(info[GLOM_GROUP], "0"))
 	Put_message(info[GLOM_NAME]);
       elem = elem->q_forw;
     }

@@ -11,8 +11,8 @@
  *                                   7/27/88
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/include/moira_site.h,v $
- *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/include/moira_site.h,v 1.23 1993-11-23 17:10:00 mar Exp $
+ *      $Author: danw $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/include/moira_site.h,v 1.24 1997-08-14 20:22:24 danw Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -346,6 +346,11 @@
 #define USH_NAME        0
 #define USH_SHELL       1
 #define USH_END         2
+
+/* MITdir pref bits */
+
+#define DIRFLAGS_SUPPRESS 1
+#define DIRFLAGS_NONLOCAL 2
 
 /* Zehpyr ACL queries */
 

@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/dump_db.qc,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/dump_db.qc,v 1.6 1989-12-04 12:09:29 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/dump_db.qc,v 1.7 1992-06-25 15:36:58 mar Exp $
  *
  *	(c) Copyright 1988 by the Massachusetts Institute of Technology.
  *	For copying and distribution information, please see the file
@@ -13,7 +13,7 @@
  */
 
 #ifndef lint
-static char *rcsid_dump_db_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/dump_db.qc,v 1.6 1989-12-04 12:09:29 mar Exp $";
+static char *rcsid_dump_db_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/dump_db.qc,v 1.7 1992-06-25 15:36:58 mar Exp $";
 #endif lint
 
 #include <stdio.h>
@@ -103,7 +103,6 @@ dump_str(f, str)
 	    if (putc1(t,f) < 0) wpunt();
 	    t = (c&7) + '0';
 	    if (putc1(t,f) < 0) wpunt();
-	    fprintf(stderr, "control character \\%03o\n", c);
 	    break;
 	    
 	default:

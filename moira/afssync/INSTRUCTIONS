@@ -139,6 +139,20 @@ the membership of rcmd.reynelda)
 	rm /moira/afs/noafs
 to remove the lock file and let Moira's afs incrementals continue.
 
+	The afssync program doesn't deal with null instance KERBEROS
+members of lists which are groups (example: if LIST zacheiss contains
+KERBEROS zacheiss@ATHENA.MIT.EDU).  To get around this, run:
+
+/moira/bin/sync.pl
+
+Which will create /var/tmp/sync.out, which contains the pts commands
+needed to add all the null instance KERBEROS members back to the pts
+groups they belong in.  If it looks sane, run:
+
+sh /var/tmp/sync.out
+
+Any failed additions are probably from lists that contain both USER
+username and KERBEROS username@ATHENA.MIT.EDU.
 
 NOTES
 

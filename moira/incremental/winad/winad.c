@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/winad/winad.c,v 1.25 2001-08-28 14:32:48 zacheiss Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/winad/winad.c,v 1.26 2001-12-14 21:07:22 zacheiss Exp $
 /* winad.incr arguments examples
  *
  * arguments when moira creates the account - ignored by winad.incr since the account is unusable.
@@ -312,6 +312,7 @@ int filesys_process(LDAP *ldap_handle, char *dn_path, char *fs_name,
                     char *fs_type, char *fs_pack, int operation);
 int get_group_membership(char *group_membership, char *group_ou, 
                          int *security_flag, char **av);
+int get_machine_ou(LDAP *ldap_handle, char *dn_path, char *member, char *machine_ou);
 int process_group(LDAP *ldap_handle, char *dn_path, char *MoiraId, 
                   char *group_name, char *group_ou, char *group_membership, 
                   int group_security_flag, int type);
@@ -885,6 +886,7 @@ void do_member(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
   char  moira_user_id[32];
   char  group_membership[1];
   char  group_ou[256];
+  char  machine_ou[256];
   char  *args[16];
   char  **ptr;
   char  *av[7];
@@ -909,7 +911,15 @@ void do_member(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
       strcpy(user_name, after[LM_MEMBER]);
       strcpy(group_name, after[LM_LIST]);
       strcpy(user_type, after[LM_TYPE]);
-      if (!strcasecmp(ptr[LM_TYPE], "USER"))
+      if (!strcasecmp(ptr[LM_TYPE], "MACHINE"))
+        {
+          if (afterc > LM_EXTRA_GROUP)
+            {
+              strcpy(moira_list_id, before[LM_EXTRA_GID]);
+              strcpy(moira_user_id, before[LMN_LIST_ID]);
+            }
+        }
+      else if (!strcasecmp(ptr[LM_TYPE], "USER"))
         {
           if (afterc > LMN_LIST_ID)
             {
@@ -935,7 +945,15 @@ void do_member(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
       strcpy(user_name, before[LM_MEMBER]);
       strcpy(group_name, before[LM_LIST]);
       strcpy(user_type, before[LM_TYPE]);
-      if (!strcasecmp(ptr[LM_TYPE], "USER"))
+      if (!strcasecmp(ptr[LM_TYPE], "MACHINE"))
+        {
+          if (beforec > LM_EXTRA_GROUP)
+            {
+              strcpy(moira_list_id, before[LM_EXTRA_GID]);
+              strcpy(moira_user_id, before[LMN_LIST_ID]);
+            }
+        }
+      else if (!strcasecmp(ptr[LM_TYPE], "USER"))
         {
           if (beforec > LMN_LIST_ID)
             {
@@ -1015,6 +1033,13 @@ void do_member(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
     {
       com_err(whoami, 0, "removing user %s from list %s", user_name, group_name);
       pUserOu = user_ou;
+      if (!strcasecmp(ptr[LM_TYPE], "MACHINE"))
+        {
+          memset(machine_ou, '\0', sizeof(machine_ou));
+          if (get_machine_ou(ldap_handle, dn_path, ptr[LM_MEMBER], machine_ou))
+            return;
+          pUserOu = machine_ou;
+        }
       if (!strcasecmp(ptr[LM_TYPE], "STRING"))
         {
           if (contact_create(ldap_handle, dn_path, ptr[LM_MEMBER], contact_ou))
@@ -1036,7 +1061,15 @@ void do_member(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
 
   com_err(whoami, 0, "Adding %s to list %s", user_name, group_name);
   pUserOu = user_ou;
-  if (!strcasecmp(ptr[LM_TYPE], "STRING"))
+
+  if (!strcasecmp(ptr[LM_TYPE], "MACHINE"))
+    {
+      memset(machine_ou, '\0', sizeof(machine_ou));
+      if (get_machine_ou(ldap_handle, dn_path, ptr[LM_MEMBER], machine_ou))
+        return;
+      pUserOu = machine_ou;
+    }
+  else if (!strcasecmp(ptr[LM_TYPE], "STRING"))
     {
       if (contact_create(ldap_handle, dn_path, ptr[LM_MEMBER], contact_ou))
         return;
@@ -4181,7 +4214,7 @@ int container_adupdate(LDAP *ldap_handle, char *dn_path, char *dName,
           attr_array[1] = NULL;
           group_count = 0;
           group_base = NULL;
-          if ((rc = linklist_build(ldap_handle, dn_path, filter, attr_array,
+          if ((rc = linklist_build(ldap_handle, dn_path, filter, attr_array, 
                                    &group_base, &group_count)) == LDAP_SUCCESS)
             {
               if (group_count == 1)
@@ -4314,5 +4347,72 @@ int container_move_objects(LDAP *ldap_handle, char *dn_path, char *dName)
           group_count = 0;
         }
     }
+  return(0);
+}
+
+int get_machine_ou(LDAP *ldap_handle, char *dn_path, char *member, char *machine_ou)
+{
+  LK_ENTRY  *group_base;
+  int  group_count;
+  int  i;
+  char filter[128];
+  char *attr_array[3];
+  char cn[256];
+  char dn[256];
+  char temp[256];
+  char *pPtr;
+  int   rc;
+
+  pPtr = NULL;
+  pPtr = strchr(member, '.');
+  if (pPtr != NULL)
+    (*pPtr) = '\0';
+
+  group_base = NULL;
+  group_count = 0;
+  sprintf(filter, "(sAMAccountName=%s$)", member);
+  attr_array[0] = "cn";
+  attr_array[1] = NULL;
+  sprintf(temp, "%s", dn_path);
+  if ((rc = linklist_build(ldap_handle, temp, filter, attr_array, 
+                        &group_base, &group_count)) != 0)
+    {
+      com_err(whoami, 0, "LDAP server couldn't process machine %s : %s",
+              member, ldap_err2string(rc));
+      return(1);
+    }
+  if (group_count != 1)
+    {
+      com_err(whoami, 0, "LDAP server couldn't process machine %s : machine not found in AD",
+              member);
+      return(1);
+    }
+  strcpy(dn, group_base->dn);
+  strcpy(cn, group_base->value);
+  for (i = 0; i < (int)strlen(dn); i++)
+    dn[i] = tolower(dn[i]);
+  for (i = 0; i < (int)strlen(cn); i++)
+    cn[i] = tolower(cn[i]);
+  linklist_free(group_base);
+  pPtr = NULL;
+  pPtr = strstr(dn, cn);
+  if (pPtr == NULL)
+    {
+      com_err(whoami, 0, "LDAP server couldn't process machine %s",
+              member);
+      return(1);
+    }
+  pPtr += strlen(cn) + 1;
+  strcpy(machine_ou, pPtr);
+  pPtr = NULL;
+  pPtr = strstr(machine_ou, "dc=");
+  if (pPtr == NULL)
+    {
+      com_err(whoami, 0, "LDAP server couldn't process machine %s",
+              member);
+      return(1);
+    }
+  --pPtr;
+  (*pPtr) = '\0';
   return(0);
 }

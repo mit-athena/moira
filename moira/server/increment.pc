@@ -1,4 +1,4 @@
-/* $Id: increment.pc,v 2.12 2001-08-28 14:26:01 zacheiss Exp $
+/* $Id: increment.pc,v 2.13 2001-12-14 21:05:35 zacheiss Exp $
  *
  * Deal with incremental updates
  *
@@ -20,7 +20,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/increment.pc,v 2.12 2001-08-28 14:26:01 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/increment.pc,v 2.13 2001-12-14 21:05:35 zacheiss Exp $");
 
 extern char *whoami;
 extern char *table_name[];
@@ -216,6 +216,12 @@ void incremental_before(enum tables table, char *qual, char **argv)
 	  EXEC SQL SELECT list_id INTO :before[9] FROM list
 	    WHERE name = :name;
 	}
+      else if (!strcmp(before[1], "MACHINE"))
+	{
+	  id_to_name(id, MACHINE_TABLE, &name2);
+	  EXEC SQL SELECT mach_id INTO :before[9] FROM machine
+	    WHERE name = :name;
+	}
       strcpy(before[2], name2);
       free(name);
       free(name2);
@@ -371,6 +377,12 @@ void incremental_after(enum tables table, char *qual, char **argv)
 	{
 	  id_to_name(id, STRINGS_TABLE, &name2);
 	  EXEC SQL SELECT list_id INTO :after[9] FROM list
+	    WHERE name = :name;
+	}
+      else if (!strcmp(after[1], "MACHINE"))
+	{
+	  id_to_name(id, MACHINE_TABLE, &name2);
+	  EXEC SQL SELECT mach_id INTO :after[9] FROM machine
 	    WHERE name = :name;
 	}
       strcpy(after[2], name2);

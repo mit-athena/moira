@@ -1,4 +1,4 @@
-/* $Id: qsetup.pc,v 2.47 2001-10-17 21:34:06 zacheiss Exp $
+/* $Id: qsetup.pc,v 2.48 2001-12-14 21:05:35 zacheiss Exp $
  *
  * Query setup routines
  *
@@ -21,7 +21,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsetup.pc,v 2.47 2001-10-17 21:34:06 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsetup.pc,v 2.48 2001-12-14 21:05:35 zacheiss Exp $");
 
 extern char *whoami;
 extern int dbms_errno, mr_errcode;
@@ -222,6 +222,10 @@ int setup_dmac(struct query *q, char *argv[], client *cl)
     return MR_IN_USE;
   EXEC SQL SELECT COUNT(mach_id) INTO :cnt FROM hostalias
     WHERE mach_id = :id;
+  if (cnt > 0)
+    return MR_IN_USE;
+  EXEC SQL SELECT COUNT(member_id) INTO :cnt FROM imembers
+    WHERE member_type = 'MACHINE' and member_id = :id;
   if (cnt > 0)
     return MR_IN_USE;
 

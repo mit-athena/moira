@@ -1,4 +1,4 @@
-/* $Id: lists.c,v 1.47 2001-05-14 19:40:00 zacheiss Exp $
+/* $Id: lists.c,v 1.48 2001-12-14 21:06:26 zacheiss Exp $
  *
  *	This is the file lists.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -24,7 +24,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v 1.47 2001-05-14 19:40:00 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v 1.48 2001-12-14 21:06:26 zacheiss Exp $");
 
 struct mqelem *GetListInfo(int type, char *name1, char *name2);
 char **AskListInfo(char **info, Bool name);
@@ -158,6 +158,8 @@ struct mqelem *GetListInfo(int type, char *name1, char *name2)
     case GLOM:
       args[0] = name1;
       args[1] = name2;
+      if (!strcmp(name1, "MACHINE"))
+	  args[1] = canonicalize_hostname(strdup(name2));
       if ((status = do_mr_query("get_lists_of_member", 2, args,
 				StoreInfo, &elem)))
 	{
@@ -719,6 +721,13 @@ int AddMember(int argc, char **argv)
       free(args[LM_MEMBER]);
       args[LM_MEMBER] = canon;
     }
+  else if (!strcmp(args[LM_TYPE], "MACHINE"))
+    {
+      char *canon;
+      canon = canonicalize_hostname(strdup(args[LM_MEMBER]));
+      free(args[LM_MEMBER]);
+      args[LM_MEMBER] = canon;
+    }
 
   if ((status = do_mr_query("add_member_to_list", CountArgs(args), args,
 			    NULL, NULL)) != MR_SUCCESS)
@@ -772,6 +781,17 @@ int DeleteMember(int argc, char **argv)
 		      status = MR_SUCCESS;
 		    }
 		}
+	    }
+	  else if ((status == MR_MACHINE || status == MR_NO_MATCH) &&
+		   !strcmp(args[LM_TYPE], "MACHINE"))
+	    {
+	      char *canon;
+	      canon = canonicalize_hostname(args[LM_MEMBER]);
+	      free(args[LM_MEMBER]);
+	      args[LM_MEMBER] = canon;
+	      if (do_mr_query("delete_member_from_list", CountArgs(args),
+			      args, NULL, NULL) == MR_SUCCESS)
+		status = MR_SUCCESS;
 	    }
 	}
       if (status)
@@ -870,6 +890,8 @@ int InterRemoveItemFromLists(int argc, char **argv)
 	  args[DM_LIST] = info[GLOM_NAME];
 	  args[DM_TYPE] = type;
 	  args[DM_MEMBER] = name;
+	  if (!strcmp("MACHINE", type))
+	      args[DM_MEMBER] = canonicalize_hostname(strdup(name));
 	  if ((status = do_mr_query("delete_member_from_list", 3, args,
 				    NULL, NULL)))
 	    {

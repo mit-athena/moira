@@ -1,4 +1,4 @@
-/* $Id: blanche.c,v 1.56 2001-07-18 02:48:52 zacheiss Exp $
+/* $Id: blanche.c,v 1.57 2001-12-14 21:06:07 zacheiss Exp $
  *
  * Command line oriented Moira List tool.
  *
@@ -20,7 +20,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.56 2001-07-18 02:48:52 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.57 2001-12-14 21:06:07 zacheiss Exp $");
 
 struct member {
   int type;
@@ -33,16 +33,18 @@ struct member {
 #define M_LIST		2
 #define M_STRING	3
 #define M_KERBEROS	4
-#define M_NONE		5
+#define M_MACHINE       5
+#define M_NONE		6
 
-char *typename[] = { "ANY", "USER", "LIST", "STRING", "KERBEROS", "NONE" };
+char *typename[] = { "ANY", "USER", "LIST", "STRING", "KERBEROS", "MACHINE",
+		     "NONE" };
 
 /* argument parsing macro */
 #define argis(a, b) (!strcmp(*arg + 1, a) || !strcmp(*arg + 1, b))
 
 /* flags from command line */
 int infoflg, verbose, syncflg, memberflg, recursflg, noauth;
-int showusers, showstrings, showkerberos, showlists, showtags;
+int showusers, showstrings, showkerberos, showlists, showtags, showmachines;
 int createflag, setinfo, active, public, hidden, maillist, grouplist;
 int nfsgroup;
 struct member *owner, *memacl;
@@ -79,7 +81,7 @@ int main(int argc, char **argv)
   /* clear all flags & lists */
   infoflg = verbose = syncflg = memberflg = recursflg = 0;
   noauth = showusers = showstrings = showkerberos = showlists = 0;
-  createflag = setinfo = 0;
+  showtags = showmachines = createflag = setinfo = 0;
   active = public = hidden = maillist = grouplist = nfsgroup = -1;
   listname = newname = desc = NULL;
   owner = NULL;
@@ -328,9 +330,10 @@ int main(int argc, char **argv)
 	taglist->q_next != taglist))
     memberflg++;
 
-  /* If none of {users,strings,lists,kerberos} specified, turn them all on */
+  /* If none of {users,strings,lists,kerberos,machines} specified, 
+     turn them all on */
   if (!(showusers || showstrings || showlists || showkerberos))
-    showusers = showstrings = showlists = showkerberos = 1;
+    showusers = showstrings = showlists = showkerberos = showmachines = 1;
 
   /* fire up Moira */
   status = mrcl_connect(server, "blanche", 4, !noauth);
@@ -735,6 +738,18 @@ int main(int argc, char **argv)
 	      success = 0;
 	    }
 	  free(membervec[2]);
+	case M_MACHINE:
+	  membervec[1] = "MACHINE";
+	  membervec[2] = canonicalize_hostname(strdup(memberstruct->name));
+	  status = mr_query("add_tagged_member_to_list", 4, membervec,
+			    NULL, NULL);
+	  if (status != MR_SUCCESS)
+	    {
+	      com_err(whoami, status, "while adding member %s to %s",
+		      memberstruct->name, listname);
+	      success = 0;
+	    }
+	  free(membervec[2]);
 	}
     }
 
@@ -845,6 +860,18 @@ int main(int argc, char **argv)
 		      memberstruct->name, listname);
 	      success = 0;
 	    }
+	case M_MACHINE:
+	  membervec[1] = "MACHINE";
+	  membervec[2] = canonicalize_hostname(memberstruct->name);
+	  status = mr_query("delete_member_from_list", 3, membervec,
+			    NULL, NULL);
+	  if (status != MR_SUCCESS)
+	    {
+	      com_err(whoami, status, "while deleting member %s from %s",
+		      memberstruct->name, listname);
+	      success = 0;
+	    }
+	  free(membervec[2]);
 	}
     }
 
@@ -1032,6 +1059,11 @@ void show_list_member(struct member *memberstruct)
 	return;
       s = "KERBEROS";
       break;
+    case M_MACHINE:
+      if (!showmachines)
+	return;
+      s = "MACHINE";
+      break;
     case M_ANY:
       printf("%s\n", memberstruct->name);
       return;
@@ -1048,6 +1080,8 @@ void show_list_member(struct member *memberstruct)
       else if (memberstruct->type == M_STRING &&
 	       !strchr(memberstruct->name, '@'))
 	printf("STRING:%s", memberstruct->name);
+      else if (memberstruct->type == M_MACHINE)
+	printf("MACHINE:%s", memberstruct->name);
       else
 	printf("%s", memberstruct->name);
     }
@@ -1188,6 +1222,9 @@ int get_list_members(int argc, char **argv, void *sq)
     case 'K':
       m->type = M_KERBEROS;
       break;
+    case 'M':
+      m->type = M_MACHINE;
+      break;
     }
   m->name = strdup(argv[1]);
   if (argc == 3)
@@ -1287,6 +1324,8 @@ struct member *parse_member(char *s)
 	m->type = M_STRING;
       else if (!strcasecmp("kerberos", s))
 	m->type = M_KERBEROS;
+      else if (!strcasecmp("machine", s))
+	m->type = M_MACHINE;
       else if (!strcasecmp("none", s))
 	m->type = M_NONE;
       else

@@ -1,4 +1,4 @@
-/* $Id: phase2.pc,v 1.19 2000-08-15 00:07:20 zacheiss Exp $
+/* $Id: phase2.pc,v 1.20 2001-12-14 21:04:54 zacheiss Exp $
  *
  * (c) Copyright 1988-1998 by the Massachusetts Institute of Technology.
  * For copying and distribution information, please see the file
@@ -15,7 +15,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase2.pc,v 1.19 2000-08-15 00:07:20 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase2.pc,v 1.20 2001-12-14 21:04:54 zacheiss Exp $");
 
 EXEC SQL WHENEVER SQLERROR DO dbmserr();
 
@@ -55,10 +55,12 @@ int show_mem_user(void *id);
 int show_mem_list(void *id);
 int show_mem_str(void *id);
 int show_mem_krb(void *id);
+int show_mem_mach(void *id);
 void del_mem_user(void *id);
 void del_mem_list(void *id);
 void del_mem_str(void *id);
 void del_mem_krb(void *id);
+void del_mem_mach(void *id);
 int show_sh(void *id);
 void del_sh_mach(void *id);
 void fsmatch(int id, void *nfsphys, void *filesys);
@@ -1095,6 +1097,33 @@ int show_mem_krb(void *id)
   return found;
 }
 
+int show_mem_mach(void *id)
+{
+  EXEC SQL BEGIN DECLARE SECTION;
+  int lid, iid = (int)id, found = 1;
+  EXEC SQL END DECLARE SECTION;
+  struct list *l; 
+
+  EXEC SQL DECLARE csr208a CURSOR FOR
+    SELECT list_id FROM imembers
+    WHERE member_id = :iid AND member_type = 'MACHINE';
+  EXEC SQL OPEN csr208a;
+  while (1)
+    {
+      EXEC SQL FETCH csr208a INTO :lid;
+      if (sqlca.sqlcode)
+	break;
+      l = hash_lookup(lists, lid);
+      if (!l)
+	continue;
+
+      found = 0;
+      printf("List %s has nonexistant machine member, id %d\n",
+	     l->name, iid);
+    }
+  EXEC SQL CLOSE csr208a;
+  return found;
+}
 
 void del_mem_user(void *id)
 {
@@ -1161,6 +1190,21 @@ void del_mem_krb(void *id)
   modified("imembers");
 }
 
+void del_mem_mach(void *id)
+{
+  EXEC SQL BEGIN DECLARE SECTION;
+  int iid = (int)id, rowcount;
+  EXEC SQL END DECLARE SECTION;
+
+  EXEC SQL DELETE FROM imembers WHERE member_type = 'MACHINE' AND
+    member_id = :iid;
+  rowcount = sqlca.sqlerrd[2];
+  if (rowcount > 0)
+    printf("%d entr%s deleted\n", rowcount, rowcount == 1 ? "y" : "ies");
+  else
+    printf("Not deleted\n");
+  modified("imembers");
+}
 
 int show_sh(void *id)
 {
@@ -1944,6 +1988,7 @@ void phase2(void)
   sq3 = sq_create();
   sq4 = sq_create();
   sq5 = sq_create();
+  sq6 = sq_create();
 
   EXEC SQL DECLARE csr223 CURSOR FOR
     SELECT list_id, member_type, member_id, tag, ref_count, direct, rowid
@@ -1972,6 +2017,8 @@ void phase2(void)
 	sq_save_unique_data(sq4, (void *)id);
       else if (type[0] == 'K' && !maybe_fixup_unref_string2("imembers", "member_id", rowid, id))
 	sq_save_unique_data(sq5, (void *)id);
+      else if (type[0] == 'M' && !maybe_fixup_unref_string2("imembers", "member_id", rowid, id))
+	sq_save_unique_data(sq6, (void *)id);
       else
 	l->members++;
       maybe_fixup_unref_string2("imembers", "tag", rowid, tag);
@@ -1982,6 +2029,7 @@ void phase2(void)
   generic_fix(sq3, show_mem_list, "Delete", del_mem_list, 1);
   generic_fix(sq4, show_mem_str, "Delete", del_mem_str, 1);
   generic_fix(sq5, show_mem_krb, "Delete", del_mem_krb, 1);
+  generic_fix(sq6, show_mem_mach, "Delete", del_mem_mach, 1);
 
   dprintf("Checking servers...\n");
   sq1 = sq_create();

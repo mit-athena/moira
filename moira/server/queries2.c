@@ -1,6 +1,6 @@
 /* This file defines the query dispatch table for version 2 of the protocol
  *
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/queries2.c,v 2.7 1992-08-04 12:02:02 genoa Exp $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/queries2.c,v 2.8 1992-08-10 00:08:04 genoa Exp $
  *
  * Copyright 1987, 1988 by the Massachusetts Institute of Technology.
  * For copying and distribution information, please see the file
@@ -56,6 +56,8 @@ int followup_gzcl();
 int followup_gsha();
 int followup_gqot();
 int followup_gpce();
+int followup_guax();
+int followup_uuac();
 
 int set_modtime();
 int set_modtime_by_id();
@@ -77,6 +79,7 @@ int delete_member_from_list();
 int get_ace_use();
 int qualified_get_lists();
 int get_members_of_list();
+int get_end_members_of_list();
 int qualified_get_server();
 int qualified_get_serverhost();
 int trigger_dcm();
@@ -96,6 +99,7 @@ static char ACE_TYPE[] = "ace_type";
 static char CLASS[] = "class";
 static char CLU_ID[] = "clu_id";
 static char CLUSTER[] = "cluster";
+static char COMMENTS[] = "comments";
 static char DESC[] = "description";
 static char DEVICE[] = "device";
 static char DIR[] = "dir";
@@ -118,8 +122,10 @@ static char MOD3[] = "modwith";
 static char NAME[] = "name";
 static char QUOTA[] = "quota";
 static char QUOTA_TYPE[] = "quota_type";
+static char SECURE[] = "secure";
 static char SERVICE[] = "service";
 static char SHELL[] = "shell";
+static char SIGNATURE[] = "signature";
 static char STATUS[] = "status";
 static char TYPE[] = "type";
 static char USERS[] = "users";
@@ -169,10 +175,10 @@ static struct valobj VOwild01sort01[] = {
 };
 
 static struct valobj VOwild012sort0[] = {  /* get_alias */
-    {V_WILD, 0},
-    {V_WILD, 1},
-    {V_WILD, 2},
-    {V_SORT, 0},
+  {V_WILD, 0},
+  {V_WILD, 1},
+  {V_WILD, 2},
+  {V_SORT, 0},
 };
 
 static struct valobj VOdate1[] = {
@@ -261,6 +267,18 @@ static struct validate VDwildsortf = {
     followup_fix_modby,
 };
 
+static struct validate VDwild2sortf = { 
+    VOwild01sort01,
+    4,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    followup_fix_modby,
+};
+
 static struct validate VDupwildsortf = { 
     VOupwild0sort,
     2,
@@ -281,10 +299,16 @@ static char *galo_fields[] = {
   LOGIN, UID, SHELL, LAST, FIRST, MIDDLE,
 };
 
+static char *gual_fields[] = {
+  LOGIN,
+  LOGIN, UID, SHELL, LAST, FIRST, MIDDLE, STATUS,
+  MIT_ID, CLASS, COMMENTS, SIGNATURE, SECURE, MOD1, MOD2, MOD3,
+};
+ 
 static char *gubl_fields[] = {
   LOGIN,
   LOGIN, UID, SHELL, LAST, FIRST, MIDDLE, STATUS, 
-  MIT_ID, CLASS, MOD1, MOD2, MOD3
+  MIT_ID, CLASS, MOD1, MOD2, MOD3,
 };
 
 static struct validate gubl_validate =	
@@ -297,13 +321,37 @@ static struct validate gubl_validate =
   0,
   access_login,
   0,
-  followup_fix_modby,
+  followup_guax,
 };
 
+static char *guau_fields[] = {
+    UID,
+    LOGIN, UID, SHELL, LAST, FIRST, MIDDLE, STATUS,
+    MIT_ID, CLASS, COMMENTS, SIGNATURE, SECURE, MOD1, MOD2, MOD3,
+};
+ 
+static char *guan_fields[] = {
+    FIRST, LAST,
+    LOGIN, UID, SHELL, LAST, FIRST, MIDDLE, STATUS,
+    MIT_ID, CLASS, COMMENTS, SIGNATURE, SECURE, MOD1, MOD2, MOD3,
+};
+ 
+static char *guac_fields[] = {
+    CLASS,
+    LOGIN, UID, SHELL, LAST, FIRST, MIDDLE, STATUS,
+    MIT_ID, CLASS, COMMENTS, SIGNATURE, SECURE, MOD1, MOD2, MOD3,
+};
+ 
+static char *guam_fields[] = {
+    MIT_ID,
+    LOGIN, UID, SHELL, LAST, FIRST, MIDDLE, STATUS,
+    MIT_ID, CLASS, COMMENTS, SIGNATURE, SECURE, MOD1, MOD2, MOD3,
+};
+ 
 static char *gubu_fields[] = {
-  UID,
-  LOGIN, UID, SHELL, LAST, FIRST, MIDDLE, STATUS, 
-  MIT_ID, CLASS, MOD1, MOD2, MOD3,
+    UID,
+    LOGIN, UID, SHELL, LAST, FIRST, MIDDLE, STATUS, 
+    MIT_ID, CLASS, MOD1, MOD2, MOD3,
 };
 
 static struct validate gubu_validate =	
@@ -350,12 +398,12 @@ static char *gubm_fields[] = {
   MIT_ID, CLASS, MOD1, MOD2, MOD3,
 };
 
-static char *ausr_fields[] = {
+static char *auac_fields[] = {
   LOGIN, UID, SHELL, LAST, FIRST, MIDDLE, STATUS, 
-  MIT_ID, CLASS,
+  MIT_ID, CLASS, COMMENTS, SIGNATURE, SECURE,
 };
 
-static struct valobj ausr_valobj[] = {
+static struct valobj auac_valobj[] = {
   {V_LOCK, 0, USERS, 0, USERS_ID, MR_DEADLOCK},
   {V_CHAR, 0},
   {V_CHAR, 3},
@@ -363,13 +411,26 @@ static struct valobj ausr_valobj[] = {
   {V_CHAR, 5},
   {V_CHAR, 7},
   {V_TYPE, 8, CLASS, 0, 0, MR_BAD_CLASS},
+  {V_ID, 9, "strings", "string", "string_id", MR_NO_MATCH},
 };
 
-static struct validate ausr_validate = {
-  ausr_valobj,
-  7,
+static struct validate auac_validate = {
+  auac_valobj,
+  8,
   LOGIN,
   "users.login = LEFT('%s',SIZE(users.login))",
+  1,
+  USERS_ID,
+  0,
+  setup_ausr,
+  followup_ausr,
+};
+ 
+static struct validate ausr_validate = {
+  auac_valobj,
+  7,
+  LOGIN,
+  "users.login = LEFT('%s',SIZE(users.login))",  
   1,
   USERS_ID,
   0,
@@ -400,13 +461,13 @@ static struct validate rusr_validate = {
   0,
 };
 
-static char *uusr_fields[] = {
+static char *uuac_fields[] = {
   LOGIN,
   "newlogin", UID, SHELL, LAST, FIRST, MIDDLE, STATUS, 
-  MIT_ID, CLASS,
+  MIT_ID, CLASS, COMMENTS, SIGNATURE, SECURE,
 };
 
-static struct valobj uusr_valobj[] = {
+static struct valobj uuac_valobj[] = {
     {V_LOCK, 0, USERS, 0, USERS_ID, MR_DEADLOCK},
     {V_ID, 0, USERS, LOGIN, USERS_ID, MR_USER},
     {V_RENAME, 1, USERS, LOGIN, USERS_ID, MR_NOT_UNIQUE},
@@ -415,17 +476,30 @@ static struct valobj uusr_valobj[] = {
     {V_CHAR, 6},
     {V_CHAR, 8},
     {V_TYPE, 9, CLASS, 0, 0, MR_BAD_CLASS},
+    {V_ID, 10, "strings", "string", "string_id", MR_NO_MATCH},
 };
 
+static struct validate uuac_validate = {
+    uuac_valobj,
+    9,
+    0,
+    0,
+    0,
+    USERS_ID,
+    0,
+    setup_ausr,
+    followup_uuac,
+};
+ 
 static struct validate uusr_validate = {
-  uusr_valobj,
+  uuac_valobj,
   8,
   0,
   0,
   0,
   USERS_ID,
   0,
-  0,
+  setup_ausr,
   set_modtime_by_id,
 };
 
@@ -451,6 +525,11 @@ static char *uust_fields[] = {
   STATUS,
 };
 
+static char *uuss_fields[] = {
+  LOGIN,
+  SECURE,
+};
+ 
 static struct validate uust_validate = {
   VOuser0lock,
   2,
@@ -1181,13 +1260,13 @@ static char *gslo_fields[] = {
 
 static char *gfsl_fields[] = {
   LABEL,
-  LABEL, TYPE, MACHINE, NAME, "mount", "access", "comments", "owner", "owners",
+  LABEL, TYPE, MACHINE, NAME, "mount", "access", COMMENTS, "owner", "owners",
   "create", "lockertype", MOD1, MOD2, MOD3,
 };
 
 static char *gfsm_fields[] = {
   MACHINE,
-  LABEL, TYPE, MACHINE, NAME, "mount", "access", "comments", "owner", "owners",
+  LABEL, TYPE, MACHINE, NAME, "mount", "access", COMMENTS, "owner", "owners",
   "create", "lockertype", MOD1, MOD2, MOD3,
 };
 
@@ -1205,7 +1284,7 @@ static struct validate gfsm_validate = {
 
 static char *gfsn_fields[] = {
   MACHINE, "parition",
-  LABEL, TYPE, MACHINE, NAME, "mount", "access", "comments", "owner", "owners",
+  LABEL, TYPE, MACHINE, NAME, "mount", "access", COMMENTS, "owner", "owners",
   "create", "lockertype", MOD1, MOD2, MOD3,
 };
 
@@ -1227,9 +1306,15 @@ static struct validate gfsn_validate = {
   followup_fix_modby,
 };
 
+static char *gfsp_fields[] = {
+  "path",
+  LABEL, TYPE, MACHINE, NAME, "mount", "access", COMMENTS, "owner", "owners",
+  "create", "lockertype", MOD1, MOD2, MOD3,
+};
+ 
 static char *gfsg_fields[] = {
   LIST,
-  LABEL, TYPE, MACHINE, NAME, "mount", "access", "comments", "owner", "owners",
+  LABEL, TYPE, MACHINE, NAME, "mount", "access", COMMENTS, "owner", "owners",
   "create", "lockertype", MOD1, MOD2, MOD3,
 };
 
@@ -1246,7 +1331,7 @@ static struct validate gfsg_validate = {
 };
 
 static char *afil_fields[] = {
-  LABEL, TYPE, MACHINE, NAME, "mount", "access", "comments", "owner", "owners",
+  LABEL, TYPE, MACHINE, NAME, "mount", "access", COMMENTS, "owner", "owners",
   "create", "lockertype",
 };
 
@@ -1274,7 +1359,7 @@ static struct validate afil_validate = {
 };
 
 static char *ufil_fields[] = {
-  LABEL, "newlabel", TYPE, MACHINE, NAME, "mount", "access", "comments",
+  LABEL, "newlabel", TYPE, MACHINE, NAME, "mount", "access", COMMENTS,
   "owner", "owners", "create", "lockertype",
 };
 
@@ -1359,7 +1444,7 @@ static struct validate aftg_validate = {
     2,
     0,
     0,
-    setup_aftg,
+    0,
     0,
 };
 
@@ -1779,6 +1864,18 @@ static struct validate gmol_validate = {
   get_members_of_list,
 };
 
+static struct validate geml_validate = {
+  VOlist0,
+  1,
+  0,
+  0,
+  0,
+  0,
+  access_visible_list,
+  0,
+  get_end_members_of_list,
+};
+ 
 static char *glom_fields[] = {
   "member_type", "member_name",
   "list_name", "active", "publicflg", "hidden", "maillist", "grouplist",
@@ -1931,7 +2028,7 @@ static struct validate asvc_validate = {
 static char *gpce_fields[] = {
     "printer",
     "printer", "spooling_host", "spool_directory", "rprinter",
-    "quotaserver", "authenticate", "price", "comments",
+    "quotaserver", "authenticate", "price", COMMENTS,
     MOD1, MOD2, MOD3,
 };
 
@@ -1949,7 +2046,7 @@ static struct validate gpce_validate = {
 
 static char *apce_fields[] = {
     "printer", "spooling_host", "spool_directory", "rprinter",
-    "quotaserver", "authenticate", "price", "comments",
+    "quotaserver", "authenticate", "price", COMMENTS,
     MOD1, MOD2, MOD3,
 };
 
@@ -1985,7 +2082,7 @@ static struct validate dpce_validate = {
 
 static char *gpcp_fields[] = {
     "printer",
-    "printer", "spooling_host", "spool_directory", "rprinter", "comments",
+    "printer", "spooling_host", "spool_directory", "rprinter", COMMENTS,
     MOD1, MOD2, MOD3,
 };
 
@@ -2152,6 +2249,81 @@ struct query Queries2[] = {
   },
 
   {
+      /* Q_GUAL - GET_USER_ACCOUNT_BY_LOGIN */
+      "get_user_account_by_login",
+      "gual",
+      RETRIEVE,
+      "u",
+      USERS,
+      "CHAR(u.login), CHAR(u.uid), u.shell, CHAR(u.last), CHAR(u.first), u.middle, CHAR(u.status), CHAR(u.clearid), u.type, str.string, CHAR(u.signature), CHAR(u.secure), CHAR(u.modtime), CHAR(u.modby), u.modwith FROM users u, strings str",
+      gual_fields,
+      15,
+      "u.login LIKE '%s' ESCAPE '*' AND u.users_id != 0 AND u.comment = strings.string_id",
+      1,
+      &gubl_validate,
+  },
+ 
+  {
+      /* Q_GUAU - GET_USER_ACCOUNT_BY_UID */
+      "get_user_account_by_uid",
+      "guau",
+      RETRIEVE,
+      "u",
+      USERS,
+      "CHAR(u.login), CHAR(u.uid), u.shell, CHAR(u.last), CHAR(u.first), u.middle, CHAR(u.status), CHAR(u.clearid), u.type, str.string, CHAR(u.signature), CHAR(u.secure), CHAR(u.modtime), CHAR(u.modby), u.modwith FROM users u, strings str",
+      guau_fields,
+      15,
+      "u.uid = %s AND u.users_id != 0 AND u.comment = str.string_id",
+      1,
+      &gubu_validate,
+  },
+  
+  {
+      /* Q_GUAN - GET_USER_ACCOUNT_BY_NAME */
+      "get_user_account_by_name",
+      "guan",
+      RETRIEVE,
+      "u",
+      USERS,
+      "CHAR(u.login), CHAR(u.uid), u.shell, CHAR(u.last), CHAR(u.first), u.middle, CHAR(u.status), CHAR(u.clearid), u.type, str.string, CHAR(u.signature), CHAR(u.secure), CHAR(u.modtime), CHAR(u.modby), u.modwith FROM users u, strings str",
+      guan_fields,
+      15,
+      "u.first LIKE '%s' ESCAPE '*' AND u.last LIKE '%s' ESCAPE '*' AND u.users_id != 0 and u.comment = str.string_id",
+      2,
+      &VDwild2sortf,
+  },
+ 
+  {
+      /* Q_GUAC - GET_USER_ACCOUNT_BY_CLASS */
+      "get_user_account_by_class",
+      "guac",
+      RETRIEVE,
+      "u",
+      USERS,
+      "CHAR(u.login), CHAR(u.uid), u.shell, CHAR(u.last), CHAR(u.first), u.middle, CHAR(u.status), CHAR(u.clearid), u.type, str.string, CHAR(u.signature), CHAR(u.secure), CHAR(u.modtime), CHAR(u.modby), u.modwith FROM users u, strings str",
+      guac_fields,
+      15,
+      "u.type = UPPERCASE('%s') AND u.users_id != 0 AND u.comment = str.string_id",
+      1,
+      &VDsortf,
+  },
+ 
+  {
+      /* Q_GUAM - GET_USER_ACCOUNT_BY_MITID */
+      "get_user_account_by_id",
+      "guai",
+      RETRIEVE,
+      "u",
+      USERS,
+      "CHAR(u.login), CHAR(u.uid), u.shell, CHAR(u.last), CHAR(u.first), u.middle, CHAR(u.status), CHAR(u.clearid), u.type, str.string, CHAR(u.signature), CHAR(u.secure), CHAR(u.modtime), CHAR(u.modby), u.modwith FROM users u, strings str",
+      guam_fields,
+      15,
+      "u.clearid LIKE '%s' ESCAPE '*' AND u.users_id != 0 AND u.comment = str.string_id",
+      1,
+      &VDwildsortf,
+  },
+ 
+  {
     /* Q_GUBL - GET_USER_BY_LOGIN */
     "get_user_by_login",
     "gubl",
@@ -2226,7 +2398,21 @@ struct query Queries2[] = {
     &VDwildsortf,
   },
 
-
+  {
+    /* Q_AUAC - ADD_USER_ACCOUNT */  /* uses prefetch_value() for users_id */
+    "add_user_account",
+    "auac",
+    APPEND,
+    "u",
+    USERS,
+    "INTO users (login, uid, shell, last, first, middle, status, clearid, type, comment, signature, secure, users_id) VALUES ('%s', %s, '%s', '%s', '%s', '%s', %s, '%s', '%s', %d, '%s', %s, %s)",
+    auac_fields,
+    12,
+    (char *)0,
+    0,
+    &auac_validate,
+  },
+ 
   {
     /* Q_AUSR - ADD_USER */  /* uses prefetch_value() for users_id */
     "add_user",
@@ -2234,8 +2420,8 @@ struct query Queries2[] = {
     APPEND,
     "u",
     USERS,
-    "INTO users (login, uid, shell, last, first, middle, status, clearid, type, users_id) VALUES ( '%s', %s, '%s', '%s',  '%s',  '%s',  %s, '%s',  '%s', %s)",
-    ausr_fields,
+    "INTO users (login, uid, shell, last, first, middle, status, clearid, type, comment, signature, secure, users_id) VALUES ('%s', %s, '%s', '%s', '%s', '%s', %s, '%s', '%s', 0, '', 0, %s)",
+    auac_fields,
     9,
     0,
     0,
@@ -2258,6 +2444,21 @@ struct query Queries2[] = {
   },
 
   {
+    /* Q_UUAC - UPDATE_USER_ACCOUNT */
+    "update_user_account",
+    "uuac",
+    UPDATE,
+    "u",
+    USERS,
+    "users SET login = '%s', uid = %s, shell = '%s', last = '%s', first = '%s', middle = '%s', status = %s, clearid = '%s', type = '%s', comment = %d, signature = '%s', secure = %s",
+    uuac_fields,
+    12,
+    "users_id = %d",
+    1,
+    &uuac_validate,
+  },
+ 
+  {
     /* Q_UUSR - UPDATE_USER */
     "update_user",
     "uusr",
@@ -2265,7 +2466,7 @@ struct query Queries2[] = {
     "u",
     USERS,
     "users SET login = '%s', uid = %s, shell = '%s', last = '%s', first = '%s', middle = '%s', status = %s, clearid = '%s',  type = '%s'",
-    uusr_fields,
+    uuac_fields,
     9,
     "users_id = %d",
     1,
@@ -2302,6 +2503,21 @@ struct query Queries2[] = {
     &uust_validate,
   },
 
+  {
+    /* Q_UUSS - UPDATE_USER_SECURITY_STATUS */
+    "update_user_security_status",
+    "uuss",
+    UPDATE,
+    "u",
+    USERS,
+    "secure = %s",
+    uuss_fields,
+    1,
+    "users_id = %d",
+    1,
+    &uust_validate,
+  },
+ 
   {
     /* Q_DUSR - DELETE_USER */ 
     "delete_user",
@@ -3083,6 +3299,21 @@ struct query Queries2[] = {
   },
 
   {
+    /* Q_GFSP - GET_FILESYS_BY_PATH */ /** Allow wildcards??? **/
+    "get_filesys_by_path",
+    "gfsp",
+    RETRIEVE,
+    "fs",
+    FILESYS,
+    "CHAR(fs.label), fs.type, CHAR(m.name), fs.name, fs.mount, fs.access, fs.comments, CHAR(u.login), CHAR(l.name), CHAR(fs.createflg), fs.lockertype, CHAR(fs.modtime), CAHR(fs.modby), fs.modwith FROM filesys fs, machine m, users u, list l",
+    gfsp_fields,
+    14,
+    "fs.name = '%s' and m.mach_id = fs.mach_id and fs.owner = u.users_id and fs.owners = list_id",
+    1,
+    &VDsortf,
+  },
+ 
+  {
     /* Q_AFIL - ADD_FILESYS */ /* uses prefetch_value() for filsys_id */
     "add_filesys",
     "afil",
@@ -3562,6 +3793,21 @@ struct query Queries2[] = {
     &gmol_validate,
   },
 
+  {
+    /* Q_GEML - GET_END_MEMBERS_OF_LIST */
+    "get_end_members_of_list",
+    "geml",
+    RETRIEVE,
+    (char *)0,
+    "imembers",
+    (char *)0,
+    gmol_fields,
+    0,
+    (char *)0,
+    1,
+    &geml_validate,
+  },
+ 
   {
     /* Q_GLOM - GET_LISTS_OF_MEMBER */
     "get_lists_of_member",

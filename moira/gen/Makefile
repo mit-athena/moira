@@ -1,4 +1,4 @@
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/Makefile,v 1.6 1989-06-28 13:54:41 mar Exp $
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/Makefile,v 1.7 1989-09-18 12:00:11 mar Exp $
 
 LIBS= -L../lib -lsms -lcom_err -lzephyr -lkrb -ldes \
 	 /usr/rtingres/lib/libqlib /usr/rtingres/lib/compatlib
@@ -54,3 +54,4 @@ install: all
 	install -c install_dirs ../bin
 	install -c install_quotas ../bin
 	install -c nfs.sh ../bin
+	install -c passwd.sh ../bin

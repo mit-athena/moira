@@ -1,4 +1,4 @@
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/Imakefile,v 1.6 1992-08-25 14:49:21 mar Exp $
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/Imakefile,v 1.7 1992-09-22 14:18:28 mar Exp $
 #
 # Copyright 1990 by the Massachusetts Institute of Technology.
 #
@@ -10,11 +10,11 @@
 
 SRCS=	auth_001.c checksum.c client.c exec_002.c get_file.c \
 	hostname.c inst_001.c log.c send_file.c ticket.c \
-	update_server.c xfer_002.c config.c update_test.c
+	update_server.c xfer_002.c xfer_003.c config.c update_test.c
 SRCDIR=${SRCTOP}/update
 CODE=${SRCS} Imakefile
 SOBJS=	update_server.o auth_001.o inst_001.o xfer_002.o exec_002.o \
-	log.o get_file.o checksum.o config.o
+	xfer_003.o log.o get_file.o checksum.o config.o
 COBJS=	ticket.o send_file.o checksum.o
 
 #ifdef HAS_VSPRINTF
@@ -33,4 +33,4 @@ moira_update.o: ${COBJS} client.o
 #endif
 
 program(update_server, ${SOBJS},${MR_LIBDEP} ${GDB_LIBDEP}, ${CLIBS},${ETCDIR})
-test_program(update_test, update_test.o ${COBJS}, ${CLIBS})
+test_program(update_test, ${COBJS}, ${CLIBS})

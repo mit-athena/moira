@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase1.dc,v 1.6 1993-10-21 15:07:36 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase1.dc,v 1.7 1993-10-26 16:43:01 mar Exp $
  *
  *  (c) Copyright 1988 by the Massachusetts Institute of Technology.
  *  For copying and distribution information, please see the file
@@ -11,7 +11,7 @@
 EXEC SQL INCLUDE sqlca;
 
 
-static char phase1_qc_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase1.dc,v 1.6 1993-10-21 15:07:36 mar Exp $";
+static char phase1_qc_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase1.dc,v 1.7 1993-10-26 16:43:01 mar Exp $";
 
 
 show_user_id(u)
@@ -306,11 +306,14 @@ phase1()
     sq = sq_create();
 
     EXEC SQL DECLARE csr104 CURSOR FOR
-	SELECT mach_id, name, modby FROM machine ORDER BY mach_id;
+	SELECT mach_id, name, snet_id, owner_type, owner_id,
+      		acomment, ocomment, creator, modby
+	FROM machine ORDER BY mach_id;
     if (sqlca.sqlcode != 0) ingerr(&sqlca.sqlcode);
     EXEC SQL OPEN csr104;
     while(1) {
-	EXEC SQL FETCH csr104 INTO :id, :name, :sid;
+	EXEC SQL FETCH csr104 INTO :id, :name, :id2, :buf, :id3, :sid2,
+		:sid3, :sid4, :sid;
 	if (sqlca.sqlcode != 0) {
 	  ingerr(&sqlca.sqlcode);
 	  break;
@@ -320,14 +323,19 @@ phase1()
 	if (m == NULL)
 	  out_of_mem("storing machines");
 	strcpy(m->name, strtrim(name));
+	m->owner_type = buf[0];
+	m->owner_id = id3;
+	m->snet_id = id2;
 	m->mach_id = id;
 	m->clucount = 0;
 	if (hash_store(machines, id, m)) {
 	    sq_save_data(sq, hash_lookup(machines, id));
 	    sq_save_data(sq, m);
 	}
-	if (sid < 0)
-	  string_check(-sid);
+	if (sid2) string_check(sid2);
+	if (sid3) string_check(sid3);
+	if (sid4 < 0) string_check(-sid4);
+	if (sid < 0) string_check(-sid);
     }
     EXEC SQL CLOSE csr104; 
     generic_fix(sq, show_mach_id, "Change ID", fix_mach_id, 0);
@@ -352,6 +360,25 @@ phase1()
 	EXEC SQL CLOSE csr105; 
 	generic_fix(sq, show_mach_name, "Change name", cant_fix, 0);
     }	
+
+    dprintf("Loading subnets...\n");
+    subnets = create_hash(254);
+
+    EXEC SQL DECLARE csr115 CURSOR FOR
+      SELECT snet_id, name from subnet;
+    if (sqlca.sqlcode != 0) ingerr(&sqlca.sqlcode);
+    EXEC SQL OPEN csr115;
+    while(1) {
+	EXEC SQL FETCH csr115 INTO :id, :name;
+	if (sqlca.sqlcode != 0) {
+	  ingerr(&sqlca.sqlcode);
+	  break;
+	} 
+	if (hash_store(subnets, id, name)) {
+	    printf("Duplicate subnet ID: %d (%s)\n", id, name);
+	}
+    }
+    EXEC SQL CLOSE csr115;
 
     dprintf("Loading clusters...\n");
     sq = sq_create();

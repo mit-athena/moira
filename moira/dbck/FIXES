@@ -11,6 +11,8 @@ PHASE 1: looking for duplicates
    Each mach_id must be unique
 	Alloc new ID
  * Each machine name must be unique (if -f flag not specified)
+   Each snet_id must be unique
+	Alloc new ID
    Each clu_id must be unique
 	Alloc new ID
  * Each cluster must have a unique name (if -f flag not specified)
@@ -52,6 +54,10 @@ P  Every STRING member must be a real string
 	Delete the member
 P  Every KERBEROS member must be a real string
 	Delete the member
+P  Every machine owner must exist
+	Set dummy owner
+P  Every machine must be on a subnet
+	Set to placeholder subnet
 P  Every service USER owner must be a real user
 	Make user 0 own service
 P  Every service LIST owner must be a real list

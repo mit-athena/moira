@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/dbck.dc,v 1.4 1993-10-21 15:08:02 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/dbck.dc,v 1.5 1993-10-26 16:42:57 mar Exp $
  *
  * Moira database consistency checker
  *
@@ -14,7 +14,7 @@
 #include "dbck.h"
 
 
-static char dbck_qc_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/dbck.dc,v 1.4 1993-10-21 15:08:02 mar Exp $";
+static char dbck_qc_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/dbck.dc,v 1.5 1993-10-26 16:42:57 mar Exp $";
 
 
 int debug = 0;
@@ -23,7 +23,7 @@ int fast = 0;
 int warn = 1;
 int abort_p = 0;
 struct hash *users, *machines, *clusters, *lists, *filesys, *nfsphys;
-struct hash *strings, *members;
+struct hash *strings, *members, *subnets;
 EXEC SQL BEGIN DECLARE SECTION; 
 int dcmenable;
 EXEC SQL END DECLARE SECTION; 

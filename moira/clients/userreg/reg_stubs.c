@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/reg_stubs.c,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/reg_stubs.c,v 1.19 1992-05-13 15:27:59 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/reg_stubs.c,v 1.20 1992-06-01 15:45:29 mar Exp $
  *
  *  (c) Copyright 1988 by the Massachusetts Institute of Technology.
  *  For copying and distribution information, please see the file
@@ -9,7 +9,7 @@
  */
 
 #ifndef lint
-static char *rcsid_reg_stubs_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/reg_stubs.c,v 1.19 1992-05-13 15:27:59 mar Exp $";
+static char *rcsid_reg_stubs_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/reg_stubs.c,v 1.20 1992-06-01 15:45:29 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -17,6 +17,9 @@ static char *rcsid_reg_stubs_c = "$Header: /afs/.athena.mit.edu/astaff/project/m
 #include <sys/types.h>
 #include <sys/time.h>
 #include <sys/socket.h>
+#ifdef _AIX_SOURCE
+#include <sys/select.h>
+#endif
 #include <netinet/in.h>
 #include <netdb.h>
 #include <des.h>
@@ -72,6 +75,7 @@ ureg_init()
 	if (s) *s = 0;
     }
     hp = gethostbyname(host);
+    host = strsave(hp->h_name);
     if (hp == NULL) return UNKNOWN_HOST;
 
     sp = getservbyname("sms_ureg", "udp");
@@ -222,7 +226,8 @@ get_krb(first, last, idnumber, hashidnumber, password)
 
 
 /* The handles the operations for secure passwords.
- * To find out if a user has a secure instance, only the login name
+ * To find out if a user has a secure instance, the newpasswd
+ * field is ignored (but must be a valid char *)
  * and the opcode = UREG_GET_SECURE need to be specified (but the
  * other strings must be valid char*'s).  This will return
  * UREG_ALREADY_REGISTERED if it is set, or SUCCESS if not.
@@ -286,17 +291,10 @@ do_secure_operation(login, idnumber, passwd, newpasswd, opcode)
      */
     status = krb_get_pw_in_tkt(login, inst, realm,
 			       "changepw", hosti, 5, passwd);
-    bzero(passwd, strlen(passwd));
-    if (status) {
-	bzero(newpasswd, strlen(newpasswd));
-	return (status + krb_err_base);
-    }
+    if (status) return (status + krb_err_base);
 
     status = krb_mk_req(&cred, "changepw", hosti, realm, 0);
-    if (status) {
-	bzero(newpasswd, strlen(newpasswd));
-	return (status + krb_err_base);
-    }
+    if (status) return (status + krb_err_base);
 
     /* round up to word boundry */
     bp = (char *)((((u_long)bp)+3)&0xfffffffc);
@@ -323,7 +321,6 @@ do_secure_operation(login, idnumber, passwd, newpasswd, opcode)
 
     status = krb_get_cred("changepw", hosti, realm, &creds);
     if (status) {
-	bzero(newpasswd, strlen(newpasswd));
 	bzero(data, strlen(data));
 	return (status + krb_err_base);
     }

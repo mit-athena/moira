@@ -1,6 +1,6 @@
 #
 #	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/man/Makefile,v $
-#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/man/Makefile,v 1.2 1988-02-08 15:59:57 mar Exp $
+#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/man/Makefile,v 1.3 1988-06-08 16:23:39 mar Exp $
 #	$Author: mar $
 #
 
@@ -17,4 +17,4 @@ install:
 		install -c $$i -m 0644 ${DESTDIR}/usr/man/man8/$$i; done
 
 clean:
-	rm *~
+	rm -f *~

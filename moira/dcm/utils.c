@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/utils.c,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/utils.c,v 1.3 1989-09-08 15:10:17 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/utils.c,v 1.4 1989-11-28 17:08:52 mar Exp $
  *
  * 
  * 	Utility functions used by the DCM.
@@ -12,7 +12,7 @@
  */
 
 #ifndef lint
-static char *rcsid_utils_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/utils.c,v 1.3 1989-09-08 15:10:17 mar Exp $";
+static char *rcsid_utils_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/utils.c,v 1.4 1989-11-28 17:08:52 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -113,3 +113,21 @@ int exclusive;
     return fd;
 }
 
+
+int sms_query_with_retry(name, argc, argv, proc, hint)
+char *name;
+int argc;
+char **argv;
+int (*proc)();
+char *hint;
+{
+    int status, tries;
+
+    for (tries = 0; tries < DEADLOCK_TRIES; tries++) {
+	status = sms_query(name, argc, argv, proc, hint);
+	if (status != SMS_DEADLOCK)
+	  return(status);
+	sleep(DEADLOCK_WAIT);
+    }
+    return(status);
+}

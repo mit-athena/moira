@@ -1,11 +1,16 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v $
  *	$Author: mike $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.11 1987-08-28 14:55:45 mike Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.12 1987-08-29 00:05:54 mike Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
  *	$Log: not supported by cvs2svn $
+Revision 1.11  87/08/28  14:55:45  mike
+Modified delete_locker to require only one argument, the login name.
+Modified get_groups_of_all_users and get_all_poboxes to disable INGRES
+table locking.
+
 Revision 1.10  87/08/25  15:56:54  mike
 - Fixed bugs in get_groups_of_all_users
 - Added tblstats updates to add_user_group
@@ -42,7 +47,7 @@ Initial revision
  */
 
 #ifndef lint
-static char *rcsid_qsupport_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.11 1987-08-28 14:55:45 mike Exp $";
+static char *rcsid_qsupport_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.12 1987-08-29 00:05:54 mike Exp $";
 #endif lint
 
 #include "query.h"
@@ -451,12 +456,14 @@ setup_update_filesys(q, argv)
 ##  int rowcount;
 ##  char dir[32];
     char caccess;
+    register int status;
     register char *cp1;
     register char *cp2;
 
     caccess = (isupper(*access)) ? tolower(*access) : *access;
     if (caccess != 'r' && caccess != 'w') return(SMS_FILESYS_ACCESS);
 
+    status = SMS_NFS;
 ##  range of np is nfsphys
 ##  retrieve (dir = np.#dir) where np.#mach_id = mach_id
 ##  {
@@ -466,10 +473,13 @@ setup_update_filesys(q, argv)
 	     if (*cp1++ != *cp2) break;
 	     cp2++;
 	 }
-	 if (*cp2 == 0) return(SMS_SUCCESS);
+	 if (*cp2 == 0) {
+	     status = SMS_SUCCESS;
+##           endretrieve
+	 }
 ##  }
 
-    return(SMS_NFS);
+    return(status);
 ##}
 
 /* Followup Routines */
@@ -1705,9 +1715,13 @@ validate_id(argv, vo)
 ##  char *idfield;
 ##  int id;
 ##  int rowcount;
+    register char *c;
 
     name = argv[vo->index];
     table = vo->table;
+    /* minor kludge to upcasify machine names */
+    if (!bcmp(table, "machine", 7))
+	for (c = name; *c; c++) if (islower(*c)) *c = toupper(*c);
     namefield = vo->namefield;
     idfield = vo->idfield;
 ##  retrieve (id = table.idfield) where table.namefield = name

@@ -1,4 +1,4 @@
-/* $Id $
+/* $Id: mailmaint.c,v 1.39 1998-03-10 21:22:38 danw Exp $
  *
  * Simple add-me-to/remove-me-from list client
  *
@@ -21,7 +21,7 @@
 #include <string.h>
 #include <unistd.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v 1.38 1998-02-05 22:50:32 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v 1.39 1998-03-10 21:22:38 danw Exp $");
 
 #define STARTCOL 0
 #define STARTROW 3

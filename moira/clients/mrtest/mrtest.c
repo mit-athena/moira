@@ -1,4 +1,4 @@
-/* $Id $
+/* $Id: mrtest.c,v 1.40 1998-03-10 21:22:40 danw Exp $
  *
  * Bare-bones Moira client
  *
@@ -24,7 +24,7 @@
 #include "history.h"
 #endif
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v 1.39 1998-02-15 17:48:39 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v 1.40 1998-03-10 21:22:40 danw Exp $");
 
 int recursion = 0, interactive;
 int count, quit = 0, cancel = 0;

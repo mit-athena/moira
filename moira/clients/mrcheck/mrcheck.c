@@ -1,4 +1,4 @@
-/* $Id $
+/* $Id: mrcheck.c,v 1.15 1998-03-10 21:22:39 danw Exp $
  *
  * Verify that all Moira updates are successful
  *
@@ -18,7 +18,7 @@
 #include <string.h>
 #include <time.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrcheck/mrcheck.c,v 1.14 1998-02-07 22:04:31 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrcheck/mrcheck.c,v 1.15 1998-03-10 21:22:39 danw Exp $");
 
 char *atot(char *itime);
 int process_server(int argc, char **argv, void *sqv);

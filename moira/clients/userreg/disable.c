@@ -1,4 +1,4 @@
-/* $Id $
+/* $Id: disable.c,v 1.11 1998-03-10 21:16:50 danw Exp $
  *
  * disabled: check to see if registration is enabled right now.  Most of this
  * code is stolen from the cron daemon.

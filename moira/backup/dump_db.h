@@ -1,4 +1,4 @@
-/* $Id $ */
+/* $Id: dump_db.h,v 1.5 1998-03-10 21:18:03 danw Exp $ */
 
 #include <stdio.h>
 #include <moira.h>

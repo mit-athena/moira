@@ -1,4 +1,4 @@
-/* $Id $
+/* $Id: display.c,v 1.16 1998-03-10 21:16:51 danw Exp $
  *
  * Display function for userreg client
  *
@@ -19,7 +19,7 @@
 
 #include "userreg.h"
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/display.c,v 1.15 1998-02-07 17:49:53 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/display.c,v 1.16 1998-03-10 21:16:51 danw Exp $");
 
 void make_border(int l);
 void query_user(char *prompt, char *buf, int maxsize, int timeout,

@@ -1,4 +1,4 @@
-/* $Id $
+/* $Id: chpobox.c,v 1.21 1998-03-10 21:22:42 danw Exp $
  *
  * Talk to the Moira database to change a person's home mail machine. This may
  * be an Athena machine, or a completely arbitrary address.
@@ -29,7 +29,7 @@
 #include <string.h>
 #include <unistd.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chpobox.c,v 1.20 1998-02-05 22:50:55 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chpobox.c,v 1.21 1998-03-10 21:22:42 danw Exp $");
 
 int get_pobox(int argc, char **argv, void *callarg);
 char *potype(char *machine);

@@ -1,4 +1,4 @@
-/* $Id $
+/* $Id: pobox.pc,v 1.5 1998-03-10 21:23:03 danw Exp $
  *
  * This generates a list of everyone's poboxes for the mitdir.
  *
@@ -21,7 +21,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/pobox.pc,v 1.4 1998-02-23 19:23:46 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/pobox.pc,v 1.5 1998-03-10 21:23:03 danw Exp $");
 
 char *whoami = "pobox.gen";
 char *db = "moira/moira";

@@ -1,4 +1,4 @@
-/* $Id $ */
+/* $Id: files.h,v 1.9 1998-03-10 21:16:52 danw Exp $ */
 
 #define WELCOME		"/mit/register/welcome"
 #define USERNAME_BLURB	"/mit/register/username_blurb"

@@ -1,4 +1,4 @@
-/* $Id $
+/* $Id: blanche.c,v 1.38 1998-03-10 21:22:37 danw Exp $
  *
  * Command line oriented Moira List tool.
  *
@@ -19,7 +19,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.37 1998-02-05 22:50:31 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.38 1998-03-10 21:22:37 danw Exp $");
 
 struct member {
   int type;

@@ -1,4 +1,4 @@
-/* $Id $
+/* $Id: chsh.c,v 1.21 1998-03-10 21:22:42 danw Exp $
  *
  * Talk to the Moira database to change a person's login shell.  The chosen
  * shell must exist.  A warning will be issued if the shell is not in
@@ -25,7 +25,7 @@
 
 #include <krb.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chsh.c,v 1.20 1998-02-05 22:50:56 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chsh.c,v 1.21 1998-03-10 21:22:42 danw Exp $");
 
 int usage(void);
 int leave(int status);

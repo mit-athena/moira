@@ -1,4 +1,4 @@
-/* $Id $
+/* $Id: reg_stubs.c,v 1.31 1998-03-10 21:16:52 danw Exp $
  *
  * Copyright (C) 1988-1998 by the Massachusetts Institute of Technology.
  * For copying and distribution information, please see the file
@@ -29,7 +29,7 @@
 #include <kadm_err.h>
 #include <krb.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/reg_stubs.c,v 1.30 1998-02-07 17:49:54 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/reg_stubs.c,v 1.31 1998-03-10 21:16:52 danw Exp $");
 
 int do_operation(char *first, char *last, char *idnumber, char *hashidnumber,
 		 char *data, u_long opcode);

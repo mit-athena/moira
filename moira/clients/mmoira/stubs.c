@@ -13,7 +13,7 @@
 #include	"mmoira.h"
 #include	<sys/file.h>
 
-static char rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/stubs.c,v 1.12 1992-12-10 10:59:19 mar Exp $";
+static char rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/stubs.c,v 1.13 1993-10-21 14:54:13 mar Exp $";
 
 void	extra_help_callback();
 extern EntryForm *MoiraForms[];
@@ -547,6 +547,24 @@ char *text, *helpname;
 	static XmString        label, yes = NULL, no;
 	XEvent	event;
 	XtAppContext _XtDefaultAppContext();
+
+	if (tty) {
+	    char buf[256];
+
+	    while (1) {
+		printf("%s (Y/N) ", text);
+		fflush(stdout);
+		if (mgets(buf, sizeof(buf)))
+		  return(False);
+		if (buf[0] == 'T' || buf[0] == 't' ||
+		    buf[0] == 'Y' || buf[0] == 'y')
+		  return(True);
+		else if (buf[0] == 'F' || buf[0] == 'f' ||
+			 buf[0] == 'N' || buf[0] == 'n')
+		  return(False);
+		printf("Please answer Yes or No\r\n");
+	    }
+	}
 
 	if (!yes) {
 	    yes = XmStringCreate("Yes", XmSTRING_DEFAULT_CHARSET);

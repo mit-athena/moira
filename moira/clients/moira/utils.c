@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v 1.29 1990-07-14 16:25:25 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v 1.30 1991-01-04 16:59:29 mar Exp $";
 #endif lint
 
 /*	This is the file utils.c for the MOIRA Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v 1.29 1990-07-14 16:25:25 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v 1.30 1991-01-04 16:59:29 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -68,6 +68,27 @@ struct qelem *elem;
     if (elem->q_back != NULL)
 	(elem->q_back)->q_forw = elem->q_forw;
 }
+
+
+/* CopyInfo: allocates memory for a copy of a NULL terminated array of 
+ * strings <and returns a pointer to the copy.
+ */
+
+char **CopyInfo(info)
+char **info;
+{
+    char **ret;
+    int i;
+
+    ret = (char **) malloc(sizeof(char *) * (CountArgs(info) + 1));
+    if (ret == NULL)
+      return(ret);
+    for (i = 0; info[i]; i++)
+      ret[i] = Strsave(info[i]);
+    ret[i] = NULL;
+    return(ret);
+}
+
 
 /*	Function Name: FreeInfo
  *	Description: Frees all elements of a NULL terminated arrary of char*'s

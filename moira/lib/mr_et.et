@@ -1,20 +1,20 @@
 #	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_et.et,v $
 #	$Author: mar $
-#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_et.et,v 1.12 1989-08-09 17:04:38 mar Exp $
+#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_et.et,v 1.13 1989-08-30 19:13:13 mar Exp $
 #
 	error_table sms
 
 ec	SMS_NOT_CONNECTED,
-	"Not connected to SMS server"
+	"Not connected to Moira server"
 
 ec	SMS_CANT_CONNECT,
-	"Can't connect to SMS server"
+	"Can't connect to Moira server"
 
 ec	SMS_VERSION_MISMATCH,
-	"SMS version mismatch"
+	"Moira version mismatch"
 
 ec	SMS_ABORTED,
-	"SMS operation aborted"
+	"Moira operation aborted"
 
 ec	SMS_UNKNOWN_PROC,
 	"Unknown procedure"
@@ -23,7 +23,7 @@ ec	SMS_INGRES_ERR,
 	"Ingres system error occurred"
 
 ec	SMS_MORE_DATA,
-	"More data is available from SMS"
+	"More data is available from Moira"
 
 ec	SMS_NO_MATCH,
 	"No records in database match query"
@@ -32,7 +32,7 @@ ec	SMS_NO_HANDLE,
 	"Unknown query handle"
 
 ec 	SMS_ALREADY_CONNECTED,
-	"Already connected to sms"
+	"Already connected to the moira server"
 
 ec	SMS_ARGS,
 	"Incorrect number of arguments"
@@ -121,7 +121,7 @@ ec	SMS_BAD_CLASS,
 	"Specified class is not known"
 
 ec	SMS_INTERNAL,
-	"SMS internal consistency failure"
+	"Moira internal consistency failure"
 
 ec	SMS_BAD_CHAR,
 	"Illegal character in argument"
@@ -181,7 +181,7 @@ ec	SMS_MISSINGFILE,
 	"Did not receive file for update"
 
 ec	SMS_MKCRED,
-	"mkcred failed while updating NFS credentials"
+	"unable to compile database files"
 
 ec	SMS_NAMED,
 	"name daemon failed to start"

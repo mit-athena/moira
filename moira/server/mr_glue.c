@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_glue.c,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_glue.c,v 1.6 1988-09-13 17:37:35 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_glue.c,v 1.7 1988-12-01 15:46:08 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -12,7 +12,7 @@
  */
 
 #ifndef lint
-static char *rcsid_sms_glue_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_glue.c,v 1.6 1988-09-13 17:37:35 mar Exp $";
+static char *rcsid_sms_glue_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_glue.c,v 1.7 1988-12-01 15:46:08 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -30,7 +30,8 @@ extern int krb_err_base, errno;
 extern char *malloc(), *whoami;
 extern time_t now;
 
-sms_connect()
+sms_connect(server)
+char *server;
 {
     register int status;
 
@@ -193,15 +194,3 @@ trigger_dcm(dummy0, dummy1, cl)
 		return(SMS_SUCCESS);
 	}
 }
-
-
-/*
- * Local Variables:
- * mode: c
- * c-indent-level: 4
- * c-continued-statement-offset: 4
- * c-brace-offset: -4
- * c-argdecl-indent: 4
- * c-label-offset: -4
- * End:
- */

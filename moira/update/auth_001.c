@@ -1,16 +1,15 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/auth_001.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/auth_001.c,v 1.2 1987-08-28 19:05:23 wesommer Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/auth_001.c,v 1.3 1988-08-22 16:13:46 mar Exp $
  */
 
 #ifndef lint
-static char *rcsid_auth_001_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/auth_001.c,v 1.2 1987-08-28 19:05:23 wesommer Exp $";
+static char *rcsid_auth_001_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/auth_001.c,v 1.3 1988-08-22 16:13:46 mar Exp $";
 #endif	lint
 
 #include <stdio.h>
 #include <strings.h>
-#include "gdb.h"
-#include "smsu_int.h"
+#include <gdb.h>
 #include "kludge.h"
 #include <krb.h>
 #include <netinet/in.h>
@@ -57,7 +56,7 @@ auth_001(str)
     ticket_st.mbz = 0;
     ticket_st.length = MAX_STRING_SIZE(data);
     bcopy(STRING_DATA(data), ticket_st.dat, MAX_STRING_SIZE(data));
-    code = rd_ap_req(&ticket_st, service,
+    code = krb_rd_req(&ticket_st, service,
 		     PrincipalHostname(host), 0,
 		     &ad, "/etc/srvtab");
     if (code) {

@@ -1,14 +1,14 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.26 1988-08-24 18:00:31 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.27 1988-09-07 15:23:32 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
  */
 
 #ifndef lint
-static char *rcsid_qsupport_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.26 1988-08-24 18:00:31 mar Exp $";
+static char *rcsid_qsupport_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.27 1988-09-07 15:23:32 mar Exp $";
 #endif lint
 
 #include "query.h"
@@ -17,6 +17,7 @@ static char *rcsid_qsupport_qc = "$Header: /afs/.athena.mit.edu/astaff/project/m
 
 
 extern char *whoami, *strsave();
+extern int  ingres_errno;
 
 
 /* Specialized Access Routines */
@@ -2171,6 +2172,7 @@ register_user(q, argv, cl)
 ##  repeat retrieve (flag = any(filesys.#name where filesys.#name = @login))
     if (flag)
       return(SMS_IN_USE);
+    if (ingres_errno != 0) return(ingres_errno);
     com_err(whoami, 0, "new login name OK");
 
     /* choose place for pobox, put in mid */
@@ -2178,6 +2180,7 @@ register_user(q, argv, cl)
 ##    where sh.service = "POP" and m.mach_id = sh.mach_id and
 ##	sh.value2 - sh.value1 = max(sh.value2-sh.value1 where sh.service="POP")
 ##  inquire_equel(rowcount = "rowcount");
+    if (ingres_errno != 0) return(ingres_errno);
     if (rowcount == 0)
       return(SMS_NO_POBOX);
 
@@ -2188,6 +2191,7 @@ register_user(q, argv, cl)
 ##		      pmodwith=@entity)
 ##	where u.#users_id = @users_id
 ##  inquire_equel(rowcount = "rowcount");
+    if (ingres_errno != 0) return(ingres_errno);
     if (rowcount != 1)
       return(SMS_INTERNAL);
     set_pop_usage(mid, 1);
@@ -2201,6 +2205,7 @@ register_user(q, argv, cl)
       return(SMS_NO_ID);
 ##  repeat retrieve (list_id = values.value) where values.name = "list_id"
 ##  inquire_equel(rowcount = "rowcount");
+    if (ingres_errno != 0) return(ingres_errno);
     if (rowcount != 1)
       return(SMS_INTERNAL);
 ##  repeat append list (name = @login, #list_id = @list_id, active = 1,
@@ -2210,11 +2215,13 @@ register_user(q, argv, cl)
 ##			modby = @who, modwith = @entity)
 ##	where values.name = "gid"
 ##  inquire_equel(rowcount = "rowcount");
+    if (ingres_errno != 0) return(ingres_errno);
     if (rowcount != 1)
       return(SMS_INTERNAL);
 ##  repeat append members (#list_id = @list_id, member_type = "USER",
 ##			   member_id = @users_id)
 ##  inquire_equel(rowcount = "rowcount");
+    if (ingres_errno != 0) return(ingres_errno);
     if (rowcount != 1)
       return(SMS_INTERNAL);
     com_err(whoami, 0, "group list created");
@@ -2233,6 +2240,7 @@ register_user(q, argv, cl)
 	    m_id = mid;
 	}
 ##  }
+    if (ingres_errno != 0) return(ingres_errno);
     if (maxsize == 0)
       return(SMS_NO_FILESYS);
 
@@ -2249,6 +2257,7 @@ register_user(q, argv, cl)
 ##			   modby = @who, modwith = @entity)
 ##	where values.name = "filsys_id"
 ##  inquire_equel(rowcount = "rowcount");
+    if (ingres_errno != 0) return(ingres_errno);
     if (rowcount != 1)
       return(SMS_INTERNAL);
     com_err(whoami, 0, "filesys created on mach %d in %s/%s", m_id,
@@ -2257,6 +2266,7 @@ register_user(q, argv, cl)
     /* set quota */
 ##  repeat retrieve (quota = values.value) where values.name = "def_quota"
 ##  inquire_equel(rowcount = "rowcount");
+    if (ingres_errno != 0) return(ingres_errno);
     if (rowcount != 1)
       return(SMS_NO_QUOTA);
 ##  repeat append nfsquota (#users_id = @users_id, filsys_id = values.value,
@@ -2264,21 +2274,25 @@ register_user(q, argv, cl)
 ##			    modby = @who, modwith = @entity)
 ##	where values.name = "filsys_id"
 ##  inquire_equel(rowcount = "rowcount");
+    if (ingres_errno != 0) return(ingres_errno);
     if (rowcount != 1)
       return(SMS_INTERNAL);
 ##  repeat replace nfsphys (allocated = nfsphys.allocated + @quota)
 ##	where nfsphys.nfsphys_id = filesys.#phys_id and
 ##	      filesys.filsys_id = values.value and values.name = "filsys_id"
 ##  inquire_equel(rowcount = "rowcount");
+    if (ingres_errno != 0) return(ingres_errno);
     if (rowcount != 1)
       return(SMS_INTERNAL);
     com_err(whoami, 0, "quota of %d assigned", quota);
 
 ##  repeat replace tblstats (updates = tblstats.updates + 1, modtime = "now")
 ##	where tblstats.table = "users"
+    if (ingres_errno != 0) return(ingres_errno);
 ##  repeat replace tblstats (appends = tblstats.appends + 1, modtime = "now")
 ##	where tblstats.table = "list" or tblstats.table = "filesys" or
 ##	      tblstats.table = "nfsquota"
+    if (ingres_errno != 0) return(ingres_errno);
     return(SMS_SUCCESS);
 ##}
 

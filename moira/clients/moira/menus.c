@@ -1,4 +1,4 @@
-/* $Id: menus.c,v 1.35 1998-08-07 18:29:35 danw Exp $
+/* $Id: menus.c,v 1.36 1998-08-07 18:46:09 danw Exp $
  *
  *	This is the file menus.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -22,7 +22,7 @@
 
 #include <stdio.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menus.c,v 1.35 1998-08-07 18:29:35 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menus.c,v 1.36 1998-08-07 18:46:09 danw Exp $");
 
 /* ------------------------- Second Tier Menus ------------------------- */
 
@@ -553,23 +553,6 @@ Menu krbmap_menu = {
       { "delete", "Delete Kerberos Mapping" },
       { "user", "User login name: " },
       { "principal", "Principal: " },
-    } },
-  }
-};
-
-Menu mitdir_menu = {
-  NULLFUNC,
-  NULLFUNC,
-  "MIT On-line Directory Preferences Menu",
-  2,
-  {
-    { GetDirFlags, NULLMENU, 2, {
-      { "show", "Show Directory Preferences" },
-      { "login", "Login name: " },
-    } },
-    { SetDirFlags, NULLMENU, 2, {
-      { "change", "Change Directory Preference" },
-      { "login", "Login name: " },
     } },
   }
 };

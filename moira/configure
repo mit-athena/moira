@@ -2399,6 +2399,22 @@ fi
 rm -f conftest*
 fi
 rm -f conftest*
+    cat > conftest.$ac_ext <<EOF
+#line 2404 "configure"
+#include "confdefs.h"
+#include <curses.h>
+int main() {
+newterm(NULL, NULL, NULL);
+; return 0; }
+EOF
+if { (eval echo configure:2411: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest; then
+  rm -rf conftest*
+  CURSES_CPPFLAGS="$CURSES_CPPFLAGS -DCURSES_HAS_NEWTERM"
+else
+  echo "configure: failed program was:" >&5
+  cat conftest.$ac_ext >&5
+fi
+rm -f conftest*
     LIBS=$OLDLIBS
     CURSES_CPPFLAGS="-DHAVE_CURSES $CURSES_CPPFLAGS"
     CURSES_SUBDIRS='$(CURSES_SUBDIRS)'
@@ -2413,12 +2429,12 @@ fi
 for ac_func in getusershell
 do
 echo $ac_n "checking for $ac_func""... $ac_c" 1>&6
-echo "configure:2417: checking for $ac_func" >&5
+echo "configure:2433: checking for $ac_func" >&5
 if eval "test \"`echo '$''{'ac_cv_func_$ac_func'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
   cat > conftest.$ac_ext <<EOF
-#line 2422 "configure"
+#line 2438 "configure"
 #include "confdefs.h"
 /* System header to define __stub macros and hopefully few prototypes,
     which can conflict with char $ac_func(); below.  */
@@ -2441,7 +2457,7 @@ $ac_func();
 
 ; return 0; }
 EOF
-if { (eval echo configure:2445: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest; then
+if { (eval echo configure:2461: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest; then
   rm -rf conftest*
   eval "ac_cv_func_$ac_func=yes"
 else

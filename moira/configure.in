@@ -373,6 +373,8 @@ if test -n "$CURSES_LIBS"; then
 		AC_TRY_COMPILE([#include <curses.h>],[WINDOW *w; w->_maxx;],
 			       [CURSES_CPPFLAGS="-D'getmaxx(w)=w->_maxx'"],
 			       [CURSES_CPPFLAGS="-D'getmaxx(w)=w->maxx'"]))
+    AC_TRY_LINK([#include <curses.h>],[newterm(NULL, NULL, NULL);],
+		[CURSES_CPPFLAGS="$CURSES_CPPFLAGS -DCURSES_HAS_NEWTERM"])
     LIBS=$OLDLIBS
     CURSES_CPPFLAGS="-DHAVE_CURSES $CURSES_CPPFLAGS"
     CURSES_SUBDIRS='$(CURSES_SUBDIRS)'

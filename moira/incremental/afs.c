@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/afs.c,v 1.36 1992-08-18 15:30:36 probe Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/afs.c,v 1.37 1992-08-18 16:57:44 probe Exp $
  *
  * Do AFS incremental updates
  *
@@ -376,7 +376,7 @@ int afterc;
      */
     
     if (strcmp(before[FS_OWNER], after[FS_OWNER]) ||
-	strcmp(before[FS_OWNERS], after[FS_OWNERS)))
+	strcmp(before[FS_OWNERS], after[FS_OWNERS]))
     {
 	critical_alert("incremental",
 		       "Cannot change ownership of filesystem %s: Operation not yet supported",
@@ -385,9 +385,9 @@ int afterc;
 
     sprintf(cmd, "%s/perl -I%s %s/afs_rename.pl %s %s %s %s %s %s %s %s %s %s",
 	    BIN_DIR, BIN_DIR, BIN_DIR,
-	    before[FS_NAME], before[FS_CELL], before[FS_TYPE],
+	    before[FS_NAME], before[FS_MACHINE], before[FS_TYPE],
 	    before[FS_L_TYPE], before[FS_PACK],
-	    after[FS_NAME], after[FS_CELL], after[FS_TYPE],
+	    after[FS_NAME], after[FS_MACHINE], after[FS_TYPE],
 	    after[FS_L_TYPE], after[FS_PACK]);
     run_cmd(cmd);
 }

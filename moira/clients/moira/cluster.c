@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/cluster.c,v 1.24 1993-11-24 11:37:26 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/cluster.c,v 1.25 1994-06-07 17:56:01 tom Exp $";
 #endif lint
 
 /*	This is the file cluster.c for the MOIRA Client, which allows a nieve
@@ -10,8 +10,8 @@
  *	By:		Chris D. Peterson
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/cluster.c,v $
- *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/cluster.c,v 1.24 1993-11-24 11:37:26 mar Exp $
+ *      $Author: tom $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/cluster.c,v 1.25 1994-06-07 17:56:01 tom Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -56,14 +56,15 @@
 #define CD_DEFAULT_LABEL   DEFAULT_NONE
 #define CD_DEFAULT_DATA    DEFAULT_NONE
 
-#define S_DEFAULT_LOW	"18.0.0.10"
-#define S_DEFAULT_HIGH	"18.0.2.252"
+#define S_DEFAULT_LOW	"18.0.0.20"
+#define S_DEFAULT_HIGH	"18.0.2.249"
 
 static char *states[] = { "Reserved (0)",
 			  "Active (1)",
 			  "None (2)",
 			  "Deleted (3)" };
-
+static char *uses[]   = { "none (0)"};
+                          
 static char *MacState(state)
 int state;
 {
@@ -99,13 +100,13 @@ char ** info, *name;
     info[M_CONTACT] = Strsave(M_DEFAULT_TYPE);
     info[M_USE] = Strsave("0");
     info[M_STAT] = Strsave("1");
-    info[8] = Strsave("NONE");
-    info[9] = Strsave("unique");
-    info[10] = Strsave("NONE");
-    info[11] = Strsave("NONE");
-    info[12] = Strsave("");
-    info[13] = Strsave("");
-    info[14] = info[15] = info[16] = NULL;
+    info[M_SUBNET] = Strsave("NONE");
+    info[M_ADDR] = Strsave("unique");
+    info[M_OWNER_TYPE] = Strsave("NONE");
+    info[M_OWNER_NAME] = Strsave("NONE");
+    info[M_ACOMMENT] = Strsave("");
+    info[M_OCOMMENT] = Strsave("");
+    info[15] = info[16] = NULL;
     return(info);
 }
 
@@ -152,7 +153,7 @@ char ** info, *name;
     info[SN_HIGH] = Strsave(buf);
     info[SN_PREFIX] = Strsave("");
     info[SN_ACE_TYPE] = Strsave("LIST");
-    info[SN_ACE_NAME] = Strsave("network_acl");
+    info[SN_ACE_NAME] = Strsave("network");
     info[SN_MODBY] = info[SN_MODTIME] = info[SN_MODWITH] = info[SN_END] = NULL;
     return(info);
 }
@@ -205,27 +206,27 @@ char ** info;
 	FreeQueue(elem);
 	Put_message(aliasbuf);
     }
-    sprintf(buf, "Address:  %-16s  Subnet:    %s",
+    sprintf(tbuf, "%s %s", info[M_OWNER_TYPE],
+            strcmp(info[M_OWNER_TYPE], "NONE") ? info[M_OWNER_NAME] : "");
+    sprintf(buf, "Address:  %-16s    Network:    %-16s",
 	    info[M_ADDR], info[M_SUBNET]);
     Put_message(buf);
-    sprintf(buf, "Status:   %-16s  Changed:   %s",
-	    MacState(atoi(info[M_STAT])), info[M_STAT_CHNG]);
+    sprintf(buf, "Owner:    %-16s    Use data:   %s", tbuf, info[M_INUSE]);
     Put_message(buf);
-    sprintf(tbuf, "%s %s", info[M_OWNER_TYPE],
-	    strcmp(info[M_OWNER_TYPE], "NONE") ? info[M_OWNER_NAME] : "");
-    sprintf(buf, "Owner:    %-16s  Last poll: %s", tbuf, info[M_INUSE]);
+    sprintf(buf, "Status:   %-16s    Changed:    %s",
+	    MacState(atoi(info[M_STAT])), info[M_STAT_CHNG]);
     Put_message(buf);
     Put_message("");
 
-    sprintf(buf, "Vendor:   %-16s  Model: %-24s  OS: %s",
+    sprintf(buf, "Vendor:   %-16s    Model:      %-20s  OS:  %s",
 	    info[M_VENDOR], info[M_MODEL], info[M_OS]);
     Put_message(buf);
-    sprintf(buf, "Location: %-16s  Contact:   %s  Use code: %s",
+    sprintf(buf, "Location: %-16s    Contact:    %-20s  Opt: %s",
 	    info[M_LOC], info[M_CONTACT], info[M_USE]);
     Put_message(buf);
-    sprintf(buf, "Admn cmt: %s", info[M_ACOMMENT]);
+    sprintf(buf, "\nAdm cmt: %s", info[M_ACOMMENT]);
     Put_message(buf);
-    sprintf(buf, "Op cmt:   %s", info[M_OCOMMENT]);
+    sprintf(buf, "Op cmt:  %s", info[M_OCOMMENT]);
     Put_message(buf);
     Put_message("");
     sprintf(buf, "Created  by %s on %s", info[M_CREATOR], info[M_CREATED]);
@@ -328,9 +329,9 @@ char ** info;
     struct in_addr addr, mask, low, high;
 
     Put_message("");
-    sprintf(buf, "Subnet:     %s", info[SN_NAME]);
+    sprintf(buf, "        Network:  %s", info[SN_NAME]);
     Put_message(buf);
-    sprintf(buf, "Description: %s", info[SN_DESC]);
+    sprintf(buf, "    Description:  %s", info[SN_DESC]);
     Put_message(buf);
     addr.s_addr = htonl(atoi(info[SN_ADDRESS]));
     mask.s_addr = htonl(atoi(info[SN_MASK]));
@@ -338,17 +339,17 @@ char ** info;
     high.s_addr = htonl(atoi(info[SN_HIGH]));
     /* screwy sequence is here because inet_ntoa returns a pointer to
        a static buf.  If it were all one sprintf, the last value would
-       appear 4 times. */
-    sprintf(buf, "Address %s, Mask ", inet_ntoa(addr));
+       appear 4 times. */ 
+    sprintf(buf, "        Address:  %s        Mask:  ", inet_ntoa(addr));
     strcat(buf, inet_ntoa(mask));
-    strcat(buf, ", High ");
+    strcat(buf, "\n           High:  ");
     strcat(buf, inet_ntoa(high));
-    strcat(buf, ", Low ");
+    strcat(buf, "       Low:  ");
     strcat(buf, inet_ntoa(low));
     Put_message(buf);
-    sprintf(buf, "Hostname prefix: %s", info[SN_PREFIX]);
+    sprintf(buf, "Hostname prefix:  %s", info[SN_PREFIX]);
     Put_message(buf);
-    sprintf(buf, "Owner: %s %s", info[SN_ACE_TYPE],
+    sprintf(buf, "          Owner:  %s %s\n", info[SN_ACE_TYPE],
 	    strcmp(info[SN_ACE_TYPE],"NONE") ? info[SN_ACE_NAME] : "");
     Put_message(buf);
     sprintf(buf,MOD_FORMAT,info[SN_MODBY],info[SN_MODTIME],info[SN_MODWITH]);
@@ -403,7 +404,7 @@ char * name1, *name2;
 				 StoreInfo, (char *)&elem)) != 0) {
 	    if (stat == MR_NO_MATCH) {
 		char buf[128];
-		sprintf(buf, "Subnet '%s' is not in the database.", name1);
+		sprintf(buf, "Network '%s' is not in the database.", name1);
 		Put_message(buf);
 	    } else
 	      com_err(program_name, stat, " in get_subnet.");
@@ -459,19 +460,19 @@ Bool name;
 
     switch (type) {
     case MACHINE:
-	sprintf(temp_buf, "Setting the information for the Machine %s.",
+	sprintf(temp_buf, "\nSetting the information for the Machine %s...",
 		info[M_NAME]);
 	break;
     case SUBNET:
-	sprintf(temp_buf, "Setting the information for the Subnet %s.",
+	sprintf(temp_buf, "Setting the information for the Network %s...",
 		info[SN_NAME]);
 	break;
     case CLUSTER:
-	sprintf(temp_buf, "Setting the information for the Cluster %s.",
+	sprintf(temp_buf, "Setting the information for the Cluster %s...",
 		info[C_NAME]);
 	break;
     case DATA:
-	sprintf(temp_buf, "Setting the Data for the Cluster %s.",
+	sprintf(temp_buf, "Setting the Data for the Cluster %s...",
 		info[CD_NAME]);
 	break;
     }
@@ -495,7 +496,7 @@ Bool name;
 	    break;
 	case SUBNET:
 	    newname = Strsave(info[SN_NAME]);
-	    if (GetValueFromUser("The new name for this subnet? ",
+	    if (GetValueFromUser("The new name for this network? ",
 				 &newname) == SUB_ERROR)
 	      return(NULL);
 	    break;
@@ -513,64 +514,74 @@ Bool name;
 
     switch(type) {
     case MACHINE:
-	if (GetValueFromUser("Machine's Vendor", &info[M_VENDOR]) == SUB_ERROR)
+	if (GetValueFromUser("Machine's vendor", &info[M_VENDOR]) == SUB_ERROR)
 	  return(NULL);
-	if (GetValueFromUser("Machine's Model", &info[M_MODEL]) == SUB_ERROR)
+	if (GetValueFromUser("Machine's model", &info[M_MODEL]) == SUB_ERROR)
 	  return(NULL);
-	if (GetValueFromUser("Machine's Operating System", &info[M_OS]) ==
+	if (GetValueFromUser("Machine's operating system", &info[M_OS]) ==
 	    SUB_ERROR)
 	  return(NULL);
-	if (GetValueFromUser("Location of Machine", &info[M_LOC]) == SUB_ERROR)
+	if (GetValueFromUser("Machine's location", &info[M_LOC]) == SUB_ERROR)
 	  return(NULL);
-	if (GetValueFromUser("Contact for Machine", &info[M_CONTACT]) ==
+	if (GetValueFromUser("Machine's contact", &info[M_CONTACT]) ==
 	    SUB_ERROR)
 	  return(NULL);
-	if (GetValueFromUser("Machine's Use Code", &info[M_USE]) == SUB_ERROR)
+#ifdef notdef
+	if (GetValueFromUser("Machine's use code", &info[M_USE]) == SUB_ERROR)
 	  return(NULL);
+#endif
 	while (1) {
 	    int i;
-	    if (GetValueFromUser("Machine's Status (? for help)",
+	    if (GetValueFromUser("Machine's status (? for help)",
 				 &info[M_STAT]) == SUB_ERROR)
 	      return(NULL);
 	    if (isdigit(info[M_STAT][0])) break;
 	    Put_message("Valid status numbers:");
 	    for (i = 0; i < 4; i++) Put_message(states[i]);
 	}
-	if (name) {
+   
+        /* there appears to be some argument mismatch between the client
+         * and the server.. so here is this argument shuffler.
+         * I have since modified this to always shuffle the arguments..
+         * not just do so when performing a modify all fields request.
+         * The SetMachinedefaults() has been changed to reflect this.
+         * pray for us and may we attain enlightenment through structures.  
+         */
 	    free(info[8]);
-	    info[8] = info[M_SUBNET];
+            info[8] = info[M_SUBNET];
 	    info[9] = info[M_ADDR];
 	    info[10] = info[M_OWNER_TYPE];
 	    info[11] = info[M_OWNER_NAME];
 	    info[12] = info[M_ACOMMENT];
 	    info[13] = info[M_OCOMMENT];
-	}
-	if (GetValueFromUser("Machine's subnet (or 'none')", &info[8])
+
+        if(name)
+          if (GetValueFromUser("Machine's network (or 'none')", &info[8])
 	    == SUB_ERROR)
-	  return(NULL);
+	    return(NULL);
 	if (GetValueFromUser("Machine's address (or 'unassigned' or 'unique')",
 			     &info[9]) == SUB_ERROR)
 	  return(NULL);
-	if (GetTypeFromUser("Machine's Owner Type", "ace_type", &info[10]) ==
+	if (GetTypeFromUser("Machine's owner type", "ace_type", &info[10]) ==
 	    SUB_ERROR)
 	  return(NULL);
 	if (strcmp(info[10], "NONE") &&
 	    GetValueFromUser("Owner's Name", &info[11]) == SUB_ERROR)
 	  return(NULL);
-	if (GetValueFromUser("Administrative Comment", &info[12]) == SUB_ERROR)
+	if (GetValueFromUser("Administrative comment", &info[12]) == SUB_ERROR)
 	  return(NULL);
-	if (GetValueFromUser("Operational Comment", &info[13]) == SUB_ERROR)
+	if (GetValueFromUser("Operational comment", &info[13]) == SUB_ERROR)
 	  return(NULL);
 	info[14] = NULL;
 	FreeAndClear(&info[15], TRUE);
 	FreeAndClear(&info[16], TRUE);
 	break;
     case SUBNET:
-	if (GetValueFromUser("Subnet Description", &info[SN_DESC]) == SUB_ERROR)
+	if (GetValueFromUser("Network description", &info[SN_DESC]) == SUB_ERROR)
 	  return(NULL);
-	if (GetAddressFromUser("Subnet Address", &info[SN_ADDRESS]) == SUB_ERROR)
+	if (GetAddressFromUser("Network address", &info[SN_ADDRESS]) == SUB_ERROR)
 	  return(NULL);
-	if (GetAddressFromUser("Subnet Mask", &info[SN_MASK]) == SUB_ERROR)
+	if (GetAddressFromUser("Network mask", &info[SN_MASK]) == SUB_ERROR)
 	  return(NULL);
 	if (atoi(info[SN_LOW]) == ntohl(inet_addr(S_DEFAULT_LOW))) {
 	    struct in_addr low;
@@ -602,10 +613,10 @@ Bool name;
 	  return(NULL);
 	if (GetValueFromUser("Hostname prefix", &info[SN_PREFIX]) == SUB_ERROR)
 	  return(NULL);
-	if (GetTypeFromUser("Owner Type", "ace_type", &info[SN_ACE_TYPE]) == SUB_ERROR)
+	if (GetTypeFromUser("Owner type", "ace_type", &info[SN_ACE_TYPE]) == SUB_ERROR)
 	  return(NULL);
 	if (strcmp(info[SN_ACE_TYPE], "NONE") &&
-	    GetValueFromUser("Owner Name", &info[SN_ACE_NAME]) == SUB_ERROR)
+	    GetValueFromUser("Owner name", &info[SN_ACE_NAME]) == SUB_ERROR)
 	  return(NULL);
 	FreeAndClear(&info[SN_MODTIME], TRUE);
 	FreeAndClear(&info[SN_MODBY], TRUE);
@@ -726,7 +737,7 @@ char **argv;
 
 /*	Function Name: AddMachine
  *	Description: This function adds a new machine to the database.
- *	Arguments: argc, argv - the name of the machine in argv[1].
+ *	Arguments: argc, argv - the name of the network in argv[1].
  *	Returns: DM_NORMAL.
  */
 
@@ -737,14 +748,38 @@ int argc;
 char **argv;
 {
     char **args, *info[MAX_ARGS_SIZE], *name, buf[256], *xargs[5];
+    char **rinfo;
+    struct qelem * elem = NULL;
     int stat;
 
     if (!ValidName(argv[1]))	/* Checks for wildcards. */
 	return(DM_NORMAL);
+
+    /* 
+     * get the network record
+     */
+
+    if (strcasecmp(argv[1], "none") &&
+            (stat = do_mr_query("get_subnet", 1, &argv[1],
+			     StoreInfo, (char *)&elem)) != 0) {
+        if (stat == MR_NO_MATCH) {
+	    char buf[128];
+	    sprintf(buf, "Network '%s' is not in the database.", argv[1]);
+	    Put_message(buf);
+	} else
+	    com_err(program_name, stat, " in get_subnet.");
+        return(DM_NORMAL);
+     } 
+      
 /* 
  * Check to see if this machine already exists. 
  */
-    name =  canonicalize_hostname(strsave(argv[1]));
+
+    name = strsave(""); /* want to put prefix here */
+    if (GetValueFromUser("Machine name", &name) == SUB_ERROR)
+          return(NULL);
+
+    name =  canonicalize_hostname(strsave(name));
 
     xargs[0] = name;
     xargs[1] = xargs[2] = xargs[3] = "*";
@@ -760,9 +795,9 @@ char **argv;
 	free(name);
 	return(DM_NORMAL);
     }
-
-    if ((args = AskMCDInfo(SetMachineDefaults(info, name), MACHINE, FALSE)) ==
-	NULL) {
+    rinfo = SetMachineDefaults(info, name);
+    rinfo[M_SUBNET] = argv[1];
+    if ((args = AskMCDInfo(rinfo, MACHINE, FALSE)) == NULL) {
 	Put_message("Aborted.");
 	return(DM_NORMAL);
     }
@@ -975,7 +1010,7 @@ char *s;
 	gethostname(buf, sizeof(buf));
 #endif
 	hp = gethostbyname(buf);
-	cp = strchr(hp->h_name, '.');
+	cp = (char *) strchr(hp->h_name, '.');
 	if (cp)
 	  def_domain = strsave(++cp);
 	else

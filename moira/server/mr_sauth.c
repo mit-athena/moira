@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_sauth.c,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_sauth.c,v 1.15 1990-02-16 15:21:51 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_sauth.c,v 1.16 1990-02-26 18:12:16 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_sms_sauth_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_sauth.c,v 1.15 1990-02-16 15:21:51 mar Exp $";
+static char *rcsid_sms_sauth_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_sauth.c,v 1.16 1990-02-26 18:12:16 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -55,6 +55,9 @@ do_auth(cl)
 	*p = 0;
 
 	if ((status = krb_rd_req (&auth, MOIRA_SNAME, host, cl->haddr.sin_addr,
+				 &ad, "")) != 0 &&
+	    /* for backwards compatability with old clients */
+	    (status = krb_rd_req (&auth, "sms", "sms", cl->haddr.sin_addr,
 				 &ad, "")) != 0) {
 		status += ERROR_TABLE_BASE_krb;
 		cl->reply.sms_status = status;

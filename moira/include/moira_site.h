@@ -1,4 +1,4 @@
-/* $Id: moira_site.h,v 1.32 1999-11-17 18:36:51 danw Exp $
+/* $Id: moira_site.h,v 1.33 2000-01-06 21:09:37 danw Exp $
  *
  * This file contains all definitions that allow easy access to
  * elements returned by most of the @i[Moira] queries.  It also defines
@@ -33,7 +33,18 @@
 #define ACE_NAME 1
 #define ACE_END  2
 
-/* alias queries. */
+/* acl queries */
+
+#define ACL_HOST    0
+#define ACL_TARGET  1
+#define ACL_KIND    2
+#define ACL_LIST    3
+#define ACL_MODTIME 4
+#define ACL_MODBY   5
+#define ACL_MODWITH 6
+#define ACL_END     7
+
+/* alias queries */
 
 #define ALIAS_NAME  0
 #define ALIAS_TYPE  1
@@ -137,6 +148,9 @@
 #define LM_TYPE   1
 #define LM_MEMBER 2
 #define LM_END    3
+
+#define LM_TAG     3
+#define LM_TAG_END 4
 
 /* Machine information queries */
 
@@ -359,12 +373,7 @@
 #define USH_SHELL       1
 #define USH_END         2
 
-/* MITdir pref bits */
-
-#define DIRFLAGS_SUPPRESS 1
-#define DIRFLAGS_NONLOCAL 2
-
-/* Zehpyr ACL queries */
+/* Zephyr ACL queries */
 
 #define ZA_CLASS	0
 #define ZA_XMT_TYPE	1

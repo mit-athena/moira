@@ -1,5 +1,5 @@
 /*
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/cache.dc,v 2.7 1993-06-11 18:11:11 genoa Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/cache.dc,v 2.8 1993-09-30 16:00:40 mar Exp $
  *
  *	Copyright (C) 1989, 1990 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -7,7 +7,7 @@
  */
 
 #ifndef lint
-static char *rcsid_cache_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/cache.dc,v 2.7 1993-06-11 18:11:11 genoa Exp $";
+static char *rcsid_cache_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/cache.dc,v 2.8 1993-09-30 16:00:40 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -110,17 +110,15 @@ int *id;
 {
     register struct item *i, *t;
     EXEC SQL BEGIN DECLARE SECTION;
-    char iname[128];
+    char *iname;
     int j, rowcount;
     EXEC SQL END DECLARE SECTION;
     int h, ctr;
 
-    undouble_single_quotes(iname,name);
-
-    h = hashname(iname, type);
+    h = hashname(name, type);
     for (i = cachehead.next; i != &cachehead; i = i->next) {
 	if (i->nhash != h ||
-	    strcmp(iname, i->name) ||
+	    strcmp(name, i->name) ||
 	    strcasecmp(type, i->type))
 	  continue;
 	*id = i->id;
@@ -135,6 +133,7 @@ int *id;
     }
 
     cachemisses++;
+    iname = name;
 
     switch (*type) {
     case 'U':
@@ -175,7 +174,7 @@ int *id;
     if (sqlca.sqlcode != 0)
       return(MR_INGRES_ERR);
     *id = j;
-    if (iname[0] == '#' && !strcasecmp(type, "USER"))
+    if (name[0] == '#' && !strcasecmp(type, "USER"))
       return(MR_SUCCESS);
     if (cachesize < CACHESIZE) {
 	i = (struct item *) malloc(sizeof(struct item));
@@ -185,7 +184,7 @@ int *id;
 	cachehead.prev = i->prev;
 	i->prev->next = &cachehead;
     }
-    strcpy(i->name, iname);
+    strcpy(i->name, name);
     strcpy(i->type, type);
     i->nhash = h;
     i->id = j;
@@ -200,20 +199,6 @@ int *id;
 	i->trans = (struct item *)NULL;
     }
     return(MR_SUCCESS);
-}
-
-
-undouble_single_quotes(to, from)
-char *to;
-char *from;
-{
-    register char *t,*f;
-
-    for(t=to,f=from; *f; ) {
-	if(*f=='\'' && f[1]=='\'') f++;
-	*t++ = *f++;
-    }
-    *t='\0';
 }
 
 

@@ -17,13 +17,13 @@
 #include	<Xm/Separator.h>
 #include	"mmoira.h"
 
-static char rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/formup.c,v 1.3 1991-05-31 16:46:33 mar Exp $";
+static char rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/formup.c,v 1.4 1991-06-04 14:33:08 mar Exp $";
 
-#define	PADDING		10
 #define	MAX(a,b)	((a > b) ? a : b)
 #define	MIN(a,b)	((a < b) ? a : b)
 
-Widget	entryformwidget;
+int	hpad = 10;
+int	vpad = 5;
 
 void	manage_widget();
 Widget	CreateForm();
@@ -36,10 +36,10 @@ void	string_callback();
 void	boolean_callback();
 void	menu_callback();
 
+extern void	UpdateForm();
 extern int	PopupErrorMessage();
 extern void	PopupHelpWindow();
 extern int	AppendToLog();
-extern void	UpdateForm();
 extern void	MakeWatchCursor();
 extern void	MakeNormalCursor();
 extern Widget	SetupLogWidget();
@@ -54,18 +54,15 @@ XmAnyCallbackStruct	*call_data;
 }
 
 int
-button_callback(w, form, call_data)
+button_callback(w, f, call_data)
 Widget	w;
-EntryForm *form;
+EntryForm *f;
 XmAnyCallbackStruct	*call_data;
 {
 	char	output[100];
-	MakeWatchCursor();
-/*	sprintf (output, "Button %x was hit...\n", w);
-	AppendToLog(output);
-	PopupErrorMessage("Sorry, no functionality here!\n"); */
-	XtUnmanageChild(form->formpointer);	
-	MakeNormalCursor();
+	static int	mode = 0;
+
+	XtUnmanageChild(f->formpointer);	
 }
 
 
@@ -171,6 +168,7 @@ EntryForm	*spec;
 
 	if (spec->formpointer) {
 		printf ("Form %s already exists\n", spec->formname);
+		UpdateForm(spec);
 		return(spec->formpointer);
 	}
 
@@ -180,15 +178,16 @@ EntryForm	*spec;
 			XtGetValues (foo, wargs, n); \
 
 #define STORESIZE	if (width > width_so_far) width_so_far = width;\
-			height_so_far += height + PADDING;
+			height_so_far += height + vpad;
 
 
 	n = 0;
-	XtSetArg(wargs[n], XmNautoUnmanage, FALSE);		n++;
+	XtSetArg(wargs[n], XmNautoUnmanage, False);		n++;
 	bb = XmCreateBulletinBoardDialog(parent, "board", wargs, n);
 
 	spec->formpointer = bb;
 
+#ifdef FORMTITLES
 	label = XmStringCreate(spec->formname, XmSTRING_DEFAULT_CHARSET);
 	n = 0;
 	XtSetArg(wargs[n], XmNlabelString, label);		n++;
@@ -199,6 +198,7 @@ EntryForm	*spec;
 				bb, wargs, n);
 	GETSIZE(titleW);
 	STORESIZE;
+#endif
 
 	label = XmStringCreate(spec->instructions, XmSTRING_DEFAULT_CHARSET);
 	n = 0;
@@ -221,6 +221,7 @@ EntryForm	*spec;
 	MakeButtons(bb, &height, &width, spec);
 	STORESIZE;
 
+#ifdef FORMTITLES
 /*
 ** Center the title of the form
 */
@@ -233,7 +234,7 @@ EntryForm	*spec;
 	n = 0;
 	XtSetArg(wargs[n], XtNx, x);				n++;
 	XtSetValues (titleW, wargs, n);
-
+#endif
 	return((Widget) bb);
 }
 
@@ -351,20 +352,21 @@ EntryForm	*spec;
 			break;
 		}
 		XmAddTabGroup(children[i]);
+		current->mywidget = children[i];
 
-		localy += MAX(rightheight, leftheight) + PADDING;
+		localy += MAX(rightheight, leftheight) + vpad;
 	}
 
 /*
 ** Now slide the input widgets right as far as the widest prompt.
 */
 	n = 0;
-	XtSetArg(wargs[n], XtNx, maxleftwidth + PADDING);	n++;
+	XtSetArg(wargs[n], XtNx, maxleftwidth + hpad);	n++;
 	for (; i; i--)
 		XtSetValues (children[i - 1], wargs, n);
 
-	*pheight = localy - PADDING;
-	*pwidth = maxleftwidth + maxrightwidth + PADDING;
+	*pheight = localy - vpad;
+	*pwidth = maxleftwidth + maxrightwidth + hpad;
 }
 
 /*
@@ -388,7 +390,7 @@ Dimension	*pheight;
 	char	**keywords;
 
 
-	if (!keywords) {
+	if (!prompt->keywords) {
 		fprintf (stderr, "Warning:  No list of keywords for widget\n");
 		return;
 	}
@@ -441,19 +443,8 @@ Dimension	*pheight;
 */
 
 	GETSIZE (child);
-	printf ("Reporting height of %d\n", (height * MAX(5, count)));
 	*pheight = (height * MIN(5, count));
 
-/*
-	n = 0;
-	XtSetArg(wargs[n], XtNheight, height_so_far);	n++;
-	XtSetValues (radioparent, wargs, n);
-	GETSIZE (radioparent);
-	printf ("height of radio parent is now %d\n", height);
-
-
-	*pheight = height_so_far;
-*/
 	return(radioparent);
 }
 
@@ -471,6 +462,8 @@ EntryForm	*spec;
 	Widget		newbutton;
 	BottomButton	**buttons = spec->buttons;
 
+	*pheight += vpad;
+
 	n = 0;
 	XtSetArg(wargs[n], XtNy, *pheight);			n++;
 	XtSetArg(wargs[n], XtNx, 0);				n++;
@@ -478,7 +471,7 @@ EntryForm	*spec;
 	XtCreateManagedWidget(	"separator",
 				xmSeparatorWidgetClass,
 				parent, wargs, n);
-	*pheight += PADDING;
+	*pheight += vpad;
 
 	for (	current=(*buttons); 
 		current; 
@@ -504,7 +497,7 @@ EntryForm	*spec;
 		XtSetArg(wargs[n], XtNwidth, &newwidth);		n++;
 		XtGetValues (newbutton, wargs, n);
 
-		width += (newwidth + PADDING);
+		width += (newwidth + hpad);
 	}
 
 	(*pheight) += 100;
@@ -587,11 +580,6 @@ XmAnyCallbackStruct	*call_data;
 {
 	MenuItem	*itemhit = (MenuItem *) client_data;
 
-/*	printf 	("menu_callback: item '%s', op %d and string '%s'\n", 
-			itemhit->label, 
-			itemhit->operation, 
-			itemhit->form);
-	XtManageChild(entryformwidget);	 */
 	MoiraMenuRequest(itemhit);
 }
 

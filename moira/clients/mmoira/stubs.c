@@ -8,8 +8,11 @@
 #include	<X11/Core.h>
 #include	<X11/CoreP.h>
 #include	<X11/CompositeP.h>
+#include	<X11/cursorfont.h>
 #include	"data.h"
 #include        <Xm/Text.h>
+
+static char rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/stubs.c,v 1.3 1991-06-04 14:31:44 mar Exp $";
 
 void	extra_help_callback();
 
@@ -126,13 +129,26 @@ char	*text;
 }
 
 void
-MakeWatchCursor()
+MakeWatchCursor(topW)
+Widget	topW;
 {
+	Cursor	mycursor;
+
+	if (!topW)
+		return;
+
+	mycursor = XCreateFontCursor (XtDisplay(topW), XC_watch);
+	XDefineCursor(XtDisplay(topW), XtWindow(topW), mycursor);
 }
 
 void
-MakeNormalCursor()
+MakeNormalCursor(topW)
+Widget	topW;
 {
+	if (!topW)
+		return;
+
+	XUndefineCursor(XtDisplay(topW), XtWindow(topW));
 }
 
 /*

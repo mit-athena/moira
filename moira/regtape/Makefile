@@ -1,6 +1,6 @@
 #
 # 	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/Makefile,v $
-#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/Makefile,v 1.2 1990-01-18 14:07:22 mar Exp $
+#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/Makefile,v 1.3 1990-01-18 14:36:35 mar Exp $
 #
 
 #
@@ -30,7 +30,8 @@ personel: personel.o rafnu.o
 	cc -o personel personel.o rafnu.o $(LIBS)
 
 clean: 
-	rm -f regtape students personal core
+	rm -f regtape students personel core
+	rm -f students.c personel.c
 	rm -f *~ *.o
 
 lint: 

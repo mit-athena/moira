@@ -1,29 +1,10 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_server.h,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_server.h,v 1.8 1988-01-14 13:12:06 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_server.h,v 1.9 1988-06-30 15:22:44 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
- *	$Log: not supported by cvs2svn $
- * Revision 1.7  87/07/29  16:03:30  wesommer
- * Added last_time_used field to client structure.
- * 
- * Revision 1.6  87/07/14  00:36:40  wesommer
- * Added debugging options.
- * 
- * Revision 1.5  87/06/30  20:05:14  wesommer
- * Added parsed kerberos principal name.
- * 
- * Revision 1.4  87/06/21  16:42:07  wesommer
- * Performance work, rearrangement of include files.
- * 
- * Revision 1.3  87/06/03  16:07:59  wesommer
- * Fixes for lint.
- * 
- * Revision 1.2  87/06/01  03:35:10  wesommer
- * added stuff for authentication.
- * 
  */
 
 #include <sys/types.h>
@@ -64,9 +45,11 @@ typedef struct _client {
 	int id;			/* Unique id of client */
 	struct sockaddr_in haddr; /* IP address of client */
 	char *clname;		/* Name client authenticated to */
+	int users_id;		/* SMS internal ID of authenticated user */
 	struct krbname kname; 	/* Parsed version of the above */
 	returned_tuples *first, *last;
 	time_t last_time_used;  /* Last time connection used */
+	char *entity;		/* entity on other end of the connection */
 } client;
 
 /*
@@ -101,3 +84,7 @@ extern int log_flags;
 
 /* max length of query argument allowed */
 #define ARGLEN	128
+
+/* statistics on number of queries by version number */
+extern int newqueries, oldqueries;
+

@@ -1,4 +1,4 @@
-/* $Id: common.pc,v 1.3 2002-04-30 02:17:16 zacheiss Exp $
+/* $Id: common.pc,v 1.4 2002-09-09 03:41:59 zacheiss Exp $
  *
  * Staff/Student load common code
  *
@@ -19,7 +19,7 @@
 EXEC SQL INCLUDE sqlca;
 extern void sqlglm(char *, unsigned int *, unsigned int *);
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/common.pc,v 1.3 2002-04-30 02:17:16 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/common.pc,v 1.4 2002-09-09 03:41:59 zacheiss Exp $");
 
 EXEC SQL BEGIN DECLARE SECTION;
 extern char *prog;
@@ -254,9 +254,15 @@ void newuser(struct entry *e, int secure)
   uid = set_next_uid();
   if (!strcmp(e->type, "LINCOLN"))
     {
+      char *p;
+
       strncpy(login, e->first, 2);
       login[2] = '\0';
-      strncat(login, e->id+4, 5);
+      /* strip leading zeroes */
+      p = e->id+4;
+      while (*p == '0')
+	p++;
+      strncat(login, p, strlen(p));
       lowercase(login);
       st = US_NO_LOGIN_YET_KERBEROS_ONLY;
     }

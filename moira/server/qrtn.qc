@@ -153,8 +153,10 @@ do_retrieve(q, action, actarg)
 		(*q->support_rtn)(0, 0, &q->vnames[q->argc], action, actarg);
 	}
 
+#ifdef notdef
 	sprintf(status, "(%d row%s)", rowcount, (rowcount == 1)? "" : "s");
 	(*action)(1, &sp, actarg);
+#endif notdef
 ## }
 
 do_retrieve_with_qual(q, qual, action, actarg)
@@ -192,8 +194,10 @@ do_retrieve_with_qual(q, qual, action, actarg)
 		(*q->support_rtn)(0, 0, &q->vnames[q->argc], action, actarg);
 	}
 
+#ifdef notdef
 	sprintf(status, "(%d row%s)", rowcount, (rowcount == 1)? "" : "s");
 	(*action)(1, &sp, actarg);
+#endif notdef
 ## }
 
 do_update(q, argv, qual, action, actarg)
@@ -241,9 +245,11 @@ do_append(q, argv, action, actarg)
 
 ##      append to rtable (param (q->tlist, argv))
 
+#ifdef notdef
 ##      inquire_equel (rowcount = "rowcount")
 	sprintf(status, "(%d row%s)", rowcount, (rowcount == 1)? "" : "s");
 	(*action)(1, &sp, actarg);
+#endif notdef
 ## }
 
 do_delete(q, qual, action, actarg)
@@ -266,9 +272,11 @@ do_delete(q, qual, action, actarg)
 	cqual = qual;
 ##      delete rvar where cqual
 
+#ifdef notdef
 ##      inquire_equel (rowcount = "rowcount")
 	sprintf(status, "(%d row%s)", rowcount, (rowcount == 1)? "" : "s");
 	(*action)(1, &sp, actarg);
+#endif notdef
 ## }
 
 /* Support Queries */

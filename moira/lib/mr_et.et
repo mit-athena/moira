@@ -1,3 +1,7 @@
+#	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_et.et,v $
+#	$Author: wesommer $
+#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_et.et,v 1.2 1987-06-25 15:30:44 wesommer Exp $
+#
 	error_table sms
 
 ec	SMS_NOT_CONNECTED,
@@ -23,5 +27,14 @@ ec	SMS_MORE_DATA,
 
 ec	SMS_NO_MATCH,
 	"No records in database match query"
+
+ec	SMS_NO_HANDLE,
+	"Unknown query handle"
+
+ec 	SMS_ALREADY_CONNECTED,
+	"Already connected to sms"
+
+ec	SMS_NOT_UNIQUE,
+	"Arguments not unique"
 
 	end

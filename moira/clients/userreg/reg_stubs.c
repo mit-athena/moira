@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/reg_stubs.c,v $
- *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/reg_stubs.c,v 1.22 1993-10-25 16:39:01 mar Exp $
+ *	$Author: jweiss $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/reg_stubs.c,v 1.23 1994-04-29 19:55:56 jweiss Exp $
  *
  *  (c) Copyright 1988 by the Massachusetts Institute of Technology.
  *  For copying and distribution information, please see the file
@@ -9,7 +9,7 @@
  */
 
 #ifndef lint
-static char *rcsid_reg_stubs_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/reg_stubs.c,v 1.22 1993-10-25 16:39:01 mar Exp $";
+static char *rcsid_reg_stubs_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/reg_stubs.c,v 1.23 1994-04-29 19:55:56 jweiss Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -250,15 +250,25 @@ do_secure_operation(login, idnumber, passwd, newpasswd, opcode)
     CREDENTIALS creds;
     Key_schedule keys;
     char *krb_get_phost(), *krb_realmofhost();
-    
+#ifdef POSIX    
+    memmove(bp, (char *)&version, sizeof(int));
+#else
     bcopy((char *)&version, bp, sizeof(int));
+#endif
     bp += sizeof(int);
     seq_no++;
+#ifdef POSIX
+    memmove(bp, (char *)&seq_no, sizeof(int));
+#else
     bcopy((char *)&seq_no, bp, sizeof(int));
+#endif
 
     bp += sizeof(int);
-
+#ifdef POSIX
+    memmove(bp, (char *)&call,  sizeof(int));
+#else
     bcopy((char *)&call, bp, sizeof(int));
+#endif
 
     bp += sizeof(int);
 
@@ -302,7 +312,11 @@ do_secure_operation(login, idnumber, passwd, newpasswd, opcode)
     /* put the ticket in the packet */
     len = cred.length;
     cred.length = htonl(cred.length);
+#ifdef POSIX
+    memmove(bp, &(cred), sizeof(int)+len);
+#else
     bcopy(&(cred), bp, sizeof(int)+len);
+#endif
 #ifdef DEBUG
     com_err("test", 0, "Cred: length %d", len);
     for (i = 0; i < len; i += 16)
@@ -321,7 +335,7 @@ do_secure_operation(login, idnumber, passwd, newpasswd, opcode)
 
     status = krb_get_cred("changepw", hosti, realm, &creds);
     if (status) {
-	bzero(data, strlen(data));
+	memset(data, 0, strlen(data));
 	return (status + krb_err_base);
     }
     dest_tkt();
@@ -329,7 +343,7 @@ do_secure_operation(login, idnumber, passwd, newpasswd, opcode)
     des_key_sched(creds.session, keys);
     des_pcbc_encrypt(data, bp + sizeof(int), len, keys, creds.session, 1);
     *((int *)bp) = htonl(len);
-    bzero(data, strlen(data));
+    memset(data, 0, strlen(data));
 
     bp += len + sizeof(int);
     

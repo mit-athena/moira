@@ -1,4 +1,4 @@
-/* $Id: dcm.pc,v 1.6 1998-02-23 19:23:34 danw Exp $
+/* $Id: dcm.pc,v 1.7 1998-04-01 17:32:53 danw Exp $
  *
  * The Data Control Manager for Moira.
  *
@@ -27,15 +27,13 @@
 EXEC SQL INCLUDE sqlca;
 void sqlglm(char *, unsigned int *, unsigned int *);
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/dcm.pc,v 1.6 1998-02-23 19:23:34 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/dcm.pc,v 1.7 1998-04-01 17:32:53 danw Exp $");
 
 int generate_service(char *name, int force);
 void do_hosts(char *service);
 int dcm_send_file(char *service, char *host, char *target);
 int dcm_execute(char *service, char *host, char *script);
 void dbmserr(void);
-
-EXEC SQL WHENEVER SQLERROR DO dbmserr();
 
 #define SQL_NO_MATCH 1403
 #define SOFT_FAIL(x) (((x) == MR_NO_MEM) || ((x) == MR_CANT_CONNECT) || ((x) == MR_CCONFIG) || ((x) == MR_DEADLOCK) || ((x) == MR_BUSY) || ((x) == MR_ABORT))
@@ -81,6 +79,8 @@ int main(int argc, char **argv)
       exit(1);
     }
 
+  EXEC SQL WHENEVER SQLERROR DO dbmserr();
+
   EXEC SQL CONNECT :db IDENTIFIED BY :db;
 
   EXEC SQL SELECT value INTO :enable FROM numvalues WHERE name = 'dcm_enable';
@@ -116,11 +116,11 @@ int main(int argc, char **argv)
 	  switch (fork())
 	    {
 	    case -1:
-	      fprintf(stderr, "dcm: could not fork for service %s -- exiting",
+	      com_err(whoami, errno, "forking for service %s -- exiting",
 		      name);
 	      exit(1);
 	    case 0:
-	      sprintf(strchr(whoami, '\0'), " (%s)", name);
+	      sprintf(strchr(whoami, '\0'), " (%s:%ld)", name, (long)getpid());
 	      do_hosts(name);
 	      com_err(whoami, 0, "exiting");
 	      exit(0);
@@ -130,7 +130,7 @@ int main(int argc, char **argv)
 	}
     }
 
-  /* wait for children */
+  com_err(whoami, 0, "All files generated. Waiting for children to exit");
   while (waitpid(0, &status, 0) > 0)
     ;
   com_err(whoami, 0, "exiting");
@@ -173,8 +173,11 @@ int generate_service(char *name, int force)
       sprintf(dfgen_cmd, "exec %s %s/%s.out", dfgen_prog, DCM_DIR, name);
       com_err(whoami, 0, "running %s", dfgen_prog);
 
+      EXEC SQL WHENEVER SQLERROR GOTO gen_cleanup;
+
       EXEC SQL UPDATE servers SET inprogress = 1
 	WHERE name = UPPER(:name);
+      EXEC SQL COMMIT;
 
       action.sa_flags = 0;
       sigemptyset(&action.sa_mask);
@@ -219,14 +222,20 @@ int generate_service(char *name, int force)
       else /* HARD_FAIL(status) */
 	{
 	  errmsg = error_message(status);
-	  EXEC SQL UPDATE servers SET dfcheck = :now, harderror = :status,
-	    errmsg = :errmsg, inprogress = 0 WHERE name = UPPER(:name);
+	  EXEC SQL UPDATE servers SET harderror = :status, errmsg = :errmsg,
+	    inprogress = 0 WHERE name = UPPER(:name);
 	  critical_alert("DCM", "DCM building config files for %s: %s",
 			 name, errmsg);
 	}
     }
   EXEC SQL COMMIT RELEASE;
   return 0;
+
+gen_cleanup:
+  EXEC SQL WHENEVER SQLERROR DO dbmserr(); 
+  EXEC SQL UPDATE servers SET inprogress = 0, harderror = MR_INTERNAL,
+    errmsg = 'DBMS Internal Error' WHERE name = UPPER(:name);
+  dbmserr();
 }
 
 void do_hosts(char *service)
@@ -235,9 +244,10 @@ void do_hosts(char *service)
   char type[SERVERS_TYPE_SIZE], host[MACHINE_NAME_SIZE];
   char target[SERVERS_TARGET_FILE_SIZE], script[SERVERS_SCRIPT_SIZE];
   const char *errmsg;
-  int status = 0, dfgen, replicated;
+  int status = 0, dfgen, replicated, mid;
   time_t now;
   EXEC SQL END DECLARE SECTION;
+  struct save_queue sq;
 
   time(&now);
   mr_init();
@@ -248,70 +258,93 @@ void do_hosts(char *service)
     INTO :dfgen, :type, :target, :script
     FROM servers WHERE name = UPPER(:service);
   replicated = !strncmp(type, "REPLICAT", 8);
+  strtrim(target);
+  strtrim(script);
 
   EXEC SQL DECLARE csr_hst1 CURSOR FOR
-    SELECT m.name FROM machine m, serverhosts sh
+    SELECT m.name, m.mach_id FROM machine m, serverhosts sh
     WHERE sh.service = UPPER(:service)
     AND sh.enable = 1 AND sh.hosterror = 0
-    AND sh.lts < :dfgen AND sh.mach_id = m.mach_id
-    FOR UPDATE OF sh.inprogress, sh.hosterror, sh.hosterrmsg;
+    AND sh.lts < :dfgen AND sh.mach_id = m.mach_id;
   EXEC SQL OPEN csr_hst1;
-
+  sq = sq_create();
   while (1)
     {
-      EXEC SQL FETCH csr_hst1 INTO :host;
+      EXEC SQL FETCH csr_hst1 INTO :host, mid;
       if (sqlca.sqlcode == SQL_NO_MATCH)
 	break;
 
-      com_err(whoami, 0, "sending %s data to %s", service, strtrim(host));
+      sq_save_data(sq, strdup(strtrim(host)));
+      sq_save_data(sq, (void *)mid);
+    }
+  EXEC SQL CLOSE csr_hst1;
+
+  EXEC SQL WHENEVER SQLERROR GOTO host_cleanup;
+  while (sq_get_data(sq, &name))
+    {
+      sq_get_data(sq, &mid);
+      com_err(whoami, 0, "sending %s data to %s", service, name);
       EXEC SQL UPDATE serverhosts SET inprogress = 1
-	WHERE CURRENT OF csr_hst1;
-      status = dcm_send_file(service, host, strtrim(target));
+	WHERE service = UPPER(:service) AND mach_id = :mid;
+      EXEC SQL COMMIT;
+      status = dcm_send_file(service, name, target);
       if (status)
 	{
 	  errmsg = error_message(status);
 	  EXEC SQL UPDATE serverhosts SET hosterrmsg = :errmsg,
-	    inprogress = 0 WHERE CURRENT OF csr_hst1;
+	    inprogress = 0, success = 0, ltt = :now
+	    WHERE service = UPPER(:service) AND mach_id = :mach_id;
 	  if (!SOFT_FAIL(status))
 	    {
 	      EXEC SQL UPDATE serverhosts SET hosterror = :status
 		WHERE CURRENT OF csr_hst1;
 	      critical_alert("DCM", "DCM updating %s:%s: %s",
-			     service, host, errmsg);
+			     service, name, errmsg);
 	    }
+	  EXEC SQL COMMIT;
 
 	  if (replicated)
 	    break;
 	}
     }
-  EXEC SQL CLOSE csr_hst1;
+  sq_destroy(sq);
 
   if (status == MR_SUCCESS || !replicated)
     {
       EXEC SQL DECLARE csr_hst2 CURSOR FOR
-	SELECT m.name FROM machine m, serverhosts sh
+	SELECT m.name, m.mach_id FROM machine m, serverhosts sh
 	WHERE sh.service = UPPER(:service) AND sh.inprogress = 1
-	AND sh.mach_id = m.mach_id
-	FOR UPDATE OF sh.hosterror, sh.hosterrmsg, sh.inprogress;
+	AND sh.mach_id = m.mach_id;
       EXEC SQL OPEN csr_hst2;
+      sq = sq_create();
 
       while (1)
 	{
-	  EXEC SQL FETCH csr_hst2 INTO :host;
+	  EXEC SQL FETCH csr_hst2 INTO :host, :mid;
 	  if (sqlca.sqlcode == SQL_NO_MATCH)
 	    break;
 
-	  com_err(whoami, 0, "executing instructions on %s", strtrim(host));
-	  status = dcm_execute(service, host, strtrim(script));
+	  sq_save_data(sq, strdup(strtrim(host)));
+	  sq_save_data(sq, (void *)mid);
+	}
+      EXEC SQL CLOSE csr_hst2;
+
+      while (sq_get_data(sq, &name))
+	{
+	  sq_get_data(sq, &mid);
+
+	  com_err(whoami, 0, "executing instructions on %s", name);
+	  status = dcm_execute(service, name, script);
 	  if (status)
 	    {
 	      errmsg = error_message(status);
 	      EXEC SQL UPDATE serverhosts SET hosterrmsg = :errmsg,
-		inprogress = 0 WHERE CURRENT OF csr_hst2;
+		inprogress = 0, success = 0, ltt = :now
+		WHERE service = UPPER(:service) AND mach_id = :mid;
 	      if (!SOFT_FAIL(status))
 		{
 		  EXEC SQL UPDATE serverhosts SET hosterror = :status
-		    WHERE CURRENT OF csr_hst2;
+		    WHERE service = UPPER(:service) AND mach_id = :mid;
 		  critical_alert("DCM", "DCM updating %s:%s: %s",
 				 service, host, errmsg);
 		}
@@ -327,13 +360,16 @@ void do_hosts(char *service)
 	    }
 	  else
 	    {
-	      EXEC SQL UPDATE serverhosts SET inprogress = 0, lts = :now
-		WHERE CURRENT OF csr_hst2;
+	      EXEC SQL UPDATE serverhosts SET inprogress = 0, ltt = :now,
+		lts = :now, success = 1 WHERE service = UPPER(:service)
+		AND mach_id = :mid;
 	    }
+	  EXEC SQL COMMIT;
 	}
       EXEC SQL CLOSE csr_hst2;
     }
 
+  EXEC SQL WHENEVER SQLERROR DO dbmserr();
   if (status && replicated)
     {
       EXEC SQL UPDATE servers SET harderror = :status, errmsg = :errmsg
@@ -341,6 +377,17 @@ void do_hosts(char *service)
     }
 
   EXEC SQL COMMIT RELEASE;
+  return;
+
+host_cleanup:
+  EXEC SQL UPDATE serverhosts SET inprogress = 0, success = 0, ltt = :now,
+    hosterror = MR_INTERNAL, hosterrmsg = 'DBMS Internal Error'
+    WHERE service = UPPER(:service) AND mach_id = :mid;
+  if (replicated)
+    {
+      EXEC SQL UPDATE servers SET harderror = MR_INTERNAL,
+	errmsg = 'DBMS Internal Error' WHERE name = UPPER(:service);
+    }
 }
 
 int dcm_send_file(char *service, char *host, char *target)

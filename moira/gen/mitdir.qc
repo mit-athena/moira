@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/mitdir.qc,v 1.1 1989-12-04 14:58:41 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/mitdir.qc,v 1.2 1990-01-12 16:27:25 mar Exp $
  *
  * This generates the input file for the mkdirdb program for the MIT.EDU
  * mailhub.
@@ -111,7 +111,9 @@ FILE *out;
 ##  int id, pid, bid, mid;
 ##  char name[129], type[9], buf[257], fname[17], mname[17], lname[17];
 ##  char year[9], dept[13], oaddr[17], ophone[13], haddr[81], hphone[17];
-    char stuemp, *mhost, *uname, *pob;
+##  char affil[5];
+    int mitroom, mitphone;
+    char stuemp, *mhost, *uname, *pob, *tmp;
     struct hash *strings;
 
     /* get locks */
@@ -161,13 +163,35 @@ FILE *out;
 	    uname = strtrim(name);
 	}
 
-	fprintf(out, "%c:%s:%s:%s:%s:",
-		stuemp, "", strtrim(lname), strtrim(fname), strtrim(mname));
-	fprintf(out, "%s:%s:%s:%s:%s:%s:%s:%s:",
-		strtrim(oaddr), "", strtrim(ophone), "",
-		"", "", uname, mhost);
-	fprintf(out, "%s:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s:%d\n",
-		strtrim(haddr), "", "", "", strtrim(hphone),
-		"", "", "", "", year, "", id);
+	strtrim(oaddr);
+	if (oaddr[0] != ' ') {
+	    tmp = &oaddr[strlen(oaddr) - 1];
+	    if (*tmp == 'm' || *tmp == 'M') {
+		*tmp = 0;
+	    }
+	}
+
+	if (tmp = index(ophone, '-')) {
+	    bcopy(tmp+1, tmp, strlen(tmp)-1);
+	}
+	if (tmp = index(hphone, '-')) {
+	    bcopy(tmp+1, tmp, strlen(tmp)-1);
+	}
+
+	fprintf(out, "%c:%s, %s %s:",
+		stuemp, strtrim(lname), strtrim(fname), strtrim(mname));
+	fprintf(out, "%s:%s:%s:%s::", lname, fname, mname, oaddr);
+	if (ophone[0] != ' ')
+	  fprintf(out, "%010d:::%s:%s:%s:",
+		  atoi(ophone), strtrim(dept), uname, mhost);
+	else
+	  fprintf(out, ":::%s:%s:%s:",
+		  strtrim(dept), uname, mhost);
+	if (hphone[0] != ' ')
+	  fprintf(out, "%s:::::%010d::::%s::0\n",
+		  strtrim(haddr), atoi(hphone), year);
+	else
+	  fprintf(out, "%s:::::::::%s::0\n",
+		  strtrim(haddr), year);
 ##  }
 ##}

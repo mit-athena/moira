@@ -1,4 +1,4 @@
-/* $Id: dcm.pc,v 1.13 1999-06-25 15:06:06 danw Exp $
+/* $Id: dcm.pc,v 1.14 2001-01-08 19:27:48 zacheiss Exp $
  *
  * The Data Control Manager for Moira.
  *
@@ -27,7 +27,7 @@
 EXEC SQL INCLUDE sqlca;
 void sqlglm(char *, unsigned int *, unsigned int *);
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/dcm.pc,v 1.13 1999-06-25 15:06:06 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/dcm.pc,v 1.14 2001-01-08 19:27:48 zacheiss Exp $");
 
 int generate_service(char *name, int force);
 void do_hosts(char *service);
@@ -412,7 +412,7 @@ int dcm_send_file(char *service, int type, char *host, char *target)
       return MR_CANT_CONNECT;
     }
 
-  code = send_auth(conn, host);
+  code = mr_send_auth(conn, host);
   if (code)
     {
       com_err(whoami, code, "authenticating to %s", host);
@@ -423,12 +423,12 @@ int dcm_send_file(char *service, int type, char *host, char *target)
     sprintf(data, "%s/%s/%s", DCM_DIR, service, host);
   else
     sprintf(data, "%s/%s.out", DCM_DIR, service);
-  code = send_file(conn, data, target, 0);
+  code = mr_send_file(conn, data, target, 0);
   if (code)
     com_err(whoami, code, "sending data to %s", host);
 
 done:
-  send_quit(conn);
+  mr_send_quit(conn);
   close(conn);
   return code;
 }
@@ -445,7 +445,7 @@ int dcm_execute(char *service, char *host, char *script)
       return MR_CANT_CONNECT;
     }
 
-  code = send_auth(conn, host);
+  code = mr_send_auth(conn, host);
   if (code)
     {
       com_err(whoami, code, "authenticating to %s", host);
@@ -454,19 +454,19 @@ int dcm_execute(char *service, char *host, char *script)
 
   sprintf(inst, "/tmp/moira-update.XXXXXX");
   mktemp(inst);
-  code = send_file(conn, script, inst, 0);
+  code = mr_send_file(conn, script, inst, 0);
   if (code)
     {
       com_err(whoami, code, "sending instructions to %s", host);
       goto done;
     }
 
-  code = execute(conn, inst);
+  code = mr_execute(conn, inst);
   if (code)
     com_err(whoami, code, "executing instructions on %s", host);
 
 done:
-  send_quit(conn);
+  mr_send_quit(conn);
   close(conn);
   return code;
 }

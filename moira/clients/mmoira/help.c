@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/help.c,v 1.4 1992-10-28 16:06:43 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/help.c,v 1.5 1992-11-04 17:59:31 mar Exp $
  *
  *  	Copyright 1991 by the Massachusetts Institute of Technology.
  *
@@ -21,7 +21,7 @@ char *node;
     char *realloc(), *getenv();
 
     sprintf(key, "*%s\n", node);
-    filename = getenv("MOIRAHELPFILE");
+    filename = resources.help_file;
     if (filename == NULL)
       filename = HELPFILE;
     helpfile = fopen(filename, "r");

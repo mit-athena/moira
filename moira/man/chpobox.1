@@ -1,40 +1,90 @@
 .TH CHPOBOX 1 "5 Feb 1988" "Project Athena"
-\" RCSID: $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/man/chpobox.1,v 1.3 1989-04-21 14:38:32 mar Exp $
+\" RCSID: $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/man/chpobox.1,v 1.4 1989-11-15 20:25:31 mar Exp $
 .SH NAME
-chpobox \- change where user receives mail
+chpobox \- change address at which user receives mail
 .SH SYNOPSIS
-.B chpobox
-[-s address][-p][-u username]
-.SH DESCRIPTION
-This command sets and displays the mailbox currently assigned to
-.IR username
-(your own name by default).
-If neither the
-.B -s
-or the
-.B -p
-option is given, the current mailbox will be displayed.  
-The
-.B -s
-option will attempt to set the user's mailbox to the specified address.
-The 
-.B -p
-flag will set the user's mailbox to the last Post Office server it was
-using if the mailbox is now a foreign address.
-.PP
-A mailbox address is of the form
-.I string@hostname,
-where the string is usually the username, and the hostname is the name
-of the machine the user wishes to receive mail on.
-.B chpobox
-will determine if the mailbox is of type POP, LOCAL, or FOREIGN based
-on information in the SMS database, and then make the appropriate
-change in the SMS database.
+.B chpobox 
+[
+.B username
+]
 
-It will not allow a user to have more than one mailbox of any type.
-The actual change will not take place on the mail hub for several hours.
-Users may only change their own information unless they are
-SMS database administrators.
+or
+
+.B chpobox
+[ \-s 
+.B address
+] [ \-p ] [ -u 
+.B username 
+]
+
+.SH DESCRIPTION
+Your post office box is what determines where you will receive
+mail.  It can be of two types: 
+.I POP,
+which is what you have by default, or 
+.I SMTP
+which allows you to specify an alternate address for your mail.
+
+In the first use of this command, the post office box of the
+user whose name corresponds to the single argument
+.I username
+(or your own name if 
+.I username
+is not specified) is displayed.
+
+In the second use, this command sets the 
+actual address that will receive mail sent to 
+.I username@ATHENA.MIT.EDU
+(where 
+.I username
+is your own name if you have not specified it on the command line).
+It should be if you want to change where you will 
+receive mail.  
+
+The 
+.I chpobox 
+command is used instead of the file
+.I .forward,
+which would be used with standard UNIX mail. 
+
+In order to change the address that receives mail sent to 
+.I username@ATHENA.MIT.EDU,
+use the 
+.B -s
+option.  Specifically, to reroute your mail to
+the address 
+.I name@host,
+you would issue the command
+
+.nf
+.nj
+chpobox -s name@host.
+.fi
+
+To restore your post office box to its original Athena default,
+use the 
+.B -p
+flag.  This will set your mailbox to the last post office server
+it was using.
+.PP
+
+Only one of 
+.B -p
+or
+.B -s
+may be used at a time.
+
+Note that the actual change will not take place on the mail hub
+for several hours.  
+
+Regular users may change and retrieve information about only
+their own post office boxes.  Moira database administrators can
+change or retrieve information about any user's post office box,
+specifying the user with the
+.B -u
+option.
+
+.SH NOTE
 
 When a mailbox is stored in the central database, any host mentioned
 will have it's name canonicalized to a standard form.  If for some
@@ -48,6 +98,8 @@ in double-quotes.  For example, the command
 will not be canonicalized to jrhacker@ptt.lcs.mit.edu, as it would
 otherwise.  Also note that the double-quotes were preceded by
 backslashes to get them past the shell.
-.SH "SEE ALSO"
-sms(1),
-SMS Section of the Project Athena Technical Plan.
+
+.SH SEE ALSO
+moira(1),
+
+Moira Section of the Project Athena Technical Plan.

@@ -27,8 +27,8 @@ public class Sender {
   }
   public void SendNameData(String FirstName, String MiddleName, String LastName, String MITID) {
      String s;
-     s = "v1:RIFO:" + FirstName + ":" + MiddleName + ":" + LastName
-       + ":" + MITID + ":";
+     s = "v1" + '\0' + "RIFO" + '\0' + FirstName + '\0' + MiddleName + '\0' 
+	 + LastName + '\0' + MITID + '\0';
      sendstring(s);
   }
   protected void sendstring (String s) {
@@ -36,8 +36,6 @@ public class Sender {
 	     byte [] data = new byte[s.length()];
 	     s.getBytes(0, s.length(), data, 0);
 	     //             byte [] data = s.getBytes(); // JDK 1.1 way
-             for (int i = 0; i < data.length; i++)
-                 if (data[i] == ':') data[i] = 0;
              data = encap.encrypt(data);
              o.write((byte) 0x45);
              sendata(data);
@@ -61,18 +59,18 @@ public class Sender {
 		   String Word5,
 		   String Word6) {
      String s;
-     s = "v1:SWRD:" + Word1 + ":" + Word2 + ":" + Word3 + ":"
-         + Word4 + ":" + Word5 + ":" + Word6 + ":";
+     s = "v1" + '\0' + "SWRD" + '\0' + Word1 + '\0' + Word2 + '\0' 
+	 + Word3 + '\0' + Word4 + '\0' + Word5 + '\0' + Word6 + '\0';
      sendstring(s);
   }
   public void SendLogin(String Login) {
      String s;
-     s = "v1:LOGN:" + Login + ":";
+     s = "v1" + '\0' + "LOGN" + '\0' + Login + '\0';
      sendstring(s);
   }
   public void SendPassword(String Password) {
      String s;
-     s = "v1:PSWD:" + Password + ":";
+     s = "v1" + '\0' + "PSWD" + '\0' + Password + '\0';
      sendstring(s);
   }
 }

@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/queries.c,v 1.12 1992-12-31 13:55:27 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/queries.c,v 1.13 1992-12-31 14:21:29 mar Exp $
  */
 
 #include <stdio.h>
@@ -747,10 +747,10 @@ int remove;
 	  if (islower(*s)) *s = toupper(*s);
 	break;
     case MM_TRIGGER_DCM:
-	if (boolvalue(form, 0))	{
-	    status = mr_do_update();
-	    if (status)
-	      com_err(program_name, status, " starting DCM");
+	if (form->inputlines[0]->returnvalue.booleanvalue) {
+	    i = mr_do_update();
+	    if (i)
+	      com_err(program_name, i, " starting DCM");
 	    else
 	      AppendToLog("DCM started.\n");
 	}

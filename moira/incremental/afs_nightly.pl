@@ -9,39 +9,39 @@ require "/moira/bin/afs_utils.pl";
 local ($key, @vos, %used,%alloc,%total, %a);
 local ($c,$as,$ap,$total,$used,$alloc);
 
-&afs_lock;
-truncate(SRV, 0);
-
 if (open(TMP,"/afs/athena.mit.edu/service/afs_data")) {
-    @afs_data = <TMP>;
+    @new_data = <TMP>;
     close(TMP);
 }
 
-chop(@afs_data);
-for (@afs_data) {
+chop(@new_data);
+for (@new_data) {
     $as = $ap = 0;
     if ($_ !~ /^\#/) {
-	($c,$as,$ap,$t,$total,$used,$alloc) = split(/\s+/,$_);
+	($c,$as,$ap,$type) = split(/\s+/,$_);
 	($as) = gethostbyname($as);
 	$c =~ tr/a-z/A-Z/;
 	$as =~ tr/a-z/A-Z/;
 	$ap =~ s:^([^/]):/vicep\1:;
     }
-    if (!$as || !$ap) {
-	print SRV "$_\n"; next;
-    }
+    next unless ($as && $ap);
     
-    $key = "$c $as $ap";
-    $total{$key} = $used{$key} = $alloc{$key} = 0;
-    $type{$key} = $t;
+    &afs_lock;
+    truncate(SRV, 0);
+    for (@afs_data) {
+	($c2,$as2,$ap2) = split(/\s+/,$_);
+	print SRV $_ unless ($c eq $c2 && $as eq $as2 && $ap eq $ap2);
+    }
+    &afs_unlock;
     
     open(VOS,"$vos partinfo $as $ap -cell $c -noauth|");
     chop(@vos = <VOS>);
     close(VOS);
     next if ($?);
     @vos = split(/\s+/,$vos[0]);
-    $total{$key} = pop(@vos);
-    $used{$key} = $total{$key}-$vos[5];
+    $total = pop(@vos);
+    $used = $total-$vos[5];
+    $alloc = 0;
     
     open(VOS,"$vos listvol $as $ap -cell $c -long -noauth|");
     @vos = <VOS>;
@@ -58,15 +58,10 @@ for (@afs_data) {
 	    $a{$p} = $q;
 	}
     }
-    for $p (keys %a) { $alloc{$key} += $a{$p}; delete $a{$p}; }
-}
+    for $p (keys %a) { $alloc += $a{$p}; delete $a{$p}; }
 
-for (sort keys %total) {
-    print SRV "$_ $type{$_} $total{$_} $used{$_} $alloc{$_}\n";
-    delete $type{$_};
-    delete $total{$_};
-    delete $used{$_};
-    delete $alloc{$_};
+    &afs_lock;
+    seek(SRV, 0, 2);
+    print SRV "$c $as $ap $type $total $used $alloc\n";
+    &afs_unlock;
 }
-
-&afs_unlock;

@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/hesiod.qc,v 1.19 1989-08-22 17:05:05 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/hesiod.qc,v 1.20 1989-09-08 15:15:14 mar Exp $
  *
  * This generates the zone files necessary to load a hesiod server.
  * The following zones are generated: passwd, uid, pobox, group,
@@ -19,7 +19,7 @@
 #include <ctype.h>
 
 
-#define HESIOD_DIR	"/u1/sms/dcm/hesiod"
+char hesiod_dir[64];
 
 #define min(x,y)	((x) < (y) ? (x) : (y))
 struct hash *machines = NULL;
@@ -54,6 +54,7 @@ char **argv;
 
     IIseterr(ingerr);
     initialize_sms_error_table ();
+    sprintf(hesiod_dir, "%s/hesiod", DCM_DIR);
 
 ##  ingres sms
 ##  set lockmode session where level = table
@@ -77,7 +78,7 @@ char **argv;
 
     if (argc == 2) {
 	fprintf(stderr, "Building tar file.\n");
-	sprintf(cmd, "cd %s; tar cf %s .", HESIOD_DIR, argv[1]);
+	sprintf(cmd, "cd %s; tar cf %s .", hesiod_dir, argv[1]);
 	if (system(cmd))
 	  exit(SMS_TAR_FAIL);
     }
@@ -139,9 +140,9 @@ do_passwd()
 ##  char nn[17], ptype[9];
 ##  int uid, flag1, flag2, id, pid;
 
-    sprintf(poutf, "%s/passwd.db", HESIOD_DIR);
-    sprintf(uoutf, "%s/uid.db", HESIOD_DIR);
-    sprintf(boutf, "%s/pobox.db", HESIOD_DIR);
+    sprintf(poutf, "%s/passwd.db", hesiod_dir);
+    sprintf(uoutf, "%s/uid.db", hesiod_dir);
+    sprintf(boutf, "%s/pobox.db", hesiod_dir);
 
     if (stat(poutf, &psb) == 0 && stat(uoutf, &usb) == 0 &&
 	stat(boutf, &bsb) == 0) {
@@ -240,9 +241,9 @@ do_groups()
 ##  int gid, id, lid, flag1, flag2, flag3, maxid;
 
     /* open files */
-    sprintf(ioutf, "%s/gid.db", HESIOD_DIR);
-    sprintf(goutf, "%s/group.db", HESIOD_DIR);
-    sprintf(loutf, "%s/grplist.db", HESIOD_DIR);
+    sprintf(ioutf, "%s/gid.db", hesiod_dir);
+    sprintf(goutf, "%s/group.db", hesiod_dir);
+    sprintf(loutf, "%s/grplist.db", hesiod_dir);
 
     if (stat(ioutf, &isb) == 0 && stat(goutf, &gsb) == 0 && stat(loutf, &lsb) == 0) {
 	ftime = min(isb.st_mtime, min(gsb.st_mtime, lsb.st_mtime));
@@ -385,7 +386,7 @@ do_filsys()
 ##  int flag1, flag2, flag3, flag4, id, fid;
     char *index();
 
-    sprintf(outf, "%s/filsys.db", HESIOD_DIR);
+    sprintf(outf, "%s/filsys.db", hesiod_dir);
 
     if (stat(outf, &sb) == 0) {
 	ftime = sb.st_mtime;
@@ -538,7 +539,7 @@ do_cluster()
 ##  char name[33], label[17], data[33], *filetime;
     set_mask **machs, *ms, *ps;
 
-    sprintf(outf, "%s/cluster.db", HESIOD_DIR);
+    sprintf(outf, "%s/cluster.db", hesiod_dir);
 
     if (stat(outf, &sb) == 0) {
 	ftime = sb.st_mtime;
@@ -658,7 +659,7 @@ do_printcap()
 ##  char name[17], rp[17], sd[33], rm[33], *filetime;
 ##  int flag;
 
-    sprintf(outf, "%s/printcap.db", HESIOD_DIR);
+    sprintf(outf, "%s/printcap.db", hesiod_dir);
 
     if (stat(outf, &sb) == 0) {
 	ftime = sb.st_mtime;
@@ -709,7 +710,7 @@ do_palladium()
 ##  char name[33], rm[33], trans[129], *filetime;
 ##  int flag, flag1, ident;
 
-    sprintf(outf, "%s/palladium.db", HESIOD_DIR);
+    sprintf(outf, "%s/palladium.db", hesiod_dir);
 
     if (stat(outf, &sb) == 0) {
 	ftime = sb.st_mtime;
@@ -768,7 +769,7 @@ do_sloc()
 ##  char service[17], *filetime;
 ##  int port, flag1, flag2, id;
 
-    sprintf(outf, "%s/sloc.db", HESIOD_DIR);
+    sprintf(outf, "%s/sloc.db", hesiod_dir);
 
     if (stat(outf, &sb) == 0) {
 	ftime = sb.st_mtime;
@@ -819,7 +820,7 @@ do_service()
 ##  char mach[33], service[33], protocol[9], altserv[129], *filetime;
 ##  int port, flag1, flag2;
 
-    sprintf(outf, "%s/service.db", HESIOD_DIR);
+    sprintf(outf, "%s/service.db", hesiod_dir);
 
     if (stat(outf, &sb) == 0) {
 	ftime = sb.st_mtime;

@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/utils.c,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/utils.c,v 1.2 1988-09-13 14:09:28 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/utils.c,v 1.3 1989-09-08 15:10:17 mar Exp $
  *
  * 
  * 	Utility functions used by the DCM.
@@ -12,7 +12,7 @@
  */
 
 #ifndef lint
-static char *rcsid_utils_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/utils.c,v 1.2 1988-09-13 14:09:28 mar Exp $";
+static char *rcsid_utils_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/utils.c,v 1.3 1989-09-08 15:10:17 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -24,6 +24,7 @@ static char *rcsid_utils_c = "$Header: /afs/.athena.mit.edu/astaff/project/moira
 #include <sys/file.h>
 #include <zephyr/zephyr.h>
 #include <sms.h>
+#include <sms_app.h>
 #include "dcm.h"
 
 
@@ -90,14 +91,14 @@ char *tkt_string()
 }
 
 
-int maybe_lock_update(dir, host, service, exclusive)
-char *dir, *host, *service;
+int maybe_lock_update(host, service, exclusive)
+char *host, *service;
 int exclusive;
 {
     char lock[BUFSIZ];
     int fd;
 
-    sprintf(lock, "%s/dcm/locks/%s.%s", dir, host, service);
+    sprintf(lock, "%s/%s.%s", LOCK_DIR, host, service);
     if ((fd = open(lock, O_TRUNC |  O_CREAT, 0)) < 0)
       com_err(whoami, errno, ": maybe_lock_update: opening %s", lock);
     else if (flock(fd, (exclusive ? LOCK_EX : LOCK_SH) | LOCK_NB) != 0) {

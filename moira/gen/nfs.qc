@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/nfs.qc,v 1.12 1989-08-16 20:42:58 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/nfs.qc,v 1.13 1989-09-08 15:18:57 mar Exp $
  *
  * This generates the files necessary to load an nfs server.
  *
@@ -15,14 +15,13 @@
 #include <sys/stat.h>
 #include <sys/time.h>
 
-#undef NFS_DIR
-#define NFS_DIR	"/u1/sms/dcm/nfs"
 
 #define min(x,y)	((x) < (y) ? (x) : (y))
 
 char *whoami = "nfs.gen";
 char *malloc(), *strsave();
 char *ingres_date_and_time(), *ingres_time(), *ingres_date();
+char nfs_dir[64];
 
 main(argc, argv)
 int argc;
@@ -40,6 +39,8 @@ char **argv;
 
     IIseterr(ingerr);
     initialize_sms_error_table();
+    sprintf(nfs_dir, "%s/nfs", DCM_DIR);
+
 ##  ingres sms
 ##  set lockmode session where level = table
 
@@ -54,7 +55,8 @@ char **argv;
     }
 
     if (argc == 2) {
-	sprintf(cmd, "cd %s; cp /u1/sms/nfs/* .; tar cf %s .", NFS_DIR, argv[1]);
+	sprintf(cmd, "cd %s; cp %s/nfs/* .; tar cf %s .",
+		nfs_dir, SMS_DIR, argv[1]);
 	if (system(cmd))
 	  exit(SMS_TAR_FAIL);
     }
@@ -125,7 +127,7 @@ struct save_queue *lists;
 ##  char *listname, *lsname, lname[33], uname[9], *filetime;
 ##  int uid, id, flag1, flag2, flag3, flag4;
 
-    sprintf(file, "%s/list-", NFS_DIR);
+    sprintf(file, "%s/list-", nfs_dir);
     if (stat(file, &sb) == 0) {
 	filetime = ingres_date_and_time(sb.st_mtime);
 ##	retrieve (flag1 = int4(interval("min", tblstats.modtime - filetime)))
@@ -161,7 +163,7 @@ struct save_queue *lists;
     while (sq_get_data(lists, &listname)) {
 	if (strlen(listname) == 0)
 	  continue;
-	sprintf(file, "%s/list-%s", NFS_DIR, listname);
+	sprintf(file, "%s/list-%s", nfs_dir, listname);
 	fd = fopen(file, "w");
 	if (!fd) {
 	    fprintf(stderr, "cannot open %s for output\n", file);
@@ -211,7 +213,7 @@ struct hash *do_everyone()
     struct save_queue *sq;
 
     fprintf(stderr, "Building the list of everybody\n");
-    sprintf(buf, "%s/list-", NFS_DIR);
+    sprintf(buf, "%s/list-", nfs_dir);
     fd = fopen(buf, "w");
     if (!fd) {
 	fprintf(stderr, "cannot open %s for output\n", buf);
@@ -324,7 +326,7 @@ struct save_queue *machs;
     struct save_queue *sq;
 
 /*
-    sprintf(file, "%s/list-", NFS_DIR);
+    sprintf(file, "%s/list-", nfs_dir);
     if (stat(file, &sb) == 0) {
 	filetime = ingres_date_and_time(sb.st_mtime);
  #	retrieve (flag1 = int4(interval("min", tblstats.modtime - filetime)))
@@ -363,8 +365,8 @@ struct save_queue *machs;
 ##	repeat retrieve (listname = trim(s.value3))
 ##	    where s.mach_id = m.mach_id and m.name = @machname
 	strtrim(machname);
-	sprintf(f1, "%s/list-%s", NFS_DIR, listname);
-	sprintf(f2, "%s/%s.cred", NFS_DIR, machname);
+	sprintf(f1, "%s/list-%s", nfs_dir, listname);
+	sprintf(f2, "%s/%s.cred", nfs_dir, machname);
 	unlink(f2); /* ignore errors on this unlink */
 	if (link(f1, f2)) {
 	    fprintf(stderr, "Cannot link %s to %s\n", f1, f2);
@@ -379,7 +381,7 @@ struct save_queue *machs;
 ##	    repeat retrieve (id = n.nfsphys_id) where n.mach_id = m.mach_id and
 ##		m.#name = @machname and n.#device = @device
 	    while (cp = index(device, '/')) *cp = '@';
-	    sprintf(file, "%s/%s.%s.quotas", NFS_DIR, machname, device);
+	    sprintf(file, "%s/%s.%s.quotas", nfs_dir, machname, device);
 	    fd = fopen(file, "w");
 	    if (!fd) {
 		fprintf(stderr, "cannot open %s for output\n", file);
@@ -405,7 +407,7 @@ struct save_queue *machs;
 		fprintf(stderr, "error closing %s", file);
 		exit(SMS_CCONFIG);
 	    }
-	    sprintf(file, "%s/%s.%s.dirs", NFS_DIR, machname, device);
+	    sprintf(file, "%s/%s.%s.dirs", nfs_dir, machname, device);
 	    fd = fopen(file, "w");
 	    if (!fd) {
 		fprintf(stderr, "cannot open %s for output\n", file);

@@ -7,11 +7,11 @@
  *
  * $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/dcm.c,v $
  * $Author: mar $
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/dcm.c,v 1.10 1989-08-31 18:57:51 mar Exp $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/dcm.c,v 1.11 1989-09-08 15:09:43 mar Exp $
  */
 
 #ifndef lint
-static char rcsid_dcm_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/dcm.c,v 1.10 1989-08-31 18:57:51 mar Exp $";
+static char rcsid_dcm_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/dcm.c,v 1.11 1989-09-08 15:09:43 mar Exp $";
 #endif lint
 
 #include <stdio.h>
@@ -69,7 +69,7 @@ char *argv[];
 	set_com_err_hook(dcm_com_err_hook);
 	
 	/* if /etc/nodcm exists, punt quietly. */
-	if (!access("/etc/nodcm", F_OK)) {
+	if (!access(NODCMFILE, F_OK)) {
 		exit(1);
 	} 
 
@@ -177,14 +177,14 @@ do_services()
 	    *p = tolower(*p);
 	com_err(whoami, 0, "checking %s...", service);
 	qargv[0] = service;
-	sprintf(dfgen_prog, "%s/bin/%s.gen", SMS_DIR, service);
+	sprintf(dfgen_prog, "%s/%s.gen", BIN_DIR, service);
 	if (!file_exists(dfgen_prog)) {
 	    com_err(whoami, 0, "prog %s doesn't exist\n", dfgen_prog);
 	    free(service);
 	    continue;
 	}
-	sprintf(dfgen_cmd, "exec %s %s/dcm/%s.out",
-		dfgen_prog, SMS_DIR, service);
+	sprintf(dfgen_cmd, "exec %s %s/%s.out",
+		dfgen_prog, DCM_DIR, service);
 	gettimeofday(&tv, &tz);
 	if (status = sms_query("get_server_info", 1, qargv, getsvinfo, &svc)) {
 	    com_err(whoami, status, " getting service %s info, skipping to next service", service);
@@ -199,7 +199,7 @@ do_services()
 	qargv[5] = strsave(svc.errmsg);
 	if (svc.interval != 0) {
 	    if (svc.interval * 60 + svc.dfcheck < tv.tv_sec) {
-		lock_fd = maybe_lock_update(SMS_DIR, "@db@", service, 1);
+		lock_fd = maybe_lock_update("@db@", service, 1);
 		if (lock_fd < 0)
 		  goto free_service;
 		free(qargv[3]);
@@ -278,7 +278,7 @@ do_services()
 	      ex = 1;
 	    else
 	      ex = 0;
-	    lock_fd = maybe_lock_update(SMS_DIR, "@db@", service, ex);
+	    lock_fd = maybe_lock_update("@db@", service, ex);
 	    if (lock_fd >= 0) {
 		do_hosts(&svc);
 		close(lock_fd);
@@ -370,7 +370,7 @@ struct service *svc;
 	    goto free_mach;
 	}
 
-	lock_fd = maybe_lock_update(SMS_DIR, machine, svc->service, 1);
+	lock_fd = maybe_lock_update(machine, svc->service, 1);
 	if (lock_fd < 0)
 	  goto free_mach;
 	argv[0] = svc->service;

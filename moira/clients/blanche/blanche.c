@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.13 1990-04-06 17:01:20 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.14 1990-09-19 11:50:00 mar Exp $
  *
  * Command line oriented Moira List tool.
  *
@@ -21,7 +21,7 @@
 #include <moira_site.h>
 
 #ifndef LINT
-static char blanche_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.13 1990-04-06 17:01:20 mar Exp $";
+static char blanche_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.14 1990-09-19 11:50:00 mar Exp $";
 #endif
 
 
@@ -115,6 +115,12 @@ char **argv;
 			sq_save_data(addlist, memberstruct);
 		} else
 		    usage(argv);
+	    else if (argis("al","addlist"))
+		if (arg - argv < argc - 1) {
+		    ++arg;
+		    get_members_from_file(*arg, addlist);
+		} else
+		  usage(argv);
 	    else if (argis("d","delete"))
 		if (arg - argv < argc - 1) {
 		    ++arg;
@@ -122,28 +128,17 @@ char **argv;
 			sq_save_data(dellist, memberstruct);
 		} else
 		    usage(argv);
+	    else if (argis("dl","deletelist"))
+		if (arg - argv < argc - 1) {
+		    ++arg;
+		    get_members_from_file(*arg, dellist);
+		} else
+		  usage(argv);
 	    else if (argis("f","file"))
 		if (arg - argv < argc - 1) {
-		    FILE *in;
-		    char buf[BUFSIZ];
-
 		    syncflg++;
 		    ++arg;
-		    if (!strcmp(*arg, "-"))
-		      in = stdin;
-		    else {
-			in = fopen(*arg, "r");
-			if (!in) {
-			    com_err(whoami, errno, 
-				    "while opening %s for input", *arg);
-			    exit(2);
-			}
-		    }
-		    while (fgets(buf, BUFSIZ, in))
-		      if (memberstruct = parse_member(buf))
-			sq_save_data(synclist, memberstruct);
-		    if (!feof(in))
-		      com_err(whoami, errno, "while reading from %s", *arg);
+		    get_members_from_file(*arg, synclist);
 		} else
 		  usage(argv);
 	    else
@@ -378,9 +373,11 @@ char **argv;
     fprintf(stderr, "   -r | -recursive\n");
     fprintf(stderr, "   -a | -add member\n");
     fprintf(stderr, "   -d | -delete member\n");
+    fprintf(stderr, "   -al | -addlist filename\n");
+    fprintf(stderr, "   -dl | -deletelist filename\n");
     fprintf(stderr, "   -f | -file filename\n");
     fprintf(stderr, "   -n | -noauth\n");
-    fprintf(stderr, "   -S | -server host:port\n");
+    fprintf(stderr, "   -S | -server host[:port]\n");
     fprintf(stderr, "   -D | -debug\n");
     exit(1);
 }
@@ -570,23 +567,53 @@ scream()
 }
 
 
+/* Open file, parse members from file, and put them on the specified queue */
+get_members_from_file(filename, queue)
+char *filename;
+struct save_queue *queue;
+{
+    FILE *in;
+    char buf[BUFSIZ];
+    struct member *memberstruct;
+
+    if (!strcmp(filename, "-"))
+      in = stdin;
+    else {
+	in = fopen(filename, "r");
+	if (!in) {
+	    com_err(whoami, errno, "while opening %s for input", filename);
+	    exit(2);
+	}
+    }
+
+    while (fgets(buf, BUFSIZ, in))
+      if (memberstruct = parse_member(buf))
+	sq_save_data(queue, memberstruct);
+    if (!feof(in))
+      com_err(whoami, errno, "while reading from %s", filename);
+}
+
+
 /* Parse a line of input, fetching a member.  NULL is returned if a member
- * is not found.  Only the first token on the line is parsed.  ';' is a
- * comment character.
+ * is not found.  ';' is a comment character.
  */
 
 struct member *parse_member(s)
 register char *s;
 {
     register struct member *m;
-    char *p;
+    char *p, *lastchar;
 
     while (*s && isspace(*s))
       s++;
-    p = s;
-    while (*p && isprint(*p) && !isspace(*p) && *p != ';')
-      p++;
-    *p = 0;
+    lastchar = p = s;
+    while (*p && *p != '\n' && *p != ';')
+      if (isprint(*p) && !isspace(*p))
+	lastchar = p++;
+      else
+	p++;
+    lastchar++;
+    *lastchar = 0;
     if (p == s || strlen(s) == 0)
       return(NULL);
 
@@ -613,7 +640,7 @@ register char *s;
 	return(m);
     }
     m->name = strsave(s);
-    if (index(s, '@') || index(s, '!') || index(s, '%'))
+    if (index(s, '@') || index(s, '!') || index(s, '%') || index(s, ' '))
       m->type = M_STRING;
     else
       m->type = M_ANY;

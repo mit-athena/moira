@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/db/newmoira.dc,v 1.2 1992-06-25 14:59:58 genoa Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/db/newmoira.dc,v 1.3 1992-12-30 17:25:33 mar Exp $
  *
  * Creates a new sms database
  *
@@ -120,8 +120,8 @@ main(argc, argv)
 int argc;
 char **argv;
 {
-    char buffer[256];
     EXEC SQL BEGIN DECLARE SECTION;
+    char buffer[256];
     char *db, *tbl, *value, *user, *query, *trans, *type;
     int i, list;
     EXEC SQL END DECLARE SECTION;
@@ -163,6 +163,8 @@ char **argv;
 	  VALUES (:tbl, 'now', 0, 0, 0);
 	if (ingres_errno) {
 	    printf("Unable to initialize tblstats for %s\n", tbl);
+	    EXEC SQL INQUIRE_SQL (:buffer = ERRORTEXT);
+	    printf("SQL error: %s\n",buffer);
 	    exit(1);
 	}
     }

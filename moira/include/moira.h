@@ -1,4 +1,4 @@
-/* $Id: moira.h,v 1.21 1998-05-26 18:14:03 danw Exp $
+/* $Id: moira.h,v 1.22 1998-08-13 18:24:09 danw Exp $
  *
  * Copyright (C) 1987-1998 by the Massachusetts Institute of Technology
  *
@@ -86,6 +86,7 @@ void LookForSt(char *nm);
 void LookForO(char *nm);
 void TrimTrailingSpace(char *ip);
 void GetMidInit(char *nm, char *mi);
+void RemoveHyphens(char *str);
 
 /* prototypes from gdss_convert.c */
 int gdss2et(int code);
@@ -99,10 +100,6 @@ void hash_search(struct hash *h, void *value, void (*callback)(int));
 void hash_step(struct hash *h, void (*callback)(int, void *, void *),
 	       void *hint);
 void hash_destroy(struct hash *h);
-
-/* prototypes from idno.c */
-void RemoveHyphens(char *str);
-void EncryptID(char *sbuf, char *idnumber, char *first, char *last);
 
 /* prototypes from kname_unparse.c */
 char *kname_unparse(char *p, char *i, char *r);

@@ -1,4 +1,4 @@
-/* $Id: employee.pc,v 1.13 1998-12-20 21:31:30 danw Exp $
+/* $Id: employee.pc,v 1.14 1998-12-20 21:33:00 danw Exp $
  *
  * Load data into Moira from Personnel Office data file
  *
@@ -19,7 +19,7 @@
 EXEC SQL INCLUDE sqlca;
 extern void sqlglm(char *, unsigned int *, unsigned int *);
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/employee.pc,v 1.13 1998-12-20 21:31:30 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/employee.pc,v 1.14 1998-12-20 21:33:00 danw Exp $");
 
 #define WHO 11859		/* root */
 #define PROG "emp-tape"
@@ -172,7 +172,7 @@ struct entry *get_next_entry(FILE *in)
   static char phone2[LEN_PHONE2 + 1], dept[LEN_DEPT + 1], title[LEN_TITLE + 1];
   static char username[LEN_USERNAME + 1], host[LEN_HOST + 1];
   int ends_sr, ends_jr, ends_iii, ends_iv, ends_ii, ends_v;
-  char *p;
+  char *p, *q;
 
   if (!fgets(buf, sizeof(buf), in))
     return NULL;
@@ -238,7 +238,51 @@ struct entry *get_next_entry(FILE *in)
 
   e.id = id;
 
-  e.address = strtrim(office);
+  /* The following is really gross, but it happens to successfully convert
+   * new-style Warehouse office descriptions into (more-readable) old-style
+   * Personnel Office office descriptions.
+   */
+  e.address = p = strtrim(office);
+  while (*p && !isspace(*p))
+    p++;
+  q = p;
+  while (isspace(*q))
+    q++;
+  if (*q && q < e.address + LEN_OFFICE / 2)
+    {
+      *p++ = '-';
+      while (*q && q < e.address + LEN_OFFICE / 2)
+	{
+	  if (*q != ' ' && *q != '-')
+	    *p++ = *q;
+	  if (q > p)
+	    *q = ' ';
+	  q++;
+	}
+      memset(p, ' ', q - p);
+    }
+
+  p = e.address + LEN_OFFICE / 2;
+  while (*p && !isspace(*p))
+    p++;
+  q = p;
+  while (isspace(*q))
+    q++;
+  if (*q)
+    {
+      *p++ = '-';
+      while (*q)
+	{
+	  if (*q != ' ' && *q != '-')
+	    *p++ = *q;
+	  if (q > p)
+	    *q = ' ';
+	  q++;
+	}
+      memset(p, ' ', q - p);
+    }
+  strtrim(e.address);
+
   e.phone = strtrim(phone);
   e.phone2 = strtrim(phone2);
   e.dept = strtrim(dept);

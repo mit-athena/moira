@@ -1,4 +1,4 @@
-/* $Id: cluster.c,v 1.61 2002-01-16 21:40:39 zacheiss Exp $
+/* $Id: cluster.c,v 1.62 2002-03-20 04:01:00 zacheiss Exp $
  *
  *	This is the file cluster.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -89,9 +89,10 @@ static char *subnet_states[] = {
   "Private, 10 Mbps (2)",
   "Private, 100 Mbps (3)",
   "Private, Other (4)",
-  "Resnet (5)",
+  "Resnet, Dorm (5)",
   "Infrastructure (6)",
-  "Private, 1000 Mbps (7)"
+  "Private, 1000 Mbps (7)",
+  "Resnet, FSILG (8)"
 };
 
 static char *MacState(int state)
@@ -110,7 +111,7 @@ static char *SubnetState(int state)
 {
   static char buf[BUFSIZ];
 
-  if (state < 0 || state > 7)
+  if (state < 0 || state > 8)
     {
       sprintf(buf, "Unknown (%d)", state);
       return buf;

@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/hesiod.dc,v 1.5 1992-12-21 18:05:06 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/hesiod.dc,v 1.6 1992-12-30 00:26:23 probe Exp $
  *
  * This generates the zone files necessary to load a hesiod server.
  * The following zones are generated: passwd, uid, pobox, group,
@@ -420,7 +420,7 @@ do_filsys()
     register char *p;
     struct stat sb;
     time_t ftime;
-    struct save_queue *sq, *sq_create();
+    struct save_queue *sq, *sq2, *sq_create();
     EXEC SQL BEGIN DECLARE SECTION;
     char name[33], type[9], loc[81], access[2], mount[33], trans[257];
     char comments[65];
@@ -454,6 +454,7 @@ do_filsys()
     fprintf(stderr, "Building filsys.db\n");
     get_mach();
     sq = sq_create();
+    sq2 = sq_create();
 
     EXEC SQL DECLARE f_cursor CURSOR FOR
       SELECT label, type, name, mach_id, access, mount, comments, filsys_id
@@ -481,6 +482,9 @@ do_filsys()
 	} else if (!strcmp(type, "FSGROUP")) {
 	    sprintf(trans, "%s:%d", strtrim(name), fid);
 	    sq_save_data(sq, strsave(trans));
+	} else if (!strcmp(type, "MUL")) {
+	    sprintf(trans, "%s:%d", strtrim(name), fid);
+	    sq_save_data(sq2, strsave(trans));
 	}
     }
     EXEC SQL CLOSE f_cursor;
@@ -520,6 +524,27 @@ do_filsys()
 	free(group);
     }
     sq_destroy(sq);
+
+    while (sq_get_data(sq2, &group)) {
+        fid = atoi(index(group, ':') + 1);
+        *index(group, ':') = 0;
+        fprintf(out, "%s.filsys\tHS %s \"MUL", group, HTYPE);
+	EXEC SQL DECLARE f_cursor3 CURSOR FOR
+	    SELECT DISTINCT f.label, g.key
+	    FROM filesys f, fsgroup g
+	    WHERE f.filsys_id = g.filsys_id AND g.group_id = :fid
+	    ORDER BY key, label;
+	EXEC SQL OPEN f_cursor3;
+	while (1) {
+	    EXEC SQL FETCH f_cursor3 INTO :name, :trans;
+	    if (sqlca.sqlcode != 0) break;
+            fprintf(out, " %s", strtrim(name));
+	}
+	EXEC SQL CLOSE f_cursor3;
+        fprintf(out, "\"\n");
+        free(group);
+    }
+    sq_destroy(sq2);
 
     EXEC SQL DECLARE a_cursor CURSOR FOR
       SELECT name, trans

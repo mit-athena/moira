@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/students.dc,v 1.15 1992-05-20 12:33:50 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/students.dc,v 1.16 1992-08-25 18:03:12 mar Exp $
  */
 
 #include <stdio.h>
@@ -12,7 +12,7 @@
 ##define WHO 11859		/* root */
 ##define PROG "stu-tape"
 
-#define MAX_ID_VALUE	32766
+#define MAX_ID_VALUE	31999
 #define MIN_ID_VALUE	101
 
 /* File format is:

@@ -1,5 +1,5 @@
 #!/bin/sh
-# $Id: acl.sh,v 1.2 2000-01-31 17:10:05 danw Exp $
+# $Id: acl.sh,v 1.3 2000-04-10 19:40:07 zacheiss Exp $
 
 # The following exit codes are defined and MUST BE CONSISTENT with the
 # error codes the library uses:
@@ -29,7 +29,7 @@ for file in `find . -type f -print | sed -e 's/^\.//'`; do
 	    if egrep -s ^root: .$file; then
 		:
 	    else
-		status=MR_MISSINGFILE
+		status=$MR_MISSINGFILE
 		break
 	    fi
         fi
@@ -37,8 +37,8 @@ for file in `find . -type f -print | sed -e 's/^\.//'`; do
 	# Make sure that there is a head file, or that the generated
 	# file contains a group with gid 0.
 	if [ ! -f $file.head ]; then
-	    if awk -F: '$3 == "0" { exit 1; }'; then
-		status=MR_MISSINGFILE
+	    if awk -F: '$3 == "0" { exit 1; }' $file; then
+		status=$MR_MISSINGFILE
 		break
 	    fi
         fi

@@ -1,4 +1,4 @@
-/* $Id: update_server.c,v 1.21 1998-11-09 22:48:18 danw Exp $
+/* $Id: update_server.c,v 1.22 2000-05-08 18:28:59 zacheiss Exp $
  *
  * Copyright 1988-1998 by the Massachusetts Institute of Technology.
  * For copying and distribution information, please see the file
@@ -23,11 +23,12 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <syslog.h>
 
 #include <des.h>
 #include "update.h"
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/update_server.c,v 1.21 1998-11-09 22:48:18 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/update_server.c,v 1.22 2000-05-08 18:28:59 zacheiss Exp $");
 
 char *whoami, *hostname;
 
@@ -36,6 +37,8 @@ des_cblock session;
 int uid = 0;
 
 void child_handler(int signal);
+static void syslog_com_err_proc(const char *progname, long code,
+				const char *fmt, va_list args);
 
 struct _dt {
   char *str;
@@ -116,6 +119,9 @@ int main(int argc, char **argv)
       com_err(whoami, errno, "creating listening socket");
       exit(1);
     }
+
+  set_com_err_hook(syslog_com_err_proc);
+  openlog(whoami, LOG_PID, LOG_DAEMON);
 
   /* now loop waiting for connections */
   while (1)
@@ -227,4 +233,17 @@ void child_handler(int signal)
 
   while (waitpid(-1, &status, WNOHANG) > 0)
     ;
+}
+
+static void syslog_com_err_proc(const char *progname, long code,
+				const char *fmt, va_list args)
+{
+  char *buf;
+  int bufsiz = 1024;
+
+  buf = malloc(bufsiz + 1);
+  buf[bufsiz] = '\0';
+
+  vsnprintf(buf, bufsiz, fmt, args);
+  syslog(LOG_NOTICE, buf);
 }

@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.6 2000-01-20 19:18:46 danw Exp $
+# $Id: Makefile.in,v 1.7 2000-09-10 02:53:27 zacheiss Exp $
 
 SHELL=/bin/sh
 @SET_MAKE@
@@ -25,11 +25,13 @@ SRCTOP=@top_srcdir@
 BUILDTOP=..
 mrbindir=@mrbindir@
 
-OBJS=dbck.o fix.o phase1.o phase2.o phase3.o phase4.o
+DBCK_OBJS=dbck.o fix.o phase1.o phase2.o phase3.o phase4.o
+MEMBERS_OBJS=members.o
+OBJS= $(DBCK_OBJS) $(MEMBERS_OBJS)
 
-CFILES=dbck.c fix.c phase1.c phase2.c phase3.c phase4.c
+CFILES=dbck.c fix.c phase1.c phase2.c phase3.c phase4.c members.c
 
-TARGET=dbck
+TARGET=dbck members
 
 .SUFFIXES: .pc
 
@@ -51,6 +53,15 @@ depend: $(CFILES)
 
 install:
 	$(INSTALL_PROGRAM) dbck $(mrbindir)
+	$(INSTALL_PROGRAM) members $(mrbindir)
 
-$(TARGET): $(OBJS) $(MR_LIBDEP)
-	$(CC) -o $@ $(LDFLAGS) $(OBJS) $(LIBS)
+dbck: $(DBCK_OBJS) $(MR_LIBDEP)
+	$(CC) -o $@ $(LDFLAGS) $(DBCK_OBJS) $(LIBS)
+
+members: members.o $(MR_LIBDEP)
+	$(CC) -o $@ $(LDFLAGS) members.o $(LIBS)
+
+
+
+
+

@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/members.pc,v 1.2 1998-01-06 20:39:45 danw Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/members.pc,v 1.3 2000-09-10 02:53:27 zacheiss Exp $
  */
 
 #include <stdio.h>
@@ -45,6 +45,7 @@ struct hash *lists, *members;
 void fix_member(), display_member();
 int debug = 0, records = 0;
 
+char *db = "moira/moira";
 
 main(argc, argv)
 int argc;
@@ -58,7 +59,7 @@ char **argv;
 #endif DEBUG
 
 /*  ingres sms */
-    EXEC SQL CONNECT moira;
+    EXEC SQL CONNECT :db;
 /*  begin transaction */
 /*  range of m is imembers */
     /* No equivalent */
@@ -332,8 +333,10 @@ fix_members()
  *		and m.member_type = mtype */
 	EXEC SQL DELETE FROM imembers WHERE list_id = :list_id AND
 	    member_id = :member_id AND member_type = :mtype;
-	EXEC SQL INQUIRE_SQL(:rowcount = rowcount); 
-	printf("  %d rows deleted\n", rowcount);
+	rowcount = sqlca.sqlerrd[2];
+	if (rowcount > 0)
+	  printf("%d entr%s deleted\n", rowcount, 
+		 rowcount == 1 ? "y" : "ies");
 #endif FIXERRORS
     }
     if (errmis > 0)
@@ -484,8 +487,10 @@ int *errmis;
 	    EXEC SQL INSERT INTO imembers (list_id, member_id, 
 	        member_type, ref_count, direct)
 	      VALUES (:list_id, :member_id, :mtype, :ref_count, :dflag);
-	    EXEC SQL INQUIRE_SQL(:rowcount = rowcount); 
-	    printf("  %d rows added\n", rowcount);
+	    rowcount = sqlca.sqlerrd[2];
+	    if (rowcount > 0)
+	      printf("%d entr%s added\n", rowcount, 
+		     rowcount == 1 ? "y" : "ies");
 #endif FIXERRORS
 	    continue;
 	}
@@ -514,8 +519,10 @@ int *errmis;
 	    SET ref_count=ref_count+:ref_count, direct = :dflag 
 	    WHERE list_id = :list_id AND member_id = :member_id AND
 		member_tpe = :mtype;
-	EXEC SQL INQUIRE_SQL(:rowcount = rowcount); 
-	printf("  %d rows fixed\n", rowcount);
+	rowcount = sqlca.sqlerrd[2];
+	if (rowcount > 0)
+	  printf("%d entr%s updated\n", rowcount, 
+		 rowcount == 1 ? "y" : "ies");
 #endif FIXERRORS
     }
 }

@@ -1,4 +1,4 @@
-/* $Id: hesiod.pc,v 1.10 1999-01-27 19:39:43 danw Exp $
+/* $Id: hesiod.pc,v 1.11 1999-05-12 15:21:23 danw Exp $
  *
  * This generates the zone files necessary to load a hesiod server.
  * The following zones are generated: passwd, uid, pobox, group,
@@ -23,7 +23,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/hesiod.pc,v 1.10 1999-01-27 19:39:43 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/hesiod.pc,v 1.11 1999-05-12 15:21:23 danw Exp $");
 
 #ifndef HTYPE
 #define HTYPE "TXT"
@@ -275,7 +275,7 @@ int do_passwd(void)
       strcpy(u->name, login);
       u->lists = NULL;
       hash_store(users, id, u);
-      if (status == 1)
+      if (status == 1 || status == 2)
 	{
 	  fprintf(pout, "%s.passwd\t%s %s \"%s:*:%d:101:%s,%s,%s,%s,%s:/mit/%s:%s\"\n",
 		  login, HCLASS, HTYPE, login, uid, fullname, nn, oa,

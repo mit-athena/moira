@@ -1,13 +1,13 @@
 #	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/Makefile,v $
 #	$Author: mar $
-#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/Makefile,v 1.2 1988-02-08 14:26:38 mar Exp $
+#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/Makefile,v 1.3 1988-02-08 15:13:29 mar Exp $
 #
 #	Makefile for SMS library.
 #
 LIBSRC=sms_auth.c sms_call.c sms_connect.c sms_data.c sms_init.c \
 	sms_shutdown.c sms_query.c sms_param.c sms_access.c sms_misc.c \
 	sms_al_filsys.c sms_al_pobox.c menu.c admin_call.c admin_util.c \
-	sms_do_update.c fixname.c strs.c fixhost.c nfsparttype.c
+	sms_do_update.c fixname.c strs.c fixhost.c nfsparttype.c ureg_err.h
 
 CFILES=${LIBSRC}
 
@@ -15,7 +15,7 @@ LIBOBJ=sms_auth.o sms_call.o sms_connect.o sms_data.o sms_et.o \
 	sms_init.o sms_shutdown.o sms_query.o sms_param.o sms_access.o \
 	sms_misc.o sms_al_filsys.o sms_al_pobox.o krb_et.o menu.o \
 	admin_call.o admin_util.o admin_err.o sms_do_update.o \
-	fixname.o strs.o fixhost.o nfsparttype.o
+	fixname.o strs.o fixhost.o nfsparttype.o ureg_err.o
 
 COPTS= -O
 
@@ -54,6 +54,10 @@ sms_et.o: sms_et.et
 
 sms_et.h: sms_et.o
 
+ureg_err.o: ureg_err.et
+	compile_et ureg_err.et
+	cp ureg_err.o profiled/ureg_err.o
+
 admin_err.o: admin_err.et
 	compile_et admin_err.et
 	cp admin_err.o profiled/admin_err.o
@@ -64,7 +68,7 @@ admin_err.h: admin_err.o
 
 clean:
 	rm -f ${ALL}
-	rm -f *.o *~ admin_err.h sms_et.h krb_et.h profiled/*.o \#*
+	rm -f *.o *~ admin_err.h sms_et.h krb_et.h ureg_err.h profiled/*.o \#*
 	rm -f *.PS *.aux *.dvi *.log
 	rm -f *.bak
 

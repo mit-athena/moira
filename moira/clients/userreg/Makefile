@@ -2,7 +2,7 @@
 # 	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/Makefile,v $
 #	$Author: mar $
 #	$Locker:  $
-#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/Makefile,v 1.7 1990-01-10 18:34:00 mar Exp $
+#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/Makefile,v 1.8 1990-02-28 12:13:38 mar Exp $
 #
 # (c) Copyright 1988 by the Massachusetts Institute of Technology.
 # For copying and distribution information, please see the file
@@ -17,7 +17,8 @@ all: userreg
 
 userreg: userreg.o display.o reg_stubs.o disable.o
 	cc ${CFLAGS} -o $@ userreg.o display.o reg_stubs.o disable.o \
-		-L../../lib -lcom_err -lkrb -ldes -lsms -lcurses -ltermcap
+		-L../../lib -lcom_err -lkrb -ldes -lsms -lcurses \
+		-ltermcap -lhesiod
 
 userreg.o display.o: userreg.h files.h
 
@@ -45,7 +46,7 @@ userreg.o: /usr/include/sys/ttychars.h /usr/include/sys/ttydev.h
 userreg.o: /usr/include/signal.h /usr/include/sys/time.h
 userreg.o: /usr/include/sys/time.h /usr/include/setjmp.h /usr/include/ctype.h
 userreg.o: ../../include/krb.h ../../include/des.h /usr/include/errno.h
-userreg.o: userreg.h files.h ureg_err.h
+userreg.o: userreg.h files.h ../../include/ureg_err.h
 display.o: display.c ../../include/mit-copyright.h /usr/include/stdio.h
 display.o: /usr/include/curses.h /usr/include/sgtty.h
 display.o: /usr/include/sys/ioctl.h /usr/include/sys/ttychars.h
@@ -55,8 +56,10 @@ reg_stubs.o: reg_stubs.c ../../include/mit-copyright.h /usr/include/stdio.h
 reg_stubs.o: /usr/include/sys/types.h /usr/include/sys/time.h
 reg_stubs.o: /usr/include/sys/time.h /usr/include/sys/socket.h
 reg_stubs.o: /usr/include/netinet/in.h /usr/include/netdb.h
-reg_stubs.o: ../../include/des.h /usr/include/errno.h ureg_err.h
-reg_stubs.o: ../../include/ureg_proto.h /usr/include/strings.h
+reg_stubs.o: ../../include/des.h /usr/include/errno.h ../../include/sms.h
+reg_stubs.o: ../../include/sms_et.h ../../include/sms_app.h
+reg_stubs.o: ../../include/ureg_err.h ../../include/ureg_proto.h
+reg_stubs.o: /usr/include/strings.h
 disable.o: disable.c ../../include/mit-copyright.h /usr/include/stdio.h
 disable.o: /usr/include/ctype.h /usr/include/sys/types.h
 disable.o: /usr/include/sys/time.h /usr/include/sys/time.h

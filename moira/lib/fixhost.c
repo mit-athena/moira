@@ -1,4 +1,4 @@
-/* $Id: fixhost.c,v 1.22 1999-12-14 20:43:58 danw Exp $
+/* $Id: fixhost.c,v 1.23 2000-03-15 22:44:18 rbasch Exp $
  *
  * Canonicalize a hostname
  *
@@ -11,18 +11,37 @@
 #include <moira.h>
 
 #include <sys/types.h>
-#include <sys/socket.h>
-#include <sys/utsname.h>
 
+#ifdef HAVE_UNAME
+#include <sys/utsname.h>
+#endif
+
+#ifndef _WIN32
+#include <sys/socket.h>
 #include <netdb.h>
 #include <netinet/in.h>
+#endif /* _WIN32 */
 
 #include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/fixhost.c,v 1.22 1999-12-14 20:43:58 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/fixhost.c,v 1.23 2000-03-15 22:44:18 rbasch Exp $");
+
+static struct hostent *local_gethostbyname(void)
+{
+#ifdef HAVE_UNAME
+  struct utsname name;
+  uname(&name);
+  return gethostbyname(name.nodename);
+#else
+  char hostname[128];
+  gethostname(hostname, sizeof(hostname));
+  hostname[sizeof(hostname)-1] = 0;
+  return gethostbyname(hostname);
+#endif
+}
 
 static char *local_domain(void)
 {
@@ -42,9 +61,7 @@ static char *local_domain(void)
 	}
       else
 	{
-	  struct utsname name;
-	  uname(&name);
-	  hp = gethostbyname(name.nodename);
+	  hp = local_gethostbyname();
 	  if (hp)
 	    {
 	      cp = strchr(hp->h_name, '.');

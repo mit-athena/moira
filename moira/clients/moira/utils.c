@@ -1,4 +1,4 @@
-/* $Id: utils.c,v 1.46 2000-01-26 18:04:53 danw Exp $
+/* $Id: utils.c,v 1.47 2000-03-15 22:44:06 rbasch Exp $
  *
  *	This is the file utils.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -21,9 +21,11 @@
 
 #include <sys/types.h>
 
+#ifndef _WIN32
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <netdb.h>		/* for gethostbyname. */
+#endif /* _WIN32 */
 
 #include <ctype.h>
 #include <stdio.h>
@@ -31,7 +33,7 @@
 #include <string.h>
 #include <time.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v 1.46 2000-01-26 18:04:53 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v 1.47 2000-03-15 22:44:06 rbasch Exp $");
 
 /*	Function Name: AddQueue
  *	Description: Adds an element to a queue
@@ -777,11 +779,15 @@ int GetTypeFromUser(char *prompt, char *tname, char **pointer)
   strcat(buffer, " (");
   for (elem = GetTypeValues(tname); elem; elem = elem->q_forw)
     {
+      /* Make sure we don't blow up and get too long a prompt */
+      if (strlen(buffer) > 64)
+	break;
       strcat(buffer, elem->q_data);
       if (elem->q_forw)
 	strcat(buffer, ", ");
     }
   strcat(buffer, ")");
+  /* Trim the prompt if it is too long */
   if (strlen(buffer) > 64)
     sprintf(buffer, "%s (? for help)", prompt);
   if (GetValueFromUser(buffer, pointer) == SUB_ERROR)

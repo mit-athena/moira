@@ -1,4 +1,4 @@
-/* $Id: mr_private.h,v 1.12 1998-07-15 20:39:32 danw Exp $
+/* $Id: mr_private.h,v 1.13 2000-03-15 22:44:20 rbasch Exp $
  *
  * Private declarations of the Moira library.
  *
@@ -12,8 +12,10 @@
 
 #include <sys/types.h>
 
+#ifndef _WIN32
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#endif /*_WIN32*/
 
 extern int _mr_conn, mr_inited;
 
@@ -32,7 +34,7 @@ typedef struct mr_params {
 #define CHECK_CONNECTED if (!_mr_conn) return MR_NOT_CONNECTED
 
 #define getlong(cp, l) do { l = ((((unsigned char *)cp)[0] * 256 + ((unsigned char *)cp)[1]) * 256 + ((unsigned char *)cp)[2]) * 256 + ((unsigned char *)cp)[3]; } while(0)
-#define putlong(cp, l) do { ((unsigned char *)cp)[0] = l >> 24; ((unsigned char *)cp)[1] = l >> 16; ((unsigned char *)cp)[2] = l >> 8; ((unsigned char *)cp)[3] = l; } while(0)
+#define putlong(cp, l) do { ((unsigned char *)cp)[0] = (unsigned char)(l >> 24); ((unsigned char *)cp)[1] = (unsigned char)(l >> 16); ((unsigned char *)cp)[2] = (unsigned char)(l >> 8); ((unsigned char *)cp)[3] = (unsigned char)(l); } while(0)
 
 /* prototypes from mr_call.h */
 int mr_do_call(struct mr_params *params, struct mr_params *reply);

@@ -1,4 +1,4 @@
-/* $Id: chfn.c,v 1.20 1999-12-30 17:30:37 danw Exp $
+/* $Id: chfn.c,v 1.21 2000-03-15 22:44:11 rbasch Exp $
  *
  * Talk to the Moira database to change a person's GECOS information.
  *
@@ -22,7 +22,7 @@
 #include <stdio.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chfn.c,v 1.20 1999-12-30 17:30:37 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chfn.c,v 1.21 2000-03-15 22:44:11 rbasch Exp $");
 
 #define FALSE 0
 #define TRUE 1
@@ -75,7 +75,6 @@ int chfn(char *uname)
   int status;			/* general purpose exit status */
   int q_argc;			/* argc for mr_query */
   char *q_argv[F_END];		/* argv for mr_query */
-  char *motd;			/* for Moira server status */
   int i;
 
   struct finger_info old_info;
@@ -175,6 +174,7 @@ char *ask(char *question, char *def_val, int phone_num)
   char *result;
   int i;
   int dashes = FALSE;
+  int len;
 
 #define BLANK "none"
 
@@ -192,7 +192,8 @@ char *ask(char *question, char *def_val, int phone_num)
       else
 	result = buf;
 
-      for (i = 0; i < strlen(buf); i++)
+      len = strlen(buf);
+      for (i = 0; i < len; i++)
 	{
 	  switch (buf[i])
 	    {
@@ -222,7 +223,8 @@ char *ask(char *question, char *def_val, int phone_num)
 
       if (phone_num && ok)
 	{
-	  for (i = 0; i < strlen(result); i++)
+	  len = strlen(result);
+	  for (i = 0; i < len; i++)
 	    {
 	      if (!isdigit(result[i]) && (result[i] != '-'))
 		{

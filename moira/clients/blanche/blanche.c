@@ -1,4 +1,4 @@
-/* $Id: blanche.c,v 1.44 2000-01-07 21:14:12 danw Exp $
+/* $Id: blanche.c,v 1.45 2000-03-15 22:43:56 rbasch Exp $
  *
  * Command line oriented Moira List tool.
  *
@@ -20,7 +20,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.44 2000-01-07 21:14:12 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.45 2000-03-15 22:43:56 rbasch Exp $");
 
 struct member {
   int type;
@@ -826,39 +826,40 @@ int main(int argc, char **argv)
 
 void usage(char **argv)
 {
+#define USAGE_OPTIONS_FORMAT "  %-39s%s\n"
   fprintf(stderr, "Usage: %s listname [options]\n", argv[0]);
   fprintf(stderr, "Options are\n");
-  fprintf(stderr, "  %-39s%-39s\n", "-v  | -verbose",
+  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-v  | -verbose",
 	  "-C  | -create");
-  fprintf(stderr, "  %-39s%-39s\n", "-m  | -members",
+  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-m  | -members",
 	  "-R  | -rename newname");
-  fprintf(stderr, "  %-39s%-39s\n", "-u  | -users",
+  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-u  | -users",
 	  "-P  | -public");
-  fprintf(stderr, "  %-39s%-39s\n", "-l  | -lists",
+  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-l  | -lists",
 	  "-NP | -private");
-  fprintf(stderr, "  %-39s%-39s\n", "-s  | -strings",
+  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-s  | -strings",
 	  "-A  | -active");
-  fprintf(stderr, "  %-39s%-39s\n", "-k  | -kerberos",
+  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-k  | -kerberos",
 	  "-I  | -inactive");
-  fprintf(stderr, "  %-39s%-39s\n", "-i  | -info",
+  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-i  | -info",
 	  "-V  | -visible");
-  fprintf(stderr, "  %-39s%-39s\n", "-r  | -recursive",
+  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-r  | -recursive",
 	  "-H  | -hidden");
-  fprintf(stderr, "  %-39s%-39s\n", "-a  | -add member",
+  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-a  | -add member",
 	  "-M  | -mail");
-  fprintf(stderr, "  %-39s%-39s\n", "-d  | -delete member",
+  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-d  | -delete member",
 	  "-NM | -notmail");
-  fprintf(stderr, "  %-39s%-39s\n", "-al | -addlist filename",
+  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-al | -addlist filename",
 	  "-G  | -group");
-  fprintf(stderr, "  %-39s%-39s\n", "-dl | -deletelist filename",
+  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-dl | -deletelist filename",
 	  "-NG | -notgroup");
-  fprintf(stderr, "  %-39s%-39s\n", "-f  | -file filename",
+  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-f  | -file filename",
 	  "-D  | -desc description");
-  fprintf(stderr, "  %-39s%-39s\n", "-at | -addtagged member tag",
+  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-at | -addtagged member tag",
 	  "-O  | -owner owner");
-  fprintf(stderr, "  %-39s%-39s\n", "-ct | -changetag member tag",
+  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-ct | -changetag member tag",
 	  "-t  | -tags");
-  fprintf(stderr, "  %-39s%-39s\n", "-n  | -noauth",
+  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-n  | -noauth",
 	  "-db | -database host[:port]");
   exit(1);
 }
@@ -869,7 +870,6 @@ void usage(char **argv)
 void show_list_member(struct member *memberstruct)
 {
   char *s = "";
-  char *tag;
 
   switch (memberstruct->type)
     {

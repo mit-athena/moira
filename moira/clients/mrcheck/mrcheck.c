@@ -1,4 +1,4 @@
-/* $Id: mrcheck.c,v 1.18 1999-12-30 17:30:36 danw Exp $
+/* $Id: mrcheck.c,v 1.19 2000-03-15 22:44:08 rbasch Exp $
  *
  * Verify that all Moira updates are successful
  *
@@ -12,14 +12,12 @@
 #include <moira_site.h>
 #include <mrclient.h>
 
-#include <sys/time.h>
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrcheck/mrcheck.c,v 1.18 1999-12-30 17:30:36 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrcheck/mrcheck.c,v 1.19 2000-03-15 22:44:08 rbasch Exp $");
 
 char *atot(char *itime);
 int process_server(int argc, char **argv, void *sqv);
@@ -30,7 +28,7 @@ void usage(void);
 
 char *whoami;
 static int count = 0;
-static struct timeval now;
+static time_t now;
 
 struct service {
   char name[17];
@@ -78,7 +76,7 @@ int process_server(int argc, char **argv, void *sqv)
     disp_svc(argv, "Should this be enabled?\n");
   else if (atoi(argv[SVC_ENABLE]) &&
 	   60 * atoi(argv[SVC_INTERVAL]) + 86400 + atoi(argv[SVC_DFCHECK])
-	   < now.tv_sec)
+	   < now)
     disp_svc(argv, "Service has not been updated\n");
 
   return MR_CONT;
@@ -130,7 +128,7 @@ int process_host(int argc, char **argv, void *sqv)
     disp_sh(argv, "Should this be enabled?\n");
   else if (atoi(argv[SH_ENABLE]) && update_int &&
 	   60 * atoi(update_int) + 86400 + atoi(argv[SH_LASTSUCCESS])
-	   < now.tv_sec)
+	   < now)
     disp_sh(argv, "Host has not been updated\n");
 
   return MR_CONT;
@@ -187,7 +185,7 @@ int main(int argc, char *argv[])
       goto punt;
     }
 
-  gettimeofday(&now, 0);
+  now = time(NULL);
   sq = sq_create();
 
   /* Check services first */

@@ -1,4 +1,4 @@
-/* $Id: main.c,v 1.37 2000-01-28 00:03:23 danw Exp $
+/* $Id: main.c,v 1.38 2000-03-15 22:44:03 rbasch Exp $
  *
  *	This is the file main.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -19,20 +19,20 @@
 #include "f_defs.h"
 #include "globals.h"
 
-#include <pwd.h>
 #include <signal.h>
 #include <stdio.h>
 #include <string.h>
+#ifdef HAVE_UNISTD_H
 #include <unistd.h>
+#endif /* HAVE_UNISTD_H */
 
-#include <krb.h>
-
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/main.c,v 1.37 2000-01-28 00:03:23 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/main.c,v 1.38 2000-03-15 22:44:03 rbasch Exp $");
 
 static void ErrorExit(char *buf, int status);
 static void Usage(void);
-static void Signal_Handler(void);
-static void CatchInterrupt(void);
+static void Signal_Handler(int sig);
+static void CatchInterrupt(int sig);
+static void SetHandlers(void);
 
 char *whoami;			/* used by menu.c ugh!!! */
 char *moira_server;
@@ -54,8 +54,7 @@ int main(int argc, char **argv)
 {
   int status;
   Menu *menu;
-  char **arg, pname[ANAME_SZ];
-  struct sigaction act;
+  char **arg;
 
   if (!(program_name = strrchr(argv[0], '/')))
     program_name = argv[0];
@@ -132,21 +131,7 @@ int main(int argc, char **argv)
    * These signals should not be set until just before we fire up the menu
    * system.
    */
-
-  sigemptyset(&act.sa_mask);
-  act.sa_flags = 0;
-  act.sa_handler = Signal_Handler;
-  sigaction(SIGHUP, &act, NULL);
-  sigaction(SIGQUIT, &act, NULL);
-#ifdef HAVE_CURSES
-  if (use_menu)
-    sigaction(SIGINT, &act, NULL);
-  else
-#endif
-    {
-      act.sa_handler = CatchInterrupt;
-      sigaction(SIGINT, &act, NULL);
-    }
+  SetHandlers();
 
   if (!strcmp(program_name, "listmaint"))
     menu = &list_menu;
@@ -205,7 +190,7 @@ static void Usage(void)
  *	Returns: doesn't
  */
 
-static void Signal_Handler(void)
+static void Signal_Handler(int sig)
 {
   Put_message("Signal caught - exiting");
 #ifdef HAVE_CURSES
@@ -217,8 +202,41 @@ static void Signal_Handler(void)
 }
 
 
-static void CatchInterrupt(void)
+static void CatchInterrupt(int sig)
 {
   Put_message("Interrupt! Press RETURN to continue");
   interrupt = 1;
 }
+
+#ifdef HAVE_POSIX_SIGNALS
+static void SetHandlers(void)
+{
+  struct sigaction act;
+
+  sigemptyset(&act.sa_mask);
+  act.sa_flags = 0;
+  act.sa_handler = Signal_Handler;
+  sigaction(SIGHUP, &act, NULL);
+  sigaction(SIGQUIT, &act, NULL);
+#ifdef HAVE_CURSES
+  if (use_menu)
+    sigaction(SIGINT, &act, NULL);
+  else
+#endif
+    {
+      act.sa_handler = CatchInterrupt;
+      sigaction(SIGINT, &act, NULL);
+    }
+}
+#else
+static void SetHandlers(void)
+{
+  signal(SIGTERM, Signal_Handler);
+#ifdef HAVE_CURSES
+  if (use_menu)
+    signal(SIGINT, Signal_Handler);
+  else
+#endif
+      signal(SIGINT, CatchInterrupt);
+}
+#endif

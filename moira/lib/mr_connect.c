@@ -1,4 +1,4 @@
-/* $Id: mr_connect.c,v 1.32 2000-02-16 18:12:10 zacheiss Exp $
+/* $Id: mr_connect.c,v 1.33 2000-03-15 22:44:19 rbasch Exp $
  *
  * This routine is part of the client library.  It handles
  * creating a connection to the moira server.
@@ -14,21 +14,35 @@
 #include "mr_private.h"
 
 #include <sys/types.h>
-#include <sys/socket.h>
-
-#include <netinet/in.h>
-#include <netdb.h>
 
 #include <errno.h>
 #include <stdlib.h>
 #include <string.h>
+
+#ifdef HAVE_UNISTD_H
 #include <unistd.h>
+#endif
+
+#ifndef _WIN32
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <netdb.h>
+#ifndef closesocket
+#define closesocket close
+#endif
+#ifndef SOCKET_ERROR
+#define SOCKET_ERROR -1
+#endif
+#endif
 
 #ifdef HAVE_HESIOD
 #include <hesiod.h>
 #endif
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_connect.c,v 1.32 2000-02-16 18:12:10 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_connect.c,v 1.33 2000-03-15 22:44:19 rbasch Exp $");
+
+#define DEFAULT_SERV "moira_db"
+#define DEFAULT_PORT 775
 
 int _mr_conn = 0;
 static char *mr_server_host = NULL;
@@ -119,76 +133,80 @@ int mr_connect(char *server)
 
 int mr_connect_internal(char *server, char *port)
 {
-  int fd, size, more;
+  int size, more;
   struct sockaddr_in target;
   struct hostent *shost;
   char actualresponse[53];
+  char *host = NULL;
+  int fd = SOCKET_ERROR;
+  int ok = 0;
 
   shost = gethostbyname(server);
   if (!shost)
-    return 0;
+    goto cleanup;
+
+  /* Get the host info in case some library decides to clobber shost. */
+  memcpy(&target.sin_addr, shost->h_addr, shost->h_length);
+  target.sin_family = shost->h_addrtype;
+  host = strdup(shost->h_name);
 
   if (port[0] == '#')
-    target.sin_port = htons(atoi(port + 1));
+    target.sin_port = htons((unsigned short)atoi(port + 1));
   else
     {
       struct servent *s;
+      target.sin_port = 0;
       s = getservbyname(port, "tcp");
       if (s)
 	target.sin_port = s->s_port;
-      else
 #ifdef HAVE_HESIOD
+      if (!target.sin_port)
         {
           s = hes_getservbyname(port, "tcp");
           if (s)
             target.sin_port = s->s_port;
-          else
-           return 0;
         }
-#else
-	return 0;
 #endif
+      if (!target.sin_port && !strcasecmp(port, DEFAULT_SERV))
+	target.sin_port = htons(DEFAULT_PORT);
+      if (!target.sin_port)
+	goto cleanup;
     }
-
-  memcpy(&target.sin_addr, shost->h_addr, shost->h_length);
-  target.sin_family = shost->h_addrtype;
 
   fd = socket(AF_INET, SOCK_STREAM, 0);
   if (fd < 0)
-    return 0;
+    goto cleanup;
 
   if (connect(fd, (struct sockaddr *)&target, sizeof(target)) < 0)
-    {
-      close(fd);
-      return 0;
-    }
+    goto cleanup;
 
   /* Do magic mrgdb initialization */
-  size = write(fd, challenge, sizeof(challenge));
+  size = send(fd, challenge, sizeof(challenge), 0);
   if (size != sizeof(challenge))
-    {
-      close(fd);
-      return 0;
-    }
+    goto cleanup;
   for (size = 0; size < sizeof(actualresponse); size += more)
     {
-      more = read(fd, actualresponse + size, sizeof(actualresponse) - size);
+      more = recv(fd, actualresponse + size, sizeof(actualresponse) - size, 0);
       if (more <= 0)
 	break;
     }
   if (size != sizeof(actualresponse))
-    {
-      close(fd);
-      return 0;
-    }
+    goto cleanup;
   if (memcmp(actualresponse, response, sizeof(actualresponse)))
+    goto cleanup;
+
+  ok = 1;
+  mr_server_host = host;
+
+ cleanup:
+  if (!ok)
     {
-      close(fd);
+      if (host)
+	free(host);
+      if (fd != SOCKET_ERROR)
+	closesocket(fd);
       return 0;
     }
-
-  mr_server_host = strdup(shost->h_name);
-
   /* You win */
   return fd;
 }
@@ -196,7 +214,7 @@ int mr_connect_internal(char *server, char *port)
 int mr_disconnect(void)
 {
   CHECK_CONNECTED;
-  close(_mr_conn);
+  closesocket(_mr_conn);
   _mr_conn = 0;
   free(mr_server_host);
   mr_server_host = NULL;
@@ -258,17 +276,17 @@ int mr_listen(char *port)
     return -1;
   if (setsockopt(s, SOL_SOCKET, SO_REUSEADDR, (char *)&on, sizeof(int)) < 0)
     {
-      close(s);
+      closesocket(s);
       return -1;
     }
   if (bind(s, (struct sockaddr *)&sin, sizeof(sin)) < 0)
     {
-      close(s);
+      closesocket(s);
       return -1;
     }
   if (listen(s, 5) < 0)
     {
-      close(s);
+      closesocket(s);
       return -1;
     }
 
@@ -311,9 +329,9 @@ int mr_cont_accept(int conn, char **buf, int *nread)
   if (!*buf)
     {
       char lbuf[4];
-      if (read(conn, lbuf, 4) != 4)
+      if (recv(conn, lbuf, 4, 0) != 4)
 	{
-	  close(conn);
+	  closesocket(conn);
 	  return 0;
 	}
       getlong(lbuf, len);
@@ -322,7 +340,7 @@ int mr_cont_accept(int conn, char **buf, int *nread)
       *buf = malloc(len);
       if (!*buf || len < 58)
 	{
-	  close(conn);
+	  closesocket(conn);
 	  free(*buf);
 	  return 0;
 	}
@@ -333,11 +351,11 @@ int mr_cont_accept(int conn, char **buf, int *nread)
   else
     getlong(*buf, len);
 
-  more = read(conn, *buf + *nread, len - *nread);
+  more = recv(conn, *buf + *nread, len - *nread, 0);
 
   if (more == -1 && errno != EINTR)
     {
-      close(conn);
+      closesocket(conn);
       free(*buf);
       return 0;
     }
@@ -349,7 +367,7 @@ int mr_cont_accept(int conn, char **buf, int *nread)
 
   if (memcmp(*buf + 4, challenge + 4, 34))
     {
-      close(conn);
+      closesocket(conn);
       free(*buf);
       return 0;
     }
@@ -357,9 +375,9 @@ int mr_cont_accept(int conn, char **buf, int *nread)
   /* good enough */
   free(*buf);
 
-  if (write(conn, response, sizeof(response)) != sizeof(response))
+  if (send(conn, response, sizeof(response), 0) != sizeof(response))
     {
-      close(conn);
+      closesocket(conn);
       return 0;
     }
   return conn;

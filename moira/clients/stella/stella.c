@@ -21,7 +21,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/stella/stella.c,v 1.1 2000-02-10 05:33:44 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/stella/stella.c,v 1.2 2000-03-15 22:44:13 rbasch Exp $");
 
 struct owner_type {
   int type;
@@ -78,7 +78,7 @@ int main(int argc, char **argv)
 {
   int status, success;
   char **arg = argv;
-  char *server = NULL, *p;
+  char *server = NULL;
 
   /* clear all flags & lists */
   info_flag = update_flag = create_flag = list_map_flag = update_map_flag = 0;
@@ -138,12 +138,14 @@ int main(int argc, char **argv)
 	  else if (argis("S", "status")) {
 	    if (arg - argv < argc - 1) {
 	      int i;
+	      int len;
 
 	      arg++;
 	      update_flag++;
 	      h_status = *arg;
 
-	      for(i=0; i<strlen(h_status); i++) {
+	      len = strlen(h_status);
+	      for(i = 0; i < len; i++) {
 		if(!isdigit(h_status[i])) {
 		  printf("Error: status code %s is not numeric.\n", h_status);
 		  exit(1);
@@ -366,7 +368,6 @@ int main(int argc, char **argv)
       char *old_argv[30];
       char *argv[16];
       char *args[5];
-      int cnt;
 
       args[0] = canonicalize_hostname(strdup(hostname));
       args[1] = args[2] = args[3] = "*";
@@ -584,31 +585,32 @@ int main(int argc, char **argv)
 
 void usage(char **argv)
 {
+#define USAGE_OPTIONS_FORMAT "  %-39s%s\n"
   fprintf(stderr, "Usage: %s hostname [options]\n", argv[0]);
   fprintf(stderr, "Options are\n");
-  fprintf(stderr, "  %-39s%-39s\n", "-C   | -create",
+  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-C   | -create",
 	  "-O   | -owner owner");
-  fprintf(stderr, "  %-39s%-39s\n", "-D   | -delete",
+  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-D   | -delete",
 	  "-S   | -status status");
-  fprintf(stderr, "  %-39s%-39s\n", "-R   | -rename newname",
+  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-R   | -rename newname",
 	  "-V   | -vendor vendor");
-  fprintf(stderr, "  %-39s%-39s\n", "-a   | -addalias alias",
+  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-a   | -addalias alias",
 	  "-M   | -model model");
-  fprintf(stderr, "  %-39s%-39s\n", "-d   | -deletealias alias",
+  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-d   | -deletealias alias",
 	  "-L   | -location location");
-  fprintf(stderr, "  %-39s%-39s\n", "-i   | -info",
+  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-i   | -info",
 	  "-o   | -os os");
-  fprintf(stderr, "  %-39s%-39s\n", "-oc  | -opcmt op_cmt",
+  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-oc  | -opcmt op_cmt",
 	  "-c   | -contact contact");
-  fprintf(stderr, "  %-39s%-39s\n", "-ac  | -admcmt adm_cmt",
+  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-ac  | -admcmt adm_cmt",
 	  "-A   | -address address");
-  fprintf(stderr, "  %-39s%-39s\n", "-am  | -addmap cluster",
+  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-am  | -addmap cluster",
 	  "-N   | -network network");
-  fprintf(stderr, "  %-39s%-39s\n", "-dm  | -deletemap cluster",
+  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-dm  | -deletemap cluster",
 	  "-lm  | -listmap");
-  fprintf(stderr, "  %-39s%-39s\n", "-db  | -database host[:port]",
+  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-db  | -database host[:port]",
 	  "-n   | -noauth");
-  fprintf(stderr, "  %-39s%-39s\n", "-v   | -verbose",
+  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-v   | -verbose",
 	  "");
   exit(1);
 }

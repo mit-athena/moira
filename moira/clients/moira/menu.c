@@ -1,4 +1,4 @@
-/* $Id: menu.c,v 1.57 2000-02-21 21:37:19 rbasch Exp $
+/* $Id: menu.c,v 1.58 2000-03-15 22:44:04 rbasch Exp $
  *
  * Generic menu system module.
  *
@@ -19,9 +19,21 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#ifdef HAVE_UNISTD_H
 #include <unistd.h>
+#endif
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.57 2000-02-21 21:37:19 rbasch Exp $");
+#ifdef _WIN32
+#include <windows.h>
+#include <conio.h>
+#ifdef getchar
+#undef getchar
+#endif
+#define getchar() _getch()
+#define getpid _getpid
+#endif /* _WIN32 */
+
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.58 2000-03-15 22:44:04 rbasch Exp $");
 
 #ifdef MAX
 #undef MAX
@@ -457,11 +469,11 @@ void refresh_screen(void)
 /* Prompt the user for input in the input window of cur_ms */
 int Prompt_input(char *prompt, char *buf, int buflen)
 {
+#ifdef HAVE_CURSES
   int c;
   char *p;
   int y, x, oldx, oldy;
 
-#ifdef HAVE_CURSES
   if (cur_ms != NULLMS)
     {
       more_flg = 1;
@@ -641,9 +653,6 @@ void Put_message(char *msg)
 /* Will be truncated to COLS characters.  */
 void Put_line(char *msg)
 {
-  int y, x, i;
-  char *msg1, chr;
-
   if (!more_flg)
     return;
 
@@ -655,6 +664,9 @@ void Put_line(char *msg)
 #ifdef HAVE_CURSES
 	  if (cur_ms != NULLMS)
 	    {
+              int x, y;
+              char chr;
+
 	      wstandout(cur_ms->ms_input);
 	      wprintw(cur_ms->ms_input, "---More---");
 	      wstandend(cur_ms->ms_input);
@@ -684,6 +696,9 @@ void Put_line(char *msg)
 #ifdef HAVE_CURSES
   if (cur_ms != NULLMS)
     {
+      int i;
+      char *msg1;
+
       msg1 = calloc(COLS, 1);
       strncpy(msg1, msg, COLS - 1);
       for (i = strlen(msg1); i < COLS - 1; i++)
@@ -766,13 +781,30 @@ struct menu_line *Find_command(Menu *m, char *command)
     return find_command_from(command, m, MAX_MENU_DEPTH);
 }
 
+static char *get_tmp_dir(void)
+{
+#ifdef _WIN32
+  static char tmp[BUFSIZ];
+  DWORD len;
+  if (!tmp[0])
+    {
+      len = GetTempPath(sizeof(tmp), tmp);
+      if (!len || (len > sizeof(tmp)))
+        strcpy(tmp, ".");
+    }
+  return tmp;
+#else
+  return "/var/tmp";
+#endif
+}
+
 int toggle_logging(int argc, char *argv[])
 {
   char buf[BUFSIZ];
 
   if (!log_file)
     {
-      sprintf(buf, "/var/tmp/%s-log.%ld", whoami, (long)getpid());
+      sprintf(buf, "%s/%s-log.%ld", get_tmp_dir(), whoami, (long)getpid());
 
       /* open the file */
       log_file = fopen(buf, "a");

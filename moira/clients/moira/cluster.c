@@ -1,4 +1,4 @@
-/* $Id: cluster.c,v 1.38 1999-04-30 17:41:07 danw Exp $
+/* $Id: cluster.c,v 1.39 2000-03-15 22:44:02 rbasch Exp $
  *
  *	This is the file cluster.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -23,11 +23,16 @@
 #include "globals.h"
 
 #include <sys/types.h>
-#include <sys/utsname.h>
 
+#ifdef HAVE_UNAME
+#include <sys/utsname.h>
+#endif
+
+#ifndef _WIN32
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <netdb.h>
+#endif /* _WIN32 */
 
 #include <ctype.h>
 #include <stdio.h>
@@ -584,7 +589,7 @@ char **AskMCDInfo(char **info, int type, Bool name)
 	return NULL;
       if (GetAddressFromUser("Network mask", &info[SN_MASK]) == SUB_ERROR)
 	return NULL;
-      if (atoi(info[SN_LOW]) == ntohl(inet_addr(S_DEFAULT_LOW)))
+      if (atoi(info[SN_LOW]) == (int)ntohl(inet_addr(S_DEFAULT_LOW)))
 	{
 	  struct in_addr low;
 	  unsigned long mask, addr;
@@ -600,7 +605,7 @@ char **AskMCDInfo(char **info, int type, Bool name)
       if (GetAddressFromUser("Lowest assignable address", &info[SN_LOW]) ==
 	  SUB_ERROR)
 	return NULL;
-      if (atoi(info[SN_HIGH]) == ntohl(inet_addr(S_DEFAULT_HIGH)))
+      if (atoi(info[SN_HIGH]) == (int)ntohl(inet_addr(S_DEFAULT_HIGH)))
 	{
 	  struct in_addr high;
 	  unsigned long mask, addr;
@@ -997,10 +1002,16 @@ char *partial_canonicalize_hostname(char *s)
       else
 	{
 	  struct hostent *hp;
+#ifdef HAVE_UNAME
 	  struct utsname name;
-
 	  uname(&name);
 	  hp = gethostbyname(name.nodename);
+#else
+	  char	name[256];
+	  gethostname(name, sizeof(name));
+	  name[sizeof(name)-1] = 0;
+	  hp = gethostbyname(name);
+#endif /* HAVE_UNAME */
 	  cp = strchr(hp->h_name, '.');
 	  if (cp)
 	    def_domain = strdup(++cp);

@@ -1,4 +1,4 @@
-/* $Id: moira.h,v 1.27 2000-01-28 00:03:27 danw Exp $
+/* $Id: moira.h,v 1.28 2000-03-15 22:44:15 rbasch Exp $
  *
  * Copyright (C) 1987-1998 by the Massachusetts Institute of Technology
  *
@@ -7,13 +7,20 @@
 #ifndef _moira_h_
 #define _moira_h_
 
-/* return values from queries (and error codes) */
+#ifdef _WIN32
+#include <windows.h>
+#ifndef strcasecmp
+#define strcasecmp      stricmp
+#endif
+#endif /*_WIN32 */
 
+/* return values from queries (and error codes) */
 #include <sys/types.h>
 #include <com_err.h>
 #include "mr_et.h"
 #include "krb_et.h"
 #include "ureg_err.h"
+
 #define MR_SUCCESS 0		/* Query was successful */
 
 #define MR_VERSION_1 1		/* Version in use from 7/87 to 4/88 */
@@ -125,6 +132,7 @@ void sq_destroy(struct save_queue *sq);
 char *strtrim(char *s);
 char *uppercase(char *s);
 char *lowercase(char *s);
+
 #ifndef HAVE_STRLCPY
 size_t strlcpy(char *dst, const char *src, size_t size);
 #endif

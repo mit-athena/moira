@@ -1,4 +1,4 @@
-/* $Id: acl.c,v 1.1 2000-01-07 21:14:04 danw Exp $
+/* $Id: acl.c,v 1.2 2000-03-15 22:44:01 rbasch Exp $
  *
  *	This is the file acl.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -20,7 +20,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/acl.c,v 1.1 2000-01-07 21:14:04 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/acl.c,v 1.2 2000-03-15 22:44:01 rbasch Exp $");
 
 void RealDeleteACL(char **info, Bool one_item);
 void ChangeACL(char **info, Bool one_item);
@@ -79,7 +79,6 @@ static char *PrintACLInfo(char **info)
 {
   static char name[BUFSIZ];
   char buf[BUFSIZ];
-  int status;
 
   if (!info)		/* If no informaion */
     {
@@ -109,9 +108,6 @@ static char *PrintACLInfo(char **info)
 static char **AskACLInfo(char **info)
 {
   char temp_buf[BUFSIZ];
-  char *args[3];
-  char *s, *d;
-  int status;
 
   Put_message("");
   info[ACL_HOST] = canonicalize_hostname(info[ACL_HOST]);
@@ -191,7 +187,7 @@ int DeleteACL(int argc, char **argv)
 
 int AddACL(int argc, char **argv)
 {
-  char *info[MAX_ARGS_SIZE], **args, *host;
+  char *info[MAX_ARGS_SIZE], **args;
   int stat;
 
   argv[1] = canonicalize_hostname(strdup(argv[1]));

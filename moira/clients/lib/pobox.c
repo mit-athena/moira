@@ -1,4 +1,4 @@
-/* $Id: pobox.c,v 1.4 2000-03-14 21:51:44 zacheiss Exp $
+/* $Id: pobox.c,v 1.5 2000-03-15 22:43:58 rbasch Exp $
  *
  * Shared routines for pobox changing.
  *
@@ -17,7 +17,7 @@
 
 #include <com_err.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/lib/pobox.c,v 1.4 2000-03-14 21:51:44 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/lib/pobox.c,v 1.5 2000-03-15 22:43:58 rbasch Exp $");
 
 enum { POTYPE_ERROR, POTYPE_POP, POTYPE_LOCAL, POTYPE_MAILHUB, POTYPE_SMTP, POTYPE_IMAP };
 static int potype(char *machine);
@@ -25,6 +25,10 @@ static int save_sloc_machine(int argc, char **argv, void *sq);
 static int save_alias_value(int argc, char **argv, void *sq);
 
 extern char *whoami;
+
+#ifdef _WIN32
+#define strtok_r(s, tokens, resume) strtok(s, tokens)
+#endif /* _WIN32 */
 
 int mrcl_validate_pobox_smtp(char *user, char *address, char **ret)
 {

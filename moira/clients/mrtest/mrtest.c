@@ -1,4 +1,4 @@
-/* $Id: mrtest.c,v 1.48 1999-12-30 17:30:37 danw Exp $
+/* $Id: mrtest.c,v 1.49 2000-03-15 22:44:09 rbasch Exp $
  *
  * Bare-bones Moira client
  *
@@ -17,23 +17,43 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#ifdef HAVE_UNISTD_H
 #include <unistd.h>
+#endif
+
+#ifdef HAVE_GETOPT_H
+#include <getopt.h>
+#endif
+
+#ifdef _WIN32
+#include <windows.h>
+#include <io.h>
+#define dup    _dup
+#define dup2   _dup2
+#define isatty _isatty
+#define close  _close
+#define open   _open
+#define sigjmp_buf jmp_buf
+#define siglongjmp longjmp
+#define sigsetjmp(env, save) setjmp(env)
+#endif /* _WIN32 */
 
 #ifdef HAVE_READLINE
 #include "readline/readline.h"
 #include "readline/history.h"
 #endif
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v 1.48 1999-12-30 17:30:37 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v 1.49 2000-03-15 22:44:09 rbasch Exp $");
 
 int recursion = 0, quote_output = 0, interactive;
 int count, quit = 0, cancel = 0;
 char *whoami;
+
 sigjmp_buf jb;
 
 #define MAXARGS 20
 
-void discard_input(void);
+void discard_input(int sig);
 char *mr_gets(char *prompt, char *buf, size_t len);
 void execute_line(char *cmdbuf);
 int parse(char *buf, char *argv[MAXARGS]);
@@ -51,11 +71,12 @@ void test_dcm(void);
 void test_script(int argc, char **argv);
 void test_list_requests(void);
 void test_version(int argc, char **argv);
+void set_signal_handler(int, void (*handler)(int));
+void set_signal_blocking(int, int);
 
 int main(int argc, char **argv)
 {
   char cmdbuf[BUFSIZ];
-  struct sigaction action;
   int c;
 
   whoami = argv[0];
@@ -83,10 +104,7 @@ int main(int argc, char **argv)
   rl_bind_key('\t', rl_insert);
 #endif
 
-  action.sa_handler = discard_input;
-  action.sa_flags = 0;
-  sigemptyset(&action.sa_mask);
-  sigaction(SIGINT, &action, NULL);
+  set_signal_handler(SIGINT, discard_input);
   sigsetjmp(jb, 1);
 
   while (!quit)
@@ -99,7 +117,7 @@ int main(int argc, char **argv)
   exit(0);
 }
 
-void discard_input(void)
+void discard_input(int sig)
 {
   putc('\n', stdout);
 
@@ -432,7 +450,6 @@ int print_reply(int argc, char **argv, void *help)
 void test_query(int argc, char **argv)
 {
   int status, help;
-  sigset_t sigs;
 
   if (argc < 2)
     {
@@ -444,11 +461,9 @@ void test_query(int argc, char **argv)
   count = 0;
   /* Don't allow ^C during the query: it will confuse libmoira's
      internal state. (Yay static variables) */
-  sigemptyset(&sigs);
-  sigaddset(&sigs, SIGINT);
-  sigprocmask(SIG_BLOCK, &sigs, NULL);
+  set_signal_blocking(SIGINT, 1);
   status = mr_query(argv[1], argc - 2, argv + 2, print_reply, &help);
-  sigprocmask(SIG_UNBLOCK, &sigs, NULL);
+  set_signal_blocking(SIGINT, 0);
   printf("%d tuple%s\n", count, ((count == 1) ? "" : "s"));
   if (status)
     com_err("moira (query)", status, "");
@@ -520,3 +535,44 @@ void test_version(int argc, char **argv)
   if (status)
     com_err("moira (version)", status, "");
 }
+
+#ifdef HAVE_POSIX_SIGNALS
+
+void set_signal_handler(int sig, void (*handler)(int))
+{
+  struct sigaction action;
+
+  sigemptyset(&action.sa_mask);
+  action.sa_flags = 0;
+  action.sa_handler = handler;
+  sigaction(sig, &action, NULL);
+}
+
+void set_signal_blocking(int sig, int block)
+{
+  sigset_t sigs;
+  sigemptyset(&sigs);
+  sigaddset(&sigs, sig);
+  sigprocmask(block ? SIG_BLOCK : SIG_UNBLOCK, &sigs, NULL);
+}
+
+#else
+
+void set_signal_handler(int sig, void (*handler)(int))
+{
+  signal(sig, handler);
+}
+
+#ifdef _WIN32
+BOOL WINAPI blocking_handler(DWORD dwCtrlType)
+{
+  return(TRUE);
+}
+
+void set_signal_blocking(int sig, int block)
+{
+  SetConsoleCtrlHandler(blocking_handler, block ? TRUE : FALSE);
+}
+#endif /* _WIN32 */
+
+#endif /* HAVE_POSIX_SIGNALS */

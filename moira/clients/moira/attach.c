@@ -1,4 +1,4 @@
-/* $Id: attach.c,v 1.48 1999-04-30 17:41:06 danw Exp $
+/* $Id: attach.c,v 1.49 2000-03-15 22:44:02 rbasch Exp $
  *
  *	This is the file attach.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -28,9 +28,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#ifdef HAVE_UNISTD_H
 #include <unistd.h>
+#endif /* HAVE_UNISTD_H */
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.48 1999-04-30 17:41:06 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.49 2000-03-15 22:44:02 rbasch Exp $");
 
 char *canonicalize_cell(char *c);
 int GetAliasValue(int argc, char **argv, void *retval);
@@ -234,9 +236,11 @@ static char *PrintFSInfo(char **info)
   return info[FS_NAME];
 }
 
-
 char *canonicalize_cell(char *c)
 {
+#ifdef _WIN32
+  return c;
+#else /* !_WIN32 */
   struct stat stbuf;
   char path[512];
   int count;
@@ -250,6 +254,7 @@ char *canonicalize_cell(char *c)
   path[count] = 0;
   free(c);
   return strdup(path);
+#endif /* _WIN32 */
 }
 
 

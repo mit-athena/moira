@@ -1,4 +1,4 @@
-/* $Id: mr_call.c,v 1.17 2000-01-31 15:44:16 danw Exp $
+/* $Id: mr_call.c,v 1.18 2000-03-15 22:44:19 rbasch Exp $
  *
  * Pass an mr_params off to the Moira server and get a reply
  *
@@ -12,12 +12,17 @@
 #include "mr_private.h"
 
 #include <errno.h>
-#include <netinet/in.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
+#ifndef _WIN32
+#include <netinet/in.h>
+#endif /* _WIN32 */
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_call.c,v 1.17 2000-01-31 15:44:16 danw Exp $");
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif
+
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_call.c,v 1.18 2000-03-15 22:44:19 rbasch Exp $");
 
 /* Moira RPC format:
 
@@ -53,7 +58,8 @@ int mr_do_call(struct mr_params *params, struct mr_params *reply)
 
 int mr_send(int fd, struct mr_params *params)
 {
-  u_long length, written;
+  u_long length;
+  int written;
   int i, *argl;
   char *buf, *p;
 
@@ -99,12 +105,12 @@ int mr_send(int fd, struct mr_params *params)
   length = p - buf;
   putlong(buf, length);
 
-  written = write(fd, buf, length);
+  written = send(fd, buf, length, 0);
   free(buf);
   if (!params->mr_argl)
     free(argl);
 
-  if (written != length)
+  if (written != (int)length)
     return MR_ABORTED;
   else
     return MR_SUCCESS;
@@ -127,10 +133,11 @@ int mr_receive(int fd, struct mr_params *reply)
  * on failure, or -1 if the packet hasn't been completely received
  * yet.
  */
+
 int mr_cont_receive(int fd, struct mr_params *reply)
 {
   u_long length, data;
-  ssize_t size, more;
+  int size, more;
   char *p, *end;
   int i;
 
@@ -138,7 +145,7 @@ int mr_cont_receive(int fd, struct mr_params *reply)
     {
       char lbuf[4];
 
-      size = read(fd, lbuf, 4);
+      size = recv(fd, lbuf, 4, 0);
       if (size != 4)
 	return size ? MR_ABORTED : MR_NOT_CONNECTED;
       getlong(lbuf, length);
@@ -155,8 +162,8 @@ int mr_cont_receive(int fd, struct mr_params *reply)
   else
     getlong(reply->mr_flattened, length);
 
-  more = read(fd, reply->mr_flattened + reply->mr_filled,
-	      length - reply->mr_filled);
+  more = recv(fd, reply->mr_flattened + reply->mr_filled,
+	      length - reply->mr_filled, 0);
   if (more == -1)
     {
       mr_destroy_reply(*reply);
@@ -177,7 +184,7 @@ int mr_cont_receive(int fd, struct mr_params *reply)
 
   getlong(reply->mr_flattened + 8, reply->u.mr_status);
   getlong(reply->mr_flattened + 12, reply->mr_argc);
-  if (reply->mr_argc > (length - 16) / 8)
+  if (reply->mr_argc > ((int)length - 16) / 8)
     {
       mr_destroy_reply(*reply);
       return MR_INTERNAL;

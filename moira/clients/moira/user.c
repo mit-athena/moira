@@ -1,4 +1,4 @@
-/* $Id: user.c,v 1.57 2000-03-14 21:53:37 zacheiss Exp $
+/* $Id: user.c,v 1.58 2000-03-15 22:44:06 rbasch Exp $
  *
  *	This is the file user.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -19,8 +19,6 @@
 #include "f_defs.h"
 #include "globals.h"
 
-#include <sys/time.h>
-
 #include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -29,7 +27,7 @@
 
 #include <krb.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.57 2000-03-14 21:53:37 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.58 2000-03-15 22:44:06 rbasch Exp $");
 
 void CorrectCapitalization(char **name);
 char **AskUserInfo(char **info, Bool name);
@@ -188,7 +186,7 @@ void CorrectCapitalization(char **name)
 
 char **AskUserInfo(char **info, Bool name)
 {
-  int i, state;
+  int state;
   char temp_buf[BUFSIZ], *newname;
 
   if (name)
@@ -713,7 +711,7 @@ static void RealDeactivateUser(char **info, Bool one_item)
 	  FreeAndClear(&args[L_MODTIME], TRUE);
 	  FreeAndClear(&args[L_MODBY], TRUE);
 	  FreeAndClear(&args[L_MODWITH], TRUE);
-	  SlipInNewName(args, args[L_NAME]);
+	  SlipInNewName(args, strdup(args[L_NAME]));
 	  if ((status = do_mr_query("update_list", CountArgs(args), args,
 				    NULL, NULL)))
 	    {
@@ -749,7 +747,7 @@ static void RealDeactivateUser(char **info, Bool one_item)
       FreeAndClear(&args[FS_MODTIME], TRUE);
       FreeAndClear(&args[FS_MODBY], TRUE);
       FreeAndClear(&args[FS_MODWITH], TRUE);
-      SlipInNewName(args, args[FS_NAME]);
+      SlipInNewName(args, strdup(args[FS_NAME]));
       if ((status = do_mr_query("update_filesys", CountArgs(args), args,
 				NULL, NULL)))
 	{

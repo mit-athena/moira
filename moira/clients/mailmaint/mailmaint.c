@@ -1,4 +1,4 @@
-/* $Id: mailmaint.c,v 1.45 1999-12-30 17:30:34 danw Exp $
+/* $Id: mailmaint.c,v 1.46 2000-03-15 22:43:59 rbasch Exp $
  *
  * Simple add-me-to/remove-me-from list client
  *
@@ -16,17 +16,45 @@
 
 #include <ctype.h>
 #ifdef HAVE_CURSES
+#ifdef _WIN32
+#include <conio.h>
+#ifdef MOUSE_MOVED
+#undef MOUSE_MOVED
+#endif
+#endif /*_WIN32*/
 #include <curses.h>
 #endif
-#include <pwd.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#ifdef HAVE_UNISTD_H
 #include <unistd.h>
+#endif
 
 #include <krb.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v 1.45 1999-12-30 17:30:34 danw Exp $");
+#ifdef _WIN32
+#define INPUT_MASK 0xff
+#ifdef getchar
+#undef getchar
+#endif
+#define getchar() _getch()
+#ifdef title
+#undef title
+#endif
+static void DELETE_A_CHAR(void)
+{
+    int x, y;
+    getsyx(&y, &x);
+    x -= 1;
+    mvdelch(y,x);
+}
+#else /* !_WIN32 */
+#define INPUT_MASK 0x7f
+#define DELETE_A_CHAR() printf("\b \b");
+#endif /* !_WIN32 */
+
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v 1.46 2000-03-15 22:43:59 rbasch Exp $");
 
 #define STARTCOL 0
 #define STARTROW 3
@@ -90,6 +118,7 @@ void end_display(void);
 void display_menu(MENU *menu);
 void pack_main_menu(void);
 void pack_help_menu(void);
+void free_menu(MENU* menu);
 void highlight(MENU *menu);
 void title(char *buff);
 void center_text(int row, char *buff);
@@ -159,11 +188,13 @@ int main(int argc, char *argv[])
       display_buff("to at least 24 lines and 60 columns.\n");
       exit(0);
     }
+
   raw();
   noecho();
   old_hook = set_com_err_hook(menu_err_hook);
   position[0] = oldpos[0] = 1;
   level = 0;
+
   pack_main_menu();
   pack_help_menu();
   display_menu(main_menu);
@@ -171,6 +202,26 @@ int main(int argc, char *argv[])
   cls();
   endwin();
   set_com_err_hook(old_hook);
+
+  free_menu(main_menu);
+  free_menu(help_menu);
+
+  if (current_li->acl_type)
+    free(current_li->acl_type);
+  if (current_li->acl_name)
+    free(current_li->acl_name);
+  if (current_li->desc)
+    free(current_li->desc);
+  if (current_li->modtime)
+    free(current_li->modtime);
+  if (current_li->modby)
+    free(current_li->modby);
+  if (current_li->modwith)
+    free(current_li->modwith);
+  free(current_li);
+
+  mr_disconnect();
+
   exit(0);
 
 punt:
@@ -191,7 +242,7 @@ void get_main_input(void)
       currow = DISPROW + 2;
       page = 1;
       toggle = num_members = moreflg = 0;
-      c = getchar() & 0x7f;	/* mask parity bit */
+      c = getchar() & INPUT_MASK;	/* mask parity bit */
       if (c == '\r' || c == '\n')
 	{
 	  if (position[level] == 7)
@@ -245,11 +296,12 @@ void get_main_input(void)
 	  if (retflg)
 	    delete_member();
 	  break;
+#ifndef _WIN32
 	case 27:		/* escape */
-	  c = getchar() & 0x7f;
+	  c = getchar() & INPUT_MASK;
 	  if (c == 91)
 	    {
-	      c = getchar() & 0x7f;
+	      c = getchar() & INPUT_MASK;
 	      if (c == 65)	/* up arrow */
 		{
 		  position[level]--;
@@ -266,6 +318,25 @@ void get_main_input(void)
 		    }
 		}
 	    }
+#else /* _WIN32 */
+	case 0xe0:
+	  c = getchar() & INPUT_MASK;
+	  if (c == 0x48)	/* up arrow */
+	    {
+	      position[level]--;
+	      if (!position[level])
+		position[level] = 7;
+	    }
+	  else
+	    {
+	      if (c == 0x50)	/* down arrow */
+		{
+		  position[level]++;
+		  if (position[level] > 7)
+		    position[level] = 1;
+		}
+	    }
+#endif /* _WIN32 */
 	  break;
 	default:
 	  printf("%c", 7);
@@ -311,6 +382,7 @@ void show_list_info(void)
       show_text(currow, STARTCOL, "Press any Key to continue...");
       getchar();
     }
+  free(buf);
   clrwin(DISPROW);
 }
 
@@ -318,14 +390,16 @@ void show_list_info(void)
 void display_buff(char *buf)
 {
   int i, cnt;
-  char *printbuf;
+  char *printbuf = NULL;
   int maxcol;
+  int len;
 
   maxcol = COLS;
 
   cnt = 0;
   printbuf = calloc(maxcol, 1);
-  for (i = 0; i <= strlen(buf); i++)
+  len = strlen(buf);
+  for (i = 0; i <= len; i++)
     {
       printbuf[cnt] = buf[i];
       cnt++;
@@ -337,11 +411,12 @@ void display_buff(char *buf)
 	  printbuf = calloc(maxcol, 1);
 	}
     }
-  if (strlen(buf) % maxcol != 0)
+  if (len % maxcol != 0)
     {
       start_display_buff(printbuf);
-      free(printbuf);
     }
+  if (printbuf)
+    free(printbuf);
   return;
 }
 
@@ -404,6 +479,7 @@ void add_member(void)
       show_text(DISPROW + 4, STARTCOL, "Press any Key to continue...");
       getchar();
     }
+  free(buf);
   clrwin(DISPROW);
 }
 
@@ -434,7 +510,11 @@ void delete_member(void)
       currow = DISPROW + 4;
       show_text(DISPROW + 4, STARTCOL, "Press any Key to continue...");
       getchar();
+      free(argv[0]);
+      free(argv[1]);
+      free(argv[2]);
     }
+  free(buf);
   clrwin(DISPROW);
 }
 
@@ -460,6 +540,7 @@ void list_by_member(void)
   show_text(currow, STARTCOL, "Press any Key to continue...");
   getchar();
   clrwin(DISPROW);
+  free(buf);
 }
 
 /****************************************************/
@@ -468,7 +549,7 @@ void show_all(void)
   char c;
 
   show_text(DISPROW, STARTCOL, "This function may take a while... proceed? [n] ");
-  c = getchar() & 0x7f;
+  c = getchar() & INPUT_MASK;
   if (c == 'y' || c == 'Y')
     {
       move(DISPROW + 1, STARTCOL);
@@ -557,12 +638,14 @@ void list_members(void)
 	  show_text(currow, STARTCOL, "Press any key to continue...");
 	  getchar();
 	  clrwin(DISPROW);
-	  return;
+	  goto cleanup;
 	}
       end_display();
-      return;
+      goto cleanup;
     }
   clrwin(DISPROW);
+ cleanup:
+  free(buf);
 }
 
 /****************************************************/
@@ -598,7 +681,7 @@ void start_display(char *buff)
 	  erase_line(currow, STARTCOL);
 	  show_text(currow, STARTCOL, "Flushing query...");
 	  moreflg = 1;
-	  return;
+	  goto cleanup;
 	}
       clrwin(DISPROW + 2);
       currow = DISPROW + 2;
@@ -616,6 +699,8 @@ void start_display(char *buff)
       currow++;
     }
   toggle = !toggle;
+ cleanup:
+  free(buffer);
 }
 
 /****************************************************/
@@ -637,6 +722,7 @@ void end_display(void)
   show_text(currow, STARTCOL, "Press any key to continue...");
   getchar();
   clrwin(DISPROW);
+  free(buffer);
 }
 
 /****************************************************/
@@ -692,6 +778,7 @@ void pack_main_menu(void)
   main_menu->items[4] = strdup("5.  Add yourself to a mailing list.");
   main_menu->items[5] = strdup("6.  Delete yourself from a mailing list.");
   main_menu->items[6] = strdup("q.  Quit.");
+  free(buf);
 }
 
 /****************************************************/
@@ -707,6 +794,17 @@ void pack_help_menu(void)
   help_menu->items[2] = strdup("program listmaint.");
   help_menu->items[3] = strdup(" ");
   help_menu->items[4] = strdup("Press any key to continue.");
+}
+
+/****************************************************/
+void free_menu(MENU* menu)
+{
+  int i;
+  for (i = 0; i < menu->num_items; i++)
+    free(menu->items[i]);
+  free(menu->items);
+  free(menu->title);
+  free(menu);
 }
 
 /****************************************************/
@@ -843,10 +941,11 @@ int Prompt(char *prompt, char *buf, int buflen, int crok)
 
   addstr(prompt);
   refresh();
+
   for (p = buf; abs(strlen(p) - strlen(buf)) <= buflen;)
     {
       refresh();
-      c = getchar() & 0x7f;
+      c = getchar() & INPUT_MASK;
       switch (c)
 	{
 	case CTL('C'):
@@ -871,16 +970,22 @@ int Prompt(char *prompt, char *buf, int buflen, int crok)
 	  if (p > buf)
 	    {
 	      p--;
-	      printf("\b \b");
+	      DELETE_A_CHAR();
 	    }
 	  break;
 	case CTL('U'):
 	case CTL('G'):
 	case CTL('['):
 	  while (p-- > buf)
-	    printf("\b \b");
+	    DELETE_A_CHAR();
 	  p = buf;
 	  break;
+#ifdef _WIN32
+	case 0xe0:
+	  c = getchar() & INPUT_MASK;
+	  putchar(CTL('G'));
+	  break;
+#endif /*_WIN32*/
 	default:
 	  if (abs(strlen(p) - strlen(buf)) >= buflen)
 	    {

@@ -1,4 +1,4 @@
-/* $Id: lists.c,v 1.38 2000-01-07 21:14:05 danw Exp $
+/* $Id: lists.c,v 1.39 2000-03-15 22:44:03 rbasch Exp $
  *
  *	This is the file lists.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -23,7 +23,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v 1.38 2000-01-07 21:14:05 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v 1.39 2000-03-15 22:44:03 rbasch Exp $");
 
 struct mqelem *GetListInfo(int type, char *name1, char *name2);
 char **AskListInfo(char **info, Bool name);
@@ -732,7 +732,6 @@ int TagMember(int argc, char **argv)
 {
   char *args[10];
   int status;
-  char temp_buf[BUFSIZ];
 
   if (GetMemberInfo("tag", args) == SUB_ERROR)
     return DM_NORMAL;

@@ -1,4 +1,4 @@
-/* $Id: printer.c,v 1.26 1999-08-04 14:58:08 danw Exp $
+/* $Id: printer.c,v 1.27 2000-03-15 22:44:05 rbasch Exp $
  *
  *	This is the file printer.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -23,7 +23,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/printer.c,v 1.26 1999-08-04 14:58:08 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/printer.c,v 1.27 2000-03-15 22:44:05 rbasch Exp $");
 
 void RealDeletePrn(char **info, Bool one_item);
 void ChangePrn(char **info, Bool one_item);
@@ -207,7 +207,6 @@ static char **AskPrnInfo(char **info)
 {
   char temp_buf[BUFSIZ];
   char *args[3], *lpc_acl;
-  char *s, *d;
   int status;
 
   Put_message("");
@@ -526,7 +525,6 @@ int GetPrintSrv(int argc, char **argv)
 static char *PrintPrintSrvInfo(char **info)
 {
   char buf[BUFSIZ];
-  int status;
 
   if (!info)		/* If no informaion */
     {
@@ -575,9 +573,6 @@ static char **SetPrintSrvDefaults(char **info, char *name)
 static char **AskPrintSrvInfo(char **info)
 {
   char buf[BUFSIZ];
-  char *args[3], *lpc_acl;
-  char *s, *d;
-  int status;
 
   Put_message("");
   sprintf(buf, "Print Server entry for %s.", info[PRINTSERVER_HOST]);
@@ -644,7 +639,7 @@ int AddPrintSrv(int argc, char **argv)
 
 int ChangePrintSrv(int argc, char **argv)
 {
-  char *name, **args;
+  char *name;
   struct mqelem *elem = NULL;
   int stat;
 

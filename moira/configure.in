@@ -352,7 +352,11 @@ AC_SUBST(CURSES_LIBS)
 AC_SUBST(CURSES_SUBDIRS)
 
 
-AC_CHECK_FUNCS(getusershell strlcpy strlcat)
+AC_CHECK_FUNCS(getusershell strlcpy strlcat uname)
+
+AC_CHECK_FUNC(sigaction, AC_DEFINE(HAVE_POSIX_SIGNALS))
+
+AC_CHECK_HEADERS(unistd.h getopt.h)
 
 MR_EXTEND(PRO_C_INCLUDES, INCLUDE='$(srcdir)')
 MR_INCLUDE('$(SRCTOP)/include')

@@ -1,4 +1,4 @@
-/* $Id: dhcp.pc,v 1.3 2001-01-05 07:37:20 zacheiss Exp $
+/* $Id: dhcp.pc,v 1.4 2003-12-04 19:50:40 zacheiss Exp $
  *
  * This generates the dhcpd.conf.print and associated files.
  *
@@ -24,7 +24,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/dhcp.pc,v 1.3 2001-01-05 07:37:20 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/dhcp.pc,v 1.4 2003-12-04 19:50:40 zacheiss Exp $");
 
 char *whoami = "dhcp.gen";
 char *db = "moira/moira";
@@ -96,6 +96,7 @@ int main(int argc, char **argv)
     FROM printers pr, machine m, machine m2
     WHERE pr.type != 'ALIAS' AND pr.mach_id != 0
     AND pr.mach_id = m.mach_id AND pr.loghost = m2.mach_id
+    AND m.status = 1 AND m.address != 'unassigned'
     ORDER BY m.hwaddr;
   EXEC SQL OPEN csr_boot;
   while (1)

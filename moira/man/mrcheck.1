@@ -1,10 +1,10 @@
 .TH MRCHECK 1 "7 Feb 1988" "Project Athena"
-\" RCSID: $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/man/mrcheck.1,v 1.4 1989-01-21 16:45:01 mar Exp $
+\" RCSID: $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/man/mrcheck.1,v 1.5 1992-04-10 16:28:56 mar Exp $
 .UC 4
 .SH NAME
 mrcheck \- verify that Moira updates are successful
 .SH SYNOPSIS
-.B mrcheck
+.B mrcheck [-noauth]
 .SH DESCRIPTION
 .I Mrcheck
 will query the Moira database to determine which services and hosts have
@@ -12,9 +12,13 @@ failed updates.  It will display a summary of each, listing the name,
 error code and message, last successful update, and last attempted
 update.  If all services are up-to-date, this will be indicated.
 .PP
-.SH DIAGNOSTICS
-Pay attention to Kerberos diagnostics, as one must be authenticated to
-do most Moira database work.  
+If the
+.B -noauth
+flag is given, 
+.I mrcheck
+will not attempt to authenticate to the moira server.  This is useful
+if it is run out of a script and Moira has been configured to allow
+this to run without authentication.
 .SH AUTHOR
 Mark Rosenstein, MIT Project Athena
 .SH "SEE ALSO"

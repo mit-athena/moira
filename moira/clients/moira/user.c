@@ -1,4 +1,4 @@
-/* $Id: user.c,v 1.53 1999-04-30 17:40:23 danw Exp $
+/* $Id: user.c,v 1.54 1999-09-03 14:21:04 danw Exp $
  *
  *	This is the file user.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -32,7 +32,7 @@
 #include <gdss.h>
 #endif
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.53 1999-04-30 17:40:23 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.54 1999-09-03 14:21:04 danw Exp $");
 
 void CorrectCapitalization(char **name);
 char **AskUserInfo(char **info, Bool name);
@@ -131,7 +131,8 @@ static void PrintUserInfo(char **info)
 	  UserState(atoi(info[U_STATE])), info[U_MITID],
 	  *info[U_SIGNATURE] ? (status ? "Bad" : "Yes") : "No");
   Put_message(buf);
-  if (!atoi(info[U_STATE]))
+  status = atoi(info[U_STATE]);
+  if (status == 0 || status == 2)
     {
       sprintf(buf, "User %s secure Account Coupon to register",
 	      atoi(info[U_SECURE]) ? "needs" : "does not need");
@@ -203,7 +204,7 @@ void CorrectCapitalization(char **name)
 
 char **AskUserInfo(char **info, Bool name)
 {
-  int i;
+  int i, state;
 #ifdef HAVE_GDSS
   SigInfo si;
 #endif
@@ -308,7 +309,8 @@ char **AskUserInfo(char **info, Bool name)
   if (GetValueFromUser("Comments", &info[U_COMMENT]) == SUB_ERROR)
     return NULL;
 
-  if (!name || !atoi(info[U_STATE]))
+  state = atoi(info[U_STATE]);
+  if (!name || state == 0 || state == 2)
     {
       if (YesNoQuestion("User needs secure Account Coupon to register",
 			atoi(info[U_SECURE]) ? TRUE : FALSE) == FALSE)

@@ -1,4 +1,4 @@
-/* $Id: boot.pc,v 1.4 1999-03-27 20:08:04 danw Exp $
+/* $Id: boot.pc,v 1.5 1999-03-30 04:00:28 danw Exp $
  *
  * This generates the bootptab and associated files.
  *
@@ -22,7 +22,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/boot.pc,v 1.4 1999-03-27 20:08:04 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/boot.pc,v 1.5 1999-03-30 04:00:28 danw Exp $");
 
 char *whoami = "boot.gen";
 char *db = "moira/moira";
@@ -33,7 +33,7 @@ int main(int argc, char **argv)
 {
   EXEC SQL BEGIN DECLARE SECTION;
   char name[MACHINE_NAME_SIZE], hwaddr[MACHINE_HWADDR_SIZE];
-  char ohwaddr[MACHINE_HWADDR_SIZE];
+  char ohwaddr[MACHINE_HWADDR_SIZE], hwtype[PRINTERS_HWTYPE_SIZE];
   char addr[MACHINE_ADDRESS_SIZE], location[PRINTERS_LOCATION_SIZE];
   char contact[PRINTERS_CONTACT_SIZE], logaddr[MACHINE_ADDRESS_SIZE];
   char modtime[PRINTERS_MODTIME_SIZE], type[PRINTERS_TYPE_SIZE];
@@ -87,17 +87,16 @@ int main(int argc, char **argv)
   ohwaddr[0] = '\0';
   EXEC SQL DECLARE csr_boot CURSOR FOR
     SELECT LOWER(m.name), m.hwaddr, m.address, m2.address,
-    pr.location, pr.contact
+    pr.location, pr.contact, pr.hwtype
     FROM printers pr, machine m, machine m2
-    WHERE pr.hwtype = 'HP' AND pr.mach_id != 0
+    WHERE pr.type != 'ALIAS' AND pr.mach_id != 0
     AND pr.mach_id = m.mach_id AND pr.loghost = m2.mach_id
-    AND pr.type != 'ALIAS'
     ORDER BY m.hwaddr;
   EXEC SQL OPEN csr_boot;
   while (1)
     {
       EXEC SQL FETCH csr_boot INTO :name, :hwaddr, :addr, :logaddr,
-	:location, :contact;
+	:location, :contact, :hwtype;
       if (sqlca.sqlcode)
 	break;
 
@@ -116,6 +115,7 @@ int main(int argc, char **argv)
       strtrim(logaddr);
       strtrim(location);
       strtrim(contact);
+      strtrim(hwtype);
       strcpy(shortname, name);
       if ((p = strchr(shortname, '.')))
 	*p = '\0';
@@ -130,9 +130,11 @@ int main(int argc, char **argv)
 
       fprintf(out, "# %s: %s\n# contact: %s\n%s:\\\n\t:tc=net%s.global:\\\n"
 	      "\t:ht=ethernet:\\\n\t:ha=%s:\\\n\t:ip=%s:\\\n"
-	      "\t:lg=%s:\\\n\t:T144=\"/hp/%s\":\\\n\t:vm=rfc1048:\n\n",
-	      shortname, location, contact, name, net, hwaddr, addr, logaddr,
-	      shortname);
+	      "\t:lg=%s:\\\n\t:vm=rfc1048:\n",
+	      shortname, location, contact, name, net, hwaddr, addr, logaddr);
+      if (!strcmp(hwtype, "HP"))
+	fprintf(out, "\t:T144=\"/hp/%s\":\\\n", shortname);
+      fprintf(out, "\n");
     }
   EXEC SQL CLOSE csr_boot;
   tarfile_end(tf);
@@ -167,7 +169,10 @@ int main(int argc, char **argv)
       if ((p = strchr(shortname, '.')))
 	*p = '\0';
 
-      sprintf(filename, "/var/boot/hp/%s", shortname);
+      /* We create it as foo.new so boot.sh can append the passwords
+       * and other data and rename it.
+       */
+      sprintf(filename, "/var/boot/hp/%s.new", shortname);
       out = tarfile_start(tf, filename, 0755, 0, 0, "root", "root",
 			  unixtime(modtime));
 

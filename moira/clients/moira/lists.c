@@ -1,4 +1,4 @@
-/* $Id: lists.c,v 1.44 2000-12-20 09:40:10 zacheiss Exp $
+/* $Id: lists.c,v 1.45 2001-03-02 04:44:57 zacheiss Exp $
  *
  *	This is the file lists.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -24,7 +24,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v 1.44 2000-12-20 09:40:10 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v 1.45 2001-03-02 04:44:57 zacheiss Exp $");
 
 struct mqelem *GetListInfo(int type, char *name1, char *name2);
 char **AskListInfo(char **info, Bool name);
@@ -905,10 +905,18 @@ int ListByMember(int argc, char **argv)
   if (GetValueFromUser(buf, &name) == SUB_ERROR)
     return DM_NORMAL;
 
-  /* What we really want is a recursive search */
-  sprintf(temp_buf, "R%s", type);
-  free(type);
-  type = strdup(temp_buf);
+  switch (YesNoQuestion("Do you want a recursive search (y/n)", TRUE))
+    {
+    case TRUE:
+      sprintf(temp_buf, "R%s", type);	/* "USER" to "RUSER" etc. */
+      free(type);
+      type = strdup(temp_buf);
+      break;
+    case FALSE:
+      break;
+    default:
+      return DM_NORMAL;
+    }
 
   if ((maillist = YesNoQuestion("Show Lists that are Maillists (y/n) ?",
 				TRUE)) == -1)

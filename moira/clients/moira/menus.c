@@ -1,4 +1,4 @@
-/* $Id: menus.c,v 1.37 1999-01-27 19:36:50 danw Exp $
+/* $Id: menus.c,v 1.38 1999-05-25 22:06:11 danw Exp $
  *
  *	This is the file menus.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -22,7 +22,7 @@
 
 #include <stdio.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menus.c,v 1.37 1999-01-27 19:36:50 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menus.c,v 1.38 1999-05-25 22:06:11 danw Exp $");
 
 /* ------------------------- Second Tier Menus ------------------------- */
 
@@ -620,6 +620,31 @@ Menu dcm_menu = {
     }
 };
 
+Menu printserver_menu = {
+  NULLFUNC,
+  NULLFUNC,
+  "Print Server Menu",
+  4,
+  {
+    { GetPrintSrv, NULLMENU, 2, {
+      {"get", "Get Print Server Information"},
+      {"name", "Name of server: "}
+    } },
+    { AddPrintSrv, NULLMENU, 2, {
+      {"add", "Add a New Print Server"},
+      {"name", "Name of server: "}
+    } },
+    { ChangePrintSrv, NULLMENU, 2, {
+      {"change", "Modify a Print Server"},
+      {"name", "Name of server: "}
+    } },
+    { DelPrintSrv, NULLMENU, 2, {
+      {"delete", "Delete a Print Server"},
+      {"name", "Name of server: "}
+    } }
+  }
+};
+
 /*
  * Printer Menu
  */
@@ -628,7 +653,7 @@ Menu printer_menu = {
   NULLFUNC,
   NULLFUNC,
   "Printer Menu",
-  10,
+  11,
   {
     { GetPrn, NULLMENU, 2, {
       {"get", "Get Printer Information"},
@@ -669,10 +694,10 @@ Menu printer_menu = {
     { UpdateHWAddr, NULLMENU, 2, {
       {"hwaddr", "Update Printer Hardware Address"},
       {"name", "Printer hostname: "}
-    } }
+    } },
+    SUBMENU("server", "Print Servers Menu", &printserver_menu),
   }
 };
-
 
 /*
  * Zephyr Menu

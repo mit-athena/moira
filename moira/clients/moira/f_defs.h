@@ -1,4 +1,4 @@
-/* $Id: f_defs.h,v 1.26 1999-01-27 19:36:49 danw Exp $
+/* $Id: f_defs.h,v 1.27 1999-05-25 22:06:10 danw Exp $
  *
  *	This is the file f_defs.h for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -149,6 +149,11 @@ int DeletePrn(int argc, char **argv);
 int AddPrn(int argc, char **argv);
 int ChngPrn(int argc, char **argv);
 int UpdateHWAddr(int argc, char **argv);
+int GetPrintSrv(int argc, char **argv);
+int AddPrintSrv(int argc, char **argv);
+int DelPrintSrv(int argc, char **argv);
+int ChangePrintSrv(int argc, char **argv);
+
 
 /* zephyr.c */
 int AddZephyr(int argc, char **argv);

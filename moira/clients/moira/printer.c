@@ -1,4 +1,4 @@
-/* $Id: printer.c,v 1.24 1999-04-30 17:41:08 danw Exp $
+/* $Id: printer.c,v 1.25 1999-05-25 22:06:11 danw Exp $
  *
  *	This is the file printer.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -23,12 +23,17 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/printer.c,v 1.24 1999-04-30 17:41:08 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/printer.c,v 1.25 1999-05-25 22:06:11 danw Exp $");
 
 void RealDeletePrn(char **info, Bool one_item);
 void ChangePrn(char **info, Bool one_item);
+void ChangePrintSrvLoop(char **info, Bool one);
 extern int GetAliasValue(int argc, char **argv, void *retval);
 int StoreHWAddr(int argc, char **argv, void *retval);
+
+static char *PrintPrintSrvInfo(char **info);
+static char **SetPrintSrvDefaults(char **info, char *name);
+static char **AskPrintSrvInfo(char **info);
 
 #define BY_NAME 0
 #define BY_ETHERNET 1
@@ -494,5 +499,193 @@ int UpdateHWAddr(int argc, char **argv)
 
   free(name);
   free(hwaddr);
+  return DM_NORMAL;
+}
+
+
+int GetPrintSrv(int argc, char **argv)
+{
+  int stat;
+  struct mqelem *elem = NULL, *top;
+  char *name;
+
+  name = canonicalize_hostname(strdup(argv[1]));
+  stat = do_mr_query("get_print_server", 1, &name, StoreInfo, &elem);
+  if (stat)
+    {
+      com_err(program_name, stat, " in GetPrintSrv");
+      return DM_NORMAL;
+    }
+
+  top = QueueTop(elem);
+  Loop(top, (void *) PrintPrintSrvInfo);
+  FreeQueue(top);		/* clean the queue. */
+  return DM_NORMAL;
+}
+
+static char *PrintPrintSrvInfo(char **info)
+{
+  char buf[BUFSIZ];
+  int status;
+
+  if (!info)		/* If no informaion */
+    {
+      Put_message("PrintPrintSrvInfo called with null info!");
+      return NULL;
+    }
+  Put_message("");
+  sprintf(buf, "Hostname: %s", info[PRINTSERVER_HOST]);
+  Put_message(buf);
+  sprintf(buf, "Kind: %-10s Printer Types: %s", info[PRINTSERVER_KIND],
+	  info[PRINTSERVER_TYPES]);
+  Put_message(buf);
+  if (!strcmp(info[PRINTSERVER_OWNER_TYPE], "NONE"))
+    sprintf(buf, "Owner: %-25s", info[PRINTSERVER_OWNER_TYPE]);
+  else
+    {
+      sprintf(buf, "Owner: %s %-*s", info[PRINTSERVER_OWNER_TYPE],
+	      24 - strlen(info[PRINTSERVER_OWNER_TYPE]),
+	      info[PRINTSERVER_OWNER_NAME]);
+    }
+  strcat(buf, "LPC ACL: ");
+  strcat(buf, info[PRINTSERVER_LPC_ACL]);
+  Put_message(buf);
+  sprintf(buf, MOD_FORMAT, info[PRINTSERVER_MODBY], info[PRINTSERVER_MODTIME],
+	  info[PRINTSERVER_MODWITH]);
+  Put_message(buf);
+
+  return info[PRINTSERVER_HOST];
+}
+
+static char **SetPrintSrvDefaults(char **info, char *name)
+{
+  info[PRINTSERVER_HOST] = strdup(name);
+  info[PRINTSERVER_KIND] = strdup("ATHENA");
+  info[PRINTSERVER_TYPES] = strdup("PRIVATE");
+  info[PRINTSERVER_OWNER_TYPE] = strdup("NONE");
+  info[PRINTSERVER_OWNER_NAME] = strdup("");
+  info[PRINTSERVER_LPC_ACL] = strdup("[none]");
+  info[PRINTSERVER_MODTIME] = info[PRINTSERVER_MODBY] =
+    info[PRINTSERVER_MODWITH] = NULL;
+
+  info[PRINTSERVER_END] = NULL;
+  return info;
+}
+
+static char **AskPrintSrvInfo(char **info)
+{
+  char buf[BUFSIZ];
+  char *args[3], *lpc_acl;
+  char *s, *d;
+  int status;
+
+  Put_message("");
+  sprintf(buf, "Print Server entry for %s.", info[PRINTSERVER_HOST]);
+  Put_message(buf);
+  Put_message("");
+
+  if (GetTypeFromUser("Kind of LPD", "lpd_kind", &info[PRINTSERVER_KIND]) ==
+      SUB_ERROR)
+    return NULL;
+  if (GetValueFromUser("Printer types", &info[PRINTSERVER_TYPES]) == SUB_ERROR)
+    return NULL;
+  if (GetTypeFromUser("Owner type", "ace_type", &info[PRINTSERVER_OWNER_TYPE])
+      == SUB_ERROR)
+    return NULL;
+  if (strcmp(info[PRINTSERVER_OWNER_TYPE], "NONE") &&
+      GetValueFromUser("Owner Name", &info[PRINTSERVER_OWNER_NAME]) ==
+      SUB_ERROR)
+    return NULL;
+  if (GetValueFromUser("LPC ACL", &info[PRINTSERVER_LPC_ACL]) == SUB_ERROR)
+    return NULL;
+
+  FreeAndClear(&info[PRINTSERVER_MODTIME], TRUE);
+  FreeAndClear(&info[PRINTSERVER_MODBY], TRUE);
+  FreeAndClear(&info[PRINTSERVER_MODWITH], TRUE);
+
+  return info;
+}
+
+int AddPrintSrv(int argc, char **argv)
+{
+  char *info[MAX_ARGS_SIZE], **args, *name;
+  int stat;
+
+  name = canonicalize_hostname(strdup(argv[1]));
+
+  if (!(stat = do_mr_query("get_print_server", 1, &name, NULL, NULL)))
+    {
+      Put_message ("A print server record for that host already exists.");
+      free(name);
+      return DM_NORMAL;
+    }
+  else if (stat != MR_NO_MATCH)
+    {
+      com_err(program_name, stat, " in AddPrintSrv");
+      free(name);
+      return DM_NORMAL;
+    }
+
+  args = AskPrintSrvInfo(SetPrintSrvDefaults(info, name));
+  free(name);
+  if (!args)
+    {
+      Put_message("Aborted.");
+      return DM_NORMAL;
+    }
+
+  if ((stat = do_mr_query("add_print_server", CountArgs(args),
+			  args, NULL, NULL)))
+    com_err(program_name, stat, " in AddPrintSrv");
+
+  FreeInfo(info);
+  return DM_NORMAL;
+}
+
+int ChangePrintSrv(int argc, char **argv)
+{
+  char *name, **args;
+  struct mqelem *elem = NULL;
+  int stat;
+
+  name = canonicalize_hostname(strdup(argv[1]));
+  if ((stat = do_mr_query("get_print_server", 1, &name, StoreInfo, &elem)))
+    {
+      free(name);
+      com_err(program_name, stat, " in ChangePrintSrv");
+      return DM_NORMAL;
+    }
+  free(name);
+
+  QueryLoop(elem, NullPrint, ChangePrintSrvLoop, "Change the print server");
+  FreeQueue(elem);
+  return DM_NORMAL;
+}
+
+void ChangePrintSrvLoop(char **info, Bool one)
+{
+  int stat;
+
+  if (!AskPrintSrvInfo(info))
+    return;
+
+  if ((stat = do_mr_query("update_print_server", CountArgs(info),
+			  info, NULL, NULL)))
+    com_err(program_name, stat, " in ChangePrintSrv");
+
+  FreeInfo(info);
+  return;
+}
+
+int DelPrintSrv(int argc, char **argv)
+{
+  int stat;
+  char *name;
+
+  name = canonicalize_hostname(strdup(argv[1]));
+
+  if ((stat = do_mr_query("delete_print_server", 1, &name, NULL, NULL)))
+    com_err(program_name, stat, " while deleting print server");
+  free(name);
   return DM_NORMAL;
 }

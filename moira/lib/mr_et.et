@@ -1,6 +1,6 @@
 #	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_et.et,v $
 #	$Author: mar $
-#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_et.et,v 1.16 1990-04-09 19:21:13 mar Exp $
+#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_et.et,v 1.17 1993-11-02 15:16:18 mar Exp $
 #
 	error_table sms
 
@@ -206,5 +206,11 @@ ec	MR_INGRES_SOFTFAIL,
 
 ec	MR_COREDUMP,
 	"Subprocess coredumped"
+
+ec	MR_SUBNET,
+	"Bad subnet"
+
+ec	MR_ADDRESS
+	"Bad address"
 
 	end

@@ -1,4 +1,4 @@
-/* $Id: utils.c,v 1.45 1998-07-09 19:03:44 danw Exp $
+/* $Id: utils.c,v 1.46 2000-01-26 18:04:53 danw Exp $
  *
  *	This is the file utils.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -31,7 +31,7 @@
 #include <string.h>
 #include <time.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v 1.45 1998-07-09 19:03:44 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v 1.46 2000-01-26 18:04:53 danw Exp $");
 
 /*	Function Name: AddQueue
  *	Description: Adds an element to a queue
@@ -39,7 +39,7 @@ RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/cl
  *	Returns: none.
  */
 
-static void AddQueue(struct mqelem *elem, struct mqelem *pred)
+void AddQueue(struct mqelem *elem, struct mqelem *pred)
 {
   if (!pred)
     {

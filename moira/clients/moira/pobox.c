@@ -1,4 +1,4 @@
-/* $Id: pobox.c,v 1.30 1999-11-23 19:58:51 danw Exp $
+/* $Id: pobox.c,v 1.31 2000-01-26 18:04:53 danw Exp $
  *
  *	This is the file pobox.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -24,10 +24,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/pobox.c,v 1.30 1999-11-23 19:58:51 danw Exp $");
-
-#define FOREIGN_BOX ("SMTP")
-#define LOCAL_BOX ("POP")
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/pobox.c,v 1.31 2000-01-26 18:04:53 danw Exp $");
 
 /*	Function Name: PrintPOBox
  *	Description: Yet another specialized print function.
@@ -150,6 +147,244 @@ static char *GetNewLocalPOBox(char *local_user)
   return (char *) SUB_ERROR;
 }
 
+static int InsertSortedImapPart(int argc, char **argv, void *arg)
+{
+  struct mqelem *new, *elem, *prev, **parts = arg;
+  int avail = atoi(argv[NFS_SIZE]) - atoi(argv[NFS_ALLOC]);
+
+  /* Dup the argv into a new mqelem. */
+  StoreInfo(argc, argv, &new);
+
+  if (!*parts)
+    {
+      *parts = new;
+      return MR_CONT;
+    }
+
+  /* Find the right place in parts for it. */
+  elem = *parts;
+  prev = NULL;
+  while (elem)
+    {
+      char **xargv = elem->q_data;
+      if (atoi(xargv[NFS_SIZE]) - atoi(xargv[NFS_ALLOC]) < avail)
+	break;
+      prev = elem;
+      elem = elem->q_forw;
+    }
+
+  if (prev)
+    AddQueue(new, prev);
+  else
+    {
+      new->q_forw = *parts;
+      (*parts)->q_back = new;
+      *parts = new;
+    }
+
+  return MR_CONT;
+}
+
+static int AddImapPartitions(char *server, struct mqelem **parts)
+{
+  char *argv[2];
+  int status;
+
+  argv[0] = server;
+  argv[1] = "*";
+
+  status = do_mr_query("get_nfsphys", 2, argv, InsertSortedImapPart, parts);
+  if (status)
+    {
+      com_err(program_name, status, " in AddImapPartitions");
+      return SUB_ERROR;
+    }
+  return SUB_NORMAL;
+}
+
+char *CreateImapBox(char *user)
+{
+  int status;
+  struct mqelem *elem, *servers = NULL, *partitions = NULL;
+  char *server = NULL, *partition = NULL;
+  char *argv[11], *fsname, temp_buf[BUFSIZ];
+  static char *default_imap_quota = NULL;
+
+  if (!default_imap_quota)
+    {
+      char **vargv;
+      argv[0] = "def_imap_quota";
+      status = do_mr_query("get_value", 1, argv, StoreInfo, &elem);
+      if (status)
+	{
+	  com_err(program_name, status, " getting default IMAP quota");
+	  return (char *)SUB_ERROR;
+	}
+      vargv = elem->q_data;
+      default_imap_quota = strdup(vargv[0]);
+      FreeQueue(elem);
+    }
+
+  argv[0] = "POSTOFFICE";
+  status = do_mr_query("get_server_locations", 1, argv, StoreInfo, &servers);
+  if (status)
+    {
+      com_err(program_name, status, " in GetImapBox.");
+      return (char *)SUB_ERROR;
+    }
+  servers = QueueTop(servers);
+
+  /* Get an IMAP server. */
+  while (!server)
+    {
+      server = strdup("[ANY]");
+      if (GetValueFromUser("IMAP Server? ['?' for a list]", &server) !=
+	  SUB_NORMAL)
+	{
+	  free(server);
+	  FreeQueue(servers);
+	  return (char *)SUB_ERROR;
+	}
+
+      if (!strcmp(server, "?"))
+	{
+	  elem = servers;
+	  while (elem)
+	    {
+	      char **sargv = elem->q_data;
+	      sprintf(temp_buf, "  %s\n", sargv[1]);
+	      Put_message(temp_buf);
+	      elem = elem->q_forw;
+	    }
+	  free(server);
+	  server = NULL;
+	}
+    }
+  server = canonicalize_hostname(server);
+
+  /* Get the partitions on that server. */
+  if (!strcasecmp(server, "[ANY]"))
+    {
+      char **sargv;
+
+      elem = servers;
+      while (elem && !status)
+	{
+	  sargv = elem->q_data;
+	  status = AddImapPartitions(sargv[1], &partitions);
+	  elem = elem->q_forw;
+	}
+
+      if (partitions)
+	{
+	  sargv = partitions->q_data;
+	  server = strdup(sargv[NFS_NAME]);
+	  partition = strdup(sargv[NFS_DIR]);
+	}
+    }
+  else
+    status = AddImapPartitions(server, &partitions);
+  partitions = QueueTop(partitions);
+
+  FreeQueue(servers);
+  if (status || !partitions)
+    {
+      if (!partitions)
+	com_err(program_name, 0, "No registered nfsphys on %s.", server);
+      else
+	FreeQueue(partitions);
+      free(server);
+      return (char *)SUB_ERROR;
+    }
+
+  /* Pick a partition */
+  while (!partition)
+    {
+      char **pargv = partitions->q_data;
+      partition = strdup(pargv[NFS_DIR]);
+      if (GetValueFromUser("Partition? ['?' for a list]", &partition) !=
+	  SUB_NORMAL)
+	{
+	  free(server);
+	  free(partition);
+	  FreeQueue(partitions);
+	  return (char *)SUB_ERROR;
+	}
+
+      elem = partitions;
+      if (!strcmp(partition, "?"))
+	{
+	  while (elem)
+	    {
+	      char **pargv = elem->q_data;
+	      sprintf(temp_buf, "  %s (%s available, %d free)",
+		      pargv[NFS_DIR], pargv[NFS_SIZE],
+		      atoi(pargv[NFS_SIZE]) - atoi(pargv[NFS_ALLOC]));
+	      Put_message(temp_buf);
+	      elem = elem->q_forw;
+	    }
+	  free(partition);
+	  partition = NULL;
+	}
+      else
+	{
+	  while (elem)
+	    {
+	      char **pargv = elem->q_data;
+	      if (!strcmp(partition, pargv[NFS_DIR]))
+		break;
+	    }
+	  if (!elem)
+	    {
+	      com_err(program_name, 0, "No such partition %s", partition);
+	      free(partition);
+	      partition = NULL;
+	    }
+	}
+    }
+  FreeQueue(partitions);
+
+  fsname = malloc(strlen(user) + 4);
+  sprintf(fsname, "%s.po", user);
+  argv[FS_NAME] = fsname;
+  argv[FS_TYPE] = "IMAP";
+  argv[FS_MACHINE] = server;
+  argv[FS_PACK] = partition;
+  argv[FS_M_POINT] = "";
+  argv[FS_ACCESS] = "w";
+  argv[FS_COMMENTS] = "IMAP box";
+  argv[FS_OWNER] = user;
+  argv[FS_OWNERS] = "wheel";
+  argv[FS_CREATE] = "1";
+  argv[FS_L_TYPE] = "USER";
+
+  status = do_mr_query("add_filesys", 11, argv, NULL, NULL);
+  free(server);
+  free(partition);
+
+  if (status)
+    {
+      com_err(program_name, status, " creating IMAP filesys in CreateImapBox");
+      free(fsname);
+      return (char *)SUB_ERROR;
+    }
+
+  argv[Q_FILESYS] = fsname;
+  argv[Q_TYPE] = "USER";
+  argv[Q_NAME] = user;
+  argv[Q_QUOTA] = default_imap_quota;
+
+  status = do_mr_query("add_quota", 4, argv, NULL, NULL);
+  if (status)
+    {
+      com_err(program_name, status, " setting quota in CreateImapBox");
+      free(fsname);
+      return (char *)SUB_ERROR;
+    }
+  else
+    return fsname;
+}
+
 /*	Function Name: SetUserPOBox
  *	Description: Addes or Chnages the P.O. Box for a user.
  *	Arguments: argc, argv - the login name of the user in argv[1].
@@ -162,8 +397,8 @@ int SetUserPOBox(int argc, char **argv)
   char *type, temp_buf[BUFSIZ], *local_user, *args[10], *box;
   char *temp_box;
   struct mqelem *top = NULL;
-  local_user = argv[1];
 
+  local_user = argv[1];
   if (!ValidName(local_user))
     return DM_NORMAL;
 
@@ -185,11 +420,12 @@ int SetUserPOBox(int argc, char **argv)
       return DM_NORMAL;
     }
 
+  Put_message("");
+
   sprintf(temp_buf, "Assign %s a local PO Box (y/n)", local_user);
   switch (YesNoQuestion(temp_buf, TRUE))
     {
     case TRUE:
-      type = LOCAL_BOX;
       switch (YesNoQuestion("Use Previous Local Box (y/n)", TRUE))
 	{
 	case TRUE:
@@ -202,24 +438,46 @@ int SetUserPOBox(int argc, char **argv)
 	      sprintf(temp_buf, "%s did not have a previous local PO Box.",
 		      local_user);
 	      Put_message(temp_buf);
-	      if ((box = GetNewLocalPOBox(local_user)) == (char *) SUB_ERROR)
-		return DM_NORMAL;
-	      break;
 	    default:
 	      com_err(program_name, status, " in set_pobox_pop.");
 	      return DM_NORMAL;
 	    }
-	  break;
+	  /* Fall through from MR_MACHINE case. */
 	case FALSE:
-	  if ((box = GetNewLocalPOBox(local_user)) == (char *) SUB_ERROR)
-	    return DM_NORMAL;
+	  type = strdup("POP");
+	  if (GetValueFromUser("Kind of Local PO Box?", &type) == SUB_ERROR)
+	    {
+	      free(type);
+	      return DM_NORMAL;
+	    }
+	  if (!strcasecmp(type, "POP"))
+	    {
+	      free(type);
+	      type = "POP";
+	      if ((box = GetNewLocalPOBox(local_user)) == (char *) SUB_ERROR)
+		return DM_NORMAL;
+	    }
+	  else if (!strcasecmp(type, "IMAP"))
+	    {
+	      free(type);
+	      type = "IMAP";
+	      if ((box = CreateImapBox(local_user)) == (char *) SUB_ERROR)
+		return DM_NORMAL;
+	    }
+	  else
+	    {
+	      sprintf(temp_buf, "Unknown local PO Box type %s", type);
+	      Put_message(temp_buf);
+	      free(type);
+	      return DM_NORMAL;
+	    }
 	  break;
 	default:
 	  return DM_NORMAL;
 	}
       break;
     case FALSE:
-      type = FOREIGN_BOX;
+      type = "SMTP";
       sprintf(temp_buf, "Set up a foreign PO Box for %s (y/n)", local_user);
       switch (YesNoQuestion(temp_buf, TRUE))
 	{

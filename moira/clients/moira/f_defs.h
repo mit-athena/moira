@@ -1,4 +1,4 @@
-/* $Id: f_defs.h,v 1.28 2000-01-07 21:14:05 danw Exp $
+/* $Id: f_defs.h,v 1.29 2000-01-26 18:04:52 danw Exp $
  *
  *	This is the file f_defs.h for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -202,6 +202,7 @@ int ShowAlias(int argc, char **argv);
  * internals documentation.
  */
 
+void AddQueue(struct mqelem *elem, struct mqelem *pred);
 char **CopyInfo(char **info);
 void FreeInfo(char **);
 void FreeQueue(struct mqelem *elem);

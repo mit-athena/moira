@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/strs.c,v $
- *	$Author: wesommer $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/strs.c,v 1.3 1987-09-03 02:35:50 wesommer Exp $
+ *	$Author: mar $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/strs.c,v 1.4 1988-08-04 19:06:33 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
@@ -9,7 +9,7 @@
  */
 
 #ifndef lint
-static char *rcsid_strs_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/strs.c,v 1.3 1987-09-03 02:35:50 wesommer Exp $";
+static char *rcsid_strs_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/strs.c,v 1.4 1988-08-04 19:06:33 mar Exp $";
 #endif lint
 
 #include <sys/types.h>
@@ -46,13 +46,18 @@ strsave(s)
 /*
  * Trim whitespace off both ends of a string.
  */
-char *strtrim(s)
-    register char *s;
+char *strtrim(save)
+    register char *save;
 {
-    register char *t;
-    
+    register char *t, *s;
+
+    s = save;
     while (isspace(*s)) s++;
     /* skip to end of string */
+    if (*s == '\0') {
+	*save = '\0';
+	return(save);
+    }
 
     for (t = s; *t; t++) continue; 
     while (t > s) {

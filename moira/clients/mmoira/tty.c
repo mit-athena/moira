@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/tty.c,v 1.2 1992-12-10 11:00:53 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/tty.c,v 1.3 1993-01-13 14:07:29 mar Exp $
  *
  *  	Copyright 1992 by the Massachusetts Institute of Technology.
  *
@@ -19,7 +19,7 @@
 #include	"mmoira.h"
 #include	"parser.h"
 
-static char rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/tty.c,v 1.2 1992-12-10 11:00:53 mar Exp $";
+static char rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/tty.c,v 1.3 1993-01-13 14:07:29 mar Exp $";
 
 
 struct parse_node *TtyCommands = NULL, *TtyRoot = NULL;
@@ -222,7 +222,7 @@ EntryForm *f;
 	    done = 0;
 	    while (!done) {
 		done = 1;
-		printf("%s(T/F): ", p->prompt);
+		printf("%s(T/F) [%c]: ", p->prompt, boolval(f, i) ? 'T' : 'F');
 		fflush(stdout);
 		if (mgets(buf, sizeof(buf)))
 		  return;
@@ -232,7 +232,7 @@ EntryForm *f;
 		else if (buf[0] == 'F' || buf[0] == 'f' ||
 			 buf[0] == 'N' || buf[0] == 'n')
 		  p->returnvalue.booleanvalue = False;
-		else {
+		else if (buf[0] != 0) {
 		    done = 0;
 		    printf("Please answer True or False\r\n");
 		}

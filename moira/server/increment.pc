@@ -1,4 +1,4 @@
-/* $Id: increment.pc,v 2.6 1998-03-31 06:47:20 danw Exp $
+/* $Id: increment.pc,v 2.7 1998-08-27 17:47:37 danw Exp $
  *
  * Deal with incremental updates
  *
@@ -20,7 +20,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/increment.pc,v 2.6 1998-03-31 06:47:20 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/increment.pc,v 2.7 1998-08-27 17:47:37 danw Exp $");
 
 extern char *whoami;
 extern char *table_name[];
@@ -391,7 +391,11 @@ void incremental_update(void)
     next_incremental();
 }
 
+/* Pro*C 2.2.4 can't cope with the sigset_t below, at least in Solaris 2.6.
+   We add DEFINE=_PROC_ to the proc invocation and then #ifndef that around
+   this function so proc will pass it through without reading it. */
 
+#ifndef _PROC_
 void next_incremental(void)
 {
   struct iupdate *iu;
@@ -446,7 +450,7 @@ void next_incremental(void)
   free_argv(iu->after, iu->afterc);
   free(iu);
 }
-
+#endif
 
 /* Called when the current transaction is aborted to throw away any queued
  * incremental updates

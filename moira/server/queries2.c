@@ -1,4 +1,4 @@
-/* $Id: queries2.c,v 2.49 1998-10-30 18:08:20 kcr Exp $
+/* $Id: queries2.c,v 2.50 1998-11-23 15:53:19 danw Exp $
  *
  * This file defines the query dispatch table for version 2 of the protocol
  *
@@ -74,13 +74,14 @@ static char *galo_fields[] = {
 static char *gual_fields[] = {
   "login",
   "login", "unix_uid", "shell", "last", "first", "middle", "status",
-  "clearid", "class", "comments", "signature", "secure", "modby", "modby", "modwith",
+  "clearid", "class", "comments", "signature", "secure",
+  "modtime", "modby", "modwith",
 };
 
 static char *gubl_fields[] = {
   "login",
   "login", "unix_uid", "shell", "last", "first", "middle", "status",
-  "clearid", "class", "modby", "modby", "modwith",
+  "clearid", "class", "modtime", "modby", "modwith",
 };
 
 static struct validate gubl_validate =
@@ -99,13 +100,15 @@ static struct validate gubl_validate =
 static char *guau_fields[] = {
   "unix_uid",
   "login", "unix_uid", "shell", "last", "first", "middle", "status",
-  "clearid", "class", "comments", "signature", "secure", "modby", "modby", "modwith",
+  "clearid", "class", "comments", "signature", "secure",
+  "modtime", "modby", "modwith",
 };
 
 static char *guan_fields[] = {
   "first", "last",
   "login", "unix_uid", "shell", "last", "first", "middle", "status",
-  "clearid", "class", "comments", "signature", "secure", "modby", "modby", "modwith",
+  "clearid", "class", "comments", "signature", "secure",
+  "modtime", "modby", "modwith",
 };
 
 static struct validate guan_validate =
@@ -124,19 +127,21 @@ static struct validate guan_validate =
 static char *guac_fields[] = {
   "class",
   "login", "unix_uid", "shell", "last", "first", "middle", "status",
-  "clearid", "class", "comments", "signature", "secure", "modby", "modby", "modwith",
+  "clearid", "class", "comments", "signature", "secure",
+  "modtime", "modby", "modwith",
 };
 
 static char *guam_fields[] = {
   "clearid",
   "login", "unix_uid", "shell", "last", "first", "middle", "status",
-  "clearid", "class", "comments", "signature", "secure", "modby", "modby", "modwith",
+  "clearid", "class", "comments", "signature", "secure",
+  "modtime", "modby", "modwith",
 };
 
 static char *gubu_fields[] = {
   "unix_uid",
   "login", "unix_uid", "shell", "last", "first", "middle", "status",
-  "clearid", "class", "modby", "modby", "modwith",
+  "clearid", "class", "modtime", "modby", "modwith",
 };
 
 static struct validate gubu_validate =
@@ -155,7 +160,7 @@ static struct validate gubu_validate =
 static char *gubn_fields[] = {
   "first", "last",
   "login", "unix_uid", "shell", "last", "first", "middle", "status",
-  "clearid", "class", "modby", "modby", "modwith",
+  "clearid", "class", "modtime", "modby", "modwith",
 };
 
 static struct validate gubn_validate =
@@ -174,13 +179,13 @@ static struct validate gubn_validate =
 static char *gubc_fields[] = {
   "class",
   "login", "unix_uid", "shell", "last", "first", "middle", "status",
-  "clearid", "class", "modby", "modby", "modwith",
+  "clearid", "class", "modtime", "modby", "modwith",
 };
 
 static char *gubm_fields[] = {
   "clearid",
   "login", "unix_uid", "shell", "last", "first", "middle", "status",
-  "clearid", "class", "modby", "modby", "modwith",
+  "clearid", "class", "modtime", "modby", "modwith",
 };
 
 static char *auac_fields[] = {
@@ -400,7 +405,7 @@ static char *gfbl_fields[] = {
   "login",
   "login", "fullname", "nickname", "home_addr",
   "home_phone", "office_addr", "office_phone", "department",
-  "affiliation", "modby", "modby", "modwith",
+  "affiliation", "modtime", "modby", "modwith",
 };
 
 static struct validate gfbl_validate = {
@@ -448,7 +453,7 @@ static struct validate ufbl_validate = {
 
 static char *gpob_fields[] = {
   "login",
-  "login", "type", "box", "modby", "modby", "modwith",
+  "login", "type", "box", "modtime", "modby", "modwith",
 };
 
 static struct validate gpob_validate = {
@@ -529,12 +534,15 @@ static struct validate dpob_validate =	/* DELETE_POBOX */
 
 static char *gmac_fields[] = {
   "name",
-  "name", "type", "modby", "modby", "modwith",
+  "name", "type", "modtime", "modby", "modwith",
 };
 
 static char *ghst_fields[] = {
   "name", "address", "location", "network",
-  "name", "vendor", "model", "os", "location", "contact", "use", "status", "status_change", "network", "address", "ace_type", "ace_name", "admin_comment", "ops_comment", "created", "creator", "inuse", "modby", "modby", "modwith",
+  "name", "vendor", "model", "os", "location", "contact", "use",
+  "status", "status_change", "network", "address", "ace_type",
+  "ace_name", "admin_comment", "ops_comment", "created", "creator",
+  "inuse", "modtime", "modby", "modwith",
 };
 
 static struct validate ghst_validate = {
@@ -550,7 +558,9 @@ static struct validate ghst_validate = {
 };
 
 static char *ahst_fields[] = {
-  "name", "vendor", "model", "os", "location", "contact", "use", "status", "subnet", "address", "ace_type", "ace_name", "admin_comment", "ops_comment",
+  "name", "vendor", "model", "os", "location", "contact", "use",
+  "status", "subnet", "address", "ace_type", "ace_name",
+  "admin_comment", "ops_comment",
 };
 
 static struct valobj ahst_valobj[] = {
@@ -583,7 +593,9 @@ static struct validate ahst_validate = {
 
 static char *uhst_fields[] = {
   "name",
-  "newname", "vendor", "model", "os", "location", "contact", "use", "status", "subnet", "address", "ace_type", "ace_name", "admin_comment", "ops_comment",
+  "newname", "vendor", "model", "os", "location", "contact", "use",
+  "status", "subnet", "address", "ace_type", "ace_name",
+  "admin_comment", "ops_comment",
 };
 
 static struct valobj uhst_valobj[] = {
@@ -684,8 +696,8 @@ static struct validate dhal_validate = {
 
 static char *gsnt_fields[] = {
   "name",
-  "name", "description", "address", "mask", "low", "high", "prefix", "ace_type", "ace_name",
-  "modby", "modby", "modwith"
+  "name", "description", "address", "mask", "low", "high", "prefix",
+  "ace_type", "ace_name", "modtime", "modby", "modwith"
 };
 
 static struct validate gsnt_validate = {
@@ -701,7 +713,8 @@ static struct validate gsnt_validate = {
 };
 
 static char *asnt_fields[] = {
-  "name", "description", "address", "mask", "low", "high", "prefix", "ace_type", "ace_name",
+  "name", "description", "address", "mask", "low", "high", "prefix",
+  "ace_type", "ace_name",
 };
 
 static struct valobj asnt_valobj[] = {
@@ -731,7 +744,8 @@ static struct validate asnt_validate =
 
 static char *usnt_fields[] = {
   "name",
-  "newname", "description", "address", "mask", "low", "high", "prefix", "ace_type", "ace_name",
+  "newname", "description", "address", "mask", "low", "high", "prefix",
+  "ace_type", "ace_name",
 };
 
 static struct valobj usnt_valobj[] = {
@@ -778,7 +792,7 @@ static struct validate dsnt_validate = {
 
 static char *gclu_fields[] = {
   "name",
-  "name", "description", "location", "modby", "modby", "modwith",
+  "name", "description", "location", "modtime", "modby", "modwith",
 };
 
 static char *aclu_fields[] = {
@@ -913,7 +927,7 @@ static struct validate dcld_validate =
 static char *glin_fields[] = {
   "name",
   "name", "active", "publicflg", "hidden", "maillist", "grouplist", "gid",
-  "ace_type", "ace_name", "description", "modby", "modby", "modwith",
+  "ace_type", "ace_name", "description", "modtime", "modby", "modwith",
 };
 
 static struct validate glin_validate = {
@@ -1161,7 +1175,7 @@ static char *gsin_fields[] = {
   "service",
   "service", "update_int", "target_file", "script", "dfgen", "dfcheck",
   "type", "enable", "inprogress", "harderror", "errmsg",
-  "ace_type", "ace_name", "modby", "modby", "modwith",
+  "ace_type", "ace_name", "modtime", "modby", "modwith",
 };
 
 static struct validate gsin_validate =
@@ -1286,7 +1300,7 @@ static char *gshi_fields[] = {
   "service", "machine",
   "service", "machine", "enable", "override", "success", "inprogress",
   "hosterror", "hosterrormsg", "ltt", "lts", "value1", "value2",
-  "value3", "modby", "modby", "modwith",
+  "value3", "modtime", "modby", "modwith",
 };
 
 static struct validate gshi_validate = {
@@ -1432,14 +1446,14 @@ static char *gslo_fields[] = {
 
 static char *gfsl_fields[] = {
   "label",
-  "label", "type", "machine", "name", "mount", "access", "comments", "owner", "owners",
-  "create", "lockertype", "modby", "modby", "modwith",
+  "label", "type", "machine", "name", "mount", "access", "comments",
+  "owner", "owners", "create", "lockertype", "modtime", "modby", "modwith",
 };
 
 static char *gfsm_fields[] = {
   "machine",
-  "label", "type", "machine", "name", "mount", "access", "comments", "owner", "owners",
-  "create", "lockertype", "modby", "modby", "modwith",
+  "label", "type", "machine", "name", "mount", "access", "comments",
+  "owner", "owners", "create", "lockertype", "modtime", "modby", "modwith",
 };
 
 static struct validate gfsm_validate = {
@@ -1456,8 +1470,8 @@ static struct validate gfsm_validate = {
 
 static char *gfsn_fields[] = {
   "machine", "parition",
-  "label", "type", "machine", "name", "mount", "access", "comments", "owner", "owners",
-  "create", "lockertype", "modby", "modby", "modwith",
+  "label", "type", "machine", "name", "mount", "access", "comments",
+  "owner", "owners", "create", "lockertype", "modtime", "modby", "modwith",
 };
 
 static struct validate gfsn_validate = {
@@ -1474,14 +1488,14 @@ static struct validate gfsn_validate = {
 
 static char *gfsp_fields[] = {
   "path",
-  "label", "type", "machine", "name", "mount", "access", "comments", "owner", "owners",
-  "create", "lockertype", "modby", "modby", "modwith",
+  "label", "type", "machine", "name", "mount", "access", "comments",
+  "owner", "owners", "create", "lockertype", "modtime", "modby", "modwith",
 };
 
 static char *gfsg_fields[] = {
   "list",
-  "label", "type", "machine", "name", "mount", "access", "comments", "owner", "owners",
-  "create", "lockertype", "modby", "modby", "modwith",
+  "label", "type", "machine", "name", "mount", "access", "comments",
+  "owner", "owners", "create", "lockertype", "modtime", "modby", "modwith",
 };
 
 static struct validate gfsg_validate = {
@@ -1497,8 +1511,8 @@ static struct validate gfsg_validate = {
 };
 
 static char *afil_fields[] = {
-  "label", "type", "machine", "name", "mount", "access", "comments", "owner", "owners",
-  "create", "lockertype",
+  "label", "type", "machine", "name", "mount", "access", "comments",
+  "owner", "owners", "create", "lockertype",
 };
 
 static struct valobj afil_valobj[] = {
@@ -1528,8 +1542,8 @@ static struct validate afil_validate = {
 };
 
 static char *ufil_fields[] = {
-  "label", "newlabel", "type", "machine", "name", "mount", "access", "comments",
-  "owner", "owners", "create", "lockertype",
+  "label", "newlabel", "type", "machine", "name", "mount", "access",
+  "comments", "owner", "owners", "create", "lockertype",
 };
 
 static struct valobj ufil_valobj[] = {
@@ -1609,12 +1623,14 @@ static struct validate aftg_validate = {
 };
 
 static char *ganf_fields[] = {
-  "machine", "dir", "device", "status", "allocated", "size", "modby", "modby", "modwith",
+  "machine", "dir", "device", "status", "allocated", "size",
+  "modtime", "modby", "modwith",
 };
 
 static char *gnfp_fields[] = {
   "machine", "dir",
-  "machine", "dir", "device", "status", "allocated", "size", "modby", "modby", "modwith",
+  "machine", "dir", "device", "status", "allocated", "size",
+  "modtime", "modby", "modwith",
 };
 
 static struct validate gnfp_validate = {
@@ -1702,7 +1718,8 @@ static struct validate dnfp_validate = {
 
 static char *gqot_fields[] = {
   "filesys", "type", "name",
-  "filesys", "type", "name", "quota", "dir", "machine", "modby", "modby", "modwith",
+  "filesys", "type", "name", "quota", "dir", "machine",
+  "modtime", "modby", "modwith",
 };
 
 static struct valobj gqot_valobj[] = {
@@ -1724,7 +1741,8 @@ static struct validate gqot_validate = {
 
 static char *gqbf_fields[] = {
   "filesys",
-  "filesys", "type", "name", "quota", "dir", "machine", "modby", "modby", "modwith",
+  "filesys", "type", "name", "quota", "dir", "machine",
+  "modtime", "modby", "modwith",
 };
 
 static struct validate gqbf_validate = {
@@ -1788,7 +1806,8 @@ static struct validate dqot_validate = {
 
 static char *gnfq_fields[] = {
   "filesys", "login",
-  "filesys", "login", "quota", "dir", "machine", "modby", "modby", "modwith",
+  "filesys", "login", "quota", "dir", "machine",
+  "modtime", "modby", "modwith",
 };
 
 static struct validate gnfq_validate = {
@@ -1805,7 +1824,8 @@ static struct validate gnfq_validate = {
 
 static char *gnqp_fields[] = {
   "machine", "dir",
-  "filesys", "login", "quota", "dir", "machine", "modby", "modby", "modwith",
+  "filesys", "login", "quota", "dir", "machine",
+  "modtime", "modby", "modwith",
 };
 
 static char *anfq_fields[] = {
@@ -1857,7 +1877,8 @@ static struct validate dnfq_validate = {
 static char *gzcl_fields[] = {
   "class",
   "class", "xmt_type", "xmt_name", "sub_type", "sub_name",
-  "iws_type", "iws_name", "iui_type", "iui_name", "modby", "modby", "modwith",
+  "iws_type", "iws_name", "iui_type", "iui_name",
+  "modtime", "modby", "modwith",
 };
 
 static struct validate gzcl_validate = {
@@ -1945,7 +1966,7 @@ static struct validate dzcl_validate = {
 
 static char *gsha_fields[] = {
   "machine",
-  "machine", "ace_type", "ace_name", "modby", "modby", "modwith",
+  "machine", "ace_type", "ace_name", "modtime", "modby", "modwith",
 };
 
 static struct validate gsha_validate =
@@ -1986,7 +2007,7 @@ static struct validate asha_validate =
 
 static char *gsvc_fields[] = {
   "service",
-  "service", "protocol", "port", "description", "modby", "modby", "modwith",
+  "service", "protocol", "port", "description", "modtime", "modby", "modwith",
 };
 
 static char *asvc_fields[] = {
@@ -2016,7 +2037,7 @@ static char *gpce_fields[] = {
   "printer",
   "printer", "spooling_host", "spool_directory", "rprinter",
   "quotaserver", "authenticate", "price", "comments",
-  "modby", "modby", "modwith",
+  "modtime", "modby", "modwith",
 };
 
 static struct validate gpce_validate = {
@@ -2034,7 +2055,7 @@ static struct validate gpce_validate = {
 static char *apce_fields[] = {
   "printer", "spooling_host", "spool_directory", "rprinter",
   "quotaserver", "authenticate", "price", "comments",
-  "modby", "modby", "modwith",
+  "modtime", "modby", "modwith",
 };
 
 static struct valobj apce_valobj[] = {
@@ -2075,12 +2096,12 @@ static struct validate dpce_validate = {
 static char *gpcp_fields[] = {
   "printer",
   "printer", "spooling_host", "spool_directory", "rprinter", "comments",
-  "modby", "modby", "modwith",
+  "modtime", "modby", "modwith",
 };
 
 static char *gpdm_fields[] = {
   "name",
-  "name", "rpcnum", "host", "modby", "modby", "modwith",
+  "name", "rpcnum", "host", "modtime", "modby", "modwith",
 };
 
 static char *apdm_fields[] = {
@@ -2204,7 +2225,8 @@ static char *dval_fields[] = {
 };
 
 static char *gats_fields[] = {
-  "table_name", "appends", "updates", "deletes", "modby", "modby", "modwith",
+  "table_name", "appends", "updates", "deletes",
+  "modtime", "modby", "modwith",
 };
 
 static char *_sdl_fields[] = {

@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/afs.c,v 1.53 1997-01-20 18:24:12 danw Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/afs.c,v 1.54 1997-01-29 23:21:46 danw Exp $
  *
  * Do AFS incremental updates
  *
@@ -10,7 +10,7 @@
 #include <stdio.h>
 #include <sys/types.h>
 #include <sys/file.h>
-#include <strings.h>
+#include <string.h>
 #include <unistd.h>
 
 #include <krb.h>
@@ -25,10 +25,6 @@
 
 #define STOP_FILE "/moira/afs/noafs"
 #define file_exists(file) (access((file), F_OK) == 0)
-
-#if defined(vax) && !defined(__STDC__)
-#define volatile
-#endif
 
 char *whoami;
 
@@ -530,7 +526,7 @@ edit_group(op, group, type, member)
     if (!local_realm[0])
 	krb_get_lrealm(local_realm, 1);
     if (!strcmp(type, "KERBEROS")) {
-	p = index(member, '@');
+	p = strchr(member, '@');
 	if (p && !strcasecmp(p+1, local_realm))
 	    *p = 0;
     } else if (strcmp(type, "USER"))

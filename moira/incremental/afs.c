@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/afs.c,v 1.52 1994-10-31 13:31:15 probe Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/afs.c,v 1.53 1997-01-20 18:24:12 danw Exp $
  *
  * Do AFS incremental updates
  *
@@ -11,6 +11,7 @@
 #include <sys/types.h>
 #include <sys/file.h>
 #include <strings.h>
+#include <unistd.h>
 
 #include <krb.h>
 #include <moira.h>
@@ -44,7 +45,7 @@ int add_user_lists();
 int add_list_members();
 int check_user();
 int edit_group();
-int pr_try();
+long pr_try();
 int check_afs();
 
 /* libprot.a routines */
@@ -78,7 +79,7 @@ int argc;
     for (i = getdtablesize() - 1; i > 2; i--)
       close(i);
 
-    whoami = ((whoami = rindex(argv[0], '/')) ? whoami++ : argv[0]);
+    whoami = ((whoami = strrchr(argv[0], '/')) ? whoami+1 : argv[0]);
 
     table = argv[1];
     beforec = atoi(argv[2]);
@@ -86,7 +87,7 @@ int argc;
     afterc = atoi(argv[3]);
     after = &argv[4 + beforec];
 
-    setlinebuf(stdout);
+    setvbuf(stdout, NULL, _IOLBF, BUFSIZ);
 
     strcpy(tbl_buf, table);
     strcat(tbl_buf, " (");
@@ -113,7 +114,7 @@ int argc;
 	do_user(before, beforec, after, afterc);
     } else if (!strcmp(table, "list")) {
 	do_list(before, beforec, after, afterc);
-    } else if (!strcmp(table, "members")) {
+    } else if (!strcmp(table, "imembers")) {
 	do_member(before, beforec, after, afterc);
     } else if (!strcmp(table, "filesys")) {
 	do_filesys(before, beforec, after, afterc);
@@ -603,7 +604,7 @@ long pr_try(fn, a1, a2, a3, a4, a5, a6, a7, a8)
     char *a1, *a2, *a3, *a4, *a5, *a6, *a7, *a8;
 {
     static int initd=0;
-    volatile register long code;
+    register long code;
     register int tries = 0;
 #ifdef DEBUG
     char fname[64];
@@ -685,12 +686,8 @@ moira_connect()
     long code;
 
     if (!mr_connections++) {
-#ifdef DEBUG
-	code = mr_connect("moira");
-#else
 	gethostname(hostname, sizeof(hostname));
 	code = mr_connect(hostname);
-#endif
 	if (!code) code = mr_auth("afs.incr");
 	return code;    
     }

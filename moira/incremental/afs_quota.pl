@@ -1,8 +1,7 @@
 #!/afs/athena/contrib/perl/perl
 # Usage: afs_quota path quota
 
-$incdir = "/mit/moiradev/src/incremental";
-require "$incdir/afs_utils.pl";
+require "/moira/bin/afs_utils.pl";
 
 die "Usage: $0 path quota\n" unless (@ARGV==2);
 

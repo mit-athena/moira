@@ -131,8 +131,8 @@ sub athena_proc
     }
 
     if ($type =~ /ACTIVITY|APROJ|PROJECT/) {
-	chown($gid,0,$path) ||
-	    die "Unable to set volume ownership\n";
+	system("/moira/bin/uchown $path $gid");
+	die "Unable to set volume ownership\n" if ($?);
     } elsif ($type =~ /HOMEDIR|UROP/) {
 	chown($uid,0,$path) ||
 	    die "Unable to set volume ownership\n";

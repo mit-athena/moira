@@ -1,16 +1,17 @@
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/Imakefile,v 1.2 1996-11-14 04:01:48 danw Exp $
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/Imakefile,v 1.3 1997-01-20 18:24:10 danw Exp $
 
 AFSDIR = /mit/afsuser
 AFSLIBS=$(AFSDIR)/lib/afs/libprot.a    $(AFSDIR)/lib/afs/libauth.a \
 	$(AFSDIR)/lib/libubik.a        $(AFSDIR)/lib/afs/util.a \
 	$(AFSDIR)/lib/librxkad.a       $(AFSDIR)/lib/afs/libsys.a \
-	$(AFSDIR)/lib/librx.a          $(AFSDIR)/lib/liblwp.a
+	$(AFSDIR)/lib/librx.a          $(AFSDIR)/lib/liblwp.a \
+	$(AFSDIR)/lib/afs/libaudit.a   -lbsd
 
 SRCS = afs.c ksrvtgt.c
 CODE = $(SRCS)
 DEBUG = -O
-CFLAGS = -I../include -I$(AFSDIR)/include -I/usr/athena/include $(DEBUG)
-LIBS = -L../lib -L/usr/athena/lib -lmoira -lzephyr -lmrgdb -lcom_err -lhesiod -lkrb -ldes
+CFLAGS = -I../include -I../lib -I$(AFSDIR)/include -I/usr/athena/include $(DEBUG)
+LIBS = -L../lib -L../gdb -L/usr/athena/lib -lmoira -lzephyr -lmrgdb -lcom_err -lhesiod -lkrb -ldes
 SRCDIR = $(SRCTOP)/incremental
 
 program(afs.incr,afs.o,,${AFSLIBS} ${LIBS},${PROGDIR})

@@ -1,6 +1,6 @@
 /*
  * $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/ksrvtgt.c,v $
- * $Author: mar $
+ * $Author: danw $
  *
  * Copyright 1988 by the Massachusetts Institute of Technology. 
  *
@@ -19,7 +19,7 @@
 /*#include <conf.h>*/
 
 char rcsid[] =
-    "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/ksrvtgt.c,v 1.3 1990-02-15 13:16:35 mar Exp $";
+    "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/ksrvtgt.c,v 1.4 1997-01-20 18:24:17 danw Exp $";
 
 
 void usage(argv)
@@ -41,8 +41,8 @@ main(argc,argv)
     int i, lifetime = 1;
     char srvtab[MAXPATHLEN + 1];
 
-    bzero(realm, sizeof(realm));
-    bzero(srvtab, sizeof(srvtab));
+    memset(realm, 0, sizeof(realm));
+    memset(srvtab, 0, sizeof(srvtab));
 
     if (argc < 3)
       usage(argv);

@@ -1,4 +1,8 @@
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/afs_utils.pl,v 1.14 1994-11-02 11:28:10 probe Exp $
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/afs_utils.pl,v 1.15 1997-01-20 18:24:17 danw Exp $
+
+# kludge kludge kludge
+sub __STDC__ {0;}
+require "fcntl.ph";
 
 $afsbin="/moira/bin";
 $vos="$afsbin/vos";
@@ -8,9 +12,6 @@ $zwrite="/usr/athena/bin/zwrite";
 
 $afs_data="/moira/afs/afs_data";
 $afs_save="$afs_data.tmp";
-
-$LOCK_EX=2;
-$LOCK_UN=8;
 
 %vtypes_ATHENA_MIT_EDU =
     ("ACTIVITY", "activity",
@@ -42,11 +43,17 @@ $LOCK_UN=8;
 # 8. Close the data file.
 
 
+$flock_t="ssllllllll";
+
 sub afs_lock
 {
     open(SRV,"+<$afs_data") || die "Unable to open $afs_data\n";
     select((select(SRV), $|=1)[$[]);
-    flock(SRV, $LOCK_EX) || die "Unable to lock $afs_data\n";
+    $flkarr[0]=&F_WRLCK;
+    $flkarr[1]=$flkarr[2]=$flkarr[3]=$flkarr[4]=$flkarr[5]=$flkarr[6]=0;
+    $flkarr[7]=$flkarr[8]=$flkarr[9]=0;
+    $flk=pack($flock_t,@flkarr);
+    fcntl(SRV, &F_SETLKW, $flk) || die "Unable to lock $afs_data:$!\n";
     die "Temporary status file: $afs_save exists... aborting\n"
 	if (-f $afs_save);
     open(SRV2, ">$afs_save");

@@ -1,4 +1,4 @@
-/* $Id: pobox.c,v 1.37 2000-03-29 20:04:12 zacheiss Exp $
+/* $Id: pobox.c,v 1.38 2000-08-10 02:28:47 zacheiss Exp $
  *
  *	This is the file pobox.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -24,7 +24,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/pobox.c,v 1.37 2000-03-29 20:04:12 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/pobox.c,v 1.38 2000-08-10 02:28:47 zacheiss Exp $");
 
 /*	Function Name: PrintPOBox
  *	Description: Yet another specialized print function.
@@ -498,7 +498,11 @@ int SetUserPOBox(int argc, char **argv)
 	    return DM_NORMAL;
 	  if (mrcl_validate_pobox_smtp(local_user, temp_buf, &box) !=
 	      MRCL_SUCCESS)
-	    return DM_NORMAL;
+	    {
+	      if (mrcl_get_message())
+		Put_message(mrcl_get_message());
+	      return DM_NORMAL;
+	    }
 	  break;
 	case FALSE:
 	default:
@@ -542,7 +546,11 @@ int SplitUserPOBox(int argc, char **argv)
     return DM_NORMAL;
   if (mrcl_validate_pobox_smtp(argv[1], temp_buf, &box) !=
       MRCL_SUCCESS)
-    return DM_NORMAL;
+    {
+      if (mrcl_get_message())
+	Put_message(mrcl_get_message());
+      return DM_NORMAL;
+    }
 
   args[0] = argv[1];
   args[1] = "SPLIT";

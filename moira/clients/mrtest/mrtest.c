@@ -1,24 +1,14 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v 1.4 1988-01-21 17:57:51 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v 1.5 1988-01-22 12:26:13 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
- *	$Log: not supported by cvs2svn $
- * Revision 1.3  88/01/07  17:42:06  mar
- * print "tuple" or "tuples" as is correct
- * 
- * Revision 1.2  87/08/22  23:45:10  wesommer
- * Removed extra RCS headers.
- * 
- * Revision 1.1  87/08/22  18:31:59  wesommer
- * Initial revision
- * 
  */
 
 #ifndef lint
-static char *rcsid_test_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v 1.4 1988-01-21 17:57:51 mar Exp $";
+static char *rcsid_test_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v 1.5 1988-01-22 12:26:13 mar Exp $";
 #endif lint
 
 #include <stdio.h>
@@ -139,8 +129,10 @@ char *argv[];
 	  break;
 	if ((cp = index(input, '\n')) != (char *)NULL)
 	  *cp = 0;
-	if (input[0] == 0)
-	  continue;
+	if (input[0] == 0) {
+	    printf("\n");
+	    continue;
+	}
 	if (input[0] == '%') {
 	    for (cp = &input[1]; *cp && isspace(*cp); cp++);
 	    printf("Comment: %s\n", cp);

@@ -5,9 +5,11 @@ LIB= owl.PS plan.mak
 SRC= sms.mss intro.mss structure.mss protocol.mss tools.mss deploy.mss \
 	dcm.mss clientlib.mss server.mss addendum.mss db_analysis.mss
 
-all: plan
+all: sms.PS
 
-plan: ${LIB} ${SRC}
+ps: sms.PS
+
+sms.PS: ${LIB} ${SRC}
 	scribe sms.mss
 
 xerox: sms.x9700
@@ -19,3 +21,6 @@ sms.x9700: ${LIB} ${SRC}
 
 clean:
 	rm -f *.x9700 *.PS *.err *~ *.aux
+
+owl.PS: owl.ps
+	ln owl.ps owl.PS

@@ -1,4 +1,4 @@
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/util/makeconfig,v 1.7 1997-01-29 23:29:48 danw Exp $
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/util/makeconfig,v 1.8 1997-07-11 00:32:25 danw Exp $
 #
 #  Copyright 1990 by the Massachusetts Institute of Technology.
 # 
@@ -19,29 +19,17 @@
 #
 # make -f makeconfig SRCDIR=/u2/lockers/moira DESTDIR=myconfig
 
-SHELL	= /bin/sh
 DESTDIR	= .
 SRCDIR 	= /mit/moiradev/src
 
-LN	= cp
-SYMLINK = ln -s
-
-SUBDIR	= backup clients db dbck dcm gdb gen include incremental \
-	lib reg_svr regtape server update clients/blanche \
-	clients/mailmaint clients/moira clients/mrcheck clients/mrtest \
-	clients/passwd clients/userreg clients/addusr clients/mmoira util man
-
 all:
-	rm -f ${DESTDIR}/Makefile
-	${LN} ${SRCDIR}/Makefile ${DESTDIR}/Makefile
-	rm -f ${DESTDIR}/Imakefile
-	${SYMLINK} ${SRCDIR}/Imakefile ${DESTDIR}/Imakefile
-	chmod +w ${DESTDIR}/Makefile
-	-for i in ${SUBDIR}; do \
-		mkdir ${DESTDIR}/$$i; \
-		rm -f ${DESTDIR}/$$i/Imakefile; \
-		${SYMLINK} ${SRCDIR}/$$i/Imakefile ${DESTDIR}/$$i/Imakefile; \
-	done
-	for i in imake makedepend imake.includes et; do \
-		make ${MFLAGS} -f ${SRCDIR}/util/$$i/Makefile SRCDIR=${SRCDIR} DESTDIR=${DESTDIR} config; \
-	done
+	synctree -q -s $(SRCDIR) -d $(DESTDIR)
+
+	rm -f $(DESTDIR)/Makefile
+	cp $(SRCDIR)/Makefile $(DESTDIR)/
+	chmod o+w $(DESTDIR)/Makefile
+
+	rm -f $(DESTDIR)/util/imake.includes/config.Imakefile
+	sed -e "s|/mit/moiradev/src|${SRCDIR}|" \
+		${SRCDIR}/util/imake.includes/config.Imakefile \
+		> ${DESTDIR}/util/imake.includes/config.Imakefile

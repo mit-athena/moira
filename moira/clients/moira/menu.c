@@ -4,36 +4,8 @@
  * "mit-copyright.h".
  *
  * $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v $
- * $Author: wesommer $
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.9 1987-08-21 23:31:37 wesommer Exp $
- * $Log: not supported by cvs2svn $
- * Revision 1.8  87/08/21  22:52:37  wesommer
- * [changes from poto]
- * 
- * Revision 1.7  87/08/17  14:23:05  jtkohl
- * add Password_input
- * 
- * Revision 1.6  87/08/17  11:55:23  jtkohl
- * changes made by poto. Looks like cleanup
- * 
- * Revision 1.5  87/08/07  18:09:46  poto
- * will not enter menu if ->m_entry returns DM_QUIT;
- * the command args from a submenu command will be passed on to ->m_entry();
- * 
- * Revision 1.4  87/08/05  14:48:04  ambar
- * added latest set of hackery, to fix missing
- * newlines, and not being able to quit out of
- * the pager.
- * 
- * Revision 1.3  87/08/03  05:10:34  wesommer
- * This one appears to work.
- * 
- * Revision 1.2  87/08/03  04:16:51  wesommer
- * Here's another, which is probably better.
- * 
- * Revision 1.1  87/07/31  18:02:23  ambar
- * Initial revision
- * 
+ * $Author: ambar $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.10 1987-09-01 15:37:06 ambar Exp $
  *
  * Generic menu system module.
  *
@@ -46,7 +18,7 @@
  */
 
 #ifndef lint
-static char rcsid_menu_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.9 1987-08-21 23:31:37 wesommer Exp $";
+static char rcsid_menu_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.10 1987-09-01 15:37:06 ambar Exp $";
 
 #endif lint
 
@@ -661,3 +633,42 @@ Find_command(command)
 	return (find_command_from(command, top_menu, MAX_MENU_DEPTH));
     }
 }
+
+void 
+sms_com_err_hook(who, code, fmt, args)
+    char *who;
+    int code;
+    char *fmt;
+    va_list args;
+{
+    char buf[BUFSIZ], *cp;
+
+    FILE _strbuf;
+
+    (void) strcpy(buf, who);
+    for (cp = buf; *cp; cp++);
+    *cp++ = ':';
+    *cp++ = ' ';
+    if (code) {
+	(void) strcpy(cp, error_message(code));
+	while (*cp)
+	    cp++;
+    }
+    _strbuf._flag = _IOWRT + _IOSTRG;
+    _strbuf._ptr = cp;
+    _strbuf._cnt = BUFSIZ - (cp - buf);
+    _doprnt(fmt, args, &_strbuf);
+    (void) putc('\0', &_strbuf);
+    Put_message(buf);
+}
+
+/*
+ * Local Variables:
+ * mode: c
+ * c-indent-level: 4
+ * c-continued-statement-offset: 4
+ * c-brace-offset: -4
+ * c-argdecl-indent: 4
+ * c-label-offset: -4
+ * End:
+ */

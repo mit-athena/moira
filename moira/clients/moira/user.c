@@ -1,4 +1,4 @@
-/* $Id: user.c,v 1.48 1998-05-26 18:13:47 danw Exp $
+/* $Id: user.c,v 1.49 1998-07-29 18:45:25 danw Exp $
  *
  *	This is the file user.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -32,7 +32,7 @@
 #include <gdss.h>
 #endif
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.48 1998-05-26 18:13:47 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.49 1998-07-29 18:45:25 danw Exp $");
 
 void CorrectCapitalization(char **name);
 char **AskUserInfo(char **info, Bool name);
@@ -130,11 +130,12 @@ static void PrintUserInfo(char **info)
 	  UserState(atoi(info[U_STATE])), info[U_MITID],
 	  *info[U_SIGNATURE] ? (status ? "Bad" : "Yes") : "No");
   Put_message(buf);
-  if (atoi(info[U_SECURE]))
-    sprintf(buf, "Secure password set on %s.", atot(info[U_SECURE]));
-  else
-    sprintf(buf, "No secure password set.");
-  Put_message(buf);
+  if (!atoi(info[U_STATE]))
+    {
+      sprintf(buf, "User %s secure Account Coupon to register",
+	      atoi(info[U_SECURE]) ? "needs" : "does not need");
+      Put_message(buf);
+    }
   sprintf(buf, "Comments: %s", info[U_COMMENT]);
   Put_message(buf);
   sprintf(buf, MOD_FORMAT, info[U_MODBY], info[U_MODTIME], info[U_MODWITH]);
@@ -290,21 +291,19 @@ char **AskUserInfo(char **info, Bool name)
   if (GetValueFromUser("Comments", &info[U_COMMENT]) == SUB_ERROR)
     return NULL;
 
-  if (YesNoQuestion("Secure password set",
-		    atoi(info[U_SECURE]) ? TRUE : FALSE) == FALSE)
+  if (!name)
     {
-      free(info[U_SECURE]);
-      info[U_SECURE] = strdup("0");
-    }
-  else if (!strcmp(info[U_SECURE], "0"))
-    {
-      char buf[16];
-      struct timeval tv;
-
-      gettimeofday(&tv, NULL);
-      sprintf(buf, "%ld", (long) tv.tv_sec);
-      free(info[U_SECURE]);
-      info[U_SECURE] = strdup(buf);
+      if (YesNoQuestion("User needs secure Account Coupon to register",
+			atoi(info[U_SECURE]) ? TRUE : FALSE) == FALSE)
+	{
+	  free(info[U_SECURE]);
+	  info[U_SECURE] = strdup("0");
+	}
+      else
+	{
+	  free(info[U_SECURE]);
+	  info[U_SECURE] = strdup("1");
+	}
     }
 
   /* Sign record */
@@ -757,8 +756,6 @@ static void RealDeactivateUser(char **info, Bool one_item)
 	{
 	  com_err(program_name, status, " getting filsys info, "
 		  "not deactivating filesystem");
-	  FreeInfo(args);
-	  FreeQueue(elem);
 	  return;
 	}
       args = QueueTop(elem)->q_data;

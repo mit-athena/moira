@@ -2,7 +2,7 @@
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/display.c,v $
  *	$Author: mar $
  *	$Locker:  $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/display.c,v 1.6 1989-08-29 13:22:04 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/display.c,v 1.7 1989-09-13 16:49:50 mar Exp $
  *
  *  (c) Copyright 1988 by the Massachusetts Institute of Technology.
  *  For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_display_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/display.c,v 1.6 1989-08-29 13:22:04 mar Exp $";
+static char *rcsid_display_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/display.c,v 1.7 1989-09-13 16:49:50 mar Exp $";
 #endif	lint
 
 #include <mit-copyright.h>
@@ -163,7 +163,7 @@ char *buf;
 int   maxsize, timeout;
 bool echop, emptyok, valuep;
 {
-  char  c;
+  int  c;
   int   i;
   struct itimerval it;
 
@@ -186,7 +186,6 @@ retry:
    switch (c) {
      case '\025': 		/* Ctl-U */
 	goto retry;
-	break;
       case EOF:
 	/* We're in raw mode, so EOF means disaster */
 	exit(1);
@@ -266,7 +265,7 @@ askyn(prompt)
   int ypos, xpos;
   int answer;
   struct itimerval it;
-  char c;
+  int c;
 
  start:
   werase (queryw);

@@ -1,543 +1,780 @@
 @part[addendum, root="sms.mss"]
-@section(ADDENDUM)
+@NewPage()
+@MajorSection[Addendum]
 
-The following information is information which supplements the 
-formal text.  In general the addendum will provide critical
-information regarding programming application and use.
+The following information supplements the formal text.  In general the
+addendum will provide critical information regarding programming application
+and use.
 
-@subsection(List of pre-defined queries)
+@Section(Predefined Queries - List of Database Interfaces)
+@Label(Queries)
 
-The following list of queries are a pre-defind list.  This list provides
-the mechanism for reading, writing, and updating information
-to the database.  
+The following list of queries are a predefined list.  This list provides
+the mechanism for reading, writing, updating, and deleting information
+in the database.
 
+In each query description below there are descriptions of the required
+arguments, the return values, integrity constraints, possible error codes,
+and side effects, if any.  In addition to the error codes specifically
+listed for each query, the following two error codes may be returned by any
+query: SMS_SUCCESS for successful completion of the query, and SMS_PERM
+indicating that permission was denied for the query.
 
-@subssection(/**** USERS ****/)
-@begin(verbatim)
+@Begin(Verbatim)
 
-get_all_logins
+@SubSection(Users)
+@label(Users)
+
+@B(get_all_logins)
   Args: none
-  Returns: {login, shell, last, first, middle, status, expdate, modtime}
-  Acl: tbinfo.acl where tbinfo.table = "users", READ
+  Returns: {login, shell, home, last, first, middle, status, expdate, modtime}
 
-get_user_by_login
+@B(get_user_by_login)
   Args: (login(*))
-  Returns: {login, shell, last, first, middle, status, mit_id, expdate,
+  Returns: {login, shell, home, last, first, middle, status, mit_id, expdate,
 	    modtime}
-  Acl: tbinfo.acl where tbinfo.table = "users", READ
   Errors: SMS_NO_MATCH
 
-get_user_by_firstname
+@B(get_user_by_firstname)
   Args: (firstname(*))
-  Returns: {login, shell, last, first, middle, status, mit_id, expdate,
+  Returns: {login, shell, home, last, first, middle, status, mit_id, expdate,
 	    modtime}
-  Acl: tbinfo.acl where tbinfo.table = "users", READ
   Errors: SMS_NO_MATCH
 
-get_user_by_lastname
+@B(get_user_by_lastname)
   Args: (lastname(*))
-  Returns: {login, shell, last, first, middle, status, mit_id, expdate,
+  Returns: {login, shell, home, last, first, middle, status, mit_id, expdate,
 	    modtime}
-  Acl: tbinfo.acl where tbinfo.table = "users", READ
   Errors: SMS_NO_MATCH
 
-get_user_by_first_and_last
+@B(get_user_by_first_and_last)
   Args: (firstname(*), lastname(*))
-  Returns: {login, shell, last, first, middle, status, mit_id, expdate,
+  Returns: {login, shell, home, last, first, middle, status, mit_id, expdate,
 	    modtime}
-  Acl: tbinfo.acl where tbinfo.table = "users", READ
   Errors: SMS_NO_MATCH
 
-update_user_shell
+@B(update_user_shell)
   Args: (login, shell)
   Returns: none
-  Acl: users.acl where users.login = $1, WRITE
-  Errors: SMS_NO_MATCH, SMS_NOT_UNIQUE
   Integrity: application should check for valid shell program
+  Errors: SMS_NO_MATCH, SMS_NOT_UNIQUE
 
-update_user_status
+@B(update_user_status)
   Args: (login, status)
   Returns: none
-  Acl: tbinfo.acl where tbinfo.table = "users", WRITE (assume only a few
-	administrative types will have WRITE permission for this table)
-  Errors: SMS_NO_MATCH, SMS_NOT_UNIQUE
   Integrity: application should check for valid status value
+  Errors: SMS_NO_MATCH, SMS_NOT_UNIQUE
 
-add_user
-  Args: (login, shell, last, first, middle, status, expdate, *modtime)
+@B(update_user_home)
+  Args: (login, home)
   Returns: none
-  Acl: tbinfo.acl where tbinfo.table = "users", APPEND (see note above)
-  Errors: SMS_EXISTS, SMS_DATE
-  Integrity: application should check for valid shell and status values;
-	     modtime set by server.
+  Integrity: home must be a known filesys entry
+  Errors: SMS_NO_MATCH, SMS_NOT_UNIQUE, SMS_FILESYS
+
+@B(add_user)
+  Args: (login, shell, home, last, first, middle, status, mit_id, expdate)
+  Returns: none
+  Integrity: application must check for valid shell and status values; home
+	     must be a valid filesys entry; expdate must be reasonable;
+	     modtime is set by the server.
+  Errors: SMS_EXISTS, SMS_FILESYS, SMS_DATE
   Side Effects: blank finger entry created
 
-delete_user
+@B(update_user)
+  Args: (login, shell, home, last, first, middle, status, mit_id, expdate)
+  Returns: none
+  Integrity: application must check for valid shell and status values; home
+	     must be a valid filesys entry; expdate must be reasonable;
+	     modtime is set by the server.
+  Errors: SMS_NO_MATCH, SMS_NOT_UNIQUE, SMS_FILESYS, SMS_DATE
+
+@B(delete_user)
   Args: (login)
   Returns: none
-  Acl: tbinfo.acl where tbinfo.table = "users", DELETE (see note above)
   Errors: SMS_NO_MATCH, SMS_NOT_UNIQUE
   Side Effects: finger entry deleted
 
-Question: Is it correct for add_user and delete_user to add/delete finger
-entries?  Or should there be add_finger and delete_finger?  Problem: want to
-require that there be a finger entry if there is a user entry; can
-application program be trusted to do this?  
+@SubSection(Finger)
+@label(Finger)
 
-Question: Should there be a separate year field in the users table that is
-not modifiable by the user?  If so, should the mit_year field in the finger
-program be renamed to mit_affiliation?
-
-@end(verbatim)
-@subsection(/**** FINGER ****/)
-@begin(verbatim)
-
-get_finger_by_login
+@B(get_finger_by_login)
   Args: (login(*))
   Returns: {login, fullname, nickname, home_addr, home_phone, office_addr,
 	    office_phone, mit_dept, mit_year, modtime}
-  Acl: tbinfo.acl where tbinfo.table = "finger", READ
   Errors: SMS_NO_MATCH
 
-update_finger_by_login
+@B(get_finger_by_first_last)
+  Args: (first(*), last(*))
+  Returns: {login, fullname, nickname, home_addr, home_phone, office_addr,
+	    office_phone, mit_dept, mit_year, modtime}
+  Errors: SMS_NO_MATCH
+
+@B(update_finger_by_login)
   Args: (login, fullname, nickname, home_addr, home_phone, office_addr, 
 	 office_phone, mit_dept, mit_year, *modtime)
   Returns: none
-  Acl: users.acl where users.login = $1, WRITE				/****/
-  Errors: SMS_NO_MATCH
   Integrity: modtime set by server, all other fields validated by 
 	     application. (Perhaps there will be a table specifying valid
 	     values for the mit_year field.)
-
-?get_finger_by_{first(*),last(*),first+last}
-@end(verbatim)
-@subsection(/**** MACHINE ****/)
-@begin(verbatim)
-
-get_machine_by_name
-  Args: (name(*))
-  Returns: {name, type, model, status, serial, ethernet, sys_type}
-  Acl: tbinfo.acl where tbinfo.table = "machine", READ
   Errors: SMS_NO_MATCH
 
-add_machine
+@SubSection(Machine)
+@label(Machine)
+
+@B(get_machine_by_name)
+  Args: (name(*))
+  Returns: {name, type, model, status, serial, ethernet, sys_type}
+  Errors: SMS_NO_MATCH
+
+@B(add_machine)
   Args: (name, type, model, status, serial, ethernet, sys_type)
   Returns: none
-  Acl: tbinfo.acl where tbinfo.table = "machine", APPEND
-  Errors: SMS_EXISTS
   Integrity: application must check for valid type, model, and status
 	     fields.  (Perhaps there will be a database table specifying
 	     valid values.)
+  Errors: SMS_EXISTS
 
-update_machine
+@B(update_machine)
   Args: (name, type, model, status, serial, ethernet, sys_type)
   Returns: none
-  Acl: tbinfo.acl where tbinfo.table = "machine", WRITE
-  Errors: SMS_NO_MATCH, SMS_NOT_UNIQUE
   Integrity: application must check for valid type, model, and status
 	     fields. 
+  Errors: SMS_NO_MATCH, SMS_NOT_UNIQUE
 
-delete_machine
+@B(delete_machine)
   Args: (name)
   Returns: none
-  Acl: tbinfo.acl where tbinfo.table = "machine", DELETE
   Errors: SMS_NO_MATCH, SMS_NOT_UNIQUE
-@end(verbatim)
 
-@subsection(/**** CLUSTER (cluster, alias) ****/)
-@begin(verbatim)
+@SubSection(Cluster)
+@label(Cluster)
 
-get_cluster_info
+@B(get_cluster_info)
   Args: (name(*))
   Returns: {name, desc, location}
-  Acl: tbinfo.acl where tbinfo.table = "cluster", READ
   Errors: SMS_NO_MATCH
 
-add_cluster
+@B(add_cluster)
   Args: (name, desc, location)
   Returns: none
-  Acl: tbinfo.acl where tbinfo.table = "cluster", APPEND
   Errors: SMS_EXISTS
 
-update_cluster
+@B(update_cluster)
   Args: (name, desc, location)
   Returns: none
-  Acl: tbinfo.acl where tbinfo.table = "cluster", WRITE
   Errors: SMS_NO_MATCH, SMS_NOT_UNIQUE
 
-delete_cluster
+@B(delete_cluster)
   Args: (name)
   Returns: none
-  Acl: tbinfo.acl where tbinfo.table = "cluster", DELETE
   Errors: SMS_NO_MATCH, SMS_NOT_UNIQUE
 
-get_machine_to_cluster_map
+@B(get_machine_to_cluster_map)
   Args: none
   Returns: {machine, cluster}
-  Acl: tbinfo.acl where tbinfo.table = "alias-mach-clu-map", READ
 
-add_machine_to_cluster
+@B(add_machine_to_cluster)
   Args: (machine, cluster)
   Returns: none
-  Acl: tbinfo.acl where tbinfo.table = "alias-mach-clu-map", APPEND
-  Errors: SMS_MACHINE, SMS_CLUSTER, SMS_EXISTS
   Integrity: machine and cluster must exist is machine and cluster tables.
+  Errors: SMS_MACHINE, SMS_CLUSTER, SMS_EXISTS
 
-delete_machine_from_cluster
+@B(delete_machine_from_cluster)
   Args: (machine, cluster)
   Returns: none
-  Acl: tbinfo.acl where tbinfo.table = "alia-mach-clu-map", DELETE
   Errors: SMS_NO_MATCH, SMS_NOT_UNIQUE
 
-@end(verbatim)
-@subsection(/**** SVC (svc, alias:prcluster) ****/)
-@begin(verbatim)
+@SubSection(Service Clusters)
+@label(Svc)
 
-get_all_service_clusters
+@B(get_all_service_clusters)
   Args: none
   Returns: {cluster, service-label, service-cluster}
-  Acl: tbinfo.acl where tbinfo.table = "svc", READ
 
-add_service_cluster
+@B(add_service_cluster)
   Args: (cluster, service-label, service-cluster)
   Returns: none
-  Acl: tbinfo.acl where tbinfo.table = "svc", APPEND
-  Errors: SMS_CLUSTER, SMS_EXISTS
   Integrity: cluster must exist in cluster table; cluster/service-label must
 	     be unique.
+  Errors: SMS_CLUSTER, SMS_EXISTS
 
-delete_service_cluster
+@B(delete_service_cluster)
   Args: (cluster, service-label)
   Returns: none
-  Acl: tbinfo.acl where tbinfo.table = "svc", DELETE
   Errors: SMS_NO_MATCH, SMS_NOT_UNIQUE
-@end(verbatim)
 
-@subsection(/**** SERVERS ****/)
-@begin(verbatim)
+@SubSection(Servers)
+@label(Servers)
 
-get_all_sloc
+@B(get_server_info)
+  Args: (service(*))
+  Returns: {service, machine, update_interval, target_dir, value}
+  Errors: SMS_NO_MATCH
+
+@B(get_all_sloc)
   Args: none
   Returns: {service, machine}
-  Acl: tbinfo.acl where tbinfo.table = "servers", READ
 
-get_server_info
-  Args: (service(*))
-  Returns: {service, machine, update_interval, target_dir}
-  Acl: tbinfo.acl where tbinfo.table = "servers", READ
-  Errors: SMS_NO_MATCH
-
-get_sloc_by_service
+@B(get_sloc_by_service)
   Args: (service(*))
   Returns: {machine}
-  Acl: tbinfo.acl where tbinfo.table = "servers", READ
   Errors: SMS_NO_MATCH
 
-add_server
-  Args: (service, machine, update_interval, target_dir)
+@B(add_server)
+  Args: (service, machine, update_interval, target_dir, value)
   Returns: none
-  Acl: tbinfo.acl where tbinfo.table = "servers", READ
-  Errors: SMS_EXISTS, SMS_MACHINE
   Integrity: machine must exist in machine table; application should verify
-	     that target_dir is a valid directory.
+	     that target_dir is a valid directory; value is
+	     server/application dependent.
+  Errors: SMS_EXISTS, SMS_MACHINE
 
-delete_server
+@B(update_server)
+  Args: (service, machine, update_interval, target_dir, value)
+  Returns: none
+  Integrity: application should verify that target_dir is a valid directory;
+	     value is server/application dependent.
+  Errors: SMS_NO_MATCH, SMS_NOT_UNIQUE
+
+@B(delete_server)
   Args: (service, machine)
   Returns: none
-  Acl: tbinfo.acl where tbinfo.table = "servers", READ
   Errors: SMS_NO_MATCH, SMS_NOT_UNIQUE
 
-update_server
-  Args: (service, machine, update_interval, target_dir)
-  Returns: none
-  Acl: tbinfo.acl where tbinfo.table = "servers", READ
-  Errors: SMS_NO_MATCH, SMS_NOT_UNIQUE
-  Integrity: application should verify that target_dir is a valid directory.
-@end(verbatim)
+@SubSection(Services)
+@label(Services)
 
-@subsection(/**** SERVICES (services, alias) ****/)
-@begin(verbatim)
-
-get_all_services
+@B(get_all_services)
   Args: none
   Returns: {service, protocol, port, description}
-  Acl: tbinfo.acl where tbinfo.table = "services", READ
 
-add_service
+@B(add_service)
   Args: (service, protocol, port, description)
   Returns: none
-  Acl: tbinfo.acl where tbinfo.table = "service", APPEND
-  Errors: SMS_EXISTS
   Integrity: application should validate all fields
+  Errors: SMS_EXISTS
 
-delete_service
+@B(delete_service)
   Args: (service, protocol(*))
   Returns: none
-  Acl: tbinfo.acl where tbinfo.table = "service", DELETE
   Errors: SMS_NO_MATCH, SMS_NOT_UNIQUE
 
-update_service
+@B(update_service)
   Args: (service, protocol, port, description)
   Returns: none
-  Acl: tbinfo.acl where tbinfo.table = "service", WRITE
   Errors: SMS_NO_MATCH, SMS_NOT_UNIQUE
 
-get_all_service_aliases
-  Args: none
-  Returns: {service-alias, service}
-  Acl: tbinfo.acl where tbinfo.table = "alias-service", READ
+@SubSection(File Systems)
+@label(Filesys)
 
-add_service_alias
-  Args: (service-alias, service)
-  Returns: none
-  Acl: tbinfo.acl where tbinfo.table = "alias-service", APPEND
-  Errors: SMS_SERVICE, SMS_EXISTS
-  Integrity: service must exist in service table
-
-delete_service_alias
-  Args: (service-alias, service)
-  Returns: none
-  Acl: tbinfo.acl where tbinfo.table = "alias-service", DELETE
-  Errors: SMS_NO_MATCH
-@end(verbatim)
-
-@subsection(/**** FILESYS (filesys, alias) ****/)
-@begin(verbatim)
-
-get_all_filesys
+@B(get_all_filesys)
   Args: none
   Returns: {label, type, machine, name, mount, access}
-  Acl: tbinfo.acl where tbinfo.table = "filesys", READ
 
-get_filesys_by_label
+@B(get_filesys_by_label)
   Args: (label(*))
   Returns: {label, type, machine, name, mount, access}
-  Acl: tbinfo.acl where tbinfo.table = "filesys", READ
   Errors: SMS_NO_MATCH
 
-get_filesys_by_machine
+@B(get_filesys_by_machine)
   Args: (machine(*))
   Returns: {label, type, machine, name, mount, access}
-  Acl: tbinfo.acl where tbinfo.table = "filesys", READ
   Errors: SMS_NO_MATCH
 
-add_filesys
+@B(add_filesys)
+  Args: (label, type, machine, name, mount, access)
+  Returns: none
+  Integrity: type must be a known type; machine must exist in machine table
+  Errors: SMS_EXISTS, SMS_TYPE, SMS_MACHINE
 
-update_filesys
+@B(update_filesys)
+  Args: (label, type, machine, name, mount, access)
+  Returns: none
+  Integrity: type must be a known type; machine must exist in machine table
+  Errors: SMS_NO_MATCH, SMS_NOT_UNIQUE, SMS_TYPE, SMS_MACHINE
 
-delete_filesys
-@end(verbatim)
+@B(delete_filesys)
+  Args: (label)
+  Returns: none
+  Errors: SMS_NO_MATCH, SMS_NOT_UNIQUE
 
-@subsection(/**** UFS ****/)
-@begin(verbatim)
+@SubSection(RVD)
+@label(Rvdsrv)
+@label(Rvdphys)
+@label(Rvdvirt)
 
-get_ufs
-
-add_ufs
-
-delete_ufs
-@end(verbatim)
-
-@subsection(/**** RVD (rvdsrv, rvdphys, rvdvirt) ****/)
-@begin(verbatim)
-
-get_rvd_physical
+@B(get_rvd_physical)
   Args: (machine)
   Returns: {device, size, created, modified}
-  Acl: rvdsrv.acl where rvdsrv.machine = $1, READ 			/****/
   Errors: SMS_NO_MATCH  
 
-get_rvd_virtual
+@B(add_rvd_physical)
+  Args: (machine, device, size, created, modified)
+  Returns: none
+  Integrity: machine must exist in machine table
+  Errors: SMS_EXISTS, SMS_MACHINE
+
+@B(delete_rvd_physical)
+  Args: (machine, device)
+  Returns: none
+  Errors: SMS_NO_MATCH, SMS_NOT_UNIQUE
+
+@B(get_rvd_virtual)
   Args: (machine)
   Returns: {device, name, packid, owner, rocap, excap, shcap, modes, offset,
 	    size, created, modified, ownhost}
-  Acl: rvdsrv.acl where rvdsrv.machine = $1, READ			/****/
   Errors: SMS_NO_MATCH  
 
-add_rvd_physical
+@B(add_rvd_virtual)
+  Args: (machine, device, name, packid, owner, rocap, excap, shcap, modes,
+	 offset, size, created, modified, ownhost)
+  Returns: none
+  Integrity: machine, ownhost must exist in machine table; machine/device
+	     must exist in rvdphys table.
+  Errors: SMS_EXISTS, SMS_MACHINE, SMS_DEVICE
 
-delete_rvd_physical
+@B(update_rvd_virtual)
+  Args: (machine, device, name, packid, owner, rocap, excap, shcap, modes,
+	 offset, size, created, modified, ownhost)
+  Returns: none
+  Integrity: ownhost must exist in machine table.
+  Errors: SMS_NO_MATCH, SMS_NOT_UNIQUE, SMS_MACHINE
 
-add_rvd_virtual
+@B(delete_rvd_virtual)
+  Args: (machine, device, name)
+  Returns: none
+  Errors: SMS_NO_MATCH, SMS_NOT_UNIQUE
 
-update_rvd_virtual
+@SubSection(NFS)
+@label(Nfsphys)
+@label(Nfsquota)
 
-delete_rvd_virtual
-@end(verbatim)
+@B(add_nfs_physical)
+  Args: (machine, device)
+  Returns: none
+  Integrity: machine must exist
+  Errors: SMS_EXISTS, SMS_MACHINE
 
-subsection(/**** NFS ****/)
-@begin(verbatim)
+@B(delete_nfs_physical)
+  Args: (machine, device)
+  Returns: none
+  Errors: SMS_NO_MATCH, SMS_NOT_UNIQUE
 
-add_nfs_physical
+@B(get_nfs_quota)
+  Args: (machine, login)
+  Returns: {machine, login, quota}
+  Errors: SMS_NO_MATCH, SMS_MACHINE, SMS_USER
 
-delete_nfs_physical
+@B(add_nfs_quota)
+  Args: (machine, login, quota)
+  Returns: none
+  Integrity: machine must exist, user must exist
+  Errors: SMS_EXISTS, SMS_MACHINE, SMS_USER
 
-@end(verbatim)
+@B(update_nfs_quota)
+  Args: (machine, login, quota)
+  Returns: none
+  Integrity: machine must exist, user must exist
+  Errors: SMS_NO_MATCH, SMS_NOT_UNIQUE, SMS_MACHINE, SMS_USER
 
-@subsection(/**** PRINTERS (printer, prability, pqm, queue, qdev,	****/)
-/****           qdm, printcap, alias)			****/
-@begin(verbatim)
+@B(delete_nfs_quota)
+  Args: (machine, login)
+  Returns: none
+  Errors: SMS_NO_MATCH, SMS_NOT_UNIQUE, SMS_MACHINE, SMS_USER
 
-get_all_printers
+@SubSection(Printers)
+@label(Printer)
+@label(Prability)
+@label(Queue)
+@label(Pqm)
+@label(Qdev)
+@label(Qdm)
+@label(Printcap)
 
-get_printer_info
+@B(get_all_printers)
+  Args: none
+  Returns: {printer, type, desc, machine}
 
-add_printer
+@B(get_printer_info)
+  Args: (printer)
+  Returns: {printer, type, desc, machine}
+  Errors: SMS_NO_MATCH
 
-update_printer
+@B(add_printer)
+  Args: (printer, type, desc, machine)
+  Returns: none
+  Integrity: machine must exist, type is validated by appliation
+  Errors: SMS_EXISTS, SMS_MACHINE
 
-delete_printer
+@B(update_printer)
+  Args: (printer, type, desc, machine)
+  Returns: none
+  Integrity: machine must exist, type is validated by appliation
+  Errors: SMS_NO_MATCH, SMS_NOT_UNIQUE, SMS_MACHINE
 
-add_printer_ability
+@B(delete_printer)
+  Args: (printer)
+  Returns: none
+  Errors: SMS_NO_MATCH, SMS_NOT_UNIQUE
 
-delete_printer_ability
+@B(get_printer_ability)
+  Args: (printer)
+  Returns: {printer, ability}
+  Errors: SMS_NO_MATCH
 
-get_all_queues
+@B(add_printer_ability)
+  Args: (printer, ability)
+  Returns: none
+  Integrity: printer must exist
+  Errors: SMS_EXISTS, SMS_PRINTER
 
-get_queue_info
+@B(delete_printer_ability)
+  Args: (printer, ability)
+  Returns: none
+  Errors: SMS_NO_MATCH, SMS_NOT_UNIQUE
 
-add_queue
+@B(get_all_queues)
+  Args: none
+  Returns: {queue, machine, ability, status}
 
-update_queue
+@B(get_queue_info)
+  Args: (queue)
+  Returns: {queue, machine, ability, status}
+  Errors: SMS_NO_MATCH
 
-delete_queue
+@B(add_queue)
+  Args: (queue, machine, ability, status)
+  Returns: none
+  Integrity: machine must exist; abilty  is validated by application
+  Errors: SMS_EXISTS, SMS_MACHINE
 
-add_printer_to_queue
+@B(update_queue)
+  Args: (queue, machine, ability, status)
+  Returns: none
+  Integrity: machine must exist; abilty  is validated by application
+  Errors: SMS_NO_MATCH, SMS_NOT_UNIQUE, SMS_MACHINE
 
-get_qdev
+@B(delete_queue)
+  Args: (queue)
+  Returns: none
+  Errors: SMS_NO_MATCH, SMS_NOT_UNIQUE
 
-add_qdev
+@B(add_printer_to_queue)
+  Args: (printer, queue)
+  Returns: none
+  Integrity: printer and queue must exist
+  Errors: SMS_PRINTER, SMS_QUEUE
 
-update_qdev
+@B(get_qdev)
+  Args: (machine)
+  Returns: {device, physical, machine, status}
+  Errors: SMS_MACHINE
 
-delete_qdev
+@B(add_qdev)
+  Args: (device, physical, machine, status)
+  Returns: none
+  Integrity: machine must exist; application must verify that physical 
+	     device exists.
+  Errors: SMS_EXISTS, SMS_MACHINE
 
-add_queue_device_map
+@B(update_qdev)
+  Args: (device, physical, machine, status)
+  Returns: none
+  Integrity: only status may be updated
+  Errors: SMS_NO_MATCH, SMS_NOT_UNIQUE
 
-update_queue_device_map
+@B(delete_qdev)
+  Args: (device, machine)
+  Returns: none
+  Errors: SMS_NO_MATCH, SMS_NOT_UNIQUE
 
-delete_queue_device_map
+@B(add_queue_device_map)
+  Args: (queue, device, machine, server)
+  Returns: none
+  Integrity: queue, device, machine must exist; application must verify that
+	     server program exists.
+  Errors: SMS_QUEUE, SMS_DEVICE, SMS_MACHINE
 
-get_all_printcap
+@B(update_queue_device_map)
+  Args: (queue, device, machine, server)
+  Returns: none
+  Integrity: only server may be updated; application must verify existence
+	     of server program.
+  Errors: SMS_NO_MATCH, SMS_NOT_UNIQUE
 
-get_printcap
+@B(delete_queue_device_map)
+  Args: (queue, device, machine)
+  Returns: none
+  Errors: SMS_NO_MATCH, SMS_NOT_UNIQUE
 
-add_printcap
+@B(get_all_printcap)
+  Args: none
+  Returns: {printer, printcap}
 
-update_printcap
+@B(get_printcap)
+  Args: (printer)
+  Returns: {printer, printcap}
+  Errors: SMS_PRINTER, SMS_NO_MATCH
 
-delete_printcap
+@B(add_printcap)
+  Args: (printer, printcap)
+  Returns: none
+  Integrity: printer must exists in printer table; printcap string is
+	     application dependent.
+  Errors: SMS_EXISTS, SMS_PRINTER
 
-@end(verbatim)
-@subsection(/**** POBOX ****/)
-@begin(verbatim)
+@B(update_printcap)
+  Args: (printer, printcap)
+  Returns: none
+  Integrity: printcap string is application dependent.
+  Errors: SMS_PRINTER, SMS_NO_MATCH
 
-get_pobox
+@B(delete_printcap)
+  Args: (printer)
+  Returns: none
+  Errors: SMS_PRINTER, SMS_NO_MATCH
 
-add_pobox
+@SubSection(Post Office Boxes)
+@label(Pobox)
 
-delete_pobox
+@B(get_pobox)
+  Args: (login)
+  Returns: {login, type, machine, box}
+  Errors: SMS_USER, SMS_NO_MATCH
 
-@end(verbatim)
-@subsection(/**** LISTS (list, members, strings) ****/)
-@begin(verbatim)
+@B(add_pobox)
+  Args: (login, type, machine, box)
+  Returns: none
+  Integrity: user, machine must exist; application must verify type and
+	     boxname. 
+  Errors: SMS_EXISTS, SMS_USER, SMS_MACHINE
 
-get_list_info
-  Args: (list_type(*), list_name(*))
-  Returns: {list_name, list_type, description, expdate, modtime}
-  Acl: tbinfo.acl where tbinfo.table = "list-all", READ
+@B(delete_pobox)
+  Args: (login, type, machine, box)
+  Returns: none
+  Errors: SMS_USER, SMS_MACHINE, SMS_NO_MATCH
+
+@SubSection(Lists)
+@label(List)
+@label(Members)
+@label(Strings)
+
+@B(get_list_info)
+  Args: (list_name(*))
+  Returns: {list_name, description, flags, admin_acl, expdate, modtime}
   Errors: SMS_NO_MATCH  
 
-add_list
-  Args: (list_type, list_name, description, expdate, *modtime)
+@B(add_list)
+  Args: (list_name, description, flags, admin_acl, expdate)
   Returns: none
-  Acl: tbinfo.acl where tbinfo.table = "list-$1", APPEND		/****/
-  Errors: SMS_LIST_TYPE, SMS_DATE
-  Integrity: list_type must be a known list type; expdate must be
-	     reasonable; modtime set by server.
+  Integrity: expdate must be reasonable; application is responsible for
+	     flags; modtime set by server.
+  Errors: SMS_EXISTS, SMS_DATE
 
-update_list
-
-delete_list
-
-add_member_to_list
-  Args: (list_type, list_name, member_type, member_name, status)
+@B(update_list)
+  Args: (list_name, description, flags, admin_acl, expdate)
   Returns: none
-  Acl: [get_member_status(requestor): member.status & IS_ADMINISTRATOR] /****/
-  Errors: SMS_LIST_TYPE, SMS_MEM_TYPE, SMS_NO_MATCH, SMS_NOT_UNIQUE
-  Integrity: list_type and member_type must be known; list_name and
-	     member_name must be unique; if member_type is "user" or "list",
+  Integrity: expdate must be reasonable; application is responsible for flags.
+  Errors: SMS_NO_MATCH, SMS_NOT_UNIQUE, SMS_DATE
+
+@B(update_list_admin)
+  Args: (list_name, admin_acl)
+  Returns: none
+  Integrity: admin_acl must be a known list.
+  Errors: SMS_NO_MATCH, SMS_NOT_UNIQUE, SMS_LIST
+
+@B(delete_list)
+  Args: (list_name)
+  Returns: none
+  Errors: SMS_NO_MATCH, SMS_NOT_UNIQUE
+
+@B(add_member_to_list)
+  Args: (list_name, member_type, member_name)
+  Returns: none
+  Integrity: member_type must be known; list_name and member_name
+	     must be unique; if member_type is "user" or "list",
 	     then corresponding user or list must exist.
   Side Effects: if member_type = "string", entry added to strings table; 
 		list modtime updated.
+  Errors: SMS_EXISTS, SMS_TYPE, SMS_LIST, SMS_USER, SMS_NO_MATCH, 
+	  SMS_NOT_UNIQUE
 
-delete_member_from_list
-  Args: (list_type, list_name, member_type, member_name)
+@B(delete_member_from_list)
+  Args: (list_name, member_type, member_name)
   Returns: none
-  Acl: [get_member_status(requestor): member.status & IS_ADMINISTRATOR] /****/
-  Errors: SMS_LIST_TYPE, SMS_MEM_TYPE, SMS_NO_MATCH, SMS_NOT_UNIQUE
-  Integrity: list_type and member_type must be known; list_name and
-	     member_name must be unique.
+  Integrity: member_type must be known; list_name and member_name must 
+	     be unique.
   Side Effects: if member_type is "string", then corresponding string entry
 		is deleted; list modtime updated.
+  Errors: SMS_TYPE, SMS_NO_MATCH, SMS_NOT_UNIQUE
 
-update_member_status
-  Args: (list_type, list_name, member_type, member_name, status)
-  Returns: none
-  Acl: [get_member_status(requestor): member.status & IS_ADMINISTRATOR] /****/
-  Errors: SMS_LIST_TYPE, SMS_MEM_TYPE, SMS_NO_MATCH, SMS_NOT_UNIQUE
-  Integrity: list_type and member_type must be known; list_name and
-	     member_name must be unique.
-  Side Effects: list modtime updated.
+@B(get_members_of_list)
+  Args: (list_name)
+  Returns: {member_type, member_name}
+  Errors: SMS_NO_MATCH, SMS_NOT_UNIQUE
 
-NOTE: Administrator level determines maximum status value that can be set.
-      Specifically, NORMAL_ADMIN can set regular protection bits (R,W,D,A);
-		    MASTER_ADMIN can also set NORMAL_ADMIN bit;
-		    SUPER_ADMIN can also set MASTER_ADMIN
+@Subheading(Mailing Lists)
+@label(Maillists)
 
-get_members_of_list
-  Args: (list_type, list_name)
-  Returns: {member_type, member_name, status}
-  Acl: tbinfo.acl where tbinfo.table = list-$1, READ AND		/****/
-       NOT (list.flags & L_HIDDEN)
-  Errors: SMS_LIST_TYPE, SMS_NO_MATCH, SMS_NOT_UNIQUE
-
-@end(verbatim)
-@subsection(/**** TBINFO ****/)
-@begin(verbatim)
-
-get_all_table_info
+@B(get_all_mail_lists)
   Args: none
-  Returns: {table, subtable, value, acl}
-  Acl: tbinfo.acl where tbinfo.table = "tbinfo", READ
+  Returns: {list}
 
-get_table_info
-  Args: (table(*))
-  Returns: {table, subtable, value, acl}
-  Acl: tbinfo.acl where tbinfo.table = "tbinfo", READ
-  Errors: SMS_NO_MATCH
+@B(add_mail_list)
+  Args: (list)
+  Returns: none
+  Errors: SMS_EXISTS, SMS_LIST
 
-add_table_info
+@B(delete_mail_list)
+  Args: (list)
+  Returns: none
+  Errors: SMS_NO_MATCH, SMS_NOT_UNIQUE, SMS_LIST
 
-update_table_info
+@SubHeading(Groups)
+@label(Groups)
 
-delete_table_info
+@B(get_all_groups)
+  Args: none
+  Returns: {list}
 
-@end(verbatim)
-@subsection(/**** END ****/)
-@begin(verbatim)
+@B(add_group)
+  Args: (list)
+  Returns: none
+  Integrity: list must exist
+  Errors: SMS_EXISTS, SMS_LIST
 
-General errors:
+@B(delete_group)
+  Args: (list)
+  Returns: none
+  Errors: SMS_NO_MATCH, SMS_NOT_UNIQUE, SMS_LIST
 
-SMS_NO_PERM - permission denied
+
+@SubHeading(Access Control Lists)
+@label(Acls)
+@label(Capacls)
+
+@B(get_acl_by_machine)
+  Args: (machine)
+  Returns: {machine, list}
+  Errors: SMS_MACHINE
+
+@B(add_acl_to_machine)
+  Args: (machine, list)
+  Returns: none
+  Integrity: machine, list must exist
+  Errors: SMS_EXISTS, SMS_MACHINE, SMS_LIST
+
+@B(delete_acl_from_machine)
+  Args: (machine, list)
+  Returns: none
+  Errors: SMS_NO_MATCH, SMS_NOT_UNIQUE, SMS_MACHINE, SMS_LIST
+
+@SubSection(Aliases)
+@label(Alias)
+
+@B(get_alias)
+  Args: (name(*), type)
+  Returns: {name, type, trans}
+  Errors: SMS_TYPE, SMS_NO_MATCH
+
+@B(add_alias)
+  Args: (name, type, trans)
+  Returns: none
+  Integrity: type must exist as a translation of get_alias("alias", "type").
+  Errors: SMS_EXISTS, SMS_TYPE
+
+@B(delete_alias)
+  Args: (name, type)
+  Returns: none
+  Errors: SMS_NO_MATCH, SMS_NOT_UNIQUE
+
+@End(Verbatim)
+
+@SubSection(Values)
+@label(Values)
+
+@Begin(Text, Below 1.5)
+This section contains values that are needed by the server or application
+programs for updating the database.  Some examples are:
+@Begin(Itemize)
+
+next users_id
+
+default user disk quota
+
+max users per nfs server
+
+max users per post office
+
+@End(Itemize)
+@End(Text)
+
+@Begin(Verbatim)
+@B(get_value)
+  Args: (name)
+  Returns: {value}
+  Errors: SMS_NO_MATCH, SMS_NOT_UNIQUE
+
+@B(add_value)
+  Args: (name, value)
+  Returns: none
+  Errors: SMS_EXISTS
+
+@B(update_value)
+  Args: (name, value)
+  Returns: none
+  Errors: SMS_NO_MATCH, SMS_NOT_UNIQUE
+
+@B(delete_value)
+  Args: (name)
+  Returns: none
+  Errors: SMS_NO_MATCH, SMS_NOT_UNIQUE
+
+@End(Verbatim)
+
+@Section(Errors)
+
+@Begin(Format)
+
+General errors (returned by all queries):
+
+SMS_SUCCESS - query completed successfully
+SMS_PERM - permission denied
 
 Query specific errors:
 
 SMS_NO_MATCH - no records match query arguments
 SMS_NOT_UNIQUE - argument not unique as required
-SMS_LIST_TYPE - unknown list type
-SMS_MEM_TYPE - unknown member type
+SMS_EXISTS - record already exists
 SMS_DATE - invalid date
+SMS_USER - no such user
+SMS_CLUSTER - no such cluster
+SMS_MACHINE - no such machine
+SMS_SERVICE - no such service
+SMS_FILESYS - no such file system
+SMS_PRINTER - no such printer
+SMS_QUEUE - no such queue
+SMS_DEVICE - no such device
+SMS_LIST - no such list
+SMS_TYPE - unknown member type
 
-@end(verbatim)
+@End(Format)
 
+@Section(Application Programmers Library)
+@label(Applib)
+
+The following is an application library used by consumers of the
+SMS database.  The library reflects a direct mapping between 
+its functions and the above listed pre-defined query handles.
+
+To be furnished.
+
+@section(Catastrophic Failure Recovery Procedure)
+@label(Catfail)
+
+This section reviews, from an operational standpoint, the procedures
+necessary to bring SMS up after a catastrophic failure.  Catastrophic
+failure is defined as any system crash which cannot recover on its
+own accord, or any automatic system recovery procedure which results
+in database inconsistency or operational failure of the SMS system.
+
+To be furnished.

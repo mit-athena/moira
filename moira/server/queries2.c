@@ -1,4 +1,4 @@
-/* $Id: queries2.c,v 2.93 2001-10-18 14:02:12 zacheiss Exp $
+/* $Id: queries2.c,v 2.94 2002-04-30 02:18:15 zacheiss Exp $
  *
  * This file defines the query dispatch table
  *
@@ -6987,7 +6987,7 @@ struct query Queries[] = {
     "name, description, location, contact, acl_type, acl_id, memacl_type, memacl_id, TO_CHAR(modtime, 'DD-mon-YYYY HH24:MI:SS'), modby, modwith FROM containers",
     gcon_fields,
     11,
-    "name = '%s' AND cnt_id != 0",
+    "name LIKE '%s' AND cnt_id != 0",
     1,
     NULL,
     &gcon_validate,
@@ -7089,7 +7089,7 @@ struct query Queries[] = {
     "m.name, c.name FROM machine m, containers c, mcntmap mcn",
     gmnm_fields,
     2,
-    "m.name = UPPER('%s') AND mcn.cnt_id = c.cnt_id AND mcn.mach_id = m.mach_id",
+    "m.name LIKE UPPER('%s') AND mcn.cnt_id = c.cnt_id AND mcn.mach_id = m.mach_id",
     1,
     NULL,
     NULL,

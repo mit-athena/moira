@@ -1,11 +1,14 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/include/mr_proto.h,v $
- *	$Author: wesommer $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/include/mr_proto.h,v 1.1 1987-06-16 17:48:47 wesommer Exp $
+ *	$Author: spook $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/include/mr_proto.h,v 1.2 1987-06-28 05:28:18 spook Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
  *	$Log: not supported by cvs2svn $
+ * Revision 1.1  87/06/16  17:48:47  wesommer
+ * Initial revision
+ * 
  */
 
 #include <stdio.h>
@@ -30,7 +33,7 @@ typedef struct sms_params {
 
 extern int sms_start_recv(), sms_start_send();
 
-#define SMS_GDB_SERV "sms:sms_db"
+#define SMS_GDB_SERV "sms.mit.edu:sms_db"
 
 /*
  * Local Variables:

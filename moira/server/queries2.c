@@ -1,4 +1,4 @@
-/* $Id: queries2.c,v 2.88 2001-07-30 16:11:00 zacheiss Exp $
+/* $Id: queries2.c,v 2.89 2001-08-19 02:50:55 zacheiss Exp $
  *
  * This file defines the query dispatch table
  *
@@ -6763,10 +6763,10 @@ struct query Queries[] = {
   },
 
   {
-    /* Q_GTLC - GET_TOPLEVEL_CONTAINERS, v8 */
+    /* Q_GTLC - GET_TOPLEVEL_CONTAINERS, v7 */
     "get_toplevel_containers",
     "gtlc",
-    8,
+    7,
     RETRIEVE,
     "c",
     CONTAINERS_TABLE,

@@ -1,4 +1,4 @@
-/* $Id: lists.c,v 1.50 2002-09-25 20:44:57 zacheiss Exp $
+/* $Id: lists.c,v 1.51 2002-12-03 21:23:23 zacheiss Exp $
  *
  *	This is the file lists.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -24,7 +24,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v 1.50 2002-09-25 20:44:57 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v 1.51 2002-12-03 21:23:23 zacheiss Exp $");
 
 struct mqelem *GetListInfo(int type, char *name1, char *name2);
 char **AskListInfo(char **info, Bool name);
@@ -37,18 +37,20 @@ int GetMemberInfo(char *action, char **ret_argv);
 #define GLOM    2
 #define ACE_USE 3
 
-#define DEFAULT_ACTIVE      DEFAULT_YES
-#define DEFAULT_PUBLIC      DEFAULT_YES
-#define DEFAULT_HIDDEN      DEFAULT_NO
-#define DEFAULT_MAILLIST    DEFAULT_YES
-#define DEFAULT_GROUP       DEFAULT_NO
-#define DEFAULT_GID         UNIQUE_GID
-#define DEFAULT_NFSGROUP    DEFAULT_NO
-#define DEFAULT_ACE_TYPE    "user"
-#define DEFAULT_ACE_NAME    (user)
-#define DEFAULT_MEMACE_TYPE "NONE"
-#define DEFAULT_MEMACE_NAME "NONE"
-#define DEFAULT_DESCRIPTION DEFAULT_COMMENT
+#define DEFAULT_ACTIVE            DEFAULT_YES
+#define DEFAULT_PUBLIC            DEFAULT_YES
+#define DEFAULT_HIDDEN            DEFAULT_NO
+#define DEFAULT_MAILLIST          DEFAULT_YES
+#define DEFAULT_GROUP             DEFAULT_NO
+#define DEFAULT_GID               UNIQUE_GID
+#define DEFAULT_NFSGROUP          DEFAULT_NO
+#define DEFAULT_MAILMAN           DEFAULT_NO
+#define DEFAULT_MAILMAN_SERVER    "[ANY]"
+#define DEFAULT_ACE_TYPE          "user"
+#define DEFAULT_ACE_NAME          (user)
+#define DEFAULT_MEMACE_TYPE       "NONE"
+#define DEFAULT_MEMACE_NAME       "NONE"
+#define DEFAULT_DESCRIPTION       DEFAULT_COMMENT
 
 /* globals only for this file. */
 
@@ -97,6 +99,13 @@ static void PrintListInfo(char **info)
     }
   else
     Put_message("This list is NOT a Group.");
+
+  if (atoi(info[L_MAILMAN]))
+    {
+      sprintf(buf, "This list is a Mailman list on server %s",
+	      info[L_MAILMAN_SERVER]);
+      Put_message(buf);
+    }
 
   if (!strcmp(info[L_ACE_TYPE], "NONE"))
     Put_message("This list has no Administrator, how strange?!");
@@ -233,6 +242,17 @@ char **AskListInfo(char **info, Bool name)
       if (GetValueFromUser("What is the GID for this group.", &info[L_GID]) ==
 	  SUB_ERROR)
 	return NULL;
+    }
+
+  if (GetYesNoValueFromUser("Is this a Mailman list", &info[L_MAILMAN]) == 
+      SUB_ERROR)
+    return NULL;
+  if (atoi(info[L_MAILMAN]))
+    {
+      if (GetValueFromUser("Mailman server", &info[L_MAILMAN_SERVER]) == 
+	  SUB_ERROR)
+	return NULL;
+      info[L_MAILMAN_SERVER] = canonicalize_hostname(info[L_MAILMAN_SERVER]);
     }
 
   do {
@@ -414,6 +434,8 @@ static char **SetDefaults(char **info, char *name)
   info[L_GROUP] =    strdup(DEFAULT_GROUP);
   info[L_GID] =      strdup(DEFAULT_GID);
   info[L_NFSGROUP] = strdup(DEFAULT_NFSGROUP);
+  info[L_MAILMAN]  = strdup(DEFAULT_MAILMAN);
+  info[L_MAILMAN_SERVER] = strdup(DEFAULT_MAILMAN_SERVER);
   info[L_ACE_TYPE] = strdup(DEFAULT_ACE_TYPE);
   info[L_ACE_NAME] = strdup(DEFAULT_ACE_NAME);
   info[L_MEMACE_TYPE] = strdup(DEFAULT_MEMACE_TYPE);

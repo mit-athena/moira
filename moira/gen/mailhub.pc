@@ -1,4 +1,4 @@
-/* $Id: mailhub.pc,v 1.13 2000-06-14 21:35:05 zacheiss Exp $
+/* $Id: mailhub.pc,v 1.14 2000-10-23 05:24:43 zacheiss Exp $
  *
  * This generates the /usr/lib/aliases file for the mailhub.
  *
@@ -22,7 +22,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/mailhub.pc,v 1.13 2000-06-14 21:35:05 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/mailhub.pc,v 1.14 2000-10-23 05:24:43 zacheiss Exp $");
 
 char *whoami = "mailhub.gen";
 char *db = "moira/moira";
@@ -517,8 +517,10 @@ void put_fill(FILE *aliases, char *string)
 }
 
 
-/* Illegal chars: this should correspond to the array used by
- * setup_alis. */
+/* Illegal chars: this no longer corresponds to the array 
+ * in setup_alis.  '+' is a valid character in a string on 
+ * a list, but is not a valid character in a listname.
+ */
 
 static int illegalchars[] = {
   1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, /* ^@ - ^O */

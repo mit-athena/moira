@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/winad/winad.c,v 1.43 2004-08-04 18:02:30 zacheiss Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/winad/winad.c,v 1.44 2004-09-21 06:08:17 zacheiss Exp $
 /* winad.incr arguments examples
  *
  * arguments when moira creates the account - ignored by winad.incr since the account is unusable.
@@ -3120,14 +3120,8 @@ int filesys_process(LDAP *ldap_handle, char *dn_path, char *fs_name,
   char  winProfile[256];
   char  filter[128];
   char  *attr_array[3];
-  char  *homedir_v[] = {NULL, NULL};
-  char  *winProfile_v[] = {NULL, NULL};
-  char  *drives_v[] = {NULL, NULL};
   int   group_count;
-  int   n;
   int   rc;
-  int   i;
-  LDAPMod   *mods[20];
   LK_ENTRY  *group_base;
 
   if (!check_string(fs_name))
@@ -3166,39 +3160,27 @@ int filesys_process(LDAP *ldap_handle, char *dn_path, char *fs_name,
   linklist_free(group_base);
   group_count = 0;
 
-  n = 0;
   if (operation == LDAP_MOD_ADD)
     {
       memset(winPath, 0, sizeof(winPath));
       AfsToWinAfs(fs_pack, winPath);
-      homedir_v[0] = winPath;
-      drives_v[0] = "H:";
       memset(winProfile, 0, sizeof(winProfile));
       strcpy(winProfile, winPath);
       strcat(winProfile, "\\.winprofile");
-      winProfile_v[0] = winProfile;
+
+      rc = attribute_update(ldap_handle, distinguished_name, winProfile, "profilePath", fs_name);
+      rc = attribute_update(ldap_handle, distinguished_name, "H:", "homeDrive", fs_name);
+      rc = attribute_update(ldap_handle, distinguished_name, winPath, "homeDirectory", fs_name);
+
     }
   else
     {
-      homedir_v[0] = NULL;
-      drives_v[0] = NULL;
-      winProfile_v[0] = NULL;
+      rc = attribute_update(ldap_handle, distinguished_name, "", "profilePath", fs_name);
+      rc = attribute_update(ldap_handle, distinguished_name, "", "homeDrive", fs_name);
+      rc = attribute_update(ldap_handle, distinguished_name, "", "homeDirectory", fs_name);
     }
-  ADD_ATTR("profilePath", winProfile_v, operation);
-  ADD_ATTR("homeDrive", drives_v, operation);
-  ADD_ATTR("homeDirectory", homedir_v, operation);
-  mods[n] = NULL;
 
-  rc = ldap_modify_s(ldap_handle, distinguished_name, mods);
-  if (rc != LDAP_SUCCESS)
-    {
-      com_err(whoami, 0, "Unable to modify user data for filesys %s : %s",
-              fs_name, ldap_err2string(rc));
-    }
-  for (i = 0; i < n; i++)
-    free(mods[i]);
-
-  return(rc);
+  return(0);
 }
 
 int user_create(int ac, char **av, void *ptr)
@@ -5681,6 +5663,8 @@ int SetHomeDirectory(LDAP *ldap_handle, char *user_name, char *DistinguishedName
                 }
             }
         }
+        else
+            return(n);
     }
 
     if (hp != NULL)

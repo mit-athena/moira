@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/queries.c,v 1.10 1992-11-09 17:17:54 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/queries.c,v 1.11 1992-12-10 11:01:54 mar Exp $
  */
 
 #include <stdio.h>
@@ -385,6 +385,7 @@ int remove;
 	  argv[0] = "*";
 	if (!*stringval(form, 1))
 	  argv[1] = "*";
+	AppendToLog("Kerberos mappings:\n");
 	break;
     case MM_SET_POBOX:
 	if (!strcmp(argv[1], "POP"))
@@ -393,8 +394,11 @@ int remove;
     case MM_SHOW_ACE_USE:
 	if (boolval(form, 2)) {
 	    sprintf(buf, "R%s", stringval(form, 0));
-	    argv[0] = buf;
+	    argv[0] = strsave(buf);
 	}
+	sprintf(buf, "Objects %s %s can administer\n",
+		stringval(form, 0), stringval(form, 1));
+	AppendToLog(buf);
 	break;
     case MM_MOD_LIST:
 	if (!strcmp(form->formname, "mod_list")) {
@@ -463,8 +467,7 @@ int remove;
 	break;
     case MM_ADD_FILSYS:
 	StoreHost(form, FS_MACHINE, &argv[FS_MACHINE]);
-	if (!strcmp(stringval(form, FS_TYPE), "AFS") ||
-	    !strcmp(stringval(form, FS_TYPE), "FSGROUP") ||
+	if (!strcmp(stringval(form, FS_TYPE), "FSGROUP") ||
 	    !strcmp(stringval(form, FS_TYPE), "MUL"))
 	  argv[FS_MACHINE] = "\\[NONE\\]";
 	break;
@@ -508,7 +511,7 @@ int remove;
 	 * in the radiobox to find the one selected and the one after
 	 * it.  The name of the widget is also the member name.
 	 */
-	{ 
+	if (!tty) { 
 	    Widget w, kid;
 
 	    argv[3] = "";
@@ -530,6 +533,8 @@ int remove;
 		    break;
 		}
 	    }
+	} else {
+	    printf("Don't know how to do this\007\007!\n");
 	}
 	if (*argv[3] == 0) argv[3] = "Z";
 #ifdef DEBUG
@@ -672,6 +677,7 @@ int remove;
     case MM_SHOW_CLDATA:
 	if (!*stringval(form, 1))
 	  argv[1] = "*";
+	AppendToLog("Cluster data:\n");
 	break;
     case MM_ADD_PCAP:
 	StoreHost(form, PCAP_SPOOL_HOST, &argv[PCAP_SPOOL_HOST]);
@@ -694,6 +700,15 @@ int remove;
 	}
 	form->extrastuff = (caddr_t) "mod_service";
 	retfunc = ModifyCallback;
+	break;
+    case MM_RESET_SERVICE:
+	argv[1] = argv[2] = argv[3] = argv[4] = "0";
+	argv[5] = "";
+	break;
+    case MM_RESET_HOST:
+	StoreHost(form, 1, &argv[1]);
+	argv[2] = argv[3] = argv[4] = argv[5] = argv[7] = argv[8] = "0";
+	argv[6] = "";
 	break;
     case MM_SHOW_HOST:
 	if (!*stringval(form, 0))
@@ -874,6 +889,15 @@ int remove;
     case MM_RESET_POBOX:
 	AppendToLog("Done.\n");
 	break;
+    case MM_SHOW_KRBMAP:
+    case MM_SHOW_CLDATA:
+    case MM_SHOW_MCMAP:
+    case MM_SHOW_MEMBERS:
+    case MM_STATS:
+    case MM_CLIENTS:
+    case MM_SHOW_ACE_USE:
+	AppendToLog("\n");
+	break;
     case MM_NEW_VALUE:
 	CacheNewValue(GetForm(form->menu->form), (int) form->menu->accel,
 		      form->extrastuff, StringValue(form, 0));
@@ -882,8 +906,12 @@ int remove;
     if (remove && form->formpointer)
       XtUnmanageChild(form->formpointer);
 
-    if (f)
-      DisplayForm(f);
+    if (f) {
+	if (tty)
+	  TtyForm(f);
+	else
+	  DisplayForm(f);
+    }
 }
 
 
@@ -914,13 +942,15 @@ MenuItem *m;
 	AppendToLog("Services and Hosts with failed updates:\n");
 	argv[0] = argv[2] = "DONTCARE";
 	argv[1] = "TRUE";
-	i = MoiraQuery("qualified_get_server", 3, argv, retfunc, NULL);
+	i = MoiraQuery("qualified_get_server", 3, argv, retfunc,
+		       (char *)&dummy);
 	if (i && i != MR_NO_MATCH)
 	  com_err(program_name, i, " executing database query");
 	argv[0] = "*";
 	argv[1] = argv[2] = argv[3] = argv[5] = "DONTCARE";
 	argv[4] = "TRUE";
-	i = MoiraQuery("qualified_get_server_host", 6, argv, retfunc, NULL);
+	i = MoiraQuery("qualified_get_server_host", 6, argv, retfunc,
+		       (char *)&dummy);
 	if (i && i != MR_NO_MATCH)
 	  com_err(program_name, i, " executing database query");
 	AppendToLog("\n");

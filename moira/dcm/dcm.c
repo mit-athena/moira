@@ -7,11 +7,11 @@
  *
  * $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/dcm.c,v $
  * $Author: mar $
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/dcm.c,v 1.3 1988-08-11 11:56:17 mar Exp $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/dcm.c,v 1.4 1988-08-16 17:39:29 mar Exp $
  */
 
 #ifndef lint
-static char rcsid_dcm_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/dcm.c,v 1.3 1988-08-11 11:56:17 mar Exp $";
+static char rcsid_dcm_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/dcm.c,v 1.4 1988-08-16 17:39:29 mar Exp $";
 #endif lint
 
 #include <stdio.h>
@@ -212,10 +212,13 @@ do_services()
 	    
 		com_err(whoami, status, " running %s", dfgen_prog);
 		waits.w_status = system(dfgen_cmd);
-		/* extract the process's exit value */
-		status = waits.w_retcode;
-		if (status) {
-		    status += sms_err_base;
+		if (waits.w_termsig) {
+		    status = SMS_TAR_FAIL;
+		    com_err(whoami, status, " %s exited on signal %d",
+			    dfgen_prog, waits.w_termsig);
+		} else if (waits.w_retcode) {
+		    /* extract the process's exit value */
+		    status = waits.w_retcode + sms_err_base;
 		    com_err(whoami, status, " %s exited", dfgen_prog);
 		}
 		if (SOFT_FAIL(status)) {

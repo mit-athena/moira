@@ -5,8 +5,11 @@
  *
  * $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v $
  * $Author: jtkohl $
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.6 1987-08-17 11:55:23 jtkohl Exp $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.7 1987-08-17 14:23:05 jtkohl Exp $
  * $Log: not supported by cvs2svn $
+ * Revision 1.6  87/08/17  11:55:23  jtkohl
+ * changes made by poto. Looks like cleanup
+ * 
  * Revision 1.5  87/08/07  18:09:46  poto
  * will not enter menu if ->m_entry returns DM_QUIT;
  * the command args from a submenu command will be passed on to ->m_entry();
@@ -37,7 +40,7 @@
  */
 
 #ifndef lint
-static char rcsid_menu_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.6 1987-08-17 11:55:23 jtkohl Exp $";
+static char rcsid_menu_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.7 1987-08-17 14:23:05 jtkohl Exp $";
 
 #endif lint
 
@@ -379,6 +382,93 @@ int Prompt_input(prompt, buf, buflen)
 	printf("%s", prompt);
 	if (gets(buf) == NULL)
 	    return 0;
+	Start_paging();
+	return 1;
+    }
+}
+
+/* Prompt the user for input in the input window of cur_ms, but don't echo
+   and allow some control characters */
+int Password_input(prompt, buf, buflen)
+    char *prompt;
+    char *buf;
+    int buflen;
+{
+    int c;
+    char *p;
+    int y, x, oldx;
+
+    if (cur_ms != NULLMS) {
+	more_flg = 1;
+	getyx(cur_ms->ms_input, y, x);
+	(void) wmove(cur_ms->ms_input, y, 0);
+
+	touchwin(cur_ms->ms_screen);
+	refresh_ms(cur_ms);
+	(void) waddstr(cur_ms->ms_input, prompt);
+	getyx(cur_ms->ms_input, y, x);
+
+	oldx = x;
+	for (p = buf; p - buf < buflen;) {
+	    (void) wmove(cur_ms->ms_input, y, x);
+	    (void) wclrtoeol(cur_ms->ms_input);
+	    refresh_ms(cur_ms);
+	    c = getchar();
+	    switch (c) {
+	    case CTL('C'):
+		return 0;
+	    case CTL('Z'):
+		kill(getpid(), SIGTSTP);
+		touchwin(curscr);
+		break;
+	    case CTL('L'):
+		(void) wclear(cur_ms->ms_input);
+		(void) waddstr(cur_ms->ms_input, prompt);
+		wrefresh(curscr);
+		getyx(cur_ms->ms_input, y, x);
+		break;
+	    case '\n':
+	    case '\r':
+		(void) waddch(cur_ms->ms_input, '\n');
+		(void) waddch(cur_ms->ms_input, '\r');
+
+		(void) wclrtoeol(cur_ms->ms_input);
+		refresh_ms(cur_ms);
+		*p = '\0';
+		Start_paging();
+		return 1;
+	    case '\b':
+	    case '\177':
+		if (p > buf) {
+		    p--;
+		    x--;
+		}
+		break;
+	    case CTL('U'):
+		x = oldx;
+		p = buf;
+		break;
+	    default:
+		*p++ = c;
+		break;
+	    }
+	}
+    }
+    else {
+	struct sgttyb ttybuf, nttybuf;
+	printf("%s", prompt);
+	/* turn off echoing */
+	(void) ioctl(0, TIOCGETP, &ttybuf);
+	nttybuf = ttybuf;
+	nttybuf.sg_flags &= ~ECHO;
+	(void)ioctl(0, TIOCSETP, &nttybuf);
+	if (gets(buf) == NULL) {
+	    (void) ioctl(0, TIOCSETP, &ttybuf);
+	    putchar('\n');
+	    return 0;
+	}
+	putchar('\n');
+	(void) ioctl(0, TIOCSETP, &ttybuf);
 	Start_paging();
 	return 1;
     }

@@ -109,13 +109,15 @@ if test "$krb4" != yes; then
 elif test -d /usr/include/kerberosIV; then
     MR_INCLUDE(/usr/include/kerberosIV)
 fi
+AC_CHECK_LIB(crypto, main, crypto="crypto",
+             [AC_CHECK_LIB(k5crypto, main, crypto="k5crypto")])
 AC_CHECK_LIB(krb4, krb_rd_req,
-	     [KRB4_LIBS="-lkrb4 -ldes425 -lkrb5 -lcrypto"],
+	     [KRB4_LIBS="-lkrb4 -ldes425 -lkrb5 -l${crypto}"],
 	     [AC_CHECK_LIB(krb, krb_rd_req,
 			   [KRB4_LIBS="-lkrb -ldes"],
 			   [AC_MSG_ERROR(Kerberos 4 libraries not found)],
 			   $LIBPATH -ldes)],
-	     $LIBPATH -ldes425 -lkrb5 -lcrypto -lcom_err)
+	     $LIBPATH -ldes425 -lkrb5 -l${crypto} -lcom_err)
 
 AC_MSG_CHECKING(for Kerberos 5)
 AC_ARG_WITH(krb5,
@@ -128,7 +130,7 @@ if test "$krb5" != no; then
 	REG_SVR_INCLUDES=-I$krb5/include
 	REG_SVR_LIBS=-L$krb5/lib
     fi
-    REG_SVR_LIBS="$REG_SVR_LIBS -lkadm5clnt -lgssapi_krb5 -lgssrpc -ldyn -lkrb4 -ldes425 -lkrb5 -lcrypto"
+    REG_SVR_LIBS="$REG_SVR_LIBS -lkadm5clnt -lgssapi_krb5 -lgssrpc -ldyn -lkrb4 -ldes425 -lkrb5 -l${crypto}"
 else
     REG_SVR_DEFS=-DKRB4
     REG_SVR_LIBS=-lkadm

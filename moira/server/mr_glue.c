@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_glue.c,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_glue.c,v 1.8 1989-06-14 15:08:08 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_glue.c,v 1.9 1989-06-23 13:48:57 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -12,12 +12,12 @@
  */
 
 #ifndef lint
-static char *rcsid_sms_glue_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_glue.c,v 1.8 1989-06-14 15:08:08 mar Exp $";
+static char *rcsid_sms_glue_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_glue.c,v 1.9 1989-06-23 13:48:57 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
 #include "sms_server.h"
-#include <krb.h>		/* XXX for error codes */
+#include <krb_et.h>
 #include <pwd.h>
 #include "query.h"
 
@@ -26,7 +26,7 @@ static int already_connected = 0;
 #define CHECK_CONNECTED { if (!already_connected) return SMS_NOT_CONNECTED; }
 
 static client pseudo_client;
-extern int krb_err_base, errno;
+extern int errno;
 extern char *malloc(), *whoami;
 extern time_t now;
 
@@ -38,8 +38,8 @@ char *server;
 
     if (already_connected) return SMS_ALREADY_CONNECTED;
 
-    init_sms_err_tbl();
-    init_krb_err_tbl();
+    initialize_sms_error_table();
+    initialize_krb_error_table();
     bzero((char *)&pseudo_client, sizeof(pseudo_client)); /* XXX */
 
     query_timeout = 0;
@@ -73,7 +73,7 @@ char *prog;
     
     CHECK_CONNECTED;
     pw = getpwuid(getuid());
-    if (!pw) return (KDC_PR_UNKNOWN + krb_err_base); /* XXX hack (we 
+    if (!pw) return (KDC_PR_UNKNOWN + ERROR_TABLE_BASE_krb); /* XXX hack (we 
 						    * need an extended 
 						    * error code table)
 						    */

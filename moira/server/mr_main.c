@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.20 1988-12-29 18:01:03 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.21 1989-06-23 13:49:20 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -16,7 +16,7 @@
  * 
  */
 
-static char *rcsid_sms_main_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.20 1988-12-29 18:01:03 mar Exp $";
+static char *rcsid_sms_main_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.21 1989-06-23 13:49:20 mar Exp $";
 
 #include <mit-copyright.h>
 #include <strings.h>
@@ -24,6 +24,7 @@ static char *rcsid_sms_main_c = "$Header: /afs/.athena.mit.edu/astaff/project/mo
 #include <sys/signal.h>
 #include <sys/wait.h>
 #include "sms_server.h"
+#include <krb_et.h>
 
 extern CONNECTION newconn, listencon;
 
@@ -77,8 +78,8 @@ main(argc, argv)
 	/*
 	 * Error handler init.
 	 */
-	init_sms_err_tbl();
-	init_krb_err_tbl();
+	initialize_sms_error_table();
+	initialize_krb_error_table();
 	set_com_err_hook(sms_com_err);
 	setlinebuf(stderr);
 	

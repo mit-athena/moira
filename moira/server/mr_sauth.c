@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_sauth.c,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_sauth.c,v 1.10 1988-09-13 17:41:33 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_sauth.c,v 1.11 1989-06-23 13:49:55 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,13 +10,13 @@
  */
 
 #ifndef lint
-static char *rcsid_sms_sauth_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_sauth.c,v 1.10 1988-09-13 17:41:33 mar Exp $";
+static char *rcsid_sms_sauth_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_sauth.c,v 1.11 1989-06-23 13:49:55 mar Exp $";
 #endif lint
 
-extern int krb_err_base;
 #include <mit-copyright.h>
 #include <strings.h>
 #include "sms_server.h"
+#include <krb_et.h>
 
 extern char buf1[];
 extern char *whoami;
@@ -38,7 +38,6 @@ do_auth(cl)
 	AUTH_DAT ad;
 	int status;
 	char buf[REALM_SZ+INST_SZ+ANAME_SZ];
-	extern int krb_err_base;
 	static char *unknown = "???";
 	
 	if (cl->clname) {
@@ -57,8 +56,8 @@ do_auth(cl)
 	auth.mbz = 0;
 	
 	if ((status = krb_rd_req (&auth, "sms", "sms", cl->haddr.sin_addr,
-				 &ad, "")) != KSUCCESS) {
-		status += krb_err_base;
+				 &ad, "")) != 0) {
+		status += ERROR_TABLE_BASE_krb;
 		cl->reply.sms_status = status;
 		if (log_flags & LOG_RES)
 			com_err(whoami, status, "(authentication failed)");

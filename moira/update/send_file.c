@@ -1,13 +1,13 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/send_file.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/send_file.c,v 1.7 1994-04-29 19:50:15 jweiss Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/send_file.c,v 1.8 1994-06-17 18:24:52 jweiss Exp $
  */
 /*  (c) Copyright 1988 by the Massachusetts Institute of Technology. */
 /*  For copying and distribution information, please see the file */
 /*  <mit-copyright.h>. */
 
 #ifndef lint
-static char *rcsid_send_file_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/send_file.c,v 1.7 1994-04-29 19:50:15 jweiss Exp $";
+static char *rcsid_send_file_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/send_file.c,v 1.8 1994-06-17 18:24:52 jweiss Exp $";
 #endif	lint
 
 #include <mit-copyright.h>
@@ -22,7 +22,7 @@ static char *rcsid_send_file_c = "$Header: /afs/.athena.mit.edu/astaff/project/m
 #include <krb.h>
 #include <update.h>
 #ifdef POSIX
-#include <sys/fcntl.h>
+#include <fcntl.h>
 #endif
 
 extern CONNECTION conn;

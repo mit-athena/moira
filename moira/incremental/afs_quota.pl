@@ -55,18 +55,18 @@ die "Unable to change quota on $path\n" if ($?);
 &afs_quota_adj($cell,$asrv,$apart,$newq-$oldq,$dusage);
 
 if ($dusage > (0.9 * $dtotal)) {
-    system("$zwrite","-q","-n","-c","afsadm","-m",
+    system("$zwrite","-q","-n","-c","afsadm","-i","moira","-m",
 	   "WARNING: Disk usage on $asrv:$apart is greater than 90%
 Used $dusage K out of $dtotal K");
 }
 elsif (($dusage + ($newq-$vusage)) > (0.9 * $dtotal)) {
-    system("$zwrite","-q","-n","-c","afsadm","-m",
+    system("$zwrite","-q","-n","-c","afsadm","-i","moira","-m",
 	   "Quota change on volume $vname, if used completely will cause
 $asrv:$apart to be over 90% used.
 
 Current volume usage: $vusage, old quota $oldq, new quota $newq");
 }
 elsif ($newq-$oldq > 39999) {
-    system("$zwrite","-q","-n","-c","afsadm","-m",
+    system("$zwrite","-q","-n","-c","afsadm","-i","moira","-m",
 	   "Increased quota on volume $vname ($asrv:$apart) from $oldq to $newq");
 }

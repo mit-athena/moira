@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/quota.c,v 1.12 1989-10-11 18:44:23 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/quota.c,v 1.13 1989-12-14 13:57:35 mar Exp $";
 #endif lint
 
 /*	This is the file quota.c for the SMS Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/quota.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/quota.c,v 1.12 1989-10-11 18:44:23 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/quota.c,v 1.13 1989-12-14 13:57:35 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -35,6 +35,7 @@ static char * def_quota = NULL;
 #define DEFAULT_FILESYS DEFAULT_NONE
 #define DEFAULT_USER user	/* this is the user who started sms. */
 #define NOBODY	"\\[nobody\\]"
+#define OLDNOBODY	"[nobody]"
 
 
 /*	Function Name: GetDefaultUserQuota
@@ -321,6 +322,10 @@ char ** info;
 
   sprintf(temp_buf, "New quota for filesystem %s (in KB)", info[Q_FILESYS]);
   GetValueFromUser(temp_buf, &info[Q_QUOTA]);
+  if (!strcmp(info[Q_LOGIN], OLDNOBODY)) {
+      free(info[Q_LOGIN]);
+      info[Q_LOGIN] = strsave(NOBODY);
+  }
   
   if (status = do_sms_query("update_nfs_quota", 3, info,
 			    Scream, (char *) NULL) != SMS_SUCCESS) {

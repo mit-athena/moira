@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/reg_stubs.c,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/reg_stubs.c,v 1.8 1989-08-16 11:18:18 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/reg_stubs.c,v 1.9 1989-09-11 14:15:49 mar Exp $
  *
  *  (c) Copyright 1988 by the Massachusetts Institute of Technology.
  *  For copying and distribution information, please see the file
@@ -9,7 +9,7 @@
  */
 
 #ifndef lint
-static char *rcsid_reg_stubs_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/reg_stubs.c,v 1.8 1989-08-16 11:18:18 mar Exp $";
+static char *rcsid_reg_stubs_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/reg_stubs.c,v 1.9 1989-09-11 14:15:49 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -26,6 +26,7 @@ static char *rcsid_reg_stubs_c = "$Header: /afs/.athena.mit.edu/astaff/project/m
 #include <strings.h>
 
 static int reg_sock = -1;
+static int seq_no = 0;
 extern errno;
 #define UNKNOWN_HOST -1
 #define UNKNOWN_SERVICE -2
@@ -39,6 +40,8 @@ ureg_init()
     initialize_ureg_error_table();
     initialize_sms_error_table();
     
+    seq_no = getpid();
+
     hp = gethostbyname("sms.mit.edu");
     if (hp == NULL) return UNKNOWN_HOST;
 
@@ -60,8 +63,6 @@ ureg_init()
     return 0;
 }
 
-static int seq_no = 0;
- 
 int
 verify_user(first, last, idnumber, hashidnumber, login)
     char *first, *last, *idnumber, *hashidnumber, *login;

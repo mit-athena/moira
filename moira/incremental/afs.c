@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/afs.c,v 1.34 1992-07-30 18:00:21 probe Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/afs.c,v 1.35 1992-07-31 12:26:25 probe Exp $
  *
  * Do AFS incremental updates
  *
@@ -330,11 +330,17 @@ char **after;
 int afterc;
 {
     char cmd[1024];
-    
+    int acreate, atype, btype;
+
+    if (afterc < FS_CREATE) {
+	atype = acreate = 0;
+    } else {
+	atype = !strcmp(after[FS_TYPE], "AFS");
+	acreate = atoi(after[FS_CREATE]);
+    }
+
     if (beforec < FS_CREATE) {
-	if (afterc < FS_CREATE || atoi(after[FS_CREATE])==0 ||
-	    strcmp(after[FS_TYPE], "AFS"))
-	    return;
+	if (acreate == 0 || atype == 0) return;
 
 	/* new locker creation */
 	sprintf(cmd, "%s/perl -I%s %s/afs_create.pl %s %s %s %s %s %s",
@@ -344,34 +350,37 @@ int afterc;
 	run_cmd(cmd);
 	return;
     }
-
+    
     /* What do we do?  When do we use FS_CREATE?
+     *
+     * Currently, we use FS_CREATE to indicate that Moira should attempt
+     * to update the file servers (rename, creation, ownership change).
      * 
-     * TYPE change:  AFS->ERR, ERR->AFS: rename/unmount/remount
-     * LOCKERTYPE change: rename/remount
-     * PACK change: remount
-     * LABEL change: rename/remount
-     * Deletion: rename/unmount
+     * Howerver, at this time, we there is no back-end support to handle:
+     *   TYPE change       (eg. AFS -> ERR)
+     *   LOCKERTYPE change (eg. PROJECT -> COURSE)
+     *   PACK change       (eg. /afs/athena/foo -> /afs/athena/bar)
+     *   LABEL change      (eg. "foo" -> "bar")
+     *   Locker Deletion
      */
+
+    btype = !strcmp(before[FS_TYPE], "AFS");
     if (afterc < FS_CREATE) {
-	if (!strcmp(before[FS_TYPE], "AFS"))
+	if (btype)
 	    critical_alert("incremental",
 			   "Could not delete AFS filesystem %s: Operation not supported",
 			   before[FS_NAME]);
 	return;
-    }
-
-    if (!strcmp(after[FS_TYPE], "AFS")) {
-	if (strcmp(before[FS_TYPE], "AFS")) {
-	    critical_alert("incremental",
-			   "Cannot convert %s to an AFS filesystem: Operation not supported",
-			   after[FS_NAME]);
-	} else {
+    } if (acreate && atype) {
+	if (btype) {
 	    critical_alert("incremental",
 			   "Cannot change attributes of AFS filesystem %s: Operation not supported",
 			   after[FS_NAME]);
+	} else {
+	    critical_alert("incremental",
+			   "Cannot convert %s to an AFS filesystem: Operation not supported",
+			   after[FS_NAME]);
 	}
-	return;
     }
 }
 

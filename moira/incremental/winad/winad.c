@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/winad/winad.c,v 1.8 2001-04-23 02:11:22 zacheiss Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/winad/winad.c,v 1.9 2001-04-30 19:49:56 zacheiss Exp $
 /* test parameters for creating a user account - done 
  * users 10 10 a_chen 31275 sh cmd Lastname Firstname Middlename 0 950000000 STAFF a_chen 31275 sh cmd Lastname Firstname Middlename 2 950000000 STAFF
  * users 10 10 a_chen 31275 sh cmd Lastname Firstname Middlename 2 950000000 STAFF a_chen 31275 sh cmd Lastname Firstname Middlename 1 950000000 STAFF
@@ -337,7 +337,7 @@ int main(int argc, char **argv)
   check_winad();
   
   memset(ldap_domain, '\0', sizeof(ldap_domain));
-  if ((fptr = fopen("winad.cfg", "r")) != NULL)
+  if ((fptr = fopen("/moira/winad/winad.cfg", "r")) != NULL)
     {
       fread(ldap_domain, sizeof(char), sizeof(ldap_domain), fptr);
       fclose(fptr);

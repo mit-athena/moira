@@ -1,4 +1,4 @@
-/* $Id: qsupport.pc,v 2.37 2001-07-30 16:07:59 zacheiss Exp $
+/* $Id: qsupport.pc,v 2.38 2001-07-30 18:01:12 zacheiss Exp $
  *
  * Special query routines
  *
@@ -18,7 +18,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.pc,v 2.37 2001-07-30 16:07:59 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.pc,v 2.38 2001-07-30 18:01:12 zacheiss Exp $");
 
 extern char *whoami, *table_name[];
 extern int dbms_errno, mr_errcode;
@@ -2038,7 +2038,7 @@ int get_subcontainers_of_container(struct query *q, char *argv[], client *cl,
   char *qs;
   EXEC SQL END DECLARE SECTION;
 
-  char querystring[512], tmp [256];
+  char querystring[2048], tmp [1024];
   char *rargv[1];
   int found = 0;
   

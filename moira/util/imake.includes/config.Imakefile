@@ -145,7 +145,7 @@ GDSSINC= -I/mit/gdss/include
  * Define USELINT if you want to build lint libraries while building
  * Moira.
  */
-#if !defined(NeXT) && !defined(_AIX)
+#if !defined(NeXT) && !defined(_AIX) && !defined(SOLARIS)
 #define USELINT
 #endif
 

@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.8 2000-01-28 00:03:23 danw Exp $
+# $Id: Makefile.in,v 1.9 2000-02-10 19:14:05 zacheiss Exp $
 
 SHELL=/bin/sh
 @SET_MAKE@
@@ -46,9 +46,12 @@ depend:
 install: all
 	$(INSTALL_PROGRAM) namespace $(bindir)
 	$(INSTALL_PROGRAM) moira $(bindir)
-	ln -s $(bindir)/listmaint moira
-	ln -s $(bindir)/dcmmaint moira
-	ln -s $(bindir)/usermaint moira
+	rm -f $(bindir)/listmaint	
+	ln -s moira $(bindir)/listmaint
+	rm -f $(bindir)/dcmmaint
+	ln -s moira $(bindir)/dcmmaint
+	rm -f $(bindir)/usermaint
+	ln -s moira $(bindir)/usermaint
 
 moira: $(MOBJS) ../lib/libmrclient.a $(MR_LIBDEP)
 	$(CC) -o $@ $(LDFLAGS) $(MOBJS) $(LIBS)

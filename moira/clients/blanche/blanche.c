@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.9 1989-11-14 17:38:42 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.10 1989-12-21 19:05:34 mar Exp $
  *
  * Command line oriented SMS List tool.
  *
@@ -21,7 +21,7 @@
 #include <sms_app.h>
 
 #ifndef LINT
-static char smslist_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.9 1989-11-14 17:38:42 mar Exp $";
+static char smslist_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.10 1989-12-21 19:05:34 mar Exp $";
 #endif
 
 
@@ -239,7 +239,7 @@ char **argv;
     while (sq_get_data(addlist, &memberstruct)) {
 	membervec[0] = listname;
 	membervec[2] = memberstruct->name;
-	if (verbose && syncflg) {
+	if (verbose) {
 	    printf("Adding member ");
 	    show_list_member(memberstruct);
 	}
@@ -288,7 +288,7 @@ char **argv;
     while (sq_get_data(dellist, &memberstruct)) {
 	membervec[0] = listname;
 	membervec[2] = memberstruct->name;
-	if (verbose && syncflg) {
+	if (verbose) {
 	    printf("Deleting member ");
 	    show_list_member(memberstruct);
 	}

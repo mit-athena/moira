@@ -1,4 +1,4 @@
-/* $Id: staff.pc,v 1.2 1999-07-30 02:16:07 danw Exp $
+/* $Id: staff.pc,v 1.3 2000-04-21 19:49:36 zacheiss Exp $
  *
  * Load data into Moira from Personnel Office data file
  *
@@ -19,7 +19,7 @@
 EXEC SQL INCLUDE sqlca;
 extern void sqlglm(char *, unsigned int *, unsigned int *);
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/staff.pc,v 1.2 1999-07-30 02:16:07 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/staff.pc,v 1.3 2000-04-21 19:49:36 zacheiss Exp $");
 
 #define WHO 11859		/* root */
 #define PROG "emp-tape"
@@ -531,11 +531,11 @@ void newuser(struct entry *e)
   com_err(whoami, 0, "adding user %s %s", e->first, e->last);
 
   EXEC SQL INSERT INTO users
-    (login, users_id, unix_uid, shell, last, first, middle, status,
-     clearid, type, modtime, modby, modwith, fullname, office_addr,
-     office_phone, department, fmodtime, fmodby, fmodwith,
+    (login, users_id, unix_uid, shell, winconsoleshell, last, first, 
+     middle, status, clearid, type, modtime, modby, modwith, fullname, 
+     office_addr, office_phone, department, fmodtime, fmodby, fmodwith,
      potype, xname, xdept, xtitle, xaddress, xphone1, xphone2, xmodtime)
-    VALUES (:login, :id, :uid, '/bin/athena/tcsh',
+    VALUES (:login, :id, :uid, '/bin/athena/tcsh', 'cmd', 
 	    NVL(:last, CHR(0)), NVL(:first, CHR(0)), NVL(:middle, CHR(0)),
 	    :st, NVL(:sid, CHR(0)), NVL(:class, CHR(0)), SYSDATE, :who, :prog,
 	    NVL(:fullname, CHR(0)), NVL(:oaddr, CHR(0)), NVL(:ophone, CHR(0)),

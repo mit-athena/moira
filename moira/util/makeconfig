@@ -1,4 +1,4 @@
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/util/makeconfig,v 1.3 1991-03-08 11:09:20 mar Exp $
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/util/makeconfig,v 1.4 1993-10-21 15:20:28 mar Exp $
 #
 #  Copyright 1990 by the Massachusetts Institute of Technology.
 # 
@@ -28,7 +28,7 @@ SYMLINK = ln -s
 SUBDIR	= backup clients db dbck dcm gdb gen include incremental \
 	lib reg_svr regtape server update clients/blanche \
 	clients/mailmaint clients/moira clients/mrcheck clients/mrtest \
-	clients/passwd clients/userreg util man
+	clients/passwd clients/userreg clients/addusr clients/mmoira util man
 
 # Empty directories which also need to be built.
 MTDIR	= lib/profiled server/profiled gdb/profiled

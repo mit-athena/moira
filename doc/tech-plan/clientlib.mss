@@ -1,9 +1,12 @@
 @Comment[
 	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/doc/tech-plan/clientlib.mss,v $
-	$Author: ambar $
-	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/doc/tech-plan/clientlib.mss,v 1.5 1987-06-19 11:54:29 ambar Exp $
+	$Author: wesommer $
+	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/doc/tech-plan/clientlib.mss,v 1.6 1987-06-23 15:34:50 wesommer Exp $
 
 	$Log: not supported by cvs2svn $
+Revision 1.5  87/06/19  11:54:29  ambar
+scribe fixes.
+
 Revision 1.4  87/06/19  10:25:09  pjlevine
 pjlevine adds applib addendum reference
 
@@ -20,12 +23,6 @@ Initial revision
 @part(clientlib, root="sms.mss")
 @Section(The Application Library)
 
-@begin[comment]
-The SMS application library consists of functions which application programs
-use to communicate with the SMS database.  The library contains routines
-which allows the client easy access to SMS data.  The application library
-uses the SMS protocol for modularity and consistency.
-@end[comment]
 The SMS application library provides access to SMS through a simple
 set of procedure calls.  The library is layered on top of GDB, and
 itself consists of several layers.
@@ -113,6 +110,20 @@ int sms_noop();
 This attempts to do a handshake with SMS (for testing and performance
 measurement).  It can return SMS_NOT_CONNECTED or SMS_ABORTED if not
 successful.
+
+@begin(programexample)
+int sms_access(name, argc, argv)
+@\char *name;@\@\/* Name of query */
+@\int argc;@\/* Number of arguments provided */
+@\char *argv[];@\@\/* Argument vector */
+@end(programexample)
+
+This routine checks the user's access to an SMS query named @t[name],
+with arguments @t<argv[0]>...@t<argv[argc-1]>.  It does not actually
+process the query.  This is included to give applications a "hint" as
+to whether or not the particular query will succeed, so that they
+won't bother to prompt the user for a large number of arguments if the
+query is doomed to failure.
 
 @begin(programexample)
 int sms_query(name, argc, argv, callproc, callarg)

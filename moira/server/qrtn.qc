@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v 1.35 1989-09-13 15:30:03 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v 1.36 1989-12-28 17:17:26 mar Exp $
  *
  *	Copyright (C) 1987, 1988 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_qrtn_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v 1.35 1989-09-13 15:30:03 mar Exp $";
+static char *rcsid_qrtn_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v 1.36 1989-12-28 17:17:26 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -69,16 +69,22 @@ int sms_open_database()
 {
     register int i;
     char *malloc();
+    static first_open = 1;
 
-    /* initialize local argv */
-    for (i = 0; i < 16; i++)
-	Argv[i] = malloc(ARGLEN);
-    incremental_init();
+    if (first_open) {
+	first_open = 0;
 
-    IIseterr(ingerr);
+	/* initialize local argv */
+	for (i = 0; i < 16; i++)
+	  Argv[i] = malloc(ARGLEN);
+
+	IIseterr(ingerr);
+	incremental_init();
+	flush_cache();
+    }
 	
     ingres_errno = 0;
-	
+
     /* open the database */
 ##  ingres sms
 ##  set lockmode session where level = table, timeout = query_timeout
@@ -89,6 +95,7 @@ int sms_open_database()
 
 int sms_close_database()
 {
+    flush_cache();
 ##  exit
 }
 
@@ -232,6 +239,7 @@ sms_process_query(cl, name, argc, argv_ro, action, actarg)
 	    status = do_update(q, &Argv[q->argc], qual, action, actarg);
 	    incremental_after(q->rtable, qual, argv_ro);
 	    if (status != SMS_SUCCESS) break;
+	    flush_name(argv_ro[0], q->rtable);
 	    table = q->rtable;
 	    if (strcmp(q->shortname, "sshi") && strcmp(q->shortname, "ssif")) {
 ##		repeat replace tblstats (updates = tblstats.updates + 1,
@@ -307,6 +315,7 @@ sms_process_query(cl, name, argc, argv_ro, action, actarg)
 	    status = do_delete(q, qual, action, actarg);
 	    incremental_clear_after();
 	    if (status != SMS_SUCCESS) break;
+	    flush_name(argv_ro[0], q->rtable);
 ##	    repeat replace tblstats (deletes = tblstats.deletes + 1,
 ##				     modtime = "now")
 ##		where tblstats.#table = @table
@@ -521,17 +530,17 @@ check_query_access(q, argv, cl)
       acl_id = q->acl;
     else {
 	name = q->shortname;
-##	repeat retrieve (acl_id = capacls.list_id) where capacls.tag = @name
+##	retrieve (acl_id = capacls.list_id) where capacls.tag = name
 ##	inquire_equel (rowcount = "rowcount", errorno = "errorno")
 	if (errorno != 0) return(SMS_INGRES_ERR);
 	if (rowcount == 0) return(SMS_PERM);
 	q->acl = acl_id;
 
 	/* check for default access */
-##	repeat retrieve (exists = any(imembers.#member_id where
-##				      imembers.list_id = @acl_id and
-##				      imembers.member_type = "USER" and
-##				      imembers.#member_id = def_uid))
+##	retrieve (exists = any(imembers.#member_id where
+##			       imembers.list_id = acl_id and
+##			       imembers.member_type = "USER" and
+##			       imembers.#member_id = def_uid))
 	q->everybody = exists;
     }
 
@@ -768,8 +777,7 @@ set_next_object_id(object, table)
 
     name = object;
     tbl = table;
-##  range of v is values
-##  repeat retrieve (value = v.#value) where v.#name = @name
+##  repeat retrieve (value = values.#value) where values.#name = @name
 ##  inquire_equel(rowcount = "rowcount")
     if (rowcount != 1)
 	return(SMS_NO_ID);
@@ -787,31 +795,8 @@ set_next_object_id(object, table)
 
     if (LOG_RES)
         com_err(whoami, 0, "setting ID %s to %d", name, value);
-##  repeat replace v (#value = @value) where v.#name = @name
+##  repeat replace values (#value = @value) where values.#name = @name
     return(SMS_SUCCESS);
-##}
-
-
-/* This looks up a login name and returns the SMS internal ID.  It is used
- * by authenticate to put the users_id in the client structure.
- */
-
-int get_users_id(name)
-char *name;
-##{
-##  int id, rowcount;
-##  char *login;
-
-    login = name;
-
-##  range of u is users
-##  repeat retrieve (id = u.#users_id) where u.#login = @login
-##  inquire_equel (rowcount = "rowcount")
-    
-    if (rowcount == 1)
-	return(id);
-    else
-	return(0);
 ##}
 
 
@@ -833,10 +818,8 @@ int *uid;
     *kid = 0;
     *uid = 0;
 
-##  range of k is krbmap
-##  range of s is strings
-##  repeat retrieve (u_id = k.#users_id, k_id = k.#string_id)
-##	where k.string_id = s.string_id and s.string = @krbname
+##  repeat retrieve (u_id = krbmap.#users_id, k_id = krbmap.#string_id)
+##	where krbmap.string_id = strings.string_id and strings.string = @krbname
 ##  inquire_equel (rowcount = "rowcount")
     
     if (rowcount == 1) {
@@ -845,19 +828,17 @@ int *uid;
 	return;
     }
 
-##  repeat retrieve (k_id = s.#string_id) where s.string = @krbname
-##  inquire_equel (rowcount = "rowcount")
-
-    if (rowcount == 1) {
-	*kid = -k_id;
-    }
+    if (name_to_id(name, "STRING", &k_id) == SMS_SUCCESS)
+      *kid = -k_id;
 
     if (!ok) {
 	*uid = *kid;
 	return;
     }
 
-    *uid = get_users_id(login);
+    if (name_to_id(login, "USER", uid) != SMS_SUCCESS)
+      *uid = 0;
+
     if (*kid == 0)
       *kid = *uid;
 ##}

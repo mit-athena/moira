@@ -1,5 +1,7 @@
 \makeindex
-\documentstyle[psbox,fancyheadings]{book}
+\documentclass{book}
+\usepackage{fancyheadings}
+\usepackage{psbox}
 %timrom
 \marginparwidth 0pt
 \oddsidemargin  .5in
@@ -10,14 +12,14 @@
 \textheight  8in
 \pagestyle{fancy}
 \begin{document}
-\newcommand{\athena}{\PSbox{/usr/athena/lib/owl.PS hscale=0.1 vscale=0.1}{7pt}{7pt}}
+\newcommand{\athena}{\PSbox{tech-plan/owl.PS hscale=0.1 vscale=0.1}{7pt}{7pt}}
 %\newcommand{\athena}{\fbox{\footnotesize Athena}}
 \title{Moira User's Manual}
 \author{Mark Rosenstein}
 
 \begin{titlepage}
 \vspace{1 in}
-\PSbox{/usr/athena/lib/owl.PS}{1in}{1in} \hfill
+\PSbox{tech-plan/owl.PS}{1in}{1in} \hfill
 \raisebox{30pt}{\begin{tabular}{r}
 {\large \sc MIT Distributed Computing and Network Services}\\[.1in]
 {\large \sc The Athena Computing Environment}\\

@@ -68,7 +68,29 @@ AC_CHECK_FUNC(socket, :,
 					LIBS="-lsocket -lnsl $LIBS", :,
 					-lnsl)))
 
-# Kerberos (required)
+# com_err (required, but can be built)
+AC_MSG_CHECKING(for com_err)
+AC_ARG_WITH(com_err,
+    [  --with-com_err=PREFIX   Specify location of com_err],
+    [AC_MSG_RESULT($withval)
+     if test $withval = "no"; then
+         AC_MSG_ERROR(com_err is required for Moira)
+     fi
+     if test $withval != "yes"; then
+	 MR_INCLUDE($withval/include)
+	 MR_LIBS($withval/lib)
+     fi
+     COMPILE_ET=compile_et],
+    [AC_MSG_RESULT(util/et)
+     COM_ERR_SUBDIR=util/et;
+     MR_INCLUDE(`pwd`/util/et)
+     MR_LIBS(`pwd`/util/et)
+     COMPILE_ET=`pwd`/util/et/compile_et
+     AC_CONFIG_SUBDIRS($COM_ERR_SUBDIR)])
+AC_SUBST(COM_ERR_SUBDIR)
+AC_SUBST(COMPILE_ET)
+
+# Kerberos (Kerberos 4 required, Kerberos 5 optional for reg_svr)
 AC_MSG_CHECKING(for Kerberos 4)
 AC_ARG_WITH(krb4,
     [  --with-krb4=PREFIX      Specify location of krb4],
@@ -92,29 +114,27 @@ AC_CHECK_LIB(krb4, krb_rd_req,
 			   [KRB4_LIBS="-lkrb -ldes"],
 			   [AC_MSG_ERROR(Kerberos 4 libraries not found)],
 			   $LIBPATH -ldes)],
-	     $LIBPATH -ldes425 -lkrb5 -lcrypto)
+	     $LIBPATH -ldes425 -lkrb5 -lcrypto -lcom_err)
 
-# com_err (required, but can be built)
-AC_MSG_CHECKING(for com_err)
-AC_ARG_WITH(com_err,
-    [  --with-com_err=PREFIX   Specify location of com_err],
-    [AC_MSG_RESULT($withval)
-     if test $withval = "no"; then
-         AC_MSG_ERROR(com_err is required for Moira)
-     fi
-     if test $withval != "yes"; then
-	 MR_INCLUDE($withval/include)
-	 MR_LIBS($withval/lib)
-     fi
-     COMPILE_ET=compile_et],
-    [AC_MSG_RESULT(util/et)
-     COM_ERR_SUBDIR=util/et;
-     MR_INCLUDE(`pwd`/util/et)
-     MR_LIBS(`pwd`/util/et)
-     COMPILE_ET=`pwd`/util/et/compile_et
-     AC_CONFIG_SUBDIRS($COM_ERR_SUBDIR)])
-AC_SUBST(COM_ERR_SUBDIR)
-AC_SUBST(COMPILE_ET)
+AC_MSG_CHECKING(for Kerberos 5)
+AC_ARG_WITH(krb5,
+    [  --with-krb5=PREFIX      Specify location of krb5 (for reg_svr)],
+    [krb5="$withval"], [krb5=no])
+AC_MSG_RESULT($krb5)
+if test "$krb5" != no; then
+    REG_SVR_DEFS=-DKRB5
+    if test "$krb5" != yes; then
+	REG_SVR_INCLUDES=-I$krb5/include
+	REG_SVR_LIBS=-L$krb5/lib
+    fi
+    REG_SVR_LIBS="$REG_SVR_LIBS -lkadm5clnt -lgssapi_krb5 -lgssrpc -ldyn -lkrb4 -ldes425 -lkrb5 -lcrypto"
+else
+    REG_SVR_DEFS=-DKRB4
+    REG_SVR_LIBS=-lkadm
+fi
+AC_SUBST(REG_SVR_DEFS)
+AC_SUBST(REG_SVR_INCLUDES)
+AC_SUBST(REG_SVR_LIBS)
 
 # Hesiod support
 AC_MSG_CHECKING(for Hesiod)

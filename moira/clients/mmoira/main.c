@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/main.c,v 1.6 1992-10-23 19:00:15 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/main.c,v 1.7 1992-10-28 16:06:20 mar Exp $
  *
  *  	Copyright 1991 by the Massachusetts Institute of Technology.
  *
@@ -8,8 +8,10 @@
 
 #include	<mit-copyright.h>
 #include	<stdio.h>
+#include	<strings.h>
 #include	<pwd.h>
 #include	<moira.h>
+#include	<com_err.h>
 #include	<Xm/PushB.h>
 #include	<Xm/BulletinB.h>
 #include	<Xm/RowColumn.h>
@@ -42,6 +44,10 @@ char *argv[];
 	char *motd;
 	int	n, status;
 	char *getlogin();
+
+	/* I know, this is a crock, but it makes the program work... */
+	setenv("XFILESEARCHPATH", "/afs/athena/system/moira/lib/%N", 1);
+	setenv("MOIRAHELPFILE", "/afs/athena/system/moira/lib/mmoira.helpfile", 1);
 
 	if ((user = getlogin()) == NULL)
 	  user = getpwuid((int) getuid())->pw_name;
@@ -207,6 +213,7 @@ caddr_t arg1, arg2, arg3, arg4, arg5;
 void mr_x_input()
 {
     XEvent event;
+    XtAppContext _XtDefaultAppContext();
 
     XtAppNextEvent(_XtDefaultAppContext(), &event);
     XtDispatchEvent(&event);

@@ -8,6 +8,8 @@
  * <mit-copyright.h>. 
  *
  * Get a ticket-granting-ticket given a service key file (srvtab)
+ * Modifed from the regular kerberos distribution in that it accepts
+ * the lifetime of the ticket as an command-line argument.
  *
  */
 
@@ -17,7 +19,7 @@
 /*#include <conf.h>*/
 
 char rcsid[] =
-    "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/ksrvtgt.c,v 1.2 1989-11-28 16:29:13 mar Exp $";
+    "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/ksrvtgt.c,v 1.3 1990-02-15 13:16:35 mar Exp $";
 
 
 void usage(argv)

@@ -1,4 +1,4 @@
-/* $Id: mr_call.c,v 1.16 1999-04-30 17:38:37 danw Exp $
+/* $Id: mr_call.c,v 1.17 2000-01-31 15:44:16 danw Exp $
  *
  * Pass an mr_params off to the Moira server and get a reply
  *
@@ -17,7 +17,7 @@
 #include <string.h>
 #include <unistd.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_call.c,v 1.16 1999-04-30 17:38:37 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_call.c,v 1.17 2000-01-31 15:44:16 danw Exp $");
 
 /* Moira RPC format:
 
@@ -122,11 +122,16 @@ int mr_receive(int fd, struct mr_params *reply)
   return status;
 }
   
+/* Read some or all of a client response, without losing if it turns
+ * out to be malformed. Returns MR_SUCCESS on success, an error code
+ * on failure, or -1 if the packet hasn't been completely received
+ * yet.
+ */
 int mr_cont_receive(int fd, struct mr_params *reply)
 {
   u_long length, data;
   ssize_t size, more;
-  char *p;
+  char *p, *end;
   int i;
 
   if (!reply->mr_flattened)
@@ -137,6 +142,8 @@ int mr_cont_receive(int fd, struct mr_params *reply)
       if (size != 4)
 	return size ? MR_ABORTED : MR_NOT_CONNECTED;
       getlong(lbuf, length);
+      if (length > 8192)
+	return MR_INTERNAL;
       reply->mr_flattened = malloc(length);
       if (!reply->mr_flattened)
 	return ENOMEM;
@@ -157,7 +164,7 @@ int mr_cont_receive(int fd, struct mr_params *reply)
     }
 
   reply->mr_filled += more;
-  
+
   if (reply->mr_filled != length)
     return -1;
 
@@ -170,6 +177,11 @@ int mr_cont_receive(int fd, struct mr_params *reply)
 
   getlong(reply->mr_flattened + 8, reply->u.mr_status);
   getlong(reply->mr_flattened + 12, reply->mr_argc);
+  if (reply->mr_argc > (length - 16) / 8)
+    {
+      mr_destroy_reply(*reply);
+      return MR_INTERNAL;
+    }
   reply->mr_argv = malloc(reply->mr_argc * sizeof(char *));
   reply->mr_argl = malloc(reply->mr_argc * sizeof(int));
   if (reply->mr_argc && (!reply->mr_argv || !reply->mr_argl))
@@ -178,11 +190,21 @@ int mr_cont_receive(int fd, struct mr_params *reply)
       return ENOMEM;
     }
 
-  for (i = 0, p = (char *)reply->mr_flattened + 16; i < reply->mr_argc; i++)
+  p = (char *)reply->mr_flattened + 16;
+  end = (char *)reply->mr_flattened + length;
+  for (i = 0; i < reply->mr_argc && p + 4 <= end; i++)
     {
       getlong(p, reply->mr_argl[i]);
+      if (p + 4 + reply->mr_argl[i] > end)
+	break;
       reply->mr_argv[i] = p + 4;
       p += 4 + reply->mr_argl[i] + (4 - reply->mr_argl[i] % 4) % 4;
+    }
+
+  if (i != reply->mr_argc)
+    {
+      mr_destroy_reply(*reply);
+      return MR_INTERNAL;
     }
 
   return MR_SUCCESS;

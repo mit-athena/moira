@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/aliases.dc,v 1.2 1990-08-20 11:04:43 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/aliases.dc,v 1.3 1992-11-17 16:55:32 mar Exp $
  *
  * This generates the /usr/lib/aliases mail aliases file for the mailhub.
  * The aliases file will contain:
@@ -43,10 +43,10 @@ char **argv;
     out = stdout;
     initialize_sms_error_table();
 #ifsql INGRES
-    EXEC SQL CONNECT sms;
+    EXEC SQL CONNECT moira;
 #endsql
 #ifsql INFORMIX
-    EXEC SQL DATABASE sms;
+    EXEC SQL DATABASE moira;
 #endsql
 
 
@@ -139,7 +139,7 @@ get_info()
 
     /* get locks */
     EXEC SQL SELECT modtime INTO :buf FROM list WHERE LIST_ID = 0;
-    EXEC SQL SELECT modtime INTO :buf FROM list WHERE USERS_ID = 0;
+    EXEC SQL SELECT modtime INTO :buf FROM users WHERE USERS_ID = 0;
 
     fprintf(stderr, "Loading machines\n");
     machines = create_hash(1000);
@@ -212,7 +212,7 @@ get_info()
     lists = create_hash(15001);
 
     EXEC SQL DECLARE l_cursor CURSOR FOR
-      SELECT list_id, name, maillist, desc, acl_type, acl_id
+      SELECT list_id, name, maillist, description, acl_type, acl_id
 	FROM list WHERE active != 0;
     EXEC SQL OPEN l_cursor;
     while (1) {

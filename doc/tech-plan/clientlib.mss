@@ -1,9 +1,12 @@
 @Comment[
 	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/doc/tech-plan/clientlib.mss,v $
 	$Author: wesommer $
-	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/doc/tech-plan/clientlib.mss,v 1.6 1987-06-23 15:34:50 wesommer Exp $
+	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/doc/tech-plan/clientlib.mss,v 1.7 1987-07-13 23:51:58 wesommer Exp $
 
 	$Log: not supported by cvs2svn $
+Revision 1.6  87/06/23  15:34:50  wesommer
+Added documentation for sms_access.
+
 Revision 1.5  87/06/19  11:54:29  ambar
 scribe fixes.
 
@@ -24,10 +27,17 @@ Initial revision
 @Section(The Application Library)
 
 The SMS application library provides access to SMS through a simple
-set of procedure calls.  The library is layered on top of GDB, and
-itself consists of several layers.
-Please see Addendum (section 9), subsection @ref(Applib), for complete
-list of application library routines.
+set of remote procedure calls to the SMS server.  The library is
+layered on top of Noah Mendohlson's GDB library, and also uses Ken
+Raeburn's com_err library to provide a coherant way to return error
+status codes to applications.
+
+For use by the DCM and other utilities, there exists a version of the
+library which does direct calls to Ingres, rather than going through
+the server.  Use of this library should result in significantly higher
+throughput, and will also reduce the load on the server itself.  The
+direct "glue" library provides the exact same interface as the RPC
+library, except that it does not use Kerberos authentication.
 
 @subsection (Error Handling) 
 
@@ -73,8 +83,8 @@ instead.  This can be used to, for example, route error messages to
 @t[syslog] or to display them using a dialogue box in a window-system
 environment.
 
-@section(Low level calls)
-The lowest level library contains the following routines:
+@subsection(SMS application library calls)
+The SMS library contains the following routines:
 
 @begin(programexample) 
 int sms_connect(); 
@@ -140,11 +150,15 @@ This runs an SMS query named @i[name] with arguments
 the tuple, a pointer to an array of characters (the data), and
 @t[callarg].
 
-@Subsection(Higher level application library) The upper layer consists of
-query-handle specific routines, such as "retrieve finger information
-by login name" or "get all servers".  The actual specifications for
-these routines will be somewhat fluid depending on exactly what query
-handles are available; it is intended that these routines should be
-easy to write in terms of the previous library.  The use and description
-of the application library can be found in Addendum 2.
+@begin(comment)
+We punted this, didn't we?
 
+@Subsection(Higher level application library) The upper layer consists
+of query-handle specific routines, such as "retrieve finger
+information by login name" or "get all servers".  The actual
+specifications for these routines depend on exactly what query handles
+are available; it is intended that these routines should be easy to
+write in terms of the previous library.  The use and description of
+the application library can be found in Addendum, section @ref(applib)
+
+@end(comment)

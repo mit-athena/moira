@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/winad/winad.c,v 1.6 2001-01-18 18:17:20 zacheiss Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/winad/winad.c,v 1.7 2001-02-14 22:36:57 zacheiss Exp $
 /* test parameters for creating a user account - done 
  * users 10 10 a_chen 31275 sh cmd Lastname Firstname Middlename 0 950000000 STAFF a_chen 31275 sh cmd Lastname Firstname Middlename 2 950000000 STAFF
  * users 10 10 a_chen 31275 sh cmd Lastname Firstname Middlename 2 950000000 STAFF a_chen 31275 sh cmd Lastname Firstname Middlename 1 950000000 STAFF
@@ -79,10 +79,13 @@
 #define EHOSTUNREACH WSAEHOSTUNREACH
 #endif
 #define krb5_xfree free
+#define F_OK 0
+#define sleep(A) Sleep(A * 1000);
 #endif /* _WIN32 */
 
 #ifndef _WIN32
 #include <sys/utsname.h>
+#include <unistd.h>
 
 #define UCHAR unsigned char
 
@@ -161,6 +164,9 @@ typedef struct lk_entry {
   struct  lk_entry *next;
 } LK_ENTRY;
 
+#define STOP_FILE "/moira/winad/nowinad"
+#define file_exists(file) (access((file), F_OK) == 0)
+
 #define LDAP_BERVAL struct berval
 #define MAX_SERVER_NAMES 32
 
@@ -173,6 +179,7 @@ typedef struct lk_entry {
 LK_ENTRY *member_base = NULL;
 LK_ENTRY *sid_base = NULL;
 LK_ENTRY **sid_ptr = NULL;
+static char tbl_buf[1024];
 char kerberos_ou[] = "OU=kerberos, OU=moira, OU=athena";
 char contact_ou[] = "OU=strings, OU=moira, OU=athena";
 char user_ou[] = "OU=users, OU=moira, OU=athena";
@@ -194,6 +201,7 @@ int  callback_rc;
 extern int locate_ldap_server(char *domain, char *server_name[]);
 extern int set_password(char *user, char *domain);
 
+void check_winad(void);
 int user_create(int ac, char **av, void *ptr);
 int user_change_status(int ac, char **av, void *ptr);
 int user_delete(LDAP *ldap_handle, char *dn_path, char *u_name);
@@ -289,6 +297,24 @@ int main(int argc, char **argv)
   before = &argv[4];
   after = &argv[4 + beforec];
 
+  strcpy(tbl_buf, table);
+  strcat(tbl_buf, " (");
+  for (i = 0; i < beforec; i++)
+    {
+      if (i > 0)
+	strcat(tbl_buf, ",");
+      strcat(tbl_buf, before[i]);
+    }
+  strcat(tbl_buf, ")->(");
+  for (i = 0; i < afterc; i++)
+    {
+      if (i > 0)
+	strcat(tbl_buf, ",");
+      strcat(tbl_buf, after[i]);
+    }
+  strcat(tbl_buf, ")");
+  check_winad();
+  
   memset(ldap_domain, '\0', sizeof(ldap_domain));
   if ((fptr = fopen("winad.cfg", "r")) != NULL)
     {
@@ -1102,6 +1128,23 @@ int moira_connect(void)
       return rc;
     }
   return 0;
+}
+
+void check_winad(void)
+{
+  int i;
+  
+  for (i = 0; file_exists(STOP_FILE); i++)
+    {
+      if (i > 30)
+        {
+	  critical_alert("incremental",
+			 "WINAD incremental failed (%s exists): %s",
+			 STOP_FILE, tbl_buf);
+	  exit(1);
+	}
+      sleep(60);
+    }
 }
 
 int moira_disconnect(void)

@@ -1,4 +1,4 @@
-/* $Id: mrcheck.c,v 1.19 2000-03-15 22:44:08 rbasch Exp $
+/* $Id: mrcheck.c,v 1.20 2002-08-10 09:36:00 zacheiss Exp $
  *
  * Verify that all Moira updates are successful
  *
@@ -17,7 +17,9 @@
 #include <string.h>
 #include <time.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrcheck/mrcheck.c,v 1.19 2000-03-15 22:44:08 rbasch Exp $");
+#define argis(a, b) (!strcmp(*arg + 1, a) || !strcmp(*arg + 1, b))
+
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrcheck/mrcheck.c,v 1.20 2002-08-10 09:36:00 zacheiss Exp $");
 
 char *atot(char *itime);
 int process_server(int argc, char **argv, void *sqv);
@@ -165,18 +167,37 @@ int main(int argc, char *argv[])
   struct save_queue *sq;
   int status;
   int auth_required = 1;
+  char **arg = argv;
+  char *server = NULL;
 
   if ((whoami = strrchr(argv[0], '/')) == NULL)
     whoami = argv[0];
   else
     whoami++;
 
-  if (argc == 2 && !strcmp(argv[1], "-noauth"))
-    auth_required = 0;
-  else if (argc > 1)
-    usage();
+  /* parse our command line options */
+  while (++arg - argv < argc)
+    {
+      if (**arg == '-')
+	{
+	  if (argis("n", "noauth"))
+	    auth_required = 0;
+	  else if (argis("db", "database"))
+	    {
+	      if (arg - argv < argc - 1)
+		{
+		  ++arg;
+		  server = *arg;
+		}
+	      else
+		usage();
+	    }
+	}
+      else
+	usage();
+    }
 
-  if (mrcl_connect(NULL, NULL, 2, 0) != MRCL_SUCCESS)
+  if (mrcl_connect(server, NULL, 2, 0) != MRCL_SUCCESS)
     exit(2);
   status = mr_auth("mrcheck");
   if (status && auth_required)
@@ -216,6 +237,7 @@ punt:
 
 void usage(void)
 {
-  fprintf(stderr, "Usage: %s [-noauth]\n", whoami);
+  fprintf(stderr, "Usage: %s [-noauth] [-db|-database server[:port]]\n",
+	  whoami);
   exit(1);
 }

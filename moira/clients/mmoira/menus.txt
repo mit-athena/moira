@@ -1,4 +1,4 @@
-; $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/menus.txt,v 1.8 1992-12-10 11:09:07 mar Exp $
+; $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/menus.txt,v 1.9 1992-12-14 11:57:47 mar Exp $
 ;
 
 ; = menu name "mnemonic"
@@ -29,7 +29,7 @@
 	reset service error	{ MM_CLEAR_SERVICE, select_service reset_server_error 1 "e" }
 	reset service state	{ MM_RESET_SERVICE, select_service set_server_internal_flags 6 "r" }
 
-= updates "u"
+= updates "d"
 	show		{ MM_SHOW_DCM, 0 qualified_get_server 3 "s" }
 	enable		{ MM_ENABLE_DCM, dcm_enable get_value 1 "e" }
 	invoke		{ MM_TRIGGER_DCM, trigger_dcm trigger_dcm 0 "i" }

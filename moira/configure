@@ -1531,7 +1531,7 @@ if eval "test \"`echo '$''{'ac_cv_lib_$ac_lib_var'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
   ac_save_LIBS="$LIBS"
-LIBS="-lkrb4 $LIBPATH -ldes425 -lkrb5 -l${crypto} -lcom_err $LIBS"
+LIBS="-lkrb4 $LIBPATH -ldes425 -lkrb5 -l${crypto} -lcom_err -lresolv $LIBS"
 cat > conftest.$ac_ext <<EOF
 #line 1537 "configure"
 #include "confdefs.h"
@@ -1559,7 +1559,7 @@ LIBS="$ac_save_LIBS"
 fi
 if eval "test \"`echo '$ac_cv_lib_'$ac_lib_var`\" = yes"; then
   echo "$ac_t""yes" 1>&6
-  KRB4_LIBS="-lkrb4 -ldes425 -lkrb5 -l${crypto}"
+  KRB4_LIBS="-lkrb4 -ldes425 -lkrb5 -l${crypto} -lresolv"
 else
   echo "$ac_t""no" 1>&6
 echo $ac_n "checking for krb_rd_req in -lkrb""... $ac_c" 1>&6
@@ -1623,7 +1623,7 @@ if test "$krb5" != no; then
 	REG_SVR_INCLUDES=-I$krb5/include
 	REG_SVR_LIBS=-L$krb5/lib
     fi
-    REG_SVR_LIBS="$REG_SVR_LIBS -lkadm5clnt -lgssapi_krb5 -lgssrpc -ldyn -lkrb4 -ldes425 -lkrb5 -l${crypto}"
+    REG_SVR_LIBS="$REG_SVR_LIBS -lkadm5clnt -lgssapi_krb5 -lgssrpc -ldyn -lkrb4 -ldes425 -lkrb5 -l${crypto} -lresolv"
 else
     REG_SVR_DEFS=-DKRB4
     REG_SVR_LIBS=-lkadm

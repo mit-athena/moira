@@ -1,4 +1,4 @@
-/* $Id: blanche.c,v 1.46 2000-04-19 23:15:12 zacheiss Exp $
+/* $Id: blanche.c,v 1.47 2000-07-16 23:02:31 zacheiss Exp $
  *
  * Command line oriented Moira List tool.
  *
@@ -20,7 +20,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.46 2000-04-19 23:15:12 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.47 2000-07-16 23:02:31 zacheiss Exp $");
 
 struct member {
   int type;
@@ -63,6 +63,7 @@ int collect(int argc, char **argv, void *l);
 struct member *parse_member(char *s);
 int membercmp(const void *mem1, const void *mem2);
 int sq_count_elts(struct save_queue *q);
+char *get_username(void);
 
 int main(int argc, char **argv)
 {
@@ -377,7 +378,7 @@ int main(int argc, char **argv)
       else
 	{
 	  argv[L_ACE_TYPE] = "USER";
-	  argv[L_ACE_NAME] = getenv("USER");
+	  argv[L_ACE_NAME] = get_username();
 
 	  status = mr_query("add_list", 11, argv, NULL, NULL);
 	}
@@ -590,7 +591,7 @@ int main(int argc, char **argv)
 			    NULL, NULL);
 	  if (status == MR_SUCCESS)
 	    {
-	      if (!strcmp(membervec[0], getenv("USER")))
+	      if (!strcmp(membervec[0], get_username()))
 		{
 		  fprintf(stderr, "\nWARNING: \"LIST:%s\" was just added "
 			  "to list \"%s\".\n", membervec[2], membervec[0]);
@@ -685,7 +686,7 @@ int main(int argc, char **argv)
 		   memberstruct->type != M_ANY)
 	    {
 	      if (status == MR_PERM && memberstruct->type == M_ANY &&
-		  !strcmp(membervec[2], getenv("USER")))
+		  !strcmp(membervec[2], get_username()))
 		{
 		  /* M_ANY means we've fallen through from the user
 		   * case. The user is trying to remove himself from
@@ -714,7 +715,7 @@ int main(int argc, char **argv)
 	      com_err(whoami, 0, " Unable to find member %s to delete from %s",
 		      memberstruct->name, listname);
 	      success = 0;
-	      if (!strcmp(membervec[0], getenv("USER")))
+	      if (!strcmp(membervec[0], get_username()))
 		{
 		  fprintf(stderr, "(If you were trying to remove yourself "
 			  "from the list \"%s\",\n", membervec[2]);
@@ -1208,4 +1209,21 @@ int sq_count_elts(struct save_queue *q)
   while (sq_get_data(q, &foo))
     count++;
   return count;
+}
+
+char *get_username(void)
+{
+  char *username;
+
+  username = getenv("USER");
+  if (!username)
+    {
+      username = mrcl_krb_user();
+      if (!username)
+	{
+	  com_err(whoami, 0, "Could not determine username");
+	  exit(1);
+	}
+    }
+  return username;
 }

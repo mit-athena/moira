@@ -1,4 +1,4 @@
-/* $Id: qaccess.pc,v 2.7 1998-02-05 22:51:46 danw Exp $
+/* $Id: qaccess.pc,v 2.8 1998-02-08 18:42:37 danw Exp $
  *
  * Check access to queries
  *
@@ -17,7 +17,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qaccess.pc,v 2.7 1998-02-05 22:51:46 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qaccess.pc,v 2.8 1998-02-08 18:42:37 danw Exp $");
 
 extern char *whoami;
 extern int dbms_errno, mr_errcode;
@@ -110,13 +110,13 @@ int access_list(struct query *q, char *argv[], client *cl)
 {
   EXEC SQL BEGIN DECLARE SECTION;
   int list_id, acl_id, flags, gid, users_id;
-  char acl_type[9], *newname;
+  char acl_type[9], name[33], *newname;
   EXEC SQL END DECLARE SECTION;
   int status;
 
   list_id = *(int *)argv[0];
-  EXEC SQL SELECT acl_id, acl_type, gid, publicflg
-    INTO :acl_id, :acl_type, :gid, :flags
+  EXEC SQL SELECT acl_id, acl_type, gid, publicflg, name
+    INTO :acl_id, :acl_type, :gid, :flags, :name
     FROM list
     WHERE list_id = :list_id;
 
@@ -148,7 +148,8 @@ int access_list(struct query *q, char *argv[], client *cl)
       newname = argv[1];
       EXEC SQL SELECT users_id INTO :users_id FROM users
 	WHERE login = :newname;
-      if ((sqlca.sqlcode != SQL_NO_MATCH) && (users_id != cl->users_id))
+      if ((sqlca.sqlcode != SQL_NO_MATCH) && strcmp(strtrim(name), newname) &&
+	  (users_id != cl->users_id))
 	return MR_PERM;
     }
 
@@ -334,8 +335,6 @@ int access_filesys(struct query *q, char *argv[], client *cl)
 /* access_host - successful if owner of host, or subnet containing host
  */
 
-int host_access_level = 0;              /* 1 for network, 2 for host */
-
 int access_host(struct query *q, char *argv[], client *cl)
 {
   EXEC SQL BEGIN DECLARE SECTION;
@@ -344,15 +343,7 @@ int access_host(struct query *q, char *argv[], client *cl)
   EXEC SQL END DECLARE SECTION;
   int status;
 
-  if (q->type == APPEND)
-    {
-      id = *(int *)argv[8];
-      EXEC SQL SELECT s.owner_type, s.owner_id
-	INTO :stype, :sid FROM subnet s
-	WHERE s.snet_id = :id;
-      mid = 0;
-    }
-  else if (q->type == RETRIEVE)
+  if (q->type == RETRIEVE)
     {
       if (strcmp(argv[0], "*") || strcmp(argv[1], "*") ||
 	  strcmp(argv[2], "*") || strcmp(argv[3], "*"))
@@ -360,30 +351,74 @@ int access_host(struct query *q, char *argv[], client *cl)
       else
 	return MR_PERM;
     }
-  else
+  
+  if (q->type == APPEND)
     {
-      id = *(int *)argv[0];
-      EXEC SQL SELECT m.owner_type, m.owner_id, s.owner_type, s.owner_id
-	INTO :mtype, :mid, :stype, :sid FROM machine m, subnet s
-	WHERE m.mach_id = :id and s.snet_id = m.snet_id;
-    }
-  if (sqlca.sqlerrd[2] != 1)
-    return MR_PERM;
+      /* Non-query owner must set use to zero */
+      if (atoi(argv[6]) != 0)
+	return MR_PERM;
 
-  status = find_member(stype, sid, cl);
-  if (status)
+      id = *(int *)argv[8];
+      EXEC SQL SELECT s.owner_type, s.owner_id
+	INTO :stype, :sid FROM subnet s
+	WHERE s.snet_id = :id;
+      mid = 0;
+
+      if (find_member(stype, sid, cl))
+	return MR_SUCCESS;
+      else
+	return MR_PERM;
+    }
+  else /* q-type == UPDATE */
     {
-      host_access_level = 1;
+      EXEC SQL BEGIN DECLARE SECTION;
+      int status, acomment, use, ocomment, snid;
+      char contact[33], address[33];
+      EXEC SQL END DECLARE SECTION;
+
+      id = *(int *)argv[0];
+      EXEC SQL SELECT m.use, m.contact, m.status, m.address, m.owner_type,
+	m.owner_id, m.acomment, m.ocomment, m.snet_id, s.owner_type, s.owner_id
+	INTO :use, :contact, :status, :address, :mtype, :mid, :acomment,
+	:ocomment, :snid, :stype, :sid
+	FROM machine m, subnet s
+	WHERE m.mach_id = :id AND s.snet_id = m.snet_id;
+      if (dbms_errno)
+	return mr_errcode;
+
+      /* non-query-owner cannot change use or ocomment */
+      if ((use != atoi(argv[7])) || (ocomment != *(int *)argv[14]))
+	return MR_PERM;
+
+      if (!find_member(stype, sid, cl))
+	{
+	  if (find_member(mtype, mid, cl))
+	    {
+	      /* host owner also cannot change contact, status, address,
+		 owner, or acomment */
+	      if (strcmp(argv[6], strtrim(contact)) ||
+		  (status != atoi(argv[8])) ||
+		  strcmp(argv[10], strtrim(address)) ||
+		  strcmp(argv[11], strtrim(mtype)) ||
+		  (mid != *(int *)argv[12]) || (acomment != *(int *)argv[13]))
+		return MR_PERM;
+	    }
+	  else
+	    return MR_PERM;
+	}
+
+      /* If moving to a new subnet, make sure user is on acl there */
+      id = *(int *)argv[9];
+      if (id != snid)
+	{
+	  EXEC SQL SELECT owner_type, owner_id INTO :stype, :sid
+	    FROM subnet WHERE snet_id=:id;
+	  if (!find_member(stype, sid, cl))
+	    return MR_PERM;
+	}
+
       return MR_SUCCESS;
     }
-  status = find_member(mtype, mid, cl);
-  if (status)
-    {
-      host_access_level = 2;
-      return MR_SUCCESS;
-    }
-  else
-    return MR_PERM;
 }
 
 

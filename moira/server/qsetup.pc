@@ -1,4 +1,4 @@
-/* $Id: qsetup.pc,v 2.8 1998-02-08 17:34:51 danw Exp $
+/* $Id: qsetup.pc,v 2.9 1998-02-08 18:42:38 danw Exp $
  *
  * Query setup routines
  *
@@ -21,7 +21,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsetup.pc,v 2.8 1998-02-08 17:34:51 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsetup.pc,v 2.9 1998-02-08 18:42:38 danw Exp $");
 
 extern char *whoami;
 extern int dbms_errno, mr_errcode;
@@ -854,7 +854,6 @@ int setup_ahst(struct query *q, char **argv, client *cl)
   EXEC SQL END DECLARE SECTION;
   int row;
   struct in_addr addr;
-  extern int host_access_level, privileged;
 
   if (!strcmp(q->shortname, "uhst"))
     row = 1;
@@ -1061,40 +1060,6 @@ int setup_ahst(struct query *q, char **argv, client *cl)
 	  EXEC SQL UPDATE machine SET statuschange = SYSDATE
 	    WHERE mach_id = :id;
 	}
-    }
-
-  if (row == 0 && !privileged)
-    {
-      /* subnet owner is adding a host */
-      /* Non-query owner must set use to zero */
-      if (atoi(argv[6]) != 0)
-	return MR_PERM;
-    }
-  else if (row == 1 && !privileged)
-    {
-      EXEC SQL BEGIN DECLARE SECTION;
-      int i8, i12, i13, i7, i9, i14;
-      char s6[33], s10[33], s11[9];
-      EXEC SQL END DECLARE SECTION;
-      /* Non-query owner is restricted in changes that can be made */
-      id = *(int *)argv[0];
-      EXEC SQL SELECT contact, status, address, owner_type, owner_id,
-	acomment, use, snet_id, ocomment INTO :s6, :i8, :s10, :s11,
-	:i12, :i13, :i7, :i9, :i14 FROM machine WHERE mach_id = :id;
-      if (dbms_errno)
-	return mr_errcode;
-      /* subnet owner cannot change use, comment, or network */
-      if ((i7 != atoi(argv[7])) || (i14 != *(int *)argv[14]) ||
-	  (i9 != *(int *)argv[9]))
-	return MR_PERM;
-      /* host owner cannot change contact, status, address, owner_type,
-       * owner_id, acomment, or subnet */
-      if (host_access_level == 2 &&
-	  (strcmp(argv[6], strtrim(s6)) || (i8 != atoi(argv[8])) ||
-	   strcmp(argv[10], strtrim(s10)) || strcmp(argv[11], strtrim(s11)) ||
-	   (i12 != *(int *)argv[12]) || (i13 != *(int *)argv[13]) ||
-	   (i9 != *(int *)argv[9])))
-	return MR_PERM;
     }
 
   /*

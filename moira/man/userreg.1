@@ -1,17 +1,17 @@
 .TH USERREG 8 "30 Nov 1988" "Project Athena"
-\" RCSID: $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/man/userreg.1,v 1.1 1988-11-30 15:11:29 mar Exp $
+\" RCSID: $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/man/userreg.1,v 1.2 1990-03-08 19:02:51 mar Exp $
 .SH NAME
-userreg \- create an account for a person known to SMS
+userreg \- create an account for a person known to Moira
 .SH SYNOPSIS
 .B userreg
 .SH DESCRIPTION
 .B userreg
 will take over the terminal, and in a user friendly way ask for the
 user's full name and ID number, then allow them to chose a login name
-and a password and create their account.  All access to the SMS
+and a password and create their account.  All access to the Moira
 database and Kerberos server is through the
 .B reg_svr
-running on the SMS server machine.  Many of the screens of helpful
+running on the Moira server machine.  Many of the screens of helpful
 text that are displayed for the user are contained in text files in
 the working directory of
 .B userreg.
@@ -44,4 +44,4 @@ disabled.times
 /mit/register/improper_reg
 .SH SEE ALSO
 reg_svr(8),
-The Project Athena Technical Plan section on SMS
+The Project Athena Technical Plan section on Moira

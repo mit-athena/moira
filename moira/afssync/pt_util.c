@@ -69,10 +69,6 @@ struct usr_list {
     struct usr_list *next;
     char name[PR_MAXNAMELEN];
     long uid;
-    long oid;
-    long cid;
-    long flags;
-    int quota;
 };
 static struct usr_list *usr_head=0;
 
@@ -97,12 +93,13 @@ main(argc, argv)
 int argc;
 char **argv;
 {
-    int cc;
-    int offset;
     register int i;
-    register struct ubik_hdr *uh;
-    char *pfile = "/usr/afs/db/prdb.DB0";
+    register long code;
+    long cc, upos, gpos;
+    struct prentry uentry, gentry;
+    struct ubik_hdr *uh;
     char *dfile = 0;
+    char *pfile = "/usr/afs/db/prdb.DB0";
     
     while ((cc = getopt(argc, argv, "wugmxsnp:d:")) != EOF) {
 	switch (cc) {
@@ -180,9 +177,8 @@ char **argv;
 	exit (1);
     }
 
+    Initdb();
     initialize_pt_error_table();
-    initialize_rxk_error_table();
-    initialize_acfg_error_table();
 
     if (wflag) {
 	struct usr_list *u;
@@ -193,69 +189,86 @@ char **argv;
 
 	    if (isspace(*buffer)) {
 		sscanf(buffer, "%s %d", mem, &uid);
+#if 0
+		/* CROSS-CELL SUPPORT - NYI */
 		for (u=usr_head; u; u=u->next)
 		    if (u->uid && u->uid==uid) break;
 		if (u) {
-		    i = PR_INewEntry(u->cid, u->name, u->uid, u->oid);
+		    /* Add user - deferred because it is probably foreign */
 		    u->uid = 0;
-		    if (i) {
+		    if (FindByID(0, uid))
+			code = PRIDEXIST;
+		    else
+			code = CreateEntry
+			    (0, u->name, &uid, 1/*idflag*/, 1/*gflag*/,
+			     SYSADMINID/*oid*/, SYSADMINID/*cid*/);
+		    if (code)
 			fprintf(stderr, "Error while creating %s: %s\n",
-				name, error_message(i));
-			continue;
-		    }
-		    i = PR_SetFieldsEntry(NULL, id,
-					  ((flags&PRQUOTA)?PR_SF_NGROUPS:0)|
-					  ((flags&PRACCESS)?PR_SF_ALLBITS:0),
-					  flags >> PRIVATE_SHIFT,
-					  quota, 0, 0, 0);
-		    if (i)
-			fprintf(stderr, "Error while setting flags on %s\n",
-				name);
+				u->name, error_message(code));
 		}
-		i = PR_AddToGroup(NULL,uid,id);
-		if (i==0 || i==PRIDEXIST) continue;
-		fprintf(stderr, "Error while adding %s to %s: %s\n",
-			mem, name, error_message(i));
+#endif
+		/* Add user to group */
+		if (id==ANYUSERID || id==AUTHUSERID || uid==ANONYMOUSID) {
+		    code = PRPERM;
+		} else if ((upos=FindByID(0,uid)) && (gpos=FindByID(0,id))) {
+		    code = pr_ReadEntry(0,0,upos,&uentry);
+		    if (!code) code = pr_ReadEntry(0,0,gpos,&gentry);
+		    if (!code) code = AddToEntry (0, &gentry, gpos, uid);
+		    if (!code) code = AddToEntry (0, &uentry, upos, id);
+		} else
+		    code = PRNOENT;
+
+		if (code)
+		    fprintf(stderr, "Error while adding %s to %s: %s\n",
+			    mem, name, error_message(code));
 	    } else {
 		sscanf(buffer, "%s %d/%d %d %d %d",
 		       name, &flags, &quota, &id, &oid, &cid);
-		i = PR_INewEntry(cid, name, id, oid);
-		if (i == PRBADNAM) {
+
+		if (FindByID(0, id))
+		    code = PRIDEXIST;
+		else
+		    code = CreateEntry(0, name, &id, 1/*idflag*/,
+				       flags&PRGRP, oid, cid);
+#if 0
+		if (code == PRBADNAM) {
 		    u = (struct usr_list *)malloc(sizeof(struct usr_list));
 		    u->next = usr_head;
 		    u->uid = id;
-		    u->oid = oid;
-		    u->cid = cid;
-		    u->flags = flags;
-		    u->quota = quota;
 		    strcpy(u->name, name);
 		    usr_head = u;
-		    continue;
-		}
-		if (i && i != PRIDEXIST) {
+		} else
+#endif
+		if (code) {
 		    fprintf(stderr, "Error while creating %s: %s\n",
-			    name, error_message(i));
-		    continue;
+			    name, error_message(code));
+		} else if ((flags&PRACCESS) ||
+			   (flags&(PRGRP|PRQUOTA))==(PRGRP|PRQUOTA)) {
+		    gpos = FindByID(0, id);
+		    code = pr_ReadEntry(0,0,gpos,&gentry);
+		    if (!code) {
+			gentry.flags = flags;
+			if ((flags&(PRGRP|PRQUOTA))==(PRGRP|PRQUOTA))
+			    gentry.ngroups = quota + gentry.count;
+			code = pr_WriteEntry(0,0,gpos,&gentry);
+		    }
+		    if (code)
+			fprintf(stderr,"Error while setting flags on %s: %s\n",
+				name, error_message(code));
 		}
-		i = PR_SetFieldsEntry(NULL, id,
-				      ((flags&PRQUOTA) ? PR_SF_NGROUPS : 0)|
-				      ((flags&PRACCESS) ? PR_SF_ALLBITS : 0),
-				      flags >> PRIVATE_SHIFT,
-				      quota, 0, 0, 0);
-		if (i)
-		    fprintf(stderr, "Error while setting flags on %s: %s\n",
-			    name, error_message(i));
 	    }
 	}
+#if 0
 	for (u=usr_head; u; u=u->next)
 	    if (u->uid)
 		fprintf(stderr, "Error while creating %s: %s\n",
 			u->name, error_message(PRBADNAM));
+#endif
     } else {
 	for (i = 0; i < HASHSIZE; i++) {
-	    offset = nflag ? ntohl(prh.nameHash[i]) : ntohl(prh.idHash[i]);
-	    while (offset)
-		offset = display_entry(offset);
+	    upos = nflag ? ntohl(prh.nameHash[i]) : ntohl(prh.idHash[i]);
+	    while (upos)
+		upos = display_entry(upos);
 	}
 	if (flags & DO_GRP)
 	    display_groups();

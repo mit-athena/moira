@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.43 1989-09-12 11:47:55 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.44 1989-09-15 17:52:17 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_qsupport_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.43 1989-09-12 11:47:55 mar Exp $";
+static char *rcsid_qsupport_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.44 1989-09-15 17:52:17 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -1377,53 +1377,6 @@ followup_glin(q, sq, v, action, actarg, cl)
 ##}
 
 
-/** followup_amtl - followup for amtl and dmfl; when adding a list 
- **                 member to a maillist, make member list a maillist also
- **                 unless list is a user-group.
- **                 Then set_list_modtime_by_id.
- **
- ** Inputs:
- **   argv[0] - list_id
- **   argv[1] - member_type
- **   argv[2] - member_id
- **
- **/
-
-followup_amtl(q, argv, cl)
-    struct query *q;
-    char *argv[];
-    client *cl;
-##{
-##  int list_id;
-##  int member_id;
-##  int exists, who;
-##  char *entity;
-
-    list_id = *(int *)argv[0];
-    entity = cl->entity;
-    who = cl->client_id;
-
-##  range of l is list
-##  repeat replace l (modtime = "now", modby = @who, modwith = @entity)
-##	 where l.#list_id = @list_id
-
-    /* if query is not amtl or if member_type is not LIST then return */
-    if (bcmp(q->shortname, "amtl", 4) || bcmp(argv[1], "LIST", 4)) 
-	return(SMS_SUCCESS);
-
-    member_id = *(int *)argv[2];
-
-    /* is parent list a mailing list? */
-##  repeat retrieve (exists = l.maillist) where l.#list_id=@list_id
-    if (!exists)
-	return(SMS_SUCCESS);
-
-    /* list is not a user-group; add list to maillist table */
-##  repeat replace l (maillist = 1) where l.#list_id = @member_id
-    return(SMS_SUCCESS);
-##}
-
-
 /* followup_gnfq: Fix the directory name & modby fields
  *   argv[0] = filsys_id
  *   argv[2] = ascii(quota)
@@ -1832,8 +1785,8 @@ int add_member_to_list(q, argv, cl)
     char **argv;
     client *cl;
 ##{
-##  int id, lid, mid, exists, error;
-##  char *mtype, dtype[9], buf[256];
+##  int id, lid, mid, exists, error, who;
+##  char *mtype, dtype[9], buf[256], *entity;
     int ancestors[MAXLISTDEPTH], acount, a;
     int descendants[MAXLISTDEPTH], dcount, d;
     char *dtypes[MAXLISTDEPTH];
@@ -1936,6 +1889,11 @@ int add_member_to_list(q, argv, cl)
 	    }
 	}
     }
+    lid = *(int *)argv[0];
+    entity = cl->entity;
+    who = cl->client_id;
+##  repeat replace list (modtime = "now", modby = @who, modwith = @entity)
+##	 where list.#list_id = @lid
     if (ingres_errno) return(sms_errcode);
     return(SMS_SUCCESS);
 ##}
@@ -1949,8 +1907,8 @@ int delete_member_from_list(q, argv, cl)
     char **argv;
     client *cl;
 ##{
-##  int id, lid, mid, cnt, exists, error;
-##  char *mtype, dtype[9];
+##  int id, lid, mid, cnt, exists, error, who;
+##  char *mtype, dtype[9], *entity;
     int ancestors[MAXLISTDEPTH], acount, a;
     int descendants[MAXLISTDEPTH], dcount, d;
     char *dtypes[MAXLISTDEPTH];
@@ -2039,6 +1997,11 @@ int delete_member_from_list(q, argv, cl)
 	    }
 	}
     }
+    lid = *(int *)argv[0];
+    entity = cl->entity;
+    who = cl->client_id;
+##  repeat replace list (modtime = "now", modby = @who, modwith = @entity)
+##	 where list.#list_id = @lid
     if (ingres_errno) return(sms_errcode);
     return(SMS_SUCCESS);
 ##}

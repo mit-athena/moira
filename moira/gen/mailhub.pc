@@ -1,4 +1,4 @@
-/* $Id: mailhub.pc,v 1.15 2000-11-30 23:27:42 zacheiss Exp $
+/* $Id: mailhub.pc,v 1.16 2002-12-03 21:25:02 zacheiss Exp $
  *
  * This generates the /usr/lib/aliases file for the mailhub.
  *
@@ -22,7 +22,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/mailhub.pc,v 1.15 2000-11-30 23:27:42 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/mailhub.pc,v 1.16 2002-12-03 21:25:02 zacheiss Exp $");
 
 char *whoami = "mailhub.gen";
 char *db = "moira/moira";
@@ -50,6 +50,8 @@ struct list {
   char *description;
   char acl_t;
   int acl_id;
+  char mailman;
+  char *mailman_server;
   struct member *m;
 };
 
@@ -122,11 +124,11 @@ int main(int argc, char **argv)
 void get_info(void)
 {
   EXEC SQL BEGIN DECLARE SECTION;
-  int id, pid, iid, bid, cnt, maillistp, acl, mid;
+  int id, pid, iid, bid, cnt, maillistp, acl, mid, mailman;
   char mname[MACHINE_NAME_SIZE], str[STRINGS_STRING_SIZE];
   char login[USERS_LOGIN_SIZE], potype[USERS_POTYPE_SIZE];
   char lname[LIST_NAME_SIZE], desc[LIST_DESCRIPTION_SIZE];
-  char type[LIST_ACL_TYPE_SIZE];
+  char type[LIST_ACL_TYPE_SIZE], mailman_server[MACHINE_NAME_SIZE];
   EXEC SQL END DECLARE SECTION;
   char *s;
   struct user *u;
@@ -271,14 +273,16 @@ void get_info(void)
   lists = create_hash(15000);
 
   EXEC SQL DECLARE l_cursor CURSOR FOR
-    SELECT list_id, name, maillist, description, acl_type, acl_id
-    FROM list
-    WHERE active != 0
+    SELECT l.list_id, l.name, l.maillist, l.description, l.acl_type, l.acl_id,
+    l.mailman, m.name
+    FROM list l, machine m
+    WHERE active != 0 AND l.mailman_id = m.mach_id
     ORDER BY list_id;
   EXEC SQL OPEN l_cursor;
   while (1)
     {
-      EXEC SQL FETCH l_cursor INTO :id, :lname, :maillistp, :desc, :type, :acl;
+      EXEC SQL FETCH l_cursor INTO :id, :lname, :maillistp, :desc, :type, :acl,
+	:mailman, :mailman_server;
       if (sqlca.sqlcode)
 	break;
       l = malloc(sizeof(struct list));
@@ -287,6 +291,15 @@ void get_info(void)
       l->description = strdup(strtrim(desc));
       l->acl_t = type[0];
       l->acl_id = acl;
+      l->mailman = mailman;
+      if ((s = strchr(mailman_server, '.')))
+	*s = '\0';
+      else
+	strtrim(mailman_server);
+#ifdef ATHENA
+      strcat(mailman_server, ".LOCAL");
+#endif
+      l->mailman_server = strdup(mailman_server);
       l->m = NULL;
       if (hash_store(lists, id, l) < 0)
 	{
@@ -374,6 +387,19 @@ void output_mlist(int id, void *list, void *out)
     return;
 
   put_fill(out, l->description);
+
+  if (l->mailman && strcmp(l->mailman_server, "[NONE]"))
+    {
+      fprintf(out, "%s-admin: %s-admin@%s\n", l->name, l->name,
+	      l->mailman_server);
+      fprintf(out, "%s-owner: %s-owner@%s\n", l->name, l->name,
+	      l->mailman_server);
+      fprintf(out, "%s-request: %s-request@%s\n", l->name, l->name,
+	      l->mailman_server);
+      fprintf(out, "%s: %s@%s\n", l->name, l->name, l->mailman_server);
+      incount++;
+      return;
+    }
 
   if (l->acl_t ==  'L' && (l1 = hash_lookup(lists, l->acl_id)))
     {

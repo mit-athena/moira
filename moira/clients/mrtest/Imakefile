@@ -1,4 +1,4 @@
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/Imakefile,v 1.3 1991-03-21 11:08:35 mar Exp $
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/Imakefile,v 1.4 1991-05-07 16:43:15 mar Exp $
 #
 # Copyright 1990 by the Massachusetts Institute of Technology.
 #
@@ -8,11 +8,23 @@
 # Imakefile for mrtest.
 #
 
-SRCS=	mrtest.c
+SRCS=	mrtest.c test.c comp.c
 SRCDIR=${SRCTOP}/clients/mrtest
-CODE=${SRCS} Imakefile test_cmds.ct
-OBJS=	mrtest.o test_cmds.o
+CODE=${SRCS} Imakefile test_cmds.ct blah.h
+OBJS=	mrtest.o test_cmds.o test.o comp.o
 INCLUDE= -I$(BUILDTOP)/include -I$(BUILDTOP)/lib -I$(BUILDTOP)/util/ss
 
 program(mrtest, ${OBJS},${MR_LIBDEP} ${GDB_LIBDEP}, ${CLIBS} ${SS_LIB},${PROGDIR})
 mk_cmds(test_cmds)
+
+test.o: mr_err_array.h
+
+mr_err_array.h:
+	${RM} mr_err_array.h
+	echo "char * MR_ERR_ARRAY[] = {" > mr_err_array.h
+	tr -d , < ../../lib/mr_et.et \
+	    | awk '$$1=="ec" {printf("\"%s\",\n", $$2)}' >> mr_err_array.h
+	echo "};" >> mr_err_array.h
+
+clean::
+	${RM} mr_err_array.h

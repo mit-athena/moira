@@ -1,4 +1,4 @@
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/Imakefile,v 1.1 1990-08-27 14:54:46 mar Exp $
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/Imakefile,v 1.2 1991-03-08 10:33:31 mar Exp $
 #
 # Copyright 1990 by the Massachusetts Institute of Technology.
 #
@@ -18,8 +18,12 @@ OBJECTS	= mr_auth.o mr_call.o mr_connect.o mr_data.o mr_init.o \
 	fixname.o strs.o fixhost.o nfsparttype.o sq.o hash.o \
 	idno.o critical.o mr_et.o ureg_err.o krb_et.o
 
-SRCDIR=$(SRCTOP)/rpc
+SRCDIR=$(SRCTOP)/lib
 CODE=$(SRCS) Imakefile mr_et.et krb_et.et ureg_err.et mr_private.h
+
+#ifdef NEED_STRCASECMP
+DEFINES= -DNEED_STRCASECMP
+#endif
 
 all::
 

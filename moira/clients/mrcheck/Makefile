@@ -1,4 +1,4 @@
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrcheck/Makefile,v 1.1 1988-12-01 15:00:52 mar Exp $
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrcheck/Makefile,v 1.2 1989-01-21 16:29:30 mar Exp $
 # (c) Copyright 1988 by the Massachusetts Institute of Technology.
 # For copying and distribution information, please see the file
 # <mit-copyright.h>.
@@ -13,23 +13,23 @@ SMSLIB = ${LDFLAGS} -lsms -lgdb -lcom_err
 LIBS = ${SMSLIB} -lcurses -ltermcap -lkrb -ldes
 
 
-SRCS =	smscheck.c
-OBJS = smscheck.o
+SRCS =	mrcheck.c
+OBJS = mrcheck.o
 
-all:	smscheck
+all:	mrcheck
 
-smscheck: ${OBJS}
-	rm -f smscheck
-	cc ${CFLAGS} -o smscheck ${OBJS} ${LIBS}
+mrcheck: ${OBJS}
+	rm -f mrcheck
+	cc ${CFLAGS} -o mrcheck ${OBJS} ${LIBS}
 
-smscheck.o: smscheck.c
+mrcheck.o: mrcheck.c
 
 lint:
 	lint -I../../include *.c
 
 clean:
 	rm -f *.o *~
-	rm -f smscheck
+	rm -f mrcheck
 
 install:	${PROGS}
-	install -s smscheck ${DESTDIR}/usr/athena/smscheck
+	install -s mrcheck ${DESTDIR}/usr/athena/mrcheck

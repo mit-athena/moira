@@ -1,6 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/afssync/ptprocs.c,v 1.1 1990-09-21 15:18:27 mar Exp $ */
-/* $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/afssync/ptprocs.c,v $ */
-
+/* Copyright (C) 1989 Transarc Corporation - All rights reserved */
 
 /*
  * P_R_P_Q_# (C) COPYRIGHT IBM CORPORATION 1988
@@ -8,142 +6,163 @@
  * REFER TO COPYRIGHT INSTRUCTIONS FORM NUMBER G120-2083
  */
 
+#ifndef lint
+static char rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/afssync/ptprocs.c,v 1.2 1990-09-21 15:18:39 mar Exp $";
+#endif
+
 /*	
        Sherri Nichols
        Information Technology Center
        November, 1988
 */
 
-
+#include <afs/param.h>
 #include <ctype.h>
 #include <stdio.h>
-#include <strings.h>
 #include <lock.h>
 #include <ubik.h>
 #include <rx/xdr.h>
 #include <rx/rx.h>
-#include "print.h"
-#include "prserver.h"
-#include "prerror.h"
+#include <rx/rx_vab.h>
+#include <rx/rxkad.h>
+#include <afs/auth.h>
+#include <netinet/in.h>
+#include "ptserver.h"
+#include "pterror.h"
+#include <strings.h>
+
+#ifdef AFS_ATHENA_STDENV
+#include <krb.h>
+#endif
 
 extern struct ubik_dbase *dbase;
-extern struct afsconf_dir *prdir;
 extern long Initdb();
+extern int pr_noAuth;
 
-PR_INewEntry(call,aname,aid,oid)
-struct rx_call *call;
-char aname[PR_MAXNAMELEN];
-long aid;
-long oid;
+static int CreateOK (ut, cid, oid, flag, admin)
+  struct ubik_trans *ut;
+  long cid;				/* id of caller */
+  long oid;				/* id of owner */
+  long flag;				/* indicates type of entry */
+  int  admin;				/* sysadmin membership */
 {
-    /* used primarily for conversion - not intended to be used as usual means of entering people into the database. */
+    if (flag & (PRGRP | PRFOREIGN)) {
+	/* Allow anonymous group creation only if owner specified and running
+         * noAuth. */
+	if (cid == ANONYMOUSID) {
+	    if ((oid == 0) || !pr_noAuth) return 0;
+	}
+    }
+    else { /* creating a user */
+	if (!admin && !pr_noAuth) return 0;
+    }
+    return 1;				/* OK! */
+}
+
+long WhoIsThis (acall, at, aid)
+  struct rx_call *acall;
+  struct ubik_trans *at;
+  long *aid;
+{
+    /* aid is set to the identity of the caller, if known, ANONYMOUSID otherwise */
+    /* returns -1 and sets aid to ANONYMOUSID on any failure */
+    register struct rx_connection *tconn;
+    struct rxvab_conn *tc;
+    register long code;
+    char tcell[MAXKTCREALMLEN];
+    long exp;
+    char name[MAXKTCNAMELEN];
+    char inst[MAXKTCNAMELEN];
+    int  ilen;
+    char vname[256];
+
+    *aid = ANONYMOUSID;
+    tconn = rx_ConnectionOf(acall);
+    code = rx_SecurityClassOf(tconn);
+    if (code == 0) return 0;
+    else if (code == 1) {		/* vab class */
+	tc = (struct rxvab_conn *) tconn->securityData;
+	if (!tc) goto done;
+	*aid = ntohl(tc->viceID);
+	code = 0;
+    }
+    else if (code == 2) {		/* kad class */
+	if (code = rxkad_GetServerInfo
+	    (acall->conn, (long *) 0, &exp, name, inst, tcell, (long *) 0))
+	    goto done;
+	if (exp < FT_ApproxTime()) goto done;
+	if (strlen (tcell)) {
+	    extern char *pr_realmName;
+#ifdef AFS_ATHENA_STDENV
+	    static char local_realm[REALM_SZ] = "";
+	    if (!local_realm[0]) {
+		krb_get_lrealm (local_realm, 0);
+	    }
+#endif
+	    if (
+#ifdef AFS_ATHENA_STDENV
+		strcasecmp (local_realm, tcell) &&
+#endif
+		strcasecmp (pr_realmName, tcell))
+		goto done;
+
+	}
+	strncpy (vname, name, sizeof(vname));
+	if (ilen = strlen (inst)) {
+	    if (strlen(vname) + 1 + ilen >= sizeof(vname)) goto done;
+	    strcat (vname, ".");
+	    strcat (vname, inst);
+	}
+	lcstring(vname, vname, sizeof(vname));
+	code = NameToID(at,vname,aid);
+    }
+  done:
+    if (code && !pr_noAuth) return -1;
+    return 0;
+}
+
+long PR_INewEntry(call,aname,aid,oid)
+  struct rx_call *call;
+  char aname[PR_MAXNAMELEN];
+  long aid;
+  long oid;
+{
+    /* used primarily for conversion - not intended to be used as usual means
+       of entering people into the database. */
     struct ubik_trans *tt;
     register long code;
-    long temp = 0;
     long gflag = 0;
     long cid;
-    long noAuth;
-    char *check;
-    long tid;
-    char oname[PR_MAXNAMELEN];
-    
+    int  admin;
+
+#define abort_with(code) return (ubik_AbortTrans(tt),code)
+
     stolower(aname);
     code = Initdb();
     if (code != PRSUCCESS) return code;
-    noAuth =afsconf_GetNoAuthFlag(prdir);
     code = ubik_BeginTrans(dbase,UBIK_WRITETRANS, &tt);
     if (code) return code;
     code = ubik_SetLock(tt, 1,1,LOCKWRITE);
-    if (code) {
-	ubik_AbortTrans(tt);
-	return code;
-    }
+    if (code) abort_with (code);
+
     code = WhoIsThis(call,tt,&cid);
-    if (code && !noAuth) {
-	ubik_AbortTrans(tt);
-	return PRPERM;
-    }
-    if (aid == 0) {
-	ubik_AbortTrans(tt);
-	return PRPERM;
-    }
-    if (aid < 0) gflag |= PRGRP;
+    if (code) abort_with (PRPERM);
+    admin = IsAMemberOf(tt,cid,SYSADMINID);
 
-    if (!noAuth) {
-	if (gflag & PRGRP) {
-	    if (oid != cid && !IsAMemberOf(tt,cid,SYSADMINID)) {
-		ubik_AbortTrans(tt);
-		return PRPERM;
-	    }
-	}
-	else {
-	    if (!IsAMemberOf(tt,cid,SYSADMINID)) {
-		ubik_AbortTrans(tt);
-		return PRPERM;
-	    }
-	}
+    /* first verify the id is good */
+    if (aid == 0) abort_with (PRPERM);
+    if (aid < 0) {
+	gflag |= PRGRP;
+	/* only sysadmin can reuse a group id */
+	if (!admin && !pr_noAuth && (aid != ntohl(cheader.maxGroup)-1))
+	    abort_with (PRPERM);
     }
+    if (FindByID (tt, aid)) abort_with (PRIDEXIST);
 
-    /* is this guy already in the database? */
-    temp = FindByID(tt,aid);
-    if (temp) {
-	ubik_AbortTrans(tt);
-	return PRIDEXIST;
-    }
-    if (gflag & PRGRP) {
-	if (cid == ANONYMOUSID) {
-	    ubik_AbortTrans(tt);
-	    return PRPERM;
-	}
-	if ((check = index(aname,':')) == 0) {
-	    /* groups should have owner's name prepended */
-	    ubik_AbortTrans(tt);
-	    return PRBADNAM;
-	}
-	if (oid) {
-	    if (!IsAMemberOf(tt,cid,SYSADMINID) && !IsOwnerOf(tt,cid,oid)) {
-		/* must be a sysadmin to specify another owner, unless other owner is group owned by you */
-		ubik_AbortTrans(tt);
-		return PRPERM;
-	    }
-	}
-	else oid = cid;
-	bzero(oname,PR_MAXNAMELEN);
-	/* check prepended part */
-	strncpy(oname,aname,check-aname);
-	if (!strcmp(oname,"system")) {
-	    /* groups with system: at beginning are owned by SYSADMIN */
-	    tid = SYSADMINID;
-	}
-	else {
-	    code = NameToID(tt,oname,&tid);
-	    if (code || tid == ANONYMOUSID) {
-		/* owner doesn't exist */
-		ubik_AbortTrans(tt);
-		return PRNOENT;
-	    }
-	}
-	if (oid > 0) {
-	    /* owner's name should be prepended */
-	    if (tid != oid) {
-		ubik_AbortTrans(tt);
-		return PRBADNAM;
-	    }
-	}
-	else {
-	    /* if owner is a group, group owner's name should be prepended. */
-	    if (tid != OwnerOf(tt,oid)) {
-		ubik_AbortTrans(tt);
-		return PRPERM;
-	    }
-	}
-    }
-    temp = FindByName(tt,aname);
-    if (temp) {
-	ubik_AbortTrans(tt);
-	return PREXIST;
-    }
-    code = CreateEntry(tt,aname,&aid,1,gflag,oid,cid);
+    /* check a few other things */
+    if (!CreateOK (tt, cid, oid, gflag, admin)) abort_with (PRPERM);
+
+    code = CreateEntry (tt,aname,&aid,1,gflag,oid,cid);
     if (code != PRSUCCESS) {
 	ubik_AbortTrans(tt);
 	return code;
@@ -155,115 +174,42 @@ long oid;
 }
 
 
-PR_NewEntry(call,aname,flag,oid,aid)
-struct rx_call *call;
-char aname[PR_MAXNAMELEN];
-long flag;
-long oid;
-long *aid;
+long PR_NewEntry (call, aname, flag, oid, aid)
+  struct rx_call *call;
+  char aname[PR_MAXNAMELEN];
+  long flag;
+  long oid;
+  long *aid;
 {
     register long code;
     struct ubik_trans *tt;
-    long temp;
     long cid;
-    char oname[PR_MAXNAMELEN];
-    long noAuth;
-    char *check;
-    long tid;
+    int  admin;
 
     stolower(aname);
     code = Initdb();
-    noAuth = afsconf_GetNoAuthFlag(prdir);
-    if (code != PRSUCCESS) return code;
+    if (code) return code;
     code = ubik_BeginTrans(dbase,UBIK_WRITETRANS,&tt);
     if (code) return code;
     code = ubik_SetLock(tt,1,1,LOCKWRITE);
     if (code) {
+      abort:
 	ubik_AbortTrans(tt);
 	return code;
     }
     code = WhoIsThis(call,tt,&cid);
-    if (code && !noAuth) {
+    if (code) {
+      perm:
 	ubik_AbortTrans(tt);
 	return PRPERM;
     }
-    if (flag & PRGRP) {
-	if (cid == ANONYMOUSID) {
-	    ubik_AbortTrans(tt);
-	    return PRPERM;
-	}
-	if ((check = index(aname,':')) == 0) {
-	    /* groups should have owner's name prepended */
-	    ubik_AbortTrans(tt);
-	    return PRBADNAM;
-	}
-	if (oid) {
-	    if (!IsAMemberOf(tt,cid,SYSADMINID) && !IsOwnerOf(tt,cid,oid)) {
-		/* must be a sysadmin to specify another owner, unless other owner is group owned by you */
-		ubik_AbortTrans(tt);
-		return PRPERM;
-	    }
-	}
-	else oid = cid;
-	bzero(oname,PR_MAXNAMELEN);
-	/* check prepended part */
-	strncpy(oname,aname,check-aname);
-	if (!strcmp(oname,"system")) {
-	    /* groups with system: at beginning are owned by SYSADMIN */
-	    tid = SYSADMINID;
-	}
-	else {
-	    code = NameToID(tt,oname,&tid);
-	    if (code || tid == ANONYMOUSID) {
-		/* owner doesn't exist */
-		ubik_AbortTrans(tt);
-		return PRNOENT;
-	    }
-	}
-	if (oid > 0) {
-	    /* owner's name should be prepended */
-	    if (tid != oid) {
-		ubik_AbortTrans(tt);
-		return PRBADNAM;
-	    }
-	}
-	else {
-	    /* if owner is a group, prepend group owner's name. */
-	    if (tid != OwnerOf(tt,oid)) {
-		ubik_AbortTrans(tt);
-		return PRPERM;
-	    }
-	}
-	temp = FindByName(tt,aname);
-	if (temp) {
-	    ubik_AbortTrans(tt);
-	    return PREXIST;
-	}
-	code = CreateEntry(tt,aname,aid,0,flag,oid,cid);
-	if (code != PRSUCCESS) {
-	    ubik_AbortTrans(tt);
-	    return code;
-	}
-    }
-    else {
-	if (!(flag & PRFOREIGN)) {
-	    if (!IsAMemberOf(tt,cid,SYSADMINID) && !noAuth) {
-		ubik_AbortTrans(tt);
-		return PRPERM;
-	    }
-	    if (oid != SYSADMINID) oid = SYSADMINID;
-	}
-	temp = FindByName(tt,aname);
-	if (temp) {
-	    ubik_AbortTrans(tt);
-	    return PREXIST;
-	}
-	code = CreateEntry(tt,aname,aid,0,flag,oid,cid);
-	if (code != PRSUCCESS) {
-	    ubik_AbortTrans(tt);
-	    return code;
-	}
-    }
+    admin = IsAMemberOf(tt,cid,SYSADMINID);
+
+    if (!CreateOK (tt, cid, oid, flag, admin)) goto perm;
+
+    code = CreateEntry (tt,aname,aid,0,flag,oid,cid);
+    if (code != PRSUCCESS) goto abort;
+
     code = ubik_EndTrans(tt);
     if (code) return code;
     return PRSUCCESS;
@@ -315,13 +261,16 @@ struct prdebugentry *aentry;
     if (code) return code;
     code = ubik_SetLock(tt,1,1,LOCKREAD);
     if (code) {
+      abort:
 	ubik_AbortTrans(tt);
 	return code;
     }
     code = pr_ReadEntry(tt, 0, apos, aentry);
-    if (code != 0) {
-	ubik_AbortTrans(tt);
-	return code;
+    if (code) goto abort;
+
+    if (aentry->flags & PRCONT) {	/* wrong type, get coentry instead */
+	code = pr_ReadCoEntry(tt, 0, apos, aentry);
+	if (code) goto abort;
     }
     code = ubik_EndTrans(tt);
     if (code) return code;
@@ -339,15 +288,12 @@ long gid;
     long tempg;
     struct prentry tentry;
     struct prentry uentry;
-    long len;
     long cid;
-    long noAuth;
 
     code = Initdb();
     if (code != PRSUCCESS) return code;
     if (gid == ANYUSERID || gid == AUTHUSERID) return PRPERM;
     if (aid == ANONYMOUSID) return PRPERM;
-    noAuth = afsconf_GetNoAuthFlag(prdir);
     code = ubik_BeginTrans(dbase,UBIK_WRITETRANS,&tt);
     if (code) return code;
     code = ubik_SetLock(tt,1,1,LOCKWRITE);
@@ -356,7 +302,7 @@ long gid;
 	return code;
     }
     code = WhoIsThis(call, tt, &cid);
-    if (code && !noAuth) {
+    if (code) {
 	ubik_AbortTrans(tt);
 	return PRPERM;
     }
@@ -391,19 +337,18 @@ long gid;
 	ubik_AbortTrans(tt);
 	return PRNOTGROUP;
     }
-    if (tentry.owner != cid && !IsAMemberOf(tt,cid,SYSADMINID) && !IsAMemberOf(tt,cid,tentry.owner) && !noAuth) {
+    if (!AccessOK (tt, cid, &tentry, PRP_ADD_MEM, PRP_ADD_ANY)) {
 	ubik_AbortTrans(tt);
 	return PRPERM;
     }
-
     
-    code = AddToEntry(tt,tentry,tempg,aid);
+    code = AddToEntry (tt, &tentry, tempg, aid);
     if (code != PRSUCCESS) {
 	ubik_AbortTrans(tt);
 	return code;
     }
     /* now, modify the user's entry as well */
-    code = AddToEntry(tt,uentry,tempu,gid);
+    code = AddToEntry (tt, &uentry, tempu, gid);
     if (code != PRSUCCESS) {
 	ubik_AbortTrans(tt);
 	return code;
@@ -413,18 +358,24 @@ long gid;
     return PRSUCCESS;
 }
 
-PR_NameToID(call,aname,aid)
-struct rx_call *call;
-namelist *aname;
-idlist *aid;
+long PR_NameToID (call, aname, aid)
+  struct rx_call *call;
+  namelist *aname;
+  idlist *aid;
 {
     register long code;
     struct ubik_trans *tt;
     long i;
+    int size;
+    int count = 0;
 
     /* must do this first for RPC stub to work */
-    aid->idlist_val = (long *)malloc(PR_MAXLIST*sizeof(long));
+    size = aname->namelist_len;
+    if ((size <= 0) || (size > PR_MAXLIST)) size = 0;
+    aid->idlist_val = (long *)malloc(size*sizeof(long));
     aid->idlist_len = 0;
+    if (aname->namelist_len == 0) return 0;
+    if (size == 0) return PRTOOMANY;	/* rxgen will probably handle this */
 
     code = Initdb();
     if (code != PRSUCCESS) return code;
@@ -438,25 +389,33 @@ idlist *aid;
     for (i=0;i<aname->namelist_len;i++) {
 	code = NameToID(tt,aname->namelist_val[i],&aid->idlist_val[i]);
 	if (code != PRSUCCESS) aid->idlist_val[i] = ANONYMOUSID;
-	aid->idlist_len++;
+	if (count++ > 50) IOMGR_Poll(), count = 0;
     }
+    aid->idlist_len = aname->namelist_len;
+
     code = ubik_EndTrans(tt);
-    if (code)return code;
+    if (code) return code;
     return PRSUCCESS;
 }
 
-PR_IDToName(call,aid,aname)
-struct rx_call *call;
-idlist *aid;
-namelist *aname;
+long PR_IDToName (call, aid, aname)
+  struct rx_call *call;
+  idlist *aid;
+  namelist *aname;
 {
     register long code;
     struct ubik_trans *tt;
     long i;
+    int size;
+    int count = 0;
 
     /* leave this first for rpc stub */
+    size = aid->idlist_len;
+    if ((size <= 0) || (size > PR_MAXLIST)) size = 0;
+    aname->namelist_val = (prname *)malloc(size*PR_MAXNAMELEN);
     aname->namelist_len = 0;
-    aname->namelist_val = (prname *)malloc(PR_MAXLIST*PR_MAXNAMELEN);
+    if (aid->idlist_len == 0) return 0;
+    if (size == 0) return PRTOOMANY;	/* rxgen will probably handle this */
 
     code = Initdb();
     if (code != PRSUCCESS) return code;
@@ -472,40 +431,139 @@ namelist *aname;
 	code = IDToName(tt,aid->idlist_val[i],aname->namelist_val[i]);
 	if (code != PRSUCCESS)
 	    sprintf(aname->namelist_val[i],"%d",aid->idlist_val[i]);
-	aname->namelist_len++;
+	if (count++ > 50) IOMGR_Poll(), count = 0;
     }
+    aname->namelist_len = aid->idlist_len;
+
     code = ubik_EndTrans(tt);
     if (code) return code;
     return PRSUCCESS;
 }
 
-PR_Delete(call,aid)
-struct rx_call *call;
-long aid;
+long PR_Delete (call, aid)
+  struct rx_call *call;
+  long aid;
 {
     register long code;
     struct ubik_trans *tt;
     long cid;
-    long noAuth;
+    struct prentry tentry;
+    long loc, nptr;
+    int count;
 
     code = Initdb();
-    noAuth = afsconf_GetNoAuthFlag(prdir);
+    if (code) return code;
     if (code != PRSUCCESS) return code;
     if (aid == SYSADMINID || aid == ANYUSERID || aid == AUTHUSERID || aid == ANONYMOUSID) return PRPERM;
     code = ubik_BeginTrans(dbase,UBIK_WRITETRANS,&tt);
     if (code) return code;
     code = ubik_SetLock(tt,1,1,LOCKWRITE);
     if (code) {
+      abort:
 	ubik_AbortTrans(tt);
 	return code;
     }
     code = WhoIsThis(call,tt,&cid);
-    if (code && !noAuth) {
+    if (code) {
 	ubik_AbortTrans(tt);
 	return PRPERM;
     }
-    /*protection check will occur in DeleteEntry - sigh. */
-    code = DeleteEntry(tt,aid,cid);
+
+    /* Read in entry to be deleted */
+    loc = FindByID (tt, aid);
+    if (loc == 0) {code = PRNOENT; goto abort;}
+    code = pr_ReadEntry (tt, 0, loc, &tentry);
+    if (code) {code = PRDBFAIL; goto abort;}
+
+    /* Do some access checking */
+    if (tentry.owner != cid &&
+	!IsAMemberOf (tt, cid, SYSADMINID) &&
+	!IsAMemberOf (tt, cid, tentry.owner) && !pr_noAuth)
+	{code = PRPERM; goto abort;}
+
+    /* Delete each continuation block as a separate transaction so that no one
+     * transaction become to large to complete. */
+    nptr = tentry.next;
+    while (nptr != NULL) {
+	struct contentry centry;
+	int i;
+
+	code = pr_ReadCoEntry(tt, 0, nptr, &centry);
+	if (code != 0) {code = PRDBFAIL; goto abort;}
+	for (i=0;i<COSIZE;i++) {
+	    if (centry.entries[i] == PRBADID) continue;
+	    if (centry.entries[i] == 0) break;
+	    code = RemoveFromEntry (tt, aid, centry.entries[i]);
+	    if (code) goto abort;
+	    tentry.count--;		/* maintain count */
+	    if ((i&3) == 0) IOMGR_Poll();
+	}
+	tentry.next = centry.next;	/* thread out this block */
+	code = FreeBlock (tt, nptr);	/* free continuation block */
+	if (code) goto abort;
+	code = pr_WriteEntry (tt, 0, loc, &tentry); /* update main entry */
+	if (code) goto abort;
+
+	/* end this trans and start a new one */
+	code = ubik_EndTrans(tt);
+	if (code) return code;
+	IOMGR_Poll();			/* just to keep the connection alive */
+	code = ubik_BeginTrans(dbase,UBIK_WRITETRANS,&tt);
+	if (code) return code;
+	code = ubik_SetLock(tt,1,1,LOCKWRITE);
+	if (code) goto abort;
+
+	/* re-read entry to get consistent uptodate info */
+	loc = FindByID (tt, aid);
+	if (loc == 0) {code = PRNOENT; goto abort;}
+	code = pr_ReadEntry (tt, 0, loc, &tentry);
+	if (code) {code = PRDBFAIL; goto abort;}
+
+	nptr = tentry.next;
+    }
+
+    /* Then move the owned chain, except possibly ourself to the orphan list.
+     * Because this list can be very long and so exceed the size of a ubik
+     * transaction, we start a new transaction every 50 entries. */
+    count = 0;
+    nptr = tentry.owned;
+    while (nptr != NULL) {
+	struct prentry nentry;
+
+	code = pr_ReadEntry (tt, 0, nptr, &nentry);
+	if (code) {code = PRDBFAIL; goto abort;}
+	nptr = tentry.owned = nentry.nextOwned;	/* thread out */
+	
+	if (nentry.id != tentry.id) {	/* don't add us to orphan chain! */
+	    code = AddToOrphan (tt, nentry.id);
+	    if (code) goto abort;
+	    count++;
+	    if ((count & 3) == 0) IOMGR_Poll();
+	}
+	if (count < 50) continue;
+	code = pr_WriteEntry (tt, 0, loc, &tentry); /* update main entry */
+	if (code) goto abort;
+
+	/* end this trans and start a new one */
+	code = ubik_EndTrans(tt);
+	if (code) return code;
+	IOMGR_Poll();			/* just to keep the connection alive */
+	code = ubik_BeginTrans(dbase,UBIK_WRITETRANS,&tt);
+	if (code) return code;
+	code = ubik_SetLock(tt,1,1,LOCKWRITE);
+	if (code) goto abort;
+
+	/* re-read entry to get consistent uptodate info */
+	loc = FindByID (tt, aid);
+	if (loc == 0) {code = PRNOENT; goto abort;}
+	code = pr_ReadEntry (tt, 0, loc, &tentry);
+	if (code) {code = PRDBFAIL; goto abort;}
+
+	nptr = tentry.owned;
+    }
+
+    /* now do what's left of the deletion stuff */
+    code = DeleteEntry (tt, &tentry, loc);
     if (code != PRSUCCESS) {
 	ubik_AbortTrans(tt);
 	return code;
@@ -527,11 +585,9 @@ long gid;
     struct prentry uentry;
     struct prentry gentry;
     long cid;
-    long noAuth;
 
     code = Initdb();
     if (code != PRSUCCESS) return code;
-    noAuth = afsconf_GetNoAuthFlag(prdir);
     code = ubik_BeginTrans(dbase,UBIK_WRITETRANS,&tt);
     if (code) return code;
     code = ubik_SetLock(tt,1,1,LOCKWRITE);
@@ -540,7 +596,7 @@ long gid;
 	return code;
     }
     code = WhoIsThis(call,tt,&cid);
-    if (code && !noAuth) {
+    if (code) {
 	ubik_AbortTrans(tt);
 	return PRPERM;
     }
@@ -574,7 +630,7 @@ long gid;
 	ubik_AbortTrans(tt);
 	return PRNOTUSER;
     }
-    if (gentry.owner != cid && !IsAMemberOf(tt,cid,SYSADMINID) && !IsAMemberOf(tt,cid,gentry.owner) && !noAuth) {
+    if (!AccessOK (tt, cid, &gentry, PRP_REMOVE_MEM, 0)) {
 	ubik_AbortTrans(tt);
 	return PRPERM;
     }
@@ -593,14 +649,17 @@ long gid;
     return PRSUCCESS;
 }
 
-PR_GetCPS(call,aid,alist,over)
-struct rx_call *call;
-long aid;
-prlist *alist;
-long *over;
+long PR_GetCPS (call, aid, alist, over)
+  struct rx_call *call;
+  long aid;
+  prlist *alist;
+  long *over;
 {
     register long code;
     struct ubik_trans *tt;
+    long temp;
+    long cid;
+    struct prentry tentry;
 
     alist->prlist_len = 0;
     alist->prlist_val = (long *) 0;
@@ -610,16 +669,33 @@ long *over;
     if (code) goto done;
     code = ubik_SetLock(tt,1,1,LOCKREAD);
     if (code) {
+      abort:
 	ubik_AbortTrans(tt);
 	goto done;
     }
+
+
+    temp = FindByID(tt,aid);
+    if (!temp) {code = PRNOENT; goto abort;}
+    code = pr_ReadEntry (tt, 0, temp, &tentry);
+    if (code) goto abort;
+
+    if (0) {				/* afs doesn't authenticate yet */
+	code = WhoIsThis (call, tt, &cid);
+	if (code || !AccessOK (tt, cid, &tentry, PRP_MEMBER_MEM, PRP_MEMBER_ANY)) {
+	    code = PRPERM;
+	    goto abort;
+	}
+    }
+	
+    code = GetList(tt, &tentry, alist, 1);
     *over = 0;
-    code = GetList(tt,aid,alist,1);
-    if (code != PRSUCCESS) {
+    if (code == PRTOOMANY) *over = 1;
+    else if (code != PRSUCCESS) {
 	ubik_AbortTrans(tt);
 	goto done;
     }
-    if (alist->prlist_len > PR_MAXGROUPS) *over = alist->prlist_len - PR_MAXGROUPS;
+
     code = ubik_EndTrans(tt);
 
 done:
@@ -664,11 +740,9 @@ long gflag;
     register long code;
     struct ubik_trans *tt;
     long cid;
-    long noAuth;
 
     code = Initdb();
     if (code != PRSUCCESS) return code;
-    noAuth = afsconf_GetNoAuthFlag(prdir);
     code = ubik_BeginTrans(dbase,UBIK_WRITETRANS,&tt);
     if (code) return code;
     code = ubik_SetLock(tt,1,1,LOCKWRITE);
@@ -677,16 +751,23 @@ long gflag;
 	return code;
     }
     code = WhoIsThis(call,tt,&cid);
-    if (code && !noAuth) {
+    if (code) {
 	ubik_AbortTrans(tt);
 	return PRPERM;
     }
-    if (!IsAMemberOf(tt, cid,SYSADMINID) && !noAuth) {
+    if (!AccessOK (tt, cid, 0, 0, 0)) {
 	ubik_AbortTrans(tt);
 	return PRPERM;
     }
+    if (((gflag & PRGRP) && (aid > 0)) ||
+	(!(gflag & PRGRP) && (aid < 0))) {
+	code = PRBADARG;
+	goto abort;
+    }
+
     code = SetMax(tt,aid,gflag);
     if (code != PRSUCCESS) {
+      abort:
 	ubik_AbortTrans(tt);
 	return code;
     }
@@ -702,6 +783,7 @@ struct prcheckentry *aentry;
 {
     register long code;
     struct ubik_trans *tt;
+    long cid;
     long temp;
     struct prentry tentry;
 
@@ -714,6 +796,12 @@ struct prcheckentry *aentry;
 	ubik_AbortTrans(tt);
 	return code;
     }
+    code = WhoIsThis(call,tt,&cid);
+    if (code) {
+      perm:
+	ubik_AbortTrans(tt);
+	return PRPERM;
+    }
     temp = FindByID(tt,aid);
     if (!temp) { 
 	ubik_AbortTrans(tt);
@@ -724,13 +812,22 @@ struct prcheckentry *aentry;
 	ubik_AbortTrans(tt);
 	return code;
     } 
+    if (!AccessOK (tt, cid, &tentry, PRP_STATUS_MEM, PRP_STATUS_ANY)) goto perm;
+
+    aentry->flags = tentry.flags >> PRIVATE_SHIFT;
+    if (aentry->flags == 0)
+	if (tentry.flags & PRGRP)
+	    aentry->flags = PRP_GROUP_DEFAULT >> PRIVATE_SHIFT;
+	else aentry->flags = PRP_USER_DEFAULT >> PRIVATE_SHIFT;
+    aentry->flags;
     aentry->owner = tentry.owner;
     aentry->id = tentry.id;
     strncpy(aentry->name,tentry.name,PR_MAXNAMELEN);
     aentry->creator = tentry.creator;
     aentry->ngroups = tentry.ngroups;
     aentry->nusers = tentry.nusers;
-    aentry->count = aentry->count;
+    aentry->count = tentry.count;
+    bzero (aentry->reserved, sizeof(aentry->reserved));
     code = ubik_EndTrans(tt);
     if (code) return code;
     return PRSUCCESS;
@@ -747,12 +844,11 @@ long newid;
     struct ubik_trans *tt;
     long pos;
     long cid;
-    long noAuth;
 
     stolower(name);
     code = Initdb();
+    if (code) return code;
     if (aid == ANYUSERID || aid == AUTHUSERID || aid == ANONYMOUSID || aid == SYSADMINID) return PRPERM;
-    noAuth = afsconf_GetNoAuthFlag(prdir);
     if (code != PRSUCCESS) return code;
     code = ubik_BeginTrans(dbase,UBIK_WRITETRANS,&tt);
     if (code) return code;
@@ -762,7 +858,7 @@ long newid;
 	return code;
     }
     code = WhoIsThis(call,tt,&cid);
-    if (code && !noAuth) {
+    if (code) {
 	ubik_AbortTrans(tt);
 	return PRPERM;
     }
@@ -781,14 +877,96 @@ long newid;
     return code;
 }
 
-PR_ListElements(call,aid,alist,over)
-struct rx_call *call;
-long aid;
-prlist *alist;
-long *over;
+PR_SetFieldsEntry(call, id, mask, flags, ngroups, nusers, spare1, spare2)
+  struct rx_call *call;
+  long id;
+  long mask;				/* specify which fields to update */
+  long flags, ngroups, nusers;
+  long spare1, spare2;
 {
     register long code;
     struct ubik_trans *tt;
+    long pos;
+    long cid;
+    struct prentry tentry;
+    long tflags;
+
+    if (mask == 0) return 0;		/* no-op */
+    code = Initdb();
+    if (code) return code;
+    if (id == ANYUSERID || id == AUTHUSERID || id == ANONYMOUSID)
+	return PRPERM;
+    if (code != PRSUCCESS) return code;
+    code = ubik_BeginTrans(dbase,UBIK_WRITETRANS,&tt);
+    if (code) return code;
+    code = ubik_SetLock(tt,1,1,LOCKWRITE);
+    if (code) {
+      abort:
+	ubik_AbortTrans(tt);
+	return code;
+    }
+    code = WhoIsThis(call,tt,&cid);
+    if (code) {
+      perm:
+	ubik_AbortTrans(tt);
+	return PRPERM;
+    }
+    pos = FindByID(tt,id);
+    if (!pos) { 
+	ubik_AbortTrans(tt);
+	return PRNOENT;
+    }
+    code = pr_ReadEntry (tt, 0, pos, &tentry);
+    if (code) goto abort;
+    tflags = tentry.flags;
+
+    if (mask & (PR_SF_NGROUPS | PR_SF_NUSERS)) {
+	if (!AccessOK (tt, cid, 0, 0, 0)) goto perm;
+	if ((tflags & PRQUOTA) == 0) {	/* default if only setting one */
+	    tentry.ngroups = tentry.nusers = 20;
+	}
+    } else {
+	if (!AccessOK (tt, cid, &tentry, 0, 0)) goto perm;
+    }
+
+    if (mask & 0xffff) {		/* if setting flag bits */
+	long flagsMask = mask & 0xffff;
+	tflags &= ~(flagsMask << PRIVATE_SHIFT);
+	tflags |= (flags & flagsMask) << PRIVATE_SHIFT;
+	tflags |= PRACCESS;
+    }
+
+    if (mask & PR_SF_NGROUPS) {		/* setting group limit */
+	if (ngroups < 0) {code = PRBADARG; goto abort;}
+	tentry.ngroups = ngroups;
+	tflags |= PRQUOTA;
+    }
+
+    if (mask & PR_SF_NUSERS) {		/* setting foreign user limit */
+	if (nusers < 0) {code = PRBADARG; goto abort;}
+	tentry.nusers = nusers;
+	tflags |= PRQUOTA;
+    }
+    tentry.flags = tflags;
+
+    code = pr_WriteEntry (tt, 0, pos, &tentry);
+    if (code) goto abort;
+
+    code = ubik_EndTrans(tt);
+    return code;
+}
+
+long PR_ListElements (call, aid, alist, over)
+  struct rx_call *call;
+  long aid;
+  prlist *alist;
+  long *over;
+{
+    register long code;
+    struct ubik_trans *tt;
+    long cid;
+    long temp;
+    struct prentry tentry;
 
     alist->prlist_len = 0;
     alist->prlist_val = (long *) 0;
@@ -799,15 +977,30 @@ long *over;
     if (code) goto done;
     code = ubik_SetLock(tt,1,1,LOCKREAD);
     if (code) {
+      abort:
 	ubik_AbortTrans(tt);
 	goto done;
     }
-    code = GetList(tt,aid,alist,0);
-    if (code != PRSUCCESS) {
+    code = WhoIsThis(call,tt,&cid);
+    if (code) {
+      perm:
+	code = PRPERM;
 	ubik_AbortTrans(tt);
 	goto done;
     }
-    if (alist->prlist_len > PR_MAXGROUPS) *over = alist->prlist_len - PR_MAXGROUPS;
+
+    temp = FindByID(tt,aid);
+    if (!temp) {code = PRNOENT; goto abort;}
+    code = pr_ReadEntry (tt, 0, temp, &tentry);
+    if (code) goto abort;
+    if (!AccessOK (tt, cid, &tentry, PRP_MEMBER_MEM, PRP_MEMBER_ANY))
+	goto perm;
+	
+    code = GetList (tt, &tentry, alist, 0);
+    *over = 0;
+    if (code == PRTOOMANY) *over = 1;
+    else if (code != PRSUCCESS) goto abort;
+
     code = ubik_EndTrans(tt);
 
 done:
@@ -815,6 +1008,120 @@ done:
 	alist->prlist_val = (long *) malloc(0);	/* make calling stub happy */
     return code;
 }
+
+/* List the entries owned by this id.  If the id is zero return the orphans
+ * list. */
+
+PR_ListOwned (call, aid, alist, over)
+  struct rx_call *call;
+  long aid;
+  prlist *alist;
+  long *over;
+{
+    register long code;
+    struct ubik_trans *tt;
+    long cid;
+    struct prentry tentry;
+    long head;
+
+    alist->prlist_len = 0;
+    alist->prlist_val = (long *) 0;
+
+    code = Initdb();
+    if (code != PRSUCCESS) goto done;
+    code = ubik_BeginTrans(dbase,UBIK_READTRANS,&tt);
+    if (code) goto done;
+    code = ubik_SetLock(tt,1,1,LOCKREAD);
+    if (code) {
+      abort:
+	ubik_AbortTrans(tt);
+	goto done;
+    }
+    code = WhoIsThis(call,tt,&cid);
+    if (code) {
+      perm:
+	code = PRPERM;
+	ubik_AbortTrans(tt);
+	goto done;
+    }
+
+    if (aid) {
+	long loc = FindByID (tt, aid);
+	if (loc == 0) { code =  PRNOENT; goto abort; }
+	code = pr_ReadEntry (tt, 0, loc, &tentry);
+	if (code) goto abort;
+;
+	if (!AccessOK (tt, cid, &tentry, -1, PRP_OWNED_ANY)) goto perm;
+	head = tentry.owned;
+    } else {
+	if (!AccessOK (tt, cid, 0, 0, 0)) goto perm;
+	head = ntohl(cheader.orphan);
+    }
+
+    code = GetOwnedChain (tt, head, alist);
+    *over = 0;
+    if (code == PRTOOMANY) *over = 1;
+    else if (code) goto abort;
+
+    code = ubik_EndTrans(tt);
+
+done:
+    if (!alist->prlist_val)
+	alist->prlist_val = (long *) malloc(0);	/* make calling stub happy */
+    return code;
+}
+
+PR_IsAMemberOf(call,uid,gid,flag)
+struct rx_call *call;
+long uid;
+long gid;
+long *flag;
+{
+    register long code;
+    struct ubik_trans *tt;
+
+    code = Initdb();
+    if (code != PRSUCCESS) return code;
+    code = ubik_BeginTrans(dbase,UBIK_READTRANS,&tt);
+    if (code) return code;
+    code = ubik_SetLock(tt,1,1,LOCKREAD);
+    if (code) {
+      abort:
+	ubik_AbortTrans(tt);
+	return code;
+    }
+    {	long cid;
+	long uloc = FindByID (tt, uid);
+	long gloc = FindByID (tt, gid);
+	struct prentry uentry, gentry;
+
+	if (!uloc || !gloc) {
+	    code = PRNOENT;
+	    goto abort;
+	}
+	code = WhoIsThis(call, tt, &cid);
+	if (code) {
+	  perm:
+	    code = PRPERM;
+	    goto abort;
+	}
+	code = pr_ReadEntry (tt, 0, uloc, &uentry);
+	if (code) goto abort;
+	code = pr_ReadEntry (tt, 0, gloc, &gentry);
+	if (code) goto abort;
+	if ((uentry.flags & PRGRP) || !(gentry.flags & PRGRP)) {
+	    code = PRBADARG;
+	    goto abort;
+	}
+	if (!AccessOK (tt, cid, &uentry, 0, PRP_MEMBER_ANY) &&
+	    !AccessOK (tt, cid, &gentry, PRP_MEMBER_MEM, PRP_MEMBER_ANY)) goto perm;
+    }
+	
+    *flag = IsAMemberOf(tt,uid,gid);
+    code = ubik_EndTrans(tt);
+    return code;
+}
+
 
 static stolower(s)
 register char *s;

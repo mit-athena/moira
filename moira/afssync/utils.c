@@ -1,23 +1,24 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/afssync/utils.c,v 1.3 1989-09-24 15:27:45 mar Exp $ */
-/* $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/afssync/utils.c,v $ */
-
-
+/* Copyright (C) 1989 Transarc Corporation - All rights reserved */
 /*
  * P_R_P_Q_# (C) COPYRIGHT IBM CORPORATION 1988
  * LICENSED MATERIALS - PROPERTY OF IBM
  * REFER TO COPYRIGHT INSTRUCTIONS FORM NUMBER G120-2083
  */
 
+#ifndef lint
+static char rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/afssync/utils.c,v 1.4 1990-09-21 15:22:49 mar Exp $";
+#endif
+
 /*	
        Sherri Nichols
        Information Technology Center
        November, 1988
 
+
        Modified May, 1989 by Jeff Schiller to keep disk file in
        network byte order
 
 */
-
 
 #include <sys/types.h>
 #include <lock.h>
@@ -25,17 +26,8 @@
 #include <stdio.h>
 #include <netinet/in.h>
 #include <netdb.h>
-#include <rx/xdr.h>
-#include <rx/rx.h>
-#include <rx/rx_vab.h>
-#include "print.h"
-#include "prserver.h"
-#include "prerror.h"
-
-#define USERSMS	14487
-
-extern struct prheader cheader;
-extern struct ubik_dbase *dbase;
+#include "ptserver.h"
+#include "pterror.h"
 
 long IDHash(x)
 long x;
@@ -66,6 +58,10 @@ long len;
 {
     /* package up seek and write into one procedure for ease of use */
     long code;
+    if ((pos < sizeof(cheader)) && (buff != (char *)&cheader + pos)) {
+	fprintf (stderr, "ptserver: dbwrite: Illegal attempt to write a location 0\n");
+	return PRDBFAIL;
+    }
     code = ubik_Seek(tt,afd,pos);
     if (code) return code;
     code = ubik_Write(tt,buff,len);
@@ -96,7 +92,9 @@ struct prentry *tentry;
     long code;
     register long i;
     struct prentry nentry;
+
     if (ntohl(1) != 1) {	/* Need to swap bytes. */
+      bzero (&nentry, sizeof(nentry));	/* make sure reseved fields are zero */
       nentry.flags = htonl(tentry->flags);
       nentry.id = htonl(tentry->id);
       nentry.cellid = htonl(tentry->cellid);
@@ -115,20 +113,20 @@ struct prentry *tentry;
       nentry.sibling = htonl(tentry->sibling);
       nentry.child = htonl(tentry->child);
       strncpy(nentry.name, tentry->name, PR_MAXNAMELEN);
+#ifdef PR_REMEMBER_TIMES
+      nentry.createTime = htonl(tentry->createTime);
+      nentry.addTime = htonl(tentry->addTime);
+      nentry.removeTime = htonl(tentry->removeTime);
+      nentry.changeTime = htonl(tentry->changeTime);
+#endif
       for (i = 0; i < PRSIZE; i++)
 	nentry.entries[i] = htonl(tentry->entries[i]);
-      code = ubik_Seek(tt, afd, pos);
-      if (code) return (code);
-      code = ubik_Write(tt, (char *) &nentry, sizeof(struct prentry));
-      return(code);
-    } else {
-      code = ubik_Seek(tt, afd, pos);
-      if (code) return (code);
-      code = ubik_Write(tt, (char *) tentry, sizeof(struct prentry));
-      return(code);
+      tentry = &nentry;
     }
+    code = pr_Write (tt, afd, pos, (char *)tentry, sizeof(struct prentry));
+    return(code);
 }
-
+  
 pr_ReadEntry(tt, afd, pos, tentry)
 struct ubik_trans *tt;
 long afd;
@@ -146,6 +144,7 @@ struct prentry *tentry;
     }
     code = ubik_Read(tt, (char *) &nentry, sizeof(struct prentry));
     if (code) return (code);
+    bzero (tentry, sizeof(*tentry));	/* make sure reseved fields are zero */
     tentry->flags = ntohl(nentry.flags);
     tentry->id = ntohl(nentry.id);
     tentry->cellid = ntohl(nentry.cellid);
@@ -164,35 +163,38 @@ struct prentry *tentry;
     tentry->sibling = ntohl(nentry.sibling);
     tentry->child = ntohl(nentry.child);
     strncpy(tentry->name, nentry.name, PR_MAXNAMELEN);
+#ifdef PR_REMEMBER_TIMES
+    tentry->createTime = ntohl(nentry.createTime);
+    tentry->addTime = ntohl(nentry.addTime);
+    tentry->removeTime = ntohl(nentry.removeTime);
+    tentry->changeTime = ntohl(nentry.changeTime);
+#endif
     for (i = 0; i < PRSIZE; i++)
       tentry->entries[i] = ntohl(nentry.entries[i]);
     return(code);
 }
 
 pr_WriteCoEntry(tt, afd, pos, tentry)
-struct ubik_trans *tt;
-long afd;
-long pos;
-struct contentry *tentry;
+  struct ubik_trans *tt;
+  long afd;
+  long pos;
+  struct contentry *tentry;
 {
     long code;
     register long i;
     struct contentry nentry;
-    if (ntohl(1) == 1) {	/* No need to swap */
-      code = ubik_Seek(tt, afd, pos);
-      if (code) return(code);
-      code = ubik_Write(tt, (char *) tentry, sizeof(struct contentry));
-      return(code);
+
+    if (ntohl(1) != 1) {	/* No need to swap */
+	bzero (&nentry, sizeof(nentry)); /* make reseved fields zero */
+	nentry.flags = htonl(tentry->flags);
+	nentry.id = htonl(tentry->id);
+	nentry.cellid = htonl(tentry->cellid);
+	nentry.next = htonl(tentry->next);
+	for (i = 0; i < COSIZE; i++)
+	    nentry.entries[i] = htonl(tentry->entries[i]);
+	tentry = &nentry;
     }
-    nentry.flags = htonl(tentry->flags);
-    nentry.id = htonl(tentry->id);
-    nentry.cellid = htonl(tentry->cellid);
-    nentry.next = htonl(tentry->next);
-    for (i = 0; i < COSIZE; i++)
-      nentry.entries[i] = htonl(tentry->entries[i]);
-    code = ubik_Seek(tt, afd, pos);
-    if (code) return (code);
-    code = ubik_Write(tt, (char *) &nentry, sizeof(struct contentry));
+    code = pr_Write (tt, afd, pos, (char *)tentry, sizeof(struct contentry));
     return(code);
 }
 
@@ -213,6 +215,7 @@ struct contentry *tentry;
     }
     code = ubik_Read(tt, (char *) &nentry, sizeof(struct contentry));
     if (code) return (code);
+    bzero (tentry, sizeof(*tentry)); /* make reseved fields zero */
     tentry->flags = ntohl(nentry.flags);
     tentry->id = ntohl(nentry.id);
     tentry->cellid = ntohl(nentry.cellid);
@@ -222,10 +225,12 @@ struct contentry *tentry;
     return(code);
 }
 
+/* AllocBloc - allocate a free block of storage for entry, returning address of
+ * new entry */
+
 long AllocBlock(at)
-register struct ubik_trans *at;
+  register struct ubik_trans *at;
 {
-    /* allocate a free block of storage for entry, returning address of new entry  */
     register long code;
     long temp;
     struct prentry tentry;
@@ -279,6 +284,7 @@ long aid;
     struct prentry tentry;
     long entry;
 
+    if ((aid == PRBADID) || (aid == 0)) return 0;
     i = IDHash(aid);
     entry = ntohl(cheader.idHash[i]);
     if (entry == 0) return entry;
@@ -378,6 +384,40 @@ long *aid;
     }
 }
 
+long IDToName(at, aid, aname)
+  register struct ubik_trans *at;
+  long aid;
+  char aname[PR_MAXNAMELEN];
+{
+    long temp;
+    struct prentry tentry;
+    register long code;
+
+    temp = FindByID(at,aid);
+    if (temp == 0) return PRNOENT;
+    code = pr_Read (at, 0, temp, (char *)&tentry, sizeof(tentry));
+    if (code) return code;
+    strncpy (aname, tentry.name, PR_MAXNAMELEN);
+    return PRSUCCESS;
+}
+
+long NameToID(at, aname, aid)
+register struct ubik_trans *at;
+char aname[PR_MAXNAMELEN];
+long *aid;
+{
+    register long code;
+    long temp;
+    struct prentry tentry;
+
+    temp = FindByName(at,aname);
+    if (!temp) return PRNOENT;
+    code = pr_ReadEntry(at, 0, temp, &tentry);
+    if (code != 0) return code;
+    *aid = tentry.id;
+    return PRSUCCESS;
+}
+
 long IDCmp(a,b)
 long *a;
 long *b;
@@ -391,7 +431,7 @@ long *b;
 long RemoveFromIDHash(tt,aid,loc)
 struct ubik_trans *tt;
 long aid;
-long *loc;
+long *loc;				/* ??? in case ID hashed twice ??? */
 {
     /* remove entry designated by aid from id hash table */
     register long code;
@@ -399,12 +439,13 @@ long *loc;
     struct prentry tentry;
     struct prentry bentry;
 
+    if ((aid == PRBADID) || (aid == 0)) return PRINCONSISTENT;
     i = IDHash(aid);
     current = ntohl(cheader.idHash[i]);
     bzero(&tentry,sizeof(tentry));
     bzero(&bentry,sizeof(bentry));
     trail = 0;
-    if (current == NULL) return PRNOENT;
+    if (current == NULL) return PRSUCCESS; /* already gone */
     code = pr_ReadEntry(tt,0,current,&tentry);
     if (code) return PRDBFAIL;
     while (aid != tentry.id) {
@@ -414,7 +455,7 @@ long *loc;
 	code = pr_ReadEntry(tt,0,current,&tentry);
 	if (code) return PRDBFAIL;
     }
-    if (current == NULL) return PRNOENT;  /* we didn't find him */
+    if (current == NULL) return PRSUCCESS;  /* we didn't find him, so he's already gone */
     if (trail == NULL) {
 	/* it's the first entry! */
 	cheader.idHash[i] = htonl(tentry.nextID);
@@ -434,13 +475,14 @@ long *loc;
 long AddToIDHash(tt, aid, loc)
 struct ubik_trans *tt;
 long aid;
-long loc;
+long loc;				/* ??? */
 {
     /* add entry at loc designated by aid to id hash table */
     register long code;
     long i;
     struct prentry tentry;
 
+    if ((aid == PRBADID) || (aid == 0)) return PRINCONSISTENT;
     i = IDHash(aid);
     bzero(&tentry,sizeof(tentry));
     code = pr_ReadEntry(tt,0,loc,&tentry);
@@ -470,7 +512,7 @@ long *loc;
     bzero(&tentry,sizeof(tentry));
     bzero(&bentry,sizeof(bentry));
     trail = 0;
-    if (current == NULL) return PRNOENT;
+    if (current == NULL) return PRSUCCESS;  /* already gone */
     code = pr_ReadEntry(tt,0,current,&tentry);
     if (code) return PRDBFAIL;
     while (strcmp(aname,tentry.name)) {
@@ -480,7 +522,7 @@ long *loc;
 	code = pr_ReadEntry(tt,0,current,&tentry);
 	if (code) return PRDBFAIL;
     }
-    if (current == NULL) return PRNOENT;  /* we dnamen't find him */
+    if (current == NULL) return PRSUCCESS;  /* we didn't find him, already gone */
     if (trail == NULL) {
 	/* it's the first entry! */
 	cheader.nameHash[i] = htonl(tentry.nextName);
@@ -521,79 +563,97 @@ long loc;
 }
 
 long AddToOwnerChain(at,gid,oid)
-struct ubik_trans *at;
-long gid;
-long oid;
+  struct ubik_trans *at;
+  long gid;
+  long oid;
 {
     /* add entry designated by gid to owner chain of entry designated by oid */
     register long code;
     long loc;
-    long gloc;
     struct prentry tentry;
     struct prentry gentry;
+    long gloc;
 
     loc = FindByID(at,oid);
     if (!loc) return PRNOENT;
     code = pr_ReadEntry(at,0,loc,&tentry);
     if (code != 0) return PRDBFAIL;
-    gloc = FindByID(at,gid);
-    code = pr_ReadEntry(at,0,gloc,&gentry);
-    if (code != 0) return PRDBFAIL;
-    gentry.nextOwned = tentry.owned;
-    tentry.owned = gloc;
+    if (oid == gid) {			/* added it to its own chain */
+	tentry.nextOwned = tentry.owned;
+	tentry.owned = loc;
+    } else {
+	gloc = FindByID(at,gid);
+	code = pr_ReadEntry(at,0,gloc,&gentry);
+	if (code != 0) return PRDBFAIL;
+	gentry.nextOwned = tentry.owned;
+	tentry.owned = gloc;
+	code = pr_WriteEntry(at,0,gloc,&gentry);
+	if (code != 0) return PRDBFAIL;
+    }
     code = pr_WriteEntry(at,0,loc,&tentry);
-    if (code != 0) return PRDBFAIL;
-    code = pr_WriteEntry(at,0,gloc,&gentry);
     if (code != 0) return PRDBFAIL;
     return PRSUCCESS;
 }
 
+/* RemoveFromOwnerChain - remove gid from owner chain for oid */
+
 long RemoveFromOwnerChain(at,gid,oid)
-struct ubik_trans *at;
-long gid;
-long oid;
+  struct ubik_trans *at;
+  long gid;
+  long oid;
 {
-    /* remove gid from owner chain for oid */
     register long code;
     long nptr;
-    struct prentry tentry;
-    struct prentry bentry;
-    long loc;
+    struct prentry thisEntry;
+    struct prentry thatEntry;
+    struct prentry *te;			/* pointer to current (this) entry */
+    struct prentry *le;			/* pointer to previous (last) entry */
+    long loc, lastLoc;
 
     loc = FindByID(at,oid);
     if (!loc) return PRNOENT;
-    code = pr_ReadEntry(at,0,loc,&tentry);
+    code = pr_ReadEntry (at, 0, loc, &thisEntry);
     if (code != 0) return PRDBFAIL;
-    if (!tentry.owned) return PRNOENT;
-    nptr = tentry.owned;
-    bcopy(&tentry,&bentry,sizeof(tentry));
+    le =  &thisEntry;
+    lastLoc = 0;
+    nptr = thisEntry.owned;
     while (nptr != NULL) {
-	code = pr_ReadEntry(at,0,nptr,&tentry);
-	if (code != 0) return PRDBFAIL;
-	if (tentry.id == gid) {
-	    /* found it */
-	    if (nptr == bentry.owned) /* modifying first of chain */
-		bentry.owned = tentry.nextOwned;
-	    else bentry.nextOwned = tentry.nextOwned;
-	    tentry.nextOwned = 0;
-	    code = pr_WriteEntry(at,0,loc,&bentry);
+	if (nptr == lastLoc) te = le;
+	else {
+	    if (&thisEntry == le) te = &thatEntry;
+	    else te = &thisEntry;
+	    code = pr_ReadEntry (at, 0, nptr, te);
 	    if (code != 0) return PRDBFAIL;
-	    code = pr_WriteEntry(at,0,nptr,&tentry);
+	}
+	if (te->id == gid) {
+	    /* found it */
+	    if (lastLoc == 0) {		/* modifying first of chain */
+		le->owned = te->nextOwned;
+		lastLoc = loc;		/* so we write to correct location */
+	    }
+	    else le->nextOwned = te->nextOwned;
+	    te->nextOwned = 0;
+	    if (te != le) {
+		code = pr_WriteEntry (at, 0, nptr, te);
+		if (code != 0) return PRDBFAIL;
+	    }
+	    code = pr_WriteEntry (at, 0, lastLoc, le);
 	    if (code != 0) return PRDBFAIL;
 	    return PRSUCCESS;
 	}
-	loc = nptr;
-	nptr = tentry.nextOwned;
-	bcopy(&tentry,&bentry,sizeof(tentry));
+	lastLoc = nptr;
+	le = te;
+	nptr = te->nextOwned;
     }
-    return PRNOENT;
+    return PRSUCCESS;			/* already removed? */
 }
 
+/* AddToOrphan - add gid to orphan list, as it's owner has died */
+
 long AddToOrphan(at,gid)
-struct ubik_trans *at;
-long gid;
+  struct ubik_trans *at;
+  long gid;
 {
-    /* add gid to orphan list, as it's owner has died */
     register long code;
     long loc;
     struct prentry tentry;
@@ -603,10 +663,10 @@ long gid;
     code = pr_ReadEntry(at,0,loc,&tentry);
     if (code != 0) return PRDBFAIL;
     tentry.nextOwned = ntohl(cheader.orphan);
-    cheader.orphan = htonl(loc);
-    code = pr_WriteEntry(at,0,loc,&tentry);
+    code = set_header_word (at, orphan, htonl(loc));
     if (code != 0) return PRDBFAIL;
-    code = pr_Write(at,0,32,(char *)&cheader.orphan,sizeof(cheader.orphan));
+    tentry.owner = 0;			/* so there's no confusion later */
+    code = pr_WriteEntry(at,0,loc,&tentry);
     if (code != 0) return PRDBFAIL;
     return PRSUCCESS;
 }
@@ -653,9 +713,9 @@ long gid;
 	}
 	loc = nptr;
 	nptr = tentry.nextOwned;
-	bcopy(&tentry,&bentry,sizeof(tentry));
+	bcopy(&tentry,&bentry, sizeof(tentry));
     }
-    return PRNOENT;
+    return PRSUCCESS;
 }
 
 long IsOwnerOf(at,aid,gid)
@@ -693,15 +753,6 @@ long gid;
 }
     
 
-long WhoIsThis(acall, at, aid)
-struct rx_call *acall;
-struct ubik_trans *at;
-long *aid;
-{
-    *aid = USERSMS;
-    return 0;
-}
-
 long IsAMemberOf(at,aid,gid)
 struct ubik_trans *at;
 long aid;
@@ -714,6 +765,10 @@ long gid;
     long i;
     long loc;
 
+    /* special case anyuser and authuser */
+    if (gid == ANYUSERID) return 1;
+    if (gid == AUTHUSERID && aid != ANONYMOUSID) return 1;
+    if ((gid == 0) || (aid == 0)) return 0;
     loc = FindByID(at,gid);
     if (!loc) return 0;
     bzero(&tentry,sizeof(tentry));
@@ -721,8 +776,8 @@ long gid;
     if (code) return 0;
     if (!(tentry.flags & PRGRP)) return 0;
     for (i= 0;i<PRSIZE;i++) {
-	if (tentry.entries[i] == aid) return 1;
 	if (tentry.entries[i] == 0) return 0;
+	if (tentry.entries[i] == aid) return 1;
     }
     if (tentry.next) {
 	loc = tentry.next;

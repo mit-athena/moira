@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/afssync/resync.qc,v 1.2 1990-04-13 17:37:07 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/afssync/resync.qc,v 1.3 1990-09-21 15:20:13 mar Exp $
  *
  */
 
@@ -6,9 +6,9 @@
 #include <stdio.h>
 #include <sys/file.h>
 #include <rx/xdr.h>
-#include "print.h"
-#include "prserver.h"
-#include "prerror.h"
+#include <afs/ptint.h>
+#include <afs/ptserver.h>
+#include <afs/pterror.h>
 #include <moira.h>
 #include <moira_site.h>
 #include <ctype.h>

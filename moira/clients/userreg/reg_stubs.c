@@ -1,18 +1,21 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/reg_stubs.c,v $
- *	$Author: wesommer $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/reg_stubs.c,v 1.2 1987-09-04 22:57:33 wesommer Exp $
+ *	$Author: mar $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/reg_stubs.c,v 1.3 1988-08-03 20:16:10 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
  *	$Log: not supported by cvs2svn $
+ * Revision 1.2  87/09/04  22:57:33  wesommer
+ * Rearranged timeouts, max retransmits.
+ * 
  * Revision 1.1  87/08/22  18:39:29  wesommer
  * Initial revision
  * 
  */
 
 #ifndef lint
-static char *rcsid_reg_stubs_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/reg_stubs.c,v 1.2 1987-09-04 22:57:33 wesommer Exp $";
+static char *rcsid_reg_stubs_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/reg_stubs.c,v 1.3 1988-08-03 20:16:10 mar Exp $";
 #endif lint
 #include <stdio.h>
 #include <sys/types.h>
@@ -116,7 +119,6 @@ grab_login(first, last, idnumber, hashidnumber, login)
     Key_schedule ks;
     register char *bp = buf;
     register int len;
-    int i;
     
     char crypt_src[1024];
     char *cbp;
@@ -179,7 +181,6 @@ set_password(first, last, idnumber, hashidnumber, password)
     Key_schedule ks;
     register char *bp = buf;
     register int len;
-    int i;
     
     char crypt_src[1024];
     char *cbp;
@@ -249,7 +250,7 @@ static do_call(buf, len, seq_no, login)
 
 	FD_ZERO(&set);
 	FD_SET(reg_sock, &set);
-	timeout.tv_sec = 25;
+	timeout.tv_sec = 45;
 	timeout.tv_usec = 0;
 	do {
 	    int rtn;
@@ -276,10 +277,11 @@ static do_call(buf, len, seq_no, login)
 
 	    bcopy(ibuf + 8, (char *)&stat, sizeof(long));
 	    stat = ntohl((u_long)stat);
-	    if (login) {
+	    if (login && len > 12) {
 		bcopy(ibuf+12, login, len-12);
 		login[len-12] = '\0';
-	    }
+	    } else if (login)
+		*login = '\0';
 	    return stat;
 	} while (1);
     } while (++retry < 10);

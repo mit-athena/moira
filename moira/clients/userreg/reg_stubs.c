@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/reg_stubs.c,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/reg_stubs.c,v 1.6 1988-09-12 17:29:11 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/reg_stubs.c,v 1.7 1989-06-28 13:39:59 mar Exp $
  *
  *  (c) Copyright 1988 by the Massachusetts Institute of Technology.
  *  For copying and distribution information, please see the file
@@ -9,7 +9,7 @@
  */
 
 #ifndef lint
-static char *rcsid_reg_stubs_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/reg_stubs.c,v 1.6 1988-09-12 17:29:11 mar Exp $";
+static char *rcsid_reg_stubs_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/reg_stubs.c,v 1.7 1989-06-28 13:39:59 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -36,8 +36,8 @@ ureg_init()
     struct hostent *hp;
     struct sockaddr_in sin;
     
-    init_ureg_err_tbl();
-    init_sms_err_tbl();
+    initialize_ureg_error_table();
+    initialize_sms_error_table();
     
     hp = gethostbyname("sms.mit.edu");
     if (hp == NULL) return UNKNOWN_HOST;
@@ -283,14 +283,3 @@ static do_call(buf, len, seq_no, login)
     } while (++retry < 10);
     return ETIMEDOUT;
 }    
-
-/*
- * Local Variables:
- * mode: c
- * c-indent-level: 4
- * c-continued-statement-offset: 4
- * c-brace-offset: -4
- * c-argdecl-indent: 4
- * c-label-offset: -4
- * End:
- */

@@ -1,4 +1,4 @@
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/Imakefile,v 1.6 1993-01-26 15:37:51 mar Exp $
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/Imakefile,v 1.7 1993-10-19 11:52:02 mar Exp $
 #
 # Copyright 1990 by the Massachusetts Institute of Technology.
 #
@@ -20,12 +20,20 @@ MOBJS=	attach.o cluster.o delete.o globals.o lists.o main.o menu.o \
 NOBJS=	namespace.o globals.o lists.o menu.o \
 	pobox.o user.o utils.o misc.o
 OBJS=	${MOBJS} ${NOBJS}
-DEFINES= -DGDSS
+#ifdef GDSS
 INCLUDE= -I$(BUILDTOP)/include -I$(BUILDTOP)/lib -I/usr/athena/include \
 	-I/mit/gdss/include -I.
+#else
+INCLUDE= -I$(BUILDTOP)/include -I$(BUILDTOP)/lib -I/usr/athena/include -I.
+#endif
 
-program(moira, ${MOBJS},${MR_LIBDEP} ${GDB_LIBDEP}, -L/mit/gdss/`machtype` -lgdss ${CLIBS} ${CURSES},${PROGDIR})
-program(namespace, ${NOBJS},${MR_LIBDEP} ${GDB_LIBDEP}, -L/mit/gdss/`machtype` -lgdss ${CLIBS} ${CURSES},${PROGDIR})
+#ifdef GDSS
+LIBGDSS = -L/mit/gdss/`machtype` -lgdss
+#endif
+
+
+program(moira, ${MOBJS},${MR_LIBDEP} ${GDB_LIBDEP}, ${LIBGDSS} ${CLIBS} ${CURSES},${PROGDIR})
+program(namespace, ${NOBJS},${MR_LIBDEP} ${GDB_LIBDEP}, ${LIBGDSS} ${CLIBS} ${CURSES},${PROGDIR})
 
 install::
 	$(RM) $(DESTDIR)$(PROGDIR)/listmaint

@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/winad/winad.c,v 1.23 2001-07-30 19:13:57 zacheiss Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/winad/winad.c,v 1.24 2001-08-12 19:29:34 zacheiss Exp $
 /* winad.incr arguments examples
  *
  * arguments when moira creates the account - ignored by winad.incr since the account is unusable.
@@ -351,6 +351,7 @@ int populate_group(LDAP *ldap_handle, char *dn_path, char *group_name,
                    int group_security_flag, char *MoiraId);
 int sid_update(LDAP *ldap_handle, char *dn_path);
 int check_string(char *s);
+int check_container_name(char* s);
 void convert_b_to_a(char *string, UCHAR *binary, int length);
 int mr_connect_cl(char *server, char *client, int version, int auth);
 
@@ -3100,6 +3101,24 @@ int check_string(char *s)
   return 1;
 }
 
+int check_container_name(char *s)
+{
+  char  character;
+
+  for (; *s; s++)
+    {
+      character = *s;
+      if (isupper(character))
+        character = tolower(character);
+
+	  if (character == ' ')
+		  continue;
+      if (illegalchars[(unsigned) character])
+        return 0;
+    }
+  return 1;
+}
+
 int mr_connect_cl(char *server, char *client, int version, int auth)
 {
   int   status;
@@ -3770,7 +3789,7 @@ int container_rename(LDAP *ldap_handle, char *dn_path, int beforec, char **befor
 
   memset(cName, '\0', sizeof(cName));
   container_get_name(after[CONTAINER_NAME], cName);
-  if (!check_string(cName))
+  if (!check_container_name(cName))
     {
       com_err(whoami, 0, "invalid LDAP container name %s", cName);
       return(AD_INVALID_NAME);
@@ -3876,7 +3895,7 @@ int container_create(LDAP *ldap_handle, char *dn_path, int count, char **av)
       return(AD_INVALID_NAME);
     }
 
-  if (!check_string(cName))
+  if (!check_container_name(cName))
     {
       com_err(whoami, 0, "invalid LDAP container name %s", cName);
       return(AD_INVALID_NAME);
@@ -3992,7 +4011,7 @@ int container_get_distinguishedName(LDAP *ldap_handle, char *dn_path, char *dist
       return(AD_INVALID_NAME);
     }
 
-  if (!check_string(cName))
+  if (!check_container_name(cName))
     {
       com_err(whoami, 0, "invalid LDAP container name %s", cName);
       return(AD_INVALID_NAME);

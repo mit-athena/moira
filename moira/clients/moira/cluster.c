@@ -1,4 +1,4 @@
-/* $Id: cluster.c,v 1.50 2001-07-28 07:54:40 zacheiss Exp $
+/* $Id: cluster.c,v 1.51 2001-08-12 19:34:00 zacheiss Exp $
  *
  *	This is the file cluster.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -2070,8 +2070,18 @@ int AddContainer(int argc, char **argv)
   char **args, *info[MAX_ARGS_SIZE], *name = argv[1];
   int stat;
 
-  if (!ValidName(name))
-    return DM_NORMAL;
+  /* Can't use ValidName() because spaces are allowed in container names */
+  if (IS_EMPTY(name))
+    {
+      Put_message("Please use a non-empty name.");
+      return DM_NORMAL;
+    }
+
+  if (strchr(name, '*') || strchr(name, '?'))
+    {
+      Put_message("Wildcards not accepted here.");
+      return DM_NORMAL;
+    }
 
   /* Check if this cluster already exists. */
   if ((stat = do_mr_query("get_container", 1, &name, NULL, NULL))

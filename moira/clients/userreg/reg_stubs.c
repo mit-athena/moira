@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/reg_stubs.c,v $
  *	$Author: danw $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/reg_stubs.c,v 1.24 1997-01-29 23:12:29 danw Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/reg_stubs.c,v 1.25 1998-01-05 14:51:25 danw Exp $
  *
  *  (c) Copyright 1988 by the Massachusetts Institute of Technology.
  *  For copying and distribution information, please see the file
@@ -9,7 +9,7 @@
  */
 
 #ifndef lint
-static char *rcsid_reg_stubs_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/reg_stubs.c,v 1.24 1997-01-29 23:12:29 danw Exp $";
+static char *rcsid_reg_stubs_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/reg_stubs.c,v 1.25 1998-01-05 14:51:25 danw Exp $";
 #endif
 
 #include <mit-copyright.h>
@@ -293,7 +293,6 @@ do_secure_operation(login, idnumber, passwd, newpasswd, opcode)
       else
       	*dst++ = *src;
     *dst = 0;
-    inst[0] = 0;
     inst[0] = 0;
 
     /* get changepw tickets.  We use this service because it's the

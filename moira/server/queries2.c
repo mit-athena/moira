@@ -1,4 +1,4 @@
-/* $Id: queries2.c,v 2.71 2000-04-21 19:47:40 zacheiss Exp $
+/* $Id: queries2.c,v 2.72 2000-04-25 01:51:06 zacheiss Exp $
  *
  * This file defines the query dispatch table
  *
@@ -468,6 +468,28 @@ static struct valobj uush_valobj[] = {
 
 static struct validate uush_validate = {
   uush_valobj,
+  2,
+  0,
+  0,
+  0,
+  "users_id",
+  access_user,
+  0,
+  set_finger_modtime,
+};
+
+static char *uuws_fields[] = {
+  "login",
+  "winconsoleshell",
+};
+
+static struct valobj uuws_valobj[] = {
+  {V_ID, 0, USERS_TABLE, "login", "users_id", MR_USER},
+  {V_CHAR, 1, USERS_TABLE, "winconsoleshell"},
+};
+
+static struct validate uuws_validate = {
+  uuws_valobj,
   2,
   0,
   0,
@@ -3348,6 +3370,23 @@ struct query Queries[] = {
     1,
     NULL,
     &uush_validate,
+  },
+
+  {
+    /* Q_UUWS - UPDATE_USER_WINDOWS_SHELL */
+    "update_user_windows_shell",
+    "uuws",
+    2,
+    UPDATE,
+    "u",
+    USERS_TABLE,
+    "users SET winconsoleshell = '%s'",
+    uuws_fields,
+    1,
+    "users_id = %d",
+    1,
+    NULL,
+    &uuws_validate,
   },
 
   {

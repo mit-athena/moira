@@ -1,7 +1,7 @@
 /*
  * Copyright (C) 1998-2000 Luke Howard. All rights reserved.
  * CONFIDENTIAL
- * $Id: ldap_adgssapi_bind.c,v 1.2 2000-11-11 11:05:37 zacheiss Exp $
+ * $Id: ldap_adgssapi_bind.c,v 1.3 2000-11-21 16:43:56 zacheiss Exp $
  *
  * Implementation of GSS-API client side binding for SASL
  */
@@ -792,7 +792,7 @@ LDAP_CALL ldap_adgssapi_bind(LDAP *ld, const char *who, int layer)
 
   if (state.rc == LDAP_SUCCESS)
     {
-      if (layer = GSSSASL_PRIVACY_PROTECTION)
+      if (layer == GSSSASL_PRIVACY_PROTECTION)
         {
           memset(&iofns, 0, sizeof(iofns));
           iofns.liof_read = ldap_gssapi_read;

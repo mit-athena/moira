@@ -1,5 +1,5 @@
 #! /bin/sh
-# $Id: print.sh,v 1.1 1999-01-27 19:39:09 danw Exp $
+# $Id: print.sh,v 1.2 1999-06-02 21:43:25 danw Exp $
 
 # The following exit codes are defined and MUST BE CONSISTENT with the
 # error codes the library uses:
@@ -7,7 +7,7 @@ MR_MISSINGFILE=47836473
 MR_MKCRED=47836474
 MR_TARERR=47836476
 
-PATH=...
+PATH=/bin
 TARFILE=/var/tmp/print.out
 PCLOCAL=/etc/printcap.local
 PCGEN=/etc/printcap.moira
@@ -20,7 +20,7 @@ test -r $PCLOCAL || exit $MR_MISSINGFILE
 # Unpack the tar file, getting only files that are newer than the
 # on-disk copies (-u).
 cd /
-pax -ru -f $TARFILE || exit $MR_TARERR
+pax -ru -p o -f $TARFILE
 
 # Build full printcap
 cat $PCLOCAL $PCGEN > $PRINTCAP

@@ -1,4 +1,4 @@
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/Imakefile,v 1.2 1991-03-08 10:33:31 mar Exp $
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/Imakefile,v 1.3 1993-10-21 15:17:49 mar Exp $
 #
 # Copyright 1990 by the Massachusetts Institute of Technology.
 #
@@ -11,27 +11,34 @@
 SRCS = mr_auth.c mr_call.c mr_connect.c mr_data.c mr_init.c \
 	mr_query.c mr_param.c mr_access.c mr_ops.c \
 	fixname.c strs.c fixhost.c nfsparttype.c sq.c hash.c \
-	idno.c critical.c
+	idno.c critical.c gdss_convert.c kname_unparse.c
 
 OBJECTS	= mr_auth.o mr_call.o mr_connect.o mr_data.o mr_init.o \
 	mr_query.o mr_param.o mr_access.o mr_ops.o \
 	fixname.o strs.o fixhost.o nfsparttype.o sq.o hash.o \
-	idno.o critical.o mr_et.o ureg_err.o krb_et.o
+	idno.o critical.o mr_et.o ureg_err.o krb_et.o gdss_et.o \
+	gdss_convert.o kname_unparse.o
 
 SRCDIR=$(SRCTOP)/lib
-CODE=$(SRCS) Imakefile mr_et.et krb_et.et ureg_err.et mr_private.h
+CODE=$(SRCS) Imakefile mr_et.et krb_et.et ureg_err.et gdss_et.et mr_private.h
 
 #ifdef NEED_STRCASECMP
 DEFINES= -DNEED_STRCASECMP
 #endif
 
-all::
+all:: mr_et.h krb_et.h ureg_err.h gdss_et.h
 
 comp_et_depend(mr_et)
 comp_et_depend(krb_et)
 comp_et_depend(ureg_err)
+comp_et_depend(gdss_et)
 
 depend:: ${CODE}
 
 library_obj_rule()
 install_library_target(moira,$(OBJECTS),$(SRCS),${MR_LINTLIB})
+
+install::
+	-mkdir ${DESTDIR}${INCLDIR}
+	for i in mr_et.h; do \
+		${INSTALLFILE} $$i ${DESTDIR}${INCLDIR}/$$i; done

@@ -1,0 +1,311 @@
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/afssync/sync.dc,v 1.1 1993-02-05 03:33:18 probe Exp $
+ *
+ *
+ *  (c) Copyright 1989 by the Massachusetts Institute of Technology.
+ *  For copying and distribution information, please see the file
+ *  <mit-copyright.h>.
+ */
+
+#include <mit-copyright.h>
+#include <stdio.h>
+#include <sys/file.h>
+
+#include <rx/xdr.h>
+#include "ptint.h"
+#include "ptserver.h"
+#include "pterror.h"
+
+#include <moira.h>
+#include <moira_site.h>
+#include <ctype.h>
+
+EXEC SQL INCLUDE sqlca;
+
+#define min(x,y)	((x) < (y) ? (x) : (y))
+char *whoami = "sync";
+
+char *malloc(), *strsave();
+int dbase_fd;
+
+int ucount = 0;
+int gcount = 0;
+int mcount = 0;
+
+struct hash *users;
+struct hash *groups;
+
+struct member {
+    struct entry *user;
+    struct entry *group;
+    struct member *unext;
+    struct member *gnext;
+};
+struct entry {
+    long id;
+    struct member *members;
+};
+
+int ingerr();
+
+main(argc, argv)
+int argc;
+char **argv;
+{
+    EXEC SQL BEGIN DECLARE SECTION;
+    char db[9];
+    EXEC SQL END DECLARE SECTION;
+
+    int status;
+    long t;
+
+    strcpy(db, "moira");
+
+    if (argc > 2 && !strcmp(argv[1], "-db")) {
+	strncpy(db, argv[2], sizeof(db)-1);
+	argc -= 2;
+	argv += 2;
+    }
+    if (argc != 2) {
+	fprintf(stderr, "usage: %s [-db moira] outfile\n", whoami);
+	exit(MR_ARGS);
+    }
+
+    dbase_fd = open(argv[1], O_RDWR|O_CREAT|O_TRUNC, 0660);
+    if (dbase_fd < 0) {
+	perror("opening file %s", argv[1]);
+	exit(1);
+    }
+
+    initialize_sms_error_table();
+    initialize_pt_error_table();
+    Initdb();					/* Initialize prdb */
+    
+    users = create_hash(10000);
+    groups = create_hash(15000);
+
+    EXEC SQL WHENEVER SQLERROR CALL sqlerr;
+#ifsql INGRES
+    EXEC SQL CONNECT :db;
+    EXEC SQL SET LOCKMODE SESSION WHERE LEVEL=TABLE, READLOCK=SHARED;
+#endsql
+#ifsql INFORMIX
+    EXEC SQL DATABASE :db;
+#endsql
+
+    do_passwd();
+    do_groups();
+
+    t = time(0);
+    fprintf(stderr, "Done (%d users, %d groups, %d members): %s",
+	    ucount, gcount, mcount, ctime(&t));
+
+#ifsql INGRES
+    EXEC SQL DISCONNECT;
+#endsql
+#ifsql INFORMIX
+    EXEC SQL CLOSE DATABASE;
+#endsql
+
+    exit(MR_SUCCESS);
+}
+
+
+do_passwd()
+{
+    EXEC SQL BEGIN DECLARE SECTION;
+    char login[9], name[33];
+    int uid, id, status;
+    EXEC SQL END DECLARE SECTION;
+
+    long t;
+    struct prentry tentry;
+    struct entry *u;
+
+    t = time(0);
+    fprintf(stderr, "Doing users: %s", ctime(&t));
+
+    /* get locks */
+    EXEC SQL SELECT modtime INTO :name FROM users WHERE users_id = 0;
+    
+    EXEC SQL DECLARE u_cursor CURSOR FOR
+	SELECT u.login, u.uid, u.users_id
+	FROM users u
+	WHERE u.uid > 0 AND (u.status = 1 OR u.status = 2)
+	ORDER BY uid;
+    EXEC SQL OPEN u_cursor;
+    while (1) {
+	EXEC SQL FETCH u_cursor INTO :login, :uid, :id;
+	if (sqlca.sqlcode != 0) break;
+	
+	lowercase(strtrim(login));
+
+	if (FindByID(0,uid))
+	    status = PRIDEXIST;
+	else
+	    status = CreateEntry(0,login,&uid,1	/*idflag*/,0/*gflag*/,
+				 SYSADMINID	/*oid*/, SYSADMINID/*cid*/);
+	if (status)
+	    fprintf(stderr, "Error adding user %s uid %d: %s\n",
+		    login, uid, error_message(status));
+	else {
+	    u = (struct entry *)malloc(sizeof(struct entry));
+	    u->id = uid;
+	    u->members = 0;
+	    hash_store(users, id, u);
+	    ucount++;
+	}
+    }
+    EXEC SQL CLOSE u_cursor;
+    return;
+}
+
+
+
+do_groups()
+{
+    EXEC SQL BEGIN DECLARE SECTION;
+    char name[33];
+    int gid, id, lid, hide;
+    EXEC SQL END DECLARE SECTION;
+
+    long status, pos;
+    struct prentry gentry, uentry;
+    struct entry *u, *g;
+    struct member *m;
+    struct bucket **p, *b;
+    char namebuf[40];
+    long aid, t;
+
+    t = time(0);
+    fprintf(stderr, "Doing groups: %s", ctime(&t));
+
+    /* get locks */
+    EXEC SQL SELECT modtime INTO :name FROM list WHERE list_id = 0;
+
+    EXEC SQL DECLARE l_cursor CURSOR FOR
+	SELECT l.name, l.gid, l.list_id, l.hidden
+	FROM list l
+	WHERE l.gid > 0 AND l.active != 0 AND l.grouplist != 0
+	ORDER BY gid;
+    EXEC SQL OPEN l_cursor;
+    while (1) {
+	EXEC SQL FETCH l_cursor INTO :name, :gid, :lid, :hide;
+	if (sqlca.sqlcode != 0) break;
+	
+	lowercase(strtrim(name));
+	sprintf(namebuf, "system:%s", name);
+	aid = -gid;
+
+	if (FindByID(0, aid))
+	    status = PRIDEXIST;
+	else
+	    status = CreateEntry(0,namebuf,&aid,1 /*idflag*/,PRGRP/*gflag*/,
+				 SYSADMINID	/*oid*/, SYSADMINID/*cid*/);
+	if (status)
+	    fprintf(stderr, "Error adding group %s id %d: %s\n",
+		    namebuf, aid, error_message(status));
+
+	if ((status==0 || status==PRIDEXIST) &&
+	    (aid!=ANYUSERID && aid!=AUTHUSERID)) {
+
+	    g = (struct entry *)malloc(sizeof(struct entry));
+	    g->id = aid;
+	    g->members = 0;
+	    hash_store(groups, lid, g);
+	    gcount++;
+
+	    /* Set modes on hidden lists (S----) */
+	    if (hide) {
+		pos = FindByID(0, aid);
+		status = pr_Read(0, 0, pos, &gentry, sizeof(gentry));
+		if (!status) {
+		    gentry.flags = htonl(PRGRP|PRACCESS|PRP_STATUS_ANY);
+		    status = pr_Write(0, 0, pos, &gentry, sizeof(gentry));
+		}
+		if (status)
+		    fprintf(stderr,
+			    "Error setting flags on group %s: %s\n",
+			    namebuf, error_message(status));
+	    }
+	}
+    }
+    EXEC SQL CLOSE l_cursor;
+
+    t = time(0);
+    fprintf(stderr, "Doing user members: %s", ctime(&t));
+
+    EXEC SQL DECLARE m_cursor CURSOR FOR
+	SELECT m.list_id, m.member_id
+	FROM imembers m
+	WHERE m.member_type='USER'
+	ORDER BY member_id;
+    EXEC SQL OPEN m_cursor;
+    while (1) {
+	EXEC SQL FETCH m_cursor INTO :lid, :id;
+	if (sqlca.sqlcode != 0) break;
+	
+	if ((u = (struct entry *)hash_lookup(users, id)) &&
+	    (g = (struct entry *)hash_lookup(groups, lid))) {
+	    m = (struct member *)malloc(sizeof(struct member));
+	    m->user = u;
+	    m->group = g;
+	    m->unext = u->members;
+	    m->gnext = g->members;
+	    u->members = g->members = m;
+	    mcount++;
+	}
+    }
+    EXEC SQL CLOSE m_cursor;
+
+    /* Do the bulk of the membership quickly.
+     * Add PRSIZE members into the user/group record.  After that, we
+     * require the use of continuation records, but we assume this is
+     * few enough that we do this the slow way (AddToEntry).
+     */
+    for (p = &(users->data[users->size - 1]); p >= users->data; p--) {
+	for (b = *p; b; b = b->next) {
+	    if ((u = (struct entry *)b->data)->members == 0)
+		continue;
+	    pos = FindByID(0, u->id);
+	    pr_Read(0, 0, pos, &uentry, sizeof(uentry));
+	    for (t=0, m=u->members; m && t<PRSIZE; m=m->unext, t++)
+		uentry.entries[t] = htonl(m->group->id);
+	    uentry.count = htonl(t);
+	    pr_Write(0, 0, pos, &uentry, sizeof(uentry));
+	    if (m) {
+		pr_ReadEntry(0, 0, pos, &uentry);
+		while (m) {
+		    AddToEntry(0, &uentry, pos, m->group->id);
+		    m = m->unext;
+		}
+	    }
+	}
+    }
+    for (p = &(groups->data[groups->size - 1]); p >= groups->data; p--) {
+	for (b = *p; b; b = b->next) {
+	    if ((g = (struct entry *)b->data)->members == 0)
+		continue;
+	    pos = FindByID(0, g->id);
+	    pr_Read(0, 0, pos, &gentry, sizeof(gentry));
+	    for (t=0, m=g->members; m && t<PRSIZE; m=m->gnext, t++)
+		gentry.entries[t] = htonl(m->user->id);
+	    gentry.count = htonl(t);
+	    pr_Write(0, 0, pos, &gentry, sizeof(gentry));
+	    if (m) {
+		pr_ReadEntry(0, 0, pos, &gentry);
+		while (m) {
+		    AddToEntry(0, &gentry, pos, m->user->id);
+		    m = m->gnext;
+		}
+	    }
+	}
+    }
+    return;
+}
+
+    
+sqlerr()
+{
+    com_err(whoami, MR_INGRES_ERR, " code %d\n", sqlca.sqlcode);
+    exit(MR_INGRES_ERR);
+}

@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsetup.pc,v $
  *	$Author: danw $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsetup.pc,v 2.1 1997-01-29 23:27:19 danw Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsetup.pc,v 2.2 1997-07-07 21:16:35 danw Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_qsupport_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsetup.pc,v 2.1 1997-01-29 23:27:19 danw Exp $";
+static char *rcsid_qsupport_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsetup.pc,v 2.2 1997-07-07 21:16:35 danw Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -221,6 +221,10 @@ int setup_dmac(q, argv)
     if (cnt > 0)
 	return(MR_IN_USE);
     EXEC SQL SELECT COUNT(mach_id) INTO :cnt FROM palladium
+      WHERE mach_id = :id;
+    if (cnt > 0)
+	return(MR_IN_USE);
+    EXEC SQL SELECT COUNT(mach_id) INTO :cnt FROM hostalias
       WHERE mach_id = :id;
     if (cnt > 0)
 	return(MR_IN_USE);

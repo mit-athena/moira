@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/db/newmoira.dc,v 1.1 1991-04-24 14:28:27 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/db/newmoira.dc,v 1.2 1992-06-25 14:59:58 genoa Exp $
  *
  * Creates a new sms database
  *
@@ -160,7 +160,7 @@ char **argv;
     for (i = 0; tbl = tables[i]; i++) {
 	EXEC SQL INSERT INTO tblstats
 	  (table_name, modtime, appends, updates, deletes)
-	  VALUES (:tbl, "now", 0, 0, 0);
+	  VALUES (:tbl, 'now', 0, 0, 0);
 	if (ingres_errno) {
 	    printf("Unable to initialize tblstats for %s\n", tbl);
 	    exit(1);
@@ -181,7 +181,7 @@ char **argv;
     gets(buffer);
     i = atoi(buffer);
     EXEC SQL INSERT INTO numvalues (name, value)
-      VALUES ("uid", :i);
+      VALUES ('uid', :i);
     if (ingres_errno) {
 	printf("Unable to install value for uid\n");
 	exit(1);
@@ -192,7 +192,7 @@ char **argv;
     gets(buffer);
     i = atoi(buffer);
     EXEC SQL INSERT INTO numvalues (name, value)
-      VALUES ("gid", :i);
+      VALUES ('gid', :i);
     if (ingres_errno) {
 	printf("Unable to install value for gid\n");
 	exit(1);
@@ -203,7 +203,7 @@ char **argv;
     gets(buffer);
     i = atoi(buffer);
     EXEC SQL INSERT INTO numvalues (name, value)
-      VALUES ("def_quota", :i);
+      VALUES ('def_quota', :i);
     if (ingres_errno) {
 	printf("Unable to install value for def_quota\n");
 	exit(1);
@@ -211,37 +211,37 @@ char **argv;
 
     /* place holder records */
     EXEC SQL INSERT INTO users (login, potype, users_id)
-      VALUES ("[nobody]", "NONE", 0);
+      VALUES ('[nobody]', 'NONE', 0);
     if (ingres_errno) {
 	printf("Unable to install 0 user\n");
 	exit(1);
     }
     EXEC SQL INSERT INTO machine (name, type)
-      VALUES ("[NONE]", "NONE");
+      VALUES ('[NONE]', 'NONE');
     if (ingres_errno) {
 	printf("Unable to install 0 machine\n");
 	exit(1);
     }
     EXEC SQL INSERT INTO cluster (name)
-      VALUES ("[unassigned]");
+      VALUES ('[unassigned]');
     if (ingres_errno) {
 	printf("Unable to install 0 cluster\n");
 	exit(1);
     }
     EXEC SQL INSERT INTO list (name, acl_type)
-      VALUES ("[none]", "NONE");
+      VALUES ('[none]', 'NONE');
     if (ingres_errno) {
 	printf("Unable to install 0 list\n");
 	exit(1);
     }
     EXEC SQL INSERT INTO filesys (label, type)
-      VALUES ("[none]", "NONE");
+      VALUES ('[none]', 'NONE');
     if (ingres_errno) {
 	printf("Unable to install 0 filesys\n");
 	exit(1);
     }
     EXEC SQL INSERT INTO nfsphys (device)
-      VALUES ("/dev/null");
+      VALUES ('/dev/null');
     if (ingres_errno) {
 	printf("Unable to install 0 nfsphys\n");
 	exit(1);
@@ -249,20 +249,20 @@ char **argv;
 
     /* magic for ALL_USERS */
     EXEC SQL INSERT INTO users (login, users_id, potype)
-      VALUES ("default", 1, "NONE");
+      VALUES ('default', 1, 'NONE');
     if (ingres_errno) {
 	printf("Unable to install default user\n");
 	exit(1);
     }
     EXEC SQL INSERT INTO list (name, list_id, acl_type)
-      VALUES ("default", 1, "NONE");
+      VALUES ('default', 1, 'NONE');
     if (ingres_errno) {
 	printf("Unable to install default list\n");
 	exit(1);
     }
     EXEC SQL INSERT INTO imembers
       (list_id, member_type, member_id, ref_count, direct)
-      VALUES (1, "USER", 1, 1, 1);
+      VALUES (1, 'USER', 1, 1, 1);
     if (ingres_errno) {
 	printf("Unable to install default user on default list\n");
 	exit(1);
@@ -270,13 +270,13 @@ char **argv;
 
     /* Privileged users */
     EXEC SQL INSERT INTO users (login, users_id, potype)
-      VALUES ("root", 2, "NONE");
+      VALUES ('root', 2, 'NONE');
     if (ingres_errno) {
 	printf("Unable to install root user\n");
 	exit(1);
     }
     EXEC SQL INSERT INTO list (name, list_id, acl_type, acl_id)
-      VALUES ("dbadmin", 2, "LIST", 2);
+      VALUES ('dbadmin', 2, 'LIST', 2);
     if (ingres_errno) {
 	printf("Unable to install default dbadmin list\n");
 	exit(1);
@@ -287,21 +287,21 @@ char **argv;
     gets(buffer);
     user = buffer;
     EXEC SQL INSERT INTO users (login, users_id, potype)
-      VALUES (:user, 3, "NONE");
+      VALUES (:user, 3, 'NONE');
     if (ingres_errno) {
 	printf("Unable to install user %s\n", buffer);
 	exit(1);
     }
     EXEC SQL INSERT INTO imembers
       (list_id, member_type, member_id, ref_count, direct)
-      VALUES (2, "USER", 2, 1, 1);
+      VALUES (2, 'USER', 2, 1, 1);
     if (ingres_errno) {
 	printf("Unable to put user root on list dbadmin\n");
 	exit(1);
     }
     EXEC SQL INSERT INTO imembers
       (list_id, member_type, member_id, ref_count, direct)
-      VALUES (2, "USER", 3, 1, 1);
+      VALUES (2, 'USER', 3, 1, 1);
     if (ingres_errno) {
 	printf("Unable to put user %s on list dbadmin\n", buffer);
 	exit(1);
@@ -323,7 +323,7 @@ char **argv;
 	}
     }
     EXEC SQL INSERT INTO capacls (capability, tag, list_id)
-      VALUES ("trigger_dcm", "tdcm", 2);
+      VALUES ('trigger_dcm', 'tdcm', 2);
 
     /* and the aliases */
     for (i = 0; aliases[i].name ; i++) {
@@ -345,11 +345,10 @@ char **argv;
  * database open error.
  */
 
-int ingerr(num)
-    int *num;
+int ingerr()
 {
-    ingres_errno = *num;
-    return *num;
+    ingres_errno = -sqlca.sqlcode;
+    return ingres_errno;
 }
 
 

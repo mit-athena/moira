@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/letter.dc,v 1.3 1992-06-18 14:20:41 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/letter.dc,v 1.4 1992-06-23 10:43:32 mar Exp $
  *
  * This generates confirmation letters to people who recently set
  * their secure instance passwords.
@@ -35,7 +35,7 @@ char **argv;
     int flag;
     struct timeval tv;
     EXEC SQL BEGIN DECLARE SECTION;
-    char login[10], fullname[34], addr[84];
+    char login[10], first[17], last[17], fullname[34], addr[84];
     int lastrun, when;
     EXEC SQL END DECLARE SECTION;
 
@@ -78,14 +78,16 @@ char **argv;
     gettimeofday(&tv, NULL);
 
     EXEC SQL DECLARE x CURSOR FOR SELECT 
-      login, fullname, xaddress, secure
+      login, first, last, xaddress, secure
 	FROM users WHERE secure > :lastrun;
     EXEC SQL OPEN x;
     while (1) {
-	EXEC SQL FETCH x INTO :login, :fullname, :addr, :when;
+	EXEC SQL FETCH x INTO :login, :first, :last, :addr, :when;
 	if (sqlca.sqlcode != 0) break;
 	strtrim(login);
-	strtrim(fullname);
+	strtrim(first);
+	strtrim(last);
+	sprintf(fullname, "%s %s", first, last);
 	print_letter(out, login, fullname, strtrim(addr), when);
     }
 

@@ -55,6 +55,9 @@ struct symtab	predefs[] = {
 #ifdef mips
 	{"mips", NULL},
 #endif
+#ifdef _AIX
+	{"_AIX", NULL},
+#endif
 	{NULL, NULL}
 };
 
@@ -286,6 +289,7 @@ freefile(fp)
 
 /*VARARGS*/
 log_fatal(x0,x1,x2,x3,x4,x5,x6,x7,x8,x9)
+char *x0, *x1, *x2, *x3, *x4, *x5, *x6, *x7, *x8, *x9;
 {
 	log(x0,x1,x2,x3,x4,x5,x6,x7,x8,x9);
 	exit (1);
@@ -293,6 +297,7 @@ log_fatal(x0,x1,x2,x3,x4,x5,x6,x7,x8,x9)
 
 /*VARARGS0*/
 log(x0,x1,x2,x3,x4,x5,x6,x7,x8,x9)
+char *x0, *x1, *x2, *x3, *x4, *x5, *x6, *x7, *x8, *x9;
 {
 	fprintf(stderr, x0,x1,x2,x3,x4,x5,x6,x7,x8,x9);
 }

@@ -267,6 +267,13 @@ init()
 
 	if (signal(SIGINT, SIG_IGN) != SIG_IGN)
 		signal(SIGINT, catch);
+
+	/* This kludge is here because in AIX cpp doesn't define any
+	 * symbols in cpp, they are all defined by cc.
+	 */
+#ifdef _AIX
+	AddCppArg("-D_AIX");
+#endif
 }
 
 AddMakeArg(arg)

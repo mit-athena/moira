@@ -1,0 +1,22 @@
+22 Insensitive text fields don't gray out
+
+24 Have delete* track down references
+
+26 When adding quota, if you click on OK while locker field  is
+active, get a quota in callback error
+
+28 If you invoke the DCM (setting "are you sure" to true), then try
+again, that boolean is initialized incorrectly.
+
+31. put an initial member on lists
+
+32. XFILESEARCHPATH problems
+
+33. Coredumps on modifications
+
+34. problems deleting machine
+
+35. Looking up Karen Schiller by name gets bad signature, by login
+gets good signature
+
+

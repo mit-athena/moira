@@ -7,7 +7,7 @@
 
 /Times-Roman findfont 10 scalefont setfont
 92 708 moveto(Athena User Accounts)show
-92 696 moveto(MIT Room 11-124H)show
+92 696 moveto(MIT Room 11-124G)show
 92 684 moveto(77 Massachusetts Ave)show
 92 672 moveto(Cambridge, MA  02139)show
 /Times-Roman findfont 12 scalefont setfont

@@ -7,7 +7,7 @@
 # 
 #       $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/Makefile,v $
 #       $Author: mar $
-#       $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/Makefile,v 1.1 1988-08-07 19:44:11 mar Exp $
+#       $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/Makefile,v 1.2 1988-08-07 19:46:35 mar Exp $
 # 	
 #   	Copyright 1987, 1988 by the Massachusetts Institute of Technology.
 # 
@@ -16,7 +16,7 @@
 # 
 
 DESTDIR=
-CFLAGS = -I/mit/smsdev/include -g -DDEBUG
+CFLAGS = -I/mit/smsdev/include -O
 LDFLAGS =  -L/mit/smsdev/lib
 CONFDIR = ${DESTDIR}/usr/athena
 BINDIR = ${DESTDIR}/bin
@@ -37,6 +37,13 @@ sms:	 	${OBJS}
 
 lint:
 	lint -I../../include *.c
+
+install: sms
+	install -s sms ${DESTDIR}/usr/athena/sms
+	rm -f ${DESTDIR}/usr/athena/usermaint
+	rm -f ${DESTDIR}/usr/athena/listmaint
+	ln -s /usr/athena/sms ${DESTDIR}/usr/athena/usermaint
+	ln -s /usr/athena/sms ${DESTDIR}/usr/athena/listmaint
 
 clean:	
 	rm -f *.o *~

@@ -1,6 +1,6 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/xfer_003.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/xfer_003.c,v 1.1 1992-09-22 13:44:10 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/xfer_003.c,v 1.2 1994-09-16 22:03:09 jweiss Exp $
  */
 /*  (c) Copyright 1988, 1992 by the Massachusetts Institute of Technology.
  *  For copying and distribution information, please see the file
@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char *rcsid_xfer_002_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/xfer_003.c,v 1.1 1992-09-22 13:44:10 mar Exp $";
+static char *rcsid_xfer_002_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/xfer_003.c,v 1.2 1994-09-16 22:03:09 jweiss Exp $";
 #endif	lint
 
 #include <mit-copyright.h>
@@ -17,7 +17,7 @@ static char *rcsid_xfer_002_c = "$Header: /afs/.athena.mit.edu/astaff/project/mo
 #include <ctype.h>
 #include <sys/param.h>
 #include <sys/file.h>
-#include <strings.h>
+#include <string.h>
 #include <moira.h>
 
 extern CONNECTION conn;

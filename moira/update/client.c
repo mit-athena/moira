@@ -1,15 +1,15 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/client.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/client.c,v 1.13 1992-12-30 17:47:00 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/client.c,v 1.14 1994-09-16 22:01:05 jweiss Exp $
  */
 
 #ifndef lint
-static char *rcsid_client2_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/client.c,v 1.13 1992-12-30 17:47:00 mar Exp $";
+static char *rcsid_client2_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/client.c,v 1.14 1994-09-16 22:01:05 jweiss Exp $";
 #endif	lint
 
 /*
  * MODULE IDENTIFICATION:
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/client.c,v 1.13 1992-12-30 17:47:00 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/client.c,v 1.14 1994-09-16 22:01:05 jweiss Exp $
  *	Copyright 1987, 1988 by the Massachusetts Institute of Technology.
  *	For copying and distribution information, please see the file
  *	<mit-copyright.h>.
@@ -26,7 +26,7 @@ static char *rcsid_client2_c = "$Header: /afs/.athena.mit.edu/astaff/project/moi
 
 #include <mit-copyright.h>
 #include <stdio.h>
-#include <strings.h>
+#include <string.h>
 #include <gdb.h>
 #include <sys/param.h>
 #include <sys/wait.h>

@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/update_test.c,v 1.2 1992-09-22 13:43:51 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/update_test.c,v 1.3 1994-09-16 22:02:48 jweiss Exp $
  *
  * Test client for update_server protocol.
  * 
@@ -13,7 +13,7 @@
 
 #include <mit-copyright.h>
 #include <stdio.h>
-#include <strings.h>
+#include <string.h>
 #include <gdb.h>
 #include <sys/param.h>
 #include <sys/wait.h>

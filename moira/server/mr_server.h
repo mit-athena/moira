@@ -1,4 +1,4 @@
-/* $Id: mr_server.h,v 1.35 1998-03-18 23:25:47 danw Exp $
+/* $Id: mr_server.h,v 1.36 1998-03-25 17:59:25 danw Exp $
  *
  * Copyright (C) 1987-1998 by the Massachusetts Institute of Technology
  * For copying and distribution information, please see the file
@@ -221,7 +221,6 @@ int setup_dfil(struct query *q, char *argv[], client *cl);
 int setup_aftg(struct query *q, char *argv[], client *cl);
 int setup_dnfp(struct query *q, char *argv[], client *cl);
 int setup_dqot(struct query *q, char *argv[], client *cl);
-int setup_akum(struct query *q, char *argv[], client *cl);
 int setup_dsnt(struct query *q, char *argv[], client *cl);
 int setup_ahst(struct query *q, char *argv[], client *cl);
 int setup_ahal(struct query *q, char *argv[], client *cl);
@@ -232,8 +231,6 @@ int add_member_to_list(struct query *q, char *argv[], client *cl);
 int delete_member_from_list(struct query *q, char *argv[], client *cl);
 int register_user(struct query *q, char *argv[], client *cl);
 
-int get_list_info(struct query *q, char **argv, client *cl,
-		  int (*action)(int, char *[], void *), void *actarg);
 int get_ace_use(struct query *q, char **argv, client *cl,
 		int (*action)(int, char *[], void *), void *actarg);
 int qualified_get_lists(struct query *q, char **argv, client *cl,

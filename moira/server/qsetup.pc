@@ -1,4 +1,4 @@
-/* $Id: qsetup.pc,v 2.11 1998-02-23 19:24:37 danw Exp $
+/* $Id: qsetup.pc,v 2.12 1998-03-25 17:59:24 danw Exp $
  *
  * Query setup routines
  *
@@ -21,7 +21,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsetup.pc,v 2.11 1998-02-23 19:24:37 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsetup.pc,v 2.12 1998-03-25 17:59:24 danw Exp $");
 
 extern char *whoami;
 extern int dbms_errno, mr_errcode;
@@ -743,32 +743,6 @@ int setup_dqot(struct query *q, char **argv, client *cl)
 
   if (dbms_errno)
     return mr_errcode;
-  return MR_SUCCESS;
-}
-
-
-/* setup add_kerberos_user_mapping: add the string to the string
- * table if necessary.
- */
-
-int setup_akum(struct query *q, char **argv, client *cl)
-{
-  EXEC SQL BEGIN DECLARE SECTION;
-  int id;
-  char *name;
-  EXEC SQL END DECLARE SECTION;
-
-  name = argv[1];
-  if (name_to_id(name, STRINGS_TABLE, &id) != MR_SUCCESS)
-    {
-      if (q->type != APPEND)
-	return MR_STRING;
-      id = add_string(name);
-      cache_entry(name, STRINGS_TABLE, id);
-    }
-  if (dbms_errno)
-    return mr_errcode;
-  *(int *)argv[1] = id;
   return MR_SUCCESS;
 }
 

@@ -1,4 +1,4 @@
-/* $Id: queries2.c,v 2.40 1998-03-20 18:33:54 danw Exp $
+/* $Id: queries2.c,v 2.41 1998-03-25 17:59:28 danw Exp $
  *
  * This file defines the query dispatch table for version 2 of the protocol
  *
@@ -414,7 +414,7 @@ static struct validate akum_validate =
   2,
   "users_id",
   access_user,
-  setup_akum,
+  0,
   0,
 };
 
@@ -693,7 +693,7 @@ static struct validate ahal_validate = {
   ahal_valobj,
   2,
   "name",
-  "name = '%s'",
+  "name = UPPER('%s')",
   1,
   "mach_id",
   access_ahal,
@@ -709,7 +709,7 @@ static struct validate dhal_validate = {
   dhal_valobj,
   1,
   "name",
-  "name = '%s' AND mach_id = %d",
+  "name = UPPER('%s') AND mach_id = %d",
   2,
   "mach_id",
   access_ahal,

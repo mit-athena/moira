@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/afssync/sync.fast.qc,v 1.1 1992-06-29 10:22:10 probe Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/afssync/sync.fast.qc,v 1.2 1992-07-05 13:05:24 probe Exp $
  *
  *
  *  (c) Copyright 1989 by the Massachusetts Institute of Technology.
@@ -31,7 +31,19 @@ long groupcount;	/* cheader.groupcount */
 
 struct hash *users;
 struct hash *groups;
-struct hash *idpos;
+
+struct member {
+    struct entry *user;
+    struct entry *group;
+    struct member *unext;
+    struct member *gnext;
+};
+
+struct entry {
+    long id;
+    long pos;
+    struct member *members;
+};
 
 main(argc, argv)
 int argc;
@@ -63,7 +75,6 @@ char **argv;
     initialize_pt_error_table();
     Initdb();					/* Initialize prdb */
     
-    idpos = create_hash(20000);
     users = create_hash(10000);
     groups = create_hash(15000);
     
@@ -88,9 +99,10 @@ char **argv;
 do_passwd()
 ##{
 ##  char login[9];
-##  int uid, id, status;
-    int t, i;
+##  int uid, id;
+    int t, i, status;
     struct prentry tentry;
+    struct entry *u;
 
     t = time(0);
     fprintf(stderr, "Doing users: %s", ctime(&t));
@@ -104,7 +116,6 @@ do_passwd()
 		status = PRIDEXIST;
 	    else {
 		bzero(&tentry, sizeof(tentry));
-		hash_store(idpos, pos);
 		strcpy(tentry.name, login);
 		tentry.id = uid;
 		tentry.owner = SYSADMINID;
@@ -124,6 +135,12 @@ do_passwd()
 		cheader.nameHash[i] = htonl(pos);
 		
 		pr_WriteEntry(0, 0, pos, &tentry);
+
+		u = (struct entry *)malloc(sizeof(struct entry));
+		u->id = uid;
+		u->pos = pos;
+		u->members = 0;
+		
 		pos += ENTRYSIZE;
 		status = 0;
 	    }
@@ -132,7 +149,7 @@ do_passwd()
 		fprintf(stderr, "Error adding user %s uid %d: %s\n",
 			login, uid, error_message(status));
 	    else
-		hash_store(users, id, uid);
+		hash_store(users, id, u);
 ##  }
 ##}
 
@@ -140,8 +157,11 @@ do_passwd()
 
 do_groups()
 ##{
-    long u, g, status, gpos, upos;
+    long status;
     struct prentry gentry, uentry;
+    struct entry *u, *g;
+    struct bucket **p, *b;
+    struct member *m;
     char namebuf[41];
     int aid, t, i;
 ##  char name[33];
@@ -166,7 +186,6 @@ do_groups()
 		status = PRIDEXIST;
 	    else {
 		bzero(&gentry, sizeof(gentry));
-		hash_store(idpos, pos);
 		strcpy(gentry.name, namebuf);
 		gentry.id = aid;
 		gentry.owner = SYSADMINID;
@@ -189,6 +208,12 @@ do_groups()
 
 		pr_WriteEntry(0, 0, pos, &gentry);
 		AddToOwnerChain(0,gentry.id,gentry.owner);
+
+		g = (struct entry *)malloc(sizeof(struct entry));
+		g->id = aid;
+		g->pos = pos;
+		g->members = 0;
+		
 		pos += ENTRYSIZE;
 		status = 0;
 	    }
@@ -196,7 +221,7 @@ do_groups()
 		fprintf(stderr, "Error adding group %s id %d: %s\n",
 			namebuf, aid, error_message(status));
 	    else
-		hash_store(groups, lid, aid);
+		hash_store(groups, lid, g);
 
 ##  }
 
@@ -210,39 +235,58 @@ do_groups()
 
 ##  retrieve (lid = m.list_id, id = m.member_id)
 ##	where m.member_type = "USER" {
-      if ((u = (long) hash_lookup(users, id)) &&
-	  (g = (long) hash_lookup(groups, lid))) {
-	  if ((gpos = get_id(g)) && (upos = get_id(u))) {
-	      pr_ReadEntry(0,0,upos,&uentry);
-	      pr_ReadEntry(0,0,gpos,&gentry);
-	      AddToEntry (0, &gentry, gpos, u);
-	      AddToEntry (0, &uentry, upos, g);
-	      status = 0;
-	  } else {
-	      status = PRNOENT;
-	  }
-	  if (status)
-	      fprintf(stderr, "Error adding uid %d to group %d: %s\n",
-		      u, -g, error_message(status));
+      if ((u = (struct entry *)hash_lookup(users, id)) &&
+	  (g = (struct entry *)hash_lookup(groups, lid))) {
+	      m = (struct member *)malloc(sizeof(struct member));
+	      m->user = u;
+	      m->group = g;
+	      m->unext = u->members;
+	      m->gnext = g->members;
+	      u->members = g->members = m;
       }
 ##  }
+
+    for (p = &(users->data[users->size - 1]); p >= users->data; p--) {
+	for (b = *p; b; b = b->next) {
+	    if ((u = (struct entry *)b->data)->members == 0)
+		continue;
+	    pr_Read(0, 0, u->pos, &uentry, sizeof(uentry));
+	    for (i=0, m=u->members; m && i<PRSIZE; m=m->unext, i++)
+		uentry.entries[i] = htonl(m->group->id);
+	    uentry.count = htonl(i);
+	    pr_Write(0, 0, u->pos, &uentry, sizeof(uentry));
+	    if (m) {
+		pr_ReadEntry(0, 0, g->pos, &gentry);
+		while (m) {
+		    AddToEntry(0, &uentry, u->pos, m->group->id);
+		    m = m->unext;
+		}
+	    }
+	}
+    }
+    for (p = &(groups->data[groups->size - 1]); p >= groups->data; p--) {
+	for (b = *p; b; b = b->next) {
+	    if ((g = (struct entry *)b->data)->members == 0)
+		continue;
+	    pr_Read(0, 0, g->pos, &gentry, sizeof(gentry));
+	    for (i=0, m=g->members; m && i<PRSIZE; m=m->gnext, i++)
+		gentry.entries[i] = htonl(m->user->id);
+	    gentry.count = htonl(i);
+	    pr_Write(0, 0, g->pos, &gentry, sizeof(gentry));
+	    if (m) {
+		pr_ReadEntry(0, 0, g->pos, &gentry);
+		while (m) {
+		    AddToEntry(0, &gentry, g->pos, m->user->id);
+		    m = m->gnext;
+		}
+	    }
+	}
+    }
 
     t = time(0);
     fprintf(stderr, "Done: %s", ctime(&t));
 
 ##}
-
-
-get_id(id)
-{
-    long i;
-
-    if (i=(long)hash_lookup(idpos, id))
-        return i;
-    hash_store(idpos, id, i=FindByID(0, id));
-    return i;
-}
-
 
 
 /*

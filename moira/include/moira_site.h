@@ -1,4 +1,4 @@
-/* $Id: moira_site.h,v 1.33 2000-01-06 21:09:37 danw Exp $
+/* $Id: moira_site.h,v 1.34 2000-04-19 23:16:22 zacheiss Exp $
  *
  * This file contains all definitions that allow easy access to
  * elements returned by most of the @i[Moira] queries.  It also defines
@@ -125,7 +125,7 @@
 #define KMAP_PRINCIPAL	1
 #define KMAP_END	2
 
-/* General List information Queries. */
+/* General List information Queries, v3. */
 
 #define L_NAME     0
 #define L_ACTIVE   1
@@ -134,13 +134,14 @@
 #define L_MAILLIST 4
 #define L_GROUP    5
 #define L_GID      6
-#define L_ACE_TYPE 7
-#define L_ACE_NAME 8
-#define L_DESC     9
-#define L_MODTIME  10
-#define L_MODBY    11
-#define L_MODWITH  12
-#define L_END      13
+#define L_NFSGROUP 7
+#define L_ACE_TYPE 8
+#define L_ACE_NAME 9
+#define L_DESC     10
+#define L_MODTIME  11
+#define L_MODBY    12
+#define L_MODWITH  13
+#define L_END      14
 
 /* List Member information queries. */
 

@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/sign.dc,v 1.4 1997-01-20 18:25:29 danw Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/sign.dc,v 1.5 1997-01-22 22:59:07 danw Exp $
  *
  * This program will bulk sign user records in the database.
  */
@@ -34,6 +34,7 @@ char **argv;
      program = "sign";
      init_krb_err_tbl();
      init_sms_err_tbl();
+     initialize_gdss_error_table();
 
      for (i = 1; i < argc; i++) {
 	if (!strcmp(argv[i], "-w"))
@@ -76,7 +77,7 @@ char **argv;
 
      EXEC SQL DECLARE c CURSOR FOR
        SELECT users_id, login, clearid
-       FROM users WHERE signature = '';
+       FROM users WHERE signature = CHR(0);
      if (sqlca.sqlcode != 0) {
 	 com_err(program, 0, "dbms error %d", sqlca.sqlcode);
 	 exit(1);

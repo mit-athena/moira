@@ -1,0 +1,302 @@
+.TH SMS 3 "29 Nov 1988"
+.FM mit
+.SH NAME
+sms_connect, sms_auth, sms_disconnect, sms_noop, sms_access,
+sms_query, sms_do_update, format_filesys_type, parse_filesys_type,
+canonicalize_hostname, strsave, strtrim, sq_create, sq_destroy,
+sq_get_data, sq_save_args, sq_save_data, sq_save_unique_data,
+sq_save_unique_string, Start_paging, Stop_paging, Start_menu,
+Start_no_menu, Cleanup_menu, Prompt_input, Password_input, Put_message
+.SH SYNOPSIS
+.nf
+.nj
+.TP
+Protocol functions
+.B #include <sms.h>
+
+.B	extern int sending_version_no;
+
+.B int sms_connect(server);
+.B	char *server;
+
+.B int sms_auth(prog);
+.B	char *prog;
+
+.B int sms_disconnect();
+
+.B int sms_noop();
+
+.B int sms_access(name, argc, argv);
+.B	char *name;
+.B	int argc;
+.B	char **argv;
+
+.B int sms_query(name, argc, argv, callproc, callarg);
+.B	char *name;
+.B	int argc;
+.B	char **argv;
+.B	int (*callproc)(int, char **, char *);
+.B	char *callarg;
+
+.B int sms_do_update();
+.TP
+Data manipulation
+.B char *format_filesys_type(fs_status);
+.B	char *fs_status;
+
+.B char *parse_filesys_type(fs_type_name);
+.B	char *fs_type_name;
+
+.B char *canonicalize_hostname(host);
+.B	char *host;
+
+.B char *strsave(s);
+.B	char *s;
+
+.B char *strtrim(s);
+.B	char *s;
+.TP
+Simple Queues
+.B struct save_queue *sq_create();
+
+.B sq_destroy(sq);
+.B	struct save_queue *sq;
+
+.B int sq_get_data(sq, data);
+.B	char **data;
+
+.B sq_save_args(argc, argv, sq);
+
+.B sq_save_data(sq, data);
+
+.B sq_save_unique_data(sq, data);
+
+.B sq_save_unique_string(sq, data);
+.TP
+Menus
+.B #include <menu.h>
+.B char *whoami = argv[0];
+
+.B Start_paging();
+
+.B Stop_paging();
+
+.B Start_menu(top_menu);
+.B	Menu *top_menu;
+
+.B Start_no_menu(top_menu);
+
+.B Cleanup_menu();
+
+.B Prompt_input(prompt, buf, buflen);
+.B	char *prompt, buf;
+.B	int buflen;
+
+.B Password_input(prompt, buf, buflen);
+
+.B Put_message(msg);
+.B	char *msg;
+.fi
+.SH DESCRIPTION
+This library supports the Athena Service Management System protocol
+and related operations.  The library contains many routines beyond
+those described in this man page, but they are not intended to be used
+directly. Instead, they are called by the routines that are described.
+.TP
+Protocol functions
+All protocol routines return 0 on sucess, or a value from 
+.I <sms_et.h>
+on failure.  An application should connect, authenticate, perform
+queries, then disconnect.
+
+.I sending_version_no
+may be set to
+.B SMS_VERSION_1
+or
+.B SMS_VERSION_2 
+to determine the version of the protocol that will be used.  It
+currently defaults to
+.B SMS_VERSION_2.
+
+.B sms_connect
+establishes a connection with the SMS server.  The
+.I server
+specification is of the form hostname:portname, where the portname can
+be looked up in 
+.B /etc/services.
+
+.B sms_auth
+authenticates an established connection using Kerberos.
+.I prog
+is the name of the program making the connection.  The program name
+and the kerberos principal name will be recorded with any changes made
+to the database through this connection.
+
+.B sms_disconnect
+severs the connection with the SMS server.
+
+.B sms_noop
+pings the SMS server through a "no operation" request, verifying that
+the connection is still working.
+
+.B sms_access
+Verifies that the authenticated user has the necessary access to
+perform the query specified by
+.I name, argc,
+and
+.I argv.
+
+.B sms_query
+performs a query.  This query may be a retrieval, append, delete, or
+update of the database.  Query
+.I name
+will be executed with the
+.I argc
+arguments specified in the string array
+.I argv.
+For each return tuple,
+.I callproc
+will be called with an
+.I argc, argv,
+and the value passed to
+.B sms_query
+as
+.I callarg.
+
+.B sms_do_update
+triggers a DCM update immediately on the SMS server.
+.TP
+Data manipulation
+.B format_filesys_type
+returns a user-displayable representation of the status bits on an NFS
+physical partition.
+.I fs_status
+is the ascii representation of the integer value of that field.
+
+.B parse_filesys_type
+returns the numeric value of the filesystem type, given a string
+describing an NFS physical partition allocation type.  The returned
+value is a pointer to a static buffer containing the ascii
+representation of the integer value.
+
+.B canonicalize_hostname
+attempts to update what is possibly the nickname for a host to its
+canonical form which is a fully specified, uppercase domain name.
+If the named host is in the namespace, it calls the nameserver to
+expand it and return the primary name of the host.  Otherwise, it just
+returns the argument.  It assumes that
+.I host
+was allocated using
+.I malloc(),
+and may be freed or realloc'ed before returning.  The returned value
+will be a malloc'ed value, possibly the same buffer as the argument.
+
+.B strsave
+will malloc some memory and make a copy of
+.I s.
+
+.B strtrim
+will trim whitespace off of both ends of the string
+.I s.
+The returned value will be a pointer into the same buffer
+.I s
+pointed to.
+
+.B sq_create
+will create an empty save_queue.
+.TP
+Simple Queues
+.B sq_destroy
+will free all of the memory contained in the queue structure
+.I sq.
+It will not attempt to free the elements.
+
+.B sq_get_data
+will fill in
+.I data
+with the next piece of data in the queue.  If will return 0 if there
+is no more data in the queue.
+
+.B sq_save_args
+will make a copy of
+.I argv,
+null terminate it so that
+.I argc
+is not necessary, and save this value on the end of the queue
+.I sq.
+
+.B sq_save_data
+saves
+.I data
+on the end of the queue
+.I sq.
+
+.B sq_save_unique_data
+will save
+.I data
+on the queue if it does not already appear in the queue.  If it is
+already present, nothing is modified and no errors are returned.
+.B sq_save_unique_string
+is like
+.B sq_save_unique_data,
+except that it uses strcmp on the elements rather than comparing the
+addresses directly.
+.TP
+Menus
+The menu package requires that the string
+.B whoami
+be defined.  It is usually set to argv[0] of the program.
+
+.B Start_paging
+initializes menu package and sets up the screen.
+
+.B Stop_paging
+resets the screen to normal mode.  This must be done before the
+program exits to put the tty back into a sane mode.
+
+.B Start_menu
+starts interpreting menus with
+.I top_menu,
+giving the menu package complete control of the screen.
+.B Start_paging
+must have been called first.
+
+.B Start_no_menu
+starts interpreting menus, but does not entirely give up control of
+the screen.  The menu package will treat the tty as a printing
+terminal.
+
+.B Cleanup_menu
+aborts the menu package and returns the tty to sane modes.
+
+.B Prompt_input
+will get input from the user, using the dialoge window on the screen.
+It will first display
+.I prompt,
+then read up to
+.I buflen
+bytes into the buffer
+.I buf.
+
+.B Password_input
+is like
+.I Prompt_input, 
+except that the value the user types is not echoed.
+.B Put_message
+writes
+.I msg
+to the screen, appending a newline at the end.
+.SH FILES
+/usr/include/sms.h
+.br
+/usr/include/sms_et.h
+.br
+/tmp/tkt###
+.SH "SEE ALSO"
+smstest(8), The Service Mangement System section of the Athena
+Technical Plan
+.SH DIAGNOSTICS
+The error codes returned are those defined in <sms_et.h>, or
+<krb_et.h>.  They may be easily decoded using the com_err library.
+.SH RESTRICTIONS
+COPYRIGHT 1987,1988 Massachusetts Institute of Technology

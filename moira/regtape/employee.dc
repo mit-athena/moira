@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/employee.dc,v 1.18 1993-10-21 15:18:47 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/employee.dc,v 1.19 1996-03-06 04:19:32 dkk Exp $
  */
 
 #include <stdio.h>
@@ -112,6 +112,7 @@ char **argv;
 
     setlinebuf(stdout);
     setlinebuf(stderr);
+    initialize_sms_error_table();
 
     EXEC SQL CONNECT moira;
     if (sqlca.sqlcode != 0) {
@@ -304,14 +305,15 @@ struct entry *e;
 	}
     }
 
-    /* Update class/state if necessary */
+    /* Update class/state if necessary.  (Exclude several spacial cases.) */
     if (strcmp(e->class, strtrim(class)) &&
-	strcmp(class, "STAFF") && strcmp(class, "SIPB")) {
+	strcmp(class, "STAFF") && strcmp(class, "SIPBMEM") &&
+	strcmp(class, "KNIGHT")) {
 	com_err(whoami, 0, "updating class for %s %s from %s to %s",
 		first, last, class, e->class);
-	if (status == US_NOT_ALLOWED && !strcmp(e->class, "FACULTY"))
+	if (status == US_NOT_ALLOWED)
 	  status = US_NO_LOGIN_YET;
-	if (status == US_ENROLL_NOT_ALLOWED && !strcmp(e->class, "FACULTY"))
+	if (status == US_ENROLL_NOT_ALLOWED)
 	  status = US_ENROLLED;
 	strcpy(class, e->class);
 	EXEC SQL UPDATE users
@@ -491,9 +493,7 @@ struct entry *e;
       sprintf(fullname, "%s %s %s", first, middle, last);
     else
       sprintf(fullname, "%s %s", first, last);
-    st = US_NOT_ALLOWED;
-    if (!strcmp(e->class, "FACULTY") || !strcmp(e->class, "STAFF"))
-      st = US_NO_LOGIN_YET;
+    st = US_NO_LOGIN_YET;
 
     sid = e->id;
     name = e->name;
@@ -507,10 +507,11 @@ struct entry *e;
        clearid, type, modtime, modby, modwith, fullname, office_addr,
        office_phone, department, fmodtime, fmodby, fmodwith,
        potype, xname, xdept, xtitle, xaddress, xphone1, xphone2, xmodtime)
-      VALUES (:login, :id, :uid, '/bin/csh', :last, :first, :middle, :st,
-	      :sid, :class, 'now', :who, :prog, :fullname, :oaddr, :ophone,
-	      :dept, 'now', :who, :prog, 'NONE', :name, :rdept,
-	      :title, :oaddr, :rhphone, :rophone, 'now');
+      VALUES (:login, :id, :uid, '/bin/athena/tcsh', :last, :first,
+	      :middle, :st, :sid, :class, 'now', :who, :prog,
+	      :fullname, :oaddr, :ophone, :dept, 'now', :who, :prog,
+	      'NONE', :name, :rdept, :title, :oaddr, :rhphone,
+	      :rophone, 'now');
     if (sqlca.sqlcode != 0) {
 	if (sqlca.sqlcode == SQL_DEADLOCK) {
 	    com_err(whoami, MR_DEADLOCK, "adding user");

@@ -1,14 +1,14 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v 1.7 1988-08-07 18:29:49 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v 1.8 1988-08-25 11:27:10 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
  */
 
 #ifndef lint
-static char *rcsid_test_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v 1.7 1988-08-07 18:29:49 mar Exp $";
+static char *rcsid_test_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v 1.8 1988-08-25 11:27:10 mar Exp $";
 #endif lint
 
 #include <stdio.h>
@@ -207,6 +207,7 @@ print_reply(argc, argv)
 	}
 	printf("\n");
 	count++;
+	return(SMS_CONT);
 }
 
 test_query(argc, argv)
@@ -236,4 +237,15 @@ test_access(argc, argv)
 	}
 	status = sms_access(argv[1], argc-2, argv+2);
 	if (status) ss_perror(ss, status, 0);
+}
+
+
+test_dcm(argc, argv)
+	int argc;
+	char **argv;
+{
+	int status;
+
+	if (status = sms_do_update())
+	  ss_perror(ss, status, " while triggering dcm");
 }

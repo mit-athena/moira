@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v $
  *	$Author: danw $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v 1.35 1997-02-04 20:05:51 danw Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v 1.36 1998-01-05 14:50:16 danw Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_test_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v 1.35 1997-02-04 20:05:51 danw Exp $";
+static char *rcsid_test_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v 1.36 1998-01-05 14:50:16 danw Exp $";
 #endif /* lint */
 
 #include <mit-copyright.h>
@@ -52,7 +52,6 @@ main(argc, argv)
 	int argc;
 	char **argv;
 {	
-	int status;
 	char cmdbuf[BUFSIZ];
 #ifdef POSIX
 	struct sigaction action;
@@ -208,7 +207,7 @@ parse(buf, argv)
 	*d++= *p++;
       }
       if(p==d+1) {*d='\0'; p++;}
-      else while(p>=d) *p--=' ';
+      else {while(p>=d) *p--=' ';}
     }
     if(*p==' ' || *p=='\t') {
       /* skip whitespace */

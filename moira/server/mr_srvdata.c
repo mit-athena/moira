@@ -1,13 +1,16 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_srvdata.c,v $
  *	$Author: wesommer $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_srvdata.c,v 1.3 1987-06-30 20:03:15 wesommer Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_srvdata.c,v 1.4 1987-07-14 00:38:14 wesommer Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
  * 	Global variables inside the SMS server.
  * 
  *	$Log: not supported by cvs2svn $
+ * Revision 1.3  87/06/30  20:03:15  wesommer
+ * Added local realm global variable.
+ * 
  * Revision 1.2  87/06/21  16:42:16  wesommer
  * Performance work, rearrangement of include files.
  * 
@@ -17,7 +20,7 @@
  */
 
 #ifndef lint
-static char *rcsid_sms_srvdata_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_srvdata.c,v 1.3 1987-06-30 20:03:15 wesommer Exp $";
+static char *rcsid_sms_srvdata_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_srvdata.c,v 1.4 1987-07-14 00:38:14 wesommer Exp $";
 #endif lint
 
 #include "sms_server.h"
@@ -74,3 +77,8 @@ char *takedown=NULL;
  */
 
 char *krb_realm = NULL;
+/*
+ * Logging levels.
+ */
+
+int log_flags = LOG_CONNECT|LOG_REQUESTS|LOG_ARGS|LOG_RES;

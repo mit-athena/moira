@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/vote.dc,v 1.1 1993-03-10 10:27:54 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/vote.dc,v 1.2 1993-09-30 14:43:30 mar Exp $
  */
 
 #include <stdio.h>
@@ -12,10 +12,7 @@ EXEC SQL INCLUDE sqlca;
 
 struct entry {
     char *line;
-    char last[19];
-    char first[14];
-    char middle[11];
-    char class;
+    char id[19];
     char login[9];
 };
 
@@ -71,10 +68,10 @@ char **argv;
 	i = process_entry(e);
 	EXEC SQL COMMIT WORK;
 	if (i == 0) {
-	    p = &(e->line[46]);
+	    p = &(e->line[0]);
 	    for (p1 = e->login; *p1; p1++)
 	      *p++ = *p1;
-	    for (; p < &(e->line[54]); p++)
+	    for (; p < &(e->line[10]); p++)
 	      *p = ' ';
 	    fputs(e->line, stdout);
 	}
@@ -100,13 +97,9 @@ FILE *in;
       return((struct entry *)NULL);
 
     e.line = &buf[0];
-    strncpy(e.last, &buf[4], 18);
-    e.last[18] = 0;
-    strncpy(e.first, &buf[22], 13);
-    e.first[13] = 0;
-    strncpy(e.middle, &buf[35], 10);
-    e.middle[10] = 0;
-    e.class = buf[45];
+    strncpy(e.id, &buf[0], 9);
+    e.id[9] = 0;
+    e.login[0] = 0;
     return(&e);
 }
 
@@ -114,65 +107,17 @@ FILE *in;
 process_entry(e)
 struct entry *e;
 {
-    int dummy;
-    static int nyear = 0;
     EXEC SQL BEGIN DECLARE SECTION;
-    char *last, *first, *middle, *login, class[10];
+    char *id, *login;
     EXEC SQL END DECLARE SECTION;
 
-    if (nyear == 0) {
-	struct tm *tm;
-	struct timeval tv;
-
-	gettimeofday(&tv, NULL);
-	tm = localtime(&tv.tv_sec);
-	nyear = tm->tm_year;
-	if (tm->tm_mon > 5)
-	  nyear++;
-    }
-
-    LookForSt(e->last);
-    LookForO(e->last);
-    LookForJrAndIII(e->last, &dummy, &dummy, &dummy, &dummy, &dummy, &dummy);
-    LookForJrAndIII(e->first, &dummy, &dummy, &dummy, &dummy, &dummy, &dummy);
-    FixCase(e->last);
-    FixCase(e->first);
-    FixCase(e->middle);
-
-    last = e->last;
-    first = e->first;
-    middle = e->middle;
+    id = e->id;
     login = e->login;
-
-    if (debug)
-      printf("Got last: %s, first %s, middle %s, class %c\n",
-	     last, first, middle, e->class);
     EXEC SQL REPEATED SELECT login INTO :login FROM users
-      WHERE last = :last and first = :first and middle = :middle and
-	status != 3;
+      WHERE clearid = :id;
     if (sqlca.sqlcode != 0) {
-	if (sqlca.sqlcode == 100) {
-	    EXEC SQL REPEATED SELECT login INTO :login FROM users
-	      WHERE last = :last and first = :first and status != 3;
-	    if (sqlca.sqlcode != 0) {
-		fprintf(stderr, "User %s %s not found.\n", strtrim(e->first),
-			strtrim(e->last));
-		return(-1);
-	    }
-	} else if (sqlca.sqlcode == -40100) {
-	    sprintf(class, "%d", nyear + 4 - e->class - '0' + 1900);
-	    EXEC SQL REPEATED SELECT login INTO :login FROM users
-	      WHERE last = :last and first = :first and middle = :middle
-		and type = :class and status != 3;
-	    if (sqlca.sqlcode != 0) {
-		fprintf(stderr, "Could not match class on %s %s %c (Error %d)\n",
-			strtrim(e->first), strtrim(e->last), e->class, sqlca.sqlcode);
-		return(-1);
-	    }
-	} else {
-	    fprintf(stderr, "Error %d on %s\n", sqlca.sqlcode, e->line);
-	    return(-1);
-	}
+	fprintf(stderr, "Error %d on %s\n", sqlca.sqlcode, e->line);
+	return(-1);
     }
     strncpy(e->login, login, 8);
     e->login[8] = 0;

@@ -1,4 +1,4 @@
-/* $Id: cluster.c,v 1.44 2000-09-07 01:25:15 zacheiss Exp $
+/* $Id: cluster.c,v 1.45 2000-09-07 20:09:57 zacheiss Exp $
  *
  *	This is the file cluster.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -950,7 +950,7 @@ int CheckAndRemoveFromCluster(char *name, Bool ask_user)
  *                   and if so then removes them.
  *	Arguments: name - name of the machine (already Canonicalized).
  *                 ask_user- query the user before removing cnames?
- *	Returns: MR_ERROR if machine left in a cluster, or mr_error.
+ *	Returns: MR_ERROR if machine left with a cname, or mr_error.
  */
 
 int CheckAndRemoveCnames(char *name, Bool ask_user)
@@ -1050,6 +1050,7 @@ static void RealDeleteMachine(char **info, Bool one_machine)
 	}
     }
 }
+
 /*	Function Name: DeleteMachine
  *	Description: This function removes a machine from the data base.
  *	Arguments: argc, argv - the machines name int argv[1].

@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/quota.c,v 1.17 1990-04-04 12:46:42 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/quota.c,v 1.18 1990-07-11 15:54:14 mar Exp $";
 #endif lint
 
 /*	This is the file quota.c for the MOIRA Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/quota.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/quota.c,v 1.17 1990-04-04 12:46:42 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/quota.c,v 1.18 1990-07-11 15:54:14 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -181,7 +181,8 @@ Bool quota;
 
   /* Get filesystem. */
 
-  GetValueFromUser("Filesystem", &args[Q_FILESYS]);
+  if (GetValueFromUser("Filesystem", &args[Q_FILESYS]) == SUB_ERROR)
+    return(NULL);
   if (quota && !ValidName(args[Q_FILESYS]))
     return(NULL);
  
@@ -190,14 +191,18 @@ Bool quota;
     args[Q_NAME] = strsave(NOBODY);
   }
   else {
-    GetTypeFromUser("Quota type", "quota_type", &args[Q_TYPE]);
-    GetValueFromUser("Name", &args[Q_NAME]);
-    if (!ValidName(args[Q_NAME])) return(NULL);
+      if (GetTypeFromUser("Quota type", "quota_type", &args[Q_TYPE]) ==
+	  SUB_ERROR)
+	return(NULL);
+      if (GetValueFromUser("Name", &args[Q_NAME]) == SUB_ERROR)
+	return(NULL);
+      if (!ValidName(args[Q_NAME])) return(NULL);
   }
 
   if (quota) {			/* Get and check quota. */
-    GetValueFromUser("Quota", &args[Q_QUOTA]);
-    if (!ValidName(args[Q_QUOTA])) return(NULL);
+      if (GetValueFromUser("Quota", &args[Q_QUOTA]) == SUB_ERROR)
+	return(NULL);
+      if (!ValidName(args[Q_QUOTA])) return(NULL);
   }
   return(args);
 }  
@@ -307,7 +312,8 @@ GetQuotaByFilesys()
   }
 
   args[0] = args[1] = NULL;
-  GetValueFromUser("Filesystem", &args[0]);
+  if (GetValueFromUser("Filesystem", &args[0]) == SUB_ERROR)
+    return(DM_NORMAL);
 
   if (( status = do_mr_query("get_quota_by_filesys", 1, args,
 			     StoreInfo, (char *) &top)) != MR_SUCCESS)
@@ -361,7 +367,10 @@ char ** info;
   char temp_buf[BUFSIZ];
 
   sprintf(temp_buf, "New quota for filesystem %s (in KB)", info[Q_FILESYS]);
-  GetValueFromUser(temp_buf, &info[Q_QUOTA]);
+  if (GetValueFromUser(temp_buf, &info[Q_QUOTA]) == SUB_ERROR) {
+      Put_message("Not changed.");
+      return;
+  }
 
   if (status = do_mr_query("update_quota", 4, info,
 			    Scream, (char *) NULL) != MR_SUCCESS) {

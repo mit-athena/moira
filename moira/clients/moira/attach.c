@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.34 1992-05-20 17:41:48 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.35 1992-06-01 00:20:32 mar Exp $";
 #endif
 
 /*	This is the file attach.c for the MOIRA Client, which allows a nieve
@@ -13,7 +13,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.34 1992-05-20 17:41:48 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.35 1992-06-01 00:20:32 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -663,13 +663,23 @@ int argc;
 		    info[FS_NAME], def_quota, info[FS_NAME]);
 	    if (YesNoQuestion(buf, 1) == TRUE) {
 		argv[Q_NAME] = argv[Q_FILESYS] = info[FS_NAME];
-		argv[Q_TYPE] = "USER";
+		if (!strcmp(info[FS_TYPE], "NFS"))
+		  argv[Q_TYPE] = "USER";
+		else
+		  argv[Q_TYPE] = "ANY";
 		argv[Q_QUOTA] = def_quota;
 		if ((stat = do_mr_query("add_quota", Q_QUOTA+1, argv, Scream,
 					 (char *) NULL)) != MR_SUCCESS) {
 		    com_err(program_name, stat, " while adding quota");
 		}
 	    }
+	}
+    } else if (stat == MR_SUCCESS) {
+	if (YesNoQuestion("Assign a quota on this filesystem (Y/N)", 1)
+	    == TRUE) {
+	    parsed_argc = 1;
+	    parsed_argv[0] = info[FS_NAME];
+	    AddQuota();
 	}
     }
 

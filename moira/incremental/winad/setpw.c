@@ -94,7 +94,7 @@ Abstract:
 #endif
 #endif /* _WIN32 && !__CYGWIN32__ */
 
-static const char rcsid[] = "$Id: setpw.c,v 1.3 2001-04-23 02:11:22 zacheiss Exp $";
+static const char rcsid[] = "$Id: setpw.c,v 1.4 2001-05-03 22:00:15 zacheiss Exp $";
 
 static int frequency[26][26] =
 { {4, 20, 28, 52, 2, 11, 28, 4, 32, 4, 6, 62, 23, 167, 2, 14, 0, 83, 76, 
@@ -721,9 +721,7 @@ int ad_connect(LDAP **ldap_handle, char *ldap_domain, char *dn_path,
         }
       if (j == 0)
         return(2);
-#ifdef _WIN32
       qsort((void *)server_array, (size_t)j, sizeof(server_array[0]), compare_elements);
-#endif
     }
   else
     strcpy(server_array[0], default_server);

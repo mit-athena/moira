@@ -1,4 +1,4 @@
-/* $Id: pobox.c,v 1.33 2000-02-18 17:07:58 rbasch Exp $
+/* $Id: pobox.c,v 1.34 2000-03-14 21:53:36 zacheiss Exp $
  *
  *	This is the file pobox.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -24,7 +24,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/pobox.c,v 1.33 2000-02-18 17:07:58 rbasch Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/pobox.c,v 1.34 2000-03-14 21:53:36 zacheiss Exp $");
 
 /*	Function Name: PrintPOBox
  *	Description: Yet another specialized print function.
@@ -444,7 +444,7 @@ int SetUserPOBox(int argc, char **argv)
 	    }
 	  /* Fall through from MR_MACHINE case. */
 	case FALSE:
-	  type = strdup("POP");
+	  type = strdup("IMAP");
 	  if (GetValueFromUser("Kind of Local PO Box?", &type) == SUB_ERROR)
 	    {
 	      free(type);

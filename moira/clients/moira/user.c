@@ -1,4 +1,4 @@
-/* $Id: user.c,v 1.56 2000-03-09 19:59:54 zacheiss Exp $
+/* $Id: user.c,v 1.57 2000-03-14 21:53:37 zacheiss Exp $
  *
  *	This is the file user.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -29,7 +29,7 @@
 
 #include <krb.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.56 2000-03-09 19:59:54 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.57 2000-03-14 21:53:37 zacheiss Exp $");
 
 void CorrectCapitalization(char **name);
 char **AskUserInfo(char **info, Bool name);
@@ -556,7 +556,7 @@ static void GiveBackLogin(char *name)
 int RegisterUser(int argc, char **argv)
 {
   char *args[MAX_ARGS_SIZE];
-  char *login, *fstype = NULL;
+  char *login, *potype = NULL;
   char temp_buf[BUFSIZ];
   int status;
 
@@ -579,8 +579,7 @@ int RegisterUser(int argc, char **argv)
 
   sprintf(temp_buf, "u%s", args[0]);
   login = strdup(temp_buf);
-  if ((GetValueFromUser("Login name for this user? ", &login) == SUB_ERROR) ||
-      (GetFSTypes(&fstype, FALSE) == SUB_ERROR))
+  if (GetValueFromUser("Login name for this user? ", &login) == SUB_ERROR)
     {
       args[1] = login;
       FreeInfo(args);	   /* This work because the NULL temination is ok. */
@@ -588,7 +587,23 @@ int RegisterUser(int argc, char **argv)
     }
   Put_message("KERBEROS code not added, did not reserve name with kerberos.");
   args[1] = login;
-  args[2] = fstype;
+  
+  sprintf(temp_buf, "IMAP");
+  potype = strdup(temp_buf);
+  if (GetValueFromUser("P.O. Box Type for this user? ", &potype) == SUB_ERROR)
+    {
+      args[2] = potype;
+      FreeInfo(args);
+      return DM_NORMAL;
+    }
+  if (strcmp(potype, "POP") && strcmp(potype, "IMAP"))
+    {
+      sprintf(temp_buf, "Unknown P.O. Box type.");
+      Put_message(temp_buf);
+      FreeInfo(args);
+      return DM_NORMAL;
+    }
+  args[2] = potype;
   args[3] = NULL;
 
   switch ((status = do_mr_query("register_user", CountArgs(args),

@@ -32,7 +32,7 @@ while (1)
       set tmpdir = $dir:h/_$dir:t
       # Don't clobber this directory if it exists.
       if (-d $tmpdir) then
-         continue
+	 break;
       else
          mkdir $tmpdir
          # At some point it may be wise to check the status here and 
@@ -75,5 +75,5 @@ exit 0
 
 #
 # 	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/install_dirs,v $
-#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/install_dirs,v 1.9 1990-04-10 17:06:02 mar Exp $
+#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/install_dirs,v 1.10 1991-01-04 11:57:04 mar Exp $
 #

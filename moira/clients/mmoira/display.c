@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/display.c,v 1.4 1992-10-09 18:06:06 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/display.c,v 1.5 1992-10-19 18:09:37 mar Exp $
  */
 
 #include <stdio.h>
@@ -10,10 +10,41 @@
 #include <netinet/in.h>
 #include <Xm/Xm.h>
 #include "mmoira.h"
+#ifdef GDSS
+#include <des.h>
+#include <krb.h>
+#include <gdss.h>
+#endif /* GDSS */
 
 
-/******* temporary ********/
-char *atot(s) char *s; { return s; }
+static char *MOD_FORMAT = "Modified by %s at %s with %s\n";
+
+
+/* atot: convert ASCII integer unix time into human readable date string */
+
+char *atot(itime)
+char *itime;
+{
+    int time;
+    char *ct, *ctime();
+
+    time = atoi(itime);
+    ct = ctime(&time);
+    ct[24] = 0;
+    return(&ct[4]);
+}
+
+
+/* Turn an integer number of minutes into a print string */
+
+char *unparse_interval(i)
+int i;
+{
+    static char uibuf[32];
+
+    sprintf(uibuf, "%d hrs %d mins", i / 60, i % 60);
+    return(&uibuf[0]);
+}
 
 
 static save_info(argc, argv, sq)
@@ -22,6 +53,7 @@ char **argv;
 struct save_queue *sq;
 {
     sq_save_args(argc, argv, sq);
+    return(MR_CONT);
 }
 
 
@@ -31,8 +63,10 @@ char **info;
 EntryForm *form;
 {
     char buf[1024], name[128];
-    char *MOD_FORMAT = "Modified by %s at %s with %s\n";
-    int i;
+#ifdef GDSS
+    SigInfo si;
+#endif
+    int i, status;
 
     switch (form->menu->operation) {
     case MM_SHOW_USER:
@@ -42,15 +76,37 @@ EntryForm *form;
 	sprintf(buf, "User id: %-23s Login shell %-10s Class: %s\n", 
 		info[U_UID], info[U_SHELL], info[U_CLASS]);
 	AppendToLog(buf);
-	sprintf(buf, "Account is: %-20s Encrypted MIT ID number: %s\n",
-		user_states[atoi(info[U_STATE])], info[U_MITID]);
+
+#ifdef GDSS
+	sprintf(buf, "%s:%s", info[U_NAME], info[U_MITID]);
+	si.rawsig = NULL;
+	status = GDSS_Verify(buf, strlen(buf), info[U_SIGNATURE], &si);
+#ifdef DEBUG
+	hex_dump(info[U_SIGNATURE]);
+	sprintf(buf, "GDSS_Verify => %d", status);
+	AppendToLog(buf);
+#endif /* DEBUG */
+#else /* GDSS */
+	status = 0;
+#endif /* GDSS */
+	
+	sprintf(buf, "Account is: %-20s ID number: %-11s Signed: %s\n",
+		user_states[atoi(info[U_STATE])], info[U_MITID],
+		*info[U_SIGNATURE] ? (status ? "Bad" : "Yes") : "No");
+	AppendToLog(buf);
+	if (atoi(info[U_SECURE]))
+	  sprintf(buf, "Secure password set on %s.\n", atot(info[U_SECURE]));
+	else
+	  sprintf(buf, "No secure password set.\n");
+	AppendToLog(buf);
+	sprintf(buf, "Comments: %s\n", info[U_COMMENT]);
 	AppendToLog(buf);
 	sprintf(buf, MOD_FORMAT,
 		info[U_MODBY], info[U_MODTIME],info[U_MODWITH]);
 	AppendToLog(buf);
 	break;
     case MM_SHOW_FINGER:
-	sprintf(buf, "Finger information for user %s:\n", info[F_NAME]);
+	sprintf(buf, "Finger information for user: %s\n", info[F_NAME]);
 	AppendToLog(buf);
 	sprintf(buf, "Login name: %-27s In real life: %s\n", info[F_NAME],
 		info[F_FULLNAME]);
@@ -69,9 +125,9 @@ EntryForm *form;
 	AppendToLog(buf);
 	break;
     case MM_SHOW_POBOX:
-	sprintf(buf, "Post Office information for user %s:\n", info[PO_NAME]);
+	sprintf(buf, "Post Office information for user: %s\n", info[PO_NAME]);
 	AppendToLog(buf);
-	sprintf(buf, "type: %-8s Box: %s\n", info[PO_TYPE], info[PO_BOX]);
+	sprintf(buf, "Type: %-8s Box: %s\n", info[PO_TYPE], info[PO_BOX]);
 	AppendToLog(buf);
 	sprintf(buf, MOD_FORMAT, info[4], info[3], info[5]);
 	AppendToLog(buf);
@@ -83,78 +139,7 @@ EntryForm *form;
 	break;
     case MM_SHOW_FILSYS:
     case MM_SHOW_FSGROUP:
-	if (!strcmp(info[FS_TYPE], "FSGROUP") ||
-	    !strcmp(info[FS_TYPE], "MUL")) {
-	    int stat;
-	    char **argv;
-	    struct save_queue *sq;
-
-	    sprintf(buf,"%20s %s: %s\n", " ", 
-		    strcmp(info[FS_TYPE], "MUL") ?
-		    	"Filesystem Group" : "Multiple Filesystem",
-		    info[FS_NAME]);
-	    AppendToLog(buf);
-
-	    sprintf(buf,"Comments: %s\n",info[FS_COMMENTS]);
-	    AppendToLog(buf);
-	    sprintf(buf, MOD_FORMAT, info[FS_MODBY], info[FS_MODTIME], 
-		    info[FS_MODWITH]);
-	    AppendToLog(buf);
-	    AppendToLog("Containing the filesystems (in order):");
-
-	    sq = sq_create();
-	    if ((stat = MoiraQuery("get_fsgroup_members", 1, &info[FS_NAME],
-				    save_info, (char *)sq)) != 0) {
-		if (stat == MR_NO_MATCH)
-		  AppendToLog("    [no members]");
-		else
-		  com_err(program_name, stat, NULL);
-	    } else {
-		while (sq_get_data(sq, &argv)) {
-		    sprintf(buf, "  Filesystem: %-32s (sort key: %s)",
-			    info[0], info[1]);
-		    free(argv[0]);
-		    free(argv[1]);
-		    free(argv);
-		}
-		sq_destroy(sq);
-	    }
-	} else {
-	    sprintf(buf,"Filesystem: %s\n", info[FS_NAME]);
-	    AppendToLog(buf);
-	    sprintf(buf,"Type: %-40s Machine: %-15s\n",
-		    info[FS_TYPE], info[FS_MACHINE]);
-	    AppendToLog(buf);
-	    sprintf(buf,"Default Access: %-2s Packname: %-17s Mountpoint %s \n",
-		    info[FS_ACCESS], info[FS_PACK], info[FS_M_POINT]);
-	    AppendToLog(buf);
-	    sprintf(buf,"Comments: %s\n",info[FS_COMMENTS]);
-	    AppendToLog(buf);
-	    sprintf(buf, "User Ownership: %-30s Group Ownership: %s\n",
-		    info[FS_OWNER], info[FS_OWNERS]);
-	    AppendToLog(buf);
-	    sprintf(buf, "Auto Create: %-34s Locker Type: %s\n",
-		    atoi(info[FS_CREATE]) ? "ON" : "OFF", 
-		    info[FS_L_TYPE]);
-	    AppendToLog(buf);
-	    sprintf(buf, MOD_FORMAT, info[FS_MODBY], info[FS_MODTIME], 
-		    info[FS_MODWITH]);
-	    AppendToLog(buf);
-	}
-	break;
-    case MM_SHOW_NFS:
-	sprintf(buf,"Machine: %-20s Directory: %-15s Device: %s\n",
-		info[NFS_NAME], info[NFS_DIR], info[NFS_DEVICE]);
-	AppendToLog(buf);
-	sprintf(buf, "Status: %s\n",
-		format_filesys_type(info[NFS_STATUS]));
-	AppendToLog(buf);
-	sprintf(buf, "Quota Allocated: %-17s Size: %s\n",
-		info[NFS_ALLOC], info[NFS_SIZE]);
-	AppendToLog(buf);
-	sprintf(buf, MOD_FORMAT, info[NFS_MODBY], info[NFS_MODTIME],
-		info[NFS_MODWITH]);
-	AppendToLog(buf);
+	sq_save_args(argc, info, form->extrastuff);
 	break;
     case MM_SHOW_QUOTA:
 	if (!strcmp(info[Q_TYPE], "ANY"))
@@ -348,6 +333,35 @@ EntryForm *form;
 	sprintf(buf, "IUI ACL Type %s %s\n", info[ZA_IUI_TYPE], name);
 	AppendToLog(buf);
 	break;
+    case MM_SHOW_SERVICE:
+	AppendToLog("Name       Type     Owner       Modified\n");
+	sprintf(name, "%s:%s", info[SVC_ACE_TYPE], info[SVC_ACE_NAME]);
+	sprintf(buf, "%-10s %-8s %-11s by %s on %s with %s\n",
+		info[SVC_SERVICE], info[SVC_TYPE], name, info[SVC_MODBY],
+		info[SVC_MODTIME], info[SVC_MODWITH]);
+	AppendToLog(buf);
+	sprintf(buf, "  Interval %s, Target:%s, Script:%s\n",
+		unparse_interval(atoi(info[SVC_INTERVAL])), info[SVC_TARGET],
+		info[SVC_SCRIPT]);
+	AppendToLog(buf);
+	strcpy(name, atot(info[SVC_DFGEN]));
+	sprintf(buf, "  Generated %s; Last Checked %s\n", name,
+		atot(info[SVC_DFCHECK]));
+	AppendToLog(buf);
+	if (atoi(info[SVC_HARDERROR]))
+	  sprintf(name, "Error %d: %s", atoi(info[SVC_HARDERROR]),
+		  info[SVC_ERRMSG]);
+	else
+	  strcpy(name, "No error");
+	sprintf(buf, "  %s/%s/%s\n",
+		atoi(info[SVC_ENABLE]) ? "Enabled" : "Disabled",
+		atoi(info[SVC_INPROGRESS]) ? "InProgress" : "Idle", name);
+	AppendToLog(buf);
+	break;
+    case MM_SHOW_ACE_USE:
+	sprintf(buf, "%s: %s\n", info[0], info[1]);
+	AppendToLog(buf);
+	break;
     default:
 	for (i = 0; i < argc; i++) {
 	    if (i != 0) AppendToLog(", ");
@@ -356,4 +370,77 @@ EntryForm *form;
 	AppendToLog("\n");
     }
     return(MR_CONT);
+}
+
+
+/* Display info about filesystem, doing FS groups & type MUL as well.
+ * frees info before returning.
+ */
+
+ShowFilsys(info)
+char **info;
+{
+    int stat, i;
+    char **argv, buf[256];
+    struct save_queue *sq;
+
+    if (!strcmp(info[FS_TYPE], "FSGROUP") ||
+	!strcmp(info[FS_TYPE], "MUL")) {
+	sprintf(buf,"%20s %s: %s\n", " ", strcmp(info[FS_TYPE], "MUL") ?
+		"Filesystem Group" : "Multiple Filesystem",
+		info[FS_NAME]);
+	AppendToLog(buf);
+
+	sprintf(buf,"Comments: %s\n",info[FS_COMMENTS]);
+	AppendToLog(buf);
+	sprintf(buf, MOD_FORMAT, info[FS_MODBY], info[FS_MODTIME], 
+		info[FS_MODWITH]);
+	AppendToLog(buf);
+	AppendToLog("Containing the filesystems (in order):\n");
+
+	sq = sq_create();
+	if ((stat = MoiraQuery("get_fsgroup_members", 1, &info[FS_NAME],
+			       save_info, (char *)sq)) != 0) {
+	    if (stat == MR_NO_MATCH)
+	      AppendToLog("    [no members]");
+	    else
+	      com_err(program_name, stat, "");
+	} else {
+	    while (sq_get_data(sq, &argv)) {
+		sprintf(buf, "  Filesystem: %-32s (sort key: %s)\n",
+			argv[0], argv[1]);
+		AppendToLog(buf);
+		free(argv[0]);
+		free(argv[1]);
+		free(argv);
+	    }
+	    sq_destroy(sq);
+	}
+    } else {
+	sprintf(buf,"Filesystem: %s\n", info[FS_NAME]);
+	AppendToLog(buf);
+	sprintf(buf,"Type: %-40s Machine: %-15s\n",
+		info[FS_TYPE], info[FS_MACHINE]);
+	AppendToLog(buf);
+	sprintf(buf, "Packname: %s\n", info[FS_PACK]);
+	AppendToLog(buf);
+	sprintf(buf,"Default Access: %-29s Mountpoint %s\n",
+		info[FS_ACCESS], info[FS_M_POINT]);
+	AppendToLog(buf);
+	sprintf(buf,"Comments: %s\n",info[FS_COMMENTS]);
+	AppendToLog(buf);
+	sprintf(buf, "User Ownership: %-30s Group Ownership: %s\n",
+		info[FS_OWNER], info[FS_OWNERS]);
+	AppendToLog(buf);
+	sprintf(buf, "Update fileserver: %-27s Locker Type: %s\n",
+		atoi(info[FS_CREATE]) ? "On" : "Off", 
+		info[FS_L_TYPE]);
+	AppendToLog(buf);
+	sprintf(buf, MOD_FORMAT, info[FS_MODBY], info[FS_MODTIME], 
+		info[FS_MODWITH]);
+	AppendToLog(buf);
+    }
+    for (i = 0; info[i]; i++)
+      free(info[i]);
+    free(info);
 }

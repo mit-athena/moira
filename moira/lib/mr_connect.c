@@ -1,4 +1,4 @@
-/* $Id: mr_connect.c,v 1.31 1999-05-27 19:04:49 danw Exp $
+/* $Id: mr_connect.c,v 1.32 2000-02-16 18:12:10 zacheiss Exp $
  *
  * This routine is part of the client library.  It handles
  * creating a connection to the moira server.
@@ -28,7 +28,7 @@
 #include <hesiod.h>
 #endif
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_connect.c,v 1.31 1999-05-27 19:04:49 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_connect.c,v 1.32 2000-02-16 18:12:10 zacheiss Exp $");
 
 int _mr_conn = 0;
 static char *mr_server_host = NULL;
@@ -137,7 +137,17 @@ int mr_connect_internal(char *server, char *port)
       if (s)
 	target.sin_port = s->s_port;
       else
+#ifdef HAVE_HESIOD
+        {
+          s = hes_getservbyname(port, "tcp");
+          if (s)
+            target.sin_port = s->s_port;
+          else
+           return 0;
+        }
+#else
 	return 0;
+#endif
     }
 
   memcpy(&target.sin_addr, shost->h_addr, shost->h_length);

@@ -1,9 +1,12 @@
 @Comment[
 	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/doc/tech-plan/dcm.mss,v $
 	$Author: ambar $
-	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/doc/tech-plan/dcm.mss,v 1.4 1987-05-29 14:29:29 ambar Exp $
+	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/doc/tech-plan/dcm.mss,v 1.5 1987-05-29 17:47:48 ambar Exp $
 
 	$Log: not supported by cvs2svn $
+Revision 1.4  87/05/29  14:29:29  ambar
+more changes from Peter.
+
 Revision 1.3  87/05/29  03:27:37  ambar
 fixed scribe error
 
@@ -23,22 +26,22 @@ distributing information to servers. Basically, the DCM is invoked by
 cron at times which are relevant to the data update needs of each
 server.  The update frequency is stored in the sms database.  A
 server/host relationship is unique to each update time.  Through the sms
-query mechanism, the dcm extracts sms data and converts it to server
+query mechanism, the DCM extracts sms data and converts it to server
 dependent form.  The conversion of database specific information to site
 specific information is done through a server description file, a
 sms-unique language which is used to describe the personality of a
 target service.
 
-When invoked the dcm will perform some preliminary operations to
+When invoked the DCM will perform some preliminary operations to
 establish the relationship between the sms data and each server.
-The very first time the dcm is called, a table is constructed 
+The very first time the DCM is called, a table is constructed 
 describing the relationship between servers and update frequency.
-The table will be the primary mechanism used by the dcm for recognizing
+The table will be the primary mechanism used by the DCM for recognizing
 the servers which need updating at given times.  As a note here,
-crontab will invoke the dcm at a pre-established time interval,
+crontab will invoke the DCM at a pre-established time interval,
 say every 15 minutes.  Obviously, the maximum update time will be limited to
-the time interval the dcm is being invoked at.  Every interval,
-the dcm will search the constructed table and determine whether or 
+the time interval the DCM is being invoked at.  Every interval,
+the DCM will search the constructed table and determine whether or 
 not a server's update time is within the current time range.  The table
 has the following components:
 
@@ -74,7 +77,7 @@ updated on the target or server end.  Derived from the sms database.
 @i[Override] - Provides an automatic facility for the authorized
 user to invoke a used-once mechanism for overriding the established
 time interval.  The facility will be very useful when a server has received
-bogus data and needs updating immediately.  After the dcm uses this
+bogus data and needs updating immediately.  After the DCM uses this
 value, the field is reset to -1.
 		Value: -1 - Use established time interval.
 			0 and greater - New once-used interval.
@@ -84,8 +87,8 @@ facility on or off.
 		Value: 0 - Off, Non-zero - On.
 @end(itemize)
 
-Each time the dcm is invoked, a search through this table will 
-indicate which servers need updating.  Once located, the dcm will
+Each time the DCM is invoked, a search through this table will 
+indicate which servers need updating.  Once located, the DCM will
 use the server/hostname combination to identify the server description
 files to process. 
 Of course, if the enable switch is off, the 
@@ -184,7 +187,7 @@ The file struct.h has the following format:
 
 Provided the fields are located, a local structure is filled.  The structure
 contains a snapshot of the local environment.  The structure, _qstruct,
-provides the dcm with the ability to allocate and generate a memory block
+provides the DCM with the ability to allocate and generate a memory block
 which is identical to the expected input structure required by each
 query request.  _Qstruct has the following components:
 
@@ -210,10 +213,10 @@ typedef struct _qstruct {
 
 @end(verbatim)
 
-With the above structure filled, the dcm simply generates a memory
+With the above structure filled, the DCM simply generates a memory
 block with the exact components expected by the query.  This 
 application allows for the addition of query handles and input
-structures without having to recompile the dcm.  Basically,
+structures without having to recompile the DCM.  Basically,
 by parsing the struct.h file and understanding the attributes
 of a given structure, the DCM is capable of making a memory 
 image of the structure and then passing the memory image and not 
@@ -250,12 +253,12 @@ To present a regular way of describing many models of servers.
 
 Each SDF will be accessed by a hostname/server combination.  This
 combination will, in fact, be the search path on the source machine.
-When the dcm needs a SDF to process, it will find a unique
+When the DCM needs a SDF to process, it will find a unique
 server description file in the directory: /hostname/server
 
-Part of the dcm is an interpreter which will parse the SDF and run a 
+Part of the DCM is an interpreter which will parse the SDF and run a 
 generalized syntax and logic check.  Assuming the file is syntactically
-correct, the dcm will use the format of the SDF to generate a server
+correct, the DCM will use the format of the SDF to generate a server
 specific file.  
 
 The SDF is comprised of a generallized syntax which allows the user to

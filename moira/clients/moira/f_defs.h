@@ -1,4 +1,4 @@
-/* $Id: f_defs.h,v 1.32 2000-08-10 02:29:43 zacheiss Exp $
+/* $Id: f_defs.h,v 1.33 2000-08-16 05:38:40 zacheiss Exp $
  *
  *	This is the file f_defs.h for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -241,5 +241,8 @@ Bool ValidName(char *s);
 int QueueCount(struct mqelem *elem);
 int PromptWithDefault(char *prompt, char *buf, int buflen, char *def);
 struct mqelem *GetTypeValues(char *tname);
+
+/* from clients/lib/error.c */
+char *mrcl_get_message(void); 
 
 #endif /* _f_defs_ */

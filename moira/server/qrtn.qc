@@ -1,14 +1,14 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v 1.15 1988-06-30 12:50:24 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v 1.16 1988-07-11 18:22:27 mar Exp $
  *
  *	Copyright (C) 1987, 1988 by the Massachusetts Institute of Technology
  * 
  */
 
 #ifndef lint
-static char *rcsid_qrtn_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v 1.15 1988-06-30 12:50:24 mar Exp $";
+static char *rcsid_qrtn_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v 1.16 1988-07-11 18:22:27 mar Exp $";
 #endif lint
 
 #include "query.h"
@@ -20,6 +20,9 @@ static int ingres_errno = 0;
 extern char *whoami;
 extern FILE *journal;
 
+#define INGRES_BAD_INT 4111
+#define INGRES_BAD_DATE 4302
+
 /*
  * ingerr: (supposedly) called when Ingres indicates an error.
  * I have not yet been able to get this to work to intercept a
@@ -29,9 +32,23 @@ extern FILE *journal;
 static int ingerr(num)
     int *num;
 {
-    ingres_errno = SMS_INGRES_ERR;
-    com_err(whoami, SMS_INGRES_ERR, " code %d\n", ingres_errno);
-    return *num;
+    char buf[256];
+
+    switch (*num) {
+    case INGRES_BAD_INT:
+	ingres_errno = SMS_INTEGER;
+	break;
+    case INGRES_BAD_DATE:
+	ingres_errno = SMS_DATE;
+	break;
+    default:
+	ingres_errno = SMS_INGRES_ERR;
+	com_err(whoami, SMS_INGRES_ERR, " code %d\n", *num);
+	sprintf(buf, "Ingres error %d", *num);
+	send_zgram("ingres_error", buf);
+	return (*num);
+    }
+    return (0);
 }
 
 int sms_open_database()
@@ -652,7 +669,10 @@ do_update(q, argv, qual, action, actarg)
 ##  where cqual
 
 ##  inquire_equel (errorno = "errorno")
-    if (errorno != 0) return(SMS_INGRES_ERR);
+    if (errorno == 4111)
+	return(SMS_INTEGER);
+    else if (errorno != 0)
+	return(SMS_INGRES_ERR);
     return(SMS_SUCCESS);
 ##}
 
@@ -680,7 +700,10 @@ do_append(q, argv, pqual, action, actarg)
     }
 
 ##  inquire_equel (errorno = "errorno")
-    if (errorno != 0) return(SMS_INGRES_ERR);
+    if (errorno == INGRES_BAD_INT)
+	return(SMS_INTEGER);
+    else if (errorno != 0)
+	return(SMS_INGRES_ERR);
     return(SMS_SUCCESS);
 ##}
 
@@ -732,14 +755,16 @@ set_next_object_id(object, table)
 ##  repeat retrieve (value = v.#value) where v.#name = @name
 ##  inquire_equel(rowcount = "rowcount")
     if (rowcount != 1)
-	return(SMS_INGRES_ERR);
+	return(SMS_NO_ID);
 
 ##  retrieve (exists = any(tbl.name where tbl.name = value))
 ##  inquire_equel(rowcount = "rowcount")
     if (rowcount != 1)
-	return(SMS_INGRES_ERR);
+	return(SMS_NO_ID);
     while (exists) {
 	value++;
+	if (value > MAX_ID_VALUE)
+	    value = MIN_ID_VALUE;
 ##	retrieve (exists = any(tbl.name where tbl.name = value))
     }
 

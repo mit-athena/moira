@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.18 1989-06-26 11:46:02 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.19 1989-08-21 12:29:01 mar Exp $";
 #endif
 
 /*	This is the file attach.c for the SMS Client, which allows a nieve
@@ -13,7 +13,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.18 1989-06-26 11:46:02 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.19 1989-08-21 12:29:01 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -42,6 +42,7 @@
 #define NO_MACHINE	 ("\\[NONE\\]")	/* C will remove one of the /'s here,
 					 * and the other quotes the [ for
 					 * ingres' regexp facility. */
+#define NO_MACHINE_BAD	 ("[NONE]")
 
 #define DEFAULT_TYPE     ("NFS")
 #define DEFAULT_MACHINE  DEFAULT_NONE
@@ -177,13 +178,13 @@ char ** info;
     char print_buf[BUFSIZ];
 
     FORMFEED;
-    sprintf(print_buf,"%20s Filesystem Group: %s", 
-	    " ",info[FS_NAME]);
-    Put_message(print_buf);
 
     if (!strcmp(info[FS_TYPE], "FSGROUP")) {
 	int stat;
 	struct qelem *elem = NULL;
+
+	sprintf(print_buf,"%20s Filesystem Group: %s", " ", info[FS_NAME]);
+	Put_message(print_buf);
 
 	sprintf(print_buf,"Comments; %s",info[FS_COMMENTS]);
 	Put_message(print_buf);
@@ -203,6 +204,8 @@ char ** info;
 	    FreeQueue(elem);
 	}
     } else {
+	sprintf(print_buf,"%20s Filesystem: %s", " ", info[FS_NAME]);
+	Put_message(print_buf);
 	sprintf(print_buf,"Type: %-40s Machine: %-15s",
 		info[FS_TYPE], info[FS_MACHINE]);
 	Put_message(print_buf);
@@ -261,6 +264,10 @@ Bool name;
 	free(info[FS_MACHINE]);
 	info[FS_MACHINE] = Strsave(NO_MACHINE);
     } else {
+	if (!strcmp(info[FS_MACHINE], NO_MACHINE_BAD)) {
+	    free(info[FS_MACHINE]);
+	    info[FS_MACHINE] = Strsave(NO_MACHINE);
+	}
 	GetValueFromUser("Filesystem's Machine", &info[FS_MACHINE]);
 	info[FS_MACHINE] = canonicalize_hostname(info[FS_MACHINE]);
     }

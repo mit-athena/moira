@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.29 1991-01-11 11:30:21 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.30 1991-07-19 14:36:40 mar Exp $";
 #endif
 
 /*	This is the file attach.c for the MOIRA Client, which allows a nieve
@@ -13,7 +13,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.29 1991-01-11 11:30:21 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.30 1991-07-19 14:36:40 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -181,11 +181,14 @@ char ** info;
 
     FORMFEED;
 
-    if (!strcmp(info[FS_TYPE], "FSGROUP")) {
+    if (!strcmp(info[FS_TYPE], "FSGROUP") || !strcmp(info[FS_TYPE], "MUL")) {
 	int stat;
 	struct qelem *elem = NULL;
 
-	sprintf(print_buf,"%20s Filesystem Group: %s", " ", info[FS_NAME]);
+	if (!strcmp(info[FS_TYPE], "MUL"))
+	  sprintf(print_buf,"%20s Multiple Filesystem: %s", " ", info[FS_NAME]);
+	else
+	  sprintf(print_buf,"%20s Filesystem Group: %s", " ", info[FS_NAME]);
 	Put_message(print_buf);
 
 	sprintf(print_buf,"Comments: %s",info[FS_COMMENTS]);
@@ -263,7 +266,8 @@ Bool name;
     if (GetTypeFromUser("Filesystem's Type", "filesys", &info[FS_TYPE]) ==
 	SUB_ERROR)
       return(NULL);
-    if (!strcasecmp(info[FS_TYPE], "FSGROUP"))
+    if (!strcasecmp(info[FS_TYPE], "FSGROUP") ||
+	!strcasecmp(info[FS_TYPE], "MUL"))
       fsgroup++;
     if (fsgroup || !strcasecmp(info[FS_TYPE], "AFS")) {
 	free(info[FS_MACHINE]);

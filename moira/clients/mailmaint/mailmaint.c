@@ -1,11 +1,10 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v 1.6 1987-09-03 04:08:43 wesommer Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v 1.7 1987-09-15 16:06:30 ambar Exp $
  */
 
 #ifndef lint
-static char rcsid_mailmaint_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v 1.6 1987-09-03 04:08:43 wesommer Exp $";
-
+static char rcsid_mailmaint_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v 1.7 1987-09-15 16:06:30 ambar Exp $";
 #endif lint
 
 /***********************************************************************/
@@ -35,7 +34,7 @@ static char rcsid_mailmaint_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/
 static char *whoami;
 static int status;
 static void scream();
-char *ds();
+extern char *strsave();
 
 typedef struct list_info {
     char *acl;
@@ -107,7 +106,7 @@ main(argc, argv)
 
 	uname = getpwuid((int) getuid())->pw_name;
     }
-    uname = (uname && strlen(uname)) ? ds(uname) : "";
+    uname = (uname && strlen(uname)) ? strsave(uname) : "";
 
     printf("Connecting to database for %s...please hold on.\n", uname);
 
@@ -439,16 +438,19 @@ show_all()
 {
     char c;
 
-    show_text(DISPROW, STARTCOL, "This function may take a while...proceed[y]?");
+    show_text(DISPROW, STARTCOL, "This function may take a \
+while... proceed? [y] ");
     c = getchar();
-    if (c == 'n' || c == 'N') {
-	erase_line(DISPROW, STARTCOL);
-	return;
+    if (c == 'y' || c == 'Y') {
+	move(DISPROW + 1, STARTCOL);
+	addstr("Processing query...please hold");
+	refresh();
+	(void) list_all_groups();
     }
-    move(DISPROW + 1, STARTCOL);
-    addstr("Processing query...please hold");
-    refresh();
-    (void) list_all_groups();
+    else
+	erase_line(DISPROW, STARTCOL);
+    return;
+
 }
 
 /****************************************************/
@@ -897,21 +899,6 @@ Prompt(prompt, buf, buflen)
 	}
     }
     return(0);
-}
-
-/*
- * duplicate string 
- */
-char *
-ds(str)
-    char *str;
-{
-    register char *newstr = malloc((unsigned) strlen(str) + 1);
-
-    if (newstr == (char *) NULL)
-	return ((char *) NULL);
-    else
-	return (strcpy(newstr, str));
 }
 
 /*

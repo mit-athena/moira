@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/nfs.qc,v 1.15 1990-01-11 11:54:47 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/nfs.qc,v 1.16 1990-01-19 15:26:32 mar Exp $
  *
  * This generates the files necessary to load an nfs server.
  *
@@ -264,10 +264,6 @@ struct hash *do_everyone()
 		  i++;
 		  strcat(buf, l);
 	      }
-	    /* should free stuff here...
-	    if (i > 1) {
-		remove_duplicate_groups(buf);
-	    } */
 	    b->data = strsave(buf);
 	    fprintf(fd, "%s\n", buf);
 	}
@@ -277,36 +273,6 @@ struct hash *do_everyone()
     free(groups);
     return(users);
 ##}
-
-#define MAXGROUPS 256
-
-remove_duplicate_groups(p)
-register char *p;
-{
-    register char *pp;
-    char *index();
-    register int *mp;
-    int memory[MAXGROUPS], i, *mg = &memory[MAXGROUPS-1];
-
-    bzero(memory, MAXGROUPS * sizeof(int));
-    p = index(p, ':');
-    p++;
-    while (p = index(p, ':')) {
-	i = atoi(++p);
-	pp = p;
-	for (mp = memory; *mp && mp < mg; mp++)
-	  if (*mp == i) {
-	      if (p = index(p, ':'))
-		strcpy(pp, ++p);
-	      else {
-		  *(--pp) = 0;
-	      }
-	      p = pp - 2;
-	      break;
-	  }
-	*mp = i;
-    }
-}
 
 
 /* Now do each of the servers, linking the credentials list file and 

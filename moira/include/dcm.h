@@ -1,6 +1,6 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/include/dcm.h,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/include/dcm.h,v 1.2 1989-08-24 23:23:03 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/include/dcm.h,v 1.3 1989-09-08 17:57:54 mar Exp $
  */
 
 #define UPCALL_CONT	0
@@ -9,8 +9,6 @@
 #define HARD_FAIL(x)	(((x) != 0 ) && ((x) != SMS_NO_CHANGE))
 #define SOFT_FAIL(x)	(((x) == SMS_NO_MEM) || ((x) == SMS_CANT_CONNECT) || ((x) == SMS_CCONFIG) || ((x) == SMS_DEADLOCK))
 
-#define SMS_DIR		"/u1/sms"
-#define LOCK_DIR	"/u1/sms/dcm/locks"
 #define UMASK		0007
 
 extern char *malloc(), *calloc(), *realloc();

@@ -1,11 +1,14 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_util.c,v $
  *	$Author: wesommer $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_util.c,v 1.9 1987-08-04 01:50:13 wesommer Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_util.c,v 1.10 1987-08-04 01:54:47 wesommer Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
  *	$Log: not supported by cvs2svn $
+ * Revision 1.9  87/08/04  01:50:13  wesommer
+ * Rearranged messages.
+ * 
  * Revision 1.8  87/07/29  16:02:48  wesommer
  * Use unsigned char rather than char to prevent sign extension
  * problem.
@@ -34,7 +37,7 @@
  */
 
 #ifndef lint
-static char *rcsid_sms_util_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_util.c,v 1.9 1987-08-04 01:50:13 wesommer Exp $";
+static char *rcsid_sms_util_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_util.c,v 1.10 1987-08-04 01:54:47 wesommer Exp $";
 #endif lint
 
 #include "sms_server.h"
@@ -95,7 +98,7 @@ log_args(tag, argc, argv)
 		bp = requote(bp, argv[i], (buf - bp) + 1024);
 	}
 	*bp = '\0';
-	com_err(whoami, 0, buf);
+	com_err(whoami, 0, "%s", buf);
 }
 	
 void sms_com_err(whoami, code, fmt, pvar)

@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/ca.dc,v 1.3 1991-11-01 18:44:05 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/ca.dc,v 1.4 1993-02-24 15:59:12 mar Exp $
  *
  * This generates a list of users and their home directories for the
  * Centra America daemon.
@@ -37,7 +37,7 @@ char **argv;
     struct stat sb;
     struct save_queue *sq;
     struct prec *prec;
-    int flag1, flag2, first;
+    int flag1, flag2, first, cnt;
     EXEC SQL BEGIN DECLARE SECTION;
     char login[257], name[257], dir[257];
     int id;
@@ -46,10 +46,11 @@ char **argv;
     initialize_sms_error_table ();
 
 #ifsql INGRES
-    EXEC SQL CONNECT sms;
+    EXEC SQL CONNECT moira;
+    EXEC SQL SET LOCKMODE SESSION WHERE LEVEL=TABLE, READLOCK=SHARED;
 #endsql
 #ifsql INFORMIX
-    EXEC SQL DATABASE sms;
+    EXEC SQL DATABASE moira;
 #endsql
 
     if (argc == 2) {
@@ -78,10 +79,12 @@ char **argv;
     EXEC SQL WHENEVER SQLERROR GOTO sqlerr;
     sq = sq_create();
 
+    cnt = 0;
     EXEC SQL DECLARE y CURSOR FOR
       SELECT p.nfsphys_id, p.dir, m.name
       FROM nfsphys p, machine m
-	WHERE m.mach_id = p.mach_id;
+      WHERE m.mach_id = p.mach_id
+      ORDER BY p.nfsphys_id;
     EXEC SQL OPEN y;
     while (1) {
 	EXEC SQL FETCH y INTO :id, :dir, :name;
@@ -94,8 +97,10 @@ char **argv;
 	strcpy(prec->mach, strtrim(name));
 	strcpy(prec->dir, strtrim(dir));
 	sq_save_data(sq, prec);
+	cnt++;
     }
     EXEC SQL CLOSE y;
+    fprintf(stderr, "Loaded %d NFS partitions\n", cnt);
 
     while (sq_get_data(sq, &prec)) {
 	id = prec->phys_id;
@@ -106,7 +111,8 @@ char **argv;
 	EXEC SQL DECLARE x CURSOR FOR 
 	  SELECT u.login, u.fullname
 	  FROM users u, filesys f
-	    WHERE f.label = u.login and u.status = 1 and f.phys_id = :id;
+	  WHERE f.label = u.login and u.status = 1 and f.phys_id = :id
+	  ORDER BY u.login;
 	EXEC SQL OPEN x;
 	first = 1;
 	while (1) {
@@ -122,12 +128,14 @@ char **argv;
 	}
 	EXEC SQL CLOSE x;
     }
+    fprintf(stderr, "Processed NFS partitions\n");
 
+    cnt = 0;
     EXEC SQL DECLARE z CURSOR FOR 
       SELECT DISTINCT u.login, u.fullname, f.name
       FROM users u, filesys f
-	WHERE f.label = u.login and u.status = 1 and f.type = "AFS"
-    	ORDER BY name;
+      WHERE f.label = u.login and u.status = 1 and f.type = 'AFS'
+      ORDER BY u.login;
     EXEC SQL OPEN z;
     while (1) {
 	EXEC SQL FETCH z INTO :login, :name, :dir;
@@ -141,8 +149,10 @@ char **argv;
 	strtrim(login);
 	strtrim(name);
 	fprintf(out, "%s,%s\n", login, name);
+	cnt++;
     }
     EXEC SQL CLOSE z;
+    fprintf(stderr, "Processed %d AFS users\n", cnt);
 
 #ifsql INGRES
     EXEC SQL DISCONNECT;

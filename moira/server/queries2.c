@@ -1,4 +1,4 @@
-/* $Id: queries2.c,v 2.51 1999-01-27 19:35:22 danw Exp $
+/* $Id: queries2.c,v 2.52 1999-01-28 15:18:22 danw Exp $
  *
  * This file defines the query dispatch table for version 2 of the protocol
  *
@@ -2873,7 +2873,7 @@ struct query Queries2[] = {
     UPDATE,
     "m",
     MACHINE_TABLE,
-    "machine SET hwaddr = '%s'",
+    "machine SET hwaddr = NVL('%s', CHR(0))",
     uhha_fields,
     1,
     "mach_id = %d",

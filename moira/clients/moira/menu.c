@@ -1,4 +1,4 @@
-/* $Id: menu.c,v 1.56 1999-08-04 15:10:23 danw Exp $
+/* $Id: menu.c,v 1.57 2000-02-21 21:37:19 rbasch Exp $
  *
  * Generic menu system module.
  *
@@ -21,7 +21,7 @@
 #include <string.h>
 #include <unistd.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.56 1999-08-04 15:10:23 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.57 2000-02-21 21:37:19 rbasch Exp $");
 
 #ifdef MAX
 #undef MAX
@@ -63,7 +63,8 @@ char **parsed_argv;		/*   comand line input */
 int Parse_words(char *buf, char *argv[], int n);
 void refresh_ms(struct menu_screen *ms);
 void Put_line(char *msg);
-void menu_com_err_hook(const char *who, long code, const char *fmt, ...);
+void menu_com_err_hook(const char *who, long code,
+		       const char *fmt, va_list ap);
 struct menu_screen *make_ms(int length);
 void destroy_ms(struct menu_screen *ms);
 struct menu_line *find_command_from(char *c, struct menu *m, int d);
@@ -72,14 +73,12 @@ int toggle_logging(int argc, char *argv[]);
 
 /*
  * Hook function to cause error messages to be printed through
- * curses instead of around it.  Takes at most 5 args to the
- * printf string (crock...)
+ * curses instead of around it.
  */
 
-void menu_com_err_hook(const char *who, long code, const char *fmt, ...)
+void menu_com_err_hook(const char *who, long code, const char *fmt, va_list ap)
 {
   char buf[BUFSIZ], *cp;
-  va_list ap;
 
   if (who)
     {
@@ -100,9 +99,7 @@ void menu_com_err_hook(const char *who, long code, const char *fmt, ...)
       while (*cp)
 	cp++;
     }
-  va_start(ap, fmt);
   vsprintf(cp, fmt, ap);
-  va_end(ap);
   Put_message(buf);
 }
 
@@ -116,7 +113,7 @@ void menu_com_err_hook(const char *who, long code, const char *fmt, ...)
 void Start_menu(Menu *m)
 {
   void (*old_hook)(const char *, long, const char *, va_list) =
-    set_com_err_hook((void (*) (const char *, long, const char *, va_list))menu_com_err_hook);
+    set_com_err_hook(menu_com_err_hook);
 #ifdef CURSES_HAS_NEWTERM
   SCREEN *scrn = newterm(NULL, stdout, stdin);
 #else

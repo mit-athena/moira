@@ -14,7 +14,8 @@ NEWTOP=NEW_TOP
 BUILDTOP=NEW_TOP
 #endif
 
-INCLUDE= -I$(BUILDTOP)/include -I$(BUILDTOP)/lib -I/usr/athena/include
+INCLUDE= -I$(BUILDTOP)/include -I$(BUILDTOP)/lib -I/usr/athena/include \
+	$(SS_INCL)
 CFLAGS=$(DBG) $(INCLUDE) $(DEFINES) $(GLOBAL_CDEFS)
 LINTFLAGS=$(INCLUDE) $(DEFINES) $(GLOBAL_CDEFS)
 
@@ -25,6 +26,8 @@ LINTFLAGS=$(INCLUDE) $(DEFINES) $(GLOBAL_CDEFS)
 DEPEND=$(BUILDTOP)/util/makedepend/makedepend
 /* The Imake command line */
 IMAKE=$(BUILDTOP)/util/imake/imake -I$(BUILDTOP)/util/imake.includes
+/* Where the ss include files are */
+SS_INCL=-I$(BUILDTOP)/util/ss
 #else
 DEPEND=makedepend
 IMAKE=imake -I$(BUILDTOP)/util/imake.includes

@@ -1,7 +1,7 @@
 /*
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v $
- *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.41 1993-01-27 11:49:47 mar Exp $
+ *      $Author: danw $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.42 1997-01-20 18:24:47 danw Exp $
  *
  *      Copyright (C) 1987, 1988 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -16,7 +16,7 @@
  */
 
 #ifndef lint
-static char *rcsid_reg_svr_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.41 1993-01-27 11:49:47 mar Exp $";
+static char *rcsid_reg_svr_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.42 1997-01-20 18:24:47 danw Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -56,8 +56,8 @@ main(argc,argv)
     whoami = argv[0];
     
     /* Error messages sent one line at a time */
-    setlinebuf(stderr);
-    setlinebuf(stdout);
+    setvbuf(stderr, NULL, _IOLBF, BUFSIZ);
+    setvbuf(stdout, NULL, _IOLBF, BUFSIZ);
     set_com_err_hook(reg_com_err_hook);
     
     /* Initialize com_err error tables */
@@ -318,7 +318,7 @@ int find_user(message)
 
     /* Zero the mit_id field in the formatted packet structure.  This
        being zeroed means that no user was found. */
-    bzero(message->db.mit_id,sizeof(message->db.mit_id));
+    memset(message->db.mit_id,0,sizeof(message->db.mit_id));
     
     if (status == SUCCESS)
     {
@@ -460,7 +460,7 @@ int ureg_kadm_init()
 
     if (!inited) {
 	inited++;
-	bzero(krbrealm, sizeof(krbrealm));
+	memset(krbrealm, 0, sizeof(krbrealm));
 	if (status = krb_get_lrealm(krbrealm, 1)) {
 	    status += krb_err_base;
 	    com_err(whoami, status, " fetching kerberos realm");
@@ -527,7 +527,7 @@ int reserve_krb(login)
 #endif DEBUG
 
     if ((status = ureg_kadm_init()) == SUCCESS) {
-	bzero((char *)&new, sizeof(new));
+	memset(&new, 0, sizeof(new));
 	SET_FIELD(KADM_DESKEY, new.fields);
 	SET_FIELD(KADM_NAME, new.fields);
 	
@@ -541,7 +541,7 @@ int reserve_krb(login)
 	if (status != KADM_SUCCESS) 
 	    com_err(whoami, status, " while reserving principal");
 	
-	bzero((char *)&new, sizeof(new));
+	memset(&new, 0, sizeof(new));
     }
 
     dest_tkt();
@@ -563,7 +563,7 @@ int setpass_krb(login, password)
     u_long *lkey = (u_long *)key;
 
     if ((status = ureg_kadm_init()) == SUCCESS) {
-	bzero((char *)&new, sizeof(new));
+	memset(&new, 0, sizeof(new));
 	SET_FIELD(KADM_DESKEY, new.fields);
 	SET_FIELD(KADM_NAME, new.fields);
 	
@@ -983,7 +983,7 @@ char *retval;
     
     creds.length = ntohl(*((int *)bp));
     bp += sizeof(int);
-    bcopy(bp, creds.dat, creds.length);
+    memcpy(creds.dat, bp, creds.length);
     creds.mbz = 0;
     bp += creds.length;
 
@@ -1014,7 +1014,7 @@ char *retval;
 		     keys, auth.session, 0);
 
     id = buf;
-    passwd = index(buf, ',');
+    passwd = strchr(buf, ',');
     *passwd++ = 0;
 #ifdef DEBUG
     com_err(whoami, 0, "Got id: %s, passwd %d chars", id, strlen(passwd));
@@ -1039,7 +1039,7 @@ char *retval;
 	return(status);
     }
 
-    bzero((char *)&kv, sizeof(kv));
+    memset(&kv, 0, sizeof(kv));
     SET_FIELD(KADM_DESKEY, kv.fields);
     SET_FIELD(KADM_NAME, kv.fields);
     SET_FIELD(KADM_INST, kv.fields);

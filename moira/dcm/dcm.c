@@ -6,12 +6,12 @@
  * "mit-copyright.h".
  *
  * $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/dcm.c,v $
- * $Author: mar $
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/dcm.c,v 1.16 1992-12-30 17:28:15 mar Exp $
+ * $Author: danw $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/dcm.c,v 1.17 1997-01-20 18:22:17 danw Exp $
  */
 
 #ifndef lint
-static char rcsid_dcm_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/dcm.c,v 1.16 1992-12-30 17:28:15 mar Exp $";
+static char rcsid_dcm_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/dcm.c,v 1.17 1997-01-20 18:22:17 danw Exp $";
 #endif lint
 
 #include <stdio.h>
@@ -19,12 +19,15 @@ static char rcsid_dcm_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moirad
 #include <sys/file.h>
 #include <sys/time.h>
 #include <sys/wait.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 #include <signal.h>
 #include <ctype.h>
 #include <moira.h>
 #include <moira_site.h>
 #include "dcm.h"
 #include "mit-copyright.h"
+#include <unistd.h>
 
 extern char *ctime();
 extern char *getenv();
@@ -54,8 +57,9 @@ char *argv[];
 	dbg = s ? atoi(s) : 0;
 	umask(UMASK);
 	log_flags = 0;
-	setlinebuf(stderr);
-	setlinebuf(stdout);
+
+	setvbuf(stderr, NULL, _IOLBF, BUFSIZ);
+	setvbuf(stdout, NULL, _IOLBF, BUFSIZ);
 	
 	while(++arg - argv < argc) {
 	    if (**arg == '-')
@@ -157,7 +161,8 @@ do_services()
     int status, lock_fd, ex, (*cstat)();
     struct timezone tz;
     register char *p;
-    union wait waits;
+    int waits;
+    struct sigaction action, prevaction;
 
     if (dbg & DBG_VERBOSE)
 	com_err(whoami, 0, "starting pass over services");
@@ -217,18 +222,23 @@ do_services()
 		}
 	    
 		com_err(whoami, status, " running %s", dfgen_prog);
-		cstat = signal(SIGCHLD, SIG_DFL);
-		waits.w_status = system(dfgen_cmd);
-		signal(SIGCHLD, cstat);
-		if (waits.w_termsig) {
+
+		action.sa_flags = 0;
+		sigemptyset(&action.sa_mask);
+		action.sa_handler = SIG_DFL;
+		sigaction(SIGCHLD, &action, &prevaction);
+		waits = system(dfgen_cmd);
+		sigaction(SIGCHLD, &prevaction, NULL);
+		if (WIFSIGNALED(waits)) {
 		    status = MR_COREDUMP;
 		    com_err(whoami, status, " %s exited on signal %d",
-			    dfgen_prog, waits.w_termsig);
-		} else if (waits.w_retcode) {
+			    dfgen_prog, WTERMSIG(waits));
+		} else if (WEXITSTATUS(waits)) {
 		    /* extract the process's exit value */
-		    status = waits.w_retcode + ERROR_TABLE_BASE_sms;
+		    status = WEXITSTATUS(waits) + ERROR_TABLE_BASE_sms;
 		    com_err(whoami, status, " %s exited", dfgen_prog);
 		}
+
 		if (SOFT_FAIL(status)) {
 		    free(qargv[5]);
 		    qargv[5] = strsave(error_message(status));

@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/utils.c,v $
- *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/utils.c,v 1.6 1990-03-19 18:52:54 mar Exp $
+ *	$Author: danw $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/utils.c,v 1.7 1997-01-20 18:22:19 danw Exp $
  *
  * 
  * 	Utility functions used by the DCM.
@@ -12,7 +12,7 @@
  */
 
 #ifndef lint
-static char *rcsid_utils_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/utils.c,v 1.6 1990-03-19 18:52:54 mar Exp $";
+static char *rcsid_utils_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/utils.c,v 1.7 1997-01-20 18:22:19 danw Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -23,6 +23,8 @@ static char *rcsid_utils_c = "$Header: /afs/.athena.mit.edu/astaff/project/moira
 #include <sys/types.h>
 #include <sys/time.h>
 #include <sys/file.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 #include <moira.h>
 #include <moira_site.h>
 #include "dcm.h"
@@ -97,12 +99,15 @@ int exclusive;
 {
     char lock[BUFSIZ];
     int fd;
+    flock_t fl;
 
     sprintf(lock, "%s/%s.%s", LOCK_DIR, host, service);
-    if ((fd = open(lock, O_TRUNC |  O_CREAT, 0)) < 0)
+    fl.l_type = exclusive ? F_WRLCK : F_RDLCK;
+    fl.l_whence = fl.l_start = fl.l_len = 0;
+    if ((fd = open(lock, O_TRUNC |  O_CREAT | O_RDWR, 0)) < 0)
       com_err(whoami, errno, ": maybe_lock_update: opening %s", lock);
-    else if (flock(fd, (exclusive ? LOCK_EX : LOCK_SH) | LOCK_NB) != 0) {
-	if (errno != EWOULDBLOCK) 
+    else if (fcntl(fd, F_SETLK, &fl) != 0) {
+	if (errno != EAGAIN) 
 	  com_err(whoami, errno, ": maybe_lock_update: flock");
 	else if (dbg & DBG_VERBOSE)
 	  com_err(whoami, 0, "%s already locked\n", lock);

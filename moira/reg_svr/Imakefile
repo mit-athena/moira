@@ -1,4 +1,4 @@
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/Imakefile,v 1.3 1996-11-14 04:01:57 danw Exp $
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/Imakefile,v 1.4 1997-01-20 18:24:44 danw Exp $
 
 # Copyright 1992 by the Massachusetts Institute of Technology.
 #
@@ -11,9 +11,6 @@ SRCDIR = $(SRCTOP)/reg_svr
 SRCS= startreg.c reg_svr.c requests.c reg_svr.h
 CODE=$(SRCS)
 OBJS=requests.o reg_svr.o
-#ifdef GDSS
-GDSSLIB=/mit/gdss/`machtype`/libgdss.a
-#endif
 
-program(reg_svr, $(OBJS),,../server/libmrglue.a -lkadm $(GDSSLIB) $(CLIBS) $(SQL_LIB), ${PROGDIR})
+program(reg_svr, $(OBJS),,../server/libmrglue.a -lkadm $(LIBGDSS) $(CLIBS) $(SQL_LIB), ${PROGDIR})
 program(startreg, startreg.o,,,${PROGDIR})

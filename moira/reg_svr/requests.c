@@ -1,7 +1,7 @@
 /*
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/requests.c,v $
- *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/requests.c,v 1.6 1992-09-22 17:21:36 mar Exp $
+ *      $Author: danw $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/requests.c,v 1.7 1997-01-20 18:24:48 danw Exp $
  *
  *      Copyright (C) 1987, 1988 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -14,7 +14,7 @@
  */
 
 #ifndef lint
-static char *rcsid_requests_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/requests.c,v 1.6 1992-09-22 17:21:36 mar Exp $";
+static char *rcsid_requests_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/requests.c,v 1.7 1997-01-20 18:24:48 danw Exp $";
 #endif lint
 
 /*
@@ -87,7 +87,7 @@ void req_initialize()
 	com_err(whoami,errno," socket");
 	exit(1);
     }
-    bzero((char *)&sin,(int)sizeof(sin));
+    memset(&sin, 0, sizeof(sin));
     
     sin.sin_family = AF_INET;
     sin.sin_port = sp->s_port;
@@ -215,11 +215,11 @@ int format_pkt(packet, pktlenp, seqno, cl_status, message)
     U_32BIT vers = htonl((U_32BIT)CUR_UREG_VERSION);
     cl_status = htonl((U_32BIT)cl_status);
     /* Put current user registration protocol version into the packet */
-    bcopy((char *)&vers, packet, sizeof(U_32BIT));
+    memcpy(packet, &vers, sizeof(U_32BIT));
     /* Put sequence number into the packet */
-    bcopy((char *)&seqno, packet+sizeof(U_32BIT), sizeof(U_32BIT));
+    memcpy(packet+sizeof(U_32BIT), &seqno, sizeof(U_32BIT));
     /* Put error status into the packet */
-    bcopy((char *)&cl_status, packet+ 2*sizeof(U_32BIT), sizeof(U_32BIT));
+    memcpy(packet+ 2*sizeof(U_32BIT), &cl_status, sizeof(U_32BIT));
     
     /* Find out how much of the message to copy; truncate if too short. */
     /* How much room is there left? */
@@ -292,7 +292,7 @@ parse_pkt(packet, pktlen, message)
     if (status == SUCCESS)
     {
 	/* Extract the user registration protocol version from the packet */
-	bcopy(packet, (char *)&message->version, sizeof(long));
+	memcpy(&message->version, packet, sizeof(long));
 	/* Convert byte order from network to host */
 	message->version = ntohl(message->version);
 	/* Verify version */
@@ -312,7 +312,7 @@ parse_pkt(packet, pktlen, message)
     if (status == SUCCESS)
     {
 	/* Extract the sequence number from the packet */
-	bcopy(packet, (char *)&CUR_REQ.seqno, sizeof(long));
+	memcpy(&CUR_REQ.seqno, packet, sizeof(long));
 	
 	packet += sizeof(U_32BIT);
 	pktlen -= sizeof(U_32BIT);
@@ -324,7 +324,7 @@ parse_pkt(packet, pktlen, message)
     if (status == SUCCESS)
     {
 	/* Extract the request from the packet */
-	bcopy(packet, (char *)(&message->request), sizeof(U_32BIT));
+	memcpy(&message->request, packet, sizeof(U_32BIT));
 	message->request = ntohl(message->request);
 	packet += sizeof(U_32BIT);
 	pktlen -= sizeof(U_32BIT);

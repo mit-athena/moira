@@ -1,4 +1,4 @@
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/Imakefile,v 1.3 1996-11-14 04:01:27 danw Exp $
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/Imakefile,v 1.4 1997-01-20 18:22:15 danw Exp $
 
 # Copyright 1992 by the Massachusetts Institute of Technology.
 #
@@ -11,9 +11,6 @@ SRCDIR = $(SRCTOP)/dcm
 SRCS= startdcm.c dcm.c utils.c
 CODE=$(SRCS)
 OBJS=dcm.o utils.o
-#ifdef GDSS
-GDSSLIB=/mit/gdss/`machtype`/libgdss.a
-#endif
 
-program(dcm, $(OBJS),,../server/libmrglue.a ../update/moira_update.o $(GDSSLIB) $(CLIBS) $(SQL_LIB), ${PROGDIR})
+program(dcm, $(OBJS),,../server/libmrglue.a $(LIBGDSS) ../update/moira_update.o $(CLIBS) $(SQL_LIB), ${PROGDIR})
 program(startdcm, startdcm.o,,,${PROGDIR})

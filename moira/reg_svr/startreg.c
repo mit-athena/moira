@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/startreg.c,v $
- *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/startreg.c,v 1.5 1991-01-15 13:03:03 mar Exp $
+ *	$Author: danw $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/startreg.c,v 1.6 1997-01-20 18:24:50 danw Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -12,7 +12,7 @@
  */
 
 #ifndef lint
-static char *rcsid_mr_starter_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/startreg.c,v 1.5 1991-01-15 13:03:03 mar Exp $";
+static char *rcsid_mr_starter_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/startreg.c,v 1.6 1997-01-20 18:24:50 danw Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -23,33 +23,35 @@ static char *rcsid_mr_starter_c = "$Header: /afs/.athena.mit.edu/astaff/project/
 #include <sys/wait.h>
 #include <sys/signal.h>
 #include <sys/ioctl.h>
+#include <fcntl.h>
+#include <sys/stat.h>
+#include <sys/resource.h>
 #include <moira_site.h>
 
 #define PROG	"reg_svr"
 
 int rdpipe[2];
-extern char *sys_siglist[];
 
 cleanup()
 {
-	union wait stat;
+	int stat;        
 	char buf[BUFSIZ];
 	extern int errno;
 	int serrno = errno;
 
 	buf[0]='\0';
 	
-	while (wait3(&stat, WNOHANG, 0) > 0) {
+	while (waitpid(-1, &stat, WNOHANG) > 0) {
 		if (WIFEXITED(stat)) {
-			if (stat.w_retcode)
+			if (WEXITSTATUS(stat))
 				sprintf(buf,
 					"exited with code %d\n",
-					stat.w_retcode);
+					WEXITSTATUS(stat));
 		}
 		if (WIFSIGNALED(stat)) {
-			sprintf(buf, "exited on %s signal%s\n",
-				sys_siglist[stat.w_termsig],
-				(stat.w_coredump?"; Core dumped":0));
+			sprintf(buf, "exited on signal %d%s\n",
+				WTERMSIG(stat),
+				(WCOREDUMP(stat)?"; Core dumped":0));
 		}
 		write(rdpipe[1], buf, strlen(buf));
 		close(rdpipe[1]);
@@ -62,14 +64,21 @@ main(argc, argv)
 	char buf[BUFSIZ];
 	FILE *log, *prog;
 	int logf, inf, i, done, pid, tty;
+	struct rlimit rl;
 	
 	extern int errno;
 	extern char *sys_errlist[];
 	
-	int nfds = getdtablesize();
+	struct sigaction action;
+	int nfds;
 	
-	setreuid(0);
-	signal(SIGCHLD, cleanup);
+	getrlimit(RLIMIT_NOFILE, &rl);
+	nfds = rl.rlim_cur;
+
+	action.sa_handler = cleanup;
+	action.sa_flags = 0;
+	sigemptyset(&action.sa_mask);
+	sigaction(SIGCHLD, &action, NULL);
 	
 	sprintf(buf, "%s/%s.log", SMS_DIR, PROG);
 	logf = open(buf, O_CREAT|O_WRONLY|O_APPEND, 0640);
@@ -94,9 +103,7 @@ main(argc, argv)
 	dup2(inf, 1);
 	dup2(inf, 2);
 	
-	tty = open("/dev/tty");
-	ioctl(tty, TIOCNOTTY, 0);
-	close(tty);
+	setpgrp();
 	sprintf(buf, "%s/%s", BIN_DIR, PROG);
 	
 	if ((pid = fork()) == 0) {

@@ -1,32 +1,21 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_glue.c,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_glue.c,v 1.5 1988-06-30 14:39:30 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_glue.c,v 1.6 1988-09-13 17:37:35 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
+ *	For copying and distribution information, please see the file
+ *	<mit-copyright.h>.
  *
  *	Glue routines to allow the database stuff to be linked in to
  * 	a program expecting a library level interface.
- * 
- * 	$Log: not supported by cvs2svn $
- * Revision 1.4  87/09/21  15:17:09  wesommer
- * Also need to initialize pseudo_client.clname.
- * 
- * Revision 1.3  87/08/22  17:31:56  wesommer
- * Fix a "fall-through".
- * 
- * Revision 1.2  87/07/29  16:03:58  wesommer
- * Initialize krb_realm.
- * 
- * Revision 1.1  87/07/14  00:41:18  wesommer
- * Initial revision
- * 
  */
 
 #ifndef lint
-static char *rcsid_sms_glue_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_glue.c,v 1.5 1988-06-30 14:39:30 mar Exp $";
+static char *rcsid_sms_glue_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_glue.c,v 1.6 1988-09-13 17:37:35 mar Exp $";
 #endif lint
 
+#include <mit-copyright.h>
 #include "sms_server.h"
 #include <krb.h>		/* XXX for error codes */
 #include <pwd.h>
@@ -39,6 +28,7 @@ static int already_connected = 0;
 static client pseudo_client;
 extern int krb_err_base, errno;
 extern char *malloc(), *whoami;
+extern time_t now;
 
 sms_connect()
 {
@@ -95,6 +85,8 @@ char *prog;
     strcpy(pseudo_client.clname, buf);
     pseudo_client.users_id = get_users_id(pseudo_client.kname.name);
     pseudo_client.entity = strsave(prog);
+    pseudo_client.args = (sms_params *) malloc(sizeof(sms_params));
+    pseudo_client.args->sms_version_no = SMS_VERSION_2;
     return 0;
 }
 
@@ -124,6 +116,7 @@ int sms_query(name, argc, argv, callproc, callarg)
 {
     struct hint hints;
 
+    time(&now);
     hints.proc = callproc;
     hints.hint = callarg;
     return sms_process_query(&pseudo_client, name, argc, argv,
@@ -135,6 +128,7 @@ int sms_access(name, argc, argv)
     int argc;			/* Arg count */
     char **argv;		/* Args */
 {
+    time(&now);
     return sms_check_access(&pseudo_client, name, argc, argv);
 }
 
@@ -146,6 +140,7 @@ int sms_query_internal(argc, argv, callproc, callarg)
 {
     struct hint hints;
 
+    time(&now);
     hints.proc = callproc;
     hints.hint = callarg;
     return sms_process_query(&pseudo_client, argv[0], argc-1, argv+1,
@@ -156,6 +151,7 @@ int sms_access_internal(argc, argv)
     int argc;
     char **argv;
 {
+    time(&now);
     return sms_check_access(&pseudo_client, argv[0], argc-1, argv+1);
 }
 

@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/students.dc,v 1.11 1990-06-13 12:46:57 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/students.dc,v 1.12 1991-10-01 12:15:01 mar Exp $
  */
 
 #include <stdio.h>
@@ -437,8 +437,8 @@ struct entry *e;
     strncpy(ophone, buf, 12);
     strncpy(dept, e->course, 12);
     
-    id = set_next_object_id("users_id");
-    uid = set_next_object_id("uid");
+    id = set_next_object_id("users_id", 0);
+    uid = set_next_object_id("uid", 1);
     sprintf(login, "#%d", uid);
     last = e->last;
     first = e->first;
@@ -487,8 +487,9 @@ struct entry *e;
 ##}
 
 
-set_next_object_id(object)
+set_next_object_id(object, limit)
     char *object;
+    int limit;
 ##{
 ##  char *name;
 ##  int rowcount, exists, value;
@@ -510,7 +511,7 @@ set_next_object_id(object)
     }
     while (exists) {
 	value++;
-	if (value > MAX_ID_VALUE)
+	if (limit && value > MAX_ID_VALUE)
 	    value = MIN_ID_VALUE;
 ##	retrieve (exists = any(users.name where users.name = value))
     }

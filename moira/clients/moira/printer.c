@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/printer.c,v 1.5 1989-06-01 21:30:34 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/printer.c,v 1.6 1989-08-22 15:56:35 mar Exp $";
 #endif lint
 
 /*	This is the file printer.c for the SMS Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/printer.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/printer.c,v 1.5 1989-06-01 21:30:34 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/printer.c,v 1.6 1989-08-22 15:56:35 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -30,16 +30,6 @@
 #include "defs.h"
 #include "f_defs.h"
 #include "globals.h"
-
-#define PCAP_NAME      	0
-#define PCAP_SPOOL_HOST	1
-#define PCAP_SPOOL_DIR	2
-#define PCAP_RPRINTER	3
-#define PCAP_COMMENTS	4
-#define PCAP_MODTIME	5
-#define PCAP_MODBY	6
-#define PCAP_MODWITH	7
-#define PCAP_END	8
 
 #define DEFAULT_MACHINE "E40-PRINT-SERVER-1.MIT.EDU"
 
@@ -138,7 +128,7 @@ char ** info;
 
     Put_message("");
     sprintf(temp_buf, "Printcap entry for %s.", 
-	    info[FS_NAME]);
+	    info[PCAP_NAME]);
     Put_message(temp_buf);
     Put_message("");
 
@@ -194,7 +184,7 @@ Bool one_item;
     char temp_buf[BUFSIZ];
 
     if ( (stat = do_sms_query("delete_printcap", 1,
-			      &info[FS_NAME], Scream, NULL)) != 0)
+			      &info[PCAP_NAME], Scream, NULL)) != 0)
 	    com_err(program_name, stat, " printcap entry not deleted.");
     else
 	    Put_message("Printcap entry deleted.");
@@ -271,7 +261,7 @@ Bool one_item;
 {
     int stat;
 
-    if ((stat = do_sms_query("delete_printcap", 1, &info[FS_NAME],
+    if ((stat = do_sms_query("delete_printcap", 1, &info[PCAP_NAME],
 			     Scream, NULL)) != 0) {
 	com_err(program_name, stat, " printcap entry not deleted.");
 	return(DM_NORMAL);
@@ -298,5 +288,266 @@ ChngPcap(argc, argv)
     struct qelem *elem = GetPcapInfo(argv[1]);
     QueryLoop(elem, NullPrint, ChangePcap, "Change the printer");
     FreeQueue(elem);
+    return(DM_NORMAL);
+}
+
+
+/*	Function Name: SetPdDefaults
+ *	Description: sets the default values for palladium additions.
+ *	Arguments: info - an array of char pointers to recieve defaults. 
+ *	Returns: char ** (this array, now filled).
+ */
+
+static char ** 
+SetPdDefaults(info, name)
+char ** info;
+char * name;
+{
+    info[PD_NAME] =		Strsave(name);
+    info[PD_IDENT] =		Strsave("1");
+    info[PD_HOST] =		Strsave(DEFAULT_MACHINE);
+    info[PD_MODTIME] = info[PD_MODBY] = info[PD_MODWITH] = NULL;
+
+    info[PD_END] = NULL;
+    return(info);
+}
+
+/*	Function Name: AskPalladiumInfo.
+ *	Description: This function askes the user for information about a 
+ *                   printer and saves it into a structure.
+ *	Arguments: info - a pointer the the structure to put the
+ *                             info into.
+ *	Returns: none.
+ */
+
+static char **
+AskPalladiumInfo(info)
+char ** info;
+{
+    char temp_buf[BUFSIZ], *newname;
+
+    Put_message("");
+    sprintf(temp_buf, "Palladium entry for %s.", 
+	    info[PD_NAME]);
+    Put_message(temp_buf);
+    Put_message("");
+
+    GetValueFromUser("Printer Identification Number", &info[PD_IDENT]);
+    GetValueFromUser("Printer Server", &info[PD_HOST]);
+    info[PD_HOST] = canonicalize_hostname(info[PD_HOST]);
+    
+    FreeAndClear(&info[PD_MODTIME], TRUE);
+    FreeAndClear(&info[PD_MODBY], TRUE);
+    FreeAndClear(&info[PD_MODWITH], TRUE);
+    
+    return(info);
+}
+
+
+/*	Function Name: PrintPalladiumInfo
+ *	Description: Yet another specialized print function.
+ *	Arguments: info - all info about this Printer.
+ *	Returns: none
+ */
+
+static void
+PrintPalladiumInfo(info)
+char ** info;
+{
+    char buf[BUFSIZ];
+    
+    if (!info)	{		/* If no informaion */
+	    Put_message("PrintPalladiumInfo called with null info!");
+	    return;
+    }
+
+    sprintf(buf, "Name: %-24s Ident: %s  Host: %s",
+	    info[PD_NAME], info[PD_IDENT], info[PD_HOST]);
+    Put_message(buf);
+    sprintf(buf, MOD_FORMAT, info[PD_MODBY], info[PD_MODTIME],
+	    info[PD_MODWITH]);
+    Put_message(buf);
+}
+
+
+static struct qelem *
+GetPalladiumInfo(name)
+char *name;
+{
+    int status;
+    struct qelem *elem = NULL;
+
+    if ((status = do_sms_query("get_palladium", 1, &name, StoreInfo, &elem))
+	!= 0) {
+	com_err(program_name, status, NULL);
+	return(NULL);
+    }
+    return(QueueTop(elem));
+}
+
+
+int ChangePalladium(info, one_item)
+char **info;
+Bool one_item;
+{
+    int status;
+
+    if ((status = do_sms_query("delete_palladium", 1, &info[PD_NAME],
+			       Scream, NULL)) != 0) {
+	com_err(program_name, status, " palladium entry not deleted.");
+	return(DM_NORMAL);
+    }
+    AskPalladiumInfo(info);
+    if ((status = do_sms_query("add_palladium", CountArgs(info), info,
+			       NullFunc, NULL)) != 0)
+      com_err(program_name, status, " in ChngPalladium");
+    return(DM_NORMAL);
+}
+
+
+/*	Function Name: RealDeletePalladium
+ *	Description: Does the real deletion work.
+ *	Arguments: info - array of char *'s containing all useful info.
+ *                 one_item - a Boolean that is true if only one item 
+ *                              in queue that dumped us here.
+ *	Returns: none.
+ */
+
+void
+RealDeletePalladium(info, one_item)
+char ** info;
+Bool one_item;
+{
+    int stat;
+    char temp_buf[BUFSIZ];
+
+    if ( (stat = do_sms_query("delete_palladium", 1,
+			      &info[PD_NAME], Scream, NULL)) != 0)
+	    com_err(program_name, stat, " palladium entry not deleted.");
+    else
+	    Put_message("Palladium entry deleted.");
+}
+
+
+int GetPalladium(argc, argv)
+int argc;
+char **argv;
+{
+    struct qelem *elem, *top;
+    char buf[BUFSIZ];
+
+    top = GetPalladiumInfo(argv[1]);
+    Loop(top, PrintPalladiumInfo);
+    FreeQueue(top);
+    return(DM_NORMAL);
+}
+
+
+int AddPalladium(argc, argv)
+int argc;
+char **argv;
+{
+    char *info[MAX_ARGS_SIZE], **args;
+    int status;
+
+    if (!ValidName(argv[1]))
+      return(DM_NORMAL);
+
+    if ((status = do_sms_query("get_palladium", 1, &argv[1], NullFunc, NULL))
+	== 0) {
+	Put_message("A printer by that name already exists.");
+	return(DM_NORMAL);
+    } else if (status != SMS_NO_MATCH) {
+	com_err(program_name, status, " in AddPalladium");
+	return(DM_NORMAL);
+    }
+
+    args = AskPalladiumInfo(SetPdDefaults(info, argv[1]));
+
+    if ((status = do_sms_query("add_palladium", CountArgs(args), args,
+			       Scream, NULL)) != 0)
+      com_err(program_name, status, " in AddPalladium");
+
+    FreeInfo(info);
+    return(DM_NORMAL);
+}
+
+
+int ChngPalladium(argc, argv)
+int argc;
+char **argv;
+{
+    struct qelem *elem = GetPalladiumInfo(argv[1]);
+    QueryLoop(elem, NullPrint, ChangePalladium, "Change the printer");
+    FreeQueue(elem);
+    return(DM_NORMAL);
+}
+
+
+int DeletePalladium(argc, argv)
+int argc;
+char **argv;
+{
+    struct qelem *elem = GetPalladiumInfo(argv[1]);
+    QueryLoop(elem, PrintPalladiumInfo, RealDeletePalladium, "Delete Printer");
+    FreeQueue(elem);
+    return(DM_NORMAL);
+}
+
+int ShowPalladiumAlias(argc, argv)
+int argc;
+char **argv;
+{
+    struct qelem *elem = NULL;
+    char *qargv[3], buf[BUFSIZ];
+    int status;
+
+    qargv[0] = argv[1];
+    qargv[1] = "PALLADIUM";
+    qargv[2] = argv[2];
+    if ((status = do_sms_query("get_alias", 3, qargv, StoreInfo, &elem)) != 0) {
+	com_err(program_name, status, " in ShowPalladiumAlias");
+	return(DM_NORMAL);
+    }
+    elem = QueueTop(elem);
+    Put_message("");
+    while (elem != NULL) {
+	char **info = (char **) elem->q_data;
+	sprintf(buf, "Queue: %-16s Server: %s", info[0], info[2]);
+	Put_message(buf);
+	elem = elem->q_forw;
+    }
+
+    FreeQueue(QueueTop(elem));
+    return(DM_NORMAL);
+}
+
+int AddPalladiumAlias(argc, argv)
+int argc;
+char **argv;
+{
+    int status;
+    char *qargv[3];
+
+    qargv[0] = argv[1];
+    qargv[1] = "PALLADIUM";
+    qargv[2] = argv[2];
+    if ((status = do_sms_query("add_alias", 3, qargv, Scream, NULL)) != 0)
+      com_err(program_name, status, " in AddPalladiumAlias");
+    return(DM_NORMAL);
+}
+
+int DeletePalladiumAlias(argc, argv)
+int argc;
+char **argv;
+{
+    int status;
+    char *qargv[3];
+
+    qargv[0] = argv[1];
+    qargv[1] = "PALLADIUM";
+    qargv[2] = argv[2];
+    if ((status = do_sms_query("delete_alias", 3, qargv, Scream, NULL)) != 0)
+      com_err(program_name, status, " in DeletePalladiumAlias");
     return(DM_NORMAL);
 }

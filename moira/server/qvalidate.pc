@@ -1,4 +1,4 @@
-/* $Id: qvalidate.pc,v 2.10 1998-02-23 19:24:43 danw Exp $
+/* $Id: qvalidate.pc,v 2.11 1998-03-17 18:45:02 danw Exp $
  *
  * Argument validation routines
  *
@@ -20,7 +20,7 @@
 EXEC SQL INCLUDE sqlca;
 EXEC SQL INCLUDE sqlda;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qvalidate.pc,v 2.10 1998-02-23 19:24:43 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qvalidate.pc,v 2.11 1998-03-17 18:45:02 danw Exp $");
 
 extern char *whoami, *table_name[], *sqlbuffer[QMAXARGS];
 extern int dbms_errno, mr_errcode;
@@ -106,10 +106,6 @@ int validate_fields(struct query *q, char *argv[], struct valobj *vo, int n)
 
 	case V_LEN:
 	  status = validate_len(argv, vo);
-	  break;
-
-	case V_SORT:
-	  status = MR_EXISTS;
 	  break;
 
 	case V_LOCK:

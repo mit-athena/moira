@@ -1,4 +1,4 @@
-/* $Id: query.h,v 2.7 1998-02-23 19:24:42 danw Exp $
+/* $Id: query.h,v 2.8 1998-03-17 18:45:02 danw Exp $
  *
  * Structures and constants used in the query dispatch table
  *
@@ -23,6 +23,7 @@ struct query
   int  vcnt;			/* variable count */
   char *qual;			/* format string for "where" clause */
   int  argc;			/* number of args for qualifier */
+  char *sort;			/* fields to sort on */
   struct validate *validate;	/* validation support */
   int  acl;			/* hint as to query ACL for this query */
   int  everybody;		/* is the default user on this ACL? */
@@ -50,7 +51,7 @@ struct validate
 
 /* Validated Object Types */
 enum vo_type {V_NAME, V_ID, V_TYPE, V_TYPEDATA,
-	      V_SORT, V_RENAME, V_CHAR, V_LOCK, V_WILD, V_UPWILD,
+	      V_RENAME, V_CHAR, V_LOCK, V_WILD, V_UPWILD,
               V_RLOCK, V_LEN};
 
 /* Validated Object Definition */

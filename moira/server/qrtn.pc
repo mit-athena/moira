@@ -1,4 +1,4 @@
-/* $Id: qrtn.pc,v 2.10 1998-02-23 19:24:36 danw Exp $
+/* $Id: qrtn.pc,v 2.11 1998-03-17 18:44:59 danw Exp $
  *
  * Query-processing routines
  *
@@ -20,7 +20,7 @@
 EXEC SQL INCLUDE sqlca;  /* SQL Communications Area */
 EXEC SQL INCLUDE sqlda;  /* SQL Descriptor Area */
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.pc,v 2.10 1998-02-23 19:24:36 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.pc,v 2.11 1998-03-17 18:44:59 danw Exp $");
 
 SQLDA *mr_sqlda;
 EXEC SQL BEGIN DECLARE SECTION;
@@ -42,7 +42,7 @@ extern char *whoami;
 extern FILE *journal;
 
 int mr_verify_query(client *cl, struct query *q, int argc, char *argv_ro[]);
-int do_retrieve(struct query *q, char *pqual, char *psort,
+int do_retrieve(struct query *q, char *pqual,
 		int (*action)(int, char *[], void *), void *actarg);
 int do_update(struct query *q, char *argv[], char *qual,
 	      int (*action)(int, char *[], void *), void *actarg);
@@ -52,7 +52,6 @@ int do_delete(struct query *q, char *qual,
 	      int (*action)(int, char *[], void *), void *actarg);
 void build_sql_stmt(char *result_buf, char *cmd, char *targetlist,
 		    char *argv[], char *qual);
-char *build_sort(struct validate *v, char *sort);
 char *sqlstrstr(char *str, char *pat);
 void optimize_sql_stmt(char *buf);
 
@@ -147,9 +146,7 @@ int mr_process_query(client *cl, char *name, int argc, char *argv_ro[],
   int status;
   struct validate *v;
   char qual[256];
-  char sort[32];
   char *pqual;
-  char *psort;
   EXEC SQL BEGIN DECLARE SECTION;
   char *table;
   EXEC SQL END DECLARE SECTION;
@@ -216,12 +213,6 @@ int mr_process_query(client *cl, char *name, int argc, char *argv_ro[],
       else
 	pqual = 0;
 
-      /* build "sort" clause if needed */
-      if (v && v->valobj)
-	psort = build_sort(v, sort);
-      else
-	psort = 0;
-
       /* if there is a followup routine, then we must save the results */
       /* of the first query for use by the followup routine */
       /* if q->rvar = NULL, perform post_rtn only */
@@ -230,7 +221,7 @@ int mr_process_query(client *cl, char *name, int argc, char *argv_ro[],
 	  if (v && v->post_rtn)
 	    {
 	      sq = sq_create();
-	      status = do_retrieve(q, pqual, psort, sq_save_args, sq);
+	      status = do_retrieve(q, pqual, sq_save_args, sq);
 	      if (status != MR_SUCCESS)
 		{
 		  sq_destroy(sq);
@@ -241,7 +232,7 @@ int mr_process_query(client *cl, char *name, int argc, char *argv_ro[],
 	  else
 	    {
 	      /* normal retrieve */
-	      status = do_retrieve(q, pqual, psort, action, actarg);
+	      status = do_retrieve(q, pqual, action, actarg);
 	    }
 	  if (status != MR_SUCCESS)
 	    break;
@@ -462,32 +453,6 @@ void build_qual(char *fmt_buf, int argc, char *argv[], char *qual)
   *res = '\0';
 }
 
-char *build_sort(struct validate *v, char *sort)
-{
-  struct valobj *vo;
-  int n;
-  char elem[16];
-
-  n = v->objcnt;
-  vo = v->valobj;
-  *sort = '\0';
-
-  while (--n >= 0)
-    {
-      if (vo->type == V_SORT)
-	{
-	  sprintf(elem, "%d", vo->index + 1);    /* Result column number */
-	  if (*sort)
-	    strcat(sort, ", ");
-	  strcat(sort, elem);
-	}
-      vo++;
-    }
-
-  return (*sort) ? sort : 0;
-}
-
-
 /* Build arguement vector, verify query and arguments */
 
 int privileged;
@@ -627,14 +592,14 @@ int find_member(char *list_type, int list_id, client *cl)
 }
 
 
-int do_retrieve(struct query *q, char *pqual, char *psort,
+int do_retrieve(struct query *q, char *pqual,
 		int (*action)(int, char *[], void *), void *actarg)
 {
   build_sql_stmt(stmt_buf, "SELECT", q->tlist, NULL, pqual);
-  if (psort)
+  if (q->sort)
     {
       strcat(stmt_buf, " ORDER BY ");
-      strcat(stmt_buf, psort);
+      strcat(stmt_buf, q->sort);
     }
 
   return do_for_all_rows(stmt_buf, q->vcnt, action, actarg);

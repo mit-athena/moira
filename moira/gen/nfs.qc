@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/nfs.qc,v 1.9 1989-06-08 16:49:59 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/nfs.qc,v 1.10 1989-06-28 13:41:15 mar Exp $
  *
  * This generates the files necessary to load an nfs server.
  *
@@ -395,7 +395,6 @@ struct save_queue *machs;
 
     fprintf(stderr, "Building machine files\n");
 
-##  begin transaction
 ##  range of s is serverhosts
 ##  range of m is machine
 ##  range of n is nfsphys
@@ -403,6 +402,14 @@ struct save_queue *machs;
 ##  range of f is filesys
 ##  range of u is users
 ##  range of l is list
+
+/* acquire locks on users, lists, machines & filesystems */
+##  begin transaction
+##  retrieve (listname = u.modtime) where u.users_id = 0
+##  retrieve (listname = l.modtime) where l.list_id = 0
+##  retrieve (listname = m.modtime) where m.mach_id = 0
+##  retrieve (listname = f.modtime) where f.filsys_id = 0
+
     while (sq_get_data(machs, &machname)) {
 ##	repeat retrieve (listname = trim(s.value3))
 ##	    where s.mach_id = m.mach_id and m.name = @machname

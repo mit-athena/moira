@@ -1,4 +1,6 @@
 @part[tools, root "sms.mss"]
+@Define(TItemize=Itemize, LeftMargin +2, Indent -2, RightMargin 0, Spread 0)
+@Define(TVerbatim=Verbatim, LeftMargin -5, RightMargin 0, Group, Size -1)
 @NewPage()
 @MajorSection(Specialized Management Tools - User Interface)
 @label(Tools)
@@ -83,7 +85,7 @@ USERREG - New user registration.
 @i[For clarity, each new program begins on a new page.]
 
 @NewPage()
-@Begin(Description)
+@Begin(Description, LeftMargin +18, Indent -18)
 PROGRAM NAME:@\ATTACH_MAINT - Associate information to filesystems. 
 
 DESCRIPTION:@\@Multiple[This program will allow the administrator to
@@ -99,7 +101,7 @@ filesys), and filesys (label, type, machine_id, name, mount, access)
 ]
 
 PRE-DEFINED QUERIES USED:@\
-@begin(itemize, spread 0)
+@Begin(TItemize)
 
 update_user_home - for user to filesys mapping
 
@@ -110,27 +112,27 @@ add_filesys
 update_filesys
 
 delete_filesys
-@end(itemize)
+@End(TItemize)
 
 Manipulates the following fields:@\
-@Begin(Itemize, Spread 0)
+@Begin(TItemize)
 (home) - USERS relation
 
 (name, type, translation) - ALIAS relation.
 
 (label, type, machine_id, name, mount, access) - FILESYS relation
-@End(Itemize)
+@End(TItemize)
 
 SUPPORTED SERVICE(S):@\
-@begin(itemize, spread 0)
+@Begin(TItemize)
 Hesiod - filesys.db
-@end(itemize)
+@End(TItemize)
 
 END USERS:
 Administrators.
 
 A SESSION USING ATTACH MAINT:
-@begin(display)
+@Begin(TVerbatim)
 %attachmaint
 
 Attach/Filesystem Maintenance
@@ -183,7 +185,7 @@ Delete functions will first confirm
 
 Command:q
 %
-@end(display)
+@End(TVerbatim)
 
 @NewPage()
 
@@ -203,30 +205,30 @@ target might be logged into.
 ]
 
 PRE-DEFINED QUERIES USED:@\
-@begin(itemize, spread 0)
+@Begin(TItemize)
 
 get_finger_by_login
 
 get_finger_by_first_last
 
 update_finger_by_login
-@end(itemize)
+@End(TItemize)
 
 Manipulates the following fields:@\
-@Begin(Itemize)
+@Begin(TItemize)
 (fullname, nickname, home_address, home_phone, office_phone, department,
 year) - FINGER relation
-@End(Itemize)
+@End(TItemize)
 
 SUPPORTED SERVICE(S):@\
-@begin(itemize, spread 0)
+@Begin(TItemize)
 User Community - finger
-@end(itemize)
+@End(TItemize)
 
 END USER:@\All.
 
 A SESSION USING CHFN:
-@begin(display)
+@Begin(TVerbatim)
 % chfn
 
 Changing finger information for pjlevine.
@@ -244,7 +246,7 @@ Office phone (Ex: 3-1300) [0000]:
 MIT department (Exs: EECS, Biology, Information Services) []: 
 MIT year (Exs: 1989, '91, Faculty, Grad) [staf]: 
 % 
-@end(display)
+@End(TVerbatim)
 
 @NewPage()
 
@@ -257,20 +259,22 @@ This program allows the user the capability to forward
 his mail to a different machine.  This program is a command line
 interface.  Basically there are two options:
 
-@begin(display)
+@begin(Verbatim, Above 1, LeftMargin +4)
 Usage: chpobox [-d|a address] [-u user]
-
-where:
-    -d deletes a currently used mail address
-    -a adds a mail address
-@End(Display)
+@End(Verbatim)
+@Begin(Format, LeftMargin +4, Above 1)
+wher@^e:
+@\-d deletes a currently used mail address
+@\-a adds a mail address
+@TabClear()
+@End(Format)
 
 Chpobox without any option will return the current state of the
 user's mail addresses (see below).
 ]
 
 PRE-DEFINED QUERIES USED:@\
-@begin(itemize, spread 0)
+@Begin(TItemize)
 
 get_pobox
 
@@ -278,22 +282,22 @@ add_pobox
 
 delete_pobox
 
-@end(itemize)
+@End(TItemize)
 
 Manipulates the following fields:@\
-@Begin(Itemize)
+@Begin(TItemize)
 (login, type, machine, box) - POBOX relation
-@End(Itemize)
+@End(TItemize)
 
 SUPPORTED SERVICE(S):@\
-@begin(itemize, spread 0)
+@Begin(TItemize)
 User Community - forward mail
-@end(itemize)
+@End(TItemize)
 
 END USERS:@\All.
 
 A SESSION USING CHPOBOX:
-@begin(display, LeftMargin +3, RightMargin 0)
+@Begin(TVerbatim)
 
 % chpobox
 Current mail address(es) for pjlevine is/are:
@@ -303,7 +307,7 @@ address: pjlevine@@menelaus.mit.edu
 %chpobox -a pjlevine@@menelaus.mit.edu  ;adds a new mail address
 %chpobox -d pjlevine@@menelaus.mit.edu  ;deletes a mail address
 %
-@end(display)
+@end(TVerbatim)
 
 @NewPage()
 
@@ -312,19 +316,19 @@ PROGRAM NAME:@\CHSH - Default shell.
 DESCRIPTION:@\This program allows users to change their default shell.
 
 PRE-DEFINED QUERIES USED:@\
-@begin(itemize, spread 0)
+@Begin(TItemize)
 update_user_shell
-@end(itemize)
+@End(TItemize)
 
 SUPPORTED SERVICE(S):@\
-@begin(itemize, spread 0)
+@Begin(TItemize)
 Hesiod - passwd.db
-@end(itemize)
+@End(TItemize)
 
 END USERS:@\All
 
 A SESSION USING CHSH:
-@begin(display)
+@Begin(TVerbatim)
 % chsh
 
 Changing login shell for pjlevine.
@@ -332,7 +336,7 @@ Current shell for pjlevine is /bin/csh
 New shell: /bin/csh
 Changing shell to /bin/csh
 %
-@end(display)
+@End(TVerbatim)
 
 @NewPage()
 
@@ -341,7 +345,7 @@ PROGRAM NAME:@\CLUSTER_MAINT - This program manages machines and clusters.
 DESCRIPTION:@\Handles the relationships of various machines and clusters.
 
 PRE-DEFINED QUERIES USED:@\
-@begin(itemize, spread 0)
+@Begin(TItemize)
 
 get_machine_by_name
 
@@ -370,10 +374,10 @@ get_all_service_clusters
 add_service_clusters
 
 delete_service_clusters
-@end(itemize)
+@End(TItemize)
 
 Manipulates the following fields:@\
-@Begin(Itemize, Spread 0)
+@Begin(TItemize)
 
 (name, machine_id, type, model, status, serial, ethernet, sys_type) -
 MACHINE relation
@@ -381,17 +385,17 @@ MACHINE relation
 (name, description, location, cluster_id) - CLUSTER relation
 
 (cluster_id, serv_label, service_cluster) - SVC relation
-@End(Itemize)
+@End(TItemize)
 
 SUPPORTED SERVICE(S):@\
-@begin(itemize, spread 0)
+@Begin(TItemize)
 Hesiod - cluster.db
-@end(itemize)
+@End(TItemize)
 
 END USERS:@\Administrator. Staff.
 
 A SESSION WITH CLUSTER_MAINT:@\[See next page]
-@begin(display, Size -1)
+@Begin(TVerbatim)
 Cluster Maintenence
  1. (machine     ) Work on Machines.
  2. (cluster     ) Work on Clusters.
@@ -447,7 +451,7 @@ Delete functions will first confirm
 
 Command: q
 %
-@end(display)
+@End(TVerbatim)
 
 @newpage()
 
@@ -466,9 +470,9 @@ hours.
 PRE-DEFINED QUERIES USED:@\To be determined.
 
 SUPPORTED SERVICE(S):@\
-@begin(itemize, spread 0)
+@Begin(TItemize)
 SMS
-@end(itemize)
+@End(TItemize)
 
 END USER:@\Administrator. Cron (automatically invoked).
 
@@ -484,7 +488,7 @@ name a few, are entered.  This program is a menu-driven program and is
 invoked with the command dcm_maint.
 
 PRE-DEFINED QUERIES USED:@\
-@begin(itemize, spread 0)
+@Begin(TItemize)
 
 get_server_info
 
@@ -492,24 +496,24 @@ add_server
 
 update_server
 
-@end(itemize)
+@End(TItemize)
 
 Manipulates the following fields:@\
-@Begin(Itemize)
+@Begin(TItemize)
 (update_interval, target_dir) - SERVERS relation
-@End(Itemize)
+@End(TItemize)
 
 SUPPORTED SERVICE(S):@\
-@begin(itemize, spread 0)
+@Begin(TItemize)
 SMS
 
 Hesiod - sloc.db
-@end(itemize)
+@End(TItemize)
 
 END USERS:@\Administrator.
 
 A SESSION WITH DCM_MAINT:@\
-@begin(display)
+@Begin(TVerbatim)
 Data Control Manager Maintenance
 
  1. (change_host_info) Modify host-specific info for a server.
@@ -567,7 +571,7 @@ Command:
 Command: 6
 Create new service
 Which service[]: 
-service_name   interval       target_path    instructions   dfgen
+service_name   interval   target_path   instructions   dfgen
 
 Add service to database? [y]:
 Service created
@@ -580,11 +584,11 @@ No entry found for service .
 Command: 8
 List services
 Which service[]:
-service_name   interval       target_path    instructions   dfgen
-hesiod                       /dev/null      /dev/null
-pop                          /dev/null      /dev/null
+service_name   interval   target_path   instructions   dfgen
+hesiod                    /dev/null     /dev/null
+pop                       /dev/null     /dev/null
 
-@end(display)
+@End(TVerbatim)
 
 @newpage()
 
@@ -619,7 +623,7 @@ The sample session below highlights this case.  The command
 ]
 
 PRE-DEFINED QUERIES USED:@\
-@begin(itemize, spread 0)
+@Begin(TItemize)
 
 get_all_mail_lists
 
@@ -646,10 +650,10 @@ get_all_groups
 add_group
 
 delete_group
-@end(itemize)
+@End(TItemize)
 
 Manipulates the following fields:@\
-@Begin(Itemize, Spread 0)
+@Begin(TItemize)
 (name, type, list_id, flags, description, expdate, modtime) - LIST relation
 
 (list_id, member_type, member_id) MEMBERS relation
@@ -659,17 +663,17 @@ Manipulates the following fields:@\
 (capability, list_id) CAPACLS relation
 
 (list_id) GROUPS relation
-@End(Itemize)
+@End(TItemize)
 
 END USERS:@\All.
 
 SUPPORTED SERVICE(S):@\
-@begin(itemize, spread 0)
+@Begin(TItemize)
 /usr/lib/aliases
-@end(itemize)
+@End(TItemize)
 
 A SESSION WITH LISTMAINT:
-@begin(display)
+@Begin(TVerbatim, LeftMargin -7)
 %listmaint
 List Maintenance Functions
  1. (list_menu   ) Manage List Parameters.
@@ -721,7 +725,7 @@ Command:
 
 Command:q
 %
-@end(display)
+@End(TVerbatim)
 
 @newpage()
 
@@ -733,7 +737,7 @@ machines, printers and abilities (such as windowdumps, postscript, etc.),
 machines, printers, and queues, and printers and printcaps.
 
 PRE-DEFINED QUERIES USED:@\
-@begin(itemize, spread 0)
+@Begin(TItemize)
 
 get_all_printers
 
@@ -770,10 +774,10 @@ add_queue_device_map
 update_queue_device_map
 
 delete_queue_device_map
-@end(itemize)
+@End(TItemize)
 
 Manipulates the following fields:@\
-@Begin(Itemize, Spread 0)
+@Begin(TItemize)
 (name, printer_id, type, machine_id) - PRINTER relation
 
 (name, queue_id, machine_id, ability, status) - QUEUE relation
@@ -783,19 +787,19 @@ Manipulates the following fields:@\
 (machine_id, qdev_id, name, device, status) - QDEV relation
 
 (machine_id, queue_id, device_id, server) - QDM relation
-@End(Itemize)
+@End(TItemize)
 
 SUPPORTED SERVICE(S):@\
-@begin(itemize, spread 0)
+@Begin(TItemize)
 Hesiod - printers.db
-@end(itemize)
+@End(TItemize)
 
 END USERS:@\
-@Begin(Itemize, Spread 0)
+@Begin(TItemize)
 Administrator.
 
 Staff.
-@End(Itemize)
+@End(TItemize)
 
 @newpage()
 
@@ -821,23 +825,23 @@ future and leave the status field ACTIVE.
 ]
 
 PRE-DEFINED QUERIES USED:@\
-@begin(itemize, spread 0)
+@Begin(TItemize)
 
 update_user
 
 update_user_status
 
-@end(itemize)
+@End(TItemize)
 
 Manipulates the following fields:@\
-@Begin(Itemize, Spread 0)
+@Begin(TItemize)
 (status, expdate) - USERS relation.
-@End(Itemize)
+@End(TItemize)
 
 SUPPORTED SERVICE(S):@\
-@begin(itemize, spread 0)
+@Begin(TItemize)
 SMS
-@end(itemize)
+@End(TItemize)
 
 END USERS:@\Administrator.
 
@@ -864,7 +868,7 @@ information.
 ]
 
 PRE_DEFINED QUERIES USED:@\
-@begin(itemize, spread 0)
+@Begin(TItemize)
 
 get_rvd_server
 
@@ -885,10 +889,10 @@ add_rvd_virtual
 delete_rvd_virtual
 
 update_rvd_virtual
-@end(itemize)
+@End(TItemize)
 
 Manipulates the following fields:@\
-@Begin(Itemize)
+@Begin(TItemize)
 (machine id, operations pwd, admin pwd, shutdown pwd) - RVDSRV relation
 
 (machine id, device, size create-time, modify-time) - RVDPHYS relation
@@ -896,17 +900,17 @@ Manipulates the following fields:@\
 (machine id, physical device, name, pack id, owner, rocap, excap, shcap,
 modes, offset, blocks, ownhost, create-time, modify-time) - RVDVIRT relation
 
-@End(Itemize)
+@End(TItemize)
 
 SUPPORTED SERVICE(S):@\
-@begin(itemize, spread 0)
+@Begin(TItemize)
 RVD - rvddb.
-@end(itemize)
+@End(TItemize)
 
 END USERS:@\Administrators.
 
 A SESSION WITH RVD_MAINT:@\
-@begin(display)
+@Begin(TVerbatim)
 %rvd_maint
 
 SMS RVD Maintenance
@@ -923,7 +927,7 @@ SMS RVD Maintenance
  r. (return      ) Return to previous menu.
  q. (quit        ) Quit.
 Command:
-@end(display)
+@End(TVerbatim)
 
 @newpage()
 
@@ -933,7 +937,7 @@ DESCRIPTION:@\ This program manages what today is /etc/services: it informs
 Hesiod of the association between services and reserved ports.
 
 PRE-DEFINED QUERIES USED:@\
-@begin(itemize, spread 0)
+@Begin(TItemize)
 get_all_services
 
 add_service
@@ -947,24 +951,24 @@ get_all_service_aliases
 add_service_alias
 
 delete_service_alias
-@end(itemize)
+@End(TItemize)
 
 Manipulates the following fields:@\
-@Begin(Itemize)
+@Begin(TItemize)
 (service, protocol, port) SERVICES relation
 
 (name, type, trans) ALIAS relation
-@End(Itemize)
+@End(TItemize)
 
 SUPPORTED SERVICE(S):@\
-@begin(itemize, spread 0)
+@Begin(TItemize)
 Hesiod - service.db
-@end(itemize)
+@End(TItemize)
 
 END USERS:@\Administrator. Staff
 
 A SESSION WITH SERVICE_MAINT:@\
-@begin(display)
+@Begin(TVerbatim)
 %servermaint
 
 Server Maintenence
@@ -1004,7 +1008,7 @@ Delete function will first confirm
 
 Command:q
 %
-@end(display)
+@End(TVerbatim)
 
 @newpage()
 
@@ -1046,7 +1050,7 @@ allocation of home directory storage space.
 ]
 
 PRE-DEFINED QUERIES USED:@\
-@begin(itemize, spread 0)
+@Begin(TItemize)
 get_user_by_login
 
 get_user_by_firstname
@@ -1094,10 +1098,10 @@ add_server_host_info
 update_server_host_info
 
 get_value - for default PO allocation
-@end(itemize)
+@End(TItemize)
 
 Manipulates the following fields:@\
-@Begin(Itemize)
+@Begin(TItemize)
 
 (login, mit_id, first, last, mid_init, exp_date, shell, status, users_id,
 modtime, home) - USER relation
@@ -1111,19 +1115,19 @@ modtime, home) - USER relation
 (value1, value2) - SERVERHOSTS relation
 
 (name, value) - VALUES relation
-@End(Itemize)
+@End(TItemize)
 
 END USER:@\Administrator.
 
 SUPPORTED SERVICE(S):
-@begin(itemize, spread 0)
+@Begin(TItemize)
 Hesiod - passwd.db
 
 Kerberos
-@end(itemize)
+@End(TItemize)
 
 A SESSION USING USERMAINT:
-@begin(display)
+@Begin(TVerbatim)
 
 SMS User Maintenance
 
@@ -1141,7 +1145,7 @@ SMS User Maintenance
  q. (quit        ) Quit.
 Command:
 
-@end(display)
+@End(TVerbatim)
 
 @newpage()
 
@@ -1156,19 +1160,19 @@ view and update.  It is intended for the one or two people whose main
 responsibility is the care and feeding of SMS.
 
 SUPPORTED SERVICES:@\
-@begin(itemize)
+@begin(Titemize)
 All.
-@end(itemize)
+@End(TItemize)
 
 PRE-DEFINED QUERIES USED:@\ALL
 
 Manipulates the following fields:@\ALL
 
 END USER:@\
-@Begin(Itemize)
+@Begin(TItemize)
 Administrator.
 
 God.
-@End(Itemize)
+@End(TItemize)
 
 @End(Description)

@@ -24,7 +24,7 @@ receiving propagated data.  Reference, however, is made to
 each application interface which ultimately effects the server contents.
 
 The services which sms now supports are:
-@begin(itemize, spread 1)
+@begin(itemize, spread .5)
 Hesiod - The athena nameserver.
 
 RVD - Remote virtual disk.
@@ -43,7 +43,7 @@ Zephyr - The athena notification service. (currently not available)
 The requirements of each server suggests a level of detail describing
 the following:
 
-@Begin(Itemize, Spread 1, Above 1)
+@Begin(Itemize, Spread .5, Above 1)
 
 Service name.
 
@@ -69,7 +69,7 @@ Example of file contents.
 @SubSection(Server Descriptions)
 
 @Begin(Description, Spread 1)
-Service:@\Hesiod
+Service:@\@U(Hesiod)
 
 Description:@\@Multiple[The hesiod server is a primary source of contact for
 many athena operations.  It is reponsible for providing information reliably
@@ -119,14 +119,14 @@ Propagation interval:@\6 Hours, 0:00, 6:00, 12:00, 18:00
 Data format:@\BIND
 
 Target locations:@\
-@begin(display) 
+@begin(Format, Above 0, Below 0) 
 JASON.MIT.EDU: /etc/athena/nameserver
 ZEUS.MIT.EDU: /etc/athena/nameserver
 MENELAUS.MIT.EDU: /etc/athena/nameserver
-@end(display)
+@end(Format)
 
 Files:@\
-@Begin(Display, RightMargin 0)
+@Begin(Display, LeftMargin 0, RightMargin 0)
 @B(HESIOD.DB) - Hesiod data 
 
 Description:
@@ -142,7 +142,7 @@ Client(s):
    Hesiod
 
 Example contents:
-@Begin(Transparent, Size -1)
+@Begin(Verbatim)
    ; Hesiod-specific cache data (for ATHENA.MIT.EDU)
    ; pointers to Hesiod name servers
    ;
@@ -164,7 +164,7 @@ Example contents:
    ZEUS.MIT.EDU.      99999999 IN  A 18.58.0.2
    MENELAUS.MIT.EDU.  99999999 IN  A 18.72.0.7
    ;
-@End(Transparent)
+@End(Verbatim)
 
 @Hinge()
 @B(CLUSTER.DB) - Cluster data
@@ -184,7 +184,7 @@ How modified:
 Client(s):
 
 Example contents:
-
+@Begin(Verbatim, Above 1)
    ; Cluster info for timesharing machines and workstations
    ; format is:
    ; lines for per-cluster info (both vs and rt) (type UNSPECA)
@@ -198,6 +198,7 @@ Example contents:
    bldge40-vs.cluster HS UNSPECA "lpr e40"
    bldge40-rt.cluster HS UNSPECA "lpr e40"
    ;
+@End(Verbatim)
 
 
 @Hinge()
@@ -218,7 +219,7 @@ Client(s):
 
 
 Example contents:
-
+@Begin(Verbatim, Above 1)
    ;
    ; Network services, Internet style
    ;
@@ -231,13 +232,14 @@ Example contents:
    systat.service  HS      UNSPECA "systat tcp 11 users"
    users.service   HS      CNAME   systat.service
    daytime.service HS      UNSPECA "daytime tcp 13"
+@End(Verbatim)
 
 
 @Hinge()
 @B(PASSWD.DB) - username and group information
 
 Description:
-@Begin(Text, Above 0, Below 0, Spacing 1, Spread 0, LeftMargin +2)
+@Begin(Text, Above 0, Below 0, Spacing 1, Spread 0, LeftMargin +2, Indent 0)
 This file is used as a template for toehold. Its contents
 are username, uid, gid (all users get gid = 101), fullname,
 home filesys (now limited to /mit/<username>), and shell.
@@ -255,8 +257,10 @@ Client(s):
    Toehold
 
 Example contents:
+@Begin(Verbatim, Above 1)
    pjlevine.passwd HS    UNSPECA \
        "pjlevine:*:1:101:Peter J. Levine,,,,:/mit/pjlevine:/bin/csh"
+@End(Verbatim)
 
 
 @Hinge()
@@ -277,6 +281,7 @@ Client(s):
    MDQS
 
 Example contents:
+@Begin(Verbatim, Above 1)
     ; MDQS Hesiod printer info
     ;
     ; prclusterlist returns all print clusters
@@ -284,7 +289,7 @@ Example contents:
     *.prclusterlist HS UNSPECA bldge40
     *.prclusterlist HS UNSPECA bldg1
     *.prclusterlist HS UNSPECA bldgw20
-
+@End(Verbatim)
 
 @Hinge()
 @B(LPR.DB) - lpr printer info
@@ -315,7 +320,6 @@ How modified:
 
 Example contents:
 
-
 @Hinge()
 @B(POBOX.DB) - post office info
 
@@ -333,7 +337,7 @@ How modified:
 Client(s):
 
 Example contents:
-
+@Begin(Verbatim, Above 1)
    abbate.pobox     HS UNSPECA "POP e40-po.mit.edu abbate"
    ackerman.pobox   HS UNSPECA "POP e40-po.mit.edu ackerman"
    ajericks.pobox   HS UNSPECA "POP e40-po.mit.edu ajericks"
@@ -341,6 +345,7 @@ Example contents:
    andrew.pobox     HS UNSPECA "POP e40-po.mit.edu andrew"
    annette.pobox    HS UNSPECA "POP e40-po.mit.edu annette"
    austin.pobox     HS UNSPECA "POP e40-po.mit.edu austin"
+@End(Verbatim)
 
 
 @Hinge()
@@ -358,6 +363,7 @@ How modified:
 Client(s):
 
 Example contents:
+@Begin(Verbatim, Above 1)
    lcprimaryhost.sloc   HS      UNSPECA matisse.mit.edu
    olctesthost.sloc     HS      UNSPECA castor.mit.edu
    kerberos.sloc        HS      UNSPECA kerberos.mit.edu
@@ -366,13 +372,14 @@ Example contents:
    zephyr.sloc          HS      UNSPECA arilinn.mit.edu
    zephyr.sloc          HS      UNSPECA hobbes.mit.edu
    zephyr.sloc          HS      UNSPECA orpheus.mit.edu
+@End(Verbatim)
 
 
 @Hinge()
 @B(FILESYS.DB) - Filesystem info
 
 Description:
-@Begin(Text, Above 0, Below 0, Spacing 1, Spread 0, LeftMargin +2)
+@Begin(Text, Above 0, Below 0, Spacing 1, Spread 0, LeftMargin +2, Indent 0)
 This file contains all the filesystems and their related 
 information.  The information presented in this file
 is a filesystem name relating to the following information:
@@ -392,7 +399,7 @@ Client(s):
    attach
 
 Example contents:
-
+@Begin(Verbatim, Above 1)
    NewrtStaffTool.filsys   HS      UNSPECA 
        "RVD NewrtStaffTool helen r /mit/StaffTools"
    NewvsStaffTool.filsys   HS      UNSPECA 
@@ -401,17 +408,19 @@ Example contents:
        "RVD Saltzer helen r /mnt"
    athena-backup.filsys    HS      UNSPECA 
        "RVD athena-backup castor r /mnt"
+@End(Verbatim)
 
-@end(Display)
-
-Update mechanism:@\Updating hesiod is a relatively simple process.  Every
+Update mechanism:
+@Begin(Text, Above 0, Below 0, Spacing 1, Spread 0, LeftMargin +2, Indent 0)
+Updating hesiod is a relatively simple process.  Every
 six hours the DCM will initiate a build on each of the above files(assuming
 the informtion has changed).  Once a file is constructed, the update
 mechanism will transport the file to each of the above machine.
-
+@End(Text)
+@end(Display)
 @NewPage()
 
-Service:@\RVD
+Service:@\@U(RVD)
 
 Description:@\Multiple[The nature of RVD servers recognizes a very different
 approach from that of the hesiod discussion.  The RVD mechanism is updated
@@ -458,35 +467,33 @@ Propagation interval:@\15 minutes, hour aligned
 Data Format:@\RVD specific,  ASCII
 
 Target Machines:@\
-@begin(display)
-
-      andromache
-      gaea
-      hactar
-      helen
-      jinx
-      m4-035-s
-      m4-035-v
-      m4-035-w
-      oath
-      persephone
-      prak
-      slartibartfast
-      socrates
-      zarquon
-      calliope
-      polyhymnia
-
-@end(display)
+@begin(Format)
+andromache
+gaea
+hactar
+helen
+jinx
+m4-035-s
+m4-035-v
+m4-035-w
+oath
+persephone
+prak
+slartibartfast
+socrates
+zarquon
+calliope
+polyhymnia
+@end(format)
 
 Target Path:@\/site/rvd/rvddb 
 
 File(s):@\
-@begin(display)
+@Begin(Display, LeftMargin 0, RightMargin 0)
 @B(RVDDB) - RVD specific file
 
 Description:
-@Begin(Text, Above 0, Below 0, Spacing 1, Spread 0, LeftMargin +2)
+@Begin(Text, Above 0, Below 0, Spacing 1, Spread 0, LeftMargin +2, Indent 0)
 RVDDB is athe rvd specific file which is used by an rvd server.
 This file is only used in the event of a catastrophic failure
 with the rvd server.  Nonetheless, this file represents all of the
@@ -511,43 +518,41 @@ Client(s):
    RVD server.
 
 Content example:
+@Begin(Verbatim, Above 1)
+     operation = add_physical |
+     filename = /dev/	      |
+     blocks=		      | - This is the header 
+     created=		      |   unique to each physical
+     modified=		      |   disk on a machine
 
-     operation = add_physical @^|
-     filename = /dev/@\|
-     blocks=@\| - This is the header 
-     created=@\|   unique to each 
-     modified=@\|   physical disk on
-				  a machine
-
-     operation = add_virtual@\|
-     physical=@\|
-     name=@\|
-     owner=@\|
-     rocap=@\| - This is the information
-     excap=@\|   unique to each virtual
-     shcap=@\|   disk.
-     modes=@\|  
-     offset=@\|   Block gets repeated n 
-     blocks=@\|   times.
-     created=@\|   Where n is the number
-     modified=@\|   of allocated RVDs on a 
-     ownhost=@\|   physical disk.
-     uid=@\|
-@TabClear()
-@end(display)
-
+     operation = add_virtual  |
+     physical=		      |
+     name=		      |
+     owner=		      |
+     rocap=		      | - This is the information
+     excap=		      |   unique to each virtual
+     shcap=		      |   disk.
+     modes=		      |  
+     offset=		      |   Block gets repeated n 
+     blocks=		      |   times.
+     created=		      |   Where n is the number
+     modified=		      |   of allocated RVDs on a 
+     ownhost=		      |   physical disk.
+     uid=		      |
+@end(Verbatim)
+@End(Display)
 @NewPage()
 
-Service:@\NFS
+Service:@\@U(NFS)
 
 Description:@\@Multiple[Sms supports two files which are necessary
 components of NFS operation.  These files are:
 
-@begin(itemize, spread 1)
+@Begin(Itemize, Spread 0)
 /site/nfsid
 
 /mit/quota
-@end(itemize)
+@End(Itemize)
 
 These files reside on the NFS target machine and are used to allocate NFS 
 directories on a per user basis.  The mechanism employed is for all
@@ -571,13 +576,11 @@ target servers.  Once on the target machine, the dcm will invoke a shell
 script which reads the /mit/quota file and then creates the NFS directory.
 The basic operation of the script is:
 
-@begin(display)
-
-      mkdir <username> - using /mit/quota file
-      chown  <UID> - using /site/nfsid
-      setquota <quota> - using /mit/quota
-
-@end(display)
+@Begin(Format, Above 1, LeftMargin +4)
+mkdir <username> - using /mit/quota file
+chown  <UID> - using /site/nfsid
+setquota <quota> - using /mit/quota
+@End(Format)
 ]
 
 Propagation interval:@\6 hours, 0:00, 6:00, 12:00, 18:00
@@ -585,17 +588,17 @@ Propagation interval:@\6 hours, 0:00, 6:00, 12:00, 18:00
 Data Format:@\ASCII
 
 Client(s):@\
-@begin(display)
+@begin(Format)
 NFS server
 sms shell script for creating directories and user quotas.   
-@end(display)
+@end(Format)
 
 Files updated:@\
-@begin(display)
+@Begin(Display, LeftMargin 0)
 @B(/SITE/NFSID) - username to uid/gid mapping.
 
 Description:
-@Begin(Text, Above 0, Below 0, Spacing 1, Spread 0, LeftMargin +2)
+@Begin(Text, Above 0, Below 0, Spacing 1, Spread 0, LeftMargin +2, Indent 0)
 This file is used for both the nfs server information and
 for the sms shell script.  It provides a username to uid/gid
 mapping.  The file is distributed to every NFS server and 
@@ -611,19 +614,19 @@ How updated:
    maintained with user_maint.  
 
 Contents example:
-
+@Begin(Verbatim, Above 1, Below 1)
    <username> <UID> <GID1, GID2,...GID32>
-
+@End(Verbatim)
    where: @^username is the user's login name (Ex: pjlevine)
 @\UID is the users id number (Ex: 123456)
 @\GIDn are the groups in which the user is a member
 @\     (max 32)
 @TabClear()
-
+@Hinge()
 @B(/MIT/QUOTA) - file containing username to quota mapping.
 
 Description:
-@Begin(Text, Above 0, Below 0, Spacing 1, Spread 0, LeftMargin +2)
+@Begin(Text, Above 0, Below 0, Spacing 1, Spread 0, LeftMargin +2, Indent 0)
 This file contains the mapping between username and quota.
 The file is distributed to each filesystem on the recipient 
 machine.  The contents of this file is used to create
@@ -640,16 +643,16 @@ How updated:
    maintained with user_maint.  
 
 Contents example:
-
+@Begin(Verbatim, Above 1, Below 1)
    <username> <quota>
-
+@End(Verbatim)
    where: @^username is the user's login name (Ex. pjlevine)
 @\quota is the per user allocation (in Mbytes)
 @TabClear()
 @end(display)
 
 @NewPage()
-Service:@\Mail (/usr/lib/aliases)
+Service:@\@U(Mail)
 
 Description:@\The generation of /usr/lib/aliases is a process which makes
 use of a currently existing program aliasbld.c.  This program 
@@ -667,7 +670,9 @@ Propagation interval:@\24 hours, 3:00
 Target:@\ATHENA.MIT.EDU
 
 File(s):@\
-@begin(display)
+
+
+@Begin(Display, LeftMargin 0)
 
 @B(/USR/LIB/ALIASES) - mail forwarding information
 

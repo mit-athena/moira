@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/dbck.qc,v 1.1 1988-09-25 21:48:56 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/dbck.qc,v 1.2 1988-09-26 14:05:10 mar Exp $
  *
  * SMS database consistency checker
  *
@@ -14,12 +14,16 @@
 #include "dbck.h"
 
 
+static char dbck_qc_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/dbck.qc,v 1.2 1988-09-26 14:05:10 mar Exp $";
+
+
 int debug = 1;
 int mode = MODE_ASK;
 int fast = 0;
 struct hash *users, *machines, *clusters, *lists, *filesys, *nfsphys, *strings;
 ##int dcmenable;
-int cleanup();
+struct save_queue *modtables;
+int interrupt();
 
 
 main(argc, argv)
@@ -74,9 +78,10 @@ char **argv;
     if (debug)
       printf("Debug level is %d\n", debug);
 
-    signal(SIGHUP, cleanup);
-    signal(SIGQUIT, cleanup);
-    signal(SIGINT, cleanup);
+    signal(SIGHUP, interrupt);
+    signal(SIGQUIT, interrupt);
+    signal(SIGINT, interrupt);
+    modtables = sq_create();
 
     IIseterr(ingerr);
     printf("Opening database %s...", database);
@@ -94,15 +99,13 @@ char **argv;
 	phase2();
 	phase3();
     } else {
-	printf("Skipping to counts\n");
 	count_only_setup();
     }
     phase4();
 
 ##  end transaction
-##  replace values (value = dcmenable) where values.name = "dcm_enable"
+    cleanup();
     printf("Done.\n");
-##  exit
     exit(0);
 }
 
@@ -116,11 +119,35 @@ int	*num;
 }
 
 
-int cleanup()
+int interrupt()
 ##{
-    printf("Signal caught, aborting transaction\n");
+    printf("Signal caught\n");
+    if (prompt("Save database changes")) {
+##	end transaction
+	cleanup();
+	exit(0);
+    }
+    printf("Aborting transaction\n");
 ##  abort
 ##  replace values (value = dcmenable) where values.name = "dcm_enable"
 ##  exit
     exit(0);
+##}
+
+
+modified(table)
+char *table;
+{
+    sq_save_unique_string(modtables, table);
+}
+
+cleanup()
+##{
+##  char *tab;
+
+    while (sq_get_data(modtables, &tab)) {
+##	replace tblstats (modtime = "now") where tblstats.table = tab
+    }
+##  replace values (value = dcmenable) where values.name = "dcm_enable"
+##  exit
 ##}

@@ -1,6 +1,6 @@
 /* This file defines the query dispatch table for version 2 of the protocol
  *
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/queries2.c,v 2.8 1992-08-10 00:08:04 genoa Exp $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/queries2.c,v 2.9 1992-08-23 21:37:02 genoa Exp $
  *
  * Copyright 1987, 1988 by the Massachusetts Institute of Technology.
  * For copying and distribution information, please see the file
@@ -2258,7 +2258,7 @@ struct query Queries2[] = {
       "CHAR(u.login), CHAR(u.uid), u.shell, CHAR(u.last), CHAR(u.first), u.middle, CHAR(u.status), CHAR(u.clearid), u.type, str.string, CHAR(u.signature), CHAR(u.secure), CHAR(u.modtime), CHAR(u.modby), u.modwith FROM users u, strings str",
       gual_fields,
       15,
-      "u.login LIKE '%s' ESCAPE '*' AND u.users_id != 0 AND u.comment = strings.string_id",
+      "u.login LIKE '%s' ESCAPE '*' AND u.users_id != 0 AND u.comment = str.string_id",
       1,
       &gubl_validate,
   },
@@ -3245,7 +3245,7 @@ struct query Queries2[] = {
     RETRIEVE,
     "fs",
     FILESYS,
-    "CHAR(fs.label), fs.type, CHAR(m.name), fs.name, fs.mount, fs.access, fs.comments, CHAR(u.login), CHAR(l.name), CHAR(fs.createflg), fs.lockertype, CHAR(fs.modtime), CHAR(fs.modby), fs.modwith FROM filesys fs, machine m, users u, list l",
+    "CHAR(fs.label), fs.type, CHAR(m.name), CHAR(fs.name), fs.mount, fs.access, fs.comments, CHAR(u.login), CHAR(l.name), CHAR(fs.createflg), fs.lockertype, CHAR(fs.modtime), CHAR(fs.modby), fs.modwith FROM filesys fs, machine m, users u, list l",
     gfsl_fields,
     14,
     "fs.label LIKE '%s' ESCAPE '*' AND fs.mach_id = m.mach_id AND fs.owner = u.users_id AND fs.owners = l.list_id",
@@ -3260,7 +3260,7 @@ struct query Queries2[] = {
     RETRIEVE,
     "fs",
     FILESYS,
-    "CHAR(fs.label), fs.type, CHAR(m.name), fs.name, fs.mount, fs.access, fs.comments, CHAR(u.login), CHAR(l.name), CHAR(fs.createflg), fs.lockertype, CHAR(fs.modtime), CHAR(fs.modby), fs.modwith FROM filesys fs, machine m, users u, list l",
+    "CHAR(fs.label), fs.type, CHAR(m.name), CHAR(fs.name), fs.mount, fs.access, fs.comments, CHAR(u.login), CHAR(l.name), CHAR(fs.createflg), fs.lockertype, CHAR(fs.modtime), CHAR(fs.modby), fs.modwith FROM filesys fs, machine m, users u, list l",
     gfsm_fields,
     14,
     "fs.mach_id = %d AND m.mach_id = fs.mach_id AND fs.owner = u.users_id AND fs.owners = l.list_id",
@@ -3275,7 +3275,7 @@ struct query Queries2[] = {
     RETRIEVE,
     "fs",
     FILESYS,
-    "CHAR(fs.label), fs.type, CHAR(m.name), fs.name, fs.mount, fs.access, fs.comments, CHAR(u.login), CHAR(l.name), CHAR(fs.createflg), fs.lockertype, CHAR(fs.modtime), CHAR(fs.modby), fs.modwith FROM filesys fs, machine m, users u, list l, nfsphys np",
+    "CHAR(fs.label), fs.type, CHAR(m.name), CHAR(fs.name), fs.mount, fs.access, fs.comments, CHAR(u.login), CHAR(l.name), CHAR(fs.createflg), fs.lockertype, CHAR(fs.modtime), CHAR(fs.modby), fs.modwith FROM filesys fs, machine m, users u, list l, nfsphys np",
     gfsn_fields,
     14,
     "fs.mach_id = %d AND m.mach_id = fs.mach_id AND fs.owner = u.users_id AND fs.owners = l.list_id AND np.nfsphys_id = fs.phys_id AND np.dir LIKE '%s' ESCAPE '*' AND fs.type = 'NFS'", 
@@ -3290,7 +3290,7 @@ struct query Queries2[] = {
     RETRIEVE,
     "fs",
     FILESYS,
-    "CHAR(fs.label), fs.type, CHAR(m.name), fs.name, fs.mount, fs.access, fs.comments, CHAR(u.login), CHAR(l.name), CHAR(fs.createflg), fs.lockertype, CHAR(fs.modtime), CHAR(fs.modby), fs.modwith FROM filesys fs, machine m, users u, list l",
+    "CHAR(fs.label), fs.type, CHAR(m.name), CHAR(fs.name), fs.mount, fs.access, fs.comments, CHAR(u.login), CHAR(l.name), CHAR(fs.createflg), fs.lockertype, CHAR(fs.modtime), CHAR(fs.modby), fs.modwith FROM filesys fs, machine m, users u, list l",
     gfsg_fields,
     14,
     "fs.owners = %d AND m.mach_id = fs.mach_id AND fs.owner = u.users_id AND fs.owners = l.list_id",
@@ -3299,18 +3299,18 @@ struct query Queries2[] = {
   },
 
   {
-    /* Q_GFSP - GET_FILESYS_BY_PATH */ /** Allow wildcards??? **/
+    /* Q_GFSP - GET_FILESYS_BY_PATH */
     "get_filesys_by_path",
     "gfsp",
     RETRIEVE,
     "fs",
     FILESYS,
-    "CHAR(fs.label), fs.type, CHAR(m.name), fs.name, fs.mount, fs.access, fs.comments, CHAR(u.login), CHAR(l.name), CHAR(fs.createflg), fs.lockertype, CHAR(fs.modtime), CAHR(fs.modby), fs.modwith FROM filesys fs, machine m, users u, list l",
+    "CHAR(fs.label), fs.type, CHAR(m.name), CHAR(fs.name), fs.mount, fs.access, fs.comments, CHAR(u.login), CHAR(l.name), CHAR(fs.createflg), fs.lockertype, CHAR(fs.modtime), CHAR(fs.modby), fs.modwith FROM filesys fs, machine m, users u, list l",
     gfsp_fields,
     14,
-    "fs.name = '%s' and m.mach_id = fs.mach_id and fs.owner = u.users_id and fs.owners = list_id",
+    "fs.name LIKE '%s' ESCAPE '*' AND m.mach_id = fs.mach_id AND fs.owner = u.users_id AND fs.owners = list_id",
     1,
-    &VDsortf,
+    &VDwildsortf,
   },
  
   {
@@ -3374,7 +3374,7 @@ struct query Queries2[] = {
   },
 
   {
-    /* Q_AFTG - ADD_FILESYS_TO_FSGROUP */ /** Needs subselect */
+    /* Q_AFTG - ADD_FILESYS_TO_FSGROUP */
     "add_filesys_to_fsgroup",
     "aftg",
     APPEND,
@@ -3382,9 +3382,9 @@ struct query Queries2[] = {
     "fsgroup",
     "INTO fsgroup (group_id,filsys_id,key) VALUES (%d, %d, '%s')",
     gfgm_fields,
-    2,
+    3,
     (char *)0,
-    1,
+    0,
     &aftg_validate,
   },
 
@@ -3530,11 +3530,11 @@ struct query Queries2[] = {
     APPEND,
     "q",
     QUOTA,
-    "INTO quota (type, entity_id, quota, filsys_id, phys_id) VALUES (filesys.filsys_id, '%s', %d, %s, %s, %s)",
+    "INTO quota (type, entity_id, quota, filsys_id, phys_id) VALUES ('%s', %d, %s, %s, %s)",
     aqot_fields,
     3,
     (char *)0,
-    1,
+    0,
     &aqot_validate,
   },
 
@@ -3548,7 +3548,7 @@ struct query Queries2[] = {
     "quota SET quota = %s",
     aqot_fields,
     1,
-    "filsys_id = %d AND type = '%s' AND entity_id = %d",
+    "quota.filsys_id = %d AND quota.type = '%s' AND quota.entity_id = %d",
     3,
     &uqot_validate,
   },
@@ -3563,7 +3563,7 @@ struct query Queries2[] = {
     (char *)0,
     aqot_fields,
     0,
-    "filsys_id = %d AND type = '%s' AND entity_id = %d",
+    "quota.filsys_id = %d AND quota.type = '%s' AND quota.entity_id = %d",
     3,
     &dqot_validate,
   },
@@ -3609,7 +3609,7 @@ struct query Queries2[] = {
     anfq_fields,
     2,
     (char *)0,
-    1,
+    0,
     &anfq_validate,
   },
 

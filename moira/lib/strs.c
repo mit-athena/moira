@@ -1,4 +1,4 @@
-/* $Id: strs.c,v 1.17 1998-05-28 14:45:10 danw Exp $
+/* $Id: strs.c,v 1.18 1999-10-06 03:04:02 danw Exp $
  *
  * Miscellaneous string functions.
  *
@@ -12,7 +12,7 @@
 
 #include <ctype.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/strs.c,v 1.17 1998-05-28 14:45:10 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/strs.c,v 1.18 1999-10-06 03:04:02 danw Exp $");
 
 /*
  * Trim whitespace off both ends of a string.
@@ -75,3 +75,43 @@ char *lowercase(char *s)
     }
   return s;
 }
+
+#ifndef HAVE_STRLCPY
+/* Copy as much of SRC will fit into a DST of size SIZE, always
+ * NUL-terminating. (Originally from OpenBSD.)
+ */
+size_t strlcpy(char *dst, const char *src, size_t size)
+{
+  size_t len = strlen(src);
+
+  if (len < size)
+    memcpy(dst, src, len + 1);
+  else
+    {
+      memcpy(dst, src, size - 1);
+      dst[size - 1] = '\0';
+    }
+  return len;
+}
+#endif
+
+#ifndef HAVE_STRLCAT
+/* Catenate as must of SRC will fit onto the end of DST, which is
+ * in a buffer of size SIZE, always NUL-terminating. (Originally
+ * from OpenBSD.)
+ */
+size_t strlcat(char *dst, const char *src, size_t size)
+{
+  size_t dlen = strlen(dst);
+  size_t slen = strlen(src);
+
+  if (dlen + slen < size)
+    memcpy(dst + dlen, src, slen + 1);
+  else
+    {
+      memcpy(dst + dlen, src, size - dlen - 1);
+      dst[size - 1] = '\0';
+    }
+  return dlen + slen;
+}
+#endif

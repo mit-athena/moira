@@ -7,11 +7,11 @@
  *
  * $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/dcm.c,v $
  * $Author: mar $
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/dcm.c,v 1.11 1989-09-08 15:09:43 mar Exp $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/dcm.c,v 1.12 1989-11-28 17:09:06 mar Exp $
  */
 
 #ifndef lint
-static char rcsid_dcm_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/dcm.c,v 1.11 1989-09-08 15:09:43 mar Exp $";
+static char rcsid_dcm_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/dcm.c,v 1.12 1989-11-28 17:09:06 mar Exp $";
 #endif lint
 
 #include <stdio.h>
@@ -34,9 +34,6 @@ char *itoa();
 int gqval();
 long time();
 
-
-#define DEADLOCK_WAIT	(3 * 60)	/* number of seconds to wait after
-					   a deadlock before trying again. */
 
 /* declared global so that we can get the current time from different places. */
 struct timeval tv;
@@ -167,7 +164,8 @@ do_services()
     qargv[1] = "dontcare";
     qargv[2] = "false";
     sq = sq_create();
-    if (status = sms_query("qualified_get_server", 3, qargv, qgetsv, sq)) {
+    if (status = sms_query_with_retry("qualified_get_server", 3, qargv,
+				      qgetsv, sq)) {
 	com_err(whoami, status, " getting services");
 	leave("query failed");
     }
@@ -186,7 +184,8 @@ do_services()
 	sprintf(dfgen_cmd, "exec %s %s/%s.out",
 		dfgen_prog, DCM_DIR, service);
 	gettimeofday(&tv, &tz);
-	if (status = sms_query("get_server_info", 1, qargv, getsvinfo, &svc)) {
+	if (status = sms_query_with_retry("get_server_info", 1, qargv,
+					  getsvinfo, &svc)) {
 	    com_err(whoami, status, " getting service %s info, skipping to next service", service);
 	    continue;
 	}
@@ -208,8 +207,8 @@ do_services()
 		qargv[3] = strsave("1");
 		qargv[4] = strsave("0");
 		qargv[5] = strsave("");
-		status = sms_query("set_server_internal_flags", 6, qargv,
-				   scream, NULL);
+		status = sms_query_with_retry("set_server_internal_flags", 6,
+					      qargv, scream, NULL);
 		if (status != SMS_SUCCESS) {
 		    com_err(whoami, status, " setting server state");
 		    goto free_service;
@@ -255,17 +254,10 @@ do_services()
 	    free_service:
 		free(qargv[3]);
 		qargv[3] = strsave("0");
-		status = sms_query("set_server_internal_flags", 6, qargv,
-				   scream, NULL);
-		if (status) {
-		    com_err(whoami, status,
-			    " setting service state, sleeping");
-		    sleep(DEADLOCK_WAIT);
-		    status = sms_query("set_server_internal_flags", 6, qargv,
-				       scream, NULL);
-		    if (status)
-		      com_err(whoami, status, " setting service state again");
-		}
+		status = sms_query_with_retry("set_server_internal_flags", 6,
+					      qargv, scream, NULL);
+		if (status)
+		  com_err(whoami, status, " setting service state");
 		close(lock_fd);
 		free(qargv[0]);
 		free(qargv[1]);
@@ -346,7 +338,8 @@ struct service *svc;
     argv[1] = "TRUE";
     argv[2] = argv[3] = argv[4] = "DONTCARE";
     argv[5] = "FALSE";
-    status = sms_query("qualified_get_server_host", 6, argv, qgethost, sq);
+    status = sms_query_with_retry("qualified_get_server_host", 6, argv,
+				  qgethost, sq);
     if (status == SMS_NO_MATCH) {
 	return;
     } else if (status) {
@@ -357,7 +350,8 @@ struct service *svc;
 	if (dbg & DBG_TRACE)
 	  com_err(whoami, 0, "checking %s...", machine);
 	argv[1] = machine;
-	status = sms_query("get_server_host_info", 2, argv,gethostinfo, &shost);
+	status = sms_query_with_retry("get_server_host_info", 2, argv,
+				      gethostinfo, &shost);
 	if (status) {
 	    com_err(whoami,status, " getting server_host_info for %s", machine);
 	    goto free_mach;
@@ -380,7 +374,8 @@ struct service *svc;
 	argv[6] = strsave("");
 	argv[7] = itoa(tv.tv_sec);
 	argv[8] = itoa(shost.lastsuccess);
-	status = sms_query("set_server_host_internal", 9, argv,scream,NULL);
+	status = sms_query_with_retry("set_server_host_internal", 9, argv,
+				      scream, NULL);
 	if (status != SMS_SUCCESS) {
 	    com_err(whoami,status," while setting internal state for %s:%s",
 		    svc->service, machine);
@@ -414,17 +409,10 @@ struct service *svc;
 		qargv[3] = strsave("0");
 		qargv[4] = itoa(svc->harderror);
 		qargv[5] = strsave(svc->errmsg);
-		status = sms_query("set_server_internal_flags",
-				   6, qargv, scream, NULL);
-		if (status) {
-		    com_err(whoami, status,
-			    " setting service state, sleeping");
-		    sleep(DEADLOCK_WAIT);
-		    status = sms_query("set_server_internal_flags",
-				       6, qargv, scream, NULL);
-		    if (status)
-		      com_err(whoami, status, " setting service state again");
-		}
+		status = sms_query_with_retry("set_server_internal_flags",
+					      6, qargv, scream, NULL);
+		if (status)
+		  com_err(whoami, status, " setting service state again");
 		free(qargv[0]);
 		free(qargv[1]);
 		free(qargv[2]);
@@ -435,17 +423,10 @@ struct service *svc;
 		free(argv[2]);
 		argv[4] = "0";
 		free(argv[5]);
-		status = sms_query("set_server_host_internal",
-				   9, argv,scream,NULL);
-		if (status) {
-		    com_err(whoami, status,
-			    " setting host state, sleeping");
-		    sleep(DEADLOCK_WAIT);
-		    status = sms_query("set_server_host_internal",
-				       9, argv,scream,NULL);
-		    if (status)
-		      com_err(whoami, status, " setting host state again");
-		}
+		status = sms_query_with_retry("set_server_host_internal",
+					      9, argv,scream,NULL);
+		if (status)
+		  com_err(whoami, status, " setting host state again");
 		return(-1);
 	    }
 	    free(argv[2]);
@@ -453,14 +434,10 @@ struct service *svc;
 	}
 	argv[4] = "0";
 	close(lock_fd);
-	status = sms_query("set_server_host_internal", 9, argv,scream,NULL);
-	if (status) {
-	    com_err(whoami, status, " setting host state, sleeping");
-	    sleep(DEADLOCK_WAIT);
-	    status = sms_query("set_server_host_internal", 9, argv,scream,NULL);
-	    if (status)
-	      com_err(whoami, status, " setting host state again");
-	}
+	status = sms_query_with_retry("set_server_host_internal", 9, argv,
+				      scream, NULL);
+	if (status)
+	  com_err(whoami, status, " setting host state again");
     free_mach:
 	free(machine);
 	close(lock_fd);

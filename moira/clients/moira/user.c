@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.19 1990-04-09 18:04:33 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.20 1990-05-02 15:47:21 mar Exp $";
 #endif lint
 
 /*	This is the file user.c for the MOIRA Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.19 1990-04-09 18:04:33 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.20 1990-05-02 15:47:21 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -133,6 +133,29 @@ char ** info;
     return(info);
 }
 
+
+/* Check that the supplied name follows the capitalization rules, and 
+ * offer to correct it if not.
+ */
+
+CorrectCapitalization(name)
+char **name;
+{
+    char temp_buf[BUFSIZ], fixname[BUFSIZ];
+
+    strcpy(fixname, *name);
+    FixCase(fixname);
+    if (strcmp(fixname, *name)) {
+	Put_message("You entered a name which does not follow the capitalization conventions.");
+	sprintf(temp_buf, "Correct it to \"%s\"", fixname);
+	if (YesNoQuestion(temp_buf, 1)) {
+	    free(*name);
+	    *name = strsave(fixname);
+	}
+    }
+}
+
+
 /*	Function Name: AskUserInfo.
  *	Description: This function askes the user for information about a 
  *                   machine and saves it into a structure.
@@ -148,7 +171,7 @@ AskUserInfo(info, name)
 char ** info;
 Bool name;
 {
-    char temp_buf[BUFSIZ], *newname, *temp_ptr;
+    char temp_buf[BUFSIZ], fixname[BUFSIZ], *newname, *temp_ptr;
 
     if (name) {
 	sprintf(temp_buf,"\nChanging Attributes of user %s.\n",info[U_NAME]);
@@ -158,8 +181,11 @@ Bool name;
 	char *argv[3];
 
 	GetValueFromUser("User's last name", &info[U_LAST]);
+	CorrectCapitalization(&info[U_LAST]);
 	GetValueFromUser("User's first name", &info[U_FIRST]);
+	CorrectCapitalization(&info[U_FIRST]);
 	GetValueFromUser("User's middle name", &info[U_MIDDLE]);
+	CorrectCapitalization(&info[U_MIDDLE]);
 	argv[0] = info[U_FIRST];
 	argv[1] = info[U_LAST];
 	if (do_mr_query("get_user_by_name", 2, argv,
@@ -183,8 +209,11 @@ Bool name;
     GetValueFromUser("User's shell", &info[U_SHELL]);
     if (name) {
 	GetValueFromUser("User's last name", &info[U_LAST]);
+	CorrectCapitalization(&info[U_LAST]);
 	GetValueFromUser("User's first name", &info[U_FIRST]);
+	CorrectCapitalization(&info[U_FIRST]);
 	GetValueFromUser("User's middle name", &info[U_MIDDLE]);
+	CorrectCapitalization(&info[U_MIDDLE]);
     }
     while (1) {
 	int i;
@@ -372,6 +401,8 @@ GetUidNumberFromName()
     
     Prompt_input("First Name: ", first, BUFSIZ);
     Prompt_input("Last  Name: ", last, BUFSIZ);
+    FixCase(first);
+    FixCase(last);
 
     args[0] = first;
     args[1] = last;

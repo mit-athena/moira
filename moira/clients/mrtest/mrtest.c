@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v $
  *	$Author: danw $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v 1.31 1996-12-14 21:01:16 danw Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v 1.32 1997-01-01 21:19:25 danw Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_test_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v 1.31 1996-12-14 21:01:16 danw Exp $";
+static char *rcsid_test_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v 1.32 1997-01-01 21:19:25 danw Exp $";
 #endif /* lint */
 
 #include <mit-copyright.h>
@@ -60,6 +60,11 @@ main(argc, argv)
 	initialize_sms_error_table();
 	initialize_krb_error_table();
 
+#ifdef USE_READLINE
+	/* we don't want filename completion */
+	rl_bind_key ('\t', rl_insert);
+#endif
+
 #ifdef POSIX
 	action.sa_handler = discard_input;
 	action.sa_flags = 0;
@@ -102,6 +107,7 @@ char *mr_gets(char *prompt, char *buf, size_t len)
     }
     strncpy(buf, in, len-1);
     buf[len]=0;
+    free(in);
     
     return buf;
   }

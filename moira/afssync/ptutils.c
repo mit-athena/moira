@@ -1,13 +1,10 @@
-/* Copyright (C) 1989 Transarc Corporation - All rights reserved */
+/* Copyright (C) 1990, 1989 Transarc Corporation - All rights reserved */
 /*
  * P_R_P_Q_# (C) COPYRIGHT IBM CORPORATION 1988
  * LICENSED MATERIALS - PROPERTY OF IBM
  * REFER TO COPYRIGHT INSTRUCTIONS FORM NUMBER G120-2083
  */
 
-#ifndef lint
-static char rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/afssync/ptutils.c,v 1.4 1990-09-21 15:17:34 mar Exp $";
-#endif
 
 /*	
              Sherri Nichols
@@ -20,8 +17,14 @@ static char rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/rep
 */
 
 #include <afs/param.h>
+#include <afs/stds.h>
 #include <sys/types.h>
 #include <stdio.h>
+#ifdef AFS_HPUX_ENV
+#include <string.h>
+#else
+#include <strings.h>
+#endif
 #include <lock.h>
 #include <netinet/in.h>
 #include <ubik.h>
@@ -29,7 +32,8 @@ static char rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/rep
 #include <afs/com_err.h>
 #include "ptserver.h"
 #include "pterror.h"
-#include <strings.h>
+
+RCSID ("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/afssync/ptutils.c,v 1.5 1992-05-31 20:25:31 probe Exp $")
 
 extern struct ubik_dbase *dbase;
 extern struct afsconf_dir *prdir;
@@ -50,10 +54,19 @@ static int CorrectUserName (name)
 {
     extern int pr_realmNameLen;
 
+#ifdef CROSS_CELL
+    if (index (name, ':') || index(name, '\n')) return 0;
+#else
     if (index (name, ':') || index(name, '@') || index(name, '\n')) return 0;
+#endif
     if (strlen (name) >= PR_MAXNAMELEN - pr_realmNameLen - 1) return 0; 
     return 1;
 }
+
+/* CorrectGroupName - Like the above but handles more complicated cases caused
+ * by including the ownership in the name.  The interface works by calculating
+ * the correct name based on a given name and owner.  This allows easy use by
+ * rename, which then compares the correct name with the requested new name. */
 
 static long CorrectGroupName (ut, aname, cid, oid, cname)
   struct ubik_trans *ut;
@@ -117,10 +130,16 @@ static long CorrectGroupName (ut, aname, cid, oid, cname)
     /* check for legal name with either group rules or user rules */
     if (suffix = index(cname, ':')) {
 	/* check for confusing characters */
+#ifdef CROSS_CELL
+	if (index(cname, '\n') ||	/* restrict so recreate can work */
+	    index(suffix+1, ':'))	/* avoid multiple colons */
+	    return PRBADNAM;
+#else
 	if (index(cname, '@') ||	/* avoid confusion w/ foreign users */
 	    index(cname, '\n') ||	/* restrict so recreate can work */
 	    index(suffix+1, ':'))	/* avoid multiple colons */
 	    return PRBADNAM;
+#endif
     } else {
 	if (!CorrectUserName (cname)) return PRBADNAM;
     }
@@ -138,6 +157,7 @@ int AccessOK (ut, cid, tentry, mem, any)
     long aid;
 
     if (pr_noAuth) return 1;
+    if (cid == SYSADMINID) return 1;	/* special case fileserver */
     if (tentry) {
 	flags = tentry->flags;
 	oid = tentry->owner;
@@ -177,7 +197,6 @@ long CreateEntry (at, aname, aid, idflag, flag, oid, creator)
     /* get and init a new entry */
     register long code;
     long newEntry;
-    long temp;
     struct prentry tentry;
     
     bzero(&tentry, sizeof(tentry));
@@ -209,12 +228,140 @@ long CreateEntry (at, aname, aid, idflag, flag, oid, creator)
 	tentry.owner = oid;
     }
     else tentry.owner = SYSADMINID;
+
+#ifdef CROSS_CELL
+#define ADD_TO_AUTHUSER_GROUP 1
+#define AUTHUSER_GROUP "system:authuser"
+    {
+	char * atsign;
+
+	if (!(atsign= index(aname,'@'))) {	/* No @ so local cell*/
+	    if (idflag)
+		tentry.id = *aid;
+	    else {
+		code= AllocID(at,flag,&tentry.id);
+		if (code != PRSUCCESS) return code;
+	    }
+	} else {
+	    /*foreign cells are represented by the group system:authuser@cell*/
+	    if (flag & PRGRP) {
+		/* it's a new foreign cell so the format
+		 * must be AUTHUSER_GROUP@cellname  */
+		int badFormat;
+		
+		*atsign = '\0';
+		badFormat = strcmp(AUTHUSER_GROUP, aname);
+		*atsign = '@';
+		if (badFormat) return PRBADNAM;
+		if (idflag)
+		    tentry.id = *aid;
+		else {
+		    code= AllocID(at,flag,&tentry.id);
+		    if (code != PRSUCCESS) return code;
+		}
+	    } else {
+		/* it's a foreign cell entry */
+		char *cellGroup;
+		long pos;
+		struct prentry centry;
+		extern long allocNextId();
+		extern long AddToEntry();
+		
+		cellGroup = (char *) malloc (strlen(AUTHUSER_GROUP) +
+					     strlen(atsign) +1);
+		strcpy(cellGroup, AUTHUSER_GROUP);
+		strcat(cellGroup, atsign);
+		pos = FindByName(at,cellGroup);
+		
+		/* if the group doesn't exist don't allow user creation */
+		if (!pos) return PRBADNAM;
+		
+		code = pr_Read (at, 0, pos, &centry, sizeof(centry));
+		if (code) return code;
+		tentry.cellid = ntohl(centry.id);
+		/* cellid is the id of the group representing the cell */
+		
+		if (idflag) {
+		    if (!inRange(&centry,*aid))
+                        return PRBADARG;	/* the id specified is not in
+						 * the id space of the group */
+		    tentry.id = *aid;
+		} else
+		    /* allocNextID() will allocate the next id
+		     * in that cell's space */
+		    tentry.id = allocNextId(&centry);
+
+		/* charge the cell group for the new user and test quota */
+		if (!(ntohl(centry.flags) & PRQUOTA)) {
+                    /* quota uninitialized, so initialize it now */
+                    centry.flags = htonl (ntohl(centry.flags) | PRQUOTA);
+                    centry.ngroups = htonl(30);
+		}
+
+		centry.ngroups = htonl(ntohl(centry.ngroups) - 1);
+		if ( centry.ngroups < 0)
+		    if (!pr_noAuth) return PRNOMORE;
+		
+#if !ADD_TO_AUTHUSER_GROUP
+		centry.count = htonl(ntohl(centry.ngroups) +1);
+		/* keep count of how many people are in the group. */
+#endif
+		
+		code = pr_Write (at, 0, pos, &centry, sizeof(centry));
+		/* write updated entry for group */
+
+		/* Now add the new user entry to the database */
+		
+		tentry.creator = creator;
+		*aid = tentry.id;
+		code = pr_WriteEntry(at, 0, newEntry, &tentry);
+		if (code) return PRDBFAIL;
+		code = AddToIDHash(at,*aid,newEntry);
+		if (code != PRSUCCESS) return code;
+		code = AddToNameHash(at,aname,newEntry);
+		if (code != PRSUCCESS) return code;
+		if (inc_header_word (at, foreigncount, 1)) return PRDBFAIL;
+		
+#if ADD_TO_AUTHUSER_GROUP
+		
+		/* Now add the entry to the authuser group for this cell.
+		 * We will reread the entries for the user and the group
+		 * instead of modifying them before writing them in the
+		 * previous steps. Although not very efficient, much simpler */
+
+		/* First update the group entry */
+		pos = FindByID(at,tentry.cellid);
+		if (!pos) return PRBADNAM;
+		code = pr_ReadEntry (at, 0, pos, &centry);
+		if (code) return code;
+		code = AddToEntry(at, &centry,pos,*aid);
+		if (code) return code;
+		/* and now the user entry */
+		pos = FindByID(at,*aid);
+		if (!pos) return PRBADNAM;
+		code = pr_ReadEntry(at, 0, pos, &tentry);
+		if (code) return code;
+		code = AddToEntry(at, &tentry,pos,tentry.cellid);
+		if (code) return code;
+		
+#endif
+		
+		/* Ok we're done */
+		return PRSUCCESS;
+	    }
+	}
+    }
+
+#else	/* !CROSS_CELL */
+
     if (idflag) 
 	tentry.id = *aid;
     else {
 	code= AllocID(at,flag,&tentry.id);
 	if (code != PRSUCCESS) return code;
     }
+#endif	/* !CROSS_CELL */
+
     if (flag & PRGRP) {
 	/* group ids are negative */
 	if (tentry.id < (long)ntohl(cheader.maxGroup)) {
@@ -266,7 +413,11 @@ long CreateEntry (at, aname, aid, idflag, flag, oid, creator)
 			!IsAMemberOf (at, creator, SYSADMINID))
 			return PRNOMORE;
 		}
-		else *nP = htonl(n-1);
+		else {			/* don't use up admin user's quota */
+		    int admin = ((creator == SYSADMINID) ||
+				 IsAMemberOf (at, creator, SYSADMINID));
+		    if (!admin) *nP = htonl(n-1);
+		}
 	    }
 	    code = pr_Write (at, 0, loc, &centry, sizeof(centry));
 	    if (code) return code;
@@ -388,12 +539,40 @@ long DeleteEntry (at, tentry, loc)
   long loc;
 {
     register long code;
-    long temp1;
     struct contentry centry;
-    struct prentry nentry;
     register long  i;
     long nptr;
 
+#ifdef CROSS_CELL
+    if (index(tentry->name,'@')) {
+	if (tentry->flags & PRGRP) {
+	    /* If there are still foreign user accounts from that cell
+	     * don't delete the group */
+	    if (tentry->count) return PRBADARG;
+	} else {
+	    /* It's a user adjust the group quota upwards */
+	    long loc = FindByID (at, tentry->cellid);
+	    struct prentry centry;
+	    if (loc) {
+		code = pr_Read (at, 0, loc, &centry, sizeof(centry));
+		if (code) return code;
+		if (ntohl(centry.flags) & PRQUOTA) {
+                    centry.ngroups = htonl(ntohl(centry.ngroups) + 1);
+		}
+#if !ADD_TO_AUTHUSER_GROUP
+		/* if this is a foreign cell entry then decrement the number of
+		 * existing users in the prentry of the authuser group for that
+		 * cell
+		 */
+		centry.count = htonl(ntohl(centry.count) - 1);
+#endif
+		code = pr_Write (at, 0, loc, &centry, sizeof(centry));
+		if (code) return code;
+	    }
+        }
+    }
+#endif /* CROSS_CELL */
+    
     /* First remove the entire membership list */
     for (i=0;i<PRSIZE;i++) {
 	if (tentry->entries[i] == PRBADID) continue;
@@ -438,13 +617,18 @@ long DeleteEntry (at, tentry, loc)
     if (tentry->flags & (PRGRP | PRFOREIGN)) {
 	long loc = FindByID (at, tentry->creator);
 	struct prentry centry;
+	int admin;
 	if (loc) {
 	    code = pr_Read (at, 0, loc, &centry, sizeof(centry));
 	    if (code) return code;
+	    admin = ((tentry->creator == SYSADMINID) ||
+		     IsAMemberOf (at, tentry->creator, SYSADMINID));
 	    if (ntohl(centry.flags) & PRQUOTA) {
-		if (tentry->flags & PRGRP) {
+		if ((tentry->flags & PRGRP) &&
+		    !(admin && (ntohl(centry.ngroups) >= 20))) {
 		    centry.ngroups = htonl(ntohl(centry.ngroups) + 1);
-		} else if (tentry->flags & PRFOREIGN) {
+		} else if ((tentry->flags & PRFOREIGN) &&
+			   !(admin && (ntohl(centry.nusers) >= 20))) {
 		    centry.nusers = htonl(ntohl(centry.nusers) + 1);
 		}
 	    }
@@ -637,9 +821,15 @@ long GetList (at, tentry, alist, add)
 
     if (add) { /* this is for a CPS, so tack on appropriate stuff */
 	if (tentry->id != ANONYMOUSID && tentry->id != ANYUSERID) {
+#ifdef CROSS_CELL
+	    if ((code = AddToPRList (alist, &size, ANYUSERID)) ||
+		(code = AddAuthGroup(tentry, alist, &size)) ||
+		(code = AddToPRList (alist, &size, tentry->id))) return code;
+#else
 	    if ((code = AddToPRList (alist, &size, ANYUSERID)) ||
 		(code = AddToPRList (alist, &size, AUTHUSERID)) ||
 		(code = AddToPRList (alist, &size, tentry->id))) return code;
+#endif
 	}
 	else {
 	    if ((code = AddToPRList (alist, &size, ANYUSERID)) ||
@@ -659,6 +849,7 @@ long GetOwnedChain (ut, next, alist)
     struct prentry tentry;
     int size;
     int count = 0;
+    extern long IDCmp();
 
     size = 0;
     alist->prlist_val = 0;
@@ -723,7 +914,7 @@ long Initdb()
 
     pr_noAuth = afsconf_GetNoAuthFlag(prdir);
 
-    code = ubik_BeginTrans(dbase,UBIK_READTRANS, &tt);
+    code = ubik_BeginTransReadAny(dbase,UBIK_READTRANS, &tt);
     if (code) return code;
     code = ubik_SetLock(tt,1,1,LOCKREAD);
     if (code) {
@@ -791,14 +982,29 @@ long Initdb()
 
     code = ubik_BeginTrans(dbase,UBIK_WRITETRANS, &tt);
     if (code) return code;
+
     code = ubik_SetLock(tt,1,1,LOCKWRITE);
     if (code) {
 	ubik_AbortTrans(tt);
 	return code;
     }
 
-    /* Initialize the database header */
+    /* before doing a rebuild, check again that the dbase looks bad, because
+     * the previous check was only under a ReadAny transaction, and there could
+     * actually have been a good database out there.  Now that we have a
+     * real write transaction, make sure things are still bad.
+     */
+    if ((ntohl(cheader.version) == PRDBVERSION) &&
+	ntohl(cheader.headerSize) == sizeof(cheader) &&
+	ntohl(cheader.eofPtr) != NULL &&
+	FindByID(tt,ANONYMOUSID) != 0){
+	/* database exists, so we don't have to build it */
+	code = ubik_EndTrans(tt);
+	if (code) return code;
+	return PRSUCCESS;
+    }
 
+    /* Initialize the database header */
     if ((code = set_header_word (tt, version, htonl(PRDBVERSION))) ||
 	(code = set_header_word (tt, headerSize, htonl(sizeof(cheader)))) ||
 	(code = set_header_word (tt, eofPtr, cheader.headerSize))) {
@@ -855,6 +1061,9 @@ long ChangeEntry (at, aid, cid, name, oid, newid)
     char holder[PR_MAXNAMELEN];
     char temp[PR_MAXNAMELEN];
     char oldname[PR_MAXNAMELEN];
+#if CROSS_CELL
+    char *atsign;
+#endif
 
     bzero(holder,PR_MAXNAMELEN);
     bzero(temp,PR_MAXNAMELEN);
@@ -875,7 +1084,7 @@ long ChangeEntry (at, aid, cid, name, oid, newid)
 	if (!IsAMemberOf(at,cid,SYSADMINID) && !pr_noAuth) return PRPERM;
 	pos = FindByID(at,newid);
 	if (pos) return PRIDEXIST;  /* new id already in use! */
-	if ((aid < 0 && newid) > 0 || (aid > 0 && newid < 0)) return PRPERM;
+	if ((aid < 0 && newid > 0) || (aid > 0 && newid < 0)) return PRPERM;
 	/* if new id is not in use, rehash things */
 	code = RemoveFromIDHash(at,aid,&loc);
 	if (code != PRSUCCESS) return code;
@@ -889,10 +1098,18 @@ long ChangeEntry (at, aid, cid, name, oid, newid)
 	if (code) return PRDBFAIL;
     }
 
+#ifdef CROSS_CELL
+    atsign = index(tentry.name, '@'); /* check for foreign entry */
+#endif
+
     /* Change the owner */
     if (tentry.owner != oid && oid) {
 	/* only groups can have their owner's changed */
 	if (!(tentry.flags & PRGRP)) return PRPERM;
+#ifdef CROSS_CELL
+	/* don't allow modifications to foreign cell group owners */
+	if (atsign) return PRPERM;
+#endif
 	oldowner = tentry.owner;
 	tentry.owner = oid;
 	/* The entry must be written through first so Remove and Add routines
@@ -922,6 +1139,9 @@ long ChangeEntry (at, aid, cid, name, oid, newid)
 	(*name && (strcmp (tentry.name, name) != 0))) {
 	strncpy (oldname, tentry.name, PR_MAXNAMELEN);
 	if (tentry.flags & PRGRP) {
+#ifdef CROSS_CELL
+	    if (atsign) return PRPERM;
+#endif
 	    code = CorrectGroupName (at, name, cid, tentry.owner, tentry.name);
 	    if (code) return code;
 
@@ -930,9 +1150,21 @@ long ChangeEntry (at, aid, cid, name, oid, newid)
 	    } else {			/* new name, caller must be correct */
 		if (strcmp (name, tentry.name) != 0) return PRBADNAM;
 	    }
-	}
-	else
-	    if (!CorrectUserName(name)) return PRBADNAM;
+	} else {
+#ifdef CROSS_CELL
+	    /* Allow a foreign name change only if the cellname part is
+	     * the same */
+            char *newatsign;
+
+            newatsign = index (name, '@');
+            if (newatsign != atsign){ /* if they are the same no problem*/
+		/* if the pointers are not equal the strings better be */
+		if ((atsign == 0) || (newatsign == 0) ||
+                    strcmp (atsign,newatsign)) return PRPERM;
+            }
+#endif
+            if (!CorrectUserName(name)) return PRBADNAM;
+        }
 
 	pos = FindByName(at,name);
 	if (pos) return PREXIST;
@@ -947,3 +1179,62 @@ nameOK:;
     }
     return PRSUCCESS;
 }
+
+#ifdef CROSS_CELL
+long allocNextId(cellEntry)
+struct prentry *cellEntry;
+{
+    /* Id's for foreign cell entries are constructed as follows:
+     * The 16 low order bits are the group id of the cell and the
+     * top 16 bits identify the particular users in that cell */
+
+    long id;
+
+    id = (ntohl(cellEntry -> nusers) +1);
+    cellEntry -> nusers = htonl(id);
+    /* use the field nusers to keep the last used id in that
+     * foreign cell's group.
+     *
+     * Note: It would seem more appropriate to use ngroup for
+     * that and nusers to enforce the quota, however pts does not
+     * have an option to change foreign users quota yet. */
+    id = (id << 16) | ((ntohl(cellEntry-> id)) & 0x0000ffff);
+    return id;
+}
+
+int inRange(cellEntry,aid)
+struct prentry *cellEntry;
+long aid;
+{
+    unsigned long id,cellid,groupid;
+
+    /* The only thing that we want to make sure here is that the id
+     * is in the legal range of this group. If it is a duplicate we
+     * don't care since it will get in a different check. */
+    cellid = aid & 0x0000ffff;
+    groupid =  (ntohl(cellEntry-> id)) & 0x0000ffff;
+    if (cellid != groupid) return 0;		/* not in range */
+
+    /* if we got here we're ok but we need to update the nusers field
+     * in order to get the id correct the next time that we try to
+     * allocate it automatically. */
+    id = aid >> 16;
+    if (id > ntohl(cellEntry -> nusers))
+	cellEntry -> nusers = htonl(id);
+    return 1;
+}
+
+AddAuthGroup(tentry, alist, size)
+    struct prentry *tentry;
+    prlist *alist;
+    long *size;
+{
+    if (!(index(tentry->name, '@')))
+	return (AddToPRList (alist, size, AUTHUSERID));
+#if ADD_TO_AUTHUSER_GROUP
+    return PRSUCCESS;
+#else
+    return (AddToPRList (alist, size, tentry->cellid));
+#endif
+}
+#endif	/* CROSS_CELL */

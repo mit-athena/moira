@@ -1,4 +1,4 @@
-/* $Id: dcm.pc,v 1.14 2001-01-08 19:27:48 zacheiss Exp $
+/* $Id: dcm.pc,v 1.15 2002-01-18 00:00:35 zacheiss Exp $
  *
  * The Data Control Manager for Moira.
  *
@@ -27,7 +27,7 @@
 EXEC SQL INCLUDE sqlca;
 void sqlglm(char *, unsigned int *, unsigned int *);
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/dcm.pc,v 1.14 2001-01-08 19:27:48 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/dcm.pc,v 1.15 2002-01-18 00:00:35 zacheiss Exp $");
 
 int generate_service(char *name, int force);
 void do_hosts(char *service);
@@ -38,19 +38,23 @@ void dbmserr(void);
 #define SQL_NO_MATCH 1403
 #define SOFT_FAIL(x) (((x) == MR_NO_MEM) || ((x) == MR_CANT_CONNECT) || ((x) == MR_CCONFIG) || ((x) == MR_DEADLOCK) || ((x) == MR_BUSY) || ((x) == MR_ABORT))
 
+/* argument parsing macro */
+#define argis(a, b) (!strcmp(*arg + 1, a) || !strcmp(*arg + 1, b))
+
 char whobuf[256], *whoami = whobuf, *db = "moira";
 
 enum { UNIQUE, DISTRIBUTED, REPLICATED };
 
 int main(int argc, char **argv)
 {
-  int i;
+  int i, force = 0;
   EXEC SQL BEGIN DECLARE SECTION;
   char buf[SERVERS_NAME_SIZE], *name;
   int enable;
   EXEC SQL END DECLARE SECTION;
   struct save_queue *sq;
   int status;
+  char **arg = argv;
 
   if (strchr(argv[0], '/'))
     strcpy(whoami, strrchr(argv[0], '/') + 1);
@@ -63,12 +67,28 @@ int main(int argc, char **argv)
   initialize_sms_error_table();
   initialize_krb_error_table();
 
+  while (++arg - argv < argc)
+    {
+      if (**arg == '-')
+	{
+	  if (argis("f", "force"))
+	    force++;
+	  else
+	    {
+	      com_err(whoami, 0, "Usage: %s [-f] servicename", argv[0]);
+	      exit(1);
+	    }
+	}
+    }
+
   /* if services were specified on the command line, do just those ones */
   if (argc > 1)
     {
       for (i = 1; i < argc; i++)
 	{
-	  if (generate_service(argv[i], 1))
+	  if (argv[i][0] == '-')
+	    continue;
+	  if (generate_service(argv[i], force))
 	    do_hosts(argv[i]);
 	}
       exit(0);
@@ -113,7 +133,7 @@ int main(int argc, char **argv)
   /* Now run through list */
   while (sq_get_data(sq, &name))
     {
-      if (generate_service(name, 0))
+      if (generate_service(name, force))
 	{
 	  switch (fork())
 	    {
@@ -142,7 +162,7 @@ int main(int argc, char **argv)
 int generate_service(char *name, int force)
 {
   EXEC SQL BEGIN DECLARE SECTION;
-  int interval, dfcheck, status;
+  int interval, dfcheck, status, inprogress;
   time_t now;
   const char *errmsg;
   EXEC SQL END DECLARE SECTION;
@@ -152,11 +172,22 @@ int generate_service(char *name, int force)
 
   EXEC SQL CONNECT :db IDENTIFIED BY :db;
 
-  EXEC SQL SELECT update_int, dfcheck INTO :interval, :dfcheck
-    FROM servers WHERE name = UPPER(:name);
+  EXEC SQL SELECT update_int, dfcheck, inprogress INTO :interval, :dfcheck,
+    :inprogress FROM servers WHERE name = UPPER(:name);
   if (sqlca.sqlcode == SQL_NO_MATCH)
     {
       com_err(whoami, 0, "No such service `%s'", name);
+      EXEC SQL COMMIT RELEASE;
+      return 0;
+    }
+
+  /* Someone might try to run a DCM from the command line while the
+   * regular one is running, which will bypass the "interval" test.
+   * Check inprogress to make sure they don't stomp on themselves.
+   */
+  if (inprogress == 1)
+    {
+      com_err(whoami, 0, "DCM for service `%s' already in progress", name);
       EXEC SQL COMMIT RELEASE;
       return 0;
     }
@@ -230,6 +261,12 @@ int generate_service(char *name, int force)
 			 name, errmsg);
 	}
     }
+  else
+    {
+      com_err(whoami, 0, "DCM for service `%s' has run too recently.", name);
+      com_err(whoami, 0, "Use the -force flag to force a DCM.");
+    }
+
   EXEC SQL COMMIT RELEASE;
   return 0;
 
@@ -246,7 +283,7 @@ void do_hosts(char *service)
   char server_type[SERVERS_TYPE_SIZE], host[MACHINE_NAME_SIZE], *name;
   char target[SERVERS_TARGET_FILE_SIZE], script[SERVERS_SCRIPT_SIZE];
   const char *errmsg;
-  int status = 0, dfgen, type, mid;
+  int status = 0, dfgen, type, mid, inprogress;
   time_t now;
   EXEC SQL END DECLARE SECTION;
   struct save_queue *sq;
@@ -256,8 +293,8 @@ void do_hosts(char *service)
 
   EXEC SQL CONNECT :db IDENTIFIED BY :db;
 
-  EXEC SQL SELECT dfgen, type, target_file, script
-    INTO :dfgen, :server_type, :target, :script
+  EXEC SQL SELECT dfgen, type, target_file, script, inprogress
+    INTO :dfgen, :server_type, :target, :script, :inprogress
     FROM servers WHERE name = UPPER(:service);
   if (!strncmp(strtrim(server_type), "REPLICAT", 8))
     type = REPLICATED;
@@ -267,6 +304,13 @@ void do_hosts(char *service)
     type = UNIQUE;
   strtrim(target);
   strtrim(script);
+
+  if (inprogress == 1)
+    {
+      com_err(whoami, 0, "DCM for service `%s' already in progress", name);
+      EXEC SQL COMMIT RELEASE;
+      return;
+    }
 
   EXEC SQL DECLARE csr_hst1 CURSOR FOR
     SELECT m.name, m.mach_id FROM machine m, serverhosts sh
@@ -290,6 +334,16 @@ void do_hosts(char *service)
   while (sq_get_data(sq, &name))
     {
       sq_get_data(sq, &mid);
+
+      EXEC SQL SELECT inprogress INTO :inprogress FROM serverhosts
+	WHERE service = UPPER(:service) AND mach_id = :mid;
+      if (inprogress == 1)
+	{
+	  com_err(whoami, 0, "DCM for service `%s' to host `%s' already in progress", service, name);
+	  EXEC SQL COMMIT RELEASE;
+	  return;
+	}
+
       com_err(whoami, 0, "sending %s data to %s", service, name);
       EXEC SQL UPDATE serverhosts SET inprogress = 1
 	WHERE service = UPPER(:service) AND mach_id = :mid;

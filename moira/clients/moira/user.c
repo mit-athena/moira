@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.21 1990-07-14 16:27:05 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.22 1991-01-04 16:58:49 mar Exp $";
 #endif lint
 
 /*	This is the file user.c for the MOIRA Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.21 1990-07-14 16:27:05 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.22 1991-01-04 16:58:49 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -241,13 +241,20 @@ Bool name;
 	}
     }
     temp_ptr = Strsave(info[U_MITID]);
-    Put_message("User's MIT ID number (type a new unencrypted number, or keep same encryption)");
+    Put_message("User's MIT ID number (unencrypted, or encryption in quotes)");
     if (GetValueFromUser("", &temp_ptr) == SUB_ERROR)
       return(NULL);
     if ( strcmp( temp_ptr, info[U_MITID] ) != 0) {
-	EncryptID(temp_buf, temp_ptr, info[U_FIRST], info[U_LAST]);
-	free(info[U_MITID]);
-	info[U_MITID] = Strsave(temp_buf);
+	if (temp_ptr[0] == '"' &&
+	    temp_ptr[strlen(temp_ptr) - 1] == '"') {
+	    free(info[U_MITID]);
+	    temp_ptr[strlen(temp_ptr) - 1] = 0;
+	    info[U_MITID] = Strsave(++temp_ptr);
+	} else {
+	    EncryptID(temp_buf, temp_ptr, info[U_FIRST], info[U_LAST]);
+	    free(info[U_MITID]);
+	    info[U_MITID] = Strsave(temp_buf);
+	}
     }
     free(temp_ptr);
     if (GetTypeFromUser("User's MIT Year (class)", "class", &info[U_CLASS]) ==

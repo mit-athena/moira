@@ -1,5 +1,5 @@
-ifndef lint
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.1 1988-06-09 14:13:32 kit Exp $";
+#ifndef lint
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.2 1988-06-10 18:37:26 kit Exp $";
 #endif lint
 
 /*	This is the file user.c for allmaint, the SMS client that allows
@@ -11,7 +11,7 @@ ifndef lint
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v $
  *      $Author: kit $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.1 1988-06-09 14:13:32 kit Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.2 1988-06-10 18:37:26 kit Exp $
  *	
  *  	Copyright 1987, 1988 by the Massachusetts Institute of Technology.
  *
@@ -19,25 +19,27 @@ ifndef lint
  *	see the file mit-copyright.h
  */
 
-#include "mit-copyright.h"
-#include "allmaint.h"
-#include "infodefs.h"
-
 #include <stdio.h>
 #include <strings.h>
 #include <ctype.h>
-
-/* SMS includes */
-
 #include <sms.h>
-#include <sms_app.h>
 #include <menu.h>
+
+#include "mit-copyright.h"
+#include "allmaint.h"
+#include "allmaint_funcs.h"
+#include "globals.h"
+#include "infodefs.h"
 
 #define LOGIN 0
 #define UID   1
 #define NAME  2
 #define QUOTA 3
 #define CLASS 4
+
+static void PrintQuota();	/* prints Quota info. */
+static void PrintUserInfo();	/* prints User info. */
+static int PrintPOBoxes();	/* prints PO Box information. */
 
 /*	Function Name: AskUserInfo.
  *	Description: This function askes the user for information about a 
@@ -49,14 +51,12 @@ ifndef lint
  *             use the #defined names (e.g args[UID] is not the uid anymore).
  */
 
-void
-AskUserInfo(info, name);
+char **
+AskUserInfo(info, name)
 char ** info;
 Bool name;
 {
-    char * temp_buf, *newname;
-
-    int counter;
+    char temp_buf[BUFSIZ], *newname;
 
     sprintf(temp_buf,"\nChanging Attributes of user %s.\n",info[NAME]);
     Put_message(temp_buf);
@@ -101,27 +101,29 @@ Bool name;
  */
 
 struct qelem *
-GetUserInfo(type, name1, name2);
+GetUserInfo(type, name1, name2)
 int type;
 char *name1, *name2;
 {
     char * args[2];
-    struct quelem * elem = NULL;
+    register int status;
+    struct qelem * elem = NULL;
 
     switch(type) {
     case LOGIN:
 	args[0] = name1;
 	if ( (status = sms_query("get_user_by_login", 1, args,
-			       StoreInfo, (caddr_t) &elem)) != 0) {
-	    com_err(whoami, status, " when attempting to get_use_by_login.");
+			       StoreInfo, (char *) &elem)) != 0) {
+	    com_err(program_name, status, " when attempting to get_use_by_login.");
       	    return (NULL);		 
 	}
 	break;
     case UID:
 	args[0] = name1;
 	if ( (status = sms_query("get_user_by_uid", 1, args,
-			       StoreInfo, (caddr_t) &elem)) != 0) {
-	    com_err(whoami, status, " when attempting to get_use_by_uid.");
+			       StoreInfo, (char *) &elem)) != 0) {
+	    com_err(program_name, status, 
+		    " when attempting to get_use_by_uid.");
 	    return (NULL);	
 	}
 	break;
@@ -129,16 +131,18 @@ char *name1, *name2;
 	args[0] = name1;
 	args[1] = name2;    
 	if ( (status = sms_query("get_user_by_name", 1, args,
-			       StoreInfo, (caddr_t) &elem)) != 0) {
-	    com_err(whoami, status, " when attempting to get_use_by_name.");
+			       StoreInfo, (char *) &elem)) != 0) {
+	    com_err(program_name, status, 
+		    " when attempting to get_use_by_name.");
 	    return (NULL);	
 	}
 	break;
     case CLASS:
 	args[0] = name1;
 	if ( (status = sms_query("get_user_by_class", 1, args,
-			       StoreInfo, (caddr_t) &elem)) != 0) {
-	    com_err(whoami, status, " when attempting to get_use_by_class.");
+			       StoreInfo, (char *) &elem)) != 0) {
+	    com_err(program_name, status, 
+		    " when attempting to get_use_by_class.");
 	    return (NULL);	
 	}
 	break;
@@ -146,7 +150,7 @@ char *name1, *name2;
 	args[0] = name1;
 	if ( (status = sms_query("get_nquotas_by_user", 1, args,
 			       StoreInfo, (char *) &elem)) != 0) {
-	    com_err(whoami, status, " in get_nfs_quotas_by_user");
+	    com_err(program_name, status, " in get_nfs_quotas_by_user");
 	    return (DM_NORMAL);
 	}
 	break;
@@ -168,23 +172,20 @@ ModifyUser(argc, argv)
 int argc;
 char **argv;
 {
-    int num_args;
-    char ** info;
-    char *temp_buf;
-    struct qelem * user, * local;
+    int status;
+    char *temp_buf, error_buf[BUFSIZ];
+    struct qelem * elem, * local;
 
-    user = GetUserInfo(LOGIN, argv[1], (char *) NULL);
+    local = elem = GetUserInfo(LOGIN, argv[1], (char *) NULL);
 
-    local = user;
     while (local != NULL) {
-	info = (char **) local->q_data;
-	info = AskUserInfo(info, TRUE);
-	num_args = CountArgs(info);
+	char ** info = (char **) local->q_data;
+	char ** args = AskUserInfo(info, TRUE);
 
-	if ( (status = sms_query("update_user", 
-				 num_args, info, Scream, NULL)) != 0) {
-	    com_err(whoami, status, " in ModifyFields");
-	    if (local->next == NULL)
+	if ( (status = sms_query("update_user", CountArgs(args), 
+				 args, Scream, NULL)) != 0) {
+	    com_err(program_name, status, " in ModifyFields");
+	    if (local->q_forw == NULL)
 		temp_buf = "";
 	    else
 		temp_buf = ", Continuing to next user";
@@ -192,9 +193,9 @@ char **argv;
 		    info[NAME], temp_buf);
 	    Put_message(error_buf);
 	}
-	local = local->next;
+	local = local->q_forw;
     }
-    FreeQueue(user);
+    FreeQueue(elem);
     return(DM_NORMAL);
 }
 
@@ -215,18 +216,17 @@ char *machine;
     char * type;
     struct qelem *top, *elem = NULL;
 
-    match = 0;
     type = "pop";
     status = sms_query("get_server_locations", 1, &type,
 		       StoreInfo, &elem);
     if (status && (status != SMS_NO_MATCH)) {
-	com_err(whoami, status, (char *) NULL);
+	com_err(program_name, status, (char *) NULL);
 	return( (char *) NULL);
     }
 
     top = elem;
     while (elem != NULL) {
-	info = (char **) elem->q_data;
+	char ** info = (char **) elem->q_data;
 	if (strcmp (info[1], machine) == 0) {
 	    FreeQueue(top);
 	    return( Strsave("POP") );
@@ -249,9 +249,9 @@ ChangeUserPOBox(argc, argv)
 int argc;
 char **argv;
 {
+    register int status;
     struct qelem * poqueue, *local;
-    char *type, buf[BUFSIZ];
-    extern int po_callbk(), PrintPOBoxes();
+    char *type, buf[BUFSIZ], *pohost;
     static char *po[4];
     poqueue = NULL;
 
@@ -259,7 +259,7 @@ char **argv;
     Put_message(buf);
     status = sms_query("get_pobox", 1, argv + 1, PrintPOBoxes, NULL);
     if (status != SMS_NO_MATCH && status != 0) {
-	com_err(whoami, status, "in ChangeUserPOBox.");
+	com_err(program_name, status, "in ChangeUserPOBox.");
         return(DM_NORMAL);
     }
     else if (status == SMS_NO_MATCH) 
@@ -268,28 +268,29 @@ char **argv;
     if (YesNoQuestion("Shall we use the least loaded Post Office?", TRUE)) {
 	po[0] = "pop";
 	po[1] = "*";
-	post_office.host = NULL;
-	post_office.least_full = -1;
 	if ( status = sms_query ("get_server_host_info", 2, po,
-				 StoreInfo, (caddr_t) &poqueue) != 0) {
-	    com_err(whoami, status, 
+				 StoreInfo, (char *) &poqueue) != 0) {
+	    com_err(program_name, status, 
 		    " in ChangeUserPOBox (get_server_host_info).");
 	    return(DM_NORMAL);
 	}
 	local = poqueue;
 	while (local != NULL) {
-	    if ( !isdigit(*argv[6]) || !isdigit(*argv[7]) )
-		put_message(
-		    "non-digit value in server_host_info, this is a bug");
+	    char ** args = (char **) local->q_data;
+	    int new_space, old_space = -1 ;
+	    if ( !isdigit(*args[6]) || !isdigit(*args[7]) )
+		Put_message(
+		    "non-digit value in server_host_info, this is a bug.");
 	    else {
-		new_space = atoi(argv[7]) - atoi(argv[6]);
-		if ( new_space < old_space ) {
+		new_space = atoi(argv[7]) - atoi(args[6]);
+		if ( (new_space < old_space) || (old_space == -1) ) {
 		    old_space = new_space;
-		pohost = argv[1];
+		    strcpy(buf, args[1]);
 		}
 	    }
-	    local = local->next;
+	    local = local->q_forw;
 	}
+	pohost = Strsave(buf);
 	FreeQueue(poqueue);
 	type = "POP";
 	(void) sprintf(buf, "The Post Office %s was chosen.",
@@ -314,9 +315,9 @@ char **argv;
 	po[2] = pohost;
 	po[3] = po[0];
 	if (status = sms_query("set_pobox", 4, po, Scream, NULL) != 0 )
-	    com_err(whoami, status, " in ChangeUserPOBox");
+	    com_err(program_name, status, " in ChangeUserPOBox");
     } else 
-	PutMessage("Operation Aborted.");
+	Put_message("Operation Aborted.");
 
     return (DM_NORMAL);
 }
@@ -337,10 +338,12 @@ DeleteUserByUid(argc, argv)
 int argc;
 char **argv;
 {
+    int status;
+
     if (Confirm("Are you sure you want to remove this user"))
 	if ( (status = sms_query("delete_user_by_uid", 1, argv+1, Scream,
 			       (char * ) NULL)) != 0)
-	    com_err(whoami, status, " in DeleteUserByUid");
+	    com_err(program_name, status, " in DeleteUserByUid");
 
     return(DM_NORMAL);
 } 
@@ -356,11 +359,11 @@ char **argv;
 int
 ShowDefaultQuota()
 {
-    extern int printit();
+    int status;
     static char *val[] = {"def_quota"};
 
     if (status = sms_query("get_value", 1, val, Print, (char *) NULL) != 0)
-	com_err(whoami, status, " in ShowDefaultQuota");
+	com_err(program_name, status, " in ShowDefaultQuota");
 
     return (DM_NORMAL);
 }
@@ -377,12 +380,15 @@ ShowUserQuota(argc, argv)
 int argc;
 char **argv;
 {
-    extern int PrintQuota();
-
-    if (status = sms_query("get_nfs_quotas_by_user", 1, argv+1, PrintQuota,
-		       (char *) NULL) != 0)
-	com_err(whoami, status, " in ShowUserQuota);
-
+    struct qelem *elem, *top;
+    top = elem = GetUserInfo(QUOTA, argv[1], (char *) NULL);
+    
+    while (elem != NULL) {
+	char ** info = (char **) elem->q_data;
+	PrintQuota(info);
+	elem = elem->q_forw;
+    }
+    FreeQueue(top);
     return (DM_NORMAL);
 }
 
@@ -398,17 +404,19 @@ ChangeDefaultQuota(argc, argv)
 int argc;
 char *argv[];
 {
+    char buf[BUFSIZ];
+    int status;
     static char *newval[] = {
 	"update_value", "def_quota", NULL,
     };
 
     sprintf(buf,"%s%s",
 	    "Are you sure that you want to change the default quota\n"
-	    "for all new users");
+	    "for all new users? (y/n) ");
     if(!Confirm(buf)) {
 	newval[2] = argv[1];
 	if (status = sms_query("update_value", 3, newval, Scream, NULL) != 0)
-	    com_err(whoami, status, " in update_value");
+	    com_err(program_name, status, " in update_value");
     }
     else
 	Put_message("Quota not changed.");
@@ -423,7 +431,7 @@ char *argv[];
  *	Arguments: arc, argv - 
  *                             argv[1] login name of user.
  *                             argv[2] server host name.
- *                             argv[3] physical device on host.
+ *                             argv[3] Directory on host.
  *                             argv[4] quota in Kb.
  *	Returns: DM_NORMAL.
  */
@@ -434,8 +442,8 @@ AddUserLocker(argc, argv)
 int argc;
 char **argv;
 {
-    extern char *CanonicalizeHostname();
-    char *tuple[4];
+    int status;
+    char *args[4];
 
     args[0] = argv[1];
     args[2] = argv[3];
@@ -448,10 +456,12 @@ char **argv;
     }
     
     if (status = sms_query("add_locker", 4, args, Scream, NULL) != 0)
-	com_err(whoami, status, " in add_user_locker");
+	com_err(program_name, status, " in add_user_locker");
 
     return(DM_NORMAL);
 }
+
+/* needs to be fixed - CDP 6/10/88 */
 
 /*	Function Name: DeleteUserLocker
  *	Description: Deletes a locker - BOOM.
@@ -465,9 +475,10 @@ DeleteUserLocker(argc, argv)
 int argc;
 char **argv;
 {
+    int status;
     if (status = sms_query("delete_locker", 1, argv + 1,
-			   scream, (char *)NULL) != 0) 
-	    com_err(whoami, status, " in delete_locker");
+			   Scream, (char *)NULL) != 0) 
+	    com_err(program_name, status, " in delete_locker");
 
     return(DM_NORMAL);
 }
@@ -484,28 +495,24 @@ ChangeUserQuota(argc, argv)
 int argc;
 char *argv[];
 {
-    int i;
+    int status;
+    char error_buf[BUFSIZ];
     struct qelem *elem, *local;
     
     elem = GetUserInfo(QUOTA, argv[1], (char *) NULL);
 
     local = elem;
     while (local != NULL) {
-	char *info[4], buf[BUFSIZ];
+	char **info;
 	info = (char **) local->q_data;
 	PrintQuota(info);
-	if( !PromptWithDefault("New quota (in KB): ", buf, sizeof(buf), 
-			       quot_array[2]) )
-	    return(DM_NORMAL);
+	GetValueFromUser("New quota (in KB): ", &info[Q_QUOTA]);
 	
-	/* Reorganize for update nfs_quota. */
-	info[3] = info[2];
-	info[2] = argv[1];
-    
-	if (status = sms_query("update_nfs_quota", 4, info,
+	if (status = sms_query("update_nfs_quota", 3, info,
 			       Scream, (char *) NULL) != 0) {
-	    com_err(whoami, status, " in update_nfs_quota");
-	    sprintf(error_buf,"Could not perform quota change on %s",info[0]); 
+	    com_err(program_name, status, " in update_nfs_quota");
+	    sprintf(error_buf,"Could not perform quota change on %s",
+		    info[Q_FILESYS]); 
 	    Put_message(error_buf);
 	}
 	local = local->q_forw;
@@ -552,7 +559,7 @@ int argc;
 char *argv[];
 {
     struct qelem *top, *elem;
-    char buf, temp_buf[BUFSIZ];
+    char buf;
 
     elem = top = GetUserInfo(NAME, argv[1], argv[2]);
 
@@ -568,10 +575,10 @@ char *argv[];
 	    break;
 	case 'N':
 	case 'n':
-	    break;
 	    PrintUserInfo( (char **) elem->q_data, TRUE);
+	    break;
 	}
-	elem = elem->q_next;
+	elem = elem->q_forw;
     }
 
     FreeQueue(top);
@@ -590,13 +597,12 @@ int argc;
 char **argv;
 {
     struct qelem *top, *elem;
-    char buf, temp_buf[BUFSIZ];
 
     elem = top = GetUserInfo(CLASS, argv[1], (char *) NULL);
 
     while (elem != NULL) {
 	PrintUserInfo( (char **) elem->q_data, TRUE);
-	elem = elem->q_next;
+	elem = elem->q_forw;
     }
 
     FreeQueue(top);
@@ -614,8 +620,10 @@ static void
 PrintQuota(info)
 char ** info;
 {
-    sprintf(buf, "Machine: %s\t\tDevice: %s\t\tQuota: %s",
-		   info[Q_MACHINE], info[Q_DEVICE], info[Q_QUOTA]);
+    char buf[BUFSIZ];
+
+    sprintf(buf, "Machine: %s\t\tDirectory: %s\t\tQuota: %s",
+		   info[Q_MACHINE], info[Q_DIRECTORY], info[Q_QUOTA]);
     Put_message(buf);
 }
 
@@ -635,8 +643,9 @@ int
 PrintPOBoxes(argc, argv, junk)
 int argc;
 char **argv;
-caddr_t junk;
+char * junk;
 {
+    char buf[BUFSIZ];
     /* no newline 'cause Put_message adds one */
 
     (void) sprintf(buf, "Address: %s@%s\t\tType: %s", argv[PO_BOX],
@@ -648,39 +657,42 @@ caddr_t junk;
 
 /*	Function Name: PrintUserInfo
  *	Description: Prints Information about a user.
- *	Arguments: answer - an argument list with the user information
+ *	Arguments: info - an argument list with the user information
  *                          in it.
  *                 name_only - if TRUE then print only the users name.
  *	Returns: none
  */
 
 void
-PrintUserInfo(answer, name_only)
-char ** answer;
+PrintUserInfo(info, name_only)
+char ** info;
 Bool name_only;
 {
+    char buf[BUFSIZ];
+
     if (name_only) {
-	sprintf(temp_buf, "%s, %s %s", info[U_LAST],
+	sprintf(buf, "%s, %s %s", info[U_LAST],
 		info[U_FIRST], info[U_MIDDLE]);
-	sprintf(temp_buf, "%-40s/tUser Name: %s", temp_buf, info[U_NAME]);
-	Put_message(temp_buf);
+	sprintf(buf, "%-40s/tUser Name: %s", buf, info[U_NAME]);
+	Put_message(buf);
     }
     else {
-	(void) sprintf(temp_buf, 
+	(void) sprintf(buf, 
 		       "Login name: %-10s/tUser id: %-10s\tLogin shell %s",
-		       answer[U_NAME], answer[U_UID], answer[U_SHELL]);
-	(void) Put_message(temp_buf);
-	(void) sprintf(temp_buf, "Full name: %s %s %s\tClass: %s", 
-		       answer[U_FIRST], answer[U_MIDDLE], 
-		       answer[U_LAST], answer[U_CLASS]);
-	(void) Put_message(temp_buf);
-	(void) sprintf(temp_buf,
-		       "Account status: %2s\tEncrypted MIT ID number: %s",
-		       answer[U_STATUS], answer[U_MITID]);
-	(void) Put_message(temp_buf);
-	(void) sprintf(temp_buf, "Last Modification by %s at %s with %s.",
-		       answer[U_MODBY], answer[U_MODTIME], answer[U_MODWITH]);
-	(void) Put_message(temp_buf);
+		       info[U_NAME], info[U_UID], info[U_SHELL]);
+	(void) Put_message(buf);
+	(void) sprintf(buf, "Full name: %s %s %s\tClass: %s", 
+		       info[U_FIRST], info[U_MIDDLE], 
+		       info[U_LAST], info[U_CLASS]);
+	(void) Put_message(buf);
+	(void) sprintf(buf,
+		       "Account status: %s\tEncrypted MIT ID number: %s",
+		       atoi(info[U_STATE]) ? "active" : "inactive",
+		       info[U_MITID]);
+	(void) Put_message(buf);
+	(void) sprintf(buf, "Last Modification by %s at %s with %s.",
+		       info[U_MODBY], info[U_MODTIME], info[U_MODWITH]);
+	(void) Put_message(buf);
     }
 }
 

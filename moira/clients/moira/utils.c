@@ -1,5 +1,5 @@
 #ifndef lint
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v 1.1 1988-06-09 14:13:38 kit Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v 1.2 1988-06-10 18:37:36 kit Exp $";
 #endif lint
 
 /*	This is the file utils.c for allmaint, the SMS client that allows
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v $
  *      $Author: kit $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v 1.1 1988-06-09 14:13:38 kit Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v 1.2 1988-06-10 18:37:36 kit Exp $
  *	
  *  	Copyright 1987, 1988 by the Massachusetts Institute of Technology.
  *
@@ -27,6 +27,7 @@
 
 #include "mit-copyright.h"
 #include "allmaint.h"
+#include "allmaint_funcs.h"
 #include "globals.h"
 #include "infodefs.h"
 
@@ -50,6 +51,43 @@ char ** info;
 	free(pointer++);
 }
 
+/*	Function Name: FreeAndClear        - I couldn't resist the name.
+ *	Description: Clears pointer and optionially frees it.
+ *	Arguments: pointer - pointer to work with.
+ *                 free_it - if TRUE then free pointer.
+ *	Returns: none.
+ */
+
+void
+FreeAndClear(pointer, free_it)
+char ** pointer;
+Bool free_it;
+{
+    if (*pointer == NULL)
+	return;
+    else if (free_it)
+	free(*pointer);
+    *pointer = NULL;
+}
+
+/*	Function Name: QueueTop
+ *	Description: returns a qelem pointer that points to the top of
+ *                   a queue.
+ *	Arguments: elem - any element of a queue.
+ *	Returns: top element of a queue.
+ */
+    
+struct qelem * 
+QueueTop(elem)
+struct qelem * elem;
+{
+    if (elem == NULL)		/* NULL returns NULL.  */
+	return(NULL);
+    while (elem->q_back != NULL) 
+	elem = elem->q_back;
+    return(elem);
+}
+
 /*	Function Name: FreeQueueElem
  *	Description: Frees one element of the queue.
  *	Arguments: elem - the elem to free.
@@ -58,13 +96,15 @@ char ** info;
 
 void
 FreeQueueElem(elem)
-struct queue * elem;
+struct qelem * elem;
 {
-    if (elem->q_data != (char *) NULL) {
-	FreeInfo( (char **) elem->q_data); /* free info fields */
+    char ** info = (char **) elem->q_data;
+
+    if (info != (char **) NULL) {
+	FreeInfo( info ); /* free info fields */
 	free(elem->q_data);		/* free info array itself. */
     }
-    rmqueue(elem);		/* remove this element from the queue */
+    remque(elem);		/* remove this element from the queue */
     free(elem);			/* free its space. */
 }
 
@@ -76,9 +116,9 @@ struct queue * elem;
 
 void
 FreeQueue(elem)
-struct queue * elem;
+struct qelem * elem;
 {
-    struct queue *temp, *local = QueueTop(elem); 
+    struct qelem *temp, *local = QueueTop(elem); 
 
     while(local != NULL) {
 	temp = local->q_forw;
@@ -106,30 +146,12 @@ struct qelem * elem;
     return(count);
 }
 
-/*	Function Name: QueueTop
- *	Description: returns a qelem pointer that points to the top of
- *                   a queue.
- *	Arguments: elem - any element of a queue.
- *	Returns: top element of a queue.
- */
-    
-struct qelem * 
-QueueTop(elem)
-struct qelem * elem;
-{
-    if (elem == NULL)		/* NULL returns NULL.  */
-	return(NULL);
-    while (elem->q_back != NULL) 
-	elem = elem->q_back;
-    return(elem);
-}
-
 /* ARGSUSED */
 int
 StoreInfo(argc, argv, data)
 int argc;
 char ** argv;
-caddr_t data;
+char * data;
 {
     char ** info = (char **) malloc( MAX_ARGS_SIZE * sizeof(char *) );
     struct qelem ** old_elem = (struct qelem **) data;
@@ -140,7 +162,7 @@ caddr_t data;
 	info[count] = Strsave(argv[count]);
     info[count] = NULL;		/* NULL terminate this sucker. */
 
-    if (* old_elem == (struct qelem **) NULL) {	 /* first elem. */
+    if (*old_elem == (struct qelem *) NULL) {	 /* first elem. */
 	new_elem->q_data = (char *) info;
 	new_elem->q_forw = new_elem->q_back = (struct qelem *) NULL;
     }
@@ -161,13 +183,15 @@ caddr_t data;
  */
 
 int
-CountArgs(info);
+CountArgs(info)
 char ** info;
 {
     int number = 0;
     
-    while (*info != NULL)
+    while (*info != NULL) {
 	number++;
+	info++;
+    }
 
     return(number);
 }    
@@ -179,55 +203,13 @@ char ** info;
  *	Returns: doesn't exit.
  */
 
-static int
+int
 Scream()
 {
-    com_err(whoami, status,
+    com_err(program_name, 0,
 	    "\nAn SMS update returned a value -- programmer botch\n");
     sms_disconnect();
     exit(1);
-}
-
-/*	Function Name: BoolAnswer
- *	Description: returns TRUE or FALSE in arg, depending upon
- *                   the value of the string in argv[0].
- *	Arguments: argc, argv - argv[0] contains "true" or "false".
- *	Returns: SMS_CONT.
- */
-
-/*ARGSUSED*/
-static int 
-BoolAnswer(argc, argv, arg)
-int argc;
-char *argv[];
-caddr_t arg;
-
-{
-    int *result = (int *) arg;
-
-    if (strcmp(argv[0], "true") == 0)
-	*result = TRUE;
-    else 
-	*result = FALSE;
-    return(SMS_CONT);
-}
-
-/*	Function Name: BoolQuery
- *	Description: This function makes the query, but returns TRUE or FALSE
- *                   instead of SMS_CONT or SMS_QUIT.
- *	Arguments: name - name of query
- *                 argc, argv - args to pass to query.
- *	Returns: TRUE or FALSE.
- */
-
-Bool
-BoolQuery(name, argc, argv)
-char *name;
-int argc;
-char *argv[];
-{
-    sms_query(name, argc, argv, BoolAnswer, (caddr_t) & result);
-    return(result);
 }
 
 /*	Function Name: PromptWithDefault
@@ -277,11 +259,9 @@ int bool_def;
 	case 'n':
 	case 'N':
 	    return(FALSE);
-	    break;
 	case 'y':
 	case 'Y':
 	    return(TRUE);
-	    break;
 	default:
 	    Put_message("Please answer 'y' or 'n'.");
 	    break;
@@ -299,7 +279,7 @@ int bool_def;
  */
 
 Bool
-YesNoQuestion(prompt, bool_def)
+YesNoQuitQuestion(prompt, bool_def)
 char *prompt;
 int bool_def;
 {
@@ -312,15 +292,12 @@ int bool_def;
 	case 'n':
 	case 'N':
 	    return(FALSE);
-	    break;
 	case 'y':
 	case 'Y':
 	    return(TRUE);
-	    break;
 	case 'q':
 	case 'Q':
 	    return(-1);
-	    break;
 	default:
 	    Put_message("Please answer 'y', 'n' or 'q'.");
 	    break;
@@ -335,7 +312,7 @@ int bool_def;
  *	Returns:   TRUE/FALSE - wether or not the confirmation occured.
  */
 
-static int
+int
 Confirm(prompt)
 char * prompt;
 {
@@ -371,13 +348,13 @@ int
 ToggleVerboseMode()
 {
 
-  if(verbose)
-    Put_message("Delete functions will be silent\n");
-  else {
+  verbose = ~verbose;
+
+  if (verbose)
     Put_message("Delete functions will first confirm\n");
-
-  verbose ~= verbose;
-
+  else
+    Put_message("Delete functions will be silent\n");
+    
   return(DM_NORMAL);
 }
 
@@ -403,9 +380,8 @@ NullFunc()
  *             big way.
  */
 
-SlipInNewName(info, name);
+SlipInNewName(info, name)
 char ** info;
-
 char * name;
 {
     register int i;
@@ -415,25 +391,6 @@ char * name;
 	info[i+i] = info[i];
     }
     info[1] = Strsave(name);	/* now slip in the name. */
-}
-
-/*	Function Name: FreeAndClear        - I couldn't resist the name.
- *	Description: Clears pointer and optionially frees it.
- *	Arguments: pointer - pointer to work with.
- *                 free - if TRUE then free pointer.
- *	Returns: none.
- */
-
-FreeAndClear(pointer, free)
-caddr_t pointer;
-Bool free;
-{
-    if (pointer == NULL)
-	return();
-    else if (free)
-	free(pointer);
-
-    pointer = NULL;
 }
 
 /*	Function Name: GetValueFromUser
@@ -447,14 +404,14 @@ Bool free;
 
 void
 GetValueFromUser(prompt, pointer)
-char * prompt, * pointer;
+char * prompt, ** pointer;
 {
     char buf[BUFSIZ];
 
-    PromptWithDefault(prompt, buf, BUFSIZ, pointer);
+    PromptWithDefault(prompt, buf, BUFSIZ, *pointer);
     if ( pointer != NULL)
-	free(pointer);
-    pointer = Strsave(buf);
+	free(*pointer);
+    *pointer = Strsave(buf);
 }
 
 /*	Function Name: CanonicalizeHostname
@@ -553,6 +510,7 @@ int argc;
 char **argv, *callback;
 {
     char buf[BUFSIZ];
+    register int i;
 
     found_some = TRUE;
     (void) strcpy(buf,argv[0]);	/* no newline 'cause Put_message adds one */
@@ -593,7 +551,7 @@ char **argv, *callback;
  */
 
 int
-PrintHelp(message);
+PrintHelp(message)
 char ** message;
 {
     Print(CountArgs(message), message, (char *) NULL);

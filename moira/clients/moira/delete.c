@@ -1,5 +1,5 @@
 #ifndef lint
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/delete.c,v 1.1 1988-06-09 14:12:56 kit Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/delete.c,v 1.2 1988-06-10 18:36:30 kit Exp $";
 #endif lint
 
 /*	This is the file delete.c for allmaint, the SMS client that allows
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/delete.c,v $
  *      $Author: kit $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/delete.c,v 1.1 1988-06-09 14:12:56 kit Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/delete.c,v 1.2 1988-06-10 18:36:30 kit Exp $
  *	
  *  	Copyright 1987, 1988 by the Massachusetts Institute of Technology.
  *
@@ -19,18 +19,18 @@
  *	see the file mit-copyright.h
  */
 
-#include "mit-copyright.h"
-#include "allmaint.h"
-#include "globals.h"
-#include "infodefs.h"
-
 #include <stdio.h>
 #include <strings.h>
 #include <sms.h>
 #include <menu.h>
 
-int DeleteList(), DeleteUser();
-static int RealDeleteList() RealDeleteUser();
+#include "mit-copyright.h"
+#include "allmaint.h"
+#include "allmaint_funcs.h"
+#include "globals.h"
+#include "infodefs.h"
+
+static int RealDeleteList(), RealDeleteUser();
 
 /*	Function Name: CheckListForDeletion
  *	Description: Check one of the lists in which we just removed a member.
@@ -45,26 +45,32 @@ CheckListForDeletion(name, verbose)
 char * name;
 Bool verbose;
 {
-    qelem *elem = NULL;
-    int status;
-    char *args[2], buf[BUFSIZ];
+    struct qelem *elem = NULL;
+    int status, ans;
+    char *args[2], buf[BUFSIZ], **info;
 
     if ( (status = sms_query("count_members_of_list", 1, &name, StoreInfo,
 			     (char *) &elem)) != 0) {
-	com_err(whoami, status, " in DeleteList (count_members_of_list).");
-	return();
+	com_err(program_name, status, 
+		" in DeleteList (count_members_of_list).");
+	return;
     }
-    if (verbose) {
-	sprintf(buf, "Delete the empty list %s? ",name);
-	ans = YesNoQuestion(buf, TRUE);
-	if (ans != TRUE) {
-	    Put_message("Aborting Deletion!");
-	    return();
+    info = (char **) elem->q_data;
+    if (info[0] == 0) {
+	if (verbose) {
+	    sprintf(buf, "Delete the empty list %s? ", name);
+	    ans = YesNoQuestion(buf, TRUE);
+	    if (ans != TRUE) {
+		Put_message("Aborting Deletion!");
+		FreeQueue(elem);
+		return;	
+	    }
 	}
+	args[0] = "foo";		/* not used. */
+	args[1] = name;
+	DeleteList(2, args);
     }
-    args[0] = "foo";		/* not used. */
-    args[1] = name;
-    DeleteList(2, args);
+    FreeQueue(elem);
 }
 
 /*	Function Name: CheckAcl
@@ -81,22 +87,24 @@ char * type, *name;
 Bool verbose;
 {
     char *args[2], buf[BUFSIZ];
+    int status, ans;
 
-    if ( strcmp(type,"LIST") != 0 ) 
-	return();		/* If the acl is not a list the ignore it. */
+    if ( strcmp(type, "LIST") != 0 ) 
+	return;		/* If the acl is not a list the ignore it. */
  
     args[0] = type;
     args[1] = name;
     status = sms_query("get_acl_use", 2, args, NullFunc,  (char *) NULL);
     if (status != SMS_NO_MATCH)
-	return();		/* if this query fails the acl will
-				 not be deleted even if it is empty. */
+	return;			/* If this query fails the acl will
+				   not be deleted even if it is empty. */
     if (verbose) {
 	sprintf(buf, "Delete the unused Access Control List (ACL) %s? ", name);
 	ans = YesNoQuestion(buf, TRUE);
 	if (ans != TRUE) {
-	Put_message("Aborting Deletion!");
-	    return();
+	    Put_message("Aborting Deletion!");
+	    return;
+	}
     }
 /*
  * Delete the ACL.
@@ -118,11 +126,12 @@ Bool verbose;
 
 int
 CheckIfAcl(name, type, verbose)
-char * name, type;
+char * name, * type;
 Bool verbose;
 {
     char * args[2], buf[BUFSIZ];
-    qelem *elem, *local;
+    struct qelem *elem, *local;
+    int status;
     elem = NULL;
 
     args[0] = type;
@@ -133,17 +142,17 @@ Bool verbose;
 	return(SUB_NORMAL);
 
     if (status != 0) {
-	com_err(whoami, status, " in CheckIfAcl (get_acl_use).");
+	com_err(program_name, status, " in CheckIfAcl (get_acl_use).");
 	return(SUB_ERROR);
     }	
     if (verbose) {
-	sprintf(buf, "%s %s %s %s", type, list_name,
+	sprintf(buf, "%s %s %s %s", type, name,
 		"is the Access Control List (ACL) for the following data",
 		"objects:\n");
 	Put_message(buf);
 	local = elem;
 	while (local != NULL) {
-	    info = (char **) local->q_data;
+	    char ** info = (char **) local->q_data;
 	    Print( QueueCount(elem), info, NULL);
 	    local = local->q_forw;
 	}
@@ -153,7 +162,6 @@ Bool verbose;
     }
     FreeQueue(elem);
     return(SUB_ERROR);
-    }
 }
 
 /*	Function Name: RemoveItemFromLists
@@ -166,12 +174,14 @@ Bool verbose;
  */
 
 int
-RemoveItemFromLists(name, type, elem, verbose);
-char * name, type;
-qelem ** elem;
+RemoveItemFromLists(name, type, elem, verbose)
+char * name, *type;
+struct qelem ** elem;
 int verbose;
 {
-    char *args[2];
+    struct qelem *local;
+    char *args[2], temp_buf[BUFSIZ];
+    int status, ans;
     
     args[0] = type;
     args[1] = name;
@@ -188,7 +198,7 @@ int verbose;
 	return(SUB_NORMAL);
 
     if (status != 0) {	
-	com_err(whoami, status, " in DeleteList (get_lists_of_member).");
+	com_err(program_name, status, " in DeleteList (get_lists_of_member).");
 	return(SUB_ERROR);
     }
 
@@ -199,17 +209,17 @@ int verbose;
 
     if (verbose) {
 	sprintf(temp_buf, "%s %s is a member of %d other list(s).\n", type,
-		name, QueueCount(member_of) );
-	Put_message(buf);
+		name, QueueCount(*elem) );
+	Put_message(temp_buf);
 	local = *elem;
 	while (local != NULL) {
-	    info = (char **) local->q_data;
+	    char ** info = (char **) local->q_data;
 	    Print( CountArgs(info), info, NULL);
 	    local = local->q_forw;
 	}
-	sprintf(buf,"Remove %s %s from these lists? ", type, name);
-	ans = YesNoQuestion(buf, TRUE);
-	if (ans < 0 || answer == FALSE) {
+	sprintf(temp_buf,"Remove %s %s from these lists? ", type, name);
+	ans = YesNoQuestion(temp_buf, TRUE);
+	if (ans < 0 || ans == FALSE) {
 	    Put_message("Aborting...");
 	    FreeQueue(*elem);
 	    return(SUB_ERROR);
@@ -224,11 +234,11 @@ int verbose;
     args[1] = name;
     args[2] = type;
     while (local != NULL) {
-	info = (char **) local->q_data;
+	char ** info = (char **) local->q_data;
 	args[0] = info[0];
 	if ( (status = sms_query("delete_member_from_list",
 				 3, args, Scream, NULL)) != 0) {
-	    com_err(whoami, status, " in delete_member\nAborting\n");
+	    com_err(program_name, status, " in delete_member\nAborting\n");
 	    FreeQueue(*elem);
 	    return(SUB_ERROR);
 	}
@@ -245,25 +255,25 @@ int verbose;
  */
 
 int
-RemoveMembersOfList(name, verbose);
+RemoveMembersOfList(name, verbose)
 char * name;
 Bool verbose;
 {
-    char buf[BUFSIZ], **info;
-    qelem *local, *elem;
+    char buf[BUFSIZ], *args[10];
+    struct qelem *local, *elem = NULL;
+    int status, ans;
 
 /* 
  * Get the members of this list.
  */
 
-    *elem = NULL;
     status = sms_query("get_members_of_list", 1, &name, StoreInfo,
 		       (char *) &elem);
-    if (status == SMS_NOMATCH) 
-	return(SUB_NORM);
+    if (status == SMS_NO_MATCH) 
+	return(SUB_NORMAL);
 
     if (status != 0) {	
-	com_err(whoami, status, " in DeleteList (get_members_of_list).");
+	com_err(program_name, status, " in DeleteList (get_members_of_list).");
 	return(SUB_ERROR);
     }
 
@@ -272,19 +282,19 @@ Bool verbose;
  */
 
     if (verbose) {
-	sprintf(buf, "List %s has %d member(s):", name, QueueCount(members) );
+	sprintf(buf, "List %s has %d member(s):", name, QueueCount(elem) );
 	Put_message(buf);
 	local = elem;
 	while (local != NULL) {
-	    info = (char **) local->q_data;
+	    char ** info = (char **) local->q_data;
 	    Print( CountArgs(info), info, NULL);
 	    local = local->q_forw;
 	}
 	sprintf(buf, "Remove these member(s) from list %s? ", name);
-	ans = YesNoQuestion(temp_buf, TRUE);
-	if (ans < 0 || answer == FALSE) {
+	ans = YesNoQuestion(buf, TRUE);
+	if (ans < 0 || ans == FALSE) {
 	    Put_message("Aborting...");
-	    FreeQueue(elem)
+	    FreeQueue(elem);
 	    return(SUB_ERROR);
 	}
     }
@@ -296,12 +306,12 @@ Bool verbose;
     local = elem;
     args[0] = name; 
     while (local != NULL) {
-	info = (char **) local->q_data;
+	char ** info = (char **) local->q_data;
 	args[1] = info[0];
 	args[2] = info[1];
 	if ( (status = sms_query("delete_member_from_list",
 				 3, args, Scream, NULL)) != 0) {
-	    com_err(whoami, status, " in delete_member\nAborting\n");
+	    com_err(program_name, status, " in delete_member\nAborting\n");
 	    FreeQueue(elem);
 	    return(SUB_ERROR);
 	}
@@ -326,7 +336,7 @@ char * name;
 Bool verbose;
 {
     int status, ans;
-    char buf[BUFSIZ];
+    char buf[BUFSIZ], *args[10];
 
     status = sms_query("get_list_info", 1, &name, NullFunc, (char *) NULL);
     if (status == 0) {
@@ -335,7 +345,7 @@ Bool verbose;
 	    ans = YesNoQuestion(buf, TRUE);
 	    if (ans == FALSE) {
 		Put_message("Leaving group alone.");
-		return(SBU_NORMAL);
+		return(SUB_NORMAL);
 	    }
 	    if (ans < 0) {
 		Put_message("Aborting...\n");
@@ -348,9 +358,10 @@ Bool verbose;
 	    DeleteList(2, args);
     }
     else if (status != SMS_NO_MATCH) {
-	com_err(whoami, status, " Aborting Delete User.");	
+	com_err(program_name, status, " Aborting Delete User.");	
 	return(SUB_ERROR);
     }
+    return(SUB_NORMAL);
 }
 
 /*	Function Name: DeleteHomeFilesys
@@ -370,7 +381,7 @@ Bool verbose;
     
     status = sms_query("get_filesystem_by_label", 1, &name, NullFunc, 
 		       (char *) NULL);
-    if (status == SMS_NOMATCH)
+    if (status == SMS_NO_MATCH)
 	return(SUB_NORMAL);
     if (status == 0) {
 	if (verbose) {
@@ -378,17 +389,17 @@ Bool verbose;
 	    ans = YesNoQuestion(buf, TRUE);
 	    if (ans != TRUE) {
 		Put_message("Filesystem Not Deleted, aborting...\n\n");
-		return(SMS_ERROR);
+		return(SUB_ERROR);
 	    }
 	}
 	if ( (status = sms_query("delete_filesystem", 1, &name, Scream,
 				 (char *) NULL) ) != 0) {
-	    com_err(whoami, status, " in delete_filesystem).");
+	    com_err(program_name, status, " in delete_filesystem).");
 	    return(SUB_ERROR);
 	}
 	return(SUB_NORMAL);
     }
-    com_err(whoami, status, " in get_filesystem_by_label).");
+    com_err(program_name, status, " in get_filesystem_by_label).");
     return(SUB_ERROR);
 }
 
@@ -405,15 +416,15 @@ char * name;
 int verbose;
 {
     int status, ans;
-    char buf[BUFSIZ];
-    struct qelem *;
+    char buf[BUFSIZ], *args[10];
+    struct qelem *local, *elem = NULL;
     
     status = sms_query("get_nfs_quotas_by_user", 1, &name, StoreInfo, 
 		       (char *) &elem);
     if (status == SMS_NO_MATCH)
 	return(SUB_NORMAL);
     if (status != 0) {
-	com_err(whoami, status, " in delete_filesystem.");
+	com_err(program_name, status, " in delete_filesystem.");
 	return(SUB_ERROR);
     }
     if (verbose) {
@@ -421,7 +432,7 @@ int verbose;
 	Put_message(buf);
 	local = elem;
 	while (local != NULL) {
-	    info = (char **) local->q_data;
+	    char ** info = (char **) local->q_data;
 	    sprintf(buf, "Filesystem:\t%s\t\tQuota(in Kb):\t%s",
 		    info[0], info[4]);
 	    Put_message(buf);
@@ -437,7 +448,7 @@ int verbose;
     local = elem;
     args[1] = name;
     while (local != elem) {
-	info = (char **) local->q_data;
+	char ** info = (char **) local->q_data;
 	args[0] = info[0];
 	status = sms_query("delete_nfs_quota", 2, args, Scream, (char *) NULL);
 	if (status != 0 && status != SMS_NO_MATCH) {
@@ -445,11 +456,11 @@ int verbose;
 		    "Could not remove quota on filesystem %s. ** ABORTING **",
 		    args[0]);
 	    Put_message(buf);
-	    com_err(whoami, status, (char *) NULL);
+	    com_err(program_name, status, (char *) NULL);
 	    FreeQueue(elem);
 	    return(SUB_ERROR);
 	}
-	local = local->normal;
+	local = local->q_forw;
     }
     FreeQueue(elem);
     return(SUB_NORMAL);
@@ -466,9 +477,9 @@ DeleteList(argc, argv)
 int argc;
 char *argv[];
 {
-    char buf[BUFSIZ], *args[2], *list;
-    struct qelem *elem, *local, *member_of, *list_info;
-    int ans, status;
+    char *list, **info;
+    struct qelem *local, *member_of, *list_info;
+    int status;
 
     member_of = list_info = NULL;
 
@@ -480,7 +491,7 @@ char *argv[];
  */
     if ( (status = sms_query("get_list_info", 1, &list, StoreInfo, 
 		       (char *) &list_info)) != 0) {
-	com_err(whoami, status,	" in DeleteList (delete_list).");
+	com_err(program_name, status,	" in DeleteList (delete_list).");
 	return(DM_NORMAL);
     }
 
@@ -493,7 +504,7 @@ char *argv[];
 
     status = sms_query("delete_list", 1, &list, Scream, (char *) NULL);
     if (status != SMS_IN_USE && status != 0) {
-	com_err(whoami, status,	" in DeleteList (delete_list).");
+	com_err(program_name, status,	" in DeleteList (delete_list).");
 	return(DM_NORMAL);
     }
     if (status == 0) {
@@ -519,12 +530,12 @@ char *argv[];
     }
 
     info = (char **) list_info->q_data;
-    CheckAcl(info[ACL_TYPE], info[ACL_NAME], TRUE);
+    CheckAcl(info[L_ACL_TYPE], info[L_ACL_NAME], TRUE);
 
     local = member_of;
     while (local != NULL) {
 	info = (char **) local->q_data;
-	CheckListForDeletion(info[0], TRUE);
+	CheckListForDeletion(info[LM_LIST], TRUE);
 	local = local->q_forw;
     }
 
@@ -540,7 +551,7 @@ char *argv[];
  */
 
 static int
-RealDeleteList(name);
+RealDeleteList(name)
 char * name;
 {
     char buf[BUFSIZ];
@@ -548,12 +559,12 @@ char * name;
 
     if ( (status = sms_query("delete_list", 1, &name, Scream, 
 			     (char *) NULL)) == NULL) {
-	com_err(whoami, status, ": list not deleted");
+	com_err(program_name, status, ": list not deleted");
 	return(SUB_ERROR);
     }
     (void) sprintf(buf, "List %s deleted./n", name);
     Put_message(buf);
-    return(SUB_NORM);
+    return(SUB_NORMAL);
 }
 
 /*	Function Name: DeleteUser
@@ -570,14 +581,14 @@ char ** argv;
     int status;
     char buf[BUFSIZ];
     char * name = argv[1];	/* name of the user we are deleting. */
-    qelem *local, *member_of = NULL;
+    struct qelem *local, *member_of = NULL;
 
     if (!Confirm("Are you sure that you want to delete this user?"))
 	return(DM_NORMAL);
 
-    status = sms_query("delete_user", 1, &name, NullFunc, (char *) NULL);
+    status = sms_query("delete_user", 1, &name, Scream, (char *) NULL);
     if (status != SMS_IN_USE && status != 0) {
-	com_err(whoami, status, ": list not deleted");	
+	com_err(program_name, status, ": list not deleted");	
 	return(DM_NORMAL);
     }
     if (status == 0) {
@@ -596,8 +607,8 @@ char ** argv;
  * If all these have been accomplished, then attempt to delete the user again.
  */
 	if ( (CheckIfAcl(name, "user", TRUE) == SUB_ERROR) ||
-	     (DeleteHomeFilsys(name, TRUE) == SUB_ERROR) ||
-	     (DeleteQuotas(name, TRUE) == SUB_ERROR) ||
+	     (DeleteHomeFilesys(name, TRUE) == SUB_ERROR) ||
+	     (DeleteAllUserQuotas(name, TRUE) == SUB_ERROR) ||
 	     (RemoveItemFromLists(name, "user",
 				  &member_of, TRUE) == SUB_ERROR) ||
 	     (RealDeleteUser(name) == SUB_ERROR) ) {
@@ -611,16 +622,16 @@ char ** argv;
  * Query - Delete all empty lists created by removing this user from them.
  */
 
-    if (DeleteUserGroup(name) == SUB_ERROR) {
+    if (DeleteUserGroup(name, TRUE) == SUB_ERROR) {
 	FreeQueue(member_of);
 	return(DM_NORMAL);
     }
 
     local = member_of;
     while (local != NULL) {
-	info = (char **) local->q_data;
+	char ** info = (char **) local->q_data;
 	CheckListForDeletion(info[0], TRUE);
-	local->local->q_forw;
+	local = local->q_forw;
     }
 
     FreeQueue(member_of);	/* Free memory and return. */
@@ -634,7 +645,7 @@ char ** argv;
  */
 
 static int
-RealDeleteUser(name);
+RealDeleteUser(name)
 char * name;
 {
     char buf[BUFSIZ];
@@ -642,12 +653,12 @@ char * name;
 
     if ( (status = sms_query("delete_user", 1, &name, Scream, 
 			     (char *) NULL)) == NULL) {
-	com_err(whoami, status, ": user not deleted");
+	com_err(program_name, status, ": user not deleted");
 	return(SUB_ERROR);
     }
     (void) sprintf(buf, "User %s deleted./n", name);
     Put_message(buf);
-    return(SUB_NORM);
+    return(SUB_NORMAL);
 }
 
     

@@ -1,5 +1,5 @@
 #ifndef lint
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/main.c,v 1.1 1988-06-09 14:13:16 kit Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/main.c,v 1.2 1988-06-10 18:37:04 kit Exp $";
 #endif lint
 
 /*	This is the file main.c for allmaint, the SMS client that allows
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/main.c,v $
  *      $Author: kit $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/main.c,v 1.1 1988-06-09 14:13:16 kit Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/main.c,v 1.2 1988-06-10 18:37:04 kit Exp $
  *	
  *  	Copyright 1987, 1988 by the Massachusetts Institute of Technology.
  *
@@ -23,15 +23,17 @@
 #include <signal.h>
 #include <stdio.h>
 #include <strings.h>
+#include <sys/types.h>
 #include <sms.h>
 #include <menu.h>
 
 #include "mit-copyright.h"
 #include "allmaint.h"
+#include "allmaint_funcs.h"
 #include "globals.h"
 
-static void init_listmaint(), error_exit(), usage();
-void Put_message();
+extern Menu allmaint_top_menu;
+static void ErrorExit(), Usage(), SignalHandler();
 char *getlogin();
 uid_t getuid();
 struct passwd *getpwuid();
@@ -49,7 +51,7 @@ main(argc, argv)
     int argc;
     char ** argv;
 {
-    char buf[BUFSIZ];
+    int status;
 
     if ((user = getlogin()) == NULL) 
 	user = getpwuid((int) getuid())->pw_name;
@@ -57,13 +59,14 @@ main(argc, argv)
 
     init_sms_err_tbl();
     init_krb_err_tbl();
+    verbose = TRUE;
 
     switch (argc) {
     case 2:
       if (strcmp(argv[1], "-nomenu") == 0)
 	use_menu = FALSE;
-      else
-	usage();
+      else 
+	Usage();
 				/* Fall Through. */
     case 1:
       if ((program_name = rindex(argv[0], '/')) == NULL)
@@ -72,23 +75,23 @@ main(argc, argv)
 	program_name++;
       break;
     default:
-      usage();
+      Usage();
       break;
     }
     
     if ( status = sms_connect() ) 
-	error_exit("\nConnection to SMS server failed", status);
+	ErrorExit("\nConnection to SMS server failed", status);
 
-    if ( status = sms_auth(argv[0]) ) 
-	error_exit("\nAuthorization failed -- please run kinit", status);
+    if ( status = sms_auth(program_name) ) 
+	ErrorExit("\nAuthorization failed -- please run kinit", status);
 
 /*
  * These signals should not be set until just before we fire up the menu
  * system. 
  */
-    (void) signal(SIGHUP, signal_handler);
-    (void) signal(SIGINT, signal_handler);
-    (void) signal(SIGQUIT, signal_handler);
+    (void) signal(SIGHUP, SignalHandler);
+    (void) signal(SIGINT, SignalHandler);
+    (void) signal(SIGQUIT, SignalHandler);
 
     if (use_menu) {		/* Start menus that execute program */
         Start_paging();
@@ -102,7 +105,7 @@ main(argc, argv)
     exit(0);
 }
 
-/*	Function Name: error_exit
+/*	Function Name: ErrorExit
  *	Description: This function does the error handling and exits.
  *	Arguments: buf - the error message to print.
  *                 status - the error code.
@@ -110,9 +113,9 @@ main(argc, argv)
  */
 
 static void
-error_exit(buf,status);
+ErrorExit(buf,status)
 int status;
-char * whoami, *buf;    
+char * buf;    
 {
     com_err(program_name, status, buf);
     sms_disconnect();
@@ -126,20 +129,20 @@ char * whoami, *buf;
  */
 
 static void
-usage()
+Usage()
 {
     fprintf(stderr, "Usage: %s [-nomenu]\n", program_name);
     exit(1);
 }
 
-/*	Function Name: signal_handler
+/*	Function Name: SignalHandler
  *	Description: This function cleans up from a signal interrupt.
  *	Arguments: none.
  *	Returns: doesn't
  */
 
-static int *
-signal_handler()
+void
+SignalHandler()
 {
     Put_message("Signal caught - exiting");
     if (use_menu)

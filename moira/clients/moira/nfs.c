@@ -1,5 +1,5 @@
 #ifndef lint
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/nfs.c,v 1.1 1988-06-09 14:13:28 kit Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/nfs.c,v 1.2 1988-06-10 18:37:20 kit Exp $";
 #endif lint
 
 /*	This is the file nfs.c for allmaint, the SMS client that allows
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/nfs.c,v $
  *      $Author: kit $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/nfs.c,v 1.1 1988-06-09 14:13:28 kit Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/nfs.c,v 1.2 1988-06-10 18:37:20 kit Exp $
  *	
  *  	Copyright 1987, 1988 by the Massachusetts Institute of Technology.
  *
@@ -19,15 +19,16 @@
  *	see the file mit-copyright.h
  */
 
-#include "mit-copyright.h"
-#include "allmaint.h"
-#include "globals.h"
-#include "infodefs.h"
-
 #include <stdio.h>
 #include <strings.h>
 #include <sms.h>
 #include <menu.h>
+
+#include "mit-copyright.h"
+#include "allmaint.h"
+#include "allmaint_funcs.h"
+#include "globals.h"
+#include "infodefs.h"
 
 /* #include <sys/types.h> */
 
@@ -58,7 +59,7 @@ char ** info;
 	    status ? "Active" : "Inactive", info[NFS_ALLOC], info[NFS_SIZE]);
     Put_message(temp_buf);
     sprintf(temp_buf, "Last Modification by %s at %s with %s.",
-		   answer[U_MODBY], answer[U_MODTIME], answer[U_MODWITH]);
+		   info[U_MODBY], info[U_MODTIME], info[U_MODWITH]);
     Put_message(temp_buf);
 }
 /*	Function Name: AskNFSInfo.
@@ -70,7 +71,7 @@ char ** info;
  */
 
 char **
-AskNFSInfo(info);
+AskNFSInfo(info)
 char ** info;
 {
     /* Also need name of the machine in this structure. */
@@ -89,13 +90,13 @@ char ** info;
     FreeAndClear(&info[NFS_MODBY], TRUE);
     FreeAndClear(&info[NFS_MODWITH], TRUE);
     
-    return(info)
+    return(info);
 }
 
 /*	Function Name: ShowNFSService
  *	Description: This function prints all exported partitions.
- *	Arguments: argc, argv - argv[1] - name of filesysytem.
- *                              argv[2] - name of filesystem device.
+ *	Arguments: argc, argv - argv[1] - name of machine.
+ *                              argv[2] - name of directroy.
  *	Returns: DM_NORMAL.
  */
 
@@ -109,11 +110,11 @@ char **argv;
     
     if ( (stat = sms_query("get_nfsphys", 2, argv + 1, 
 			   StoreInfo, (char *)  &elem)) != 0)
-	com_err(whoami, stat, " in ShowNFSServices.");
+	com_err(program_name, stat, " in ShowNFSServices.");
 
     top = elem;
     while (elem != NULL) {
-	info = (char **) elem->q_data;
+	char ** info = (char **) elem->q_data;
 	PrintNFSInfo(info);
 	elem = elem->q_forw;
     }
@@ -125,7 +126,7 @@ char **argv;
  *	Description: Adds a new partition to the nfsphys relation
  *	Arguments: arc, argv - 
  *                             argv[1] - machine name.
- *                             argv[2] - device
+ *                             argv[2] - directory.
  *	Returns: DM_NORMAL.
  */
 
@@ -142,7 +143,7 @@ int argc;
 			   NullFunc, (char *) NULL)) == 0) {
 	Put_message("This service already exists.");
 	if (stat != SMS_NO_MATCH) 
-	    com_err(whoami, stat, " in get_nfsphys.");
+	    com_err(program_name, stat, " in get_nfsphys.");
     }
     
     if ( (info[NFS_NAME] = CanonicalizeHostname(argv[1])) == NULL) {
@@ -162,7 +163,7 @@ int argc;
     
     if ((stat = sms_query("add_nfsphys", CountArgs(args), args,
 			   Scream, (char *) NULL)) != 0) 
-	com_err(whoami, stat, " in AdsNFSService");
+	com_err(program_name, stat, " in AdsNFSService");
     
     FreeInfo(info);
     return (DM_NORMAL);
@@ -172,7 +173,7 @@ int argc;
  *	Description: Update the values for an nfsphys entry.
  *	Arguments: argc, argv -
  *                             argv[1] - machine name.
- *                             argv[2] - device
+ *                             argv[2] - directory.
  *	Returns: DM_NORMAL.
  */
 
@@ -195,7 +196,7 @@ int argc;
 
     if ( (stat = sms_query("get_nfsphys", 2, argv + 1,
 			   StoreInfo, (char *) &elem)) != 0) {
-	com_err(whoami, stat, " in UpdateNFSService.");
+	com_err(program_name, stat, " in UpdateNFSService.");
 	return (DM_NORMAL);
     }
 
@@ -213,11 +214,10 @@ int argc;
 	    case FALSE:
 		update = FALSE;
 		break;
-	    case QUIT:
+	    default:
 		FreeQueue(top);
 		Put_message("Aborting update.");
-		Return(DM_NORMAL);
-		break;
+		return(DM_NORMAL);
 	    }
 	}
 	else
@@ -225,37 +225,15 @@ int argc;
 
 	if (update) {		/* actually perform update */
 	    args = AskNFSInfo(info);
-	    if ((stat = sms_query("update_nfsphys", num_args, args,
-				  abort, (char *)NULL)) != 0) 
-		com_err(whoami, stat, (char *) NULL);
+	    if ((stat = sms_query("update_nfsphys", CountArgs(args), args,
+				  Scream, (char *)NULL)) != 0) 
+		com_err(program_name, stat, (char *) NULL);
 	}
-	elem = elem->q_next;
+	elem = elem->q_forw;
     }
 
     FreeQueue(top);
     return (DM_NORMAL);
-}
-
-/* stop CDP 6/7/88 */
-
-/*	Function Name: DeleteCheck
- *	Description: This checks to see if we should delete this nfs
- *	Arguments: argc, argv - 
- *                              argv[0] - name of file system.
- *                              argv[1] - type of file system.
- *                              argv[3] - packname of fulsys
- *                data - a filled info structure.
- *	Returns: SMS_CONT.
- */
-
-DeleteCheck(argc, argv, date)
-int argc;
-char **argv, *data;
-{
-    char buf[BUFSIZ];
-    NFS_info *info = (NFS_info *) data;
-
-    return(SMS_CONT);
 }
 
 /*	Function Name: DeleteNFSService
@@ -272,12 +250,11 @@ int argc;
 char **argv;
 {
     register int stat;
-    struct qelem *elem, *top;
+    struct qelem *top, *elem = NULL;
     char * dir = argv[2];
     int length;
     Bool delete_ok = TRUE;
 
-    elem = NULL;
     argv[1] = CanonicalizeHostname(argv[1]);
 
     stat = sms_query("get_nfsphys", 2, argv + 1, NullFunc, (char *) NULL);
@@ -286,19 +263,20 @@ char **argv;
 	return(DM_NORMAL);
     }
     if (stat) {
-	com_err(whoami, stat, " in DeleteNFSService");
+	com_err(program_name, stat, " in DeleteNFSService");
 	return(DM_NORMAL);
     }
     
     stat = sms_query("get_filesys_by_machine", 1, argv + 1, StoreInfo, 
 		     &elem);
     if (stat && stat != SMS_NO_MATCH)
-	com_err(whoami, stat, " while checking usage of partition");
+	com_err(program_name, stat, " while checking usage of partition");
 
     length = strlen( dir );
     top = elem;
     while (elem != NULL) {
-	info = (char ** ) elem->q_data;
+	char buf[BUFSIZ];
+	char ** info = (char ** ) elem->q_data;
 	if ( (strcmp(info[FS_TYPE], TYPE_NFS) == 0) && 
 	     (strcmp(info[FS_PACK], dir, length) == 0) ) {
 	    sprintf(buf, "Filesystem %s uses that partition", info[FS_NAME]);
@@ -312,7 +290,7 @@ char **argv;
 	Confirm("Do you really want to delete this Filesystem? (y/n) ")) {
 	if ( (stat = sms_query("delete_nfsphys", 2, argv + 1,
 			       Scream, (char *) NULL )) !=0 )
-	    com_err(whoami, stat, " in DeleteNFSService");
+	    com_err(program_name, stat, " in DeleteNFSService");
     }
     else
 	Put_message("Operation Aborted.\n");

@@ -1,5 +1,5 @@
 #ifndef lint
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v 1.1 1988-06-09 14:13:11 kit Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v 1.2 1988-06-10 18:36:53 kit Exp $";
 #endif lint
 
 /*	This is the file lists.c for allmaint, the SMS client that allows
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v $
  *      $Author: kit $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v 1.1 1988-06-09 14:13:11 kit Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v 1.2 1988-06-10 18:36:53 kit Exp $
  *	
  *  	Copyright 1987, 1988 by the Massachusetts Institute of Technology.
  *
@@ -26,6 +26,7 @@
 
 #include "mit-copyright.h"
 #include "allmaint.h"
+#include "allmaint_funcs.h"
 #include "globals.h"
 #include "infodefs.h"
 
@@ -33,6 +34,10 @@
 #define MEMBERS 1
 #define GLOM    2
 #define ACL_USE 3
+
+/* globals only for this file. */
+
+static char * current_list;
 
 /*	Function Name: PrintListInfo
  *	Description: This function Prints out the List info in a coherent form.
@@ -66,7 +71,7 @@ char ** info;
 	Put_message("This list has no Administrator, how strange?!");
     else {
 	sprintf(buf, "The List Administrator of this list is the %s: %s",
-		info[L_ACL_TYPE], info[ACL_NAME]);
+		info[L_ACL_TYPE], info[L_ACL_NAME]);
 	Put_message(buf);
     }
 
@@ -91,17 +96,18 @@ char ** info;
 struct qelem *
 GetListInfo(type, name1, name2)
 int type;
-char * name;
+char * name1, *name2;
 {
     char *args[2];
-    struct quelem * elem = NULL;
+    struct qelem * elem = NULL;
+    register int status;
 
     switch(type) {
     case LIST:
 	args[0] = name1;
 	if ( (status = sms_query("get_list_info", 1, args,
 			       StoreInfo, (char *) &elem)) != 0) {
-	    com_err(whoami, status, " in get_nfs_quotas_by_user");
+	    com_err(program_name, status, " in get_nfs_quotas_by_user");
 	    return (NULL);
 	}
 	break;
@@ -109,7 +115,7 @@ char * name;
 	args[0] = name1;
 	if ( (status = sms_query("get_members_of_list", 1, args,
 			       StoreInfo, (char *) &elem)) != 0) {
-	    com_err(whoami, status, " in get_nfs_quotas_by_user");
+	    com_err(program_name, status, " in get_nfs_quotas_by_user");
 	    return (NULL);
 	}
 	break;
@@ -118,7 +124,7 @@ char * name;
 	args[1] = name2; 	
 	if ( (status =  sms_query("get_list_of_member", 2, args,
 			       StoreInfo, (char *) &elem)) != 0) {
-	    com_err(whoami, status, " in get_nfs_quotas_by_user");
+	    com_err(program_name, status, " in get_nfs_quotas_by_user");
 	    return (NULL);
 	}
 	break;
@@ -127,7 +133,7 @@ char * name;
 	args[1] = name2; 	
 	if ( (status =  sms_query("get_acl_use", 2, args,
 			       StoreInfo, (char *) &elem)) != 0) {
-	    com_err(whoami, status, " in get_nfs_quotas_by_user");
+	    com_err(program_name, status, " in get_nfs_quotas_by_user");
 	    return (NULL);
 	}
 	break;
@@ -145,13 +151,11 @@ char * name;
  */
 
 char **
-AskListInfo(info, name);
+AskListInfo(info, name)
 char ** info;
 Bool name;
 {
-    char * temp_buf, *newname;
-    char *ret_args[100];
-    int counter;
+    char temp_buf[BUFSIZ], *newname;
 
     sprintf(temp_buf,"\nChanging Attributes of list %s.\n",info[L_NAME]);
     Put_message(temp_buf);
@@ -165,15 +169,19 @@ Bool name;
     GetValueFromUser("Is this list hidden (1/0): ", &info[L_HIDDEN]);
     GetValueFromUser("Is this a maillist  (1/0): ", &info[L_MAILLIST]);
     GetValueFromUser("is this a group     (1/0): ", &info[L_GROUP]);
-    if (atoi(info[L_GROUP])) 
-	GetValueFromUser("What is the Gid for this group '#' get unique gid:".
-			 &info[L_GID]);
+    if (atoi(info[L_GROUP])) {
+	sprintf(temp_buf, "What is the Gid for this group, %s",
+		"'#' gets unique gid:");
+	GetValueFromUser(temp_buf, &info[L_GID]);
+    }
     GetValueFromUser("What Type of Administrator (none, user, list): ",
 		     &info[L_ACL_TYPE]);
-    if ( strcmp(info[L_ACL_TYPE],"USER") == 0) 
+    if ( (strcmp(info[L_ACL_TYPE], "USER") == 0) || 
+	(strcmp(info[L_ACL_TYPE], "user") == 0) )
 	GetValueFromUser("Who will be the administrator of this list: ",
 			 &info[L_ACL_NAME]);
-    if ( strcmp(info[L_ACL_TYPE],"USER") == 0) 
+    if ( (strcmp(info[L_ACL_TYPE], "LIST") == 0) ||
+	(strcmp(info[L_ACL_TYPE], "list") == 0) )
        GetValueFromUser("Which group will be the administrator of this list: ",
 			 &info[L_ACL_NAME]);
     GetValueFromUser("Description: ", &info[L_DESC]);
@@ -195,7 +203,7 @@ Bool name;
 
 /*	Function Name: ShowListInfo.
  *	Description: shows info on a list.
- *	Arguments: argc, argv - standard SMS argc and argv.
+ *	Arguments: argc, argv - name of list in argv[1].
  *	Returns: DM status code.
  */
 
@@ -206,7 +214,7 @@ char **argv;
 {
     struct qelem *top, *list;
 
-    top = list = StoreListInfo(LIST, argv[1], (char *) NULL);
+    top = list = GetListInfo(LIST, argv[1], (char *) NULL);
     while (list != NULL) {
 	PrintListInfo( (char **) list->q_data);
 	list = list->q_forw;
@@ -238,7 +246,7 @@ char **argv;
 	up_args = AskListInfo(info, TRUE);
 	if ( (status = sms_query("update_list", CountArgs(up_args), up_args,
 				 Scream, (char *) NULL)) != 0) {
-	    com_err(whoami, status, " in UpdateList.");	
+	    com_err(program_name, status, " in UpdateList.");	
 	    Put_message("List Not Updated.");
 	    list = list->q_forw;
 	}
@@ -260,19 +268,18 @@ int argc;
 char **argv;
 {
     static char *info[MAX_ARGS_SIZE], **add_args;
-    struct qelem *top, *list;
     int status;
 
     if (!ValidName(argv[1])) /* Check if list name is valid. */
 	return(DM_QUIT);
     
     status = sms_query("get_list_info", 1, argv + 1, NullFunc, 
-		       (caddr_t) NULL);
+		       (char *) NULL);
     if (status != SMS_NO_MATCH) {
 	if (status == 0)
 	    Put_message("This list already exists.");
 	else
-	    com_err(whoami, status, " in AddList.");	
+	    com_err(program_name, status, " in AddList.");	
 	return(DM_QUIT);
     }
 
@@ -280,9 +287,8 @@ char **argv;
 
     if ( (status = sms_query("add_list", CountArgs(add_args), add_args,
 			     Scream, (char *) NULL)) != 0) {
-	com_err(whoami, status, " in AddList.");	
+	com_err(program_name, status, " in AddList.");	
 	Put_message("List Not Created.");
-	list = list->q_forw;
     }
 
     FreeInfo(info);
@@ -296,13 +302,13 @@ char **argv;
  */
 
 int
-Instructions()
+ListHelp()
 {
     static char * message[] = {
 	"Listmaint handles the creation, deletion, and updating of lists.\n",
 	"A list can be a mailing list, a group list, or both.\n",
 	"The concept behind lists is that a list has an owner",
-	"- administrator -  and members.\n";
+	"- administrator -  and members.\n",
 	"The administrator of a list may be another list.\n",
 	"The members of a list can be users (login names), other lists,",
 	"or address strings.\n",
@@ -311,7 +317,7 @@ Instructions()
 	"    Escape from a function - Type ctrl-C.\n",
 	"    Suspend the program (temporarily) - Type ctrl-Z.\n",
 	NULL,
-    }
+    };
 
     return(PrintHelp(message));
 }
@@ -332,7 +338,7 @@ Menu *m;
 int argc;
 char **argv;
 {
-    char buf[BUFSIZ], temp_buf[BUFSIZ];
+    char temp_buf[BUFSIZ];
     char *list_name = argv[1];
 
     if (*argv[0] == 'a') {	/* add_list */
@@ -383,15 +389,16 @@ Menu *m;
  */
 
 void
-ListMembersByType(type);
+ListMembersByType(type)
 char * type;
 {
     char temp_buf[BUFSIZ];
+    register int status;
 
     found_some = FALSE;
-    if (status = sms_query("get_members_of_list", 1, &current_list, 
-			   PrintByType, type))
-	com_err(whoami, status, " in ListMembersByType\n");
+    if ( (status = sms_query("get_members_of_list", 1, &current_list, 
+			   PrintByType, type)) != 0)
+	com_err(program_name, status, " in ListMembersByType\n");
     if (!found_some) {
 	if (type == NULL)
 	    Put_message("List is empty (no members).");
@@ -466,6 +473,7 @@ GetMemberInfo(action, ret_argv)
 char *action, **ret_argv;
 {
     char temp_buf[BUFSIZ], ret_buf[BUFSIZ];
+    register int status;
 
     ret_argv[LM_LIST] = Strsave(current_list);
     ret_argv[LM_MEMBER] = "nobody";
@@ -479,13 +487,13 @@ char *action, **ret_argv;
 	Put_message("\"type\" must be one of 'STRING', 'LIST', or 'USER'.");
 	return(SUB_ERROR);
     } else if (status) {
-	com_err(whoami, status, NULL);
+	com_err(program_name, status, NULL);
     }
 
     sprintf(temp_buf,"Name of member to %s", action);
     PromptWithDefault(temp_buf, ret_buf, BUFSIZ, user);
     ret_argv[LM_MEMBER] = Strsave(ret_buf);
-    ret-args[LM_END] = NULL;		/* null terminat this list. */
+    ret_argv[LM_END] = NULL;		/* null terminat this list. */
     return(SUB_NORMAL);
 }
 
@@ -499,13 +507,14 @@ int
 AddMember()
 {
     char *args[10];
+    register int status;
 
     if( GetMemberInfo("add", args) == SUB_ERROR )
 	return(DM_NORMAL);
 
     if (status = sms_query("add_member_to_list", CountArgs(args), args,
 			   Scream, NULL) != 0)
-	com_err(whoami, status, " in AddMember\n");
+	com_err(program_name, status, " in AddMember\n");
 
     FreeInfo(args);
     return (DM_NORMAL);
@@ -521,6 +530,7 @@ int
 DeleteMember()
 {
     char *args[10];
+    register int status;
 
     if( GetMemberInfo("delete", args) == SUB_ERROR )
 	return(DM_NORMAL);
@@ -528,7 +538,7 @@ DeleteMember()
     if (Confirm("Are you sure you want to delete this member?") ) {
 	if (status = sms_query("delete_member_from_list", CountArgs(args),
 			       args, Scream, NULL))
-	    com_err(whoami, status, " in DeleteMember\n");
+	    com_err(program_name, status, " in DeleteMember\n");
 	else
 	    Put_message("Deletion Completed.");
     }
@@ -550,8 +560,9 @@ DeleteMember()
 int
 InterRemoveItemFromLists()
 {
-    char type[BUFSIZ], name[BUFSIZ], args[10];
-    qelem *top, *elem;
+    register int status;
+    char type[BUFSIZ], name[BUFSIZ], *args[10];
+    struct qelem *top, *elem;
 
     if ( !(PromptWithDefault("Type of member (user, list, string)? ", type, 
 			    BUFSIZ, "user")) )
@@ -564,19 +575,20 @@ InterRemoveItemFromLists()
     top = elem = GetListInfo(GLOM, type, name);
 
     while(elem != NULL) {
-	info = (char **) elem->q_data;
+	char line[BUFSIZ], buf[BUFSIZ];
+	char ** info = (char **) elem->q_data;
 	sprintf(line, "Delete %s from the list \"%s\" [Y/N/Q]? ", name,
 		info[0]);
 	PromptWithDefault(line, buf, BUFSIZ, "N" );
 	if (buf[0] == 'y' || buf[0] == 'Y') {
 	    Put_message("deleting...");
-	    args[DM_LIST] = info[0];
+	    args[DM_LIST] = info[GLOM_NAME];
 	    args[DM_TYPE] = type;
 	    args[DM_MEMBER] = name;
 	    if ( (status = sms_query("delete_member_from_list", 3, args,
 			       Scream, (char *) NULL)) != 0)
 		/* should check to delete list. */
-		com_err(whoami, status, " in delete_member");
+		com_err(program_name, status, " in delete_member");
 	} 
 	else if (buf[0] == 'q' || buf[0] == 'Q') {
 	    Put_message("Quitting.");
@@ -592,17 +604,16 @@ InterRemoveItemFromLists()
 
 /*	Function Name: ListByMember
  *	Description: This gets all lists that a given member is a member of.
- *	Arguments: argc, argv - agrv[1] contains the type.
- *                              argv[2] contains the name of the member.
+ *	Arguments: none.
  *	Returns: DM_NORMAL.
  */
 
 int
-ListByMember(argc, argv)
-int argc;
-char **argv;
+ListByMember()
 {
     char buf[BUFSIZ], *type, *name, **info;
+    Bool maillist, group;
+    struct qelem *top, *elem;
 
     if ( !(PromptWithDefault("Type of member (user, list, string)? ", buf, 
 			    BUFSIZ, "user")) )
@@ -637,17 +648,15 @@ char **argv;
 /*	Function Name: ListByAdministrator
  *	Description: This function prints all lists which a given user or
  *                   group administers.
- *	Arguments: argc, argv - type of the acl in argc[1].
- *                              name of the acl in argc[2].
+ *	Arguments: none.
  *	Returns: DM_NORMAL.
  */
 
 int
-ListByAdministrator(argc, argv)
-int argc;
-char **argv;
+ListByAdministrator()
 {
-    char buf[BUFSIZ], *type, *name, **info;
+    char buf[BUFSIZ], *type, *name;
+    struct qelem *top, *elem;
 
     if ( !(PromptWithDefault("Type of member (user, list, string)? ", buf, 
 			    BUFSIZ, "user")) )
@@ -665,7 +674,7 @@ char **argv;
 
     top = elem = GetListInfo(ACL_USE, type, name);
     while (elem != NULL) {
-	info = (char **) elem->q_data;
+	char ** info = (char **) elem->q_data;
 	sprintf(buf, "Type: %s,\tName: %s", info[0], info[1]);
 	Put_message(buf);
 	elem = elem->q_forw;
@@ -682,19 +691,20 @@ char **argv;
 
 ListAllGroups()
 {
+    register int status;
     static char * args[] = {
 	"TRUE",			/* active */
 	"DONTCARE",		/* public */
 	"FALSE",		/* hidden */
 	"DONTCARE",		/* maillist */
 	"TRUE",			/* group. */
-    }
+    };
 
     if (YesNoQuestion("This query will take a while, Do you wish to continue?",
-		       TRUE) )
+		       TRUE) == TRUE )
 	if (status = sms_query("qualified_get_lists", 5, args,
 			       Print, (char *) NULL) != 0)
-	    com_err(whoami, status, " in ListAllGroups\n");
+	    com_err(program_name, status, " in ListAllGroups\n");
     return (DM_NORMAL);
 }
 
@@ -706,19 +716,20 @@ ListAllGroups()
 
 ListAllMailLists()
 {
+    register int status;
     static char * args[] = {
 	"TRUE",			/* active */
 	"DONTCARE",		/* public */
 	"FALSE",		/* hidden */
 	"TRUE",			/* maillist */
 	"DONTCARE",		/* group. */
-    }
+    };
 
     if (YesNoQuestion("This query will take a while. Do you wish to continue?",
-		       TRUE) )
+		       TRUE) == TRUE )
 	if (status = sms_query("qualified_get_lists", 5, args,
 			       Print, (char *) NULL) != 0)
-	    com_err(whoami, status, " in ListAllGroups\n");
+	    com_err(program_name, status, " in ListAllGroups\n");
 
     return (DM_NORMAL);	
 }
@@ -731,19 +742,20 @@ ListAllMailLists()
 
 ListAllPublicMailLists()
 {
+    register int status;
     static char * args[] = {
 	"TRUE",			/* active */
 	"TRUE",			/* public */
 	"FALSE",		/* hidden */
 	"TRUE",			/* maillist */
 	"DONTCARE",		/* group. */
-    }
+    };
 
     if (YesNoQuestion("This query will take a while. Do you wish to continue?",
-		       TRUE) )
+		       TRUE) == TRUE )
 	if (status = sms_query("qualified_get_lists", 5, args,
 			       Print, (char *) NULL) != 0)
-	    com_err(whoami, status, " in ListAllGroups\n");
+	    com_err(program_name, status, " in ListAllGroups\n");
 
     return (DM_NORMAL);	
 }

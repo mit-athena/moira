@@ -1,5 +1,5 @@
 #ifndef lint
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/globals.c,v 1.1 1988-06-09 14:13:02 kit Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/globals.c,v 1.2 1988-06-10 18:36:40 kit Exp $";
 #endif lint
 
 /*	This is the file globals.h for allmaint, the SMS client that allows
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/globals.c,v $
  *      $Author: kit $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/globals.c,v 1.1 1988-06-09 14:13:02 kit Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/globals.c,v 1.2 1988-06-10 18:36:40 kit Exp $
  *	
  *  	Copyright 1987, 1988 by the Massachusetts Institute of Technology.
  *
@@ -22,6 +22,9 @@
 #include "mit-copyright.h"
 #include "allmaint.h"
 
-char *user			/* The name of the user executing allmaint. */
+Bool verbose;			/* TRUE if verbose mode is active (default). */
+Bool found_some;		/* used by lists.c for determining if there 
+				   are any members of a given type. */
+char *user;			/* The name of the user executing allmaint. */
 char *program_name;		/* The name of this instance of the program. */
 

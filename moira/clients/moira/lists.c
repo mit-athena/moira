@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v 1.10 1988-09-13 15:46:52 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v 1.11 1988-09-14 15:44:41 mar Exp $";
 #endif lint
 
 /*	This is the file lists.c for the SMS Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v 1.10 1988-09-13 15:46:52 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v 1.11 1988-09-14 15:44:41 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -481,8 +481,10 @@ char * type;
 
     found_some = FALSE;
     if ( (status = sms_query("get_members_of_list", CountArgs(args), args, 
-			     PrintByType, type)) != 0)
+			     PrintByType, type)) != 0) {
 	com_err(program_name, status, " in ListMembersByType");
+	return(DM_NORMAL);
+    }
     if (!found_some) {
 	if (type == NULL)
 	    Put_message("List is empty (no members).");

@@ -3,7 +3,7 @@
 #	MIT Project Athena
 #
 #	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/Makefile,v $
-#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/Makefile,v 1.3 1990-01-10 18:30:23 mar Exp $
+#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/Makefile,v 1.4 1990-02-12 15:58:10 mar Exp $
 #	$Author: mar $
 # 
 # (c) Copyright 1988 by the Massachusetts Institute of Technology.
@@ -16,7 +16,7 @@ DEFINES = -O
 CFLAGS = -I../../include ${DEFINES}
 BINDIR = ${DESTDIR}/bin
 
-SMSLIB = -L../../lib -lsms -lgdb -lcom_err -lkrb -ldes
+SMSLIB = -L../../lib -lsms -lgdb -lcom_err -lkrb -ldes -lhesiod
 
 PROGS= blanche
 

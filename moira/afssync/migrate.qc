@@ -1,8 +1,10 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/afssync/migrate.qc,v 1.1 1992-06-16 11:31:43 mar Exp $ */
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/afssync/migrate.qc,v 1.2 1992-06-16 11:56:22 mar Exp $ */
 
 #include <stdio.h>
 #include <ctype.h>
 
+
+int ingerr();
 
 main(argc, argv)
 int argc;
@@ -40,8 +42,11 @@ char **argv;
 
     if (debug > 4)
       setenv("ING_SET", "set printqry");
+    setlinebuf(stdout);
+    setlinebuf(stderr);
 
     if (debug) { printf("Opening database..."); fflush(stdout);}
+    IIseterr(ingerr);
 ##  ingres sms
     if (debug) printf("done.\n");
 
@@ -50,7 +55,6 @@ char **argv;
 ##  range of q is #quota
 ##  retrieve (cell = machine.mach_id) where machine.#name="ATHENA.MIT.EDU"
 ##  retrieve (who = users.users_id) where users.login="root"
-##  begin transaction
 
     while (!feof(input)) {
 	fgets(buf, sizeof(buf), input);
@@ -129,7 +133,6 @@ char **argv;
 ##	    where tblstats.tbl = "quota"
     }
 
-##  end transaction
     if (debug) printf("Done.\n");
     exit(0);
 }
@@ -175,4 +178,20 @@ char *name;
       *dst = 0;
 
     return(buf);
+}
+
+
+ingerr(num)
+int	*num;
+{
+    fprintf(stderr, "An ingres error ocurred, code %d\n", *num);
+    switch (*num) {
+    case 4700:
+	fprintf(stderr, "Deadlock**************************\n");
+	break;
+    default:
+	fprintf(stderr, "Aborting\n");
+	exit(1);
+    }
+    return(0);
 }

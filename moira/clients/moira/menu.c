@@ -5,8 +5,11 @@
  *
  * $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v $
  * $Author: wesommer $
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.8 1987-08-21 22:52:37 wesommer Exp $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.9 1987-08-21 23:31:37 wesommer Exp $
  * $Log: not supported by cvs2svn $
+ * Revision 1.8  87/08/21  22:52:37  wesommer
+ * [changes from poto]
+ * 
  * Revision 1.7  87/08/17  14:23:05  jtkohl
  * add Password_input
  * 
@@ -43,14 +46,16 @@
  */
 
 #ifndef lint
-static char rcsid_menu_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.8 1987-08-21 22:52:37 wesommer Exp $";
+static char rcsid_menu_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.9 1987-08-21 23:31:37 wesommer Exp $";
 
 #endif lint
 
+#include <sys/types.h>
 #include <stdio.h>
 #include <signal.h>
 #include <curses.h>
 #include <ctype.h>
+#include <strings.h>
 #include "menu.h"
 
 #define MAX(A,B)	((A) > (B) ? (A) : (B))
@@ -59,8 +64,7 @@ static char rcsid_menu_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moira
 
 #define MIN_INPUT 2		/* Minimum number of lines for input window */
 
-char *strcpy();
-char *strncpy();
+extern char *calloc();
 int more_flg = 1;
 
 /* Structure for holding current displayed menu */
@@ -91,8 +95,8 @@ Start_menu(m)
 	fputs("Can't initialize curses!\n", stderr);
 	Start_no_menu(m);
     }
-    raw();			/* We parse & print everything ourselves */
-    noecho();
+    (void) raw();		/* We parse & print everything ourselves */
+    (void) noecho();
     cur_ms = make_ms(0);	/* So we always have some current */
 				/* menu_screen */ 
     top_menu = m;
@@ -104,8 +108,8 @@ Start_menu(m)
 Cleanup_menu()
 {
     if (cur_ms) {
-	wclear(cur_ms->ms_screen);
-	wrefresh(cur_ms->ms_screen);
+	(void) wclear(cur_ms->ms_screen);
+	(void) wrefresh(cur_ms->ms_screen);
     }
     endwin();
 }
@@ -340,13 +344,13 @@ int Prompt_input(prompt, buf, buflen)
 	    case CTL('C'):
 		return 0;
 	    case CTL('Z'):
-		kill(getpid(), SIGTSTP);
+		(void) kill(getpid(), SIGTSTP);
 		touchwin(curscr);
 		break;
 	    case CTL('L'):
 		(void) wclear(cur_ms->ms_input);
 		(void) waddstr(cur_ms->ms_input, prompt);
-		wrefresh(curscr);
+		(void) wrefresh(curscr);
 		getyx(cur_ms->ms_input, y, x);
 		break;
 	    case '\n':
@@ -424,13 +428,13 @@ int Password_input(prompt, buf, buflen)
 	    case CTL('C'):
 		return 0;
 	    case CTL('Z'):
-		kill(getpid(), SIGTSTP);
+		(void) kill(getpid(), SIGTSTP);
 		touchwin(curscr);
 		break;
 	    case CTL('L'):
 		(void) wclear(cur_ms->ms_input);
 		(void) waddstr(cur_ms->ms_input, prompt);
-		wrefresh(curscr);
+		(void) wrefresh(curscr);
 		getyx(cur_ms->ms_input, y, x);
 		break;
 	    case '\n':
@@ -464,20 +468,21 @@ int Password_input(prompt, buf, buflen)
 	struct sgttyb ttybuf, nttybuf;
 	printf("%s", prompt);
 	/* turn off echoing */
-	(void) ioctl(0, TIOCGETP, &ttybuf);
+	(void) ioctl(0, TIOCGETP, (char *)&ttybuf);
 	nttybuf = ttybuf;
 	nttybuf.sg_flags &= ~ECHO;
-	(void)ioctl(0, TIOCSETP, &nttybuf);
+	(void)ioctl(0, TIOCSETP, (char *)&nttybuf);
 	if (gets(buf) == NULL) {
-	    (void) ioctl(0, TIOCSETP, &ttybuf);
+	    (void) ioctl(0, TIOCSETP, (char *)&ttybuf);
 	    putchar('\n');
 	    return 0;
 	}
 	putchar('\n');
-	(void) ioctl(0, TIOCSETP, &ttybuf);
+	(void) ioctl(0, TIOCSETP, (char *)&ttybuf);
 	Start_paging();
 	return 1;
     }
+    return 0;
 }
 
 int lines_left;
@@ -507,15 +512,15 @@ char *msg;
 {
     char *copy, *line, *s;
 
-    copy = (char *) malloc(COLS);
+    copy = (char *) malloc((u_int)COLS);
     s = line = msg;
     while(*s++) {
 	if (s - line >= COLS-1) {
-	    strncpy(copy, line, COLS-1);
+	    (void) strncpy(copy, line, COLS-1);
 	    line += COLS-1;
 	} else if (*s == '\n') {
 	    *s = '\0';
-	    strcpy(copy, line);
+	    (void) strcpy(copy, line);
 	    line = ++s;
 	} else
 	    continue;
@@ -549,6 +554,8 @@ char *msg;
 		    return;
 		}
 		getyx(cur_ms->ms_input, y, x);
+		/* x is a bitbucket; avoid lint problems */
+		x=x;
 		(void) wmove(cur_ms->ms_input, y, 0);
 		(void) wclrtoeol(cur_ms->ms_input);
 	    }
@@ -561,7 +568,7 @@ char *msg;
     }
 
     if (cur_ms != NULLMS) {
-	msg1 = (char *) calloc(COLS, 1);
+	msg1 = (char *) calloc((u_int)COLS, 1);
 	(void) strncpy(msg1, msg, COLS-1);
 	for (i = strlen(msg1); i < COLS - 1; i++)
 	    msg1[i] = ' ';

@@ -31,7 +31,7 @@ typedef unsigned long in_addr_t;
 #include <arpa/inet.h>
 #endif
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/stella/stella.c,v 1.14 2001-09-13 02:29:35 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/stella/stella.c,v 1.15 2001-09-15 19:21:46 zacheiss Exp $");
 
 struct owner_type {
   int type;
@@ -910,6 +910,7 @@ void show_host_info_unformatted(char **argv)
   printf("Location:         %s\n", argv[M_LOC]);
   printf("Contact:          %s\n", argv[M_CONTACT]);
   printf("Billing Contact:  %s\n", argv[M_BILL_CONTACT]);
+  printf("Account Number:   %s\n", argv[M_ACCT_NUMBER]);
   printf("Opt:              %s\n", argv[M_USE]);
   printf("Adm cmt:          %s\n", argv[M_ACOMMENT]);
   printf("Op cmt:           %s\n", argv[M_OCOMMENT]);

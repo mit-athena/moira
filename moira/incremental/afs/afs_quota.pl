@@ -65,7 +65,7 @@ $asrv:$apart to be over 90% used.
 
 Current volume usage: $vusage, old quota $oldq, new quota $newq");
 }
-elsif ($newq-$oldq > 999999) {
+elsif ($newq-$oldq > 3999999) {
     system("$zwrite","-q","-n","-c","afsadm","-i","moira","-m",
 	   "Increased quota on volume $vname ($asrv:$apart) from $oldq to $newq");
 }

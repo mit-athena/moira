@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/winad/winad.c,v 1.14 2001-05-29 21:37:39 zacheiss Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/winad/winad.c,v 1.15 2001-06-08 21:09:49 zacheiss Exp $
 /* test parameters for creating a user account - done 
  * users 10 10 a_chen 31275 sh cmd Lastname Firstname Middlename 0 950000000 STAFF a_chen 31275 sh cmd Lastname Firstname Middlename 2 950000000 STAFF
  * users 10 10 a_chen 31275 sh cmd Lastname Firstname Middlename 2 950000000 STAFF a_chen 31275 sh cmd Lastname Firstname Middlename 1 950000000 STAFF
@@ -245,9 +245,9 @@ int group_delete(LDAP *ldap_handle, char *dn_path,
                  char *group_name, char *group_membership);
 int group_rename(LDAP *ldap_handle, char *dn_path, 
                  char *before_group_name, char *before_group_membership, 
-                 char *before_group_ou, int before_security_flag,
+                 char *before_group_ou, int before_security_flag, char *before_desc,
                  char *after_group_name, char *after_group_membership, 
-                 char *after_group_ou, int after_security_flag);
+                 char *after_group_ou, int after_security_flag, char *after_desc);
 int member_list_build(int ac, char **av, void *ptr);
 int member_add(LDAP *ldap_handle, char *dn_path, char *group_name, 
                         char *group_ou, char *group_membership, 
@@ -610,7 +610,9 @@ void do_list(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
 
   if (agid && bgid)
     {
-      if (strcmp(after[L_NAME], before[L_NAME]))
+      if ((strcmp(after[L_NAME], before[L_NAME])) || 
+	  ((!strcmp(after[L_NAME], before[L_NAME])) && 
+	   (strcmp(before_group_ou, group_ou))))
 	{
           if (astatus && bstatus)
             {
@@ -624,9 +626,9 @@ void do_list(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
                 }
               if ((rc = group_rename(ldap_handle, dn_path, 
                                      before[L_NAME], before_group_membership, 
-                                     before_group_ou, before_security_flag,
+                                     before_group_ou, before_security_flag, before[9],
                                      after[L_NAME], group_membership, 
-                                     group_ou, security_flag)) != LDAP_NO_SUCH_OBJECT)
+                                     group_ou, security_flag, after[9])) != LDAP_NO_SUCH_OBJECT)
                 {
                   if (rc != LDAP_SUCCESS)
                     com_err(whoami, 0, "Could not change list name from %s to %s",
@@ -1489,9 +1491,9 @@ int get_group_membership(char *group_membership, char *group_ou,
 
 int group_rename(LDAP *ldap_handle, char *dn_path, 
                  char *before_group_name, char *before_group_membership, 
-                 char *before_group_ou, int before_security_flag,
+                 char *before_group_ou, int before_security_flag, char *before_desc,
                  char *after_group_name, char *after_group_membership, 
-                 char *after_group_ou, int after_security_flag)
+                 char *after_group_ou, int after_security_flag, char *after_desc)
 {
   LDAPMod   *mods[20];
   char      old_dn[512];
@@ -1501,6 +1503,7 @@ int group_rename(LDAP *ldap_handle, char *dn_path,
   char      filter_exp[4096];
   char      *attr_array[3];
   char      *name_v[] = {NULL, NULL};
+  char      *desc_v[] = {NULL, NULL};
   char      *samAccountName_v[] = {NULL, NULL};
   int       n;
   int       i;
@@ -1541,7 +1544,6 @@ int group_rename(LDAP *ldap_handle, char *dn_path,
   group_base = NULL;
   group_count = 0;
 
-  sprintf(sam_name, "%s_zZx%c", after_group_name, after_group_membership[0]);
   sprintf(new_dn_path, "%s,%s", after_group_ou, dn_path);
   sprintf(new_dn, "cn=%s", after_group_name);
   if ((rc = ldap_rename_s(ldap_handle, old_dn, new_dn, new_dn_path,
@@ -1552,11 +1554,16 @@ int group_rename(LDAP *ldap_handle, char *dn_path,
       return(rc);
     }
 
+  sprintf(sam_name, "%s_zZx%c", after_group_name, after_group_membership[0]);
   name_v[0] = after_group_name;
   samAccountName_v[0] = sam_name;
+  desc_v[0] = after_desc;
   n = 0;
+  ADD_ATTR("samAccountName", samAccountName_v, LDAP_MOD_REPLACE);
   ADD_ATTR("displayName", name_v, LDAP_MOD_REPLACE);
-  ADD_ATTR("sAMAccountName", samAccountName_v, LDAP_MOD_REPLACE);
+  if (strlen(after_desc) == 0)
+    desc_v[0] = NULL;
+  ADD_ATTR("description", desc_v, LDAP_MOD_REPLACE);
   mods[n] = NULL;
   sprintf(new_dn, "cn=%s,%s,%s", after_group_name, after_group_ou, dn_path);
   if ((rc = ldap_modify_s(ldap_handle, new_dn, mods)) != LDAP_SUCCESS)
@@ -1659,6 +1666,18 @@ int group_create(int ac, char **av, void *ptr)
               av[L_NAME], ldap_err2string(rc));
       callback_rc = rc;
       return(rc);
+    }
+  if (rc == LDAP_ALREADY_EXISTS)
+    {
+      n = 0;
+      desc_v[0] = av[L_DESC];
+      if (strlen(av[L_DESC]) == 0)
+        desc_v[0] = NULL;
+      ADD_ATTR("description", desc_v, LDAP_MOD_REPLACE);
+      mods[n] = NULL;
+      rc = ldap_modify_s((LDAP *)call_args[0], new_dn, mods);
+      for (i = 0; i < n; i++)
+        free(mods[i]);
     }
   sprintf(filter_exp, "(sAMAccountName=%s)", sam_group_name);
   attr_array[0] = "objectSid";

@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/formup.c,v 1.7 1992-10-22 15:36:25 mar Exp $ */
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/formup.c,v 1.8 1992-10-23 19:04:31 mar Exp $ */
 
 #include	<stdio.h>
 #include	<X11/StringDefs.h>
@@ -23,7 +23,7 @@
 #include	<Xm/Traversal.h>
 #include	"mmoira.h"
 
-static char rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/formup.c,v 1.7 1992-10-22 15:36:25 mar Exp $";
+static char rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/formup.c,v 1.8 1992-10-23 19:04:31 mar Exp $";
 
 #ifndef MAX
 #define	MAX(a,b)	((a > b) ? a : b)
@@ -790,7 +790,7 @@ XmAnyCallbackStruct	*call_data;
     UserPrompt	*current = (UserPrompt *)client_data;
     EntryForm	*form, *f;
     int i;
-    static MenuItem *mi = NULL;
+    static MenuItem mi;
 
     if (current->keyword_name == NULL) {
 	PopupErrorMessage("Sorry, that keyword cannot be changed.", NULL);
@@ -801,15 +801,12 @@ XmAnyCallbackStruct	*call_data;
       if (form->inputlines[i] == current)
 	break;
     f = GetAndClearForm("add_new_value");
-    if (mi == NULL) {
-	mi = (MenuItem *)malloc(sizeof(*mi));
-	mi->operation = MM_NEW_VALUE;
-	mi->query = "add_alias";
-	mi->argc = 3;
-    }
-    mi->form = form->formname;
-    mi->accel = (char *) i;
-    f->menu = mi;
+    mi.operation = MM_NEW_VALUE;
+    mi.query = "add_alias";
+    mi.argc = 3;
+    mi.form = form->formname;
+    mi.accel = (char *) i;
+    f->menu = &mi;
     f->extrastuff = current->keyword_name;
     DisplayForm(f);
 }

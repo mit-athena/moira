@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v 1.28 1989-06-26 14:09:11 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v 1.29 1989-06-30 15:49:07 mar Exp $
  *
  *	Copyright (C) 1987, 1988 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_qrtn_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v 1.28 1989-06-26 14:09:11 mar Exp $";
+static char *rcsid_qrtn_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v 1.29 1989-06-30 15:49:07 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -81,6 +81,8 @@ int sms_open_database()
     /* open the database */
 ##  ingres sms
 ##  set lockmode session where level = table, timeout = query_timeout
+##  set lockmode on capacls where readlock = shared
+##  set lockmode on alias where readlock = shared
     return ingres_errno;
 }
 

@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/delete.c,v 1.17 1990-04-25 12:50:26 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/delete.c,v 1.18 1990-07-14 16:05:51 mar Exp $";
 #endif lint
 
 /*	This is the file delete.c for the MOIRA Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/delete.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/delete.c,v 1.17 1990-04-25 12:50:26 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/delete.c,v 1.18 1990-07-14 16:05:51 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -38,7 +38,7 @@
  *	Returns: none.
  */
 
-void
+int
 CheckListForDeletion(name, verbose)
 char * name;
 Bool verbose;
@@ -51,16 +51,23 @@ Bool verbose;
 				(char *) &elem)) != 0) {
 	com_err(program_name, status, 
 		" in DeleteList (count_members_of_list).");
-	return;
+	return(SUB_NORMAL);
     }
     info = (char **) elem->q_data;
     if ( strcmp(info[NAME],"0") == 0) {
 	if (verbose) {
 	    sprintf(buf, "Delete the empty list %s? ", name);
-	    if (YesNoQuestion(buf, FALSE) != TRUE) {
+	    switch (YesNoQuestion(buf, FALSE)) {
+	    case TRUE:
+		break;
+	    case FALSE:
+		Put_message("Not deleting this list.");
+		FreeQueue(elem);
+		return(SUB_NORMAL);
+	    default:
 		Put_message("Aborting Deletion!");
 		FreeQueue(elem);
-		return;	
+		return(SUB_ERROR);
 	    }
 	}
 	args[0] = "foo";		/* not used. */
@@ -68,6 +75,7 @@ Bool verbose;
 	DeleteList(2, args);
     }
     FreeQueue(elem);
+    return(SUB_NORMAL);
 }
 
 /*	Function Name: CheckAce
@@ -547,7 +555,8 @@ Bool ask_first;
 	    local = QueueTop(member_of);
 	    while (local != NULL) {
 		char ** info = (char **) local->q_data;
-		CheckListForDeletion(info[LM_LIST], ask_first);
+		if (CheckListForDeletion(info[LM_LIST], ask_first) == SUB_ERROR)
+		  break;
 		local = local->q_forw;
 	    }
 	    FreeQueue(member_of);
@@ -614,7 +623,7 @@ char *argv[];
 	    default:
 		Put_message ("Aborting...");
 		FreeQueue(top);
-		return(DM_NORMAL);
+		return(DM_QUIT);
 	    }
 	}
 	list = list->q_forw;
@@ -695,7 +704,8 @@ char ** argv;
     local = member_of;
     while (local != NULL) {
 	char ** info = (char **) local->q_data;
-	CheckListForDeletion(info[0], TRUE);
+	if (CheckListForDeletion(info[0], TRUE) == SUB_ERROR)
+	  break;
 	local = local->q_forw;
     }
 

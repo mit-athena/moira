@@ -21,7 +21,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/stella/stella.c,v 1.8 2000-12-19 07:33:46 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/stella/stella.c,v 1.9 2000-12-20 09:39:46 zacheiss Exp $");
 
 struct owner_type {
   int type;
@@ -352,6 +352,9 @@ int main(int argc, char **argv)
 
 	    case M_KERBEROS:
 	      argv[11] = "KERBEROS";
+	      status = mrcl_validate_kerberos_member(argv[12], &argv[12]);
+	      if (mrcl_get_message())
+		mrcl_com_err(whoami);
 	      status = wrap_mr_query("add_host", 15, argv, NULL, NULL);
 	      break;
 
@@ -453,6 +456,9 @@ int main(int argc, char **argv)
 
 	    case M_KERBEROS:
 	      argv[12] = "KERBEROS";
+	      status = mrcl_validate_kerberos_member(argv[13], &argv[13]);
+	      if (mrcl_get_message())
+		mrcl_com_err(whoami);
 	      status = wrap_mr_query("update_host", 16, argv, NULL, NULL);
 	      break;
 

@@ -1,4 +1,4 @@
-/* $Id: dcm.pc,v 1.8 1998-04-15 02:58:58 danw Exp $
+/* $Id: dcm.pc,v 1.9 1998-04-16 20:49:26 danw Exp $
  *
  * The Data Control Manager for Moira.
  *
@@ -27,7 +27,7 @@
 EXEC SQL INCLUDE sqlca;
 void sqlglm(char *, unsigned int *, unsigned int *);
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/dcm.pc,v 1.8 1998-04-15 02:58:58 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/dcm.pc,v 1.9 1998-04-16 20:49:26 danw Exp $");
 
 int generate_service(char *name, int force);
 void do_hosts(char *service);
@@ -346,7 +346,7 @@ void do_hosts(char *service)
 		  EXEC SQL UPDATE serverhosts SET hosterror = :status
 		    WHERE service = UPPER(:service) AND mach_id = :mid;
 		  critical_alert("DCM", "DCM updating %s:%s: %s",
-				 service, host, errmsg);
+				 service, name, errmsg);
 		}
 
 	      if (replicated)

@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/critical.c,v 1.8 1990-01-29 18:09:43 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/critical.c,v 1.9 1990-02-05 12:34:30 mar Exp $
  *
  * Log and send a zephyrgram about any critical errors.
  *
@@ -7,21 +7,16 @@
  *  <mit-copyright.h>.
  */
 
-/* At Athena, we use zephyr & not syslog.  Change the following line 
- * if necessary */
-#define ZEPHYR
-
-
 #include <mit-copyright.h>
 #include <stdio.h>
 #include <sys/file.h>
+#include <sms_app.h>
 #ifdef ZEPHYR
 #include <zephyr/zephyr.h>
 #endif
 #ifdef SYSLOG
 #include <syslog.h>
 #endif
-#include <sms_app.h>
 
 
 /* mode to create the file with */

@@ -1,7 +1,7 @@
-@Comment($Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/doc/queries.mss,v 1.2 1988-07-11 12:54:02 mar Exp $)
+@Comment($Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/doc/queries.mss,v 1.3 1990-04-25 14:48:29 mar Exp $)
 @Device(PostScript)
 @Pagefooting(center "Draft of @value(date)")
-@MajorHeading(SMS Queries)
+@MajorHeading(Moira Queries)
 @center(Draft of @value(date))
 
 The following descriptions contain the long name of the query, the
@@ -19,12 +19,12 @@ named "default" is actually the magic) which is treated as if it
 contained the name of every user.  This list is used as the query ACL
 for some public queries.
 
-Any query may return: SMS_PERM "Insufficient permission to perform
-requested database access" or SMS_ARGS "Incorrect number of
-arguments".  Any retrieval query may return SMS_NO_MATCH "No records
+Any query may return: MR_PERM "Insufficient permission to perform
+requested database access" or MR_ARGS "Incorrect number of
+arguments".  Any retrieval query may return MR_NO_MATCH "No records
 in database match query".  Any add or update query may return
-SMS_BAD_CHAR "Illegal character in argument" if a bad character is in
-an argument that has character restrictions, or SMS_EXISTS if the new
+MR_BAD_CHAR "Illegal character in argument" if a bad character is in
+an argument that has character restrictions, or MR_EXISTS if the new
 object to be added or new name of existing object conflicts with
 another object already in the database.  Other errors are listed with
 each query.
@@ -93,17 +93,17 @@ class]@b[) =>]@i[]
 
 Adds a new user to the database.  @i(login) must not match any
 existing @i(login)s.  @i(uid) and @i(state) must be integers.  If the
-given uid is @b(UNIQUE_UID) as defined in @i(<sms.h>), the next unused
+given uid is @b(UNIQUE_UID) as defined in @i(<moira.h>), the next unused
 uid will be assigned.  If @i(login) is @b(UNIQUE_LOGIN) as defined in
-@i(<sms.h>), the login name will be a "#" followed by the uid.  For
+@i(<moira.h>), the login name will be a "#" followed by the uid.  For
 example, when adding a person so that they may register later, the
 query ausr(UNIQUE_LOGIN, UNIQUE_UID, /bin/csh, @i(Last, First, M), 0,
 [encrypted ID], @i(class)) is used.  The @i(class) field must contain
 a value specified as a @b(TYPE) alias for @b(class).  This query also
 initializes the finger record for this user with just their full name,
 and sets their pobox to @b(NONE).  It updates the modtime on the user,
-finger and pobox records.  Errors: SMS_NOT_UNIQUE "Arguments not
-unique" if the login name is not unique, or SMS_BAD_CLASS "Specified
+finger and pobox records.  Errors: MR_NOT_UNIQUE "Arguments not
+unique" if the login name is not unique, or MR_BAD_CLASS "Specified
 class is not known" if the class is not in the alias database.}
 
 @multiple[@b[
@@ -117,12 +117,12 @@ existing user.  Further, this user must currently have a @i(status) of
 will be of type @b(POP) on the least loaded post office.  The group
 list will have the user as an owner, and a unique GID will be assigned.
 The filesystem will be allocated on the least loaded fileserver which
-supports @i(fstype), where @i(fstype) is @b(SMS_FS_STUDENT,
-SMS_FS_FACULTY, SMS_FS_STAFF), or @b(SMS_FS_MISC) as defined in
-@i(<sms.h>).  A quota will be assigned to the user on his filesystem
+supports @i(fstype), where @i(fstype) is @b(MR_FS_STUDENT,
+MR_FS_FACULTY, MR_FS_STAFF), or @b(MR_FS_MISC) as defined in
+@i(<moira.h>).  A quota will be assigned to the user on his filesystem
 with the value taken from @b(def_quota) in the values table.  Errors:
-SMS_NO_MATCH, SMS_NOT_UNIQUE "Arguments not unique" if the uid does
-not specify exactly one user; SMS_IN_USE "Object is in use" if the
+MR_NO_MATCH, MR_NOT_UNIQUE "Arguments not unique" if the uid does
+not specify exactly one user; MR_IN_USE "Object is in use" if the
 login name is already taken.]
 
 @multiple[@b[
@@ -139,9 +139,9 @@ user in the database.  @i(newlogin) must either match the existing
 login or be unique in the database.  The @i(class) field must contain
 a value specified as a @b(TYPE) alias for @b(class).  @i(uid) and
 @i(state) must be integers.  The modtime fields in the user's record
-will be updated.  Errors: SMS_USER "No such user" if the login name
-does not match exactly one user, SMS_NOT_UNIQUE "Arguments not unique"
-if the new login name is not unique, or SMS_BAD_CLASS "Specified class
+will be updated.  Errors: MR_USER "No such user" if the login name
+does not match exactly one user, MR_NOT_UNIQUE "Arguments not unique"
+if the new login name is not unique, or MR_BAD_CLASS "Specified class
 is not known" if the class is not in the alias database.]
 
 @multiple[@b[
@@ -150,7 +150,7 @@ update_user_shell, uush(]@i[login, shell]@b[) =>]@i[]
 Updates a user's shell.  @i(login) must match exactly one user.  The
 modtime fields in the user's record will be updated.  This query may
 be executed by the target user or by someone on the query ACL.
-Errors: SMS_USER "No such user" if the login name does not match
+Errors: MR_USER "No such user" if the login name does not match
 exactly one user.]
 
 @multiple[@b[
@@ -158,19 +158,20 @@ update_user_status, uust(]@i[login, status]@b[) =>]@i[]
 
 Updates a user's @i(status).  @i(login) must match exactly one user.
 The modtime fields in the user's record will be updated.  Errors:
-SMS_USER "No such user" if the login name does not match exactly one
+MR_USER "No such user" if the login name does not match exactly one
 user.]
 
 @multiple[@b[
 delete_user, dusr(]@i[login]@b[) =>]@i[]
 
-Deletes a user record.  @i(login) must match exactly one user.  This
-will only be allowed if the user is not a member of any lists, has any
-quotas assigned, or is the owner of an object.  It will also delete
-associated finger information, post office box, and any quotas the
-user has.  Errors: SMS_USER "No such user" if the login name does not
-match exactly one user, SMS_IN_USE "Object is in use" if the user is a
-member of a list, has a quota or is an ACE.]
+Deletes a user record.  @i(login) must match exactly one user.  @b(The
+user must have a status of zero, or MR_IN_USE will be returned.)
+This will only be allowed if the user is not a member of any lists,
+has any quotas assigned, or is the owner of an object.  It will also
+delete associated finger information, post office box, and any quotas
+the user has.  Errors: MR_USER "No such user" if the login name does
+not match exactly one user, MR_IN_USE "Object is in use" if the user
+is a member of a list, has a quota or is an ACE.]
 
 @multiple[@b[
 delete_user_by_uid, dubu(]@i[uid]@b[) =>]@i[]
@@ -178,9 +179,39 @@ delete_user_by_uid, dubu(]@i[uid]@b[) =>]@i[]
 Deletes a user record.  @i(uid) must match exactly one user.  This
 will only be allowed if the user is not a member of any lists or is
 the owner of an object.  It will also delete associated finger
-information and post office box.  Errors: SMS_USER "No such user" if
-the uid does not match exactly one user, SMS_IN_USE "Object is in use"
+information and post office box.  Errors: MR_USER "No such user" if
+the uid does not match exactly one user, MR_IN_USE "Object is in use"
 if the user is a member of a list or is an ACE.]
+
+@multiple[@b[
+get_kerberos_user_map, gkum(]@i[login, kerberos]@b[) =>]@i[ login,
+kerberos]
+
+Gets kerberos principal to user mapping entries.  Both @i(login) and
+@i(kerberos) may contain wildcards.  A user may only retrieve his own
+entry unless he is on the query ACL.]
+
+@multiple[@b[
+add_kerberos_user_map, akum(]@i[login, kerberos]@b[) =>]@i[]
+
+Adds a new kerberos principal to user mapping entry.  @i(Login) must
+match exactly one user.  @i(Kerberos) is a case-sensitive
+name/instance/realm principal string.  These mappings must be strictly
+one-to-one, so a new entry will not be allowed if the user or
+principal already appears in the mapping table.  A user may only add a
+mapping for himself unless he is on the query ACL.  Errors: MR_USER
+"No such user" if @i(login) does not match exactly one user,
+MR_EXISTS "Record already exists" if the user or principal already
+has a mapping.]
+
+@multiple[@b[
+delete_kerberos_user_map, dkum(]@i[login, kerberos]@b[) =>]@i[]
+
+Deletes a kerberos principal to user mapping.  @i(Login) must match
+exactly one user.  @I(Kerberos) must exactly match an existing mapping
+for that user.  A user may only remove his own mapping unless he is on
+the query ACL.  Errors: MR_USER "No such user" if @i(login) does not
+match exactly one user.]
 
 @multiple[@b[
 get_finger_by_login, gfbl(]@i[login]@b[) =>]@i[ login, fullname, nicname,
@@ -190,7 +221,7 @@ affiliation, modtime, modby, modwith]
 Gets all of the finger information for the specified user.  @i(login)
 must match exactly one user.  The target user may retrieve his
 information.  It is safe to point the query ACL at the list of all
-users.  Errors: SMS_USER "No such user" if the login name does not
+users.  Errors: MR_USER "No such user" if the login name does not
 match exactly one user.]
 
 @multiple[@b[
@@ -201,16 +232,17 @@ Allows any part of the finger information to be changed for a
 specified account.  @i(login) must match exactly one user.  The
 remaining fields are free-form, and may contain anything.  The modtime
 fields in the finger record will be updated.  A user may update his
-own information.  Errors: SMS_USER "No such user" if the login name
+own information.  Errors: MR_USER "No such user" if the login name
 does not match exactly one user.]
 
 @multiple[@b[
-get_pobox, gpob(]@i[login]@b[) =>]@i[ login, type, box]
+get_pobox, gpob(]@i[login]@b[) =>]@i[ login, type, box, modtime,
+modby, modwith]
 
 Retrieves a user's post office box assignment.  The @i(login) name
 must match exactly one user.  See @i(set_pobox) for a summary of the
 returned fields.  The owner of the pobox may perform this query.
-Errors: SMS_USER "No such user" if the login name does not match
+Errors: MR_USER "No such user" if the login name does not match
 exactly one user.]
 
 @multiple[@b[
@@ -238,12 +270,12 @@ Establishes a user's post office box.  The given @i(login) must match
 exactly one user.  The @i(type) will be checked against the alias
 database for valid @b(pobox) types.  Currently allowed types are
 @b(POP), @b(SMTP), and @b(NONE).  If the type is @b(POP), then box
-must name a machine known by SMS.  If the type is @b(SMTP), then box
-is the user's mail address with no other interpretation by SMS.  A
+must name a machine known by MR.  If the type is @b(SMTP), then box
+is the user's mail address with no other interpretation by MR.  A
 type of @b(NONE) is the same as not having a pobox.  The modtime
 fields on the pobox record will be set.  The owner of the target pobox
-may perform this query.  Errors: SMS_USER "No such user" if the login
-name does not match exactly one user, or SMS_TYPE "Invalid type" if
+may perform this query.  Errors: MR_USER "No such user" if the login
+name does not match exactly one user, or MR_TYPE "Invalid type" if
 the type is not @b(POP), @b(SMTP), or @b(NONE).]
 
 @multiple[@b[
@@ -254,11 +286,11 @@ match exactly one user.  If the user's pobox is already of type
 @b(POP), nothing will be changed.  If the user has previously had a
 pobox of type @b(POP), then the previous post office machine
 assignment will be restored.  If there was no previous post office
-assignment, the query will fail with SMS_MACHINE "Unknown machine"
+assignment, the query will fail with MR_MACHINE "Unknown machine"
 since it will be unable to choose a post office machine.  The modtime
 fields on the pobox record will be set.  The owner of the target pobox
-may perform this query.  Errors: SMS_USER "No such user" if login does
-not match exactly one user, or SMS_MACHINE.]
+may perform this query.  Errors: MR_USER "No such user" if login does
+not match exactly one user, or MR_MACHINE.]
 
 @multiple[@b[
 delete_pobox, dpob(]@i[login]@b[) =>]@i[]
@@ -266,7 +298,7 @@ delete_pobox, dpob(]@i[login]@b[) =>]@i[]
 Effectively deletes a user's pobox, by setting the type to @b(NONE).
 The @i(login) name must match exactly one user.  The modtime fields on
 the pobox record will be set.  The owner of the target pobox may
-perform this query.  Errors: SMS_USER "No such user" if login does not
+perform this query.  Errors: MR_USER "No such user" if login does not
 match exactly one user.]
 
 @Heading(Machines and Clusters)
@@ -287,8 +319,8 @@ converted to uppercase.  Then it will be checked for uniqueness in the
 database.  The @i(type) field will be checked against the aliases
 database for valid @b(mach_type)s.  Currently defined @b(mach_types)
 are @b(RT) and @b(VAX).  The modtime fields will be set.  Errors:
-SMS_NOT_UNIQUE "Arguments not unique" if a machine with the given
-@i(name) already exists, or SMS_TYPE "Invalid type" if the given
+MR_NOT_UNIQUE "Arguments not unique" if a machine with the given
+@i(name) already exists, or MR_TYPE "Invalid type" if the given
 @i(type) is not in the alias database.]
 
 @multiple[@b[
@@ -299,10 +331,10 @@ one machine.  The @i(newname) must either be the same as the old name,
 or must be unique among machine names in the database after being
 converted to uppercase.  The type field will be checked against the
 aliases database for valid @b(mach_type)s.  The modtime fields will be
-set.  Errors: SMS_MACH "No such machine" if the old @i(name) does not
-match exactly one machine, SMS_NOT_UNIQUE "Arguments not unique" if
+set.  Errors: MR_MACH "No such machine" if the old @i(name) does not
+match exactly one machine, MR_NOT_UNIQUE "Arguments not unique" if
 the @i(newname) does not either match the old name or is unique, or
-SMS_TYPE "Invalid type" if the given @i(type) is not in the alias
+MR_TYPE "Invalid type" if the given @i(type) is not in the alias
 database.]
 
 @multiple[@b[
@@ -310,11 +342,11 @@ delete_machine, dmac(]@i[name]@b[) =>]@i[]
 
 Delete a machine from the database.  The given @i(name) must match
 exactly one machine.  A machine that is in use (post office, file
-system, server_host_access, or DCM service update) cannot be deleted.
-Errors: SMS_MACH "No such machine" if the @i(name) does not match
-exactly one machine, or SMS_IN_USE "Object is in use" if the machine
-is being referenced as a post office, filesystem, or server updated by
-the DCM.]
+system, printer spooling host, server_host_access, or DCM service
+update) cannot be deleted.  Errors: MR_MACH "No such machine" if the
+@i(name) does not match exactly one machine, or MR_IN_USE "Object is
+in use" if the machine is being referenced as a post office,
+filesystem, spooling host, or server updated by the DCM.]
 
 @multiple[@b[
 get_cluster, gclu(]@i[name]@b[) =>]@i[ name, description, location,
@@ -330,7 +362,7 @@ add_cluster, aclu(]@i[name, description, location]@b[) =>]@i[]
 Adds a new cluster to the database.  The @i(name) must be unique among
 the existing cluster names.  The names are case sensitive.  There are
 no constraints on the remaining data.  The modtime fields will be set.
-Errors: SMS_NOT_UNIQUE "Arguments not unique" if the cluster @i(name)
+Errors: MR_NOT_UNIQUE "Arguments not unique" if the cluster @i(name)
 is not unique.]
 
 @multiple[@b[
@@ -340,9 +372,9 @@ Changes the information about a cluster.  The old @i(name) must match
 exactly one cluster.  The @i(newname) must either match the old name
 or be unique among the existing cluster names.  The names are case
 sensitive.  There are no constraints on the remaining data.  The
-modtime fields will be set.  Errors: SMS_CLUSTER "Unknown cluster" if
+modtime fields will be set.  Errors: MR_CLUSTER "Unknown cluster" if
 the old cluster name does not match exactly one cluster, or
-SMS_NOT_UNIQUE "Arguments not unique" if the new name does not either
+MR_NOT_UNIQUE "Arguments not unique" if the new name does not either
 match the old name or is unique.]
 
 @multiple[@b[
@@ -351,8 +383,8 @@ delete_cluster, dclu(]@i[name]@b[) =>]@i[]
 Removes a cluster from the database.  The @i(name) must match exactly
 one cluster.  The cluster must not have any machines assigned to it.
 Any service cluster information assigned to the cluster will be
-deleted.  Errors: SMS_CLUSTER "Unknown cluster" if the old cluster
-name does not match exactly one cluster, or SMS_IN_USE "Object in use"
+deleted.  Errors: MR_CLUSTER "Unknown cluster" if the old cluster
+name does not match exactly one cluster, or MR_IN_USE "Object in use"
 if the cluster has machines assigned to it.]
 
 @multiple[@b[
@@ -368,8 +400,8 @@ add_machine_to_cluster, amtc(]@i[machine, cluster]@b[) =>]@i[]
 
 Add a machine to a cluster.  The @i(machine) name must match exactly
 one machine.  The @i(cluster) name must match exactly one cluster.
-The machine's modtime fields will be updated.  Errors: SMS_MACHINE "No
-such machine" or SMS_CLUSTER "No such cluster" if one of them does not
+The machine's modtime fields will be updated.  Errors: MR_MACHINE "No
+such machine" or MR_CLUSTER "No such cluster" if one of them does not
 match exactly one object in the database.]
 
 @multiple[@b[
@@ -378,8 +410,8 @@ delete_machine_from_cluster, dmfc(]@i[machine, cluster]@b[) =>]@i[]
 Delete a machine from a cluster.  The @i(machine) name must match
 exactly one machine.  The @i(cluster) name must match exactly one
 cluster.  The named machine must belong to the named cluster.  The
-machine's modtime fields will be updated.  Errors: SMS_MACHINE "No
-such machine" or SMS_CLUSTER "No such cluster" if one of them does not
+machine's modtime fields will be updated.  Errors: MR_MACHINE "No
+such machine" or MR_CLUSTER "No such cluster" if one of them does not
 match exactly one object in the database.]
 
 @multiple[@b[
@@ -398,9 +430,9 @@ add_cluster_data, acld(]@i[cluster, label, data]@b[) =>]@i[]
 Add new data to a cluster.  The @i(cluster) name must match exactly
 one cluster.  The service @i(label) must be a registered @b(slabel) in
 the alias database.  The @i(data) is an arbitrary string.  The
-cluster's modtime fields will be updated.  Errors: SMS_CLUSTER "No
+cluster's modtime fields will be updated.  Errors: MR_CLUSTER "No
 such cluster" if the @i(cluster) name does not match exactly one
-cluster, or SMS_TYPE "Invalid type" if the @i(label) is not in the
+cluster, or MR_TYPE "Invalid type" if the @i(label) is not in the
 alias database.]
 
 @multiple[@b[
@@ -409,8 +441,8 @@ delete_cluster_data, dcld(]@i[cluster, label, data]@b[) =>]@i[]
 Delete the specified cluster data.  The @i(cluster) name must match
 exactly one cluster, and the remaining two arguments must exactly
 match an existing service cluster.  The cluster's modtime fields will
-be updated.  Errors: SMS_CLUSTER "No such cluster" if the @i(cluster)
-name does not match exactly one cluster, or SMS_NOT_UNIQUE "Arguments
+be updated.  Errors: MR_CLUSTER "No such cluster" if the @i(cluster)
+name does not match exactly one cluster, or MR_NOT_UNIQUE "Arguments
 not unique" if the @i(label) and @i(data) do not match exactly one
 existing piece of data for the cluster.]
 
@@ -447,14 +479,14 @@ Creates a new list and adds it to the database.  The @i(list) name
 must be unique among existing list names.  @i(active, public, hidden,
 maillist,) and @i(group) are booleans passed as integers (0 is false,
 non-zero is true).  If @i(group) is true and @i(gid) is @b(UNIQUE_GID)
-as defined in @i(<sms.h>), a new unique group ID will be assigned,
+as defined in @i(<moira.h>), a new unique group ID will be assigned,
 otherwise the integer value given for @i(gid) will be assigned to the
 GID.  The @i(ace-type) is either @b(USER), @b(LIST), or @b(NONE), and
 the @i(ace_name) will be either a login name, a list name, or
 @b(NONE), respectively.  The access list may be the list that is being
 created (self-referential).  The list modtime will be set.  Errors:
-SMS_EXISTS "Record already exists" if a list already exists by that
-name, SMS_ACE "No such access control entity" if the @i(ace_type) is not
+MR_EXISTS "Record already exists" if a list already exists by that
+name, MR_ACE "No such access control entity" if the @i(ace_type) is not
 @b(USER), @b(LIST), or @b(NONE), or if the @i(ace_name) cannot be
 resolved relative to the @i(ace_type).]
 
@@ -469,15 +501,15 @@ renamed.  The @i(list) name must match exactly one list.  The @i(new
 name) must either match the old name or be unique among list names in
 the database.  The @i(active, public, hidden, maillist), and @i(group)
 flags should be 0 if the flag is false, or non-zero if it is true.
-The @i(gid) may be @b(UNIQUE_GID) as defined in @i(<sms.h>), in which
+The @i(gid) may be @b(UNIQUE_GID) as defined in @i(<moira.h>), in which
 case a new unique GID will be assigned.  The @i(ace-type) is either
 @b(USER), @b(LIST), or @b(NONE), and the @i(ace_name) will be either a
 login name, a list name, or @b(NONE), respectively.  The list modtime
 will be set.  This query may be executed by anyone on the ACE of the
-target list.  Errors: SMS_LIST "No such list" if the named list does
-not match exactly one list, SMS_NOT_UNIQUE "Arguments not unique" if
+target list.  Errors: MR_LIST "No such list" if the named list does
+not match exactly one list, MR_NOT_UNIQUE "Arguments not unique" if
 the new list name doesn't either match the old one or is unique,
-SMS_ACE "No such access control entity" if the @i(ace_type) is not
+MR_ACE "No such access control entity" if the @i(ace_type) is not
 @b(USER), @b(LIST), or @b(NONE), or if the
 @i(ace_name) cannot be resolved relative to the @i(ace_type).]
 
@@ -488,8 +520,8 @@ Deletes a list from the database.  A list may only be deleted if it is
 not in use as a member of any other list or as an ACL for an object,
 and the list itself must be empty.  This query may be executed by
 someone who is on the current ace of the target list.  Errors:
-SMS_LIST "No such list" if the named list does not exist, or
-SMS_IN_USE "Object is in use" if the list is still being referenced.]
+MR_LIST "No such list" if the named list does not exist, or
+MR_IN_USE "Object is in use" if the list is still being referenced.]
 
 @multiple[@b[
 add_member_to_list, amtl(]@i[list, type, member]@b[) =>]@i[]
@@ -500,9 +532,9 @@ one list.  Type must be either @b(USER), @b(LIST), or @b(STRING).
 respectively.  The modtime on the list is updated.  This query may
 be executed by: anyone adding themselves as a @i(USER) to a list with the
 @i(public) bit set or anyone on the ACE of the list being modified.
-Errors: SMS_LIST "No such list" if the named list does not exist,
-SMS_TYPE "Invalid type" if the member @i(type) is not @b(USER), @b(LIST), or
-@b(STRING), or SMS_NO_MATCH "No records in database match query" if the
+Errors: MR_LIST "No such list" if the named list does not exist,
+MR_TYPE "Invalid type" if the member @i(type) is not @b(USER), @b(LIST), or
+@b(STRING), or MR_NO_MATCH "No records in database match query" if the
 @i(member) name cannot be resolved with the member @i(type).]
 
 @multiple[@b[
@@ -513,9 +545,9 @@ one list.  The specified @i(type) and @i(member) must exactly match an
 existing member of that list.  The modtime on the list is updated.
 This query may be executed by anyone deleting themselves as a @b(USER)
 from a list with the @i(public) bit set or anyone on the ACE of the list
-being modified.  Errors: SMS_LIST "No such list" if the named list
-does not exist, SMS_TYPE "Invalid type" if the member type is not
-@b(USER), @b(LIST), or @b(STRING), or SMS_NO_MATCH "No records in database
+being modified.  Errors: MR_LIST "No such list" if the named list
+does not exist, MR_TYPE "Invalid type" if the member type is not
+@b(USER), @b(LIST), or @b(STRING), or MR_NO_MATCH "No records in database
 match query" if the @i(member) name cannot be resolved with the member
 @i(type) or if there is no such member in the list.]
 
@@ -533,9 +565,9 @@ The returned tuples will be @b(LIST), list name; @b(SERVICE), service
 name; @b(FILESYS) and a filesystem label; @b(QUERY), query name;
 @b(HOSTACCESS), machine name; or @b(ZEPHYR), zephyr class name.  This
 query may be executed by a user asking about himself or a person on an
-ACE of a list asking about that list.  Errors: SMS_TYPE "Invalid type"
+ACE of a list asking about that list.  Errors: MR_TYPE "Invalid type"
 if the @i(ace_type) is not one of @b(LIST), @b(RLIST), @b(USER), or
-@b(RUSER); SMS_NO_MATCH "No objects in database match query" if the
+@b(RUSER); MR_NO_MATCH "No objects in database match query" if the
 @i(ace_name) doesn't match a user or list.]
 
 @multiple[@b[
@@ -545,7 +577,7 @@ group]@b[) =>]@i[ list]
 Finds the names of any lists that meet the specified criteria.  Each
 of the inputs may be one of @b(TRUE, FALSE), or @b(DONTCARE).  Any
 user may execute this query with @i(active) @b(TRUE) and @i(hidden)
-@b(FALSE).  Errors: SMS_TYPE "Invalid type" if one of the arguments is
+@b(FALSE).  Errors: MR_TYPE "Invalid type" if one of the arguments is
 something other than @b(TRUE), @b(FALSE), or @b(DONTCARE).]
 
 @multiple[@b[
@@ -569,9 +601,9 @@ respectively.  The @I(type) may also be one of @b(RUSER, RLIST), or
 @b(RSTRING), in which case it will also find any lists that contain as
 sublists a list that the target is a member of.  This query may be
 executed by someone asking about themselves or a person on the ace of
-a list asking about that list.  Errors: SMS_TYPE "Invalid type" if the
+a list asking about that list.  Errors: MR_TYPE "Invalid type" if the
 @i(type) is not @b(USER, LIST, STRING, RUSER, RLIST), or @b(RSTRING);
-or SMS_NO_MATCH "No records in database match query" if @i(value) does
+or MR_NO_MATCH "No records in database match query" if @i(value) does
 not match an existing value for the given type.]
 
 @multiple[@b[
@@ -580,22 +612,24 @@ count_members_of_list, cmol(]@i[list]@b[) =>]@i[ count]
 Determines how many members are on the specified list.  The @i(list)
 name must match exactly one list.  This query may be executed by a
 anyone on a visible list, or someone on the ACE of the target list.
-SMS_LIST "Invalid list" if the list name does not match exactly one
+MR_LIST "Invalid list" if the list name does not match exactly one
 list.]
 
 @Heading(DCM Information)
 
 @multiple[@b[
 get_server_info, gsin(]@i[name]@b[) =>]@i[ service, interval, target,
-script, dfgen, type, enable, inprogress, harderror, errmsg, ace_type,
-ace_name, modtime, modby, modwith]
+script, dfgen, dfcheck, type, enable, inprogress, harderror, errmsg,
+ace_type, ace_name, modtime, modby, modwith]
 
 Retrieves service information from the database.  This is the
 per-service information used by the DCM for updates.  The service
 @i(name) may contain wildcards.  Note that all service names are
 stored in uppercase, and the passed name will be upper-cased before
 comparing it.  The returned @i(interval) is in minutes.  @i(dfgen) is
-the date the data files were last generated.  The @i(type) must be a
+the data files were last generated, and @i(dfcheck) is the date we
+last checked to see if we needed to generate them.  These are passed
+as integers (unix format date).  The @i(type) must be a
 @b(service-type) as stored in the aliases database.  @i(enable,
 inprogress), and @i(harderror) are booleans (0 = false, non-zero =
 true).  @i(ace_type) is either @b(USER, LIST), or @b(NONE), and
@@ -609,7 +643,7 @@ qualified_get_server, qgsv(]@i[enable, inprogress, harderror]@b[)
 
 Finds the names of any services that meet the specified criteria.
 Each of the inputs may be one of @b(TRUE, FALSE), or @b(DONTCARE).
-Errors: SMS_TYPE "Invalid type" if any of the flags are not one of the
+Errors: MR_TYPE "Invalid type" if any of the flags are not one of the
 three legal values.]
 
 @multiple[@b[
@@ -625,9 +659,9 @@ is in minutes.  The @i(type) must be a @b(service-type) as stored in
 the aliases database.  @i(Enable) is a boolean (0 = false, non-zero =
 true).  @i(ace_type) is either @b(USER, LIST), or @b(NONE), and
 @i(ace_name) is a login name, a list name, or @b(NONE), respectively.
-The service modtime will be set.  Errors: SMS_TYPE "Invalid type" if
+The service modtime will be set.  Errors: MR_TYPE "Invalid type" if
 the type field is not a valid @b(service-type) in the alias database,
-or SMS_ACE "No such access control entity" if the @i(ace_type) is not
+or MR_ACE "No such access control entity" if the @i(ace_type) is not
 @b(USER, LIST), or @b(NONE) or the @i(ace_name) cannot be resolved
 based on the @i(ace_type).]
 
@@ -638,7 +672,7 @@ enable, ace_type, ace_name]@b[) =>]@i[]
 Updates a service in the database.  This is the per-service
 information used by the DCM for updates.  Note that only a subset of
 the information can be modified with this query, as the remaining
-fields are only changed by SMS itself.  The @i(service) name must
+fields are only changed by Moira itself.  The @i(service) name must
 match exactly one existing service after being converted to uppercase.
 The @i(interval) is in minutes.  The @i(type) must be a
 @b(service-type) as stored in the aliases database.  @i(Enable) is a
@@ -646,8 +680,8 @@ boolean (0 = false, non-zero = true).  @i(Ace_type) is either @b(USER,
 LIST), or @b(NONE), and @i(ace_name) is a login name, a list name, or
 @b(NONE), respectively.  The service modtime will be set.  This query
 may be used by someone on the ACE of the target service.  Errors:
-SMS_TYPE "Invalid type" if the @i(type) field is not a valid
-@b(service-type) in the alias database, or SMS_ACE "No such access
+MR_TYPE "Invalid type" if the @i(type) field is not a valid
+@b(service-type) in the alias database, or MR_ACE "No such access
 control entity" if the @i(ace_type) is not @b(USER, LIST), or @b(NONE)
 or the @i(ace_name) cannot be resolved based on the @i(ace_type).]
 
@@ -655,23 +689,23 @@ or the @i(ace_name) cannot be resolved based on the @i(ace_type).]
 reset_server_error, rsve(]@i[service]@b[) =>]@i[]
 
 Updates the specified service by changing the harderror flag from
-@b(TRUE) to @b(FALSE).  The @i(service) name must match exactly on
-existing service after being converted to uppercase.  The service
-modtime will be set.  This query may be executed by someone on the ACE
-of the target service.]
+@b(TRUE) to @b(FALSE), and sets @i(dfcheck) to be the same as
+@i(dfgen).  The @i(service) name must match exactly on existing
+service after being converted to uppercase.  The service modtime will
+be set.  This query may be executed by someone on the ACE of the
+target service.]
 
 @multiple[@b[
-set_server_internal_flags, ssif(]@i[service, dfgen, inprogress, harderr,
-errmsg]@b[) =>]@i[]
+set_server_internal_flags, ssif(]@i[service, dfgen, dfcheck,
+inprogress, harderr, errmsg]@b[) =>]@i[]
 
 Updates the specified service.  This is intended to only be used by
 the DCM, as it changes flags that the user should not have control
 over.  The @i(service) name must match exactly one existing service
-after being converted to uppercase.  @i(dfgen) is a date.
-@i(inprogress) and @i(harderr) are booleans (0 = false, non-zero =
-true).  The service modtime will NOT be set.  Errors: SMS_LOCKED "Lock
-is already set by someone else" if this query attempts to set
-@i(inprogress) and it was already set.]
+after being converted to uppercase.  @i(dfgen) and @i(dfcheck) are
+unix format dates (long integers).  @i(inprogress) and @i(harderr) are
+booleans (0 = false, non-zero = true).  The service modtime will NOT
+be set.]
 
 @multiple[@b[
 delete_server_info, dsin(]@i[service]@b[) =>]@i[]
@@ -680,7 +714,7 @@ Deletes a set of service information from the database.  The
 @i(service) name must match exactly one service in the database after
 being converted to uppercase.  A service may not be deleted if there
 are any server-hosts assigned to that service, or if the inprogress
-bit is set for that service.  Error: SMS_IN_USE "Object is in use" if
+bit is set for that service.  Error: MR_IN_USE "Object is in use" if
 there are hosts assigned to that service.]
 
 @multiple[@b[
@@ -692,8 +726,9 @@ Retrieves server-host information from the database.  This is the
 per-host information used by the DCM for updates.  The given
 @i(service) and @i(machine) names may contain wildcards.  @i(Enable,
 override, success, inprogress), and @i(hosterror) are booleans (0 =
-false, non-zero = true).  This query may be executed by someone on the
-ACE for the target service.]
+false, non-zero = true).  @i(lasttry) and @i(lastsuccess) are unix
+format dates (long integers).  This query may be executed by someone
+on the ACE for the target service.]
 
 @multiple[@b[
 qualified_get_server_host, qgsh(]@i[service, enable, override, success,
@@ -702,7 +737,7 @@ inprogress, hosterror]@b[) =>]@i[ service, machine]
 Finds the names of any machine/services pairs that meet the specified
 criteria.  The @i(service) name may contain wildcards.  Each of the
 remaining inputs may be one of @b(TRUE, FALSE), or @b(DONTCARE).
-Errors: SMS_TYPE "Invalid type" if any of the flags are not one of the
+Errors: MR_TYPE "Invalid type" if any of the flags are not one of the
 three legal values.]
 
 @multiple[@b[
@@ -719,8 +754,8 @@ each match exactly one existing service and machine, respectively.
 are service specific in function; @i(value1) and @i(value2) are
 integers, @i(value3) is a string.  The server-host's modtime will be
 set.  This query may be used by someone on the ACE for the target
-service.  Errors: SMS_SERVICE "Unknown service" if the @i(service)
-name does not match exactly one existing service, or SMS_MACH "Invalid
+service.  Errors: MR_SERVICE "Unknown service" if the @i(service)
+name does not match exactly one existing service, or MR_MACH "Invalid
 machine" if the @i(machine) name does not match exactly one machine.]
 
 @multiple[@b[
@@ -738,9 +773,9 @@ are service specific in function; @i(value1) and @i(value2) are
 integers, @i(value3) is a string.  The server-host's modtime will be
 set.  This query may only be executed when the inprogress bit is not
 currently set for the specified server_host.  This query may be used
-by someone on the ACE for the target service.  Errors: SMS_SERVICE
+by someone on the ACE for the target service.  Errors: MR_SERVICE
 "Unknown service" if the @i(service) name does not match exactly one
-existing service, or SMS_MACH "Invalid machine" if the @i(machine)
+existing service, or MR_MACH "Invalid machine" if the @i(machine)
 name does not match exactly one machine.]
 
 
@@ -751,8 +786,8 @@ Resets the hosterr flag for the specified server_host.  The
 @i(service) and @i(machine) must each match exactly one service and
 host.  The server_host's modtime will be updated.  This query may be
 used by someone on the ACE for the target service.  Errors:
-SMS_SERVICE "Unknown service" if the @i(service) name does not match
-exactly one existing service, or SMS_MACH "Invalid machine" if the
+MR_SERVICE "Unknown service" if the @i(service) name does not match
+exactly one existing service, or MR_MACH "Invalid machine" if the
 @i(machine) name does not match exactly one machine.]
 
 @multiple[@b[
@@ -762,8 +797,8 @@ This will set the override flag for a server_host, and start a new DCM
 running.  The @i(service) and @i(machine) must each match exactly one
 service and host.  The server_host's modtime will be updated.  This
 query may be used by someone on the ACE for the target service.
-Errors: SMS_SERVICE "Unknown service" if the @i(service) name does not
-match exactly one existing service, or SMS_MACH "Invalid machine" if
+Errors: MR_SERVICE "Unknown service" if the @i(service) name does not
+match exactly one existing service, or MR_MACH "Invalid machine" if
 the @i(machine) name does not match exactly one machine.]
 
 @multiple[@b[
@@ -776,14 +811,11 @@ by the DCM, as it changes flags that the user should not have control
 over.  The @i(service) and @i(host) names name must match exactly one
 existing service and host each.  @i(override, success, inprogress) and
 @i(hosterror) are booleans (0 = false, non-zero = true).  @i(lasttry)
-and @i(lastsuccess) are dates.  The service_host modtime will NOT be
-set.  Errors: SMS_SERVICE "Unknown service" if the @i(service) name
-does not match exactly one existing service, SMS_MACH "Invalid
-machine" if the @i(machine) name does not match exactly one machine,
-SMS_DATE "Invalid date" if either @i(lasttry) or @i(lastsuccess) do
-not parse as dates, or SMS_LOCKED "Lock is already set by someone
-else" if this query attempts to set @i(inprogress) and it was already
-set.]
+and @i(lastsuccess) are unix format dates (long integers).  The
+service_host modtime will NOT be set.  Errors: MR_SERVICE "Unknown
+service" if the @i(service) name does not match exactly one existing
+service, or MR_MACH "Invalid machine" if the @i(machine) name does
+not match exactly one machine]
 
 @multiple[@b[
 delete_server_host_info, dshi(]@i[service, machine]@b[) =>]@i[]
@@ -792,10 +824,10 @@ Deletes a server-host from the database.  The @i(service) and
 @i(machine) names each must match exactly one existing service or
 host.  A server-host may not be deleted if the inprogress bit is set
 for that server-host.  This query may be used by someone on the ACE
-for the target service.  Errors: SMS_SERVICE "Unknown service" if the
-@i(service) name does not match exactly one existing service, SMS_MACH
+for the target service.  Errors: MR_SERVICE "Unknown service" if the
+@i(service) name does not match exactly one existing service, MR_MACH
 "Invalid machine" if the @i(machine) name does not match exactly one
-machine, or SMS_IN_USE "Object is in use" if the inprogress bit is
+machine, or MR_IN_USE "Object is in use" if the inprogress bit is
 set.]
 
 @multiple[@b[
@@ -816,14 +848,15 @@ create, lockertype, modtime, modby, modwith]
 
 Retrieves all the information about a specific filesystem from the
 database.  The @i(name) may contain wildcards.  @i(fstype) is one of
-@b(NFS) or @b(RVD), recorded as aliases of @b(filesys).  @i(machine)
-must match exactly one existing machine.  @i(owner) must match exactly
-one user, @i(owners) must match exactly one list.  @i(create) is a
-boolean (0 = false, non-zero = true) indicating that the locker should
-be automatically created.  @i(lockertype) is a @b(lockertype) as
-recorded in the alias database, currently one of @b(SYSTEM, HOMEDIR,
-PROJECT), or @b(OTHER).  The @i(packname, mountpoint), and @i(access)
-vary depending on the filesystem type.]
+@b(NFS), @b(RVD), @b(FSGROUP), or @b(ERR), recorded as aliases of
+@b(filesys).  @i(machine) must match exactly one existing machine.
+@i(owner) must match exactly one user, @i(owners) must match exactly
+one list.  @i(create) is a boolean (0 = false, non-zero = true)
+indicating that the locker should be automatically created.
+@i(lockertype) is a @b(lockertype) as recorded in the alias database,
+currently one of @b(SYSTEM, HOMEDIR, PROJECT), or @b(OTHER).  The
+@i(packname, mountpoint), and @i(access) vary depending on the
+filesystem type.]
 
 @multiple[@b[
 get_filesys_by_machine, gfsm(]@i[machine]@b[) =>]@i[ name, fstype,
@@ -833,7 +866,7 @@ create, lockertype, modtime, modby, modwith]
 Retrieves the information about any filesystems on the named machine.
 The @i(machine) name must match exactly one machine in the database.
 The returned information is as specified above for
-@i(get_filesys_by_label).  Errors: SMS_MACHINE "No such machine" if
+@i(get_filesys_by_label).  Errors: MR_MACHINE "No such machine" if
 the named machine does not match an existing machine.]
 
 @multiple[@b[
@@ -844,8 +877,8 @@ owner, owners, create, lockertype, modtime, modby, modwith]
 Retrieves the information about all NFS filesystems that reside on the
 specified NFS server partition.  @i(machine) must match exactly one
 machine.  @i(partition) is the mount point of the NFS physical
-partition.  Errors: SMS_MACHINE "Invalid machine" if the machine name
-does not match exactly one machine, or SMS_NO_MATCH "No records in
+partition.  Errors: MR_MACHINE "Invalid machine" if the machine name
+does not match exactly one machine, or MR_NO_MATCH "No records in
 database match query" if the partition does not match anything.]
 
 @multiple[@b[
@@ -856,7 +889,7 @@ create, lockertype, modtime, modby, modwith]
 Retrieves the information about all filesystems that have the
 specified group as the owners list.  The @i(list) must match exactly
 one existing list.  This query may be executed by a member of the
-target list.  Errors: SMS_LIST "No such list" if the given list does
+target list.  Errors: MR_LIST "No such list" if the given list does
 not match exactly one list in the database.]
 
 @multiple[@b[
@@ -875,15 +908,15 @@ currently one of @b(SYSTEM, HOMEDIR, PROJECT), or @b(OTHER).  The
 For an RVD filesystem, they may contain anything.  For NFS
 filesystems, the @i(packname) must match an existing NFS physical
 filesystem, and @i(access) must be one of @b(r) or @b(w).  The
-filesystem's modtime will be set.  Errors: SMS_FSTYPE "Invalid filesys
-type" if the @i(fstype) is not a valid @b(filesys) type, SMS_TYPE
+filesystem's modtime will be set.  Errors: MR_FSTYPE "Invalid filesys
+type" if the @i(fstype) is not a valid @b(filesys) type, MR_TYPE
 "Invalid type" if the @i(lockertype) is not a valid @b(lockertype),
-SMS_MACHINE "No such machine" if the @i(machine) name does not match
-exactly one machine, SMS_USER "No such user" if the @i(owner) does not
-match exactly one user, SMS_LIST "No such list" if the @i(owners) does
-not match exactly one list, SMS_NFS "Specified directory not exported"
+MR_MACHINE "No such machine" if the @i(machine) name does not match
+exactly one machine, MR_USER "No such user" if the @i(owner) does not
+match exactly one user, MR_LIST "No such list" if the @i(owners) does
+not match exactly one list, MR_NFS "Specified directory not exported"
 if the @i(machine) and @i(packname) do not match an existing NFS
-physical partition, or SMS_FILESYS_ACCESS if the @i(fstype) is @b(NFS)
+physical partition, or MR_FILESYS_ACCESS if the @i(fstype) is @b(NFS)
 and the access mode is not @b(r) or @b(w).]
 
 @multiple[@b[
@@ -905,16 +938,16 @@ filesystem type.  For an @b(RVD) filesystem, they may contain
 anything.  For @b(NFS) filesystems, the @i(packname) must match an
 existing NFS physical filesystem, and @i(access) must be one of @b(r)
 or @b(w).  The filesystem's modtime will be updated.  Errors:
-SMS_NOT_UNIQUE "Arguments not unique" if the @i(new name) does not
-either match the old one or is unique among filesystems, SMS_FSTYPE
+MR_NOT_UNIQUE "Arguments not unique" if the @i(new name) does not
+either match the old one or is unique among filesystems, MR_FSTYPE
 "Invalid filesys type" if the @i(fstype) is not a valid @b(filesys)
-type, SMS_TYPE "Invalid type" if the @i(lockertype) is not a valid
-@b(lockertype), SMS_MACHINE "No such machine" if the @i(machine) name
-does not match exactly one machine, SMS_USER "No such user" if the
-@i(owner) does not match exactly one user, SMS_LIST "No such list" if
-the @i(owners) does not match exactly one list, SMS_NFS "Specified
+type, MR_TYPE "Invalid type" if the @i(lockertype) is not a valid
+@b(lockertype), MR_MACHINE "No such machine" if the @i(machine) name
+does not match exactly one machine, MR_USER "No such user" if the
+@i(owner) does not match exactly one user, MR_LIST "No such list" if
+the @i(owners) does not match exactly one list, MR_NFS "Specified
 directory not exported" if the @i(machine) and @i(packname) do not
-match an existing NFS physical partition, or SMS_FILESYS_ACCESS if the
+match an existing NFS physical partition, or MR_FILESYS_ACCESS if the
 @i(fstype) is @b(NFS) and the @i(access) mode is not @b(r) or @b(w).]
 
 @multiple[@b[
@@ -924,8 +957,33 @@ Deletes a filesystem from the database.  The @i(name) must match
 exactly one existing filesystem.  Any quotas assigned to that
 filesystem will be deleted, and the allocation count on the nfs
 physical partition will be decremented accordingly.  Errors:
-SMS_FILESYS "No such file system" if the name does not match an
+MR_FILESYS "No such file system" if the name does not match an
 existing filesystem.]
+
+@multiple[@b[
+get_fsgroup_members, gfgm(]@i[name]@b[) =>]@i[ filsys, sortkey]
+
+Fetches the filesystems belonging to the named fsgroup.  The
+filesystems will be returned in sort order.  The @i(name) must match
+exactly one existing fsgroup.  Errors: MR_FILESYS "No such file
+system" if the name does not match an existing fsgroup.]
+
+@multiple[@b[
+add_filesys_to_fsgroup, aftg(]@i[fsgroup, filesys, sortkey]@b[) =>]@i[]
+
+Adds the named filesystem to the named fsgroup, with the given
+sortkey.  The @i(filesys) and @i(fsgroup) must each match exactly one
+existing filesystem.  Errors: MR_FILESYS "No such file system" if the
+name does not match an existing fsgroup.]
+
+@multiple[@b[
+remove_filesys_from_fsgroup, rffg(]@i[filesys, fsgroup]@b[) =>]@i[]
+
+Deletes the named filesystem from the named fsgroup.  The @i(filesys)
+and @i(fsgroup) must each match exactly one existing filesystem.
+Errors: MR_FILESYS "No such file system" if the name does not match
+an existing fsgroup, MR_NO_MATCH if the filesystem is not a member of
+the group.]
 
 @multiple{@b[
 get_all_nfsphys, ganf(]@i[]@b[) =>]@i[ machine, dir, device, status,
@@ -940,7 +998,7 @@ status, allocated, size, modtime, modby, modwith]
 
 Retrieves information about a specific NFS physical filesystem.  The
 @i(machine) must match exactly one existing machine.  The
-@i(dir)ectory name may contain wildcards.  Errors: SMS_MACHINE "No
+@i(dir)ectory name may contain wildcards.  Errors: MR_MACHINE "No
 such machine" if the @i(machine) name does not match exactly one
 existing machine.]
 
@@ -952,12 +1010,12 @@ Adds a new NFS physical filesystem to the database.  The @i(machine)
 name must match exactly one existing machine.  The @i(directory) and
 @i(device) must be unique among existing NFS physical filesystems for
 this machine.  @i(status) is an integer, with bit encodings
-@b(SMS_FS_STUDENT, SMS_FS_FACULTY, SMS_FS_STAFF), or @b(SMS_FS_MISC)
-as defined in @I(<sms.h>).  @i(allocated) keeps track of quota
+@b(MR_FS_STUDENT, MR_FS_FACULTY, MR_FS_STAFF), or @b(MR_FS_MISC)
+as defined in @I(<moira.h>).  @i(allocated) keeps track of quota
 allocation, the initial value should be zero unless there is something
 besides lockers on this filesystem.  @i(size) is the actual size (in
 blocks) of the filesystem.  The modtime will be set for this
-filesystem.  Errors: SMS_MACHINE "No such machine" if the @i(machine)
+filesystem.  Errors: MR_MACHINE "No such machine" if the @i(machine)
 name does not match exactly one existing machine.]
 
 @multiple[@b[
@@ -979,7 +1037,7 @@ Changes the allocation for an NFS physical filesystem.  @i(machine)
 must match exactly one existing machine.  @i(directory) must match an
 existing NFS physical filesystem on that machine.  The current
 allocation for this filesystem will have @i(delta) (which may be
-positive or negative) added to it.  Errors: SMS_MACHINE "No such
+positive or negative) added to it.  Errors: MR_MACHINE "No such
 machine" if the @i(machine) name does not match exactly one existing
 machine.]
 
@@ -990,14 +1048,73 @@ Deletes an NFS physical filesystem from the database.  The @i(machine)
 name must match exactly one existing machine.  The @i(directory) name must
 match exactly one existing NFS physical filesystem on that machine.
 The physical filesystem must not be in use with logical filesystems.
-Errors: SMS_MACHINE "No such machine" if the @i(machine) name does not
-match exactly one existing machine, or SMS_IN_USE "Object is in use"
+Errors: MR_MACHINE "No such machine" if the @i(machine) name does not
+match exactly one existing machine, or MR_IN_USE "Object is in use"
 if there are any filesystems assigned to this partition.]
+
+@multiple[@b[
+get_quota, gqot(]@i[filesys, type, name]@b[) =>]@i[ filesys,
+type, name, quota, directory, machine, modtime, modby, modwith]
+
+Retrieves the quotas assigned to the named filesystem(s) and quota
+holder.  Valid types are @b(USER), @b(GROUP), and @b(ANY) with
+corresponding login name, list name, or any placeholder.  The
+@i(filesystem) name may contain wildcards.  Errors: MR_TYPE "Invalid
+type" if the type is not a valid "quota_type" in the alias table.]
+
+@multiple[@b[
+get_quota_by_filesys, gqbf(]@i[filesys]@b[) =>]@i[ filesys,
+type, name, quota, directory, machine, modtime, modby, modwith]
+
+Retrieves the quotas assigned to the named filesystem(s).  The
+@i(filesystem) name may contain wildcards.]
+
+@multiple[@b[
+add_quota, aqot(]@i[filesystem, type, name, quota]@b[) =>]@i[]
+
+Adds a new quota to the database.  The @i(filesystem) name must match
+exactly one existing filesystem.  Valid types are @b(USER), @b(GROUP),
+and @b(ANY) with corresponding login name, list name, or "*".  The
+@i(quota) may be any positive integer.  The modtime on the quota
+record will be set.  If the filesystem is of type NFS, the allocation
+count for that NFS physical partition will also be updated.  Errors:
+MR_FILESYS "No such file system" if the @i(filesystem) does not match
+exactly one existing filesystem, or MR_TYPE "Invalid type" if the type
+is not a valid "quota_type" in the alias table.]
+
+@multiple[@b[
+update_quota, uqot(]@i[filesystem, type, name, quota]@b[) =>]@i[]
+
+Changes a quota in the database.  The @i(filesystem) name must match
+exactly one existing filesystem.  Valid types are @b(USER), @b(GROUP),
+and @b(ANY) with corresponding login name, list name, or "*", and that
+entity must have a quota on the named filesystem.  The quota may be
+any positive integer, and will replace the existing quota.  The
+modtime on the quota record will be set.  If the filesystem is of type
+NFS, the allocation count for that NFS physical partition will also be
+updated.  Errors: MR_FILESYS "No such file system" if the
+@i(filesystem) does not match exactly one existing filesystem, or
+MR_TYPE "Invalid type" if the type is not a valid "quota_type" in the
+alias table.]
+
+@multiple[@b[
+delete_quota, dqot(]@i[filesystem, type, name]@b[) =>]@i[]
+
+Deletes a quota from the database.  The @i(filesystem) name must match
+exactly one existing filesystem.  Valid types are @b(USER), @b(GROUP),
+and @b(ANY) with corresponding login name, list name, or "*", and that
+entity must have a quota on the named filesystem.  If the filesystem
+is of type NFS, the allocation count for that NFS physical partition
+will also be updated.  Errors: MR_FILESYS "No such file system" if the
+@i(filesystem) does not match exactly one existing filesystem, or
+MR_TYPE "Invalid type" if the type is not a valid "quota_type" in the
+alias table.]
 
 @multiple[@b[
 get_nfs_quota, gnfq(]@i[filesys, login]@b[) =>]@i[ filesys,
 login, quota, directory, machine, modtime, modby, modwith]
 
+@B(Obsolete.)
 Retrieves the quotas assigned to the named filesystems and user.  The
 @i(filesystem) name may contain wildcards.  The @i(login) name must
 match exactly one user.  This query may be executed by the owner of
@@ -1009,45 +1126,48 @@ filesys, login, quota, directory, machine]
 
 Retrieves the quotas assigned to a given device.  The @i(machine) must
 match exactly one existing machine.  The @i(directory) name may
-contain wildcards.  Errors: SMS_MACHINE "No such machine" if the
+contain wildcards.  Errors: MR_MACHINE "No such machine" if the
 @i(machine) name does not match exactly one existing machine.]
 
 @multiple[@b[
 add_nfs_quota, anfq(]@i[filesystem, login, quota]@b[) =>]@i[]
 
+@B(Obsolete.)
 Adds a new quota to the database.  The @i(filesystem) name must match
 exactly one existing filesystem.  The @i(login) name must match
 exactly one existing user.  The @i(quota) may be any positive
 integer.  The modtime on the quota record will be set.  The allocation
 count for that NFS physical filesystem will also be updated.  Errors:
-SMS_FILESYS "No such file system" if the @i(filesystem) does not match
-exactly one existing filesystem, or SMS_USER "No such user" if the
+MR_FILESYS "No such file system" if the @i(filesystem) does not match
+exactly one existing filesystem, or MR_USER "No such user" if the
 @i(login) name does not match exactly one existing user.]
 
 @multiple[@b[
 update_nfs_quota, unfq(]@i[filesystem, login, quota]@b[) =>]@i[]
 
+@B(Obsolete.)
 Changes a quota in the database.  The @i(filesystem) name must match
 exactly one existing filesystem.  The @i(login) name must match
 exactly one existing user, and that user must have a quota assigned on
 that filesystem.  The quota may be any positive integer, and will
 replace the existing quota.  The modtime on the quota record will be
 set.  The allocation count for that NFS physical filesystem will also
-be updated.  Errors: SMS_FILESYS "No such file system" if the
+be updated.  Errors: MR_FILESYS "No such file system" if the
 @i(filesystem) does not match exactly one existing filesystem, or
-SMS_USER "No such user" if the @i(login) name does not match exactly
+MR_USER "No such user" if the @i(login) name does not match exactly
 one existing user.]
 
 @multiple[@b[
 delete_nfs_quota, dnfq(]@i[filesystem, login]@b[) =>]@i[]
 
+@B(Obsolete.)
 Deletes a quota from the database.  The @i(filesystem) name must match
 exactly one existing filesystem.  The @i(login) name must match
 exactly one existing user, and that user must have a quota assigned on
 that filesystem.  The allocation count for that NFS physical
-filesystem will also be updated.  Errors: SMS_FILESYS "No such file
+filesystem will also be updated.  Errors: MR_FILESYS "No such file
 system" if the @i(filesystem) does not match exactly one existing
-filesystem, or SMS_USER "No such user" if the @i(login) name does not
+filesystem, or MR_USER "No such user" if the @i(login) name does not
 match exactly one existing user.]
 
 @Heading(Zephyr)
@@ -1109,8 +1229,8 @@ database.  The @i(machine) name must match exactly one existing
 machine.  The @i(ace_type) is either @b(USER, LIST), or @b(NONE), and
 the @i(ace_name) is either a login name, a list name, or @b(NONE),
 respectively.  The modtime on the record will be set.  Errors:
-SMS_MACHINE "No such machine" if the @i(machine) name does not match
-exactly one existing machine, SMS_ACE "Invalid access control entity"
+MR_MACHINE "No such machine" if the @i(machine) name does not match
+exactly one existing machine, MR_ACE "Invalid access control entity"
 if the @i(ace_type) and @i(ace_name) together do not specify a valid
 entity.]
 
@@ -1123,8 +1243,8 @@ Updates the information about who has access to a given machine.  The
 @i(ace_type) is either @b(USER, LIST), or @b(NONE), and the
 @i(ace_name) is either a login name, a list name, or @b(NONE),
 respectively.  The modtime on the record will be updated.  Errors:
-SMS_MACHINE "No such machine" if the @i(machine) name does not match
-exactly one existing machine, SMS_ACE "Invalid access control entity"
+MR_MACHINE "No such machine" if the @i(machine) name does not match
+exactly one existing machine, MR_ACE "Invalid access control entity"
 if the @i(ace_type) and @i(ace_name) together do not specify a valid
 entity.]
 
@@ -1157,25 +1277,77 @@ Deletes information about a network service from the database.  The
 service name must match exactly one existing service.]}
 
 @multiple[@b[
-get_printcap, gpcp(]@i[printer]@b[) =>]@i[ printer, printcap, modtime,
-modby, modwith]
+get_printcap_entry, gpce(]@i[printer]@b[) =>]@i[ printer, spool_host,
+spool_directory, rprinter, quotaserver, authenticate, price, comments,
+modtime, modby, modwith]
 
 Retrieves information about a printer.  The @i(printer) name may
 contain wildcards.  It is safe for this query's ACL to be the list
 containing everybody.]
 
 @multiple[@b[
-add_printcap, apcp(]@i[printer, printcap]@b[) =>]@i[]
+add_printcap_entry, apce(]@i[printer, spool_host, spool_directory,
+rprinter, quotaserver, authenticate, price, comments]@b[) =>]@i[]
 
 Adds information about a new printer to the database.  The @i(printer)
-name must not match any existing printers.  The printer's modtime will
-be set.]
+name must not match any existing printers.  @i(spool_host) and
+@i(quotaserver) each must name exactly one existing machine in the
+database.  The printer's modtime will be set.  Error: MR_MACHINE if
+@i(spool_host) or @i(quotaserver) do not each match exactly one
+machine.]
+
+@multiple[@b[
+delete_printcap_entry, dpce(]@i[printer]@b[) =>]@i[]
+
+Deletes information about a printer from the database.  The
+@i(printer) name must match exactly one existing printer.]
+
+@multiple[@b[
+get_printcap, gpcp(]@i[printer]@b[) =>]@i[ printer, spool_host,
+spool_directory, rprinter, comments, modtime, modby, modwith]
+
+@b(OBSOLETE.)
+Retrieves information about a printer.  The @i(printer) name may
+contain wildcards.  It is safe for this query's ACL to be the list
+containing everybody.]
+
+@multiple[@b[
+add_printcap, apcp(]@i[printer, spool_host, spool_directory,
+rprinter, comments]@b[) =>]@i[]
+
+@b(OBSOLETE.)
+Adds information about a new printer to the database.  The @i(printer)
+name must not match any existing printers.  @i(spool_host) must name
+exactly one existing machine in the database.  The printer's modtime
+will be set.  Error: MR_MACHINE if @i(spool_host) does not match
+exactly one machine.]
 
 @multiple[@b[
 delete_printcap, dpcp(]@i[printer]@b[) =>]@i[]
 
+@b(OBSOLETE.)
 Deletes information about a printer from the database.  The
 @i(printer) name must match exactly one existing printer.]
+
+@multiple[@b[
+get_palladium, gpdm(]@i[name]@b[) =>]@i[ name, ident, machine,
+modtime, modby, modwith]
+
+Gets information about palladium servers and supervisors.  @i(Name)
+may contain wildcards.]
+
+@multiple[@b[
+add_palladium, apdm(]@i[name, ident, machine]@b[) =>]@i[]
+
+Adds information about a new palladium server or supervisor.  @i(Ident) is
+the 16-bit port identifier, and @i(machine) must name an existing
+machine.  Error: MR_MACHINE if @I(machine) does not match exactly one
+machine.]
+
+@multiple[@b[
+delete_palladium, dpdm(]@i[name]@b[) =>]@i[]
+
+Deletes information about a new palladium server or supervisor.]
 
 @multiple[@b[
 get_alias, gali(]@i[name, type, translation]@b[) =>]@i[ name, type,
@@ -1216,9 +1388,9 @@ three input arguments must match exactly one alias.]
 get_value, gval(]@i[variable]@b[) =>]@i[ value]
 
 Look up a value in the values database.  This is used for DCM flags
-and SMS internal ID hints.  The @i(variable) name must match exactly
+and Moira internal ID hints.  The @i(variable) name must match exactly
 one existing value name in the database.  It is safe for this query's
-ACL to be the list containing everybody.  Errors: SMS_NO_MATCH "No
+ACL to be the list containing everybody.  Errors: MR_NO_MATCH "No
 records in database match query" if the name does not match exactly
 one variable name.]
 
@@ -1235,14 +1407,14 @@ update_value, uval(]@i[variable, value]@b[) =>]@i[]
 Changes the value of an existing variable in the values database.  The
 @i(variable) name must match exactly one existing variable.  Its
 @i(value) will be replaced with the supplied value.  Errors:
-SMS_NO_MATCH "No records in database match query" if the name does not
+MR_NO_MATCH "No records in database match query" if the name does not
 match exactly one variable name.]
 
 @multiple[@b[
 delete_value, dval(]@i[variable]@b[) =>]@i[]
 
 Deletes a variable from the values database.  The @i(variable) name
-must match exactly one existing variable.  Errors: SMS_NO_MATCH "No
+must match exactly one existing variable.  Errors: MR_NO_MATCH "No
 records in database match query" if the name does not match exactly
 one variable name.]
 
@@ -1256,7 +1428,7 @@ the @i(table) name, how many @i(retrieves, appends, updates), and
 last change to the table.  It is safe for this query's ACL to be the
 list containing everybody.]
 
-@Heading(Build-in Special Queries)
+@Heading(Built-in Special Queries)
 
 @multiple[@b[
 _help(]@i[query]@b[) =>]@i[ help_message]
@@ -1272,9 +1444,10 @@ Returns a list of every query name.  This query may be executed by
 anyone. ]
 
 @multiple[@b[
-_list_users(]@i[]@b[) =>]@i[ user_info]
+_list_users(]@i[]@b[) =>]@i[ kerberos_principal, host_address,
+port_number, connect_time, client_number]
 
-Returns a list of every client currently using the SMS server.  This
+Returns a list of every client currently using the Moira server.  This
 query may be executed by anyone.]
 
 @end(description)

@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.dc,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.dc,v 2.13 1993-05-10 12:08:57 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.dc,v 2.14 1993-11-10 15:34:52 mar Exp $
  *
  *	Copyright (C) 1987, 1988 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_qrtn_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.dc,v 2.13 1993-05-10 12:08:57 mar Exp $";
+static char *rcsid_qrtn_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.dc,v 2.14 1993-11-10 15:34:52 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -511,6 +511,8 @@ build_sort(v, sort)
 
 /* Build arguement vector, verify query and arguments */
 
+int privileged;
+
 mr_verify_query(cl, q, argc, argv_ro)
     client *cl;
     struct query *q;
@@ -521,8 +523,9 @@ mr_verify_query(cl, q, argc, argv_ro)
     register int status;
     register struct validate *v = q->validate;
     register int i;
-    register int privileged = 0;
     register char *to,*fr,*stop;
+
+    privileged = 0;
 
     /* copy the arguments into a local argv that we can modify */
     if (argc >= QMAXARGS)
@@ -566,7 +569,7 @@ mr_verify_query(cl, q, argc, argv_ro)
 	if (status != MR_SUCCESS && status != MR_PERM)
 	    return(status);
 	if (status == MR_SUCCESS)
-	    privileged++;
+	    return(MR_SUCCESS);
     }
 
     return(privileged ? MR_SUCCESS : MR_PERM);

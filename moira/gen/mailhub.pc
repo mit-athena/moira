@@ -1,4 +1,4 @@
-/* $Id: mailhub.pc,v 1.17 2003-01-02 01:05:05 zacheiss Exp $
+/* $Id: mailhub.pc,v 1.18 2003-01-16 22:54:07 zacheiss Exp $
  *
  * This generates the /usr/lib/aliases file for the mailhub.
  *
@@ -22,7 +22,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/mailhub.pc,v 1.17 2003-01-02 01:05:05 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/mailhub.pc,v 1.18 2003-01-16 22:54:07 zacheiss Exp $");
 
 char *whoami = "mailhub.gen";
 char *db = "moira/moira";
@@ -372,12 +372,16 @@ void output_login(int dummy, void *user, void *out)
 }
 
 int line_width, alias_width;
+static const char *mailman_suffixes[] = { "-admin", "-owner", "-request",
+					  "-bounces", "-confirm", "-join",
+					  "-leave", "-subscribe",
+					  "-unsubscribe", NULL };
 
 void output_mlist(int id, void *list, void *out)
 {
   struct list *l = list, *l1;
   struct user *u;
-  int len = strlen(l->name);
+  int len = strlen(l->name), i;
 
   if (!l->maillist || !check_string(l->name))
     return;
@@ -390,12 +394,9 @@ void output_mlist(int id, void *list, void *out)
 
   if (l->mailman && strcmp(l->mailman_server, "[NONE]"))
     {
-      fprintf(out, "%s-admin: %s-admin@%s\n", l->name, l->name,
-	      l->mailman_server);
-      fprintf(out, "%s-owner: %s-owner@%s\n", l->name, l->name,
-	      l->mailman_server);
-      fprintf(out, "%s-request: %s-request@%s\n", l->name, l->name,
-	      l->mailman_server);
+      for (i = 0; mailman_suffixes[i]; i++)
+	fprintf(out, "%s%s: %s%s@%s\n", l->name, mailman_suffixes[i], l->name,
+		mailman_suffixes[i], l->mailman_server);
     }
 
   if (l->acl_t ==  'L' && (l1 = hash_lookup(lists, l->acl_id)))

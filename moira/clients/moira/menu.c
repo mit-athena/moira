@@ -4,8 +4,8 @@
  * "mit-copyright.h".
  *
  * $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v $
- * $Author: mar $
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.18 1988-07-29 18:11:19 mar Exp $
+ * $Author: kit $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.19 1988-07-29 18:15:50 kit Exp $
  *
  * Generic menu system module.
  *
@@ -18,7 +18,7 @@
  */
 
 #ifndef lint
-static char rcsid_menu_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.18 1988-07-29 18:11:19 mar Exp $";
+static char rcsid_menu_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.19 1988-07-29 18:15:50 kit Exp $";
 
 #endif lint
 
@@ -431,7 +431,8 @@ int Prompt_input(prompt, buf, buflen)
 		p = buf;
 		break;
 	    default:
-		if (isprint(c) && (p - buf < buflen)) {
+		/* (buflen - 1) leaves room for the \0 */
+		if (isprint(c) && (p - buf < buflen - 1)) {
 		    (void) waddch(cur_ms->ms_input, c);
 		    *p++ = c;
 		    x++;

@@ -1,13 +1,13 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/auth_001.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/auth_001.c,v 1.6 1989-08-16 20:59:46 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/auth_001.c,v 1.7 1992-08-25 14:40:17 mar Exp $
  */
 /*  (c) Copyright 1988 by the Massachusetts Institute of Technology. */
 /*  For copying and distribution information, please see the file */
 /*  <mit-copyright.h>. */
 
 #ifndef lint
-static char *rcsid_auth_001_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/auth_001.c,v 1.6 1989-08-16 20:59:46 mar Exp $";
+static char *rcsid_auth_001_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/auth_001.c,v 1.7 1992-08-25 14:40:17 mar Exp $";
 #endif	lint
 
 #include <mit-copyright.h>
@@ -44,9 +44,10 @@ auth_001(str)
      char *str;
 {
     STRING data;
-    char host[BUFSIZ];
+    char host[BUFSIZ], realm[REALM_SZ];
+    char aname[ANAME_SZ], ainst[INST_SZ], arealm[REALM_SZ];
     AUTH_DAT ad;
-    char realm[REALM_SZ];
+    char *p, *first, *config_lookup();
     KTEXT_ST ticket_st;
 
     if (send_ok())
@@ -61,8 +62,8 @@ auth_001(str)
     ticket_st.length = MAX_STRING_SIZE(data);
     bcopy(STRING_DATA(data), ticket_st.dat, MAX_STRING_SIZE(data));
     code = krb_rd_req(&ticket_st, service,
-		     PrincipalHostname(host), 0,
-		     &ad, KEYFILE);
+		      krb_get_phost(host), 0,
+		      &ad, KEYFILE);
     if (code) {
 	code += ERROR_TABLE_BASE_krb;
 	strcpy(ad.pname, qmark);
@@ -70,15 +71,32 @@ auth_001(str)
 	strcpy(ad.prealm, qmark);
 	goto auth_failed;
     }
-    if (krb_get_lrealm(realm,1))
-	strcpy(realm, KRB_REALM);
+
+    /* If there is an auth record in the config file matching the
+     * authenticator we received, then accept it.  If there's no
+     * auth record, assume [master]@[local realm].
+     */
+    if (first = p = config_lookup("auth")) {
+	do {
+	    kname_parse(aname, ainst, arealm, p);
+	    if (strcmp(aname, ad.pname) ||
+		strcmp(ainst, ad.pinst) ||
+		strcmp(arealm, ad.prealm))
+	      p = config_lookup("auth");
+	    else
+	      p = first;
+	} while (p != first);
+    } else {
+	strcpy(aname, master);
+	strcpy(ainst, "");
+	if (krb_get_lrealm(arealm,1))
+	  strcpy(arealm, KRB_REALM);
+    }
     code = EPERM;
-    if (strcmp(master, ad.pname))
-	goto auth_failed;
-    if (ad.pinst[0] != '\0')
-	goto auth_failed;
-    if (strcmp(realm, ad.prealm))
-	goto auth_failed;
+    if (strcmp(aname, ad.pname) ||
+	strcmp(ainst, ad.pinst) ||
+	strcmp(arealm, ad.prealm))
+      goto auth_failed;
     if (send_ok())
 	lose("sending approval of authorization");
     have_authorization = 1;

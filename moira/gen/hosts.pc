@@ -1,4 +1,4 @@
-/* $Id: hosts.pc,v 1.5 1998-02-23 19:23:42 danw Exp $
+/* $Id: hosts.pc,v 1.6 1998-04-21 20:32:41 danw Exp $
  *
  * This generates the hstath.txt hosttable.
  *
@@ -24,7 +24,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/hosts.pc,v 1.5 1998-02-23 19:23:42 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/hosts.pc,v 1.6 1998-04-21 20:32:41 danw Exp $");
 
 char *whoami = "hosts.gen";
 char *db = "moira/moira";
@@ -33,7 +33,6 @@ int main(int argc, char **argv)
 {
   FILE *out = stdout;
   char *outf = NULL, outft[MAXPATHLEN], *p;
-  char buf[MACHINE_NAME_SIZE + ALIAS_NAME_SIZE];
   struct stat sb;
   struct timeval now;
   int flag1, flag2, i;
@@ -110,9 +109,9 @@ int main(int argc, char **argv)
 	name[i - 8] = 0;
       if ((p = hash_lookup(aliases, id)))
 	{
-	  sprintf(buf, "%s,%s", p, name);
-	  hash_update(aliases, id, strdup(buf));
-	  free(p);
+	  p = realloc(p, strlen(p) + strlen(name) + 2);
+	  sprintf(strchr(p, '\0'), ",%s", name);
+	  hash_update(aliases, id, p);
 	}
       else
 	hash_store(aliases, id, strdup(name));
@@ -145,20 +144,18 @@ int main(int argc, char **argv)
       strtrim(addr);
       if (*addr == 0 || inet_addr(addr) == -1)
 	continue;
+      fprintf(out, "HOST : %s : %s", addr, name);
       if ((p = hash_lookup(aliases, id)))
-	sprintf(buf, "%s,%s", name, p);
-      else
-	strcpy(buf, name);
-      fprintf(out, "HOST : %s : %s : ", addr, buf);
+	fprintf(out, ",%s", p);
       if ((*vendor || *model) && *os)
 	{
 	  if (*vendor && *model)
-	    fprintf(out, "%s/%s : %s :\n", vendor, model, os);
+	    fprintf(out, " : %s/%s : %s :\n", vendor, model, os);
 	  else
-	    fprintf(out, "%s%s : %s :\n", vendor, model, os);
+	    fprintf(out, " : %s%s : %s :\n", vendor, model, os);
 	}
       else
-	fputs("\n", out);
+	fputs(" : \n", out);
     }
 
   EXEC SQL CLOSE x;

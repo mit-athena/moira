@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/addusr/addusr.c,v 1.4 1993-10-25 17:02:26 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/addusr/addusr.c,v 1.5 1995-11-21 15:36:55 jweiss Exp $
  *
  * Program to add users en batch to the moira database
  *
@@ -21,7 +21,13 @@
 #include <moira_site.h>
 
 #ifndef LINT
-static char adduser_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/addusr/addusr.c,v 1.4 1993-10-25 17:02:26 mar Exp $";
+static char adduser_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/addusr/addusr.c,v 1.5 1995-11-21 15:36:55 jweiss Exp $";
+#endif
+
+#ifdef ATHENA
+#define DEFAULT_SHELL "/bin/athena/tcsh"
+#else
+#define DEFAULT_SHELL "/bin/csh"
 #endif
 
 /* flags from command line */
@@ -53,7 +59,7 @@ char **argv;
     reg_only = reg = verbose = lineno = nodupcheck = errors = 0;
     server = NULL;
     filename = "-";
-    shell = "/bin/csh";
+    shell = DEFAULT_SHELL;
     class = "TEMP";
     comment = "";
     status_str = "0";
@@ -102,7 +108,7 @@ char **argv;
 	      verbose++;
 	    else if (argis("d","nodupcheck"))
 	      nodupcheck++;
-	    else if (argis("S","server"))
+	    else if (argis("S","server") || argis("db","database"))
 		if (arg - argv < argc - 1) {
 		    ++arg;
 		    server = *arg;
@@ -306,7 +312,7 @@ char **argv;
     fprintf(stderr, "   -c | -class class (default TEMP)\n");
     fprintf(stderr, "   -C | -comment \"comment\" (default \"\")\n");
     fprintf(stderr, "   -s | -status status (default 0)\n");
-    fprintf(stderr, "   -h | -shell shell (default /bin/csh)\n");
+    fprintf(stderr, "   -h | -shell shell (default %s)\n", DEFAULT_SHELL);
     fprintf(stderr, "   -r | -reg_only\n");
     fprintf(stderr, "   -R | -register (and add to database)\n");
     fprintf(stderr, "   -v | -verbose\n");

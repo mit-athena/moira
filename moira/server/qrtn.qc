@@ -1,14 +1,14 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v 1.21 1988-08-11 22:44:32 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v 1.22 1988-09-07 15:14:40 mar Exp $
  *
  *	Copyright (C) 1987, 1988 by the Massachusetts Institute of Technology
  * 
  */
 
 #ifndef lint
-static char *rcsid_qrtn_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v 1.21 1988-08-11 22:44:32 mar Exp $";
+static char *rcsid_qrtn_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v 1.22 1988-09-07 15:14:40 mar Exp $";
 #endif lint
 
 #include "query.h"
@@ -16,7 +16,7 @@ static char *rcsid_qrtn_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moira
 
 char *Argv[16];
 
-static int ingres_errno = 0;
+int ingres_errno = 0;
 extern char *whoami;
 extern FILE *journal;
 
@@ -136,6 +136,7 @@ sms_process_query(cl, name, argc, argv_ro, action, actarg)
     if (q == (struct query *)0) return(SMS_NO_HANDLE);
     v = q->validate;
 
+    ingres_errno = 0;
     if (q->type != RETRIEVE)
 ##      begin transaction
 
@@ -777,6 +778,7 @@ set_next_object_id(object, table)
     if (LOG_RES)
         com_err(whoami, 0, "setting ID %s to %d", name, value);
 ##  repeat replace v (#value = @value) where v.#name = @name
+    if (ingres_errno != 0) return(ingres_errno);
     return(SMS_SUCCESS);
 ##}
 

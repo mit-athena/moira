@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/include/ureg_proto.h,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/include/ureg_proto.h,v 1.3 1989-08-25 11:19:56 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/include/ureg_proto.h,v 1.4 1992-05-13 15:33:24 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
@@ -12,5 +12,7 @@
 #define UREG_SET_PASSWORD 2
 #define UREG_SET_IDENT 3
 #define UREG_GET_KRB 4
+#define UREG_GET_SECURE 5
+#define UREG_SET_SECURE 6
 
 typedef u_long U_32BIT;

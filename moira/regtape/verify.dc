@@ -1,10 +1,10 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/verify.dc,v 1.4 1993-07-14 10:36:10 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/verify.dc,v 1.5 1997-01-20 18:25:31 danw Exp $
  *
  * This program will verify signatures on user records in the database.
  */
 
 #include <stdio.h>
-#include <strings.h>
+#include <string.h>
 #include <ctype.h>
 #include <sys/time.h>
 #include <moira.h>
@@ -22,12 +22,13 @@ main(argc, argv)
 int argc;
 char **argv;
 {
-    char buf[BUFSIZ], *usercheck[100], sigbuf[256], *data;
+    char buf[BUFSIZ], *usercheck[100], sigbuf[256], *data, *db="moira";
     SigInfo si;
     struct save_queue *sq;
     int status, i, wait, check, debug, fix;
     EXEC SQL BEGIN DECLARE SECTION;
     char login[10], mid[32], rawsig[256], who[257];
+    EXEC SQL VAR rawsig IS STRING(256);
     int id, timestamp, sms;
     EXEC SQL END DECLARE SECTION;
 
@@ -52,7 +53,7 @@ char **argv;
 	else usercheck[check++] = argv[i];
     }
 
-    EXEC SQL CONNECT moira;
+    EXEC SQL CONNECT :db IDENTIFIED BY :db;
 
     if (fix) {
 	/* Set the name of our kerberos ticket file */
@@ -84,7 +85,7 @@ char **argv;
 	EXEC SQL DECLARE c CURSOR FOR
 	  SELECT login, clearid, signature, string, sigdate
 	  FROM users, strings
-	  WHERE signature != '' and sigwho = string_id;
+	  WHERE signature != CHR(0) and sigwho = string_id;
 	EXEC SQL OPEN c;
 	while (1) {
 	    EXEC SQL FETCH c INTO :login, :mid, :rawsig, :who, :timestamp;
@@ -117,8 +118,8 @@ char **argv;
 	if (fix) {
 	    while (sq_get_data(sq, &data)) {
 		strncpy(login, data, 8);
-		if (index(login, ':'))
-		  *index(login, ':') = 0;
+		if (strchr(login, ':'))
+		  *strchr(login, ':') = 0;
 	    again:
 		com_err(program, 0, "fixing sig for %s", login);
 		status = GDSS_Sign(data, strlen(data), sigbuf, &si);
@@ -138,11 +139,11 @@ char **argv;
 		}
 
 		timestamp = si.timestamp;
-		EXEC SQL REPEATED UPDATE users 
+		EXEC SQL UPDATE users 
 		  SET signature = :rawsig, sigwho = :sms, sigdate = :timestamp
 		    WHERE login = :login;
 		if (sqlca.sqlcode != 0) {
-		    com_err(program, 0, "ingres error %d", sqlca.sqlcode);
+		    com_err(program, 0, "dbms error %d", sqlca.sqlcode);
 		    dest_tkt();
 		    exit(1);
 		}
@@ -155,7 +156,7 @@ char **argv;
 	    EXEC SQL DECLARE s CURSOR FOR
 	      SELECT clearid, signature, string, sigdate
 	      FROM users, strings
-	      WHERE signature != '' and sigwho = string_id and login = :login;
+	      WHERE sigwho = string_id and login = :login;
 	    EXEC SQL OPEN s;
 	    while (1) {
 		EXEC SQL FETCH s INTO :mid, :rawsig, :who, :timestamp;
@@ -195,11 +196,11 @@ char **argv;
 		    }
 
 		    timestamp = si.timestamp;
-		    EXEC SQL REPEATED UPDATE users 
+		    EXEC SQL UPDATE users 
 		      SET signature = :rawsig, sigwho = :sms, sigdate = :timestamp
 			WHERE login = :login;
 		    if (sqlca.sqlcode != 0) {
-			com_err(program, 0, "ingres error %d", sqlca.sqlcode);
+			com_err(program, 0, "dbms error %d", sqlca.sqlcode);
 			dest_tkt();
 			exit(1);
 		    }

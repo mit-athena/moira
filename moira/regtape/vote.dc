@@ -1,8 +1,8 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/vote.dc,v 1.2 1993-09-30 14:43:30 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/vote.dc,v 1.3 1997-01-20 18:25:31 danw Exp $
  */
 
 #include <stdio.h>
-#include <strings.h>
+#include <string.h>
 #include <ctype.h>
 #include <sys/time.h>
 #include <moira.h>
@@ -27,14 +27,17 @@ char **argv;
     FILE *in;
     struct entry *e, *get_next_entry();
     int i, wait = 0;
-    char buf[BUFSIZ], *file = NULL, *p, *p1;
+    char buf[BUFSIZ], *file = NULL, *p, *p1, *db="moira";
 
     debug = 0;
-    whoami = rindex(argv[0], '/');
+    whoami = strrchr(argv[0], '/');
     if (whoami)
       whoami++;
     else
       whoami = argv[0];
+
+    setvbuf(stdout, NULL, _IOLBF, BUFSIZ);
+    setvbuf(stderr, NULL, _IOLBF, BUFSIZ);
 
     for (i = 1; i < argc; i++) {
 	if (!strcmp(argv[i], "-w"))
@@ -55,10 +58,7 @@ char **argv;
 	exit(1);
     }
 
-    setlinebuf(stdout);
-    setlinebuf(stderr);
-
-    EXEC SQL CONNECT moira;
+    EXEC SQL CONNECT :db IDENTIFIED BY :db;
     if (sqlca.sqlcode != 0) {
 	com_err(whoami, 0, "ingres error %d", sqlca.sqlcode);
 	exit(1);
@@ -109,12 +109,12 @@ struct entry *e;
 {
     EXEC SQL BEGIN DECLARE SECTION;
     char *id, *login;
+    EXEC SQL VAR login is STRING(9);
     EXEC SQL END DECLARE SECTION;
 
     id = e->id;
     login = e->login;
-    EXEC SQL REPEATED SELECT login INTO :login FROM users
-      WHERE clearid = :id;
+    EXEC SQL SELECT login INTO :login FROM users WHERE clearid = :id;
     if (sqlca.sqlcode != 0) {
 	fprintf(stderr, "Error %d on %s\n", sqlca.sqlcode, e->line);
 	return(-1);

@@ -1,8 +1,8 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/employee.dc,v 1.19 1996-03-06 04:19:32 dkk Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/employee.dc,v 1.20 1997-01-20 18:25:27 danw Exp $
  */
 
 #include <stdio.h>
-#include <strings.h>
+#include <string.h>
 #include <ctype.h>
 #include <sys/time.h>
 #include <moira.h>
@@ -71,9 +71,8 @@ struct entry {
 char *whoami;
 int newfinger = 0;
 
-#define sqlfail() (sqlca.sqlcode && sqlca.sqlcode != 100)
-#define SQL_DUPLICATE -40100
-#define SQL_DEADLOCK -49900
+#define sqlfail() (sqlca.sqlcode && sqlca.sqlcode != 1403)
+#define SQL_DUPLICATE 1422
 
 
 main(argc, argv)
@@ -84,12 +83,18 @@ char **argv;
     struct entry *e, *get_next_entry();
     int i, wait = 0;
     char buf[BUFSIZ], *file = NULL;
+EXEC SQL BEGIN DECLARE SECTION;
+    char *db="moira";
+EXEC SQL END DECLARE SECTION;
 
-    whoami = rindex(argv[0], '/');
+    whoami = strrchr(argv[0], '/');
     if (whoami)
       whoami++;
     else
       whoami = argv[0];
+
+    setvbuf(stdout, NULL, _IOLBF, BUFSIZ);
+    setvbuf(stderr, NULL, _IOLBF, BUFSIZ);
 
     for (i = 1; i < argc; i++) {
 	if (!strcmp(argv[i], "-w"))
@@ -110,13 +115,11 @@ char **argv;
 	exit(1);
     }
 
-    setlinebuf(stdout);
-    setlinebuf(stderr);
     initialize_sms_error_table();
 
-    EXEC SQL CONNECT moira;
+    EXEC SQL CONNECT :db IDENTIFIED BY :db;
     if (sqlca.sqlcode != 0) {
-	com_err(whoami, 0, "ingres error %d opening database", sqlca.sqlcode);
+	dbmserr("opening database", sqlca.sqlcode);
 	exit(1);
     }
 
@@ -125,13 +128,8 @@ char **argv;
 	process_entry(e);
 	EXEC SQL COMMIT WORK;
 	if (sqlca.sqlcode != 0) {
-            if (sqlca.sqlcode == SQL_DEADLOCK) {
-                com_err(whoami, MR_DEADLOCK, "commiting work");
-                goto again;
-            } else {
-                com_err(whoami, 0, "ingres error %d committing work", sqlca.sqlcode);
-                exit(1);
-            }
+	  dbmserr("committing work", sqlca.sqlcode);
+	  exit(1);
 	}
 	if (wait) {
 	    printf("Next");
@@ -184,7 +182,7 @@ FILE *in;
 
     strcpy(sname, name);
     e.name = strtrim(sname);
-    p = index(name, ',');
+    p = strchr(name, ',');
     if (p)
       *p = 0;
     e.last = strtrim(name);
@@ -193,7 +191,7 @@ FILE *in;
 	while (isspace(*p))
 	  p++;
 	e.first = p;
-	if (p = index(e.first, ' ')) {
+	if (p = strchr(e.first, ' ')) {
 	    *p = 0;
 	    e.first = strtrim(e.first);
 	    e.middle = strtrim(p + 1);
@@ -278,10 +276,6 @@ struct entry *e;
 	if (sqlca.sqlcode == SQL_DUPLICATE) {
 	    com_err(whoami, 0, "duplicate ID number %s on user %s %s", sid, first, last);
 	    return;
-        } else if (sqlca.sqlcode == SQL_DEADLOCK) {
-            com_err(whoami, MR_DEADLOCK, "looking up user %s", sid);
-            EXEC SQL ROLLBACK;
-            return process_entry(e);
 	} else
 	  sqlexit();
     }
@@ -290,12 +284,7 @@ struct entry *e;
 	  INTO :id, :dfirst, :dlast, :dmiddle, :class, :oaddr, :ophone, :dept, :status
 	  FROM users
 	  WHERE last = :last and first = :first and clearid = :eid;
-        if (sqlfail()) {
-            if (sqlca.sqlcode == SQL_DEADLOCK) {
-                com_err(whoami, MR_DEADLOCK, "looking up user %s", sid);
-                EXEC SQL ROLLBACK;
-                return process_entry(e);
-            } else if (sqlca.sqlcode != SQL_DUPLICATE)
+        if (sqlfail() && sqlca.sqlcode != SQL_DUPLICATE) {
               sqlexit();
         }
 	encrypted++;
@@ -317,17 +306,12 @@ struct entry *e;
 	  status = US_ENROLLED;
 	strcpy(class, e->class);
 	EXEC SQL UPDATE users
-	  SET type = :class, status = :status, modtime = 'now',
+	  SET type = NVL(:class,CHR(0)), status = :status, modtime = SYSDATE,
 		modby = :who, modwith = :prog
 	  WHERE users_id = :id;
 	if (sqlca.sqlcode != 0) {
-            if (sqlca.sqlcode == SQL_DEADLOCK) {
-                com_err(whoami, MR_DEADLOCK, "updating user");
-		return;
-            } else {
-                com_err(whoami, 0, "ingres error %d updating user", sqlca.sqlcode);
-                exit(1);
-	    }
+	  dbmserr("updating user", sqlca.sqlcode);
+	  exit(1);
 	}
     }
 
@@ -337,26 +321,22 @@ struct entry *e;
 	strcmp(middle, strtrim(dmiddle))) {
 	com_err(whoami, 0, "updating real name for %s %s", first, last);
 	EXEC SQL UPDATE users
-	  SET first = :first, last = :last, middle = :middle,
-	  	modby = :who, modwith = :prog, modtime = 'now'
+	  SET first = NVL(:first,CHR(0)), last = NVL(:last,CHR(0)),
+	  middle = NVL(:middle,CHR(0)), modby = :who, modwith = :prog,
+	  modtime = SYSDATE
 	  WHERE users_id = :id;
 	if (sqlca.sqlcode != 0) {
-            if (sqlca.sqlcode == SQL_DEADLOCK) {
-                com_err(whoami, MR_DEADLOCK, "updating name");
-		return;
-            } else {
-                com_err(whoami, 0, "ingres error %d updating name", sqlca.sqlcode);
-                exit(1);
-            }
+	  dbmserr("updating name", sqlca.sqlcode);
+	  exit(1);
 	}
     }
 
     changed = nochange = 0;
     if (encrypted) changed++;
     strcpy(buf, e->address);
-    while (to = index(buf, ','))
+    while (to = strchr(buf, ','))
       *to = ';';
-    while (to = index(buf, ':'))
+    while (to = strchr(buf, ':'))
       *to = ';';
     if (newfinger) {
 	if (oaddr[0] == ' ' && buf[0]) {
@@ -414,38 +394,29 @@ struct entry *e;
     rophone = e->phone2;
     if (changed) {
 	com_err(whoami, 0, "updating finger for %s %s", first, last);
-	EXEC SQL REPEATED UPDATE users
-	  SET office_addr = :oaddr, office_phone = :ophone, department = :dept,
-	    fmodtime = 'now', fmodby = :who, fmodwith = :prog,
-	    xname = :name, xdept = :rdept, xtitle = :rtitle,
-	    xaddress = :raddr, xphone1 = :rhphone, xphone2 = :rophone,
-	    xmodtime = 'now', clearid = :sid
+	EXEC SQL UPDATE users
+	  SET office_addr = NVL(:oaddr,CHR(0)),
+	  office_phone = NVL(:ophone,CHR(0)), department = NVL(:dept,CHR(0)),
+	  fmodtime = SYSDATE, fmodby = :who, fmodwith = :prog,
+	  xname = NVL(:name,CHR(0)), xdept = NVL(:rdept,CHR(0)),
+	  xtitle = NVL(:rtitle,CHR(0)), xaddress = NVL(:raddr,CHR(0)),
+	  xphone1 = NVL(:rhphone,CHR(0)), xphone2 = NVL(:rophone,CHR(0)),
+	  xmodtime = SYSDATE, clearid = NVL(:sid,CHR(0))
 	  WHERE users_id = :id;
 	if (sqlca.sqlcode != 0) {
-            if (sqlca.sqlcode == SQL_DEADLOCK) {
-                com_err(whoami, MR_DEADLOCK, "updating user %s", sid);
-                EXEC SQL ROLLBACK;
-                return process_entry(e);
-            } else {
-                com_err(whoami, 0, "ingres error %d", sqlca.sqlcode);
-                exit(1);
-            }
+	  dbmserr(NULL, sqlca.sqlcode);
+	  exit(1);
 	}
     } else {
-	EXEC SQL REPEATED UPDATE users
-	  SET xname = :name, xdept = :rdept, xtitle = :rtitle,
-	    xaddress = :raddr, xphone1 = :rhphone, xphone2 = :rophone,
-	    xmodtime = 'now', clearid = :sid
+	EXEC SQL UPDATE users
+	  SET xname = NVL(:name,CHR(0)), xdept = NVL(:rdept,CHR(0)),
+	  xtitle = NVL(:rtitle,CHR(0)), xaddress = NVL(:raddr,CHR(0)),
+	  xphone1 = NVL(:rhphone,CHR(0)), xphone2 = NVL(:rophone,CHR(0)),
+	  xmodtime = SYSDATE, clearid = NVL(:sid,CHR(0))
 	  WHERE users_id = :id;
 	if (sqlca.sqlcode != 0) {
-            if (sqlca.sqlcode == SQL_DEADLOCK) {
-                com_err(whoami, MR_DEADLOCK, "updating user %s", sid);
-                EXEC SQL ROLLBACK;
-                return process_entry(e);
-            } else {
-                com_err(whoami, 0, "ingres error %d", sqlca.sqlcode);
-                exit(1);
-            }
+	  dbmserr(NULL, sqlca.sqlcode);
+	  exit(1);
 	}
     }
 }
@@ -466,9 +437,9 @@ struct entry *e;
     prog = PROG;
     strncpy(oaddr, e->address, 16);
     oaddr[16] = 0;
-    while (to = index(oaddr, ','))
+    while (to = strchr(oaddr, ','))
       *to = ';';
-    while (to = index(oaddr, ':'))
+    while (to = strchr(oaddr, ':'))
       *to = ';';
     from = e->phone;
     to = ophone;
@@ -502,23 +473,22 @@ struct entry *e;
     rhphone = e->phone;
     rophone = e->phone2;
 
-    EXEC SQL REPEATED INSERT INTO users
-      (login, users_id, uid, shell, last, first, middle, status,
+    EXEC SQL INSERT INTO users
+      (login, users_id, unix_uid, shell, last, first, middle, status,
        clearid, type, modtime, modby, modwith, fullname, office_addr,
        office_phone, department, fmodtime, fmodby, fmodwith,
        potype, xname, xdept, xtitle, xaddress, xphone1, xphone2, xmodtime)
-      VALUES (:login, :id, :uid, '/bin/athena/tcsh', :last, :first,
-	      :middle, :st, :sid, :class, 'now', :who, :prog,
-	      :fullname, :oaddr, :ophone, :dept, 'now', :who, :prog,
-	      'NONE', :name, :rdept, :title, :oaddr, :rhphone,
-	      :rophone, 'now');
+      VALUES (:login, :id, :uid, '/bin/athena/tcsh',
+	      NVL(:last,CHR(0)), NVL(:first,CHR(0)), NVL(:middle,CHR(0)),
+	      :st, NVL(:sid,CHR(0)), NVL(:class,CHR(0)), SYSDATE, :who, :prog,
+	      NVL(:fullname,CHR(0)), NVL(:oaddr,CHR(0)), NVL(:ophone,CHR(0)),
+	      NVL(:dept,CHR(0)), SYSDATE, :who, :prog, 'NONE',
+	      NVL(:name,CHR(0)), NVL(:rdept,CHR(0)), NVL(:title,CHR(0)),
+	      NVL(:oaddr,CHR(0)), NVL(:rhphone,CHR(0)), NVL(:rophone,CHR(0)),
+	      SYSDATE);
     if (sqlca.sqlcode != 0) {
-	if (sqlca.sqlcode == SQL_DEADLOCK) {
-	    com_err(whoami, MR_DEADLOCK, "adding user");
-	} else {
-	    com_err(whoami, 0, "ingres error %d adding user", sqlca.sqlcode);
-	    exit(1);
-	}
+      dbmserr("adding user", sqlca.sqlcode);
+      exit(1);
     } else
       com_err(whoami, 0, "adding user %s %s", e->first, e->last);
 }
@@ -531,7 +501,7 @@ set_next_users_id(limit)
     int rowcount, flag, value, retval;
     EXEC SQL END DECLARE SECTION;
 
-    EXEC SQL REPEATED SELECT value INTO :value FROM numvalues 
+    EXEC SQL SELECT value INTO :value FROM numvalues 
       WHERE name = 'users_id';
     if (sqlfail()) sqlexit();
     if (sqlca.sqlerrd[2] != 1) {
@@ -541,7 +511,7 @@ set_next_users_id(limit)
     }
 
     flag = 0;
-    EXEC SQL REPEATED SELECT users_id INTO :flag FROM users
+    EXEC SQL SELECT users_id INTO :flag FROM users
       WHERE users_id = :value;
     if (sqlfail()) sqlexit();
     if (sqlca.sqlerrd[2] == 0)
@@ -551,7 +521,7 @@ set_next_users_id(limit)
 	if (limit && value > MAX_ID_VALUE)
 	    value = MIN_ID_VALUE;
 	flag = 0;
-	EXEC SQL REPEATED SELECT users_id INTO :flag FROM users 
+	EXEC SQL SELECT users_id INTO :flag FROM users 
 	  WHERE users_id = :value;
 	if (sqlfail()) sqlexit();
 	if (sqlca.sqlerrd[2] == 0)
@@ -561,10 +531,10 @@ set_next_users_id(limit)
     retval = value++;
     if (limit && value > MAX_ID_VALUE)
       value = MIN_ID_VALUE;
-    EXEC SQL REPEATED UPDATE numvalues SET value = :value
+    EXEC SQL UPDATE numvalues SET value = :value
       WHERE name = 'users_id';
     if (sqlca.sqlcode != 0) {
-	com_err(whoami, 0, "ingres error %d assigning ID", sqlca.sqlcode);
+	dbmserr("assigning ID", sqlca.sqlcode);
 	exit(1);
     }
     return(retval);
@@ -577,8 +547,8 @@ set_next_uid(limit)
     int rowcount, flag, value, retval;
     EXEC SQL END DECLARE SECTION;
 
-    EXEC SQL REPEATED SELECT value INTO :value FROM numvalues 
-      WHERE name = 'uid';
+    EXEC SQL SELECT value INTO :value FROM numvalues 
+      WHERE name = 'unix_uid';
     if (sqlfail()) sqlexit();
     if (sqlca.sqlerrd[2] != 1) {
 	EXEC SQL ROLLBACK;
@@ -587,7 +557,7 @@ set_next_uid(limit)
     }
 
     flag = 0;
-    EXEC SQL REPEATED SELECT uid INTO :flag FROM users WHERE uid = :value;
+    EXEC SQL SELECT unix_uid INTO :flag FROM users WHERE unix_uid = :value;
     if (sqlfail()) sqlexit();
     if (sqlca.sqlerrd[2] == 0)
       flag = 0;
@@ -596,7 +566,7 @@ set_next_uid(limit)
 	if (limit && value > MAX_ID_VALUE)
 	    value = MIN_ID_VALUE;
 	flag = 0;
-	EXEC SQL REPEATED SELECT uid INTO :flag FROM users WHERE uid = :value;
+	EXEC SQL SELECT unix_uid INTO :flag FROM users WHERE unix_uid = :value;
 	if (sqlfail()) sqlexit();
 	if (sqlca.sqlerrd[2] == 0)
 	  flag = 0;
@@ -605,9 +575,9 @@ set_next_uid(limit)
     retval = value++;
     if (limit && value > MAX_ID_VALUE)
       value = MIN_ID_VALUE;
-    EXEC SQL REPEATED UPDATE numvalues SET value = :value WHERE name = 'uid';
+    EXEC SQL UPDATE numvalues SET value = :value WHERE name = 'unix_uid';
     if (sqlca.sqlcode != 0) {
-	com_err(whoami, 0, "ingres error %d assigning ID", sqlca.sqlcode);
+	dbmserr("assigning ID", sqlca.sqlcode);
 	exit(1);
     }
     return(retval);
@@ -616,11 +586,21 @@ set_next_uid(limit)
 
 sqlexit()
 {
-    if (sqlca.sqlcode == SQL_DEADLOCK)
-      com_err(whoami, MR_DEADLOCK, "unrecoverable ingres error %d",
-              sqlca.sqlcode);
-    else
-      com_err(whoami, 0, "ingres error %d", sqlca.sqlcode);
+    dbmserr(NULL, sqlca.sqlcode);
     EXEC SQL ROLLBACK WORK;
     exit(1);
+}
+
+dbmserr(char *where, int what)
+{
+  char err_msg[256];
+  int bufsize=256, msglength=0;
+
+  sqlglm(err_msg, &bufsize, &msglength);
+  err_msg[msglength]=0;
+
+  if(where)
+    com_err(whoami, 0, "DBMS error %swhile %s", err_msg, where);
+  else
+    com_err(whoami, 0, "DBMS error %s", err_msg);
 }

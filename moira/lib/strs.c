@@ -1,4 +1,4 @@
-/* $Id: strs.c,v 1.16 1998-02-08 19:31:23 danw Exp $
+/* $Id: strs.c,v 1.17 1998-05-28 14:45:10 danw Exp $
  *
  * Miscellaneous string functions.
  *
@@ -12,7 +12,7 @@
 
 #include <ctype.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/strs.c,v 1.16 1998-02-08 19:31:23 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/strs.c,v 1.17 1998-05-28 14:45:10 danw Exp $");
 
 /*
  * Trim whitespace off both ends of a string.
@@ -27,7 +27,8 @@ char *strtrim(char *save)
   /* skip to end of string */
   if (*s == '\0')
     {
-      *save = '\0';
+      if (*save)
+	*save = '\0';
       return save;
     }
 

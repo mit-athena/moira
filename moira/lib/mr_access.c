@@ -1,15 +1,18 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_access.c,v $
  *	$Author: wesommer $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_access.c,v 1.1 1987-06-23 16:13:00 wesommer Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_access.c,v 1.2 1987-08-02 21:48:35 wesommer Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
  *	$Log: not supported by cvs2svn $
+ * Revision 1.1  87/06/23  16:13:00  wesommer
+ * Initial revision
+ * 
  */
 
 #ifndef lint
-static char *rcsid_sms_access_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_access.c,v 1.1 1987-06-23 16:13:00 wesommer Exp $";
+static char *rcsid_sms_access_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_access.c,v 1.2 1987-08-02 21:48:35 wesommer Exp $";
 #endif lint
 
 #include "sms_private.h"
@@ -51,7 +54,7 @@ int sms_access_internal(argc, argv)
     params->sms_argl = NULL;
     params->sms_argv = argv;
 	
-    if ((status = sms_do_call(params, &reply)))
+    if ((status = sms_do_call(params, &reply)) == 0)
 	status = reply->sms_status;
 
     sms_destroy_reply(reply);

@@ -1,4 +1,4 @@
-/* $Id: qfollow.pc,v 2.11 1999-11-17 18:37:27 danw Exp $
+/* $Id: qfollow.pc,v 2.12 2000-01-05 05:21:47 danw Exp $
  *
  * Query followup routines
  *
@@ -23,7 +23,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qfollow.pc,v 2.11 1999-11-17 18:37:27 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qfollow.pc,v 2.12 2000-01-05 05:21:47 danw Exp $");
 
 extern char *whoami, *table_name[];
 extern int dbms_errno, mr_errcode;
@@ -652,96 +652,64 @@ int followup_gpob(struct query *q, struct save_queue *sq, struct validate *v,
   return MR_SUCCESS;
 }
 
+/* Fix an ace_name, based on its type. */
 
-/* followup_gsnt: fix the ace_name in argv[7].  argv[6] will contain the
- * ace_type: "LIST", "USER", or "NONE".  Decode the id in argv[7] into the
- * proper name based on the type, and repace that string in the argv.
- * Also fixes the modby field by called followup_fix_modby.
- */
+static int fix_ace(char *type, char **name)
+{
+  int id = atoi(*name);
+
+  if (!strcmp(type, "LIST"))
+    return id_to_name(id, LIST_TABLE, name);
+  else if (!strcmp(type, "USER"))
+    return id_to_name(id, USERS_TABLE, name);
+  else if (!strcmp(type, "KERBEROS"))
+    return id_to_name(id, STRINGS_TABLE, name);
+  else
+    {
+      free(*name);
+      if (!strcmp(type, "NONE"))
+	*name = xstrdup("NONE");
+      else
+	*name = xstrdup("???");
+      return MR_SUCCESS;
+    }
+}
+
+
+/* followup_gsnt: fix the ace_name and modby */
 
 int followup_gsnt(struct query *q, struct save_queue *sq, struct validate *v,
 		  int (*action)(int, char *[], void *), void *actarg,
 		  client *cl)
 {
-  char **argv, *type;
-  int id, i, idx, status;
-
-  idx = 8;
+  char **argv;
+  int status;
 
   while (sq_get_data(sq, &argv))
     {
       mr_trim_args(q->vcnt, argv);
 
-      id = atoi(argv[i = q->vcnt - 2]);
-      if (id > 0)
-	status = id_to_name(id, USERS_TABLE, &argv[i]);
-      else
-	status = id_to_name(-id, STRINGS_TABLE, &argv[i]);
+      status = fix_ace(argv[7], &argv[8]);
       if (status && status != MR_NO_MATCH)
 	return status;
-
-      id = atoi(argv[idx]);
-      type = argv[idx - 1];
-
-      if (!strcmp(type, "LIST"))
-	status = id_to_name(id, LIST_TABLE, &argv[idx]);
-      else if (!strcmp(type, "USER"))
-	status = id_to_name(id, USERS_TABLE, &argv[idx]);
-      else if (!strcmp(type, "KERBEROS"))
-	status = id_to_name(id, STRINGS_TABLE, &argv[idx]);
-      else if (!strcmp(type, "NONE"))
-	{
-	  status = 0;
-	  free(argv[idx]);
-	  argv[idx] = xstrdup("NONE");
-	}
-      else
-	{
-	  status = 0;
-	  free(argv[idx]);
-	  argv[idx] = xstrdup("???");
-	}
-      if (status && status != MR_NO_MATCH)
-	return status;
-
-      /* send the data */
-      (*action)(q->vcnt, argv, actarg);
-
-      /* free saved data */
-      for (i = 0; i < q->vcnt; i++)
-	free(argv[i]);
-      free(argv);
     }
 
-  sq_destroy(sq);
-  return MR_SUCCESS;
+  return followup_fix_modby(q, sq, v, action, actarg, cl);
 }
 
 
-/* followup_ghst: fix the ace_name in argv[12].  argv[11] will contain the
- * ace_type: "LIST", "USER", or "NONE".  Decode the id in argv[12] into the
- * proper name based on the type, and repace that string in the argv.
- * Also fixes the modby field by called followup_fix_modby.
- */
+/* followup_ghst: fix the ace_name, strings and modby */
 
 int followup_ghst(struct query *q, struct save_queue *sq, struct validate *v,
 		  int (*action)(int, char *[], void *), void *actarg,
 		  client *cl)
 {
-  char **argv, *type;
-  int id, i, idx, status;
+  char **argv;
+  int id, status;
 
   while (sq_get_data(sq, &argv))
     {
       mr_trim_args(q->vcnt, argv);
-
-      id = atoi(argv[i = q->vcnt - 2]);
-      if (id > 0)
-	status = id_to_name(id, USERS_TABLE, &argv[i]);
-      else
-	status = id_to_name(-id, STRINGS_TABLE, &argv[i]);
-      if (status && status != MR_NO_MATCH)
-	return status;
 
       id = atoi(argv[13]);
       status = id_to_name(id, STRINGS_TABLE, &argv[13]);
@@ -759,95 +727,33 @@ int followup_ghst(struct query *q, struct save_queue *sq, struct validate *v,
       if (status && status != MR_NO_MATCH)
 	return status;
 
-      idx = 12;
-      id = atoi(argv[idx]);
-      type = strtrim(argv[idx - 1]);
-
-      if (!strcmp(type, "LIST"))
-	status = id_to_name(id, LIST_TABLE, &argv[idx]);
-      else if (!strcmp(type, "USER"))
-	status = id_to_name(id, USERS_TABLE, &argv[idx]);
-      else if (!strcmp(type, "KERBEROS"))
-	status = id_to_name(id, STRINGS_TABLE, &argv[idx]);
-      else if (!strcmp(type, "NONE"))
-	{
-	  status = 0;
-	  free(argv[idx]);
-	  argv[idx] = xstrdup("NONE");
-	}
-      else
-	{
-	  status = 0;
-	  free(argv[idx]);
-	  argv[idx] = xstrdup("???");
-	}
+      status = fix_ace(argv[11], &argv[12]);
       if (status && status != MR_NO_MATCH)
 	return status;
-
-      /* send the data */
-      (*action)(q->vcnt, argv, actarg);
-
-      /* free saved data */
-      for (i = 0; i < q->vcnt; i++)
-	free(argv[i]);
-      free(argv);
     }
 
-  sq_destroy(sq);
-  return MR_SUCCESS;
+  return followup_fix_modby(q, sq, v, action, actarg, cl);
 }
 
 
-/* followup_glin: fix the ace_name in argv[8].  argv[7] will contain the
- * ace_type: "LIST", "USER", or "NONE".  Decode the id in argv[8] into the
- * proper name based on the type, and repace that string in the argv.
- * Also fixes the modby field by called followup_fix_modby.
- */
+/* followup_glin: fix the ace_name, modace_name, expiration, and modby */
 
 int followup_glin(struct query *q, struct save_queue *sq, struct validate *v,
 		  int (*action)(int, char *[], void *), void *actarg,
 		  client *cl)
 {
-  char **argv, *type;
+  char **argv;
   int id, i, idx, status;
 
-  idx = 8;
+  idx = 7;
   if (!strcmp(q->shortname, "gsin"))
-    idx = 12;
+    idx = 11;
 
   while (sq_get_data(sq, &argv))
     {
       mr_trim_args(q->vcnt, argv);
 
-      id = atoi(argv[i = q->vcnt - 2]);
-      if (id > 0)
-	status = id_to_name(id, USERS_TABLE, &argv[i]);
-      else
-	status = id_to_name(-id, STRINGS_TABLE, &argv[i]);
-      if (status && status != MR_NO_MATCH)
-	return status;
-
-      id = atoi(argv[idx]);
-      type = argv[idx - 1];
-
-      if (!strcmp(type, "LIST"))
-	status = id_to_name(id, LIST_TABLE, &argv[idx]);
-      else if (!strcmp(type, "USER"))
-	status = id_to_name(id, USERS_TABLE, &argv[idx]);
-      else if (!strcmp(type, "KERBEROS"))
-	status = id_to_name(id, STRINGS_TABLE, &argv[idx]);
-      else if (!strcmp(type, "NONE"))
-	{
-	  status = 0;
-	  free(argv[idx]);
-	  argv[idx] = xstrdup("NONE");
-	}
-      else
-	{
-	  status = 0;
-	  free(argv[idx]);
-	  argv[idx] = xstrdup("???");
-	}
+      status = fix_ace(argv[idx], &argv[idx + 1]);
       if (status && status != MR_NO_MATCH)
 	return status;
 
@@ -856,46 +762,24 @@ int followup_glin(struct query *q, struct save_queue *sq, struct validate *v,
 	  argv[6] = xrealloc(argv[6], strlen(UNIQUE_GID) + 1);
 	  strcpy(argv[6], UNIQUE_GID);
 	}
-
-      /* send the data */
-      (*action)(q->vcnt, argv, actarg);
-
-      /* free saved data */
-      for (i = 0; i < q->vcnt; i++)
-	free(argv[i]);
-      free(argv);
     }
 
-  sq_destroy(sq);
-  return MR_SUCCESS;
+  return followup_fix_modby(q, sq, v, action, actarg, cl);
 }
 
 int followup_gpsv(struct query *q, struct save_queue *sq, struct validate *v,
 		  int (*action)(int, char *[], void *), void *actarg,
 		  client *cl)
 {
-  char **argv, *type;
-  int id, i, status;
+  char **argv;
+  int status;
 
   while (sq_get_data(sq, &argv))
     {
       mr_trim_args(q->vcnt, argv);
 
-      id = atoi(argv[PRINTSERVER_OWNER_NAME]);
-      type = argv[PRINTSERVER_OWNER_TYPE];
-
-      if (!strcmp(type, "LIST"))
-	status = id_to_name(id, LIST_TABLE, &argv[PRINTSERVER_OWNER_NAME]);
-      else if (!strcmp(type, "USER"))
-	status = id_to_name(id, USERS_TABLE, &argv[PRINTSERVER_OWNER_NAME]);
-      else if (!strcmp(type, "KERBEROS"))
-	status = id_to_name(id, STRINGS_TABLE, &argv[PRINTSERVER_OWNER_NAME]);
-      else
-	{
-	  status = 0;
-	  free(argv[PRINTSERVER_OWNER_NAME]);
-	  argv[PRINTSERVER_OWNER_NAME] = xstrdup("NONE");
-	}
+      status = fix_ace(argv[PRINTSERVER_OWNER_TYPE],
+		       &argv[PRINTSERVER_OWNER_NAME]);
       if (status && status != MR_NO_MATCH)
 	return status;
     }
@@ -928,6 +812,7 @@ int followup_gqot(struct query *q, struct save_queue *sq, struct validate *v,
     idx = 4;
   else
     idx = 3;
+
   while (sq_get_data(sq, &argv))
     {
       if (idx == 4)
@@ -1133,56 +1018,22 @@ int followup_gzcl(struct query *q, struct save_queue *sq, struct validate *v,
 		  int (*action)(int, char *[], void *), void *actarg,
 		  client *cl)
 {
-  int id, i, status;
+  int i, status;
   char **argv;
 
   while (sq_get_data(sq, &argv))
     {
       mr_trim_args(q->vcnt, argv);
 
-      id = atoi(argv[i = q->vcnt - 2]);
-      if (id > 0)
-	status = id_to_name(id, USERS_TABLE, &argv[i]);
-      else
-	status = id_to_name(-id, STRINGS_TABLE, &argv[i]);
-      if (status && status != MR_NO_MATCH)
-	return status;
-
       for (i = 1; i < 8; i += 2)
 	{
-	  id = atoi(argv[i + 1]);
-	  if (!strcmp(argv[i], "LIST"))
-	    status = id_to_name(id, LIST_TABLE, &argv[i + 1]);
-	  else if (!strcmp(argv[i], "USER"))
-	    status = id_to_name(id, USERS_TABLE, &argv[i + 1]);
-	  else if (!strcmp(argv[i], "KERBEROS"))
-	    status = id_to_name(id, STRINGS_TABLE, &argv[i + 1]);
-	  else if (!strcmp(argv[i], "NONE"))
-	    {
-	      status = 0;
-	      free(argv[i + 1]);
-	      argv[i + 1] = xstrdup("NONE");
-	    }
-	  else
-	    {
-	      status = 0;
-	      free(argv[i + 1]);
-	      argv[i + 1] = xstrdup("???");
-	    }
+	  status = fix_ace(argv[i], &argv[i + 1]);
 	  if (status && status != MR_NO_MATCH)
 	    return status;
 	}
-
-      /* send the data */
-      (*action)(q->vcnt, argv, actarg);
-
-      /* free saved data */
-      for (i = 0; i < q->vcnt; i++)
-	free(argv[i]);
-      free(argv);
     }
-  sq_destroy(sq);
-  return MR_SUCCESS;
+
+  return followup_fix_modby(q, sq, v, action, actarg, cl);
 }
 
 
@@ -1194,52 +1045,18 @@ int followup_gsha(struct query *q, struct save_queue *sq, struct validate *v,
 		  client *cl)
 {
   char **argv;
-  int i, id, status;
+  int status;
 
   while (sq_get_data(sq, &argv))
     {
       mr_trim_args(q->vcnt, argv);
 
-      id = atoi(argv[4]);
-      if (id > 0)
-	status = id_to_name(id, USERS_TABLE, &argv[4]);
-      else
-	status = id_to_name(-id, STRINGS_TABLE, &argv[4]);
+      status = fix_ace(argv[1], &argv[2]);
       if (status && status != MR_NO_MATCH)
 	return status;
-
-      id = atoi(argv[2]);
-      if (!strcmp(argv[1], "LIST"))
-	status = id_to_name(id, LIST_TABLE, &argv[2]);
-      else if (!strcmp(argv[1], "USER"))
-	status = id_to_name(id, USERS_TABLE, &argv[2]);
-      else if (!strcmp(argv[1], "KERBEROS"))
-	status = id_to_name(id, STRINGS_TABLE, &argv[2]);
-      else if (!strcmp(argv[1], "NONE"))
-	{
-	  status = 0;
-	  free(argv[2]);
-	  argv[2] = xstrdup("NONE");
-	}
-      else
-	{
-	  status = 0;
-	  free(argv[2]);
-	  argv[2] = xstrdup("???");
-	}
-      if (status && status != MR_NO_MATCH)
-	return status;
-
-      /* send the data */
-      (*action)(q->vcnt, argv, actarg);
-
-      /* free saved data */
-      for (i = 0; i < q->vcnt; i++)
-	free(argv[i]);
-      free(argv);
     }
-  sq_destroy(sq);
-  return MR_SUCCESS;
+
+  return followup_fix_modby(q, sq, v, action, actarg, cl);
 }
 
 

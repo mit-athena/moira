@@ -1,8 +1,11 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/form_setup.c,v 1.6 1992-10-23 19:05:58 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/form_setup.c,v 1.7 1992-10-28 16:14:06 mar Exp $
  */
 
 #include <stdio.h>
 #include <ctype.h>
+#include <strings.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 #include <moira.h>
 #include <moira_site.h>
 #include <Xm/Xm.h>

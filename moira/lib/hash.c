@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/hash.c,v 1.6 1989-11-14 18:12:05 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/hash.c,v 1.7 1989-12-05 18:33:02 mar Exp $
  *
  * Generic hash table routines.  Uses integer keys to store char * values.
  *
@@ -22,8 +22,14 @@ int size;
     struct hash *h;
 
     h = (struct hash *) malloc(sizeof(struct hash));
+    if (h == (struct hash *) NULL)
+      return((struct hash *) NULL);
     h->size = size;
     h->data = (struct bucket **) malloc(size * sizeof(char *));
+    if (h->data == (struct bucket **) NULL) {
+	free(h);
+	return((struct hash *) NULL);
+    }
     bzero(h->data, size * sizeof(char *));
     return(h);
 }
@@ -71,7 +77,7 @@ char *value;
 
 
 /* Store an item in the hash table.  Returns 0 if the key was not previously
- * there, or 1 if it was.
+ * there, 1 if it was, or -1 if we ran out of memory.
  */
 
 int hash_store(h, key, value)
@@ -84,6 +90,8 @@ char *value;
     p = &(h->data[hash_func(h, key)]);
     if (*p == NULL) {
 	b = *p = (struct bucket *) malloc(sizeof(struct bucket));
+	if (b == (struct bucket *) NULL)
+	  return(-1);
 	b->next = NULL;
 	b->key = key;
 	b->data = value;
@@ -97,6 +105,8 @@ char *value;
 	return(1);
     }
     b = *p = (struct bucket *) malloc(sizeof(struct bucket));
+    if (b == (struct bucket *) NULL)
+      return(-1);
     b->next = NULL;
     b->key = key;
     b->data = value;

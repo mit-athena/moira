@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase1.qc,v 1.6 1990-03-19 18:44:02 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase1.qc,v 1.7 1992-06-24 16:34:04 mar Exp $
  *
  *  (c) Copyright 1988 by the Massachusetts Institute of Technology.
  *  For copying and distribution information, please see the file
@@ -9,7 +9,7 @@
 #include <moira.h>
 #include "dbck.h"
 
-static char phase1_qc_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase1.qc,v 1.6 1990-03-19 18:44:02 mar Exp $";
+static char phase1_qc_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase1.qc,v 1.7 1992-06-24 16:34:04 mar Exp $";
 
 
 show_user_id(u)
@@ -176,7 +176,7 @@ struct string *s;
 phase1()
 ##{
 ##  char name[81], name1[81], last[17], first[17], buf[257];
-##  int id, id2, id3, aid, aid2, status, sid, sid2, sid3;
+##  int id, id2, id3, aid, aid2, status, sid, sid2, sid3, sid4, sid5;
     struct save_queue *sq;
     struct user *u;
     struct machine *m;
@@ -205,6 +205,7 @@ phase1()
 	}
 ##  }
     generic_delete(sq, show_str_id, "strings", "string_id", 0);
+    string_check(0);
 
     dprintf("Loading users...\n");
     sq = sq_create();
@@ -213,7 +214,7 @@ phase1()
 ##  retrieve (id = u.users_id, name = u.login, last = u.#last,
 ##	      first = u.#first, status = u.#status, buf = u.potype,
 ##	      id2 = u.pop_id, id3 = u.box_id, sid = u.modby, sid2 = u.fmodby,
-##	      sid3 = u.pmodby) {
+##	      sid3 = u.pmodby, sid4 = u.comment, sid5 = u.sigwho) {
     	u = (struct user *) malloc(sizeof(struct user));
 	if (u == NULL)
 	  out_of_mem("storing users");
@@ -243,6 +244,10 @@ phase1()
 	  string_check(-sid2);
 	if (sid3 < 0)
 	  string_check(-sid3);
+	if (sid4)
+	  string_check(sid4);
+	if (sid5)
+	  string_check(sid5);
 ##  }
     generic_fix(sq, show_user_id, "Change ID", fix_user_id, 0);
 

@@ -1,4 +1,4 @@
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/Imakefile,v 1.1 1990-08-27 14:57:14 mar Exp $
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/Imakefile,v 1.2 1991-03-08 10:23:30 mar Exp $
 #
 # Copyright 1990 by the Massachusetts Institute of Technology.
 #
@@ -20,6 +20,9 @@ MOBJS=	attach.o cluster.o delete.o globals.o lists.o main.o menu.o \
 NOBJS=	namespace.o globals.o lists.o menu.o \
 	pobox.o user.o utils.o misc.o
 OBJS=	${MOBJS} ${NOBJS}
+INCLUDE= -I$(BUILDTOP)/include -I$(BUILDTOP)/lib -I.
 
-program(moira, ${MOBJS},${MR_LIBDEP} ${GDB_LIBDEP}, ${CLIBS}, ${PROGDIR})
-program(namespace, ${NOBJS},${MR_LIBDEP} ${GDB_LIBDEP}, ${CLIBS}, ${PROGDIR})
+program(moira, ${MOBJS},${MR_LIBDEP} ${GDB_LIBDEP}, ${CLIBS} -lcurses -ltermcap, ${PROGDIR})
+program(namespace, ${NOBJS},${MR_LIBDEP} ${GDB_LIBDEP}, ${CLIBS} -lcurses -ltermcap, ${PROGDIR})
+
+depend:: ${CODE}

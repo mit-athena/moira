@@ -1,15 +1,15 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/client.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/client.c,v 1.8 1989-08-21 21:45:36 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/client.c,v 1.9 1989-09-08 14:53:05 mar Exp $
  */
 
 #ifndef lint
-static char *rcsid_client2_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/client.c,v 1.8 1989-08-21 21:45:36 mar Exp $";
+static char *rcsid_client2_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/client.c,v 1.9 1989-09-08 14:53:05 mar Exp $";
 #endif	lint
 
 /*
  * MODULE IDENTIFICATION:
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/client.c,v 1.8 1989-08-21 21:45:36 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/client.c,v 1.9 1989-09-08 14:53:05 mar Exp $
  *	Copyright 1987, 1988 by the Massachusetts Institute of Technology.
  *	For copying and distribution information, please see the file
  *	<mit-copyright.h>.
@@ -35,6 +35,7 @@ static char *rcsid_client2_c = "$Header: /afs/.athena.mit.edu/astaff/project/moi
 #include <errno.h>
 #include <dcm.h>
 #include <sms.h>
+#include <sms_app.h>
 #include <krb.h>
 
 extern char *malloc();
@@ -78,7 +79,7 @@ initialize()
  *	sms_update_server(service, machine, target_path)
  * DESCRIPTION:
  *	Attempts to perform an update to the named machine
- *	of the named service.  The file SMS_DIR/dcm/service.out
+ *	of the named service.  The file DCM_DIR/service.out
  *	will be sent, then the file SMS_DIR/bin/service.sh,
  *	the the shell script will be executed.
  * INPUT:
@@ -133,7 +134,7 @@ char *instructions;
 	   " target pathname");
     ASSERT2(target_path[0] == '/', SMS_NOT_UNIQUE,
 	   " non-absolute pathname supplied \"%s\"", target_path);
-    sprintf(buf, "%s/dcm/%s.out", SMS_DIR, service);
+    sprintf(buf, "%s/%s.out", DCM_DIR, service);
     pathname = strsave(buf);
     ASSERT(NONNULL(pathname), SMS_NO_MEM, " for pathname");
     ASSERT(NONNULL(instructions), SMS_NO_MEM, " for instructions");

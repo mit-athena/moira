@@ -1,4 +1,4 @@
-/* $Id: queries2.c,v 2.80 2000-11-01 22:34:20 zacheiss Exp $
+/* $Id: queries2.c,v 2.81 2000-11-15 10:11:42 zacheiss Exp $
  *
  * This file defines the query dispatch table
  *
@@ -2946,7 +2946,7 @@ static struct validate _sdl_validate =
 };
 
 static char *gusl_fields[] = {
-  "login",
+  "login", "domain_sid", 
   "login", "sid", "created",
 };
 
@@ -2964,7 +2964,7 @@ static struct validate gusl_validate =
 };
 
 static char *glsn_fields[] = {
-  "name",
+  "name", "domain_sid",
   "name", "sid", "created",
 };
 
@@ -3013,6 +3013,10 @@ static struct validate alsn_validate =
   0,
   0,
   0,
+};
+
+static char *gdds_fields[] = {
+  "sid",
 };
 
 
@@ -6191,9 +6195,9 @@ struct query Queries[] = {
     "u.login, us.sid, TO_CHAR(us.created, 'YYYY-MM-DD HH24:MI:SS') FROM users u, usersids us",
     gusl_fields,
     3,
-    "us.users_id = %d AND u.users_id = us.users_id",
-    1,
-    "us.created",
+    "us.users_id = %d AND u.users_id = us.users_id AND SUBSTR(us.sid, 1, LENGTH(us.sid)-8) = '%s'",
+    2,
+    NULL,
     &gusl_validate,
   },
 
@@ -6225,9 +6229,9 @@ struct query Queries[] = {
     "l.name, ls.sid, TO_CHAR(ls.created, 'YYYY-MM-DD HH24:MI:SS') FROM list l, listsids ls",
     glsn_fields,
     3,
-    "ls.list_id = %d AND l.list_id = ls.list_id",
-    1,
-    "created",
+    "ls.list_id = %d AND l.list_id = ls.list_id AND SUBSTR(ls.sid, 1, LENGTH(ls.sid)-8) = '%s'",
+    2,
+    NULL,
     &glsn_validate,
   },
 
@@ -6246,6 +6250,23 @@ struct query Queries[] = {
     0,
     NULL,
     &alsn_validate,
+  },
+
+  {
+    /* Q_GDDS - GET_DISTINCT_DOMAIN_SIDS, v4 */
+    "get_distinct_domain_sids",
+    "gdds",
+    4,
+    RETRIEVE,
+    "s",
+    USERSIDS_TABLE,
+    "DISTINCT SUBSTR(sid, 1, LENGTH(sid)-8) FROM usersids",
+    gdds_fields,
+    1,
+    NULL,
+    0,
+    NULL,
+    NULL,
   },
 
 };

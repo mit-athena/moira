@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.22 1989-06-27 16:31:44 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.23 1989-06-28 14:02:59 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -16,7 +16,7 @@
  * 
  */
 
-static char *rcsid_sms_main_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.22 1989-06-27 16:31:44 mar Exp $";
+static char *rcsid_sms_main_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.23 1989-06-28 14:02:59 mar Exp $";
 
 #include <mit-copyright.h>
 #include <strings.h>
@@ -110,16 +110,21 @@ main(argc, argv)
 	get_krbrlm(krb_realm, 1);
 	
 	/*
-	 * Database initialization.
+	 * Database initialization.  Only init if database should be open.
 	 */
 
-	if ((status = sms_open_database()) != 0) {
+	if (stat(SMS_MOTD_FILE, &stbuf) != 0) {
+	    if ((status = sms_open_database()) != 0) {
 		com_err(whoami, status, " when trying to open database.");
 		exit(1);
+	    }
+	    sanity_check_database();
+	} else {
+	    dormant = ASLEEP;
+	    com_err(whoami, 0, "sleeping, not opening database");
 	}
 	
 	sanity_check_queries();
-	sanity_check_database();
 
 	/*
 	 * Set up client array handler.
@@ -127,21 +132,7 @@ main(argc, argv)
 	nclients = 0;
 	clients = (client **) malloc(0);
 	
-	/*
-	 * Signal handlers
-	 *	There should probably be a few more of these. This is
-	 *	duplicated on the next page, be sure to also add any
-	 *	additional handlers there.
-	 */
-	
-	if ((((int)signal (SIGTERM, sigshut)) < 0) ||
-	    (((int)signal (SIGCHLD, reapchild)) < 0) ||
-	    (((int)signal (SIGUSR1, godormant)) < 0) ||
-	    (((int)signal (SIGUSR2, gowakeup)) < 0) ||
-	    (((int)signal (SIGHUP, sigshut)) < 0)) {
-		com_err(whoami, errno, " Unable to establish signal handlers.");
-		exit(1);
-	}
+	sms_setup_signals();
 	
 	journal = fopen(JOURNAL, "a");
 	if (journal == NULL) {
@@ -162,7 +153,10 @@ main(argc, argv)
 	
 	com_err(whoami, 0, "started (pid %d)", getpid());
 	com_err(whoami, 0, rcsid_sms_main_c);
-	send_zgram("SMS", "server started");
+	if (dormant != ASLEEP)
+	  send_zgram("SMS", "server started");
+	else
+	  send_zgram("SMS", "server started, but database closed");
 
 	/*
 	 * Run until shut down.
@@ -178,20 +172,13 @@ main(argc, argv)
 		if (dormant == SLEEPY) {
 		    sms_close_database();
 		    com_err(whoami, 0, "database closed");
+		    sms_setup_signals();
 		    send_zgram("SMS", "database closed");
 		    dormant = ASLEEP;
 		} else if (dormant == GROGGY) {
 		    sms_open_database();
 		    com_err(whoami, 0, "database open");
-		    if ((((int)signal (SIGTERM, sigshut)) < 0) ||
-			(((int)signal (SIGCHLD, reapchild)) < 0) ||
-			(((int)signal (SIGUSR1, godormant)) < 0) ||
-			(((int)signal (SIGUSR2, gowakeup)) < 0) ||
-			(((int)signal (SIGHUP, sigshut)) < 0)) {
-			com_err(whoami, errno,
-				" Unable to reestablish signal handlers.");
-			exit(1);
-		    }
+		    sms_setup_signals();
 		    send_zgram("SMS", "database open again");
 		    dormant = AWAKE;
 		}
@@ -532,4 +519,19 @@ void gowakeup()
 	break;
     }
     dormant = GROGGY;
+}
+
+	
+sms_setup_signals()
+{
+    /* There should probably be a few more of these. */
+	
+    if ((((int)signal (SIGTERM, sigshut)) < 0) ||
+	(((int)signal (SIGCHLD, reapchild)) < 0) ||
+	(((int)signal (SIGUSR1, godormant)) < 0) ||
+	(((int)signal (SIGUSR2, gowakeup)) < 0) ||
+	(((int)signal (SIGHUP, sigshut)) < 0)) {
+	com_err(whoami, errno, " Unable to establish signal handlers.");
+	exit(1);
+    }
 }

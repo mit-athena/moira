@@ -1,7 +1,7 @@
 /*
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/setquota.c,v $
- *      $Author: jnrees $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/setquota.c,v 1.5 1990-03-06 15:59:08 jnrees Exp $
+ *      $Author: mar $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/setquota.c,v 1.6 1990-03-07 17:41:22 mar Exp $
  *
  *      Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
@@ -11,6 +11,11 @@
  * quota system.
  *
  *      $Log: not supported by cvs2svn $
+ * Revision 1.5  90/03/06  15:59:08  jnrees
+ * x*.5 replaced with x/2;
+ * x*1.2 with (x*6)/5;
+ * This avoids linking in the floating-point library.
+ * 
  * Revision 1.4  90/01/27  19:48:05  jnrees
  * Grows quotas file if necessary
  * Allows setting quota for a range of uid's.
@@ -24,7 +29,7 @@
  */
 
 #ifndef lint
-static char *rcsid_setquota_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/setquota.c,v 1.5 1990-03-06 15:59:08 jnrees Exp $";
+static char *rcsid_setquota_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/setquota.c,v 1.6 1990-03-07 17:41:22 mar Exp $";
 #endif lint
 
 #include <stdio.h>
@@ -154,7 +159,8 @@ quota is in 1KB units\n");
 	exit (0);
 }
 	
-get_device(char *device_or_dir)
+get_device(device_or_dir)
+char *device_or_dir;
 {
   register struct mntent *mntp;
   FILE *fstab;

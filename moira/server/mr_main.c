@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.17 1988-08-03 19:00:25 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.18 1988-08-05 16:09:00 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
@@ -15,7 +15,7 @@
  * 
  */
 
-static char *rcsid_sms_main_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.17 1988-08-03 19:00:25 mar Exp $";
+static char *rcsid_sms_main_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.18 1988-08-05 16:09:00 mar Exp $";
 
 #include <strings.h>
 #include <sys/errno.h>
@@ -127,6 +127,7 @@ main(argc, argv)
 	 */
 	
 	if ((((int)signal (SIGTERM, sigshut)) < 0) ||
+	    (((int)signal (SIGCHLD, reapchild)) < 0) ||
 	    (((int)signal (SIGHUP, sigshut)) < 0)) {
 		com_err(whoami, errno, " Unable to establish signal handler.");
 		exit(1);

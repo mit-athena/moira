@@ -189,8 +189,7 @@ char **argv;
 
 	    if (isspace(*buffer)) {
 		sscanf(buffer, "%s %d", mem, &uid);
-#if 0
-		/* CROSS-CELL SUPPORT - NYI */
+
 		for (u=usr_head; u; u=u->next)
 		    if (u->uid && u->uid==uid) break;
 		if (u) {
@@ -198,15 +197,23 @@ char **argv;
 		    u->uid = 0;
 		    if (FindByID(0, uid))
 			code = PRIDEXIST;
-		    else
+		    else {
+			if (!code && (flags&(PRGRP|PRQUOTA))==(PRGRP|PRQUOTA)){
+			    gentry.ngroups++;
+			    code = pr_WriteEntry(0,0,gpos,&gentry);
+			    if (code)
+				fprintf(stderr, "Error setting group count on %s: %s\n",
+					name, error_message(code));
+			}
 			code = CreateEntry
 			    (0, u->name, &uid, 1/*idflag*/, 1/*gflag*/,
 			     SYSADMINID/*oid*/, SYSADMINID/*cid*/);
+		    }
 		    if (code)
 			fprintf(stderr, "Error while creating %s: %s\n",
 				u->name, error_message(code));
+		    continue;
 		}
-#endif
 		/* Add user to group */
 		if (id==ANYUSERID || id==AUTHUSERID || uid==ANONYMOUSID) {
 		    code = PRPERM;
@@ -230,7 +237,6 @@ char **argv;
 		else
 		    code = CreateEntry(0, name, &id, 1/*idflag*/,
 				       flags&PRGRP, oid, cid);
-#if 0
 		if (code == PRBADNAM) {
 		    u = (struct usr_list *)malloc(sizeof(struct usr_list));
 		    u->next = usr_head;
@@ -238,7 +244,6 @@ char **argv;
 		    strcpy(u->name, name);
 		    usr_head = u;
 		} else
-#endif
 		if (code) {
 		    fprintf(stderr, "Error while creating %s: %s\n",
 			    name, error_message(code));
@@ -248,8 +253,6 @@ char **argv;
 		    code = pr_ReadEntry(0,0,gpos,&gentry);
 		    if (!code) {
 			gentry.flags = flags;
-			if ((flags&(PRGRP|PRQUOTA))==(PRGRP|PRQUOTA))
-			    gentry.ngroups = quota + gentry.count;
 			code = pr_WriteEntry(0,0,gpos,&gentry);
 		    }
 		    if (code)
@@ -258,12 +261,10 @@ char **argv;
 		}
 	    }
 	}
-#if 0
 	for (u=usr_head; u; u=u->next)
 	    if (u->uid)
 		fprintf(stderr, "Error while creating %s: %s\n",
 			u->name, error_message(PRBADNAM));
-#endif
     } else {
 	for (i = 0; i < HASHSIZE; i++) {
 	    upos = nflag ? ntohl(prh.nameHash[i]) : ntohl(prh.idHash[i]);

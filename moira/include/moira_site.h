@@ -1,4 +1,4 @@
-/* $Id: moira_site.h,v 1.31 1999-06-30 20:55:47 danw Exp $
+/* $Id: moira_site.h,v 1.32 1999-11-17 18:36:51 danw Exp $
  *
  * This file contains all definitions that allow easy access to
  * elements returned by most of the @i[Moira] queries.  It also defines
@@ -228,7 +228,8 @@
 #define PO_NAME    0
 #define PO_TYPE    1
 #define PO_BOX     2
-#define PO_END     3
+#define PO_ADDR    3
+#define PO_END     4
 
 /* Quota queries */
 

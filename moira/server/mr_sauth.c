@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_sauth.c,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_sauth.c,v 1.13 1989-08-25 14:40:17 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_sauth.c,v 1.14 1990-02-15 15:32:14 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,12 +10,13 @@
  */
 
 #ifndef lint
-static char *rcsid_sms_sauth_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_sauth.c,v 1.13 1989-08-25 14:40:17 mar Exp $";
+static char *rcsid_sms_sauth_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_sauth.c,v 1.14 1990-02-15 15:32:14 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
 #include <strings.h>
 #include "sms_server.h"
+#include <ctype.h>
 #include <krb_et.h>
 
 extern char buf1[];
@@ -39,13 +40,20 @@ do_auth(cl)
 	KTEXT_ST auth;
 	AUTH_DAT ad;
 	int status, ok;
-	char buf[REALM_SZ+INST_SZ+ANAME_SZ];
-	
+	char buf[REALM_SZ+INST_SZ+ANAME_SZ], hostbuf[BUFSIZ], *host, *p;
+
 	auth.length = cl->args->sms_argl[0];
 	bcopy(cl->args->sms_argv[0], (char *)auth.dat, auth.length);
 	auth.mbz = 0;
-	
-	if ((status = krb_rd_req (&auth, "sms", "sms", cl->haddr.sin_addr,
+	if (gethostname(hostbuf, sizeof(hostbuf)) < 0)
+	  com_err(whoami, errno, "Unable to get local hostname");
+	host = canonicalize_hostname(strsave(hostbuf));
+	for (p = host; *p && *p != '.'; p++)
+	  if (isupper(*p))
+	    *p = tolower(*p);
+	*p = 0;
+
+	if ((status = krb_rd_req (&auth, MOIRA_SNAME, host, cl->haddr.sin_addr,
 				 &ad, "")) != 0) {
 		status += ERROR_TABLE_BASE_krb;
 		cl->reply.sms_status = status;
@@ -53,6 +61,7 @@ do_auth(cl)
 			com_err(whoami, status, "(authentication failed)");
 		return;
 	}
+	free(host);
 
 	bcopy(ad.pname, cl->kname.name, ANAME_SZ);
 	bcopy(ad.pinst, cl->kname.inst, INST_SZ);

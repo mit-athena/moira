@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_auth.c,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_auth.c,v 1.11 1989-08-16 11:24:35 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_auth.c,v 1.12 1990-02-15 15:33:40 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -12,11 +12,12 @@
  */
 
 #ifndef lint
-static char *rcsid_sms_auth_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_auth.c,v 1.11 1989-08-16 11:24:35 mar Exp $";
+static char *rcsid_sms_auth_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_auth.c,v 1.12 1990-02-15 15:33:40 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
 #include "sms_private.h"
+#include <ctype.h>
 #include <krb.h>
 #include <krb_et.h>
 
@@ -31,8 +32,7 @@ char *prog;
     sms_params params_st;
     char *args[2];
     int argl[2];
-    char realm[REALM_SZ];
-    char host[BUFSIZ];
+    char realm[REALM_SZ], host[BUFSIZ], *p;
 
     register sms_params *params = &params_st;
     sms_params *reply = NULL;
@@ -40,18 +40,19 @@ char *prog;
 
     CHECK_CONNECTED;
 	
-    /*
-     * Build a Kerberos authenticator.
-     * The "service" and "instance" should not be hardcoded here.
-     */
+    /* Build a Kerberos authenticator. */
 	
     bzero(host, sizeof(host));
     if (status = sms_host(host, sizeof(host) - 1))
 	return status;
 
     strcpy(realm, krb_realmofhost(host));
+    for (p = host; *p && *p != '.'; p++)
+      if (isupper(*p))
+	*p = tolower(*p);
+    *p = 0;
 
-    status = krb_mk_req(&auth, "sms", "sms", realm, 0);
+    status = krb_mk_req(&auth, MOIRA_SNAME, host, realm, 0);
     if (status != KSUCCESS) {
 	status += ERROR_TABLE_BASE_krb;
 	return status;

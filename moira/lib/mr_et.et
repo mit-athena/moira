@@ -1,4 +1,4 @@
-# $Id: mr_et.et,v 1.23 2000-05-24 04:27:02 danw Exp $
+# $Id: mr_et.et,v 1.24 2000-06-02 19:47:15 zacheiss Exp $
 	error_table sms
 
 ec	MR_NOT_CONNECTED,
@@ -215,5 +215,8 @@ ec	MR_VERSION_LOW,
 
 ec	MR_VERSION_HIGH,
 	"Client query version is newer than server"
+
+ec	MR_RESERVED,
+	"That name is reserved"
 
 	end

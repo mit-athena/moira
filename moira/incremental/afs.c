@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/afs.c,v 1.6 1989-09-14 18:21:17 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/afs.c,v 1.7 1989-10-06 14:13:34 mar Exp $
  *
  * Do AFS incremental updates
  *
@@ -251,8 +251,10 @@ int afterc;
 {
     if (afterc < FS_CREATE)
       return;
-    if (!strcmp("AFS", after[FS_TYPE]) && !strncmp("/afs", after[FS_PACK]) &&
-		!file_exists(after[FS_PACK])) {
+    if (!strcmp("AFS", after[FS_TYPE]) &&
+	!strncmp("/afs/", after[FS_PACK], 5) &&
+	atoi(after[FS_CREATE]) &&
+	!file_exists(after[FS_PACK])) {
 	critical_alert("incremental", "unable to create locker %s",
 		       after[FS_PACK]);
     }

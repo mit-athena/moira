@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/afs.c,v 1.2 1989-08-25 14:36:17 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/afs.c,v 1.3 1989-08-28 15:11:47 mar Exp $
  *
  * Do AFS incremental updates
  *
@@ -14,6 +14,9 @@
 #include <krb_et.h>
 #include <afs/auth.h>
 #include <pwd.h>
+#include <sys/file.h>
+
+#define file_exists(file) (access((file), F_OK) == 0)
 
 #define LOCALCELL "sms_test.mit.edu"
 #define PRS	"/u1/sms/bin/prs"
@@ -195,7 +198,7 @@ int afterc;
 	return;
     }
     if (afterc == 0 && !strcmp(before[LM_TYPE], "USER")) {
-	sprintf(cmd, "%s delete -user %s -group system:%s -cell %s",
+	sprintf(cmd, "%s remove -user %s -group system:%s -cell %s",
 		PRS, before[LM_MEMBER], before[LM_LIST], LOCALCELL);
 	do_cmd(cmd);
 	return;
@@ -209,6 +212,13 @@ int beforec;
 char **after;
 int afterc;
 {
+    if (afterc < FS_CREATE)
+      return;
+    if (!strcmp("AFS", after[FS_TYPE]) && !strncmp("/afs", after[FS_PACK]) &&
+		!file_exists(after[FS_PACK])) {
+	critical_alert("incremental", "unable to create locker %s",
+		       after[FS_PACK]);
+    }
 }
 
 

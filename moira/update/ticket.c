@@ -1,13 +1,13 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/ticket.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/ticket.c,v 1.9 1992-08-25 14:45:12 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/ticket.c,v 1.10 1992-09-21 12:31:34 mar Exp $
  */
 /*  (c) Copyright 1988 by the Massachusetts Institute of Technology. */
 /*  For copying and distribution information, please see the file */
 /*  <mit-copyright.h>. */
 
 #ifndef lint
-static char *rcsid_ticket_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/ticket.c,v 1.9 1992-08-25 14:45:12 mar Exp $";
+static char *rcsid_ticket_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/ticket.c,v 1.10 1992-09-21 12:31:34 mar Exp $";
 #endif	lint
 
 #include <mit-copyright.h>
@@ -25,6 +25,7 @@ static char *srvtab = KEYFILE; /* default == /etc/srvtab */
 static char realm[REALM_SZ];
 static char master[INST_SZ] = "sms";
 static char service[ANAME_SZ] = "rcmd";
+C_Block session;
 
 
 static init()
@@ -48,6 +49,7 @@ get_mr_update_ticket(host, ticket)
      register int code;
      register int pass;
      char phost[BUFSIZ];
+     CREDENTIALS cr;
 
      pass = 1;
      init();
@@ -57,6 +59,9 @@ get_mr_update_ticket(host, ticket)
      if (code) {
 	 code += ERROR_TABLE_BASE_krb;
 	 com_err(whoami, code, "in krb_mk_req");
+     } else {
+	 code = krb_get_cred(service, phost, realm, &cr);
+	 bcopy(cr.session, session, sizeof(session));
      }
 #ifdef notdef
      if (pass == 1) {

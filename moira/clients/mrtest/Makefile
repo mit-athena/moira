@@ -1,6 +1,6 @@
 #
 # 	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/Makefile,v $
-#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/Makefile,v 1.2 1987-08-23 01:43:47 wesommer Exp $
+#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/Makefile,v 1.3 1988-01-21 16:01:21 mar Exp $
 #
 
 
@@ -20,6 +20,7 @@ CFLAGS= ${INCDIRS} ${COPTS}
 all: smstest smsfinger
 
 smstest: test_cmds.o test.o ${LIBS} 
+	rm -f smstest
 	cc ${COPTS} -o $@ test_cmds.o test.o ${LIBS} ${LLIBS}
 
 smsfinger: smsfinger.o ${LIBS} 

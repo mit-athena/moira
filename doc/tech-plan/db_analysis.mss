@@ -16,8 +16,9 @@ a field,  the server will check the input against a list of
 accepted values for that field.  Therefore,  each field which requires
 input data integrity checking will be associated to a list of
 values.  An error condition will return if the value specified is
-incorrect.  For authorized users, the program ******* will
-allow the addition or deletion of accepted field values.  
+incorrect.  For authorized users, the program Alias_maint will
+allow the addition or deletion of accepted field values.  This
+program is described in more detail in @ref(Tools) 
 
 The list of predefined queries (addendum 1) gives reference to those fields
 which require explicit data checking.

@@ -1,5 +1,5 @@
 #	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/db2bkup.awk,v $
-#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/db2bkup.awk,v 1.1 1987-07-11 19:51:36 wesommer Exp $
+#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/db2bkup.awk,v 1.2 1987-07-13 03:52:34 wesommer Exp $
 #
 #	This converts the file used to originally create the database
 #	into a program to back it up.
@@ -9,8 +9,11 @@
 BEGIN { print "/* This file automatically generated */";
 	print "/* Do not edit */";
 	print "#include <stdio.h>";
+	print "#include \"dump_db.h\"";
 	print "/* This file automatically generated */" > "bkup1.qc";
 	print "/* Do not edit */" >> "bkup1.qc"
+	print "#include <stdio.h>" >> "bkup1.qc"
+	print "FILE *open_file();" >> "bkup1.qc"
 	print "do_backups(prefix)\n\tchar *prefix;\n{" >>"bkup1.qc"
 }
 
@@ -55,7 +58,7 @@ $2 ~ /\=/ {
 	printf ")\n"
 	printf "##	{\n"
 	for (i = 0; i < count; i++) {
-		if (i != 0) print "\t\tdump_str(f, \":\");"
+		if (i != 0) print "\t\tdump_sep(f);"
 		printf "\t\tdump_%s(f, t_%s);\n", vtype[i], vname[i]
 	}
 	printf "\t\tdump_nl(f);\n"

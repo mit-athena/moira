@@ -7,11 +7,11 @@
  *
  * $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/dcm.c,v $
  * $Author: mar $
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/dcm.c,v 1.4 1988-08-16 17:39:29 mar Exp $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/dcm.c,v 1.5 1988-08-19 18:03:00 mar Exp $
  */
 
 #ifndef lint
-static char rcsid_dcm_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/dcm.c,v 1.4 1988-08-16 17:39:29 mar Exp $";
+static char rcsid_dcm_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/dcm.c,v 1.5 1988-08-19 18:03:00 mar Exp $";
 #endif lint
 
 #include <stdio.h>
@@ -348,13 +348,13 @@ struct service *svc;
 	}
 	if (!shost.enable || shost.hosterror ||
 	    (shost.success && !shost.override &&
-	     shost.lastsuccess > svc->dfgen)) {
+	     shost.lastsuccess >= svc->dfgen)) {
 	    if (dbg & DBG_TRACE)
 	      com_err(whoami, 0, "not updating %s:%s", svc->service, machine);
 	    goto free_mach;
 	}
 	if (!shost.success || shost.override ||
-	    shost.lasttry + svc->interval < tv.tv_sec) {
+	    shost.lasttry + svc->interval <= tv.tv_sec) {
 	    lock_fd = maybe_lock_update(SMS_DIR, machine, svc->service, 1);
 	    if (lock_fd < 0)
 	      goto free_mach;

@@ -1,10 +1,10 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/checksum.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/checksum.c,v 1.1 1987-08-22 17:53:28 wesommer Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/checksum.c,v 1.2 1988-08-04 14:20:23 mar Exp $
  */
 
 #ifndef lint
-static char *rcsid_checksum_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/checksum.c,v 1.1 1987-08-22 17:53:28 wesommer Exp $";
+static char *rcsid_checksum_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/checksum.c,v 1.2 1988-08-04 14:20:23 mar Exp $";
 #endif	lint
 
 #include <stdio.h>
@@ -16,18 +16,15 @@ static char *rcsid_checksum_c = "$Header: /afs/.athena.mit.edu/astaff/project/mo
  */
 
 int
-checksum_fd(fd1)
-    int fd1;
+checksum_file(path)
+char *path;
 {
-    int fd;
     register int sum;
     register int ch;
     register FILE *f;
 
-    fd = dup(fd1);
     sum = 0;
-    (void) lseek(fd, 0, L_SET);
-    f = fdopen(fd, "r");
+    f = fopen(path, "r");
     while ((ch = getc(f)) != EOF) {
 	sum = (sum + ch) & ((1<<24)-1);
     }

@@ -1,4 +1,4 @@
-/* $Id: acl.pc,v 1.1 2000-01-06 21:13:50 danw Exp $
+/* $Id: acl.pc,v 1.2 2000-01-24 03:42:11 danw Exp $
  *
  * This generates acl files for various servers.
  *
@@ -23,7 +23,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/acl.pc,v 1.1 2000-01-06 21:13:50 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/acl.pc,v 1.2 2000-01-24 03:42:11 danw Exp $");
 
 char *whoami = "acl.gen";
 char *db = "moira/moira";
@@ -40,7 +40,7 @@ void sqlerr(void);
 int main(int argc, char **argv)
 {
   EXEC SQL BEGIN DECLARE SECTION;
-  int mid, lid;
+  int mid, lid, discuss_uid = -1;
   char target[ACL_TARGET_SIZE], kind[ACL_KIND_SIZE];
   char host[MACHINE_NAME_SIZE];
   EXEC SQL END DECLARE SECTION;
@@ -86,20 +86,36 @@ int main(int argc, char **argv)
 	  strtrim(target);
 	  strtrim(kind);
 
-	  out = tarfile_start(tf, target, 0644, 0, 0, "root", "root", now);
+	  if (!strcasecmp(kind, "discuss"))
+	    {
+	      /* Discuss acls need to be owned by discuss. */
+	      if (discuss_uid == -1)
+		{
+		  EXEC SQL SELECT unix_uid INTO :discuss_uid
+		    FROM users WHERE login = 'discuss';
+		}
+	      out = tarfile_start(tf, target, 0644, discuss_uid, 1,
+				  "discuss", "daemon", now);
+	      dump_discuss_acl(out, lid);
+	    }
+	  else
+	    {
+	      /* Otherwise own by root? Perhaps the acl table should
+	       * say, really...
+	       */
+	      out = tarfile_start(tf, target, 0644, 0, 0, "root", "root", now);
 
-	  if (!strcasecmp(kind, "kerberos4"))
-	    dump_krb_acl(out, "LIST", lid, 4);
-	  else if (!strcasecmp(kind, "kerberos5"))
-	    dump_krb_acl(out, "LIST", lid, 5);
-	  else if (!strcasecmp(kind, "access"))
-	    dump_access_file(out, lid);
-	  else if (!strcasecmp(kind, "discuss"))
-	    dump_discuss_acl(out, lid);
-	  else if (!strcasecmp(kind, "passwd"))
-	    dump_passwd_file(out, lid);
-	  else if (!strcasecmp(kind, "group"))
-	    dump_group_file(out, lid);
+	      if (!strcasecmp(kind, "kerberos4"))
+		dump_krb_acl(out, "LIST", lid, 4);
+	      else if (!strcasecmp(kind, "kerberos5"))
+		dump_krb_acl(out, "LIST", lid, 5);
+	      else if (!strcasecmp(kind, "access"))
+		dump_access_file(out, lid);
+	      else if (!strcasecmp(kind, "passwd"))
+		dump_passwd_file(out, lid);
+	      else if (!strcasecmp(kind, "group"))
+		dump_group_file(out, lid);
+	    }
 
 	  tarfile_end(tf);
 	}
@@ -180,25 +196,35 @@ void dump_discuss_acl(FILE *out, int lid)
   struct save_queue *sq = get_acl("LIST", lid, merge_discuss_acls);
   struct imember *m;
   char name[STRINGS_STRING_SIZE], *bits;
+  char starbits[8] = { 0 };
   int num;
 
   num = 0;
   while (sq_get_data(sq, &m))
-    num++;
+    {
+      if (m->type != 'S' || !strcmp(m->name, "*"))
+	num++;
+    }
 
   fprintf(out, "%d\n", num);
   while (sq_remove_data(sq, &m))
     {
+      bits = merge_discuss_acls(m->tag, "");
       if (m->type != 'S')
 	{
 	  canon_krb(m, 4, name, sizeof(name));
-	  bits = merge_discuss_acls(m->tag, "");
-	  fprintf(out, "%s    %s\n", bits, name);
-	  free(bits);
+	  fprintf(out, "%s:%s\n", bits, name);
 	}
+      else if (!strcmp(m->name, "*"))
+	strcpy(starbits, bits);
+      free(bits);
       freeimember(m);
     }
   sq_destroy(sq);
+
+  /* Discuss ACLs are ordered, so "*" must come last. */
+  if (*starbits)
+    fprintf(out, "%s:*\n", starbits);
 }
 
 char *merge_discuss_acls(char *one, char *two)

@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.50 1990-03-30 19:18:16 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.51 1990-04-09 12:43:51 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_qsupport_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.50 1990-03-30 19:18:16 mar Exp $";
+static char *rcsid_qsupport_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.51 1990-04-09 12:43:51 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -463,6 +463,9 @@ int setup_dmac(q, argv)
 ##  repeat retrieve (flag = any(printcap.mach_id where printcap.mach_id=@id))
     if (flag)
 	return(MR_IN_USE);
+##  repeat retrieve (flag = any(printcap.quotaserver where printcap.quotaserver=@id))
+    if (flag)
+	return(MR_IN_USE);
 ##  repeat retrieve (flag = any(palladium.mach_id where palladium.mach_id=@id))
     if (flag)
 	return(MR_IN_USE);
@@ -564,6 +567,10 @@ int setup_dlis(q, argv)
 ##			servers.acl_type = "LIST"))
     if (flag)
 	return(MR_IN_USE);
+##  repeat retrieve (flag = any(quotas.entity_id where quotas.entity_id=@id and
+##			quotas.type = "GROUP"))
+    if (flag)
+	return(MR_IN_USE);
 ##  repeat retrieve (flag=any(hostaccess.acl_id where hostaccess.acl_id=@id and
 ##			hostaccess.acl_type = "LIST"))
     if (flag)
@@ -660,11 +667,11 @@ int setup_dshi(q, argv)
 setup_afil(q, argv)
     struct query *q;
     char *argv[];
-{
-    char *type;
+##{
+    char *type, *name;
     int mach_id;
-    char *name;
-    char *access;  
+##  int ok;
+##  char ftype[32], *access;
 
     type = argv[1];
     mach_id = *(int *)argv[2];
@@ -672,11 +679,17 @@ setup_afil(q, argv)
     access = argv[5];
     var_phys_id = 0;
 
+    sprintf(ftype, "fs_access_%s", type);
+##  retrieve (ok = any(alias.trans where alias.name = ftype and
+##			     alias.type = "TYPE" and alias.trans = access))
+    if (ingres_errno) return(mr_errcode);
+    if (ok == 0) return(MR_FILESYS_ACCESS);
+
     if (!strcmp(type, "NFS"))
 	return (check_nfs(mach_id, name, access));
     else
 	return(MR_SUCCESS);
-}
+##}
 
 
 /* Verify the arguments, depending on the FStype.  Also, if this is an
@@ -690,9 +703,9 @@ setup_ufil(q, argv, cl)
     client *cl;
 ##{
     int mach_id, status;
-    char *type, *name, *access;  
+    char *type, *name;  
 ##  int fid, total, who;
-##  char *entity;
+##  char *entity, ftype[32], *access;
 
     type = argv[2];
     mach_id = *(int *)argv[3];
@@ -703,6 +716,12 @@ setup_ufil(q, argv, cl)
     who = cl->client_id;
     entity = cl->entity;
 
+    sprintf(ftype, "fs_access_%s", type);
+##  retrieve (total = any(alias.trans where alias.name = ftype and
+##			     alias.type = "TYPE" and alias.trans = access))
+    if (ingres_errno) return(mr_errcode);
+    if (total == 0) return(MR_FILESYS_ACCESS);
+
     if (!strcmp(type, "NFS")) {
 	status = check_nfs(mach_id, name, access);
 ##	replace quota (phys_id = var_phys_id) where quota.filsys_id = fid
@@ -710,7 +729,8 @@ setup_ufil(q, argv, cl)
 	return(status);
     } else if (!strcmp(type, "AFS")) {
 	total = 0;
-##	retrieve (total = sum(quota.quota where quota.filsys_id = fid))
+##	retrieve (total = sum(quota.quota where quota.filsys_id = fid
+##			      and quota.phys_id != 0))
 	if (ingres_errno) return(mr_errcode);
 	if (total != 0) {
 ##	    append quota (quota = total, filsys_id = fid,
@@ -742,10 +762,6 @@ setup_ufil(q, argv, cl)
     register int status;
     register char *cp1;
     register char *cp2;
-
-    caccess = (isupper(*access)) ? tolower(*access) : *access;
-    if (caccess != 'r' && caccess != 'w' && caccess != 'n')
-      return(MR_FILESYS_ACCESS);
 
     status = MR_NFS;
 ##  range of np is nfsphys

@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.10 1988-08-09 19:46:52 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.11 1988-09-01 16:02:47 mar Exp $";
 #endif lint
 
 /*	This is the file user.c for the SMS Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.10 1988-08-09 19:46:52 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.11 1988-09-01 16:02:47 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -34,6 +34,10 @@
 #define UID   1
 #define BY_NAME  2
 #define CLASS 3
+
+#define DEFAULT_SHELL "/bin/csh"
+#define DEFAULT_CLASS "?"
+
 
 /*	Function Name: UserState
  *	Description: Convert a numeric state into a descriptive string.
@@ -110,13 +114,13 @@ char ** info;
 {
     info[U_NAME] = Strsave(UNIQUE_LOGIN);
     info[U_UID] = Strsave(UNIQUE_UID);
-    info[U_SHELL] = Strsave(DEFAULT_NONE);
+    info[U_SHELL] = Strsave(DEFAULT_SHELL);
     info[U_LAST] = Strsave(DEFAULT_NONE);
     info[U_FIRST] = Strsave(DEFAULT_NONE);
     info[U_MIDDLE] = Strsave(DEFAULT_NONE);
     info[U_STATE] = Strsave(DEFAULT_NO);
     info[U_MITID] = Strsave(DEFAULT_NONE);
-    info[U_CLASS] = Strsave(DEFAULT_NONE);
+    info[U_CLASS] = Strsave(DEFAULT_CLASS);
     info[U_MODTIME] = info[U_MODBY] = info[U_MODWITH] = info[U_END] = NULL;
     return(info);
 }
@@ -156,14 +160,15 @@ Bool name;
     GetValueFromUser("User's middle name", &info[U_MIDDLE]);
     GetValueFromUser("User's status", &info[U_STATE]);
     temp_ptr = Strsave(info[U_MITID]);
-    GetValueFromUser("User's (unencrypted) MIT ID number", &temp_ptr);
+    Put_message("User's MIT ID number (type a new unencrypted number, or keep same encryption)");
+    GetValueFromUser("", &temp_ptr);
     if ( strcmp( temp_ptr, info[U_MITID] ) != 0) {
 	EncryptID(temp_buf, temp_ptr, info[U_FIRST], info[U_LAST]);
 	free(info[U_MITID]);
 	info[U_MITID] = Strsave(temp_buf);
     }
     free(temp_ptr);
-    GetValueFromUser("User's MIT Year (class)", &info[U_CLASS]);
+    GetTypeFromUser("User's MIT Year (class)", "class", &info[U_CLASS]);
     
     FreeAndClear(&info[U_MODTIME], TRUE);
     FreeAndClear(&info[U_MODBY], TRUE);

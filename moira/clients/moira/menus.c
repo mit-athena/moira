@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menus.c,v 1.8 1988-08-07 17:52:04 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menus.c,v 1.9 1988-08-30 18:44:03 mar Exp $";
 #endif lint
 
 /*	This is the file menus.c for the SMS Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menus.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menus.c,v 1.8 1988-08-07 17:52:04 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menus.c,v 1.9 1988-08-30 18:44:03 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -26,6 +26,7 @@
 #include "defs.h"
 #include "f_defs.h"
 #include "globals.h"
+
 
 /* ------------------------- Second Tier Menus ------------------------- */
 
@@ -186,6 +187,83 @@ Menu quota_menu = {
 	       RemoveUserQuota),
     SIMPLEFUNC("verbose", "Toggle Verbosity of Delete", ToggleVerboseMode)
   } 
+};
+
+Menu service_menu = {
+    NULLFUNC,
+    NULLFUNC,
+    "DCM Service Menu",
+    6,
+    {
+	{ showserv, NULLMENU, 2, {
+	    { "showserv", "Show service information" },
+	    { "service name", "Name of service: " },
+	} },
+	{ addserv, NULLMENU, 2, {
+	    { "addserv", "Add a new service" },
+	    { "service name", "Name of service: " },
+	} },
+	{ updateserv, NULLMENU, 2, {
+	    { "updateserv", "Update service information" },
+	    { "service name", "Name of service: " },
+	} },
+	{ resetsrverr, NULLMENU, 2, {
+	    { "resetsrverr", "Reset service error" },
+	    { "service name", "Name of service: " },
+	} },
+	{ resetsrvc, NULLMENU, 2, {
+	    { "resetsrvc", "Reset service state" },
+	    { "service name", "Name of service: " },
+	} },
+	{ delserv, NULLMENU, 2, {
+	    { "delserv", "Delete service info" },
+	    { "service name", "Name of service: " },
+	} },
+    }
+};
+
+Menu host_menu = {
+    NULLFUNC,
+    NULLFUNC,
+    "DCM Host Menu",
+    7,
+    {
+	{ showhost, NULLMENU, 3, {
+	    { "showhost", "Show service/host tuple information" },
+	    { "service name", "Name of service: " },
+	    { "host name", "Name of machine: " },
+	} },
+	{ addhost, NULLMENU, 3, {
+	    { "addhost", "Add a new service/host tuple" },
+	    { "service name", "Name of service: " },
+	    { "host name", "Name of machine: " },
+	} },
+	{ updatehost, NULLMENU, 3, {
+	    { "updatehost", "Update a service/host tuple" },
+	    { "service name", "Name of service: " },
+	    { "host name", "Name of machine: " },
+	} },
+	{ resethosterr, NULLMENU, 3, {
+	    { "resethosterr", "Reset service/host error" },
+	    { "service name", "Name of service: " },
+	    { "host name", "Name of machine: " },
+	} },
+	{ resethost, NULLMENU, 3, {
+	    { "resethost", "Reset service/host state" },
+	    { "service name", "Name of service: " },
+	    { "host name", "Name of machine: " },
+	} },
+	{ sethostor, NULLMENU, 3, {
+	    { "override", "Set service/host override" },
+	    { "service name", "Name of service: " },
+	    { "host name", "Name of machine: " },
+	} },
+	{ delhost, NULLMENU, 3, {
+	    { "delhost", "Delete service/host tuple" },
+	    { "service name", "Name of service: " },
+	    { "host name", "Name of machine: " },
+	} },
+    }
 };
 
 /* ------------------------- First Tier Menus ------------------------- */
@@ -419,6 +497,52 @@ Menu user_menu = {
   }
 };
 
+Menu dcm_menu = {
+    NULLFUNC,
+    NULLFUNC,
+    "DCM Menu",
+    6,
+    {
+	SIMPLEFUNC("enable", "Enable/disable DCM", EnableDcm),
+	SUBMENU("service", "DCM Service Menu", &service_menu),
+	SUBMENU("host", "DCM Host Menu", &host_menu),
+	SIMPLEFUNC("active", "Display entries currently being updated",
+		   InProgress),
+	SIMPLEFUNC("failed", "Display entries with errors to be reset",
+		   DcmFailed),
+	SIMPLEFUNC("dcm", "Invoke a DCM update now", Dcm),
+    }
+};
+
+/* 
+ * Printer Menu
+ */
+
+Menu printer_menu = {
+  NULLFUNC, 
+  NULLFUNC, 
+  "Printer Menu",
+  4,
+  {
+    { GetPcap, NULLMENU, 2, {
+      {"get", "Get Printcap Entry Information"},
+      {"name", "Name of Printer: "}
+    } },
+    { AddPcap, NULLMENU, 2, {
+      {"add", "Add New Printcap Entry to Database"},
+      {"name", "name: "},
+    } },
+    { ChngPcap, NULLMENU, 2, {
+      {"change", "Update Printer Information"},
+      {"name", "name: "},
+    } },
+    { DeletePcap, NULLMENU, 2, {
+      {"delete", "Delete Printcap Entry"},
+      {"name", "Printer Name: "}
+    } }
+  }
+};
+
 /* ------------------------- Root Menu ------------------------- */
 
 /* 
@@ -429,14 +553,15 @@ Menu sms_top_menu = {
   NULLFUNC,
   NULLFUNC,
   "Sms Database Manipulation",
-  6,
+  8,
   {
     SUBMENU("cluster","Cluster Menu",&cluster_menu),
     SUBMENU("filesys","Filesystem Menu", &filesys_menu),
     SUBMENU("list","Lists and Group Menu", &list_menu),
     SUBMENU("machine","Machine Menu",&machine_menu),
     SUBMENU("nfs","NFS Physical Menu", &nfsphys_menu),
-    SUBMENU("user","User Menu", &user_menu)
+    SUBMENU("user","User Menu", &user_menu),
+    SUBMENU("printer", "Printer Menu", &printer_menu),
+    SUBMENU("dcm", "DCM Menu", &dcm_menu)
   }
 };  
-       

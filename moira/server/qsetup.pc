@@ -1,4 +1,4 @@
-/* $Id: qsetup.pc,v 2.30 1999-05-25 22:05:31 danw Exp $
+/* $Id: qsetup.pc,v 2.31 1999-07-09 03:52:36 danw Exp $
  *
  * Query setup routines
  *
@@ -21,7 +21,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsetup.pc,v 2.30 1999-05-25 22:05:31 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsetup.pc,v 2.31 1999-07-09 03:52:36 danw Exp $");
 
 extern char *whoami;
 extern int dbms_errno, mr_errcode;
@@ -1194,7 +1194,7 @@ int setup_aprn(struct query *q, char **argv, client *cl)
 		  EXEC SQL SELECT COUNT(name) INTO :usage
 		    FROM printers WHERE mach_id = :mid;
 
-		  if (best > 0 && usage < best)
+		  if (best < 0 || usage < best)
 		    {
 		      best = usage;
 		      *(int *)argv[PRN_RM + row] = mid;

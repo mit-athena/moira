@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.38 1989-08-10 14:13:45 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.39 1989-08-28 18:53:39 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_qsupport_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.38 1989-08-10 14:13:45 mar Exp $";
+static char *rcsid_qsupport_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.39 1989-08-28 18:53:39 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -58,6 +58,7 @@ access_login(q, argv, cl)
 ##  char qual[256];
 
     build_qual(q->qual, q->argc, argv, qual);
+##  range of u is users
 ##  retrieve (id = u.users_id) where qual
 ##  inquire_equel(rowcount = "rowcount")
     if (rowcount != 1 || id != cl->users_id)
@@ -115,6 +116,13 @@ access_list(q, argv, cl)
 	  return(SMS_PERM);
     }
 
+    if (!strcmp(strtrim(acl_type), "LIST")) {
+	if (!client_is_member(cl, acl_id))
+	  return(SMS_PERM);
+	else
+	  return(SMS_SUCCESS);
+    }
+
     /* check for client in access control list */
     status = find_member(acl_type, acl_id, client_type, client_id, 0);
     if (!status) return(SMS_PERM);
@@ -148,6 +156,14 @@ access_visible_list(q, argv, cl)
       return(SMS_INTERNAL);
     if (!flags)
 	return(SMS_SUCCESS);
+
+
+    if (!strcmp(strtrim(acl_type), "LIST")) {
+	if (!client_is_member(cl, acl_id))
+	  return(SMS_PERM);
+	else
+	  return(SMS_SUCCESS);
+    }
 
     /* parse client structure */
     if ((status = get_client(cl, &client_type, &client_id)) != SMS_SUCCESS)
@@ -189,6 +205,13 @@ access_vis_list_by_name(q, argv, cl)
       return(SMS_NO_MATCH);
     if (!flags)
 	return(SMS_SUCCESS);
+
+    if (!strcmp(strtrim(acl_type), "LIST")) {
+	if (!client_is_member(cl, acl_id))
+	  return(SMS_PERM);
+	else
+	  return(SMS_SUCCESS);
+    }
 
     /* parse client structure */
     if ((status = get_client(cl, &client_type, &client_id)) != SMS_SUCCESS)
@@ -261,6 +284,13 @@ access_service(q, argv, cl)
     if (rowcount > 1)
       return(SMS_PERM);
 
+    if (!strcmp(strtrim(acl_type), "LIST")) {
+	if (!client_is_member(cl, acl_id))
+	  return(SMS_PERM);
+	else
+	  return(SMS_SUCCESS);
+    }
+
     /* parse client structure */
     if ((status = get_client(cl, &client_type, &client_id)) != SMS_SUCCESS)
 	return(status);
@@ -297,12 +327,10 @@ access_filesys(q, argv, cl)
       return(SMS_PERM);
     if (users_id == cl->users_id)
       return(SMS_SUCCESS);
-    if ((status = get_client(cl, &client_type, &client_id)) != SMS_SUCCESS)
-	return(status);
-    status = find_member("LIST", list_id, client_type, client_id, 0);
-    if (status)
+    if (!client_is_member(cl, list_id))
+      return(SMS_PERM);
+    else
       return(SMS_SUCCESS);
-    return(SMS_PERM);
 ##}
 
     
@@ -359,10 +387,11 @@ int setup_dusr(q, argv)
 
     /* For now, only allow users to be deleted if their status is 0 */
 ##  repeat retrieve (flag = u.status) where u.users_id = @id
-    if (flag != 0)
+    if (flag != 0 && flag != 4)
       return(SMS_IN_USE);
 
 ##  repeat delete nfsquota where nfsquota.users_id = @id
+##  repeat delete krbmap where krbmap.users_id = @id
 ##  repeat retrieve (flag = any(imembers.member_id where imembers.member_id=@id
 ##			 and imembers.member_type = "USER"))
     if (flag)
@@ -455,6 +484,9 @@ int setup_dmac(q, argv)
     if (flag)
 	return(SMS_IN_USE);
 ##  repeat retrieve (flag = any(printcap.mach_id where printcap.mach_id=@id))
+    if (flag)
+	return(SMS_IN_USE);
+##  repeat retrieve (flag = any(palladium.mach_id where palladium.mach_id=@id))
     if (flag)
 	return(SMS_IN_USE);
 
@@ -814,6 +846,35 @@ setup_sshi(q, argv, cl)
 ##}
 
 
+/* setup add_kerberos_user_mapping: add the string to the string 
+ * table if necessary.
+ */
+
+setup_akum(q, argv, cl)
+struct query *q;
+char **argv;
+client *cl;
+##{
+##  int id, rowcount;
+##  char *name;
+
+    name = argv[1];
+##  range of s is strings
+##  repeat retrieve (id = s.string_id) where s.string = @name
+##  inquire_equel (rowcount = "rowcount")
+    if (rowcount == 0) {
+	if (q->type != APPEND) return(SMS_STRING);
+##	range of v is values
+##	retrieve (id = v.value) where v.#name = "strings_id"
+	id++;
+##	replace v (value = id) where v.#name = "strings_id"
+##	append to strings (string_id = id, string = name)
+    }
+    *(int *)argv[1] = id;
+    return(0);
+##}
+
+
 
 /* FOLLOWUP ROUTINES */
 
@@ -831,7 +892,7 @@ set_modtime(q, argv, cl)
 ##  int who;
 
     entity = cl->entity;
-    who = cl->users_id;
+    who = cl->client_id;
     table = q->rtable;
     name = argv[0];
 
@@ -855,7 +916,7 @@ set_modtime_by_id(q, argv, cl)
 ##  int who, id;
 
     entity = cl->entity;
-    who = cl->users_id;
+    who = cl->client_id;
     table = q->rtable;
     id_name = q->validate->object_id;
 
@@ -878,7 +939,7 @@ set_finger_modtime(q, argv, cl)
 ##  char *entity;
 
     entity = cl->entity;
-    who = cl->users_id;
+    who = cl->client_id;
     users_id = *(int *)argv[0];
 
 ##  repeat replace u (fmodtime = "now", fmodby = @who, fmodwith = @entity)
@@ -899,7 +960,7 @@ set_pobox_modtime(q, argv, cl)
 ##  char *entity;
 
     entity = cl->entity;
-    who = cl->users_id;
+    who = cl->client_id;
     users_id = *(int *)argv[0];
 
 ##  repeat replace users (pmodtime = "now", pmodby = @who, pmodwith = @entity)
@@ -920,7 +981,7 @@ set_uppercase_modtime(q, argv, cl)
 ##  int who;
 
     entity = cl->entity;
-    who = cl->users_id;
+    who = cl->client_id;
     table = q->rtable;
     name = argv[0];
 
@@ -944,7 +1005,7 @@ set_mach_modtime_by_id(q, argv, cl)
 ##  int who, id;
 
     entity = cl->entity;
-    who = cl->users_id;
+    who = cl->client_id;
 
     id = *(int *)argv[0];
 ##  range of m is machine
@@ -968,7 +1029,7 @@ set_cluster_modtime_by_id(q, argv, cl)
 ##  int who, id;
 
     entity = cl->entity;
-    who = cl->users_id;
+    who = cl->client_id;
 
     id = *(int *)argv[0];
 ##  range of c is cluster
@@ -991,7 +1052,7 @@ set_serverhost_modtime(q, argv, cl)
 ##  int who, id;
 
     entity = cl->entity;
-    who = cl->users_id;
+    who = cl->client_id;
 
     serv = argv[0];
     id = *(int *)argv[1];
@@ -1014,7 +1075,7 @@ set_nfsphys_modtime(q, argv, cl)
 ##  int who, id;
 
     entity = cl->entity;
-    who = cl->users_id;
+    who = cl->client_id;
 
     id = *(int *)argv[0];
     dir = argv[1];
@@ -1037,7 +1098,7 @@ set_filesys_modtime(q, argv, cl)
 ##  int who;
 
     entity = cl->entity;
-    who = cl->users_id;
+    who = cl->client_id;
 
     label = argv[0];
     if (!strcmp(q->shortname, "ufil"))
@@ -1062,7 +1123,7 @@ set_zephyr_modtime(q, argv, cl)
 ##  int who;
 
     entity = cl->entity;
-    who = cl->users_id;
+    who = cl->client_id;
 
     class = argv[0];
 
@@ -1094,9 +1155,15 @@ followup_fix_modby(q, sq, v, action, actarg, cl)
     while (sq_get_data(sq, &argv)) {
 	id = atoi(argv[i]);
 	free(argv[i]);
-	argv[i] = malloc(9);
+	argv[i] = malloc(256);
 	name = argv[i];
-##	repeat retrieve (name = users.login) where users.users_id = @id
+	if (id > 0)
+##	  repeat retrieve (name = users.login) where users.users_id = @id
+	else {
+	    id = -id;
+##	    repeat retrieve (name = strings.string) where strings.string_id = @id
+	    id = -id;
+	}
 ##	inquire_equel(rowcount = "rowcount")
 	if (rowcount != 1) {
 	    sprintf(argv[i], "#%d", id);
@@ -1132,7 +1199,7 @@ followup_ausr(q, argv, cl)
 ##  char fullname[129];
 
     login = argv[0];
-    who = cl->users_id;
+    who = cl->client_id;
     entity = cl->entity;
 
     /* build fullname */
@@ -1203,9 +1270,16 @@ followup_gpob(q, sq, v, action, actarg, cl)
 	if (!strcmp(q->shortname, "gpob")) {
 	    sid = atoi(argv[4]);
 	    free(argv[4]);
-	    argv[4] = malloc(9);
+	    argv[4] = malloc(256);
 	    name = argv[4];
-##	    repeat retrieve (name = users.login) where users.users_id = @sid
+	    if (sid > 0)
+##	      repeat retrieve (name = users.login) where users.users_id = @sid
+	    else {
+	      sid = -sid;
+##	      repeat retrieve (name = strings.string) 
+##		  where strings.string_id = @sid
+	      sid = -sid;
+	    }
 ##	    inquire_equel(rowcount = "rowcount")
 	    if (rowcount != 1)
 	      sprintf(name, "#%d", sid);
@@ -1217,6 +1291,7 @@ followup_gpob(q, sq, v, action, actarg, cl)
 	/* free saved data */
 	free(argv[0]);
 	free(argv[1]);
+	free(argv[4]);
 	free(argv);
     }
 
@@ -1253,8 +1328,14 @@ followup_glin(q, sq, v, action, actarg, cl)
 
 	id = atoi(argv[i = q->vcnt - 2]);
 	free(argv[i]);
-	name = argv[i] = malloc(9);
-##	repeat retrieve (name = users.login) where users.users_id = @id
+	name = argv[i] = malloc(256);
+	if (id > 0)
+##	  repeat retrieve (name = users.login) where users.users_id = @id
+	else {
+	  id = -id;
+##	  repeat retrieve (name = strings.string) where strings.string_id = @id
+	  id = -id;
+	}
 ##	inquire_equel(rowcount = "rowcount")
 	if (rowcount != 1)
 	  sprintf(argv[i], "#%d", id);
@@ -1329,7 +1410,7 @@ followup_amtl(q, argv, cl)
 
     list_id = *(int *)argv[0];
     entity = cl->entity;
-    who = cl->users_id;
+    who = cl->client_id;
 
 ##  range of l is list
 ##  repeat replace l (modtime = "now", modby = @who, modwith = @entity)
@@ -1352,6 +1433,65 @@ followup_amtl(q, argv, cl)
 ##}
 
 
+/* followup_gnfq: Fix the directory name & modby fields
+ *   argv[0] = filsys_id
+ *   argv[2] = ascii(quota)
+ */
+
+followup_gnfq(q, sq, v, action, actarg, cl)
+    struct query *q;
+    register struct save_queue *sq;
+    struct validate *v;
+    register int (*action)();
+    register int actarg;
+    client *cl;
+##{
+    register int j;
+    char **argv, *malloc();
+##  int id, rowcount;
+##  char *name, *label;
+
+    while (sq_get_data(sq, &argv)) {
+	id = atoi(argv[3]);
+	free(argv[3]);
+	argv[3] = malloc(256);
+	name = argv[3];
+	if (id == 0) {
+	    label = argv[0];
+##	    repeat retrieve (name = filesys.#name) where filesys.#label = @label
+	} else {
+##	    repeat retrieve (name = nfsphys.dir) where nfsphys.nfsphys_id = @id
+	}
+##	inquire_equel(rowcount = "rowcount")
+	if (rowcount != 1) {
+	    sprintf(argv[3], "#%d", id);
+	}
+
+	id = atoi(argv[6]);
+	free(argv[6]);
+	argv[6] = malloc(256);
+	name = argv[6];
+	if (id > 0)
+##	  repeat retrieve (name = users.login) where users.users_id = @id
+	else {
+	    id = -id;
+##	    repeat retrieve (name = strings.string) where strings.string_id = @id
+	    id = -id;
+	}
+##	inquire_equel(rowcount = "rowcount")
+	if (rowcount != 1) {
+	    sprintf(argv[6], "#%d", id);
+	}
+	(*action)(q->vcnt, argv, actarg);
+	for (j = 0; j < q->vcnt; j++)
+	  free(argv[j]);
+	free(argv);
+    }
+    sq_destroy(sq);
+    return(SMS_SUCCESS);
+##}
+
+
 /* followup_anfq: Add allocation to nfsphys after creating quota.
  *   argv[0] = filsys_id
  *   argv[2] = ascii(quota)
@@ -1368,7 +1508,7 @@ followup_anfq(q, argv, cl)
     fs = *(int *)argv[0];
     user = *(int *)argv[1];
     quota = atoi(argv[2]);
-    who = cl->users_id;
+    who = cl->client_id;
     entity = cl->entity;
 
 ##  repeat replace nq (modtime = "now", modby = @who, modwith = @entity)
@@ -1400,8 +1540,14 @@ followup_gzcl(q, sq, v, action, actarg, cl)
 
 	id = atoi(argv[i = q->vcnt - 2]);
 	free(argv[i]);
-	name = argv[i] = malloc(9);
-##	repeat retrieve (name = users.login) where users.users_id = @id
+	name = argv[i] = malloc(256);
+	if (id > 0)
+##	  repeat retrieve (name = users.login) where users.users_id = @id
+	else {
+	  id = -id;
+##	  repeat retrieve (name = strings.string) where strings.string_id = @id
+	  id = -id;
+	}
 ##	inquire_equel(rowcount = "rowcount")
 	if (rowcount != 1)
 	  sprintf(argv[i], "#%d", id);
@@ -1467,8 +1613,14 @@ followup_gsha(q, sq, v, action, actarg, cl)
 
 	id = atoi(argv[4]);
 	free(argv[4]);
-	name = argv[4] = malloc(9);
-##	repeat retrieve (name = users.login) where users.users_id = @id
+	name = argv[4] = malloc(256);
+	if (id > 0)
+##	  repeat retrieve (name = users.login) where users.users_id = @id
+	else {
+	  id = -id;
+##	  repeat retrieve (name = strings.string) where strings.string_id = @id
+	  id = -id;
+	}
 ##	inquire_equel(rowcount = "rowcount")
 	if (rowcount != 1)
 	  sprintf(argv[4], "#%d", id);
@@ -1584,7 +1736,7 @@ get_list_info(q, aargv, cl, action, actarg)
     char *argv[13], *malloc(), *realloc();
 ##  char *name, acl_type[9], listname[33], active[5], public[5], hidden[5];
 ##  char maillist[5], group[5], gid[6], acl_name[33], desc[256], modtime[27];
-##  char modby[9], modwith[9];
+##  char modby[256], modwith[9];
 ##  int id, rowcount, acl_id, hid, modby_id;
     int returned;
     struct save_queue *sq, *sq_create();
@@ -1598,6 +1750,7 @@ get_list_info(q, aargv, cl, action, actarg)
 	sq_save_data(sq, id);
 	rowcount++;
 ##  }
+    if (ingres_errno) return(sms_errcode);
     if (rowcount == 0)
       return(SMS_NO_MATCH);
 
@@ -1618,6 +1771,7 @@ get_list_info(q, aargv, cl, action, actarg)
 ##		desc = l.#desc, modtime = l.#modtime, modby_id = l.#modby,
 ##		modwith =l.#modwith)
 ##	    where l.list_id = @id
+	if (ingres_errno) return(sms_errcode);
 
 	if (atoi(gid) == -1)
 	    argv[6] = UNIQUE_GID;
@@ -1644,10 +1798,18 @@ get_list_info(q, aargv, cl, action, actarg)
 	} else
 	  strcpy(acl_name, "???");
 
-##	repeat retrieve (modby = users.login) where users.users_id = @modby_id
+	if (modby_id > 0)
+##	  repeat retrieve (modby = users.login) where users.users_id = @modby_id
+	else {
+	    modby_id = -modby_id;
+##	     repeat retrieve (modby = strings.string) 
+##		where strings.string_id = @modby_id
+	    modby_id = -modby_id;
+	}
 ##	inquire_equel(rowcount = "rowcount")
 	if (rowcount != 1)
-	  sprintf(modby, "#%d", id);
+	  sprintf(modby, "#%d", modby_id);
+	if (ingres_errno) return(sms_errcode);
 
 	sms_trim_args(q->vcnt, argv);
 	returned++;
@@ -1678,6 +1840,7 @@ int add_member_to_list(q, argv, cl)
     int ancestors[MAXLISTDEPTH], acount, a;
     int descendants[MAXLISTDEPTH], dcount, d;
     char *dtypes[MAXLISTDEPTH];
+    char *iargv[3];
 
 ##  range of m is imembers
     lid = *(int *)argv[0];
@@ -1697,6 +1860,7 @@ int add_member_to_list(q, argv, cl)
 ##	    endretrieve
 	}
 ##  }
+    if (ingres_errno) return(sms_errcode);
     if (acount >= MAXLISTDEPTH) {
 	return(SMS_INTERNAL);
     }
@@ -1730,6 +1894,7 @@ int add_member_to_list(q, argv, cl)
 ##	        endretrieve
 	    }
 ##	}
+	if (ingres_errno) return(sms_errcode);
 	if (error)
 	  return(SMS_INTERNAL);
     }
@@ -1754,15 +1919,21 @@ int add_member_to_list(q, argv, cl)
 ##			     where m.list_id = lid and m.member_id = mid and
 ##			     m.member_type = mtype
 	    } else {
+		incremental_clear_before();
 		if (a == 0 && d == 0)
 ##		  append imembers (list_id=lid, member_id = mid, direct = 1,
 ##				   member_type=mtype, ref_count = 1)
 		else
 ##		  append imembers (list_id=lid, member_id = mid,
 ##				   member_type=mtype, ref_count = 1)
+		iargv[0] = (char *)lid;
+		iargv[1] = mtype;
+		iargv[2] = (char *)mid;
+		incremental_after("members", 0, iargv);
 	    }
 	}
     }
+    if (ingres_errno) return(sms_errcode);
     return(SMS_SUCCESS);
 ##}
 
@@ -1780,6 +1951,7 @@ int delete_member_from_list(q, argv, cl)
     int ancestors[MAXLISTDEPTH], acount, a;
     int descendants[MAXLISTDEPTH], dcount, d;
     char *dtypes[MAXLISTDEPTH];
+    char *iargv[3];
 
 ##  range of m is imembers
     lid = *(int *)argv[0];
@@ -1788,6 +1960,7 @@ int delete_member_from_list(q, argv, cl)
 ##  repeat retrieve (exists = any(m.list_id where m.list_id=@lid and 
 ##			   m.member_id = @mid and m.member_type = @mtype
 ##			   and m.direct = 1))
+    if (ingres_errno) return(sms_errcode);
     if (!exists)
       return(SMS_NO_MATCH);
     ancestors[0] = lid;
@@ -1798,6 +1971,7 @@ int delete_member_from_list(q, argv, cl)
 	if (acount >= MAXLISTDEPTH)
 ##	  endretrieve
 ##  }
+	  if (ingres_errno) return(sms_errcode);
     if (acount >= MAXLISTDEPTH)
       return(SMS_INTERNAL);
     descendants[0] = mid;
@@ -1828,6 +2002,7 @@ int delete_member_from_list(q, argv, cl)
 	    if (dcount >= MAXLISTDEPTH)
 ##	      endretrieve
 ##	}
+	      if (ingres_errno) return(sms_errcode);
 	if (error)
 	  return(SMS_INTERNAL);
     }
@@ -1843,8 +2018,13 @@ int delete_member_from_list(q, argv, cl)
 ##		where m.list_id = @lid and m.member_id = @mid
 ##		  and m.member_type = @mtype
 	    if (cnt <= 1) {
+		iargv[0] = (char *)lid;
+		iargv[1] = mtype;
+		iargv[2] = (char *)mid;
+		incremental_before("members", 0, iargv);
 ##		delete m where m.list_id = lid and m.member_id = mid and
 ##		    m.member_type = mtype
+		incremental_clear_after();
 	    } else if (a == 0 && d == 0) {
 ##		replace m (ref_count = m.ref_count-1, direct = 0)
 ##		    where m.list_id = lid and m.member_id = mid and
@@ -1856,6 +2036,7 @@ int delete_member_from_list(q, argv, cl)
 	    }
 	}
     }
+    if (ingres_errno) return(sms_errcode);
     return(SMS_SUCCESS);
 ##}
 
@@ -2326,10 +2507,11 @@ register_user(q, argv, cl)
 ##  char *login, dir[65], *entity, *directory, machname[33];
 ##  int who, rowcount, mid, uid, users_id, flag, utype, nid, list_id, quota;
 ##  int size, alloc, pid, m_id;
+    char buffer[256], *aargv[3];
     int maxsize;
 
     entity = cl->entity;
-    who = cl->users_id;
+    who = cl->client_id;
 
     uid = atoi(argv[0]);
     login = argv[1];
@@ -2343,7 +2525,7 @@ register_user(q, argv, cl)
 
     /* find user */
 ##  repeat retrieve (users_id = u.#users_id)
-##	where u.#uid = @uid and u.status = 0
+##	where u.#uid = @uid and (u.status = 0 or u.status = 5)
 ##  inquire_equel(rowcount = "rowcount");
     if (rowcount == 0)
       return(SMS_NO_MATCH);
@@ -2351,7 +2533,8 @@ register_user(q, argv, cl)
       return(SMS_NOT_UNIQUE);
 
     /* check new login name */
-##  repeat retrieve (flag = any(u.#login where u.#login = @login))
+##  repeat retrieve (flag = any(u.#login where u.#login = @login and
+##				u.#users_id != users_id))
     if (ingres_errno) return(sms_errcode);
     if (flag) return(SMS_IN_USE);
 ##  repeat retrieve (flag = any(l.#name where l.#name = @login))
@@ -2371,6 +2554,8 @@ register_user(q, argv, cl)
       return(SMS_NO_POBOX);
 
     /* change login name, set pobox */
+    sprintf(buffer, "u.users_id = %d", users_id);
+    incremental_before("users", buffer, 0);
 ##  repeat replace u (#login = @login, status = 2, modtime = "now",
 ##		      modby = @who, modwith = @entity, potype="POP",
 ##		      pop_id = @mid, pmodtime="now", pmodby=@who,
@@ -2381,7 +2566,8 @@ register_user(q, argv, cl)
       return(SMS_INTERNAL);
     set_pop_usage(mid, 1);
     com_err(whoami, 0, "set login name to %s and pobox to %s", login,
-	    trim(machname));
+	    strtrim(machname));
+    incremental_after("users", buffer, 0);
 
     /* create group list */
     if (set_next_object_id("gid", "list"))
@@ -2392,6 +2578,7 @@ register_user(q, argv, cl)
 ##  inquire_equel(rowcount = "rowcount");
     if (rowcount != 1)
       return(SMS_INTERNAL);
+    incremental_clear_before();
 ##  repeat append list (name = @login, #list_id = @list_id, active = 1,
 ##			public = 0, hidden = 0, maillist = 0, group = 1,
 ##			#gid = values.value, desc = "User Group",
@@ -2401,11 +2588,18 @@ register_user(q, argv, cl)
 ##  inquire_equel(rowcount = "rowcount");
     if (rowcount != 1)
       return(SMS_INTERNAL);
+    sprintf(buffer, "l.list_id = %d", list_id);
+    incremental_after("list", buffer, 0);
+    aargv[0] = (char *) list_id;
+    aargv[1] = "USER";
+    aargv[2] = (char *) users_id;
+    incremental_clear_before();
 ##  repeat append imembers (#list_id = @list_id, member_type = "USER",
 ##			   member_id = @users_id, ref_count = 1, direct = 1)
 ##  inquire_equel(rowcount = "rowcount");
     if (rowcount != 1)
       return(SMS_INTERNAL);
+    incremental_after("members", 0, argv);
     com_err(whoami, 0, "group list created");
 
     /* decide where to put filesystem */
@@ -2428,6 +2622,7 @@ register_user(q, argv, cl)
     /* create filesystem */
     if (set_next_object_id("filsys_id", "filesys"))
       return(SMS_NO_ID);
+    incremental_clear_before();	
 ##  repeat append filesys (filsys_id = values.value, phys_id = @pid,
 ##			   label = @login, type = "NFS", mach_id = @m_id,
 ##			   name = @directory + "/" + @login,
@@ -2440,6 +2635,9 @@ register_user(q, argv, cl)
 ##  inquire_equel(rowcount = "rowcount");
     if (rowcount != 1)
       return(SMS_INTERNAL);
+    incremental_after("filesys", 
+	  "fs.filsys_id = values.value and values.name = \"filsys_id\"",
+		      0);
     com_err(whoami, 0, "filesys created on mach %d in %s/%s", m_id,
 	    directory, login);
 
@@ -2448,6 +2646,7 @@ register_user(q, argv, cl)
 ##  inquire_equel(rowcount = "rowcount");
     if (rowcount != 1)
       return(SMS_NO_QUOTA);
+    incremental_clear_before();
 ##  repeat append nfsquota (#users_id = @users_id, filsys_id = values.value,
 ##			    #quota = @quota, phys_id = @pid, modtime = "now",
 ##			    modby = @who, modwith = @entity)
@@ -2461,6 +2660,10 @@ register_user(q, argv, cl)
 ##  inquire_equel(rowcount = "rowcount");
     if (rowcount != 1)
       return(SMS_INTERNAL);
+    aargv[0] = login;
+    aargv[1] = login;
+    sprintf(buffer, "nq.users_id = %d and nq.filsys_id = values.value and values.name = \"filsys_id\"", users_id);
+    incremental_after("nfsquota", buffer, argv);
     com_err(whoami, 0, "quota of %d assigned", quota);
 
 ##  repeat replace tblstats (updates = tblstats.updates + 1, modtime = "now")
@@ -2884,29 +3087,6 @@ struct valobj *vo;
       return(vo->error);
     else
       return(SMS_EXISTS);
-##}
-
-
-/* This looks up a login name and returns the SMS internal ID.  It is used
- * by authenticate to put the users_id in the client structure.
- */
-
-int get_users_id(name)
-char *name;
-##{
-##  int id, rowcount;
-##  char *login;
-
-    login = name;
-
-##  range of u is users
-##  repeat retrieve (id = u.#users_id) where u.#login = @login
-##  inquire_equel (rowcount = "rowcount")
-    
-    if (rowcount == 1)
-	return(id);
-    else
-	return(0);
 ##}
 
 

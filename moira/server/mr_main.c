@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.19 1988-09-13 17:40:51 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.20 1988-12-29 18:01:03 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -16,7 +16,7 @@
  * 
  */
 
-static char *rcsid_sms_main_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.19 1988-09-13 17:40:51 mar Exp $";
+static char *rcsid_sms_main_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.20 1988-12-29 18:01:03 mar Exp $";
 
 #include <mit-copyright.h>
 #include <strings.h>
@@ -288,7 +288,6 @@ new_connection()
 	 */
 	cp = (client *)malloc(sizeof *cp);
 	bzero(cp, sizeof(*cp));
-	cp->state = CL_STARTING;
 	cp->action = CL_ACCEPT;
 	cp->con = newconn;
 	cp->id = counter++;
@@ -442,6 +441,8 @@ void reapchild()
     union wait status;
     int pid;
 
+    if (takedown)
+      return;
     while ((pid = wait3(&status, WNOHANG, (struct rusage *)0)) > 0) {
 	if  (status.w_termsig == 0 && status.w_retcode == 0)
 	  com_err(whoami, 0, "dcm started successfully");

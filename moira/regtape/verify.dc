@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/verify.dc,v 1.2 1993-01-04 16:37:54 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/verify.dc,v 1.3 1993-07-13 16:46:57 mar Exp $
  *
  * This program will verify signatures on user records in the database.
  */
@@ -23,10 +23,10 @@ char **argv;
 {
     char buf[BUFSIZ], *usercheck[100], sigbuf[256];
     SigInfo si;
-    int status, i, wait, check, debug;
+    int status, i, wait, check, debug, fix;
     EXEC SQL BEGIN DECLARE SECTION;
     char login[10], mid[32], rawsig[256], who[257];
-    int id, timestamp;
+    int id, timestamp, sms;
     EXEC SQL END DECLARE SECTION;
 
     initialize_sms_error_table();
@@ -34,7 +34,7 @@ char **argv;
     initialize_gdss_error_table();
 
     program = "sign";
-    check = debug = 0;
+    check = debug = fix = 0;
 
     for (i = 1; i < argc; i++) {
 	if (!strcmp(argv[i], "-w"))
@@ -43,12 +43,37 @@ char **argv;
 	  debug++;
 	else if (!strcmp(argv[i], "-D"))
 	  setenv("ING_SET", "set printqry");
+	else if (!strcmp(argv[i], "-fix"))
+	  fix++;
 	else if (argv[i][0] == '-')
-	  fprintf(stderr, "Usage: %s [-w] [-D]\n", argv[0]);
+	  fprintf(stderr, "Usage: %s [-w] [-D] [-fix]\n", argv[0]);
 	else usercheck[check++] = argv[i];
     }
 
     EXEC SQL CONNECT moira;
+
+    if (fix) {
+	/* Set the name of our kerberos ticket file */
+	krb_set_tkt_string("/tmp/tkt_sign");
+	status = 1;
+	while (status) {
+	    printf("Authenticating as moira.extra:\n");
+	    status = krb_get_pw_in_tkt("moira", "extra", "ATHENA.MIT.EDU",
+				       "krbtgt", "ATHENA.MIT.EDU",
+				       DEFAULT_TKT_LIFE, 0);
+	    if (status != 0)
+	      com_err(program, status + krb_err_base, " in krb_get_pw_in_tkt");
+	}
+
+	sms = 0;
+	EXEC SQL SELECT string_id INTO :sms FROM strings 
+	  WHERE string='moira.extra@ATHENA.MIT.EDU';
+	if (sms == 0) {
+	    com_err(program, 0, " failed to find string moira.extra@ATHENA.MIT.EDU in database");
+	    dest_tkt();
+	    exit(1);
+	}
+    }
 
     if (check == 0) {
 	EXEC SQL DECLARE c CURSOR FOR
@@ -74,6 +99,34 @@ char **argv;
 	    status = GDSS_Verify(buf, strlen(buf), sigbuf, &si);
 	    if (status) {
 		com_err(program, gdss2et(status), "verifying user %s", login);
+	    }
+	    if (fix && status == GDSS_ET_BADSIG) {
+	    again:
+		status = GDSS_Sign(buf, strlen(buf), sigbuf, &si);
+		if (status) {
+		    com_err(program, gdss2et(status), "signing data");
+		    continue;
+		}
+		status = GDSS_Verify(data, strlen(data), buf, &si);
+		if (status) {
+		    com_err(program, gdss2et(status), "verifying data");
+		    continue;
+		}
+		if (strlen(rawsig) > 68) {
+		    sleep(1);
+		    goto again;
+		}
+
+		timestamp = si.timestamp;
+		EXEC SQL REPEATED UPDATE users 
+		  SET signature = :rawsig, sigwho = :sms, sigdate = :timestamp
+		    WHERE login = :login;
+		if (sqlca.sqlcode != 0) {
+		    com_err(program, 0, "ingres error %d", sqlca.sqlcode);
+		    dest_tkt();
+		    exit(1);
+		}
+		EXEC SQL COMMIT WORK;
 	    }
 	    if (wait) {
 		printf("Next");
@@ -115,6 +168,34 @@ char **argv;
 			hex_dump(sigbuf);
 		    }
 		}
+		if (fix && status == GDSS_ET_BADSIG) {
+		again:
+		    status = GDSS_Sign(buf, strlen(buf), sigbuf, &si);
+		    if (status) {
+			com_err(program, gdss2et(status), "signing data");
+			continue;
+		    }
+		    status = GDSS_Verify(data, strlen(data), buf, &si);
+		    if (status) {
+			com_err(program, gdss2et(status), "verifying data");
+			continue;
+		    }
+		    if (strlen(rawsig) > 68) {
+			sleep(1);
+			goto again;
+		    }
+
+		    timestamp = si.timestamp;
+		    EXEC SQL REPEATED UPDATE users 
+		      SET signature = :rawsig, sigwho = :sms, sigdate = :timestamp
+			WHERE login = :login;
+		    if (sqlca.sqlcode != 0) {
+			com_err(program, 0, "ingres error %d", sqlca.sqlcode);
+			dest_tkt();
+			exit(1);
+		    }
+		    EXEC SQL COMMIT WORK;
+		}
 		if (wait) {
 		    printf("Next");
 		    fflush(stdout);
@@ -124,7 +205,8 @@ char **argv;
 	}
     }
 
-     exit(0);
+    dest_tkt();
+    exit(0);
 }
 
 

@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v 1.24 1991-05-13 12:57:32 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v 1.25 1993-05-04 18:04:01 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,13 +10,14 @@
  */
 
 #ifndef lint
-static char *rcsid_test_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v 1.24 1991-05-13 12:57:32 mar Exp $";
+static char *rcsid_test_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v 1.25 1993-05-04 18:04:01 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
 #include <stdio.h>
 #include <sys/types.h>
 #include <sys/file.h>
+#include <fcntl.h>
 #include <ctype.h>
 #include <moira.h>
 #include <ss.h>

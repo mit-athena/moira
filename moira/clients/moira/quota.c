@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/quota.c,v 1.13 1989-12-14 13:57:35 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/quota.c,v 1.14 1989-12-21 19:22:13 mar Exp $";
 #endif lint
 
 /*	This is the file quota.c for the SMS Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/quota.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/quota.c,v 1.13 1989-12-14 13:57:35 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/quota.c,v 1.14 1989-12-21 19:22:13 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -187,7 +187,6 @@ Bool quota;
       args[Q_LOGIN] = strsave(NOBODY);
   } else {
       GetValueFromUser("Username", &args[Q_LOGIN]);
-      if (!ValidName(args[Q_LOGIN])) return(NULL);
   }
 
   if (quota) {			/* Get and check quota. */

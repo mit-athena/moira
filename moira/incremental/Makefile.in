@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.4 1998-10-27 20:39:53 danw Exp $
+# $Id: Makefile.in,v 1.5 1998-10-30 18:18:55 danw Exp $
 
 SHELL=/bin/sh
 @SET_MAKE@
@@ -47,7 +47,7 @@ depend:
 install: all
 	$(INSTALL_PROGRAM) afs.incr $(mrbindir)
 	$(INSTALL_PROGRAM) ksrvtgt $(mrbindir)
-	@for p in afs_create.pl afs_nightly.pl afs_quota.pl afs_rename.pl afs_utils.pl; do $(INSTALL_PROGRAM) $$p $(mrbindir); done
+	@set -x; for p in afs_create.pl afs_nightly.pl afs_quota.pl afs_rename.pl afs_utils.pl; do $(INSTALL_PROGRAM) $$p $(mrbindir); done
 
 afs.incr: $(AFS_OBJS) $(MR_LIBDEP)
 	$(CC) -o $@ $(LDFLAGS) $(AFS_OBJS) $(AFS_LIBS) -lprot -lauth \

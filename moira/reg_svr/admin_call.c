@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/admin_call.c,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/admin_call.c,v 1.6 1988-08-02 15:38:33 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/admin_call.c,v 1.7 1988-08-02 21:09:53 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
@@ -13,7 +13,7 @@
  */
 
 #ifndef lint
-static char *rcsid_admin_call_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/admin_call.c,v 1.6 1988-08-02 15:38:33 mar Exp $";
+static char *rcsid_admin_call_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/admin_call.c,v 1.7 1988-08-02 21:09:53 mar Exp $";
 #endif lint
 
 #include <sys/errno.h>
@@ -25,6 +25,7 @@ static char *rcsid_admin_call_c = "$Header: /afs/.athena.mit.edu/astaff/project/
 
 #include <netdb.h>
 #include <strings.h>
+#include <ctype.h>
 #include <stdio.h>
 
 #include "admin_err.h"
@@ -91,6 +92,16 @@ int admin_call_init()
 	bcopy((char *)hp->h_addr, (char *)&admin_addr.sin_addr, hp->h_length);
 	admin_addr.sin_port = sp->s_port;
 
+	/* lowercase & truncate hostname becuase it will be used as an
+	 * instance name.
+	 */
+        {
+	    char *s;
+	    for (s = krbhost; *s && *s != '.'; s++)
+		if (isupper(*s))
+		    *s = tolower(*s);
+	    *s = 0;
+	}
 	inited = 1;
     }
     return 0;
@@ -182,7 +193,7 @@ admin_call(opcode, pname, old_passwd, new_passwd, crypt_passwd)
      * find our session key.
      */
 
-    if (status = krb_get_cred("changepw", "kerberos", krbrlm, &cred)) {
+    if (status = krb_get_cred("changepw", krbhost, krbrlm, &cred)) {
 	status += krb_err_base;
 	goto bad;
     }
@@ -252,7 +263,7 @@ admin_call(opcode, pname, old_passwd, new_passwd, crypt_passwd)
      * and know who we are.
      */
 
-    if (status = krb_mk_req(&authent, "changepw", "kerberos", krbrlm,
+    if (status = krb_mk_req(&authent, "changepw", krbhost, krbrlm,
 			   checksum)) {
 	status += krb_err_base;
 	goto bad;

@@ -1,4 +1,4 @@
-/* $Id: user.c,v 1.52 1998-09-07 18:36:13 danw Exp $
+/* $Id: user.c,v 1.53 1999-04-30 17:40:23 danw Exp $
  *
  *	This is the file user.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -32,7 +32,7 @@
 #include <gdss.h>
 #endif
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.52 1998-09-07 18:36:13 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.53 1999-04-30 17:40:23 danw Exp $");
 
 void CorrectCapitalization(char **name);
 char **AskUserInfo(char **info, Bool name);
@@ -121,7 +121,8 @@ static void PrintUserInfo(char **info)
 #ifdef HAVE_GDSS
   sprintf(buf, "%s:%s", info[U_NAME], info[U_MITID]);
   si.rawsig = NULL;
-  status = GDSS_Verify(buf, strlen(buf), info[U_SIGNATURE], &si);
+  status = GDSS_Verify((unsigned char *)buf, strlen(buf),
+		       (unsigned char *)info[U_SIGNATURE], &si);
 #else /* GDSS */
   status = 0;
 #endif /* GDSS */
@@ -331,23 +332,25 @@ char **AskUserInfo(char **info, Bool name)
       else
 	sprintf(temp_buf, "%s:%s", info[U_NAME], info[U_MITID]);
       si.rawsig = NULL;
-      i = GDSS_Verify(temp_buf, strlen(temp_buf), info[U_SIGNATURE], &si);
+      i = GDSS_Verify((unsigned char *)temp_buf, strlen(temp_buf),
+		      (unsigned char *)info[U_SIGNATURE], &si);
       /* If it's already signed OK, don't resign it. */
       if (i != GDSS_SUCCESS)
 	{
 	  free(info[U_SIGNATURE]);
 	  info[U_SIGNATURE] = malloc(GDSS_Sig_Size() * 2);
 	sign_again:
-	  i = GDSS_Sign(temp_buf, strlen(temp_buf), info[U_SIGNATURE]);
+	  i = GDSS_Sign((unsigned char *)temp_buf, strlen(temp_buf),
+			(unsigned char *)info[U_SIGNATURE]);
 	  if (i != GDSS_SUCCESS)
 	    com_err(program_name, gdss2et(i), "Failed to create signature");
 	  else
 	    {
 	      unsigned char buf[256];
 	      si.rawsig = buf;
-	      i = GDSS_Verify(temp_buf, strlen(temp_buf),
-			      info[U_SIGNATURE], &si);
-	      if (strlen(buf) > 68)
+	      i = GDSS_Verify((unsigned char *)temp_buf, strlen(temp_buf),
+			      (unsigned char *)info[U_SIGNATURE], &si);
+	      if (strlen((char *)buf) > 68)
 		goto sign_again;
 	    }
 	}

@@ -1,11 +1,14 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v $
  *	$Author: wesommer $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.7 1987-08-04 01:49:41 wesommer Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.8 1987-08-18 15:05:20 wesommer Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
  *	$Log: not supported by cvs2svn $
+Revision 1.7  87/08/04  01:49:41  wesommer
+Rearranged messages.
+
 Revision 1.6  87/08/04  01:10:02  wesommer
 Changes by mike; checked in prior to my hacking.
 
@@ -27,7 +30,7 @@ Initial revision
  */
 
 #ifndef lint
-static char *rcsid_qsupport_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.7 1987-08-04 01:49:41 wesommer Exp $";
+static char *rcsid_qsupport_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.8 1987-08-18 15:05:20 wesommer Exp $";
 #endif lint
 
 #include "query.h"
@@ -161,6 +164,42 @@ access_list(q, argv, cl)
 
     return(SMS_SUCCESS);
 ##}
+
+/**
+ ** Setup routine for add_group
+ **
+ ** Inputs: none
+ **
+ ** Description: allocate next gid and store in values table
+ **
+ **/
+
+setup_add_group(q, argv, cl, access_check)
+    struct query *q;
+    char *argv[];
+    client *cl;
+    int access_check;
+##{
+##  int ngid;
+##  int exists;
+    int status;
+
+    status = access_list(q, argv, cl);
+
+    if (status != SMS_SUCCESS || access_check) return(status);
+
+##  range of g is groups
+##  range of v is values
+##  repeat retrieve (ngid = v.value) where v.name = "gid"
+    exists = 1;
+    while (exists) {
+	ngid++;
+##      repeat retrieve (exists = any(g.#gid where g.#gid = @ngid))
+    }
+
+##  repeat replace v (value = @ngid) where v.name = "gid"
+    return(SMS_SUCCESS);
+##}
 
 /**
  ** Setup routine for add_user
@@ -207,35 +246,65 @@ setup_add_user(q, argv, cl, access_check)
 ##}
 
 /**
- ** Setup routine for add_group
+ ** followup_add_user - add finger entry, set_user_modtime
+ ** followup_delete_user - delete finger entry
  **
- ** Inputs: none
- **
- ** Description: allocate next gid and store in values table
+ ** Inputs:
+ **   argv[0] - login (add_user)
+ **   argv[0] - users_id (delete_user)
  **
  **/
 
-setup_add_group(q, argv, cl, access_check)
+followup_add_user(q, argv)
     struct query *q;
     char *argv[];
-    client *cl;
-    int access_check;
 ##{
-##  int ngid;
-##  int exists;
+##  char *login;
+##  int users_id;
+##  char first[33];
+##  char middle[33];
+##  char last[33];
+##  char fullname[128];
+    register char *cp1;
+    register char *cp2;
 
-    if (access_check) return(SMS_SUCCESS);
+    login = argv[0];
 
-##  range of g is groups
-##  range of v is values
-##  repeat retrieve (ngid = v.value) where v.name = "gid"
-    exists = 1;
-    while (exists) {
-	ngid++;
-##      repeat retrieve (exists = any(g.#gid where g.#gid = @ngid))
-    }
+    /* get user information */
+##  range of u is users
+##  repeat retrieve (users_id = u.#users_id, last = u.#last,
+##                   first = u.#first, middle = u.#middle) 
+##         where u.#login = @login
 
-##  repeat replace v (value = @ngid) where v.name = "gid"
+    /* build fullname */
+    cp2 = fullname;
+    cp1 = first;
+    while (*cp1) *cp2++ = *cp1++;
+    *cp2++ = ' ';
+    cp1 = middle;
+    if (*cp1 == 0) cp2--;
+    while (*cp1) *cp2++ = *cp1++;
+    *cp2++ = ' ';
+    cp1 = last;
+    while (*cp2++ = *cp1++) ;
+
+    /* create a finger entry */
+##  repeat append finger (#users_id = @users_id, #fullname = @fullname)
+
+    /* set modtime (creation time) on user */
+##  repeat replace u (modtime = "now") where u.#users_id = @users_id
+
+    return(SMS_SUCCESS);
+##}
+
+followup_delete_user(q, argv)
+    struct query *q;
+    char *argv[];
+##{
+##  int users_id;
+
+    users_id = *(int *)argv[0];
+##  repeat delete finger where finger.#users_id = @users_id
     return(SMS_SUCCESS);
 ##}
 
@@ -448,7 +517,73 @@ set_pop_usage(q, argv)
 
     return(SMS_SUCCESS);
 ##}
+
+/**
+ ** add_new_quota
+ ** delete_current_quota - adjust nfsphys values on xxx_quota queries.
+ **
+ ** Inputs:
+ **   argv[0] - mach_id
+ **   argv[1] - device
+ **   argv[2] - users_id
+ **   argv[3] - quota (add_new_quota only)
+ **
+ ** Description:
+ **   delete_current_quota:
+ **     - find nfsquota entry
+ **     - decrement nfsphys.allocated by nfsquota.quota
+ **   add_new_quota
+ **     - increment nfsphys.allocated by quota
+ **
+ **/
 
+add_new_quota(q, argv)
+    struct query *q;
+    register char *argv[];
+##{
+##  int mach_id;
+##  char *device;
+##  int quota;
+
+    mach_id = *(int*)argv[0];
+    device = argv[1];
+    quota = *(int *)argv[3];
+
+##  range of np is nfsphys
+##  repeat replace np (allocated = np.allocated + @quota)
+##      where np.#mach_id = @mach_id and np.#device = @device
+
+    return(SMS_SUCCESS);
+##}
+
+delete_current_quota(q, argv, cl, access_check)
+    struct query *q;
+    register char *argv[];
+    client *cl;
+    int access_check;
+##{
+##  int mach_id;
+##  int users_id;
+##  char *device;
+##  int quota;
+
+    if (access_check) return(SMS_SUCCESS);
+
+    mach_id = *(int *)argv[0];
+    device = argv[1];
+    users_id = *(int *)argv[2];
+
+##  range of np is nfsphys
+##  range of nq is nfsquota
+##  repeat retrieve (quota = nq.#quota) 
+##      where nq.#mach_id = @mach_id and nq.#device = @device and
+##            nq.#users_id = @users_id
+##  repeat replace np (allocated = np.allocated - @quota)
+##      where np.#mach_id = @mach_id and np.#device = @device
+ 
+    return(SMS_SUCCESS);
+##}
+
 /**
  ** delete_list_members - called after the delete_list query to clean up
  **			  members table.
@@ -499,7 +634,7 @@ delete_list_members(q, argv)
 
     return(SMS_SUCCESS);
 ##}
-
+
 /**
  ** grvd_support - Support routine for get_rvd_servers query
  **
@@ -554,6 +689,46 @@ grvd_support(q, sq, v, action, actarg)
     return(SMS_SUCCESS);
 ##}
 
+gars_support(q, sq, v, action, actarg)
+    struct query *q;
+    struct save_queue *sq;
+    struct validate *v;
+    int (*action)();
+    int actarg;
+##{
+    char **argv;
+    char *targv[4];
+##  char oper[33];
+##  char admin[33];
+##  char shutdown[33];
+##  int list_id;
+
+    targv[1] = oper;
+    targv[2] = admin;
+    targv[3] = shutdown;
+
+##  range of l is list
+
+    while (sq_get_data(sq, &argv)) {
+	sscanf(argv[1], "%d", &list_id);
+##      repeat retrieve (oper = l.name) where l.#list_id = @list_id
+	sscanf(argv[2], "%d", &list_id);
+##      repeat retrieve (admin = l.name) where l.#list_id = @list_id
+	sscanf(argv[3], "%d", &list_id);
+##      repeat retrieve (shutdown = l.name) where l.#list_id = @list_id
+	
+	targv[0] = argv[0];
+	(*action)(4, targv, actarg);
+	free(argv[0]);
+	free(argv[1]);
+	free(argv[2]);
+	free(argv[3]);
+    }
+
+    sq_destroy(sq);
+    return(SMS_SUCCESS);
+##}
+
 /**
  ** set_next_object_id - set next object id in values table
  **
@@ -602,13 +777,65 @@ get_query_need(q, argv, action, actarg)
     last_get_time = argv[1];
     table = q1->rtable;
 
-    if (q1->type != RETRIEVE || table == (char *)0) return(SMS_NO_MATCH);
+    if (q1->type != RETRIEVE) return(SMS_NO_MATCH);
 
 ##  range of tbs is tblstats
 ##  repeat retrieve (need = any(tbs.modtime where tbs.#table = @table and
 ##				tbs.modtime > @last_get_time))
     
     result = (need) ? "true" : "false";
+    (*action)(1, &result, actarg);
+    return(SMS_SUCCESS);
+##}
+
+/**
+ ** get_list_is_group
+ ** get_list_is_maillist
+ **
+ ** Inputs:
+ **   argv[0] - list_id
+ **
+ ** Returns:
+ **   {true | false}
+ **
+ **/
+
+get_list_is_group(q, argv, action, actarg)
+    struct query *q;
+    char *argv[];
+    int (*action)();
+    int actarg;
+##{
+##  int exists;
+##  int list_id;
+    char *result;
+
+    list_id = *(int *)argv[0];
+
+##  range of g is groups
+##  repeat retrieve (exists = any(g.#list_id where g.#list_id = @list_id))
+
+    result = (exists) ? "true" : "false";
+    (*action)(1, &result, actarg);
+    return(SMS_SUCCESS);
+##}
+
+get_list_is_maillist(q, argv, action, actarg)
+    struct query *q;
+    char *argv[];
+    int (*action)();
+    int actarg;
+##{
+##  int exists;
+##  int list_id;
+    char *result;
+
+    list_id = *(int *)argv[0];
+
+##  range of ml is maillists
+##  repeat retrieve (exists = any(ml.#list_id where ml.#list_id = @list_id))
+
+    result = (exists) ? "true" : "false";
     (*action)(1, &result, actarg);
     return(SMS_SUCCESS);
 ##}
@@ -674,7 +901,7 @@ add_locker(q, argv)
     printf("np.mach_id = %d and np.device = %s\n", mach_id, device);
     
 ##  repeat retrieve (dir = np.#dir, allocated = np.#allocated) 
-##         where np.#mach_id = @mach_id and np.#device = device
+##         where np.#mach_id = @mach_id and np.#device = @device
 ##  inquire_equel (rowcount = "rowcount")
     if (rowcount == 0) return(SMS_NFSPHYS);
 
@@ -776,6 +1003,74 @@ delete_locker(q, argv)
 ##}
 
 /**
+ ** add_user_group - create a group for a user and add user to group
+ **
+ ** Inputs:
+ **   argv[0] - login
+ **
+ ** Description:
+ **   - verify specified user exists
+ **   - create a list of same name as user
+ **   - add user as a member of the list
+ **
+ **/
+
+add_user_group(q, argv)
+    struct query *q;
+    char *argv[];
+##{
+##  char *login;
+##  int exists;
+##  int users_id;
+##  int list_id;
+##  int gid;
+
+    login = argv[0];
+
+    /* verify user exists */
+##  repeat retrieve (users_id = users.#users_id) where users.#login = @login
+##  inquire_equel (exists = "rowcount")
+    if (exists != 1) return(SMS_USER);
+
+    /* verify list does not exist */
+##  repeat retrieve (exists = any(list.name where list.name = @login))
+    if (exists) return(SMS_LIST);
+
+    /* get new list_id */
+##  repeat retrieve (list_id = values.value) where values.name = "list_id"
+    list_id++;
+##  repeat replace values (value = @list_id) where values.name = "list_id"
+
+    /* create the list */
+##  repeat append list (name = @login, #list_id = @list_id, flags = 1,
+##                      desc = "User Group", acl_id = @list_id,
+##			expdate = "today" + "5 years", modtime = "now")
+
+    /* add user to list */
+##  repeat append members (#list_id = @list_id, member_type = "USER",
+##			   member_id = @users_id)
+
+    /* get new gid */
+##  range of g is groups
+##  range of v is values
+##  repeat retrieve (gid = v.value) where v.name = "gid"
+    exists = 1;
+    while (exists) {
+	gid++;
+##      repeat retrieve (exists = any(g.#gid where g.#gid = @gid))
+    }
+##  repeat replace v (value = @gid) where v.name = "gid"
+
+    /* add list to group table */
+##  repeat append groups (#list_id = @list_id, ltid = list.tid, #gid = @gid)
+##      where list.#list_id = @list_id
+
+    /* and we're done */
+    return(SMS_SUCCESS);
+##}
+
+
+/**
  ** get_members_of_list - optimized query for retrieval of list members
  **
  ** Inputs:
@@ -804,6 +1099,7 @@ get_members_of_list(q, argv, action, actarg)
 ##  repeat retrieve (member_name = users.login)
 ##             where m.#list_id = @list_id and m.member_type = "USER"
 ##                   and m.member_id = users.users_id
+##             sort by #member_name
 ##  {
 	 (*action)(2, targv, actarg);
 ##  }
@@ -812,6 +1108,7 @@ get_members_of_list(q, argv, action, actarg)
 ##  repeat retrieve (member_name = list.name)
 ##             where m.#list_id = @list_id and m.member_type = "LIST"
 ##                   and m.member_id = list.#list_id
+##             sort by #member_name
 ##  {
 	 (*action)(2, targv, actarg);
 ##  }
@@ -820,6 +1117,7 @@ get_members_of_list(q, argv, action, actarg)
 ##  repeat retrieve (member_name = strings.string)
 ##             where m.#list_id = @list_id and m.member_type = "STRING"
 ##                   and m.member_id = strings.string_id
+##             sort by #member_name
 ##  {
 	 (*action)(2, targv, actarg);
 ##  }
@@ -828,7 +1126,43 @@ get_members_of_list(q, argv, action, actarg)
 ##}
 
 /**
- ** get_all_poboxes - optimize query for retrieval of all poboxes
+ ** get_groups_of_user - optimized query for retrieval of all groups to
+ **                      which a user belongs
+ **
+ **/
+
+get_groups_of_user(q, argv, action, actarg)
+    struct query *q;
+    char *argv[];
+    int (*action)();
+    int actarg;
+##{
+##  int users_id;
+##  char list_name[33];
+##  char gid[11];
+##  int rowcount;
+    char *targv[2];
+
+    users_id = *(int *)argv[0];
+    targv[0] = list_name;
+    targv[1] = gid;
+
+##  range of m is members
+
+##  repeat retrieve (list_name = list.name, gid = text(groups.#gid))
+##         where m.member_id = @users_id and m.member_type = "USER" and
+##               m.list_id = groups.list_id and groups.ltid = list.tid
+##         sort by #list_name
+##  {
+	 (*action)(2, targv, actarg);
+##  }
+##  inquire_equel (rowcount = "rowcount")
+
+    return ((rowcount = 0) ? SMS_NO_MATCH : SMS_SUCCESS);
+##}
+
+/**
+ ** get_all_poboxes - optimized query for retrieval of all poboxes
  **
  ** Description:
  **   - retrieve LOCAL boxes, then POP boxes, then FOREIGN boxes
@@ -918,39 +1252,48 @@ validate_fields(q, argv, vo, n)
     register int n;
 {
     register int status;
-    char buf[64];
 
     while (--n >= 0) {
 	switch (vo->type) {
 	case V_NAME:
-	    if (log_flags&LOG_RES)
+	    if (log_flags & LOG_RES)
 		com_err(whoami, 0, "validating %s in %s: %s", 
 		    vo->namefield, vo->table, argv[vo->index]);
 	    status = validate_name(argv, vo);
 	    break;
 
 	case V_ID:
-	    if (log_flags&LOG_RES)
+	    if (log_flags & LOG_RES)
 		com_err(whoami, 0, "validating %s in %s: %s", 
 		    vo->idfield, vo->table, argv[vo->index]);
 	    status = validate_id(argv, vo);
 	    break;
 
+	case V_DATE:
+	    if (log_flags & LOG_RES)
+		com_err(whoami, 0, "validating date: %s", argv[vo->index]);
+	    status = validate_date(argv, vo);
+	    break;
+
 	case V_TYPE:
-	    if (log_flags&LOG_RES)
+	    if (log_flags & LOG_RES)
 		com_err(whoami, 0, "validating %s type: %s",
 		    vo->table, argv[vo->index]);
 	    status = validate_type(argv, vo);
 	    break;
 
 	case V_TYPEDATA:
-	    if (log_flags&LOG_RES)
-		com_err(whoami, 0, "validating type-specific data: %s",
-		    argv[vo->index]);
+	    if (log_flags & LOG_RES)
+		com_err(whoami, 0, "validating typed data (%s): %s",
+		    argv[vo->index - 1], argv[vo->index]);
 	    status = validate_typedata(q, argv, vo);
 	    break;
 
 	case V_FOLLOWUP:
+	    status = SMS_EXISTS;
+	    break;
+
+	case V_SORT:
 	    status = SMS_EXISTS;
 	    break;
 
@@ -1000,6 +1343,22 @@ validate_name(argv, vo)
 ##  retrieve (rowcount = countu(table.namefield 
 ##            where table.namefield = name))
     return ((rowcount == 1) ? SMS_EXISTS : vo->error);
+##}
+
+validate_date(argv, vo)
+    char *argv[];
+    struct valobj *vo;
+##{
+##  char *idate;
+##  double dd;
+##  int errorno;
+
+    idate = argv[vo->index];
+
+##  retrieve (dd = interval("years", date(idate) - date("today")))
+##  inquire_equel (errorno = "errorno")
+    if (errorno != 0 || dd > 5.0) return(SMS_DATE);
+    return(SMS_SUCCESS);
 ##}
 
 validate_type(argv, vo)

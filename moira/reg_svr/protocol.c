@@ -1,4 +1,4 @@
-/* $Id: protocol.c,v 1.1 1998-07-22 14:55:25 danw Exp $
+/* $Id: protocol.c,v 1.2 1998-07-22 18:02:25 danw Exp $
  *
  * Reg_svr protocol and encryption/decryption routines
  *
@@ -28,7 +28,7 @@
 #include "global.h"
 #include "rsaref.h"
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/protocol.c,v 1.1 1998-07-22 14:55:25 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/protocol.c,v 1.2 1998-07-22 18:02:25 danw Exp $");
 
 R_RSA_PRIVATE_KEY *rsa_key;
 char *emsg[NUM_REG_ERRORS], *ename[NUM_REG_ERRORS];
@@ -269,7 +269,7 @@ void reply(reg_client *rc, int msg, char *state, char *clean, char *data,
   junk = lrand48();
   memcpy(buf + 7, &junk, 4);
   nrand = seed48(rc->random);
-  memcpy(rc->random, nrand, 48);
+  memcpy(rc->random, nrand, 6);
 
   memcpy(buf + 11, "v1", 3);
   memcpy(buf + 14, state, len = strlen(state) + 1);

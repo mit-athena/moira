@@ -1,0 +1,282 @@
+/**/#	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/util/imake.includes/config.Imakefile,v $
+/**/#	$Author: mar $
+/**/#	$Id: config.Imakefile,v 1.1 1990-08-20 17:16:50 mar Exp $
+/**/#
+
+/* 
+ * Configuration options.
+ */
+
+/* GLOBAL_CDEFS are passed to every C compile statement */
+/* Here are some of the common definitions which you might add to GLOBAL_CDEFS:
+ *	BSD42 - needed for compiling on BSD-type systems (selects
+ *		hostname retrieval method)
+ *	ATHENA_COMPAT - compatibility with currently-running Athena software
+ *		(old-style .klogin files, reserved ports for r* commands,
+ *		KOPT_DO_OLDSTYLE for krb_sendauth, ancient 'srvtab'
+ *		files with "Athena" instead of "ATHENA.MIT.EDU"
+ *	ATHENA - Athena-local modifications to r-commands (rlogin, rsh, rcp)
+ *	KERBEROS - should ALWAYS be turned on
+ *	VFS - Virtual File System (for most Sun NFS machines)
+ *	SYSLOG42 - if defined, use 4.2BSD-style syslog routines
+ *	POSIX - if defined, conform to POSIX library calls and data structures.
+ *	ULTRIX022 - if you are running on pre-3.0 Ultrix.
+ *	SunOS=xx - if you are running SunOS.  Set xx to 10 times the release
+ *		number (e.g. SunOS 3.5 => -DSunOS=35, SunOS 4.0 => -DSunOS=40)
+ *	NO_GETUSERSHELL - if your system doesn't have getusershell() in libc
+ *		(type 'nm /lib/libc.a | grep getusershell', if something
+ *		 shows up, you should NOT turn this flag on)
+ *	NOTTYENT - if your system doesn't have ttyent.h (4.3-style /etc/ttys)
+ *	NO_WINSIZE - if your system doesn't have struct winsize, but
+ *		has struct ttysize (e.g. older Suns) (check <sys/ioctl.h>)
+ *	NO_UIDGID_T - if your system does not have uid_t's and gid_t's
+ *		(check <sys/types.h>)
+ */
+
+GLOBAL_CDEFS= -DBSD42 -DATHENA_COMPAT -DATHENA -DKERBEROS -DVFS \
+	$(NOENCFLAG) $(DBMFLAG) $(SHMFLAG)
+
+/* SRCTOP is the root of the Kerberos source tree */
+SRCTOP=/mit/kerberos/src
+
+/* DESTDIR is the root of the tree to install into.  
+ * If null, install into the running system.
+ *
+ * DESTDIR='/' is guaranteed to cause trouble for systems which don't
+ * like double slashes in pathnames.
+ *
+ * All the installed programs and files are put into ${DESTDIR}/wherever, e.g.
+ * kinit would get installed into ${DESTDIR}${PROGDIR}/kuser
+ */
+
+DESTDIR= 
+
+/*
+ * These directories should be subdirectories of DESTDIR;
+ * they show up as absolute pathnames here.
+ */
+/*
+ * Note: USRDIR should be the parent of most of these directories.
+ * If it is not, you may get errors when installing (the installation
+ * process attempts to create USRDIR, in order to assure that all the
+ * parents of these directories exist.
+ */
+USRDIR= /usr
+SVRDIR= /usr/etc
+DAEMDIR= /usr/etc
+PROGDIR=/usr/athena
+LIBDIR= /usr/athena/lib
+USRLIB= /usr/lib
+LINTLIBDIR = /usr/lib/lint
+BINDIR= /usr/bin
+UCBDIR= /usr/ucb
+INCLDIR= /usr/include
+MANDIR= /usr/man
+ETCDIR= /etc
+SLASHBINDIR= /bin
+
+/*
+ * Set ORGANIZATION to be the desired organization string printed
+ * by the 'kinit' program.  It may have spaces.
+ */
+ORGANIZATION=MIT Project Athena
+
+/*
+ * Define NOENCRYPTION if you do not have the DES library.
+ */
+/* #define NOENCRYPTION */
+
+/*
+ * Define NDBM if you are using the 4.3 ndbm library (which is part of
+ * libc).  If not defined, 4.2 dbm will be assumed.
+ */
+#define NDBM 
+
+/*
+ * Define NEED_SETENV if you don't have setenv() in your libc.
+ * (likely for older 4.3 systems and pre-4.3 systems)
+ */
+/* #define NEED_SETENV */
+
+/*
+ * Define NEED_STRCASECMP if you don't have strcasecmp() in your libc.
+ * (likely for older 4.3 systems and pre-4.3 systems)
+ */
+/* #define NEED_STRCASECMP */
+
+/*
+ * Define NEED_GETOPT if you don't have getopt() in your libc.
+ */
+/* #define NEED_GETOPT */
+
+/*
+ * Define TKT_SHMEM if you want to use shared memory for the session
+ * keys in your ticket caches.
+ */
+/* #define TKT_SHMEM */
+
+/*
+ * LINTLIBFLAG should be the flag used to tell lint to create a lint
+ * library.  On most BSD systems, this is -C
+ */
+LINTLIBFLAG=-C
+
+KRB_LIB=$(BUILDTOP)/lib/krb/libkrb.a
+KRB_LIBDEP=$(KRB_LIB)
+KRB_LINTLIB=$(BUILDTOP)/lib/krb/llib-lkrb.ln
+KADM_LIB=$(BUILDTOP)/lib/kadm/libkadm.a
+KADM_LIBDEP=$(KADM_LIB)
+ACL_LIB=$(BUILDTOP)/lib/acl/libacl.a
+ACL_LIBDEP=$(ACL_LIB)
+
+#ifdef NOENCRYPTION
+NOENCFLAG=-DNOENCRYPTION
+DES_LIBDEP=
+DES_LIB=
+DES_LINTLIB=
+#else /* Do encryption */
+NOENCFLAG=
+DES_LIB=$(BUILDTOP)/lib/des/libdes.a
+DES_LIBDEP=$(DES_LIB)
+DES_LINTLIB=$(BUILDTOP)/lib/des/llib-ldes.ln
+#endif /* NOENCRYPTION */
+
+#ifdef NDBM
+DBMFLAG=-DNDBM
+KDB_LIB=$(BUILDTOP)/lib/kdb/libkdb.a
+KDB_LIBDEP=$(KDB_LIB)
+#else
+DBMFLAG=
+KDB_LIB=$(BUILDTOP)/lib/kdb/libkdb.a -ldbm
+KDB_LIBDEP=$(BUILDTOP)/lib/kdb/libkdb.a
+#endif
+
+#ifdef TKT_SHMEM
+SHMFLAG=-DTKT_SHMEM
+#else
+SHMFLAG=
+#endif
+/*
+ * The name of a command which compiles error tables.
+ */
+COMPILE_ET= $(BUILDTOP)/util/et/compile_et
+/*
+ * Loader argument to get the com_err library
+ */
+COM_ERR = $(BUILDTOP)/util/et/libcom_err.a
+/*
+ * Dependency name for COM_ERR, if any
+ */
+COM_ERR_DEP = $(COM_ERR)
+/*
+ * The name of a command which compiles command tables.
+ */
+MAKE_COMMANDS= $(BUILDTOP)/util/ss/make_commands
+/*
+ * Loader argument to get the ss library
+ */
+SS_LIB = $(BUILDTOP)/util/ss/libss.a
+/*
+ * Dependency name for SS_LIB, if any
+ */
+SS_LIBDEP = $(SS_LIB)
+
+/* 
+ * Define OLD_COMPAT if you want to be able to link old binaries with
+ * the new library names
+ */ 
+
+/* #define OLD_COMPAT */
+
+/*
+ * Define DEBUG_LIBS if you want to create versions of the libraries
+ * that have useful debugging information (the default rules will strip
+ * out extra symbols, including debugging symbols, from the symbol
+ * table.)  NOTE:  This only works if you do NOT turn on PROFILED_LIBS
+ * below.
+ * NOTE:  this doesn't turn on the debugging flag for your compiler; do
+ * that with the DBG make variable, below.
+ */
+/* #define DEBUG_LIBS */
+
+/*
+ * Define PROFILED_LIBS if you want to create profiled versions of the
+ * libraries used in Kerberos
+ */
+#define PROFILED_LIBS
+
+/*
+ * Define PROF_FLAG to be the flag to be passed to your C compiler to
+ * turn on profiling.  For 4.3BSD on a VAX, this should probably be -pg.
+ * For most other systems, it should probably be -p
+ */
+#define PROF_FLAG -p
+ 
+/*
+ * The name of a command which builds an object library.
+ */
+ARCHIVE= ar cru
+/*
+ * The name of another program needed to post-process the archive.
+ */
+RANLIB= ranlib
+
+
+
+/* 
+ * Install commands:  installs a file into the destination tree.
+ * These commands are called with two arguments: the source and the
+ * destination of the install.
+ */
+/* install a file */
+INSTALLFILE= install -c -m 444
+/* install a library */ 
+INSTALLLIB= install -c -m 444
+/* install a program */
+INSTALLPROG= install -c -m 555 
+/* invoke raw install program */
+INSTALLRAW= install
+/* install a program which should run as root */
+INSTALLSUID= install -c -m 4555 -o root
+
+LD=ld			/* The name of the target's linker */
+
+AS=as			/* The name of the target's assembler */
+
+LINT=lint		/* The name of `lint' */
+
+CC=cc			/* The name of the C compiler for the target */
+
+CCRO=cc -R		/* Compile with initialized data read-only 
+			   & shared (if possible) */
+
+HCC=$(CC)		/* The name of the C compiler on _this_
+			 * machine
+			 */
+
+CPP=$(CC) -E		/* A command which invokes the C preprocessor */
+
+DBG=-O			/* Debug or optimize? */
+
+HCFLAGS=$(CFLAGS)
+
+TAGGER=etags		/* Program to index source files */
+
+MAKE=make		/* name of make program */
+RM=rm -f		/* delete one or more files/directories/links */
+MV=mv			/* rename/move a file */
+CP=cp			/* copy a file */
+LN=ln -s		/* create a link */
+LPR=lpr -p		/* print a file or files */
+CHMOD=chmod		/* change mode of a file */
+
+/* turds */
+/* XXX default's uid on Athena (for tftp) */
+DEF_UID = 113
+
+#ifdef vax /*XXX*/
+#if 0
+#define VAXASM
+#endif
+#define BIG
+#endif

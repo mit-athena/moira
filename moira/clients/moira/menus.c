@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menus.c,v 1.19 1990-07-31 18:41:52 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menus.c,v 1.20 1991-01-09 18:22:23 mar Exp $";
 #endif lint
 
 /*	This is the file menus.c for the MOIRA Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menus.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menus.c,v 1.19 1990-07-31 18:41:52 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menus.c,v 1.20 1991-01-09 18:22:23 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -202,17 +202,17 @@ Menu fsgroup_menu = {
 	} },
 	{ AddFSToGroup, NULLMENU, 3, {
 	    {"add", "Add a new filesystem to an FS group"},
-	    {"group", "FS Group name:"},
-	    {"filsys", "Filesystem name:"}
+	    {"group", "FS Group name: "},
+	    {"filsys", "Filesystem name: "}
 	} },
 	{ RemoveFSFromGroup, NULLMENU, 3, {
 	    {"remove", "Remove a filesystem from an FS group"},
-	    {"group", "FS Group name:"},
-	    {"filsys", "Filesystem name:"}
+	    {"group", "FS Group name: "},
+	    {"filsys", "Filesystem name: "}
 	} },
 	{ ChangeFSGroupOrder, NULLMENU, 2, {
 	    {"order", "Change the order of filesystems in a group"},
-	    {"group", "FS Group name:"}
+	    {"group", "FS Group name: "}
 	} },
 	SIMPLEFUNC("help", "Info on Filesystem Groups", FSGroupHelp),
 	SIMPLEFUNC("verbose", "Toggle Verbosity of Delete", ToggleVerboseMode)

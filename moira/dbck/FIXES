@@ -75,7 +75,9 @@ P	Set to correct one if found
 	    else create one
    Every NFS physical's machine must exist
 	Delete entry
-P  Every quota must be for a real user
+P  Every USER quota must be for a real user
+	Delete quota
+P  Every GROUP quota must be for a real list
 	Delete quota
    Every quota must be on a real filesys
 	Delete quota

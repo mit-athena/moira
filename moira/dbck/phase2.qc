@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase2.qc,v 1.9 1990-03-19 18:44:07 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase2.qc,v 1.10 1990-04-13 17:33:36 mar Exp $
  *
  *  (c) Copyright 1988 by the Massachusetts Institute of Technology.
  *  For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
 #include <moira.h>
 #include "dbck.h"
 
-static char phase2_qc_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase2.qc,v 1.9 1990-03-19 18:44:07 mar Exp $";
+static char phase2_qc_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase2.qc,v 1.10 1990-04-13 17:33:36 mar Exp $";
 
 
 show_mcm_mach(id)
@@ -547,50 +547,90 @@ struct filesys *f;
 ##{
 ##  int id1, found = 1;
 
-##  retrieve (id1 = nfsquota.filsys_id) where nfsquota.users_id = id {
+##  retrieve (id1 = quota.filsys_id) where quota.entity_id = id and
+##	quota.type = "USER" {
       found = 0;
-      printf("NFSquota on fs %d for non-existant user %d\n", id1, id);
+      printf("Quota on fs %d for non-existant user %d\n", id1, id);
 ##  }
     return(found);
 ##}
 
-fix_quota_nouser(id)
-{
-    single_delete("nfsquota", "users_id", id);
-}
+##show_quota_nolist(id)
+##int id;
+##{
+##  int id1, found = 1;
+
+##  retrieve (id1 = quota.filsys_id) where quota.entity_id = id and
+##	quota.type = "GROUP" {
+      found = 0;
+      printf("Quota on fs %d for non-existant list %d\n", id1, id);
+##  }
+    return(found);
+##}
+
+##fix_quota_nouser(id)
+##int id;
+##{
+##  int rowcount, id1;
+
+    id1 = ((struct filesys *)hash_lookup(filesys, id))->phys_id;
+##  delete quota where quota.entity_id = id and quota.type = "USER"
+##  inquire_equel(rowcount = "rowcount")
+    if (rowcount > 0)
+      printf("%d entr%s deleted\n",rowcount, rowcount==1?"y":"ies");
+    else
+      printf("Not deleted\n");
+    modified("quota");
+##}
+
+##fix_quota_nolist(id)
+##int id;
+##{
+##  int rowcount, id1;
+
+    id1 = ((struct filesys *)hash_lookup(filesys, id))->phys_id;
+##  delete quota where quota.entity_id = id and quota.type = "GROUP"
+##  inquire_equel(rowcount = "rowcount")
+    if (rowcount > 0)
+      printf("%d entr%s deleted\n",rowcount, rowcount==1?"y":"ies");
+    else
+      printf("Not deleted\n");
+    modified("quota");
+##}
 
 ##show_quota_nofs(id)
 ##int id;
 ##{
 ##  int id1, found = 1;
-    struct user *u;
+##  char type[9];
 
-##  retrieve (id1 = nfsquota.users_id) where nfsquota.filsys_id = id {
-      u = (struct user *)hash_lookup(users, id1);
+##  retrieve (id1 = quota.entity_id, type = quota.#type)
+##	where quota.filsys_id = id {
       found = 0;
-      printf("NFSquota for user %s on non-existant filesys %d\n", u->login, id);
+      printf("Quota for %s %d on non-existant filesys %d\n", type, id1, id);
 ##  }
     return(found);
 ##}
 
 fix_quota_nofs(id)
 {
-    single_delete("nfsquota", "filsys_id", id);
+    single_delete("quota", "filsys_id", id);
 }
 
 ##show_quota_wrongpid(id)
 ##int id;
 ##{
 ##  int id1, found = 1;
+##  char type[9];
     struct user *u;
     struct filesys *f;
 
     f = (struct filesys *)hash_lookup(filesys, id);
-##  retrieve (id1 = nfsquota.users_id) where nfsquota.filsys_id = id {
-      u = (struct user *)hash_lookup(users, id1);
+##  retrieve (id1 = quota.entity_id, type = quota.#type)
+##	where quota.filsys_id = id {
       found = 0;
-      printf("NFSquota for user %s on filesys %s has wrong phys_id %d\n",
-	     u->login, f->name, id);
+      printf("Quota for %s %d on filesys %s has wrong phys_id %d\n",
+	     type, id1, f->name, id);
 ##  }
     return(found);
 ##}
@@ -601,14 +641,14 @@ fix_quota_nofs(id)
 ##  int rowcount, id1;
 
     id1 = ((struct filesys *)hash_lookup(filesys, id))->phys_id;
-##  replace nfsquota (phys_id = id1) where nfsquota.filsys_id = id and
-##	nfsquota.phys_id != id1	
+##  replace quota (phys_id = id1) where quota.filsys_id = id and
+##	quota.phys_id != id1	
 ##  inquire_equel(rowcount = "rowcount")
     if (rowcount > 0)
       printf("%d entr%s fixed\n",rowcount, rowcount==1?"y":"ies");
     else
       printf("Not fixed\n");
-    modified("nfsquota");
+    modified("quota");
 ##}
 
 ##show_srv_user(id)
@@ -838,14 +878,17 @@ phase2()
     generic_fix(sq2, show_fsg_type, "Change to \"FSTYPE\"", fix_fsg_type, 0);
     generic_delete(sq3, show_fsg_nomember, "fsgroup", "filsys_id", 1);
 
-    dprintf("Checking nfsquota...\n");
+    dprintf("Checking quotas...\n");
     sq1 = sq_create();
     sq2 = sq_create();
     sq3 = sq_create();
-##  retrieve (id1 = nfsquota.users_id, id2 = nfsquota.filsys_id,
-##	      id3 = nfsquota.phys_id, id4 = nfsquota.quota) {
-	if (id1 != 0 && !hash_lookup(users, id1))
+    sq4 = sq_create();
+##  retrieve (id1 = quota.entity_id, type = quota.#type, id2 = quota.filsys_id,
+##	      id3 = quota.phys_id, id4 = quota.quota) {
+	if (type[0] == 'U' && id1 != 0 && !hash_lookup(users, id1))
 	  sq_save_data(sq1, id1);
+	else if (type[0] == 'G' && !hash_lookup(lists, id1))
+	  sq_save_data(sq4, id1);
 	else if (!(f = (struct filesys *) hash_lookup(filesys, id2)))
 	  sq_save_data(sq2, id2);
 	else if (id3 != f->phys_id ||
@@ -858,6 +901,7 @@ phase2()
     generic_fix(sq1, show_quota_nouser, "Delete", fix_quota_nouser, 1);
     generic_fix(sq2, show_quota_nofs, "Delete", fix_quota_nofs, 0);
     generic_fix(sq3, show_quota_wrongpid, "Fix", fix_quota_physid, 1);
+    generic_fix(sq4, show_quota_nolist, "Delete", fix_quota_nolist, 1);
 
     dprintf("Not checking zephyr.\n");
 

@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase4.qc,v 1.6 1990-03-19 18:44:16 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase4.qc,v 1.7 1990-04-13 17:31:51 mar Exp $
  *
  *  (c) Copyright 1988 by the Massachusetts Institute of Technology.
  *  For copying and distribution information, please see the file
@@ -9,7 +9,7 @@
 #include <moira.h>
 #include "dbck.h"
 
-static char phase4_qc_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase4.qc,v 1.6 1990-03-19 18:44:16 mar Exp $";
+static char phase4_qc_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase4.qc,v 1.7 1990-04-13 17:31:51 mar Exp $";
 
 
 count_boxes(id, u, boxes)
@@ -171,7 +171,7 @@ count_only_setup()
 ##  }
 
     dprintf("Counting quotas...\n");
-##  retrieve (id = nfsquota.phys_id, id2 = nfsquota.quota) {
+##  retrieve (id = quota.phys_id, id2 = quota.quota) {
         if (n = (struct nfsphys  *) hash_lookup(nfsphys, id)) {
 	    n->count += id2;
 	}

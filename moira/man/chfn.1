@@ -1,5 +1,5 @@
 .TH CHFN 1 "1 Feb 1988" "Project Athena"
-\" RCSID: $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/man/chfn.1,v 1.5 1990-03-08 17:59:40 mar Exp $
+\" RCSID: $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/man/chfn.1,v 1.6 1998-01-07 17:05:25 danw Exp $
 .SH NAME
 chfn \- change finger information
 .SH SYNOPSIS
@@ -34,17 +34,17 @@ be typed.  Below is a sample run:
 .br
 .B "Nickname [Studley]:"
 .br
-.B "Home address (Ex: Bemis 304) [New House 4-601]:"
+.B "Home address (Ex: EC Bemis 514) [New House 4-601]:"
 .br
-.B "Home phone number (Ex: 4660000) [225-1234]:"
+.B "Home phone number (Ex: 3141592) [225-1234]:"
 .br
-.B "Office address (Exs: 597 Tech Square or 10-256) [E40-300M]:"
+.B "Office address (Exs: E40-342 or 2-108) [E40-300M]:"
 E40-358M
 .br
-.B "Office phone (Ex: 3-1300) []:"
+.B "Office phone (Ex: 3-7619) []:"
 1863
 .br
-.B "MIT department (Exs: EECS, Biology, Information Services) [VI-3]:"
+.B "MIT department (Exs: 9, Biology, Information Services) [VI-3]:"
 none
 .br
 .B "MIT year (Exs: 1989, '91, Faculty, Grad) ['90]:"
@@ -53,13 +53,10 @@ none
 .PP
 .I chfn
 allows phone numbers to be entered with or without hyphens.
-If only four digits are entered for a phone number, and MIT extension
-is assumed.  If the Office address ends in "M", it will assume an MIT
-room, if it ends in "T", it will assume Tech Square.
 .PP
 Note that the changes will not show up with
 .I finger
-until several hours after the database has been changed.
+until the day after the database has been changed.
 .PP
 Users may only change their own information unless they are
 Moira database administrators.

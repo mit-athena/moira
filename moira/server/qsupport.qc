@@ -1,11 +1,14 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v $
  *	$Author: wesommer $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.8 1987-08-18 15:05:20 wesommer Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.9 1987-08-22 17:41:34 wesommer Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
  *	$Log: not supported by cvs2svn $
+Revision 1.8  87/08/18  15:05:20  wesommer
+Fixed definition of add_locker.
+
 Revision 1.7  87/08/04  01:49:41  wesommer
 Rearranged messages.
 
@@ -30,7 +33,7 @@ Initial revision
  */
 
 #ifndef lint
-static char *rcsid_qsupport_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.8 1987-08-18 15:05:20 wesommer Exp $";
+static char *rcsid_qsupport_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.9 1987-08-22 17:41:34 wesommer Exp $";
 #endif lint
 
 #include "query.h"
@@ -163,6 +166,37 @@ access_list(q, argv, cl)
     if (!exists) return(SMS_PERM);
 
     return(SMS_SUCCESS);
+##}
+
+/**
+ ** access_maillist - access_list + disallow adding user-group to maillists
+ **
+ ** Inputs:
+ **   argv[0] - list_id
+ **
+ **/
+
+access_maillist(q, argv, cl)
+    struct query *q;
+    char *argv[];
+    client *cl;
+##{
+##  int list_id;
+##  int exists;
+##  char list_name[32];
+    int status;
+
+    status = access_list(q, argv, cl);
+    if (status != SMS_SUCCESS) return(status);
+    if (bcmp(q->name, "add_maillist", 12)) return(status);
+
+    list_id = *(int *)argv[0];
+##  range of g is groups
+##  repeat retrieve (exists = any(g.#list_id where g.#list_id = @list_id))
+    if (!exists) return(SMS_SUCCESS);
+##  repeat retrieve (list_name = list.name) where list.#list_id = @list_id
+##  repeat retrieve (exists = any(users.login where users.login = @list_name))
+    return ((exists) ? SMS_USER_GROUP : SMS_SUCCESS);
 ##}
 
 /**
@@ -485,12 +519,125 @@ set_finger_modtime(q, argv)
 ##  repeat replace f (modtime = "now") where f.#users_id = @users_id
     return(SMS_SUCCESS);
 ##}
+
+/**
+ ** followup_amtl - followup for amtl and dmfl; when adding a list 
+ **                 member to a maillist, add list to maillist table,
+ **                 unless list is a user-group.
+ **                 Then set_list_modtime_by_id.
+ **
+ ** Inputs:
+ **   argv[0] - list_id
+ **   argv[1] - member_type
+ **   argv[2] - member_id
+ **
+ **/
+
+followup_amtl(q, argv)
+    struct query *q;
+    char *argv[];
+##{
+##  int list_id;
+##  int member_id;
+##  int exists;
+##  char list_name[33];
+
+    list_id = *(int *)argv[0];
+
+##  repeat replace list (modtime = "now") where list.#list_id = @list_id
+
+    /* if query is not amtl or if member_type is not LIST then return */
+    if (bcmp(q->shortname, "amtl", 4) || bcmp(argv[1], "LIST", 4)) 
+	return(SMS_SUCCESS);
+
+    member_id = *(int *)argv[2];
+##  range of l is list
+##  range of ml is maillists
+##  range of g is groups
+
+    /* is parent list a mailing list? */
+##  repeat retrieve (exists = any(ml.#list_id where ml.#list_id=@list_id))
+
+    /* if not then return */
+    if (!exists) return(SMS_SUCCESS);
+
+    /* is member_list a user-group? */
+    /* is it a group? */
+##  repeat retrieve (exists = any(g.#list_id where g.#list_id = @member_id))
+    if (exists) {
+	/* get list_name */
+##      repeat retrieve (list_name = l.#name) where l.#list_id = @member_id
+	/* is list_name a username? */
+##      repeat retrieve (exists = any(users.login 
+##				      where users.login = @list_name))
+	/* yes, return error */
+	if (exists) return(SMS_USER_GROUP);
+    }
+
+    /* list is not a user-group; add list to maillist table */
+##  repeat append maillists (#list_id = @member_id, ltid = l.tid)
+##         where l.#list_id = @member_id
+
+    return(SMS_SUCCESS);
+##}
+
+/**
+ ** followup_add_pobox
+ ** followup_delete_pobox - followup routines for pobox queries
+ **
+ ** Description:
+ **   add_pobox: set pobox creation time
+ **              increment pop usage in serverhosts
+ **
+ **   delete_pobox: decrement pop usage in serverhosts
+ **
+ **/
+
+followup_add_pobox(q, argv)
+    struct query *q;
+    char *argv[];
+{
+    set_pobox_creation(q, argv);
+    set_pop_usage(q, argv, 1);
+    return(SMS_SUCCESS);
+}
+
+followup_delete_pobox(q, argv)
+    struct query *q;
+    char *argv[];
+{
+    set_pop_usage(q, argv, -1);
+    return(SMS_SUCCESS);
+}
+
+set_pobox_creation(q, argv)
+    struct query *q;
+    char *argv[];
+##{
+##  int users_id;
+##  int mach_id;
+##  char *type;
+##  char *box;
+
+    users_id = *(int *)argv[0];
+    type = argv[1];
+    mach_id = *(int *)argv[2];
+    box = argv[3];
+
+##  range of p is pobox
+##  repeat replace p (created = "now") 
+##         where p.#users_id = @users_id and p.#type = @type and
+##               p.#mach_id = @mach_id and p.#box = @box
+
+    return (SMS_SUCCESS);
+##}
 
 /**
  ** set_pop_usage - incr/decr usage count for pop server in serverhosts talbe
  **
  ** Inputs:
  **   q->name - "add_pobox" or "delete_pobox"
+ **   argv[1] - type
  **   argv[2] - mach_id
  **
  ** Description:
@@ -498,25 +645,71 @@ set_finger_modtime(q, argv)
  **
  **/
 
-set_pop_usage(q, argv)
+set_pop_usage(q, argv, count)
     struct query *q;
     char *argv[];
 ##{
 ##  int mach_id;
+##  int n;
+
+    if (bcmp(argv[1], "POP", 3)) return(SMS_SUCCESS);
 
     mach_id = *(int *)argv[2];
-##  range of sh is serverhosts
+    n = count;
 
-    if (!bcmp(q->name, "add_pobox", 10)) {
-##      repeat replace sh (value1 = sh.value1 + 1)
-##             where sh.service = "pop" and sh.#mach_id = @mach_id
-    } else if (!bcmp(q->name, "delete_pobox", 13)) {
+##  range of sh is serverhosts
+##  repeat replace sh (value1 = sh.value1 + @n)
+##         where sh.service = "pop" and sh.#mach_id = @mach_id
+
+    return(SMS_SUCCESS);
+##}
+
+/**
+ ** delete_user_poboxes - delete all poboxes for a user
+ **
+ ** Inputs:
+ **   argv[0] - users_id
+ **
+ **/
+
+delete_user_poboxes(q, argv)
+    struct query *q;
+    char *argv[];
+##{
+##  int users_id;
+##  int n;
+##  int mach_id;
+    register int i;
+    int mach_ids[10];
+
+    users_id = *(int *)argv[0];
+
+    /* get machine ids for pop server(s) on which the user currently exists */
+##  range of p is pobox
+    i = 0;
+##  repeat retrieve (mach_id = p.#mach_id) 
+##         where p.#users_id = @users_id and p.type = "POP"
+##  {
+	 mach_ids[i++] = mach_id;
+	 if (i == 10) {
+##           endretrieve
+	 }
+##  }
+
+    /* decrement counts on serverhost entries */
+##  range of sh is serverhosts
+    while (--i >= 0) {
+	mach_id = mach_ids[i];
 ##      repeat replace sh (value1 = sh.value1 - 1)
 ##             where sh.service = "pop" and sh.#mach_id = @mach_id
     }
 
+    /* delete user's poboxes */
+##  repeat delete p where p.#users_id = @users_id
+
     return(SMS_SUCCESS);
 ##}
+
 
 /**
  ** add_new_quota
@@ -1160,6 +1353,33 @@ get_groups_of_user(q, argv, action, actarg)
 
     return ((rowcount = 0) ? SMS_NO_MATCH : SMS_SUCCESS);
 ##}
+
+get_groups_of_all_users(q, argv, action, actarg)
+    struct query *q;
+    char *argv[];
+    int (*action)();
+    int actarg;
+##{
+##  char login[9];
+##  char group[33];
+##  char gid[11];
+##  int errorno;
+
+##  range of u is users
+##  range of l is list
+##  range of m is members
+##  range of g is groups
+
+##  repeat retrieve (login = u.#login, group = l.name, gid = g.#gid)
+##         where m.member_type = "USER" and m.member_id = u.users_id and
+##               u.status != 0 and m.list_id = g.list_id and
+##               g.ltid = l.tid
+##         sort by #login, #group
+
+##  inquire_equel (errorno = "errorno")
+
+    return((errorno) ? SMS_INGRES_ERR : SMS_SUCCESS);
+##}
 
 /**
  ** get_all_poboxes - optimized query for retrieval of all poboxes
@@ -1205,6 +1425,55 @@ get_all_poboxes(q, argv, action, actarg)
 ##  repeat retrieve (login=users.#login, machine=strings.string, box=p.#box)
 ##             where p.type = "FOREIGN" and p.users_id = users.users_id
 ##                   and p.mach_id = strings.string_id
+##  {
+	 (*action)(4, targv, actarg);
+##  }
+
+    return(SMS_SUCCESS);
+##}
+
+get_new_poboxes(q, argv, action, actarg)
+    struct query *q;
+    char *argv[];
+    int (*action)();
+    int actarg;
+##{
+##  char *created;
+##  char login[9];
+##  char machine[129];
+##  char box[129];
+    char *targv[4];
+
+    created = argv[0];
+
+    targv[0] = login;
+    targv[2] = machine;
+    targv[3] = box;
+
+    targv[1] = "LOCAL";
+##  range of p is pobox
+##  repeat retrieve (login=users.#login, machine = #machine.name, box=p.#box)
+##             where p.type = "LOCAL" and p.users_id = users.users_id
+##                   and p.mach_id = #machine.mach_id and
+##                   p.#created > @created
+##  {
+	 (*action)(4, targv, actarg);
+##  }
+
+    targv[1] = "POP";
+##  repeat retrieve (login=users.#login, machine = #machine.name, box=p.#box)
+##             where p.type = "POP" and p.users_id = users.users_id
+##                   and p.mach_id = #machine.mach_id and
+##                   p.#created > @created
+##  {
+	 (*action)(4, targv, actarg);
+##  }
+
+    targv[1] = "FOREIGN";
+##  repeat retrieve (login=users.#login, machine=strings.string, box=p.#box)
+##             where p.type = "FOREIGN" and p.users_id = users.users_id
+##                   and p.mach_id = strings.string_id and
+##                   p.#created > @created
 ##  {
 	 (*action)(4, targv, actarg);
 ##  }
@@ -1396,6 +1665,7 @@ validate_typedata(q, argv, vo)
 ##  int id;
 ##  int refc;
 ##  int rowcount;
+    register char *c;
 
     /* get named object */
     name = argv[vo->index];
@@ -1425,6 +1695,7 @@ validate_typedata(q, argv, vo)
 
     } else if (!strcmp(data_type, "machine")) {
 	/* MACHINE */
+	for (c = name; *c; c++) if (islower(*c)) *c = toupper(*c);
 ##      repeat retrieve (id = machine.mach_id) where machine.#name = @name
 ##      inquire_equel (rowcount = "rowcount")
 	if (rowcount != 1) return(SMS_MACHINE);

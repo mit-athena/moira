@@ -1,5 +1,5 @@
 .TH BLANCHE 1 "14 Sep 1988" "Project Athena"
-\" RCSID: $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/man/blanche.1,v 1.15 2000-08-12 23:30:42 zacheiss Exp $
+\" RCSID: $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/man/blanche.1,v 1.16 2002-06-17 18:47:12 zacheiss Exp $
 .SH NAME
 blanche \- examine and modify memberships in Moira lists
 .SH SYNOPSIS
@@ -137,6 +137,8 @@ Set the mebership acl of the list; members of this acl will be allowed
 to add and remove members of the list, but not update any other
 characteristics. The membership acl is specified like a list member,
 except that it can never be a string.
+To return a list to having default membership access control
+conditions, set the membership acl to "NONE".
 
 .SH AUTHORS
 Mark Rosenstein and Jay Berkenbilt.

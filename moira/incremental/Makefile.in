@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.9 2002-12-03 21:37:46 zacheiss Exp $
+# $Id: Makefile.in,v 1.10 2003-01-02 01:05:36 zacheiss Exp $
 
 SHELL=/bin/sh
 @SET_MAKE@
@@ -19,7 +19,7 @@ SRCTOP=@top_srcdir@
 BUILDTOP=..
 mrbindir=@mrbindir@
 
-SUBDIRS=@AFS_SUBDIRS@ @WINAD_SUBDIRS@ mailman
+SUBDIRS=@AFS_SUBDIRS@ @WINAD_SUBDIRS@
 
 KSRVTGT_OBJS=ksrvtgt.o
 

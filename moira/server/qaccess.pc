@@ -1,4 +1,4 @@
-/* $Id: qaccess.pc,v 2.24 2001-09-13 02:26:42 zacheiss Exp $
+/* $Id: qaccess.pc,v 2.25 2001-11-05 20:38:35 zacheiss Exp $
  *
  * Check access to queries
  *
@@ -17,7 +17,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qaccess.pc,v 2.24 2001-09-13 02:26:42 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qaccess.pc,v 2.25 2001-11-05 20:38:35 zacheiss Exp $");
 
 extern char *whoami;
 extern int dbms_errno, mr_errcode;
@@ -491,7 +491,8 @@ int access_host(struct query *q, char *argv[], client *cl)
       /* Non query owner must provide valid billing information. */
       if (q->version >= 8)
 	{
-	  if (subnet_status == SNET_STATUS_BILLABLE)
+	  if ((subnet_status == SNET_STATUS_BILLABLE) &&
+	      (atoi(argv[10]) != 3))
 	    {
 	      account_number = argv[8];
 	      EXEC SQL SELECT account_number FROM accountnumbers 

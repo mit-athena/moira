@@ -1,13 +1,13 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/log.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/log.c,v 1.4 1989-06-26 12:31:19 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/log.c,v 1.5 1990-03-19 13:02:25 mar Exp $
  */
 /*  (c) Copyright 1988 by the Massachusetts Institute of Technology. */
 /*  For copying and distribution information, please see the file */
 /*  <mit-copyright.h>. */
 
 #ifndef lint
-static char *rcsid_log_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/log.c,v 1.4 1989-06-26 12:31:19 mar Exp $";
+static char *rcsid_log_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/log.c,v 1.5 1990-03-19 13:02:25 mar Exp $";
 #endif	lint
 
 /*
@@ -49,14 +49,16 @@ int syslog_prio[] = {
 int log_priority;
 extern char *whoami;
 
-void sms_update_com_err_hook(whoami, code, fmt, args)
+void mr_update_com_err_hook(whoami, code, fmt, args)
     const char *whoami;
     long code;
     const char *fmt;
     va_list args;
 {
     char buf[BUFSIZ], *cp;
+#ifndef __STDC__
     FILE _strbuf;
+#endif
 
 #ifndef use_syslog
     strcpy(buf, whoami);
@@ -73,11 +75,15 @@ void sms_update_com_err_hook(whoami, code, fmt, args)
 	while (*cp)
 	    cp++;
     }
+#ifdef __STDC__
+    vsprintf(cp, fmt, args);
+#else
     _strbuf._flag = _IOWRT+_IOSTRG;
     _strbuf._ptr = cp;
     _strbuf._cnt = BUFSIZ-(cp-buf);
     _doprnt(fmt, args, &_strbuf);
     putc('\0', &_strbuf);
+#endif
 #ifdef use_syslog
     syslog(syslog_prio[log_priority], "%s", buf);
 #endif
@@ -86,7 +92,7 @@ void sms_update_com_err_hook(whoami, code, fmt, args)
 #endif
 }
 
-sms_update_initialize()
+mr_update_initialize()
 {
     static int initialized = 0;
     if (initialized)
@@ -94,7 +100,7 @@ sms_update_initialize()
 #ifdef use_syslog
     openlog(whoami, LOG_PID, LOG_DAEMON);
 #endif
-    (void) set_com_err_hook(sms_update_com_err_hook);
+    (void) set_com_err_hook(mr_update_com_err_hook);
     log_priority = log_INFO;
     initialized = 1;
 }
@@ -108,12 +114,12 @@ static char fmt[] = "[%s] %s";
 {\
      register int old_prio; \
      old_prio = log_priority; \
-     sms_update_initialize(); \
+     mr_update_initialize(); \
      com_err(whoami, 0, fmt, level, msg); \
      log_priority = old_prio; \
 }
 
-def(sms_log_error, "error", log_ERROR)
-def(sms_log_warning, "warning", log_WARNING)
-def(sms_log_info, "info", log_INFO)
-def(sms_debug, "debug", log_DEBUG)
+def(mr_log_error, "error", log_ERROR)
+def(mr_log_warning, "warning", log_WARNING)
+def(mr_log_info, "info", log_INFO)
+def(mr_debug, "debug", log_DEBUG)

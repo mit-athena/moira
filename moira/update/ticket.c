@@ -1,13 +1,13 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/ticket.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/ticket.c,v 1.7 1989-08-16 11:44:32 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/ticket.c,v 1.8 1990-03-19 13:02:33 mar Exp $
  */
 /*  (c) Copyright 1988 by the Massachusetts Institute of Technology. */
 /*  For copying and distribution information, please see the file */
 /*  <mit-copyright.h>. */
 
 #ifndef lint
-static char *rcsid_ticket_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/ticket.c,v 1.7 1989-08-16 11:44:32 mar Exp $";
+static char *rcsid_ticket_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/ticket.c,v 1.8 1990-03-19 13:02:33 mar Exp $";
 #endif	lint
 
 #include <mit-copyright.h>
@@ -43,7 +43,7 @@ static init()
 
 
 int
-get_sms_update_ticket(host, ticket)
+get_mr_update_ticket(host, ticket)
      char *host;
      KTEXT ticket;
 {
@@ -60,7 +60,7 @@ get_sms_update_ticket(host, ticket)
        code += ERROR_TABLE_BASE_krb;
      if (pass == 1) {
 	 /* maybe we're taking too long? */
-	 if ((code = get_sms_tgt()) != 0) {
+	 if ((code = get_mr_tgt()) != 0) {
 	     /* don't need phost buffer any more */
 	     com_err(whoami, code, " can't get Kerberos TGT");
 	     return(code);
@@ -72,7 +72,7 @@ get_sms_update_ticket(host, ticket)
 }
 
 int
-get_sms_tgt()
+get_mr_tgt()
 {
     register int code;
     init();

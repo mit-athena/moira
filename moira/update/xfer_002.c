@@ -1,13 +1,13 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/xfer_002.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/xfer_002.c,v 1.4 1989-08-16 21:00:13 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/xfer_002.c,v 1.5 1990-03-19 13:02:39 mar Exp $
  */
 /*  (c) Copyright 1988 by the Massachusetts Institute of Technology. */
 /*  For copying and distribution information, please see the file */
 /*  <mit-copyright.h>. */
 
 #ifndef lint
-static char *rcsid_xfer_002_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/xfer_002.c,v 1.4 1989-08-16 21:00:13 mar Exp $";
+static char *rcsid_xfer_002_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/xfer_002.c,v 1.5 1990-03-19 13:02:39 mar Exp $";
 #endif	lint
 
 #include <mit-copyright.h>
@@ -17,7 +17,7 @@ static char *rcsid_xfer_002_c = "$Header: /afs/.athena.mit.edu/astaff/project/mo
 #include <sys/param.h>
 #include <sys/file.h>
 #include <strings.h>
-#include <sms.h>
+#include <moira.h>
 
 extern CONNECTION conn;
 char buf[BUFSIZ];
@@ -41,7 +41,7 @@ extern int have_authorization, have_file, done;
  *
  * function:
  *	perform initial preparations and receive file as
- * a single string, storing it into <pathname>.sms_update.
+ * a single string, storing it into <pathname>.moira_update.
  *
  * still to be done: file locking; perform transfers in pieces instead
  * of all at once; use checksums
@@ -60,7 +60,7 @@ xfer_002(str)
 	str++;
     if (!*str) {
     failure:
-	reject_call(SMS_ARGS);
+	reject_call(MR_ARGS);
 	return;
     }
     file_size = atoi(str);
@@ -77,7 +77,7 @@ xfer_002(str)
 	goto failure;
     pathname = str;
     if (!have_authorization) {
-	reject_call(SMS_PERM);
+	reject_call(MR_PERM);
 	return;
     }
     if (done)			/* re-initialize data */
@@ -91,7 +91,7 @@ xfer_002(str)
 	have_file = 1;
 	strcpy(buf, "transferred file ");
 	strcat(buf, pathname);
-	sms_log_info(buf);
+	mr_log_info(buf);
     }
     return;
 }

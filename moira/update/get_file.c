@@ -1,13 +1,13 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/get_file.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/get_file.c,v 1.5 1989-08-16 21:00:02 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/get_file.c,v 1.6 1990-03-19 13:02:22 mar Exp $
  */
 /*  (c) Copyright 1988 by the Massachusetts Institute of Technology. */
 /*  For copying and distribution information, please see the file */
 /*  <mit-copyright.h>. */
 
 #ifndef lint
-static char *rcsid_get_file_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/get_file.c,v 1.5 1989-08-16 21:00:02 mar Exp $";
+static char *rcsid_get_file_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/get_file.c,v 1.6 1990-03-19 13:02:22 mar Exp $";
 #endif	lint
 
 #include <mit-copyright.h>
@@ -16,7 +16,7 @@ static char *rcsid_get_file_c = "$Header: /afs/.athena.mit.edu/astaff/project/mo
 #include <ctype.h>
 #include <sys/param.h>
 #include <sys/file.h>
-#include <sms.h>
+#include <moira.h>
 #include "update.h"
 
 extern CONNECTION conn;
@@ -70,7 +70,7 @@ get_file(pathname, file_size, checksum)
     int found_checksum;
     
     if (!have_authorization) {
-	reject_call(SMS_PERM);
+	reject_call(MR_PERM);
 	return(1);
     }
     if (done)			/* re-initialize data */
@@ -83,7 +83,7 @@ get_file(pathname, file_size, checksum)
 	code = errno;
 	sprintf(buf, "%s: creating file %s (get_file)",
 		error_message(code), pathname);
-	sms_log_error(buf);
+	mr_log_error(buf);
 	report_error("reporting file creation error (get_file)");
 	return(1);
     }
@@ -96,7 +96,7 @@ get_file(pathname, file_size, checksum)
 	    code = errno;
 	    sprintf(buf, "%s: verifying free disk space for %s (get_file)",
 		    error_message(code), pathname);
-	    sms_log_error(buf);
+	    mr_log_error(buf);
 	    /* do all we can to free the space */
 	    (void) unlink(pathname);
 	    (void) ftruncate(fd, 0);
@@ -134,7 +134,7 @@ get_file(pathname, file_size, checksum)
     /* validate checksum */
     found_checksum = checksum_file(pathname);
     if (checksum != found_checksum) {
-	code = SMS_MISSINGFILE;
+	code = MR_MISSINGFILE;
 	com_err(whoami, code, ": expected = %d, found = %d",
 		checksum, found_checksum);
 	report_error("checksum error");
@@ -173,7 +173,7 @@ get_block(fd, max_size)
 	if (n_wrote == -1) {
 	    code = errno;
 	    sprintf(buf, "%s: writing file (get_file)", error_message(code));
-	    sms_log_error(buf);
+	    mr_log_error(buf);
 	    string_free(&data);
 	    report_error("reporting write error (get_file)");
 	    close(fd);

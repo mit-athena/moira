@@ -1,27 +1,27 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/client.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/client.c,v 1.9 1989-09-08 14:53:05 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/client.c,v 1.10 1990-03-19 13:02:11 mar Exp $
  */
 
 #ifndef lint
-static char *rcsid_client2_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/client.c,v 1.9 1989-09-08 14:53:05 mar Exp $";
+static char *rcsid_client2_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/client.c,v 1.10 1990-03-19 13:02:11 mar Exp $";
 #endif	lint
 
 /*
  * MODULE IDENTIFICATION:
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/client.c,v 1.9 1989-09-08 14:53:05 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/client.c,v 1.10 1990-03-19 13:02:11 mar Exp $
  *	Copyright 1987, 1988 by the Massachusetts Institute of Technology.
  *	For copying and distribution information, please see the file
  *	<mit-copyright.h>.
  * DESCRIPTION:
  *	This code handles the actual distribution of data files
- *	to servers in the SMS server-update program.
+ *	to servers in the MOIRA server-update program.
  * AUTHOR:
  *	Ken Raeburn (spook@athena.MIT.EDU),
  *		MIT Project Athena/MIT Information Systems.
  * DEFINED VALUES:
  *	conn
- *	sms_update_server
+ *	mr_update_server
  */
 
 #include <mit-copyright.h>
@@ -34,8 +34,8 @@ static char *rcsid_client2_c = "$Header: /afs/.athena.mit.edu/astaff/project/moi
 #include <update.h>
 #include <errno.h>
 #include <dcm.h>
-#include <sms.h>
-#include <sms_app.h>
+#include <moira.h>
+#include <moira_site.h>
 #include <krb.h>
 
 extern char *malloc();
@@ -76,7 +76,7 @@ initialize()
 
 /*
  * FUNCTION:
- *	sms_update_server(service, machine, target_path)
+ *	mr_update_server(service, machine, target_path)
  * DESCRIPTION:
  *	Attempts to perform an update to the named machine
  *	of the named service.  The file DCM_DIR/service.out
@@ -85,7 +85,7 @@ initialize()
  * INPUT:
  *	service
  *		Name of service to be updated; used to find
- *		the source data file in the SMS data directory.
+ *		the source data file in the MR data directory.
  *	machine
  *	target_path
  *		Location to install the file.
@@ -100,7 +100,7 @@ initialize()
  */
 
 int
-sms_update_server(service, machine, target_path, instructions)
+mr_update_server(service, machine, target_path, instructions)
 char *service;
 char *machine;
 char *target_path;
@@ -117,28 +117,28 @@ char *instructions;
     int on;
     
     /* some sanity checking of arguments while we build data */
-    ASSERT(NONNULL(machine), SMS_INTERNAL, " null host name");
-    ASSERT(NONNULL(service), SMS_INTERNAL, " null service name");
-    ASSERT((strlen(machine) + strlen(service) + 2 < BUFSIZ), SMS_ARG_TOO_LONG,
+    ASSERT(NONNULL(machine), MR_INTERNAL, " null host name");
+    ASSERT(NONNULL(service), MR_INTERNAL, " null service name");
+    ASSERT((strlen(machine) + strlen(service) + 2 < BUFSIZ), MR_ARG_TOO_LONG,
 	   " machine and service names");
     sprintf(buf, "%s:%s", machine, service);
     service_updated = strsave(buf);
-    ASSERT(NONNULL(service_updated), SMS_NO_MEM, " for service name");
-    ASSERT((strlen(machine)+strlen(SERVICE_NAME)+2 < BUFSIZ), SMS_ARG_TOO_LONG,
+    ASSERT(NONNULL(service_updated), MR_NO_MEM, " for service name");
+    ASSERT((strlen(machine)+strlen(SERVICE_NAME)+2 < BUFSIZ), MR_ARG_TOO_LONG,
 	   " machine and update service name");
     sprintf(buf, "%s:%s", machine, SERVICE_NAME);
     service_address = strsave(buf);
-    ASSERT(NONNULL(service_address), SMS_NO_MEM, " for service address");
-    ASSERT(NONNULL(target_path), SMS_INTERNAL, " null target pathname");
-    ASSERT((strlen(target_path) < MAXPATHLEN), SMS_ARG_TOO_LONG,
+    ASSERT(NONNULL(service_address), MR_NO_MEM, " for service address");
+    ASSERT(NONNULL(target_path), MR_INTERNAL, " null target pathname");
+    ASSERT((strlen(target_path) < MAXPATHLEN), MR_ARG_TOO_LONG,
 	   " target pathname");
-    ASSERT2(target_path[0] == '/', SMS_NOT_UNIQUE,
+    ASSERT2(target_path[0] == '/', MR_NOT_UNIQUE,
 	   " non-absolute pathname supplied \"%s\"", target_path);
     sprintf(buf, "%s/%s.out", DCM_DIR, service);
     pathname = strsave(buf);
-    ASSERT(NONNULL(pathname), SMS_NO_MEM, " for pathname");
-    ASSERT(NONNULL(instructions), SMS_NO_MEM, " for instructions");
-    ASSERT((strlen(instructions) < MAXPATHLEN), SMS_ARG_TOO_LONG,
+    ASSERT(NONNULL(pathname), MR_NO_MEM, " for pathname");
+    ASSERT(NONNULL(instructions), MR_NO_MEM, " for instructions");
+    ASSERT((strlen(instructions) < MAXPATHLEN), MR_ARG_TOO_LONG,
 	   " instruction pathname");
     
     initialize();
@@ -149,7 +149,7 @@ char *instructions;
     if (!conn || (connection_status(conn) == CON_STOPPED)) {
 	com_err(whoami, connection_errno(conn),
 		" can't connect to update %s", service_address);
-	return(SMS_CANT_CONNECT);
+	return(MR_CANT_CONNECT);
     }
     on = 1;
     setsockopt(conn->in.fd, SOL_SOCKET, SO_KEEPALIVE, &on, sizeof(on));
@@ -167,7 +167,7 @@ char *instructions;
       goto update_failed;
 
     /* send instructions for installation */
-    strcpy(buf, "/tmp/sms-update.XXXXXX");
+    strcpy(buf, "/tmp/moira-update.XXXXXX");
     mktemp(buf);
     code = send_file(instructions, buf);
     if (code)
@@ -182,7 +182,7 @@ char *instructions;
     }
     
     /* finished updates */
-    code = SMS_SUCCESS;
+    code = MR_SUCCESS;
 
  update_failed:
     send_quit();
@@ -204,7 +204,7 @@ char *host_name;
     register int code;
     int response;
     
-    code = get_sms_update_ticket(host_name, ticket);
+    code = get_mr_update_ticket(host_name, ticket);
     if (code) {
 	return(code);
     }
@@ -234,7 +234,7 @@ char *host_name;
     if (response) {
 	return(response);
     }
-    return(SMS_SUCCESS);
+    return(MR_SUCCESS);
 }
 
 static
@@ -257,7 +257,7 @@ execute(path)
       com_err(whoami, response, "execute returned %d", response);
     if (response)
       return(response);
-    return(SMS_SUCCESS);
+    return(MR_SUCCESS);
 }
 
 send_quit()

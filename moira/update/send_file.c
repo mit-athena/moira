@@ -1,13 +1,13 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/send_file.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/send_file.c,v 1.4 1988-09-14 12:16:23 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/send_file.c,v 1.5 1990-03-19 13:02:29 mar Exp $
  */
 /*  (c) Copyright 1988 by the Massachusetts Institute of Technology. */
 /*  For copying and distribution information, please see the file */
 /*  <mit-copyright.h>. */
 
 #ifndef lint
-static char *rcsid_send_file_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/send_file.c,v 1.4 1988-09-14 12:16:23 mar Exp $";
+static char *rcsid_send_file_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/send_file.c,v 1.5 1990-03-19 13:02:29 mar Exp $";
 #endif	lint
 
 #include <mit-copyright.h>
@@ -15,7 +15,7 @@ static char *rcsid_send_file_c = "$Header: /afs/.athena.mit.edu/astaff/project/m
 #include <com_err.h>
 #include <gdb.h>
 #include <dcm.h>
-#include <sms.h>
+#include <moira.h>
 #include <sys/file.h>
 #include <sys/stat.h>
 #include <update.h>
@@ -57,12 +57,12 @@ char *target_path;
     fd = open(pathname, O_RDONLY, 0);
     if (fd < 0) {
 	com_err(whoami, errno, "unable to open %s for read", pathname);
-	return(SMS_OCONFIG);
+	return(MR_OCONFIG);
     }
     if (fstat(fd, &statb)) {
 	com_err(whoami, errno, "unable to stat %s", pathname);
 	close(fd);
-	return(SMS_OCONFIG);
+	return(MR_OCONFIG);
     }
     n_to_send = statb.st_size;
     
@@ -107,7 +107,7 @@ char *target_path;
 	if (n < 0) {
 	    com_err(whoami, errno, " reading %s for transmission", pathname);
 	    close(fd);
-	    return(SMS_ABORTED);
+	    return(MR_ABORTED);
 	}
 	MAX_STRING_SIZE(data) = n;
 	code = send_object(conn, (char *)&data, STRING_T);
@@ -150,5 +150,5 @@ char *target_path;
 	}
     }
     close(fd);
-    return(SMS_SUCCESS);
+    return(MR_SUCCESS);
 }

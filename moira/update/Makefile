@@ -1,6 +1,6 @@
 #
 # 	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/Makefile,v $
-#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/Makefile,v 1.15 1990-02-14 11:40:54 mar Exp $
+#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/Makefile,v 1.16 1990-03-19 13:04:21 mar Exp $
 #
 
 #
@@ -29,15 +29,15 @@ SSRCS=	update_server.c auth_001.c inst_001.c xfer_002.c exec_002.c \
 
 CSRCS=	client.c ticket.c send_file.c checksum.c hostname.c
 
-LIBS=	-L../lib -lsms -lgdb -lkrb -ldes -lcom_err
+LIBS=	-L../lib -lmoira -lgdb -lkrb -ldes -lcom_err
 
-all:	sms_update.o update_server sms_untar
+all:	moira_update.o update_server sms_untar
 
 update_server: ${SOBJS}
 	cc ${CFLAGS} -o update_server ${SOBJS} ${LIBS}
 
-sms_update.o: ${COBJS}
-	ld -r -o sms_update.o ${COBJS}
+moira_update.o: ${COBJS}
+	ld -r -o moira_update.o ${COBJS}
 
 sms_untar: sms_untar.c
 	cc -o sms_untar ${INCS} sms_untar.c
@@ -45,7 +45,7 @@ sms_untar: sms_untar.c
 
 clean:	
 	-rm -f ${COBJS} ${SOBJS}
-	-rm -f update_server sms_update.o
+	-rm -f update_server moira_update.o
 	-rm -f sms_untar
 	-rm -f core a.out *~ \#*
 
@@ -56,7 +56,6 @@ install: update_server
 lint:
 	lint ${LINTFLAGS} ${SSRCS}
 	lint ${LINTFLAGS} ${CSRCS}
-
 
 smskey:	smskey.c
 	${CC} ${CFLAGS} -o smskey smskey.c -ldes
@@ -70,7 +69,7 @@ update_server.o: update_server.c ../include/mit-copyright.h
 update_server.o: /usr/include/stdio.h ../include/gdb.h
 update_server.o: /usr/include/sys/types.h /usr/include/sys/time.h
 update_server.o: /usr/include/sys/time.h /usr/include/errno.h
-update_server.o: /usr/include/strings.h ../include/sms.h ../include/sms_et.h
+update_server.o: /usr/include/strings.h ../include/moira.h ../include/mr_et.h
 update_server.o: /usr/include/sys/file.h /usr/include/sys/ioctl.h
 update_server.o: /usr/include/sys/ttychars.h /usr/include/sys/ttydev.h
 update_server.o: ../include/update.h
@@ -87,11 +86,11 @@ xfer_002.o: ../include/gdb.h /usr/include/sys/types.h /usr/include/sys/time.h
 xfer_002.o: /usr/include/sys/time.h /usr/include/ctype.h
 xfer_002.o: /usr/include/sys/param.h /usr/include/machine/machparam.h
 xfer_002.o: /usr/include/sys/signal.h /usr/include/sys/file.h
-xfer_002.o: /usr/include/strings.h ../include/sms.h ../include/sms_et.h
+xfer_002.o: /usr/include/strings.h ../include/moira.h ../include/mr_et.h
 exec_002.o: exec_002.c ../include/mit-copyright.h /usr/include/stdio.h
 exec_002.o: /usr/include/sys/wait.h /usr/include/sys/signal.h
 exec_002.o: ../include/gdb.h /usr/include/sys/types.h /usr/include/sys/time.h
-exec_002.o: /usr/include/sys/time.h ../include/sms.h ../include/sms_et.h
+exec_002.o: /usr/include/sys/time.h ../include/moira.h ../include/mr_et.h
 exec_002.o: ../include/update.h
 hostname.o: hostname.c ../include/mit-copyright.h /usr/include/stdio.h
 hostname.o: /usr/include/sys/types.h /usr/include/netinet/in.h
@@ -104,7 +103,7 @@ get_file.o: ../include/gdb.h /usr/include/sys/types.h /usr/include/sys/time.h
 get_file.o: /usr/include/sys/time.h /usr/include/ctype.h
 get_file.o: /usr/include/sys/param.h /usr/include/machine/machparam.h
 get_file.o: /usr/include/sys/signal.h /usr/include/sys/file.h
-get_file.o: ../include/sms.h ../include/sms_et.h ../include/update.h
+get_file.o: ../include/moira.h ../include/mr_et.h ../include/update.h
 checksum.o: checksum.c ../include/mit-copyright.h /usr/include/stdio.h
 checksum.o: /usr/include/sys/file.h
 client.o: client.c ../include/mit-copyright.h /usr/include/stdio.h
@@ -113,8 +112,8 @@ client.o: /usr/include/sys/time.h /usr/include/sys/time.h
 client.o: /usr/include/sys/param.h /usr/include/machine/machparam.h
 client.o: /usr/include/sys/signal.h /usr/include/sys/wait.h
 client.o: /usr/include/sys/socket.h ../include/update.h /usr/include/errno.h
-client.o: ../include/dcm.h ../include/sms.h ../include/sms_et.h
-client.o: ../include/sms_app.h ../include/krb.h ../include/des.h
+client.o: ../include/dcm.h ../include/moira.h ../include/mr_et.h
+client.o: ../include/moira_site.h ../include/krb.h ../include/des.h
 ticket.o: ticket.c ../include/mit-copyright.h /usr/include/stdio.h
 ticket.o: ../include/krb.h ../include/des.h /usr/include/sys/types.h
 ticket.o: /usr/include/sys/stat.h /usr/include/strings.h ../include/update.h
@@ -122,7 +121,7 @@ ticket.o: ../include/com_err.h ../include/krb_et.h
 send_file.o: send_file.c ../include/mit-copyright.h /usr/include/stdio.h
 send_file.o: ../include/com_err.h ../include/gdb.h /usr/include/sys/types.h
 send_file.o: /usr/include/sys/time.h /usr/include/sys/time.h ../include/dcm.h
-send_file.o: ../include/sms.h ../include/sms_et.h /usr/include/sys/file.h
+send_file.o: ../include/moira.h ../include/mr_et.h /usr/include/sys/file.h
 send_file.o: /usr/include/sys/stat.h ../include/update.h
 checksum.o: checksum.c ../include/mit-copyright.h /usr/include/stdio.h
 checksum.o: /usr/include/sys/file.h

@@ -1,13 +1,13 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/update_server.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/update_server.c,v 1.6 1989-10-05 12:39:16 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/update_server.c,v 1.7 1990-03-19 13:02:36 mar Exp $
  */
 /*  (c) Copyright 1988 by the Massachusetts Institute of Technology. */
 /*  For copying and distribution information, please see the file */
 /*  <mit-copyright.h>. */
 
 #ifndef lint
-static char *rcsid_dispatch_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/update_server.c,v 1.6 1989-10-05 12:39:16 mar Exp $";
+static char *rcsid_dispatch_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/update_server.c,v 1.7 1990-03-19 13:02:36 mar Exp $";
 #endif	lint
 
 #include <mit-copyright.h>
@@ -15,7 +15,7 @@ static char *rcsid_dispatch_c = "$Header: /afs/.athena.mit.edu/astaff/project/mo
 #include <gdb.h>
 #include <errno.h>
 #include <strings.h>
-#include <sms.h>
+#include <moira.h>
 #include <sys/file.h>
 #include <sys/ioctl.h>
 #include "update.h"
@@ -65,7 +65,7 @@ err(code, fmt)
      char *fmt;
 {
      sprintf(buf, fmt, error_message(code));
-     sms_log_error(buf);
+     mr_log_error(buf);
 }
 
 main(argc, argv)
@@ -106,7 +106,7 @@ main(argc, argv)
      umask(0022);
      initialize_sms_error_table();
      initialize_krb_error_table();
-     sms_update_initialize();
+     mr_update_initialize();
 
      /* wait for connection */
      gdb_init();
@@ -120,7 +120,7 @@ main(argc, argv)
 	 exit(1);
      }
 
-     sms_log_info("got connection");
+     mr_log_info("got connection");
      /* got a connection; loop forever */
      while (1) {
 	  register char *cp;
@@ -145,8 +145,8 @@ main(argc, argv)
 	      }
 	  }
 	  sprintf(buf, "unknown request received: %s\n", STRING_DATA(str));
-	  sms_log_error(buf);
-	  code = send_int(SMS_UNKNOWN_PROC);
+	  mr_log_error(buf);
+	  code = send_int(MR_UNKNOWN_PROC);
 	  if (code) {
 	      err(connection_errno(conn), "%s: sending UNKNOWN_PROC");
 	  }
@@ -183,7 +183,7 @@ initialize()
  * any arguments are ignored
  *
  * function:
- *	closes connection from SMS
+ *	closes connection from MR
  */
 int
 quit(str)
@@ -194,7 +194,7 @@ quit(str)
 #endif /* lint */
      (void) send_ok();
      sever_connection(conn);
-     sms_log_info("Closing connection.");
+     mr_log_info("Closing connection.");
      exit(0);
 }
 
@@ -209,7 +209,7 @@ lose(msg)
     char *msg;
 {
     sprintf(buf, "%s: %s", error_message(code), msg);
-    sms_log_error(buf);
+    mr_log_error(buf);
     if (conn)
 	sever_connection(conn);
     exit(1);

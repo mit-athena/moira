@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.31 1993-01-26 15:37:26 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.32 1993-06-09 18:08:41 mar Exp $";
 #endif lint
 
 /*	This is the file user.c for the MOIRA Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.31 1993-01-26 15:37:26 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.32 1993-06-09 18:08:41 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -101,8 +101,8 @@ PrintUserInfo(info)
 char ** info;
 {
     char name[BUFSIZ], buf[BUFSIZ];
-#ifdef GDSS
     int status;
+#ifdef GDSS
     SigInfo si;
 #endif
 
@@ -206,7 +206,9 @@ char ** info;
 Bool name;
 {
     int siglen, i;
+#ifdef GDSS
     SigInfo si;
+#endif
     char temp_buf[BUFSIZ], *newname, *temp_ptr, *sig, sig_buf[BUFSIZ];
 
     if (name) {

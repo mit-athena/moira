@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v 1.27 1989-06-14 15:14:07 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v 1.28 1989-06-26 14:09:11 mar Exp $
  *
  *	Copyright (C) 1987, 1988 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_qrtn_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v 1.27 1989-06-14 15:14:07 mar Exp $";
+static char *rcsid_qrtn_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v 1.28 1989-06-26 14:09:11 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -434,15 +434,18 @@ sms_verify_query(cl, q, argc, argv_ro)
     register struct validate *v = q->validate;
     register int i;
     register int privileged = 0;
+    int len;
 
     /* copy the arguments into a local argv that we can modify */
     if (argc >= QMAXARGS)
       return(SMS_ARGS);
     for (i = 0; i < argc; i++) {
-	if (strlen(argv_ro[i]) < ARGLEN)
+	if ((len = strlen(argv_ro[i])) < ARGLEN)
 	    strcpy(Argv[i], argv_ro[i]);
 	else
 	    return(SMS_ARG_TOO_LONG);
+	if (Argv[i][len-1] == '\\')
+	  return(SMS_BAD_CHAR);
     }
 
     /* check initial query access */

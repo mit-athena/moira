@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v 1.27 1990-06-12 16:30:08 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v 1.28 1990-07-11 15:47:30 mar Exp $";
 #endif lint
 
 /*	This is the file utils.c for the MOIRA Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v 1.27 1990-06-12 16:30:08 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v 1.28 1990-07-11 15:47:30 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -285,6 +285,7 @@ char *def;
 
     (void) sprintf(tmp, "%s [%s]: ", prompt, def ? def : "");
     ans = Prompt_input(tmp, buf, buflen);
+#ifdef notdef
     if (ans == 0) {
 	if (YesNoQuestion("Are you sure you want to exit", 1)) {
 	    Cleanup_menu();
@@ -293,6 +294,7 @@ char *def;
 	Put_message("Continuing input...");
 	return(PromptWithDefault(prompt, buf, buflen, def));
     }
+#endif
     if (IS_EMPTY(buf))
 	(void) strcpy(buf, def);
     else if (!strcmp(buf, "\"\""))
@@ -830,10 +832,10 @@ char *tname;
 /*	Function Name: GetTypeFromUser
  *	Description: gets a typed value from the user
  *	Arguments: prompt string, type name, buffer pointer
- *	Returns: 
+ *	Returns: SUB_ERROR if ^C, SUB_NORMAL otherwise
  */
 
-GetTypeFromUser(prompt, tname, pointer)
+int GetTypeFromUser(prompt, tname, pointer)
 char *prompt;
 char *tname;
 char  **pointer;
@@ -853,7 +855,8 @@ char  **pointer;
     strcat(buffer, ")");
     if (strlen(buffer) > 64)
 	sprintf(buffer, "%s (? for help)", prompt);
-    GetValueFromUser(buffer, pointer);
+    if (GetValueFromUser(buffer, pointer) == SUB_ERROR)
+      return(SUB_ERROR);
     if (**pointer == '?') {
 	sprintf(buffer, "Type %s is one of:", tname);
 	Put_message(buffer);
@@ -877,8 +880,8 @@ char  **pointer;
     }
     sprintf(buffer, "Are you sure you want \"%s\" to be a legal %s",
 	    *pointer, tname);
-    if (YesNoQuestion("Do you want this to be a new legal value", 0) &&
-	YesNoQuestion(buffer, 0)) {
+    if (YesNoQuestion("Do you want this to be a new legal value", 0) == TRUE &&
+	YesNoQuestion(buffer, 0) == TRUE) {
 	argv[0] = tname;
 	argv[1] = "TYPE";
 	argv[2] = *pointer;

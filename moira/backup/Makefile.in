@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.1 1998-05-26 18:13:36 danw Exp $
+# $Id: Makefile.in,v 1.2 1998-05-26 21:50:36 danw Exp $
 
 SHELL=/bin/sh
 @SET_MAKE@
@@ -7,7 +7,7 @@ CC=@CC@
 CPPFLAGS=@CPPFLAGS@
 CFLAGS=@CFLAGS@
 DEFS=@DEFS@
-ALL_CFLAGS=$(CPPFLAGS) $(CFLAGS) $(DEFS)
+ALL_CFLAGS=-I$(srcdir) $(CPPFLAGS) $(CFLAGS) $(DEFS)
 PRO_C=@PRO_C@
 PRO_C_DEFS=@PRO_C_DEFS@
 PRO_C_INCLUDES=@PRO_C_INCLUDES@
@@ -15,6 +15,7 @@ PRO_C_OPTS=@PRO_C_OPTS@
 PRO_C_FLAGS=$(PRO_C_OPTS) $(PRO_C_DEFS) $(PRO_C_INCLUDES)
 LDFLAGS=@LDFLAGS@
 LIBS=@SQL_LIBS@ @LIBS@
+INSTALL=@INSTALL@
 INSTALL_PROGRAM=@INSTALL_PROGRAM@
 
 srcdir=@srcdir@
@@ -56,8 +57,8 @@ mrbackup: $(BOBJS)
 mrrestore: $(ROBJS)
 	$(CC) -o $@ $(LDFLAGS) $(ROBJS) $(LIBS)
 
-bkup.pc bkup1.pc bkup.h: ../db/schema.sql db2bkup.awk
-	awk -f db2bkup.awk < ../db/schema.sql > bkup.pc
+bkup.pc bkup1.pc bkup.h: $(SRCTOP)/db/schema.sql $(srcdir)/db2bkup.awk
+	awk -f $(srcdir)/db2bkup.awk < $(SRCTOP)/db/schema.sql > bkup.pc
 
-rest.pc rest1.pc rest.h: ../db/schema.sql db2rest.awk
-	awk -f db2rest.awk < ../db/schema.sql > rest.pc
+rest.pc rest1.pc rest.h: $(SRCTOP)/db/schema.sql $(srcdir)/db2rest.awk
+	awk -f $(srcdir)/db2rest.awk < $(SRCTOP)/db/schema.sql > rest.pc

@@ -1,10 +1,10 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_conn.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_conn.c,v 1.3 1991-08-21 10:43:53 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_conn.c,v 1.4 1992-12-01 11:51:46 mar Exp $
  */
 
 #ifndef lint
-static char *rcsid_gdb_conn_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_conn.c,v 1.3 1991-08-21 10:43:53 mar Exp $";
+static char *rcsid_gdb_conn_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_conn.c,v 1.4 1992-12-01 11:51:46 mar Exp $";
 #endif	lint
 
 
@@ -291,6 +291,7 @@ char *id;
 {
 	int peer;				/* socket for talking to
 						   peer */
+	int on = 1;				/* flag for ioctl */
 	struct sockaddr_in target;		/* build the peer address */
 						/* here */
 	struct hostent *peer_host; 		/* host where peer is */
@@ -360,6 +361,13 @@ char *id;
 			g_stop_with_errno(con);
 			return TRUE;
 		}
+	}
+
+	if ((gdb_Options & GDB_OPT_KEEPALIVE) &&
+	    setsockopt(peer, SOL_SOCKET, SO_KEEPALIVE, &on, sizeof(on)) < 0) {
+	    gdb_perror("gdb: unable to start keepalives");
+	    g_stop_with_errno(con);
+	    return(TRUE);
 	}
 
 	/*----------------------------------------------------------*/

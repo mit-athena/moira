@@ -10,6 +10,10 @@ modify i_usr_uid to btree
 index on users is i_usr_pop (pop_id)
 modify i_usr_pop to btree
 
+modify krbmap to btree unique on users_id
+index on krbmap is i_krb_str (string_id)
+modify i_krb_str to btree
+
 modify machine to cbtree unique on mach_id
 index on machine is i_mac_name (name)
 modify i_mac_name to btree
@@ -79,5 +83,7 @@ modify hostaccess to cbtree unique on mach_id
 modify printcap to cbtree on name
 index on printcap is i_pcp_mach (mach_id)
 modify i_pcp_mach to btree
+
+modify palladium to cbtree on name
 
 modify capacls to cbtree on tag

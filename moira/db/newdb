@@ -34,6 +34,11 @@ create users
 	uglist_id	= i4,
 	ugdefault	= i1
 )
+create krbmap
+(
+	users_id	= i4,
+	string_id	= i4
+)
 create machine 
 (
 	name		= c32,
@@ -81,11 +86,13 @@ create list
 	modby		= i4,
 	modwith		= c8
 )
-create members 
+create imembers 
 (
 	list_id		= i4,
 	member_type	= c8,
-	member_id	= i4
+	member_id	= i4,
+	ref_count	= i2,
+	direct		= i2
 )
 create servers 
 (
@@ -220,6 +227,15 @@ create printcap
 	dir		= c32,
 	rp		= c16,
 	comments	= c64,
+	modtime		= date,
+	modby		= i4,
+	modwith		= c8
+)
+create palladium
+(
+	name		= c32,
+	ident		= i2,
+	mach_id		= i4,
 	modtime		= date,
 	modby		= i4,
 	modwith		= c8

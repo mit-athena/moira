@@ -1,13 +1,13 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/get_file.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/get_file.c,v 1.6 1990-03-19 13:02:22 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/get_file.c,v 1.7 1991-01-15 15:18:47 mar Exp $
  */
 /*  (c) Copyright 1988 by the Massachusetts Institute of Technology. */
 /*  For copying and distribution information, please see the file */
 /*  <mit-copyright.h>. */
 
 #ifndef lint
-static char *rcsid_get_file_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/get_file.c,v 1.6 1990-03-19 13:02:22 mar Exp $";
+static char *rcsid_get_file_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/get_file.c,v 1.7 1991-01-15 15:18:47 mar Exp $";
 #endif	lint
 
 #include <mit-copyright.h>
@@ -18,6 +18,10 @@ static char *rcsid_get_file_c = "$Header: /afs/.athena.mit.edu/astaff/project/mo
 #include <sys/file.h>
 #include <moira.h>
 #include "update.h"
+
+#ifndef MIN
+#define MIN(a,b)    (((a) < (b))?(a):(b))
+#endif /* MIN */
 
 extern CONNECTION conn;
 char buf[BUFSIZ];

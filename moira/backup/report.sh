@@ -1,7 +1,7 @@
 #!/moira/bin/perl
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/report.sh,v 1.4 1992-08-14 17:27:46 mar Exp $
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/report.sh,v 1.5 1992-08-17 15:08:15 mar Exp $
 
-chdir($ARGV[1]);
+chdir($ARGV[0]);
 
 ($sec, $min, $hour, $mday, $month) = localtime($^T);
 @MONTHS = ( "Jan", "Feb", "Mar", "Apr", "May", "Jun",

@@ -44,9 +44,9 @@
 @Comment[ ======================== Author Variables ======================== ]
 
 @String(
-	ConferenceTitle="MIT Project Athena, Winter Usenix 1988",
-        LectureTitle="The Athena Service Management System",
-	LectureDate="12 February 1988",
+	ConferenceTitle="MIT Project Athena",
+        LectureTitle="Moira",
+	LectureDate="",
         Lecturer="by Mark Rosenstein",
 	Organization="MIT Project Athena",
 	Address="Massachusetts Institute of Technology @* Cambridge, MA 02139",
@@ -57,7 +57,7 @@
 @Comment[ ==================== Title Slide ==================== ]
 
 @PageHeading(
-	Left=<@Graphic(Height = 1.05 inches, PostScript = owl.PS)>,
+	Left=<@Graphic(Height = 1.05 inches, Width = 1.05in, PostScript = owl.PS)>,
 	Right=<@LogoText(@Value(ConferenceTitle))>,
 	Immediate
 )
@@ -69,11 +69,11 @@
 
 @LogoText(@Value(ConferenceTitle))
 @Begin(Transparent, Fixed 1.0 inch, Above 0, Below 0)
-@Graphic(Height = 1.05 inches, PostScript = owl.PS)
+@Graphic(Height = 1.05 inches, Width = 1.05 inches, PostScript = owl.PS)
 @End(Transparent)
 @BlankSpace(1 line)
 @Begin(SlideText, Centered)
-@MajorHeading(@Value(LectureTitle))
+@MajorHeading(@Value(LectureTitle)@*The Athena Service Management System)
 @Value(Lecturer)
 @BlankSpace(1 line)
 @Value(Organization)
@@ -91,9 +91,9 @@
 
 How to manage:
 @Begin(Itemize)
-14,000 User accounts (5000 active)
+17,000 User accounts (7,400 active)
 
-650 Workstations
+900 Workstations
 
 66 Servers
 @Itemize{
@@ -157,10 +157,10 @@ Space Efficiency
 @Comment[ ==================== Slide Four ==================== ]
 
 @Begin(SlideText)
-@MajorHeading{SMS Organization}
+@MajorHeading{Moira Organization}
 @BlankSpace(1 inches)
 
-@graphic(Height = 3 inch, PostScript = organization.ps)
+@graphic(Height = 3 inch, Width = 6 inch, PostScript = organization.ps)
 
 @End(SlideText)
 @CopyRightNotice{by the Massachusetts Institute of Technology}
@@ -169,7 +169,7 @@ Space Efficiency
 @Comment[ ==================== Slide Five ==================== ]
 
 @Begin(SlideText)
-@MajorHeading{SMS Protocol}
+@MajorHeading{Moira Protocol}
 @BlankSpace(0.5 inches)
 @Itemize{
 Built on a remote procedure call library
@@ -195,7 +195,7 @@ No-op
 @Comment[ ==================== Slide Six ==================== ]
 
 @Begin(SlideText)
-@MajorHeading{SMS Queries}
+@MajorHeading{Moira Queries}
 @BlankSpace(0.5 inches)
 @Itemize{
 Over 100 queries
@@ -222,7 +222,7 @@ Access Control Lists
 @Comment[ ==================== Slide Seven ==================== ]
 
 @Begin(SlideText)
-@MajorHeading{SMS Protocol}
+@MajorHeading{Moira Protocol}
 @Heading(Example: @p(chsh))
 @Begin(enumerate, rightmargin -1 inch)
 @p(Establish connection)
@@ -241,7 +241,7 @@ access(update_user_shell, mar, /bin/csh)@*
 query(update_user_shell, mar, /bin/tcsh)@*
 @ @ => success()
 
-@p(Close SMS connection)
+@p(Close Moira connection)
 @end(enumerate)
 @End(SlideText)
 @CopyRightNotice{by the Massachusetts Institute of Technology}
@@ -304,10 +304,10 @@ Execute
 @Comment[ ==================== Slide Ten ==================== ]
 
 @Begin(SlideText)
-@MajorHeading{SMS Components}
+@MajorHeading{Moira Components}
 @BlankSpace(1 inches)
 
-@graphic(Height = 3 inch, PostScript = components.ps)
+@graphic(Height = 3 inch, Width = 6 inch, PostScript = components.ps)
 
 @End(SlideText)
 @CopyRightNotice{by the Massachusetts Institute of Technology}
@@ -316,7 +316,7 @@ Execute
 @Comment[ ==================== Slide Eleven ==================== 
 
 @Begin(SlideText)
-@MajorHeading{SMS Client Programs}
+@MajorHeading{Moira Client Programs}
 @BlankSpace(0.25 inches)
 Standard Unix programs:
 @begin(itemize, spread 0)
@@ -332,29 +332,17 @@ New programs for regular users:
 @end(itemize)
 For system administrators:
 @begin(itemize, spread 0)
-@p(attachmaint)
-
 @p(chpobox)
-
-@p(clustermaint)
-
-@p(dcmmaint)
 
 @p(listmaint)
 
-@p(nfsmaint)
-
-@p(portmaint)
+@p(moira)
 
 @p(regtape)
-
-@p(rvdmaint)
-
-@p(usermaint)
 @end(itemize)
-For debugging SMS:
+For debugging Moira:
 @itemize{
-@p(smstest)
+@p(mrtest)
 }
 
 @End(SlideText)
@@ -364,7 +352,7 @@ For debugging SMS:
 @Comment[ ==================== Slide Twelve ==================== ]
 
 @Begin(SlideText)
-@MajorHeading{SMS Server}
+@MajorHeading{Moira Server}
 @BlankSpace(1 inches)
 
 @Itemize{
@@ -404,7 +392,7 @@ Locking
 @Comment[ ==================== Final Slide ==================== ]
 
 @PageHeading(
-	Left=<@Graphic(Height = 1.05 inch, PostScript = owl.PS)>,
+	Left=<@Graphic(Height = 1.05 inch, Width = 1.05 inches, PostScript = owl.PS)>,
 	Right=<@LogoText(@Value(ConferenceTitle))>,
 	Immediate
 )

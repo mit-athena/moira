@@ -1,11 +1,14 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_param.c,v $
  *	$Author: wesommer $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_param.c,v 1.1 1987-06-16 17:48:21 wesommer Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_param.c,v 1.2 1987-08-02 21:49:15 wesommer Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
  *	$Log: not supported by cvs2svn $
+ * Revision 1.1  87/06/16  17:48:21  wesommer
+ * Initial revision
+ * 
  * Revision 1.4  87/06/04  01:32:18  wesommer
  * Renamed gdb calls.
  * 
@@ -18,9 +21,11 @@
  */
 
 #ifndef lint
-static char *rcsid_sms_param_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_param.c,v 1.1 1987-06-16 17:48:21 wesommer Exp $";
+static char *rcsid_sms_param_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_param.c,v 1.2 1987-08-02 21:49:15 wesommer Exp $";
 #endif lint
 
+#include <sys/types.h>
+#include <netinet/in.h>
 #include "sms_private.h"
 
 /*
@@ -40,6 +45,8 @@ sms_cont_send(op, hcon, arg)
 {
     op->result = OP_SUCCESS;
     free(arg->sms_flattened);
+    arg->sms_flattened = NULL;
+    
     return OP_COMPLETE;
 }
 
@@ -156,6 +163,9 @@ sms_cont_recv(op, hcon, argp)
 	    fflush(stdout);
 	    /* Should validate that length is reasonable */
 	    arg->sms_size = ntohl(arg->sms_size);
+	    if (arg->sms_size > 65536) {
+		return OP_CANCELLED;
+	    }
 	    arg->sms_flattened = malloc(arg->sms_size);
 	    arg->sms_state = S_DECODE_DATA;
 	    bcopy((caddr_t)&arg->sms_size, arg->sms_flattened, sizeof(long));
@@ -181,8 +191,13 @@ sms_cont_recv(op, hcon, argp)
 	    arg->sms_argl=(int *)malloc(arg->sms_argc *sizeof(int *));
 			
 	    for (i = 0; i<arg->sms_argc; ++i) {
-		int nlen = ntohl(* (int *) cp);
+		u_short nlen = ntohl(* (int *) cp);
 		cp += sizeof (long);
+		if (cp + nlen > arg->sms_flattened + arg->sms_size) {
+		    free(arg->sms_flattened);
+		    arg->sms_flattened = NULL;
+		    return OP_CANCELLED;
+		}		    
 		arg->sms_argv[i] = (char *)malloc(nlen);
 		bcopy(cp, arg->sms_argv[i], nlen);
 		arg->sms_argl[i]=nlen;

@@ -1,4 +1,4 @@
-/* $Id: qaccess.pc,v 2.20 2000-12-19 07:32:46 zacheiss Exp $
+/* $Id: qaccess.pc,v 2.21 2001-01-11 19:38:56 zacheiss Exp $
  *
  * Check access to queries
  *
@@ -17,7 +17,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qaccess.pc,v 2.20 2000-12-19 07:32:46 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qaccess.pc,v 2.21 2001-01-11 19:38:56 zacheiss Exp $");
 
 extern char *whoami;
 extern int dbms_errno, mr_errcode;
@@ -486,7 +486,7 @@ int access_host(struct query *q, char *argv[], client *cl)
 	    {
 	      /* host owner also cannot change contact, status, address,
 		 owner, or acomment */
-	      if (strcmp(argv[6 + idx], strtrim(contact)) ||
+	      if (strcmp(argv[6], strtrim(contact)) ||
 		  (status != atoi(argv[8 + idx])) ||
 		  strcmp(argv[10 + idx], strtrim(address)) ||
 		  strcmp(argv[11 + idx], strtrim(mtype)) ||
@@ -495,7 +495,7 @@ int access_host(struct query *q, char *argv[], client *cl)
 		return MR_PERM;
 	      /* Billing contact field didn't appear until version 6 */
 	      if (q->version >= 6)
-		if (strcmp(argv[8], strtrim(billing_contact)))
+		if (strcmp(argv[7], strtrim(billing_contact)))
 		    return MR_PERM;
 	    }
 	  else

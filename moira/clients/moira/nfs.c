@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/nfs.c,v 1.8 1988-08-07 17:21:58 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/nfs.c,v 1.9 1988-08-07 17:26:01 qjb Exp $";
 #endif lint
 
 /*	This is the file nfs.c for the SMS Client, which allows a nieve
@@ -10,8 +10,8 @@
  *	By:		Chris D. Peterson
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/nfs.c,v $
- *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/nfs.c,v 1.8 1988-08-07 17:21:58 mar Exp $
+ *      $Author: qjb $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/nfs.c,v 1.9 1988-08-07 17:26:01 qjb Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -343,7 +343,7 @@ Bool one_item;
 	args[1] = info[NFS_DIR];
 	args[2] = NULL;
 	switch(stat = sms_query("get_filesys_by_nfsphys", CountArgs(args), 
-			 args, StoreInfo, &elem)) {
+			 args, StoreInfo, (char *)&elem)) {
 	case SMS_NO_MATCH:	/* it is unused, delete it. */
 	    if ( (stat = sms_query("delete_nfsphys", 2, info, Scream, 
 				   (char *) NULL )) != SMS_SUCCESS)

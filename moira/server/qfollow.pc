@@ -1,4 +1,4 @@
-/* $Id: qfollow.pc,v 2.14 2000-01-28 00:31:57 danw Exp $
+/* $Id: qfollow.pc,v 2.15 2000-04-19 23:11:51 zacheiss Exp $
  *
  * Query followup routines
  *
@@ -20,7 +20,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qfollow.pc,v 2.14 2000-01-28 00:31:57 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qfollow.pc,v 2.15 2000-04-19 23:11:51 zacheiss Exp $");
 
 extern char *whoami, *table_name[];
 extern int dbms_errno, mr_errcode;
@@ -566,6 +566,8 @@ int followup_glin(struct query *q, struct save_queue *sq, struct validate *v,
   int id, i, idx, status;
 
   idx = 7;
+  if (!strcmp(q->shortname, "glin")  && q->version > 2)
+    idx = 8;
   if (!strcmp(q->shortname, "gsin"))
     idx = 11;
 

@@ -1,4 +1,4 @@
-/* $Id: queries2.c,v 2.69 2000-03-30 22:01:56 zacheiss Exp $
+/* $Id: queries2.c,v 2.70 2000-04-19 23:11:52 zacheiss Exp $
  *
  * This file defines the query dispatch table
  *
@@ -1000,10 +1000,17 @@ static struct validate dcld_validate =
   set_cluster_modtime_by_id,
 };
 
-static char *glin_fields[] = {
+static char *glin2_fields[] = {
   "name",
   "name", "active", "publicflg", "hidden", "maillist", "grouplist", "gid",
   "ace_type", "ace_name", "description", "modtime", "modby", "modwith",
+};
+
+static char *glin_fields[] = {
+  "name",
+  "name", "active", "publicflg", "hidden", "maillist", "grouplist", "gid",
+  "nfsgroup", "ace_type", "ace_name", "description", "modtime", "modby", 
+  "modwith",
 };
 
 static struct validate glin_validate = {
@@ -1018,12 +1025,12 @@ static struct validate glin_validate = {
   followup_glin,
 };
 
-static char *alis_fields[] = {
+static char *alis2_fields[] = {
   "name", "active", "publicflg", "hidden", "maillist", "grouplist", "gid",
   "ace_type", "ace_name", "description",
 };
 
-static struct valobj alis_valobj[] = {
+static struct valobj alis2_valobj[] = {
   {V_CHAR, 0, LIST_TABLE, "name"},
   {V_NUM, 1},
   {V_NUM, 2},
@@ -1036,8 +1043,8 @@ static struct valobj alis_valobj[] = {
   {V_LEN, 9, LIST_TABLE, "description"},
 };
 
-static struct validate alis_validate = {
-  alis_valobj,
+static struct validate alis2_validate = {
+  alis2_valobj,
   10,
   "name",
   "name = '%s'",
@@ -1048,13 +1055,44 @@ static struct validate alis_validate = {
   set_modtime,
 };
 
-static char *ulis_fields[] = {
+static char *alis_fields[] = {
+  "name", "active", "publicflg", "hidden", "maillist", "grouplist", "gid",
+  "nfsgroup", "ace_type", "ace_name", "description",
+};
+
+static struct valobj alis_valobj[] = {
+  {V_CHAR, 0, LIST_TABLE, "name"},
+  {V_NUM, 1},
+  {V_NUM, 2},
+  {V_NUM, 3},
+  {V_NUM, 4},
+  {V_NUM, 5},
+  {V_NUM, 6},
+  {V_NUM, 7},
+  {V_TYPE, 8, 0, "ace_type", 0, MR_ACE},
+  {V_TYPEDATA, 9, 0, 0, "list_id", MR_ACE},
+  {V_LEN, 10, LIST_TABLE, "description"},
+};
+
+static struct validate alis_validate = {
+  alis_valobj,
+  11,
+  "name",
+  "name = '%s'",
+  1,
+  "list_id",
+  0,
+  setup_alis,
+  set_modtime,
+};
+
+static char *ulis2_fields[] = {
   "name",
   "newname", "active", "publicflg", "hidden", "maillist", "grouplist", "gid",
   "ace_type", "ace_name", "description",
 };
 
-static struct valobj ulis_valobj[] = {
+static struct valobj ulis2_valobj[] = {
   {V_ID, 0, LIST_TABLE, "name", "list_id", MR_LIST},
   {V_RENAME, 1, LIST_TABLE, "name", "list_id", MR_NOT_UNIQUE},
   {V_NUM, 2},
@@ -1068,10 +1106,43 @@ static struct valobj ulis_valobj[] = {
   {V_LEN, 10, LIST_TABLE, "description"},
 };
 
-static struct validate ulis_validate = {
-  ulis_valobj,
+static struct validate ulis2_validate = {
+  ulis2_valobj,
   11,
   "name",
+  "list_id = %d",
+  1,
+  "list_id",
+  access_list,
+  setup_alis,
+  set_modtime_by_id,
+};
+
+static char *ulis_fields[] = {
+  "name",
+  "newname", "active", "publicflg", "hidden", "maillist", "grouplist", "gid", 
+  "nfsgroup", "ace_type", "ace_name", "description",
+};
+
+static struct valobj ulis_valobj[] = {
+  {V_ID, 0, LIST_TABLE, "name", "list_id", MR_LIST},
+  {V_RENAME, 1, LIST_TABLE, "name", "list_id", MR_NOT_UNIQUE},
+  {V_NUM, 2},
+  {V_NUM, 3},
+  {V_NUM, 4},
+  {V_NUM, 5},
+  {V_NUM, 6},
+  {V_NUM, 7},
+  {V_NUM, 8},
+  {V_TYPE, 9, 0, "ace_type", 0, MR_ACE},
+  {V_TYPEDATA, 10, 0, 0, "list_id", MR_ACE},
+  {V_LEN, 11, LIST_TABLE, "description"},
+};
+
+static struct validate ulis_validate = {
+  ulis_valobj,
+  12,
+  "name", 
   "list_id = %d",
   1,
   "list_id",
@@ -3593,7 +3664,7 @@ struct query Queries[] = {
   },
 
   {
-    /* Q_GLIN - GET_LIST_INFO */
+    /* Q_GLIN - GET_LIST_INFO, v2 */
     "get_list_info",
     "glin",
     2,
@@ -3601,8 +3672,25 @@ struct query Queries[] = {
     "l",
     LIST_TABLE,
     "name, active, publicflg, hidden, maillist, grouplist, gid, acl_type, acl_id, description, TO_CHAR(modtime, 'DD-mon-YYYY HH24:MI:SS'), modby, modwith FROM list",
-    glin_fields,
+    glin2_fields,
     13,
+    "name LIKE '%s'",
+    1,
+    "name",
+    &glin_validate,
+  },
+
+  {
+    /* Q_GLIN - GET_LIST_INFO, v3 */
+    "get_list_info",
+    "glin",
+    3,
+    RETRIEVE,
+    "l",
+    LIST_TABLE,
+    "name, active, publicflg, hidden, maillist, grouplist, gid, nfsgroup, acl_type, acl_id, description, TO_CHAR(modtime, 'DD-mon-YYYY HH24:MI:SS'), modby, modwith FROM list",
+    glin_fields,
+    14,
     "name LIKE '%s'",
     1,
     "name",
@@ -3627,7 +3715,7 @@ struct query Queries[] = {
   },
 
   {
-    /* Q_ALIS - ADD_LIST */ /* uses prefetch_value() for list_id */
+    /* Q_ALIS - ADD_LIST, v2 */ /* uses prefetch_value() for list_id */
     "add_list",
     "alis",
     2,
@@ -3635,8 +3723,25 @@ struct query Queries[] = {
     "l",
     LIST_TABLE,
     "INTO list (name, active, publicflg, hidden, maillist, grouplist, gid, acl_type, acl_id, description, list_id) VALUES ('%s', %s, %s, %s, %s, %s, %s, '%s', %d, NVL('%s', CHR(0)), %s)",
-    alis_fields,
+    alis2_fields,
     10,
+    0,
+    0,
+    NULL,
+    &alis2_validate,
+  },
+
+  {
+    /* Q_ALIS - ADD_LIST, v3 */ /* uses prefetch_value() for list_id */
+    "add_list",
+    "alis",
+    3,
+    APPEND,
+    "l",
+    LIST_TABLE,
+    "INTO list (name, active, publicflg, hidden, maillist, grouplist, gid, nfsgroup, acl_type, acl_id, description, list_id) VALUES ('%s', %s, %s, %s, %s, %s, %s, %s, '%s', %d, NVL('%s', CHR(0)), %s)", 
+    alis_fields,
+    11,
     0,
     0,
     NULL,
@@ -3644,7 +3749,7 @@ struct query Queries[] = {
   },
 
   {
-    /* Q_ULIS - UPDATE_LIST */
+    /* Q_ULIS - UPDATE_LIST, v2 */
     "update_list",
     "ulis",
     2,
@@ -3652,8 +3757,25 @@ struct query Queries[] = {
     "l",
     LIST_TABLE,
     "list SET name = '%s', active = %s, publicflg = %s, hidden = %s, maillist = %s, grouplist = %s, gid = %s, acl_type = '%s', acl_id = %d, description = NVL('%s', CHR(0))",
-    ulis_fields,
+    ulis2_fields,
     10,
+    "list_id = %d",
+    1,
+    NULL,
+    &ulis2_validate,
+  },
+
+  {
+    /* Q_ULIS - UPDATE_LIST, v3 */
+    "update_list",
+    "ulis",
+    3,
+    UPDATE,
+    "l",
+    LIST_TABLE,
+    "list SET name = '%s', active = %s, publicflg = %s, hidden = %s, maillist = %s, grouplist = %s, gid = %s, nfsgroup = %s, acl_type = '%s', acl_id = %d, description = NVL('%s', CHR(0))",
+    ulis_fields,
+    11,
     "list_id = %d",
     1,
     NULL,

@@ -1,4 +1,4 @@
-/* $Id: www.pc,v 1.6 2001-05-08 03:09:39 zacheiss Exp $
+/* $Id: www.pc,v 1.7 2001-09-14 23:17:50 zacheiss Exp $
  *
  * This generates the web server user & group data.
  *
@@ -21,7 +21,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/www.pc,v 1.6 2001-05-08 03:09:39 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/www.pc,v 1.7 2001-09-14 23:17:50 zacheiss Exp $");
 
 
 #ifndef WWW_SUBDIR
@@ -190,6 +190,8 @@ void filsys(FILE *out)
 
       if (!*strtrim(path))
 	continue;
+      for (c = label; *c; c++)
+	*c = tolower(*c);
       fprintf(out, "%s:%s\n", label, path);
 
       EXEC SQL OPEN alias_cursor;
@@ -201,6 +203,8 @@ void filsys(FILE *out)
 	  
 	  if (!*strtrim(alias))
 	    continue;
+	  for (c = alias; *c; c++)
+	    *c = tolower(*c);
 	  fprintf(out, "%s:%s\n", alias, path);
 	}
       EXEC SQL CLOSE alias_cursor;

@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.42 1989-09-04 17:12:43 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.43 1989-09-12 11:47:55 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_qsupport_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.42 1989-09-04 17:12:43 mar Exp $";
+static char *rcsid_qsupport_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.43 1989-09-12 11:47:55 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -1691,6 +1691,8 @@ int set_pobox(q, argv, cl)
 ##		where users.users_id = @user
 	set_pop_usage(id, 1);
     } else if (!strcmp(argv[1], "SMTP")) {
+	if (index(box, '/') || index(box, '|'))
+	  return(SMS_BAD_CHAR);
 ##      range of s is strings
 ##      repeat retrieve (id = s.string_id) where s.string = @box
 ##      inquire_equel (rowcount = "rowcount")
@@ -1831,7 +1833,7 @@ int add_member_to_list(q, argv, cl)
     client *cl;
 ##{
 ##  int id, lid, mid, exists, error;
-##  char *mtype, dtype[9];
+##  char *mtype, dtype[9], buf[256];
     int ancestors[MAXLISTDEPTH], acount, a;
     int descendants[MAXLISTDEPTH], dcount, d;
     char *dtypes[MAXLISTDEPTH];
@@ -1846,6 +1848,12 @@ int add_member_to_list(q, argv, cl)
 ##			   and m.direct = 1))
     if (exists)
       return(SMS_EXISTS);
+    if (!strcasecmp(mtype, "STRING")) {
+##	repeat retrieve (buf = strings.string) where strings.string_id = @mid
+	if (index(buf, '/') || index(buf, '|'))
+	  return(SMS_BAD_CHAR);
+    }
+
     ancestors[0] = lid;
     acount = 1;
 ##  repeat retrieve (id = m.list_id)
@@ -2026,7 +2034,7 @@ int delete_member_from_list(q, argv, cl)
 ##		    m.member_type = mtype
 	    } else {
 ##		replace m (ref_count = m.ref_count-1)
-##		    where m.list_id = lid and m.member_idn = mid and
+##		    where m.list_id = lid and m.member_id = mid and
 ##		    m.member_type = mtype
 	    }
 	}

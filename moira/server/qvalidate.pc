@@ -1,4 +1,4 @@
-/* $Id: qvalidate.pc,v 2.22 2003-02-16 21:50:36 zacheiss Exp $
+/* $Id: qvalidate.pc,v 2.23 2003-02-17 00:50:25 zacheiss Exp $
  *
  * Argument validation routines
  *
@@ -20,7 +20,7 @@
 EXEC SQL INCLUDE sqlca;
 EXEC SQL INCLUDE sqlda;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qvalidate.pc,v 2.22 2003-02-16 21:50:36 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qvalidate.pc,v 2.23 2003-02-17 00:50:25 zacheiss Exp $");
 
 extern char *whoami, *table_name[], *sqlbuffer[QMAXARGS];
 extern int dbms_errno, mr_errcode;
@@ -154,14 +154,15 @@ int validate_chars(char *argv[], struct valobj *vo)
   char *tname, *cname;
   EXEC SQL END DECLARE SECTION;
 
+  if (!*s)
+    return MR_RESERVED;
+
   /* check for bad characters */
   while (*s)
     {
       if (illegalchars[(int)*s++])
 	return MR_BAD_CHAR;
     }
-  if (!*s)
-    return MR_RESERVED;
 
   /* check for length */
   tname = table_name[vo->table];

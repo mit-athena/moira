@@ -175,6 +175,7 @@ fi
 
 # GDSS support (default: build util/gdss if present)
 AC_MSG_CHECKING(for GDSS)
+AC_TRY_RUN([ int main() { return sizeof(long)!=4; } ], :, with_gdss=no, with_gdss=no)
 AC_ARG_WITH(gdss,
     [  --with-gdss=PREFIX      Specify location of GDSS],
     [gdss="$withval"

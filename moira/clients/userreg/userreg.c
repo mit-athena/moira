@@ -2,7 +2,7 @@
  * $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.c,v $
  * $Author: mar $
  * $Locker:  $
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.c,v 1.11 1989-08-04 13:57:56 mar Exp $ 
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.c,v 1.12 1989-08-16 11:19:34 mar Exp $ 
  *
  *  (c) Copyright 1988 by the Massachusetts Institute of Technology.
  *  For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char    *rcsid_userreg_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.c,v 1.11 1989-08-04 13:57:56 mar Exp $";
+static char    *rcsid_userreg_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.c,v 1.12 1989-08-16 11:19:34 mar Exp $";
 #endif	lint
 
 #include <mit-copyright.h>
@@ -337,11 +337,12 @@ negotiate_login()
 		 * usernames, all in use, we first try and see if this
 		 * guy is known to Kerberos.
 		 */
-		if ((result = get_krbrlm(realm, 1)) != KSUCCESS) {
-		    display_text_line("System error, please try another workstation.");
+		if ((result = krb_get_lrealm(realm, 1)) != KSUCCESS) {
+		    display_text_line("System error; please try another workstation.");
 		    continue;
 		}
-		result = get_in_tkt(user.u_login, "", realm, "krbtgt", realm, 1, "");
+		result = krb_get_pw_in_tkt(user.u_login, "", realm, 
+					   "krbtgt", realm, 1, "");
 		timer_on();
 		if (result != KDC_PR_UNKNOWN) {
 		in_use:

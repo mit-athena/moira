@@ -1,7 +1,7 @@
 #
 # 	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/Makefile,v $
 #	$Author: mar $
-#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/Makefile,v 1.10 1990-02-14 11:23:17 mar Exp $
+#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/Makefile,v 1.11 1990-03-17 00:01:13 mar Exp $
 #
 # Revised makefile for GDB library.
 #
@@ -30,7 +30,7 @@ CCPROF= ${CC}
 
 INGLIBS= /usr/rtingres/lib/libqlib /usr/rtingres/lib/compatlib
 
-LINTFLAGS= -uhv
+LINTFLAGS= -uhv -I../include
 
 .c.o:
 	${CCPROF} -c -pg ${CFLAGS} $*.c
@@ -48,11 +48,11 @@ libgdb_p.a: ${LIBOBJS}
 	(cd profiled; ar uv ../libgdb_p.a ${LIBOBJS}; ranlib ../libgdb_p.a)
 
 lint:
-	lint -huv ${GDBCSRCS} | \
+	lint ${LINTFLAGS} ${GDBCSRCS} | \
 	egrep -v "warning: possible pointer alignment problem"
 
 llib-lgdb.ln: ${LIBSRC}
-	lint -Cgdb ${GDBCSRCS}
+	lint ${LINTFLAGS} -Cgdb ${GDBCSRCS}
 
 install:
 	install -c -m 644 libgdb.a ${DESTDIR}/usr/athena/lib/libsmsgdb.a

@@ -1,4 +1,4 @@
-/* $Id: kname_unparse.c,v 1.4 1998-02-08 19:31:18 danw Exp $
+/* $Id: kname_unparse.c,v 1.5 2004-07-20 06:47:46 zacheiss Exp $
  *
  * Don't know why this function is not in libkrb.a.  It's the inverse
  * of kname_parse() which is there.
@@ -16,14 +16,14 @@
 #include <des.h>
 #include <krb.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/kname_unparse.c,v 1.4 1998-02-08 19:31:18 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/kname_unparse.c,v 1.5 2004-07-20 06:47:46 zacheiss Exp $");
 
 /* Turn a principal, instance, realm triple into a single non-ambiguous
  * string.  This is the inverse of kname_parse().  It returns a pointer
  * to a static buffer, or NULL on error.
  */
 
-char *kname_unparse(char *p, char *i, char *r)
+char *mr_kname_unparse(char *p, char *i, char *r)
 {
   static char name[MAX_K_NAME_SZ];
   char *s;

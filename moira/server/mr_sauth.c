@@ -1,4 +1,4 @@
-/* $Id: mr_sauth.c,v 1.28 1999-07-17 21:41:40 danw Exp $
+/* $Id: mr_sauth.c,v 1.29 2004-07-20 06:47:48 zacheiss Exp $
  *
  * Handle server side of authentication
  *
@@ -19,7 +19,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_sauth.c,v 1.28 1999-07-17 21:41:40 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_sauth.c,v 1.29 2004-07-20 06:47:48 zacheiss Exp $");
 
 extern char *whoami, *host;
 extern int proxy_acl;
@@ -79,7 +79,7 @@ void do_auth(client *cl)
 	  com_err(whoami, 0,
 		  "Authenticator replay from %s using authenticator for %s",
 		  inet_ntoa(cl->haddr.sin_addr),
-		  kname_unparse(ad.pname, ad.pinst, ad.prealm));
+		  mr_kname_unparse(ad.pname, ad.pinst, ad.prealm));
 	  com_err(whoami, KE_RD_AP_REPEAT, " (authentication failed)");
 	  client_reply(cl, KE_RD_AP_REPEAT);
 	  return;
@@ -107,7 +107,7 @@ void do_auth(client *cl)
 	rc = rc->next;
     }
 
-  status = set_client(cl, kname_unparse(ad.pname, ad.pinst, ad.prealm),
+  status = set_client(cl, mr_kname_unparse(ad.pname, ad.pinst, ad.prealm),
 		      ad.pname, ad.pinst, ad.prealm);
 
   strncpy(cl->entity, cl->req.mr_argv[1], sizeof(cl->entity) - 1);

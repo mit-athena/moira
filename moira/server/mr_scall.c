@@ -1,4 +1,4 @@
-/* $Id: mr_scall.c,v 1.36 1999-07-17 21:41:40 danw Exp $
+/* $Id: mr_scall.c,v 1.37 1999-12-30 17:27:14 danw Exp $
  *
  * Do RPC
  *
@@ -24,13 +24,15 @@
 #include <string.h>
 #include <unistd.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_scall.c,v 1.36 1999-07-17 21:41:40 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_scall.c,v 1.37 1999-12-30 17:27:14 danw Exp $");
 
 extern int nclients;
 extern client **clients;
 extern char *whoami;
 
 extern int dbms_errno, mr_errcode;
+
+int max_version;
 
 void do_call(client *cl);
 void free_rtn_tuples(client *cp);
@@ -39,6 +41,7 @@ int list_users(client *cl);
 void do_retr(client *cl);
 void do_access(client *cl);
 void get_motd(client *cl);
+void do_version(client *cl);
 
 char *procnames[] = {
   "noop",
@@ -49,6 +52,7 @@ char *procnames[] = {
   "dcm",
   "motd",
   "proxy",
+  "version",
 };
 
 int newqueries;
@@ -121,6 +125,10 @@ void client_read(client *cl)
 
     case MR_PROXY:
       do_proxy(cl);
+      break;
+
+    case MR_SETVERSION:
+      do_version(cl);
       break;
     }
   mr_destroy_reply(cl->req);
@@ -245,6 +253,23 @@ void do_access(client *cl)
   client_reply(cl, status);
 
   com_err(whoami, 0, "Access check complete.");
+}
+
+void do_version(client *cl)
+{
+  if (cl->req.mr_argc != 1)
+    {
+      client_reply(cl, MR_ARGS);
+      com_err(whoami, MR_ARGS, "incorrect number of arguments");
+      return;
+    }
+
+  cl->version = atoi(cl->req.mr_argv[0]);
+  if (cl->version == -1)
+    cl->version = max_version;
+
+  client_reply(cl, cl->version == max_version ? MR_SUCCESS :
+	       cl->version < max_version ? MR_VERSION_LOW : MR_VERSION_HIGH);
 }
 
 void get_motd(client *cl)

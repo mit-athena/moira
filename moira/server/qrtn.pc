@@ -1,4 +1,4 @@
-/* $Id: qrtn.pc,v 2.17 1999-07-17 21:40:27 danw Exp $
+/* $Id: qrtn.pc,v 2.18 1999-12-30 17:27:14 danw Exp $
  *
  * Query-processing routines
  *
@@ -20,7 +20,7 @@
 EXEC SQL INCLUDE sqlca;  /* SQL Communications Area */
 EXEC SQL INCLUDE sqlda;  /* SQL Descriptor Area */
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.pc,v 2.17 1999-07-17 21:40:27 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.pc,v 2.18 1999-12-30 17:27:14 danw Exp $");
 
 SQLDA *mr_sqlda;
 EXEC SQL BEGIN DECLARE SECTION;
@@ -41,6 +41,8 @@ char *database = "moira";
 EXEC SQL END DECLARE SECTION;
 extern char *whoami;
 extern FILE *journal;
+extern int QueryCount, max_version;
+extern struct query Queries[];
 
 /* Put this in a variable so that we can patch it if necessary */
 int max_row_count = 4096;
@@ -87,7 +89,7 @@ EXEC SQL WHENEVER SQLERROR DO dbmserr();
 int mr_open_database(void)
 {
   int i;
-  static first_open = 1;
+  static int first_open = 1;
 
   if (first_open)
     {
@@ -137,7 +139,7 @@ int mr_check_access(client *cl, char *name, int argc, char *argv_ro[])
   dbms_errno = 0;
   mr_errcode = 0;
 
-  q = get_query_by_name(name);
+  q = get_query_by_name(name, cl->version);
   if (!q)
     return MR_NO_HANDLE;
 
@@ -171,7 +173,7 @@ int mr_process_query(client *cl, char *name, int argc, char *argv_ro[],
     {
       if (argc < 1)
 	return MR_ARGS;
-      q = get_query_by_name(argv_ro[0]);
+      q = get_query_by_name(argv_ro[0], cl->version);
       if (!q)
 	return MR_NO_HANDLE;
       help_query(q, action, actarg);
@@ -179,7 +181,7 @@ int mr_process_query(client *cl, char *name, int argc, char *argv_ro[],
     }
 
   /* get query structure, return error if named query does not exist */
-  q = get_query_by_name(name);
+  q = get_query_by_name(name, cl->version);
   if (!q)
     return MR_NO_HANDLE;
   v = q->validate;
@@ -879,23 +881,18 @@ int set_krb_mapping(char *name, char *login, int ok, int *kid, int *uid)
 }
 
 
-/* For now this just checks the argc's.  It should also see that there
- * are no duplicate names.
- */
-
 void sanity_check_queries(void)
 {
   int i;
   int maxv = 0, maxa = 0;
-  extern int QueryCount2;
-  extern struct query Queries2[];
 
 #define MAX(x, y) ((x) > (y) ? (x) : (y))
 
-  for (i = 0; i < QueryCount2; i++)
+  for (i = 0; i < QueryCount; i++)
     {
-      maxv = MAX(maxv, Queries2[i].vcnt);
-      maxa = MAX(maxa, Queries2[i].argc);
+      maxv = MAX(maxv, Queries[i].vcnt);
+      maxa = MAX(maxa, Queries[i].argc);
+      max_version = MAX(max_version, Queries[i].version);
     }
   if (MAX(maxv, maxa) > QMAXARGS)
     {

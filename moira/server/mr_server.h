@@ -1,4 +1,4 @@
-/* $Id: mr_server.h,v 1.47 1999-11-16 22:56:04 danw Exp $
+/* $Id: mr_server.h,v 1.48 1999-12-30 17:27:14 danw Exp $
  *
  * Copyright (C) 1987-1998 by the Massachusetts Institute of Technology
  * For copying and distribution information, please see the file
@@ -33,6 +33,7 @@ typedef struct _client {
   int users_id;			/* Moira-internal ID of authenticated user */
   int client_id;		/* Moira-internal ID of client */
   int proxy_id;			/* client_id of orig user, if proxied */
+  int version;			/* Max query version known by client */
   time_t last_time_used;	/* Last time connection used */
   mr_params req;		/* Current request */
   mr_params *tuples;		/* Tuples waiting to send back to client */

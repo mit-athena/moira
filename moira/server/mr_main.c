@@ -1,4 +1,4 @@
-/* $Id: mr_main.c,v 1.48 1998-07-15 20:40:45 danw Exp $
+/* $Id: mr_main.c,v 1.49 1999-12-30 17:27:13 danw Exp $
  *
  * Moira server process.
  *
@@ -30,7 +30,7 @@
 
 #include <krb.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.48 1998-07-15 20:40:45 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.49 1999-12-30 17:27:13 danw Exp $");
 
 extern char *krb_get_lrealm(char *, int);
 
@@ -263,6 +263,7 @@ int main(int argc, char **argv)
 	      cp->tuples = xmalloc(sizeof(mr_params));
 	      memset(cp->tuples, 0, sizeof(mr_params));
 	      cp->state = CL_ACCEPTING;
+	      cp->version = 2;
 
 	      cur_client = cp;
 	      com_err(whoami, 0,

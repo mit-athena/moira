@@ -1,4 +1,4 @@
-/* $Id: query.h,v 2.11 1998-03-18 23:25:52 danw Exp $
+/* $Id: query.h,v 2.12 1999-12-30 17:27:16 danw Exp $
  *
  * Structures and constants used in the query dispatch table
  *
@@ -15,6 +15,7 @@ struct query
 {
   char *name;			/* query name */
   char *shortname;		/* abbreviated query name (must be 4 chars) */
+  int  version;			/* query version */
   enum query_type type;		/* query type */
   char *rvar;			/* range variable */
   enum tables rtable;		/* range table */
@@ -89,4 +90,4 @@ void list_queries(int (*action)(int, char *[], void *),
 		  void *actarg);
 void help_query(struct query *q, int (*action)(int, char *[], void *),
 		void *actarg);
-struct query *get_query_by_name(char *name);
+struct query *get_query_by_name(char *name, int version);

@@ -1,6 +1,6 @@
-/* $Id: queries2.c,v 2.65 1999-11-18 16:59:29 danw Exp $
+/* $Id: queries2.c,v 2.66 1999-12-30 17:27:15 danw Exp $
  *
- * This file defines the query dispatch table for version 2 of the protocol
+ * This file defines the query dispatch table
  *
  * Copyright (C) 1987-1998 by the Massachusetts Institute of Technology.
  * For copying and distribution information, please see the file
@@ -2453,15 +2453,20 @@ static struct validate _sdl_validate =
 
 /* Generalized Query Definitions */
 
+/* Multiple versions of the same query MUST be listed in ascending
+ * order.
+ */
+
 /* Note: For any query which uses prefetch_value, the vcnt should be
  * one less than the number of %-format specifiers in the tlist.
  */
 
-struct query Queries2[] = {
+struct query Queries[] = {
   {
     /* Q_GALO - GET_ALL_LOGINS */
     "get_all_logins",
     "galo",
+    2,
     RETRIEVE,
     "u",
     USERS_TABLE,
@@ -2478,6 +2483,7 @@ struct query Queries2[] = {
     /* Q_GAAL - GET_ALL_ACTIVE_LOGINS */
     "get_all_active_logins",
     "gaal",
+    2,
     RETRIEVE,
     "u",
     USERS_TABLE,
@@ -2494,6 +2500,7 @@ struct query Queries2[] = {
     /* Q_GUAL - GET_USER_ACCOUNT_BY_LOGIN */
     "get_user_account_by_login",
     "gual",
+    2,
     RETRIEVE,
     "u",
     USERS_TABLE,
@@ -2510,6 +2517,7 @@ struct query Queries2[] = {
     /* Q_GUAU - GET_USER_ACCOUNT_BY_UID */
     "get_user_account_by_uid",
     "guau",
+    2,
     RETRIEVE,
     "u",
     USERS_TABLE,
@@ -2526,6 +2534,7 @@ struct query Queries2[] = {
     /* Q_GUAN - GET_USER_ACCOUNT_BY_NAME */
     "get_user_account_by_name",
     "guan",
+    2,
     RETRIEVE,
     "u",
     USERS_TABLE,
@@ -2542,6 +2551,7 @@ struct query Queries2[] = {
     /* Q_GUAC - GET_USER_ACCOUNT_BY_CLASS */
     "get_user_account_by_class",
     "guac",
+    2,
     RETRIEVE,
     "u",
     USERS_TABLE,
@@ -2558,6 +2568,7 @@ struct query Queries2[] = {
     /* Q_GUAM - GET_USER_ACCOUNT_BY_MITID */
     "get_user_account_by_id",
     "guai",
+    2,
     RETRIEVE,
     "u",
     USERS_TABLE,
@@ -2574,6 +2585,7 @@ struct query Queries2[] = {
     /* Q_GUBL - GET_USER_BY_LOGIN */
     "get_user_by_login",
     "gubl",
+    2,
     RETRIEVE,
     "u",
     USERS_TABLE,
@@ -2590,6 +2602,7 @@ struct query Queries2[] = {
     /* Q_GUBU - GET_USER_BY_UID */
     "get_user_by_uid",
     "gubu",
+    2,
     RETRIEVE,
     "u",
     USERS_TABLE,
@@ -2606,6 +2619,7 @@ struct query Queries2[] = {
     /* Q_GUBN - GET_USER_BY_NAME */
     "get_user_by_name",
     "gubn",
+    2,
     RETRIEVE,
     "u",
     USERS_TABLE,
@@ -2622,6 +2636,7 @@ struct query Queries2[] = {
     /* Q_GUBC - GET_USER_BY_CLASS */
     "get_user_by_class",
     "gubc",
+    2,
     RETRIEVE,
     "u",
     USERS_TABLE,
@@ -2638,6 +2653,7 @@ struct query Queries2[] = {
     /* Q_GUBM - GET_USER_BY_MITID */
     "get_user_by_mitid",
     "gubm",
+    2,
     RETRIEVE,
     "u",
     USERS_TABLE,
@@ -2654,6 +2670,7 @@ struct query Queries2[] = {
     /* Q_AUAC - ADD_USER_ACCOUNT */  /* uses prefetch_value() for users_id */
     "add_user_account",
     "auac",
+    2,
     APPEND,
     "u",
     USERS_TABLE,
@@ -2670,6 +2687,7 @@ struct query Queries2[] = {
     /* Q_AUSR - ADD_USER */  /* uses prefetch_value() for users_id */
     "add_user",
     "ausr",
+    2,
     APPEND,
     "u",
     USERS_TABLE,
@@ -2686,6 +2704,7 @@ struct query Queries2[] = {
     /* Q_RUSR - REGISTER_USER */
     "register_user",
     "rusr",
+    2,
     APPEND,
     0,
     0,
@@ -2702,6 +2721,7 @@ struct query Queries2[] = {
     /* Q_UUAC - UPDATE_USER_ACCOUNT */
     "update_user_account",
     "uuac",
+    2,
     UPDATE,
     "u",
     USERS_TABLE,
@@ -2718,6 +2738,7 @@ struct query Queries2[] = {
     /* Q_UUSR - UPDATE_USER */
     "update_user",
     "uusr",
+    2,
     UPDATE,
     "u",
     USERS_TABLE,
@@ -2734,6 +2755,7 @@ struct query Queries2[] = {
     /* Q_UUSH - UPDATE_USER_SHELL */
     "update_user_shell",
     "uush",
+    2,
     UPDATE,
     "u",
     USERS_TABLE,
@@ -2750,6 +2772,7 @@ struct query Queries2[] = {
     /* Q_UUST - UPDATE_USER_STATUS */
     "update_user_status",
     "uust",
+    2,
     UPDATE,
     "u",
     USERS_TABLE,
@@ -2766,6 +2789,7 @@ struct query Queries2[] = {
     /* Q_UUSS - UPDATE_USER_SECURITY_STATUS */
     "update_user_security_status",
     "uuss",
+    2,
     UPDATE,
     "u",
     USERS_TABLE,
@@ -2782,6 +2806,7 @@ struct query Queries2[] = {
     /* Q_DUSR - DELETE_USER */
     "delete_user",
     "dusr",
+    2,
     DELETE,
     "u",
     USERS_TABLE,
@@ -2798,6 +2823,7 @@ struct query Queries2[] = {
     /* Q_GKUM - GET_KERBEROS_USER_MAP */
     "get_kerberos_user_map",
     "gkum",
+    2,
     RETRIEVE,
     "k",
     KRBMAP_TABLE,
@@ -2814,6 +2840,7 @@ struct query Queries2[] = {
     /* Q_AKUM - ADD_KERBEROS_USER_MAP */
     "add_kerberos_user_map",
     "akum",
+    2,
     APPEND,
     "k",
     KRBMAP_TABLE,
@@ -2830,6 +2857,7 @@ struct query Queries2[] = {
     /* Q_DKUM - DELETE_KERBEROS_USER_MAP */
     "delete_kerberos_user_map",
     "dkum",
+    2,
     DELETE,
     "k",
     KRBMAP_TABLE,
@@ -2846,6 +2874,7 @@ struct query Queries2[] = {
     /* Q_GFBL - GET_FINGER_BY_LOGIN */
     "get_finger_by_login",
     "gfbl",
+    2,
     RETRIEVE,
     "u",
     USERS_TABLE,
@@ -2862,6 +2891,7 @@ struct query Queries2[] = {
     /* Q_UFBL - UPDATE_FINGER_BY_LOGIN */
     "update_finger_by_login",
     "ufbl",
+    2,
     UPDATE,
     "u",
     USERS_TABLE,
@@ -2878,6 +2908,7 @@ struct query Queries2[] = {
     /* Q_GPOB - GET_POBOX */
     "get_pobox",
     "gpob",
+    2,
     RETRIEVE,
     "u",
     USERS_TABLE,
@@ -2894,6 +2925,7 @@ struct query Queries2[] = {
     /* Q_GAPO - GET_ALL_POBOXES */
     "get_all_poboxes",
     "gapo",
+    2,
     RETRIEVE,
     "u",
     USERS_TABLE,
@@ -2910,6 +2942,7 @@ struct query Queries2[] = {
     /* Q_GPOP - GET_POBOXES_POP */
     "get_poboxes_pop",
     "gpop",
+    2,
     RETRIEVE,
     "u",
     USERS_TABLE,
@@ -2926,6 +2959,7 @@ struct query Queries2[] = {
     /* Q_GPOF - GET_POBOXES_SMTP */
     "get_poboxes_smtp",
     "gpos",
+    2,
     RETRIEVE,
     "u",
     USERS_TABLE,
@@ -2942,6 +2976,7 @@ struct query Queries2[] = {
     /* Q_SPOB - SET_POBOX */
     "set_pobox",
     "spob",
+    2,
     UPDATE,
     0,
     USERS_TABLE,
@@ -2958,6 +2993,7 @@ struct query Queries2[] = {
     /* Q_SPOP - SET_POBOX_POP */
     "set_pobox_pop",
     "spop",
+    2,
     UPDATE,
     0,
     USERS_TABLE,
@@ -2974,6 +3010,7 @@ struct query Queries2[] = {
     /* Q_DPOB - DELETE_POBOX */
     "delete_pobox",
     "dpob",
+    2,
     UPDATE,
     "u",
     USERS_TABLE,
@@ -2990,6 +3027,7 @@ struct query Queries2[] = {
     /* Q_GHST - GET_HOST */
     "get_host",
     "ghst",
+    2,
     RETRIEVE,
     "m",
     MACHINE_TABLE,
@@ -3006,6 +3044,7 @@ struct query Queries2[] = {
     /* Q_GHBH - GET_HOST_BY_HWADDR */
     "get_host_by_hwaddr",
     "ghbh",
+    2,
     RETRIEVE,
     "m",
     MACHINE_TABLE,
@@ -3022,6 +3061,7 @@ struct query Queries2[] = {
     /* Q_GHHA - GET_HOST_HWADDR */
     "get_host_hwaddr",
     "ghha",
+    2,
     RETRIEVE,
     "m",
     MACHINE_TABLE,
@@ -3038,6 +3078,7 @@ struct query Queries2[] = {
     /* Q_AHST - ADD_HOST */ /* uses prefetch_value() for mach_id */
     "add_host",
     "ahst",
+    2,
     APPEND,
     "m",
     MACHINE_TABLE,
@@ -3054,6 +3095,7 @@ struct query Queries2[] = {
     /* Q_UHST - UPDATE_HOST */
     "update_host",
     "uhst",
+    2,
     UPDATE,
     "m",
     MACHINE_TABLE,
@@ -3070,6 +3112,7 @@ struct query Queries2[] = {
     /* Q_UHHA - UPDATE_HOST_HWADDR */
     "update_host_hwaddr",
     "uhha",
+    2,
     UPDATE,
     "m",
     MACHINE_TABLE,
@@ -3086,6 +3129,7 @@ struct query Queries2[] = {
     /* Q_DHST - DELETE_HOST */
     "delete_host",
     "dhst",
+    2,
     DELETE,
     "m",
     MACHINE_TABLE,
@@ -3102,6 +3146,7 @@ struct query Queries2[] = {
     /* Q_GMAC - GET_MACHINE */
     "get_machine",
     "gmac",
+    2,
     RETRIEVE,
     "m",
     MACHINE_TABLE,
@@ -3118,6 +3163,7 @@ struct query Queries2[] = {
     /* Q_GHAL - GET_HOSTALIAS */
     "get_hostalias",
     "ghal",
+    2,
     RETRIEVE,
     "a",
     HOSTALIAS_TABLE,
@@ -3134,6 +3180,7 @@ struct query Queries2[] = {
     /* Q_AHAL - ADD_HOSTALIAS */
     "add_hostalias",
     "ahal",
+    2,
     APPEND,
     "a",
     HOSTALIAS_TABLE,
@@ -3150,6 +3197,7 @@ struct query Queries2[] = {
     /* Q_DHAL - DELETE_HOSTALIAS */
     "delete_hostalias",
     "dhal",
+    2,
     DELETE,
     "a",
     HOSTALIAS_TABLE,
@@ -3166,6 +3214,7 @@ struct query Queries2[] = {
     /* Q_GSNT - GET_SUBNET */
     "get_subnet",
     "gsnt",
+    2,
     RETRIEVE,
     "s",
     SUBNET_TABLE,
@@ -3182,6 +3231,7 @@ struct query Queries2[] = {
     /* Q_ASNT - ADD_SUBNET */
     "add_subnet",
     "asnt",
+    2,
     APPEND,
     "s",
     SUBNET_TABLE,
@@ -3198,6 +3248,7 @@ struct query Queries2[] = {
     /* Q_USNT - UPDATE_SUBNET */
     "update_subnet",
     "usnt",
+    2,
     UPDATE,
     "s",
     SUBNET_TABLE,
@@ -3214,6 +3265,7 @@ struct query Queries2[] = {
     /* Q_DSNT - DELETE_SUBNET */
     "delete_subnet",
     "dsnt",
+    2,
     DELETE,
     "s",
     SUBNET_TABLE,
@@ -3230,6 +3282,7 @@ struct query Queries2[] = {
     /* Q_GCLU - GET_CLUSTER */
     "get_cluster",
     "gclu",
+    2,
     RETRIEVE,
     "c",
     CLUSTERS_TABLE,
@@ -3246,6 +3299,7 @@ struct query Queries2[] = {
     /* Q_ACLU - ADD_CLUSTER */ /* uses prefetch_value() for clu_id */
     "add_cluster",
     "aclu",
+    2,
     APPEND,
     "c",
     CLUSTERS_TABLE,
@@ -3262,6 +3316,7 @@ struct query Queries2[] = {
     /* Q_UCLU - UPDATE_CLUSTER */
     "update_cluster",
     "uclu",
+    2,
     UPDATE,
     "c",
     CLUSTERS_TABLE,
@@ -3278,6 +3333,7 @@ struct query Queries2[] = {
     /* Q_DCLU - DELETE_CLUSTER */
     "delete_cluster",
     "dclu",
+    2,
     DELETE,
     "c",
     CLUSTERS_TABLE,
@@ -3294,6 +3350,7 @@ struct query Queries2[] = {
     /* Q_GMCM - GET_MACHINE_TO_CLUSTER_MAP */
     "get_machine_to_cluster_map",
     "gmcm",
+    2,
     RETRIEVE,
     "mcm",
     MCMAP_TABLE,
@@ -3310,6 +3367,7 @@ struct query Queries2[] = {
     /* Q_AMTC - ADD_MACHINE_TO_CLUSTER */
     "add_machine_to_cluster",
     "amtc",
+    2,
     APPEND,
     "mcm",
     MCMAP_TABLE,
@@ -3326,6 +3384,7 @@ struct query Queries2[] = {
     /* Q_DMFC - DELETE_MACHINE_FROM_CLUSTER */
     "delete_machine_from_cluster",
     "dmfc",
+    2,
     DELETE,
     "mcm",
     MCMAP_TABLE,
@@ -3342,6 +3401,7 @@ struct query Queries2[] = {
     /* Q_GCLD - GET_CLUSTER_DATA */
     "get_cluster_data",
     "gcld",
+    2,
     RETRIEVE,
     "svc",
     SVC_TABLE,
@@ -3358,6 +3418,7 @@ struct query Queries2[] = {
     /* Q_ACLD - ADD_CLUSTER_DATA */
     "add_cluster_data",
     "acld",
+    2,
     APPEND,
     "svc",
     SVC_TABLE,
@@ -3374,6 +3435,7 @@ struct query Queries2[] = {
     /* Q_DCLD - DELETE_CLUSTER_DATA */
     "delete_cluster_data",
     "dcld",
+    2,
     DELETE,
     "svc",
     SVC_TABLE,
@@ -3390,6 +3452,7 @@ struct query Queries2[] = {
     /* Q_GLIN - GET_LIST_INFO */
     "get_list_info",
     "glin",
+    2,
     RETRIEVE,
     "l",
     LIST_TABLE,
@@ -3406,6 +3469,7 @@ struct query Queries2[] = {
     /* Q_EXLN - EXPAND_LIST_NAMES */
     "expand_list_names",
     "exln",
+    2,
     RETRIEVE,
     "l",
     LIST_TABLE,
@@ -3422,6 +3486,7 @@ struct query Queries2[] = {
     /* Q_ALIS - ADD_LIST */ /* uses prefetch_value() for list_id */
     "add_list",
     "alis",
+    2,
     APPEND,
     "l",
     LIST_TABLE,
@@ -3438,6 +3503,7 @@ struct query Queries2[] = {
     /* Q_ULIS - UPDATE_LIST */
     "update_list",
     "ulis",
+    2,
     UPDATE,
     "l",
     LIST_TABLE,
@@ -3454,6 +3520,7 @@ struct query Queries2[] = {
     /* Q_DLIS - DELETE_LIST */
     "delete_list",
     "dlis",
+    2,
     DELETE,
     "l",
     LIST_TABLE,
@@ -3470,6 +3537,7 @@ struct query Queries2[] = {
     /* Q_AMTL - ADD_MEMBER_TO_LIST */
     "add_member_to_list",
     "amtl",
+    2,
     APPEND,
     0,
     IMEMBERS_TABLE,
@@ -3486,6 +3554,7 @@ struct query Queries2[] = {
     /* Q_ATML - ADD_TAGGED_MEMBER_TO_LIST */
     "add_tagged_member_to_list",
     "atml",
+    2,
     APPEND,
     0,
     IMEMBERS_TABLE,
@@ -3502,6 +3571,7 @@ struct query Queries2[] = {
     /* Q_TMOL - TAG_MEMBER_OF_LIST */
     "tag_member_of_list",
     "tmol",
+    2,
     UPDATE,
     "im",
     IMEMBERS_TABLE,
@@ -3518,6 +3588,7 @@ struct query Queries2[] = {
     /* Q_DMFL - DELETE_MEMBER_FROM_LIST */
     "delete_member_from_list",
     "dmfl",
+    2,
     DELETE,
     0,
     IMEMBERS_TABLE,
@@ -3534,6 +3605,7 @@ struct query Queries2[] = {
     /* Q_GAUS - GET_ACE_USE */
     "get_ace_use",
     "gaus",
+    2,
     RETRIEVE,
     0,
     0,
@@ -3550,6 +3622,7 @@ struct query Queries2[] = {
     /* Q_QGLI - QUALIFIED_GET_LISTS */
     "qualified_get_lists",
     "qgli",
+    2,
     RETRIEVE,
     0,
     LIST_TABLE,
@@ -3566,6 +3639,7 @@ struct query Queries2[] = {
     /* Q_GMOL - GET_MEMBERS_OF_LIST */
     "get_members_of_list",
     "gmol",
+    2,
     RETRIEVE,
     NULL,
     IMEMBERS_TABLE,
@@ -3582,6 +3656,7 @@ struct query Queries2[] = {
     /* Q_GEML - GET_END_MEMBERS_OF_LIST */
     "get_end_members_of_list",
     "geml",
+    2,
     RETRIEVE,
     NULL,
     IMEMBERS_TABLE,
@@ -3598,6 +3673,7 @@ struct query Queries2[] = {
     /* Q_GTML - GET_TAGGED_MEMBERS_OF_LIST */
     "get_tagged_members_of_list",
     "gtml",
+    2,
     RETRIEVE,
     NULL,
     IMEMBERS_TABLE,
@@ -3614,6 +3690,7 @@ struct query Queries2[] = {
     /* Q_GLOM - GET_LISTS_OF_MEMBER */
     "get_lists_of_member",
     "glom",
+    2,
     RETRIEVE,
     0,
     IMEMBERS_TABLE,
@@ -3630,6 +3707,7 @@ struct query Queries2[] = {
     /* Q_CMOL - COUNT_MEMBERS_OF_LIST */
     "count_members_of_list",
     "cmol",
+    2,
     RETRIEVE,
     0,
     IMEMBERS_TABLE,
@@ -3646,6 +3724,7 @@ struct query Queries2[] = {
     /* Q_GSIN - GET_SERVER_INFO */
     "get_server_info",
     "gsin",
+    2,
     RETRIEVE,
     "s",
     SERVERS_TABLE,
@@ -3662,6 +3741,7 @@ struct query Queries2[] = {
     /* Q_QGSV - QUALIFIED_GET_SERVER */
     "qualified_get_server",
     "qgsv",
+    2,
     RETRIEVE,
     0,
     SERVERS_TABLE,
@@ -3678,6 +3758,7 @@ struct query Queries2[] = {
     /* Q_ASIN - ADD_SERVER_INFO */
     "add_server_info",
     "asin",
+    2,
     APPEND,
     "s",
     SERVERS_TABLE,
@@ -3694,6 +3775,7 @@ struct query Queries2[] = {
     /* Q_USIN - UPDATE_SERVER_INFO */
     "update_server_info",
     "usin",
+    2,
     UPDATE,
     "s",
     SERVERS_TABLE,
@@ -3710,6 +3792,7 @@ struct query Queries2[] = {
     /* Q_RSVE - RESET_SERVER_ERROR */
     "reset_server_error",
     "rsve",
+    2,
     UPDATE,
     "s",
     SERVERS_TABLE,
@@ -3726,6 +3809,7 @@ struct query Queries2[] = {
     /* Q_SSIF - SET_SERVER_INTERNAL_FLAGS */
     "set_server_internal_flags",
     "ssif",
+    2,
     UPDATE,
     "s",
     SERVERS_TABLE,
@@ -3742,6 +3826,7 @@ struct query Queries2[] = {
     /* Q_DSIN - DELETE_SERVER_INFO */
     "delete_server_info",
     "dsin",
+    2,
     DELETE,
     "s",
     SERVERS_TABLE,
@@ -3758,6 +3843,7 @@ struct query Queries2[] = {
     /* Q_GSHI - GET_SERVER_HOST_INFO */
     "get_server_host_info",
     "gshi",
+    2,
     RETRIEVE,
     "sh",
     SERVERHOSTS_TABLE,
@@ -3774,6 +3860,7 @@ struct query Queries2[] = {
     /* Q_QGSH - QUALIFIED_GET_SERVER_HOST */
     "qualified_get_server_host",
     "qgsh",
+    2,
     RETRIEVE,
     0,
     SERVERHOSTS_TABLE,
@@ -3790,6 +3877,7 @@ struct query Queries2[] = {
     /* Q_ASHI - ADD_SERVER_HOST_INFO */
     "add_server_host_info",
     "ashi",
+    2,
     APPEND,
     "sh",
     SERVERHOSTS_TABLE,
@@ -3806,6 +3894,7 @@ struct query Queries2[] = {
     /* Q_USHI - UPDATE_SERVER_HOST_INFO */
     "update_server_host_info",
     "ushi",
+    2,
     UPDATE,
     "sh",
     SERVERHOSTS_TABLE,
@@ -3822,6 +3911,7 @@ struct query Queries2[] = {
     /* Q_RSHE - RESET_SERVER_HOST_ERROR */
     "reset_server_host_error",
     "rshe",
+    2,
     UPDATE,
     "sh",
     SERVERHOSTS_TABLE,
@@ -3838,6 +3928,7 @@ struct query Queries2[] = {
     /* Q_SSHO - SET_SERVER_HOST_OVERRIDE */
     "set_server_host_override",
     "ssho",
+    2,
     UPDATE,
     "sh",
     SERVERHOSTS_TABLE,
@@ -3854,6 +3945,7 @@ struct query Queries2[] = {
     /* Q_SSHI - SET_SERVER_HOST_INTERNAL */
     "set_server_host_internal",
     "sshi",
+    2,
     UPDATE,
     "s",
     SERVERHOSTS_TABLE,
@@ -3870,6 +3962,7 @@ struct query Queries2[] = {
     /* Q_DSHI - DELETE_SERVER_HOST_INFO */
     "delete_server_host_info",
     "dshi",
+    2,
     DELETE,
     "sh",
     SERVERHOSTS_TABLE,
@@ -3886,6 +3979,7 @@ struct query Queries2[] = {
     /* Q_GSLO - GET_SERVER_LOCATIONS */
     "get_server_locations",
     "gslo",
+    2,
     RETRIEVE,
     "sh",
     SERVERHOSTS_TABLE,
@@ -3902,6 +3996,7 @@ struct query Queries2[] = {
     /* Q_GFSL - GET_FILESYS_BY_LABEL */
     "get_filesys_by_label",
     "gfsl",
+    2,
     RETRIEVE,
     "fs",
     FILESYS_TABLE,
@@ -3918,6 +4013,7 @@ struct query Queries2[] = {
     /* Q_GFSM - GET_FILESYS_BY_MACHINE */
     "get_filesys_by_machine",
     "gfsm",
+    2,
     RETRIEVE,
     "fs",
     FILESYS_TABLE,
@@ -3934,6 +4030,7 @@ struct query Queries2[] = {
     /* Q_GFSN - GET_FILESYS_BY_NFSPHYS */
     "get_filesys_by_nfsphys",
     "gfsn",
+    2,
     RETRIEVE,
     "fs",
     FILESYS_TABLE,
@@ -3950,6 +4047,7 @@ struct query Queries2[] = {
     /* Q_GFSG - GET_FILESYS_BY_GROUP */
     "get_filesys_by_group",
     "gfsg",
+    2,
     RETRIEVE,
     "fs",
     FILESYS_TABLE,
@@ -3966,6 +4064,7 @@ struct query Queries2[] = {
     /* Q_GFSP - GET_FILESYS_BY_PATH */
     "get_filesys_by_path",
     "gfsp",
+    2,
     RETRIEVE,
     "fs",
     FILESYS_TABLE,
@@ -3982,6 +4081,7 @@ struct query Queries2[] = {
     /* Q_AFIL - ADD_FILESYS */ /* uses prefetch_value() for filsys_id */
     "add_filesys",
     "afil",
+    2,
     APPEND,
     "fs",
     FILESYS_TABLE,
@@ -3998,6 +4098,7 @@ struct query Queries2[] = {
     /* Q_UFIL - UPDATE_FILESYS */
     "update_filesys",
     "ufil",
+    2,
     UPDATE,
     "fs",
     FILESYS_TABLE,
@@ -4014,6 +4115,7 @@ struct query Queries2[] = {
     /* Q_DFIL - DELETE_FILESYS */
     "delete_filesys",
     "dfil",
+    2,
     DELETE,
     "fs",
     FILESYS_TABLE,
@@ -4030,6 +4132,7 @@ struct query Queries2[] = {
     /* Q_GFGM - GET_FSGROUP_MEMBERS */
     "get_fsgroup_members",
     "gfgm",
+    2,
     RETRIEVE,
     "fg",
     FSGROUP_TABLE,
@@ -4046,6 +4149,7 @@ struct query Queries2[] = {
     /* Q_AFTG - ADD_FILESYS_TO_FSGROUP */
     "add_filesys_to_fsgroup",
     "aftg",
+    2,
     APPEND,
     "fg",
     FSGROUP_TABLE,
@@ -4062,6 +4166,7 @@ struct query Queries2[] = {
     /* Q_RFFG - REMOVE_FILESYS_FROM_FSGROUP */
     "remove_filesys_from_fsgroup",
     "rffg",
+    2,
     DELETE,
     "fg",
     FSGROUP_TABLE,
@@ -4078,6 +4183,7 @@ struct query Queries2[] = {
     /* Q_GANF - GET_ALL_NFSPHYS */
     "get_all_nfsphys",
     "ganf",
+    2,
     RETRIEVE,
     "np",
     NFSPHYS_TABLE,
@@ -4094,6 +4200,7 @@ struct query Queries2[] = {
     /* Q_GNFP - GET_NFSPHYS */
     "get_nfsphys",
     "gnfp",
+    2,
     RETRIEVE,
     "np",
     NFSPHYS_TABLE,
@@ -4110,6 +4217,7 @@ struct query Queries2[] = {
     /* Q_ANFP - ADD_NFSPHYS */ /* uses prefetch_value() for nfsphys_id */
     "add_nfsphys",
     "anfp",
+    2,
     APPEND,
     "np",
     NFSPHYS_TABLE,
@@ -4126,6 +4234,7 @@ struct query Queries2[] = {
     /* Q_UNFP - UPDATE_NFSPHYS */
     "update_nfsphys",
     "unfp",
+    2,
     UPDATE,
     "np",
     NFSPHYS_TABLE,
@@ -4142,6 +4251,7 @@ struct query Queries2[] = {
     /* Q_AJNF - ADJUST_NFSPHYS_ALLOCATION */
     "adjust_nfsphys_allocation",
     "ajnf",
+    2,
     UPDATE,
     "np",
     NFSPHYS_TABLE,
@@ -4158,6 +4268,7 @@ struct query Queries2[] = {
     /* Q_DNFP - DELETE_NFSPHYS */
     "delete_nfsphys",
     "dnfp",
+    2,
     DELETE,
     "np",
     NFSPHYS_TABLE,
@@ -4174,6 +4285,7 @@ struct query Queries2[] = {
     /* Q_GQOT - GET_QUOTA */
     "get_quota",
     "gqot",
+    2,
     RETRIEVE,
     "q",
     QUOTA_TABLE,
@@ -4190,6 +4302,7 @@ struct query Queries2[] = {
     /* Q_GQBF - GET_QUOTA_BY_FILESYS */
     "get_quota_by_filesys",
     "gqbf",
+    2,
     RETRIEVE,
     "q",
     QUOTA_TABLE,
@@ -4206,6 +4319,7 @@ struct query Queries2[] = {
     /* Q_AQOT - ADD_QUOTA */ /* prefetch_filsys() gets last 1 value */
     "add_quota",
     "aqot",
+    2,
     APPEND,
     0,
     QUOTA_TABLE,
@@ -4222,6 +4336,7 @@ struct query Queries2[] = {
     /* Q_UQOT - UPDATE_QUOTA */
     "update_quota",
     "uqot",
+    2,
     UPDATE,
     0,
     QUOTA_TABLE,
@@ -4238,6 +4353,7 @@ struct query Queries2[] = {
     /* Q_DQOT - DELETE_QUOTA */
     "delete_quota",
     "dqot",
+    2,
     DELETE,
     0,
     QUOTA_TABLE,
@@ -4254,6 +4370,7 @@ struct query Queries2[] = {
     /* Q_GNFQ - GET_NFS_QUOTAS */
     "get_nfs_quota",
     "gnfq",
+    2,
     RETRIEVE,
     "q",
     QUOTA_TABLE,
@@ -4270,6 +4387,7 @@ struct query Queries2[] = {
     /* Q_GNQP - GET_NFS_QUOTAS_BY_PARTITION */
     "get_nfs_quotas_by_partition",
     "gnqp",
+    2,
     RETRIEVE,
     "q",
     QUOTA_TABLE,
@@ -4286,6 +4404,7 @@ struct query Queries2[] = {
     /* Q_ANFQ - ADD_NFS_QUOTA */ /* prefetch_filsys() gets last 1 value */
     "add_nfs_quota",
     "anfq",
+    2,
     APPEND,
     0,
     QUOTA_TABLE,
@@ -4302,6 +4421,7 @@ struct query Queries2[] = {
     /* Q_UNFQ - UPDATE_NFS_QUOTA */
     "update_nfs_quota",
     "unfq",
+    2,
     UPDATE,
     0,
     QUOTA_TABLE,
@@ -4318,6 +4438,7 @@ struct query Queries2[] = {
     /* Q_DNFQ - DELETE_NFS_QUOTA */
     "delete_nfs_quota",
     "dnfq",
+    2,
     DELETE,
     0,
     QUOTA_TABLE,
@@ -4334,6 +4455,7 @@ struct query Queries2[] = {
     /* Q_GZCL - GET_ZEPHYR_CLASS */
     "get_zephyr_class",
     "gzcl",
+    2,
     RETRIEVE,
     "z",
     ZEPHYR_TABLE,
@@ -4350,6 +4472,7 @@ struct query Queries2[] = {
     /* Q_AZCL - ADD_ZEPHYR_CLASS */
     "add_zephyr_class",
     "azcl",
+    2,
     APPEND,
     "z",
     ZEPHYR_TABLE,
@@ -4366,6 +4489,7 @@ struct query Queries2[] = {
     /* Q_UZCL - UPDATE_ZEPHYR_CLASS */
     "update_zephyr_class",
     "uzcl",
+    2,
     UPDATE,
     "z",
     ZEPHYR_TABLE,
@@ -4382,6 +4506,7 @@ struct query Queries2[] = {
     /* Q_DZCL - DELETE_ZEPHYR_CLASS */
     "delete_zephyr_class",
     "dzcl",
+    2,
     DELETE,
     "z",
     ZEPHYR_TABLE,
@@ -4398,6 +4523,7 @@ struct query Queries2[] = {
     /* Q_GSHA - GET_SERVER_HOST_ACCESS */
     "get_server_host_access",
     "gsha",
+    2,
     RETRIEVE,
     "ha",
     HOSTACCESS_TABLE,
@@ -4414,6 +4540,7 @@ struct query Queries2[] = {
     /* Q_ASHA - ADD_SERVER_HOST_ACCESS */
     "add_server_host_access",
     "asha",
+    2,
     APPEND,
     "ha",
     HOSTACCESS_TABLE,
@@ -4430,6 +4557,7 @@ struct query Queries2[] = {
     /* Q_USHA - UPDATE_SERVER_HOST_ACCESS */
     "update_server_host_access",
     "usha",
+    2,
     UPDATE,
     "ha",
     HOSTACCESS_TABLE,
@@ -4446,6 +4574,7 @@ struct query Queries2[] = {
     /* Q_DSHA - DELETE_SERVER_HOST_ACCESS */
     "delete_server_host_access",
     "dsha",
+    2,
     DELETE,
     "ha",
     HOSTACCESS_TABLE,
@@ -4462,6 +4591,7 @@ struct query Queries2[] = {
     /* Q_GACL - GET_ACL */
     "get_acl",
     "gacl",
+    2,
     RETRIEVE,
     "ac",
     ACL_TABLE,
@@ -4478,6 +4608,7 @@ struct query Queries2[] = {
     /* Q_AACL - ADD_ACL */
     "add_acl",
     "aacl",
+    2,
     APPEND,
     "ac",
     ACL_TABLE,
@@ -4494,6 +4625,7 @@ struct query Queries2[] = {
     /* Q_DACL - DELETE_ACL */
     "delete_acl",
     "dacl",
+    2,
     DELETE,
     "ac",
     ACL_TABLE,
@@ -4510,6 +4642,7 @@ struct query Queries2[] = {
     /* Q_GSVC - GET_SERVICE */
     "get_service",
     "gsvc",
+    2,
     RETRIEVE,
     "ss",
     SERVICES_TABLE,
@@ -4526,6 +4659,7 @@ struct query Queries2[] = {
     /* Q_ASVC - ADD_SERVICE */
     "add_service",
     "asvc",
+    2,
     APPEND,
     "ss",
     SERVICES_TABLE,
@@ -4542,6 +4676,7 @@ struct query Queries2[] = {
     /* Q_DSVC - DELETE_SERVICE */
     "delete_service",
     "dsvc",
+    2,
     DELETE,
     "ss",
     SERVICES_TABLE,
@@ -4558,6 +4693,7 @@ struct query Queries2[] = {
     /* Q_GPRN - GET_PRINTER */
     "get_printer",
     "gprn",
+    2,
     RETRIEVE,
     "pr",
     PRINTERS_TABLE,
@@ -4574,6 +4710,7 @@ struct query Queries2[] = {
     /* Q_GPBD - GET_PRINTER_BY_DUPLEXNAME */
     "get_printer_by_duplexname",
     "gpbd",
+    2,
     RETRIEVE,
     "pr",
     PRINTERS_TABLE,
@@ -4590,6 +4727,7 @@ struct query Queries2[] = {
     /* Q_GPBE - GET_PRINTER_BY_ETHERNET */
     "get_printer_by_ethernet",
     "gpbe",
+    2,
     RETRIEVE,
     "pr",
     PRINTERS_TABLE,
@@ -4606,6 +4744,7 @@ struct query Queries2[] = {
     /* Q_GPBH - GET_PRINTER_BY_HOSTNAME */
     "get_printer_by_hostname",
     "gpbh",
+    2,
     RETRIEVE,
     "pr",
     PRINTERS_TABLE,
@@ -4622,6 +4761,7 @@ struct query Queries2[] = {
     /* Q_GPBR - GET_PRINTER_BY_RM */
     "get_printer_by_rm",
     "gpbr",
+    2,
     RETRIEVE,
     "pr",
     PRINTERS_TABLE,
@@ -4638,6 +4778,7 @@ struct query Queries2[] = {
     /* Q_GPBL - GET_PRINTER_BY_LOCATION */
     "get_printer_by_location",
     "gpbl",
+    2,
     RETRIEVE,
     "pr",
     PRINTERS_TABLE,
@@ -4654,6 +4795,7 @@ struct query Queries2[] = {
     /* Q_GPBC - GET_PRINTER_BY_CONTACT */
     "get_printer_by_contact",
     "gpbc",
+    2,
     RETRIEVE,
     "pr",
     PRINTERS_TABLE,
@@ -4670,6 +4812,7 @@ struct query Queries2[] = {
     /* Q_APRN - ADD_PRINTER */
     "add_printer",
     "aprn",
+    2,
     APPEND,
     "pr",
     PRINTERS_TABLE,
@@ -4686,6 +4829,7 @@ struct query Queries2[] = {
     /* Q_UPRN - UPDATE_PRINTER */
     "update_printer",
     "uprn",
+    2,
     UPDATE,
     "pr",
     PRINTERS_TABLE,
@@ -4702,6 +4846,7 @@ struct query Queries2[] = {
     /* Q_DPRN - DELETE_PRINTER */
     "delete_printer",
     "dprn",
+    2,
     DELETE,
     "pr",
     PRINTERS_TABLE,
@@ -4718,6 +4863,7 @@ struct query Queries2[] = {
     /* Q_GPSV - GET_PRINT_SERVER */
     "get_print_server",
     "gpsv",
+    2,
     RETRIEVE,
     "ps",
     PRINTSERVERS_TABLE,
@@ -4734,6 +4880,7 @@ struct query Queries2[] = {
     /* Q_APSV - ADD_PRINT_SERVER */
     "add_print_server",
     "apsv",
+    2,
     APPEND,
     "ps",
     PRINTSERVERS_TABLE,
@@ -4750,6 +4897,7 @@ struct query Queries2[] = {
     /* Q_UPSV - UPDATE_PRINT_SERVER */
     "update_print_server",
     "upsv",
+    2,
     UPDATE,
     "ps",
     PRINTSERVERS_TABLE,
@@ -4766,6 +4914,7 @@ struct query Queries2[] = {
     /* Q_DPSV - DELETE_PRINT_SERVER */
     "delete_print_server",
     "dpsv",
+    2,
     DELETE,
     "ps",
     PRINTSERVERS_TABLE,
@@ -4782,6 +4931,7 @@ struct query Queries2[] = {
     /* Q_GALI - GET_ALIAS */
     "get_alias",
     "gali",
+    2,
     RETRIEVE,
     "a",
     ALIAS_TABLE,
@@ -4798,6 +4948,7 @@ struct query Queries2[] = {
     /* Q_AALI - ADD_ALIAS */
     "add_alias",
     "aali",
+    2,
     APPEND,
     "a",
     ALIAS_TABLE,
@@ -4814,6 +4965,7 @@ struct query Queries2[] = {
     /* Q_DALI - DELETE_ALIAS */
     "delete_alias",
     "dali",
+    2,
     DELETE,
     "a",
     ALIAS_TABLE,
@@ -4830,6 +4982,7 @@ struct query Queries2[] = {
     /* Q_GVAL - GET_VALUE */
     "get_value",
     "gval",
+    2,
     RETRIEVE,
     "val",
     NUMVALUES_TABLE,
@@ -4846,6 +4999,7 @@ struct query Queries2[] = {
     /* Q_AVAL - ADD_VALUE */
     "add_value",
     "aval",
+    2,
     APPEND,
     "val",
     NUMVALUES_TABLE,
@@ -4862,6 +5016,7 @@ struct query Queries2[] = {
     /* Q_UVAL - UPDATE_VALUE */
     "update_value",
     "uval",
+    2,
     UPDATE,
     "val",
     NUMVALUES_TABLE,
@@ -4878,6 +5033,7 @@ struct query Queries2[] = {
     /* Q_DVAL - DELETE_VALUE */
     "delete_value",
     "dval",
+    2,
     DELETE,
     "val",
     NUMVALUES_TABLE,
@@ -4894,6 +5050,7 @@ struct query Queries2[] = {
     /* Q_GATS - GET_ALL_TABLE_STATS */
     "get_all_table_stats",
     "gats",
+    2,
     RETRIEVE,
     "tbs",
     TBLSTATS_TABLE,
@@ -4910,6 +5067,7 @@ struct query Queries2[] = {
     /* Q__SDL - _SET_DEBUG_LEVEL */
     "_set_debug_level",
     "_sdl",
+    2,
     UPDATE,
     NULL,
     0,
@@ -4924,4 +5082,4 @@ struct query Queries2[] = {
 
 };
 
-int QueryCount2 = (sizeof(Queries2) / sizeof(struct query));
+int QueryCount = (sizeof(Queries) / sizeof(struct query));

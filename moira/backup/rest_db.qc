@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/rest_db.qc,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/rest_db.qc,v 1.3 1988-09-12 13:59:10 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/rest_db.qc,v 1.4 1989-12-04 12:09:33 mar Exp $
  *
  *  (c) Copyright 1988 by the Massachusetts Institute of Technology.
  *  For copying and distribution information, please see the file
@@ -10,13 +10,14 @@
  */
 
 #ifndef lint
-static char *rcsid_rest_db_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/rest_db.qc,v 1.3 1988-09-12 13:59:10 mar Exp $";
+static char *rcsid_rest_db_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/rest_db.qc,v 1.4 1989-12-04 12:09:33 mar Exp $";
 #endif lint
 
 #include <sys/file.h>
 #include <stdio.h>
 #include <ctype.h>
 #include <mit-copyright.h>
+#include "dump_db.h"
 
 
 /*ARGSUSED*/
@@ -109,7 +110,7 @@ int parse_int(f)
     register int c;
     register int val = 0;
     register int sign = 1;
-    while ((c = getc(f)) != EOF && c != ':' && c != '\n') {
+    while ((c = getc(f)) != EOF && c != SEP_CHAR && c != '\n') {
 	if (c == '-') sign = -1;
 	else if (isdigit(c)) {
 	    val *= 10;
@@ -127,7 +128,7 @@ void parse_str(f, buf, len)
 {
     register int c;
 
-    while ((c = getc(f)) != EOF && c != ':' && c != '\n' && len > 0) {
+    while ((c = getc(f)) != EOF && c != SEP_CHAR && c != '\n' && len > 0) {
 	if (c == '\\') {
 	    c = getc(f);
 	    if (isdigit(c)) {
@@ -139,7 +140,7 @@ void parse_str(f, buf, len)
 		    punt("Broken \\###");
 		/* Convert to ASCII code: */
 		*buf++ =  (((c-'0')<<6) + ((c1-'0')<<3) + c2-'0');
-	    } else if (c == '\\' || c == ':') {
+	    } else if (c == '\\' || c == SEP_CHAR) {
 		*buf++ = c;
 		--len;
 	    } else punt ("Broken '\\'");
@@ -151,9 +152,9 @@ void parse_str(f, buf, len)
     if (c == EOF)
 	return;
     
-    if (c != EOF && c != ':' && c != '\n') {
+    if (c != EOF && c != SEP_CHAR && c != '\n') {
 	fprintf(stderr, "Field too wide, truncated\n");
-	while ((c = getc(f)) != EOF && c != ':' && c != '\n');
+	while ((c = getc(f)) != EOF && c != SEP_CHAR && c != '\n');
 	(void) ungetc(c, f);
     } else {
 	*buf++ = 0;
@@ -164,7 +165,7 @@ void parse_str(f, buf, len)
 void parse_sep(f)
     FILE *f;
 {
-    if (getc(f) != ':') punt("Expected colon");
+    if (getc(f) != SEP_CHAR) punt("Expected Separator");
 }
 void parse_nl(f)
     FILE *f;
@@ -195,14 +196,3 @@ FILE *open_file(prefix, suffix)
     fprintf(stderr, "Working on %s\n", name);
     return(f);
 }
-
-/*
- * Local Variables:
- * mode: c
- * c-indent-level: 4
- * c-continued-statement-offset: 4
- * c-brace-offset: -4
- * c-argdecl-indent: 4
- * c-label-offset: -4
- * End:
- */

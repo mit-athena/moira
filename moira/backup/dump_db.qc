@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/dump_db.qc,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/dump_db.qc,v 1.5 1989-06-08 15:51:40 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/dump_db.qc,v 1.6 1989-12-04 12:09:29 mar Exp $
  *
  *	(c) Copyright 1988 by the Massachusetts Institute of Technology.
  *	For copying and distribution information, please see the file
@@ -13,13 +13,14 @@
  */
 
 #ifndef lint
-static char *rcsid_dump_db_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/dump_db.qc,v 1.5 1989-06-08 15:51:40 mar Exp $";
+static char *rcsid_dump_db_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/dump_db.qc,v 1.6 1989-12-04 12:09:29 mar Exp $";
 #endif lint
 
 #include <stdio.h>
 #include <sys/file.h>
 #include <ctype.h>
 #include <mit-copyright.h>
+#include "dump_db.h"
 
 /* putc without the line buffer hair */
 
@@ -46,7 +47,7 @@ main(argc, argv)
 
     bzero(act, 128);
 
-    act[':']=1;
+    act[SEP_CHAR]=1;
     act['\\']=1;
     act[127]=2;
     for (i=0; i<' '; i++) act[i]=2;
@@ -172,16 +173,3 @@ char *strtrim(save)
     *t = '\0';
     return s;
 }
-
-
-
-/*
- * Local Variables:
- * mode: c
- * c-indent-level: 4
- * c-continued-statement-offset: 4
- * c-brace-offset: -4
- * c-argdecl-indent: 4
- * c-label-offset: -4
- * End:
- */

@@ -1,13 +1,13 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/include/dcm.h,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/include/dcm.h,v 1.1 1988-08-07 22:42:25 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/include/dcm.h,v 1.2 1989-08-24 23:23:03 mar Exp $
  */
 
 #define UPCALL_CONT	0
 #define UPCALL_STOP	1
 
 #define HARD_FAIL(x)	(((x) != 0 ) && ((x) != SMS_NO_CHANGE))
-#define SOFT_FAIL(x)	(((x) == SMS_NO_MEM) || ((x) == SMS_CANT_CONNECT) || ((x) == SMS_CCONFIG))
+#define SOFT_FAIL(x)	(((x) == SMS_NO_MEM) || ((x) == SMS_CANT_CONNECT) || ((x) == SMS_CCONFIG) || ((x) == SMS_DEADLOCK))
 
 #define SMS_DIR		"/u1/sms"
 #define LOCK_DIR	"/u1/sms/dcm/locks"

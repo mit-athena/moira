@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_server.h,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_server.h,v 1.13 1988-12-29 17:57:41 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_server.h,v 1.14 1989-06-27 16:04:40 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
@@ -90,3 +90,13 @@ extern int newqueries, oldqueries;
 /* Maximum and minimum values that will ever be chosen for IDs */
 #define MAX_ID_VALUE	32765
 #define MIN_ID_VALUE	100
+
+/* Sleepy states for the server! */
+#define AWAKE 0
+#define SLEEPY 1
+#define ASLEEP 2
+#define GROGGY 3
+extern int dormant;
+
+/* If the motd file exists, the server will go to sleep. */
+#define SMS_MOTD_FILE "/etc/smsdown"

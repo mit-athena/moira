@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.29 1990-06-13 12:44:14 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.30 1992-06-22 18:29:38 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -16,7 +16,7 @@
  * 
  */
 
-static char *rcsid_mr_main_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.29 1990-06-13 12:44:14 mar Exp $";
+static char *rcsid_mr_main_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.30 1992-06-22 18:29:38 mar Exp $";
 
 #include <mit-copyright.h>
 #include <strings.h>
@@ -82,6 +82,7 @@ main(argc, argv)
 	 */
 	initialize_sms_error_table();
 	initialize_krb_error_table();
+	initialize_gdss_error_table();
 	set_com_err_hook(mr_com_err);
 	setlinebuf(stderr);
 	

@@ -1,6 +1,6 @@
 #	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_et.et,v $
 #	$Author: mar $
-#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_et.et,v 1.9 1988-08-05 00:09:12 mar Exp $
+#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_et.et,v 1.10 1989-06-14 11:35:45 mar Exp $
 #
 	error_table sms
 
@@ -191,5 +191,8 @@ ec	SMS_TARERR,
 
 ec	SMS_PROTO,
 	"Failed to put prototype files in new locker"
+
+ec	SMS_BUSY,
+	"the database is busy; try again later"
 
 	end

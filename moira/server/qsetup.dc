@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsetup.dc,v $
  *	$Author: tom $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsetup.dc,v 1.7 1994-05-18 16:20:25 tom Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsetup.dc,v 1.8 1994-06-08 10:47:14 tom Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_qsupport_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsetup.dc,v 1.7 1994-05-18 16:20:25 tom Exp $";
+static char *rcsid_qsupport_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsetup.dc,v 1.8 1994-06-08 10:47:14 tom Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -932,7 +932,7 @@ setup_ahst(q,argv,cl)
     if (*argv[row+2] && (row == 0 || strcmp(argv[3], cl->args->mr_argv[3]))) {
 	char *p = argv[row+2];
 
-	if (!isalpha(*p)) return(MR_BAD_CHAR);
+	if (!isalnum(*p)) return(MR_BAD_CHAR);
 	for (; *p; p++) {
 	    if ((!isalnum(*p) && *p != '-' && *p != '.') ||
 		(*p == '-' && p[1] == '.'))

@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/reg_stubs.c,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/reg_stubs.c,v 1.7 1989-06-28 13:39:59 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/reg_stubs.c,v 1.8 1989-08-16 11:18:18 mar Exp $
  *
  *  (c) Copyright 1988 by the Massachusetts Institute of Technology.
  *  For copying and distribution information, please see the file
@@ -9,7 +9,7 @@
  */
 
 #ifndef lint
-static char *rcsid_reg_stubs_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/reg_stubs.c,v 1.7 1989-06-28 13:39:59 mar Exp $";
+static char *rcsid_reg_stubs_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/reg_stubs.c,v 1.8 1989-08-16 11:18:18 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -69,8 +69,8 @@ verify_user(first, last, idnumber, hashidnumber, login)
     char buf[1024];
     int version = ntohl((u_long)1);
     int call = ntohl((u_long)UREG_VERIFY_USER);
-    C_Block key;
-    Key_schedule ks;
+    des_cblock key;
+    des_key_schedule ks;
     register char *bp = buf;
     register int len;
     char crypt_src[1024];
@@ -97,9 +97,9 @@ verify_user(first, last, idnumber, hashidnumber, login)
 
     bcopy(hashidnumber, crypt_src+len, 13);
 
-    string_to_key(hashidnumber, key);
-    key_sched(key, ks);
-    pcbc_encrypt(crypt_src, bp, len+14, ks, key, 1);
+    des_string_to_key(hashidnumber, key);
+    des_key_sched(key, ks);
+    des_pcbc_encrypt(crypt_src, bp, len+14, ks, key, 1);
     bp += len+14+8;
     len = bp - buf;
     return do_call(buf, len, seq_no, login);
@@ -111,8 +111,8 @@ grab_login(first, last, idnumber, hashidnumber, login)
     char buf[1024];
     int version = ntohl((u_long)1);
     int call = ntohl((u_long)UREG_RESERVE_LOGIN);
-    C_Block key;
-    Key_schedule ks;
+    des_cblock key;
+    des_key_schedule ks;
     register char *bp = buf;
     register int len;
     
@@ -150,9 +150,9 @@ grab_login(first, last, idnumber, hashidnumber, login)
     cbp += len;
 
     len = cbp - crypt_src;
-    string_to_key(hashidnumber, key);
-    key_sched(key, ks);
-    pcbc_encrypt(crypt_src, bp, len, ks, key, 1);
+    des_string_to_key(hashidnumber, key);
+    des_key_sched(key, ks);
+    des_pcbc_encrypt(crypt_src, bp, len, ks, key, 1);
 #ifdef notdef    
     for (i = 0; i < len; i++) {
 	printf("%02.2x ", (unsigned char)bp[i]);
@@ -173,8 +173,8 @@ set_password(first, last, idnumber, hashidnumber, password)
     char buf[1024];
     int version = ntohl((u_long)1);
     int call = ntohl((u_long)UREG_SET_PASSWORD);
-    C_Block key;
-    Key_schedule ks;
+    des_cblock key;
+    des_key_schedule ks;
     register char *bp = buf;
     register int len;
     
@@ -212,9 +212,9 @@ set_password(first, last, idnumber, hashidnumber, password)
     cbp += len;
 
     len = cbp - crypt_src;
-    string_to_key(hashidnumber, key);
-    key_sched(key, ks);
-    pcbc_encrypt(crypt_src, bp, len, ks, key, 1);
+    des_string_to_key(hashidnumber, key);
+    des_key_sched(key, ks);
+    des_pcbc_encrypt(crypt_src, bp, len, ks, key, 1);
 #ifdef notdef    
     for (i = 0; i < len; i++) {
 	printf("%02.2x ", (unsigned char)bp[i]);

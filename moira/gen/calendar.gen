@@ -1,6 +1,6 @@
 #!/moira/bin/perl -Tw
 
-# $Id: calendar.gen,v 1.2 2002-08-16 15:32:18 zacheiss Exp $
+# $Id: calendar.gen,v 1.3 2002-08-22 20:45:30 zacheiss Exp $
 
 # The following exit codes are defined and MUST BE CONSISTENT withh the
 # error codes the library uses:
@@ -27,7 +27,7 @@ open(OUT, ">$outfile") || exit $MR_OCONFIG;
 
 while (($clearid, $login, $first, $middle, $last) = $sth->fetchrow_array) {
     $row = "$clearid|$login^UID=$login/S=$last/G=$first/I=$middle/";
-    $row .= "EMAIL=$login\@mit.edu\n";
+    $row .= "OU1=/JOB-TITLE=/PHONE=/LOC=/EMAIL=$login\@mit.edu\n";
     $row =~ s/\0//g;
     print OUT $row;
 }

@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/increment.qc,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/increment.qc,v 1.3 1989-09-01 15:02:36 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/increment.qc,v 1.4 1989-09-04 17:11:04 mar Exp $
  *
  *	Copyright (C) 1989 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_qrtn_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/increment.qc,v 1.3 1989-09-01 15:02:36 mar Exp $";
+static char *rcsid_qrtn_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/increment.qc,v 1.4 1989-09-04 17:11:04 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -317,9 +317,9 @@ incremental_update()
 	sprintf(cafter, "%d", iu->afterc);
 	argv[3] = cafter;
 	for (i = 0; i < iu->beforec; i++)
-	  argv[4 + i] = before[i];
+	  argv[4 + i] = iu->before[i];
 	for (i = 0; i < iu->afterc; i++)
-	  argv[4 + iu->beforec + i] = after[i];
+	  argv[4 + iu->beforec + i] = iu->after[i];
 	invoke_updates(argv, 4 + iu->beforec + iu->afterc);
 	free_argv(iu->before, iu->beforec);
 	free_argv(iu->after, iu->afterc);
@@ -367,6 +367,9 @@ int argc;
     for (c = cache; c; c = c->next) {
 	if (!strcmp(c->table, argv[1])) {
 	    sprintf(prog, "/u1/sms/bin/%s.incr", c->service);
+#ifdef DEBUG
+	    com_err(whoami, 0, "forking %s", prog);
+#endif
 	    argv[0] = prog;
 	    argv[argc] = 0;
 	    pid = vfork();

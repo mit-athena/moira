@@ -1,4 +1,4 @@
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/Imakefile,v 1.4 1993-01-19 11:31:46 mar Exp $
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/Imakefile,v 1.5 1994-09-16 22:10:15 jweiss Exp $
 
 # Copyright 1990 by the Massachusetts Institute of Technology.
 #
@@ -8,5 +8,5 @@
 # Intermediate level imakefile for appl directory.
 
 #define have_subdirs
-SUBDIRS=blanche mailmaint moira mrcheck mrtest passwd userreg addusr mmoira
+SUBDIRS=blanche mailmaint moira mrcheck mrtest passwd userreg addusr
 CODE=Imakefile

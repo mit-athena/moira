@@ -1,4 +1,4 @@
-/* $Id: queries2.c,v 2.64 1999-11-18 01:05:10 danw Exp $
+/* $Id: queries2.c,v 2.65 1999-11-18 16:59:29 danw Exp $
  *
  * This file defines the query dispatch table for version 2 of the protocol
  *
@@ -2959,11 +2959,11 @@ struct query Queries2[] = {
     "set_pobox_pop",
     "spop",
     UPDATE,
-    "u",
+    0,
     USERS_TABLE,
     0,
     spob_fields,
-    0,
+    1,
     NULL,
     0,
     NULL,

@@ -12,7 +12,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/include/moira_site.h,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/include/moira_site.h,v 1.22 1992-04-30 16:31:13 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/include/moira_site.h,v 1.23 1993-11-23 17:10:00 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -144,12 +144,29 @@
 
 /* Machine information queries */
 
-#define M_NAME       0
-#define M_TYPE       1
-#define M_MODTIME    2
-#define M_MODBY      3
-#define M_MODWITH    4
-#define M_END        5
+#define M_NAME		0
+#define M_VENDOR	1
+#define M_TYPE		1
+#define M_MODEL		2
+#define M_OS		3
+#define M_LOC		4
+#define M_CONTACT	5
+#define M_USE		6
+#define M_STAT		7
+#define M_STAT_CHNG	8
+#define M_SUBNET	9
+#define M_ADDR		10
+#define M_OWNER_TYPE	11
+#define M_OWNER_NAME	12
+#define M_ACOMMENT	13
+#define M_OCOMMENT	14
+#define M_CREATED	15
+#define M_CREATOR	16
+#define M_INUSE		17
+#define M_MODTIME	18
+#define M_MODBY		19
+#define M_MODWITH	20
+#define M_END		21
 
 /*  Machine to Cluster mapping */
 
@@ -276,6 +293,22 @@
 #define SHI_VALUE2	4
 #define SHI_VALUE3	5
 #define SHI_END		6
+
+/* Subnet info */
+
+#define SN_NAME		0
+#define SN_DESC		1
+#define SN_ADDRESS	2
+#define SN_MASK		3
+#define SN_LOW		4
+#define SN_HIGH		5
+#define SN_PREFIX	6
+#define SN_ACE_TYPE	7
+#define SN_ACE_NAME	8
+#define SN_MODTIME	9
+#define SN_MODBY	10
+#define SN_MODWITH	11
+#define SN_END		12
 
 /* User Information queries */
 

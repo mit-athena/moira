@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.dc,v $
  *	$Author: genoa $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.dc,v 2.8 1992-08-25 01:42:29 genoa Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.dc,v 2.9 1992-10-17 23:20:44 genoa Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_qsupport_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.dc,v 2.8 1992-08-25 01:42:29 genoa Exp $";
+static char *rcsid_qsupport_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.dc,v 2.9 1992-10-17 23:20:44 genoa Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -30,7 +30,7 @@ extern int ingres_errno, mr_errcode;
 EXEC SQL BEGIN DECLARE SECTION;
 extern char stmt_buf[];
 int idummy;
-extern char cdummy[];           /** Routines which need these vars should use mr_select_any() **/
+extern char cdummy[];           
 EXEC SQL END DECLARE SECTION;
 
 /* Specialized Access Routines */
@@ -72,11 +72,7 @@ access_login(q, argv, cl)
     EXEC SQL END DECLARE SECTION;
 
     build_qual(q->qual, q->argc, argv, qual);
-    if(!strcmp(q->shortname,"guau")) {
-      EXEC SQL SELECT users_id INTO :id FROM users u, strings str WHERE :qual;
-    } else {
-      EXEC SQL SELECT users_id INTO :id FROM users WHERE :qual;
-    }
+    EXEC SQL SELECT users_id INTO :id FROM users u, strings str WHERE :qual;
     
     if (sqlca.sqlerrd[2] != 1 || id != cl->users_id)
 	return(MR_PERM);
@@ -2668,9 +2664,9 @@ get_ace_internal(atype, aid, action, actarg)
 
     rargv[0] = "HOSTACCESS";
     EXEC SQL DECLARE csr115 CURSOR FOR
-      SELECT name FROM machine, hostaccess
-	WHERE mach_id = hostaccess.mach_id AND hostaccess.acl_type = :atype
-	  AND hostaccess.acl_id = :aid;
+      SELECT name FROM machine m, hostaccess ha
+	WHERE mach_id = ha.mach_id AND ha.acl_type = :atype
+	  AND ha.acl_id = :aid;
     EXEC SQL OPEN csr115;
     while(1) {
 	EXEC SQL FETCH csr115 INTO :name;
@@ -2682,11 +2678,11 @@ get_ace_internal(atype, aid, action, actarg)
 
     rargv[0] = "ZEPHYR";
     EXEC SQL DECLARE csr116 CURSOR FOR
-      SELECT class FROM zephyr
-	WHERE zephyr.xmt_type = :atype AND zephyr.xmt_id = :aid
-	  OR zephyr.sub_type = :atype AND zephyr.sub_id = :aid
-	  OR zephyr.iws_type = :atype AND zephyr.iws_id = :aid
-          OR zephyr.iui_type = :atype AND zephyr.iui_id = :aid;
+      SELECT class FROM zephyr z
+	WHERE z.xmt_type = :atype AND z.xmt_id = :aid
+	  OR z.sub_type = :atype AND z.sub_id = :aid
+	  OR z.iws_type = :atype AND z.iws_id = :aid
+          OR z.iui_type = :atype AND z.iui_id = :aid;
     EXEC SQL OPEN csr116;
     while(1) {
 	EXEC SQL FETCH csr116 INTO :name;
@@ -2751,11 +2747,11 @@ int get_lists_of_member(q, argv, cl, action, actarg)
     rargv[5] = grouplist;
     if (direct) {
 	EXEC SQL DECLARE csr117a CURSOR FOR
-	  SELECT name, CHAR(active), CHAR(publicflg), CHAR(hidden),
-  	      CHAR(maillist), CHAR(grouplist)
-	    FROM list l, imembers m
-	    WHERE l.list_id = m.list_id AND m.direct = 1
-	      AND m.member_type = :atype AND m.member_id = :aid;
+	  SELECT l.name, CHAR(l.active), CHAR(l.publicflg), CHAR(l.hidden),
+  	      CHAR(l.maillist), CHAR(l.grouplist)
+	    FROM list l, imembers im
+	    WHERE l.list_id = im.list_id AND im.direct = 1
+	      AND im.member_type = :atype AND im.member_id = :aid;
 	EXEC SQL OPEN csr117a;
 	while(1) {
 	    EXEC SQL FETCH csr117a
@@ -2767,11 +2763,11 @@ int get_lists_of_member(q, argv, cl, action, actarg)
 	EXEC SQL CLOSE csr117a;
     } else {
 	EXEC SQL DECLARE csr117b CURSOR FOR
-	  SELECT name, CHAR(active), CHAR(publicflg), CHAR(hidden),
-	      CHAR(maillist), CHAR(grouplist)
-	    FROM list l, imembers m
-	    WHERE l.list_id = m.list_id
-	      AND m.member_type = :atype AND m.member_id = :aid;
+	  SELECT l.name, CHAR(l.active), CHAR(l.publicflg), CHAR(l.hidden),
+	      CHAR(l.maillist), CHAR(l.grouplist)
+	    FROM list l, imembers im
+	    WHERE l.list_id = im.list_id
+	      AND im.member_type = :atype AND im.member_id = :aid;
 	EXEC SQL OPEN csr117b;
 	while(1) {
 	    EXEC SQL FETCH csr117b
@@ -2920,9 +2916,9 @@ gmol_internal(q, argv, cl, action, actarg, flag)
     targv[1] = member_name;
     targv[0] = "USER";
     EXEC SQL DECLARE csr119 CURSOR FOR
-      SELECT users.login FROM users, imembers
-	WHERE imembers.list_id = :list_id AND imembers.member_type = 'USER'
-	  AND imembers.member_id = users.users_id AND imembers.direct > :direct
+      SELECT u.login FROM users u, imembers im
+	WHERE im.list_id = :list_id AND im.member_type = 'USER'
+	  AND im.member_id = u.users_id AND im.direct > :direct
 	ORDER BY 1;
     EXEC SQL OPEN csr119;
     while(1) {
@@ -2935,9 +2931,9 @@ gmol_internal(q, argv, cl, action, actarg, flag)
 
     targv[0] = "LIST";
     EXEC SQL DECLARE csr120 CURSOR FOR
-      SELECT list.name FROM list, imembers
-	WHERE imembers.list_id = :list_id AND imembers.member_type='LIST'
-	  AND imembers.member_id = list.list_id AND imembers.direct > :direct
+      SELECT l.name FROM list l, imembers im
+	WHERE im.list_id = :list_id AND im.member_type='LIST'
+	  AND im.member_id = l.list_id AND im.direct > :direct
         ORDER BY 1;
     EXEC SQL OPEN csr120;
     while(1) {
@@ -2950,10 +2946,9 @@ gmol_internal(q, argv, cl, action, actarg, flag)
 
     targv[0] = "STRING";
     EXEC SQL DECLARE csr121 CURSOR FOR
-      SELECT strings.string FROM strings, imembers
-	WHERE imembers.list_id = :list_id AND imembers.member_type='STRING'
-	  AND imembers.member_id = strings.string_id 
-	  AND imembers.direct > :direct
+      SELECT str.string FROM strings str, imembers im
+	WHERE im.list_id = :list_id AND im.member_type='STRING'
+	  AND im.member_id = str.string_id AND im.direct > :direct
 	ORDER BY 1;
     EXEC SQL OPEN csr121;
     while(1) {
@@ -3057,10 +3052,10 @@ int qualified_get(q, argv, action, actarg, start, range, field, flags)
     strcpy(qual, start);
     for (i = 0; i < q->argc; i++) {
 	if (!strcmp(argv[i], "TRUE")) {
-	    sprintf(buf, " and %s.%s != 0", range, flags[i]);
+	    sprintf(buf, " AND %s.%s != 0", range, flags[i]);
 	    (void) strcat(qual, buf);
 	} else if (!strcmp(argv[i], "FALSE")) {
-	    sprintf(buf, " and %s.%s = 0", range, flags[i]);
+	    sprintf(buf, " AND %s.%s = 0", range, flags[i]);
 	    (void) strcat(qual, buf);
 	}
     }
@@ -3109,15 +3104,14 @@ int qualified_get_serverhost(q, argv, cl, action, actarg)
     int i, rowcount;
 
     /** the uppercase() function is INGRES-specific */
-    sprintf(qual, "machine.mach_id = serverhosts.mach_id AND \
-serverhosts.service = uppercase('%s')",
+    sprintf(qual, "m.mach_id = sh.mach_id AND sh.service = uppercase('%s')",
 	    argv[0]);
     for (i = 1; i < q->argc; i++) {
 	if (!strcmp(argv[i], "TRUE")) {
-	    sprintf(buf, " AND serverhosts.%s != 0", shflags[i]);
+	    sprintf(buf, " AND sh.%s != 0", shflags[i]);
 	    strcat(qual, buf);
 	} else if (!strcmp(argv[i], "FALSE")) {
-	    sprintf(buf, " AND serverhosts.%s = 0", shflags[i]);
+	    sprintf(buf, " AND sh.%s = 0", shflags[i]);
 	    strcat(qual, buf);
 	}
     }
@@ -3125,7 +3119,7 @@ serverhosts.service = uppercase('%s')",
     rargv[0] = sname;
     rargv[1] = mname;
     EXEC SQL DECLARE csr124 CURSOR FOR
-      SELECT serverhosts.service, machine.name FROM serverhosts, machine
+      SELECT sh.service, m.name FROM serverhosts sh, machine m
 	WHERE :qual;
     EXEC SQL OPEN csr124;
     while(1) {
@@ -3214,7 +3208,7 @@ register_user(q, argv, cl)
     }
 
     /* change login name, set pobox */
-    sprintf(buffer, "users.users_id = %d", users_id);
+    sprintf(buffer, "u.users_id = %d", users_id);
     incremental_before("users", buffer, 0);
     nstatus = 2;
     if (ostatus == 5 || ostatus == 6)
@@ -3254,7 +3248,7 @@ register_user(q, argv, cl)
     if (ingres_errno) return(mr_errcode);
     if (sqlca.sqlerrd[2] != 1)
       return(MR_INTERNAL);
-    sprintf(buffer, "list_id = %d", list_id);
+    sprintf(buffer, "l.list_id = %d", list_id);
     incremental_after("list", buffer, 0);
     aargv[0] = (char *) list_id;
     aargv[1] = "USER";

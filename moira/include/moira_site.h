@@ -10,8 +10,8 @@
  *                                   7/27/88
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/include/moira_site.h,v $
- *      $Author: qjb $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/include/moira_site.h,v 1.11 1988-12-19 15:15:03 qjb Exp $
+ *      $Author: mar $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/include/moira_site.h,v 1.12 1989-08-22 17:50:06 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -110,6 +110,12 @@
 #define GLOM_GROUP    5
 #define GLOM_END      6
 
+/* Kerberos/User Map */
+
+#define KMAP_USER	0
+#define KMAP_PRINCIPAL	1
+#define KMAP_END	2
+
 /* General List information Queries. */
 
 #define L_NAME     0
@@ -161,6 +167,28 @@
 #define NFS_MODBY   7
 #define NFS_MODWITH 8
 #define NFS_END     9
+
+/* Printcap queries */
+
+#define PCAP_NAME      	0
+#define PCAP_SPOOL_HOST	1
+#define PCAP_SPOOL_DIR	2
+#define PCAP_RPRINTER	3
+#define PCAP_COMMENTS	4
+#define PCAP_MODTIME	5
+#define PCAP_MODBY	6
+#define PCAP_MODWITH	7
+#define PCAP_END	8
+
+/* Palladium queries */
+
+#define PD_NAME		0
+#define PD_IDENT	1
+#define PD_HOST		2
+#define PD_MODTIME	3
+#define PD_MODBY	4
+#define PD_MODWITH	5
+#define PD_END		6
 
 /* PO box infomarion queries */
 
@@ -266,7 +294,9 @@
 #define US_NO_PASSWD    2
 #define US_DELETED      3
 #define US_NOT_ALLOWED  4
-#define US_END          5
+#define US_ENROLLED	5
+#define US_ENROLL_NOT_ALLOWED 6
+#define US_END          7
 
 /* User shell queries */
 

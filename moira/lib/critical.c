@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/critical.c,v 1.6 1989-09-08 14:55:48 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/critical.c,v 1.7 1989-10-05 01:24:47 mar Exp $
  *
  * Log and send a zephyrgram about any critical errors.
  *
@@ -7,10 +7,20 @@
  *  <mit-copyright.h>.
  */
 
+/* At Athena, we use zephyr & not syslog.  Change the following line 
+ * if necessary */
+#define ZEPHYR
+
+
 #include <mit-copyright.h>
 #include <stdio.h>
 #include <sys/file.h>
+#ifdef ZEPHYR
 #include <zephyr/zephyr.h>
+#endif
+#ifdef SYSLOG
+#include <syslog.h>
+#endif
 #include <sms_app.h>
 
 
@@ -72,6 +82,7 @@ send_zgram(inst, msg)
 char *inst;
 char *msg;
 {
+#ifdef ZEPHYR
     ZNotice_t znotice;
 
     bzero (&znotice, sizeof (znotice));
@@ -85,4 +96,12 @@ char *msg;
     znotice.z_opcode = "";
     znotice.z_recipient = "";
     ZSendNotice(&znotice, ZNOAUTH);
+#endif
+#ifdef SYSLOG
+    {
+	char buf[512];
+	sprintf(buf, "SMS: %s %s", inst, msg);
+	syslog(LOG_ERR, buf);
+    }
+#endif
 }

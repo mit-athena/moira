@@ -1,5 +1,5 @@
 .TH MRTEST 8 "25 Jan 1988" "Project Athena"
-\" RCSID: $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/man/mrtest.8,v 1.7 1990-03-08 19:00:57 mar Exp $
+\" RCSID: $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/man/mrtest.8,v 1.8 1998-01-07 17:09:50 danw Exp $
 .SH NAME
 mrtest \- perform Moira operations manually
 .SH SYNOPSIS
@@ -80,10 +80,6 @@ command described above.
 .TP
 .B dcm
 instructs the server to trigger a DCM update immediately.
-.SH BUGS
-Due to problems in the ss library, standard input must be a terminal.
-If it is a file, only the first line will be read.  However, the
-script command allows one to read input from a file.
 .SH SEE ALSO
 The Project Athena Technical Plan section on Moira for a list of queries
 and their arguments, and a description of the protocol this

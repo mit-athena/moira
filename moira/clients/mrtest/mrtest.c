@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v 1.9 1988-09-13 17:46:49 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v 1.10 1988-12-01 16:51:19 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_test_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v 1.9 1988-09-13 17:46:49 mar Exp $";
+static char *rcsid_test_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v 1.10 1988-12-01 16:51:19 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -75,9 +75,16 @@ test_old()
 	sending_version_no = SMS_VERSION_1;
 }
 
-test_connect()
+test_connect(argc, argv)
+int argc;
+char *argv[];
 {
-	int status = sms_connect();
+    	char *server = "";
+	int status;
+
+	if (argc > 1)
+	  server = argv[1];
+	status = sms_connect(server);
 	if (status) ss_perror(ss, status, 0);
 }
 

@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/db/newmoira.qc,v 1.8 1989-08-25 11:36:25 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/db/newmoira.qc,v 1.9 1990-02-02 15:25:19 mar Exp $
  *
  * Creates a new sms database
  *
@@ -26,9 +26,10 @@ struct alias { char *name;
 	       char *type;
 	       char *trans;
 	   } aliases[] = {
-		   {"ace_type", "TYPE", "USER"},
+		   {"ace_type", "TYPE", "KERBEROS"},
 		   {"ace_type", "TYPE", "LIST"},
 		   {"ace_type", "TYPE", "NONE"},
+		   {"ace_type", "TYPE", "USER"},
 		   {"alias", "TYPE", "FILESYS"},
 		   {"alias", "TYPE", "PALLADIUM"},
 		   {"alias", "TYPE", "TYPE"},
@@ -39,28 +40,32 @@ struct alias { char *name;
 		   {"boolean", "TYPE", "DONTCARE"},
 		   {"boolean", "TYPE", "TRUE"},
 		   {"class", "TYPE", "STAFF"},
-		   {"class", "TYPE", "1988"},
-		   {"class", "TYPE", "1989"},
 		   {"class", "TYPE", "1990"},
 		   {"class", "TYPE", "1991"},
 		   {"class", "TYPE", "1992"},
+		   {"class", "TYPE", "1993"},
 		   {"class", "TYPE", "FACULTY"},
 		   {"class", "TYPE", "G"},
 		   {"class", "TYPE", "GUEST"},
-		   {"class", "TYPE", "UNKNOWN"},
+		   {"class", "TYPE", "TEST"},
+		   {"class", "TYPE", "SYSTEM"},
 		   {"filesys", "TYPE", "ERR"},
 		   {"filesys", "TYPE", "FSGROUP"},
 		   {"filesys", "TYPE", "NFS"},
 		   {"filesys", "TYPE", "RVD"},
+		   {"filesys", "TYPE", "AFS"},
 		   {"gaus", "TYPE", "LIST"},
 		   {"gaus", "TYPE", "USER"},
 		   {"gaus", "TYPE", "RLIST"},
 		   {"gaus", "TYPE", "RUSER"},
+		   {"lockertype", "TYPE", "COURSE"},
 		   {"lockertype", "TYPE", "HOMEDIR"},
 		   {"lockertype", "TYPE", "OTHER"},
 		   {"lockertype", "TYPE", "PROJECT"},
 		   {"lockertype", "TYPE", "SYSTEM"},
-		   {"lockertype", "TYPE", "UNKNOWN"},
+		   {"mac_type", "TYPE", "MAC"},
+		   {"mac_type", "TYPE", "NEXT"},
+		   {"mac_type", "TYPE", "PMAX"},
 		   {"mac_type", "TYPE", "RT"},
 		   {"mac_type", "TYPE", "VAX"},
 		   {"member", "TYPE", "KERBEROS"},
@@ -79,7 +84,13 @@ struct alias { char *name;
 		   {"rmember", "TYPE", "RUSER"},
 		   {"rmember", "TYPE", "RKERBEROS"},
 		   {"service", "TYPE", "REPLICAT"},
+		   {"service", "TYPE", "REPLICATED"},
 		   {"service", "TYPE", "UNIQUE"},
+		   {"slabel", "TYPE", "LPR"},
+		   {"slabel", "TYPE", "KERBEROS"},
+		   {"slabel", "TYPE", "USRLIB"},
+		   {"slabel", "TYPE", "SYSLIB"},
+		   {"slabel", "TYPE", "ZEPHYR"},
 		   {"KERBEROS", "TYPEDATA", "string"},
 		   {"LIST", "TYPEDATA", "list"},
 		   {"NONE", "TYPEDATA", "none"},
@@ -208,7 +219,8 @@ char **argv;
 	printf("Unable to install default list\n");
 	exit(1);
     }
-##  append members (list_id = 1, member_type = "USER", member_id = 1)
+##  append imembers (list_id = 1, member_type = "USER", member_id = 1,
+##		     ref_count = 1, direct = 1)
     if (ingres_errno) {
 	printf("Unable to install default user on default list\n");
 	exit(1);
@@ -235,7 +247,8 @@ char **argv;
 	printf("Unable to install user %s\n", buffer);
 	exit(1);
     }
-##  append members (list_id = 2, member_type = "USER", member_id = 3)
+##  append imembers (list_id = 2, member_type = "USER", member_id = 3,
+##		     ref_count = 1, direct = 1)
     if (ingres_errno) {
 	printf("Unable to put user %s on list dbadmin\n", buffer);
 	exit(1);

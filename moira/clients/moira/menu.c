@@ -5,7 +5,7 @@
  *
  * $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v $
  * $Author: mar $
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.36 1992-04-10 15:31:10 mar Exp $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.37 1993-04-29 14:52:48 mar Exp $
  *
  * Generic menu system module.
  *
@@ -18,7 +18,7 @@
  */
 
 #ifndef lint
-static char rcsid_menu_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.36 1992-04-10 15:31:10 mar Exp $";
+static char rcsid_menu_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.37 1993-04-29 14:52:48 mar Exp $";
 
 #endif lint
 
@@ -27,10 +27,9 @@ static char rcsid_menu_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moira
 #include <stdio.h>
 #include <signal.h>
 #include <curses.h>
-#ifdef _AUX_SOURCE
-#include <sys/termio.h>
-#include <sys/ttychars.h>
-#endif /* _AUX_SOURCE */
+#ifdef POSIX
+#include <sys/termios.h>
+#endif /* POSIX */
 #include <ctype.h>
 #include <strings.h>
 #ifndef sun
@@ -597,20 +596,20 @@ int Password_input(prompt, buf, buflen)
 	}
     }
     else {
-#ifdef _AUX_SOURCE
-	struct termio ttybuf, nttybuf;
+#ifdef POSIX
+	struct termios ttybuf, nttybuf;
 #else
 	struct sgttyb ttybuf, nttybuf;
-#endif /* _AUX_SOURCE */
+#endif /* POSIX */
 	printf("%s", prompt);
 	/* turn off echoing */
-#ifdef _AUX_SOURCE
-	(void) ioctl(0, TCGETA, (char *)&ttybuf);
+#ifdef POSIX
+	tcgetattr(0, &ttybuf);
 	nttybuf = ttybuf;
 	nttybuf.c_lflag &= ~ECHO;
-	(void)ioctl(0, TCSETA, (char *)&nttybuf);
+	tcsetattr(0, TCSANOW, &nttybuf);
 	if (gets(buf) == NULL) {
-	    (void) ioctl(0, TCSETA, (char *)&ttybuf);
+	    tcsetattr(0, TCSANOW, &ttybuf);
 	    putchar('\n');
 	    return 0;
 	}
@@ -628,7 +627,7 @@ int Password_input(prompt, buf, buflen)
 	}
 	putchar('\n');
 	(void) ioctl(0, TIOCSETP, (char *)&ttybuf);
-#endif /* _AUX_SOURCE */
+#endif /* POSIX */
 	Start_paging();
 	return 1;
     }

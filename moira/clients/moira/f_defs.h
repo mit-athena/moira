@@ -7,7 +7,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/f_defs.h,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/f_defs.h,v 1.16 1991-10-29 14:57:50 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/f_defs.h,v 1.17 1992-04-30 16:18:06 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -194,6 +194,7 @@ int ToggleVerboseMode();	/* Turns on and off the verbose variable. */
 char *CanonicalizeHostname();	/* this is what it does. */
 char *NullPrint();		/* Prints nothing, returns argv[0]. */
 char *Strsave();		/* allocated space for a copy of the string. */
+char *atot();			/* convert unix time to date string */
 struct qelem * QueueTop();	/* Finds the top of a queue. */
 Bool Confirm();			/* Confirms a delete operation, with user. */
 Bool YesNoQuestion();		/* Asks a user a yes no type question. */

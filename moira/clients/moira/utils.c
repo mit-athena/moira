@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v 1.32 1992-04-06 17:20:02 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v 1.33 1992-04-30 16:18:00 mar Exp $";
 #endif lint
 
 /*	This is the file utils.c for the MOIRA Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v 1.32 1992-04-06 17:20:02 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v 1.33 1992-04-30 16:18:00 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -632,6 +632,22 @@ char *str;
     else
 	return (strcpy(newstr, str));
 }
+
+
+/* atot: convert ASCII integer unix time into human readable date string */
+
+char *atot(itime)
+char *itime;
+{
+    int time;
+    char *ct, *ctime();
+
+    time = atoi(itime);
+    ct = ctime(&time);
+    ct[24] = 0;
+    return(&ct[4]);
+}
+
 
 /*	Function Name: Print
  *	Description: prints out all the arguments on a single line.

@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/dcmmaint.c,v 1.13 1991-03-08 11:06:02 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/dcmmaint.c,v 1.14 1992-04-30 16:17:39 mar Exp $
  *
  * Copyright 1987, 1988 by the Massachusetts Institute of Technology.
  * For copying and distribution information, please see the file
@@ -547,17 +547,4 @@ Dcm()
       if (status = mr_do_update())
 	com_err(whoami, status, " while triggering update");
     return(DM_NORMAL);
-}
-
-
-char *atot(itime)
-char *itime;
-{
-    int time;
-    char *ct, *ctime();
-
-    time = atoi(itime);
-    ct = ctime(&time);
-    ct[24] = 0;
-    return(&ct[4]);
 }

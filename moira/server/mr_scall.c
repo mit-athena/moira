@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_scall.c,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_scall.c,v 1.18 1989-09-08 15:33:32 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_scall.c,v 1.19 1990-03-19 15:42:05 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_sms_scall_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_scall.c,v 1.18 1989-09-08 15:33:32 mar Exp $";
+static char *rcsid_sms_scall_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_scall.c,v 1.19 1990-03-19 15:42:05 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -20,7 +20,7 @@ static char *rcsid_sms_scall_c = "$Header: /afs/.athena.mit.edu/astaff/project/m
 #include <krb.h>
 #include <errno.h>
 #include "query.h"
-#include "sms_server.h"
+#include "mr_server.h"
 extern char buf1[];
 extern int nclients;
 extern char *whoami;
@@ -51,7 +51,7 @@ do_client(cp)
 		 * go down, then go down now.
 		 */
 		if ((dormant == AWAKE) && (nclients == 0) &&
-		    (stat(SMS_MOTD_FILE, &stbuf) == 0)) {
+		    (stat(MOIRA_MOTD_FILE, &stbuf) == 0)) {
 		    com_err(whoami, 0, "motd file exists, slumbertime");
 		    dormant = SLEEPY;
 		}
@@ -61,7 +61,7 @@ do_client(cp)
 	case CL_ACCEPT:
 	case CL_SEND:
 		/* Start recieving next request */
-		initialize_operation(cp->pending_op, sms_start_recv,
+		initialize_operation(cp->pending_op, mr_start_recv,
 				     (char *)&cp->args, (int (*)())NULL);
 		queue_operation(cp->con, CON_INPUT, cp->pending_op);
 		cp->action = CL_RECEIVE;
@@ -69,9 +69,9 @@ do_client(cp)
 	case CL_RECEIVE:
 		/* Data is here. Process it & start it heading back */
 		do_call(cp); /* This may block for a while. */
-		sms_destroy_reply(cp->args);
+		mr_destroy_reply(cp->args);
 		cp->args = NULL;
-		initialize_operation(cp->pending_op, sms_start_send,
+		initialize_operation(cp->pending_op, mr_start_send,
 				     (char *)&cp->reply, (int (*)())NULL);
 		queue_operation(cp->con, CON_OUTPUT, cp->pending_op);
 		cp->action = CL_SEND;
@@ -95,55 +95,55 @@ do_call(cl)
 	client *cl;
 {
 	int pn;
-	cl->reply.sms_argc = 0;
-	cl->reply.sms_status = 0;
-	cl->reply.sms_version_no = cl->args->sms_version_no;
-	if (((pn = cl->args->sms_procno) < 0) ||
-	    (pn > SMS_MAX_PROC)) {
+	cl->reply.mr_argc = 0;
+	cl->reply.mr_status = 0;
+	cl->reply.mr_version_no = cl->args->mr_version_no;
+	if (((pn = cl->args->mr_procno) < 0) ||
+	    (pn > MR_MAX_PROC)) {
 		com_err(whoami, 0, "procno out of range");
-		cl->reply.sms_status = SMS_UNKNOWN_PROC;
+		cl->reply.mr_status = MR_UNKNOWN_PROC;
 		return;
 	}
 	if (log_flags & LOG_ARGS)
-		log_args(procnames[pn], cl->args->sms_version_no,
-			 cl->args->sms_argc, cl->args->sms_argv);
+		log_args(procnames[pn], cl->args->mr_version_no,
+			 cl->args->mr_argc, cl->args->mr_argv);
 	else if (log_flags & LOG_REQUESTS)
 		com_err(whoami, 0, "%s", procnames[pn]);
 
 	if ((dormant == ASLEEP || dormant == GROGGY) &&
-	    pn != SMS_NOOP && pn != SMS_MOTD) {
-	    cl->reply.sms_status = SMS_DOWN;
+	    pn != MR_NOOP && pn != MR_MOTD) {
+	    cl->reply.mr_status = MR_DOWN;
 	    if (log_flags & LOG_RES)
-	      com_err(whoami, SMS_DOWN, "(query refused)");
+	      com_err(whoami, MR_DOWN, "(query refused)");
 	    return;
 	}
 
 	switch(pn) {
-	case SMS_NOOP:
-		cl->reply.sms_status = 0;
+	case MR_NOOP:
+		cl->reply.mr_status = 0;
 		return;
 
-	case SMS_AUTH:
+	case MR_AUTH:
 		do_auth(cl);
 		return;
 
-	case SMS_QUERY:
+	case MR_QUERY:
 		do_retr(cl);
 		return;
 
-	case SMS_ACCESS:
+	case MR_ACCESS:
 		do_access(cl);
 		return;
 		
-	case SMS_SHUTDOWN:
+	case MR_SHUTDOWN:
 		do_shutdown(cl);
 		return;
 
-	case SMS_DO_UPDATE:
+	case MR_DO_UPDATE:
 		trigger_dcm(0, 0, cl);
 		return;
 
-	case SMS_MOTD:
+	case MR_MOTD:
 		get_motd(cl);
 		return;
 	}
@@ -158,7 +158,7 @@ free_rtn_tuples(cp)
 		temp = t1->next;
 		if (t1 == cp->last) cp->last = NULL;
 
-		sms_destroy_reply(t1->retval);
+		mr_destroy_reply(t1->retval);
 		delete_operation(t1->op);
 		free(t1);
 	}
@@ -175,7 +175,7 @@ retr_callback(argc, argv, p_cp)
 	 * This takes too much advantage of the fact that
 	 * serialization of the data happens during the queue operation.
 	 */
-	sms_params *arg_tmp = (sms_params *)db_alloc(sizeof(sms_params));
+	mr_params *arg_tmp = (mr_params *)db_alloc(sizeof(mr_params));
 	returned_tuples *tp = (returned_tuples *)
 		db_alloc(sizeof(returned_tuples));
 	register char **nargv = (char **)malloc(argc * sizeof(char *));
@@ -183,27 +183,27 @@ retr_callback(argc, argv, p_cp)
 	
 	OPERATION op_tmp = create_operation();
 
-	if (sms_trim_args(argc, argv) == SMS_NO_MEM) {
-	    com_err(whoami, SMS_NO_MEM, "while trimming args");
+	if (mr_trim_args(argc, argv) == MR_NO_MEM) {
+	    com_err(whoami, MR_NO_MEM, "while trimming args");
 	}
 	if (log_flags & LOG_RESP)
-		log_args("return: ", cp->args->sms_version_no, argc, argv);
+		log_args("return: ", cp->args->mr_version_no, argc, argv);
 
 	tp->op = op_tmp;
 	tp->retval = arg_tmp;
 	tp->next = NULL;
 	
-	arg_tmp->sms_status = SMS_MORE_DATA;
-	arg_tmp->sms_version_no = cp->args->sms_version_no;
-	arg_tmp->sms_argc = argc;
-	arg_tmp->sms_argv = nargv;
+	arg_tmp->mr_status = MR_MORE_DATA;
+	arg_tmp->mr_version_no = cp->args->mr_version_no;
+	arg_tmp->mr_argc = argc;
+	arg_tmp->mr_argv = nargv;
 	for (i = 0; i < argc; i++) {
 		register int len = strlen(argv[i]) + 1;
 		nargv[i] = malloc(len);
 		bcopy(argv[i], nargv[i], len);
 	}
-	arg_tmp->sms_flattened = (char *)NULL;
-	arg_tmp->sms_argl = (int *)NULL;
+	arg_tmp->mr_flattened = (char *)NULL;
+	arg_tmp->mr_argl = (int *)NULL;
 
 	if (cp->last) {
 		cp->last->next = tp;
@@ -213,7 +213,7 @@ retr_callback(argc, argv, p_cp)
 	}
 	
 	reset_operation(op_tmp);
-	initialize_operation(op_tmp, sms_start_send, (char *)arg_tmp,
+	initialize_operation(op_tmp, mr_start_send, (char *)arg_tmp,
 			     (int (*)())NULL);
 	queue_operation(cp->con, CON_OUTPUT, op_tmp);
 }
@@ -256,24 +256,24 @@ do_retr(cl)
 {
 	register char *queryname;
 
-	cl->reply.sms_argc = 0;
-	cl->reply.sms_status = 0;
+	cl->reply.mr_argc = 0;
+	cl->reply.mr_status = 0;
 
-	queryname = cl->args->sms_argv[0];
+	queryname = cl->args->mr_argv[0];
 	
-	if (cl->args->sms_version_no == SMS_VERSION_2)
+	if (cl->args->mr_version_no == MR_VERSION_2)
 	  newqueries++;
 	else
 	  oldqueries++;
 
 	if (strcmp(queryname, "_list_users") == 0)
-		cl->reply.sms_status = list_users(retr_callback, (char *)cl);
+		cl->reply.mr_status = list_users(retr_callback, (char *)cl);
 	else {
-		cl->reply.sms_status = 
-			sms_process_query(cl,
-					  cl->args->sms_argv[0],
-					  cl->args->sms_argc-1,
-					  cl->args->sms_argv+1,
+		cl->reply.mr_status = 
+			mr_process_query(cl,
+					  cl->args->mr_argv[0],
+					  cl->args->mr_argc-1,
+					  cl->args->mr_argv+1,
 					  retr_callback,
 					  (char *)cl);
 	}
@@ -284,13 +284,13 @@ do_retr(cl)
 do_access(cl)
 	client *cl;
 {
-	cl->reply.sms_argc = 0;
+	cl->reply.mr_argc = 0;
 
-	cl->reply.sms_status = 
-	  sms_check_access(cl,
-			   cl->args->sms_argv[0],
-			   cl->args->sms_argc-1,
-			   cl->args->sms_argv+1);
+	cl->reply.mr_status = 
+	  mr_check_access(cl,
+			   cl->args->mr_argv[0],
+			   cl->args->mr_argc-1,
+			   cl->args->mr_argv+1);
 	
 	com_err(whoami, 0, "Access check complete.");
 }
@@ -312,10 +312,10 @@ trigger_dcm(dummy0, dummy1, cl)
 	register int pid;
 	char prog[128];
 
-	cl->reply.sms_argc = 0;
+	cl->reply.mr_argc = 0;
 
-	if (cl->reply.sms_status = check_query_access(&pseudo_query, 0, cl) )
-		return(cl->reply.sms_status);
+	if (cl->reply.mr_status = check_query_access(&pseudo_query, 0, cl) )
+		return(cl->reply.mr_status);
 
 	sprintf(prog, "%s/startdcm", BIN_DIR);
 	pid = vfork();
@@ -327,7 +327,7 @@ trigger_dcm(dummy0, dummy1, cl)
 		exit(1);
 		
 	case -1:
-		cl->reply.sms_status = errno;
+		cl->reply.mr_status = errno;
 		return(0);
 
 	default:
@@ -344,12 +344,12 @@ client *cl;
     char *arg[1];
 
     arg[0] = buffer;
-    cl->reply.sms_status = 0;
-    motd = open(SMS_MOTD_FILE, 0, O_RDONLY);
+    cl->reply.mr_status = 0;
+    motd = open(MOIRA_MOTD_FILE, 0, O_RDONLY);
     if (motd < 0) return;
     len = read(motd, buffer, sizeof(buffer) - 1);
     close(motd);
     buffer[len] = 0;
     retr_callback(1, arg, cl);
-    cl->reply.sms_status = 0;
+    cl->reply.mr_status = 0;
 }

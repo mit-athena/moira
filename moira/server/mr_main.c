@@ -1,13 +1,13 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.27 1989-12-28 17:08:17 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.28 1990-03-19 15:41:44 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
  *	<mit-copyright.h>.
  *
- * 	SMS server process.
+ * 	MOIRA server process.
  *
  * 	Most of this is stolen from ../gdb/tsr.c
  *
@@ -16,7 +16,7 @@
  * 
  */
 
-static char *rcsid_sms_main_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.27 1989-12-28 17:08:17 mar Exp $";
+static char *rcsid_mr_main_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.28 1990-03-19 15:41:44 mar Exp $";
 
 #include <mit-copyright.h>
 #include <strings.h>
@@ -25,7 +25,7 @@ static char *rcsid_sms_main_c = "$Header: /afs/.athena.mit.edu/astaff/project/mo
 #include <sys/signal.h>
 #include <sys/wait.h>
 #include <sys/stat.h>
-#include "sms_server.h"
+#include "mr_server.h"
 #include <krb_et.h>
 
 extern CONNECTION newconn, listencon;
@@ -49,7 +49,7 @@ extern FILE *journal;
 extern char *malloc();
 extern int free();
 extern char *inet_ntoa();
-extern void sms_com_err();
+extern void mr_com_err();
 extern void do_client();
 
 extern int sigshut();
@@ -60,7 +60,7 @@ void reapchild(), godormant(), gowakeup();
 extern time_t now;
 
 /*
- * Main SMS server loop.
+ * Main MOIRA server loop.
  *
  * Initialize the world, then start accepting connections and
  * making progress on current connections.
@@ -82,11 +82,11 @@ main(argc, argv)
 	 */
 	initialize_sms_error_table();
 	initialize_krb_error_table();
-	set_com_err_hook(sms_com_err);
+	set_com_err_hook(mr_com_err);
 	setlinebuf(stderr);
 	
 	if (argc != 1) {
-		com_err(whoami, 0, "Usage: smsd");
+		com_err(whoami, 0, "Usage: moirad");
 		exit(1);
 	}		
 
@@ -112,8 +112,8 @@ main(argc, argv)
 	 * Database initialization.  Only init if database should be open.
 	 */
 
-	if (stat(SMS_MOTD_FILE, &stbuf) != 0) {
-	    if ((status = sms_open_database()) != 0) {
+	if (stat(MOIRA_MOTD_FILE, &stbuf) != 0) {
+	    if ((status = mr_open_database()) != 0) {
 		com_err(whoami, status, " when trying to open database.");
 		exit(1);
 	    }
@@ -131,7 +131,7 @@ main(argc, argv)
 	nclients = 0;
 	clients = (client **) malloc(0);
 	
-	sms_setup_signals();
+	mr_setup_signals();
 	
 	journal = fopen(JOURNAL, "a");
 	if (journal == NULL) {
@@ -151,11 +151,11 @@ main(argc, argv)
 	op_list = create_list_of_operations(1, listenop);
 	
 	com_err(whoami, 0, "started (pid %d)", getpid());
-	com_err(whoami, 0, rcsid_sms_main_c);
+	com_err(whoami, 0, rcsid_mr_main_c);
 	if (dormant != ASLEEP)
-	  send_zgram("SMS", "server started");
+	  send_zgram("MOIRA", "server started");
 	else
-	  send_zgram("SMS", "server started, but database closed");
+	  send_zgram("MOIRA", "server started, but database closed");
 
 	/*
 	 * Run until shut down.
@@ -169,16 +169,16 @@ main(argc, argv)
 		com_err(whoami, 0, "tick");
 #endif notdef
 		if (dormant == SLEEPY) {
-		    sms_close_database();
+		    mr_close_database();
 		    com_err(whoami, 0, "database closed");
-		    sms_setup_signals();
-		    send_zgram("SMS", "database closed");
+		    mr_setup_signals();
+		    send_zgram("MOIRA", "database closed");
 		    dormant = ASLEEP;
 		} else if (dormant == GROGGY) {
-		    sms_open_database();
+		    mr_open_database();
 		    com_err(whoami, 0, "database open");
-		    sms_setup_signals();
-		    send_zgram("SMS", "database open again");
+		    mr_setup_signals();
+		    send_zgram("MOIRA", "database open again");
 		    dormant = AWAKE;
 		}
 
@@ -229,7 +229,7 @@ main(argc, argv)
 			 * down now.
 			 */
 			if ((dormant == AWAKE) && (nclients == 1) &&
-			    (stat(SMS_MOTD_FILE, &stbuf) == 0)) {
+			    (stat(MOIRA_MOTD_FILE, &stbuf) == 0)) {
 			    com_err(whoami, 0, "motd file exists, slumbertime");
 			    dormant = SLEEPY;
 			}
@@ -237,7 +237,7 @@ main(argc, argv)
 			 * to be down, then wake up.
 			 */
 			if ((dormant == ASLEEP) &&
-			    (stat(SMS_MOTD_FILE, &stbuf) == -1) &&
+			    (stat(MOIRA_MOTD_FILE, &stbuf) == -1) &&
 			    (errno == ENOENT)) {
 			    com_err(whoami, 0, "motd file no longer exists, waking up");
 			    dormant = GROGGY;
@@ -263,8 +263,8 @@ main(argc, argv)
 		}
 	}
 	com_err(whoami, 0, "%s", takedown);
-	sms_close_database();
-	send_zgram("SMS", takedown);
+	mr_close_database();
+	send_zgram("MOIRA", takedown);
 	return 0;
 }
 
@@ -275,7 +275,7 @@ main(argc, argv)
 int
 do_listen()
 {
-	char *service = index(SMS_SERVER, ':') + 1;
+	char *service = index(MOIRA_SERVER, ':') + 1;
 
 	listencon = create_listening_connection(service);
 
@@ -319,7 +319,7 @@ new_connection()
 	}
 	
 	if (newconn == NULL) {
-		return SMS_NOT_CONNECTED;
+		return MR_NOT_CONNECTED;
 	}
 
 	/*
@@ -332,7 +332,7 @@ new_connection()
 	cp->id = counter++;
 	cp->args = NULL;
 	cp->clname[0] = NULL;
-	cp->reply.sms_argv = NULL;
+	cp->reply.mr_argv = NULL;
 	cp->first = NULL;
 	cp->last = NULL;
 	cp->last_time_used = now;
@@ -524,7 +524,7 @@ void gowakeup()
 }
 
 	
-sms_setup_signals()
+mr_setup_signals()
 {
     /* There should probably be a few more of these. */
 	

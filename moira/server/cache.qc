@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/cache.qc,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/cache.qc,v 1.2 1990-01-30 18:05:37 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/cache.qc,v 1.3 1990-03-19 15:41:25 mar Exp $
  *
  *	Copyright (C) 1989 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,16 +10,16 @@
  */
 
 #ifndef lint
-static char *rcsid_qsupport_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/cache.qc,v 1.2 1990-01-30 18:05:37 mar Exp $";
+static char *rcsid_qsupport_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/cache.qc,v 1.3 1990-03-19 15:41:25 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
 #include "query.h"
-#include "sms_server.h"
+#include "mr_server.h"
 
 
 extern char *whoami, *strsave();
-extern int ingres_errno, sms_errcode;
+extern int ingres_errno, mr_errcode;
 
 
 /*** NOTE **************************************************************
@@ -126,7 +126,7 @@ int *id;
 	i->prev = &cachehead;
 	cachehead.next->prev = i;
 	cachehead.next = i;
-	return(SMS_SUCCESS);
+	return(MR_SUCCESS);
     }
 
     cachemisses++;
@@ -158,17 +158,17 @@ int *id;
 ##	repeat retrieve (j = strings.string_id) where strings.#string=@iname
 	break;
     default:
-	return(SMS_INTERNAL);
+	return(MR_INTERNAL);
     }
 ##  inquire_equel(rowcount = "rowcount")
-    if (ingres_errno) return(sms_errcode);
+    if (ingres_errno) return(mr_errcode);
     if (rowcount == 0)
-      return(SMS_NO_MATCH);
+      return(MR_NO_MATCH);
     if (rowcount > 1)
-      return(SMS_NOT_UNIQUE);
+      return(MR_NOT_UNIQUE);
     *id = j;
     if (name[0] == '#' && !strcasecmp(type, "USER"))
-      return(SMS_SUCCESS);
+      return(MR_SUCCESS);
     if (cachesize < CACHESIZE) {
 	i = (struct item *) malloc(sizeof(struct item));
 	cachesize++;
@@ -185,7 +185,7 @@ int *id;
     i->prev = &cachehead;
     cachehead.next->prev = i;
     cachehead.next = i;
-    return(SMS_SUCCESS);
+    return(MR_SUCCESS);
 ##}
 
 
@@ -215,7 +215,7 @@ char **name;
 	i->prev = &cachehead;
 	cachehead.next->prev = i;
 	cachehead.next = i;
-	return(SMS_SUCCESS);
+	return(MR_SUCCESS);
     }
 
     cachemisses++;
@@ -247,22 +247,22 @@ char **name;
 ##	repeat retrieve (iname = strings.string) where strings.string_id=@j
 	break;
     default:
-	return(SMS_INTERNAL);
+	return(MR_INTERNAL);
     }
 ##  inquire_equel(rowcount = "rowcount")
-    if (ingres_errno) return(sms_errcode);
+    if (ingres_errno) return(mr_errcode);
     if (rowcount == 0) {
 	free(*name);
 	sprintf(iname, "#%d", j);
 	*name = strsave(iname);
-	return(SMS_NO_MATCH);
+	return(MR_NO_MATCH);
     }
     if (rowcount != 1)
-      return(SMS_INTERNAL);
+      return(MR_INTERNAL);
     free(*name);
     *name = strsave(strtrim(iname));
     if (**name == '#' && !strcasecmp(type, "USER"))
-      return(SMS_SUCCESS);
+      return(MR_SUCCESS);
     if (cachesize < CACHESIZE) {
 	i = (struct item *) malloc(sizeof(struct item));
 	cachesize++;
@@ -279,7 +279,7 @@ char **name;
     i->prev = &cachehead;
     cachehead.next->prev = i;
     cachehead.next = i;
-    return(SMS_SUCCESS);
+    return(MR_SUCCESS);
 ##}
 
 
@@ -296,7 +296,7 @@ int id;
 
     for (i = cachehead.next; i != &cachehead; i = i->next)
       if (i->id == id && !strcmp(i->type, type))
-	return(SMS_SUCCESS);
+	return(MR_SUCCESS);
     if (cachesize < CACHESIZE) {
 	i = (struct item *) malloc(sizeof(struct item));
 	cachesize++;
@@ -313,7 +313,7 @@ int id;
     i->prev = &cachehead;
     cachehead.next->prev = i;
     cachehead.next = i;
-    return(SMS_SUCCESS);
+    return(MR_SUCCESS);
 }
 
 
@@ -334,7 +334,7 @@ char *type;
 	    i->next->prev = i->prev;
 	    i->prev->next = i->next;
 	    free(i);
-	    return(SMS_SUCCESS);
+	    return(MR_SUCCESS);
 	}
     }
 }

@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_sauth.c,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_sauth.c,v 1.16 1990-02-26 18:12:16 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_sauth.c,v 1.17 1990-03-19 15:41:59 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,12 +10,12 @@
  */
 
 #ifndef lint
-static char *rcsid_sms_sauth_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_sauth.c,v 1.16 1990-02-26 18:12:16 mar Exp $";
+static char *rcsid_sms_sauth_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_sauth.c,v 1.17 1990-03-19 15:41:59 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
 #include <strings.h>
-#include "sms_server.h"
+#include "mr_server.h"
 #include <ctype.h>
 #include <krb_et.h>
 
@@ -26,7 +26,7 @@ extern char *malloc();
 char *kname_unparse();
 
 /*
- * Handle a SMS_AUTH RPC request.
+ * Handle a MOIRA_AUTH RPC request.
  *
  * argv[0] is a kerberos authenticator.  Decompose it, and if
  * successful, store the name the user authenticated to in 
@@ -43,8 +43,8 @@ do_auth(cl)
 	char buf[REALM_SZ+INST_SZ+ANAME_SZ], hostbuf[BUFSIZ], *host, *p;
 	extern int errno;
 
-	auth.length = cl->args->sms_argl[0];
-	bcopy(cl->args->sms_argv[0], (char *)auth.dat, auth.length);
+	auth.length = cl->args->mr_argl[0];
+	bcopy(cl->args->mr_argv[0], (char *)auth.dat, auth.length);
 	auth.mbz = 0;
 	if (gethostname(hostbuf, sizeof(hostbuf)) < 0)
 	  com_err(whoami, errno, "Unable to get local hostname");
@@ -60,7 +60,7 @@ do_auth(cl)
 	    (status = krb_rd_req (&auth, "sms", "sms", cl->haddr.sin_addr,
 				 &ad, "")) != 0) {
 		status += ERROR_TABLE_BASE_krb;
-		cl->reply.sms_status = status;
+		cl->reply.mr_status = status;
 		if (log_flags & LOG_RES)
 			com_err(whoami, status, "(authentication failed)");
 		return;
@@ -80,8 +80,8 @@ do_auth(cl)
 	set_krb_mapping(cl->clname, ad.pname, ok,
 			&cl->client_id, &cl->users_id);
 
-	if (cl->args->sms_version_no == SMS_VERSION_2) {
-	    bcopy(cl->args->sms_argv[1], cl->entity, 8);
+	if (cl->args->mr_version_no == MR_VERSION_2) {
+	    bcopy(cl->args->mr_argv[1], cl->entity, 8);
 	    cl->entity[8] = 0;
 	} else {
 	    strcpy(cl->entity, "???");
@@ -92,7 +92,7 @@ do_auth(cl)
 	    com_err(whoami, 0, "Auth to %s using %s, uid %d cid %d",
 		    cl->clname, cl->entity, cl->users_id, cl->client_id);
 	if (cl->users_id == 0)
-	  cl->reply.sms_status = SMS_USER_AUTH;
+	  cl->reply.mr_status = MR_USER_AUTH;
 }
 
 

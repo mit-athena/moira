@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_glue.c,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_glue.c,v 1.13 1989-12-21 17:56:08 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_glue.c,v 1.14 1990-03-19 15:41:41 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -12,11 +12,11 @@
  */
 
 #ifndef lint
-static char *rcsid_sms_glue_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_glue.c,v 1.13 1989-12-21 17:56:08 mar Exp $";
+static char *rcsid_mr_glue_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_glue.c,v 1.14 1990-03-19 15:41:41 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
-#include "sms_server.h"
+#include "mr_server.h"
 #include <sys/types.h>
 #include <sys/signal.h>
 #include <sys/wait.h>
@@ -26,7 +26,7 @@ static char *rcsid_sms_glue_c = "$Header: /afs/.athena.mit.edu/astaff/project/mo
 
 static int already_connected = 0;
 
-#define CHECK_CONNECTED { if (!already_connected) return SMS_NOT_CONNECTED; }
+#define CHECK_CONNECTED { if (!already_connected) return MR_NOT_CONNECTED; }
 
 static client pseudo_client;
 extern int errno;
@@ -34,35 +34,35 @@ extern char *malloc(), *whoami;
 extern time_t now;
 void reapchild();
 
-sms_connect(server)
+mr_connect(server)
 char *server;
 {
     register int status;
     extern int query_timeout;
 
-    if (already_connected) return SMS_ALREADY_CONNECTED;
+    if (already_connected) return MR_ALREADY_CONNECTED;
 
     initialize_sms_error_table();
     initialize_krb_error_table();
     bzero((char *)&pseudo_client, sizeof(pseudo_client)); /* XXX */
 
     query_timeout = 0;
-    status =  sms_open_database();
+    status =  mr_open_database();
     if (!status) already_connected = 1;
 
     signal(SIGCHLD, reapchild);
     return status;
 }
 
-sms_disconnect()
+mr_disconnect()
 {
     CHECK_CONNECTED;
-    sms_close_database();
+    mr_close_database();
     already_connected = 0;
     return 0;
 }
 
-sms_noop()
+mr_noop()
 {
     CHECK_CONNECTED;
     return 0;
@@ -70,7 +70,7 @@ sms_noop()
 /*
  * This routine is rather bogus, as it only fills in who you claim to be.
  */
-sms_auth(prog)
+mr_auth(prog)
 char *prog;
 {
     struct passwd *pw;
@@ -95,8 +95,8 @@ char *prog;
     name_to_id(pseudo_client.kname.name, "USER", &pseudo_client.users_id);
     pseudo_client.client_id = pseudo_client.users_id;
     strcpy(pseudo_client.entity, prog);
-    pseudo_client.args = (sms_params *) malloc(sizeof(sms_params));
-    pseudo_client.args->sms_version_no = SMS_VERSION_2;
+    pseudo_client.args = (mr_params *) malloc(sizeof(mr_params));
+    pseudo_client.args->mr_version_no = MR_VERSION_2;
     return 0;
 }
 
@@ -110,14 +110,14 @@ int argc;
 char **argv;
 struct hint *arg;
 {
-    if (sms_trim_args(argc, argv) == SMS_NO_MEM) {
-	com_err(whoami, SMS_NO_MEM, "while trimmming args");
+    if (mr_trim_args(argc, argv) == MR_NO_MEM) {
+	com_err(whoami, MR_NO_MEM, "while trimmming args");
     }
     (*arg->proc)(argc, argv, arg->hint);
 }
 
 
-int sms_query(name, argc, argv, callproc, callarg)
+int mr_query(name, argc, argv, callproc, callarg)
     char *name;		/* Query name */
     int argc;		/* Arg count */
     char **argv;		/* Args */
@@ -129,20 +129,20 @@ int sms_query(name, argc, argv, callproc, callarg)
     time(&now);
     hints.proc = callproc;
     hints.hint = callarg;
-    return sms_process_query(&pseudo_client, name, argc, argv,
+    return mr_process_query(&pseudo_client, name, argc, argv,
 			     callback, &hints);
 }
 
-int sms_access(name, argc, argv)
+int mr_access(name, argc, argv)
     char *name;			/* Query name */
     int argc;			/* Arg count */
     char **argv;		/* Args */
 {
     time(&now);
-    return sms_check_access(&pseudo_client, name, argc, argv);
+    return mr_check_access(&pseudo_client, name, argc, argv);
 }
 
-int sms_query_internal(argc, argv, callproc, callarg)
+int mr_query_internal(argc, argv, callproc, callarg)
     int argc;
     char **argv;
     int (*callproc)();
@@ -153,19 +153,19 @@ int sms_query_internal(argc, argv, callproc, callarg)
     time(&now);
     hints.proc = callproc;
     hints.hint = callarg;
-    return sms_process_query(&pseudo_client, argv[0], argc-1, argv+1,
+    return mr_process_query(&pseudo_client, argv[0], argc-1, argv+1,
 			     callback, &hints);
 }
 
-int sms_access_internal(argc, argv)
+int mr_access_internal(argc, argv)
     int argc;
     char **argv;
 {
     time(&now);
-    return sms_check_access(&pseudo_client, argv[0], argc-1, argv+1);
+    return mr_check_access(&pseudo_client, argv[0], argc-1, argv+1);
 }
 
-sms_shutdown(why)
+mr_shutdown(why)
     char *why;
 {
     fprintf(stderr, "Sorry, not implemented\n");
@@ -202,7 +202,7 @@ trigger_dcm(dummy0, dummy1, cl)
 		return(errno);
 
 	default:
-		return(SMS_SUCCESS);
+		return(MR_SUCCESS);
 	}
 }
 

@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_util.c,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_util.c,v 1.15 1989-08-16 20:47:49 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_util.c,v 1.16 1990-03-19 15:42:24 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -9,11 +9,11 @@
  */
 
 #ifndef lint
-static char *rcsid_sms_util_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_util.c,v 1.15 1989-08-16 20:47:49 mar Exp $";
+static char *rcsid_mr_util_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_util.c,v 1.16 1990-03-19 15:42:24 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
-#include "sms_server.h"
+#include "mr_server.h"
 
 #include <ctype.h>
 #include <strings.h>
@@ -74,7 +74,7 @@ log_args(tag, version, argc, argv)
 	com_err(whoami, 0, "%s", buf);
 }
 	
-void sms_com_err(whoami, code, fmt, pvar)
+void mr_com_err(whoami, code, fmt, pvar)
 	char *whoami;
 	int code;
 	char *fmt;
@@ -98,11 +98,11 @@ void sms_com_err(whoami, code, fmt, pvar)
 }
 
 
-/* sms_trim_args: passed an argument vector, it will trim any trailing
+/* mr_trim_args: passed an argument vector, it will trim any trailing
  * spaces on the args by writing a null into the string.
  */
 
-int sms_trim_args(argc, argv)
+int mr_trim_args(argc, argv)
 int argc;
 char **argv;
 {

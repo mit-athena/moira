@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_server.h,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_server.h,v 1.19 1989-12-28 17:03:37 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_server.h,v 1.20 1990-03-19 15:42:13 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
@@ -11,14 +11,14 @@
 #include <sys/uio.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
-#include "sms_proto.h"
-#include <sms_app.h>
+#include "mr_proto.h"
+#include <moira_site.h>
 #include <krb.h>
 
 typedef struct returned_tuples {
 	struct returned_tuples *next;
 	OPERATION op;
-	sms_params *retval;
+	mr_params *retval;
 } returned_tuples;
 
 /*
@@ -40,13 +40,13 @@ typedef struct _client {
 	OPERATION pending_op;	/* Primary pending operation */
 	CONNECTION con;		/* Connection to the client */
 	int action;		/* what action is pending? */
-	sms_params *args, reply;
+	mr_params *args, reply;
 	int id;			/* Unique id of client */
 	struct sockaddr_in haddr; /* IP address of client */
 	char clname[MAX_K_NAME_SZ];/* Name client authenticated to */
 	struct krbname kname; 	/* Parsed version of the above */
-	int users_id;		/* SMS internal ID of authenticated user */
-	int client_id;		/* SMS internal ID of client for modby field */
+	int users_id;		/* MR internal ID of authenticated user */
+	int client_id;		/* MR internal ID of client for modby field */
 	returned_tuples *first, *last;
 	time_t last_time_used;  /* Last time connection used */
 	char entity[9];		/* entity on other end of the connection */

@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_srvdata.c,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_srvdata.c,v 1.8 1989-06-27 16:01:27 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_srvdata.c,v 1.9 1990-03-19 15:42:21 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -11,11 +11,11 @@
  */
 
 #ifndef lint
-static char *rcsid_sms_srvdata_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_srvdata.c,v 1.8 1989-06-27 16:01:27 mar Exp $";
+static char *rcsid_mr_srvdata_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_srvdata.c,v 1.9 1990-03-19 15:42:21 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
-#include "sms_server.h"
+#include "mr_server.h"
 
 /*
  * Connections & clients:
@@ -45,7 +45,7 @@ struct sockaddr_in client_addr;
 int client_addrlen;
 /*
  * Additional data sent at connect time by the client
- * (provided by GDB; ignored by SMS)
+ * (provided by GDB; ignored by Moira)
  */
 TUPLE client_tuple;
 
@@ -59,7 +59,7 @@ char *whoami;
 char buf1[BUFSIZ];
 
 /*
- * If non-null, reason for shutdown.  (SMS will be going down shortly
+ * If non-null, reason for shutdown.  (Moira will be going down shortly
  * if this is non-null)
  */
 char *takedown=NULL;

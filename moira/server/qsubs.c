@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsubs.c,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsubs.c,v 1.8 1989-07-19 15:00:12 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsubs.c,v 1.9 1990-03-19 15:44:14 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,11 +10,11 @@
  */
 
 #ifndef lint
-static char *rcsid_qsubs_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsubs.c,v 1.8 1989-07-19 15:00:12 mar Exp $";
+static char *rcsid_qsubs_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsubs.c,v 1.9 1990-03-19 15:44:14 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
-#include <sms.h>
+#include <moira.h>
 #include "query.h"
 
 #ifdef MULTIPROTOCOLS
@@ -34,7 +34,7 @@ get_query_by_name(name, version)
     register int i;
 
 #ifdef MULTIPROTOCOLS
-    if (version == SMS_VERSION_1) {
+    if (version == MR_VERSION_1) {
 	q = Queries1;
 	i = QueryCount1;
     } else {
@@ -78,7 +78,7 @@ list_queries(version, action, actarg)
   int qcmp();
 
 #ifdef MULTIPROTOCOLS
-  if (version == SMS_VERSION_1) {
+  if (version == MR_VERSION_1) {
       count = QueryCount1;
       if (squeries1 == (struct query **)0) {
 	  sq = (struct query **)malloc(count * sizeof (struct query *));

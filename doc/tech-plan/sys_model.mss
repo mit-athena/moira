@@ -1,4 +1,21 @@
 @part[sysmodel, root "sms.mss"]
+
+@Comment{Table Environment Definitions}
+@Define(ColH=FlushLeft, Underline All)
+@Define(Col1=FlushLeft, MinWidth 1inch)
+@Define(Col2=FlushLeft)
+@Define(Col3=FlushLeft)
+@Define(Col4=FlushLeft, MinWidth .625inch)
+@Define(Col5=FlushLeft, MinWidth .975inch)
+@Define(Col6=FlushLeft, MinWidth .625inch)
+@DefineRowFormat( ColHeadFormat,
+		  Columns = [Column ColH, Column ColH, Column ColH,
+			     Column ColH, Column ColH, Column ColH])
+@DefineRowFormat( BodyFormat, FlushTop,
+		  Columns = [Column Col1, Column Col2, Column Col3,
+			     Column Col4, Column Col5, Column Col6])
+
+
 @newpage()
 @MajorSection(System Model)
 
@@ -46,25 +63,23 @@ The support and function of sms is derived exclusively in response to
 the environment which it supports.  This section presents factors
 of the design dealing with considerations such as scalability, size,
 deployment, and support.  
-@begin(enumerate)
+
+@begin(enumerate, RightMargin 0)
+
 The system is designed optimally for 10,000 active users.  The database
 has been designed to delineate between active and non-active status.
 Active refers to those individuals who have permission to use the system.
 
-SMS supports a number of system services.  To date there are six system
+SMS supports a number of system services.  To date there are four system
 services which are supported.  They are:
 @begin(itemize, spread 0)
 Hesiod
-
-RVD
 
 NFS
 
 Mail Service
 
-MDQS - not fully supported 
-
-Zephyr - to date, not supported
+Zephyr - to date, supported but not in use
 @end(itemize)
 These services are, however, each supported by a collection of server-specific
 data files.  To date, there are over 20 separate files used to support the 
@@ -84,61 +99,50 @@ an optimal time interval being greater than 6 hours.  The data control manager i
 designed to only generate and propagate new files if the database has changed
 within the previous time interval.
 
-The system supports three hesiod servers, 10 library servers running RVD, 20
-locker servers running NFS, five class libraries running NFS, one 
-/usr/lib/aliases propagation.  A hesiod server requires 9 separate files;
-Each hesiod server will receive the same 9 files. Each RVD server requires one 
-file, each file being different.  Each NFS server requires two files,
-one identical file to all NFS servers, one different file to each filesystem
-on each server.  Usr/lib/aliases is one file.
+The system supports one hesiod servers, 20 locker servers running NFS,
+one /usr/lib/aliases propagation.  A hesiod server requires 11 separate
+files; each hesiod server will receive the same 11 files.  Each NFS
+server requires three files, one of these files will be the same for
+most NFS servers.  Usr/lib/aliases is one file.
 
-@StandardTable( Name FileOrg, Columns 6, TopHeading FlushLeft, 
-		ColumnHeadings FlushLeft, FlushTop)
-@Begin(FileOrg)
+File Organization:
+@Begin(Multiple)
+@Begin(Text, TableColumns BodyFormat, LeftMargin 3ems, Spacing 1, Above 1,
+       Spread .2lines, BoxLM .125inch)
 @TableId(FileOrg)
 
-@TableHeading( Immediate, RowFormat FileOrgTopHeading, 
-	       Line 'File Organization')
-
-@TableHeading( Immediate, RowFormat FileOrgColumnHeadings,
+@TableHeading( Immediate, Continued, RowFormat ColHeadFormat,
 	       Line 'Service@\File@\Size@\Number@\Propagations@\Interval')
 
-Hesiod@\cluster.db@\22300@\1@\3@Hsp(.625inch)@\6 hours
+Hesiod@\cluster.db@\53656@\1@\1@\6 hours
 
-@\service.db@\10100@\1@\3@Hsp(.625inch)@\6 hours
+@\filesys.db@\541482@\1@\1@\6 hours
 
-@\printers.db@\3833@\1@\3@\6 hours
+@\gid.db@\341012@\1@\1@\6 hours
 
-@\lpr.db@\3250@\1@\3@\6 hours
+@\group.db@\453636@\1@\1@\6 hours
 
-@\printcap.db@\9800@\1@\3@\6 hours
+@\grplist.db@\357662@\1@\1@\6 hours
 
-@\pobox.db@\325000@\1@\3@\6 hours
+@\passwd.db@\712446@\1@\1@\6 hours
 
-@\sloc.db@\300@\1@\3@\6 hours
+@\pobox.db@\415688@\1@\1@\6 hours
 
-@\filesys.db@\36000@\1@\3@\6 hours
+@\printcap.db@\4318@\1@\1@\6 hours
 
-@\passwd.db@\880000@\1@\3@\6 hours
+@\service.db@\9052@\1@\1@\6 hours
 
-@BlankSpace(1 line)@\@\@\@\@\
+@\sloc.db@\3734@\1@\1@\6 hours
 
-RVD@\/site/rvddb@\2000(90%) - 
-20000@\10@\10@\15 minutes
-
-@\/site/rvd/acl/OP.acl@\small@\10@\10@\15 min
-
-@\/site/rvd/acl/AD.acl@\small@\10@\10@\15 min
-
-@\/site/rvd/acl/SH.acl@\small@\10@\10@\15 min
-
-@\/site/rvd/acl/file.acl@\small@\10@\10@\15 min
+@\uid.db@\256381@\1@\1@\6 hours
 
 @BlankSpace(1 line)@\@\@\@\@\
 
-NFS@\/site/nfsid@\880000@\1@\25@\6 hours
+NFS@\@i(partition).dirs@\2784@\20@\20@\12 hours
 
-@\/mit/quota@\35000@\25@\25@\6 hours
+@\@i(partition).quotas@\1205@\20@\20@\12 hours
+
+@\credentials@\152648@\1@\20@\12 hours
 
 @BlankSpace(1 line)@\@\@\@\@\ 
 
@@ -146,17 +150,19 @@ Mail@\/usr/lib/aliases@\445000@\1@\1@\24 hours
 
 @BlankSpace(1 line)@\@\@\@\@\
 
-TOTAL@\@\@\86@\110@\
+Zephyr@\@i(class).acl@\100@\6@\3@\24 hours
 
-@End(FileOrg)
+TOTAL@\@\@\?@\?@\
 
-@Begin(Description)
+@End(Text)
+@Begin(Description, LeftMargin +8, Indent -8)
 NOTE:@\The above files will only be generated and propagated if the
 data has changed during the time interval.  For example,  although
-the RVD interval is 15 minutes, there is no effect on
-system resources unless the information relevant to RVD's changed
-during the previous 15 minute interval.
+the hesiod interval is 6 hours, there is no effect on
+system resources unless the information relevant to hesiod has changed
+during the previous 6 hour interval.
 @End(Description)
+@End(Multiple)
 
 Application interfaces provide all the mechanisms to change database
 fields.  There will be no need for any sms updating to be done
@@ -187,15 +193,17 @@ The database contains the following:
 
 @Begin(Itemize, Spread 1)
 
-User information
+User information (account, finger)
 
 Machine information
 
+Cluster information
+
 General service information (service location, /etc/services)
 
-File system information (RVD, NFS)
+File system information (NFS partitions, logical filesystems)
 
-Printer information (Berkeley, MDQS)
+Printcap information
 
 Post office information
 
@@ -208,7 +216,7 @@ Aliases
 The database field are described in the section @i[Database Fields],
 described later in this document.  
 
-The database is a completely independent entity from the sms
+The database is a completely independent entity from the SMS
 system.  The Ingres query bindings and database specific routines
 are layered at the lower levels of the sms server.  @i[All applications
 are independent of the database specific routines.]  This independence
@@ -219,46 +227,11 @@ the database via a database specific call.  Allowing for additional
 data and future expansions, sms can use other databases for information.
 This mechanism, although not functional at this time, is achieved by having
 a set of query handles for each accessable database.  Then, the application
-merely passes a query handle to a function, which then resolves the database and 
-query. 
+merely passes a query handle to a function, which then resolves the
+database and query. 
 
 The current database supports all activities inherent to operation and
 data requirements of the previously listed sms-supported services. 
 No attempt is made to circumvent sms as the central point of contact.
 When needed and where applicable, as more services are required, new 
 fields and query handles will be provided for support.
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

@@ -1,6 +1,6 @@
 #	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/Makefile,v $
 #	$Author: kostas $
-#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/Makefile,v 1.2 1990-10-02 09:42:16 kostas Exp $
+#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/Makefile,v 1.3 1990-10-02 09:48:25 kostas Exp $
 #
 
 CFILES = startmoira.c mr_main.c mr_sauth.c mr_scall.c \
@@ -87,6 +87,7 @@ clean:
 	rm -f ${ALL} libmoiraglue_p.a
 	rm -f *.o *~ qrtn.c qsupport.c qoldsup.c increment.c
 	rm -f profiled/*.o
+	rm -f *.err
 
 TAGS:	$(CFILES)
 	-etags $(CFILES)

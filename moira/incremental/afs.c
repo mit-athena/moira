@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/afs.c,v 1.44 1993-02-02 18:21:26 probe Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/afs.c,v 1.45 1993-02-22 00:39:14 probe Exp $
  *
  * Do AFS incremental updates
  *
@@ -558,15 +558,19 @@ long pr_try(fn, a1, a2, a3, a4, a5, a6, a7, a8)
 
     check_afs();
     
-    if (!initd) {
-	code=pr_Initialize(1, AFSCONF_CLIENTNAME, 0);
-	if (code) {
-	    critical_alert("incremental", "Couldn't initialize libprot: %s",
-			   error_message(code));
-	    return;
-	}
+    if (initd) {
+	code=pr_Initialize(0, AFSCONF_CLIENTNAME, 0);
+    } else {
+	code = 0;
 	initd = 1;
     }
+    if (!code) code=pr_Initialize(1, AFSCONF_CLIENTNAME, 0);
+    if (code) {
+	critical_alert("incremental", "Couldn't initialize libprot: %s",
+		       error_message(code));
+	return;
+    }
+
     sleep(1);					/* give ptserver room */
 
     while (code = (*fn)(a1, a2, a3, a4, a5, a6, a7, a8)) {

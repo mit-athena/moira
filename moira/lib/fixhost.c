@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/fixhost.c,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/fixhost.c,v 1.5 1989-04-12 18:59:05 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/fixhost.c,v 1.6 1989-10-05 01:16:48 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -9,7 +9,7 @@
  */
 
 #ifndef lint
-static char *rcsid_fixhost_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/fixhost.c,v 1.5 1989-04-12 18:59:05 mar Exp $";
+static char *rcsid_fixhost_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/fixhost.c,v 1.6 1989-10-05 01:16:48 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -17,7 +17,11 @@ static char *rcsid_fixhost_c = "$Header: /afs/.athena.mit.edu/astaff/project/moi
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/nameser.h>
+#ifdef sun
+#include <resolv.h>
+#else
 #include <arpa/resolv.h>
+#endif sun
 #include <netdb.h>
 #include <stdio.h>
 #include <strings.h>

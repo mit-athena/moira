@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/afssync/sync.qc,v 1.13 1992-11-07 23:08:16 probe Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/afssync/sync.qc,v 1.14 1993-02-05 03:30:47 probe Exp $
  *
  *
  *  (c) Copyright 1989 by the Massachusetts Institute of Technology.
@@ -51,6 +51,7 @@ char **argv;
     
     int status;
     int ingerr();
+    long t;
 
     strcpy(db, "sms");
 
@@ -85,6 +86,10 @@ char **argv;
     do_passwd();
     do_groups();
 
+    t = time(0);
+    fprintf(stderr, "Done (%d users, %d groups, %d members): %s",
+	    ucount, gcount, mcount, ctime(&t));
+
 ##  end transaction
 ##  exit
 
@@ -96,7 +101,7 @@ do_passwd()
 ##{
 ##  char login[9];
 ##  int uid, id, status;
-    int t;
+    long t;
     struct prentry tentry;
     struct entry *u;
 
@@ -136,7 +141,7 @@ do_groups()
     struct member *m;
     struct bucket **p, *b;
     char namebuf[40];
-    int aid, t;
+    long aid, t;
 ##  char name[33];
 ##  int gid, id, lid, hide;
 
@@ -249,14 +254,41 @@ do_groups()
 	    }
 	}
     }
-
-    t = time(0);
-    fprintf(stderr, "Done (%d users, %d groups, %d members): %s",
-	    ucount, gcount, mcount, ctime(&t));
-
 ##}
 
+#if 0
+do_kerberos()
+##{
+    long status, pos;
+    struct prentry gentry, uentry;
+    struct entry *u, *g;
+    struct member *m;
+    struct bucket **p, *b;
+    char namebuf[40];
+    int aid, t;
+##  char name[129];
+##  int gid, id, lid, hide;
 
+    t = time(0);
+    fprintf(stderr, "Doing kerberos members: %s", ctime(&t));
+
+##  range of s is strings
+##  range of m is imembers
+    /* get lock records */
+##  retrieve (name = list.modtime) where list.list_id = 0
+##  retrieve (name = s.modtime) where s.string_id = 0
+
+##  retrieve (lid = m.list_id, id = m.member_id)
+##	where m.member_type = "KERBEROS" {
+	xxx;
+	{
+	}
+##  }
+
+##}
+#endif
+    
+    
 /*
  * ingerr: (supposedly) called when Ingres indicates an error.
  * I have not yet been able to get this to work to intercept a

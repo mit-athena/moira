@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v 1.28 1990-07-11 15:47:30 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v 1.29 1990-07-14 16:25:25 mar Exp $";
 #endif lint
 
 /*	This is the file utils.c for the MOIRA Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v 1.28 1990-07-11 15:47:30 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v 1.29 1990-07-14 16:25:25 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -285,16 +285,6 @@ char *def;
 
     (void) sprintf(tmp, "%s [%s]: ", prompt, def ? def : "");
     ans = Prompt_input(tmp, buf, buflen);
-#ifdef notdef
-    if (ans == 0) {
-	if (YesNoQuestion("Are you sure you want to exit", 1)) {
-	    Cleanup_menu();
-	    exit(0);
-	}
-	Put_message("Continuing input...");
-	return(PromptWithDefault(prompt, buf, buflen, def));
-    }
-#endif
     if (IS_EMPTY(buf))
 	(void) strcpy(buf, def);
     else if (!strcmp(buf, "\"\""))

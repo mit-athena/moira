@@ -1,4 +1,4 @@
-/* $Id: staff.pc,v 1.1 1999-01-09 05:51:05 danw Exp $
+/* $Id: staff.pc,v 1.2 1999-07-30 02:16:07 danw Exp $
  *
  * Load data into Moira from Personnel Office data file
  *
@@ -19,7 +19,7 @@
 EXEC SQL INCLUDE sqlca;
 extern void sqlglm(char *, unsigned int *, unsigned int *);
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/staff.pc,v 1.1 1999-01-09 05:51:05 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/staff.pc,v 1.2 1999-07-30 02:16:07 danw Exp $");
 
 #define WHO 11859		/* root */
 #define PROG "emp-tape"
@@ -74,19 +74,17 @@ struct entry {
   char *address;
   char *phone;
   char *phone2;
-  int highid;
 };
 
 struct entry *get_next_entry(FILE *in);
 void process_entry(struct entry *e);
 void newuser(struct entry *e);
 int set_next_users_id(int limit);
-int set_next_uid(int high);
+int set_next_uid(void);
 void sqlexit(void);
 void dbmserr(char *where, int what);
 
 char *whoami;
-int highid = 0;
 
 #define sqlfail() (sqlca.sqlcode && sqlca.sqlcode != 1403)
 #define SQL_DUPLICATE -2112
@@ -115,8 +113,6 @@ int main(int argc, char **argv)
     {
       if (!strcmp(argv[i], "-w"))
 	wait++;
-      else if (!strcmp(argv[i], "-h"))
-	highid++;
       else if (file)
 	fprintf(stderr, "Usage: %s [-w] [-D] [-n] inputfile\n", whoami);
       else
@@ -285,14 +281,10 @@ struct entry *get_next_entry(FILE *in)
   e.title = strtrim(title);
 
   e.class = "MITS";
-  e.highid = highid;
   if (strstr(e.title, "PROF") || strstr(e.title, "LECTURE"))
     e.class = "FACULTY";
   if (!strcmp(e.dept, "LINCOLN LAB"))
-    {
-      e.class = "LINCOLN";
-      e.highid = 1;
-    }
+    e.class = "LINCOLN";
 
   return &e;
 }
@@ -517,7 +509,7 @@ void newuser(struct entry *e)
   dept[USERS_DEPARTMENT_SIZE - 1] = '\0';
 
   id = set_next_users_id(0);
-  uid = set_next_uid(e->highid);
+  uid = set_next_uid();
   sprintf(login, "#%d", uid);
   last = e->last;
   first = e->first;
@@ -610,20 +602,15 @@ int set_next_users_id(int limit)
   return retval;
 }
 
-int set_next_uid(int high)
+int set_next_uid(void)
 {
   EXEC SQL BEGIN DECLARE SECTION;
   int flag, initial, value, retval;
   char *name;
   EXEC SQL END DECLARE SECTION;
 
-  if (high)
-    name = "high_uid";
-  else
-    name = "unix_uid";
-
   EXEC SQL SELECT value INTO :initial FROM numvalues
-    WHERE name = :name;
+    WHERE name = 'unix_uid';
   if (sqlfail())
     sqlexit();
   if (sqlca.sqlerrd[2] != 1)
@@ -642,7 +629,11 @@ int set_next_uid(int high)
   while (flag)
     {
       value++;
-      if (!high && value > MAX_ID_VALUE)
+#ifdef ULTRIX_ID_HOLE
+      if (value > 31999 && value < 32768)
+	value = 32768;
+#endif
+      if (value > MAX_ID_VALUE)
 	value = MIN_ID_VALUE;
       if (value == initial)
 	{
@@ -658,9 +649,9 @@ int set_next_uid(int high)
     }
 
   retval = value++;
-  if (!high && value > MAX_ID_VALUE)
+  if (value > MAX_ID_VALUE)
     value = MIN_ID_VALUE;
-  EXEC SQL UPDATE numvalues SET value = :value WHERE name = :name;
+  EXEC SQL UPDATE numvalues SET value = :value WHERE name = 'unix_uid';
   if (sqlca.sqlcode)
     {
       dbmserr("assigning ID", sqlca.sqlcode);

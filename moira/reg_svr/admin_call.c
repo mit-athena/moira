@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/admin_call.c,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/admin_call.c,v 1.9 1989-06-26 12:15:47 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/admin_call.c,v 1.10 1989-08-16 21:52:11 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -15,7 +15,7 @@
  */
 
 #ifndef lint
-static char *rcsid_admin_call_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/admin_call.c,v 1.9 1989-06-26 12:15:47 mar Exp $";
+static char *rcsid_admin_call_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/admin_call.c,v 1.10 1989-08-16 21:52:11 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -67,7 +67,7 @@ int admin_call_init()
 	struct servent *sp;	/* service to talk to */
 
 	initialize_kadm_error_table();
-	if (status = get_krbrlm(krbrlm, 1)) {
+	if (status = krb_get_lrealm(krbrlm, 1)) {
 	    status += ERROR_TABLE_BASE_krb;
 	    goto punt;
 	}
@@ -76,7 +76,7 @@ int admin_call_init()
 	 * Locate server.
 	 */
 
-	if (status = get_krbhst(krbhost, krbrlm, 1)) {
+	if (status = krb_get_krbhst(krbhost, krbrlm, 1)) {
 	    status += ERROR_TABLE_BASE_krb;
 	    goto punt;
 	}

@@ -31,7 +31,7 @@ typedef unsigned long in_addr_t;
 #include <arpa/inet.h>
 #endif
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/stella/stella.c,v 1.17 2001-09-24 08:02:24 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/stella/stella.c,v 1.18 2002-01-16 21:40:47 zacheiss Exp $");
 
 struct owner_type {
   int type;
@@ -695,7 +695,8 @@ int main(int argc, char **argv)
     if (status)
       com_err(whoami, status, "while getting subnet information");
     if (atoi(argv[SN_STATUS]) == SNET_STATUS_PRIVATE_10MBPS ||
-	atoi(argv[SN_STATUS]) == SNET_STATUS_PRIVATE_100MBPS)
+	atoi(argv[SN_STATUS]) == SNET_STATUS_PRIVATE_100MBPS ||
+	atoi(argv[SN_STATUS]) == SNET_STATUS_PRIVATE_1000MBPS)
       {
 	fprintf(stderr, "\nWarning:  This host is on a private subnet.\n");
 	fprintf(stderr, "Billing information shown is superseded by billing information for the subnet.\n");

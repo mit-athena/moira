@@ -1,4 +1,4 @@
-/* $Id: cluster.c,v 1.60 2001-09-24 08:02:02 zacheiss Exp $
+/* $Id: cluster.c,v 1.61 2002-01-16 21:40:39 zacheiss Exp $
  *
  *	This is the file cluster.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -90,7 +90,8 @@ static char *subnet_states[] = {
   "Private, 100 Mbps (3)",
   "Private, Other (4)",
   "Resnet (5)",
-  "Infrastructure (6)"
+  "Infrastructure (6)",
+  "Private, 1000 Mbps (7)"
 };
 
 static char *MacState(int state)
@@ -109,7 +110,7 @@ static char *SubnetState(int state)
 {
   static char buf[BUFSIZ];
 
-  if (state < 0 || state > 6)
+  if (state < 0 || state > 7)
     {
       sprintf(buf, "Unknown (%d)", state);
       return buf;
@@ -298,7 +299,8 @@ static char *PrintMachInfo(char **info)
   if (stat)
     com_err(program_name, stat, " looking up subnet info");
   else if (atoi(((char **)elem2->q_data)[2]) == SNET_STATUS_PRIVATE_10MBPS ||
-	   atoi(((char **)elem2->q_data)[2]) == SNET_STATUS_PRIVATE_100MBPS)
+	   atoi(((char **)elem2->q_data)[2]) == SNET_STATUS_PRIVATE_100MBPS ||
+	   atoi(((char **)elem2->q_data)[2]) == SNET_STATUS_PRIVATE_1000MBPS)
     {
       Put_message("");
       sprintf(buf, "Warning:  This host is on a private subnet.");
@@ -734,7 +736,7 @@ char **AskMCDInfo(char **info, int type, Bool name)
 	  if (isdigit(info[SN_STATUS][0]))
 	    break;
 	  Put_message("Valid status numbers:");
-	  for (i = 0; i < 7; i++)
+	  for (i = 0; i < 8; i++)
 	    Put_message(subnet_states[i]);
 	}
       if (GetValueFromUser("Network's contact", &info[SN_CONTACT]) == SUB_ERROR)

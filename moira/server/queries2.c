@@ -1,6 +1,6 @@
 /* This file defines the query dispatch table for version 2 of the protocol
  *
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/queries2.c,v 2.13 1992-12-30 16:57:40 mar Exp $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/queries2.c,v 2.14 1993-01-12 12:07:46 mar Exp $
  *
  * Copyright 1987, 1988 by the Massachusetts Institute of Technology.
  * For copying and distribution information, please see the file
@@ -87,6 +87,7 @@ int trigger_dcm();
 int count_members_of_list();
 int get_lists_of_member();
 int register_user();
+int _sdl_followup();
 
 
 
@@ -2211,6 +2212,23 @@ static char *gats_fields[] = {
   "table_name", "appends", "updates", "deletes", MOD1, MOD2, MOD3,
 };
 
+static char *_sdl_fields[] = {
+    "level",
+};
+
+static struct validate _sdl_validate = 
+{
+    0,
+    0,
+    (char *)0,
+    (char *)0,
+    0,
+    0,
+    0,
+    0,
+    _sdl_followup,
+};
+
 
 
 /* Generalized Query Definitions */
@@ -4183,6 +4201,21 @@ struct query Queries2[] = {
     (char *)0,
     0,
     0,
+  },
+
+  {
+    /* Q__SDL - _SET_DEBUG_LEVEL */
+    "_set_debug_level",
+    "_sdl",
+    UPDATE,
+    (char *)0,
+    (char *)0,
+    (char *)0,
+    _sdl_fields,
+    1,
+    (char *)0,
+    0,
+    &_sdl_validate,
   },
 
 };

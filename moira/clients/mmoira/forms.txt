@@ -1,0 +1,332 @@
+; $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/forms.txt,v 1.1 1991-05-24 12:18:52 mar Exp $
+;
+
+; { FORM_NAME	INSTRUCTION FIELD
+;	LABEL	FIELD TYPE (S=string, K=keyword, B=TRUE/FALSE)
+;	etc
+; }
+
+{ show_user	Enter the login name, real name, uid or class to select one or more users.
+	login name	s
+    or
+	first name	s
+	last name	s
+    or
+	unix uid	s
+    or
+	class	K
+}
+; add/modify
+{ add_user	Add a new user to the database or modify an existing user.
+	login name	S
+	unix uid	s
+	shell	s
+	last name	s
+	first name	s
+	middle name	s
+	account status	K
+	ID number	s
+	class	K
+}
+{ register_user	Register a user with an active account.  Specify user by real name or uid.
+	first name s
+	last name s
+    or
+	unix uid s
+	desired login name	s
+}
+; deactivate/expunge/show finger
+{ select_user	Enter the login name to select a user.
+	login	s
+}
+
+; show/delete
+{ select_pobox	Enter the login name of the user whose P.O.Box you want to examine.
+	login	s
+}
+{ set_pobox	Enter the new P.O.Box information.
+	login	s
+	type	K
+	address  s
+	    or
+	Post Office server K
+}
+
+{ show_krbmap	Enter the username or principal of the Kerberos mapping to examine.
+	login	s
+    or
+	principal s
+}
+; add/delete
+{ add_krbmap	Modify Kerberos mapping.
+	login	s
+	principal s
+}
+{ show_filsys	Enter the name, machine, or owning group to see a filesystem.
+	name	s
+    or
+	machine s
+	partition s
+    or
+	group	s
+}
+; add/modify
+{ add_filsys	Enter the new filesystem information.
+	name	s
+	type	K
+	machine	s
+	remote name s
+	mountpoint s
+	access mode	K
+	comments s
+	owner	s
+	owners	s
+	autocreate B
+	lockertype K
+}
+{ del_filsys	Enter the name of the filesystem to delete.
+	name	s
+}
+{ show_fsgroup	Enter the name of the filesyste group to show.
+	name	s
+}
+; insert/re-order
+{ add_fsgroup	Specify the filesystem for the filesystem group and where it goes in sort order.
+	filesystem group name s
+	filesystem name s
+	select filesystem to insert after in sort order k
+}
+{ del_fsgroup	Specify the filesystem to remove from the filesystem group.
+	filesystem group name s
+	filesystem name s
+}
+{ show_fs_alias	Specify the alias or real name of the filesystem alias to show.
+	real filesystem name s
+    or
+	aliased name	s
+}
+; add/delete
+{ add_fs_alias	Specify the filesystem alias to be added or deleted.
+	real filesystem name s
+	aliased name	s
+}
+
+
+{ show_nfs	Specify the machine (and optionally the partition) to be examined.
+	machine	s
+    or
+	parition s
+}
+; add/modify
+{ add_nfs	Enter the information for the NFS partition.
+	machine s
+	partition s
+	device	s
+	status	K
+	allocated s
+	size	s
+}
+{ del_nfs	Specify the NFS partition to delete.
+	machine s
+	parition s
+}
+
+
+{ show_quota	Specify the user, group, and/or filesystem of the desired quota.
+	user	s
+    or
+	group	s
+    or
+	filesystem s
+}
+; add/modify
+{ add_quota	Enter the quota information.
+	type	K
+	user/group s
+	filesystem s
+	quota	s
+}
+{ del_quota	Specify the quota to delete.
+	type	K
+	user/group s
+	filesystem s
+}
+;quota show default
+{ set dquota	Specify the new default quota for new accounts.
+	value	s
+}
+
+
+{ show_list	Specify the name of the list to examine.
+	name	s
+}
+;list show all public
+{ show_ace_use	Specify the user or list to see what they can administer.
+	type	K
+	member name s
+	search recursively B
+}
+; add/modify
+{ add_list	Enter the list information.
+	name	s
+	active	B
+	public	B
+	hidden	B
+	maillist B
+	group	B
+	gid	s
+	owner type K
+	owner name s
+	description s
+}
+{ delete_list	Specify the name of the list to delete
+	name	s
+}
+{ show_members	Specify the list name or member name to see memberships.
+	list name s
+    or
+	member type K
+	member name s
+	recursive search B
+}
+; add/delete
+{ add_member	Enter the member information.
+	list	s
+	member type K
+	member name s
+}
+{ del_all_member	Enter a member to remove from all lists.
+	member type K
+	member name s
+	prompt for each deletion B
+}
+
+
+; show/delete
+{ show_machine	Specify the machine to display.
+	name	s
+}
+; add/modify
+{ add_machine	Enter the information about the machine.
+	name	s
+	type	K
+}
+
+
+; show/delete
+{ show_cluster	Specify the cluster to display.
+	name	s
+}
+; add/modify
+{ add_cluster	Enter the information about the cluster.
+	name	s
+	description s
+	location s
+}
+{ mcmap		Enter a machine or cluster to see its mappings.
+	machine	s
+	cluster s
+}
+{ add_mcmap	Enter the machine and cluster to change.
+	machine s
+	cluster s
+}
+{ show_cldata	Enter the cluster name or data label of the desired cluster data.
+	cluster s
+	label s
+}
+{ add_cldata	Enter the cluster information.
+	cluster s
+	label	s
+	value	s
+}
+{ del_cldata	Specify the cluster information to be deleted.
+	cluster s
+	label	s
+}
+
+
+; show/delete
+{ show_printer	Specify the desired printer.
+	name	s
+}
+; add/modify
+{ add_printer	Enter the printer information.
+	name	s
+	spooling host	s
+	spool directory s
+	remote name	s
+	authenticate B
+	quota server s
+	price	s
+	comments s
+}
+
+
+;server updates show
+{ dcm_enable	Allow Data Control Manager updates?
+	enable	B
+}
+{ trigger_dcm	Start a batch update now?
+	Are You Sure? B
+}
+
+;service show/delete/clear error/reset
+{ show_service	Enter the service name to examine.
+	name	s
+}
+; add/modify
+{ add_service	Enter the service information.
+	service name s
+	interval (minutes) s
+	destination file s
+	script	s
+	type	K
+	enable	B
+	owner type K
+	owner name s
+}
+; show/delete/clear error/reset state
+{ show_host	Enter the host and or service to examine.
+	host name s
+	service name s
+}
+; add/modify
+{ add_host	Enter the service/host tuple information.
+	host name s
+	service s
+	enable	B
+	value1	s
+	value2	s
+	value3	s
+}
+
+
+;misc show stats
+;misc show clients
+{ show_value	Enter the name of the variable to display.
+	variable name s
+}
+{ show_alias	Enter the alias name, type, or value to display.
+	name	s
+	type	K
+	value	s
+}
+
+
+; show/delete
+{ show_zephyr	Enter the name of the zephyr class to examine.
+	class	s
+}
+; add/modify
+{ add_zephyr	Enter the zephyr class access information.
+	class	s
+	XMT type K
+	XMT name s
+	SUB type K
+	SUB name s
+	IWS type K
+	IWS name s
+	IUI type K
+	IUI name s
+}

@@ -1,0 +1,157 @@
+; $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/menus.txt,v 1.1 1991-05-24 12:20:02 mar Exp $
+;
+
+; = menu name
+;	label			{ operation, form_name }
+;  or
+;	submenu name
+
+
+= miscellaneous
+	show database statistics { MM_STATS, 0 }
+	show active Moira clients { MM_CLIENTS, 0 }
+	show numeric value	{ MM_SHOW_VALUE, show_value }
+	show alias		{ MM_SHOW_ALIAS, show_alias }
+
+= hosts
+	show			{ MM_SHOW_HOST, show_host }
+	add			{ MM_ADD_HOST, add_host }
+	modify			{ MM_MOD_HOST, show_host }
+	delete			{ MM_DEL_HOST, show_host }
+	clear error		{ MM_CLEAR_HOST, show_host }
+	reset state		{ MM_RESET_HOST, show_host }
+
+= services
+	show			{ MM_SHOW_SERVICE, show_service }
+	add			{ MM_ADD_SERVICE, add_service }
+	modify			{ MM_MOD_SERVICE, show_service }
+	delete			{ MM_DEL_SERVICE, show_service }
+	clear error		{ MM_CLEAR_SERVICE, show_service }
+	reset state		{ MM_RESET_SERVICE, show_service }
+
+= server updates
+	show status		{ MM_SHOW_DCMM, 0 }
+	enable/disable		{ MM_ENABLE_DCM, dcm_enable }
+	invoke update		{ MM_TRIGGER_DCM, trigger_dcm }
+	services
+	hosts
+
+= zephyr
+	show			{ MM_SHOW_ZEPHYR, show_zephyr }
+	add			{ MM_ADD_ZEPHYR, add_zephyr }
+	modify			{ MM_MOD_ZEPHYR, show_zephyr }
+	delete			{ MM_DEL_ZEPHYR, show_zephyr }
+
+= printer
+	show			{ MM_SHOW_PCAP, show_printer }
+	add			{ MM_ADD_PCAP, add_printer }
+	modify			{ MM_MOD_PCAP, show_printer }
+	delete			{ MM_DEL_PCAP, show_printer }
+
+= cluster data
+	show			{ MM_SHOW_CLDATA, show_cldata }
+	add			{ MM_ADD_CLDATA, add_cldata }
+	delete			{ MM_DEL_CLDATA, del_cldata }
+
+= cluster mappings
+	show			{ MM_SHOW_MCMAP, mcmap }
+	add			{ MM_ADD_MCMAP, add_mcmap }
+	delete			{ MM_DEL_MCMAP, add_mcmap }
+
+= cluster
+	show			{ MM_SHOW_CLUSTER, show_cluster }
+	add			{ MM_ADD_CLUSTER, add_cluster }
+	modify			{ MM_MOD_CLUSTER, show_cluster }
+	delete			{ MM_DEL_CLUSTER, show_cluster }
+	cluster mappings
+	cluster data
+
+= machine
+	show			{ MM_SHOW_MACH, show_machine }
+	add			{ MM_ADD_MACH, add_machine }
+	modify			{ MM_MOD_MACH, show_machine }
+	delete			{ MM_DEL_MACH, show_machine }
+
+= list membership
+	show			{ MM_SHOW_MEMBERS, show_members }
+	add			{ MM_ADD_MEMBER, add_member }
+	delete			{ MM_DEL_MEMBER, add_member }
+	delete a member from all lists { MM_DEL_ALL_MEMBER, del_all_member }
+
+= list
+	show			{ MM_SHOW_LIST, show_list }
+	show all public mailing lists { MM_SHOW_MAILLIST, 0 }
+	show all items a list or user can administer { MM_SHOW_ACE_USE, show_ace_use }
+	add			{ MM_ADD_LIST, add_list }
+	modify			{ MM_MOD_LIST, show_list }
+	delete			{ MM_DEL_LIST, show_list }
+
+= quota
+	show			{ MM_SHOW_QUOTA, show_quota }
+	add			{ MM_ADD_QUOTA, add_quota }
+	modify			{ MM_MOD_QUOTA, show_quota }
+	delete			{ MM_DEL_QUOTA, show_quota }
+	show default		{ MM_SHOW_DQUOTA, 0 }
+	set default		{ MM_SET_DQUOTA, set_dquota }
+
+= nfs partition
+	show			{ MM_SHOW_NFS, show_nfs }
+	add			{ MM_ADD_NFS, add_nfs }
+	modify			{ MM_MOD_NFS, show_nfs }
+	delete			{ MM_DEL_NFS, del_nfs }
+
+= filesystem alias
+	show alias		{ MM_SHOW_FS_ALIAS, show_fs_alias }
+	add alias		{ MM_ADD_FS_ALIAS, add_fs_alias }
+	delete alias		{ MM_DEL_FS_ALIAS, add_fs_alias }
+
+= filesystem group
+	show			{ MM_SHOW_FSGROUP, show_fsgroup }
+	insert			{ MM_ADD_FSGROUP, add_fsgroup }
+	re-order		{ MM_MOV_FSGROUP, add_fsgroup }
+	remove			{ MM_DEL_FSGROUP, del_fsgroup }
+
+= filesystem
+	show			{ MM_SHOW_FILSYS, show_filsys }
+	add			{ MM_ADD_FILSYS, add_filsys }
+	modify			{ MM_MOD_FILSYS, show_filsys }
+	delete			{ MM_DEL_FILSYS, del_filsys }
+	filesystem group
+	filesystem alias
+	nfs partition
+
+= kerberos mapping
+	show			{ MM_SHOW_KRBMAP, show_krbmap }
+	add			{ MM_ADD_KRBMAP, add_krbmap }
+	delete			{ MM_DEL_KRBMAP, add_krbmap }
+
+= pobox
+	show			{ MM_SHOW_POBOX, select_pobox }
+	set			{ MM_SET_POBOX, set_pobox }
+	delete			{ MM_DEL_POBOX, select_pobox }
+
+= user
+	show			{ MM_SHOW_USER, show_user }
+	add			{ MM_ADD_USER, add_user }
+	register		{ MM_REGISTER, register_user }
+	modify			{ MM_MOD_USER, select_user }
+	deactivate		{ MM_DEACTIVATE, select_user }
+	expunge			{ MM_EXPUNGE, select_user }
+	show finger info	{ MM_SHOW_FINGER, select_user }
+	modify finger info	{ MM_MOD_FINGER, mod_finger }
+	kerberos mapping
+
+= toplevel
+	user
+	pobox
+	list
+	list membership
+	filesystem
+	quota
+	machine
+	cluster
+	printer
+	zephyr
+	server updates
+	miscellaneous
+

@@ -1,6 +1,6 @@
 #	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_et.et,v $
 #	$Author: wesommer $
-#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_et.et,v 1.2 1987-06-25 15:30:44 wesommer Exp $
+#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_et.et,v 1.3 1987-07-29 14:24:58 wesommer Exp $
 #
 	error_table sms
 
@@ -34,7 +34,61 @@ ec	SMS_NO_HANDLE,
 ec 	SMS_ALREADY_CONNECTED,
 	"Already connected to sms"
 
+ec	SMS_ARGS,
+	"Insufficient number of arguments"
+
 ec	SMS_NOT_UNIQUE,
 	"Arguments not unique"
+
+ec	SMS_PERM,
+	"Insufficient permission to perform requested database access"
+
+ec	SMS_LIST,
+	"No such list"
+
+ec	SMS_USER,
+	"No such user"
+
+ec	SMS_STRING,
+	"Unknown string"
+
+ec	SMS_TYPE,
+	"Invalid type"
+
+ec	SMS_EXISTS,
+	"Record already exists"
+
+ec	SMS_DATE,
+	"Invalid date"
+
+ec	SMS_CLUSTER,
+	"Unknown cluster"
+
+ec	SMS_MACHINE,
+	"Unknown machine"
+
+ec	SMS_SERVICE,
+	"Unknown service"
+
+ec	SMS_FILESYS,
+	"Named file system does not exist"
+
+ec	SMS_PRINTER,
+	"Unknown printer"
+
+ec	SMS_QUEUE,
+	"Unknown queue"
+	
+ec	SMS_DEVICE,
+	"No such device"
+
+ec	SMS_ACL,
+	"No such access control list"
+
+ec	SMS_NFSPHYS,
+	"Machine/device pair not in nfsphys"
+
+ec	SMS_FILESYS_EXISTS,
+	"Named file system already exists"
 
 	end

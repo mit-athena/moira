@@ -1,0 +1,12 @@
+	et	kadm
+	ec	ADMIN_NO_SVC, "admin_svc unknown."
+	ec	ADMIN_TOO_LONG, "Total length of arguments too large"
+	ec	ADMIN_BAD_KEY, "Can't create key schedule"
+	ec	ADMIN_CANT_ENCRYPT, "Can't make private message"
+	ec 	ADMIN_BAD_VERSION, "Requested version is not supported"
+	ec	ADMIN_SERVER_ERROR, "admin_server reports error"
+	ec	ADMIN_UNKNOWN_CODE, "Can't parse reply from admin_server"
+	ec	ADMIN_UNKNOWN_HOST, "Unknown host kerberos"
+	ec	ADMIN_UNKNOWN_SERVICE, "Unknown service atest3"
+	ec	ADMIN_UNKNOWN_USER, "I can't figure out who you are"
+	end

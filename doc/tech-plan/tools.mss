@@ -3,13 +3,13 @@
 @label(Tools)
 
 SMS will include a set of specialized management tools to enable system
-adminstrators to control system resources.  As the system evolves, more
+administrators to control system resources.  As the system evolves, more
 management tools will become a part of the SMS's application program
 library.  These tools provide the fundamental administrative use of SMS.
 
 In response to complaints about the user interface of current database
 maintenance tools such as madm, gadm, and (to a lesser extent) register,
-the SMS tools will use a slightly different strategy.  To accomodate
+the SMS tools will use a slightly different strategy.  To accommodate
 novice and occasional users, a menu interface similar to the interface
 in register will be the default.  For regular users, a command-line
 switch (such as @t(-nomenu)) will be provided that will use a
@@ -194,7 +194,7 @@ manipulates the following fields:
 modtime, home) USER relation
 
 This program will also allocate and change home directory storage space.
-It will allow the adminstrator to check storage allocation on a server
+It will allow the administrator to check storage allocation on a server
 and allocate or change a storage space for a user.  The information will
 be held in the SMS database and will be passed to the name service.  The
 allocation of a user's quota can be done automatically at register
@@ -205,8 +205,8 @@ should be taken into consideration when assigning a server.  (Trying to
 assign people to servers reasonably "near" them is an attempt to
 decrease the load on the network.)
 
-For home directory allocation\change the following predefined queries
-are used:
+For home directory allocation and change, the following predefined
+queries are used:
 
 @begin(itemize, spread 0)
 
@@ -244,21 +244,17 @@ get_value - for default PO allocation
 manipulates the following field:
 (value) VALUE relation.
 
-In the SERVERS relation, the @i[value] field represents the 
-total currently allocated
-space (but not necessarily used).  In the VALUE relation, the @i[value]
-field represents the default nfs quota for a user (used in new user home
-allocation).
-For example, if 20 users have been 
-allocated to a machine
-and each has a fielsys quota of 2 Meg, then the value field (SERVER relation) 
-will
-be 40 Meg.  If the server reports back that its free space is
-80 Meg, then another 20 users can be given allocated space on this
-disk.  As long as the free space minus the allocated space is greater
-or equal to the quota of the current allocation, the disk is OK to use.
-This mechanism will prevent over allocation of home directory 
-storage space.
+In the SERVERS relation, the @i[value] field represents the total
+currently allocated space (but not necessarily used).  In the VALUE
+relation, the @i[value] field represents the default nfs quota for a
+user (used in new user home allocation).  For example, if 20 users have
+been allocated to a machine and each has a filesys quota of 2 Meg, then
+the value field (SERVER relation) will be 40 Meg.  If the server reports
+back that its free space is 80 Meg, then another 20 users can be given
+allocated space on this disk.  As long as the free space minus the
+allocated space is greater or equal to the quota of the current
+allocation, the disk is OK to use.  This mechanism will prevent over
+allocation of home directory storage space.
 
 END USER: Administrator.
 
@@ -299,7 +295,7 @@ Administrator.  Staff.  Students.
 @end(multiple)
 
 @begin(multiple)
-PROGRAM NAME: PO_MAINT - Allocate/change home mail host.  
+PROGRAM NAME: PO_MAINT - Allocate and change home mail host.  
 
 DESCRIPTION: The name service and a mail
 forwarding service need to know where a user's post office is.  When a
@@ -345,7 +341,7 @@ manipulates the following field:
 
 In this program, the @i[value] field represents the number of allocated
 post office boxes on a machine.  A default value of post office box allocations
-will be compared to the actual nuber of allocated boxes.
+will be compared to the actual number of allocated boxes.
 
 END USERS:  Administrator. Staff. Students.
 @end(multiple)
@@ -374,21 +370,18 @@ manipulates the following fields:
 
 END USERS: Administrator.
 
-The isssue of deleting users is a sensitive issue.  The removal 
-of a user will reflect this sensitivity.  When deleting a user,
-the expiration date field will be set to the current date, but 
-the user will not be 
-removed.  The program db_maint will, among other things, check 
-the expiration stamp of the users.  If a stamp is within
-critical expiration time, the program will notify the administrator
-that a time-to-live date has been reached.  If correct, the administrator will
-set the user's status field to INACTIVE and set the
-time to some date in the future.  When that date and INACTIVE 
-status are reached, the user is flushed.  If incorrect, the administrator
-will set the date to some time in the future and leave the status 
-field ACTIVE. 
+The problem of deleting users is a sensitive one.  The removal of a user
+will reflect this sensitivity.  When deleting a user, the expiration
+date field will be set to the current date, but the user will not be
+removed.  The program db_maint will, among other things, check the
+expiration stamp of the users.  If a stamp is within critical expiration
+time, the program will notify the administrator that a time-to-live date
+has been reached.  If correct, the administrator will set the user's
+status field to INACTIVE and set the time to some date in the future.
+When that date and INACTIVE status are reached, the user is flushed.  If
+incorrect, the administrator will set the date to some time in the
+future and leave the status field ACTIVE.
 @end(multiple)
-
 
 @begin(multiple)
 
@@ -423,14 +416,13 @@ PROGRAM NAME: LIST_MAINT - List Administration
 DESCRIPTION: 
 This program handles mailing lists, group lists, and ACL administration.
 The general approach to this program is to identify the list type 
-which will need updating.  The program is, among otther things, a 
+which will need updating.  The program is, among other things, a 
 combination of the current madm and gadm programs.
-
 
 PRE-DEFINED QUERIES USED:
 @begin(itemize, spread 0)
 
-get_alll_mail_lists
+get_all_mail_lists
 
 add_mail_list
 

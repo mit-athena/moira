@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/critical.c,v 1.5 1988-09-13 15:50:56 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/critical.c,v 1.6 1989-09-08 14:55:48 mar Exp $
  *
  * Log and send a zephyrgram about any critical errors.
  *
@@ -11,10 +11,8 @@
 #include <stdio.h>
 #include <sys/file.h>
 #include <zephyr/zephyr.h>
+#include <sms_app.h>
 
-
-/* log file for critical events that require human intervention */
-#define CRITERRLOG	"/u1/sms/critical.log"
 
 /* mode to create the file with */
 #define LOGFILEMODE	0644

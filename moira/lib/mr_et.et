@@ -1,6 +1,6 @@
 #	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_et.et,v $
 #	$Author: wesommer $
-#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_et.et,v 1.3 1987-07-29 14:24:58 wesommer Exp $
+#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_et.et,v 1.4 1987-07-29 14:27:35 wesommer Exp $
 #
 	error_table sms
 
@@ -90,5 +90,8 @@ ec	SMS_NFSPHYS,
 
 ec	SMS_FILESYS_EXISTS,
 	"Named file system already exists"
+
+ec	SMS_QUERY_NOT_REENTRANT,
+	"Cannot do query from callback routine"
 
 	end

@@ -1,4 +1,4 @@
-/* $Id: ndb.pc,v 1.4 1998-02-23 19:23:44 danw Exp $
+/* $Id: ndb.pc,v 1.5 2000-07-17 17:52:43 zacheiss Exp $
  *
  * This generates the msql database for the network tables.
  *
@@ -19,7 +19,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/ndb.pc,v 1.4 1998-02-23 19:23:44 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/ndb.pc,v 1.5 2000-07-17 17:52:43 zacheiss Exp $");
 
 char *whoami = "ndb.gen";
 char *db = "moira/moira";
@@ -86,7 +86,7 @@ void users(FILE *out)
 
   EXEC SQL DECLARE users1 CURSOR FOR
     SELECT login, clearid, users_id, type, status, first, middle, last
-    FROM users WHERE clearid != '0' AND clearid != '999999999' 
+    FROM users WHERE clearid != '0' 
     AND login NOT LIKE '#%';
   EXEC SQL OPEN users1;
   while (1)

@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/main.c,v 1.24 1993-11-10 15:41:10 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/main.c,v 1.25 1994-10-28 16:58:33 jweiss Exp $";
 #endif lint
 
 /*	This is the file main.c for the Moira Client, which allows a nieve
@@ -10,8 +10,8 @@
  *	By:		Chris D. Peterson
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/main.c,v $
- *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/main.c,v 1.24 1993-11-10 15:41:10 mar Exp $
+ *      $Author: jweiss $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/main.c,v 1.25 1994-10-28 16:58:33 jweiss Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -48,7 +48,11 @@ char *getlogin();
 uid_t getuid();
 struct passwd *getpwuid();
 
+#ifdef _AIX
+Bool use_menu = FALSE;		/* whether or not we are using a menu. */
+#else
 Bool use_menu = TRUE;		/* whether or not we are using a menu. */
+#endif
 
 /*	Function Name: main
  *	Description: The main driver for the Moira Client.
@@ -87,6 +91,8 @@ main(argc, argv)
 	if (**arg == '-') {
 	    if (!strcmp(*arg, "-nomenu"))
 	      use_menu = FALSE;
+	    else if (!strcmp(*arg, "-menu"))
+	      use_menu = TRUE;
 	    else if (!strcmp(*arg, "-db"))
 	      if (arg - argv < argc - 1) {
 		  ++arg;
@@ -200,7 +206,7 @@ char * buf;
 static void
 Usage()
 {
-    fprintf(stderr, "Usage: %s [-nomenu] [-db server[:port]]\n", program_name);
+    fprintf(stderr, "Usage: %s [-nomenu | -menu] [-db server[:port]]\n", program_name);
     exit(1);
 }
 

@@ -1,11 +1,15 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v $
  *	$Author: wesommer $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.15 1987-09-11 15:31:58 wesommer Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.16 1988-01-04 11:56:09 wesommer Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
  *	$Log: not supported by cvs2svn $
+Revision 1.15  87/09/11  15:31:58  wesommer
+add_user_group modified to side-effect the time for tbs for groups as 
+well as the other things.
+
 Revision 1.15  87/09/10  22:44:49  wesommer
 One more table needs to be modified when adding the user-group.
 
@@ -64,7 +68,7 @@ Initial revision
  */
 
 #ifndef lint
-static char *rcsid_qsupport_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.15 1987-09-11 15:31:58 wesommer Exp $";
+static char *rcsid_qsupport_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.16 1988-01-04 11:56:09 wesommer Exp $";
 #endif lint
 
 #include "query.h"
@@ -140,10 +144,8 @@ access_pop(q, argv, cl)
 	mach_id = *(int *)argv[2];
 	box = argv[3];
 ##      range of p is pobox
-##      repeat retrieve (exists = any(p.#box where p.#users_id = @users_id
-##				      and p.type = "POP" 
-##				      and p.#mach_id = @mach_id
-##				      and p.#box = @box))
+##      repeat retrieve (exists = any(p.#box where p.#users_id = @users_id))
+
 	if (exists) return(SMS_EXISTS);
     }
 
@@ -1749,8 +1751,13 @@ validate_id(argv, vo)
 	for (c = name; *c; c++) if (islower(*c)) *c = toupper(*c);
     namefield = vo->namefield;
     idfield = vo->idfield;
-##  retrieve (id = table.idfield) where table.namefield = name
-##  inquire_equel (rowcount = "rowcount")
+    if (!bcmp(namefield, "uid", 4)) {
+##    retrieve (id = table.idfield) where table.namefield = int4(name)
+##    inquire_equel (rowcount = "rowcount")
+    } else {
+##    retrieve (id = table.idfield) where table.namefield = name
+##    inquire_equel (rowcount = "rowcount")
+    }
     if (rowcount != 1) return(vo->error);
     *(int *)argv[vo->index] = id;
     return(SMS_EXISTS);

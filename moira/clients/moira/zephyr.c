@@ -1,4 +1,4 @@
-/* $Id: zephyr.c,v 1.12 2000-09-25 22:53:39 zacheiss Exp $
+/* $Id: zephyr.c,v 1.13 2000-09-27 08:54:17 zacheiss Exp $
  *
  * Zephyr ACL routines for the Moira client
  *
@@ -18,7 +18,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/zephyr.c,v 1.12 2000-09-25 22:53:39 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/zephyr.c,v 1.13 2000-09-27 08:54:17 zacheiss Exp $");
 
 void RealDeleteZephyr(char **info, Bool one_item);
 
@@ -84,7 +84,7 @@ static char *PrintZephyrInfo(char **info)
 	  (strcasecmp(info[ZA_IWS_TYPE], "NONE") && 
 	   strcasecmp(info[ZA_IWS_TYPE], "ALL")) ? info[ZA_IWS_ID] : "");
   Put_message(buf);
-  sprintf(buf, "Instance Indentity ACL: %s %s", info[ZA_IUI_TYPE],
+  sprintf(buf, "Instance Identity ACL: %s %s", info[ZA_IUI_TYPE],
 	  (strcasecmp(info[ZA_IUI_TYPE], "NONE") && 
 	   strcasecmp(info[ZA_IUI_TYPE], "ALL")) ? info[ZA_IUI_ID] : "");
   Put_message(buf);

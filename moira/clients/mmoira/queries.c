@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/queries.c,v 1.3 1991-06-05 12:26:39 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/queries.c,v 1.4 1992-10-13 11:19:53 mar Exp $
  */
 
 #include <stdio.h>
@@ -102,17 +102,35 @@ EntryForm *form;
 }
 
 
-
-/* callback when form is complete to process the data */
+/* when OK pressed */
 
 MoiraFormComplete(dummy1, form)
 int dummy1;
 EntryForm *form;
 {
+    process_form(form, TRUE);
+}
+
+
+/* when APPLY pressed */
+
+MoiraFormApply(dummy1, form)
+int dummy1;
+EntryForm *form;
+{
+    process_form(form, FALSE);
+}
+
+
+/* callback when form is complete to process the data */
+
+process_form(form, remove)
+EntryForm *form;
+int remove;
+{
     char *qy, *argv[32], buf[256], *s;
     int (*retfunc)(), argc, i;
     EntryForm *f;
-    static int persistant_forms = 0;
 
     retfunc = DisplayCallback;
     argc = -1;
@@ -125,15 +143,15 @@ EntryForm *form;
     switch (form->menu->operation) {
     case MM_SHOW_USER:
 	if (*stringval(form, 0)) {
-	    qy = "get_user_by_login";
+	    qy = "get_user_account_by_login";
 	    argv[0] = stringval(form, 0);
 	    argc = 1;
 	} else if (*stringval(form, 3)) {
-	    qy = "get_user_by_uid";
+	    qy = "get_user_account_by_uid";
 	    argv[0] = stringval(form, 3);
 	    argc = 1;
 	} else if (*stringval(form, 4)) {
-	    qy = "get_user_by_class";
+	    qy = "get_user_account_by_class";
 	    argv[0] = stringval(form, 4);
 	    argc = 1;
 	} else if (*stringval(form, 1) == 0 &&
@@ -145,7 +163,7 @@ EntryForm *form;
 	      StoreField(form, 1, "*");
 	    if (*stringval(form, 2) == 0)
 	      StoreField(form, 2, "*");
-	    qy = "get_user_by_name";
+	    qy = "get_user_account_by_name";
 	    argv[0] = stringval(form, 1);
 	    argv[1] = stringval(form, 2);
 	    argc = 2;
@@ -166,7 +184,7 @@ EntryForm *form;
 	    argv[0] = stringval(form, 0);
 	    argv[1] = stringval(form, 1);
 	    form->extrastuff = NULL;
-	    i = MoiraQuery("get_user_by_name", 2, argv,
+	    i = MoiraQuery("get_user_account_by_name", 2, argv,
 			   ModifyCallback, (char *)form);
 	    if (i) {
 		com_err(program_name, i, " looking up user by name");
@@ -253,7 +271,7 @@ EntryForm *form;
 	if (!*stringval(form, 0)) {
 	    qy = "get_lists_of_member";
 	    argv[0] = stringval(form, 1);
-	    sprintf(buf, "Lists of %s %s:\n", stringval(form, 1), argv[1]);
+	    sprintf(buf, "Lists of %s %s:\n", stringval(form, 1), argv[2]);
 	    AppendToLog(buf);
 	    if (boolval(form, 3)) {
 		sprintf(buf, "R%s", stringval(form, 1));
@@ -294,7 +312,8 @@ EntryForm *form;
     case MM_ADD_FILSYS:
 	StoreHost(form, FS_MACHINE, &argv[FS_MACHINE]);
 	if (!strcmp(stringval(form, FS_TYPE), "AFS") ||
-	    !strcmp(stringval(form, FS_TYPE), "FSGROUP"))
+	    !strcmp(stringval(form, FS_TYPE), "FSGROUP") ||
+	    !strcmp(stringval(form, FS_TYPE), "MUL"))
 	  argv[FS_MACHINE] = "\\[NONE\\]";
 	break;
     case MM_MOD_FILSYS:
@@ -414,13 +433,16 @@ EntryForm *form;
 	StoreHost(form, PCAP_QSERVER, &argv[PCAP_QSERVER]);
 	break;
     case MM_SAVE_LOG:
-	display_error("Not yet implemented.");
-	return;
-    case MM_PERSISTANT_FORMS:
-	persistant_forms = boolval(form, 0);
-	if (!persistant_forms)
+	if (!write_log_to_file(stringval(form, 0)) && remove)
 	  XtUnmanageChild(form->formpointer);
 	return;
+    case MM_NEW_VALUE:
+	argv[0] = form->extrastuff;
+	argv[1] = "TYPE";
+	argv[2] = StringValue(form, 0);
+	for (s = argv[2]; *s; s++)
+	  if (islower(*s)) *s = toupper(*s);
+	break;
     }
 
     if (argc == -1) {
@@ -458,9 +480,11 @@ EntryForm *form;
 	  AppendToLog("Done.\n");	  
 	break;
     case MM_MOD_LIST:
-	if (f)
-	  GetKeywords(f, L_ACE_TYPE, "ace_type");
-	else
+	if (f) {
+	    GetKeywords(f, L_ACE_TYPE, "ace_type");
+	    f->inputlines[L_GROUP]->valuechanged = MoiraValueChanged;
+	    f->inputlines[L_ACE_TYPE]->valuechanged = MoiraValueChanged;
+	} else
 	  AppendToLog("Done.\n");	  
 	break;
     case MM_MOD_FILSYS:
@@ -471,6 +495,7 @@ EntryForm *form;
 	    GetKeywords(f, FS_L_TYPE, "lockertype");
 	    if (!strcmp(stringval(f, FS_MACHINE), "[NONE]"))
 	      StoreField(f, FS_MACHINE, "\\[NONE\\]");
+	    f->inputlines[FS_TYPE]->valuechanged = MoiraValueChanged;
 	} else
 	  AppendToLog("Done.\n");	  
 	break;
@@ -535,9 +560,13 @@ EntryForm *form;
     case MM_EXPUNGE:
     case MM_RESET_POBOX:
 	AppendToLog("Done.\n");
+	break;
+    case MM_NEW_VALUE:
+	CacheNewValue(GetForm(form->menu->form), (int) form->menu->accel,
+		      form->extrastuff, StringValue(form, 0));
     }
 
-    if (!persistant_forms)
+    if (remove)
       XtUnmanageChild(form->formpointer);
 
     if (f)
@@ -604,7 +633,3 @@ MenuItem *m;
       com_err(program_name, i, " executing database query");
     AppendToLog("\n");
 }
-
-
-/******* temporary ********/
-display_error(msg) char *msg; { PopupErrorMessage(msg, "Sorry, no help is available"); }

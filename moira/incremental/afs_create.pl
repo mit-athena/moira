@@ -16,8 +16,10 @@ die "Usage: $0 locker type cell path user group\n" if (@ARGV != 6);
 
 # Lookup volume type
 ($c = $cell) =~ s/\./_/g;
-$vname = &afs_vname($locker, $type, $cell);
-die "Cannot create $type volumes in $cell\n" unless $vname;
+$vtype = eval "\$vtypes_$c{$type}";
+die "Cannot create $type volumes in $cell\n" unless $vtype;
+$vname = $vtype . "." . $locker;
+$vname =~ s/[^-A-Za-z0-9_.]//g;		# strip out illegal characters
 
 # Find free space
 ($asrv,$apart) = &afs_find($cell,$type,$quota);

@@ -23,21 +23,6 @@ $LOCK_UN=8;
      "UROP", "urop",
      );
 
-# Function: afs_vname
-# Returns the canonical volume name for (locker,type,cell)
-sub afs_vname
-{
-    local($name,$type,$cell) = @_;
-
-    $vtype = eval "\$vtypes_$cell{$type}";
-    return "" unless $vtype;
-
-    $vname = $vtype . "." . $name;
-    $vname =~ s/[^-A-Za-z0-9_.]//g;		# strip out illegal characters
-    return $vname;
-}
-
-
 # File format:
 #    cell server partition total used alloc
 
@@ -72,8 +57,7 @@ sub afs_unlock
     close(SRV);
 }
 
-# Function: afs_find
-# Finds server/partition for allocation.
+# Find server/partition for allocation.
 #
 # Best fit algorithm used:
 #    max[ (2*free space) - (unused quota) ]
@@ -81,36 +65,31 @@ sub afs_unlock
 #
 # Note: This routine does not actually adjust the quota; the caller
 # should use afs_quota_adj();
+
 sub afs_find
 {
     local($cell,$type,$quota) = @_;
-    local($i, $j, $vos, $a);
+    local($j);
     local(@max) = '';
 
     &afs_lock;
     chop(@afs_data);
 
-    for $i ($[ .. $#afs_data) {
-	($a, $asrv, $apart, $t, $total, $used, $alloc) =
-	    split(/\s+/, $afs_data[$i]);
+    for (@afs_data) {
+	local ($a, $asrv, $apart, $t, $total, $used, $alloc) = split(/\s+/,$_);
 	next if ($a ne $cell || !$total || $type !~ /$t/);
 	$alloc = $used if ($alloc < $used);
 	$j = 2*$total - $used - $alloc;
-	if (! @max || $j > $max[2]) {
-	    ($total, $used) = &afs_partinfo($asrv, $apart, $cell);
-	    next if ($?);
-	    $afs_data[$i]=join(' ',$cell,$asrv,$apart,$t,$total,$used,$alloc);
-	    @max = ($asrv,$apart,$j);
-	}
+	@max = ($asrv,$apart,$j) if (! @max || $j > $max[2]);
     }
 
     &afs_unlock;
     return(@max);
 }
 
-
-# Function: afs_quota_adj
-# Adjusts the quota allocation for a given server/partition
+#
+# Quota adjustments
+#
 sub afs_quota_adj
 {
     local($cell,$asrv,$apart,$adj) = @_;
@@ -130,21 +109,4 @@ sub afs_quota_adj
     }
     &afs_unlock;
     return($found);
-}
-
-
-sub afs_partinfo
-{
-    local($as, $ap, $c) = @_;
-    local(@vos, $total, $used);
-
-    open(VOS,"$vos partinfo $as $ap -cell $c -noauth|");
-    chop(@vos = <VOS>);
-    close(VOS);
-    return "" if ($?);
-
-    @vos = split(/\s+/,$vos[0]);
-    $total = pop(@vos);
-    $used = $total-$vos[5];
-    return ($total,$used);
 }

@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/disable.c,v 1.6 1997-01-29 23:12:22 danw Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/disable.c,v 1.7 1998-01-05 14:51:10 danw Exp $
  *
  * disabled: check to see if registration is enabled right now.  Most of this
  * code is stolen from the cron daemon.
@@ -39,6 +39,7 @@ char	*listend;
 unsigned listsize;
 
 char *cmp();
+int number(register char c, FILE *f);
 
 /* This routine will determine if registration is enabled at this time.  If
  * NULL is returned, registration is OK.  Otherwise, the string returned

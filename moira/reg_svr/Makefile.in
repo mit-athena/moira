@@ -1,16 +1,21 @@
-# $Id: Makefile.in,v 1.2 1998-05-26 21:50:11 danw Exp $
+# $Id: Makefile.in,v 1.3 1998-07-22 14:55:23 danw Exp $
 
 SHELL=/bin/sh
 @SET_MAKE@
 
 CC=@CC@
-CPPFLAGS=@CPPFLAGS@
+CPPFLAGS=@CPPFLAGS@ @RSAREF_CPPFLAGS@
 CFLAGS=@CFLAGS@
 DEFS=@DEFS@
 ALL_CFLAGS=$(CPPFLAGS) $(CFLAGS) $(DEFS)
+PRO_C=@PRO_C@
+PRO_C_DEFS=@PRO_C_DEFS@
+PRO_C_INCLUDES=@PRO_C_INCLUDES@
+PRO_C_OPTS=@PRO_C_OPTS@
+PRO_C_FLAGS=$(PRO_C_OPTS) $(PRO_C_DEFS) $(PRO_C_INCLUDES)
 LDFLAGS=@LDFLAGS@
 SQL_LIBS=@SQL_LIBS@
-LIBS=-lkadm @LIBS@
+LIBS=-lkadm @RSAREF_LIBS@ @LIBS@
 INSTALL=@INSTALL@
 INSTALL_PROGRAM=@INSTALL_PROGRAM@
 
@@ -20,10 +25,18 @@ SRCTOP=@top_srcdir@
 BUILDTOP=..
 mrbindir=@mrbindir@
 
-REG_OBJS=reg_svr.o requests.o
-START_OBJS=startreg.o
+REG_OBJS=	kerberos.o protocol.o reg_svr.o words.o
+START_OBJS=	startreg.o
+GEN_OBJS=	genkey.o
 
-TARGET=reg_svr startreg
+CFILES=		reg_svr.c
+
+TARGET=		reg_svr startreg genkey
+
+.SUFFIXES: .pc
+
+.pc.c:
+	$(PRO_C) $(PRO_C_FLAGS) INAME=$< ONAME=$@
 
 .c.o:
 	$(CC) -c $(ALL_CFLAGS) $<
@@ -31,16 +44,19 @@ TARGET=reg_svr startreg
 all: $(TARGET)
 
 clean:
-	rm -f $(REG_OBJS) $(START_OBJS) $(TARGET)
+	rm -f $(REG_OBJS) $(START_OBJS) $(CFILES) $(TARGET)
 
-depend:
+depend: $(CFILES)
 
 install: all
 	$(INSTALL_PROGRAM) reg_svr $(mrbindir)
 	$(INSTALL_PROGRAM) startreg $(mrbindir)
 
 reg_svr: $(REG_OBJS)
-	$(CC) -o $@ $(LDFLAGS) $(REG_OBJS) ../server/libmrglue.a $(SQL_LIBS) $(LIBS)
+	$(CC) -o $@ $(LDFLAGS) $(REG_OBJS) $(SQL_LIBS) $(LIBS)
 
 startreg: $(START_OBJS)
 	$(CC) -o $@ $(LDFLAGS) $(START_OBJS) $(LIBS)
+
+genkey: $(GEN_OBJS)
+	$(CC) -o $@ $(LDFLAGS) $(GEN_OBJS) $(LIBS)

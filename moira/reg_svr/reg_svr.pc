@@ -1,0 +1,847 @@
+/* $Id: reg_svr.pc,v 1.1 1998-07-22 14:55:27 danw Exp $
+ *
+ * Server for user registration with Moira and Kerberos.
+ *
+ * Copyright (C) 1987-1998 by the Massachusetts Institute of Technology
+ * For copying and distribution information, please see the file
+ * <mit-copyright.h>.
+ */
+
+#include <mit-copyright.h>
+#include <moira.h>
+#include <mr_private.h>
+#include <moira_schema.h>
+#include <moira_site.h>
+#include "reg_svr.h"
+
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <sys/stat.h>
+#include <sys/time.h>
+#include <sys/utsname.h>
+
+#include <netinet/in.h>
+#include <netdb.h>
+
+#include <ctype.h>
+#include <errno.h>
+#include <signal.h>
+#include <stdarg.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+
+#include <com_err.h>
+#include <krb.h>
+
+EXEC SQL INCLUDE sqlca;
+
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.pc,v 1.1 1998-07-22 14:55:27 danw Exp $");
+
+char *whoami, *hostname, *shorthostname;
+
+char *find_usernames(char *first, char *middle, char *last);
+void fixname(char *name);
+int register_user(int uid, char *username);
+void mr_com_err(const char *whoami, long code, const char *fmt, va_list pvar);
+void sigshut(int);
+
+reg_client *cl = NULL;
+enum { RS_RUNNING, RS_SLEEPING, RS_EXITING } state = RS_RUNNING;
+
+int main(int argc, char **argv)
+{
+  int listener, nfds, i, clientid = 0;
+  fd_set readfds, xreadfds;
+  reg_client *clients;
+  int nclients, clientssize;
+  long status;
+  char *db = "moira";
+  struct utsname uts;
+  struct hostent *h;
+  struct sigaction sa;
+  struct stat st;
+
+  whoami = strrchr(argv[0], '/');
+  whoami = whoami ? whoami + 1 : argv[0];
+
+  set_com_err_hook(mr_com_err);
+
+  /* Read keys */
+  if (!read_rsa_key())
+    {
+      com_err(whoami, errno, "reading RSA key");
+      exit(1);
+    }
+  if (!read_hmac_key())
+    {
+      com_err(whoami, errno, "reading HMAC key");
+      exit(1);
+    }
+
+  /* Read error messages */
+  if (!read_errors())
+    {
+      com_err(whoami, errno, "reading error messages");
+      exit(1);
+    }
+
+  /* Connect to database */
+  EXEC SQL CONNECT :db IDENTIFIED BY :db;
+  if (sqlca.sqlcode)
+    {
+      char err_msg[256];
+      int bufsize = 256, msglength = 0;
+
+      sqlglm(err_msg, &bufsize, &msglength);
+      err_msg[msglength] = 0;
+      com_err(whoami, 0, "SQL error connecting to DBMS:\n%s", err_msg);
+      exit(1);
+    }
+
+  /* Get my hostname */
+  uname(&uts);
+  h = gethostbyname(uts.nodename);
+  if (!h)
+    {
+      com_err(whoami, 0, "Couldn't resolve hostname %s", uts.nodename);
+      exit(1);
+    }
+  hostname = lowercase(xstrdup(h->h_name));
+  shorthostname = xstrdup(hostname);
+  if (strchr(shorthostname, '.'))
+    *strchr(shorthostname, '.') = '\0';
+
+  /* Initialize kerberos */
+  status = init_kerberos();
+  if (status)
+    {
+      com_err(whoami, status, "initializing kerberos library");
+      exit(1);
+    }
+
+  /* Set up listening socket. */
+  listener = mr_listen("moira_ureg");
+  if (listener < 0)
+    {
+      com_err(whoami, errno, "couldn't create listening socket");
+      exit(1);
+    }
+  FD_ZERO(&xreadfds);
+  FD_SET(listener, &xreadfds);
+  nfds = listener + 1;
+
+  /* Initialize client array. */
+  nclients = 0;
+  clientssize = 5;
+  clients = malloc(clientssize * sizeof(reg_client));
+  if (!clients)
+    {
+      com_err(whoami, errno, "creating client array");
+      exit(1);
+    }
+
+  /* Set up signal handlers */
+  sa.sa_flags = 0;
+  sigemptyset(&sa.sa_mask);
+  sa.sa_handler = sigshut;
+  sigaction(SIGTERM, &sa, NULL);
+  sigaction(SIGINT, &sa, NULL);
+  sigaction(SIGHUP, &sa, NULL);
+  sa.sa_handler = SIG_IGN;
+  sigaction(SIGPIPE, &sa, NULL);
+
+  com_err(whoami, 0, "started (pid %d)", getpid());
+  com_err(whoami, 0, rcsid);
+
+  /* Main loop */
+  while (state != RS_EXITING)
+    {
+      if (state == RS_RUNNING && stat(MOIRA_MOTD_FILE, &st) == 0)
+	{
+	  state == RS_SLEEPING;
+	  com_err(whoami, 0, "found motd. reg_svr is sleeping");
+	}
+      else if (state == RS_SLEEPING && stat(MOIRA_MOTD_FILE, &st) == -1)
+	{
+	  state == RS_RUNNING;
+	  com_err(whoami, 0, "motd gone. reg_svr is running");
+	}
+
+      memcpy(&readfds, &xreadfds, sizeof(readfds));
+      if (select(nfds, &readfds, NULL, NULL, NULL) == -1)
+	{
+	  if (errno != EINTR)
+            com_err(whoami, errno, "in select");
+	  continue;
+	}
+
+      if (FD_ISSET(listener, &readfds))
+	{
+	  int newconn, addrlen = sizeof(struct sockaddr_in);
+	  struct sockaddr_in addr;
+
+	  newconn = accept(listener, (struct sockaddr *)&addr, &addrlen);
+	  if (newconn < 0)
+	    com_err(whoami, errno, "accepting new connection");
+	  else
+	    {
+	      nclients++;
+	      if (nclients > clientssize)
+		{
+		  clientssize = 2 * clientssize;
+		  clients = xrealloc(clients, clientssize *
+				     sizeof(reg_client));
+		}
+
+	      cl = &clients[nclients - 1];
+	      memset(cl, 0, sizeof(reg_client));
+	      cl->fd = newconn;
+	      cl->lastmod = time(NULL);
+	      cl->clientid = ++clientid;
+	      cl->random = init_rand(cl);
+	      FD_SET(newconn, &xreadfds);
+	      if (newconn >= nfds)
+		nfds = newconn + 1;
+
+	      com_err(whoami, 0,
+		      "New connection from %s port %d (now %d client%s)",
+		      inet_ntoa(addr.sin_addr), (int)ntohs(addr.sin_port),
+		      nclients, nclients != 1 ? "s" : "");
+	    }
+	}
+
+      for (i = 0; i < nclients; i++)
+	{
+	  cl = &clients[i];
+	  if (FD_ISSET(cl->fd, &readfds))
+	    {
+	      cl->lastmod = time(NULL);
+	      if (!cl->buf)
+		{
+		  /* We're just starting */
+		  cl->buf = malloc(3);
+                  if (!cl->buf)
+		    {
+		      com_err(whoami, errno, "allocating read buffer");
+		      reply(cl, INTERNAL_ERROR, "INIT", "c", NULL,
+			    "Out of memory");
+		      goto reap;
+		    }
+		  cl->nread = 0;
+		}
+
+	      if (cl->nread < 3)
+		{
+		  /* We haven't read the length byte yet... */
+		  cl->nread += read(cl->fd, cl->buf + cl->nread,
+				    3 - cl->nread);
+		  if (cl->nread == 3)
+		    {
+		      cl->nmax = cl->buf[1] * 256 + cl->buf[2] + 3;
+		      cl->buf = realloc(cl->buf, cl->nmax + 3);
+		      if (!cl->buf)
+			{
+			  com_err(whoami, errno, "reallocating read buffer");
+			  reply(cl, INTERNAL_ERROR, "INIT", "c", NULL,
+				"Out of memory");
+			  goto reap;
+			}
+		    }
+		  else if (cl->nread == 0)
+		    {
+		      /* client has closed connection. setting
+			 lastmod will cause it to be reaped */
+		      cl->lastmod = 0;
+		    }
+		}
+	      else
+		{
+		  /* We know how long the packet is supposed to be */
+		  cl->nread += read(cl->fd, cl->buf + cl->nread,
+				    cl->nmax - cl->nread);
+		  if (cl->nread == cl->nmax)
+		    {
+		      parse_packet(cl, cl->buf[0], cl->nread - 3, cl->buf + 3,
+				   state == RS_SLEEPING);
+		      free(cl->buf);
+		      cl->buf = NULL;
+		    }
+		}
+	    }
+
+	reap:
+	  if (cl->lastmod < time(NULL) - TIMEOUT)
+	    {
+	      com_err(whoami, 0, "Closed connection. (now %d client%s)",
+		      nclients - 1, nclients != 2 ? "s" : "");
+	      shutdown(cl->fd, 2);
+	      close(cl->fd);
+	      FD_CLR(cl->fd, &xreadfds);
+	      free(cl->buf);
+	      free(cl->id);
+	      free(cl->username);
+	      free(cl->suggestions);
+	      free(cl->random);
+	      clients[i] = clients[--nclients];
+	      i--;
+	    }
+	}
+      cl = NULL;
+    }
+  com_err(whoami, 0, "Exiting.");
+}
+
+void RIFO(reg_client *rc, int argc, char **argv)
+{
+  EXEC SQL BEGIN DECLARE SECTION;
+  char *ufirst, *umiddle, *ulast, *id;
+  char login[USERS_LOGIN_SIZE], first[USERS_FIRST_SIZE];
+  char middle[USERS_MIDDLE_SIZE], last[USERS_LAST_SIZE];
+  char fullname[USERS_FIRST_SIZE + USERS_MIDDLE_SIZE + USERS_LAST_SIZE];
+  char class[USERS_TYPE_SIZE];
+  int uid, status, secure, sqlstatus;
+  EXEC SQL END DECLARE SECTION;
+
+  if (rc->uid || argc != 4)
+    {
+      reply(rc, PROTOCOL_ERROR, "INIT", "c", NULL);
+      return;
+    }
+
+  ufirst = argv[0];
+  umiddle = argv[1];
+  ulast = argv[2];
+  id = argv[3];
+
+  /* "ORDER BY status" so that if there's both a matching state 0 entry
+     and a matching state 3 entry, we'll get the former. */
+  EXEC SQL DECLARE csr_id CURSOR FOR
+    SELECT login, unix_uid, status, secure, first, middle, last, type
+    FROM users WHERE clearid = :id ORDER BY status;
+  EXEC SQL OPEN csr_id;
+  while (1)
+    {
+      EXEC SQL FETCH csr_id INTO :login, :uid, :status,
+	:secure, :first, :middle, :last, :class;
+      if (sqlca.sqlcode)
+	break;
+      strtrim(login);
+      strtrim(first);
+      strtrim(middle);
+      strtrim(last);
+      strtrim(class);
+
+      /* Check names, allowing for the possibility that Moira and the
+	 user might have them split up differently. eg, Mary/Ann/Singleton
+	 vs. Mary Ann/Singleton. */
+      if (strcasecmp(last, ulast) && strncasecmp(last, ulast, strlen(last)) &&
+	  strncasecmp(last, ulast, strlen(ulast)))
+	continue;
+      if (strlen(last) > 3 && strlen(ulast) < 3)
+	continue;
+      if (strcasecmp(first, ufirst) &&
+	  strncasecmp(first, ufirst, strlen(first)) &&
+	  strncasecmp(first, ufirst, strlen(ufirst)))
+	continue;
+      if (strlen(first) > 3 && strlen(ufirst) < 3)
+	continue;
+      /* Ignore the middle name since Moira doesn't have those reliably */
+      break;
+    }
+  sqlstatus = sqlca.sqlcode;
+  EXEC SQL CLOSE csr_id;
+
+  if (sqlstatus)
+    {
+      reply(rc, NOT_FOUND_IN_DATABASE, "GETN", "d", NULL);
+      return;
+    }
+
+  switch (status)
+    {
+    case US_REGISTERED:
+    case US_ENROLLED:
+    case US_ENROLL_NOT_ALLOWED:
+      reply(rc, ALREADY_REGISTERED, "INIT", "c", NULL, login);
+      return;
+
+    case US_DELETED:
+      reply(rc, ACCOUNT_DELETED, "INIT", "c", NULL, login);
+      return;
+
+    case US_NOT_ALLOWED:
+      reply(rc, NOT_ELIGIBLE, "INIT", "c", NULL);
+      return;
+
+    default:
+      break;
+    }
+
+  rc->uid = uid;
+  sprintf(fullname, "%s %s%s%s", first, middle, *middle ? " " : "", last);
+  if (!strcmp(class, "MITS"))
+    strcpy(class, "STAFF");
+  if (secure == 1)
+    {
+      rc->id = strdup(id);
+      if (!rc->id)
+	{
+	  com_err(whoami, errno, "in RIFO");
+	  reply(rc, INTERNAL_ERROR, "INIT", "c", NULL, "Out of memory");
+	  return;
+	}
+    }
+  if (*login != '#')
+    {
+      rc->reserved_username = 1;
+      rc->username = strdup(login);
+      if (!rc->username)
+	{
+	  com_err(whoami, errno, "in RIFO");
+	  reply(rc, INTERNAL_ERROR, "INIT", "c", NULL, "Out of memory");
+	  return;
+	}
+    }
+  else
+    {
+      rc->suggestions = find_usernames(first, middle, last);
+      if (!rc->suggestions)
+	{
+	  com_err(whoami, errno, "in RIFO");
+	  reply(rc, INTERNAL_ERROR, "INIT", "c", NULL, "Out of memory");
+	  return;
+	}
+    }
+
+  if (rc->id)
+    reply(rc, FOUND, "GETW", "c", NULL, fullname, class);
+  else if (!rc->username)
+    reply(rc, FOUND, "GETL", "c", rc->suggestions, fullname, class);
+  else
+    reply(rc, FORCED_USERNAME, "GETP", "c", NULL, fullname, class,
+	  rc->username);
+}
+
+void SWRD(reg_client *rc, int argc, char **argv)
+{
+  char *words[6];
+  int i;
+
+  if (!rc->id || argc != 6)
+    {
+      reply(rc, PROTOCOL_ERROR, "INIT", "c", NULL);
+      return;
+    }
+
+  getwordlist(rc->id, words);
+  for (i = 0; i < 6; i++)
+    {
+      if (strcasecmp(strtrim(argv[i]), words[i]))
+	break;
+    }
+  if (i != 6)
+    {
+      reply(rc, BAD_SIX_WORDS, "GETW", "d", NULL);
+      return;
+    }
+
+  free(rc->id);
+  rc->id = NULL;
+  if (!rc->username)
+    reply(rc, NO_MESSAGE, "GETL", "c", rc->suggestions);
+  else
+    reply(rc, FORCED_USERNAME, "GETP", "c", NULL, rc->username);
+}
+
+void LOGN(reg_client *rc, int argc, char **argv)
+{
+  int i;
+  char *login;
+  long status;
+
+  if (!rc->uid || rc->id || rc->username || argc != 1)
+    {
+      reply(rc, PROTOCOL_ERROR, "INIT", "c", NULL);
+      return;
+    }
+
+  login = argv[0];
+
+  /* make sure someone's not trying to overrun reply */
+  if (strlen(login) > 100)
+    {
+      com_err(whoami, 0, "Buffer overrun attempted? Closing connection");
+      rc->lastmod = 0;
+      return;
+    }
+
+  if ((strlen(login) < 3) || (strlen(login) > USERS_LOGIN_SIZE - 1) ||
+      (login[0] == '_') || isdigit(login[0]))
+    {
+      reply(rc, BAD_USERNAME, "GETL", "c", rc->suggestions, login,
+	    3, USERS_LOGIN_SIZE - 1);
+      return;
+    }
+
+  for (i = 0; i < strlen(login); i++)
+    {
+      if (!islower(login[i]) && !isdigit(login[i]) && (login[i] != '_'))
+	{
+	  reply(rc, BAD_USERNAME, "GETL", "c", rc->suggestions, login,
+		3, USERS_LOGIN_SIZE - 1);
+	  return;
+	}
+    }
+
+  status = check_kerberos(login);
+  if (status == MR_SUCCESS)
+    status = register_user(rc->uid, login);
+
+  if (status == MR_IN_USE)
+    {
+      if (rc->reserved_username)
+	{
+	  reply(rc, RESERVED_USERNAME_UNAVAILABLE, "INIT", "c", NULL,
+		rc->username);
+	  return;
+	}
+      reply(rc, USERNAME_UNAVAILABLE, "GETL", "c", rc->suggestions);
+      return;
+    }
+  else if (status == MR_DOWN)
+    {
+      reply(rc, DATABASE_CLOSED, "INIT", "c", NULL);
+      return;
+    }
+  else if (status != MR_SUCCESS)
+    {
+      reply(rc, INTERNAL_ERROR, "INIT", "c", NULL, error_message(status));
+      return;
+    }
+
+  rc->username = strdup(login);
+  if (!rc->username)
+    {
+      com_err(whoami, errno, "in LOGN");
+      reply(rc, INTERNAL_ERROR, "INIT", "c", NULL, "Out of memory");
+      return;
+    }
+  reply(rc, USERNAME_OK, "GETP", "c", NULL, login);
+}
+
+int ctypes[256] = {
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, /* ^@ - ^O */
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, /* ^P - ^_ */
+  1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, /* SPACE - / */
+  3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 2, 2, 2, 2, 2, 2, /* 0 - ? */
+  2, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, /* : - O */
+  4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 2, 2, 2, 2, 2, /* P - _ */
+  2, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, /* ` - o */
+  5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 0, /* p - ^? */
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+};
+
+void PSWD(reg_client *rc, int argc, char **argv)
+{
+  long status;
+  char *password = argv[0], *p;
+  EXEC SQL BEGIN DECLARE SECTION;
+  char *login = rc->username;
+  EXEC SQL END DECLARE SECTION;
+
+  if (!rc->username || rc->id || argc != 1)
+    {
+      reply(rc, PROTOCOL_ERROR, "INIT", "c", NULL);
+      return;
+    }
+
+  /* password quality checking */
+  if (strlen(password) < 4)
+    {
+      reply(rc, PASSWORD_SHORT, "GETP", "c", NULL);
+      return;
+    }
+
+  if (strlen(password) < 7)
+    {
+      for (p = password + 1; *p; p++)
+	{
+	  if (ctypes[*p] != ctypes[*(p - 1)])
+	    break;
+	}
+      if (!*p)
+	{
+	  reply(rc, PASSWORD_SIMPLE, "GETP", "c", NULL);
+	  return;
+	}
+    }
+  
+  if (!strcasecmp(password, "GykoR-66") ||
+      !strcasecmp(password, "slaRooBey") ||
+      !strcasecmp(password, "krang-its") ||
+      !strcasecmp(password, "2HotPeetzas") ||
+      !strcasecmp(password, "ItzAGurl"))
+    {
+      reply(rc, PASSWORD_SAMPLE, "GETP", "c", NULL);
+      return;
+    }
+
+  status = register_kerberos(rc->username, password);
+  if (status == MR_IN_USE)
+    {
+      reply(rc, RESERVED_USERNAME_UNAVAILABLE, "INIT", "c", NULL,
+	    rc->username);
+      return;
+    }
+  else if (status)
+    {
+      com_err(whoami, status, "registering username with Kerberos");
+      reply(rc, KADM_ERROR, "INIT", "c", NULL, error_message(status));
+      return;
+    }
+  EXEC SQL UPDATE users SET status = 1 WHERE login = :login;
+  EXEC SQL COMMIT;
+
+  reply(rc, DONE, "INIT", "c", NULL, rc->username);
+}
+
+void QUIT(reg_client *rc, int argc, char **argv)
+{
+}
+
+/* Register a user in Moira */
+int register_user(int uid, char *username)
+{
+  char uidbuf[10], *qargv[3], *motd = NULL;
+  long status;
+
+  status = mr_connect(hostname);
+  if (status)
+    return status;
+
+  status = mr_motd(&motd);
+  if (status || motd)
+    {
+      mr_disconnect();
+      return MR_DOWN;
+    }
+
+  status = krb_get_svc_in_tkt(REG_SVR_PRINCIPAL, REG_SVR_INSTANCE,
+			      krb_realmofhost(hostname), MOIRA_SNAME,
+			      shorthostname, 1, KEYFILE);
+  if (status)
+    status += ERROR_TABLE_BASE_krb;
+  else
+    status = mr_auth("reg_svr");
+  if (status)
+    {
+      com_err(whoami, status, "authenticating to moira");
+      mr_disconnect();
+      return MR_INTERNAL;
+    }
+
+  sprintf(uidbuf, "%d", uid);
+  qargv[0] = uidbuf;
+  qargv[1] = username;
+  qargv[2] = "0";
+  status = mr_query("register_user", 3, qargv, NULL, NULL);
+  mr_disconnect();
+  return status;
+}
+
+
+/* Find some typical available usernames */
+
+char *uname_patterns[] = {
+  "FL",		/* johndoe */
+  "fmllllll",	/* jmdoe... (last name truncated) */
+  "flllllll",   /* jdoe.... ("") */
+  "llllllll",	/* doe..... ("") */
+  "fml",	/* jmd */
+  "Fl",		/* johnd */
+  "Lf",		/* doej */
+  "Lfm",	/* doejm */
+  "F",		/* john */
+};
+int num_patterns = sizeof(uname_patterns) / sizeof(char *);
+
+char *find_usernames(char *first, char *middle, char *last)
+{
+  EXEC SQL BEGIN DECLARE SECTION;
+  char username[2 * USERS_LOGIN_SIZE];
+  int count;
+  EXEC SQL END DECLARE SECTION;
+  int pat, len;
+  char *pp, *up, *fp, *mp, *lp, *unames = NULL;
+
+  fixname(first);
+  fixname(middle);
+  fixname(last);
+
+  for (pat = 0; pat < num_patterns; pat++)
+    {
+      up = username;
+      fp = first;
+      mp = middle;
+      lp = last;
+      for (pp = uname_patterns[pat]; *pp; pp++)
+	{
+	  switch (*pp)
+	    {
+	    case 'f':
+	      if (*fp)
+		*up++ = *fp++;
+	      break;
+
+	    case 'F':
+	      if (up - username + strlen(first) < USERS_LOGIN_SIZE)
+		up += sprintf(up, "%s", first);
+	      else
+		goto nextpattern;
+	      break;
+
+	    case 'm':
+	      if (!*middle)
+		goto nextpattern;
+	      if (*mp)
+		*up++ = *mp++;
+	      break;
+
+	    case 'l':
+	      if (*lp)
+		*up++ = *lp++;
+	      break;
+
+	    case 'L':
+	      if (up - username + strlen(last) < USERS_LOGIN_SIZE)
+		up += sprintf(up, "%s", last);
+	      else
+		goto nextpattern;
+	      break;
+	    }
+	}
+      *up = '\0';
+
+      if (strlen(username) < 3 || strlen(username) > USERS_LOGIN_SIZE)
+	continue;
+
+      EXEC SQL SELECT COUNT(login) INTO :count FROM users
+	WHERE login = :username;
+      if (sqlca.sqlcode)
+	return NULL;
+      if (count == 0)
+	{
+	  EXEC SQL SELECT COUNT(name) INTO :count FROM list
+	    WHERE name = :username;
+	  if (sqlca.sqlcode)
+	    return NULL;
+	}
+      if (count == 0)
+	{
+	  EXEC SQL SELECT COUNT(label) INTO :count FROM filesys
+	    WHERE label = :username;
+	  if (sqlca.sqlcode)
+	    return NULL;
+	}
+
+      if (count == 0)
+	{
+	  if (unames)
+	    {
+	      unames = realloc(unames, strlen(unames) + strlen(username) + 3);
+	      if (!unames)
+		return NULL;
+	      strcat(unames, ", ");
+	      strcat(unames, username);
+	    }
+	  else
+	    {
+	      unames = strdup(username);
+	      if (!unames)
+		return NULL;
+	    }
+	}
+
+    nextpattern:
+      ;
+    }
+
+  return unames;
+}
+
+void fixname(char *name)
+{
+  char *s, *d;
+
+  for (s = d = name; *s; s++)
+    {
+      if (isalnum(*s))
+	*d++ = tolower(*s);
+    }
+  *d = '\0';
+}
+
+void *xmalloc(size_t bytes)
+{
+  void *buf = malloc(bytes);
+
+  if (buf)
+    return buf;
+
+  com_err(whoami, errno, "in xmalloc");
+  exit(1);
+}
+
+void *xrealloc(void *ptr, size_t bytes)
+{
+  void *buf = realloc(ptr, bytes);
+
+  if (buf)
+    return buf;
+
+  com_err(whoami, errno, "in xrealloc");
+  exit(1);
+}
+
+char *xstrdup(char *str)
+{
+  char *buf = strdup(str);
+
+  if (buf)
+    return buf;
+
+  com_err(whoami, errno, "in xstrdup");
+  exit(1);
+}
+
+void mr_com_err(const char *whoami, long code, const char *fmt, va_list pvar)
+{
+  if (whoami)
+    {
+      fputs(whoami, stderr);
+      if (cl)
+	fprintf(stderr, "[#%d]", cl->clientid);
+      fputs(": ", stderr);
+    }
+  if (code) {
+    fputs(error_message(code), stderr);
+    fputs(" ", stderr);
+  }
+  if (fmt)
+    vfprintf(stderr, fmt, pvar);
+  putc('\n', stderr);
+}
+
+void sigshut(int sig)
+{
+  state = RS_EXITING;
+}

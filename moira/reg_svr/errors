@@ -1,0 +1,95 @@
+# 1 INTERNAL_ERROR
+An internal error has occurred, and the registration applet is unable
+to continue. The error is: "%s".
+
+Please try again later. If this problem persists, contact the Athena
+User Accounts Office in N42-105A, x3-1325.
+# 2 PROTOCOL_ERROR
+A protocol error has occurred, and the registration applet is unable
+to continue. This may indicate that you are using an out-of-date
+version of the registration applet.
+
+If you are unable to fix this problem, contact the Athena User
+Accounts Office in N42-105A, x3-1325.
+# 3 DATABASE_CLOSED
+Sorry, it appears that the Moira database (which is needed for account
+registration) is currently closed. Please try again later.
+# 4 ENCRYPT_KEY
+The registration server is unable to decrypt the data from the
+registration applet. This probably means that you are using an
+out-of-date version of the registration applet.
+
+If you are unable to fix this problem, contact the Athena User
+Accounts Office in N42-105A, x3-1325.
+# 5 NOT_FOUND_IN_DATABASE
+The registration server was unable to locate you in the accounts
+database. Please make sure you typed in your name and MIT ID number
+correctly.
+
+If you are a new staff member, this may mean that you have not been
+entered into the database yet. Try again tomorrow. If this problem
+persists, contact the Athena User Accounts Office in N42-105A,
+x3-1325.
+# 6 ALREADY_REGISTERED
+You have already registered for an account. The username you selected
+is "%s".
+
+If you don't remember your password, or you do not think that this is
+your account, contact the Athena User Accounts Office in N42-105A,
+x3-1325.
+# 7 ACCOUNT_DELETED
+Your account, "%s", has been deactivated, and you are not listed as
+eligible for another account. If you have any questions, contact
+the Athena User Accounts Office in N42-105A, x3-1325.
+# 8 NOT_ELIGIBLE
+You were found in the database, but are listed as ineligible for an
+account. If you have any questions, contact the Athena User Accounts
+Office in N42-105A, x3-1325.
+# 9 FOUND
+OK. I've found you in the database: %s, account class %s.
+# 10 FORCED_USERNAME
+OK. I've found you in the database: %s, account class %s.
+
+The username "%s" has previously been reserved for this account.
+# 11 BAD_SIX_WORDS
+At least one of the six words you typed was incorrect. Please make
+sure you typed in all six of the words correctly and in order.
+
+If you have lost your Athena Account Coupon, you will need to
+get a new one, by going to either the Student Services Center in
+Building 11, or the Athena User Accounts Office in N42-105A, x3-1325.
+# 12 BAD_USERNAME
+"%s" is not a valid username. Your username must be between %d and %d
+characters long, must start with a lowercase letter, and must consist
+entirely of lowercase letters, digits 0-9, and the underscore (_)
+character.
+# 13 USERNAME_UNAVAILABLE
+Sorry, that username is already taken. Please select another.
+# 14 RESERVED_USERNAME_UNAVAILABLE
+Oops. Your account was reserved with the username "%s", but that
+username is already taken. You will not be able to register your
+account until this problem is resolved. Please contact the Athena User
+Accounts Office in N42-105A, x3-1325.
+# 15 USERNAME_OK
+OK. I've reserved the username "%s" for you.
+# 16 PASSWORD_SHORT
+That password is too short! Please use a longer password.
+# 17 PASSWORD_SIMPLE
+That password is too simple. Please use a password with a mix of
+different kinds of characters.
+# 18 PASSWORD_SAMPLE
+Those were just examples! You should invent your own secret password,
+that no one else knows.
+# 19 KADM_ERROR
+An unexpected error occurred while trying to register your username
+and password with the Kerberos server. The error was: "%s".
+
+Please try again later. If this problem persists, contact the Athena
+User Accounts Office in N42-105A, x3-1325.
+# 20 DONE
+Your account has been registered and will become active later tonight.
+
+You should be able to log in by tomorrow morning using your Athena
+username (%s) and the password you chose.
+
+Welcome to Athena!

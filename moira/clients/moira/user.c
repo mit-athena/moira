@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.26 1992-01-02 14:38:34 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.27 1992-04-10 16:00:25 mar Exp $";
 #endif lint
 
 /*	This is the file user.c for the MOIRA Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.26 1992-01-02 14:38:34 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.27 1992-04-10 16:00:25 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -103,8 +103,11 @@ char ** info;
     sprintf(buf, "User id: %-23s Login shell %-10s Class: %s", 
 	    info[U_UID], info[U_SHELL], info[U_CLASS]);
     Put_message(buf);
-    sprintf(buf, "Account is: %-20s MIT ID number: %s",
-	    UserState(atoi(info[U_STATE])), info[U_MITID]);
+    sprintf(buf, "Account is: %-20s MIT ID number: %s Signed: %s",
+	    UserState(atoi(info[U_STATE])), info[U_MITID],
+	    *info[U_SIGNATURE] ? "Yes" : "No");
+    Put_message(buf);
+    sprintf(buf, "Comments: %s", info[U_COMMENT]);
     Put_message(buf);
     sprintf(buf, MOD_FORMAT, info[U_MODBY], info[U_MODTIME],info[U_MODWITH]);
     Put_message(buf);
@@ -129,6 +132,8 @@ char ** info;
     info[U_STATE] = Strsave(DEFAULT_NO);
     info[U_MITID] = Strsave(DEFAULT_NONE);
     info[U_CLASS] = Strsave(DEFAULT_CLASS);
+    info[U_COMMENT] = Strsave("");
+    info[U_SIGNATURE] = Strsave("");
     info[U_MODTIME] = info[U_MODBY] = info[U_MODWITH] = info[U_END] = NULL;
     return(info);
 }
@@ -171,7 +176,8 @@ AskUserInfo(info, name)
 char ** info;
 Bool name;
 {
-    char temp_buf[BUFSIZ], *newname, *temp_ptr;
+    int siglen;
+    char temp_buf[BUFSIZ], *newname, *temp_ptr, *sig;
 
     if (name) {
 	sprintf(temp_buf,"\nChanging Attributes of user %s.\n",info[U_NAME]);
@@ -192,7 +198,7 @@ Bool name;
 	CorrectCapitalization(&info[U_MIDDLE]);
 	argv[0] = info[U_FIRST];
 	argv[1] = info[U_LAST];
-	if (do_mr_query("get_user_by_name", 2, argv,
+	if (do_mr_query("get_user_account_by_name", 2, argv,
 			 StoreInfo, (char *) &elem) == 0) {
 	    Put_message("A user by that name already exists in the database.");
 	    Loop(QueueTop(elem), PrintUserInfo);
@@ -246,7 +252,18 @@ Bool name;
     if (GetTypeFromUser("User's MIT Year (class)", "class", &info[U_CLASS]) ==
 	SUB_ERROR)
       return(NULL);
-    
+    if (GetValueFromUser("Comments", &info[U_COMMENT]) == SUB_ERROR)
+      return(NULL);
+
+    /* Sign record */
+#ifdef GDSS
+    info[U_SIGNATURE] = malloc(GDSS_Sig_Size());
+    sprintf(temp_buf, "%s:%s", info[U_NAME], info[U_MITID]);
+    GDSS_Sign(temp_buf, strlen(temp_buf), info[U_SIGNATURE], &siglen);
+#else /* GDSS */
+    info[U_SIGNATURE] = strsave("");
+#endif /* GDSS */
+
     FreeAndClear(&info[U_MODTIME], TRUE);
     FreeAndClear(&info[U_MODBY], TRUE);
     FreeAndClear(&info[U_MODWITH], TRUE);
@@ -284,38 +301,38 @@ char *name1, *name2;
     switch(type) {
     case LOGIN:
 	args[0] = name1;
-	if ( (status = do_mr_query("get_user_by_login", 1, args,
+	if ( (status = do_mr_query("get_user_account_by_login", 1, args,
 				    StoreInfo, (char *) &elem)) != 0) {
 	    com_err(program_name, status, 
-		    " when attempting to get_user_by_login.");
+		    " when attempting to get_user_account_by_login.");
       	    return (NULL);		 
 	}
 	break;
     case UID:
 	args[0] = name1;
-	if ( (status = do_mr_query("get_user_by_uid", 1, args,
+	if ( (status = do_mr_query("get_user_account_by_uid", 1, args,
 				    StoreInfo, (char *) &elem)) != 0) {
 	    com_err(program_name, status, 
-		    " when attempting to get_user_by_uid.");
+		    " when attempting to get_user_account_by_uid.");
 	    return (NULL);	
 	}
 	break;
     case BY_NAME:
 	args[0] = name1;
 	args[1] = name2;    
-	if ( (status = do_mr_query("get_user_by_name", 2, args,
+	if ( (status = do_mr_query("get_user_account_by_name", 2, args,
 				    StoreInfo, (char *) &elem)) != 0) {
 	    com_err(program_name, status, 
-		    " when attempting to get_user_by_name.");
+		    " when attempting to get_user_account_by_name.");
 	    return (NULL);	
 	}
 	break;
     case CLASS:
 	args[0] = name1;
-	if ( (status = do_mr_query("get_user_by_class", 1, args,
+	if ( (status = do_mr_query("get_user_account_by_class", 1, args,
 				    StoreInfo, (char *) &elem)) != 0) {
 	    com_err(program_name, status, 
-		    " when attempting to get_user_by_class.");
+		    " when attempting to get_user_account_by_class.");
 	    return (NULL);	
 	}
 	break;
@@ -342,9 +359,9 @@ AddNewUser()
     }
     if (args == NULL)
       return(DM_NORMAL);
-    if ( (status = do_mr_query("add_user", CountArgs(args), 
+    if ( (status = do_mr_query("add_user_account", CountArgs(args), 
 				args, Scream, (char *) NULL)) != MR_SUCCESS)
-	com_err(program_name, status, " in add_user");
+	com_err(program_name, status, " in add_user_account");
     else
 	Put_message("New user added to database.");
     FreeInfo(args);
@@ -421,7 +438,7 @@ GetUidNumberFromName()
     args[0] = first;
     args[1] = last;
     
-    switch (status = do_mr_query("get_user_by_name", 2, args,
+    switch (status = do_mr_query("get_user_account_by_name", 2, args,
 				  StoreInfo, (char *) &top)) {
     case MR_SUCCESS:
 	break;
@@ -429,7 +446,7 @@ GetUidNumberFromName()
 	Put_message("There is no user in the database with that name.");
 	return(NULL);
     default:
-	com_err(program_name, status, " in get_user_by_name.");
+	com_err(program_name, status, " in get_account_user_by_name.");
 	return(NULL);
     }
     
@@ -559,7 +576,7 @@ Bool junk;
 	Put_message("Aborted.");
 	return;
     }
-    if ( (status = do_mr_query("update_user", CountArgs(args), 
+    if ( (status = do_mr_query("update_user_account", CountArgs(args), 
 				args, Scream, (char *) NULL)) != MR_SUCCESS) {
 	com_err(program_name, status, " in ModifyFields");
 	sprintf(error_buf, "User %s not updated due to errors.", info[NAME]);
@@ -667,9 +684,9 @@ char **argv;
     if(!ValidName(argv[1]))
 	return(DM_NORMAL);
     
-    if ( (status = do_mr_query("get_user_by_uid", 1, argv+1, StoreInfo,
+    if ( (status = do_mr_query("get_user_account_by_uid", 1, argv+1, StoreInfo,
 				(char * ) &elem)) != MR_SUCCESS)
-	com_err(program_name, status, " in get_user_by_uid");
+	com_err(program_name, status, " in get_user_account_by_uid");
     
     info = (char **) elem->q_data;
     argv[1] = info[U_NAME];
@@ -755,6 +772,8 @@ char **argv;
 {
     struct qelem *top;
 
+    if (YesNoQuestion("This will take a long time.  Are you sure", 0) == FALSE)
+      return (DM_NORMAL);
     top = GetUserInfo(CLASS, argv[1], (char *) NULL);
     Loop(top, PrintUserName);
 

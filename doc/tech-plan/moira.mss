@@ -34,9 +34,7 @@ mechanism of data distribution.
 The primary purpose of SMS is to provide a single point of contact for
 administrative changes that affect more than one Athena service.  The
 secondary purpose is to provide a single point of contact for
-authoritative information about Athena administration.  Inherently, the
-implementation of the purpose creates significant economic value in
-regard to the support and maintainence of system services.
+authoritative information about Athena administration.
 
 @include[intro.mss]
 @include[structure.mss]

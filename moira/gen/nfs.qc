@@ -1,8 +1,13 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/nfs.qc,v 1.4 1988-08-30 16:56:11 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/nfs.qc,v 1.5 1988-09-13 14:30:53 mar Exp $
  *
  * This generates the files necessary to load an nfs server.
+ *
+ *  (c) Copyright 1988 by the Massachusetts Institute of Technology.
+ *  For copying and distribution information, please see the file
+ *  <mit-copyright.h>.
  */
 
+#include <mit-copyright.h>
 #include <stdio.h>
 #include <sms.h>
 #include <sms_app.h>

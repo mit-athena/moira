@@ -1,10 +1,10 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_serv.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_serv.c,v 1.1 1987-08-02 22:11:37 wesommer Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_serv.c,v 1.2 1988-09-13 14:26:15 mar Exp $
  */
 
 #ifndef lint
-static char *rcsid_gdb_serv_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_serv.c,v 1.1 1987-08-02 22:11:37 wesommer Exp $";
+static char *rcsid_gdb_serv_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_serv.c,v 1.2 1988-09-13 14:26:15 mar Exp $";
 #endif	lint
 
 
@@ -36,9 +36,12 @@ static char *rcsid_gdb_serv_c = "$Header: /afs/.athena.mit.edu/astaff/project/mo
 /*	
 /*	Author: Noah Mendelsohn
 /*	Copyright: 1986 MIT Project Athena 
+/*		For copying and distribution information, please see
+/*	  	the file <mit-copyright.h>.
 /*	
 /************************************************************************/
 
+#include <mit-copyright.h>
 #include <stdio.h>
 #include <strings.h>
 #include "gdb.h"

@@ -1,10 +1,10 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_conn.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_conn.c,v 1.1 1987-08-02 22:10:13 wesommer Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_conn.c,v 1.2 1988-09-13 14:25:01 mar Exp $
  */
 
 #ifndef lint
-static char *rcsid_gdb_conn_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_conn.c,v 1.1 1987-08-02 22:10:13 wesommer Exp $";
+static char *rcsid_gdb_conn_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_conn.c,v 1.2 1988-09-13 14:25:01 mar Exp $";
 #endif	lint
 
 
@@ -38,6 +38,8 @@ static char *rcsid_gdb_conn_c = "$Header: /afs/.athena.mit.edu/astaff/project/mo
 /*	
 /*	Author: Noah Mendelsohn
 /*	Copyright: 1986 MIT Project Athena 
+/*		For copying and distribution information, please see
+/*	  	the file <mit-copyright.h>.
 /*	
 /*	Routines used in the creation and maintenance of CONNECTIONS.
 /*	Note: these are closely related to the services provided
@@ -46,6 +48,7 @@ static char *rcsid_gdb_conn_c = "$Header: /afs/.athena.mit.edu/astaff/project/mo
 /*	
 /************************************************************************/
 
+#include <mit-copyright.h>
 #include <stdio.h>
 #include <strings.h>
 #include "gdb.h"

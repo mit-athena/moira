@@ -1,10 +1,10 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_stype.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_stype.c,v 1.1 1987-08-02 22:12:07 wesommer Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_stype.c,v 1.2 1988-09-13 14:26:37 mar Exp $
  */
 
 #ifndef lint
-static char *rcsid_gdb_stype_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_stype.c,v 1.1 1987-08-02 22:12:07 wesommer Exp $";
+static char *rcsid_gdb_stype_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_stype.c,v 1.2 1988-09-13 14:26:37 mar Exp $";
 #endif	lint
 
 
@@ -35,6 +35,8 @@ static char *rcsid_gdb_stype_c = "$Header: /afs/.athena.mit.edu/astaff/project/m
 /*	
 /*	Author: Noah Mendelsohn
 /*	Copyright: 1986 MIT Project Athena 
+/*		For copying and distribution information, please see
+/*	  	the file <mit-copyright.h>.
 /*	
 /*	This file initializes the definitions for all system defined
 /*	data types, and it includes the type specific semantic routines
@@ -58,6 +60,7 @@ static char *rcsid_gdb_stype_c = "$Header: /afs/.athena.mit.edu/astaff/project/m
 /*	
 /************************************************************************/
 
+#include <mit-copyright.h>
 #include <stdio.h>
 #include <strings.h>
 #include "gdb.h"

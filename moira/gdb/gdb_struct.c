@@ -1,10 +1,10 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_struct.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_struct.c,v 1.1 1987-08-02 22:11:53 wesommer Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_struct.c,v 1.2 1988-09-13 14:26:27 mar Exp $
  */
 
 #ifndef lint
-static char *rcsid_gdb_struct_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_struct.c,v 1.1 1987-08-02 22:11:53 wesommer Exp $";
+static char *rcsid_gdb_struct_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_struct.c,v 1.2 1988-09-13 14:26:27 mar Exp $";
 #endif	lint
 
 
@@ -35,6 +35,8 @@ static char *rcsid_gdb_struct_c = "$Header: /afs/.athena.mit.edu/astaff/project/
 /*	
 /*	Author: Noah Mendelsohn
 /*	Copyright: 1986 MIT Project Athena 
+/*		For copying and distribution information, please see
+/*	  	the file <mit-copyright.h>.
 /*	
 /*	These routines implement the following layers of the 
 /*	Client Library Specification of the GDB system:
@@ -53,6 +55,7 @@ static char *rcsid_gdb_struct_c = "$Header: /afs/.athena.mit.edu/astaff/project/
 /*	
 /************************************************************************/
 
+#include <mit-copyright.h>
 #include <stdio.h>
 #include <strings.h>
 #include "gdb.h"

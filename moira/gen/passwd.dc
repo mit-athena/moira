@@ -1,9 +1,14 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/passwd.dc,v 1.5 1988-08-30 14:04:46 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/passwd.dc,v 1.6 1988-09-13 14:31:01 mar Exp $
  *
  * This generates a master /etc/passwd containing all active (status != 0)
  * accounts.
+ *
+ *  (c) Copyright 1988 by the Massachusetts Institute of Technology.
+ *  For copying and distribution information, please see the file
+ *  <mit-copyright.h>.
  */
 
+#include <mit-copyright.h>
 #include <stdio.h>
 #include <sms.h>
 #include <sys/types.h>

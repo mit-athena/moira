@@ -1,9 +1,14 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/util.c,v 1.3 1988-08-30 15:17:26 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/util.c,v 1.4 1988-09-13 14:31:06 mar Exp $
  *
  * Utility routines used by the SMS extraction programs.
+ *
+ *  (c) Copyright 1988 by the Massachusetts Institute of Technology.
+ *  For copying and distribution information, please see the file
+ *  <mit-copyright.h>.
  */
 
 
+#include <mit-copyright.h>
 #include <stdio.h>
 #include <sys/time.h>
 #include <sms.h>

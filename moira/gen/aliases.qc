@@ -1,13 +1,18 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/aliases.qc,v 1.5 1988-08-30 14:05:41 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/aliases.qc,v 1.6 1988-09-13 14:30:30 mar Exp $
  *
  * This generates the /usr/lib/aliases mail aliases file for the mailhub.
  * The aliases file will contain:
  *	user pobox entries
  *	maillist expansions
  *	sublists of maillists
+ *
+ *  (c) Copyright 1988 by the Massachusetts Institute of Technology.
+ *  For copying and distribution information, please see the file
+ *  <mit-copyright.h>.
  */
 
 
+#include <mit-copyright.h>
 #include <stdio.h>
 #include <string.h>
 #include <sms.h>

@@ -1,10 +1,10 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_ops.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_ops.c,v 1.1 1987-08-02 22:11:20 wesommer Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_ops.c,v 1.2 1988-09-13 14:26:04 mar Exp $
  */
 
 #ifndef lint
-static char *rcsid_gdb_ops_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_ops.c,v 1.1 1987-08-02 22:11:20 wesommer Exp $";
+static char *rcsid_gdb_ops_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_ops.c,v 1.2 1988-09-13 14:26:04 mar Exp $";
 #endif	lint
 
 
@@ -36,12 +36,15 @@ static char *rcsid_gdb_ops_c = "$Header: /afs/.athena.mit.edu/astaff/project/moi
 /*	
 /*	Author: Noah Mendelsohn
 /*	Copyright: 1986 MIT Project Athena 
+/*		For copying and distribution information, please see
+/*	  	the file <mit-copyright.h>.
 /*	
 /*	These routines provide a suite of asynchronous operations 
 /*	on connections.
 /*	
 /************************************************************************/
 
+#include <mit-copyright.h>
 #include <stdio.h>
 #include "gdb.h"
 #include <netinet/in.h>

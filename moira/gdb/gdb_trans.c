@@ -1,10 +1,10 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_trans.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_trans.c,v 1.1 1987-08-02 22:12:33 wesommer Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_trans.c,v 1.2 1988-09-13 14:26:57 mar Exp $
  */
 
 #ifndef lint
-static char *rcsid_gdb_trans_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_trans.c,v 1.1 1987-08-02 22:12:33 wesommer Exp $";
+static char *rcsid_gdb_trans_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_trans.c,v 1.2 1988-09-13 14:26:57 mar Exp $";
 #endif	lint
 
 
@@ -35,6 +35,8 @@ static char *rcsid_gdb_trans_c = "$Header: /afs/.athena.mit.edu/astaff/project/m
 /*	
 /*	Author: Noah Mendelsohn
 /*	Copyright: 1986 MIT Project Athena 
+/*		For copying and distribution information, please see
+/*	  	the file <mit-copyright.h>.
 /*	
 /*	These routines implement layer 6 of the Client Library
 /*	Specification of the GDB system, as well as the facilities
@@ -45,6 +47,7 @@ static char *rcsid_gdb_trans_c = "$Header: /afs/.athena.mit.edu/astaff/project/m
 /*	
 /************************************************************************/
 
+#include <mit-copyright.h>
 #include <sys/types.h>
 #include <strings.h>
 #include <stdio.h>

@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.dc,v $
  *	$Author: genoa $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.dc,v 2.7 1992-08-23 21:37:02 genoa Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.dc,v 2.8 1992-08-25 01:42:29 genoa Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_qsupport_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.dc,v 2.7 1992-08-23 21:37:02 genoa Exp $";
+static char *rcsid_qsupport_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.dc,v 2.8 1992-08-25 01:42:29 genoa Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -1483,7 +1483,7 @@ followup_ausr(q, argv, cl)
         si.rawsig = (unsigned char *) rawsig;
         status = GDSS_Verify(databuf, strlen(databuf), argv[U_SIGNATURE], &si);
 	if (strlen(rawsig) > mr_sig_length) {
-	    com_err(whoami, 0, "GDSS signature too long.");  /** ??? **/
+	    com_err(whoami, 0, "GDSS signature would be truncated.");  /** untested **/
 	    return(MR_INTERNAL);
 	}
         if (status == 0) {
@@ -1577,7 +1577,7 @@ followup_uuac(q, argv, cl)
         si.rawsig = (unsigned char *) rawsig;
         status = GDSS_Verify(databuf, strlen(databuf), argv[U_SIGNATURE+1], &si);
 	if (strlen(rawsig) > mr_sig_length) {
-	    com_err(whoami, 0, "GDSS signature too long.");  /** ??? **/
+	    com_err(whoami, 0, "GDSS signature would be truncated.");  /** untested **/
 	    return(MR_INTERNAL);
 	}
         if (status == 0) {
@@ -2315,12 +2315,12 @@ int add_member_to_list(q, argv, cl)
 	    if (sqlca.sqlerrd[2] > 0) {
 		if (a == 0 && d == 0) {
 		    EXEC SQL UPDATE imembers
-		      SET ref_count = ref_count+ref, direct=1
+		      SET ref_count = ref_count+:ref, direct=1
 		      WHERE list_id = :lid AND member_id = :mid
 			AND member_type = :mtype;
 		} else {
 		    EXEC SQL UPDATE imembers
-		      SET ref_count = ref_count+ref
+		      SET ref_count = ref_count+:ref
 		      WHERE list_id = :lid AND member_id = :mid
 			AND member_type = :mtype;
 		}
@@ -2466,7 +2466,7 @@ int delete_member_from_list(q, argv, cl)
 		    AND member_type = :mtype;
 	    } else {
 		EXEC SQL UPDATE imembers
-		  SET ref_count=refcount-:ref
+		  SET ref_count = refcount - :ref
 		  WHERE list_id = :lid AND member_id = :mid
 		    AND member_type = :mtype;
 	    }

@@ -1,6 +1,6 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v 1.23 1990-03-17 16:55:10 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v 1.24 1991-03-06 11:54:03 mar Exp $
  */
 
 /*  (c) Copyright 1988 by the Massachusetts Institute of Technology. */
@@ -8,7 +8,7 @@
 /*  <mit-copyright.h>. */
 
 #ifndef lint
-static char rcsid_mailmaint_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v 1.23 1990-03-17 16:55:10 mar Exp $";
+static char rcsid_mailmaint_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v 1.24 1991-03-06 11:54:03 mar Exp $";
 #endif lint
 
 /***********************************************************************/
@@ -201,7 +201,7 @@ get_main_input()
 	currow = DISPROW + 2;
 	page = 1;
 	toggle = num_members = moreflg = 0;
-	c = getchar();
+	c = getchar() & 0x7f;	/* mask parity bit */
 	if (c == 13) {
 	    if (position[level] == 7)
 		c = 'q';
@@ -259,9 +259,9 @@ get_main_input()
 	    }
 	    break;
 	case 27:		/* up arrow */
-	    c = getchar();
+	    c = getchar() & 0x7f;
 	    if (c == 91) {
-		c = getchar();
+		c = getchar() & 0x7f;
 		if (c == 65) {
 		    position[level]--;
 		    if (!position[level])
@@ -470,7 +470,7 @@ show_all()
 
     show_text(DISPROW, STARTCOL, "This function may take a \
 while... proceed? [y] ");
-    c = getchar();
+    c = getchar() & 0x7f;
     if (c == 'y' || c == 'Y' || c == '\n') {
 	move(DISPROW + 1, STARTCOL);
 	addstr("Processing query...please hold");
@@ -889,7 +889,7 @@ Prompt(prompt, buf, buflen, crok)
     refresh();
     for (p = buf; abs(strlen(p) - strlen(buf)) <= buflen;) {
 	refresh();
-	c = getchar();
+	c = getchar() & 0x7f;
 	switch (c) {
 	case CTL('C'):
 	    return 0;

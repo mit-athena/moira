@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/dump_db.qc,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/dump_db.qc,v 1.4 1988-09-12 13:58:53 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/dump_db.qc,v 1.5 1989-06-08 15:51:40 mar Exp $
  *
  *	(c) Copyright 1988 by the Massachusetts Institute of Technology.
  *	For copying and distribution information, please see the file
@@ -13,7 +13,7 @@
  */
 
 #ifndef lint
-static char *rcsid_dump_db_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/dump_db.qc,v 1.4 1988-09-12 13:58:53 mar Exp $";
+static char *rcsid_dump_db_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/dump_db.qc,v 1.5 1989-06-08 15:51:40 mar Exp $";
 #endif lint
 
 #include <stdio.h>
@@ -52,9 +52,12 @@ main(argc, argv)
     for (i=0; i<' '; i++) act[i]=2;
     
 ##  ingres sms 
-    
+##  set lockmode session where level = table
+##  begin transaction
+
     do_backups(prefix);
-    
+
+##  end transaction    
 ##  exit
     exit(0);
 }

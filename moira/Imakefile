@@ -1,4 +1,4 @@
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/Imakefile,v 1.6 1994-04-21 14:28:04 tytso Exp $
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/Imakefile,v 1.7 1994-04-26 18:29:22 jweiss Exp $
 #
 # Copyright 1990 by the Massachusetts Institute of Technology.
 #
@@ -46,7 +46,6 @@ world::
 
 clean-imake:
 	cd util/imake; make clean
-	cd util/imake; make
 
 imake::
 	cd util/imake; make 

@@ -1,6 +1,6 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v 1.21 1990-02-14 11:36:58 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v 1.22 1990-03-17 15:46:50 mar Exp $
  */
 
 /*  (c) Copyright 1988 by the Massachusetts Institute of Technology. */
@@ -8,7 +8,7 @@
 /*  <mit-copyright.h>. */
 
 #ifndef lint
-static char rcsid_mailmaint_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v 1.21 1990-02-14 11:36:58 mar Exp $";
+static char rcsid_mailmaint_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v 1.22 1990-03-17 15:46:50 mar Exp $";
 #endif lint
 
 /***********************************************************************/
@@ -954,8 +954,6 @@ menu_err_hook(who, code, fmt, args)
 {
     char buf[BUFSIZ], *cp;
 
-    FILE _strbuf;
-
     (void) strcpy(buf, who);
     for (cp = buf; *cp; cp++);
     *cp++ = ':';
@@ -965,10 +963,11 @@ menu_err_hook(who, code, fmt, args)
 	while (*cp)
 	    cp++;
     }
-    _strbuf._flag = _IOWRT + _IOSTRG;
-    _strbuf._ptr = cp;
-    _strbuf._cnt = BUFSIZ - (cp - buf);
-    _doprnt(fmt, args, &_strbuf);
-    (void) putc('\0', &_strbuf);
+#if defined(AIX386) || defined(sun)
+    vsprintf(cp, fmt, args);
+#else
+    /* can do this because we never pass more than 1 arg here anyway... */
+    sprintf(cp, fmt, args);
+#endif
     display_buff(buf);
 }

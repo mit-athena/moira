@@ -1,13 +1,13 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/include/dcm.h,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/include/dcm.h,v 1.5 1990-03-19 18:52:31 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/include/dcm.h,v 1.6 1993-03-25 10:27:55 mar Exp $
  */
 
 #define UPCALL_CONT	0
 #define UPCALL_STOP	1
 
 #define HARD_FAIL(x)	(((x) != 0 ) && ((x) != MR_NO_CHANGE))
-#define SOFT_FAIL(x)	(((x) == MR_NO_MEM) || ((x) == MR_CANT_CONNECT) || ((x) == MR_CCONFIG) || ((x) == MR_DEADLOCK))
+#define SOFT_FAIL(x)	(((x) == MR_NO_MEM) || ((x) == MR_CANT_CONNECT) || ((x) == MR_CCONFIG) || ((x) == MR_DEADLOCK) || ((x) == MR_BUSY))
 
 
 #define DEADLOCK_WAIT	(3 * 60)	/* number of seconds to wait after

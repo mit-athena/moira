@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/mmoira.h,v 1.4 1992-10-19 17:16:17 mar Exp $ */
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/mmoira.h,v 1.5 1992-11-04 17:56:42 mar Exp $ */
 
 #include "data.h"
 
@@ -7,6 +7,14 @@ extern char *user, *program_name;
 extern char *user_states[], *nfs_states[];
 extern char *StringValue();
 extern int DisplayCallback(), MoiraValueChanged();
+typedef struct _MoiraResources {
+    String form_trans;
+    String text_trans;
+    String log_trans;
+    String help_file;
+    String db;
+} MoiraResources;
+extern MoiraResources resources;
 
 #define HELPFILE	"/usr/athena/lib/moira.help"
 #define MAXLOGSIZE	10000

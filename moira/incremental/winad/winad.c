@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/winad/winad.c,v 1.22 2001-07-29 15:15:59 zacheiss Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/winad/winad.c,v 1.23 2001-07-30 19:13:57 zacheiss Exp $
 /* winad.incr arguments examples
  *
  * arguments when moira creates the account - ignored by winad.incr since the account is unusable.
@@ -85,9 +85,9 @@
  *
  * arguments when moira deletes a container (OU).
  * containers 7 0 machines/test/bottom description location contact USER 105316 2222
- * 
+ *
  * arguments when moira modifies a container information (OU).
- * containers 7 7 machines/test/bottom description location contact USER 105316 2222 machines/test/bottom description1 location contact USER 10531 2222
+ * containers 7 7 machines/test/bottom description location contact USER 105316 2222 machines/test/bottom description1 location contact USER 105316 2222
 */
 #include <mit-copyright.h>
 #ifdef _WIN32
@@ -495,7 +495,7 @@ void do_container(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
     }
   if ((beforec == 0) && (afterc != 0)) /*create a container*/
     {
-      com_err(whoami, 0, "creating container %s", before[CONTAINER_NAME]);
+      com_err(whoami, 0, "creating container %s", after[CONTAINER_NAME]);
       container_check(ldap_handle, dn_path, after[CONTAINER_NAME]);
       container_create(ldap_handle, dn_path, afterc, after);
       return;
@@ -507,6 +507,7 @@ void do_container(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
       container_rename(ldap_handle, dn_path, beforec, before, afterc, after);
       return;
     }
+  com_err(whoami, 0, "updating container %s information", after[CONTAINER_NAME]);
   container_update(ldap_handle, dn_path, beforec, before, afterc, after);
   return;
 }
@@ -3785,7 +3786,7 @@ int container_rename(LDAP *ldap_handle, char *dn_path, int beforec, char **befor
     }
 
   strcpy(temp, after[CONTAINER_NAME]);
-  pPtr = NULL;
+  pPtr = temp;
   for (i = 0; i < (int)strlen(temp); i++)
     {
       if (temp[i] == '/')
@@ -3793,11 +3794,13 @@ int container_rename(LDAP *ldap_handle, char *dn_path, int beforec, char **befor
           pPtr = &temp[i];
         }
     }
-  if (pPtr != NULL)
-    (*pPtr) = '\0';
+  (*pPtr) = '\0';
 
   container_get_dn(temp, dName);
-  sprintf(new_dn_path, "%s,%s", dName, dn_path);
+  if (strlen(temp) != 0)
+    sprintf(new_dn_path, "%s,%s", dName, dn_path);
+  else
+    sprintf(new_dn_path, "%s", dn_path);
   sprintf(new_cn, "OU=%s", cName);
 
   container_check(ldap_handle, dn_path, after[CONTAINER_NAME]);
@@ -4082,9 +4085,9 @@ int container_adupdate(LDAP *ldap_handle, char *dn_path, char *dName,
     {
       if (!strcasecmp(pPtr->attribute, "description"))
         strcpy(desc, pPtr->value);
-      if (!strcasecmp(pPtr->attribute, "managedBy"))
+      else if (!strcasecmp(pPtr->attribute, "managedBy"))
         strcpy(managedByDN, pPtr->value);
-      if (!strcasecmp(pPtr->attribute, "mitMoiraId"))
+      else if (!strcasecmp(pPtr->attribute, "mitMoiraId"))
         strcpy(moiraId, pPtr->value);
       pPtr = pPtr->next;
     }

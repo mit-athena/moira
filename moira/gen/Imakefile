@@ -1,4 +1,4 @@
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/Imakefile,v 1.1 1993-10-21 14:43:13 mar Exp $
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/Imakefile,v 1.2 1993-10-25 16:51:04 mar Exp $
 #
 # Copyright 1993 by the Massachusetts Institute of Technology.
 #
@@ -8,6 +8,8 @@
 # Imakefile for server directory.
 #
 
+SRCDIR = $(SRCTOP)/gen
+#ifdef GDSS
 SRCS = util.c moddiff.c ca.c passwd.c zephyr.c aliases.c hesiod.c \
 	nfs.c mailhub.c mitdir.c prlogger.c stats.c sis.c pobox.c \
 	letter.c 
@@ -20,8 +22,21 @@ CODE = util.c moddiff.dc ca.dc passwd.dc zephyr.dc aliases.dc hesiod.dc \
 LIBS =  -L/usr/athena/lib ../lib/libmoira.a -lcom_err -lzephyr \
 	../server/libmrglue.a /mit/gdss/`machtype`/libgdss.a \
 	-lkrb -ldes -lhesiod ${SQL_LIB}
-SRCDIR = $(SRCTOP)/gen
 DEFINES = -I/mit/gdss/include
+#else /* GDSS */
+SRCS = util.c moddiff.c ca.c passwd.c zephyr.c aliases.c hesiod.c \
+	nfs.c mailhub.c mitdir.c prlogger.c stats.c pobox.c \
+	letter.c 
+OBJS = util.o moddiff.o ca.o passwd.o zephyr.o aliases.o hesiod.o \
+	nfs.o mailhub.o mitdir.o prlogger.o stats.o pobox.o \
+	letter.o
+CODE = util.c moddiff.dc ca.dc passwd.dc zephyr.dc aliases.dc hesiod.dc \
+	nfs.dc mailhub.dc mitdir.dc prlogger.dc stats.dc pobox.dc \
+	letter.dc
+LIBS =  -L/usr/athena/lib ../lib/libmoira.a -lcom_err -lzephyr \
+	../server/libmrglue.a -lkrb -ldes -lhesiod ${SQL_LIB}
+DEFINES =
+#endif /* GDSS */
 sqlrule()
 
 program(ca.gen, ca.o util.o moddiff.o,${MR_LIBDEP},${LIBS},${PROGDIR})
@@ -45,8 +60,10 @@ program(prlogger.gen, prlogger.o util.o moddiff.o,${MR_LIBDEP},${LIBS},${PROGDIR
 sqlfile(prlogger)
 program(stats.gen, stats.o util.o moddiff.o,${MR_LIBDEP},${LIBS},${PROGDIR})
 sqlfile(stats)
+#ifdef GDSS
 program(sis.gen, sis.o util.o moddiff.o,${MR_LIBDEP},${LIBS},${PROGDIR})
 sqlfile(sis)
+#endif
 program(pobox.gen, pobox.o util.o moddiff.o,${MR_LIBDEP},${LIBS},${PROGDIR})
 sqlfile(pobox)
 program(letter.gen, letter.o util.o moddiff.o,${MR_LIBDEP},${LIBS},${PROGDIR})

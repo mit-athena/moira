@@ -1,6 +1,6 @@
 /**/#	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/util/imake.includes/Imake.rules,v $
 /**/#	$Author: jtkohl $
-/**/#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/util/imake.includes/Imake.rules,v 4.11 1989-04-13 09:31:09 jtkohl Exp $
+/**/#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/util/imake.includes/Imake.rules,v 4.12 1989-07-10 11:10:08 jtkohl Exp $
 /**/#
 
 #ifdef __STDC__
@@ -68,7 +68,7 @@ concat3(lib,libname,_p.a): objs						@@\
 lint:: concat3(llib-l,libname,.ln)					@@\
 									@@\
 concat3(llib-l,libname,.ln): srcs					@@\
-	$(LINT) concat(-C,libname) $(LINTFLAGS) srcs lintlibs 		@@\
+	$(LINT) concat($(LINTLIBFLAG),libname) $(LINTFLAGS) srcs lintlibs 		@@\
 									@@\
 clean:: 								@@\
 	$(RM) concat3(lib,libname,.a) concat3(lib,libname,_p.a)		@@\
@@ -120,7 +120,7 @@ concat3(lib,libname,.a): objs						@@\
 lint:: concat3(llib-l,libname,.ln)					@@\
 									@@\
 concat3(llib-l,libname,.ln): srcs					@@\
-	$(LINT) concat(-C,libname) $(LINTFLAGS) srcs lintlibs 		@@\
+	$(LINT) concat($(LINTLIBFLAG),libname) $(LINTFLAGS) srcs lintlibs 		@@\
 									@@\
 clean:: 								@@\
 	$(RM) concat3(lib,libname,.a)					@@\
@@ -360,7 +360,7 @@ install:: page								@@\
 #define	depend_target()							@@\
 depend:: $(SRCS)							@@\
 	@echo "### Now computing dependencies"				@@\
-	@$(DEPEND) -s "# DO NOT DELETE" $(CFLAGS) $(SRCS)		@@\
+	@$(DEPEND) -s "# DO NOT DELETE" -- $(CFLAGS) -- $(SRCS)		@@\
 
 #define clean_target()							@@\
 clean::									@@\

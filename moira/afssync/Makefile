@@ -1,34 +1,32 @@
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/afssync/Makefile,v 1.6 1992-07-05 13:32:14 probe Exp $
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/afssync/Makefile,v 1.7 1993-02-05 03:34:15 probe Exp $
+
+DBCFLAGS=
+DBLIBS=	-L/usr/ingres/lib -lingres -lm
 
 AFSDIR = /mit/afsdev/bld/dest
 CFLAGS = -I$(AFSDIR)/include -I$(AFSDIR)/include/afs -I../include \
-	-I/usr/athena/include -O
+	-I/usr/athena/include -O ${DBCFLAGS}
 LDFLAGS= -L/usr/athena/lib
 
 OBJS= ptutils.o utils.o ubik.o
-LIBS= -L../lib $(LDFLAGS) -lmoira -lcom_err -lkrb -ldes \
-	 /usr/rtingres/lib/libqlib /usr/rtingres/lib/compatlib
+LIBS= -L../lib $(LDFLAGS) -lmoira -lcom_err -lkrb -ldes ${DBLIBS}
 
 AFSLIBS=$(AFSDIR)/lib/afs/libprot.a   $(AFSDIR)/lib/afs/libauth.a \
 	$(AFSDIR)/lib/libubik.a       $(AFSDIR)/lib/afs/util.a \
 	$(AFSDIR)/lib/librxkad.a      $(AFSDIR)/lib/afs/libsys.a \
 	$(AFSDIR)/lib/librx.a         $(AFSDIR)/lib/liblwp.a
 
-.SUFFIXES: .qc
+.SUFFIXES: .dc .sc
 
-.qc.c: 
-	rm -f $*.c
-	/usr/rtingres/bin/eqc -p $*.qc
+.dc.sc:
+	awk -f ../util/imake.includes/ingres.awk < $< > $*.sc
+.sc.c:
+	/usr/ingres/bin/esqlc -p $*
 
-all: sync ptdump migrate pt_util
+all: sync ptdump pt_util
 
 sync: sync.o $(OBJS)
 	$(CC) -o sync sync.o $(OBJS) $(AFSLIBS) $(LIBS)
-sync.c: sync.qc
-
-sync.fast: sync.fast.o $(OBJS)
-	$(CC) -o sync.fast sync.fast.o $(OBJS) $(AFSLIBS) $(LIBS)
-sync.fast.c: sync.fast.qc
 
 ptdump: ptdump.o
 	cc -o ptdump ptdump.o $(AFSLIBS) $(LDFLAGS) -ldes

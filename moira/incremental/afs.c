@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/afs.c,v 1.15 1990-09-06 11:48:16 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/afs.c,v 1.16 1992-05-29 11:21:04 mar Exp $
  *
  * Do AFS incremental updates
  *
@@ -226,9 +226,23 @@ int beforec;
 char **after;
 int afterc;
 {
-    if (afterc < FS_CREATE)
+    char cmd[512];
+
+    if (afterc < FS_CREATE ||
+	strcmp("AFS", after[FS_TYPE]))
       return;
-    if (!strcmp("AFS", after[FS_TYPE]) &&
+    if (beforec < FS_CREATE) {
+	/* new locker creation */
+	sprintf(cmd, "%s/afs_create.pl %s %s %s %s %s %s %s %s %s",
+		BIN_DIR, after[FS_LABEL], after[FS_LOCKERTYPE],
+		after[FS_MACHINE], after[FS_PACK], 2200, after[FS_OWNER],
+		0, after[FS_OWNERS], 0);
+	do_cmd(cmd);
+	return;
+    } else if (strcmp(before[FS_TYPE], "AFS")) {
+	/* moved from non-AFS */
+    } else {
+	/* other modification */
 	!strncmp("/afs/", after[FS_PACK], 5) &&
 	atoi(after[FS_CREATE]) &&
 	!file_exists(after[FS_PACK])) {

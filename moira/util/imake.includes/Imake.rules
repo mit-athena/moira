@@ -173,10 +173,11 @@ Makefiles::								@@\
 #undef GDSS
 #undef ATHENA
 ORADEFS= DEFINE=HESIOD DEFINE=ZEPHYR DEFINE=GDSS DEFINE=ATHENA
+ORAOPTS= CODE=ANSI_C
 #define sqlrule()							@@\
 .SUFFIXES: .pc								@@\
 .pc.c:									@@\
-	/usr/oracle/bin/proc INAME=$*.pc INCLUDE=$(BUILDTOP)/include INCLUDE=$(BUILDTOP)/lib INCLUDE=$(INCLDIR) $(ORADEFS) $(ORAINCLUDES)
+	/usr/oracle/bin/proc INAME=$*.pc INCLUDE=$(BUILDTOP)/include INCLUDE=$(BUILDTOP)/lib INCLUDE=$(INCLDIR) $(ORAOPTS) $(ORADEFS) $(ORAINCLUDES)
 #define sqlfile(file)							@@\
 concat(file,.c): concat(file,.pc)					@@\
 clean::									@@\

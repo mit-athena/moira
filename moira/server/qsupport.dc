@@ -2,7 +2,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.dc,v $
  *	$Author: genoa $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.dc,v 2.2 1992-07-07 22:36:30 genoa Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.dc,v 2.3 1992-07-15 18:01:15 genoa Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -11,7 +11,7 @@
  */
 
 #ifndef lint
-static char *rcsid_qsupport_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.dc,v 2.2 1992-07-07 22:36:30 genoa Exp $";
+static char *rcsid_qsupport_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.dc,v 2.3 1992-07-15 18:01:15 genoa Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -30,7 +30,8 @@ extern int ingres_errno, mr_errcode;
 
 EXEC SQL BEGIN DECLARE SECTION; 
 int idummy;                            
-extern char *cdummy, *stmt_buf;
+extern char cdummy[];
+extern char stmt_buf[];
 EXEC SQL END DECLARE SECTION; 
 
 /* Specialized Access Routines */
@@ -108,7 +109,7 @@ access_list(q, argv, cl)
     int client_id, status;
 
     list_id = *(int *)argv[0];
-    EXEC SQL SELECT acl_id, acl_type, gid, public 
+    EXEC SQL SELECT acl_id, acl_type, gid, publicflg 
       INTO :acl_id, :acl_type, :gid, :flags
       FROM list
       WHERE list_id = :list_id;
@@ -373,6 +374,9 @@ setup_ausr(q, argv, cl)
 	sprintf(argv[0], "#%s", argv[row]);
     }
 
+    if((mr_errcode=prefetch_value(q,argv,cl))!=MR_SUCCESS)
+      return(mr_errcode);
+
     return(MR_SUCCESS);
 }
 
@@ -391,11 +395,9 @@ int setup_dusr(q, argv)
 
     id = *(int *)argv[0];
 
-    /*? Can this get wildcarded users?  What happens then?! */
-    /*? How does the REPEATED keyword work? */
     /* For now, only allow users to be deleted if their status is 0 */
     EXEC SQL REPEATED SELECT status INTO :flag FROM users 
-      WHERE user_id = :id;
+      WHERE users_id = :id;
     if (flag != 0 && flag != 4)
       return(MR_IN_USE);
 
@@ -417,7 +419,7 @@ int setup_dusr(q, argv)
     if (sqlca.sqlerrd[2] > 0)
 	return(MR_IN_USE);
     EXEC SQL REPEATED SELECT acl_id INTO :idummy FROM hostaccess
-      WHERE acl_d = :id AND acl_type = 'USER';
+      WHERE acl_id = :id AND acl_type = 'USER';
     if (sqlca.sqlerrd[2] > 0)
 	return(MR_IN_USE);
     if (ingres_errno)
@@ -557,9 +559,10 @@ int setup_dclu(q, argv)
  * at 6 & 7.
  */
 
-int setup_alis(q, argv)
+int setup_alis(q, argv, cl)
     struct query *q;
-    char **argv;
+    char *argv[];
+    client *cl;
 {
     EXEC SQL BEGIN DECLARE SECTION; 
     int ngid;
@@ -585,17 +588,20 @@ int setup_alis(q, argv)
 	}
     }
 
+    if((mr_errcode=prefetch_value(q,argv,cl))!=MR_SUCCESS)
+      return(mr_errcode);
+
     return(MR_SUCCESS);
 }
 
 
-/* setup_dlist - verify that the list is no longer being referenced 
+/* setup_dlis - verify that the list is no longer being referenced 
  * and may safely be deleted.
  */
 
 int setup_dlis(q, argv)
     struct query *q;
-    char **argv;
+    char *argv[];
 {
     EXEC SQL BEGIN DECLARE SECTION; 
     int flag, id;
@@ -732,9 +738,10 @@ EXEC SQL BEGIN DECLARE SECTION;
 static int var_phys_id;
 EXEC SQL END DECLARE SECTION; 
 
-setup_afil(q, argv)
+setup_afil(q, argv, cl)
     struct query *q;
     char *argv[];
+    client *cl;
 {
     char *type, *name;
     int mach_id;
@@ -757,8 +764,11 @@ setup_afil(q, argv)
 
     if (!strcmp(type, "NFS"))
 	return (check_nfs(mach_id, name, access));
-    else
-	return(MR_SUCCESS);
+    
+    if((mr_errcode=prefetch_value(q,argv,cl))!=MR_SUCCESS)
+      return(mr_errcode);
+
+    return(MR_SUCCESS);
 }
 
 
@@ -1462,7 +1472,7 @@ followup_ausr(q, argv, cl)
 #ifdef GDSS
     EXEC SQL REPEATED UPDATE users 
       SET modtime='now', modby=:who, modwith = :entity, 
-          fullname = :fullname, mit_affil = mit_year, 
+          fullname = :fullname, affiliation = type, 
           signature = :rawsig, 
           fmodtime='now', fmodby = :who, fmodwith = :entity,
           potype='NONE', pmodtime='now', pmodby = :who, pmodwith = :entity
@@ -1470,7 +1480,7 @@ followup_ausr(q, argv, cl)
 #else /* GDSS */
     EXEC SQL REPEATED UPDATE users
       SET modtime='now', modby=:who, modwith = :entity, 
-          fullname = :fullname, mit_affil = mit_year, 
+          fullname = :fullname, affiliation = type, 
           fmodtime='now', fmodby = :who, fmodwith = :entity,
           potype='NONE', pmodtime='now', pmodby = :who, pmodwith = :entity
       WHERE login = :login;
@@ -2018,9 +2028,10 @@ get_list_info(q, aargv, cl, action, actarg)
  *		modwith =l.#modwith)
  *	    where l.list_id = :id
  */
-	EXEC SQL REPEATED SELECT name, text(active), text(public),
-	    text(hidden), hidden, text(maillist), text(grouplist), text(gid),
-	    trim(acl_type), acl_id, desc, modtime, modby, modwith  
+	/** Won't the TRIM() die a horrible INGRES death? **/
+	EXEC SQL REPEATED SELECT name, CHAR(active), CHAR(publicflg),
+	    CHAR(hidden), hidden, CHAR(maillist), CHAR(grouplist), CHAR(gid),
+	    TRIM(acl_type), acl_id, description, CHAR(modtime), modby, modwith 
 	  INTO :listname, :active, :public, :hidden, :hid, :maillist,
             :grouplist, :gid_str, :acl_type, :acl_id, :desc, 
 	    :modtime, :modby_id, :modwith
@@ -2645,8 +2656,8 @@ int get_lists_of_member(q, argv, cl, action, actarg)
  *		      m.member_type = :atype and m.member_id = :aid 
  */
 	EXEC SQL DECLARE csr117a CURSOR FOR 
-	  SELECT name, text(active), text(public), text(hidden), 
-  	      text(maillist), text(grouplist)
+	  SELECT name, CHAR(active), CHAR(publicflg), CHAR(hidden), 
+  	      CHAR(maillist), CHAR(grouplist)
 	    FROM list l, imembers m
 	    WHERE l.list_id = m.list_id AND m.direct = 1 
 	      AND m.member_type = :atype AND m.member_id = :aid;
@@ -2661,8 +2672,8 @@ int get_lists_of_member(q, argv, cl, action, actarg)
 	EXEC SQL CLOSE csr117a;
     } else {
 	EXEC SQL DECLARE csr117b CURSOR FOR 
-	  SELECT name, text(active), text(public), text(hidden), 
-	      text(maillist), text(grouplist)
+	  SELECT name, CHAR(active), CHAR(publicflg), CHAR(hidden), 
+	      CHAR(maillist), CHAR(grouplist)
 	    FROM list l, imembers m
 	    WHERE l.list_id = m.list_id 
 	      AND m.member_type = :atype AND m.member_id = :aid;
@@ -2689,7 +2700,7 @@ int get_lists_of_member(q, argv, cl, action, actarg)
  * where clause based on the arguments, then doing a retrieve.
  */
 
-static char *lflags[5] = { "active", "public", "hidden", "maillist", "group" };
+static char *lflags[5] = { "active", "publicflg", "hidden", "maillist", "group" };
 
 int qualified_get_lists(q, argv, cl, action, actarg)
     struct query *q;
@@ -2926,7 +2937,7 @@ int qualified_get(q, argv, action, actarg, start, range, field, flags)
     }
       
     rargv[0] = SQLDA->sqlvar[0].sqldata;
-    sprintf(stmt_buf,"SELECT %s.%s FROM %s WHERE %s",q->rtable,field,q->rtable,qual);
+    sprintf(stmt_buf,"SELECT %s.%s FROM %s %s WHERE %s",q->rtable,field,q->rtable,q->rvar,qual);
     EXEC SQL PREPARE stmt INTO :SQLDA USING NAMES FROM :stmt_buf; 
     if((mr_errcode=mr_check_SQLDA(SQLDA)) != MR_SUCCESS)
       return(mr_errcode);
@@ -2935,7 +2946,6 @@ int qualified_get(q, argv, action, actarg, start, range, field, flags)
     while(1) {
         EXEC SQL FETCH csr123 USING DESCRIPTOR :SQLDA;
         if(sqlca.sqlcode != 0) break;
-	mr_fix_nulls_in_SQLDA(SQLDA); 
         rowcount++;
 	(*action)(1, rargv, actarg);
     }
@@ -3098,8 +3108,8 @@ register_user(q, argv, cl)
     incremental_clear_before();
     EXEC SQL SELECT value INTO :gidval FROM numvalues WHERE name = 'gid';
     EXEC SQL REPEATED INSERT INTO list
-             (name, list_id, active, public, hidden, maillist, grouplist,
-              gid, desc, acl_type, acl_id, 
+             (name, list_id, active, publicflg, hidden, maillist, grouplist,
+              gid, description, acl_type, acl_id, 
 	      modtime, modby, modwith)
       VALUES (:login, :list_id, 1, 0, 0, 0, 1,
 	      :gidval, 'User Group', 'USER', :users_id,
@@ -3264,17 +3274,13 @@ validate_row(q, argv, v)
 	com_err(whoami, 0, "validating row: %s", qual);
     
     /* look for the record */
-/*
- *  range of rvar is table
- *  retrieve (rowcount = count(rvar.name where qual))
- */    
-    sprintf(stmt_buf,"SELECT COUNT (*) FROM %s %s WHERE %s",q->rtable,q->rvar,qual);
+    sprintf(stmt_buf,"SELECT COUNT (*) FROM %s WHERE %s",q->rtable,qual);
     EXEC SQL PREPARE stmt INTO :SQLDA USING NAMES FROM :stmt_buf; 
     EXEC SQL DECLARE csr126 CURSOR FOR stmt;
     EXEC SQL OPEN csr126;
     EXEC SQL FETCH csr126 USING DESCRIPTOR :SQLDA;
     EXEC SQL CLOSE csr126;
-    rowcount=*(int *)SQLDA->[0].sqldata;
+    rowcount = *(int *)SQLDA->sqlvar[0].sqldata;
 
     if (ingres_errno) return(mr_errcode);
     if (rowcount == 0) return(MR_NO_MATCH);
@@ -3436,17 +3442,9 @@ validate_id(q, argv, vo)
     }
 
     if (!strcmp(namefield, "uid")) {
-/* 
- *    retrieve (id = table.idfield) where table.namefield = int4(name)
- */
-      sprintf(stmt_buf,"SELECT %s FROM %s WHERE %s.%s = %s",idfield,tbl,tbl,namefield,name);
-      if (ingres_errno) return(mr_errcode);
+	sprintf(stmt_buf,"SELECT %s FROM %s WHERE %s = %s",idfield,tbl,namefield,name);
     } else {
-/*
- *    retrieve (id = table.idfield) where table.namefield = name
- */
-      sprintf(stmt_buf,"SELECT %s FROM %s WHERE %s.%s = '%s'",idfield,tbl,tbl,namefield,name);
-      if (ingres_errno) return(mr_errcode);
+	sprintf(stmt_buf,"SELECT %s FROM %s WHERE %s = '%s'",idfield,tbl,namefield,name);
     }
     EXEC SQL PREPARE stmt INTO :SQLDA USING NAMES FROM :stmt_buf; 
     EXEC SQL DECLARE csr127 CURSOR FOR stmt;
@@ -3456,12 +3454,14 @@ validate_id(q, argv, vo)
     if(sqlca.sqlcode == 0) {
 	rowcount++;
 	EXEC SQL FETCH csr127 USING DESCRIPTOR :SQLDA;
-	if(sqlca.sqlcode == 0) rowcount++
+	if(sqlca.sqlcode == 0) rowcount++;
     }
     EXEC SQL CLOSE csr127;
+    if (ingres_errno) 
+      return(mr_errcode);
 
     if (rowcount != 1) return(vo->error);
-    *argv[vo->index] = *SQLDA->sqlvar[0]->sqldata;
+    *argv[vo->index] = *SQLDA->sqlvar[0].sqldata;
     return(MR_EXISTS);
 }
 
@@ -3483,17 +3483,13 @@ validate_name(argv, vo)
 	  if (islower(*c))
 	    *c = toupper(*c);
     }
-/*
- *  retrieve (rowcount = countu(table.namefield 
- *            where table.namefield = name))
- */
-    sprintf(stmt_buf,"SELECT COUNT (DISTINCT *) FROM %s WHERE %s.%s = '%s'",
+    sprintf(stmt_buf,"SELECT DISTINCT COUNT(*) FROM %s WHERE %s.%s = '%s'",
 	    tbl,tbl,namefield,name);
     EXEC SQL PREPARE stmt INTO :SQLDA USING NAMES FROM :stmt_buf; 
     EXEC SQL DECLARE csr128 CURSOR FOR stmt;
     EXEC SQL OPEN csr128;
     EXEC SQL FETCH csr128 USING DESCRIPTOR :SQLDA; 
-    rowcount=*(int *)SQLDA->sqlvar[0]->sqldata;
+    rowcount = *(int *)SQLDA->sqlvar[0].sqldata;
     EXEC SQL CLOSE csr128;
 
     if (ingres_errno) return(mr_errcode);
@@ -3578,22 +3574,22 @@ validate_type(argv, vo)
 {
     EXEC SQL BEGIN DECLARE SECTION; 
     char *typename;
-    char *value;
+    char *val;
     EXEC SQL END DECLARE SECTION; 
     register char *c;
 
     typename = vo->table;
-    c = value = argv[vo->index];
+    c = val = argv[vo->index];
     while (*c) {
-	if (illegalchars[*c])
+	if (illegalchars[*c++])
 	  return(MR_BAD_CHAR);
     }
 
     /* uppercase type fields */
-    for (c = value; *c; c++) if (islower(*c)) *c = toupper(*c);
+    for (c = val; *c; c++) if (islower(*c)) *c = toupper(*c);
 
     EXEC SQL SELECT trans INTO :cdummy FROM alias
-      WHERE name = :typename AND type='TYPE' AND trans = :value;
+      WHERE name = :typename AND type='TYPE' AND trans = :val;
     if (ingres_errno) return(mr_errcode);
     return (sqlca.sqlerrd[2] ? MR_EXISTS : vo->error);
 }
@@ -3757,6 +3753,11 @@ mr_check_SQLDA(da)
     return(MR_SUCCESS);
 }
 
+/* Use this after FETCH USING DESCRIPTOR one or more 
+ * result columns may contain NULLs.  This routine is
+ * not currently needed, since db/schema creates all
+ * columns with a NOT NULL WITH DEFAULT clause.
+ */
 mr_fix_nulls_in_SQLDA(da)
     MR_SQLDA_T *da;
 {
@@ -3776,6 +3777,50 @@ mr_fix_nulls_in_SQLDA(da)
 		*intp=0;
 	    }
 	    break;
-	} /** I believe that these two are the only types Moira encounters */
+	} 
     }
 }
+
+/* prefetch_value():
+ * This routine fetches an appropriate value from the numvalues table.
+ * It is a little hack to get around the fact that SQL doesn't let you
+ * do something like INSERT INTO table (foo) VALUES (other_table.bar).
+ *
+ * It is called from the query table as (*v->pre_rtn)(q,Argv,cl) or
+ * from within a setup_...() routine with the appropriate arguments.
+ *
+ * Correct functioning of this routine may depend on the assumption
+ * that this query is an APPEND.
+ */ 
+
+prefetch_value(q,argv,cl)
+    struct query *q;
+    char **argv;
+    client *cl;
+{
+    EXEC SQL BEGIN DECLARE SECTION; 
+    char *name = q->validate->object_id;
+    int value;
+    EXEC SQL END DECLARE SECTION; 
+    int status, limit, argc;
+
+    /* set next object id, limiting it if necessary */
+    if(!strcmp(name, "uid") || !strcmp(name, "gid"))  
+      limit = 1; /* So far as I know, this isn't needed.  Just CMA. */
+    else 
+      limit = 0;
+    if((status = set_next_object_id(name, q->rtable, limit)) != MR_SUCCESS)
+      return(status);
+
+    /* fetch object id */
+    EXEC SQL SELECT value INTO :value FROM numvalues WHERE name=:name;
+    if(ingres_errno) return(mr_errcode);
+    if(sqlca.sqlerrd[2] != 1) return(MR_INTERNAL);
+
+    argc = q->argc + q->vcnt;   /* end of Argv for APPENDs */
+    sprintf(argv[argc],"%d",value);
+
+    return(MR_SUCCESS);
+}
+
+/* eof:qsupport.dc */

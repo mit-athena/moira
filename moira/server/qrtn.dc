@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.dc,v $
  *	$Author: genoa $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.dc,v 2.2 1992-07-07 22:43:23 genoa Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.dc,v 2.3 1992-07-15 18:01:11 genoa Exp $
  *
  *	Copyright (C) 1987, 1988 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_qrtn_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.dc,v 2.2 1992-07-07 22:43:23 genoa Exp $";
+static char *rcsid_qrtn_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.dc,v 2.3 1992-07-15 18:01:11 genoa Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -42,6 +42,12 @@ extern FILE *journal;
 #define INGRES_BAD_DATE1 41206
 #define INGRES_BAD_DATE2 40207
 #define INGRES_DEADLOCK 49900
+
+#define INGRES_BAD_COLUMN 30110
+#define INGRES_ASGN_ERR   40204
+#define INGRES_NO_CURSOR  30120
+#define INGRES_NO_STMT    30130
+
 /*
 #define INGRES_BAD_INT 
 #define INGRES_TIMEOUT 
@@ -57,6 +63,9 @@ extern FILE *journal;
 
 void ingerr()
 {
+    EXEC SQL BEGIN DECLARE SECTION; 
+    char err_msg[256];
+    EXEC SQL END DECLARE SECTION;
     ingres_errno = -sqlca.sqlcode;
 
     switch (ingres_errno) {
@@ -85,15 +94,36 @@ void ingerr()
  *	com_err(whoami, 0, "INGRES missing range statement");
  *	break;
  */
+#ifdef NEVER
+    /* #ifdef-ing these out lets default: give me the INGRES text */
+    case INGRES_BAD_COLUMN:
+	mr_errcode = MR_INTERNAL;
+	com_err(whoami, 0, "Bad column name in query table");
+        break;
+    case INGRES_ASGN_ERR:
+	mr_errcode = MR_INTERNAL;
+	com_err(whoami, 0, "Error in SQL assignment statement");
+	break;
+    case INGRES_NO_CURSOR:
+	mr_errcode = MR_INTERNAL;
+	com_err(whoami, 0, "Cursor not opened");
+	break;
+    case INGRES_NO_STMT:
+	mr_errcode = MR_INTERNAL;
+	com_err(whoami, 0, "Statement not declared");
+	break;
+#endif
     default:
 	/** Add the INGRES error_text to the alert message ??? **/
 	mr_errcode = MR_INGRES_ERR;
-	com_err(whoami, MR_INGRES_ERR, " code %d\n", sqlca.sqlcode);
+	com_err(whoami, MR_INGRES_ERR, " code %d\n", ingres_errno);
+	EXEC SQL INQUIRE_SQL(:err_msg = errortext);
+	com_err(whoami, 0, "SQL error text = %s", err_msg);
 	critical_alert("MOIRA", "Moira server encountered INGRES ERROR %d", ingres_errno);
     }
 }
 
-/* This is declarative, not executed.  Applies from here on, in the file */
+/* This is declarative, not executed.  Applies from here on, in this file. */
 EXEC SQL WHENEVER SQLERROR CALL ingerr;
 
 int mr_open_database()
@@ -301,11 +331,15 @@ mr_process_query(cl, name, argc, argv_ro, action, actarg)
 	    if (status != MR_NO_MATCH) break;
 	}
 
+#ifdef NEVER
+	/* This is now done by a valobj, which also fetches the id value */
+
 	/* increment id number if necessary */
 	if (v->object_id) {
 	    status = set_next_object_id(v->object_id, q->rtable, 0);
 	    if (status != MR_SUCCESS) break;
 	}
+#endif
 
 	/* build "where" clause if needed */
 	if (q->qual) {
@@ -322,8 +356,8 @@ mr_process_query(cl, name, argc, argv_ro, action, actarg)
 	    status = do_append(q, &Argv[q->argc], pqual, action, actarg);
 	    if (status != MR_SUCCESS) break;
 	    if (v && v->object_id) {
-		sprintf(qual, "%s.%s = values.value and values.name = '%s'",
-			q->rtable, v->object_id, v->object_id);
+		sprintf(qual, "%s.%s = %s",q->rtable, v->object_id, 
+			Argv[q->argc+q->vcnt]);
 		incremental_after(q->rtable, qual, argv_ro);
 	    } else
 	      incremental_after(q->rtable, pqual, argv_ro);
@@ -675,48 +709,16 @@ EXEC SQL END DECLARE SECTION;
 	    com_err(whoami, MR_NO_MEM, "setting up static argv");
 	    exit(1);
 	}
-	for (i = 0; i < QMAXARGS; i++) {
+	for (i = 0; i < QMAXARGS; i++) {  
 	    vaddrs[i]=SQLDA->sqlvar[i].sqldata;
 	}
     }
 
-/*
- *  if (psort) {
- *      csort = psort;
- *	if (pqual) {
- *	    cqual = pqual;
- *          retrieve unique (param (q->tlist, vaddrs)) where cqual
- *                   sort by csort
- *          {
- *		 (*action)(q->vcnt, vaddrs, actarg);
- *          }
- *	} else {
- *          retrieve unique (param (q->tlist, vaddrs))
- *                   sort by csort
- *          {
- *		 (*action)(q->vcnt, vaddrs, actarg);
- *          }
- *	}
- *  
- *  } else {
- *	if (pqual) {
- *	    cqual = pqual;
- *          retrieve unique (param (q->tlist, vaddrs)) where cqual
- *          {
- *		 (*action)(q->vcnt, vaddrs, actarg);
- *          }
- *	} else {
- *          retrieve unique (param (q->tlist, vaddrs))
- *          {
- *		 (*action)(q->vcnt, vaddrs, actarg);
- *          }
- *	}
- *  }
- */
-
     build_sql_stmt(stmt_buf,"SELECT",q->tlist,vaddrs,pqual);
     if(psort) { strcat(stmt_buf," ORDER BY "); strcat(stmt_buf,psort); }
     EXEC SQL PREPARE stmt INTO :SQLDA USING NAMES FROM :stmt_buf; 
+    if(ingres_errno) 
+      return(mr_errcode);
     if((mr_errcode=mr_check_SQLDA(SQLDA)) != MR_SUCCESS) 
       return(mr_errcode);
     EXEC SQL DECLARE csr001 CURSOR FOR stmt;
@@ -725,7 +727,6 @@ EXEC SQL END DECLARE SECTION;
     while(1) {
 	EXEC SQL FETCH csr001 USING DESCRIPTOR :SQLDA;
 	if(sqlca.sqlcode != 0) break;
-	mr_fix_nulls_in_SQLDA(SQLDA);
 	(*action)(q->vcnt, vaddrs, actarg);
 	rowcount++;
     }
@@ -744,8 +745,8 @@ build_sql_stmt(result_buf,cmd,targetlist,argv,qual)
 {
     char fmt_buf[MR_STMTBUF_LEN];
     char tmp_buf[16];
-    char *res=result_buf, *tmp=tmp_buf, *fmt=fmt_buf;
-    int state;
+    register char *res=result_buf, *tmp=tmp_buf, *fmt=fmt_buf;
+    register int state;
 
     sprintf(fmt_buf,"%s %s",cmd,targetlist);
     if(qual) { strcat(fmt_buf," WHERE "); strcat(fmt_buf,qual); }
@@ -756,7 +757,7 @@ build_sql_stmt(result_buf,cmd,targetlist,argv,qual)
 	    if(*fmt=='%') {                          /* formatting -> tmp */
 		*tmp++ = *fmt;
 		state=1;
-	    } else *res++ = *fmt;                      /* text -> res */
+	    } else *res++ = *fmt;                    /* text -> res */
 	    break;
 	  case 1:
 	    if((*fmt=='%') && (tmp==tmp_buf+1)) {    /* %% -> % */
@@ -768,7 +769,7 @@ build_sql_stmt(result_buf,cmd,targetlist,argv,qual)
 		*tmp='\0';
 		tmp=tmp_buf;
 		sprintf(res,tmp_buf,*argv++);        /* print to result buffer */
-		while(*res++) ;
+		while(*++res) ;
 		state=0;
 	    } else *tmp++ = *fmt;    /* keep copying the formatting to tmp */
 	    break;
@@ -838,43 +839,31 @@ set_next_object_id(object, table_name, limit)
     EXEC SQL BEGIN DECLARE SECTION; 
     int value;
     EXEC SQL END DECLARE SECTION;
-    int rowcount=0;
-
+    int starting_value;
+    
     EXEC SQL SELECT value INTO :value FROM numvalues WHERE name = :object;
     if (sqlca.sqlerrd[2] != 1)
 	return(MR_NO_ID);
 
-/*
- *  retrieve (exists = any(tbl.name where tbl.name = value)) 
- */
-    sprintf(stmt_buf,"SELECT %s FROM %s WHERE %s=:value",object,table_name,object);  /** Will this work??? */
-    EXEC SQL PREPARE stmt INTO :SQLDA USING NAMES FROM :stmt_buf; 
-    EXEC SQL DECLARE csr002 CURSOR FOR stmt;
-
-    EXEC SQL OPEN csr002;
-    EXEC SQL FETCH csr002 USING DESCRIPTOR :SQLDA; 
-    if(sqlca.sqlcode == 0) {
-	rowcount++;
-	EXEC SQL FETCH csr002 USING DESCRIPTOR :SQLDA; 
-	if(sqlca.sqlcode == 0) rowcount++;
-    }
-    EXEC SQL CLOSE csr002;
-
-    if (rowcount != 1)
-      return(MR_NO_ID);
+    starting_value=value;
     while (1) { 
-	value++;
-	if (limit && value > MAX_ID_VALUE)      /* Potential infinite loop */
-	  value = MIN_ID_VALUE;
-/*
- *	retrieve (exists = any(tbl.name where tbl.name = value)) 
- */
-	
-	/** Does the following work like I think it should ??? */
+	if (limit && value > MAX_ID_VALUE) 
+	    value = MIN_ID_VALUE;
+
+	sprintf(stmt_buf,"SELECT %s FROM %s WHERE %s=%d",object,table_name,object,value);  
+	EXEC SQL PREPARE stmt INTO :SQLDA USING NAMES FROM :stmt_buf; 
+	EXEC SQL DECLARE csr002 CURSOR FOR stmt;
 	EXEC SQL OPEN csr002;
-	EXEC SQL FETCH csr002 USING DESCRIPTOR :SQLDA; 
-	if(sqlca.sqlcode == 100) break;
+	EXEC SQL FETCH csr002 USING DESCRIPTOR :SQLDA;
+	if (sqlca.sqlcode < 0) return(mr_errcode);
+	if (sqlca.sqlcode == 100) break;
+
 	EXEC SQL CLOSE csr002;
+	value++;
+	if (limit && value == starting_value) {   
+	    com_err(whoami,0,"All id values have been used");
+	    return(MR_NO_ID);
+	}
     }
     EXEC SQL CLOSE csr002;
 

@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/increment.dc,v $
  *	$Author: genoa $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/increment.dc,v 2.0 1992-06-22 23:09:21 genoa Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/increment.dc,v 2.1 1992-07-15 18:01:07 genoa Exp $
  *
  *	Copyright (C) 1989 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,14 +10,14 @@
  */
 
 #ifndef lint
-static char *rcsid_increment_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/increment.dc,v 2.0 1992-06-22 23:09:21 genoa Exp $";
+static char *rcsid_increment_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/increment.dc,v 2.1 1992-07-15 18:01:07 genoa Exp $";
 #endif lint
 
 #include <mit-copyright.h>
 #include <moira.h>
 #include "query.h"
 #include "mr_server.h"
-EXEC SQL INCLUDE sqlca
+EXEC SQL INCLUDE sqlca;
 
 extern char *whoami;
 char *malloc();
@@ -27,6 +27,8 @@ int inc_running = 0;
 time_t inc_started;
 
 #define MAXARGC 15
+
+EXEC SQL WHENEVER SQLERROR CALL ingerr;
 
 /* structures to save before args */
 static char beforeb[MAXARGC][ARGLEN];
@@ -109,7 +111,9 @@ incremental_init()
 
 incremental_before(table, qual, argv)
 char *table;
+EXEC SQL BEGIN DECLARE SECTION; 
 char *qual;
+EXEC SQL END DECLARE SECTION; 
 char **argv;
 {
     EXEC SQL BEGIN DECLARE SECTION;
@@ -128,8 +132,8 @@ char **argv;
  *		  barg7 = u.mit_id, barg8 = u.mit_year)
  *		where qual
  */
-	EXEC SQL SELECT login, uid, shell, last, first, middle, 
-	    text(u.status), mit_id, mit_year
+	EXEC SQL SELECT login, CHAR(uid), shell, last, first, middle, 
+	    CHAR(status), clearid, type
 	  INTO :barg0, :barg1, :barg2, :barg3, :barg4, :barg5, :barg6,
 	    :barg7, :barg8
 	  FROM users WHERE :qual;
@@ -146,7 +150,8 @@ char **argv;
  *	retrieve (barg0 = c.name, barg1 = c.desc, barg2 = c.location)
  *	  	where qual
  */
-	EXEC SQL SELECT name, desc, location INTO :barg0, :barg1, :barg2
+	EXEC SQL SELECT name, description, location 
+	  INTO :barg0, :barg1, :barg2
 	  FROM cluster WHERE :qual;
 	beforec = 3;
     } else if (!strcmp(table, "mcmap")) {
@@ -168,8 +173,8 @@ char **argv;
  *		  barg10 = fs.lockertype)
  *	  where qual
  */
-	EXEC SQL SELECT label, type, text(mach_id), name, mount, access,
-	    comments, text(owner), text(owners), text(createflag), lockertype
+	EXEC SQL SELECT label, type, CHAR(mach_id), name, mount, access,
+	    comments, CHAR(owner), CHAR(owners), CHAR(createflag), lockertype
 	  INTO :barg0, :barg1, :barg2, :barg3, :barg4, :barg5, :barg6, 
             :barg7, :barg8, :barg9, :barg10
 	  FROM filesys WHERE :qual;
@@ -196,9 +201,9 @@ char **argv;
  *		  barg8 = text(l.acl_id), barg9 = l.desc)
  *	  where qual
  */
-	EXEC SQL SELECT name, text(active), text(public), text(hidden),
-	    text(maillist), text(grouplist), text(gid), acl_type,
-	    text(acl_id), desc
+	EXEC SQL SELECT name, CHAR(active), CHAR(publicflg), CHAR(hidden),
+	    CHAR(maillist), CHAR(grouplist), CHAR(gid), acl_type,
+	    CHAR(acl_id), description
 	  INTO :barg0, :barg1, :barg2, :barg3, :barg4, :barg5, :barg6,
 	     :barg7, :barg8, :barg9
 	  FROM list WHERE :qual;
@@ -208,7 +213,7 @@ char **argv;
 /*
  *	retrieve (barg3 = text(list.group)) where list.list_id = id
  */
-	EXEC SQL SELECT text(list.group) INTO :barg3 FROM list 
+	EXEC SQL SELECT CHAR(grouplist) INTO :barg3 FROM list 
 	  WHERE list_id = :id;
 	name = malloc(0);
 	id_to_name(id, "LIST", &name);
@@ -245,8 +250,8 @@ incremental_clear_after()
 
 
 incremental_after(table, qual, argv)
-EXEC SQL BEGIN DECLARE SECTION; 
 char *table;
+EXEC SQL BEGIN DECLARE SECTION; 
 char *qual;
 EXEC SQL END DECLARE SECTION; 
 char **argv;
@@ -266,8 +271,8 @@ EXEC SQL END DECLARE SECTION;
  *		  aarg7 = u.mit_id, aarg8 = u.mit_year)
  *		where qual
  */
-	EXEC SQL SELECT login, uid, shell, last, first, middle,
-	    text(status), mit_id, mit_year
+	EXEC SQL SELECT login, CHAR(uid), shell, last, first, middle,
+	    CHAR(status), clearid, type
 	  INTO :aarg0, :aarg1, :aarg2, :aarg3, :aarg4, :aarg5,
 	    :aarg6, :aarg7, :aarg8
 	  FROM users WHERE :qual;
@@ -284,7 +289,8 @@ EXEC SQL END DECLARE SECTION;
  *	retrieve (aarg0 = c.name, aarg1 = c.desc, aarg2 = c.location)
  *	  	where qual
  */
-	EXEC SQL SELECT name, desc, location INTO :aarg0, :aarg1, :aarg2
+	EXEC SQL SELECT name, description, location 
+	  INTO :aarg0, :aarg1, :aarg2
 	  FROM cluster WHERE :qual;
 	afterc = 3;
     } else if (!strcmp(table, "mcmap")) {
@@ -307,8 +313,8 @@ EXEC SQL END DECLARE SECTION;
  *		  aarg10 = fs.lockertype)
  *	  where qual
  */
-        EXEC SQL SELECT label, type, text(mach_id), name, mount, access,
-	    comments, text(owner), text(owners), text(createflag), lockertype
+        EXEC SQL SELECT label, type, CHAR(mach_id), name, mount, access,
+	    comments, CHAR(owner), CHAR(owners), CHAR(createflag), lockertype
           INTO :aarg0, :aarg1, :aarg2, :aarg3, :aarg4, :aarg5, :aarg6,
 	      :aarg7, :aarg8, :aarg9, :aarg10
           FROM filesys fs WHERE :qual;
@@ -323,7 +329,7 @@ EXEC SQL END DECLARE SECTION;
  *	range of q is quota
  *	retrieve (aarg3 = text(q.quota), aarg4 = filesys.name) where qual
  */
-	EXEC SQL SELECT text(q.quota), fs.name INTO :aarg3, :aarg4
+	EXEC SQL SELECT CHAR(q.quota), fs.name INTO :aarg3, :aarg4
 	  FROM quota q, filesys fs WHERE :qual;
 	afterc = 5;
     } else if (!strcmp(table, "list")) {
@@ -335,9 +341,9 @@ EXEC SQL END DECLARE SECTION;
  *		  aarg8 = text(l.acl_id), aarg9 = l.desc)
  *	  where qual
  */
-	EXEC SQL SELECT name, text(active), text(public), text(hidden),
-	    text(maillist), text(grouplist), text(gid), acl_type,
-	    text(acl_id), desc
+	EXEC SQL SELECT name, CHAR(active), CHAR(publicflg), CHAR(hidden),
+	    CHAR(maillist), CHAR(grouplist), CHAR(gid), acl_type,
+	    CHAR(acl_id), description
 	  INTO :aarg0, :aarg1, :aarg2, :aarg3, :aarg4, :aarg5, :aarg6,
 	     :aarg7, :aarg8, :aarg9
 	  FROM list WHERE :qual;
@@ -347,7 +353,7 @@ EXEC SQL END DECLARE SECTION;
 /*
  *	retrieve (aarg3 = text(list.group)) where list.list_id = id
  */
-	EXEC SQL SELECT text(list.group) INTO :aarg3 FROM list
+	EXEC SQL SELECT CHAR(grouplist) INTO :aarg3 FROM list
 	  WHERE list_id = :id;
 	name = malloc(0);
 	id_to_name(id, "LIST", &name);
@@ -430,7 +436,7 @@ incremental_update()
     if (!inited) {
 	inited++;
 
-	EXEC SQL DECLARE inc CURSOR FOR SELECT table, service FROM incremental;
+	EXEC SQL DECLARE inc CURSOR FOR SELECT tablename, service FROM incremental;
 	EXEC SQL OPEN inc;
 	while (1) {
 	    EXEC SQL FETCH inc INTO :tab, :serv;

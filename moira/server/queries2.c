@@ -1,6 +1,6 @@
 /* This file defines the query dispatch table for version 2 of the protocol
  *
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/queries2.c,v 2.3 1992-07-09 21:46:17 genoa Exp $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/queries2.c,v 2.4 1992-07-15 18:01:22 genoa Exp $
  *
  * Copyright 1987, 1988 by the Massachusetts Institute of Technology.
  * For copying and distribution information, please see the file
@@ -25,6 +25,7 @@ int access_service();
 int access_filesys();
 
 /* Query Setup Routines */
+int prefetch_value();
 int setup_ausr();
 int setup_dusr();
 int setup_spop();
@@ -580,11 +581,11 @@ static struct validate amac_validate = {
   amac_valobj,
   3,
   NAME,
-  "imembers.name = uppercase('%s')",
+  "machine.name = uppercase('%s')",
   1,
   MACH_ID,
   0,
-  0,
+  prefetch_value,
   set_uppercase_modtime,
 };
 
@@ -652,11 +653,11 @@ static struct validate aclu_validate =	/* for aclu  */
   aclu_valobj,
   2,
   NAME,
-  "clusters.name = '%s'",
+  "cluster.name = '%s'",
   1,
   CLU_ID,
   0,
-  0,
+  prefetch_value,
   set_modtime,
 };
 
@@ -715,7 +716,7 @@ static struct validate amtc_validate = /* for amtc and dmfc */
   amtc_valobj,
   2,
   MACH_ID,
-  "imembers.mach_id = %d and imembers.clu_id = %d",
+  "mcmap.mach_id = %d and mcmap.clu_id = %d",
   2,
   0,
   0,
@@ -1242,6 +1243,18 @@ static struct validate anfp_validate = {
   2,
   "nfsphys_id",
   0,
+  prefetch_value,
+  set_nfsphys_modtime,
+};
+
+static struct validate unfp_validate = {
+  anfp_valobj,
+  2,
+  DIR,
+  "nfsphys.mach_id = %d and nfsphys.dir = '%s'",
+  2,
+  "nfsphys_id",
+  0,
   0,
   set_nfsphys_modtime,
 };
@@ -1413,7 +1426,7 @@ static struct validate dnfq_validate = {
 
 static char *glin_fields[] = {
   NAME,
-  NAME, "active", "public", "hidden", "maillist", "grouplist", "gid",
+  NAME, "active", "publicflg", "hidden", "maillist", "grouplist", "gid",
   ACE_TYPE, ACE_NAME, DESC, MOD1, MOD2, MOD3,
 };
 
@@ -1430,7 +1443,7 @@ static struct validate glin_validate = {
 };
 
 static char *alis_fields[] = {
-  NAME, "active", "public", "hidden", "maillist", "grouplist", "gid",
+  NAME, "active", "publicflg", "hidden", "maillist", "grouplist", "gid",
   ACE_TYPE, ACE_NAME, DESC,
 };
 
@@ -1455,7 +1468,7 @@ static struct validate alis_validate = {
 
 static char *ulis_fields[] = {
   NAME,
-  "newname", "active", "public", "hidden", "maillist", "grouplist", "gid",
+  "newname", "active", "publicflg", "hidden", "maillist", "grouplist", "gid",
   ACE_TYPE, ACE_NAME, DESC,
 };
 
@@ -1555,7 +1568,7 @@ static struct validate gaus_validate = {
 };
 
 static char *qgli_fields[] = {
-    "active", "public", "hidden", "maillist", "grouplist",
+    "active", "publicflg", "hidden", "maillist", "grouplist",
     "list",
 };
 
@@ -1598,7 +1611,7 @@ static struct validate gmol_validate = {
 
 static char *glom_fields[] = {
   "member_type", "member_name",
-  "list_name", "active", "public", "hidden", "maillist", "grouplist",
+  "list_name", "active", "publicflg", "hidden", "maillist", "grouplist",
 };
 
 static struct valobj glom_valobj[] = {
@@ -1926,7 +1939,7 @@ static char *dval_fields[] = {
 };
 
 static char *gats_fields[] = {
-  "table_name", "retrieves", "appends", "updates", "deletes", MOD1, MOD2, MOD3,
+  "table_name", "appends", "updates", "deletes", MOD1, MOD2, MOD3,
 };
 
 
@@ -1941,7 +1954,7 @@ struct query Queries2[] = {
     RETRIEVE,
     "u",
     USERS,
-    "login, text(uid), shell, last, first, middle FROM users",
+    "login, CHAR(uid), shell, last, first, middle FROM users",
     galo_fields,
     6,
     "users_id != 0",
@@ -1956,7 +1969,7 @@ struct query Queries2[] = {
     RETRIEVE,
     "u",
     USERS,
-    "login, text(uid), shell, last, first, middle FROM users",
+    "login, CHAR(uid), shell, last, first, middle FROM users",
     galo_fields,
     6,
     "status = 1",
@@ -1971,7 +1984,7 @@ struct query Queries2[] = {
     RETRIEVE,
     "u",
     USERS,  
-    "login, text(uid), shell, last, first, middle, text(status), clearid, type, modtime, text(modby), modwith FROM users",
+    "login, CHAR(uid), shell, last, first, middle, CHAR(status), clearid, type, CHAR(modtime), CHAR(modby), modwith FROM users",
     gubl_fields,
     12,
     "login = '%s' AND users_id != 0",
@@ -1986,7 +1999,7 @@ struct query Queries2[] = {
     RETRIEVE,
     "u",
     USERS,
-    "login, text(uid), shell, last, first, middle, text(status), clearid, type, modtime, text(modby), modwith FROM users",
+    "login, CHAR(uid), shell, last, first, middle, CHAR(status), clearid, type, CHAR(modtime), CHAR(modby), modwith FROM users",
     gubu_fields,
     12,
     "uid = %s AND users_id != 0",
@@ -2001,7 +2014,7 @@ struct query Queries2[] = {
     RETRIEVE,
     "u",
     USERS,
-    "login, text(uid), shell, last, first, middle, text(status), clearid, type, modtime, text(modby), modwith FROM users",
+    "login, CHAR(uid), shell, last, first, middle, CHAR(status), clearid, type, CHAR(modtime), CHAR(modby), modwith FROM users",
     gubn_fields,
     12,
     "first = '%s' AND last = '%s' AND users_id != 0",
@@ -2016,7 +2029,7 @@ struct query Queries2[] = {
     RETRIEVE,
     "u",
     USERS,
-    "login, text(uid), shell, last, first, middle, text(status), clearid, type, modtime, text(modby), modwith FROM users",
+    "login, CHAR(uid), shell, last, first, middle, CHAR(status), clearid, type, CHAR(modtime), CHAR(modby), modwith FROM users",
     gubc_fields,
     12,
     "type = uppercase('%s') AND users_id != 0",
@@ -2031,7 +2044,7 @@ struct query Queries2[] = {
     RETRIEVE,
     "u",
     USERS,
-    "login, text(uid), shell, last, first, middle, text(status), clearid, type, modtime, text(modby), modwith FROM users",
+    "login, CHAR(uid), shell, last, first, middle, CHAR(status), clearid, type, CHAR(modtime), CHAR(modby), modwith FROM users",
     gubm_fields,
     12,
     "clearid = '%s' AND users_id != 0",
@@ -2039,17 +2052,18 @@ struct query Queries2[] = {
     &VDsortf,
   },
 
+
   {
-    /* Q_AUSR - ADD_USER */  /** Needs subselect */
+    /* Q_AUSR - ADD_USER */  /* uses prefetch_value() for users_id */
     "add_user",
     "ausr",
     APPEND,
     "u",
     USERS,
-    "INTO users (login, users_id, uid, shell, last, first, middle, status, clearid, type) VALUES ( '%s', numvalues.value, %s, '%s', '%s',  '%s',  '%s',  %s, '%s',  '%s')",
+    "INTO users (login, uid, shell, last, first, middle, status, clearid, type, users_id) VALUES ( '%s', %s, '%s', '%s',  '%s',  '%s',  %s, '%s',  '%s', %s)",
     ausr_fields,
     9,
-    "numvalues.name = 'users_id'",
+    0,
     0,
     &ausr_validate,
   },
@@ -2196,7 +2210,7 @@ struct query Queries2[] = {
     RETRIEVE,
     "u",
     USERS,
-    "login, fullname, nickname, home_addr, home_phone, office_addr, office_phone, department, affiliation, fmodtime, text(fmodby), fmodwith FROM users",
+    "login, fullname, nickname, home_addr, home_phone, office_addr, office_phone, department, affiliation, CHAR(fmodtime), CHAR(fmodby), fmodwith FROM users",
     gfbl_fields,
     12,
     "users_id = %d",
@@ -2226,7 +2240,7 @@ struct query Queries2[] = {
     RETRIEVE,
     "u",
     USERS,
-    "login, potype, text(pop_id) + ':' + text(box_id), pmodtime, text(pmodby), pmodwith FROM users",
+    "login, potype, CHAR(pop_id) + ':' + CHAR(box_id), CHAR(pmodtime), CHAR(pmodby), pmodwith FROM users",
     gpob_fields,
     6,
     "users_id = %d",
@@ -2241,7 +2255,7 @@ struct query Queries2[] = {
     RETRIEVE,
     "u",
     USERS,
-    "login, potype, text(pop_id) + ':' + text(box_id) FROM users",
+    "login, potype, CHAR(pop_id) + ':' + CHAR(box_id) FROM users",
     gpox_fields,
     3,
     "potype != 'NONE'",
@@ -2256,7 +2270,7 @@ struct query Queries2[] = {
     RETRIEVE,
     "u",
     USERS,
-    "login, potype, text(pop_id) + ':' + text(box_id) FROM users",
+    "login, potype, CHAR(pop_id) + ':' + CHAR(box_id) FROM users",
     gpox_fields,
     3,
     "potype = 'POP'",
@@ -2271,7 +2285,7 @@ struct query Queries2[] = {
     RETRIEVE,
     "u",
     USERS,
-    "login, potype, text(pop_id) + ':' + text(box_id) FROM users",
+    "login, potype, CHAR(pop_id) + ':' + CHAR(box_id) FROM users",
     gpox_fields,
     3,
     "potype = 'SMTP'",
@@ -2331,25 +2345,26 @@ struct query Queries2[] = {
     RETRIEVE,
     "m",
     MACHINE,
-    "name, type, modtime, text(modby), modwith FROM machine",
+    "name, type, CHAR(modtime), CHAR(modby), modwith FROM machine",
     gmac_fields,
     5,
     "name = uppercase('%s') AND mach_id != 0",
+/*    "name LIKE '%s' ESCAPE '\\' AND mach_id != 0", */ /* Pattern matching */
     1,
     &VDsortf,
   },
 
   {
-    /* Q_AMAC - ADD_MACHINE */ /** Needs subselect */
+    /* Q_AMAC - ADD_MACHINE */ /* uses prefetch_value() for mach_id */
     "add_machine",
     "amac",
     APPEND,
     "m",
     MACHINE,
-    "INTO machine (name, mach_id, type) VALUES (uppercase('%s'),numvalues.value,'%s')",
+    "INTO machine (name, type, mach_id) VALUES (uppercase('%s'),'%s',%s)",
     amac_fields,
     2,
-    "numvalues.name = 'mach_id'",
+    0,
     0,
     &amac_validate,
   },
@@ -2391,7 +2406,7 @@ struct query Queries2[] = {
     RETRIEVE,
     "c",
     CLUSTER,
-    "name, desc, location, modtime, text(modby), modwith FROM cluster",
+    "name, description, location, CHAR(modtime), CHAR(modby), modwith FROM cluster",
     gclu_fields,
     6,
     "name = '%s' AND clu_id != 0",
@@ -2400,16 +2415,16 @@ struct query Queries2[] = {
   },
 
   {
-    /* Q_ACLU - ADD_CLUSTER */ /** Needs subselect */
+    /* Q_ACLU - ADD_CLUSTER */ /* uses prefetch_value() for clu_id */
     "add_cluster",
     "aclu",
     APPEND,
     "c",
     CLUSTER,
-    "INTO cluster (name, clu_id, desc, location) VALUES ('%s',numvalues.value,'%s','%s')",
+    "INTO cluster (name, description, location, clu_id) VALUES ('%s','%s','%s',%s)",
     aclu_fields,
     3,
-    "numvalues.name = 'clu_id'",
+    0,
     0,
     &aclu_validate,
   },
@@ -2421,7 +2436,7 @@ struct query Queries2[] = {
     UPDATE,
     "c",
     CLUSTER,
-    "cluster SET name = '%s', desc = '%s', location = '%s'",
+    "cluster SET name = '%s', description = '%s', location = '%s'",
     uclu_fields,
     3,
     "clu_id = %d",
@@ -2541,7 +2556,7 @@ struct query Queries2[] = {
     RETRIEVE,
     "s",
     "servers",
-    "name, text(update_int), target_file, script, text(dfgen), text(dfcheck), type, text(enable), text(inprogress), text(harderror), errmsg, acl_type, text(acl_id), modtime, text(modby), modwith FROM servers",
+    "name, CHAR(update_int), target_file, script, CHAR(dfgen), CHAR(dfcheck), type, CHAR(enable), CHAR(inprogress), CHAR(harderror), errmsg, acl_type, CHAR(acl_id), CHAR(modtime), CHAR(modby), modwith FROM servers",
     gsin_fields,
     16,
     "name = uppercase('%s')",
@@ -2646,7 +2661,7 @@ struct query Queries2[] = {
     RETRIEVE,
     "sh",
     "serverhosts",
-    "sh.service, m.name, text(sh.enable), text(sh.override), text(sh.success), text(sh.inprogress), text(sh.hosterror), sh.hosterrmsg, text(sh.ltt), text(sh.lts), text(sh.value1), text(sh.value2), sh.value3, sh.modtime, text(sh.modby), sh.modwith FROM serverhosts sh, machine m",
+    "sh.service, m.name, CHAR(sh.enable), CHAR(sh.override), CHAR(sh.success), CHAR(sh.inprogress), CHAR(sh.hosterror), sh.hosterrmsg, CHAR(sh.ltt), CHAR(sh.lts), CHAR(sh.value1), CHAR(sh.value2), sh.value, CHAR(sh.modtime), CHAR(sh.modby), sh.modwith FROM serverhosts sh, machine m",
     gshi_fields,
     16,
     "sh.service = uppercase('%s') AND m.name = uppercase('%s') AND m.mach_id = sh.mach_id",
@@ -2766,7 +2781,7 @@ struct query Queries2[] = {
     RETRIEVE,
     "ha",
     "hostaccess",
-    "m.name, ha.acl_type, text(ha.acl_id), ha.modtime, text(ha.modby), ha.modwith FROM hostaccess ha, machine m",
+    "m.name, ha.acl_type, CHAR(ha.acl_id), CHAR(ha.modtime), CHAR(ha.modby), ha.modwith FROM hostaccess ha, machine m",
     gsha_fields,
     6,
     "m.name = uppercase('%s') AND ha.mach_id = m.mach_id",
@@ -2841,7 +2856,7 @@ struct query Queries2[] = {
     RETRIEVE,
     "fs",
     FILESYS,
-    "fs.label, fs.type, m.name, fs.name, fs.mount, fs.access, fs.comments, u.login, l.name, text(fs.createflg), fs.lockertype, fs.modtime, text(fs.modby), fs.modwith FROM filesys fs, machine m, users u, list l",
+    "fs.label, fs.type, m.name, fs.name, fs.mount, fs.access, fs.comments, u.login, l.name, CHAR(fs.createflg), fs.lockertype, CHAR(fs.modtime), CHAR(fs.modby), fs.modwith FROM filesys fs, machine m, users u, list l",
     gfsl_fields,
     14,
     "fs.label = '%s' AND fs.mach_id = m.mach_id AND fs.owner = u.users_id AND fs.owners = l.list_id",
@@ -2856,7 +2871,7 @@ struct query Queries2[] = {
     RETRIEVE,
     "fs",
     FILESYS,
-    "fs.label, fs.type, m.name, fs.name, fs.mount, fs.access, fs.comments, u.login, l.name, text(fs.createflg), fs.lockertype, fs.modtime, text(fs.modby), fs.modwith FROM filesys fs, machine m, users u, list l",
+    "fs.label, fs.type, m.name, fs.name, fs.mount, fs.access, fs.comments, u.login, l.name, CHAR(fs.createflg), fs.lockertype, CHAR(fs.modtime), CHAR(fs.modby), fs.modwith FROM filesys fs, machine m, users u, list l",
     gfsm_fields,
     14,
     "fs.mach_id = %d AND m.mach_id = fs.mach_id AND fs.owner = u.users_id AND fs.owners = l.list_id",
@@ -2871,7 +2886,7 @@ struct query Queries2[] = {
     RETRIEVE,
     "fs",
     FILESYS,
-    "fs.label, fs.type, m.name, fs.name, fs.mount, fs.access, fs.comments, u.login, l.name, text(fs.createflg), fs.lockertype, fs.modtime, text(fs.modby), fs.modwith FROM filesys fs, machine m, users u, list l, nfsphys np",
+    "fs.label, fs.type, m.name, fs.name, fs.mount, fs.access, fs.comments, u.login, l.name, CHAR(fs.createflg), fs.lockertype, CHAR(fs.modtime), CHAR(fs.modby), fs.modwith FROM filesys fs, machine m, users u, list l, nfsphys np",
     gfsn_fields,
     14,
     "fs.mach_id = %d AND m.mach_id = fs.mach_id AND fs.owner = u.users_id AND fs.owners = l.list_id AND np.nfsphys_id = fs.phys_id AND np.dir = '%s' AND fs.type = 'NFS'",
@@ -2886,7 +2901,7 @@ struct query Queries2[] = {
     RETRIEVE,
     "fs",
     FILESYS,
-    "fs.label, fs.type, m.name, fs.name, fs.mount, fs.access, fs.comments, u.login, l.name, text(fs.createflg), fs.lockertype, fs.modtime, text(fs.modby), fs.modwith FROM filesys fs, machine m, users u, list l",
+    "fs.label, fs.type, m.name, fs.name, fs.mount, fs.access, fs.comments, u.login, l.name, CHAR(fs.createflg), fs.lockertype, CHAR(fs.modtime), CHAR(fs.modby), fs.modwith FROM filesys fs, machine m, users u, list l",
     gfsg_fields,
     14,
     "fs.owners = %d AND m.mach_id = fs.mach_id AND fs.owner = u.users_id AND fs.owners = l.list_id",
@@ -2895,16 +2910,16 @@ struct query Queries2[] = {
   },
 
   {
-    /* Q_AFIL - ADD_FILESYS */ /** Need subselect */
+    /* Q_AFIL - ADD_FILESYS */ /* uses prefetch_value() for filsys_id */
     "add_filesys",
     "afil",
     APPEND,
     "fs",
     FILESYS,
-    "INTO filesys (filsys_id, label, type, mach_id, name, mount, access, comments, owner, owners, createflg, lockertype) VALUES (numvalues.value,'%s','%s',%d,'%s','%s','%s','%s',%d,%d,%s,'%s')",
+    "INTO filesys (label, type, mach_id, name, mount, access, comments, owner, owners, createflg, lockertype, filsys_id) VALUES ('%s','%s',%d,'%s','%s','%s','%s',%d,%d,%s,'%s',%s)",
     afil_fields,
     11,
-    "numvalues.name = 'filsys_id'",
+    0,
     0,
     &afil_validate,
   },
@@ -2991,7 +3006,7 @@ struct query Queries2[] = {
     RETRIEVE,
     "np",
     "nfsphys",
-    "m.name, np.dir, np.device, text(np.status), text(np.allocated), text(np.size), np.modtime, text(np.modby), np.modwith FROM nfsphys np, machine m",
+    "m.name, np.dir, np.device, CHAR(np.status), CHAR(np.allocated), CHAR(np.size), CHAR(np.modtime), CHAR(np.modby), np.modwith FROM nfsphys np, machine m",
     ganf_fields,
     9,
     "m.mach_id = np.mach_id",
@@ -3006,7 +3021,7 @@ struct query Queries2[] = {
     RETRIEVE,
     "np",
     "nfsphys",
-    "m.name, np.dir, np.device, text(np.status), text(np.allocated), text(np.size), np.modtime, text(np.modby), np.modwith FROM nfsphys np, machine m",
+    "m.name, np.dir, np.device, CHAR(np.status), CHAR(np.allocated), CHAR(np.size), CHAR(np.modtime), CHAR(np.modby), np.modwith FROM nfsphys np, machine m",
     gnfp_fields,
     9,
     "np.mach_id = %d AND np.dir = '%s' AND m.mach_id = np.mach_id",
@@ -3015,16 +3030,16 @@ struct query Queries2[] = {
   },
 
   {
-    /* Q_ANFP - ADD_NFSPHYS */ /** Needs subselect */
+    /* Q_ANFP - ADD_NFSPHYS */ /* uses prefetch_value() for nfsphys_id */
     "add_nfsphys",
     "anfp",
     APPEND,
     "np",
     "nfsphys",
-    "INTO nfsphys (nfsphys_id, mach_id, dir, device, status, allocated, size) VALUES (numvalues.value, %d, '%s', '%s', %s, %s, %s)",
+    "INTO nfsphys (mach_id, dir, device, status, allocated, size, nfsphys_id) VALUES (%d, '%s', '%s', %s, %s, %s, %s)",
     ganf_fields,
     6,
-    "numvalues.name = 'nfsphys_id'",
+    0,
     0,
     &anfp_validate,
   },
@@ -3041,7 +3056,7 @@ struct query Queries2[] = {
     4,
     "mach_id = %d AND dir = '%s'",
     2,
-    &anfp_validate,
+    &unfp_validate,
   },
 
   {
@@ -3056,7 +3071,7 @@ struct query Queries2[] = {
     1,
     "mach_id = %d AND dir = '%s'",
     2,
-    &anfp_validate,
+    &unfp_validate,
   },
 
   {
@@ -3081,7 +3096,7 @@ struct query Queries2[] = {
     RETRIEVE,
     "q",
     QUOTA,
-    "fs.label, q.type, text(q.entity_id), text(q.quota), text(q.phys_id), m.name, q.modtime, text(q.modby), q.modwith FROM quota q, filesys fs, machine m",
+    "fs.label, q.type, CHAR(q.entity_id), CHAR(q.quota), CHAR(q.phys_id), m.name, CHAR(q.modtime), CHAR(q.modby), q.modwith FROM quota q, filesys fs, machine m",
     gqot_fields,
     9,
     "fs.label = '%s' AND q.type = '%s' AND q.entity_id = %d AND fs.filsys_id = q.filsys_id AND m.mach_id = fs.mach_id",
@@ -3096,7 +3111,7 @@ struct query Queries2[] = {
     RETRIEVE,
     "q",
     QUOTA,
-    "fs.label, q.type, text(q.entity_id), text(q.quota), text(q.phys_id), m.name, q.modtime, text(q.modby), q.modwith FROM quota q, filesys fs, machine m",
+    "fs.label, q.type, CHAR(q.entity_id), CHAR(q.quota), CHAR(q.phys_id), m.name, CHAR(q.modtime), CHAR(q.modby), q.modwith FROM quota q, filesys fs, machine m",
     gqbf_fields,
     9,
     "fs.label = '%s' AND fs.filsys_id = q.filsys_id AND m.mach_id = fs.mach_id",
@@ -3156,7 +3171,7 @@ struct query Queries2[] = {
     RETRIEVE,
     "q",
     QUOTA,
-    "fs.label, u.login, text(q.quota), text(q.phys_id), m.name, q.modtime, text(q.modby), q.modwith FROM quota q, filesys fs, users u, machine m",
+    "fs.label, u.login, CHAR(q.quota), CHAR(q.phys_id), m.name, CHAR(q.modtime), CHAR(q.modby), q.modwith FROM quota q, filesys fs, users u, machine m",
     gnfq_fields,
     8,
     "fs.label = '%s' AND q.type = 'USER' AND q.entity_id = u.users_id AND fs.filsys_id = q.filsys_id AND m.mach_id = fs.mach_id AND u.login = '%s'",
@@ -3171,7 +3186,7 @@ struct query Queries2[] = {
     RETRIEVE,
     "q",
     QUOTA,
-    "fs.label, u.login, text(q.quota), np.dir, m.name FROM quota q, filesys fs, users u, nfsphys np, machine m",
+    "fs.label, u.login, CHAR(q.quota), np.dir, m.name FROM quota q, filesys fs, users u, nfsphys np, machine m",
     gnqp_fields,
     5,
     "np.mach_id = %d AND np.dir = '%s' AND q.phys_id = np.nfsphys_id AND fs.filsys_id = q.filsys_id AND q.type = 'USER' AND u.users_id = q.entity_id AND m.mach_id = np.mach_id",
@@ -3255,16 +3270,16 @@ struct query Queries2[] = {
   },
     
   {
-    /* Q_ALIS - ADD_LIST */ /** Needs numvalues subselect */
+    /* Q_ALIS - ADD_LIST */ /* uses prefetch_value() for list_id */
     "add_list",
     "alis",
     APPEND,
     "l",
     LIST, 
-    "INTO list (list_id, name, active, public, hidden, maillist, grouplist, gid, acl_type, acl_id, desc) VALUES (numvalues.value,'%s',%s,%s,%s,%s,%s,%s,'%s',%d,'%s')",
+    "INTO list (name, active, publicflg, hidden, maillist, grouplist, gid, acl_type, acl_id, description, list_id) VALUES ('%s',%s,%s,%s,%s,%s,%s,'%s',%d,'%s',%s)",
     alis_fields,
     10,
-    "numvalues.name = 'list_id'",
+    0,
     0,
     &alis_validate,
   },
@@ -3276,7 +3291,7 @@ struct query Queries2[] = {
     UPDATE,
     "l",
     LIST,
-    "list SET name='%s', active=%s, public=%s, hidden=%s, maillist=%s, grouplist=%s, gid=%s, acl_type='%s', acl_id=%d, desc='%s'",
+    "list SET name='%s', active=%s, publicflg=%s, hidden=%s, maillist=%s, grouplist=%s, gid=%s, acl_type='%s', acl_id=%d, description='%s'",
     ulis_fields,
     10,
     "list.list_id = %d",
@@ -3411,7 +3426,7 @@ struct query Queries2[] = {
     RETRIEVE,
     "z",
     "zephyr",
-    "class, xmt_type, text(xmt_id),sub_type, text(sub_id),iws_type, text(iws_id),iui_type, text(iui_id), modtime, text(modby), modwith FROM zephyr",
+    "class, xmt_type, CHAR(xmt_id),sub_type, CHAR(sub_id),iws_type, CHAR(iws_id),iui_type, CHAR(iui_id), CHAR(modtime), CHAR(modby), modwith FROM zephyr",
     gzcl_fields,
     12,
     "class = '%s'",
@@ -3471,7 +3486,7 @@ struct query Queries2[] = {
     RETRIEVE,
     "s",
     "services",
-    "name, protocol, text(port), desc, modtime, text(modby), modwith FROM services",
+    "name, protocol, CHAR(port), description, CHAR(modtime), CHAR(modby), modwith FROM services",
     gsvc_fields,
     7,
     "name = '%s'",
@@ -3486,7 +3501,7 @@ struct query Queries2[] = {
     APPEND,
     "s",
     "services",
-    "INTO services (name, protocol, port, desc) VALUES ('%s','%s',%s,'%s')",
+    "INTO services (name, protocol, port, description) VALUES ('%s','%s',%s,'%s')",
     asvc_fields,
     4,
     (char *)0,
@@ -3516,7 +3531,7 @@ struct query Queries2[] = {
     RETRIEVE,
     "p",
     "printcap",
-    "p.name, m.name, p.dir, p.rp, text(p.quotaserver), text(p.auth), text(p.price), p.comments, p.modtime, text(p.modby), p.modwith FROM printcap p, machine m",
+    "p.name, m.name, p.dir, p.rp, CHAR(p.quotaserver), CHAR(p.auth), CHAR(p.price), p.comments, CHAR(p.modtime), CHAR(p.modby), p.modwith FROM printcap p, machine m",
     gpce_fields,
     11,
     "p.name = '%s' AND m.mach_id = p.mach_id",
@@ -3561,7 +3576,7 @@ struct query Queries2[] = {
     RETRIEVE,
     "p",
     "printcap",
-    "p.name, m.name, p.dir, p.rp, p.comments, p.modtime, text(p.modby), p.modwith FROM printcap p, machine m",
+    "p.name, m.name, p.dir, p.rp, p.comments, CHAR(p.modtime), CHAR(p.modby), p.modwith FROM printcap p, machine m",
     gpcp_fields,
     8,
     "p.name = '%s' AND m.mach_id = p.mach_id",
@@ -3591,7 +3606,7 @@ struct query Queries2[] = {
     RETRIEVE,
     "p",
     "palladium",
-    "p.name, text(p.ident), m.name, p.modtime, text(p.modby), p.modwith FROM palladium p, machine m",
+    "p.name, CHAR(p.ident), m.name, CHAR(p.modtime), CHAR(p.modby), p.modwith FROM palladium p, machine m",
     gpdm_fields,
     6,
     "p.name = '%s' AND m.mach_id = p.mach_id",
@@ -3681,7 +3696,7 @@ struct query Queries2[] = {
     RETRIEVE,
     "v",
     "numvalues",
-    "text(value) FROM numvalues",
+    "CHAR(value) FROM numvalues",
     gval_fields,
     1,
     "name = '%s'",
@@ -3741,9 +3756,9 @@ struct query Queries2[] = {
     RETRIEVE,
     "tbs",
     "tblstats",
-    "tbs.table_name, text(tbs.retrieves), text(tbs.appends), text(tbs.updates), text(tbs.deletes), tbs.modtime FROM tblstats tbs",
+    "tbs.table_name, CHAR(tbs.appends), CHAR(tbs.updates), CHAR(tbs.deletes), CHAR(tbs.modtime) FROM tblstats tbs",
     gats_fields,
-    6,
+    5,
     (char *)0,
     0,
     0,

@@ -1,5 +1,5 @@
 /*
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/cache.dc,v 2.1 1992-06-26 13:08:02 genoa Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/cache.dc,v 2.2 1992-07-15 18:00:18 genoa Exp $
  *
  *	Copyright (C) 1989, 1990 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -7,7 +7,7 @@
  */
 
 #ifndef lint
-static char *rcsid_cache_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/cache.dc,v 2.1 1992-06-26 13:08:02 genoa Exp $";
+static char *rcsid_cache_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/cache.dc,v 2.2 1992-07-15 18:00:18 genoa Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -15,6 +15,7 @@ static char *rcsid_cache_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moir
 #include "mr_server.h"
 EXEC SQL INCLUDE sqlca;
 
+EXEC SQL WHENEVER SQLERROR CALL ingerr;
 
 extern char *whoami, *strsave();
 extern int ingres_errno, mr_errcode;
@@ -207,7 +208,7 @@ int id;
 char *type;
 char **name;
 {
-    register struct item *i;
+    register struct item *i, *t;
     EXEC SQL BEGIN DECLARE SECTION;
     char iname[NAMESZ];
     int j, rowcount;

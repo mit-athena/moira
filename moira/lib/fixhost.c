@@ -1,15 +1,18 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/fixhost.c,v $
- *	$Author: wesommer $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/fixhost.c,v 1.1 1987-09-03 03:12:45 wesommer Exp $
+ *	$Author: mar $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/fixhost.c,v 1.2 1988-08-02 21:12:18 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
  *	$Log: not supported by cvs2svn $
+ * Revision 1.1  87/09/03  03:12:45  wesommer
+ * Initial revision
+ * 
  */
 
 #ifndef lint
-static char *rcsid_fixhost_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/fixhost.c,v 1.1 1987-09-03 03:12:45 wesommer Exp $";
+static char *rcsid_fixhost_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/fixhost.c,v 1.2 1988-08-02 21:12:18 mar Exp $";
 #endif lint
 
 #include <sys/types.h>
@@ -46,6 +49,9 @@ canonicalize_hostname(host)
     char tbuf[BUFSIZ];
     register char *cp;
     
+    if (index(host, '*') || index(host, '?'))
+      return(host);
+
     hp = gethostbyname(host);
 
     if (hp) {

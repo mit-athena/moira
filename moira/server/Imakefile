@@ -1,4 +1,4 @@
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/Imakefile,v 1.1 1992-12-30 16:31:18 mar Exp $
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/Imakefile,v 1.2 1993-10-21 14:50:30 mar Exp $
 #
 # Copyright 1990 by the Massachusetts Institute of Technology.
 #
@@ -16,29 +16,31 @@ XSRC=
 XOBJ=
 #endif
 
-DEFINES=-DGDSS
+DEFINES=-DGDSS -I/mit/gdss/include -I.
 
 SRCS = startmoira.c mr_main.c mr_sauth.c mr_scall.c \
 	mr_srvdata.c mr_shutdown.c mr_util.c qrtn.c \
 	qsupport.c qsubs.c queries2.c mr_smalloc.c \
-	increment.c cache.c mr_glue.c $(XSRC)
+	increment.c cache.c mr_glue.c \
+	mr_server.h query.h qrtn.h $(XSRC)
 CODE= startmoira.c mr_main.c mr_sauth.c mr_scall.c \
 	mr_srvdata.c mr_shutdown.c mr_util.c qrtn.dc \
 	qsupport.dc qsubs.c queries2.c mr_smalloc.c \
-	increment.dc cache.dc mr_glue.dc \
-	Imakefile mr_server.h query.h $(XSRC)
+	increment.dc cache.dc mr_glue.c \
+	Imakefile mr_server.h query.h qrtn.h $(XSRC)
 SRVOBJ=mr_main.o mr_sauth.o mr_scall.o mr_srvdata.o mr_shutdown.o \
 	mr_util.o qrtn.o queries2.o qsupport.o qsubs.o \
 	mr_smalloc.o increment.o cache.o $(XOBJ)
 GLUOBJS=mr_glue.o qrtn.o queries2.o qsupport.o qsubs.o \
 	../lib/mr_et.o mr_srvdata.o mr_smalloc.o \
 	../lib/krb_et.o mr_util.o increment.o cache.o $(XOBJ)
+SRCDIR = $(SRCTOP)/server
 sqlrule()
 
 program(moirad, ${SRVOBJ},${MR_LIBDEP} ${GDB_LIBDEP},\
 	-L/usr/athena/lib .././lib/libmoira.a -lzephyr \
 	.././gdb/libmrgdb.a  -lcom_err \
-	../gdss/rgdss.o /mit/gdss/`machtype`/libgdss.a -lkrb -ldes -lhesiod \
+	/mit/gdss/`machtype`/libgdss.a -lkrb -ldes -lhesiod \
 	${SQL_LIB}, ${PROGDIR})
 program(startmoira, startmoira.o,,, ${PROGDIR})
 library_obj_rule()
@@ -48,4 +50,3 @@ sqlfile(cache)
 sqlfile(increment)
 sqlfile(qrtn)
 sqlfile(qsupport)
-sqlfile(mr_glue)

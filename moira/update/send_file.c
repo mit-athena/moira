@@ -1,13 +1,13 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/send_file.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/send_file.c,v 1.9 1997-01-29 23:29:03 danw Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/send_file.c,v 1.10 1997-09-02 22:23:02 danw Exp $
  */
 /*  (c) Copyright 1988 by the Massachusetts Institute of Technology. */
 /*  For copying and distribution information, please see the file */
 /*  <mit-copyright.h>. */
 
 #ifndef lint
-static char *rcsid_send_file_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/send_file.c,v 1.9 1997-01-29 23:29:03 danw Exp $";
+static char *rcsid_send_file_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/send_file.c,v 1.10 1997-09-02 22:23:02 danw Exp $";
 #endif
 
 #include <mit-copyright.h>
@@ -79,15 +79,16 @@ int  encrypt;
 	    checksum_file(pathname), target_path);
     code = send_object(conn, (char *)&data, STRING_T);
     if (code) {
-	com_err(whoami, code, " sending XFER request");
+	com_err(whoami, connection_errno(conn), " sending XFER request");
 	close(fd);
-	return(code);
+	return(connection_errno(conn));
     }
     code = receive_object(conn, (char *)&n, INTEGER_T);
     if (code) {
-	com_err(whoami, code, " getting reply from XFER request");
+	com_err(whoami, connection_errno(conn),
+		" getting reply from XFER request");
 	close(fd);
-	return(code);
+	return(connection_errno(conn));
     }
     if (n) {
 	com_err(whoami, n, " transfer request (XFER) rejected");
@@ -99,7 +100,7 @@ int  encrypt;
     if (code) {
 	com_err(whoami, connection_errno(conn), ": lost connection");
 	close(fd);
-	return(code);
+	return(connection_errno(conn));
     }
     if (n) {
 	com_err(whoami, n, " from remote server: can't update %s",
@@ -154,7 +155,7 @@ int  encrypt;
 	    com_err(whoami, connection_errno(conn), " transmitting file %s",
 		    pathname);
 	    close(fd);
-	    return(code);
+	    return(connection_errno(conn));
 	}
 	n_to_send -= n;
 	code = receive_object(conn, (char *)&n, INTEGER_T);
@@ -163,7 +164,7 @@ int  encrypt;
 		    " awaiting ACK remote server during transmission of %s",
 		    pathname);
 	    close(fd);
-	    return(code);
+	    return(connection_errno(conn));
 	}
 	if (n) {
 	    com_err(whoami, n, " from remote server during transmission of %s",
@@ -179,7 +180,7 @@ int  encrypt;
 		    " awaiting ACK remote server after transmission of %s",
 		    pathname);
 	    close(fd);
-	    return(code);
+	    return(connection_errno(conn));
 	}
 	if (n) {
 	    com_err(whoami, n, " from remote server after transmission of %s",

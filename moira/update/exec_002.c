@@ -1,13 +1,13 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/exec_002.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/exec_002.c,v 1.16 1997-07-03 03:23:38 danw Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/exec_002.c,v 1.17 1997-09-02 22:23:02 danw Exp $
  */
 /*  (c) Copyright 1988 by the Massachusetts Institute of Technology. */
 /*  For copying and distribution information, please see the file */
 /*  <mit-copyright.h>. */
 
 #ifndef lint
-static char *rcsid_exec_002_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/exec_002.c,v 1.16 1997-07-03 03:23:38 danw Exp $";
+static char *rcsid_exec_002_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/exec_002.c,v 1.17 1997-09-02 22:23:02 danw Exp $";
 #endif
 
 #include <mit-copyright.h>
@@ -54,7 +54,7 @@ exec_002(str)
     }
     if (config_lookup("noexec")) {
 	code = EPERM;
-	code = send_object(conn, (char *)&code, INTEGER_T);
+	send_object(conn, (char *)&code, INTEGER_T);
 	com_err(whoami, code, "Not allowed to execute");
 	return(0);
     }
@@ -115,16 +115,16 @@ exec_002(str)
 #endif
 #ifdef POSIX
 	if ( (WIFEXITED(waitb) && (WEXITSTATUS(waitb)!=0)) || WIFSIGNALED(waitb)  ) {
-	    /* This is not really correct.  It will cause teh moira server to
-	       report a bogus error message if the script died on a signal.
-	       However this is the same thing that occurs in the non-POSIX
-	       case, and I don't know how to come up with a useful error based
-	       on the signal recieved.
-	    */
-	    n = WEXITSTATUS(waitb) + ERROR_TABLE_BASE_sms;
 	    log_priority = log_ERROR;
-	    com_err(whoami, n, " child exited with status %d",
-		    WEXITSTATUS(waitb));
+	    if (WIFSIGNALED(waitb)) {
+		n = MR_COREDUMP;
+		com_err(whoami, n, " child exited on signal %d",
+			WTERMSIG(waitb));
+	    } else {
+		n = WEXITSTATUS(waitb) + ERROR_TABLE_BASE_sms;
+		com_err(whoami, n, " child exited with status %d",
+			WEXITSTATUS(waitb));
+	    }
 #else
 	if (waitb.w_status) {
 	    n = waitb.w_retcode + ERROR_TABLE_BASE_sms;

@@ -1,13 +1,13 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/auth_002.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/auth_002.c,v 1.1 1997-07-03 03:22:21 danw Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/auth_002.c,v 1.2 1997-09-02 22:23:01 danw Exp $
  */
 /*  (c) Copyright 1988 by the Massachusetts Institute of Technology. */
 /*  For copying and distribution information, please see the file */
 /*  <mit-copyright.h>. */
 
 #ifndef lint
-static char *rcsid_auth_002_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/auth_002.c,v 1.1 1997-07-03 03:22:21 danw Exp $";
+static char *rcsid_auth_002_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/auth_002.c,v 1.2 1997-09-02 22:23:01 danw Exp $";
 #endif
 
 #include <mit-copyright.h>
@@ -125,6 +125,10 @@ auth_002(str)
     if (send_object(conn, (char *)&data, STRING_T))
 	lose("sending nonce");
     code = receive_object(conn, (char *)&data, STRING_T);
+    if (code) {
+	code = connection_errno(conn);
+	goto auth_failed;
+    }
     des_key_sched(&ad.session, &sched);
     des_ecb_encrypt(STRING_DATA(data), nonce2, sched, 0);
     if (memcmp(nonce, nonce2, sizeof(nonce)))

@@ -1,13 +1,13 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/ticket.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/ticket.c,v 1.14 1997-01-29 23:29:04 danw Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/ticket.c,v 1.15 1997-09-02 22:23:03 danw Exp $
  */
 /*  (c) Copyright 1988 by the Massachusetts Institute of Technology. */
 /*  For copying and distribution information, please see the file */
 /*  <mit-copyright.h>. */
 
 #ifndef lint
-static char *rcsid_ticket_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/ticket.c,v 1.14 1997-01-29 23:29:04 danw Exp $";
+static char *rcsid_ticket_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/ticket.c,v 1.15 1997-09-02 22:23:03 danw Exp $";
 #endif
 
 #include <mit-copyright.h>
@@ -68,9 +68,11 @@ get_mr_update_ticket(host, ticket)
 	     pass++;
 	     goto try_it;
 	 }
+	 code += ERROR_TABLE_BASE_krb;
 	 com_err(whoami, code, "in krb_mk_req");
      } else {
 	 code = krb_get_cred(service, phost, realm, &cr);
+	 if (code) code += ERROR_TABLE_BASE_krb;
 	 memcpy(session, cr.session, sizeof(session));
      }
      return(code);

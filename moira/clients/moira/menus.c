@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menus.c,v 1.22 1992-04-06 17:24:23 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menus.c,v 1.23 1992-07-10 15:05:03 mar Exp $";
 #endif lint
 
 /*	This is the file menus.c for the MOIRA Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menus.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menus.c,v 1.22 1992-04-06 17:24:23 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menus.c,v 1.23 1992-07-10 15:05:03 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -118,7 +118,7 @@ Menu mappings_menu = {
       {"cluster", "Cluster's Name: "},
     } },
     { AddMachineToCluster, NULLMENU, 3, {
-      {"addcluster","Add machines to a clusters"},
+      {"addcluster","Add machine to a cluster"},
       {"name","Machine's Name: "},
       {"cluster", "Cluster's Name: "},
     } },

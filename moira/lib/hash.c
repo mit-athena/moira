@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/hash.c,v 1.2 1988-08-04 10:44:34 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/hash.c,v 1.3 1988-08-04 10:48:21 mar Exp $
  *
  * Generic hash table routines.  Uses integer keys to store char * values.
  */
@@ -121,15 +121,16 @@ void (*callback)();
 /* Step through the hash table, calling the callback proc with each key.
  */
 
-hash_step(h, callback)
+hash_step(h, callback, hint)
 struct hash *h;
 void (*callback)();
+char *hint;
 {
     register struct bucket *b, **p;
 
     for (p = &(h->data[h->size - 1]); p >= h->data; p--) {
 	for (b = *p; b; b = b->next) {
-	    (*callback)(b->key, b->data);
+	    (*callback)(b->key, b->data, hint);
 	}
     }
 }

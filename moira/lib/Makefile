@@ -1,18 +1,18 @@
 #	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/Makefile,v $
 #	$Author: mar $
-#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/Makefile,v 1.8 1989-09-04 17:08:44 mar Exp $
+#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/Makefile,v 1.9 1989-10-11 23:07:52 mar Exp $
 #
 #	Makefile for SMS library.
 #
 LIBSRC=sms_auth.c sms_call.c sms_connect.c sms_data.c sms_init.c \
-	sms_query.c sms_param.c sms_access.c menu.c sms_ops.c \
+	sms_query.c sms_param.c sms_access.c sms_ops.c \
 	fixname.c strs.c fixhost.c nfsparttype.c sq.c hash.c \
 	idno.c critical.c
 
 CFILES=${LIBSRC}
 
 LIBOBJ=sms_auth.o sms_call.o sms_connect.o sms_data.o sms_init.o \
-	sms_query.o sms_param.o sms_access.o menu.o sms_ops.o \
+	sms_query.o sms_param.o sms_access.o sms_ops.o \
 	fixname.o strs.o fixhost.o nfsparttype.o sq.o hash.o \
 	idno.o critical.o sms_et.o ureg_err.o krb_et.o
 
@@ -135,12 +135,6 @@ sms_access.o: sms_access.c ../include/mit-copyright.h sms_private.h
 sms_access.o: ../include/sms_proto.h /usr/include/stdio.h ../include/gdb.h
 sms_access.o: /usr/include/sys/types.h /usr/include/sys/time.h
 sms_access.o: /usr/include/time.h ../include/sms.h ../include/sms_et.h
-menu.o: menu.c ../include/mit-copyright.h /usr/include/sys/types.h
-menu.o: /usr/include/stdio.h /usr/include/signal.h /usr/include/curses.h
-menu.o: /usr/include/stdio.h /usr/include/sgtty.h /usr/include/sys/ioctl.h
-menu.o: /usr/include/sys/ttychars.h /usr/include/sys/ttydev.h
-menu.o: /usr/include/ctype.h /usr/include/strings.h /usr/include/varargs.h
-menu.o: ../include/com_err.h ../include/menu.h
 sms_ops.o: sms_ops.c ../include/mit-copyright.h sms_private.h
 sms_ops.o: ../include/sms_proto.h /usr/include/stdio.h ../include/gdb.h
 sms_ops.o: /usr/include/sys/types.h /usr/include/sys/time.h /usr/include/time.h

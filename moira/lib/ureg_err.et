@@ -2,8 +2,8 @@
 
 	ec	UREG_ALREADY_REGISTERED, "User already registered"
 	ec	UREG_USER_NOT_FOUND, "Unable to locate user in database"
-	ec	UREG_UNKNOWN_HOST, "Unknown host SMS"
-	ec	UREG_UNKNOWN_SERVICE, "Unknown service sms_ureg/udp"
+	ec	UREG_UNKNOWN_HOST, "Unknown host Moira"
+	ec	UREG_UNKNOWN_SERVICE, "Unknown service"
 	ec	UREG_UNKNOWN_REQUEST, "Unknown request to userreg server"
 	ec	UREG_BROKEN_PACKET, "Unable to parse request packet"
 	ec 	UREG_WRONG_VERSION, "Wrong version of protocol"
@@ -17,6 +17,7 @@
 	ec	UREG_MISC_ERROR, "System error."
 	ec	UREG_ENROLLED, "Enrolled in campus namespace."
 	ec	UREG_ENROLL_NOT_ALLOWED, "Enrolled in campus namespace, not eligable for an Athena account."
+	ec	UREG_HALF_ENROLLED, "Halfway enrolled in campus namespace."
 	end
 
 	

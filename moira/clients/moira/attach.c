@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.8 1988-08-07 17:03:22 qjb Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.9 1988-08-11 13:27:08 mar Exp $";
 #endif
 
 /*	This is the file attach.c for the SMS Client, which allows a nieve
@@ -12,8 +12,8 @@
  *	By:		Chris D. Peterson
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v $
- *      $Author: qjb $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.8 1988-08-07 17:03:22 qjb Exp $
+ *      $Author: mar $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.9 1988-08-11 13:27:08 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -221,7 +221,7 @@ Bool name;
     GetValueFromUser("Comments about this Filesystem", &info[FS_COMMENTS]);
     GetValueFromUser("Filesystem's owner (user)", &info[FS_OWNER]);
     GetValueFromUser("Filesystem's owners (group)", &info[FS_OWNERS]);
-    GetYesNoValueFromUser("Automatically create this filsystem",
+    GetYesNoValueFromUser("Automatically create this filesystem",
 		     &info[FS_CREATE]);
     GetValueFromUser("Filesystem's lockertype", &info[FS_L_TYPE]);
 
@@ -415,7 +415,7 @@ char **argv;
 }
 
 /*	Function Name: CreateFSAlias
- *	Description: Create an alias name for a filsystem
+ *	Description: Create an alias name for a filesystem
  *	Arguments: argc, argv - name of alias in argv[1].
  *	Returns: DM_NORMAL.
  *      NOTES:  This requires (name, type, transl)  I get {name, translation}
@@ -510,7 +510,7 @@ Bool one_item;
 }
 
 /*	Function Name: DeleteFSAlias
- *	Description: Delete an alias name for a filsystem
+ *	Description: Delete an alias name for a filesystem
  *	Arguments: argc, argv - name of alias in argv[1].
  *	Returns: DM_NORMAL.
  *      NOTES:  This requires (name, type, transl)  I get {name, translation}
@@ -546,7 +546,7 @@ AttachHelp()
       "update - update the information in the database on a filesystem.\n",
       "delete - delete a filesystem from the database.\n",
       "check - check information about association of a name and a filesys.\n",
-      "alias - associate a name with a filsystem.\n",
+      "alias - associate a name with a filesystem.\n",
       "unalias - disassociate a name with a filesystem.\n",
       "verbose - toggle the request for delete confirmation.\n",
 	NULL,

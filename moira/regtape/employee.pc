@@ -1,4 +1,4 @@
-/* $Id: employee.pc,v 1.12 1998-11-17 21:19:15 danw Exp $
+/* $Id: employee.pc,v 1.13 1998-12-20 21:31:30 danw Exp $
  *
  * Load data into Moira from Personnel Office data file
  *
@@ -19,7 +19,7 @@
 EXEC SQL INCLUDE sqlca;
 extern void sqlglm(char *, unsigned int *, unsigned int *);
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/employee.pc,v 1.12 1998-11-17 21:19:15 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/employee.pc,v 1.13 1998-12-20 21:31:30 danw Exp $");
 
 #define WHO 11859		/* root */
 #define PROG "emp-tape"
@@ -56,7 +56,7 @@ RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/re
 #define LEN_OFFICE 24
 #define LEN_PHONE 12
 #define LEN_PHONE2 12
-#define LEN_DEPT 20
+#define LEN_DEPT 50
 #define LEN_TITLE 50
 #define LEN_USERNAME 30
 #define LEN_HOST 55
@@ -86,7 +86,7 @@ void sqlexit(void);
 void dbmserr(char *where, int what);
 
 char *whoami;
-int newfinger = 0;
+int newfinger = 0, debug = 0, highid = 0;
 
 #define sqlfail() (sqlca.sqlcode && sqlca.sqlcode != 1403)
 #define SQL_DUPLICATE -2112
@@ -117,6 +117,10 @@ int main(int argc, char **argv)
 	wait++;
       else if (!strcmp(argv[i], "-n"))
 	newfinger++;
+      else if (!strcmp(argv[i], "-d"))
+	debug++;
+      else if (!strcmp(argv[i], "-h"))
+	highid++;
       else if (file)
 	fprintf(stderr, "Usage: %s [-w] [-D] [-n] inputfile\n", whoami);
       else
@@ -241,7 +245,7 @@ struct entry *get_next_entry(FILE *in)
   e.title = strtrim(title);
 
   e.class = "MITS";
-  e.highid = 0;
+  e.highid = highid;
   if (strstr(e.title, "PROF") || strstr(e.title, "LECTURE"))
     e.class = "FACULTY";
   if (!strcmp(e.dept, "LINCOLN LAB"))
@@ -317,14 +321,17 @@ void process_entry(struct entry *e)
       if (status == US_ENROLL_NOT_ALLOWED)
 	status = US_ENROLLED;
       strcpy(class, e->class);
-      EXEC SQL UPDATE users
-	SET type = NVL(:class, CHR(0)), status = :status, modtime = SYSDATE,
-	modby = :who, modwith = :prog
-	WHERE users_id = :id;
-      if (sqlca.sqlcode)
+      if (!debug)
 	{
-	  dbmserr("updating user", sqlca.sqlcode);
-	  exit(1);
+	  EXEC SQL UPDATE users
+	    SET type = NVL(:class, CHR(0)), status = :status,
+	    modtime = SYSDATE, modby = :who, modwith = :prog
+	    WHERE users_id = :id;
+	  if (sqlca.sqlcode)
+	    {
+	      dbmserr("updating user", sqlca.sqlcode);
+	      exit(1);
+	    }
 	}
     }
 
@@ -334,15 +341,23 @@ void process_entry(struct entry *e)
       strcmp(middle, strtrim(dmiddle)))
     {
       com_err(whoami, 0, "updating real name for %s %s", first, last);
-      EXEC SQL UPDATE users
-	SET first = NVL(:first, CHR(0)), last = NVL(:last, CHR(0)),
-	middle = NVL(:middle, CHR(0)), modby = :who, modwith = :prog,
-	modtime = SYSDATE
-	WHERE users_id = :id;
-      if (sqlca.sqlcode)
+      if (!debug)
 	{
-	  dbmserr("updating name", sqlca.sqlcode);
-	  exit(1);
+	  EXEC SQL UPDATE users
+	    SET first = NVL(:first, CHR(0)), last = NVL(:last, CHR(0)),
+	    middle = NVL(:middle, CHR(0)), modby = :who, modwith = :prog,
+	    modtime = SYSDATE
+	    WHERE users_id = :id;
+	  if (sqlca.sqlcode)
+	    {
+	      dbmserr("updating name", sqlca.sqlcode);
+	      exit(1);
+	    }
+	}
+      else
+	{
+	  com_err(whoami, 0, "was %s %s %s, became %s %s %s",
+		  dfirst, dmiddle, dlast, first, middle, last);
 	}
     }
 
@@ -366,7 +381,14 @@ void process_entry(struct entry *e)
   else
     {
       if (strncmp(strtrim(oaddr), buf, USERS_OFFICE_ADDR_SIZE - 1))
-	changed++;
+	{
+	  changed++;
+	  if (debug)
+	    {
+	      com_err(whoami, 0, "office for %s %s changed from %s to %s",
+		      first, last, oaddr, buf);
+	    }
+	}
       strncpy(oaddr, buf, USERS_OFFICE_ADDR_SIZE - 1);
       oaddr[USERS_OFFICE_ADDR_SIZE - 1] = '\0';
     }
@@ -392,7 +414,14 @@ void process_entry(struct entry *e)
   else
     {
       if (strncmp(strtrim(ophone), buf, USERS_OFFICE_PHONE_SIZE - 1))
-	changed++;
+	{
+	  changed++;
+	  if (debug)
+	    {
+	      com_err(whoami, 0, "Phone for %s %s changed from %s to %s",
+		      first, last, ophone, buf);
+	    }
+	}
       strncpy(ophone, buf, USERS_OFFICE_PHONE_SIZE - 1);
       ophone[USERS_OFFICE_PHONE_SIZE - 1] = '\0';
     }
@@ -411,7 +440,14 @@ void process_entry(struct entry *e)
   else
     {
       if (strncmp(strtrim(dept), e->dept, USERS_DEPARTMENT_SIZE - 1))
-	changed++;
+	{
+	  changed++;
+	  if (debug)
+	    {
+	      com_err(whoami, 0, "Department for %s %s changed from %s to %s",
+		      first, last, dept, e->dept);
+	    }
+	}
       strncpy(dept, e->dept, USERS_DEPARTMENT_SIZE - 1);
       dept[USERS_DEPARTMENT_SIZE - 1] = '\0';
     }
@@ -422,6 +458,10 @@ void process_entry(struct entry *e)
   raddr = e->address;
   rhphone = e->phone;
   rophone = e->phone2;
+
+  if (debug)
+    return;
+
   if (changed)
     {
       com_err(whoami, 0, "updating finger for %s %s", first, last);
@@ -510,6 +550,10 @@ void newuser(struct entry *e)
   rhphone = e->phone;
   rophone = e->phone2;
 
+  com_err(whoami, 0, "adding user %s %s", e->first, e->last);
+  if (debug)
+    return;
+
   EXEC SQL INSERT INTO users
     (login, users_id, unix_uid, shell, last, first, middle, status,
      clearid, type, modtime, modby, modwith, fullname, office_addr,
@@ -528,8 +572,6 @@ void newuser(struct entry *e)
       dbmserr("adding user", sqlca.sqlcode);
       exit(1);
     }
-  else
-    com_err(whoami, 0, "adding user %s %s", e->first, e->last);
 }
 
 
@@ -538,6 +580,9 @@ int set_next_users_id(int limit)
   EXEC SQL BEGIN DECLARE SECTION;
   int flag, value, retval;
   EXEC SQL END DECLARE SECTION;
+
+  if (debug)
+    return 0;
 
   EXEC SQL SELECT value INTO :value FROM numvalues
     WHERE name = 'users_id';
@@ -587,16 +632,19 @@ int set_next_users_id(int limit)
 int set_next_uid(int high)
 {
   EXEC SQL BEGIN DECLARE SECTION;
-  int flag, value, retval;
+  int flag, initial, value, retval;
   char *name;
   EXEC SQL END DECLARE SECTION;
+
+  if (debug)
+    return 0;
 
   if (high)
     name = "high_uid";
   else
     name = "unix_uid";
 
-  EXEC SQL SELECT value INTO :value FROM numvalues
+  EXEC SQL SELECT value INTO :initial FROM numvalues
     WHERE name = :name;
   if (sqlfail())
     sqlexit();
@@ -607,23 +655,28 @@ int set_next_uid(int high)
       exit(1);
     }
 
+  value = initial;
   flag = 0;
-  EXEC SQL SELECT unix_uid INTO :flag FROM users WHERE unix_uid = :value;
+  EXEC SQL SELECT COUNT(unix_uid) INTO :flag
+    FROM users WHERE unix_uid = :value;
   if (sqlfail())
     sqlexit();
-  if (sqlca.sqlerrd[2] == 0)
-    flag = 0;
   while (flag)
     {
       value++;
       if (!high && value > MAX_ID_VALUE)
 	value = MIN_ID_VALUE;
+      if (value == initial)
+	{
+	  com_err(whoami, 0, "Out of uids!");
+	  EXEC SQL ROLLBACK WORK;
+	  exit(1);
+	}
       flag = 0;
-      EXEC SQL SELECT unix_uid INTO :flag FROM users WHERE unix_uid = :value;
+      EXEC SQL SELECT COUNT(unix_uid) INTO :flag
+	FROM users WHERE unix_uid = :value;
       if (sqlfail())
 	sqlexit();
-      if (sqlca.sqlerrd[2] == 0)
-	flag = 0;
     }
 
   retval = value++;

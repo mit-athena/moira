@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.18 1993-04-06 10:30:46 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.19 1993-05-24 16:05:48 mar Exp $
  *
  * Command line oriented Moira List tool.
  *
@@ -21,7 +21,7 @@
 #include <moira_site.h>
 
 #ifndef LINT
-static char blanche_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.18 1993-04-06 10:30:46 mar Exp $";
+static char blanche_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.19 1993-05-24 16:05:48 mar Exp $";
 #endif
 
 
@@ -250,7 +250,8 @@ char **argv;
 		argv[2] = "*";
 		mailhubs = (char **)malloc(sizeof(char *));
 		mailhubs[0] = NULL;
-		status = mr_query("get_alias", 3, argv, collect, &mailhubs);
+		status = mr_query("get_alias", 3, argv, collect,
+				   (char *)&mailhubs);
 		if (status != MR_SUCCESS && status != MR_NO_MATCH) {
 		    com_err(whoami, status,
 			    " while reading list of MAILHUB servers");

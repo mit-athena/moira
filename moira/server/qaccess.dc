@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qaccess.dc,v $
  *	$Author: danw $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qaccess.dc,v 1.7 1996-07-14 17:29:27 danw Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qaccess.dc,v 1.8 1996-09-29 20:24:42 danw Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_qsupport_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qaccess.dc,v 1.7 1996-07-14 17:29:27 danw Exp $";
+static char *rcsid_qsupport_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qaccess.dc,v 1.8 1996-09-29 20:24:42 danw Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -66,6 +66,15 @@ access_login(q, argv, cl)
     int id;
     char qual[256];
     EXEC SQL END DECLARE SECTION;
+
+    /* BEGIN KLUDGE
+       Ingres will lose horribly if you try to look up a user with
+       a username > 8 chars (which some old versions of the moira client
+       still sometimes do). This routine is only called by gubl/gual and
+       gubu/guau, so we know argv[0] must be <=8 chars in a correct
+       query, so verify that first */
+    if(strlen(argv[0])>8) return MR_ARG_TOO_LONG;
+    /* END KLUDGE */
 
     build_qual(q->qual, q->argc, argv, qual);
     if (!strncmp(q->name,"get_user_account",strlen("get_user_account"))) {

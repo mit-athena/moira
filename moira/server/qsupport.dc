@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.dc,v $
- *	$Author: tytso $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.dc,v 2.27 1993-12-10 13:50:44 tytso Exp $
+ *	$Author: danw $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.dc,v 2.28 1996-09-29 20:24:45 danw Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_qsupport_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.dc,v 2.27 1993-12-10 13:50:44 tytso Exp $";
+static char *rcsid_qsupport_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.dc,v 2.28 1996-09-29 20:24:45 danw Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -1461,3 +1461,42 @@ int set_pop_usage(id, cnt)
     return(MR_SUCCESS);
 }
 
+
+/* BEGIN KLUDGE
+   special-case `ghal "*" "name"' since Ingres does it slowly */
+
+int get_hostalias(q, argv, cl, action, actarg)
+    struct query *q;
+    char *argv[];
+    client *cl;
+    int (*action)();
+    int actarg;
+{
+    EXEC SQL BEGIN DECLARE SECTION;
+    char *alias=argv[0], *machine=argv[1], qual[BUFSIZ], *p;
+    int id;
+    EXEC SQL END DECLARE SECTION;
+
+    for(p=machine; *p; p++) {
+      if(*p=='%' || *p=='_') break;
+      if(*p=='*') {
+      p++;
+      if(*p=='%') p++;
+      }
+    }
+    if(!*p) {
+      /* machine has no wildcards, so we can do it the fast way */
+      EXEC SQL REPEATED SELECT mach_id INTO :id FROM machine
+      WHERE name=:machine;
+      if(ingres_errno) return(mr_errcode);
+      
+      sprintf(qual, "a.mach_id = %d AND m.mach_id = %d AND a.name LIKE '%s' ESCAPE '*'", id, id, alias);
+      return do_retrieve(q, qual, 0, action, actarg);
+    }
+
+    /* not the special case... do the normal query */
+    build_qual(q->qual, q->argc, argv, qual); 
+    return do_retrieve(q, qual, 0, action, actarg);
+}
+
+/* END KLUDGE */

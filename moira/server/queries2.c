@@ -1,6 +1,6 @@
 /* This file defines the query dispatch table for version 2 of the protocol
  *
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/queries2.c,v 2.23 1994-06-07 18:39:38 tom Exp $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/queries2.c,v 2.24 1996-09-29 20:24:49 danw Exp $
  *
  * Copyright 1987, 1988 by the Massachusetts Institute of Technology.
  * For copying and distribution information, please see the file
@@ -97,6 +97,7 @@ int count_members_of_list();
 int get_lists_of_member();
 int register_user();
 int _sdl_followup();
+int get_hostalias();
 
 
 
@@ -898,7 +899,7 @@ static struct validate ghal_validate = {
   0,
   access_ahal,
   0,
-  0,
+  get_hostalias,
 };
 
 static struct valobj ahal_valobj[] = {
@@ -3049,7 +3050,7 @@ struct query Queries2[] = {
     "get_hostalias",
     "ghal",
     RETRIEVE,
-    "a",
+    0,
     "hostalias",
     "CHAR(a.name), CHAR(m.name) FROM hostalias a, machine m",
     ghal_fields,

@@ -1,4 +1,4 @@
-/* $Id: print.pc,v 1.1 1999-01-27 19:39:09 danw Exp $
+/* $Id: print.pc,v 1.2 1999-02-06 18:45:13 danw Exp $
  *
  * This generates printcaps and other files for Athena print servers
  *
@@ -22,7 +22,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/print.pc,v 1.1 1999-01-27 19:39:09 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/print.pc,v 1.2 1999-02-06 18:45:13 danw Exp $");
 
 char *whoami = "print.gen";
 char *db = "moira/moira";
@@ -72,7 +72,7 @@ void do_host(char *host)
   char modtime[PRINTERS_MODTIME_SIZE], lmodtime[LIST_MODTIME_SIZE];
   char contact[PRINTERS_CONTACT_SIZE];
   char *spoolhost = host, *unixtime_fmt = UNIXTIME_FMT;
-  int ka, pc, ac, lpc_acl;
+  int ka, pc, ac, lpc_acl, banner;
   EXEC SQL END DECLARE SECTION;
   TARFILE *tf;
   FILE *out;
@@ -155,7 +155,7 @@ void do_host(char *host)
 
   EXEC SQL DECLARE csr_spool CURSOR FOR
     SELECT UNIQUE pr.rp, pr.duplexname, pr.hwtype, m.name, pr.ac,
-    pr.lpc_acl, TO_CHAR(pr.modtime, :unixtime_fmt)
+    pr.lpc_acl, pr.banner, TO_CHAR(pr.modtime, :unixtime_fmt)
     FROM printers pr, machine m, machine mrm
     WHERE m.mach_id = pr.mach_id
     AND mrm.mach_id = pr.rm AND mrm.name = :spoolhost;
@@ -163,7 +163,7 @@ void do_host(char *host)
   while (1)
     {
       EXEC SQL FETCH csr_spool INTO :name, :duplexname, :hwtype,
-	:hostname, :ac, :lpc_acl, :modtime;
+	:hostname, :ac, :lpc_acl, :banner, :modtime;
       if (sqlca.sqlcode)
 	break;
 
@@ -182,10 +182,11 @@ void do_host(char *host)
 	  sprintf(filename, "/var/spool/printer/%s/.options", name);
 	  out = tarfile_start(tf, filename, 0755, 1, 1, "daemon", "daemon",
 			      mtime);
-	  fprintf(out, "BANNERFIRST=1\nBANNERLAST=0\nREVERSE=\n"
+	  fprintf(out, "BANNERFIRST=%d\nBANNERLAST=%d\nREVERSE=\n"
 		  "DUPLEXING=0\nINTERFACE=0\nNETNAME=%s\nPRINTER=%s\n"
 		  "export BANNERFIRST BANNERLAST REVERSE DUPLEXING\n"
 		  "export PRINTER NETNAME INTERFACE VERBOSELOG\n",
+		  banner == PRN_BANNER_FIRST, banner == PRN_BANNER_LAST,
 		  hostname, name);
 	  tarfile_end(tf);
 	}

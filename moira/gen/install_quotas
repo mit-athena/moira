@@ -14,11 +14,10 @@ if ( -f /etc/enforce_quota ) then
  
       if (${#args} != 2) break
 
-      set uid = args[1]
-      set quota = args[2]
+      set uid = $args[1]
+      set quota = $args[2]
 
-      setquota -u $dev $uid $quota
-      if ($status) ### Soft failure
+      setquota $dev $uid $quota
    end
 endif
 
@@ -26,5 +25,5 @@ exit 0
 
 #
 # 	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/install_quotas,v $
-#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/install_quotas,v 1.1 1988-08-05 14:25:38 qjb Exp $
+#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/install_quotas,v 1.2 1988-08-22 14:46:14 qjb Exp $
 #

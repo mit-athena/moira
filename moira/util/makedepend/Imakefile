@@ -1,6 +1,6 @@
 # $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/util/makedepend/Imakefile,v $
 # $Author: jtkohl $
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/util/makedepend/Imakefile,v 4.1 1989-01-16 21:34:22 jtkohl Exp $
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/util/makedepend/Imakefile,v 4.2 1989-01-17 11:57:21 jtkohl Exp $
 #
 # Copyright 1987 by the Massachusetts Institute of Technology.
 #
@@ -20,6 +20,7 @@ SOURCES = \
 	${SRCDIR}/util/makedepend/pr.c \
 	${SRCDIR}/util/makedepend/cppsetup.c \
 	${SRCDIR}/util/makedepend/cpp.ed \
+	${SRCDIR}/util/makedepend/def.h \
 	${SRCDIR}/util/makedepend/Imakefile \
 	${SRCDIR}/util/makedepend/Makefile
 OBJS = include.o main.o parse.o pr.o cppsetup.o cpp.o cpy.o
@@ -38,6 +39,7 @@ SOURCES = \
 	${SRCDIR}/util/makedepend/parse.c \
 	${SRCDIR}/util/makedepend/pr.c \
 	${SRCDIR}/util/makedepend/cppsetup.c \
+	${SRCDIR}/util/makedepend/def.h \
 	${SRCDIR}/util/makedepend/Imakefile \
 	${SRCDIR}/util/makedepend/Makefile
 OBJS = include.o main.o parse.o pr.o cppsetup.o

@@ -1,4 +1,4 @@
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/util/Imakefile,v 1.1 1990-08-24 16:00:08 mar Exp $
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/util/Imakefile,v 1.2 1991-03-08 11:07:54 mar Exp $
 #
 # Copyright 1990 by the Massachusetts Institute of Technology.
 #
@@ -7,8 +7,14 @@
 #
 # Intermediate level makefile for `util' directory.
 
+all::
+
+#ifndef USELOCALTOOLS
 #define have_subdirs
 SUBDIRS = makedepend
+#endif
 CODE=Imakefile
 
+#ifndef USELOCALTOOLS
 do_subdirs_no_imakefile(imake)
+#endif

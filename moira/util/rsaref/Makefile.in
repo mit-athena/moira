@@ -1,0 +1,34 @@
+# $Id: Makefile.in,v 1.1 1998-07-22 14:54:49 danw Exp $
+
+SHELL=/bin/sh
+
+CC=@CC@
+CPPFLAGS=@CPPFLAGS@
+CFLAGS=@CFLAGS@
+DEFS=@DEFS@
+ALL_CFLAGS=$(CPPFLAGS) $(CFLAGS) $(DEFS)
+RANLIB=@RANLIB@
+
+srcdir=@srcdir@
+VPATH=@srcdir@
+SRCTOP=@top_srcdir@
+BUILDTOP=..
+
+OBJS=	desc.o digit.o md2c.o md5c.o nn.o prime.o rsa.o r_encode.o \
+	r_dh.o r_enhanc.o r_keygen.o r_random.o r_stdlib.o
+
+.c.o:
+	$(CC) -c $(ALL_CFLAGS) $<
+
+all: rsaref.a
+
+clean:
+	rm -f $(OBJS) rsaref.a
+
+depend:
+
+install: all
+
+rsaref.a: $(OBJS)
+	ar cru $@ $(OBJS)
+	$(RANLIB) $@

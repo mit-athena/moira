@@ -1,6 +1,7 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/formup.c,v 1.8 1992-10-23 19:04:31 mar Exp $ */
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/formup.c,v 1.9 1992-10-28 16:07:08 mar Exp $ */
 
 #include	<stdio.h>
+#include	<strings.h>
 #include	<X11/StringDefs.h>
 #include	<X11/IntrinsicP.h>
 #include	<X11/Shell.h>
@@ -23,7 +24,7 @@
 #include	<Xm/Traversal.h>
 #include	"mmoira.h"
 
-static char rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/formup.c,v 1.8 1992-10-23 19:04:31 mar Exp $";
+static char rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/formup.c,v 1.9 1992-10-28 16:07:08 mar Exp $";
 
 #ifndef MAX
 #define	MAX(a,b)	((a > b) ? a : b)
@@ -623,8 +624,9 @@ EntryForm	*spec;
 						xmPushButtonWidgetClass,
 						parent, wargs, n);
 
-		XtAddCallback(	newbutton, XmNactivateCallback,
-				current->returnfunction, spec);
+		XtAddCallback(newbutton, XmNactivateCallback,
+			      (XtCallbackProc) current->returnfunction,
+			      spec);
 		n = 0;
 		XtSetArg(wargs[n], XtNwidth, &newwidth);		n++;
 		XtGetValues (newbutton, wargs, n);

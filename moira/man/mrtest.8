@@ -1,5 +1,5 @@
 .TH MRTEST 8 "25 Jan 1988" "Project Athena"
-\" RCSID: $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/man/mrtest.8,v 1.6 1990-03-08 18:58:59 mar Exp $
+\" RCSID: $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/man/mrtest.8,v 1.7 1990-03-08 19:00:57 mar Exp $
 .SH NAME
 mrtest \- perform Moira operations manually
 .SH SYNOPSIS
@@ -62,6 +62,9 @@ still there.
 sends
 .I Kerberos
 tickets to the server to authenticate the user.
+.TP
+.B motd
+gets the current message of the day from the server.
 .TP
 .B query query_handle [query arguments ...]
 performs a query operation on the server.  All of the real work is

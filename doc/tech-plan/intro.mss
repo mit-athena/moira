@@ -118,4 +118,8 @@ which reside with the data.
 
 Fail gracefully.
 
+SMS does not have to be 100% available.  SMS provides timely information 
+to other services which are 100% available (Hesiod, Zephyr, NFS).  Once again,
+the purpose is to provide a centralized source of authoritative information.
+
 @End(Itemize)

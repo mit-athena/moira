@@ -1,13 +1,13 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/ticket.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/ticket.c,v 1.12 1993-01-27 11:23:26 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/ticket.c,v 1.13 1994-09-16 22:09:04 jweiss Exp $
  */
 /*  (c) Copyright 1988 by the Massachusetts Institute of Technology. */
 /*  For copying and distribution information, please see the file */
 /*  <mit-copyright.h>. */
 
 #ifndef lint
-static char *rcsid_ticket_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/ticket.c,v 1.12 1993-01-27 11:23:26 mar Exp $";
+static char *rcsid_ticket_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/ticket.c,v 1.13 1994-09-16 22:09:04 jweiss Exp $";
 #endif	lint
 
 #include <mit-copyright.h>
@@ -15,7 +15,7 @@ static char *rcsid_ticket_c = "$Header: /afs/.athena.mit.edu/astaff/project/moir
 #include <krb.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <strings.h>
+#include <string.h>
 #include <update.h>
 #include <com_err.h>
 #include <krb_et.h>
@@ -69,7 +69,7 @@ get_mr_update_ticket(host, ticket)
 	 com_err(whoami, code, "in krb_mk_req");
      } else {
 	 code = krb_get_cred(service, phost, realm, &cr);
-	 bcopy(cr.session, session, sizeof(session));
+	 memcpy(session, cr.session, sizeof(session));
      }
      return(code);
 }

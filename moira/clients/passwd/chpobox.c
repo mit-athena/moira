@@ -3,13 +3,13 @@
  * and distribution information, see the file "mit-copyright.h". 
  *
  * $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chpobox.c,v $
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chpobox.c,v 1.14 1991-05-14 18:05:53 mar Exp $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chpobox.c,v 1.15 1992-03-25 23:32:43 mar Exp $
  * $Author: mar $
  *
  */
 
 #ifndef lint
-static char *rcsid_chpobox_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chpobox.c,v 1.14 1991-05-14 18:05:53 mar Exp $";
+static char *rcsid_chpobox_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chpobox.c,v 1.15 1992-03-25 23:32:43 mar Exp $";
 #endif not lint
 
 /*
@@ -180,10 +180,23 @@ main(argc, argv)
 	      *address = 0;
 	    strcat(mrarg[2], ".LOCAL");
 	    mrarg[1] = "SMTP";
+	} else if (!strcmp(mrarg[1], "MAILHUB")) {
+	    if (!strcmp(address, uname)) {
+		fprintf(stderr,
+			"Error: this will set a mail forwarding loop.\n");
+		fprintf(stderr,
+			"Use \"%s -p\" to set a local post office server.\n",
+			whoami);
+		exit(1);
+	    }
+	    fprintf(stderr, "Error: \"%s@%s\" is a local mail address.\n",
+		    address, machine);
+	    fprintf(stderr, "Your mail drop must be on a post office server or an external mail address.\n");
+	    exit(1);
 	} else if (mrarg[1]) {
 	    if (*machine != '"' && strcasecmp(mrarg[2], machine))
-	      printf("Warning: hostname %s canonicalized to %s\n",
-		     machine, mrarg[2]);
+	      fprintf(stderr, "Warning: hostname %s canonicalized to %s\n",
+		      machine, mrarg[2]);
 	    strcat(address, "@");
 	    strcat(address, mrarg[2]);
 	    mrarg[2] = address;
@@ -252,8 +265,8 @@ char *
 potype(machine)
     char *machine;
 {
-    char *service[1];
-    int check_match(), status;
+    char *service[1], *argv[3];
+    int check_match(), check_match3(), status;
 
     match = 0;
     service[0] = "POP";
@@ -275,6 +288,17 @@ potype(machine)
     }
     if (match)
 	return ("LOCAL");
+
+    argv[0] = "mailhub";
+    argv[1] = "TYPE";
+    argv[2] = "*";
+    status = mr_query("get_alias", 3, argv, check_match3, machine);
+    if (status && (status != MR_NO_MATCH)) {
+	com_err(whoami, status, " while reading list of MAILHUB servers");
+	return(NULL);
+    }
+    if (match)
+	return ("MAILHUB");
     else
 	return ("SMTP");
 }
@@ -289,6 +313,21 @@ check_match(argc, argv, callback)
 	return (0);
 
     if (strcasecmp(argv[1], callback) == 0)
+	match = 1;
+
+    return (0);
+}
+
+/* ARGSUSED */
+int
+check_match3(argc, argv, callback)
+    int argc;
+    char **argv, *callback;
+{
+    if (match)
+	return (0);
+
+    if (strcasecmp(argv[2], callback) == 0)
 	match = 1;
 
     return (0);

@@ -1,17 +1,19 @@
 /**/#	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/util/imake.includes/Imake.rules,v $
-/**/#	$Author: jtkohl $
-/**/#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/util/imake.includes/Imake.rules,v 4.7 1989-01-05 14:22:05 jtkohl Exp $
+/**/#	$Author: wesommer $
+/**/#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/util/imake.includes/Imake.rules,v 4.8 1989-01-18 21:06:35 wesommer Exp $
 /**/#
 
 #ifdef __STDC__
 #define concat(x,y) x##y
 #define concat3(x,y,z) x##y##z
 #define concat4(w,x,y,z) w##x##y##z
+#define concat5(v,w,x,y,z) v##w##x##y##z
 #define requote(x) #x
 #else
 #define concat(x,y)x/**/y
 #define concat3(x,y,z)x/**/y/**/z
 #define concat4(w,x,y,z)w/**/x/**/y/**/z
+#define concat5(v,w,x,y,z)v/**/w/**/x/**/y/**/z
 #define requote(x) "x"
 #endif
 
@@ -140,7 +142,7 @@ install:: 								@@\
 all:: pgm								@@\
 									@@\
 pgm: objs localdeps							@@\
-	$(CC) $(CFLAGS) -o $@ objs localdeps syslibs			@@\
+	$(CC) $(CFLAGS) -o $@ objs syslibs				@@\
 									@@\
 clean:: 								@@\
 	$(RM) pgm objs							@@\
@@ -314,6 +316,26 @@ install::								@@\
 									@@\
 clean:: 								@@\
 	$(RM) pgm objs							@@\
+
+/*
+ * Special rule for building and installing a Berkeley r-command
+ * We need to preserve the original copies upon installation.
+ */
+
+#define ucbprogram(pgm,objs,localdeps,syslibs,installdir)		@@\
+all:: pgm								@@\
+									@@\
+pgm: objs localdeps							@@\
+	$(CC) $(CFLAGS) -o $@ objs syslibs				@@\
+									@@\
+install::								@@\
+	if [ ! -f concat5(${DESTDIR},installdir,/,pgm,.ucb) -a -f concat4(${DESTDIR},installdir,/,pgm) ]; then \ @@\
+		mv concat4(${DESTDIR},installdir,/,pgm) concat5(${DESTDIR},installdir,/,pgm,.ucb); fi; exit 0 @@\
+	$(INSTALLSUID) pgm concat4(${DESTDIR},installdir,/,pgm)		@@\
+									@@\
+clean:: 								@@\
+	$(RM) pgm objs							@@\
+
 
 /*
  * Rule for installing man pages.  Section installing into should match

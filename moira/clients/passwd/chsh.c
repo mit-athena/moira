@@ -1,4 +1,4 @@
-/* $Id: chsh.c,v 1.25 1999-05-13 18:55:44 danw Exp $
+/* $Id: chsh.c,v 1.26 1999-06-22 01:09:21 danw Exp $
  *
  * Talk to the Moira database to change a person's login shell.  The chosen
  * shell must exist.  A warning will be issued if the shell is not in
@@ -24,7 +24,7 @@
 #include <string.h>
 #include <unistd.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chsh.c,v 1.25 1999-05-13 18:55:44 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chsh.c,v 1.26 1999-06-22 01:09:21 danw Exp $");
 
 void usage(void);
 int chsh(char *uname);
@@ -223,23 +223,47 @@ void usage(void)
 }
 
 #ifndef HAVE_GETUSERSHELL
+#include <sys/param.h>
+
 char *getusershell(void)
 {
-  static int count = 1;
+  static FILE *shells = NULL;
 
-  switch (count++)
+  /* In a sane universe, no shell will have a length longer than
+   * MAXPATHLEN. If any line in /etc/shells does, we'll lose, but
+   * not much. shrug.
+   */
+  static char buf[MAXPATHLEN];
+  char *p;
+
+  if (!shells)
     {
-    case 1:
-      return "/bin/sh";
-    case 2:
-      return "/bin/csh";
-    case 3:
-      return "/bin/athena/tcsh";
-    case 4:
-      return NULL;
-    default:
-      count = 1;
-      return getusershell();
+      shells = fopen("/etc/shells", "r");
+      if (!shells)
+	{
+	  fprintf(stderr, "%s: Can't open /etc/shells. Unable to determine if "
+		  "this is a normal shell.\n\n", whoami);
+	  return NULL;
+	}
+    }
+
+  while (1)
+    {
+      if (!fgets(buf, sizeof(buf), shells))
+	{
+	  fclose(shells);
+	  shells = NULL;
+	  return NULL;
+	}
+
+      if (buf[0] != '/')
+	continue;
+
+      p = strchr(buf, '\n');
+      if (p)
+	*p = '\0';
+
+      return buf;
     }
 }
 #endif

@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/passwd.dc,v 1.6 1988-09-13 14:31:01 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/passwd.dc,v 1.7 1989-02-23 16:01:39 mar Exp $
  *
  * This generates a master /etc/passwd containing all active (status != 0)
  * accounts.
@@ -28,6 +28,7 @@ char **argv;
     char *outf, outft[64];
     struct stat sb;
 ##  char login[9], shell[33], fullname[33], oa[17], op[13], hp[17], *filetime;
+##  char nickname[17];
 ##  int uid, error, flag;
     int ingerr();
 
@@ -63,16 +64,18 @@ char **argv;
 ##  range of u is users
 ##  retrieve (login = u.#login, uid = u.#uid, shell = u.#shell,
 ##	      fullname = u.#fullname, oa = u.office_addr,
+##	      nickname = u.#nickname,
 ##	      op = u.office_phone, hp = u.home_phone)
 ##	where u.status = 1 {
 	    strtrim(login);
 	    strtrim(fullname);
+	    strtrim(nickname);
 	    strtrim(oa);
 	    strtrim(op);
 	    strtrim(hp);
 	    strtrim(shell);
-    	    fprintf(out, "%s:*:%d:101:%s,%s,%s,%s:/mit/%s:%s\n",
-		    login, uid, fullname, oa, op, hp, login, shell);
+    	    fprintf(out, "%s:*:%d:101:%s,%s,%s,%s,%s:/mit/%s:%s\n",
+		    login, uid, fullname, nickname, oa, op, hp, login, shell);
 ##  }
 ##  inquire_equel(error = "errorno")
     if (error)  {

@@ -1,11 +1,14 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/include/mr_proto.h,v $
- *	$Author: spook $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/include/mr_proto.h,v 1.2 1987-06-28 05:28:18 spook Exp $
+ *	$Author: mar $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/include/mr_proto.h,v 1.3 1989-10-06 19:09:59 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
  *	$Log: not supported by cvs2svn $
+ * Revision 1.2  87/06/28  05:28:18  spook
+ * Added domain name to 'sms'...
+ * 
  * Revision 1.1  87/06/16  17:48:47  wesommer
  * Initial revision
  * 
@@ -32,16 +35,3 @@ typedef struct sms_params {
 } sms_params;
 
 extern int sms_start_recv(), sms_start_send();
-
-#define SMS_GDB_SERV "sms.mit.edu:sms_db"
-
-/*
- * Local Variables:
- * mode: c
- * c-indent-level: 4
- * c-continued-statement-offset: 4
- * c-brace-offset: -4
- * c-argdecl-indent: 4
- * c-label-offset: -4
- * End:
- */

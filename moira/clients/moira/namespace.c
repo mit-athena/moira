@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/namespace.c,v 1.2 1991-01-11 11:58:32 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/namespace.c,v 1.3 1992-04-06 17:40:23 mar Exp $";
 #endif lint
 
 /*	This is the file main.c for the Moira Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/namespace.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/namespace.c,v 1.2 1991-01-11 11:58:32 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/namespace.c,v 1.3 1992-04-06 17:40:23 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -47,7 +47,7 @@ Menu list_info_menu = {
     NULLFUNC,
     NULLFUNC,
     "List Information Menu",
-    4,
+    3,
     {
         SIMPLEFUNC("member", "Show all lists to which a given member belongs",
 		   ListByMember),
@@ -56,8 +56,6 @@ Menu list_info_menu = {
 		   ListByAdministrator),
 	SIMPLEFUNC("public", "Show all public mailing lists",
 		   ListAllPublicMailLists),
-	SIMPLEFUNC("maillists", "Show all mailing lists",
-		   ListAllMailLists)
     }
 };
 

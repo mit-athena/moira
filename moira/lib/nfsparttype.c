@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/nfsparttype.c,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/nfsparttype.c,v 1.3 1990-03-17 16:37:13 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/nfsparttype.c,v 1.4 1990-05-02 13:12:20 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_nfsparttype_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/nfsparttype.c,v 1.3 1990-03-17 16:37:13 mar Exp $";
+static char *rcsid_nfsparttype_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/nfsparttype.c,v 1.4 1990-05-02 13:12:20 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -33,11 +33,10 @@ struct pair {
 
 static struct pair fs_names[] = {
     { MR_FS_STUDENT, "Student" },
-    { MR_FS_FACULTY, "Faculty/Project" },
     { MR_FS_FACULTY, "Faculty" },
-    { MR_FS_FACULTY, "Project" },
     { MR_FS_STAFF, "Staff" },
     { MR_FS_MISC, "Other" },
+    { MR_FS_GROUPQUOTA, "GroupQuota" },
     /* Insert new entries before the 0,0 pair */
     { 0, 0 },
 };
@@ -105,7 +104,7 @@ parse_filesys_type(fs_type_name)
 	t = strtrim(temp);	/* nuke leading and trailing whitespace */
 
 	for (pp = fs_names; pp->type; pp++) {
-	    if (cistrcmp(pp->name, t) == 0) {
+	    if (strcasecmp(pp->name, t) == 0) {
 		flags |= pp->type;
 		break;
 	    }

@@ -2,11 +2,11 @@
  * $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.c,v $
  * $Author: mar $
  * $Locker:  $
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.c,v 1.7 1988-07-31 17:31:09 mar Exp $ 
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.c,v 1.8 1988-08-03 20:17:04 mar Exp $ 
  */
 
 #ifndef lint
-static char    *rcsid_userreg_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.c,v 1.7 1988-07-31 17:31:09 mar Exp $";
+static char    *rcsid_userreg_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.c,v 1.8 1988-08-03 20:17:04 mar Exp $";
 #endif	lint
 
 #include <curses.h>
@@ -33,6 +33,7 @@ extern int      errno;
 int             user_is_valid = 0;
 int		user_has_login = 0;
 int             already_registered = 0;
+extern char *disabled();
 
 fix_display(sig)
 {
@@ -49,7 +50,7 @@ main(argc, argv)
 {
 	register int    ntimes;
 	register int    reencrypt;
-	char            line[100];
+	char            line[100], *when, *msg;
 	int status;
 	char tmpfirst[100], tmplast[100], tmpmid[100];
 	
@@ -57,6 +58,15 @@ main(argc, argv)
 	if (status) {
 		com_err(argv[0], status, "while trying to initialize");
 		exit(1);
+	}
+
+	if (when = disabled(&msg)) {
+	    printf("We're sorry, the registration service is unavailable right now\n");
+	    if (msg)
+	      printf("because %s\n", msg);
+	    printf("You should be able to register after %s", when);
+	    sleep(30);
+	    exit(0);
 	}
 
 	setup_display();
@@ -238,13 +248,29 @@ dolook()
 			db_user.u_login);
 		display_text_line(line);
 		redisp();
-		sleep(5);
+		sleep(10);
 		return (0);
+	case UREG_DELETED:
+		display_text(DELETED_ACCT);
+		refresh();
+		sleep(20);
+		restore_display();
+		exit(0);
+	case UREG_NOT_ALLOWED:
+		display_text(NOT_ALLOWED);
+		refresh();
+		sleep(20);
+		restore_display();
+		exit(0);
+	case UREG_KRB_TAKEN:
+		display_text(IMPROPER_LOGIN);
+		return(0);
 	case UREG_USER_NOT_FOUND:
 		return (1);
 
 	case ECONNREFUSED:
 	case ETIMEDOUT:
+	case UREG_MISC_ERROR:
 		display_text(NETWORK_DOWN);
 		return (0);
 		
@@ -252,18 +278,16 @@ dolook()
 		display_text_line("An unexpected error occurred while trying to access the database");
 		display_text_line(error_message(result));
 		redisp();
-		sleep(5);
+		sleep(10);
 		return(1);
 	}
 }
 
 negotiate_login()
 {
-	register int    result, result2;
-	int             same;
+	register int    result;
 	char            line[100];
 	char            old_login[LOGIN_SIZE];
-	char            old_password[PASSWORD_SIZE];
 	char		realm[REALM_SZ];
 	int		i;
 	char *cp;
@@ -304,7 +328,7 @@ negotiate_login()
 		 * guy is known to Kerberos.
 		 */
 		if ((result = get_krbrlm(realm, 1)) != KSUCCESS) {
-		    display_text_line("Can't get kerberos realm, giving up");
+		    display_text_line("System error, please try another workstation.");
 		    continue;
 		}
 		result = get_in_tkt(user.u_login, "", realm, "krbtgt", realm, "");
@@ -351,7 +375,7 @@ negotiate_passwd()
 		return (-1);
 	}
 	display_text_line("done.");
-
+	return(0);
 }
 
 gfirst()
@@ -383,7 +407,6 @@ glast()
 gpass()
 {
 	/* input password */
-	char            old_password[PASSWORD_SIZE];
 	char            new_password[PASSWORD_SIZE];
 	char            new_password_again[PASSWORD_SIZE];
 

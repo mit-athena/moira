@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/employee.dc,v 1.16 1993-09-30 14:43:12 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/employee.dc,v 1.17 1993-09-30 15:43:55 mar Exp $
  */
 
 #include <stdio.h>
@@ -115,7 +115,7 @@ char **argv;
 
     EXEC SQL CONNECT moira;
     if (sqlca.sqlcode != 0) {
-	com_err(whoami, 0, "ingres error %d", sqlca.sqlcode);
+	com_err(whoami, 0, "ingres error %d opening database", sqlca.sqlcode);
 	exit(1);
     }
 
@@ -128,7 +128,7 @@ char **argv;
                 com_err(whoami, MR_DEADLOCK, "commiting work");
                 goto again;
             } else {
-                com_err(whoami, 0, "ingres error %d", sqlca.sqlcode);
+                com_err(whoami, 0, "ingres error %d committing work", sqlca.sqlcode);
                 exit(1);
             }
 	}
@@ -319,8 +319,13 @@ struct entry *e;
 		modby = :who, modwith = :prog
 	  WHERE users_id = :id;
 	if (sqlca.sqlcode != 0) {
-	    com_err(whoami, 0, "ingres error %d", sqlca.sqlcode);
-	    exit(1);
+            if (sqlca.sqlcode == SQL_DEADLOCK) {
+                com_err(whoami, MR_DEADLOCK, "updating user");
+		return;
+            } else {
+                com_err(whoami, 0, "ingres error %d updating user", sqlca.sqlcode);
+                exit(1);
+	    }
 	}
     }
 
@@ -334,8 +339,13 @@ struct entry *e;
 	  	modby = :who, modwith = :prog, modtime = 'now'
 	  WHERE users_id = :id;
 	if (sqlca.sqlcode != 0) {
-	    com_err(whoami, 0, "ingres error %d", sqlca.sqlcode);
-	    exit(1);
+            if (sqlca.sqlcode == SQL_DEADLOCK) {
+                com_err(whoami, MR_DEADLOCK, "updating name");
+		return;
+            } else {
+                com_err(whoami, 0, "ingres error %d updating name", sqlca.sqlcode);
+                exit(1);
+            }
 	}
     }
 
@@ -502,8 +512,12 @@ struct entry *e;
 	      :dept, 'now', :who, :prog, 'NONE', :name, :rdept,
 	      :title, :oaddr, :rhphone, :rophone, 'now');
     if (sqlca.sqlcode != 0) {
-	com_err(whoami, 0, "ingres error %d", sqlca.sqlcode);
-	exit(1);
+	if (sqlca.sqlcode == SQL_DEADLOCK) {
+	    com_err(whoami, MR_DEADLOCK, "adding user");
+	} else {
+	    com_err(whoami, 0, "ingres error %d adding user", sqlca.sqlcode);
+	    exit(1);
+	}
     } else
       com_err(whoami, 0, "adding user %s %s", e->first, e->last);
 }
@@ -549,7 +563,7 @@ set_next_users_id(limit)
     EXEC SQL REPEATED UPDATE numvalues SET value = :value
       WHERE name = 'users_id';
     if (sqlca.sqlcode != 0) {
-	com_err(whoami, 0, "ingres error %d", sqlca.sqlcode);
+	com_err(whoami, 0, "ingres error %d assigning ID", sqlca.sqlcode);
 	exit(1);
     }
     return(retval);
@@ -592,7 +606,7 @@ set_next_uid(limit)
       value = MIN_ID_VALUE;
     EXEC SQL REPEATED UPDATE numvalues SET value = :value WHERE name = 'uid';
     if (sqlca.sqlcode != 0) {
-	com_err(whoami, 0, "ingres error %d", sqlca.sqlcode);
+	com_err(whoami, 0, "ingres error %d assigning ID", sqlca.sqlcode);
 	exit(1);
     }
     return(retval);

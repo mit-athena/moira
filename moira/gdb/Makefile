@@ -1,7 +1,7 @@
 #
 # 	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/Makefile,v $
 #	$Author: mar $
-#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/Makefile,v 1.5 1988-12-27 16:46:11 mar Exp $
+#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/Makefile,v 1.6 1989-06-01 16:11:24 mar Exp $
 #
 # Revised makefile for GDB library.
 #
@@ -24,7 +24,7 @@ SAMPLES= samp1.c
 
 MISC= Makefile .saberinit README gdb_version
 
-CFLAGS= -O
+CFLAGS= -O -I../include
 
 CCPROF= ${CC}
 
@@ -182,44 +182,52 @@ depend: $(GDBCSRCS)
 # the last constant line in the makefile should be...
 # DO NOT DELETE THIS LINE
 
-gdb_struct.o: gdb_struct.c /usr/include/stdio.h /usr/include/strings.h gdb.h
-gdb_struct.o: /usr/include/sys/types.h /usr/include/sys/time.h
-gdb_struct.o: /usr/include/time.h
-gdb_stype.o: gdb_stype.c /usr/include/stdio.h /usr/include/strings.h gdb.h
-gdb_stype.o: /usr/include/sys/types.h /usr/include/sys/time.h
-gdb_stype.o: /usr/include/time.h /usr/include/netinet/in.h
+gdb_struct.o: gdb_struct.c ../include/mit-copyright.h /usr/include/stdio.h
+gdb_struct.o: /usr/include/strings.h ../include/gdb.h /usr/include/sys/types.h
+gdb_struct.o: /usr/include/sys/time.h /usr/include/time.h
+gdb_stype.o: gdb_stype.c ../include/mit-copyright.h /usr/include/stdio.h
+gdb_stype.o: /usr/include/strings.h ../include/gdb.h /usr/include/sys/types.h
+gdb_stype.o: /usr/include/sys/time.h /usr/include/time.h
+gdb_stype.o: /usr/include/netinet/in.h
 gdb.o: gdb.c /usr/include/stdio.h /usr/include/strings.h /usr/include/signal.h
-gdb.o: /usr/include/pwd.h gdb.h /usr/include/sys/types.h
+gdb.o: /usr/include/pwd.h ../include/gdb.h /usr/include/sys/types.h
 gdb.o: /usr/include/sys/time.h /usr/include/time.h gdb_lib.h
 gdb.o: /usr/include/errno.h
-gdb_trans.o: gdb_trans.c /usr/include/sys/types.h /usr/include/strings.h
-gdb_trans.o: /usr/include/stdio.h /usr/include/varargs.h /usr/include/errno.h
-gdb_trans.o: gdb.h /usr/include/sys/types.h /usr/include/sys/time.h
-gdb_trans.o: /usr/include/time.h
-gdb_trans2.o: gdb_trans2.c /usr/include/sys/types.h /usr/include/errno.h
-gdb_trans2.o: /usr/include/stdio.h gdb.h /usr/include/sys/types.h
-gdb_trans2.o: /usr/include/sys/time.h /usr/include/time.h
-gdb_trans2.o: /usr/include/sys/uio.h /usr/include/sys/socket.h
-gdb_conn.o: gdb_conn.c /usr/include/stdio.h /usr/include/strings.h gdb.h
-gdb_conn.o: /usr/include/sys/types.h /usr/include/sys/time.h
-gdb_conn.o: /usr/include/time.h /usr/include/sys/types.h /usr/include/sys/uio.h
+gdb_trans.o: gdb_trans.c ../include/mit-copyright.h /usr/include/sys/types.h
+gdb_trans.o: /usr/include/strings.h /usr/include/stdio.h /usr/include/varargs.h
+gdb_trans.o: /usr/include/errno.h ../include/gdb.h /usr/include/sys/types.h
+gdb_trans.o: /usr/include/sys/time.h /usr/include/time.h
+gdb_trans2.o: gdb_trans2.c ../include/mit-copyright.h /usr/include/sys/types.h
+gdb_trans2.o: /usr/include/errno.h /usr/include/stdio.h ../include/gdb.h
+gdb_trans2.o: /usr/include/sys/types.h /usr/include/sys/time.h
+gdb_trans2.o: /usr/include/time.h /usr/include/sys/uio.h
+gdb_trans2.o: /usr/include/sys/socket.h
+gdb_conn.o: gdb_conn.c ../include/mit-copyright.h /usr/include/stdio.h
+gdb_conn.o: /usr/include/strings.h ../include/gdb.h /usr/include/sys/types.h
+gdb_conn.o: /usr/include/sys/time.h /usr/include/time.h
+gdb_conn.o: /usr/include/sys/types.h /usr/include/sys/uio.h
 gdb_conn.o: /usr/include/sys/socket.h /usr/include/sys/ioctl.h
 gdb_conn.o: /usr/include/sys/ttychars.h /usr/include/sys/ttydev.h
 gdb_conn.o: /usr/include/netinet/in.h /usr/include/netdb.h /usr/include/errno.h
-gdb_serv.o: gdb_serv.c /usr/include/stdio.h /usr/include/strings.h gdb.h
-gdb_serv.o: /usr/include/sys/types.h /usr/include/sys/time.h
-gdb_serv.o: /usr/include/time.h /usr/include/sys/ioctl.h
-gdb_serv.o: /usr/include/sys/ttychars.h /usr/include/sys/ttydev.h
-gdb_fserv.o: gdb_fserv.c /usr/include/stdio.h /usr/include/sys/types.h
-gdb_fserv.o: /usr/include/sys/uio.h /usr/include/sys/socket.h
-gdb_fserv.o: /usr/include/sys/wait.h /usr/include/sys/signal.h gdb.h
+gdb_serv.o: gdb_serv.c ../include/mit-copyright.h /usr/include/stdio.h
+gdb_serv.o: /usr/include/strings.h ../include/gdb.h /usr/include/sys/types.h
+gdb_serv.o: /usr/include/sys/time.h /usr/include/time.h
+gdb_serv.o: /usr/include/sys/ioctl.h /usr/include/sys/ttychars.h
+gdb_serv.o: /usr/include/sys/ttydev.h
+gdb_fserv.o: gdb_fserv.c ../include/mit-copyright.h /usr/include/stdio.h
+gdb_fserv.o: /usr/include/sys/types.h /usr/include/sys/uio.h
+gdb_fserv.o: /usr/include/sys/socket.h /usr/include/sys/wait.h
+gdb_fserv.o: /usr/include/sys/signal.h ../include/gdb.h
 gdb_fserv.o: /usr/include/sys/types.h /usr/include/sys/time.h
 gdb_fserv.o: /usr/include/time.h /usr/include/sys/resource.h
-gdb_db.o: gdb_db.c /usr/include/stdio.h /usr/include/strings.h gdb.h
-gdb_db.o: /usr/include/sys/types.h /usr/include/sys/time.h /usr/include/time.h
-gdb_debug.o: gdb_debug.c /usr/include/stdio.h gdb.h /usr/include/sys/types.h
-gdb_debug.o: /usr/include/sys/time.h /usr/include/time.h
-gdb_ops.o: gdb_ops.c /usr/include/stdio.h gdb.h /usr/include/sys/types.h
-gdb_ops.o: /usr/include/sys/time.h /usr/include/time.h
-gdb_ops.o: /usr/include/netinet/in.h /usr/include/sys/ioctl.h
-gdb_ops.o: /usr/include/sys/ttychars.h /usr/include/sys/ttydev.h
+gdb_db.o: gdb_db.c ../include/mit-copyright.h /usr/include/stdio.h
+gdb_db.o: /usr/include/strings.h ../include/gdb.h /usr/include/sys/types.h
+gdb_db.o: /usr/include/sys/time.h /usr/include/time.h
+gdb_debug.o: gdb_debug.c ../include/mit-copyright.h /usr/include/stdio.h
+gdb_debug.o: ../include/gdb.h /usr/include/sys/types.h /usr/include/sys/time.h
+gdb_debug.o: /usr/include/time.h
+gdb_ops.o: gdb_ops.c ../include/mit-copyright.h /usr/include/stdio.h
+gdb_ops.o: ../include/gdb.h /usr/include/sys/types.h /usr/include/sys/time.h
+gdb_ops.o: /usr/include/time.h /usr/include/netinet/in.h
+gdb_ops.o: /usr/include/sys/ioctl.h /usr/include/sys/ttychars.h
+gdb_ops.o: /usr/include/sys/ttydev.h

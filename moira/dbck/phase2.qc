@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase2.qc,v 1.4 1988-10-05 15:43:22 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase2.qc,v 1.5 1989-03-27 15:44:12 mar Exp $
  *
  *  (c) Copyright 1988 by the Massachusetts Institute of Technology.
  *  For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
 #include <sms.h>
 #include "dbck.h"
 
-static char phase2_qc_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase2.qc,v 1.4 1988-10-05 15:43:22 mar Exp $";
+static char phase2_qc_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase2.qc,v 1.5 1989-03-27 15:44:12 mar Exp $";
 
 
 show_mcm_mach(id)
@@ -428,6 +428,77 @@ int hint;
     }
 }
 
+##show_fsg_missing(id)
+##int id;
+##{
+##  int id1, found = 1;
+    struct filesys *f;
+
+##  retrieve (id1 = fsgroup.filsys_id) where fsgroup.group_id = id {
+      found = 0;
+      if (f = (struct filesys *) hash_lookup(filesys, id1))
+	printf("Missing fsgroup %d has member filesystem %s\n", id, f->name);
+      else
+	printf("Missing fsgroup %d has member filesystem %d\n", id, id1);
+##  }
+    return(found);
+##}
+
+show_fsg_type(f)
+struct filesys *f;
+{
+    char *t;
+
+    switch (f->type) {
+    case 'N':
+	t = "NFS";
+	break;
+    case 'R':
+	t = "RVD";
+	break;
+    case 'E':
+	t = "ERR";
+	break;
+    case 'F':
+	t = "FSGROUP";
+	break;
+    default:
+	t = "???";
+    }
+    printf("FSGroup %s has type %s instead of FSGROUP\n", f->name, t);
+    return(0);
+}
+
+fix_fsg_type(f)
+struct filesys *f;
+##{
+##  int rowcount, id = f->filsys_id;
+
+##  replace filesys (type = "FSGROUP") where filesys.filsys_id = id
+##  inquire_equel(rowcount = "rowcount")
+    if (rowcount > 0)
+      printf("%d entr%s fixed\n", rowcount, rowcount==1?"y":"ies");
+    else
+      printf("Not fixed\n");
+    modified("filesys");
+##}
+
+##show_fsg_nomember(id)
+##int id;
+##{
+##  int id1, found = 1;
+    struct filesys *f;
+
+##  retrieve (id1 = fsgroup.group_id) where fsgroup.filsys_id = id {
+      found = 0;
+      if (f = (struct filesys *) hash_lookup(filesys, id1))
+	printf("FSGroup %s has missing member %d\n", f->name, id);
+      else
+	printf("FSGroup %d has missing member %d\n", id1, id);
+##  }
+    return(found);
+##}
+
 ##show_quota_nouser(id)
 ##int id;
 ##{
@@ -647,6 +718,22 @@ phase2()
 
     dprintf("Checking filesys...\n");
     hash_step(filesys, check_fs, NULL);
+
+    dprintf("Checking filesystem groups...\n");
+    sq1 = sq_create();
+    sq2 = sq_create();
+    sq3 = sq_create();
+##  retrieve (id1 = fsgroup.group_id, id2 = fsgroup.filsys_id) {
+    	if (!(f = (struct filesys *) hash_lookup(filesys, id1)))
+	  sq_save_data(sq1, id1);
+	if (f->type  != 'F')
+	  sq_save_data(sq2, f);
+    	if (!hash_lookup(filesys, id2))
+	  sq_save_data(sq3, id2);
+##  }
+    generic_delete(sq1, show_fsg_missing, "fsgroup", "group_id", 0);
+    generic_fix(sq2, show_fsg_type, "Change to \"FSTYPE\"", fix_fsg_type, 0);
+    generic_delete(sq3, show_fsg_nomember, "fsgroup", "filsys_id", 1);
 
     dprintf("Checking nfsquota...\n");
     sq1 = sq_create();

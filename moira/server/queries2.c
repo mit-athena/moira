@@ -1,6 +1,6 @@
 /* This file defines the query dispatch table for version 2 of the protocol
  *
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/queries2.c,v 1.9 1988-09-13 17:41:45 mar Exp $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/queries2.c,v 1.10 1988-10-03 15:31:23 mar Exp $
  *
  * Copyright 1987, 1988 by the Massachusetts Institute of Technology.
  * For copying and distribution information, please see the file
@@ -56,7 +56,7 @@ int set_modtime();
 int set_modtime_by_id();
 int set_finger_modtime();
 int set_pobox_modtime();
-int set_mach_modtime();
+int set_uppercase_modtime();
 int set_mach_modtime_by_id();
 int set_cluster_modtime_by_id();
 int set_serverhost_modtime();
@@ -521,7 +521,7 @@ static struct validate amac_validate = {
   MACH_ID,
   0,
   0,
-  set_mach_modtime,
+  set_uppercase_modtime,
 };
 
 static char *umac_fields[] = {
@@ -740,7 +740,7 @@ static struct validate asin_validate =	/* for asin, usin */
   0,
   0,
   0,
-  set_modtime,
+  set_uppercase_modtime,
 };
 
 static struct validate rsve_validate = {
@@ -752,7 +752,7 @@ static struct validate rsve_validate = {
   0,
   access_service,
   0,
-  set_modtime,
+  set_uppercase_modtime,
 };
 
 static char *ssif_fields[] = {

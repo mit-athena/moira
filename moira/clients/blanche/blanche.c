@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.29 1996-10-24 00:23:26 danw Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.30 1997-01-16 02:50:46 danw Exp $
  *
  * Command line oriented Moira List tool.
  *
@@ -24,7 +24,7 @@
 #include <moira_site.h>
 
 #ifndef LINT
-static char blanche_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.29 1996-10-24 00:23:26 danw Exp $";
+static char blanche_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.30 1997-01-16 02:50:46 danw Exp $";
 #endif
 
 
@@ -242,13 +242,6 @@ char **argv;
 
     /* Process the add list */
     while (sq_get_data(addlist, &memberstruct)) {
-	if ((memberstruct->type == M_STRING ||
-	     memberstruct->type == M_ANY) &&
-	    strchr(memberstruct->name, '\'')) {
-		fprintf(stderr, "%s: Illegal character \"'\" in argument while adding \"STRING:%s\" to %s.\n",
-			whoami, memberstruct->name, listname);
-		continue;
-	}
 	/* canonicalize string if necessary */
 	if (memberstruct->type == M_STRING &&
 	    (p = strchr(memberstruct->name, '@'))) {

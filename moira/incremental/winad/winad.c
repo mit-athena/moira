@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/winad/winad.c,v 1.17 2001-07-10 23:36:35 zacheiss Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/winad/winad.c,v 1.18 2001-07-14 22:58:48 zacheiss Exp $
 /* winad.incr arguments examples
  *
  *
@@ -912,7 +912,7 @@ void do_member(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
                   if (afterc)
                     com_err(whoami, 0, "Couldn't add %s to group %s - unable to process group", user_name, group_name);
                   else
-                    com_err(whoami, 0, "Couldn't remove %s to group %s - unable to process group", user_name, group_name);
+                    com_err(whoami, 0, "Couldn't remove %s from group %s - unable to process group", user_name, group_name);
                   return;
                 }
             }
@@ -962,7 +962,7 @@ void do_member(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
       if (rc = member_remove(ldap_handle, dn_path, group_name,
                              group_ou, group_membership, ptr[LM_MEMBER], 
                              pUserOu, moira_list_id))
-          com_err(whoami, 0, "couldn't remove %s to group %s", user_name, group_name);
+          com_err(whoami, 0, "couldn't remove %s from group %s", user_name, group_name);
       return;
     }
 
@@ -1079,8 +1079,8 @@ void do_user(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
     }
 
   /*process anything that gets here*/
-  if ((rc = check_user(ldap_handle, dn_path, after[U_NAME], 
-                       after_user_id)) == AD_NO_USER_FOUND)
+  if ((rc = check_user(ldap_handle, dn_path, before[U_NAME], 
+                       before_user_id)) == AD_NO_USER_FOUND)
     {
       if (rc = moira_connect())
         {
@@ -1724,11 +1724,7 @@ int group_rename(LDAP *ldap_handle, char *dn_path,
     }
 
   name_v[0] = after_group_name;
-  if (!strncmp(&sam_name[strlen(sam_name) - strlen("_zZxc")], "_zZx", strlen("_zZx")))
-    {
-      sprintf(sam_name, "%s_zZx%c", after_group_name, after_group_membership[0]);
-    }
-  else if (!strncmp(&sam_name[strlen(sam_name) - strlen("_group")], "_group", strlen("_group")))
+  if (!strncmp(&sam_name[strlen(sam_name) - strlen("_group")], "_group", strlen("_group")))
     {
       sprintf(sam_name, "%s_group", after_group_name);
     }
@@ -1900,7 +1896,7 @@ int group_create(int ac, char **av, void *ptr)
 
   sprintf(filter, "(sAMAccountName=%s)", sam_group_name);
   if (strlen(call_args[5]) != 0)
-    sprintf(filter, "(mitMoiraId=%s)", call_args[5]);
+    sprintf(filter, "(&(objectClass=group) (mitMoiraId=%s))", call_args[5]);
   attr_array[0] = "objectSid";
   attr_array[1] = NULL;
   group_count = 0;
@@ -2282,6 +2278,7 @@ int user_update(LDAP *ldap_handle, char *dn_path, char *user_name,
   char *attr_array[3];
   char **hp;
   char path[256];
+  char temp[256];
   char winPath[256];
   char winProfile[256];
 
@@ -2296,7 +2293,7 @@ int user_update(LDAP *ldap_handle, char *dn_path, char *user_name,
 
   if (strlen(MoiraId) != 0)
     {
-      sprintf(filter, "(mitMoiraId=%s)", MoiraId);
+      sprintf(filter, "(&(objectClass=user)(mitMoiraId=%s))", MoiraId);
       attr_array[0] = "cn";
       attr_array[1] = NULL;
       if ((rc = linklist_build(ldap_handle, dn_path, filter, attr_array, 
@@ -2307,12 +2304,16 @@ int user_update(LDAP *ldap_handle, char *dn_path, char *user_name,
           return(rc);
         }
     }
-  if (group_count == 0)
+  if (group_count != 1)
     {
+      linklist_free(group_base);
+      group_base = NULL;
+      group_count = 0;
       sprintf(filter, "(sAMAccountName=%s)", user_name);
       attr_array[0] = "cn";
       attr_array[1] = NULL;
-      if ((rc = linklist_build(ldap_handle, dn_path, filter, attr_array, 
+      sprintf(temp, "%s,%s", user_ou, dn_path);
+      if ((rc = linklist_build(ldap_handle, temp, filter, attr_array, 
                                &group_base, &group_count)) != 0)
         {
           com_err(whoami, 0, "LDAP server couldn't process user %s : %s",
@@ -2649,7 +2650,7 @@ int user_create(int ac, char **av, void *ptr)
     }
   sprintf(filter, "(sAMAccountName=%s)", av[U_NAME]);
   if (strlen(call_args[2]) != 0)
-    sprintf(filter, "(mitMoiraId=%s)", call_args[2]);
+    sprintf(filter, "(&(objectClass=user)(mitMoiraId=%s))", call_args[2]);
   attr_array[0] = "objectSid";
   attr_array[1] = NULL;
   group_count = 0;
@@ -2707,7 +2708,7 @@ int user_change_status(LDAP *ldap_handle, char *dn_path,
 
   if (strlen(MoiraId) != 0)
     {
-      sprintf(filter, "(mitMoiraId=%s)", MoiraId);
+      sprintf(filter, "(&(objectClass=user)(mitMoiraId=%s))", MoiraId);
       attr_array[0] = "UserAccountControl";
       attr_array[1] = NULL;
       if ((rc = linklist_build(ldap_handle, dn_path, filter, attr_array, 
@@ -2718,8 +2719,11 @@ int user_change_status(LDAP *ldap_handle, char *dn_path,
           return(rc);
         }
     }
-  if (group_count == 0)
+  if (group_count != 1)
     {
+      linklist_free(group_base);
+      group_count = 0;
+      group_base = NULL;
       sprintf(filter, "(sAMAccountName=%s)", user_name);
       attr_array[0] = "UserAccountControl";
       attr_array[1] = NULL;
@@ -2794,7 +2798,7 @@ int user_delete(LDAP *ldap_handle, char *dn_path,
 
   if (strlen(MoiraId) != 0)
     {
-      sprintf(filter, "(mitMoiraId=%s)", MoiraId);
+      sprintf(filter, "(&(objectClass=user)(mitMoiraId=%s))", MoiraId);
       attr_array[0] = "name";
       attr_array[1] = NULL;
       if ((rc = linklist_build(ldap_handle, dn_path, filter, attr_array, 
@@ -2805,8 +2809,11 @@ int user_delete(LDAP *ldap_handle, char *dn_path,
           goto cleanup;
         }
     }
-  if (group_count == 0)
+  if (group_count != 1)
     {
+      linklist_free(group_base);
+      group_count = 0;
+      group_base = NULL;
       sprintf(filter, "(sAMAccountName=%s)", user_name);
       attr_array[0] = "name";
       attr_array[1] = NULL;
@@ -3312,10 +3319,13 @@ int process_group(LDAP *ldap_handle, char *dn_path, char *MoiraId,
               MoiraId, ldap_err2string(rc));
       return(rc);
     }
-  strcpy(before_desc, group_base->value);
-  linklist_free(group_base);
-  group_base = NULL;
-  group_count = 0;
+  if (group_count != 0)
+    {
+      strcpy(before_desc, group_base->value);
+      linklist_free(group_base);
+      group_base = NULL;
+      group_count = 0;
+    }
   change_to_lower_case(ad_distinguishedName);  
   strcpy(ou_both, group_ou_both);
   change_to_lower_case(ou_both);
@@ -3374,8 +3384,8 @@ int ad_get_group(LDAP *ldap_handle, char *dn_path,
                  LK_ENTRY **linklist_base, int *linklist_count,
                  char *rFilter)
 {
-  char      filter[128];
-  char      *attr_array[3];
+  char  filter[128];
+  char  *attr_array[3];
   int   rc;
 
   (*linklist_base) = NULL;
@@ -3404,7 +3414,7 @@ int ad_get_group(LDAP *ldap_handle, char *dn_path,
   (*linklist_count) = 0;
   if (strlen(MoiraId) != 0)
     {
-      sprintf(filter, "(mitMoiraId=%s)", MoiraId);
+      sprintf(filter, "(&(objectClass=group)(mitMoiraId=%s))", MoiraId);
       attr_array[0] = attribute;
       attr_array[1] = NULL;
       if ((rc = linklist_build(ldap_handle, dn_path, filter, attr_array, 
@@ -3440,21 +3450,6 @@ int ad_get_group(LDAP *ldap_handle, char *dn_path,
       return(0);
     }
 
-  linklist_free((*linklist_base));
-  (*linklist_base) = NULL;
-  (*linklist_count) = 0;
-  sprintf(filter, "(sAMAccountName=%s_zZx%c)", group_name, group_membership[0]);
-  attr_array[0] = attribute;
-  attr_array[1] = NULL;
-  if ((rc = linklist_build(ldap_handle, dn_path, filter, attr_array, 
-                           linklist_base, linklist_count)) != 0)
-    {
-      com_err(whoami, 0, "LDAP server unable to get list info with MoiraId = %s: %s",
-              MoiraId, ldap_err2string(rc));
-      return(rc);
-    }
-  if ((*linklist_count) == 1)
-      strcpy(rFilter, filter);
   return(0);
 }
 
@@ -3466,13 +3461,14 @@ int check_user(LDAP *ldap_handle, char *dn_path, char *UserName, char *MoiraId)
   int  group_count;
   int  rc;
   LK_ENTRY  *group_base;
+  LK_ENTRY  *gPtr;
 
   group_count = 0;
   group_base = NULL;
 
   if (strlen(MoiraId) != 0)
     {
-      sprintf(filter, "(mitMoiraId=%s)", MoiraId);
+      sprintf(filter, "(&(objectClass=user)(mitMoiraId=%s))", MoiraId);
       attr_array[0] = "sAMAccountName";
       attr_array[1] = NULL;
       if ((rc = linklist_build(ldap_handle, dn_path, filter, attr_array, 
@@ -3482,9 +3478,24 @@ int check_user(LDAP *ldap_handle, char *dn_path, char *UserName, char *MoiraId)
                   UserName, ldap_err2string(rc));
           return(rc);
         }
+      if (group_count > 1)
+        {
+          com_err(whoami, 0, "multiple users exist with MoiraId = %s",
+                  MoiraId);
+          gPtr = group_base;
+          while (gPtr)
+            {
+              com_err(whoami, 0, "user %s exist with MoiraId = %s",
+                      gPtr->value, MoiraId);
+              gPtr = gPtr->next;
+            }
+        }
     }
-  if (group_count == 0)
+  if (group_count != 1)
     {
+      linklist_free(group_base);
+      group_count = 0;
+      group_base = NULL;
       sprintf(filter, "(sAMAccountName=%s)", UserName);
       attr_array[0] = "sAMAccountName";
       attr_array[1] = NULL;

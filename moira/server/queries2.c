@@ -1,6 +1,6 @@
 /* This file defines the query dispatch table for version 2 of the protocol
  *
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/queries2.c,v 1.19 1989-12-28 17:22:27 mar Exp $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/queries2.c,v 1.20 1990-03-19 15:49:36 mar Exp $
  *
  * Copyright 1987, 1988 by the Massachusetts Institute of Technology.
  * For copying and distribution information, please see the file
@@ -9,7 +9,7 @@
 
 #include <mit-copyright.h>
 #include "query.h"
-#include "sms_et.h"
+#include "mr_et.h"
 
 /* Specialized Support Query Routines */
 
@@ -132,32 +132,32 @@ static struct valobj VOsort0[] = {
 };
 
 static struct valobj VOdate1[] = {
-  {V_DATE, 1, 0, 0, 0, SMS_DATE},
+  {V_DATE, 1, 0, 0, 0, MR_DATE},
 };
 
 static struct valobj VOuser0[] = {
-  {V_ID, 0, USERS, LOGIN, USERS_ID, SMS_USER},
+  {V_ID, 0, USERS, LOGIN, USERS_ID, MR_USER},
 };
 
 static struct valobj VOuser0lock[] = {
-  {V_LOCK, 0, USERS, 0, USERS_ID, SMS_DEADLOCK},
-  {V_ID, 0, USERS, LOGIN, USERS_ID, SMS_USER},
+  {V_LOCK, 0, USERS, 0, USERS_ID, MR_DEADLOCK},
+  {V_ID, 0, USERS, LOGIN, USERS_ID, MR_USER},
 };
 
 static struct valobj VOmach0[] = {
-  {V_ID, 0, MACHINE, NAME, MACH_ID, SMS_MACHINE},
+  {V_ID, 0, MACHINE, NAME, MACH_ID, MR_MACHINE},
 };
 
 static struct valobj VOclu0[] = {
-  {V_ID, 0, CLUSTER, NAME, CLU_ID, SMS_CLUSTER},
+  {V_ID, 0, CLUSTER, NAME, CLU_ID, MR_CLUSTER},
 };
 
 static struct valobj VOlist0[] = {
-  {V_ID, 0, LIST, NAME, LIST_ID, SMS_LIST},
+  {V_ID, 0, LIST, NAME, LIST_ID, MR_LIST},
 };
 
 static struct valobj VOfilsys0[] = {
-  {V_ID, 0, FILESYS, LABEL, FILSYS_ID, SMS_FILESYS},
+  {V_ID, 0, FILESYS, LABEL, FILSYS_ID, MR_FILESYS},
 };
 
 static struct valobj VOchar0[] = {
@@ -170,14 +170,14 @@ static struct valobj VOsort01[] = {
 };
 
 static struct valobj VOuser0sort[] = {
-  {V_ID, 0, USERS, LOGIN, USERS_ID, SMS_USER},
+  {V_ID, 0, USERS, LOGIN, USERS_ID, MR_USER},
   {V_SORT, 0},
 };
 
 static struct valobj VOfilsys0user1[] = {
-  {V_LOCK, 0, FILESYS, 0, FILSYS_ID, SMS_DEADLOCK},
-  {V_ID, 0, FILESYS, LABEL, FILSYS_ID, SMS_FILESYS},
-  {V_ID, 1, USERS, LOGIN, USERS_ID, SMS_USER},
+  {V_LOCK, 0, FILESYS, 0, FILSYS_ID, MR_DEADLOCK},
+  {V_ID, 0, FILESYS, LABEL, FILSYS_ID, MR_FILESYS},
+  {V_ID, 1, USERS, LOGIN, USERS_ID, MR_USER},
 };
 
 
@@ -257,13 +257,13 @@ static char *ausr_fields[] = {
 };
 
 static struct valobj ausr_valobj[] = {
-  {V_LOCK, 0, USERS, 0, USERS_ID, SMS_DEADLOCK},
+  {V_LOCK, 0, USERS, 0, USERS_ID, MR_DEADLOCK},
   {V_CHAR, 0},
   {V_CHAR, 3},
   {V_CHAR, 4},
   {V_CHAR, 5},
   {V_CHAR, 7},
-  {V_TYPE, 8, CLASS, 0, 0, SMS_BAD_CLASS},
+  {V_TYPE, 8, CLASS, 0, 0, MR_BAD_CLASS},
 };
 
 static struct validate ausr_validate = {
@@ -283,10 +283,10 @@ static char *rusr_fields[] = {
 };
 
 static struct valobj rusr_valobj[] = {
-  {V_LOCK, 0, USERS, 0, USERS_ID, SMS_DEADLOCK},
-  {V_LOCK, 0, LIST, 0, LIST_ID, SMS_DEADLOCK},
-  {V_LOCK, 0, FILESYS, 0, FILSYS_ID, SMS_DEADLOCK},
-  {V_LOCK, 0, "nfsphys", 0, "nfsphys_id", SMS_DEADLOCK},
+  {V_LOCK, 0, USERS, 0, USERS_ID, MR_DEADLOCK},
+  {V_LOCK, 0, LIST, 0, LIST_ID, MR_DEADLOCK},
+  {V_LOCK, 0, FILESYS, 0, FILSYS_ID, MR_DEADLOCK},
+  {V_LOCK, 0, "nfsphys", 0, "nfsphys_id", MR_DEADLOCK},
 };
 
 static struct validate rusr_validate = {
@@ -308,14 +308,14 @@ static char *uusr_fields[] = {
 };
 
 static struct valobj uusr_valobj[] = {
-    {V_LOCK, 0, USERS, 0, USERS_ID, SMS_DEADLOCK},
-    {V_ID, 0, USERS, LOGIN, USERS_ID, SMS_USER},
-    {V_RENAME, 1, USERS, LOGIN, USERS_ID, SMS_NOT_UNIQUE},
+    {V_LOCK, 0, USERS, 0, USERS_ID, MR_DEADLOCK},
+    {V_ID, 0, USERS, LOGIN, USERS_ID, MR_USER},
+    {V_RENAME, 1, USERS, LOGIN, USERS_ID, MR_NOT_UNIQUE},
     {V_CHAR, 4},
     {V_CHAR, 5},
     {V_CHAR, 6},
     {V_CHAR, 8},
-    {V_TYPE, 9, CLASS, 0, 0, SMS_BAD_CLASS},
+    {V_TYPE, 9, CLASS, 0, 0, MR_BAD_CLASS},
 };
 
 static struct validate uusr_validate = {
@@ -385,8 +385,8 @@ static char *dubu_fields[] = {
 };
 
 static struct valobj dubu_valobj[] = {
-    {V_LOCK, 0, USERS, 0, USERS_ID, SMS_DEADLOCK},
-    {V_ID, 0, USERS, UID, USERS_ID, SMS_USER}
+    {V_LOCK, 0, USERS, 0, USERS_ID, MR_DEADLOCK},
+    {V_ID, 0, USERS, UID, USERS_ID, MR_USER}
 };
 
 static struct validate dubu_validate = {
@@ -408,8 +408,8 @@ static char *akum_fields[] = { LOGIN, "kerberos" };
 
 static struct valobj akum_valobj[] =
 {
-    {V_ID, 0, USERS, LOGIN, USERS_ID, SMS_USER},
-    {V_ID, 1, "strings", "string", "string_id", SMS_NO_MATCH},
+    {V_ID, 0, USERS, LOGIN, USERS_ID, MR_USER},
+    {V_ID, 1, "strings", "string", "string_id", MR_NO_MATCH},
 };
 
 static struct validate akum_validate =
@@ -514,9 +514,9 @@ static char *spob_fields[] = {
 };
 
 static struct valobj spob_valobj[] = {
-  {V_LOCK, 0, USERS, 0, USERS_ID, SMS_DEADLOCK},
-  {V_ID, 0, USERS, LOGIN, USERS_ID, SMS_USER},
-  {V_TYPE, 1, "pobox", 0, 0, SMS_TYPE},
+  {V_LOCK, 0, USERS, 0, USERS_ID, MR_DEADLOCK},
+  {V_ID, 0, USERS, LOGIN, USERS_ID, MR_USER},
+  {V_TYPE, 1, "pobox", 0, 0, MR_TYPE},
 };
 
 static struct validate spob_validate =	/* SET_POBOX */
@@ -569,8 +569,8 @@ static char *amac_fields[] = {
 
 static struct valobj amac_valobj[] = {
   {V_CHAR, 0},
-  {V_LOCK, 0, MACHINE, 0, MACH_ID, SMS_DEADLOCK},
-  {V_TYPE, 1, "mac_type", 0, 0, SMS_TYPE},
+  {V_LOCK, 0, MACHINE, 0, MACH_ID, MR_DEADLOCK},
+  {V_TYPE, 1, "mac_type", 0, 0, MR_TYPE},
 };
 
 static struct validate amac_validate = {
@@ -591,10 +591,10 @@ static char *umac_fields[] = {
 };
 
 static struct valobj umac_valobj[] = {
-  {V_LOCK, 0, MACHINE, 0, MACH_ID, SMS_DEADLOCK},
-  {V_ID, 0, MACHINE, NAME, MACH_ID, SMS_MACHINE},
-  {V_RENAME, 1, MACHINE, NAME, MACH_ID, SMS_NOT_UNIQUE},
-  {V_TYPE, 2, "mac_type", 0, 0, SMS_TYPE},
+  {V_LOCK, 0, MACHINE, 0, MACH_ID, MR_DEADLOCK},
+  {V_ID, 0, MACHINE, NAME, MACH_ID, MR_MACHINE},
+  {V_RENAME, 1, MACHINE, NAME, MACH_ID, MR_NOT_UNIQUE},
+  {V_TYPE, 2, "mac_type", 0, 0, MR_TYPE},
 };
 
 static struct validate umac_validate = {
@@ -614,8 +614,8 @@ static char *dmac_fields[] = {
 };
 
 static struct valobj dmac_valobj[] = {
-  {V_LOCK, 0, MACHINE, 0, MACH_ID, SMS_DEADLOCK},
-  {V_ID, 0, MACHINE, NAME, MACH_ID, SMS_MACHINE},
+  {V_LOCK, 0, MACHINE, 0, MACH_ID, MR_DEADLOCK},
+  {V_ID, 0, MACHINE, NAME, MACH_ID, MR_MACHINE},
 };
 
 static struct validate dmac_validate = {
@@ -640,7 +640,7 @@ static char *aclu_fields[] = {
 };
   
 static struct valobj aclu_valobj[] = {
-  {V_LOCK, 0, CLUSTER, 0, CLU_ID, SMS_DEADLOCK},
+  {V_LOCK, 0, CLUSTER, 0, CLU_ID, MR_DEADLOCK},
   {V_CHAR, 0}
 };
 
@@ -663,9 +663,9 @@ static char *uclu_fields[] = {
 };
 
 static struct valobj uclu_valobj[] = {
-  {V_LOCK, 0, CLUSTER, 0, CLU_ID, SMS_DEADLOCK},
-  {V_ID, 0, CLUSTER, NAME, CLU_ID, SMS_CLUSTER},
-  {V_RENAME, 1, CLUSTER, NAME, CLU_ID, SMS_NOT_UNIQUE},
+  {V_LOCK, 0, CLUSTER, 0, CLU_ID, MR_DEADLOCK},
+  {V_ID, 0, CLUSTER, NAME, CLU_ID, MR_CLUSTER},
+  {V_RENAME, 1, CLUSTER, NAME, CLU_ID, MR_NOT_UNIQUE},
 };
 
 static struct validate uclu_validate = {
@@ -703,8 +703,8 @@ static char *gmcm_fields[] = {
 
 static struct valobj amtc_valobj[] =	/* ADD_MACHINE_TO_CLUSTER */
 {					/* DELETE_MACHINE_FROM_CLUSTER */
-  {V_ID, 0, MACHINE, NAME, MACH_ID, SMS_MACHINE},
-  {V_ID, 1, CLUSTER, NAME, CLU_ID, SMS_CLUSTER},
+  {V_ID, 0, MACHINE, NAME, MACH_ID, MR_MACHINE},
+  {V_ID, 1, CLUSTER, NAME, CLU_ID, MR_CLUSTER},
 };
 
 static struct validate amtc_validate = /* for amtc and dmfc */
@@ -731,7 +731,7 @@ static char *acld_fields[] = {
 
 static struct valobj acld_valobj[] =
 {
-  {V_ID, 0, CLUSTER, NAME, CLU_ID, SMS_CLUSTER},
+  {V_ID, 0, CLUSTER, NAME, CLU_ID, MR_CLUSTER},
   {V_CHAR, 2},
 };
 
@@ -774,9 +774,9 @@ static char *qgsv_fields[] = {
 };
 
 static struct valobj qgsv_valobj[] = {
-  {V_TYPE, 0, "boolean", 0, 0, SMS_TYPE},
-  {V_TYPE, 1, "boolean", 0, 0, SMS_TYPE},
-  {V_TYPE, 2, "boolean", 0, 0, SMS_TYPE},
+  {V_TYPE, 0, "boolean", 0, 0, MR_TYPE},
+  {V_TYPE, 1, "boolean", 0, 0, MR_TYPE},
+  {V_TYPE, 2, "boolean", 0, 0, MR_TYPE},
 };
 
 static struct validate qgsv_validate = {
@@ -797,11 +797,11 @@ static char *asin_fields[] = {
 };
 
 static struct valobj asin_valobj[] = {
-  {V_LOCK, 0, MACHINE, 0, MACH_ID, SMS_DEADLOCK},
+  {V_LOCK, 0, MACHINE, 0, MACH_ID, MR_DEADLOCK},
   {V_CHAR, 0},
-  {V_TYPE, 4, "service", 0, 0, SMS_TYPE},
-  {V_TYPE, 6, ACE_TYPE, 0, 0, SMS_ACE},
-  {V_TYPEDATA, 7, 0, 0, 0, SMS_ACE},
+  {V_TYPE, 4, "service", 0, 0, MR_TYPE},
+  {V_TYPE, 6, ACE_TYPE, 0, 0, MR_ACE},
+  {V_TYPEDATA, 7, 0, 0, 0, MR_ACE},
 };
 
 static struct validate asin_validate =	/* for asin, usin */
@@ -886,11 +886,11 @@ static char *qgsh_fields[] = {
 };
 
 static struct valobj qgsh_valobj[] = {
-  {V_TYPE, 1, "boolean", 0, 0, SMS_TYPE},
-  {V_TYPE, 2, "boolean", 0, 0, SMS_TYPE},
-  {V_TYPE, 3, "boolean", 0, 0, SMS_TYPE},
-  {V_TYPE, 4, "boolean", 0, 0, SMS_TYPE},
-  {V_TYPE, 5, "boolean", 0, 0, SMS_TYPE},
+  {V_TYPE, 1, "boolean", 0, 0, MR_TYPE},
+  {V_TYPE, 2, "boolean", 0, 0, MR_TYPE},
+  {V_TYPE, 3, "boolean", 0, 0, MR_TYPE},
+  {V_TYPE, 4, "boolean", 0, 0, MR_TYPE},
+  {V_TYPE, 5, "boolean", 0, 0, MR_TYPE},
 };
 
 static struct validate qgsh_validate = {
@@ -910,9 +910,9 @@ static char *ashi_fields[] = {
 };
 
 static struct valobj ashi_valobj[] = {
-  {V_LOCK, 0, MACHINE, 0, MACH_ID, SMS_DEADLOCK},
-  {V_NAME, 0, "servers", NAME, 0, SMS_SERVICE},
-  {V_ID, 1, MACHINE, NAME, MACH_ID, SMS_MACHINE},
+  {V_LOCK, 0, MACHINE, 0, MACH_ID, MR_DEADLOCK},
+  {V_NAME, 0, "servers", NAME, 0, MR_SERVICE},
+  {V_ID, 1, MACHINE, NAME, MACH_ID, MR_MACHINE},
 };
 
 static struct validate ashi_validate = /* ashi & ushi */
@@ -960,7 +960,7 @@ static char *sshi_fields[] = {
 };
 
 static struct valobj sshi_valobj[] = {
-  {V_NAME, 0, "servers", NAME, 0, SMS_SERVICE},
+  {V_NAME, 0, "servers", NAME, 0, MR_SERVICE},
 };
 
 static struct validate sshi_validate =	
@@ -1016,9 +1016,9 @@ static char *asha_fields[] = {
 };
 
 static struct valobj asha_valobj[] = {
-  {V_ID, 0, MACHINE, NAME, MACH_ID, SMS_MACHINE},
-  {V_TYPE, 1, ACE_TYPE, 0, 0, SMS_ACE},
-  {V_TYPEDATA, 2, 0, 0, 0, SMS_ACE},
+  {V_ID, 0, MACHINE, NAME, MACH_ID, MR_MACHINE},
+  {V_TYPE, 1, ACE_TYPE, 0, 0, MR_ACE},
+  {V_TYPEDATA, 2, 0, 0, 0, MR_ACE},
 };
 
 static struct validate asha_validate =	
@@ -1094,13 +1094,13 @@ static char *afil_fields[] = {
 
 static struct valobj afil_valobj[] = {
   {V_CHAR, 0},
-  {V_LOCK, 0, FILESYS, 0, FILSYS_ID, SMS_DEADLOCK},
-  {V_TYPE, 1, FILESYS, 0, 0, SMS_FSTYPE},
-  {V_ID, 2, MACHINE, NAME, MACH_ID, SMS_MACHINE},
+  {V_LOCK, 0, FILESYS, 0, FILSYS_ID, MR_DEADLOCK},
+  {V_TYPE, 1, FILESYS, 0, 0, MR_FSTYPE},
+  {V_ID, 2, MACHINE, NAME, MACH_ID, MR_MACHINE},
   {V_CHAR, 3},
-  {V_ID, 7, USERS, LOGIN, USERS_ID, SMS_USER},
-  {V_ID, 8, LIST, NAME, LIST_ID, SMS_LIST},
-  {V_TYPE, 10, "lockertype", 0, 0, SMS_TYPE}
+  {V_ID, 7, USERS, LOGIN, USERS_ID, MR_USER},
+  {V_ID, 8, LIST, NAME, LIST_ID, MR_LIST},
+  {V_TYPE, 10, "lockertype", 0, 0, MR_TYPE}
 };
 
 static struct validate afil_validate = {
@@ -1121,15 +1121,15 @@ static char *ufil_fields[] = {
 };
 
 static struct valobj ufil_valobj[] = {
-  {V_LOCK, 0, FILESYS, 0, FILSYS_ID, SMS_DEADLOCK},
-  {V_ID, 0, FILESYS, LABEL, FILSYS_ID, SMS_FILESYS},
-  {V_RENAME, 1, FILESYS, LABEL, FILSYS_ID, SMS_NOT_UNIQUE},
-  {V_TYPE, 2, FILESYS, 0, 0, SMS_FSTYPE},
-  {V_ID, 3, MACHINE, NAME, MACH_ID, SMS_MACHINE},
+  {V_LOCK, 0, FILESYS, 0, FILSYS_ID, MR_DEADLOCK},
+  {V_ID, 0, FILESYS, LABEL, FILSYS_ID, MR_FILESYS},
+  {V_RENAME, 1, FILESYS, LABEL, FILSYS_ID, MR_NOT_UNIQUE},
+  {V_TYPE, 2, FILESYS, 0, 0, MR_FSTYPE},
+  {V_ID, 3, MACHINE, NAME, MACH_ID, MR_MACHINE},
   {V_CHAR, 4},
-  {V_ID, 8, USERS, LOGIN, USERS_ID, SMS_USER},
-  {V_ID, 9, LIST, NAME, LIST_ID, SMS_LIST},
-  {V_TYPE, 11, "lockertype", 0, 0, SMS_TYPE}
+  {V_ID, 8, USERS, LOGIN, USERS_ID, MR_USER},
+  {V_ID, 9, LIST, NAME, LIST_ID, MR_LIST},
+  {V_TYPE, 11, "lockertype", 0, 0, MR_TYPE}
 };
 
 static struct validate ufil_validate = {
@@ -1149,8 +1149,8 @@ static char *dfil_fields[] = {
 };
 
 static struct valobj dfil_valobj[] = {
-  {V_LOCK, 0, FILESYS, 0, FILSYS_ID, SMS_DEADLOCK},
-  {V_ID, 0, FILESYS, LABEL, FILSYS_ID, SMS_FILESYS},
+  {V_LOCK, 0, FILESYS, 0, FILSYS_ID, MR_DEADLOCK},
+  {V_ID, 0, FILESYS, LABEL, FILSYS_ID, MR_FILESYS},
 };
 
 static struct validate dfil_validate = {
@@ -1170,7 +1170,7 @@ static char *gfgm_fields[] = {
 };
 
 static struct valobj gfgm_valobj[] = {
-    {V_ID, 0, FILESYS, LABEL, FILSYS_ID, SMS_FILESYS},
+    {V_ID, 0, FILESYS, LABEL, FILSYS_ID, MR_FILESYS},
     {V_SORT, 1},
     {V_SORT, 0},
 };
@@ -1188,9 +1188,9 @@ static struct validate gfgm_validate = {
 };
 
 static struct valobj aftg_valobj[] = {
-    {V_LOCK, 0, FILESYS, 0, FILSYS_ID, SMS_DEADLOCK},
-    {V_ID, 0, FILESYS, LABEL, FILSYS_ID, SMS_FILESYS},
-    {V_ID, 1, FILESYS, LABEL, FILSYS_ID, SMS_FILESYS},
+    {V_LOCK, 0, FILESYS, 0, FILSYS_ID, MR_DEADLOCK},
+    {V_ID, 0, FILESYS, LABEL, FILSYS_ID, MR_FILESYS},
+    {V_ID, 1, FILESYS, LABEL, FILSYS_ID, MR_FILESYS},
 };
 
 static struct validate aftg_validate = {
@@ -1227,7 +1227,7 @@ static struct validate gnfp_validate = {
 };
 
 static struct valobj anfp_valobj[] = {
-  {V_ID, 0, MACHINE, NAME, MACH_ID, SMS_MACHINE},
+  {V_ID, 0, MACHINE, NAME, MACH_ID, MR_MACHINE},
   {V_CHAR, 1},
 };
 
@@ -1345,10 +1345,10 @@ static char *alis_fields[] = {
 };
 
 static struct valobj alis_valobj[] = {
-  {V_LOCK, 0, LIST, 0, LIST_ID, SMS_DEADLOCK},
+  {V_LOCK, 0, LIST, 0, LIST_ID, MR_DEADLOCK},
   {V_CHAR, 0},
-  {V_TYPE, 7, ACE_TYPE, 0, 0, SMS_ACE},
-  {V_TYPEDATA, 8, 0, 0, LIST_ID, SMS_ACE},
+  {V_TYPE, 7, ACE_TYPE, 0, 0, MR_ACE},
+  {V_TYPEDATA, 8, 0, 0, LIST_ID, MR_ACE},
 };
 
 static struct validate alis_validate = {
@@ -1370,11 +1370,11 @@ static char *ulis_fields[] = {
 };
 
 static struct valobj ulis_valobj[] = {
-  {V_LOCK, 0, LIST, 0, LIST_ID, SMS_DEADLOCK},
-  {V_ID, 0, LIST, NAME, LIST_ID, SMS_LIST},
-  {V_RENAME, 1, LIST, NAME, LIST_ID, SMS_NOT_UNIQUE},
-  {V_TYPE, 8, ACE_TYPE, 0, 0, SMS_ACE},
-  {V_TYPEDATA, 9, 0, 0, LIST_ID, SMS_ACE},
+  {V_LOCK, 0, LIST, 0, LIST_ID, MR_DEADLOCK},
+  {V_ID, 0, LIST, NAME, LIST_ID, MR_LIST},
+  {V_RENAME, 1, LIST, NAME, LIST_ID, MR_NOT_UNIQUE},
+  {V_TYPE, 8, ACE_TYPE, 0, 0, MR_ACE},
+  {V_TYPEDATA, 9, 0, 0, LIST_ID, MR_ACE},
 };
 
 static struct validate ulis_validate = {
@@ -1410,10 +1410,10 @@ static char *amtl_fields[] = {
 };
 
 static struct valobj amtl_valobj[] = {
-  {V_LOCK, 0, LIST, 0, LIST_ID, SMS_DEADLOCK},
-  {V_ID, 0, LIST, NAME, LIST_ID, SMS_LIST},
-  {V_TYPE, 1, "member", 0, 0, SMS_TYPE},
-  {V_TYPEDATA, 2, 0, 0, 0, SMS_NO_MATCH},
+  {V_LOCK, 0, LIST, 0, LIST_ID, MR_DEADLOCK},
+  {V_ID, 0, LIST, NAME, LIST_ID, MR_LIST},
+  {V_TYPE, 1, "member", 0, 0, MR_TYPE},
+  {V_TYPEDATA, 2, 0, 0, 0, MR_NO_MATCH},
 };
 
 static struct validate amtl_validate =
@@ -1448,8 +1448,8 @@ static char *gaus_fields[] = {
 };
 
 static struct valobj gaus_valobj[] = {
-  {V_TYPE, 0, "gaus", 0, 0, SMS_TYPE},
-  {V_TYPEDATA, 1, 0, 0, 0, SMS_NO_MATCH},
+  {V_TYPE, 0, "gaus", 0, 0, MR_TYPE},
+  {V_TYPEDATA, 1, 0, 0, 0, MR_NO_MATCH},
 };
 
 static struct validate gaus_validate = {
@@ -1470,11 +1470,11 @@ static char *qgli_fields[] = {
 };
 
 static struct valobj qgli_valobj[] = {
-  {V_TYPE, 0, "boolean", 0, 0, SMS_TYPE},
-  {V_TYPE, 1, "boolean", 0, 0, SMS_TYPE},
-  {V_TYPE, 2, "boolean", 0, 0, SMS_TYPE},
-  {V_TYPE, 3, "boolean", 0, 0, SMS_TYPE},
-  {V_TYPE, 4, "boolean", 0, 0, SMS_TYPE},
+  {V_TYPE, 0, "boolean", 0, 0, MR_TYPE},
+  {V_TYPE, 1, "boolean", 0, 0, MR_TYPE},
+  {V_TYPE, 2, "boolean", 0, 0, MR_TYPE},
+  {V_TYPE, 3, "boolean", 0, 0, MR_TYPE},
+  {V_TYPE, 4, "boolean", 0, 0, MR_TYPE},
 };
 
 static struct validate qgli_validate = {
@@ -1512,8 +1512,8 @@ static char *glom_fields[] = {
 };
 
 static struct valobj glom_valobj[] = {
-  {V_TYPE, 0, "rmember", 0, 0, SMS_TYPE},
-  {V_TYPEDATA, 1, 0, 0, 0, SMS_NO_MATCH},
+  {V_TYPE, 0, "rmember", 0, 0, MR_TYPE},
+  {V_TYPEDATA, 1, 0, 0, 0, MR_NO_MATCH},
   {V_SORT, 0},
 };
 
@@ -1571,14 +1571,14 @@ static char *azcl_fields[] = {
 
 static struct valobj azcl_valobj[] = {
   {V_CHAR, 0},
-  {V_TYPE, 1, ACE_TYPE, 0, 0, SMS_ACE},
-  {V_TYPEDATA, 2, 0, 0, LIST_ID, SMS_ACE},
-  {V_TYPE, 3, ACE_TYPE, 0, 0, SMS_ACE},
-  {V_TYPEDATA, 4, 0, 0, LIST_ID, SMS_ACE},
-  {V_TYPE, 5, ACE_TYPE, 0, 0, SMS_ACE},
-  {V_TYPEDATA, 6, 0, 0, LIST_ID, SMS_ACE},
-  {V_TYPE, 7, ACE_TYPE, 0, 0, SMS_ACE},
-  {V_TYPEDATA, 8, 0, 0, LIST_ID, SMS_ACE},
+  {V_TYPE, 1, ACE_TYPE, 0, 0, MR_ACE},
+  {V_TYPEDATA, 2, 0, 0, LIST_ID, MR_ACE},
+  {V_TYPE, 3, ACE_TYPE, 0, 0, MR_ACE},
+  {V_TYPEDATA, 4, 0, 0, LIST_ID, MR_ACE},
+  {V_TYPE, 5, ACE_TYPE, 0, 0, MR_ACE},
+  {V_TYPEDATA, 6, 0, 0, LIST_ID, MR_ACE},
+  {V_TYPE, 7, ACE_TYPE, 0, 0, MR_ACE},
+  {V_TYPEDATA, 8, 0, 0, LIST_ID, MR_ACE},
 };
 
 static struct validate azcl_validate = {
@@ -1599,15 +1599,15 @@ static char *uzcl_fields[] = {
 };
 
 static struct valobj uzcl_valobj[] = {
-  {V_RENAME, 1, "zephyr", CLASS, 0, SMS_NOT_UNIQUE},
-  {V_TYPE, 2, ACE_TYPE, 0, 0, SMS_ACE},
-  {V_TYPEDATA, 3, 0, 0, LIST_ID, SMS_ACE},
-  {V_TYPE, 4, ACE_TYPE, 0, 0, SMS_ACE},
-  {V_TYPEDATA, 5, 0, 0, LIST_ID, SMS_ACE},
-  {V_TYPE, 6, ACE_TYPE, 0, 0, SMS_ACE},
-  {V_TYPEDATA, 7, 0, 0, LIST_ID, SMS_ACE},
-  {V_TYPE, 8, ACE_TYPE, 0, 0, SMS_ACE},
-  {V_TYPEDATA, 9, 0, 0, LIST_ID, SMS_ACE},
+  {V_RENAME, 1, "zephyr", CLASS, 0, MR_NOT_UNIQUE},
+  {V_TYPE, 2, ACE_TYPE, 0, 0, MR_ACE},
+  {V_TYPEDATA, 3, 0, 0, LIST_ID, MR_ACE},
+  {V_TYPE, 4, ACE_TYPE, 0, 0, MR_ACE},
+  {V_TYPEDATA, 5, 0, 0, LIST_ID, MR_ACE},
+  {V_TYPE, 6, ACE_TYPE, 0, 0, MR_ACE},
+  {V_TYPEDATA, 7, 0, 0, LIST_ID, MR_ACE},
+  {V_TYPE, 8, ACE_TYPE, 0, 0, MR_ACE},
+  {V_TYPEDATA, 9, 0, 0, LIST_ID, MR_ACE},
 };
 
 static struct validate uzcl_validate = {
@@ -1651,7 +1651,7 @@ static char *apcp_fields[] = {
 
 static struct valobj apcp_valobj[] = {
     {V_CHAR, 0},
-    {V_ID, 1, MACHINE, NAME, MACH_ID, SMS_MACHINE},
+    {V_ID, 1, MACHINE, NAME, MACH_ID, MR_MACHINE},
 };
 
 static struct validate apcp_validate = {
@@ -1689,7 +1689,7 @@ static char *apdm_fields[] = {
 
 static struct valobj apdm_valobj[] = {
     {V_CHAR, 0},
-    {V_ID, 2, MACHINE, NAME, MACH_ID, SMS_MACHINE},
+    {V_ID, 2, MACHINE, NAME, MACH_ID, MR_MACHINE},
 };
 
 static struct validate apdm_validate = {
@@ -1727,7 +1727,7 @@ static char *aali_fields[] = {
 
 static struct valobj aali_valobj[] = {
   {V_CHAR, 0},
-  {V_TYPE, 1, "alias", 0, 0, SMS_TYPE},
+  {V_TYPE, 1, "alias", 0, 0, MR_TYPE},
   {V_CHAR, 2},
 };
 
@@ -1761,7 +1761,7 @@ static char *gval_fields[] = {
 };
 
 static struct valobj gval_valobj[] = {
-  {V_NAME, 0, "values", NAME, 0, SMS_NO_MATCH},
+  {V_NAME, 0, "values", NAME, 0, MR_NO_MATCH},
 };
 
 static struct validate gval_validate = {

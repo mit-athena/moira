@@ -1,11 +1,14 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_util.c,v $
  *	$Author: wesommer $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_util.c,v 1.5 1987-06-30 20:05:52 wesommer Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_util.c,v 1.6 1987-07-06 16:09:07 wesommer Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
  *	$Log: not supported by cvs2svn $
+ * Revision 1.5  87/06/30  20:05:52  wesommer
+ * Added range checking.
+ * 
  * Revision 1.4  87/06/21  16:42:19  wesommer
  * Performance work, rearrangement of include files.
  * 
@@ -21,7 +24,7 @@
  */
 
 #ifndef lint
-static char *rcsid_sms_util_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_util.c,v 1.5 1987-06-30 20:05:52 wesommer Exp $";
+static char *rcsid_sms_util_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_util.c,v 1.6 1987-07-06 16:09:07 wesommer Exp $";
 #endif lint
 
 #include "sms_server.h"
@@ -50,7 +53,7 @@ requote(buf, cp, len)
 		}
 	}
 	if (len > 1) { *buf++ = '"'; count++; len--; }
-	if (len > 3) {
+	if (len > 3 && count >= 40) {
 		*buf++ = '.'; count++; len--;
 		*buf++ = '.'; count++; len--;
 		*buf++ = '.'; count++; len--;

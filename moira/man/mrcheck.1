@@ -1,5 +1,5 @@
 .TH SMSCHECK 1 "7 Feb 1988" "Project Athena"
-\" RCSID: $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/man/mrcheck.1,v 1.2 1988-03-01 19:53:22 mar Exp $
+\" RCSID: $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/man/mrcheck.1,v 1.3 1988-12-01 12:42:22 mar Exp $
 .UC 4
 .SH NAME
 smscheck \- verify that SMS updates are successful
@@ -7,46 +7,15 @@ smscheck \- verify that SMS updates are successful
 .B smscheck
 .SH DESCRIPTION
 .I Smscheck
-will query the SMS database to determine of every system server which
-should be updated has been successfully updated.  It will display a
-one line summary for each service/host pair which has not been
-successfully updated.  If all services are up-to-date, this will be
-indicated.
+will query the SMS database to determine which services and hosts have
+failed updates.  It will display a summary of each, listing the name,
+error code and message, last successful update, and last attempted
+update.  If all services are up-to-date, this will be indicated.
 .PP
-The following information is displayed for unsuccessful services:
-.TP
-service
-the name of the service
-.TP
-host
-the internet hostname
-.TP
-s
-The success/failure flag.  A value of 0 here indicates that the last
-updated attempt failed.
-.TP
-e
-The enable flag.  A value of 0 here indicates that this service/host
-tuple is disabled.  This flag must be set for updates to be attempted.
-Entries that are disabled are ignored by 
-.I smscheck.
-.TP
-override
-This shows the length of the re-try interval.  This length of time
-after the last time an update was attempted, the DCM will try again.
-.TP
-last time attempted
-This shows the date and time of the last update
-attempt.
-.TP
-val1, val2
-These values are service dependant, and are ignored by
-the update algorithm.
-.PP
-The determination that a service needs updating is that the last update
-failed, or that the current update is more than an hour past due.
 .SH DIAGNOSTICS
 Pay attention to Kerberos diagnostics, as one must be authenticated to
 do most SMS database work.  
+.SH AUTHOR
+Mark Rosenstein, MIT Project Athena
 .SH "SEE ALSO"
-dcmmaint(1), SMS section of the Project Athena Technical Plan
+sms(1), SMS section of the Project Athena Technical Plan

@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/aliases.qc,v 1.9 1989-08-16 20:38:02 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/aliases.qc,v 1.10 1989-08-21 21:47:43 mar Exp $
  *
  * This generates the /usr/lib/aliases mail aliases file for the mailhub.
  * The aliases file will contain:
@@ -179,7 +179,8 @@ get_info()
     users = create_hash(15000);
 ##  range of u is users
 ##  retrieve (id = u.users_id, name = u.login, type = u.potype,
-##	      pid = u.pop_id, bid = u.box_id) where u.status = 1 {
+##	      pid = u.pop_id, bid = u.box_id) 
+##    	where u.status = 1 or u.status = 5 or u.status = 6 {
 	u = (struct user *) malloc(sizeof(struct user));
 	strcpy(u->login, strtrim(name));
 	u->pobox = (char *) NULL;

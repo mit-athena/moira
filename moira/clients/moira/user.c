@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.34 1994-08-09 19:13:41 tytso Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.35 1994-10-28 17:18:15 jweiss Exp $";
 #endif lint
 
 /*	This is the file user.c for the MOIRA Client, which allows a nieve
@@ -10,8 +10,8 @@
  *	By:		Chris D. Peterson
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v $
- *      $Author: tytso $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.34 1994-08-09 19:13:41 tytso Exp $
+ *      $Author: jweiss $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.35 1994-10-28 17:18:15 jweiss Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -630,11 +630,16 @@ RegisterUser()
 	return(DM_NORMAL);
     }
 
-    if ( ((login = args[1] = GetLoginName()) == NULL) ||
+    sprintf(temp_buf, "u%s", args[0]);
+    login = strsave(temp_buf);
+    if ( (GetValueFromUser("Login name for this user? ", &login) == SUB_ERROR) ||
 	( GetFSTypes(&fstype, FALSE) == SUB_ERROR ) ) {
+        args[1] = login;
 	FreeInfo(args);	   /* This work because the NULL temination is ok. */
 	return(DM_NORMAL);
     }
+    Put_message("KERBEROS code not added, did not reserve name with kerberos.");
+    args[1] = login;
     args[2] = fstype;
     args[3] = NULL;
     

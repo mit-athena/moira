@@ -1,13 +1,13 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/update_server.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/update_server.c,v 1.3 1988-09-14 12:16:49 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/update_server.c,v 1.4 1989-06-26 09:05:18 mar Exp $
  */
 /*  (c) Copyright 1988 by the Massachusetts Institute of Technology. */
 /*  For copying and distribution information, please see the file */
 /*  <mit-copyright.h>. */
 
 #ifndef lint
-static char *rcsid_dispatch_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/update_server.c,v 1.3 1988-09-14 12:16:49 mar Exp $";
+static char *rcsid_dispatch_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/update_server.c,v 1.4 1989-06-26 09:05:18 mar Exp $";
 #endif	lint
 
 #include <mit-copyright.h>
@@ -108,8 +108,8 @@ main(argc, argv)
 #endif
 
      umask(0022);
-     init_sms_err_tbl();
-     init_krb_err_tbl();
+     initialize_sms_error_table();
+     initialize_krb_error_table();
      sms_update_initialize();
 
      /* wait for connection */

@@ -1,4 +1,4 @@
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/afs_utils.pl,v 1.17 1998-11-18 19:22:06 danw Exp $
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/afs/afs_utils.pl,v 1.1 2000-06-06 04:38:26 zacheiss Exp $
 
 use Fcntl;
 

@@ -1,20 +1,15 @@
-# $Id: Makefile.in,v 1.7 2000-01-20 19:18:48 danw Exp $
+# $Id: Makefile.in,v 1.8 2000-06-06 04:38:09 zacheiss Exp $
 
 SHELL=/bin/sh
 @SET_MAKE@
 
 CC=@CC@
 CPPFLAGS=@CPPFLAGS@
-AFS_CPPFLAGS=@AFS_CPPFLAGS@
 CFLAGS=@CFLAGS@
 DEFS=@DEFS@
-ALL_CFLAGS=$(CPPFLAGS) $(AFS_CPPFLAGS) $(CFLAGS) $(DEFS)
+ALL_CFLAGS=$(CPPFLAGS) $(CFLAGS) $(DEFS)
 LDFLAGS=@LDFLAGS@
-AFS_LIBS=@AFS_LIBS@
-AFS_EXTRA_LIBS=@AFS_EXTRA_LIBS@
-AFS_DIR=@AFS_DIR@
 LIBS=@LIBS@
-MR_LIBDEP=@MR_LIBDEP@
 INSTALL=@INSTALL@
 INSTALL_PROGRAM=@INSTALL_PROGRAM@
 
@@ -24,10 +19,11 @@ SRCTOP=@top_srcdir@
 BUILDTOP=..
 mrbindir=@mrbindir@
 
-AFS_OBJS=afs.o
+SUBDIRS=@AFS_SUBDIRS@ @WINAD_SUBDIRS@ 
+
 KSRVTGT_OBJS=ksrvtgt.o
 
-TARGET=afs.incr ksrvtgt
+TARGET=ksrvtgt
 
 .SUFFIXES: .pc
 
@@ -38,24 +34,22 @@ TARGET=afs.incr ksrvtgt
 	$(CC) -c $(ALL_CFLAGS) $<
 
 all: $(TARGET)
+	@for d in $(SUBDIRS); do (echo "### Making $@ in incremental/$$d"; cd $$d; $(MAKE) $@) || exit 1; done
 
 clean:
-	rm -f $(AFS_OBJS) $(KSRVTGT_OBJS) $(TARGET)
+	rm -f $(KSRVTGT_OBJS) $(TARGET)
+	@for d in $(SUBDIRS); do (echo "### Making $@ in incremental/$$d"; cd $$d; $(MAKE) $@) || exit 1; done
 
-cleandir distclean: clean
-	rm -f Makefile
+cleandir distclean:
+	rm -f Makefile $(KSRVTGT_OBJS) $(TARGET)
+	@for d in $(SUBDIRS); do (echo "### Making $@ in incremental/$$d"; cd $$d; $(MAKE) $@) || exit 1; done
 
 depend:
+	@for d in $(SUBDIRS); do (echo "### Making $@ in incremental/$$d"; cd $$d; $(MAKE) $@) || exit 1; done
 
 install:
-	$(INSTALL_PROGRAM) afs.incr $(mrbindir)
 	$(INSTALL_PROGRAM) ksrvtgt $(mrbindir)
-	@set -x; for p in afs_create.pl afs_nightly.pl afs_quota.pl afs_rename.pl afs_utils.pl; do $(INSTALL_PROGRAM) $$p $(mrbindir); done
-
-afs.incr: $(AFS_OBJS) $(MR_LIBDEP)
-	$(CC) -o $@ $(LDFLAGS) $(AFS_OBJS) $(AFS_LIBS) -lprot -lauth \
-		-lrxkad -ldes -lrx -llwp -lubik -lsys -laudit \
-		$(AFS_DIR)/lib/afs/util.a $(AFS_EXTRA_LIBS) $(LIBS)
+	@for d in $(SUBDIRS); do (echo "### Making $@ in incremental/$$d"; cd $$d; $(MAKE) $@) || exit 1; done
 
 ksrvtgt: $(KSRVTGT_OBJS)
 	$(CC) -o $@ $(LDFLAGS) $(KSRVTGT_OBJS) $(LIBS)

@@ -1,7 +1,7 @@
 /*
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.36 1992-05-13 14:24:18 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.37 1992-05-19 17:19:34 mar Exp $
  *
  *      Copyright (C) 1987, 1988 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -16,7 +16,7 @@
  */
 
 #ifndef lint
-static char *rcsid_reg_svr_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.36 1992-05-13 14:24:18 mar Exp $";
+static char *rcsid_reg_svr_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.37 1992-05-19 17:19:34 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -931,7 +931,7 @@ char *retval;
 	com_err(whoami, status, " while getting user info");
 	return(status);
     }
-    if (atoi(argv[U_SECURE]))
+    if (atoi(argv[U_SECURE + 1]))
       return UREG_ALREADY_REGISTERED;
     return SUCCESS;
 }

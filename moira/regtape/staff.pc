@@ -1,4 +1,4 @@
-/* $Id: staff.pc,v 1.7 2004-02-25 01:41:33 zacheiss Exp $
+/* $Id: staff.pc,v 1.8 2004-09-24 19:05:07 zacheiss Exp $
  *
  * Load data into Moira from Personnel Office data file
  *
@@ -19,7 +19,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/staff.pc,v 1.7 2004-02-25 01:41:33 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/staff.pc,v 1.8 2004-09-24 19:05:07 zacheiss Exp $");
 
 /* File format is:
  *
@@ -242,7 +242,8 @@ struct entry *get_next_entry(FILE *in)
   e.xtitle = strtrim(title);
 
   e.type = "MITS";
-  if (strstr(e.xtitle, "PROF") || strstr(e.xtitle, "LECTURE"))
+  if (strstr(uppercase(e.xtitle), "PROF") ||
+      strstr(uppercase(e.xtitle), "LECTURE"))
     e.type = "FACULTY";
   if (!strcmp(e.dept, "LINCOLN LAB"))
     e.type = "LINCOLN";

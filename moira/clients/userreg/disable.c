@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/disable.c,v 1.4 1991-03-08 10:28:41 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/disable.c,v 1.5 1991-07-12 16:33:40 mar Exp $
  *
  * disabled: check to see if registration is enabled right now.  Most of this
  * code is stolen from the cron daemon.
@@ -17,6 +17,7 @@
 #include <time.h>
 #endif /* _AUX_SOURCE */
 #include <sys/file.h>
+#include "files.h"
 
 #define	LISTS	(2*BUFSIZ)
 #define	MAXLIN	BUFSIZ
@@ -26,8 +27,6 @@
 #define	LIST	102
 #define	RANGE	103
 #define	EOS	104
-
-#define FILENAME "disabled.times"
 
 time_t	itime, time();
 struct	tm *loct;
@@ -54,7 +53,7 @@ char **msg;
 
     *msg = 0;
     init();
-    append(FILENAME);
+    append(DISABLE_FILE);
     *listend++ = EOS;
     *listend++ = EOS;
 

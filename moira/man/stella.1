@@ -1,5 +1,5 @@
 .TH STELLA 1 "10 Feb 2000" "MIT Athena"
-\" RCSID: $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/man/stella.1,v 1.5 2001-08-16 21:46:13 zacheiss Exp $
+\" RCSID: $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/man/stella.1,v 1.6 2001-08-16 23:50:08 zacheiss Exp $
 .SH NAME
 stella \- examine and modify information about hosts in Moira
 .SH SYNOPSIS
@@ -35,6 +35,15 @@ the clusters to which the host belongs.
 This will add the specified host to \fIcluster\fR.
 .IP \fB-deletemap\ \fIcluster\ \fRor\ \fB-dm\ \fIcluster\fR
 This will delete the specified host from \fIcluster\fR.
+
+.IP \fB-listcontainer\ \fRor\ \fB-lcn\fR
+This will list the Active Directory container membership for the 
+specified host.  Unlike clusters, a machine may only belong to a 
+single container.
+.IP \fB-addcontainer\ \fIcontainer\ \fRor\ \fB-acn\ \fIcontainer\fR
+This will add the specified host to \fIcontainer\fR.
+.IP \fB-deletecontainer\ \fIcontainer\fRor \ \fB-dcn\ \fIcontainer\fR
+This will delete the specified host from \fIcontainer\fR. 
 
 .IP \fB-vendor\ \fIvendor\ \fRor\ \fB-V\ \fIvendor\fR
 Update the vendor field for the specified host to \fIvendor\fR.

@@ -1,18 +1,21 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_access.c,v $
- *	$Author: wesommer $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_access.c,v 1.2 1987-08-02 21:48:35 wesommer Exp $
+ *	$Author: mar $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_access.c,v 1.3 1988-04-19 12:41:39 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
  *	$Log: not supported by cvs2svn $
+ * Revision 1.2  87/08/02  21:48:35  wesommer
+ * Got direction of test incorrect.
+ * 
  * Revision 1.1  87/06/23  16:13:00  wesommer
  * Initial revision
  * 
  */
 
 #ifndef lint
-static char *rcsid_sms_access_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_access.c,v 1.2 1987-08-02 21:48:35 wesommer Exp $";
+static char *rcsid_sms_access_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_access.c,v 1.3 1988-04-19 12:41:39 mar Exp $";
 #endif lint
 
 #include "sms_private.h"
@@ -49,6 +52,7 @@ int sms_access_internal(argc, argv)
     CHECK_CONNECTED;
 
     params = &params_st;
+    params->sms_version_no = sending_version_no;
     params->sms_procno = SMS_ACCESS;
     params->sms_argc = argc;
     params->sms_argl = NULL;

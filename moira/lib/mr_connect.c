@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_connect.c,v $
- *	$Author: wesommer $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_connect.c,v 1.7 1987-09-03 03:19:45 wesommer Exp $
+ *	$Author: mar $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_connect.c,v 1.8 1988-04-19 12:40:56 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_sms_connect_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_connect.c,v 1.7 1987-09-03 03:19:45 wesommer Exp $";
+static char *rcsid_sms_connect_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_connect.c,v 1.8 1988-04-19 12:40:56 mar Exp $";
 #endif lint
 
 #include "sms_private.h"
@@ -59,6 +59,7 @@ int sms_noop()
 
     CHECK_CONNECTED;
     params = &param_st;
+    params->sms_version_no = sending_version_no;
     params->sms_procno = SMS_NOOP;
     params->sms_argc = 0;
     params->sms_argl = NULL;

@@ -1,11 +1,14 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_auth.c,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_auth.c,v 1.4 1987-10-20 15:09:22 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_auth.c,v 1.5 1988-04-19 12:40:29 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
  *	$Log: not supported by cvs2svn $
+ * Revision 1.4  87/10/20  15:09:22  mar
+ * replace hardcoded ATHENA realm with call to get_krbrlm();
+ * 
  * Revision 1.3  87/06/16  17:47:20  wesommer
  * Clean up memory allocation, indenting.
  * 
@@ -21,7 +24,7 @@
  */
 
 #ifndef lint
-static char *rcsid_sms_auth_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_auth.c,v 1.4 1987-10-20 15:09:22 mar Exp $";
+static char *rcsid_sms_auth_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_auth.c,v 1.5 1988-04-19 12:40:29 mar Exp $";
 #endif lint
 
 #include "sms_private.h"
@@ -55,7 +58,8 @@ int sms_auth()
     if (status != KSUCCESS) {
 	status += krb_err_base;
 	return status;
-    }
+    } 
+    params->sms_version_no = sending_version_no;
     params->sms_procno = SMS_AUTH;
     params->sms_argc = 1;
     params->sms_argv = args;

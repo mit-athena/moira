@@ -1,11 +1,14 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_query.c,v $
- *	$Author: wesommer $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_query.c,v 1.4 1987-08-22 17:11:16 wesommer Exp $
+ *	$Author: mar $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_query.c,v 1.5 1988-04-19 12:38:41 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
  *	$Log: not supported by cvs2svn $
+ * Revision 1.4  87/08/22  17:11:16  wesommer
+ * Increment the nesting level only after we know we're connected.
+ * 
  * Revision 1.3  87/08/02  21:49:53  wesommer
  * Prevent recursive query call.
  * 
@@ -18,7 +21,7 @@
  */
 
 #ifndef lint
-static char *rcsid_sms_query_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_query.c,v 1.4 1987-08-22 17:11:16 wesommer Exp $";
+static char *rcsid_sms_query_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_query.c,v 1.5 1988-04-19 12:38:41 mar Exp $";
 #endif lint
 
 #include "sms_private.h"
@@ -76,7 +79,8 @@ int sms_query_internal(argc, argv, callproc, callarg)
     CHECK_CONNECTED;
     level++;
 
-    params = &params_st;
+    params = &params_st; 
+    params->sms_version_no = sending_version_no;
     params->sms_procno = SMS_QUERY;
     params->sms_argc = argc;
     params->sms_argl = NULL;

@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_ops.c,v $
- *	$Author: wesommer $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_ops.c,v 1.1 1987-08-22 17:11:42 wesommer Exp $
+ *	$Author: mar $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_ops.c,v 1.2 1988-04-19 12:39:23 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_sms_do_update_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_ops.c,v 1.1 1987-08-22 17:11:42 wesommer Exp $";
+static char *rcsid_sms_do_update_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_ops.c,v 1.2 1988-04-19 12:39:23 mar Exp $";
 #endif lint
 
 #include "sms_private.h"
@@ -24,6 +24,7 @@ int sms_do_update()
 
     CHECK_CONNECTED;
     params = &param_st;
+    params->sms_version_no = sending_version_no;
     params->sms_procno = SMS_DO_UPDATE;
     params->sms_argc = 0;
     params->sms_argl = NULL;

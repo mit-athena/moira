@@ -1,9 +1,12 @@
 @Comment[
 	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/doc/tech-plan/dcm.mss,v $
-	$Author: wesommer $
-	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/doc/tech-plan/dcm.mss,v 1.1 1987-05-20 14:42:38 wesommer Exp $
+	$Author: ambar $
+	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/doc/tech-plan/dcm.mss,v 1.2 1987-05-29 03:14:20 ambar Exp $
 
 	$Log: not supported by cvs2svn $
+Revision 1.1  87/05/20  14:42:38  wesommer
+Initial revision
+
 
 ]
 @part[dcm, root="sms.mss"]
@@ -11,18 +14,80 @@
 
 The data control manager, or DCM, is a program responsible for distributing
 information to servers. Basically, the DCM is invoked by crontab at times
-which are relevant to the data update needs of each server.  The DCM
-extracts SMS data, converts it to server-dependent form, and transfers it to
-the servers.  Because each server has unique information requirements, along
-with varrying data structure requirements, a generic server description
-syntax is used to represent the special features of each server.
+which are relevant to the data update needs of each server.  The update 
+frequency is stored in the sms database.  A server/host relationship
+is unique to each update time.  Through the sms query mechanism, the dcm
+extracts sms data and converts it to server dependent form.  The conversion
+of database specific information to site specific information is done
+through a server description file, a sms-unique language which is 
+used to describe the personality of a target service.  
+
+When invoked the dcm will perform some preliminary operations to
+establish the relationship between the sms data and each server.
+The very first time the dcm is called, a table is constructed 
+describing the relationship between servers and update frequency.
+The table will be the primary mechanism used by the dcm for recognizing
+the servers which need updating at given times.  As a note here,
+crontab will invoke the dcm at a pre-established time interval,
+say every 15 minutes.  Obviously, the maximum update time will be limited to
+the time interval the dcm is being invoked at.  Every interval,
+the dcm will search the constructed table and determine whether or 
+not a server's update time is within the current time range.  The table
+has the following components:
+
+@begin(verbatim)
+
+Last time | Time     | Server | Hostname | Target   |Override | Enable |
+of update | interval |        |          | Pathname |         |        |
+          |          |        |          |          |         |        |
+
+@end(verbatim)
+
+A description of each field follows:
+@begin(itemize, spread 0)
+
+@i[Last Time of Update] - This field holds the time when a last 
+successful update occured.  This time will be used against 
+the current time to determine if the interval criteria has been met.
+
+@i[Time interval] - Dervived from the sms database.  Gives the interval
+update time for each server's information needs.
+
+@i[Server] - This is the server name.  Derived from sms database.
+
+@i[Hostname] - This is the host name where the server resides. Derived from
+the sms database.
+
+@i[Target Pathname] - Gives the location of the file which needs to be 
+updated on the target or server end.  Derived from the sms database.
+
+@i[Override] - Provides an automatic facility for the authorized
+user to invoke a used-once mechanism for overriding the established
+time interval.  The facility will be very useful when a server has received
+bogus data and needs updating immediately.  After the dcm uses this
+value, the field is reset to -1.
+		Value: -1 - Use established time interval.
+			0 and greater - New once-used interval.
+
+@i[Enable] - This switch allows the authorized user to turn the update
+facility on or off.  
+		Value: 0 - Off, Non-zero - On.
+@end(itemize)
+
+Each time the dcm is invoked, a search through this table will 
+indicate which servers need updating.  Once located, the dcm will
+use the server/hostname combination to identify the server description
+files to process. 
+Of course, if the enable switch is off, the 
+update will not occur.  
 
 @SubSection(Server Description Files)
 
 The server description files, or SDF, are files which contains a unique
 description of each server SMS updates.
 
-These files hold information, in english-like syntax, which the DCM for
+Hand created, these files hold information, in english-like syntax, 
+which the DCM uses for
 manipulating generic data into server specific form.  Accomodating new
 servers requires, simply, adding a new SDF to the system.  The purpose of
 the server description files is to provide a parsable, readable text files
@@ -40,152 +105,104 @@ To present a regular way of describing many models of servers.
 
 @End(Itemize)
 
-The SDF will be comprised of the following three files:
+Each SDF will be accessed by a hostname/server combination.  This
+combination will, in fact, be the search path on the source machine.
+When the dcm needs a SDF to process, it will find a unique
+server description file in the directory: /hostname/server
 
-@StandardTable(Name SDF, Columns 2, FirstColumn FlushLeft, 
-	OtherColumns Text, OtherColumnWidth 2.5inches, 
-	ColumnHeadings FlushLeft, Boxed, FlushTop)
-@Begin(SDF)
-@TableID(SDF)
-@TableHeading(Immediate, RowFormat SDFColumnHeadings, 
-	Line "File@\Description")
+Part of the dcm is an interpreter which will parse the SDF and run a 
+generalized syntax and logic check.  Assuming the file is syntactically
+correct, the dcm will use the format of the SDF to generate a server
+specific file.  
 
-~/sms/serverType@\directory on SMS machine to hold information for DCM.
-Where serverType is the type of server.  (i.e. Name server, RVD server, etc,
-...)
+The SDF is comprised of a generallized syntax which allows the user to
+create the information needs of any system server.  The limitations are
+that the data must be in character format. 
 
-~/serverType/server.info@\file holding server information, the number of
-these servers to update, location, etc.
-
-~/serverType/server.data@\describes the specific format of the data.
-
-@End(SDF)
-
-Based on this information the DCM will query the database and put together
-the necessary information.
-
-The SDF consists of a collection of key words and commands which the DCM
+The Server Description Language consists of key words and commands which the DCM
 interprets.  The format of the files is line oriented and parsable.  An
-example of SDF syntax is:
+example of an SDF is:
 
 @Begin(Verbatim, LeftMargin +.5inch)
 
-SERVICENAME =
-FREQUENCY = 	
-HEADER = 
-BEGIN HEADER DATA
-	
-END HEADER DATA	
-BEGIN BODY DATA
+#one sharp sign is for this file only
+##two sharp signs puts data in the target file too
 
-END BODY DATA
-@End(Verbatim)
+#variables to be used
 
-There are two types of data which the SDF handles: Static data and dymamic
-data.  The static data is data which resides in the SDF as a component of
-the SDF.  This data is entered during the creation of the SDF and is changed
-only when the system adminitrator changes the format of the SDF. An example
-of static data:
+var name, attribute
 
-@Begin(Verbatim, LeftMargin +.5inch)
+begin header
 
-SERVICENAME = static data (i.e. "userlib")
-FREQUENCY = static data (i.e. "6 HOURS")
-HEADER = static data (i.e. "TRUE")
-BEGIN HEADER DATA
+	<"this is verbatim infomation">
+	<"this is the header">
 
-END HEADER DATA
+end header
+	##query 1, all print clusters
+	begin query
+		#get all print clusters
 
-BEGIN BODY DATA
-	
-END BODY DATA
-@End(Verbatim)
+		handle = 1 #this is the associated query handle to use
+		input : NULL
+			 #no input
+		output : name
+			#name is a declared variable having the 
+			 structure of the query's associated output 
+			 structure.
+		<"cluster = ", name.prcluster>
+			#verbatim info with passed in output variable
+	end query
+		#the above query will continue to query until all
+		 fields are found.
+	##
+	##query 2, printers by cluster
+	begin query #another query
+		handle = 1  #get all print clusters
+		input : NULL
+		output : name
+		begin query
+			handle = 2 #get printers by cluster 
+			input : prcluster = name.prcluster  
+			#input the output of the previous query
+			output : attribute
 
-Dynamic data is data which changes based on query responses.  This data is
-derived from a pre-defined list of queries.  Each query used by SDF has an
-associated pre-defined query handle.  The pre-defined handle is used as a
-method of representing q particular query.  For example, a list of queries
-exist, representing all the required relationships for retreiving data from
-the SMS database. A simple list may look like the following:
+		<"print cluster = ", name.prcluster
+        	 "printer name = ", attribute.printer
+		 "printer type = ", attribute.type>
+		end query
+	end query
 
-@Begin(Verbatim, LeftMargin +.5inch)
+@end(verbatim)
 
-HANDLE	    QUERY
-	
-1	    GET ALL NAMES BEGINING WITH <VAR>
-		Where VAR is a letter
+The target file would look like the following:
 
-2	    GET ALL CLUSTER NAMES
+#two sharp signs puts data in the target file too
+#query 1, all print clusters
+cluster = e40
+cluster = sloan
+cluster = admin
 
-3 	    GET MACHINE INFORMATION FOR ALL MACHINES OF 
-	    TYPE <VAR>
-		Where VAR is VS2, RTPC, 750.
-@End(Verbatim)
+#query 2, printers by cluster
+print cluster = e40
+printer name = ln03-bldge40-3 
+printer type = laser
+printer name = ln03-bldge40-2
+printer type = laser
+printer name = ln03-bldge40-4
+printer type = laser
+print cluster = sloan
+printer name = ln03-sloan-1 
+printer type = laser
+print cluster admin
+printer name = juki-admin-1
+printer type = daisy
 
-The SDF uses each handle to describe the server format.  A SDF uses the
-handle in the following method:
+@end(verbatim)
 
-@Begin(Verbatim, LeftMargin +.5inch)
-
-BEGIN HEADER DATA
-
-<USE 1 WITH DATA "L"> #Retreive all names beginning with "L"
-
-END HEADER DATA
-@End(Verbatim)
-
-So a simple SDF would look like the following:
-
-@Begin(Verbatim, LeftMargin +.5inch)
-
-#Sharp sign is for comments
-##Double sharp sign puts comment in transport file
-
-#This example does nothing.
-##Text to go in transport file
-
-SERVICENAME = "userlib"
-FREQUENCY = "6 HOURS"
-HEADER = TRUE
-##Header
-BEGIN HEADER DATA
-		
-"Created=4-8-87"
-
-END HEADER DATA
-##Body
-BEGIN BODY DATA
-
-<USE 1 WITH DATA "L">  "DYNAMIC DATA"
-#Retreive all names beginning with "L" and make a list of 
-#names and a field called DYNAMIC DATA
-
-END BODY DATA
-##End transport file
-@End(Verbatim)
-	
-The net result is a file bound by the DCM which has the following format:
-
-@Begin(Verbatim, LeftMargin +.5inch)
-
-#Double sharp sign puts comment in transport file
-#Text to go in transport file
-#Header
-Created=4-8-87
-#Body
-LOU	DYNAMIC DATA
-LEVINE	DYNAMIC DATA
-LUCY	DYNAMIC DATA
-LAST	DYNAMIC DATA
-#End transport file
-@End(Verbatim)	
 
 From a generic database the DCM will take the information, process it into
-localized form, and serve it over the net. The DCM is responsible for
-updating servers(i.e. a name server) along with generating and distributing
-system configuration files.  The advantage of having this mechanism is to
-provide a systematic, automated approach to distributing centralized
-information.
+localized form, and cache it locally.  From here, the server update mechanism
+grabs the file and serves it over the net.
 
 @SubSection(SMS-to-Server Update Protocol)
 

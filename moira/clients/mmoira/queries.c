@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/queries.c,v 1.4 1992-10-13 11:19:53 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/queries.c,v 1.5 1992-10-19 17:13:35 mar Exp $
  */
 
 #include <stdio.h>
@@ -10,6 +10,11 @@
 #include <netinet/in.h>
 #include <Xm/Xm.h>
 #include "mmoira.h"
+#ifdef GDSS
+#include <des.h>
+#include <krb.h>
+#include <gdss.h>
+#endif /* GDSS */
 
 
 /* Called with moira data that is to be modified. */
@@ -27,9 +32,25 @@ EntryForm *form;
     offset = 0;
     switch (form->menu->operation) {
     case MM_MOD_USER:
-	fn = "mod_user";
-	count = U_MODTIME;
-	break;
+	count = 0;
+	f = GetAndClearForm("mod_user");
+	if (f == NULL) {
+	    display_error("Unknown form in ModifyCallback!\n");
+	    return;
+	}
+	f->extrastuff = form->extrastuff;
+	f->menu = form->menu;
+	for (i = 0; i < U_SIGNATURE; i++)
+	  if (f->inputlines[i]->type == FT_BOOLEAN)
+	    f->inputlines[i]->returnvalue.booleanvalue =
+	      strcmp(argv[i + offset], "0") ? 1 : 0;
+	  else
+	    StoreField(f, i, argv[i + offset]);
+	f->inputlines[U_SIGNATURE]->keyword_name = strsave(argv[U_SIGNATURE]);
+	f->inputlines[U_SIGNATURE]->returnvalue.booleanvalue =
+	  strcmp(argv[U_SECURE], "0") ? 1 : 0;
+	f->inputlines[U_COMMENT]->keyword_name = strsave(argv[U_SECURE]);
+	return;
     case MM_MOD_FINGER:
 	fn = "mod_finger";
 	count = F_MODTIME - 1;
@@ -102,6 +123,54 @@ EntryForm *form;
 }
 
 
+/* Generate a new cryptographic signature for the user record */
+SignUser(argv, offset)
+char **argv;
+int offset;
+{
+#ifdef GDSS
+    char buf[256];
+    SigInfo si;
+    int i;
+
+    if (strcmp(argv[U_NAME + offset], UNIQUE_LOGIN)) {
+	sprintf(buf, "%s:%s", argv[U_NAME + offset], argv[U_MITID + offset]);
+	si.rawsig = NULL;
+	i = GDSS_Verify(buf, strlen(buf), argv[U_SIGNATURE + offset], &si);
+	/* If it's already signed OK, don't resign it. */
+	if (i != GDSS_SUCCESS) {
+	    free(argv[U_SIGNATURE + offset]);
+	    argv[U_SIGNATURE + offset] = (char *) malloc(GDSS_Sig_Size() * 2);
+	sign_again:
+	    i = GDSS_Sign(buf, strlen(buf), argv[U_SIGNATURE + offset]);
+	    if (i != GDSS_SUCCESS)
+	      com_err(program_name, gdss2et(i),
+		      "Failed to create signature");
+	    else {
+		unsigned char newbuf[256];
+		si.rawsig = newbuf;
+		i = GDSS_Verify(buf, strlen(buf),
+				argv[U_SIGNATURE + offset], &si);
+		if (strlen(newbuf) > 68) {
+#ifdef DEBUG
+		    AppendLog("Signature too long, trying again\n");
+#endif /* DEBUG */
+		    goto sign_again;
+		}
+	    }
+#ifdef DEBUG
+	    AppendLog("Made signature:");hex_dump(argv[U_SIGNATURE + offset]);
+	} else {
+	    AppendLog("Don't need to remake signature\n");
+#endif /* DEBUG */
+	}
+    }
+#else /* GDSS */
+    argv[U_SIGNATURE + offset] = strsave("");
+#endif /* GDSS */
+}
+
+
 /* when OK pressed */
 
 MoiraFormComplete(dummy1, form)
@@ -118,7 +187,34 @@ MoiraFormApply(dummy1, form)
 int dummy1;
 EntryForm *form;
 {
+    UserPrompt **p;
+    int count;
+
+    /* undocumented Motif internal routine to advance in tab group.
+     * In this case we're going backwards because for some reason
+     * the form advances whenever this button is pressed.
+     * However, it doesn't seem to go backwards even though source 
+     * implies that it should.  So we go forward until we wrap.
+     */
+    count = 0;
+    for (p = form->inputlines; *p; p++)
+      count++;
+    while (count-- > 1)
+      _XmMgrTraversal(form->formpointer, XmTRAVERSE_PREV_TAB_GROUP);
     process_form(form, FALSE);
+}
+
+
+int CollectData(argc, argv, form)
+int argc;
+char **argv;
+EntryForm *form;
+{
+    struct save_queue *sq;
+
+    sq = (struct save_queue *) form->extrastuff;
+    sq_save_data(sq, strsave(argv[0]));
+    return(MR_CONT);
 }
 
 
@@ -128,7 +224,7 @@ process_form(form, remove)
 EntryForm *form;
 int remove;
 {
-    char *qy, *argv[32], buf[256], *s;
+    char *qy, *argv[32], buf[256], *s, **aargv;
     int (*retfunc)(), argc, i;
     EntryForm *f;
 
@@ -171,11 +267,36 @@ int remove;
 	break;
     case MM_ADD_USER:
 	argv[U_STATE][1] = 0;
-	if (argv[U_MITID][0] == '"')
-	  strcpy(argv[U_MITID], stringval(form, U_MITID) + 1,
-		 strlen(stringval(form, U_MITID) - 2));
-	else
-	  EncryptID(argv[U_MITID], argv[U_MITID], argv[U_FIRST], argv[U_LAST]);
+	argv[U_SECURE] = argv[U_SIGNATURE];
+	SignUser(argv, 0);
+	argc = U_MODTIME;
+	break;
+    case MM_MOD_USER:
+	if (!strcmp(form->formname, "mod_user")) {
+	    qy = "update_user_account";
+	    for (i = 0; i < U_SIGNATURE; i++)
+	      argv[i + 1] = StringValue(form, i);
+	    argv[0] = form->extrastuff;
+	    argv[U_STATE + 1][1] = 0;
+	    argv[U_SIGNATURE + 1] = form->inputlines[U_SIGNATURE]->keyword_name;
+	    argv[U_SECURE + 1] = StringValue(form, U_SIGNATURE);
+	    if (*argv[U_SECURE + 1] == '1')
+	      if (atoi(form->inputlines[U_COMMENT]->keyword_name))
+		argv[U_SECURE + 1] = form->inputlines[U_COMMENT]->keyword_name;
+	      else {
+		  struct timeval tv;
+		  char buf[32];
+		  gettimeofday(&tv, NULL);
+		  printf("Got %ld, %ld\n", tv.tv_sec, tv.tv_usec);
+		  sprintf(buf, "%ld", tv.tv_sec);
+		  argv[U_SECURE + 1] = strsave(buf);
+	      }
+	    SignUser(argv, 1);
+	    argc = U_MODTIME + 1;
+	    break;
+	}
+	form->extrastuff = (caddr_t) "mod_user";
+	retfunc = ModifyCallback;
 	break;
     case MM_REGISTER:
 	if (*stringval(form, 2)) {
@@ -200,25 +321,6 @@ int remove;
 	argv[1] = stringval(form, 3);
 	argv[2] = "1";
 	argc = 3;
-	break;
-    case MM_MOD_USER:
-	if (!strcmp(form->formname, "mod_user")) {
-	    qy = "update_user";
-	    for (i = 0; i < U_MODTIME; i++)
-	      argv[i + 1] = StringValue(form, i);
-	    argv[0] = form->extrastuff;
-	    argv[U_STATE + 1][1] = 0;
-	    if (argv[U_MITID + 1][0] == '"') {
-		strcpy(argv[U_MITID + 1], stringval(form, U_MITID) + 1);
-		stringval(form, U_MITID)[strlen(stringval(form, U_MITID))-1] = 0;
-	    } else
-	      EncryptID(argv[U_MITID + 1], argv[U_MITID + 1],
-			argv[U_FIRST + 1], argv[U_LAST + 1]);
-	    argc = U_MODTIME + 1;
-	    break;
-	}
-	form->extrastuff = (caddr_t) "mod_user";
-	retfunc = ModifyCallback;
 	break;
     case MM_DEACTIVATE:
 	argv[1] = "3";
@@ -280,13 +382,13 @@ int remove;
 	    argv[1] = stringval(form, 2);
 	    argc = 2;
 	} else {
-	    sprintf(buf, "Members of list %s:\n", argv[0]);
+	    sprintf(buf, "Members of list: %s\n", argv[0]);
 	    AppendToLog(buf);
 	}
 	break;
     case MM_DEL_ALL_MEMBER:
-	display_error("Not yet implemented.");
-	return;
+	form->extrastuff = (caddr_t) sq_create();
+	retfunc = CollectData;
 	break;
     case MM_SHOW_FILSYS:
 	if (*stringval(form, 0)) {
@@ -308,6 +410,9 @@ int remove;
 	    argv[0] = stringval(form, 3);
 	    argc = 1;
 	}
+	/* fall through to */
+    case MM_SHOW_FSGROUP:
+	form->extrastuff = (caddr_t) sq_create();
 	break;
     case MM_ADD_FILSYS:
 	StoreHost(form, FS_MACHINE, &argv[FS_MACHINE]);
@@ -457,7 +562,8 @@ int remove;
     
     f = NULL;
     if (form->extrastuff && (f = GetForm((char *)(form->extrastuff)))) {
-	XtUnmanageChild(form->formpointer);
+	if (form->formpointer)
+	  XtUnmanageChild(form->formpointer);
 	f->extrastuff = (caddr_t) strsave(stringval(form, 0));
 	f->menu = form->menu;
     }
@@ -465,9 +571,6 @@ int remove;
     switch (form->menu->operation) {
     case MM_MOD_USER:
 	if (f) {
-	    qy = strsave(stringval(f, U_MITID));
-	    sprintf(stringval(f, U_MITID), "\"%s\"", qy);
-	    free(qy);
 	    f->inputlines[U_STATE]->keywords = user_states;
 	    StoreField(f, U_STATE, user_states[atoi(stringval(f, U_STATE))]);
 	    GetKeywords(f, U_CLASS, "class");
@@ -511,6 +614,37 @@ int remove;
 	else
 	  AppendToLog("Done.\n");	  
 	break;
+    case MM_DEL_ALL_MEMBER:
+	argv[1] = StringValue(form, 0);
+	argv[2] = StringValue(form, 1);
+	while (sq_get_data(form->extrastuff, &(argv[0]))) {
+	    sprintf(buf, "Delete %s %s from list %s?", StringValue(form, 0),
+		    StringValue(form, 1), argv[0]);
+	    if (!boolval(form, 2) ||
+		AskQuestion(buf, "If you answer yes, this member will be deleted from the named list.\n\
+Answer no to avoid the deletion.  In either case, you will continue to\n\
+be prompted with the other lists the member belongs to.")) {
+		i = MoiraQuery("delete_member_from_list", 3, argv,
+			       DisplayCallback, NULL);
+		if (i)
+		  com_err(program_name, i, " while removing member from list");
+		else {
+		    sprintf(buf, "Member %s %s removed from list %s.\n",
+			    argv[1], argv[2], argv[0]);
+		    AppendToLog(buf);
+		}
+	    }
+	    free(argv[0]);
+	}
+	AppendToLog("Done.\n");
+	break;
+    case MM_SHOW_FILSYS:
+    case MM_SHOW_FSGROUP:
+	while (sq_get_data(form->extrastuff, &aargv)) {
+	    ShowFilsys(aargv);
+	}
+	sq_destroy(form->extrastuff);
+	break;
     case MM_ADD_HOST:
     case MM_DEL_HOST:
     case MM_CLEAR_HOST:
@@ -535,7 +669,6 @@ int remove;
     case MM_DEL_MACH:
     case MM_ADD_MEMBER:
     case MM_DEL_MEMBER:
-    case MM_DEL_ALL_MEMBER:
     case MM_ADD_LIST:
     case MM_DEL_LIST:
     case MM_ADD_QUOTA:
@@ -566,7 +699,7 @@ int remove;
 		      form->extrastuff, StringValue(form, 0));
     }
 
-    if (remove)
+    if (remove && form->formpointer)
       XtUnmanageChild(form->formpointer);
 
     if (f)

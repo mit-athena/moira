@@ -1,16 +1,19 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v 1.24 1988-09-08 14:30:05 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v 1.25 1988-12-29 18:12:29 mar Exp $
  *
  *	Copyright (C) 1987, 1988 by the Massachusetts Institute of Technology
+ *	For copying and distribution information, please see the file
+ *	<mit-copyright.h>.
  * 
  */
 
 #ifndef lint
-static char *rcsid_qrtn_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v 1.24 1988-09-08 14:30:05 mar Exp $";
+static char *rcsid_qrtn_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v 1.25 1988-12-29 18:12:29 mar Exp $";
 #endif lint
 
+#include <mit-copyright.h>
 #include "query.h"
 #include "sms_server.h"
 
@@ -43,6 +46,7 @@ static int ingerr(num)
 	ingres_errno = SMS_DATE;
 	break;
     case INGRES_DEADLOCK:
+	com_err(whoami, 0, "INGRES deadlock detected");
 	ingres_errno = SMS_DEADLOCK;
 	break;
     default:
@@ -137,8 +141,10 @@ sms_process_query(cl, name, argc, argv_ro, action, actarg)
     if (q == (struct query *)0) return(SMS_NO_HANDLE);
     v = q->validate;
 
-    if (q->type != RETRIEVE)
+    if (q->type != RETRIEVE) {
+##	set lockmode session where readlock = exclusive
 ##      begin transaction
+    }
 
     /* setup argument vector, verify access and arguments */
     if ((status = sms_verify_query(cl, q, argc, argv_ro)) != SMS_SUCCESS)
@@ -289,6 +295,7 @@ out:
     if (q->type != RETRIEVE) {
         if (status == SMS_SUCCESS) {
 ##          end transaction	/* commit to this */
+##	    set lockmode session where readlock = system
 	    if (journal) {
 		char buf[1024], *bp;
 		int i;
@@ -308,7 +315,9 @@ out:
 		fflush(journal);
 	    }
 	} else {
-##          abort		/* it never happened */
+	    if (status != SMS_DEADLOCK) {
+##          	abort		/* it never happened */
+	    }
 	}
     }
 
@@ -405,6 +414,8 @@ sms_verify_query(cl, q, argc, argv_ro)
     register int privileged = 0;
 
     /* copy the arguments into a local argv that we can modify */
+    if (argc >= QMAXARGS)
+      return(SMS_ARGS);
     for (i = 0; i < argc; i++) {
 	if (strlen(argv_ro[i]) < ARGLEN)
 	    strcpy(Argv[i], argv_ro[i]);
@@ -807,16 +818,3 @@ sanity_check_queries()
 	exit(1);
     }
 }
-
-
-/*
- * Local Variables:
- * mode: c
- * c-indent-level: 4
- * c-continued-statement-offset: 4
- * c-brace-offset: -4
- * c-argdecl-indent: 4
- * c-label-offset: -4
- * End:
- */
-

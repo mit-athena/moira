@@ -1,9 +1,12 @@
 @Comment[
 	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/doc/tech-plan/dcm.mss,v $
-	$Author: ambar $
-	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/doc/tech-plan/dcm.mss,v 1.7 1987-05-29 18:26:53 ambar Exp $
+	$Author: spook $
+	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/doc/tech-plan/dcm.mss,v 1.8 1987-06-01 10:51:22 spook Exp $
 
 	$Log: not supported by cvs2svn $
+Revision 1.7  87/05/29  18:26:53  ambar
+fixed scribe error.
+
 Revision 1.6  87/05/29  17:57:42  ambar
 added to the section on security of datagrams.
 
@@ -357,13 +360,9 @@ grabs the file and serves it over the net.
 
 @SubSection(SMS-to-Server Update Protocol)
 
-(@b[NOTE]: This information has been used verbatim from J.H. Saltzer's
-document @i[Reliable sms-to-server update protocol], draft
-of 14 March 1987)
-
-SMS provides a reliable mechanism for updating the servers it manages.  The
-use of an update protocol allows the servers to be reliably managed.  The
-goals of the server update protocol are:
+SMS provides a reliable mechanism for updating the servers it manages.
+The use of an update protocol allows the servers to be reliably
+managed.  The goals of the server update protocol are:
 
 @Begin(Itemize)
 
@@ -377,199 +376,177 @@ Easy to understand state and recovery by hand.
 
 @End(Itemize)
 
-General approach: serialized two-phase atomic update.  SMS and the server
-each maintain a stable record of the serial number of the current update
-level.  The algorithm constrains updates to take place in serial number
-order.
-
-Supporting facilities: all data movement is initiated by SMS; data files can
-be moved from the SMS to the server, and the server's commit record can be
-checked by SMS, using a Kerberos-protected rcp, ftp, tftp, or NFS/RFS/Vice
-remote file system interface.  Whatever movement method is used should have
-the property that a death timer can be placed around its invocation, and if
-the timer goes off a clean shutdown of the transfer can be done.  One
-control message from the server back to the SMS (confirming commitment or
-aborting of the transaction) can be carried by an unreliable datagram; that
-datagram should be Kerberos-authenticated.  A method is needed to flush file
-system caches to the disk; for BSD UNIX a call to fsync followed by a
-two-second pause may be an adequate approximation.
+General approach: perform updates using atomic operations only.  All
+updates should be of a nature such that a reboot will fix an
+inconsistent database.  (For example, the RVD database is sent to the
+server upon booting, so if the machine crashes between installation of
+the file and delivery of the information to the server, no harm is
+done.)  Updates not received will be retried at a later point until
+they succeed.  All actions are initiated by the SMS.
 
 @SubHeading(Strategy)
 
-@Begin(Enumerate)
+@define(en=enumerate)
+@define(it=itemize)
+@define(m=multiple)
+@define(f, facecode f)
 
-Preparation phase.  Initiated by SMS when it notices that it has
-something new that should be passed to the server.  May be triggered
-by a change in data, by an administrator, by a timer (crontab), or by
-an SMS restart.
-@Begin(Enumerate)
+@begin(en)
+@begin(m)
 
-Check whether or not the previous update is committed yet.  If not (previous
-attempt at update either aborted or hasn't finished yet), do nothing but
-report to (human) system administrator that updates are piling up for some
-reason.
+Preparation phase.  This phase is initiated by the SMS when it
+determines that an update should be performed.  This can be triggered by
+a change in data, by an administrator, by a timer (run by cron), or by a
+restart of the SMS machine.
 
-Check server's serial update level; compare with SMS record of update level.
-If different, report to system administrator that the world is screwed up.
-If identical, proceed.
+@begin(en)
 
-Figure out next serial update number for this server, create a commit record
-for this update, with initial state UNCOMMITTED.  Discard previous commit
-record at SMS for this server, if any.
+Check whether a data file is being constructed for transmission.  If
+so, do nothing and report the fact.  Otherwise, build a data file from
+the SMS database.  (Building the data file is handled with a locking
+strategy that ensures that "the" data file available for distribution
+is not an incomplete one.  The new data file is placed in position for
+transfer once it is complete using the @f(rename) system
+call.)@foot(Does this mean that SMS can only update one file at any
+one time? @foot(No, it should all be on a file-by-file basis. -- KR)
+-- AMBAR)
 
-Create an intentions file, store stably at SMS.  It contains
-@Begin(Itemize, Spread 0)
-serial update number
+Extract from SMS the list of server machines to update, and the
+instructions for installing the file.  Perform the remaining steps
+independently for each host.
 
-identity of target server
+Connect to the server host and send authentication.
 
-list of files to be transferred from SMS to server
+Transfer the files to be installed to the server.  These are stored in
+@f(filename.sms_update) until the update is actually performed.  At
+the same time, the existing file is linked to @f(filename.sms_backup)
+for later deinstallations, and to minimize the overhead required in
+the actual installation (freeing disk pages).  (The locking strategy
+employed throughout also ensures that this will not occur twice
+simultaneously.)  A checksum is also transmitted to insure integrity
+of the data.
 
-list of actions to be performed by server
-@End(Itemize)
-[For BSD Unix, the serial update number can be the prefix of the name
-of the intentions file, e.g., "update741".  The commit record can be
-coded into the suffix of the name of the intentions file, e.g.,
-.UNCOMMITTED, .COMMITTED, or .ABORTED.  The state of the commit
-record is changed atomically with rename system calls, and directory
-operations are used to learn the latest serial update level and to
-read the commit record value encoded in the name.]
+Transfer the installation instruction sequence to the server.
 
-Flush SMS caches to disk, to ensure that commit record and transaction
-details are safe from an SMS crash.
+Flush all data on the server to disk.
 
-Copy detail files to server's buffer area.  (The buffer area at the server
-is under the control of the SMS at this point; the SMS can delete anything
-it finds in that buffer area except the most recent transaction commit
-record.)
+@end(en)
+@end(m)
+@begin(m)
 
-Copy intentions file to a stable location at the server.
+Execution phase.  If all portions of the preparation phase are
+completed without error, the execution phase is initiated by the SMS.
 
-Get server to flush caches to disk.
+On a single command from the SMS, the server begins execution of the
+instruction sequence supplied.  These can include the following:
 
-Copy commit record to stable storage of server and get server to flush
-caches to disk.  This copy, when flushed to the disk, is the thing that
-guarantees that the transaction will actually take place.  Until the
-transaction gets to this point, the update can vanish without a trace.  This
-action turns control of the buffer are over to the server.  [With the BSD
-UNIX implementation suggested above, the intentions file might be copied
-with a temporary name, and then renamed to create the commit record.]
+@begin(en)
 
-Update SMS authoritative data to show that server has been asked to move to
-the new serial update level.  (The SMS copy of the commit record tells
-whether or not SMS knows that the server completed the update.)
+Swap new data files in.  This is done using atomic filesystem
+@f(rename) operations.  The cost of this step is kept to an absolute
+minimum by keeping both files in the same directory and by retaining
+the @f(filename.sms_backup) link to the file.
 
-Ask the server to do the actions.  Acknowledgement of this request is not
-required, but this step might be repeated until some acknowledgement comes
-back, to minimize the performance cost of a lost packet.  (Indeed, except
-for getting the update done on a timely basis, this step can even be
-omitted, because there is a birddog process at the server that looks for
-commit records and starts processing on their associated intentions files.)
-@End(Enumerate)
+Revert the file -- identical to swapping in the new data file, but
+instead uses @f(filename.sms_backup).  May be useful in the case of an
+erroneous installation.
 
-Commit phase.  Initiated by server as a result of discovering a
-commit record that is in the UNCOMMITTED state.  The discovery may be
-because the SMS woke it up (the usual case), because of a crontab
-trigger, or as part of a system restart.
-@Begin(Enumerate)
-Discard any old commit records.
+Send a signal to a specified process.  The process_id is assumed to be
+recorded in a file; the pathname of this file is a parameter to this
+instruction.  The process_id is read out of the file at the time of
+execution of this instruction.@foot(Does this mean that we're going to
+have to be keeping around lots more @f(daemon.pid) files than we do
+now? @foot(Yes, but it's either that or read kernel data structures
+for the info, and have to recompile the update program with each new
+kernel. -- KR)
+-- AMBAR)
 
-Do actions in intentions file.
+Execute a supplied command.
 
-Change server copy of commit record to COMMITTED.
+@end(en)
+@end(m)
 
-Discard buffer copies of detail files and the intentions file.  (If the name
-of the intentions file is the commit record, then just truncate the
-intentions file.)
+Confirm installation.
+The server sends back a reply indicating that the installation was
+successful.  The SMS then updates the last-update-tried field of the
+update table, clears the override value, and sets the 'success' flag.
 
-Notify SMS of completion.  This notification returns control of the server
-buffer area to SMS; the commit record remains as a record of the update
-level of the server.
-
-SMS changes its commit record state to COMMITTED and discards its copy of
-intentions file, retaining the commit record as evidence of the actual
-update level of the server.
-@End(Enumerate)
-@End(Enumerate)
+@end(en)
 
 @SubHeading(Trouble Recovery Procedures)
 
-@Begin(Enumerate)
+@begin(en)
+@begin(m)
 
-Server finds that actions can't be done.  (Out of disk, or some other
-unrecoverable problem.)
-@Begin(Enumerate, Spread 0)
-Change server copy of commit record to ABORTED
+Server fails to perform action.
 
-Notify SMS that transaction aborted.
+If an error is detected in the update procedure, the information is
+relayed back to the SMS.  The last-update-tried flag is set, and the
+'success' flag is cleared, in the update table.  The override value
+may be set, depending on the error condition and the default update
+interval.
 
-SMS changes its copy of commit record to ABORTED and sends message alerting
-system manager.
-@End(Enumerate)
-General rule: an aborted transaction requires human intervention to
-figure out what went wrong.  Step 1 of the preparation phase stalls
-all additional attempts at update until the system administrator
-fixes the problem and deletes the commit record for the aborted
-transaction at the SMS end.
+The error value returned is logged to the appropriate file; at some
+point it may be desirable to use Zephyr to notify the system maintainers
+when failures occur.
 
-Server crashes/restarts:
-@Begin(Enumerate)
-Kill off any previously running server update processes.
+A timeout is used in both sides of the connection during the preparation
+phase, and during the actual installation on the SMS.  If any single
+operation takes longer than a reasonable amount of time, the connection
+is closed, and the installation assumed to have failed.  This is to
+prevent network lossage and machine crashes from causing arbitrarily
+long delays, and instead falls back to the error condition, so that the
+installation will be attempted again later.  (Since the all the data
+files being prepared are valid, extra installations are not harmful.)
 
-Recover server data bases to last committed update level.  If an update was
-in progress that had not reached the point of changing the server's copy of
-the commit record to COMMITTED, the server returns to the previous update
-level.
+@end(m)
+@begin(m)
 
-Check for an UNCOMMITTED commit record.  If found, perform commit phase, as
-earlier.  In any case, start a bird dog procedure that does this check every
-thirty minutes.
-@End(Enumerate)
+Server crashes.
 
-SMS crashes/restarts
-@Begin(Enumerate)
-Kill off any previously running SMS server update processes.
+If a server crashes, it may fail to respond to the next attempted SMS
+update.  In this case, it is (generally) tagged for retry at a later
+time, say ten or fifteen minutes later.  This retry interval will be
+repeated until an attempt to update the server succeeds (or fails due to
+another error).
 
-Look for commit records.  For each one found, branch on state:
-@Begin(Description)
-COMMITTED@\skip this record
+If a server crashes while it is receiving an update, either the file
+will have been installed or it will not have been installed.  If it
+has been installed, normal system startup procedures should take care
+of any followup operations that would have been performed as part of
+the update (such as [re]starting the server using the data file).  If
+the file has not been installed, it will be updated again from the
+SMS, and the existing @f(filename.sms_update) file will be deleted (as
+it may be incomplete) when the next update starts.
 
-ABORTED@\skip this record
+@end(m)
+@begin(m)
 
-UNCOMMITTED@\look at corresponding server commit record, branch on its state:
-@Begin(Description)
-COMMITTED@\record that state in the SMS commit record.
+SMS crashes.
 
-ABORTED@\record that state in the SMS commit record and send alert message
-to system administrator.
+Since the SMS update table is driven by absolute times and offsets,
+crashes of the SMS machine will result in (at worst) delays in updates.
+If updates were in progress when the SMS crashed, those that did not
+have the install command sent will have a few extra files on the
+servers, which will be deleted in the update that will be started the
+first time the update table is scanned for updates due to be performed.
+Updates for which the install command had been issued may get repeated
+if notification of completion was not returned to the SMS.
 
-UNCOMMITTED@\skip.
+@end(m)
+@end(en)
 
-nonexistent@\discard SMS commit record, intentions file, and detail files,
-and alert system administrator of failed update.  (SMS's own recovery
-procedures should lead to a retry of the update.)
+@comment[Should this be someplace else?]
 
-server doesn't respond@\alert system administrator, and skip this commit
-record.
-@End(Description)
-@End(Description)
+@SubHeading(Considerations)
 
-Run procedure to recover SMS authoritative data bases.
-@End(Enumerate)
-
-Death timeout in SMS preparation phase.  If any step of the preparation
-phase other than copying the commit file to the server hangs up because of
-network failure, a death timer eventually goes off.  The timer handler
-alerts the system administrator of trouble, then backs out of this update by
-deleting the commit record, intentions file, and detail files.  If copying
-the commit file hangs up, the timer handler alerts the system administrator
-that the outcome of this update is unknown, but does not back out of the
-transaction.  (The copy may have been successful, and the server may be
-doing the update.)
-
-Network outages that cause failures of individual steps of this protocol are
-recovered by the server birddog procedure and the SMS death timer.
-@End(Enumerate)
+What happens if the SMS broadcasts an invalid data file to servers?
+In the case of name service, the SMS may not be able to locate the
+servers again if the name service is lost.  Also, if the server
+machine crashes, it may not be able to come up to full operational
+capacity if it relies on the databases which have been corrupted; in
+this case, it is possible that the database may not be easily
+replacable.  Manual intervention would be required for recovery.
 
 @SubSection(Data Transport Security)
 

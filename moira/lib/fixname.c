@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/fixname.c,v $
  *	$Author: danw $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/fixname.c,v 1.7 1997-01-29 23:24:09 danw Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/fixname.c,v 1.8 1998-01-05 14:55:19 danw Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -9,7 +9,7 @@
  */
 
 #ifndef lint
-static char *rcsid_fixname_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/fixname.c,v 1.7 1997-01-29 23:24:09 danw Exp $";
+static char *rcsid_fixname_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/fixname.c,v 1.8 1998-01-05 14:55:19 danw Exp $";
 #endif
 
 #include <mit-copyright.h>
@@ -25,8 +25,8 @@ void FixName(ilnm, ifnm, last, first, middle)
 {
 	int ends_jr=0, ends_iii=0, ends_iv=0, ends_ii=0, ends_v=0;
 
-	Upcase(ilnm);
-	Upcase(ifnm);
+	uppercase(ilnm);
+	uppercase(ifnm);
 	
 	/* Last name ... */
 
@@ -133,15 +133,6 @@ register char *ip;
     for (p = ip + strlen(ip) - 1; p >= ip && isspace(*p); p--) {
 	*p = '\0';
     }
-}
-
-Upcase(cp)
-	char *cp;
-{
-	register int c;
-	
-	for ( ; c= *cp; cp++)
-		if (islower(c)) *cp = toupper(c);
 }
 
 GetMidInit(nm, mi)

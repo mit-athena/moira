@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/display.c,v 1.2 1991-05-31 16:46:16 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/display.c,v 1.3 1991-06-05 11:22:06 mar Exp $
  */
 
 #include <stdio.h>
@@ -15,6 +15,14 @@
 /******* temporary ********/
 char *atot(s) char *s; { return s; }
 
+
+static save_info(argc, argv, sq)
+int argc;
+char **argv;
+struct save_queue *sq;
+{
+    sq_save_args(argc, argv, sq);
+}
 
 
 int DisplayCallback(argc, info, form)
@@ -42,13 +50,13 @@ EntryForm *form;
 	AppendToLog(buf);
 	break;
     case MM_SHOW_FINGER:
-	sprintf(buf, "Nickname: %-29s Department: %s\n", info[F_NICKNAME],
-		info[F_MIT_DEPT]);
-	AppendToLog(buf);
-	sprintf(buf, "finger %s =>\n", info[F_NAME]);
+	sprintf(buf, "Finger information for user %s:\n", info[F_NAME]);
 	AppendToLog(buf);
 	sprintf(buf, "Login name: %-27s In real life: %s\n", info[F_NAME],
 		info[F_FULLNAME]);
+	AppendToLog(buf);
+	sprintf(buf, "Nickname: %-29s Department: %s\n", info[F_NICKNAME],
+		info[F_MIT_DEPT]);
 	AppendToLog(buf);
 	sprintf(buf, "Home: %-33s Home phone: %s\n", info[F_HOME_ADDR],
 		info[F_HOME_PHONE]);
@@ -61,14 +69,15 @@ EntryForm *form;
 	AppendToLog(buf);
 	break;
     case MM_SHOW_POBOX:
-	sprintf(buf, "Address: %-10s Box: %-35s Type: %s\n", info[PO_NAME],
-		info[PO_BOX], info[PO_TYPE]);
+	sprintf(buf, "Post Office information for user %s:\n", info[PO_NAME]);
+	AppendToLog(buf);
+	sprintf(buf, "type: %-8s Box: %s\n", info[PO_TYPE], info[PO_BOX]);
 	AppendToLog(buf);
 	sprintf(buf, MOD_FORMAT, info[4], info[3], info[5]);
 	AppendToLog(buf);
 	break;
     case MM_SHOW_KRBMAP:
-	sprintf(buf, "User: %-9s Principal: %s\n",
+	sprintf(buf, "Kerberos mapping: User %-9s Principal %s\n",
 		info[KMAP_USER], info[KMAP_PRINCIPAL]);
 	AppendToLog(buf);
 	break;
@@ -76,7 +85,8 @@ EntryForm *form;
     case MM_SHOW_FSGROUP:
 	if (!strcmp(info[FS_TYPE], "FSGROUP")) {
 	    int stat;
-/*	    struct qelem *elem = NULL; */
+	    char **argv;
+	    struct save_queue *sq;
 
 	    sprintf(buf,"%20s Filesystem Group: %s\n", " ", info[FS_NAME]);
 	    AppendToLog(buf);
@@ -87,21 +97,26 @@ EntryForm *form;
 		    info[FS_MODWITH]);
 	    AppendToLog(buf);
 	    AppendToLog("Containing the filesystems (in order):");
-/*
-	    if ((stat = do_moira_query("get_fsgroup_members", 1, &info[FS_NAME],
-				    StoreInfo, (char *)&elem)) != 0) {
+
+	    sq = sq_create();
+	    if ((stat = MoiraQuery("get_fsgroup_members", 1, &info[FS_NAME],
+				    save_info, (char *)sq)) != 0) {
 		if (stat == MR_NO_MATCH)
 		  AppendToLog("    [no members]");
 		else
 		  com_err(program_name, stat, NULL);
 	    } else {
-		fsgCount = 1;
-		Loop(QueueTop(elem), (void *) PrintFSGMembers);
-		FreeQueue(elem);
+		while (sq_get_data(sq, &argv)) {
+		    sprintf(buf, "  Filesystem: %-32s (sort key: %s)",
+			    info[0], info[1]);
+		    free(argv[0]);
+		    free(argv[1]);
+		    free(argv);
+		}
+		sq_destroy(sq);
 	    }
-*/
 	} else {
-	    sprintf(buf,"%20s Filesystem: %s\n", " ", info[FS_NAME]);
+	    sprintf(buf,"Filesystem: %s\n", info[FS_NAME]);
 	    AppendToLog(buf);
 	    sprintf(buf,"Type: %-40s Machine: %-15s\n",
 		    info[FS_TYPE], info[FS_MACHINE]);
@@ -127,9 +142,8 @@ EntryForm *form;
 	sprintf(buf,"Machine: %-20s Directory: %-15s Device: %s\n",
 		info[NFS_NAME], info[NFS_DIR], info[NFS_DEVICE]);
 	AppendToLog(buf);
-    
 	sprintf(buf, "Status: %s\n",
-		format_filesys_type(atoi(info[NFS_STATUS])));
+		format_filesys_type(info[NFS_STATUS]));
 	AppendToLog(buf);
 	sprintf(buf, "Quota Allocated: %-17s Size: %s\n",
 		info[NFS_ALLOC], info[NFS_SIZE]);
@@ -154,7 +168,7 @@ EntryForm *form;
 	AppendToLog(buf);
 	break;
     case MM_SHOW_LIST:
-	(void) sprintf(buf, "%20sList: %s\n", "", info[L_NAME]);
+	(void) sprintf(buf, "List: %s\n", info[L_NAME]);
 	AppendToLog(buf);
 	(void) sprintf(buf, "Description: %s\n", info[L_DESC]);
 	AppendToLog(buf);
@@ -202,6 +216,10 @@ EntryForm *form;
     case MM_SHOW_CLDATA:
 	sprintf(buf, "Cluster: %-20s Label: %-15s Data: %s\n",
 		info[CD_NAME], info[CD_LABEL], info[CD_DATA]);
+	AppendToLog(buf);
+	break;
+    case MM_SHOW_MCMAP:
+	sprintf(buf, "Machine: %-20s Cluster: %s\n", info[0], info[1]);
 	AppendToLog(buf);
 	break;
     case MM_SHOW_MEMBERS:
@@ -279,6 +297,51 @@ EntryForm *form;
 	  sprintf(buf, "%s:%s\n", info[0], info[1]);
 	else
 	  sprintf(buf, "%s\n", info[0]);
+	AppendToLog(buf);
+	break;
+    case MM_SHOW_PCAP:
+	sprintf(buf, "Printer: %-35s Spool host: %s\n", info[PCAP_NAME],
+		info[PCAP_SPOOL_HOST]);
+	AppendToLog(buf);
+	sprintf(buf, "Spool directory: %-27s Remote Printer Name: %s\n",
+		info[PCAP_SPOOL_DIR], info[PCAP_RPRINTER]);
+	AppendToLog(buf);
+	sprintf(buf, "Authentication: %-3s Price/page: %-3s  Quota Server: %s\n",
+		atoi(info[PCAP_AUTH]) ? "yes" : "no",
+		info[PCAP_PRICE], info[PCAP_QSERVER]);
+	AppendToLog(buf);
+	sprintf(buf, "Comments: %s\n", info[PCAP_COMMENTS]);
+	AppendToLog(buf);
+	sprintf(buf, MOD_FORMAT, info[PCAP_MODBY], info[PCAP_MODTIME], 
+		info[PCAP_MODWITH]);
+	AppendToLog(buf);
+	break;
+    case MM_SHOW_ZEPHYR:
+	sprintf(buf, "Zephyr class: %s\n", info[ZA_CLASS]);
+	AppendToLog(buf);
+	if (!strcmp("NONE", info[ZA_XMT_TYPE]))
+	  name[0] = 0;
+	else
+	  sprintf(name, "Name: %s", info[ZA_XMT_ID]);
+	sprintf(buf, "XMT ACL Type %s %s\n", info[ZA_XMT_TYPE], name);
+	AppendToLog(buf);
+	if (!strcmp("NONE", info[ZA_SUB_TYPE]))
+	  name[0] = 0;
+	else
+	  sprintf(name, "Name: %s", info[ZA_SUB_ID]);
+	sprintf(buf, "SUB ACL Type %s %s\n", info[ZA_SUB_TYPE], name);
+	AppendToLog(buf);
+	if (!strcmp("NONE", info[ZA_IWS_TYPE]))
+	  name[0] = 0;
+	else
+	  sprintf(name, "Name: %s", info[ZA_IWS_ID]);
+	sprintf(buf, "IWS ACL Type %s %s\n", info[ZA_IWS_TYPE], name);
+	AppendToLog(buf);
+	if (!strcmp("NONE", info[ZA_IUI_TYPE]))
+	  name[0] = 0;
+	else
+	  sprintf(name, "Name: %s", info[ZA_IUI_ID]);
+	sprintf(buf, "IUI ACL Type %s %s\n", info[ZA_IUI_TYPE], name);
 	AppendToLog(buf);
 	break;
     default:

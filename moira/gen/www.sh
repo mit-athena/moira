@@ -1,9 +1,15 @@
 #!/bin/sh
 # This script performs updates of the web server.
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/www.sh,v 1.1 2000-01-10 21:56:36 danw Exp $
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/www.sh,v 1.2 2000-05-08 18:30:31 zacheiss Exp $
 
 PATH=/sbin:/bin:/usr/sbin:/usr/bin:/etc:/usr/etc:/usr/athena/bin:/usr/local/bin
 export PATH
+
+if [ -d /var/athena ] && [ -w /var/athena ]; then
+    exec >/var/athena/moira_update.log 2>&1
+else 
+    exec >/tmp/moira_update.log 2>&1
+fi
 
 # The following exit codes are defined and MUST BE CONSISTENT with the
 # error codes the library uses:

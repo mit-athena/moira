@@ -1,6 +1,12 @@
 #!/bin/sh
 PATH=/bin:/usr/ucb:/usr/bin
 
+if [ -d /var/athena ] && [ -w /var/athena ]; then
+    exec >/var/athena/moira_update.log 2>&1
+else
+    exec >/tmp/moira_update.log 2>&1
+fi
+
 MR_MKCRED=47836474
 
 cat /usr/lib/aliases.legacy > /usr/lib/aliases.tmp
@@ -35,4 +41,4 @@ rm -f xf* tf* lf* nf*
 rm -f $0
 exit 0
 
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/mailhub.sh,v 1.7 1998-01-15 19:02:51 danw Exp $
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/mailhub.sh,v 1.8 2000-05-08 18:30:30 zacheiss Exp $

@@ -1,5 +1,11 @@
 #! /bin/sh
-# $Id: print.sh,v 1.3 1999-12-06 15:16:08 danw Exp $
+# $Id: print.sh,v 1.4 2000-05-08 18:30:31 zacheiss Exp $
+
+if [ -d /var/athena ] && [ -w /var/athena ]; then
+    exec >/var/athena/moira_update.log 2>&1
+else 
+    exec >/tmp/moira_update.log 2>&1
+fi
 
 # The following exit codes are defined and MUST BE CONSISTENT with the
 # error codes the library uses:

@@ -1,5 +1,10 @@
 #!/bin/sh
-# $Id: acl.sh,v 1.3 2000-04-10 19:40:07 zacheiss Exp $
+# $Id: acl.sh,v 1.4 2000-05-08 18:30:29 zacheiss Exp $
+if [ -d /var/athena ] && [ -w /var/athena ]; then
+    exec >/var/athena/moira_update.log 2>&1
+else 
+    exec >/tmp/moira_update.log 2>&1 
+fi
 
 # The following exit codes are defined and MUST BE CONSISTENT with the
 # error codes the library uses:

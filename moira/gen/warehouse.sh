@@ -6,6 +6,12 @@ TAR_FILE=$DIR/moira.tar.Z
 
 PATH="/etc:/bin:/usr/bin:/usr/etc:/usr/athena/etc"
 
+if [ -d /var/athena ] && [ -w /var/athena ]; then
+    exec >/var/athena/moira_update.log 2>&1
+else 
+    exec >/tmp/moira_update.log 2>&1
+fi
+
 # The following exit codes are defined and MUST BE CONSISTENT with the
 # error codes the library uses:
 set MR_MISSINGFILE = 	47836473

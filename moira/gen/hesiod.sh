@@ -1,8 +1,13 @@
 #!/bin/sh
 # This script performs updates of hesiod files on hesiod servers.
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/hesiod.sh,v 1.18 1999-09-29 21:46:26 kcr Exp $
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/hesiod.sh,v 1.19 2000-05-08 18:30:30 zacheiss Exp $
 
-exec >/tmp/moira_update.log 2>&1
+if [ -d /var/athena ] && [ -w /var/athena ]; then
+    exec >/var/athena/moira_update.log 2>&1
+else
+    exec >/tmp/moira_update.log 2>&1 
+fi
+
 set -x 
 
 PATH=/etc:/bin:/usr/bin:/usr/etc:/usr/athena/etc

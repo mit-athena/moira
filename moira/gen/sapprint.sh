@@ -1,5 +1,11 @@
 #! /bin/sh
-# $Id: sapprint.sh,v 1.1 1999-09-17 21:25:24 mwhitson Exp $
+# $Id: sapprint.sh,v 1.2 2000-05-08 18:30:31 zacheiss Exp $
+
+if [ -d /var/athena ] && [ -w /var/athena ]; then 
+    exec >/var/athena/moira_update.log 2>&1
+else 
+    exec >/tmp/moira_update.log 2>&1
+fi
 
 # The following exit codes are defined and MUST BE CONSISTENT with the
 # error codes the library uses:

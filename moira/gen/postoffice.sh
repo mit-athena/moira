@@ -1,10 +1,16 @@
 #!/bin/sh 
 # This script performs postoffice updates.
 #
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/postoffice.sh,v 1.2 2000-02-27 19:10:40 zacheiss Exp $
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/postoffice.sh,v 1.3 2000-05-08 18:30:30 zacheiss Exp $
 
 PATH=/sbin:/bin:/usr/sbin:/usr/bin:/etc:/usr/etc:/usr/athena/bin:/usr/local/bin
 export PATH
+
+if [ -d /var/athena ] && [ -w /var/athena ]; then
+    exec >/var/athena/moira_update.log 2>&1
+else
+    exec >/tmp/moira_update.log 2>&1
+fi
 
 # The following exit codes are defined and MUST BE CONSISTENT with the
 # error codes the library uses:
@@ -39,7 +45,7 @@ mkdir ${SRC_DIR}
 chmod 700 ${SRC_DIR}
 
 uchost=`hostname | tr '[a-z]' '[A-Z]'`
-echo $uchost | egrep -e "." > /dev/null
+echo $uchost | egrep -e "\." > /dev/null
 if [ $? != 0 ]; then
     	domain=`grep domain /etc/resolv.conf | awk '{print $2}' |tr '[a-z]' '[A-Z]'`
 

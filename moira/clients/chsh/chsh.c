@@ -1,4 +1,4 @@
-/* $Id: chsh.c,v 1.1 2000-03-16 06:03:59 zacheiss Exp $
+/* $Id: chsh.c,v 1.2 2000-05-01 08:18:01 zacheiss Exp $
  *
  * Talk to the Moira database to change a person's login shell.  The chosen
  * shell must exist.  A warning will be issued if the shell is not in
@@ -24,11 +24,14 @@
 #include <string.h>
 #include <unistd.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/chsh/chsh.c,v 1.1 2000-03-16 06:03:59 zacheiss Exp $");
+#define argis(a, b) (!strcmp(*arg + 1, a) || !strcmp(*arg + 1, b))
+
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/chsh/chsh.c,v 1.2 2000-05-01 08:18:01 zacheiss Exp $");
 
 void usage(void);
 int chsh(char *uname);
 int get_shell(int argc, char **argv, void *uname);
+int get_winshell(int argc, char **argv, void *uname);
 int get_fmodtime(int argc, char **argv, void *uname);
 void check_shell(char *shell);
 #ifndef HAVE_GETUSERSHELL
@@ -36,42 +39,65 @@ char *getusershell(void);
 #endif
 
 char *whoami;
+char *uname;
 
 int main(int argc, char *argv[])
 {
-  char *uname;
+  int status;                   /* general purpose exit status */
+  int q_argc;                   /* argc for mr_query */
+  char *q_argv[U_END];          /* argv for mr_query */
+  char *motd;                   /* determine Moira server status */
+  int got_one = 0;              /* Have we got a shell yet? */
+  char shell[BUFSIZ];           /* Our new shell */
+  int windowsflg = 0, unixflg = 0;  
+  char **arg = argv;
+  char *server = NULL;
 
   if ((whoami = strrchr(argv[0], '/')) == NULL)
     whoami = argv[0];
   else
     whoami++;
 
-  if (argc > 2)
-    usage();
+  /* parse our command line options */
+  while (++arg - argv < argc)
+    {
+      if (**arg == '-')
+	{
+	  if (argis("w", "winshell"))
+	    windowsflg++;
+	  else if (argis("u", "unixshell"))
+	    unixflg++;
+	  else if (argis("db", "database"))
+	    {
+	      if (arg - argv < argc - 1)
+		{
+		  ++arg;
+		  server = *arg;
+		}
+	      else
+		usage();
+	    }
+	}
+      else if (uname == NULL)
+	uname = *arg;
+      else
+	usage();
+    }
 
-  if (argc == 2)
-    uname = argv[1];
-  else
+  if (!uname)
     {
       uname = mrcl_krb_user();
       if (!uname)
 	exit(1);
     }
 
-  exit(chsh(uname));
-}
+  if (!unixflg && !windowsflg)
+    unixflg++;
 
-int chsh(char *uname)
-{
-  int status;			/* general purpose exit status */
-  int q_argc;			/* argc for mr_query */
-  char *q_argv[U_END];		/* argv for mr_query */
-  char *motd;			/* determine Moira server status */
-
-  int got_one = 0;		/* have we got a new shell yet? */
-  char shell[BUFSIZ];		/* the new shell */
-
-  if (mrcl_connect(NULL, "chsh", 2, 1) != MRCL_SUCCESS)
+  if (unixflg && windowsflg)
+    usage();
+  
+  if (mrcl_connect(server, "chsh", 3, 1) != MRCL_SUCCESS)
     exit(1);
 
   /* First, do an access check */
@@ -89,10 +115,10 @@ int chsh(char *uname)
   printf("Changing login shell for %s.\n", uname);
 
   /* Display current information */
-
+  
   q_argv[NAME] = uname;
   q_argc = NAME + 1;
-
+  
   if ((status = mr_query("get_finger_by_login", q_argc, q_argv,
 			 get_fmodtime, uname)))
     {
@@ -100,43 +126,83 @@ int chsh(char *uname)
       exit(2);
     }
 
-  if ((status = mr_query("get_user_account_by_login", q_argc, q_argv,
-			 get_shell, uname)))
+  if (unixflg)
     {
-      com_err(whoami, status, "while getting user information.");
-      exit(2);
+      if ((status = mr_query("get_user_account_by_login", q_argc, q_argv,
+			     get_shell, uname)))
+	{
+	  com_err(whoami, status, "while getting user information.");
+	  exit(2);
+	}
+      
+      /* Ask for new shell */
+      while (!got_one)
+	{
+	  printf("New shell: ");
+	  if (!fgets(shell, sizeof(shell), stdin))
+	    exit(0);
+	  got_one = (strlen(shell) > 1);
+	}
+      
+      shell[strlen(shell) - 1] = 0;	/* strip off newline */
+      
+      /* Make sure we have a valid shell.  This routine could exit */
+      check_shell(shell);
+      
+      /* Change shell */
+      
+      printf("Changing shell to %s...\n", shell);
+      
+      q_argv[USH_NAME] = uname;
+      q_argv[USH_SHELL] = shell;
+      q_argc = USH_END;
+      if ((status = mr_query("update_user_shell", q_argc, q_argv, NULL, NULL)))
+	{
+	  com_err(whoami, status, "while changing shell.");
+	  exit(2);
+	}
+      
+      printf("Shell successfully changed.\n");
     }
-
-  /* Ask for new shell */
-  while (!got_one)
+  else if (windowsflg)
     {
-      printf("New shell: ");
-      if (!fgets(shell, sizeof(shell), stdin))
-	exit(0);
-      got_one = (strlen(shell) > 1);
+      if ((status = mr_query("get_user_account_by_login", q_argc, q_argv,
+			     get_winshell, uname)))
+	{
+	  com_err(whoami, status, "while getting user information.");
+	  exit(2);
+	}
+      
+      /* Ask for new Windows shell */
+      while(!got_one)
+	{
+	  printf("New Windows shell: ");
+	  if (!fgets(shell, sizeof(shell), stdin))
+	    exit(0);
+	  got_one = (strlen(shell) > 1);
+	}
+      
+      shell[strlen(shell) - 1] = 0; /* strip off newline */
+
+      /* Change shell */
+      
+      printf("Changing Windows shell to %s...\n", shell);
+      
+      q_argv[USH_NAME] = uname;
+      q_argv[USH_SHELL] = shell;
+      q_argc = USH_END;
+      if ((status = mr_query("update_user_windows_shell", q_argc, q_argv,
+			     NULL, NULL)))
+	{
+	  com_err(whoami, status, "while changing Windows shell.");
+	  exit(2);
+	}
+      
+      printf("Windows shell successfully changed.\n");
     }
-
-  shell[strlen(shell) - 1] = 0;	/* strip off newline */
-
-  /* Make sure we have a valid shell.  This routine could exit */
-  check_shell(shell);
-
-  /* Change shell */
-
-  printf("Changing shell to %s...\n", shell);
-
-  q_argv[USH_NAME] = uname;
-  q_argv[USH_SHELL] = shell;
-  q_argc = USH_END;
-  if ((status = mr_query("update_user_shell", q_argc, q_argv, NULL, NULL)))
-    {
-      com_err(whoami, status, "while changing shell.");
-      exit(2);
-    }
-
-  printf("Shell successfully changed.\n");
+     
   mr_disconnect();
-
+      
   return 0;
 }
 
@@ -152,6 +218,23 @@ int get_shell(int argc, char **argv, void *uname)
     }
 
   printf("Current shell for %s is %s.\n", (char *)uname, argv[U_SHELL]);
+
+  return MR_ABORT;		/* Don't pay attention to other matches. */
+}
+
+int get_winshell(int argc, char **argv, void *uname)
+{
+  /* We'll just take the first information we get since login names
+     cannot be duplicated in the database. */
+
+  if (argc < U_END || strcmp(argv[U_NAME], uname))
+    {
+      fprintf(stderr, "Some internal error has occurred.  Try again.\n");
+      exit(3);
+    }
+
+  printf("Current Windows shell for %s is %s.\n", (char *)uname, 
+	 argv[U_WINCONSOLESHELL]);
 
   return MR_ABORT;		/* Don't pay attention to other matches. */
 }
@@ -178,7 +261,7 @@ void check_shell(char *shell)
   char *valid_shell;
   int ok = 0;
 
-  while ((valid_shell = getusershell()))
+  while ((valid_shell = (char *)getusershell()))
     {
       if (!strcmp(shell, valid_shell))
 	{
@@ -218,7 +301,7 @@ void check_shell(char *shell)
 
 void usage(void)
 {
-  fprintf(stderr, "Usage: %s [user]\n", whoami);
+  fprintf(stderr, "Usage: %s [-w|-u] [user]\n", whoami);
   exit(1);
 }
 

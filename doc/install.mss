@@ -104,9 +104,9 @@ Copy all of the binaries installed in @i(bin) to BIN_DIR.
 
 Finally, make entries in /etc/services:
 @example{
-sms_db		775/tcp				# SMS database
-sms_update      777/tcp                         # SMS update protocol.
-sms_ureg        779/udp                         # SMS user registration.
+sms_db		775/tcp		# Moira database
+sms_update      777/tcp		# Moira update protocol
+sms_ureg        779/udp		# Moira user registration
 }
 These are the numbers we use at Athena.  They are not officially
 allocated, and you may change them at your site.

@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/cluster.c,v 1.20 1990-07-13 18:00:53 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/cluster.c,v 1.21 1991-03-08 10:22:05 mar Exp $";
 #endif lint
 
 /*	This is the file cluster.c for the MOIRA Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/cluster.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/cluster.c,v 1.20 1990-07-13 18:00:53 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/cluster.c,v 1.21 1991-03-08 10:22:05 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -269,7 +269,7 @@ Bool name;
 	      return(NULL);
 	    oldnewname = Strsave(newname);
 	    newname = canonicalize_hostname(newname);
-	    if (strcasecmp(newname, oldnewname)) {
+	    if (strcasecmp(newname, oldnewname) && *oldnewname != '"') {
 		sprintf(temp_buf, "Warning: '%s' canonicalized to '%s'\n",
 			oldnewname, newname);
 		Put_message(temp_buf);
@@ -600,7 +600,7 @@ char ** argv;
     struct qelem * melem, *mtop, *celem, *ctop;
 
     machine = canonicalize_hostname(strsave(argv[1]));
-    if (strcasecmp(machine, argv[1])) {
+    if (strcasecmp(machine, argv[1]) && *argv[1] != '"') {
 	sprintf(temp_buf, "Warning: '%s' canonicalized to '%s'.",
 		argv[1], machine);
 	Put_message(temp_buf);
@@ -718,7 +718,7 @@ char ** argv;
     register int stat;
 
     args[MAP_MACHINE] = canonicalize_hostname(strsave(argv[1]));
-    if (strcasecmp(args[MAP_MACHINE], argv[1])) {
+    if (strcasecmp(args[MAP_MACHINE], argv[1]) && *argv[1] != '"') {
 	sprintf(buf, "Warning: '%s' canonicalized to '%s'.",
 		argv[1], args[MAP_MACHINE]);
 	Put_message(buf);
@@ -1116,7 +1116,7 @@ char **argv;
     char *tmpname, temp_buf[256];
 
     tmpname = canonicalize_hostname(strsave(argv[1]));
-    if (strcasecmp(tmpname, argv[1])) {
+    if (strcasecmp(tmpname, argv[1]) && *argv[1] != '"') {
 	sprintf(temp_buf, "Warning: '%s' canonicalized to '%s'.",
 		argv[1], tmpname);
 	Put_message(temp_buf);

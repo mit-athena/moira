@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.15 1989-08-21 22:37:49 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.16 1989-08-22 15:55:32 mar Exp $";
 #endif lint
 
 /*	This is the file user.c for the SMS Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.15 1989-08-21 22:37:49 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.16 1989-08-22 15:55:32 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -46,19 +46,23 @@
  *	Returns: pointer to statically allocated string.
  */
 
-static char *states[] = { "Registerable",
-			  "Active",
-			  "Half Registered",
-			  "Deleted",
-			  "Not registerable",
-			  "Enrolled/Registerable",
-			  "Enrolled/Not Registerable" };
+static char *states[] = { "Registerable (0)",
+			  "Active (1)",
+			  "Half Registered (2)",
+			  "Deleted (3)",
+			  "Not registerable (4)",
+			  "Enrolled/Registerable (5)",
+			  "Enrolled/Not Registerable (6)" };
 
 static char *UserState(state)
 int state;
 {
-    if (state < 0 || state >= US_END)
-	return("Unknown");
+    char buf[BUFSIZ];
+
+    if (state < 0 || state >= US_END) {
+	sprintf(buf, "Unknown (%d)", state);
+	return(buf);
+    }
     return(states[state]);
 }
 
@@ -723,7 +727,7 @@ int argc;
 char **argv;
 {
     int stat;
-    struct qelem *elem = NULL;
+    struct qelem *elem = NULL, *top;
     char buf[BUFSIZ];
 
     if ((stat = do_sms_query("get_kerberos_user_map", 2, &argv[1],
@@ -732,7 +736,7 @@ char **argv;
 	return(DM_NORMAL);
     }
 
-    elem = QueueTop(elem);
+    top = elem = QueueTop(elem);
     Put_message("");
     while (elem != NULL) {
 	char **info = (char **) elem->q_data;
@@ -742,7 +746,7 @@ char **argv;
 	elem = elem->q_forw;
     }
 
-    FreeQueue(QueueTop(elem));
+    FreeQueue(QueueTop(top));
     return(DM_NORMAL);
 }
 

@@ -1,0 +1,80 @@
+.TH ADDUSR 1 "6 Jul 1992" "Project Athena"
+\" RCSID: $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/man/addusr.1,v 1.1 1992-07-06 15:56:31 mar Exp $
+.SH NAME
+addusr \- add and/or register users in Moira
+.SH SYNOPSIS
+.B addusr [-cCdfhrRsSv]
+.SH DESCRIPTION
+.I Addusr
+is a tool for adding users in bulk to the moira database and
+registering them for accounts.  It reads the users from a file (or
+stdin) rather than the menu-oriented regular moira client.
+
+The users are entered in one of two formats, depending on whether or
+not they will be registered.  When users are only being added to the
+database, the format is:
+.nf
+  lastname, firstname middlename idnumber
+.fi
+The lastname may have spaces in it, as it will continue up until the
+first comma on the line.  The firstname also may have spaces, as it
+will take up everything but the last two tokens on the line.  If only
+3 tokens are on the line, the middlename will be assumed to be the
+empty string.  The middlename cannot have spaces in it.  The idnumber
+also cannot have spaces, although it may have hyphens in it.  The
+capitalization of the names is not important as it will be corrected
+before entering into the database.  If the operation specified for
+.B addusr
+includes registering users, then there are two additional tokens on
+the end of the line:
+.nf
+  lastname, firstname middlename idnumber loginname password
+.fi
+Note that neither the loginname nor the password may contain spaces.
+.SH OPTIONS
+.IP \fB-file\ \fIfilename\ \fRor\ \fB-f\ \fIfilename\fR:
+This specifies the file that will be read for the list of users to
+operate on.  If not specifed, standard input will be used.  The file
+format is described above.
+.IP \fB-class\ \fIclass\ \fRor\ \fB-c\ \fIclass\fR:
+This specifies the account class that will be used for all users added
+in this invocation.  If not specified, \fITEMP\fR will be used.
+.IP \fB-comment\ \fI"comment"\ \fRor\ \fB-C\ \fI"comment"\fR:
+This specifies the comment that will be stored for all users added
+in this invocation.  If not specified, the comment field will be left
+blank.  Note that the double-quotes are not required by \fBaddusr\fR,
+but will be parsed out by the shell and are only needed to specify
+comments with spaces in them.
+.IP \fB-status\ \fIstatus\ \fRor\ \fB-s\ \fIstatus\fR:
+This specifies the account status that will be used for all users added
+in this invocation.  If not specified, \fI0 (registerable)\fR will be used.
+.IP \fB-shell\ \fIshell\ \fRor\ \fB-h\ \fIshell\fR:
+This specifies the login shell that will be stored for all users added
+in this invocation.  If not specified, \fI/bin/csh\fR will be used.
+.IP \fB-register\ \fRor\ \fB-R\fR:
+This instructs \fBaddusr\fR to both add the users to the database and
+then to immediately register them.
+.IP \fB-reg_only\ \fRor\ \fB-r\fR:
+This instructs \fBaddusr\fR to register the users without attempting
+to add them to the database.  They must already exist in the database.
+.IP \fB-verbose\ \fRor\ \fB-v\fR:
+This causes \fBaddusr\fR to print messages about each operation as it
+performs it.
+.IP \fB-nodupcheck\ \fRor\ \fB-d\fR:
+Do not attempt to check the database for duplicates before adding
+users.  Normally \fBaddusr\fR will check the database for users with
+the same name.  If it finds any who match in both name and ID number,
+the user will not be added.  If it finds a name match with a different
+ID number, it will print a warning and add the user anyway.
+.IP \fB-server\ \fIhost:port\ \fRor\ \fB-S\ \fIhost:port\fR:
+Use the specified host and port to contact the Moira server instead of
+the default server.  Both may be symbolic names or numbers.  If the
+port is left off, the default Moira server port will be assumed.  The
+server chosen will be the one specified on the command line, specified
+in the MOIRASERVER environment variable, the hesiod "moira" sloc entry,
+or the compiled in default, in that order or preference.
+
+.SH AUTHOR
+Mark Rosenstein
+.SH SEE ALSO
+moira(1), userreg(1)

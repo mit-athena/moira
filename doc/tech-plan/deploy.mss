@@ -15,10 +15,11 @@ current system relinquishes responsibility.  Administrative changes,
 therefore, must be carefully monitored so that the SMS fields which are
 "on-line" receive the most relevant data.
 
-Because Athena will not support time sharing systems in the future, SMS will
-not have any responsibility supporting time sharing.  This then assumes that
-the old database will support the time sharing environment until Athena no
-longer recognizes time sharing.
+Because Athena will not support time sharing systems in the future, SMS
+will not support time sharing.  This then assumes that the old database
+will support the time sharing environment as long as it still
+exists.@foot(This might not work.  Are the staff really going to do
+system builds on microvaxen? -- AMBAR)
 
 The following development schedule is planned:
 
@@ -93,8 +94,6 @@ plan.
 
 @MajorSection(Long Term Support Strategy)
 
-The eventual use and application of SMS will be by the operations component
-of the Athena organization.  The support of SMS will be left to the
-operations and informations systems departments.
-
-@Verbatim[more to come here after talk w/ geer]
+The eventual users of SMS will be the operations component of the Athena
+organization.  The support of SMS will be left to the operations and
+informations systems groups.

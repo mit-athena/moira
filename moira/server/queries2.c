@@ -1,6 +1,6 @@
 /* This file defines the query dispatch table for version 2 of the protocol
  *
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/queries2.c,v 2.17 1993-11-10 15:32:49 mar Exp $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/queries2.c,v 2.18 1993-11-22 14:29:44 mar Exp $
  *
  * Copyright 1987, 1988 by the Massachusetts Institute of Technology.
  * For copying and distribution information, please see the file
@@ -938,7 +938,7 @@ static struct validate dhal_validate = {
 
 static char *gsnt_fields[] = {
     NAME,
-    NAME, DESC, ADDRESS, "mask", "low", "high", ACE_TYPE, ACE_NAME,
+    NAME, DESC, ADDRESS, "mask", "low", "high", "prefix", ACE_TYPE, ACE_NAME,
     MOD1, MOD2, MOD3
 };
 
@@ -960,14 +960,14 @@ static struct validate gsnt_validate = {
 };
 
 static char *asnt_fields[] = {
-    NAME, DESC, ADDRESS, "mask", "low", "high", ACE_TYPE, ACE_NAME,
+    NAME, DESC, ADDRESS, "mask", "low", "high", "prefix", ACE_TYPE, ACE_NAME,
 };
 
 static struct valobj asnt_valobj[] = {
   {V_LOCK, 0, SUBNET, 0, SNET_ID, MR_DEADLOCK},
   {V_CHAR, 0},
-  {V_TYPE, 6, ACE_TYPE, 0, 0, MR_ACE},
-  {V_TYPEDATA, 7, 0, 0, 0, MR_ACE},
+  {V_TYPE, 7, ACE_TYPE, 0, 0, MR_ACE},
+  {V_TYPEDATA, 8, 0, 0, 0, MR_ACE},
 };
 
 static struct validate asnt_validate = 
@@ -985,15 +985,15 @@ static struct validate asnt_validate =
 
 static char *usnt_fields[] = {
     NAME,
-    "newname", DESC, ADDRESS, "mask", "low", "high", ACE_TYPE, ACE_NAME,
+    "newname", DESC, ADDRESS, "mask", "low", "high", "prefix", ACE_TYPE, ACE_NAME,
 };
 
 static struct valobj usnt_valobj[] = {
   {V_LOCK, 0, SUBNET, 0, SNET_ID, MR_DEADLOCK},
   {V_ID, 0, SUBNET, NAME, SNET_ID, MR_NO_MATCH},
   {V_RENAME, 1, SUBNET, NAME, SNET_ID, MR_NOT_UNIQUE},
-  {V_TYPE, 7, ACE_TYPE, 0, 0, MR_ACE},
-  {V_TYPEDATA, 8, 0, 0, 0, MR_ACE},
+  {V_TYPE, 8, ACE_TYPE, 0, 0, MR_ACE},
+  {V_TYPEDATA, 9, 0, 0, 0, MR_ACE},
 };
 
 static struct validate usnt_validate = 
@@ -3095,9 +3095,9 @@ struct query Queries2[] = {
     RETRIEVE,
     "s",
     SUBNET,
-    "CHAR(s.name), CHAR(s.description), CHAR(s.saddr), CHAR(s.mask), CHAR(s.low), CHAR(s.high), s.owner_type, CHAR(s.owner_id), CHAR(s.modtime), CHAR(s.modby), s.modwith FROM subnet s",
+    "CHAR(s.name), CHAR(s.description), CHAR(s.saddr), CHAR(s.mask), CHAR(s.low), CHAR(s.high), s.prefix, s.owner_type, CHAR(s.owner_id), CHAR(s.modtime), CHAR(s.modby), s.modwith FROM subnet s",
     gsnt_fields,
-    11,
+    12,
     "s.name LIKE '%s' ESCAPE '*' and s.snet_id != 0",
     1,
     &gsnt_validate,
@@ -3110,9 +3110,9 @@ struct query Queries2[] = {
     APPEND,
     "s",
     SUBNET,
-    "INTO subnet (name, description, saddr, mask, low, high, owner_type, owner_id, snet_id) VALUES (uppercase('%s'), '%s', %s, %s, %s, %s, '%s', %d, %s)",
+    "INTO subnet (name, description, saddr, mask, low, high, prefix, owner_type, owner_id, snet_id) VALUES (uppercase('%s'), '%s', %s, %s, %s, %s, '%s', '%s', %d, %s)",
     asnt_fields,
-    8,
+    9,
     0,
     0,
     &asnt_validate,
@@ -3125,9 +3125,9 @@ struct query Queries2[] = {
     UPDATE,
     "s",
     SUBNET,
-    "subnet SET name=uppercase('%s'), description='%s', saddr=%s, mask=%s, low=%s, high=%s, owner_type='%s', owner_id=%d",
+    "subnet SET name=uppercase('%s'), description='%s', saddr=%s, mask=%s, low=%s, high=%s, prefix='%s', owner_type='%s', owner_id=%d",
     usnt_fields,
-    8,
+    9,
     "snet_id = %d",
     1,
     &usnt_validate,

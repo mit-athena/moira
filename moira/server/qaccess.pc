@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qaccess.pc,v $
  *	$Author: danw $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qaccess.pc,v 2.3 1997-07-08 19:51:16 danw Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qaccess.pc,v 2.4 1997-10-01 19:59:35 danw Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_qsupport_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qaccess.pc,v 2.3 1997-07-08 19:51:16 danw Exp $";
+static char *rcsid_qsupport_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qaccess.pc,v 2.4 1997-10-01 19:59:35 danw Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -361,7 +361,11 @@ int access_host(q, argv, cl)
 	  WHERE s.snet_id=:id;
 	mid =0;
     } else if (q->type == RETRIEVE) {
-	return(MR_SUCCESS);
+	if (strcmp(argv[0], "*") || strcmp(argv[1], "*") ||
+	    strcmp(argv[2], "*") || strcmp(argv[3], "*"))
+	    return(MR_SUCCESS);
+	else
+	    return(MR_PERM);
     } else {
 	id = *(int *)argv[0];
 	EXEC SQL SELECT m.owner_type, m.owner_id, s.owner_type, s.owner_id

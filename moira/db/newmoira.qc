@@ -1,10 +1,13 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/db/newmoira.qc,v 1.1 1988-05-19 17:28:08 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/db/newmoira.qc,v 1.2 1988-09-12 17:37:17 mar Exp $
  *
  * Creates a new sms database
  *
  * Copyright 1988 by the Massachusetts Institute of Technology.
+ * For copying and distribution information, please see the file
+ * <mit-copyright.h>.
  */
 
+#include <mit-copyright.h>
 #include <stdio.h>
 #include "../server/query.h"
 
@@ -15,32 +18,47 @@ extern char *tables[];
 extern struct query Queries1[], Queries2[];
 extern int QueryCount1, QueryCount2;
 
-char *values[] = { "users_id", "machine_id", "cluster_id", "list_id",
-		   "nfsphys_id", "filsys_id", "strings_id", 0 };
+char *values[] = { "users_id", "mach_id", "clu_id", "list_id",
+		   "nfsphys_id", "filsys_id", "strings_id", "dcm_enable",
+		   0 };
 
 struct alias { char *name;
 	       char *type;
 	       char *trans;
 	   } aliases[] = {
-		   {"acl_type", "TYPE", "USER"},
-		   {"acl_type", "TYPE", "LIST"},
-		   {"acl_type", "TYPE", "NONE"},
+		   {"ace_type", "TYPE", "USER"},
+		   {"ace_type", "TYPE", "LIST"},
+		   {"ace_type", "TYPE", "NONE"},
+		   {"alias", "TYPE", "FILESYS"},
 		   {"alias", "TYPE", "TYPE"},
+		   {"alias", "TYPE", "SERVICE"},
 		   {"alias", "TYPE", "TYPEDATA"},
+		   {"alias", "TYPE", "VALUE"},
 		   {"boolean", "TYPE", "FALSE"},
 		   {"boolean", "TYPE", "DONTCARE"},
 		   {"boolean", "TYPE", "TRUE"},
-		   {"class", "TYPE", "staff"},
+		   {"class", "TYPE", "STAFF"},
 		   {"class", "TYPE", "1988"},
 		   {"class", "TYPE", "1989"},
 		   {"class", "TYPE", "1990"},
 		   {"class", "TYPE", "1991"},
 		   {"class", "TYPE", "1992"},
+		   {"class", "TYPE", "FACULTY"},
 		   {"class", "TYPE", "G"},
-		   {"class", "TYPE", "guest"},
+		   {"class", "TYPE", "GUEST"},
+		   {"class", "TYPE", "UNKNOWN"},
+		   {"filesys", "TYPE", "ERR"},
 		   {"filesys", "TYPE", "NFS"},
 		   {"filesys", "TYPE", "RVD"},
-		   {"mac_type", "TYPE", "#"},
+		   {"gaus", "TYPE", "LIST"},
+		   {"gaus", "TYPE", "USER"},
+		   {"gaus", "TYPE", "RLIST"},
+		   {"gaus", "TYPE", "RUSER"},
+		   {"lockertype", "TYPE", "HOMEDIR"},
+		   {"lockertype", "TYPE", "OTHER"},
+		   {"lockertype", "TYPE", "PROJECT"},
+		   {"lockertype", "TYPE", "SYSTEM"},
+		   {"lockertype", "TYPE", "UNKNOWN"},
 		   {"mac_type", "TYPE", "RT"},
 		   {"mac_type", "TYPE", "VAX"},
 		   {"member", "TYPE", "LIST"},
@@ -49,19 +67,23 @@ struct alias { char *name;
 		   {"pobox", "TYPE", "SMTP"},
 		   {"pobox", "TYPE", "NONE"},
 		   {"pobox", "TYPE", "POP"},
-		   {"service", "TYPE", "replicated"},
-		   {"service", "TYPE", "unique"},
-		   {"slabel", "TYPE", "usrlib"},
-		   {"slabel", "TYPE", "syslib"},
-		   {"slabel", "TYPE", "lpr"},
-		   {"slabel", "TYPE", "zephyr"},
-		   {"slabel", "TYPE", "kerberos"},
+		   {"rmember", "TYPE", "LIST"},
+		   {"rmember", "TYPE", "STRING"},
+		   {"rmember", "TYPE", "USER"},
+		   {"rmember", "TYPE", "RLIST"},
+		   {"rmember", "TYPE", "RSTRING"},
+		   {"rmember", "TYPE", "RUSER"},
+		   {"service", "TYPE", "REPLICAT"},
+		   {"service", "TYPE", "UNIQUE"},
 		   {"LIST", "TYPEDATA", "list"},
-		   {"NONE", "TYPEDATA", ""},
+		   {"NONE", "TYPEDATA", "none"},
 		   {"POP", "TYPEDATA", "machine"},
+		   {"RLIST", "TYPEDATA", "list"},
+		   {"RSTRING", "TYPEDATA", "string"},
+		   {"RUSER", "TYPEDATA", "user"},
 		   {"SMTP", "TYPEDATA", "string"},
 		   {"STRING", "TYPEDATA", "string"},
-		   {"USER", "TYPEDATA", "user"},
+		   {"USER", "TYPEDATA", "user"},	
 		   0 };
 
 
@@ -70,11 +92,15 @@ int argc;
 char **argv;
 {
     char buffer[256];
-##  char *table, *user, *value, *query, *trans, *type;
+##  char *table, *user, *value, *query, *trans, *type, *db;
 ##  int i, flag;
 
+    if (argc == 2)
+      db = argv[1];
+    else
+      db = "sms";
     IIseterr(ingerr);
-##  ingres testsms
+##  ingres db
     if (ingres_errno) {
 	printf("Unable to open the database\n");
 	exit(1);
@@ -231,6 +257,7 @@ char **argv;
 	  }
         }
     }
+##  append capacls (capability = "trigger_dcm", tag = "tdcm", list_id = 2)
 
     /* and the aliases */
     for (i = 0; aliases[i].name ; i++) {
@@ -265,10 +292,9 @@ int access_list() {}
 int access_visible_list() {}
 int access_maillist() {}
 int access_user() {}
+int access_login() {}
+int access_filesys() {}
 int setup_ausr() {}
-int setup_add_group() {}
-int setup_add_filesys() {}
-int setup_update_filesys() {}
 int setup_umac() {}
 int setup_dmac() {}
 int setup_uclu() {}
@@ -277,11 +303,12 @@ int setup_dusr() {}
 int setup_dsin() {}
 int setup_dshi() {}
 int setup_dlis() {}
-int validate_label() {}
-int validate_label_2() {}
+int setup_afil() {}
+int setup_ufil() {}
+int setup_ssif() {}
+int setup_sshi() {}
+int setup_dnfq() {}
 int uusr_login_check() {}
-int delete_user_poboxes() {}
-int delete_current_quota() {}
 int set_modtime() {}
 int set_modtime_by_id() {}
 int set_user_modtime() {}
@@ -291,6 +318,7 @@ int set_filesys_modtime() {}
 int set_mach_modtime() {}
 int set_mach_modtime_by_id() {}
 int set_serverhost_modtime() {}
+int set_zephyr_modtime() {}
 int followup_amtl() {}
 int followup_ausr() {}
 int followup_delete_list() {}
@@ -298,13 +326,15 @@ int followup_add_pobox() {}
 int followup_delete_pobox() {}
 int followup_usha() {}
 int followup_old_gpob() {}
+int followup_gsha() {}
+int followup_anfq() {}
+int followup_gzcl() {}
 int followup_fix_acl() {}
+int followup_fix_modby() {}
 int translate_ids() {}
 int expand_list_flags() {}
 int add_new_quota() {}
-int add_hostaccess() {}
-int delete_hostaccess() {}
-int get_query_need() {}
+int count_members_of_list() {}
 int get_list_is_group() {}
 int get_list_is_maillist() {}
 int add_locker() {}
@@ -331,6 +361,15 @@ int trigger_dcm() {}
 int set_nfsphys_modtime() {}
 int setup_alis() {}
 int access_member() {}
-int get_acl_use() {}
+int get_ace_use() {}
 int access_qgli() {}
 int qualified_get_lists() {}
+int delete_current_quota() {}
+int setup_add_group() {}
+int setup_dfil() {}
+int setup_dnfp() {}
+int get_lists_of_member() {}
+int access_all() {}
+int get_list_info() {}
+int register_user() {}
+int access_vis_list_by_name() {}

@@ -4,8 +4,8 @@
  * "mit-copyright.h".
  *
  * $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v $
- * $Author: mar $
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.40 1993-10-22 18:10:41 mar Exp $
+ * $Author: tom $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.41 1994-06-25 15:07:27 tom Exp $
  *
  * Generic menu system module.
  *
@@ -18,7 +18,7 @@
  */
 
 #ifndef lint
-static char rcsid_menu_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.40 1993-10-22 18:10:41 mar Exp $";
+static char rcsid_menu_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.41 1994-06-25 15:07:27 tom Exp $";
 
 #endif lint
 
@@ -52,7 +52,9 @@ static char rcsid_menu_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moira
 
 extern int interrupt;		/* will be set if ^C is received */
 extern FILE *fdopen();
+#ifndef sgi
 extern int getpid();
+#endif
 extern char *calloc();
 extern char *whoami;
 

@@ -1,0 +1,9 @@
+#!/bin/csh -f 
+reset
+while (1)
+	/mit/register/userreg.`/bin/athena/machtype`
+	reset
+	echo -n "Do you want to register another user? "
+	set answer = $<
+	if ("${answer}x" =~ [nN]*) exit 0
+end

@@ -1,0 +1,111 @@
+P  if fixed in preen step
+ * if not offered to fix
+  *if not actually checked
+================================
+PHASE 1: looking for duplicates
+
+   Each users_id must be unique
+	Alloc new ID
+   Each login name must be unique (if -f flag not specified)
+	If full names match, delete; else unregister
+   Each mach_id must be unique
+	Alloc new ID
+ * Each machine name must be unique (if -f flag not specified)
+   Each clu_id must be unique
+	Alloc new ID
+ * Each cluster must have a unique name (if -f flag not specified)
+   Each list_id must be unique
+	Alloc new ID
+ * Each list must have a unique name (if -f flag not specified)
+   Each filsys_id must be unique
+	Alloc new ID
+   Each nfsphys_id must be unique
+	Alloc new ID
+   Each strings_id must be unique
+	Delete duplicate
+ * Each string must have a unique value
+ * Each user can appear at most once in the krbmap (if -f flag not specified)
+ * Each principal can appear at most once in the krbmap (if -f flag
+	not specified)
+
+PHASE 2: checking references
+
+   Each user's POP pobox must be on a real machine
+	Delete pobox
+   Each user's SMTP pobox must have a string
+	Delete pobox
+P  Every entry in the machine-cluster map must reference machine & cluster
+	Delete entry
+P  Every piece of cluster data must be attached to a real cluster.
+	Delete data
+P  Every LIST list ACE must exist
+	Make list it's own acl
+P  Every USER list ACE must exist
+	Make list it's own acl
+P  Every member must be a member of a real list
+	Delete the member
+P  Every USER member must be a real user
+	Delete the member
+P  Every LIST member must be a real list
+	Delete the member
+P  Every STRING member must be a real string
+	Delete the member
+P  Every KERBEROS member must be a real string
+	Delete the member
+P  Every service USER owner must be a real user
+	Make user 0 own service
+P  Every service LIST owner must be a real list
+	Make list 0 own service
+   Every server/host tuple must refer to a real machine
+	Delete tuple
+   Every filesys must be on a real machine
+	Put it on machine 0
+P  Every filesys' owning user must exist
+	Make it user 0
+P  Every filesys' owning group must exist
+	Make it list 0
+   Every fsgroup must exist
+	Delete the fsgroup
+   Every fsgroup must be of type FSGROUP
+	Change type
+P  Every fsgroup member must exist
+	Delete member
+   Every NFS filesys' phys_id must exist
+P	Set to correct one if found
+	    else create one
+   Every NFS physical's machine must exist
+	Delete entry
+P  Every quota must be for a real user
+	Delete quota
+   Every quota must be on a real filesys
+	Delete quota
+P  Every quota's phys_id must match the filesys' phys_id
+	Fix phys_id
+P  Every user in the krbmap must exist
+	Delete map entry
+P  Every string in the krbmap must exist
+	Delete map entry
+ **Zephyr checks
+ * Every hostaccess must be for a real machine
+ * Every hostaccess USER must exist
+ * Every hostaccess LIST must exist
+P  Every palladium server must be on a real machine
+	Delete the palladium entry
+ * Every list used in capacls must exist
+
+PHASE 3: finding unused objects
+
+   Every machine must be in at least one cluster (if -w flag not specified)
+	Print warning
+   Every list must have at least one member (if -w flag not specified)
+	Print warning
+P  Every string must be used at least once
+	Delete string
+
+PHASE 4: checking counts
+
+ * Every POP pobox must be on a POP server
+P  The count of POP boxes must match value1 of the service/host tuple
+	update count
+P  The total quota on an NFSphys must match the recorded allocation
+	update count

@@ -1,0 +1,2 @@
+0-10 * * * * 	kerberos backups are taking place
+* 4 * * 7	weekly database cleanup

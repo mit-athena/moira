@@ -1,14 +1,14 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v 1.19 1988-08-03 18:21:37 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v 1.20 1988-08-05 16:07:48 mar Exp $
  *
  *	Copyright (C) 1987, 1988 by the Massachusetts Institute of Technology
  * 
  */
 
 #ifndef lint
-static char *rcsid_qrtn_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v 1.19 1988-08-03 18:21:37 mar Exp $";
+static char *rcsid_qrtn_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v 1.20 1988-08-05 16:07:48 mar Exp $";
 #endif lint
 
 #include "query.h"
@@ -191,9 +191,6 @@ sms_process_query(cl, name, argc, argv_ro, action, actarg)
 		status = do_retrieve(q, pqual, psort, action, actarg);
 	    }
 	    if (status != SMS_SUCCESS) break;
-	    table = q->rtable;
-##          repeat replace tblstats (retrieves = tblstats.retrieves + 1)
-##                 where tblstats.#table = @table
 	} else {
 	    status = (*v->post_rtn)(q, Argv, cl, action, actarg);
 	}

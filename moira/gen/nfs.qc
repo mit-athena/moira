@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/nfs.qc,v 1.7 1988-12-07 16:56:00 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/nfs.qc,v 1.8 1989-06-08 16:25:39 mar Exp $
  *
  * This generates the files necessary to load an nfs server.
  *
@@ -39,6 +39,7 @@ char **argv;
 
     IIseterr(ingerr);
 ##  ingres sms
+##  set lockmode session where level = table
 
     changed = do_nfs();
 
@@ -140,6 +141,11 @@ struct save_queue *lists;
 	}
     }
 
+##  begin transaction
+    /* get locks */
+##  retrieve (lname = list.modtime) where list.list_id = 0
+##  retrieve (lname = users.modtime) where users.users_id = 0
+
     /* build the list of everyone, and store it in a file whose name
      * corresponds to the empty list.
      */
@@ -179,14 +185,18 @@ struct save_queue *lists;
 	}
 	while (sq_get_data(members, &lsname))
 	  fprintf(fd, "%s\n", lsname);
+/* test to see if this speeds things up; don't free anything!
 	sq_destroy(members);
 	sq_destroy(sq);
-	if (fclose(fd)) {
+ */	if (fclose(fd)) {
 	    fprintf(stderr, "error closing %s\n", file);
 	    exit(SMS_CCONFIG);
 	}
     }
+/* don't free here either
     sq_destroy(lists);
+ */
+##  end transaction
     return(1);
 ##}
 
@@ -384,6 +394,7 @@ struct save_queue *machs;
 
     fprintf(stderr, "Building machine files\n");
 
+##  begin transaction
 ##  range of s is serverhosts
 ##  range of m is machine
 ##  range of n is nfsphys
@@ -456,5 +467,6 @@ struct save_queue *machs;
 	}
 	sq_destroy(sq);
     }
+##  end transaction
     return(1);
 ##}

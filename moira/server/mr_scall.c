@@ -1,11 +1,14 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_scall.c,v $
  *	$Author: wesommer $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_scall.c,v 1.9 1987-08-04 02:41:22 wesommer Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_scall.c,v 1.10 1987-08-19 18:39:04 wesommer Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
  *	$Log: not supported by cvs2svn $
+ * Revision 1.9  87/08/04  02:41:22  wesommer
+ * Clean up messages.
+ * 
  * Revision 1.8  87/07/16  15:43:19  wesommer
  * Fixed bug where the argv was not copied to private storage
  * (it got changed out from under us before it got sent..).
@@ -35,7 +38,7 @@
  */
 
 #ifndef lint
-static char *rcsid_sms_scall_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_scall.c,v 1.9 1987-08-04 02:41:22 wesommer Exp $";
+static char *rcsid_sms_scall_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_scall.c,v 1.10 1987-08-19 18:39:04 wesommer Exp $";
 #endif lint
 
 #include <krb.h>
@@ -76,6 +79,8 @@ do_client(cp)
 	case CL_RECEIVE:
 		/* Data is here. Process it & start it heading back */
 		do_call(cp); /* This may block for a while. */
+		sms_destroy_reply(cp->args);
+		cp->args = NULL;
 		initialize_operation(cp->pending_op, sms_start_send,
 				     (char *)&cp->reply, (int (*)())NULL);
 		queue_operation(cp->con, CON_OUTPUT, cp->pending_op);
@@ -210,20 +215,60 @@ retr_callback(argc, argv, p_cp)
 	queue_operation(cp->con, CON_OUTPUT, op_tmp);
 }
 
+list_users(callbk, callarg)
+	int (*callbk)();
+	char *callarg;
+{
+	char *argv[6];
+	char buf[30];
+	char buf1[30];
+	int i;
+	extern client **clients;
+	extern char *inet_ntoa();
+	char *cp;
+	char *index();
+	char *ctime();
+
+	for (i = 0; i < nclients; i++) {
+		register client *cl = clients[i];
+		if (cl->clname) 
+			argv[0] = cl->clname;
+		else argv[0] = "unauthenticated";
+		
+		argv[1] = inet_ntoa(cl->haddr.sin_addr);
+		argv[2] = buf;
+		sprintf(buf, "port %d", ntohs(cl->haddr.sin_port));
+		argv[3] = ctime(&cl->last_time_used);
+		cp = index(argv[3], '\n');
+		if (cp) *cp = '\0';
+		argv[4] = buf1;
+		sprintf(buf1, "[#%d]", cl->id);
+		(*callbk)(5, argv, callarg);
+	}
+	return 0;
+}
 
 do_retr(cl)
-	client *cl;
+	register client *cl;
 {
+	register char *queryname;
+
 	cl->reply.sms_argc = 0;
 	cl->reply.sms_status = 0;
 
-	cl->reply.sms_status = 
-	  sms_process_query(cl,
-			    cl->args->sms_argv[0],
-			    cl->args->sms_argc-1,
-			    cl->args->sms_argv+1,
-			    retr_callback,
-			    (char *)cl);
+	queryname = cl->args->sms_argv[0];
+	
+	if (strcmp(queryname, "_list_users") == 0)
+		cl->reply.sms_status = list_users(retr_callback, (char *)cl);
+	else {
+		cl->reply.sms_status = 
+			sms_process_query(cl,
+					  cl->args->sms_argv[0],
+					  cl->args->sms_argc-1,
+					  cl->args->sms_argv+1,
+					  retr_callback,
+					  (char *)cl);
+	}
 	if (log_flags & LOG_RES)
 		com_err(whoami, 0, "Query complete.");
 }

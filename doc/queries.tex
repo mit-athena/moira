@@ -36,19 +36,21 @@ each query.
 \section{Users, Finger, and Post Office Boxes}
 
 \begin{description}
-\item[get\_all\_logins, galo]() $\rightarrow$ login, uid, shell, last, first, mi
+\item[get\_all\_logins, galo]() $\rightarrow$ login, uid, shell,
+winconsoleshell, last, first, mi
 
 Returns info on every account in the database.  The returned info is a
 summary of the account info, not the complete information.
 
-\item[get\_all\_active\_logins, gaal]() $\rightarrow$ login, uid, shell, last, first, mi
+\item[get\_all\_active\_logins, gaal]() $\rightarrow$ login, uid, shell,
+winconsoleshell, last, first, mi
 
 Returns info on every account for which the status field is non-zero.
 The returned info is a summary of the account info, not the complete
 information.
 
 \item[get\_user\_account\_by\_login, gual](login) $\rightarrow$ login, uid,
-shell, last, first, mi, state, mitid, class, comments, signature,
+shell, winconsoleshell, last, first, mi, state, mitid, class, comments, signature,
 secure, modtime, modby, modwith
 
 Returns complete account information on the named account.  Wildcards
@@ -57,7 +59,7 @@ the query is not on the query ACL, then the query only succeeds if the
 only retrieved information is about the user making the request.
 
 \item[get\_user\_account\_by\_uid, guau](uid) $\rightarrow$ login, uid, shell,
-last, first, mi, state, mitid, class, comments, signature, secure,
+winconsoleshell, last, first, mi, state, mitid, class, comments, signature, secure,
 modtime, modby, modwith
 
 Returns complete account information on any account with the specified
@@ -65,7 +67,8 @@ Returns complete account information on any account with the specified
 then the query only succeeds if the only retrieved information is
 about the user making the request.
 
-\item[get\_user\_account\_by\_name, guan](first, last) $\rightarrow$ login, uid, shell,
+\item[get\_user\_account\_by\_name, guan](first, last) $\rightarrow$
+login, uid, shell, winconsoleshell, 
 last, first, mi, state, mitid, class, comments, signature, secure, modtime,
 modby, modwith
 
@@ -74,21 +77,23 @@ Returns complete account information on any account with matching
 wildcards, so that this query can do the equivalent of lookup by
 firstname or lookup by lastname.
 
-\item[get\_user\_account\_by\_class, guac](class) $\rightarrow$ login, uid, shell, last,
+\item[get\_user\_account\_by\_class, guac](class) $\rightarrow$ login,
+uid, shell, winconsoleshell, last,
 first, mi, state, mitid, class, comments, signature, secure, modtime,
 modby, modwith
 
 Returns complete account information on any account with a matching
 class field.  The given class may contain wildcards.
 
-\item[get\_user\_account\_by\_id, guai](id) $\rightarrow$ login, uid, shell, last, first,
+\item[get\_user\_account\_by\_id, guai](id) $\rightarrow$ login, uid,
+shell, winconsoleshell, last, first,
 mi, state, mitid, class, comments, signature, secure, modtime, modby, modwith
 
 Returns complete account information on any account with a matching
 MIT ID field.  The given id may contain wildcards.
 
 \item[get\_user\_by\_login, gubl](login) $\rightarrow$login, uid, shell,
-last, first, mi, state, mitid, class, modtime, modby, modwith
+winconsoleshell, last, first, mi, state, mitid, class, modtime, modby, modwith
 
 {\bf Obsolete.}  Returns complete account information on the named
 account.  Wildcards may be used in the {\em login} name specified.  If
@@ -96,7 +101,8 @@ the person executing the query is not on the query ACL, then the query
 only succeeds if the only retrieved information is about the user
 making the request.
 
-\item[get\_user\_by\_uid, gubu](uid) $\rightarrow$ login, uid, shell, last, first, mi,
+\item[get\_user\_by\_uid, gubu](uid) $\rightarrow$ login, uid, shell,
+winconsoleshell, last, first, mi,
 state, mitid, class, modtime, modby, modwith
 
 {\bf Obsolete.}  Returns complete account information on any account
@@ -105,26 +111,28 @@ on the query ACL, then the query only succeeds if the only retrieved
 information is about the user making the request.
 
 \item[get\_user\_by\_name, gubn](first, last) $\rightarrow$ login, uid, shell,
-last, first, mi, state, mitid, class, modtime, modby, modwith
+winconsoleshell, last, first, mi, state, mitid, class, modtime, modby, modwith
 
 {\bf Obsolete.}  Returns complete account information on any account
 with matching {\em first} and {\em last} name fields.  Either or both
 names may contain wildcards, so that this query can do the equivalent
 of lookup by firstname or lookup by lastname.
 
-\item[get\_user\_by\_class, gubc](class) $\rightarrow$ login, uid, shell, last,
+\item[get\_user\_by\_class, gubc](class) $\rightarrow$ login, uid,
+shell, winconsoleshell, last,
 first, mi, state, mitid, class, modtime, modby, modwith
 
 {\bf Obsolete.}  Returns complete account information on any account
 with a matching class field.  The given class may contain wildcards.
 
-\item[get\_user\_by\_mitid, gubm](crypt(id)) $\rightarrow$ login, uid, shell, last, first,
+\item[get\_user\_by\_mitid, gubm](crypt(id)) $\rightarrow$ login, uid,
+shell, winconsoleshell, last, first,
 mi, state, mitid, class, modtime, modby, modwith
 
 {\bf Obsolete.}  Returns complete account information on any account
 with a matching MIT ID field.  The given id may contain wildcards.
 
-\item[add\_user\_account, auac](login, uid, shell, last, first, mi, state, mitid,
+\item[add\_user\_account, auac](login, uid, shell, winconsoleshell, last, first, mi, state, mitid,
 class, comments, signature, secure)
 
 Adds a new user to the database. {\em login} must not match any
@@ -134,7 +142,7 @@ $\langle$moira.h$\rangle$}, the next unused uid will be assigned. If
 {\em login} is {\bf UNIQUE\_LOGIN} as defined in {\em
 $\langle$moira.h$\rangle$}, the login name will be a ``\#'' followed by
 the uid. For example, when adding a person so that they may register
-later, the query ausr(UNIQUE\_LOGIN, UNIQUE\_UID, /bin/csh, {\em Last,
+later, the query ausr(UNIQUE\_LOGIN, UNIQUE\_UID, /bin/csh, cmd, {\em Last,
 First, M}, 0, 999999999, {\em class}) is used. The {\em class}
 field must contain a value specified as a {\bf TYPE} alias for {\bf
 class}. The {\em comments} field can contain any string. The {\em
@@ -146,7 +154,7 @@ Errors: MR\_NOT\_UNIQUE ``Arguments not unique'' if the login name is not
 unique, or MR\_BAD\_CLASS ``Specified class is not known'' if the class is
 not in the alias database.
 
-\item[add\_user, ausr](login, uid, shell, last, first, mi, state, mitid,
+\item[add\_user, ausr](login, uid, shell, winconsoleshell, last, first, mi, state, mitid,
 class)
 
 {\bf Obsolete.} Adds a new user to the database. {\em login} must not
@@ -156,7 +164,7 @@ $\langle$moira.h$\rangle$}, the next unused uid will be assigned. If
 {\em login} is {\bf UNIQUE\_LOGIN} as defined in {\em
 $\langle$moira.h$\rangle$}, the login name will be a ``\#'' followed by
 the uid. For example, when adding a person so that they may register
-later, the query ausr(UNIQUE\_LOGIN, UNIQUE\_UID, /bin/csh, {\em Last,
+later, the query ausr(UNIQUE\_LOGIN, UNIQUE\_UID, /bin/csh, cmd, {\em Last,
 First, M}, 0, 999999999, {\em class}) is used. The {\em class} field
 must contain a value specified as a {\bf TYPE} alias for {\bf class}.
 This query also initializes the finger record for this user with just
@@ -166,25 +174,22 @@ modtime on the user, finger and pobox records. Errors: MR\_NOT\_UNIQUE
 MR\_BAD\_CLASS ``Specified class is not known'' if the class is not in the
 alias database.
 
-\item[register\_user, rusr](uid, login, fstype)
+\item[register\_user, rusr](uid, login, pobox_type)
 
-Registers a user. This consists of changing their username, and
-creating a pobox, a group list, a filesystem, and a quota for them.
-The user is identified by {\em uid}, which must match exactly one
-existing user. Further, this user must currently have a {\em status}
-of 0. The user will be left with a {\em status} of 2. The pobox
-created will be of type {\bf POP} on the least loaded post office. The
-group list will have the user as an owner, and a unique GID will be
-assigned. The filesystem will be allocated on the least loaded
-fileserver which supports {\em fstype}, where {\em fstype} is {\bf
-MR\_FS\_STUDENT, MR\_FS\_FACULTY, MR\_FS\_STAFF}, or {\bf MR\_FS\_MISC} as
-defined in {\em $\langle$moira.h$\rangle$}. A quota will be assigned
-to the user on his filesystem with the value taken from {\bf
-def\_quota} in the values table. Errors: MR\_NO\_MATCH, MR\_NOT\_UNIQUE
-``Arguments not unique'' if the uid does not specify exactly one user;
-MR\_IN\_USE ``Object is in use'' if the login name is already taken.
+Registers a user. This consists of changing their username, and creating
+a pobox, a filesystem, and a quota for them.  The user is identified by
+{\em uid}, which must match exactly one existing user. Further, this
+user must currently have a {\em status} of 0. The user will be left with
+a {\em status} of 2. The pobox created will be of the type specified by
+the last argument; valid choices are {\bf POP}, {\bf IMAP}, and {\bf
+NONE}. A quota will be assigned to the user on his filesystem with the
+value taken from {\bf def\_quota} in the values table. Errors:
+MR\_NO\_MATCH, MR\_NOT\_UNIQUE ``Arguments not unique'' if the uid does
+not specify exactly one user; MR\_IN\_USE ``Object is in use'' if the
+login name is already taken.
 
-\item[update\_user\_account, uuac](login, newlogin, uid, shell, last,
+\item[update\_user\_account, uuac](login, newlogin, uid, shell,
+winconsoleshell, last,
 first, mi, state, mitid, class, comments, signature, secure)
 
 Updates the info in a user entry.  {\em login} specifies the existing
@@ -202,7 +207,7 @@ does not match exactly one user, MR\_NOT\_UNIQUE ``Arguments not unique''
 if the new login name is not unique, or MR\_BAD\_CLASS ``Specified class
 is not known'' if the class is not in the alias database.
 
-\item[update\_user, uusr](login, newlogin, uid, shell, last, first, mi, state,
+\item[update\_user, uusr](login, newlogin, uid, shell, winconsoleshell, last, first, mi, state,
 mitid, class)
 
 {\bf Obsolete.}  Updates the info in a user entry.  {\em login} specifies
@@ -226,6 +231,14 @@ alias database.
 Updates a user's shell.  {\em login} must match exactly one user.  The
 modtime fields in the user's record will be updated.  This query may
 be executed by the target user or by someone on the query ACL.
+Errors: MR\_USER ``No such user'' if the login name does not match
+exactly one user.
+
+\item[update\_user\_windows\_shell, uuws](login, winconsoleshell)
+
+Updates a user's windows shell. {\em login} must match exactly one
+user.  The modtime fields in the user's record will be updated.  This
+query may be executed by the target user or by someone on the query ACL.
 Errors: MR\_USER ``No such user'' if the login name does not match
 exactly one user.
 
@@ -329,15 +342,17 @@ database.  See {\em set\_pobox} for a summary of the returned fields.
 
 Establishes a user's post office box.  The given {\em login} must match
 exactly one user.  The {\em type} will be checked against the alias
-database for valid {\bf pobox} types.  Currently allowed types are
-{\bf POP}, {\bf SMTP}, and {\bf NONE}.  If the type is {\bf POP}, then box
-must name a machine known by MR.  If the type is {\bf SMTP}, then box
-is the user's mail address with no other interpretation by MR.  A
-type of {\bf NONE} is the same as not having a pobox.  The modtime
-fields on the pobox record will be set.  The owner of the target pobox
-may perform this query.  Errors: MR\_USER ``No such user'' if the login
-name does not match exactly one user, or MR\_TYPE ``Invalid type'' if
-the type is not {\bf POP}, {\bf SMTP}, or {\bf NONE}.
+database for valid {\bf pobox} types.  Currently allowed types are {\bf
+POP}, {\bf IMAP}, {\bf SMTP}, and {\bf NONE}.  If the type is {\bf POP},
+then box must name a machine known by MR.  If the type is {\bf IMAP},
+then box must name a filesystem owned by the user on an IMAP server. If
+the type is {\bf SMTP}, then box is the user's mail address with no
+other interpretation by MR.  A type of {\bf NONE} is the same as not
+having a pobox.  The modtime fields on the pobox record will be set.
+The owner of the target pobox may perform this query.  Errors: MR\_USER
+``No such user'' if the login name does not match exactly one user, or
+MR\_TYPE ``Invalid type'' if the type is not {\bf POP}, {\bf IMAP}, {\bf
+SMTP}, or {\bf NONE}.
 
 \item[set\_pobox\_pop, spop](login)
 
@@ -372,6 +387,11 @@ created, creator, inuse modtime, modby, modwith
 
 Any of the arguments may contain wildcards.
 
+\item[get\_host\_by\_owner, ghbo](ace\_type, ace\_name) $\rightarrow$
+name
+
+Neither argument may be a wild card.
+
 \item[add\_host, ahst](name, vendor, model, os, location, contact, use,
 status, subnet, address, owner\_type, owner\_name, admincomment,
 opcomment)
@@ -382,7 +402,7 @@ letter, remaining chars letter, numbers, and hyphen, must not end with
 a hyphen.  Vendor, model, os, and location will be upcased.  Use is an
 integer whose values are determined by the client (if entity
 performing the query is not on the query ACL, the use field must be
-zero).  Status must be 1 (active) or 3 (reserved).  Subnet must name
+zero).  Status must be 1 (active) or 0 (reserved).  Subnet must name
 an existing subnet.  Address must be unique among hosts, or ``unqiue''
 or ``unassigned''.  The address must be a legal address on the subnet,
 though if it is specified by the user, it need not fall within the
@@ -398,7 +418,7 @@ acomment, ocomment, inuse)
 newname must either match the old name, or be unique among hosts and
 host aliases.  If the name is changed, it is sanity checked as
 described in add\_host.  use may not be changed except by someone on
-the query ACL.  status may be set to 1 (active), 3 (reserved) or 4
+the query ACL.  status may be set to 1 (active), 0 (reserved) or 3
 (deleted).  address may only be changed to ``unassigned'' or ``unique''
 (which assigns a unique address).  If status changes, statuschange
 will be set to the current date.  All other fields are as in add\_host.
@@ -549,12 +569,12 @@ existing piece of data for the cluster.
 \begin{description}
 
 \item[get\_list\_info, glin](list) $\rightarrow$ list, active, public, hidden,
-maillist, group, gid, ace\_type, ace\_name, description, modtime, modby,
+maillist, group, gid, nfsgroup, ace\_type, ace\_name, description, modtime, modby,
 modwith
 
 Returns information about the named list.  The {\em list} name may
-contain wildcards.  {\em active, public, hidden, maillist}, and
-{\em group} are booleans returned as integers (0 is false, non-zero is
+contain wildcards.  {\em active, public, hidden, maillist, group}, and
+{\em nfsgroup} are booleans returned as integers (0 is false, non-zero is
 true).  The {\em ace-type} is either {\bf USER}, {\bf LIST}, or {\bf NONE},
 and the {\em ace\_name} will be either a login name, a list name, or
 {\bf NONE}, respectively.  This query is allowed if the list is not
@@ -569,11 +589,11 @@ Expands wildcards in a {\em list} name.  A name is passed which may
 contain wildcards, and a set of matching names are returned.
 
 \item[add\_list, alis](list, active, public, hidden, maillist, group, gid,
-ace\_type, ace\_name, description)
+nfsgroup, ace\_type, ace\_name, description)
 
 Creates a new list and adds it to the database. The {\em list} name
 must be unique among existing list names. {\em active, public, hidden,
-maillist}, and {\em group} are booleans passed as integers (0 is
+maillist, group}, and {\em nfsgroup} are booleans passed as integers (0 is
 false, non-zero is true). If {\em group} is true and {\em gid} is {\bf
 UNIQUE\_GID} as defined in {\em $\langle$moira.h$\rangle$}, a new
 unique group ID will be assigned, otherwise the integer value given
@@ -588,15 +608,15 @@ USER}, {\bf LIST}, or {\bf NONE}, or if the {\em ace\_name} cannot be
 resolved relative to the {\em ace\_type}.
 
 \item[update\_list, ulis](list, newname, active, public, hidden, maillist,
-group, gid, ace\_type, ace\_name, description)
+group, gid, nfsgroup, ace\_type, ace\_name, description)
 
 Allows the list information and attributes to be changed. This is not
 equivalent to deleting the list and creating a new one, since
 references to the old name will still apply to the new name if it is
 renamed. The {\em list} name must match exactly one list. The {\em new
 name} must either match the old name or be unique among list names in
-the database. The {\em active, public, hidden, maillist}, and {\em
-group} flags should be 0 if the flag is false, or non-zero if it is
+the database. The {\em active, public, hidden, maillist, group}, and {\em
+nfsgroup} flags should be 0 if the flag is false, or non-zero if it is
 true. The {\em gid} may be {\bf UNIQUE\_GID} as defined in {\em
 $\langle$moira.h$\rangle$}, in which case a new unique GID will be
 assigned. The {\em ace-type} is either {\bf USER}, {\bf LIST}, or {\bf

@@ -1,14 +1,14 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v 1.18 1988-07-31 01:09:22 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v 1.19 1988-08-03 18:21:37 mar Exp $
  *
  *	Copyright (C) 1987, 1988 by the Massachusetts Institute of Technology
  * 
  */
 
 #ifndef lint
-static char *rcsid_qrtn_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v 1.18 1988-07-31 01:09:22 mar Exp $";
+static char *rcsid_qrtn_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v 1.19 1988-08-03 18:21:37 mar Exp $";
 #endif lint
 
 #include "query.h"
@@ -48,8 +48,7 @@ static int ingerr(num)
     default:
 	ingres_errno = SMS_INGRES_ERR;
 	com_err(whoami, SMS_INGRES_ERR, " code %d\n", *num);
-	sprintf(buf, "Ingres error %d", *num);
-	send_zgram("ingres_error", buf);
+	critical_alert("SMS", "SMS server encountered INGRES ERROR %d", *num);
 	return (*num);
     }
     return (0);

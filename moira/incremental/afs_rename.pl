@@ -22,7 +22,7 @@ die "Can only handle AFS and ERR lockers\n"
 
 # Lookup volume type
 ($c = $newcell) =~ s/\./_/g;
-$vtype = eval "\$vtypes_$c{$newltype}";
+$vtype = eval "\$vtypes_${c}{$newltype}";
 die "Cannot handle $newltype volumes\n" unless $vtype;
 $newvname = $vtype . "." . $newname;
 
@@ -33,7 +33,7 @@ if ($oldtype eq "ERR") {
 
     # Lookup volume type for old locker
     ($c = $oldcell) =~ s/\./_/g;
-    $vtype = eval "\$vtypes_$c{$oldltype}";
+    $vtype = eval "\$vtypes_${c}{$oldltype}";
     die "Cannot handle $oldltype volumes\n" unless $vtype;
     $oldvname = $vtype . "." . $oldname;
     $oldvname =~ s/[^-A-Za-z0-9_.]//g;	# strip out illegal characters

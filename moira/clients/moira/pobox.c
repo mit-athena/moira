@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/pobox.c,v 1.17 1990-07-14 16:23:06 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/pobox.c,v 1.18 1991-01-04 17:09:56 mar Exp $";
 #endif lint
 
 /*	This is the file pobox.c for the MOIRA Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/pobox.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/pobox.c,v 1.17 1990-07-14 16:23:06 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/pobox.c,v 1.18 1991-01-04 17:09:56 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -123,7 +123,7 @@ char ** argv;
 	FreeQueue(top);
 	break;
     default:
-	com_err(program_name, status, "in get_pobox.");
+	com_err(program_name, status, " in get_pobox.");
     }
     return(DM_NORMAL);
 }
@@ -140,8 +140,6 @@ char * local_user;
 {
     char temp_buf[BUFSIZ];
 
-    sprintf(temp_buf, "%s did not have a previous local PO Box.", local_user);
-    Put_message(temp_buf);
     sprintf(temp_buf,"%s %s", "Pick one of the following",
 	    "machines for this user's Post Office.");
     Put_message(temp_buf);
@@ -188,6 +186,9 @@ char **argv;
 	    case MR_SUCCESS:
 		return(DM_NORMAL);
 	    case MR_MACHINE:
+		sprintf(temp_buf, "%s did not have a previous local PO Box.",
+			local_user);
+		Put_message(temp_buf);
 		if ( (temp_box = GetNewLocalPOBox(local_user)) !=
 		    	(char *) SUB_ERROR) {
 		    strcpy(box, temp_box);

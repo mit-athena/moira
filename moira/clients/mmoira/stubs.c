@@ -13,11 +13,74 @@
 #include	"mmoira.h"
 #include	<sys/file.h>
 
-static char rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/stubs.c,v 1.6 1992-10-19 17:11:10 mar Exp $";
+static char rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/stubs.c,v 1.7 1992-10-22 15:25:34 mar Exp $";
 
 void	extra_help_callback();
 
 static Widget	logwidget = NULL;
+
+
+/* No-op action to mask built-in actions */
+
+void noopACT(w, event, p, n)
+Widget w;
+XEvent *event;
+String *p;
+Cardinal *n;
+{
+}
+
+
+/* Action to do a moira retrieve on what was clicked at */
+
+void moiraRetrieveACT(w, event, p, n)
+Widget w;
+XEvent *event;
+String *p;
+Cardinal *n;
+{
+    XmTextPosition pos;
+    XButtonEvent *be;
+
+    be = (XButtonEvent *)event;
+
+    pos = XmTextXYToPos(w, be->x, be->y);
+    DoMoiraSelect(pos, w, 0);
+}
+
+
+/* Action to modify the moira object that was clicked on */
+
+void moiraModifyACT(w, event, p, n)
+Widget w;
+XEvent *event;
+String *p;
+Cardinal *n;
+{
+    XmTextPosition pos;
+    XButtonEvent *be;
+
+    be = (XButtonEvent *)event;
+
+    pos = XmTextXYToPos(w, be->x, be->y);
+    DoMoiraSelect(pos, w, 1);
+}
+
+
+static XtActionsRec myactions[] = {
+    { "moiraRetrieve", moiraRetrieveACT },
+    { "moiraModify", moiraModifyACT },
+    { "noop", noopACT },
+};
+
+#define newtrans "~Ctrl  Shift ~Meta ~Alt<Btn1Down>: moiraRetrieve()\n\
+	~Ctrl ~Meta ~Alt<Btn1Up>: noop()\n\
+	~Ctrl  Shift ~Meta ~Alt<Btn2Down>: moiraModify()"
+
+
+/* Create the log window, and setup the translation table to taking
+ * mouse clicks in it.
+ */
 
 Widget
 SetupLogWidget(parent)
@@ -25,6 +88,7 @@ Widget	parent;
 {
 	Arg		wargs[10];
 	int		n;
+	XtTranslations	trans;
 
 	if (logwidget)
 		return (logwidget);
@@ -38,25 +102,18 @@ Widget	parent;
 						wargs, n);
 	XtManageChild(logwidget);
 
+	XtAppAddActions(XtWidgetToApplicationContext(logwidget),
+			myactions, XtNumber(myactions));
+	trans = XtParseTranslationTable(newtrans);
+	XtOverrideTranslations(logwidget, trans);
 	return (logwidget);
 }
 
 
-static MoiraSelect(w, data, e, cont)
-Widget w;
-caddr_t data;
-XEvent *e;
-Boolean *cont;
-{
-    XmTextPosition pos;
-    XButtonEvent *be;
-
-    be = (XButtonEvent *)e;
-
-    pos = XmTextXYToPos(logwidget, be->x, be->y);
-    DoMoiraSelect(pos, w, 0);
-}
-
+/* This actually does all of the work for handling mouse clicks.  It
+ * finds the surrounding text and decides what to do with the click,
+ * the actually starts the moira query or pops up the form.
+ */
 
 static DoMoiraSelect(pos, w, modify)
 XmTextPosition pos;
@@ -137,6 +194,10 @@ int modify;
 }
 
 
+/* This is the heart of handling the reference once we have found out
+ * what type of reference it is.
+ */
+
 static DoReference(name, formname, modop, showop, query, modify)
 char *name;
 char *formname;
@@ -175,61 +236,6 @@ int modify;
 	else
 	  AppendToLog("\n");
     }
-}
-
-
-void noopACT(w, event, p, n)
-Widget w;
-XEvent *event;
-String *p;
-Cardinal *n;
-{
-}
-
-void moiraRetrieveACT(w, event, p, n)
-Widget w;
-XEvent *event;
-String *p;
-Cardinal *n;
-{
-    MoiraSelect(w, 0, event, 0);
-}
-
-void moiraModifyACT(w, event, p, n)
-Widget w;
-XEvent *event;
-String *p;
-Cardinal *n;
-{
-    XmTextPosition pos;
-    XButtonEvent *be;
-
-    be = (XButtonEvent *)event;
-
-    pos = XmTextXYToPos(w, be->x, be->y);
-    DoMoiraSelect(pos, w, 1);
-}
-
-
-XtActionsRec myactions[] = {
-    { "moiraRetrieve", moiraRetrieveACT },
-    { "moiraModify", moiraModifyACT },
-    { "noop", noopACT },
-};
-
-#define newtrans "~Ctrl  Shift ~Meta ~Alt<Btn1Down>: moiraRetrieve()\n\
-	~Ctrl ~Meta ~Alt<Btn1Up>: noop()\n\
-	~Ctrl  Shift ~Meta ~Alt<Btn2Down>: moiraModify()"
-
-SetupClickBacks()
-{
-    static XtTranslations trans = NULL;
-
-    XtAppAddActions(XtWidgetToApplicationContext(logwidget),
-		    myactions, XtNumber(myactions));
-    trans = XtParseTranslationTable(newtrans);
-    XtOverrideTranslations(logwidget, trans);
-
 }
 
 
@@ -340,13 +346,15 @@ void
 MakeWatchCursor(topW)
 Widget	topW;
 {
-	Cursor	mycursor;
+    static Cursor mycursor = NULL;
 
-	if (!topW)
-		return;
+    if (!topW)
+      return;
 
-	mycursor = XCreateFontCursor (XtDisplay(topW), XC_watch);
-	XDefineCursor(XtDisplay(topW), XtWindow(topW), mycursor);
+    if (!mycursor)
+      mycursor = XCreateFontCursor (XtDisplay(topW), XC_watch);
+
+    XDefineCursor(XtDisplay(topW), XtWindow(topW), mycursor);
 }
 
 void

@@ -1,4 +1,4 @@
-/* $Id: reg_svr.pc,v 1.12 2002-05-09 00:45:17 zacheiss Exp $
+/* $Id: reg_svr.pc,v 1.13 2002-05-09 03:47:53 zacheiss Exp $
  *
  * Server for user registration with Moira and Kerberos.
  *
@@ -37,7 +37,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.pc,v 1.12 2002-05-09 00:45:17 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.pc,v 1.13 2002-05-09 03:47:53 zacheiss Exp $");
 
 char *whoami, *hostname, *shorthostname;
 
@@ -503,8 +503,8 @@ void SPIN(reg_client *rc, int argc, char **argv)
 
   /* "ORDER BY status" so that if there's both a matching state 0 entry
      and a matching state 3 entry, we'll get the former. */
-  EXEC SQL SELECT pin INTO :pin FROM users WHERE clearid = :rc->id;
-  ORDER BY status;
+  EXEC SQL SELECT pin INTO :pin FROM users WHERE clearid = :rc->id
+    ORDER BY status;
   strtrim(pin);
   if (strcmp(argv[0], pin) != 0)
     {

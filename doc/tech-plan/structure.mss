@@ -103,6 +103,10 @@ obtain a service (e.g. to login), and personal information about the user
 @I(users_id)@\an internal database indentifier for the user record.  This is
 not the same as the Unix uid.
 
+@I(uid)@\Unix uid.  Temporarily necessary due to NFS client code problems.
+Ultimately, this field will be removed and uids will be assigned arbitrarily
+for each client-server connection.
+
 @I(last, first, middle)@\The user's full name, broken down for convenient
 indexing. 
 
@@ -117,6 +121,9 @@ directory, and who may be a member of one or more lists.)
 
 @I(mit_id)@\the user's encrypted MIT id.
 
+@I(mit_year)@\a student's academic year, not modifiable by the student.
+Used for Athean administrative purposes.
+
 @I(expdate)@\the expiration date of the user and the user's resources (the user
 becomes inactive.)
 
@@ -126,10 +133,8 @@ becomes inactive.)
 
 Please see section @ref(Users) for a complete discussion of interfaces.
 
-There are no entries for password, uid, and primary gid because these are
-being subsumed by other services (Kerberos, ACLS).  There is no entry for
-home directory as it has little meaning in a workstation environment.  (See
-below on User Filesys Mapping).]
+There are no entries for password and primary gid because these are
+being subsumed by other services (Kerberos, ACLS).]
 
 @C(finger)@\@Multiple[This table contains the "finger" information for users.  
 
@@ -203,8 +208,20 @@ areas.
 
 @End(Description)
 
-Please see section @ref(Queries), subsection @ref(Cluster)  for a complete 
-discussion of interfaces.]
+Please see section @ref(Cluster)  for a complete discussion of interfaces.]
+
+@C(machclumap)@\@Multiple[Machine-Cluster Map.  This tables is used to
+assign machines to clusters.
+
+@Begin(Description)
+
+@I(cluster_id)@\cluster id.
+
+@I(machine_id)@\machine id.
+
+@End(Description)
+
+Please see section @ref(Cluster)  for a complete discussion of interfaces.]
 
 @C(svc)@\@Multiple[For each cluster there is a set of services that serve the
 machines in that cluster.  These services are described by an environment
@@ -625,9 +642,12 @@ optimization for dealing with (usually long) foreign mail addresses.
 
 @Begin(Description)
 
-@I(member_id)@\member id.
+@I(string_id)@\member id.
 
 @I(string)@\string.
+
+@I(refc)@\Reference count.  A single string can be a member of multiple
+lists.  When the reference count goes to zero, the string is deleted.
 
 @End(Description)
 
@@ -692,12 +712,12 @@ Please see section @ref(Capacls) for a complete discussion of interfaces.
 @C(alias)@\@Multiple[Aliases are used by several different services to
 provide alternative names for objects or a mapping one type of object and
 another.  Some examples of alias usage are printer aliases, service aliases,
-cluster aliases, file system aliases, print cluster to printer maps, and the
-machine to cluster map.  As an integrity constraint it is required that all
-aliases be of a known type.  The list of known alias types is actually
-stored in the database as the set of translations of aliases with name
-"alias" and type "type".  Therefore, it is also quite easy to add new alias
-types. 
+cluster aliases, file system aliases, and print cluster to printer maps.  As
+an integrity constraint it is required that all aliases be of a known type.
+The list of known alias types is actually stored in the database as the set
+of translations of aliases with name "alias" and type "type".  Therefore, it
+is also quite easy to add new alias types.  Another use of the "type" alias
+type is for storing known field values for validated table fields.
 
 @Begin(Description)
 

@@ -234,7 +234,7 @@ create printcap
 create palladium
 (
 	name		= c32,
-	ident		= i2,
+	ident		= i4,
 	mach_id		= i4,
 	modtime		= date,
 	modby		= i4,

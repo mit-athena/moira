@@ -1,4 +1,4 @@
-/* $Id: cluster.c,v 1.47 2000-12-20 09:40:09 zacheiss Exp $
+/* $Id: cluster.c,v 1.48 2001-05-09 21:27:36 zacheiss Exp $
  *
  *	This is the file cluster.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -230,9 +230,11 @@ static char *PrintMachInfo(char **info)
   sprintf(buf, "OS:       %-16s    Billing Contact: %s", info[M_OS],
 	  info[M_BILL_CONTACT]);
   Put_message(buf);
-  sprintf(buf, "\nOpt: %s", info[M_USE]);
+  Put_message("");
+  sprintf(buf, "Opt: %s", info[M_USE]);
   Put_message(buf);
-  sprintf(buf, "\nAdm cmt: %s", info[M_ACOMMENT]);
+  Put_message("");
+  sprintf(buf, "Adm cmt: %s", info[M_ACOMMENT]);
   Put_message(buf);
   sprintf(buf, "Op cmt:  %s", info[M_OCOMMENT]);
   Put_message(buf);

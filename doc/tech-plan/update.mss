@@ -13,9 +13,9 @@
 @begin(en)
 @begin(m)
 
-Preparation phase.  Initiated by the SMS when it determines that an
-update should be performed.  This can be triggered by a change in
-data, by an administrator, by a timer (running from crontab), or by a
+preparation phase.  This phase is initiated by the SMS when it
+determines that an update should be performed.  This can be triggered by
+a change in data, by an administrator, by a timer (run by cron), or by a
 restart of the SMS machine.
 
 @begin(en)
@@ -25,7 +25,9 @@ so, do nothing and report the fact.  Otherwise, build a data file from
 the SMS database.  (Building the data file is handled with a locking
 strategy that ensures that "the" data file available for distribution
 is not an incomplete one.  The new data file is placed in position for
-transfer once it is complete using the @f(rename) system call.)
+transfer once it is complete using the @f(rename) system
+call.)@foot(Does this mean that SMS can only update one file at any one
+time? -- AMBAR)
 
 Extract from SMS the list of server machines to update, and the
 instructions for installing the file.  Perform the remaining steps
@@ -70,7 +72,9 @@ erroneous installation.
 Send a signal to a specified process.  The process_id is assumed to be
 recorded in a file; the pathname of this file is a parameter to this
 instruction.  The process_id is read out of the file at the time of
-execution of this instruction.
+execution of this instruction.@foot(Does this mean that we're going to
+have to be keeping around lots more @f(daemon.pid) files than we do now?
+-- AMBAR)
 
 Execute a supplied command.
 
@@ -98,18 +102,17 @@ may be set, depending on the error condition and the default update
 interval.
 
 The error value returned is logged to the appropriate file; at some
-point it may be desirable to integrate Zephyr into this to notify the
-system maintainers when failures occur.
+point it may be desirable to use Zephyr to notify the system maintainers
+when failures occur.
 
-A timeout is used in both sides of the connection during the
-preparation phase, and during the actual installation on the SMS.  If
-any single operation takes longer than a reasonable amount of time,
-the connection is closed, and the installation assumed to have failed.
-This is to prevent network lossage and machine crashes from causing
-arbitrarily long delays, and instead falling back to the error
-condition, so that the installation will be attempted again later.
-(Sinc the all the data files being prepared are valid, extra
-installations are not harmful.)
+A timeout is used in both sides of the connection during the preparation
+phase, and during the actual installation on the SMS.  If any single
+operation takes longer than a reasonable amount of time, the connection
+is closed, and the installation assumed to have failed.  This is to
+prevent network lossage and machine crashes from causing arbitrarily
+long delays, and instead falls back to the error condition, so that the
+installation will be attempted again later.  (Sinc the all the data
+files being prepared are valid, extra installations are not harmful.)
 
 @end(m)
 @begin(m)
@@ -119,8 +122,8 @@ Server crashes.
 If a server crashes, it may fail to respond to the next attempted SMS
 update.  In this case, it is (generally) tagged for retry at a later
 time, say ten or fifteen minutes later.  This retry interval will be
-repeated until an attempt to update the server succeeds (or fails due
-to another error).
+repeated until an attempt to update the server succeeds (or fails due to
+another error).
 
 If a server crashes while it is receiving an update, either the file
 will have been installed or it will not have been installed.  If it
@@ -137,14 +140,13 @@ it may be incomplete) when the next update starts.
 SMS crashes.
 
 Since the SMS update table is driven by absolute times and offsets,
-crashes of the SMS machine will result in (at worst) delays in
-updates.  If updates were in progress when the SMS crashed, those that
-did not have the install command sent will have a few extra files on
-the servers, which will be deleted in the update that will be started
-the first time the update table is scanned for updates due to be
-performed.  Updates for which the install command had been issued may
-get repeated if notification of completion was not returned to the
-SMS.
+crashes of the SMS machine will result in (at worst) delays in updates.
+If updates were in progress when the SMS crashed, those that did not
+have the install command sent will have a few extra files on the
+servers, which will be deleted in the update that will be started the
+first time the update table is scanned for updates due to be performed.
+Updates for which the install command had been issued may get repeated
+if notification of completion was not returned to the SMS.
 
 @end(m)
 

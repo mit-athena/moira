@@ -7,7 +7,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/defs.h,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/defs.h,v 1.10 1991-01-04 16:56:19 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/defs.h,v 1.11 1993-11-10 15:42:02 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -31,7 +31,7 @@
 
 /* Modification information is always printed in this format. */
 
-#define MOD_FORMAT ("Last Modification by %s at %s with %s.")
+#define MOD_FORMAT ("Last mod by %s at %s with %s.")
 
 /* Some common default values. */
 

@@ -6,53 +6,34 @@
  */
 
 /* GLOBAL_CDEFS are passed to every C compile statement */
-/* Here are some of the common definitions which you might add to GLOBAL_CDEFS:
- *	HESIOD - use hesiod lookup Moira server name
- *	ZEPHYR - report critical errors via Zephyr
- *	SYSLOG42 - report critical errors via 4.2BSD-style syslog routines
- *	ATHENA - Athena-local hacks other sites probably don't want
- *	GDSS - use the generic data signature service to verify user info
- *	DBMS=xxx - currently supported is INGRES, INFORMIX, ORACLE
- *	ULTRIX022 - if you are running on pre-3.0 Ultrix.
- *	SunOS=xx - if you are running SunOS.  Set xx to 10 times the release
- *		number (e.g. SunOS 3.5 => -DSunOS=35, SunOS 4.0 => -DSunOS=40)
- *	NO_GETUSERSHELL - if your system doesn't have getusershell() in libc
- *		(type 'nm /lib/libc.a | grep getusershell', if something
- *		 shows up, you should NOT turn this flag on)
- */
-
-/* Curses library */
-#ifdef SOLARIS
-CURSES= -L/usr/css/lib -lcurses -ltermcap
-#else
-CURSES= -lcurses -ltermcap
-#endif
 
 #ifdef _AIX
-OSDEFS=-D_BSD -D_BSD_INCLUDES -DPOSIX
-OSLIBS=-lbsd
-CURSES=-lcurses
+OSDEFS= -D_BSD -D_BSD_INCLUDES -DPOSIX
+OSLIBS= -lbsd
 #endif
 
-#if defined(sgi)
+#if defined(linux) || defined(__NetBSD__)
 OSDEFS= -DPOSIX
 #endif
 
+#ifdef sgi
+OSDEFS= -DPOSIX -DUSE_CRYPT_H
+#endif
+
 #if defined(SOLARIS)
-OSDEFS= -DPOSIX -DSOLARIS -I/usr/openwin/include
-OSLIBS= -L/usr/ccs/lib -lcurses -ltermcap -lresolv \
-	-lsocket -lnsl -lc -lelf -ldl
-CURSES= 
-/* the curses and termcap libs are where they are on purpose. -vrt 4/28/93
- */
+OSDEFS= -DPOSIX -DSOLARIS
+OSLIBS= -lresolv -lsocket -lnsl
 #endif
 
 #ifdef NeXT
 OSLIBS= -lresolv
 #endif
 
+#ifdef __alpha
+OSDEFS= -DSIXTYFOUR -DPOSIX
+#endif
 
-GLOBAL_CDEFS= -DHESIOD -DZEPHYR -DGDSS -DATHENA -DDBMS=ORACLE -I/usr/athena/include $(OSDEFS)
+GLOBAL_CDEFS= -DHESIOD -DZEPHYR -DATHENA -DDBMS=ORACLE -I/usr/athena/include $(OSDEFS)
 
 
 /* SRCTOP is the root of the Moira source tree */
@@ -128,6 +109,7 @@ LZEPHYR=-lzephyr
  * stamp user records to guarentee their authenticity.  Also define
  * location of library and includes.
  */
+#if !defined(linux) && !defined(__NetBSD__)
 #define GDSS
 #ifdef sgi
 LIBGDSS= /mit/gdss/lib/libgdss.a
@@ -138,7 +120,8 @@ LIBGDSS= /mit/gdss/`machtype`/libgdss.a -lbsd
 LIBGDSS= /mit/gdss/`machtype`/libgdss.a
 #endif
 #endif
-GDSSINC= -I/mit/gdss/include
+GDSSINC= -DGDSS -I/mit/gdss/include
+#endif /* GDSS */
 
 /*
  * Define your DBMS here.  Currently only ORACLE is supported.
@@ -151,30 +134,10 @@ GDSSINC= -I/mit/gdss/include
  */
 /* #define NEED_STRCASECMP */
 
-/*
- * Define USELINT if you want to build lint libraries while building
- * Moira.
- */
-#if !defined(NeXT) && !defined(_AIX) && !defined(SOLARIS) && !defined(sgi)
-#define USELINT
-#endif
-
-/*
- * LINTLIBFLAG should be the flag used to tell lint to create a lint
- * library.  On most BSD systems, this is -C
- */
-#if defined(ultrix) || defined(_AIX)
-LINTLIBFLAG=-o
-#else
-LINTLIBFLAG=-C
-#endif
-
 MR_LIB=$(BUILDTOP)/lib/libmoira.a
 MR_LIBDEP=$(MR_LIB)
-MR_LINTLIB=$(BUILDTOP)/lib/llib-lmoira.ln
 GDB_LIB=$(BUILDTOP)/gdb/libmrgdb.a
 GDB_LIBDEP=$(GDB_LIB)
-GDB_LINTLIB=$(BUILDTOP)/gdb/llib-lmrgdb.ln
 
 
 /*
@@ -198,6 +161,7 @@ COM_ERR = $(BUILDTOP)/util/et/libcom_err.a
  */
 #ifndef USELOCALLIBS
 COM_ERR_DEP = $(COM_ERR)
+COM_ERR_INC = -I$(BUILDTOP)/util/et/
 #endif
 
 LLIB = -L/usr/athena/lib
@@ -210,16 +174,13 @@ CLIBS= $(MR_LIB) $(GDB_LIB) $(LLIB) $(LZEPHYR) $(COM_ERR) -lkrb -ldes
 #endif
 
 /* libraries SQL programs need */
-#ifdef INGRES
-SQL_LIB= /usr/ingres/lib/libingres.a -lm
-#endif
-#ifdef INFORMIX
-SQL_LIB= /usr/informix/lib/libsql.a
-#endif
 #ifdef ORACLE
 SQL_LIB= -L/usr/oracle/lib -lsql /usr/oracle/lib/osntab.o -lsqlnet -lora -lsqlnet -lora -lnlsrtl -lcv6 -lcore -lnlsrtl -lcv6 -lcore -lsocket -lnsl -lm -lm -ldl -laio
 #endif
 
+/* optional readline support for mrtest */
+READLINE_INCLUDES= -I/mit/gnu/include/readline -DUSE_READLINE
+READLINE_LIBS= -L/mit/gnu/lib -lreadline -ltermcap
 
 /* Define NEED_STRCASECMP if your C library doesn't have the BSD-style
  * case insensitive string compare strcasecmp().
@@ -229,43 +190,44 @@ SQL_LIB= -L/usr/oracle/lib -lsql /usr/oracle/lib/osntab.o -lsqlnet -lora -lsqlne
 #endif
 
 /* HAS_VSPRINTF should be defined if this function is in your C library */
-#if defined(_AIX) || defined(sun) || defined(_AUX_SOURCE) || defined(sgi)
+#if !defined(ultrix) && (!defined(sun) || defined(SOLARIS))
 #define HAS_VSPRINTF
-#else
-#undef HAS_VSPRINTF
 #endif
 
-/*
- * Define DEBUG_LIBS if you want to create versions of the libraries
- * that have useful debugging information (the default rules will strip
- * out extra symbols, including debugging symbols, from the symbol
- * table.)  NOTE:  This only works if you do NOT turn on PROFILED_LIBS
- * below.
- * NOTE:  this doesn't turn on the debugging flag for your compiler; do
- * that with the DBG make variable, below.
- */
-/* #define DEBUG_LIBS */
-
-/*
- * Define PROFILED_LIBS if you want to create profiled versions of the
- * libraries used in Kerberos
- */
-#define PROFILED_LIBS
-
-/*
- * Define PROF_FLAG to be the flag to be passed to your C compiler to
- * turn on profiling.
- */
-#ifdef vax
-#define PROF_FLAG -pg
+/* Curses library */
+#ifdef SOLARIS
+CURSES= -L/usr/css/lib -lcurses -ltermcap
+#elif linux
+CURSES= -lncurses -ltermcap
+OSINCLUDES= -I/usr/include/ncurses
+#elif _AIX
+CURSES= -lcurses
 #else
-#define PROF_FLAG -p
-#endif 
+CURSES= -lcurses -ltermcap
+#endif
+
+/* X and motif (for mmoira client) */
+#ifdef SOLARIS
+XDIR= /usr/openwin
+#else
+XDIR= /usr/X11
+#endif
+
+#if !(defined(linux) || defined(__NetBSD__))
+MOTIFINC= /mit/motif/include
+MOTIFLIB= /mit/motif/`machtype`lib
+#endif
+
+/* where crypt is, if not libc */
+#ifdef __NetBSD__
+CRYPT= -lcrypt
+#endif
 
 /*
  * The name of a command which builds an object library.
  */
 ARCHIVE= ar cru
+
 /*
  * The name of another program needed to post-process the archive.
  */
@@ -292,10 +254,6 @@ INSTALLRAW= install
 
 LD=ld			/* The name of the target's linker */
 
-AS=as			/* The name of the target's assembler */
-
-LINT=lint		/* The name of `lint' */
-
 #ifdef SOLARIS
 CC=gcc -traditional
 #else
@@ -310,22 +268,11 @@ CC=cc			/* The name of the C compiler for the target */
 #endif /* _AIX */
 #endif /* SOLARIS */
 
-CCRO=$(CC) -R		/* Compile with initialized data read-only 
-			   & shared (if possible) */
-
-HCC=$(CC)		/* The name of the C compiler on _this_
-			 * machine
-			 */
-
 CPP=$(CC) -E		/* A command which invokes the C preprocessor */
 
 #ifndef _AIX		/* RS6K optomizer is buggy, we don't know if it wall affect moira */
 DBG=-O			/* Debug or optimize? */
 #endif /* _AIX */
-
-HCFLAGS=$(CFLAGS)
-
-TAGGER=etags		/* Program to index source files */
 
 SHELL=/bin/sh		/* shell to use from make */
 MAKE=make		/* name of make program */

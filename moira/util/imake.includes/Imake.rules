@@ -15,157 +15,17 @@
 #define requote(x) "x"
 #endif
 
-#ifdef PROFILED_LIBS
 /*
  * Rule for building objects in libraries.
  */
 
-#if defined(mips) || defined(_AIX) || defined(SOLARIS)
-/*
- * The MIPS, AIX & SOLARIS loaders don't have the -X flag or its functionality.
- * Solaris to make it worse does not have -x
- */
-#if !defined(SOLARIS)
-#define library_obj_rule()						@@\
-.c.o:									@@\
-	$(CC) PROF_FLAG -c $(CFLAGS) $*.c				@@\
-	$(MV) $*.o profiled/$*.o					@@\
-	$(CC) -c $(CFLAGS) $*.c						@@\
-	-$(LD) -x -r -o a.out $*.o					@@\
-	$(MV) a.out $*.o
-#else
-#define library_obj_rule()						@@\
-.c.o:									@@\
-	$(CC) PROF_FLAG -c $(CFLAGS) $*.c				@@\
-	$(MV) $*.o profiled/$*.o					@@\
-	$(CC) -c $(CFLAGS) $*.c						@@\
-	-$(LD) -r -o a.out $*.o						@@\
-	$(MV) a.out $*.o
-#endif
-#else /* ! mips && ! _AIX */
-#define library_obj_rule()						@@\
-.c.o:									@@\
-	$(CC) PROF_FLAG -c $(CFLAGS) $*.c				@@\
-	-$(LD) -X -r -o profiled/$*.o $*.o				@@\
-	$(CC) -c $(CFLAGS) $*.c						@@\
-	-$(LD) -x -r -o a.out $*.o					@@\
-	$(MV) a.out $*.o
-#endif /* mips */
-/*
- * cc -R breaks profiling with -p on 4.3BSD on the VAX 
- * (and probably elsewhere), so we don't do it for the profiled version.
- */
-
-#define library_ro_object(cfile)					@@\
-concat(cfile,.o): concat(cfile,.c)					@@\
-	$(CC) PROF_FLAG -c $(CFLAGS) concat(cfile,.c)			@@\
-	-$(LD) -X -r -o profiled/$*.o $*.o				@@\
-	$(CCRO) -c $(CFLAGS) concat(cfile,.c)				@@\
-	-$(LD) -x -r -o a.out $*.o					@@\
-	$(MV) a.out $*.o
-
-#define library_asm_object(ofile,sfile)					@@\
-ofile: sfile								@@\
-	$(CP) sfile x.c							@@\
-	$(CPP) -DPROF x.c | $(AS) - 					@@\
-	-$(LD) -X -r -o profiled/$*.o a.out				@@\
-	$(CPP) x.c | $(AS) -						@@\
-	-$(LD) -x -r -o $*.o a.out					@@\
-	$(RM) a.out x.c
-
-#ifdef USELINT
-#define install_library_lint(libname)					@@\
-all:: concat3(llib-l,libname,.ln)					@@\
-									@@\
-install::								@@\
-	$(INSTALLFILE) concat3(llib-l,libname,.ln) concat4($(DESTDIR)$(LINTLIBDIR)/,llib-l,libname,.ln)	@@\
-
-#else
-#define install_library_lint(libname)
-#endif
-
-
-#define	install_library_target(libname,objs,srcs,lintlibs)		@@\
-									@@\
-all:: concat3(lib,libname,.a) concat3(lib,libname,_p.a)			@@\
-									@@\
-concat3(lib,libname,.a): objs						@@\
-	$(RM) $@.bak							@@\
-	-$(MV) $@ $@.bak						@@\
-	$(ARCHIVE) $@ objs						@@\
-	$(RANLIB) $@							@@\
-									@@\
-concat3(lib,libname,_p.a): objs						@@\
-	$(RM) $@.bak							@@\
-	-$(MV) $@ $@.bak						@@\
-	cd profiled; $(ARCHIVE) ../$@ objs				@@\
-	$(RANLIB) $@							@@\
-									@@\
-lint:: concat3(llib-l,libname,.ln)					@@\
-									@@\
-concat3(llib-l,libname,.ln): srcs					@@\
-	$(LINT) concat($(LINTLIBFLAG),libname) $(LINTFLAGS) srcs lintlibs 		@@\
-									@@\
-clean:: 								@@\
-	$(RM) concat3(lib,libname,.a) concat3(lib,libname,_p.a)		@@\
-	$(RM) concat3(llib-l,libname,.ln)				@@\
-	$(RM) objs							@@\
-	$(RM) profiled/?*.o						@@\
-									@@\
-install:: 								@@\
-	$(INSTALLRAW) -c -m 644 concat3(lib,libname,.a) concat4($(DESTDIR)$(LIBDIR)/,lib,libname,.a)	@@\
-	$(RANLIB) -t concat4($(DESTDIR)$(LIBDIR)/,lib,libname,.a)	@@\
-	$(CHMOD) 444 concat4($(DESTDIR)$(LIBDIR)/,lib,libname,.a)	@@\
-	$(INSTALLRAW) -c -m 644 concat3(lib,libname,_p.a) concat4($(DESTDIR)$(LIBDIR)/,lib,libname,_p.a)	@@\
-	$(RANLIB) -t concat4($(DESTDIR)$(LIBDIR)/,lib,libname,_p.a)	@@\
-	$(CHMOD) 444 concat4($(DESTDIR)$(LIBDIR)/,lib,libname,_p.a)	@@\
-									@@\
-install_library_lint(libname)						@@\
-
-#else /* !PROFILED_LIBS */
-/*
- * Rule for building objects in libraries.
- */
-
-#ifdef DEBUG_LIBS
-/* When debugging, leave symbols alone (don't do LD) */
 #define library_obj_rule()						@@\
 .c.o:									@@\
 	$(CC) -c $(CFLAGS) $*.c
-#else
-#define library_obj_rule()						@@\
-.c.o:									@@\
-	$(CC) -c $(CFLAGS) $*.c						@@\
-	-$(LD) -x -r -o a.out $*.o					@@\
-	$(MV) a.out $*.o
-#endif
 
-#define library_ro_object(cfile)					@@\
-concat(cfile,.o): concat(cfile,.c)					@@\
-	$(CCRO) -c $(CFLAGS) concat(cfile,.c)				@@\
-	-$(LD) -x -r -o a.out $*.o					@@\
-	$(MV) a.out $*.o
-
-#define library_asm_object(ofile,sfile)					@@\
-ofile: sfile								@@\
-	$(CPP) x.c | $(AS) -						@@\
-	-$(LD) -x -r -o $*.o a.out					@@\
-	$(RM) a.out x.c
-
-#ifdef USELINT
-#define install_library_lint(libname)					@@\
-all:: concat3(llib-l,libname,.ln)					@@\
+#define	install_library_target(libname,objs,srcs)			@@\
 									@@\
-install::								@@\
-	$(INSTALLFILE) concat3(llib-l,libname,.ln) concat4($(DESTDIR)$(LINTLIBDIR)/,llib-l,libname,.ln)	@@\
-
-#else
-#define install_library_lint(libname)
-#endif
-
-#define	install_library_target(libname,objs,srcs,lintlibs)		@@\
-									@@\
-all:: concat3(lib,libname,.a) 						@@\
+all:: concat3(lib,libname,.a)						@@\
 									@@\
 concat3(lib,libname,.a): objs						@@\
 	$(RM) $@.bak							@@\
@@ -173,25 +33,15 @@ concat3(lib,libname,.a): objs						@@\
 	$(ARCHIVE) $@ objs						@@\
 	$(RANLIB) $@							@@\
 									@@\
-lint:: concat3(llib-l,libname,.ln)					@@\
-									@@\
-concat3(llib-l,libname,.ln): srcs					@@\
-	$(LINT) concat($(LINTLIBFLAG),libname) $(LINTFLAGS) srcs lintlibs 		@@\
-									@@\
 clean:: 								@@\
 	$(RM) concat3(lib,libname,.a)					@@\
-	$(RM) concat3(llib-l,libname,.ln)				@@\
 	$(RM) objs							@@\
 									@@\
 install:: 								@@\
 	$(INSTALLRAW) -c -m 644 concat3(lib,libname,.a) concat4($(DESTDIR)$(LIBDIR)/,lib,libname,.a)	@@\
 	$(RANLIB) -t concat4($(DESTDIR)$(LIBDIR)/,lib,libname,.a)	@@\
-	$(CHMOD) 444 concat4($(DESTDIR)$(LIBDIR)/,lib,libname,.a)	@@\
-									@@\
-install_library_lint(libname)						@@\
+	$(CHMOD) 444 concat4($(DESTDIR)$(LIBDIR)/,lib,libname,.a)
 
-
-#endif /* PROFILED_LIBS */
 
 /*
  * Rule for building utilities (binaries which don't get installed)
@@ -204,27 +54,6 @@ pgm: objs localdeps							@@\
 									@@\
 clean:: 								@@\
 	$(RM) pgm objs							@@\
-
-/*
- * Rule for building "generator" programs.
- */
-
-#define generate(file,pgm,libs)						@@\
-									@@\
-pgm: concat(pgm,.c) libs						@@\
-	$(HCC) $(HCFLAGS) -o $@ $@.c libs $(OSLIBS)			@@\
-									@@\
-file: pgm								@@\
-	./pgm file							@@\
-									@@\
-clean::									@@\
-	$(RM) file pgm concat(pgm,.o)					
-
-#define generate_depend(file,pgm,libs)					@@\
-	generate(file,pgm,libs)						@@\
-									@@\
-depend:: file
-
 
 /*
  * Rule for building test programs (something which is not installed)
@@ -241,7 +70,7 @@ clean::									@@\
 	$(RM) pgm concat(pgm,.o) 					@@\
 
 /* 
- * Rule for compileing files with "et"
+ * Rule for compiling files with "et"
  */
 
 #define comp_et(tbl)							@@\
@@ -256,64 +85,6 @@ clean::									@@\
 depend:: concat(src,.h)
 
 /*
- * Rule for building some random object module
- */
-
-#define host_simple_object(obj,src)					@@\
-obj:	src								@@\
-	$(HCC) $(HCFLAGS) -c src					@@\
-									@@\
-clean::									@@\
-	$(RM) obj							@@\
-
-#define ro_object(obj,src)						@@\
-obj:	src								@@\
-	$(CCRO) $(CFLAGS) -c src					@@\
-									@@\
-clean::									@@\
-	$(RM) obj							@@\
-	
-/*
- * Rule for building some random object module with compile flags and
- * other dependendcies
- */
-
-#define host_flag_object(obj,src,flags,localdeps)			@@\
-obj:	src localdeps							@@\
-	$(HCC) $(HCFLAGS) flags -c src					@@\
-									@@\
-clean::									@@\
-	$(RM) obj							@@\
-
-#define ro_flag_object(obj,src,flags,localdeps)				@@\
-obj:	src localdeps							@@\
-	$(CCRO) $(CFLAGS) flags -c src					@@\
-									@@\
-clean::									@@\
-	$(RM) obj							@@\
-	
-/*
- * Rule for building some random object module with compile flags, an
- * intermediate output, and some other dependencies
- */
-
-#define host_cplx_object(obj,interim,src,flags,localdeps)		@@\
-obj:	interim	src localdeps 						@@\
-	$(HCC) $(HCFLAGS) flags -c src					@@\
-	$(MV) interim obj						@@\
-									@@\
-clean::									@@\
-	$(RM) obj							@@\
-
-#define ro_cplx_object(obj,interim,src,flags,localdeps)			@@\
-obj:	src localdeps interim						@@\
-	$(CCRO) $(CFLAGS) flags -c src					@@\
-	$(MV) interim obj						@@\
-									@@\
-clean::									@@\
-	$(RM) obj							@@\
-	
-/*
  * Rule for building a program which is to be installed:
  */
 
@@ -325,22 +96,6 @@ pgm: localdeps objs							@@\
 									@@\
 install::								@@\
 	$(INSTALLPROG) pgm ${DESTDIR}installdir/pgm			@@\
-									@@\
-clean:: 								@@\
-	$(RM) pgm objs							@@\
-
-/*
- * Rule for building a specially installed program
- */
-
-#define program_spinst(pgm,objs,localdeps,syslibs,installdir,instopts)	@@\
-all:: pgm								@@\
-									@@\
-pgm: objs localdeps							@@\
-	$(CC) $(CFLAGS) -o $@ objs syslibs $(OSLIBS)			@@\
-									@@\
-install::								@@\
-	$(INSTALLRAW) instopts pgm ${DESTDIR}installdir/pgm		@@\
 									@@\
 clean:: 								@@\
 	$(RM) pgm objs							@@\
@@ -368,10 +123,6 @@ depend:: $(SRCS)							@@\
 clean::									@@\
 	$(RM) *~ \#* *.bak $(TAGSFILE)				
 
-#define tags_target()							@@\
-tags:: 									@@\
-	$(TAGGER) *.c *.h
-
 #define makefile_target()						@@\
 Makefile:: 	 							@@\
 	-$(RM) Makefile.bak; $(MV) Makefile Makefile.bak		@@\
@@ -386,10 +137,6 @@ name::									@@\
 			echo "### Done with" `pwd`);		\	@@\
 	done
 
-#define print_target()							@@\
-print:: ${CODE}								@@\
-	${LPR} ${CODE}
-	
 #define src_target()							@@\
 src:: ${CODE}								@@\
 									@@\
@@ -402,8 +149,6 @@ ${CODE}:								@@\
 	foreach_subdirs(install, subdirs)				@@\
 	foreach_subdirs(clean, subdirs)					@@\
 	foreach_subdirs(depend, subdirs)				@@\
-	foreach_subdirs(tags, subdirs)					@@\
-	foreach_subdirs(print, subdirs)					@@\
 	foreach_subdirs(src, subdirs)					@@\
 
 #define do_subdirs(subdirs)						@@\
@@ -428,51 +173,19 @@ Makefiles::								@@\
 
 /* Compile Embeded SQL source */
 
-#ifdef INGRES
-#define sqlrule()							@@\
-.SUFFIXES: .sc .dc							@@\
-.dc.sc:									@@\
-	$(AWK) -f $(SRCTOP)/util/imake.includes/ingres.awk < $< > $*.sc	@@\
-									@@\
-.sc.c:									@@\
-	/usr/ingres/bin/esqlc -p $*
-#define sqlfile(file)							@@\
-concat(file,.sc): concat(file,.dc)					@@\
-concat(file,.c): concat(file,.sc)					@@\
-clean::									@@\
-	$(RM) concat(file,.sc) concat(file,.c)
-#endif
-#ifdef INFORMIX
-#define sqlrule()							@@\
-.SUFFIXES: .ec .dc							@@\
-.dc.ec:									@@\
-	$(AWK) -f $(SRCTOP)/util/imake.includes/informix.awk < $< > $*.ec @@\
-									@@\
-.ec.c:									@@\
-	/usr/informix/bin/esql -e $*.ec
-#define sqlfile(file)							@@\
-concat(file,.ec): concat(file,.dc)					@@\
-concat(file,.c): concat(file,.ec)					@@\
-clean::									@@\
-	$(RM) concat(file,.ec) concat(file,.c)
-#endif
 #ifdef ORACLE
-/* have to undef these to keep the ORADEFS line from being attacked */
+/* have to undef these to keep the ORADEFS line from being attacked by Imake */
 #undef HESIOD
 #undef ZEPHYR
 #undef GDSS
 #undef ATHENA
 ORADEFS= DEFINE=HESIOD DEFINE=ZEPHYR DEFINE=GDSS DEFINE=ATHENA
 #define sqlrule()							@@\
-.SUFFIXES: .pc .dc							@@\
-.dc.pc:									@@\
-	$(AWK) -f $(SRCTOP)/util/imake.includes/oracle.awk < $< > $*.pc @@\
-									@@\
+.SUFFIXES: .pc								@@\
 .pc.c:									@@\
 	/usr/oracle/bin/proc INAME=$*.pc INCLUDE=$(BUILDTOP)/include INCLUDE=$(BUILDTOP)/lib INCLUDE=$(INCLDIR) $(ORADEFS)
 #define sqlfile(file)							@@\
-concat(file,.pc): concat(file,.dc)					@@\
 concat(file,.c): concat(file,.pc)					@@\
 clean::									@@\
-	$(RM) concat(file,.pc) concat(file,.c)
+	$(RM) concat(file,.c)
 #endif

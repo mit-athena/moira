@@ -14,7 +14,7 @@ NEWTOP=NEW_TOP
 BUILDTOP=NEW_TOP
 #endif
 
-INCLUDE= -I$(BUILDTOP)/include -I$(BUILDTOP)/lib -I/usr/athena/include
+INCLUDE= -I$(BUILDTOP)/include -I$(BUILDTOP)/lib -I/usr/athena/include $(COM_ERR_INC) $(OSINCLUDES) $(LOCAL_INCLUDES)
 CFLAGS=$(DBG) $(INCLUDE) $(DEFINES) $(GLOBAL_CDEFS)
 LINTFLAGS=$(INCLUDE) $(DEFINES) $(GLOBAL_CDEFS)
 
@@ -40,9 +40,7 @@ do_subdirs($(SUBDIRS))
 
 depend_target()
 clean_target()
-tags_target()
 makefile_target()
-print_target()
 src_target()
 
 install::

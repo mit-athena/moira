@@ -1,0 +1,59 @@
+$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/README,v 1.1 1988-12-27 16:30:21 mar Exp $
+
+This is SMS version 2.0.  See the file INSTALLATION in this directory
+for instructions on building and installing SMS.  Contents of this
+distribution:
+
+backup: source to smsbackup & smsrestore.  Depends on files in ~/db
+
+bin: `make install' will put binaries here that are only used on the
+	sms server machine, not needed on clients.  This should be a
+	duplicate of /u1/sms/bin on the sms machine.
+
+clients: contains subdirs with source to each of the client programs
+
+db: Database code: scripts and programs to create a database
+
+dbck: database consistency checker
+
+dcm: the Data Control Manager
+
+doc: Documentation
+
+et: Sources to com_err stuff.  This is a private copy so that the
+	com_err() routine supports printf style arguments.
+
+gdb: Noah Mendelsohn's GDB library (which forms the core of our RPC
+	mechanism)  This is a private copy because the startup
+	negotiation is different.
+
+gen: server config file generators.  These are the programs that
+	extract info from the database.  The shell scripts that
+	install the files are also here.
+
+include: include files.  Has soft links to header files in other dirs.
+	Reference include/foo.h as <foo.h>, and add a -I../include in 
+	your Makefiles.
+
+lib: Random libraries, including an improved version of malloc which does 
+	"scribble checking" to verify that you aren't trashing your address
+	space.  This dir includes soft-links to files in other dirs.
+
+man: man pages for SMS programs
+
+reg_svr: the daemon to handle the back end of user registration
+
+regtape: a program to read the tape from the registrar's office
+
+regtest: a sample of what the homedirectory for "register" should look like
+
+rpc: The code for the RPC mechanism: libsms.a is built here.
+
+server: smsd & libsmsglue.a come from here.
+
+ss: sources to libss.a, the line parser used by smstest.
+
+test: smstest
+
+update: Routines for performing updates to servers (including its own
+	GDB-based RPC).

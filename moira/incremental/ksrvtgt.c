@@ -8,17 +8,27 @@
  * <mit-copyright.h>. 
  *
  * Get a ticket-granting-ticket given a service key file (srvtab)
- * The lifetime is the shortest allowed [1 five-minute interval]
  *
  */
 
 #include <stdio.h>
 #include <sys/param.h>
 #include <krb.h>
-#include <conf.h>
+/*#include <conf.h>*/
 
-const char rcsid[] =
-    "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/ksrvtgt.c,v 1.1 1989-11-28 16:28:51 mar Exp $";
+char rcsid[] =
+    "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/ksrvtgt.c,v 1.2 1989-11-28 16:29:13 mar Exp $";
+
+
+void usage(argv)
+char **argv;
+{
+    fprintf(stderr,
+	    "Usage: %s name instance [-r realm] [-s srvtab] [-l lifetime]\n",
+	    argv[0]);
+    exit(1);
+}
+
 
 main(argc,argv)
     int argc;
@@ -26,35 +36,56 @@ main(argc,argv)
 {
     char realm[REALM_SZ + 1];
     register int code;
+    int i, lifetime = 1;
     char srvtab[MAXPATHLEN + 1];
 
     bzero(realm, sizeof(realm));
     bzero(srvtab, sizeof(srvtab));
 
-    if (argc < 3 || argc > 5) {
-	fprintf(stderr, "Usage: %s name instance [[realm] srvtab]\n",
-		argv[0]);
-	exit(1);
-    }
-    
-    if (argc == 4)
-	(void) strncpy(srvtab, argv[3], sizeof(srvtab) -1);
-    
-    if (argc == 5) {
-	(void) strncpy(realm, argv[3], sizeof(realm) - 1);
-	(void) strncpy(srvtab, argv[4], sizeof(srvtab) -1);
+    if (argc < 3)
+      usage(argv);
+
+    for (i = 3; i < argc; i++) {
+	if (argv[i][0] != '-')
+	  usage(argv);
+	switch (argv[i][1]) {
+	case 'r':
+	    if (i + 1 >= argc)
+	      usage(argv);
+	    strncpy(realm, argv[i++ + 1], sizeof(realm) - 1);
+	    break;
+	case 's':
+	    if (i + 1 >= argc)
+	      usage(argv);
+	    strncpy(srvtab, argv[i++ + 1], sizeof(srvtab) - 1);
+	    break;
+	case 'l':
+	    if (i + 1 >= argc)
+	      usage(argv);
+	    lifetime = atoi(argv[i++ + 1]);
+	    if (lifetime < 5)
+	      lifetime = 1;
+	    else
+	      lifetime /= 5;
+	    if (lifetime > 255)
+	      lifetime = 255;
+	    break;
+	default:
+	    usage();
+	}
     }
 
     if (srvtab[0] == 0)
 	(void) strcpy(srvtab, KEYFILE);
 
     if (realm[0] == 0)
-	if (krb_get_lrealm(realm) != KSUCCESS)
+	if (krb_get_lrealm(realm, 1) != KSUCCESS)
 	    (void) strcpy(realm, KRB_REALM);
 
     code = krb_get_svc_in_tkt(argv[1], argv[2], realm,
-			      "krbtgt", realm, 1, srvtab);
+			      "krbtgt", realm, lifetime, srvtab);
     if (code)
 	fprintf(stderr, "%s\n", krb_err_txt[code]);
     exit(code);
 }
+

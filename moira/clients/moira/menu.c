@@ -5,7 +5,7 @@
  *
  * $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v $
  * $Author: mar $
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.22 1988-09-13 15:51:32 mar Exp $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.23 1988-12-27 17:27:08 mar Exp $
  *
  * Generic menu system module.
  *
@@ -18,7 +18,7 @@
  */
 
 #ifndef lint
-static char rcsid_menu_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.22 1988-09-13 15:51:32 mar Exp $";
+static char rcsid_menu_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.23 1988-12-27 17:27:08 mar Exp $";
 
 #endif lint
 
@@ -632,7 +632,7 @@ char *msg;
 	    }
 	    else {
 		printf("---More (hit return)---");
-		getchar() & 0x7f;
+		getchar();
 	    }
 	    Start_paging();	/* Reset lines_left */
 	}
@@ -747,7 +747,6 @@ toggle_logging(argc, argv)
     if (log_file == (FILE *) NULL) {
 	pid = getpid();
 	if (!whoami) {
-	    char *whoami;
 	    Put_message("I've lost my SENSE of DIRECTION!  I have no IDEA who I AM!");
 	    Put_message("My God... You've turned him into a DEMOCRAT!!");
 	    Put_message("		-- Doonesbury");
@@ -775,14 +774,3 @@ toggle_logging(argc, argv)
     }
     return(DM_NORMAL);
 } 
-
-/*
- * Local Variables:
- * mode: c
- * c-indent-level: 4
- * c-continued-statement-offset: 4
- * c-brace-offset: -4
- * c-argdecl-indent: 4
- * c-label-offset: -4
- * End:
- */

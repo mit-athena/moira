@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_server.h,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_server.h,v 1.9 1988-06-30 15:22:44 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_server.h,v 1.10 1988-07-31 01:15:45 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
@@ -88,3 +88,6 @@ extern int log_flags;
 /* statistics on number of queries by version number */
 extern int newqueries, oldqueries;
 
+/* Maximum and minimum values that will ever be chosen for IDs */
+#define MAX_ID_VALUE	32765
+#define MIN_ID_VALUE	100

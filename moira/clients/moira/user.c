@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.16 1989-08-22 15:55:32 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.17 1990-03-12 17:35:50 mar Exp $";
 #endif lint
 
 /*	This is the file user.c for the SMS Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.16 1989-08-22 15:55:32 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.17 1990-03-12 17:35:50 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -52,7 +52,8 @@ static char *states[] = { "Registerable (0)",
 			  "Deleted (3)",
 			  "Not registerable (4)",
 			  "Enrolled/Registerable (5)",
-			  "Enrolled/Not Registerable (6)" };
+			  "Enrolled/Not Registerable (6)",
+			  "Half Enrolled (7)" };
 
 static char *UserState(state)
 int state;

@@ -1,0 +1,379 @@
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/students.dc,v 1.1 1990-01-16 15:02:27 mar Exp $
+ */
+
+#include <stdio.h>
+#include <strings.h>
+#include <ctype.h>
+#include <sys/time.h>
+#include <sms.h>
+#include <sms_app.h>
+
+
+/* File format is:
+
+0-29	name
+30-38	id number
+50-54	school code
+55-79   year
+80-109  address
+110-124 room
+125-144 city
+145-158 state
+159-168 dorm phone
+169-212 home address
+213-232 home city
+243-251 mit phone (?)
+*/
+
+#define LOC_NAME 0
+#define LOC_ID 30
+#define LOC_COURSE 50
+#define LOC_YEAR 55
+#define LOC_ADDRESS 80
+#define LOC_DORM_ROOM 110
+#define LOC_CITY 125
+#define LOC_STATE 145
+#define LOC_DORM_PHONE 159
+#define LOC_MIT_PHONE1 243
+
+#define LEN_NAME 29
+#define LEN_ID 9
+#define LEN_COURSE 3
+#define LEN_YEAR 23
+#define LEN_ADDRESS 29
+#define LEN_DORM_ROOM 14
+#define LEN_CITY 28
+#define LEN_STATE 12
+#define LEN_DPHONE 9
+#define LEN_MPHONE 9
+
+struct entry {
+    char *last;
+    char *first;
+    char *middle;
+    char *title;
+    char *id;
+    char *eid;
+    char *course;
+    char *year;
+    char *address;
+    char *dorm;
+    char *city;
+    char *state;
+    char *dphone;
+    char *mphone;
+    char *class;
+    char **argv;
+    char **finger;
+};
+
+
+char *whoami;
+
+
+main(argc, argv)
+int argc;
+char **argv;
+{
+    FILE *in;
+    struct entry *e, *get_next_entry();
+    int status, wait = 0;
+    char buf[BUFSIZ];
+
+    whoami = rindex(argv[0], '/');
+    if (whoami)
+      whoami++;
+    else
+      whoami = argv[0];
+
+    if (argc > 2)
+      wait++;
+
+    in = fopen(argv[1], "r");
+    if (in == NULL) {
+	fprintf(stderr, "Unable to open %s for input\n", argv[1]);
+	exit(1);
+    }
+
+    if (status = sms_connect("")) {
+	com_err(whoami, status, " connecting to Moira");
+	exit(1);
+    }
+    if (status = sms_auth(whoami)) {
+	com_err(whoami, status, " authenticating");
+	exit(1);
+    }
+    while (e = get_next_entry(in)) {
+	process_entry(e);
+	if (wait) {
+	    printf("Next");
+	    fflush(stdout);
+	    gets(buf);
+	}
+    }
+
+    sms_disconnect();
+    exit(0);
+}
+
+
+struct entry *get_next_entry(in)
+FILE *in;
+{
+    static struct entry e;
+    static char buf[BUFSIZ], eid[16], classbuf[10], titlebuf[12];
+    static int year = 0;
+    int ends_jr, ends_iii, ends_iv;
+    char *p;
+
+    if (year == 0) {
+	struct tm *tm;
+	struct timeval tv;
+
+	gettimeofday(&tv, NULL);
+	tm = localtime(&tv.tv_sec);
+	year = tm->tm_year;
+	if (tm->tm_mon > 5)
+	  year++;
+    }
+
+    fgets(buf, sizeof(buf), in);
+    buf[LEN_NAME] = 0;
+    p = index(&buf[LOC_NAME], ',');
+    if (p)
+      *p = 0;
+    e.last = strtrim(&buf[LOC_NAME]);
+    if (p) {
+	e.first = p + 2;
+	if (p = index(e.first, ' ')) {
+	    *p = 0;
+	    e.middle = strtrim(p + 1);
+	} else
+	  e.middle = "";
+    } else
+      e.first = "";
+    e.first = strtrim(e.first);
+    ends_jr = ends_iii = ends_iv = 0;
+    LookForSt(e.last);
+    LookForO(e.last);
+    LookForJrAndIII(e.last, &ends_jr, &ends_iii, &ends_iv);
+    LookForJrAndIII(e.first, &ends_jr, &ends_iii, &ends_iv);
+    FixCase(e.last);
+    FixCase(e.first);
+    FixCase(e.middle);
+    e.title = titlebuf;
+    titlebuf[0] = 0;
+    AppendJrOrIII(titlebuf, &ends_jr, &ends_iii, &ends_iv);
+
+    e.id = &buf[LOC_ID];
+    e.id[LEN_ID] = 0;
+    e.eid = eid;
+    EncryptID(e.eid, e.id, e.first, e.last);
+
+    e.course = &buf[LOC_COURSE];
+    e.course[LEN_COURSE] = 0;
+    e.year = &buf[LOC_YEAR];
+    e.year[LEN_YEAR] = 0;
+    if (e.year[0] == 'G')
+      e.class = "G";
+    else {
+	e.class = classbuf;
+	sprintf(classbuf, "%d", year + 4 - atoi(e.year) + 1900);
+    }
+    e.address = &buf[LOC_ADDRESS];
+    e.address[LEN_ADDRESS] = 0;
+    e.dorm = &buf[LOC_DORM_ROOM];
+    e.dorm[LEN_DORM_ROOM] = 0;
+    e.city = &buf[LOC_CITY];
+    e.city[LEN_CITY] = 0;
+    e.state = &buf[LOC_STATE];
+    e.state[LEN_STATE] = 0;
+    e.dphone = &buf[LOC_DORM_PHONE];
+    e.dphone[LEN_DPHONE] = 0;
+    e.mphone = &buf[LOC_MIT_PHONE1];
+    e.mphone[LEN_MPHONE] = 0;
+    return(&e);
+}
+
+
+char **copy_argv(argc, argv)
+int argc;
+char **argv;
+{
+    char **ret;
+
+    ret = (char **) malloc((argc + 1) * sizeof(char *));
+    ret[argc] = NULL;
+    while (argc-- > 0)
+      ret[argc] = strsave(argv[argc]);
+    return(ret);
+}
+
+
+free_argv(argv)
+char **argv;
+{
+    char **p;
+
+    for (p = argv; *p; p++)
+      free(p);
+    free(argv);
+}
+
+
+getusers(argc, argv, e)
+int argc;
+char **argv;
+struct entry *e;
+{
+    if (!strcmp(e->eid, argv[U_MITID])) {
+	e->argv = copy_argv(argc, argv);
+	return(SMS_ABORT);
+    }
+#ifdef DEBUG
+    com_err(whoami, 0, "comparing %s and %s", e->eid, argv[U_MITID]);
+#endif
+    return(SMS_CONT);
+}
+
+
+getfinger(argc, argv, e)
+int argc;
+char **argv;
+struct entry *e;
+{
+    e->finger = copy_argv(argc, argv);
+    return(SMS_ABORT);
+}
+
+
+scream()
+{
+    com_err(whoami, 0, "Programmer botch!");
+}
+
+
+process_entry(e)
+struct entry *e;
+{
+    int status, changed;
+    char *argv[U_END], buf[BUFSIZ], *from, *to;
+
+    argv[0] = e->first;
+    argv[1] = e->last;
+    e->argv = NULL;
+    status = sms_query("get_user_by_name", 2, argv, getusers, e);
+    if (status == SMS_NO_MATCH || e->argv == NULL) {
+	newuser(argv, e);
+	return;
+    } else if (status != SMS_SUCCESS) {
+	com_err(whoami, status, "looking for user");
+	return;
+    }
+    if (strcmp(e->class, e->argv[U_CLASS])) {
+	com_err(whoami, 0, "updating class for user %s", e->argv[U_NAME]);
+	argv[U_NAME] = e->argv[U_NAME];
+	argv[U_NAME+1] = e->argv[U_NAME];
+	argv[U_UID+1] = e->argv[U_UID];
+	argv[U_SHELL+1] = e->argv[U_SHELL];
+	argv[U_LAST+1] = e->argv[U_LAST];
+	argv[U_FIRST+1] = e->argv[U_FIRST];
+	argv[U_MIDDLE+1] = e->argv[U_MIDDLE];
+	argv[U_STATE+1] = e->argv[U_STATE];
+	argv[U_MITID+1] = e->argv[U_MITID];
+	argv[U_CLASS+1] = e->class;
+	status = sms_query("update_user", 10, argv, scream, NULL);
+	if (status) {
+	    com_err(whoami, status, "updating user");
+	    free_argv(e->argv);
+	    return;
+	}
+    }
+    if (status = sms_query("get_finger_by_login", 1, e->argv, getfinger, e)) {
+	com_err(whoami, status, "getting finger info for %s", e->argv[U_NAME]);
+	free_argv(e->argv);
+	return;
+    }
+    changed = 0;
+    strcpy(buf, strtrim(e->address));
+    if (*e->dorm) {
+	strcat(buf, " ");
+	strcat(buf, strtrim(e->dorm));
+    }
+    if (*e->city) {
+	strcat(buf, " ");
+	strcat(buf, strtrim(e->city));
+    }
+    if (*e->state) {
+	strcat(buf, " ");
+	strcat(buf, strtrim(e->state));
+    }
+    if (strncmp(e->finger[F_HOME_ADDR], buf, 80)) {
+	changed++;
+	free(e->finger[F_HOME_ADDR]);
+	e->finger[F_HOME_ADDR] = strsave(buf);
+    }
+    from = e->dphone;
+    to = buf;
+    while (*from) {
+	if (isdigit(*from))
+	  *to++ = *from;
+	from++;
+    }
+    *to = 0;
+    if (strncmp(e->finger[F_HOME_PHONE], buf, 16)) {
+	changed++;
+	free(e->finger[F_HOME_PHONE]);
+	e->finger[F_HOME_PHONE] = strsave(buf);
+    }
+    from = e->mphone;
+    to = buf;
+    while (*from) {
+	if (isdigit(*from))
+	  *to++ = *from;
+	from++;
+    }
+    *to = 0;
+    if (strncmp(e->finger[F_OFFICE_PHONE], buf, 12)) {
+	changed++;
+	free(e->finger[F_OFFICE_PHONE]);
+	e->finger[F_OFFICE_PHONE] = strsave(buf);
+    }
+    e->course = strtrim(e->course);
+    if (strncmp(e->finger[F_MIT_DEPT], e->course, 12)) {
+	changed++;
+	free(e->finger[F_MIT_DEPT]);
+	e->finger[F_MIT_DEPT] = strsave(e->course);
+    }
+    if (changed) {
+	com_err(whoami, 0, "updating finger for %s", e->argv[U_NAME]);
+	status = sms_query("update_finger_by_login", 9, e->finger,
+			   scream, NULL);
+	if (status)
+	  com_err(whoami, status, " while updating finger info");
+    }
+    free_argv(e->argv);
+    free_argv(e->finger);
+}
+
+newuser(argv, e)
+char **argv;
+struct entry *e;
+{
+    int status;
+
+    argv[U_NAME] = UNIQUE_LOGIN;
+    argv[U_UID] = UNIQUE_UID;
+    argv[U_SHELL] = "/bin/csh";
+    argv[U_LAST] = e->last;
+    argv[U_FIRST] = e->first;
+    argv[U_MIDDLE] = e->middle;
+    argv[U_STATE] = "0";
+    argv[U_MITID] = e->eid;
+    argv[U_CLASS] = e->class;
+    com_err(whoami, 0, "adding user %s %s", e->first, e->last);
+    status = sms_query("add_user", 9, argv, scream, NULL);
+    if (status) {
+	com_err(whoami, status, "adding user");
+    }
+}

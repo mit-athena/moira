@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.10 1988-08-12 18:15:36 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.11 1988-09-01 14:00:12 mar Exp $";
 #endif
 
 /*	This is the file attach.c for the SMS Client, which allows a nieve
@@ -13,7 +13,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.10 1988-08-12 18:15:36 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.11 1988-09-01 14:00:12 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -210,7 +210,7 @@ Bool name;
 			 &newname);
     }
 
-    GetValueFromUser("Filesystem's Type", &info[FS_TYPE]);
+    GetTypeFromUser("Filesystem's Type", "filesys", &info[FS_TYPE]);
     GetValueFromUser("Filesystem's Machine", &info[FS_MACHINE]);
     strcpy(temp_buf, CanonicalizeHostname(info[FS_MACHINE]));
     free(info[FS_MACHINE]);
@@ -223,7 +223,7 @@ Bool name;
     GetValueFromUser("Filesystem's owners (group)", &info[FS_OWNERS]);
     GetYesNoValueFromUser("Automatically create this filesystem",
 		     &info[FS_CREATE]);
-    GetValueFromUser("Filesystem's lockertype", &info[FS_L_TYPE]);
+    GetTypeFromUser("Filesystem's lockertype", "lockertype", &info[FS_L_TYPE]);
 
     FreeAndClear(&info[FS_MODTIME], TRUE);
     FreeAndClear(&info[FS_MODBY], TRUE);

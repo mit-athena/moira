@@ -138,7 +138,7 @@ Files:
            ; Hesiod-specific cache data (for ATHENA.MIT.EDU)
            ;
            ;       $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/doc/tech-plan/server_arrang.mss,v $      
-           ;       $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/doc/tech-plan/server_arrang.mss,v 1.6 1987-08-05 16:49:16 pjlevine Exp $
+           ;       $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/doc/tech-plan/server_arrang.mss,v 1.7 1987-08-05 18:20:19 pjlevine Exp $
            ; pointers to Hesiod name servers
            NS.ATHENA.MIT.EDU. 99999999 HS  NS          JASON.MIT.EDU.
            NS.ATHENA.MIT.EDU. 99999999 HS  NS          ZEUS.MIT.EDU.
@@ -390,19 +390,21 @@ protocol.  This process affords instantaneous changes to RVD's.
 Secondly, when invoked, RVD_MAINT will also communicate with the sms database.
 This communication path will allow the updating of all the fields necessary
 to create rvddb, a RVD server specific file.  The generation of this file is
-inherent to the DCM.  Every 15 minutes the DCM will check the last change
-made to any RVD information.  If information has changed (via RVD_MAINT),
+inherent to the DCM. 
+If information has changed (via RVD_MAINT),
 the dcm will invoke a module which creates an rvddb file.  This file
 is then propagated to the relevant RVD server.  This file resides on the
 target disk and is used in the event of server failure.
 
 During a session with RVD_MAINT an administrator may make several changes
-to the RVD server.  These changes will go into effect immediately.   However,
-because the DCM is invoked every 15 minutes, should the RVD server crash
-during a given 15 minute interval, the consequence will be that the server
-will use an older version of rvddb.  Because the rvddb file on the server
-is used exclusively for backup, the loss of changed data over a 15 minute
-tiem interval is barely significant.
+to the RVD server.  These changes will go into effect immediately.  In addition
+to rvddb, a few acls must be present with the propagation.  These files are:
+@begin(itemize)
+/site/rvd/acl/AD.acl
+/site/rvd/acl/OP.acl
+/site/rvd/acl/SH.acl
+/site/rvd/acl/file.acl - where file is host-packname.
+@end(itemize)
 
 RVD support can best be illustrated by the following diagram:
 @blankspace(3 inches)

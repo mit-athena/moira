@@ -1,0 +1,31 @@
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/Imakefile,v 1.1 1993-01-26 15:38:14 mar Exp $
+#
+# Copyright 1991 by the Massachusetts Institute of Technology.
+#
+# For copying and distribution information,
+# please see the file <mit-copyright.h>.
+#
+# Imakefile for moira client.
+#
+
+SRCS=	main.c formup.c form_setup.c \
+	queries.c help.c stubs.c display.c tty.c parser.c
+CODE=${SRCS} Imakefile mmoira.h data.h menus.txt menus.awk forms.txt \
+	forms.awk parser.h
+SRCDIR=${SRCTOP}/clients/mmoira
+OBJS = form_data.o form_setup.o menu_data.o main.o formup.o \
+	queries.o help.o stubs.o display.o tty.o parser.o
+MOTIF = /mit/motif
+INCLUDE= -I$(BUILDTOP)/include -I$(BUILDTOP)/lib -I$(MOTIF)/include \
+	-I/usr/athena/include -I/mit/gdss/include -I.
+DEFINES= -DGDSS -D_NO_PROTO
+
+program(mmoira, ${OBJS},${MR_LIBDEP} ${GDB_LIBDEP},/mit/gdss/`machtype`/libgdss.a ${CLIBS} -L$(MOTIF)/`machtype`lib -lXm -lXt -lX11,${PROGDIR})
+
+form_data.c: forms.txt forms.awk
+	awk -f forms.awk forms.txt > form_data.c
+
+menu_data.c: menus.txt menus.awk
+	awk -f menus.awk menus.txt > menu_data.c
+
+depend:: ${CODE} form_data.c form_setup.c

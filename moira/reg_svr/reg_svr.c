@@ -1,7 +1,7 @@
 /*
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.20 1988-12-01 15:07:41 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.21 1989-04-21 19:13:50 mar Exp $
  *
  *      Copyright (C) 1987, 1988 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -16,7 +16,7 @@
  */
 
 #ifndef lint
-static char *rcsid_reg_svr_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.20 1988-12-01 15:07:41 mar Exp $";
+static char *rcsid_reg_svr_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.21 1989-04-21 19:13:50 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -550,9 +550,9 @@ int reserve_user(message,retval)
 	    status = UREG_LOGIN_USED;
 	    break;
 	  default:
-	    status = UREG_MISC_ERROR;
 	    critical_alert(FAIL_INST,"%s returned from register_user.",
 			   error_message(status));
+	    status = UREG_MISC_ERROR;
 	    break;
 	}
     }

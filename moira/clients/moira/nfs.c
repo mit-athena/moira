@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/nfs.c,v 1.11 1988-12-07 18:50:16 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/nfs.c,v 1.12 1989-06-01 21:23:50 mar Exp $";
 #endif lint
 
 /*	This is the file nfs.c for the SMS Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/nfs.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/nfs.c,v 1.11 1988-12-07 18:50:16 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/nfs.c,v 1.12 1989-06-01 21:23:50 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -174,13 +174,14 @@ char **argv;
     if (!ValidName(argv[1]))
 	return(DM_NORMAL);
     
-    args[0] = CanonicalizeHostname(argv[1]);    
+    args[0] = canonicalize_hostname(strsave(argv[1]));
     if ( (args[1] = GetDirName()) == NULL)
 	return(DM_NORMAL);
     
     if ( (stat = do_sms_query("get_nfsphys", 2, args,
 			      StoreInfo, (char *)  &elem)) != SMS_SUCCESS)
 	com_err(program_name, stat, " in ShowNFSServices.");
+    free(args[0]);
     free(args[1]);		/* prevents memory leaks. */
 
     elem = QueueTop(elem);
@@ -206,7 +207,7 @@ int argc;
     char *info[MAX_ARGS_SIZE];
     int stat;
 
-    args[0] = CanonicalizeHostname(argv[1]);
+    args[0] = canonicalize_hostname(strsave(argv[1]));
     if ( (args[1] = GetDirName()) == NULL)
 	return(DM_NORMAL);
     
@@ -235,6 +236,7 @@ int argc;
 	com_err(program_name, stat, " in AdsNFSService");
     
     FreeInfo(info);
+    free(args[0]);
     return (DM_NORMAL);
 }
 
@@ -279,7 +281,7 @@ int argc;
     if (!ValidName(argv[1]))
 	return(DM_NORMAL);
 
-    args[0] = CanonicalizeHostname(argv[1]);
+    args[0] = canonicalize_hostname(strsave(argv[1]));
     if ( (args[1] = GetDirName()) == NULL)
 	return(DM_NORMAL);
 
@@ -288,6 +290,7 @@ int argc;
 	com_err(program_name, stat, " in UpdateNFSService.");
 	return (DM_NORMAL);
     }
+    free(args[0]);
     free(args[1]);		/* stop memory leaks. */
 
     elem = QueueTop(elem);
@@ -388,7 +391,7 @@ char **argv;
     if (!ValidName(argv[1]))
 	return(DM_NORMAL);
 
-    args[0] = CanonicalizeHostname(argv[1]);
+    args[0] = canonicalize_hostname(strsave(argv[1]));
     if ( (args[1] = GetDirName()) == NULL)
 	return(DM_NORMAL);
 
@@ -403,6 +406,7 @@ char **argv;
 	com_err(program_name, stat, " in DeleteNFSService");
 	return(DM_NORMAL);
     }
+    free(args[0]);
     free(args[1]);		/* stop memory leaks, in your neighborhood. */
 
     QueryLoop(elem, PrintNFSInfo, RealDeleteNFSService,

@@ -1,12 +1,12 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/employee.dc,v 1.5 1990-03-06 18:46:45 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/employee.dc,v 1.6 1990-03-19 21:55:44 mar Exp $
  */
 
 #include <stdio.h>
 #include <strings.h>
 #include <ctype.h>
 #include <sys/time.h>
-#include <sms.h>
-#include <sms_app.h>
+#include <moira.h>
+#include <moira_site.h>
 
 
 ##define WHO 11859		/* root */

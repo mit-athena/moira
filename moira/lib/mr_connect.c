@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_connect.c,v $
  *	$Author: wesommer $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_connect.c,v 1.5 1987-06-16 17:47:58 wesommer Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_connect.c,v 1.6 1987-08-02 21:48:08 wesommer Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_sms_connect_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_connect.c,v 1.5 1987-06-16 17:47:58 wesommer Exp $";
+static char *rcsid_sms_connect_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_connect.c,v 1.6 1987-08-02 21:48:08 wesommer Exp $";
 #endif lint
 
 #include "sms_private.h"
@@ -27,14 +27,17 @@ int sms_connect()
     if (_sms_conn) return SMS_ALREADY_CONNECTED;
 		
     /* 
-     * 	* should do a hesiod call to find the sms machine name & service
-     * 	 * number/name.
-     * 	 */
-    /* XXX gdb doesn't give real return codes. Can we trust errno?*/
+     * XXX should do a hesiod call to find the sms machine name & service
+     * number/name.
+     */
     errno = 0;
     _sms_conn = start_server_connection(SMS_GDB_SERV, ""); 
-    if (_sms_conn == NULL) {
+    if (_sms_conn == NULL)
 	return errno;
+    if (connection_status(_sms_conn) == CON_STOPPED) {
+	register status = connection_errno(_sms_conn);
+	sms_disconnect();
+	return status;
     }
     return 0;
 }

@@ -1,4 +1,4 @@
-/* $Id: get_file.c,v 1.18 1998-10-21 19:27:51 danw Exp $
+/* $Id: get_file.c,v 1.19 2003-07-27 11:26:03 zacheiss Exp $
  *
  * Copyright (C) 1988-1998 by the Massachusetts Institute of Technology.
  * For copying and distribution information, please see the file
@@ -19,7 +19,7 @@
 
 #include <des.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/get_file.c,v 1.18 1998-10-21 19:27:51 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/get_file.c,v 1.19 2003-07-27 11:26:03 zacheiss Exp $");
 
 #ifndef MIN
 #define MIN(a, b)    (((a) < (b)) ? (a) : (b))
@@ -91,11 +91,6 @@ int get_file(int conn, char *pathname, int file_size, int checksum,
       code = errno;
       com_err(whoami, errno, "creating file %s (get_file)", pathname);
       send_int(conn, code);
-      if (setuid(0) < 0)
-	{
-	  com_err(whoami, errno, "Unable to setuid back to %d\n", 0);
-	  exit(1);
-	}
       return 1;
     }
 
@@ -116,12 +111,6 @@ int get_file(int conn, char *pathname, int file_size, int checksum,
 	  unlink(pathname);
 	  ftruncate(fd, 0);
 	  close(fd);
-
-	  if (setuid(0) < 0)
-	    {
-	      com_err(whoami, errno, "Unable to setuid back to %d\n", 0);
-	      exit(1);
-	    }
 	  return 1;
 	}
       n_written += n_wrote;
@@ -145,11 +134,6 @@ int get_file(int conn, char *pathname, int file_size, int checksum,
 	{
 	  /* get_block has already printed a message */
 	  unlink(pathname);
-	  if (setuid(0) < 0)
-	    {
-	      com_err(whoami, errno, "Unable to setuid back to %d\n", 0);
-	      exit(1);
-	    }
 	  return 1;
 	}
       n_written += n_got;
@@ -161,12 +145,6 @@ int get_file(int conn, char *pathname, int file_size, int checksum,
   ftruncate(fd, file_size);
   fsync(fd);
   close(fd);
-
-  if (setuid(0) < 0)
-    {
-      com_err(whoami, errno, "Unable to setuid back to %d\n", 0);
-      exit(1);
-    }
 
   /* validate checksum */
   found_checksum = checksum_file(pathname);

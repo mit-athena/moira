@@ -1,11 +1,14 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_auth.c,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_auth.c,v 1.5 1988-04-19 12:40:29 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_auth.c,v 1.6 1988-06-01 15:31:53 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
  *	$Log: not supported by cvs2svn $
+ * Revision 1.5  88/04/19  12:40:29  mar
+ * pass version number on queries
+ * 
  * Revision 1.4  87/10/20  15:09:22  mar
  * replace hardcoded ATHENA realm with call to get_krbrlm();
  * 
@@ -24,7 +27,7 @@
  */
 
 #ifndef lint
-static char *rcsid_sms_auth_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_auth.c,v 1.5 1988-04-19 12:40:29 mar Exp $";
+static char *rcsid_sms_auth_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_auth.c,v 1.6 1988-06-01 15:31:53 mar Exp $";
 #endif lint
 
 #include "sms_private.h"
@@ -32,12 +35,17 @@ static char *rcsid_sms_auth_c = "$Header: /afs/.athena.mit.edu/astaff/project/mo
 
 extern int krb_err_base;
 
-int sms_auth()
+/* Authenticate this client with the SMS server.  prog is the name of the
+ * client program, and will be recorded in the database.
+ */
+
+int sms_auth(prog)
+char *prog;
 {
     register int status;
     sms_params params_st;
-    char *args[1];
-    int argl[1];
+    char *args[2];
+    int argl[2];
     char realm[REALM_SZ];
 
     register sms_params *params = &params_st;
@@ -61,12 +69,17 @@ int sms_auth()
     } 
     params->sms_version_no = sending_version_no;
     params->sms_procno = SMS_AUTH;
-    params->sms_argc = 1;
+    params->sms_argc = 2;
     params->sms_argv = args;
     params->sms_argl = argl;
     params->sms_argv[0] = (char *)auth.dat;
     params->sms_argl[0] = auth.length;
+    params->sms_argv[1] = prog;
+    params->sms_argl[1] = strlen(prog) + 1;
 	
+    if (sending_version_no == SMS_VERSION_1)
+	params->sms_argc = 1;
+
     if ((status = sms_do_call(params, &reply)) == 0)
 	status = reply->sms_status;
 

@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/afs.c,v 1.37 1992-08-18 16:57:44 probe Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/afs.c,v 1.38 1992-08-28 12:31:57 probe Exp $
  *
  * Do AFS incremental updates
  *
@@ -170,7 +170,7 @@ int afterc;
 	    return;
 	}
 
-	if (beforec) {
+	if (bstate != 0) {
 	    /* Reactivating a user; get his group list */
 	    gethostname(hostname, sizeof(hostname));
 	    code = mr_connect(hostname);
@@ -374,7 +374,8 @@ int afterc;
      *    Path change:  remount
      *    Type change:  ERR<-->AFS
      */
-    
+
+#if 0
     if (strcmp(before[FS_OWNER], after[FS_OWNER]) ||
 	strcmp(before[FS_OWNERS], after[FS_OWNERS]))
     {
@@ -382,6 +383,7 @@ int afterc;
 		       "Cannot change ownership of filesystem %s: Operation not yet supported",
 		       after[FS_NAME]);
     }
+#endif
 
     sprintf(cmd, "%s/perl -I%s %s/afs_rename.pl %s %s %s %s %s %s %s %s %s %s",
 	    BIN_DIR, BIN_DIR, BIN_DIR,

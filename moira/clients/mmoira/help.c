@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/help.c,v 1.5 1992-11-04 17:59:31 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/help.c,v 1.6 1992-11-09 18:23:01 mar Exp $
  *
  *  	Copyright 1991 by the Massachusetts Institute of Technology.
  *
@@ -46,7 +46,7 @@ char *node;
 	  if (msg) {
 	      if (!strcmp(buf, "\n"))
 		strcpy(buf, " \n");
-	      msg = realloc(msg, strlen(msg) + strlen(buf));
+	      msg = realloc(msg, strlen(msg) + strlen(buf) + 2);
 	      strcat(msg, buf);
 	  } else
 	    msg = strsave(buf);

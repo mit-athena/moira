@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/afs.c,v 1.13 1990-06-15 12:22:13 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/afs.c,v 1.14 1990-06-18 12:57:57 mar Exp $
  *
  * Do AFS incremental updates
  *
@@ -186,6 +186,9 @@ int afterc;
 {
     char cmd[512];
 
+    if ((beforec < 4 || !atoi(before[LM_END])) &&
+	(afterc < 4 || !atoi(after[LM_END])))
+      return;
     if (beforec == 0 && !strcmp(after[LM_TYPE], "USER")) {
 	sprintf(cmd, "%s adduser -user %s -group system:%s",
 		pts, after[LM_MEMBER], after[LM_LIST]);

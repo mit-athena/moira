@@ -1,4 +1,4 @@
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/db/Makefile,v 1.3 1988-12-29 18:48:31 mar Exp $
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/db/Makefile,v 1.4 1989-08-16 20:31:17 mar Exp $
 
 # (c) Copyright 1988 by the Massachusetts Institute of Technology.
 # For copying and distribution information, please see the file
@@ -6,7 +6,7 @@
 
 
 INGLIB=/usr/rtingres/lib/libqlib /usr/rtingres/lib/compatlib
-OBJS=newsms.o tables.o ../server/queries.o ../server/queries2.o
+OBJS=newsms.o tables.o ../server/queries2.o
 CFLAGS= -I../include -O
 .SUFFIXES: .qc
 
@@ -14,7 +14,11 @@ CFLAGS= -I../include -O
 	rm -f $*.c
 	/usr/rtingres/bin/eqc -p $*
 
-all: newsms class convert
+all: newsms class convert imembers
+
+imembers: imembers.o
+	cc -o imembers imembers.o ../lib/libsms.a ${INGLIB}
+imembers.c: imembers.qc
 
 newsms: ${OBJS}
 	cc -o newsms ${OBJS} ${INGLIB}
@@ -38,7 +42,7 @@ match.c: match.qc
 
 clean:
 	rm -f *.o newsms.c tables.c newsms extractdb extract.c class class.c
-	rm -f convert conv.c match.c data.c
+	rm -f convert conv.c match.c data.c imembers.c imembers
 
 install: newsms
 	install newsms ../bin

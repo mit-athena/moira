@@ -7,16 +7,22 @@
 		connect, c;
 
 	request test_disconnect, "Disconnect from SMS",
-		disconnect;
+		disconnect, d;
+
+	request test_new, "Use new protocol",
+		new, 2;
+
+	request test_old, "Use old protocol",
+		old, 1;
 
 	request test_query, "Make a query.",
-		query;
+		query, qy;
 
 	request test_shutdown, "Shut down SMS.",
 		shutdown;
 
 	request test_auth, "Authenticate to SMS.",
-		auth;
+		auth, a;
 
 	request test_access, "Check access to an SMS query.",
 		access;
@@ -32,7 +38,7 @@
 		list_requests, lr, "?";
 
 	request	ss_quit, "Leave the subsystem.",
-		quit, q;
+		quit, Q;
 
 	end;
 

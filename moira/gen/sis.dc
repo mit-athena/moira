@@ -1,0 +1,135 @@
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/sis.dc,v 1.1 1992-07-16 10:36:25 mar Exp $
+ *
+ * This generates a list of users and their MIT ID numbers and the
+ * signatures which guarentee this mapping.
+ *
+ *  (c) Copyright 1992 by the Massachusetts Institute of Technology.
+ *  For copying and distribution information, please see the file
+ *  <mit-copyright.h>.
+ */
+
+#include <mit-copyright.h>
+#include <stdio.h>
+#include <moira.h>
+#include <moira_site.h>
+#include <des.h>
+#include <krb.h>
+#include <gdss.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <sys/time.h>
+#include <sys/file.h>
+#include <strings.h>
+#include <ctype.h>
+EXEC SQL INCLUDE sqlca;
+
+extern int errno;
+char *whoami = "sis.gen";
+
+
+main(argc, argv)
+int argc;
+char **argv;
+{
+    int out = 1 /* stdout */;
+    char *outf = NULL, outft[64];
+    struct stat sb;
+    int flag1;
+    SigInfo si;
+    struct timeval now;
+    EXEC SQL BEGIN DECLARE SECTION;
+    char login[9], sig[257], id[17], kname[257];
+    int timestamp, cutoff;
+    struct { char login[12];
+	     char id[12];
+	     char sig[256];
+	 } outrec;
+    EXEC SQL END DECLARE SECTION;
+
+    initialize_sms_error_table ();
+
+#ifsql INGRES
+    EXEC SQL CONNECT sms;
+#endsql
+#ifsql INFORMIX
+    EXEC SQL DATABASE sms;
+#endsql
+
+    if (argc == 2) {
+	if (stat(argv[1], &sb) == 0) {
+	    if (ModDiff (&flag1, "users", sb.st_mtime) == 0 &&
+		flag1 < 0) {
+		fprintf(stderr, "File %s does not need to be rebuilt.\n",
+			argv[1]);
+		exit(MR_NO_CHANGE);
+	    }
+	}
+	outf = argv[1];
+	sprintf(outft, "%s~", outf);
+	if ((out = open(outft, O_WRONLY|O_APPEND|O_CREAT|O_TRUNC, 0666)) < 0) {
+	    fprintf(stderr, "unable to open %s for output\n", outf);
+	    exit(MR_OCONFIG);
+	}
+    } else if (argc != 1) {
+	fprintf(stderr, "usage: %s [outfile]\n", argv[0]);
+	exit(MR_ARGS);
+    } else {
+	outf = NULL;
+    }
+
+    /* the cutoff time is 14 days before now */
+    gettimeofday(&now, NULL);
+    cutoff = now.tv_sec - 14 * 24 * 60 * 60;
+
+    EXEC SQL WHENEVER SQLERROR GOTO sqlerr;
+
+    EXEC SQL DECLARE x CURSOR FOR
+      SELECT u.login, u.mit_id, u.signature, u.sigdate, s.string
+      FROM users u, strings s
+	WHERE u.status = 1 and u.sigwho = s.string_id and u.sigwho != 0
+	  and u.secure <= :cutoff and u.secure != 0;
+    EXEC SQL OPEN x;
+    while (1) {
+	EXEC SQL FETCH x INTO :login, :id, :sig, :timestamp, :kname;
+	if (sqlca.sqlcode != 0) break;
+	if (id == 0) continue;
+	if (!isdigit(id[1])) continue;
+	strtrim(login);
+	strtrim(id);
+	strtrim(kname);
+	strcpy(outrec.login, login);
+	strcpy(outrec.id, id);
+	si.timestamp = timestamp;
+	si.SigInfoVersion = 0; /* XXXXXX this isn't used */
+	kname_parse(si.pname, si.pinst, si.prealm, kname);
+	si.rawsig = sig;
+	GDSS_Recompose(&si, outrec.sig);
+	write(out, &outrec, sizeof(outrec));
+    }
+    EXEC SQL CLOSE x;
+
+#ifsql INGRES
+    EXEC SQL DISCONNECT;
+#endsql
+#ifsql INFORMIX
+    EXEC SQL CLOSE DATABASE;
+#endsql
+
+    if (close(out)) {
+	perror("close failed");
+	exit(MR_CCONFIG);
+    }
+    if (outf)
+      fix_file(outf);
+    exit(MR_SUCCESS);
+
+ sqlerr:
+    com_err(whoami, MR_INGRES_ERR, " code %d\n", sqlca.sqlcode);
+#ifsql INGRES
+    if (sqlca.sqlcode == 17700)
+      exit(MR_DEADLOCK);
+#endsql
+    critical_alert("DCM", "SIS build encountered INGRES ERROR %d",
+		   sqlca.sqlcode);
+    exit(MR_INGRES_ERR);
+}

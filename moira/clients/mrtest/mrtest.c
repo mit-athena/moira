@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v 1.14 1989-06-27 14:33:56 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v 1.15 1989-08-16 11:27:02 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_test_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v 1.14 1989-06-27 14:33:56 mar Exp $";
+static char *rcsid_test_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v 1.15 1989-08-16 11:27:02 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -96,6 +96,19 @@ test_disconnect()
 {
 	int status = sms_disconnect();
 	if (status) ss_perror(ss, status, 0);
+}
+
+test_host()
+{
+        char host[BUFSIZ];
+        int status;
+
+        bzero(host, sizeof(host));
+
+	if (status = sms_host(host, sizeof(host) - 1))
+	    ss_perror(ss, status, 0);
+	else
+	    printf("You are connected to host %s\n", host);
 }
 
 test_auth()

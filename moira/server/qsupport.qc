@@ -1,14 +1,14 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.19 1988-06-30 15:30:05 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.20 1988-07-23 19:29:09 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
  */
 
 #ifndef lint
-static char *rcsid_qsupport_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.19 1988-06-30 15:30:05 mar Exp $";
+static char *rcsid_qsupport_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.20 1988-07-23 19:29:09 mar Exp $";
 #endif lint
 
 #include "query.h"
@@ -245,7 +245,7 @@ access_service(q, argv, cl)
 
     name = argv[0];
 ##  repeat retrieve (acl_id = servers.#acl_id, acl_type = servers.#acl_type)
-##	where servers.#name = @name
+##	where servers.#name = uppercase(@name)
 ##  inquire_equel(rowcount = "rowcount")
     if (rowcount > 1)
       return(SMS_PERM);
@@ -345,6 +345,7 @@ int setup_dusr(q, argv)
 ##  int flag, id;
 
     id = *(int *)argv[0];
+##  repeat delete nfsquota where nfsquota.users_id = @id
 ##  repeat retrieve (flag = any(members.member_id where members.member_id=@id
 ##			 and members.member_type = "USER"))
     if (flag)
@@ -358,6 +359,10 @@ int setup_dusr(q, argv)
 	return(SMS_IN_USE);
 ##  repeat retrieve (flag = any(servers.name where servers.acl_id=@id and
 ##			servers.acl_type = "USER"))
+    if (flag)
+	return(SMS_IN_USE);
+##  repeat retrieve (flag=any(hostaccess.acl_id where hostaccess.acl_id=@id and
+##			hostaccess.acl_type = "USER"))
     if (flag)
 	return(SMS_IN_USE);
     else
@@ -432,8 +437,9 @@ int setup_dmac(q, argv)
 ##  repeat retrieve (flag = any(hostaccess.mach_id where hostaccess.mach_id=@id))
     if (flag)
 	return(SMS_IN_USE);
-    else
-	return(SMS_SUCCESS);
+
+##  repeat delete mcmap where mcmap.mach_id = @id
+    return(SMS_SUCCESS);
 ##}
 
 
@@ -526,6 +532,10 @@ int setup_dlis(q, argv)
 ##			servers.acl_type = "LIST"))
     if (flag)
 	return(SMS_IN_USE);
+##  repeat retrieve (flag=any(hostaccess.acl_id where hostaccess.acl_id=@id and
+##			hostaccess.acl_type = "LIST"))
+    if (flag)
+	return(SMS_IN_USE);
 ##  repeat retrieve (flag = any(zephyr.class
 ##		where zephyr.xmt_type = "LIST" and zephyr.xmt_id = @id or
 ##		      zephyr.sub_type = "LIST" and zephyr.sub_id = @id or
@@ -550,7 +560,8 @@ int setup_dsin(q, argv)
 ##  char *name;
 
     name = argv[0];
-##  repeat retrieve (flag = any(serverhosts.service where serverhosts.service=@name))
+##  repeat retrieve (flag = any(serverhosts.service 
+##				where serverhosts.service=uppercase(@name)))
     if (flag)
 	return(SMS_IN_USE);
 ##  repeat retrieve (flag = servers.inprogress) where servers.#name = @name
@@ -575,7 +586,7 @@ int setup_dshi(q, argv)
     name = argv[0];
     id = *(int *)argv[1];
 ##  repeat retrieve (flag=serverhosts.inprogress) 
-##	where serverhosts.service=@name and serverhosts.mach_id=@id
+##	where serverhosts.service=uppercase(@name) and serverhosts.mach_id=@id
     if (flag)
 	return(SMS_IN_USE);
     else
@@ -708,9 +719,10 @@ setup_dfil(q, argv, cl)
 
     id = *(int *)argv[0];
 ##  range of q is nfsquota
-##  repeat replace nfsphys (allocated = nfsphys.allocated - q.quota)
-##	where nfsphys.nfsphys_id = fs.phys_id and 
-##	      q.filsys_id = @id and fs.filsys_id = @id
+##  range of fs is filesys
+##  range of n is nfsphys
+##  repeat replace n (allocated=n.allocated-sum(q.quota where q.filsys_id=@id))
+##	where n.nfsphys_id = fs.phys_id and fs.filsys_id = @id
 
 ##  repeat delete q where q.filsys_id = @id
     return(SMS_SUCCESS);
@@ -732,45 +744,6 @@ setup_dnfp(q, argv, cl)
 ##  repeat retrieve (exists = any(filesys.label where filesys.phys_id = @id))
     if (exists)
       return(SMS_IN_USE);
-    return(SMS_SUCCESS);
-##}
-
-
-/* setup_ssif: check to see if lock is already set.  If it is not set or
- * it is set, but this request is turning it off, fine.  Otherwise, give
- * a lock error.  setup_sshi is the same for each serverhost.
- */
-
-setup_ssif(q, argv, cl)
-    struct query  *q;
-    char **argv;
-    client *cl;
-##{
-##  char *service;
-##  int lock;
-
-    service = argv[0];
-##  repeat retrieve (lock = s.inprogress) where s.name = @service
-    if (lock && atoi(argv[2]))
-      return(SMS_LOCKED);
-    return(SMS_SUCCESS);
-##}
-
-
-setup_sshi(q, argv, cl)
-    struct query  *q;
-    char **argv;
-    client *cl;
-##{
-##  char *service;
-##  int lock, mach_id;
-
-    service = argv[0];
-    mach_id = *(int *)argv[1];
-##  repeat retrieve (lock = sh.inprogress) where sh.#mach_id = @mach_id and
-##		sh.#service = @service
-    if (lock && atoi(argv[4]))
-      return(SMS_LOCKED);
     return(SMS_SUCCESS);
 ##}
 
@@ -982,7 +955,7 @@ set_serverhost_modtime(q, argv, cl)
     serv = argv[0];
     id = *(int *)argv[1];
 ##  repeat replace sh (modtime = "now", modby = @who, modwith = @entity)
-##	 where sh.service = @serv and sh.mach_id = @id
+##	 where sh.service = uppercase(@serv) and sh.mach_id = @id
     return(SMS_SUCCESS);
 ##}
 
@@ -1211,8 +1184,8 @@ followup_gpob(q, sq, v, action, actarg, cl)
 ##}
 
 
-/* followup_glin: fix the acl_name in argv[8].  argv[7] will contain the
- * acl_type: "LIST", "USER", or "NONE".  Decode the id in argv[8] into the
+/* followup_glin: fix the ace_name in argv[8].  argv[7] will contain the
+ * ace_type: "LIST", "USER", or "NONE".  Decode the id in argv[8] into the
  * proper name based on the type, and repace that string in the argv.
  * Also fixes the modby field by called followup_fix_modby.
  */
@@ -1542,7 +1515,7 @@ int set_pobox(q, argv, cl)
 
 /* get_list_info:  passed a wildcard list name, returns lots of stuff about
  * each list.  This is tricky:  first build a queue of all requested
- * data.  Rest of processing consists of fixing gid, acl_name, and modby.
+ * data.  Rest of processing consists of fixing gid, ace_name, and modby.
  */
 
 get_list_info(q, aargv, cl, action, actarg)
@@ -1627,15 +1600,15 @@ get_list_info(q, aargv, cl, action, actarg)
 ##}
 
 
-/* get_acl_use - given a type and a name, return a type and a name.
- * The acl_type is one of "LIST", "USER", "RLIST", or "RUSER" in argv[0],
+/* get_ace_use - given a type and a name, return a type and a name.
+ * The ace_type is one of "LIST", "USER", "RLIST", or "RUSER" in argv[0],
  * and argv[1] will contain the ID of the entity in question.  The R*
  * types mean to recursively look at every containing list, not just
  * when the object in question is a direct member.  On return, the
  * usage type will be one of LIST, SERVICE, FILESYS, QUOTA, QUERY, or ZEPHYR.
  */
 
-int get_acl_use(q, argv, cl, action, actarg)
+int get_ace_use(q, argv, cl, action, actarg)
     struct query *q;
     char *argv[];
     client *cl;
@@ -1650,7 +1623,7 @@ int get_acl_use(q, argv, cl, action, actarg)
     atype = argv[0];
     aid = *(int *)argv[1];
     if (!strcmp(atype, "LIST") || !strcmp(atype, "USER")) {
-	return(get_acl_internal(atype, aid, action, actarg));
+	return(get_ace_internal(atype, aid, action, actarg));
     }
 
     sq = sq_create();
@@ -1666,7 +1639,7 @@ int get_acl_use(q, argv, cl, action, actarg)
 	  }
 	/* now process each one */
 	while (sq_get_data(sq, &id)) {
-	    if (get_acl_internal("LIST", id, action, actarg) == SMS_SUCCESS)
+	    if (get_ace_internal("LIST", id, action, actarg) == SMS_SUCCESS)
 	      found++;
 	}
     }
@@ -1686,10 +1659,10 @@ int get_acl_use(q, argv, cl, action, actarg)
 	  }
 	/* now process each one */
 	while (sq_get_data(sq, &id)) {
-	    if (get_acl_internal("LIST", id, action, actarg) == SMS_SUCCESS)
+	    if (get_ace_internal("LIST", id, action, actarg) == SMS_SUCCESS)
 	      found++;
 	}
-	if (get_acl_internal("USER", aid, action, actarg) == SMS_SUCCESS)
+	if (get_ace_internal("USER", aid, action, actarg) == SMS_SUCCESS)
 	  found++;
     }
 
@@ -1699,12 +1672,12 @@ int get_acl_use(q, argv, cl, action, actarg)
 ##}
 
 
-/* This looks up a single list or user for acl use.  atype must be "USER"
+/* This looks up a single list or user for ace use.  atype must be "USER"
  * or "LIST", and aid is the ID of the corresponding object.  This is used
- * by get_acl_use above.
+ * by get_ace_use above.
  */
 
-##get_acl_internal(atype, aid, action, actarg)
+##get_ace_internal(atype, aid, action, actarg)
 ##  char *atype;
 ##  int aid;
     int (*action)();
@@ -2100,7 +2073,7 @@ int qualified_get_serverhost(q, argv, cl, action, actarg)
     char *rargv[2], buf[32];
 ##  int rowcount, i;
 
-    sprintf(qual, "machine.mach_id = sh.mach_id and sh.service = \"%s\"",
+    sprintf(qual, "machine.mach_id = sh.mach_id and sh.service = uppercase(\"%s\")",
 	    argv[0]);
     for (i = 1; i < q->argc; i++) {
 	if (!strcmp(argv[i], "TRUE")) {
@@ -2180,11 +2153,11 @@ register_user(q, argv, cl)
 
     /* choose place for pobox, put in mid */
 ##  repeat retrieve (mid = sh.mach_id, machname = m.name)
-##    where sh.service = "pop" and m.mach_id = sh.mach_id and
-##	sh.value2 - sh.value1 = max(sh.value2-sh.value1 where sh.service="pop")
+##    where sh.service = "POP" and m.mach_id = sh.mach_id and
+##	sh.value2 - sh.value1 = max(sh.value2-sh.value1 where sh.service="POP")
 ##  inquire_equel(rowcount = "rowcount");
     if (rowcount == 0)
-      return(SMS_INTERNAL);
+      return(SMS_NO_POBOX);
 
     /* change login name, set pobox */
 ##  repeat replace u (#login = @login, status = 2, modtime = "now",
@@ -2201,9 +2174,9 @@ register_user(q, argv, cl)
 
     /* create group list */
     if (set_next_object_id("gid", "list"))
-      return(SMS_INTERNAL);
+      return(SMS_NO_ID);
     if (set_next_object_id("list_id", "list"))
-      return(SMS_INTERNAL);
+      return(SMS_NO_ID);
 ##  repeat retrieve (list_id = values.value) where values.name = "list_id"
 ##  inquire_equel(rowcount = "rowcount");
     if (rowcount != 1)
@@ -2214,6 +2187,11 @@ register_user(q, argv, cl)
 ##			acl_type = "USER", acl_id = @users_id, modtime = "now",
 ##			modby = @who, modwith = @entity)
 ##	where values.name = "gid"
+##  inquire_equel(rowcount = "rowcount");
+    if (rowcount != 1)
+      return(SMS_INTERNAL);
+##  repeat append members (#list_id = @list_id, member_type = "USER",
+##			   member_id = @users_id)
 ##  inquire_equel(rowcount = "rowcount");
     if (rowcount != 1)
       return(SMS_INTERNAL);
@@ -2234,11 +2212,11 @@ register_user(q, argv, cl)
 	}
 ##  }
     if (maxsize == 0)
-      return(SMS_INTERNAL);
+      return(SMS_NO_FILESYS);
 
     /* create filesystem */
     if (set_next_object_id("filsys_id", "filesys"))
-      return(SMS_INTERNAL);
+      return(SMS_NO_ID);
 ##  repeat append filesys (filsys_id = values.value, phys_id = @pid,
 ##			   label = @login, type = "NFS", mach_id = @m_id,
 ##			   name = @directory + @login, mount = "/mit/" + @login,
@@ -2257,7 +2235,7 @@ register_user(q, argv, cl)
 ##  repeat retrieve (quota = values.value) where values.name = "def_quota"
 ##  inquire_equel(rowcount = "rowcount");
     if (rowcount != 1)
-      return(SMS_INTERNAL);
+      return(SMS_NO_QUOTA);
 ##  repeat append nfsquota (#users_id = @users_id, filsys_id = values.value,
 ##			    #quota = @quota, modtime = "now", modby = @who,
 ##			    modwith = @entity)
@@ -2298,7 +2276,7 @@ int count;
 
 ##  range of sh is serverhosts
 ##  repeat replace sh (value1 = sh.value1 + @n)
-##         where sh.service = "pop" and sh.#mach_id = @mach_id
+##         where sh.service = "POP" and sh.#mach_id = @mach_id
 
     return(SMS_SUCCESS);
 ##}
@@ -2481,10 +2459,16 @@ validate_name(argv, vo)
 ##  char *table;
 ##  char *namefield;
 ##  int rowcount;
+    register char *c;
 
     name = argv[vo->index];
     table = vo->table;
     namefield = vo->namefield;
+    if (!strcmp(table, "servers") && !strcmp(namefield, "name")) {
+	for (c = name; *c; c++)
+	  if (islower(*c))
+	    *c = toupper(*c);
+    }
 ##  retrieve (rowcount = countu(table.namefield 
 ##            where table.namefield = name))
     return ((rowcount == 1) ? SMS_EXISTS : vo->error);
@@ -2503,7 +2487,7 @@ validate_date(argv, vo)
 ##  retrieve (dd = interval("years", date(idate) - date("today")))
 ##  inquire_equel (errorno = "errorno")
     if (errorno != 0 || dd > 5.0) return(SMS_DATE);
-    return(SMS_SUCCESS);
+    return(SMS_EXISTS);
 ##}
 
 

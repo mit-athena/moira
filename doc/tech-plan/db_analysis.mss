@@ -1,5 +1,5 @@
 @part[db_analysis, root="sms.mss"]
-@subsection(5.1.3 Input Data Checking)
+@subsection(Input Data Checking)
 
 The integrity of the data in an authoritative data system like SMS is
 critical.  Without proper restrictive control, a user could easily enter
@@ -23,7 +23,7 @@ The list of predefined queries (addendum 1) gives reference to those fields
 which require explicit data checking.
 
 
-@subsection(5.1.4 Backup)
+@subsection(Backup)
 
 As an authoritative system, SMS will require a specific plan for
 baking up the database.  

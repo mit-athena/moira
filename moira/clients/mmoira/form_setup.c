@@ -1,11 +1,10 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/form_setup.c,v 1.4 1992-10-13 11:27:31 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/form_setup.c,v 1.5 1992-10-22 15:39:30 mar Exp $
  */
 
 #include <stdio.h>
 #include <moira.h>
 #include <moira_site.h>
 #include <Xm/Xm.h>
-#include <X11/StringDefs.h>
 #include "mmoira.h"
 
 
@@ -30,11 +29,42 @@ char *nfs_states[] = { "0 - Not Allocated",
 		          NULL};
 
 
+static FixNameCase(form, field)
+EntryForm *form;
+int field;
+{
+    char fixname[128], buf[256];
+
+    strcpy(fixname, stringval(form, field));
+    FixCase(fixname);
+    sprintf(buf, "You entered a name which does not follow the capitalization conventions.\nCorrect it to \"%s\"?", fixname);
+    if (strcmp(fixname, stringval(form, field)) &&
+	AskQuestion(buf, "fixcase"))
+      StoreField(form, field, fixname);
+}
+
+
+get_members(argc, argv, sq)
+int argc;
+char **argv;
+struct save_queue *sq;
+{
+    char buf[256];
+
+    sprintf(buf, "%s (%s)", argv[0], argv[1]);
+    sq_save_data(sq, strsave(buf));
+    return(MR_CONT);
+}
+
+
 MoiraValueChanged(f, p)
 EntryForm *f;
 UserPrompt *p;
 {
-    char buf[1024], fixname[128];
+    char buf[1024];
+    char *argv[5];
+    int i, size;
+    struct save_queue *sq, *s;
 #define maybechange(f, n, v)	{if (f->inputlines[n]->insensitive != v) { f->inputlines[n]->insensitive=v; f->inputlines[n]->changed = True; }}
 
     switch (f->menu->operation) {
@@ -56,19 +86,14 @@ UserPrompt *p;
 	    maybechange(f, FS_M_POINT, True);
 	    maybechange(f, FS_ACCESS, True);
 	    maybechange(f, FS_CREATE, True);
-	} else if (!strcmp(stringval(f, FS_TYPE), "NFS") ||
+	} else if (!strcmp(stringval(f, FS_TYPE), "NFS") ||	
+		   !strcmp(stringval(f, FS_TYPE), "AFS") ||
 		   !strcmp(stringval(f, FS_TYPE), "RVD")) {
 	    maybechange(f, FS_MACHINE, False);
 	    maybechange(f, FS_PACK, False);
 	    maybechange(f, FS_M_POINT, False);
 	    maybechange(f, FS_ACCESS, False);
 	    maybechange(f, FS_CREATE, False);
-	} else if (!strcmp(stringval(f, FS_TYPE), "AFS")) {
-	    maybechange(f, FS_MACHINE, True);
-	    maybechange(f, FS_PACK, False);
-	    maybechange(f, FS_M_POINT, False);
-	    maybechange(f, FS_ACCESS, False);
-	    maybechange(f, FS_CREATE, True);
 	}
 	break;
     case MM_SET_POBOX:
@@ -110,24 +135,102 @@ UserPrompt *p;
 	  maybechange(f, ZA_IUI_ID, False)
 	break;
     case MM_ADD_USER:
-	strcpy(fixname, stringval(f, U_LAST));
-	FixCase(fixname);
-	sprintf(buf, "You entered a name which does not follow the capitalization conventions.\nCorrect it to \"%s\"?", fixname);
-	if (strcmp(fixname, stringval(f, U_LAST)) &&
-	    AskQuestion(buf, "fixcase"))
-	  StoreField(f, U_LAST, fixname);
-	strcpy(fixname, stringval(f, U_FIRST));
-	FixCase(fixname);
-	sprintf(buf, "You entered a name which does not follow the capitalization conventions.\nCorrect it to \"%s\"?", fixname);
-	if (strcmp(fixname, stringval(f, U_FIRST)) &&
-	    AskQuestion(buf, "fixcase"))
-	  StoreField(f, U_FIRST, fixname);
-	strcpy(fixname, stringval(f, U_MIDDLE));
-	FixCase(fixname);
-	sprintf(buf, "You entered a name which does not follow the capitalization conventions.\nCorrect it to \"%s\"?", fixname);
-	if (strcmp(fixname, stringval(f, U_MIDDLE)) &&
-	    AskQuestion(buf, "fixcase"))
-	  StoreField(f, U_MIDDLE, fixname);
+	FixNameCase(f, U_LAST);
+	FixNameCase(f, U_FIRST);
+	FixNameCase(f, U_MIDDLE);
+	break;
+    case MM_SHOW_USER:
+	FixNameCase(f, 1);
+	FixNameCase(f, 2);
+	break;
+    case MM_ADD_FSGROUP:
+	argv[0] = stringval(f, 0);
+	sq = sq_create();
+	i = MoiraQuery("get_fsgroup_members", 1, argv, get_members, (char *)sq);
+	if (i) {
+	    com_err(program_name, i, " retrieving filesystem group members");
+	    break;
+	}
+	size = 1;
+	for (s = sq->q_next; s->q_next != sq; s = s->q_next)
+	  size++;
+	if (f->inputlines[2]->keywords)
+	  free(f->inputlines[2]->keywords);
+	f->inputlines[2]->keywords = (char **)malloc(sizeof(char *)*(size+2));
+	if (f->inputlines[2]->keywords == NULL) {
+	    display_error("Out of memory while fetching members");
+	    return;
+	}
+	f->inputlines[2]->keywords[0] = "[First]";
+	for (i = 0; i < size; i++)
+	  sq_get_data(sq, &f->inputlines[2]->keywords[i+1]);
+	f->inputlines[2]->keywords[i+1] = NULL;
+	f->inputlines[2]->changed = 1;
+	sq_destroy(sq);
+	RemakeRadioField(f, 2);
+	break;
+    case MM_DEL_FSGROUP:
+	argv[0] = stringval(f, 0);
+	sq = sq_create();
+	i = MoiraQuery("get_fsgroup_members", 1, argv, get_members, (char *)sq);
+	if (i) {
+	    com_err(program_name, i, " retrieving filesystem group members");
+	    break;
+	}
+	size = 1;
+	for (s = sq->q_next; s->q_next != sq; s = s->q_next)
+	  size++;
+	if (f->inputlines[1]->keywords)
+	  free(f->inputlines[1]->keywords);
+	f->inputlines[1]->keywords = (char **)malloc(sizeof(char *)*(size+1));
+	if (f->inputlines[1]->keywords == NULL) {
+	    display_error("Out of memory while fetching members");
+	    return;
+	}
+	for (i = 0; i < size; i++)
+	  sq_get_data(sq, &f->inputlines[1]->keywords[i]);
+	f->inputlines[1]->keywords[i] = NULL;
+	f->inputlines[1]->changed = 1;
+	sq_destroy(sq);
+	RemakeRadioField(f, 1);
+	break;
+    case MM_MOV_FSGROUP:
+	argv[0] = stringval(f, 0);
+	sq = sq_create();
+	i = MoiraQuery("get_fsgroup_members", 1, argv, get_members, (char *)sq);
+	if (i) {
+	    com_err(program_name, i, " retrieving filesystem group members");
+	    break;
+	}
+	size = 1;
+	for (s = sq->q_next; s->q_next != sq; s = s->q_next)
+	  size++;
+	if (f->inputlines[1]->keywords)
+	  free(f->inputlines[1]->keywords);
+	f->inputlines[1]->keywords = (char **)malloc(sizeof(char *)*(size+1));
+	if (f->inputlines[1]->keywords == NULL) {
+	    display_error("Out of memory while fetching members");
+	    return;
+	}
+	if (f->inputlines[2]->keywords)
+	  free(f->inputlines[2]->keywords);
+	f->inputlines[2]->keywords = (char **)malloc(sizeof(char *)*(size+2));
+	if (f->inputlines[2]->keywords == NULL) {
+	    display_error("Out of memory while fetching members");
+	    return;
+	}
+	f->inputlines[2]->keywords[0] = "[First]";
+	for (i = 0; i < size; i++) {
+	    sq_get_data(sq, &f->inputlines[1]->keywords[i]);
+	    f->inputlines[2]->keywords[i+1] = f->inputlines[1]->keywords[i];
+	}
+	f->inputlines[1]->keywords[i] = NULL;
+	f->inputlines[2]->keywords[i+1] = NULL;
+	f->inputlines[1]->changed = 1;
+	f->inputlines[2]->changed = 1;
+	sq_destroy(sq);
+	RemakeRadioField(f, 1);
+	RemakeRadioField(f, 2);
 	break;
     default:
 	return;
@@ -155,6 +258,8 @@ MenuItem	*menu;
     switch (menu->operation) {
     case MM_SHOW_USER:
 	GetKeywords(f, 4, "class");
+	f->inputlines[1]->valuechanged = MoiraValueChanged;
+	f->inputlines[2]->valuechanged = MoiraValueChanged;
 	break;
     case MM_ADD_USER:
 	StoreField(f, U_NAME, UNIQUE_LOGIN);
@@ -162,7 +267,7 @@ MenuItem	*menu;
 	StoreField(f, U_SHELL, "/bin/csh");
 	StoreField(f, U_STATE, user_states[US_NO_LOGIN_YET]);
 	f->inputlines[U_STATE]->keywords = user_states;
-	f->inputlines[U_LAST]->valuechanged = MoiraValueChanged;
+ 	f->inputlines[U_LAST]->valuechanged = MoiraValueChanged;
 	f->inputlines[U_FIRST]->valuechanged = MoiraValueChanged;
 	f->inputlines[U_MIDDLE]->valuechanged = MoiraValueChanged;
 	GetKeywords(f, U_CLASS, "class");
@@ -173,16 +278,37 @@ MenuItem	*menu;
 	f->inputlines[PO_TYPE]->valuechanged = MoiraValueChanged;
 	break;
     case MM_ADD_FILSYS:
-	StoreField(f, FS_TYPE, "NFS");
+	StoreField(f, FS_TYPE, "AFS");
 	StoreField(f, FS_M_POINT, "/mit/");
 	StoreField(f, FS_ACCESS, "w");
 	StoreField(f, FS_OWNER, user);
 	StoreField(f, FS_OWNERS, user);
 	boolval(f, FS_CREATE) = TRUE;
 	GetKeywords(f, FS_TYPE, "filesys");
-	GetKeywords(f, FS_ACCESS, "fs_access_NFS");
+	GetKeywords(f, FS_ACCESS, "fs_access_AFS");
 	GetKeywords(f, FS_L_TYPE, "lockertype");
 	f->inputlines[FS_TYPE]->valuechanged = MoiraValueChanged;
+	break;
+    case MM_ADD_FSGROUP:
+	f->inputlines[2]->keywords = (char **)malloc(sizeof(char*)*2);
+	f->inputlines[2]->keywords[0] = "[First]";
+	f->inputlines[2]->keywords[1] = NULL;
+	f->inputlines[0]->valuechanged = MoiraValueChanged;
+	break;
+    case MM_DEL_FSGROUP:
+	f->inputlines[1]->keywords = (char **)malloc(sizeof(char*)*2);
+	f->inputlines[1]->keywords[0] = "[Placeholder]";
+	f->inputlines[1]->keywords[1] = NULL;
+	f->inputlines[0]->valuechanged = MoiraValueChanged;
+	break;
+    case MM_MOV_FSGROUP:
+	f->inputlines[1]->keywords = (char **)malloc(sizeof(char*)*2);
+	f->inputlines[1]->keywords[0] = "[Placeholder]";
+	f->inputlines[1]->keywords[1] = NULL;
+	f->inputlines[2]->keywords = (char **)malloc(sizeof(char*)*2);
+	f->inputlines[2]->keywords[0] = "[First]";
+	f->inputlines[2]->keywords[1] = NULL;
+	f->inputlines[0]->valuechanged = MoiraValueChanged;
 	break;
     case MM_ADD_NFS:
 	StoreField(f, 1, "/u1/lockers");
@@ -345,10 +471,6 @@ char *value;
 {
     strncpy(form->inputlines[field]->returnvalue.stringvalue,
 	    value, MAXFIELDSIZE);
-    if (form->inputlines[field]->mywidget) {
-	XmTextSetString (form->inputlines[field]->mywidget,
-			 form->inputlines[field]->returnvalue.stringvalue);
-    }
 }
 
 
@@ -373,11 +495,13 @@ char **dest;
 {
     char *s;
 
-    s = strsave(stringval(form, 0));
+    s = strsave(stringval(form, field));
     s = canonicalize_hostname(s);
-    StoreField(form, 0, s);
+    StoreField(form, field, s);
+    form->inputlines[field]->changed = True;
+    UpdateForm(form);
     free(s);
-    *dest = stringval(form, 0);
+    *dest = stringval(form, field);
 }
 
 
@@ -429,6 +553,10 @@ char *name;
     if (cache == NULL)
       cache = sq_create();
     cache->q_lastget = NULL;
+
+    if (!strcmp(name, "fsgroup")) {
+	form->inputlines[field]->keywords = NULL;
+    }
 
     /* look through cache */
     while (sq_get_data(cache, &ce))
@@ -498,11 +626,11 @@ char *value;
 {
     struct save_queue *sq;
     struct cache_elem *ce;
-    int size, dummy;
-    Dimension x, y;
-    Arg wargs[3];
-    Widget w, MakeRadioField();
+    int size;
 
+    /* init cache */
+    if (cache == NULL)
+      cache = sq_create();
     cache->q_lastget = NULL;
 
     /* find entry in cache */
@@ -529,17 +657,5 @@ char *value;
 
     /* new update form */
     form->inputlines[field]->keywords = ce->values;
-    XtSetArg(wargs[0], XtNx, &x);
-    XtSetArg(wargs[1], XtNy, &y);
-    XtGetValues(form->inputlines[field]->mywidget, wargs, 2);
-    XtUnmanageChild(form->inputlines[field]->mywidget);
-    form->inputlines[field]->mywidget = w =
-      MakeRadioField(form->formpointer, form->inputlines[field],
-		     &dummy, form);
-    XtSetArg(wargs[0], XtNx, x);
-    XtSetArg(wargs[1], XtNy, y);
-    XtSetValues(w, wargs, 2);
-    MapWidgetToForm(w, form);
-    XmAddTabGroup(w);
-    XtManageChild(w);
+    RemakeRadioField(form, field);
 }

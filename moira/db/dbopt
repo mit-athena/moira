@@ -8,6 +8,9 @@ modify i_usr_last to cbtree on last, first;\g
 create index i_usr_uid on  users (uid);\g
 modify i_usr_uid to btree;\g
 create index i_usr_pop on  users (pop_id);\g
+modify i_usr_pop to btree;\g
+create index i_usr_clearid on users (clearid);\g
+modify i_usr_clearid to btree;\g
 ;\g
 modify krbmap to btree unique on users_id;\g
 create index i_krb_str on  krbmap (string_id);\g
@@ -20,6 +23,8 @@ create index i_mac_addr on machine (address);\g
 modify i_mac_addr to btree;\g
 create index i_mac_loc on machine (location);\g
 modify i_mac_loc to btree;\g
+create index i_mac_snet on machine (snet_id);\g
+modify i_mac_snet to btree;\g
 ;\g
 modify hostalias to cbtree unique on name;\g
 create index i_hal_id on hostalias (mach_id);\g
@@ -51,6 +56,7 @@ modify i_lis_name to cbtree;\g
 create index i_lis_mail on  list (maillist);\g
 create index i_lis_group on  list (grouplist);\g
 create index i_lis_gid on  list (gid);\g
+create index i_lis_acl on list (acl_id);\g
 modify i_lis_gid to btree;\g
 ;\g
 modify imembers to cbtree on member_id, member_type;\g

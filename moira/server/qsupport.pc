@@ -1,4 +1,4 @@
-/* $Id: qsupport.pc,v 2.46 2002-11-18 20:19:33 zacheiss Exp $
+/* $Id: qsupport.pc,v 2.47 2003-04-26 19:24:04 zacheiss Exp $
  *
  * Special query routines
  *
@@ -18,7 +18,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.pc,v 2.46 2002-11-18 20:19:33 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.pc,v 2.47 2003-04-26 19:24:04 zacheiss Exp $");
 
 extern char *whoami, *table_name[];
 extern int dbms_errno, mr_errcode;
@@ -203,7 +203,7 @@ int add_member_to_list(struct query *q, char **argv, client *cl)
       status = id_to_name(mid, STRINGS_TABLE, &buf);
       if (status)
 	return status;
-      if (strchr(buf, '/') || strchr(buf, '|'))
+      if (strchr(buf, '/') || strchr(buf, '|') || strchr(buf, ','))
 	{
 	  free(buf);
 	  return MR_BAD_CHAR;

@@ -1,4 +1,4 @@
-@Comment($Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/doc/queries.mss,v 1.4 1993-11-30 16:07:49 mar Exp $)
+@Comment($Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/doc/queries.mss,v 1.5 2000-01-21 17:01:25 danw Exp $)
 @Device(PostScript)
 @Pagefooting(center "Draft of @value(date)")
 @MajorHeading(Moira Queries)
@@ -37,7 +37,7 @@ each query.
 get_all_logins, galo(]@i[]@b[) =>]@i[ login, uid, shell, last, first, mi]
 
 Returns info on every account in the database.  The returned info is a
-summary of the account info, not the complete information.]
+summary of the account info, not the complete information.]]
 
 @multiple[@b[
 get_all_active_logins, gaal(]@i[]@b[) =>]@i[ login, uid, shell, last, first, mi]

@@ -1,0 +1,23 @@
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/Imakefile,v 1.1 1993-02-10 15:00:07 mar Exp $
+#
+# Copyright 1993 by the Massachusetts Institute of Technology.
+#
+# For copying and distribution information,
+# please see the file <mit-copyright.h>.
+#
+# Imakefile for server directory.
+#
+
+SRCS = dbck.c fix.c phase1.c phase2.c phase3.c phase4.c
+OBJS = dbck.o fix.o phase1.o phase2.o phase3.o phase4.o
+CODE = dbck.dc fix.dc phase1.dc phase2.dc phase3.dc phase4.dc dbck.h
+SRCDIR=$(SRCTOP)/dbck
+sqlrule()
+
+program(dbck, ${OBJS},,../lib/libmoira.a ../server/libmrglue.a $(SQL_LIB), ${PROGDIR})
+sqlfile(dbck)
+sqlfile(fix)
+sqlfile(phase1)
+sqlfile(phase2)
+sqlfile(phase3)
+sqlfile(phase4)

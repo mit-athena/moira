@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.33 1997-07-15 15:39:47 danw Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.34 1997-09-08 19:50:43 danw Exp $
  *
  * Command line oriented Moira List tool.
  *
@@ -24,7 +24,7 @@
 #include <moira_site.h>
 
 #ifndef LINT
-static char blanche_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.33 1997-07-15 15:39:47 danw Exp $";
+static char blanche_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.34 1997-09-08 19:50:43 danw Exp $";
 #endif
 
 
@@ -44,8 +44,11 @@ struct member {
 #define argis(a,b) ((strcmp(*arg+1, a) == 0) || (strcmp(*arg+1, b) == 0))
 
 /* flags from command line */
-int infoflg, verbose, syncflg, memberflg, recursflg, debugflg, noauth;
+int infoflg, verbose, syncflg, memberflg, recursflg, noauth;
 int showusers, showstrings, showkerberos, showlists;
+int createflag, setinfo, active, public, hidden, maillist, grouplist;
+struct member *owner;
+char *desc, *newname;
 
 /* various member lists */
 struct save_queue *addlist, *dellist, *memberlist, *synclist;
@@ -57,7 +60,7 @@ extern int errno;
 #endif
 
 int show_list_info(), show_list_count(), get_list_members(), scream();
-int show_list_members(), membercmp();
+int show_list_members(), membercmp(), save_list_info();
 struct member *parse_member();
 
 
@@ -73,9 +76,12 @@ char **argv;
     char *server = NULL, *p;
 
     /* clear all flags & lists */
-    infoflg = verbose = syncflg = memberflg = debugflg = recursflg = 0;
+    infoflg = verbose = syncflg = memberflg = recursflg = 0;
     noauth = showusers = showstrings = showkerberos = showlists = 0;
-    listname = NULL;
+    createflag = setinfo = 0;
+    active = public = hidden = maillist = grouplist = -1;
+    listname = newname = desc = NULL;
+    owner = NULL;
     addlist = sq_create();
     dellist = sq_create();
     memberlist = sq_create();
@@ -98,8 +104,6 @@ char **argv;
 		showlists++;
 	    else if (argis("k", "kerberos"))
 	      	showkerberos++;
-	    else if (argis("D", "debug"))
-		debugflg++;
 	    else if (argis("i","info"))
 	      infoflg++;
 	    else if (argis("n","noauth"))
@@ -147,6 +151,60 @@ char **argv;
 		    get_members_from_file(*arg, synclist);
 		} else
 		  usage(argv);
+	    else if (argis("C", "create"))
+		createflag++;
+	    else if (argis("P", "public")) {
+		setinfo++;
+		public = 1;
+	    } else if (argis("NP", "private")) {
+		setinfo++;
+		public = 0;
+	    } else if (argis("A", "active")) {
+		setinfo++;
+		active = 1;
+	    } else if (argis("I", "inactive")) {
+		setinfo++;
+		active = 0;
+	    } else if (argis("V", "visible")) {
+		setinfo++;
+		hidden = 0;
+	    } else if (argis("H", "hidden")) {
+		setinfo++;
+		hidden = 1;
+	    } else if (argis("M", "mail")) {
+		setinfo++;
+		maillist = 1;
+	    } else if (argis("NM", "notmail")) {
+		setinfo++;
+		maillist = 0;
+	    } else if (argis("G", "group")) {
+		setinfo++;
+		grouplist = 1;
+	    } else if (argis("NG", "notgroup")) {
+		setinfo++;
+		grouplist = 0;
+	    } else if (argis("D", "desc"))
+		if (arg - argv < argc - 1) {
+		    setinfo++;
+		    ++arg;
+		    desc = *arg;
+		} else
+		  usage(argv);
+	    else if (argis("O", "owner"))
+		if (arg - argv < argc - 1) {
+		    setinfo++;
+		    ++arg;
+		    owner = parse_member(*arg);
+		} else
+		  usage(argv);
+	    else if (argis("R", "rename"))
+		if (arg - argv < argc - 1) {
+		    setinfo++;
+		    ++arg;
+		    newname = *arg;
+		} else
+		  usage(argv);
+		
 	    else
 		usage(argv);
 	}
@@ -159,7 +217,7 @@ char **argv;
       usage(argv);
 
     /* if no other options specified, turn on list members flag */
-    if (!(infoflg || syncflg ||
+    if (!(infoflg || syncflg || createflag || setinfo ||
 	  addlist->q_next != addlist || dellist->q_next != dellist))
       memberflg++;
 
@@ -191,6 +249,96 @@ char **argv;
 		    " Try the -noauth flag if you don't need authentication");
 	    exit(2);
 	}
+    }
+
+    /* create if needed */
+    if (createflag) {
+	char *argv[10];
+
+	argv[0] = listname;
+	argv[1] = (active == 0) ? "0" : "1";
+	argv[2] = (public == 1) ? "1" : "0";
+	argv[3] = (hidden == 1) ? "1" : "0";
+	argv[4] = (maillist == 0) ? "0" : "1";
+	argv[5] = (grouplist == 1) ? "1" : "0";
+	argv[6] = UNIQUE_GID;
+	argv[9] = desc ? desc : "none";
+
+	if (owner) {
+	    argv[8] = owner->name;
+	    switch (owner->type) {
+		case M_ANY:
+		case M_USER:
+		    argv[7] = "USER";
+		    status = mr_query("add_list", 10, argv, scream, NULL);
+		    if (owner->type != M_ANY || status != MR_USER)
+			break;
+
+		case M_LIST:
+		    argv[7] = "LIST";
+		    status = mr_query("add_list", 10, argv, scream, NULL);
+		    break;
+
+		case M_KERBEROS:
+		    argv[7] = "KERBEROS";
+		    status = mr_query("add_list", 10, argv, scream, NULL);
+		    break;
+	    }
+	} else {
+	    argv[7] = "USER";
+	    argv[8] = getenv("USER");
+
+	    status = mr_query("add_list", 10, argv, scream, NULL);
+	}
+	
+	if (status) {
+	    com_err(whoami, status, "while creating list.");
+	    exit(1);
+	}
+    } else if (setinfo) {
+	char *argv[11];
+
+	status = mr_query("get_list_info", 1, &listname,
+			  save_list_info, (char *)argv);
+	if (status) {
+	    com_err(whoami, status, "while getting list information");
+	    exit(1);
+	}
+
+	argv[0] = listname;
+	if (newname) argv[1] = newname;
+	if (active != -1) argv[2] = active ? "1" : "0";
+	if (public != -1) argv[3] = public ? "1" : "0";
+	if (hidden != -1) argv[4] = hidden ? "1" : "0";
+	if (maillist != -1) argv[5] = maillist ? "1" : "0";
+	if (grouplist != -1) argv[6] = grouplist ? "1" : "0";
+	if (desc) argv[10] = desc;
+
+	if (owner) {
+	    argv[9] = owner->name;
+	    switch (owner->type) {
+		case M_ANY:
+		case M_USER:
+		    argv[8] = "USER";
+		    status = mr_query("update_list", 11, argv, scream, NULL);
+		    if (owner->type != M_ANY || status != MR_USER)
+			break;
+
+		case M_LIST:
+		    argv[8] = "LIST";
+		    status = mr_query("update_list", 11, argv, scream, NULL);
+		    break;
+
+		case M_KERBEROS:
+		    argv[8] = "KERBEROS";
+		    status = mr_query("update_list", 11, argv, scream, NULL);
+		    break;
+	    }
+	} else status = mr_query("update_list", 11, argv, scream, NULL);
+
+	if (status)
+	    com_err(whoami, status, "while updating list.");
+	else if (newname) listname = newname;
     }
 
     /* display list info if requested to */
@@ -461,22 +609,36 @@ char **argv;
 {
     fprintf(stderr, "Usage: %s listname [options]\n",argv[0]);
     fprintf(stderr, "Options are\n");
-    fprintf(stderr, "   -v | -verbose\n");
-    fprintf(stderr, "   -m | -members\n");
-    fprintf(stderr, "   -u | -users\n");
-    fprintf(stderr, "   -l | -lists\n");
-    fprintf(stderr, "   -s | -strings\n");
-    fprintf(stderr, "   -k | -kerberos\n");
-    fprintf(stderr, "   -i | -info\n");
-    fprintf(stderr, "   -r | -recursive\n");
-    fprintf(stderr, "   -a | -add member\n");
-    fprintf(stderr, "   -d | -delete member\n");
-    fprintf(stderr, "   -al | -addlist filename\n");
-    fprintf(stderr, "   -dl | -deletelist filename\n");
-    fprintf(stderr, "   -f | -file filename\n");
-    fprintf(stderr, "   -n | -noauth\n");
-    fprintf(stderr, "   -db | -database host[:port]\n");
-    fprintf(stderr, "   -D | -debug\n");
+    fprintf(stderr, "  %-39s%-39s\n", "-v  | -verbose",
+	    "-C  | -create");
+    fprintf(stderr, "  %-39s%-39s\n", "-m  | -members",
+	    "-R  | -rename newname");
+    fprintf(stderr, "  %-39s%-39s\n", "-u  | -users",
+	    "-P  | -public");
+    fprintf(stderr, "  %-39s%-39s\n", "-l  | -lists",
+	    "-NP | -private");
+    fprintf(stderr, "  %-39s%-39s\n", "-s  | -strings",
+	    "-A  | -active");
+    fprintf(stderr, "  %-39s%-39s\n", "-k  | -kerberos",
+	    "-I  | -inactive");
+    fprintf(stderr, "  %-39s%-39s\n", "-i  | -info",
+	    "-V  | -visible");
+    fprintf(stderr, "  %-39s%-39s\n", "-r  | -recursive",
+	    "-H  | -hidden");
+    fprintf(stderr, "  %-39s%-39s\n", "-a  | -add member",
+	    "-M  | -mail");
+    fprintf(stderr, "  %-39s%-39s\n", "-d  | -delete member",
+	    "-NM | -notmail");
+    fprintf(stderr, "  %-39s%-39s\n", "-al | -addlist filename",
+	    "-G  | -group");
+    fprintf(stderr, "  %-39s%-39s\n", "-dl | -deletelist filename",
+	    "-NG | -notgroup");
+    fprintf(stderr, "  %-39s%-39s\n", "-f  | -file filename",
+	    "-D  | -desc description");
+    fprintf(stderr, "  %-39s%-39s\n", "-n  | -noauth",
+	    "-O  | -owner owner");
+    fprintf(stderr, "  %-39s%-39s\n", "-db | -database host[:port]",
+	    "");
     exit(1);
 }
 
@@ -556,6 +718,20 @@ int hint;
 }
 
 
+/* Copy retrieved information about a list into a new argv */
+
+save_list_info(argc, argv, hint)
+int argc;
+char **argv;
+int hint;
+{
+    char **nargv = (char **)hint;
+    
+    for(argc = 0; argc < 10; argc++)
+	nargv[argc+1] = strdup(argv[argc]);
+    return MR_CONT;
+}
+
 /* Show the retrieve list member count */
 
 show_list_count(argc, argv, hint)
@@ -585,8 +761,6 @@ recursive_display_list_members()
     while (sq_get_data(lists, &m)) {
 	sq_destroy(memberlist);
 	memberlist = sq_create();
-	if (debugflg)
-	  fprintf(stderr, "Fetching members of %s\n", m->name);
 	status = mr_query("get_members_of_list", 1, &(m->name),
 			   get_list_members, (char *)memberlist);
 	if (status)

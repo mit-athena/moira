@@ -1,4 +1,4 @@
-/* $Id: menus.c,v 1.34 1998-03-10 21:09:39 danw Exp $
+/* $Id: menus.c,v 1.35 1998-08-07 18:29:35 danw Exp $
  *
  *	This is the file menus.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -22,7 +22,7 @@
 
 #include <stdio.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menus.c,v 1.34 1998-03-10 21:09:39 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menus.c,v 1.35 1998-08-07 18:29:35 danw Exp $");
 
 /* ------------------------- Second Tier Menus ------------------------- */
 
@@ -582,7 +582,7 @@ Menu user_menu = {
   NULLFUNC,
   NULLFUNC,
   "User Menu",
-  12,
+  11,
   {
     {ShowUserByLogin, NULLMENU, 2, {
        {"login", "Show user information by login name"},
@@ -618,7 +618,6 @@ Menu user_menu = {
     } },
     SUBMENU("pobox", "Post Office Box Menu", &pobox_menu),
     SUBMENU("krbmap", "User Kerberos Mappings", &krbmap_menu),
-    SUBMENU("mitdir", "MIT On-line Directory Preferences", &mitdir_menu),
   }
 };
 

@@ -1,4 +1,4 @@
-/* $Id: user.c,v 1.49 1998-07-29 18:45:25 danw Exp $
+/* $Id: user.c,v 1.50 1998-08-07 18:29:36 danw Exp $
  *
  *	This is the file user.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -32,7 +32,7 @@
 #include <gdss.h>
 #endif
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.49 1998-07-29 18:45:25 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.50 1998-08-07 18:29:36 danw Exp $");
 
 void CorrectCapitalization(char **name);
 char **AskUserInfo(char **info, Bool name);
@@ -1003,96 +1003,5 @@ int DeleteKrbmap(int argc, char **argv)
   if ((stat = do_mr_query("delete_kerberos_user_map", 2, &argv[1],
 			  NULL, NULL)))
     com_err(program_name, stat, " in DeleteKrbMap.");
-  return DM_NORMAL;
-}
-
-
-/*	Function Name: GetDirFlags
- *	Description: Shows MITdir listing preferences
- *	Arguments: argc, argv - argv[1] contains the user login name
- *	Returns: none.
- */
-
-int GetDirFlags(int argc, char **argv)
-{
-  int stat;
-  struct mqelem *elem = NULL;
-  char buf[BUFSIZ], **info;
-
-  if (!ValidName(argv[1]))
-    return DM_NORMAL;
-
-  if ((stat = do_mr_query("get_user_directory_flags", 1, &argv[1],
-			  StoreInfo, &elem)))
-    {
-      com_err(program_name, stat, " in GetDirFlags.");
-      return DM_NORMAL;
-    }
-
-  info = QueueTop(elem)->q_data;
-  FreeQueue(QueueTop(elem));
-
-  Put_message("");
-  sprintf(buf, "User: %s", argv[1]);
-  Put_message(buf);
-  if (atoi(info[0]) == 0)
-      Put_message("Does NOT appear in the on-line directory.");
-  else
-    {
-      Put_message("Does appear in the on-line directory.");
-      if (atoi(info[1]) == 0)
-	Put_message("Is listed with non-MIT.EDU email address (if any)");
-      else
-	Put_message("Is listed with MIT.EDU email address.");
-    }
-
-  return DM_NORMAL;
-}
-
-/*	Function Name: SetDirFlags
- *	Description: Update online directory preferences
- *	Arguments: argc, argv - the login name of the user in argv[1].
- *	Returns: DM_NORMAL.
- */
-
-int SetDirFlags(int argc, char **argv)
-{
-  int stat;
-  char **info, buf[BUFSIZ], *args[3];
-  struct mqelem *elem = NULL;
-
-  if (!ValidName(argv[1]))
-    return DM_NORMAL;
-
-  /* Fetch current prefs */
-  if ((stat = do_mr_query("get_user_directory_flags", 1, &argv[1],
-			  StoreInfo, &elem)))
-    {
-      com_err(program_name, stat, " in GetDirFlags.");
-      return DM_NORMAL;
-    }
-  info = QueueTop(elem)->q_data;
-  FreeQueue(QueueTop(elem));
-
-  sprintf(buf, "List %s in the on-line directory (y/n)", argv[1]);
-  if (YesNoQuestion(buf, !atoi(info[0])))
-    args[1] = "0";
-  else
-    args[1] = "1";
-
-  sprintf(buf, "List MIT.EDU email address even when mail is "
-	  "forwarded elsewhere? (y/n)");
-  if (YesNoQuestion(buf, !atoi(info[1])))
-    args[2] = "0";
-  else
-    args[2] = "1";
-
-  args[0] = argv[1];
-  if ((stat = do_mr_query("update_user_directory_flags", 3,
-			  args, NULL, NULL)))
-    com_err(program_name, stat, " in SetDirFlags");
-  else
-    Put_message("Directory preferences set.");
-
   return DM_NORMAL;
 }

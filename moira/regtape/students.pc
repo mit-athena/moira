@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/students.pc,v 1.1 1997-01-29 23:26:08 danw Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/students.pc,v 1.2 1997-03-25 02:20:44 danw Exp $
  */
 
 #include <stdio.h>
@@ -77,7 +77,7 @@ struct entry {
 char *whoami;
 int newfinger = 0;
 
-#define SQL_DUPLICATE 1422
+#define SQL_DUPLICATE 2112
 #define sqlfail() (sqlca.sqlcode && sqlca.sqlcode != 1403)
 
 main(argc, argv)

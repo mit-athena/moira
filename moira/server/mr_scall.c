@@ -1,11 +1,15 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_scall.c,v $
  *	$Author: wesommer $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_scall.c,v 1.5 1987-06-26 10:55:53 wesommer Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_scall.c,v 1.6 1987-06-30 20:04:43 wesommer Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
  *	$Log: not supported by cvs2svn $
+ * Revision 1.5  87/06/26  10:55:53  wesommer
+ * Added sms_access, now paiys attention to return code from 
+ * sms_process_query, sms_check_access.
+ * 
  * Revision 1.4  87/06/21  16:42:00  wesommer
  * Performance work, rearrangement of include files.
  * 
@@ -21,7 +25,7 @@
  */
 
 #ifndef lint
-static char *rcsid_sms_scall_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_scall.c,v 1.5 1987-06-26 10:55:53 wesommer Exp $";
+static char *rcsid_sms_scall_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_scall.c,v 1.6 1987-06-30 20:04:43 wesommer Exp $";
 #endif lint
 
 #include <krb.h>
@@ -41,6 +45,7 @@ void
 do_client(cp)
 	client *cp;
 {
+	free_rtn_tuples(cp);
 	if (OP_STATUS(cp->pending_op) == OP_CANCELLED) {
 		(void) sprintf(buf1, "Closed connection (now %d client%s)",
 			       nclients-1,
@@ -124,30 +129,68 @@ do_call(cl)
 	}
 }
 
+free_rtn_tuples(cp)
+	client *cp;
+{
+	register returned_tuples *temp;
+	for (temp=cp->first; temp && OP_DONE(temp->op); ) {
+		register returned_tuples *t1=temp;
+		temp = t1->next;
+		if (t1 == cp->last) cp->last = NULL;
+#ifdef notdef
+		sms_destroy_reply(t1->retval);
+#endif notdef
+		if (t1->retval) {
+			register sms_params *p = t1->retval;
+			if (p->sms_flattened)
+				free(p->sms_flattened);
+			if (p->sms_argl)
+				free(p->sms_argl);
+			free(p);
+		}
+		delete_operation(t1->op);
+		free(t1);
+	}
+	cp->first = temp;
+}	
+
 retr_callback(argc, argv, p_cp)
 	int argc;
 	char **argv;
 	char *p_cp;
 {
 	register client *cp = (client *)p_cp;
-	/* XXX MEM when are these freed?? */
 	/*
 	 * This takes too much advantage of the fact that
 	 * serialization of the data happens during the queue operation.
 	 */
 	sms_params *arg_tmp = (sms_params *)db_alloc(sizeof(sms_params));
+	returned_tuples *tp = (returned_tuples *)
+		db_alloc(sizeof(returned_tuples));
+	
 	OPERATION op_tmp = create_operation();
 
 #ifdef notdef			/* We really don't want this logged */
 	com_err(whoami, 0, "Returning next data:");
 	log_args(argc, argv);
 #endif notdef
+	tp->op = op_tmp;
+	tp->retval = arg_tmp;
+	tp->next = NULL;
 	
 	arg_tmp->sms_status = SMS_MORE_DATA;
 	arg_tmp->sms_argc = argc;
 	arg_tmp->sms_argv = argv;
 	arg_tmp->sms_flattened = (char *)NULL;
 	arg_tmp->sms_argl = (int *)NULL;
+
+	if (cp->last) {
+		cp->last->next = tp;
+		cp->last = tp;
+	} else {
+		cp->last = cp->first = tp;
+	}
+	
 	reset_operation(op_tmp);
 	initialize_operation(op_tmp, sms_start_send, (char *)arg_tmp,
 			     (int (*)())NULL);

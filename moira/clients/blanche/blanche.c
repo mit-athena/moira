@@ -1,4 +1,4 @@
-/* $Id: blanche.c,v 1.49 2000-08-10 02:25:08 zacheiss Exp $
+/* $Id: blanche.c,v 1.50 2000-08-16 05:33:17 zacheiss Exp $
  *
  * Command line oriented Moira List tool.
  *
@@ -20,7 +20,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.49 2000-08-10 02:25:08 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.50 2000-08-16 05:33:17 zacheiss Exp $");
 
 struct member {
   int type;
@@ -464,8 +464,6 @@ int main(int argc, char **argv)
 	  argv[L_MEMACE_TYPE + 1] = typename[memacl->type];
 	  argv[L_MEMACE_NAME + 1] = memacl->name;
 	}
-      else
-	argv[L_MEMACE_TYPE + 1] = argv[L_MEMACE_NAME + 1] = "NONE";
 
       if (owner)
 	{
@@ -1062,7 +1060,7 @@ int save_list_info(int argc, char **argv, void *hint)
 {
   char **nargv = hint;
 
-  for (argc = 0; argc < 11; argc++)
+  for (argc = 0; argc < 14; argc++)
     nargv[argc + 1] = strdup(argv[argc]);
   return MR_CONT;
 }

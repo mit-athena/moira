@@ -10,8 +10,8 @@
  *                                   7/27/88
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/include/moira_site.h,v $
- *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/include/moira_site.h,v 1.10 1988-12-06 16:31:42 mar Exp $
+ *      $Author: qjb $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/include/moira_site.h,v 1.11 1988-12-19 15:15:03 qjb Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -66,7 +66,23 @@
 #define DM_MEMBER    2
 #define DM_END       3
 
-/* Filesys queries (attachmaint) */
+/* Finger queries */
+
+#define F_NAME          0
+#define F_FULLNAME      1
+#define F_NICKNAME      2
+#define F_HOME_ADDR     3
+#define F_HOME_PHONE    4
+#define F_OFFICE_ADDR   5
+#define F_OFFICE_PHONE  6
+#define F_MIT_DEPT      7
+#define F_MIT_AFFIL     8
+#define F_MODTIME       9
+#define F_MODBY         10
+#define F_MODWITH       11
+#define F_END           12
+
+/* Filesys queries */
 
 #define FS_NAME         0
 #define FS_TYPE         1
@@ -165,31 +181,8 @@
 #define Q_MODWITH   7
 #define Q_END       8
 
-/* User Information queries */
-
-#define U_NAME    0
-#define U_UID     1
-#define U_SHELL   2
-#define U_LAST    3
-#define U_FIRST   4
-#define U_MIDDLE  5
-#define U_STATE   6  
-#define U_MITID   7
-#define U_CLASS   8
-#define U_MODTIME 9
-#define U_MODBY   10
-#define U_MODWITH 11
-#define U_END     12
-
-/* User states (the value of argv[U_STATE] from a user query) */
-#define US_NO_LOGIN_YET 0
-#define US_REGISTERED   1
-#define US_NO_PASSWD    2
-#define US_DELETED      3
-#define US_NOT_ALLOWED  4
-#define US_END          5
-
 /* Service info */
+
 #define SVC_SERVICE	0
 #define SVC_INTERVAL	1
 #define SVC_TARGET	2
@@ -209,6 +202,7 @@
 #define SVC_END		16
 
 /* Service add/update */
+
 #define SC_SERVICE	0
 #define SC_INTERVAL	1
 #define SC_TARGET	2
@@ -220,6 +214,7 @@
 #define SC_END		8
 
 /* Service/host tuples */
+
 #define SH_SERVICE	0
 #define SH_MACHINE	1
 #define SH_ENABLE	2
@@ -239,6 +234,7 @@
 #define SH_END		16
 
 /* Service/host tuple add & updates */
+
 #define SHI_SERVICE	0
 #define SHI_MACHINE	1
 #define SHI_ENABLE	2
@@ -246,5 +242,36 @@
 #define SHI_VALUE2	4
 #define SHI_VALUE3	5
 #define SHI_END		6
+
+/* User Information queries */
+
+#define U_NAME    0
+#define U_UID     1
+#define U_SHELL   2
+#define U_LAST    3
+#define U_FIRST   4
+#define U_MIDDLE  5
+#define U_STATE   6  
+#define U_MITID   7
+#define U_CLASS   8
+#define U_MODTIME 9
+#define U_MODBY   10
+#define U_MODWITH 11
+#define U_END     12
+
+/* User states (the value of argv[U_STATE] from a user query) */
+
+#define US_NO_LOGIN_YET 0
+#define US_REGISTERED   1
+#define US_NO_PASSWD    2
+#define US_DELETED      3
+#define US_NOT_ALLOWED  4
+#define US_END          5
+
+/* User shell queries */
+
+#define USH_NAME        0
+#define USH_SHELL       1
+#define USH_END         2
 
 #endif _sms_app_		/* Do not add anything after this line. */

@@ -153,6 +153,7 @@ sub athena_proc
     if ($type eq "HOMEDIR") {
 	die "Unable to get uid for user\n" unless ($uid);
 
+	chmod(0755, $path);
 	mkdir("$path/Public",0755) && chown($uid,0,"$path/Public") &&
 	    mkdir("$path/Private",0700) && mkdir("$path/Mail", 0700) &&
 		chown($uid,0,"$path/Public","$path/Private","$path/Mail") ||

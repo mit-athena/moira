@@ -1,18 +1,21 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v $
- *	$Author: wesommer $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v 1.2 1987-08-22 23:45:10 wesommer Exp $
+ *	$Author: mar $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v 1.3 1988-01-07 17:42:06 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
  *	$Log: not supported by cvs2svn $
+ * Revision 1.2  87/08/22  23:45:10  wesommer
+ * Removed extra RCS headers.
+ * 
  * Revision 1.1  87/08/22  18:31:59  wesommer
  * Initial revision
  * 
  */
 
 #ifndef lint
-static char *rcsid_test_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v 1.2 1987-08-22 23:45:10 wesommer Exp $";
+static char *rcsid_test_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v 1.3 1988-01-07 17:42:06 mar Exp $";
 #endif lint
 
 #include <stdio.h>
@@ -146,7 +149,7 @@ test_query(argc, argv)
 	}
 	count = 0;
 	status = sms_query(argv[1], argc-2, argv+2, print_reply, (char *)NULL);
-	printf("%d tuples\n", count);
+	printf("%d tuple%s\n", count, ((count == 1) ? "" : "s"));
 	if (status) ss_perror(ss, status, 0);
 }
 

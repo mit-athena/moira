@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/parser.c,v 1.1 1992-12-10 10:58:42 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/parser.c,v 1.2 1992-12-31 13:55:45 mar Exp $
  *
  * TOPS-20 style command parser
  *
@@ -104,7 +104,9 @@ struct parse_node	*nd;
 	    break;
 	case 'Z' - '@':
 	    printf("\r\n");
+	    cooked_mode();
 	    kill(getpid(), SIGSTOP);
+	    raw_mode();
 	    /* when continued, fall through to */
 	case 'R' - '@':
 	    *p = 0;

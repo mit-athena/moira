@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/stats.dc,v 1.1.1.1 1992-09-15 01:12:23 genoa Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/stats.dc,v 1.2 1992-12-21 17:59:34 mar Exp $
  *
  * This generates a list of how many lockers are on each NFS server
  * for statistics gathering purposes.
@@ -38,6 +38,7 @@ char **argv;
 
 #ifsql INGRES
     EXEC SQL CONNECT moira;
+    EXEC SQL SET LOCKMODE SESSION WHERE LEVEL=TABLE, READLOCK=SHARED;
 #endsql
 #ifsql INFORMIX
     EXEC SQL DATABASE moira;
@@ -95,7 +96,7 @@ char **argv;
     while (1) {
 	EXEC SQL FETCH x INTO :id, :n;
 	if (sqlca.sqlcode != 0) break;
-	fprintf(out, "%s %d\n", hash_lookup(machines, id), n);
+	fprintf(out, "%-32s %d\n", hash_lookup(machines, id), n);
     }
     EXEC SQL CLOSE x;
 

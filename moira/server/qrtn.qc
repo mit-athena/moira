@@ -1,11 +1,16 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v $
- *	$Author: mike $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v 1.10 1987-08-28 14:57:51 mike Exp $
+ *	$Author: wesommer $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v 1.11 1987-09-01 16:10:01 wesommer Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
  *	$Log: not supported by cvs2svn $
+ * Revision 1.10  87/08/28  14:57:51  mike
+ * Modified sms_query to not enclose RETRIEVE queries in begin/end transaction.
+ * This was necessary to allow get_all_poboxes and get_groups_of_all_users
+ * to temporarily change the Ingres lockmode.
+ * 
  * Revision 1.9  87/08/22  17:47:38  wesommer
  * Cleanup (these changes were by Mike).
  * 
@@ -28,7 +33,7 @@
  */
 
 #ifndef lint
-static char *rcsid_qrtn_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v 1.10 1987-08-28 14:57:51 mike Exp $";
+static char *rcsid_qrtn_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v 1.11 1987-09-01 16:10:01 wesommer Exp $";
 #endif lint
 
 #include "query.h"
@@ -479,9 +484,8 @@ get_client(cl, client_type, client_id)
 ##  char *name;
 ##  int rowcount;
 
-    /* for now accept only null instances */
+    /* for now ignore instances */
     krb = &cl->kname;
-    if (krb->inst[0]) return(SMS_PERM);
 
     /* if client is from local realm, get users_id */
     if (!strcmp(krb->realm, krb_realm)) {

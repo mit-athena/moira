@@ -312,6 +312,19 @@ create table printers
 	modwith		VARCHAR(8) 	DEFAULT CHR(0)	NOT NULL
 );
 
+create table printservers
+(
+	mach_id		INTEGER		DEFAULT 0	NOT NULL,
+	kind		VARCHAR(8)	DEFAULT CHR(0)	NOT NULL,
+	printer_types	INTEGER		DEFAULT 0	NOT NULL,
+	owner_type	VARCHAR(8) 	DEFAULT CHR(0)	NOT NULL,
+	owner_id	INTEGER		DEFAULT 0	NOT NULL,
+	lpc_acl		INTEGER		DEFAULT 0	NOT NULL,
+	modtime		DATE    	DEFAULT SYSDATE	NOT NULL,
+	modby		INTEGER		DEFAULT 0	NOT NULL,
+	modwith		VARCHAR(8) 	DEFAULT CHR(0)	NOT NULL
+);
+
 create table capacls 
 (
 	capability	VARCHAR(32) 	DEFAULT CHR(0)	NOT NULL,

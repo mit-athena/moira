@@ -1,4 +1,4 @@
-/* $Id: qvalidate.pc,v 2.17 1998-11-10 19:08:39 danw Exp $
+/* $Id: qvalidate.pc,v 2.18 1998-12-08 19:28:27 danw Exp $
  *
  * Argument validation routines
  *
@@ -20,7 +20,7 @@
 EXEC SQL INCLUDE sqlca;
 EXEC SQL INCLUDE sqlda;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qvalidate.pc,v 2.17 1998-11-10 19:08:39 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qvalidate.pc,v 2.18 1998-12-08 19:28:27 danw Exp $");
 
 extern char *whoami, *table_name[], *sqlbuffer[QMAXARGS];
 extern int dbms_errno, mr_errcode;
@@ -464,11 +464,12 @@ int validate_num(char *argv[], struct valobj *vo)
       strcpy(p, "-1");
       return MR_EXISTS;
     }
-  if (!*p)
-    return MR_INTEGER;
 
   if (*p == '-')
     p++;
+  if (!*p)
+    return MR_INTEGER;
+
   for (; *p; p++)
     {
       if (*p < '0' || *p > '9')

@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_util.c,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_util.c,v 1.18 1992-07-08 16:36:43 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_util.c,v 1.19 1992-07-08 16:57:49 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -9,7 +9,7 @@
  */
 
 #ifndef lint
-static char *rcsid_mr_util_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_util.c,v 1.18 1992-07-08 16:36:43 mar Exp $";
+static char *rcsid_mr_util_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_util.c,v 1.19 1992-07-08 16:57:49 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -108,7 +108,7 @@ int argc;
 char **argv;
 {
     register char **arg;
-    register char *p, *lastch;
+    register unsigned char *p, *lastch;
 
     for (arg = argv; argc--; arg++) {
 	for (lastch = p = *arg; *p; p++) {

@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.dc,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.dc,v 2.16 1993-01-12 12:02:18 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.dc,v 2.17 1993-01-12 16:00:01 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_qsupport_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.dc,v 2.16 1993-01-12 12:02:18 mar Exp $";
+static char *rcsid_qsupport_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.dc,v 2.17 1993-01-12 16:00:01 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -1457,16 +1457,14 @@ followup_guax(q, sq, v, action, actarg, cl)
             free(kname);
 	    rsig.data_buf[rsig.data_size] = 0;
             si.rawsig = (unsigned char *)strsave(rsig.data_buf);
-#ifdef DEBUG
-	    com_err(whoami, 0, "rawsig length = %d, sig=\"%s\"", strlen(si.rawsig), si.rawsig);
-#endif /* DEBUG */
+	    if (log_flags & LOG_GDSS)
+	      com_err(whoami, 0, "rawsig length = %d, sig=\"%s\"", strlen(si.rawsig), si.rawsig);
 	    GDSS_Recompose(&si, sigbuf);
 	    free(si.rawsig);
 	    free(argv[U_SIGNATURE]);
 	    argv[U_SIGNATURE] = strsave(sigbuf);
-#ifdef DEBUG
-	    com_err(whoami, 0, "generated signature length %d", strlen(sigbuf));
-#endif /* DEBUG */
+	    if (log_flags & LOG_GDSS)
+	      com_err(whoami, 0, "generated signature length %d", strlen(sigbuf));
 	}
 #endif /* GDSS */
 	(*action)(q->vcnt, argv, actarg);
@@ -1541,8 +1539,11 @@ followup_ausr(q, argv, cl)
             } else if (status)
               return(status);
             timestamp = si.timestamp;
-        } else
-          return(gdss2et(status));
+        } else {
+	    if (log_flags & LOG_GDSS)
+	      hex_dump(argv[U_SIGNATURE]);
+	    return(gdss2et(status));
+	}
       } else {
         rawsig[0] = 0;
         sigwho = 0;
@@ -1641,8 +1642,11 @@ followup_uuac(q, argv, cl)
             } else if (status)
               return(status);
             timestamp = si.timestamp;
-        } else
-          return(gdss2et(status));
+        } else {
+	    if (log_flags & LOG_GDSS)
+	      hex_dump(argv[U_SIGNATURE+1]);
+	    return(gdss2et(status));
+	}
     } else {
         rawsig[0] = 0;
         sigwho = 0;
@@ -3509,11 +3513,12 @@ int _sdl_followup(q, argv, cl)
     int i;
     i = atoi(argv[0]);
     log_flags = i;
-    if (i && LOG_SQL) {
+    if (i & LOG_SQL) {
 	EXEC SQL set printqry;
     } else {
-	EXEC SQL set no printqry;
+	EXEC SQL set noprintqry;
     }
+    return(MR_SUCCESS);
 }
 
 
@@ -4202,5 +4207,52 @@ mr_select_any(stmt)
     return(result);
 } 
 
+
+
+static hex_dump(p)
+unsigned  char *p;
+{
+    char buf[BUFSIZ];
+    int i;
+
+    fprintf(stderr, "Size: %d\n", strlen(p));
+    while (strlen(p) >= 8) {
+	fprintf(stderr, "%02x %02x %02x %02x %02x %02x %02x %02x\n",
+		p[0], p[1], p[2], p[3], p[4], p[5], p[6], p[7]);
+	p += 8;
+    }
+    switch (strlen(p)) {
+    case 7:
+	fprintf(stderr, "%02x %02x %02x %02x %02x %02x %02x\n",
+		p[0], p[1], p[2], p[3], p[4], p[5], p[6]);
+	break;
+    case 6:
+	fprintf(stderr, "%02x %02x %02x %02x %02x %02x\n",
+		p[0], p[1], p[2], p[3], p[4], p[5]);
+	break;
+    case 5:
+	fprintf(stderr, "%02x %02x %02x %02x %02x\n",
+		p[0], p[1], p[2], p[3], p[4]);
+	break;
+    case 4:
+	fprintf(stderr, "%02x %02x %02x %02x\n",
+		p[0], p[1], p[2], p[3]);
+	break;
+    case 3:
+	fprintf(stderr, "%02x %02x %02x\n",
+		p[0], p[1], p[2]);
+	break;
+    case 2:
+	fprintf(stderr, "%02x %02x\n",
+		p[0], p[1]);
+	break;
+    case 1:
+	fprintf(stderr, "%02x\n",
+		p[0]);
+	break;
+    default:
+	return;
+    }
+}
 
 /* eof:qsupport.dc */

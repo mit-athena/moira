@@ -1,4 +1,4 @@
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/Imakefile,v 1.4 1993-12-08 13:52:43 tytso Exp $
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/Imakefile,v 1.5 1996-07-14 17:06:44 danw Exp $
 
 # Copyright 1992 by the Massachusetts Institute of Technology.
 #
@@ -10,6 +10,7 @@
 SRCS= students.c employee.c sign.c rafnu.c
 CODE= students.dc employee.dc sign.dc rafnu.c
 SRCDIR = $(SRCTOP)/regtape
+DEFINES = -I/mit/gdss/include
 sqlrule()
 
 program(students, students.o rafnu.o,,$(CLIBS) $(SQL_LIB), $(PROGDIR))

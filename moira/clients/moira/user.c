@@ -1,4 +1,4 @@
-/* $Id: user.c,v 1.62 2000-08-10 02:29:44 zacheiss Exp $
+/* $Id: user.c,v 1.63 2000-08-13 05:47:11 zacheiss Exp $
  *
  *	This is the file user.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -27,7 +27,7 @@
 
 #include <krb.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.62 2000-08-10 02:29:44 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.63 2000-08-13 05:47:11 zacheiss Exp $");
 
 void CorrectCapitalization(char **name);
 char **AskUserInfo(char **info, Bool name);
@@ -1031,16 +1031,20 @@ int AddUserReservation(int argc, char **argv)
   int stat;
   char buf[BUFSIZ];
   
-  stat = do_mr_query("add_user_reservation", 2, &argv[1],
-		     NULL, NULL);
-    if (stat == MR_STRING)
-      {
-	sprintf(buf, "The reservation %s is not valid.", argv[2]);
-	Put_message(buf);
-	PrintReservationTypes();
-      }
-    else
+  switch (stat = do_mr_query("add_user_reservation", 2, &argv[1],
+			     NULL, NULL))
+    {
+    case MR_SUCCESS:
+      break;
+    case MR_STRING:
+      sprintf(buf, "The reservation %s is not valid.", argv[2]);
+      Put_message(buf);
+      PrintReservationTypes();
+      break;
+    default:
       com_err(program_name, stat, " in AddUserReservation.");
+      break;
+    }
   
   return DM_NORMAL;
 }
@@ -1050,16 +1054,20 @@ int DelUserReservation(int argc, char **argv)
   int stat;
   char buf[BUFSIZ];
 
-  stat = do_mr_query("delete_user_reservation", 2, &argv[1],
-		     NULL, NULL);
-  if (stat == MR_STRING)
+  switch (stat = do_mr_query("delete_user_reservation", 2, &argv[1],
+		     NULL, NULL))
     {
+    case MR_SUCCESS:
+      break;
+    case MR_STRING:
       sprintf(buf, "The reservation %s is not valid.", argv[2]);
       Put_message(buf);
       PrintReservationTypes();
+      break;
+    default:
+      com_err(program_name, stat, " in DelUserReservation.");
+      break;
     }
-  else
-    com_err(program_name, stat, " in DelUserReservation.");
   
   return DM_NORMAL;
 }
@@ -1070,17 +1078,17 @@ int GetUserByReservation(int argc, char **argv)
   struct mqelem *elem = NULL, *top;
   char buf[BUFSIZ];
 
-  stat = do_mr_query("get_user_by_reservation", 1, &argv[1],
-		     StoreInfo, &elem);
-  if (stat == MR_STRING)
+  switch (stat = do_mr_query("get_user_by_reservation", 1, &argv[1],
+		     StoreInfo, &elem))
     {
+    case MR_SUCCESS:
+      break;
+    case MR_STRING:
       sprintf(buf, "The reservation %s is not valid.", argv[1]);
       Put_message(buf);
       PrintReservationTypes();
       return DM_NORMAL;
-    }
-  else
-    {
+    default:
       com_err(program_name, stat, " in GetUserByReservation.");
       return DM_NORMAL;
     }

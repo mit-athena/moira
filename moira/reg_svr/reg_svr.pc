@@ -1,4 +1,4 @@
-/* $Id: reg_svr.pc,v 1.5 1999-02-03 18:53:59 danw Exp $
+/* $Id: reg_svr.pc,v 1.6 2000-03-14 21:50:51 zacheiss Exp $
  *
  * Server for user registration with Moira and Kerberos.
  *
@@ -37,7 +37,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.pc,v 1.5 1999-02-03 18:53:59 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.pc,v 1.6 2000-03-14 21:50:51 zacheiss Exp $");
 
 char *whoami, *hostname, *shorthostname;
 
@@ -651,7 +651,7 @@ int register_user(int uid, char *username)
   sprintf(uidbuf, "%d", uid);
   qargv[0] = uidbuf;
   qargv[1] = username;
-  qargv[2] = "0";
+  qargv[2] = "IMAP";
   status = mr_query("register_user", 3, qargv, NULL, NULL);
   mr_disconnect();
   return status;

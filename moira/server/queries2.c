@@ -1,6 +1,6 @@
 /* This file defines the query dispatch table for version 2 of the protocol
  *
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/queries2.c,v 2.18 1993-11-22 14:29:44 mar Exp $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/queries2.c,v 2.19 1993-12-29 15:37:18 tom Exp $
  *
  * Copyright 1987, 1988 by the Massachusetts Institute of Technology.
  * For copying and distribution information, please see the file
@@ -895,7 +895,7 @@ static struct validate ghal_validate = {
   0,
   0,
   0,
-  0,
+  access_ahal,
   0,
   0,
 };

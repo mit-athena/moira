@@ -1,9 +1,9 @@
 #!/moira/bin/perl -Tw
-# $Id: grouper.pl,v 1.1 2000-03-16 22:17:23 zacheiss Exp $
+# $Id: grouper.pl,v 1.2 2000-03-16 22:18:56 zacheiss Exp $
 
 die "Usage: $0 password\n" unless ($#ARGV == 0);
 $whpassword = $ARGV[0];
-$db = "ttsp";
+$db = "";
 $mrtest = "mrtest";
 $ENV{'PATH'} = "/moira/bin";
 use DBI;

@@ -17,6 +17,7 @@
 *formTranslations:	None<Key>Return:	next-or-do-it()\n\
 			Ctrl<Key>C:		cancel-form()\n\
 			Shift<Key>Return:	execute-form()\n\
+			Meta<Key>Return:	execute-form()\n\
 			Meta<Key>?:		help()
 # These are the additional translations added to the Motif text widget
 # for emacs style editing.

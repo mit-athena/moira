@@ -1,0 +1,379 @@
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/employee.dc,v 1.1 1990-01-18 14:06:42 mar Exp $
+ */
+
+#include <stdio.h>
+#include <strings.h>
+#include <ctype.h>
+#include <sys/time.h>
+#include <sms.h>
+#include <sms_app.h>
+
+
+##define WHO 11859		/* root */
+##define PROG "emp-tape"
+
+#define MAX_ID_VALUE	32766
+#define MIN_ID_VALUE	101
+
+/* File format is:
+
+0-8	id number
+9-38	name
+39-62	office address
+63-74	phone1
+75-86	phone2
+87-106	dept
+107-156	title
+157-186	username
+187-241	host
+
+*/
+
+#define LOC_ID 0
+#define LOC_NAME 9
+#define LOC_OFFICE 39
+#define LOC_PHONE 63
+#define LOC_PHONE2 75
+#define LOC_DEPT 87
+#define LOC_TITLE 107
+#define LOC_USERNAME 157
+#define LOC_HOST 187
+
+#define LEN_ID 9
+#define LEN_NAME 30
+#define LEN_OFFICE 23
+#define LEN_PHONE 12
+#define LEN_PHONE2 12
+#define LEN_DEPT 19
+#define LEN_TITLE 49
+#define LEN_USERNAME 29
+#define LEN_HOST 55
+
+
+struct entry {
+    char *last;
+    char *first;
+    char *middle;
+    char *title;
+    char *class;
+    char *id;
+    char *eid;
+    char *dept;
+    char *address;
+    char *phone;
+    char *email;
+};
+
+
+char *whoami;
+int newfinger = 0;
+
+
+main(argc, argv)
+int argc;
+char **argv;
+##{
+    FILE *in;
+    struct entry *e, *get_next_entry();
+    int i, wait = 0;
+    char buf[BUFSIZ], *file = NULL;
+
+    whoami = rindex(argv[0], '/');
+    if (whoami)
+      whoami++;
+    else
+      whoami = argv[0];
+
+    for (i = 1; i < argc; i++) {
+	if (!strcmp(argv[i], "-w"))
+	  wait++;
+	else if (!strcmp(argv[i], "-D"))
+	  setenv("ING_SET", "set printqry");
+	else if (!strcmp(argv[i], "-n"))
+	  newfinger++;
+	else if (file != NULL)
+	  fprintf(stderr, "Usage: %s [-w] [-D] [-n] inputfile\n", whoami);
+	else
+	  file = argv[i];
+    }
+
+    in = fopen(file, "r");
+    if (in == NULL) {
+	fprintf(stderr, "Unable to open %s for input\n", file);
+	exit(1);
+    }
+
+##  ingres sms
+##  range of u is users
+
+    while (e = get_next_entry(in)) {
+	process_entry(e);
+	if (wait) {
+	    printf("Next");
+	    fflush(stdout);
+	    gets(buf);
+	}
+    }
+
+##  exit
+    exit(0);
+##}
+
+
+char *substr(buf, key)
+char *buf;
+char *key;
+{
+    int l;
+
+    for (l = strlen(key); *buf; buf++)
+      if (!strncmp(buf, key, l))
+	return(buf);
+    return(NULL);
+}
+
+
+struct entry *get_next_entry(in)
+FILE *in;
+{
+    static struct entry e;
+    static char buf[BUFSIZ], mid[16], eid[16], email[256], phone[13];
+    int ends_jr, ends_iii, ends_iv;
+    char *p;
+
+    fgets(buf, sizeof(buf), in);
+    buf[LEN_NAME] = 0;
+    p = index(&buf[LOC_NAME], ',');
+    if (p)
+      *p = 0;
+    e.last = strtrim(&buf[LOC_NAME]);
+    if (p) {
+	e.first = p + 3;
+	if (p = index(e.first, ' ')) {
+	    *p = 0;
+	    e.middle = strtrim(p + 1);
+	} else
+	  e.middle = "";
+    } else
+      e.first = "";
+    e.first = strtrim(e.first);
+    ends_jr = ends_iii = ends_iv = 0;
+    LookForSt(e.last);
+    LookForO(e.last);
+    LookForJrAndIII(e.last, &ends_jr, &ends_iii, &ends_iv);
+    LookForJrAndIII(e.first, &ends_jr, &ends_iii, &ends_iv);
+    FixCase(e.last);
+    FixCase(e.first);
+    FixCase(e.middle);
+
+    strncpy(mid, buf, LEN_ID);
+    e.id = mid;
+    e.eid = eid;
+    EncryptID(e.eid, e.id, e.first, e.last);
+
+    e.address = &buf[LOC_OFFICE];
+    e.address[LEN_OFFICE] = 0;
+    e.address = strtrim(e.address);
+    e.phone = phone;
+    strncpy(phone, &buf[LOC_PHONE], LEN_PHONE);
+    e.phone = strtrim(e.phone);
+    e.dept = &buf[LOC_DEPT];
+    e.dept[LEN_DEPT] = 0;
+    e.dept = strtrim(e.dept);
+    e.title = &buf[LOC_TITLE];
+    e.title[LEN_TITLE] = 0;
+    e.title = strtrim(e.title);
+
+    e.class = "MITS";
+    if (!strcmp(e.dept, "PROJECT ATHENA"))
+      e.class = "STAFF";
+    else if (substr(e.title, "PROF"))
+      e.class = "FACULTY";
+    else if (!strcmp(e.title, "VISITING SCIENTIST"))
+      e.class = "VSCIENTI";
+
+    strncpy(email, &buf[LOC_USERNAME], LEN_USERNAME);
+    strtrim(email);
+    if (buf[LOC_HOST] == '@')
+      strncat(email, &buf[LOC_HOST], LEN_HOST);
+    e.email = strtrim(email);
+
+    return(&e);
+}
+
+
+process_entry(e)
+struct entry *e;
+##{
+    int changed, nochange;
+    char buf[BUFSIZ], *from, *to;
+##  char *first, *last, *eid;
+##  char class[9], oaddr[17], ophone[17], dept[17];
+##  int id;
+
+    first = e->first;
+    last = e->last;
+    eid = e->eid;
+    id = 0;
+##  repeat retrieve (id = u.users_id, class = u.mit_year, oaddr = u.office_addr,
+##	      ophone = u.office_phone, dept = u.mit_dept)
+##	where u.#last = @last and u.#first = @first and u.mit_id = @eid
+    if (id == 0) {
+	newuser(e);
+	return;
+    }
+    if (strcmp(e->class, strtrim(class))) {
+	com_err(whoami, 0, "updating class for %s %s from %s to %s",
+		first, last, class, e->class);
+	strcpy(class, e->class);
+##	repeat replace u (mit_year = @class,
+##		   modtime = "now", modby = WHO, modwith = PROG)
+##	    where u.users_id = id
+    }
+    changed = nochange = 0;
+    strcpy(buf, e->address);
+    while (to = index(buf, ','))
+      *to = ';';
+    while (to = index(buf, ':'))
+      *to = ';';
+    if (newfinger) {
+	if (oaddr[0] == ' ') {
+	    strncpy(oaddr, buf, 16);
+	    oaddr[16] = 0;
+	    changed++;
+	} else
+	  nochange++;
+    } else {
+	if (strncmp(strtrim(oaddr), buf, 15))
+	  changed++;
+	strncpy(oaddr, buf, 16);
+	oaddr[16] = 0;
+    }
+    from = e->phone;
+    to = buf;
+    while (*from) {
+	if (isdigit(*from))
+	  *to++ = *from;
+	from++;
+    }
+    *to = 0;
+    if (newfinger) {
+	if (ophone[0] == ' ') {
+	    strncpy(ophone, buf, 16);
+	    ophone[16] = 0;
+	} else
+	  nochange++;
+    } else {
+	if (strncmp(strtrim(ophone), buf, 11))
+	  changed++;
+	strncpy(ophone, buf, 16);
+	ophone[16] = 0;
+    }
+    FixCase(e->dept);
+    if (newfinger) {
+	if (dept[0] == ' ') {
+	    strncpy(dept, e->dept, 12);
+	    dept[12] = 0;
+	} else
+	  nochange++;
+    } else {
+	if (strncmp(strtrim(dept), e->dept, 11))
+	  changed++;
+	strncpy(dept, e->dept, 12);
+	dept[12] = 0;
+    }
+    if (changed) {
+	com_err(whoami, 0, "updating finger for %s %s", first, last);
+##	repeat replace u (office_addr = @oaddr,
+##		   office_phone = @ophone, #mit_dept = @dept,
+##		   fmodtime = "now", fmodby = WHO, fmodwith = PROG)
+##	    where u.users_id = @id
+    } else if (nochange)
+      com_err(whoami, 0, "NOT updating finger for %s %s", first, last);
+##}
+
+
+newuser(e)
+struct entry *e;
+##{
+    char *from, *to;
+##  int id, uid, st;
+##  char *last, *first, *class, *middle, login[9], *eid, fullname[65];
+##  char oaddr[81], ophone[13], dept[13];
+
+
+    strncpy(oaddr, e->address, 16);
+    while (to = index(oaddr, ','))
+      *to = ';';
+    while (to = index(oaddr, ':'))
+      *to = ';';
+    from = e->phone;
+    to = ophone;
+    while (*from) {
+	if (isdigit(*from))
+	  *to++ = *from;
+	from++;
+    }
+    *to = 0;
+    strncpy(dept, e->dept, 12);
+    
+    id = set_next_object_id("users_id");
+    uid = set_next_object_id("uid");
+    sprintf(login, "#%d", uid);
+    last = e->last;
+    first = e->first;
+    middle = e->middle;
+    eid = e->eid;
+    class = e->class;
+    if (*middle)
+      sprintf(fullname, "%s %s %s", first, middle, last);
+    else
+      sprintf(fullname, "%s %s", first, last);
+    st = US_NOT_ALLOWED;
+    if (!strcmp(e->class, "FACULTY"))
+      st = US_NO_LOGIN_YET;
+    
+##  append users (#login = login, users_id = id, #uid = uid, shell = "/bin/csh",
+##		  #last = last, #first = first, #middle = middle, status = st,
+##		  #mit_id = eid, #mit_year = class,
+##		  modtime = "now", modby = WHO, modwith = PROG,
+##		  #fullname = fullname, office_addr = oaddr,
+##		  office_phone = ophone, #mit_dept = dept,
+##		  fmodtime = "now", fmodby = WHO, fmodwith = PROG,
+##		  potype = "NONE")
+    com_err(whoami, 0, "adding user %s %s", e->first, e->last);
+##}
+
+
+set_next_object_id(object)
+    char *object;
+##{
+##  char *name;
+##  int rowcount, exists, value;
+
+    name = object;
+##  begin transaction
+##  repeat retrieve (value = values.#value) where values.#name = @name
+##  inquire_equel(rowcount = "rowcount")
+    if (rowcount != 1) {
+##	abort
+	return(0);
+    }
+
+##  retrieve (exists = any(users.name where users.name = value))
+##  inquire_equel(rowcount = "rowcount")
+    if (rowcount != 1) {
+##	abort
+	return(0);
+    }
+    while (exists) {
+	value++;
+	if (value > MAX_ID_VALUE)
+	    value = MIN_ID_VALUE;
+##	retrieve (exists = any(users.name where users.name = value))
+    }
+
+##  repeat replace values (#value = @value) where values.#name = @name
+##  end transaction
+    return(value);
+##}

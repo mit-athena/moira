@@ -1,4 +1,4 @@
-/* $Id: moira_site.h,v 1.46 2002-08-02 10:31:32 zacheiss Exp $
+/* $Id: moira_site.h,v 1.47 2002-12-03 21:22:55 zacheiss Exp $
  *
  * This file contains all definitions that allow easy access to
  * elements returned by most of the @i[Moira] queries.  It also defines
@@ -127,23 +127,25 @@
 
 /* General List information Queries, v4. */
 
-#define L_NAME     0
-#define L_ACTIVE   1
-#define L_PUBLIC   2
-#define L_HIDDEN   3
-#define L_MAILLIST 4
-#define L_GROUP    5
-#define L_GID      6
-#define L_NFSGROUP 7
-#define L_ACE_TYPE 8
-#define L_ACE_NAME 9
-#define L_MEMACE_TYPE 10
-#define L_MEMACE_NAME 11
-#define L_DESC     12
-#define L_MODTIME  13
-#define L_MODBY    14
-#define L_MODWITH  15
-#define L_END      16
+#define L_NAME            0
+#define L_ACTIVE          1
+#define L_PUBLIC          2
+#define L_HIDDEN          3
+#define L_MAILLIST        4
+#define L_GROUP           5
+#define L_GID             6
+#define L_NFSGROUP        7
+#define L_MAILMAN         8
+#define L_MAILMAN_SERVER  9
+#define L_ACE_TYPE        10
+#define L_ACE_NAME        11
+#define L_MEMACE_TYPE     12
+#define L_MEMACE_NAME     13
+#define L_DESC            14
+#define L_MODTIME         15
+#define L_MODBY           16
+#define L_MODWITH         17
+#define L_END             18
 
 /* List Member information queries. */
 

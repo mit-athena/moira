@@ -1,5 +1,5 @@
 .TH BLANCHE 1 "14 Sep 1988" "Project Athena"
-\" RCSID: $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/man/blanche.1,v 1.14 2000-04-19 23:16:48 zacheiss Exp $
+\" RCSID: $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/man/blanche.1,v 1.15 2000-08-12 23:30:42 zacheiss Exp $
 .SH NAME
 blanche \- examine and modify memberships in Moira lists
 .SH SYNOPSIS
@@ -132,7 +132,11 @@ Set the description of the list.
 .IP \fB-owner\ \fIowner\ \fRor\ \fB-O\ \fIowner\fR
 Set the owner of the list. The owner is specified like a list member,
 except that list owners can never be strings.
-
+.IP \fB-memacl\ \fImembership_acl\ \fRor\ \fB-MA\ \fImembership_acl\fR
+Set the mebership acl of the list; members of this acl will be allowed
+to add and remove members of the list, but not update any other
+characteristics. The membership acl is specified like a list member,
+except that it can never be a string.
 
 .SH AUTHORS
 Mark Rosenstein and Jay Berkenbilt.

@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/afs.c,v 1.47 1993-03-15 17:45:23 probe Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/afs.c,v 1.48 1993-05-04 16:15:19 probe Exp $
  *
  * Do AFS incremental updates
  *
@@ -556,7 +556,13 @@ edit_group(op, group, type, member)
 			       "Error contacting Moira server to lookup user %s: %s",
 			       member, error_message(code));
 	    }
-	    moira_disconnect();
+
+	    /* We don't use moira_disconnect()
+	     * because we may already be in the routine.
+	     */
+	    mr_disconnect();
+	    mr_connections--;
+
 	    if (!code && ustate!=1 && ustate!=2) return; /* inactive user */
 	    code = PRNOENT;
 	}

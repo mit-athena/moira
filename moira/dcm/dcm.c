@@ -7,11 +7,11 @@
  *
  * $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/dcm.c,v $
  * $Author: mar $
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/dcm.c,v 1.8 1989-06-29 14:36:57 mar Exp $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/dcm.c,v 1.9 1989-08-21 21:54:17 mar Exp $
  */
 
 #ifndef lint
-static char rcsid_dcm_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/dcm.c,v 1.8 1989-06-29 14:36:57 mar Exp $";
+static char rcsid_dcm_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/dcm.c,v 1.9 1989-08-21 21:54:17 mar Exp $";
 #endif lint
 
 #include <stdio.h>
@@ -33,6 +33,9 @@ char *itoa();
 int gqval();
 long time();
 
+
+#define DEADLOCK_WAIT	(3 * 60)	/* number of seconds to wait after
+					   a deadlock before trying again. */
 
 /* declared global so that we can get the current time from different places. */
 struct timeval tv;
@@ -253,7 +256,8 @@ do_services()
 				   scream, NULL);
 		if (status) {
 		    com_err(whoami, status,
-			    " setting service state, trying again");
+			    " setting service state, sleeping");
+		    sleep(DEADLOCK_WAIT);
 		    status = sms_query("set_server_internal_flags", 6, qargv,
 				       scream, NULL);
 		    if (status)
@@ -411,7 +415,8 @@ struct service *svc;
 				   6, qargv, scream, NULL);
 		if (status) {
 		    com_err(whoami, status,
-			    " setting service state, trying again");
+			    " setting service state, sleeping");
+		    sleep(DEADLOCK_WAIT);
 		    status = sms_query("set_server_internal_flags",
 				       6, qargv, scream, NULL);
 		    if (status)
@@ -431,7 +436,8 @@ struct service *svc;
 				   9, argv,scream,NULL);
 		if (status) {
 		    com_err(whoami, status,
-			    " setting host state, trying again");
+			    " setting host state, sleeping");
+		    sleep(DEADLOCK_WAIT);
 		    status = sms_query("set_server_host_internal",
 				       9, argv,scream,NULL);
 		    if (status)
@@ -446,7 +452,8 @@ struct service *svc;
 	close(lock_fd);
 	status = sms_query("set_server_host_internal", 9, argv,scream,NULL);
 	if (status) {
-	    com_err(whoami, status, " setting host state, trying again");
+	    com_err(whoami, status, " setting host state, sleeping");
+	    sleep(DEADLOCK_WAIT);
 	    status = sms_query("set_server_host_internal", 9, argv,scream,NULL);
 	    if (status)
 	      com_err(whoami, status, " setting host state again");

@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.31 1997-07-03 09:22:03 danw Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.32 1997-07-03 22:45:22 danw Exp $
  *
  * Command line oriented Moira List tool.
  *
@@ -24,7 +24,7 @@
 #include <moira_site.h>
 
 #ifndef LINT
-static char blanche_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.31 1997-07-03 09:22:03 danw Exp $";
+static char blanche_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.32 1997-07-03 22:45:22 danw Exp $";
 #endif
 
 
@@ -380,18 +380,19 @@ char **argv;
 	      break;
 	    else if ((status != MR_LIST && status != MR_NO_MATCH) ||
 		     memberstruct->type != M_ANY) {
-	        if (status == MR_PERM && memberstruct->type == M_ANY)  {
-		  /* M_ANY means we've fallen through from the user case
-		   * The fact that we didn't get MR_PERM there indicates
-		   * that we had permission to remove the specified member 
-		   * from the list if it is a user, but not a list.  This is 
-		   * if we are the member in question.  Since we exist as a user
-		   * we must have gotten the MR_NO_MATCH error, so we will
-		   * return that, since it will be less confusing.  However,
-		   * This will generate the wrongerror if the user was trying
-		   * to remove the list with his/her username from a list they
-		   * don't administrate, without explicitly specifying "list:".
-		   */
+	        if (status == MR_PERM && memberstruct->type == M_ANY &&
+		    !strcmp(membervec[2], getenv("USER")))  {
+		    /* M_ANY means we've fallen through from the user
+		     * case. The user is trying to remove himself from
+		     * a list, but we got MR_USER or MR_NO_MATCH above,
+		     * meaning he's not really on it, and we got MR_PERM
+		     * when trying to remove LIST:$USER because he's not
+		     * on the acl. That error is useless, so return
+		     * MR_NO_MATCH instead. However, this will generate the
+		     * wrong error if the user was trying to remove the list
+		     * with his username from a list he doesn't administrate
+		     * without explicitly specifying "list:".
+		     */
 		  status = MR_NO_MATCH;
 		}
 		com_err(whoami, status, "while deleting member %s from %s",

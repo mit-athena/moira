@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/winad/winad.c,v 1.36 2003-09-06 22:42:20 zacheiss Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/winad/winad.c,v 1.37 2003-11-19 03:15:40 zacheiss Exp $
 /* winad.incr arguments examples
  *
  * arguments when moira creates the account - ignored by winad.incr since the account is unusable.
@@ -100,6 +100,7 @@
 */
 #include <mit-copyright.h>
 #ifdef _WIN32
+#include <winsock2.h>
 #include <windows.h>
 #include <stdlib.h>
 #include <malloc.h>
@@ -333,6 +334,8 @@ int ad_connect(LDAP **ldap_handle, char *ldap_domain, char *dn_path,
                char *Win2kPassword, char *Win2kUser, char *default_server,
                int connect_to_kdc, char **ServerList, int *IgnoreMasterSeverError);
 void ad_kdc_disconnect();
+int attribute_update(LDAP *ldap_handle, char *distinguished_name, 
+                      char *attribute_value, char *attribute, char *user_name);
 int BEREncodeSecurityBits(ULONG uBits, char *pBuffer);
 int checkADname(LDAP *ldap_handle, char *dn_path, char *Name);
 void check_winad(void);
@@ -494,7 +497,7 @@ int main(int argc, char **argv)
 
   if (argc < 4)
     {
-      com_err(whoami, 0, "%s", "argc < 4");
+      com_err(whoami, 0, "Unable to process %s", "argc < 4");
       exit(1);
     }
   beforec = atoi(argv[2]);
@@ -502,7 +505,7 @@ int main(int argc, char **argv)
 
   if (argc < (4 + beforec + afterc))
     {
-      com_err(whoami, 0, "%s", "argc < (4 + breforec + afterc)");
+      com_err(whoami, 0, "Unable to process %s", "argc < (4 + breforec + afterc)");
       exit(1);
     }
 
@@ -629,6 +632,7 @@ int main(int argc, char **argv)
 
   for (i = 0; i < (int)strlen(table); i++)
     table[i] = tolower(table[i]);
+
   if (!strcmp(table, "users"))
     do_user(ldap_handle, dn_path, ldap_domain, before, beforec, after,
             afterc);
@@ -722,7 +726,7 @@ void do_mcntmap(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
 					  DeleteMachine);
     if (machine_check(ldap_handle, dn_path, MachineName))
     {
-        com_err(whoami, 0, "machine %s (alias %s) not found in AD.", OriginalMachineName, MachineName);
+        com_err(whoami, 0, "Unable to find machine %s (alias %s) in AD.", OriginalMachineName, MachineName);
         moira_disconnect();
         return;
     }
@@ -730,7 +734,7 @@ void do_mcntmap(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
     machine_get_moira_container(ldap_handle, dn_path, MachineName, MoiraContainerName);
     if (strlen(MoiraContainerName) == 0)
     {
-        com_err(whoami, 0, "machine %s (alias %s) container not found in Moira - moving to orphans OU.",
+        com_err(whoami, 0, "Unable to fine machine %s (alias %s) container in Moira - moving to orphans OU.",
                 OriginalMachineName, MachineName);
         machine_move_to_ou(ldap_handle, dn_path, MachineName, orphans_machines_ou);
         moira_disconnect();
@@ -827,7 +831,7 @@ void do_filesys(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
                     after[FS_TYPE], after[FS_PACK], LDAP_MOD_ADD)) != LDAP_NO_SUCH_OBJECT)
           {
             if (rc != LDAP_SUCCESS)
-              com_err(whoami, 0, "Couldn't process filesys %s", after[FS_NAME]);
+              com_err(whoami, 0, "Unable to process filesys %s", after[FS_NAME]);
             break;
           }
         if (abort_flag == 1)
@@ -853,13 +857,13 @@ void do_filesys(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
                           call_args))
           {
             moira_disconnect();
-            com_err(whoami, 0, "Couldn't process filesys %s", after[FS_NAME]);
+            com_err(whoami, 0, "Unable to process filesys %s", after[FS_NAME]);
             break;
           }
         if (callback_rc)
           {
             moira_disconnect();
-            com_err(whoami, 0, "Couldn't process filesys %s", after[FS_NAME]);
+            com_err(whoami, 0, "Unable to process filesys %s", after[FS_NAME]);
             break;
           }
         if (sid_base != NULL)
@@ -882,7 +886,7 @@ void do_filesys(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
           if (rc = filesys_process(ldap_handle, dn_path, before[FS_NAME], 
                       before[FS_TYPE], before[FS_PACK], LDAP_MOD_DELETE))
             {
-              com_err(whoami, 0, "Couldn't delete filesys %s", before[FS_NAME]);
+              com_err(whoami, 0, "Unable to delete filesys %s", before[FS_NAME]);
             }
         }
       return;
@@ -895,7 +899,7 @@ void do_filesys(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
     {
       if (strcmp(before[FS_TYPE], "ERR") || strcmp(after[FS_TYPE], "ERR"))
         {
-          com_err(whoami, 0, "Filesystem %s or %s is not AFS",
+          com_err(whoami, 0, "Unable to process Filesystem %s or %s is not AFS",
                   before[FS_NAME], after[FS_NAME]);
           return;
         }
@@ -908,7 +912,7 @@ void do_filesys(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
                     after[FS_TYPE], after[FS_PACK], LDAP_MOD_ADD)) != LDAP_NO_SUCH_OBJECT)
       {
         if (rc != LDAP_SUCCESS)
-          com_err(whoami, 0, "Couldn't process filesys %s", after[FS_NAME]);
+          com_err(whoami, 0, "Unable to process filesys %s", after[FS_NAME]);
         break;
       }
     if (abort_flag == 1)
@@ -934,13 +938,13 @@ void do_filesys(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
                       call_args))
       {
         moira_disconnect();
-        com_err(whoami, 0, "Couldn't process filesys %s", after[FS_NAME]);
+        com_err(whoami, 0, "Unable to process filesys %s", after[FS_NAME]);
         break;
       }
     if (callback_rc)
       {
         moira_disconnect();
-        com_err(whoami, 0, "Couldn't process filesys %s", after[FS_NAME]);
+        com_err(whoami, 0, "Unable to process filesys %s", after[FS_NAME]);
         break;
       }
     if (sid_base != NULL)
@@ -1033,7 +1037,7 @@ void do_list(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
                 }
               if ((rc != AD_NO_GROUPS_FOUND) && (rc != 0))
                 {
-                  com_err(whoami, 0, "Could not change list name from %s to %s",
+                  com_err(whoami, 0, "Unable to change list name from %s to %s",
                           before[L_NAME], after[L_NAME]);
                   return;
                 }
@@ -1055,7 +1059,7 @@ void do_list(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
           if ((strlen(before_group_ou) == 0) || (strlen(before_group_membership) == 0) ||
               (strlen(group_ou) == 0) || (strlen(group_membership) == 0))
             {
-              com_err(whoami, 0, "%s", "couldn't find the group OU's");
+              com_err(whoami, 0, "%s", "Unable to find the group OU's");
               return;
             }
           memset(filter, '\0', sizeof(filter));
@@ -1068,7 +1072,7 @@ void do_list(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
             {
               if (rc != AD_NO_GROUPS_FOUND)
                 {
-                  com_err(whoami, 0, "Could not change list name from %s to %s",
+                  com_err(whoami, 0, "Unable to change list name from %s to %s",
                           before[L_NAME], after[L_NAME]);
                   return;
                 }
@@ -1084,7 +1088,7 @@ void do_list(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
     {
       if ((strlen(before_group_ou) == 0) || (strlen(before_group_membership) == 0))
         {
-          com_err(whoami, 0, "couldn't find the group OU for group %s", before[L_NAME]);
+          com_err(whoami, 0, "Unable to find the group OU for group %s", before[L_NAME]);
           return;
         }
       com_err(whoami, 0, "Deleting group %s", before[L_NAME]);
@@ -1111,7 +1115,7 @@ void do_list(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
                     }
                   if (rc)
                     {
-                      com_err(whoami, 0, "Could not create list %s", after[L_NAME]);
+                      com_err(whoami, 0, "Unable to create list %s", after[L_NAME]);
                       return;
                     }
                 }
@@ -1193,10 +1197,17 @@ void do_member(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
       if (afterc < LM_EXTRA_GID)
         return;
       if (!atoi(after[LM_EXTRA_ACTIVE]))
+        {
+        com_err(whoami, 0, "Unable to add %s to group %s : group not active", after[2], after[0]);
         return;
+        }
       ptr = after;
       if (!strcasecmp(ptr[LM_TYPE], "LIST"))
-        return;
+        {
+          com_err(whoami, 0, "Unable to add %s to group %s : %s is not a group", 
+                  after[2], after[0], after[0]);
+          return;
+        }
       strcpy(user_name, after[LM_MEMBER]);
       strcpy(group_name, after[LM_LIST]);
       strcpy(user_type, after[LM_TYPE]);
@@ -1227,10 +1238,17 @@ void do_member(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
       if (beforec < LM_EXTRA_GID)
         return;
       if (!atoi(before[LM_EXTRA_ACTIVE]))
+        {
+          com_err(whoami, 0, "Unable to add %s to group %s : group not active", before[2], before[0]);
           return;
+        }
       ptr = before;
       if (!strcasecmp(ptr[LM_TYPE], "LIST"))
-        return;
+        {
+          com_err(whoami, 0, "Unable to add %s to group %s : %s is not a group", 
+                  before[2], before[0], before[0]);
+          return;
+        }
       strcpy(user_name, before[LM_MEMBER]);
       strcpy(group_name, before[LM_LIST]);
       strcpy(user_type, before[LM_TYPE]);
@@ -1258,7 +1276,10 @@ void do_member(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
     }
 
   if (ptr == NULL)
-    return;
+    {
+      com_err(whoami, 0, "Unable to process group : beforec = %d, afterc = %d", beforec, afterc);
+      return;
+    }
 
   args[L_NAME] = ptr[LM_LIST];
   args[L_ACTIVE] = ptr[LM_EXTRA_ACTIVE];
@@ -1273,7 +1294,7 @@ void do_member(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
   get_group_membership(group_membership, group_ou, &security_flag, args);
   if (strlen(group_ou) == 0)
     {
-      com_err(whoami, 0, "couldn't find the group OU for group %s", group_name);
+      com_err(whoami, 0, "Unable to find the group OU for group %s", group_name);
       return;
     }
   if (rc = process_group(ldap_handle, dn_path, moira_list_id, group_name, group_ou, group_membership, security_flag, CHECK_GROUPS))
@@ -1285,9 +1306,9 @@ void do_member(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
               if (rc != AD_NO_GROUPS_FOUND)
                 {
                   if (afterc)
-                    com_err(whoami, 0, "Couldn't add %s to group %s - unable to process group", user_name, group_name);
+                    com_err(whoami, 0, "Unable to add %s to group %s - unable to process group", user_name, group_name);
                   else
-                    com_err(whoami, 0, "Couldn't remove %s from group %s - unable to process group", user_name, group_name);
+                    com_err(whoami, 0, "Unable to remove %s from group %s - unable to process group", user_name, group_name);
                   return;
                 }
             }
@@ -1354,7 +1375,7 @@ void do_member(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
       if (rc = member_remove(ldap_handle, dn_path, group_name,
                              group_ou, group_membership, ptr[LM_MEMBER], 
                              pUserOu, moira_list_id))
-          com_err(whoami, 0, "couldn't remove %s from group %s", user_name, group_name);
+          com_err(whoami, 0, "Unable to remove %s from group %s", user_name, group_name);
       return;
     }
 
@@ -1407,14 +1428,14 @@ void do_member(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
                             call_args))
             {
               moira_disconnect();
-              com_err(whoami, 0, "couldn't create user %s : %s",
+              com_err(whoami, 0, "Unable to create user %s : %s",
                       ptr[LM_MEMBER], error_message(rc));
               return;
             }
           if (callback_rc)
             {
               moira_disconnect();
-              com_err(whoami, 0, "couldn't create user %s", ptr[LM_MEMBER]);
+              com_err(whoami, 0, "Unable to create user %s", ptr[LM_MEMBER]);
               return;
             }
           sleep(1);
@@ -1436,7 +1457,7 @@ void do_member(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
                   group_ou, group_membership, ptr[LM_MEMBER],
                   pUserOu, moira_list_id))
     {
-      com_err(whoami, 0, "couldn't add %s to group %s", user_name, group_name);
+      com_err(whoami, 0, "Unable to add %s to group %s", user_name, group_name);
     }
   return;
 }
@@ -1469,15 +1490,23 @@ void do_user(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
   if ((beforec == 0) && (afterc == 0)) /*this case should never happen */
     return;
 
-  if ((beforec == 0) && (afterc != 0)) /*this case only happens when the account*/
-    return;                            /*account is first created but not usable*/
-
+  if ((beforec == 0) && (afterc != 0)) 
+    {
+      /*this case only happens when the account*/
+      /*account is first created but not usable*/
+      com_err(whoami, 0, "Unable to process user %s because the user account is not yet usable", after[U_NAME]);
+      return;
+    }
   if ((beforec != 0) && (afterc == 0)) /*this case only happens when the account*/
     {                                  /*is expunged*/
       if (atoi(before[U_STATE]) == 0)
         {
           com_err(whoami, 0, "expunging user %s from AD", before[U_NAME]);
           user_delete(ldap_handle, dn_path, before[U_NAME], before_user_id);
+        }
+      else
+        {
+          com_err(whoami, 0, "Unable to process because user %s has been previously expungeded", before[U_NAME]);
         }
       return;
     }
@@ -1509,14 +1538,14 @@ void do_user(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
                         call_args))
         {
           moira_disconnect();
-          com_err(whoami, 0, "couldn't create user %s : %s",
+          com_err(whoami, 0, "Unable to create user %s : %s",
                   after[U_NAME], error_message(rc));
           return;
         }
       if (callback_rc)
         {
           moira_disconnect();
-          com_err(whoami, 0, "couldn't create user %s", after[U_NAME]);
+          com_err(whoami, 0, "Unable to create user %s", after[U_NAME]);
           return;
         }
       sleep(1);
@@ -2056,7 +2085,6 @@ int group_rename(LDAP *ldap_handle, char *dn_path,
   char      *attr_array[3];
   char      *mitMoiraId_v[] = {NULL, NULL};
   char      *name_v[] = {NULL, NULL};
-  char      *desc_v[] = {NULL, NULL};
   char      *samAccountName_v[] = {NULL, NULL};
   char      *groupTypeControl_v[] = {NULL, NULL};
   u_int     groupTypeControl = ADS_GROUP_TYPE_GLOBAL_GROUP;
@@ -2069,12 +2097,12 @@ int group_rename(LDAP *ldap_handle, char *dn_path,
 
   if (!check_string(before_group_name))
     {
-      com_err(whoami, 0, "invalid LDAP list name %s", before_group_name);
+      com_err(whoami, 0, "Unable to process invalid LDAP list name %s", before_group_name);
       return(AD_INVALID_NAME);
     }
   if (!check_string(after_group_name))
     {
-      com_err(whoami, 0, "invalid LDAP list name %s", after_group_name);
+      com_err(whoami, 0, "Unable to process invalid LDAP list name %s", after_group_name);
       return(AD_INVALID_NAME);
     }
 
@@ -2093,7 +2121,7 @@ int group_rename(LDAP *ldap_handle, char *dn_path,
   if (group_count != 1)
     {
       com_err(whoami, 0,
-              "multiple groups with MoiraId = %s exist in the AD",
+              "Unable to process multiple groups with MoiraId = %s exist in the AD",
               MoiraId);
       return(AD_MULTIPLE_GROUPS_FOUND);
     }
@@ -2107,7 +2135,7 @@ int group_rename(LDAP *ldap_handle, char *dn_path,
   if ((rc = linklist_build(ldap_handle, dn_path, filter, attr_array, 
                            &group_base, &group_count, LDAP_SCOPE_SUBTREE)) != 0)
     {
-      com_err(whoami, 0, "LDAP server unable to get list %s dn : %s",
+      com_err(whoami, 0, "Unable to get list %s dn : %s",
               after_group_name, ldap_err2string(rc));
       return(rc);
     }
@@ -2129,7 +2157,7 @@ int group_rename(LDAP *ldap_handle, char *dn_path,
   if ((rc = ldap_rename_s(ldap_handle, old_dn, new_dn, new_dn_path,
                           TRUE, NULL, NULL)) != LDAP_SUCCESS)
     {
-      com_err(whoami, 0, "Couldn't rename list from %s to %s : %s",
+      com_err(whoami, 0, "Unable to rename list from %s to %s : %s",
               before_group_name, after_group_name, ldap_err2string(rc));
       return(rc);
     }
@@ -2141,7 +2169,7 @@ int group_rename(LDAP *ldap_handle, char *dn_path,
     }
   else
     {
-      com_err(whoami, 0, "Couldn't rename list from %s to %s : sAMAccountName not found",
+      com_err(whoami, 0, "Unable to rename list from %s to %s : sAMAccountName not found",
               before_group_name, after_group_name);
       return(rc);
     }
@@ -2150,21 +2178,19 @@ int group_rename(LDAP *ldap_handle, char *dn_path,
     groupTypeControl |= ADS_GROUP_TYPE_SECURITY_ENABLED;
   sprintf(groupTypeControlStr, "%ld", groupTypeControl);
   groupTypeControl_v[0] = groupTypeControlStr;
+  mitMoiraId_v[0] = MoiraId;
+
+  sprintf(new_dn, "cn=%s,%s,%s", after_group_name, after_group_ou, dn_path);
+  rc = attribute_update(ldap_handle, new_dn, after_desc, "description", after_group_name);
   n = 0;
   ADD_ATTR("samAccountName", samAccountName_v, LDAP_MOD_REPLACE);
   ADD_ATTR("displayName", name_v, LDAP_MOD_REPLACE);
-  desc_v[0] = after_desc;
-  if (strlen(after_desc) == 0)
-    desc_v[0] = NULL;
-  ADD_ATTR("description", desc_v, LDAP_MOD_REPLACE);
-  mitMoiraId_v[0] = MoiraId;
   ADD_ATTR("mitMoiraId", mitMoiraId_v, LDAP_MOD_REPLACE);
   ADD_ATTR("groupType", groupTypeControl_v, LDAP_MOD_REPLACE);
   mods[n] = NULL;
-  sprintf(new_dn, "cn=%s,%s,%s", after_group_name, after_group_ou, dn_path);
   if ((rc = ldap_modify_s(ldap_handle, new_dn, mods)) != LDAP_SUCCESS)
     {
-      com_err(whoami, 0, "After renaming, couldn't modify list data for %s : %s",
+      com_err(whoami, 0, "Unable to modify list data for %s after renaming: %s",
               after_group_name, ldap_err2string(rc));
     }
   for (i = 0; i < n; i++)
@@ -2209,7 +2235,7 @@ int group_create(int ac, char **av, void *ptr)
 
   if (!check_string(av[L_NAME]))
     {
-      com_err(whoami, 0, "invalid LDAP list name %s", av[L_NAME]);
+      com_err(whoami, 0, "Unable to process invalid LDAP list name %s", av[L_NAME]);
       return(AD_INVALID_NAME);
     }
 
@@ -2276,18 +2302,10 @@ int group_create(int ac, char **av, void *ptr)
     }
   if ((rc == LDAP_ALREADY_EXISTS) || (updateGroup))
     {
+      rc = attribute_update((LDAP *)call_args[0], new_dn, av[L_DESC], "description", av[L_NAME]);
+      sprintf(info, "The Administrator of this list is: %s", av[L_ACE_NAME]);
+      rc = attribute_update((LDAP *)call_args[0], new_dn, info, "info", av[L_NAME]);
       n = 0;
-      desc_v[0] = NULL;
-      if (strlen(av[L_DESC]) != 0)
-        desc_v[0] = av[L_DESC];
-      ADD_ATTR("description", desc_v, LDAP_MOD_REPLACE);
-      info_v[0] = NULL;
-      if (strlen(av[L_ACE_NAME]) != 0)
-        {
-          sprintf(info, "The Administrator of this list is: %s", av[L_ACE_NAME]);
-          info_v[0] = info;
-        }
-      ADD_ATTR("info", info_v, LDAP_MOD_REPLACE);
       if (strlen(call_args[5]) != 0)
         {
           mitMoiraId_v[0] = call_args[5];
@@ -2299,15 +2317,19 @@ int group_create(int ac, char **av, void *ptr)
           ADD_ATTR("member", member_v, LDAP_MOD_REPLACE);
         }
       mods[n] = NULL;
-      rc = ldap_modify_s((LDAP *)call_args[0], new_dn, mods);
-      for (i = 0; i < n; i++)
-        free(mods[i]);
-      if (rc != LDAP_SUCCESS)
+      rc = LDAP_SUCCESS;
+      if (n != 0)
         {
-          com_err(whoami, 0, "Unable to update list %s in AD : %s",
-                  av[L_NAME], ldap_err2string(rc));
-          callback_rc = rc;
-          return(rc);
+          rc = ldap_modify_s((LDAP *)call_args[0], new_dn, mods);
+          for (i = 0; i < n; i++)
+              free(mods[i]);
+          if (rc != LDAP_SUCCESS)
+            {
+              com_err(whoami, 0, "Unable to update list %s in AD : %s",
+                      av[L_NAME], ldap_err2string(rc));
+              callback_rc = rc;
+              return(rc);
+            }
         }
     }
 
@@ -2476,7 +2498,7 @@ int ProcessGroupSecurity(LDAP *ldap_handle, char *dn_path, char *TargetGroupName
         return(1);
       if ((rc != 0) || (group_count != 1))
         {
-          com_err(whoami, 0, "Couldn't process user security template: %s", "UserTemplate");
+          com_err(whoami, 0, "Unable to process user security template: %s", "UserTemplate");
           AceSidCount = 0;
         }
       else
@@ -2527,7 +2549,7 @@ int ProcessGroupSecurity(LDAP *ldap_handle, char *dn_path, char *TargetGroupName
   if (group_count != 1)
     {
       linklist_free(group_base);
-      com_err(whoami, 0, "Couldn't process group security template: %s - security not set", GroupSecurityTemplate);
+      com_err(whoami, 0, "Unable to process group security template: %s - security not set", GroupSecurityTemplate);
       return(1);
     }
   strcpy(TemplateDn, group_base->dn);
@@ -2551,13 +2573,13 @@ int ProcessGroupSecurity(LDAP *ldap_handle, char *dn_path, char *TargetGroupName
 
   if ((psMsg = ldap_first_entry(ldap_handle, psMsg)) == NULL)
     {
-      com_err(whoami, 0, "Couldn't find group security template: %s - security not set", GroupSecurityTemplate);
+      com_err(whoami, 0, "Unable to find group security template: %s - security not set", GroupSecurityTemplate);
       return(1);
     }
   ppsValues = ldap_get_values_len(ldap_handle, psMsg, "ntSecurityDescriptor");
   if (ppsValues == NULL)
     {
-      com_err(whoami, 0, "Couldn't find group security descriptor for group %s - security not set", GroupSecurityTemplate);
+      com_err(whoami, 0, "Unable to find group security descriptor for group %s - security not set", GroupSecurityTemplate);
       return(1);
     }
 
@@ -2587,7 +2609,7 @@ int ProcessGroupSecurity(LDAP *ldap_handle, char *dn_path, char *TargetGroupName
   ldap_msgfree(psMsg);
   if (rc != LDAP_SUCCESS)
     {
-      com_err(whoami, 0, "Couldn't set security settings for group %s : %s",
+      com_err(whoami, 0, "Unable to set security settings for group %s : %s",
               TargetGroupName, ldap_err2string(rc));
       if (AceSidCount != 0)
         {
@@ -2603,7 +2625,6 @@ int ProcessGroupSecurity(LDAP *ldap_handle, char *dn_path, char *TargetGroupName
         }
       return(rc);
     }
-  com_err(whoami, 0, "Security set for group %s.", TargetGroupName);
   return(rc);
 }
 
@@ -2618,7 +2639,7 @@ int group_delete(LDAP *ldap_handle, char *dn_path, char *group_name,
 
   if (!check_string(group_name))
     {
-      com_err(whoami, 0, "invalid LDAP list name %s", group_name);
+      com_err(whoami, 0, "Unable to process invalid LDAP list name %s", group_name);
       return(AD_INVALID_NAME);
     }
 
@@ -2770,7 +2791,7 @@ int member_remove(LDAP *ldap_handle, char *dn_path, char *group_name,
 
   if (group_count != 1)
     {
-      com_err(whoami, 0, "LDAP server unable to find list %s in AD",
+      com_err(whoami, 0, "Unable to find list %s in AD",
               group_name);
       linklist_free(group_base);
       group_base = NULL;
@@ -2796,7 +2817,7 @@ int member_remove(LDAP *ldap_handle, char *dn_path, char *group_name,
     rc = LDAP_SUCCESS;
   if (rc != LDAP_SUCCESS)
     {
-      com_err(whoami, 0, "LDAP server unable to modify list %s members : %s",
+      com_err(whoami, 0, "Unable to modify list %s members : %s",
               group_name, ldap_err2string(rc));
       goto cleanup;
     }
@@ -2838,7 +2859,7 @@ int member_add(LDAP *ldap_handle, char *dn_path, char *group_name,
       linklist_free(group_base);
       group_base = NULL;
       group_count = 0;
-      com_err(whoami, 0, "LDAP server unable to find list %s in AD",
+      com_err(whoami, 0, "Unable to find list %s in AD",
               group_name);
       return(AD_MULTIPLE_GROUPS_FOUND);
     }
@@ -2867,7 +2888,7 @@ int member_add(LDAP *ldap_handle, char *dn_path, char *group_name,
     free(mods[i]);
   if (rc != LDAP_SUCCESS)
     {
-      com_err(whoami, 0, "LDAP server unable to add %s to list %s as a member : %s",
+      com_err(whoami, 0, "Unable to add %s to list %s as a member : %s",
               user_name, group_name, ldap_err2string(rc));
     }
 
@@ -2894,7 +2915,7 @@ int contact_create(LDAP *ld, char *bind_path, char *user, char *group_ou)
 
   if (!check_string(user))
     {
-      com_err(whoami, 0, "invalid LDAP name %s", user);
+      com_err(whoami, 0, "Unable to process invalid LDAP name %s", user);
       return(AD_INVALID_NAME);
     }
   strcpy(contact_name, user);
@@ -2936,7 +2957,7 @@ int contact_create(LDAP *ld, char *bind_path, char *user, char *group_ou)
     }
   if ((rc != LDAP_SUCCESS) && (rc != LDAP_ALREADY_EXISTS))
     {
-      com_err(whoami, 0, "could not create contact %s : %s",
+      com_err(whoami, 0, "Unable to create contact %s : %s",
               user, ldap_err2string(rc));
       return(rc);
     }
@@ -2970,7 +2991,7 @@ int user_update(LDAP *ldap_handle, char *dn_path, char *user_name,
 
   if (!check_string(user_name))
     {
-      com_err(whoami, 0, "invalid LDAP user name %s", user_name);
+      com_err(whoami, 0, "Unable to process invalid LDAP user name %s", user_name);
       return(AD_INVALID_NAME);
     }
 
@@ -2985,7 +3006,7 @@ int user_update(LDAP *ldap_handle, char *dn_path, char *user_name,
       if ((rc = linklist_build(ldap_handle, dn_path, filter, attr_array, 
                                &group_base, &group_count, LDAP_SCOPE_SUBTREE)) != 0)
         {
-          com_err(whoami, 0, "LDAP server couldn't process user %s : %s",
+          com_err(whoami, 0, "Unable to process user %s : %s",
                   user_name, ldap_err2string(rc));
           return(rc);
         }
@@ -3002,7 +3023,7 @@ int user_update(LDAP *ldap_handle, char *dn_path, char *user_name,
       if ((rc = linklist_build(ldap_handle, temp, filter, attr_array, 
                                &group_base, &group_count, LDAP_SCOPE_SUBTREE)) != 0)
         {
-          com_err(whoami, 0, "LDAP server couldn't process user %s : %s",
+          com_err(whoami, 0, "Unable to process user %s : %s",
                   user_name, ldap_err2string(rc));
           return(rc);
         }
@@ -3010,7 +3031,7 @@ int user_update(LDAP *ldap_handle, char *dn_path, char *user_name,
 
   if (group_count != 1)
     {
-      com_err(whoami, 0, "LDAP server unable to find user %s in AD",
+      com_err(whoami, 0, "Unable to find user %s in AD",
               user_name);
       linklist_free(group_base);
       return(AD_NO_USER_FOUND);
@@ -3019,11 +3040,12 @@ int user_update(LDAP *ldap_handle, char *dn_path, char *user_name,
 
   linklist_free(group_base);
   group_count = 0;
+
+  rc = attribute_update(ldap_handle, distinguished_name, MitId, "employeeID", user_name);
+  rc = attribute_update(ldap_handle, distinguished_name, Uid, "uid", user_name);
+  rc = attribute_update(ldap_handle, distinguished_name, MoiraId, "mitMoiraId", user_name);
+
   n = 0;
-  uid_v[0] = Uid;
-  if (strlen(Uid) == 0)
-    uid_v[0] = NULL;
-  ADD_ATTR("uid", uid_v, LDAP_MOD_REPLACE);
   if (!UseSFU30)
     {
       ADD_ATTR("uidNumber", uid_v, LDAP_MOD_REPLACE);
@@ -3032,14 +3054,8 @@ int user_update(LDAP *ldap_handle, char *dn_path, char *user_name,
     {
       ADD_ATTR("msSFU30UidNumber", uid_v, LDAP_MOD_REPLACE);
     }
-  mitid_v[0] = MitId;
-  if (strlen(MitId) == 0)
-    mitid_v[0] = NULL;
-  ADD_ATTR("employeeID", mitid_v, LDAP_MOD_REPLACE);
-  mitMoiraId_v[0] = MoiraId;
-  if (strlen(MoiraId) == 0)
-    mitMoiraId_v[0] = NULL;
-  ADD_ATTR("mitMoiraId", mitMoiraId_v, LDAP_MOD_REPLACE);
+
+
   if ((State != US_NO_PASSWD) && (State != US_REGISTERED))
     userAccountControl |= UF_ACCOUNTDISABLE;
   sprintf(userAccountControlStr, "%ld", userAccountControl);
@@ -3059,7 +3075,7 @@ int user_update(LDAP *ldap_handle, char *dn_path, char *user_name,
             rc = ldap_modify_s(ldap_handle, distinguished_name, mods);
         if (rc)
         {
-            com_err(whoami, 0, "Couldn't modify user data for %s : %s",
+            com_err(whoami, 0, "Unable to modify user data for %s : %s",
                 user_name, ldap_err2string(rc));
         }
     }
@@ -3086,12 +3102,12 @@ int user_rename(LDAP *ldap_handle, char *dn_path, char *before_user_name,
 
   if (!check_string(before_user_name))
     {
-      com_err(whoami, 0, "invalid LDAP user name %s", before_user_name);
+      com_err(whoami, 0, "Unable to process invalid LDAP user name %s", before_user_name);
       return(AD_INVALID_NAME);
     }
   if (!check_string(user_name))
     {
-      com_err(whoami, 0, "invalid LDAP user name %s", user_name);
+      com_err(whoami, 0, "Unable to process invalid LDAP user name %s", user_name);
       return(AD_INVALID_NAME);
     }
 
@@ -3101,7 +3117,7 @@ int user_rename(LDAP *ldap_handle, char *dn_path, char *before_user_name,
   if ((rc = ldap_rename_s(ldap_handle, old_dn, new_dn, NULL, TRUE, 
                            NULL, NULL)) != LDAP_SUCCESS)
     {
-      com_err(whoami, 0, "Couldn't rename user from %s to %s : %s",
+      com_err(whoami, 0, "Unable to rename user from %s to %s : %s",
               before_user_name, user_name, ldap_err2string(rc));
       return(rc);
     }
@@ -3122,7 +3138,7 @@ int user_rename(LDAP *ldap_handle, char *dn_path, char *before_user_name,
   sprintf(new_dn, "cn=%s,%s,%s", user_name, user_ou, dn_path);
   if ((rc = ldap_modify_s(ldap_handle, new_dn, mods)) != LDAP_SUCCESS)
     {
-      com_err(whoami, 0, "After renaming, couldn't modify user data for %s : %s",
+      com_err(whoami, 0, "Unable to modify user data for %s after renaming : %s",
               user_name, ldap_err2string(rc));
     }
   for (i = 0; i < n; i++)
@@ -3150,13 +3166,13 @@ int filesys_process(LDAP *ldap_handle, char *dn_path, char *fs_name,
 
   if (!check_string(fs_name))
     {
-      com_err(whoami, 0, "invalid filesys name %s", fs_name);
+      com_err(whoami, 0, "Unable to process invalid filesys name %s", fs_name);
       return(AD_INVALID_NAME);
     }
 
   if (strcmp(fs_type, "AFS"))
     {
-      com_err(whoami, 0, "invalid filesys type %s", fs_type);
+      com_err(whoami, 0, "Unable to process invalid filesys type %s", fs_type);
       return(AD_INVALID_FILESYS);
     }
 
@@ -3168,7 +3184,7 @@ int filesys_process(LDAP *ldap_handle, char *dn_path, char *fs_name,
   if ((rc = linklist_build(ldap_handle, dn_path, filter, attr_array, 
                            &group_base, &group_count, LDAP_SCOPE_SUBTREE)) != 0)
     {
-      com_err(whoami, 0, "LDAP server couldn't process filesys %s : %s",
+      com_err(whoami, 0, "Unable to process filesys %s : %s",
               fs_name, ldap_err2string(rc));
       return(rc);
     }
@@ -3176,7 +3192,7 @@ int filesys_process(LDAP *ldap_handle, char *dn_path, char *fs_name,
   if (group_count != 1)
     {
       linklist_free(group_base);
-      com_err(whoami, 0, "LDAP server unable to find user %s in AD",
+      com_err(whoami, 0, "Unable to find user %s in AD",
               fs_name);
       return(LDAP_NO_SUCH_OBJECT);
     }
@@ -3210,7 +3226,7 @@ int filesys_process(LDAP *ldap_handle, char *dn_path, char *fs_name,
   rc = ldap_modify_s(ldap_handle, distinguished_name, mods);
   if (rc != LDAP_SUCCESS)
     {
-      com_err(whoami, 0, "Couldn't modify user data for filesys %s : %s",
+      com_err(whoami, 0, "Unable to modify user data for filesys %s : %s",
               fs_name, ldap_err2string(rc));
     }
   for (i = 0; i < n; i++)
@@ -3263,7 +3279,7 @@ int user_create(int ac, char **av, void *ptr)
   if (!check_string(av[U_NAME]))
     {
       callback_rc = AD_INVALID_NAME;
-      com_err(whoami, 0, "invalid LDAP user name %s", av[U_NAME]);
+      com_err(whoami, 0, "Unable to process invalid LDAP user name %s", av[U_NAME]);
       return(AD_INVALID_NAME);
     }
 
@@ -3341,7 +3357,7 @@ int user_create(int ac, char **av, void *ptr)
     free(mods[i]);
   if ((rc != LDAP_SUCCESS) && (rc != LDAP_ALREADY_EXISTS))
     {
-      com_err(whoami, 0, "could not create user %s : %s",
+      com_err(whoami, 0, "Unable to create user %s : %s",
               user_name, ldap_err2string(rc));
       callback_rc = rc;
       return(rc);
@@ -3350,7 +3366,7 @@ int user_create(int ac, char **av, void *ptr)
     {
       if ((rc = set_password(sam_name, "", ldap_domain)) != 0)
         {
-          com_err(whoami, 0, "Couldn't set password for user %s : %ld",
+          com_err(whoami, 0, "Unable to set password for user %s : %ld",
                   user_name, rc);
         }
     }
@@ -3417,7 +3433,7 @@ int user_change_status(LDAP *ldap_handle, char *dn_path,
 
   if (!check_string(user_name))
     {
-      com_err(whoami, 0, "invalid LDAP user name %s", user_name);
+      com_err(whoami, 0, "Unable to process invalid LDAP user name %s", user_name);
       return(AD_INVALID_NAME);
     }
 
@@ -3432,7 +3448,7 @@ int user_change_status(LDAP *ldap_handle, char *dn_path,
       if ((rc = linklist_build(ldap_handle, dn_path, filter, attr_array, 
                                &group_base, &group_count, LDAP_SCOPE_SUBTREE)) != 0)
         {
-          com_err(whoami, 0, "LDAP server couldn't process user %s : %s",
+          com_err(whoami, 0, "Unable to process user %s : %s",
                   user_name, ldap_err2string(rc));
           return(rc);
         }
@@ -3448,7 +3464,7 @@ int user_change_status(LDAP *ldap_handle, char *dn_path,
       if ((rc = linklist_build(ldap_handle, dn_path, filter, attr_array, 
                                &group_base, &group_count, LDAP_SCOPE_SUBTREE)) != 0)
         {
-          com_err(whoami, 0, "LDAP server couldn't process user %s : %s",
+          com_err(whoami, 0, "Unable to process user %s : %s",
                   user_name, ldap_err2string(rc));
           return(rc);
         }
@@ -3457,7 +3473,7 @@ int user_change_status(LDAP *ldap_handle, char *dn_path,
   if (group_count != 1)
     {
       linklist_free(group_base);
-      com_err(whoami, 0, "LDAP server unable to find user %s in AD",
+      com_err(whoami, 0, "Unable to find user %s in AD",
               user_name);
       return(LDAP_NO_SUCH_OBJECT);
     }
@@ -3489,7 +3505,7 @@ int user_change_status(LDAP *ldap_handle, char *dn_path,
   free_values(modvalues);
   if (rc != LDAP_SUCCESS)
     {
-      com_err(whoami, 0, "LDAP server could not change status of user %s : %s",
+      com_err(whoami, 0, "Unable to change status of user %s : %s",
               user_name, ldap_err2string(rc));
     }
 cleanup:
@@ -3522,7 +3538,7 @@ int user_delete(LDAP *ldap_handle, char *dn_path,
       if ((rc = linklist_build(ldap_handle, dn_path, filter, attr_array, 
                                &group_base, &group_count, LDAP_SCOPE_SUBTREE)) != 0)
         {
-          com_err(whoami, 0, "LDAP server couldn't process user %s : %s",
+          com_err(whoami, 0, "Unable to process user %s : %s",
                   user_name, ldap_err2string(rc));
           goto cleanup;
         }
@@ -3538,7 +3554,7 @@ int user_delete(LDAP *ldap_handle, char *dn_path,
       if ((rc = linklist_build(ldap_handle, dn_path, filter, attr_array, 
                                &group_base, &group_count, LDAP_SCOPE_SUBTREE)) != 0)
         {
-          com_err(whoami, 0, "LDAP server couldn't process user %s : %s",
+          com_err(whoami, 0, "Unable to process user %s : %s",
                   user_name, ldap_err2string(rc));
           goto cleanup;
         }
@@ -3546,7 +3562,7 @@ int user_delete(LDAP *ldap_handle, char *dn_path,
 
   if (group_count != 1)
     {
-      com_err(whoami, 0, "LDAP server unable to find user %s in AD",
+      com_err(whoami, 0, "Unable to find user %s in AD",
               user_name);
       goto cleanup;
     }
@@ -3554,7 +3570,7 @@ int user_delete(LDAP *ldap_handle, char *dn_path,
   strcpy(distinguished_name, group_base->dn);
   if (rc = ldap_delete_s(ldap_handle, distinguished_name))
     {
-      com_err(whoami, 0, "LDAP server couldn't process user %s : %s",
+      com_err(whoami, 0, "Unable to process user %s : %s",
               user_name, ldap_err2string(rc));
     }
 
@@ -3832,7 +3848,7 @@ int checkADname(LDAP *ldap_handle, char *dn_path, char *Name)
   if ((rc = linklist_build(ldap_handle, dn_path, filter, attr_array, 
                            &group_base, &group_count, LDAP_SCOPE_SUBTREE)) != 0)
     {
-      com_err(whoami, 0, "LDAP server couldn't process ACE name %s : %s",
+      com_err(whoami, 0, "Unable to process ACE name %s : %s",
               Name, ldap_err2string(rc));
       return(1);
     }
@@ -3877,12 +3893,12 @@ int ProcessAce(LDAP *ldap_handle, char *dn_path, char *Name, char *Type, int Upd
       callback_rc = 0;
       if (rc = mr_query("get_list_info", 1, av, GetAceInfo, AceInfo))
         {
-          com_err(whoami, 0, "Couldn't get ACE info for list %s : %s", GroupName, error_message(rc));
+          com_err(whoami, 0, "Unable to get ACE info for list %s : %s", GroupName, error_message(rc));
           return(1);
         }
       if (callback_rc)
         {
-          com_err(whoami, 0, "Couldn't get ACE info for list %s", GroupName);
+          com_err(whoami, 0, "Unable to get ACE info for list %s", GroupName);
           return(1);
         }
       if ((strcasecmp(AceType, "USER")) && (strcasecmp(AceType, "LIST")))
@@ -3913,12 +3929,12 @@ int ProcessAce(LDAP *ldap_handle, char *dn_path, char *Name, char *Type, int Upd
           callback_rc = 0;
           if (rc = mr_query("get_user_account_by_login", 1, av, user_create, call_args))
             {
-              com_err(whoami, 0, "Couldn't process user ACE %s for group %s.", Name, AceName);
+              com_err(whoami, 0, "Unable to process user ACE %s for group %s.", AceName, Name);
               return(1);
             }
           if (callback_rc)
             {
-              com_err(whoami, 0, "Couldn't process user Ace %s for group %s", Name, AceName);
+              com_err(whoami, 0, "Unable to process user Ace %s for group %s", AceName, Name);
               return(1);
             }
           if (sid_base != NULL)
@@ -3963,13 +3979,13 @@ int make_new_group(LDAP *ldap_handle, char *dn_path, char *MoiraId,
   if (rc = mr_query("get_list_info", 1, av, group_create, call_args))
     {
       moira_disconnect();
-      com_err(whoami, 0, "Couldn't create list %s : %s", group_name, error_message(rc));
+      com_err(whoami, 0, "Unable to create list %s : %s", group_name, error_message(rc));
       return(rc);
     }
   if (callback_rc)
     {
       moira_disconnect();
-      com_err(whoami, 0, "Couldn't create list %s", group_name);
+      com_err(whoami, 0, "Unable to create list %s", group_name);
       return(callback_rc);
     }
 
@@ -4003,7 +4019,7 @@ int populate_group(LDAP *ldap_handle, char *dn_path, char *group_name,
   if (rc = mr_query("get_end_members_of_list", 1, av,
                     member_list_build, call_args))
     {
-      com_err(whoami, 0, "Couldn't populate list %s : %s", 
+      com_err(whoami, 0, "Unable to populate list %s : %s", 
               group_name, error_message(rc));
       return(3);
     }
@@ -4150,7 +4166,7 @@ int process_group(LDAP *ldap_handle, char *dn_path, char *MoiraId,
   if ((rc = linklist_build(ldap_handle, dn_path, filter, attr_array, 
                            &group_base, &group_count, LDAP_SCOPE_SUBTREE)) != 0)
     {
-      com_err(whoami, 0, "LDAP server unable to get list info with MoiraId = %s: %s",
+      com_err(whoami, 0, "Unable to get list info with MoiraId = %s: %s",
                MoiraId, ldap_err2string(rc));
       return(rc);
     }
@@ -4178,7 +4194,7 @@ int process_group(LDAP *ldap_handle, char *dn_path, char *MoiraId,
   if ((rc = linklist_build(ldap_handle, dn_path, filter, attr_array, 
                            &group_base, &group_count, LDAP_SCOPE_SUBTREE)) != 0)
     {
-      com_err(whoami, 0, "LDAP server unable to get list name with MoiraId = %s: %s",
+      com_err(whoami, 0, "Unable to get list name with MoiraId = %s: %s",
               MoiraId, ldap_err2string(rc));
       return(rc);
     }
@@ -4192,7 +4208,7 @@ int process_group(LDAP *ldap_handle, char *dn_path, char *MoiraId,
                            &group_base, &group_count, LDAP_SCOPE_SUBTREE)) != 0)
     {
       com_err(whoami, 0, 
-              "LDAP server unable to get list description with MoiraId = %s: %s",
+              "Unable to get list description with MoiraId = %s: %s",
               MoiraId, ldap_err2string(rc));
       return(rc);
     }
@@ -4276,7 +4292,7 @@ int ad_get_group(LDAP *ldap_handle, char *dn_path,
       if ((rc = linklist_build(ldap_handle, dn_path, filter, attr_array, 
                                linklist_base, linklist_count, LDAP_SCOPE_SUBTREE)) != 0)
         {
-          com_err(whoami, 0, "LDAP server unable to get list info with MoiraId = %s: %s",
+          com_err(whoami, 0, "Unable to get list info with MoiraId = %s: %s",
                   MoiraId, ldap_err2string(rc));
          return(rc);
        }
@@ -4298,7 +4314,7 @@ int ad_get_group(LDAP *ldap_handle, char *dn_path,
       if ((rc = linklist_build(ldap_handle, dn_path, filter, attr_array, 
                                linklist_base, linklist_count, LDAP_SCOPE_SUBTREE)) != 0)
         {
-          com_err(whoami, 0, "LDAP server unable to get list info with MoiraId = %s: %s",
+          com_err(whoami, 0, "Unable to get list info with MoiraId = %s: %s",
                   MoiraId, ldap_err2string(rc));
          return(rc);
        }
@@ -4334,7 +4350,7 @@ int ad_get_group(LDAP *ldap_handle, char *dn_path,
   if ((rc = linklist_build(ldap_handle, dn_path, filter, attr_array, 
                            linklist_base, linklist_count, LDAP_SCOPE_SUBTREE)) != 0)
     {
-      com_err(whoami, 0, "LDAP server unable to get list info with MoiraId = %s: %s",
+      com_err(whoami, 0, "Unable to get list info with MoiraId = %s: %s",
               MoiraId, ldap_err2string(rc));
       return(rc);
     }
@@ -4368,7 +4384,7 @@ int check_user(LDAP *ldap_handle, char *dn_path, char *UserName, char *MoiraId)
       if ((rc = linklist_build(ldap_handle, dn_path, filter, attr_array, 
                                &group_base, &group_count, LDAP_SCOPE_SUBTREE)) != 0)
         {
-          com_err(whoami, 0, "LDAP server couldn't process user %s : %s",
+          com_err(whoami, 0, "Unable to process user %s : %s",
                   UserName, ldap_err2string(rc));
           return(rc);
         }
@@ -4396,7 +4412,7 @@ int check_user(LDAP *ldap_handle, char *dn_path, char *UserName, char *MoiraId)
       if ((rc = linklist_build(ldap_handle, dn_path, filter, attr_array, 
                                &group_base, &group_count, LDAP_SCOPE_SUBTREE)) != 0)
         {
-          com_err(whoami, 0, "LDAP server couldn't process user %s : %s",
+          com_err(whoami, 0, "Unable to process user %s : %s",
                   UserName, ldap_err2string(rc));
           return(rc);
         }
@@ -4530,7 +4546,7 @@ int container_rename(LDAP *ldap_handle, char *dn_path, int beforec, char **befor
   container_get_name(after[CONTAINER_NAME], cName);
   if (!check_container_name(cName))
     {
-      com_err(whoami, 0, "invalid LDAP container name %s", cName);
+      com_err(whoami, 0, "Unable to process invalid LDAP container name %s", cName);
       return(AD_INVALID_NAME);
     }
 
@@ -4566,7 +4582,7 @@ int container_rename(LDAP *ldap_handle, char *dn_path, int beforec, char **befor
   if ((rc = ldap_rename_s(ldap_handle, distinguishedName, new_cn, new_dn_path,
                           TRUE, NULL, NULL)) != LDAP_SUCCESS)
     {
-      com_err(whoami, 0, "couldn't rename container from %s to %s : %s",
+      com_err(whoami, 0, "Unable to rename container from %s to %s : %s",
               before[CONTAINER_NAME], after[CONTAINER_NAME], ldap_err2string(rc));
       return(rc);
     }
@@ -4592,7 +4608,7 @@ int container_delete(LDAP *ldap_handle, char *dn_path, int count, char **av)
       if (rc == LDAP_NOT_ALLOWED_ON_NONLEAF)
         container_move_objects(ldap_handle, dn_path, distinguishedName);
       else
-        com_err(whoami, 0, "unable to delete container %s from AD : %s",
+        com_err(whoami, 0, "Unable to delete container %s from AD : %s",
                 av[CONTAINER_NAME], ldap_err2string(rc));
     }
   return(rc);
@@ -4631,13 +4647,13 @@ int container_create(LDAP *ldap_handle, char *dn_path, int count, char **av)
 
   if ((strlen(cName) == 0) || (strlen(dName) == 0))
     {
-      com_err(whoami, 0, "invalid LDAP container name %s", cName);
+      com_err(whoami, 0, "Unable to process invalid LDAP container name %s", cName);
       return(AD_INVALID_NAME);
     }
 
   if (!check_container_name(cName))
     {
-      com_err(whoami, 0, "invalid LDAP container name %s", cName);
+      com_err(whoami, 0, "Unable to process invalid LDAP container name %s", cName);
       return(AD_INVALID_NAME);
     }
 
@@ -4708,7 +4724,7 @@ int container_create(LDAP *ldap_handle, char *dn_path, int count, char **av)
     free(mods[i]);
   if ((rc != LDAP_SUCCESS) && (rc != LDAP_ALREADY_EXISTS))
     {
-      com_err(whoami, 0, "couldn't create container %s : %s",
+      com_err(whoami, 0, "Unable to create container %s : %s",
               cName, ldap_err2string(rc));
       return(rc);
     }
@@ -4759,13 +4775,13 @@ int container_get_distinguishedName(LDAP *ldap_handle, char *dn_path, char *dist
 
   if (strlen(dName) == 0)
     {
-      com_err(whoami, 0, "invalid LDAP container name %s", av[CONTAINER_NAME]);
+      com_err(whoami, 0, "Unable to process invalid LDAP container name %s", av[CONTAINER_NAME]);
       return(AD_INVALID_NAME);
     }
 
   if (!check_container_name(cName))
     {
-      com_err(whoami, 0, "invalid LDAP container name %s", cName);
+      com_err(whoami, 0, "Unable to process invalid LDAP container name %s", cName);
       return(AD_INVALID_NAME);
     }
 
@@ -4816,23 +4832,23 @@ int container_adupdate(LDAP *ldap_handle, char *dn_path, char *dName,
   LDAPMod   *mods[20];
   int       group_count;
   char      filter[512];
-  char      temp[256];
   char      *moiraId_v[] = {NULL, NULL};
   char      *desc_v[] = {NULL, NULL};
   char      *managedBy_v[] = {NULL, NULL};
   char      managedByDN[256];
   char      moiraId[64];
   char      desc[256];
+  char      ad_path[512];
   int       rc;
   int       i;
   int       n;
 
 
-  strcpy(temp, distinguishedName);
+  strcpy(ad_path, distinguishedName);
   if (strlen(dName) != 0)
-    sprintf(temp, "%s,%s", dName, dn_path);
+    sprintf(ad_path, "%s,%s", dName, dn_path);
 
-  sprintf(filter, "(&(objectClass=organizationalUnit)(distinguishedName=%s))", temp);
+  sprintf(filter, "(&(objectClass=organizationalUnit)(distinguishedName=%s))", ad_path);
   if (strlen(av[CONTAINER_ID]) != 0)
     sprintf(filter, "(&(objectClass=organizationalUnit)(mitMoiraId=%s))", av[CONTAINER_ROWID]);
   attr_array[0] = "mitMoiraId";
@@ -4844,7 +4860,7 @@ int container_adupdate(LDAP *ldap_handle, char *dn_path, char *dName,
   if ((rc = linklist_build(ldap_handle, dn_path, filter, attr_array, 
                            &group_base, &group_count, LDAP_SCOPE_SUBTREE)) != LDAP_SUCCESS)
     {
-      com_err(whoami, 0, "couldn't retreive container info for %s : %s",
+      com_err(whoami, 0, "Unable to retreive container info for %s : %s",
               av[CONTAINER_NAME], ldap_err2string(rc));
       return(rc);
     }
@@ -4874,15 +4890,13 @@ int container_adupdate(LDAP *ldap_handle, char *dn_path, char *dName,
     }
   if (strlen(av[CONTAINER_DESC]) != 0)
     {
-      desc_v[0] = av[CONTAINER_DESC];
-      ADD_ATTR("description", desc_v, LDAP_MOD_REPLACE);
+      attribute_update(ldap_handle, ad_path, av[CONTAINER_DESC], "description", dName);
     }
   else
     {
       if (strlen(desc) != 0)
         {
-          desc_v[0] = NULL;
-          ADD_ATTR("description", desc_v, LDAP_MOD_REPLACE);
+          attribute_update(ldap_handle, ad_path, "", "description", dName);
         }
     }
   if ((strlen(av[CONTAINER_TYPE]) != 0) && (strlen(av[CONTAINER_ID]) != 0))
@@ -4893,14 +4907,13 @@ int container_adupdate(LDAP *ldap_handle, char *dn_path, char *dName,
 		  {
 			sprintf(managedByDN, "CN=%s,%s,%s", av[CONTAINER_ID], kerberos_ou, dn_path);
 			managedBy_v[0] = managedByDN;
-            		ADD_ATTR("managedBy", managedBy_v, LDAP_MOD_REPLACE);
+            ADD_ATTR("managedBy", managedBy_v, LDAP_MOD_REPLACE);
 		  }
 		  else
 		  {
 			if (strlen(managedByDN) != 0)
 			{
-				managedBy_v[0] = NULL;
-				ADD_ATTR("managedBy", managedBy_v, LDAP_MOD_REPLACE);
+                attribute_update(ldap_handle, ad_path, "", "managedBy", dName);
 			}
 		  }
 	  }
@@ -4934,8 +4947,7 @@ int container_adupdate(LDAP *ldap_handle, char *dn_path, char *dName,
                 {
                   if (strlen(managedByDN) != 0)
                     {
-                      managedBy_v[0] = NULL;
-                      ADD_ATTR("managedBy", managedBy_v, LDAP_MOD_REPLACE);
+                        attribute_update(ldap_handle, ad_path, "", "managedBy", dName);
                     }
                 }
               linklist_free(group_base);
@@ -4947,8 +4959,7 @@ int container_adupdate(LDAP *ldap_handle, char *dn_path, char *dName,
         {
           if (strlen(managedByDN) != 0)
             {
-              managedBy_v[0] = NULL;
-              ADD_ATTR("managedBy", managedBy_v, LDAP_MOD_REPLACE);
+                attribute_update(ldap_handle, ad_path, "", "managedBy", dName);
             }
         }
 	  }
@@ -4957,17 +4968,14 @@ int container_adupdate(LDAP *ldap_handle, char *dn_path, char *dName,
   if (n == 0)
     return(LDAP_SUCCESS);
 
-  strcpy(temp, distinguishedName);
-  if (strlen(dName) != 0)
-    sprintf(temp, "%s,%s", dName, dn_path);
-  rc = ldap_modify_s(ldap_handle, temp, mods);
+  rc = ldap_modify_s(ldap_handle, ad_path, mods);
   for (i = 0; i < n; i++)
     free(mods[i]);
   if (rc != LDAP_SUCCESS)
     {
-        com_err(whoami, 0, "couldn't modify container info for %s : %s",
-              av[CONTAINER_NAME], ldap_err2string(rc));
-      return(rc);
+        com_err(whoami, 0, "Unable to modify container info for %s : %s",
+                av[CONTAINER_NAME], ldap_err2string(rc));
+        return(rc);
     }
   return(rc);
 }
@@ -5094,13 +5102,13 @@ int get_machine_ou(LDAP *ldap_handle, char *dn_path, char *member, char *machine
   if ((rc = linklist_build(ldap_handle, temp, filter, attr_array, 
                         &group_base, &group_count, LDAP_SCOPE_SUBTREE)) != 0)
     {
-      com_err(whoami, 0, "LDAP server couldn't process machine %s : %s",
+      com_err(whoami, 0, "Unable to process machine %s : %s",
               member, ldap_err2string(rc));
       return(1);
     }
   if (group_count != 1)
     {
-      com_err(whoami, 0, "LDAP server couldn't process machine %s : machine not found in AD",
+      com_err(whoami, 0, "Unable to process machine %s : machine not found in AD",
               NewMachineName);
       return(1);
     }
@@ -5115,7 +5123,7 @@ int get_machine_ou(LDAP *ldap_handle, char *dn_path, char *member, char *machine
   pPtr = strstr(dn, cn);
   if (pPtr == NULL)
     {
-      com_err(whoami, 0, "LDAP server couldn't process machine %s",
+      com_err(whoami, 0, "Unable to process machine %s",
               member);
       return(1);
     }
@@ -5125,7 +5133,7 @@ int get_machine_ou(LDAP *ldap_handle, char *dn_path, char *member, char *machine
   pPtr = strstr(machine_ou, "dc=");
   if (pPtr == NULL)
     {
-      com_err(whoami, 0, "LDAP server couldn't process machine %s",
+      com_err(whoami, 0, "Unable to process machine %s",
               member);
       return(1);
     }
@@ -5168,7 +5176,7 @@ int machine_move_to_ou(LDAP *ldap_handle, char * dn_path, char *MoiraMachineName
     if ((rc = linklist_build(ldap_handle, dn_path, filter, attr_array, &group_base, 
                              &group_count, LDAP_SCOPE_SUBTREE)) != 0)
     {
-        com_err(whoami, 0, "LDAP server couldn't process machine %s : %s",
+        com_err(whoami, 0, "Unable to process machine %s : %s",
                 MoiraMachineName, ldap_err2string(rc));
         return(1);
     }
@@ -5263,7 +5271,7 @@ int Moira_container_group_create(char **after)
 
   if (rc = mr_query("add_list", 15, argv, NULL, NULL))
     {
-      com_err(whoami, 0, "couldn't create container group %s for container %s: %s",
+      com_err(whoami, 0, "Unable to create container group %s for container %s: %s",
 	      GroupName, after[CONTAINER_NAME], error_message(rc));
     }
 
@@ -5315,7 +5323,7 @@ int Moira_container_group_update(char **before, char **after)
       
       if (rc = mr_query("update_list", 16, argv, NULL, NULL))
 	{
-	  com_err(whoami, 0, "couldn't rename container group from %s to %s: %s",
+	  com_err(whoami, 0, "Unable to rename container group from %s to %s: %s",
 		  BeforeGroupName, AfterGroupName, error_message(rc));
 	}
     }
@@ -5344,7 +5352,7 @@ int Moira_container_group_delete(char **before)
       argv[2] = GroupName;
       if (rc = mr_query("delete_member_from_list", 3, argv, NULL, NULL))
 	{
-	  com_err(whoami, 0, "couldn't delete container group %s from list: %s",
+	  com_err(whoami, 0, "Unable to delete container group %s from list: %s",
 		  GroupName, ParentGroupName, error_message(rc));
 	}
     }
@@ -5354,7 +5362,7 @@ int Moira_container_group_delete(char **before)
       argv[0] = GroupName;
       if (rc = mr_query("delete_list", 1, argv, NULL, NULL))
 	{
-	  com_err(whoami, 0, "couldn't delete container group %s : %s",
+	  com_err(whoami, 0, "Unable to delete container group %s : %s",
 		  GroupName, error_message(rc));
 	}
      }
@@ -5415,7 +5423,7 @@ int Moira_groupname_create(char *GroupName, char *ContainerName,
       sprintf(newGroupName, "%s-%c", tempGroupName, i);
       if (i == (int)'z')
 	{
-	  com_err(whoami, 0, "Can not find a unique group name for container %s: too many duplicate container names",
+	  com_err(whoami, 0, "Unable to find a unique group name for container %s: too many duplicate container names",
 		  ContainerName);
 	  return 1;
 	}
@@ -5439,7 +5447,7 @@ int Moira_setContainerGroup(char *origContainerName, char *GroupName)
 
   if ((rc = mr_query("set_container_list", 2, argv, NULL, NULL)))
     {
-         com_err(whoami, 0, "couldn't set container group %s in container %s: %s",
+         com_err(whoami, 0, "Unable to set container group %s in container %s: %s",
                  GroupName, origContainerName, error_message(rc));
     }
 
@@ -5465,7 +5473,7 @@ int Moira_setContainerGroup(char *origContainerName, char *GroupName)
    argv[2] = GroupName;
    if ((rc = mr_query("add_member_to_list", 3, argv, NULL, NULL)))
      {
-       com_err(whoami, 0, "couldn't add container group %s to parent group %s: %s",
+       com_err(whoami, 0, "Unable to add container group %s to parent group %s: %s",
 	       GroupName, ParentGroupName, error_message(rc));
      }
    return(0);
@@ -5513,10 +5521,10 @@ int Moira_getGroupName(char *origContainerName, char *GroupName,
     }
 
   if (rc)
-    com_err(whoami, 0, "couldn't get container group from container %s: %s",
+    com_err(whoami, 0, "Unable to get container group from container %s: %s",
 	    ContainerName, error_message(rc));
   else
-    com_err(whoami, 0, "couldn't get container group from container %s",
+    com_err(whoami, 0, "Unable to get container group from container %s",
 	    ContainerName);
      return(0);
 }
@@ -5539,7 +5547,7 @@ int Moira_process_machine_container_group(char *MachineName, char* GroupName,
     rc = mr_query("delete_member_from_list", 3, argv, NULL, NULL);
   if (rc)
     {
-      com_err(whoami, 0, "couldn't add machine %s to container group%s: %s",
+      com_err(whoami, 0, "Unable to add machine %s to container group%s: %s",
 	      MachineName, GroupName, error_message(rc));
     }
   return(0);
@@ -5573,7 +5581,7 @@ int GetMachineName(char *MachineName)
     call_args[1] = NULL;
     if (rc = mr_query("get_hostalias", 2, args, ProcessMachineName, call_args))
     {
-        com_err(whoami, 0, "couldn't resolve machine name %s : %s",
+        com_err(whoami, 0, "Unable to resolve machine name %s : %s",
                 MachineName, error_message(rc));
         strcpy(MachineName, "");
         return(0);
@@ -5939,4 +5947,46 @@ int GetServerList(char *ldap_domain, char **ServerList)
   ldap_unbind_s(ldap_handle);
 
   return(0);
+}
+
+int attribute_update(LDAP *ldap_handle, char *distinguished_name, 
+                      char *attribute_value, char *attribute, char *user_name)
+{
+  char      *mod_v[] = {NULL, NULL};
+  LDAPMod   *DelMods[20];
+  LDAPMod   *mods[20];
+  int       n;
+  int       i;
+  int       rc;
+
+  if (strlen(attribute_value) == 0)
+    {
+      i = 0;
+      DEL_ATTR(attribute, LDAP_MOD_DELETE);
+      DelMods[i] = NULL;
+      rc = ldap_modify_s(ldap_handle, distinguished_name, DelMods);
+      free(DelMods[0]);
+    }
+    else
+    {
+      n = 0;
+      mod_v[0] = attribute_value;
+      ADD_ATTR(attribute, mod_v, LDAP_MOD_REPLACE);
+      mods[n] = NULL;
+      if ((rc = ldap_modify_s(ldap_handle, distinguished_name, mods)) != LDAP_SUCCESS)
+        {
+          free(mods[0]);
+          n = 0;
+          mod_v[0] = attribute_value;
+          ADD_ATTR(attribute, mod_v, LDAP_MOD_ADD);
+          mods[n] = NULL;
+          if ((rc = ldap_modify_s(ldap_handle, distinguished_name, mods)) != LDAP_SUCCESS)
+            {
+              com_err(whoami, 0, "Unable to change the %s attribute for %s in the AD : %s",
+                      attribute, user_name, ldap_err2string(rc));
+            }
+        }
+      free(mods[0]);
+    }
+  return(rc);
 }

@@ -1,4 +1,4 @@
-/* $Id: blanche.c,v 1.57 2001-12-14 21:06:07 zacheiss Exp $
+/* $Id: blanche.c,v 1.58 2002-03-03 10:19:15 zacheiss Exp $
  *
  * Command line oriented Moira List tool.
  *
@@ -20,7 +20,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.57 2001-12-14 21:06:07 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.58 2002-03-03 10:19:15 zacheiss Exp $");
 
 struct member {
   int type;
@@ -738,6 +738,7 @@ int main(int argc, char **argv)
 	      success = 0;
 	    }
 	  free(membervec[2]);
+	  break;
 	case M_MACHINE:
 	  membervec[1] = "MACHINE";
 	  membervec[2] = canonicalize_hostname(strdup(memberstruct->name));
@@ -860,6 +861,7 @@ int main(int argc, char **argv)
 		      memberstruct->name, listname);
 	      success = 0;
 	    }
+	  break;
 	case M_MACHINE:
 	  membervec[1] = "MACHINE";
 	  membervec[2] = canonicalize_hostname(memberstruct->name);

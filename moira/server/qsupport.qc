@@ -1,14 +1,14 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.20 1988-07-23 19:29:09 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.21 1988-07-31 01:12:08 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
  */
 
 #ifndef lint
-static char *rcsid_qsupport_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.20 1988-07-23 19:29:09 mar Exp $";
+static char *rcsid_qsupport_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.21 1988-07-31 01:12:08 mar Exp $";
 #endif lint
 
 #include "query.h"
@@ -385,6 +385,7 @@ char **argv;
 ##					where machine.mach_id = u.pop_id 
 ##						and u.pop_id != 0
 ##						and u.users_id = @id))
+##	where u.users_id = @id
     if (!flag)
       return(SMS_MACHINE);
     if (strcmp(type, "POP"))
@@ -525,7 +526,7 @@ int setup_dlis(q, argv)
     if (flag)
 	return(SMS_IN_USE);
 ##  repeat retrieve (flag = any(list.name where list.acl_id=@id and
-##			list.acl_type = "LIST"))
+##			list.acl_type = "LIST" and list.list_id != @id))
     if (flag)
 	return(SMS_IN_USE);
 ##  repeat retrieve (flag = any(servers.name where servers.acl_id=@id and
@@ -1205,7 +1206,7 @@ followup_glin(q, sq, v, action, actarg, cl)
 
     idx = 8;
     if (!strcmp(q->shortname, "gsin"))
-      idx = 11;
+      idx = 12;
 
     while (sq_get_data(sq, &argv)) {
 	sms_trim_args(q->vcnt, argv);
@@ -2143,7 +2144,7 @@ register_user(q, argv, cl)
 ##  repeat retrieve (flag = any(u.#login where u.#login = @login))
     if (flag)
       return(SMS_IN_USE);
-##  repeat retrieve (flag = any(l.name where l.name = @login))
+##  repeat retrieve (flag = any(l.#name where l.#name = @login))
     if (flag)
       return(SMS_IN_USE);
 ##  repeat retrieve (flag = any(filesys.#name where filesys.#name = @login))
@@ -2219,7 +2220,8 @@ register_user(q, argv, cl)
       return(SMS_NO_ID);
 ##  repeat append filesys (filsys_id = values.value, phys_id = @pid,
 ##			   label = @login, type = "NFS", mach_id = @m_id,
-##			   name = @directory + @login, mount = "/mit/" + @login,
+##			   name = @directory + "/" + @login,
+##			   mount = "/mit/" + @login,
 ##			   access = "w", comments = "User Locker",
 ##			   owner = @users_id, owners = @list_id, createflg = 1,
 ##			   lockertype = "HOMEDIR", modtime = "now",
@@ -2229,7 +2231,7 @@ register_user(q, argv, cl)
     if (rowcount != 1)
       return(SMS_INTERNAL);
     com_err(whoami, 0, "filesys created on mach %d in %s/%s", m_id,
-	    trim(directory), login);
+	    directory, login);
 
     /* set quota */
 ##  repeat retrieve (quota = values.value) where values.name = "def_quota"
@@ -2251,6 +2253,11 @@ register_user(q, argv, cl)
       return(SMS_INTERNAL);
     com_err(whoami, 0, "quota of %d assigned", quota);
 
+##  repeat replace tblstats (updates = tblstats.updates + 1, modtime = "now")
+##	where tblstats.table = "users"
+##  repeat replace tblstats (appends = tblstats.appends + 1, modtime = "now")
+##	where tblstats.table = "list" or tblstats.table = "filesys" or
+##	      tblstats.table = "nfsquota"
     return(SMS_SUCCESS);
 ##}
 
@@ -2598,8 +2605,9 @@ validate_typedata(q, argv, vo)
 	     * values.[idfield] for the id.
 	     */
 	    if (vo->idfield && !strcmp(argv[0], argv[vo->index])) {
+		set_next_object_id(q->validate->object_id, q->rtable);
 		name = vo->idfield;
-##		repeat retrieve (id = values.value+1) where values.#name = @name
+##		repeat retrieve (id = values.value) where values.#name = @name
 ##		inquire_equel(rowcount = "rowcount")
 		if (rowcount != 1) return(SMS_LIST);
 	    } else

@@ -3,20 +3,8 @@
 #	MIT Project Athena
 #
 #	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/Makefile,v $
-#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/Makefile,v 1.6 1987-12-22 12:50:53 mar Exp $
+#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/Makefile,v 1.7 1988-08-04 13:22:57 mar Exp $
 #	$Author: mar $
-#	$Log: not supported by cvs2svn $
-# Revision 1.5  87/08/08  23:38:10  ambar
-# passwd now links with smslib
-# 
-# Revision 1.4  87/08/03  05:13:22  wesommer
-# changed libmisc to libcom_err.a
-# 
-# Revision 1.3  87/08/02  19:46:26  ambar
-# changed name of chhome to chpobox
-# 
-# Revision 1.2  87/07/31  01:24:43  ambar
-# added install target
 # 
 #
 DESTDIR=
@@ -25,23 +13,20 @@ CFLAGS = -I../../include ${DEFINES}
 CONFDIR = ${DESTDIR}/usr/athena
 BINDIR = ${DESTDIR}/bin
 
-SMSLIB =  ../../lib/libsms.a ../../lib/libgdb.a ../../lib/libcom_err.a
+SMSLIB = -L../../lib -lsms -lgdb -lcom_err -lkrb -ldes
 
-PROGS= passwd chfn chpobox chsh
+PROGS= chfn chsh # chpobox
 
 all: 	${PROGS}
 
-passwd:	passwd.o
-	cc -o passwd passwd.o ${SMSLIB} -lkrb -ldes
-
 chfn:	chfn.o
-	cc -o chfn chfn.o ${SMSLIB} -lkrb -ldes
+	cc -o chfn chfn.o ${SMSLIB}
 
 chpobox:	chpobox.o
-	cc -o chpobox chpobox.o ${SMSLIB} -lkrb -ldes
+	cc -o chpobox chpobox.o ${SMSLIB}
 
 chsh:	chsh.o
-	cc -o chsh chsh.o ${SMSLIB} -lkrb -ldes
+	cc -o chsh chsh.o ${SMSLIB}
 
 lint:
 	lint *.c
@@ -51,7 +36,6 @@ clean:
 	rm -f ${PROGS}
 
 install:	${PROGS}
-	install passwd ${DESTDIR}/usr/athena/passwd
 	install chsh ${DESTDIR}/usr/athena/chsh
 	install chfn ${DESTDIR}/usr/athena/chfn
-#	install chpobox ${DESTDIR}/usr/athena/chpobox
+	install chpobox ${DESTDIR}/usr/athena/chpobox

@@ -62,6 +62,7 @@ modify i_lis_gid to btree;\g
 modify imembers to cbtree on member_id, member_type;\g
 create index i_imem_list on  imembers (list_id);\g
 modify i_imem_list to hash;\g
+create index i_imem_all on imembers (list_id, member_type, member_id, direct);\g
 ;\g
 modify strings to cbtree unique on string_id;\g
 create index i_str_name on  strings (string);\g

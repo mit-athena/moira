@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v 1.34 1993-10-22 16:23:09 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v 1.35 1993-11-10 15:39:46 mar Exp $";
 #endif lint
 
 /*	This is the file utils.c for the MOIRA Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v 1.34 1993-10-22 16:23:09 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v 1.35 1993-11-10 15:39:46 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -30,8 +30,10 @@
 #include "defs.h"
 #include "f_defs.h"
 #include "globals.h"
-
 #include <netdb.h>		/* for gethostbyname. */
+#include <sys/types.h>
+#include <netinet/in.h>
+
 
 /*	Function Name: AddQueue
  *	Description: Adds an element to a queue
@@ -931,6 +933,33 @@ char  **pointer;
     }
     *pointer = strsave(def);
     return(GetTypeFromUser(prompt, tname, pointer));
+}
+
+
+/*	Function Name: GetAddressFromUser
+ *	Description: gets an IP address from the user
+ *	Arguments: prompt string, buffer pointer
+ *		buffer contains default value as long int
+ *	Returns: SUB_ERROR if ^C, SUB_NORMAL otherwise
+ */
+
+int GetAddressFromUser(prompt, pointer)
+char *prompt;
+char  **pointer;
+{
+    char *value, buf[256];
+    struct in_addr addr;
+    int ret;
+
+    addr.s_addr = htonl(atoi(*pointer));
+    value = strsave(inet_ntoa(addr));
+    ret = GetValueFromUser(prompt, &value);
+    if (ret == SUB_ERROR) return(SUB_ERROR);
+    addr.s_addr = inet_addr(value);
+    free(pointer);
+    sprintf(buf, "%d", ntohl(addr.s_addr));
+    *pointer = strsave(buf);
+    return(SUB_NORMAL);
 }
 
 

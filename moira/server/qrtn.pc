@@ -1,4 +1,4 @@
-/* $Id: qrtn.pc,v 2.19 2000-01-10 20:54:15 danw Exp $
+/* $Id: qrtn.pc,v 2.20 2000-01-11 19:46:03 danw Exp $
  *
  * Query-processing routines
  *
@@ -20,7 +20,7 @@
 EXEC SQL INCLUDE sqlca;  /* SQL Communications Area */
 EXEC SQL INCLUDE sqlda;  /* SQL Descriptor Area */
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.pc,v 2.19 2000-01-10 20:54:15 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.pc,v 2.20 2000-01-11 19:46:03 danw Exp $");
 
 SQLDA *mr_sqlda;
 EXEC SQL BEGIN DECLARE SECTION;
@@ -164,7 +164,7 @@ int mr_process_query(client *cl, char *name, int argc, char *argv_ro[],
   /* list queries command */
   if (!strcmp(name, "_list_queries"))
     {
-      list_queries(action, actarg);
+      list_queries(cl, action, actarg);
       return MR_SUCCESS;
     }
 

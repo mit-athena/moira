@@ -1,4 +1,4 @@
-/* $Id: query.h,v 2.12 1999-12-30 17:27:16 danw Exp $
+/* $Id: query.h,v 2.13 2000-01-11 19:46:04 danw Exp $
  *
  * Structures and constants used in the query dispatch table
  *
@@ -86,7 +86,7 @@ int check_query_access(struct query *q, char *argv[], client *cl);
 int set_next_object_id(char *objectx, enum tables table, int limit);
 
 /* prototypes from qsubs.c */
-void list_queries(int (*action)(int, char *[], void *),
+void list_queries(client *cl, int (*action)(int, char *[], void *),
 		  void *actarg);
 void help_query(struct query *q, int (*action)(int, char *[], void *),
 		void *actarg);

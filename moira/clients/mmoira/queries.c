@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/queries.c,v 1.11 1992-12-10 11:01:54 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/queries.c,v 1.12 1992-12-31 13:55:27 mar Exp $
  */
 
 #include <stdio.h>
@@ -237,9 +237,12 @@ EntryForm *form;
      */
     count = 0;
     for (p = form->inputlines; *p; p++)
-      count++;
+      if (!((*p)->insensitive))
+	count++;
     while (count-- > 1)
       _XmMgrTraversal(form->formpointer, XmTRAVERSE_PREV_TAB_GROUP);
+    MoiraFocusOut(form->inputlines[0]->mywidget,
+		  (XEvent *)NULL, (String *)NULL, 0);
     process_form(form, FALSE);
 }
 
@@ -272,6 +275,7 @@ int remove;
 
     for (i = 0; form->inputlines[i]; i++)
       argv[i] = StringValue(form, i);
+    form->extrastuff = NULL;
     qy = form->menu->query;
     argc = form->menu->argc;
 
@@ -710,6 +714,9 @@ int remove;
 	argv[2] = argv[3] = argv[4] = argv[5] = argv[7] = argv[8] = "0";
 	argv[6] = "";
 	break;
+    case MM_CLEAR_HOST:
+	StoreHost(form, 1, &argv[1]);
+	break;
     case MM_SHOW_HOST:
 	if (!*stringval(form, 0))
 	  argv[0] = "*";
@@ -739,6 +746,17 @@ int remove;
 	for (s = argv[2]; *s; s++)
 	  if (islower(*s)) *s = toupper(*s);
 	break;
+    case MM_TRIGGER_DCM:
+	if (boolvalue(form, 0))	{
+	    status = mr_do_update();
+	    if (status)
+	      com_err(program_name, status, " starting DCM");
+	    else
+	      AppendToLog("DCM started.\n");
+	}
+	if (remove)
+	  XtUnmanageChild(form->formpointer);
+	return;
     }
 
     if (argc == -1) {
@@ -849,7 +867,6 @@ int remove;
     case MM_CLEAR_SERVICE:
     case MM_RESET_SERVICE:
     case MM_ENABLE_DCM:
-    case MM_TRIGGER_DCM:
     case MM_ADD_ZEPHYR:
     case MM_DEL_ZEPHYR:
     case MM_ADD_PCAP:

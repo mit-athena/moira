@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/afs.c,v 1.26 1992-07-05 19:59:36 probe Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/afs.c,v 1.27 1992-07-10 20:06:20 probe Exp $
  *
  * Do AFS incremental updates
  *
@@ -58,6 +58,7 @@ int argc;
 	  strcat(buf, ",");
 	strcat(buf, after[i]);
     }
+    strcat(buf, ")");
 #ifdef DEBUG
     printf("%s\n", buf);
 #endif
@@ -107,6 +108,18 @@ char *cmd;
 }
 
 
+add_user_lists(ac, av, user)
+    int ac;
+    char *av[];
+    char *user;
+{
+    if (atoi(av[5])) {
+	sleep(1);				/* give the ptserver room */
+	edit_group(1, av[0], "USER", user);
+    }
+}
+
+
 do_user(before, beforec, after, afterc)
 char **before;
 int beforec;
@@ -114,6 +127,8 @@ char **after;
 int afterc;
 {
     int astate, bstate, auid, buid, code;
+    char hostname[64];
+    char *av[2];
 
     auid = buid = astate = bstate = 0;
     if (afterc > U_STATE) astate = atoi(after[U_STATE]);
@@ -168,6 +183,27 @@ int afterc;
 			   "Couldn't create user %s (id %d): %s",
 			   after[U_NAME], auid, error_message(code));
 	}
+	if (beforec) {
+	    /* Reactivating a user; get his group list */
+	    gethostname(hostname, sizeof(hostname));
+	    code = mr_connect(hostname);
+	    if (!code) code = mr_auth("afs.incr");
+	    if (code) {
+		critical_alert("incremental",
+			       "Error contacting Moira server to retrieve grouplist of user %s: %s",
+			       after[U_NAME], error_message(code));
+		return;
+	    }
+	    av[0] = "RUSER";
+	    av[1] = after[U_NAME];
+	    code = mr_query("get_lists_of_member", 2, av,
+			    add_user_lists, after[U_NAME]);
+	    if (code)
+		critical_alert("incremental",
+			       "Couldn't retrieve membership of user %s: %s",
+			       after[U_NAME], error_message(code));
+	    mr_disconnect();
+	}
 	return;
     }
 }
@@ -214,7 +250,7 @@ int afterc;
 	    strcpy(g2, "system:");
 	    strcat(g1, before[L_NAME]);
 	    strcat(g2, after[L_NAME]);
-	    code = pr_ChangeEntry(g1, g2, (agid==bgid) ? 0 : -agid, "");
+	    code = pr_ChangeEntry(g1, g2, -agid, "");
 	    if (code) {
 		critical_alert("incremental",
 			       "Couldn't change group %s (id %d) to %s (id %d): %s",

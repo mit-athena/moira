@@ -1,8 +1,8 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/queries.c,v 1.16 1993-10-21 14:53:47 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/queries.c,v 1.17 1993-10-25 16:35:41 mar Exp $
  */
 
 #include <stdio.h>
-#include <strings.h>
+#include <string.h>
 #include <ctype.h>
 #include <moira.h>
 #include <moira_site.h>
@@ -510,7 +510,7 @@ int remove;
 	break;
     case MM_MOV_FSGROUP:
 	argv[1] = strsave(stringval(form, 1));
-	s = index(argv[1], ' ');
+	s = strchr(argv[1], ' ');
 	if (s) *s = 0;
 	i = MoiraQuery("remove_filesys_from_fsgroup", 2, argv, ModifyCallback,
 		       (char *)form);
@@ -523,10 +523,10 @@ int remove;
     case MM_ADD_FSGROUP:
 	/* find the two keys to sort between */
 	argv[2] = strsave(argv[2]);
-	s = index(argv[2], ' ');
+	s = strchr(argv[2], ' ');
 	if (s) {
 	    argv[2] = s+2;
-	    s = index(argv[2], ')');
+	    s = strchr(argv[2], ')');
 	    if (s) *s = 0;
 	} else
 	  argv[2] = "";
@@ -546,10 +546,10 @@ int remove;
 		    i++;
 		    if (i < NumChildren(w)) {
 			argv[3] = strsave(XtName(NthChild(w, i)));
-			s = index(argv[3], ' ');
+			s = strchr(argv[3], ' ');
 			if (s) {
 			    argv[3] = s+2;
-			    s = index(argv[3], ')');
+			    s = strchr(argv[3], ')');
 			    if (s) *s = 0;
 			} else
 			  argv[3] = "";
@@ -586,7 +586,7 @@ int remove;
 	break;
     case MM_DEL_FSGROUP:
 	argv[1] = strsave(stringval(form, 1));
-	s = index(argv[1], ' ');
+	s = strchr(argv[1], ' ');
 	if (s) *s = 0;
 	break;
     case MM_SHOW_FS_ALIAS:

@@ -1,9 +1,9 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/form_setup.c,v 1.11 1993-01-13 14:06:06 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/form_setup.c,v 1.12 1993-10-25 16:35:24 mar Exp $
  */
 
 #include <stdio.h>
 #include <ctype.h>
-#include <strings.h>
+#include <string.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <moira.h>
@@ -184,7 +184,7 @@ UserPrompt *prompt;
 	    path = "???";
 	    i = MoiraQuery("get_alias", 3, argv, GetAliasValue, &path);
 	    if (i == MR_SUCCESS) {
-		p = index(path, ':');
+		p = strchr(path, ':');
 		if (p) {
 		    *p = 0;
 		    depth = atoi(++p);
@@ -253,7 +253,7 @@ UserPrompt *prompt;
 		} else if (!strcmp(info[FS_TYPE], "NFS")) {
 		    argv[0] = strsave(info[FS_MACHINE]);
 		    argv[1] = strsave(info[FS_PACK]);
-		    p = rindex(argv[1], '/');
+		    p = strrchr(argv[1], '/');
 		    if (p) *p = 0;
 		    for (i = 0; info[i]; i++) free(info[i]);
 		    free(info);

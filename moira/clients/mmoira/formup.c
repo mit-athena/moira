@@ -1,7 +1,7 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/formup.c,v 1.12 1992-12-28 18:22:14 mar Exp $ */
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/formup.c,v 1.13 1993-10-25 16:35:33 mar Exp $ */
 
 #include	<stdio.h>
-#include	<strings.h>
+#include	<string.h>
 #include	<X11/StringDefs.h>
 #include	<X11/IntrinsicP.h>
 #include	<X11/Shell.h>
@@ -23,7 +23,7 @@
 #include	<Xm/Traversal.h>
 #include	"mmoira.h"
 
-static char rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/formup.c,v 1.12 1992-12-28 18:22:14 mar Exp $";
+static char rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/formup.c,v 1.13 1993-10-25 16:35:33 mar Exp $";
 
 #ifndef MAX
 #define	MAX(a,b)	((a > b) ? a : b)
@@ -310,7 +310,7 @@ EntryForm	*spec;
 		if (current->type == FT_KEYWORD) {
 		    char *p;
 
-		    p = index(current->prompt, '|');
+		    p = strchr(current->prompt, '|');
 		    if (p) {
 			*p++ = 0;
 			current->keyword_name = p;

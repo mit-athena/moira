@@ -2,8 +2,12 @@
 ** Stub functions
 */
 
+#ifdef POSIX
+#include	<unistd.h>
+#endif
 #include	<ctype.h>
 #include	<stdio.h>
+#include	<string.h>
 #include	<X11/StringDefs.h>
 #include	<X11/Intrinsic.h>
 #include	<X11/Core.h>
@@ -11,9 +15,11 @@
 #include        <Xm/Text.h>
 #include	<Xm/MessageB.h>
 #include	"mmoira.h"
+#include	<sys/types.h>
 #include	<sys/file.h>
+#include	<fcntl.h>
 
-static char rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/stubs.c,v 1.13 1993-10-21 14:54:13 mar Exp $";
+static char rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/stubs.c,v 1.14 1993-10-25 16:35:45 mar Exp $";
 
 void	extra_help_callback();
 extern EntryForm *MoiraForms[];
@@ -196,7 +202,7 @@ int modify;
     } else if (!strcmp(type, "Packname")) {
 	char name2[256];
 	sprintf(name2, "%s:%s", type2, name);
-	p = rindex(name2, '/');
+	p = strrchr(name2, '/');
 	if (p) *p = 0;
 	DoReference(name, "select_nfs", MM_MOD_NFS, MM_SHOW_NFS,
 		    "get_nfsphys", modify);

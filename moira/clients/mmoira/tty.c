@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/tty.c,v 1.3 1993-01-13 14:07:29 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/tty.c,v 1.4 1993-10-25 16:35:48 mar Exp $
  *
  *  	Copyright 1992 by the Massachusetts Institute of Technology.
  *
@@ -8,18 +8,18 @@
 
 #include	<mit-copyright.h>
 #include	<stdio.h>
+#include	<string.h>
 #include	<sys/types.h>
 #include	<sys/signal.h>
 #include	<sgtty.h>
 #include	<sys/ioctl.h>
 #include	<ctype.h>
-#include	<strings.h>
 #include	<X11/Intrinsic.h>
 #include	<moira.h>
 #include	"mmoira.h"
 #include	"parser.h"
 
-static char rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/tty.c,v 1.3 1993-01-13 14:07:29 mar Exp $";
+static char rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/tty.c,v 1.4 1993-10-25 16:35:48 mar Exp $";
 
 
 struct parse_node *TtyCommands = NULL, *TtyRoot = NULL;
@@ -45,7 +45,9 @@ TtyMainLoop()
     sleep(10);
 #endif /* DEBUG */
 
+#ifndef POSIX
     ioctl(0, TIOCFLUSH, &arg);
+#endif
     ioctl(0, TIOCGETP, &otty);
     ntty = otty;
     ntty.sg_flags |= RAW;
@@ -85,7 +87,7 @@ parse_menus()
 
     TtyCommands = (struct parse_node *)malloc(sizeof(struct parse_node) *
 					      NumMenus * 3);
-    bzero(TtyCommands, sizeof(struct parse_node) * NumMenus * 3);
+    memset(TtyCommands, 0, sizeof(struct parse_node) * NumMenus * 3);
     arg = 0;
     parse_menu_recursive(&MenuRoot, "", &arg);
     TtyCommands[arg].p_word = "help";
@@ -119,10 +121,10 @@ int *i;
 	/* insert command into parse tree */
 	p = TtyRoot;
 	prev = (struct parse_node **) &TtyRoot;
-	for (word = cmd; word; word = index(word, ' ')) {
+	for (word = cmd; word; word = strchr(word, ' ')) {
 	    if (*word == ' ')
 	      word++;
-	    s = index(word, ' ');
+	    s = strchr(word, ' ');
 	    if (s)
 	      len = s - word;
 	    else
@@ -253,7 +255,7 @@ EntryForm *f;
 	      StoreField(f, i, "");
 	    break;
 	case FT_KEYWORD:
-	    k = index(p->prompt, '|');
+	    k = strchr(p->prompt, '|');
 	    if (k) *k = 0;
 	    done = 0;
 	    while (done != 1) {

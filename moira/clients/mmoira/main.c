@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/main.c,v 1.10 1992-12-10 10:46:11 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/main.c,v 1.11 1993-10-25 16:35:36 mar Exp $
  *
  *  	Copyright 1991 by the Massachusetts Institute of Technology.
  *
@@ -8,7 +8,7 @@
 
 #include	<mit-copyright.h>
 #include	<stdio.h>
-#include	<strings.h>
+#include	<string.h>
 #include	<pwd.h>
 #include	<moira.h>
 #include	<com_err.h>
@@ -95,7 +95,7 @@ char *argv[];
 	  user = getpwuid((int) getuid())->pw_name;
 	user = (user && strlen(user)) ? strsave(user) : "";
 
-	if ((program_name = rindex(argv[0], '/')) == NULL)
+	if ((program_name = strrchr(argv[0], '/')) == NULL)
 	  program_name = argv[0];
 	else
 	  program_name++;

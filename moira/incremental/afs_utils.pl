@@ -1,4 +1,4 @@
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/afs_utils.pl,v 1.10 1993-08-30 11:38:15 mar Exp $
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/afs_utils.pl,v 1.11 1994-10-17 15:18:01 probe Exp $
 
 $afsbin="/moira/bin";
 $vos="$afsbin/vos";
@@ -19,6 +19,7 @@ $LOCK_UN=8;
      "COURSE", "course",
      "HOMEDIR", "user",
      "LEASE", "dept",
+     "ORG", "org",
      "PROJECT", "project",
      "REF", "ref",
      "SW", "sw",

@@ -39,5 +39,9 @@ shift(@tmp), $_ = shift(@tmp);
 
 system("$fs","sq",$path,$newq);
 die "Unable to change quota on $path\n" if ($?);
-
 &afs_quota_adj($cell,$asrv,$apart,$newq-$oldq);
+
+#$stat_fs = $?;
+#$stat_qa = &afs_quota_adj($cell,$asrv,$apart,($stat_fs ? 0 : $newq-$oldq));
+#die "Unable to change quota on $path\n" if ($stat_fs && $stat_qa);
+#warn "Unable to change quota on $path\n" if ($stat_fs);

@@ -1,10 +1,10 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v 1.5 1987-09-03 02:58:00 wesommer Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v 1.6 1987-09-03 04:08:43 wesommer Exp $
  */
 
 #ifndef lint
-static char rcsid_mailmaint_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v 1.5 1987-09-03 02:58:00 wesommer Exp $";
+static char rcsid_mailmaint_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v 1.6 1987-09-03 04:08:43 wesommer Exp $";
 
 #endif lint
 
@@ -52,9 +52,8 @@ static int fetch_list_info();
 
 char *malloc();
 char *rindex();
-char *strcpy();
 char *getlogin();
-char *strsave();
+extern char *strsave();
 char *getenv();
 char *calloc();
 
@@ -780,22 +779,7 @@ clrwin(erase_row)
 }
 
 /****************************************************/
-char *
-strsave(s)
-    char *s;
-{
-    char *p;
 
-    if ((p = calloc((unsigned)1, (unsigned)(strlen(s) + 1))) != NULL) {
-	(void) strcpy(p, s);
-    }
-    else
-	Put_message("error in alloc\n\r");
-    return (p);
-}
-
-/****************************************************/
-/* jean's routine ??? */
 static void 
 scream()
 {

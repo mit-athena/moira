@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/increment.dc,v $
- *	$Author: genoa $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/increment.dc,v 2.5 1992-10-17 21:16:07 genoa Exp $
+ *	$Author: mar $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/increment.dc,v 2.6 1992-12-30 16:35:36 mar Exp $
  *
  *	Copyright (C) 1989 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_increment_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/increment.dc,v 2.5 1992-10-17 21:16:07 genoa Exp $";
+static char *rcsid_increment_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/increment.dc,v 2.6 1992-12-30 16:35:36 mar Exp $";
 #endif lint
 
 #include <fcntl.h>
@@ -133,7 +133,7 @@ char **argv;
 	  FROM users u WHERE :qual;
 	beforec = 9;
     } else if (!strcmp(table, "machine")) {
-	EXEC SQL SELECT n.name, n.type INTO :barg0, :barg1 FROM machine m
+	EXEC SQL SELECT m.name, m.type INTO :barg0, :barg1 FROM machine m
 	  WHERE :qual;
 	beforec = 2;
     } else if (!strcmp(table, "cluster")) {
@@ -396,6 +396,7 @@ incremental_update()
 	    cache = c;
 	}
 	EXEC SQL CLOSE inc;
+	EXEC SQL COMMIT WORK;
     }
 
     while (sq_remove_data(incremental_sq, &iu)) {

@@ -16,6 +16,10 @@ modify i_krb_str to btree;\g
 modify machine to cbtree unique on mach_id;\g
 create index i_mac_name on  machine (name);\g
 modify i_mac_name to btree;\g
+create index i_mac_addr on machine (address);\g
+modify i_mac_addr to btree;\g
+create index i_mac_loc on machine (location);\g
+modify i_mac_loc to btree;\g
 ;\g
 modify hostalias to cbtree unique on name;\g
 create index i_hal_id on hostalias (mach_id);\g

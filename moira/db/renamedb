@@ -1,0 +1,37 @@
+#! /bin/sh
+
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/db/renamedb,v 1.1 1988-05-10 12:22:51 mar Exp $
+#
+# Ingres does not come with a utility to rename a database, so we do
+# it this way.  First, rename the directory containing the datafiles.
+# Then run the program to restore after a system crash.  It will cause
+# the dbdb directory to match where the files are, renaming the
+# database.
+
+if (test $# != 2) then
+	echo Usage: $0 oldname newname
+	exit 1
+fi
+
+OLDNAME=$1
+NEWNAME=$2
+INGRES=/usr/rtingres/data/default
+
+if (test ! -d $INGRES/$OLDNAME) then
+	echo Database $OLDNAME does not exist!
+	exit 1
+fi
+
+if (test -r $INGRES/$NEWNAME) then
+	echo Database $NEWNAME already exists!
+	exit 1
+fi
+
+if (mv $INGRES/$OLDNAME $INGRES/$NEWNAME) then
+	true
+else
+	echo Unable to move database
+	exit 1
+fi
+
+echo | /usr/rtingres/bin/finddbs -r

@@ -21,7 +21,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/stella/stella.c,v 1.5 2000-04-05 22:03:52 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/stella/stella.c,v 1.6 2000-09-15 06:09:43 zacheiss Exp $");
 
 struct owner_type {
   int type;
@@ -313,6 +313,8 @@ int main(int argc, char **argv)
 	argv[8] = network;
       if (address)
 	argv[9] = address;
+      else
+	argv[9] = "unique";
       if (adm_cmt)
 	argv[12] = adm_cmt;
       if (op_cmt)

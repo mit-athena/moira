@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.dc,v $
- *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.dc,v 2.14 1993-11-10 15:34:52 mar Exp $
+ *	$Author: tytso $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.dc,v 2.15 1993-12-10 13:50:22 tytso Exp $
  *
  *	Copyright (C) 1987, 1988 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_qrtn_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.dc,v 2.14 1993-11-10 15:34:52 mar Exp $";
+static char *rcsid_qrtn_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.dc,v 2.15 1993-12-10 13:50:22 tytso Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -110,7 +110,6 @@ EXEC SQL WHENEVER SQLERROR CALL ingerr;
 int mr_open_database()
 {
     register int i;
-    char *malloc();
     MR_SQLDA_T *mr_alloc_SQLDA();
     static first_open = 1;
 
@@ -437,7 +436,6 @@ build_qual(fmt, argc, argv, qual)
     register char *c;
     register int i;
     char *args[4];
-    char *index();
 
     c = fmt;
     for (i = 0; i < argc; i++) {
@@ -491,6 +489,9 @@ build_sort(v, sort)
     register struct valobj *vo;
     register int n;
     char elem[16];
+#ifdef _DEBUG_MALLOC_INC
+#undef index
+#endif
 
     n = v->objcnt;
     vo = v->valobj;

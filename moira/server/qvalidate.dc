@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qvalidate.dc,v $
- *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qvalidate.dc,v 1.2 1993-11-10 15:31:20 mar Exp $
+ *	$Author: tytso $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qvalidate.dc,v 1.3 1993-12-10 13:49:08 tytso Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_qsupport_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qvalidate.dc,v 1.2 1993-11-10 15:31:20 mar Exp $";
+static char *rcsid_qsupport_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qvalidate.dc,v 1.3 1993-12-10 13:49:08 tytso Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -31,6 +31,12 @@ EXEC SQL END DECLARE SECTION;
 
 EXEC SQL WHENEVER SQLERROR CALL ingerr;
 
+#ifdef _DEBUG_MALLOC_INC
+#undef index
+#define dbg_index(str1,c)             DBindex(__FILE__, __LINE__, str1, c)
+#else
+#define dbg_index index
+#endif
 
 /* Validation Routines */
 
@@ -396,7 +402,6 @@ validate_typedata(q, argv, vo)
     int id;
     EXEC SQL END DECLARE SECTION;
     int status;
-    char *index();
     register char *c;
 
     /* get named object */
@@ -412,11 +417,11 @@ validate_typedata(q, argv, vo)
     if (sqlca.sqlerrd[2] != 1) return(MR_TYPE);
 
     /* now retrieve the record id corresponding to the named object */
-    if (index(data_type, ' '))
-	*index(data_type, ' ') = 0;
+    if (dbg_index(data_type, ' '))
+	*dbg_index(data_type, ' ') = 0;
     if (!strcmp(data_type, "user")) {
 	/* USER */
-	if (index(name, '@'))
+	if (dbg_index(name, '@'))
 	  return(MR_USER);
 	status = name_to_id(name, data_type, &id);
 	if (status && (status == MR_NO_MATCH || status == MR_NOT_UNIQUE))

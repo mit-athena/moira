@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_server.h,v $
- *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_server.h,v 1.24 1993-11-10 15:31:49 mar Exp $
+ *	$Author: tytso $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_server.h,v 1.25 1993-12-10 13:51:34 tytso Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
@@ -14,6 +14,7 @@
 #include "mr_proto.h"
 #include <moira_site.h>
 #include <krb.h>
+#include "malloc.h"
 
 typedef struct returned_tuples {
 	struct returned_tuples *next;

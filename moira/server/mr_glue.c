@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_glue.c,v $
- *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_glue.c,v 1.17 1990-06-07 17:51:37 mar Exp $
+ *	$Author: tytso $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_glue.c,v 1.18 1993-12-10 14:01:30 tytso Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -12,17 +12,17 @@
  */
 
 #ifndef lint
-static char *rcsid_mr_glue_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_glue.c,v 1.17 1990-06-07 17:51:37 mar Exp $";
+static char *rcsid_mr_glue_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_glue.c,v 1.18 1993-12-10 14:01:30 tytso Exp $";
 #endif lint
 
 #include <mit-copyright.h>
-#include "mr_server.h"
 #include <sys/types.h>
 #include <sys/signal.h>
 #include <sys/wait.h>
 #include <krb_et.h>
 #include <pwd.h>
 #include "query.h"
+#include "mr_server.h"
 
 static int already_connected = 0;
 
@@ -30,7 +30,7 @@ static int already_connected = 0;
 
 static client pseudo_client;
 extern int errno;
-extern char *malloc(), *whoami;
+extern char *whoami;
 extern time_t now;
 void reapchild();
 

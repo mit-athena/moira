@@ -1,4 +1,4 @@
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/Imakefile,v 1.3 1993-11-01 12:06:09 mar Exp $
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/Imakefile,v 1.4 1993-12-10 13:56:46 tytso Exp $
 #
 # Copyright 1990 by the Massachusetts Institute of Technology.
 #
@@ -23,13 +23,13 @@ SRCS = startmoira.c mr_main.c mr_sauth.c mr_scall.c \
 	qsupport.c qsubs.c queries2.c mr_smalloc.c \
 	increment.c cache.c mr_glue.c qvalidate.c \
 	mr_server.h query.h qrtn.h qaccess.c qsetup.c \
-	qfollow.c $(XSRC)
+	qfollow.c malloc.h $(XSRC)
 CODE= startmoira.c mr_main.c mr_sauth.c mr_scall.c \
 	mr_srvdata.c mr_shutdown.c mr_util.c qrtn.dc \
 	qsupport.dc qsubs.c queries2.c mr_smalloc.c \
 	increment.dc cache.dc mr_glue.c qvalidate.dc \
 	Imakefile mr_server.h query.h qrtn.h qaccess.dc \
-	qsetup.dc qfollow.dc $(XSRC)
+	qsetup.dc qfollow.dc malloc.h $(XSRC)
 SRVOBJ=mr_main.o mr_sauth.o mr_scall.o mr_srvdata.o mr_shutdown.o \
 	mr_util.o qrtn.o queries2.o qsupport.o qsubs.o \
 	mr_smalloc.o increment.o cache.o qvalidate.o \

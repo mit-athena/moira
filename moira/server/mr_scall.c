@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_scall.c,v $
- *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_scall.c,v 1.22 1992-07-20 11:18:02 mar Exp $
+ *	$Author: tytso $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_scall.c,v 1.23 1993-12-10 13:55:32 tytso Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_sms_scall_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_scall.c,v 1.22 1992-07-20 11:18:02 mar Exp $";
+static char *rcsid_sms_scall_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_scall.c,v 1.23 1993-12-10 13:55:32 tytso Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -24,7 +24,6 @@ static char *rcsid_sms_scall_c = "$Header: /afs/.athena.mit.edu/astaff/project/m
 extern char buf1[];
 extern int nclients;
 extern char *whoami;
-extern char *malloc();
 extern int errno;
 
 extern void clist_delete(), do_auth(), do_shutdown();
@@ -247,7 +246,6 @@ list_users(callbk, callarg)
 	extern client **clients;
 	extern char *inet_ntoa();
 	char *cp;
-	char *index();
 	char *ctime();
 
 	for (i = 0; i < nclients; i++) {

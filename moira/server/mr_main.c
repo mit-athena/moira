@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v $
- *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.31 1993-03-02 18:28:18 mar Exp $
+ *	$Author: tytso $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.32 1993-12-10 13:57:06 tytso Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -16,7 +16,7 @@
  * 
  */
 
-static char *rcsid_mr_main_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.31 1993-03-02 18:28:18 mar Exp $";
+static char *rcsid_mr_main_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.32 1993-12-10 13:57:06 tytso Exp $";
 
 #include <mit-copyright.h>
 #include <strings.h>
@@ -46,8 +46,6 @@ extern char *takedown;
 extern int errno;
 extern FILE *journal;
 
-extern char *malloc();
-extern int free();
 extern char *inet_ntoa();
 extern void mr_com_err();
 extern void do_client();
@@ -58,6 +56,11 @@ void oplist_append();
 void reapchild(), godormant(), gowakeup();
 
 extern time_t now;
+
+#ifdef _DEBUG_MALLOC_INC
+static char *dbg_malloc();
+static int dbg_free();
+#endif
 
 /*
  * Main MOIRA server loop.
@@ -107,8 +110,13 @@ main(argc, argv)
 	/* Profiling implies that getting rid of one level of call
 	 * indirection here wins us maybe 1% on the VAX.
 	 */
+#ifdef _DEBUG_MALLOC_INC
+	gdb_amv = dbg_malloc;
+	gdb_fmv = dbg_free;
+#else
 	gdb_amv = malloc;
-	gdb_fmv = free;
+	gdb_fmv = (int (*)()) free;
+#endif
 	
 	/*
 	 * GDB initialization.
@@ -552,3 +560,19 @@ mr_setup_signals()
 	exit(1);
     }
 }
+
+#ifdef _DEBUG_MALLOC_INC
+static char *dbg_malloc(size)
+	SIZETYPE	size;
+{
+	return( debug_malloc("somewhere in the gdb code",1,size) );
+}
+
+static int dbg_free(cptr)
+	DATATYPE	*cptr;
+{
+	debug_free((char *)NULL, 0, cptr);
+	return 0;		/* GDB is being stupid */
+}
+#endif
+

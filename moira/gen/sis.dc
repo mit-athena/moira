@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/sis.dc,v 1.3 1993-04-15 12:14:51 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/sis.dc,v 1.4 1996-09-29 21:09:29 danw Exp $
  *
  * This generates a list of users and their MIT ID numbers and the
  * signatures which guarentee this mapping.
@@ -39,7 +39,7 @@ char **argv;
     struct timeval now;
     EXEC SQL BEGIN DECLARE SECTION;
     char login[9], sig[257], id[17], kname[257];
-    int timestamp, cutoff;
+    int timestamp;
     struct { char login[12];
 	     char id[12];
 	     char sig[256];
@@ -78,10 +78,6 @@ char **argv;
 	outf = NULL;
     }
 
-    /* the cutoff time is 14 days before now */
-    gettimeofday(&now, NULL);
-    cutoff = now.tv_sec - 14 * 24 * 60 * 60;
-
     /* The following is declarative, not executed,
      * and so is dependent on where it is in the file,
      * not in the order of execution of statements.
@@ -92,7 +88,7 @@ char **argv;
       SELECT u.login, u.clearid, u.signature, u.sigdate, s.string
       FROM users u, strings s
 	WHERE u.status = 1 and u.sigwho = s.string_id and u.sigwho != 0
-	  and u.secure <= :cutoff and u.secure != 0;
+	  and u.secure != 0;
     EXEC SQL OPEN x;
     while (1) {
 	EXEC SQL FETCH x INTO :login, :id, :sig, :timestamp, :kname;

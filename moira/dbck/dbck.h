@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/dbck.h,v 1.2 1988-09-26 14:41:01 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/dbck.h,v 1.3 1989-09-11 12:18:22 mar Exp $
  *
  * Declarations for SMS database consistancy checker
  *
@@ -9,6 +9,8 @@
 
 #include <sms_app.h>
 #include <mit-copyright.h>
+
+#define NULL 0
 
 #define MODE_ASK 1
 #define MODE_NO 2

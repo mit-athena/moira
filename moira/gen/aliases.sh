@@ -1,23 +1,26 @@
 #!/bin/sh
+PATH=/bin:/usr/ucb:/usr/bin
+
 MR_MKCRED=47836474
+
 cat /usr/lib/local-aliases >> /usr/lib/aliases.new
-/bin/diff /usr/lib/aliases /usr/lib/aliases.new > /tmp/aliasdiff
-/bin/cp /dev/null /usr/lib/aliases.new.dir
-/bin/cp /dev/null /usr/lib/aliases.new.pag
+diff /usr/lib/aliases /usr/lib/aliases.new > /tmp/aliasdiff
+cp /dev/null /usr/lib/aliases.new.dir
+cp /dev/null /usr/lib/aliases.new.pag
 /usr/lib/sendmail -bi -oA/usr/lib/aliases.new
 if [ $? != 0 ]; then
 	exit $MR_MKCRED
 	fi
-kill `/bin/ps ax | /bin/grep "accepting connections" | /bin/grep -v grep | /bin/awk '{print $1}'`
-/bin/mv /usr/lib/aliases /usr/lib/aliases.old
-/bin/mv /usr/lib/aliases.dir /usr/lib/aliases.old.dir
-/bin/mv /usr/lib/aliases.pag /usr/lib/aliases.old.pag
-/bin/mv /usr/lib/aliases.new /usr/lib/aliases
-/bin/mv /usr/lib/aliases.new.dir /usr/lib/aliases.dir
-/bin/mv /usr/lib/aliases.new.pag /usr/lib/aliases.pag
+kill `ps ax | grep "accepting connections" | grep -v grep | awk '{print $1}'`
+mv /usr/lib/aliases /usr/lib/aliases.old
+mv /usr/lib/aliases.dir /usr/lib/aliases.old.dir
+mv /usr/lib/aliases.pag /usr/lib/aliases.old.pag
+mv /usr/lib/aliases.new /usr/lib/aliases
+mv /usr/lib/aliases.new.dir /usr/lib/aliases.dir
+mv /usr/lib/aliases.new.pag /usr/lib/aliases.pag
 /usr/lib/sendmail -bd -q30m
 
-/bin/rm -f $0
+rm -f $0
 exit 0
 
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/aliases.sh,v 1.5 1990-11-19 12:18:53 mar Exp $
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/aliases.sh,v 1.6 1991-09-03 15:45:31 mar Exp $

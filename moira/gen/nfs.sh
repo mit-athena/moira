@@ -1,8 +1,7 @@
 #!/bin/csh -f
 # This script performs nfs updates on servers.
 #
-# $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/nfs.sh,v $
-echo '$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/nfs.sh,v 1.12 1991-07-22 14:08:11 mar Exp $'
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/nfs.sh,v 1.13 1991-09-03 15:47:58 mar Exp $
 
 # The following exit codes are defined and MUST BE CONSISTENT with the
 # MR error codes the library uses:
@@ -32,7 +31,7 @@ chmod 755 $SRC_DIR
 # incorrect.  For now however, it is probably not worth the effort
 # to canonicalize the hostname, especially with the upcoming update
 # protocol redesign
-set uchost=`/bin/hostname | tr a-z A-Z`.MIT.EDU
+set uchost=`hostname | tr a-z A-Z`.MIT.EDU
 
 cd $SRC_DIR
 

@@ -1,4 +1,4 @@
-/* $Id: mailhub.pc,v 1.7 1998-02-23 19:23:43 danw Exp $
+/* $Id: mailhub.pc,v 1.8 1999-01-18 21:44:34 danw Exp $
  *
  * This generates the /usr/lib/aliases file for the mailhub.
  *
@@ -22,14 +22,14 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/mailhub.pc,v 1.7 1998-02-23 19:23:43 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/mailhub.pc,v 1.8 1999-01-18 21:44:34 danw Exp $");
 
 char *whoami = "mailhub.gen";
 char *db = "moira/moira";
 char *divide = "##############################################################";
 
-#define ML_WID	72
-#define AL_MAX_WID 592
+#define MAX_LINE_WIDTH	72
+#define MAX_ALIAS_WIDTH 592
 
 #define FALSE 0
 #define TRUE (!FALSE)
@@ -69,18 +69,17 @@ int hashstr(char *s);
 void sort_info(void);
 void output_data(int dummy, void *names, void *out);
 void output_mlist(int id, struct list *l);
-void do_member(FILE *out, char *s);
 void put_fill(FILE *aliases, char *string);
 void do_people(void);
 
+int incount = 0;
+
 int main(int argc, char **argv)
 {
-  long tm = time(NULL);
+  time_t tm = time(NULL);
   char filename[MAXPATHLEN], *targetfile;
   struct stat sb;
-  EXEC SQL BEGIN DECLARE SECTION;
-  int flag;
-  EXEC SQL END DECLARE SECTION;
+  int flag1, flag2;
 
   EXEC SQL CONNECT :db;
 
@@ -88,9 +87,10 @@ int main(int argc, char **argv)
     {
       if (stat(argv[1], &sb) == 0)
 	{
-	  if (ModDiff (&flag, "users", sb.st_mtime))
+	  if (ModDiff(&flag1, "users", sb.st_mtime) ||
+	      ModDiff(&flag2, "list", sb.st_mtime))
 	    exit(MR_DATE);
-	  if (flag < 0)
+	  if (flag1 < 0 && flag2 < 0)
 	    {
 	      fprintf(stderr, "File %s does not need to be rebuilt.\n",
 		      argv[1]);
@@ -159,12 +159,13 @@ void get_info(void)
   EXEC SQL WHENEVER SQLERROR GOTO sqlerr;
 
   cnt = 0;
-  machines = create_hash(1000);
+  machines = create_hash(100);
 
   EXEC SQL DECLARE m_cursor CURSOR FOR
     SELECT mach_id, name
     FROM machine
     WHERE status = 1
+    AND mach_id IN ( SELECT UNIQUE pop_id FROM users )
     ORDER BY mach_id;
   EXEC SQL OPEN m_cursor;
   while (1)
@@ -368,8 +369,6 @@ void insert_login(int id, void *user, void *hint)
     insert_name(u->login, id, TRUE, FALSE);
 }
 
-int incount = 0;
-
 void insert_name(char *s, int id, int nodups, int copy)
 {
   int code;
@@ -513,13 +512,14 @@ void output_data(int dummy, void *names, void *out)
 }
 
 
-int lwid, bol, awid;
-
 void output_mlist(int id, struct list *l)
 {
   struct list *l1;
   struct member *m;
   struct user *u;
+  int line_width, alias_width, word_width, beginning;
+  static int cont = 1;
+  char str[8];
 
   put_fill(out, l->description);
   if (l->acl_t ==  'L' && (l1 = hash_lookup(lists, l->acl_id)))
@@ -529,70 +529,63 @@ void output_mlist(int id, struct list *l)
   else
     fprintf(out, "%s: ", l->name);
 
-  lwid = strlen(l->name) + 2;
-  bol = 1;
+  alias_width = line_width = strlen(l->name) + 2;
+  beginning = 1;
   for (m = l->m; m; m = m->next)
-    do_member(out, m->name);
+    {
+      word_width = strlen(m->name);
+
+      if (!beginning && alias_width + word_width + 2 > MAX_ALIAS_WIDTH)
+	{
+	  /* Make a continuation. */
+	  sprintf(str, "%c%c%c%c%c%c", rand() % 26 + 97, rand() % 26 + 97,
+		  rand() % 26 + 97, rand() % 26 + 97,
+		  rand() % 26 + 97, rand() % 26 + 97);
+	  fprintf(out, ",\n\tcont%d-%s\ncont%d-%s: ", cont, str, cont, str);
+	  cont++;
+	  alias_width = line_width = 17 + word_width;
+	  fputs(m->name, out);
+	}
+      else if (beginning)
+	{
+	  /* Beginning of alias, so don't wrap. */
+	  line_width += word_width;
+	  alias_width = line_width;
+	  fputs(m->name, out);
+	  beginning = 0;
+	}
+      else if (line_width + word_width + 2 > MAX_LINE_WIDTH)
+	{
+	  /* Wrap. */
+	  fprintf(out, ",\n\t%s", m->name);
+	  alias_width += line_width + word_width + 2;
+	  line_width = word_width + 8;
+	}
+      else
+	{
+	  /* Continue line. */
+	  line_width += word_width + 2;
+	  fprintf(out, ", %s", m->name);
+	}
+    }
   if (!l->m)
     fprintf(out, "/dev/null");
   fprintf(out, "\n\n");
   incount++;
 }
 
-
-/* print out strings separated by commas, doing line breaks as appropriate */
-
-void do_member(FILE *out, char *s)
-{
-  int wwid;
-  static int cont = 1;
-  char str[8];
-
-  wwid = strlen(s);
-
-  if (!bol && awid + wwid + 2 > AL_MAX_WID)
-    {
-      sprintf(str, "%c%c%c%c%c%c", rand() % 26 + 97, rand() % 26 + 97,
-	      rand() % 26 + 97, rand() % 26 + 97,
-	      rand() % 26 + 97, rand() % 26 + 97);
-      str[6] = '\0';
-      fprintf(out, ",\n\tcont%d-%s\ncont%d-%s: ", cont, str, cont, str);
-      cont++;
-      awid = lwid = 17 + wwid;
-      fputs(s, out);
-      return;
-    }
-
-  if (bol)
-    {
-      lwid += wwid;
-      awid = lwid;
-      fputs(s, out);
-      bol = 0;
-      return;
-    }
-  if (lwid + wwid + 2 > ML_WID)
-    {
-      fprintf(out, ",\n\t%s", s);
-      awid += lwid + wwid + 2;
-      lwid = wwid + 8;
-      return;
-    }
-  lwid += wwid + 2;
-  fprintf(out, ", %s", s);
-}
-
-
+/* Write a word-wrapped list description to the aliases file as a
+ * comment. */
 void put_fill(FILE *aliases, char *string)
 {
   char *c;
-  int lwid;
-  int wwid;
+  int line_width;
+  int word_width;
 
   if (!string || !*string)
     return;
   fputs("#  ", aliases);
-  lwid = 3;
+  line_width = 3;
 
   while (1)
     {
@@ -600,17 +593,17 @@ void put_fill(FILE *aliases, char *string)
 	string++;
       c = strchr(string, ' ');
       if (!c)
-	wwid = strlen(string);
+	word_width = strlen(string);
       else
 	{
-	  wwid = c - string;
+	  word_width = c - string;
 	  *c = '\0';
 	}
 
-      if ((lwid + wwid) > ML_WID)
+      if (line_width + word_width > MAX_LINE_WIDTH)
 	{
 	  fputs("\n#  ", aliases);
-	  lwid = 3;
+	  line_width = 3;
 	  fputs(string, aliases);
 	}
       else
@@ -620,14 +613,14 @@ void put_fill(FILE *aliases, char *string)
 	break;
       /* add a space after the word */
       fputc(' ', aliases);
-      wwid++;
-      lwid += wwid;
-      string += wwid;
+      word_width++;
+      line_width += word_width;
+      string += word_width;
       /* add another if after a period */
       if (*--c == '.')
 	{
 	  fputc(' ', aliases);
-	  lwid++;
+	  line_width++;
 	}
     }
 

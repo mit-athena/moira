@@ -1,4 +1,4 @@
-/* $Id: blanche.c,v 1.39 1998-03-26 21:24:28 danw Exp $
+/* $Id: blanche.c,v 1.40 1999-05-13 18:53:41 danw Exp $
  *
  * Command line oriented Moira List tool.
  *
@@ -12,6 +12,7 @@
 #include <mit-copyright.h>
 #include <moira.h>
 #include <moira_site.h>
+#include <mrclient.h>
 
 #include <ctype.h>
 #include <errno.h>
@@ -19,7 +20,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.39 1998-03-26 21:24:28 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.40 1999-05-13 18:53:41 danw Exp $");
 
 struct member {
   int type;
@@ -66,7 +67,7 @@ int main(int argc, char **argv)
 {
   int status, success;
   char **arg = argv;
-  char *membervec[3], *motd;
+  char *membervec[3];
   struct member *memberstruct;
   char *server = NULL, *p;
 
@@ -277,36 +278,14 @@ int main(int argc, char **argv)
     showusers = showstrings = showlists = showkerberos = 1;
 
   /* fire up Moira */
-  if ((status = mr_connect(server)))
+  status = mrcl_connect(server, "blanche", !noauth);
+  if (status == MRCL_AUTH_ERROR)
     {
-      com_err(whoami, status, "unable to connect to the Moira server");
-      exit(2);
+      com_err(whoami, 0, "Try the -noauth flag if you don't "
+	      "need authentication.");
     }
-  if ((status = mr_motd(&motd)))
-    {
-      com_err(whoami, status, "unable to check server status");
-      exit(2);
-    }
-  if (motd)
-    {
-      fprintf(stderr, "The Moira server is currently unavailable:\n%s\n",
-	      motd);
-      mr_disconnect();
-      exit(2);
-    }
-
-  if (!noauth && (status = mr_auth("blanche")))
-    {
-      if (status == MR_USER_AUTH)
-	com_err(whoami, status, "");
-      else
-	{
-	  com_err(whoami, status, "unable to authenticate to Moira");
-	  com_err(whoami, 0,
-		  " Try the -noauth flag if you don't need authentication");
-	  exit(2);
-	}
-    }
+  if (status)
+    exit(2);
 
   /* check for username/listname clash */
   if (createflag || (setinfo && newname && strcmp(newname, listname)))

@@ -1,4 +1,4 @@
-/* $Id: addusr.c,v 1.13 1999-01-13 19:57:18 danw Exp $
+/* $Id: addusr.c,v 1.14 1999-05-13 18:53:28 danw Exp $
  *
  * Program to add users en masse to the moira database
  *
@@ -12,13 +12,14 @@
 #include <mit-copyright.h>
 #include <moira.h>
 #include <moira_site.h>
+#include <mrclient.h>
 
 #include <ctype.h>
 #include <errno.h>
 #include <stdio.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/addusr/addusr.c,v 1.13 1999-01-13 19:57:18 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/addusr/addusr.c,v 1.14 1999-05-13 18:53:28 danw Exp $");
 
 #ifdef ATHENA
 #define DEFAULT_SHELL "/bin/athena/tcsh"
@@ -44,7 +45,7 @@ int main(int argc, char **argv)
 {
   int status, lineno;
   char **arg = argv, *qargv[U_END];
-  char *motd, *p, *first, *middle, *last, *id, *login, *server;
+  char *p, *first, *middle, *last, *id, *login, *server;
   char buf[BUFSIZ], idbuf[32];
   FILE *input;
 
@@ -154,34 +155,8 @@ int main(int argc, char **argv)
     }
 
   /* fire up Moira */
-  if ((status = mr_connect(server)))
-    {
-      com_err(whoami, status, "unable to connect to the Moira server");
-      exit(2);
-    }
-  if ((status = mr_motd(&motd)))
-    {
-      com_err(whoami, status, "unable to check server status");
-      exit(2);
-    }
-  if (motd)
-    {
-      fprintf(stderr, "The Moira server is currently unavailable:\n%s\n",
-	      motd);
-      mr_disconnect();
-      exit(2);
-    }
-
-  if ((status = mr_auth("addusr")))
-    {
-      if (status == MR_USER_AUTH)
-	com_err(whoami, status, "");
-      else
-	{
-	  com_err(whoami, status, "unable to authenticate to Moira");
-	  exit(2);
-	}
-    }
+  if (mrcl_connect(server, "addusr", 1) != MRCL_SUCCESS)
+    exit(2);
 
   qargv[U_NAME] = UNIQUE_LOGIN;
   qargv[U_UID] = UNIQUE_UID;

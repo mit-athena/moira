@@ -1,4 +1,4 @@
-/* $Id: mailmaint.c,v 1.43 1999-04-30 17:44:59 danw Exp $
+/* $Id: mailmaint.c,v 1.44 1999-05-13 18:53:43 danw Exp $
  *
  * Simple add-me-to/remove-me-from list client
  *
@@ -12,6 +12,7 @@
 #include <mit-copyright.h>
 #include <moira.h>
 #include <moira_site.h>
+#include <mrclient.h>
 
 #include <ctype.h>
 #ifdef HAVE_CURSES
@@ -25,7 +26,7 @@
 
 #include <krb.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v 1.43 1999-04-30 17:44:59 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v 1.44 1999-05-13 18:53:43 danw Exp $");
 
 #define STARTCOL 0
 #define STARTROW 3
@@ -112,7 +113,7 @@ int main(int argc, char *argv[])
 {
   void (*old_hook)(const char *, long, const char *, va_list);
   int use_menu = 1, k_errno;
-  char buf[BUFSIZ], pname[ANAME_SZ], *motd;
+  char buf[BUFSIZ], pname[ANAME_SZ];
 
   if ((whoami = strrchr(argv[0], '/')) == NULL)
     whoami = argv[0];
@@ -144,33 +145,8 @@ int main(int argc, char *argv[])
 
   printf("Connecting to database for %s...please hold on.\n", username);
 
-  status = mr_connect(NULL);
-  if (status)
-    {
-      sprintf(buf, "\nConnection to Moira server failed");
-      goto punt;
-    }
-
-  status = mr_motd(&motd);
-  if (status)
-    {
-      com_err(whoami, status, " unable to check server status");
-      mr_disconnect();
-      exit(2);
-    }
-  if (motd)
-    {
-      fprintf(stderr, "The Moira server is currently unavailable:\n%s\n",
-	      motd);
-      mr_disconnect();
-      exit(2);
-    }
-  status = mr_auth("mailmaint");
-  if (status)
-    {
-      sprintf(buf, "\nAuthorization failed.\n");
-      goto punt;
-    }
+  if (mrcl_connect(NULL, "mailmaint", 1))
+    exit(2);
 
   initscr();
   if ((LINES < 24) || (COLS < 60))

@@ -1,4 +1,4 @@
-/* $Id: mrcheck.c,v 1.16 1999-04-30 17:39:36 danw Exp $
+/* $Id: mrcheck.c,v 1.17 1999-05-13 18:53:45 danw Exp $
  *
  * Verify that all Moira updates are successful
  *
@@ -10,6 +10,7 @@
 #include <mit-copyright.h>
 #include <moira.h>
 #include <moira_site.h>
+#include <mrclient.h>
 
 #include <sys/time.h>
 
@@ -18,7 +19,7 @@
 #include <string.h>
 #include <time.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrcheck/mrcheck.c,v 1.16 1999-04-30 17:39:36 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrcheck/mrcheck.c,v 1.17 1999-05-13 18:53:45 danw Exp $");
 
 char *atot(char *itime);
 int process_server(int argc, char **argv, void *sqv);
@@ -27,8 +28,8 @@ int process_host(int argc, char **argv, void *sqv);
 void disp_sh(char **argv, char *msg);
 void usage(void);
 
+char *whoami;
 static int count = 0;
-static char *whoami;
 static struct timeval now;
 
 struct service {
@@ -162,7 +163,7 @@ void disp_sh(char **argv, char *msg)
 
 int main(int argc, char *argv[])
 {
-  char *args[2], buf[BUFSIZ], *motd;
+  char *args[2], buf[BUFSIZ];
   struct save_queue *sq;
   int status;
   int auth_required = 1;
@@ -177,26 +178,8 @@ int main(int argc, char *argv[])
   else if (argc > 1)
     usage();
 
-  status = mr_connect(NULL);
-  if (status)
-    {
-      sprintf(buf, "\nConnection to the Moira server failed.");
-      goto punt;
-    }
-
-  status = mr_motd(&motd);
-  if (status)
-    {
-      com_err(whoami, status, " unable to check server status");
-      exit(2);
-    }
-  if (motd)
-    {
-      fprintf(stderr, "The Moira server is currently unavailable:\n%s\n",
-	      motd);
-      mr_disconnect();
-      exit(2);
-    }
+  if (mrcl_connect(NULL, NULL, 0) != MRCL_SUCCESS)
+    exit(2);
   status = mr_auth("mrcheck");
   if (status && auth_required)
     {

@@ -1,0 +1,537 @@
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/members.qc,v 1.1 1990-04-13 17:34:21 mar Exp $
+ */
+
+#include <stdio.h>
+#include <signal.h>
+#include <moira.h>
+
+#define FIXERRORS
+
+#define max(x, y)	((x) > (y) ? (x) : (y))
+
+struct member {
+    int	list_id;
+    int member_id;
+    union {
+	short all;
+	struct {
+	    short u_ref_count:12;
+	    unsigned short u_direct:1;
+	    unsigned short u_baddirect:1;
+	    unsigned short u_found:1;
+	    unsigned short u_scanned:1;
+	} u_flags;
+    } flags;
+} *find_member(), *allocmember();
+#define frefc		flags.u_flags.u_ref_count
+#define fdirect		flags.u_flags.u_direct
+#define fbaddirect	flags.u_flags.u_baddirect
+#define ffound		flags.u_flags.u_found
+#define fscanned	flags.u_flags.u_scanned
+#define fall		flags.all
+
+#define member2id(c, id)	(((c & 0xff) << 24) | (id & 0xffffff))
+#define id2type(id)		((id >> 24) & 0xff)
+#define	id2id(id)		(id & 0xffffff)
+
+struct member_list {
+    struct member_list *next;
+    struct member *member;
+};
+
+struct hash *lists, *members;
+void fix_member(), display_member();
+int debug = 0, records = 0;
+
+
+main(argc, argv)
+int argc;
+char **argv;
+##{
+    char buf[256];
+
+#ifdef DEBUG
+    if (argc > 1)
+      debug = atoi(argv[1]);
+#endif DEBUG
+
+##  ingres sms
+##  begin transaction
+##  range of m is imembers
+
+    lists = create_hash(10000);
+    members = create_hash(10000);
+    records = 0;
+
+    load_members();
+#ifdef DEBUG
+    if (debug > 3)
+      hash_step(lists, display_member, NULL);
+#endif DEBUG
+    verify_members();
+    fix_members();
+
+#ifdef FIXERRORS
+    printf("Commit changes (Y/N)?");
+    fflush(stdout);
+    fgets(buf, sizeof(buf), stdin);
+    if (buf[0] == 'Y' || buf[0] == 'y') {
+	printf("Ending transaction\n");
+##	end transaction
+    } else {
+#endif FIXERRORS
+	printf("Aborting transaction\n");
+##	abort
+#ifdef FIXERRORS
+    }
+#endif FIXERRORS
+
+##  exit
+    printf("Done.\n");
+
+    exit(0);
+##}
+
+
+
+load_members()
+##{
+    struct member *m, *m1, *md, *ma;
+    struct member_list *descendants, *ancestors, *desc, *ance, la, ld;
+##  int list_id, member_id, ref_count, ref;
+##  char mtype[9];
+    struct save_queue *sq;
+
+    printf("Loading members\n");
+    sq = sq_create();
+
+##  retrieve (list_id = m.#list_id, member_id = m.#member_id,
+##	      mtype = m.#member_type, ref_count = m.#ref_count)
+##	where m.direct = 1 {
+#ifdef DEBUG
+      if (debug > 5)
+	printf("Working on list %d member %s %d refc %d\n",
+	       list_id, mtype, member_id, ref_count);
+#endif DEBUG
+      if ((m = find_member(list_id, member2id(mtype[0], member_id))) == NULL) {
+	  m = allocmember();
+	  m->list_id = list_id;
+	  m->member_id = member2id(mtype[0], member_id);
+	  insert_list(m);
+	  insert_member(m);
+      }
+      m->fdirect = 1;
+      la.next = (struct member_list *) hash_lookup(members,
+						   member2id('L', list_id));
+      la.member = m;
+      if (isinchain(m, la.next))
+	ance = la.next;
+      else
+	ance = &la;
+      if (mtype[0] == 'L')
+	ld.next = (struct member_list *) hash_lookup(lists, member_id);
+      else
+	ld.next = NULL;
+      ld.member = m;
+      if (isinchain(m, ld.next))
+	desc = ld.next;
+      else
+	desc = &ld;
+#ifdef DEBUG
+      if (debug > 5)
+	printf("%d ancestors, %d descendants\n",
+	       chainlen(ance), chainlen(desc));
+#endif DEBUG
+      for (ancestors = ance; ancestors; ancestors = ancestors->next) {
+	  ma = ancestors->member;
+	  for (descendants = desc; descendants; descendants=descendants->next) {
+	      md = descendants->member;
+	      if (member2id('L', ma->list_id) == md->member_id)
+		fprintf(stderr, "Loop detected! list %d member %d\n",
+			md->list_id, ma->member_id);
+	      ref = md->frefc * ma->frefc;
+	      if (ref == 0) {
+		  ref = max(md->frefc, ma->frefc);
+		  if (ref == 0)
+		    ref = 1;
+	      }
+#ifdef DEBUG
+	      if (debug > 5)
+		printf("Checking list %d member %d, ref = %d\n",
+		       ma->list_id, id2id(md->member_id), ref);
+#endif DEBUG
+	      if (m1 = find_member(ma->list_id, md->member_id)) {
+		  m1->frefc += ref;
+#ifdef DEBUG
+		  if (debug > 5)
+		    printf("set refc to %d (%d) on list %d, member %d\n",
+			   m1->frefc, ref, m1->list_id, id2id(m1->member_id));
+#endif DEBUG
+		  if (ma == m && md == m)
+		    m1->fdirect = 1;
+	      } else {
+		  m1 = allocmember();
+		  m1->list_id = ma->list_id;
+		  m1->member_id = md->member_id;
+		  m1->frefc = ref;
+#ifdef DEBUG
+		  if (debug > 5)
+		    printf("set new refc to %d (%d) on list %d, member %d\n",
+			   m1->frefc, ref, m1->list_id, id2id(m1->member_id));
+#endif DEBUG
+		  sq_save_data(sq, m1);
+	      }
+	  }
+      }
+      while (sq_get_data(sq, &m)) {
+	  insert_list(m);
+	  insert_member(m);
+      }
+      sq_destroy(sq);
+      sq = sq_create();
+##  }
+    printf("created %d records\n", records);
+##}
+
+verify_members()
+##{
+    struct member *m;
+    struct save_queue *sq;
+##  int list_id, member_id, ref_count, dflag;
+##  char mtype[9];
+    int errxtra, errbref, errbdir;
+#ifdef DEBUG
+    int ref0, ref1, ref2, ref3, refg;
+    int db0, db1, db2, db3, dbg;
+#endif DEBUG
+
+    /* verify members from database */
+    printf("Verifying members\n");
+    errxtra = errbref = errbdir = 0;
+#ifdef DEBUG
+    ref0 = ref1 = ref2 = ref3 = refg = 0;
+    db0 = db1 = db2 = db3 = dbg = 0;
+#endif DEBUG
+    sq = sq_create();
+##  retrieve (list_id = m.#list_id, member_id = m.#member_id,
+##	      mtype = m.member_type, ref_count = m.#ref_count,
+##	      dflag = m.#direct) {
+#ifdef DEBUG
+      if (debug > 1)
+	switch (ref_count) {
+	case 0: db0++; break;
+	case 1: db1++; break;
+	case 2: db2++; break;
+	case 3: db3++; break;
+	default: dbg++;
+	}
+#endif DEBUG
+      m = find_member(list_id, member2id(mtype[0], member_id));
+      if (m == NULL) {
+	  m = allocmember();
+	  m->list_id = list_id;
+	  m->member_id = member2id(mtype[0], member_id);
+	  m->fdirect = dflag;
+	  m->frefc = ref_count;
+	  sq_save_data(sq, m);
+	  errxtra++;
+      } else {
+	  m->ffound = 1;
+#ifdef DEBUG	
+	  if (debug > 1)
+	    switch (m->frefc) {
+	    case 0: ref0++; break;
+	    case 1: ref1++; break;
+	    case 2: ref2++; break;
+	    case 3: ref3++; break;
+	    default: refg++;
+	    }
+#endif DEBUG
+	  m->frefc -= ref_count;
+	  if (m->frefc != 0)
+	    errbref++;
+	  if (m->fdirect != dflag) {
+	      m->fbaddirect = 1;
+	      errbdir++;
+	  }
+      }
+##  }
+    printf("Found %d extra records, %d bad ref counts, %d bad direct flags\n",
+	   errxtra, errbref, errbdir);
+#ifdef DEBUG
+    if (debug > 1) {
+	printf("Found in db: %d 0; %d 1; %d 2; %d 3; %d > 3\n",
+	       db0, db1, db2, db3, dbg);
+	printf("Found  refs: %d 0; %d 1; %d 2; %d 3; %d > 3\n",
+	       ref0, ref1, ref2, ref3, refg);
+    }
+#endif DEBUG
+##}
+
+
+fix_members()
+##{
+    struct member *m;
+    struct save_queue *sq;
+    int errmis = 0;
+##  int list_id, member_id, rowcount;
+##  char mtype[9];
+    char buf[512];
+
+    /* fix any errors */
+    printf("Fixing errors\n");
+    hash_step(lists, fix_member, &errmis);
+    while (sq_get_data(sq, &m)) {
+	printf("Extraneous member record, deleting:\n");
+	list_id = m->list_id;
+	member_id = id2id(m->member_id);
+	switch (id2type(m->member_id)) {
+	case 'U': strcpy(mtype, "USER"); break;
+	case 'L': strcpy(mtype, "LIST"); break;
+	case 'S': strcpy(mtype, "STRING"); break;
+	case 'K': strcpy(mtype, "KERBEROS"); break;
+	default:
+	    mtype[0] = id2type(m->member_id);
+	    mtype[1] = 0;
+	}
+    	printf("  List: %d, Member: %s %d, Refc: %d, Direct %d\n",
+	       list_id, mtype, member_id, m->frefc, m->fdirect);
+#ifdef FIXERRORS
+##	delete m where m.#list_id = list_id and m.#member_id = member_id
+##		and m.member_type = mtype
+##	inquire_equel(rowcount = "rowcount")
+	printf("  %d rows deleted\n", rowcount);
+#endif FIXERRORS
+    }
+    if (errmis > 0)
+      printf("Added %d missing records\n", errmis);
+##}
+
+
+insert_list(m)
+struct member *m;
+{
+    register struct member_list *l, *l1;
+
+    l = (struct member_list *) hash_lookup(lists, m->list_id);
+    if (l == NULL) {
+	l = (struct member_list *)malloc(sizeof(struct member_list));
+	if (l == NULL) {
+	    fprintf(stderr, "No memory for insert_list\n");
+	    exit(1);
+	}
+	l->next = NULL;
+	l->member = m;
+	hash_store(lists, m->list_id, l);
+	return;
+    }
+    for (l1 = l; l1; l1 = l1->next)
+      if (l1->member->member_id == m->member_id) {
+	  fprintf(stderr, "Found 2nd copy of list record for\n");
+	  fprintf(stderr, "List: %d, Member: %c %d, Refc: %d, Direct %d\n",
+		  m->list_id, id2type(m->member_id), id2id(m->member_id),
+		  m->frefc, m->fdirect);
+	  kill(getpid(), SIGQUIT);
+	  exit(2);
+      }
+
+    l1 = (struct member_list *)malloc(sizeof(struct member_list));
+    if (l1 == NULL) {
+	fprintf(stderr, "No memory for insert_list\n");
+	exit(1);
+    }
+    l1->next = l->next;
+    l->next = l1;
+    l1->member = m;
+}
+
+
+insert_member(m)
+struct member *m;
+{
+    register struct member_list *l, *l1;
+
+    l = (struct member_list *) hash_lookup(members, m->member_id);
+    if (l == NULL) {
+	l = (struct member_list *)malloc(sizeof(struct member_list));
+	if (l == NULL) {
+	    fprintf(stderr, "No memory for insert_member\n");
+	    exit(1);
+	}
+	l->next = NULL;
+	l->member = m;
+	hash_store(members, m->member_id, l);
+	return;
+    }
+
+    for (l1 = l; l1; l1 = l1->next)
+      if (l1->member->list_id == m->list_id) {
+	  fprintf(stderr, "Found 2nd copy of member record for\n");
+	  fprintf(stderr, "List: %d, Member: %c %d, Refc: %d, Direct %d\n",
+		  m->list_id, id2type(m->member_id), id2id(m->member_id),
+		  m->frefc, m->fdirect);
+	  kill(getpid(), SIGQUIT);
+	  exit(2);
+      }
+
+    l1 = (struct member_list *)malloc(sizeof(struct member_list));
+    if (l1 == NULL) {
+	fprintf(stderr, "No memory for insert_member\n");
+	exit(1);
+    }
+    l1->next = l->next;
+    l->next = l1;
+    l1->member = m;
+}
+
+
+struct member *find_member(listid, memberid)
+int listid;
+int memberid;
+{
+    register struct member_list *l;
+
+    for (l = (struct member_list *) hash_lookup(lists, listid); l; l = l->next)
+      if (l->member->member_id == memberid)
+	return(l->member);
+    return(NULL);
+}
+
+
+/*ARGSUSED*/
+void fix_member(dummy, l, errmis)
+int dummy;
+struct member_list *l;
+int *errmis;
+##{
+##  int list_id, member_id, ref_count, dflag, rowcount;
+##  char *mtype;
+    char buf[2];
+    register struct member *m;
+
+    for (; l; l = l->next) {
+	m = l->member;
+
+	if (m->fscanned)
+	  continue;
+	m->fscanned = 1;
+	if (m->fbaddirect == 0 && m->frefc == 0 && m->ffound == 1)
+	  continue;
+	if (m->ffound == 0) {
+	    printf("Missing member record, adding:\n");
+	    list_id = m->list_id;
+	    member_id = id2id(m->member_id);
+	    ref_count = m->frefc;
+	    dflag = m->fdirect;
+	    switch (id2type(m->member_id)) {
+	    case 'U': mtype = "USER"; break;
+	    case 'L': mtype = "LIST"; break;
+	    case 'S': mtype = "STRING"; break;
+	    case 'K': mtype = "KERBEROS"; break;
+	    default:
+		mtype = buf;
+		buf[0] = id2type(m->member_id);
+		buf[1] = 0;
+	    }
+	    printf("  List: %d, Member: %s %d, Refc: %d, Direct %d\n",
+		   list_id, mtype, member_id, ref_count, dflag);
+	    (*errmis)++;
+#ifdef FIXERRORS
+##	    append imembers (#list_id = list_id, #member_id = member_id,
+##			     member_type = mtype, #ref_count = ref_count,
+##			     direct = dflag);
+##	    inquire_equel(rowcount = "rowcount")
+	    printf("  %d rows added\n", rowcount);
+#endif FIXERRORS
+	    continue;
+	}
+	printf("Member record has bad ref_count and/or direct flag, fixing\n");
+	list_id = m->list_id;
+	member_id = id2id(m->member_id);
+	ref_count = m->frefc;
+	dflag = m->fdirect;
+	switch (id2type(m->member_id)) {
+	case 'U': mtype = "USER"; break;
+	case 'L': mtype = "LIST"; break;
+	case 'S': mtype = "STRING"; break;
+	case 'K': mtype = "KERBEROS"; break;
+	default:
+	    mtype = buf;
+	    buf[0] = id2type(m->member_id);
+	    buf[1] = 0;
+	}
+	printf("  List: %d, Member: %s %d, Refc: %d, Direct %d\n",
+	       list_id, mtype, member_id, ref_count, dflag);
+#ifdef FIXERRORS
+##	replace m (#ref_count = m.#ref_count + ref_count, direct = dflag)
+##	  where m.#list_id = list_id and m.#member_id = member_id and
+##	    m.member_type = mtype
+##	inquire_equel(rowcount = "rowcount");
+	printf("  %d rows fixed\n", rowcount);
+#endif FIXERRORS
+    }
+##}
+
+
+struct member *allocmember()
+{
+    register struct member *m;
+
+    m = (struct member *) malloc(sizeof(struct member));
+    if (m == NULL) {
+	fprintf(stderr, "No memory for new member\n");
+	exit(1);
+    }
+    m->fall = 0;
+    records++;
+    return(m);
+}
+
+
+int isinchain(m, l)
+struct member *m;
+register struct member_list *l;
+{
+    for (; l; l = l->next)
+      if (l->member == m)
+	return(1);
+    return(0);
+}
+
+
+int chainlen(l)
+register struct member_list *l;
+{
+    register int i;
+    for (i = 0; l; l = l->next, i++);
+    return(i);
+}
+
+
+#ifdef DEBUG
+
+/*ARGSUSED*/
+void display_member(key, l, dummy1)
+int key, dummy1;
+struct member_list *l;
+{
+    struct member *m;
+    char *mtype;
+
+    printf("%d*", key);
+    for(; l; l = l->next) {
+	m = l->member;
+	switch (id2type(m->member_id)) {
+	case 'U': mtype = "USER"; break;
+	case 'L': mtype = "LIST"; break;
+	case 'S': mtype = "STRING"; break;
+	case 'K': mtype = "KERBEROS"; break;
+	default: mtype = "???"; break;
+	}
+	printf("List: %d, Member: %s %d, Refc: %d, Direct %d\n",
+	       m->list_id, mtype, id2id(m->member_id), m->frefc,
+	       m->fdirect);
+    }
+}
+
+#endif DEBUG

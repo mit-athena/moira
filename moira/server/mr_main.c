@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v $
  *	$Author: wesommer $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.10 1987-06-30 20:02:26 wesommer Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.11 1987-07-29 16:04:54 wesommer Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
@@ -14,6 +14,10 @@
  * 	Let the reader beware.
  * 
  *	$Log: not supported by cvs2svn $
+ * Revision 1.10  87/06/30  20:02:26  wesommer
+ * Added returned tuple chain to client structure.
+ * Added local realm global variable.
+ * 
  * Revision 1.9  87/06/21  16:39:54  wesommer
  * Performance work, rearrangement of include files.
  * 
@@ -43,7 +47,7 @@
  * 
  */
 
-static char *rcsid_sms_main_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.10 1987-06-30 20:02:26 wesommer Exp $";
+static char *rcsid_sms_main_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.11 1987-07-29 16:04:54 wesommer Exp $";
 
 #include <strings.h>
 #include <sys/errno.h>
@@ -78,6 +82,8 @@ void clist_append();
 void oplist_append();
 extern u_short ntohs();
 
+extern time_t now;
+
 /*
  * Main SMS server loop.
  *
@@ -92,6 +98,7 @@ main(argc, argv)
 	char **argv;
 {
 	int status;
+	time_t tardy;
 	
 	whoami = argv[0];
 	/*
@@ -183,19 +190,26 @@ main(argc, argv)
 			continue;
 		}
 		if (takedown) break;
+		time(&now);
 #ifdef notdef
 		fprintf(stderr, "    tick\n");
 #endif notdef
 		/*
 		 * Handle any existing connections.
 		 */
+		tardy = now - 30*60;
+		
 		for (i=0; i<nclients; i++) {
+			cur_client = clients[i];
 			if (OP_DONE(clients[i]->pending_op)) {
-				cur_client = clients[i];
+				cur_client->last_time_used = now;
 				do_client(cur_client);
-				cur_client = NULL;
-				if (takedown) break;
+			} else if (clients[i]->last_time_used < tardy) {
+				com_err(whoami, 0, "Shutting down connection due to inactivity");
+				shutdown(cur_client->con->in.fd, 0);
 			}
+			cur_client = NULL;
+			if (takedown) break;
 		}
 		/*
 		 * Handle any new connections.
@@ -277,7 +291,7 @@ new_connection()
 	cp->reply.sms_argv = NULL;
 	cp->first = NULL;
 	cp->last = NULL;
-	
+	cp->last_time_used = now;
 	newconn = NULL;
 	
 	cp->pending_op = create_operation();

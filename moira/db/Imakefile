@@ -1,4 +1,4 @@
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/db/Imakefile,v 1.1 1992-12-30 17:22:57 mar Exp $
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/db/Imakefile,v 1.2 1993-10-21 15:05:54 mar Exp $
 #
 # Copyright 1990 by the Massachusetts Institute of Technology.
 #
@@ -22,3 +22,5 @@ tables.c: schema db2tbls.awk
 	awk -f db2tbls.awk < schema > tables.c
 clean::
 	$(RM) tables.c
+
+depend:: ${CODE}

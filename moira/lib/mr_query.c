@@ -1,18 +1,21 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_query.c,v $
  *	$Author: wesommer $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_query.c,v 1.2 1987-06-16 17:48:58 wesommer Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_query.c,v 1.3 1987-08-02 21:49:53 wesommer Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
  *	$Log: not supported by cvs2svn $
+ * Revision 1.2  87/06/16  17:48:58  wesommer
+ * Clean up memory allocation, indenting.
+ * 
  * Revision 1.1  87/06/04  01:29:32  wesommer
  * Initial revision
  * 
  */
 
 #ifndef lint
-static char *rcsid_sms_query_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_query.c,v 1.2 1987-06-16 17:48:58 wesommer Exp $";
+static char *rcsid_sms_query_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_query.c,v 1.3 1987-08-02 21:49:53 wesommer Exp $";
 #endif lint
 
 #include "sms_private.h"
@@ -23,6 +26,7 @@ static char *rcsid_sms_query_c = "$Header: /afs/.athena.mit.edu/astaff/project/m
  * It builds a new argument vector with the query handle prepended,
  * and calls sms_query_internal.
  */
+int level = 0;
 
 int sms_query(name, argc, argv, callproc, callarg)
     char *name;		/* Query name */
@@ -63,6 +67,9 @@ int sms_query_internal(argc, argv, callproc, callarg)
     register sms_params *params = NULL;
     sms_params *reply = NULL;
     int stopcallbacks = 0;
+
+    if (level) return SMS_QUERY_NOT_REENTRANT;
+    level++;
     
     CHECK_CONNECTED;
 
@@ -89,12 +96,14 @@ int sms_query_internal(argc, argv, callproc, callarg)
 	complete_operation(_sms_recv_op);
 	if (OP_STATUS(_sms_recv_op) != OP_COMPLETE) {
 	    sms_disconnect();
-	    return SMS_ABORTED;
+	    status = SMS_ABORTED;
+	    goto punt_1;
 	}
     }	
 punt:
     sms_destroy_reply(reply);
-
+punt_1:
+    level--;
     return status;
 }
 /*

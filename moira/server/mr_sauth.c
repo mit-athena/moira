@@ -1,11 +1,14 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_sauth.c,v $
  *	$Author: wesommer $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_sauth.c,v 1.4 1987-06-30 20:03:46 wesommer Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_sauth.c,v 1.5 1987-07-14 00:40:18 wesommer Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
  *	$Log: not supported by cvs2svn $
+ * Revision 1.4  87/06/30  20:03:46  wesommer
+ * Put parsed kerberos principal name into the per-client structure.
+ * 
  * Revision 1.3  87/06/21  16:40:10  wesommer
  * Performance work, rearrangement of include files.
  * 
@@ -18,7 +21,7 @@
  */
 
 #ifndef lint
-static char *rcsid_sms_sauth_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_sauth.c,v 1.4 1987-06-30 20:03:46 wesommer Exp $";
+static char *rcsid_sms_sauth_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_sauth.c,v 1.5 1987-07-14 00:40:18 wesommer Exp $";
 #endif lint
 
 extern int krb_err_base;
@@ -47,9 +50,6 @@ do_auth(cl)
 	char buf[REALM_SZ+INST_SZ+ANAME_SZ];
 	extern int krb_err_base;
 	
-	com_err(whoami, 0, "Processing auth: ");
-	log_args(cl->args->sms_argc, cl->args->sms_argv);
-
 	auth.length = cl->args->sms_argl[0];
 
 	bcopy(cl->args->sms_argv[0], (char *)auth.dat, auth.length);
@@ -59,7 +59,8 @@ do_auth(cl)
 				 &ad, "")) != KSUCCESS) {
 		status += krb_err_base;
 		cl->reply.sms_status = status;
-		com_err(whoami, status, "(authentication failed)");
+		if (log_flags & LOG_RES)
+			com_err(whoami, status, "(authentication failed)");
 		return;
 	}
 	bcopy(ad.pname, cl->kname.name, ANAME_SZ);
@@ -77,6 +78,8 @@ do_auth(cl)
 	
 	cl->clname = (char *)malloc((unsigned)(strlen(buf)+1));
 	(void) strcpy(cl->clname, buf);
-	(void) sprintf(buf1, "Authenticated to %s", cl->clname);
-	com_err(whoami, 0, buf1);
+	if (log_flags & LOG_RES) {
+		(void) sprintf(buf1, "Authenticated to %s", cl->clname);
+		com_err(whoami, 0, buf1);
+	}
 }

@@ -1,0 +1,375 @@
+/************************************************************************/
+/*	
+/*	              PROBLEMS WITH THE GDB CODE
+/*	
+/************************************************************************/
+
+* Go through all of wesommers changes in /u1/sms/gdb
+	- Eye catchers faster
+	- fastprogress
+	- signal handling
+	- some fatal error stuff
+
+* check error return handling on all system calls used by GDB
+
+* terminate_db was never written
+
+* comments on start_performing_db_operation lie
+
+* clean up comments in dbserv.qc
+
+* clean up comments in gdb_db.c
+
+* Fix ptr <--> int casts on semantic routines
+
+* Buffer input through gdb_move_data
+
+* Ingres version 5 support
+
+* Bouncing connections so that there is only one GDB port
+
+* decode of descriptor currently assumes that NULL will be passed if receiving
+  into unallocated descriptor.  Autos sometimes aren't null.
+
+* Straighten out description of db_query in the library reference.
+
+* Document retrieval limit setting
+
+* Debug retrieval limit setting
+
+* Document -l option on dbserv
+
+* Document user and host fields and how to zap for anonymous use.
+  Also, indicate risks of trusting the information in those fields.
+
+* There is some inconsistency in the use of tuple vs. tuple descriptor
+  as argument to the routines like FIELD_OFFSET_IN_TUPLE
+
+* Offsets would be more convenient if from the start of the tuple rather than
+  from the start of the 0th field.
+
+* Some of the routines defined as macros may not work if semicolons are
+  used after invocation.  This should be documented our changed.
+
+* there is some inconsistency in the semantic routines over which
+  decode routines presume null values of their targets, and which
+  ones actively free any existing data.  Likewise for the null
+  routines.  For the moment, we'll ignore it as an internal issue,
+  but this should be fixed when it starts causing more trouble than
+  it's worth.
+
+
+* should check all uses of register declaration to make sure they
+  are appropriate
+
+* make sure null values are handlined properly when tuples are 
+  initialized.  Looks like the string routines may be easily confused   
+  about non-initialized null values.
+
+* must update documentation and sample programs to indicate requirement
+  to call the gdb_init routine.  Perhaps there should be a closeup routine
+  too?
+
+** create-tuple-descriptor may be mis-computing data-len in the case
+   where alignment is leaving gas.  Looks like the gas is not getting
+   added in. (I think this was fixed during debugging with Saber.)
+
+* must make a plan to exhaustively test code paths.  Several whole
+  routines have not been tried at all
+
+* the design for out of band signalling and operation interruption must 
+  be considered more carefully.
+
+* perhaps gdb.h should be split into a piece which is visible to all
+  users (i.e. lives in /usr/include) and an internal piece used only
+  for compiling the library.
+
+* we need some way to mark and distinguish inbound and outbound half 
+  sessions.  For the moment, they can be implicit in their position in
+  the connection data structure, but that seems a bit tacky.  Could
+  use routine pointers to to do the reading and the writing.
+
+* could implement a buffer/flush scheme at some level to avoid repeated
+  and unnecessary system calls for write/read.  Not clear what level is
+  best to do this--I'm inclined to do it in the oeprations themselves, not 
+  in the transport service.
+
+* should come up with a way to encode those types which need a recursive
+  call on cleanup.  We can probably get rid of null_tuple_strings that
+  way, and pick up a bit of generality.
+
+* don't yet have a proper architecture for the routines used at the
+  server end.  Which one's should be exposed and documented to 
+  implementors of new services?  How general should they be?
+
+* CONN_STATUS values should be cleaned up.
+
+* make sure the cancellation function in OPERATION_DATA is handled properly.
+
+* How do we really want to handle predecessor failing conditions.  Should
+  we purge the queue, as currently claimed, or just attempt the next one?
+  Probably just attempt the next one.
+
+* select timer handling is being implemented very approximately for now
+  We are setting the full timer each time the real select is called, not
+  accounting for time already elapsed when select is called repeatedly.
+
+* level of indirection on select is really not clear
+
+* in dealing with file descriptor masks passed to functions, one should
+  probably use the & notation consistently to avoid unnecessary structure
+  copying.  See especially in the interfaces to gdb_fd_copy, etc. in
+  gdb_trans.c
+
+* current semantics of op_select imply that lots of manipulation of
+  operation queues will be required as operations complete and the
+  lists get logically shorter.  We may want to change the semantics
+  of op_select and/or provide new operations for adding and deleting
+  operations from an operation list, possibly with attendant re-allocation.
+
+* how do we do exception handling on the connections?
+
+* gdb_hcon_progress: how to handle cancelling, etc.
+
+* the distinction between initialization and continuation routines 
+  is looking pretty artificial.  Leading to duplicate code in 
+  places like gdb_hcon_progress.  
+
+* out of band signalling not implemented.  The sockets are set to null
+  during creation.
+
+* when starting peer sessions a race condition is built into the current
+  algorithm.  startup may fail when the two sides are initiated at about
+  the same time.  Must be fixed for production use.
+
+* start_peer_connection has no way to return a reason for failure.
+
+* connections are currently made to a well known port.   Eventually this
+  should be fixed.
+
+* one could argue that the creation of the listening socket should be done
+  once during initialization, not repeatedly.  On the other hand, this
+  significantly raises the cost for someone who never listens.
+
+* We could automate the activation of gdb_init by checking for a flag
+  in the appropriate routines.
+ 
+* define consistent set of op_results, apply them in gdb_ops.c
+
+* synchronous calling of continuation routines may be a mistake?  I don't
+  think so, since the length of the chain is statically limited.  Would
+  be a mistake in the case of extensive re-queueing, but then we go back
+  to the queue manager, NO?
+
+* queue_operation takes a half connection as an argument, but they are
+  not properly described in the spec.   There should be macros to 
+  extract the input and output half connections from a connection.
+
+* our writeup should note ease of supporting shared state servers
+  (e.g. a very live conferencing system?)
+
+* for performance, changes should be made to minimize the number of read
+  and write system calls done.  This could (perhaps) be done with look-behind
+  on the outbound and buffered read on the inbound queues, used in conjunction
+  with the iovec technique.  Should improve performance significantly.
+  May also need a 'block' hint for use on a half connection which allows
+  an application queueing lots of little requests to get them batched
+  together.
+
+* we're not handling the case where select returns -1 in cnsel, particularly
+  for EBADF indicating a closed descriptor.
+
+* start_peer_connection should use randomized waits to re-try connect and
+  avoid the current startup window.
+
+* need a better way to return errors on things like starting a connection.
+  should scan all of the synchronous interfaces to find out where this
+  should be used.
+
+* it's possible that HCON_BUSY should be replaced by a mechanism to lock
+  all of gdb_progress
+
+* most operations should have cancellation routines.
+
+* when tuples are sent for server/client stuff, make sure the descriptors
+  are properly destroyed when not needed
+
+* should integrate deletion as an operation on a type, along with
+  optimization for nop'ing it.  Should then go through all of code
+  which does things like null-tuple-strings and straighten it out.
+
+* document start_sending_object start_receiving_object
+
+* anything which starts an operation should make sure that the
+  status of the supplied operation is NOT_RUNNING.  There is a 
+  nasty condition which results when the same operation is started
+  twice.
+
+* disable GDB_PORT because it encourages conflict among applications
+
+* implement validate routines in create_forking_server
+
+* check userinfod and inetd to make sure that server environment is 
+  appropriate.
+
+* build async versions of db ops, at both client and server
+
+* use of "string" vs "STRING" in documentation is confusing
+
+* macros for getting at fields in tuples
+
+* document non-portabilities
+	- 4.2 dependencies
+	- representation of data by enc/dec
+
+* are text lengths being handled well on queries? (Looks ok, 9/17/86)
+
+* lots of error checking is missing in dbserv
+
+* Confusion in documentation as to whether receive_object allocates
+  a new relation (for example)
+
+* delete relation needs a way to delete non-contiguous data other
+  than strings
+
+* syntax checking of queries
+
+* return codes for operations, especially DB operations, are a mess.
+
+* we should have some equivalent of perror
+
+* we can possibly give some information about where we were at   
+  the time of a failure if we keep a logical stack. 
+
+* gdb_init should be callable multiple times
+
+* i.d. fields are currently implemented with strings, which is very
+  slow.  Should re-implement with integers as magic numbers
+
+* must figure out handling of errors on queued database requests.  
+  which ones cause a tear-down.  Are there problems dequeueing
+  the appropriate operations in the right order?  Could things get
+  out of sync if other things are queued ahead?  Seems to require
+  a pretty good understanding of how things get cancelled implicitly
+  and explicitly.  Maybe all explicit cancellations should be done
+  using terminate_db.  There is also some question about how 
+  careful we have to be in handling the explicit cancellation of
+  a single db operation, or whether that should be supported.  Not
+  clear that we have enough of a bracket context to do that cleanly.
+
+* document preempt_and_start_receiving_object, also, maybe should
+  do one for sending.
+
+* Notes should be provided on create/delete semantics.  Current is:
+	tuple_descs are reference counted.  Your creates should
+	match your deletes.   Same is true for relations and operations.
+	Likewise tuples EXCEPT:  if you create a tuple, add it to 
+	a relation, and delete the relation, the tuple itself is
+	deleted, and all dangling pointers to it are invalid.
+
+* Must assign version numbers to all programs, documents and files
+
+* gdb_ugd should reference K&R
+
+* should make a CSTRING_T to represent a null terminated string by its pointer
+
+* should be able to limit the number of tuples retrieved.
+
+* Perhaps should be able to interrupt ongoing database operations, or
+  in any case, the restriction on severing the connection should be
+  documented.
+
+* send_object and receive_object should return OP_SUCCESS not OP_COMPLETE
+
+* create_type is documented, but it does not exist.  Also, it is mentioned
+  in the language reference, but not really written up properly.
+
+* add missing chapters to the user's guide
+
+* Steve: forward reference in user guide to async
+
+* Steve: diagrams of general system structure and flow
+
+* More reference material in user guide
+	- GDB data types
+	- Other structures
+
+* what are rules about memory allocation
+ 	- what does it
+
+* confusion over pointers and macros in documentation
+
+* Missing chapters
+
+* i.d. fields should be changed upon deletion to try and catch misuse 
+  of deleted data
+
+* explicit host addresses are not accepted
+
+*debugging forked servers is very difficult
+
+*there should be more detailed failure codes on send_object receive_object
+
+/************************************************************************/
+/*	
+/*			"Solved" Problems 
+/*	
+/************************************************************************/
+
+* need a routine to wait for all the operations in a list
+  should be easy to build out of op_sel (DONE)
+
+* there should be a macro called TERMINATED for internal use which
+  would be true when an operation was completed or cancelled.  This
+  should be used by most of the routines which check for completion,
+  in anticipation of the day when error recovery is done properly.
+  (DONE...name of the macro is OP_DONE)
+
+* see if select can be used with a listening socket (DONE...it works)
+
+* we need a send_object and receive_object as well as start_sending_object
+  and start_receiving_object (DONE, but documentation is missing)
+
+* should put handling in select for the exceptfd case to catch closing 
+  connections, and likewise should check for errors on read/write.  Maybe
+  only errors on read/write should be checked.  (DONE..exceptfd's are 
+  irrelavent...I think they're for getting signals, anyway, we do the
+  right thing now when a socket fails by closing the corresponding
+  connection.)
+
+* make sure port numbers are handled OK in the server/client model
+  (DONE)
+
+* the database server MUST delete its relations, and we must decide
+  how tuple descriptor reclamation is to be done (Done)
+
+* make db_alloc and db_free replaceable (Done)
+
+* James had problems with create_tuple_descriptor in that he got
+  one of the parameters duplicated (not a gdb problem)
+
+* async queries and db_ops (Done)
+
+* we should put eye catchers into structured data and check it. (done)
+
+* db_query is not nearly asynchronous enough (Done)
+
+* Strings:  James forgot to initialize strings after creating tuple;
+
+* we are missing a delete_relation routine, which would have to
+  recursively delete all tuples after calling delete_tuple_strings
+  or whatever on them.  This should be called by the decode relation
+  and the null relation semantic routines.  (Done)
+
+* naming inconsistency between "new-tuple" and "create-_____" all others (Done)
+
+
+/************************************************************************/
+/*	
+/*		Problems in Providing SQL Support
+/*	
+/************************************************************************/
+
+* Character strings in SQL limited to 255 bytes, in literal at least
+
+

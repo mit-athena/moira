@@ -1,0 +1,7 @@
+This directory (will contain) (contains) the client and server RPC
+code for SMS.
+
+Eventually, we can put the client code into a separate library, and
+merge the server stuff into the main sources.
+
+

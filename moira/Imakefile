@@ -1,4 +1,4 @@
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/Imakefile,v 1.10 1998-02-05 22:12:45 danw Exp $
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/Imakefile,v 1.11 1998-02-07 17:47:44 danw Exp $
 #
 # Copyright 1990 by the Massachusetts Institute of Technology.
 #
@@ -66,6 +66,9 @@ depend:: makedepend
 
 #ifndef USELOCALLIBS
 depend:: et
+
+clean::
+	cd util/et; make clean; cd ../..
 #endif
 
 et:

@@ -7,7 +7,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/f_defs.h,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/f_defs.h,v 1.12 1989-08-21 22:40:49 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/f_defs.h,v 1.13 1990-04-04 11:15:00 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -112,10 +112,11 @@ int RemoveUserPOBox();
 int ShowDefaultQuota();		/* show or change system default quota. */
 int ChangeDefaultQuota();
 
-int ShowUserQuota();		/* modify a user's quota. */
-int ChangeUserQuota();
-int AddUserQuota();
-int RemoveUserQuota();
+int GetQuota();	        	/* modify a user's quota. */
+int GetQuotaByFilesys();
+int AddQuota();
+int UpdateQuota();
+int DeleteQuota();
 
 /* user.c */
 

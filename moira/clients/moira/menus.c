@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menus.c,v 1.16 1990-03-17 17:10:48 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menus.c,v 1.17 1990-04-04 11:15:31 mar Exp $";
 #endif lint
 
 /*	This is the file menus.c for the MOIRA Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menus.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menus.c,v 1.16 1990-03-17 17:10:48 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menus.c,v 1.17 1990-04-04 11:15:31 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -169,21 +169,23 @@ Menu quota_menu = {
   NULLFUNC,
   NULLFUNC,
   "Quota Menu",
-  7,
+  8,
   {
     SIMPLEFUNC("shdef", "Show default user quota (in KB)", ShowDefaultQuota),
     {ChangeDefaultQuota, NULLMENU, 2, {
       {"chdef", "Change default user quota"},
       {"quota", "New quota (in KB): "}
     } },
-    SIMPLEFUNC("shquota", "Show a user's disk quota on a filesytem",
-	       ShowUserQuota),
-    SIMPLEFUNC("addquota", "Add a new disk quota for user on a filesytem",
-	       AddUserQuota),
-    SIMPLEFUNC("chquota", "Change a user's disk quota on a filesytem",
-	       ChangeUserQuota),
-    SIMPLEFUNC("rmquota", "Remove a user's disk quota on a filesytem",
-	       RemoveUserQuota),
+    SIMPLEFUNC("getquota", "Show a quota on a filesystem",
+	       GetQuota),
+    SIMPLEFUNC("getfsquotas", "Show all quotas on a filesystem",
+	       GetQuotaByFilesys),
+    SIMPLEFUNC("addquota", "Add a new disk quota on a filesystem",
+	       AddQuota),
+    SIMPLEFUNC("upquota", "Change a quota on a filesystem",
+	       UpdateQuota),
+    SIMPLEFUNC("delquota", "Delete a quota on a filesystem",
+	       DeleteQuota),
     SIMPLEFUNC("verbose", "Toggle Verbosity of Delete", ToggleVerboseMode)
   } 
 };

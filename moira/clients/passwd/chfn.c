@@ -3,13 +3,13 @@
  * and distribution information, see the file "mit-copyright.h". 
  *
  * $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chfn.c,v $
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chfn.c,v 1.10 1993-10-22 16:35:52 mar Exp $
- * $Author: mar $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chfn.c,v 1.11 1996-07-29 22:39:52 jweiss Exp $
+ * $Author: jweiss $
  *
  */
 
 #ifndef lint
-static char *rcsid_chfn_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chfn.c,v 1.10 1993-10-22 16:35:52 mar Exp $";
+static char *rcsid_chfn_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chfn.c,v 1.11 1996-07-29 22:39:52 jweiss Exp $";
 #endif not lint
 
 /*
@@ -40,8 +40,6 @@ static char *rcsid_chfn_c = "$Header: /afs/.athena.mit.edu/astaff/project/moirad
 #include "mit-copyright.h"
 
 char *whoami;
-
-extern char *krb_err_txt[];
 
 struct finger_info {
     char *fullname;

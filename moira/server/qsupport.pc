@@ -1,4 +1,4 @@
-/* $Id: qsupport.pc,v 2.24 2000-06-01 21:51:02 zacheiss Exp $
+/* $Id: qsupport.pc,v 2.25 2000-06-29 18:22:54 zacheiss Exp $
  *
  * Special query routines
  *
@@ -18,7 +18,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.pc,v 2.24 2000-06-01 21:51:02 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.pc,v 2.25 2000-06-29 18:22:54 zacheiss Exp $");
 
 extern char *whoami, *table_name[];
 extern int dbms_errno, mr_errcode;
@@ -508,6 +508,40 @@ int delete_member_from_list(struct query *q, char **argv, client *cl)
   return MR_SUCCESS;
 }
 
+int tag_member_of_list(struct query *q, char **argv, client *cl)
+{
+  EXEC SQL BEGIN DECLARE SECTION;
+  int lid, mid, cnt, tag;
+  char *mtype;
+  EXEC SQL END DECLARE SECTION;
+  char *iargv[3];
+
+  lid = *(int *)argv[0];
+  mtype = argv[1];
+  mid = *(int *)argv[2];
+  tag = *(int *)argv[3];
+
+  EXEC SQL SELECT COUNT(member_id) INTO :cnt FROM imembers
+    WHERE member_id = :mid AND member_type = :mtype AND
+    list_id = :lid;
+  if (dbms_errno)
+    return mr_errcode;
+  if (cnt == 0)
+    return MR_NO_MATCH;
+
+  incremental_clear_before();
+  EXEC SQL UPDATE imembers SET tag = :tag WHERE list_id = :lid 
+    AND member_type = :mtype AND member_id = :mid;
+  if (dbms_errno)
+    return mr_errcode;
+  
+  iargv[0] = (char *)lid;
+  iargv[1] = mtype;
+  iargv[2] = (char *)mid;
+  incremental_after(IMEMBERS_TABLE, 0, iargv);
+
+  return MR_SUCCESS;
+}
 
 /* Don't allow someone to add someone to a list which is the acl of a
  * query unless they're on the list acl, even if they're on the amtl

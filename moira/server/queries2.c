@@ -1,4 +1,4 @@
-/* $Id: queries2.c,v 2.72 2000-04-25 01:51:06 zacheiss Exp $
+/* $Id: queries2.c,v 2.73 2000-06-29 18:22:54 zacheiss Exp $
  *
  * This file defines the query dispatch table
  *
@@ -1393,13 +1393,13 @@ static struct validate tmol_validate =
 {
   amtl_valobj,
   4,
-  "tag",
-  "list_id = %d AND member_type = '%s' AND member_id = %d",
-  3,
+  0,
+  0,
+  0,
   0,
   access_list,
   0,
-  0,
+  tag_member_of_list,
 };
 
 static struct validate dmfl_validate =
@@ -4313,12 +4313,12 @@ struct query Queries[] = {
     "tmol",
     2,
     UPDATE,
-    "im",
+    0,
     IMEMBERS_TABLE,
-    "imembers SET tag = %d",
+    0,
     atml_fields,
     1,
-    "list_id = %d AND member_type = '%s' and member_id = %d",
+    0,
     3,
     NULL,
     &tmol_validate,

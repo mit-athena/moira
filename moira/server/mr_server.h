@@ -1,4 +1,4 @@
-/* $Id: mr_server.h,v 1.51 2000-03-30 22:01:55 zacheiss Exp $
+/* $Id: mr_server.h,v 1.52 2000-06-29 18:22:54 zacheiss Exp $
  *
  * Copyright (C) 1987-1998 by the Massachusetts Institute of Technology
  * For copying and distribution information, please see the file
@@ -232,6 +232,7 @@ int set_pobox(struct query *q, char *argv[], client *cl);
 int set_pobox_pop(struct query *q, char *argv[], client *cl);
 int add_member_to_list(struct query *q, char *argv[], client *cl);
 int delete_member_from_list(struct query *q, char *argv[], client *cl);
+int tag_member_of_list(struct query *q, char *argv[], client *cl);
 int register_user(struct query *q, char *argv[], client *cl);
 int do_user_reservation(struct query *q, char *argv[], client *cl);
 

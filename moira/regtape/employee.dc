@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/employee.dc,v 1.4 1990-02-14 10:42:14 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/employee.dc,v 1.5 1990-03-06 18:46:45 mar Exp $
  */
 
 #include <stdio.h>
@@ -213,7 +213,11 @@ struct entry *e;
 ##  int id;
 
     first = e->first;
+    if (strlen(first) > 16)
+      first[16] = 0;
     last = e->last;
+    if (strlen(last) > 16)
+      last[16] = 0;
     eid = e->eid;
     id = 0;
 ##  repeat retrieve (id = u.users_id, class = u.mit_year, oaddr = u.office_addr,

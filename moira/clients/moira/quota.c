@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/quota.c,v 1.20 1991-10-29 14:57:21 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/quota.c,v 1.21 1993-10-22 16:22:18 mar Exp $";
 #endif lint
 
 /*	This is the file quota.c for the MOIRA Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/quota.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/quota.c,v 1.20 1991-10-29 14:57:21 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/quota.c,v 1.21 1993-10-22 16:22:18 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -20,7 +20,7 @@
  */
 
 #include <stdio.h>
-#include <strings.h>
+#include <string.h>
 #include <moira.h>
 #include <moira_site.h>
 #include <menu.h>
@@ -140,7 +140,7 @@ char *name;
     int status, ret = 0;
     char *argv[1];
 
-    if (index(name, '*') || index(name, '?') || index(name, '\\'))
+    if (strchr(name, '*') || strchr(name, '?') || strchr(name, '\\'))
       return(0);
     argv[0] = name;
     status = do_mr_query("get_filesys_by_label", 1, argv,

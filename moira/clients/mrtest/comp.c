@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/comp.c,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/comp.c,v 1.1 1991-05-07 16:38:45 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/comp.c,v 1.2 1993-10-22 16:25:40 mar Exp $
  *
  *	Copyright (C) 1991 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,6 +10,7 @@
  */
 
 #include <ctype.h>
+#include <string.h>
 #include <stdio.h>
 #include <moira.h>
 
@@ -43,7 +44,7 @@ if (*ErrorBuf == '\0') {    /* Don't process if there's a data error already */
 	(*CompStr)++;}
       else if (**CompStr == '"') {  /* Compare a field */
 	(*CompStr)++;
-	Len = (int)(index(*CompStr, '"')) - (int)(*CompStr);
+	Len = (int)(strchr(*CompStr, '"')) - (int)(*CompStr);
 	if (Len < 0) {
 	  strcpy (ErrorBuf, "Malformed Comparison String");
 	  break;}
@@ -51,11 +52,11 @@ if (*ErrorBuf == '\0') {    /* Don't process if there's a data error already */
 		 (strlen(argv[Field]) != Len)) {   /* Data Error */
 	  strcpy (ErrorBuf, "Data Error");
 	  break;}
-	*CompStr = (char *)index(*CompStr, '"');
+	*CompStr = (char *)strchr(*CompStr, '"');
 	(*CompStr)++;}
       else {
-	Len  = (int)(index(*CompStr, ' ')) - (int)(*CompStr);
-	Len2 = (int)(index(*CompStr, '}')) - (int)(*CompStr);
+	Len  = (int)(strchr(*CompStr, ' ')) - (int)(*CompStr);
+	Len2 = (int)(strchr(*CompStr, '}')) - (int)(*CompStr);
 	if ((Len < 0) || ((Len2 >= 0) && (Len2 < Len)))
 	  Len = Len2;
 	if (Len < 0) 

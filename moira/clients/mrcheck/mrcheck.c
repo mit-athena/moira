@@ -4,12 +4,12 @@
  * Copyright 1988, 1991 by the Massachusetts Institute of Technology. 
  * For copying and distribution information, see the file "mit-copyright.h". 
  *
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrcheck/mrcheck.c,v 1.8 1992-03-10 16:40:26 mar Exp $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrcheck/mrcheck.c,v 1.9 1993-10-22 16:24:20 mar Exp $
  * $Author: mar $
  */
 
 #ifndef lint
-static char *rcsid_chsh_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrcheck/mrcheck.c,v 1.8 1992-03-10 16:40:26 mar Exp $";
+static char *rcsid_chsh_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrcheck/mrcheck.c,v 1.9 1993-10-22 16:24:20 mar Exp $";
 #endif	lint
 
 #include <stdio.h>
@@ -17,7 +17,7 @@ static char *rcsid_chsh_c = "$Header: /afs/.athena.mit.edu/astaff/project/moirad
 #include <moira_site.h>
 #include "mit-copyright.h"
 #include <sys/time.h>
-#include <strings.h>
+#include <string.h>
 
 char *malloc();
 
@@ -174,7 +174,7 @@ char *argv[];
     int scream();
     int auth_required = 1;
 
-    if ((whoami = rindex(argv[0], '/')) == NULL)
+    if ((whoami = strrchr(argv[0], '/')) == NULL)
 	whoami = argv[0];
     else
 	whoami++;

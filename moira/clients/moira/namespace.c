@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/namespace.c,v 1.3 1992-04-06 17:40:23 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/namespace.c,v 1.4 1993-10-22 16:21:25 mar Exp $";
 #endif lint
 
 /*	This is the file main.c for the Moira Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/namespace.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/namespace.c,v 1.3 1992-04-06 17:40:23 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/namespace.c,v 1.4 1993-10-22 16:21:25 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -22,7 +22,7 @@
 #include <pwd.h>
 #include <signal.h>
 #include <stdio.h>
-#include <strings.h>
+#include <string.h>
 #include <sys/types.h>
 #include <moira.h>
 #include <menu.h>
@@ -191,8 +191,11 @@ main(argc, argv)
     Menu *menu;
     char *motd, **arg;
     char pname[ANAME_SZ];
+#ifdef POSIX
+    struct sigaction act;
+#endif
 
-    if ((program_name = rindex(argv[0], '/')) == NULL)
+    if ((program_name = strrchr(argv[0], '/')) == NULL)
       program_name = argv[0];
     else
       program_name++;
@@ -255,13 +258,27 @@ main(argc, argv)
  */
 
 #ifndef DEBUG
+#ifdef POSIX
+    sigemptyset(&act.sa_mask);
+    act.sa_flags = 0;
+    act.sa_handler= (void (*)()) SignalHandler;
+    (void) sigaction(SIGHUP, &act, NULL);
+    (void) sigaction(SIGQUIT, &act, NULL);
+    if (use_menu)
+      (void) sigaction(SIGINT, &act, NULL); 
+    else {
+	act.sa_handler= (void (*)()) CatchInterrupt;
+	(void) sigaction(SIGINT, &act, NULL); 
+    }
+#else
     (void) signal(SIGHUP, SignalHandler);
     (void) signal(SIGQUIT, SignalHandler);
     if (use_menu)
       (void) signal(SIGINT, SignalHandler); 
     else
       (void) signal(SIGINT, CatchInterrupt); 
-#endif DEBUG
+#endif /* POSIX */
+#endif /* DEBUG */
 
     menu = &namespace_menu;
 

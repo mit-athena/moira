@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/zephyr.c,v 1.2 1991-01-04 16:59:49 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/zephyr.c,v 1.3 1991-03-08 10:20:23 mar Exp $
  *
  * Zephyr ACL routines for the Moira client
  *
@@ -325,7 +325,7 @@ char **argv;
 {
     struct qelem *top;
 
-    top = GetZephyrInfo(argv[1], (char *) NULL);
+    top = GetZephyrInfo(argv[1]);
     QueryLoop(top, NullPrint, RealUpdateZephyr, "Update class");
 
     FreeQueue(top);

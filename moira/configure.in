@@ -177,8 +177,10 @@ AC_MSG_CHECKING(for GDSS)
 AC_ARG_WITH(gdss,
     [  --with-gdss=PREFIX      Specify location of GDSS],
     [gdss="$withval"
-     MR_INCLUDE("$gdss/include")
-     GDSS_LIBS="-L$gdss/lib -lgdss"],
+     if test "$gdss" != no; then
+       MR_INCLUDE("$gdss/include")
+       GDSS_LIBS="-L$gdss/lib -lgdss"
+     fi],
     [if test -d $srcdir/util/gdss; then
          gdss=$srcdir/util/gdss
 	 GDSS_SUBDIR=util/gdss

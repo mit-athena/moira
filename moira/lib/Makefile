@@ -1,6 +1,6 @@
 #	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/Makefile,v $
 #	$Author: mar $
-#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/Makefile,v 1.13 1990-03-17 16:38:15 mar Exp $
+#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/Makefile,v 1.14 1990-03-17 17:27:19 mar Exp $
 #
 #	Makefile for Moira library.
 #
@@ -79,7 +79,7 @@ lint:	${CFILES} llib-lmoira.ln
 	lint ${LINTFLAGS} ${INCDIRS} mr_main.c llib-lmoira.ln
 
 llib-lmoira.ln:	${LIBSRC}
-	lint -Cmr $(LINTFLAGS) $(INCDIRS) ${LIBSRC}
+	lint -Cmoira $(LINTFLAGS) $(INCDIRS) ${LIBSRC}
 
 depend: $(CFILES) mr_et.h ureg_err.h krb_et.h
 	mkdep ${CFLAGS} ${CFILES}

@@ -1,5 +1,5 @@
 /*
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/cache.dc,v 2.5 1992-12-30 16:33:14 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/cache.dc,v 2.6 1993-05-06 15:41:09 mar Exp $
  *
  *	Copyright (C) 1989, 1990 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -7,7 +7,7 @@
  */
 
 #ifndef lint
-static char *rcsid_cache_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/cache.dc,v 2.5 1992-12-30 16:33:14 mar Exp $";
+static char *rcsid_cache_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/cache.dc,v 2.6 1993-05-06 15:41:09 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -138,6 +138,10 @@ int *id;
     switch (*type) {
     case 'U':
     case 'u':
+	if (index(iname, '@')) {
+	    sqlca.sqlcode = 100;
+	    break;
+	}
 	EXEC SQL SELECT users_id INTO :j FROM users WHERE login=:iname;
 	break;
     case 'L':

@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/nfs.qc,v 1.2 1988-08-11 20:45:48 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/nfs.qc,v 1.3 1988-08-19 14:42:01 mar Exp $
  *
  * This generates the files necessary to load an nfs server.
  */
@@ -175,6 +175,7 @@ struct grp {
 };
 struct user {
     char name[9];
+    int uid;
     struct grp *lists;
 };
 
@@ -246,9 +247,11 @@ struct hash *do_everyone()
     /* now do grplists */
     users = create_hash(10000);
 ##  range of u is users
-##  retrieve (id = u.users_id, name = u.login) where u.status = 1 {
+##  retrieve (id = u.users_id, name = u.login, uid = u.#uid)
+##	 where u.status = 1 {
       u = (struct user *) malloc(sizeof(struct user));
       strcpy(u->name, strtrim(name));
+      u->uid = uid;
       u->lists = NULL;
       hash_store(users, id, u);
 ##  }
@@ -265,8 +268,9 @@ struct hash *do_everyone()
 
     for (p = &(users->data[users->size - 1]); p >= users->data; p--) {
 	for (b = *p; b; b = b->next) {
-	    strcpy(buf, ((struct user *)b->data)->name);
-	    for (g = ((struct user *)b->data)->lists; g; g = g->next)
+	    u = (struct user *)b->data;
+	    sprintf(buf, "%s:%d", u->name, u->uid);
+	    for (g = u->lists; g; g = g->next)
 	      if (l = hash_lookup(groups, g->id))
 		strcat(buf, l);
 	    /* should free stuff here... */

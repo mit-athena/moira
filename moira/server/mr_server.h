@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_server.h,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_server.h,v 1.21 1991-07-23 10:11:22 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_server.h,v 1.22 1993-01-12 12:06:11 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
@@ -81,6 +81,8 @@ extern int log_flags;
 #define LOG_RESP		0x0008
 #define LOG_RES			0x0010
 #define LOG_VALID		0x0020
+#define LOG_SQL			0x0040
+#define LOG_GDSS		0x0080
 
 
 /* max length of query argument allowed */

@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/main.c,v 1.8 1988-10-13 13:58:38 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/main.c,v 1.9 1988-11-28 14:55:55 mar Exp $";
 #endif lint
 
 /*	This is the file main.c for the SMS Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/main.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/main.c,v 1.8 1988-10-13 13:58:38 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/main.c,v 1.9 1988-11-28 14:55:55 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -65,6 +65,9 @@ main(argc, argv)
 	user = getpwuid((int) getuid())->pw_name;
     user = (user && strlen(user)) ? Strsave(user) : "";
 
+    program_name = Strsave(program_name);
+    whoami = Strsave(program_name); /* used by menu.c,  ugh !!! */
+
     init_sms_err_tbl();
     init_krb_err_tbl();
     verbose = TRUE;
@@ -86,9 +89,6 @@ main(argc, argv)
       Usage();
       break;
     }
-
-    program_name = Strsave(program_name);
-    whoami = Strsave(program_name); /* used by menu.c,  ugh !!! */
 
     if ( status = sms_connect() ) 
 	ErrorExit("\nConnection to SMS server failed", status);

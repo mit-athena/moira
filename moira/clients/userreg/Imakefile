@@ -1,4 +1,4 @@
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/Imakefile,v 1.5 1992-11-07 22:41:43 probe Exp $
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/Imakefile,v 1.6 1996-08-01 08:57:55 jweiss Exp $
 #
 # Copyright 1990 by the Massachusetts Institute of Technology.
 #
@@ -12,7 +12,8 @@ SRCS=	disable.c display.c reg_stubs.c userreg.c
 SRCDIR=${SRCTOP}/clients/userreg
 TEXT= welcome network_down username_blurb password_blurb improper_reg \
 	deleted_acct not_allowed
-CODE=${SRCS} ${TEXT} Imakefile files.h userreg.h
+SCRIPTS= register xregister
+CODE=${SRCS} ${TEXT} ${SCRIPTS} Imakefile files.h userreg.h
 OBJS=	userreg.o display.o reg_stubs.o disable.o
 
 program(userreg, ${OBJS},${MR_LIBDEP} ${GDB_LIBDEP}, -lkadm ${CLIBS} ${CURSES},${PROGDIR})

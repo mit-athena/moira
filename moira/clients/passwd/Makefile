@@ -1,11 +1,14 @@
-# Makefile for SMS clients passwd/chfn/chhome/chsh
+# Makefile for SMS clients passwd/chfn/chpobox/chsh
 #
 #	MIT Project Athena
 #
 #	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/Makefile,v $
-#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/Makefile,v 1.2 1987-07-31 01:24:43 ambar Exp $
+#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/Makefile,v 1.3 1987-08-02 19:46:26 ambar Exp $
 #	$Author: ambar $
 #	$Log: not supported by cvs2svn $
+# Revision 1.2  87/07/31  01:24:43  ambar
+# added install target
+# 
 #
 DESTDIR=
 DEFINES = -O
@@ -15,7 +18,7 @@ BINDIR = ${DESTDIR}/bin
 
 SMSLIB =  ../../lib/libsms.a ../../lib/libgdb.a ../../lib/libmisc.a
 
-PROGS= passwd chfn chhome chsh
+PROGS= passwd chfn chpobox chsh
 
 all: 	${PROGS}
 
@@ -25,8 +28,8 @@ passwd:	passwd.o
 chfn:	chfn.o
 	cc -o chfn chfn.o ${SMSLIB} -lkrb -ldes
 
-chhome:	chhome.o
-	cc -o chhome chhome.o ${SMSLIB} -lkrb -ldes
+chpobox:	chpobox.o
+	cc -o chpobox chpobox.o ${SMSLIB} -lkrb -ldes
 
 chsh:	chsh.o
 	cc -o chsh chsh.o ${SMSLIB} -lkrb -ldes
@@ -42,4 +45,4 @@ install:	${PROGS}
 	install passwd ${DESTDIR}/usr/athena/passwd
 	install chsh ${DESTDIR}/usr/athena/chsh
 	install chfn ${DESTDIR}/usr/athena/chfn
-	install chhome ${DESTDIR}/usr/athena/chhome
+	install chpobox ${DESTDIR}/usr/athena/chpobox

@@ -189,7 +189,7 @@ AC_ARG_WITH(gdss,
 	 if test ! -d util; then
 	     mkdir util
 	 fi
-	 GDSS_CPPFLAGS='-I$(SRCTOP)/util/gdss/include'
+	 MR_INCLUDE('-I$(SRCTOP)/util/gdss/include')
 	 GDSS_LIBS='-L$(BUILDTOP)/util/gdss/lib -lgdss'
      else
          gdss=no
@@ -224,7 +224,7 @@ AC_ARG_WITH(rsaref,
 	 if test ! -d util; then
 	     mkdir util
 	 fi
-	 RSAREF_CPPFLAGS="-I$(SRCTOP)/util/rsaref"
+	 RSAREF_CPPFLAGS='-I$(SRCTOP)/util/rsaref'
 	 RSAREF_LIBS='$(BUILDTOP)/util/rsaref/rsaref.a'
      else
          rsaref=no

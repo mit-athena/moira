@@ -90,181 +90,434 @@ The current SMS database is comprised of the following tables:
 
 @UX(Table)@\@UX(Fields and Description)
 
-users@\@Multiple[login, @i(users) id, shell, last name, first name, middle
-name, status, mit_id, expiration date, modification date.
+@C(users)@\@Multiple[User Information.  There are two types of user required
+information: information necessary to identify a user and enable a user to
+obtain a service (e.g. to login), and personal information about the user
+(finger).
 
-User Information.  There are two types of user required information:
-information necessary to identify a user and enable a user to obtain a
-service (e.g. to login), and personal information about the user (finger).
+@Begin(Description)
+@I(login)@\a unique username, equivalent to the user's Kerberos principal name.
 
-In this table @i(login) is the user's unique username (and Kerberos
-principal name); the @i(users id) is an internal database identifier for the
-users record (this is not the same as the current Unix uid).  The @i(status)
-field is used to indicate whether the user is active or privileged.
-@i(Mit_id) is the user's encrypted MIT id.  There are no entries for
-password, uid, and primary gid because these are being subsumed by other
-services (Kerberos, ACLS).  There is no entry for home directory as it has
-little meaning in a workstation environment.  (See below on User Filesys
-Mapping).]
+@I(users_id)@\an internal database indentifier for the user record.  This is
+not the same as the Unix uid.
 
-finger@\@Multiple[@i(users) id, fullname, nickname, home address, home
-phone, MIT address, MIT phone, MIT affiliation, department, office, year,
-modification date.
+@I(last, first, middle)@\The user's full name, broken down for convenient
+indexing. 
 
-This table contains the "finger" information for users.  The @i(users id)
-field corresponds to a unique id in the @i(users) table.  Expiration dates
-for @i(finger) entries are taken from the corresponding @i(users) entries.]
+@I(status)@\contains flags for the user.  The only currently defined flag is
+bit 0, which when set indicates that the user is active.  (An active user is
+one who has been assigned system resources such as a mailbox, a home
+directory, and who may be a member of one or more lists.)
 
-machine@\@Multiple[name, @i(machine) id, type, model, status, serial,
-sys_type.
+@I(mit_id)@\the user's encrypted MIT id.
 
-Machine Information.  @i(Name) is the canonical hostname.  The @i(machine id)
-is used for internal database references to machines.  @i(Type) is one
-of VS2, RPTC, 750.  @i(Model) is one of VS2, VS2000, RTFLOOR, RTDESK, etc.
-@i(status) is one of PUBLIC, PRIVATE, SERVER, TIMESHARE.  @i(Sys_type) is
-for use by release engineering and operations.]
+@I(shell)@\the user's default shell.
 
-cluster@\@Multiple[name, location, @i(cluster) id, @i(acl) id.
+@I(expdate)@\the expiration date of the user and the user's resources (the user
+becomes inactive.)
 
-Cluster Infomation.  There are several named clusters throughout Athena that
-correspond roughly to subnets and/or geographical areas.  Entries in this
-table include the cluster name, its location, a unique id, and an access
-control list indicating who can modify information regarding this cluster.]
+@I(modtime)@\the time that the user record was last modified (or created).
+@End(Description)
 
-svc@\@Multiple[@i(cluster) id, environment variable, service cluster.
+There are no entries for password, uid, and primary gid because these are
+being subsumed by other services (Kerberos, ACLS).  There is no entry for
+home directory as it has little meaning in a workstation environment.  (See
+below on User Filesys Mapping).]
 
-For each cluster there is a set of services that serve the machines
-in that cluster.  These services are described by an environment variable
-(to be set on client workstations at login) and a @i(service cluster) name.
-Use of the service cluster name is service dependent but in general refers
-to a group of entities that provide the named service in the particular
-cluster.]
+@C(finger)@\@Multiple[This table contains the "finger" information for users.  
 
-services@\@Multiple[name, protocol, port.
+@Begin(Description)
+@I(users_id)@\corresponds to the users_id in the users table.
 
-TCP/UDP Port Information.  This is the information currently in
-/etc/services.  In a workstation environment with SMS and the Hesiod name
-server, service information will be obtained from the name server.]
+@I(fullname)@\the user's full name.
 
-filesys@\@Multiple[label, type, @i(machine) id, name, mount, access, @i(acl)
-id.
+@I(nickname)@\the user's nickname.
 
-File System Information.  This section desribes the file system information
-necessary for a workstation to attach a file system.  Entries consist of a
-@i(label) which is a unique name for an attachable file system; @i(type)
-which is currently one of RVD, NFS, or RFS; a reference to the file server
-machine, the name of the file system on the server machine, the default
-mount point on a workstation, the default access for the file system, and an
-access control list for the file system.]
+@I(home_address)@\home address.
 
-ufs@\@Multiple[@i(users) id, @i(filesys) label.
+@I(home_phone)@\home phone.
 
-User File System Mapping.  Each user has a default set of file systems that
-are attached at login time.  This table provides the mapping for these file
-sytems. ]
+@I(mit_address)@\MIT address; this is for on-campus students' living addresses.
 
-rvdsrv@\@Multiple[@i(machine) id, operations pwd, admin pwd, shutdown pwd.
+@I(mit_phone)@\MIT phone.
 
-RVD Server Information.  This table contains the top level access control
-lists for each rvd server.  Any other per-server information should be added
-here.]
+@I(office)@\office address.
 
-rvdphys@\@Multiple[@i(machine) id, device, size, created, modified.
+@I(affiliation)@\one of undergraduate, graduate, staff, faculty, other.
 
-Physical device partition table.  This table contains for each rvd server
-machine a list of the rvd physical devices and their sizes, and creation and
-modification dates.]
+@I(department)@\student's major or employee's department.
 
-rvdvirt@\@Multiple[@i(machine) id, physical device, name, pack id, owner,
-rocap, excap, shcap, modes, offset, blocks, ownhost, created, modified.
+@I(year)@\student's year or "G".
 
-Virtual device table.  This table contains the list of virtual devices for
-each rvd server machine.  Information per device includes the rvd physical
-device it resides on, its name, unique pack id, owner (@i<users> id), access
-control lists for the device (@i<rocap, excap, shcap>), allowable access
-modes, the offset within the physical device, its size, a @i(machine) id
-for a host that has default access to the device, and the creation and
-modifications dates for the device.]
+@I(modtime)@\time finger record was last modified.
 
-nfsphys@\@Multiple[@i(machine) id, device, @i(acl) id.
+@End(Description)]
 
-NFS Server Information.  This table contains for each nfs server machine a
-list of the physical device partitions from which directories may be
-exported.  For each such partition an access control list is provided.]
+@C(machine)@\@Multiple[Machine Information.  
 
-printer@\@Multiple[name, @i(printer) id, type, @i(machine) id, @i(acl) id.
+@Begin(Description)
 
-Printer Information.  All printers have a unique name.  The characteristics
-of a particular printer are the server machine it is connected to, its
-hardward type (lps40, 3812), and its printing abilities (text, postscript,
-windowdumps).  Each printer also has an access control list which specifies
-who can modify the attributes of the printer.]
+@I(name)@\the canonical hostname.
 
-prability@\@Multiple[@i(printer) id, ability.
+@I(machine_id)@\an internal database id for this record.
 
-Printer abilities.  This table contains a list of @i(printer) ids and
-ability names.]
+@I(type)@\machine type: VS, RTPC, VAX
 
-queue@\@Multiple[@i(machine) id, name, @i(queue) id, ability, status,
-@i(acl) id.
+@I(model)@\machine model: VS2, VS2000, RTFLOOR, RTDESK, 750, 785.
 
-Printer queues.  This table contains a list of unique queue names and the
-attributes of each queue.  Attributes of queue are its @i(ability), a status
-string (used by MDQS servers), and an access control list.]
+@I(status)@\machine status: PUBLIC, PRIVATE, SERVER, TIMESHARE.
 
-pqm@\@Multiple[@i(printer) id, @i(queue) id.
+@I(serial)@\serial number.
 
-Printer to queue mapping.  This table provides the mapping between printers
-and queues.]
+@I(ethernet)@\ethernet address.
 
-qdev@\@Multiple[@i(machine) id, @i(qdev) id, name, device, status, @i(acl)
-id.
+@I(sys_type)@\system type (for use by release engineering and operations).
 
-MDQS device information.  Each MDQS server has a device table that assigns a
-logical name and status information to each known physical printer device.]
+@End(Description)]
 
-printcap@\@Multiple[name, printcap string.
+@C(cluster)@\@Multiple[Cluster Infomation.  There are several named clusters
+throughout Athena that correspond roughly to subnets and/or geographical
+areas.
 
-Berkeley line printer software printcap entries.]
+@Begin(Description)
 
-pobox@\@Multiple[@i(users) id, type, @i(machine) id, box.
+@I(name)@\cluster name.
 
-Post Office Information.  This list matches users with one or more
-post office boxes.  A post office box is identified by its type (POP,
-LOCAL), the machine on which the box resides, and the box name on that
-machine.]
+@I(description)@\cluster description.
 
-list@\@Multiple[name, @i(list) id, type, flags, description, owner, @i(acl)
-id, expiration date, modification date.
+@I(location)@\cluster location.
 
-Lists are used to associate a group of names with a particular
-label.  The definition of this table should be generic enough to support
-many types of lists.  Entries in this table contain a list name, a unique
-id, a list type (string), flags (ACTIVE, PUBLIC, HIDDEN), a description
-string, an owner @i(users) id, an ACL @i(list) id, an expiration date, and a
-modification date.  Currently known list types are "mail", "acl", "group",
-and "project".
+@I(cluster_id)@\internal database identifier for this record.
 
-Lists must have either an owner, an ACL, or both.  An access control list
-specifies users who are allowed to administer the list.  List administrators
-fall into three categories: simple administrators who are allowed to add
-members to and delete members from a list; master-administrators who are
-allowed to add and delete administrators as well as members of the list; and
-super-administrators who in addtion to the above are allowed to designate
-master and super administrators.  An owner is equivalent to a
-super-administrator and is the person primarily responsible for a list.]
+@I(acl_id)@\id for an access control list for cluster specific data.
 
-members@\@Multiple[@i(list) id, member id, member type, member status.
+@End(Description)]
 
-List members.  List members can be of three types: a user as found in the
-@i(users) table, another list, or an arbitrary string.  For efficiency
-reasons, this table uses a @i(member id) field which references either a
-@i(users) id, a @i(list) id, or a @i(strings) id depending on the @i(member
-type).  The member status field is a bit field that specifies the access
-a member has to the containing list.  The current bit values are:
+@C(svc)@\@Multiple[For each cluster there is a set of services that serve the
+machines in that cluster.  These services are described by an environment
+variable (to be set on client workstations at login) and a @i(service
+cluster) name.  Use of the service cluster name is service dependent but in
+general refers to a group of entities that provide the named service in the
+particular cluster.
 
-@Begin(Format, Above .8, LeftMargin +.5inch)
-@TabSet(2inch)
+@Begin(Description)
+
+@I(cluster_id)@\references an entry in the cluster table.
+
+@I(serv_label)@\label of a service cluster type (e.g. "prcluster", "usrlib",
+"syslib")  
+
+@I(serv_cluster)@\specific service cluster name (e.g. "e40-prcluster")
+
+@End(Description)]
+
+@C(services)@\@Multiple[TCP/UDP Port Information.  This is the information
+currently in /etc/services.  In a workstation environment with SMS and the
+Hesiod name server, service information will be obtained from the name
+server.
+
+@Begin(Description)
+
+@I(service)@\service name.
+
+@I(protocol)@\protocol: one of TCP, UDP.
+
+@I(port)@\port number.
+
+@End(Description)]
+
+@C(filesys)@\@Multiple[File System Information.  This section desribes the file
+system information necessary for a workstation to attach a file system.
+
+@Begin(Description)
+
+@I(label)@\a unique name for an attachable file system.
+
+@I(type)@\currently one of RVD, NFS, or RFS.
+
+@I(machine_id)@\file server machine.
+
+@I(name)@\name of file system on the server.
+
+@I(mount)@\default mount point for file system.
+
+@I(access)@\default access mode for file system.
+
+@I(acl_id)@\access control list for file system.
+
+@End(Description)]
+
+@C(ufs)@\@Multiple[User File System Mapping.  Each user has a default set of
+file systems that are attached at login time.  This table provides the
+mapping for these file sytems.
+
+@Begin(Description)
+
+@I(users_id)@\id of @C(users) entry.
+
+@I(filesys_label)@\file system label.
+
+@End(Description)]
+
+@C(rvdsrv)@\@Multiple[RVD Server Information.  This table contains the top
+level access control lists for each rvd server.  Any other per-server
+information should be added here.
+
+@Begin(Description)
+
+@I(machine_id)@\server machine.
+
+@I(operations_acl)@\operations access control list.
+
+@I(admin_acl)@\administrative access control list.
+
+@I(shutdown_acl)@\shutdown access control list.
+
+@End(Description)]
+
+@C(rvdphys)@\@Multiple[Physical device partition table.
+
+@Begin(Description)
+
+@I(machine_id)@\server machine.
+
+@I(device)@\rvd physical device.
+
+@I(size)@\size in 512-byte blocks.
+
+@I(created)@\creation time.
+
+@I(modified)@\modification time.
+
+@End(Description)]
+
+@C(rvdvirt)@\@Multiple[Virtual device table.  This table contains the list of
+virtual devices for each rvd server machine.  Information per device
+includes the rvd physical device it resides on, its name, unique pack id,
+owner (@i<users> id), access control lists for the device (@i<rocap, excap,
+shcap>), allowable access modes, the offset within the physical device, its
+size, a @i(machine) id for a host that has default access to the device, and
+the creation and modifications dates for the device.
+
+@Begin(Description)
+
+@I(machine_id)@\server machine.
+
+@I(device)@\rvd physical device.
+
+@I(name)@\virtual device name.
+
+@I(packid)@\unique pack id.
+
+@I(owner)@\owner (currently an arbitrary string, should be a @C(users) entry
+id.) 
+
+@I(rocap, excap, shcap)@\currently three passwords providing read-only,
+exclusive, and shared accesss to the file system.  These should be condensed
+into one access control list id.  The access control list would indicate
+read and write access (shared access has never been implemented).
+
+@I(modes)@\allowable access modes for device.
+
+@I(offset)@\offset of virtual device into physical device (in blocks).
+
+@I(blocks)@\size of virtual device.
+
+@I(ownhost)@\name of host from which device may be mounted without a
+password (not used with acl's?).
+
+@I(created)@\creation time.
+
+@I(modified)@\modification time.
+
+@End(Description)]
+
+@C(nfsphys)@\@Multiple[NFS Server Information.  This table contains for each
+nfs server machine a list of the physical device partitions from which
+directories may be exported.  For each such partition an access control list
+is provided.
+
+@Begin(Description)
+
+@I(machine_id)@\server machine.
+
+@I(device)@\file system name.
+
+@I(acl_id)@\access control list.
+
+@End(Description)]
+
+@C(printer)@\@Multiple[Printer Information.
+
+@Begin(Description)
+
+@I(name)@\a unique printer name.
+
+@I(printer_id)@\internal database identifier for this record.
+
+@I(type)@\printer hardware type: one of LPS40, 3812, LN03, LN01, etc.
+
+@I(machine_id)@\print server machine for this printer.
+
+@I(acl_id)@\access control list specifying who may modify the attributes of
+this printer in the database.
+
+@End(Description)]
+
+@C(prability)@\@Multiple[Printer abilities.
+
+@Begin(Description)
+
+@I(printer_id)@\id for a printer.
+
+@I(ability)@\printer ability: one of TEXT, POSTSCRIPT, WINDOWDUMP, etc.
+
+@End(Description)]
+
+@C(queue)@\@Multiple[Printer queues.  This table contains a list of unique
+queue names and the attributes of each queue.  Attributes of queue are its
+@i(ability), a status string (used by MDQS servers), and an access control
+list.
+
+@Begin(Description)
+
+@I(name)@\unique queue name.
+
+@I(queue_id)@\internal database id for this queue.
+
+@I(machine_id)@\server machine.
+
+@I(ability)@\printer ability associated with this queue.
+
+@I(status)@\queue status string (used by MDQS).
+
+@I(acl_id)@\access control list specifying who may modify the attributes of
+this queue in the database.
+
+@End(Description)]
+
+@C(pqm)@\@Multiple[Printer to queue mapping.  This table provides the mapping
+between printers and queues.
+
+@Begin(Description)
+
+@I(printer_id)@\printer id.
+
+@I(queue_id)@\queue id.
+
+@End(Description)]
+
+@C(qdev)@\@Multiple[MDQS device information.  Each MDQS server has a device
+table that assigns a logical name and status information to each known
+physical printer device.
+
+@Begin(Description)
+
+@I(machine_id)@\MDQS server machine.
+
+@I(qdev_id)@\internal database id for this device.
+
+@I(name)@\logical name of device.
+
+@I(device)@\physcial device name (e.g.: /dev/lp0)
+
+@I(status)@\status string kept by MDQS.
+
+@I(acl_id)@\access control list for device.
+
+@End(Description)]
+
+@C(qdm)@\@Multiple[MDQS queue to device mapping.  This table ties together
+the queue and device information for each MDQS server.  Printer names are
+not actually known to MDQS; printer to queue mapping is handled by Hesiod
+using the @C(pqm) table information described above.
+
+@Begin(Description)
+
+@I(machine_id)@\MDQS server machine.
+
+@I(queue_id)@\queue id.
+
+@I(device_id)@\device id.
+
+@I(server)@\name of a server program to invoke for jobs using this queue and
+device. 
+
+@End(Description)]
+
+@C(printcap)@\@Multiple[Berkeley line printer software printcap entries.
+
+@Begin(Description)
+
+@I(name)@\printer name.
+
+@I(string)@\printcap string.
+
+@End(Description)]
+
+@C(pobox)@\@Multiple[Post Office Information.  This list matches users with
+one or more post office boxes.  A post office box is identified by its type
+(POP, LOCAL), the machine on which the box resides, and the box name on that
+machine.
+
+@Begin(Description)
+
+@I(users_id)@\id for a @C(users) entry.
+
+@I(type)@\mailbox type: one of POP, LOCAL.
+
+@I(machine_id)@\post office server machine.
+
+@I(box)@\mailbox name on server.
+
+@End(Description)]
+
+@C(list)@\@Multiple[Lists are used to associate a group of names with a
+particular label.  The definition of this table should be generic enough to
+support many types of lists.  List members are specified in the @c(members)
+table.  Associated with each members is a list of flags indicating access
+control and list administrator permissions.  There must be at least one list
+administrator for a list; there can be many.  In fact a list may be
+administered by all of the members of another list.  
+
+@Begin(Description)
+
+@I(name)@\list name.
+
+@I(type)@\list type: currently one of MAIL, ACL, GROUP
+
+@I(list_id)@\internal database id for this list.
+
+@I(flags)@\currently one or more of ACTIVE, PUBLIC, HIDDEN.  (These flags
+are used for mailing lists.)
+
+@I(description)@\description of list.
+
+@I(expdate)@\expiration date of list.
+
+@I(modtime)@\time list was last modified (@c(list) entry or @C(members)
+entry). 
+
+@End(Description)]
+
+@C(members)@\@Multiple[List members.  Members are specified by a member type
+and a member id pair.  Each member entry also has a status field which
+contains access control information.
+
+@Begin(Description)
+
+@I(list_id)@\id of a list.
+
+@I(member_type)@\member type: one of USER, LIST, STRING.
+
+@I(member_id)@\id of a member (a @c[users] id, @c[list] id, or @c[string]
+id.)
+
+@I(member_status)@\@Multiple[access control and list administrator
+permissions.  Current values are:
+
+@Begin(Format, Above .8, LeftMargin +.375inch, Size -1)
+@TabSet(+1.2inch)
 @U(Bit)@\@U(Function)
 0@\Read
 1@\Write
@@ -272,35 +525,71 @@ a member has to the containing list.  The current bit values are:
 3@\Append
 4@\Administrator
 5@\Master Administrator
-6@\Super Administrator (Owner)
+6@\Super Administrator (Owner(s))
 @End(Format)
 
 The first three bits specify standard read/write/delete access.  The first
 four bits specify database access capabilities (Retrieve, Replace, Delete,
-and Append) for table access control lists.  The last three bits are list
-administration capabilities.]
+and Append) for table access control lists.  In the case of MAIL and GROUP
+lists these permission bits may have no meaning; however, since a list of
+one type may contain as a member a list of another type, these bits can be
+used to indicate allowable access when referenced through an access control
+list.  The last three bits are list administration capabilities.
 
-strings@\@Multiple[@i(members) id, string.
+NOTE: Need to determine how to mask the status field of members of type LIST
+with the status fields of the corresponding list members.]
 
-Used for list members of @i(string) type.  An optimization for dealing
-with (usually long) foreign mail addresses.]
+@End(Description)]
 
-alias@\@Multiple[name, type, translation, translation type.
+@C(strings)@\@Multiple[Used for list members of @i(string) type.  An
+optimization for dealing with (usually long) foreign mail addresses.
 
-Aliases are used by several different services to provide alternative names
-for objects or a mapping one type of object and another.  Some examples of
-alias usage are printer aliases, service aliases, cluster aliases, file
-system aliases, print cluster to printer maps, and the machine to cluster
-map.
+@Begin(Description)
 
-An alias entry consists of its name, the alias type (string), the
-translation, and the translation type (string, alias type-specific).]
+@I(member_id)@\member id.
 
-tbinfo@\@Multiple[table, subtable, value1, value2, @i(acl) id.
+@I(string)@\string.
 
-Table Info.  This table contains table specific information such as access
-control lists for each table, and current maximum values for unique ids.
-A second value field is provided for future needs.]
+@End(Description)]
+
+@C(alias)@\@Multiple[Aliases are used by several different services to
+provide alternative names for objects or a mapping one type of object and
+another.  Some examples of alias usage are printer aliases, service aliases,
+cluster aliases, file system aliases, print cluster to printer maps, and the
+machine to cluster map.
+
+@Begin(Description)
+
+@I(name)@\alias name.
+
+@I(type)@\alias type: currently one of PRINTER, SERVICE, CLUSTER, FILESYS,
+PRCLUSTER, MACH-CLU-MAP.
+
+@I(trans)@\alias translation.
+
+@I(trans_type)@\translation object type: alias type dependent (usually
+STRING) (possibly unnecessary)
+
+@End(Description)]
+
+@C(tbinfo)@\@Multiple[Table Info.  This table contains table specific
+information such as access control lists for each table, and current maximum
+values for unique ids.  Table names will in general correspond directly to
+the list of tables described in this section.  However logical table names
+may be used that correspond to a part of larger table.  For example, there
+is a separate entry for each alias type ("alias-printer", "alias-service",
+etc.) 
+
+@Begin(Description)
+
+@I(table)@\table name.
+
+@I(value)@\currently is used to specify the current maximum unique id for
+tables with unique id fields.
+
+@I(acl_id)@\access control list for specified table.
+
+@End(Description)]
 
 @End(Description)
 

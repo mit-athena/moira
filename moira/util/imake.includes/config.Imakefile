@@ -17,11 +17,11 @@ OSDEFS= -DPOSIX
 #endif
 
 #ifdef sgi
-OSDEFS= -DPOSIX -DUSE_CRYPT_H
+OSDEFS= -DPOSIX -DUSE_CRYPT_H -DSYSV
 #endif
 
 #if defined(SOLARIS)
-OSDEFS= -DPOSIX -DSOLARIS
+OSDEFS= -DPOSIX -DSOLARIS -DSYSV
 OSLIBS= -lresolv -lsocket -lnsl
 #endif
 
@@ -109,20 +109,10 @@ LZEPHYR=-lzephyr
  * stamp user records to guarentee their authenticity.  Also define
  * location of library and includes.
  */
-#if !defined(linux) && !defined(__NetBSD__)
 #define GDSS
 #define DO_GDSS
-#ifdef sgi
-LIBGDSS= /mit/gdss/lib/libgdss.a
-#else
-#ifdef SOLARIS
-LIBGDSS= /mit/gdss/`machtype`/libgdss.a -lbsd
-#else
-LIBGDSS= /mit/gdss/`machtype`/libgdss.a
-#endif
-#endif
-GDSSINC= -DGDSS -I/mit/gdss/include
-#endif /* GDSS */
+LIBGDSS= $(BUILDTOP)/util/gdss/lib/libgdss.a
+GDSSINC= -DGDSS -I$(BUILDTOP)/util/gdss/include
 
 /*
  * Define your DBMS here.  Currently only ORACLE is supported.

@@ -1,4 +1,4 @@
-/* $Id: pobox.pc,v 1.7 2000-11-30 23:27:47 zacheiss Exp $
+/* $Id: pobox.pc,v 1.8 2002-03-15 18:11:19 zacheiss Exp $
  *
  * This generates a list of everyone's poboxes for the mitdir.
  *
@@ -21,7 +21,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/pobox.pc,v 1.7 2000-11-30 23:27:47 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/pobox.pc,v 1.8 2002-03-15 18:11:19 zacheiss Exp $");
 
 char *whoami = "pobox.gen";
 char *db = "moira/moira";
@@ -64,7 +64,7 @@ int main(int argc, char **argv)
 
   EXEC SQL DECLARE x CURSOR FOR SELECT
     clearid, login
-    FROM users WHERE status != 3 AND potype != 'NONE' AND potype != 'SMTP';
+    FROM users WHERE status != 3 AND potype != 'NONE';
   EXEC SQL OPEN x;
   while (1)
     {
@@ -78,35 +78,6 @@ int main(int argc, char **argv)
     }
 
   EXEC SQL CLOSE x;
-
-  EXEC SQL DECLARE y CURSOR FOR SELECT
-    u.clearid, s.string
-    FROM users u, strings s
-    WHERE u.status != 3 and u.potype = 'SMTP' and u.box_id = s.string_id;
-  EXEC SQL OPEN y;
-  while (1)
-    {
-      EXEC SQL FETCH y INTO :id, :string;
-      if (sqlca.sqlcode)
-	break;
-      strtrim(string);
-      strtrim(id);
-      if (isdigit(id[0]))
-	{
-	  if ((i = strlen(string)) > 7 &&
-	      !strcasecmp(".local", string + i - 6))
-	    {
-	      string[i - 6] = '\0';
-	      fprintf(out, "%s %s.mit.edu\n", id, string);
-	    }
-	  else if (!strchr(string, '@'))
-	    fprintf(out, "%s %s@mit.edu\n", id, string);
-	  else
-	    fprintf(out, "%s %s\n", id, string);
-	}
-    }
-
-  EXEC SQL CLOSE y;
 
   EXEC SQL COMMIT;
 

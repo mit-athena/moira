@@ -1,4 +1,4 @@
-/* $Id: queries2.c,v 2.98 2003-08-14 02:43:55 zacheiss Exp $
+/* $Id: queries2.c,v 2.99 2003-10-20 19:42:10 zacheiss Exp $
  *
  * This file defines the query dispatch table
  *
@@ -3831,6 +3831,24 @@ static struct validate scli_validate = {
 
 static char *gcli_fields[] = {
   "containername",
+  "containername", "listname",
+};
+
+static struct validate glic_validate = 
+{
+  VOlist0,
+  1,
+  NULL,
+  NULL,
+  0,
+  0,
+  0,
+  0,
+  0,
+};
+
+static char *glic_fields[] = {
+  "listname",
   "containername", "listname",
 };
 
@@ -7748,6 +7766,23 @@ struct query Queries[] = {
     1,
     NULL,
     NULL,
+  },
+
+  {
+    /* G_GLIC - GET_LIST_CONTAINER, v9 */
+    "get_list_container",
+    "glic",
+    9,
+    RETRIEVE,
+    "c",
+    CONTAINERS_TABLE,
+    "c.name, l.name FROM containers c, list l",
+    glic_fields,
+    2,
+    "l.list_id = %d AND l.list_id = c.list_id and c.list_id != 0",
+    1,
+    NULL,
+    &glic_validate,
   },
 
 };

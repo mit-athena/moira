@@ -48,7 +48,7 @@ create index i_imem_mid on imembers (member_id, member_type);
 create index i_imem_list on  imembers (list_id);
 
 create unique index i_str_sid on strings  (string_id);
-create index i_str_name on  strings (string);
+create unique index i_str_name on  strings (string);
 
 create unique index i_nfs_nid on nfsphys  (nfsphys_id);
 create index i_nfs_mach on  nfsphys (mach_id);

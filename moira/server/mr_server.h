@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_server.h,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_server.h,v 1.14 1989-06-27 16:04:40 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_server.h,v 1.15 1989-08-28 17:28:27 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
@@ -34,6 +34,8 @@ struct krbname {
  * This structure holds all per-client information; one of these is
  * allocated for each active client.
  */
+
+#define NLISTS 100
    
 typedef struct _client {
 	OPERATION pending_op;	/* Primary pending operation */
@@ -42,12 +44,14 @@ typedef struct _client {
 	sms_params *args, reply;
 	int id;			/* Unique id of client */
 	struct sockaddr_in haddr; /* IP address of client */
-	char *clname;		/* Name client authenticated to */
-	int users_id;		/* SMS internal ID of authenticated user */
+	char clname[MAX_K_NAME_SZ];/* Name client authenticated to */
 	struct krbname kname; 	/* Parsed version of the above */
+	int users_id;		/* SMS internal ID of authenticated user */
+	int client_id;		/* SMS internal ID of client for modby field */
 	returned_tuples *first, *last;
 	time_t last_time_used;  /* Last time connection used */
-	char *entity;		/* entity on other end of the connection */
+	char entity[9];		/* entity on other end of the connection */
+	int lists[NLISTS];	/* lists this person is a member of */
 } client;
 
 /*

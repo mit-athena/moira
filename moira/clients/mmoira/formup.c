@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/formup.c,v 1.10 1992-11-04 17:57:21 mar Exp $ */
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/formup.c,v 1.11 1992-11-09 17:12:28 mar Exp $ */
 
 #include	<stdio.h>
 #include	<strings.h>
@@ -7,9 +7,9 @@
 #include	<X11/Shell.h>
 #include	<X11/Core.h>
 #include	<X11/CoreP.h>
+#include	<X11/CompositeP.h>
 #include	<Xm/Xm.h>
 #include	<Xm/BulletinB.h>
-#include	<Xm/BulletinBP.h>
 #include	<Xm/Label.h>
 #include	<Xm/Text.h>
 #include	<Xm/TextP.h>
@@ -19,12 +19,11 @@
 #include	<Xm/ToggleB.h>
 #include	<Xm/ToggleBG.h>
 #include	<Xm/RowColumn.h>
-#include	<Xm/RowColumnP.h>
 #include	<Xm/Separator.h>
 #include	<Xm/Traversal.h>
 #include	"mmoira.h"
 
-static char rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/formup.c,v 1.10 1992-11-04 17:57:21 mar Exp $";
+static char rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/formup.c,v 1.11 1992-11-09 17:12:28 mar Exp $";
 
 #ifndef MAX
 #define	MAX(a,b)	((a > b) ? a : b)
@@ -535,8 +534,6 @@ int field;
     Dimension x, y, parent_y, oldheight, newheight;
     Arg wargs[4];
     Widget w;
-    XmBulletinBoardWidget bb;
-    XmRowColumnWidget rc;
     static XtTranslations trans = NULL;
     extern char form_override_table[];
     int i;
@@ -555,15 +552,14 @@ int field;
     MapWidgetToForm(w, form);
     XmAddTabGroup(w);
     if (newheight > oldheight) {
-	bb = (XmBulletinBoardWidget) form->formpointer;
 	parent_y = y;
-	for (i = 0; i < bb->composite.num_children; i++) {
+	for (i = 0; i < NumChildren(form->formpointer); i++) {
 	    XtSetArg(wargs[0], XtNy, &y);
-	    XtGetValues(bb->composite.children[i], wargs, 1);
+	    XtGetValues(NthChild(form->formpointer, i), wargs, 1);
 	    if (y > parent_y) {
 		y = (y + newheight) - oldheight;
 		XtSetArg(wargs[0], XtNy, y);
-		XtSetValues(bb->composite.children[i], wargs, 1);
+		XtSetValues(NthChild(form->formpointer, i), wargs, 1);
 	    }
 	}
     }
@@ -571,9 +567,8 @@ int field;
     if (trans == NULL)
       trans = XtParseTranslationTable(resources.form_trans);
     XtOverrideTranslations(w, trans);
-    rc = (XmRowColumnWidget) w;
-    for (i = 0; i < rc->composite.num_children; i++)
-      XtOverrideTranslations(rc->composite.children[i], trans);
+    for (i = 0; i < NumChildren(w); i++)
+      XtOverrideTranslations(NthChild(w, i), trans);
 
     XtManageChild(w);
 }
@@ -900,4 +895,20 @@ EntryForm *WidgetToForm(w)
 Widget *w;
 {
     return((EntryForm *) hash_lookup(WFmap, w));
+}
+
+
+/* Routines to deal with children of composite widgets */
+
+Widget NthChild(w, n)
+CompositeRec *w;
+int n;
+{
+    return(w->composite.children[n]);
+}
+
+int NumChildren(w)
+CompositeRec *w;
+{
+    return(w->composite.num_children);
 }

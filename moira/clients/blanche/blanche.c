@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.25 1994-10-28 17:34:02 jweiss Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.26 1995-10-26 22:56:08 jweiss Exp $
  *
  * Command line oriented Moira List tool.
  *
@@ -23,7 +23,7 @@
 #include <moira_site.h>
 
 #ifndef LINT
-static char blanche_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.25 1994-10-28 17:34:02 jweiss Exp $";
+static char blanche_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.26 1995-10-26 22:56:08 jweiss Exp $";
 #endif
 
 
@@ -105,7 +105,7 @@ char **argv;
 	      verbose++;
 	    else if (argis("r","recursive"))
 	      recursflg++;
-	    else if (argis("S","server"))
+	    else if (argis("S","server") || argis("db","database"))
 		if (arg - argv < argc - 1) {
 		    ++arg;
 		    server = *arg;

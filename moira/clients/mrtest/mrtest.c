@@ -1,4 +1,4 @@
-/* $Id: mrtest.c,v 1.46 1999-08-02 18:43:44 danw Exp $
+/* $Id: mrtest.c,v 1.47 1999-12-27 18:41:09 danw Exp $
  *
  * Bare-bones Moira client
  *
@@ -24,7 +24,7 @@
 #include "readline/history.h"
 #endif
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v 1.46 1999-08-02 18:43:44 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v 1.47 1999-12-27 18:41:09 danw Exp $");
 
 int recursion = 0, quote_output = 0, interactive;
 int count, quit = 0, cancel = 0;
@@ -155,7 +155,7 @@ void execute_line(char *cmdbuf)
     test_disconnect();
   else if (!strcmp(argv[0], "host"))
     test_host();
-  else if (!strcmp(argv[0], "motd"))
+  else if (!strcmp(argv[0], "motd") || !strcmp(argv[0], "m"))
     test_motd();
   else if (!strcmp(argv[0], "query") || !strcmp(argv[0], "qy"))
     test_query(argc, argv);

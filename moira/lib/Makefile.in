@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.2 1998-08-13 18:23:41 danw Exp $
+# $Id: Makefile.in,v 1.3 1999-07-06 16:31:33 danw Exp $
 
 SHELL=/bin/sh
 
@@ -28,7 +28,7 @@ ET_C=	mr_et.c krb_et.c ureg_err.c gdss_et.c
 
 .SUFFIXES: .et
 
-.et.h:
+.et.c:
 	$(COMPILE_ET) $<
 
 all: depend libmoira.a
@@ -36,7 +36,7 @@ all: depend libmoira.a
 clean:
 	rm -f $(OBJS) $(ET_H) $(ET_C) libmoira.a
 
-depend: $(ET_H)
+depend: $(ET_C)
 
 install: all
 

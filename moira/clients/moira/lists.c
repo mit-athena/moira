@@ -1,4 +1,4 @@
-/* $Id: lists.c,v 1.48 2001-12-14 21:06:26 zacheiss Exp $
+/* $Id: lists.c,v 1.49 2002-08-06 22:08:31 zacheiss Exp $
  *
  *	This is the file lists.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -24,7 +24,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v 1.48 2001-12-14 21:06:26 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v 1.49 2002-08-06 22:08:31 zacheiss Exp $");
 
 struct mqelem *GetListInfo(int type, char *name1, char *name2);
 char **AskListInfo(char **info, Bool name);
@@ -439,6 +439,12 @@ int AddList(int argc, char **argv)
 	Put_message("This list already exists.");
       else
 	com_err(program_name, status, " in AddList.");
+      return SUB_ERROR;
+    }
+
+  if (status = mr_access("add_list", L_MODTIME, SetDefaults(info, argv[1]))) 
+    {
+      com_err(program_name, status, " in AddList.");
       return SUB_ERROR;
     }
 

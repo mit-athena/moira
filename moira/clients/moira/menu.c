@@ -1,4 +1,4 @@
-/* $Id: menu.c,v 1.52 1998-10-21 19:24:51 danw Exp $
+/* $Id: menu.c,v 1.53 1999-01-26 20:09:09 danw Exp $
  *
  * Generic menu system module.
  *
@@ -21,7 +21,7 @@
 #include <string.h>
 #include <unistd.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.52 1998-10-21 19:24:51 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.53 1999-01-26 20:09:09 danw Exp $");
 
 #ifdef MAX
 #undef MAX
@@ -109,23 +109,30 @@ void Start_menu(Menu *m)
 {
   void (*old_hook)(const char *, long, const char *, va_list) =
     set_com_err_hook((void (*) (const char *, long, const char *, va_list))menu_com_err_hook);
-
-  if (initscr() == (WINDOW *)ERR)
+#ifdef CURSES_HAS_NEWTERM
+  SCREEN *scrn = newterm(NULL, stdout, stdin);
+#else
+  WINDOW *scrn = initscr();
+#endif
+  if (!scrn)
     {
-      fputs("Can't initialize curses!\n", stderr);
+      fputs("Can't initialize curses!\nReverting to -nomenu mode\n\n", stderr);
       Start_no_menu(m);
     }
   else
     {
+#ifdef CURSES_HAS_NEWTERM
+      set_term(scrn);
+#endif
       raw();		/* We parse & print everything ourselves */
       noecho();
       cur_ms = make_ms(0);	/* So we always have some current */
 				/* menu_screen */
       /* Run the menu */
       Do_menu(m, -1, NULL);
+      Cleanup_menu();
     }
   set_com_err_hook(old_hook);
-  Cleanup_menu();
 }
 
 void Cleanup_menu(void)
@@ -134,8 +141,8 @@ void Cleanup_menu(void)
     {
       wclear(cur_ms->ms_screen);
       wrefresh(cur_ms->ms_screen);
+      endwin();
     }
-  endwin();
 }
 
 /*

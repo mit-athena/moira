@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/members.pc,v 1.3 2000-09-10 02:53:27 zacheiss Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/members.pc,v 1.4 2002-08-14 14:01:21 zacheiss Exp $
  */
 
 #include <stdio.h>
@@ -56,7 +56,7 @@ char **argv;
 #ifdef DEBUG
     if (argc > 1)
       debug = atoi(argv[1]);
-#endif DEBUG
+#endif /* DEBUG */
 
 /*  ingres sms */
     EXEC SQL CONNECT :db;
@@ -72,7 +72,7 @@ char **argv;
 #ifdef DEBUG
     if (debug > 3)
       hash_step(lists, display_member, NULL);
-#endif DEBUG
+#endif /* DEBUG */
     verify_members();
     fix_members();
 
@@ -85,13 +85,13 @@ char **argv;
 /*	end transaction */
 	EXEC SQL COMMIT WORK;
     } else {
-#endif FIXERRORS
+#endif /* FIXERRORS */
 	printf("Aborting transaction\n");
 /*	abort */
 	EXEC SQL ROLLBACK WORK;
 #ifdef FIXERRORS
     }
-#endif FIXERRORS
+#endif /* FIXERRORS */
 
 /*  exit */
     /* No equivalent (?) */
@@ -129,7 +129,7 @@ load_members()
       if (debug > 5)
 	printf("Working on list %d member %s %d refc %d\n",
 	       list_id, mtype, member_id, ref_count);
-#endif DEBUG
+#endif /* DEBUG */
       if ((m = find_member(list_id, member2id(mtype[0], member_id))) == NULL) {
 	  m = allocmember();
 	  m->list_id = list_id;
@@ -158,7 +158,7 @@ load_members()
       if (debug > 5)
 	printf("%d ancestors, %d descendants\n",
 	       chainlen(ance), chainlen(desc));
-#endif DEBUG
+#endif /* DEBUG */
       for (ancestors = ance; ancestors; ancestors = ancestors->next) {
 	  ma = ancestors->member;
 	  for (descendants = desc; descendants; descendants=descendants->next) {
@@ -176,14 +176,14 @@ load_members()
 	      if (debug > 5)
 		printf("Checking list %d member %d, ref = %d\n",
 		       ma->list_id, id2id(md->member_id), ref);
-#endif DEBUG
+#endif /* DEBUG */
 	      if (m1 = find_member(ma->list_id, md->member_id)) {
 		  m1->frefc += ref;
 #ifdef DEBUG
 		  if (debug > 5)
 		    printf("set refc to %d (%d) on list %d, member %d\n",
 			   m1->frefc, ref, m1->list_id, id2id(m1->member_id));
-#endif DEBUG
+#endif /* DEBUG */
 		  if (ma == m && md == m)
 		    m1->fdirect = 1;
 	      } else {
@@ -195,7 +195,7 @@ load_members()
 		  if (debug > 5)
 		    printf("set new refc to %d (%d) on list %d, member %d\n",
 			   m1->frefc, ref, m1->list_id, id2id(m1->member_id));
-#endif DEBUG
+#endif /* DEBUG */
 		  sq_save_data(sq, m1);
 	      }
 	  }
@@ -223,7 +223,7 @@ verify_members()
 #ifdef DEBUG
     int ref0, ref1, ref2, ref3, refg;
     int db0, db1, db2, db3, dbg;
-#endif DEBUG
+#endif /* DEBUG */
 
     /* verify members from database */
     printf("Verifying members\n");
@@ -231,7 +231,7 @@ verify_members()
 #ifdef DEBUG
     ref0 = ref1 = ref2 = ref3 = refg = 0;
     db0 = db1 = db2 = db3 = dbg = 0;
-#endif DEBUG
+#endif /* DEBUG */
     sq = sq_create();
 /*  retrieve (list_id = m.#list_id, member_id = m.#member_id,
  *	      mtype = m.member_type, ref_count = m.#ref_count,
@@ -254,7 +254,7 @@ verify_members()
 	case 3: db3++; break;
 	default: dbg++;
 	}
-#endif DEBUG
+#endif /* DEBUG */
       m = find_member(list_id, member2id(mtype[0], member_id));
       if (m == NULL) {
 	  m = allocmember();
@@ -275,7 +275,7 @@ verify_members()
 	    case 3: ref3++; break;
 	    default: refg++;
 	    }
-#endif DEBUG
+#endif /* DEBUG */
 	  m->frefc -= ref_count;
 	  if (m->frefc != 0)
 	    errbref++;
@@ -295,7 +295,7 @@ verify_members()
 	printf("Found  refs: %d 0; %d 1; %d 2; %d 3; %d > 3\n",
 	       ref0, ref1, ref2, ref3, refg);
     }
-#endif DEBUG
+#endif /* DEBUG */
 }
 
 
@@ -337,7 +337,7 @@ fix_members()
 	if (rowcount > 0)
 	  printf("%d entr%s deleted\n", rowcount, 
 		 rowcount == 1 ? "y" : "ies");
-#endif FIXERRORS
+#endif /* FIXERRORS */
     }
     if (errmis > 0)
       printf("Added %d missing records\n", errmis);
@@ -491,7 +491,7 @@ int *errmis;
 	    if (rowcount > 0)
 	      printf("%d entr%s added\n", rowcount, 
 		     rowcount == 1 ? "y" : "ies");
-#endif FIXERRORS
+#endif /* FIXERRORS */
 	    continue;
 	}
 	printf("Member record has bad ref_count and/or direct flag, fixing\n");
@@ -523,7 +523,7 @@ int *errmis;
 	if (rowcount > 0)
 	  printf("%d entr%s updated\n", rowcount, 
 		 rowcount == 1 ? "y" : "ies");
-#endif FIXERRORS
+#endif /* FIXERRORS */
     }
 }
 
@@ -589,4 +589,4 @@ struct member_list *l;
     }
 }
 
-#endif DEBUG
+#endif /* DEBUG */

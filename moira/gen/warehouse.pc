@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/warehouse.pc,v 1.4 1997-09-05 19:14:52 danw Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/warehouse.pc,v 1.5 1997-10-09 14:53:30 tytso Exp $
  *
  * This generates a database extract from the users table for the MIT
  * Warehouse.
@@ -49,10 +49,14 @@ char **argv;
     int records = 0;
     EXEC SQL BEGIN DECLARE SECTION;
     char login[9], sig[257], id[17], kname[257];
+    char fname[17], lname[17], middle[17];
     EXEC SQL VAR sig IS STRING(257);
     int timestamp, sigwho;
     struct { char login[12];
 	     char id[12];
+             char fname[20];
+             char lname[20];
+             char middle[20];
 	     char sig[256];
 	 } outrec;
     EXEC SQL END DECLARE SECTION;
@@ -92,23 +96,31 @@ char **argv;
     EXEC SQL WHENEVER SQLERROR GOTO sqlerr;
 
     EXEC SQL DECLARE x CURSOR FOR
-      SELECT u.login, u.clearid, u.signature, u.sigdate, s.string, u.sigwho
+      SELECT u.login, u.clearid, u.signature, u.sigdate, s.string, u.sigwho,
+		u.first, u.last, u.middle
       FROM users u, strings s
 	WHERE (u.status = 1 or u.status=2 or u.status=5 or
 	       u.status=6 or u.status=7) 
 		 and u.sigwho = s.string_id;
     EXEC SQL OPEN x;
     while (1) {
-	EXEC SQL FETCH x INTO :login, :id, :sig, :timestamp, :kname, :sigwho;
+	EXEC SQL FETCH x INTO :login, :id, :sig, :timestamp, :kname, :sigwho,
+		:fname, :lname, :middle;
 	if (sqlca.sqlcode != 0) break;
 	if (id == 0) continue;
 	if (!isdigit(id[1])) continue;
 	strtrim(login);
 	strtrim(id);
 	strtrim(kname);
+	strtrim(fname);
+	strtrim(lname);
+	strtrim(middle);
 	memset(&outrec, 0, sizeof(outrec));
 	strcpy(outrec.login, login);
 	strcpy(outrec.id, id);
+	strcpy(outrec.fname, fname);
+	strcpy(outrec.lname, lname);
+	strcpy(outrec.middle, middle);
 	if (sigwho) {
 		si.timestamp = timestamp;
 		si.SigInfoVersion = 0; /* XXXXXX this isn't used */
@@ -136,7 +148,7 @@ char **argv;
     }
     fprintf(f, "username_id.map --- Moira feed for MIT Data Warehouse\n");
     fprintf(f, "%d records\n", records);
-    fprintf(f, "%d bytes\n", records * (12+12+256));
+    fprintf(f, "%d bytes\n", records * (12+12+20+20+20+256));
     fprintf(f, "Full feed\n");
     fprintf(f, "Fixed format -- binary\n");
     fclose(f);

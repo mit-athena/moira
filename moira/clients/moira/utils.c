@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v 1.7 1988-07-29 18:42:43 kit Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v 1.8 1988-08-07 17:22:49 mar Exp $";
 #endif lint
 
 /*	This is the file utils.c for the SMS Client, which allows a nieve
@@ -10,8 +10,8 @@
  *	By:		Chris D. Peterson
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v $
- *      $Author: kit $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v 1.7 1988-07-29 18:42:43 kit Exp $
+ *      $Author: mar $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v 1.8 1988-08-07 17:22:49 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -608,46 +608,6 @@ char *str;
 	return ((char *) NULL);
     else
 	return (strcpy(newstr, str));
-}
-
-/*	Function Name: EncryptMITID
- *	Description: Encrypts an mit ID number. 
- *	Arguments: sbuf - the buffer to return the encrypted number in.
- *                 idnumber - the id number (string).
- *                 first, last - name of the person.
- *	Returns: none.
- */
-
-void
-EncryptMITID(sbuf, idnumber, first, last)
-char *sbuf, *idnumber, *first, *last;
-{
-    char salt[3];
-    extern char *crypt();
-
-#define _tolower(c) ((c)|0x60)
-
-    salt[0] = _tolower(last[0]);
-    salt[1] = _tolower(first[0]);
-    salt[2] = 0;
-
-    (void) strcpy(sbuf, crypt(&idnumber[2], salt));
-}
-
-/*	Function Name: RemoveHyphens
- *	Description: Removes all hyphens from the string passed to it.
- *	Arguments: str - the string to remove the hyphes from
- *	Returns: none
- */
-
-void
-RemoveHyphens(str)
-char *str;
-{
-    char *hyphen;
-
-    while ((hyphen = index(str, '-')) != NULL)
-	(void) strcpy(hyphen, hyphen + 1);
 }
 
 /*	Function Name: Print

@@ -1,13 +1,14 @@
-# $Id: Makefile.in,v 1.1 2001-10-04 01:16:31 zacheiss Exp $
+# $Id: Makefile.in,v 1.2 2001-10-09 10:18:12 zacheiss Exp $
 
 SHELL=/bin/sh
 @SET_MAKE@
 
 CC=@CC@
-CPPFLAGS=@CPPFLAGS@ -I/usr/java/include -I/usr/java/include/solaris
+CPPFLAGS=@CPPFLAGS@
+JAVA_CPPFLAGS=@JAVA_CPPFLAGS@
 CFLAGS=@CFLAGS@
 DEFS=@DEFS@
-ALL_CFLAGS=$(CPPFLAGS) $(CFLAGS) $(DEFS)
+ALL_CFLAGS=$(CPPFLAGS) $(JAVA_CPPFLAGS) $(CFLAGS) $(DEFS)
 LDFLAGS=@LDFLAGS@
 LIBS=@LIBS@
 MR_LIBDEP=@MR_LIBDEP@

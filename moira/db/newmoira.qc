@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/db/newmoira.qc,v 1.2 1988-09-12 17:37:17 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/db/newmoira.qc,v 1.3 1988-12-07 18:33:52 mar Exp $
  *
  * Creates a new sms database
  *
@@ -373,3 +373,4 @@ int access_all() {}
 int get_list_info() {}
 int register_user() {}
 int access_vis_list_by_name() {}
+int set_uppercase_modtime() {}

@@ -7,11 +7,11 @@
  *
  * $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/dcm.c,v $
  * $Author: mar $
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/dcm.c,v 1.14 1990-04-09 18:41:45 mar Exp $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/dcm.c,v 1.15 1990-05-31 14:29:27 mar Exp $
  */
 
 #ifndef lint
-static char rcsid_dcm_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/dcm.c,v 1.14 1990-04-09 18:41:45 mar Exp $";
+static char rcsid_dcm_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/dcm.c,v 1.15 1990-05-31 14:29:27 mar Exp $";
 #endif lint
 
 #include <stdio.h>
@@ -46,10 +46,12 @@ char *argv[];
 	int i;
 	char **arg = argv;
 	char *qargv[3];
+	char *s;
 	int status;
 
 	whoami = argv[0];
-	dbg = atoi(getenv("DEBUG"));
+	s = getenv("DEBUG");
+	dbg = s ? atoi(s) : 0;
 	umask(UMASK);
 	log_flags = 0;
 	setlinebuf(stderr);

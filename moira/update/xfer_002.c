@@ -1,13 +1,13 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/xfer_002.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/xfer_002.c,v 1.7 1992-09-21 12:31:57 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/xfer_002.c,v 1.8 1993-05-24 15:17:44 mar Exp $
  */
 /*  (c) Copyright 1988 by the Massachusetts Institute of Technology. */
 /*  For copying and distribution information, please see the file */
 /*  <mit-copyright.h>. */
 
 #ifndef lint
-static char *rcsid_xfer_002_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/xfer_002.c,v 1.7 1992-09-21 12:31:57 mar Exp $";
+static char *rcsid_xfer_002_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/xfer_002.c,v 1.8 1993-05-24 15:17:44 mar Exp $";
 #endif	lint
 
 #include <mit-copyright.h>
@@ -61,7 +61,7 @@ xfer_002(str)
     if (!*str) {
     failure:
 	reject_call(MR_ARGS);
-	return;
+	return(0);
     }
     file_size = atoi(str);
     while (isdigit(*str))
@@ -78,7 +78,7 @@ xfer_002(str)
     pathname = str;
     if (!have_authorization) {
 	reject_call(MR_PERM);
-	return;
+	return(0);
     }
     if (done)			/* re-initialize data */
 	initialize();
@@ -93,5 +93,5 @@ xfer_002(str)
 	strcat(buf, pathname);
 	mr_log_info(buf);
     }
-    return;
+    return(0);
 }

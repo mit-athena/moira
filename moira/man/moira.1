@@ -1,20 +1,20 @@
-.TH SMS 1 "29 Nov 1988" "Project Athena"
-\" RCSID: $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/man/moira.1,v 1.2 1988-12-06 14:36:00 mar Exp $
+.TH MOIRA 1 "29 Nov 1988" "Project Athena"
+\" RCSID: $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/man/moira.1,v 1.3 1989-01-21 16:39:10 mar Exp $
 .SH NAME
-sms, listmaint, usermaint, dcmmaint \- maintain information stored in SMS
+moira, listmaint, usermaint, dcmmaint \- maintain information stored in moira
 .SH SYNOPSIS
-.B sms
+.B moira
 [
 .BI \-nomenu
 ]
 .SH DESCRIPTION
-.I sms
-administers all of the information stored in the SMS database.  When
-invoked by the name
+.I Moira
+administers all of the information stored in Moira, the Athena Service
+Management System database.  When invoked by the name
 .B listmaint, usermaint,
 or
 .B dcmmaint,
-.I sms
+.I moira
 will immediately drop into the appropriate sub-menu.
 There is only one option:
 .TP
@@ -24,7 +24,7 @@ will be handled like a printing terminal.  Each menu will be displayed
 only once.  Typing '?' will cause a menu to be redisplayed.
 .PP
 When called without options,
-.I sms
+.I moira
 displays a menu in the top half of the screen listing other menus;
 retrievals, appends, updates, or 
 deletes to the database; or control actions within the program.
@@ -51,14 +51,14 @@ Return to the menu above this one in the menu tree.
 Toggle logging on and off.  When logging is turned on, all output in
 the lower half of the screen will also be written to
 .I /usr/tmp/sms-log.XXXX,
-where XXXX is the process-ID of the sms client.
+where XXXX is the process-ID of the moira client.
 .TP
 .B quit
-Exits the sms client immediately.  The connection to the SMS server
+Exits the moira client immediately.  The connection to the Moira server
 will be closed.
 .SH DIAGNOSTICS
 Pay attention to Kerberos diagnostics, as one must be authenticated to
-do most SMS database work.  
+do most Moira database work.  
 .PP
 As this is a database manipulation application, diagnostics indicate an
 incomplete argument list, an attempt to modify/delete an ambiguous
@@ -66,7 +66,7 @@ entry, or an invalid menu choice.
 .SH ENVIRONMENT
 .TP
 KRBTKFILE
-path name of your Kerberos ticket.  SMS decides who you are and what you
+path name of your Kerberos ticket.  Moira decides who you are and what you
 can do based on your Kerberos tickets, and nothing else.
 .TP
 TERMCAP
@@ -75,7 +75,8 @@ used by curses to control of scrolling and menu display.
 Jean Marie Diaz, Mark Roman, Chris Peterson, Mark Rosenstein and a
 cast of thousands
 .SH "SEE ALSO"
-chfn(1), chpobox(1), chsh(1), mailmaint(1), smslist(1),
-SMS section of the Project Athena Technical Plan
+chfn(1), chpobox(1), chsh(1), mailmaint(1), mrlist(1),
+Moira section of the Project Athena Technical Plan
 .SH NOTES
-SMS is Project Athena's Service Management System.
+Moira was previously called SMS, and some places still refer to it by
+this name.

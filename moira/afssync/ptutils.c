@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/afssync/ptutils.c,v 1.2 1989-09-23 18:47:07 mar Exp $ */
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/afssync/ptutils.c,v 1.3 1989-09-24 15:35:04 mar Exp $ */
 /* $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/afssync/ptutils.c,v $ */
 
 
@@ -544,7 +544,7 @@ Initdb()
     /* else we need to build a database */
     code = ubik_EndTrans(tt);
     if (code) return code;
-    printf("Creating new database\n");
+    fprintf(stderr, "Creating new database\n");
     code = ubik_BeginTrans(dbase,UBIK_WRITETRANS, &tt);
     if (code) return code;
     code = ubik_SetLock(tt,1,1,LOCKWRITE);

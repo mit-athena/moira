@@ -1,4 +1,4 @@
-! $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/cluster/Cluster,v 1.1 1991-09-08 18:29:22 mar Exp $
+! $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/cluster/Cluster,v 1.2 1991-09-09 11:13:53 mar Exp $
 
 cluster.wcChildren:		toplevel
 
@@ -6,16 +6,56 @@ cluster.wcChildren:		toplevel
 
 ! Widget tree
 
-*toplevel.wcClass:		formWidgetClass
+*toplevel.wcClass:		xmBulletinBoardWidgetClass
 *toplevel.wcChildren:		buttons, clusters, machines
 
+*buttons.wcConstructor:		XmCreateMenuBar
 *buttons.wcClass:		formWidgetClass
-*buttons.wcChildren:		quit, help
-*buttons.borderWidth:		0
-*quit.wcClass:			commandWidgetClass
+*buttons.wcChildren:		fileMenu, cluMenu, macMenu, helpMenu, \
+				file, cluButton, macButton, help
+
+*file.wcConstructor:		XmCreateCascadeButton
+*file.subMenuId:		*fileMenu
+*file.mnemonic:			F
+*fileMenu.wcConstructor:	XmCreatePulldownMenu
+*fileMenu.wcManaged:		False
+*fileMenu.wcCallback:		WcSetValueCB(*file.subMenuID: this)
+*fileMenu.wcChildren:		quit
+
+*quit.wcConstructor:		XmCreateCascadeButton
+*quit.labelString:		Quit
+*quit.mnemonic:			Q
 *quit.callback:			WcExitCB(0)
-*help.wcClass:			commandWidgetClass
-*help.fromHoriz:		*quit
+
+*clu.wcConstructor:		XmCreateCascadeButton
+*clu.subMenuId:			*cluMenu
+*clu.mnemonic:			C
+*cluMenu.wcConstructor:		XmCreatePulldownMenu
+*cluMenu.wcManaged:		False
+*cluMenu.wcCallback:		WcSetValueCB(*clu.subMenuID: this)
+*cluMenu.wcChildren:		fetch
+
+*fetch.wcConstructor:		XmCreateCascadeButton
+*fetch.labelString:		Fetch
+*fetch.callback:		getClusters
+
+*mac.wcConstructor:		XmCreateCascadeButton
+*mac.subMenuId:			*macMenu
+*mac.mnemonic:			M
+*macMenu.wcConstructor:		XmCreatePulldownMenu
+*macMenu.wcManaged:		False
+*macMenu.wcCallback:		WcSetValueCB(*mac.subMenuID: this)
+*macMenu.wcChildren:		fetch
+
+
+*help.wcConstructor:		XmCreateCascadeButton
+*help.subMenuId:		*helpMenu
+*help.mnemonic:			H
+*helpMenu.wcConstructor:	XmCreatePulldownMenu
+*helpMenu.wcManaged:		False
+*helpMenu.wcCallback:		WcSetValueCB(*help.subMenuID: this)
+*helpMenu.wcChildren:		fetch
+
 
 *clusters.wcClass:		formWidgetClass
 *clusters.wcChildren:		clutitle, cget, cclear, \

@@ -20,7 +20,7 @@ F* Each hostalias name must be unique
 F* Each hostalias name must not be the same as any machine name
    Each snet_id must be unique
 	Alloc new ID
-F**Each subnet name must be unique
+F* Each subnet name must be unique
    Each clu_id must be unique
 	Alloc new ID
 F* Each cluster must have a unique name
@@ -29,14 +29,14 @@ F* Each cluster must have a unique name
 F* Each list must have a unique name
    Each filsys_id must be unique
 	Alloc new ID
-F**Each filesys name must be unique
+F* Each filesys name must be unique
    Each nfsphys_id must be unique
 	Alloc new ID
    Each string must be unique
 	Delete second copy and remember this for phase 2
    Each string_id must be unique
 	Delete all copies
-F**Each printer name must be unique
+F* Each printer name must be unique
   *Each palladium id must be unique
 	Alloc new ID
 F**Each palladium name must be unique
@@ -108,6 +108,10 @@ P  Every quota's phys_id must match the filesys' phys_id
  * Every hostaccess must be for a real machine
  * Every hostaccess USER must exist
  * Every hostaccess LIST must exist
+   Every printer must have a real spool machine
+	Delete the printer
+   Every printer must have a real quota server
+	Delete the printer
 P  Every palladium server must be on a real machine
 	Delete the palladium entry
 P  Every user in the krbmap must exist

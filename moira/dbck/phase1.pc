@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase1.pc,v 1.1 1997-01-29 23:13:13 danw Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase1.pc,v 1.2 1997-07-03 08:58:30 danw Exp $
  *
  *  (c) Copyright 1988 by the Massachusetts Institute of Technology.
  *  For copying and distribution information, please see the file
@@ -11,7 +11,7 @@
 #include "dbck.h"
 EXEC SQL INCLUDE sqlca;
 
-static char phase1_qc_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase1.pc,v 1.1 1997-01-29 23:13:13 danw Exp $";
+static char phase1_qc_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase1.pc,v 1.2 1997-07-03 08:58:30 danw Exp $";
 
 EXEC SQL WHENEVER SQLERROR DO dbmserr();
 
@@ -101,6 +101,13 @@ struct machine *m;
 				m->mach_id, m->name);
 }
 
+show_snet_name(s)
+struct subnet *s;
+{
+    printf("Subnet %s (%d) has duplicate name\n", s->name, s->snet_id);
+    return(0);
+}
+
 show_clu_id(c)
 struct cluster *c;
 {
@@ -153,6 +160,13 @@ struct filesys *f;
 {
     f->filsys_id = generic_fix_id("filesys", "filsys_id", "label",
 				  f->filsys_id, f->name);
+}
+
+show_fs_name(fs)
+struct filesys *fs;
+{
+    printf("Filesys %s (%d) has duplicate name\n", fs->name, fs->filsys_id);
+    return(0);
 }
 
 
@@ -502,6 +516,24 @@ phase1()
     }
     EXEC SQL CLOSE csr115;
 
+    if (!fast) {
+	sq = sq_create();
+	if(!sq) out_of_mem("looking for duplicate subnet names");
+
+	EXEC SQL DECLARE csr117 CURSOR FOR
+	    SELECT s1.snet_id FROM subnet s1, subnet s2
+		WHERE s1.name = s2.name AND s1.rowid != s2.rowid;
+	EXEC SQL OPEN csr117;
+	while(1) {
+	    EXEC SQL FETCH csr117 INTO :id;
+	    if (sqlca.sqlcode != 0) break; 
+
+	    sq_save_data(sq, hash_lookup(subnets, id));
+	}
+	EXEC SQL CLOSE csr117;
+	generic_fix(sq, show_snet_name, "Change name", cant_fix, 0);
+    }
+    
     dprintf("Loading clusters...\n");
     sq = sq_create();
     clusters = create_hash(100);
@@ -635,6 +667,24 @@ phase1()
 
     generic_fix(sq, show_fs_id, "Change ID", fix_fs_id, 0);
 
+    if (!fast) {
+	sq = sq_create();
+	if(!sq) out_of_mem("looking for duplicate filesys names");
+
+	EXEC SQL DECLARE csr118 CURSOR FOR
+	    SELECT fs1.filsys_id FROM filesys fs1, filesys fs2
+		WHERE fs1.label=fs2.label AND fs1.rowid != fs2.rowid;
+	EXEC SQL OPEN csr118;
+	while(1) {
+	    EXEC SQL FETCH csr118 INTO :id;
+	    if (sqlca.sqlcode != 0) break; 
+	    
+	    sq_save_data(sq, hash_lookup(filesys, id));
+	}
+	EXEC SQL CLOSE csr118;
+	generic_fix(sq, show_fs_name, "Change name", cant_fix, 0);
+    }
+
     dprintf("Loading nfsphys...\n");
     sq = sq_create();
     nfsphys = create_hash(500);
@@ -646,7 +696,7 @@ phase1()
     while(1) {
 	EXEC SQL FETCH csr111 INTO :id, :name, :id2, :id3, :sid;
 	if (sqlca.sqlcode != 0) break; 
-
+	
     	n = (struct nfsphys *) malloc(sizeof(struct nfsphys));
 	if (n == NULL)
 	  out_of_mem("storing nfsphys");
@@ -667,6 +717,18 @@ phase1()
 
     generic_fix(sq, show_np_id, "Change ID", fix_np_id, 0);
 
-    /* csr112 */
-    
+    dprintf("Checking printcap...\n");
+
+    EXEC SQL DECLARE csr119 CURSOR FOR
+	SELECT p1.name FROM printcap p1, printcap p2
+	WHERE p1.name=p2.name AND p1.rowid<p2.rowid;
+    EXEC SQL OPEN csr119;
+    while(1) {
+	EXEC SQL FETCH csr119 INTO :name;
+	if (sqlca.sqlcode != 0) break;
+
+	printf("Printer %s has duplicate name\n", name);
+	cant_fix(0);
+    }
+    EXEC SQL CLOSE csr119;
 }

@@ -1,11 +1,14 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_auth.c,v $
- *	$Author: wesommer $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_auth.c,v 1.3 1987-06-16 17:47:20 wesommer Exp $
+ *	$Author: mar $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_auth.c,v 1.4 1987-10-20 15:09:22 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
  *	$Log: not supported by cvs2svn $
+ * Revision 1.3  87/06/16  17:47:20  wesommer
+ * Clean up memory allocation, indenting.
+ * 
  * Revision 1.2  87/05/31  22:03:23  wesommer
  * It's working better.
  * 
@@ -18,7 +21,7 @@
  */
 
 #ifndef lint
-static char *rcsid_sms_auth_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_auth.c,v 1.3 1987-06-16 17:47:20 wesommer Exp $";
+static char *rcsid_sms_auth_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_auth.c,v 1.4 1987-10-20 15:09:22 mar Exp $";
 #endif lint
 
 #include "sms_private.h"
@@ -32,7 +35,8 @@ int sms_auth()
     sms_params params_st;
     char *args[1];
     int argl[1];
-    
+    char realm[REALM_SZ];
+
     register sms_params *params = &params_st;
     sms_params *reply = NULL;
     KTEXT_ST auth;
@@ -44,7 +48,10 @@ int sms_auth()
      * The "service" and "instance" should not be hardcoded here.
      */
 	
-    status = mk_ap_req(&auth, "sms", "sms", "ATHENA.MIT.EDU", 0);
+    if ((status = get_krbrlm(realm, 1)) != KSUCCESS) {
+	return status;
+    }
+    status = mk_ap_req(&auth, "sms", "sms", realm, 0);
     if (status != KSUCCESS) {
 	status += krb_err_base;
 	return status;

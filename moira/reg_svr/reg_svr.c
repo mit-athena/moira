@@ -1,36 +1,43 @@
 /*
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v $
- *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.27 1989-09-08 14:58:53 mar Exp $
+ *      $Author: qjb $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.28 1990-01-12 15:38:06 qjb Exp $
  *
  *      Copyright (C) 1987, 1988 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
  *	<mit-copyright.h>.
  *
- *      Server for user registration with SMS and Kerberos.
+ *      Server for user registration with Moira and Kerberos.
  *
  *      This program is a client of the Kerberos admin_server and a
  *      server for the userreg program.  It is not a client of the
- *      SMS server as it is linked with libsmsglue which bypasses
+ *      Moira server as it is linked with libsmsglue which bypasses
  *      the network protocol.
  */
 
 #ifndef lint
-static char *rcsid_reg_svr_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.27 1989-09-08 14:58:53 mar Exp $";
+static char *rcsid_reg_svr_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.28 1990-01-12 15:38:06 qjb Exp $";
 #endif lint
 
 #include <mit-copyright.h>
+#include <stdio.h>
+#include <strings.h>
+#include <ctype.h>
+#include <sys/types.h>
+#include <sys/file.h>
+#include <krb.h>
+#include <des.h>
+#include <kadm.h>
+#include <kadm_err.h>
+#include <krb_err.h>
+#include <errno.h>
+#include "sms.h"
+#include "sms_app.h"
 #include "reg_svr.h"
-#include "admin_server.h"
-#include "admin_err.h"
-#include "krb_et.h"
 
 extern char admin_errmsg[];
 
-static char krbhst[BUFSIZ];	/* kerberos server name */
-static char krbrealm[REALM_SZ];	/* kerberos realm name */
 void reg_com_err_hook();
-
 
 main(argc,argv)
   int argc;
@@ -47,51 +54,38 @@ main(argc,argv)
     /* Initialize */
     whoami = argv[0];
     
-    /* Use com_err or output to stderr for all log messages. */    
-#ifdef DEBUG
-    fprintf(stderr,"*** Debugging messages enabled. ***\n");
-#endif DEBUG
-    
     /* Error messages sent one line at a time */
     setlinebuf(stderr);
     setlinebuf(stdout);
     set_com_err_hook(reg_com_err_hook);
     
-    /* Initialize user registration error table for com_err */
+    /* Initialize com_err error tables */
     init_ureg_err_tbl();
+    init_krb_err_tbl();
+    init_kadm_err_tbl();
     
-    /* Connect to the SMS server */
+    /* Use com_err or output to stderr for all log messages. */    
+#ifdef DEBUG
+    com_err(whoami, 0, "*** Debugging messages enabled. ***");
+#endif DEBUG
+    
+    /* Set the name of our kerberos ticket file */
+    krb_set_tkt_string("/tmp/tkt_ureg");
+
+    /* Connect to the Moira server */
     if ((status = sms_connect(SMS_SERVER)) != SMS_SUCCESS) 
     {
-	com_err(whoami, status, " on connect");
+	com_err(whoami, status, " on sms_connect");
 	exit(1);
     }
     
     /* Authorize, telling the server who you are */
     if ((status = sms_auth(whoami)) != SMS_SUCCESS) 
     {
-	com_err(whoami, status, " on auth");
+	com_err(whoami, status, " on sms_auth");
 	exit(1);
     }
     
-    if (status = krb_get_lrealm(krbrealm, 1)) {
-	status += ERROR_TABLE_BASE_krb;
-	com_err(whoami, status, " fetching kerberos realm");
-	exit(1);
-    }
-    
-    if (status = krb_get_krbhst(krbhst, krbrealm, 1)) {
-	status += ERROR_TABLE_BASE_krb;
-	com_err(whoami, status, " fetching kerberos hostname");
-	exit(1);
-    } else {
-	char *s;
-	for (s = krbhst; *s && *s != '.'; s++)
-	    if (isupper(*s))
-		*s = tolower(*s);
-	*s = 0;
-    }
-
     journal = fopen(REGJOURNAL, "a");
     if (journal == NULL) {
 	com_err(whoami, errno, " while opening journal file");
@@ -133,22 +127,15 @@ main(argc,argv)
     }
 }
 
-/* This is necessary so that this server can know where to put its
-   tickets. */
-char *tkt_string()
-{
-    return("/tmp/tkt_ureg");
-}
-
 int parse_encrypted(message,data)
   struct msg *message;		/* Formatted packet */
-  struct db_data *data;		/* Data from the SMS database */
+  struct db_data *data;		/* Data from the Moira database */
 /* This routine makes sure that the ID from the database matches
    the ID sent accross in the packet.  The information in the packet
    was created in the following way:
 
    The plain text ID number was encrypted via EncryptID() resulting
-   in the form that would appear in the SMS database.  This is
+   in the form that would appear in the Moira database.  This is
    concatinated to the plain text ID so that the ID string contains plain
    text ID followed by a null followed by the encrypted ID.  Other
    information such as the username or password is appended.  The whole
@@ -173,7 +160,7 @@ int parse_encrypted(message,data)
     int status = SUCCESS;	/* Error status */
     
 #ifdef DEBUG
-    com_err(whoami,0,"Entering parse_encrypted");
+    com_err(whoami, 0, "Entering parse_encrypted");
 #endif
 
     /* Make the decrypted information length the same as the encrypted
@@ -181,7 +168,7 @@ int parse_encrypted(message,data)
        because of the DES encryption routines. */
     decrypt_len = (long)message->encrypted_len;
     
-    /* Get key from the one-way encrypted ID in the SMS database */
+    /* Get key from the one-way encrypted ID in the Moira database */
     string_to_key(data->mit_id, key);
     /* Get schedule from key */
     key_sched(key, sched);
@@ -228,7 +215,7 @@ int parse_encrypted(message,data)
 	message->leftover = temp;
 	message->leftover_len = len;
 	/* Since we know we have the right user, fill in the information 
-	   from the SMS database. */
+	   from the Moira database. */
 	message->db.reg_status = data->reg_status;
 	(void) strncpy(message->db.uid,data->uid, sizeof(message->db.uid));
 	(void) strncpy(message->db.mit_id,data->mit_id, 
@@ -238,17 +225,17 @@ int parse_encrypted(message,data)
     
 #ifdef DEBUG
     if (status)
-	com_err(whoami,status," parse_encrypted failed.");
+	com_err(whoami, status, " in parse_encrypted");
     else
-	com_err(whoami,status,"parse_encrypted succeeded.");
+	com_err(whoami, status, "parse_encrypted succeeded");
 #endif
 
     return status;
 }
 
 int db_callproc(argc,argv,queue)
-  int argc;			/* Number of arguments returned by SMS */
-  char *argv[];			/* Arguments returned by SMS */
+  int argc;			/* Number of arguments returned by Moira */
+  char *argv[];			/* Arguments returned by Moira */
   struct save_queue *queue;	/* Queue to save information in */
 /* This function is called by sms_query after each tuple found.  It is
    used by find_user to cache information about each user found.  */
@@ -257,7 +244,7 @@ int db_callproc(argc,argv,queue)
     int status = SUCCESS;	/* Error status */
     
 #ifdef DEBUG
-    com_err(whoami,0,"Entering db_callproc.");
+    com_err(whoami, 0, "Entering db_callproc.");
 #endif
 
     if (argc != U_END)
@@ -269,7 +256,7 @@ int db_callproc(argc,argv,queue)
     }
     else
     {
-	/* extract the needed information from the results of the SMS query */
+	/* extract the needed information from the results of the Moira query */
 	data = (struct db_data *)malloc(sizeof(struct db_data));
 	data->reg_status = atoi(argv[U_STATE]);
 	(void) strncpy(data->login,argv[U_NAME],sizeof(data->login));
@@ -291,7 +278,7 @@ int db_callproc(argc,argv,queue)
 int find_user(message)
   struct msg *message;		/* Formatted packet structure */
 /* This routine verifies that a user is allowed to register by finding
-   him/her in the SMS database.  It returns the status of the SMS
+   him/her in the Moira database.  It returns the status of the Moira
    query that it calls. */
 {
 #define GUBN_ARGS 2		/* Arguements needed by get_user_by_name */
@@ -300,7 +287,7 @@ int find_user(message)
     char *q_argv[GUBN_ARGS];	/* Arguments to query */
     int status = SUCCESS;	/* Query return status */
 
-    struct save_queue *queue;	/* Queue to hold SMS data */
+    struct save_queue *queue;	/* Queue to hold Moira data */
     struct db_data *data;	/* Structure for data for one tuple */
     short verified = FALSE;	/* Have we verified the user? */
 
@@ -310,7 +297,7 @@ int find_user(message)
     
     if (status == SUCCESS)
     {
-	/* Get ready to make an SMS query */
+	/* Get ready to make an Moira query */
 	q_name = "get_user_by_name";
 	q_argc = GUBN_ARGS;	/* #defined in this routine */
 	q_argv[0] = message->first;
@@ -366,7 +353,7 @@ int verify_user(message,retval)
     int status = SUCCESS;	/* Return status */
 
     /* Log that we are about to veryify user */
-    com_err(whoami,0,"verify_user %s %s",message->first,message->last);
+    com_err(whoami, 0, "verifying user %s %s",message->first,message->last);
 
     /* Figure out what user (if any) can be found based on the
        encrypted information in the packet.  (See the comment on 
@@ -374,7 +361,7 @@ int verify_user(message,retval)
 
     status = find_user(message);
 
-    /* If SMS coudn't find the user */
+    /* If Moira coudn't find the user */
     if (status == SMS_NO_MATCH) 
 	status = UREG_USER_NOT_FOUND;
     else if (status == SMS_SUCCESS)
@@ -423,27 +410,55 @@ int verify_user(message,retval)
 	}
     }
     
-    com_err(whoami,status," returned from verify_user");
+    if (status)
+	com_err(whoami, status, " returned from verify_user");
+    else
+	com_err(whoami, 0, "User verified");
 
     return status;
 }
 	
-int ureg_get_tkt()
+int ureg_kadm_init()
 {
-    int status = SUCCESS;	/* Return status */
+    unsigned int status = SUCCESS;	 /* Return status */
+    static char krbrealm[REALM_SZ];	 /* kerberos realm name */
+    static int inited = 0;
+
+#ifdef DEBUG
+    com_err(whoami, 0, "Entering ureg_kadm_init");
+#endif DEBUG
+
+    if (!inited) {
+	inited++;
+	bzero(krbrealm, sizeof(krbrealm));
+	if (status = krb_get_lrealm(krbrealm, 1)) {
+	    status += krb_err_base;
+	    com_err(whoami, status, " fetching kerberos realm");
+	    exit(1);
+	}
+    }
 
     /* Get keys for interacting with Kerberos admin server. */
     /* principal, instance, realm, service, service instance, life, file */
-    if (status = krb_get_svc_in_tkt("register", "sms", krbrealm, "changepw", 
-				krbhst, 1, KEYFILE))
-	status += ERROR_TABLE_BASE_krb;
-
+    if (status = krb_get_svc_in_tkt("register", "sms", krbrealm, PWSERV_NAME,
+				    KADM_SINST, 1, KEYFILE))
+	status += krb_err_base;
+    
+    if (status != SUCCESS)
+	com_err(whoami, status, " while get admin tickets");
 #ifdef DEBUG
-    if (status == SUCCESS)
-	com_err(whoami,status,"Succeeded in getting tickets.");
-    else
-	com_err(whoami,status,"Failed to get tickets.");
+    else {
+	com_err(whoami, status, "Succeeded in getting admin tickets");
+    }
 #endif
+
+    if (status == SUCCESS) {
+	if ((status = kadm_init_link(PWSERV_NAME, KADM_SINST, krbrealm)) !=
+	    KADM_SUCCESS) {
+	    com_err(whoami, status, " while initializing kadmin connection");
+	}
+    }
+
     return status;
 }
 
@@ -458,46 +473,85 @@ int null_callproc(argc,argv,message)
     return FAILURE;
 }
 
-int do_admin_call(login, passwd, uid)
-  char *login;			/* Requested kerberos principal */
-  char *passwd;			/* Requested password */
-  char *uid;			/* Uid of user who owns this principal */
-  /* This routine gets tickets, makes the appropriate call to admin_call,
-     and destroys tickets. */
+/*
+ * This routine reserves a principal in kerberos by setting up a 
+ * principal with a random initial key.
+ */
+int reserve_krb(login)
+  char *login;
 {
-    int status;			/* Error status */
-    char uid_buf[20];		/* Holds uid for kerberos */
+    int status = SUCCESS;
+    Kadm_vals new;
+    des_cblock key;
+    u_long *lkey = (u_long *)key;
 
-    com_err(whoami,0,"Entering do_admin_call");
+#ifdef DEBUG
+    com_err(whoami, 0, "Entering reserve_krb");
+#endif DEBUG
 
-    if ((status = ureg_get_tkt()) == SUCCESS)
-    {
-	/* Try to reserve kerberos principal.  To do this, send a 
-	   password request and a null password.  It will only succeed
-	   if there is no principal or the principal exists and has no 
-	   password. */
-	/* 13 chars of placebo for backwards-compatability - the admin
-	   server protocol reqires this. */
-	bzero(uid_buf,sizeof(uid_buf));
-	(void) sprintf(uid_buf, "%13s", uid);
+    if ((status = ureg_kadm_init()) == SUCCESS) {
+	bzero((char *)&new, sizeof(new));
+	SET_FIELD(KADM_DESKEY, new.fields);
+	SET_FIELD(KADM_NAME, new.fields);
 	
-	if ((status = admin_call(ADMIN_ADD_NEW_KEY_ATTR, login, 
-				 "", passwd, uid_buf)) != KSUCCESS)
-	{
-	    com_err(whoami,status," server error: %s",admin_errmsg);
-	    
-	    if (strcmp(admin_errmsg,
-		       "Principal already in kerberos database.") == 0)
-		status = UREG_KRB_TAKEN;
-	    if (status != ETIMEDOUT)
-	      critical_alert(FAIL_INST,"%s is known to Kerberos but not SMS.", 
-			     login);
+	(void) des_random_key(key);
+	new.key_low = htonl(lkey[0]);
+	new.key_high = htonl(lkey[1]);
+	strcpy(new.name, login);
+	
+	com_err(whoami, 0, "Creating kerberos principal for %s", login);
+	status = kadm_add(&new);
+	if (status != KADM_SUCCESS) 
+	    com_err(whoami, status, " while reserving principal");
+	
+	bzero((char *)&new, sizeof(new));
+    }
+
+    dest_tkt();
+
+    return(status);
+}
+
+/*
+ * This routine reserves a principal in kerberos by setting up a 
+ * principal with a random initial key.
+ */
+int setpass_krb(login, password)
+  char *login;
+  char *password;
+{
+    int status = SUCCESS;
+    Kadm_vals new;
+    des_cblock key;
+    u_long *lkey = (u_long *)key;
+
+    if ((status = ureg_kadm_init()) == SUCCESS) {
+	bzero((char *)&new, sizeof(new));
+	SET_FIELD(KADM_DESKEY, new.fields);
+	SET_FIELD(KADM_NAME, new.fields);
+	
+	(void) des_string_to_key(password, key);
+	new.key_low = htonl(lkey[0]);
+	new.key_high = htonl(lkey[1]);
+	strcpy(new.name, login);
+	
+	com_err(whoami, 0, "Setting password for %s", login);
+	/* First arguement is not used if user has modify privileges */
+	if ((status = kadm_mod(&new, &new)) != KADM_SUCCESS) {
+	    if (status == KADM_NOENTRY) {
+		com_err(whoami, 0, 
+			"kerberos principal doesn't exist; creating");
+		if ((status = kadm_add(&new)) != KADM_SUCCESS)
+		    com_err(whoami, status, 
+			    " while creating kerberos principal");
+	    }
+	    else
+		com_err(whoami, status, " while setting password");
 	}
     }
     
     dest_tkt();
-    com_err(whoami,status," returned from do_admin_call");
-    return status;
+    return(status);
 }
 
 int reserve_user(message,retval)
@@ -505,15 +559,15 @@ int reserve_user(message,retval)
   char *retval;
 {
     int q_argc;			/* Number of arguments to query */
-    char *q_argv[3];		/* Arguments to SMS query */
-    char *q_name;		/* Name of SMS query */
+    char *q_argv[3];		/* Arguments to Moira query */
+    char *q_name;		/* Name of Moira query */
     int status = SUCCESS;	/* General purpose error status */
     char fstype_buf[7];		/* Buffer to hold fs_type, a 16 bit number */
     char *login;		/* The login name the user wants */
     register int i;		/* A counter */
 
     /* Log that we are about to reserve a user. */
-    com_err(whoami, 0, "reserve_user %s %s", 
+    com_err(whoami, 0, "reserving user %s %s", 
 	    message->first, message->last);
     
     /* Check to make sure that we can verify this user. */
@@ -523,15 +577,16 @@ int reserve_user(message,retval)
 	login = message->leftover;
 
 	/* Check the login name for validity.  The login name is currently
-	   is allowed to contain lowercase letters and numbers in any
-	   position and underscore characters in any position but the 
+	   is allowed to contain lowercase letters in any position and 
+	   and numbers and underscore characters in any position but the 
 	   first. */
 	if ((strlen(login) < MIN_UNAME) || (strlen(login) > MAX_UNAME))
 	    status = UREG_INVALID_UNAME;
     }
     if (status == SUCCESS)
-	if (login[1] == '_')
+	if ((login[0] == '_') || isdigit(login[0]))
 	    status = UREG_INVALID_UNAME;
+    
     if (status == SUCCESS)
     {
 	for (i = 0; i < strlen(login); i++)
@@ -546,7 +601,7 @@ int reserve_user(message,retval)
     {
 	/* Now that we have a valid user with a valid login... */
 
-	/* First, try to reserve the user in SMS. */
+	/* First, try to reserve the user in Moira. */
 	(void) sprintf(fstype_buf,"%d",SMS_FS_STUDENT);
 	q_name = "register_user";
 	q_argv[0] = message->db.uid;
@@ -572,17 +627,25 @@ int reserve_user(message,retval)
 	    break;
 	}
     }
+
     if (status == SUCCESS)
     {
-	/* SMS login was successfully created; try to reserve kerberos
-	   principal. */
-	/* If this routine fails, store the login in the retval so
-	   that it can be used in the client-side error message. */
-	if ((status = do_admin_call(login, "", message->db.uid)) != SUCCESS)
+	/* 
+	 * Moira login was successfully created; try to reserve kerberos
+	 * principal. 
+	 *
+	 * If this routine fails, store the login in the retval so
+	 * that it can be used in the client-side error message.
+	 */
+	if ((status = reserve_krb(login)) != SUCCESS)
 	    (void) strcpy(retval, login);
     }
 
-    com_err(whoami, status, " returned from reserve_user");
+    if (status)
+	com_err(whoami, status, " returned from reserve_user");
+    else {
+	com_err(whoami, 0, "User reserved");
+    }
     
     return status;
 }
@@ -593,8 +656,8 @@ struct msg *message;
        registered. */
 {
     char *login;
-    char *q_name;		/* Name of SMS query */
-    int q_argc;			/* Number of arguments for SMS query */
+    char *q_name;		/* Name of Moira query */
+    int q_argc;			/* Number of arguments for Moira query */
     char *q_argv[2];		/* Arguments to get user by uid */
     char state[7];		/* Can hold a 16 bit integer */
     int status;			/* Error status */
@@ -621,7 +684,10 @@ struct msg *message;
 	  critical_alert(FAIL_INST,"%s returned from update_user_status.",
 			 error_message(status));
     }
-    com_err(whoami,status," returned from set_final_status");
+    if (status)
+	com_err(whoami, status, " returned from set_final_status");
+    else
+	com_err(whoami, 0, "Final status set");
     return status;
 }
 
@@ -634,7 +700,7 @@ int set_password(message,retval)
     int status = SUCCESS;	/* Return status */
     char *passwd;		/* User's password */
 
-    com_err(whoami, 0, " set_password %s %s",
+    com_err(whoami, 0, "setting password %s %s",
 	    message->first, message->last);
 
     status = verify_user(message,retval);
@@ -650,8 +716,7 @@ int set_password(message,retval)
 	passwd = message->leftover;
 	
 	/* Set password. */
-	if ((status = do_admin_call(message->db.login, 
-				    passwd, message->db.uid)) != SUCCESS)
+	if ((status = setpass_krb(message->db.login, passwd)) != SUCCESS)
 	    /* If failure, allow login name to be used in client 
 	       error message */
 	    (void) strcpy(retval,message->db.login);
@@ -659,8 +724,12 @@ int set_password(message,retval)
 	    /* Otherwise, mark user as finished. */
 	    status = set_final_status(message);
     }
-    com_err(whoami, status, " returned from set_passwd");
-    
+
+    if (status)
+	com_err(whoami, status, " returned from set_passwd");
+    else
+	com_err(whoami, 0, "Password set");
+
     return status;
 }
 
@@ -697,15 +766,15 @@ struct msg *message;
 char *retval;
 {
     int q_argc;			/* Number of arguments to query */
-    char *q_argv[U_END];	/* Arguments to SMS query */
-    char *q_name;		/* Name of SMS query */
+    char *q_argv[U_END];	/* Arguments to Moira query */
+    char *q_name;		/* Name of Moira query */
     int status = SUCCESS;	/* General purpose error status */
     char fstype_buf[7];		/* Buffer to hold fs_type, a 16 bit number */
     char *login;		/* The login name the user wants */
     register int i;		/* A counter */
 
     /* Log that we are about to reserve a user. */
-    com_err(whoami, 0, "set_identity %s %s", 
+    com_err(whoami, 0, "setting identity %s %s", 
 	    message->first, message->last);
     
     /* Check to make sure that we can verify this user. */
@@ -717,14 +786,14 @@ char *retval;
 	login = message->leftover;
 
 	/* Check the login name for validity.  The login name is currently
-	   is allowed to contain lowercase letters and numbers in any
-	   position and underscore characters in any position but the 
+	   is allowed to contain lowercase letters in any position and 
+	   and numbers and underscore characters in any position but the 
 	   first. */
 	if ((strlen(login) < MIN_UNAME) || (strlen(login) > MAX_UNAME))
 	    status = UREG_INVALID_UNAME;
     }
     if (status == SUCCESS)
-	if (login[1] == '_')
+	if ((login[0] == '_') || isdigit(login[0]))
 	    status = UREG_INVALID_UNAME;
     if (status == SUCCESS)
     {
@@ -769,15 +838,18 @@ char *retval;
     }
     if (status == SUCCESS)
     {
-	/* SMS login was successfully created; try to reserve kerberos
+	/* Moira login was successfully created; try to reserve kerberos
 	   principal. */
 	/* If this routine fails, store the login in the retval so
 	   that it can be used in the client-side error message. */
-	if ((status = do_admin_call(login, "", message->db.uid)) != SUCCESS)
+	if ((status = reserve_krb(login)) != SUCCESS)
 	    (void) strcpy(retval, login);
     }
 
-    com_err(whoami, status, " returned from set_identity");
+    if (status)
+	com_err(whoami, status, " returned from set_identity");
+    else
+	com_err(whoami, 0, "Identity set");
     
     return status;
 }

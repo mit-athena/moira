@@ -1,4 +1,4 @@
-/* $Id: printng.pc,v 1.2 1999-06-02 23:10:31 danw Exp $
+/* $Id: printng.pc,v 1.3 1999-06-22 00:48:05 danw Exp $
  *
  * This generates printcaps and other files for Athena print servers
  *
@@ -22,7 +22,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/printng.pc,v 1.2 1999-06-02 23:10:31 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/printng.pc,v 1.3 1999-06-22 00:48:05 danw Exp $");
 
 char *whoami = "printng.gen";
 char *db = "moira/moira";
@@ -154,7 +154,13 @@ void do_host(char *host)
 		      "daemon", "daemon", now);
   fprintf(out, "# Allow anybody to connect, get status, list queue, or "
 	  "print (once a\n# job is spooled)\n");
-  fprintf(out, "ACCEPT SERVICE=X,S,Q,P\n\n");
+  fprintf(out, "ACCEPT SERVICE=X,S,Q,P\nACCEPT LPC=status,lpq\n\n");
+
+  fprintf(out, "# Only trust certain host keys to forward jobs/commands\n");
+  fprintf(out, "REJECT AUTHFROM=?* PRINTER=</var/spool/printer/queues.secure "
+	  "NOT AUTHFROM=</var/spool/printer/hostkeys.allow\n");
+  fprintf(out, "REJECT AUTHFROM=?* AUTHJOB "
+	  "NOT AUTHFROM=</var/spool/printer/hostkeys.allow\n\n");
 
   fprintf(out, "# Reject jobs from unauthorized users to restricted queues\n");
   EXEC SQL DECLARE csr_ac CURSOR FOR
@@ -227,16 +233,20 @@ void do_host(char *host)
   out = tarfile_start(tf, "/var/spool/printer/queues.secure", 0755, 1, 1,
 		     "daemon", "daemon", now);
   EXEC SQL DECLARE csr_kq CURSOR FOR
-    SELECT UNIQUE rp FROM printers
+    SELECT rp, duplexname FROM printers
     WHERE rm = :rm AND ka = 1;
   EXEC SQL OPEN csr_kq;
   while (1)
     {
-      EXEC SQL FETCH csr_kq INTO :name;
+      EXEC SQL FETCH csr_kq INTO :name, :duplexname;
       if (sqlca.sqlcode)
 	break;
 
-      fprintf(out, "%s\n", strtrim(name));
+      strtrim(name);
+      strtrim(duplexname);
+      fprintf(out, "%s\n", name);
+      if (*duplexname)
+	fprintf(out, "%s\n", duplexname);
     }
   tarfile_end(tf);
 

@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.22 1990-04-04 11:48:02 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.23 1990-04-05 17:35:57 mar Exp $";
 #endif
 
 /*	This is the file attach.c for the MOIRA Client, which allows a nieve
@@ -13,7 +13,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.22 1990-04-04 11:48:02 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.23 1990-04-05 17:35:57 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -244,7 +244,7 @@ AskFSInfo(info, name)
 char ** info;
 Bool name;
 {
-    char temp_buf[BUFSIZ], *newname;
+    char temp_buf[BUFSIZ], *newname, access_type[32];
     int fsgroup = 0;
 
     Put_message("");
@@ -276,7 +276,9 @@ Bool name;
     if (!fsgroup) {
 	GetValueFromUser("Filesystem's Pack Name", &info[FS_PACK]);
 	GetValueFromUser("Filesystem's Mount Point", &info[FS_M_POINT]);
-	GetValueFromUser("Filesystem's Default Access", &info[FS_ACCESS]);
+	sprintf(access_type, "fs_access_%s", info[FS_TYPE]);
+	GetTypeFromUser("Filesystem's Default Access", access_type,
+			&info[FS_ACCESS]);
     }
     GetValueFromUser("Comments about this Filesystem", &info[FS_COMMENTS]);
     GetValueFromUser("Filesystem's owner (user)", &info[FS_OWNER]);

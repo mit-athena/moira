@@ -7,7 +7,7 @@
 # 
 #       $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/Makefile,v $
 #       $Author: mar $
-#       $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/Makefile,v 1.6 1989-01-21 16:28:19 mar Exp $
+#       $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/Makefile,v 1.7 1989-01-23 14:02:45 mar Exp $
 # 	
 #   	Copyright 1987, 1988 by the Massachusetts Institute of Technology.
 # 
@@ -43,8 +43,10 @@ install: moira
 	install -s moira ${DESTDIR}/usr/athena/moira
 	rm -f ${DESTDIR}/usr/athena/usermaint
 	rm -f ${DESTDIR}/usr/athena/listmaint
+	rm -f ${DESTDIR}/usr/athena/dcmmaint
 	ln -s /usr/athena/moira ${DESTDIR}/usr/athena/usermaint
 	ln -s /usr/athena/moira ${DESTDIR}/usr/athena/listmaint
+	ln -s /usr/athena/moira ${DESTDIR}/usr/athena/dcmmaint
 
 clean:	
 	rm -f *.o *~

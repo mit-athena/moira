@@ -1,13 +1,13 @@
 # Makefile for first release of SMS.
 #
 #	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/Makefile,v $
-#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/Makefile,v 1.7 1988-08-04 12:48:48 mar Exp $
+#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/Makefile,v 1.8 1988-08-04 13:35:29 mar Exp $
 #	$Author: mar $
 #
 
 DESTDIR=
 
-SUBDIRS= dcmmaint listmaint mailmaint passwd sms userreg
+SUBDIRS= dcmmaint mailmaint passwd sms userreg
 
 all:
 	for i in ${SUBDIRS}; do \

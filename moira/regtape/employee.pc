@@ -1,4 +1,4 @@
-/* $Id: employee.pc,v 1.15 1998-12-21 04:40:42 danw Exp $
+/* $Id: employee.pc,v 1.16 1999-01-09 05:47:55 danw Exp $
  *
  * Load data into Moira from Personnel Office data file
  *
@@ -19,7 +19,7 @@
 EXEC SQL INCLUDE sqlca;
 extern void sqlglm(char *, unsigned int *, unsigned int *);
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/employee.pc,v 1.15 1998-12-21 04:40:42 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/employee.pc,v 1.16 1999-01-09 05:47:55 danw Exp $");
 
 #define WHO 11859		/* root */
 #define PROG "emp-tape"
@@ -86,7 +86,7 @@ void sqlexit(void);
 void dbmserr(char *where, int what);
 
 char *whoami;
-int newfinger = 0, debug = 0, highid = 0;
+int highid = 0;
 
 #define sqlfail() (sqlca.sqlcode && sqlca.sqlcode != 1403)
 #define SQL_DUPLICATE -2112
@@ -115,10 +115,6 @@ int main(int argc, char **argv)
     {
       if (!strcmp(argv[i], "-w"))
 	wait++;
-      else if (!strcmp(argv[i], "-n"))
-	newfinger++;
-      else if (!strcmp(argv[i], "-d"))
-	debug++;
       else if (!strcmp(argv[i], "-h"))
 	highid++;
       else if (file)
@@ -303,7 +299,7 @@ struct entry *get_next_entry(FILE *in)
 
 void process_entry(struct entry *e)
 {
-  int changed, nochange;
+  int changed;
   char buf[MAX_FIELD_WIDTH], *from, *to;
   EXEC SQL BEGIN DECLARE SECTION;
   char *first, *last, *middle, *sid, *name, *rdept;
@@ -335,7 +331,7 @@ void process_entry(struct entry *e)
     INTO :id, :dfirst, :dlast, :dmiddle, :class, :oaddr,
     :ophone, :dept, :status
     FROM users
-    WHERE clearid = :sid;
+    WHERE clearid = :sid AND status != 3;
   if (sqlfail())
     {
       if (sqlca.sqlcode == SQL_DUPLICATE)
@@ -352,30 +348,31 @@ void process_entry(struct entry *e)
       newuser(e);
       return;
     }
+  strtrim(dfirst);
+  strtrim(dlast);
+  strtrim(dmiddle);
+  strtrim(class);
 
   /* Update class/state if necessary.  (Exclude several spacial cases.) */
-  if (strcmp(e->class, strtrim(class)) &&
+  if (strcmp(e->class, class) &&
       strcmp(class, "STAFF") && strcmp(class, "SIPBMEM") &&
       strcmp(class, "KNIGHT"))
     {
-      com_err(whoami, 0, "updating class for %s %s from %s to %s",
+      com_err(whoami, 0, "updating class for %s %s from \"%s\" to \"%s\"",
 	      first, last, class, e->class);
       if (status == US_NOT_ALLOWED)
 	status = US_NO_LOGIN_YET;
       if (status == US_ENROLL_NOT_ALLOWED)
 	status = US_ENROLLED;
       strcpy(class, e->class);
-      if (!debug)
+      EXEC SQL UPDATE users
+	SET type = NVL(:class, CHR(0)), status = :status,
+	modtime = SYSDATE, modby = :who, modwith = :prog
+	WHERE users_id = :id;
+      if (sqlca.sqlcode)
 	{
-	  EXEC SQL UPDATE users
-	    SET type = NVL(:class, CHR(0)), status = :status,
-	    modtime = SYSDATE, modby = :who, modwith = :prog
-	    WHERE users_id = :id;
-	  if (sqlca.sqlcode)
-	    {
-	      dbmserr("updating user", sqlca.sqlcode);
-	      exit(1);
-	    }
+	  dbmserr("updating user", sqlca.sqlcode);
+	  exit(1);
 	}
     }
 
@@ -384,58 +381,36 @@ void process_entry(struct entry *e)
       strcmp(last, strtrim(dlast)) ||
       strcmp(middle, strtrim(dmiddle)))
     {
-      com_err(whoami, 0, "updating real name for %s %s", first, last);
-      if (!debug)
+      com_err(whoami, 0, "updating real name for %s%s%s %s (was %s%s%s %s)",
+	      first, *middle ? " " : "", middle, last,
+	      dfirst, *dmiddle ? " " : "", dmiddle, dlast);
+      EXEC SQL UPDATE users
+	SET first = NVL(:first, CHR(0)), last = NVL(:last, CHR(0)),
+	middle = NVL(:middle, CHR(0)), modby = :who, modwith = :prog,
+	modtime = SYSDATE
+	WHERE users_id = :id;
+      if (sqlca.sqlcode)
 	{
-	  EXEC SQL UPDATE users
-	    SET first = NVL(:first, CHR(0)), last = NVL(:last, CHR(0)),
-	    middle = NVL(:middle, CHR(0)), modby = :who, modwith = :prog,
-	    modtime = SYSDATE
-	    WHERE users_id = :id;
-	  if (sqlca.sqlcode)
-	    {
-	      dbmserr("updating name", sqlca.sqlcode);
-	      exit(1);
-	    }
-	}
-      else
-	{
-	  com_err(whoami, 0, "was %s %s %s, became %s %s %s",
-		  dfirst, dmiddle, dlast, first, middle, last);
+	  dbmserr("updating name", sqlca.sqlcode);
+	  exit(1);
 	}
     }
 
-  changed = nochange = 0;
+  changed = 0;
   strcpy(buf, e->address);
   while ((to = strchr(buf, ',')))
     *to = ';';
   while ((to = strchr(buf, ':')))
     *to = ';';
-  if (newfinger)
+  if (strncmp(strtrim(oaddr), buf, USERS_OFFICE_ADDR_SIZE - 1))
     {
-      if (oaddr[0] == ' ' && buf[0])
-	{
-	  strncpy(oaddr, buf, USERS_OFFICE_ADDR_SIZE - 1);
-	  oaddr[USERS_OFFICE_ADDR_SIZE - 1] = '\0';
-	  changed++;
-	}
-      else if (strncmp(strtrim(oaddr), buf, USERS_OFFICE_ADDR_SIZE - 1))
-	nochange++;
+      changed++;
+      com_err(whoami, 0, "office for %s %s changed from \"%s\" to \"%s\"",
+	      first, last, oaddr, buf);
     }
-  else
-    {
-      if (strncmp(strtrim(oaddr), buf, USERS_OFFICE_ADDR_SIZE - 1))
-	{
-	  changed++;
-	  if (debug)
-	    {
-	      com_err(whoami, 0, "office for %s %s changed from %s to %s",
-		      first, last, oaddr, buf);
-	    }
-	}
-      strncpy(oaddr, buf, USERS_OFFICE_ADDR_SIZE - 1);
-      oaddr[USERS_OFFICE_ADDR_SIZE - 1] = '\0';
-    }
+  strncpy(oaddr, buf, USERS_OFFICE_ADDR_SIZE - 1);
+  oaddr[USERS_OFFICE_ADDR_SIZE - 1] = '\0';
+
   from = e->phone;
   to = buf;
   while (*from)
@@ -445,56 +420,26 @@ void process_entry(struct entry *e)
       from++;
     }
   *to = '\0';
-  if (newfinger)
+  if (strncmp(strtrim(ophone), buf, USERS_OFFICE_PHONE_SIZE - 1))
     {
-      if (ophone[0] == ' ')
-	{
-	  strncpy(ophone, buf, USERS_OFFICE_PHONE_SIZE - 1);
-	  ophone[USERS_OFFICE_PHONE_SIZE - 1] = '\0';
-	}
-      else if (strncmp(strtrim(ophone), buf, USERS_OFFICE_PHONE_SIZE - 1))
-	nochange++;
+      changed++;
+      com_err(whoami, 0, "Phone for %s %s changed from \"%s\" to \"%s\"",
+	      first, last, ophone, buf);
     }
-  else
-    {
-      if (strncmp(strtrim(ophone), buf, USERS_OFFICE_PHONE_SIZE - 1))
-	{
-	  changed++;
-	  if (debug)
-	    {
-	      com_err(whoami, 0, "Phone for %s %s changed from %s to %s",
-		      first, last, ophone, buf);
-	    }
-	}
-      strncpy(ophone, buf, USERS_OFFICE_PHONE_SIZE - 1);
-      ophone[USERS_OFFICE_PHONE_SIZE - 1] = '\0';
-    }
+  strncpy(ophone, buf, USERS_OFFICE_PHONE_SIZE - 1);
+  ophone[USERS_OFFICE_PHONE_SIZE - 1] = '\0';
+
   FixCase(e->dept);
   FixCase(e->title);
-  if (newfinger)
+  if (strncmp(strtrim(dept), e->dept, USERS_DEPARTMENT_SIZE - 1))
     {
-      if (dept[0] == ' ')
-	{
-	  strncpy(dept, e->dept, USERS_DEPARTMENT_SIZE - 1);
-	  dept[USERS_DEPARTMENT_SIZE - 1] = '\0';
-	}
-      else if (strncmp(strtrim(dept), e->dept, USERS_DEPARTMENT_SIZE - 1))
-	nochange++;
+      changed++;
+      com_err(whoami, 0, "Department for %s %s changed from \"%s\" to \"%s\"",
+	      first, last, dept, e->dept);
     }
-  else
-    {
-      if (strncmp(strtrim(dept), e->dept, USERS_DEPARTMENT_SIZE - 1))
-	{
-	  changed++;
-	  if (debug)
-	    {
-	      com_err(whoami, 0, "Department for %s %s changed from %s to %s",
-		      first, last, dept, e->dept);
-	    }
-	}
-      strncpy(dept, e->dept, USERS_DEPARTMENT_SIZE - 1);
-      dept[USERS_DEPARTMENT_SIZE - 1] = '\0';
-    }
+  strncpy(dept, e->dept, USERS_DEPARTMENT_SIZE - 1);
+  dept[USERS_DEPARTMENT_SIZE - 1] = '\0';
+
   sid = e->id;
   name = e->name;
   rdept = e->dept;
@@ -502,9 +447,6 @@ void process_entry(struct entry *e)
   raddr = e->address;
   rhphone = e->phone;
   rophone = e->phone2;
-
-  if (debug)
-    return;
 
   if (changed)
     {
@@ -595,8 +537,6 @@ void newuser(struct entry *e)
   rophone = e->phone2;
 
   com_err(whoami, 0, "adding user %s %s", e->first, e->last);
-  if (debug)
-    return;
 
   EXEC SQL INSERT INTO users
     (login, users_id, unix_uid, shell, last, first, middle, status,
@@ -624,9 +564,6 @@ int set_next_users_id(int limit)
   EXEC SQL BEGIN DECLARE SECTION;
   int flag, value, retval;
   EXEC SQL END DECLARE SECTION;
-
-  if (debug)
-    return 0;
 
   EXEC SQL SELECT value INTO :value FROM numvalues
     WHERE name = 'users_id';
@@ -679,9 +616,6 @@ int set_next_uid(int high)
   int flag, initial, value, retval;
   char *name;
   EXEC SQL END DECLARE SECTION;
-
-  if (debug)
-    return 0;
 
   if (high)
     name = "high_uid";

@@ -1,11 +1,14 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v $
  *	$Author: wesommer $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.4 1987-07-30 00:30:21 wesommer Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.5 1987-07-30 14:54:13 wesommer Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
  *	$Log: not supported by cvs2svn $
+Revision 1.4  87/07/30  00:30:21  wesommer
+replaced appends = appends+1 with appends = tbs.appends+1
+
 Revision 1.3  87/07/30  00:26:11  wesommer
 Changes by mike prior to "appends" fix.
 
@@ -18,7 +21,7 @@ Initial revision
  */
 
 #ifndef lint
-static char *rcsid_qsupport_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.4 1987-07-30 00:30:21 wesommer Exp $";
+static char *rcsid_qsupport_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.5 1987-07-30 14:54:13 wesommer Exp $";
 #endif lint
 
 #include "query.h"
@@ -541,6 +544,8 @@ add_locker(q, argv)
 
     /* get filesystem directory prefix; give error if machine/device
        pair not in nfsphys table */
+    printf("np.mach_id = %d and np.device = %s\n", mach_id, device);
+    
 ##  repeat retrieve (dir = np.#dir, allocated = np.#allocated) 
 ##         where np.#mach_id = @mach_id and np.#device = device
 ##  inquire_equel (rowcount = "rowcount")

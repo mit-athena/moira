@@ -1,4 +1,4 @@
-/* $Id: queries2.c,v 2.79 2000-10-25 20:38:43 zacheiss Exp $
+/* $Id: queries2.c,v 2.80 2000-11-01 22:34:20 zacheiss Exp $
  *
  * This file defines the query dispatch table
  *
@@ -2990,8 +2990,8 @@ static struct validate ausl_validate =
   VOuser0,
   1,
   "sid",
-  "sid = '%s'",
-  1,
+  "users_id = %d AND sid = '%s'",
+  2,
   0,
   0,
   0,
@@ -3007,8 +3007,8 @@ static struct validate alsn_validate =
   VOlist0,
   1,
   "sid",
-  "sid = '%s'",
-  1,
+  "list_id = %d AND sid = '%s'",
+  2,
   0,
   0,
   0,

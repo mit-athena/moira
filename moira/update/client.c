@@ -1,15 +1,15 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/client.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/client.c,v 1.11 1991-01-15 13:15:19 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/client.c,v 1.12 1992-09-22 13:44:43 mar Exp $
  */
 
 #ifndef lint
-static char *rcsid_client2_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/client.c,v 1.11 1991-01-15 13:15:19 mar Exp $";
+static char *rcsid_client2_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/client.c,v 1.12 1992-09-22 13:44:43 mar Exp $";
 #endif	lint
 
 /*
  * MODULE IDENTIFICATION:
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/client.c,v 1.11 1991-01-15 13:15:19 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/client.c,v 1.12 1992-09-22 13:44:43 mar Exp $
  *	Copyright 1987, 1988 by the Massachusetts Institute of Technology.
  *	For copying and distribution information, please see the file
  *	<mit-copyright.h>.
@@ -162,14 +162,14 @@ char *instructions;
 	goto update_failed;
     }
     
-    code = send_file(pathname, target_path);
+    code = send_file(pathname, target_path, 0);
     if (code)
       goto update_failed;
 
     /* send instructions for installation */
     strcpy(buf, "/tmp/moira-update.XXXXXX");
     mktemp(buf);
-    code = send_file(instructions, buf);
+    code = send_file(instructions, buf, 0);
     if (code)
       goto update_failed;
 

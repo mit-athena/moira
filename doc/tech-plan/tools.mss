@@ -1,5 +1,5 @@
 @part[tools, root "sms.mss"]
-@MajorSection(Specialized Management Tools)
+@MajorSection(Specialized Management Tools - User Interface)
 
 SMS will include a set of specialized management tools to enable system
 adminstrators to control system resources.  As the system evolves, more
@@ -14,7 +14,10 @@ in register will be the default.  For regular users, a command-line
 switch (such as @t(-nomenu)) will be provided that will use a
 line-oriented interface such as those in discuss and kermit.  This
 should provide speed and directness for users familiar with the system,
-while being reasonably helpful to novices and occasional users.  An X
+while being reasonably helpful to novices and occasional users.  
+A specialized menu building tool has been developed in order that 
+new application programs can be developed quickly.
+An X
 interface is being planned, but is of secondary importance to the
 functioning of the base system.
 
@@ -39,7 +42,8 @@ themselves to be dealt with.
 @Begin(Itemize, Spread 1)
 @Begin(Multiple)
 
-rvd_maint - Create/update an RVD server.  This administrative program
+PROGRAM NAME: rvd_maint - Create/update an RVD server.  
+DESCRIPTION: This administrative program
 will allow for the master copy of rvddb's to be updated and created.
 The DCM will distribute the RVD information automatically to the servers
 requiring RVD data.  Presently, the system administrator keeps an
@@ -55,6 +59,25 @@ excap, shcap, modes, offset, blocks, ownhost, create-time, modify-time)
 It will become the responsibility of SMS to maintain the present file
 /site/rvd/rvddb.  The DCM will automatically load the RVD server with
 information.
+
+DATABASE QUERIES USED:
+
+
+get_rvd_physical();
+add_rvd_physical();
+delete_rvd_physical();
+manipulates the following fields:
+(machine id, device, size create-time, modify-time)
+
+get_rvd_virtual();
+add_rvd_virtual();
+delete_rvd_physical();
+manipulates the following fields:
+(machine id, physical device, name, pack id, owner, rocap,
+excap, shcap, modes, offset, blocks, ownhost, create-time, modify-time)
+
+END USERS:
+Administrators.
 
 @End(Multiple)
 

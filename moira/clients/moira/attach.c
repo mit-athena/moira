@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.36 1992-07-28 17:45:49 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.37 1992-08-18 18:40:39 mar Exp $";
 #endif
 
 /*	This is the file attach.c for the MOIRA Client, which allows a nieve
@@ -13,7 +13,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.36 1992-07-28 17:45:49 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.37 1992-08-18 18:40:39 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -226,7 +226,7 @@ char ** info;
 	sprintf(print_buf, "User Ownership: %-30s Group Ownership: %s",
 		info[FS_OWNER], info[FS_OWNERS]);
 	Put_message(print_buf);
-	sprintf(print_buf, "Auto Create: %-34s Locker Type: %s",
+	sprintf(print_buf, "Update Fileserver: %-27s Locker Type: %s",
 		atoi(info[FS_CREATE]) ? "ON" : "OFF", 
 		info[FS_L_TYPE]);
 	Put_message(print_buf);
@@ -407,7 +407,7 @@ Bool name;
 	SUB_ERROR)
       return(NULL);
     if (!fsgroup)
-      if (GetYesNoValueFromUser("Automatically create this filesystem",
+      if (GetYesNoValueFromUser("Propagate changes to fileserver",
 				&info[FS_CREATE]) == SUB_ERROR)
 	return(NULL);
     if (strcasecmp(info[FS_TYPE], "AFS")) {

@@ -1,4 +1,4 @@
-/* $Id: dcm.pc,v 1.4 1998-02-05 22:51:06 danw Exp $
+/* $Id: dcm.pc,v 1.5 1998-02-15 17:48:41 danw Exp $
  *
  * The Data Control Manager for Moira.
  *
@@ -16,18 +16,17 @@
 #include <sys/stat.h>
 #include <sys/wait.h>
 
+#include <errno.h>
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 
-#include <gdb.h>
-
 EXEC SQL INCLUDE sqlca;
 void sqlglm(char *, unsigned int *, unsigned int *);
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/dcm.pc,v 1.4 1998-02-05 22:51:06 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/dcm.pc,v 1.5 1998-02-15 17:48:41 danw Exp $");
 
 int generate_service(char *name, int force);
 void do_hosts(char *service);
@@ -41,7 +40,6 @@ EXEC SQL WHENEVER SQLERROR DO dbmserr();
 #define SOFT_FAIL(x) (((x) == MR_NO_MEM) || ((x) == MR_CANT_CONNECT) || ((x) == MR_CCONFIG) || ((x) == MR_DEADLOCK) || ((x) == MR_BUSY) || ((x) == MR_ABORT))
 
 char whobuf[256], *whoami = whobuf, *db = "moira";
-extern CONNECTION conn;
 
 int main(int argc, char **argv)
 {
@@ -240,7 +238,7 @@ void do_hosts(char *service)
   EXEC SQL END DECLARE SECTION;
 
   time(&now);
-  gdb_init();
+  mr_init();
 
   EXEC SQL CONNECT :db IDENTIFIED BY :db;
 
@@ -345,18 +343,17 @@ void do_hosts(char *service)
 
 int dcm_send_file(char *service, char *host, char *target)
 {
-  char addr[256], data[MAXPATHLEN];
-  int code;
+  char data[MAXPATHLEN];
+  int code, conn;
 
-  sprintf(addr, "%s:moira_update", host);
-  conn = start_server_connection(addr, "");
-  if (!conn || (connection_status(conn) == CON_STOPPED))
+  conn = mr_connect_internal(host, "moira_update");
+  if (!conn)
     {
-      com_err(whoami, connection_errno(conn), "can't connect to %s", addr);
+      com_err(whoami, errno, "can't connect to %s", host);
       return MR_CANT_CONNECT;
     }
 
-  code = send_auth(host);
+  code = send_auth(conn, host);
   if (code)
     {
       com_err(whoami, code, "authenticating to %s", host);
@@ -364,32 +361,29 @@ int dcm_send_file(char *service, char *host, char *target)
     }
 
   sprintf(data, "%s/%s.out", DCM_DIR, service);
-  code = send_file(data, target, 1);
-  if (code == MR_UNKNOWN_PROC)
-    code = send_file(data, target, 0);
+  code = send_file(conn, data, target, 0);
   if (code)
     com_err(whoami, code, "sending data to %s", host);
 
 done:
-  send_quit();
-  sever_connection(conn);
+  send_quit(conn);
+  close(conn);
   return code;
 }
 
 int dcm_execute(char *service, char *host, char *script)
 {
-  char addr[256], inst[MAXPATHLEN];
-  int code;
+  char inst[MAXPATHLEN];
+  int code, conn;
 
-  sprintf(addr, "%s:moira_update", host);
-  conn = start_server_connection(addr, "");
-  if (!conn || (connection_status(conn) == CON_STOPPED))
+  conn = mr_connect_internal(host, "moira_update");
+  if (!conn)
     {
-      com_err(whoami, connection_errno(conn), "can't connect to %s", addr);
+      com_err(whoami, errno, "can't connect to %s", host);
       return MR_CANT_CONNECT;
     }
 
-  code = send_auth(host);
+  code = send_auth(conn, host);
   if (code)
     {
       com_err(whoami, code, "authenticating to %s", host);
@@ -398,20 +392,20 @@ int dcm_execute(char *service, char *host, char *script)
 
   sprintf(inst, "/tmp/moira-update.XXXXXX");
   mktemp(inst);
-  code = send_file(script, inst, 0);
+  code = send_file(conn, script, inst, 0);
   if (code)
     {
       com_err(whoami, code, "sending instructions to %s", host);
       goto done;
     }
 
-  code = execute(inst);
+  code = execute(conn, inst);
   if (code)
     com_err(whoami, code, "executing instructions on %s", host);
 
 done:
-  send_quit();
-  sever_connection(conn);
+  send_quit(conn);
+  close(conn);
   return code;
 }
 

@@ -1,4 +1,4 @@
-/* $Id: send_file.c,v 1.13 1998-02-05 22:52:01 danw Exp $
+/* $Id: send_file.c,v 1.14 1998-02-15 17:49:28 danw Exp $
  *
  * Copyright (C) 1988-1998 by the Massachusetts Institute of Technology.
  * For copying and distribution information, please see the file
@@ -18,15 +18,11 @@
 #include <unistd.h>
 
 #include <des.h>
-#include <gdb.h>
 #include <update.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/send_file.c,v 1.13 1998-02-05 22:52:01 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/send_file.c,v 1.14 1998-02-15 17:49:28 danw Exp $");
 
-extern CONNECTION conn;
-char buf[BUFSIZ];
-extern C_Block session;
-extern char *whoami;
+extern des_cblock session;
 
 /*
  * syntax:
@@ -45,11 +41,11 @@ extern char *whoami;
  *  1 on error (file not found, etc)
  */
 
-int send_file(char *pathname, char *target_path, int encrypt)
+int send_file(int conn, char *pathname, char *target_path, int encrypt)
 {
   int n, fd, code, n_to_send, i;
-  STRING data;
-  unsigned char dst[UPDATE_BUFSIZ + 8], *src;
+  char data[UPDATE_BUFSIZ], enc[UPDATE_BUFSIZ];
+  long response;
   struct stat statb;
   des_key_schedule sched;
   des_cblock ivec;
@@ -69,44 +65,42 @@ int send_file(char *pathname, char *target_path, int encrypt)
     }
   n_to_send = statb.st_size;
 
-  string_alloc(&data, UPDATE_BUFSIZ);
-  sprintf(STRING_DATA(data), "XFER_00%c %d %d %s",
-	  (encrypt ? '3' : '2'), n_to_send,
+  sprintf(data, "XFER_00%c %d %d %s", (encrypt ? '3' : '2'), n_to_send,
 	  checksum_file(pathname), target_path);
-  code = send_object(conn, (char *)&data, STRING_T);
+  code = send_string(conn, data, strlen(data) + 1);
   if (code)
     {
-      com_err(whoami, connection_errno(conn), " sending XFER request");
+      com_err(whoami, code, "sending XFER request");
       close(fd);
-      return connection_errno(conn);
+      return code;
     }
-  code = receive_object(conn, (char *)&n, INTEGER_T);
+  code = recv_int(conn, &response);
   if (code)
     {
-      com_err(whoami, connection_errno(conn),
-	      " getting reply from XFER request");
+      com_err(whoami, code, "getting reply from XFER request");
       close(fd);
-      return connection_errno(conn);
+      return code;
     }
-  if (n)
+  if (response)
     {
-      com_err(whoami, n, " transfer request (XFER) rejected");
+      com_err(whoami, response, "transfer request (XFER) rejected");
       close(fd);
-      return n;
+      return response;
     }
 
-  code = receive_object(conn, (char *)&n, INTEGER_T);
+  code = recv_int(conn, &response);
   if (code)
     {
-      com_err(whoami, connection_errno(conn), ": lost connection");
+      com_err(whoami, code, ": lost connection");
       close(fd);
-      return connection_errno(conn);
+      return code;
     }
-  if (n)
+  if (response)
     {
-      com_err(whoami, n, " from remote server: can't update %s", pathname);
+      com_err(whoami, response, " from remote server: can't update %s",
+	      pathname);
       close(fd);
-      return n;
+      return response;
     }
 
   if (encrypt)
@@ -117,70 +111,69 @@ int send_file(char *pathname, char *target_path, int encrypt)
 
   while (n_to_send > 0)
     {
-      n = read(fd, STRING_DATA(data), UPDATE_BUFSIZ);
+      n = read(fd, data, sizeof(data));
       if (n < 0)
 	{
-	  com_err(whoami, errno, " reading %s for transmission", pathname);
+	  com_err(whoami, errno, "reading %s for transmission", pathname);
 	  close(fd);
 	  return MR_ABORTED;
 	}
-      MAX_STRING_SIZE(data) = n;
       if (encrypt)
 	{
-	  src = (unsigned char *)STRING_DATA(data);
-	  memmove(dst, src, n);
-	  memset(dst + n, 0, 7);
-	  /* encrypt! */
-	  des_pcbc_encrypt(dst, src, n, sched, ivec, 0);
+	  memset(data + n, 0, sizeof(data) -n);
+	  des_pcbc_encrypt(data, enc, n, sched, ivec, 0);
 	  /* save vector to continue chaining */
 	  for (i = 0; i < 8; i++)
-	    ivec[i] = dst[n - 8 + i] ^ src[n - 8 + i];
+	    ivec[i] = data[n - 8 + i] ^ enc[n - 8 + i];
 	  /* round up to multiple of 8 */
-	  data.length = (data.length + 7) & 0xfffffff8;
+	  n = (n + 7) & ~7;
+	  code = send_string(conn, enc, n);
 	}
-      code = send_object(conn, (char *)&data, STRING_T);
+      else
+	code = send_string(conn, data, n);
       if (code)
 	{
-	  com_err(whoami, connection_errno(conn), " transmitting file %s",
-		  pathname);
+	  com_err(whoami, code, "transmitting file %s", pathname);
 	  close(fd);
-	  return connection_errno(conn);
+	  return code;
 	}
+
       n_to_send -= n;
-      code = receive_object(conn, (char *)&n, INTEGER_T);
+      code = recv_int(conn, &response);
       if (code)
 	{
-	  com_err(whoami, connection_errno(conn),
-		  " awaiting ACK remote server during transmission of %s",
+	  com_err(whoami, code, "awaiting ACK during transmission of %s",
 		  pathname);
 	  close(fd);
-	  return connection_errno(conn);
+	  return code;
 	}
-      if (n)
+      if (response)
 	{
-	  com_err(whoami, n, " from remote server during transmission of %s",
+	  com_err(whoami, response,
+		  "from remote server during transmission of %s",
 		  pathname);
 	  close(fd);
-	  return n;
+	  return response;
 	}
     }
+
   if (statb.st_size == 0)
     {
-      code = receive_object(conn, (char *)&n, INTEGER_T);
+      code = recv_int(conn, &response);
       if (code)
 	{
-	  com_err(whoami, connection_errno(conn),
-		  " awaiting ACK remote server after transmission of %s",
+	  com_err(whoami, code, "awaiting ACK after transmission of %s",
 		  pathname);
 	  close(fd);
-	  return connection_errno(conn);
+	  return code;
 	}
-      if (n)
+      if (response)
 	{
-	  com_err(whoami, n, " from remote server after transmission of %s",
+	  com_err(whoami, response,
+		  "from remote server after transmission of %s",
 		  pathname);
 	  close(fd);
-	  return n;
+	  return response;
 	}
     }
   close(fd);

@@ -1,4 +1,4 @@
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/Imakefile,v 1.4 1997-07-14 20:21:56 danw Exp $
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/Imakefile,v 1.5 1998-02-15 17:48:59 danw Exp $
 
 AFSDIR = /mit/afsuser
 AFSLIBS=$(AFSDIR)/lib/afs/libprot.a    $(AFSDIR)/lib/afs/libauth.a \
@@ -10,7 +10,7 @@ AFSLIBS=$(AFSDIR)/lib/afs/libprot.a    $(AFSDIR)/lib/afs/libauth.a \
 SRCS = afs.c ksrvtgt.c
 CODE = $(SRCS)
 CFLAGS = -I../include -I../lib -I$(AFSDIR)/include -I/usr/athena/include $(DBG)
-LIBS = -L../lib -L../gdb -L/usr/athena/lib -lmoira -lzephyr -lmrgdb -lcom_err -lhesiod -lkrb -ldes
+LIBS = -L../lib -L/usr/athena/lib -lmoira -lzephyr -lcom_err -lhesiod -lkrb -ldes
 SRCDIR = $(SRCTOP)/incremental
 
 program(afs.incr,afs.o,,${AFSLIBS} ${LIBS},${PROGDIR})

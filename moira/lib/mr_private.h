@@ -1,4 +1,4 @@
-/* $Id: mr_private.h,v 1.10 1998-02-08 19:31:21 danw Exp $
+/* $Id: mr_private.h,v 1.11 1998-02-15 17:49:06 danw Exp $
  *
  * Private declarations of the Moira library.
  *
@@ -7,35 +7,42 @@
  * <mit-copyright.h>.
  */
 
-#include "mr_proto.h"
+#include <mit-copyright.h>
+#include <moira.h>
 
-extern CONNECTION _mr_conn;
-extern OPERATION _mr_send_op, _mr_recv_op;
+#include <sys/types.h>
 
-extern int mr_inited;
-extern int sending_version_no;
+#include <netinet/in.h>
+#include <arpa/inet.h>
 
-/*
- * You are in a maze of twisty little FSM's, all different.
- */
+extern int _mr_conn, mr_inited;
 
-#define S_RECV_START 1
-#define S_RECV_DATA 2
-#define S_DECODE_DATA 3
+typedef struct mr_params {
+  union {
+    u_long mr_procno;     /* for call */
+    u_long mr_status;     /* for reply */
+  } u;
+  int mr_argc;
+  char **mr_argv;
+  int *mr_argl;
+  unsigned char *mr_flattened;
+} mr_params;
 
-#define EVER (;;)
+#define CHECK_CONNECTED if (!_mr_conn) return MR_NOT_CONNECTED
 
-#define CHECK_CONNECTED {if (!_mr_conn) return MR_NOT_CONNECTED;}
+#define getlong(cp, l) l = ((((unsigned char *)cp)[0] * 256 + ((unsigned char *)cp)[1]) * 256 + ((unsigned char *)cp)[2]) * 256 + ((unsigned char *)cp)[3]
+#define putlong(cp, l) do { ((unsigned char *)cp)[0] = l >> 24; ((unsigned char *)cp)[1] = l >> 16; ((unsigned char *)cp)[2] = l >> 8; ((unsigned char *)cp)[3] = l; } while(0);
 
 /* prototypes from mr_call.h */
-int mr_do_call(struct mr_params *params, struct mr_params **reply);
+int mr_do_call(struct mr_params *params, struct mr_params *reply);
+int mr_send(int fd, struct mr_params *params);
+int mr_receive(int fd, struct mr_params *params);
+void mr_destroy_reply(mr_params reply);
+
+/* prototypes from mr_connect.h */
+int mr_accept(int s, struct sockaddr_in *sin);
+int mr_connect_internal(char *server, char *port);
+int mr_listen(char *port);
 
 /* prototypes from mr_init.c */
 void mr_init(void);
-
-/* prototypes from mr_ops.c */
-int mr_complete_operation(OPERATION op);
-
-/* prototypes from mr_params.c */
-int mr_cont_send(OPERATION op, HALF_CONNECTION hcon, struct mr_params *arg);
-int mr_cont_recv(OPERATION op, HALF_CONNECTION hcon, mr_params **argp);

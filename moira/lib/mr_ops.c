@@ -1,4 +1,4 @@
-/* $Id: mr_ops.c,v 1.15 1998-02-08 20:37:53 danw Exp $
+/* $Id: mr_ops.c,v 1.16 1998-02-15 17:49:05 danw Exp $
  *
  * This routine is part of the client library.  It handles
  * the protocol operations: invoking an update and getting the
@@ -17,27 +17,23 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_ops.c,v 1.15 1998-02-08 20:37:53 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_ops.c,v 1.16 1998-02-15 17:49:05 danw Exp $");
 
 /* Invoke a DCM update. */
 
 int mr_do_update(void)
 {
   int status;
-  mr_params param_st;
-  struct mr_params *params = NULL;
-  struct mr_params *reply = NULL;
+  mr_params params, reply;
 
   CHECK_CONNECTED;
-  params = &param_st;
-  params->mr_version_no = sending_version_no;
-  params->mr_procno = MR_DO_UPDATE;
-  params->mr_argc = 0;
-  params->mr_argl = NULL;
-  params->mr_argv = NULL;
+  params.u.mr_procno = MR_DO_UPDATE;
+  params.mr_argc = 0;
+  params.mr_argl = NULL;
+  params.mr_argv = NULL;
 
-  if ((status = mr_do_call(params, &reply)) == 0)
-    status = reply->mr_status;
+  if ((status = mr_do_call(&params, &reply)) == MR_SUCCESS)
+    status = reply.u.mr_status;
 
   mr_destroy_reply(reply);
 
@@ -52,55 +48,41 @@ int mr_do_update(void)
 int mr_motd(char **motd)
 {
   int status;
-  mr_params param_st;
-  struct mr_params *params = NULL;
-  struct mr_params *reply = NULL;
+  mr_params params, reply;
   static char *buffer = NULL;
 
   *motd = NULL;
   CHECK_CONNECTED;
-  params = &param_st;
-  params->mr_version_no = sending_version_no;
-  params->mr_procno = MR_MOTD;
-  params->mr_argc = 0;
-  params->mr_argl = NULL;
-  params->mr_argv = NULL;
+  params.u.mr_procno = MR_MOTD;
+  params.mr_argc = 0;
+  params.mr_argl = NULL;
+  params.mr_argv = NULL;
 
-  if ((status = mr_do_call(params, &reply)))
+  if ((status = mr_do_call(&params, &reply)))
     goto punt;
 
-  while ((status = reply->mr_status) == MR_MORE_DATA)
+  while ((status = reply.u.mr_status) == MR_MORE_DATA)
     {
-      if (reply->mr_argc > 0)
+      if (reply.mr_argc > 0)
 	{
-	  buffer = realloc(buffer, reply->mr_argl[0] + 1);
+	  buffer = realloc(buffer, reply.mr_argl[0] + 1);
 	  if (!buffer)
 	    {
 	      mr_disconnect();
 	      return ENOMEM;
 	    }
-	  strcpy(buffer, reply->mr_argv[0]);
+	  strcpy(buffer, reply.mr_argv[0]);
 	  *motd = buffer;
 	}
       mr_destroy_reply(reply);
-      reply = NULL;
-
-      initialize_operation(_mr_recv_op, mr_start_recv, &reply, NULL);
-      queue_operation(_mr_conn, CON_INPUT, _mr_recv_op);
-
-      complete_operation(_mr_recv_op);
-      if (OP_STATUS(_mr_recv_op) != OP_COMPLETE)
+      if (mr_receive(_mr_conn, &reply) != MR_SUCCESS)
 	{
 	  mr_disconnect();
-	  status = MR_ABORTED;
-	  return status;
+	  return MR_ABORTED;
 	}
     }
 punt:
   mr_destroy_reply(reply);
-  /* for backwards compatability */
-  if (status == MR_UNKNOWN_PROC)
-    return 0;
-  else
-    return status;
+
+  return status;
 }

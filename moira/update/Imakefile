@@ -1,4 +1,4 @@
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/Imakefile,v 1.10 1998-02-05 22:51:56 danw Exp $
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/Imakefile,v 1.11 1998-02-15 17:49:26 danw Exp $
 #
 # Copyright 1990 by the Massachusetts Institute of Technology.
 #
@@ -9,13 +9,13 @@
 #
 
 SRCS=	auth_002.c checksum.c client.c config.c exec_002.c \
-	get_file.c log.c send_file.c ticket.c \
+	get_file.c sendrecv.c send_file.c ticket.c \
 	update_server.c update_test.c xfer_002.c xfer_003.c
 SRCDIR=${SRCTOP}/update
 CODE=${SRCS} Imakefile
 SOBJS = auth_002.o checksum.o config.o exec_002.o get_file.o \
-	log.o update_server.o xfer_002.o xfer_003.o
-COBJS=	checksum.o client.o send_file.o ticket.o
+	update_server.o xfer_002.o xfer_003.o sendrecv.o
+COBJS=	checksum.o client.o send_file.o ticket.o sendrecv.o
 
 #ifdef HAS_VSPRINTF
 DEFINES= -DHAS_VSPRINTF
@@ -31,5 +31,5 @@ moira_update.o: ${COBJS}
 	${LD} -r -o moira_update.o ${COBJS}
 #endif
 
-program(update_server, ${SOBJS},${MR_LIBDEP} ${GDB_LIBDEP}, ${CLIBS},${ETCDIR})
-program(update_test, update_test.o ${COBJS}, ${MR_LIBDEP} ${GDB_LIBDEP}, ${CLIBS},${BINDIR})
+program(update_server, ${SOBJS},${MR_LIBDEP}, ${CLIBS},${ETCDIR})
+program(update_test, update_test.o ${COBJS}, ${MR_LIBDEP}, ${CLIBS},${BINDIR})

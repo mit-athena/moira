@@ -1,4 +1,4 @@
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/Imakefile,v 1.5 1997-09-05 19:14:55 danw Exp $
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/Imakefile,v 1.6 1998-02-15 17:48:59 danw Exp $
 #
 # Copyright 1990 by the Massachusetts Institute of Technology.
 #
@@ -8,13 +8,13 @@
 # Imakefile for GDB library.
 #
 
-SRCS = mr_auth.c mr_call.c mr_connect.c mr_data.c mr_init.c \
-	mr_query.c mr_param.c mr_access.c mr_ops.c \
+SRCS = mr_auth.c mr_call.c mr_connect.c mr_init.c \
+	mr_query.c mr_access.c mr_ops.c \
 	fixname.c strs.c fixhost.c nfsparttype.c sq.c hash.c \
 	idno.c critical.c gdss_convert.c kname_unparse.c
 
-OBJECTS	= mr_auth.o mr_call.o mr_connect.o mr_data.o mr_init.o \
-	mr_query.o mr_param.o mr_access.o mr_ops.o \
+OBJECTS	= mr_auth.o mr_call.o mr_connect.o mr_init.o \
+	mr_query.o mr_access.o mr_ops.o \
 	fixname.o strs.o fixhost.o nfsparttype.o sq.o hash.o \
 	idno.o critical.o mr_et.o ureg_err.o krb_et.o gdss_et.o \
 	gdss_convert.o kname_unparse.o

@@ -1,4 +1,4 @@
-/* $Id: qsubs.c,v 1.14 1998-02-05 22:51:50 danw Exp $
+/* $Id: qsubs.c,v 1.15 1998-02-15 17:49:19 danw Exp $
  *
  * Copyright (C) 1987-1998 by the Massachusetts Institute of Technology
  * For copying and distribution information, please see the file
@@ -11,14 +11,14 @@
 
 #include <stdlib.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsubs.c,v 1.14 1998-02-05 22:51:50 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsubs.c,v 1.15 1998-02-15 17:49:19 danw Exp $");
 
 extern struct query Queries2[];
 extern int QueryCount2;
 
 int qcmp(const void *q1, const void *q2);
 
-struct query *get_query_by_name(char *name, int version)
+struct query *get_query_by_name(char *name)
 {
   struct query *q;
   int i;
@@ -48,8 +48,7 @@ struct query *get_query_by_name(char *name, int version)
   return NULL;
 }
 
-void list_queries(int version, int (*action)(int, char *[], void *),
-		  void *actarg)
+void list_queries(int (*action)(int, char *[], void *), void *actarg)
 {
   struct query *q;
   int i;

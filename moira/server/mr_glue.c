@@ -1,4 +1,4 @@
-/* $Id: mr_glue.c,v 1.23 1998-02-05 22:51:42 danw Exp $
+/* $Id: mr_glue.c,v 1.24 1998-02-15 17:49:12 danw Exp $
  *
  * Glue routines to allow the database stuff to be linked in to
  * a program expecting a library level interface.
@@ -23,7 +23,7 @@
 
 extern char *krb_get_lrealm(char *, int);
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_glue.c,v 1.23 1998-02-05 22:51:42 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_glue.c,v 1.24 1998-02-15 17:49:12 danw Exp $");
 
 static int already_connected = 0;
 
@@ -86,7 +86,6 @@ int mr_noop(void)
 int mr_auth(char *prog)
 {
   struct passwd *pw;
-  extern char *krb_realm;
   char buf[1024];
 
   CHECK_CONNECTED;
@@ -95,7 +94,7 @@ int mr_auth(char *prog)
     return KDC_PR_UNKNOWN + ERROR_TABLE_BASE_krb;
   strcpy(pseudo_client.kname.name, pw->pw_name);
   krb_get_lrealm(pseudo_client.kname.realm, 1);
-  krb_realm = pseudo_client.kname.realm;
+  krb_get_lrealm(krb_realm, 1);
 
   strcpy(buf, pw->pw_name);
   strcat(buf, "@");
@@ -105,8 +104,6 @@ int mr_auth(char *prog)
   name_to_id(pseudo_client.kname.name, USERS_TABLE, &pseudo_client.users_id);
   pseudo_client.client_id = pseudo_client.users_id;
   strncpy(pseudo_client.entity, prog, 8);
-  pseudo_client.args = malloc(sizeof(mr_params));
-  pseudo_client.args->mr_version_no = MR_VERSION_2;
   return 0;
 }
 

@@ -1,4 +1,4 @@
-/* $Id: mr_util.c,v 1.29 1998-02-05 22:51:45 danw Exp $
+/* $Id: mr_util.c,v 1.30 1998-02-15 17:49:16 danw Exp $
  *
  * Copyright (C) 1987-1998 by the Massachusetts Institute of Technology
  * For copying and distribution information, please see the file
@@ -9,10 +9,11 @@
 #include "mr_server.h"
 
 #include <ctype.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_util.c,v 1.29 1998-02-05 22:51:45 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_util.c,v 1.30 1998-02-15 17:49:16 danw Exp $");
 
 extern char *whoami;
 
@@ -83,8 +84,10 @@ void mr_com_err(const char *whoami, long code, const char *fmt, va_list pvar)
 	fprintf(stderr, "[#%d]", cur_client->id);
       fputs(": ", stderr);
     }
-  if (code)
+  if (code) {
     fputs(error_message(code), stderr);
+    fputs(" ", stderr);
+  }
   if (fmt)
     vfprintf(stderr, fmt, pvar);
   putc('\n', stderr);
@@ -144,4 +147,28 @@ char **mr_copy_args(char **argv, int argc)
   for (i = 0; i < argc; i++)
     a[i] = strdup(argv[i]);
   return a;
+}
+
+
+/* malloc or die! */
+void *xmalloc(size_t bytes)
+{
+  void *buf = malloc(bytes);
+
+  if (buf)
+    return buf;
+
+  critical_alert("moirad", "Out of memory");
+  exit(1);
+}
+
+void *xrealloc(void *ptr, size_t bytes)
+{
+  void *buf = realloc(ptr, bytes);
+
+  if (buf)
+    return buf;
+
+  critical_alert("moirad", "Out of memory");
+  exit(1);
 }

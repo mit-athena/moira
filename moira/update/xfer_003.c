@@ -1,4 +1,4 @@
-/* $Id: xfer_003.c,v 1.5 1998-02-05 22:52:05 danw Exp $
+/* $Id: xfer_003.c,v 1.6 1998-02-15 17:49:31 danw Exp $
  *
  * Copyright (C) 1988-1998 by the Massachusetts Institute of Technology.
  * For copying and distribution information, please see the file
@@ -14,16 +14,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <gdb.h>
-
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/xfer_003.c,v 1.5 1998-02-05 22:52:05 danw Exp $");
-
-extern CONNECTION conn;
-extern char buf[BUFSIZ];
-
-extern int code;
-
-extern int have_authorization, have_file, done;
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/xfer_003.c,v 1.6 1998-02-15 17:49:31 danw Exp $");
 
 /*
  *
@@ -44,11 +35,10 @@ extern int have_authorization, have_file, done;
  * this version of transfer encrypts the file being transferred.
  */
 
-int xfer_003(char *str)
+void xfer_003(int conn, char *str)
 {
-  int file_size;
-  int checksum;
-  char *pathname;
+  int file_size, checksum, code;
+  char *pathname, *p;
 
   str += 8;
   while (*str == ' ')
@@ -56,40 +46,46 @@ int xfer_003(char *str)
   if (!*str)
     {
     failure:
-      reject_call(MR_ARGS);
-      return 0;
+      send_int(conn, MR_ARGS);
+      return;
     }
-  file_size = atoi(str);
-  while (isdigit(*str))
-    str++;
+
+  file_size = strtol(str, &p, 10);
+  if (p == str)
+    {
+      send_int(conn, MR_ARGS);
+      return;
+    }
+  else
+    str = p;
   while (*str == ' ')
     str++;
-  checksum = atoi(str);
-  while (isdigit(*str))
-    str++;
+
+  checksum = strtol(str, &p, 10);
+  if (p == str)
+    {
+      send_int(conn, MR_ARGS);
+      return;
+    }
+  else
+    str = p;
   while (*str == ' ')
     str++;
+
   if (*str != '/')
     goto failure;
   pathname = str;
+
   if (!have_authorization)
     {
-      reject_call(MR_PERM);
-      return 0;
+      send_int(conn, MR_PERM);
+      return;
     }
-  if (done)			/* re-initialize data */
-    initialize();
-  code = send_ok();
-  if (code)
-    lose("sending ok for file xfer (2)");
-  code = get_file(pathname, file_size, checksum, 0444, 1);
+
+  send_ok(conn);
+  code = get_file(conn, pathname, file_size, checksum, 0444, 1);
   if (!code)
-    {
-      char buf[BUFSIZ];
-      have_file = 1;
-      strcpy(buf, "transferred file ");
-      strcat(buf, pathname);
-      mr_log_info(buf);
-    }
-  return 0;
+    com_err(whoami, 0, "Transferred file %s", pathname);
+
+  return;
 }

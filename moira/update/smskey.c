@@ -1,4 +1,4 @@
-/* $Id: smskey.c,v 1.5 1998-02-05 22:52:02 danw Exp $
+/* $Id: smskey.c,v 1.6 1998-02-15 17:49:29 danw Exp $
  *
  * Copyright (C) 1988-1998 by the Massachusetts Institute of Technology.
  * For copying and distribution information, please see the file
@@ -15,7 +15,7 @@
 
 #include <des.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/smskey.c,v 1.5 1998-02-05 22:52:02 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/smskey.c,v 1.6 1998-02-15 17:49:29 danw Exp $");
 
 int debug = 0;			/* goddamn des library breakage */
 char string[] = "sms\0\0Athena\0\1";
@@ -26,7 +26,7 @@ char insecure[] =
 int main(int argc, char **argv)
 {
   int fd;
-  C_Block key;
+  des_cblock key;
   char *tty;
   tty = ttyname(0);
   if (!tty || strcmp(tty, "/dev/console"))

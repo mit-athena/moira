@@ -1,4 +1,4 @@
-/* $Id: client.c,v 1.22 1998-02-05 22:51:58 danw Exp $
+/* $Id: client.c,v 1.23 1998-02-15 17:49:27 danw Exp $
  *
  * This code handles the actual distribution of data files
  * to servers in the Moira server-update program.
@@ -12,61 +12,50 @@
 #include <moira.h>
 #include "update.h"
 
+#include <errno.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 #include <des.h>
-#include <gdb.h>
 #include <krb.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/client.c,v 1.22 1998-02-05 22:51:58 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/client.c,v 1.23 1998-02-15 17:49:27 danw Exp $");
 
-extern int dbg;
-extern C_Block session;
+extern des_cblock session;
 
-CONNECTION conn;
-
-int send_auth(char *host_name)
+int send_auth(int conn, char *host_name)
 {
   KTEXT_ST ticket_st;
-  KTEXT ticket = &ticket_st;
-  STRING data;
-  int code;
-  int response;
-  int auth_version = 2;
+  int code, auth_version = 2;
+  long response;
 
-  code = get_mr_update_ticket(host_name, ticket);
+  code = get_mr_update_ticket(host_name, &ticket_st);
   if (code)
     return code;
-  STRING_DATA(data) = "AUTH_002";
-  MAX_STRING_SIZE(data) = 9;
-  code = send_object(conn, (char *)&data, STRING_T);
+  code = send_string(conn, "AUTH_002", 9);
   if (code)
-    return connection_errno(conn);
-  code = receive_object(conn, (char *)&response, INTEGER_T);
+    return code;
+  code = recv_int(conn, &response);
   if (code)
-    return connection_errno(conn);
+    return code;
   if (response)
     {
-      STRING_DATA(data) = "AUTH_001";
-      MAX_STRING_SIZE(data) = 9;
-      code = send_object(conn, (char *)&data, STRING_T);
+      code = send_string(conn, "AUTH_001", 9);
       if (code)
-	return connection_errno(conn);
-      code = receive_object(conn, (char *)&response, INTEGER_T);
+	return code;
+      code = recv_int(conn, &response);
       if (code)
-	return connection_errno(conn);
+	return code;
       if (response)
 	return response;
       auth_version = 1;
     }
-  STRING_DATA(data) = (char *)ticket->dat;
-  MAX_STRING_SIZE(data) = ticket->length;
-  code = send_object(conn, (char *)&data, STRING_T);
+  code = send_string(conn, (char *)ticket_st.dat, ticket_st.length);
   if (code)
-    return connection_errno(conn);
-  code = receive_object(conn, (char *)&response, INTEGER_T);
+    return code;
+  code = recv_int(conn, &response);
   if (code)
-    return connection_errno(conn);
+    return code;
   if (response)
     return response;
 
@@ -74,19 +63,21 @@ int send_auth(char *host_name)
     {
       des_key_schedule sched;
       C_Block enonce;
+      char *data;
+      size_t size;
 
-      code = receive_object(conn, (char *)&data, STRING_T);
+      code = recv_string(conn, &data, &size);
       if (code)
-	return connection_errno(conn);
+	return code;
       des_key_sched(session, sched);
-      des_ecb_encrypt(STRING_DATA(data), enonce, sched, 1);
-      STRING_DATA(data) = enonce;
-      code = send_object(conn, (char *)&data, STRING_T);
+      des_ecb_encrypt(data, enonce, sched, 1);
+      free(data);
+      code = send_string(conn, (char *)enonce, sizeof(enonce));
       if (code)
-	return connection_errno(conn);
-      code = receive_object(conn, (char *)&response, INTEGER_T);
+	return code;
+      code = recv_int(conn, &response);
       if (code)
-	return connection_errno(conn);
+	return code;
       if (response)
 	return response;
     }
@@ -94,32 +85,35 @@ int send_auth(char *host_name)
   return MR_SUCCESS;
 }
 
-int execute(char *path)
+int execute(int conn, char *path)
 {
-  int response;
-  STRING data;
+  long response;
+  char *data;
   int code;
 
-  string_alloc(&data, BUFSIZ);
-  sprintf(STRING_DATA(data), "EXEC_002 %s", path);
-  code = send_object(conn, (char *)&data, STRING_T);
+  data = malloc(10 + strlen(path));
+  if (!data)
+    return ENOMEM;
+  sprintf(data, "EXEC_002 %s", path);
+  code = send_string(conn, data, strlen(data) + 1);
+  free(data);
   if (code)
-    return connection_errno(conn);
-  code = receive_object(conn, (char *)&response, INTEGER_T);
+    return code;
+  code = recv_int(conn, &response);
   if (code)
-    return connection_errno(conn);
+    return code;
   if (response)
     return response;
+
   return MR_SUCCESS;
 }
 
-void send_quit(void)
+void send_quit(int conn)
 {
-  STRING str;
-  if (!conn)
-    return;
-  string_alloc(&str, 5);
-  strcpy(STRING_DATA(str), "quit");
-  send_object(conn, (char *)&str, STRING_T);
-  string_free(&str);
+  send_string(conn, "quit", 5);
+}
+
+void fail(int conn, int err, char *msg)
+{
+  return;
 }

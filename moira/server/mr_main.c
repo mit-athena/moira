@@ -1,4 +1,4 @@
-/* $Id: mr_main.c,v 1.39 1998-02-05 22:51:42 danw Exp $
+/* $Id: mr_main.c,v 1.40 1998-02-15 17:49:12 danw Exp $
  *
  * Moira server process.
  *
@@ -28,41 +28,34 @@
 #include <string.h>
 #include <unistd.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.39 1998-02-05 22:51:42 danw Exp $");
+#include <krb.h>
+
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.40 1998-02-15 17:49:12 danw Exp $");
 
 extern char *krb_get_lrealm(char *, int);
 
-extern CONNECTION newconn, listencon;
+client *cur_client;
 
-extern int nclients;
-extern client **clients, *cur_client;
+char *whoami;
+char *takedown;
+FILE *journal;
 
-extern OPERATION listenop;
-extern LIST_OF_OPERATIONS op_list;
-
-extern struct sockaddr_in client_addr;
-extern int client_addrlen;
-extern TUPLE client_tuple;
-
-extern char *whoami;
-extern char buf1[BUFSIZ];
-extern char *takedown;
-extern FILE *journal;
-
-extern time_t now;
+time_t now;
 
 char *host;
+char krb_realm[REALM_SZ];
+
+/* Client array and associated data. This needs to be global for _list_users */
+client **clients;
+int nclients, clientssize;
+
+int dormant;
 
 void reapchild(int x);
 void godormant(int x);
 void gowakeup(int x);
-int do_listen(char *port);
-void do_reset_listen(void);
 void clist_append(client *cp);
-void oplist_append(LIST_OF_OPERATIONS *oplp, OPERATION op);
-void oplist_delete(LIST_OF_OPERATIONS oplp, OPERATION op);
 void mr_setup_signals(void);
-int new_connection(void);
 
 /*
  * Main Moira server loop.
@@ -73,20 +66,20 @@ int new_connection(void);
 
 int main(int argc, char **argv)
 {
-  int status, i;
+  int status, i, listener;
   time_t tardy;
   char *port, *p;
   extern char *database;
   struct stat stbuf;
   struct utsname uts;
+  fd_set readfds, writefds, xreadfds, xwritefds;
+  int nfds, counter = 0;
 
   whoami = argv[0];
   /*
    * Error handler init.
    */
-  initialize_sms_error_table();
-  initialize_krb_error_table();
-  initialize_gdss_error_table();
+  mr_init();
   set_com_err_hook(mr_com_err);
   setvbuf(stderr, NULL, _IOLBF, BUFSIZ);
 
@@ -111,17 +104,6 @@ int main(int argc, char **argv)
 	}
     }
 
-  /*
-   * GDB initialization.
-   */
-  if (gdb_init() != 0)
-    {
-      com_err(whoami, 0, "GDB initialization failed.");
-      exit(1);
-    }
-  gdb_debug(0); /* this can be patched, if necessary, to enable */
-		/* GDB level debugging .. */
-  krb_realm = malloc(REALM_SZ);
   krb_get_lrealm(krb_realm, 1);
 
   /*
@@ -132,7 +114,7 @@ int main(int argc, char **argv)
     {
       if ((status = mr_open_database()))
 	{
-	  com_err(whoami, status, " when trying to open database.");
+	  com_err(whoami, status, "trying to open database.");
 	  exit(1);
 	}
       sanity_check_database();
@@ -165,27 +147,30 @@ int main(int argc, char **argv)
    * Set up client array handler.
    */
   nclients = 0;
-  clients = malloc(0);
+  clientssize = 10;
+  clients = malloc(clientssize * sizeof(client *));
 
   mr_setup_signals();
 
   journal = fopen(JOURNAL, "a");
   if (!journal)
     {
-      com_err(whoami, errno, " while opening journal file");
+      com_err(whoami, errno, "opening journal file");
       exit(1);
     }
 
   /*
    * Establish template connection.
    */
-  if ((status = do_listen(port)))
+  if (!(listener = mr_listen(port)))
     {
-      com_err(whoami, status, " while trying to create listening connection");
+      com_err(whoami, status, "trying to create listening connection");
       exit(1);
     }
-
-  op_list = create_list_of_operations(1, listenop);
+  FD_ZERO(&xreadfds);
+  FD_ZERO(&xwritefds);
+  FD_SET(listener, &xreadfds);
+  nfds = listener + 1;
 
   com_err(whoami, 0, "started (pid %d)", getpid());
   com_err(whoami, 0, rcsid);
@@ -200,10 +185,11 @@ int main(int argc, char **argv)
   while (!takedown)
     {
       int i;
-      /*
-       * Block until something happens.
-       */
-      if (dormant == SLEEPY)
+      struct timeval timeout;
+
+      /* If we're supposed to go down and we can, do it */
+      if ((dormant == AWAKE) && (nclients == 0) &&
+	  (stat(MOIRA_MOTD_FILE, &stbuf) == 0))
 	{
 	  mr_close_database();
 	  com_err(whoami, 0, "database closed");
@@ -211,7 +197,30 @@ int main(int argc, char **argv)
 	  send_zgram("MOIRA", "database closed");
 	  dormant = ASLEEP;
 	}
-      else if (dormant == GROGGY)
+
+      /* Block until something happens. */
+      memcpy(&readfds, &xreadfds, sizeof(readfds));
+      memcpy(&writefds, &xwritefds, sizeof(writefds));
+      /* XXX set timeout */
+      if (select(nfds, &readfds, &writefds, NULL, NULL) == -1)
+	{
+	  if (errno != EINTR)
+	    com_err(whoami, errno, "in select");
+	  if (!inc_running || now - inc_started > INC_TIMEOUT)
+	    next_incremental();
+	  continue;
+	}
+
+      if (takedown)
+	break;
+      time(&now);
+      if (!inc_running || now - inc_started > INC_TIMEOUT)
+	next_incremental();
+      tardy = now - 30 * 60;
+
+      /* If we're asleep and we should wake up, do it */
+      if ((dormant == ASLEEP) && (stat(MOIRA_MOTD_FILE, &stbuf) == -1) &&
+	  (errno == ENOENT))
 	{
 	  mr_open_database();
 	  com_err(whoami, 0, "database open");
@@ -220,287 +229,112 @@ int main(int argc, char **argv)
 	  dormant = AWAKE;
 	}
 
-      errno = 0;
-      status = op_select_any(op_list, 0, NULL, NULL, NULL, NULL);
-      if (status == -1)
+      /* Handle any new connections */
+      if (FD_ISSET(listener, &readfds))
 	{
-	  if (errno != EINTR)
-	    com_err(whoami, errno, " error from op_select");
-	  if (!inc_running || now - inc_started > INC_TIMEOUT)
-	    next_incremental();
-	  continue;
-	}
-      else if (status != -2)
-	{
-	  com_err(whoami, 0, " wrong return from op_select_any");
-	  continue;
-	}
-      if (takedown)
-	break;
-      time(&now);
-      if (!inc_running || now - inc_started > INC_TIMEOUT)
-	next_incremental();
+	  int newconn;
+	  struct sockaddr_in addr;
+	  client *cp;
 
-      /*
-       * Handle any new connections; this comes first so
-       * errno isn't tromped on.
-       */
-      if (OP_DONE(listenop))
-	{
-	  if (OP_STATUS(listenop) == OP_CANCELLED)
+	  newconn = mr_accept(listener, &addr);
+	  if (newconn == -1)
+	    com_err(whoami, errno, "accepting new connection");
+	  else if (newconn > 0)
 	    {
-	      if (errno == EWOULDBLOCK)
-		do_reset_listen();
-	      else
+	      if (newconn + 1 > nfds)
+		nfds = newconn + 1;
+	      FD_SET(newconn, &xreadfds);
+
+	      /* Add a new client to the array */
+	      nclients++;
+	      if (nclients > clientssize)
 		{
-		  static int count = 0;
-		  com_err(whoami, errno, " error (%d) on listen", count);
-		  if (count++ > 10)
-		    exit(1);
+		  clientssize = 2 * clientssize;
+		  clients = xrealloc(clients, clientssize * sizeof(client *));
 		}
-	    }
-	  else if ((status = new_connection()))
-	    {
-	      com_err(whoami, errno, " Error on listening operation.");
-	      /*
-	       * Sleep here to prevent hosing?
-	       */
-	    }
-	  /* if the new connection is our only connection,
-	   * and the server is supposed to be down, then go
-	   * down now.
-	   */
-	  if ((dormant == AWAKE) && (nclients == 1) &&
-	      (stat(MOIRA_MOTD_FILE, &stbuf) == 0))
-	    {
-	      com_err(whoami, 0, "motd file exists, slumbertime");
-	      dormant = SLEEPY;
-	    }
-	  /* on new connection, if we are no longer supposed
-	   * to be down, then wake up.
-	   */
-	  if ((dormant == ASLEEP) && (stat(MOIRA_MOTD_FILE, &stbuf) == -1) &&
-	      (errno == ENOENT))
-	    {
-	      com_err(whoami, 0, "motd file no longer exists, waking up");
-	      dormant = GROGGY;
+
+	      clients[nclients - 1] = cp = xmalloc(sizeof(client));
+	      memset(cp, 0, sizeof(client));
+	      cp->con = newconn;
+	      cp->id = counter++;
+	      cp->last_time_used = now;
+	      cp->haddr = addr;
+	      cp->tuplessize = 1;
+	      cp->tuples = xmalloc(sizeof(mr_params));
+	      memset(cp->tuples, 0, sizeof(mr_params));
+
+	      cur_client = cp;
+	      com_err(whoami, 0,
+		      "New connection from %s port %d (now %d client%s)",
+		      inet_ntoa(cp->haddr.sin_addr),
+		      (int)ntohs(cp->haddr.sin_port),
+		      nclients, nclients != 1 ? "s" : "");
 	    }
 	}
-      /*
-       * Handle any existing connections.
-       */
-      tardy = now - 30 * 60;
 
+      /* Handle any existing connections. */
       for (i = 0; i < nclients; i++)
 	{
 	  cur_client = clients[i];
-	  if (OP_DONE(clients[i]->pending_op))
+
+	  if (FD_ISSET(clients[i]->con, &writefds))
 	    {
-	      cur_client->last_time_used = now;
-	      do_client(cur_client);
+	      client_write(clients[i]);
+	      if (!clients[i]->ntuples)
+		{
+		  FD_CLR(clients[i]->con, &xwritefds);
+		  /* Now that we're done writing we can read again */
+		  FD_SET(clients[i]->con, &xreadfds);
+		}
+	      clients[i]->last_time_used = now;
 	    }
-	  else if (clients[i]->last_time_used < tardy)
+
+	  if (FD_ISSET(clients[i]->con, &readfds))
+	    {
+	      client_read(clients[i]);
+	      if (clients[i]->ntuples)
+		FD_SET(clients[i]->con, &xwritefds);
+	      clients[i]->last_time_used = now;
+	    }
+
+	  if (clients[i]->last_time_used < tardy)
 	    {
 	      com_err(whoami, 0, "Shutting down connection due to inactivity");
-	      shutdown(cur_client->con->in.fd, 2);
+	      clients[i]->done = 1;
 	    }
+
+	  if (clients[i]->done)
+	    {
+	      client *old;
+
+	      com_err(whoami, 0, "Closed connection (now %d client%s, "
+		      "%d queries)", nclients - 1, nclients != 2 ? "s" : "",
+		      newqueries);
+
+	      shutdown(clients[i]->con, 2);
+	      close(clients[i]->con);
+	      FD_CLR(clients[i]->con, &xreadfds);
+	      FD_CLR(clients[i]->con, &xwritefds);
+	      for (; clients[i]->ntuples; clients[i]->ntuples--)
+		mr_destroy_reply(clients[i]->tuples[clients[i]->ntuples - 1]);
+	      free(clients[i]->tuples);
+	      old = clients[i];
+	      clients[i] = clients[--nclients];
+	      free(old);
+	    }
+
 	  cur_client = NULL;
 	  if (takedown)
 	    break;
 	}
     }
+
   com_err(whoami, 0, "%s", takedown);
   if (dormant != ASLEEP)
     mr_close_database();
   send_zgram("MOIRA", takedown);
   return 0;
 }
-
-/*
- * Set up the template connection and queue the first accept.
- */
-
-int do_listen(char *port)
-{
-  listencon = create_listening_connection(port);
-
-  if (!listencon)
-    return errno;
-
-  listenop = create_operation();
-  client_addrlen = sizeof(client_addr);
-
-  start_accepting_client(listencon, listenop, &newconn, (char *)&client_addr,
-			 &client_addrlen, &client_tuple);
-  return 0;
-}
-
-
-void do_reset_listen(void)
-{
-  client_addrlen = sizeof(client_addr);
-  start_accepting_client(listencon, listenop, &newconn, (char *)&client_addr,
-			 &client_addrlen, &client_tuple);
-}
-
-/*
- * This routine is called when a new connection comes in.
- *
- * It sets up a new client and adds it to the list of currently active clients.
- */
-int new_connection(void)
-{
-  client *cp;
-  static counter = 0;
-
-  /*
-   * Make sure there's been no error
-   */
-  if (OP_STATUS(listenop) != OP_COMPLETE)
-    return errno;
-
-  if (!newconn)
-    return MR_NOT_CONNECTED;
-
-  /*
-   * Set up the new connection and reply to the client
-   */
-  cp = malloc(sizeof(client));
-  memset(cp, 0, sizeof(*cp));
-  cp->action = CL_ACCEPT;
-  cp->con = newconn;
-  cp->id = counter++;
-  cp->args = NULL;
-  cp->clname[0] = '\0';
-  cp->reply.mr_argv = NULL;
-  cp->first = NULL;
-  cp->last = NULL;
-  cp->last_time_used = now;
-  newconn = NULL;
-
-  cp->pending_op = create_operation();
-  reset_operation(cp->pending_op);
-  oplist_append(&op_list, cp->pending_op);
-  cur_client = cp;
-
-  /*
-   * Add a new client to the array..
-   */
-  clist_append(cp);
-
-  /*
-   * Let him know we heard him.
-   */
-  start_replying_to_client(cp->pending_op, cp->con, GDB_ACCEPTED, "", "");
-
-  cp->haddr = client_addr;
-
-  /*
-   * Log new connection.
-   */
-  com_err(whoami, 0, "New connection from %s port %d (now %d client%s)",
-	  inet_ntoa(cp->haddr.sin_addr), (int)ntohs(cp->haddr.sin_port),
-	  nclients, nclients != 1 ? "s" : "");
-
-  /*
-   * Get ready to accept the next connection.
-   */
-  reset_operation(listenop);
-  client_addrlen = sizeof(client_addr);
-
-  start_accepting_client(listencon, listenop, &newconn, (char *)&client_addr,
-			 &client_addrlen, &client_tuple);
-  return 0;
-}
-
-/*
- * Add a new client to the known clients.
- */
-void clist_append(client *cp)
-{
-  client **clients_n;
-
-  nclients++;
-  clients_n = malloc(nclients * sizeof(client *));
-  memcpy(clients_n, clients, (nclients - 1) * sizeof(cp));
-  clients_n[nclients - 1] = cp;
-  free(clients);
-  clients = clients_n;
-  clients_n = NULL;
-}
-
-
-void clist_delete(client *cp)
-{
-  client **clients_n, **scpp, **dcpp; /* source and dest client ptr ptr */
-
-  int found_it = 0;
-
-  clients_n = malloc((nclients - 1) * sizeof(client *));
-  for (scpp = clients, dcpp = clients_n; scpp < clients + nclients; )
-    {
-      if (*scpp != cp)
-	*dcpp++ = *scpp++;
-      else
-	{
-	  scpp++;
-	  if (found_it)
-	    abort();
-	  found_it = 1;
-	}
-    }
-  --nclients;
-  free(clients);
-  clients = clients_n;
-  clients_n = NULL;
-  oplist_delete(op_list, cp->pending_op);
-  reset_operation(cp->pending_op);
-  delete_operation(cp->pending_op);
-  sever_connection(cp->con);
-  free(cp);
-}
-
-/*
- * Add a new operation to a list of operations.
- *
- * This should be rewritten to use realloc instead, since in most
- * cases it won't have to copy the array.
- */
-
-void oplist_append(LIST_OF_OPERATIONS *oplp, OPERATION op)
-{
-  int count = (*oplp)->count + 1;
-  LIST_OF_OPERATIONS newlist = (LIST_OF_OPERATIONS)
-    db_alloc(size_of_list_of_operations(count));
-  memcpy(newlist, *oplp, size_of_list_of_operations((*oplp)->count));
-  newlist->count++;
-  newlist->op[count - 1] = op;
-  db_free(*oplp, size_of_list_of_operations(count - 1));
-  *oplp = newlist;
-}
-
-void oplist_delete(LIST_OF_OPERATIONS oplp, OPERATION op)
-{
-  OPERATION *s;
-  int c;
-
-  for (s = oplp->op, c = oplp->count; c; --c, ++s)
-    {
-      if (*s == op)
-	{
-	  while (c > 0)
-	    {
-	      *s = *(s + 1);
-	      ++s;
-	      --c;
-	    }
-	  oplp->count--;
-	  return;
-	}
-    }
-  abort();
-}
-
 
 void reapchild(int x)
 {

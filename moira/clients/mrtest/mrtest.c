@@ -24,10 +24,9 @@
 #include "history.h"
 #endif
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v 1.38 1998-02-05 22:50:54 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v 1.39 1998-02-15 17:48:39 danw Exp $");
 
 int recursion = 0, interactive;
-extern int sending_version_no;
 int count, quit = 0, cancel = 0;
 char *whoami;
 sigjmp_buf jb;
@@ -43,8 +42,6 @@ void test_noop(void);
 void test_connect(int argc, char **argv);
 void test_disconnect(void);
 void test_host(void);
-void test_new(void);
-void test_old(void);
 void test_motd(void);
 void test_query(int argc, char **argv);
 void test_auth(void);
@@ -142,10 +139,6 @@ void execute_line(char *cmdbuf)
     test_disconnect();
   else if (!strcmp(argv[0], "host"))
     test_host();
-  else if (!strcmp(argv[0], "new") || !strcmp(argv[0], "2"))
-    test_new();
-  else if (!strcmp(argv[0], "old") || !strcmp(argv[0], "1"))
-    test_old();
   else if (!strcmp(argv[0], "motd"))
     test_motd();
   else if (!strcmp(argv[0], "query") || !strcmp(argv[0], "qy"))
@@ -238,16 +231,6 @@ void test_noop(void)
   int status = mr_noop();
   if (status)
     com_err("moira (noop)", status, "");
-}
-
-void test_new(void)
-{
-  sending_version_no = MR_VERSION_2;
-}
-
-void test_old(void)
-{
-  sending_version_no = MR_VERSION_1;
 }
 
 void test_connect(int argc, char *argv[])
@@ -463,8 +446,6 @@ void test_list_requests(void)
   printf("connect, c\t\tConnect to Moira server\n");
   printf("disconnect, d\t\tDisconnect from server\n");
   printf("host\t\t\tIdentify the server host\n");
-  printf("new, 2\t\t\tUse new protocol\n");
-  printf("old, 1\t\t\tUse old protocol\n");
   printf("motd, m\t\t\tGet the Message of the Day\n");
   printf("query, qy\t\tMake a query.\n");
   printf("auth, a\t\t\tAuthenticate to Moira.\n");

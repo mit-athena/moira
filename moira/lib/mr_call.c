@@ -1,4 +1,4 @@
-/* $Id: mr_call.c,v 1.13 1998-02-08 19:31:19 danw Exp $
+/* $Id: mr_call.c,v 1.14 1998-02-15 17:49:01 danw Exp $
  *
  * Pass an mr_params off to the Moira server and get a reply
  *
@@ -11,33 +11,164 @@
 #include <moira.h>
 #include "mr_private.h"
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_call.c,v 1.13 1998-02-08 19:31:19 danw Exp $");
+#include <errno.h>
+#include <netinet/in.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
 
-int mr_do_call(struct mr_params *params, struct mr_params **reply)
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_call.c,v 1.14 1998-02-15 17:49:01 danw Exp $");
+
+/* Moira RPC format:
+
+   4-byte total length (including these 4 bytes)
+   4-byte version number (MR_VERSION_2 == 2)
+   4-byte opcode (from client) or status (from server)
+   4-byte argc
+
+   4-byte len, followed by null-terminated string, padded to 4-byte boundary
+     (the len doesn't include the padding)
+   ...
+
+   (followed by more packets if status was MR_MORE_DATA)
+
+   All numbers are in network byte order.
+*/
+
+int mr_do_call(struct mr_params *params, struct mr_params *reply)
 {
+  int status;
+
   CHECK_CONNECTED;
 
-  if (!_mr_send_op)
-    _mr_send_op = create_operation();
+  status = mr_send(_mr_conn, params);
+  if (status == MR_SUCCESS)
+    status = mr_receive(_mr_conn, reply);
 
-  if (!_mr_recv_op)
-    _mr_recv_op = create_operation();
+  if (status)
+    mr_disconnect();
 
-  initialize_operation(_mr_send_op, mr_start_send, (char *)params, NULL);
-  queue_operation(_mr_conn, CON_OUTPUT, _mr_send_op);
+  return status;
+}
 
-  initialize_operation(_mr_recv_op, mr_start_recv, (char *)reply, NULL);
-  queue_operation(_mr_conn, CON_INPUT, _mr_recv_op);
+int mr_send(int fd, struct mr_params *params)
+{
+  u_long length, written;
+  int i, *argl;
+  char *buf, *p;
 
-  /* Block until operation done. */
-  complete_operation(_mr_send_op);
-  complete_operation(_mr_recv_op);
-  /* Look at results */
-  if ((OP_STATUS(_mr_send_op) != OP_COMPLETE) ||
-      (OP_STATUS(_mr_recv_op) != OP_COMPLETE))
+  length = 16; /* length + version + opcode/status + argc */
+
+  if (params->mr_argl)
     {
-      mr_disconnect();
+      argl = params->mr_argl;
+      for (i = 0; i < params->mr_argc; i++)
+	length += 8 + argl[i];
+    }
+  else
+    {
+      argl = malloc(params->mr_argc * sizeof(int));
+      if (params->mr_argc && !argl)
+	return ENOMEM;
+      for (i = 0; i < params->mr_argc; i++)
+	{
+	  argl[i] = strlen(params->mr_argv[i]) + 1;
+	  length += 8 + argl[i];
+	}
+    }
+
+  buf = malloc(length);
+  if (!buf)
+    {
+      if (!params->mr_argl)
+	free(argl);
+      return ENOMEM;
+    }
+  memset(buf, 0, length);
+
+  putlong(buf + 4, MR_VERSION_2);
+  putlong(buf + 8, params->u.mr_procno);
+  putlong(buf + 12, params->mr_argc);
+
+  for (i = 0, p = buf + 16; i < params->mr_argc; i++)
+    {
+      putlong(p, argl[i]);
+      memcpy(p += 4, params->mr_argv[i], argl[i]);
+      p += argl[i] + (4 - argl[i] % 4) % 4;
+    }
+  length = p - buf;
+  putlong(buf, length);
+
+  written = write(fd, buf, length);
+  free(buf);
+  if (!params->mr_argl)
+    free(argl);
+
+  if (written != length)
+    return MR_ABORTED;
+  else
+    return MR_SUCCESS;
+}
+
+int mr_receive(int fd, struct mr_params *reply)
+{
+  u_long length, data;
+  ssize_t size, more;
+  char *p;
+  int i;
+
+  memset(reply, 0, sizeof(struct mr_params));
+
+  size = read(fd, &data, 4);
+  if (size != 4)
+    return size ? MR_ABORTED : MR_NOT_CONNECTED;
+  length = ntohl(data) - 4;
+  reply->mr_flattened = malloc(length);
+  if (!reply->mr_flattened)
+    return ENOMEM;
+
+  for (size = 0; size < length; size += more)
+    {
+      more = read(fd, reply->mr_flattened + size, length - size);
+      if (!more)
+	break;
+    }
+  if (size != length)
+    {
+      mr_destroy_reply(*reply);
       return MR_ABORTED;
     }
-  return 0;
+
+  getlong(reply->mr_flattened, data);
+  if (data != MR_VERSION_2)
+    {
+      mr_destroy_reply(*reply);
+      return MR_VERSION_MISMATCH;
+    }
+
+  getlong(reply->mr_flattened + 4, reply->u.mr_status);
+  getlong(reply->mr_flattened + 8, reply->mr_argc);
+  reply->mr_argv = malloc(reply->mr_argc * sizeof(char *));
+  reply->mr_argl = malloc(reply->mr_argc * sizeof(int));
+  if (reply->mr_argc && (!reply->mr_argv || !reply->mr_argl))
+    {
+      mr_destroy_reply(*reply);
+      return ENOMEM;
+    }
+
+  for (i = 0, p = reply->mr_flattened + 12; i < reply->mr_argc; i++)
+    {
+      getlong(p, reply->mr_argl[i]);
+      reply->mr_argv[i] = p + 4;
+      p += 4 + reply->mr_argl[i] + (4 - reply->mr_argl[i] % 4) % 4;
+    }
+
+  return MR_SUCCESS;
+}
+
+void mr_destroy_reply(mr_params reply)
+{
+  free(reply.mr_argl);
+  free(reply.mr_argv);
+  free(reply.mr_flattened);
 }

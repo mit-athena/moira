@@ -1,4 +1,4 @@
-/* $Id: qsetup.pc,v 2.9 1998-02-08 18:42:38 danw Exp $
+/* $Id: qsetup.pc,v 2.10 1998-02-15 17:49:19 danw Exp $
  *
  * Query setup routines
  *
@@ -21,7 +21,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsetup.pc,v 2.9 1998-02-08 18:42:38 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsetup.pc,v 2.10 1998-02-15 17:49:19 danw Exp $");
 
 extern char *whoami;
 extern int dbms_errno, mr_errcode;
@@ -849,21 +849,28 @@ int prefetch_filesys(struct query *q, char **argv, client *cl)
 int setup_ahst(struct query *q, char **argv, client *cl)
 {
   EXEC SQL BEGIN DECLARE SECTION;
-  char *name;
+  char *name, oldname[41], vendor[17], model[25], os[17];
   int value, id, saddr, mask, high, low, cnt;
   EXEC SQL END DECLARE SECTION;
   int row;
   struct in_addr addr;
 
   if (!strcmp(q->shortname, "uhst"))
-    row = 1;
+    {
+      row = 1;
+      EXEC SQL SELECT name, vendor, model, os
+	INTO :oldname, :vendor, :model, :os
+	FROM machine WHERE mach_id = :id;
+    }
   else
     row = 0;
+
+  id = *(int *)argv[0];
 
   /* sanity check name: must start with a letter, contain only
    * letters, numerals, and hyphen, and not end with a hyphen.
    */
-  if (row == 0 || strcmp(argv[1], cl->args->mr_argv[1]))
+  if (row == 0 || strcmp(argv[1], oldname))
     {
       char *p = argv[row];
 
@@ -882,7 +889,7 @@ int setup_ahst(struct query *q, char **argv, client *cl)
   /* sanity check host vendor: must start with a letter, contain only
    * letters, numerals, and hyphen, and end with an alphanumeric.
    */
-  if (*argv[row + 1] && (row == 0 || strcmp(argv[2], cl->args->mr_argv[2])))
+  if (*argv[row + 1] && (row == 0 || strcmp(argv[2], vendor)))
     {
       char *p = argv[row + 1];
 
@@ -901,7 +908,7 @@ int setup_ahst(struct query *q, char **argv, client *cl)
   /* sanity check host type: must start with a letter, contain only
    * letters, numerals, and hyphen, and end with an alphanumeric.
    */
-  if (*argv[row + 2] && (row == 0 || strcmp(argv[3], cl->args->mr_argv[3])))
+  if (*argv[row + 2] && (row == 0 || strcmp(argv[3], model)))
     {
       char *p = argv[row + 2];
 
@@ -917,10 +924,10 @@ int setup_ahst(struct query *q, char **argv, client *cl)
 	return MR_BAD_CHAR;
     }
 
-  /* sanity check host vendor: must start with a letter, contain only
+  /* sanity check host os: must start with a letter, contain only
    * letters, numerals, and hyphen, and end with an hyphen alphanumeric.
    */
-  if (*argv[row + 3] && (row == 0 || strcmp(argv[4], cl->args->mr_argv[4])))
+  if (*argv[row + 3] && (row == 0 || strcmp(argv[4], os)))
     {
       char *p = argv[row + 3];
 

@@ -128,9 +128,6 @@ GDSSINC= -DGDSS -I$(BUILDTOP)/util/gdss/include
 
 MR_LIB=$(BUILDTOP)/lib/libmoira.a
 MR_LIBDEP=$(MR_LIB)
-GDB_LIB=$(BUILDTOP)/gdb/libmrgdb.a
-GDB_LIBDEP=$(GDB_LIB)
-
 
 /*
  * The name of a command which compiles error tables.
@@ -160,9 +157,9 @@ LLIB = -L/usr/athena/lib
 
 /* libraries most Moira programs use */
 #ifdef HESIOD
-CLIBS= $(MR_LIB) $(GDB_LIB) $(LLIB) $(LZEPHYR) $(COM_ERR) -lkrb -ldes -lhesiod
+CLIBS= $(MR_LIB) $(LLIB) $(LZEPHYR) $(COM_ERR) -lkrb -ldes -lhesiod
 #else
-CLIBS= $(MR_LIB) $(GDB_LIB) $(LLIB) $(LZEPHYR) $(COM_ERR) -lkrb -ldes
+CLIBS= $(MR_LIB) $(LLIB) $(LZEPHYR) $(COM_ERR) -lkrb -ldes
 #endif
 
 /* libraries SQL programs need */

@@ -1,4 +1,4 @@
-/* $Id: ticket.c,v 1.19 1998-02-05 22:52:03 danw Exp $
+/* $Id: ticket.c,v 1.20 1998-02-15 17:49:30 danw Exp $
  *
  * Copyright (C) 1988-1998 by the Massachusetts Institute of Technology.
  * For copying and distribution information, please see the file
@@ -16,43 +16,27 @@
 #include <krb.h>
 #include <update.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/ticket.c,v 1.19 1998-02-05 22:52:03 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/ticket.c,v 1.20 1998-02-15 17:49:30 danw Exp $");
 
-extern char *whoami;
-
-/* too bad we can't set the pathname easily */
 static char *srvtab = KEYFILE; /* default == /etc/srvtab */
 static char realm[REALM_SZ];
 static char master[INST_SZ] = "sms";
 static char service[ANAME_SZ] = "rcmd";
-C_Block session;
+des_cblock session;
 
-int get_mr_tgt(void);
-
-static void init(void)
-{
-  static int initialized = 0;
-
-  if (!initialized)
-    {
-      if (krb_get_lrealm(realm, 1))
-	strcpy(realm, KRB_REALM);
-      initialize_krb_error_table();
-      initialized = 1;
-    }
-}
-
+static int get_mr_tgt(void);
 
 int get_mr_update_ticket(char *host, KTEXT ticket)
 {
-  int code;
-  int pass;
+  int code, pass;
   char phost[BUFSIZ];
   CREDENTIALS cr;
 
   pass = 1;
-  init();
+  if (krb_get_lrealm(realm, 1))
+    strcpy(realm, KRB_REALM);
   strcpy(phost, (char *)krb_get_phost(host));
+
 try_it:
   code = krb_mk_req(ticket, service, phost, realm, (long)0);
   if (code)
@@ -81,12 +65,11 @@ try_it:
   return code;
 }
 
-int get_mr_tgt(void)
+static int get_mr_tgt(void)
 {
   int code;
   char linst[INST_SZ], kinst[INST_SZ];
 
-  init();
   linst[0] = '\0';
   strcpy(kinst, "krbtgt");
   code = krb_get_svc_in_tkt(master, linst, realm, kinst, realm,

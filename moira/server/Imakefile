@@ -1,4 +1,4 @@
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/Imakefile,v 1.8 1998-02-05 22:51:40 danw Exp $
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/Imakefile,v 1.9 1998-02-15 17:49:10 danw Exp $
 #
 # Copyright 1990 by the Massachusetts Institute of Technology.
 #
@@ -11,35 +11,35 @@
 GDSS_INC=$(GDSSINC)
 
 SRCS = startmoira.c mr_main.c mr_sauth.c mr_scall.c \
-	mr_srvdata.c mr_shutdown.c mr_util.c \
+	mr_shutdown.c mr_util.c \
 	mr_server.h query.h qrtn.h qrtn.c \
 	qsupport.c qsubs.c queries2.c increment.c \
 	cache.c mr_glue.c qvalidate.c qaccess.c qsetup.c \
 	qfollow.c
 CODE= startmoira.c mr_main.c mr_sauth.c mr_scall.c \
-	mr_srvdata.c mr_shutdown.c mr_util.c \
+	mr_shutdown.c mr_util.c \
 	mr_server.h query.h qrtn.h qrtn.pc \
 	qsupport.pc qsubs.c queries2.c increment.pc \
 	cache.pc mr_glue.c qvalidate.pc Imakefile \
 	qaccess.pc qsetup.pc qfollow.pc
-SRVOBJ=mr_main.o mr_sauth.o mr_scall.o mr_srvdata.o mr_shutdown.o \
+SRVOBJ=mr_main.o mr_sauth.o mr_scall.o mr_shutdown.o \
 	mr_util.o qrtn.o queries2.o qsupport.o qsubs.o \
 	increment.o cache.o qvalidate.o \
 	qaccess.o qsetup.o qfollow.o
 GLUOBJS=mr_glue.o qrtn.o queries2.o qsupport.o qsubs.o \
-	../lib/mr_et.o mr_sauth.o mr_srvdata.o \
+	../lib/mr_et.o mr_sauth.o \
 	../lib/krb_et.o mr_util.o increment.o cache.o \
 	qvalidate.o qaccess.o qsetup.o qfollow.o
 SRCDIR = $(SRCTOP)/server
 sqlrule()
 
-program(moirad, ${SRVOBJ},${MR_LIBDEP} ${GDB_LIBDEP},\
+program(moirad, ${SRVOBJ},${MR_LIBDEP},\
 	-L/usr/athena/lib .././lib/libmoira.a -lzephyr \
-	.././gdb/libmrgdb.a  -lcom_err $(LIBGDSS)\
+	-lcom_err $(LIBGDSS)\
 	-lkrb -ldes -lhesiod ${SQL_LIB}, ${PROGDIR})
-program(startmoira, startmoira.o,${MR_LIBDEP} ${GDB_LIBDEP},\
+program(startmoira, startmoira.o,${MR_LIBDEP},\
 	-L/usr/athena/lib .././lib/libmoira.a -lzephyr \
-	.././gdb/libmrgdb.a -lcom_err -lkrb -ldes -lhesiod,\
+	-lcom_err -lkrb -ldes -lhesiod,\
 	${PROGDIR})
 library_obj_rule()
 install_library_target(mrglue,$(GLUOBJS),$(SRCS))

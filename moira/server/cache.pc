@@ -1,4 +1,4 @@
-/* $Id: cache.pc,v 2.5 1998-02-05 22:51:41 danw Exp $
+/* $Id: cache.pc,v 2.6 1998-02-15 17:49:11 danw Exp $
  *
  * Keep a cache of name/id mappings
  *
@@ -16,7 +16,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/cache.pc,v 2.5 1998-02-05 22:51:41 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/cache.pc,v 2.6 1998-02-15 17:49:11 danw Exp $");
 
 EXEC SQL WHENEVER SQLERROR DO dbmserr();
 
@@ -363,6 +363,7 @@ void flush_name(char *name, enum tables type)
 	  i->next->prev = i->prev;
 	  i->prev->next = i->next;
 	  free(i);
+	  break;
 	}
     }
 }

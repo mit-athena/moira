@@ -1,4 +1,4 @@
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/Imakefile,v 1.5 1992-11-07 22:41:17 probe Exp $
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/Imakefile,v 1.6 1998-02-15 17:48:36 danw Exp $
 #
 # Copyright 1990 by the Massachusetts Institute of Technology.
 #
@@ -13,4 +13,4 @@ SRCDIR=${SRCTOP}/clients/mailmaint
 CODE=${SRCS} Imakefile
 OBJS=mailmaint.o
 
-program(mailmaint,${OBJS},${MR_LIBDEP} ${GDB_LIBDEP}, ${CLIBS} ${CURSES},${PROGDIR})
+program(mailmaint,${OBJS},${MR_LIBDEP}, ${CLIBS} ${CURSES},${PROGDIR})

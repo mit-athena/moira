@@ -1,4 +1,4 @@
-/* $Id: exec_002.c,v 1.19 1998-02-05 22:51:59 danw Exp $
+/* $Id: exec_002.c,v 1.20 1998-02-15 17:49:27 danw Exp $
  *
  * Copyright (C) 1988-1998 by the Massachusetts Institute of Technology.
  * For copying and distribution information, please see the file
@@ -17,32 +17,27 @@
 #include <stdio.h>
 #include <unistd.h>
 
-#include <gdb.h>
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/exec_002.c,v 1.20 1998-02-15 17:49:27 danw Exp $");
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/exec_002.c,v 1.19 1998-02-05 22:51:59 danw Exp $");
-
-extern CONNECTION conn;
-extern int code, uid, log_priority, have_authorization;
-extern char *whoami;
-
-int exec_002(char *str)
+void exec_002(int conn, char *str)
 {
-  int waitb;
+  int waitb, n;
   sigset_t mask, oldmask;
-  int n, pid;
+  pid_t pid;
+  long code;
 
   if (!have_authorization)
     {
-      reject_call(MR_PERM);
-      return 0;
+      send_int(conn, MR_PERM);
+      return;
     }
   if (config_lookup("noexec"))
     {
-      code = EPERM;
-      send_object(conn, (char *)&code, INTEGER_T);
-      com_err(whoami, code, "Not allowed to execute");
-      return 0;
+      send_int(conn, EPERM);
+      com_err(whoami, EPERM, "Not allowed to execute");
+      return;
     }
+
   str += 8;
   while (*str == ' ')
     str++;
@@ -55,12 +50,12 @@ int exec_002(char *str)
     case -1:
       n = errno;
       sigprocmask(SIG_UNBLOCK, &oldmask, &mask);
-      log_priority = log_ERROR;
-      com_err(whoami, errno, ": can't fork to run install script");
-      code = send_object(conn, (char *)&n, INTEGER_T);
+      com_err(whoami, n, ": can't fork to run install script");
+      code = send_int(conn, n);
       if (code)
 	exit(1);
-      return 0;
+      return;
+
     case 0:
       if (setuid(uid) < 0)
 	{
@@ -71,19 +66,19 @@ int exec_002(char *str)
       execlp(str, str, NULL);
       n = errno;
       sigprocmask(SIG_UNBLOCK, &oldmask, &mask);
-      log_priority = log_ERROR;
       com_err(whoami, n, ": %s", str);
-      send_object(conn, (char *)&n, INTEGER_T);
+      send_int(conn, n);
       exit(1);
+
     default:
       do
 	n = wait(&waitb);
       while (n != -1 && n != pid);
+
       sigprocmask(SIG_UNBLOCK, &oldmask, &mask);
       if ((WIFEXITED(waitb) && (WEXITSTATUS(waitb) != 0)) ||
 	  WIFSIGNALED(waitb))
 	{
-	  log_priority = log_ERROR;
 	  if (WIFSIGNALED(waitb))
 	    {
 	      n = MR_COREDUMP;
@@ -96,16 +91,16 @@ int exec_002(char *str)
 	      com_err(whoami, n, " child exited with status %d",
 		      WEXITSTATUS(waitb));
 	    }
-	  code = send_object(conn, (char *)&n, INTEGER_T);
+	  code = send_int(conn, n);
 	  if (code)
 	    exit(1);
 	}
       else
 	{
-	  code = send_ok();
+	  code = send_ok(conn);
 	  if (code)
 	    exit(1);
 	}
     }
-  return 0;
+  return;
 }

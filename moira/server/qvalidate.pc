@@ -1,4 +1,4 @@
-/* $Id: qvalidate.pc,v 2.8 1998-02-08 18:47:34 danw Exp $
+/* $Id: qvalidate.pc,v 2.9 1998-02-15 17:49:25 danw Exp $
  *
  * Argument validation routines
  *
@@ -20,7 +20,7 @@
 EXEC SQL INCLUDE sqlca;
 EXEC SQL INCLUDE sqlda;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qvalidate.pc,v 2.8 1998-02-08 18:47:34 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qvalidate.pc,v 2.9 1998-02-15 17:49:25 danw Exp $");
 
 extern char *whoami, *table_name[], *sqlbuffer[QMAXARGS];
 extern int dbms_errno, mr_errcode;
@@ -57,10 +57,6 @@ int validate_row(struct query *q, char *argv[], struct validate *v)
   /* build where clause */
   build_qual(v->qual, v->argc, argv, qual);
 
-  if (log_flags & LOG_VALID)
-    /* tell the logfile what we're doing */
-    com_err(whoami, 0, "validating row: %s", qual);
-
   /* look for the record */
   sprintf(stmt_buf, "SELECT COUNT (*) FROM %s WHERE %s",
 	  table_name[q->rtable], qual);
@@ -85,59 +81,30 @@ int validate_fields(struct query *q, char *argv[], struct valobj *vo, int n)
       switch (vo->type)
 	{
 	case V_NAME:
-	  if (log_flags & LOG_VALID)
-	    {
-	      com_err(whoami, 0, "validating %s in %s: %s",
-		      vo->namefield, table_name[vo->table], argv[vo->index]);
-	    }
 	  status = validate_name(argv, vo);
 	  break;
 
 	case V_ID:
-	  if (log_flags & LOG_VALID)
-	    {
-	      com_err(whoami, 0, "validating %s in %s: %s",
-		      vo->idfield, table_name[vo->table], argv[vo->index]);
-	    }
 	  status = validate_id(q, argv, vo);
 	  break;
 
 	case V_TYPE:
-	  if (log_flags & LOG_VALID)
-	    {
-	      com_err(whoami, 0, "validating %s type: %s",
-		      table_name[vo->table], argv[vo->index]);
-	    }
 	  status = validate_type(argv, vo);
 	  break;
 
 	case V_TYPEDATA:
-	  if (log_flags & LOG_VALID)
-	    {
-	      com_err(whoami, 0, "validating typed data (%s): %s",
-		      argv[vo->index - 1], argv[vo->index]);
-	    }
 	  status = validate_typedata(q, argv, vo);
 	  break;
 
 	case V_RENAME:
-	  if (log_flags & LOG_VALID)
-	    {
-	      com_err(whoami, 0, "validating rename %s in %s",
-		      argv[vo->index], table_name[vo->table]);
-	    }
 	  status = validate_rename(argv, vo);
 	  break;
 
 	case V_CHAR:
-	  if (log_flags & LOG_VALID)
-	    com_err(whoami, 0, "validating chars: %s", argv[vo->index]);
 	  status = validate_chars(argv, vo);
 	  break;
 
 	case V_LEN:
-	  if (log_flags & LOG_VALID)
-	    com_err(whoami, 0, "validating length: %s", argv[vo->index]);
 	  status = validate_len(argv, vo);
 	  break;
 

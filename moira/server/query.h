@@ -1,4 +1,4 @@
-/* $Id: query.h,v 2.5 1998-02-05 22:51:54 danw Exp $
+/* $Id: query.h,v 2.6 1998-02-15 17:49:24 danw Exp $
  *
  * Structures and constants used in the query dispatch table
  *
@@ -89,16 +89,13 @@ void incremental_clear_before(void);
 void incremental_after(enum tables table, char *qualx, char **argv);
 void incremental_clear_after(void);
 
-/* prototypes from qfollow.dc */
-int set_pobox_modtime(struct query *q, char *argv[], client *cl);
-
 /* prototypes from qrtn.dc */
 int check_query_access(struct query *q, char *argv[], client *cl);
 int set_next_object_id(char *objectx, enum tables table, int limit);
 
 /* prototypes from qsubs.c */
-void list_queries(int version, int (*action)(int, char *[], void *),
+void list_queries(int (*action)(int, char *[], void *),
 		  void *actarg);
 void help_query(struct query *q, int (*action)(int, char *[], void *),
 		void *actarg);
-struct query *get_query_by_name(char *name, int version);
+struct query *get_query_by_name(char *name);

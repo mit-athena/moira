@@ -1,4 +1,4 @@
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/include/Imakefile,v 1.4 1997-09-05 20:15:23 danw Exp $
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/include/Imakefile,v 1.5 1998-02-15 17:48:56 danw Exp $
 #
 # Copyright 1990 by the Massachusetts Institute of Technology.
 #
@@ -8,8 +8,8 @@
 # Imakefile for include.
 #
 
-CODE=Imakefile gdb.h mit-copyright.h \
-	moira.h moira_site.h mr_proto.h update.h ureg_proto.h
+CODE=Imakefile mit-copyright.h \
+	moira.h moira_site.h update.h ureg_proto.h
 SRCDIR=$(SRCTOP)/include
 
 all::

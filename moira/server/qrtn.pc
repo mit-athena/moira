@@ -1,4 +1,4 @@
-/* $Id: qrtn.pc,v 2.8 1998-02-05 22:51:48 danw Exp $
+/* $Id: qrtn.pc,v 2.9 1998-02-15 17:49:18 danw Exp $
  *
  * Query-processing routines
  *
@@ -13,13 +13,14 @@
 #include "qrtn.h"
 #include "query.h"
 
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 EXEC SQL INCLUDE sqlca;  /* SQL Communications Area */
 EXEC SQL INCLUDE sqlda;  /* SQL Descriptor Area */
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.pc,v 2.8 1998-02-05 22:51:48 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.pc,v 2.9 1998-02-15 17:49:18 danw Exp $");
 
 SQLDA *mr_sqlda;
 EXEC SQL BEGIN DECLARE SECTION;
@@ -134,7 +135,7 @@ int mr_check_access(client *cl, char *name, int argc, char *argv_ro[])
   dbms_errno = 0;
   mr_errcode = 0;
 
-  q = get_query_by_name(name, cl->args->mr_version_no);
+  q = get_query_by_name(name);
   if (!q)
     return MR_NO_HANDLE;
 
@@ -162,7 +163,7 @@ int mr_process_query(client *cl, char *name, int argc, char *argv_ro[],
   /* list queries command */
   if (!strcmp(name, "_list_queries"))
     {
-      list_queries(cl->args->mr_version_no, action, actarg);
+      list_queries(action, actarg);
       return MR_SUCCESS;
     }
 
@@ -171,7 +172,7 @@ int mr_process_query(client *cl, char *name, int argc, char *argv_ro[],
     {
       if (argc < 1)
 	return MR_ARGS;
-      q = get_query_by_name(argv_ro[0], cl->args->mr_version_no);
+      q = get_query_by_name(argv_ro[0]);
       if (!q)
 	return MR_NO_HANDLE;
       help_query(q, action, actarg);
@@ -179,7 +180,7 @@ int mr_process_query(client *cl, char *name, int argc, char *argv_ro[],
     }
 
   /* get query structure, return error if named query does not exist */
-  q = get_query_by_name(name, cl->args->mr_version_no);
+  q = get_query_by_name(name);
   if (!q)
     return MR_NO_HANDLE;
   v = q->validate;
@@ -391,7 +392,7 @@ out:
 
 	      fprintf(journal, "%% %s %s %s",
 		      cl->clname, cl->entity, ctime(&now));
-	      fprintf(journal, "%s[%ld] ", q->name, cl->args->mr_version_no);
+	      fprintf(journal, "%s ", q->name);
 	      for (i = 0; i < argc; i++)
 		{
 		  if (i != 0)
@@ -413,7 +414,7 @@ out:
     }
   cache_commit(); /* commit following abort is safe */
 
-  if (status != MR_SUCCESS && log_flags & LOG_RES)
+  if (status != MR_SUCCESS)
     com_err(whoami, status, " (Query failed)");
   return status;
 }
@@ -519,7 +520,7 @@ int mr_verify_query(client *cl, struct query *q, int argc, char *argv_ro[])
 	return MR_ARG_TOO_LONG;
       *to = '\0';
 
-      if (*--to == '\\')
+      if (to > Argv[i] && *--to == '\\')
 	return MR_BAD_CHAR;
     }
 
@@ -875,8 +876,7 @@ int set_next_object_id(char *object, enum tables table, int limit)
 	}
     }
 
-  if (LOG_RES)
-    com_err(whoami, 0, "setting ID %s to %d", object, value);
+  com_err(whoami, 0, "setting ID %s to %d", object, value);
   EXEC SQL UPDATE numvalues SET value = :value WHERE name = :obj;
   return MR_SUCCESS;
 }

@@ -1,4 +1,4 @@
-/* $Id: mr_sauth.c,v 1.24 1998-02-05 22:51:43 danw Exp $
+/* $Id: mr_sauth.c,v 1.25 1998-02-15 17:49:13 danw Exp $
  *
  * Handle server side of authentication
  *
@@ -19,7 +19,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_sauth.c,v 1.24 1998-02-05 22:51:43 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_sauth.c,v 1.25 1998-02-15 17:49:13 danw Exp $");
 
 extern char *whoami, *host;
 
@@ -39,7 +39,7 @@ replay_cache *rcache = NULL;
  * cl->cl_name.
  */
 
-void do_auth(client *cl)
+void do_auth(client *cl, mr_params req)
 {
   KTEXT_ST auth;
   AUTH_DAT ad;
@@ -47,17 +47,16 @@ void do_auth(client *cl)
   replay_cache *rc, *rcnew;
   time_t now;
 
-  auth.length = cl->args->mr_argl[0];
-  memcpy(auth.dat, cl->args->mr_argv[0], auth.length);
+  auth.length = req.mr_argl[0];
+  memcpy(auth.dat, req.mr_argv[0], auth.length);
   auth.mbz = 0;
 
-  if ((status = krb_rd_req (&auth, MOIRA_SNAME, host,
-			    cl->haddr.sin_addr.s_addr, &ad, "")))
+  if ((status = krb_rd_req(&auth, MOIRA_SNAME, host,
+			   cl->haddr.sin_addr.s_addr, &ad, "")))
     {
       status += ERROR_TABLE_BASE_krb;
-      cl->reply.mr_status = status;
-      if (log_flags & LOG_RES)
-	com_err(whoami, status, " (authentication failed)");
+      client_reply(cl, status);
+      com_err(whoami, status, " (authentication failed)");
       return;
     }
 
@@ -78,7 +77,7 @@ void do_auth(client *cl)
 		  inet_ntoa(cl->haddr.sin_addr),
 		  kname_unparse(ad.pname, ad.pinst, ad.prealm));
 	  com_err(whoami, KE_RD_AP_REPEAT, " (authentication failed)");
-	  cl->reply.mr_status = KE_RD_AP_REPEAT;
+	  client_reply(cl, KE_RD_AP_REPEAT);
 	  return;
 	}
     }
@@ -117,22 +116,16 @@ void do_auth(client *cl)
   status = set_krb_mapping(cl->clname, ad.pname, ok,
 			   &cl->client_id, &cl->users_id);
 
-  if (cl->args->mr_version_no == MR_VERSION_2)
-    {
-      strncpy(cl->entity, cl->args->mr_argv[1], 8);
-      cl->entity[8] = 0;
-    }
-  else
-    strcpy(cl->entity, "???");
+  strncpy(cl->entity, req.mr_argv[1], 8);
+  cl->entity[8] = 0;
+
   memset(&ad, 0, sizeof(ad));	/* Clean up session key, etc. */
 
-  if (log_flags & LOG_RES)
-    {
-      com_err(whoami, 0, "Auth to %s using %s, uid %d cid %d",
-	      cl->clname, cl->entity, cl->users_id, cl->client_id);
-    }
-  if (status != MR_SUCCESS)
-    cl->reply.mr_status = status;
-  else if (cl->users_id == 0)
-    cl->reply.mr_status = MR_USER_AUTH;
+  com_err(whoami, 0, "Auth to %s using %s, uid %d cid %d",
+	  cl->clname, cl->entity, cl->users_id, cl->client_id);
+
+  if (status != MR_SUCCESS || cl->users_id != 0)
+    client_reply(cl, status);
+  else
+    client_reply(cl, MR_USER_AUTH);
 }

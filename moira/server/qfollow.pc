@@ -1,4 +1,4 @@
-/* $Id: qfollow.pc,v 2.5 1998-02-05 22:51:47 danw Exp $
+/* $Id: qfollow.pc,v 2.6 1998-02-15 17:49:17 danw Exp $
  *
  * Query followup routines
  *
@@ -13,6 +13,7 @@
 #include "query.h"
 #include "qrtn.h"
 
+#include <errno.h>
 #include <ctype.h>
 #include <stdlib.h>
 #include <string.h>
@@ -22,7 +23,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qfollow.pc,v 2.5 1998-02-05 22:51:47 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qfollow.pc,v 2.6 1998-02-15 17:49:17 danw Exp $");
 
 extern char *whoami, *table_name[];
 extern int dbms_errno, mr_errcode;
@@ -371,16 +372,10 @@ int followup_guax(struct query *q, struct save_queue *sq, struct validate *v,
 	  kname_parse(si.pname, si.pinst, si.prealm, kname);
 	  free(kname);
 	  si.rawsig = (unsigned char *)strdup(rsig);
-	  if (log_flags & LOG_GDSS)
-	    com_err(whoami, 0, "rawsig length = %d, sig=\"%s\"",
-		    strlen(si.rawsig), si.rawsig);
 	  GDSS_Recompose(&si, sigbuf);
 	  free(si.rawsig);
 	  free(argv[U_SIGNATURE]);
 	  argv[U_SIGNATURE] = strdup(sigbuf);
-	  if (log_flags & LOG_GDSS)
-	    com_err(whoami, 0, "generated signature length %d",
-		    strlen(sigbuf));
 	}
 #endif /* GDSS */
       (*action)(q->vcnt, argv, actarg);
@@ -451,11 +446,7 @@ int followup_ausr(struct query *q, char *argv[], client *cl)
 	  timestamp = si.timestamp;
         }
       else
-	{
-	  if (log_flags & LOG_GDSS)
-	    hex_dump(argv[U_SIGNATURE]);
-	  return gdss2et(status);
-	}
+	return gdss2et(status);
     }
   else
     {
@@ -548,11 +539,7 @@ int followup_uuac(struct query *q, char *argv[], client *cl)
 	  timestamp = si.timestamp;
         }
       else
-	{
-	  if (log_flags & LOG_GDSS)
-	    hex_dump(argv[U_SIGNATURE + 1]);
-	  return gdss2et(status);
-	}
+	return gdss2et(status);
     }
   else
     {
@@ -912,6 +899,7 @@ int followup_gqot(struct query *q, struct save_queue *sq, struct validate *v,
       free(argv[idx]);
       argv[idx] = malloc(256);
       name = argv[idx];
+      memset(name, 0, 256);
       if (id == 0)
 	{
 	  label = argv[0];
@@ -1234,11 +1222,7 @@ int followup_gsha(struct query *q, struct save_queue *sq, struct validate *v,
 
 int _sdl_followup(struct query *q, char *argv[], client *cl)
 {
-  int i;
-  i = atoi(argv[0]);
-  log_flags = i;
-
-  if (i & LOG_SQL)
+  if (atoi(argv[0]))
     EXEC SQL ALTER SESSION SET SQL_TRACE TRUE;
   else
     EXEC SQL ALTER SESSION SET SQL_TRACE FALSE;
@@ -1247,46 +1231,23 @@ int _sdl_followup(struct query *q, char *argv[], client *cl)
 }
 
 
-static void hex_dump(unsigned char *p)
+int trigger_dcm(struct query *q, char *argv[], client *cl)
 {
-  fprintf(stderr, "Size: %d\n", strlen(p));
-  while (strlen(p) >= 8)
+  pid_t pid;
+  char prog[128];
+
+  sprintf(prog, "%s/startdcm", BIN_DIR);
+  pid = vfork();
+  switch (pid)
     {
-      fprintf(stderr, "%02x %02x %02x %02x %02x %02x %02x %02x\n",
-	      p[0], p[1], p[2], p[3], p[4], p[5], p[6], p[7]);
-      p += 8;
-    }
-  switch (strlen(p))
-    {
-    case 7:
-      fprintf(stderr, "%02x %02x %02x %02x %02x %02x %02x\n",
-	      p[0], p[1], p[2], p[3], p[4], p[5], p[6]);
-      break;
-    case 6:
-      fprintf(stderr, "%02x %02x %02x %02x %02x %02x\n",
-	      p[0], p[1], p[2], p[3], p[4], p[5]);
-      break;
-    case 5:
-      fprintf(stderr, "%02x %02x %02x %02x %02x\n",
-		p[0], p[1], p[2], p[3], p[4]);
-      break;
-    case 4:
-      fprintf(stderr, "%02x %02x %02x %02x\n",
-	      p[0], p[1], p[2], p[3]);
-	break;
-    case 3:
-      fprintf(stderr, "%02x %02x %02x\n",
-	      p[0], p[1], p[2]);
-      break;
-    case 2:
-      fprintf(stderr, "%02x %02x\n",
-	      p[0], p[1]);
-      break;
-    case 1:
-      fprintf(stderr, "%02x\n",
-	      p[0]);
-      break;
+    case 0:
+      execl(prog, "startdcm", 0);
+      exit(1);
+
+    case -1:
+      return errno;
+
     default:
-      return;
+      return MR_SUCCESS;
     }
 }

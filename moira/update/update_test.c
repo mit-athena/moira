@@ -1,4 +1,4 @@
-/* $Id: update_test.c,v 1.8 1998-02-05 22:52:04 danw Exp $
+/* $Id: update_test.c,v 1.9 1998-02-15 17:49:31 danw Exp $
  *
  * Test client for update_server protocol.
  *
@@ -11,41 +11,36 @@
 #include <moira.h>
 #include <update.h>
 
+#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 
-#include <gdb.h>
-
 void usage(void);
 
-CONNECTION conn;
 char *whoami;
 
 int main(int argc, char **argv)
 {
-  char *host, service_address[256], *file, *rfile, buf[256];
-  int code, i;
+  char *host, *file, *rfile, *ibuf = NULL;
+  int code, i, count = 0, conn;
 
   whoami = argv[0];
-  initialize_sms_error_table();
-  initialize_krb_error_table();
-  gdb_init();
+  mr_init();
 
   if (argc < 2)
     usage();
   host = argv[1];
 
-  sprintf(service_address, "%s:%s", host, SERVICE_NAME);
-  conn = start_server_connection(service_address, "");
-  if (!conn || (connection_status(conn) == CON_STOPPED))
+  conn = mr_connect_internal(host, SERVICE_NAME);
+  if (!conn)
     {
-      com_err(whoami, connection_errno(conn),
-	      " can't connect to update %s", service_address);
-      return MR_CANT_CONNECT;
+      com_err(whoami, errno, ": can't connect to %s:%s", host, SERVICE_NAME);
+      exit(1);
     }
-  code = send_auth(host);
+
+  code = send_auth(conn, host);
   if (code)
-    com_err(whoami, code, " authorization attempt failed");
+    com_err(whoami, code, "attempting authorization");
 
   for (i = 2; i < argc; i++)
     {
@@ -59,7 +54,7 @@ int main(int argc, char **argv)
 	  file = argv[++i];
 	  rfile = argv[++i];
 	  fprintf(stderr, "Sending file %s to %s as %s\n", file, host, rfile);
-	  send_file(file, rfile, 0);
+	  send_file(conn, file, rfile, 0);
 	  break;
 	case 'S':
 	  if (i + 2 >= argc)
@@ -68,31 +63,41 @@ int main(int argc, char **argv)
 	  rfile = argv[++i];
 	  fprintf(stderr, "Sending (encrypted) file %s to %s as %s\n",
 		  file, host, rfile);
-	  send_file(file, rfile, 1);
+	  send_file(conn, file, rfile, 1);
 	  break;
 	case 'i':
 	  if (i + 1 >= argc)
 	    usage();
 	  file = argv[++i];
-	  strcpy(buf, "/tmp/moira-updateXXXXX");
-	  mktemp(buf);
+	  ibuf = strdup("/tmp/moira-updateXXXXX");
+	  if (!ibuf)
+	    {
+	      com_err(whoami, ENOMEM, "sending instructions");
+	      exit(1);
+	    }
+	  mktemp(ibuf);
 	  fprintf(stderr, "Sending instructions %s to %s as %s\n",
-		  file, host, buf);
-	  send_file(file, buf, 0);
+		  file, host, ibuf);
+	  send_file(conn, file, ibuf, 0);
 	  break;
 	case 'I':
 	  if (i + 2 >= argc)
 	    usage();
 	  file = argv[++i];
-	  rfile = argv[++i];
-	  strcpy(buf, rfile);
+	  ibuf = argv[++i];
+	  strcpy(ibuf, rfile);
 	  fprintf(stderr, "Sending instructions %s to %s as %s\n",
-		  file, host, buf);
-	  send_file(file, buf, 0);
+		  file, host, ibuf);
+	  send_file(conn, file, ibuf, 0);
 	  break;
 	case 'x':
-	  fprintf(stderr, "Executing instructions %s on %s\n", buf, host);
-	  code = execute(buf);
+	  if (!ibuf)
+	    {
+	      fprintf(stderr, "No instructions sent.");
+	      usage();
+	    }
+	  fprintf(stderr, "Executing instructions %s on %s\n", ibuf, host);
+	  code = execute(conn, ibuf);
 	  if (code)
 	    com_err(whoami, code, "executing");
 	  break;
@@ -101,7 +106,7 @@ int main(int argc, char **argv)
 	    usage();
 	  file = argv[++i];
 	  fprintf(stderr, "Executing instructions %s on %s\n", file, host);
-	  code = execute(file);
+	  code = execute(conn, file);
 	  if (code)
 	    com_err(whoami, code, "executing");
 	  break;
@@ -111,8 +116,8 @@ int main(int argc, char **argv)
 	  usage();
 	}
     }
-  send_quit();
-  conn = sever_connection(conn);
+  send_quit(conn);
+  close(conn);
   exit(code);
 }
 

@@ -1,4 +1,4 @@
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/Imakefile,v 1.9 1997-01-29 23:09:37 danw Exp $
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/Imakefile,v 1.10 1998-02-15 17:48:38 danw Exp $
 #
 # Copyright 1990 by the Massachusetts Institute of Technology.
 #
@@ -14,4 +14,4 @@ CODE=${SRCS} Imakefile
 OBJS=	mrtest.o
 LOCAL_INCLUDES= $(READLINE_INCLUDES)
 
-program(mrtest, ${OBJS},${MR_LIBDEP} ${GDB_LIBDEP}, ${READLINE_LIBS} ${CLIBS},${ETCDIR})
+program(mrtest, ${OBJS},${MR_LIBDEP}, ${READLINE_LIBS} ${CLIBS},${ETCDIR})

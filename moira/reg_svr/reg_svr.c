@@ -1,4 +1,4 @@
-/* $Id: reg_svr.c,v 1.49 1998-02-05 22:51:33 danw Exp $
+/* $Id: reg_svr.c,v 1.50 1998-02-15 17:49:09 danw Exp $
  *
  * Server for user registration with Moira and Kerberos.
  *
@@ -31,9 +31,12 @@
 
 #include "reg_svr.h"
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.49 1998-02-05 22:51:33 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.50 1998-02-15 17:49:09 danw Exp $");
 
 extern char admin_errmsg[];
+
+FILE *journal;
+char *whoami;
 
 int parse_encrypted(struct msg *message, struct db_data *data);
 int parse_encrypted(struct msg *message, struct db_data *data);

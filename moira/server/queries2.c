@@ -1,4 +1,4 @@
-/* $Id: queries2.c,v 2.31 1998-02-05 22:51:52 danw Exp $
+/* $Id: queries2.c,v 2.32 1998-02-15 17:49:22 danw Exp $
  *
  * This file defines the query dispatch table for version 2 of the protocol
  *
@@ -1659,7 +1659,7 @@ static struct valobj ashi_valobj[] = {
   {V_NAME, 0, SERVERS_TABLE, NAME, 0, MR_SERVICE},
   {V_LOCK, 0, SERVERHOSTS_TABLE, 0, MACH_ID, MR_DEADLOCK},
   {V_ID, 1, MACHINE_TABLE, NAME, MACH_ID, MR_MACHINE},
-  {V_CHAR, 0, SERVERHOSTS_TABLE, NAME},
+  {V_CHAR, 0, SERVERHOSTS_TABLE, SERVICE},
   {V_LEN, 5, SERVERHOSTS_TABLE, "value3"},
 };
 

@@ -1,4 +1,4 @@
-/* $Id: mr_server.h,v 1.32 1998-02-05 22:51:44 danw Exp $
+/* $Id: mr_server.h,v 1.33 1998-02-15 17:49:14 danw Exp $
  *
  * Copyright (C) 1987-1998 by the Massachusetts Institute of Technology
  * For copying and distribution information, please see the file
@@ -6,7 +6,7 @@
  */
 
 #include <moira.h>
-#include <mr_proto.h>
+#include <mr_private.h>
 #include <moira_site.h>
 
 #include <netinet/in.h>
@@ -15,15 +15,7 @@
 
 #include <krb.h>
 
-typedef struct returned_tuples {
-  struct returned_tuples *next;
-  OPERATION op;
-  mr_params *retval;
-} returned_tuples;
-
-/*
- * This should be in the kerberos header file.
- */
+/* This should be in the kerberos header file. */
 
 struct krbname {
   char name[ANAME_SZ];
@@ -37,53 +29,23 @@ struct krbname {
  */
 
 typedef struct _client {
-  OPERATION pending_op;		/* Primary pending operation */
-  CONNECTION con;		/* Connection to the client */
-  int action;			/* what action is pending? */
-  mr_params *args, reply;
+  int con;			/* Connection to the client */
   int id;			/* Unique id of client */
   struct sockaddr_in haddr; 	/* IP address of client */
   char clname[MAX_K_NAME_SZ];	/* Name client authenticated to */
   struct krbname kname; 	/* Parsed version of the above */
+  char entity[9];		/* client program being used */
   int users_id;			/* Moira-internal ID of authenticated user */
-  int client_id;		/* Moira-internal ID of client for modby field */
-  returned_tuples *first, *last;
+  int client_id;		/* Moira-internal ID of client */
   time_t last_time_used;	/* Last time connection used */
-  char entity[9];		/* entity on other end of the connection */
+  mr_params *tuples;		/* Tuples waiting to send back to client */
+  int ntuples;			/* Number of tuples waiting */
+  int tuplessize;		/* Current size of tuple array */
+  int nexttuple;		/* Next tuple to return */
+  int done;			/* Close up next time through loop */
 } client;
 
-/*
- * States
- */
-
-#define CL_DEAD 0
-#define CL_STARTING 1
-
-/*
- * Actions.
- */
-
-#define CL_ACCEPT 0
-#define CL_RECEIVE 1
-#define CL_SEND 2
-
-extern char *krb_realm;
-
-/*
- * Debugging options.
- */
-
-extern int log_flags;
-
-#define LOG_CONNECT		0x0001
-#define LOG_REQUESTS		0x0002
-#define LOG_ARGS		0x0004
-#define LOG_RESP		0x0008
-#define LOG_RES			0x0010
-#define LOG_VALID		0x0020
-#define LOG_SQL			0x0040
-#define LOG_GDSS		0x0080
-
+extern char krb_realm[REALM_SZ];
 
 /* max length of query argument allowed */
 #define ARGLEN	257
@@ -91,7 +53,7 @@ extern int log_flags;
 #define QMAXARGS	22
 
 /* statistics on number of queries by version number */
-extern int newqueries, oldqueries;
+extern int newqueries;
 
 /* Maximum and minimum values that will ever be chosen for IDs */
 #define MAX_ID_VALUE	31999
@@ -116,19 +78,6 @@ extern time_t inc_started, now;
 struct query;
 struct validate;
 struct valobj;
-
-/* prototypes from gdb */
-int gdb_init(void);
-int gdb_debug(int flag);
-void start_accepting_client(CONNECTION, OPERATION, CONNECTION *,
-			     char *, int *, TUPLE *);
-int initialize_operation(OPERATION, int (*init_function)(OPERATION, HALF_CONNECTION, void *),
-			 char *, int (*cancel_function)(HALF_CONNECTION, void *));
-int reset_operation(OPERATION);
-int delete_operation(OPERATION);
-int start_replying_to_client(OPERATION, CONNECTION, int, char *, char *);
-int op_select(LIST_OF_OPERATIONS, int, fd_set *, fd_set *, fd_set *,
-	      struct timeval *);
 
 /* prototypes from increment.dc */
 void incremental_init(void);
@@ -164,11 +113,14 @@ int convert_wildcards(char *arg);
 void clist_delete(client *cp);
 
 /* prototypes from mr_sauth.c */
-void do_auth(client *cl);
+void do_auth(client *cl, mr_params req);
 
 /* prototypes from mr_scall.c */
-void do_client(client *cp);
-int trigger_dcm(struct query *q, char *argv[], client *cl);
+void do_client(client *cl);
+void client_reply(client *cl, long status);
+void client_return_tuple(client *cl, int argc, char **argv);
+void client_read(client *cl);
+void client_write(client *cl);
 
 /* prototypes from mr_shutdown.c */
 void sigshut(int);
@@ -180,6 +132,8 @@ void log_args(char *tag, int version, int argc, char **argv);
 void mr_com_err(const char *whoami, long code, const char *fmt, va_list pvar);
 int mr_trim_args(int argc, char **argv);
 char **mr_copy_args(char **argv, int argc);
+void *xmalloc(size_t);
+void *xrealloc(void *, size_t);
 
 /* prototypes from qaccess.pc */
 int access_user(struct query *q, char *argv[], client *cl);
@@ -244,6 +198,7 @@ int set_nfsphys_modtime(struct query *q, char *argv[], client *cl);
 int set_filesys_modtime(struct query *q, char *argv[], client *cl);
 int set_zephyr_modtime(struct query *q, char *argv[], client *cl);
 int _sdl_followup(struct query *q, char *argv[], client *cl);
+int trigger_dcm(struct query *q, char *argv[], client *cl);
 
 /* prototypes from qsetup.pc */
 int prefetch_value(struct query *q, char *argv[], client *cl);

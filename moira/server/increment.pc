@@ -1,4 +1,4 @@
-/* $Id: increment.pc,v 2.3 1998-02-05 22:51:41 danw Exp $
+/* $Id: increment.pc,v 2.4 1998-02-15 17:49:11 danw Exp $
  *
  * Deal with incremental updates
  *
@@ -13,13 +13,14 @@
 #include "qrtn.h"
 
 #include <signal.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/increment.pc,v 2.3 1998-02-05 22:51:41 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/increment.pc,v 2.4 1998-02-15 17:49:11 danw Exp $");
 
 extern char *whoami;
 extern char *table_name[];

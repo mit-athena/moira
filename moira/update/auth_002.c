@@ -1,4 +1,4 @@
-/* $Id: auth_002.c,v 1.7 1998-02-05 22:51:57 danw Exp $
+/* $Id: auth_002.c,v 1.8 1998-02-15 17:49:26 danw Exp $
  *
  * Copyright (C) 1988-1998 by the Massachusetts Institute of Technology.
  * For copying and distribution information, please see the file
@@ -14,19 +14,14 @@
 #include <errno.h>
 #include <stdio.h>
 
-#include <gdb.h>
 #include <krb.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/auth_002.c,v 1.7 1998-02-05 22:51:57 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/auth_002.c,v 1.8 1998-02-15 17:49:26 danw Exp $");
 
-extern char buf[BUFSIZ];
-extern int have_authorization;
-extern CONNECTION conn;
-extern int code;
 static char service[] = "rcmd";
 static char master[] = "sms";
 static char qmark[] = "???";
-extern C_Block session;
+extern des_cblock session;
 
 /*
  * authentication request auth_002:
@@ -41,30 +36,32 @@ extern C_Block session;
  *
  */
 
-int auth_002(char *str)
+void auth_002(int conn, char *str)
 {
-  STRING data;
   char aname[ANAME_SZ], ainst[INST_SZ], arealm[REALM_SZ];
   AUTH_DAT ad;
-  char *p, *first;
+  char *p, *first, *data;
+  size_t size;
   KTEXT_ST ticket_st;
-  struct utsname name;
   des_key_schedule sched;
-  C_Block nonce, nonce2;
+  des_cblock nonce, nonce2;
+  long code;
 
-  if (send_ok())
-    lose("sending okay for authorization (auth_002)");
-  code = receive_object(conn, (char *)&data, STRING_T);
-  if (code)
+  send_ok(conn);
+  
+  recv_string(conn, &data, &size);
+  if (size > sizeof(ticket_st.dat))
     {
-      code = connection_errno(conn);
-      lose("awaiting Kerberos authenticators");
+      code = KE_RD_AP_UNDEC;
+      com_err(whoami, code, ": authenticator too large");
+      send_int(conn, code);
+      return;
     }
-  uname(&name);
+  memcpy(ticket_st.dat, data, size);
+  free(data);
   ticket_st.mbz = 0;
-  ticket_st.length = MAX_STRING_SIZE(data);
-  memcpy(ticket_st.dat, STRING_DATA(data), MAX_STRING_SIZE(data));
-  code = krb_rd_req(&ticket_st, service, krb_get_phost(name.nodename), 0,
+  ticket_st.length = size;
+  code = krb_rd_req(&ticket_st, service, krb_get_phost(hostname), 0,
 		    &ad, KEYFILE);
   if (code)
     {
@@ -106,41 +103,26 @@ int auth_002(char *str)
       strcmp(arealm, ad.prealm))
     goto auth_failed;
 
-  if (send_ok())
-    lose("sending preliminary approval of authorization");
+  send_ok(conn);
 
   /* replay protection */
   des_random_key(&nonce);
-  STRING_DATA(data) = (char *)nonce;
-  MAX_STRING_SIZE(data) = 8;
-  if (send_object(conn, (char *)&data, STRING_T))
-    lose("sending nonce");
-  code = receive_object(conn, (char *)&data, STRING_T);
-  if (code)
-    {
-      code = connection_errno(conn);
-      goto auth_failed;
-    }
+  send_string(conn, (char *)nonce, sizeof(nonce));
+  recv_string(conn, &data, &size);
   des_key_sched(ad.session, sched);
-  des_ecb_encrypt(STRING_DATA(data), nonce2, sched, 0);
+  des_ecb_encrypt(data, nonce2, sched, 0);
+  free(data);
   if (memcmp(nonce, nonce2, sizeof(nonce)))
     goto auth_failed;
+  send_ok(conn);
 
-  if (send_ok())
-    lose("sending approval of authorization");
   have_authorization = 1;
   /* Stash away session key */
   memcpy(session, ad.session, sizeof(session));
-  return 0;
+  return;
+
 auth_failed:
-  sprintf(buf, "auth for %s.%s@%s failed: %s",
-	  ad.pname, ad.pinst, ad.prealm, error_message(code));
-  {
-    int rc;
-    rc = send_object(conn, (char *)&code, INTEGER_T);
-    code = rc;
-  }
-  if (code)
-    lose("sending rejection of authenticator");
-  return EPERM;
+  com_err(whoami, code, "auth for %s.%s@%s failed",
+	  ad.pname, ad.pinst, ad.prealm);
+  send_int(conn, code);
 }

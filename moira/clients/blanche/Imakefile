@@ -1,4 +1,4 @@
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/Imakefile,v 1.2 1991-03-21 10:58:19 mar Exp $
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/Imakefile,v 1.3 1998-02-15 17:48:35 danw Exp $
 #
 # Copyright 1990 by the Massachusetts Institute of Technology.
 #
@@ -13,4 +13,4 @@ SRCDIR=${SRCTOP}/clients/blanche
 CODE=${SRCS} Imakefile
 OBJS=blanche.o
 
-program(blanche,${OBJS},${MR_LIBDEP} ${GDB_LIBDEP}, ${CLIBS},${PROGDIR})
+program(blanche,${OBJS},${MR_LIBDEP}, ${CLIBS},${PROGDIR})

@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_connect.c,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_connect.c,v 1.12 1989-10-06 19:07:42 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_connect.c,v 1.13 1990-02-05 12:48:18 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -12,7 +12,7 @@
  */
 
 #ifndef lint
-static char *rcsid_sms_connect_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_connect.c,v 1.12 1989-10-06 19:07:42 mar Exp $";
+static char *rcsid_sms_connect_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_connect.c,v 1.13 1990-02-05 12:48:18 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -23,25 +23,44 @@ static char *rcsid_sms_connect_c = "$Header: /afs/.athena.mit.edu/astaff/project
 static char *sms_server_host = 0;
 
 /*
- * Open a connection to the sms server.
+ * Open a connection to the sms server.  Looks for the server name
+ * 1) passed as an argument, 2) in environment variable, 3) by hesiod
+ * 4) compiled in default (from sms_app.h).
  */
 
 int sms_connect(server)
 char *server;
 {
     extern int errno;
-    char *p;
+    char *p, **pp, sbuf[256];
+    extern char *getenv(), **hes_resolve();
 	
     if (!sms_inited) sms_init();
     if (_sms_conn) return SMS_ALREADY_CONNECTED;
 		
-    /* 
-     * XXX should do a hesiod call to find the sms machine name & service
-     * number/name.
-     */
+    if (!server || (strlen(server) == 0)) {
+	server = getenv("MOIRASERVER");
+    }
+
+#ifdef HESIOD
+    if (!server || (strlen(server) == 0)) {
+	pp = hes_resolve("moira", "sloc");
+	if (pp) server = *pp;
+    }
+#endif HESIOD
+
+    if (!server || (strlen(server) == 0)) {
+	server = SMS_SERVER;
+    }
+
+    if (!index(server, ':')) {
+	p = index(SMS_SERVER, ':');
+	p++;
+	sprintf(sbuf, "%s:%s", server, p);
+	server = sbuf;
+    }
+
     errno = 0;
-    if (!server || (strlen(server) == 0))
-      server = SMS_SERVER;
     _sms_conn = start_server_connection(server, ""); 
     if (_sms_conn == NULL)
 	return errno;

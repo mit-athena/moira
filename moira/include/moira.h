@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/include/moira.h,v $
- *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/include/moira.h,v 1.18 1991-03-08 11:04:08 mar Exp $
+ *	$Author: danw $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/include/moira.h,v 1.19 1997-01-20 18:04:14 danw Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
@@ -103,5 +103,9 @@ char *strsave();
 char *strtrim();
 char *canonicalize_hostname();
 #endif  /* __STDC__ */
+
+/* error-name backward compatibility */
+#define MR_INGRES_ERR		MR_DBMS_ERR
+#define MR_INGRES_SOFTFAIL	MR_DBMS_SOFTFAIL
 
 #endif /* _moira_h_ */		/* Do Not Add Anything after this line. */

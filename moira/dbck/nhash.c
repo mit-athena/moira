@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/nhash.c,v 1.2 1997-01-20 18:20:14 danw Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/nhash.c,v 1.3 1997-01-29 23:13:11 danw Exp $
  *
  * Generic hash table routines.  Uses integer keys to store integer values.
  *
@@ -9,6 +9,7 @@
 
 #include <mit-copyright.h>
 #include <ctype.h>
+#include <stdlib.h>
 /* #include <moira.h> */
 
 struct int_bucket {
@@ -21,9 +22,9 @@ struct int_hash {
     struct int_bucket **data;
 };
 
-extern char *malloc();
-
+#ifndef NULL
 #define NULL 0
+#endif
 #define int_hash_func(h, key) (key >= 0 ? (key % h->size) : (-key % h->size))
 
 /* Create an int_hash table.  The size is just a hint, not a maximum. */

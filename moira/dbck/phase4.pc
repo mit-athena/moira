@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase4.dc,v 1.6 1997-01-20 18:20:23 danw Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase4.pc,v 1.1 1997-01-29 23:13:20 danw Exp $
  *
  *  (c) Copyright 1988 by the Massachusetts Institute of Technology.
  *  For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
 #include "dbck.h"
 EXEC SQL INCLUDE sqlca;
 
-static char phase4_qc_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase4.dc,v 1.6 1997-01-20 18:20:23 danw Exp $";
+static char phase4_qc_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase4.pc,v 1.1 1997-01-29 23:13:20 danw Exp $";
 
 EXEC SQL WHENEVER SQLERROR DO dbmserr();
 

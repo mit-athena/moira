@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/dbck.h,v 1.7 1997-01-20 18:20:12 danw Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/dbck.h,v 1.8 1997-01-29 23:13:05 danw Exp $
  *
  * Declarations for Moira database consistancy checker
  *
@@ -10,7 +10,9 @@
 #include <moira_site.h>
 #include <mit-copyright.h>
 
-#define NULL 0
+#ifndef NULL
+#define NULL ((void*)0)
+#endif
 
 #define MODE_ASK 1
 #define MODE_NO 2

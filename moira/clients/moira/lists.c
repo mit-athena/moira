@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v 1.26 1993-10-22 16:12:18 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v 1.27 1994-08-03 19:42:26 tytso Exp $";
 #endif lint
 
 /*	This is the file lists.c for the MOIRA Client, which allows a nieve
@@ -10,8 +10,8 @@
  *	By:		Chris D. Peterson
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v $
- *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v 1.26 1993-10-22 16:12:18 mar Exp $
+ *      $Author: tytso $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v 1.27 1994-08-03 19:42:26 tytso Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -360,6 +360,7 @@ char **argv;
 {
     static char *info[MAX_ARGS_SIZE], **add_args;
     int status, ret_code = SUB_NORMAL;
+    struct qelem *elem = NULL;
 
     if (!ValidName(argv[1]))
       return(DM_NORMAL);
@@ -373,6 +374,16 @@ char **argv;
 	return(SUB_ERROR);
     }
 
+    if (do_mr_query("get_user_account_by_login", 1, argv + 1,
+		    StoreInfo, (char *) &elem) == 0) {
+	    Put_message("A user by that name already exists in the database.");
+	    Loop(QueueTop(elem), FreeInfo);
+	    FreeQueue(elem);
+	    if (YesNoQuestion("Crate a list with the same name",
+			      FALSE) != TRUE)
+		    return(SUB_ERROR);
+    }
+    
     if ((add_args = AskListInfo(SetDefaults(info,argv[1]), FALSE)) == NULL) {
 	Put_message("Aborted.");
 	return(SUB_ERROR);

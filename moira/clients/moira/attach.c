@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.7 1988-07-29 18:33:54 kit Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.8 1988-08-07 17:03:22 qjb Exp $";
 #endif
 
 /*	This is the file attach.c for the SMS Client, which allows a nieve
@@ -12,8 +12,8 @@
  *	By:		Chris D. Peterson
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v $
- *      $Author: kit $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.7 1988-07-29 18:33:54 kit Exp $
+ *      $Author: qjb $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.8 1988-08-07 17:03:22 qjb Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -95,21 +95,21 @@ char *name;
     switch (type) {
     case LABEL:
 	if ( (stat = sms_query("get_filesys_by_label", 1, &name,
-			       StoreInfo, &elem)) != 0) {
+			       StoreInfo, (char *)&elem)) != 0) {
 	    com_err(program_name, stat, NULL);
 	    return(NULL);
 	}
 	break;
     case MACHINE:
 	if ( (stat = sms_query("get_filesys_by_machine", 1, &name,
-			       StoreInfo, &elem)) != 0) {
+			       StoreInfo, (char *)&elem)) != 0) {
 	    com_err(program_name, stat, NULL);
 	    return(NULL);
 	}
 	break;
     case GROUP:
 	if ( (stat = sms_query("get_filesys_by_group", 1, &name,
-			       StoreInfo, &elem)) != 0) {
+			       StoreInfo, (char *)&elem)) != 0) {
 	    com_err(program_name, stat, NULL);
 	    return(NULL);
 	}
@@ -118,7 +118,8 @@ char *name;
 	args[ALIAS_NAME] = name;
 	args[ALIAS_TYPE] = FS_ALIAS_TYPE;
 	args[ALIAS_TRANS] = "*";
-	if ( (stat = sms_query("get_alias", 3, args, StoreInfo, &elem)) != 0) {
+	if ( (stat = sms_query("get_alias", 3, args, StoreInfo, 
+			       (char *) &elem)) != 0) {
 	    com_err(program_name, stat, " in get_alias.");
 	    return(NULL);
 	}
@@ -445,7 +446,8 @@ char **argv;
  * print out values, free memory used and then exit.
  */
 
-    if ( (stat = sms_query("get_alias", 3, args, StoreInfo, &elem)) == 0) {
+    if ( (stat = sms_query("get_alias", 3, args, StoreInfo, 
+			   (char *)&elem)) == 0) {
 	top = elem = QueueTop(elem);
 	while (elem != NULL) {
 	    info = (char **) elem->q_data;	    

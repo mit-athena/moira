@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/cluster.c,v 1.7 1988-07-29 18:34:27 kit Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/cluster.c,v 1.8 1988-08-07 17:02:46 qjb Exp $";
 #endif lint
 
 /*	This is the file cluster.c for the SMS Client, which allows a nieve
@@ -10,8 +10,8 @@
  *	By:		Chris D. Peterson
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/cluster.c,v $
- *      $Author: kit $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/cluster.c,v 1.7 1988-07-29 18:34:27 kit Exp $
+ *      $Author: qjb $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/cluster.c,v 1.8 1988-08-07 17:02:46 qjb Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -187,14 +187,14 @@ char * name1, *name2;
     switch (type) {
     case MACHINE:
 	if ( (stat = sms_query("get_machine", 1, &name1,
-			       StoreInfo, &elem)) != 0) {
+			       StoreInfo, (char *)&elem)) != 0) {
 	    com_err(program_name, stat, " in get_machine.");
 	    return(NULL);
 	}
 	break;
     case CLUSTER:
 	if ( (stat = sms_query("get_cluster",  1, &name1,
-			       StoreInfo, &elem)) != 0) {
+			       StoreInfo, (char *)&elem)) != 0) {
 	    com_err(program_name, stat, " in get_cluster.");
 	    return(NULL);
 	}
@@ -203,7 +203,7 @@ char * name1, *name2;
 	args[MAP_MACHINE] = name1;
 	args[MAP_CLUSTER] = name2;
 	if ( (stat = sms_query("get_machine_to_cluster_map", 2, args,
-			       StoreInfo, &elem)) != 0) {
+			       StoreInfo, (char *)&elem)) != 0) {
 	    com_err(program_name, stat, " in get_machine_to_cluster_map.");
 	    return(NULL);
 	}
@@ -212,7 +212,7 @@ char * name1, *name2;
 	args[CD_NAME] = name1;
 	args[CD_LABEL] = name2;
 	if ( (stat = sms_query("get_cluster_data", 2, args,
-			       StoreInfo, &elem)) != 0) {
+			       StoreInfo, (char *)&elem)) != 0) {
 	    com_err(program_name, stat, " in get_cluster_data.");
 	    return(NULL);
 	}
@@ -436,7 +436,7 @@ Bool ask_user;
     args[0] = name;
     args[1] = "*";
     stat = sms_query("get_machine_to_cluster_map", 2, args, 
-			 StoreInfo, &elem);
+			 StoreInfo, (char *)&elem);
     if (stat && stat != SMS_NO_MATCH) {
 	com_err(program_name, stat, " in get_machine_to_cluster_map.");
 	return(DM_NORMAL);
@@ -672,7 +672,7 @@ char ** argv;
     args[MAP_END] = NULL;
 
     stat = sms_query("get_machine_to_cluster_map", CountArgs(args), args,
-		     StoreInfo, &elem);
+		     StoreInfo, (char *)&elem);
     if (stat == SMS_NO_MATCH) {
 	sprintf(buf, "The machine %s is not is the cluster %s.",
 		args[MAP_MACHINE], args[MAP_CLUSTER]);
@@ -818,7 +818,7 @@ Bool ask_first;
     args[MAP_MACHINE] = "*";
     args[MAP_CLUSTER] = name;
     stat = sms_query("get_machine_to_cluster_map", 2, args, 
-			 StoreInfo, &elem);
+			 StoreInfo, (char *)&elem);
     if (stat && stat != SMS_NO_MATCH) {
 	com_err(program_name, stat, " in get_machine_to_cluster_map.");
 	return(DM_NORMAL);

@@ -5,12 +5,12 @@
  * and distribution information, see the file "mit-copyright.h". 
  *
  * $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrcheck/mrcheck.c,v $
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrcheck/mrcheck.c,v 1.4 1989-08-28 23:23:36 mar Exp $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrcheck/mrcheck.c,v 1.5 1990-02-14 11:35:19 mar Exp $
  * $Author: mar $
  */
 
 #ifndef lint
-static char *rcsid_chsh_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrcheck/mrcheck.c,v 1.4 1989-08-28 23:23:36 mar Exp $";
+static char *rcsid_chsh_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrcheck/mrcheck.c,v 1.5 1990-02-14 11:35:19 mar Exp $";
 #endif	lint
 
 #include <stdio.h>
@@ -90,7 +90,7 @@ main(argc, argv)
 	usage();
     }
 
-    status = sms_connect(SMS_SERVER);
+    status = sms_connect(NULL);
     if (status) {
 	(void) sprintf(buf, "\nConnection to the Moira server failed.");
 	goto punt;

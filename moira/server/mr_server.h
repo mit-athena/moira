@@ -1,4 +1,4 @@
-/* $Id: mr_server.h,v 1.34 1998-02-23 19:24:32 danw Exp $
+/* $Id: mr_server.h,v 1.35 1998-03-18 23:25:47 danw Exp $
  *
  * Copyright (C) 1987-1998 by the Massachusetts Institute of Technology
  * For copying and distribution information, please see the file
@@ -99,7 +99,7 @@ int set_krb_mapping(char *name, char *login, int ok, int *kid, int *uid);
 int find_member(char *list_type, int list_id, client *cl);
 int do_for_all_rows(char *query, int count,
 		    int (*action)(int, char *[], void *), void *actarg);
-void build_qual(char *fmt, int argc, char *argv[], char *qual);
+char *build_qual(char *fmt, int argc, char *argv[]);
 
 
 /* prototyoes from qsupport.dc */

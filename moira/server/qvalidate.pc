@@ -1,4 +1,4 @@
-/* $Id: qvalidate.pc,v 2.13 1998-03-17 21:35:58 danw Exp $
+/* $Id: qvalidate.pc,v 2.14 1998-03-18 23:25:52 danw Exp $
  *
  * Argument validation routines
  *
@@ -20,7 +20,7 @@
 EXEC SQL INCLUDE sqlca;
 EXEC SQL INCLUDE sqlda;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qvalidate.pc,v 2.13 1998-03-17 21:35:58 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qvalidate.pc,v 2.14 1998-03-18 23:25:52 danw Exp $");
 
 extern char *whoami, *table_name[], *sqlbuffer[QMAXARGS];
 extern int dbms_errno, mr_errcode;
@@ -37,7 +37,6 @@ int validate_type(char *argv[], struct valobj *vo);
 int validate_typedata(struct query *, char *argv[], struct valobj *vo);
 int validate_len(char *argv[], struct valobj *vo);
 int validate_num(char *argv[], struct valobj *vo);
-int convert_wildcards_uppercase(char *arg);
 
 extern SQLDA *sqlald(int, int, int);
 SQLDA *mr_alloc_sqlda(void);
@@ -49,17 +48,18 @@ EXEC SQL WHENEVER SQLERROR DO dbmserr();
 int validate_row(struct query *q, char *argv[], struct validate *v)
 {
   EXEC SQL BEGIN DECLARE SECTION;
-  char qual[128];
   int rowcount;
   EXEC SQL END DECLARE SECTION;
+  char *qual;
 
   /* build where clause */
-  build_qual(v->qual, v->argc, argv, qual);
+  qual = build_qual(v->qual, v->argc, argv);
 
   /* look for the record */
   sprintf(stmt_buf, "SELECT COUNT (*) FROM %s WHERE %s",
 	  table_name[q->rtable], qual);
   dosql(sqlbuffer);
+  free(qual);
   if (dbms_errno)
     return mr_errcode;
 
@@ -110,15 +110,6 @@ int validate_fields(struct query *q, char *argv[], struct valobj *vo, int n)
 	case V_NUM:
 	  status = validate_num(argv, vo);
 	  break;
-
-        case V_WILD:
-	  status = convert_wildcards(argv[vo->index]);
-	  break;
-
-	case V_UPWILD:
-	  status = convert_wildcards_uppercase(argv[vo->index]);
-	  break;
-
 	}
 
       if (status != MR_EXISTS)
@@ -548,90 +539,6 @@ SQLDA *mr_alloc_sqlda(void)
 
   return it;
 }
-
-
-/* Convert normal Unix-style wildcards to SQL voodoo */
-int convert_wildcards(char *arg)
-{
-  static char buffer[ARGLEN];
-  char *s, *d;
-
-  for (d = buffer, s = arg; *s; s++)
-    {
-      switch (*s)
-	{
-	case '*':
-	  *d++ = '%';
-	  *d++ = '%';
-	  break;
-	case '?':
-	  *d++ = '_';
-	  break;
-	case '_':
-	  *d++ = '*';
-	  *d++ = *s;
-	  break;
-	case '%':
-	  *d++ = '*';
-	  *d++ = '%';
-	  *d++ = '%';
-	  break;
-	default:
-	  *d++ = *s;
-	  break;
-	}
-    }
-  *d = '\0';
-
-  /* Copy back into argv */
-  strcpy(arg, buffer);
-
-  return MR_EXISTS;
-}
-
-/* This version includes uppercase conversion, for things like gmac.
- * This is necessary because "LIKE" doesn't work with "uppercase()".
- * Including it in a wildcard routine saves making two passes over
- * the argument string.
- */
-int convert_wildcards_uppercase(char *arg)
-{
-  static char buffer[ARGLEN];
-  char *s, *d;
-
-  for (d = buffer, s = arg; *s; s++)
-    {
-      switch (*s)
-	{
-	case '*':
-	  *d++ = '%';
-	  *d++ = '%';
-	  break;
-	case '?':
-	  *d++ = '_';
-	  break;
-	case '_':
-	  *d++ = '*';
-	  *d++ = *s;
-	  break;
-	case '%':
-	  *d++ = '*';
-	  *d++ = '%';
-	  *d++ = '%';
-	  break;
-	default:
-	  *d++ = toupper(*s);       /* This is the only diff. */
-	  break;
-	}
-    }
-  *d = '\0';
-
-  /* Copy back into argv */
-  strcpy(arg, buffer);
-
-  return MR_EXISTS;
-}
-
 
 /*  Adds a string to the string table.  Returns the id number.
  *

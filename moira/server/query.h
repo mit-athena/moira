@@ -1,4 +1,4 @@
-/* $Id: query.h,v 2.10 1998-03-17 21:35:57 danw Exp $
+/* $Id: query.h,v 2.11 1998-03-18 23:25:52 danw Exp $
  *
  * Structures and constants used in the query dispatch table
  *
@@ -51,7 +51,7 @@ struct validate
 
 /* Validated Object Types */
 enum vo_type {V_NAME, V_ID, V_TYPE, V_TYPEDATA, V_RENAME, V_CHAR,
-	      V_WILD, V_UPWILD, V_LEN, V_NUM};
+	      V_LEN, V_NUM};
 
 /* Validated Object Definition */
 struct valobj

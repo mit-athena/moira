@@ -1,7 +1,7 @@
 /*
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/requests.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/requests.c,v 1.4 1990-03-19 19:30:07 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/requests.c,v 1.5 1992-05-13 13:19:49 mar Exp $
  *
  *      Copyright (C) 1987, 1988 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -14,7 +14,7 @@
  */
 
 #ifndef lint
-static char *rcsid_requests_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/requests.c,v 1.4 1990-03-19 19:30:07 mar Exp $";
+static char *rcsid_requests_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/requests.c,v 1.5 1992-05-13 13:19:49 mar Exp $";
 #endif lint
 
 /*
@@ -399,4 +399,10 @@ parse_pkt(packet, pktlen, message)
 	com_err(whoami,status," - parse packet failed.");
 
     return status;
+}
+
+
+u_long cur_req_sender()
+{
+    return (CUR_REQ.ip_address);
 }

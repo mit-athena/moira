@@ -1,14 +1,14 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v 1.16 1988-07-11 18:22:27 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v 1.17 1988-07-23 19:24:32 mar Exp $
  *
  *	Copyright (C) 1987, 1988 by the Massachusetts Institute of Technology
  * 
  */
 
 #ifndef lint
-static char *rcsid_qrtn_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v 1.16 1988-07-11 18:22:27 mar Exp $";
+static char *rcsid_qrtn_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v 1.17 1988-07-23 19:24:32 mar Exp $";
 #endif lint
 
 #include "query.h"
@@ -22,6 +22,7 @@ extern FILE *journal;
 
 #define INGRES_BAD_INT 4111
 #define INGRES_BAD_DATE 4302
+#define INGRES_DEADLOCK 4700
 
 /*
  * ingerr: (supposedly) called when Ingres indicates an error.
@@ -40,6 +41,9 @@ static int ingerr(num)
 	break;
     case INGRES_BAD_DATE:
 	ingres_errno = SMS_DATE;
+	break;
+    case INGRES_DEADLOCK:
+	ingres_errno = SMS_DEADLOCK;
 	break;
     default:
 	ingres_errno = SMS_INGRES_ERR;
@@ -669,7 +673,7 @@ do_update(q, argv, qual, action, actarg)
 ##  where cqual
 
 ##  inquire_equel (errorno = "errorno")
-    if (errorno == 4111)
+    if (errorno == INGRES_BAD_INT)
 	return(SMS_INTEGER);
     else if (errorno != 0)
 	return(SMS_INGRES_ERR);

@@ -76,6 +76,7 @@ typedef int sigreturn_t;
 #endif
 sigreturn_t catch();
 
+#if !(defined(mips) && defined(SYSTYPE_SYSV))
 struct sigvec sig_vec = {
 	catch,
 	 (1<<(SIGINT -1))

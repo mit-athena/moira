@@ -1,6 +1,6 @@
 /*
  *
- * ptdump: Program to dump the AFS protection server database
+ * pt_util: Program to dump the AFS protection server database
  *         into an ascii file.
  *
  *	Assumptions: We *cheat* here and read the datafile directly, ie.
@@ -145,19 +145,19 @@ char **argv;
 	}
     }
     if ((dbase_fd = open(pfile, wflag ? O_RDWR : O_RDONLY, 0600)) < 0) {
-	fprintf(stderr, "ptdump: cannot open %s: %s\n",
+	fprintf(stderr, "pt_util: cannot open %s: %s\n",
 		pfile, sys_errlist[errno]);
 	exit (1);
     }
     if (read(dbase_fd, buffer, HDRSIZE) < 0) {
-	fprintf(stderr, "ptdump: error reading %s: %s\n",
+	fprintf(stderr, "pt_util: error reading %s: %s\n",
 		pfile, sys_errlist[errno]);
 	exit (1);
     }
 
     if (dfile) {
 	if ((dfp = fopen(dfile, wflag ? "r" : "w")) == 0) {
-	    fprintf(stderr, "ptdump: error opening %s: %s\n",
+	    fprintf(stderr, "pt_util: error opening %s: %s\n",
 		    dfile, sys_errlist[errno]);
 	    exit(1);
 	}
@@ -166,7 +166,7 @@ char **argv;
 
     uh = (struct ubik_hdr *)buffer;
     if (ntohl(uh->magic) != UBIK_MAGIC)
-	fprintf(stderr, "ptdump: %s: Bad UBIK_MAGIC. Is %x should be %x\n",
+	fprintf(stderr, "pt_util: %s: Bad UBIK_MAGIC. Is %x should be %x\n",
 		pfile, ntohl(uh->magic), UBIK_MAGIC);
     memcpy(&uv, &uh->version, sizeof(struct ubik_version));
     if (wflag && uv.epoch==0 && uv.counter==0) {
@@ -174,7 +174,7 @@ char **argv;
 	memcpy(&uh->version, &uv, sizeof(struct ubik_version));
 	lseek(dbase_fd, 0, SEEK_SET);
 	if (write(dbase_fd, buffer, HDRSIZE) < 0) {
-	    fprintf(stderr, "ptdump: error writing ubik version to %s: %s\n",
+	    fprintf(stderr, "pt_util: error writing ubik version to %s: %s\n",
 		    pfile, sys_errlist[errno]);
 	    exit (1);
 	}
@@ -182,7 +182,7 @@ char **argv;
     fprintf(stderr, "Ubik Version is: %d.%d\n",
 	    uv.epoch, uv.counter);
     if (read(dbase_fd, &prh, sizeof(struct prheader)) < 0) {
-	fprintf(stderr, "ptdump: error reading %s: %s\n",
+	fprintf(stderr, "pt_util: error reading %s: %s\n",
 		pfile, sys_errlist[errno]);
 	exit (1);
     }
@@ -288,14 +288,14 @@ char **argv;
 
     lseek (dbase_fd, 0, L_SET);		/* rewind to beginning of file */
     if (read(dbase_fd, buffer, HDRSIZE) < 0) {
-	fprintf(stderr, "ptdump: error reading %s: %s\n",
+	fprintf(stderr, "pt_util: error reading %s: %s\n",
 		pfile, sys_errlist[errno]);
 	exit (1);
     }
     uh = (struct ubik_hdr *)buffer;
     if ((uh->version.epoch != uv.epoch) ||
 	(uh->version.counter != uv.counter)) {
-	fprintf(stderr, "ptdump: Ubik Version number changed during execution.\n");
+	fprintf(stderr, "pt_util: Ubik Version number changed during execution.\n");
 	fprintf(stderr, "Old Version = %d.%d, new version = %d.%d\n",
 		uv.epoch, uv.counter, uh->version.epoch,
 		uh->version.counter);
@@ -373,7 +373,7 @@ void display_group(id)
     while (offset) {
 	lseek(dbase_fd, offset+HDRSIZE, L_SET);
 	if (read(dbase_fd, &pre, sizeof(struct prentry)) < 0) {
-	    fprintf(stderr, "ptdump: read i/o error: %s\n",
+	    fprintf(stderr, "pt_util: read i/o error: %s\n",
 		    strerror(errno));
 	    exit (1);
 	}
@@ -475,7 +475,7 @@ int id;
     while (offset) {
 	lseek(dbase_fd, offset+HDRSIZE, L_SET);
 	if (read(dbase_fd, &pre, sizeof(struct prentry)) < 0) {
-	    fprintf(stderr, "ptdump: read i/o error: %s\n",
+	    fprintf(stderr, "pt_util: read i/o error: %s\n",
 		    sys_errlist[errno]);
 	    exit (1);
 	}
@@ -505,7 +505,7 @@ struct prentry *pre;
     }
     he = (struct hash_entry *)malloc(sizeof(struct hash_entry));
     if (he == 0) {
-	fprintf(stderr, "ptdump: No Memory for internal hash table.\n");
+	fprintf(stderr, "pt_util: No Memory for internal hash table.\n");
 	exit (1);
     }
     he->h_id = id;

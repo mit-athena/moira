@@ -1,4 +1,4 @@
-/* $Id: cluster.c,v 1.39 2000-03-15 22:44:02 rbasch Exp $
+/* $Id: cluster.c,v 1.40 2000-03-29 20:47:43 zacheiss Exp $
  *
  *	This is the file cluster.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -44,7 +44,6 @@ struct mqelem *GetMCInfo(int type, char *name1, char *name2);
 char **AskMCDInfo(char **info, int type, Bool name);
 int CheckAndRemoveFromCluster(char *name, Bool ask_user);
 int CheckAndRemoveMachines(char *name, Bool ask_first);
-char *partial_canonicalize_hostname(char *s);
 
 #define MACHINE  0
 #define CLUSTER  1
@@ -983,48 +982,6 @@ int DeleteMachine(int argc, char **argv)
   FreeQueue(top);
   free(tmpname);
   return DM_NORMAL;
-}
-
-
-char *partial_canonicalize_hostname(char *s)
-{
-  char buf[256], *cp;
-  static char *def_domain = NULL;
-
-  if (!def_domain)
-    {
-      if (mr_host(buf, sizeof(buf)) == MR_SUCCESS)
-	{
-	  cp = strchr(buf, '.');
-	  if (cp)
-	    def_domain = strdup(++cp);
-	}
-      else
-	{
-	  struct hostent *hp;
-#ifdef HAVE_UNAME
-	  struct utsname name;
-	  uname(&name);
-	  hp = gethostbyname(name.nodename);
-#else
-	  char	name[256];
-	  gethostname(name, sizeof(name));
-	  name[sizeof(name)-1] = 0;
-	  hp = gethostbyname(name);
-#endif /* HAVE_UNAME */
-	  cp = strchr(hp->h_name, '.');
-	  if (cp)
-	    def_domain = strdup(++cp);
-	}
-      if (!def_domain)
-	def_domain = "";
-    }
-
-  if (strchr(s, '.') || strchr(s, '*'))
-    return s;
-  sprintf(buf, "%s.%s", s, def_domain);
-  free(s);
-  return strdup(buf);
 }
 
 

@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.7 1998-09-03 22:56:23 danw Exp $
+# $Id: Makefile.in,v 1.8 1998-11-18 19:20:52 danw Exp $
 
 SHELL=/bin/sh
 @SET_MAKE@
@@ -57,7 +57,7 @@ install: all
 	$(INSTALL_PROGRAM) startreg $(mrbindir)
 
 reg_svr: $(REG_OBJS) $(MR_LIBDEP) $(RSAREF_LIBDEP)
-	$(CC) -o $@ $(LDFLAGS) $(REG_OBJS) $(SQL_LIBS) $(LIBS)
+	$(CC) -o $@ $(LDFLAGS) $(REG_OBJS) $(LIBS) $(SQL_LIBS)
 
 startreg: $(START_OBJS)
 	$(CC) -o $@ $(LDFLAGS) $(START_OBJS) $(LIBS)

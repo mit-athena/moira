@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/startmoira.c,v $
  *	$Author: danw $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/startmoira.c,v 1.14 1997-01-29 23:27:28 danw Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/startmoira.c,v 1.15 1997-12-20 20:56:32 danw Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -13,7 +13,7 @@
  */
 
 #ifndef lint
-static char *rcsid_mr_starter_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/startmoira.c,v 1.14 1997-01-29 23:27:28 danw Exp $";
+static char *rcsid_mr_starter_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/startmoira.c,v 1.15 1997-12-20 20:56:32 danw Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -50,14 +50,15 @@ void cleanup()
 				sprintf(buf,
 					"exited with code %d\n",
 					WEXITSTATUS(stat));
-				send_zgram("startmoira", buf);
+				critical_alert("startmoira", "%s", buf);
 			}
 		}
 		if (WIFSIGNALED(stat)) {
 			sprintf(buf, "exited on signal %d%s\n",
 				WTERMSIG(stat),
 				(WCOREDUMP(stat)?"; Core dumped":0));
-			if(WCOREDUMP(stat)) send_zgram("startmoira", buf);
+			if(WCOREDUMP(stat))
+			  critical_alert("startmoira", "%s", buf);
 		}
 		write(rdpipe[1], buf, strlen(buf));
 		close(rdpipe[1]);

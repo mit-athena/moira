@@ -1,13 +1,13 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/exec_002.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/exec_002.c,v 1.13 1993-10-19 12:16:30 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/exec_002.c,v 1.14 1995-10-17 22:58:27 jweiss Exp $
  */
 /*  (c) Copyright 1988 by the Massachusetts Institute of Technology. */
 /*  For copying and distribution information, please see the file */
 /*  <mit-copyright.h>. */
 
 #ifndef lint
-static char *rcsid_exec_002_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/exec_002.c,v 1.13 1993-10-19 12:16:30 mar Exp $";
+static char *rcsid_exec_002_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/exec_002.c,v 1.14 1995-10-17 22:58:27 jweiss Exp $";
 #endif	lint
 
 #include <mit-copyright.h>
@@ -110,7 +110,13 @@ exec_002(str)
 	sigsetmask(mask);
 #endif
 #ifdef POSIX
-	if (WIFEXITED(waitb)) {
+	if ( (WIFEXITED(waitb) && (WEXITSTATUS(waitb)!=0)) || WIFSIGNALED(waitb)  ) {
+	    /* This is not really correct.  It will cause teh moira server to
+	       report a bogus error message if the script died on a signal.
+	       However this is the same thing that occurs in the non-POSIX
+	       case, and I don't know how to come up with a useful error based
+	       on the signal recieved.
+	    */
 	    n = WEXITSTATUS(waitb) + ERROR_TABLE_BASE_sms;
 	    log_priority = log_ERROR;
 	    com_err(whoami, n, " child exited with status %d",

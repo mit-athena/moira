@@ -1,6 +1,6 @@
 #
 # 	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/Makefile,v $
-#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/Makefile,v 1.12 1989-08-16 21:00:32 mar Exp $
+#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/Makefile,v 1.13 1989-10-05 17:38:08 mar Exp $
 #
 
 #
@@ -40,7 +40,7 @@ sms_update.o: ${COBJS}
 	ld -r -o sms_update.o ${COBJS}
 
 sms_untar: sms_untar.c
-	cc -o sms_untar sms_untar.c
+	cc -o sms_untar ${INCS} sms_untar.c
 
 
 clean:	

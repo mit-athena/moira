@@ -1,7 +1,7 @@
 /*
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v $
- *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.18 1988-09-13 14:45:50 mar Exp $
+ *      $Author: qjb $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.19 1988-10-03 00:18:28 qjb Exp $
  *
  *      Copyright (C) 1987, 1988 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -16,7 +16,7 @@
  */
 
 #ifndef lint
-static char *rcsid_reg_svr_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.18 1988-09-13 14:45:50 mar Exp $";
+static char *rcsid_reg_svr_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.19 1988-10-03 00:18:28 qjb Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -511,8 +511,8 @@ int reserve_user(message,retval)
 
 	/* Check the login name for validity.  The login name is currently
 	   is allowed to contain lowercase letters and numbers in any
-	   position and underscore characters and periods in any position
-	   but the first. */
+	   position and underscore characters in any position but the 
+	   first. */
 	if ((strlen(login) < MIN_UNAME) || (strlen(login) > MAX_UNAME))
 	    status = UREG_INVALID_UNAME;
     }

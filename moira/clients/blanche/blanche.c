@@ -1,4 +1,4 @@
-/* $Id: blanche.c,v 1.43 1999-12-30 17:30:33 danw Exp $
+/* $Id: blanche.c,v 1.44 2000-01-07 21:14:12 danw Exp $
  *
  * Command line oriented Moira List tool.
  *
@@ -20,11 +20,11 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.43 1999-12-30 17:30:33 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.44 2000-01-07 21:14:12 danw Exp $");
 
 struct member {
   int type;
-  char *name;
+  char *name, *tag;
 };
 
 /* It is important to membercmp that M_USER < M_LIST < M_STRING */
@@ -39,13 +39,13 @@ struct member {
 
 /* flags from command line */
 int infoflg, verbose, syncflg, memberflg, recursflg, noauth;
-int showusers, showstrings, showkerberos, showlists;
+int showusers, showstrings, showkerberos, showlists, showtags;
 int createflag, setinfo, active, public, hidden, maillist, grouplist;
 struct member *owner;
 char *desc, *newname;
 
 /* various member lists */
-struct save_queue *addlist, *dellist, *memberlist, *synclist;
+struct save_queue *addlist, *dellist, *memberlist, *synclist, *taglist;
 
 char *listname, *whoami;
 
@@ -67,7 +67,7 @@ int main(int argc, char **argv)
 {
   int status, success;
   char **arg = argv;
-  char *membervec[3];
+  char *membervec[4];
   struct member *memberstruct;
   char *server = NULL, *p;
 
@@ -82,6 +82,7 @@ int main(int argc, char **argv)
   dellist = sq_create();
   memberlist = sq_create();
   synclist = sq_create();
+  taglist = sq_create();
   whoami = argv[0];
 
   success = 1;
@@ -101,6 +102,8 @@ int main(int argc, char **argv)
 	    showlists++;
 	  else if (argis("k", "kerberos"))
 	    showkerberos++;
+	  else if (argis("t", "tags"))
+	    showtags++;
 	  else if (argis("i", "info"))
 	    infoflg++;
 	  else if (argis("n", "noauth"))
@@ -126,6 +129,18 @@ int main(int argc, char **argv)
 		  ++arg;
 		  if ((memberstruct = parse_member(*arg)))
 		    sq_save_data(addlist, memberstruct);
+		}
+	      else
+		usage(argv);
+	    }
+	  else if (argis("at", "addtagged"))
+	    {
+	      if (arg - argv < argc - 2)
+		{
+		  ++arg;
+		  if ((memberstruct = parse_member(*arg)))
+		    sq_save_data(addlist, memberstruct);
+		  memberstruct->tag = *++arg;
 		}
 	      else
 		usage(argv);
@@ -168,6 +183,18 @@ int main(int argc, char **argv)
 		  syncflg++;
 		  ++arg;
 		  get_members_from_file(*arg, synclist);
+		}
+	      else
+		usage(argv);
+	    }
+	  else if (argis("ct", "changetag"))
+	    {
+	      if (arg - argv < argc - 2)
+		{
+		  ++arg;
+		  if ((memberstruct = parse_member(*arg)))
+		    sq_save_data(taglist, memberstruct);
+		  memberstruct->tag = *++arg;
 		}
 	      else
 		usage(argv);
@@ -270,7 +297,8 @@ int main(int argc, char **argv)
 
   /* if no other options specified, turn on list members flag */
   if (!(infoflg || syncflg || createflag || setinfo ||
-	addlist->q_next != addlist || dellist->q_next != dellist))
+	addlist->q_next != addlist || dellist->q_next != dellist ||
+	taglist->q_next != taglist))
     memberflg++;
 
   /* If none of {users,strings,lists,kerberos} specified, turn them all on */
@@ -520,6 +548,7 @@ int main(int argc, char **argv)
       /* now continue adding member */
       membervec[0] = listname;
       membervec[2] = memberstruct->name;
+      membervec[3] = memberstruct->tag;
       if (verbose)
 	{
 	  printf("Adding member ");
@@ -530,7 +559,8 @@ int main(int argc, char **argv)
 	case M_ANY:
 	case M_USER:
 	  membervec[1] = "USER";
-	  status = mr_query("add_member_to_list", 3, membervec, NULL, NULL);
+	  status = mr_query("add_tagged_member_to_list", 4, membervec,
+			    NULL, NULL);
 	  if (status == MR_SUCCESS)
 	    break;
 	  else if (status != MR_USER || memberstruct->type != M_ANY)
@@ -542,7 +572,7 @@ int main(int argc, char **argv)
 	    }
 	case M_LIST:
 	  membervec[1] = "LIST";
-	  status = mr_query("add_member_to_list", 3, membervec,
+	  status = mr_query("add_tagged_member_to_list", 4, membervec,
 			    NULL, NULL);
 	  if (status == MR_SUCCESS)
 	    {
@@ -582,7 +612,7 @@ int main(int argc, char **argv)
 	    }
 
 	  membervec[1] = "STRING";
-	  status = mr_query("add_member_to_list", 3, membervec,
+	  status = mr_query("add_tagged_member_to_list", 4, membervec,
 			    NULL, NULL);
 	  if (status != MR_SUCCESS)
 	    {
@@ -593,7 +623,7 @@ int main(int argc, char **argv)
 	  break;
 	case M_KERBEROS:
 	  membervec[1] = "KERBEROS";
-	  status = mr_query("add_member_to_list", 3, membervec,
+	  status = mr_query("add_tagged_member_to_list", 4, membervec,
 			    NULL, NULL);
 	  if (status != MR_SUCCESS)
 	    {
@@ -698,6 +728,79 @@ int main(int argc, char **argv)
 	}
     }
 
+  /* Process the tag list */
+  while (sq_get_data(taglist, &memberstruct))
+    {
+      membervec[0] = listname;
+      membervec[2] = memberstruct->name;
+      membervec[3] = memberstruct->tag;
+      if (verbose)
+	{
+	  printf("Tagging member ");
+	  show_list_member(memberstruct);
+	}
+      switch (memberstruct->type)
+	{
+	case M_ANY:
+	case M_USER:
+	  membervec[1] = "USER";
+	  status = mr_query("tag_member_of_list", 4, membervec,
+			    NULL, NULL);
+	  if (status == MR_SUCCESS)
+	    break;
+	  else if ((status != MR_USER && status != MR_NO_MATCH) ||
+		   memberstruct->type != M_ANY)
+	    {
+	      com_err(whoami, status, "while changing tag on member %s of %s",
+		      memberstruct->name, listname);
+	      success = 0;
+	      break;
+	    }
+	case M_LIST:
+	  membervec[1] = "LIST";
+	  status = mr_query("tag_member_of_list", 4, membervec,
+			    NULL, NULL);
+	  if (status == MR_SUCCESS)
+	    break;
+	  else if ((status != MR_LIST && status != MR_NO_MATCH) ||
+		   memberstruct->type != M_ANY)
+	    {
+	      com_err(whoami, status, "while changing tag on member %s of %s",
+		      memberstruct->name, listname);
+	      success = 0;
+	      break;
+	    }
+	case M_STRING:
+	  membervec[1] = "STRING";
+	  status = mr_query("tag_member_of_list", 4, membervec,
+			    NULL, NULL);
+	  if (status == MR_STRING && memberstruct->type == M_ANY)
+	    {
+	      com_err(whoami, 0, " Unable to find member %s on list %s",
+		      memberstruct->name, listname);
+	      success = 0;
+	    }
+	  else if (status != MR_SUCCESS)
+	    {
+	      com_err(whoami, status, "while retagging member %s on %s",
+		      memberstruct->name, listname);
+	      success = 0;
+	    }
+	  break;
+	case M_KERBEROS:
+	  membervec[1] = "KERBEROS";
+	  status = mr_query("tag_member_of_list", 4, membervec,
+			    NULL, NULL);
+	  if (status != MR_SUCCESS)
+	    {
+	      com_err(whoami, status, "while changing tag on member %s of %s",
+		      memberstruct->name, listname);
+	      success = 0;
+	    }
+	}
+    }
+
+
   /* Display the members of the list now, if requested */
   if (memberflg)
     {
@@ -705,7 +808,8 @@ int main(int argc, char **argv)
 	recursive_display_list_members();
       else
 	{
-	  status = mr_query("get_members_of_list", 1, &listname,
+	  status = mr_query(showtags ? "get_tagged_members_of_list" :
+			    "get_members_of_list", 1, &listname,
 			    get_list_members, memberlist);
 	  if (status)
 	    com_err(whoami, status, "while getting members of list %s",
@@ -750,10 +854,12 @@ void usage(char **argv)
 	  "-NG | -notgroup");
   fprintf(stderr, "  %-39s%-39s\n", "-f  | -file filename",
 	  "-D  | -desc description");
-  fprintf(stderr, "  %-39s%-39s\n", "-n  | -noauth",
+  fprintf(stderr, "  %-39s%-39s\n", "-at | -addtagged member tag",
 	  "-O  | -owner owner");
-  fprintf(stderr, "  %-39s%-39s\n", "-db | -database host[:port]",
-	  "");
+  fprintf(stderr, "  %-39s%-39s\n", "-ct | -changetag member tag",
+	  "-t  | -tags");
+  fprintf(stderr, "  %-39s%-39s\n", "-n  | -noauth",
+	  "-db | -database host[:port]");
   exit(1);
 }
 
@@ -763,6 +869,7 @@ void usage(char **argv)
 void show_list_member(struct member *memberstruct)
 {
   char *s = "";
+  char *tag;
 
   switch (memberstruct->type)
     {
@@ -792,19 +899,23 @@ void show_list_member(struct member *memberstruct)
     }
 
   if (verbose)
-    printf("%s:%s\n", s, memberstruct->name);
+    printf("%s:%s", s, memberstruct->name);
   else
     {
       if (memberstruct->type == M_LIST)
-	printf("LIST:%s\n", memberstruct->name);
+	printf("LIST:%s", memberstruct->name);
       else if (memberstruct->type == M_KERBEROS)
-	printf("KERBEROS:%s\n", memberstruct->name);
+	printf("KERBEROS:%s", memberstruct->name);
       else if (memberstruct->type == M_STRING &&
 	       !strchr(memberstruct->name, '@'))
-	printf("STRING:%s\n", memberstruct->name);
+	printf("STRING:%s", memberstruct->name);
       else
-	printf("%s\n", memberstruct->name);
+	printf("%s", memberstruct->name);
     }
+  if (showtags && *(memberstruct->tag))
+    printf(" (%s)\n", memberstruct->tag);
+  else
+    printf("\n");
 }
 
 
@@ -932,6 +1043,10 @@ int get_list_members(int argc, char **argv, void *sq)
       break;
     }
   m->name = strdup(argv[1]);
+  if (argc == 3)
+    m->tag = strdup(argv[2]);
+  else
+    m->tag = strdup("");
   sq_save_data(q, m);
   return MR_CONT;
 }
@@ -1011,6 +1126,7 @@ struct member *parse_member(char *s)
 
   if (!(m = malloc(sizeof(struct member))))
     return NULL;
+  m->tag = strdup("");
 
   if ((p = strchr(s, ':')))
     {

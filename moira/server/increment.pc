@@ -1,4 +1,4 @@
-/* $Id: increment.pc,v 2.14 2002-02-26 09:00:14 zacheiss Exp $
+/* $Id: increment.pc,v 2.15 2002-04-30 02:19:03 zacheiss Exp $
  *
  * Deal with incremental updates
  *
@@ -20,7 +20,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/increment.pc,v 2.14 2002-02-26 09:00:14 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/increment.pc,v 2.15 2002-04-30 02:19:03 zacheiss Exp $");
 
 extern char *whoami;
 extern char *table_name[];
@@ -138,6 +138,15 @@ void incremental_before(enum tables table, char *qual, char **argv)
       strcpy(before[0], argv[0]);
       strcpy(before[1], argv[1]);
       beforec = 2;
+      break;
+    case MCNTMAP_TABLE:
+      strcpy(before[0], argv[0]);
+      strcpy(before[1], argv[1]);
+      name_to_id(before[0], MACHINE_TABLE, &id);
+      sprintf(before[2], "%d", id);
+      name_to_id(before[1], CONTAINERS_TABLE, &id);
+      sprintf(before[3], "%d", id);
+      beforec = 4;
       break;
     case SVC_TABLE:
       strcpy(before[0], argv[0]);
@@ -303,6 +312,15 @@ void incremental_after(enum tables table, char *qual, char **argv)
       strcpy(after[0], argv[0]);
       strcpy(after[1], argv[1]);
       afterc = 2;
+      break;
+    case MCNTMAP_TABLE:
+      strcpy(after[0], argv[0]);
+      strcpy(after[1], argv[1]);
+      name_to_id(after[0], MACHINE_TABLE, &id);
+      sprintf(after[2], "%d", id);
+      name_to_id(after[1], CONTAINERS_TABLE, &id);
+      sprintf(after[3], "%d", id);
+      afterc = 4;
       break;
     case SVC_TABLE:
       strcpy(after[0], argv[0]);

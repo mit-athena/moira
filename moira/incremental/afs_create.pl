@@ -17,6 +17,7 @@ $quota=1;
      "REF", "ref",
      "SW", "sw",
      "SYSTEM", "system",
+     "UROP", "urop",
      );
 
 %proc =
@@ -110,21 +111,22 @@ sub athena_proc
     # REF       <user> all system:anyuser rl
     # SW        <user> all system:swmaint all system:authuser rl
     # SYSTEM    system:administrators all system:anyuser rl
+    # UROP	<user> all <group> all system:facdev all system:authuser rl
     #
     # Notes:
     # 1. All directories also have "system:expunge ld".
 
     @acl=("system:expunge ld");
-    push(@acl,"system:facdev all") if ($type =~ /^(COURSE)/);
+    push(@acl,"system:facdev all") if ($type =~ /^(COURSE|UROP)/);
     push(@acl,"system:swmaint all") if ($type =~ /^(SW)/);
     push(@acl,"system:administrators all") if ($type =~ /^(SYSTEM)/);
     push(@acl,"$user all")
-	if ($uid != 0 && $type =~ /^(ACTIVITY|APROJ|AREF|CONTRIB|COURSE|HOMEDIR|PROJECT|REF|SW)/);
+	if ($uid != 0 && $type =~ /^(ACTIVITY|APROJ|AREF|CONTRIB|COURSE|HOMEDIR|PROJECT|REF|SW|UROP)/);
     push(@acl,"system:$group all")
-	if ($gid != 0 && $type =~ /^(ACTIVITY|APROJ|COURSE|PROJECT)/);
+	if ($gid != 0 && $type =~ /^(ACTIVITY|APROJ|COURSE|PROJECT|UROP)/);
     push(@acl,"system:$group rl") if ($gid != -1 && $type =~ /^(AREF)/);
     push(@acl,"system:authuser rl")
-	if ($type =~ /^(COURSE|SW)/);
+	if ($type =~ /^(COURSE|SW|UROP)/);
     push(@acl,"system:anyuser rl")
 	if ($type =~ /^(ACTIVITY|APROJ|CONTRIB|REF|SYSTEM)/);
 

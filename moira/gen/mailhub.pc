@@ -1,4 +1,4 @@
-/* $Id: mailhub.pc,v 1.12 2000-01-28 00:31:56 danw Exp $
+/* $Id: mailhub.pc,v 1.13 2000-06-14 21:35:05 zacheiss Exp $
  *
  * This generates the /usr/lib/aliases file for the mailhub.
  *
@@ -22,7 +22,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/mailhub.pc,v 1.12 2000-01-28 00:31:56 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/mailhub.pc,v 1.13 2000-06-14 21:35:05 zacheiss Exp $");
 
 char *whoami = "mailhub.gen";
 char *db = "moira/moira";
@@ -33,8 +33,6 @@ char *divide = "##############################################################";
 
 #define FALSE 0
 #define TRUE (!FALSE)
-
-FILE *out = stdout;
 
 struct hash *users, *machines, *strings, *lists;
 struct user {
@@ -56,10 +54,10 @@ struct list {
 };
 
 void get_info(void);
-void save_mlist(int id, void *list, void *force);
 int check_string(char *s);
 void output_login(int dummy, void *names, void *out);
-void output_mlist(int id, struct list *l);
+void output_mlist(int id, void *list, void *out);
+void output_membership(struct list *l, FILE *out);
 void put_fill(FILE *aliases, char *string);
 void do_people(void);
 
@@ -71,7 +69,9 @@ int main(int argc, char **argv)
   char filename[MAXPATHLEN], *targetfile;
   struct stat sb;
   int flag1, flag2;
+  FILE *out = stdout;
 
+  srand(tm);
   EXEC SQL CONNECT :db;
 
   if (argc == 2)
@@ -112,7 +112,7 @@ int main(int argc, char **argv)
 
   incount = 0;
   fprintf(out, "\n%s\n# Mailing lists\n%s\n\n", divide, divide);
-  hash_step(lists, save_mlist, FALSE);
+  hash_step(lists, output_mlist, out);
   fprintf(stderr, "Output %d lists\n", incount);
 
   incount = 0;
@@ -363,34 +363,6 @@ sqlerr:
 }
 
 
-void save_mlist(int id, void *list, void *force)
-{
-  struct member *m;
-  struct list *l = list, *l1;
-
-  if (l->maillist > 1 || (l->maillist == 0 && !force) ||
-      !check_string(l->name))
-    return;
-
-  /* If user group appears on list, replace with user. */
-  if (l->m && l->m->next == NULL && !strcasecmp(l->name, l->m->name))
-    {
-      l->maillist = 3;
-      return;
-    }
-  l->maillist = 2;
-  output_mlist(id, l);
-
-  if (l->acl_t == 'L' && (l1 = hash_lookup(lists, l->acl_id)))
-    save_mlist(0, l1, (void *)TRUE);
-
-  for (m = l->m; m; m = m->next)
-    {
-      if (m->list_id && (l1 = hash_lookup(lists, m->list_id)))
-	save_mlist(0, l1, (void *)TRUE);
-    }
-}
-
 void output_login(int dummy, void *user, void *out)
 {
   struct user *u = user;
@@ -400,30 +372,58 @@ void output_login(int dummy, void *user, void *out)
     fprintf(out, "%s: %s\n", u->login, u->pobox);
 }
 
-void output_mlist(int id, struct list *l)
+int line_width, alias_width;
+
+void output_mlist(int id, void *list, void *out)
 {
-  struct list *l1;
-  struct member *m;
+  struct list *l = list, *l1;
   struct user *u;
-  int line_width, alias_width, word_width, beginning;
+  int len = strlen(l->name);
+
+  if (!l->maillist || !check_string(l->name))
+    return;
+
+  /* If standard user group appears on a list, substitute in the user. */
+  if (l->m && l->m->next == NULL && !strcasecmp(l->name, l->m->name))
+    return;
+
+  put_fill(out, l->description);
+
+  if (l->acl_t ==  'L' && (l1 = hash_lookup(lists, l->acl_id)))
+    {
+      fprintf(out, "owner-%s: ", l->name);
+      if ((l1->maillist) && (strcmp(l->name, l1->name)))
+	fprintf(out, "%s\n", l1->name);
+      else
+	{
+	  alias_width = line_width = len + 8;
+	  output_membership(l1, out);
+	  fprintf(out, "\n");
+	}
+    }
+  else if (l->acl_t ==  'U' && (u = hash_lookup(users, l->acl_id)))
+    fprintf(out, "owner-%s: %s\n", l->name, u->login);
+
+  fprintf(out, "%s: ", l->name);
+  alias_width = line_width = len + 2;
+  output_membership(l, out);
+  fprintf(out, "\n\n");
+  incount++;
+}
+
+void output_membership(struct list *l, FILE *out)
+{
+  struct member *m;
+  struct list *l1;
+  int word_width, linestart = 1;
   static int cont = 1;
   char str[8];
 
-  put_fill(out, l->description);
-  if (l->acl_t ==  'L' && (l1 = hash_lookup(lists, l->acl_id)))
-    fprintf(out, "owner-%s: %s\n%s: ", l->name, l1->name, l->name);
-  else if (l->acl_t ==  'U' && (u = hash_lookup(users, l->acl_id)))
-    fprintf(out, "owner-%s: %s\n%s: ", l->name, u->login, l->name);
-  else
-    fprintf(out, "%s: ", l->name);
-
-  alias_width = line_width = strlen(l->name) + 2;
-  beginning = 1;
   for (m = l->m; m; m = m->next)
     {
       word_width = strlen(m->name);
 
-      if (!beginning && alias_width + word_width + 2 > MAX_ALIAS_WIDTH)
+      if (!linestart && alias_width + word_width + 2 > MAX_ALIAS_WIDTH)
 	{
 	  /* Make a continuation. */
 	  sprintf(str, "%c%c%c%c%c%c", rand() % 26 + 97, rand() % 26 + 97,
@@ -432,20 +432,18 @@ void output_mlist(int id, struct list *l)
 	  fprintf(out, ",\n\tcont%d-%s\ncont%d-%s: ", cont, str, cont, str);
 	  cont++;
 	  alias_width = line_width = 17 + word_width;
-	  fputs(m->name, out);
 	}
-      else if (beginning)
+      else if (linestart)
 	{
-	  /* Beginning of alias, so don't wrap. */
+	  /* First word on line, so we can't wrap. */
 	  line_width += word_width;
 	  alias_width = line_width;
-	  fputs(m->name, out);
-	  beginning = 0;
+	  linestart = 0;
 	}
       else if (line_width + word_width + 2 > MAX_LINE_WIDTH)
 	{
 	  /* Wrap. */
-	  fprintf(out, ",\n\t%s", m->name);
+	  fputs(",\n\t", out);
 	  alias_width += line_width + word_width + 2;
 	  line_width = word_width + 8;
 	}
@@ -453,13 +451,16 @@ void output_mlist(int id, struct list *l)
 	{
 	  /* Continue line. */
 	  line_width += word_width + 2;
-	  fprintf(out, ", %s", m->name);
+	  fputs(", ", out);
 	}
+
+      if (m->list_id && (l1 = hash_lookup(lists, m->list_id)) && !l1->maillist)
+	output_membership(l1, out);
+      else
+	fputs(m->name, out);
     }
   if (!l->m)
     fprintf(out, "/dev/null");
-  fprintf(out, "\n\n");
-  incount++;
 }
 
 /* Write a word-wrapped list description to the aliases file as a

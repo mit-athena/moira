@@ -1,21 +1,21 @@
 /*
- * Verify that all SMS updates are successful
+ * Verify that all MOIRA updates are successful
  *
  * Copyright 1988 by the Massachusetts Institute of Technology. For copying
  * and distribution information, see the file "mit-copyright.h". 
  *
  * $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrcheck/mrcheck.c,v $
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrcheck/mrcheck.c,v 1.5 1990-02-14 11:35:19 mar Exp $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrcheck/mrcheck.c,v 1.6 1990-03-17 17:16:20 mar Exp $
  * $Author: mar $
  */
 
 #ifndef lint
-static char *rcsid_chsh_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrcheck/mrcheck.c,v 1.5 1990-02-14 11:35:19 mar Exp $";
+static char *rcsid_chsh_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrcheck/mrcheck.c,v 1.6 1990-03-17 17:16:20 mar Exp $";
 #endif	lint
 
 #include <stdio.h>
-#include <sms.h>
-#include <sms_app.h>
+#include <moira.h>
+#include <moira_site.h>
 #include "mit-copyright.h"
 
 char *malloc(), *rindex(), *strsave();
@@ -47,7 +47,7 @@ struct save_queue *sq;
     printf("Service %s, error %s: %s\n\tlast success %s, last try %s\n",
 	   argv[0], argv[9], argv[10], tmp, atot(argv[5]));
     free(tmp);
-    return(SMS_CONT);
+    return(MR_CONT);
 }
 
 ghost(argc, argv, sq)
@@ -61,7 +61,7 @@ struct save_queue *sq;
     printf("Host %s:%s, error %s: %s\n\tlast success %s, last try %s\n",
 	   argv[0], argv[1], argv[6], argv[7], tmp, atot(argv[8]));
     free(tmp);
-    return(SMS_CONT);
+    return(MR_CONT);
 }
 
 save_args(argc, argv, sq)
@@ -70,7 +70,7 @@ char **argv;
 struct save_queue *sq;
 {
     sq_save_args(argc, argv, sq);
-    return(SMS_CONT);
+    return(MR_CONT);
 }
 
 main(argc, argv)
@@ -90,23 +90,23 @@ main(argc, argv)
 	usage();
     }
 
-    status = sms_connect(NULL);
+    status = mr_connect(NULL);
     if (status) {
 	(void) sprintf(buf, "\nConnection to the Moira server failed.");
 	goto punt;
     }
 
-    status = sms_motd(&motd);
+    status = mr_motd(&motd);
     if (status) {
         com_err(whoami, status, " unable to check server status");
 	exit(2);
     }
     if (motd) {
 	fprintf(stderr, "The Moira server is currently unavailable:\n%s\n", motd);
-	sms_disconnect();
+	mr_disconnect();
 	exit(2);
     }
-    status = sms_auth("mrcheck");
+    status = mr_auth("mrcheck");
     if (status) {
 	(void) sprintf(buf, "\nAuthorization failure -- run \"kinit\" \
 and try again");
@@ -116,30 +116,30 @@ and try again");
     services = sq_create();
     args[0] = args[2] = "TRUE";
     args[1] = "DONTCARE";
-    if ((status = sms_query("qualified_get_server", 3, args, save_args,
+    if ((status = mr_query("qualified_get_server", 3, args, save_args,
 			    (char *)services)) &&
-	status != SMS_NO_MATCH)
+	status != MR_NO_MATCH)
       com_err(whoami, status, " while getting servers");
 
     hosts = sq_create();
     args[0] = "*";
     args[1] = args[5] = "TRUE";
     args[2] = args[3] = args[4] = "DONTCARE";
-    if ((status = sms_query("qualified_get_server_host", 6, args, save_args,
+    if ((status = mr_query("qualified_get_server_host", 6, args, save_args,
 			    (char *)hosts)) &&
-	status != SMS_NO_MATCH)
+	status != MR_NO_MATCH)
       com_err(whoami, status, " while getting server/hosts");
 
     while (sq_get_data(services, &service)) {
 	count++;
-	if (status = sms_query("get_server_info", 1, service, gserv, NULL))
+	if (status = mr_query("get_server_info", 1, service, gserv, NULL))
 	  com_err(whoami, status, " while getting info about service %s",
 		  service[0]);
     }
 
     while (sq_get_data(hosts, &host)) {
 	count++; 
-	if (status = sms_query("get_server_host_info", 2, host, ghost, NULL))
+	if (status = mr_query("get_server_host_info", 2, host, ghost, NULL))
 	  com_err(whoami, status, " while getting info about host %s:%s",
 		  host[0], host[1]);
    }
@@ -151,12 +151,12 @@ and try again");
 	      count == 1 ? "" : "s", count == 1 ? "s" : "ve");
     puts(buf);
 
-    sms_disconnect();
+    mr_disconnect();
     exit(0);
 
 punt:
     com_err(whoami, status, buf);
-    sms_disconnect();
+    mr_disconnect();
     exit(1);
 }
 
@@ -165,7 +165,7 @@ scream()
 {
     com_err(whoami, status, "Update to Moira returned a value -- \
 programmer botch.\n");
-    sms_disconnect();
+    mr_disconnect();
     exit(1);
 }
 

@@ -1,4 +1,4 @@
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrcheck/Makefile,v 1.4 1990-02-14 11:34:40 mar Exp $
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrcheck/Makefile,v 1.5 1990-03-17 17:16:09 mar Exp $
 # (c) Copyright 1988 by the Massachusetts Institute of Technology.
 # For copying and distribution information, please see the file
 # <mit-copyright.h>.
@@ -9,8 +9,8 @@ LDFLAGS =  -L../../lib
 CONFDIR = ${DESTDIR}/usr/athena
 BINDIR = ${DESTDIR}/bin
 
-SMSLIB = ${LDFLAGS} -lsms -lgdb -lcom_err
-LIBS = ${SMSLIB} -lkrb -ldes -lhesiod
+MOIRALIB = ${LDFLAGS} -lmoira -lgdb -lcom_err
+LIBS = ${MOIRALIB} -lkrb -ldes -lhesiod
 
 
 SRCS =	mrcheck.c
@@ -39,6 +39,6 @@ depend:
 
 # DO NOT DELETE THIS LINE -- mkdep uses it.
 
-mrcheck.o: mrcheck.c /usr/include/stdio.h ../../include/sms.h
-mrcheck.o: /usr/include/sms_et.h ../../include/sms_app.h
+mrcheck.o: mrcheck.c /usr/include/stdio.h ../../include/moira.h
+mrcheck.o: ../../include/mr_et.h ../../include/moira_site.h
 mrcheck.o: ../../include/mit-copyright.h

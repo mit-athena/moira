@@ -17,6 +17,12 @@ modify machine to cbtree unique on mach_id;\g
 create index i_mac_name on  machine (name);\g
 modify i_mac_name to btree;\g
 ;\g
+modify hostalias to cbtree unique on name;\g
+create index i_hal_id on hostalias (mach_id);\g
+;\g
+modify subnet to btree unique on snet_id;\g
+create index i_snt_name on subnet (name);\g
+;\g
 modify cluster to cbtree unique on clu_id;\g
 create index i_clu_name on  cluster (name);\g
 modify i_clu_name to btree;\g

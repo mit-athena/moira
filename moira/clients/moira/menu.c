@@ -5,7 +5,7 @@
  *
  * $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v $
  * $Author: mar $
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.17 1988-04-22 14:10:05 mar Exp $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.18 1988-07-29 18:11:19 mar Exp $
  *
  * Generic menu system module.
  *
@@ -18,7 +18,7 @@
  */
 
 #ifndef lint
-static char rcsid_menu_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.17 1988-04-22 14:10:05 mar Exp $";
+static char rcsid_menu_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.18 1988-07-29 18:11:19 mar Exp $";
 
 #endif lint
 
@@ -393,9 +393,7 @@ int Prompt_input(prompt, buf, buflen)
 	while(1) {
 	    (void) wmove(cur_ms->ms_input, y, x);
 		(void) touchwin(cur_ms->ms_screen);
-#ifdef notdef
 	    (void) wclrtoeol(cur_ms->ms_input);
-#endif notdef
 	    refresh_ms(cur_ms);
 	    c = getchar() & 0x7f;
 	    switch (c) {

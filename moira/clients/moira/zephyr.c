@@ -1,4 +1,4 @@
-/* $Id: zephyr.c,v 1.9 1999-04-30 17:41:09 danw Exp $
+/* $Id: zephyr.c,v 1.10 1999-06-03 18:34:18 danw Exp $
  *
  * Zephyr ACL routines for the Moira client
  *
@@ -18,7 +18,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/zephyr.c,v 1.9 1999-04-30 17:41:09 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/zephyr.c,v 1.10 1999-06-03 18:34:18 danw Exp $");
 
 void RealDeleteZephyr(char **info, Bool one_item);
 
@@ -27,14 +27,14 @@ void RealDeleteZephyr(char **info, Bool one_item);
 static char **SetDefaults(char **info, char *name)
 {
   info[ZA_CLASS] = strdup(name);
-  info[ZA_XMT_TYPE] = strdup("LIST");
-  info[ZA_SUB_TYPE] = strdup("LIST");
-  info[ZA_IWS_TYPE] = strdup("LIST");
-  info[ZA_IUI_TYPE] = strdup("LIST");
-  info[ZA_XMT_ID] = strdup("empty");
-  info[ZA_SUB_ID] = strdup("empty");
-  info[ZA_IWS_ID] = strdup("empty");
-  info[ZA_IUI_ID] = strdup("empty");
+  info[ZA_XMT_TYPE] = strdup("NONE");
+  info[ZA_SUB_TYPE] = strdup("NONE");
+  info[ZA_IWS_TYPE] = strdup("NONE");
+  info[ZA_IUI_TYPE] = strdup("NONE");
+  info[ZA_XMT_ID] = strdup("");
+  info[ZA_SUB_ID] = strdup("");
+  info[ZA_IWS_ID] = strdup("");
+  info[ZA_IUI_ID] = strdup("");
   info[ZA_MODTIME] = info[ZA_MODBY] = info[ZA_MODWITH] = NULL;
   info[ZA_END] = NULL;
   return info;
@@ -70,35 +70,15 @@ static char *PrintZephyrInfo(char **info)
     }
   sprintf(buf, "        Zephyr class: %s", info[ZA_CLASS]);
   Put_message(buf);
-  if (!strcmp(info[ZA_XMT_ID], "WILDCARD"))
-    {
-      free(info[ZA_XMT_ID]);
-      info[ZA_XMT_ID] = strdup("*.*@*");
-    }
   sprintf(buf, "Transmit ACL:           %s %s", info[ZA_XMT_TYPE],
 	  strcasecmp(info[ZA_XMT_TYPE], "NONE") ? info[ZA_XMT_ID] : "");
   Put_message(buf);
-  if (!strcmp(info[ZA_SUB_ID], "WILDCARD"))
-    {
-      free(info[ZA_SUB_ID]);
-      info[ZA_SUB_ID] = strdup("*.*@*");
-    }
   sprintf(buf, "Subscription ACL:       %s %s", info[ZA_SUB_TYPE],
 	  strcasecmp(info[ZA_SUB_TYPE], "NONE") ? info[ZA_SUB_ID] : "");
   Put_message(buf);
-  if (!strcmp(info[ZA_IWS_ID], "WILDCARD"))
-    {
-      free(info[ZA_IWS_ID]);
-      info[ZA_IWS_ID] = strdup("*.*@*");
-    }
   sprintf(buf, "Instance Wildcard ACL:  %s %s", info[ZA_IWS_TYPE],
 	  strcasecmp(info[ZA_IWS_TYPE], "NONE") ? info[ZA_IWS_ID] : "");
   Put_message(buf);
-  if (!strcmp(info[ZA_IUI_ID], "WILDCARD"))
-    {
-      free(info[ZA_IUI_ID]);
-      info[ZA_IUI_ID] = strdup("*.*@*");
-    }
   sprintf(buf, "Instance Indentity ACL: %s %s", info[ZA_IUI_TYPE],
 	  strcasecmp(info[ZA_IUI_TYPE], "NONE") ? info[ZA_IUI_ID] : "");
   Put_message(buf);
@@ -138,76 +118,36 @@ static char **AskZephyrInfo(char **info, Bool rename)
     return NULL;
   if (strcasecmp(info[ZA_XMT_TYPE], "NONE"))
     {
-      if (!strcmp(info[ZA_XMT_ID], "WILDCARD"))
-	{
-	  free(info[ZA_XMT_ID]);
-	  info[ZA_XMT_ID] = strdup("*.*@*");
-	}
       sprintf(buf, "Which %s: ", info[ZA_XMT_TYPE]);
       if (GetValueFromUser(buf, &info[ZA_XMT_ID]) == SUB_ERROR)
 	return NULL;
-      if (!strcmp(info[ZA_XMT_ID], "*.*@*"))
-	{
-	  free(info[ZA_XMT_ID]);
-	  info[ZA_XMT_ID] = strdup("WILDCARD");
-	}
     }
   if (GetTypeFromUser("What kind of subscription restriction", "ace_type",
 		      &info[ZA_SUB_TYPE]) == SUB_ERROR)
     return NULL;
   if (strcasecmp(info[ZA_SUB_TYPE], "NONE"))
     {
-      if (!strcmp(info[ZA_SUB_ID], "WILDCARD"))
-	{
-	  free(info[ZA_SUB_ID]);
-	  info[ZA_SUB_ID] = strdup("*.*@*");
-	}
       sprintf(buf, "Which %s: ", info[ZA_SUB_TYPE]);
       if (GetValueFromUser(buf, &info[ZA_SUB_ID]) == SUB_ERROR)
 	return NULL;
-      if (!strcmp(info[ZA_SUB_ID], "*.*@*"))
-	{
-	  free(info[ZA_SUB_ID]);
-	  info[ZA_SUB_ID] = strdup("WILDCARD");
-	}
     }
   if (GetTypeFromUser("What kind of wildcard instance restriction",
 		      "ace_type", &info[ZA_IWS_TYPE]) == SUB_ERROR)
     return NULL;
   if (strcasecmp(info[ZA_IWS_TYPE], "NONE") != 0)
     {
-      if (!strcmp(info[ZA_IWS_ID], "WILDCARD"))
-	{
-	  free(info[ZA_IWS_ID]);
-	  info[ZA_IWS_ID] = strdup("*.*@*");
-	}
       sprintf(buf, "Which %s: ", info[ZA_IWS_TYPE]);
       if (GetValueFromUser(buf, &info[ZA_IWS_ID]) == SUB_ERROR)
 	return NULL;
-      if (!strcmp(info[ZA_IWS_ID], "*.*@*"))
-	{
-	  free(info[ZA_IWS_ID]);
-	  info[ZA_IWS_ID] = strdup("WILDCARD");
-	}
     }
   if (GetTypeFromUser("What kind of instance identity restriction",
 		      "ace_type", &info[ZA_IUI_TYPE]) == SUB_ERROR)
     return NULL;
   if (strcasecmp(info[ZA_IUI_TYPE], "NONE"))
     {
-      if (!strcmp(info[ZA_IUI_ID], "WILDCARD"))
-	{
-	  free(info[ZA_IUI_ID]);
-	  info[ZA_IUI_ID] = strdup("*.*@*");
-	}
       sprintf(buf, "Which %s: ", info[ZA_IUI_TYPE]);
       if (GetValueFromUser(buf, &info[ZA_IUI_ID]) == SUB_ERROR)
 	return NULL;
-      if (!strcmp(info[ZA_IUI_ID], "*.*@*"))
-	{
-	  free(info[ZA_IUI_ID]);
-	  info[ZA_IUI_ID] = strdup("WILDCARD");
-	}
     }
   FreeAndClear(&info[ZA_MODTIME], TRUE);
   FreeAndClear(&info[ZA_MODBY], TRUE);

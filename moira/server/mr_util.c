@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_util.c,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_util.c,v 1.17 1990-06-07 17:52:10 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_util.c,v 1.18 1992-07-08 16:36:43 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -9,7 +9,7 @@
  */
 
 #ifndef lint
-static char *rcsid_mr_util_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_util.c,v 1.17 1990-06-07 17:52:10 mar Exp $";
+static char *rcsid_mr_util_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_util.c,v 1.18 1992-07-08 16:36:43 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -99,7 +99,8 @@ void mr_com_err(whoami, code, fmt, pvar)
 
 
 /* mr_trim_args: passed an argument vector, it will trim any trailing
- * spaces on the args by writing a null into the string.
+ * spaces on the args by writing a null into the string.  If an argument
+ * appears to be binary instead of ASCII, it will not be trimmed.
  */
 
 int mr_trim_args(argc, argv)
@@ -110,9 +111,19 @@ char **argv;
     register char *p, *lastch;
 
     for (arg = argv; argc--; arg++) {
-	for (lastch = p = *arg; *p; p++)
-	  if (!isspace(*p))
-	    lastch = p;
+	for (lastch = p = *arg; *p; p++) {
+	    /* If any byte in the string has the high bit set, assume
+	     * that it is binary and we do not want to trim it.
+	     * Setting p = lastch will cause us not to trim the string
+	     * when we break out of this inner loop.
+	     */
+	    if (*p >= 0x80) {
+		p = lastch;
+		break;
+	    }
+	    if (!isspace(*p))
+	      lastch = p;
+	}
 	if (p != lastch) {
 	    if (isspace(*lastch))
 	      *lastch = 0;

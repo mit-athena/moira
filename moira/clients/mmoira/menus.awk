@@ -1,4 +1,4 @@
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/menus.awk,v 1.3 1992-10-13 11:14:07 mar Exp $
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/menus.awk,v 1.4 1992-12-10 10:48:16 mar Exp $
 
 BEGIN		{ numfields = 0; nummenus = 0;
 		  printf("/* This file is machine generated, do not edit. */");
@@ -60,4 +60,5 @@ END		{ menuno = menumap[menuname] = nummenus++;
 		  printf("\t(MenuItem *) NULL\n};\n");
 		  printf("MenuItem MenuRoot = { \"%s\", menu%dsub };\n", \
 			menuname, menuno);
+		  printf("int NumMenus = %d;\n", nummenus);
 		}

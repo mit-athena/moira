@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_sauth.c,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_sauth.c,v 1.12 1989-08-08 15:05:08 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_sauth.c,v 1.13 1989-08-25 14:40:17 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_sms_sauth_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_sauth.c,v 1.12 1989-08-08 15:05:08 mar Exp $";
+static char *rcsid_sms_sauth_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_sauth.c,v 1.13 1989-08-25 14:40:17 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -21,6 +21,8 @@ static char *rcsid_sms_sauth_c = "$Header: /afs/.athena.mit.edu/astaff/project/m
 extern char buf1[];
 extern char *whoami;
 extern char *malloc();
+
+char *kname_unparse();
 
 /*
  * Handle a SMS_AUTH RPC request.
@@ -36,20 +38,8 @@ do_auth(cl)
 {
 	KTEXT_ST auth;
 	AUTH_DAT ad;
-	int status;
+	int status, ok;
 	char buf[REALM_SZ+INST_SZ+ANAME_SZ];
-	static char *unknown = "???";
-	
-	if (cl->clname) {
-		free(cl->clname);
-		cl->clname = 0;
-		cl->users_id = 0;
-		bzero(&cl->kname, sizeof(cl->kname));
-	}
-	if (cl->entity && cl->entity != unknown) {
-		free(cl->entity);
-		cl->entity = 0;
-	}
 	
 	auth.length = cl->args->sms_argl[0];
 	bcopy(cl->args->sms_argv[0], (char *)auth.dat, auth.length);
@@ -63,38 +53,113 @@ do_auth(cl)
 			com_err(whoami, status, "(authentication failed)");
 		return;
 	}
+
 	bcopy(ad.pname, cl->kname.name, ANAME_SZ);
 	bcopy(ad.pinst, cl->kname.inst, INST_SZ);
 	bcopy(ad.prealm, cl->kname.realm, REALM_SZ);
-	
-	(void) strcpy(buf, ad.pname);
-	if(ad.pinst[0]) {
-		(void) strcat(buf, ".");
-		(void) strcat(buf, ad.pinst);
-	}
-	(void) strcat(buf, "@");
-	(void) strcat(buf, ad.prealm);
-	if (cl->clname) free((char *)cl->clname);
-	
-	cl->clname = (char *)malloc((unsigned)(strlen(buf)+1));
-	(void) strcpy(cl->clname, buf);
+	strcpy(cl->clname, kname_unparse(ad.pname, ad.pinst, ad.prealm));
 
-	if (!strcmp(ad.prealm, krb_realm))
-	  cl->users_id = get_users_id(cl->kname.name);
+	if (ad.pinst[0] == 0 && !strcmp(ad.prealm, krb_realm))
+	  ok = 1;
+	else
+	  ok = 0;
+	/* this is in a separate function because it accesses the database */
+	set_krb_mapping(cl->clname, ad.pname, ok,
+			&cl->client_id, &cl->users_id);
 
 	if (cl->args->sms_version_no == SMS_VERSION_2) {
-	    unsigned len = strlen(cl->args->sms_argv[1]) + 1;
-
-	    cl->entity = (char *)malloc(len);
-	    bcopy(cl->args->sms_argv[1], cl->entity, len+1);
+	    bcopy(cl->args->sms_argv[1], cl->entity, 8);
+	    cl->entity[8] = 0;
 	} else {
-	    cl->entity = unknown;
+	    strcpy(cl->entity, "???");
 	}
 	bzero(&ad, sizeof(ad));	/* Clean up session key, etc. */
 
 	if (log_flags & LOG_RES)
-	    com_err(whoami, 0, "Authenticated to %s using %s, id %d",
-		    cl->clname, cl->entity, cl->users_id);
+	    com_err(whoami, 0, "Auth to %s using %s, uid %d cid %d",
+		    cl->clname, cl->entity, cl->users_id, cl->client_id);
 	if (cl->users_id == 0)
 	  cl->reply.sms_status = SMS_USER_AUTH;
+}
+
+
+/* Turn a principal, instance, realm triple into a single non-ambiguous 
+ * string.  This is the inverse of kname_parse().  It returns a pointer
+ * to a static buffer, or NULL on error.
+ */
+
+char *kname_unparse(p, i, r)
+char *p;
+char *i;
+char *r;
+{
+    static char name[MAX_K_NAME_SZ];
+    char *s;
+
+    s = name;
+    if (!p || strlen(p) > ANAME_SZ)
+      return(NULL);
+    while (*p) {
+	switch (*p) {
+	case '@':
+	    *s++ = '\\';
+	    *s++ = '@';
+	    break;
+	case '.':
+	    *s++ = '\\';
+	    *s++ = '.';
+	    break;
+	case '\\':
+	    *s++ = '\\';
+	    *s++ = '\\';
+	    break;
+	default:
+	    *s++ = *p;
+	}
+	p++;
+    }
+    if (i && *i) {
+	if (strlen(i) > INST_SZ)
+	  return(NULL);
+	*s++ = '.';
+	while (*i) {
+	    switch (*i) {
+	    case '@':
+		*s++ = '\\';
+		*s++ = '@';
+		break;
+	    case '.':
+		*s++ = '\\';
+		*s++ = '.';
+		break;
+	    case '\\':
+		*s++ = '\\';
+		*s++ = '\\';
+		break;
+	    default:
+		*s++ = *i;
+	    }
+	    i++;
+	}
+    }
+    *s++ = '@';
+    if (!r || strlen(r) > REALM_SZ)
+      return(NULL);
+    while (*r) {
+	switch (*r) {
+	case '@':
+	    *s++ = '\\';
+	    *s++ = '@';
+	    break;
+	case '\\':
+	    *s++ = '\\';
+	    *s++ = '\\';
+	    break;
+	default:
+	    *s++ = *r;
+	}
+	r++;
+    }
+    *s = '\0';
+    return(&name[0]);
 }

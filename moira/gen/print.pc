@@ -1,4 +1,4 @@
-/* $Id: print.pc,v 1.3 1999-03-30 04:06:55 danw Exp $
+/* $Id: print.pc,v 1.4 1999-06-02 22:22:08 danw Exp $
  *
  * This generates printcaps and other files for Athena print servers
  *
@@ -22,7 +22,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/print.pc,v 1.3 1999-03-30 04:06:55 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/print.pc,v 1.4 1999-06-02 22:22:08 danw Exp $");
 
 char *whoami = "print.gen";
 char *db = "moira/moira";
@@ -127,14 +127,14 @@ void do_host(char *host)
 	      "\t:af=/var/spool/printer/%s/%s-acct:\\\n"
 	      "\t:ka#%d:pc#%d:\\\n",
 	      !strcmp(hwtype, "LPR") ? "raw" : rp,
-	      !strcmp(hwtype, "HP") ? rm : hostname,
+	      !strncmp(hwtype, "HP", 2) ? rm : hostname,
 	      rp, rp, rp, rp, rp, ka, pc);
       if (strcmp(rq, "[NONE]"))
 	fprintf(out, "\t:rq=%s:\\\n", rq);
       if (ac)
 	fprintf(out, "\t:ac=/var/spool/printer/%s/restrict.list:pa:\\\n", rp);
 
-      if (!strcmp(hwtype, "HP"))
+      if (!strncmp(hwtype, "HP", 2))
 	{
 	  fprintf(out, "\t:if=/usr/athena/lib/lpdfilters/hpif:\\\n"
 		  "\t:of=/usr/athena/lib/lpdfilters/hpof:\\\n"
@@ -177,7 +177,7 @@ void do_host(char *host)
       tarfile_mkdir(tf, filename, 0755, 1, 1, "daemon", "daemon", mtime);
 
       /* If spooling to an HP printer, make a .options file. */
-      if (!strcmp(hwtype, "HP"))
+      if (!strncmp(hwtype, "HP", 2))
 	{
 	  sprintf(filename, "/var/spool/printer/%s/.options", name);
 	  out = tarfile_start(tf, filename, 0755, 1, 1, "daemon", "daemon",

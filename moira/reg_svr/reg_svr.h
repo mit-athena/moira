@@ -1,7 +1,7 @@
 /*
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.h,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.h,v 1.4 1988-12-29 19:01:42 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.h,v 1.5 1989-09-08 14:58:35 mar Exp $
  *
  *      Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
@@ -87,6 +87,5 @@ int set_password();		/* Set this user's password */
 
 
 /* For logging successful database transactions */
-#define JOURNAL "/u1/sms/journal.reg"
 extern FILE *journal;
 

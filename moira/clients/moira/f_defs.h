@@ -7,7 +7,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/f_defs.h,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/f_defs.h,v 1.17 1992-04-30 16:18:06 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/f_defs.h,v 1.18 1993-09-22 11:50:06 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -124,6 +124,7 @@ int DeleteQuota();
 int ShowUserByLogin();		/* misc. ways to show user. */
 int ShowUserByName();
 int ShowUserByClass();
+int ShowUserById();
 int AddNewUser();		/* add a new user to the database. */
 int RegisterUser();		/* register a user. */
 int UpdateUser();		/* modify info about a user. */

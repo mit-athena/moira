@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menus.c,v 1.23 1992-07-10 15:05:03 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menus.c,v 1.24 1993-09-22 11:50:09 mar Exp $";
 #endif lint
 
 /*	This is the file menus.c for the MOIRA Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menus.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menus.c,v 1.23 1992-07-10 15:05:03 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menus.c,v 1.24 1993-09-22 11:50:09 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -525,7 +525,11 @@ Menu user_menu = {
     {ShowUserByClass, NULLMENU, 2, {
        {"class", "Show names of users in a given class"},
        {"login name", "Desired class: "}
-     } },    
+    } },    
+    {ShowUserById, NULLMENU, 2, {
+	{"id", "Show user information by ID number"},
+	{"ID number", "ID number: "}
+    } },
     {UpdateUser, NULLMENU, 2, {
       {"modify", "Change all user fields"},
       {"login", "Login name: "}
@@ -542,7 +546,6 @@ Menu user_menu = {
       {"login", "Login name: "}
     } },
     SUBMENU("pobox", "Post Office Box Menu", &pobox_menu),
-    SUBMENU("quota", "Quota Menu", &quota_menu),
     SUBMENU("krbmap", "User Kerberos Mappings", &krbmap_menu),
   }
 };

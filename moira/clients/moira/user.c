@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.32 1993-06-09 18:08:41 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.33 1993-09-22 11:49:55 mar Exp $";
 #endif lint
 
 /*	This is the file user.c for the MOIRA Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.32 1993-06-09 18:08:41 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.33 1993-09-22 11:49:55 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -40,6 +40,7 @@
 #define UID   1
 #define BY_NAME  2
 #define CLASS 3
+#define ID 4
 
 #define DEFAULT_SHELL "/bin/csh"
 #define DEFAULT_CLASS "?"
@@ -413,6 +414,15 @@ char *name1, *name2;
 				    StoreInfo, (char *) &elem)) != 0) {
 	    com_err(program_name, status, 
 		    " when attempting to get_user_account_by_class.");
+	    return (NULL);	
+	}
+	break;
+    case ID:
+	args[0] = name1;
+	if ( (status = do_mr_query("get_user_account_by_id", 1, args,
+				    StoreInfo, (char *) &elem)) != 0) {
+	    com_err(program_name, status, 
+		    " when attempting to get_user_account_by_id.");
 	    return (NULL);	
 	}
 	break;
@@ -906,6 +916,28 @@ char **argv;
       return (DM_NORMAL);
     top = GetUserInfo(CLASS, argv[1], (char *) NULL);
     Loop(top, PrintUserName);
+
+    FreeQueue(top);
+    return (DM_NORMAL);
+}
+
+
+/*	Function Name: ShowUserById
+ *	Description: Shows user information given an ID number.
+ *	Arguments: argc, argv - ID number in argv[1].
+ *	Returns: DM_NORMAL
+ */
+
+/* ARGSUSED */
+int
+ShowUserById(argc, argv)
+int argc;
+char *argv[];
+{
+    struct qelem *top, *elem;
+
+    elem = top = GetUserInfo(ID, argv[1], (char *) NULL);
+    Loop(elem, PrintUserInfo);
 
     FreeQueue(top);
     return (DM_NORMAL);

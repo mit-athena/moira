@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.6 1998-10-28 16:54:53 danw Exp $
+# $Id: Makefile.in,v 1.7 1998-10-30 18:17:26 danw Exp $
 
 SHELL=/bin/sh
 @SET_MAKE@
@@ -36,7 +36,7 @@ install:
 
 svrinstall:
 	$(srcdir)/mkinstalldirs $(mrbindir)
-	@for d in $(SVRSUBDIRS); do (echo "### Making $@ in $$d"; cd $$d; $(MAKE) $@) || exit 1; done
+	@for d in $(SVRDIRS); do (echo "### Making install in $$d"; cd $$d; $(MAKE) install) || exit 1; done
 
 world: depend all
 

@@ -1,4 +1,4 @@
-/* $Id: mr_main.c,v 1.52 2002-08-13 15:49:56 zacheiss Exp $
+/* $Id: mr_main.c,v 1.53 2004-02-25 02:25:39 zacheiss Exp $
  *
  * Moira server process.
  *
@@ -30,7 +30,7 @@
 
 #include <krb.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.52 2002-08-13 15:49:56 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.53 2004-02-25 02:25:39 zacheiss Exp $");
 
 client *cur_client;
 
@@ -48,6 +48,8 @@ client **clients;
 int nclients, clientssize;
 
 int dormant;
+int child_exited_abnormally = 0;
+int child_pid, child_signal, child_status;
 
 void reapchild(int x);
 void godormant(int x);
@@ -212,6 +214,14 @@ int main(int argc, char **argv)
 
       if (takedown)
 	break;
+
+      if (child_exited_abnormally)
+	{
+	  critical_alert("moirad", "%d: child exits with signal %d status %d",
+			 child_pid, child_signal, child_status);
+	  child_exited_abnormally = 0;
+	}
+
       time(&now);
       if (!inc_running || now - inc_started > INC_TIMEOUT)
 	next_incremental();
@@ -371,8 +381,10 @@ void reapchild(int x)
 	inc_running = 0;
       if (!takedown && (WTERMSIG(status) != 0 || WEXITSTATUS(status) != 0))
 	{
-	  critical_alert("moirad", "%d: child exits with signal %d status %d",
-			 pid, WTERMSIG(status), WEXITSTATUS(status));
+	  child_exited_abnormally = 1;
+	  child_pid = pid;
+	  child_signal = WTERMSIG(status);
+	  child_status = WEXITSTATUS(status);
 	}
     }
 }

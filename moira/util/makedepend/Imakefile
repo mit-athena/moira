@@ -1,6 +1,6 @@
 # $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/util/makedepend/Imakefile,v $
 # $Author: jtkohl $
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/util/makedepend/Imakefile,v 4.0 1989-01-16 21:07:28 jtkohl Exp $
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/util/makedepend/Imakefile,v 4.1 1989-01-16 21:34:22 jtkohl Exp $
 #
 # Copyright 1987 by the Massachusetts Institute of Technology.
 #
@@ -13,6 +13,15 @@
 #
 #ifdef cpp_source_path
 SRCS = include.c main.c parse.c pr.c cppsetup.c cpp.c cpy.y
+SOURCES = \
+	${SRCDIR}/util/makedepend/include.c \
+	${SRCDIR}/util/makedepend/main.c \
+	${SRCDIR}/util/makedepend/parse.c \
+	${SRCDIR}/util/makedepend/pr.c \
+	${SRCDIR}/util/makedepend/cppsetup.c \
+	${SRCDIR}/util/makedepend/cpp.ed \
+	${SRCDIR}/util/makedepend/Imakefile \
+	${SRCDIR}/util/makedepend/Makefile
 OBJS = include.o main.o parse.o pr.o cppsetup.o cpp.o cpy.o
 DEFINES = -DCPP '-DINCLUDEDIR="/usr/include"'
 CPPSRC = cpp_source_path
@@ -23,6 +32,14 @@ CPPSRC = cpp_source_path
 # But if you don't have cpp source...
 #
 SRCS = include.c main.c parse.c pr.c cppsetup.c
+SOURCES = \
+	${SRCDIR}/util/makedepend/include.c \
+	${SRCDIR}/util/makedepend/main.c \
+	${SRCDIR}/util/makedepend/parse.c \
+	${SRCDIR}/util/makedepend/pr.c \
+	${SRCDIR}/util/makedepend/cppsetup.c \
+	${SRCDIR}/util/makedepend/Imakefile \
+	${SRCDIR}/util/makedepend/Makefile
 OBJS = include.o main.o parse.o pr.o cppsetup.o
 DEFINES = '-DINCLUDEDIR="/usr/include"'
 
@@ -58,4 +75,11 @@ cpy.o: cpy.c
 
 clean::
 	$(RM) cpp.c cpy.? yylex.c
+
+config: $(SOURCES)
+	-mkdir $(DESTDIR)/util
+	-mkdir $(DESTDIR)/util/makedepend
+	for i in $(SOURCES); do \
+		$(RM) ${DESTDIR}/util/makedepend/`basename $$i`; \
+		$(CP) $$i ${DESTDIR}/util/makedepend/`basename $$i`; done
 

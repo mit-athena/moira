@@ -1,6 +1,6 @@
 /**/#	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/util/imake.includes/Imake.rules,v $
 /**/#	$Author: shanzer $
-/**/#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/util/imake.includes/Imake.rules,v 4.2 1988-10-06 18:05:24 shanzer Exp $
+/**/#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/util/imake.includes/Imake.rules,v 4.3 1988-12-01 11:40:42 shanzer Exp $
 /**/#
 
 #ifdef __STDC__
@@ -9,19 +9,20 @@
 #define concat4(w,x,y,z) w##x##y##z
 #define requote(x) #x
 #else
-#define concat(x,y) x/**/y
-#define concat3(x,y,z) x/**/y/**/z
-#define concat4(w,x,y,z) w/**/x/**/y/**/z
+#define concat(x,y)x/**/y
+#define concat3(x,y,z)x/**/y/**/z
+#define concat4(w,x,y,z)w/**/x/**/y/**/z
 #define requote(x) "x"
 #endif
 
+#ifdef PROFILED_LIBS
 /*
  * Rule for building objects in libraries.
  */
 
 #define library_obj_rule()						@@\
 .c.o:									@@\
-	$(CC) -p -c $(CFLAGS) $*.c					@@\
+	$(CC) PROF_FLAG -c $(CFLAGS) $*.c				@@\
 	-$(LD) -X -r -o profiled/$*.o $*.o				@@\
 	$(CC) -c $(CFLAGS) $*.c						@@\
 	-$(LD) -x -r -o a.out $*.o					@@\
@@ -34,7 +35,7 @@
 
 #define library_ro_object(cfile)					@@\
 concat(cfile,.o): concat(cfile,.c)					@@\
-	$(CC) -p -c $(CFLAGS) concat(cfile,.c)				@@\
+	$(CC) PROF_FLAG -c $(CFLAGS) concat(cfile,.c)			@@\
 	-$(LD) -X -r -o profiled/$*.o $*.o				@@\
 	$(CCRO) -c $(CFLAGS) concat(cfile,.c)				@@\
 	-$(LD) -x -r -o a.out $*.o					@@\
@@ -71,7 +72,7 @@ clean:: 								@@\
 	$(RM) concat3(lib,libname,.a) concat3(lib,libname,_p.a)		@@\
 	$(RM) concat3(llib-l,libname,.ln)				@@\
 	$(RM) objs							@@\
-	$(RM) profiled\/*.o						@@\
+	$(RM) profiled/?*.o						@@\
 									@@\
 install:: 								@@\
 	$(INSTALLFILE) concat3(lib,libname,.a) concat4($(DESTDIR)$(LIBDIR)/,lib,libname,.a)	@@\
@@ -79,6 +80,55 @@ install:: 								@@\
 	$(INSTALLFILE) concat3(lib,libname,_p.a) concat4($(DESTDIR)$(LIBDIR)/,lib,libname,_p.a)	@@\
 	$(RANLIB) concat4($(DESTDIR)$(LIBDIR)/,lib,libname,_p.a)		@@\
 	$(INSTALLFILE) concat3(llib-l,libname,.ln) concat4($(DESTDIR)$(LIBDIR)/lint,llib-l,libname,.ln)	@@\
+
+#else /* !PROFILED_LIBS */
+/*
+ * Rule for building objects in libraries.
+ */
+
+#define library_obj_rule()						@@\
+.c.o:									@@\
+	$(CC) -c $(CFLAGS) $*.c						@@\
+	-$(LD) -x -r -o a.out $*.o					@@\
+	$(MV) a.out $*.o
+
+#define library_ro_object(cfile)					@@\
+concat(cfile,.o): concat(cfile,.c)					@@\
+	$(CCRO) -c $(CFLAGS) concat(cfile,.c)				@@\
+	-$(LD) -x -r -o a.out $*.o					@@\
+	$(MV) a.out $*.o
+
+#define library_asm_object(ofile,sfile)					@@\
+ofile: sfile								@@\
+	$(CPP) x.c | $(AS) -						@@\
+	-$(LD) -x -r -o $*.o a.out					@@\
+	$(RM) a.out x.c
+
+#define	install_library_target(libname,objs,srcs,lintlibs)		@@\
+									@@\
+all:: concat3(lib,libname,.a) 						@@\
+all:: concat3(llib-l,libname,.ln)					@@\
+									@@\
+concat3(lib,libname,.a): objs						@@\
+	$(ARCHIVE) $@ objs						@@\
+	$(RANLIB) $@							@@\
+									@@\
+lint:: concat3(llib-l,libname,.ln)					@@\
+									@@\
+concat3(llib-l,libname,.ln): srcs					@@\
+	$(LINT) concat(-C,libname) $(CFLAGS) srcs lintlibs 		@@\
+									@@\
+clean:: 								@@\
+	$(RM) concat3(lib,libname,.a)					@@\
+	$(RM) concat3(llib-l,libname,.ln)				@@\
+	$(RM) objs							@@\
+									@@\
+install:: 								@@\
+	$(INSTALLFILE) concat3(lib,libname,.a) concat4($(DESTDIR)$(LIBDIR)/,lib,libname,.a)	@@\
+	$(RANLIB) -t concat4($(DESTDIR)$(LIBDIR)/,lib,libname,.a)	@@\
+	$(INSTALLFILE) concat3(llib-l,libname,.ln) concat4($(DESTDIR)$(LIBDIR)/lint,llib-l,libname,.ln)	@@\
+
+#endif /* PROFILED_LIBS */
 
 /*
  * Rule for building utilities (binaries which don't get installed)
@@ -131,18 +181,30 @@ clean::									@@\
  * Rule for compileing files with "et"
  */
 
-#define comp_et(src)							@@\
-concat(src,.h):: concat(src,.et)					@@\
-	compile_et concat(src,.et)					@@\
-concat(src,.o):: concat(src,.et)					@@\
-	compile_et concat(src,.et)					@@\
+#ifdef PROFILED_LIBS
+#define comp_et_prof(tbl)						@@\
+concat(tbl,.h) concat(tbl,.o): concat(tbl,.et)				@@\
+	$(COMPILE_ET) concat(tbl,.et) -n				@@\
+	$(CC) -c PROF_FLAG concat(tbl,.et.c)				@@\
+	$(MV) concat(tbl,.et.o) concat3(profiled/,tbl,.o)		@@\
+	$(COMPILE_ET) concat(tbl,.et)					@@\
 clean::									@@\
 	$(RM) concat(src,.o) concat(src,.h)				@@\
+depend:: concat(src,.h)
+#else /* !PROFILED_LIBS */
+#define comp_et_prof(tbl) comp_et(tbl)
+#endif /* PROFILED_LIBS */
+
+#define comp_et(tbl)							@@\
+concat(tbl,.h) concat(tbl,.o): concat(tbl,.et)				@@\
+	$(COMPILE_ET) concat(tbl,.et)					@@\
+clean::									@@\
+	$(RM) concat(src,.o) concat(src,.h)
 
 #define comp_et_depend(src)						@@\
 	comp_et(src)							@@\
 									@@\
-depend:: concat(src,.h)							@@\
+depend:: concat(src,.h)
 
 /*
  * Rule for building some random object module

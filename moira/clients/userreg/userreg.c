@@ -2,7 +2,7 @@
  * $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.c,v $
  * $Author: mar $
  * $Locker:  $
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.c,v 1.24 1991-07-31 18:20:38 mar Exp $ 
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.c,v 1.25 1991-08-14 16:04:56 mar Exp $ 
  *
  *  (c) Copyright 1988 by the Massachusetts Institute of Technology.
  *  For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char    *rcsid_userreg_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.c,v 1.24 1991-07-31 18:20:38 mar Exp $";
+static char    *rcsid_userreg_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.c,v 1.25 1991-08-14 16:04:56 mar Exp $";
 #endif	lint
 
 #include <mit-copyright.h>
@@ -502,7 +502,9 @@ negotiate_passwd()
 	if (result == KSUCCESS)
 	  result = kadm_check_pw(key, passwd, &error);
 	dest_tkt();
-	if (result != KSUCCESS && result != KADM_INSECURE_PW) {
+	if (result == KADM_INSECURE_PW) {
+	    error = "You have chosen a passsword that is in the dictionary of commonly\nselected user passwords.  You will have to choose a better password.";
+	} else if (result != KSUCCESS) {
 	    display_text(NETWORK_DOWN);
 	    display_text_line(" ");
 	    sprintf(fullname, "%s while verifying password",

@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v $
  *	$Author: danw $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.33 1997-01-20 18:26:12 danw Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.34 1997-07-03 02:56:27 danw Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -16,7 +16,7 @@
  * 
  */
 
-static char *rcsid_mr_main_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.33 1997-01-20 18:26:12 danw Exp $";
+static char *rcsid_mr_main_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.34 1997-07-03 02:56:27 danw Exp $";
 
 #include <mit-copyright.h>
 #include <string.h>
@@ -53,6 +53,8 @@ extern FILE *journal;
 
 extern time_t now;
 
+char hostbuf[BUFSIZ], *host;
+
 int do_listen(char *port);
 void do_reset_listen(void);
 void clist_append(client *cp);
@@ -75,7 +77,7 @@ int main(argc, argv)
 {
 	int status, i;
 	time_t tardy;
-	char *port;
+	char *port, *p;
 	extern char *database;
 	struct stat stbuf;
 	
@@ -132,6 +134,19 @@ int main(argc, argv)
 	}
 	
 	sanity_check_queries();
+
+	/*
+	 * Get moira server hostname for authentication
+	 */
+	if (gethostname(hostbuf, sizeof(hostbuf)) < 0) {
+	  com_err(whoami, errno, "Unable to get local hostname");
+	  exit(1);
+	}
+	host = canonicalize_hostname(strsave(hostbuf));
+	for (p = host; *p && *p != '.'; p++)
+	  if (isupper(*p))
+	    *p = tolower(*p);
+	*p = 0;
 
 	/*
 	 * Set up client array handler.

@@ -1,4 +1,4 @@
-/* $Id: qsupport.pc,v 2.17 1999-11-18 01:05:07 danw Exp $
+/* $Id: qsupport.pc,v 2.18 2000-01-11 19:50:02 danw Exp $
  *
  * Special query routines
  *
@@ -18,7 +18,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.pc,v 2.17 1999-11-18 01:05:07 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.pc,v 2.18 2000-01-11 19:50:02 danw Exp $");
 
 extern char *whoami, *table_name[];
 extern int dbms_errno, mr_errcode;
@@ -1478,3 +1478,128 @@ int set_pop_usage(id, cnt)
   return MR_SUCCESS;
 }
 
+
+int do_user_reservation(struct query *q, char *argv[], client *cl)
+{
+  EXEC SQL BEGIN DECLARE SECTION;
+  char resv[USERS_RESERVATIONS_SIZE];
+  char *trans, name[ALIAS_NAME_SIZE];
+  int uid;
+  EXEC SQL END DECLARE SECTION;
+
+  uid = *(int *)argv[0];
+  trans = argv[1];
+
+  EXEC SQL SELECT UPPER(name) INTO :name FROM alias
+    WHERE type = 'RESERVE' AND LOWER(trans) = LOWER(:trans);
+  if (dbms_errno)
+    return mr_errcode;
+  if (sqlca.sqlerrd[2] != 1)
+    return MR_STRING;
+  name[1] = '\0';
+
+  EXEC SQL SELECT reservations INTO :resv FROM users
+    WHERE users_id = :uid;
+  if (dbms_errno)
+    return mr_errcode;
+  strtrim(resv);
+
+  if (!strcmp(q->shortname, "aurv"))
+    {
+      if (strchr(resv, *name))
+	return MR_EXISTS;
+      if (strlen(resv) == USERS_RESERVATIONS_SIZE - 1)
+	return MR_ARG_TOO_LONG;
+
+      strcat(resv, name);
+    }
+  else
+    {
+      char *p = strchr(resv, *name);
+      if (!p)
+	return MR_NO_MATCH;
+      memmove(p, p + 1, strlen(p));
+    }
+
+  EXEC SQL UPDATE users SET reservations = NVL(:resv, CHR(0))
+    WHERE users_id = :uid;
+  if (dbms_errno)
+    return mr_errcode;
+
+  EXEC SQL UPDATE tblstats SET updates = updates + 1, modtime = SYSDATE
+    WHERE table_name = 'users';
+  return set_modtime_by_id(q, argv, cl);
+}
+
+int get_user_reservations(struct query *q, char **argv, client *cl,
+			  int (*action)(int, char *[], void *), void *actarg)
+{
+  EXEC SQL BEGIN DECLARE SECTION;
+  char resv[USERS_RESERVATIONS_SIZE], *p;
+  char trans[ALIAS_TRANS_SIZE], name[2] = { 0, 0 };
+  int uid;
+  EXEC SQL END DECLARE SECTION;
+  char *targv[1];
+
+  uid = *(int *)argv[0];
+
+  EXEC SQL SELECT reservations INTO :resv FROM users
+    WHERE users_id = :uid;
+  if (dbms_errno)
+    return mr_errcode;
+
+  targv[0] = trans;
+  p = resv;
+  while (*p && !isspace(*p))
+    {
+      name[0] = toupper(*p);
+      EXEC SQL SELECT trans INTO :trans FROM alias
+	WHERE type = 'RESERVE' AND UPPER(name) = :name;
+      if (dbms_errno)
+	return mr_errcode;
+      if (sqlca.sqlerrd[2] != 1)
+	sprintf(trans, "Unknown (%s)", name);
+      (*action)(1, targv, actarg);
+      p++;
+    }
+  return MR_SUCCESS;
+}
+
+int get_user_by_reservation(struct query *q, char **argv, client *cl,
+			    int (*action)(int, char *[], void *), void *actarg)
+{
+  EXEC SQL BEGIN DECLARE SECTION;
+  char resv[USERS_RESERVATIONS_SIZE], login[USERS_LOGIN_SIZE];
+  char *trans, name[ALIAS_NAME_SIZE];
+  int uid;
+  EXEC SQL END DECLARE SECTION;
+  char *targv[1];
+
+  trans = argv[0];
+
+  EXEC SQL SELECT UPPER(name) INTO :name FROM alias
+    WHERE type = 'RESERVE' AND LOWER(trans) = LOWER(:trans);
+  if (dbms_errno)
+    return mr_errcode;
+  if (sqlca.sqlerrd[2] != 1)
+    return MR_STRING;
+  name[1] = '\0';
+
+  EXEC SQL DECLARE csr_gubr CURSOR FOR
+    SELECT login FROM users WHERE reservations LIKE '%' || :name || '%';
+  EXEC SQL OPEN csr_gubr;
+  if (dbms_errno)
+    return mr_errcode;
+
+  targv[0] = login;
+  while (1)
+    {
+      EXEC SQL FETCH csr_gubr INTO :login;
+      if (sqlca.sqlcode)
+	break;
+      (*action)(1, targv, actarg);
+    }
+  EXEC SQL CLOSE csr_gubr;
+
+  return MR_SUCCESS;
+}

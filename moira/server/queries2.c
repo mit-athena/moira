@@ -1,4 +1,4 @@
-/* $Id: queries2.c,v 2.66 1999-12-30 17:27:15 danw Exp $
+/* $Id: queries2.c,v 2.67 2000-01-11 19:50:03 danw Exp $
  *
  * This file defines the query dispatch table
  *
@@ -361,6 +361,56 @@ static struct validate dusr_validate = {
   0,
   setup_dusr,
   0,
+};
+
+static char *aurv_fields[] = {
+  "login", "reservation",
+};
+
+static struct validate aurv_validate = {
+  VOuser0,
+  1,
+  0,
+  0,
+  0,
+  "users_id",
+  0,
+  0,
+  do_user_reservation,
+};
+
+static char *gurv_fields[] = {
+  "login",
+  "reservation",
+};
+
+static struct validate gurv_validate = {
+  VOuser0,
+  1,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  get_user_reservations,
+};
+
+static char *gubr_fields[] = {
+  "reservation",
+  "login",
+};
+
+static struct validate gubr_validate = {
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  get_user_by_reservation,
 };
 
 static char *gkum_fields[] = { "login", "kerberos",
@@ -2817,6 +2867,74 @@ struct query Queries[] = {
     1,
     NULL,
     &dusr_validate,
+  },
+
+  {
+    /* Q_AURV - ADD_USER_RESERVATION */
+    "add_user_reservation",
+    "aurv",
+    2,
+    UPDATE,
+    0,
+    USERS_TABLE,
+    0,
+    aurv_fields,
+    2,
+    0,
+    0,
+    NULL,
+    &aurv_validate,
+  },
+
+  {
+    /* Q_GURV - GET_USER_RESERVATIONS */
+    "get_user_reservations",
+    "gurv",
+    2,
+    RETRIEVE,
+    0,
+    USERS_TABLE,
+    0,
+    gurv_fields,
+    2,
+    0,
+    1,
+    NULL,
+    &gurv_validate,
+  },
+
+  {
+    /* Q_GUBR - GET_USER_BY_RESERVATION */
+    "get_user_by_reservation",
+    "gubr",
+    2,
+    RETRIEVE,
+    0,
+    USERS_TABLE,
+    0,
+    gubr_fields,
+    1,
+    0,
+    1,
+    NULL,
+    &gubr_validate,
+  },
+
+  {
+    /* Q_DURV - DELETE_USER_RESERVATION */
+    "delete_user_reservation",
+    "durv",
+    2,
+    UPDATE,
+    0,
+    USERS_TABLE,
+    0,
+    aurv_fields,
+    2,
+    0,
+    0,
+    NULL,
+    &aurv_validate,
   },
 
   {

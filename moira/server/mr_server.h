@@ -1,4 +1,4 @@
-/* $Id: mr_server.h,v 1.48 1999-12-30 17:27:14 danw Exp $
+/* $Id: mr_server.h,v 1.49 2000-01-11 19:50:02 danw Exp $
  *
  * Copyright (C) 1987-1998 by the Massachusetts Institute of Technology
  * For copying and distribution information, please see the file
@@ -234,6 +234,7 @@ int set_pobox_pop(struct query *q, char *argv[], client *cl);
 int add_member_to_list(struct query *q, char *argv[], client *cl);
 int delete_member_from_list(struct query *q, char *argv[], client *cl);
 int register_user(struct query *q, char *argv[], client *cl);
+int do_user_reservation(struct query *q, char *argv[], client *cl);
 
 int get_ace_use(struct query *q, char **argv, client *cl,
 		int (*action)(int, char *[], void *), void *actarg);
@@ -250,8 +251,12 @@ int count_members_of_list(struct query *q, char **argv, client *cl,
 			  int (*action)(int, char *[], void *), void *actarg);
 int get_lists_of_member(struct query *q, char **argv, client *cl,
 			int (*action)(int, char *[], void *), void *actarg);
+int get_user_reservations(struct query *q, char **argv, client *cl,
+			  int (*action)(int, char *[], void *), void *actarg);
+int get_user_by_reservation(struct query *q, char **argv, client *cl,
+			    int (*action)(int, char *[], void *),
+			    void *actarg);
 
 /* prototypes from qvalidate.pc */
-/* from qvalidate.dc */
 int validate_fields(struct query *q, char *argv[], struct valobj *vo, int n);
 int validate_row(struct query *q, char *argv[], struct validate *v);

@@ -266,3 +266,8 @@ create tblstats
 	updates		= i4,
 	deletes		= i4
 )
+create incremental
+(
+	table		= c16,
+	service		= c16
+)

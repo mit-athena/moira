@@ -1,4 +1,4 @@
-/* $Id: mr_ops.c,v 1.16 1998-02-15 17:49:05 danw Exp $
+/* $Id: mr_ops.c,v 1.17 1999-12-30 17:29:24 danw Exp $
  *
  * This routine is part of the client library.  It handles
  * the protocol operations: invoking an update and getting the
@@ -14,10 +14,11 @@
 #include "mr_private.h"
 
 #include <errno.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_ops.c,v 1.16 1998-02-15 17:49:05 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_ops.c,v 1.17 1999-12-30 17:29:24 danw Exp $");
 
 /* Invoke a DCM update. */
 
@@ -82,6 +83,38 @@ int mr_motd(char **motd)
 	}
     }
 punt:
+  mr_destroy_reply(reply);
+
+  return status;
+}
+
+/* Exchange query version info with the server. */
+
+int mr_version(int version)
+{
+  int status;
+  mr_params params, reply;
+  char vbuf[10], *arg;
+
+  CHECK_CONNECTED;
+
+  sprintf(vbuf, "%d", version);
+  arg = strdup(vbuf);
+  params.u.mr_procno = MR_SETVERSION;
+  params.mr_argc = 1;
+  params.mr_argl = NULL;
+  params.mr_argv = &arg;
+
+  status = mr_do_call(&params, &reply);
+  free(arg);
+
+  if (status == MR_SUCCESS)
+    {
+      status = reply.u.mr_status;
+
+      if (status == MR_VERSION_LOW && getenv("MOIRA_LOW_VERSION_WARNING"))
+	fprintf(stderr, "Warning: This client is out of date.\n");
+    }
   mr_destroy_reply(reply);
 
   return status;

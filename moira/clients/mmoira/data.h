@@ -7,6 +7,7 @@
 typedef struct MenuItemS {
 	char		*label;		/* the displayed label */
 	struct MenuItemS **submenu;	/* if non-null, a submenu to display */
+	char		*accel;		/* accelerator */
 	int		operation;	/* op identifer */
 	char		*form;		/* name of form to popup */
 	char		*query;
@@ -23,9 +24,12 @@ typedef struct {
 		int	integervalue;
 	} returnvalue;
 	Boolean	insensitive;		/* grayed-out or not... */
+	Boolean changed;		/* true when prog changes config */
 	int	(*valuechanged)();	/* if non-NULL, call */
 	char	**keywords;		/* list of possible values */
+	char	*keyword_name;		/* name of keyword */
 	Widget	mywidget;
+	caddr_t	parent;			/* parent form */
 } UserPrompt;
 
 /* field types */

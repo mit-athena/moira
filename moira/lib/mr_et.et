@@ -1,6 +1,6 @@
 #	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_et.et,v $
-#	$Author: mike $
-#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_et.et,v 1.6 1987-08-21 18:20:49 mike Exp $
+#	$Author: mar $
+#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_et.et,v 1.7 1988-01-14 13:05:41 mar Exp $
 #
 	error_table sms
 
@@ -36,6 +36,9 @@ ec 	SMS_ALREADY_CONNECTED,
 
 ec	SMS_ARGS,
 	"Insufficient number of arguments"
+
+ec	SMS_ARG_TOO_LONG,
+	"An argument is too long"
 
 ec	SMS_NOT_UNIQUE,
 	"Arguments not unique"

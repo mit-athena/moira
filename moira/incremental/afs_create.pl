@@ -33,6 +33,7 @@ die "Usage: $0 locker type cell path user group\n" if (@ARGV != 6);
 $vtype = eval "\$vtypes_$c{$type}";
 die "Cannot create $type volumes in $cell\n" unless $vtype;
 $vname = $vtype . "." . $locker;
+$vname =~ s/[^-A-Za-z0-9_.]//g;		# strip out illegal characters
 
 # Find free space
 ($asrv,$apart) = &afs_find($cell,$type,$quota);
@@ -45,7 +46,7 @@ push(@clean, "$vos remove $asrv $apart $vname -cell $cell >/dev/null");
 
 # Create mountpoint and set quota
 $path =~ s:^/afs/([^.]):/afs/.\1:;
-system("$fs checkb >/dev/null; $fs mkm $path $vname");
+system("$fs checkv >/dev/null; $fs mkm $path $vname");
 &fatal("Unable to create $path") if ($?);
 push(@clean, "$fs rmm $path");
 

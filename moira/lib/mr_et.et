@@ -1,6 +1,6 @@
 #	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_et.et,v $
 #	$Author: mar $
-#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_et.et,v 1.11 1989-06-27 14:35:09 mar Exp $
+#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_et.et,v 1.12 1989-08-09 17:04:38 mar Exp $
 #
 	error_table sms
 
@@ -197,5 +197,8 @@ ec	SMS_BUSY,
 
 ec	SMS_DOWN,
 	"the database is closed right now; try again later"
+
+ec	SMS_LISTLOOP,
+	"Lists are not allowed to contain themselves as members"
 
 	end

@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/printer.c,v 1.10 1990-04-25 12:52:04 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/printer.c,v 1.11 1990-06-14 11:13:06 mar Exp $";
 #endif lint
 
 /*	This is the file printer.c for the MOIRA Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/printer.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/printer.c,v 1.10 1990-04-25 12:52:04 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/printer.c,v 1.11 1990-06-14 11:13:06 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -112,7 +112,7 @@ char ** info;
 	    atoi(info[PCAP_AUTH]) ? "yes" : "no",
 	    info[PCAP_PRICE], info[PCAP_QSERVER]);
     Put_message(buf);
-    sprintf(buf, "Comments: ", info[PCAP_COMMENTS]);
+    sprintf(buf, "Comments: %s", info[PCAP_COMMENTS]);
     Put_message(buf);
     sprintf(buf, MOD_FORMAT, info[PCAP_MODBY], info[PCAP_MODTIME], 
 	    info[PCAP_MODWITH]);
@@ -139,19 +139,30 @@ char ** info;
     Put_message(temp_buf);
     Put_message("");
 
-    GetValueFromUser("Printer Server", &info[PCAP_SPOOL_HOST]);
+    if (GetValueFromUser("Printer Server", &info[PCAP_SPOOL_HOST]) == SUB_ERROR)
+      return(NULL);
     info[PCAP_SPOOL_HOST] = canonicalize_hostname(info[PCAP_SPOOL_HOST]);
-    GetValueFromUser("Spool Directory", &info[PCAP_SPOOL_DIR]);
-    GetValueFromUser("Remote Printer Name", &info[PCAP_RPRINTER]);
+    if (GetValueFromUser("Spool Directory", &info[PCAP_SPOOL_DIR]) ==
+	SUB_ERROR)
+      return(NULL);
+    if (GetValueFromUser("Remote Printer Name", &info[PCAP_RPRINTER]) ==
+	SUB_ERROR)
+      return(NULL);
     if (!strcmp(info[PCAP_QSERVER], "[NONE]")) {
 	free(info[PCAP_QSERVER]);
 	info[PCAP_QSERVER] = strsave("\\[NONE\\]");
     }
-    GetValueFromUser("Quotaserver for this printer", &info[PCAP_QSERVER]);
+    if (GetValueFromUser("Quotaserver for this printer", &info[PCAP_QSERVER]) ==
+	SUB_ERROR)
+      return(NULL);
     info[PCAP_QSERVER] = canonicalize_hostname(info[PCAP_QSERVER]);
-    GetYesNoValueFromUser("Authentication required", &info[PCAP_AUTH]);
-    GetValueFromUser("Price/page", &info[PCAP_PRICE]);
-    GetValueFromUser("Comments", &info[PCAP_COMMENTS]);
+    if (GetYesNoValueFromUser("Authentication required", &info[PCAP_AUTH]) ==
+	SUB_ERROR)
+      return(NULL);
+    if (GetValueFromUser("Price/page", &info[PCAP_PRICE]) == SUB_ERROR)
+      return(NULL);
+    if (GetValueFromUser("Comments", &info[PCAP_COMMENTS]) == SUB_ERROR)
+      return(NULL);
     
     FreeAndClear(&info[PCAP_MODTIME], TRUE);
     FreeAndClear(&info[PCAP_MODBY], TRUE);
@@ -252,6 +263,10 @@ int argc;
     } 
 
     args = AskPcapInfo(SetDefaults(info, argv[1]));
+    if (args == NULL) {
+	Put_message("Aborted.");
+	return(DM_NORMAL);
+    }
 
     if ( (stat = do_mr_query("add_printcap_entry", CountArgs(args), args, 
 			      NullFunc, NULL)) != 0)
@@ -275,12 +290,13 @@ Bool one_item;
 {
     int stat;
 
+    if (AskPcapInfo(info) == NULL)
+      return(DM_QUIT);
     if ((stat = do_mr_query("delete_printcap_entry", 1, &info[PCAP_NAME],
 			     Scream, NULL)) != 0) {
 	com_err(program_name, stat, " printcap entry not deleted.");
 	return(DM_NORMAL);
     }
-    AskPcapInfo(info);
     if ((stat = do_mr_query("add_printcap_entry", CountArgs(info), info,
 			     NullFunc, NULL)) != 0)
 	com_err(program_name, stat, " in ChngPcap");
@@ -346,8 +362,11 @@ char ** info;
     Put_message(temp_buf);
     Put_message("");
 
-    GetValueFromUser("RPC Program Number", &info[PD_IDENT]);
-    GetValueFromUser("Print Server/Supervisor Host", &info[PD_HOST]);
+    if (GetValueFromUser("RPC Program Number", &info[PD_IDENT]) == SUB_ERROR)
+      return(NULL);
+    if (GetValueFromUser("Print Server/Supervisor Host", &info[PD_HOST]) ==
+	SUB_ERROR)
+      return(NULL);
     info[PD_HOST] = canonicalize_hostname(info[PD_HOST]);
     
     FreeAndClear(&info[PD_MODTIME], TRUE);
@@ -406,12 +425,13 @@ Bool one_item;
 {
     int status;
 
+    if (AskPalladiumInfo(info) == NULL)
+      return(DM_QUIT);
     if ((status = do_mr_query("delete_palladium", 1, &info[PD_NAME],
 			       Scream, NULL)) != 0) {
 	com_err(program_name, status, " palladium entry not deleted.");
 	return(DM_NORMAL);
     }
-    AskPalladiumInfo(info);
     if ((status = do_mr_query("add_palladium", CountArgs(info), info,
 			       NullFunc, NULL)) != 0)
       com_err(program_name, status, " in ChngPalladium");
@@ -475,6 +495,10 @@ char **argv;
     }
 
     args = AskPalladiumInfo(SetPdDefaults(info, argv[1]));
+    if (args == NULL) {
+	Put_message("Aborted.");
+	return(DM_NORMAL);
+    }
 
     if ((status = do_mr_query("add_palladium", CountArgs(args), args,
 			       Scream, NULL)) != 0)

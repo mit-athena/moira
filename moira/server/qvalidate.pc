@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qvalidate.pc,v $
  *	$Author: danw $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qvalidate.pc,v 2.2 1997-06-24 20:02:56 danw Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qvalidate.pc,v 2.3 1997-07-03 07:52:31 danw Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_qsupport_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qvalidate.pc,v 2.2 1997-06-24 20:02:56 danw Exp $";
+static char *rcsid_qsupport_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qvalidate.pc,v 2.3 1997-07-03 07:52:31 danw Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -533,10 +533,25 @@ int readlock_table(vo)
                            */
 }
 
-/* Check the database at startup time. NOT! */
+/* Check the database at startup time. */
 
 void sanity_check_database(void)
 {
+    EXEC SQL BEGIN DECLARE SECTION;
+    int oid, id;
+    EXEC SQL END DECLARE SECTION;
+
+    /* Sometimes a crash can leave strings_id in numvalues in an
+       incorrect state. Check for that and fix it. */
+
+    EXEC SQL SELECT value INTO :oid FROM numvalues WHERE name='strings_id';
+
+    for (id=oid+1; sqlca.sqlcode==0; id++)
+	EXEC SQL SELECT string_id INTO :id FROM strings
+	    WHERE string_id=:id;
+
+    if (id!=oid+1)
+	EXEC SQL UPDATE numvalues SET value=:id-1 WHERE name='strings_id';
 }
 
 

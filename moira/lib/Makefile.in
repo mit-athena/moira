@@ -1,9 +1,9 @@
-# $Id: Makefile.in,v 1.1 1998-05-26 18:14:07 danw Exp $
+# $Id: Makefile.in,v 1.2 1998-08-13 18:23:41 danw Exp $
 
 SHELL=/bin/sh
 
 CC=@CC@
-CPPFLAGS=@CPPFLAGS@ @CRYPT_CPPFLAGS@
+CPPFLAGS=@CPPFLAGS@
 CFLAGS=@CFLAGS@
 DEFS=@DEFS@
 ALL_CFLAGS=$(CPPFLAGS) $(CFLAGS) $(DEFS)
@@ -16,7 +16,7 @@ SRCTOP=@top_srcdir@
 BUILDTOP=..
 
 OBJS=	critical.o fixhost.o fixname.o gdss_convert.o gdss_et.o \
-	hash.o idno.o kname_unparse.o krb_et.o mr_access.o mr_auth.o \
+	hash.o kname_unparse.o krb_et.o mr_access.o mr_auth.o \
 	mr_call.o mr_connect.o mr_et.o mr_init.o mr_ops.o mr_query.o \
 	nfsparttype.o sq.o strs.o ureg_err.o
 

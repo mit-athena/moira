@@ -1,4 +1,4 @@
-/* $Id: fixname.c,v 1.13 1998-02-08 20:37:51 danw Exp $
+/* $Id: fixname.c,v 1.14 1998-08-13 18:23:41 danw Exp $
  *
  * Put a name into Moira-canonical form
  *
@@ -13,7 +13,7 @@
 #include <ctype.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/fixname.c,v 1.13 1998-02-08 20:37:51 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/fixname.c,v 1.14 1998-08-13 18:23:41 danw Exp $");
 
 #define LAST_LEN		100
 #define FIRST_LEN		100
@@ -146,4 +146,18 @@ void GetMidInit(char *nm, char *mi)
   if (*nm)
     *mi++ = *nm;
   *mi = '\0';
+}
+
+/*	Function Name: RemoveHyphens
+ *	Description: Removes all hyphens from the string passed to it.
+ *	Arguments: str - the string to remove the hyphens from
+ *	Returns: none
+ */
+
+void RemoveHyphens(char *str)
+{
+  char *hyphen;
+
+  while ((hyphen = strchr(str, '-')))
+    strcpy(hyphen, hyphen + 1);
 }

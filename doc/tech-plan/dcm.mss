@@ -1,9 +1,12 @@
 @Comment[
 	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/doc/tech-plan/dcm.mss,v $
 	$Author: ambar $
-	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/doc/tech-plan/dcm.mss,v 1.5 1987-05-29 17:47:48 ambar Exp $
+	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/doc/tech-plan/dcm.mss,v 1.6 1987-05-29 17:57:42 ambar Exp $
 
 	$Log: not supported by cvs2svn $
+Revision 1.5  87/05/29  17:47:48  ambar
+replaced "dcm" with "DCM" for consistency.
+
 Revision 1.4  87/05/29  14:29:29  ambar
 more changes from Peter.
 
@@ -568,6 +571,17 @@ recovered by the server birddog procedure and the SMS death timer.
 @SubSection(Data Transport Security)
 
 Each datagram which is transmitted over the network is secure using
-Kerberos, the Athena authentication system.  Enciphered information headers
-will proceed each datagram.  The servers decrypt the header information and
-use the packet accordingly.
+Kerberos, the Athena authentication system.  Encyphered information
+headers will proceed each datagram.  The servers decrypt the header
+information and use the packet accordingly.
+
+Data going over the net will be checksummed before it is sent.  This
+checksum will be put in a small encrypted "header", which will be
+decoded on the receiving side.  This will allow detection of lost or
+damaged packets, as well as detection of deliberate attempts to damage
+or change data while it is in transit.
+
+Encryption of the data itself is an option that can be invoked depending
+on the sensitivity of the data involved.  For instance, files such as
+/etc/rvdtdab are not particularly secret, but the MIT id numbers of
+users are.

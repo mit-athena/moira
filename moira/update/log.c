@@ -1,13 +1,13 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/log.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/log.c,v 1.6 1990-03-19 18:14:15 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/log.c,v 1.7 1991-03-08 11:00:46 mar Exp $
  */
 /*  (c) Copyright 1988 by the Massachusetts Institute of Technology. */
 /*  For copying and distribution information, please see the file */
 /*  <mit-copyright.h>. */
 
 #ifndef lint
-static char *rcsid_log_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/log.c,v 1.6 1990-03-19 18:14:15 mar Exp $";
+static char *rcsid_log_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/log.c,v 1.7 1991-03-08 11:00:46 mar Exp $";
 #endif	lint
 
 /*
@@ -73,7 +73,7 @@ void mr_update_com_err_hook(whoami, code, fmt, args)
 	while (*cp)
 	    cp++;
     }
-#if defined(AIX386) || defined(sun)
+#ifdef HAS_VSPRINTF
     vsprintf(cp, fmt, args);
 #else
     _strbuf._flag = _IOWRT+_IOSTRG;

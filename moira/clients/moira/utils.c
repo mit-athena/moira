@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v 1.23 1990-04-04 12:46:23 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v 1.24 1990-04-05 17:35:14 mar Exp $";
 #endif lint
 
 /*	This is the file utils.c for the MOIRA Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v 1.23 1990-04-04 12:46:23 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v 1.24 1990-04-05 17:35:14 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -805,7 +805,7 @@ char *tname;
     }
     elem = (struct qelem *) malloc(sizeof(struct qelem));
     ce = (struct cache_elem *) malloc(sizeof(struct cache_elem));
-    ce->cache_name = tname;
+    ce->cache_name = strsave(tname);
     ce->cache_data = QueueTop(oelem);
     elem->q_data = (char  *)ce;
     AddQueue(elem, cache);
@@ -867,9 +867,11 @@ char  **pointer;
 	argv[0] = tname;
 	argv[1] = "TYPE";
 	argv[2] = *pointer;
-	for (p = argv[2]; *p; p++)
+	/* don't uppercase access flags.  Do uppercase everything else */
+	if (strncmp(tname, "fs_access", 9))
+	  for (p = argv[2]; *p; p++)
 	    if (islower(*p))
-		*p = toupper(*p);
+	      *p = toupper(*p);
 	if (stat = do_mr_query("add_alias", 3, argv, Scream, NULL)) {
 	    com_err(program_name, stat, " in add_alias");
 	} else {

@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/sq.c,v 1.7 1993-10-22 14:20:39 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/sq.c,v 1.8 1996-08-12 20:59:35 danw Exp $
  *
  * Generic Queue Routines
  *
@@ -19,12 +19,14 @@ sq_create()
     register struct save_queue *sq;
 
     sq = (struct save_queue *)malloc(sizeof (struct save_queue));
+    if (!sq) return sq;
     sq->q_next = sq;
     sq->q_prev = sq;
     sq->q_lastget = 0;
     return(sq);
 }
 
+int
 sq_save_data(sq, data)
     register struct save_queue *sq;
     char *data;
@@ -32,13 +34,16 @@ sq_save_data(sq, data)
     register struct save_queue *q;
 
     q = (struct save_queue *)malloc(sizeof (struct save_queue));
+    if (!q) return 0;
     q->q_next = sq;
     q->q_prev = sq->q_prev;
     sq->q_prev->q_next = q;
     sq->q_prev = q;
     q->q_data = data;
+    return 1;
 }
 
+int
 sq_save_args(argc, argv, sq)
     register struct save_queue *sq;
     register int argc;
@@ -49,15 +54,22 @@ sq_save_args(argc, argv, sq)
     register int n;
 
     argv_copy = (char **)malloc(argc * sizeof (char *));
+    if (!argv_copy) return 0;
     for (i = 0; i < argc; i++) {
 	n = strlen(argv[i]) + 1;
 	argv_copy[i] = (char *)malloc(n);
+	if (!argv_copy[i]) {
+	  for(i--; i>=0; i--) free(argv_copy[i]);
+	  free((char **)argv_copy);
+	  return 0;
+	}
 	memcpy(argv_copy[i], argv[i], n);
     }
 
-    sq_save_data(sq, (char *)argv_copy);
+    return sq_save_data(sq, (char *)argv_copy);
 }
 
+int
 sq_save_unique_data(sq, data)
     register struct save_queue *sq;
     char *data;
@@ -67,9 +79,10 @@ sq_save_unique_data(sq, data)
     for (q = sq->q_next; q != sq; q = q->q_next)
 	if (q->q_data == data) return;
 
-    sq_save_data(sq, data);
+    return sq_save_data(sq, data);
 }
 
+int
 sq_save_unique_string(sq, data)
     register struct save_queue *sq;
     char *data;
@@ -79,9 +92,10 @@ sq_save_unique_string(sq, data)
     for (q = sq->q_next; q != sq; q = q->q_next)
 	if (!strcmp(q->q_data, data)) return;
 
-    sq_save_data(sq, data);
+    return sq_save_data(sq, data);
 }
 
+int
 sq_get_data(sq, data)
     register struct save_queue *sq;
     register char **data;
@@ -97,6 +111,7 @@ sq_get_data(sq, data)
     return(1);
 }
 
+int
 sq_remove_data(sq, data)
     register struct save_queue *sq;
     register char **data;

@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_connect.c,v $
  *	$Author: wesommer $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_connect.c,v 1.3 1987-06-01 03:34:20 wesommer Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_connect.c,v 1.4 1987-06-01 04:35:04 wesommer Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_sms_connect_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_connect.c,v 1.3 1987-06-01 03:34:20 wesommer Exp $";
+static char *rcsid_sms_connect_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_connect.c,v 1.4 1987-06-01 04:35:04 wesommer Exp $";
 #endif lint
 
 #include "sms_private.h"
@@ -59,7 +59,9 @@ int sms_noop()
 	
 	parms->sms_procno = SMS_NOOP;
 	parms->sms_argc = 0;
-
+	parms->sms_argl = NULL;
+	parms->sms_argv = NULL;
+	
 	if ((status = sms_do_call(parms, &reply)) || (status = reply->sms_status))
 		goto punt;
 	
@@ -85,7 +87,8 @@ int sms_shutdown(why)
 	parms->sms_argv = (char **)malloc(sizeof(char *) * 2);
 	parms->sms_argv[0] = why;
 	parms->sms_argv[1] = NULL;
-
+	parms->sms_argl = NULL;
+	
 	if ((status = sms_do_call(parms, &reply)) || (status = reply->sms_status))
 		goto punt;
 	

@@ -1,7 +1,7 @@
 #!/bin/csh -f
 # This script performs nfs updates on servers.
 #
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/nfs.sh,v 1.15 1996-02-16 20:08:50 dkk Exp $
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/nfs.sh,v 1.16 1996-07-08 19:24:10 dkk Exp $
 
 # The following exit codes are defined and MUST BE CONSISTENT with the
 # MR error codes the library uses:
@@ -81,9 +81,11 @@ end
 
 
 # cleanup
-  if [ -f $TARFILE ] ; then rm -f $TARFILE ; fi
-  if [ -d $SRC_DIR ] ; then cd $SRC_DIR/.. ; rm -rf $SRC_DIR ; fi
-  if [ -f $0 ] ; then rm -r $0 ; fi
-fi
+if ( -f $TARFILE ) rm -f $TARFILE
+if ( -d $SRC_DIR ) then
+  cd $SRC_DIR/..
+  rm -rf $SRC_DIR
+endif
+if ( -f $0 ) rm -r $0
 
 exit 0

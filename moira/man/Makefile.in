@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.6 2003-01-23 19:41:33 zacheiss Exp $
+# $Id: Makefile.in,v 1.7 2003-02-04 04:42:04 zacheiss Exp $
 
 SHELL=/bin/sh
 @SET_MAKE@
@@ -11,8 +11,8 @@ VPATH=@srcdir@
 prefix=@prefix@
 mandir=@mandir@
 
-MAN1=	bella.1 blanche.1 chfn.1 chpobox.1 chsh.1 dcmmaint.1 listmaint.1 \
-	mailmaint.1 moira.1 mrcheck.1 stanley.1 stella.1 usermaint.1 userreg.1
+MAN1=	blanche.1 chfn.1 chpobox.1 chsh.1 dcmmaint.1 listmaint.1 mailmaint.1 \
+	mitch.1 moira.1 mrcheck.1 stanley.1 stella.1 usermaint.1 userreg.1
 MAN3=	canonicalize_hostname.3 format_filesys_type.3 moira.3 \
 	mr_access.3 mr_auth.3 mr_connect.3 mr_disconnect.3 \
 	mr_host.3 mr_motd.3 mr_noop.3 mr_query.3 \

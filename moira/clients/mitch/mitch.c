@@ -21,7 +21,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Id: bella.c,v 1.1 2003-01-23 19:41:32 zacheiss Exp $");
+RCSID("$Id: mitch.c,v 1.1 2003-02-04 04:44:41 zacheiss Exp $");
 
 struct owner_type {
   int type;
@@ -222,7 +222,7 @@ int main(int argc, char **argv)
   }
 
   /* fire up Moira */
-  status = mrcl_connect(server, "bella", 9, !noauth);
+  status = mrcl_connect(server, "mitch", 9, !noauth);
   if (status == MRCL_AUTH_ERROR)
     {
       com_err(whoami, 0, "Try the -noauth flag if you don't "

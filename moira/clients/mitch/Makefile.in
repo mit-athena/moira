@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.1 2003-01-23 19:41:32 zacheiss Exp $
+# $Id: Makefile.in,v 1.1 2003-02-04 04:44:41 zacheiss Exp $
 
 SHELL=/bin/sh
 @SET_MAKE@
@@ -22,9 +22,9 @@ prefix=@prefix@
 exec_prefix=@exec_prefix@
 bindir=@bindir@
 
-OBJS=bella.o
+OBJS=mitch.o
 
-TARGET=bella
+TARGET=mitch
 
 .c.o:
 	$(CC) -c $(ALL_CFLAGS) $<
@@ -40,7 +40,7 @@ cleandir distclean: clean
 depend:
 
 install: all
-	$(INSTALL_PROGRAM) bella $(bindir)
+	$(INSTALL_PROGRAM) mitch $(bindir)
 
 $(TARGET): $(OBJS) ../lib/libmrclient.a $(MR_LIBDEP)
 	$(CC) -o $@ $(LDFLAGS) $(OBJS) $(LIBS)

@@ -453,9 +453,9 @@ AC_SUBST(MR_LIBDEP)
 
 AC_OUTPUT(Makefile lib/Makefile include/Makefile clients/Makefile \
 	  clients/lib/Makefile clients/addusr/Makefile \
-	  clients/bella/Makefile clients/blanche/Makefile \
-	  clients/chfn/Makefile clients/chpobox/Makefile \
-	  clients/chsh/Makefile clients/mailmaint/Makefile \
+	  clients/blanche/Makefile clients/chfn/Makefile \
+	  clients/chpobox/Makefile clients/chsh/Makefile \
+	  clients/mailmaint/Makefile clients/mitch/Makefile \
 	  clients/moira/Makefile clients/mrcheck/Makefile \
 	  clients/mrtest/Makefile clients/stanley/Makefile \
 	  clients/stella/Makefile update/Makefile man/Makefile \

@@ -1,4 +1,4 @@
-/* $Id: qrtn.pc,v 2.27 2002-09-25 20:43:48 zacheiss Exp $
+/* $Id: qrtn.pc,v 2.28 2003-05-16 15:28:06 zacheiss Exp $
  *
  * Query-processing routines
  *
@@ -20,7 +20,7 @@
 EXEC SQL INCLUDE sqlca;  /* SQL Communications Area */
 EXEC SQL INCLUDE sqlda;  /* SQL Descriptor Area */
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.pc,v 2.27 2002-09-25 20:43:48 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.pc,v 2.28 2003-05-16 15:28:06 zacheiss Exp $");
 
 SQLDA *mr_sqlda;
 EXEC SQL BEGIN DECLARE SECTION;
@@ -559,9 +559,6 @@ int mr_verify_query(client *cl, struct query *q, int argc, char *argv_ro[])
       if (*fr)
 	return MR_ARG_TOO_LONG;
       *to = '\0';
-
-      if (to > Argv[i] && *--to == '\\')
-	return MR_BAD_CHAR;
     }
 
   /* Check initial query access.  If we're acting as a proxy, only allow

@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.51 1990-04-09 12:43:51 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.52 1990-04-09 19:23:04 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_qsupport_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.51 1990-04-09 12:43:51 mar Exp $";
+static char *rcsid_qsupport_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.52 1990-04-09 19:23:04 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -329,6 +329,12 @@ setup_ausr(q, argv, cl)
     client *cl;
 ##{
 ##  int nuid, rowcount;
+##  char *mit_id;
+
+    mit_id = argv[U_MITID];
+##  retrieve (rowcount = any(u.#mit_id where u.#mit_id = mit_id))
+    if (ingres_errno) return(mr_errcode);
+    if (rowcount) return(MR_EXISTS);
 
     if (!strcmp(argv[1], UNIQUE_UID) || atoi(argv[1]) == -1) {
 	if (set_next_object_id("uid", "users"))
@@ -2550,7 +2556,7 @@ register_user(q, argv, cl)
 
     /* find user */
 ##  repeat retrieve (users_id = u.#users_id)
-##	where u.#uid = @uid and (u.status = 0 or u.status = 5)
+##	where u.#uid = @uid and (u.status = 0 or u.status = 5 or u.status = 6)
 ##  inquire_equel(rowcount = "rowcount");
     if (rowcount == 0)
       return(MR_NO_MATCH);

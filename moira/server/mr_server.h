@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_server.h,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_server.h,v 1.17 1989-09-08 15:24:15 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_server.h,v 1.18 1989-09-08 15:35:04 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
@@ -100,5 +100,3 @@ extern int newqueries, oldqueries;
 #define GROGGY 3
 extern int dormant;
 
-/* If the motd file exists, the server will go to sleep. */
-#define SMS_MOTD_FILE "/etc/smsdown"

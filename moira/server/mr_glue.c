@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_glue.c,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_glue.c,v 1.11 1989-08-25 14:39:32 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_glue.c,v 1.12 1989-09-08 15:30:24 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -12,7 +12,7 @@
  */
 
 #ifndef lint
-static char *rcsid_sms_glue_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_glue.c,v 1.11 1989-08-25 14:39:32 mar Exp $";
+static char *rcsid_sms_glue_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_glue.c,v 1.12 1989-09-08 15:30:24 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -185,14 +185,16 @@ trigger_dcm(dummy0, dummy1, cl)
 	client *cl;
 {
 	register int pid, status;
+	char prog[128];
 	
 	if (status = check_query_access(&pseudo_query, 0, cl))
 	    return(status);
 
+	sprintf(prog, "%s/startdcm", BIN_DIR);
 	pid = vfork();
 	switch (pid) {
 	case 0:
-		execl("/u1/sms/bin/startdcm", "startdcm", 0);
+		execl(prog, "startdcm", 0);
 		exit(1);
 		
 	case -1:

@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_scall.c,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_scall.c,v 1.17 1989-06-28 14:02:18 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_scall.c,v 1.18 1989-09-08 15:33:32 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_sms_scall_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_scall.c,v 1.17 1989-06-28 14:02:18 mar Exp $";
+static char *rcsid_sms_scall_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_scall.c,v 1.18 1989-09-08 15:33:32 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -310,18 +310,20 @@ trigger_dcm(dummy0, dummy1, cl)
 	client *cl;
 {
 	register int pid;
-	
+	char prog[128];
+
 	cl->reply.sms_argc = 0;
 
 	if (cl->reply.sms_status = check_query_access(&pseudo_query, 0, cl) )
 		return(cl->reply.sms_status);
 
+	sprintf(prog, "%s/startdcm", BIN_DIR);
 	pid = vfork();
 	switch (pid) {
 	case 0:
 	    	for (dummy0 = getdtablesize() - 1; dummy0 > 2; dummy0--)
 		  close(dummy0);
-		execl("/u1/sms/bin/startdcm", "startdcm", 0);
+		execl(prog, "startdcm", 0);
 		exit(1);
 		
 	case -1:

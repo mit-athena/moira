@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.24 1989-08-25 14:41:09 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.25 1989-09-08 15:32:06 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -16,7 +16,7 @@
  * 
  */
 
-static char *rcsid_sms_main_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.24 1989-08-25 14:41:09 mar Exp $";
+static char *rcsid_sms_main_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.25 1989-09-08 15:32:06 mar Exp $";
 
 #include <mit-copyright.h>
 #include <strings.h>
@@ -45,7 +45,6 @@ extern char buf1[BUFSIZ];
 extern char *takedown;
 extern int errno;
 extern FILE *journal;
-#define JOURNAL "/u1/sms/journal"
 
 extern char *malloc();
 extern int free();

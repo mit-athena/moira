@@ -1,19 +1,20 @@
 /*
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v $
- *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.13 1988-08-02 21:14:29 mar Exp $
+ *      $Author: qjb $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.14 1988-08-03 18:50:38 qjb Exp $
  *
  *      Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
  *      Server for user registration with SMS and Kerberos.
  *
- *      This program is a client of the SMS server and the Kerberos
- *      admin_server, and is a server for the userreg program.
- * 
+ *      This program is a client of the Kerberos admin_server and a
+ *      server for the userreg program.  It is not a client of the
+ *      SMS server as it is linked with libsmsglue which bypasses
+ *      the network protocol.
  */
 
 #ifndef lint
-static char *rcsid_reg_svr_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.13 1988-08-02 21:14:29 mar Exp $";
+static char *rcsid_reg_svr_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.14 1988-08-03 18:50:38 qjb Exp $";
 #endif lint
 
 #include <stdio.h>
@@ -44,9 +45,11 @@ static char *rcsid_reg_svr_c = "$Header: /afs/.athena.mit.edu/astaff/project/moi
 #define FALSE 0
 #endif
 
+#define FAIL_INST "reg_svr"	/* Instance for failure zephyrgrams */
+
 #define CUR_UREG_VERSION 1	/* Version for the register protocol */
 #define SUCCESS 0		/* General purpose success code */
-#define NON_ZERO 1		/* To use when any non-zero number will work */
+#define FAILURE 1		/* To use when any non-zero number will work */
 #define min(a,b) ((a)>(b)?(b):(a))
 #define MIN_UNAME 3		/* Username must be between three and */
 #define MAX_UNAME 8		/*    eight characters long. */
@@ -113,8 +116,9 @@ main(argc,argv)
     int status = SUCCESS;	/* Error status */
     char retval[BUFSIZ];	/* Buffer to hold return message for client */
     
+    void failure_alert();	/* Log an unexplainable failure */
     int parse_pkt();		/* Parse a packet from the client */
-    void format_pkt();		/* Prepare a packet to send to client*/
+    int format_pkt();		/* Prepare a packet to send to client*/
     int verify_user();		/* Make sure user is allowed to register */
     int reserve_user();		/* Reserve a login for this user */
     int set_password();		/* Set this user's password */
@@ -210,7 +214,7 @@ main(argc,argv)
 	{
 	    /* If error, format packet to send back to the client */
 	    pktlen = sizeof(packet);
-	    format_pkt(packet, &pktlen, seqno, status, (char *)NULL);
+	    (void) format_pkt(packet, &pktlen, seqno, status, (char *)NULL);
 	    /* Report the error the the client */
 	    (void)  sendto(s, packet, pktlen, 0, &sin, addrlen);
 	    continue;
@@ -231,13 +235,17 @@ main(argc,argv)
 	    
 	  default:
 	    status = UREG_UNKNOWN_REQUEST;
-	    /* Send email ### */
+	    failure_alert("Unknown request %d from userreg.",
+			  message.request);
 	    break;
 	}
 	
 	/* Report what happened to client */
 	pktlen = sizeof(packet);
-	format_pkt(packet, &pktlen, seqno, status, retval);
+	if (format_pkt(packet, &pktlen, seqno, status, retval))
+	{
+	    com_err(whoami,0,"Client error message was truncated.");
+	}
 	(void) sendto(s, packet, pktlen, 0, &sin, addrlen);
     }
 }
@@ -249,48 +257,54 @@ char *tkt_string()
     return("/tmp/tkt_ureg");
 }
 
-void format_pkt(packet, pktlenp, seqno, status, message)
-  char *packet;
-  int *pktlenp;
-  U_32BIT seqno;
-  int status;
-  char *message;
-  /* This routine prepares a packet to send back to the client. */
+void failure_alert(msg, args)
+  char *msg;			/* Text of message, printf format */
+				/* args = arguments, printf style */
+  /* This routine takes care of logging critical error from userreg
+     in the appropriate way. */
 {
-    /* Convert byte order to network byte order */
-    U_32BIT vers = htonl((U_32BIT)CUR_UREG_VERSION);
-    status = htonl((U_32BIT)status);
-    
-    /* Put current user registration protocol version into the packet */
-    bcopy((char *)&vers, packet, sizeof(long));
-    /* Put sequence number into the packet */
-    bcopy((char *)&seqno, packet+sizeof(long), sizeof(long));
-    /* Put error status into the packet */
-    bcopy((char *)&status, packet+ 2*sizeof(long), sizeof(long));
-    *pktlenp = sizeof(long) * 3;
-    /* Copy the message into the packet */
-    (void) strcpy(packet+3*sizeof(long), message);
-    (*pktlenp) += strlen(message);
+    critical_alert(FAIL_INST, msg, args);
+    com_err(whoami, 0, msg, args);
 }
 
-encrypt_mitid(encrypt, idnumber, first, last)
-  char *encrypt;		/* Buffer to hold encrypted ID */
-  char *idnumber;		/* Plain text ID */
-  char *first;			/* First name */
-  char *last;			/* Last name */
-/* A routine with exactly this function belongs in the SMS library. ### 
-   This routine encrypts the MIT ID so that it will match what is in the
-   database. */
+int format_pkt(packet, pktlenp, seqno, cl_status, message)
+  char *packet;			/* Packet buffer */
+  int *pktlenp;			/* Pointer to packet size */
+  U_32BIT seqno;		/* Sequence number */
+  int cl_status;		/* Error status to return to client */
+  char *message;		/* Error message to return to client */
+  /* This routine prepares a packet to send back to the client.  A 
+     non-zero return status means that the client error message was 
+     truncated. */
 {
-    char salt[3];
-    extern char *crypt();
-    
-    /* Use the last and first initials as salt. */
-    salt[0] = tolower(last[0]);
-    salt[1] = tolower(first[0]);
-    salt[2] = 0;
+    int len;			/* Amount of message to send */
+    int status = SUCCESS;	/* Return status */
 
-    (void) strcpy(encrypt, crypt(&idnumber[2], salt));
+    /* Convert byte order to network byte order */
+    U_32BIT vers = htonl((U_32BIT)CUR_UREG_VERSION);
+    cl_status = htonl((U_32BIT)cl_status);
+    /* Put current user registration protocol version into the packet */
+    bcopy((char *)&vers, packet, sizeof(U_32BIT));
+    /* Put sequence number into the packet */
+    bcopy((char *)&seqno, packet+sizeof(U_32BIT), sizeof(U_32BIT));
+    /* Put error status into the packet */
+    bcopy((char *)&cl_status, packet+ 2*sizeof(U_32BIT), sizeof(U_32BIT));
+    
+    /* Find out how much of the message to copy; truncate if too short. */
+    /* How much room is there left? */
+    len = *pktlenp - sizeof(U_32BIT)*3;
+    if (len < strlen(message) + 1) /* Room for null terminator */
+    {
+	status = FAILURE;	/* Message was truncated */
+	/* Truncate the message */
+	message[len-1] = NULL;
+    }
+
+    /* Copy the message into the packet */
+    (void) strcpy(packet+3*sizeof(U_32BIT), message);
+    *pktlenp = 3*sizeof(U_32BIT) + strlen(message);
+    
+    return status;
 }
 
 int parse_encrypted(message,data)
@@ -300,8 +314,8 @@ int parse_encrypted(message,data)
    the ID sent accross in the packet.  The information in the packet
    was created in the following way:
 
-   The plain text ID number was encrypted via encrypt_mitid() ###
-   resulting in the form that would appear in the SMS database.  This is
+   The plain text ID number was encrypted via EncryptID() resulting
+   in the form that would appear in the SMS database.  This is
    concatinated to the plain text ID so that the ID string contains plain
    text ID followed by a null followed by the encrypted ID.  Other
    information such as the username or password is appended.  The whole
@@ -343,10 +357,6 @@ int parse_encrypted(message,data)
        padded. */
     pcbc_encrypt(message->encrypted,decrypt, decrypt_len, sched, key, DECRYPT);
     
-#ifdef DEBUG
-    fprintf(stderr,"Decrypted information: %s\n",decrypt);
-#endif
-
     /* Extract the plain text and encrypted ID fields from the decrypted
        packet information. */
     /* Since the decrypted information starts with the plain-text ID
@@ -370,12 +380,12 @@ int parse_encrypted(message,data)
     len = message->encrypted_len - (temp - decrypt);
     
     /* Now compare encrypted ID's don't match. */
-    if (strcmp(hashid, data->mit_id)) status = NON_ZERO;
+    if (strcmp(hashid, data->mit_id)) status = FAILURE;
     if (status == SUCCESS)
     {
-	encrypt_mitid(recrypt, idnumber, message->first, message->last);
+	EncryptID(recrypt, idnumber, message->first, message->last);
 	/* Now compare encrypted plain text to ID from database. */
-	if (strcmp(recrypt, data->mit_id)) status = NON_ZERO;
+	if (strcmp(recrypt, data->mit_id)) status = FAILURE;
     }
     
     if (status == SUCCESS)
@@ -419,8 +429,9 @@ int db_callproc(argc,argv,queue)
 
     if (argc != U_END)
     {
-	/* Wrong number of arguments; stop searching and send email ### */
-	status = NON_ZERO;
+	failure_alert
+	    ("Wrong number of arguments returned from get_user_by_name.");
+	status = SMS_ABORT;
     }
     else
     {
@@ -449,7 +460,7 @@ int find_user(message)
    him/her in the SMS database.  It returns the status of the SMS
    query that it calls. */
 {
-#define GUBN_ARGS 2		/* Arguements needed by get_uer_by_name */
+#define GUBN_ARGS 2		/* Arguements needed by get_user_by_name */
     char *q_name;		/* Name of query */
     int q_argc;			/* Number of arguments for query */
     char *q_argv[GUBN_ARGS];	/* Arguments to query */
@@ -463,25 +474,6 @@ int find_user(message)
        being zeroed means that no user was found. */
     bzero(message->db.mit_id,sizeof(message->db.mit_id));
     
-    /* Make sure that there are no wild cards in the names.
-       Just think.  A user giving his name as * * could tie up this
-       server for eight hours and could tie up the SMS database
-       for quite a while as well! */
-    if (index(message->first,'*') || index(message->first,'?') ||
-	index(message->last,'*') || index(message->last,'?'))
-    {
-	/* Act like this name couldn't be found in the SMS database. 
-	   This is okay because first of all, we want the user to think
-	   that * * is an invalid name, and secondly, it really is; the
-	   SMS library checks to make sure that names don't contain these
-	   characters when they are entered. */
-	status = SMS_NO_MATCH;
-#ifdef DEBUG
-	fprintf(stderr,"%s %s contains wild cards.\n",message->first,
-		message->last);
-#endif DEBUG
-    }
-
     if (status == SUCCESS)
     {
 	/* Get ready to make an SMS query */
@@ -497,7 +489,7 @@ int find_user(message)
 	status = sms_query(q_name,q_argc,q_argv,db_callproc,(char *)queue);
 	
 #ifdef DEBUG
-	fprintf(stderr," %d returned by get_user_by_name",status);
+	fprintf(stderr," %d returned by get_user_by_name\n",status);
 #endif
 	
 	if (status == SMS_SUCCESS) 
@@ -527,6 +519,43 @@ int find_user(message)
 #endif DEBGUG
 
     return status;
+}
+
+/* The ureg_validate_char variable and routine were taken verbatim 
+   out of server/qsupport.qc where they are called
+   validate_chars.  At some point, it may be desirable
+   to put this functionality in one place. */
+
+/* ureg_validate_char: verify that there are no illegal characters in
+ * the string.  Legal characters are printing chars other than 
+ * ", *, ?, \, [ and ].
+ */
+static int illegalchars[] = {
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, /* ^@ - ^O */
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, /* ^P - ^_ */
+    0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, /* SPACE - / */
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, /* 0 - ? */
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, /* @ - O */
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, /* P - _ */
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, /* ` - o */
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, /* p - ^? */
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+};
+
+ureg_validate_char(s)
+register char *s;
+{
+    while (*s)
+      if (illegalchars[*s++])
+	return(FAILURE);
+    return(SUCCESS);
 }
 
 parse_pkt(packet, pktlen, seqnop, message)
@@ -582,14 +611,24 @@ parse_pkt(packet, pktlen, seqnop, message)
 	packet += sizeof(U_32BIT);
 	pktlen -= sizeof(U_32BIT);
 	
-	/* Extract first name from the packet */
-	message->first = packet;
-	
-	/* Scan forward until null appears in the packet or there
-	   is no more packet! */
-	for (; *packet && pktlen > 0; --pktlen, ++packet) continue;
-	if (pktlen <= 0) 
-	    status = UREG_BROKEN_PACKET;
+	/* Make sure that the packet contains only valid characters up 
+	   to the next null */
+	if (ureg_validate_char(packet) != SUCCESS)
+	{
+	    com_err(whoami,0,"Packet contains invalid characters.");
+	    status = UREG_USER_NOT_FOUND;
+	}
+	else
+	{
+	    /* Extract first name from the packet */
+	    message->first = packet;
+	    
+	    /* Scan forward until null appears in the packet or there
+	       is no more packet! */
+	    for (; *packet && pktlen > 0; --pktlen, ++packet) continue;
+	    if (pktlen <= 0) 
+		status = UREG_BROKEN_PACKET;
+	}
     }
     
     if (status == SUCCESS)
@@ -597,12 +636,20 @@ parse_pkt(packet, pktlen, seqnop, message)
 	/* Skip over the null */
 	packet++, pktlen--;
 	
-	/* Extract last name from the packet */
-	message->last = packet;
-	
-	for (; *packet && pktlen > 0; --pktlen, ++packet) continue;
-	if (pktlen <= 0)
-	    status = UREG_BROKEN_PACKET;
+	if (ureg_validate_char(packet) != SUCCESS)
+	{
+	    com_err(whoami,0,"Packet contains invalid characters.");
+	    status = UREG_USER_NOT_FOUND;
+	}
+	else
+	{
+	    /* Extract last name from the packet */
+	    message->last = packet;
+	    
+	    for (; *packet && pktlen > 0; --pktlen, ++packet) continue;
+	    if (pktlen <= 0)
+		status = UREG_BROKEN_PACKET;
+	}
     }
 
     if (status == SUCCESS)
@@ -690,7 +737,8 @@ int verify_user(message,retval)
 
 	      default:
 		status = UREG_MISC_ERROR;
-		/* ### Send email... */
+		failure_alert("Bad user state for %s %s.",
+			      message->first,message->last);
 		break;
 	    }
 	    /* Set retval to the login name so that the client can use
@@ -714,6 +762,12 @@ int ureg_get_tkt()
 				krbhst, 1, KEYFILE))
 	status += krb_err_base;
 
+#ifdef DEBUG
+    if (status == SUCCESS)
+	com_err(whoami,status,"Succeeded in getting tickets.");
+    else
+	com_err(whoami,status,"Failed to get tickets.");
+#endif
     return status;
 }
 
@@ -724,8 +778,8 @@ int null_callproc(argc,argv,message)
   /* This routine is a null callback that should be used for queries that
      do not return tuples.  If it ever gets called, something is wrong. */
 {
-    /* Send email... ### */
-    return NON_ZERO;
+    failure_alert("Something returned from an update query.");
+    return FAILURE;
 }
 
 int do_admin_call(login, passwd, uid)
@@ -738,13 +792,16 @@ int do_admin_call(login, passwd, uid)
     int status;			/* Error status */
     char uid_buf[20];		/* Holds uid for kerberos */
 
+    com_err(whoami,0,"Entering do_admin_call");
+
     if ((status = ureg_get_tkt()) == SUCCESS)
     {
 	/* Try to reserve kerberos principal.  To do this, send a 
 	   password request and a null password.  It will only succeed
 	   if there is no principal or the principal exists and has no 
 	   password. */
-	/* 13 chars of placebo for backwards-compatability ### */
+	/* 13 chars of placebo for backwards-compatability - the admin
+	   server protocol reqires this. */
 	bzero(uid_buf,sizeof(uid_buf));
 	(void) sprintf(uid_buf, "%13s", uid);
 	
@@ -756,11 +813,12 @@ int do_admin_call(login, passwd, uid)
 	    if (strcmp(admin_errmsg,
 		       "Principal already in kerberos database.") == 0)
 		status = UREG_KRB_TAKEN;
-	    /* Send email... ### */
+	    failure_alert("%s is known to Kerberos but not SMS.", login);
 	}
     }
     
     dest_tkt();
+    com_err(whoami,status," returned from do_adin_call");
     return status;
 }
 
@@ -775,9 +833,8 @@ int reserve_user(message,retval)
     char fstype_buf[7];		/* Buffer to hold fs_type, a 16 bit number */
     char *login;		/* The login name the user wants */
     register int i;		/* A counter */
-    int invalid = FALSE;	/* True if login name is invalid */
 
-    /* Log that we are about to resever a user. */
+    /* Log that we are about to reserve a user. */
     com_err(whoami, 0, "reserve_user %s %s", 
 	    message->first, message->last);
     
@@ -799,11 +856,13 @@ int reserve_user(message,retval)
 	    status = UREG_INVALID_UNAME;
     if (status == SUCCESS)
     {
-	for (i = 0; ((i < strlen(login)) && (!invalid)); i++)
-	    invalid = (!islower(login[i]) && !isdigit(login[i]) &&
-		       (login[i] != '_') && (login[i] != '.'));
-	if (invalid)
-	    status = UREG_INVALID_UNAME;
+	for (i = 0; i < strlen(login); i++)
+	    if (!islower(login[i]) && !isdigit(login[i]) &&
+		(login[i] != '_') && (login[i] != '.'))
+	    {
+		status = UREG_INVALID_UNAME;
+		break;
+	    }
     }
     if (status == SUCCESS)
     {
@@ -827,7 +886,8 @@ int reserve_user(message,retval)
 	    break;
 	  default:
 	    status = UREG_MISC_ERROR;
-	    /* Send email... ### */
+	    failure_alert("%s returned from register_user.",
+			  error_message(status));
 	    break;
 	}
     }
@@ -848,7 +908,7 @@ int reserve_user(message,retval)
 
 int set_final_status(login)
   char *login;
-    /* This routine updates a users registration status to fully 
+    /* This routine updates a user's registration status to fully 
        registered. */
 {
     char *q_name;		/* Name of SMS query */
@@ -866,9 +926,8 @@ int set_final_status(login)
     q_argv[1] = state;
     if ((status = sms_query(q_name, q_argc, q_argv, null_callproc,
 			    (char *)0)) != SMS_SUCCESS)
-    {
-	/* Send email ### */
-    }
+	failure_alert("%s returned from update_user_status.",
+		      error_message(status));
     
     com_err(whoami,status," returned from set_final_status");
     return status;

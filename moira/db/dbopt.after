@@ -35,11 +35,11 @@ modify i_str_name to hash
 index on filesys is i_fil_grp (owners)
 modify i_fil_grp to btree
 
-modify nfsquota to cbtree on users_id
-index on nfsquota is i_nfq_fil (filsys_id)
-modify i_nfq_fil to cbtree
-index on nfsquota is i_nfq_phys (phys_id)
-modify i_nfq_phys to cbtree
+modify quota to cbtree on entity_id
+index on quota is i_qot_fil (filsys_id)
+modify i_qot_fil to cbtree
+index on quota is i_qot_phys (phys_id)
+modify i_qot_phys to cbtree
 
 modify zephyr to cbtree unique on class
 

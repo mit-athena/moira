@@ -1,6 +1,6 @@
 #
 # 	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/Makefile,v $
-#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/Makefile,v 1.6 1988-08-04 14:27:42 mar Exp $
+#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/Makefile,v 1.7 1988-08-23 12:04:36 mar Exp $
 #
 
 #
@@ -15,74 +15,46 @@ LINTFLAGS= ${INCS}
 LDFLAGS= -x
 
 # server object files
-SOBJS=	dispatch.o initialize_server.o \
-	quit.o xfer_001.o misc.o inst_001.o sync.o auth_001.o \
-	exec_001.o get_file.o xfer_002.o exec_002.o
+SOBJS=	update_server.o auth_001.o inst_001.o xfer_002.o exec_002.o \
+	hostname.o log.o get_file.o checksum.o
 
 # client object files
 COBJS=	client.o ticket.o send_file.o checksum.o hostname.o
 
-# common object files
-COMOBJS= log_error.o hostname.o smsu_int.o log.o checksum.o
-
-SSRCS=	dispatch.c initialize_server.c \
-	quit.c xfer_001.c misc.c inst_001.c sync.c auth_001.c \
-	exec_001.c get_file.c xfer_002.c exec_002.c
+SSRCS=	update_server.c auth_001.c inst_001.c xfer_002.c exec_002.c \
+	hostname.c log.c get_file.c checksum.c
 
 CSRCS=	client.c ticket.c send_file.c checksum.c hostname.c
 
-COMSRCS= log_error.c hostname.c log.c checksum.c
+LIBS=	-L../lib -lsms -lgdb -lkrb -ldes -lcom_err
 
-LIBS=	-L../lib -lgdb -lkrb -ldes -lcom_err
+all:	sms_update.o update_server
 
-all:	sms_update.o # server test smskey
+update_server: ${SOBJS}
+	cc ${CFLAGS} -o update_server ${SOBJS} ${LIBS}
 
 sms_update.o: ${COBJS}
 	ld -r -o sms_update.o ${COBJS}
 
-client.o: client.c
-
 
 clean:	
-	-rm -f ${COBJS} ${SOBJS} ${COMOBJS} client.o
-	-rm -f server sms_update.o test test.o smsu_int.h smskey
+	-rm -f ${COBJS} ${SOBJS}
+	-rm -f update_server sms_update.o
 	-rm -f core a.out *~ \#*
 
 install:
-# This is probably wrong..
-	install server ../bin/update_server
-	install test ../bin/update_test
-	install smskey ../bin/smskey
+	install update_server ../bin/update_server
 
 lint:
-	lint ${LINTFLAGS} ${SSRCS} ${COMSRCS}
-	lint ${LINTFLAGS} ${CSRCS} ${COMSRCS}
-	lint ${LINTFLAGS} smskey.c
+	lint ${LINTFLAGS} ${SSRCS}
+	lint ${LINTFLAGS} ${CSRCS}
 
-server:	${SOBJS} ${COMOBJS}
-	rm -f server
-	${CC} ${CFLAGS} -o server ${SOBJS} ${COMOBJS} ${LIBS}
 
 smskey:	smskey.c
 	${CC} ${CFLAGS} -o smskey smskey.c -ldes
 
-# sms_update.o:	${COBJS} ${COMOBJS}
-#	ld ${LDFLAGS} -r -o sms_update.o ${COBJS} ${COMOBJS}
-#	-chmod -x sms_update.o
-
-smsu_int.o smsu_int.h: smsu_int.et
-	compile_et smsu_int
-
-test.o: test.c
-	-rm -f test.o
-	${CC} ${CFLAGS} -c test.c
-
-test:	test.o sms_update.o
-	rm -f test
-	${CC} ${CFLAGS} -o test test.o sms_update.o ${LIBS}
-
-SRCS=	${SSRCS} ${CSRCS} ${COMSRCS} smskey.c
-depend:	smsu_int.h
+SRCS=	${SSRCS} ${CSRCS}
+depend:
 	-rm -f eddep makedep
 	${CC} -M ${CFLAGS} ${SRCS} | \
 	sed -e 's; ./; ;' \
@@ -100,6 +72,75 @@ depend:	smsu_int.h
 	cp Makefile Makefile.bak
 	ed - Makefile < eddep
 	rm -f eddep makedep
-#
+
 # the last line in the makefile should be...
 # DO NOT DELETE THIS LINE
+
+update_server.o: update_server.c /usr/include/stdio.h ../include/gdb.h
+update_server.o: /usr/include/sys/types.h /usr/include/sys/time.h
+update_server.o: /usr/include/time.h /usr/include/errno.h
+update_server.o: /usr/include/strings.h ../include/sms.h ../include/sms_et.h
+update_server.o: /usr/include/sys/file.h /usr/include/sys/ioctl.h
+update_server.o: /usr/include/sys/ttychars.h /usr/include/sys/ttydev.h update.h
+update_server.o: kludge.h
+auth_001.o: auth_001.c /usr/include/stdio.h /usr/include/strings.h
+auth_001.o: ../include/gdb.h /usr/include/sys/types.h /usr/include/sys/time.h
+auth_001.o: /usr/include/time.h kludge.h /usr/include/krb.h
+auth_001.o: ../include/mit-copyright.h /usr/include/des.h
+auth_001.o: ../include/mit-copyright.h /usr/include/des_conf.h
+auth_001.o: ../include/mit-copyright.h /usr/include/netinet/in.h
+auth_001.o: /usr/include/errno.h
+inst_001.o: inst_001.c /usr/include/stdio.h ../include/gdb.h
+inst_001.o: /usr/include/sys/types.h /usr/include/sys/time.h
+inst_001.o: /usr/include/time.h kludge.h
+xfer_002.o: xfer_002.c /usr/include/stdio.h ../include/gdb.h
+xfer_002.o: /usr/include/sys/types.h /usr/include/sys/time.h
+xfer_002.o: /usr/include/time.h /usr/include/ctype.h /usr/include/sys/param.h
+xfer_002.o: /usr/include/machine/machparam.h /usr/include/signal.h
+xfer_002.o: /usr/include/sys/types.h /usr/include/sys/file.h
+xfer_002.o: /usr/include/strings.h ../include/sms.h ../include/sms_et.h
+xfer_002.o: kludge.h
+exec_002.o: exec_002.c /usr/include/stdio.h /usr/include/sys/wait.h
+exec_002.o: /usr/include/signal.h ../include/gdb.h /usr/include/sys/types.h
+exec_002.o: /usr/include/sys/time.h /usr/include/time.h ../include/sms.h
+exec_002.o: ../include/sms_et.h update.h kludge.h
+hostname.o: hostname.c /usr/include/stdio.h /usr/include/sys/types.h
+hostname.o: /usr/include/netinet/in.h /usr/include/netdb.h /usr/include/ctype.h
+hostname.o: /usr/include/strings.h
+log.o: log.c /usr/include/stdio.h ../include/com_err.h
+log.o: ../include/mit-sipb-copyright.h /usr/include/varargs.h update.h
+log.o: /usr/include/krb.h ../include/mit-copyright.h /usr/include/des.h
+log.o: ../include/mit-copyright.h /usr/include/des_conf.h
+log.o: ../include/mit-copyright.h
+get_file.o: get_file.c /usr/include/stdio.h ../include/gdb.h
+get_file.o: /usr/include/sys/types.h /usr/include/sys/time.h
+get_file.o: /usr/include/time.h /usr/include/ctype.h /usr/include/sys/param.h
+get_file.o: /usr/include/machine/machparam.h /usr/include/signal.h
+get_file.o: /usr/include/sys/types.h /usr/include/sys/file.h ../include/sms.h
+get_file.o: ../include/sms_et.h update.h kludge.h
+checksum.o: checksum.c /usr/include/stdio.h /usr/include/sys/file.h
+client.o: client.c /usr/include/stdio.h /usr/include/strings.h ../include/gdb.h
+client.o: /usr/include/sys/types.h /usr/include/sys/time.h /usr/include/time.h
+client.o: /usr/include/sys/param.h /usr/include/machine/machparam.h
+client.o: /usr/include/signal.h /usr/include/sys/types.h
+client.o: /usr/include/sys/wait.h ../include/update.h /usr/include/errno.h
+client.o: ../include/dcm.h ../include/sms.h ../include/sms_et.h
+client.o: /usr/include/krb.h ../include/mit-copyright.h /usr/include/des.h
+client.o: ../include/mit-copyright.h /usr/include/des_conf.h
+client.o: ../include/mit-copyright.h
+ticket.o: ticket.c /usr/include/stdio.h /usr/include/krb.h
+ticket.o: ../include/mit-copyright.h /usr/include/des.h
+ticket.o: ../include/mit-copyright.h /usr/include/des_conf.h
+ticket.o: ../include/mit-copyright.h /usr/include/sys/types.h
+ticket.o: /usr/include/sys/stat.h /usr/include/strings.h ../include/update.h
+ticket.o: ../include/com_err.h ../include/mit-sipb-copyright.h
+send_file.o: send_file.c /usr/include/stdio.h ../include/com_err.h
+send_file.o: ../include/mit-sipb-copyright.h ../include/gdb.h
+send_file.o: /usr/include/sys/types.h /usr/include/sys/time.h
+send_file.o: /usr/include/time.h ../include/dcm.h ../include/sms.h
+send_file.o: ../include/sms_et.h /usr/include/sys/file.h
+send_file.o: /usr/include/sys/stat.h ../include/update.h
+checksum.o: checksum.c /usr/include/stdio.h /usr/include/sys/file.h
+hostname.o: hostname.c /usr/include/stdio.h /usr/include/sys/types.h
+hostname.o: /usr/include/netinet/in.h /usr/include/netdb.h /usr/include/ctype.h
+hostname.o: /usr/include/strings.h

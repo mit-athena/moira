@@ -1,4 +1,4 @@
-/* $Id: cluster.c,v 1.63 2002-03-20 12:55:43 zacheiss Exp $
+/* $Id: cluster.c,v 1.64 2002-08-02 10:32:25 zacheiss Exp $
  *
  *	This is the file cluster.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -169,6 +169,7 @@ static char **SetClusterDefaults(char **info, char *name)
 static char **SetContainerDefaults(char **info, char *name)
 {
   info[CON_NAME] = strdup(name);
+  info[CON_PUBLIC] = strdup(DEFAULT_NO);
   info[CON_DESCRIPT] = strdup(CON_DEFAULT_TYPE);
   info[CON_LOCATION] = strdup(CON_DEFAULT_TYPE);
   info[CON_CONTACT] = strdup(CON_DEFAULT_TYPE);
@@ -822,6 +823,9 @@ char **AskMCDInfo(char **info, int type, Bool name)
 	return NULL;
       break;
     case CONTAINER:
+      if (GetYesNoValueFromUser("Is this a public container", 
+				&info[CON_PUBLIC]) == SUB_ERROR)
+	return NULL;
       if (GetValueFromUser("Container's Description:", &info[CON_DESCRIPT]) ==
 	  SUB_ERROR)
 	return NULL;
@@ -2117,10 +2121,28 @@ int ShowContainerInfo(int argc, char **argv)
 static char *PrintContainerInfo(char **info)
 {
   char buf[BUFSIZ], tbuf[256];
+  char *args[2];
+  struct mqelem *elem = NULL;
+  int stat;
 
   Put_message("");
-  sprintf(buf, "Container:      %-16s", info[CON_NAME]);
+  sprintf(buf, "Container:      %-16s    Public:      %s", info[CON_NAME],
+	  atoi(info[CON_PUBLIC]) ? "Yes" : "No");
   Put_message(buf);
+  /* Do a get_container_list to see what the associated list is. */
+  args[0] = info[CON_NAME];
+  if (stat = do_mr_query("get_container_list", 1, args, StoreInfo, &elem))
+    {
+      if (stat != MR_NO_MATCH)
+	com_err(program_name, stat, " looking up container list");
+    }
+  else 
+    {
+      sprintf(buf, "Container's associated list is: LIST %s",
+	      ((char **)elem->q_data)[1]);
+      Put_message(buf);
+      FreeQueue(elem);
+    }
   sprintf(buf, "Description:    %-16s", info[CON_DESCRIPT]);
   Put_message(buf);
   sprintf(buf, "Location:       %-16s    Contact:     %s", info[CON_LOCATION],
@@ -2138,7 +2160,7 @@ static char *PrintContainerInfo(char **info)
   sprintf(buf, MOD_FORMAT, info[CON_MODBY], info[CON_MODTIME], 
 	  info[CON_MODWITH]);
   Put_message(buf);
-  return info[CON_NAME];
+  return(info[CON_NAME]);
 }
 
 static char *PrintContainer(char **info)

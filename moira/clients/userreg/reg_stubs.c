@@ -1,29 +1,18 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/reg_stubs.c,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/reg_stubs.c,v 1.5 1988-08-17 18:09:42 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/reg_stubs.c,v 1.6 1988-09-12 17:29:11 mar Exp $
  *
- *	Copyright (C) 1987 by the Massachusetts Institute of Technology
- *
- *	$Log: not supported by cvs2svn $
- * Revision 1.4  88/08/07  22:20:21  mar
- * changed server hostname to dodo for testing.
- * changed timeout back to 30 seconds (it gets retried 10 times)
- * 
- * Revision 1.3  88/08/03  20:16:10  mar
- * increase timeout; don't copy login out of packet unless packet is long enough
- * 
- * Revision 1.2  87/09/04  22:57:33  wesommer
- * Rearranged timeouts, max retransmits.
- * 
- * Revision 1.1  87/08/22  18:39:29  wesommer
- * Initial revision
- * 
+ *  (c) Copyright 1988 by the Massachusetts Institute of Technology.
+ *  For copying and distribution information, please see the file
+ *  <mit-copyright.h>.
  */
 
 #ifndef lint
-static char *rcsid_reg_stubs_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/reg_stubs.c,v 1.5 1988-08-17 18:09:42 mar Exp $";
+static char *rcsid_reg_stubs_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/reg_stubs.c,v 1.6 1988-09-12 17:29:11 mar Exp $";
 #endif lint
+
+#include <mit-copyright.h>
 #include <stdio.h>
 #include <sys/types.h>
 #include <sys/time.h>

@@ -2,8 +2,11 @@
 # 	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/Makefile,v $
 #	$Author: mar $
 #	$Locker:  $
-#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/Makefile,v 1.5 1988-08-09 17:58:56 mar Exp $
+#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/Makefile,v 1.6 1988-09-12 17:28:16 mar Exp $
 #
+# (c) Copyright 1988 by the Massachusetts Institute of Technology.
+# For copying and distribution information, please see the file
+# <mit-copyright.h>.
 
 CFLAGS= -O -I../../include
 

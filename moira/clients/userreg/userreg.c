@@ -2,13 +2,18 @@
  * $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.c,v $
  * $Author: mar $
  * $Locker:  $
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.c,v 1.9 1988-08-09 17:56:01 mar Exp $ 
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.c,v 1.10 1988-09-12 17:29:19 mar Exp $ 
+ *
+ *  (c) Copyright 1988 by the Massachusetts Institute of Technology.
+ *  For copying and distribution information, please see the file
+ *  <mit-copyright.h>.
  */
 
 #ifndef lint
-static char    *rcsid_userreg_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.c,v 1.9 1988-08-09 17:56:01 mar Exp $";
+static char    *rcsid_userreg_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.c,v 1.10 1988-09-12 17:29:19 mar Exp $";
 #endif	lint
 
+#include <mit-copyright.h>
 #include <curses.h>
 #include <signal.h>
 #include <sys/time.h>

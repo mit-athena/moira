@@ -1,9 +1,14 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/disable.c,v 1.2 1988-08-03 20:12:57 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/disable.c,v 1.3 1988-09-12 17:28:56 mar Exp $
  *
  * disabled: check to see if registration is enabled right now.  Most of this
  * code is stolen from the cron daemon.
+ *
+ *  (c) Copyright 1988 by the Massachusetts Institute of Technology.
+ *  For copying and distribution information, please see the file
+ *  <mit-copyright.h>.
  */
 
+#include <mit-copyright.h>
 #include <stdio.h>
 #include <ctype.h>
 #include <sys/types.h>

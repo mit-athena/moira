@@ -1,10 +1,10 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/get_file.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/get_file.c,v 1.2 1988-08-22 16:18:17 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/get_file.c,v 1.3 1988-08-23 11:48:38 mar Exp $
  */
 
 #ifndef lint
-static char *rcsid_get_file_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/get_file.c,v 1.2 1988-08-22 16:18:17 mar Exp $";
+static char *rcsid_get_file_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/get_file.c,v 1.3 1988-08-23 11:48:38 mar Exp $";
 #endif	lint
 
 #include <stdio.h>
@@ -129,12 +129,6 @@ get_file(pathname, file_size, checksum)
     fsync(fd);
     close(fd);
     /* validate checksum */
-    fd = open(pathname, O_RDONLY, 0);
-    if (fd == -1) {
-	code = errno;
-	report_error("re-opening file for checksum verification");
-	return(1);
-    }
     found_checksum = checksum_file(pathname);
     if (checksum != found_checksum) {
 	code = SMS_MISSINGFILE;
@@ -143,7 +137,6 @@ get_file(pathname, file_size, checksum)
 	report_error("checksum error");
 	return(1);
     }
-    close(fd);
     /* send ack or nack */
     have_file = 1;
     if (send_ok()) {

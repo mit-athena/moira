@@ -17,9 +17,9 @@
 #include	<Xm/Separator.h>
 #include	"mmoira.h"
 
-#define	HPADDING		8
-#define	WPADDING		20
+#define	PADDING		10
 #define	MAX(a,b)	((a > b) ? a : b)
+#define	MIN(a,b)	((a < b) ? a : b)
 
 extern Widget toplevel;
 
@@ -28,11 +28,23 @@ void	manage_widget();
 Widget	CreateForm();
 Widget	CreateMenu();
 Widget	BuildMenuTree();
-int	button_callback();
-int	radio_callback();
+Widget	MakeRadioField();
+void	button_callback();
+void	radio_callback();
+void	boolean_callback();
+void	string_callback();
 void	menu_callback();
 void	post_menu_handler();
 
+
+DisplayForm(spec)
+EntryForm	*spec;
+{
+	Widget	w;
+
+	w = CreateForm(toplevel, spec);
+	XtManageChild(w);
+}
 
 /*
 ** Read the specification and put up a menu to match...
@@ -60,17 +72,27 @@ int		orientation;
 	Arg		wargs[10];
 	int		n;
 	XmString	label;		/* !@#$%^ compound string required */
-	Widget		shellparent;
+	int		mark = 0;
 
 	label = XmStringCreate(	"Complete junk", XmSTRING_DEFAULT_CHARSET);
 
 	n = 0;
-
-/* MOTIF menus are broken.
 	XtSetArg(wargs[n], XmNlabelString, label);	n++;
-	menuparent = XmCreatePopupMenu(parent, "randommenu", wargs, n);
-*/
 
+	if (orientation == XmHORIZONTAL)
+		if (mark) {
+			menuparent = XmCreateMenuBar(	parent, "randommenu", 
+						wargs, n);
+			XtManageChild(menuparent);
+		}
+		else
+		menuparent = XmCreatePopupMenu(	parent, "randommenu", 
+						wargs, n);
+	else
+		menuparent = XmCreatePulldownMenu(parent, "randommenu", 
+						wargs, n);
+
+#ifdef OLDCODE
 	XtSetArg(wargs[n], XtNmappedWhenManaged, False);	n++;
 	shellparent = XtCreateApplicationShell(	"shellparent", 
 						transientShellWidgetClass,
@@ -83,11 +105,11 @@ int		orientation;
 					xmRowColumnWidgetClass,
 					shellparent, wargs, n);
 						
+#endif
 
-/*
 	XtAddEventHandler (	parent, ButtonPressMask, FALSE,
 				post_menu_handler, menuparent);
-*/
+
 	for (	curmenuitem = (*spec);
 		curmenuitem;
 		spec++, curmenuitem = (*spec)) {
@@ -97,56 +119,41 @@ int		orientation;
 #endif
 		label = XmStringCreate(	curmenuitem->label,
 					XmSTRING_DEFAULT_CHARSET);
-		if (curmenuitem->submenu) {
-			label = XmStringConcat(label,
-					XmStringCreate(	"...",
-					XmSTRING_DEFAULT_CHARSET));
-		}
 		n = 0;
 		XtSetArg(wargs[n], XmNlabelString, label);	n++;
-
-		childbutton = XtCreateManagedWidget(	"child",
-				xmPushButtonGadgetClass,
-				menuparent, wargs, n);
 
 		if (curmenuitem->submenu) {
 #ifdef	DEBUG
 			printf ("It has a submenu, which I'm recursing on...\n");
 #endif
-/* MOTIF menus don't work...
-			childmenu = XmCreatePulldownMenu(menuparent,
-					curmenuitem->label,
-					NULL, 0);
-
-			n = 0;
+			childmenu = CreateMenu(	menuparent, 
+						curmenuitem->submenu,
+						XmVERTICAL);
 			XtSetArg(wargs[n], XmNsubMenuId, childmenu);	n++;
 
 			childbutton = XtCreateManagedWidget(	"child",
 					xmCascadeButtonWidgetClass,
 					menuparent, wargs, n);
-*/
 
-			childmenu = CreateMenu(	childbutton, 
-						curmenuitem->submenu,
-						XmVERTICAL);
 			XtAddCallback(	childbutton, XmNactivateCallback,
 					map_menu_widget, childmenu);
 
 		}
 
 		else {
+			childbutton = XtCreateManagedWidget(	"child",
+					xmPushButtonGadgetClass,
+					menuparent, wargs, n);
+
 			XtAddCallback(	childbutton, 
 					XmNactivateCallback, 
 					menu_callback, curmenuitem);
 		}
 	}
-	XtRealizeWidget(shellparent);
+	XtRealizeWidget(menuparent);
 
-	return (shellparent);
+	return (menuparent);
 }
-
-/*	We don't need this, since I'm using callbacks rather than
-**	event handlers.
 
 void
 post_menu_handler(w, menu, event)
@@ -168,20 +175,10 @@ XEvent	*event;
 	}
 
 	else {
-		printf ("Ignoring hit from 'wrong' button\n");
+/*		printf ("Ignoring hit from 'wrong' button\n"); */
 	}
 }
-*/
 
-
-DisplayForm(spec)
-EntryForm	*spec;
-{
-	Widget	w;
-
-	w = CreateForm(toplevel, spec);
-	XtManageChild(w);
-}
 
 
 /*
@@ -193,9 +190,9 @@ CreateForm(parent, spec)
 Widget		parent;
 EntryForm	*spec;
 {
-	XmBulletinBoardWidget	bb;
+	Widget		bb;
 	Arg		wargs[10];
-	int		i, n;
+	int		n;
 	XmString	label;		/* compound string required */
 	Dimension	height_so_far = 0, width_so_far = 0;
 	Dimension	height, width;
@@ -203,13 +200,10 @@ EntryForm	*spec;
 	Position	x, y;
 	Widget		shellparent;
 
-/*
-	n = 0;
-	XtSetArg(wargs[n], XtNmappedWhenManaged, False);	n++;
-	shellparent = XtCreateApplicationShell(	"shellparent", 
-						topLevelShellWidgetClass,
-						wargs, n);
-*/
+	if (spec->formpointer) {
+		printf ("Form %s already exists\n", spec->formname);
+		return(spec->formpointer);
+	}
 
 #define GETSIZE(foo)	n = 0; \
 			XtSetArg(wargs[n], XtNwidth, &width);	n++; \
@@ -217,13 +211,18 @@ EntryForm	*spec;
 			XtGetValues (foo, wargs, n); \
 
 #define STORESIZE	if (width > width_so_far) width_so_far = width;\
-			height_so_far += height + HPADDING;
+			height_so_far += height + PADDING;
 
 
 	n = 0;
 	XtSetArg(wargs[n], XmNautoUnmanage, FALSE);		n++;
-	bb = (XmBulletinBoardWidget)
-		XmCreateBulletinBoardDialog(parent, "board", wargs, n);
+	bb = XmCreateBulletinBoardDialog(parent, "board", wargs, n);
+
+/*
+	XmAddTabGroup(bb);
+*/
+
+	spec->formpointer = bb;
 
 	label = XmStringCreate(spec->formname, XmSTRING_DEFAULT_CHARSET);
 	n = 0;
@@ -249,12 +248,12 @@ EntryForm	*spec;
 
 	height = height_so_far;
 	width = width_so_far;
-	MakeInputLines((Widget) bb, &height, &width, spec->inputlines);
+	MakeInputLines(bb, &height, &width, spec);
 	STORESIZE;
 
 	height = height_so_far;
 	width = width_so_far;
-	MakeButtons((Widget) bb, &height, &width, spec->buttons, (char *)spec);
+	MakeButtons(bb, &height, &width, spec);
 	STORESIZE;
 
 /*
@@ -270,8 +269,6 @@ EntryForm	*spec;
 	XtSetArg(wargs[n], XtNx, x);				n++;
 	XtSetValues (titleW, wargs, n);
 
-	spec->formpointer = (Widget) bb;
-
 	return((Widget) bb);
 }
 
@@ -285,11 +282,11 @@ EntryForm	*spec;
 **	according to the widest left side noted.
 */
 
-MakeInputLines(parent, pheight, pwidth, inputlines)
+MakeInputLines(parent, pheight, pwidth, spec)
 Widget		parent;
 Dimension	*pheight;
 Dimension	*pwidth;
-UserPrompt      **inputlines;
+EntryForm	*spec;
 {
 	UserPrompt	*current;
 	XmString	label;		/* compound string required */
@@ -298,10 +295,13 @@ UserPrompt      **inputlines;
 	Widget		child;
 	Dimension	width, height, maxleftwidth = 0, maxrightwidth = 0;
 	Dimension	localy, leftheight = 0, rightheight = 0;
-	UserPrompt      **myinputlines = inputlines;
+	UserPrompt      **myinputlines = spec->inputlines;
 	int		foo = 30;
 	Widget		children[20];
 
+/*
+	XmAddTabGroup(parent);
+*/
 	for (	current = (*myinputlines), localy = 0,  i = 0;
 		current; 
 		myinputlines++, current = (*myinputlines), i++) {
@@ -333,6 +333,7 @@ UserPrompt      **inputlines;
 */
 		n = 0;
 		XtSetArg(wargs[n], XtNy, localy + *pheight);	n++;
+		XtSetArg(wargs[n], XmNtraversalOn, True);	n++;
 		XtSetArg(wargs[n], XtNsensitive, 
 			!(current->insensitive));		n++;
 		switch (current->type) {
@@ -340,6 +341,8 @@ UserPrompt      **inputlines;
 			children[i] = XtCreateManagedWidget(	"child",
 						xmTextWidgetClass,
 						parent, wargs, n);
+			XtAddCallback(	children[i], XmNlosingFocusCallback,
+				string_callback, current);
 			if (current->returnvalue.stringvalue) {
 				XmTextSetString (children[i], current->returnvalue.stringvalue);
 			}
@@ -351,12 +354,11 @@ UserPrompt      **inputlines;
 
 		case FT_BOOLEAN:
 			XtSetArg(wargs[n], XmNset, current->returnvalue.booleanvalue);	n++;
-/*
-** EEEuch!  Not only to I have to use a blank (not NULL!) string to
-** override the ToggleButton's insistance on labelling itself, it has
-** to be a _compound_ blank string!
-*/
-			label = XmStringCreate(	" ", XmSTRING_DEFAULT_CHARSET);
+
+			if (current->returnvalue.booleanvalue)
+				label = XmStringCreate(	"(True)", XmSTRING_DEFAULT_CHARSET);
+			else
+				label = XmStringCreate(	"(False)", XmSTRING_DEFAULT_CHARSET);
 			XtSetArg(wargs[n], XmNlabelString, label);	n++;
 
 			children[i] = XtCreateManagedWidget(	"ignore this",
@@ -364,7 +366,7 @@ UserPrompt      **inputlines;
 						parent, wargs, n);
 
 			XtAddCallback(	children[i], XmNvalueChangedCallback,
-				radio_callback, NULL);
+				boolean_callback, current);
 
 			GETSIZE (children[i]);
 			rightheight = height;
@@ -373,11 +375,10 @@ UserPrompt      **inputlines;
 			break;
 
 		case FT_KEYWORD:
-			children[i] = XmCreateRadioBox(parent, "radio", wargs, n);
-			XtManageChild(children[i]);	
-			AddRadioButtons(	children[i], 
-						current,
-						&rightheight);
+			children[i] = 
+				MakeRadioField(parent, current, &rightheight);
+			XtManageChild(children[i]);
+			XtSetValues(children[i], wargs, n);
 			GETSIZE (children[i]);
 			if (width > maxrightwidth)
 				maxrightwidth = width;
@@ -387,52 +388,76 @@ UserPrompt      **inputlines;
 			printf ("Sorry, don't recognize that type\n");
 			break;
 		}
+		XmAddTabGroup(children[i]);
 
-		localy += MAX(rightheight, leftheight) + HPADDING;
+		localy += MAX(rightheight, leftheight) + PADDING;
 	}
 
 /*
 ** Now slide the input widgets right as far as the widest prompt.
 */
 	n = 0;
-	XtSetArg(wargs[n], XtNx, maxleftwidth + WPADDING);	n++;
+	XtSetArg(wargs[n], XtNx, maxleftwidth + PADDING);	n++;
 	for (; i; i--)
 		XtSetValues (children[i - 1], wargs, n);
 
-	*pheight = localy - HPADDING;
-	*pwidth = maxleftwidth + maxrightwidth + WPADDING;
+	*pheight = localy - PADDING;
+	*pwidth = maxleftwidth + maxrightwidth + PADDING;
 }
 
 /*
 ** All the junk about keeping track of the sum of the children's heights
 ** is because the !#$% RowColumn widget doesn't sum them for us, NOR
-** does it accept SetValues on its XtNHeight!
+** does it accept SetValues on its XtNHeight!  Thanks, Motif!
 */
 
-AddRadioButtons(parent, prompt, pheight)
+Widget
+MakeRadioField(parent, prompt, pheight)
 Widget		parent;
 UserPrompt	*prompt;
 Dimension	*pheight;
 {
-	Widget	child;
+	Widget	radioparent, child;
 	char	*current;
 	Arg	wargs[10];
-	int	i, n;
-	XmString	label;		/* compound string required */
+	int	count, n;
+	XmString	label;	/* accursed compound string required */
 	Dimension	height, width;
-	Dimension	height_so_far = 0;
-	char	**keywords = prompt->keywords;
-	char	*defvalue = prompt->returnvalue.stringvalue;
+	char	**keywords;
 
-	if (!keywords) {
+
+	if (!prompt->keywords) {
 		fprintf (stderr, "Warning:  No list of keywords for widget\n");
-		return;
+		return((Widget) NULL);
 	}
+	for (	count = 0, keywords = prompt->keywords;
+		*keywords; 
+		keywords++, count++);
+
+/*
+** Although the XmNnumColumns resource is documented as actually
+** representing the number of _rows_ when XmNorientation is set to XmVERTICAL,
+** it doesn't.  So I need to count the items myself and manually set the
+** number of columns to get a maximum of five rows.  There's no XmNnumRows
+** resource.  Thanks, Motif!
+*/
+
+	n = 0;
+	if (count > 5) {
+		printf ("Special case:  Asking for %d columns\n",1 + count/5);
+		XtSetArg(wargs[n], XmNnumColumns, 1 + count / 5);		n++;
+		XtSetArg(wargs[n], XmNorientation, XmVERTICAL);	n++;
+		XtSetArg(wargs[n], XmNpacking, XmPACK_COLUMN);	n++;
+	}
+
+	radioparent = XmCreateRadioBox(parent, "radio", wargs, n);
+
+	keywords = prompt->keywords;
 	for (current=(*keywords); current; keywords++, current=(*keywords)) {
 		n = 0;
 		label = XmStringCreate(current, XmSTRING_DEFAULT_CHARSET);
 		XtSetArg(wargs[n], XmNlabelString, label);	n++;
-		if (!strcmp (current, defvalue)) {
+		if (!strcmp (current, prompt->returnvalue.stringvalue)) {
 			XtSetArg(wargs[n], XmNset, True);	n++;
 		}
 		else {
@@ -440,32 +465,39 @@ Dimension	*pheight;
 		}
 		child = XtCreateManagedWidget(	current,
 						xmToggleButtonGadgetClass,
-						parent, wargs, n);
+						radioparent, wargs, n);
 
 		XtAddCallback(	child, XmNvalueChangedCallback,
 				radio_callback, prompt);
 
-		GETSIZE (child);
-		height_so_far += height;
 	}
 /*
-	GETSIZE (parent);
-	printf ("height of radio parent was %d\n", height);
+** Assume all child widgets are the same height.  Increase height by
+** five times this, or the actual number of children, whichever is lesser.
+*/
+
+	GETSIZE (child);
+	printf ("Reporting height of %d\n", (height * MAX(5, count)));
+	*pheight = (height * MIN(5, count));
+
+/*
 	n = 0;
 	XtSetArg(wargs[n], XtNheight, height_so_far);	n++;
-	XtSetValues (parent, wargs, n);
-	GETSIZE (parent);
+	XtSetValues (radioparent, wargs, n);
+	GETSIZE (radioparent);
 	printf ("height of radio parent is now %d\n", height);
-*/
+
+
 	*pheight = height_so_far;
+*/
+	return(radioparent);
 }
 
-MakeButtons(parent, pheight, pwidth, buttons, data)
+MakeButtons(parent, pheight, pwidth, spec)
 Widget		parent;
 Dimension	*pheight;
 Dimension	*pwidth;
-BottomButton	**buttons;
-caddr_t		data;
+EntryForm	*spec;
 {
 	BottomButton	*current;
 	XmString	label;		/* compound string required */
@@ -473,6 +505,7 @@ caddr_t		data;
 	int		i, n;
 	Dimension	newwidth, width = 25;
 	Widget		newbutton;
+	BottomButton	**buttons = spec->buttons;
 
 	n = 0;
 	XtSetArg(wargs[n], XtNy, *pheight);			n++;
@@ -481,7 +514,7 @@ caddr_t		data;
 	XtCreateManagedWidget(	"separator",
 				xmSeparatorWidgetClass,
 				parent, wargs, n);
-	*pheight += HPADDING;
+	*pheight += PADDING;
 
 	for (	current=(*buttons); 
 		current; 
@@ -502,12 +535,12 @@ caddr_t		data;
 						parent, wargs, n);
 
 		XtAddCallback(	newbutton, XmNactivateCallback,
-				current->returnfunction, data);
+				current->returnfunction, spec);
 		n = 0;
 		XtSetArg(wargs[n], XtNwidth, &newwidth);		n++;
 		XtGetValues (newbutton, wargs, n);
 
-		width += (newwidth + WPADDING);
+		width += (newwidth + PADDING);
 	}
 
 	(*pheight) += 100;
@@ -555,62 +588,81 @@ XmAnyCallbackStruct	*call_data;
 	XtManageChild(widget);	
 }
 
-int
-button_callback(w, client_data, call_data)
+void
+button_callback(w, form, call_data)
 Widget	w;
-EntryForm	*client_data;
+EntryForm *form;
 XmAnyCallbackStruct	*call_data;
 {
-	XtUnmanageChild(client_data->formpointer);
+	XtUnmanageChild(form->formpointer);	
 }
 
-int
+void
 radio_callback(w, client_data, call_data)
 Widget	w;
 XmAnyCallbackStruct	*client_data;
 XmAnyCallbackStruct	*call_data;
 {
 	Arg		wargs[10];
-	int		i, n;
-	XmString	label;		/* !@#$ compound string required! */
-	char            *text_value;
+	int		n;
+	Boolean		is_set;
 
 	UserPrompt	*prompt = (UserPrompt *) client_data;
 
-	printf ("radio_callback: button %x, data %x\n", w, client_data);
-
-/*
-** It should be _easy_ to find the value of a label, right?  _WRONG!_
-** Have to disassemble the !@#$ compound text to get a char*, and
-** Motif doesn't provide any functions to do so.  So I stash the label
-** value as the name of the widget.
-
 	n = 0;
-	XtSetArg(wargs[n], XmNlabelString, label);	n++;
+	XtSetArg(wargs[n], XmNset, &is_set);	n++;
 	XtGetValues (w, wargs, n);
 
-       XmStringGetLtoR (label,
-                        XmSTRING_DEFAULT_CHARSET, &text_value);
-*/
-
+	if (!is_set)
+		return;
 
 /*
-** Unfortunately, Xt caches w->core.name into something besides a char*,
-** so I can't use it.  And XtName is, somehow, unavailable.
-
-	if (!prompt) {
-		printf ("Oops!  radio_callback called from '%s' with no data\n",
-				w->core.name);
-		return(0);
-	}
+** Since Motif insists on using !@#$% Compound Strings as the text for
+** its label widgets, but doesn't provide a way of getting a char* back
+** from a !@#$% Compound String, I can't retrieve the label of the button 
+** that was hit. 
+**
+** Fortunately, I was smart enough to use the button label as the name 
+** of the widget, and I can extract it via XtName().  Thanks, Motif!
+*/
 
 	printf ("Replacing old value of selection, '%s', with '%s'\n",
 			prompt->returnvalue.stringvalue,
-			w->core.name);
+			XtName(w));
 
-	strcpy(prompt->returnvalue.stringvalue, w->core.name);
-*/
+	strcpy(prompt->returnvalue.stringvalue, XtName(w));
+}
 
+void
+boolean_callback(w, client_data, call_data)
+Widget	w;
+XmAnyCallbackStruct	*client_data;
+XmAnyCallbackStruct	*call_data;
+{
+	Arg		wargs[10];
+	int		n;
+	Boolean		is_set;
+	UserPrompt	*current = (UserPrompt *)client_data;
+	XmString	label;
+
+	n = 0;
+	XtSetArg(wargs[n], XmNset, &is_set);			n++;
+	XtGetValues (w, wargs, n);
+
+	current->returnvalue.booleanvalue = is_set;
+
+	if (is_set)
+		label = XmStringCreate(	"(True)", XmSTRING_DEFAULT_CHARSET);
+	else
+		label = XmStringCreate(	"(False)", XmSTRING_DEFAULT_CHARSET);
+	n = 0;
+	XtSetArg(wargs[n], XmNlabelString, label);		n++;
+	XtSetValues (w, wargs, n);
+
+#if DEBUG
+	printf ("boolean_callback:  button %x is %s\n", 
+			w, (is_set ? "True" : "False"));
+#endif
 }
 
 void
@@ -621,16 +673,27 @@ XmAnyCallbackStruct	*call_data;
 {
 	MenuItem	*itemhit = (MenuItem *) client_data;
 
-#ifdef DEBUG
-	printf 	("menu_callback: item '%s', op %d and string '%s'\n", 
+/*	printf 	("menu_callback: item '%s', op %d and string '%s'\n", 
 			itemhit->label, 
 			itemhit->operation, 
-			itemhit->form);
-#endif
+			itemhit->form); */
 	MoiraMenuRequest(itemhit);
-/*
-** Unmap the shell of this button.  (UGLY HACK until Motif menus work)
-*/
+}
 
-	XtUnmapWidget(XtParent(XtParent(w)));
+void
+string_callback(w, client_data, call_data)
+Widget	w;
+XmAnyCallbackStruct	*client_data;
+XmAnyCallbackStruct	*call_data;
+{
+	UserPrompt	*current = (UserPrompt *)client_data;
+	char		*newvalue;
+
+	newvalue = XmTextGetString(w);
+
+	printf ("Replacing old value of selection, '%s', with '%s'\n",
+			current->returnvalue.stringvalue,
+			newvalue);
+	strcpy(current->returnvalue.stringvalue, newvalue);
+	XtFree(newvalue);
 }

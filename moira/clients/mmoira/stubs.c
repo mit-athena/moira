@@ -9,10 +9,11 @@
 #include	<X11/CoreP.h>
 #include	<X11/CompositeP.h>
 #include	<X11/cursorfont.h>
-#include	"data.h"
 #include        <Xm/Text.h>
+#include	"mmoira.h"
+#include	<sys/file.h>
 
-static char rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/stubs.c,v 1.4 1991-06-05 12:26:51 mar Exp $";
+static char rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/stubs.c,v 1.5 1992-10-13 11:11:37 mar Exp $";
 
 void	extra_help_callback();
 
@@ -127,7 +128,7 @@ AppendToLog(text)
 char	*text;
 {
 	XmTextPosition	pos;
-	char		*string;
+	char		*string, *p;
 
 	string = XmTextGetString(logwidget);
 	pos = strlen(string);
@@ -135,6 +136,12 @@ char	*text;
 
 	XmTextReplace(logwidget, pos, pos, text);
 	XmTextSetCursorPosition(logwidget, pos + strlen(text));
+	if (pos > MAXLOGSIZE) {
+	    for (p = &string[pos - MAXLOGSIZE]; *p && *p != '\n'; p++);
+	    if (*p)
+	      pos = p - string;
+	    XmTextReplace(logwidget, 0, pos, "");
+	}
 }
 
 void
@@ -179,6 +186,13 @@ EntryForm	*spec;
 		current; 
 		myinputlines++, current = (*myinputlines)) {
 
+		if (current->changed) {
+		    n = 0;
+		    XtSetArg(wargs[n], XmNsensitive,
+			     current->insensitive ? False : True); n++;
+		    XtSetValues(current->mywidget, wargs, n);
+		    current->changed = False;
+		}
 
 		switch (current->type) {
 		case FT_STRING:
@@ -231,4 +245,106 @@ char	*client_data;
 XmAnyCallbackStruct	*call_data;
 {
 	PopupHelpWindow(client_data);
+}
+
+
+int write_log_to_file(fn)
+char *fn;
+{
+    char *string, buf[256];
+    int fd, i;
+    extern int errno;
+
+    string = XmTextGetString(logwidget);
+    fd = open(fn, O_WRONLY|O_CREAT, 0666);
+    if (fd < 0) {
+	sprintf(buf, "opening output file \"%s\"", fn);
+	com_err(program_name, errno, buf);
+	return(1);
+    }
+    if ((i = write(fd, string, strlen(string))) < 0) {
+	sprintf(buf, "writing output file \"%s\"", fn);
+	com_err(program_name, errno, buf);
+	return(1);
+    }
+    if ((i = close(fd)) < 0) {
+	sprintf(buf, "closing output file \"%s\"", fn);
+	com_err(program_name, errno, buf);
+	return(1);
+    }
+    return(0);
+}
+
+
+yesCallback(w, ret, dummy)
+Widget w;
+int *ret;
+{
+    *ret = 1;
+}
+
+noCallback(w, ret, dummy)
+Widget w;
+int *ret;
+{
+    *ret = -1;
+}
+
+
+static int value;
+static XtCallbackRec yescb[] = { { yesCallback, &value }, {NULL, NULL} };
+static XtCallbackRec nocb[]  = { { noCallback, &value }, {NULL, NULL} };
+
+Boolean AskQuestion(text, helpname)
+char *text, helpname;
+{
+	static Widget		child;
+	Arg		wargs[10];
+	int		n;
+	static XmString        label, yes = NULL, no;
+	XEvent	event;
+
+	if (!yes) {
+	    yes = XmStringCreate("Yes", XmSTRING_DEFAULT_CHARSET);
+	    no = XmStringCreate("No", XmSTRING_DEFAULT_CHARSET);
+	}
+	if (label) {
+		XtFree(label);
+		XtDestroyWidget(child);
+	}
+
+	label = XmStringCreateLtoR( text, XmSTRING_DEFAULT_CHARSET);
+
+	n = 0;
+	XtSetArg(wargs[n], XmNmessageString, label);		n++;
+	XtSetArg(wargs[n], XmNokLabelString, yes);		n++;
+	XtSetArg(wargs[n], XmNcancelLabelString, no);		n++;
+	XtSetArg(wargs[n], XmNokCallback, yescb);		n++;
+	XtSetArg(wargs[n], XmNcancelCallback, nocb);		n++;
+
+	child = (Widget) XmCreateQuestionDialog(logwidget, "question", wargs, n);
+	if (helpname) 
+		XtAddCallback (child, XmNhelpCallback, extra_help_callback, helpname);
+	else
+		XtUnmanageChild(XmMessageBoxGetChild (child, XmDIALOG_HELP_BUTTON));
+
+	XtManageChild(child);
+	value = 0;
+	while (value == 0) {
+	    XtAppNextEvent(_XtDefaultAppContext(), &event);
+	    XtDispatchEvent(&event);
+	}
+	if (value > 0)
+	  return(1);
+	else
+	  return(0);
+}
+
+
+
+/******* temporary ********/
+display_error(msg)
+char *msg;
+{
+    PopupErrorMessage(msg, "Sorry, no further help is available");
 }

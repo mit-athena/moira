@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/formup.c,v 1.9 1992-10-28 16:07:08 mar Exp $ */
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/formup.c,v 1.10 1992-11-04 17:57:21 mar Exp $ */
 
 #include	<stdio.h>
 #include	<strings.h>
@@ -24,7 +24,7 @@
 #include	<Xm/Traversal.h>
 #include	"mmoira.h"
 
-static char rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/formup.c,v 1.9 1992-10-28 16:07:08 mar Exp $";
+static char rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/formup.c,v 1.10 1992-11-04 17:57:21 mar Exp $";
 
 #ifndef MAX
 #define	MAX(a,b)	((a > b) ? a : b)
@@ -295,8 +295,6 @@ EntryForm	*spec;
 	int		foo = 30;
 	Widget		children[20];
 	static XtTranslations trans = NULL;
-#define newtrans "<FocusOut>: focusOut() MoiraFocusOut()"
-
 
 	for (	current = (*myinputlines), localy = 0,  i = 0;
 		current; 
@@ -371,7 +369,7 @@ EntryForm	*spec;
 			    XtAppAddActions(XtWidgetToApplicationContext(children[i]),
 					    myactions, XtNumber(myactions));
 
-			    trans = XtParseTranslationTable(newtrans);
+			    trans = XtParseTranslationTable(resources.text_trans);
 			}
 			XtOverrideTranslations(children[i], trans);
 			if (current->returnvalue.stringvalue) {
@@ -571,7 +569,7 @@ int field;
     }
 
     if (trans == NULL)
-      trans = XtParseTranslationTable(form_override_table);
+      trans = XtParseTranslationTable(resources.form_trans);
     XtOverrideTranslations(w, trans);
     rc = (XmRowColumnWidget) w;
     for (i = 0; i < rc->composite.num_children; i++)

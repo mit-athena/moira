@@ -19,7 +19,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/dump_db.pc,v 1.6 1998-02-05 22:50:21 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/dump_db.pc,v 1.7 1998-02-07 22:37:53 danw Exp $");
 
 EXEC SQL BEGIN DECLARE SECTION;
 char *db = "moira";
@@ -58,7 +58,7 @@ void wpunt(void)
 
 void dump_str(FILE *f, char *str)
 {
-  char *ibp, c;
+  unsigned char *ibp, c;
   int t;
 
   for (ibp = str; (c = *ibp); ibp++)

@@ -1,4 +1,4 @@
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/Imakefile,v 1.7 1994-04-26 18:29:22 jweiss Exp $
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/Imakefile,v 1.8 1997-01-29 22:55:32 danw Exp $
 #
 # Copyright 1990 by the Massachusetts Institute of Technology.
 #
@@ -27,7 +27,6 @@ all::
 #ifndef USELOCALTOOLS
 
 world::
-	make ${MFLAGS} clean-imake
 	make ${MFLAGS} imake
 	make ${MFLAGS} Makefile
 	make ${MFLAGS} Makefiles
@@ -37,15 +36,11 @@ world::
 #else /* USELOCALTOOLS */
 
 world::
-	make ${MFLAGS} clean-imake
 	make ${MFLAGS} Makefile
 	make ${MFLAGS} Makefiles
 	make ${MFLAGS} depend
 	make ${MFLAGS} all
 #endif /* USELOCALTOOLS */
-
-clean-imake:
-	cd util/imake; make clean
 
 imake::
 	cd util/imake; make 

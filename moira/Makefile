@@ -116,7 +116,7 @@ IMAKE=imake -I$(BUILDTOP)/util/imake.includes
 #	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/Makefile,v $
 #
 
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/Makefile,v 1.1 1996-07-02 01:48:42 danw Exp $
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/Makefile,v 1.2 1997-01-29 22:55:33 danw Exp $
 #
 # Copyright 1990 by the Massachusetts Institute of Technology.
 #
@@ -135,14 +135,10 @@ SUBDIRS=$(CLIENTDIRS)
 all::
 
 world::
-	make ${MFLAGS} clean-imake
 	make ${MFLAGS} Makefile
 	make ${MFLAGS} Makefiles
 	make ${MFLAGS} depend
 	make ${MFLAGS} all
-
-clean-imake:
-	cd util/imake; make clean
 
 imake::
 	cd util/imake; make

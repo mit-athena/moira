@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/hash.c,v 1.5 1988-12-07 17:21:49 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/hash.c,v 1.6 1989-11-14 18:12:05 mar Exp $
  *
  * Generic hash table routines.  Uses integer keys to store char * values.
  *
@@ -12,7 +12,7 @@
 #include <sms.h>
 
 #define NULL 0
-
+#define hash_func(h, key) (key >= 0 ? (key % h->size) : (-key % h->size))
 
 /* Create a hash table.  The size is just a hint, not a maximum. */
 
@@ -38,7 +38,7 @@ register int key;
 {
     register struct bucket *b;
 
-    b = h->data[key % h->size];
+    b = h->data[hash_func(h, key)];
     while (b && b->key != key)
       b = b->next;
     if (b && b->key == key)
@@ -59,7 +59,7 @@ char *value;
 {
     register struct bucket *b;
 
-    b = h->data[key % h->size];
+    b = h->data[hash_func(h, key)];
     while (b && b->key != key)
       b = b->next;
     if (b && b->key == key) {
@@ -81,7 +81,7 @@ char *value;
 {
     register struct bucket *b, **p;
 
-    p = &(h->data[key % h->size]);
+    p = &(h->data[hash_func(h, key)]);
     if (*p == NULL) {
 	b = *p = (struct bucket *) malloc(sizeof(struct bucket));
 	b->next = NULL;

@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.25 1990-06-12 16:29:21 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.26 1990-07-14 15:50:35 mar Exp $";
 #endif
 
 /*	This is the file attach.c for the MOIRA Client, which allows a nieve
@@ -13,7 +13,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.25 1990-06-12 16:29:21 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.26 1990-07-14 15:50:35 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -255,11 +255,14 @@ Bool name;
 
     if (name) {
 	newname = Strsave(info[FS_NAME]);
-	GetValueFromUser("The new name for this filesystem",
-			 &newname);
+	if (GetValueFromUser("The new name for this filesystem",
+			     &newname) == SUB_ERROR)
+	  return(NULL);
     }
 
-    GetTypeFromUser("Filesystem's Type", "filesys", &info[FS_TYPE]);
+    if (GetTypeFromUser("Filesystem's Type", "filesys", &info[FS_TYPE]) ==
+	SUB_ERROR)
+      return(NULL);
     if (!strcasecmp(info[FS_TYPE], "FSGROUP"))
       fsgroup++;
     if (fsgroup || !strcasecmp(info[FS_TYPE], "AFS")) {
@@ -270,23 +273,39 @@ Bool name;
 	    free(info[FS_MACHINE]);
 	    info[FS_MACHINE] = Strsave(NO_MACHINE);
 	}
-	GetValueFromUser("Filesystem's Machine", &info[FS_MACHINE]);
+	if (GetValueFromUser("Filesystem's Machine", &info[FS_MACHINE]) ==
+	    SUB_ERROR)
+	  return(NULL);
 	info[FS_MACHINE] = canonicalize_hostname(info[FS_MACHINE]);
     }
     if (!fsgroup) {
-	GetValueFromUser("Filesystem's Pack Name", &info[FS_PACK]);
-	GetValueFromUser("Filesystem's Mount Point", &info[FS_M_POINT]);
+	if (GetValueFromUser("Filesystem's Pack Name", &info[FS_PACK]) ==
+	    SUB_ERROR)
+	  return(NULL);
+	if (GetValueFromUser("Filesystem's Mount Point", &info[FS_M_POINT]) ==
+	    SUB_ERROR)
+	  return(NULL);
 	sprintf(access_type, "fs_access_%s", info[FS_TYPE]);
-	GetTypeFromUser("Filesystem's Default Access", access_type,
-			&info[FS_ACCESS]);
+	if (GetTypeFromUser("Filesystem's Default Access", access_type,
+			    &info[FS_ACCESS]) == SUB_ERROR)
+	  return(NULL);
     }
-    GetValueFromUser("Comments about this Filesystem", &info[FS_COMMENTS]);
-    GetValueFromUser("Filesystem's owner (user)", &info[FS_OWNER]);
-    GetValueFromUser("Filesystem's owners (group)", &info[FS_OWNERS]);
+    if (GetValueFromUser("Comments about this Filesystem", &info[FS_COMMENTS])
+	== SUB_ERROR)
+      return(NULL);
+    if (GetValueFromUser("Filesystem's owner (user)", &info[FS_OWNER]) ==
+	SUB_ERROR)
+      return(NULL);
+    if (GetValueFromUser("Filesystem's owners (group)", &info[FS_OWNERS]) ==
+	SUB_ERROR)
+      return(NULL);
     if (!fsgroup)
-      GetYesNoValueFromUser("Automatically create this filesystem",
-			    &info[FS_CREATE]);
-    GetTypeFromUser("Filesystem's lockertype", "lockertype", &info[FS_L_TYPE]);
+      if (GetYesNoValueFromUser("Automatically create this filesystem",
+				&info[FS_CREATE]) == SUB_ERROR)
+	return(NULL);
+    if (GetTypeFromUser("Filesystem's lockertype", "lockertype",
+			&info[FS_L_TYPE]) == SUB_ERROR)
+      return(NULL);
 
     FreeAndClear(&info[FS_MODTIME], TRUE);
     FreeAndClear(&info[FS_MODBY], TRUE);
@@ -460,7 +479,10 @@ int argc;
 	return(DM_NORMAL);
     } 
 
-    args = AskFSInfo(SetDefaults(info, argv[1]), FALSE );
+    if ((args = AskFSInfo(SetDefaults(info, argv[1]), FALSE )) == NULL) {
+	Put_message("Aborted.");
+	return(DM_NORMAL);
+    }
 
     stat = do_mr_query("add_filesys", CountArgs(args), args, NullFunc, NULL);
     switch (stat) {
@@ -503,7 +525,7 @@ int argc;
 	if (def_quota != NULL) {
 	    sprintf(buf, "Give user %s a quota of %s on filesys %s (Y/N)",
 		    info[FS_NAME], def_quota, info[FS_NAME]);
-	    if (YesNoQuestion(buf, 1)) {
+	    if (YesNoQuestion(buf, 1) == TRUE) {
 		argv[Q_NAME] = argv[Q_FILESYS] = info[FS_NAME];
 		argv[Q_TYPE] = "USER";
 		argv[Q_QUOTA] = def_quota;
@@ -607,7 +629,8 @@ int argc;
     Loop(elem, (void *) PrintFSGMembers);
     sprintf(buf, "%d", QueueCount(elem));
     bufp = Strsave(buf);
-    stat = GetValueFromUser("Enter number of filesystem it should follow (0 to make it first):", &bufp);
+    if (GetValueFromUser("Enter number of filesystem it should follow (0 to make it first):", &bufp) == SUB_ERROR)
+      return(DM_NORMAL);
     count = atoi(bufp);
     free(bufp);
     args[2] = SortAfter(elem, count);
@@ -669,7 +692,9 @@ int argc;
     if ((stat = do_mr_query("get_fsgroup_members", 1, argv+1, StoreInfo,
 			     (char *)&elem)) != 0) {
 	if (stat == MR_NO_MATCH) {
-	    sprintf(buf, "Ether %s is not a filesystem group or it has no members", argv[1]);
+	    sprintf(buf,
+		    "Ether %s is not a filesystem group or it has no members",
+		    argv[1]);
 	    Put_message(buf);
 	} else
 	  com_err(program_name, stat, " in ChangeFSGroupOrder");
@@ -680,8 +705,9 @@ int argc;
     Loop(top, (void *) PrintFSGMembers);
     while (1) {
 	bufp = Strsave("1");
-	stat = GetValueFromUser("Enter number of the filesystem to move:",
-				&bufp);
+	if (GetValueFromUser("Enter number of the filesystem to move:",
+			     &bufp) == SUB_ERROR)
+	  return(DM_NORMAL);
 	src = atoi(bufp);
 	free(bufp);
 	if (src < 0) {
@@ -700,7 +726,8 @@ int argc;
     }
     while (1) {
 	bufp = Strsave("0");
-	stat = GetValueFromUser("Enter number of filesystem it should follow (0 to make it first):", &bufp);
+	if (GetValueFromUser("Enter number of filesystem it should follow (0 to make it first):", &bufp) == SUB_ERROR)
+	  return(DM_NORMAL);
 	dst = atoi(bufp);
 	free(bufp);
 	if (src == dst || src == dst + 1) {
@@ -812,8 +839,9 @@ char **argv;
     }
 
     args[ALIAS_TRANS]= args[ALIAS_END] = NULL;	/* set to NULL initially. */
-    GetValueFromUser("Which filesystem will this alias point to?",
-		     &args[ALIAS_TRANS]);
+    if (GetValueFromUser("Which filesystem will this alias point to?",
+			 &args[ALIAS_TRANS]) == SUB_ERROR)
+      return(DM_NORMAL);
 
     if ( (stat = do_mr_query("add_alias", 3, args, NullFunc, NULL)) != 0)
 	com_err(program_name, stat, " in CreateFSAlias.");

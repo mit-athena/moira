@@ -1,4 +1,4 @@
-/* $Id: qvalidate.pc,v 2.19 1999-08-06 18:46:15 danw Exp $
+/* $Id: qvalidate.pc,v 2.20 2000-10-18 19:00:48 zacheiss Exp $
  *
  * Argument validation routines
  *
@@ -20,7 +20,7 @@
 EXEC SQL INCLUDE sqlca;
 EXEC SQL INCLUDE sqlda;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qvalidate.pc,v 2.19 1999-08-06 18:46:15 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qvalidate.pc,v 2.20 2000-10-18 19:00:48 zacheiss Exp $");
 
 extern char *whoami, *table_name[], *sqlbuffer[QMAXARGS];
 extern int dbms_errno, mr_errcode;
@@ -375,7 +375,7 @@ int validate_typedata(struct query *q, char *argv[], struct valobj *vo)
 	   * that we're trying to resolve, we should get the value of
 	   * numvalues.[idfield] for the id.
 	   */
-	  if (vo->idfield && !strcmp(argv[0], argv[vo->index]))
+	  if (vo->idfield && (*(int *)argv[0] == *(int *)argv[vo->index]))
 	    {
 	      set_next_object_id(q->validate->object_id, q->rtable, 0);
 	      name = vo->idfield;

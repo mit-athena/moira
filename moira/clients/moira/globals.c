@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/globals.c,v 1.4 1988-07-27 19:19:57 kit Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/globals.c,v 1.5 1988-07-29 18:31:13 kit Exp $";
 #endif lint
 
 /*	This is the file globals.c for the SMS Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/globals.c,v $
  *      $Author: kit $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/globals.c,v 1.4 1988-07-27 19:19:57 kit Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/globals.c,v 1.5 1988-07-29 18:31:13 kit Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -25,6 +25,7 @@
 Bool verbose;			/* TRUE if verbose mode is active (default). */
 Bool found_some;		/* used by lists.c for determining if there 
 				   are any members of a given type. */
-char *user;			/* The name of the user executing allmaint. */
+char *user;			/* The name of the user executing this
+				   program. */
 char *program_name;		/* The name of this instance of the program. */
 

@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/delete.c,v 1.6 1988-07-27 19:19:40 kit Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/delete.c,v 1.7 1988-07-29 18:30:58 kit Exp $";
 #endif lint
 
 /*	This is the file delete.c for the SMS Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/delete.c,v $
  *      $Author: kit $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/delete.c,v 1.6 1988-07-27 19:19:40 kit Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/delete.c,v 1.7 1988-07-29 18:30:58 kit Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -140,15 +140,16 @@ Bool verbose;
     case SMS_SUCCESS:
 	local = elem = QueueTop(elem);
 	if (verbose) {
-	    sprintf(buf, "%s %s %s %s", type, name,
-		    "is the Access Control List (ACE) for the following data",
-		    "objects:\n");
+	    sprintf(buf, "%s %s %s", type, name,
+		    "is the ACE for the following data objects:");
 	    Put_message(buf);
+	    Put_message("");
 	    while (local != NULL) {
 		char ** info = (char **) local->q_data;
 		Print( CountArgs(info), info, NULL);
 		local = local->q_forw;
 	    }
+	    Put_message("");
 	    Put_message(
                  "The ACE for each of these items must be changed before");
 	    sprintf(buf,"the %s %s can be deleted.\n", type, name);
@@ -297,7 +298,7 @@ Bool verbose;
 	Put_message(" ");	/* Blank Line. */
 	sprintf(buf, "Remove th%s member%s from list %s? ", 
 		((members == 1) ? "is" : "ese"), 
-		((members == 1) ? "" : "s", name) );
+		((members == 1) ? "" : "s"), name );
 	if ( YesNoQuestion(buf, FALSE) != TRUE) {
 	    Put_message("Aborting...");
 	    FreeQueue(elem);

@@ -7,7 +7,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/globals.h,v $
  *      $Author: kit $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/globals.h,v 1.3 1988-07-27 19:20:02 kit Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/globals.h,v 1.4 1988-07-29 18:31:18 kit Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -24,7 +24,8 @@
 extern Bool verbose;		/* TRUE if verbose mode is active (default). */
 extern Bool found_some;		/* used by lists.c for determining if there 
 				 are any members of a given type. */
-extern char *user;		/* The name of the user executing allmaint. */
+extern char *user;		/* The name of the user executing this
+				   program. */
 extern char *program_name;	/* The name of this instance of the program. */
 
 #endif _sms_client_globals_	/* Do Not Add Anything After This Line */

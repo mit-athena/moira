@@ -5,7 +5,7 @@
  *
  * $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v $
  * $Author: mar $
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.30 1990-07-11 15:40:17 mar Exp $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.31 1991-01-04 16:57:26 mar Exp $
  *
  * Generic menu system module.
  *
@@ -18,7 +18,7 @@
  */
 
 #ifndef lint
-static char rcsid_menu_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.30 1990-07-11 15:40:17 mar Exp $";
+static char rcsid_menu_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.31 1991-01-04 16:57:26 mar Exp $";
 
 #endif lint
 
@@ -27,6 +27,10 @@ static char rcsid_menu_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moira
 #include <stdio.h>
 #include <signal.h>
 #include <curses.h>
+#ifdef _AUX_SOURCE
+#include <sys/termio.h>
+#include <sys/ttychars.h>
+#endif /* _AUX_SOURCE */
 #include <ctype.h>
 #include <strings.h>
 #include <varargs.h>
@@ -589,9 +593,26 @@ int Password_input(prompt, buf, buflen)
 	}
     }
     else {
+#ifdef _AUX_SOURCE
+	struct termio ttybuf, nttybuf;
+#else
 	struct sgttyb ttybuf, nttybuf;
+#endif /* _AUX_SOURCE */
 	printf("%s", prompt);
 	/* turn off echoing */
+#ifdef _AUX_SOURCE
+	(void) ioctl(0, TCGETA, (char *)&ttybuf);
+	nttybuf = ttybuf;
+	nttybuf.c_lflag &= ~ECHO;
+	(void)ioctl(0, TCSETA, (char *)&nttybuf);
+	if (gets(buf) == NULL) {
+	    (void) ioctl(0, TCSETA, (char *)&ttybuf);
+	    putchar('\n');
+	    return 0;
+	}
+	putchar('\n');
+	(void) ioctl(0, TCSETA, (char *)&ttybuf);
+#else
 	(void) ioctl(0, TIOCGETP, (char *)&ttybuf);
 	nttybuf = ttybuf;
 	nttybuf.sg_flags &= ~ECHO;
@@ -603,6 +624,7 @@ int Password_input(prompt, buf, buflen)
 	}
 	putchar('\n');
 	(void) ioctl(0, TIOCSETP, (char *)&ttybuf);
+#endif /* _AUX_SOURCE */
 	Start_paging();
 	return 1;
     }

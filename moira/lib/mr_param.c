@@ -1,11 +1,14 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_param.c,v $
- *	$Author: wesommer $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_param.c,v 1.2 1987-08-02 21:49:15 wesommer Exp $
+ *	$Author: mar $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_param.c,v 1.3 1988-04-19 12:45:20 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
  *	$Log: not supported by cvs2svn $
+ * Revision 1.2  87/08/02  21:49:15  wesommer
+ * Clean up error handling, memory handling.
+ * 
  * Revision 1.1  87/06/16  17:48:21  wesommer
  * Initial revision
  * 
@@ -21,7 +24,7 @@
  */
 
 #ifndef lint
-static char *rcsid_sms_param_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_param.c,v 1.2 1987-08-02 21:49:15 wesommer Exp $";
+static char *rcsid_sms_param_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_param.c,v 1.3 1988-04-19 12:45:20 mar Exp $";
 #endif lint
 
 #include <sys/types.h>
@@ -111,7 +114,7 @@ sms_start_send(op, hcon, arg)
      */
 
     ((long *)buf)[0] = htonl(sms_size);
-    ((long *)buf)[1] = htonl((u_int)SMS_VERSION_1);
+    ((long *)buf)[1] = htonl(arg->sms_version_no);
     ((long *)buf)[2] = htonl(arg->sms_procno);
     ((long *)buf)[3] = htonl(arg->sms_argc);
 
@@ -182,7 +185,9 @@ sms_cont_recv(op, hcon, argp)
 	    ip = (int *) cp;
 	    /* we already got the overall length.. */
 	    for(i=1; i <4; i++) ip[i] = ntohl(ip[i]);
-	    if (ip[1] != SMS_VERSION_1)
+	    arg->sms_version_no = ip[1];
+	    if (arg->sms_version_no != SMS_VERSION_1 &&
+		arg->sms_version_no != SMS_VERSION_2)
 		arg->sms_status = SMS_VERSION_MISMATCH;
 	    else arg->sms_status = ip[2];
 	    arg->sms_argc = ip[3];

@@ -1,4 +1,4 @@
-/* $Id: moira.h,v 1.23 1999-07-12 16:26:11 danw Exp $
+/* $Id: moira.h,v 1.24 1999-07-17 21:39:24 danw Exp $
  *
  * Copyright (C) 1987-1998 by the Massachusetts Institute of Technology
  *
@@ -35,7 +35,8 @@
 #define MR_ACCESS 4
 #define MR_DO_UPDATE 5
 #define MR_MOTD 6
-#define MR_MAX_PROC 6
+#define MR_PROXY 7
+#define MR_MAX_PROC 7
 
 /* values used in NFS physical flags */
 #define MR_FS_STUDENT	0x0001
@@ -130,6 +131,7 @@ char *lowercase(char *s);
 /* mr_ functions */
 int mr_access(char *handle, int argc, char **argv);
 int mr_auth(char *prog);
+int mr_proxy(char *principal, char *orig_authtype);
 int mr_connect(char *server);
 int mr_disconnect(void);
 int mr_do_update(void);

@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.32 1997-07-03 22:45:22 danw Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.33 1997-07-15 15:39:47 danw Exp $
  *
  * Command line oriented Moira List tool.
  *
@@ -24,7 +24,7 @@
 #include <moira_site.h>
 
 #ifndef LINT
-static char blanche_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.32 1997-07-03 22:45:22 danw Exp $";
+static char blanche_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.33 1997-07-15 15:39:47 danw Exp $";
 #endif
 
 
@@ -320,6 +320,19 @@ char **argv;
 		break;
 	    }
 	case M_STRING:
+	    if (memberstruct->type == M_ANY &&
+		!strchr(memberstruct->name, '@') &&
+		!strchr(memberstruct->name, '!') &&
+		!strchr(memberstruct->name, '%')) {
+		/* if user is trying to add something which isn't a
+		   remote string, or a list, or a user, and didn't
+		   explicitly specify `STRING:', it's probably a typo */
+		com_err(whoami, MR_NO_MATCH, "while adding member %s to %s",
+			memberstruct->name, listname);
+		success = 0;
+		break;
+	    }
+			    
 	    membervec[1] = "STRING";
 	    status = mr_query("add_member_to_list", 3, membervec,
 			       scream, NULL);
@@ -328,14 +341,6 @@ char **argv;
 		      memberstruct->name, listname);
 	      success = 0;
 	    }
-	    else if (!strchr(memberstruct->name, '@') &&
-		     !strchr(memberstruct->name, '!') &&
-		     !strchr(memberstruct->name, '%')) {
-		fprintf(stderr, "\nWARNING: \"STRING:%s\" was just added to list \"%s\".\n",
-			memberstruct->name, listname);
-		fprintf(stderr, "\tIf %s is a mailing list, this may cause it to stop working.\n", listname);
-		fprintf(stderr, "\tYou should consider removing \"STRING:%s\" from the list.\n", memberstruct->name);
-  	    }
 	    break;
 	case M_KERBEROS:
 	    membervec[1] = "KERBEROS";
@@ -744,17 +749,14 @@ register char *s;
 	else if (!strcasecmp("kerberos", s))
 	  m->type = M_KERBEROS;
 	else {
-	    m->type = M_STRING;
+	    m->type = M_ANY;
 	    *(--p) = ':';
 	    m->name = s;
 	}
 	m->name = strsave(m->name);
     } else {
 	m->name = strsave(s);
-	if (strchr(s, '@') || strchr(s, '!') || strchr(s, '%') || strchr(s, ' '))
-	  m->type = M_STRING;
-	else
-	  m->type = M_ANY;
+	m->type = M_ANY;
     }
     return(m);
 }

@@ -1,10 +1,10 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_conn.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_conn.c,v 1.2 1988-09-13 14:25:01 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_conn.c,v 1.3 1991-08-21 10:43:53 mar Exp $
  */
 
 #ifndef lint
-static char *rcsid_gdb_conn_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_conn.c,v 1.2 1988-09-13 14:25:01 mar Exp $";
+static char *rcsid_gdb_conn_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_conn.c,v 1.3 1991-08-21 10:43:53 mar Exp $";
 #endif	lint
 
 
@@ -793,9 +793,9 @@ CONNECTION con;
        /*
         * Remove the file descriptor from the select bit maps
         */
-	if (!(con->in.flags & HCON_UNUSED))
+	if (!(con->in.flags & HCON_UNUSED) && con->in.fd >= 0)
 		FD_CLR(con->in.fd,  &gdb_crfds);
-	if (!(con->out.flags & HCON_UNUSED))
+	if (!(con->out.flags & HCON_UNUSED) && con->out.fd >= 0)
 		FD_CLR(con->out.fd, &gdb_cwfds);
        /*
         * Close the file descriptor.  Note, this presumes that in fact

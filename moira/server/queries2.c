@@ -1,6 +1,6 @@
 /* This file defines the query dispatch table for version 2 of the protocol
  *
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/queries2.c,v 1.14 1989-07-19 15:02:11 mar Exp $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/queries2.c,v 1.15 1989-08-10 14:19:41 mar Exp $
  *
  * Copyright 1987, 1988 by the Massachusetts Institute of Technology.
  * For copying and distribution information, please see the file
@@ -47,7 +47,6 @@ int followup_fix_modby();
 int followup_ausr();
 int followup_gpob();
 int followup_glin();
-int followup_amtl();
 int followup_anfq();
 int followup_gzcl();
 int followup_gsha();
@@ -68,6 +67,8 @@ int set_zephyr_modtime();
 /* Special Queries */
 int set_pobox();
 int get_list_info();
+int add_member_to_list();
+int delete_member_from_list();
 int get_ace_use();
 int qualified_get_lists();
 int get_members_of_list();
@@ -1375,17 +1376,30 @@ static struct valobj amtl_valobj[] = {
   {V_TYPEDATA, 2, 0, 0, 0, SMS_NO_MATCH},
 };
 
-static struct validate amtl_validate =	/* for amtl and dmfl */
+static struct validate amtl_validate =
 {
   amtl_valobj,
   4,
-  "member_id",
-  "m.list_id = %d and m.member_type = \"%s\" and m.member_id = %d",
-  3,
+  0,
+  0,
+  0,
   0,
   access_list,
   0,
-  followup_amtl,
+  add_member_to_list,
+};
+
+static struct validate dmfl_validate =
+{
+  amtl_valobj,
+  4,
+  0,
+  0,
+  0,
+  0,
+  access_list,
+  0,
+  delete_member_from_list,
 };
 
 static char *gaus_fields[] = {
@@ -2964,9 +2978,9 @@ struct query Queries2[] = {
     "add_member_to_list",
     "amtl",
     APPEND,
-    "m",
-    "members",
-    "list_id=%i4, member_type=%c, member_id=%i4",
+    0,
+    "imembers",
+    0,
     amtl_fields,
     3,
     (char *)0,
@@ -2979,14 +2993,14 @@ struct query Queries2[] = {
     "delete_member_from_list",
     "dmfl",
     DELETE,
-    "m",
-    "members",
+    0,
+    "imembers",
     (char *)0,
     amtl_fields,
     0,
-    "m.list_id = %d and m.member_type = \"%s\" and m.member_id = %d",
+    0,
     3,
-    &amtl_validate,
+    &dmfl_validate,
   },
 
   {
@@ -3025,7 +3039,7 @@ struct query Queries2[] = {
     "gmol",
     RETRIEVE,
     (char *)0,
-    "members",
+    "imembers",
     (char *)0,
     gmol_fields,
     0,
@@ -3040,7 +3054,7 @@ struct query Queries2[] = {
     "glom",
     RETRIEVE,
     0,
-    "members",
+    "imembers",
     0,
     glom_fields,
     6,
@@ -3055,7 +3069,7 @@ struct query Queries2[] = {
     "cmol",
     RETRIEVE,
     0,
-    "members",
+    "imembers",
     0,
     cmol_fields,
     1,

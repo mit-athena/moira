@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/pobox.c,v 1.16 1990-06-07 17:57:37 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/pobox.c,v 1.17 1990-07-14 16:23:06 mar Exp $";
 #endif lint
 
 /*	This is the file pobox.c for the MOIRA Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/pobox.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/pobox.c,v 1.16 1990-06-07 17:57:37 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/pobox.c,v 1.17 1990-07-14 16:23:06 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -148,7 +148,8 @@ char * local_user;
     Put_message("");
     if (PrintPOMachines() == SUB_NORMAL) {
 	Put_message("");
-	Prompt_input("Which Machine? ", temp_buf, BUFSIZ);
+	if (!Prompt_input("Which Machine? ", temp_buf, BUFSIZ))
+	  return((char *) SUB_ERROR);
 	return(canonicalize_hostname(strsave(temp_buf)));
     }
     Put_message("Could not get machines to choose from, quitting.");
@@ -227,8 +228,8 @@ char **argv;
 	}
 	break;
     default:			/* ^C hit. */
-	type = "NONE";
-	break;
+	Put_message("Aborted.");
+	return(DM_NORMAL);
     }
 
     args[PO_NAME] = local_user;

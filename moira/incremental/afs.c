@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/afs.c,v 1.1 1989-08-18 17:31:26 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/afs.c,v 1.2 1989-08-25 14:36:17 mar Exp $
  *
  * Do AFS incremental updates
  *
@@ -16,6 +16,9 @@
 #include <pwd.h>
 
 #define LOCALCELL "sms_test.mit.edu"
+#define PRS	"/u1/sms/bin/prs"
+#define FS	"/u1/sms/bin/fs"
+
 
 char *whoami;
 
@@ -112,12 +115,12 @@ int afterc;
     if (astate != 1 && bstate != 1)
       return;
     if (astate == 1 && bstate != 1) {
-	sprintf(cmd, "prs newuser -name %s -id %s -cell %s",
-		after[U_NAME], after[U_UID], LOCALCELL);
+	sprintf(cmd, "%s newuser -name %s -id %s -cell %s",
+		PRS, after[U_NAME], after[U_UID], LOCALCELL);
 	do_cmd(cmd);
 	return;
     } else if (astate != 1 && bstate == 1) {
-	sprintf(cmd, "prs delete %s -cell %s", before[U_NAME], LOCALCELL);
+	sprintf(cmd, "%s delete %s -cell %s", PRS, before[U_NAME], LOCALCELL);
 	do_cmd(cmd);
 	return;
     }
@@ -130,8 +133,8 @@ int afterc;
 
     if (beforec > U_NAME && afterc > U_NAME &&
 	strcmp(before[U_NAME], after[U_NAME])) {
-	sprintf(cmd, "prs chname -oldname %s -newname %s -cell %s",
-		before[U_NAME], after[U_NAME], LOCALCELL);
+	sprintf(cmd, "%s chname -oldname %s -newname %s -cell %s",
+		PRS, before[U_NAME], after[U_NAME], LOCALCELL);
 	do_cmd(cmd);
     }
 }
@@ -154,14 +157,14 @@ int afterc;
       agid = atoi(after[L_GID]);
 
     if (bgid == 0 && agid != 0) {
-	sprintf(cmd, "prs create -name system:%s -id %s -cell %s",
-		after[L_NAME], after[L_GID], LOCALCELL);
+	sprintf(cmd, "%s create -name system:%s -id %s -cell %s",
+		PRS, after[L_NAME], after[L_GID], LOCALCELL);
 	do_cmd(cmd);
 	return;
     }
     if (agid == 0 && bgid != 0) {
-	sprintf(cmd, "prs delete -name system:%s -cell %s",
-		before[L_NAME], LOCALCELL);
+	sprintf(cmd, "%s delete -name system:%s -cell %s",
+		PRS, before[L_NAME], LOCALCELL);
 	do_cmd(cmd);
 	return;
     }
@@ -169,8 +172,8 @@ int afterc;
       return;
     if (strcmp(before[L_NAME], after[L_NAME])) {
 	sprintf(cmd,
-		"prs chname -oldname system:%s -newname system:%s -cell %s",
-		before[L_NAME], after[L_NAME], LOCALCELL);
+		"%s chname -oldname system:%s -newname system:%s -cell %s",
+		PRS, before[L_NAME], after[L_NAME], LOCALCELL);
 	do_cmd(cmd);
 	return;
     }
@@ -186,14 +189,14 @@ int afterc;
     char cmd[512];
 
     if (beforec == 0 && !strcmp(after[LM_TYPE], "USER")) {
-	sprintf(cmd, "prs add -user %s -group system:%s -cell %s",
-		after[LM_MEMBER], after[LM_LIST], LOCALCELL);
+	sprintf(cmd, "%s add -user %s -group system:%s -cell %s",
+		PRS, after[LM_MEMBER], after[LM_LIST], LOCALCELL);
 	do_cmd(cmd);
 	return;
     }
     if (afterc == 0 && !strcmp(before[LM_TYPE], "USER")) {
-	sprintf(cmd, "prs delete -user %s -group system:%s -cell %s",
-		before[LM_MEMBER], before[LM_LIST], LOCALCELL);
+	sprintf(cmd, "%s delete -user %s -group system:%s -cell %s",
+		PRS, before[LM_MEMBER], before[LM_LIST], LOCALCELL);
 	do_cmd(cmd);
 	return;
     }
@@ -220,9 +223,11 @@ int afterc;
     if (!(afterc >= Q_DIRECTORY && !strncmp("/afs", after[Q_DIRECTORY], 4)) &&
 	!(beforec >= Q_DIRECTORY && !strncmp("/afs", before[Q_DIRECTORY], 4)))
       return;
+    if (afterc >= Q_LOGIN && strcmp("[nobody]", after[Q_LOGIN]))
+      return;
     if (afterc != 0) {
-	sprintf(cmd, "fs setquota -dir %s -quota %s",
-		after[Q_DIRECTORY], after[Q_QUOTA]);
+	sprintf(cmd, "%s setquota -dir %s -quota %s",
+		FS, after[Q_DIRECTORY], after[Q_QUOTA]);
 	do_cmd(cmd);
 	return;
     }
@@ -283,4 +288,5 @@ char *cell;
 unlog()
 {
     ktc_ForgetToken("afs");
+    dest_tkt();
 }

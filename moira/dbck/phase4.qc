@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase4.qc,v 1.1 1988-09-25 22:02:34 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase4.qc,v 1.2 1988-09-26 14:09:24 mar Exp $
  *
  *  (c) Copyright 1988 by the Massachusetts Institute of Technology.
  *  For copying and distribution information, please see the file
@@ -7,6 +7,8 @@
 
 #include <mit-copyright.h>
 #include "dbck.h"
+
+static char phase4_qc_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase4.qc,v 1.2 1988-09-26 14:09:24 mar Exp $";
 
 
 count_boxes(id, u, boxes)
@@ -30,24 +32,24 @@ struct hash *boxes;
 ##int id, cnt;
 struct hash *counts;
 ##{
-##  int newval, rowcount, error;
+##  int oldval, rowcount;
 
-    newval = (int) hash_lookup(counts, id);
-    if (newval != cnt - 1) {
+    oldval = (int) hash_lookup(counts, id);
+    cnt--;
+    if (oldval != cnt) {
 	printf("Count wrong on POBox machine %s; is %d in db, counted %d\n",
 	       ((struct machine *) hash_lookup(machines, id))->name,
-	       newval, cnt - 1);
+	       oldval, cnt);
 	if (single_fix("Update", 1)) {
 ##	    range of s is serverhosts
-##    	    replace s (value1 = newval) where
+##    	    replace s (value1 = cnt) where
 ##		s.service = "POP" and s.mach_id = id
-##	    inquire_equel(rowcount = "rowcount", error = "errorno")
-	    if (error != 0)
-	      printf("Error = %d\n", error);
+##	    inquire_equel(rowcount = "rowcount")
 	    if (rowcount > 0)
 	      printf("%d entr%s fixed\n", rowcount, rowcount==1?"y":"ies");
 	    else
 	      printf("Not fixed\n");
+	    modified("serverhosts");
 	}
     }
 ##}
@@ -71,6 +73,7 @@ struct nfsphys *n;
 	      printf("%d entr%s fixed\n", rowcount, rowcount==1?"y":"ies");
 	    else
 	      printf("Not fixed\n");
+	    modified("nfsphys");
 	}
     }
 ##}
@@ -114,7 +117,7 @@ count_only_setup()
 ##  retrieve (id = u.users_id, name = u.login, last = u.#last,
 ##	      first = u.#first, status = u.#status, buf = u.potype,
 ##	      id2 = u.pop_id, id3 = u.box_id) 
-##    where u.potype != "NONE" {
+##    where u.potype = "POP" {
     	u = (struct user *) malloc(sizeof(struct user));
 	strcpy(u->login, strtrim(name));
 	u->potype = buf[0];

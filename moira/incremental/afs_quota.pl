@@ -39,7 +39,12 @@ shift(@tmp), $_ = shift(@tmp);
 
 system("$fs","sq",$path,$newq);
 die "Unable to change quota on $path\n" if ($?);
+
 &afs_quota_adj($cell,$asrv,$apart,$newq-$oldq);
+
+system("$zwrite","-c","afsadm","-m",
+       "Changed quota on volume $vname ($asrv:$apart) from $oldq to $newq")
+    if (($newq-$oldq > 39999) || ($oldq-$newq > 39999));
 
 #$stat_fs = $?;
 #$stat_qa = &afs_quota_adj($cell,$asrv,$apart,($stat_fs ? 0 : $newq-$oldq));

@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase2.qc,v 1.7 1989-09-11 12:10:19 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase2.qc,v 1.8 1989-09-12 17:37:41 mar Exp $
  *
  *  (c) Copyright 1988 by the Massachusetts Institute of Technology.
  *  For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
 #include <sms.h>
 #include "dbck.h"
 
-static char phase2_qc_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase2.qc,v 1.7 1989-09-11 12:10:19 mar Exp $";
+static char phase2_qc_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase2.qc,v 1.8 1989-09-12 17:37:41 mar Exp $";
 
 
 show_mcm_mach(id)
@@ -787,7 +787,7 @@ phase2()
 	else
 	  l->members++;
 ##  }
-    generic_delete(sq1, show_member_list, "members", "list_id", 1);
+    generic_delete(sq1, show_member_list, "imembers", "list_id", 1);
     generic_fix(sq2, show_mem_user, "Delete", del_mem_user, 1);
     generic_fix(sq3, show_mem_list, "Delete", del_mem_list, 1);
     generic_fix(sq4, show_mem_str, "Delete", del_mem_str, 1);

@@ -118,7 +118,7 @@ MANDIR= /usr/athena/man
  * to link against.
  */
 #define ZEPHYR
-LZEHPYR=-lzephyr
+LZEPHYR=-lzephyr
 
 /*
  * Define GDSS if you use the Generic Data Signature Service to 

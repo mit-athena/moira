@@ -1,4 +1,4 @@
-/* $Id: queries2.c,v 2.50 1998-11-23 15:53:19 danw Exp $
+/* $Id: queries2.c,v 2.51 1999-01-27 19:35:22 danw Exp $
  *
  * This file defines the query dispatch table for version 2 of the protocol
  *
@@ -557,6 +557,11 @@ static struct validate ghst_validate = {
   followup_ghst,
 };
 
+static char *ghha_fields[] = {
+  "name",
+  "hwaddr",
+};
+
 static char *ahst_fields[] = {
   "name", "vendor", "model", "os", "location", "contact", "use",
   "status", "subnet", "address", "ace_type", "ace_name",
@@ -625,6 +630,28 @@ static struct validate uhst_validate = {
   "mach_id",
   access_host,
   setup_ahst,
+  set_modtime_by_id,
+};
+
+static char *uhha_fields[] = {
+  "name",
+  "hwaddr"
+};
+
+static struct valobj uhha_valobj[] = {
+  {V_ID, 0, MACHINE_TABLE, "name", "mach_id", MR_MACHINE},
+  {V_CHAR, 1, MACHINE_TABLE, "hwaddr"},
+};
+
+static struct validate uhha_validate = {
+  uhha_valobj,
+  2,
+  0,
+  0,
+  0,
+  "mach_id",
+  0,
+  setup_uhha,
   set_modtime_by_id,
 };
 
@@ -2033,100 +2060,92 @@ static struct validate asvc_validate = {
   set_modtime,
 };
 
-static char *gpce_fields[] = {
-  "printer",
-  "printer", "spooling_host", "spool_directory", "rprinter",
-  "quotaserver", "authenticate", "price", "comments",
-  "modtime", "modby", "modwith",
+static char *gprn_fields[] = {
+  "name",
+  "name", "type", "hwtype", "duplexname", "hostname",
+  "loghost", "rm", "rp", "rq", "ka", "pc", "ac", "lpc_acl",
+  "location", "contact", "modtime", "modby", "modwith"
 };
 
-static struct validate gpce_validate = {
-  0,
-  0,
-  0,
-  0,
-  0,
-  0,
-  0,
-  0,
-  followup_gpce,
+static char *gpbd_fields[] = {
+  "duplexname",
+  "name", "type", "hwtype", "duplexname", "hostname",
+  "loghost", "rm", "rp", "rq", "ka", "pc", "ac", "lpc_acl",
+  "location", "contact", "modtime", "modby", "modwith"
 };
 
-static char *apce_fields[] = {
-  "printer", "spooling_host", "spool_directory", "rprinter",
-  "quotaserver", "authenticate", "price", "comments",
-  "modtime", "modby", "modwith",
+static char *gpbe_fields[] = {
+  "hwaddr",
+  "name", "type", "hwtype", "duplexname", "hostname",
+  "loghost", "rm", "rp", "rq", "ka", "pc", "ac", "lpc_acl",
+  "location", "contact", "modtime", "modby", "modwith"
 };
 
-static struct valobj apce_valobj[] = {
-  {V_CHAR, 0, PRINTCAP_TABLE, "name"},
-  {V_ID, 1, MACHINE_TABLE, "name", "mach_id", MR_MACHINE},
-  {V_LEN, 2, PRINTCAP_TABLE, "dir"},
-  {V_LEN, 3, PRINTCAP_TABLE, "rp"},
+static char *gpbh_fields[] = {
+  "hostname",
+  "name", "type", "hwtype", "duplexname", "hostname",
+  "loghost", "rm", "rp", "rq", "ka", "pc", "ac", "lpc_acl",
+  "location", "contact", "modtime", "modby", "modwith"
+};
+
+static char *gpbr_fields[] = {
+  "rm",
+  "name", "type", "hwtype", "duplexname", "hostname",
+  "loghost", "rm", "rp", "rq", "ka", "pc", "ac", "lpc_acl",
+  "location", "contact", "modtime", "modby", "modwith"
+};
+
+static char *gpbl_fields[] = {
+  "location",
+  "name", "type", "hwtype", "duplexname", "hostname",
+  "loghost", "rm", "rp", "rq", "ka", "pc", "ac", "lpc_acl",
+  "location", "contact", "modtime", "modby", "modwith"
+};
+
+static char *gpbc_fields[] = {
+  "contact",
+  "name", "type", "hwtype", "duplexname", "hostname",
+  "loghost", "rm", "rp", "rq", "ka", "pc", "ac", "lpc_acl",
+  "location", "contact", "modtime", "modby", "modwith"
+};
+
+static char *aprn_fields[] = {
+  "printer", "type", "hwtype", "duplexname", "hostname",
+  "loghost", "rm", "rp", "rq", "ka", "pc", "ac", "lpc_acl",
+  "location", "contact",
+};
+
+static struct valobj aprn_valobj[] = {
+  {V_CHAR, 0, PRINTERS_TABLE, "name"},
+  {V_TYPE, 1, 0, "printertype", 0, MR_TYPE},
+  {V_TYPE, 2, 0, "printerhwtype", 0, MR_TYPE},
+  {V_CHAR, 3, PRINTERS_TABLE, "duplexname"},
   {V_ID, 4, MACHINE_TABLE, "name", "mach_id", MR_MACHINE},
-  {V_NUM, 5},
-  {V_NUM, 6},
-  {V_CHAR, 7, PRINTCAP_TABLE, "comments"},
+  {V_ID, 5, MACHINE_TABLE, "name", "mach_id", MR_MACHINE},
+  {V_ID, 6, MACHINE_TABLE, "name", "mach_id", MR_MACHINE},
+  {V_CHAR, 7, PRINTERS_TABLE, "rp"},
+  {V_ID, 8, MACHINE_TABLE, "name", "mach_id", MR_MACHINE},
+  {V_NUM, 9},
+  {V_NUM, 10},
+  {V_ID, 11, LIST_TABLE, "name", "list_id", MR_LIST},
+  {V_ID, 12, LIST_TABLE, "name", "list_id", MR_LIST},
+  {V_CHAR, 13, PRINTERS_TABLE, "location"},
+  {V_CHAR, 14, PRINTERS_TABLE, "contact"},
 };
 
-static struct validate apce_validate = {
-  apce_valobj,
-  8,
+static struct validate aprn_validate = {
+  aprn_valobj,
+  15,
   "name",
   "name = '%s'",
   1,
   0,
   0,
-  0,
-  set_modtime,
+  setup_aprn,
+  followup_aprn,
 };
 
-static struct validate dpce_validate = {
-  0,
-  0,
-  "name",
-  "name = '%s'",
-  1,
-  0,
-  0,
-  0,
-  0,
-};
-
-static char *gpcp_fields[] = {
-  "printer",
-  "printer", "spooling_host", "spool_directory", "rprinter", "comments",
-  "modtime", "modby", "modwith",
-};
-
-static char *gpdm_fields[] = {
-  "name",
-  "name", "rpcnum", "host", "modtime", "modby", "modwith",
-};
-
-static char *apdm_fields[] = {
-  "name", "rpcnum", "host"
-};
-
-static struct valobj apdm_valobj[] = {
-  {V_CHAR, 0, PALLADIUM_TABLE, "name"},
-  {V_NUM, 1},
-  {V_ID, 2, MACHINE_TABLE, "name", "mach_id", MR_MACHINE},
-};
-
-static struct validate apdm_validate = {
-  apdm_valobj,
-  3,
-  "name",
-  "name = '%s'",
-  1,
-  0,
-  0,
-  0,
-  set_modtime,
-};
-
-static struct validate dpdm_validate = {
+static struct validate dprn_validate = {
   0,
   0,
   "name",
@@ -2135,7 +2154,7 @@ static struct validate dpdm_validate = {
   0,
   0,
   0,
-  0,
+  followup_aprn,
 };
 
 static char *gali_fields[] = {
@@ -2800,6 +2819,22 @@ struct query Queries2[] = {
   },
 
   {
+    /* Q_GHHA - GET_HOST_HWADDR */
+    "get_host_hwaddr",
+    "ghha",
+    RETRIEVE,
+    "m",
+    MACHINE_TABLE,
+    "m.hwaddr FROM machine m",
+    ghha_fields,
+    1,
+    "m.name LIKE UPPER('%s')",
+    1,
+    NULL,
+    NULL,
+  },
+
+  {
     /* Q_AHST - ADD_HOST */ /* uses prefetch_value() for mach_id */
     "add_host",
     "ahst",
@@ -2829,6 +2864,22 @@ struct query Queries2[] = {
     1,
     NULL,
     &uhst_validate,
+  },
+
+  {
+    /* Q_UHHA - UPDATE_HOST_HWADDR */
+    "update_host_hwaddr",
+    "uhha",
+    UPDATE,
+    "m",
+    MACHINE_TABLE,
+    "machine SET hwaddr = '%s'",
+    uhha_fields,
+    1,
+    "mach_id = %d",
+    1,
+    NULL,
+    &uhha_validate,
   },
 
   {
@@ -4208,131 +4259,147 @@ struct query Queries2[] = {
   },
 
   {
-    /* Q_GPCE - GET_PRINTCAP_ENTRY */
-    "get_printcap_entry",
-    "gpce",
+    /* Q_GPRN - GET_PRINTER */
+    "get_printer",
+    "gprn",
     RETRIEVE,
-    "pc",
-    PRINTCAP_TABLE,
-    "pc.name, m.name, pc.dir, pc.rp, pc.quotaserver, pc.auth, pc.price, pc.comments, TO_CHAR(pc.modtime, 'DD-mon-YYYY HH24:MI:SS'), pc.modby, pc.modwith FROM printcap pc, machine m",
-    gpce_fields,
-    11,
-    "pc.name LIKE '%s' AND m.mach_id = pc.mach_id",
+    "pr",
+    PRINTERS_TABLE,
+    "pr.name, pr.type, pr.hwtype, pr.duplexname, m1.name, m2.name, m3.name, pr.rp, m4.name, pr.ka, pr.pc, l1.name, l2.name, pr.location, pr.contact, TO_CHAR(pr.modtime, 'DD-mon-YYYY HH24:MI:SS'), pr.modby, pr.modwith FROM printers pr, machine m1, machine m2, machine m3, machine m4, list l1, list l2",
+    gprn_fields,
+    18,
+    "pr.name LIKE '%s' AND m1.mach_id = pr.mach_id AND m2.mach_id = pr.loghost AND m3.mach_id = pr.rm AND m4.mach_id = pr.rq AND l1.list_id = pr.ac AND l2.list_id = pr.lpc_acl",
     1,
-    "pc.name",
-    &gpce_validate,
-  },
-
-  {
-    /* Q_APCE - ADD_PRINTCAP_ENTRY */
-    "add_printcap_entry",
-    "apce",
-    APPEND,
-    "pc",
-    PRINTCAP_TABLE,
-    "INTO printcap (name, mach_id, dir, rp, quotaserver, auth, price, comments) VALUES ('%s', %d, '%s', '%s', %d, %s, %s, NVL('%s', CHR(0)))",
-    apce_fields,
-    8,
-    0,
-    0,
-    NULL,
-    &apce_validate,
-  },
-
-  {
-    /* Q_DPCE - DELETE_PRINTCAP_ENTRY */
-    "delete_printcap_entry",
-    "dpce",
-    DELETE,
-    "pc",
-    PRINTCAP_TABLE,
-    0,
-    apce_fields,
-    0,
-    "name = '%s'",
-    1,
-    NULL,
-    &dpce_validate,
-  },
-
-  {
-    /* Q_GPCP - GET_PRINTCAP */
-    "get_printcap",
-    "gpcp",
-    RETRIEVE,
-    "pc",
-    PRINTCAP_TABLE,
-    "pc.name, m.name, pc.dir, pc.rp, pc.comments, TO_CHAR(pc.modtime, 'DD-mon-YYYY HH24:MI:SS'), pc.modby, pc.modwith FROM printcap pc, machine m",
-    gpcp_fields,
-    8,
-    "pc.name LIKE '%s' AND m.mach_id = pc.mach_id",
-    1,
-    "pc.name",
+    "pr.name",
     &VDfix_modby,
   },
 
   {
-    /* Q_DPCP - DELETE_PRINTCAP */
-    "delete_printcap",
-    "dpcp",
-    DELETE,
-    "pc",
-    PRINTCAP_TABLE,
-    0,
-    apce_fields,
-    0,
-    "name = '%s'",
-    1,
-    NULL,
-    &dpce_validate,
-  },
-
-  {
-    /* Q_GPDM - GET_PALLADIUM */
-    "get_palladium",
-    "gpdm",
+    /* Q_GPBD - GET_PRINTER_BY_DUPLEXNAME */
+    "get_printer_by_duplexname",
+    "gpbd",
     RETRIEVE,
-    "pal",
-    PALLADIUM_TABLE,
-    "pal.name, pal.identifier, m.name, TO_CHAR(pal.modtime, 'DD-mon-YYYY HH24:MI:SS'), pal.modby, pal.modwith FROM palladium pal, machine m",
-    gpdm_fields,
-    6,
-    "pal.name LIKE '%s' AND m.mach_id = pal.mach_id",
+    "pr",
+    PRINTERS_TABLE,
+    "pr.name, pr.type, pr.hwtype, pr.duplexname, m1.name, m2.name, m3.name, pr.rp, m4.name, pr.ka, pr.pc, l1.name, l2.name, pr.location, pr.contact, TO_CHAR(pr.modtime, 'DD-mon-YYYY HH24:MI:SS'), pr.modby, pr.modwith FROM printers pr, machine m1, machine m2, machine m3, machine m4, list l1, list l2",
+    gpbd_fields,
+    18,
+    "pr.duplexname LIKE '%s' AND m1.mach_id = pr.mach_id AND m2.mach_id = pr.loghost AND m3.mach_id = pr.rm AND m4.mach_id = pr.rq AND l1.list_id = pr.ac AND l2.list_id = pr.lpc_acl",
     1,
-    "pal.name",
+    "pr.name",
     &VDfix_modby,
   },
 
   {
-    /* Q_APDM - ADD_PALLADIUM */
-    "add_palladium",
-    "apdm",
-    APPEND,
-    "pal",
-    PALLADIUM_TABLE,
-    "INTO palladium (name, identifier, mach_id) VALUES ('%s', %s, %d)",
-    apdm_fields,
-    3,
-    0,
-    0,
-    NULL,
-    &apdm_validate,
+    /* Q_GPBE - GET_PRINTER_BY_ETHERNET */
+    "get_printer_by_ethernet",
+    "gpbe",
+    RETRIEVE,
+    "pr",
+    PRINTERS_TABLE,
+    "pr.name, pr.type, pr.hwtype, pr.duplexname, m1.name, m2.name, m3.name, pr.rp, m4.name, pr.ka, pr.pc, l1.name, l2.name, pr.location, pr.contact, TO_CHAR(pr.modtime, 'DD-mon-YYYY HH24:MI:SS'), pr.modby, pr.modwith FROM printers pr, machine m1, machine m2, machine m3, machine m4, list l1, list l2",
+    gpbd_fields,
+    18,
+    "m1.hwaddr LIKE '%s' AND m1.mach_id = pr.mach_id AND m2.mach_id = pr.loghost AND m3.mach_id = pr.rm AND m4.mach_id = pr.rq AND l1.list_id = pr.ac AND l2.list_id = pr.lpc_acl",
+    1,
+    "pr.name",
+    &VDfix_modby,
   },
 
   {
-    /* Q_DPDM - DELETE_PALLADIUM */
-    "delete_palladium",
-    "dpdm",
-    DELETE,
-    "pal",
-    PALLADIUM_TABLE,
+    /* Q_GPBH - GET_PRINTER_BY_HOSTNAME */
+    "get_printer_by_hostname",
+    "gpbh",
+    RETRIEVE,
+    "pr",
+    PRINTERS_TABLE,
+    "pr.name, pr.type, pr.hwtype, pr.duplexname, m1.name, m2.name, m3.name, pr.rp, m4.name, pr.ka, pr.pc, l1.name, l2.name, pr.location, pr.contact, TO_CHAR(pr.modtime, 'DD-mon-YYYY HH24:MI:SS'), pr.modby, pr.modwith FROM printers pr, machine m1, machine m2, machine m3, machine m4, list l1, list l2",
+    gpbh_fields,
+    18,
+    "m1.name LIKE UPPER('%s') AND m1.mach_id = pr.mach_id AND m2.mach_id = pr.loghost AND m3.mach_id = pr.rm AND m4.mach_id = pr.rq AND l1.list_id = pr.ac AND l2.list_id = pr.lpc_acl",
+    1,
+    "pr.name",
+    &VDfix_modby,
+  },
+
+  {
+    /* Q_GPBR - GET_PRINTER_BY_RM */
+    "get_printer_by_rm",
+    "gpbr",
+    RETRIEVE,
+    "pr",
+    PRINTERS_TABLE,
+    "pr.name, pr.type, pr.hwtype, pr.duplexname, m1.name, m2.name, m3.name, pr.rp, m4.name, pr.ka, pr.pc, l1.name, l2.name, pr.location, pr.contact, TO_CHAR(pr.modtime, 'DD-mon-YYYY HH24:MI:SS'), pr.modby, pr.modwith FROM printers pr, machine m1, machine m2, machine m3, machine m4, list l1, list l2",
+    gpbr_fields,
+    18,
+    "m3.name LIKE UPPER('%s') AND m1.mach_id = pr.mach_id AND m2.mach_id = pr.loghost AND m3.mach_id = pr.rm AND m4.mach_id = pr.rq AND l1.list_id = pr.ac AND l2.list_id = pr.lpc_acl",
+    1,
+    "pr.name",
+    &VDfix_modby,
+  },
+
+  {
+    /* Q_GPBL - GET_PRINTER_BY_LOCATION */
+    "get_printer_by_location",
+    "gpbl",
+    RETRIEVE,
+    "pr",
+    PRINTERS_TABLE,
+    "pr.name, pr.type, pr.hwtype, pr.duplexname, m1.name, m2.name, m3.name, pr.rp, m4.name, pr.ka, pr.pc, l1.name, l2.name, pr.location, pr.contact, TO_CHAR(pr.modtime, 'DD-mon-YYYY HH24:MI:SS'), pr.modby, pr.modwith FROM printers pr, machine m1, machine m2, machine m3, machine m4, list l1, list l2",
+    gpbl_fields,
+    18,
+    "UPPER(pr.location) LIKE UPPER('%s') AND m1.mach_id = pr.mach_id AND m2.mach_id = pr.loghost AND m3.mach_id = pr.rm AND m4.mach_id = pr.rq AND l1.list_id = pr.ac AND l2.list_id = pr.lpc_acl",
+    1,
+    "pr.name",
+    &VDfix_modby,
+  },
+
+  {
+    /* Q_GPBC - GET_PRINTER_BY_CONTACT */
+    "get_printer_by_contact",
+    "gpbc",
+    RETRIEVE,
+    "pr",
+    PRINTERS_TABLE,
+    "pr.name, pr.type, pr.hwtype, pr.duplexname, m1.name, m2.name, m3.name, pr.rp, m4.name, pr.ka, pr.pc, l1.name, l2.name, pr.location, pr.contact, TO_CHAR(pr.modtime, 'DD-mon-YYYY HH24:MI:SS'), pr.modby, pr.modwith FROM printers pr, machine m1, machine m2, machine m3, machine m4, list l1, list l2",
+    gpbc_fields,
+    18,
+    "UPPER(pr.contact) LIKE UPPER('%s') AND m1.mach_id = pr.mach_id AND m2.mach_id = pr.loghost AND m3.mach_id = pr.rm AND m4.mach_id = pr.rq AND l1.list_id = pr.ac AND l2.list_id = pr.lpc_acl",
+    1,
+    "pr.name",
+    &VDfix_modby,
+  },
+
+  {
+    /* Q_APRN - ADD_PRINTER */
+    "add_printer",
+    "aprn",
+    APPEND,
+    "pr",
+    PRINTERS_TABLE,
+    "INTO printers (name, type, hwtype, duplexname, mach_id, loghost, rm, rp, rq, ka, pc, ac, lpc_acl, location, contact) VALUES ('%s', '%s', '%s', NVL('%s', CHR(0)), %d, %d, %d, NVL('%s', CHR(0)), %d, %s, %s, %d, %d, NVL('%s', CHR(0)), NVL('%s', CHR(0)))",
+    aprn_fields,
+    15,
     0,
-    apdm_fields,
+    0,
+    NULL,
+    &aprn_validate,
+  },
+
+  {
+    /* Q_DPRN - DELETE_PRINTER */
+    "delete_printer",
+    "dprn",
+    DELETE,
+    "pr",
+    PRINTERS_TABLE,
+    0,
+    aprn_fields,
     0,
     "name = '%s'",
     1,
     NULL,
-    &dpdm_validate,
+    &dprn_validate,
   },
 
   {

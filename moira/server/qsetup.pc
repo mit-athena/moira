@@ -1,4 +1,4 @@
-/* $Id: qsetup.pc,v 2.25 1999-01-03 17:44:16 danw Exp $
+/* $Id: qsetup.pc,v 2.26 1999-01-27 19:35:20 danw Exp $
  *
  * Query setup routines
  *
@@ -21,7 +21,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsetup.pc,v 2.25 1999-01-03 17:44:16 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsetup.pc,v 2.26 1999-01-27 19:35:20 danw Exp $");
 
 extern char *whoami;
 extern int dbms_errno, mr_errcode;
@@ -209,12 +209,16 @@ int setup_dmac(struct query *q, char *argv[], client *cl)
     WHERE mach_id = :id;
   if (cnt > 0)
     return MR_IN_USE;
-  EXEC SQL SELECT COUNT(mach_id) INTO :cnt FROM printcap
+  EXEC SQL SELECT COUNT(mach_id) INTO :cnt FROM printers
     WHERE mach_id = :id;
   if (cnt > 0)
     return MR_IN_USE;
-  EXEC SQL SELECT COUNT(quotaserver) INTO :cnt FROM printcap
-    WHERE quotaserver = :id;
+  EXEC SQL SELECT COUNT(rm) INTO :cnt FROM printers
+    WHERE rm = :id;
+  if (cnt > 0)
+    return MR_IN_USE;
+  EXEC SQL SELECT COUNT(rq) INTO :cnt FROM printers
+    WHERE rq = :id;
   if (cnt > 0)
     return MR_IN_USE;
   EXEC SQL SELECT COUNT(mach_id) INTO :cnt FROM palladium
@@ -1051,6 +1055,116 @@ int setup_ahal(struct query *q, char **argv, client *cl)
     return mr_errcode;
   if (cnt > 0)
     return MR_EXISTS;
+
+  return MR_SUCCESS;
+}
+
+/* setup_uhha(): Check characters in hwaddr, and make sure it's not
+ * a duplicate.
+ */
+int setup_uhha(struct query *q, char **argv, client *cl)
+{
+  EXEC SQL BEGIN DECLARE SECTION;
+  char *hwaddr = argv[1];
+  int count;
+  EXEC SQL END DECLARE SECTION;
+  char *p;
+
+  if (*hwaddr && strcasecmp(hwaddr, "unknown"))
+    {
+      for (p = hwaddr; *p; p++)
+	{
+	  if (isupper(*p))
+	    *p = tolower(*p);
+	  if (!isxdigit(*p))
+	    return MR_BAD_CHAR;
+	}
+      if (p != hwaddr + 12)
+	return MR_ADDRESS;
+
+      EXEC SQL SELECT COUNT(hwaddr) INTO :count
+	FROM machine WHERE hwaddr = :hwaddr;
+      if (count)
+	return MR_NOT_UNIQUE;
+    }
+
+  return MR_SUCCESS;
+}
+
+/* setup_aprn(): Make sure name/duplexname don't conflict with
+ * anything. If [ANY] was specified for the spooling host, pick the
+ * least loaded print server that serves this kind of printer.
+ */
+int setup_aprn(struct query *q, char **argv, client *cl)
+{
+  int best = -1;
+  char *p;
+  EXEC SQL BEGIN DECLARE SECTION;
+  int mid, usage, count;
+  char types[SERVERHOSTS_VALUE3_SIZE], *hwaddr, *name;
+  EXEC SQL END DECLARE SECTION;
+
+  name = argv[PRN_NAME];
+  if (!*name)
+    return MR_BAD_CHAR;
+  else
+    {
+      EXEC SQL SELECT COUNT(name) INTO :count FROM printers
+	WHERE name = :name OR duplexname = :name;
+      if (dbms_errno)
+	return mr_errcode;
+      if (count)
+	return MR_NOT_UNIQUE;
+    }
+
+  name = argv[PRN_DUPLEXNAME];
+  if (*name)
+    {
+      EXEC SQL SELECT COUNT(name) INTO :count FROM printers
+	WHERE name = :name OR duplexname = :name;
+      if (dbms_errno)
+	return mr_errcode;
+      if (count)
+	return MR_NOT_UNIQUE;
+    }
+
+  if (*(int *)argv[PRN_RM] == -1)
+    {
+      EXEC SQL DECLARE csr_rm CURSOR FOR
+	SELECT mach_id, value1, value3 FROM serverhosts
+	WHERE service = 'PRINT';
+      if (dbms_errno)
+	return mr_errcode;
+      EXEC SQL OPEN csr_rm;
+      if (dbms_errno)
+	return mr_errcode;
+
+      while (1)
+	{
+	  EXEC SQL FETCH csr_rm INTO :mid, :usage, :types;
+	  if (sqlca.sqlcode)
+	    break;
+
+	  if (best > 0 && usage > best)
+	    continue;
+
+	  for (p = strtok(types, ", "); p; p = strtok(NULL, ", "))
+	    {
+	      if (!strcasecmp(argv[PRN_TYPE], p))
+		{
+		  best = usage;
+		  *(int *)argv[PRN_RM] = mid;
+		  break;
+		}
+	    }
+	}
+      EXEC SQL CLOSE csr_rm;
+      if (dbms_errno)
+	return mr_errcode;
+
+      if (best == -1)
+	return MR_SERVICE;
+    }
 
   return MR_SUCCESS;
 }

@@ -1,4 +1,4 @@
-/* $Id: qfollow.pc,v 2.7 1998-02-23 19:24:34 danw Exp $
+/* $Id: qfollow.pc,v 2.8 1999-01-27 19:35:19 danw Exp $
  *
  * Query followup routines
  *
@@ -23,7 +23,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qfollow.pc,v 2.7 1998-02-23 19:24:34 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qfollow.pc,v 2.8 1999-01-27 19:35:19 danw Exp $");
 
 extern char *whoami, *table_name[];
 extern int dbms_errno, mr_errcode;
@@ -560,6 +560,33 @@ int followup_uuac(struct query *q, char *argv[], client *cl)
   return MR_SUCCESS;
 }
 
+
+/* followp_aprn: update counts in serverhosts. Also set modtime for aprn. */
+int followup_aprn(struct query *q, char *argv[], client *cl)
+{
+  EXEC SQL BEGIN DECLARE SECTION;
+  int mid, delta;
+  EXEC SQL END DECLARE SECTION;
+
+  /* See if we're doing aprn or dprn */
+  if (q->name[0] == 'a')
+    {
+      delta = 1;
+      set_modtime(q, argv, cl);
+    }
+  else
+    delta = -1;
+
+  mid = *(int *)argv[PRN_RM];
+
+  EXEC SQL UPDATE serverhosts SET value1 = value1 + :delta
+    WHERE service = 'PRINT' AND mach_id = :mid;
+  if (dbms_errno)
+    return mr_errcode;
+
+  return MR_SUCCESS;
+}
+
 /* followup_gpob: fixes argv[2] based on the IDs currently there and the
  * type in argv[1].  Then completes the upcall to the user.
  *
@@ -1067,39 +1094,6 @@ int followup_dqot(struct query *q, char **argv, client *cl)
     WHERE table_name = :tname;
   return MR_SUCCESS;
 }
-
-
-int followup_gpce(struct query *q, struct save_queue *sq, struct validate *v,
-		  int (*action)(int, char *[], void *), void *actarg,
-		  client *cl)
-{
-  int i, j;
-  char **argv;
-  int id, status;
-
-  i = q->vcnt - 2;
-  while (sq_get_data(sq, &argv))
-    {
-      id = atoi(argv[PCAP_QSERVER]);
-      status = id_to_name(id, MACHINE_TABLE, &argv[PCAP_QSERVER]);
-      if (status)
-	return status;
-      id = atoi(argv[i]);
-      if (id > 0)
-	status = id_to_name(id, USERS_TABLE, &argv[i]);
-      else
-	status = id_to_name(-id, STRINGS_TABLE, &argv[i]);
-      if (status && status != MR_NO_MATCH)
-	return status;
-      (*action)(q->vcnt, argv, actarg);
-      for (j = 0; j < q->vcnt; j++)
-	free(argv[j]);
-      free(argv);
-    }
-  sq_destroy(sq);
-  return MR_SUCCESS;
-}
-
 
 /* followup_gzcl:
  */

@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v $
- *	$Author: tytso $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.32 1993-12-10 13:57:06 tytso Exp $
+ *	$Author: danw $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.33 1997-01-20 18:26:12 danw Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -16,17 +16,22 @@
  * 
  */
 
-static char *rcsid_mr_main_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.32 1993-12-10 13:57:06 tytso Exp $";
+static char *rcsid_mr_main_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.33 1997-01-20 18:26:12 danw Exp $";
 
 #include <mit-copyright.h>
-#include <strings.h>
+#include <string.h>
+#include <stdio.h>
 #include <sys/types.h>
 #include <sys/errno.h>
 #include <sys/signal.h>
 #include <sys/wait.h>
 #include <sys/stat.h>
+#include <unistd.h>
+#include <signal.h>
 #include "mr_server.h"
 #include <krb_et.h>
+#include <gdss_et.h>
+#include <arpa/inet.h>
 
 extern CONNECTION newconn, listencon;
 
@@ -46,21 +51,15 @@ extern char *takedown;
 extern int errno;
 extern FILE *journal;
 
-extern char *inet_ntoa();
-extern void mr_com_err();
-extern void do_client();
-
-extern int sigshut();
-void clist_append();
-void oplist_append();
-void reapchild(), godormant(), gowakeup();
-
 extern time_t now;
 
-#ifdef _DEBUG_MALLOC_INC
-static char *dbg_malloc();
-static int dbg_free();
-#endif
+int do_listen(char *port);
+void do_reset_listen(void);
+void clist_append(client *cp);
+void oplist_append(LIST_OF_OPERATIONS *oplp, OPERATION op);
+void oplist_delete(LIST_OF_OPERATIONS oplp, OPERATION op);
+void mr_setup_signals(void);
+int new_connection(void);
 
 /*
  * Main MOIRA server loop.
@@ -70,10 +69,9 @@ static int dbg_free();
  */
 
 /*ARGSUSED*/
-int
-main(argc, argv)
-	int argc;
-	char **argv;
+int main(argc, argv)
+     int argc;
+     char **argv;
 {
 	int status, i;
 	time_t tardy;
@@ -89,10 +87,9 @@ main(argc, argv)
 	initialize_krb_error_table();
 	initialize_gdss_error_table();
 	set_com_err_hook(mr_com_err);
-	setlinebuf(stderr);
-	
-	database = "moira";
-	port = index(MOIRA_SERVER, ':') + 1;
+	setvbuf(stderr, NULL, _IOLBF, BUFSIZ);
+
+	port = strchr(MOIRA_SERVER, ':') + 1;
 
 	for (i = 1; i < argc; i++) {
 	    if (!strcmp(argv[i], "-db") && i+1 < argc) {
@@ -107,17 +104,6 @@ main(argc, argv)
 	    }
 	}
 
-	/* Profiling implies that getting rid of one level of call
-	 * indirection here wins us maybe 1% on the VAX.
-	 */
-#ifdef _DEBUG_MALLOC_INC
-	gdb_amv = dbg_malloc;
-	gdb_fmv = dbg_free;
-#else
-	gdb_amv = malloc;
-	gdb_fmv = (int (*)()) free;
-#endif
-	
 	/*
 	 * GDB initialization.
 	 */
@@ -280,7 +266,7 @@ main(argc, argv)
 				do_client(cur_client);
 			} else if (clients[i]->last_time_used < tardy) {
 				com_err(whoami, 0, "Shutting down connection due to inactivity");
-				shutdown(cur_client->con->in.fd, 0);
+				shutdown(cur_client->con->in.fd, 2);
 			}
 			cur_client = NULL;
 			if (takedown) break;
@@ -296,9 +282,8 @@ main(argc, argv)
  * Set up the template connection and queue the first accept.
  */
 
-int
-do_listen(port)
-char *port;
+int do_listen(port)
+     char *port;
 {
 	listencon = create_listening_connection(port);
 
@@ -315,7 +300,7 @@ char *port;
 }
 
 
-do_reset_listen()
+void do_reset_listen(void)
 {
 	client_addrlen = sizeof(client_addr);
 	start_accepting_client(listencon, listenop, &newconn,
@@ -328,8 +313,7 @@ do_reset_listen()
  *
  * It sets up a new client and adds it to the list of currently active clients.
  */
-int
-new_connection()
+int new_connection(void)
 {
 	register client *cp;
 	static counter = 0;
@@ -349,7 +333,7 @@ new_connection()
 	 * Set up the new connection and reply to the client
 	 */
 	cp = (client *)malloc(sizeof *cp);
-	bzero(cp, sizeof(*cp));
+	memset(cp, 0, sizeof(*cp));
 	cp->action = CL_ACCEPT;
 	cp->con = newconn;
 	cp->id = counter++;
@@ -404,16 +388,15 @@ new_connection()
 /*
  * Add a new client to the known clients.
  */
-void
-clist_append(cp)
-	client *cp;
+void clist_append(cp)
+     client *cp;
 {		
 	client **clients_n;
 	
 	nclients++;
 	clients_n = (client **)malloc
 		((unsigned)(nclients * sizeof(client *)));
-	bcopy((char *)clients, (char *)clients_n, (nclients-1)*sizeof(cp));
+	memcpy((char *)clients_n, (char *)clients, (nclients-1)*sizeof(cp));
 	clients_n[nclients-1] = cp;
 	free((char *)clients);
 	clients = clients_n;
@@ -421,9 +404,8 @@ clist_append(cp)
 }
 
 		
-void
-clist_delete(cp)
-	client *cp;
+void clist_delete(cp)
+     client *cp;
 {
 	client **clients_n, **scpp, **dcpp; /* source and dest client */
 					    /* ptr ptr */
@@ -459,15 +441,14 @@ clist_delete(cp)
  * cases it won't have to copy the array.
  */
 
-void
-oplist_append(oplp, op)
-	LIST_OF_OPERATIONS *oplp;
-	OPERATION op;
+void oplist_append(oplp, op)
+     LIST_OF_OPERATIONS *oplp;
+     OPERATION op;
 {
 	int count = (*oplp)->count+1;
 	LIST_OF_OPERATIONS newlist = (LIST_OF_OPERATIONS)
 		db_alloc(size_of_list_of_operations(count));
-	bcopy((char *)(*oplp), (char *)newlist,
+	memcpy((char *)newlist, (char *)(*oplp),
 	      size_of_list_of_operations((*oplp)->count));
 	newlist->count++;
 	newlist->op[count-1] = op;
@@ -476,9 +457,9 @@ oplist_append(oplp, op)
 }
 
 
-oplist_delete(oplp, op)
-	LIST_OF_OPERATIONS oplp;
-	register OPERATION op;
+void oplist_delete(oplp, op)
+     LIST_OF_OPERATIONS oplp;
+     OPERATION op;
 {
 	register OPERATION *s;
 	register int c;
@@ -498,22 +479,27 @@ oplist_delete(oplp, op)
 }
 
 
-void reapchild()
+void reapchild(x)
+     int x;
 {
-    union wait status;
-    int pid;
+    int status, pid;
 
-    while ((pid = wait3(&status, WNOHANG, (struct rusage *)0)) > 0) {
+    while ((pid = waitpid(-1, &status, WNOHANG)) > 0) {
+#ifdef INCR_DEBUG
+        com_err(whoami, 0, "Reaping %d (inc_pid=%d, inc_running=%d)",
+		pid, inc_pid, inc_running);
+#endif
 	if (pid == inc_pid)
 	  inc_running = 0;
-	if  (!takedown && (status.w_termsig != 0 || status.w_retcode != 0))
-	  com_err(whoami, 0, "%d: child exits with signal %d status %d",
-		  pid, status.w_termsig, status.w_retcode);
+        if  (!takedown && (WTERMSIG(status)!= 0 || WEXITSTATUS(status)!= 0))
+          com_err(whoami, 0, "%d: child exits with signal %d status %d",
+                  pid, WTERMSIG(status), WEXITSTATUS(status));
     }
 }
 
 
-void godormant()
+void godormant(x)
+     int x;
 {
     switch (dormant) {
     case AWAKE:
@@ -530,7 +516,8 @@ void godormant()
 }
 
 
-void gowakeup()
+void gowakeup(x)
+     int x;
 {
     switch (dormant) {
     case ASLEEP:
@@ -547,32 +534,39 @@ void gowakeup()
 }
 
 	
-mr_setup_signals()
+void mr_setup_signals(void)
 {
+    struct sigaction action;
+
+    action.sa_flags = 0;
+    sigemptyset(&action.sa_mask);
+
     /* There should probably be a few more of these. */
 	
-    if ((((int)signal (SIGTERM, sigshut)) < 0) ||
-	(((int)signal (SIGCHLD, reapchild)) < 0) ||
-	(((int)signal (SIGUSR1, godormant)) < 0) ||
-	(((int)signal (SIGUSR2, gowakeup)) < 0) ||
-	(((int)signal (SIGHUP, sigshut)) < 0)) {
-	com_err(whoami, errno, " Unable to establish signal handlers.");
-	exit(1);
+    action.sa_handler = sigshut;
+    if ((sigaction(SIGTERM, &action, NULL) < 0) ||
+	(sigaction(SIGINT, &action, NULL) < 0) ||
+	(sigaction(SIGHUP, &action, NULL) < 0)) {
+      com_err(whoami, errno, "Unable to establish signal handlers.");
+      exit(1);
+    }
+
+    action.sa_handler = godormant;
+    if (sigaction(SIGUSR1, &action, NULL) < 0) {
+      com_err(whoami, errno, "Unable to establish signal handlers.");
+      exit(1);
+    }
+
+    action.sa_handler = gowakeup;
+    if (sigaction(SIGUSR2, &action, NULL) < 0) {
+      com_err(whoami, errno, "Unable to establish signal handlers.");
+      exit(1);
+    }
+
+    action.sa_handler = reapchild;
+    sigaddset(&action.sa_mask, SIGCHLD);
+    if (sigaction(SIGCHLD, &action, NULL) < 0) {
+      com_err(whoami, errno, "Unable to establish signal handlers.");
+      exit(1);
     }
 }
-
-#ifdef _DEBUG_MALLOC_INC
-static char *dbg_malloc(size)
-	SIZETYPE	size;
-{
-	return( debug_malloc("somewhere in the gdb code",1,size) );
-}
-
-static int dbg_free(cptr)
-	DATATYPE	*cptr;
-{
-	debug_free((char *)NULL, 0, cptr);
-	return 0;		/* GDB is being stupid */
-}
-#endif
-

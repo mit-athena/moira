@@ -1,5 +1,5 @@
 /*
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/cache.dc,v 2.11 1993-11-01 12:06:26 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/cache.dc,v 2.12 1997-01-20 18:26:08 danw Exp $
  *
  *	Copyright (C) 1989, 1990 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -7,37 +7,18 @@
  */
 
 #ifndef lint
-static char *rcsid_cache_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/cache.dc,v 2.11 1993-11-01 12:06:26 mar Exp $";
+static char *rcsid_cache_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/cache.dc,v 2.12 1997-01-20 18:26:08 danw Exp $";
 #endif lint
 
 #include <mit-copyright.h>
-#include "query.h"
+#include <string.h>
 #include "mr_server.h"
+#include "query.h"
 EXEC SQL INCLUDE sqlca;
 
-EXEC SQL WHENEVER SQLERROR CALL ingerr;
+EXEC SQL WHENEVER SQLERROR DO dbmserr();
 
-extern char *whoami, *strsave();
-extern int ingres_errno, mr_errcode;
-
-
-/*** NOTE **************************************************************
- *
- *    This code depends on each type starting with a unique letter.  If
- *    any new types are added to the system that begin with the same
- *    letter as one of the existing types:
- *		User
- *		List
- *		String
- *		Machine
- *		Subnet
- *		Cluster
- *		Filesystem
- *    then we will have to rework the code that only looks at the first
- *    letter of the types.
- *
- ***********************************************************************
- */
+extern char *whoami;
 
 /* Cache parameters: */
 #define CACHESIZE 101		/* number of cache slots */
@@ -45,7 +26,7 @@ extern int ingres_errno, mr_errcode;
 
 struct item {
     char name[NAMESZ];
-    char type[9];
+    enum tables type;
     int nhash;
     int id;
     struct item *next;
@@ -63,13 +44,13 @@ int cachehits = 0, cachemisses = 0;
 /* Name hash function. */
 
 int hashname(name, type)
-register char *name;
-char *type;
+     char *name;
+     enum tables type;
 {
-    register int val = *type;
+    register int val = type;
 
     while (*name)
-      val = val<<5 - val + *name++ - '`';
+      val = (val<<5) - val + *name++ - '`';
     return(val);
 }
 
@@ -78,7 +59,7 @@ char *type;
  * if the cache was previously in use.
  */
 
-flush_cache()
+void flush_cache(void)
 {
     register struct item *i;
 
@@ -105,23 +86,21 @@ flush_cache()
  */
 
 int name_to_id(name, type, id)
-char *name;
-char *type;
-int *id;
+     char *name;
+     enum tables type;
+     int *id;
 {
     register struct item *i, *t;
     EXEC SQL BEGIN DECLARE SECTION;
     char *iname;
-    int j, rowcount;
+    int j, h;
     EXEC SQL END DECLARE SECTION;
-    char key;
-    int h, ctr;
 
     h = hashname(name, type);
     for (i = cachehead.next; i != &cachehead; i = i->next) {
 	if (i->nhash != h ||
 	    strcmp(name, i->name) ||
-	    strcasecmp(type, i->type))
+	    type!=i->type)
 	  continue;
 	*id = i->id;
 	cachehits++;
@@ -136,55 +115,49 @@ int *id;
 
     cachemisses++;
     iname = name;
-    key = *type;
 
-    if (!strcasecmp(type, "subnet"))
-      key = 'N';
-
-    switch (key) {
-    case 'U':
-    case 'u':
-	if (index(iname, '@') || (strlen(iname) > 8)) {
-	    sqlca.sqlcode = 100;
-	    break;
+    switch (type)
+      {
+      case USERS_TABLE:
+	if (strchr(iname, '@') || (strlen(iname) > 8)) {
+	  sqlca.sqlcode = SQL_NO_MATCH;
+	  break;
 	}
 	EXEC SQL SELECT users_id INTO :j FROM users WHERE login=:iname;
 	break;
-    case 'L':
-    case 'l':
+      case LIST_TABLE:
 	EXEC SQL SELECT list_id INTO :j FROM list WHERE name=:iname;
 	break;
-    case 'M':
-    case 'm':
-	EXEC SQL SELECT mach_id INTO :j FROM machine WHERE name=UPPERCASE(:iname);
+      case MACHINE_TABLE:
+	EXEC SQL SELECT mach_id INTO :j FROM machine WHERE name=UPPER(:iname);
 	break;
-    case 'N':
-    case 'n':
-	EXEC SQL SELECT snet_id INTO :j FROM subnet WHERE name=UPPERCASE(:iname);
+      case SUBNET_TABLE:
+	EXEC SQL SELECT snet_id INTO :j FROM subnet WHERE name=UPPER(:iname);
 	break;
-    case 'C':
-    case 'c':
-	EXEC SQL SELECT clu_id INTO :j FROM cluster WHERE name=:iname;
+      case CLUSTER_TABLE:
+	EXEC SQL SELECT clu_id INTO :j FROM clusters WHERE name=:iname;
 	break;
-    case 'F':
-    case 'f':
+      case FILESYS_TABLE:
 	EXEC SQL SELECT filsys_id INTO :j FROM filesys WHERE label=:iname;
 	break;
-    case 'S':
-    case 's':
+      case STRINGS_TABLE:
+	if (!iname[0]) { /* special-case empty string */
+	  *id=0;
+	  return MR_SUCCESS;
+	}
 	EXEC SQL SELECT string_id INTO :j FROM strings WHERE string=:iname;
 	break;
-    default:
+      default:
 	return(MR_INTERNAL);
     }
-    if (sqlca.sqlcode == 100)
+    if (sqlca.sqlcode == SQL_NO_MATCH)
       return(MR_NO_MATCH);
     if (sqlca.sqlerrd[2] > 1)
       return(MR_NOT_UNIQUE);
     if (sqlca.sqlcode != 0)
-      return(MR_INGRES_ERR);
+      return(MR_DBMS_ERR);
     *id = j;
-    if (name[0] == '#' && !strcasecmp(type, "USER"))
+    if (name[0] == '#' && type!=USERS_TABLE)
       return(MR_SUCCESS);
     if (cachesize < CACHESIZE) {
 	i = (struct item *) malloc(sizeof(struct item));
@@ -195,19 +168,17 @@ int *id;
 	i->prev->next = &cachehead;
     }
     strcpy(i->name, name);
-    strcpy(i->type, type);
+    i->type=type;
     i->nhash = h;
     i->id = j;
     i->next = cachehead.next;
     i->prev = &cachehead;
+    i->trans = NULL;
     cachehead.next->prev = i;
     cachehead.next = i;
     /* find the end of the transaction chain & add this item */
     for (t = &cachehead; t->trans && t != i; t = t->trans);
-    if (t != i) {
-	t->trans = i;
-	i->trans = (struct item *)NULL;
-    }
+    if (t != i) t->trans = i;
     return(MR_SUCCESS);
 }
 
@@ -218,20 +189,18 @@ int *id;
  */
 
 int id_to_name(id, type, name)
-int id;
-char *type;
-char **name;
+     int id;
+     enum tables type;
+     char **name;
 {
     register struct item *i, *t;
     EXEC SQL BEGIN DECLARE SECTION;
     char iname[NAMESZ];
-    int j, rowcount;
+    int j;
     EXEC SQL END DECLARE SECTION;
-    char key;
-    int ctr;
 
     for (i = cachehead.next; i != &cachehead; i = i->next) {
-	if (i->id != id || strcasecmp(type, i->type)) continue;
+	if (i->id != id || type!=i->type) continue;
 	free(*name);
 	*name = strsave(i->name);
 	cachehits++;
@@ -246,43 +215,34 @@ char **name;
 
     cachemisses++;
     j = id;
-    key = *type;
-    if (!strcasecmp(type, "subnet"))
-      key = 'N';
 
-    switch (key) {
-    case 'U':
-    case 'u':
-	EXEC SQL SELECT CHAR(login) INTO :iname FROM users WHERE users_id=:j;
+    switch (type)
+      {
+      case USERS_TABLE:
+	EXEC SQL SELECT login INTO :iname FROM users WHERE users_id=:j;
 	break;
-    case 'L':
-    case 'l':
-	EXEC SQL SELECT CHAR(name) INTO :iname FROM list WHERE list_id=:j;
+      case LIST_TABLE:
+	EXEC SQL SELECT name INTO :iname FROM list WHERE list_id=:j;
 	break;
-    case 'M':
-    case 'm':
-	EXEC SQL SELECT CHAR(name) INTO :iname FROM machine WHERE mach_id=:j;
+      case MACHINE_TABLE:
+	EXEC SQL SELECT name INTO :iname FROM machine WHERE mach_id=:j;
 	break;
-    case 'N':
-    case 'n':
-	EXEC SQL SELECT CHAR(name) INTO :iname FROM subnet WHERE snet_id=:j;
+      case SUBNET_TABLE:
+	EXEC SQL SELECT name INTO :iname FROM subnet WHERE snet_id=:j;
 	break;
-    case 'C':
-    case 'c':
-	EXEC SQL SELECT CHAR(name) INTO :iname FROM cluster WHERE clu_id=:j;
+      case CLUSTER_TABLE:
+	EXEC SQL SELECT name INTO :iname FROM clusters WHERE clu_id=:j;
 	break;
-    case 'F':
-    case 'f':
-	EXEC SQL SELECT CHAR(label) INTO :iname FROM filesys WHERE filsys_id=:j;
+      case FILESYS_TABLE:
+	EXEC SQL SELECT label INTO :iname FROM filesys WHERE filsys_id=:j;
 	break;
-    case 'S':
-    case 's':
-	EXEC SQL SELECT CHAR(string) INTO :iname FROM strings WHERE string_id=:j;
+      case STRINGS_TABLE:
+	EXEC SQL SELECT string INTO :iname FROM strings WHERE string_id=:j;
 	break;
     default:
 	return(MR_INTERNAL);
     }
-    if (sqlca.sqlcode == 100) {
+    if (sqlca.sqlcode == SQL_NO_MATCH) {
 	free(*name);
 	sprintf(iname, "#%d", j);
 	*name = strsave(iname);
@@ -291,10 +251,10 @@ char **name;
     if (sqlca.sqlerrd[2] > 1)
       return(MR_INTERNAL);
     if (sqlca.sqlcode != 0)
-      return(MR_INGRES_ERR);
+      return(MR_DBMS_ERR);
     free(*name);
     *name = strsave(strtrim(iname));
-    if (**name == '#' && !strcasecmp(type, "USER"))
+    if (**name == '#' && type!=USERS_TABLE)
       return(MR_SUCCESS);
     if (cachesize < CACHESIZE) {
 	i = (struct item *) malloc(sizeof(struct item));
@@ -305,19 +265,17 @@ char **name;
 	i->prev->next = &cachehead;
     }
     strcpy(i->name, *name);
-    strcpy(i->type, type);
+    i->type=type;
     i->nhash = hashname(*name, type);
     i->id = id;
     i->next = cachehead.next;
     i->prev = &cachehead;
+    i->trans = NULL;
     cachehead.next->prev = i;
     cachehead.next = i;
     /* find the end of the transaction chain & add this item */
     for (t = &cachehead; t->trans && t != i; t = t->trans);
-    if (t != i) {
-	t->trans = i;
-	i->trans = (struct item *)NULL;
-    }
+    if (t != i) t->trans = i;
     return(MR_SUCCESS);
 }
 
@@ -326,15 +284,15 @@ char **name;
  * database.
  */
 
-cache_entry(name, type, id)
-char *name;
-char *type;
-int id;
+int cache_entry(name, type, id)
+     char *name;
+     enum tables type;
+     int id;
 {
     register struct item *i, *t;
 
     for (i = cachehead.next; i != &cachehead; i = i->next)
-      if (i->id == id && !strcmp(i->type, type)) {
+      if (i->id == id && i->type==type) {
 	  if (strcmp(i->name, name)) {
 	      strcpy(i->name, name);
 	      i->nhash = hashname(name, type);
@@ -350,28 +308,26 @@ int id;
 	i->prev->next = &cachehead;
     }
     strcpy(i->name, name);
-    strcpy(i->type, type);
+    i->type=type;
     i->nhash = hashname(name, type);
     i->id = id;
     i->next = cachehead.next;
     i->prev = &cachehead;
+    i->trans = NULL;
     cachehead.next->prev = i;
     cachehead.next = i;
     /* find the end of the transaction chain & add this item */
     for (t = &cachehead; t->trans && t != i; t = t->trans);
-    if (t != i) {
-	t->trans = i;
-	i->trans = (struct item *)NULL;
-    }
+    if (t != i) t->trans = i;
     return(MR_SUCCESS);
 }
 
 
 /* Flush something that may or may not already be in the cache. */
 
-flush_name(name, type)
-char *name;
-char *type;
+void flush_name(name, type)
+     char *name;
+     enum tables type;
 {
     int h;
     register struct item *i;
@@ -379,12 +335,11 @@ char *type;
     h = hashname(name, type);
 
     for (i = cachehead.next; i != &cachehead; i = i->next) {
-	if (!strcmp(name, i->name) && !strcasecmp(type, i->type)) {
+	if (!strcmp(name, i->name) && type==i->type) {
 	    cachesize--;
 	    i->next->prev = i->prev;
 	    i->prev->next = i->next;
 	    free(i);
-	    return(MR_SUCCESS);
 	}
     }
 }
@@ -394,7 +349,7 @@ char *type;
  * Just throws away the list of cache changes for this transaction.
  */
 
-cache_commit()
+void cache_commit(void)
 {
     cachehead.trans = (struct item *)NULL;
 }
@@ -404,7 +359,7 @@ cache_commit()
  * from that transaction.
  */
 
-cache_abort()
+void cache_abort(void)
 {
     register struct item *i, *t;
 

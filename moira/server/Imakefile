@@ -1,4 +1,4 @@
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/Imakefile,v 1.5 1996-09-29 20:06:54 danw Exp $
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/Imakefile,v 1.6 1997-01-20 18:26:06 danw Exp $
 #
 # Copyright 1990 by the Massachusetts Institute of Technology.
 #
@@ -8,49 +8,39 @@
 # Imakefile for server directory.
 #
 
-#ifdef INGRES
-XSRC= mr_sbrk.c meinitlst.c
-XOBJ= mr_sbrk.o meinitlst.o
-#else
-XSRC=
-XOBJ=
-#endif
-
-DEFINES=-DGDSS -I/mit/gdss/include -I.
+DEFINES= -I. $(GDSSINC)
 
 SRCS = startmoira.c mr_main.c mr_sauth.c mr_scall.c \
-	mr_srvdata.c mr_shutdown.c mr_util.c qrtn.c \
-	qsupport.c qsubs.c queries2.c mr_smalloc.c \
-	increment.c cache.c mr_glue.c qvalidate.c \
-	mr_server.h query.h qrtn.h qaccess.c qsetup.c \
-	qfollow.c malloc.h $(XSRC)
+	mr_srvdata.c mr_shutdown.c mr_util.c \
+	mr_server.h query.h qrtn.h qrtn.c \
+	qsupport.c qsubs.c queries2.c increment.c \
+	cache.c mr_glue.c qvalidate.c qaccess.c qsetup.c \
+	qfollow.c
 CODE= startmoira.c mr_main.c mr_sauth.c mr_scall.c \
-	mr_srvdata.c mr_shutdown.c mr_util.c qrtn.dc \
-	qsupport.dc qsubs.c queries2.c mr_smalloc.c \
-	increment.dc cache.dc mr_glue.c qvalidate.dc \
-	Imakefile mr_server.h query.h qrtn.h qaccess.dc \
-	qsetup.dc qfollow.dc malloc.h $(XSRC)
+	mr_srvdata.c mr_shutdown.c mr_util.c \
+	mr_server.h query.h qrtn.h qrtn.dc \
+	qsupport.dc qsubs.c queries2.c increment.dc \
+	cache.dc mr_glue.c qvalidate.dc Imakefile \
+	qaccess.dc qsetup.dc qfollow.dc
 SRVOBJ=mr_main.o mr_sauth.o mr_scall.o mr_srvdata.o mr_shutdown.o \
 	mr_util.o qrtn.o queries2.o qsupport.o qsubs.o \
-	mr_smalloc.o increment.o cache.o qvalidate.o \
-	qaccess.o qsetup.o qfollow.o $(XOBJ)
+	increment.o cache.o qvalidate.o \
+	qaccess.o qsetup.o qfollow.o
 GLUOBJS=mr_glue.o qrtn.o queries2.o qsupport.o qsubs.o \
-	../lib/mr_et.o mr_srvdata.o mr_smalloc.o \
+	../lib/mr_et.o mr_sauth.o mr_srvdata.o \
 	../lib/krb_et.o mr_util.o increment.o cache.o \
-	qvalidate.o qaccess.o qsetup.o qfollow.o $(XOBJ)
+	qvalidate.o qaccess.o qsetup.o qfollow.o
 SRCDIR = $(SRCTOP)/server
 sqlrule()
 
 program(moirad, ${SRVOBJ},${MR_LIBDEP} ${GDB_LIBDEP},\
 	-L/usr/athena/lib .././lib/libmoira.a -lzephyr \
-	.././gdb/libmrgdb.a  -lcom_err \
-	/mit/gdss/`machtype`/libgdss.a -lkrb -ldes -lhesiod \
-	${SQL_LIB}, ${PROGDIR})
+	.././gdb/libmrgdb.a  -lcom_err $(LIBGDSS)\
+	-lkrb -ldes -lhesiod ${SQL_LIB}, ${PROGDIR})
 program(startmoira, startmoira.o,${MR_LIBDEP} ${GDB_LIBDEP},\
-      -L/usr/athena/lib .././lib/libmoira.a -lzephyr \
-      .././gdb/libmrgdb.a -lcom_err \
-      /mit/gdss/`machtype`/libgdss.a -lkrb -ldes -lhesiod \
-      ${SQL_LIB}, ${PROGDIR})
+	-L/usr/athena/lib .././lib/libmoira.a -lzephyr \
+	.././gdb/libmrgdb.a -lcom_err -lkrb -ldes -lhesiod,\
+	${PROGDIR})
 library_obj_rule()
 install_library_target(mrglue,$(GLUOBJS),$(SRCS),)
 

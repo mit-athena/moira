@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_glue.c,v $
- *	$Author: tytso $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_glue.c,v 1.18 1993-12-10 14:01:30 tytso Exp $
+ *	$Author: danw $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_glue.c,v 1.19 1997-01-20 18:26:11 danw Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -12,7 +12,7 @@
  */
 
 #ifndef lint
-static char *rcsid_mr_glue_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_glue.c,v 1.18 1993-12-10 14:01:30 tytso Exp $";
+static char *rcsid_mr_glue_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_glue.c,v 1.19 1997-01-20 18:26:11 danw Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -21,8 +21,8 @@ static char *rcsid_mr_glue_c = "$Header: /afs/.athena.mit.edu/astaff/project/moi
 #include <sys/wait.h>
 #include <krb_et.h>
 #include <pwd.h>
-#include "query.h"
 #include "mr_server.h"
+#include "query.h"
 
 static int already_connected = 0;
 
@@ -39,18 +39,26 @@ char *server;
 {
     register int status;
     extern int query_timeout;
+    struct sigaction action;
 
     if (already_connected) return MR_ALREADY_CONNECTED;
 
     initialize_sms_error_table();
     initialize_krb_error_table();
-    bzero((char *)&pseudo_client, sizeof(pseudo_client)); /* XXX */
+    memset((char *)&pseudo_client, 0, sizeof(pseudo_client)); /* XXX */
 
     query_timeout = 0;
     status =  mr_open_database();
     if (!status) already_connected = 1;
 
-    signal(SIGCHLD, reapchild);
+    action.sa_flags = 0;
+    sigemptyset(&action.sa_mask);
+    sigaddset(&action.sa_mask, SIGCHLD);
+    action.sa_handler = reapchild;
+    if (sigaction(SIGCHLD, &action, NULL) < 0) {
+      com_err(whoami, errno, "Unable to establish signal handlers.");
+      exit(1);
+    }
     return status;
 }
 
@@ -92,9 +100,9 @@ char *prog;
     strcat(buf, pseudo_client.kname.realm);
     strcpy(pseudo_client.clname, buf);
     pseudo_client.users_id = 0;
-    name_to_id(pseudo_client.kname.name, "USER", &pseudo_client.users_id);
+    name_to_id(pseudo_client.kname.name, USERS_TABLE, &pseudo_client.users_id);
     pseudo_client.client_id = pseudo_client.users_id;
-    strcpy(pseudo_client.entity, prog);
+    strncpy(pseudo_client.entity, prog, 8);
     pseudo_client.args = (mr_params *) malloc(sizeof(mr_params));
     pseudo_client.args->mr_version_no = MR_VERSION_2;
     return 0;
@@ -214,16 +222,15 @@ trigger_dcm(dummy0, dummy1, cl)
 
 void reapchild()
 {
-    union wait status;
-    int pid;
+    int status, pid;
 
-    while ((pid = wait3(&status, WNOHANG, (struct rusage *)0)) > 0) {
+    while ((pid = waitpid(-1, &status, WNOHANG)) > 0) {
 	if (pid == inc_pid) {
 	    inc_running = 0;
 	    next_incremental();
 	}
-	if  (status.w_termsig != 0 || status.w_retcode != 0)
+	if  (WTERMSIG(status) != 0 || WEXITSTATUS(status) != 0)
 	  com_err(whoami, 0, "%d: child exits with signal %d status %d",
-		  pid, status.w_termsig, status.w_retcode);
+		  pid, WTERMSIG(status), WEXITSTATUS(status));
     }
 }

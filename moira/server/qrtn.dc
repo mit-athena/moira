@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.dc,v $
- *	$Author: tytso $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.dc,v 2.15 1993-12-10 13:50:22 tytso Exp $
+ *	$Author: danw $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.dc,v 2.16 1997-01-20 18:26:22 danw Exp $
  *
  *	Copyright (C) 1987, 1988 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,18 +10,18 @@
  */
 
 #ifndef lint
-static char *rcsid_qrtn_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.dc,v 2.15 1993-12-10 13:50:22 tytso Exp $";
+static char *rcsid_qrtn_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.dc,v 2.16 1997-01-20 18:26:22 danw Exp $";
 #endif lint
 
 #include <mit-copyright.h>
 #include <string.h>
-#include "query.h"
 #include "mr_server.h"
+#include "query.h"
 EXEC SQL INCLUDE sqlca;  /* SQL Communications Area */
 EXEC SQL INCLUDE sqlda;  /* SQL Descriptor Area */
 #include "qrtn.h"
 
-MR_SQLDA_T *SQLDA;
+SQLDA *mr_sqlda;
 EXEC SQL BEGIN DECLARE SECTION; 
 int mr_sig_length;
 int idummy;                            
@@ -30,8 +30,10 @@ char stmt_buf[MR_STMTBUF_LEN];
 EXEC SQL END DECLARE SECTION; 
 
 char *Argv[QMAXARGS];
+extern char *table_name[];
+extern char *sqlbuffer[QMAXARGS];
 
-int ingres_errno = 0;
+int dbms_errno = 0;
 int mr_errcode = 0;
 EXEC SQL BEGIN DECLARE SECTION; 
 int query_timeout = 30;
@@ -40,77 +42,52 @@ EXEC SQL END DECLARE SECTION;
 extern char *whoami;
 extern FILE *journal;
 
-#define INGRES_BAD_DATE1  40206
-#define INGRES_BAD_DATE2  40207
-#define INGRES_DEADLOCK   49900
-#define INGRES_TIMEOUT    39100
-#define INGRES_BAD_COLUMN 30110
-#define INGRES_ASGN_ERR   40204
-#define INGRES_NO_CURSOR  30120
-#define INGRES_NO_STMT    30130
+int mr_verify_query(client *cl, struct query *q, int argc, char *argv_ro[]);
+int do_retrieve(struct query *q, char *pqual, char *psort,
+		int (*action)(), char *actarg);
+int do_update(struct query *q, char *argv[], char *qual,
+	      int (*action)(), char *actarg);
+int do_append(struct query *q, char *argv[], char *pqual,
+	      int (*action)(), char *actarg);
+int do_delete(struct query *q, char *qual,
+	      int (*action)(), char *actarg);
+void build_sql_stmt(char *result_buf, char *cmd, char *targetlist,
+		    char *argv[], char *qual);
+char *build_sort(struct validate *v, char *sort);
+
+/* from qvalidate.dc */
+int validate_fields(struct query *q, char *argv[], struct valobj *vo, int n);
+int validate_row(struct query *q, char *argv[], struct validate *v);
+
 
 /*
- * ingerr: Called when Ingres indicates an error.
+ * dbmserr: Called when the DBMS indicates an error.
  */
 
-void ingerr()
+void dbmserr(void)
 {
     EXEC SQL BEGIN DECLARE SECTION; 
     char err_msg[256];
     EXEC SQL END DECLARE SECTION;
-    ingres_errno = -sqlca.sqlcode;
+    int bufsize=256, msglength=0;
 
-    switch (ingres_errno) {
-      case INGRES_BAD_DATE1:
-      case INGRES_BAD_DATE2:
-	mr_errcode = MR_DATE;
-	break;
-      case INGRES_DEADLOCK:
-	mr_errcode = MR_DEADLOCK;
-	com_err(whoami, 0, "INGRES deadlock detected");
-	break;
-      case INGRES_TIMEOUT:
-/* May be something other than timeout! #39100 is "Unknown error" 
- * Really should parse the error message enough to decide if it's a timeout */
-  	mr_errcode = MR_BUSY;
-  	com_err(whoami, 0, "timed out getting lock");
-  	break;
-/* These should never come up unless someone breaks the query table */
-      case INGRES_NO_CURSOR:
-	if (mr_errcode != MR_BUSY &&
-	    mr_errcode != MR_DEADLOCK)
-	  mr_errcode = MR_INTERNAL;
-	com_err(whoami, 0, "Cursor not opened");
-	break;
-      case INGRES_NO_STMT:
-	mr_errcode = MR_INTERNAL;
-	com_err(whoami, 0, "Statement not declared");
-	break;
-      case INGRES_BAD_COLUMN:
-	mr_errcode = MR_INTERNAL;
-	com_err(whoami, 0, "Bad column name in query table");
-        break;
-      case INGRES_ASGN_ERR:
-	mr_errcode = MR_INTERNAL;
-	com_err(whoami, 0, "Error in SQL assignment statement");
-	break;
-/* Others ??? */
-      default:
-	mr_errcode = MR_INGRES_ERR;
-	com_err(whoami, MR_INGRES_ERR, " code %d\n", ingres_errno);
-	EXEC SQL INQUIRE_SQL(:err_msg = errortext);
-	com_err(whoami, 0, "SQL error text = %s", err_msg);
-	critical_alert("MOIRA", "Moira server encountered INGRES ERROR %d", ingres_errno);
-    }
+    dbms_errno = -sqlca.sqlcode;
+    mr_errcode = MR_DBMS_ERR;
+    com_err(whoami, MR_DBMS_ERR, " code %d\n", dbms_errno);
+    sqlglm(err_msg, &bufsize, &msglength);
+    err_msg[msglength]=0;
+    com_err(whoami, 0, "SQL error text = %s", err_msg);
+    critical_alert("MOIRA", "Moira server encountered DBMS ERROR %d\n%s",
+		       dbms_errno, err_msg);
 }
 
 /* This is declarative, not executed.  Applies from here on, in this file. */
-EXEC SQL WHENEVER SQLERROR CALL ingerr;
+EXEC SQL WHENEVER SQLERROR DO dbmserr();
 
-int mr_open_database()
+int mr_open_database(void)
 {
     register int i;
-    MR_SQLDA_T *mr_alloc_SQLDA();
+    SQLDA *mr_alloc_sqlda();
     static first_open = 1;
 
     if (first_open) {
@@ -120,57 +97,43 @@ int mr_open_database()
 	for (i = 0; i < 16; i++)
 	  Argv[i] = malloc(ARGLEN);
 
-	SQLDA = mr_alloc_SQLDA();       
+	mr_sqlda = mr_alloc_sqlda();       
 
 	incremental_init();
 	flush_cache();
     }
 	
-    ingres_errno = 0;
+    dbms_errno = 0;
     mr_errcode = 0;
 
     /* open the database */
-#ifsql INGRES
-    EXEC SQL CONNECT :database;
-    if(ingres_errno) 
-      return (ingres_errno);
-    EXEC SQL set lockmode session where level = table, timeout = :query_timeout;
-    EXEC SQL set lockmode on capacls where readlock = shared;
-    EXEC SQL set lockmode on alias where readlock = shared;
-#endsql
-#ifsql INFORMIX
-    EXEC SQL DATABASE moira
-#endsql
+    EXEC SQL CONNECT :database IDENTIFIED BY :database;
 
-    if(ingres_errno) 
+    if(dbms_errno) 
         return(mr_errcode);
 
-    EXEC SQL SELECT SIZE(signature) INTO :mr_sig_length FROM users WHERE users_id=0; /* Harmless on second open */
+    EXEC SQL SELECT data_length INTO :mr_sig_length FROM user_tab_columns WHERE table_name='USERS' and column_name='SIGNATURE';
     EXEC SQL COMMIT WORK;
-    if(ingres_errno)
+    if(dbms_errno)
         return(mr_errcode);
 
     return(MR_SUCCESS);
 }
 
-int mr_close_database()
+void mr_close_database(void)
 {
     flush_cache();
-#ifsql INGRES
-    EXEC SQL DISCONNECT;
-#endsql
+    EXEC SQL COMMIT RELEASE;
 }
 
-mr_check_access(cl, name, argc, argv_ro)
-    client *cl;
-    char *name;
-    int argc;
-    char *argv_ro[];
+int mr_check_access(cl, name, argc, argv_ro)
+     client *cl;
+     char *name, *argv_ro[];
+     int argc;
 {
     struct query *q;
-    struct query *get_query_by_name();
 
-    ingres_errno = 0;
+    dbms_errno = 0;
     mr_errcode = 0;
 
     q = get_query_by_name(name, cl->args->mr_version_no);
@@ -180,13 +143,10 @@ mr_check_access(cl, name, argc, argv_ro)
     return(mr_verify_query(cl, q, argc, argv_ro));    
 }
 
-mr_process_query(cl, name, argc, argv_ro, action, actarg)
-    client *cl;
-    char *name;
-    int argc;
-    char *argv_ro[];
-    int (*action)();
-    char *actarg;
+int mr_process_query(cl, name, argc, argv_ro, action, actarg)
+     client *cl;
+     char *name, *argv_ro[], *actarg;
+     int argc, (*action)();
 {
     register struct query *q;
     register int status;
@@ -196,15 +156,11 @@ mr_process_query(cl, name, argc, argv_ro, action, actarg)
     char *pqual;
     char *psort;
     EXEC SQL BEGIN DECLARE SECTION; 
-    char *table_name;
+    char *table;
     EXEC SQL END DECLARE SECTION; 
     struct save_queue *sq;
-    struct query *get_query_by_name();
-    int sq_save_args();
-    struct save_queue *sq_create();
-    char *build_sort();
 
-    ingres_errno = 0;
+    dbms_errno = 0;
     mr_errcode = 0;
 
     /* list queries command */
@@ -302,11 +258,11 @@ mr_process_query(cl, name, argc, argv_ro, action, actarg)
 	    incremental_after(q->rtable, qual, argv_ro);
 	    if (status != MR_SUCCESS) break;
 	    flush_name(argv_ro[0], q->rtable);
-	    table_name = q->rtable;
+	    table = table_name[q->rtable];
 	    if (strcmp(q->shortname, "sshi") && strcmp(q->shortname, "ssif")) {
 		EXEC SQL UPDATE tblstats
-                  SET updates = updates + 1, modtime = 'now'
-		  WHERE table_name = :table_name;
+                  SET updates = updates + 1, modtime = SYSDATE
+		  WHERE table_name = :table;
 	    }
 	}
 
@@ -343,10 +299,10 @@ mr_process_query(cl, name, argc, argv_ro, action, actarg)
 	    } else
 	      incremental_after(q->rtable, pqual, argv_ro);
 
-	    table_name = q->rtable;
+	    table = table_name[q->rtable];
 	    EXEC SQL UPDATE tblstats
-	      SET appends = appends + 1, modtime = 'now'
-	      WHERE table_name = :table_name;
+	      SET appends = appends + 1, modtime = SYSDATE
+	      WHERE table_name = :table;
 	}
 	
 	/* execute followup routine */
@@ -364,15 +320,15 @@ mr_process_query(cl, name, argc, argv_ro, action, actarg)
 	/* if q->rvar = NULL, perform post_rtn only */
 	if (q->rvar) {
 	    build_qual(q->qual, q->argc, Argv, qual);
-	    table_name = q->rtable;
+	    table = table_name[q->rtable];
      	    incremental_before(q->rtable, qual, argv_ro);
 	    status = do_delete(q, qual, action, actarg);
 	    incremental_clear_after();
 	    if (status != MR_SUCCESS) break;
 	    flush_name(argv_ro[0], q->rtable);
 	    EXEC SQL UPDATE tblstats
-	      SET deletes = deletes + 1, modtime = 'now'
-	      WHERE table_name = :table_name;
+	      SET deletes = deletes + 1, modtime = SYSDATE
+	      WHERE table_name = :table;
 	}
 
 	/* execute followup routine */
@@ -382,9 +338,9 @@ mr_process_query(cl, name, argc, argv_ro, action, actarg)
     }
 
 out:
-    if (status == MR_SUCCESS && ingres_errno != 0) {
-	com_err(whoami, MR_INTERNAL, "Server didn't notice INGRES ERROR %d",
-		       ingres_errno);
+    if (status == MR_SUCCESS && dbms_errno != 0) {
+	com_err(whoami, MR_INTERNAL, "Server didn't notice DBMS ERROR %d",
+		       dbms_errno);
 	status = mr_errcode;
     }
 
@@ -394,7 +350,7 @@ out:
         if (status == MR_SUCCESS) {
         EXEC SQL COMMIT WORK;
 	    if (journal) {
-		char buf[1024], *bp;
+		char buf[1024];
 		int i;
 		extern time_t now;
 
@@ -414,9 +370,7 @@ out:
 	    incremental_update();
 	} else {
 	    cache_abort();
-	    if (ingres_errno != INGRES_DEADLOCK) {
-                EXEC SQL ROLLBACK WORK;
-	    }
+            EXEC SQL ROLLBACK WORK;
 	    incremental_flush();
 	}
     }
@@ -427,71 +381,48 @@ out:
     return(status);
 }
 
-build_qual(fmt, argc, argv, qual)
-	char *fmt;
-	int argc;
-	char *argv[];
-	char *qual;
+int build_qual(fmt_buf, argc, argv, qual)
+     char *fmt_buf, *argv[], *qual;
+     int argc;
 {
-    register char *c;
-    register int i;
-    char *args[4];
+    char *res, *fmt;
 
-    c = fmt;
-    for (i = 0; i < argc; i++) {
-	c = index(c, '%');
-	if (c++ == (char *)0) return(MR_ARGS);
-	if (*c == 's')
-	    args[i] = argv[i];
-	else if (*c == 'd')
-	    *(int *)&args[i] = *(int *)argv[i];	/* sigh */
-	else
-	    return(MR_INGRES_ERR);
+    for(res=qual, fmt=fmt_buf; *fmt; fmt++) {
+	if(*fmt=='%') {
+	    if(*++fmt) {
+		switch(*fmt) {                       
+		  case '%':                              /* %% -> % */
+		    *res++ = *fmt;           
+		    break;
+		  case 's':
+		    if(*argv[0]) {
+		        char *p=*argv;
+			while(*p) {
+			    if(*p=='\'') *res++='\'';	/* double the ' */
+			    *res++=*p++;
+			}
+		    }
+		    argv++;
+		    break;
+		  case 'd':
+		    res+=sprintf(res,"%d",*(int *)*argv++);
+		    break;
+		  default:                               /* Swallow other %? pairs */
+		    break;
+		}
+	    } else break;
+	} else *res++ = *fmt;                            /* text -> result buffer */
     }
-    if (c = index(c, '%')) {
-	args[i] = args[i - 1];
-    }
-
-    switch (argc) {
-    case 0:
-	strcpy(qual, fmt);
-	break;
-
-    case 1:
-	sprintf(qual, fmt, args[0]);
-	break;
-
-    case 2:
-	sprintf(qual, fmt, args[0], args[1]);
-	break;
-
-    case 3:
-	sprintf(qual, fmt, args[0], args[1], args[2]);
-	break;
-
-    case 4:
-	sprintf(qual, fmt, args[0], args[1], args[2], args[3]);
-	break;
-
-    default:
-	com_err(whoami, MR_INTERNAL,
-		"Internal arg count error processing query");
-	return(MR_INTERNAL);
-    }
-    return(MR_SUCCESS);
+    *res='\0';
 }
 
-char *
-build_sort(v, sort)
-    register struct validate *v;
-    char *sort;
+char *build_sort(v, sort)
+     struct validate *v;
+     char *sort;
 {
     register struct valobj *vo;
     register int n;
     char elem[16];
-#ifdef _DEBUG_MALLOC_INC
-#undef index
-#endif
 
     n = v->objcnt;
     vo = v->valobj;
@@ -514,11 +445,11 @@ build_sort(v, sort)
 
 int privileged;
 
-mr_verify_query(cl, q, argc, argv_ro)
-    client *cl;
-    struct query *q;
-    int argc;
-    char *argv_ro[];
+int mr_verify_query(cl, q, argc, argv_ro)
+     client *cl;
+     struct query *q;
+     int argc;
+     char *argv_ro[];
 {
     register int argreq;
     register int status;
@@ -532,12 +463,9 @@ mr_verify_query(cl, q, argc, argv_ro)
     if (argc >= QMAXARGS)
       return(MR_ARGS);
     for (i = 0; i < argc; i++) {
-	/* Single quotes must be doubled for SQL */
-	for (to=Argv[i], fr=argv_ro[i], stop=to+ARGLEN; (*fr) && (to<stop);) {
-	    if(*fr=='\'') 
-	      *to++ = *fr;
-	    *to++ = *fr++;
-	}
+	for (to=Argv[i], fr=argv_ro[i], stop=to+ARGLEN; (*fr) && (to<stop);)
+	  *to++ = *fr++;
+
 	if (*fr) 
 	  return(MR_ARG_TOO_LONG);
 	*to='\0';
@@ -581,19 +509,16 @@ mr_verify_query(cl, q, argc, argv_ro)
  * in the query structure, and whether that acl contains everybody.
  */
 
-check_query_access(q, argv, cl)
-    struct query *q;
-    char *argv[];
-    client *cl;
+int check_query_access(q, argv, cl)
+     struct query *q;
+     char *argv[];
+     client *cl;
 {
     EXEC SQL BEGIN DECLARE SECTION; 
     char *name;
     int acl_id;
-    int rowcount;
-    int errorno;
     static int def_uid;
     EXEC SQL END DECLARE SECTION; 
-    int status;
     int client_id;
     char *client_type;
 
@@ -608,8 +533,8 @@ check_query_access(q, argv, cl)
     else {
 	name = q->shortname;
 	EXEC SQL SELECT list_id INTO :acl_id FROM capacls WHERE tag = :name;
-        if (sqlca.sqlcode < 0) return(MR_INGRES_ERR);
-        if (sqlca.sqlcode == 100) return(MR_PERM);
+        if (sqlca.sqlcode < 0) return(MR_DBMS_ERR);
+        if (sqlca.sqlcode == SQL_NO_MATCH) return(MR_PERM);
 	q->acl = acl_id;
 
 	/* check for default access */
@@ -627,17 +552,17 @@ check_query_access(q, argv, cl)
 
     if (get_client(cl, &client_type, &client_id) != MR_SUCCESS)
       return(MR_PERM);
-    if (find_member("LIST", acl_id, client_type, client_id, 0))
+    if (find_member("LIST", acl_id, client_type, client_id))
       return(MR_SUCCESS);
     else
       return(MR_PERM);
 }
 
 
-get_client(cl, client_type, client_id)
-    client *cl;
-    char **client_type;
-    int *client_id;
+int get_client(cl, client_type, client_id)
+     client *cl;
+     char **client_type;
+     int *client_id;
 {
     if (cl->users_id > 0) {
 	*client_id = cl->users_id;
@@ -654,16 +579,12 @@ get_client(cl, client_type, client_id)
     return(MR_PERM);
 }
 
-find_member(list_type, list_id, member_type, member_id)
-    char *list_type;
-    EXEC SQL BEGIN DECLARE SECTION; 
-    int list_id;
-    char *member_type;
-    int member_id;
-    EXEC SQL END DECLARE SECTION;
+int find_member(list_type, list_id, member_type, member_id)
+     char *list_type, *member_type;
+     int list_id, member_id;
 {
     EXEC SQL BEGIN DECLARE SECTION; 
-    int flag, errorno;
+    int flag;
     EXEC SQL END DECLARE SECTION; 
 
     if (!strcmp(strtrim(list_type), strtrim(member_type)) &&
@@ -682,53 +603,22 @@ find_member(list_type, list_id, member_type, member_id)
 }
 
 
-do_retrieve(q, pqual, psort, action, actarg)            
-    register struct query *q;
-EXEC SQL BEGIN DECLARE SECTION; 
-    char *pqual;
-    char *psort;
-EXEC SQL END DECLARE SECTION; 
-    int (*action)();
-    char *actarg;
+int do_retrieve(q, pqual, psort, action, actarg)
+     struct query *q;
+     char *pqual, *psort, *actarg;
+     int (*action)();
 {
-    static char **vaddrs = (char **)NULL;
-    int j, rowcount;
-
-    if (!vaddrs) {
-	register int i;
-
-	if ((vaddrs = (char **)malloc(sizeof(char *) * QMAXARGS)) == NULL) {
-	    com_err(whoami, MR_NO_MEM, "setting up static argv");
-	    exit(1);
-	}
-	for (i = 0; i < QMAXARGS; i++) {  
-	    vaddrs[i]=SQLDA->sqlvar[i].sqldata;
-	}
+    build_sql_stmt(stmt_buf,"SELECT",q->tlist,NULL,pqual);
+    if(psort) {
+      strcat(stmt_buf," ORDER BY ");
+      strcat(stmt_buf,psort);
     }
 
-    build_sql_stmt(stmt_buf,"SELECT",q->tlist,vaddrs,pqual);
-    if(psort) { strcat(stmt_buf," ORDER BY "); strcat(stmt_buf,psort); }
-    EXEC SQL PREPARE stmt INTO :SQLDA USING NAMES FROM :stmt_buf; 
-    if(sqlca.sqlcode)
-      return(MR_INTERNAL);
-    EXEC SQL DECLARE csr001 CURSOR FOR stmt;
-    EXEC SQL OPEN csr001;
-    rowcount = 0;
-    while(1) {
-	EXEC SQL FETCH csr001 USING DESCRIPTOR :SQLDA;
-	if(sqlca.sqlcode != 0) break;
-	(*action)(q->vcnt, vaddrs, actarg);
-	rowcount++;
-    }
-    EXEC SQL CLOSE csr001;
-
-    if (mr_errcode) return(mr_errcode);
-    return ((rowcount == 0) ? MR_NO_MATCH : MR_SUCCESS);
+    return do_for_all_rows(stmt_buf, q->vcnt, action, actarg);
 }
 
-char *sqlstrstr(str,pat)
-    char *str;
-    char *pat;
+char *sqlstrstr(str, pat)
+     char *str, *pat;
 {
     register char *p=pat;
     
@@ -752,7 +642,7 @@ char *sqlstrstr(str,pat)
 }
 
 void optimize_sql_stmt(buf)
-char *buf;
+     char *buf;
 {
     char *point=buf, *pat, *eopat, *esc1, *esc2, *csr;
 
@@ -811,12 +701,8 @@ char *buf;
     }
 }
 
-build_sql_stmt(result_buf,cmd,targetlist,argv,qual)
-    char *result_buf;
-    char *cmd;
-    char *targetlist;
-    char *argv[];
-    char *qual;
+void build_sql_stmt(result_buf, cmd, targetlist, argv, qual)
+     char *result_buf, *cmd, *targetlist, *argv[], *qual;
 {
     char fmt_buf[MR_STMTBUF_LEN];
     register char *res, *fmt;
@@ -835,15 +721,16 @@ build_sql_stmt(result_buf,cmd,targetlist,argv,qual)
 		    break;
 		  case 's':
 		    if(*argv[0]) {
-			*res='\0';
-			strcat(res,*argv);
-			while(*++res) ;
+		        char *p=*argv;
+			while(*p) {
+			    if(*p=='\'') *res++='\'';	/* double the ' */
+			    *res++=*p++;
+			}
 		    }
 		    argv++;
 		    break;
 		  case 'd':
-		    sprintf(res,"%d",*(int *)*argv++);   /* print to result buffer */
-		    while(*++res) ;
+		    res+=sprintf(res,"%d",*(int *)*argv++);
 		    break;
 		  default:                               /* Swallow other %? pairs */
 		    break;
@@ -856,12 +743,10 @@ build_sql_stmt(result_buf,cmd,targetlist,argv,qual)
     optimize_sql_stmt(result_buf);
 }
 
-do_update(q, argv, qual, action, actarg)
-    register struct query *q;
-    char *argv[];
-    char *qual;
-    int (*action)();
-    char *actarg;
+int do_update(q, argv, qual, action, actarg)
+     struct query *q;
+     char *argv[], *qual, *actarg;
+     int (*action)();
 {
     build_sql_stmt(stmt_buf,"UPDATE",q->tlist,argv,qual);
     EXEC SQL EXECUTE IMMEDIATE :stmt_buf;
@@ -869,12 +754,10 @@ do_update(q, argv, qual, action, actarg)
     return(MR_SUCCESS);
 }
 
-do_append(q, argv, pqual, action, actarg)
-    register struct query *q;
-    char *argv[];
-    char *pqual;
-    int (*action)();
-    char *actarg;
+int do_append(q, argv, pqual, action, actarg)
+     struct query *q;
+     char *argv[], *pqual, *actarg;
+     int (*action)();
 {
     build_sql_stmt(stmt_buf,"INSERT",q->tlist,argv,pqual);
     EXEC SQL EXECUTE IMMEDIATE :stmt_buf;
@@ -882,13 +765,12 @@ do_append(q, argv, pqual, action, actarg)
     return(MR_SUCCESS);
 }
 
-do_delete(q, qual, action, actarg)
-    register struct query *q;
-    char *qual;
-    int (*action)();
-    char *actarg;
+int do_delete(q, qual, action, actarg)
+     struct query *q;
+     char *qual, *actarg;
+     int (*action)();
 {
-    sprintf(stmt_buf,"DELETE FROM %s WHERE %s",q->rtable,qual);
+    sprintf(stmt_buf,"DELETE FROM %s WHERE %s",table_name[q->rtable],qual);
     EXEC SQL EXECUTE IMMEDIATE :stmt_buf;
     if (mr_errcode) return(mr_errcode);
     return(MR_SUCCESS);
@@ -907,12 +789,12 @@ do_delete(q, qual, action, actarg)
  **
  **/
 
-set_next_object_id(object, table_name, limit)
-    EXEC SQL BEGIN DECLARE SECTION; 
-    char *object;
-    char *table_name;
-    int limit;
-    EXEC SQL END DECLARE SECTION; 
+int set_next_object_id(object, table, limit)
+EXEC SQL BEGIN DECLARE SECTION;
+     char *object;
+EXEC SQL END DECLARE SECTION;
+     enum tables table;
+     int limit;
 {
     EXEC SQL BEGIN DECLARE SECTION; 
     int value;
@@ -928,24 +810,18 @@ set_next_object_id(object, table_name, limit)
 	if (limit && value > MAX_ID_VALUE) 
 	    value = MIN_ID_VALUE;
 
-	sprintf(stmt_buf,"SELECT %s FROM %s WHERE %s=%d",object,table_name,object,value);  
-	EXEC SQL PREPARE stmt INTO :SQLDA USING NAMES FROM :stmt_buf; 
-	if(sqlca.sqlcode)
-	  return(MR_INTERNAL);
-	EXEC SQL DECLARE csr002 CURSOR FOR stmt;
-	EXEC SQL OPEN csr002;
-	EXEC SQL FETCH csr002 USING DESCRIPTOR :SQLDA;
+	sprintf(stmt_buf,"SELECT %s FROM %s WHERE %s=%d",
+		object,table_name[table],object,value);
+	dosql(sqlbuffer);
 	if (sqlca.sqlcode < 0) return(mr_errcode);
-	if (sqlca.sqlcode == 100) break;
+	if (sqlca.sqlcode == SQL_NO_MATCH) break;
 
-	EXEC SQL CLOSE csr002;
 	value++;
 	if (limit && value == starting_value) {   
 	    com_err(whoami,0,"All id values have been used");
 	    return(MR_NO_ID);
 	}
     }
-    EXEC SQL CLOSE csr002;
 
     if (LOG_RES)
         com_err(whoami, 0, "setting ID %s to %d", object, value);
@@ -959,11 +835,8 @@ set_next_object_id(object, table_name, limit)
  */
 
 int set_krb_mapping(name, login, ok, kid, uid)
-char *name;
-char *login;
-int ok;
-int *kid;
-int *uid;
+     char *name, *login;
+     int ok, *kid, *uid;
 {
     EXEC SQL BEGIN DECLARE SECTION; 
     int u_id, k_id;
@@ -979,7 +852,7 @@ int *uid;
       WHERE km.string_id = str.string_id AND str.string = :krbname;
     EXEC SQL COMMIT WORK;
 
-    if (ingres_errno) return(mr_errcode);
+    if (dbms_errno) return(mr_errcode);
     
     if (sqlca.sqlerrd[2] == 1) {    /* rowcount */
 	*kid = -k_id;
@@ -987,7 +860,7 @@ int *uid;
 	return(MR_SUCCESS);
     }
 
-    if (name_to_id(name, "STRINGS", &k_id) == MR_SUCCESS)
+    if (name_to_id(name, STRINGS_TABLE, &k_id) == MR_SUCCESS)
       *kid = -k_id;
 
     if (!ok) {             
@@ -995,12 +868,12 @@ int *uid;
 	return(MR_SUCCESS);
     }
 
-    if (name_to_id(login, "USERS", uid) != MR_SUCCESS)
+    if (name_to_id(login, USERS_TABLE, uid) != MR_SUCCESS)
       *uid = 0;
 
     if (*kid == 0)
       *kid = *uid;
-    if (ingres_errno) return(mr_errcode);
+    if (dbms_errno) return(mr_errcode);
     return(MR_SUCCESS);
 }
 
@@ -1009,26 +882,15 @@ int *uid;
  * are no duplicate names.
  */
 
-sanity_check_queries()
+void sanity_check_queries(void)
 {
     register int i;
     int maxv = 0, maxa = 0;
-#ifdef MULTIPROTOCOLS
-    extern int QueryCount1, QueryCount2;
-    extern struct query Queries1[], Queries2[];
-#else
     extern int QueryCount2;
     extern struct query Queries2[];
-#endif MULTIPROTOCOLS
 
 #define MAX(x,y) ((x) > (y) ? (x) : (y))
 
-#ifdef MULTIPROTOCOLS
-    for (i = 0; i < QueryCount1; i++) {
-	maxv = MAX(maxv, Queries1[i].vcnt);
-	maxa = MAX(maxa, Queries1[i].argc);
-    }
-#endif MULTIPROTOCOLS
     for (i = 0; i < QueryCount2; i++) {
 	maxv = MAX(maxv, Queries2[i].vcnt);
 	maxa = MAX(maxa, Queries2[i].argc);
@@ -1038,5 +900,75 @@ sanity_check_queries()
 	exit(1);
     }
 }
+
+
+/* Generically do a SELECT, storing the results in the provided buffers */
+
+void dosql(buffers)
+     char *buffers[];
+{
+  int i, errcode=0, errlen;
+
+  EXEC SQL PREPARE inc_stmt FROM :stmt_buf;
+  if(sqlca.sqlcode) return;
+  EXEC SQL DECLARE inc_crs CURSOR FOR inc_stmt;
+  EXEC SQL OPEN inc_crs;
+  mr_sqlda->N = QMAXARGS;
+  EXEC SQL DESCRIBE SELECT LIST FOR inc_stmt INTO mr_sqlda;
+  mr_sqlda->N = mr_sqlda->F;
+  for(i=0; i<mr_sqlda->N; i++) {
+    mr_sqlda->V[i]=buffers[i];
+    mr_sqlda->T[i]=97;
+    mr_sqlda->L[i]=ARGLEN;
+  }
+  EXEC SQL FETCH inc_crs USING DESCRIPTOR mr_sqlda;
+
+  /* if we got an error from the FETCH, we have to preserve it or the
+     close will reset it and the caller will think nothing happened */
+  if(sqlca.sqlcode) {
+    errcode=sqlca.sqlcode;
+    errlen=sqlca.sqlerrm.sqlerrml;
+  }
+
+  EXEC SQL CLOSE inc_crs;
+  if(errcode) {
+    sqlca.sqlcode=errcode;
+    sqlca.sqlerrm.sqlerrml=errlen;
+  }
+}
+
+int do_for_all_rows(query, count, action, actarg)
+EXEC SQL BEGIN DECLARE SECTION;
+     char *query;
+EXEC SQL END DECLARE SECTION;
+     int count, (*action)(), actarg;
+{
+  int i, rowcount=0;
+
+  EXEC SQL PREPARE stmt FROM :query;
+  if(sqlca.sqlcode) return;
+  EXEC SQL DECLARE curs CURSOR FOR stmt;
+  EXEC SQL OPEN curs;
+  mr_sqlda->N = count;
+  EXEC SQL DESCRIBE SELECT LIST FOR stmt INTO mr_sqlda;
+  mr_sqlda->N = mr_sqlda->F;
+  for(i=0; i<mr_sqlda->N; i++) {
+    mr_sqlda->V[i]=sqlbuffer[i];
+    mr_sqlda->T[i]=97;
+    mr_sqlda->L[i]=ARGLEN;
+  }
+
+  while(1) {
+    EXEC SQL FETCH curs USING DESCRIPTOR mr_sqlda;
+    if(sqlca.sqlcode != 0) break;
+    (*action)(count, sqlbuffer, actarg);
+    rowcount++;
+  }
+  EXEC SQL CLOSE curs;
+  
+  if (mr_errcode) return(mr_errcode);
+  return ((rowcount == 0) ? MR_NO_MATCH : MR_SUCCESS);
+}
+
 
 /* eof:qrtn.dc */

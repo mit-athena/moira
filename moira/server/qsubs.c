@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsubs.c,v $
- *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsubs.c,v 1.9 1990-03-19 15:44:14 mar Exp $
+ *	$Author: danw $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsubs.c,v 1.10 1997-01-20 18:26:26 danw Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,11 +10,12 @@
  */
 
 #ifndef lint
-static char *rcsid_qsubs_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsubs.c,v 1.9 1990-03-19 15:44:14 mar Exp $";
+static char *rcsid_qsubs_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsubs.c,v 1.10 1997-01-20 18:26:26 danw Exp $";
 #endif lint
 
 #include <mit-copyright.h>
 #include <moira.h>
+#include "mr_server.h"
 #include "query.h"
 
 #ifdef MULTIPROTOCOLS
@@ -60,7 +61,7 @@ get_query_by_name(name, version)
     return((struct query *)0);
 }
 
-list_queries(version, action, actarg)
+void list_queries(version, action, actarg)
     int version;
     int (*action)();
     int actarg;
@@ -118,7 +119,7 @@ list_queries(version, action, actarg)
   (*action)(1, &qnp, actarg);
 }
 
-help_query(q, action, actarg)
+void help_query(q, action, actarg)
     register struct query *q;
     int (*action)();
     int actarg;

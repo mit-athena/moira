@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_util.c,v $
  *	$Author: danw $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_util.c,v 1.22 1996-09-29 19:58:09 danw Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_util.c,v 1.23 1997-01-20 18:26:19 danw Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -9,7 +9,7 @@
  */
 
 #ifndef lint
-static char *rcsid_mr_util_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_util.c,v 1.22 1996-09-29 19:58:09 danw Exp $";
+static char *rcsid_mr_util_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_util.c,v 1.23 1997-01-20 18:26:19 danw Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -17,6 +17,7 @@ static char *rcsid_mr_util_c = "$Header: /afs/.athena.mit.edu/astaff/project/moi
 
 #include <ctype.h>
 #include <sys/types.h>
+#include <string.h>
 
 extern char *whoami;
 
@@ -35,7 +36,7 @@ requote(buf, cp, len)
 		if (isprint(c)) *buf++ = c;
 		else {
 			sprintf(buf, "\\%03o", c);
-			buf = index(buf, '\0');
+			buf = strchr(buf, '\0');
 		}
 	}
 	if (len > 1) { *buf++ = '"'; count++; len--; }
@@ -43,7 +44,7 @@ requote(buf, cp, len)
 	return buf;
 }
 
-log_args(tag, version, argc, argv)
+void log_args(tag, version, argc, argv)
 	char *tag;
 	int version;
 	int argc;

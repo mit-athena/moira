@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_scall.c,v $
- *	$Author: tytso $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_scall.c,v 1.23 1993-12-10 13:55:32 tytso Exp $
+ *	$Author: danw $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_scall.c,v 1.24 1997-01-20 18:26:16 danw Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,17 +10,19 @@
  */
 
 #ifndef lint
-static char *rcsid_sms_scall_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_scall.c,v 1.23 1993-12-10 13:55:32 tytso Exp $";
+static char *rcsid_sms_scall_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_scall.c,v 1.24 1997-01-20 18:26:16 danw Exp $";
 #endif lint
 
 #include <mit-copyright.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/file.h>
+#include <fcntl.h>
+#include <string.h>
 #include <krb.h>
 #include <errno.h>
-#include "query.h"
 #include "mr_server.h"
+#include "query.h"
 extern char buf1[];
 extern int nclients;
 extern char *whoami;
@@ -28,7 +30,7 @@ extern int errno;
 
 extern void clist_delete(), do_auth(), do_shutdown();
 void do_call();
-extern int ingres_errno, mr_errcode;
+extern int dbms_errno, mr_errcode;
 static int row_count;
 
 /* Put this in a variable so that we can patch it if necessary */
@@ -99,7 +101,6 @@ do_call(cl)
 	client *cl;
 {
 	int pn;
-	extern int ingres_errno;
 	cl->reply.mr_argc = 0;
 	cl->reply.mr_status = 0;
 	cl->reply.mr_version_no = cl->args->mr_version_no;
@@ -124,7 +125,7 @@ do_call(cl)
 	}
 
 	/* make sure this gets cleared before every operation */
-	ingres_errno = 0;
+	dbms_errno = 0;
 
 	switch(pn) {
 	case MR_NOOP:
@@ -186,7 +187,7 @@ retr_callback(argc, argv, p_cp)
 	register int i;
 
 	if (row_count++ >= max_row_count) {
-	    ingres_errno = mr_errcode = MR_NO_MEM;
+	    dbms_errno = mr_errcode = MR_NO_MEM;
 	    return;
 	}
 
@@ -217,7 +218,7 @@ retr_callback(argc, argv, p_cp)
 	for (i = 0; i < argc; i++) {
 		register int len = strlen(argv[i]) + 1;
 		nargv[i] = malloc(len);
-		bcopy(argv[i], nargv[i], len);
+		memcpy(nargv[i], argv[i], len);
 	}
 	arg_tmp->mr_flattened = (char *)NULL;
 	arg_tmp->mr_argl = (int *)NULL;
@@ -258,7 +259,7 @@ list_users(callbk, callarg)
 		argv[2] = buf;
 		sprintf(buf, "port %d", ntohs(cl->haddr.sin_port));
 		argv[3] = ctime(&cl->last_time_used);
-		cp = index(argv[3], '\n');
+		cp = strchr(argv[3], '\n');
 		if (cp) *cp = '\0';
 		argv[4] = buf1;
 		sprintf(buf1, "[#%d]", cl->id);
@@ -353,8 +354,6 @@ trigger_dcm(dummy0, dummy1, cl)
 	pid = vfork();
 	switch (pid) {
 	case 0:
-	    	for (dummy0 = getdtablesize() - 1; dummy0 > 2; dummy0--)
-		  close(dummy0);
 		execl(prog, "startdcm", 0);
 		exit(1);
 		

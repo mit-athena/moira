@@ -1,6 +1,6 @@
 /* This file defines the query dispatch table for version 2 of the protocol
  *
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/queries2.c,v 2.24 1996-09-29 20:24:49 danw Exp $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/queries2.c,v 2.25 1997-01-20 18:26:31 danw Exp $
  *
  * Copyright 1987, 1988 by the Massachusetts Institute of Technology.
  * For copying and distribution information, please see the file
@@ -8,6 +8,10 @@
  */
 
 #include <mit-copyright.h>
+#include "mr_server.h"
+#undef ACE_TYPE
+#undef ACE_NAME
+#undef NAME
 #include "query.h"
 #include "mr_et.h"
 
@@ -47,7 +51,6 @@ int setup_dfil();
 int setup_aftg();
 int setup_dnfp();
 int setup_dqot();
-int setup_sshi();
 int setup_akum();
 int setup_dsnt();
 int setup_ahst();
@@ -97,7 +100,6 @@ int count_members_of_list();
 int get_lists_of_member();
 int register_user();
 int _sdl_followup();
-int get_hostalias();
 
 
 
@@ -112,16 +114,17 @@ static char ADDRESS[] = "address";
 static char ALIAS[] = "alias";
 static char CLASS[] = "class";
 static char CLU_ID[] = "clu_id";
-static char CLUSTER[] = "cluster";
+static char CLUSTER[] = "clusters";
 static char COMMENTS[] = "comments";
 static char DESC[] = "description";
 static char DEVICE[] = "device";
 static char DIR[] = "dir";
 static char FILESYS[] = "filesys";
 static char FILSYS_ID[] = "filsys_id";
-static char FIRST[] = "firstname";
+static char FIRST[] = "first";
+static char HOSTACCESS[] = "hostaccess";
 static char LABEL[] = "label";
-static char LAST[] = "lastname";
+static char LAST[] = "last";
 static char LIST[] = "list";
 static char LIST_ID[] = "list_id";
 static char LOCATION[] = "location";
@@ -134,10 +137,12 @@ static char MOD1[] = "modtime";
 static char MOD2[] = "modby";
 static char MOD3[] = "modwith";
 static char NAME[] = "name";
+static char PRINTCAP[] = "printcap";
 static char QUOTA[] = "quota";
 static char QUOTA_TYPE[] = "quota_type";
 static char SECURE[] = "secure";
 static char SERVICE[] = "service";
+static char SERVERS[] = "servers";
 static char SHELL[] = "shell";
 static char SIGNATURE[] = "signature";
 static char SNET_ID[] = "snet_id";
@@ -146,13 +151,31 @@ static char STATUS[] = "status";
 static char TYPE[] = "type";
 static char USERS[] = "users";
 static char USERS_ID[] = "users_id";
-static char UID[] = "uid";
+static char UID[] = "unix_uid";
+static char ZEPH[] = "zephyr";
+static char ZEPH_ID[] = "xmt_id";
 
+/* Table Names */
+char *table_name[] = {
+  "none", USERS, "krbmap", MACHINE, "hostalias", SUBNET, CLUSTER,
+  "mcmap", "svc", LIST, "imembers", SERVERS, "serverhosts", FILESYS,
+  "fsgroup", "nfsphys", "quota", ZEPH, HOSTACCESS, "strings", "services",
+  PRINTCAP, "palladium", "capacls", "alias", "numvalues", "tblstats",
+  "incremental"};
+int num_tables = 27;
 
 
 /* VALOBJS
  * These are commonly used validation objects, defined here so that they
  * can be shared.
+ */
+
+/*
+ * A word about validation objects and locking:  The validation object
+ * for a query should also request locks on behalf of the pre-processing
+ * and post-processing routines.  This helps to ensure that tables are
+ * accessed and locked in the proper order and thus avoids deadlock 
+ * situations
  */
 
 static struct valobj VOsort0[] = {
@@ -197,53 +220,40 @@ static struct valobj VOwild012sort0[] = {  /* get_alias */
   {V_SORT, 0},
 };
 
-static struct valobj VOdate1[] = {
-  {V_DATE, 1, 0, 0, 0, MR_DATE},
-};
 
 static struct valobj VOuser0[] = {
-  {V_ID, 0, USERS, LOGIN, USERS_ID, MR_USER},
+  {V_ID, 0, USERS_TABLE, LOGIN, USERS_ID, MR_USER},
 };
 
+
 static struct valobj VOuser0lock[] = {
-  {V_LOCK, 0, USERS, 0, USERS_ID, MR_DEADLOCK},
-  {V_ID, 0, USERS, LOGIN, USERS_ID, MR_USER},
+  {V_LOCK, 0, USERS_TABLE, 0, USERS_ID, MR_DEADLOCK},
+  {V_ID, 0, USERS_TABLE, LOGIN, USERS_ID, MR_USER},
 };
 
 static struct valobj VOmach0[] = {
-  {V_ID, 0, MACHINE, NAME, MACH_ID, MR_MACHINE},
+  {V_ID, 0, MACHINE_TABLE, NAME, MACH_ID, MR_MACHINE},
 };
 
 static struct valobj VOclu0[] = {
-  {V_ID, 0, CLUSTER, NAME, CLU_ID, MR_CLUSTER},
+  {V_ID, 0, CLUSTER_TABLE, NAME, CLU_ID, MR_CLUSTER},
 };
 
 static struct valobj VOlist0[] = {
-  {V_ID, 0, LIST, NAME, LIST_ID, MR_LIST},
+  {V_ID, 0, LIST_TABLE, NAME, LIST_ID, MR_LIST},
 };
 
-static struct valobj VOfilsys0[] = {
-  {V_ID, 0, FILESYS, LABEL, FILSYS_ID, MR_FILESYS},
-};
 
 static struct valobj VOchar0[] = {
   {V_CHAR, 0},
 };
 
-static struct valobj VOsort01[] = {
-  {V_SORT, 1},
-  {V_SORT, 0},
-};
 
-static struct valobj VOuser0sort[] = {
-  {V_ID, 0, USERS, LOGIN, USERS_ID, MR_USER},
-  {V_SORT, 0},
-};
 
 static struct valobj VOfilsys0user1[] = {
-  {V_LOCK, 0, FILESYS, 0, FILSYS_ID, MR_DEADLOCK},
-  {V_ID, 0, FILESYS, LABEL, FILSYS_ID, MR_FILESYS},
-  {V_ID, 1, USERS, LOGIN, USERS_ID, MR_USER},
+  {V_LOCK, 0, FILESYS_TABLE, 0, FILSYS_ID, MR_DEADLOCK},
+  {V_ID, 0, FILESYS_TABLE, LABEL, FILSYS_ID, MR_FILESYS},
+  {V_ID, 1, USERS_TABLE, LOGIN, USERS_ID, MR_USER},
 };
 
 
@@ -253,10 +263,8 @@ static struct valobj VOfilsys0user1[] = {
  */
 
 static struct validate VDmach = { VOmach0, 1 };
-static struct validate VDsort0= { VOsort0, 1 };
 static struct validate VDwild0= { VOwild0, 1 };
 static struct validate VDupwild0= { VOupwild0, 1 };
-static struct validate VDsort2= { VOsort01,2 };
 static struct validate VDwild2sort2 = { VOwild01sort01,4 };
 static struct validate VDwild3sort1 = { VOwild012sort0,4 };
 static struct validate VDsortf = { 
@@ -282,20 +290,10 @@ static struct validate VDwildsortf = {
   0,
   followup_fix_modby,
 };
+static struct validate VDsort0= { VOsort0, 1 };
 
-static struct validate VDwild2sortf = { 
-  VOwild01sort01,
-  4,
-  0,
-  0,
-  0,
-  0,
-  0,
-  0,
-  followup_fix_modby,
-};
 
-static struct validate VDupwildsortf = { 
+static struct validate VDupwildsortf = {
   VOupwild0sort,
   2,
   0,
@@ -306,9 +304,6 @@ static struct validate VDupwildsortf = {
   0,
   followup_fix_modby,
 };
-
-
-
 /* Query data */
 
 static char *galo_fields[] = {
@@ -433,21 +428,22 @@ static char *auac_fields[] = {
 };
 
 static struct valobj auac_valobj[] = {
-  {V_LOCK, 0, USERS, 0, USERS_ID, MR_DEADLOCK},
-  {V_CHAR, 0},
-  {V_CHAR, 3},
-  {V_CHAR, 4},
-  {V_CHAR, 5},
-  {V_CHAR, 7},
-  {V_TYPE, 8, CLASS, 0, 0, MR_BAD_CLASS},
-  {V_ID, 9, "strings", "string", "string_id", MR_NO_MATCH},
+  {V_LOCK, 0, USERS_TABLE, 0, USERS_ID, MR_DEADLOCK},
+  {V_CHAR, 0, USERS_TABLE, LOGIN},
+  {V_CHAR, 2, USERS_TABLE, SHELL},
+  {V_CHAR, 3, USERS_TABLE, LAST},
+  {V_CHAR, 4, USERS_TABLE, FIRST},
+  {V_CHAR, 5, USERS_TABLE, MIDDLE},
+  {V_CHAR, 7, USERS_TABLE, MIT_ID},
+  {V_TYPE, 8, 0, CLASS, 0, MR_BAD_CLASS},
+  {V_ID, 9, STRINGS_TABLE, "string", "string_id", MR_NO_MATCH},
 };
 
 static struct validate auac_validate = {
   auac_valobj,
-  8,
+  9,
   LOGIN,
-  "login = LEFT('%s',SIZE(login))",
+  "login = '%s'",
   1,
   USERS_ID,
   0,
@@ -457,9 +453,9 @@ static struct validate auac_validate = {
 
 static struct validate ausr_validate = {
   auac_valobj,
-  7,
+  8,
   LOGIN,
-  "login = LEFT('%s',SIZE(login))",  
+  "login = '%s'",
   1,
   USERS_ID,
   0,
@@ -469,18 +465,22 @@ static struct validate ausr_validate = {
 
 static char *rusr_fields[] = {
   UID, LOGIN, "fs_type"
-    };
+};
 
 static struct valobj rusr_valobj[] = {
-  {V_LOCK, 0, USERS, 0, USERS_ID, MR_DEADLOCK},
-  {V_LOCK, 0, LIST, 0, LIST_ID, MR_DEADLOCK},
-  {V_LOCK, 0, FILESYS, 0, FILSYS_ID, MR_DEADLOCK},
-  {V_LOCK, 0, "nfsphys", 0, "nfsphys_id", MR_DEADLOCK},
+  {V_LOCK, 0, IMEMBERS_TABLE, 0, LIST_ID, MR_DEADLOCK},
+  {V_LOCK, 0, FILESYS_TABLE, 0, FILSYS_ID, MR_DEADLOCK},
+  {V_LOCK, 0, USERS_TABLE, 0, USERS_ID, MR_DEADLOCK},
+  {V_RLOCK, 0, MACHINE_TABLE, 0,MACH_ID, MR_DEADLOCK},
+  {V_LOCK, 0, LIST_TABLE, 0, LIST_ID, MR_DEADLOCK},
+  {V_LOCK, 0, NFSPHYS_TABLE, 0, "nfsphys_id", MR_DEADLOCK},
+  {V_LOCK, 0, QUOTA_TABLE,0, FILSYS_ID, MR_DEADLOCK},
+  {V_RLOCK,0, SERVERHOSTS_TABLE,0, MACH_ID, MR_DEADLOCK},
 };
 
 static struct validate rusr_validate = {
   rusr_valobj,
-  4,
+  8,
   0,
   0,
   0,
@@ -497,20 +497,21 @@ static char *uuac_fields[] = {
 };
 
 static struct valobj uuac_valobj[] = {
-  {V_LOCK, 0, USERS, 0, USERS_ID, MR_DEADLOCK},
-  {V_ID, 0, USERS, LOGIN, USERS_ID, MR_USER},
-  {V_RENAME, 1, USERS, LOGIN, USERS_ID, MR_NOT_UNIQUE},
-  {V_CHAR, 4},
-  {V_CHAR, 5},
-  {V_CHAR, 6},
-  {V_CHAR, 8},
-  {V_TYPE, 9, CLASS, 0, 0, MR_BAD_CLASS},
-  {V_ID, 10, "strings", "string", "string_id", MR_NO_MATCH},
+  {V_LOCK, 0, USERS_TABLE, 0, USERS_ID, MR_DEADLOCK},
+  {V_ID, 0, USERS_TABLE, LOGIN, USERS_ID, MR_USER},
+  {V_RENAME, 1, USERS_TABLE, LOGIN, USERS_ID, MR_NOT_UNIQUE},
+  {V_CHAR, 3, USERS_TABLE, SHELL},
+  {V_CHAR, 4, USERS_TABLE, FIRST},
+  {V_CHAR, 5, USERS_TABLE, LAST},
+  {V_CHAR, 6, USERS_TABLE, MIDDLE},
+  {V_CHAR, 8, USERS_TABLE, MIT_ID},
+  {V_TYPE, 9, 0, CLASS, 0, MR_BAD_CLASS},
+  {V_ID, 10, STRINGS_TABLE, "string", "string_id", MR_NO_MATCH},
 };
 
 static struct validate uuac_validate = {
   uuac_valobj,
-  9,
+  10,
   0,
   0,
   0,
@@ -522,7 +523,7 @@ static struct validate uuac_validate = {
 
 static struct validate uusr_validate = {
   uuac_valobj,
-  8,
+  10,
   0,
   0,
   0,
@@ -537,9 +538,15 @@ static char *uush_fields[] = {
   SHELL,
 };
 
+static struct valobj uush_valobj[] = {
+  {V_LOCK, 0, USERS_TABLE, 0, USERS_ID, MR_DEADLOCK},
+  {V_ID, 0, USERS_TABLE, LOGIN, USERS_ID, MR_USER},
+  {V_CHAR, 1, USERS_TABLE, SHELL},
+};
+
 static struct validate uush_validate = {
-  VOuser0lock,
-  2,
+  uush_valobj,
+  3,
   0,
   0,
   0,
@@ -575,9 +582,20 @@ static char *dusr_fields[] = {
   LOGIN,
 };
 
+struct valobj dusr_valobj[]= {
+  {V_LOCK, 0, IMEMBERS_TABLE, 0, LIST_ID, MR_DEADLOCK},
+  {V_LOCK, 0, FILESYS_TABLE, 0,  FILSYS_ID, MR_DEADLOCK},
+  {V_LOCK, 0, USERS_TABLE, 0, USERS_ID, MR_DEADLOCK},
+  {V_LOCK, 0, LIST_TABLE, 0, LIST_ID, MR_DEADLOCK},
+  {V_LOCK, 0, QUOTA_TABLE, 0, FILSYS_ID, MR_DEADLOCK},
+  {V_LOCK, 0, HOSTACCESS_TABLE, 0, MACH_ID, MR_DEADLOCK},
+  {V_LOCK, 0, KRBMAP_TABLE, 0, "users_id", MR_DEADLOCK},
+  {V_ID, 0, USERS_TABLE, LOGIN, USERS_ID, MR_USER},
+};
+
 static struct validate dusr_validate = {
-  VOuser0lock,
-  2,
+  dusr_valobj,
+  8,
   0,
   0,
   0,
@@ -592,8 +610,8 @@ static char *dubu_fields[] = {
 };
 
 static struct valobj dubu_valobj[] = {
-  {V_LOCK, 0, USERS, 0, USERS_ID, MR_DEADLOCK},
-  {V_ID, 0, USERS, UID, USERS_ID, MR_USER}
+  {V_LOCK, 0, USERS_TABLE, 0, USERS_ID, MR_DEADLOCK},
+  {V_ID, 0, USERS_TABLE, UID, USERS_ID, MR_USER}
 };
 
 static struct validate dubu_validate = {
@@ -615,14 +633,16 @@ static char *akum_fields[] = { LOGIN, "kerberos" };
 
 static struct valobj akum_valobj[] =
 {
-  {V_ID, 0, USERS, LOGIN, USERS_ID, MR_USER},
-  {V_ID, 1, "strings", "string", "string_id", MR_NO_MATCH},
+  {V_LOCK, 0, KRBMAP_TABLE, 0, "users_id", MR_DEADLOCK},
+  {V_ID, 0, USERS_TABLE, LOGIN, USERS_ID, MR_USER},
+  {V_ID, 1, STRINGS_TABLE, "string", "string_id", MR_NO_MATCH},
+
 };
 
 static struct validate akum_validate =
 {
   akum_valobj,
-  1,
+  3,
   USERS_ID,
   "users_id = %d or string_id = %d",
   2,
@@ -635,7 +655,7 @@ static struct validate akum_validate =
 static struct validate dkum_validate =
 {
   akum_valobj,
-  2,
+  3,
   USERS_ID,
   "users_id = %d and string_id = %d",
   2,
@@ -671,9 +691,22 @@ static char *ufbl_fields[] = {
   "affiliation",
 };
 
+static struct valobj ufbl_valobj[] = {
+  {V_LOCK, 0, USERS_TABLE, 0, USERS_ID, MR_DEADLOCK},
+  {V_ID, 0, USERS_TABLE, LOGIN, USERS_ID, MR_USER},
+  {V_LEN, 1, USERS_TABLE, "fullname"},
+  {V_LEN, 2, USERS_TABLE, "nickname"},
+  {V_LEN, 3, USERS_TABLE, "home_addr"},
+  {V_LEN, 4, USERS_TABLE, "home_phone"},
+  {V_LEN, 5, USERS_TABLE, "office_addr"},
+  {V_LEN, 6, USERS_TABLE, "office_phone"},
+  {V_LEN, 7, USERS_TABLE, "department"},
+  {V_LEN, 8, USERS_TABLE, "affiliation"},
+};
+
 static struct validate ufbl_validate = {
-  VOuser0lock,
-  2,
+  ufbl_valobj,
+  10,
   0,
   0,
   0,
@@ -704,9 +737,14 @@ static char *gpox_fields[] = {
   LOGIN, TYPE, "box",
 };
 
+struct valobj gpox_valobj[]={
+  {V_RLOCK, 0, USERS_TABLE, 0, USERS_ID, MR_DEADLOCK},
+  {V_RLOCK, 0, MACHINE_TABLE, 0, MACH_ID, MR_DEADLOCK}
+};
+
 static struct validate gpox_validate = {
-  0,
-  0,
+  gpox_valobj,
+  2,
   0,
   0,
   0,
@@ -721,15 +759,16 @@ static char *spob_fields[] = {
 };
 
 static struct valobj spob_valobj[] = {
-  {V_LOCK, 0, USERS, 0, USERS_ID, MR_DEADLOCK},
-  {V_ID, 0, USERS, LOGIN, USERS_ID, MR_USER},
-  {V_TYPE, 1, "pobox", 0, 0, MR_TYPE},
+  {V_LOCK, 0, USERS_TABLE, 0, USERS_ID, MR_DEADLOCK},
+  {V_RLOCK, 0, MACHINE_TABLE, 0, MACH_ID, MR_DEADLOCK},
+  {V_ID, 0, USERS_TABLE, LOGIN, USERS_ID, MR_USER},
+  {V_TYPE, 1, 0, "pobox", 0, MR_TYPE},
 };
 
 static struct validate spob_validate =	/* SET_POBOX */
 {
   spob_valobj,
-  3,
+  4,
   0,
   0,
   0,
@@ -739,10 +778,16 @@ static struct validate spob_validate =	/* SET_POBOX */
   set_pobox,
 };
 
+struct valobj spop_valobj[] = {
+  {V_LOCK, 0, USERS_TABLE, 0, USERS_ID, MR_DEADLOCK},
+  {V_RLOCK, 0, MACHINE_TABLE, 0, MACH_ID, MR_DEADLOCK},
+  {V_ID, 0, USERS_TABLE, LOGIN, USERS_ID, MR_USER},
+};
+
 static struct validate spop_validate =	/* SET_POBOX_POP */
 {
-  VOuser0lock,
-  2,
+  spop_valobj,
+  3,
   0,
   0,
   0,
@@ -754,8 +799,8 @@ static struct validate spop_validate =	/* SET_POBOX_POP */
 
 static struct validate dpob_validate =	/* DELETE_POBOX */
 {
-  VOuser0lock,
-  2,
+  spop_valobj,
+  3,
   0,
   0,
   0,
@@ -800,24 +845,29 @@ static char *ahst_fields[] = {
 };
 
 static struct valobj ahst_valobj[] = {
-  {V_CHAR, 0},
-  {V_CHAR, 1},
-  {V_CHAR, 2},
-  {V_CHAR, 3},
-  {V_CHAR, 4},
-  {V_LOCK, 0, MACHINE, 0, MACH_ID, MR_DEADLOCK},
-  {V_ID, 8, SUBNET, NAME, SNET_ID, MR_SUBNET},
-  {V_TYPE, 10, ACE_TYPE, 0, 0, MR_ACE},
+  {V_CHAR, 0, MACHINE_TABLE, NAME},
+  {V_CHAR, 1, MACHINE_TABLE, "vendor"},
+  {V_CHAR, 2, MACHINE_TABLE, "model"},
+  {V_CHAR, 3, MACHINE_TABLE, "os"},
+  {V_CHAR, 4, MACHINE_TABLE, "location"},
+  {V_CHAR, 5, MACHINE_TABLE, "contact"},
+  {V_RLOCK,0, USERS_TABLE, 0, USERS_ID, MR_DEADLOCK},
+  {V_LOCK, 0, MACHINE_TABLE, 0, MACH_ID, MR_DEADLOCK},
+  {V_RLOCK, 0, SUBNET_TABLE, 0, SNET_ID, MR_DEADLOCK},
+  {V_RLOCK, 0, LIST_TABLE, 0, LIST_ID, MR_DEADLOCK},
+  {V_RLOCK, 0, HOSTALIAS_TABLE, 0, MACH_ID, MR_DEADLOCK},
+  {V_ID, 8, SUBNET_TABLE, NAME, SNET_ID, MR_SUBNET},
+  {V_TYPE, 10, 0, ACE_TYPE, 0, MR_ACE},
   {V_TYPEDATA, 11, 0, 0, 0, MR_ACE},
-  {V_ID, 12, "strings", "string", "string_id", MR_NO_MATCH},
-  {V_ID, 13, "strings", "string", "string_id", MR_NO_MATCH},
+  {V_ID, 12, STRINGS_TABLE, "string", "string_id", MR_NO_MATCH},
+  {V_ID, 13, STRINGS_TABLE, "string", "string_id", MR_NO_MATCH},
 };
 
 static struct validate ahst_validate = {
   ahst_valobj,
-  11,
+  16,
   NAME,
-  "name = uppercase(LEFT('%s',SIZE(name)))",
+  "name = UPPER('%s')",
   1,
   MACH_ID,
   access_host,
@@ -831,24 +881,27 @@ static char *uhst_fields[] = {
 };
 
 static struct valobj uhst_valobj[] = {
-  {V_CHAR, 0},
-  {V_ID, 0, MACHINE, NAME, MACH_ID, MR_MACHINE},
-  {V_RENAME, 1, MACHINE, NAME, MACH_ID, MR_NOT_UNIQUE},
-  {V_CHAR, 2},
-  {V_CHAR, 3},
-  {V_CHAR, 4},
-  {V_CHAR, 5},
-  {V_LOCK, 0, MACHINE, 0, MACH_ID, MR_DEADLOCK},
-  {V_ID, 9, SUBNET, NAME, SNET_ID, MR_SUBNET},
-  {V_TYPE, 11, ACE_TYPE, 0, 0, MR_ACE},
+  {V_RLOCK, 0, USERS_TABLE, 0, USERS_ID, MR_DEADLOCK},
+  {V_LOCK, 0, MACHINE_TABLE, 0, MACH_ID, MR_DEADLOCK},
+  {V_RLOCK, 0, SUBNET_TABLE, 0, SNET_ID, MR_DEADLOCK},
+  {V_RLOCK, 0, LIST_TABLE, 0, LIST_ID, MR_DEADLOCK},
+  {V_CHAR, 0, MACHINE_TABLE, "name"},
+  {V_ID, 0, MACHINE_TABLE, NAME, MACH_ID, MR_MACHINE},
+  {V_RENAME, 1, MACHINE_TABLE, NAME, MACH_ID, MR_NOT_UNIQUE},
+  {V_CHAR, 2, MACHINE_TABLE, "vendor"},
+  {V_CHAR, 3, MACHINE_TABLE, "model"},
+  {V_CHAR, 4, MACHINE_TABLE, "os"},
+  {V_CHAR, 5, MACHINE_TABLE, "location"},
+  {V_ID, 9, SUBNET_TABLE, NAME, SNET_ID, MR_SUBNET},
+  {V_TYPE, 11, 0, ACE_TYPE, 0, MR_ACE},
   {V_TYPEDATA, 12, 0, 0, 0, MR_ACE},
-  {V_ID, 13, "strings", "string", "string_id", MR_NO_MATCH},
-  {V_ID, 14, "strings", "string", "string_id", MR_NO_MATCH},
+  {V_ID, 13, STRINGS_TABLE, "string", "string_id", MR_NO_MATCH},
+  {V_ID, 14, STRINGS_TABLE, "string", "string_id", MR_NO_MATCH},
 };
 
 static struct validate uhst_validate = {
   uhst_valobj,
-  13,
+  16,
   0,
   0,
   0,
@@ -863,13 +916,21 @@ static char *dhst_fields[] = {
 };
 
 static struct valobj dhst_valobj[] = {
-  {V_LOCK, 0, MACHINE, 0, MACH_ID, MR_DEADLOCK},
-  {V_ID, 0, MACHINE, NAME, MACH_ID, MR_MACHINE},
+  {V_RLOCK, 0, USERS_TABLE, 0, USERS_ID, MR_DEADLOCK},
+  {V_LOCK, 0, MACHINE_TABLE, 0, MACH_ID, MR_DEADLOCK},
+  {V_RLOCK, 0, NFSPHYS_TABLE, 0, "nfsphys_id", MR_DEADLOCK},
+  {V_RLOCK, 0, SERVERHOSTS_TABLE, 0, MACH_ID, MR_DEADLOCK},
+  {V_RLOCK, 0, HOSTACCESS_TABLE, 0, MACH_ID, MR_DEADLOCK},
+  {V_RLOCK, 0, HOSTALIAS_TABLE, 0, MACH_ID, MR_DEADLOCK},
+  {V_LOCK, 0, MCMAP_TABLE, 0, MACH_ID, MR_DEADLOCK},
+  {V_RLOCK, 0, PRINTCAP_TABLE, 0, MACH_ID, MR_DEADLOCK},
+  {V_RLOCK, 0, PALLADIUM_TABLE, 0, MACH_ID, MR_DEADLOCK},
+  {V_ID, 0, MACHINE_TABLE, NAME, MACH_ID, MR_MACHINE},
 };
 
 static struct validate dhst_validate = {
   dhst_valobj,
-  2,
+  10,
   0,
   0,
   0,
@@ -899,20 +960,20 @@ static struct validate ghal_validate = {
   0,
   access_ahal,
   0,
-  get_hostalias,
+  0,
 };
 
 static struct valobj ahal_valobj[] = {
-  {V_CHAR, 0},
+  {V_CHAR, 0, HOSTALIAS_TABLE, NAME},
   {V_UPWILD, 0},
-  {V_ID, 1, MACHINE, NAME, MACH_ID, MR_MACHINE},
+  {V_ID, 1, MACHINE_TABLE, NAME, MACH_ID, MR_MACHINE},
 };
 
 static struct validate ahal_validate = {
   ahal_valobj,
   3,
   NAME,
-  "name = LEFT('%s',SIZE(name))",
+  "name = '%s'",
   1,
   MACH_ID,
   access_ahal,
@@ -921,16 +982,16 @@ static struct validate ahal_validate = {
 };
 
 static struct valobj dhal_valobj[] = {
-    {V_UPWILD, 0},
-    {V_LOCK, 0, MACHINE, 0, MACH_ID, MR_DEADLOCK},
-    {V_ID, 1, MACHINE, NAME, MACH_ID, MR_MACHINE},
+  {V_UPWILD, 0},
+  {V_LOCK, 0, MACHINE_TABLE, 0, MACH_ID, MR_DEADLOCK},
+  {V_ID, 1, MACHINE_TABLE, NAME, MACH_ID, MR_MACHINE},
 };
 
 static struct validate dhal_validate = {
   dhal_valobj,
   3,
   NAME,
-  "name = LEFT('%s',SIZE(name)) AND mach_id = %d",
+  "name = '%s' AND mach_id = %d",
   2,
   MACH_ID,
   access_ahal,
@@ -945,13 +1006,16 @@ static char *gsnt_fields[] = {
 };
 
 static struct valobj gsnt_valobj[] = {
+  {V_RLOCK, 0, USERS_TABLE, 0, USERS_ID, MR_DEADLOCK},
+  {V_RLOCK, 0, SUBNET_TABLE, 0, SNET_ID, MR_DEADLOCK},
+  {V_RLOCK, 0, LIST_TABLE, 0, LIST_ID, MR_DEADLOCK},
   {V_UPWILD, 0},
   {V_SORT, 0},
 };
 
 static struct validate gsnt_validate = {
   gsnt_valobj,
-  2,
+  5,
   0,
   0,
   0,
@@ -966,18 +1030,22 @@ static char *asnt_fields[] = {
 };
 
 static struct valobj asnt_valobj[] = {
-  {V_LOCK, 0, SUBNET, 0, SNET_ID, MR_DEADLOCK},
-  {V_CHAR, 0},
-  {V_TYPE, 7, ACE_TYPE, 0, 0, MR_ACE},
+  {V_RLOCK, 0, USERS_TABLE, 0, USERS_ID, MR_DEADLOCK},
+  {V_LOCK, 0, SUBNET_TABLE, 0, SNET_ID, MR_DEADLOCK},
+  {V_RLOCK, 0, LIST_TABLE, 0, LIST_ID, MR_DEADLOCK},
+  {V_CHAR, 0, SUBNET_TABLE, NAME},
+  {V_LEN, 1, SUBNET_TABLE, DESC},
+  {V_LEN, 6, SUBNET_TABLE, "prefix"},
+  {V_TYPE, 7, 0, ACE_TYPE, 0, MR_ACE},
   {V_TYPEDATA, 8, 0, 0, 0, MR_ACE},
 };
 
 static struct validate asnt_validate = 
 {
     asnt_valobj,
-    4,
+    8,
     NAME,
-    "name = uppercase(LEFT('%s',SIZE(name)))",
+    "name = UPPER('%s')",
     1,
     SNET_ID,
     0,
@@ -991,17 +1059,21 @@ static char *usnt_fields[] = {
 };
 
 static struct valobj usnt_valobj[] = {
-  {V_LOCK, 0, SUBNET, 0, SNET_ID, MR_DEADLOCK},
-  {V_ID, 0, SUBNET, NAME, SNET_ID, MR_NO_MATCH},
-  {V_RENAME, 1, SUBNET, NAME, SNET_ID, MR_NOT_UNIQUE},
-  {V_TYPE, 8, ACE_TYPE, 0, 0, MR_ACE},
+  {V_RLOCK, 0, USERS_TABLE, 0, USERS_ID, MR_DEADLOCK},
+  {V_LOCK, 0, SUBNET_TABLE, 0, SNET_ID, MR_DEADLOCK},
+  {V_RLOCK, 0, LIST_TABLE, 0, LIST_ID, MR_DEADLOCK},
+  {V_ID, 0, SUBNET_TABLE, NAME, SNET_ID, MR_NO_MATCH},
+  {V_RENAME, 1, SUBNET_TABLE, NAME, SNET_ID, MR_NOT_UNIQUE},
+  {V_LEN, 2, SUBNET_TABLE, DESC},
+  {V_LEN, 7, SUBNET_TABLE, "prefix"},
+  {V_TYPE, 8, 0, ACE_TYPE, 0, MR_ACE},
   {V_TYPEDATA, 9, 0, 0, 0, MR_ACE},
 };
 
 static struct validate usnt_validate = 
 {
     usnt_valobj,
-    5,
+    9,
     NAME,
     "snet_id = %d",
     1,
@@ -1016,13 +1088,14 @@ static char *dsnt_fields[] = {
 };
 
 static struct valobj dsnt_valobj[] = {
-  {V_LOCK, 0, SUBNET, 0, SNET_ID, MR_DEADLOCK},
-  {V_ID, 0, SUBNET, NAME, SNET_ID, MR_SUBNET},
+  {V_RLOCK, 0, MACHINE_TABLE, 0, MACH_ID, MR_DEADLOCK},
+  {V_LOCK, 0, SUBNET_TABLE, 0, SNET_ID, MR_DEADLOCK},
+  {V_ID, 0, SUBNET_TABLE, NAME, SNET_ID, MR_SUBNET},
 };
 
 static struct validate dsnt_validate = {
   dsnt_valobj,
-  2,
+  3,
   0,
   0,
   0,
@@ -1042,16 +1115,18 @@ static char *aclu_fields[] = {
 };
 
 static struct valobj aclu_valobj[] = {
-  {V_LOCK, 0, CLUSTER, 0, CLU_ID, MR_DEADLOCK},
-  {V_CHAR, 0}
+  {V_LOCK, 0, CLUSTER_TABLE, 0, CLU_ID, MR_DEADLOCK},
+  {V_CHAR, 0, CLUSTER_TABLE, NAME},
+  {V_LEN, 1, CLUSTER_TABLE, DESC},
+  {V_LEN, 2, CLUSTER_TABLE, LOCATION},
 };
 
 static struct validate aclu_validate =	
 {
   aclu_valobj,
-  2,
+  4,
   NAME,
-  "name = LEFT('%s',SIZE(name))",
+  "name = '%s'",
   1,
   CLU_ID,
   0,
@@ -1065,14 +1140,16 @@ static char *uclu_fields[] = {
 };
 
 static struct valobj uclu_valobj[] = {
-  {V_LOCK, 0, CLUSTER, 0, CLU_ID, MR_DEADLOCK},
-  {V_ID, 0, CLUSTER, NAME, CLU_ID, MR_CLUSTER},
-  {V_RENAME, 1, CLUSTER, NAME, CLU_ID, MR_NOT_UNIQUE},
+  {V_LOCK, 0, CLUSTER_TABLE, 0, CLU_ID, MR_DEADLOCK},
+  {V_ID, 0, CLUSTER_TABLE, NAME, CLU_ID, MR_CLUSTER},
+  {V_RENAME, 1, CLUSTER_TABLE, NAME, CLU_ID, MR_NOT_UNIQUE},
+  {V_LEN, 2, CLUSTER_TABLE, DESC},
+  {V_LEN, 3, CLUSTER_TABLE, LOCATION},
 };
 
 static struct validate uclu_validate = {
   uclu_valobj,
-  3,
+  5,
   0,
   0,
   0,
@@ -1115,8 +1192,8 @@ static struct validate gmcm_validate = { gmcm_valobj, 4 };
 
 static struct valobj amtc_valobj[] =	/* ADD_MACHINE_TO_CLUSTER */
 {					/* DELETE_MACHINE_FROM_CLUSTER */
-  {V_ID, 0, MACHINE, NAME, MACH_ID, MR_MACHINE},
-  {V_ID, 1, CLUSTER, NAME, CLU_ID, MR_CLUSTER},
+  {V_ID, 0, MACHINE_TABLE, NAME, MACH_ID, MR_MACHINE},
+  {V_ID, 1, CLUSTER_TABLE, NAME, CLU_ID, MR_CLUSTER},
 };
 
 static struct validate amtc_validate = /* for amtc and dmfc */
@@ -1143,9 +1220,9 @@ static char *acld_fields[] = {
 
 static struct valobj acld_valobj[] =
 {
-  {V_ID, 0, CLUSTER, NAME, CLU_ID, MR_CLUSTER},
-  {V_CHAR, 1},
-  {V_CHAR, 2},
+  {V_ID, 0, CLUSTER_TABLE, NAME, CLU_ID, MR_CLUSTER},
+  {V_CHAR, 1, SVC_TABLE, "serv_label"},
+  {V_CHAR, 2, SVC_TABLE, "serv_cluster"}
 };
 
 static struct validate acld_validate =	
@@ -1153,7 +1230,7 @@ static struct validate acld_validate =
   acld_valobj,
   3,
   CLU_ID,
-  "clu_id = %d AND serv_label = '%s' AND serv_cluster = LEFT('%s',SIZE(serv_cluster))",
+  "clu_id = %d AND serv_label = '%s' AND serv_cluster = '%s'",
   3,
   0,
   0,
@@ -1163,14 +1240,13 @@ static struct validate acld_validate =
 
 static struct valobj dcld_valobj[] =
 {
-  {V_ID, 0, CLUSTER, NAME, CLU_ID, MR_CLUSTER},
-  {V_CHAR, 2},
+  {V_ID, 0, CLUSTER_TABLE, NAME, CLU_ID, MR_CLUSTER},
 };
 
 static struct validate dcld_validate =	
 {					
   dcld_valobj,
-  2,
+  1,
   CLU_ID,
   "clu_id = %d AND serv_label = '%s' AND serv_cluster = '%s'",
   3,
@@ -1178,6 +1254,273 @@ static struct validate dcld_validate =
   0,
   0,
   set_cluster_modtime_by_id,
+};
+
+static char *glin_fields[] = {
+  NAME,
+  NAME, "active", "publicflg", "hidden", "maillist", "grouplist", "gid",
+  ACE_TYPE, ACE_NAME, DESC, MOD1, MOD2, MOD3,
+};
+
+static struct validate glin_validate = {
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  access_vis_list_by_name,
+  0,
+  get_list_info,
+};
+
+static char *alis_fields[] = {
+  NAME, "active", "publicflg", "hidden", "maillist", "grouplist", "gid",
+  ACE_TYPE, ACE_NAME, DESC,
+};
+
+static struct valobj alis_valobj[] = {
+  {V_RLOCK, 0, USERS_TABLE, 0, USERS_ID, MR_DEADLOCK},
+  {V_LOCK, 0, LIST_TABLE, 0, LIST_ID, MR_DEADLOCK},
+  {V_CHAR, 0, LIST_TABLE, NAME},
+  {V_TYPE, 7, 0, ACE_TYPE, 0, MR_ACE},
+  {V_TYPEDATA, 8, 0, 0, LIST_ID, MR_ACE},
+  {V_LEN, 9, LIST_TABLE, DESC},
+};
+
+static struct validate alis_validate = {
+  alis_valobj,
+  6,
+  NAME,
+  "name = '%s'",
+  1,
+  LIST_ID,
+  0,
+  setup_alis,
+  set_modtime,
+};
+
+static char *ulis_fields[] = {
+  NAME,
+  "newname", "active", "publicflg", "hidden", "maillist", "grouplist", "gid",
+  ACE_TYPE, ACE_NAME, DESC,
+};
+
+static struct valobj ulis_valobj[] = {
+  {V_RLOCK, 0, USERS_TABLE, 0, USERS_ID, MR_DEADLOCK},
+  {V_LOCK, 0, LIST_TABLE, 0, LIST_ID, MR_DEADLOCK},
+  {V_ID, 0, LIST_TABLE, NAME, LIST_ID, MR_LIST},
+  {V_RENAME, 1, LIST_TABLE, NAME, LIST_ID, MR_NOT_UNIQUE},
+  {V_TYPEDATA, 9, 0, 0, LIST_ID, MR_ACE},
+  {V_CHAR, 1, LIST_TABLE, NAME},
+  {V_LEN, 10, LIST_TABLE, DESC},
+};
+
+static struct validate ulis_validate = {
+  ulis_valobj,
+  7,
+  NAME,
+  "list_id = %d",
+  1,
+  LIST_ID,
+  access_list,
+  setup_alis,
+  set_modtime_by_id,
+};
+
+static char *dlis_fields[] = {
+  NAME,
+};
+
+static struct valobj dlis_valobj[] ={
+  {V_RLOCK, 0, CAPACLS_TABLE, 0, LIST_ID, MR_DEADLOCK},
+  {V_RLOCK, 0, IMEMBERS_TABLE, 0, LIST_ID, MR_DEADLOCK},
+  {V_RLOCK, 0, FILESYS_TABLE, 0, FILSYS_ID, MR_DEADLOCK},
+  {V_LOCK, 0, LIST_TABLE, 0, LIST_ID, MR_DEADLOCK},
+  {V_RLOCK, 0, QUOTA_TABLE, 0, FILSYS_ID, MR_DEADLOCK},
+  {V_RLOCK, 0, ZEPHYR_TABLE, 0, ZEPH_ID, MR_DEADLOCK},  
+  {V_RLOCK, 0, HOSTACCESS_TABLE, 0, MACH_ID, MR_DEADLOCK},
+  {V_ID, 0, LIST_TABLE, NAME, LIST_ID, MR_LIST}
+};
+
+static struct validate dlis_validate = {
+  dlis_valobj,
+  8,
+  NAME,
+  "list_id = %d",
+  1,
+  0,
+  access_list,
+  setup_dlis,
+  0,
+};
+
+static char *amtl_fields[] = {
+  "list_name", "member_type", "member_name",
+};
+
+static struct valobj amtl_valobj[] = {
+  {V_RLOCK, 0, USERS_TABLE, 0, USERS_ID, MR_DEADLOCK},
+  {V_LOCK, 0, LIST_TABLE, 0, LIST_ID, MR_DEADLOCK},
+  {V_ID, 0, LIST_TABLE, NAME, LIST_ID, MR_LIST},
+  {V_TYPE, 1, 0, "member", 0, MR_TYPE},
+  {V_TYPEDATA, 2, 0, 0, 0, MR_NO_MATCH},
+};
+
+static struct validate amtl_validate =
+{
+  amtl_valobj,
+  5,
+  0,
+  0,
+  0,
+  0,
+  access_list,
+  0,
+  add_member_to_list,
+};
+
+static struct validate dmfl_validate =
+{
+  amtl_valobj,
+  5,
+  0,
+  0,
+  0,
+  0,
+  access_list,
+  0,
+  delete_member_from_list,
+};
+
+static char *gaus_fields[] = {
+  ACE_TYPE, ACE_NAME,
+  "use_type", "use_name",
+};
+
+static struct valobj gaus_valobj[] = {
+  {V_RLOCK, 0, FILESYS_TABLE, 0, FILSYS_ID, MR_DEADLOCK},
+  {V_RLOCK, 0, USERS_TABLE, 0, USERS_ID, MR_DEADLOCK},
+  {V_RLOCK, 0, LIST_TABLE, 0, LIST_ID, MR_DEADLOCK},
+  {V_RLOCK, 0, ZEPHYR_TABLE, 0, ZEPH_ID, MR_DEADLOCK},
+  {V_RLOCK, 0, HOSTACCESS_TABLE, 0, MACH_ID, MR_DEADLOCK},
+  {V_TYPE, 0, 0, "gaus", 0, MR_TYPE},
+  {V_TYPEDATA, 1, 0, 0, 0, MR_NO_MATCH},
+};
+
+static struct validate gaus_validate = {
+  gaus_valobj,
+  7,
+  0,
+  0,
+  0,
+  0,
+  access_member,
+  0,
+  get_ace_use,
+};
+
+static char *qgli_fields[] = {
+  "active", "publicflg", "hidden", "maillist", "grouplist",
+  "list",
+};
+
+static struct valobj qgli_valobj[] = {
+  {V_TYPE, 0, 0, "boolean", 0, MR_TYPE},
+  {V_TYPE, 1, 0, "boolean", 0, MR_TYPE},
+  {V_TYPE, 2, 0, "boolean", 0, MR_TYPE},
+  {V_TYPE, 3, 0, "boolean", 0, MR_TYPE},
+  {V_TYPE, 4, 0, "boolean", 0, MR_TYPE},
+};
+
+static struct validate qgli_validate = {
+  qgli_valobj,
+  5,
+  0,
+  0,
+  0,
+  0,
+  access_qgli,
+  0,
+  qualified_get_lists,
+};
+
+static char *gmol_fields[] = {
+  "list_name",
+  "member_type", "member_name",
+};
+
+static struct valobj gmol_valobj[]={
+  {V_LOCK, 0, IMEMBERS_TABLE, 0, LIST_ID, MR_DEADLOCK},
+  {V_RLOCK, 0, USERS_TABLE, 0, USERS_ID, MR_DEADLOCK},
+  {V_ID, 0, LIST_TABLE, NAME, LIST_ID, MR_LIST},
+
+};
+static struct validate gmol_validate = {
+ gmol_valobj,
+  3,
+  0,
+  0,
+  0,
+  0,
+  access_visible_list,
+  0,
+  get_members_of_list,
+};
+
+static struct validate geml_validate = {
+  gmol_valobj,
+  3,
+  0,
+  0,
+  0,
+  0,
+  access_visible_list,
+  0,
+  get_end_members_of_list,
+};
+
+static char *glom_fields[] = {
+  "member_type", "member_name",
+  "list_name", "active", "publicflg", "hidden", "maillist", "grouplist",
+};
+
+static struct valobj glom_valobj[] = {
+   {V_LOCK, 0, IMEMBERS_TABLE, 0, LIST_ID, MR_DEADLOCK},
+   {V_RLOCK, 0, USERS_TABLE, 0, USERS_ID, MR_DEADLOCK},
+   {V_RLOCK, 0, LIST_TABLE, 0, LIST_ID, MR_DEADLOCK},
+   {V_TYPE, 0, 0, "rmember", 0, MR_TYPE},
+   {V_TYPEDATA, 1, 0, 0, 0, MR_NO_MATCH},
+   {V_SORT, 0},
+};
+
+static struct validate glom_validate = {
+  glom_valobj,
+  6,
+  0,
+  0,
+  0,
+  0,
+  access_member,
+  0,
+  get_lists_of_member,
+};
+
+static char *cmol_fields[] = {
+  "list_name",
+  "count",
+};
+
+static struct validate cmol_validate = {
+  VOlist0,
+  1,
+  0,
+  0,
+  0,
+  0,
+  access_visible_list,
+  0,
+  count_members_of_list,
 };
 
 static char *gsin_fields[] = {
@@ -1189,13 +1532,15 @@ static char *gsin_fields[] = {
 
 static struct valobj gsin_valobj[] =
 {
-  { V_UPWILD, 0 },
+  {V_RLOCK, 0, USERS_TABLE, 0, USERS_ID, MR_DEADLOCK},
+  {V_RLOCK, 0, LIST_TABLE, 0, LIST_ID, MR_DEADLOCK},
+  {V_UPWILD, 0 },
 };
 
 static struct validate gsin_validate = 
 {
   gsin_valobj,
-  1,
+  3,
   0,
   0,
   0,
@@ -1211,9 +1556,9 @@ static char *qgsv_fields[] = {
 };
 
 static struct valobj qgsv_valobj[] = {
-  {V_TYPE, 0, "boolean", 0, 0, MR_TYPE},
-  {V_TYPE, 1, "boolean", 0, 0, MR_TYPE},
-  {V_TYPE, 2, "boolean", 0, 0, MR_TYPE},
+  {V_TYPE, 0, 0, "boolean", 0, MR_TYPE},
+  {V_TYPE, 1, 0, "boolean", 0, MR_TYPE},
+  {V_TYPE, 2, 0, "boolean", 0, MR_TYPE},
 };
 
 static struct validate qgsv_validate = {
@@ -1234,19 +1579,23 @@ static char *asin_fields[] = {
 };
 
 static struct valobj asin_valobj[] = {
-  {V_LOCK, 0, MACHINE, 0, MACH_ID, MR_DEADLOCK},
-  {V_CHAR, 0},
-  {V_TYPE, 4, "service", 0, 0, MR_TYPE},
-  {V_TYPE, 6, ACE_TYPE, 0, 0, MR_ACE},
+  {V_RLOCK, 0, USERS_TABLE, 0, USERS_ID, MR_DEADLOCK},
+  {V_LOCK, 0, MACHINE_TABLE, 0, MACH_ID, MR_DEADLOCK},
+  {V_RLOCK, 0, LIST_TABLE, 0, LIST_ID, MR_DEADLOCK},
+  {V_CHAR, 0, SERVERS_TABLE, SERVICE},
+  {V_LEN, 2, SERVERS_TABLE, "target_file"},
+  {V_LEN, 3, SERVERS_TABLE, "script"},
+  {V_TYPE, 4, 0, "service", 0, MR_TYPE},
+  {V_TYPE, 6, 0, ACE_TYPE, 0, MR_ACE},
   {V_TYPEDATA, 7, 0, 0, 0, MR_ACE},
 };
 
 static struct validate asin_validate =	/* for asin, usin */
 {
   asin_valobj,
-  5,
+  9,
   NAME,
-  "name = uppercase(LEFT('%s',SIZE(name)))",
+  "name = UPPER('%s')",
   1,
   0,
   0,
@@ -1256,9 +1605,9 @@ static struct validate asin_validate =	/* for asin, usin */
 
 static struct validate rsve_validate = {
   asin_valobj,
-  1,
+  3,
   NAME,
-  "name = uppercase('%s')",
+  "name = UPPER('%s')",
   1,
   0,
   access_service,
@@ -1270,11 +1619,18 @@ static char *ssif_fields[] = {
   SERVICE, "dfgen", "dfcheck", "inprogress", "harderror", "errmsg",
 };
 
+static struct valobj ssif_valobj[] = {
+  {V_RLOCK, 0, USERS_TABLE, 0, USERS_ID, MR_DEADLOCK},
+  {V_LOCK, 0, MACHINE_TABLE, 0, MACH_ID, MR_DEADLOCK},
+  {V_RLOCK, 0, LIST_TABLE, 0, LIST_ID, MR_DEADLOCK},
+  {V_LEN, 5, SERVERS_TABLE, "errmsg"},
+};
+
 static struct validate ssif_validate = {
-  asin_valobj,
-  1,
+  ssif_valobj,
+  4,
   NAME,
-  "name = uppercase('%s')",
+  "name = UPPER('%s')",
   1,
   0,
   0,
@@ -1288,9 +1644,9 @@ static char *dsin_fields[] = {
 
 static struct validate dsin_validate = {
   asin_valobj,
-  1,
+  3,
   NAME,
-  "name = uppercase('%s')",
+  "name = UPPER('%s')",
   1,
   0,
   0,
@@ -1328,11 +1684,11 @@ static char *qgsh_fields[] = {
 };
 
 static struct valobj qgsh_valobj[] = {
-  {V_TYPE, 1, "boolean", 0, 0, MR_TYPE},
-  {V_TYPE, 2, "boolean", 0, 0, MR_TYPE},
-  {V_TYPE, 3, "boolean", 0, 0, MR_TYPE},
-  {V_TYPE, 4, "boolean", 0, 0, MR_TYPE},
-  {V_TYPE, 5, "boolean", 0, 0, MR_TYPE},
+  {V_TYPE, 1, 0, "boolean", 0, MR_TYPE},
+  {V_TYPE, 2, 0, "boolean", 0, MR_TYPE},
+  {V_TYPE, 3, 0, "boolean", 0, MR_TYPE},
+  {V_TYPE, 4, 0, "boolean", 0, MR_TYPE},
+  {V_TYPE, 5, 0, "boolean", 0, MR_TYPE},
 };
 
 static struct validate qgsh_validate = {
@@ -1352,17 +1708,20 @@ static char *ashi_fields[] = {
 };
 
 static struct valobj ashi_valobj[] = {
-  {V_LOCK, 0, MACHINE, 0, MACH_ID, MR_DEADLOCK},
-  {V_NAME, 0, "servers", NAME, 0, MR_SERVICE},
-  {V_ID, 1, MACHINE, NAME, MACH_ID, MR_MACHINE},
+  {V_LOCK, 0, MACHINE_TABLE, 0, MACH_ID, MR_DEADLOCK},
+  {V_NAME, 0, SERVERS_TABLE, NAME, 0, MR_SERVICE},
+  {V_LOCK, 0, SERVERHOSTS_TABLE,0, MACH_ID, MR_DEADLOCK},
+  {V_ID, 1, MACHINE_TABLE, NAME, MACH_ID, MR_MACHINE},
+  {V_CHAR, 0, SERVERHOSTS_TABLE, NAME},
+  {V_LEN, 5, SERVERHOSTS_TABLE, "value3"},
 };
 
 static struct validate ashi_validate = /* ashi & ushi */
 {
   ashi_valobj,
-  3,
+  6,
   SERVICE,
-  "service = uppercase(LEFT('%s',SIZE(service))) AND mach_id = %d",
+  "service = UPPER('%s') AND mach_id = %d",
   2,
   0,
   access_service,
@@ -1373,9 +1732,9 @@ static struct validate ashi_validate = /* ashi & ushi */
 static struct validate rshe_validate =	
 {
   ashi_valobj,
-  3,
+  4,
   SERVICE,
-  "service = uppercase('%s') AND mach_id = %d",
+  "service = UPPER('%s') AND mach_id = %d",
   2,
   0,
   access_service,
@@ -1386,9 +1745,9 @@ static struct validate rshe_validate =
 static struct validate ssho_validate =	
 {
   ashi_valobj,
-  3,
+  4,
   SERVICE,
-  "service = uppercase('%s') AND mach_id = %d",
+  "service = UPPER('%s') AND mach_id = %d",
   2,
   0,
   access_service,
@@ -1402,20 +1761,22 @@ static char *sshi_fields[] = {
 };
 
 static struct valobj sshi_valobj[] = {
-  {V_NAME, 0, "servers", NAME, 0, MR_SERVICE},
-  {V_ID, 1, MACHINE, NAME, MACH_ID, MR_MACHINE},  /** Was this ok to add? */
+  {V_RLOCK, 0, MACHINE_TABLE, 0, MACH_ID, MR_DEADLOCK},
+  {V_NAME, 0, SERVERS_TABLE, NAME, 0, MR_SERVICE},
+  {V_ID, 1, MACHINE_TABLE, NAME, MACH_ID, MR_MACHINE},  /** Was this ok to add? */
+  {V_LEN, 5, SERVERS_TABLE, "errmsg"},
 };
 
 static struct validate sshi_validate =	
 {
   sshi_valobj,
-  2,
+  4,
   0,
   0,
   0,
   0,
   0,
-  setup_sshi,
+  0,
   0,
 };
 
@@ -1426,55 +1787,14 @@ static char *dshi_fields[] = {
 static struct validate dshi_validate =	
 {
   ashi_valobj,
-  3,
+  4,
   SERVICE,
-  "service = uppercase('%s') AND mach_id = %d",
+  "service = UPPER('%s') AND mach_id = %d",
   2,
   0,
   access_service,
   setup_dshi,
   0,
-};
-
-static char *gsha_fields[] = {
-  MACHINE,
-  MACHINE, ACE_TYPE, ACE_NAME, MOD1, MOD2, MOD3,
-};
-
-static struct validate gsha_validate =	
-{
-  VOupwild0,
-  1,
-  0,
-  0,
-  0,
-  0,
-  0,
-  0,
-  followup_gsha,
-};
-
-static char *asha_fields[] = {
-  MACHINE, ACE_TYPE, ACE_NAME,
-};
-
-static struct valobj asha_valobj[] = {
-  {V_ID, 0, MACHINE, NAME, MACH_ID, MR_MACHINE},
-  {V_TYPE, 1, ACE_TYPE, 0, 0, MR_ACE},
-  {V_TYPEDATA, 2, 0, 0, 0, MR_ACE},
-};
-
-static struct validate asha_validate =	
-{
-  asha_valobj,
-  3,
-  MACH_ID,
-  "mach_id = %d",
-  1,
-  MACH_ID,
-  0,
-  0,
-  set_modtime_by_id,
 };
 
 static char *gslo_fields[] = {
@@ -1494,9 +1814,14 @@ static char *gfsm_fields[] = {
   "create", "lockertype", MOD1, MOD2, MOD3,
 };
 
+static struct valobj gfsm_valobj[] = {
+  {V_RLOCK, 0, FILESYS_TABLE, 0, FILSYS_ID, MR_DEADLOCK},
+  {V_ID, 0, MACHINE_TABLE, NAME, MACH_ID, MR_MACHINE},
+};
+
 static struct validate gfsm_validate = {
-  VOmach0,
-  1,
+  gfsm_valobj,
+  2,
   0,
   0,
   0,
@@ -1514,13 +1839,14 @@ static char *gfsn_fields[] = {
 
 static struct valobj gfsn_valobj[] =
 {
-  {V_ID, 0, MACHINE, NAME, MACH_ID, MR_MACHINE},
+  {V_RLOCK, 0, FILESYS_TABLE, 0, FILSYS_ID, MR_DEADLOCK},
+  {V_ID, 0, MACHINE_TABLE, NAME, MACH_ID, MR_MACHINE},
   {V_WILD, 1},
 };
 
 static struct validate gfsn_validate = {
   gfsn_valobj,
-  2,
+  3,
   0,
   0,
   0,
@@ -1542,9 +1868,14 @@ static char *gfsg_fields[] = {
   "create", "lockertype", MOD1, MOD2, MOD3,
 };
 
+static struct valobj gfsg_valobj[] = {
+  {V_RLOCK, 0, FILESYS_TABLE, 0, FILSYS_ID, MR_DEADLOCK},
+  {V_ID, 0, LIST_TABLE, NAME, LIST_ID, MR_LIST}
+};
+
 static struct validate gfsg_validate = {
-  VOlist0,
-  1,
+  gfsg_valobj,
+  2,
   0,
   0,
   0,
@@ -1560,21 +1891,26 @@ static char *afil_fields[] = {
 };
 
 static struct valobj afil_valobj[] = {
-  {V_CHAR, 0},
-  {V_LOCK, 0, FILESYS, 0, FILSYS_ID, MR_DEADLOCK},
-  {V_TYPE, 1, FILESYS, 0, 0, MR_FSTYPE},
-  {V_ID, 2, MACHINE, NAME, MACH_ID, MR_MACHINE},
-  {V_CHAR, 3},
-  {V_ID, 7, USERS, LOGIN, USERS_ID, MR_USER},
-  {V_ID, 8, LIST, NAME, LIST_ID, MR_LIST},
-  {V_TYPE, 10, "lockertype", 0, 0, MR_TYPE}
+  {V_LOCK, 0, FILESYS_TABLE, 0, FILSYS_ID, MR_DEADLOCK},
+  {V_RLOCK, 0, USERS_TABLE, 0, USERS_ID, MR_DEADLOCK},
+  {V_RLOCK, 0, MACHINE_TABLE, 0, MACH_ID, MR_DEADLOCK},
+  {V_RLOCK, 0, LIST_TABLE, 0, LIST_ID, MR_DEADLOCK},
+  {V_CHAR, 0, FILESYS_TABLE, LABEL},
+  {V_TYPE, 1, 0, "filesys", 0, MR_FSTYPE},
+  {V_ID, 2, MACHINE_TABLE, NAME, MACH_ID, MR_MACHINE},
+  {V_CHAR, 3, FILESYS_TABLE, NAME},
+  {V_LEN, 4, FILESYS_TABLE, "mount"},
+  {V_LEN, 6, FILESYS_TABLE, COMMENTS},
+  {V_ID, 7, USERS_TABLE, LOGIN, USERS_ID, MR_USER},
+  {V_ID, 8, LIST_TABLE, NAME, LIST_ID, MR_LIST},
+  {V_TYPE, 10, 0, "lockertype", 0, MR_TYPE},
 };
 
 static struct validate afil_validate = {
   afil_valobj,
-  8,
+  13,
   LABEL,
-  "label = LEFT('%s',SIZE(label))",
+  "label = '%s'",
   1,
   FILSYS_ID,
   0,
@@ -1588,20 +1924,26 @@ static char *ufil_fields[] = {
 };
 
 static struct valobj ufil_valobj[] = {
-  {V_LOCK, 0, FILESYS, 0, FILSYS_ID, MR_DEADLOCK},
-  {V_ID, 0, FILESYS, LABEL, FILSYS_ID, MR_FILESYS},
-  {V_RENAME, 1, FILESYS, LABEL, FILSYS_ID, MR_NOT_UNIQUE},
-  {V_TYPE, 2, FILESYS, 0, 0, MR_FSTYPE},
-  {V_ID, 3, MACHINE, NAME, MACH_ID, MR_MACHINE},
-  {V_CHAR, 4},
-  {V_ID, 8, USERS, LOGIN, USERS_ID, MR_USER},
-  {V_ID, 9, LIST, NAME, LIST_ID, MR_LIST},
-  {V_TYPE, 11, "lockertype", 0, 0, MR_TYPE}
+  {V_LOCK, 0, FILESYS_TABLE, 0, FILSYS_ID, MR_DEADLOCK},
+  {V_RLOCK, 0, USERS_TABLE, 0, USERS_ID, MR_DEADLOCK},
+  {V_RLOCK, 0, MACHINE_TABLE, 0, MACH_ID, MR_DEADLOCK},
+  {V_RLOCK, 0, LIST_TABLE, 0, LIST_ID, MR_DEADLOCK},
+  {V_LOCK, 0, QUOTA_TABLE, 0, FILSYS_ID, MR_DEADLOCK},
+  {V_ID, 0, FILESYS_TABLE, LABEL, FILSYS_ID, MR_FILESYS},
+  {V_RENAME, 1, FILESYS_TABLE, LABEL, FILSYS_ID, MR_NOT_UNIQUE},
+  {V_TYPE, 2, 0, "filesys", 0, MR_FSTYPE},
+  {V_ID, 3, MACHINE_TABLE, NAME, MACH_ID, MR_MACHINE},
+  {V_CHAR, 4, FILESYS_TABLE, NAME},
+  {V_LEN, 5, FILESYS_TABLE, "mount"},
+  {V_LEN, 7, FILESYS_TABLE, COMMENTS},
+  {V_ID, 8, USERS_TABLE, LOGIN, USERS_ID, MR_USER},
+  {V_ID, 9, LIST_TABLE, NAME, LIST_ID, MR_LIST},
+  {V_TYPE, 11, 0, "lockertype", 0, MR_TYPE},
 };
 
 static struct validate ufil_validate = {
   ufil_valobj,
-  9,
+  15,
   LABEL,
   "filsys_id = %d",
   1,
@@ -1616,13 +1958,16 @@ static char *dfil_fields[] = {
 };
 
 static struct valobj dfil_valobj[] = {
-  {V_LOCK, 0, FILESYS, 0, FILSYS_ID, MR_DEADLOCK},
-  {V_ID, 0, FILESYS, LABEL, FILSYS_ID, MR_FILESYS},
+  {V_LOCK, 0, FILESYS_TABLE, 0, FILSYS_ID, MR_DEADLOCK},
+  {V_LOCK, 0, NFSPHYS_TABLE, 0, "nfsphys_id", MR_DEADLOCK},
+  {V_LOCK, 0, QUOTA_TABLE, 0, FILSYS_ID, MR_DEADLOCK},
+  {V_LOCK, 0, FSGROUP_TABLE, 0, "filsys_id", MR_DEADLOCK},
+  {V_ID, 0, FILESYS_TABLE, LABEL, FILSYS_ID, MR_FILESYS},
 };
 
 static struct validate dfil_validate = {
   dfil_valobj,
-  2,
+  5,
   "label",
   "filsys_id = %d",
   1,
@@ -1637,7 +1982,7 @@ static char *gfgm_fields[] = {
     };
 
 static struct valobj gfgm_valobj[] = {
-  {V_ID, 0, FILESYS, LABEL, FILSYS_ID, MR_FILESYS},
+  {V_ID, 0, FILESYS_TABLE, LABEL, FILSYS_ID, MR_FILESYS},
   {V_SORT, 1},
   {V_SORT, 0},
 };
@@ -1655,14 +2000,15 @@ static struct validate gfgm_validate = {
 };
 
 static struct valobj aftg_valobj[] = {
-  {V_LOCK, 0, FILESYS, 0, FILSYS_ID, MR_DEADLOCK},
-  {V_ID, 0, FILESYS, LABEL, FILSYS_ID, MR_FILESYS},
-  {V_ID, 1, FILESYS, LABEL, FILSYS_ID, MR_FILESYS},
+  {V_LOCK, 0, FILESYS_TABLE, 0, FILSYS_ID, MR_DEADLOCK},
+  {V_LOCK, 0, FSGROUP_TABLE, 0, "filsys_id", MR_DEADLOCK},
+  {V_ID, 0, FILESYS_TABLE, LABEL, FILSYS_ID, MR_FILESYS},
+  {V_ID, 1, FILESYS_TABLE, LABEL, FILSYS_ID, MR_FILESYS},
 };
 
 static struct validate aftg_validate = {
   aftg_valobj,
-  3,
+  4,
   "group_id",
   "group_id = %d and filsys_id = %d",
   2,
@@ -1682,13 +2028,14 @@ static char *gnfp_fields[] = {
 };
 
 static struct valobj gnfp_valobj[] = {
-  {V_ID, 0, MACHINE, NAME, MACH_ID, MR_MACHINE},
+  {V_ID, 0, MACHINE_TABLE, NAME, MACH_ID, MR_MACHINE},
+  {V_RLOCK, 0, NFSPHYS_TABLE, 0, "nfsphys_id", MR_DEADLOCK},
   {V_WILD, 1},
 };
 
 static struct validate gnfp_validate = {
   gnfp_valobj,
-  2,
+  3,
   0,
   0,
   0,
@@ -1699,15 +2046,18 @@ static struct validate gnfp_validate = {
 };
 
 static struct valobj anfp_valobj[] = {
-  {V_ID, 0, MACHINE, NAME, MACH_ID, MR_MACHINE},
-  {V_CHAR, 1},
+  {V_RLOCK, 0, MACHINE_TABLE, 0, MACH_ID, MR_DEADLOCK},
+  {V_LOCK, 0, NFSPHYS_TABLE, 0, "nfsphys_id", MR_DEADLOCK},
+  {V_ID, 0, MACHINE_TABLE, NAME, MACH_ID, MR_MACHINE},
+  {V_CHAR, 1, NFSPHYS_TABLE, "dir"},
+  {V_LEN, 2, NFSPHYS_TABLE, "device"},
 };
 
 static struct validate anfp_validate = {
   anfp_valobj,
-  2,
+  5,
   DIR,
-  "mach_id = %d and dir = LEFT('%s',SIZE(dir))",
+  "mach_id = %d and dir = '%s'",
   2,
   "nfsphys_id",
   0,
@@ -1717,7 +2067,7 @@ static struct validate anfp_validate = {
 
 static struct validate unfp_validate = {
   anfp_valobj,
-  2,
+  5,
   DIR,
   "mach_id = %d and dir = '%s'",
   2,
@@ -1735,9 +2085,17 @@ static char *dnfp_fields[] = {
   MACHINE, DIR,
 };
 
+static struct valobj dnfp_valobj[] = {
+  {V_RLOCK, 0, FILESYS_TABLE, 0, FILSYS_ID, MR_DEADLOCK},
+  {V_LOCK, 0, MACHINE_TABLE, 0, MACH_ID, MR_DEADLOCK},
+  {V_LOCK, 0, NFSPHYS_TABLE, 0, "nfsphys_id", MR_DEADLOCK},
+  {V_ID, 0, MACHINE_TABLE, NAME, MACH_ID, MR_MACHINE},
+
+};
+
 static struct validate dnfp_validate = {
-  VOmach0,
-  1,
+  dnfp_valobj,
+  4,
   DIR,
   "mach_id = %d and dir = '%s'",
   2,
@@ -1753,15 +2111,20 @@ static char *gqot_fields[] = {
 };
 
 static struct valobj gqot_valobj[] = {
+  {V_RLOCK, 0, FILESYS_TABLE, 0, FILSYS_ID, MR_DEADLOCK},
+  {V_RLOCK, 0, USERS_TABLE, 0, USERS_ID, MR_DEADLOCK},
+  {V_RLOCK, 0, LIST_TABLE, 0, LIST_ID, MR_DEADLOCK},
+  {V_RLOCK, 0, NFSPHYS_TABLE, 0, "nfsphys_id", MR_DEADLOCK},
+  {V_RLOCK, 0, QUOTA_TABLE, 0, FILSYS_ID, MR_DEADLOCK},
   {V_WILD, 0},
-  {V_TYPE, 1, QUOTA_TYPE, 0, 0, MR_TYPE},
+  {V_TYPE, 1, 0, QUOTA_TYPE, 0, MR_TYPE},
   {V_TYPEDATA, 2, 0, 0, 0, MR_ACE},
   {V_SORT, 0, 0, 0, 0, 0},
 };
 
 static struct validate gqot_validate = {
   gqot_valobj,
-  4,
+  9,
   0,
   0,
   0,
@@ -1793,15 +2156,19 @@ static char *aqot_fields[] = {
 };
 
 static struct valobj aqot_valobj[] = {
-  {V_LOCK, 0, FILESYS, 0, FILSYS_ID, MR_DEADLOCK},
-  {V_ID, 0, FILESYS, LABEL, FILSYS_ID, MR_FILESYS},
-  {V_TYPE, 1, QUOTA_TYPE, 0, 0, MR_TYPE},
+  {V_LOCK, 0, FILESYS_TABLE, 0, FILSYS_ID, MR_DEADLOCK},
+  {V_RLOCK, 0, USERS_TABLE, 0, USERS_ID, MR_DEADLOCK},
+  {V_RLOCK, 0, LIST_TABLE, 0, LIST_ID, MR_DEADLOCK},
+  {V_LOCK, 0, NFSPHYS_TABLE, 0, "nfsphys_id", MR_DEADLOCK},
+  {V_LOCK, 0, QUOTA_TABLE, 0, FILSYS_ID, MR_DEADLOCK},
+  {V_ID, 0, FILESYS_TABLE, LABEL, FILSYS_ID, MR_FILESYS},
+  {V_TYPE, 1, 0, QUOTA_TYPE, 0, MR_TYPE},
   {V_TYPEDATA, 2, 0, 0, 0, MR_ACE},
 };
 
 static struct validate aqot_validate = {
   aqot_valobj,
-  4,
+  8,
   FILSYS_ID,
   "filsys_id = %d and type = '%s' and entity_id = %d",
   3,
@@ -1813,7 +2180,7 @@ static struct validate aqot_validate = {
 
 static struct validate uqot_validate = {
   aqot_valobj,
-  4,
+  8,
   FILSYS_ID,
   "filsys_id = %d AND type = '%s' AND entity_id = %d",
   3,
@@ -1825,7 +2192,7 @@ static struct validate uqot_validate = {
 
 static struct validate dqot_validate = {
   aqot_valobj,
-  4,
+  8,
   FILSYS_ID,
   "filsys_id = %d AND type = '%s' AND entity_id = %d",
   3,
@@ -1858,7 +2225,7 @@ static char *gnqp_fields[] = {
 };
 
 static struct valobj gnqp_valobj[] = {
-  {V_ID, 0, MACHINE, NAME, MACH_ID, MR_MACHINE},
+  {V_ID, 0, MACHINE_TABLE, NAME, MACH_ID, MR_MACHINE},
   {V_WILD, 1},
 };
 
@@ -1904,252 +2271,22 @@ static struct validate dnfq_validate = {
   followup_dqot,
 };
 
-static char *glin_fields[] = {
-  NAME,
-  NAME, "active", "publicflg", "hidden", "maillist", "grouplist", "gid",
-  ACE_TYPE, ACE_NAME, DESC, MOD1, MOD2, MOD3,
-};
-
-static struct validate glin_validate = {
-  0,
-  0,
-  0,
-  0,
-  0,
-  0,
-  access_vis_list_by_name,
-  0,
-  get_list_info,
-};
-
-static char *alis_fields[] = {
-  NAME, "active", "publicflg", "hidden", "maillist", "grouplist", "gid",
-  ACE_TYPE, ACE_NAME, DESC,
-};
-
-static struct valobj alis_valobj[] = {
-  {V_LOCK, 0, LIST, 0, LIST_ID, MR_DEADLOCK},
-  {V_CHAR, 0},
-  {V_TYPE, 7, ACE_TYPE, 0, 0, MR_ACE},
-  {V_TYPEDATA, 8, 0, 0, LIST_ID, MR_ACE},
-};
-
-static struct validate alis_validate = {
-  alis_valobj,
-  4,
-  NAME,
-  "name = LEFT('%s',SIZE(name))",
-  1,
-  LIST_ID,
-  0,
-  setup_alis,
-  set_modtime,
-};
-
-static char *ulis_fields[] = {
-  NAME,
-  "newname", "active", "publicflg", "hidden", "maillist", "grouplist", "gid",
-  ACE_TYPE, ACE_NAME, DESC,
-};
-
-static struct valobj ulis_valobj[] = {
-  {V_LOCK, 0, LIST, 0, LIST_ID, MR_DEADLOCK},
-  {V_ID, 0, LIST, NAME, LIST_ID, MR_LIST},
-  {V_RENAME, 1, LIST, NAME, LIST_ID, MR_NOT_UNIQUE},
-  {V_TYPE, 8, ACE_TYPE, 0, 0, MR_ACE},
-  {V_TYPEDATA, 9, 0, 0, LIST_ID, MR_ACE},
-};
-
-static struct validate ulis_validate = {
-  ulis_valobj,
-  5,
-  NAME,
-  "list_id = %d",
-  1,
-  LIST_ID,
-  access_list,
-  setup_alis,
-  set_modtime_by_id,
-};
-
-static char *dlis_fields[] = {
-  NAME,
-};
-
-static struct validate dlis_validate = {
-  VOlist0,
-  1,
-  NAME,
-  "list_id = %d",
-  1,
-  0,
-  access_list,
-  setup_dlis,
-  0,
-};
-
-static char *amtl_fields[] = {
-  "list_name", "member_type", "member_name",
-};
-
-static struct valobj amtl_valobj[] = {
-  {V_LOCK, 0, LIST, 0, LIST_ID, MR_DEADLOCK},
-  {V_ID, 0, LIST, NAME, LIST_ID, MR_LIST},
-  {V_TYPE, 1, "member", 0, 0, MR_TYPE},
-  {V_TYPEDATA, 2, 0, 0, 0, MR_NO_MATCH},
-};
-
-static struct validate amtl_validate =
-{
-  amtl_valobj,
-  4,
-  0,
-  0,
-  0,
-  0,
-  access_list,
-  0,
-  add_member_to_list,
-};
-
-static struct validate dmfl_validate =
-{
-  amtl_valobj,
-  4,
-  0,
-  0,
-  0,
-  0,
-  access_list,
-  0,
-  delete_member_from_list,
-};
-
-static char *gaus_fields[] = {
-  ACE_TYPE, ACE_NAME,
-  "use_type", "use_name",
-};
-
-static struct valobj gaus_valobj[] = {
-  {V_TYPE, 0, "gaus", 0, 0, MR_TYPE},
-  {V_TYPEDATA, 1, 0, 0, 0, MR_NO_MATCH},
-};
-
-static struct validate gaus_validate = {
-  gaus_valobj,
-  2,
-  0,
-  0,
-  0,
-  0,
-  access_member,
-  0,
-  get_ace_use,
-};
-
-static char *qgli_fields[] = {
-  "active", "publicflg", "hidden", "maillist", "grouplist",
-  "list",
-};
-
-static struct valobj qgli_valobj[] = {
-  {V_TYPE, 0, "boolean", 0, 0, MR_TYPE},
-  {V_TYPE, 1, "boolean", 0, 0, MR_TYPE},
-  {V_TYPE, 2, "boolean", 0, 0, MR_TYPE},
-  {V_TYPE, 3, "boolean", 0, 0, MR_TYPE},
-  {V_TYPE, 4, "boolean", 0, 0, MR_TYPE},
-};
-
-static struct validate qgli_validate = {
-  qgli_valobj,
-  5,
-  0,
-  0,
-  0,
-  0,
-  access_qgli,
-  0,
-  qualified_get_lists,
-};
-
-static char *gmol_fields[] = {
-  "list_name",
-  "member_type", "member_name",
-};
-
-static struct validate gmol_validate = {
-  VOlist0,
-  1,
-  0,
-  0,
-  0,
-  0,
-  access_visible_list,
-  0,
-  get_members_of_list,
-};
-
-static struct validate geml_validate = {
-  VOlist0,
-  1,
-  0,
-  0,
-  0,
-  0,
-  access_visible_list,
-  0,
-  get_end_members_of_list,
-};
-
-static char *glom_fields[] = {
-  "member_type", "member_name",
-  "list_name", "active", "publicflg", "hidden", "maillist", "grouplist",
-};
-
-static struct valobj glom_valobj[] = {
-  {V_TYPE, 0, "rmember", 0, 0, MR_TYPE},
-  {V_TYPEDATA, 1, 0, 0, 0, MR_NO_MATCH},
-  {V_SORT, 0},
-};
-
-static struct validate glom_validate = {
-  glom_valobj,
-  3,
-  0,
-  0,
-  0,
-  0,
-  access_member,
-  0,
-  get_lists_of_member,
-};
-
-static char *cmol_fields[] = {
-  "list_name",
-  "count",
-};
-
-static struct validate cmol_validate = {
-  VOlist0,
-  1,
-  0,
-  0,
-  0,
-  0,
-  access_visible_list,
-  0,
-  count_members_of_list,
-};
-
 static char *gzcl_fields[] = {
   CLASS,
   CLASS, "xmt_type", "xmt_name", "sub_type", "sub_name",
   "iws_type", "iws_name", "iui_type", "iui_name", MOD1, MOD2, MOD3, 
 };
 
+static struct valobj gzcl_valobj[] = {
+  {V_RLOCK, 0, USERS_TABLE, 0, USERS_ID, MR_DEADLOCK},
+  {V_RLOCK, 0, LIST_TABLE, 0, LIST_ID, MR_DEADLOCK},
+  {V_RLOCK, 0, ZEPHYR_TABLE, 0, ZEPH_ID, MR_DEADLOCK},
+  {V_WILD, 0},
+  {V_SORT, 0},
+};
 static struct validate gzcl_validate = {
-  VOwild0sort,
-  2,
+  gzcl_valobj,
+  5,
   0,
   0,
   0,
@@ -2165,22 +2302,25 @@ static char *azcl_fields[] = {
 };
 
 static struct valobj azcl_valobj[] = {
-  {V_CHAR, 0},
-  {V_TYPE, 1, ACE_TYPE, 0, 0, MR_ACE},
+  {V_RLOCK, 0, USERS_TABLE, 0, USERS_ID, MR_DEADLOCK},
+  {V_RLOCK, 0, LIST_TABLE, 0, LIST_ID, MR_DEADLOCK},
+  {V_LOCK, 0, ZEPHYR_TABLE, 0, ZEPH_ID, MR_DEADLOCK}, 
+  {V_CHAR, 0, ZEPHYR_TABLE, CLASS},
+  {V_TYPE, 1, 0, ACE_TYPE, 0, MR_ACE},
   {V_TYPEDATA, 2, 0, 0, LIST_ID, MR_ACE},
-  {V_TYPE, 3, ACE_TYPE, 0, 0, MR_ACE},
+  {V_TYPE, 3, 0, ACE_TYPE, 0, MR_ACE},
   {V_TYPEDATA, 4, 0, 0, LIST_ID, MR_ACE},
-  {V_TYPE, 5, ACE_TYPE, 0, 0, MR_ACE},
+  {V_TYPE, 5, 0, ACE_TYPE, 0, MR_ACE},
   {V_TYPEDATA, 6, 0, 0, LIST_ID, MR_ACE},
-  {V_TYPE, 7, ACE_TYPE, 0, 0, MR_ACE},
+  {V_TYPE, 7, 0, ACE_TYPE, 0, MR_ACE},
   {V_TYPEDATA, 8, 0, 0, LIST_ID, MR_ACE},
 };
 
 static struct validate azcl_validate = {
   azcl_valobj,
-  9,
+  12,
   CLASS,
-  "class = LEFT('%s',SIZE(class))",
+  "class = '%s'",
   1,
   0,
   0,
@@ -2194,20 +2334,23 @@ static char *uzcl_fields[] = {
 };
 
 static struct valobj uzcl_valobj[] = {
-  {V_RENAME, 1, "zephyr", CLASS, 0, MR_NOT_UNIQUE},
-  {V_TYPE, 2, ACE_TYPE, 0, 0, MR_ACE},
+  {V_RLOCK, 0, USERS_TABLE, 0, USERS_ID, MR_DEADLOCK},
+  {V_RLOCK, 0, LIST_TABLE, 0, LIST_ID, MR_DEADLOCK},
+  {V_LOCK, 0, ZEPHYR_TABLE, 0, ZEPH_ID, MR_DEADLOCK},
+  {V_RENAME, 1, ZEPHYR_TABLE, CLASS, 0, MR_NOT_UNIQUE},
+  {V_TYPE, 2, 0, ACE_TYPE, 0, MR_ACE},
   {V_TYPEDATA, 3, 0, 0, LIST_ID, MR_ACE},
-  {V_TYPE, 4, ACE_TYPE, 0, 0, MR_ACE},
+  {V_TYPE, 4, 0, ACE_TYPE, 0, MR_ACE},
   {V_TYPEDATA, 5, 0, 0, LIST_ID, MR_ACE},
-  {V_TYPE, 6, ACE_TYPE, 0, 0, MR_ACE},
+  {V_TYPE, 6, 0, ACE_TYPE, 0, MR_ACE},
   {V_TYPEDATA, 7, 0, 0, LIST_ID, MR_ACE},
-  {V_TYPE, 8, ACE_TYPE, 0, 0, MR_ACE},
+  {V_TYPE, 8, 0, ACE_TYPE, 0, MR_ACE},
   {V_TYPEDATA, 9, 0, 0, LIST_ID, MR_ACE},
 };
 
 static struct validate uzcl_validate = {
   uzcl_valobj,
-  9,
+  12,
   CLASS,
   "class = '%s'",
   1,
@@ -2229,6 +2372,49 @@ static struct validate dzcl_validate = {
   0,
 };
 
+static char *gsha_fields[] = {
+  MACHINE,
+  MACHINE, ACE_TYPE, ACE_NAME, MOD1, MOD2, MOD3,
+};
+
+static struct validate gsha_validate =	
+{
+  VOupwild0,
+  1,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  followup_gsha,
+};
+
+static char *asha_fields[] = {
+  MACHINE, ACE_TYPE, ACE_NAME,
+};
+
+static struct valobj asha_valobj[] = {
+  {V_RLOCK, 0, USERS_TABLE, 0, USERS_ID, MR_DEADLOCK},
+  {V_ID, 0, MACHINE_TABLE, NAME, MACH_ID, MR_MACHINE},
+  {V_RLOCK, 0, LIST_TABLE, 0, LIST_ID, MR_DEADLOCK},
+  {V_TYPE, 1, 0, ACE_TYPE, 0, MR_ACE},
+  {V_TYPEDATA, 2, 0, 0, 0, MR_ACE},
+};
+
+static struct validate asha_validate =	
+{
+  asha_valobj,
+  5,
+  MACH_ID,
+  "mach_id = %d",
+  1,
+  MACH_ID,
+  0,
+  0,
+  set_modtime_by_id,
+};
+
 static char *gsvc_fields[] = {
   SERVICE,
   SERVICE, "protocol", "port", DESC, MOD1, MOD2, MOD3,
@@ -2238,11 +2424,17 @@ static char *asvc_fields[] = {
   SERVICE, "protocol", "port", DESC,
 };
 
+static struct valobj asvc_valobj[] = {
+  {V_CHAR, 0, SERVICES_TABLE, NAME},
+  {V_CHAR, 1, SERVICES_TABLE, "protocol"},
+  {V_CHAR, 3, SERVICES_TABLE, DESC},
+};
+
 static struct validate asvc_validate = {
-  VOchar0,
-  1,
+  asvc_valobj,
+  3,
   NAME,
-  "name = LEFT('%s',SIZE(name))",
+  "name = '%s'",
   1,
   0,
   0,
@@ -2257,9 +2449,17 @@ static char *gpce_fields[] = {
   MOD1, MOD2, MOD3,
 };
 
+static struct valobj gpce_valobj[]={
+  {V_RLOCK, 0, USERS_TABLE, 0, USERS_ID, MR_DEADLOCK},
+  {V_RLOCK, 0, MACHINE_TABLE, 0, MACH_ID, MR_DEADLOCK},
+  {V_RLOCK, 0, PRINTCAP_TABLE, 0, MACH_ID, MR_DEADLOCK},
+  {V_WILD, 0},
+  {V_SORT, 0},
+};
+
 static struct validate gpce_validate = {
-  VOwild0sort,
-  2,
+  gpce_valobj,
+  5,
   0,
   0,
   0,
@@ -2276,16 +2476,19 @@ static char *apce_fields[] = {
 };
 
 static struct valobj apce_valobj[] = {
-  {V_CHAR, 0},
-  {V_ID, 1, MACHINE, NAME, MACH_ID, MR_MACHINE},
-  {V_ID, 4, MACHINE, NAME, MACH_ID, MR_MACHINE},
+  {V_CHAR, 0, PRINTCAP_TABLE, NAME},
+  {V_ID, 1, MACHINE_TABLE, NAME, MACH_ID, MR_MACHINE},
+  {V_LEN, 2, PRINTCAP_TABLE, "dir"},
+  {V_LEN, 3, PRINTCAP_TABLE, "rp"},
+  {V_ID, 4, MACHINE_TABLE, NAME, MACH_ID, MR_MACHINE},
+  {V_CHAR, 7, PRINTCAP_TABLE, "comments"},
 };
 
 static struct validate apce_validate = {
   apce_valobj,
-  3,
+  6,
   NAME,
-  "name = LEFT('%s',SIZE(name))",
+  "name = '%s'",
   1,
   0,
   0,
@@ -2318,18 +2521,18 @@ static char *gpdm_fields[] = {
 
 static char *apdm_fields[] = {
   NAME, "rpcnum", "host"
-    };
+};
 
 static struct valobj apdm_valobj[] = {
-  {V_CHAR, 0},
-  {V_ID, 2, MACHINE, NAME, MACH_ID, MR_MACHINE},
+  {V_CHAR, 0, PALLADIUM_TABLE, NAME},
+  {V_ID, 2, MACHINE_TABLE, NAME, MACH_ID, MR_MACHINE},
 };
 
 static struct validate apdm_validate = {
   apdm_valobj,
   2,
   NAME,
-  "name = LEFT('%s',SIZE(name))",
+  "name = '%s'",
   1,
   0,
   0,
@@ -2359,16 +2562,16 @@ static char *aali_fields[] = {
 };
 
 static struct valobj aali_valobj[] = {
-  {V_CHAR, 0},
-  {V_TYPE, 1, ALIAS, 0, 0, MR_TYPE},
-  {V_CHAR, 2},
+  {V_CHAR, 0, ALIAS_TABLE, NAME},
+  {V_TYPE, 1, 0, ALIAS, 0, MR_TYPE},
+  {V_CHAR, 2, ALIAS_TABLE, "trans"},
 };
 
 static struct validate aali_validate = {
   aali_valobj,
   3,
   "trans",
-  "name = LEFT('%s',SIZE(name)) and type = '%s' and trans = LEFT('%s',SIZE(trans))",
+  "name = '%s' and type = '%s' and trans = '%s'",
   3,
   0,
   0,
@@ -2394,7 +2597,7 @@ static char *gval_fields[] = {
 };
 
 static struct valobj gval_valobj[] = {
-  {V_NAME, 0, "numvalues", NAME, 0, MR_NO_MATCH},
+  {V_NAME, 0, NUMVALUES_TABLE, NAME, 0, MR_NO_MATCH},
 };
 
 static struct validate gval_validate = {
@@ -2413,12 +2616,16 @@ static char *aval_fields[] = {
   NAME, "value",
 };
 
+static struct valobj aval_valobj[] = {
+  {V_CHAR, 0, NUMVALUES_TABLE, NAME},
+};
+
 static struct validate aval_validate =	/* for aval, uval, and dval */
 {
-  VOchar0,
+  aval_valobj,
   1,
   NAME,
-  "name = LEFT('%s',SIZE(name))",  /* LEFT() only needed for aval */
+  "name = '%s'",
   1,
   0,
   0,
@@ -2466,8 +2673,8 @@ struct query Queries2[] = {
     "galo",
     RETRIEVE,
     "u",
-    USERS,
-    "CHAR(u.login), CHAR(u.uid), u.shell, CHAR(u.last), CHAR(u.first), u.middle FROM users u",
+    USERS_TABLE,
+    "u.login, u.unix_uid, u.shell, u.last, u.first, u.middle FROM users u",
     galo_fields,
     6,
     "u.users_id != 0",
@@ -2481,8 +2688,8 @@ struct query Queries2[] = {
     "gaal",
     RETRIEVE,
     "u",
-    USERS,
-    "CHAR(u.login), CHAR(u.uid), u.shell, CHAR(u.last), CHAR(u.first), u.middle FROM users u",
+    USERS_TABLE,
+    "u.login, u.unix_uid, u.shell, u.last, u.first, u.middle FROM users u",
     galo_fields,
     6,
     "u.status = 1",
@@ -2496,11 +2703,11 @@ struct query Queries2[] = {
     "gual",
     RETRIEVE,
     "u",
-    USERS,
-    "CHAR(u.login), CHAR(u.uid), u.shell, CHAR(u.last), CHAR(u.first), u.middle, CHAR(u.status), CHAR(u.clearid), u.type, CHAR(str.string), CHAR(u.signature), CHAR(u.secure), CHAR(u.modtime), CHAR(u.modby), u.modwith FROM users u, strings str",
+    USERS_TABLE,
+    "u.login, u.unix_uid, u.shell, u.last, u.first, u.middle, u.status, u.clearid, u.type, str.string, u.signature, u.secure, TO_CHAR(u.modtime, 'DD-mon-YYYY HH24:MI:SS'), u.modby, u.modwith FROM users u, strings str",
     gual_fields,
     15,
-    "u.login LIKE '%s' ESCAPE '*' AND u.users_id != 0 AND u.comment = str.string_id",
+    "u.login LIKE '%s' ESCAPE '*' AND u.users_id != 0 AND u.comments = str.string_id",
     1,
     &gubl_validate,
   },
@@ -2511,11 +2718,11 @@ struct query Queries2[] = {
     "guau",
     RETRIEVE,
     "u",
-    USERS,
-    "CHAR(u.login), CHAR(u.uid), u.shell, CHAR(u.last), CHAR(u.first), u.middle, CHAR(u.status), CHAR(u.clearid), u.type, CHAR(str.string), CHAR(u.signature), CHAR(u.secure), CHAR(u.modtime), CHAR(u.modby), u.modwith FROM users u, strings str",
+    USERS_TABLE,
+    "u.login, u.unix_uid, u.shell, u.last, u.first, u.middle, u.status, u.clearid, u.type, str.string, u.signature, u.secure, TO_CHAR(u.modtime, 'DD-mon-YYYY HH24:MI:SS'), u.modby, u.modwith FROM users u, strings str",
     guau_fields,
     15,
-    "u.uid = %s AND u.users_id != 0 AND u.comment = str.string_id",
+    "u.unix_uid = %s AND u.users_id != 0 AND u.comments = str.string_id",
     1,
     &gubu_validate,
   },
@@ -2526,11 +2733,11 @@ struct query Queries2[] = {
     "guan",
     RETRIEVE,
     "u",
-    USERS,
-    "CHAR(u.login), CHAR(u.uid), u.shell, CHAR(u.last), CHAR(u.first), u.middle, CHAR(u.status), CHAR(u.clearid), u.type, CHAR(str.string), CHAR(u.signature), CHAR(u.secure), CHAR(u.modtime), CHAR(u.modby), u.modwith FROM users u, strings str",
+    USERS_TABLE,
+    "u.login, u.unix_uid, u.shell, u.last, u.first, u.middle, u.status, u.clearid, u.type, str.string, u.signature, u.secure, TO_CHAR(u.modtime, 'DD-mon-YYYY HH24:MI:SS'), u.modby, u.modwith FROM users u, strings str",
     guan_fields,
     15,
-    "u.first LIKE '%s' ESCAPE '*' AND u.last LIKE '%s' ESCAPE '*' AND u.users_id != 0 and u.comment = str.string_id",
+    "u.first LIKE '%s' ESCAPE '*' AND u.last LIKE '%s' ESCAPE '*' AND u.users_id != 0 and u.comments = str.string_id",
     2,
     &guan_validate,
   },
@@ -2541,11 +2748,11 @@ struct query Queries2[] = {
     "guac",
     RETRIEVE,
     "u",
-    USERS,
-    "CHAR(u.login), CHAR(u.uid), u.shell, CHAR(u.last), CHAR(u.first), u.middle, CHAR(u.status), CHAR(u.clearid), u.type, CHAR(str.string), CHAR(u.signature), CHAR(u.secure), CHAR(u.modtime), CHAR(u.modby), u.modwith FROM users u, strings str",
+    USERS_TABLE,
+    "u.login, u.unix_uid, u.shell, u.last, u.first, u.middle, u.status, u.clearid, u.type, str.string, u.signature, u.secure, TO_CHAR(u.modtime, 'DD-mon-YYYY HH24:MI:SS'), u.modby, u.modwith FROM users u, strings str",
     guac_fields,
     15,
-    "u.type = uppercase('%s') AND u.users_id != 0 AND u.comment = str.string_id",
+    "u.type = UPPER('%s') AND u.users_id != 0 AND u.comments = str.string_id",
     1,
     &VDsortf,
   },
@@ -2556,11 +2763,11 @@ struct query Queries2[] = {
     "guai",
     RETRIEVE,
     "u",
-    USERS,
-    "CHAR(u.login), CHAR(u.uid), u.shell, CHAR(u.last), CHAR(u.first), u.middle, CHAR(u.status), CHAR(u.clearid), u.type, CHAR(str.string), CHAR(u.signature), CHAR(u.secure), CHAR(u.modtime), CHAR(u.modby), u.modwith FROM users u, strings str",
+    USERS_TABLE,
+    "u.login, u.unix_uid, u.shell, u.last, u.first, u.middle, u.status, u.clearid, u.type, str.string, u.signature, u.secure, TO_CHAR(u.modtime, 'DD-mon-YYYY HH24:MI:SS'), u.modby, u.modwith FROM users u, strings str",
     guam_fields,
     15,
-    "u.clearid LIKE '%s' ESCAPE '*' AND u.users_id != 0 AND u.comment = str.string_id",
+    "u.clearid LIKE '%s' ESCAPE '*' AND u.users_id != 0 AND u.comments = str.string_id",
     1,
     &VDwildsortf,
   },
@@ -2571,8 +2778,8 @@ struct query Queries2[] = {
     "gubl",
     RETRIEVE,
     "u",
-    USERS,  
-    "CHAR(u.login), CHAR(u.uid), u.shell, CHAR(u.last), CHAR(u.first), u.middle, CHAR(u.status), CHAR(u.clearid), u.type, CHAR(u.modtime), CHAR(u.modby), u.modwith FROM users u",
+    USERS_TABLE,  
+    "u.login, u.unix_uid, u.shell, u.last, u.first, u.middle, u.status, u.clearid, u.type, TO_CHAR(u.modtime, 'DD-mon-YYYY HH24:MI:SS'), u.modby, u.modwith FROM users u",
     gubl_fields,
     12,
     "u.login LIKE '%s' ESCAPE '*' AND u.users_id != 0",
@@ -2586,11 +2793,11 @@ struct query Queries2[] = {
     "gubu",
     RETRIEVE,
     "u",
-    USERS,
-    "CHAR(u.login), CHAR(u.uid), u.shell, CHAR(u.last), CHAR(u.first), u.middle, CHAR(u.status), CHAR(u.clearid), u.type, CHAR(u.modtime), CHAR(u.modby), u.modwith FROM users u",
+    USERS_TABLE,
+    "u.login, u.unix_uid, u.shell, u.last, u.first, u.middle, u.status, u.clearid, u.type, TO_CHAR(u.modtime, 'DD-mon-YYYY HH24:MI:SS'), u.modby, u.modwith FROM users u",
     gubu_fields,
     12,
-    "u.uid = %s AND u.users_id != 0",
+    "u.unix_uid = %s AND u.users_id != 0",
     1,
     &gubu_validate,
   },
@@ -2601,8 +2808,8 @@ struct query Queries2[] = {
     "gubn",
     RETRIEVE,
     "u",
-    USERS,
-    "CHAR(u.login), CHAR(u.uid), u.shell, CHAR(u.last), CHAR(u.first), u.middle, CHAR(u.status), CHAR(u.clearid), u.type, CHAR(u.modtime), CHAR(u.modby), u.modwith FROM users u",
+    USERS_TABLE,
+    "u.login, u.unix_uid, u.shell, u.last, u.first, u.middle, u.status, u.clearid, u.type, TO_CHAR(u.modtime, 'DD-mon-YYYY HH24:MI:SS'), u.modby, u.modwith FROM users u",
     gubn_fields,
     12,
     "u.first LIKE '%s' ESCAPE '*' AND u.last LIKE '%s' ESCAPE '*' AND u.users_id != 0",
@@ -2616,11 +2823,11 @@ struct query Queries2[] = {
     "gubc",
     RETRIEVE,
     "u",
-    USERS,
-    "CHAR(u.login), CHAR(u.uid), u.shell, CHAR(u.last), CHAR(u.first), u.middle, CHAR(u.status), CHAR(u.clearid), u.type, CHAR(u.modtime), CHAR(u.modby), u.modwith FROM users u",
+    USERS_TABLE,
+    "u.login, u.unix_uid, u.shell, u.last, u.first, u.middle, u.status, u.clearid, u.type, TO_CHAR(u.modtime, 'DD-mon-YYYY HH24:MI:SS'), u.modby, u.modwith FROM users u",
     gubc_fields,
     12,
-    "u.type = uppercase('%s') AND u.users_id != 0",
+    "u.type = UPPER('%s') AND u.users_id != 0",
     1,
     &VDsortf,
   },
@@ -2631,8 +2838,8 @@ struct query Queries2[] = {
     "gubm",
     RETRIEVE,
     "u",
-    USERS,
-    "CHAR(u.login), CHAR(u.uid), u.shell, CHAR(u.last), CHAR(u.first), u.middle, CHAR(u.status), CHAR(u.clearid), u.type, CHAR(u.modtime), CHAR(u.modby), u.modwith FROM users u",
+    USERS_TABLE,
+    "u.login, u.unix_uid, u.shell, u.last, u.first, u.middle, u.status, u.clearid, u.type, TO_CHAR(u.modtime, 'DD-mon-YYYY HH24:MI:SS'), u.modby, u.modwith FROM users u",
     gubm_fields,
     12,
     "u.clearid LIKE '%s' ESCAPE '*' AND u.users_id != 0",
@@ -2646,8 +2853,8 @@ struct query Queries2[] = {
     "auac",
     APPEND,
     "u",
-    USERS,
-    "INTO users (login, uid, shell, last, first, middle, status, clearid, type, comment, signature, secure, users_id) VALUES ('%s', %s, '%s', '%s', '%s', '%s', %s, '%s', '%s', %d, '%s', %s, %s)",
+    USERS_TABLE,
+    "INTO users (login, unix_uid, shell, last, first, middle, status, clearid, type, comments, signature, secure, users_id) VALUES ('%s', %s, '%s', NVL('%s',CHR(0)), NVL('%s',CHR(0)), NVL('%s',CHR(0)), %s, NVL('%s',CHR(0)), '%s', %d, LENGTH(NVL('%s',CHR(0))), %s, %s)", /* followup_ausr fixes signature field */
     auac_fields,
     12,
     (char *)0,
@@ -2661,8 +2868,8 @@ struct query Queries2[] = {
     "ausr",
     APPEND,
     "u",
-    USERS,
-    "INTO users (login, uid, shell, last, first, middle, status, clearid, type, comment, signature, secure, users_id) VALUES ('%s', %s, '%s', '%s', '%s', '%s', %s, '%s', '%s', 0, '', 0, %s)",
+    USERS_TABLE,
+    "INTO users (login, unix_uid, shell, last, first, middle, status, clearid, type, comments, signature, secure, users_id) VALUES ('%s', %s, '%s', NVL('%s',CHR(0)), NVL('%s',CHR(0)), NVL('%s',CHR(0)), %s, NVL('%s',CHR(0)), '%s', 0, CHR(0), 0, %s)",
     auac_fields,
     9,
     0,
@@ -2691,8 +2898,8 @@ struct query Queries2[] = {
     "uuac",
     UPDATE,
     "u",
-    USERS,
-    "users SET login = '%s', uid = %s, shell = '%s', last = '%s', first = '%s', middle = '%s', status = %s, clearid = '%s', type = '%s', comment = %d, signature = '%s', secure = %s",
+    USERS_TABLE,
+    "users SET login = '%s', unix_uid = %s, shell = '%s', last = NVL('%s',CHR(0)), first = NVL('%s',CHR(0)), middle = NVL('%s',CHR(0)), status = %s, clearid = NVL('%s',CHR(0)), type = '%s', comments = %d, signature = LENGTH(NVL('%s',CHR(0))), secure = %s", /* followup_uuac fixes signature */
     uuac_fields,
     12,
     "users_id = %d",
@@ -2706,8 +2913,8 @@ struct query Queries2[] = {
     "uusr",
     UPDATE,
     "u",
-    USERS,
-    "users SET login = '%s', uid = %s, shell = '%s', last = '%s', first = '%s', middle = '%s', status = %s, clearid = '%s',  type = '%s'",
+    USERS_TABLE,
+    "users SET login = '%s', unix_uid = %s, shell = '%s', last = NVL('%s',CHR(0)), first = NVL('%s',CHR(0)), middle = NVL('%s',CHR(0)), status = %s, clearid = NVL('%s',CHR(0)),  type = '%s'",
     uuac_fields,
     9,
     "users_id = %d",
@@ -2721,7 +2928,7 @@ struct query Queries2[] = {
     "uush",
     UPDATE,
     "u",
-    USERS,
+    USERS_TABLE,
     "users SET shell = '%s'",  
     uush_fields,
     1,
@@ -2736,7 +2943,7 @@ struct query Queries2[] = {
     "uust",
     UPDATE,
     "u",
-    USERS,
+    USERS_TABLE,
     "users SET status = %s",
     uust_fields,
     1,
@@ -2751,7 +2958,7 @@ struct query Queries2[] = {
     "uuss",
     UPDATE,
     "u",
-    USERS,
+    USERS_TABLE,
     "users SET secure = %s",
     uuss_fields,
     1,
@@ -2766,7 +2973,7 @@ struct query Queries2[] = {
     "dusr",
     DELETE,
     "u",
-    USERS,
+    USERS_TABLE,
     (char *)0,
     dusr_fields,
     0,
@@ -2781,7 +2988,7 @@ struct query Queries2[] = {
     "dubu",
     DELETE,
     "u",
-    USERS,
+    USERS_TABLE,
     (char *)0,
     dubu_fields,
     0,
@@ -2796,8 +3003,8 @@ struct query Queries2[] = {
     "gkum",
     RETRIEVE,
     "k",
-    "krbmap",
-    "CHAR(u.login), CHAR(str.string) FROM krbmap km, users u, strings str",
+    KRBMAP_TABLE,
+    "u.login, str.string FROM krbmap km, users u, strings str",
     gkum_fields,
     2,
     "u.login LIKE '%s' ESCAPE '*' AND str.string LIKE '%s' ESCAPE '*' AND km.users_id = u.users_id AND km.string_id = str.string_id",
@@ -2811,7 +3018,7 @@ struct query Queries2[] = {
     "akum",
     APPEND,
     "k",
-    "krbmap",
+    KRBMAP_TABLE,
     "INTO krbmap (users_id, string_id) VALUES (%d, %d)",
     akum_fields,
     2,
@@ -2826,7 +3033,7 @@ struct query Queries2[] = {
     "dkum",
     DELETE,
     "k",
-    "krbmap",
+    KRBMAP_TABLE,
     0,
     akum_fields,
     0,
@@ -2841,11 +3048,11 @@ struct query Queries2[] = {
     "gfbl",
     RETRIEVE,
     "u",
-    USERS,
-    "CHAR(u.login), u.fullname, u.nickname, u.home_addr, u.home_phone, u.office_addr, u.office_phone, u.department, u.affiliation, CHAR(u.fmodtime), CHAR(u.fmodby), u.fmodwith FROM users u",
+    USERS_TABLE,
+    "login, fullname, nickname, home_addr, home_phone, office_addr, office_phone, department, affiliation, TO_CHAR(fmodtime, 'DD-mon-YYYY HH24:MI:SS'), fmodby, fmodwith FROM users",
     gfbl_fields,
     12,
-    "u.users_id = %d",
+    "users_id = %d",
     1,
     &gfbl_validate,
   },
@@ -2856,8 +3063,8 @@ struct query Queries2[] = {
     "ufbl",
     UPDATE,
     "u",
-    USERS,
-    "users SET fullname= '%s',nickname= '%s',home_addr= '%s',home_phone= '%s',office_addr= '%s',office_phone= '%s',department= '%s',affiliation= '%s'",
+    USERS_TABLE,
+    "users SET fullname= NVL('%s',CHR(0)),nickname= NVL('%s',CHR(0)),home_addr= NVL('%s',CHR(0)),home_phone= NVL('%s',CHR(0)),office_addr= NVL('%s',CHR(0)),office_phone= NVL('%s',CHR(0)),department= NVL('%s',CHR(0)),affiliation= NVL('%s',CHR(0))",
     ufbl_fields,
     8,
     "users_id = %d",
@@ -2871,11 +3078,11 @@ struct query Queries2[] = {
     "gpob",
     RETRIEVE,
     "u",
-    USERS,
-    "CHAR(u.login), u.potype, CHAR(u.pop_id) + ':' + CHAR(u.box_id), CHAR(u.pmodtime), CHAR(u.pmodby), u.pmodwith FROM users u",
+    USERS_TABLE,
+    "login, potype, pop_id || ':' || box_id, TO_CHAR(pmodtime, 'DD-mon-YYYY HH24:MI:SS'), pmodby, pmodwith FROM users",
     gpob_fields,
     6,
-    "u.users_id = %d",
+    "users_id = %d",
     1,
     &gpob_validate,
   },
@@ -2886,11 +3093,11 @@ struct query Queries2[] = {
     "gapo",
     RETRIEVE,
     "u",
-    USERS,
-    "CHAR(u.login), u.potype, CHAR(u.pop_id) + ':' + CHAR(u.box_id) FROM users u",
+    USERS_TABLE,
+    "login, potype, pop_id || ':' || box_id FROM users",
     gpox_fields,
     3,
-    "u.potype != 'NONE'",
+    "potype != 'NONE'",
     0,
     &gpox_validate,
   },
@@ -2901,11 +3108,11 @@ struct query Queries2[] = {
     "gpop",
     RETRIEVE,
     "u",
-    USERS,
-    "CHAR(u.login), u.potype, CHAR(u.pop_id) + ':' + CHAR(u.box_id) FROM users u",
+    USERS_TABLE,
+    "login, potype, pop_id || ':' || box_id FROM users",
     gpox_fields,
     3,
-    "u.potype = 'POP'",
+    "potype = 'POP'",
     0,
     &gpox_validate
   },
@@ -2916,11 +3123,11 @@ struct query Queries2[] = {
     "gpos",
     RETRIEVE,
     "u",
-    USERS,
-    "CHAR(u.login), u.potype, CHAR(u.pop_id) + ':' + CHAR(u.box_id) FROM users u",
+    USERS_TABLE,
+    "login, potype, pop_id || ':' || box_id FROM users",
     gpox_fields,
     3,
-    "u.potype = 'SMTP'",
+    "potype = 'SMTP'",
     0,
     &gpox_validate
   },
@@ -2931,7 +3138,7 @@ struct query Queries2[] = {
     "spob",
     UPDATE,
     0,
-    USERS,
+    USERS_TABLE,
     0,
     spob_fields,
     3,
@@ -2946,7 +3153,7 @@ struct query Queries2[] = {
     "spop",
     UPDATE,
     "u",
-    USERS,
+    USERS_TABLE,
     "users SET potype = 'POP'",
     spob_fields,
     0,
@@ -2961,7 +3168,7 @@ struct query Queries2[] = {
     "dpob",
     UPDATE,
     "u",
-    USERS,
+    USERS_TABLE,
     "users SET potype = 'NONE'",
     spob_fields,
     0,
@@ -2971,28 +3178,13 @@ struct query Queries2[] = {
   },
 
   {
-    /* Q_GMAC - GET_MACHINE */
-    "get_machine",
-    "gmac",
-    RETRIEVE,
-    "m",
-    MACHINE,
-    "CHAR(m.name), m.vendor, CHAR(m.modtime), CHAR(m.modby), m.modwith FROM machine m",
-    gmac_fields,
-    5,
-    "m.name LIKE '%s' ESCAPE '*' AND m.mach_id != 0", 
-    1,
-    &VDupwildsortf,
-  },
-
-  {
     /* Q_GHST - GET_HOST */
     "get_host",
     "ghst",
     RETRIEVE,
     "m",
-    MACHINE,
-    "CHAR(m.name), m.vendor, m.model, m.os, m.location, m.contact, CHAR(m.use), CHAR(m.status), CHAR(m.statuschange), CHAR(s.name), m.address, m.owner_type, CHAR(m.owner_id), CHAR(m.acomment), CHAR(m.ocomment), CHAR(m.created), CHAR(m.creator), CHAR(m.inuse), CHAR(m.modtime), CHAR(m.modby), m.modwith FROM machine m, subnet s",
+    MACHINE_TABLE,
+    "m.name, m.vendor, m.model, m.os, m.location, m.contact, m.use, m.status, TO_CHAR(m.statuschange, 'DD-mon-YYYY HH24:MI:SS'), s.name, m.address, m.owner_type, m.owner_id, m.acomment, m.ocomment, TO_CHAR(m.created, 'DD-mon-YYYY HH24:MI:SS'), m.creator, TO_CHAR(m.inuse, 'DD-mon-YYYY HH24:MI:SS'), TO_CHAR(m.modtime, 'DD-mon-YYYY HH24:MI:SS'), m.modby, m.modwith FROM machine m, subnet s",
     ghst_fields,
     21,
     "m.name LIKE '%s' ESCAPE '*' AND m.address LIKE '%s' ESCAPE '*' AND m.location LIKE '%s' ESCAPE '*' AND s.name LIKE '%s' ESCAPE '*' AND m.mach_id != 0 AND s.snet_id = m.snet_id", 
@@ -3006,8 +3198,8 @@ struct query Queries2[] = {
     "ahst",
     APPEND,
     "m",
-    MACHINE,
-    "INTO machine (name, vendor, model, os, location, contact, use, status, statuschange, snet_id, address, owner_type, owner_id, acomment, ocomment, created, inuse, mach_id, creator) VALUES (uppercase('%s'),uppercase('%s'),uppercase('%s'),uppercase('%s'),uppercase('%s'),'%s',%s,%s,date('now'),%d,'%s','%s',%d,%d,%d,date('now'),date('now'),%s,%s)",
+    MACHINE_TABLE,
+    "INTO machine (name, vendor, model, os, location, contact, use, status, statuschange, snet_id, address, owner_type, owner_id, acomment, ocomment, created, inuse, mach_id, creator) VALUES (UPPER('%s'),NVL(UPPER('%s'),CHR(0)),NVL(UPPER('%s'),CHR(0)),NVL(UPPER('%s'),CHR(0)),NVL(UPPER('%s'),CHR(0)),NVL('%s',CHR(0)),%s,%s,SYSDATE,%d,'%s','%s',%d,%d,%d,SYSDATE,SYSDATE,%s,%s)",
     ahst_fields,
     14,
     0,
@@ -3021,8 +3213,8 @@ struct query Queries2[] = {
     "uhst",
     UPDATE,
     "m",
-    MACHINE,
-    "machine SET name=uppercase('%s'),vendor=uppercase('%s'),model=uppercase('%s'),os=uppercase('%s'),location=uppercase('%s'),contact='%s',use=%s,status=%s,snet_id=%d,address='%s',owner_type='%s',owner_id=%d,acomment=%d,ocomment=%d",
+    MACHINE_TABLE,
+    "machine SET name=NVL(UPPER('%s'),CHR(0)),vendor=NVL(UPPER('%s'),CHR(0)),model=NVL(UPPER('%s'),CHR(0)),os=NVL(UPPER('%s'),CHR(0)),location=NVL(UPPER('%s'),CHR(0)),contact=NVL('%s',CHR(0)),use=%s,status=%s,snet_id=%d,address='%s',owner_type='%s',owner_id=%d,acomment=%d,ocomment=%d",
     uhst_fields,
     14,
     "mach_id = %d",
@@ -3036,7 +3228,7 @@ struct query Queries2[] = {
     "dhst",
     DELETE,
     "m",
-    MACHINE,
+    MACHINE_TABLE,
     (char *)0,
     dhst_fields,
     0,
@@ -3046,13 +3238,28 @@ struct query Queries2[] = {
   },
 
   {
+    /* Q_GMAC - GET_MACHINE */
+    "get_machine",
+    "gmac",
+    RETRIEVE,
+    "m",
+    MACHINE_TABLE,
+    "name, vendor, TO_CHAR(modtime, 'DD-mon-YYYY HH24:MI:SS'), modby, modwith FROM machine",
+    gmac_fields,
+    5,
+    "name LIKE '%s' ESCAPE '*' AND mach_id != 0", 
+    1,
+    &VDupwildsortf,
+  },
+
+  {
     /* Q_GHAL - GET_HOSTALIAS */
     "get_hostalias",
     "ghal",
     RETRIEVE,
-    0,
-    "hostalias",
-    "CHAR(a.name), CHAR(m.name) FROM hostalias a, machine m",
+    "a",
+    HOSTALIAS_TABLE,
+    "a.name, m.name FROM hostalias a, machine m",
     ghal_fields,
     2,
     "m.mach_id = a.mach_id and a.name LIKE '%s' ESCAPE '*' AND m.name LIKE '%s' ESCAPE '*'",
@@ -3066,8 +3273,8 @@ struct query Queries2[] = {
     "ahal",
     APPEND,
     "a",
-    "hostalias",
-    "INTO hostalias (name, mach_id) VALUES (uppercase('%s'),%d)",
+    HOSTALIAS_TABLE,
+    "INTO hostalias (name, mach_id) VALUES (UPPER('%s'),%d)",
     ghal_fields,
     2,
     0,
@@ -3081,11 +3288,11 @@ struct query Queries2[] = {
     "dhal",
     DELETE,
     "a",
-    "hostalias",
+    HOSTALIAS_TABLE,
     (char *)0,
     ghal_fields,
     0,
-    "name = uppercase('%s') AND mach_id = %d",
+    "name = UPPER('%s') AND mach_id = %d",
     2,
     &dhal_validate,
   },
@@ -3096,11 +3303,11 @@ struct query Queries2[] = {
     "gsnt",
     RETRIEVE,
     "s",
-    SUBNET,
-    "CHAR(s.name), CHAR(s.description), CHAR(s.saddr), CHAR(s.mask), CHAR(s.low), CHAR(s.high), s.prefix, s.owner_type, CHAR(s.owner_id), CHAR(s.modtime), CHAR(s.modby), s.modwith FROM subnet s",
+    SUBNET_TABLE,
+    "name, description, saddr, mask, low, high, prefix, owner_type, owner_id, TO_CHAR(modtime, 'DD-mon-YYYY HH24:MI:SS'), modby, modwith FROM subnet",
     gsnt_fields,
     12,
-    "s.name LIKE '%s' ESCAPE '*' and s.snet_id != 0",
+    "name LIKE '%s' ESCAPE '*' and snet_id != 0",
     1,
     &gsnt_validate,
   },
@@ -3111,8 +3318,8 @@ struct query Queries2[] = {
     "asnt",
     APPEND,
     "s",
-    SUBNET,
-    "INTO subnet (name, description, saddr, mask, low, high, prefix, owner_type, owner_id, snet_id) VALUES (uppercase('%s'), '%s', %s, %s, %s, %s, '%s', '%s', %d, %s)",
+    SUBNET_TABLE,
+    "INTO subnet (name, description, saddr, mask, low, high, prefix, owner_type, owner_id, snet_id) VALUES (UPPER('%s'), NVL('%s',CHR(0)), %s, %s, %s, %s, NVL('%s',CHR(0)), '%s', %d, %s)",
     asnt_fields,
     9,
     0,
@@ -3126,8 +3333,8 @@ struct query Queries2[] = {
     "usnt",
     UPDATE,
     "s",
-    SUBNET,
-    "subnet SET name=uppercase('%s'), description='%s', saddr=%s, mask=%s, low=%s, high=%s, prefix='%s', owner_type='%s', owner_id=%d",
+    SUBNET_TABLE,
+    "subnet SET name=UPPER('%s'), description=NVL('%s',CHR(0)), saddr=%s, mask=%s, low=%s, high=%s, prefix=NVL('%s',CHR(0)), owner_type='%s', owner_id=%d",
     usnt_fields,
     9,
     "snet_id = %d",
@@ -3141,7 +3348,7 @@ struct query Queries2[] = {
     "dsnt",
     DELETE,
     "s",
-    SUBNET,
+    SUBNET_TABLE,
     (char *)0,
     dsnt_fields,
     0,
@@ -3156,11 +3363,11 @@ struct query Queries2[] = {
     "gclu",
     RETRIEVE,
     "c",
-    CLUSTER,
-    "CHAR(c.name), c.description, c.location, CHAR(c.modtime), CHAR(c.modby), c.modwith FROM cluster c",
+    CLUSTER_TABLE,
+    "name, description, location, TO_CHAR(modtime, 'DD-mon-YYYY HH24:MI:SS'), modby, modwith FROM clusters",
     gclu_fields,
     6,
-    "c.name LIKE '%s' ESCAPE '*' AND c.clu_id != 0",
+    "name LIKE '%s' ESCAPE '*' AND clu_id != 0",
     1,
     &VDwildsortf,
   },
@@ -3171,8 +3378,8 @@ struct query Queries2[] = {
     "aclu",
     APPEND,
     "c",
-    CLUSTER,
-    "INTO cluster (name, description, location, clu_id) VALUES ('%s','%s','%s',%s)",
+    CLUSTER_TABLE,
+    "INTO clusters (name, description, location, clu_id) VALUES ('%s',NVL('%s',CHR(0)),NVL('%s',CHR(0)),%s)",
     aclu_fields,
     3,
     0,
@@ -3186,8 +3393,8 @@ struct query Queries2[] = {
     "uclu",
     UPDATE,
     "c",
-    CLUSTER,
-    "cluster SET name = '%s', description = '%s', location = '%s'",
+    CLUSTER_TABLE,
+    "clusters SET name = '%s', description = NVL('%s',CHR(0)), location = NVL('%s',CHR(0))",
     uclu_fields,
     3,
     "clu_id = %d",
@@ -3201,7 +3408,7 @@ struct query Queries2[] = {
     "dclu",
     DELETE,
     "c",
-    CLUSTER,
+    CLUSTER_TABLE,
     (char *)0,
     dclu_fields,
     0,
@@ -3216,8 +3423,8 @@ struct query Queries2[] = {
     "gmcm",
     RETRIEVE,
     "mcm",
-    "mcmap",
-    "CHAR(m.name), CHAR(c.name) FROM machine m, cluster c, mcmap mcm",
+    MCMAP_TABLE,
+    "m.name, c.name FROM machine m, clusters c, mcmap mcm",
     gmcm_fields,
     2,
     "m.name LIKE '%s' ESCAPE '*' AND c.name LIKE '%s' ESCAPE '*' AND mcm.clu_id = c.clu_id AND mcm.mach_id = m.mach_id",
@@ -3231,7 +3438,7 @@ struct query Queries2[] = {
     "amtc",
     APPEND,
     "mcm",
-    "mcmap",
+    MCMAP_TABLE,
     "INTO mcmap (mach_id, clu_id) VALUES (%d, %d)",
     gmcm_fields,
     2,
@@ -3246,7 +3453,7 @@ struct query Queries2[] = {
     "dmfc",
     DELETE,
     "mcm",
-    "mcmap",
+    MCMAP_TABLE,
     0,
     gmcm_fields,
     0,
@@ -3261,8 +3468,8 @@ struct query Queries2[] = {
     "gcld",
     RETRIEVE,
     "svc",
-    "svc",
-    "CHAR(c.name), CHAR(svc.serv_label), svc.serv_cluster FROM svc svc, cluster c",
+    SVC_TABLE,
+    "c.name, svc.serv_label, svc.serv_cluster FROM svc svc, clusters c",
     gcld_fields,
     3,
     "c.clu_id = svc.clu_id AND c.name LIKE '%s' ESCAPE '*' AND svc.serv_label LIKE '%s' ESCAPE '*'",
@@ -3276,7 +3483,7 @@ struct query Queries2[] = {
     "acld",
     APPEND,
     "svc",
-    "svc",
+    SVC_TABLE,
     "INTO svc (clu_id, serv_label, serv_cluster) VALUES (%d,'%s','%s')",
     acld_fields,
     3,
@@ -3291,7 +3498,7 @@ struct query Queries2[] = {
     "dcld",
     DELETE,
     "svc",
-    "svc",
+    SVC_TABLE,
     (char *)0,
     acld_fields,
     0,
@@ -3301,717 +3508,12 @@ struct query Queries2[] = {
   },
 
   {
-    /* Q_GSIN - GET_SERVER_INFO */
-    "get_server_info",
-    "gsin",
-    RETRIEVE,
-    "s",
-    "servers",
-    "CHAR(s.name), CHAR(s.update_int), s.target_file, s.script, CHAR(s.dfgen), CHAR(s.dfcheck), s.type, CHAR(s.enable), CHAR(s.inprogress), CHAR(s.harderror), s.errmsg, s.acl_type, CHAR(s.acl_id), CHAR(s.modtime), CHAR(s.modby), s.modwith FROM servers s",
-    gsin_fields,
-    16,
-    "s.name LIKE '%s' ESCAPE '*'",
-    1,
-    &gsin_validate,
-  },
-
-  {
-    /* Q_QGSV - QUALIFIED_GET_SERVER */
-    "qualified_get_server",
-    "qgsv",
-    RETRIEVE,
-    0,
-    "servers",
-    0,
-    qgsv_fields,
-    1,
-    0,
-    3,
-    &qgsv_validate,
-  },
-
-  {
-    /* Q_ASIN - ADD_SERVER_INFO */
-    "add_server_info",
-    "asin",
-    APPEND,
-    "s",
-    "servers",
-    "INTO servers (name, update_int, target_file, script, type, enable, acl_type, acl_id) VALUES (uppercase('%s'),%s,'%s','%s','%s',%s,'%s',%d)",
-    asin_fields,
-    8,
-    (char *)0,
-    0,
-    &asin_validate,
-  },
-
-  {
-    /* Q_USIN - UPDATE_SERVER_INFO */
-    "update_server_info",
-    "usin",
-    UPDATE,
-    "s",
-    "servers",
-    "servers SET update_int = %s, target_file = '%s', script = '%s', type = '%s', enable = %s, acl_type = '%s', acl_id = %d",
-    asin_fields,
-    7,
-    "name = uppercase('%s')",
-    1,
-    &asin_validate,
-  },
-
-  {
-    /* Q_RSVE - RESET_SERVER_ERROR */
-    "reset_server_error",
-    "rsve",
-    UPDATE,
-    "s",
-    "servers",
-    "servers SET harderror = 0, dfcheck = dfgen",
-    dsin_fields,
-    0,
-    "name = uppercase('%s')",
-    1,
-    &rsve_validate,
-  },
-
-  {
-    /* Q_SSIF - SET_SERVER_INTERNAL_FLAGS */
-    "set_server_internal_flags",
-    "ssif",
-    UPDATE,
-    "s",
-    "servers",
-    "servers SET dfgen = %s, dfcheck = %s, inprogress = %s, harderror = %s, errmsg = '%s'",
-    ssif_fields,
-    5,
-    "name = uppercase('%s')",
-    1,
-    &ssif_validate,
-  },
-
-  {
-    /* Q_DSIN - DELETE_SERVER_INFO */
-    "delete_server_info",
-    "dsin",
-    DELETE,
-    "s",
-    "servers",
-    (char *)0,
-    dsin_fields,
-    0,
-    "name = uppercase('%s')",
-    1,
-    &dsin_validate,
-  },
-
-  {
-    /* Q_GSHI - GET_SERVER_HOST_INFO */ 
-    "get_server_host_info",
-    "gshi",
-    RETRIEVE,
-    "sh",
-    "serverhosts",
-    "CHAR(sh.service), CHAR(m.name), CHAR(sh.enable), CHAR(sh.override), CHAR(sh.success), CHAR(sh.inprogress), CHAR(sh.hosterror), sh.hosterrmsg, CHAR(sh.ltt), CHAR(sh.lts), CHAR(sh.value1), CHAR(sh.value2), sh.value3, CHAR(sh.modtime), CHAR(sh.modby), sh.modwith FROM serverhosts sh, machine m",
-    gshi_fields,
-    16,
-    "sh.service LIKE '%s' ESCAPE '*' AND m.name LIKE '%s' ESCAPE '*' AND m.mach_id = sh.mach_id",
-    2,
-    &gshi_validate,
-  },
-
-  {
-    /* Q_QGSH - QUALIFIED_GET_SERVER_HOST */
-    "qualified_get_server_host",
-    "qgsh",
-    RETRIEVE,
-    0,
-    "serverhosts",
-    0,
-    qgsh_fields,
-    2,
-    0,
-    6,
-    &qgsh_validate,
-  },
-
-  {
-    /* Q_ASHI - ADD_SERVER_HOST_INFO */
-    "add_server_host_info",
-    "ashi",
-    APPEND,
-    "sh",
-    "serverhosts",
-    "INTO serverhosts (service, mach_id, enable, value1, value2, value3) VALUES (uppercase('%s'), %d, %s, %s, %s, '%s')",
-    ashi_fields,
-    6,
-    (char *)0,
-    0,
-    &ashi_validate,
-  },
-
-  {
-    /* Q_USHI - UPDATE_SERVER_HOST_INFO */
-    "update_server_host_info",
-    "ushi",
-    UPDATE,
-    "sh",
-    "serverhosts",
-    "serverhosts SET enable = %s, value1 = %s, value2 = %s, value3 = '%s'",
-    ashi_fields,
-    4,
-    "service = uppercase('%s') AND mach_id = %d",
-    2,
-    &ashi_validate,
-  },
-
-  {
-    /* Q_RSHE - RESET_SERVER_HOST_ERROR */
-    "reset_server_host_error",
-    "rshe",
-    UPDATE,
-    "sh",
-    "serverhosts",
-    "serverhosts SET hosterror = 0",
-    dshi_fields,
-    0,
-    "service = uppercase('%s') AND mach_id = %d",
-    2,
-    &rshe_validate,
-  },
-
-  {
-    /* Q_SSHO - SET_SERVER_HOST_OVERRIDE */
-    "set_server_host_override",
-    "ssho",
-    UPDATE,
-    "sh",
-    "serverhosts",
-    "serverhosts SET override = 1",
-    dshi_fields,
-    0,
-    "service = uppercase('%s') AND mach_id = %d",
-    2,
-    &ssho_validate,
-  },
-
-  {
-    /* Q_SSHI - SET_SERVER_HOST_INTERNAL */
-    "set_server_host_internal",
-    "sshi",
-    UPDATE,
-    "s",
-    "serverhosts",
-    "serverhosts SET override = %s, success = %s, inprogress = %s, hosterror = %s, hosterrmsg = '%s', ltt = %s, lts = %s",
-    sshi_fields,
-    7,
-    "service = uppercase('%s') AND mach_id = %d", 
-    2,
-    &sshi_validate,
-  },
-
-  {
-    /* Q_DSHI - DELETE_SERVER_HOST_INFO */
-    "delete_server_host_info",
-    "dshi",
-    DELETE,
-    "sh",
-    "serverhosts",
-    (char *)0,
-    dshi_fields,
-    0,
-    "service = uppercase('%s') AND mach_id = %d",
-    2,
-    &dshi_validate,
-  },
-
-  {
-    /* Q_GSHA - GET_SERVER_HOST_ACCESS */ 
-    "get_server_host_access",
-    "gsha",
-    RETRIEVE,
-    "ha",
-    "hostaccess",
-    "CHAR(m.name), ha.acl_type, CHAR(ha.acl_id), CHAR(ha.modtime), CHAR(ha.modby), ha.modwith FROM hostaccess ha, machine m",
-    gsha_fields,
-    6,
-    "m.name LIKE '%s' ESCAPE '*' AND ha.mach_id = m.mach_id",
-    1,
-    &gsha_validate,
-  },
-
-  {
-    /* Q_ASHA - ADD_SERVER_HOST_ACCESS */
-    "add_server_host_access",
-    "asha",
-    APPEND,
-    "ha",
-    "hostaccess",
-    "INTO hostaccess (mach_id, acl_type, acl_id) VALUES (%d,'%s',%d)",
-    asha_fields,
-    3,
-    0,
-    0,
-    &asha_validate,
-  },
-
-  {
-    /* Q_USHA - UPDATE_SERVER_HOST_ACCESS */
-    "update_server_host_access",
-    "usha",
-    UPDATE,
-    "ha",
-    "hostaccess",
-    "hostaccess SET acl_type = '%s', acl_id = %d",
-    asha_fields,
-    2,
-    "mach_id = %d",
-    1,
-    &asha_validate,
-  },
-
-  {
-    /* Q_DSHA - DELETE_SERVER_HOST_ACCESS */
-    "delete_server_host_access",
-    "dsha",
-    DELETE,
-    "ha",
-    "hostaccess",
-    0,
-    asha_fields,
-    0,
-    "mach_id = %d",
-    1,
-    &VDmach,
-  },
-
-  {
-    /* Q_GSLO - GET_SERVER_LOCATIONS */ 
-    "get_server_locations",
-    "gslo",
-    RETRIEVE,
-    "sh",
-    "serverhosts",
-    "CHAR(sh.service), CHAR(m.name) FROM serverhosts sh, machine m",
-    gslo_fields,
-    2,
-    "sh.service LIKE '%s' ESCAPE '*' AND sh.mach_id = m.mach_id",
-    1,
-    &VDupwild0,
-  },
-
-  {
-    /* Q_GFSL - GET_FILESYS_BY_LABEL */ 
-    "get_filesys_by_label",
-    "gfsl",
-    RETRIEVE,
-    "fs",
-    FILESYS,
-    "CHAR(fs.label), fs.type, CHAR(m.name), CHAR(fs.name), fs.mount, fs.access, fs.comments, CHAR(u.login), CHAR(l.name), CHAR(fs.createflg), fs.lockertype, CHAR(fs.modtime), CHAR(fs.modby), fs.modwith FROM filesys fs, machine m, users u, list l",
-    gfsl_fields,
-    14,
-    "fs.label LIKE '%s' ESCAPE '*' AND fs.mach_id = m.mach_id AND fs.owner = u.users_id AND fs.owners = l.list_id",
-    1,
-    &VDwildsortf,
-  },
-
-  {
-    /* Q_GFSM - GET_FILESYS_BY_MACHINE */ 
-    "get_filesys_by_machine",
-    "gfsm",
-    RETRIEVE,
-    "fs",
-    FILESYS,
-    "CHAR(fs.label), fs.type, CHAR(m.name), CHAR(fs.name), fs.mount, fs.access, fs.comments, CHAR(u.login), CHAR(l.name), CHAR(fs.createflg), fs.lockertype, CHAR(fs.modtime), CHAR(fs.modby), fs.modwith FROM filesys fs, machine m, users u, list l",
-    gfsm_fields,
-    14,
-    "fs.mach_id = %d AND m.mach_id = fs.mach_id AND fs.owner = u.users_id AND fs.owners = l.list_id",
-    1,
-    &gfsm_validate,
-  },
-
-  {
-    /* Q_GFSN - GET_FILESYS_BY_NFSPHYS */ 
-    "get_filesys_by_nfsphys",
-    "gfsn",
-    RETRIEVE,
-    "fs",
-    FILESYS,
-    "CHAR(fs.label), fs.type, CHAR(m.name), CHAR(fs.name), fs.mount, fs.access, fs.comments, CHAR(u.login), CHAR(l.name), CHAR(fs.createflg), fs.lockertype, CHAR(fs.modtime), CHAR(fs.modby), fs.modwith FROM filesys fs, machine m, users u, list l, nfsphys np",
-    gfsn_fields,
-    14,
-    "fs.mach_id = %d AND m.mach_id = fs.mach_id AND fs.owner = u.users_id AND fs.owners = l.list_id AND np.nfsphys_id = fs.phys_id AND np.dir LIKE '%s' ESCAPE '*' AND fs.type = 'NFS'", 
-    2,
-    &gfsn_validate,
-  },
-
-  {
-    /* Q_GFSG - GET_FILESYS_BY_GROUP */ 
-    "get_filesys_by_group",
-    "gfsg",
-    RETRIEVE,
-    "fs",
-    FILESYS,
-    "CHAR(fs.label), fs.type, CHAR(m.name), CHAR(fs.name), fs.mount, fs.access, fs.comments, CHAR(u.login), CHAR(l.name), CHAR(fs.createflg), fs.lockertype, CHAR(fs.modtime), CHAR(fs.modby), fs.modwith FROM filesys fs, machine m, users u, list l",
-    gfsg_fields,
-    14,
-    "fs.owners = %d AND m.mach_id = fs.mach_id AND fs.owner = u.users_id AND fs.owners = l.list_id",
-    1,
-    &gfsg_validate,
-  },
-
-  {
-    /* Q_GFSP - GET_FILESYS_BY_PATH */
-    "get_filesys_by_path",
-    "gfsp",
-    RETRIEVE,
-    "fs",
-    FILESYS,
-    "CHAR(fs.label), fs.type, CHAR(m.name), CHAR(fs.name), fs.mount, fs.access, fs.comments, CHAR(u.login), CHAR(l.name), CHAR(fs.createflg), fs.lockertype, CHAR(fs.modtime), CHAR(fs.modby), fs.modwith FROM filesys fs, machine m, users u, list l",
-    gfsp_fields,
-    14,
-    "fs.name LIKE '%s' ESCAPE '*' AND m.mach_id = fs.mach_id AND fs.owner = u.users_id AND fs.owners = list_id",
-    1,
-    &VDwildsortf,
-  },
- 
-  {
-    /* Q_AFIL - ADD_FILESYS */ /* uses prefetch_value() for filsys_id */
-    "add_filesys",
-    "afil",
-    APPEND,
-    "fs",
-    FILESYS,
-    "INTO filesys (label, type, mach_id, name, mount, access, comments, owner, owners, createflg, lockertype, filsys_id) VALUES ('%s','%s',%d,'%s','%s','%s','%s',%d,%d,%s,'%s',%s)",
-    afil_fields,
-    11,
-    0,
-    0,
-    &afil_validate,
-  },
-
-  {
-    /* Q_UFIL - UPDATE_FILESYS */
-    "update_filesys",
-    "ufil",
-    UPDATE,
-    "fs",
-    FILESYS,
-    "filesys SET label = '%s', type = '%s', mach_id = %d, name = '%s', mount = '%s', access = '%s', comments = '%s', owner = %d, owners = %d, createflg = %s, lockertype = '%s'",
-    ufil_fields,
-    11,
-    "filsys_id = %d",
-    1,
-    &ufil_validate,      
-  },
-
-  {
-    /* Q_DFIL - DELETE_FILESYS */
-    "delete_filesys",
-    "dfil",
-    DELETE,
-    "fs",
-    FILESYS,
-    (char *)0,
-    dfil_fields,
-    0,
-    "filsys_id = %d",
-    1,
-    &dfil_validate,
-  },
-
-  {
-    /* Q_GFGM - GET_FSGROUP_MEMBERS */ 
-    "get_fsgroup_members",
-    "gfgm",
-    RETRIEVE,
-    "fg",
-    "fsgroup",
-    "CHAR(fs.label), fg.key FROM fsgroup fg, filesys fs",
-    gfgm_fields,
-    2,
-    "fg.group_id = %d AND fs.filsys_id = fg.filsys_id",
-    1,
-    &gfgm_validate,
-  },
-
-  {
-    /* Q_AFTG - ADD_FILESYS_TO_FSGROUP */
-    "add_filesys_to_fsgroup",
-    "aftg",
-    APPEND,
-    "fg",
-    "fsgroup",
-    "INTO fsgroup (group_id,filsys_id,key) VALUES (%d, %d, '%s')",
-    gfgm_fields,
-    3,
-    (char *)0,
-    0,
-    &aftg_validate,
-  },
-
-  {
-    /* Q_RFFG - REMOVE_FILESYS_FROM_FSGROUP */
-    "remove_filesys_from_fsgroup",
-    "rffg",
-    DELETE,
-    "fg",
-    "fsgroup",
-    (char *)0,
-    gfgm_fields,
-    0,
-    "group_id = %d AND filsys_id = %d",
-    2,
-    &aftg_validate,
-  },
-
-  {
-    /* Q_GANF - GET_ALL_NFSPHYS */ 
-    "get_all_nfsphys",
-    "ganf",
-    RETRIEVE,
-    "np",
-    "nfsphys",
-    "CHAR(m.name), CHAR(np.dir), np.device, CHAR(np.status), CHAR(np.allocated), CHAR(np.partsize), CHAR(np.modtime), CHAR(np.modby), np.modwith FROM nfsphys np, machine m",
-    ganf_fields,
-    9,
-    "m.mach_id = np.mach_id",
-    0,
-    &VDsortf,
-  },
-
-  {
-    /* Q_GNFP - GET_NFSPHYS */ 
-    "get_nfsphys",
-    "gnfp",
-    RETRIEVE,
-    "np",
-    "nfsphys",
-    "CHAR(m.name), CHAR(np.dir), np.device, CHAR(np.status), CHAR(np.allocated), CHAR(np.partsize), CHAR(np.modtime), CHAR(np.modby), np.modwith FROM nfsphys np, machine m",
-    gnfp_fields,
-    9,
-    "np.mach_id = %d AND np.dir LIKE '%s' ESCAPE '*' AND m.mach_id = np.mach_id", 
-    2,
-    &gnfp_validate,
-  },
-
-  {
-    /* Q_ANFP - ADD_NFSPHYS */ /* uses prefetch_value() for nfsphys_id */
-    "add_nfsphys",
-    "anfp",
-    APPEND,
-    "np",
-    "nfsphys",
-    "INTO nfsphys (mach_id, dir, device, status, allocated, partsize, nfsphys_id) VALUES (%d, '%s', '%s', %s, %s, %s, %s)",
-    ganf_fields,
-    6,
-    0,
-    0,
-    &anfp_validate,
-  },
-
-  {
-    /* Q_UNFP - UPDATE_NFSPHYS */
-    "update_nfsphys",
-    "unfp",
-    UPDATE,
-    "np",
-    "nfsphys",
-    "nfsphys SET device = '%s', status = %s, allocated = %s, partsize = %s",
-    ganf_fields,
-    4,
-    "mach_id = %d AND dir = '%s'", 
-    2,
-    &unfp_validate,
-  },
-
-  {
-    /* Q_AJNF - ADJUST_NFSPHYS_ALLOCATION */
-    "adjust_nfsphys_allocation",
-    "ajnf",
-    UPDATE,
-    "np",
-    "nfsphys",
-    "nfsphys SET allocated = allocated + %s",
-    ajnf_fields,
-    1,
-    "mach_id = %d AND dir = '%s'",
-    2,
-    &unfp_validate,
-  },
-
-  {
-    /* Q_DNFP - DELETE_NFSPHYS */
-    "delete_nfsphys",
-    "dnfp",
-    DELETE,
-    "np",
-    "nfsphys",
-    (char *)0,
-    dnfp_fields,
-    0,
-    "mach_id = %d AND dir = '%s'",
-    2,
-    &dnfp_validate,
-  },
-
-  {
-    /* Q_GQOT - GET_QUOTA */ 
-    "get_quota",
-    "gqot",
-    RETRIEVE,
-    "q",
-    QUOTA,
-    "CHAR(fs.label), q.type, CHAR(q.entity_id), CHAR(q.quota), CHAR(q.phys_id), CHAR(m.name), CHAR(q.modtime), CHAR(q.modby), q.modwith FROM quota q, filesys fs, machine m",
-    gqot_fields,
-    9,
-    "fs.label LIKE '%s' ESCAPE '*' AND q.type = '%s' AND q.entity_id = %d AND fs.filsys_id = q.filsys_id AND m.mach_id = fs.mach_id",
-    3,
-    &gqot_validate,
-  },
-
-  {
-    /* Q_GQBF - GET_QUOTA_BY_FILESYS */ 
-    "get_quota_by_filesys",
-    "gqbf",
-    RETRIEVE,
-    "q",
-    QUOTA,
-    "CHAR(fs.label), q.type, CHAR(q.entity_id), CHAR(q.quota), CHAR(q.phys_id), CHAR(m.name), CHAR(q.modtime), CHAR(q.modby), q.modwith FROM quota q, filesys fs, machine m",
-    gqbf_fields,
-    9,
-    "fs.label LIKE '%s' ESCAPE '*' AND fs.filsys_id = q.filsys_id AND m.mach_id = fs.mach_id",
-    1,
-    &gqbf_validate,
-  },
-
-  {
-    /* Q_AQOT - ADD_QUOTA */ /* prefetch_filsys() gets last 1 value */
-    "add_quota",
-    "aqot",
-    APPEND,
-    0,
-    QUOTA,
-    "INTO quota (filsys_id, type, entity_id, quota, phys_id) VALUES ('%s', %d, %d, %s, %s)",
-    aqot_fields,
-    4,
-    (char *)0,
-    0,
-    &aqot_validate,
-  },
-
-  {
-    /* Q_UQOT - UPDATE_QUOTA */
-    "update_quota",
-    "uqot",
-    UPDATE,
-    0,
-    QUOTA,
-    "quota SET quota = %s",
-    aqot_fields,
-    1,
-    0,
-    3,
-    &uqot_validate,
-  },
-
-  {
-    /* Q_DQOT - DELETE_QUOTA */
-    "delete_quota",
-    "dqot",
-    DELETE,
-    0,
-    QUOTA,
-    (char *)0,
-    aqot_fields,
-    0,
-    0,
-    3,
-    &dqot_validate,
-  },
-
-  {
-    /* Q_GNFQ - GET_NFS_QUOTAS */ 
-    "get_nfs_quota",
-    "gnfq",
-    RETRIEVE,
-    "q",
-    QUOTA,
-    "CHAR(fs.label), CHAR(u.login), CHAR(q.quota), CHAR(q.phys_id), CHAR(m.name), CHAR(q.modtime), CHAR(q.modby), q.modwith FROM quota q, filesys fs, users u, machine m",
-    gnfq_fields,
-    8,
-    "fs.label LIKE '%s' ESCAPE '*' AND q.type = 'USER' AND q.entity_id = u.users_id AND fs.filsys_id = q.filsys_id AND m.mach_id = fs.mach_id AND u.login = '%s'",
-    2,
-    &gnfq_validate,
-  },
-
-  {
-    /* Q_GNQP - GET_NFS_QUOTAS_BY_PARTITION */ 
-    "get_nfs_quotas_by_partition",
-    "gnqp",
-    RETRIEVE,
-    "q",
-    QUOTA,
-    "CHAR(fs.label), CHAR(u.login), CHAR(q.quota), CHAR(np.dir), CHAR(m.name) FROM quota q, filesys fs, users u, nfsphys np, machine m",
-    gnqp_fields,
-    5,
-    "np.mach_id = %d AND np.dir LIKE '%s' ESCAPE '*' AND q.phys_id = np.nfsphys_id AND fs.filsys_id = q.filsys_id AND q.type = 'USER' AND u.users_id = q.entity_id AND m.mach_id = np.mach_id",
-    2,
-    &gnqp_validate,
-  },
-
-  {
-    /* Q_ANFQ - ADD_NFS_QUOTA */ /* prefetch_filsys() gets last 1 value */
-    "add_nfs_quota",
-    "anfq",
-    APPEND,
-    0,
-    QUOTA,
-    "INTO quota (type, filsys_id, entity_id, quota, phys_id ) VALUES ('USER', %d, %d, %s, %s)",
-    anfq_fields,
-    3,
-    (char *)0,
-    0,
-    &anfq_validate,
-  },
-
-  {
-    /* Q_UNFQ - UPDATE_NFS_QUOTA */ 
-    "update_nfs_quota",
-    "unfq",
-    UPDATE,
-    0,
-    QUOTA,
-    "quota SET quota = %s",
-    anfq_fields,
-    1,
-    0,
-    2,
-    &unfq_validate,
-  },
-
-  {
-    /* Q_DNFQ - DELETE_NFS_QUOTA */
-    "delete_nfs_quota",
-    "dnfq",
-    DELETE,
-    0,
-    QUOTA,
-    (char *)0,
-    anfq_fields,
-    0,
-    0,
-    2,
-    &dnfq_validate,
-  },
-
-  {
     /* Q_GLIN - GET_LIST_INFO */
     "get_list_info",
     "glin",
     RETRIEVE,
     0,
-    LIST,
+    LIST_TABLE,
     0,
     glin_fields,
     13,
@@ -4026,11 +3528,11 @@ struct query Queries2[] = {
     "exln",
     RETRIEVE,
     "l",
-    LIST,
-    "CHAR(l.name) FROM list l",
+    LIST_TABLE,
+    "name FROM list",
     glin_fields,
     1,
-    "l.name LIKE '%s' ESCAPE '*' AND l.list_id != 0",
+    "name LIKE '%s' ESCAPE '*' AND list_id != 0",
     1,
     &VDwild0,
   },
@@ -4041,8 +3543,8 @@ struct query Queries2[] = {
     "alis",
     APPEND,
     "l",
-    LIST, 
-    "INTO list (name, active, publicflg, hidden, maillist, grouplist, gid, acl_type, acl_id, description, list_id) VALUES ('%s',%s,%s,%s,%s,%s,%s,'%s',%d,'%s',%s)",
+    LIST_TABLE, 
+    "INTO list (name, active, publicflg, hidden, maillist, grouplist, gid, acl_type, acl_id, description, list_id) VALUES ('%s',%s,%s,%s,%s,%s,%s,'%s',%d,NVL('%s',CHR(0)),%s)",
     alis_fields,
     10,
     0,
@@ -4056,8 +3558,8 @@ struct query Queries2[] = {
     "ulis",
     UPDATE,
     "l",
-    LIST,
-    "list SET name='%s', active=%s, publicflg=%s, hidden=%s, maillist=%s, grouplist=%s, gid=%s, acl_type='%s', acl_id=%d, description='%s'",
+    LIST_TABLE,
+    "list SET name='%s', active=%s, publicflg=%s, hidden=%s, maillist=%s, grouplist=%s, gid=%s, acl_type='%s', acl_id=%d, description=NVL('%s',CHR(0))",
     ulis_fields,
     10,
     "list_id = %d",
@@ -4071,7 +3573,7 @@ struct query Queries2[] = {
     "dlis",
     DELETE,
     "l",
-    LIST,
+    LIST_TABLE,
     (char *)0,
     dlis_fields,
     0,
@@ -4086,7 +3588,7 @@ struct query Queries2[] = {
     "amtl",
     APPEND,
     0,
-    "imembers",
+    IMEMBERS_TABLE,
     0,
     amtl_fields,
     3,
@@ -4101,7 +3603,7 @@ struct query Queries2[] = {
     "dmfl",
     DELETE,
     0,
-    "imembers",
+    IMEMBERS_TABLE,
     (char *)0,
     amtl_fields,
     0,
@@ -4131,7 +3633,7 @@ struct query Queries2[] = {
     "qgli",
     RETRIEVE,
     0,
-    LIST,
+    LIST_TABLE,
     0,
     qgli_fields,
     1,
@@ -4146,7 +3648,7 @@ struct query Queries2[] = {
     "gmol",
     RETRIEVE,
     (char *)0,
-    "imembers",
+    IMEMBERS_TABLE,
     (char *)0,
     gmol_fields,
     2,
@@ -4161,7 +3663,7 @@ struct query Queries2[] = {
     "geml",
     RETRIEVE,
     (char *)0,
-    "imembers",
+    IMEMBERS_TABLE,
     (char *)0,
     gmol_fields,
     0,
@@ -4176,7 +3678,7 @@ struct query Queries2[] = {
     "glom",
     RETRIEVE,
     0,
-    "imembers",
+    IMEMBERS_TABLE,
     0,
     glom_fields,
     6,
@@ -4191,7 +3693,7 @@ struct query Queries2[] = {
     "cmol",
     RETRIEVE,
     0,
-    "imembers",
+    IMEMBERS_TABLE,
     0,
     cmol_fields,
     1,
@@ -4201,19 +3703,664 @@ struct query Queries2[] = {
   },
 
   {
+    /* Q_GSIN - GET_SERVER_INFO */
+    "get_server_info",
+    "gsin",
+    RETRIEVE,
+    "s",
+    SERVERS_TABLE,
+    "name, update_int, target_file, script, dfgen, dfcheck, type, enable, inprogress, harderror, errmsg, acl_type, acl_id, TO_CHAR(modtime, 'DD-mon-YYYY HH24:MI:SS'), modby, modwith FROM servers",
+    gsin_fields,
+    16,
+    "name LIKE '%s' ESCAPE '*'",
+    1,
+    &gsin_validate,
+  },
+
+  {
+    /* Q_QGSV - QUALIFIED_GET_SERVER */
+    "qualified_get_server",
+    "qgsv",
+    RETRIEVE,
+    0,
+    SERVERS_TABLE,
+    0,
+    qgsv_fields,
+    1,
+    0,
+    3,
+    &qgsv_validate,
+  },
+
+  {
+    /* Q_ASIN - ADD_SERVER_INFO */
+    "add_server_info",
+    "asin",
+    APPEND,
+    "s",
+    SERVERS_TABLE,
+    "INTO servers (name, update_int, target_file, script, type, enable, acl_type, acl_id) VALUES (UPPER('%s'),%s,'%s','%s','%s',%s,'%s',%d)",
+    asin_fields,
+    8,
+    (char *)0,
+    0,
+    &asin_validate,
+  },
+
+  {
+    /* Q_USIN - UPDATE_SERVER_INFO */
+    "update_server_info",
+    "usin",
+    UPDATE,
+    "s",
+    SERVERS_TABLE,
+    "servers SET update_int = %s, target_file = '%s', script = '%s', type = '%s', enable = %s, acl_type = '%s', acl_id = %d",
+    asin_fields,
+    7,
+    "name = UPPER('%s')",
+    1,
+    &asin_validate,
+  },
+
+  {
+    /* Q_RSVE - RESET_SERVER_ERROR */
+    "reset_server_error",
+    "rsve",
+    UPDATE,
+    "s",
+    SERVERS_TABLE,
+    "servers SET harderror = 0, dfcheck = dfgen",
+    dsin_fields,
+    0,
+    "name = UPPER('%s')",
+    1,
+    &rsve_validate,
+  },
+
+  {
+    /* Q_SSIF - SET_SERVER_INTERNAL_FLAGS */
+    "set_server_internal_flags",
+    "ssif",
+    UPDATE,
+    "s",
+    SERVERS_TABLE,
+    "servers SET dfgen = %s, dfcheck = %s, inprogress = %s, harderror = %s, errmsg = NVL('%s',CHR(0))",
+    ssif_fields,
+    5,
+    "name = UPPER('%s')",
+    1,
+    &ssif_validate,
+  },
+
+  {
+    /* Q_DSIN - DELETE_SERVER_INFO */
+    "delete_server_info",
+    "dsin",
+    DELETE,
+    "s",
+    SERVERS_TABLE,
+    (char *)0,
+    dsin_fields,
+    0,
+    "name = UPPER('%s')",
+    1,
+    &dsin_validate,
+  },
+
+  {
+    /* Q_GSHI - GET_SERVER_HOST_INFO */ 
+    "get_server_host_info",
+    "gshi",
+    RETRIEVE,
+    "sh",
+    SERVERHOSTS_TABLE,
+    "sh.service, m.name, sh.enable, sh.override, sh.success, sh.inprogress, sh.hosterror, sh.hosterrmsg, sh.ltt, sh.lts, sh.value1, sh.value2, sh.value3, TO_CHAR(sh.modtime, 'DD-mon-YYYY HH24:MI:SS'), sh.modby, sh.modwith FROM serverhosts sh, machine m",
+    gshi_fields,
+    16,
+    "sh.service LIKE '%s' ESCAPE '*' AND m.name LIKE '%s' ESCAPE '*' AND m.mach_id = sh.mach_id",
+    2,
+    &gshi_validate,
+  },
+
+  {
+    /* Q_QGSH - QUALIFIED_GET_SERVER_HOST */
+    "qualified_get_server_host",
+    "qgsh",
+    RETRIEVE,
+    0,
+    SERVERHOSTS_TABLE,
+    0,
+    qgsh_fields,
+    2,
+    0,
+    6,
+    &qgsh_validate,
+  },
+
+  {
+    /* Q_ASHI - ADD_SERVER_HOST_INFO */
+    "add_server_host_info",
+    "ashi",
+    APPEND,
+    "sh",
+    SERVERHOSTS_TABLE,
+    "INTO serverhosts (service, mach_id, enable, value1, value2, value3) VALUES (UPPER('%s'), %d, %s, %s, %s, NVL('%s',CHR(0)))",
+    ashi_fields,
+    6,
+    (char *)0,
+    0,
+    &ashi_validate,
+  },
+
+  {
+    /* Q_USHI - UPDATE_SERVER_HOST_INFO */
+    "update_server_host_info",
+    "ushi",
+    UPDATE,
+    "sh",
+    SERVERHOSTS_TABLE,
+    "serverhosts SET enable = %s, value1 = %s, value2 = %s, value3 = NVL('%s',CHR(0))",
+    ashi_fields,
+    4,
+    "service = UPPER('%s') AND mach_id = %d",
+    2,
+    &ashi_validate,
+  },
+
+  {
+    /* Q_RSHE - RESET_SERVER_HOST_ERROR */
+    "reset_server_host_error",
+    "rshe",
+    UPDATE,
+    "sh",
+    SERVERHOSTS_TABLE,
+    "serverhosts SET hosterror = 0",
+    dshi_fields,
+    0,
+    "service = UPPER('%s') AND mach_id = %d",
+    2,
+    &rshe_validate,
+  },
+
+  {
+    /* Q_SSHO - SET_SERVER_HOST_OVERRIDE */
+    "set_server_host_override",
+    "ssho",
+    UPDATE,
+    "sh",
+    SERVERHOSTS_TABLE,
+    "serverhosts SET override = 1",
+    dshi_fields,
+    0,
+    "service = UPPER('%s') AND mach_id = %d",
+    2,
+    &ssho_validate,
+  },
+
+  {
+    /* Q_SSHI - SET_SERVER_HOST_INTERNAL */
+    "set_server_host_internal",
+    "sshi",
+    UPDATE,
+    "s",
+    SERVERHOSTS_TABLE,
+    "serverhosts SET override = %s, success = %s, inprogress = %s, hosterror = %s, hosterrmsg = NVL('%s',CHR(0)), ltt = %s, lts = %s",
+    sshi_fields,
+    7,
+    "service = UPPER('%s') AND mach_id = %d", 
+    2,
+    &sshi_validate,
+  },
+
+  {
+    /* Q_DSHI - DELETE_SERVER_HOST_INFO */
+    "delete_server_host_info",
+    "dshi",
+    DELETE,
+    "sh",
+    SERVERHOSTS_TABLE,
+    (char *)0,
+    dshi_fields,
+    0,
+    "service = UPPER('%s') AND mach_id = %d",
+    2,
+    &dshi_validate,
+  },
+
+  {
+    /* Q_GSLO - GET_SERVER_LOCATIONS */ 
+    "get_server_locations",
+    "gslo",
+    RETRIEVE,
+    "sh",
+    SERVERHOSTS_TABLE,
+    "sh.service, m.name FROM serverhosts sh, machine m",
+    gslo_fields,
+    2,
+    "sh.service LIKE '%s' ESCAPE '*' AND sh.mach_id = m.mach_id",
+    1,
+    &VDupwild0,
+  },
+
+  {
+    /* Q_GFSL - GET_FILESYS_BY_LABEL */ 
+    "get_filesys_by_label",
+    "gfsl",
+    RETRIEVE,
+    "fs",
+    FILESYS_TABLE,
+    "fs.label, fs.type, m.name, fs.name, fs.mount, fs.rwaccess, fs.comments, u.login, l.name, fs.createflg, fs.lockertype, TO_CHAR(fs.modtime, 'DD-mon-YYYY HH24:MI:SS'), fs.modby, fs.modwith FROM filesys fs, machine m, users u, list l",
+    gfsl_fields,
+    14,
+    "fs.label LIKE '%s' ESCAPE '*' AND fs.mach_id = m.mach_id AND fs.owner = u.users_id AND fs.owners = l.list_id",
+    1,
+    &VDwildsortf,
+  },
+
+  {
+    /* Q_GFSM - GET_FILESYS_BY_MACHINE */ 
+    "get_filesys_by_machine",
+    "gfsm",
+    RETRIEVE,
+    "fs",
+    FILESYS_TABLE,
+    "fs.label, fs.type, m.name, fs.name, fs.mount, fs.rwaccess, fs.comments, u.login, l.name, fs.createflg, fs.lockertype, TO_CHAR(fs.modtime, 'DD-mon-YYYY HH24:MI:SS'), fs.modby, fs.modwith FROM filesys fs, machine m, users u, list l",
+    gfsm_fields,
+    14,
+    "fs.mach_id = %d AND m.mach_id = fs.mach_id AND fs.owner = u.users_id AND fs.owners = l.list_id",
+    1,
+    &gfsm_validate,
+  },
+
+  {
+    /* Q_GFSN - GET_FILESYS_BY_NFSPHYS */ 
+    "get_filesys_by_nfsphys",
+    "gfsn",
+    RETRIEVE,
+    "fs",
+    FILESYS_TABLE,
+    "fs.label, fs.type, m.name, fs.name, fs.mount, fs.rwaccess, fs.comments, u.login, l.name, fs.createflg, fs.lockertype, TO_CHAR(fs.modtime, 'DD-mon-YYYY HH24:MI:SS'), fs.modby, fs.modwith FROM filesys fs, machine m, users u, list l, nfsphys np",
+    gfsn_fields,
+    14,
+    "fs.mach_id = %d AND m.mach_id = fs.mach_id AND fs.owner = u.users_id AND fs.owners = l.list_id AND np.nfsphys_id = fs.phys_id AND np.dir LIKE '%s' ESCAPE '*' AND fs.type = 'NFS'", 
+    2,
+    &gfsn_validate,
+  },
+
+  {
+    /* Q_GFSG - GET_FILESYS_BY_GROUP */ 
+    "get_filesys_by_group",
+    "gfsg",
+    RETRIEVE,
+    "fs",
+    FILESYS_TABLE,
+    "fs.label, fs.type, m.name, fs.name, fs.mount, fs.rwaccess, fs.comments, u.login, l.name, fs.createflg, fs.lockertype, TO_CHAR(fs.modtime, 'DD-mon-YYYY HH24:MI:SS'), fs.modby, fs.modwith FROM filesys fs, machine m, users u, list l",
+    gfsg_fields,
+    14,
+    "fs.owners = %d AND m.mach_id = fs.mach_id AND fs.owner = u.users_id AND fs.owners = l.list_id",
+    1,
+    &gfsg_validate,
+  },
+
+  {
+    /* Q_GFSP - GET_FILESYS_BY_PATH */
+    "get_filesys_by_path",
+    "gfsp",
+    RETRIEVE,
+    "fs",
+    FILESYS_TABLE,
+    "fs.label, fs.type, m.name, fs.name, fs.mount, fs.rwaccess, fs.comments, u.login, l.name, fs.createflg, fs.lockertype, TO_CHAR(fs.modtime, 'DD-mon-YYYY HH24:MI:SS'), fs.modby, fs.modwith FROM filesys fs, machine m, users u, list l",
+    gfsp_fields,
+    14,
+    "fs.name LIKE '%s' ESCAPE '*' AND m.mach_id = fs.mach_id AND fs.owner = u.users_id AND fs.owners = list_id",
+    1,
+    &VDwildsortf,
+  },
+ 
+  {
+    /* Q_AFIL - ADD_FILESYS */ /* uses prefetch_value() for filsys_id */
+    "add_filesys",
+    "afil",
+    APPEND,
+    "fs",
+    FILESYS_TABLE,
+    "INTO filesys (label, type, mach_id, name, mount, rwaccess, comments, owner, owners, createflg, lockertype, filsys_id) VALUES ('%s','%s',%d,NVL('%s',CHR(0)),'%s','%s',NVL('%s',CHR(0)),%d,%d,%s,'%s',%s)",
+    afil_fields,
+    11,
+    0,
+    0,
+    &afil_validate,
+  },
+
+  {
+    /* Q_UFIL - UPDATE_FILESYS */
+    "update_filesys",
+    "ufil",
+    UPDATE,
+    "fs",
+    FILESYS_TABLE,
+    "filesys SET label = '%s', type = '%s', mach_id = %d, name = NVL('%s',CHR(0)), mount = '%s', rwaccess = '%s', comments = NVL('%s',CHR(0)), owner = %d, owners = %d, createflg = %s, lockertype = '%s'",
+    ufil_fields,
+    11,
+    "filsys_id = %d",
+    1,
+    &ufil_validate,      
+  },
+
+  {
+    /* Q_DFIL - DELETE_FILESYS */
+    "delete_filesys",
+    "dfil",
+    DELETE,
+    "fs",
+    FILESYS_TABLE,
+    (char *)0,
+    dfil_fields,
+    0,
+    "filsys_id = %d",
+    1,
+    &dfil_validate,
+  },
+
+  {
+    /* Q_GFGM - GET_FSGROUP_MEMBERS */ 
+    "get_fsgroup_members",
+    "gfgm",
+    RETRIEVE,
+    "fg",
+    FSGROUP_TABLE,
+    "fs.label, fg.key FROM fsgroup fg, filesys fs",
+    gfgm_fields,
+    2,
+    "fg.group_id = %d AND fs.filsys_id = fg.filsys_id",
+    1,
+    &gfgm_validate,
+  },
+
+  {
+    /* Q_AFTG - ADD_FILESYS_TO_FSGROUP */
+    "add_filesys_to_fsgroup",
+    "aftg",
+    APPEND,
+    "fg",
+    FSGROUP_TABLE,
+    "INTO fsgroup (group_id,filsys_id,key) VALUES (%d, %d, '%s')",
+    gfgm_fields,
+    3,
+    (char *)0,
+    0,
+    &aftg_validate,
+  },
+
+  {
+    /* Q_RFFG - REMOVE_FILESYS_FROM_FSGROUP */
+    "remove_filesys_from_fsgroup",
+    "rffg",
+    DELETE,
+    "fg",
+    FSGROUP_TABLE,
+    (char *)0,
+    gfgm_fields,
+    0,
+    "group_id = %d AND filsys_id = %d",
+    2,
+    &aftg_validate,
+  },
+
+  {
+    /* Q_GANF - GET_ALL_NFSPHYS */ 
+    "get_all_nfsphys",
+    "ganf",
+    RETRIEVE,
+    "np",
+    NFSPHYS_TABLE,
+    "m.name, np.dir, np.device, np.status, np.allocated, np.partsize, TO_CHAR(np.modtime, 'DD-mon-YYYY HH24:MI:SS'), np.modby, np.modwith FROM nfsphys np, machine m",
+    ganf_fields,
+    9,
+    "m.mach_id = np.mach_id",
+    0,
+    &VDsortf,
+  },
+
+  {
+    /* Q_GNFP - GET_NFSPHYS */ 
+    "get_nfsphys",
+    "gnfp",
+    RETRIEVE,
+    "np",
+    NFSPHYS_TABLE,
+    "m.name, np.dir, np.device, np.status, np.allocated, np.partsize, TO_CHAR(np.modtime, 'DD-mon-YYYY HH24:MI:SS'), np.modby, np.modwith FROM nfsphys np, machine m",
+    gnfp_fields,
+    9,
+    "np.mach_id = %d AND np.dir LIKE '%s' ESCAPE '*' AND m.mach_id = np.mach_id", 
+    2,
+    &gnfp_validate,
+  },
+
+  {
+    /* Q_ANFP - ADD_NFSPHYS */ /* uses prefetch_value() for nfsphys_id */
+    "add_nfsphys",
+    "anfp",
+    APPEND,
+    "np",
+    NFSPHYS_TABLE,
+    "INTO nfsphys (mach_id, dir, device, status, allocated, partsize, nfsphys_id) VALUES (%d, '%s', NVL('%s',CHR(0)), %s, %s, %s, %s)",
+    ganf_fields,
+    6,
+    0,
+    0,
+    &anfp_validate,
+  },
+
+  {
+    /* Q_UNFP - UPDATE_NFSPHYS */
+    "update_nfsphys",
+    "unfp",
+    UPDATE,
+    "np",
+    NFSPHYS_TABLE,
+    "nfsphys SET device = NVL('%s',CHR(0)), status = %s, allocated = %s, partsize = %s",
+    ganf_fields,
+    4,
+    "mach_id = %d AND dir = '%s'", 
+    2,
+    &unfp_validate,
+  },
+
+  {
+    /* Q_AJNF - ADJUST_NFSPHYS_ALLOCATION */
+    "adjust_nfsphys_allocation",
+    "ajnf",
+    UPDATE,
+    "np",
+    NFSPHYS_TABLE,
+    "nfsphys SET allocated = allocated + %s",
+    ajnf_fields,
+    1,
+    "mach_id = %d AND dir = '%s'",
+    2,
+    &unfp_validate,
+  },
+
+  {
+    /* Q_DNFP - DELETE_NFSPHYS */
+    "delete_nfsphys",
+    "dnfp",
+    DELETE,
+    "np",
+    NFSPHYS_TABLE,
+    (char *)0,
+    dnfp_fields,
+    0,
+    "mach_id = %d AND dir = '%s'",
+    2,
+    &dnfp_validate,
+  },
+
+  {
+    /* Q_GQOT - GET_QUOTA */ 
+    "get_quota",
+    "gqot",
+    RETRIEVE,
+    "q",
+    QUOTA_TABLE,
+    "fs.label, q.type, q.entity_id, q.quota, q.phys_id, m.name, TO_CHAR(q.modtime, 'DD-mon-YYYY HH24:MI:SS'), q.modby, q.modwith FROM quota q, filesys fs, machine m",
+    gqot_fields,
+    9,
+    "fs.label LIKE '%s' ESCAPE '*' AND q.type = '%s' AND q.entity_id = %d AND fs.filsys_id = q.filsys_id AND m.mach_id = fs.mach_id",
+    3,
+    &gqot_validate,
+  },
+
+  {
+    /* Q_GQBF - GET_QUOTA_BY_FILESYS */ 
+    "get_quota_by_filesys",
+    "gqbf",
+    RETRIEVE,
+    "q",
+    QUOTA_TABLE,
+    "fs.label, q.type, q.entity_id, q.quota, q.phys_id, m.name, TO_CHAR(q.modtime, 'DD-mon-YYYY HH24:MI:SS'), q.modby, q.modwith FROM quota q, filesys fs, machine m",
+    gqbf_fields,
+    9,
+    "fs.label LIKE '%s' ESCAPE '*' AND fs.filsys_id = q.filsys_id AND m.mach_id = fs.mach_id",
+    1,
+    &gqbf_validate,
+  },
+
+  {
+    /* Q_AQOT - ADD_QUOTA */ /* prefetch_filsys() gets last 1 value */
+    "add_quota",
+    "aqot",
+    APPEND,
+    0,
+    QUOTA_TABLE,
+    "INTO quota (filsys_id, type, entity_id, quota, phys_id) VALUES ('%s', %d, %d, %s, %s)",
+    aqot_fields,
+    4,
+    (char *)0,
+    0,
+    &aqot_validate,
+  },
+
+  {
+    /* Q_UQOT - UPDATE_QUOTA */
+    "update_quota",
+    "uqot",
+    UPDATE,
+    0,
+    QUOTA_TABLE,
+    "quota SET quota = %s",
+    aqot_fields,
+    1,
+    0,
+    3,
+    &uqot_validate,
+  },
+
+  {
+    /* Q_DQOT - DELETE_QUOTA */
+    "delete_quota",
+    "dqot",
+    DELETE,
+    0,
+    QUOTA_TABLE,
+    (char *)0,
+    aqot_fields,
+    0,
+    0,
+    3,
+    &dqot_validate,
+  },
+
+  {
+    /* Q_GNFQ - GET_NFS_QUOTAS */ 
+    "get_nfs_quota",
+    "gnfq",
+    RETRIEVE,
+    "q",
+    QUOTA_TABLE,
+    "fs.label, u.login, q.quota, q.phys_id, m.name, TO_CHAR(q.modtime, 'DD-mon-YYYY HH24:MI:SS'), q.modby, q.modwith FROM quota q, filesys fs, users u, machine m",
+    gnfq_fields,
+    8,
+    "fs.label LIKE '%s' ESCAPE '*' AND q.type = 'USER' AND q.entity_id = u.users_id AND fs.filsys_id = q.filsys_id AND m.mach_id = fs.mach_id AND u.login = '%s'",
+    2,
+    &gnfq_validate,
+  },
+
+  {
+    /* Q_GNQP - GET_NFS_QUOTAS_BY_PARTITION */ 
+    "get_nfs_quotas_by_partition",
+    "gnqp",
+    RETRIEVE,
+    "q",
+    QUOTA_TABLE,
+    "fs.label, u.login, q.quota, np.dir, m.name FROM quota q, filesys fs, users u, nfsphys np, machine m",
+    gnqp_fields,
+    5,
+    "np.mach_id = %d AND np.dir LIKE '%s' ESCAPE '*' AND q.phys_id = np.nfsphys_id AND fs.filsys_id = q.filsys_id AND q.type = 'USER' AND u.users_id = q.entity_id AND m.mach_id = np.mach_id",
+    2,
+    &gnqp_validate,
+  },
+
+  {
+    /* Q_ANFQ - ADD_NFS_QUOTA */ /* prefetch_filsys() gets last 1 value */
+    "add_nfs_quota",
+    "anfq",
+    APPEND,
+    0,
+    QUOTA_TABLE,
+    "INTO quota (type, filsys_id, entity_id, quota, phys_id ) VALUES ('USER', %d, %d, %s, %s)",
+    anfq_fields,
+    3,
+    (char *)0,
+    0,
+    &anfq_validate,
+  },
+
+  {
+    /* Q_UNFQ - UPDATE_NFS_QUOTA */ 
+    "update_nfs_quota",
+    "unfq",
+    UPDATE,
+    0,
+    QUOTA_TABLE,
+    "quota SET quota = %s",
+    anfq_fields,
+    1,
+    0,
+    2,
+    &unfq_validate,
+  },
+
+  {
+    /* Q_DNFQ - DELETE_NFS_QUOTA */
+    "delete_nfs_quota",
+    "dnfq",
+    DELETE,
+    0,
+    QUOTA_TABLE,
+    (char *)0,
+    anfq_fields,
+    0,
+    0,
+    2,
+    &dnfq_validate,
+  },
+
+  {
     /* Q_GZCL - GET_ZEPHYR_CLASS */
     "get_zephyr_class",
     "gzcl",
     RETRIEVE,
     "z",
-    "zephyr",
-    "CHAR(z.class), z.xmt_type, CHAR(z.xmt_id), z.sub_type, CHAR(z.sub_id), z.iws_type, CHAR(z.iws_id), z.iui_type, CHAR(z.iui_id), CHAR(z.modtime), CHAR(z.modby), z.modwith FROM zephyr z",
+    ZEPHYR_TABLE,
+    "class, xmt_type, xmt_id, sub_type, sub_id, iws_type, iws_id, iui_type, iui_id, TO_CHAR(modtime, 'DD-mon-YYYY HH24:MI:SS'), modby, modwith FROM zephyr",
     gzcl_fields,
     12,
-    "z.class LIKE '%s' ESCAPE '*'",
+    "class LIKE '%s' ESCAPE '*'",
     1,
     &gzcl_validate,
-  },    
+  },
 
   {
     /* Q_AZCL - ADD_ZEPHYR_CLASS */
@@ -4221,7 +4368,7 @@ struct query Queries2[] = {
     "azcl",
     APPEND,
     "z",
-    "zephyr",
+    ZEPHYR_TABLE,
     "INTO zephyr (class, xmt_type, xmt_id, sub_type, sub_id, iws_type, iws_id, iui_type, iui_id) VALUES ('%s','%s',%d,'%s',%d,'%s',%d,'%s',%d)",
     azcl_fields,
     9,
@@ -4236,7 +4383,7 @@ struct query Queries2[] = {
     "uzcl",
     UPDATE,
     "z",
-    "zephyr",
+    ZEPHYR_TABLE,
     "zephyr SET class = '%s', xmt_type = '%s', xmt_id = %d, sub_type = '%s', sub_id = %d, iws_type = '%s', iws_id = %d, iui_type = '%s', iui_id = %d",
     uzcl_fields,
     9,
@@ -4251,7 +4398,7 @@ struct query Queries2[] = {
     "dzcl",
     DELETE,
     "z",
-    "zephyr",
+    ZEPHYR_TABLE,
     0,
     uzcl_fields,
     0,
@@ -4261,16 +4408,76 @@ struct query Queries2[] = {
   },    
 
   {
+    /* Q_GSHA - GET_SERVER_HOST_ACCESS */ 
+    "get_server_host_access",
+    "gsha",
+    RETRIEVE,
+    "ha",
+    HOSTACCESS_TABLE,
+    "m.name, ha.acl_type, ha.acl_id, TO_CHAR(ha.modtime, 'DD-mon-YYYY HH24:MI:SS'), ha.modby, ha.modwith FROM hostaccess ha, machine m",
+    gsha_fields,
+    6,
+    "m.name LIKE '%s' ESCAPE '*' AND ha.mach_id = m.mach_id",
+    1,
+    &gsha_validate,
+  },
+
+  {
+    /* Q_ASHA - ADD_SERVER_HOST_ACCESS */
+    "add_server_host_access",
+    "asha",
+    APPEND,
+    "ha",
+    HOSTACCESS_TABLE,
+    "INTO hostaccess (mach_id, acl_type, acl_id) VALUES (%d,'%s',%d)",
+    asha_fields,
+    3,
+    0,
+    0,
+    &asha_validate,
+  },
+
+  {
+    /* Q_USHA - UPDATE_SERVER_HOST_ACCESS */
+    "update_server_host_access",
+    "usha",
+    UPDATE,
+    "ha",
+    HOSTACCESS_TABLE,
+    "hostaccess SET acl_type = '%s', acl_id = %d",
+    asha_fields,
+    2,
+    "mach_id = %d",
+    1,
+    &asha_validate,
+  },
+
+  {
+    /* Q_DSHA - DELETE_SERVER_HOST_ACCESS */
+    "delete_server_host_access",
+    "dsha",
+    DELETE,
+    "ha",
+    HOSTACCESS_TABLE,
+    0,
+    asha_fields,
+    0,
+    "mach_id = %d",
+    1,
+    &VDmach,
+  },
+
+  {
     /* Q_GSVC - GET_SERVICE */
     "get_service",
     "gsvc",
     RETRIEVE,
     "ss",
-    "services",
-    "CHAR(ss.name), ss.protocol, CHAR(ss.port), ss.description, CHAR(ss.modtime), CHAR(ss.modby), ss.modwith FROM services ss",
+    SERVICES_TABLE,
+    "name, protocol, port, description, TO_CHAR(modtime, 'DD-mon-YYYY HH24:MI:SS'), modby, modwith FROM services",
     gsvc_fields,
     7,
-    "ss.name LIKE '%s' ESCAPE '*'",
+    "name LIKE '%s' ESCAPE '*'",
     1,
     &VDwildsortf,
   },
@@ -4281,8 +4488,8 @@ struct query Queries2[] = {
     "asvc",
     APPEND,
     "ss",
-    "services",
-    "INTO services (name, protocol, port, description) VALUES ('%s','%s',%s,'%s')",
+    SERVICES_TABLE,
+    "INTO services (name, protocol, port, description) VALUES ('%s','%s',%s,NVL('%s',CHR(0)))",
     asvc_fields,
     4,
     (char *)0,
@@ -4296,7 +4503,7 @@ struct query Queries2[] = {
     "dsvc",
     DELETE,
     "ss",
-    "services",
+    SERVICES_TABLE,
     0,
     asvc_fields,
     0,
@@ -4311,8 +4518,8 @@ struct query Queries2[] = {
     "gpce",
     RETRIEVE,
     "pc",
-    "printcap",
-    "CHAR(pc.name), CHAR(m.name), pc.dir, pc.rp, CHAR(pc.quotaserver), CHAR(pc.auth), CHAR(pc.price), pc.comments, CHAR(pc.modtime), CHAR(pc.modby), pc.modwith FROM printcap pc, machine m",
+    PRINTCAP_TABLE,
+    "pc.name, m.name, pc.dir, pc.rp, pc.quotaserver, pc.auth, pc.price, pc.comments, TO_CHAR(pc.modtime, 'DD-mon-YYYY HH24:MI:SS'), pc.modby, pc.modwith FROM printcap pc, machine m",
     gpce_fields,
     11,
     "pc.name LIKE '%s' ESCAPE '*' AND m.mach_id = pc.mach_id",
@@ -4326,8 +4533,8 @@ struct query Queries2[] = {
     "apce",
     APPEND,
     "pc",
-    "printcap",
-    "INTO printcap (name, mach_id, dir, rp, quotaserver, auth, price, comments) VALUES ('%s',%d,'%s','%s',%d,%s,%s,'%s')",
+    PRINTCAP_TABLE,
+    "INTO printcap (name, mach_id, dir, rp, quotaserver, auth, price, comments) VALUES ('%s',%d,'%s','%s',%d,%s,%s,NVL('%s',CHR(0)))",
     apce_fields,
     8,
     0,
@@ -4341,7 +4548,7 @@ struct query Queries2[] = {
     "dpce",
     DELETE,
     "pc",
-    "printcap",
+    PRINTCAP_TABLE,
     0,
     apce_fields,
     0,
@@ -4356,8 +4563,8 @@ struct query Queries2[] = {
     "gpcp",
     RETRIEVE,
     "pc",
-    "printcap",
-    "CHAR(pc.name), CHAR(m.name), pc.dir, pc.rp, pc.comments, CHAR(pc.modtime), CHAR(pc.modby), pc.modwith FROM printcap pc, machine m",
+    PRINTCAP_TABLE,
+    "pc.name, m.name, pc.dir, pc.rp, pc.comments, TO_CHAR(pc.modtime, 'DD-mon-YYYY HH24:MI:SS'), pc.modby, pc.modwith FROM printcap pc, machine m",
     gpcp_fields,
     8,
     "pc.name LIKE '%s' ESCAPE '*' AND m.mach_id = pc.mach_id",
@@ -4371,7 +4578,7 @@ struct query Queries2[] = {
     "dpcp",
     DELETE,
     "pc",
-    "printcap",
+    PRINTCAP_TABLE,
     0,
     apce_fields,
     0,
@@ -4386,8 +4593,8 @@ struct query Queries2[] = {
     "gpdm",
     RETRIEVE,
     "pal",
-    "palladium",
-    "CHAR(pal.name), CHAR(pal.ident), CHAR(m.name), CHAR(pal.modtime), CHAR(pal.modby), pal.modwith FROM palladium pal, machine m",
+    PALLADIUM_TABLE,
+    "pal.name, pal.identifier, m.name, TO_CHAR(pal.modtime, 'DD-mon-YYYY HH24:MI:SS'), pal.modby, pal.modwith FROM palladium pal, machine m",
     gpdm_fields,
     6,
     "pal.name LIKE '%s' ESCAPE '*' AND m.mach_id = pal.mach_id",
@@ -4401,8 +4608,8 @@ struct query Queries2[] = {
     "apdm",
     APPEND,
     "pal",
-    "palladium",
-    "INTO palladium (name, ident, mach_id) VALUES ('%s',%s,%d)",
+    PALLADIUM_TABLE,
+    "INTO palladium (name, identifier, mach_id) VALUES ('%s',%s,%d)",
     apdm_fields,
     3,
     0,
@@ -4416,7 +4623,7 @@ struct query Queries2[] = {
     "dpdm",
     DELETE,
     "pal",
-    "palladium",
+    PALLADIUM_TABLE,
     0,
     apdm_fields,
     0,
@@ -4431,11 +4638,11 @@ struct query Queries2[] = {
     "gali",
     RETRIEVE,
     "a",
-    ALIAS,
-    "CHAR(a.name), CHAR(a.type), CHAR(a.trans) FROM alias a",
+    ALIAS_TABLE,
+    "name, type, trans FROM alias",
     gali_fields,
     3,
-    "a.name LIKE '%s' ESCAPE '*' AND a.type LIKE '%s' ESCAPE '*' AND a.trans LIKE '%s' ESCAPE '*'",
+    "name LIKE '%s' ESCAPE '*' AND type LIKE '%s' ESCAPE '*' AND trans LIKE '%s' ESCAPE '*'",
     3,
     &VDwild3sort1,
   },
@@ -4446,7 +4653,7 @@ struct query Queries2[] = {
     "aali",
     APPEND,
     "a",
-    ALIAS,
+    ALIAS_TABLE,
     "INTO alias (name, type, trans) VALUES ('%s', '%s', '%s')",
     aali_fields,
     3,
@@ -4461,7 +4668,7 @@ struct query Queries2[] = {
     "dali",
     DELETE,
     "a",
-    ALIAS,
+    ALIAS_TABLE,
     (char *)0,
     aali_fields,
     0,
@@ -4476,11 +4683,11 @@ struct query Queries2[] = {
     "gval",
     RETRIEVE,
     "val",
-    "numvalues",
-    "CHAR(val.value) FROM numvalues val",
+    NUMVALUES_TABLE,
+    "value FROM numvalues",
     gval_fields,
     1,
-    "val.name = '%s'",
+    "name = '%s'",
     1,
     &gval_validate,
   },
@@ -4491,7 +4698,7 @@ struct query Queries2[] = {
     "aval",
     APPEND,
     "val",
-    "numvalues",
+    NUMVALUES_TABLE,
     "INTO numvalues (name, value) VALUES ('%s', %s)",
     aval_fields,
     2,
@@ -4506,7 +4713,7 @@ struct query Queries2[] = {
     "uval",
     UPDATE,
     "val",
-    "numvalues",
+    NUMVALUES_TABLE,
     "numvalues SET value = %s",
     aval_fields,
     1,
@@ -4521,7 +4728,7 @@ struct query Queries2[] = {
     "dval",
     DELETE,
     "val",
-    "numvalues",
+    NUMVALUES_TABLE,
     (char *)0,
     dval_fields,
     0,
@@ -4536,8 +4743,8 @@ struct query Queries2[] = {
     "gats",
     RETRIEVE,
     "tbs",
-    "tblstats",
-    "tbs.table_name, CHAR(tbs.appends), CHAR(tbs.updates), CHAR(tbs.deletes), CHAR(tbs.modtime) FROM tblstats tbs",
+    TBLSTATS_TABLE,
+    "table_name, appends, updates, deletes, TO_CHAR(modtime, 'DD-mon-YYYY HH24:MI:SS') FROM tblstats",
     gats_fields,
     5,
     (char *)0,
@@ -4551,7 +4758,7 @@ struct query Queries2[] = {
     "_sdl",
     UPDATE,
     (char *)0,
-    (char *)0,
+    0,
     (char *)0,
     _sdl_fields,
     1,

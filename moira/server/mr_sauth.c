@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_sauth.c,v $
- *	$Author: tytso $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_sauth.c,v 1.19 1993-12-10 14:00:49 tytso Exp $
+ *	$Author: danw $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_sauth.c,v 1.20 1997-01-20 18:26:14 danw Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,19 +10,21 @@
  */
 
 #ifndef lint
-static char *rcsid_sms_sauth_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_sauth.c,v 1.19 1993-12-10 14:00:49 tytso Exp $";
+static char *rcsid_sms_sauth_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_sauth.c,v 1.20 1997-01-20 18:26:14 danw Exp $";
 #endif lint
 
 #include <mit-copyright.h>
-#include <strings.h>
+#include <string.h>
 #include "mr_server.h"
 #include <ctype.h>
 #include <krb_et.h>
+#include <moira.h>
 
 extern char buf1[];
 extern char *whoami;
 
-char *kname_unparse();
+/* from libmoira */
+char *kname_unparse(char *, char *, char *);
 
 /*
  * Handle a MOIRA_AUTH RPC request.
@@ -39,11 +41,11 @@ do_auth(cl)
 	KTEXT_ST auth;
 	AUTH_DAT ad;
 	int status, ok;
-	char buf[REALM_SZ+INST_SZ+ANAME_SZ], hostbuf[BUFSIZ], *host, *p;
+	char hostbuf[BUFSIZ], *host, *p;
 	extern int errno;
 
 	auth.length = cl->args->mr_argl[0];
-	bcopy(cl->args->mr_argv[0], (char *)auth.dat, auth.length);
+	memcpy((char *)auth.dat, cl->args->mr_argv[0], auth.length);
 	auth.mbz = 0;
 	if (gethostname(hostbuf, sizeof(hostbuf)) < 0)
 	  com_err(whoami, errno, "Unable to get local hostname");
@@ -53,11 +55,8 @@ do_auth(cl)
 	    *p = tolower(*p);
 	*p = 0;
 
-	if ((status = krb_rd_req (&auth, MOIRA_SNAME, host, cl->haddr.sin_addr,
-				 &ad, "")) != 0 &&
-	    /* for backwards compatability with old clients */
-	    (status = krb_rd_req (&auth, "sms", "sms", cl->haddr.sin_addr,
-				 &ad, "")) != 0) {
+	if ((status = krb_rd_req (&auth, MOIRA_SNAME, host,
+				  cl->haddr.sin_addr.s_addr, &ad, "")) != 0) {
 		status += ERROR_TABLE_BASE_krb;
 		cl->reply.mr_status = status;
 		if (log_flags & LOG_RES)
@@ -66,9 +65,9 @@ do_auth(cl)
 	}
 	free(host);
 
-	bcopy(ad.pname, cl->kname.name, ANAME_SZ);
-	bcopy(ad.pinst, cl->kname.inst, INST_SZ);
-	bcopy(ad.prealm, cl->kname.realm, REALM_SZ);
+	memcpy(cl->kname.name, ad.pname, ANAME_SZ);
+	memcpy(cl->kname.inst, ad.pinst, INST_SZ);
+	memcpy(cl->kname.realm, ad.prealm, REALM_SZ);
 	strcpy(cl->clname, kname_unparse(ad.pname, ad.pinst, ad.prealm));
 
 	if (ad.pinst[0] == 0 && !strcmp(ad.prealm, krb_realm))
@@ -85,7 +84,7 @@ do_auth(cl)
 	} else {
 	    strcpy(cl->entity, "???");
 	}
-	bzero(&ad, sizeof(ad));	/* Clean up session key, etc. */
+	memset(&ad, 0, sizeof(ad));	/* Clean up session key, etc. */
 
 	if (log_flags & LOG_RES)
 	    com_err(whoami, 0, "Auth to %s using %s, uid %d cid %d",
@@ -94,86 +93,4 @@ do_auth(cl)
 	  cl->reply.mr_status = status;
 	else if (cl->users_id == 0)
 	  cl->reply.mr_status = MR_USER_AUTH;
-}
-
-
-/* Turn a principal, instance, realm triple into a single non-ambiguous 
- * string.  This is the inverse of kname_parse().  It returns a pointer
- * to a static buffer, or NULL on error.
- */
-
-char *kname_unparse(p, i, r)
-char *p;
-char *i;
-char *r;
-{
-    static char name[MAX_K_NAME_SZ];
-    char *s;
-
-    s = name;
-    if (!p || strlen(p) > ANAME_SZ)
-      return(NULL);
-    while (*p) {
-	switch (*p) {
-	case '@':
-	    *s++ = '\\';
-	    *s++ = '@';
-	    break;
-	case '.':
-	    *s++ = '\\';
-	    *s++ = '.';
-	    break;
-	case '\\':
-	    *s++ = '\\';
-	    *s++ = '\\';
-	    break;
-	default:
-	    *s++ = *p;
-	}
-	p++;
-    }
-    if (i && *i) {
-	if (strlen(i) > INST_SZ)
-	  return(NULL);
-	*s++ = '.';
-	while (*i) {
-	    switch (*i) {
-	    case '@':
-		*s++ = '\\';
-		*s++ = '@';
-		break;
-	    case '.':
-		*s++ = '\\';
-		*s++ = '.';
-		break;
-	    case '\\':
-		*s++ = '\\';
-		*s++ = '\\';
-		break;
-	    default:
-		*s++ = *i;
-	    }
-	    i++;
-	}
-    }
-    *s++ = '@';
-    if (!r || strlen(r) > REALM_SZ)
-      return(NULL);
-    while (*r) {
-	switch (*r) {
-	case '@':
-	    *s++ = '\\';
-	    *s++ = '@';
-	    break;
-	case '\\':
-	    *s++ = '\\';
-	    *s++ = '\\';
-	    break;
-	default:
-	    *s++ = *r;
-	}
-	r++;
-    }
-    *s = '\0';
-    return(&name[0]);
 }

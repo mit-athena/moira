@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsetup.dc,v $
- *	$Author: tom $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsetup.dc,v 1.10 1994-10-29 20:12:57 tom Exp $
+ *	$Author: danw $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsetup.dc,v 1.11 1997-01-20 18:26:25 danw Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,29 +10,29 @@
  */
 
 #ifndef lint
-static char *rcsid_qsupport_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsetup.dc,v 1.10 1994-10-29 20:12:57 tom Exp $";
+static char *rcsid_qsupport_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsetup.dc,v 1.11 1997-01-20 18:26:25 danw Exp $";
 #endif lint
 
 #include <mit-copyright.h>
-#include "query.h"
 #include "mr_server.h"
+#include "query.h"
 #include <ctype.h>
-#ifdef GDSS
-#include "gdss.h"
-#endif /* GDSS */
+#include <arpa/inet.h>
 EXEC SQL INCLUDE sqlca;
-EXEC SQL INCLUDE sqlda;
 #include "qrtn.h"
 
 extern char *whoami, *strsave();
-extern int ingres_errno, mr_errcode;
+extern int dbms_errno, mr_errcode;
 
 EXEC SQL BEGIN DECLARE SECTION;
 extern char stmt_buf[];
 EXEC SQL END DECLARE SECTION;
 
-EXEC SQL WHENEVER SQLERROR CALL ingerr;
+EXEC SQL WHENEVER SQLERROR DO dbmserr();
 
+
+int prefetch_value(struct query *q, char **argv, client *cl);
+int check_nfs(int mach_idx, char *name, char *access);
 
 /* Setup Routines */
 
@@ -47,12 +47,12 @@ EXEC SQL WHENEVER SQLERROR CALL ingerr;
  * - if argv[0] == UNIQUE_LOGIN then set argv[0] = "#<uid>"
  */
 
-setup_ausr(q, argv, cl)
-    struct query *q;
-    register char *argv[];
-    client *cl;
+int setup_ausr(q, argv, cl)
+     struct query *q;
+     char *argv[];
+     client *cl;
 {
-    int row;
+    int row, err;
     EXEC SQL BEGIN DECLARE SECTION;
     int nuid;
     EXEC SQL END DECLARE SECTION;
@@ -62,9 +62,9 @@ setup_ausr(q, argv, cl)
     else
       row = 1;
     if (!strcmp(argv[row], UNIQUE_UID) || atoi(argv[row]) == -1) {
-	if (set_next_object_id("uid", "users", 1))
-	  return(MR_INGRES_ERR);
-	EXEC SQL SELECT value INTO :nuid FROM numvalues WHERE name = 'uid';
+	if ((err=set_next_object_id("unix_uid", USERS_TABLE, 1)))
+	  return(err);
+	EXEC SQL SELECT value INTO :nuid FROM numvalues WHERE name = 'unix_uid';
 	if (sqlca.sqlerrd[2] != 1)
 	  return(MR_INTERNAL);
 	sprintf(argv[row], "%d", nuid);
@@ -86,8 +86,8 @@ setup_ausr(q, argv, cl)
  */
 
 int setup_dusr(q, argv)
-    struct query *q;
-    char **argv;
+     struct query *q;
+     char **argv;
 {
     EXEC SQL BEGIN DECLARE SECTION;
     int flag, id, cnt;
@@ -96,34 +96,34 @@ int setup_dusr(q, argv)
     id = *(int *)argv[0];
 
     /* For now, only allow users to be deleted if their status is 0 */
-    EXEC SQL REPEATED SELECT status INTO :flag FROM users
+    EXEC SQL SELECT status INTO :flag FROM users
       WHERE users_id = :id;
     if (flag != 0 && flag != 4)
       return(MR_IN_USE);
 
-    EXEC SQL REPEATED DELETE FROM quota WHERE entity_id = :id AND type='USER';
-    EXEC SQL REPEATED DELETE FROM krbmap WHERE users_id = :id;
-    EXEC SQL REPEATED SELECT COUNT(member_id) INTO :cnt FROM imembers
+    EXEC SQL DELETE FROM quota WHERE entity_id = :id AND type='USER';
+    EXEC SQL DELETE FROM krbmap WHERE users_id = :id;
+    EXEC SQL SELECT COUNT(member_id) INTO :cnt FROM imembers
       WHERE member_id = :id AND member_type = 'USER';
     if (cnt > 0)
 	return(MR_IN_USE);
-    EXEC SQL REPEATED SELECT COUNT(label) INTO :cnt FROM filesys 
+    EXEC SQL SELECT COUNT(label) INTO :cnt FROM filesys 
 	WHERE owner = :id;
     if (cnt > 0)
 	return(MR_IN_USE);
-    EXEC SQL REPEATED SELECT COUNT(name) INTO :cnt FROM list
+    EXEC SQL SELECT COUNT(name) INTO :cnt FROM list
       WHERE acl_id = :id AND acl_type = 'USER';
     if (cnt > 0)
 	return(MR_IN_USE);
-    EXEC SQL REPEATED SELECT COUNT(name) INTO :cnt FROM servers
+    EXEC SQL SELECT COUNT(name) INTO :cnt FROM servers
       WHERE acl_id = :id AND acl_type = 'USER';
     if (cnt > 0)
 	return(MR_IN_USE);
-    EXEC SQL REPEATED SELECT COUNT(acl_id) INTO :cnt FROM hostaccess
+    EXEC SQL SELECT COUNT(acl_id) INTO :cnt FROM hostaccess
       WHERE acl_id = :id AND acl_type = 'USER';
     if (cnt > 0)
 	return(MR_IN_USE);
-    if (ingres_errno)
+    if (dbms_errno)
 	return(mr_errcode);
     return(MR_SUCCESS);
 }
@@ -133,20 +133,20 @@ int setup_dusr(q, argv)
  * pop_id field.  Also take care of keeping track of the post office usage.
  */
 int setup_spop(q, argv)
-struct query *q;
-char **argv;
+     struct query *q;
+     char **argv;
 {
     EXEC SQL BEGIN DECLARE SECTION;
-    int id, mid, flag;
+    int id, mid;
     char type[9];
     EXEC SQL END DECLARE SECTION;
 
     id = *(int *)argv[0];
-    EXEC SQL REPEATED SELECT potype, pop_id INTO :type, :mid FROM users
+    EXEC SQL SELECT potype, pop_id INTO :type, :mid FROM users
       WHERE users_id = :id;
     if(sqlca.sqlerrd[2] = 0)
       return(MR_MACHINE);
-    EXEC SQL REPEATED SELECT mach_id INTO :mid FROM machine
+    EXEC SQL SELECT mach_id INTO :mid FROM machine
       WHERE mach_id = :mid;
     if (sqlca.sqlerrd[2] = 0)
       return(MR_MACHINE);
@@ -168,9 +168,9 @@ int setup_dpob(q, argv)
     EXEC SQL END DECLARE SECTION;
 
     user = *(int *)argv[0];
-    EXEC SQL REPEATED SELECT potype, pop_id INTO :type, :id FROM users
+    EXEC SQL SELECT potype, pop_id INTO :type, :id FROM users
       WHERE users_id = :user;
-    if (ingres_errno) return(mr_errcode);
+    if (dbms_errno) return(mr_errcode);
 
     if (!strcmp(strtrim(type), "POP"))
       set_pop_usage(id, -1);
@@ -183,8 +183,8 @@ int setup_dpob(q, argv)
  */
 
 int setup_dmac(q, argv)
-    struct query *q;
-    char **argv;
+     struct query *q;
+     char **argv;
 {
     EXEC SQL BEGIN DECLARE SECTION;
     int flag, id, cnt;
@@ -192,41 +192,41 @@ int setup_dmac(q, argv)
 
     id = *(int *)argv[0];
 
-    EXEC SQL REPEATED SELECT status INTO :flag FROM machine
+    EXEC SQL SELECT status INTO :flag FROM machine
       WHERE mach_id = :id;
     if (flag != 3)
       return(MR_IN_USE);
-    EXEC SQL REPEATED SELECT COUNT(login) INTO :cnt FROM users
+    EXEC SQL SELECT COUNT(login) INTO :cnt FROM users
       WHERE potype='POP' AND pop_id = :id;
     if (cnt > 0)
 	return(MR_IN_USE);
-    EXEC SQL REPEATED SELECT COUNT(mach_id) INTO :cnt FROM serverhosts
+    EXEC SQL SELECT COUNT(mach_id) INTO :cnt FROM serverhosts
       WHERE mach_id = :id;
     if (cnt > 0)
 	return(MR_IN_USE);
-    EXEC SQL REPEATED SELECT COUNT(mach_id) INTO :cnt FROM nfsphys
+    EXEC SQL SELECT COUNT(mach_id) INTO :cnt FROM nfsphys
       WHERE mach_id = :id;
     if (cnt > 0)
 	return(MR_IN_USE);
-    EXEC SQL REPEATED SELECT COUNT(mach_id) INTO :cnt FROM hostaccess
+    EXEC SQL SELECT COUNT(mach_id) INTO :cnt FROM hostaccess
       WHERE mach_id = :id;
     if (cnt > 0)
 	return(MR_IN_USE);
-    EXEC SQL REPEATED SELECT COUNT(mach_id) INTO :cnt FROM printcap
+    EXEC SQL SELECT COUNT(mach_id) INTO :cnt FROM printcap
       WHERE mach_id = :id;
     if (cnt > 0)
 	return(MR_IN_USE);
-    EXEC SQL REPEATED SELECT COUNT(quotaserver) INTO :cnt FROM printcap
+    EXEC SQL SELECT COUNT(quotaserver) INTO :cnt FROM printcap
       WHERE quotaserver = :id;
     if (cnt > 0)
 	return(MR_IN_USE);
-    EXEC SQL REPEATED SELECT COUNT(mach_id) INTO :cnt FROM palladium
+    EXEC SQL SELECT COUNT(mach_id) INTO :cnt FROM palladium
       WHERE mach_id = :id;
     if (cnt > 0)
 	return(MR_IN_USE);
 
-    EXEC SQL REPEATED DELETE FROM mcmap WHERE mach_id = :id;
-    if (ingres_errno) return(mr_errcode);
+    EXEC SQL DELETE FROM mcmap WHERE mach_id = :id;
+    if (dbms_errno) return(mr_errcode);
     return(MR_SUCCESS);
 }
 
@@ -236,15 +236,15 @@ int setup_dmac(q, argv)
  */
 
 int setup_dsnt(q, argv)
-    struct query *q;
-    char **argv;
+     struct query *q;
+     char **argv;
 {
     EXEC SQL BEGIN DECLARE SECTION;
-    int flag, id, cnt = 0;
+    int id, cnt = 0;
     EXEC SQL END DECLARE SECTION;
 
     id = *(int *)argv[0];
-    EXEC SQL REPEATED SELECT COUNT(mach_id) INTO :cnt FROM machine
+    EXEC SQL SELECT COUNT(mach_id) INTO :cnt FROM machine
       WHERE snet_id = :id;
     if (cnt > 0)
 	return(MR_IN_USE);
@@ -257,23 +257,23 @@ int setup_dsnt(q, argv)
  */
 
 int setup_dclu(q, argv)
-    struct query *q;
-    char **argv;
+     struct query *q;
+     char **argv;
 {
     EXEC SQL BEGIN DECLARE SECTION;
     int id, cnt;
     EXEC SQL END DECLARE SECTION;
 
     id = *(int *)argv[0];
-    EXEC SQL REPEATED SELECT COUNT(mach_id) INTO :cnt FROM mcmap
+    EXEC SQL SELECT COUNT(mach_id) INTO :cnt FROM mcmap
       WHERE clu_id = :id;
     if (cnt > 0)
 	return(MR_IN_USE);
-    EXEC SQL REPEATED SELECT COUNT(clu_id) INTO :cnt FROM svc
+    EXEC SQL SELECT COUNT(clu_id) INTO :cnt FROM svc
       WHERE clu_id = :id;
     if (cnt > 0)
 	return(MR_IN_USE);
-    if (ingres_errno)
+    if (dbms_errno)
 	return(mr_errcode);
     return(MR_SUCCESS);
 }
@@ -307,15 +307,15 @@ static int badlistchars[] = {
 };
 
 int setup_alis(q, argv, cl)
-    struct query *q;
-    char *argv[];
-    client *cl;
+     struct query *q;
+     char *argv[];
+     client *cl;
 {
     EXEC SQL BEGIN DECLARE SECTION;
     int ngid;
     EXEC SQL END DECLARE SECTION;
     unsigned char *p;
-    int idx;
+    int idx, err;
 
     if (!strcmp(q->shortname, "alis"))
       idx = 0;
@@ -328,11 +328,11 @@ int setup_alis(q, argv, cl)
  
     if (!strcmp(argv[6 + idx], UNIQUE_GID) || atoi(argv[6 + idx]) == -1) {
 	if (atoi(argv[5 + idx])) {
-	    if (set_next_object_id("gid", "list", 1))
-	      return(MR_INGRES_ERR);
-	    EXEC SQL REPEATED SELECT value INTO :ngid FROM numvalues
+	    if ((err=set_next_object_id("gid", LIST_TABLE, 1)))
+	      return(err);
+	    EXEC SQL SELECT value INTO :ngid FROM numvalues
 	      WHERE name = 'gid';
-	    if (ingres_errno) return(mr_errcode);
+	    if (dbms_errno) return(mr_errcode);
 	    sprintf(argv[6 + idx], "%d", ngid);
 	} else {
 	    strcpy(argv[6 + idx], "-1");
@@ -351,60 +351,56 @@ int setup_alis(q, argv, cl)
  */
 
 int setup_dlis(q, argv)
-    struct query *q;
-    char *argv[];
+     struct query *q;
+     char *argv[];
 {
-    int flag, id, ec;
+    int id;
+    EXEC SQL BEGIN DECLARE SECTION;
+    int cnt;
+    EXEC SQL END DECLARE SECTION;
 
     id = *(int *)argv[0];
-    sprintf(stmt_buf,"SELECT member_id FROM imembers WHERE member_id = %d AND member_type='LIST'",id);
-    if(ec=mr_select_any(stmt_buf)) {
-	if(ec==MR_EXISTS) return(MR_IN_USE); else return(ec);
-    }
+
+    EXEC SQL SELECT COUNT(member_id) INTO :cnt FROM imembers
+      WHERE member_id = :id AND member_type='LIST';
+    if(cnt>0) return MR_IN_USE;
+
+    EXEC SQL SELECT COUNT(member_id) INTO :cnt FROM imembers
+      WHERE member_id = :id AND member_type='LIST';
+    if(cnt>0) return MR_IN_USE;
     
-    sprintf(stmt_buf,"SELECT member_id FROM imembers WHERE list_id = %d",id);
-    if(ec=mr_select_any(stmt_buf)) {
-	if(ec==MR_EXISTS) return(MR_IN_USE); else return(ec);
-    }
+    EXEC SQL SELECT COUNT(member_id) INTO :cnt FROM imembers
+      WHERE list_id = :id;
+    if(cnt>0) return MR_IN_USE;
 
-    sprintf(stmt_buf,"SELECT label FROM filesys WHERE owners = %d",id);
-    if(ec=mr_select_any(stmt_buf)) {
-	if(ec==MR_EXISTS) return(MR_IN_USE); else return(ec);
-    }
+    EXEC SQL SELECT COUNT(label) INTO :cnt FROM filesys WHERE owners = :id;
+    if(cnt>0) return MR_IN_USE;
 
-    sprintf(stmt_buf,"SELECT tag FROM capacls WHERE list_id = %d",id);
-    if(ec=mr_select_any(stmt_buf)) {
-	if(ec==MR_EXISTS) return(MR_IN_USE); else return(ec);
-    }
+    EXEC SQL SELECT COUNT(tag) INTO :cnt FROM capacls WHERE list_id = :id;
+    if(cnt>0) return MR_IN_USE;
 
-    sprintf(stmt_buf,"SELECT name FROM list WHERE acl_id = %d AND acl_type='LIST' AND list_id != %d",id,id);
-    if(ec=mr_select_any(stmt_buf)) {
-	if(ec==MR_EXISTS) return(MR_IN_USE); else return(ec);
-    }
+    EXEC SQL SELECT COUNT(name) INTO :cnt FROM list
+      WHERE acl_id = :id AND acl_type='LIST' AND list_id != :id;
+    if(cnt>0) return MR_IN_USE;
 
-    sprintf(stmt_buf,"SELECT name FROM servers WHERE acl_id = %d AND acl_type='LIST'",id);
-    if(ec=mr_select_any(stmt_buf)) {
-	if(ec==MR_EXISTS) return(MR_IN_USE); else return(ec);
-    }
+    EXEC SQL SELECT COUNT(name) INTO :cnt FROM servers
+      WHERE acl_id = :id AND acl_type='LIST';
+    if(cnt>0) return MR_IN_USE;
 
-    sprintf(stmt_buf,"SELECT entity_id FROM quota WHERE entity_id = %d AND type='GROUP'",id);
-    if(ec=mr_select_any(stmt_buf)) {
-	if(ec==MR_EXISTS) return(MR_IN_USE); else return(ec);
-    }
+    EXEC SQL SELECT COUNT(entity_id) INTO :cnt FROM quota
+      WHERE entity_id = :id AND type='GROUP';
+    if(cnt>0) return MR_IN_USE;
  
-    sprintf(stmt_buf,"SELECT acl_id  FROM hostaccess WHERE acl_id = %d AND acl_type='LIST'",id);
-    if(ec=mr_select_any(stmt_buf)) {
-	if(ec==MR_EXISTS) return(MR_IN_USE); else return(ec);
-    }
+    EXEC SQL SELECT COUNT(acl_id) INTO :cnt FROM hostaccess
+      WHERE acl_id = :id AND acl_type='LIST';
+    if(cnt>0) return MR_IN_USE;
 
-    sprintf(stmt_buf,"SELECT class FROM zephyr z \
-WHERE z.xmt_type = 'LIST' AND z.xmt_id = %d \
-OR z.sub_type = 'LIST' AND z.sub_id = %d \
-OR z.iws_type = 'LIST' AND z.iws_id = %d \
-OR z.iui_type = 'LIST' AND z.iui_id = %d",id,id,id,id);
-    if(ec=mr_select_any(stmt_buf)) {
-	if(ec==MR_EXISTS) return(MR_IN_USE); else return(ec);
-    }
+    EXEC SQL SELECT COUNT(class) INTO :cnt FROM zephyr z
+      WHERE z.xmt_type = 'LIST' AND z.xmt_id = :id
+      OR z.sub_type = 'LIST' AND z.sub_id = :id
+      OR z.iws_type = 'LIST' AND z.iws_id = :id
+      OR z.iui_type = 'LIST' AND z.iui_id = :id;
+    if(cnt>0) return MR_IN_USE;
 
     return(MR_SUCCESS);
 }
@@ -415,26 +411,22 @@ OR z.iui_type = 'LIST' AND z.iui_id = %d",id,id,id,id);
  */
 
 int setup_dsin(q, argv)
-    struct query *q;
-    char **argv;
+     struct query *q;
+     char **argv;
 {
     EXEC SQL BEGIN DECLARE SECTION;     
-    int ec;
+    int ec, cnt;
     char *svrname;
     EXEC SQL END DECLARE SECTION;
 
-    sprintf(stmt_buf,"SELECT service FROM serverhosts WHERE service = UPPERCASE('%s')",argv[0]);
-    if(ec=mr_select_any(stmt_buf)) {
-	if(ec==MR_EXISTS) 
-	    return(MR_IN_USE); 
-	else 
-	    return(ec);
-    }
-
     svrname=argv[0];
+    EXEC SQL SELECT COUNT(service) INTO :cnt FROM serverhosts
+      WHERE service = UPPER(:svrname);
+    if(cnt>0) return MR_IN_USE;
+
     EXEC SQL SELECT inprogress INTO :ec FROM servers 
-      WHERE name=UPPERCASE(:svrname);
-    if(ingres_errno) 
+      WHERE name=UPPER(:svrname);
+    if(dbms_errno) 
 	return(mr_errcode);
     if(ec) 
 	return(MR_IN_USE); 
@@ -448,8 +440,8 @@ int setup_dsin(q, argv)
  */
 
 int setup_dshi(q, argv)
-    struct query *q;
-    char **argv;
+     struct query *q;
+     char **argv;
 {
     EXEC SQL BEGIN DECLARE SECTION;
     int id, ec;
@@ -460,8 +452,8 @@ int setup_dshi(q, argv)
     id = *(int *)argv[1];
 
     EXEC SQL SELECT inprogress INTO :ec FROM serverhosts 
-      WHERE service=UPPERCASE(:svrname) AND mach_id = :id;
-    if(ingres_errno) 
+      WHERE service=UPPER(:svrname) AND mach_id = :id;
+    if(dbms_errno) 
 	return(mr_errcode);
     if(ec) 
 	return(MR_IN_USE); 
@@ -478,7 +470,7 @@ int setup_dshi(q, argv)
  **   argv[1] - type
  **   argv[2] - mach_id
  **   argv[3] - name
- **   argv[5] - access
+ **   argv[5] - rwaccess
  **
  ** Description:
  **   - for type = RVD:
@@ -486,7 +478,7 @@ int setup_dshi(q, argv)
  **   - for type = NFS:
  **        * extract directory prefix from name
  **        * verify mach_id/dir in nfsphys
- **        * verify access in {r, w, R, W}
+ **        * verify rwaccess in {r, w, R, W}
  **
  **  Side effect: sets variable _var_phys_id to the ID of the physical
  **	filesystem (nfsphys_id for NFS, 0 for RVD)
@@ -501,35 +493,35 @@ EXEC SQL BEGIN DECLARE SECTION;
 int _var_phys_id;
 EXEC SQL END DECLARE SECTION;
 
-setup_afil(q, argv, cl)
-    struct query *q;
-    char *argv[];
-    client *cl;
+int setup_afil(q, argv, cl)
+     struct query *q;
+     char *argv[];
+     client *cl;
 {
     char *type, *name;
     int mach_id;
     EXEC SQL BEGIN DECLARE SECTION;
     int ok;
-    char ftype[32], *access;
+    char ftype[32], *rwaccess;
     EXEC SQL END DECLARE SECTION;
 
     type = argv[1];
     mach_id = *(int *)argv[2];
     name = argv[3];
-    access = argv[5];
+    rwaccess = argv[5];
     _var_phys_id = 0;
 
     sprintf(ftype, "fs_access_%s", type);
     EXEC SQL SELECT COUNT(trans) INTO :ok FROM alias
-	WHERE name = :ftype AND type = 'TYPE' and trans = :access;   
-    if (ingres_errno) return(mr_errcode);
+	WHERE name = :ftype AND type = 'TYPE' and trans = :rwaccess;
+    if (dbms_errno) return(mr_errcode);
     if (ok == 0) return(MR_FILESYS_ACCESS);
 
     if((mr_errcode=prefetch_value(q,argv,cl))!=MR_SUCCESS)
       return(mr_errcode);
 
     if (!strcmp(type, "NFS"))
-	return (check_nfs(mach_id, name, access));
+	return (check_nfs(mach_id, name, rwaccess));
 
     return(MR_SUCCESS);
 }
@@ -540,10 +532,10 @@ setup_afil(q, argv, cl)
  * the new phys_id.
  */
 
-setup_ufil(q, argv, cl)
-    struct query *q;
-    char *argv[];
-    client *cl;
+int setup_ufil(q, argv, cl)
+     struct query *q;
+     char *argv[];
+     client *cl;
 {
     int mach_id, status;
     char *type, *name;
@@ -565,27 +557,26 @@ setup_ufil(q, argv, cl)
     sprintf(ftype, "fs_access_%s", type);
     EXEC SQL SELECT COUNT(trans) INTO :ok FROM alias
       WHERE name = :ftype AND type='TYPE' AND trans = :access;
-    if (ingres_errno) return(mr_errcode);
+    if (dbms_errno) return(mr_errcode);
     if (ok == 0) return(MR_FILESYS_ACCESS);
 
     EXEC SQL SELECT type INTO :ftype FROM filesys
       WHERE filsys_id = :fid;
-    strtrim(ftype);
-    if (ingres_errno) return(mr_errcode);
+    if (dbms_errno) return(mr_errcode);
 
     if (!strcmp(type, "NFS")) {
 	status = check_nfs(mach_id, name, access);
 	EXEC SQL UPDATE quota SET phys_id = :_var_phys_id
 	  WHERE filsys_id = :fid;
-	if (ingres_errno) return(mr_errcode);
+	if (dbms_errno) return(mr_errcode);
 	return(status);
-    } else if (!strcmp(type, "AFS") && strcmp(ftype, "AFS")) {
+    } else if (!strcmp(type, "AFS") && strcmp(strtrim(ftype), "AFS")) {
 	total = 0;
-	EXEC SQL REPEATED DELETE FROM quota
+	EXEC SQL DELETE FROM quota
 	  WHERE type = 'ANY' AND filsys_id = :fid;
 	EXEC SQL SELECT SUM (quota) INTO :total:total_null FROM quota
 	  WHERE filsys_id = :fid AND phys_id != 0;
-	if (ingres_errno) return(mr_errcode);
+	if (dbms_errno) return(mr_errcode);
 	if (!total_null && (total != 0)) {
 /*
  *             append quota (quota = total, filsys_id = fid,
@@ -595,12 +586,12 @@ setup_ufil(q, argv, cl)
 	    EXEC SQL INSERT INTO quota (quota, filsys_id, phys_id, entity_id,
 					type, modtime, modby, modwith)
 	      VALUES (:total, :fid, 0, 0,
-		      'ANY', 'now', :who, :entity) ;
-	    if (ingres_errno) return(mr_errcode);
+		      'ANY', SYSDATE, :who, :entity) ;
+	    if (dbms_errno) return(mr_errcode);
 	}
     } else {
 	EXEC SQL UPDATE quota SET phys_id = 0 WHERE filsys_id = :fid;
-	if (ingres_errno) return(mr_errcode);
+	if (dbms_errno) return(mr_errcode);
     }
     return(MR_SUCCESS);
 }
@@ -612,36 +603,34 @@ setup_ufil(q, argv, cl)
  * more than one, we sort the query in reverse order by dir name.
  */
 
-check_nfs(mach_id, name, access)
-    EXEC SQL BEGIN DECLARE SECTION;
+int check_nfs(mach_id, name, access)
+EXEC SQL BEGIN DECLARE SECTION;
     int mach_id;
-    EXEC SQL END DECLARE SECTION;
-    char *name;
-    char *access;
+EXEC SQL END DECLARE SECTION;
+    char *name, *access;
 {
     EXEC SQL BEGIN DECLARE SECTION;
     char dir[81];
     EXEC SQL END DECLARE SECTION;
-    char caccess;
     register int status;
     register char *cp1;
     register char *cp2;
 
     status = MR_NFS;
     EXEC SQL DECLARE csr101 CURSOR FOR
-      SELECT nfsphys_id, TRIM (dir) FROM nfsphys
+      SELECT nfsphys_id, dir FROM nfsphys
 	WHERE mach_id = :mach_id
 	ORDER BY 2 DESC;
-    if (ingres_errno)
+    if (dbms_errno)
 	return(mr_errcode);
     EXEC SQL OPEN csr101;
-    if (ingres_errno)
+    if (dbms_errno)
 	return(mr_errcode);
     while(1) {
 	EXEC SQL FETCH csr101 INTO :_var_phys_id, :dir;
 	if(sqlca.sqlcode != 0) break;
 	cp1 = name;
-	cp2 = dir;
+	cp2 = strtrim(dir);
 	while (*cp2) {
 	    if (*cp1++ != *cp2) break;
 	    cp2++;
@@ -652,7 +641,7 @@ check_nfs(mach_id, name, access)
 	}
     }
     EXEC SQL CLOSE csr101;
-    if (ingres_errno)
+    if (dbms_errno)
 	return(mr_errcode);
     return(status);
 }
@@ -662,10 +651,10 @@ check_nfs(mach_id, name, access)
  * a filesystem when it is deleted.  Also adjust the allocation numbers.
  */
 
-setup_dfil(q, argv, cl)
-    struct query  *q;
-    char **argv;
-    client *cl;
+int setup_dfil(q, argv, cl)
+     struct query *q;
+     char **argv;
+     client *cl;
 {
     EXEC SQL BEGIN DECLARE SECTION;
     int id, total, phys_id;
@@ -673,23 +662,23 @@ setup_dfil(q, argv, cl)
     EXEC SQL END DECLARE SECTION;
 
     id = *(int *)argv[0];
-    EXEC SQL REPEATED SELECT SUM (quota) INTO :total:none FROM quota
+    EXEC SQL SELECT SUM (quota) INTO :total:none FROM quota
       WHERE filsys_id = :id;
 
     if(none) total=0;
 
     /** What if there are multiple phys_id's per f/s? (bad data) **/
-    EXEC SQL REPEATED SELECT phys_id INTO :phys_id FROM filesys
+    EXEC SQL SELECT phys_id INTO :phys_id FROM filesys
       WHERE filsys_id = :id;
-    EXEC SQL REPEATED UPDATE nfsphys SET allocated = allocated - :total
+    EXEC SQL UPDATE nfsphys SET allocated = allocated - :total
       WHERE nfsphys_id = :phys_id;
 
     if(!none) {
-	EXEC SQL REPEATED DELETE FROM quota WHERE filsys_id = :id;
+	EXEC SQL DELETE FROM quota WHERE filsys_id = :id;
     }
-    EXEC SQL REPEATED DELETE FROM fsgroup WHERE filsys_id = :id;
-    EXEC SQL REPEATED DELETE FROM fsgroup WHERE group_id = :id;
-    if (ingres_errno) return(mr_errcode);
+    EXEC SQL DELETE FROM fsgroup WHERE filsys_id = :id;
+    EXEC SQL DELETE FROM fsgroup WHERE group_id = :id;
+    if (dbms_errno) return(mr_errcode);
     return(MR_SUCCESS);
 }
 
@@ -698,10 +687,10 @@ setup_dfil(q, argv, cl)
  * any filesystems assigned to it before allowing it to be deleted.
  */
 
-setup_dnfp(q, argv, cl)
-    struct query  *q;
-    char **argv;
-    client *cl;
+int setup_dnfp(q, argv, cl)
+     struct query *q;
+     char **argv;
+     client *cl;
 {
     EXEC SQL BEGIN DECLARE SECTION;
     int id, cnt;
@@ -710,12 +699,12 @@ setup_dnfp(q, argv, cl)
 
     id = *(int *)argv[0];
     dir = argv[1];
-    EXEC SQL REPEATED SELECT count(fs.tid) INTO :cnt FROM filesys fs, nfsphys np
+    EXEC SQL SELECT count(fs.rowid) INTO :cnt FROM filesys fs, nfsphys np
       WHERE fs.mach_id = :id AND fs.phys_id = np.nfsphys_id
 	AND np.mach_id = :id AND np.dir = :dir;
     if (cnt > 0)
       return(MR_IN_USE);
-    if (ingres_errno)
+    if (dbms_errno)
       return(mr_errcode);
     return(MR_SUCCESS);
 }
@@ -727,10 +716,10 @@ setup_dnfp(q, argv, cl)
  *   argv[2 or 1] = users_id or list_id
  */
 
-setup_dqot(q, argv, cl)
-    struct query  *q;
-    char **argv;
-    client *cl;
+int setup_dqot(q, argv, cl)
+     struct query *q;
+     char **argv;
+     client *cl;
 {
     EXEC SQL BEGIN DECLARE SECTION;
     int quota, fs, id, physid;
@@ -746,32 +735,14 @@ setup_dqot(q, argv, cl)
 	id = *(int *)argv[1];
     }
 
-    EXEC SQL REPEATED SELECT quota INTO :quota FROM quota
+    EXEC SQL SELECT quota INTO :quota FROM quota
       WHERE type = :qtype AND entity_id = :id AND filsys_id = :fs;
-    EXEC SQL REPEATED SELECT phys_id INTO :physid FROM filesys 
+    EXEC SQL SELECT phys_id INTO :physid FROM filesys 
       WHERE filsys_id = :fs;
-    EXEC SQL REPEATED UPDATE nfsphys SET allocated = allocated - :quota
+    EXEC SQL UPDATE nfsphys SET allocated = allocated - :quota
       WHERE nfsphys_id = :physid;
 
-    if (ingres_errno) return(mr_errcode);
-    return(MR_SUCCESS);
-}
-
-
-/* setup_sshi: don't exclusive lock the machine table during
- * set_server_host_internal.
- */
-/** Not allowed under (INGRES) SQL **/
-setup_sshi(q, argv, cl)
-    struct query  *q;
-    char **argv;
-    client *cl;
-{
-#if 0
-#ifsql INGRES
-    EXEC SQL set lockmode session where readlock = system;
-#endsql
-#endif
+    if (dbms_errno) return(mr_errcode);
     return(MR_SUCCESS);
 }
 
@@ -780,23 +751,23 @@ setup_sshi(q, argv, cl)
  * table if necessary.
  */
 
-setup_akum(q, argv, cl)
-struct query *q;
-char **argv;
-client *cl;
+int setup_akum(q, argv, cl)
+     struct query *q;
+     char **argv;
+     client *cl;
 {
     EXEC SQL BEGIN DECLARE SECTION;
-    int id, rowcount;
+    int id;
     char *name;
     EXEC SQL END DECLARE SECTION;
 
     name = argv[1];
-    if (name_to_id(name, "STRING", &id) != MR_SUCCESS) {
+    if (name_to_id(name, STRINGS_TABLE, &id) != MR_SUCCESS) {
 	if (q->type != APPEND) return(MR_STRING);
 	id=add_string(name);
-	cache_entry(name, "STRING", id);
+	cache_entry(name, STRINGS_TABLE, id);
     }
-    if (ingres_errno) return(mr_errcode);
+    if (dbms_errno) return(mr_errcode);
     *(int *)argv[1] = id;
     return(MR_SUCCESS);
 }
@@ -814,10 +785,10 @@ client *cl;
  * that this query is an APPEND.
  */
 
-prefetch_value(q,argv,cl)
-    struct query *q;
-    char **argv;
-    client *cl;
+int prefetch_value(q, argv, cl)
+     struct query *q;
+     char **argv;
+     client *cl;
 {
     EXEC SQL BEGIN DECLARE SECTION;
     char *name = q->validate->object_id;
@@ -826,7 +797,7 @@ prefetch_value(q,argv,cl)
     int status, limit, argc;
 
     /* set next object id, limiting it if necessary */
-    if(!strcmp(name, "uid") || !strcmp(name, "gid"))
+    if(!strcmp(name, "unix_uid") || !strcmp(name, "gid"))
       limit = 1; /* So far as I know, this isn't needed.  Just CMA. */
     else
       limit = 0;
@@ -835,7 +806,7 @@ prefetch_value(q,argv,cl)
 
     /* fetch object id */
     EXEC SQL SELECT value INTO :value FROM numvalues WHERE name=:name;
-    if(ingres_errno) return(mr_errcode);
+    if(dbms_errno) return(mr_errcode);
     if(sqlca.sqlerrd[2] != 1) return(MR_INTERNAL);
 
     argc = q->argc + q->vcnt;   /* end of Argv for APPENDs */
@@ -853,10 +824,10 @@ prefetch_value(q,argv,cl)
  * Assumes the existence of a row where filsys_id = argv[0], since a
  * filesys label has already been resolved to a filsys_id.
  */
-prefetch_filesys(q,argv,cl)
-    struct query *q;
-    char **argv;
-    client *cl;
+int prefetch_filesys(q, argv, cl)
+     struct query *q;
+     char **argv;
+     client *cl;
 {
     EXEC SQL BEGIN DECLARE SECTION;
     int fid,phid;
@@ -865,7 +836,7 @@ prefetch_filesys(q,argv,cl)
 
     fid = *(int *)argv[0];
     EXEC SQL SELECT phys_id INTO :phid FROM filesys WHERE filsys_id = :fid;
-    if(ingres_errno) return(mr_errcode);
+    if(dbms_errno) return(mr_errcode);
 
     argc=q->argc+q->vcnt;
     sprintf(argv[argc++],"%d",phid);
@@ -878,17 +849,17 @@ prefetch_filesys(q,argv,cl)
 /* setup_ahst():
  */
 
-setup_ahst(q,argv,cl)
-    struct query *q;
-    char **argv;
-    client *cl;
+int setup_ahst(q, argv, cl)
+     struct query *q;
+     char **argv;
+     client *cl;
 {
     EXEC SQL BEGIN DECLARE SECTION;
     char *name;
-    int value, id, addr, mask, high, low, cnt;
+    int value, id, saddr, mask, high, low, cnt;
     EXEC SQL END DECLARE SECTION;
-    char buf[BUFSIZ];
     int row;
+    struct in_addr addr;
     extern int host_access_level, privileged;
 
     if (!strcmp(q->shortname, "uhst"))
@@ -960,7 +931,7 @@ setup_ahst(q,argv,cl)
     name = argv[row];
     EXEC SQL SELECT count(mach_id) INTO :cnt FROM hostalias
       WHERE name = :name;
-    if (ingres_errno) return(mr_errcode);
+    if (dbms_errno) return(mr_errcode);
     if (cnt != 0) return(MR_EXISTS);
 
     /* check address */
@@ -981,14 +952,14 @@ setup_ahst(q,argv,cl)
          * an address or unique was specified.
          */
 	id = *(int *)argv[8+row];
-	EXEC SQL SELECT saddr, mask, high, low INTO :addr, :mask, :high, :low
+	EXEC SQL SELECT saddr, mask, high, low INTO :saddr, :mask, :high, :low
 	  FROM subnet WHERE snet_id = :id;
-	if (ingres_errno) return(mr_errcode);
+	if (dbms_errno) return(mr_errcode);
 	if (value != -2) {
             /*
              * someone specified an IP address for the host record
              */
-	    if ((value & mask) != addr) return(MR_ADDRESS);
+	    if ((value & mask) != saddr) return(MR_ADDRESS);
             /* 
              * run the address argument through inet_addr(). This
              * has the effect that any out of bounds host addrs will
@@ -997,10 +968,11 @@ setup_ahst(q,argv,cl)
              * link in an inet_addr() that returns an error for
              * this case. 
              */
-	    name = (char *) inet_ntoa(inet_addr(argv[9+row]));
+	    addr.s_addr=inet_addr(argv[9+row]);
+	    name = inet_ntoa(addr);
 	    EXEC SQL SELECT count(mach_id) INTO :cnt FROM machine
 	      WHERE address = :name;
-	    if (ingres_errno) return(mr_errcode);
+	    if (dbms_errno) return(mr_errcode);
 	    if (cnt > 0) {
                 /*
                  * make IP address is unique. If this a modify request
@@ -1023,23 +995,23 @@ setup_ahst(q,argv,cl)
 		if (((id & 0xff) == 0) ||
 		    ((id & 0xff) == 255))
 		  continue;
-		value = htonl(id);
-		name = (char *)inet_ntoa(value);
+		addr.s_addr = htonl(id);
+		name = (char *)inet_ntoa(addr);
 		EXEC SQL SELECT count(mach_id) INTO :cnt FROM machine
 		  WHERE address = :name;
-		if (ingres_errno) return(mr_errcode);
+		if (dbms_errno) return(mr_errcode);
 		if (cnt == 0) break;
 	    }
 	    if (cnt != 0)
 	      return(MR_ADDRESS);
 	    else
-	      value = htonl(value);
+	      value = htonl(id);
 	}
         /*
          * we have an address in value. Convert it to a string and store it.
          */
-	value = htonl(value);
-	strcpy(argv[9+row], inet_ntoa(value));
+	addr.s_addr = htonl(value);
+	strcpy(argv[9+row], inet_ntoa(addr));
     } else {
 	strcpy(argv[9+row], "unassigned");
     }
@@ -1051,9 +1023,9 @@ setup_ahst(q,argv,cl)
     if (row == 1) {
 	id = *(int *)argv[0];
 	EXEC SQL SELECT status INTO :cnt FROM machine WHERE mach_id = :id;
-	if (ingres_errno) return(mr_errcode);
+	if (dbms_errno) return(mr_errcode);
 	if (value != cnt) {
-  	    EXEC SQL UPDATE machine SET statuschange = date('now')
+  	    EXEC SQL UPDATE machine SET statuschange = SYSDATE
                  WHERE mach_id = :id;
 	}
     }
@@ -1069,10 +1041,10 @@ setup_ahst(q,argv,cl)
 	EXEC SQL END DECLARE SECTION;
 	/* Non-query owner is restricted in changes that can be made */
 	id = *(int *)argv[0];
-	EXEC SQL SELECT contact, status, address, owner_type, owner_id, 
-	  acomment, use, snet_id, ocomment INTO :s6, :i8, :s10, :s11, :i12,
-	  :i13, :i7, :i9, :i14 FROM machine WHERE mach_id = :id;
-	if (ingres_errno) return(mr_errcode);
+	EXEC SQL SELECT contact, status, address, owner_type, owner_id,
+	  acomment, use, snet_id, ocomment INTO :s6, :i8, :s10, :s11,
+	  :i12, :i13, :i7, :i9, :i14 FROM machine WHERE mach_id = :id;
+	if (dbms_errno) return(mr_errcode);
 	/* subnet owner cannot change use, comment, or network */
 	if ((i7 != atoi(argv[7])) || (i14 != *(int *)argv[14]) ||
             (i9 != *(int *)argv[9]))
@@ -1108,10 +1080,10 @@ setup_ahst(q,argv,cl)
 /* setup_ahal():
  */
 
-setup_ahal(q,argv,cl)
-    struct query *q;
-    char **argv;
-    client *cl;
+int setup_ahal(q, argv, cl)
+     struct query *q;
+     char **argv;
+     client *cl;
 {
     EXEC SQL BEGIN DECLARE SECTION;
     char *name;
@@ -1130,7 +1102,7 @@ setup_ahal(q,argv,cl)
 
     EXEC SQL SELECT count(mach_id) INTO :cnt FROM machine WHERE
       name = :name;
-    if (ingres_errno) return(mr_errcode);
+    if (dbms_errno) return(mr_errcode);
     if (cnt > 0) return(MR_EXISTS);
 
     return(MR_SUCCESS);

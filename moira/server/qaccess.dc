@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qaccess.dc,v $
  *	$Author: danw $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qaccess.dc,v 1.8 1996-09-29 20:24:42 danw Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qaccess.dc,v 1.9 1997-01-20 18:26:20 danw Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,25 +10,24 @@
  */
 
 #ifndef lint
-static char *rcsid_qsupport_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qaccess.dc,v 1.8 1996-09-29 20:24:42 danw Exp $";
+static char *rcsid_qsupport_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qaccess.dc,v 1.9 1997-01-20 18:26:20 danw Exp $";
 #endif lint
 
 #include <mit-copyright.h>
-#include "query.h"
 #include "mr_server.h"
+#include "query.h"
 #include <ctype.h>
 EXEC SQL INCLUDE sqlca;
-EXEC SQL INCLUDE sqlda;
 #include "qrtn.h"
 
 extern char *whoami;
-extern int ingres_errno, mr_errcode;
+extern int dbms_errno, mr_errcode;
 
 EXEC SQL BEGIN DECLARE SECTION;
 extern char stmt_buf[];
 EXEC SQL END DECLARE SECTION;
 
-EXEC SQL WHENEVER SQLERROR CALL ingerr;
+EXEC SQL WHENEVER SQLERROR DO dbmserr();
 
 
 /* Specialized Access Routines */
@@ -39,10 +38,10 @@ EXEC SQL WHENEVER SQLERROR CALL ingerr;
  *    now in argv[0] instead of the login name.
  */
 
-access_user(q, argv, cl)
-    struct query *q;
-    char *argv[];
-    client *cl;
+int access_user(q, argv, cl)
+     struct query *q;
+     char *argv[];
+     client *cl;
 {
     if (cl->users_id != *(int *)argv[0])
 	return(MR_PERM);
@@ -57,30 +56,31 @@ access_user(q, argv, cl)
  *   argv[0...n] contain search info.  q->
  */
 
-access_login(q, argv, cl)
-    struct query *q;
-    char *argv[];
-    client *cl;
+int access_login(q, argv, cl)
+     struct query *q;
+     char *argv[];
+     client *cl;
 {
     EXEC SQL BEGIN DECLARE SECTION;
     int id;
-    char qual[256];
     EXEC SQL END DECLARE SECTION;
 
-    /* BEGIN KLUDGE
-       Ingres will lose horribly if you try to look up a user with
-       a username > 8 chars (which some old versions of the moira client
-       still sometimes do). This routine is only called by gubl/gual and
-       gubu/guau, so we know argv[0] must be <=8 chars in a correct
-       query, so verify that first */
-    if(strlen(argv[0])>8) return MR_ARG_TOO_LONG;
-    /* END KLUDGE */
+    if(q->argc != 1) return MR_ARGS;
 
-    build_qual(q->qual, q->argc, argv, qual);
-    if (!strncmp(q->name,"get_user_account",strlen("get_user_account"))) {
-	EXEC SQL SELECT users_id INTO :id FROM users u, strings str WHERE :qual;
-    } else {
-	EXEC SQL SELECT users_id INTO :id FROM users u WHERE :qual;
+    if(!strcmp(q->shortname, "gual")) {
+      EXEC SQL SELECT users_id INTO :id FROM users u, strings str
+	WHERE u.login LIKE :argv[0] AND u.users_id != 0
+	AND u.comments = str.string_id;
+    } else if (!strcmp(q->shortname, "gubl")) {
+      EXEC SQL SELECT users_id INTO :id FROM users u
+	WHERE u.login LIKE :argv[0] AND u.users_id != 0;
+    } else if (!strcmp(q->shortname, "guau")) {
+      EXEC SQL SELECT users_id INTO :id FROM users u, strings str
+	WHERE u.unix_uid = :argv[0] AND u.users_id != 0
+	AND u.comments = str.string_id;
+    } else if(!strcmp(q->shortname, "gubu")) {
+      EXEC SQL SELECT users_id INTO :id FROM users u
+	WHERE u.unix_uid = :argv[0] AND u.users_id != 0;
     }
 
     if (sqlca.sqlerrd[2] != 1 || id != cl->users_id)
@@ -104,10 +104,10 @@ access_login(q, argv, cl)
  *	and the list is public, allow access if client = member
  */
 
-access_list(q, argv, cl)
-    struct query *q;
-    char *argv[];
-    client *cl;
+int access_list(q, argv, cl)
+     struct query *q;
+     char *argv[];
+     client *cl;
 {
     EXEC SQL BEGIN DECLARE SECTION;
     int list_id, acl_id, flags, gid;
@@ -136,13 +136,15 @@ access_list(q, argv, cl)
 	if (*(int *)argv[2] == client_id) return(MR_SUCCESS);
     /* if update_list, don't allow them to change the GID */
     } else if (!strcmp("ulis", q->shortname)) {
-	if ((!strcmp(argv[7], UNIQUE_GID) && (gid != -1)) ||
-	    (strcmp(argv[7], UNIQUE_GID) && (gid != atoi(argv[7]))))
-	  return(MR_PERM);
+      if (!strcmp(argv[7], UNIQUE_GID)) {
+	if(gid != -1) return MR_PERM;
+      } else {
+	if(gid != atoi(argv[7])) return MR_PERM;
+      }
     }
 
     /* check for client in access control list */
-    status = find_member(acl_type, acl_id, client_type, client_id, 0);
+    status = find_member(acl_type, acl_id, client_type, client_id);
     if (!status) return(MR_PERM);
 
     return(MR_SUCCESS);
@@ -156,10 +158,10 @@ access_list(q, argv, cl)
  *         cl - client identifier
  */
 
-access_visible_list(q, argv, cl)
-    struct query *q;
-    char *argv[];
-    client *cl;
+int access_visible_list(q, argv, cl)
+     struct query *q;
+     char *argv[];
+     client *cl;
 {
     EXEC SQL BEGIN DECLARE SECTION;
     int list_id, acl_id, flags ;
@@ -183,7 +185,7 @@ access_visible_list(q, argv, cl)
 	return(status);
 
     /* check for client in access control list */
-    status = find_member(acl_type, acl_id, client_type, client_id, 0);
+    status = find_member(acl_type, acl_id, client_type, client_id);
     if (!status)
 	return(MR_PERM);
 
@@ -198,10 +200,10 @@ access_visible_list(q, argv, cl)
  *         cl - client identifier
  */
 
-access_vis_list_by_name(q, argv, cl)
-    struct query *q;
-    char *argv[];
-    client *cl;
+int access_vis_list_by_name(q, argv, cl)
+     struct query *q;
+     char *argv[];
+     client *cl;
 {
     EXEC SQL BEGIN DECLARE SECTION;
     int acl_id, flags, rowcount;
@@ -227,7 +229,7 @@ access_vis_list_by_name(q, argv, cl)
 	return(status);
 
     /* check for client in access control list */
-    status = find_member(acl_type, acl_id, client_type, client_id, 0);
+    status = find_member(acl_type, acl_id, client_type, client_id);
     if (!status)
 	return(MR_PERM);
 
@@ -240,10 +242,10 @@ access_vis_list_by_name(q, argv, cl)
  * on the acl of, or the list is visible.
  */
 
-access_member(q, argv, cl)
-    struct query *q;
-    char *argv[];
-    client *cl;
+int access_member(q, argv, cl)
+     struct query *q;
+     char *argv[];
+     client *cl;
 {
     if (!strcmp(argv[0], "LIST") || !strcmp(argv[0], "RLIST"))
       return(access_visible_list(q, &argv[1], cl));
@@ -266,10 +268,10 @@ access_member(q, argv, cl)
  * access iff argv[0] == "TRUE" and argv[2] == "FALSE".
  */
 
-access_qgli(q, argv, cl)
-    struct query *q;
-    char *argv[];
-    client *cl;
+int access_qgli(q, argv, cl)
+     struct query *q;
+     char *argv[];
+     client *cl;
 {
     if (!strcmp(argv[0], "TRUE") && !strcmp(argv[2], "FALSE"))
       return(MR_SUCCESS);
@@ -281,10 +283,10 @@ access_qgli(q, argv, cl)
  * allow access if a wildcard is used.
  */
 
-access_service(q, argv, cl)
-    struct query *q;
-    char *argv[];
-    client *cl;
+int access_service(q, argv, cl)
+     struct query *q;
+     char *argv[];
+     client *cl;
 {
     EXEC SQL BEGIN DECLARE SECTION;
     int acl_id;
@@ -305,7 +307,7 @@ access_service(q, argv, cl)
 	return(status);
 
     /* check for client in access control list */
-    status = find_member(acl_type, acl_id, client_type, client_id, 0);
+    status = find_member(acl_type, acl_id, client_type, client_id);
     if (!status) return(MR_PERM);
 
     return(MR_SUCCESS);
@@ -316,10 +318,10 @@ access_service(q, argv, cl)
  *	named by argv[0]
  */
 
-access_filesys(q, argv, cl)
-    struct query *q;
-    char *argv[];
-    client *cl;
+int access_filesys(q, argv, cl)
+     struct query *q;
+     char *argv[];
+     client *cl;
 {
     EXEC SQL BEGIN DECLARE SECTION;
     int users_id, list_id;
@@ -338,7 +340,7 @@ access_filesys(q, argv, cl)
       return(MR_SUCCESS);
     if ((status = get_client(cl, &client_type, &client_id)) != MR_SUCCESS)
       return(status);
-    status = find_member("LIST", list_id, client_type, client_id, 0);
+    status = find_member("LIST", list_id, client_type, client_id);
     if (status)
       return(MR_SUCCESS);
     else
@@ -351,14 +353,14 @@ access_filesys(q, argv, cl)
 
 int host_access_level = 0;              /* 1 for network, 2 for host */
 
-access_host(q, argv, cl)
-    struct query *q;
-    char *argv[];
-    client *cl;
+int access_host(q, argv, cl)
+     struct query *q;
+     char *argv[];
+     client *cl;
 {
     EXEC SQL BEGIN DECLARE SECTION;
-    int mid, sid, users_id, id;
-    char mtype[9], stype[9], *name;
+    int mid, sid, id;
+    char mtype[9], stype[9];
     EXEC SQL END DECLARE SECTION;
     int status, client_id;
     char *client_type;
@@ -382,12 +384,12 @@ access_host(q, argv, cl)
 
     if ((status = get_client(cl, &client_type, &client_id)) != MR_SUCCESS)
       return(status);
-    status = find_member(stype, sid, client_type, client_id, 0);
+    status = find_member(stype, sid, client_type, client_id);
     if (status) {
 	host_access_level = 1;
 	return(MR_SUCCESS);
     }
-    status = find_member(mtype, mid, client_type, client_id, 0);
+    status = find_member(mtype, mid, client_type, client_id);
     if (status) {
 	host_access_level = 2;
 	return(MR_SUCCESS);
@@ -402,10 +404,10 @@ access_host(q, argv, cl)
  * If deleting an alias, any owner will do.
  */
 
-access_ahal(q, argv, cl)
-    struct query *q;
-    char *argv[];
-    client *cl;
+int access_ahal(q, argv, cl)
+     struct query *q;
+     char *argv[];
+     client *cl;
 {
     EXEC SQL BEGIN DECLARE SECTION;
     int cnt, id, mid, sid;
@@ -420,7 +422,7 @@ access_ahal(q, argv, cl)
     id = *(int *)argv[1];
 
     EXEC SQL SELECT count(name) INTO :cnt from hostalias WHERE mach_id = :id;
-    if (ingres_errno) return(mr_errcode);
+    if (dbms_errno) return(mr_errcode);
     /* if the type is APPEND, this is ahal and we need to make sure there
      * will be no more than 2 aliases.  If it's not, it must be dhal and
      * any owner will do.
@@ -432,10 +434,10 @@ access_ahal(q, argv, cl)
       WHERE m.mach_id=:id and s.snet_id=m.snet_id;
     if ((status = get_client(cl, &client_type, &client_id)) != MR_SUCCESS)
       return(status);
-    status = find_member(mtype, mid, client_type, client_id, 0);
+    status = find_member(mtype, mid, client_type, client_id);
     if (status)
       return(MR_SUCCESS);
-    status = find_member(stype, sid, client_type, client_id, 0);
+    status = find_member(stype, sid, client_type, client_id);
     if (status)
       return(MR_SUCCESS);
     else
@@ -447,10 +449,10 @@ access_ahal(q, argv, cl)
 /* access_snt - check for retrieving network structure
  */
 
-access_snt(q, argv, cl)
-    struct query *q;
-    char *argv[];
-    client *cl;
+int access_snt(q, argv, cl)
+     struct query *q;
+     char *argv[];
+     client *cl;
 {
     if(q->type == RETRIEVE)
        return(MR_SUCCESS);

@@ -1,4 +1,4 @@
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/db/Makefile,v 1.8 1990-03-19 18:36:58 mar Exp $
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/db/Makefile,v 1.9 1990-09-26 09:16:00 kostas Exp $
 
 # (c) Copyright 1988 by the Massachusetts Institute of Technology.
 # For copying and distribution information, please see the file
@@ -28,6 +28,9 @@ newmoira.c: newmoira.qc
 
 tables.c: newdb db2tbls.awk
 	awk -f db2tbls.awk < newdb > tables.c
+
+tables_sql.c: newdb.sql db2tbls_sql.awk
+	awk -f db2tbls_sql.awk < newdb.sql > tables_sql.c
 
 class: class.o
 	cc -o class class.o ../lib/libmoira.a ${INGLIB}

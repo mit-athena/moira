@@ -1,0 +1,256 @@
+/* $Id: postoffice.pc,v 1.1 2000-01-10 21:56:36 danw Exp $
+ *
+ * This generates the post office location data.
+ *
+ * tom@mit.edu
+ *
+ * Copyright 1998 by the Massachusetts Institute of Technology.
+ * For copying and distribution information, please see the file
+ * <mit-copyright.h>.
+ */
+
+#include <mit-copyright.h>
+#include <moira.h>
+#include <moira_site.h>
+#include <sys/stat.h>
+#include <stdio.h>
+#include <string.h>
+#include <time.h>
+#include <errno.h>
+#include "util.h"
+
+EXEC SQL INCLUDE sqlca;
+
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/postoffice.pc,v 1.1 2000-01-10 21:56:36 danw Exp $");
+
+
+#ifndef PO_SUBDIR
+#define PO_SUBDIR "postoffice"
+#endif
+
+#define MAX_RECSIZE 1000
+
+char *whoami = "postoffice.gen";
+char *db = "moira/moira";
+
+void pobox(char *);
+
+
+int main(int argc, char **argv)
+{
+  char cmd[BUFSIZ];
+  char po_dir[MAXPATHLEN], wpo_dir[MAXPATHLEN];
+  struct stat sb;
+  char *c;
+  int flag;
+
+  initialize_sms_error_table();
+
+  if (argc == 1)
+    sprintf(po_dir, "%s/%s", DCM_DIR, PO_SUBDIR);
+  else
+    {
+      sprintf(po_dir, "%s", argv[1]);
+      /* fake out dcm - we'll append .out later */
+      if (c = strrchr(po_dir, '.'))
+        *c = '\0';
+    }
+  sprintf(wpo_dir, "%s~", po_dir);
+
+  if (argc > 2)
+    {
+      fprintf(stderr, "usage: %s [outdir]\n", argv[0]);
+      exit(MR_ARGS);
+    }
+
+  if (stat(wpo_dir, &sb) < 0)
+    {
+      if (errno == ENOENT)
+	{
+	  if (mkdir(wpo_dir, 0700) < 0)
+	    {
+	      fprintf(stderr, "%s: unable to make directory %s (%s))\n",
+		      whoami, wpo_dir, strerror(errno));
+	      exit(MR_CCONFIG);
+	    }
+	}
+      else
+	{
+	  fprintf(stderr, "%s: cannot stat %s (%s)\n", whoami, wpo_dir,
+		  strerror(errno));
+          exit(MR_CCONFIG);
+	}
+    }
+  else if (!S_ISDIR(sb.st_mode))
+    {
+      fprintf(stderr, "%s: %s not a directory\n" , whoami, wpo_dir);
+      exit(MR_CCONFIG);
+    }
+
+  EXEC SQL CONNECT :db;
+
+  flag = 0;
+  if (stat(po_dir, &sb) == 0)
+    {
+      if (ModDiff (&flag, "filesys", sb.st_mtime))
+        exit(MR_DATE);
+    }
+  if (flag < 0)
+    {
+      fprintf(stderr, "%s: %s does not need to be rebuilt.\n", whoami, po_dir);
+      unlink(wpo_dir);
+    }
+  else
+    {
+      fprintf(stderr, "%s: building po databases...\n", whoami);
+      pobox(wpo_dir);
+
+      if (stat(po_dir, &sb) != -1)
+	{
+          fprintf(stderr, "%s: removing %s\n", whoami, po_dir);
+          sprintf(cmd, "rm -r %s", po_dir);
+          if (strncmp(po_dir, wpo_dir, strlen(po_dir)))
+	    exit(MR_CCONFIG);
+          if (system(cmd))
+	    {
+              fprintf(stderr, "%s: unable to remove %s (%s)", whoami, po_dir,
+		      strerror(errno));
+              exit(MR_CCONFIG);
+	    }
+	}
+
+      rename(wpo_dir, po_dir);
+    }
+
+  fprintf(stderr, "%s: building tar file...\n", whoami);
+  sprintf(cmd, "(cd %s; tar cf - . ) > %s.out", po_dir, po_dir);
+  if (system(cmd))
+    exit(MR_TAR_FAIL);
+
+  exit(MR_SUCCESS);
+}
+
+void pobox(char *path)
+{
+  char *c;
+  char mdir[MAXPATHLEN];
+  char mout[MAXPATHLEN], qout[MAXPATHLEN];
+  struct stat sb;
+  FILE *moutp, *qoutp;
+
+  EXEC SQL BEGIN DECLARE SECTION;
+  char machine[MACHINE_NAME_SIZE];
+  char label[FILESYS_LABEL_SIZE], type[FILESYS_TYPE_SIZE];
+  char partition[NFSPHYS_DIR_SIZE];
+  int mid, quota;
+  EXEC SQL END DECLARE SECTION;
+
+  EXEC SQL WHENEVER SQLERROR GOTO sqlerr;
+
+  EXEC SQL DECLARE po_curses CURSOR FOR
+    SELECT m.name, m.mach_id from machine m, serverhosts s
+    WHERE s.service='POSTOFFICE' AND s.mach_id=m.mach_id
+    ORDER by m.name;
+  EXEC SQL OPEN po_curses;
+
+  while (1)
+    {
+      EXEC SQL FETCH po_curses INTO :machine, :mid;
+      if (sqlca.sqlcode)
+	break;
+      if (!*strtrim(machine))
+	continue;
+
+      sprintf(mdir, "%s/%s", path, machine);
+      if (stat(mdir, &sb) < 0)
+	{
+          if (errno == ENOENT)
+	    {
+              if (mkdir(mdir, 0700) < 0)
+		{
+                  fprintf(stderr, "%s: unable to make directory %s (%s)\n",
+			  whoami, mdir, strerror(errno));
+                  exit(MR_CCONFIG);
+		}
+	    }
+	  else
+	    {
+              fprintf(stderr, "%s: cannot stat %s (%s)\n", whoami, mdir,
+		      strerror(errno));
+              exit(MR_CCONFIG);
+	    }
+	}
+      sprintf(mout, "%s/mailboxes", mdir);
+      sprintf(qout, "%s/quota", mdir);
+      if (!(moutp = fopen(mout, "w")))
+	{
+          fprintf(stderr, "%s: cannot open %s for writing (%s)\n", whoami,
+		  mout, strerror(errno));
+          exit(MR_OCONFIG);
+	}
+
+      if (!(qoutp = fopen(qout, "w")))
+	{
+          fprintf(stderr, "%s: cannot open %s for writing (%s)\n", whoami,
+		  qout, strerror(errno));
+          exit(MR_OCONFIG);
+	}
+
+      EXEC SQL DECLARE filsys_cursor CURSOR FOR
+	SELECT f.label, f.lockertype, p.dir, q.quota
+	FROM filesys f, nfsphys p, quota q
+	WHERE f.mach_id=:mid AND f.type='IMAP' AND f.createflg!=0
+	AND f.filsys_id=q.filsys_id
+	AND f.mach_id=p.mach_id AND f.phys_id=p.nfsphys_id
+	ORDER BY f.label, p.dir, q.quota;
+      EXEC SQL OPEN filsys_cursor;
+
+      while (1)
+	{
+          EXEC SQL FETCH filsys_cursor INTO :label, :type, :partition, :quota;
+          if (sqlca.sqlcode)
+ 	    break;
+          if (!*strtrim(label))
+	    continue;
+          if (!*strtrim(type))
+	    continue;
+	  if (!*strtrim(partition))
+	    continue;
+
+          if (!strncmp(&label[strlen(label)-3], ".po", 3))
+	    label[strlen(label)-3] = '\0';
+          lowercase(label);
+          lowercase(type);
+          lowercase(partition);
+
+          fprintf(moutp, "%s.%s\t%s\t%s\t%s\n", type, label, partition,
+		  label, "lrswipcda");
+          fprintf(qoutp, "%s.%s\t%d\n", type, label, quota);
+      }
+
+      EXEC SQL CLOSE filsys_cursor;
+      EXEC SQL COMMIT;
+
+      if (fclose(moutp))
+	{
+          fprintf(stderr, "%s: unable to close file %s (%s)\n", whoami,
+		  mout, strerror(errno));
+          exit(MR_CCONFIG);
+	}
+
+      if (fclose(qoutp))
+	{
+          fprintf(stderr, "%s: unable to close file %s (%s)\n", whoami,
+		  qout, strerror(errno));
+          exit(MR_CCONFIG);
+	}
+    }
+
+  EXEC SQL CLOSE po_curses;
+  EXEC SQL COMMIT;
+  return;
+
+sqlerr:
+  db_error(sqlca.sqlcode);
+  exit(MR_DBMS_ERR);
+}

@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.12 2000-01-06 21:13:50 danw Exp $
+# $Id: Makefile.in,v 1.13 2000-01-10 21:56:35 danw Exp $
 
 SHELL=/bin/sh
 @SET_MAKE@
@@ -33,21 +33,22 @@ LIB_TARGET=libdcm.a
 
 GDSS_OBJS=warehouse.o
 OBJS=	acl.o boot.o directory.o hesiod.o hosts.o mailhub.o \
-	ndb.o network.o nfs.o pobox.o print.o zephyr.o \
-	@GDSS_OBJS@
+	ndb.o network.o nfs.o pobox.o postoffice.o print.o \
+	www.o zephyr.o @GDSS_OBJS@
 
 GDSS_CFILES=warehouse.c
 CFILES= acl.c boot.c directory.c hesiod.c hosts.c mailhub.c \
-	ndb.c network.c nfs.c pobox.c print.c zephyr.c \
-	@GDSS_CFILES@
+	ndb.c network.c nfs.c pobox.c postoffice.c print.c \
+	www.c zephyr.c @GDSS_CFILES@
 
 GDSS_TARGET=warehouse.gen
 TARGET=	acl.gen boot.gen directory.gen hesiod.gen hosts.gen \
 	mailhub.gen ndb.gen network.gen nfs.gen pobox.gen \
-	print.gen zephyr.gen @GDSS_TARGET@
+	postoffice.gen print.gen www.gen zephyr.gen @GDSS_TARGET@
 
-SCRIPTS=boot.sh hesiod.sh mailhub.sh nfs.sh null.sh print.sh \
-	sapprint.gen sapprint.sh warehouse.sh
+SCRIPTS=boot.sh hesiod.sh mailhub.sh nfs.sh null.sh \
+	postoffice.sh print.sh sapprint.gen sapprint.sh warehouse.sh \
+	www.sh
 
 .SUFFIXES: .pc .gen
 
@@ -116,3 +117,10 @@ acl.gen: acl.o libdcm.a $(MR_LIBDEP)
 
 zephyr.gen: zephyr.o libdcm.a $(MR_LIBDEP)
 	$(CC) -o $@ $(LDFLAGS) zephyr.o libdcm.a $(SQL_LIBS) $(LIBS)
+
+postoffice.gen: postoffice.o libdcm.a $(MR_LIBDEP)
+	$(CC) -o $@ $(LDFLAGS) postoffice.o libdcm.a $(SQL_LIBS) $(LIBS)
+
+www.gen: www.o libdcm.a $(MR_LIBDEP)
+	$(CC) -o $@ $(LDFLAGS) www.o libdcm.a $(SQL_LIBS) $(LIBS)
+

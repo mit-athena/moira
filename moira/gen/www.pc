@@ -1,0 +1,275 @@
+/* $Id: www.pc,v 1.1 2000-01-10 21:56:35 danw Exp $
+ *
+ * This generates the web server user & group data.
+ *
+ * tom@mit.edu
+ *
+ * Copyright 1998 by the Massachusetts Institute of Technology.
+ * For copying and distribution information, please see the file
+ * <mit-copyright.h>.
+ */
+
+#include <mit-copyright.h>
+#include <moira.h>
+#include <moira_site.h>
+#include <sys/stat.h>
+#include <stdio.h>
+#include <string.h>
+#include <time.h>
+#include <errno.h>
+#include "util.h"
+
+EXEC SQL INCLUDE sqlca;
+
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/www.pc,v 1.1 2000-01-10 21:56:35 danw Exp $");
+
+
+#ifndef WWW_SUBDIR
+#define WWW_SUBDIR "www"
+#endif
+
+#define MAX_RECSIZE 10240
+
+char *whoami = "www.gen";
+char *db = "moira/moira";
+
+void filsys(FILE *out);
+void group(FILE *out);
+
+char www_dir[MAXPATHLEN];
+
+char *colors[] = {"red", "green", "blue", "yellow", "mauve", "spooge",
+		  "rose", "ivory", "mitbeige", "twinkie", "midnightblue",
+		  "grey", "lilac", "orange", "purple", "ronhoffmanngreen"};
+int ncolors = 16;
+
+
+int main(int argc, char **argv)
+{
+  char outgrp[MAXPATHLEN];
+  char outfs[MAXPATHLEN];
+  char wkgrp[MAXPATHLEN];
+  char wkfs[MAXPATHLEN];
+  char cmd[BUFSIZ];
+  FILE *outgrpf;
+  FILE *outfsf;
+  struct stat sb;
+  char *c;
+  int flag;
+
+  initialize_sms_error_table();
+
+  if (argc == 1)
+    sprintf(www_dir, "%s/%s", DCM_DIR, WWW_SUBDIR);
+  else
+    {
+      sprintf(www_dir, "%s", argv[1]);
+      /* fake out dcm - we'll append .out later */
+      if (c = strrchr(www_dir, '.'))
+        *c = '\0';
+    }
+
+  if (argc > 2)
+    {
+      fprintf(stderr, "usage: %s [outdir]\n", argv[0]);
+      exit(MR_ARGS);
+    }
+
+  if (stat(www_dir, &sb) < 0)
+    {
+      if (errno == ENOENT)
+	{
+	  if (mkdir(www_dir, 0700) < 0)
+	    {
+	      fprintf(stderr, "%s: unable to make directory %s (%s))\n",
+		      whoami, www_dir, strerror(errno));
+	      exit(MR_CCONFIG);
+	    }
+	}
+      else
+	{
+	  fprintf(stderr, "%s: cannot stat %s (%s)\n", whoami, www_dir,
+		  strerror(errno));
+          exit(MR_CCONFIG);
+	}
+    }
+  else if(!S_ISDIR(sb.st_mode))
+    {
+      fprintf(stderr, "%s: %s not a directory\n" , whoami, www_dir);
+      exit(MR_CCONFIG);
+    }
+
+  EXEC SQL CONNECT :db;
+
+  sprintf(outgrp, "%s/group", www_dir);
+  sprintf(outfs, "%s/filsys", www_dir);
+  sprintf(wkgrp, "%s/group~", www_dir);
+  sprintf(wkfs, "%s/filsys~", www_dir);
+
+  flag = 0;
+  if (stat(outfs, &sb) == 0)
+    {
+      if (ModDiff (&flag, "filesys", sb.st_mtime))
+        exit(MR_DATE);
+    }
+  if (flag < 0)
+    fprintf(stderr, "%s: %s does not need to be rebuilt.\n", whoami, outfs);
+  else
+    {
+      fprintf(stderr, "%s: building fs database...\n", whoami);
+      if (!(outfsf = fopen(wkfs, "w")))
+	{
+	  fprintf(stderr, "%s: cannot open %s for writing (%s)\n", whoami,
+		  wkfs, strerror(errno));
+	  exit(MR_OCONFIG);
+	}
+      filsys(outfsf);
+      if (fclose(outfsf))
+	{
+	  fprintf(stderr, "%s: close of %s failed (%s)", whoami,
+		  wkfs, strerror(errno));
+	  exit(MR_CCONFIG);
+	}
+      fix_file(outfs);
+    }
+
+  flag = 0;
+  if (stat(outgrp, &sb) == 0)
+    {
+      if (ModDiff (&flag, "list", sb.st_mtime) ||
+	  ModDiff (&flag, "users", sb.st_mtime))
+        exit(MR_DATE);
+    }
+  if (flag < 0)
+    fprintf(stderr, "%s: %s does not need to be rebuilt.\n", whoami, outgrp);
+  else
+    {
+      fprintf(stderr, "%s: building group database...\n", whoami);
+      if (!(outgrpf = fopen(wkgrp, "w")))
+	{
+	  fprintf(stderr, "%s: cannot open %s for writing (%s)\n", whoami,
+		  wkgrp, strerror(errno));
+	  exit(MR_OCONFIG);
+	}
+      group(outgrpf);
+      if (fclose(outgrpf))
+	{
+	  fprintf(stderr, "%s: close of %s failed (%s)", whoami, wkgrp,
+		  strerror(errno));
+	  exit(MR_CCONFIG);
+	}
+      fix_file(outgrp);
+    }
+
+  fprintf(stderr, "%s: building tar file...\n", whoami);
+  sprintf(cmd, "(cd %s; tar cf - . ) > %s.out", www_dir, www_dir);
+  if (system(cmd))
+    exit(MR_TAR_FAIL);
+
+  exit(MR_SUCCESS);
+}
+
+void filsys(FILE *out)
+{
+  char *c;
+  EXEC SQL BEGIN DECLARE SECTION;
+  char label[FILESYS_LABEL_SIZE], path[FILESYS_NAME_SIZE];
+  int status;
+  EXEC SQL END DECLARE SECTION;
+
+  EXEC SQL WHENEVER SQLERROR GOTO sqlerr;
+
+  EXEC SQL DECLARE filsys_cursor CURSOR FOR
+    SELECT label, name FROM filesys WHERE type='AFS' ORDER by label;
+  EXEC SQL OPEN filsys_cursor;
+
+  while (1)
+    {
+      EXEC SQL FETCH filsys_cursor INTO :label, :path;
+      if (sqlca.sqlcode)
+ 	break;
+      if (!*strtrim(label))
+	continue;
+      if (!*strtrim(path))
+	continue;
+      fprintf(out, "%s:%s\n", label, path);
+    }
+
+  EXEC SQL CLOSE filsys_cursor;
+  EXEC SQL COMMIT;
+
+  return;
+
+sqlerr:
+  db_error(sqlca.sqlcode);
+  exit(MR_DBMS_ERR);
+}
+
+void group(FILE *out)
+{
+  int first;
+  int recsize;
+
+  EXEC SQL BEGIN DECLARE SECTION;
+  char user[USERS_LOGIN_SIZE];
+  char list[LIST_NAME_SIZE];
+  char parent[LIST_NAME_SIZE];
+  EXEC SQL END DECLARE SECTION;
+
+  EXEC SQL WHENEVER SQLERROR GOTO sqlerr;
+
+  EXEC SQL DECLARE user_cursor CURSOR FOR
+    SELECT login FROM users WHERE status=1 ORDER by login;
+  EXEC SQL OPEN user_cursor;
+
+  while (1)
+    {
+      EXEC SQL FETCH user_cursor INTO :user;
+      if (sqlca.sqlcode)
+        break;
+      strtrim(user);
+      recsize = strlen(user) + 3;
+      first = 1;
+
+      EXEC SQL DECLARE member_cursor CURSOR FOR
+	SELECT DISTINCT l.name from list l, imembers i, users u
+	WHERE u.login=:user AND u.users_id=i.member_id AND
+  	i.member_type='USER' AND i.list_id=l.list_id AND
+	l.grouplist != 0 and l.active != 0
+	ORDER by l.name;
+      EXEC SQL OPEN member_cursor;
+
+      while (1)
+	{
+	  EXEC SQL FETCH member_cursor INTO :list;
+	  if (sqlca.sqlcode)
+	    break;
+	  strtrim(list);
+	  if (first)
+	    fprintf(out, "%s:xjOhFdLKGK84w:", user);
+	  fprintf(out, "%s%s", first ? "" : ",", list);
+	  recsize += strlen(list) + 1;
+	  first = 0;
+	  if (recsize > MAX_RECSIZE)
+	    {
+	      fprintf(stderr, "truncated group list for %s\n", user);
+	      break;
+	    }
+	}
+
+      EXEC SQL CLOSE member_cursor;
+      EXEC SQL COMMIT;
+
+      if (!first)
+        fprintf(out, "\n");
+    }
+
+  EXEC SQL CLOSE user_cursor;
+  EXEC SQL COMMIT;
+
+  return;
+
+sqlerr:
+  db_error(sqlca.sqlcode);
+  exit(MR_DBMS_ERR);
+}

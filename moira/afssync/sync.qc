@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/afssync/sync.qc,v 1.9 1992-06-29 10:19:17 probe Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/afssync/sync.qc,v 1.10 1992-07-05 13:18:24 probe Exp $
  *
  *
  *  (c) Copyright 1989 by the Massachusetts Institute of Technology.
@@ -140,13 +140,13 @@ do_groups()
 	    else
 		hash_store(groups, lid, aid);
 
-	    /* If this list is hidden, set the pts entry to be s---- */
+	    /* Set modes on hidden lists (S----) */
 	    if (hide && (status==0 || status==PRIDEXIST)) {
 		gpos = FindByID(0, aid);
-		status = pr_ReadEntry(0, 0, gpos, &gentry);
+		status = pr_Read(0, 0, gpos, &gentry, sizeof(gentry));
 		if (!status) {
-		    gentry.flags = PRGRP|PRACCESS|PRP_STATUS_ANY;
-		    status = pr_WriteEntry(0, 0, gpos, &gentry);
+		    gentry.flags = htonl(PRGRP|PRACCESS|PRP_STATUS_ANY);
+		    status = pr_Write(0, 0, gpos, &gentry, sizeof(gentry));
 		}
 		if (status)
 		    fprintf(stderr,

@@ -3,13 +3,13 @@
  * and distribution information, see the file "mit-copyright.h". 
  *
  * $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chsh.c,v $
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chsh.c,v 1.9 1991-05-16 18:26:26 mar Exp $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chsh.c,v 1.10 1992-09-02 11:49:51 mar Exp $
  * $Author: mar $
  *
  */
 
 #ifndef lint
-static char *rcsid_chsh_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chsh.c,v 1.9 1991-05-16 18:26:26 mar Exp $";
+static char *rcsid_chsh_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chsh.c,v 1.10 1992-09-02 11:49:51 mar Exp $";
 #endif not lint
 
 /*
@@ -156,7 +156,7 @@ chsh(uname)
     q_argv[NAME] = uname;
     q_argc = NAME + 1;
 
-    if ((status = mr_query("get_user_by_login", q_argc, q_argv, 
+    if ((status = mr_query("get_user_account_by_login", q_argc, q_argv, 
 			    get_shell, (char *) uname)))
     {
 	com_err(whoami, status, " while getting user information.");

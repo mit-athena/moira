@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/strs.c,v $
  *	$Author: danw $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/strs.c,v 1.11 1997-01-29 23:24:22 danw Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/strs.c,v 1.12 1997-09-10 03:37:45 danw Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -11,7 +11,7 @@
  */
 
 #ifndef lint
-static char *rcsid_strs_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/strs.c,v 1.11 1997-01-29 23:24:22 danw Exp $";
+static char *rcsid_strs_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/strs.c,v 1.12 1997-09-10 03:37:45 danw Exp $";
 #endif
 
 #include <mit-copyright.h>
@@ -68,7 +68,7 @@ char *strtrim(save)
 	    break;
 	}
     }
-    *t = '\0';
+    if (*t) *t = '\0';
     return s;
 }
 

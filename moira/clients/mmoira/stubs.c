@@ -12,7 +12,7 @@
 #include	"data.h"
 #include        <Xm/Text.h>
 
-static char rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/stubs.c,v 1.3 1991-06-04 14:31:44 mar Exp $";
+static char rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/stubs.c,v 1.4 1991-06-05 12:26:51 mar Exp $";
 
 void	extra_help_callback();
 
@@ -56,10 +56,15 @@ PopupErrorMessage(text, extrahelp)
 char	*text;
 char	*extrahelp;
 {
-	Widget		child;
+	static Widget		child;
 	Arg		wargs[10];
 	int		n;
-	XmString        label;          /* !@#$%^ compound string required */
+	static XmString        label;
+
+	if (label) {
+		XtFree(label);
+		XtDestroyWidget(child);
+	}
 
 
 	label = XmStringCreateLtoR( text, XmSTRING_DEFAULT_CHARSET);
@@ -89,11 +94,15 @@ void
 PopupHelpWindow(text)
 char	*text;
 {
-	Widget		child;
+	static Widget		child;
 	Arg		wargs[10];
 	int		n;
-	XmString        label;          /* !@#$%^ compound string required */
 
+	static XmString        label;
+	if (label) {
+		XtFree(label);
+		XtDestroyWidget(child);
+	}
 
 	label = XmStringCreateLtoR( text, XmSTRING_DEFAULT_CHARSET);
 
@@ -180,20 +189,21 @@ EntryForm	*spec;
 
 		case FT_BOOLEAN:
 			n = 0;
-			XtSetArg(wargs[n], XmNset, current->returnvalue.booleanvalue);	n++;
+			XtSetArg(wargs[n], XmNset,
+				 current->returnvalue.booleanvalue ? True : False);	n++;
 			XtSetValues (current->mywidget, wargs, n);
 			break;
 
 		case FT_KEYWORD:
 			kidcount = ((CompositeRec *)(current->mywidget))->
 					composite.num_children;
-			printf ("Keyword field has %d children\n", kidcount);
 
 			while(kidcount--) {
 				n = 0;
 				kid = ((CompositeRec *)(current->mywidget))->
 					composite.children[kidcount];
-				if (!strcmp (XtName(kid), current->returnvalue.stringvalue)) {
+				if (current->returnvalue.stringvalue &&
+					(!strcmp (XtName(kid), current->returnvalue.stringvalue))) {
 					XtSetArg(wargs[n], XmNset, True);
 					n++;
 				}

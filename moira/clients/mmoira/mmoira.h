@@ -1,4 +1,14 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/mmoira.h,v 1.1 1991-05-24 12:21:09 mar Exp $ */
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/mmoira.h,v 1.2 1991-06-05 12:27:04 mar Exp $ */
+
+#include "data.h"
+
+extern EntryForm *GetAndClearForm(), *GetForm();
+extern char *user, *program_name;
+extern char *user_states[], *nfs_states[];
+extern char *StringValue();
+extern int DisplayCallback();
+
+#define HELPFILE	"/usr/athena/lib/moira.help"
 
 #define MM_STATS	1
 #define MM_CLIENTS	2
@@ -16,7 +26,7 @@
 #define MM_DEL_SERVICE	14
 #define MM_CLEAR_SERVICE	15
 #define MM_RESET_SERVICE	16
-#define MM_SHOW_DCMM	17
+#define MM_SHOW_DCM	17
 #define MM_ENABLE_DCM	18
 #define MM_TRIGGER_DCM	19
 #define MM_SHOW_ZEPHYR	20
@@ -86,3 +96,11 @@
 #define MM_EXPUNGE	84
 #define MM_SHOW_FINGER	85
 #define MM_MOD_FINGER	86
+#define MM_RESET_POBOX	87
+#define MM_HELP_MOIRA	88
+#define MM_HELP_WILDCARDS 89
+#define MM_HELP_AUTHORS 90
+#define MM_HELP_BUGS	91
+#define MM_SAVE_LOG	92
+#define MM_PERSISTANT_FORMS 93
+#define MM_QUIT		94

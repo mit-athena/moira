@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/main.c,v 1.2 1991-05-31 16:46:39 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/main.c,v 1.3 1991-06-05 12:26:30 mar Exp $
  *
  *  	Copyright 1991 by the Massachusetts Institute of Technology.
  *
@@ -17,7 +17,7 @@ extern MenuItem MenuRoot;
 
 Widget	CreateMenu(), CreateForm();
 Widget	BuildMenuTree();
-void popup_error_hook();
+void popup_error_hook(), mr_x_input();
 
 Widget  toplevel;
 char *user, *program_name, *moira_server;
@@ -27,14 +27,52 @@ int argc;
 char *argv[];
 {
 	Widget	button, bboard, menuwidget;
-	int	n;
+	char *motd;
+	int	n, status;
 
-	user = "mar";
-	program_name = argv[0];
+	if ((user = getlogin()) == NULL)
+	  user = getpwuid((int) getuid())->pw_name;
+	user = (user && strlen(user)) ? Strsave(user) : "";
+
+	if ((program_name = rindex(argv[0], '/')) == NULL)
+	  program_name = argv[0];
+	else
+	  program_name++;
+	program_name = Strsave(program_name);
+
+	/* Need to parse command line argument here */
 	moira_server = "";
 
-	mr_connect(moira_server);
-	mr_auth("mmoira");
+	status = mr_connect(moira_server);
+	if (status) {
+	    com_err(program_name, status, " connecting to server");
+	    exit(1);
+	}
+	status = mr_motd(&motd);
+	if (status) {
+	    com_err(program_name, status, " connecting to server");
+	    exit(1);
+	}
+	if (motd) {
+	    fprintf(stderr, "The Moira server is currently unavailable:\n%s\n",
+		    motd);
+	    mr_disconnect();
+	    exit(1);
+	}
+
+      	status = mr_auth("mmoira");
+	if (status == MR_USER_AUTH) {
+	    char buf[BUFSIZ];
+	    com_err(program_name, status, "\nPress [RETURN] to continue");
+	    gets(buf);
+	} else if (status) {
+	    if (status >= ERROR_TABLE_BASE_krb &&
+		status <= ERROR_TABLE_BASE_krb + 256)
+	      com_err(program_name, status, "; authorization failed - please run kinit");
+	    else
+	      com_err(program_name, status, "; authorization failed");
+	    exit(1);
+	}
 
 	toplevel = XtInitialize("toplevel", "Moira", NULL, 0, 
 				&argc, argv);
@@ -48,6 +86,8 @@ char *argv[];
 	XtRealizeWidget(toplevel);
 
 	set_com_err_hook(popup_error_hook);
+	mr_set_alternate_input(ConnectionNumber(XtDisplay(toplevel)),
+			       mr_x_input);
 	XtMainLoop();
 }
 
@@ -61,17 +101,17 @@ caddr_t data;
 {
     int status;
 
-    MakeWatchCursor();
+    MakeWatchCursor(toplevel);
     status = mr_query(query, argc, argv, callback, data);
     if (status != MR_ABORTED && status != MR_NOT_CONNECTED) {
-	MakeNormalCursor();
+	MakeNormalCursor(toplevel);
 	return(status);
     }
     status = mr_connect(moira_server);
     if (status) {
 	com_err(program_name, status, " while re-connecting to server %s",
 		moira_server);
-	MakeNormalCursor();
+	MakeNormalCursor(toplevel);
 	return(MR_ABORTED);
     }
     status = mr_auth("mmoira");
@@ -79,11 +119,11 @@ caddr_t data;
 	com_err(program_name, status, " while re-authenticating to server %s",
 		moira_server);
 	mr_disconnect();
-	MakeNormalCursor();
+	MakeNormalCursor(toplevel);
 	return(MR_ABORTED);
     }
     status = mr_query(query, argc, argv, callback, data);
-    MakeNormalCursor();
+    MakeNormalCursor(toplevel);
     return(status);
 
 }
@@ -118,4 +158,13 @@ caddr_t arg1, arg2, arg3, arg4, arg5;
     }
     sprintf(cp, fmt, arg1, arg2, arg3, arg4, arg5);
     display_error(buf);
+}
+
+
+void mr_x_input()
+{
+    XEvent event;
+
+    XtAppNextEvent(_XtDefaultAppContext(), &event);
+    XtDispatchEvent(&event);
 }

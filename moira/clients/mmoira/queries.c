@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/queries.c,v 1.2 1991-05-31 16:46:54 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/queries.c,v 1.3 1991-06-05 12:26:39 mar Exp $
  */
 
 #include <stdio.h>
@@ -50,6 +50,35 @@ EntryForm *form;
 	fn = "mod_filsys";
 	count = FS_MODTIME;
 	break;
+    case MM_MOD_NFS:
+	f = GetAndClearForm("mod_nfs");
+	if (f == NULL) {
+	    display_error("Unknown form in ModifyCallback of mod_nfs\n");
+	    return;
+	}
+	f->extrastuff = form->extrastuff;
+	f->menu = form->menu;
+	StoreField(f, 0, argv[0]);
+	StoreField(f, 1, argv[1]);
+	StoreField(f, 2, argv[2]);
+	f->inputlines[3]->keywords = nfs_states;
+	for (i = 0; nfs_states[i]; i++)
+	  if ((atoi(nfs_states[i]) & ~MR_FS_GROUPQUOTA) == atoi(argv[3]))
+	    StoreField(f, 3, nfs_states[i]);
+	StoreField(f, 3, argv[3]);
+	if (atoi(argv[3]) && MR_FS_GROUPQUOTA)
+	  f->inputlines[4]->returnvalue.booleanvalue = 1;
+	StoreField(f, 5, argv[4]);
+	StoreField(f, 6, argv[5]);
+	return;
+    case MM_MOD_MACH:
+	fn = "mod_machine";
+	count = M_MODTIME;
+	break;
+    case MM_MOD_CLUSTER:
+	fn = "mod_cluster";
+	count = C_MODTIME;
+	break;
     }
 
     if (count > 0) {
@@ -80,9 +109,10 @@ MoiraFormComplete(dummy1, form)
 int dummy1;
 EntryForm *form;
 {
-    char *qy, *argv[32], buf[256];
+    char *qy, *argv[32], buf[256], *s;
     int (*retfunc)(), argc, i;
     EntryForm *f;
+    static int persistant_forms = 0;
 
     retfunc = DisplayCallback;
     argc = -1;
@@ -139,7 +169,7 @@ EntryForm *form;
 	    i = MoiraQuery("get_user_by_name", 2, argv,
 			   ModifyCallback, (char *)form);
 	    if (i) {
-		com_err(program_name, i, "looking up user by name");
+		com_err(program_name, i, " looking up user by name");
 		return;
 	    }
 	    if (form->extrastuff == NULL) {
@@ -223,12 +253,17 @@ EntryForm *form;
 	if (!*stringval(form, 0)) {
 	    qy = "get_lists_of_member";
 	    argv[0] = stringval(form, 1);
+	    sprintf(buf, "Lists of %s %s:\n", stringval(form, 1), argv[1]);
+	    AppendToLog(buf);
 	    if (boolval(form, 3)) {
 		sprintf(buf, "R%s", stringval(form, 1));
 		argv[0] = buf;
 	    }
 	    argv[1] = stringval(form, 2);
 	    argc = 2;
+	} else {
+	    sprintf(buf, "Members of list %s:\n", argv[0]);
+	    AppendToLog(buf);
 	}
 	break;
     case MM_DEL_ALL_MEMBER:
@@ -241,7 +276,7 @@ EntryForm *form;
 	    argv[0] = stringval(form, 0);
 	    argc = 1;
 	} else if (*stringval(form, 1)) {
-	    argv[0] = canonicalize_hostname(stringval(form, 1));
+	    StoreHost(form, 1, &argv[0]);
 	    if (*stringval(form, 2)) {
 		qy = "get_filesys_by_nfsphys";
 		argv[1] = stringval(form, 2);
@@ -257,22 +292,58 @@ EntryForm *form;
 	}
 	break;
     case MM_ADD_FILSYS:
-	argv[FS_MACHINE] = canonicalize_hostname(stringval(form, FS_MACHINE));
+	StoreHost(form, FS_MACHINE, &argv[FS_MACHINE]);
 	if (!strcmp(stringval(form, FS_TYPE), "AFS") ||
 	    !strcmp(stringval(form, FS_TYPE), "FSGROUP"))
 	  argv[FS_MACHINE] = "\\[NONE\\]";
 	break;
     case MM_MOD_FILSYS:
 	if (!strcmp(form->formname, "mod_filsys")) {
-	    qy = "update_filsys";
+	    qy = "update_filesys";
 	    for (i = 0; i < FS_MODTIME; i++)
 	      argv[i + 1] = StringValue(form, i);
+	    StoreHost(form, FS_MACHINE, &argv[FS_MACHINE + 1]);
 	    argv[0] = form->extrastuff;
 	    argc = FS_MODTIME + 1;
 	    break;
 	}
 	form->extrastuff = (caddr_t) "mod_filsys";
 	retfunc = ModifyCallback;
+	break;
+    case MM_ADD_FSGROUP:
+	
+	break;
+    case MM_SHOW_FS_ALIAS:
+    case MM_ADD_FS_ALIAS:
+    case MM_DEL_FS_ALIAS:
+	argv[1] = "FILESYS";
+	argv[2] = stringval(form, 1);
+	break;
+    case MM_SHOW_NFS:
+	StoreHost(form, NFS_NAME, &argv[NFS_NAME]);
+	if (!*stringval(form, 1))
+	  argv[1] = "*";
+	break;
+    case MM_ADD_NFS:
+	StoreHost(form, NFS_NAME, &argv[NFS_NAME]);
+	sprintf(buf, "%d", atoi(stringval(form, NFS_STATUS)) +
+		(boolval(form, 4) ? MR_FS_GROUPQUOTA : 0));
+	argv[NFS_STATUS] = buf;
+	argv[NFS_ALLOC] = stringval(form, 5);
+	argv[NFS_SIZE] = stringval(form, 6);
+	break;
+    case MM_MOD_NFS:
+	StoreHost(form, NFS_NAME, &argv[NFS_NAME]);
+	if (!strcmp(form->formname, "mod_nfs")) {
+	    qy = "update_nfsphys";
+	    argc = NFS_MODTIME;
+	    break;
+	}
+	form->extrastuff = (caddr_t) "mod_nfs";
+	retfunc = ModifyCallback;
+	break;
+    case MM_DEL_NFS:
+	StoreHost(form, NFS_NAME, &argv[NFS_NAME]);
 	break;
     case MM_SHOW_QUOTA:
 	if (!*stringval(form, 0))
@@ -294,7 +365,7 @@ EntryForm *form;
     case MM_SHOW_MACH:
     case MM_ADD_MACH:
     case MM_DEL_MACH:
-	argv[0] = canonicalize_hostname(stringval(form, 0));	
+	StoreHost(form, 0, &argv[0]);
 	break;
     case MM_MOD_MACH:
 	if (!strcmp(form->formname, "mod_machine")) {
@@ -305,11 +376,51 @@ EntryForm *form;
 	    argc = M_MODTIME + 1;
 	    break;
 	}
-	argv[0] = canonicalize_hostname(stringval(form, 0));	
+	StoreHost(form, 0, &argv[0]);
 	form->extrastuff = (caddr_t) "mod_machine";
 	retfunc = ModifyCallback;
 	break;
-
+    case MM_MOD_CLUSTER:
+	if (!strcmp(form->formname, "mod_cluster")) {
+	    qy = "update_cluster";
+	    for (i = 0; i < C_MODTIME; i++)
+	      argv[i + 1] = StringValue(form, i);
+	    argv[0] = form->extrastuff;
+	    argc = C_MODTIME + 1;
+	    break;
+	}
+	form->extrastuff = (caddr_t) "mod_cluster";
+	retfunc = ModifyCallback;
+	break;
+    case MM_SHOW_MCMAP:
+	if (!*stringval(form, 0))
+	  argv[0] = "*";
+	else
+	  StoreHost(form, 0, &argv[0]);
+	if (!*stringval(form, 1))
+	  argv[1] = "*";
+	AppendToLog("Cluster mappings:\n");
+	break;
+    case MM_ADD_MCMAP:
+    case MM_DEL_MCMAP:
+	StoreHost(form, 0, &argv[0]);
+	break;
+    case MM_SHOW_CLDATA:
+	if (!*stringval(form, 1))
+	  argv[1] = "*";
+	break;
+    case MM_ADD_PCAP:
+	StoreHost(form, PCAP_SPOOL_HOST, &argv[PCAP_SPOOL_HOST]);
+	StoreHost(form, PCAP_QSERVER, &argv[PCAP_QSERVER]);
+	break;
+    case MM_SAVE_LOG:
+	display_error("Not yet implemented.");
+	return;
+    case MM_PERSISTANT_FORMS:
+	persistant_forms = boolval(form, 0);
+	if (!persistant_forms)
+	  XtUnmanageChild(form->formpointer);
+	return;
     }
 
     if (argc == -1) {
@@ -318,7 +429,7 @@ EntryForm *form;
     }
     i = MoiraQuery(qy, argc, argv, retfunc, (char *)form);
     if (i) {
-	com_err(program_name, i, "executing database query");
+	com_err(program_name, i, " executing database query");
 	return;
     }
     
@@ -342,6 +453,7 @@ EntryForm *form;
 	  AppendToLog("Done.\n");
 	break;
     case MM_MOD_FINGER:
+    case MM_MOD_CLUSTER:
 	if (!f)
 	  AppendToLog("Done.\n");	  
 	break;
@@ -365,6 +477,12 @@ EntryForm *form;
     case MM_MOD_MACH:
 	if (f)
 	  GetKeywords(f, 1, "mac_type");
+	else
+	  AppendToLog("Done.\n");	  
+	break;
+    case MM_MOD_NFS:
+	if (f)
+	  f->inputlines[3]->keywords = nfs_states;
 	else
 	  AppendToLog("Done.\n");	  
 	break;
@@ -419,6 +537,9 @@ EntryForm *form;
 	AppendToLog("Done.\n");
     }
 
+    if (!persistant_forms)
+      XtUnmanageChild(form->formpointer);
+
     if (f)
       DisplayForm(f);
     else
@@ -444,23 +565,35 @@ MenuItem *m;
 	argv[0] = argv[1] = argv[3] = "TRUE";
 	argv[2] = "FALSE";
 	argv[4] = "DONTCARE";
+	AppendToLog("Public Mailinglists:\n");
 	break;
     case MM_SHOW_DQUOTA:
 	argv[0] = "def_quota";
 	break;
     case MM_SHOW_DCM:
-	AppendToLog("Services and Hosts with failed updates:");
+	AppendToLog("Services and Hosts with failed updates:\n");
 	argv[0] = argv[2] = "DONTCARE";
 	argv[1] = "TRUE";
 	i = MoiraQuery("qualified_get_server", 3, argv, retfunc, NULL);
 	if (i && i != MR_NO_MATCH)
-	  com_err(program_name, i, "executing database query");
-	qy = "qualified_get_server_host";
+	  com_err(program_name, i, " executing database query");
 	argv[0] = "*";
 	argv[1] = argv[2] = argv[3] = argv[5] = "DONTCARE";
 	argv[4] = "TRUE";
-	argc = 6;
-	break;
+	i = MoiraQuery("qualified_get_server_host", 6, argv, retfunc, NULL);
+	if (i && i != MR_NO_MATCH)
+	  com_err(program_name, i, " executing database query");
+	AppendToLog("\n");
+	return;
+    case MM_HELP_MOIRA:
+    case MM_HELP_WILDCARDS:
+    case MM_HELP_AUTHORS:
+    case MM_HELP_BUGS:
+	help(m->query);
+	return;
+    case MM_QUIT:
+	mr_disconnect();
+	exit(0);
     }
     if (argc == -1) {
 	display_error("Unknown function in menu callback.\n");
@@ -468,7 +601,8 @@ MenuItem *m;
     }
     i = MoiraQuery(qy, argc, argv, retfunc, (char *)&dummy);
     if (i)
-      com_err(program_name, i, "executing database query");
+      com_err(program_name, i, " executing database query");
+    AppendToLog("\n");
 }
 
 

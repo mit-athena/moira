@@ -1,4 +1,4 @@
-/* $Id: mrtest.c,v 1.45 1999-07-17 21:42:32 danw Exp $
+/* $Id: mrtest.c,v 1.46 1999-08-02 18:43:44 danw Exp $
  *
  * Bare-bones Moira client
  *
@@ -24,7 +24,7 @@
 #include "readline/history.h"
 #endif
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v 1.45 1999-07-17 21:42:32 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v 1.46 1999-08-02 18:43:44 danw Exp $");
 
 int recursion = 0, quote_output = 0, interactive;
 int count, quit = 0, cancel = 0;
@@ -427,7 +427,7 @@ int print_reply(int argc, char **argv, void *help)
 
 void test_query(int argc, char **argv)
 {
-  int status, help = !strcmp(argv[1], "_help");
+  int status, help;
   sigset_t sigs;
 
   if (argc < 2)
@@ -435,6 +435,7 @@ void test_query(int argc, char **argv)
       com_err("moira (query)", 0, "Usage: query handle [ args ... ]");
       return;
     }
+  help = !strcmp(argv[1], "_help");
 
   count = 0;
   /* Don't allow ^C during the query: it will confuse libmoira's

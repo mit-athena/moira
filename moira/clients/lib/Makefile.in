@@ -1,0 +1,33 @@
+# $Id: Makefile.in,v 1.1 1999-05-13 18:52:27 danw Exp $
+
+SHELL=/bin/sh
+
+CC=@CC@
+CPPFLAGS=@CPPFLAGS@
+CFLAGS=@CFLAGS@
+DEFS=@DEFS@
+ALL_CFLAGS=$(CPPFLAGS) $(CFLAGS) $(DEFS)
+RANLIB=@RANLIB@
+
+srcdir=@srcdir@
+VPATH=@srcdir@
+SRCTOP=@top_srcdir@
+BUILDTOP=../..
+
+OBJS=pobox.o utils.o
+
+.c.o:
+	$(CC) -c $(ALL_CFLAGS) $<
+
+all: libmrclient.a
+
+clean:
+	rm -f $(OBJS) libmrclient.a
+
+depend:
+
+install: all
+
+libmrclient.a: $(OBJS)
+	ar cru $@ $(OBJS)
+	$(RANLIB) $@

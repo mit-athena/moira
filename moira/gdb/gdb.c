@@ -1,10 +1,10 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb.c,v 1.3 1989-06-01 21:40:09 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb.c,v 1.4 1989-09-13 14:51:21 mar Exp $
  */
 
 #ifndef lint
-static char *rcsid_gdb_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb.c,v 1.3 1989-06-01 21:40:09 mar Exp $";
+static char *rcsid_gdb_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb.c,v 1.4 1989-09-13 14:51:21 mar Exp $";
 #endif	lint
 
 
@@ -96,11 +96,9 @@ gdb_init()
         */
 	gdb_mfd = 0;
 
-	for (i=0; i<NFDBITS/sizeof(int); i++) {
-		gdb_crfds.fds_bits[i] = 0;
-		gdb_cwfds.fds_bits[i] = 0;
-		gdb_cefds.fds_bits[i] = 0;
-	}
+	FD_ZERO(&gdb_crfds);
+	FD_ZERO(&gdb_cwfds);
+	FD_ZERO(&gdb_cefds);
 
        /*
         * Initialize the server/client layer

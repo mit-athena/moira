@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/hesiod.dc,v 1.13 1993-11-23 17:31:54 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/hesiod.dc,v 1.14 1993-11-24 15:50:05 mar Exp $
  *
  * This generates the zone files necessary to load a hesiod server.
  * The following zones are generated: passwd, uid, pobox, group,
@@ -112,7 +112,7 @@ get_mach()
 {
     EXEC SQL BEGIN DECLARE SECTION;
     int id;
-    char name[33];
+    char name[41];
     EXEC SQL END DECLARE SECTION;
 
     if (machines)
@@ -612,12 +612,12 @@ set_mask *set;
 do_cluster()
 {
     FILE *out;
-    char outf[64], outft[64], *mach, machbuf[33], *p;
+    char outf[64], outft[64], *mach, machbuf[41], *p;
     struct stat sb;
     time_t ftime;
     EXEC SQL BEGIN DECLARE SECTION;
     int flag1, flag2, flag3, flag4, maxmach, maxclu, mid, cid, id;
-    char name[33], label2[17], data[33];
+    char name[41], label2[17], data[33];
     EXEC SQL END DECLARE SECTION;
     set_mask **machs, *ms, *ps;
     int oneclu;

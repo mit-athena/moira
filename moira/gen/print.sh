@@ -1,5 +1,5 @@
 #! /bin/sh
-# $Id: print.sh,v 1.2 1999-06-02 21:43:25 danw Exp $
+# $Id: print.sh,v 1.3 1999-12-06 15:16:08 danw Exp $
 
 # The following exit codes are defined and MUST BE CONSISTENT with the
 # error codes the library uses:
@@ -20,10 +20,12 @@ test -r $PCLOCAL || exit $MR_MISSINGFILE
 # Unpack the tar file, getting only files that are newer than the
 # on-disk copies (-u).
 cd /
-pax -ru -p o -f $TARFILE
+tar xf $TARFILE || exit $MR_TARERR
 
-# Build full printcap
+# Build full printcap and spools
 cat $PCLOCAL $PCGEN > $PRINTCAP
+/usr/athena/etc/checkpc -f
+/usr/athena/etc/lpc reread
 
 # cleanup
 test -f $TARFILE && rm -f $TARFILE

@@ -3,8 +3,9 @@
 #	Nightly script for backing up Moira.
 #
 #
-BKUPDIRDIR=/u3/sms_backup
+BKUPDIRDIR=/u1/backups
 PATH=/bin:/athena/bin:/usr/athena/bin:/usr/bin:/usr/ucb:/usr/new; export PATH
+. /usr/ingres/sqluser.profile
 chdir ${BKUPDIRDIR}
 
 # /moira/bin/counts </dev/null	
@@ -24,6 +25,7 @@ else
 	echo "Cannot create backup directory"
 	exit 1
 fi
+chmod 750 in_progress
 if /moira/bin/mrbackup ${BKUPDIRDIR}/in_progress/
 then
 	echo "Backup successful"
@@ -53,8 +55,8 @@ echo
 echo -n "deleting last backup"
 rm -rf stale
 echo "Shipping over the net:"
-rcp -rp ${BKUPDIRDIR}/* oregano:/var/moira
-rcp -rp ${BKUPDIRDIR}/* plover:/backup/moira
+rcp -rp ${BKUPDIRDIR}/* oregano:/u1/moira
+rcp -rp ${BKUPDIRDIR}/* nessus:/backup/moira
 
 if [ "`/usr/bin/find /moira/critical.log -mtime -1 -print`" = "/moira/critical.log" ]; then
 	(/bin/echo "To: dbadmin";\

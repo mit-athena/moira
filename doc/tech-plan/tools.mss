@@ -48,6 +48,7 @@ mailing lists that are being modified.  Objects that need to be modified
 at once (such as the ownership of a mailing list) should present
 themselves to be dealt with.
 
+@newpage()
 @Begin(Itemize, Spread 1)
 @Begin(Multiple)
 
@@ -115,8 +116,29 @@ RVDVIRT relation
 END USERS:
 Administrators.
 
+A SESSION WITH RVD_MAINT
+@begin(display)
+
+%rvd_maint
+
+                              SMS RVD Maintenance
+ 1. (modvd       ) Modify a virtual disk.
+ 2. (addvd       ) Add a new virtual disk.
+ 3. (addpd       ) Add a new physical disk.
+ 4. (rmvd        ) Delete a virtual disk.
+ 5. (rmpd        ) Delete a virtual disk.
+ 6. (exchvd      ) Exchange virtual disk names.
+ 7. (lookvd      ) Look up virtual disk names.
+ 8. (lookpd      ) Look up physical disk names.
+ 9. (rvdhelp     ) Get help with RVD commands.
+ r. (return      ) Return to previous menu.
+ q. (quit        ) Quit.
+Command:
+@end(display)
+
 @End(Multiple)
 
+@newpage()
 @begin(multiple)
 PROGRAM NAME: ATTACH_MAINT - Associate information to filesystems. 
 
@@ -213,6 +235,7 @@ Command:q
 @end(display)
 @end(multiple)
 
+@newpage()
 @Begin(Multiple)
 
 PROGRAM NAME: USER_MAINT - Adding/changing user information, including NFS 
@@ -339,6 +362,7 @@ Command:
 @end(display)
 @end(multiple)
 
+@newpage()
 @begin(multiple)
 PROGRAM NAME: CHFN - Finger Information.
 
@@ -392,6 +416,7 @@ MIT year (Exs: 1989, '91, Faculty, Grad) [staf]:
 @end(display)
 @end(multiple)
 
+@newpage()
 @begin(multiple)
 PROGRAM NAME: CHPOBOX - Add / change home mail host.  (This
 program is the new chhome.)
@@ -443,6 +468,7 @@ address: pjlevine@menelaus.mit.edu
 @end(display)
 @end(multiple)
 
+@newpage()
 @begin(multiple)
 PROGRAM NAME: REG_TAPE - Add or remove students from 
 the system using Registrar's
@@ -480,6 +506,7 @@ incorrect, the administrator will set the date to some time in the
 future and leave the status field ACTIVE.
 @end(multiple)
 
+@newpage()
 @begin(multiple)
 
 PROGRAM NAME: DCM_MAINT - Add/update DCM table entries.
@@ -590,6 +617,7 @@ pop                          /dev/null      /dev/null
 @end(display)
 @end(multiple)
 
+@newpage()
 @begin(multiple)
 PROGRAM NAME: LIST_MAINT - List Administration
 
@@ -719,6 +747,7 @@ Command:q
 @end(display)
 @end(multiple)
 
+@newpage()
 @begin(multiple)
 PROGRAM NAME: CLUSTER_MAINT - This program manages machines and clusters.  
 
@@ -840,6 +869,8 @@ Command:q
 %
 @end(display)
 @end(multiple)
+
+@newpage()
 @begin(multiple)
 
 PROGRAM NAME: SERVICE_MAINT - Services management.
@@ -919,6 +950,7 @@ Command:q
 %
 @end(display)
 
+@newpage()
 @begin(multiple)
 PROGRAM NAME: PRINTER_MAINT - Printer maintenance.
 
@@ -1002,6 +1034,7 @@ updates the following fields:
 END USERS: Administrator.  Staff.
 @end(multiple)
 
+@newpage()
 @begin(multiple)
 PROGRAM NAME: DB_MAINT - Data base integrity checker/intersective
 constrainer.
@@ -1025,6 +1058,7 @@ To be determined
 END USER: Administrator. Cron (automatically invoked).
 @end(multiple)
 
+@newpage()
 @begin(multiple)
 PROGRAM NAME: SMS_MAINT - Master SMS program.
 

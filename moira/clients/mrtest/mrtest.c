@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v $
  *	$Author: danw $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v 1.33 1997-01-16 01:27:17 danw Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v 1.34 1997-01-29 23:09:38 danw Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_test_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v 1.33 1997-01-16 01:27:17 danw Exp $";
+static char *rcsid_test_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v 1.34 1997-01-29 23:09:38 danw Exp $";
 #endif /* lint */
 
 #include <mit-copyright.h>
@@ -42,8 +42,11 @@ jmp_buf jb;
 
 #define MAXARGS 20
 
-void discard_input(void);
-char *mr_gets(char *, char *, size_t);
+#ifdef POSIX
+void
+#endif
+discard_input();
+char *mr_gets();
 
 main(argc, argv)
 	int argc;
@@ -84,7 +87,12 @@ main(argc, argv)
 	exit(0);
 }
 
-void discard_input(void)
+#ifdef POSIX
+void
+#else
+int
+#endif
+discard_input()
 {
   putc('\n', stdout);
 #ifdef POSIX
@@ -94,7 +102,9 @@ void discard_input(void)
 #endif
 }
 
-char *mr_gets(char *prompt, char *buf, size_t len)
+char *mr_gets(prompt, buf, len)
+     char *prompt, *buf;
+     size_t len;
 {
   char *in;
 #ifdef USE_READLINE
@@ -187,7 +197,7 @@ parse(buf, argv)
 	    *p=num;
 	  }
 	}
-	*d++=*p++;
+	*d++= *p++;
       }
       if(p==d+1) {*d='\0'; p++;}
       else while(p>=d) *p--=' ';

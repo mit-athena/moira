@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.4 1998-08-27 17:13:21 danw Exp $
+# $Id: Makefile.in,v 1.5 1998-10-30 18:18:00 danw Exp $
 
 SHELL=/bin/sh
 @SET_MAKE@
@@ -51,6 +51,7 @@ depend: $(GENFILES) $(CFILES)
 install: all
 	$(INSTALL_PROGRAM) mrbackup $(mrbindir)
 	$(INSTALL_PROGRAM) mrrestore $(mrbindir)
+	$(INSTALL_PROGRAM) $(srcdir)/report.sh $(mrbindir)
 
 mrbackup: $(BOBJS) $(MR_LIBDEP)
 	$(CC) -o $@ $(LDFLAGS) $(BOBJS) $(LIBS)

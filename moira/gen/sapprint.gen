@@ -1,6 +1,6 @@
 #!/moira/bin/perl -Tw
 
-# $Id: sapprint.gen,v 1.1 1999-09-17 21:25:24 mwhitson Exp $
+# $Id: sapprint.gen,v 1.2 2000-12-11 22:04:18 zacheiss Exp $
 
 # The following exit codes are defined and MUST BE CONSISTENT with the
 # error codes the library uses:
@@ -16,7 +16,7 @@ $dbh = DBI->connect("dbi:Oracle:moira", "moira", "moira")
 
 $sth = $dbh->prepare("SELECT p.name, p.hwtype, p.location, p.duplexname, p.rp, m.name ".
 		     "FROM printers p, machine m ".
-		     "WHERE p.rm=m.mach_id AND p.type='SAP'")
+		     "WHERE p.rm=m.mach_id AND (p.type='SAP' OR p.type='IPM')")
   || exit $MR_DBMS_ERR;
 
 $sth->execute || exit $MR_DBMS_ERR;

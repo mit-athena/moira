@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v 1.13 1989-06-26 12:08:46 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v 1.14 1989-06-27 14:33:56 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_test_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v 1.13 1989-06-26 12:08:46 mar Exp $";
+static char *rcsid_test_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v 1.14 1989-06-27 14:33:56 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -262,4 +262,20 @@ test_dcm(argc, argv)
 
 	if (status = sms_do_update())
 	  ss_perror(ss, status, " while triggering dcm");
+}
+
+
+test_motd(argc, argv)
+	int argc;
+	char **argv;
+{
+	int status;
+	char *motd;
+
+	if (status = sms_motd(&motd))
+	  ss_perror(ss, status, " while getting motd");
+	if (motd)
+	  printf("%s\n", motd);
+	else
+	  printf("No message of the day.\n");
 }

@@ -15,6 +15,9 @@
 	request test_old, "Use old protocol",
 		old, 1;
 
+	request test_motd, "Get the Message of the Day",
+		motd, m;
+
 	request test_query, "Make a query.",
 		query, qy;
 

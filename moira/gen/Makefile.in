@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.23 2001-06-19 22:39:39 zacheiss Exp $
+# $Id: Makefile.in,v 1.24 2001-07-19 21:30:32 zacheiss Exp $
 
 SHELL=/bin/sh
 @SET_MAKE@
@@ -36,7 +36,7 @@ OBJS=	acl.o boot.o dhcp.o directory.o hesiod.o hosts.o mailhub.o \
 
 CFILES= acl.c boot.c dhcp.c directory.c hesiod.c hosts.c mailhub.c \
 	ndb.c network.c nfs.c pobox.c postoffice.c print.c \
-	warehouse.c winad.o www.c zephyr.c
+	warehouse.c winad.c www.c zephyr.c
 
 TARGET=	acl.gen boot.gen dhcp.gen directory.gen hesiod.gen hosts.gen \
 	mailhub.gen ndb.gen network.gen nfs.gen pobox.gen \

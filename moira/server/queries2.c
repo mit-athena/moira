@@ -1,4 +1,4 @@
-/* $Id: queries2.c,v 2.42 1998-04-01 03:02:01 danw Exp $
+/* $Id: queries2.c,v 2.43 1998-04-11 18:45:52 danw Exp $
  *
  * This file defines the query dispatch table for version 2 of the protocol
  *
@@ -2838,7 +2838,7 @@ struct query Queries2[] = {
     "m.name, m.vendor, m.model, m.os, m.location, m.contact, m.use, m.status, TO_CHAR(m.statuschange, 'DD-mon-YYYY HH24:MI:SS'), s.name, m.address, m.owner_type, m.owner_id, m.acomment, m.ocomment, TO_CHAR(m.created, 'DD-mon-YYYY HH24:MI:SS'), m.creator, TO_CHAR(m.inuse, 'DD-mon-YYYY HH24:MI:SS'), TO_CHAR(m.modtime, 'DD-mon-YYYY HH24:MI:SS'), m.modby, m.modwith FROM machine m, subnet s",
     ghst_fields,
     21,
-    "m.name LIKE UPPER('%s') AND m.address LIKE '%s' AND m.location LIKE '%s' AND s.name LIKE UPPER('%s') AND m.mach_id != 0 AND s.snet_id = m.snet_id",
+    "m.name LIKE UPPER('%s') AND m.address LIKE '%s' AND m.location LIKE UPPER('%s') AND s.name LIKE UPPER('%s') AND m.mach_id != 0 AND s.snet_id = m.snet_id",
     4,
     "m.name",
     &ghst_validate,

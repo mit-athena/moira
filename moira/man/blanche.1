@@ -1,5 +1,5 @@
 .TH BLANCHE 1 "14 Sep 1988" "Project Athena"
-\" RCSID: $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/man/blanche.1,v 1.7 1990-03-08 17:58:14 mar Exp $
+\" RCSID: $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/man/blanche.1,v 1.8 1990-11-16 16:30:32 mar Exp $
 .SH NAME
 blanche \- examine and modify memberships in Moira lists
 .SH SYNOPSIS
@@ -53,6 +53,12 @@ will read from standard input.
 Display other information about the target list besides the
 membership.  This includes the description, flags, maillist and group
 status, owner, and last modification.
+.IP \fB-addlist\ \fIfilename\ \fRor\ \fB-al\ \fIfilename\fR:
+This will read a list of members from the named file, and add those
+members to the target list.  The file format is specified above.
+.IP \fB-deletelist\ \fIfilename\ \fRor\ \fB-dl\ \fIfilename\fR:
+This will read a list of members from the named file, and delete those
+members from the target list.  The file format is specified above.
 .IP \fB-members\ \fRor\ \fB-m\fR:
 Display the membership of the target list.  This is the default if no
 other options are specified.

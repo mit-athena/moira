@@ -654,7 +654,7 @@ indicating that permission was denied for the query.
   Errors: SMS_LIST
 
 @B(add_list)
-  Args: (list_name, description, flags, admin_acl, expdate)
+  Args: (list_name, flags, admin_acl, description, expdate)
   Returns: none
   Integrity: expdate must be reasonable; application is responsible
              for
@@ -662,7 +662,7 @@ indicating that permission was denied for the query.
   Errors: SMS_EXISTS, SMS_ACL, SMS_DATE
 
 @B(update_list)
-  Args: (list_name, description, flags, admin_acl, expdate)
+  Args: (list_name, flags, admin_acl, description, expdate)
   Returns: none
   Integrity: expdate must be reasonable; application is responsible
              for flags.

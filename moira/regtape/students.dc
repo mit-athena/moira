@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/students.dc,v 1.9 1990-03-19 21:55:48 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/students.dc,v 1.10 1990-04-23 16:42:35 mar Exp $
  */
 
 #include <stdio.h>
@@ -39,21 +39,22 @@
 #define LOC_DORM_ROOM 110
 #define LOC_CITY 125
 #define LOC_STATE 145
-#define LOC_DORM_PHONE 159
-#define LOC_MIT_PHONE1 243
+#define LOC_DPHONE 159
+#define LOC_MPHONE 243
 
-#define LEN_NAME 29
+#define LEN_NAME 30
 #define LEN_ID 9
-#define LEN_COURSE 3
-#define LEN_YEAR 23
-#define LEN_ADDRESS 26
-#define LEN_DORM_ROOM 14
-#define LEN_CITY 19
-#define LEN_STATE 12
+#define LEN_COURSE 5
+#define LEN_YEAR 25
+#define LEN_ADDRESS 30
+#define LEN_DORM_ROOM 15
+#define LEN_CITY 20
+#define LEN_STATE 14
 #define LEN_DPHONE 9
 #define LEN_MPHONE 9
 
 struct entry {
+    char *name;
     char *last;
     char *first;
     char *middle;
@@ -74,6 +75,7 @@ struct entry {
 
 char *whoami;
 int newfinger = 0;
+int addxuser = 0;
 
 
 main(argc, argv)
@@ -98,8 +100,10 @@ char **argv;
 	  setenv("ING_SET", "set printqry");
 	else if (!strcmp(argv[i], "-n"))
 	  newfinger++;
+	else if (!strcmp(argv[i], "-u"))
+	  addxuser++;
 	else if (file != NULL)
-	  fprintf(stderr, "Usage: %s [-w] [-D] [-n] inputfile\n", whoami);
+	  fprintf(stderr, "Usage: %s [-w] [-D] [-n] [-u] inputfile\n", whoami);
 	else
 	  file = argv[i];
     }
@@ -132,38 +136,62 @@ FILE *in;
 {
     static struct entry e;
     static char buf[BUFSIZ], eid[16], classbuf[10], titlebuf[12];
-    static int year = 0;
+    static char name[LEN_NAME+1], id[LEN_ID+1], course[LEN_COURSE+1];
+    static char year[LEN_YEAR+1], address[LEN_ADDRESS+1];
+    static char dorm_room[LEN_DORM_ROOM+1], city[LEN_CITY+1];
+    static char state[LEN_STATE+1], dphone[LEN_DPHONE+1], mphone[LEN_MPHONE+1];
+    static char sname[LEN_NAME+1], title[128];
+    static int nyear = 0;
     int ends_jr, ends_iii, ends_iv, ends_sr;
     char *p;
 
-    if (year == 0) {
+    if (nyear == 0) {
 	struct tm *tm;
 	struct timeval tv;
 
 	gettimeofday(&tv, NULL);
 	tm = localtime(&tv.tv_sec);
-	year = tm->tm_year;
+	nyear = tm->tm_year;
 	if (tm->tm_mon > 5)
-	  year++;
+	  nyear++;
     }
 
     if (fgets(buf, sizeof(buf), in) == NULL)
       return((struct entry *)NULL);
-    buf[LEN_NAME] = 0;
-    p = index(&buf[LOC_NAME], ',');
+
+    strncpy(name, &buf[LOC_NAME], LEN_NAME); name[LEN_NAME] = 0;
+    strncpy(id, &buf[LOC_ID], LEN_ID); id[LEN_ID] = 0;
+    strncpy(course, &buf[LOC_COURSE], LEN_COURSE); course[LEN_COURSE] = 0;
+    strncpy(year, &buf[LOC_YEAR], LEN_YEAR); year[LEN_YEAR] = 0;
+    strncpy(address, &buf[LOC_ADDRESS], LEN_ADDRESS); address[LEN_ADDRESS] = 0;
+    strncpy(dorm_room, &buf[LOC_DORM_ROOM], LEN_DORM_ROOM); dorm_room[LEN_DORM_ROOM] = 0;
+    strncpy(city, &buf[LOC_CITY], LEN_CITY); city[LEN_CITY] = 0;
+    strncpy(state, &buf[LOC_STATE], LEN_STATE); state[LEN_STATE] = 0;
+    strncpy(dphone, &buf[LOC_DPHONE], LEN_DPHONE); dphone[LEN_DPHONE] = 0;
+    strncpy(mphone, &buf[LOC_MPHONE], LEN_MPHONE); mphone[LEN_MPHONE] = 0;
+
+    strcpy(sname, name);
+    e.name = strtrim(sname);
+    p = index(name, ',');
     if (p)
       *p = 0;
-    e.last = strtrim(&buf[LOC_NAME]);
+    e.last = strtrim(name);
     if (p) {
-	e.first = p + 2;
+	p++;
+	while (isspace(*p))
+	  p++;
+	e.first = p;	
 	if (p = index(e.first, ' ')) {
 	    *p = 0;
+	    e.first = strtrim(e.first);
 	    e.middle = strtrim(p + 1);
 	} else
+	  e.first = strtrim(e.first);
 	  e.middle = "";
-    } else
-      e.first = "";
-    e.first = strtrim(e.first);
+    } else {
+	e.first = "";
+	e.middle = "";
+    }
     ends_jr = ends_iii = ends_iv = ends_sr = 0;
     LookForSt(e.last);
     LookForO(e.last);
@@ -172,37 +200,30 @@ FILE *in;
     FixCase(e.last);
     FixCase(e.first);
     FixCase(e.middle);
-    e.title = titlebuf;
-    titlebuf[0] = 0;
-    AppendJrOrIII(titlebuf, &ends_sr, &ends_jr, &ends_iii, &ends_iv);
 
-    e.id = &buf[LOC_ID];
+    e.id = id;
     e.id[LEN_ID] = 0;
     e.eid = eid;
     EncryptID(e.eid, e.id, e.first, e.last);
 
-    e.course = &buf[LOC_COURSE];
-    e.course[LEN_COURSE] = 0;
-    e.year = &buf[LOC_YEAR];
-    e.year[LEN_YEAR] = 0;
-    if (e.year[0] == 'G')
-      e.class = "G";
-    else {
+    e.year = strtrim(year);
+    e.title = title;
+    if (e.year[0] == 'G') {
+	e.class = "G";
+	sprintf(title, "Grad Student");
+    } else {
 	e.class = classbuf;
-	sprintf(classbuf, "%d", year + 4 - atoi(e.year) + 1900);
+	sprintf(classbuf, "%d", nyear + 4 - atoi(e.year) + 1900);
+	sprintf(title, "Undergrad (class of %s)", classbuf);
     }
-    e.address = &buf[LOC_ADDRESS];
-    e.address[LEN_ADDRESS] = 0;
-    e.dorm = &buf[LOC_DORM_ROOM];
-    e.dorm[LEN_DORM_ROOM] = 0;
-    e.city = &buf[LOC_CITY];
-    e.city[LEN_CITY] = 0;
-    e.state = &buf[LOC_STATE];
-    e.state[LEN_STATE] = 0;
-    e.dphone = &buf[LOC_DORM_PHONE];
-    e.dphone[LEN_DPHONE] = 0;
-    e.mphone = &buf[LOC_MIT_PHONE1];
-    e.mphone[LEN_MPHONE] = 0;
+
+    e.course = strtrim(course);
+    e.address = strtrim(address);
+    e.dorm = strtrim(dorm_room);
+    e.city = strtrim(city);
+    e.state = strtrim(state);
+    e.dphone = strtrim(dphone);
+    e.mphone = strtrim(mphone);
     return(&e);
 }
 
@@ -212,9 +233,9 @@ struct entry *e;
 ##{
     int changed, nochange;
     char buf[BUFSIZ], *from, *to;
-##  char *first, *last, *eid;
-##  char class[9], haddr[81], hphone[17], ophone[13], dept[13];
-##  int id;
+##  char *first, *last, *eid, *title, *sid, *name;
+##  char class[9], haddr[128], hphone[17], ophone[13], dept[24];
+##  int id, status;
 
     first = e->first;
     if (strlen(first) > 16)
@@ -226,7 +247,7 @@ struct entry *e;
     id = 0;
 ##  repeat retrieve (id = u.users_id, class = u.mit_year, haddr = u.home_addr,
 ##	      hphone = u.home_phone, ophone = u.office_phone,
-##	      dept = u.mit_dept)
+##	      status = u.#status, dept = u.mit_dept)
 ##	where u.#last = @last and u.#first = @first and u.mit_id = @eid
     if (id == 0) {
 	newuser(e);
@@ -236,25 +257,24 @@ struct entry *e;
 	strcmp(class, "STAFF") && strcmp(class, "SIPB")) {
 	com_err(whoami, 0, "updating class for user %s %s from %s to %s",
 		first, last, class, e->class);
+	if (status == US_NOT_ALLOWED) status = US_NO_LOGIN_YET;
+	if (status == US_ENROLL_NOT_ALLOWED) status = US_ENROLLED;
 	strcpy(class, e->class);
-##	repeat replace u (mit_year = @class,
+##	repeat replace u (mit_year = @class, #status = @status, ugdefault = 1,
 ##		   modtime = "now", modby = WHO, modwith = PROG)
 ##	    where u.users_id = @id
     }
     changed = nochange = 0;
-    strcpy(buf, strtrim(e->address));
-    e->dorm = strtrim(e->dorm);
+    strcpy(buf, e->address);
     if (*e->dorm) {
 	strcat(buf, " ");
 	strcat(buf, e->dorm);
     }
-    e->city = strtrim(e->city);
     if (*e->city) {
 	strcat(buf, " ");
 	strcat(buf, e->city);
     }
     FixCase(buf);
-    e->state = strtrim(e->state);
     if (*e->state) {
 	strcat(buf, " ");
 	strcat(buf, e->state);
@@ -316,7 +336,7 @@ struct entry *e;
 	strncpy(ophone, buf, 12);
 	ophone[12] = 0;
     }
-    e->course = strtrim(e->course);
+    e->course = e->course;
     if (newfinger) {
 	if (dept[0] == ' ') {
 	    strncpy(dept, e->course, 12);
@@ -332,11 +352,39 @@ struct entry *e;
     if (changed) {
 	com_err(whoami, 0, "updating finger for %s %s", first, last);
 ##	repeat replace u (home_addr = @haddr, home_phone = @hphone,
-##		   office_phone = @ophone, #mit_dept = @dept,
+##		   office_phone = @ophone, #mit_dept = @dept, ugdefault = 1,
 ##		   fmodtime = "now", fmodby = WHO, fmodwith = PROG)
 ##	    where u.users_id = @id
-    } else if (nochange)
+    } /* else if (nochange)
       com_err(whoami, 0, "NOT updating finger for %s %s", first, last);
+       */
+    if (!changed && !strcmp(e->class, class)) {
+##	repeat replace u (ugdefault = 1) where u.users_id = @id
+    }
+    if (addxuser) {
+	sid = e->id;
+	name = e->name;
+	strcpy(dept, e->course);
+	title = e->title;
+	strcpy(haddr, e->address);
+	if (*e->dorm) {
+	    strcat(haddr, " ");
+	    strcat(haddr, e->dorm);
+	}
+	if (*e->city) {
+	    strcat(haddr, " ");
+	    strcat(haddr, e->city);
+	}
+	FixCase(haddr);
+	if (*e->state) {
+	    strcat(haddr, " ");
+	    strcat(haddr, e->state);
+	}
+	
+##	append xuser (users_id = id, #id = sid, #name = name, #dept = dept,
+##		      #title = title, address = haddr, #phone1 = hphone,
+##		      #phone2 = ophone, modtime = "now")
+    }
 ##}
 
 
@@ -346,21 +394,21 @@ struct entry *e;
     char buf[512], *from, *to;
 ##  int id, uid;
 ##  char *last, *first, *class, *middle, login[9], *eid, fullname[65];
-##  char haddr[81], hphone[17], ophone[13], dept[13];
+##  char haddr[81], hphone[17], ophone[13], dept[24], *sid, *title;
 
 
-    strcpy(buf, strtrim(e->address));
+    strcpy(buf, e->address);
     if (*e->dorm) {
 	strcat(buf, " ");
-	strcat(buf, strtrim(e->dorm));
+	strcat(buf, e->dorm);
     }
     if (*e->city) {
 	strcat(buf, " ");
-	strcat(buf, strtrim(e->city));
+	strcat(buf, e->city);
     }
     if (*e->state) {
 	strcat(buf, " ");
-	strcat(buf, strtrim(e->state));
+	strcat(buf, e->state);
     }
     strncpy(haddr, buf, 80);
     from = e->dphone;
@@ -381,9 +429,7 @@ struct entry *e;
     }
     *to = 0;
     strncpy(ophone, buf, 12);
-    e->course = strtrim(e->course);
     strncpy(dept, e->course, 12);
-
     
     id = set_next_object_id("users_id");
     uid = set_next_object_id("uid");
@@ -400,12 +446,37 @@ struct entry *e;
     
 ##  append users (#login = login, users_id = id, #uid = uid, shell = "/bin/csh",
 ##		  #last = last, #first = first, #middle = middle, status = 0,
-##		  #mit_id = eid, #mit_year = class,
+##		  #mit_id = eid, #mit_year = class, ugdefault = 1,
 ##		  modtime = "now", modby = WHO, modwith = PROG,
 ##		  #fullname = fullname, home_addr = haddr, home_phone = hphone,
 ##		  office_phone = ophone, #mit_dept = dept,
 ##		  fmodtime = "now", fmodby = WHO, fmodwith = PROG,
 ##		  potype = "NONE")
+
+    sid = e->id;
+    strcpy(fullname, e->name);
+    strcpy(dept, e->course);
+    title = e->title;
+    strcpy(haddr, e->address);
+    if (*e->dorm) {
+	strcat(haddr, " ");
+	strcat(haddr, e->dorm);
+    }
+    if (*e->city) {
+	strcat(haddr, " ");
+	strcat(haddr, e->city);
+    }
+    FixCase(haddr);
+    if (*e->state) {
+	strcat(haddr, " ");
+	strcat(haddr, e->state);
+    }
+
+    if (addxuser) {
+##	append xuser (users_id = id, #id = sid, #name = fullname, #dept = dept,
+##		  #title = title, address = haddr, #phone1 = hphone,
+##		  #phone2 = ophone, modtime = "now")
+    }
     com_err(whoami, 0, "adding user %s %s", e->first, e->last);
 ##}
 

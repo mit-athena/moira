@@ -30,18 +30,31 @@ If the two udebugs show that the version changed, lather-rinse-repeat.
 to extract and prepare the personal groups and special user entries in
 the old prdb for being reincorporated into the new prdb.
 
+	awk -F\| '$8 == 3 {print $1}' /backup/backup_1/users > /tmp/deactivated
+	perl -e 'for(`cat /tmp/deactivated`) { chop; $ex{$_}=1;} \
+		$punt=0; foreach $L (`cat prdb.extra.sort`){ \
+		@w=split(/ /,$L);  $_=$w[0]; if ( /:/ ) \
+		{@x=split(/:/,$w[0]); if($ex{$x[0]}) {$punt=1;}else{$punt=0;}} \
+		print $L unless $punt==1;}' > prdb.extra.trimmed
+to remove the personal groups for users who are deactivated
+
 	awk '/^[^ ][^:]*@/ {printf "KERBEROS:%s\n",$1}' prdb.extra > foreign
 	blanche afs-foreign-users -f foreign
 Get a list of all the @andrew.cmu.edu type (non- athena.mit.edu cell)
 users, and sync the Moira list afs-foreign-users to this list.
 Moira then adds those entries to the group system:afs-foreign-users,
 thus keeping them from being lost in the prdb resync.
+Sanity checking the diffs before running the blanche command is recommended.
 
-	awk '/^[^ ][^:@]*$/ {printf "KERBEROS:%s\n",$1}' prdb.extra > oddities
+	awk '/^[^ 0-9][^:@]*$/ {printf "KERBEROS:%s@ATHENA.MIT.EDU\n",$1}' \
+		prdb.extra > oddities
+	awk '/^[^ ][0-9.]* .*$/ {printf "KERBEROS:%s\n",$1}' prdb.extra >> oddities
 	echo "LIST:afs-foreign-users" >> oddities
 	blanche afs-odd-entities -f oddities
 Do the equivalent of afs-foreign-users for domestic users.  We make
 the afs-foreign-users list a member of the more general afs-odd-entities.
+Sanity checking the diffs before running the blanche command is recommended.
+
 WAIT for the incremental updates from the `blanche` changes to complete.
 
 ####   Now the actual resync begins.  Incremental updates must stop.   ####
@@ -57,29 +70,51 @@ to dump the prdb data that is in Moira (users, groups, and group
 memberships).  This step takes about ten minutes, but can be done
 concurrently with the next few steps.
 
-REPEAT the first two sets of commands, above, thus regenerating
-prdb.extra from a now completely-up-to-date prdb.
+REPEAT the above commands, thus regenerating prdb.trimmed from a now
+completely-up-to-date prdb.
 
 *** Make sure the "afssync" command has completed ***
 
 	cp prdb.moira prdb.new
-	/moira/bin/pt_util -w -d prdb.extra.sort -p prdb.new
+	/moira/bin/pt_util -w -d prdb.extra.trimmed -p prdb.new \
+		>& prdb.extra.err
 This use of pt_util will presumably log errors about failed user
 creations and list additions.  (To start over, do both the `cp` and
 `pt_util` again.)  You can filter out the "User or group doesn't exist"
 type of lines that were caused by a user deactivation with something
 like:
 	awk -F\| '$8 == 3 {print $1}' /backup/backup_1/users > /tmp/deactivated
-	perl -e 'for(cat /tmp/deactivated`){ chop; $ex{$_}=1;} \
+	perl -e 'for(`cat /tmp/deactivated`){ chop; $ex{$_}=1;} \
 		foreach $L (`cat prdb.extra.err`){ $f=0; \
 		@w=split(/[ :]/,$L); for(@w){ $f=1 if $ex{$_}; } \
 		next if $f; print $L; }'
 Now, back to the resync.
 
+The only remaining errors should be errors creating system:foo groups,
+be cause they already exist.  These generally mean that that group has
+an odd user on it (root instance, IP acl, etc.) and can safely be
+ignored.
+
+Errors of the form:
+Error while creating dcctdw:foo: Badly formed name (group prefix doesn't match owner?)
+are probably an indication that a user with personal groups had a
+username change (in the past they have also meant that a user with
+personal groups was deactivated and the uid was re-used (this was
+becasue we didn't trim the prdb.extra.sort file in the past.))
+Assuming htese errors are due to a username change, the groups should
+be renamed, and you should regenerate prdb.extra.trimmed starting with
+a fresh prdb from aggy.  (You may want to abort and
+rm /moira/afs/noafs and try again later.)
+
 	pts listmax > /var/prdb.listmax
 	foreach i ( <db servers> )
-	    bos shutdown $i ptserver
-	    bos exec $i "rm /usr/afs/db/prdb.DB*; mv /usr/afs/db/prdb.new /usr/afs/db/prdb.DB0"
+	    rsh $i -l root -x /bin/athena/detach -a 	# detach packs
+	    rsh $i -l root -x rm -f /usr/afs/db/{prdb.new,pre-resync-prdb}
+	    rcp -px prdb.new root@${i}:/usr/afs/db/prdb.new
+	end						# staging
+	foreach i ( <db servers> )
+	    bos shutdown $i ptserver -wait
+	    bos exec $i "mv /usr/afs/db/prdb.DB0 /usr/afs/db/pre-resync-prdb; rm /usr/afs/db/prdb.DB*; mv /usr/afs/db/prdb.new /usr/afs/db/prdb.DB0"
 	end
 	foreach i ( <db servers> )
 	    bos restart $i ptserver

@@ -1,4 +1,4 @@
-/* $Id: pobox.c,v 1.6 2000-08-10 02:05:36 zacheiss Exp $
+/* $Id: pobox.c,v 1.7 2000-08-10 06:51:38 zacheiss Exp $
  *
  * Shared routines for pobox changing.
  *
@@ -18,7 +18,7 @@
 
 #include <com_err.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/lib/pobox.c,v 1.6 2000-08-10 02:05:36 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/lib/pobox.c,v 1.7 2000-08-10 06:51:38 zacheiss Exp $");
 
 static int save_sloc_machine(int argc, char **argv, void *sq);
 static int save_alias_value(int argc, char **argv, void *sq);
@@ -138,10 +138,7 @@ int mrcl_validate_pobox_smtp(char *user, char *address, char **ret)
  cleanup:
   free(addr);
   if (status == MRCL_SUCCESS)
-    {
-      *ret = retaddr;
-      mrcl_clear_message();
-    }
+    *ret = retaddr;
   else
     free(retaddr);
   free(machine);

@@ -1,4 +1,4 @@
-/* $Id: queries2.c,v 2.39 1998-03-20 18:25:43 danw Exp $
+/* $Id: queries2.c,v 2.40 1998-03-20 18:33:54 danw Exp $
  *
  * This file defines the query dispatch table for version 2 of the protocol
  *
@@ -250,7 +250,7 @@ static char *rusr_fields[] = {
 
 static struct valobj rusr_valobj[] = {
   {V_NUM, 0},
-  {V_CHAR, 1},
+  {V_CHAR, 1, USERS_TABLE, "login"},
   {V_NUM, 2},
 };
 
@@ -384,26 +384,6 @@ static char *dusr_fields[] = {
 
 static struct validate dusr_validate = {
   VOuser0,
-  1,
-  0,
-  0,
-  0,
-  0,
-  0,
-  setup_dusr,
-  0,
-};
-
-static char *dubu_fields[] = {
-  "unix_uid",
-};
-
-static struct valobj dubu_valobj[] = {
-  {V_ID, 0, USERS_TABLE, "unix_uid", "users_id", MR_USER}
-};
-
-static struct validate dubu_validate = {
-  dubu_valobj,
   1,
   0,
   0,
@@ -2654,22 +2634,6 @@ struct query Queries2[] = {
     1,
     NULL,
     &dusr_validate,
-  },
-
-  {
-    /* Q_DUBU - DELETE_USER_BY_UID */
-    "delete_user_by_uid",
-    "dubu",
-    DELETE,
-    "u",
-    USERS_TABLE,
-    NULL,
-    dubu_fields,
-    0,
-    "users_id = %d",
-    1,
-    NULL,
-    &dubu_validate,
   },
 
   {

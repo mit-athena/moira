@@ -2,7 +2,7 @@
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.h,v $
  *	$Author: mar $
  *	$Locker:  $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.h,v 1.4 1988-08-09 17:50:54 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.h,v 1.5 1989-08-04 13:59:30 mar Exp $
  */
 
 #include <stdio.h>
@@ -44,15 +44,15 @@ struct alias {
    other timeouts are just there so that userreg will not stay in a half-used
    state -- possibly confusing an unwary registree.
  */
-#define FIRSTNAME_TIMEOUT            600 /* 30 minutes */
-#define MI_TIMEOUT                    90
-#define LASTNAME_TIMEOUT              90
-#define MITID_TIMEOUT                 90
+#define FIRSTNAME_TIMEOUT            600 /* 10 minutes */
+#define MI_TIMEOUT                    90 /* 1.5 minutes */
+#define LASTNAME_TIMEOUT              90 /* 1.5 minutes */
+#define MITID_TIMEOUT                 90 /* 1.5 minutes */
 #define USERNAME_TIMEOUT             180 /* This should not be too long */
-#define OLD_PASSWORD_TIMEOUT          90
+#define OLD_PASSWORD_TIMEOUT          90 /* 1.5 minutes */
 #define NEW_PASSWORD_TIMEOUT         180 /* Neither should this */
-#define REENTER_PASSWORD_TIMEOUT      90
-#define YN_TIMEOUT                    90
+#define REENTER_PASSWORD_TIMEOUT      90 /* 1.5 minutes */
+#define YN_TIMEOUT                    90 /* 1.5 minutes */
 #define TIMER_TIMEOUT                 90 /* default timeout for timer_on() */
 
 #define NO    0

@@ -1,5 +1,5 @@
 .TH SMSTEST 8 "25 Jan 1988" "Project Athena"
-\" RCSID: $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/man/mrtest.8,v 1.1 1988-01-25 18:19:56 mar Exp $
+\" RCSID: $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/man/mrtest.8,v 1.2 1988-11-29 14:39:31 mar Exp $
 .SH NAME
 smstest \- perform SMS operations manually
 .SH SYNOPSIS
@@ -16,16 +16,28 @@ make a network connection to the SMS server.
 .B disconnect
 break the network connection to the SMS server.
 .TP
+.B new
+specify use of version 2.0 of the protocol.
+.TP
+.B old
+specify use of version 1.0 of the protocol.
+.TP
 .B script inputfile [outputfile]
 read commands from 
-.I inputfile.  If
-.I outputfile is specified, output will be redirected there while
+.I inputfile.
+If
+.I outputfile
+is specified, output will be redirected there while
 commands are read from
 .I inputfile.
+The script file may contain comments consisting of lines starting
+with a percent sign.  Script files may also recursively perform other
+script commands up to 8 scripts deep.
 .TP
 .B list_requests
 lists all of the 
-.I smstest commands.
+.I smstest
+commands.
 .TP
 .B quit
 exits the program.
@@ -52,8 +64,9 @@ performs an authorization check on a query without actually executing
 the query.  The arguments are the same as those in the
 .B query
 command described above.
-.SH BUGS
-There is no way to enter whitespace into a string argument to a query.
+.TP
+.B dcm
+instructs the server to trigger a DCM update immediately.
 .SH SEE ALSO
 The Project Athena Technical Plan section on SMS for a list of queries
 and their arguements, and a description of the protocol this

@@ -1,5 +1,5 @@
 .TH CHFN 1 "1 Feb 1988" "Project Athena"
-\" RCSID: $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/man/chfn.1,v 1.1 1988-02-08 15:47:33 mar Exp $
+\" RCSID: $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/man/chfn.1,v 1.2 1988-11-29 14:40:02 mar Exp $
 .SH NAME
 chfn \- change finger information
 .SH SYNOPSIS
@@ -7,7 +7,7 @@ chfn \- change finger information
 [ username ]
 .SH DESCRIPTION
 This command changes (or installs)
-then GECOS information field
+the GECOS information field
 associated with
 .IR username
 (your own name by default).
@@ -27,6 +27,8 @@ The default value is accepted simply by typing a carriage
 return.  To enter a blank field, the word ``none'' may
 be typed.  Below is a sample run:
 .IP
+.B "Info last changed on 22-mar-1988 15:13:33 by user studley using chfn"
+.br
 .B "Name [Biff Studsworth II]:"
 .br
 .B "Nickname [Studley]:"
@@ -61,4 +63,4 @@ until several hours after the database has been changed.
 Users may only change their own information unless they are
 SMS database administrators.
 .SH "SEE ALSO"
-usermaint(1), finger(1)
+sms(1), finger(1)

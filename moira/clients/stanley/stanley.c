@@ -21,7 +21,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/stanley/stanley.c,v 1.7 2001-10-17 21:34:46 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/stanley/stanley.c,v 1.8 2002-03-29 02:24:49 zacheiss Exp $");
 
 struct string_list {
   char *string;
@@ -50,7 +50,9 @@ static char *states[] = {
   "Not registerable (4)",
   "Enrolled/Registerable (5)",
   "Enrolled/Not Registerable (6)",
-  "Half Enrolled (7)"
+  "Half Enrolled (7)",
+  "Registerable, Kerberos only (8)",
+  "Active, Kerberos only (9)"
 };
 
 static char *UserState(int state)

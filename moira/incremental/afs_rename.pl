@@ -83,13 +83,15 @@ if ($newtype eq "AFS") {
     if (! $?) {
 	($oldofvname = $_) =~ s/^.* volume '.(.*)'$/\1/;
 	$newofvname = $newvname . ".backup";
-	&run("$fs sa $newpath sms all");
-	push(@clean, "$fs sa $newpath sms none");
-	&run("$fs rmm $oldfilespath");
-	push(@clean, "$fs mkm $oldfilespath $oldofvname");
-	&run("$fs mkm $oldfilespath $newofvname");
-	push(@clean, "$fs rmm $oldfilespath");
-	&run("$fs sa $newpath sms none");
+	if ($newofvname ne $oldofvname) {
+	  &run("$fs sa $newpath sms all");
+	  push(@clean, "$fs sa $newpath sms none");
+	  &run("$fs rmm $oldfilespath");
+	  push(@clean, "$fs mkm $oldfilespath $oldofvname");
+	  &run("$fs mkm $oldfilespath $newofvname");
+	  push(@clean, "$fs rmm $oldfilespath");
+	  &run("$fs sa $newpath sms none");
+	}
     }
     &release_parent($newpath);
 }
@@ -115,7 +117,7 @@ sub fatal
     s/\n$//;
 
     while (@clean) {
-	$cmd = shift(@clean);
+	$cmd = pop(@clean);
 	warn "$newname: Cleanup failed: $cmd\n" if (system("$cmd"));
     }
     die "$newname: $_\n";

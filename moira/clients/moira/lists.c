@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v 1.23 1990-07-14 16:21:41 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v 1.24 1992-03-26 21:59:07 mar Exp $";
 #endif lint
 
 /*	This is the file lists.c for the MOIRA Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v 1.23 1990-07-14 16:21:41 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v 1.24 1992-03-26 21:59:07 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -616,11 +616,36 @@ char *action, **ret_argv;
 int
 AddMember()
 {
-    char *args[10], temp_buf[BUFSIZ];
+    char *args[10], temp_buf[BUFSIZ], *p;
     register int status;
+    struct qelem *mailhubs, *elem, *GetTypeValues();
 
     if ( GetMemberInfo("add", args) == SUB_ERROR )
 	return(DM_NORMAL);
+
+    if (!strcmp(args[LM_TYPE], "STRING")) {
+	if (p = index(args[LM_MEMBER], '@')) {
+	    char *host = canonicalize_hostname(strsave(++p));
+	    mailhubs = GetTypeValues("mailhub");
+	    for (elem = mailhubs; elem; elem = elem->q_forw) {
+		if (!strcasecmp(host, elem->q_data)) {
+		    free(host);
+		    host = strsave(args[LM_MEMBER]);
+		    *(--p) = 0;
+		    sprintf(temp_buf, "String \"%s\" should be USER or LIST \"%s\" because it is a local name.",
+			    host, args[LM_MEMBER]);
+		    Put_message(temp_buf);
+		    free(args[LM_TYPE]);
+		    free(host);
+		    return(DM_NORMAL);
+		}
+	    }
+	    free(host);
+	} else if (!index(args[LM_MEMBER], '!')) {
+	    Put_message("Member which is not a foreign mail address should not be type STRING.");
+	    return(DM_NORMAL);
+	}
+    }
 
     if ( (status = do_mr_query("add_member_to_list", CountArgs(args), args,
 			   Scream, NULL)) != MR_SUCCESS) {

@@ -1,35 +1,43 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/update_server.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/update_server.c,v 1.1 1987-08-22 17:53:54 wesommer Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/update_server.c,v 1.2 1988-08-23 11:51:47 mar Exp $
  */
 
 #ifndef lint
-static char *rcsid_dispatch_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/update_server.c,v 1.1 1987-08-22 17:53:54 wesommer Exp $";
+static char *rcsid_dispatch_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/update_server.c,v 1.2 1988-08-23 11:51:47 mar Exp $";
 #endif	lint
 
 #include <stdio.h>
-#include "gdb.h"
+#include <gdb.h>
 #include <errno.h>
 #include <strings.h>
+#include <sms.h>
+#include <sys/file.h>
+#include <sys/ioctl.h>
 #include "update.h"
-#include "sms_update_int.h"
-#include "smsu_int.h"
 
 /* XXX */
 #include "kludge.h"
 /* XXX */
 
-extern int auth_001(), exec_001(), inst_001(), xfer_001();
+extern int auth_001(), inst_001();
 extern int xfer_002(), exec_002();
 
 extern int sync_proc(), quit();
 
 extern void gdb_debug();
 extern int exit(), abort(), errno;
+extern STRING instructions;
 
 CONNECTION conn;
 int code;
 char *whoami;
+
+int have_authorization = 0;
+int have_file = 0;
+int have_instructions = 0;
+int done = 0;
+
 
 #define send_int(n) \
      (_send_int=(n),send_object(conn,(char *)&_send_int,INTEGER_T))
@@ -41,8 +49,6 @@ struct _dt {
 } dispatch_table[] = {
      { "INST_001", inst_001 },
      { "AUTH_001", auth_001 },
-     { "XFER_001", xfer_001 },
-     { "EXEC_001", exec_001 },
      { "XFER_002", xfer_002 },
      { "EXEC_002", exec_002 },
      { "quit", quit },
@@ -68,6 +74,7 @@ main(argc, argv)
 {
      STRING str;
      struct _dt *d;
+     int n;
 
 #ifdef DEBUG
      gdb_debug(GDB_NOFORK);
@@ -86,9 +93,20 @@ main(argc, argv)
      }
      /* well, sort of... */
 
-     umask(0077);
+#ifndef DEBUG
+     if (fork())
+       exit(0);
+     n = open("/dev/tty", O_RDWR|O_NDELAY);
+     if (n > 0) {
+	 (void) ioctl(n, TIOCNOTTY, (char *)NULL);
+	 (void) close(n);
+     }
+#endif
+
+     umask(0022);
+     init_sms_err_tbl();
+     init_krb_err_tbl();
      sms_update_initialize();
-     init_smsU_err_tbl();
 
      /* wait for connection */
      gdb_init();
@@ -128,7 +146,7 @@ main(argc, argv)
 	  }
 	  sprintf(buf, "unknown request received: %s\n", STRING_DATA(str));
 	  sms_log_error(buf);
-	  code = send_int(SMSU_UNKNOWN_PROC);
+	  code = send_int(SMS_UNKNOWN_PROC);
 	  if (code) {
 	      err(connection_errno(conn), "%s: sending UNKNOWN_PROC");
 	  }
@@ -142,4 +160,86 @@ send_ok()
 {
      static int zero = 0;
      return((code = send_object(conn, (char *)&zero, INTEGER_T)));
+}
+
+
+initialize()
+{
+     /* keep have_authorization around */
+     have_file = 0;
+     have_instructions = 0;
+     done = 0;
+     if (STRING_DATA(instructions) != (char *)NULL)
+	  string_free(&instructions);
+}
+
+
+/*
+ * quit request:
+ *
+ * syntax:
+ * >>> quit
+ * <<< (int)0
+ * any arguments are ignored
+ *
+ * function:
+ *	closes connection from SMS
+ */
+int
+quit(str)
+     char *str;
+{
+#ifdef lint
+     str = (char *)NULL;
+#endif /* lint */
+     (void) send_ok();
+     sever_connection(conn);
+     sms_log_info("Closing connection.");
+     exit(0);
+}
+
+
+/*
+ * lose(msg)
+ *
+ * put <msg> to log as error, break connection, and exit
+ */
+
+lose(msg)
+    char *msg;
+{
+    sprintf(buf, "%s: %s", error_message(code), msg);
+    sms_log_error(buf);
+    if (conn)
+	sever_connection(conn);
+    exit(1);
+}
+
+/*
+ * report_error(msg)
+ *
+ * send back (external) <code>; if error, punt big with <lose(msg)>
+ */
+
+report_error(msg)
+    char *msg;
+{
+    code = send_object(conn, (char *)&code, INTEGER_T);
+    if (code) {
+	code = connection_errno(conn);
+	lose(msg);
+    }
+}
+
+/*
+ * reject_call(c)
+ *
+ * set (external) <code> to <c> and call <report_error>
+ */
+
+reject_call(c)
+    int c;
+{
+    code = c;
+    report_error("call rejected");
 }

@@ -1,0 +1,35 @@
+.TH CHPOBOX 1 "5 Feb 1988" "Project Athena"
+\" RCSID: $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/man/chpobox.1,v 1.1 1988-02-08 15:48:11 mar Exp $
+.SH NAME
+chpobox \- change where user receives mail
+.SH SYNOPSIS
+.B chpobox
+[ -d|a address] [-u username]
+.SH DESCRIPTION
+This command adds a new mailbox, deletes and existing mailbox, or
+lists the mailboxes currently assigned to
+.IR username
+(your own name by default).
+If neither the
+.B -a
+or the
+.B -d
+option is given, the current mailboxes will be displayed.  
+The options will attempt to add or delete the specified mailbox.  
+A mailbox address is of the form
+.I string@hostname,
+where the string is usually the username, and the hostname is the name
+of the machine the user wishes to receive mail on.
+.PP
+.B chpobox
+will determine if the mailbox is of type POP, LOCAL, or FOREIGN based
+on information in the SMS database, and then make the appropriate
+change in the SMS database.
+It will not allow a user to have more than one mailbox of type POP,
+and it will not allow a user to delete his last mailbox.
+The actual change will take place a couple of hours later. 
+Users may only change their own information unless they are
+SMS database administrators.
+.SH "SEE ALSO"
+usermaint(1),
+SMS Section of the Project Athena Technical Plan.

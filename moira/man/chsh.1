@@ -1,0 +1,30 @@
+.TH CHSH 1 "1 Feb 1988" "Project Athena"
+\" RCSID: $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/man/chsh.1,v 1.1 1988-02-08 15:49:01 mar Exp $
+.SH NAME
+chsh \- change user login shell
+.SH SYNOPSIS
+.B chsh
+[ username ]
+.SH DESCRIPTION
+This command changes the login shell associated with
+.IR username
+(your own name by default).
+If no command interpreter is specified, then the login shell reverts
+to the default login shell
+.B /bin/sh.
+While you can specify any program as a command interpreter, be
+cautious about specifying a program which won't let you change your
+login shell to something else (i.e., a noninteractive program like
+"date").
+.PP
+When invoked,
+.B chsh
+displays the current shell, and prompts for the new one.
+Just pressing return will keep the same shell.
+.PP
+The actual change will take place a couple of hours later.
+Users may only change their own information unless they are
+SMS database administrators.
+.SH "SEE ALSO"
+usermaint(1),
+SMS section of the Project Athena Technical Plan

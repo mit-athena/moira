@@ -1,0 +1,64 @@
+.TH CHFN 1 "1 Feb 1988" "Project Athena"
+\" RCSID: $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/man/chfn.1,v 1.1 1988-02-08 15:47:33 mar Exp $
+.SH NAME
+chfn \- change finger information
+.SH SYNOPSIS
+.B chfn
+[ username ]
+.SH DESCRIPTION
+This command changes (or installs)
+then GECOS information field
+associated with
+.IR username
+(your own name by default).
+The GECOS information is the information shown by
+.I finger(1).
+.PP
+When invoked,
+.B chfn
+displays the current information as default values
+while prompting for any changes.
+The fields include a user's
+``real life'' name, nickname, home address and phone number,
+office address and phone number, department and year.
+Included in each prompt is a default value,
+which is enclosed between brackets.
+The default value is accepted simply by typing a carriage
+return.  To enter a blank field, the word ``none'' may
+be typed.  Below is a sample run:
+.IP
+.B "Name [Biff Studsworth II]:"
+.br
+.B "Nickname [Studley]:"
+.br
+.B "Home address (Ex: Bemis 304) [New House 4-601]:"
+.br
+.B "Home phone number (Ex: 4660000) [225-1234]:"
+.br
+.B "Office address (Exs: 597 Tech Square or 10-256) [E40-300M]:"
+E40-358M
+.br
+.B "Office phone (Ex: 3-1300) []:"
+1863
+.br
+.B "MIT department (Exs: EECS, Biology, Information Services) [VI-3]:"
+none
+.br
+.B "MIT year (Exs: 1989, '91, Faculty, Grad) ['90]:"
+'91
+.sp
+.PP
+.I chfn
+allows phone numbers to be entered with or without hyphens.
+If only four digits are entered for a phone number, and MIT extension
+is assumed.  If the Office address ends in "M", it will assume an MIT
+room, if it ends in "T", it will assume Tech Square.
+.PP
+Note that the changes will not show up with
+.I finger
+until several hours after the database has been changed.
+.PP
+Users may only change their own information unless they are
+SMS database administrators.
+.SH "SEE ALSO"
+usermaint(1), finger(1)

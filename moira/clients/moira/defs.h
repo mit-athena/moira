@@ -7,7 +7,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/defs.h,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/defs.h,v 1.9 1990-02-14 12:23:36 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/defs.h,v 1.10 1991-01-04 16:56:19 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -22,11 +22,11 @@
 
 #ifndef TRUE
 #define TRUE 1
-#endif TRUE
+#endif /* TRUE */
 
 #ifndef FALSE
 #define FALSE 0
-#endif FALSE
+#endif /* FALSE */
 
 
 /* Modification information is always printed in this format. */
@@ -67,4 +67,4 @@ struct qelem {
   char * q_data;
 };
 
-#endif _defs_header_	/* Do Not Add Anything After This Line */
+#endif /* _defs_header_ */	/* Do Not Add Anything After This Line */

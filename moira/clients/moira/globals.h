@@ -6,8 +6,8 @@
  *	By:		Chris D. Peterson
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/globals.h,v $
- *      $Author: kit $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/globals.h,v 1.4 1988-07-29 18:31:18 kit Exp $
+ *      $Author: mar $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/globals.h,v 1.5 1991-01-04 16:57:06 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -28,4 +28,4 @@ extern char *user;		/* The name of the user executing this
 				   program. */
 extern char *program_name;	/* The name of this instance of the program. */
 
-#endif _sms_client_globals_	/* Do Not Add Anything After This Line */
+#endif /* _sms_client_globals_ */ /* Do Not Add Anything After This Line */

@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v $
  *	$Author: danw $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v 1.28 1996-10-29 21:56:10 danw Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v 1.29 1996-10-30 00:38:27 danw Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_test_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v 1.28 1996-10-29 21:56:10 danw Exp $";
+static char *rcsid_test_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v 1.29 1996-10-30 00:38:27 danw Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -90,8 +90,7 @@ execute_line(cmdbuf)
     test_list_requests();
   else if(!strcmp(argv[0],"quit") || !strcmp(argv[0],"Q"))
     quit=1;
-  else fprintf(stderr, "moira: Unknown request \"%s\"."
-	       "Type \"?\" for a request list.\n", argv[0]);
+  else fprintf(stderr, "moira: Unknown request \"%s\".  Type \"?\" for a request list.\n", argv[0]);
 }
 
 int

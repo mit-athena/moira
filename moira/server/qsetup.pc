@@ -1,4 +1,4 @@
-/* $Id: qsetup.pc,v 2.27 1999-01-29 23:35:17 danw Exp $
+/* $Id: qsetup.pc,v 2.28 1999-02-01 21:37:05 danw Exp $
  *
  * Query setup routines
  *
@@ -21,7 +21,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsetup.pc,v 2.27 1999-01-29 23:35:17 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsetup.pc,v 2.28 1999-02-01 21:37:05 danw Exp $");
 
 extern char *whoami;
 extern int dbms_errno, mr_errcode;
@@ -1180,7 +1180,8 @@ int hostname_check(char *name)
 
   /* Sanity check name: must contain only letters, numerals, and
    * hyphen, and not start or end with a hyphen. Also make sure no
-   * label (the thing the .s seperate) is longer than 63 characters.
+   * label (the thing the .s seperate) is longer than 63 characters,
+   * or empty.
    */
 
   for (p = name, count = 0; *p; p++)
@@ -1190,7 +1191,11 @@ int hostname_check(char *name)
 	  (*p == '-' && p[1] == '.'))
 	return 0;
       if (*p == '.')
-	count = 0;
+	{
+	  if (count == 1)
+	    return 0;
+	  count = 0;
+	}
       if (count == 64)
 	return 0;
     }

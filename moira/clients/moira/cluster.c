@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/cluster.c,v 1.19 1990-07-13 17:34:56 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/cluster.c,v 1.20 1990-07-13 18:00:53 mar Exp $";
 #endif lint
 
 /*	This is the file cluster.c for the MOIRA Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/cluster.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/cluster.c,v 1.19 1990-07-13 17:34:56 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/cluster.c,v 1.20 1990-07-13 18:00:53 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -719,9 +719,9 @@ char ** argv;
 
     args[MAP_MACHINE] = canonicalize_hostname(strsave(argv[1]));
     if (strcasecmp(args[MAP_MACHINE], argv[1])) {
-	sprintf(temp_buf, "Warning: '%s' canonicalized to '%s'.",
+	sprintf(buf, "Warning: '%s' canonicalized to '%s'.",
 		argv[1], args[MAP_MACHINE]);
-	Put_message(temp_buf);
+	Put_message(buf);
     }
     args[MAP_CLUSTER] = argv[2];
     args[MAP_END] = NULL;
@@ -1113,7 +1113,7 @@ int argc;
 char **argv;
 {
     struct qelem *elem, *top;
-    char *tmpname;
+    char *tmpname, temp_buf[256];
 
     tmpname = canonicalize_hostname(strsave(argv[1]));
     if (strcasecmp(tmpname, argv[1])) {

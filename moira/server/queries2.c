@@ -1,4 +1,4 @@
-/* $Id: queries2.c,v 2.76 2000-08-25 00:46:14 zacheiss Exp $
+/* $Id: queries2.c,v 2.77 2000-09-25 22:48:49 zacheiss Exp $
  *
  * This file defines the query dispatch table
  *
@@ -2337,11 +2337,18 @@ static struct validate dnfq_validate = {
   followup_dqot,
 };
 
-static char *gzcl_fields[] = {
+static char *gzcl2_fields[] = {
   "class",
   "class", "xmt_type", "xmt_name", "sub_type", "sub_name",
   "iws_type", "iws_name", "iui_type", "iui_name",
   "modtime", "modby", "modwith",
+};
+
+static char *gzcl_fields[] = {
+  "class",
+  "class", "xmt_type", "xmt_name", "sub_type", "sub_name",
+  "iws_type", "iws_name", "iui_type", "iui_name", "owner_type",
+  "owner_id", "modtime", "modby", "modwith",
 };
 
 static struct validate gzcl_validate = {
@@ -2351,14 +2358,44 @@ static struct validate gzcl_validate = {
   0,
   0,
   0,
-  0,
+  access_zephyr,
   0,
   followup_gzcl,
 };
 
-static char *azcl_fields[] = {
+static char *azcl2_fields[] = {
   "class", "xmt_type", "xmt_name", "sub_type", "sub_name",
   "iws_type", "iws_name", "iui_type", "iui_name",
+};  
+
+static struct valobj azcl2_valobj[] = {
+  {V_CHAR, 0, ZEPHYR_TABLE, "class"},
+  {V_TYPE, 1, 0, "zace_type", 0, MR_ACE},
+  {V_TYPEDATA, 2, 0, 0, "list_id", MR_ACE},
+  {V_TYPE, 3, 0, "zace_type", 0, MR_ACE},
+  {V_TYPEDATA, 4, 0, 0, "list_id", MR_ACE},
+  {V_TYPE, 5, 0, "zace_type", 0, MR_ACE},
+  {V_TYPEDATA, 6, 0, 0, "list_id", MR_ACE},
+  {V_TYPE, 7, 0, "zace_type", 0, MR_ACE},
+  {V_TYPEDATA, 8, 0, 0, "list_id", MR_ACE},
+};
+
+static struct validate azcl2_validate = {
+  azcl2_valobj,
+  9,
+  "class",
+  "class = '%s'",
+  1,
+  0,
+  0,
+  0,
+  set_zephyr_modtime,
+};
+
+static char *azcl_fields[] = {
+  "class", "xmt_type", "xmt_name", "sub_type", "sub_name",
+  "iws_type", "iws_name", "iui_type", "iui_name", "owner_type", 
+  "owner_id",
 };
 
 static struct valobj azcl_valobj[] = {
@@ -2371,11 +2408,13 @@ static struct valobj azcl_valobj[] = {
   {V_TYPEDATA, 6, 0, 0, "list_id", MR_ACE},
   {V_TYPE, 7, 0, "zace_type", 0, MR_ACE},
   {V_TYPEDATA, 8, 0, 0, "list_id", MR_ACE},
+  {V_TYPE, 9, 0, "ace_type", 0, MR_ACE},
+  {V_TYPEDATA, 10, 0, 0, "list_id", MR_ACE},
 };
 
 static struct validate azcl_validate = {
   azcl_valobj,
-  9,
+  11,
   "class",
   "class = '%s'",
   1,
@@ -2385,9 +2424,39 @@ static struct validate azcl_validate = {
   set_zephyr_modtime,
 };
 
-static char *uzcl_fields[] = {
+static char *uzcl2_fields[] = {
   "class", "newclass", "xmt_type", "xmt_name", "sub_type", "sub_name",
   "iws_type", "iws_name", "iui_type", "iui_name",
+};
+
+static struct valobj uzcl2_valobj[] = {
+  {V_NAME, 0, ZEPHYR_TABLE, "class", 0, MR_BAD_CLASS},
+  {V_RENAME, 1, ZEPHYR_TABLE, "class", 0, MR_NOT_UNIQUE},
+  {V_TYPE, 2, 0, "zace_type", 0, MR_ACE},
+  {V_TYPEDATA, 3, 0, 0, "list_id", MR_ACE},
+  {V_TYPE, 4, 0, "zace_type", 0, MR_ACE},
+  {V_TYPEDATA, 5, 0, 0, "list_id", MR_ACE},
+  {V_TYPE, 6, 0, "zace_type", 0, MR_ACE},
+  {V_TYPEDATA, 7, 0, 0, "list_id", MR_ACE},
+  {V_TYPE, 8, 0, "zace_type", 0, MR_ACE},
+  {V_TYPEDATA, 9, 0, 0, "list_id", MR_ACE},
+};
+
+static struct validate uzcl2_validate = {
+  uzcl2_valobj,
+  10,
+  "class",
+  "class = '%s'",
+  1,
+  0,
+  access_zephyr,
+  0,
+  set_zephyr_modtime,
+};
+
+static char *uzcl_fields[] = {
+  "class", "newclass", "xmt_type", "xmt_name", "sub_type", "sub_name",
+  "iws_type", "iws_name", "iui_type", "iui_name", "owner_type", "owner_id",
 };
 
 static struct valobj uzcl_valobj[] = {
@@ -2401,16 +2470,18 @@ static struct valobj uzcl_valobj[] = {
   {V_TYPEDATA, 7, 0, 0, "list_id", MR_ACE},
   {V_TYPE, 8, 0, "zace_type", 0, MR_ACE},
   {V_TYPEDATA, 9, 0, 0, "list_id", MR_ACE},
+  {V_TYPE, 10, 0, "ace_type", 0, MR_ACE},
+  {V_TYPEDATA, 11, 0, 0, "list_id", MR_ACE},
 };
 
 static struct validate uzcl_validate = {
   uzcl_valobj,
-  10,
+  12,
   "class",
   "class = '%s'",
   1,
   0,
-  0,
+  access_zephyr,
   0,
   set_zephyr_modtime,
 };
@@ -5353,7 +5424,7 @@ struct query Queries[] = {
   },
 
   {
-    /* Q_GZCL - GET_ZEPHYR_CLASS */
+    /* Q_GZCL - GET_ZEPHYR_CLASS, v2 */
     "get_zephyr_class",
     "gzcl",
     2,
@@ -5361,7 +5432,7 @@ struct query Queries[] = {
     "z",
     ZEPHYR_TABLE,
     "class, xmt_type, xmt_id, sub_type, sub_id, iws_type, iws_id, iui_type, iui_id, TO_CHAR(modtime, 'DD-mon-YYYY HH24:MI:SS'), modby, modwith FROM zephyr",
-    gzcl_fields,
+    gzcl2_fields,
     12,
     "class LIKE '%s'",
     1,
@@ -5370,7 +5441,24 @@ struct query Queries[] = {
   },
 
   {
-    /* Q_AZCL - ADD_ZEPHYR_CLASS */
+    /* Q_GZCL - GET_ZEPHYR_CLASS, v5 */
+    "get_zephyr_class",
+    "gzcl",
+    5,
+    RETRIEVE,
+    "z",
+    ZEPHYR_TABLE,
+    "class, xmt_type, xmt_id, sub_type, sub_id, iws_type, iws_id, iui_type, iui_id, owner_type, owner_id, TO_CHAR(modtime, 'DD-mon-YYYY HH24:MI:SS'), modby, modwith FROM zephyr",
+    gzcl_fields,
+    14,
+    "class LIKE '%s'",
+    1,
+    "class",
+    &gzcl_validate,
+  },
+
+  {
+    /* Q_AZCL - ADD_ZEPHYR_CLASS, v2 */
     "add_zephyr_class",
     "azcl",
     2,
@@ -5378,8 +5466,25 @@ struct query Queries[] = {
     "z",
     ZEPHYR_TABLE,
     "INTO zephyr (class, xmt_type, xmt_id, sub_type, sub_id, iws_type, iws_id, iui_type, iui_id) VALUES ('%s', '%s', %d, '%s', %d, '%s', %d, '%s', %d)",
-    azcl_fields,
+    azcl2_fields,
     9,
+    0,
+    0,
+    NULL,
+    &azcl2_validate,
+  },
+
+  {
+    /* Q_AZCL - ADD_ZEPHYR_CLASS, v5 */
+    "add_zephyr_class",
+    "azcl",
+    5,
+    APPEND,
+    "z",
+    ZEPHYR_TABLE,
+    "INTO zephyr (class, xmt_type, xmt_id, sub_type, sub_id, iws_type, iws_id, iui_type, iui_id, owner_type, owner_id) VALUES ('%s', '%s', %d, '%s', %d, '%s', %d, '%s', %d, '%s', %d)",
+    azcl_fields,
+    11,
     0,
     0,
     NULL,
@@ -5387,7 +5492,7 @@ struct query Queries[] = {
   },
 
   {
-    /* Q_UZCL - UPDATE_ZEPHYR_CLASS */
+    /* Q_UZCL - UPDATE_ZEPHYR_CLASS, v2 */
     "update_zephyr_class",
     "uzcl",
     2,
@@ -5395,8 +5500,25 @@ struct query Queries[] = {
     "z",
     ZEPHYR_TABLE,
     "zephyr SET class = '%s', xmt_type = '%s', xmt_id = %d, sub_type = '%s', sub_id = %d, iws_type = '%s', iws_id = %d, iui_type = '%s', iui_id = %d",
-    uzcl_fields,
+    uzcl2_fields,
     9,
+    "class = '%s'",
+    1,
+    NULL,
+    &uzcl2_validate,
+  },
+
+  {
+    /* Q_UZCL - UPDATE_ZEPHYR_CLASS, v5 */
+    "update_zephyr_class",
+    "uzcl",
+    5,
+    UPDATE,
+    "z",
+    ZEPHYR_TABLE,
+    "zephyr SET class = '%s', xmt_type = '%s', xmt_id = %d, sub_type = '%s', sub_id = %d, iws_type = '%s', iws_id = %d, iui_type = '%s', iui_id = %d, owner_type = '%s', owner_id = %d",
+    uzcl_fields,
+    11,
     "class = '%s'",
     1,
     NULL,

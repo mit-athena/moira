@@ -1,4 +1,4 @@
-/* $Id: qaccess.pc,v 2.18 2000-08-10 02:23:49 zacheiss Exp $
+/* $Id: qaccess.pc,v 2.19 2000-09-25 22:48:48 zacheiss Exp $
  *
  * Check access to queries
  *
@@ -17,7 +17,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qaccess.pc,v 2.18 2000-08-10 02:23:49 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qaccess.pc,v 2.19 2000-09-25 22:48:48 zacheiss Exp $");
 
 extern char *whoami;
 extern int dbms_errno, mr_errcode;
@@ -583,3 +583,27 @@ int access_printer(struct query *q, char *argv[], client *cl)
   else
     return MR_PERM;
 }
+
+/* access_zephyr */
+int access_zephyr(struct query *q, char *argv[], client *cl)
+{
+  EXEC SQL BEGIN DECLARE SECTION;
+  char type[ZEPHYR_OWNER_TYPE_SIZE];
+  char *class;
+  int id;
+  EXEC SQL END DECLARE SECTION;
+  int status;
+
+  class = argv[ZA_CLASS];
+  EXEC SQL SELECT owner_type, owner_id INTO :type, :id
+      FROM zephyr WHERE class = :class;
+  if (sqlca.sqlcode)
+    return MR_PERM;
+
+  status = find_member(type, id, cl);
+  if (status)
+    return MR_SUCCESS;
+  else
+    return MR_PERM;
+}
+

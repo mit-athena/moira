@@ -6,8 +6,8 @@
  *	By:		Chris D. Peterson
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/f_defs.h,v $
- *      $Author: kit $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/f_defs.h,v 1.7 1988-07-29 18:34:59 kit Exp $
+ *      $Author: mar $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/f_defs.h,v 1.8 1988-08-07 17:21:11 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -120,6 +120,7 @@ int ShowUserByClass();
 int AddNewUser();		/* add a new user to the database. */
 int RegisterUser();		/* register a user. */
 int UpdateUser();		/* modify info about a user. */
+int DeactivateUser();		/* change a user's status to DELETED */
 int ChangeUserPOBox();		/* change the PO box of a user. */
 int DeleteUserByUid();		/* detete a user by uid. */
 

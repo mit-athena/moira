@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/letter.dc,v 1.1 1992-05-14 18:00:16 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/letter.dc,v 1.2 1992-05-18 17:04:11 mar Exp $
  *
  * This generates confirmation letters to people who recently set
  * their secure instance passwords.
@@ -33,6 +33,7 @@ char **argv;
     char *outf = NULL, outft[64];
     struct stat sb;
     int flag;
+    struct timeval tv;
     EXEC SQL BEGIN DECLARE SECTION;
     char login[10], fullname[34], addr[84];
     int lastrun, when;
@@ -72,7 +73,10 @@ char **argv;
 
     EXEC SQL WHENEVER SQLERROR GOTO sqlerr;
 
-    lastrun = sb.st_mtime;
+    EXEC SQL SELECT secure INTO :lastrun FROM users WHERE users_id = 0;
+
+    gettimeofday(&tv, NULL);
+
     EXEC SQL DECLARE x CURSOR FOR SELECT 
       login, fullname, xaddress, secure
 	FROM users WHERE secure > :lastrun;
@@ -86,6 +90,10 @@ char **argv;
     }
 
     EXEC SQL CLOSE x;
+
+    lastrun = tv.tv_sec;
+    EXEC SQL UPDATE users SET secure = :lastrun WHERE users_id = 0;
+
 #ifsql INGRES
     EXEC SQL DISCONNECT;
 #endsql
@@ -180,8 +188,6 @@ int when;
 	/* Must be interdepartmental */
 	a2 = "MIT INTERDEPARTMENTAL MAIL";
     }
-
-    com_err(whoami, 0, "addr = \"%s\", a1 = \"%s\", a2 = \"%s\"", addr, a1, a2);
 
     for (p = letter_text; *p; p++) {
 	if (*p == '%') {

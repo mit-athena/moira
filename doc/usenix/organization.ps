@@ -1,0 +1,40 @@
+%! Moira organization picture
+% Mark Rosenstein, 19-jan-88
+
+% Picture is 3 inches high and 6 inches wide
+
+/ellipse
+  { 
+    matrix currentmatrix		% Push current matrix	
+    5 1 roll    		% roll to bottom
+    3 index 2 index add 3 index moveto	% move to start
+    4 2 roll translate scale	% translate then scale
+    0 0 1 0 360 arc		% draw it
+    setmatrix			% restore matrix
+  } def
+
+/centershow {
+	dup stringwidth pop 2 div 3 index sub neg 2 index moveto show pop pop
+} def
+
+/AvantGarde-Demi findfont 24 scalefont setfont
+40 180 moveto (INPUT) show
+180 180 moveto (DATABASE) show
+360 180 moveto (OUTPUT) show
+
+2.5 setlinewidth
+75 120 40 20 ellipse closepath stroke
+280 120 moveto 240 120 40 0 360 arc closepath stroke
+380 160 moveto 440 160 lineto 440 80 lineto 380 80 lineto closepath stroke
+
+1.5 setlinewidth
+115 120 moveto 200 120 lineto stroke
+280 120 moveto 380 120 lineto stroke
+
+/AvantGarde-Demi findfont 18 scalefont setfont
+75 115 (Client) centershow
+240 115 (Moira) centershow
+410 115 (Server) centershow
+
+132 125 moveto (Moira) show 120 105 moveto (Protocol) show
+300 125 moveto (Update) show 295 105 moveto (Protocol) show

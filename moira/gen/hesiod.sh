@@ -22,12 +22,15 @@ for file in `/bin/tar tf $TARFILE`; do
 		/bin/rm -f $file
 	fi
 done
-#/bin/rm -f $TARFILE
-#kill -HUP `/bin/cat /etc/named.pid`
 
+/bin/rm -f $TARFILE
+kill -KILL `/bin/cat /etc/named.pid`
 
+csh -fc "unlimit; /etc/named"
+
+rm -f $0
 exit
 #
 # 	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/hesiod.sh,v $
-#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/hesiod.sh,v 1.1 1987-08-22 16:34:57 wesommer Exp $
+#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/hesiod.sh,v 1.2 1988-02-16 12:18:51 mar Exp $
 #

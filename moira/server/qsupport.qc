@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.44 1989-09-15 17:52:17 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.45 1989-09-27 17:17:03 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_qsupport_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.44 1989-09-15 17:52:17 mar Exp $";
+static char *rcsid_qsupport_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.45 1989-09-27 17:17:03 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -2207,6 +2207,7 @@ int get_lists_of_member(q, argv, cl, action, actarg)
     rargv[3] = hidden;
     rargv[4] = maillist;
     rargv[5] = group;
+##  range of m is imembers
     if (direct) {
 ##    repeat retrieve (name = list.#name, active = text(list.#active), 
 ##		     public = text(list.#public), hidden = text(list.#hidden),

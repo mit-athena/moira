@@ -1,4 +1,4 @@
-/* $Id: reg_svr.pc,v 1.10 2002-02-25 16:41:17 zacheiss Exp $
+/* $Id: reg_svr.pc,v 1.11 2002-03-29 02:23:34 zacheiss Exp $
  *
  * Server for user registration with Moira and Kerberos.
  *
@@ -37,7 +37,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.pc,v 1.10 2002-02-25 16:41:17 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.pc,v 1.11 2002-03-29 02:23:34 zacheiss Exp $");
 
 char *whoami, *hostname, *shorthostname;
 
@@ -301,7 +301,7 @@ void RIFO(reg_client *rc, int argc, char **argv)
   char middle[USERS_MIDDLE_SIZE], last[USERS_LAST_SIZE];
   char fullname[USERS_FIRST_SIZE + USERS_MIDDLE_SIZE + USERS_LAST_SIZE];
   char class[USERS_TYPE_SIZE], pin[USERS_PIN_SIZE];
-  int uid, status, secure, sqlstatus, string_id;
+  int uid, status, secure, sqlstatus;
   EXEC SQL END DECLARE SECTION;
 
   if (rc->uid || argc != 4)
@@ -365,6 +365,7 @@ void RIFO(reg_client *rc, int argc, char **argv)
     case US_REGISTERED:
     case US_ENROLLED:
     case US_ENROLL_NOT_ALLOWED:
+    case US_REGISTERED_KERBEROS_ONLY:
       reply(rc, ALREADY_REGISTERED, "INIT", "c", NULL, login);
       return;
 
@@ -380,6 +381,7 @@ void RIFO(reg_client *rc, int argc, char **argv)
       break;
     }
 
+  rc->user_status = status;
   rc->uid = uid;
   sprintf(fullname, "%s %s%s%s", first, middle, *middle ? " " : "", last);
   if (!strcmp(class, "MITS"))
@@ -427,19 +429,13 @@ void RIFO(reg_client *rc, int argc, char **argv)
     reply(rc, FOUND, "GETL", "c", rc->suggestions, fullname, class);
   else
     {
-      if (status == US_NO_LOGIN_YET)
+      if (rc->user_status == US_NO_LOGIN_YET || 
+	  rc->user_status == US_NO_LOGIN_YET_KERBEROS_ONLY)
 	{
 	  status = check_kerberos(login);
-	  if (status == MR_SUCCESS)
-	    if (!strcmp(class, "LINCOLN"))
-	      {
-		EXEC SQL SELECT string_id INTO :string_id FROM strings
-		  WHERE string = 'LINCOLN: no pobox or filesys';
-		EXEC SQL UPDATE users SET comments = :string_id 
-		  WHERE login = :login;
-	      }
-	    else
-	      status = register_user(rc->uid, login);
+	  if (status == MR_SUCCESS && 
+	      rc->user_status != US_NO_LOGIN_YET_KERBEROS_ONLY)
+	    status = register_user(rc->uid, login);
 	  if (status == MR_IN_USE)
 	    {
 	      reply(rc, RESERVED_USERNAME_UNAVAILABLE, "INIT", "c", NULL, 
@@ -563,8 +559,12 @@ void LOGN(reg_client *rc, int argc, char **argv)
 
   status = check_kerberos(login);
   if (status == MR_SUCCESS)
-    status = register_user(rc->uid, login);
-
+    {
+      if (rc->user_status == US_NO_LOGIN_YET_KERBEROS_ONLY)
+	EXEC SQL UPDATE users SET login = :login WHERE unix_uid = :rc->uid;
+      else
+	status = register_user(rc->uid, login);
+    }
   if (status == MR_IN_USE)
     {
       if (rc->reserved_username)
@@ -679,7 +679,11 @@ void PSWD(reg_client *rc, int argc, char **argv)
       reply(rc, KADM_ERROR, "INIT", "c", NULL, error_message(status));
       return;
     }
-  EXEC SQL UPDATE users SET status = 1 WHERE login = :login;
+  
+  if (rc->user_status == US_NO_LOGIN_YET_KERBEROS_ONLY)
+    EXEC SQL UPDATE users SET status = 9 WHERE login = :login;
+  else
+    EXEC SQL UPDATE users SET status = 1 WHERE login = :login;
   EXEC SQL COMMIT;
 
   reply(rc, DONE, "INIT", "c", NULL, rc->username);

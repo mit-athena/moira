@@ -17,6 +17,7 @@ typedef struct reg_client {
   char *username;			/* desired username. set by LOGN */
   int reserved_username;		/* if username wasn't picked by user */
   unsigned short *random;		/* random state */
+  int user_status;                      /* Status of account */
 } reg_client;
 
 void RIFO(reg_client *rc, int argc, char **argv);

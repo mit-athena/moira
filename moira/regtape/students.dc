@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/students.dc,v 1.12 1991-10-01 12:15:01 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/students.dc,v 1.13 1992-02-10 18:34:30 mar Exp $
  */
 
 #include <stdio.h>
@@ -39,7 +39,7 @@
 #define LOC_DORM_ROOM 110
 #define LOC_CITY 125
 #define LOC_STATE 145
-#define LOC_DPHONE 159
+#define LOC_DPHONE 155
 #define LOC_MPHONE 243
 
 #define LEN_NAME 30
@@ -49,9 +49,9 @@
 #define LEN_ADDRESS 30
 #define LEN_DORM_ROOM 15
 #define LEN_CITY 20
-#define LEN_STATE 14
-#define LEN_DPHONE 9
-#define LEN_MPHONE 9
+#define LEN_STATE 10
+#define LEN_DPHONE 12
+#define LEN_MPHONE 12
 
 struct entry {
     char *name;
@@ -232,10 +232,11 @@ FILE *in;
 process_entry(e)
 struct entry *e;
 ##{
-    int changed, nochange;
+    int changed, nochange, encrypted;
     char buf[BUFSIZ], *from, *to;
-##  char *first, *last, *eid, *title, *sid, *name;
-##  char class[9], haddr[128], hphone[17], ophone[13], dept[24];
+##  char *first, *last, *eid, *title, *sid, *name, *rname, *rdept, *rtitle;
+##  char *rophone, *rhphone;
+##  char class[9], haddr[128], hphone[33], ophone[33], dept[33], raddr[128];
 ##  int id, status;
 
     first = e->first;
@@ -245,15 +246,31 @@ struct entry *e;
     if (strlen(last) > 16)
       last[16] = 0;
     eid = e->eid;
+    sid = e->id;
     id = 0;
+    encrypted = 0;
+
+/* Get user info */
 ##  repeat retrieve (id = u.users_id, class = u.mit_year, haddr = u.home_addr,
 ##	      hphone = u.home_phone, ophone = u.office_phone,
 ##	      status = u.#status, dept = u.mit_dept)
-##	where u.#last = @last and u.#first = @first and u.mit_id = @eid
+##	where u.#last = @last and u.#first = @first and u.mit_id = @sid
     if (id == 0) {
-	newuser(e);
-	return;
+##	repeat retrieve (id = u.users_id, class = u.mit_year, haddr = u.home_addr,
+##	      hphone = u.home_phone, ophone = u.office_phone,
+##	      status = u.#status, dept = u.mit_dept)
+##	where u.#last = @last and u.#first = @first and u.mit_id = @eid
+	encrypted++;
+	if (id == 0) {
+	    newuser(e);
+	    return;
+	}
     }
+
+/* See if class changed: if it's different, and the value in the database
+ * is not STAFF or SIPB, then update the database.  Since they were on the
+ * students tape, make the account usable.
+ */
     if (strcmp(e->class, strtrim(class)) &&
 	strcmp(class, "STAFF") && strcmp(class, "SIPB")) {
 	com_err(whoami, 0, "updating class for user %s %s from %s to %s",
@@ -261,10 +278,13 @@ struct entry *e;
 	if (status == US_NOT_ALLOWED) status = US_NO_LOGIN_YET;
 	if (status == US_ENROLL_NOT_ALLOWED) status = US_ENROLLED;
 	strcpy(class, e->class);
-##	repeat replace u (mit_year = @class, #status = @status, ugdefault = 1,
+##	repeat replace u (mit_year = @class, #status = @status,
 ##		   modtime = "now", modby = WHO, modwith = PROG)
 ##	    where u.users_id = @id
     }
+
+    /* Deal with updating the finger info if necessary */
+
     changed = nochange = 0;
     strcpy(buf, e->address);
     if (*e->dorm) {
@@ -350,46 +370,40 @@ struct entry *e;
 	strncpy(dept, e->course, 12);
 	dept[12] = 0;
     }
+    sid = e->id;
+    name = e->name;
+    rdept = e->course;
+    rtitle = e->title;
+    rophone = e->mphone;
+    rhphone = e->dphone;
+    strcpy(raddr, e->address);
+    if (*e->dorm) {
+	strcat(raddr, " ");
+	strcat(raddr, e->dorm);
+    }
+    if (*e->city) {
+	strcat(raddr, " ");
+	strcat(raddr, e->city);
+    }
+    FixCase(raddr);
+    if (*e->state) {
+	strcat(raddr, " ");
+	strcat(raddr, e->state);
+    }
     if (changed) {
 	com_err(whoami, 0, "updating finger for %s %s", first, last);
 ##	repeat replace u (home_addr = @haddr, home_phone = @hphone,
-##		   office_phone = @ophone, #mit_dept = @dept, ugdefault = 1,
-##		   fmodtime = "now", fmodby = WHO, fmodwith = PROG)
+##		   office_phone = @ophone, #mit_dept = @dept,
+##		   fmodtime = "now", fmodby = WHO, fmodwith = PROG,
+##		   xname = @name, xdept = @rdept, xtitle = @rtitle,
+##		   xaddress = @raddr, xphone1 = @rhphone, xphone2 = @rophone,
+##		   xmodtime = date("now"), mit_id = @sid)
 ##	    where u.users_id = @id
-    } /* else if (nochange)
-      com_err(whoami, 0, "NOT updating finger for %s %s", first, last);
-       */
-    if (!changed && !strcmp(e->class, class)) {
-##	repeat replace u (ugdefault = 1) where u.users_id = @id
-    }
-    if (addxuser) {
-	sid = e->id;
-	name = e->name;
-	strcpy(dept, e->course);
-	title = e->title;
-	strcpy(haddr, e->address);
-	if (*e->dorm) {
-	    strcat(haddr, " ");
-	    strcat(haddr, e->dorm);
-	}
-	if (*e->city) {
-	    strcat(haddr, " ");
-	    strcat(haddr, e->city);
-	}
-	FixCase(haddr);
-	if (*e->state) {
-	    strcat(haddr, " ");
-	    strcat(haddr, e->state);
-	}
-	
-	status = 1;
-##	repeat retrieve (status = any (xuser.users_id
-##			 where xuser.users_id = @id))
-	if (!status) {
-##	append xuser (users_id = id, #id = sid, #name = name, #dept = dept,
-##		      #title = title, address = haddr, #phone1 = hphone,
-##		      #phone2 = ophone, modtime = "now")
-	}
+    }  else {
+##	repeat replace u (xname = @name, xdept = @rdept, xtitle = @rtitle,
+##		   xaddress = @raddr, xphone1 = @rhphone, xphone2 = @rophone,
+##		   xmodtime = date("now"), mit_id = @sid)
+##	    where u.users_id = @id
     }
 ##}
 
@@ -399,8 +413,8 @@ struct entry *e;
 ##{
     char buf[512], *from, *to;
 ##  int id, uid;
-##  char *last, *first, *class, *middle, login[9], *eid, fullname[65];
-##  char haddr[81], hphone[17], ophone[13], dept[24], *sid, *title;
+##  char *last, *first, *class, *middle, login[9], *sid, fullname[65];
+##  char haddr[81], hphone[17], ophone[13], dept[24], *title;
 
 
     strcpy(buf, e->address);
@@ -443,8 +457,9 @@ struct entry *e;
     last = e->last;
     first = e->first;
     middle = e->middle;
-    eid = e->eid;
+    sid = e->id;
     class = e->class;
+    title = e->title;
     if (*middle)
       sprintf(fullname, "%s %s %s", first, middle, last);
     else
@@ -452,37 +467,16 @@ struct entry *e;
     
 ##  append users (#login = login, users_id = id, #uid = uid, shell = "/bin/csh",
 ##		  #last = last, #first = first, #middle = middle, status = 0,
-##		  #mit_id = eid, #mit_year = class, ugdefault = 1,
+##		  #mit_id = sid, #mit_year = class,
 ##		  modtime = "now", modby = WHO, modwith = PROG,
 ##		  #fullname = fullname, home_addr = haddr, home_phone = hphone,
 ##		  office_phone = ophone, #mit_dept = dept,
 ##		  fmodtime = "now", fmodby = WHO, fmodwith = PROG,
-##		  potype = "NONE")
+##		  potype = "NONE",
+##		  xname = fullname, xdept = dept, xtitle = title,
+##		  xaddress = haddr, xphone1 = hphone, xphone2 = ophone,
+##		  xmodtime = date("now"))
 
-    sid = e->id;
-    strcpy(fullname, e->name);
-    strcpy(dept, e->course);
-    title = e->title;
-    strcpy(haddr, e->address);
-    if (*e->dorm) {
-	strcat(haddr, " ");
-	strcat(haddr, e->dorm);
-    }
-    if (*e->city) {
-	strcat(haddr, " ");
-	strcat(haddr, e->city);
-    }
-    FixCase(haddr);
-    if (*e->state) {
-	strcat(haddr, " ");
-	strcat(haddr, e->state);
-    }
-
-    if (addxuser) {
-##	append xuser (users_id = id, #id = sid, #name = fullname, #dept = dept,
-##		  #title = title, address = haddr, #phone1 = hphone,
-##		  #phone2 = ophone, modtime = "now")
-    }
     com_err(whoami, 0, "adding user %s %s", e->first, e->last);
 ##}
 

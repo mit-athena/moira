@@ -36,7 +36,7 @@ public class Parser {
        if (type == 0x45) data = encap.decrypt(data);
        else System.arraycopy(data, 8, data, 0, data.length-8);
      } else {
-       new IOException("Unknown type code in data stream");
+       throw new IOException("Unknown type code in data stream, or I/O Error");
      }
      String [] pdat = pparse(data);
      if (!pdat[0].equals("v1")) {

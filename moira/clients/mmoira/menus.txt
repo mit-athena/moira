@@ -1,4 +1,4 @@
-; $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/menus.txt,v 1.3 1992-10-13 11:13:37 mar Exp $
+; $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/menus.txt,v 1.4 1992-10-19 17:15:50 mar Exp $
 ;
 
 ; = menu name "mnemonic"
@@ -106,7 +106,7 @@
 	delete 		{ MM_DEL_FS_ALIAS, del_fs_alias delete_alias 3 "d" }
 
 = filesystem group "g"
-	show		{ MM_SHOW_FSGROUP, show_fsgroup get_filesys 1 "s" }
+	show		{ MM_SHOW_FSGROUP, show_fsgroup get_filesys_by_label 1 "s" }
 	insert		{ MM_ADD_FSGROUP, add_fsgroup add_filesys_to_fsgroup 3 "i" }
 	re-order	{ MM_MOV_FSGROUP, order_fsgroup 0 -1 "o" }
 	remove		{ MM_DEL_FSGROUP, del_fsgroup remove_filesys_from_fsgroup 2 "r" }
@@ -116,7 +116,7 @@
 	add		{ MM_ADD_FILSYS, add_filsys add_filesys 11 "a" }
 	modify		{ MM_MOD_FILSYS, select_filsys get_filesys_by_label 1 "m" }
 	delete		{ MM_DEL_FILSYS, del_filsys delete_filesys 1 "d" }
-;	filesystem group
+	filesystem group
 	filesystem alias
 	nfs partition
 
@@ -132,10 +132,10 @@
 	delete		{ MM_DEL_POBOX, del_pobox delete_pobox 1 "d" }
 
 = user "u"
-	show		{ MM_SHOW_USER, show_user get_user_by_login 1 "s" }
-	add		{ MM_ADD_USER, add_user add_user 9 "a" }
+	show		{ MM_SHOW_USER, show_user get_user_account_by_login 1 "s" }
+	add		{ MM_ADD_USER, add_user add_user_account 9 "a" }
 	register	{ MM_REGISTER, register_user register_user 3 "r" }
-	modify		{ MM_MOD_USER, select_user get_user_by_login 1 "m" }
+	modify		{ MM_MOD_USER, select_user get_user_account_by_login 1 "m" }
 	deactivate	{ MM_DEACTIVATE, deactivate_user update_user_status 2 "d" }
 	expunge		{ MM_EXPUNGE, expunge_user delete_user 1 "x" }
 	show finger info { MM_SHOW_FINGER, show_finger get_finger_by_login 1 "f" }
@@ -143,8 +143,9 @@
 	kerberos mapping
 
 = ?help "?"
-	about moira	{ MM_HELP_MOIRA, 0 about_moira 0 "m" }
+	about moira	{ MM_HELP_MOIRA, 0 about_moira 0 "?" }
 	wildcards	{ MM_HELP_WILDCARDS, 0 wildcards 0 "w" }
+	using the mouse { MM_HELP_MOUSE, 0, mouse 0 "m"
 	using the keyboard { MM_HELP_KEYBOARD, 0, keyboard 0 "k" }
 	reporting bugs	{ MM_HELP_BUGS, 0, bugs 0 "b" }
 	authors		{ MM_HELP_AUTHORS, 0 authors 0 "a" }

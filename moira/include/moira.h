@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/include/moira.h,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/include/moira.h,v 1.15 1990-03-17 16:30:56 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/include/moira.h,v 1.16 1990-04-02 19:14:50 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
@@ -41,6 +41,7 @@
 #define	MR_FS_FACULTY	0x0002
 #define MR_FS_STAFF	0x0004
 #define MR_FS_MISC	0x0008
+#define MR_FS_GROUPQUOTA 0x0010
 
 /* magic values to pass for list and user queries */
 #define UNIQUE_GID	"create unique GID"

@@ -188,7 +188,7 @@ CREATE TABLE quota
         type             CHAR( 8 ),
         entity_id        INTEGER,
         phys_id          INTEGER,
-        quota            INTEGER,
+        quota_value      INTEGER,
         modtime          DATE,
         modby            INTEGER,
         modwith          CHAR( 8 )
@@ -273,7 +273,7 @@ CREATE TABLE alias
         trans            CHAR( 128 )
 )
 
-CREATE TABLE values 
+CREATE TABLE values_tbl 
 (
         name             CHAR( 32 ),
         value            INTEGER
@@ -281,7 +281,7 @@ CREATE TABLE values
 
 CREATE TABLE tblstats 
 (
-        table            CHAR( 12 ),
+        table_name       CHAR( 12 ),
         modtime          DATE,
         retrieves        INTEGER,
         appends          INTEGER,

@@ -1,4 +1,4 @@
-/* $Id: kerberos.c,v 1.6 2004-07-20 08:11:25 zacheiss Exp $
+/* $Id: kerberos.c,v 1.7 2005-02-04 03:49:26 zacheiss Exp $
  *
  * Kerberos routines for registration server
  *
@@ -39,7 +39,7 @@
 krb5_context context;
 #endif
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/kerberos.c,v 1.6 2004-07-20 08:11:25 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/kerberos.c,v 1.7 2005-02-04 03:49:26 zacheiss Exp $");
 
 extern char *hostname, *shorthostname;
 
@@ -116,8 +116,10 @@ long register_kerberos(char *username, char *password)
   void *kadm_server_handle = NULL;
   kadm5_ret_t status;
   kadm5_principal_ent_rec princ;
+  kadm5_policy_ent_rec defpol;
   kadm5_config_params realm_params;
   char admin_princ[256];
+  long mask = 0;
 #ifdef KERBEROS_TEST_REALM
   char ubuf[256];
 
@@ -131,6 +133,8 @@ long register_kerberos(char *username, char *password)
   realm_params.mask = 0;
 #endif
 
+  memset(&princ, 0, sizeof(princ));
+
   status = krb5_parse_name(context, username, &(princ.principal));
   if (status)
     return status;
@@ -142,8 +146,16 @@ long register_kerberos(char *username, char *password)
   if (status)
     goto cleanup;
 
-  status = kadm5_create_principal(kadm_server_handle, &princ,
-				  KADM5_PRINCIPAL, password);
+  /* Assign "default" policy if it exists. */
+  if (!kadm5_get_policy(kadm_server_handle, "default", &defpol))
+    {
+      princ.policy = "default";
+      mask |= KADM5_POLICY;
+      (void) kadm5_free_policy_ent(kadm_server_handle, &defpol);
+    } 
+
+  mask |= KADM5_PRINCIPAL;
+  status = kadm5_create_principal(kadm_server_handle, &princ, mask, password);
 
 cleanup:
   krb5_free_principal(context, princ.principal);

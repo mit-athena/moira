@@ -27,6 +27,7 @@ modify i_hal_id to btree;\g
 ;\g
 modify subnet to btree unique on snet_id;\g
 create index i_snt_name on subnet (name);\g
+create index i_snt_saddr on subnet(saddr);\g
 ;\g
 modify cluster to cbtree unique on clu_id;\g
 create index i_clu_name on  cluster (name);\g

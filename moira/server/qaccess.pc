@@ -1,4 +1,4 @@
-/* $Id: qaccess.pc,v 2.26 2001-12-22 02:43:46 zacheiss Exp $
+/* $Id: qaccess.pc,v 2.27 2002-08-02 10:30:07 zacheiss Exp $
  *
  * Check access to queries
  *
@@ -17,7 +17,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qaccess.pc,v 2.26 2001-12-22 02:43:46 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qaccess.pc,v 2.27 2002-08-02 10:30:07 zacheiss Exp $");
 
 extern char *whoami;
 extern int dbms_errno, mr_errcode;
@@ -669,9 +669,10 @@ int access_zephyr(struct query *q, char *argv[], client *cl)
 int access_container(struct query *q, char *argv[], client *cl)
 {
   EXEC SQL BEGIN DECLARE SECTION;
-  int cnt_id, acl_id, memacl_id;
+  int cnt_id, acl_id, memacl_id, mach_id, machine_owner_id, flag;
   char acl_type[CONTAINERS_ACL_TYPE_SIZE], memacl_type[CONTAINERS_ACL_TYPE_SIZE];
   char name[CONTAINERS_NAME_SIZE], *newname;
+  char machine_owner_type[MACHINE_OWNER_TYPE_SIZE];
   EXEC SQL END DECLARE SECTION;
   int status;
 
@@ -679,10 +680,13 @@ int access_container(struct query *q, char *argv[], client *cl)
   
   /* if amcn or dmcn, container id is the second argument */
   if (strcmp(q->shortname, "amcn") == 0 || strcmp(q->shortname, "dmcn") == 0)
+  {
+	mach_id = *(int *)argv[0];
 	cnt_id = *(int *)argv[1];
+  }
 
-  EXEC SQL SELECT acl_id, acl_type, memacl_id, memacl_type, name
-    INTO :acl_id, :acl_type, :memacl_id, :memacl_type, :name
+  EXEC SQL SELECT acl_id, acl_type, memacl_id, memacl_type, name, publicflg
+    INTO :acl_id, :acl_type, :memacl_id, :memacl_type, :name, :flag
     FROM containers
     WHERE cnt_id = :cnt_id;
 
@@ -713,6 +717,19 @@ int access_container(struct query *q, char *argv[], client *cl)
   if (find_member(memacl_type, memacl_id, cl))
     return MR_SUCCESS;
 
+  /* if the container is public or the query is delete, grant access if client
+   * is on owner list */
+  if (flag || q->type == DELETE)
+    {
+	  EXEC SQL SELECT owner_type, owner_id INTO :machine_owner_type,
+	    :machine_owner_id
+	    FROM machine
+	    WHERE mach_id = :mach_id;
+
+	  if (sqlca.sqlerrd[2] == 1 && strcmp("NONE", machine_owner_type) &&
+		find_member(machine_owner_type, machine_owner_id, cl))
+	    return MR_SUCCESS;
+    }
   /* Otherwise fail. */
   return MR_PERM;
 }

@@ -1,4 +1,4 @@
-/* $Id: qsupport.pc,v 2.41 2002-03-29 02:24:25 zacheiss Exp $
+/* $Id: qsupport.pc,v 2.42 2002-08-02 10:30:08 zacheiss Exp $
  *
  * Special query routines
  *
@@ -18,7 +18,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.pc,v 2.41 2002-03-29 02:24:25 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.pc,v 2.42 2002-08-02 10:30:08 zacheiss Exp $");
 
 extern char *whoami, *table_name[];
 extern int dbms_errno, mr_errcode;
@@ -1891,7 +1891,7 @@ int get_user_by_reservation(struct query *q, char **argv, client *cl,
 int update_container(struct query *q, char *argv[], client *cl)
 {
   EXEC SQL BEGIN DECLARE SECTION;
-  int cnt_id, acl_id, memacl_id, who;
+  int cnt_id, acl_id, memacl_id, who, flag;
   char name[CONTAINERS_NAME_SIZE], newchildname[CONTAINERS_NAME_SIZE];
   char* newname, *entity, *description, *location, *contact, *acl_type, *memacl_type;
   EXEC SQL END DECLARE SECTION;
@@ -1899,16 +1899,21 @@ int update_container(struct query *q, char *argv[], client *cl)
   int cnt, childid;
   char childname[CONTAINERS_NAME_SIZE];
   char *qual;
+   int index = 0;
 
-  cnt_id = *(int *)argv[0];
-  newname = argv[1];
-  description = argv[2];
-  location = argv[3];
-  contact = argv[4];
-  acl_type = argv[5];
-  acl_id = *(int *)argv[6];
-  memacl_type = argv[7];
-  memacl_id = *(int *)argv[8];
+  cnt_id = *(int *)argv[index++];
+  newname = argv[index++];
+
+  if (q->version >= 9)
+    flag = atoi(argv[index++]);
+
+  description = argv[index++];
+  location = argv[index++];
+  contact = argv[index++];
+  acl_type = argv[index++];
+  acl_id = *(int *)argv[index++];
+  memacl_type = argv[index++];
+  memacl_id = *(int *)argv[index++];
   entity = cl->entity;
   who = cl->client_id;
 
@@ -1987,12 +1992,24 @@ int update_container(struct query *q, char *argv[], client *cl)
   }
 
   /* update the remaining fields */
-  EXEC SQL UPDATE containers 
-    SET description = NVL(:description, CHR(0)), location = NVL(:location, CHR(0)), 
-      contact = NVL(:contact, CHR(0)), acl_type = :acl_type, acl_id = :acl_id, 
-      memacl_type = :memacl_type, memacl_id = :memacl_id, 
-      modtime = SYSDATE, modby = :who, modwith = :entity
-    WHERE cnt_id = :cnt_id;
+  if (q->version >= 9)
+  {
+	EXEC SQL UPDATE containers
+		SET publicflg= :flag, description = NVL(:description, CHR(0)), location = NVL(:location, CHR(0)),
+			contact = NVL(:contact, CHR(0)), acl_type = :acl_type, acl_id = :acl_id,
+			memacl_type = :memacl_type, memacl_id = :memacl_id,
+			modtime = SYSDATE, modby = :who, modwith = :entity
+		WHERE cnt_id = :cnt_id;
+  }
+  else
+  {
+    EXEC SQL UPDATE containers
+		SET publicflg= :flag, description = NVL(:description, CHR(0)), location = NVL(:location, CHR(0)),
+			contact = NVL(:contact, CHR(0)), acl_type = :acl_type, acl_id = :acl_id,
+			memacl_type = :memacl_type, memacl_id = :memacl_id,
+			modtime = SYSDATE, modby = :who, modwith = :entity
+		WHERE cnt_id = :cnt_id;
+  }
 
   if (dbms_errno)
     return mr_errcode;
@@ -2037,7 +2054,8 @@ int get_machines_of_container(struct query *q, char *argv[], client *cl,
   if (!isrecursive)
     sprintf(tmp, "AND b.cnt_id = %d ", cnt_id);
   else
-    sprintf(tmp, "AND (b.cnt_id = %d OR b.name LIKE '%s/%%') ", cnt_id, containername);
+    sprintf(tmp, "AND (b.cnt_id = %d OR b.name LIKE LOWER('%s/%%')) ", 
+	    cnt_id, containername);
 
   strcat(querystring, tmp);
   strcat(querystring, "ORDER BY b.name, a.name");
@@ -2095,10 +2113,10 @@ int get_subcontainers_of_container(struct query *q, char *argv[], client *cl,
   strcpy(querystring, "SELECT name FROM containers ");
   
   if (!isrecursive)
-    sprintf(tmp, "WHERE name LIKE '%s/%%' and name NOT LIKE '%s/%%/%%' ", containername, 
-        containername);
+    sprintf(tmp, "WHERE LOWER(name) LIKE '%s/%%' and name NOT LIKE LOWER('%s/%%/%%') ",
+	    containername, containername);
   else
-    sprintf(tmp, "WHERE name LIKE '%s/%%' ", containername);
+    sprintf(tmp, "WHERE LOWER(name) LIKE LOWER('%s/%%') ", containername);
 
   strcat(querystring, tmp);
   strcat(querystring, "ORDER BY name");
@@ -2123,5 +2141,21 @@ int get_subcontainers_of_container(struct query *q, char *argv[], client *cl,
   EXEC SQL CLOSE curs_gsoc;
   if (!found)
     return MR_NO_MATCH;
+  return MR_SUCCESS;
+}
+
+int set_container_list(struct query *q, char *argv[], client *cl)
+{
+  EXEC SQL BEGIN DECLARE SECTION;
+  int cnt_id, list_id;
+  EXEC SQL END DECLARE SECTION;
+
+  cnt_id = *(int *)argv[0];
+  list_id = *(int *)argv[1];
+
+  EXEC SQL UPDATE containers SET list_id = :list_id WHERE cnt_id = :cnt_id;
+  if (dbms_errno)
+    return mr_errcode;
+
   return MR_SUCCESS;
 }

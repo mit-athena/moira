@@ -1,4 +1,4 @@
-/* $Id: qsetup.pc,v 2.49 2002-01-16 21:41:21 zacheiss Exp $
+/* $Id: qsetup.pc,v 2.50 2002-08-02 10:30:08 zacheiss Exp $
  *
  * Query setup routines
  *
@@ -21,7 +21,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsetup.pc,v 2.49 2002-01-16 21:41:21 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsetup.pc,v 2.50 2002-08-02 10:30:08 zacheiss Exp $");
 
 extern char *whoami;
 extern int dbms_errno, mr_errcode;
@@ -1358,13 +1358,32 @@ int setup_dcon(struct query *q, char *argv[], client *cl)
    strcpy(containername, strtrim(containername));
 
   EXEC SQL SELECT COUNT(cnt_id) INTO :cnt FROM containers
-    WHERE name LIKE :containername || '/' || '%';
+    WHERE LOWER(name) LIKE LOWER(:containername || '/' || '%');
 
   if (cnt > 0)
     return MR_IN_USE;
 
   if (dbms_errno)
     return mr_errcode;
+  return MR_SUCCESS;
+}
+
+int setup_scli(struct query *q, char *argv[], client *cl)
+{
+  EXEC SQL BEGIN DECLARE SECTION;
+  int cnt_id, list_id;
+  EXEC SQL END DECLARE SECTION;
+
+  cnt_id = *(int *)argv[0];
+  /* Check if someone has already set the list for this container */
+  EXEC SQL SELECT list_id INTO :list_id FROM containers
+    WHERE cnt_id = :cnt_id;
+  if (list_id != 0)
+    return MR_EXISTS;
+
+  if (dbms_errno)
+    return mr_errcode;
+
   return MR_SUCCESS;
 }
 
@@ -1425,4 +1444,31 @@ int hostinfo_check(char *info, int num)
     }
   if (!isalnum(*(p - 1)))
     return 1;
+}
+
+int setup_acon(struct query *q, char *argv[], client *cl)
+{
+  EXEC SQL BEGIN DECLARE SECTION;
+  char containername[CONTAINERS_NAME_SIZE];
+  EXEC SQL END DECLARE SECTION;
+  
+  char* ptr;
+  
+  memset(containername, 0, sizeof(containername));
+  strcpy(containername, argv[0]);
+  ptr = strrchr(containername, '/');
+  /* sub container, check for parents */
+  if (ptr)
+    {
+      *ptr = '\0';
+      EXEC SQL SELECT * FROM containers
+	WHERE lower(name) = lower(:containername);	
+      if (sqlca.sqlerrd[2] != 1)
+	return MR_CONTAINER_NO_PARENT;
+    }
+  
+  if ((mr_errcode = prefetch_value(q, argv, cl)) != MR_SUCCESS)
+    return mr_errcode;
+  
+  return MR_SUCCESS;
 }

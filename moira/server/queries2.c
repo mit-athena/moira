@@ -1,4 +1,4 @@
-/* $Id: queries2.c,v 2.94 2002-04-30 02:18:15 zacheiss Exp $
+/* $Id: queries2.c,v 2.95 2002-08-02 10:30:08 zacheiss Exp $
  *
  * This file defines the query dispatch table
  *
@@ -43,7 +43,7 @@ static struct valobj VOfilesys0[] = {
 };
 
 static struct valobj VOcon0[] = {
-	{V_ID, 0, CONTAINERS_TABLE, "name", "cnt_id", MR_CONTAINER},
+  {V_ID, 0, CONTAINERS_TABLE, "name", "cnt_id", MR_CONTAINER},
 };
 
 static struct valobj VOnum0[] = {
@@ -3343,7 +3343,7 @@ static char *gdds_fields[] = {
   "sid",
 };
 
-static char *gcon_fields[] = {
+static char *gcon7_fields[] = {
   "name",
   "name", "description", "location", "contact",
   "ace_type", "ace_name", "memace_type", "memace_name", "modtime", "modby", "modwith",
@@ -3361,12 +3361,18 @@ static struct validate gcon_validate = {
   followup_gcon,
 };
 
-static char *acon_fields[] = {
+static char *gcon_fields[] = {
+  "name",
+  "name", "publicflg", "description", "location", "contact",
+  "ace_type", "ace_name", "memace_type", "memace_name", "modtime", "modby", "modwith",
+};
+
+static char *acon7_fields[] = {
   "name", "description", "location", "contact",
   "ace_type", "ace_name", "memace_type", "memace_name",
 };
 
-static struct valobj acon_valobj[] = {
+static struct valobj acon7_valobj[] = {
   {V_CHAR, 0, CONTAINERS_TABLE, "name"},
   {V_LEN, 1, CONTAINERS_TABLE, "description"},
   {V_CHAR, 2, CONTAINERS_TABLE, "location"},
@@ -3377,26 +3383,56 @@ static struct valobj acon_valobj[] = {
   {V_TYPEDATA, 7, 0, 0, 0, MR_ACE},
 };
 
-static struct validate acon_validate =
+static struct validate acon7_validate =
 {
-  acon_valobj,
+  acon7_valobj,
   8,
   "name",
   "name = '%s'",
   1,
   "cnt_id",
   0,
-  prefetch_value,
+  setup_acon,
   set_modtime,
 };
 
-static char *ucon_fields[] = {
+static char *acon_fields[] = {
+  "name", "publicflg", "description", "location", "contact",
+  "ace_type", "ace_name", "memace_type", "memace_name",
+};
+
+static struct valobj acon_valobj[] = {
+  {V_CHAR, 0, CONTAINERS_TABLE, "name"},
+  {V_NUM, 1},
+  {V_LEN, 2, CONTAINERS_TABLE, "description"},
+  {V_CHAR, 3, CONTAINERS_TABLE, "location"},
+  {V_CHAR, 4, CONTAINERS_TABLE, "contact"},
+  {V_TYPE, 5, 0, "ace_type", 0, MR_ACE},
+  {V_TYPEDATA, 6, 0, 0, 0, MR_ACE},
+  {V_TYPE, 7, 0, "ace_type", 0, MR_ACE},
+  {V_TYPEDATA, 8, 0, 0, 0, MR_ACE},
+};
+
+static struct validate acon_validate =
+{
+  acon_valobj,
+  9,
+  "name",
+  "name = '%s'",
+  1,
+  "cnt_id",
+  0,
+  setup_acon,
+  set_modtime,
+};
+
+static char *ucon7_fields[] = {
   "name",
   "newname", "description", "location", "contact",
   "ace_type", "ace_name", "memace_type", "memace_name",
 };
 
-static struct valobj ucon_valobj[] = {
+static struct valobj ucon7_valobj[] = {
   {V_ID, 0, CONTAINERS_TABLE, "name", "cnt_id", MR_CONTAINER},
   {V_RENAME, 1, CONTAINERS_TABLE, "name", "cnt_id", MR_NOT_UNIQUE},
   {V_LEN, 2, CONTAINERS_TABLE, "description"},
@@ -3408,10 +3444,42 @@ static struct valobj ucon_valobj[] = {
   {V_TYPEDATA, 8, 0, 0, 0, MR_ACE},
 };
 
+static struct validate ucon7_validate =
+{
+  ucon7_valobj,
+  9,
+  0,
+  0,
+  0,
+  0,
+  access_container,
+  0,
+  update_container,
+};
+
+static char *ucon_fields[] = {
+  "name",
+  "newname", "publicflg", "description", "location", "contact",
+  "ace_type", "ace_name", "memace_type", "memace_name",
+};
+
+static struct valobj ucon_valobj[] = {
+  {V_ID, 0, CONTAINERS_TABLE, "name", "cnt_id", MR_CONTAINER},
+  {V_RENAME, 1, CONTAINERS_TABLE, "name", "cnt_id", MR_NOT_UNIQUE},
+  {V_NUM, 2},
+  {V_LEN, 3, CONTAINERS_TABLE, "description"},
+  {V_CHAR, 4, CONTAINERS_TABLE, "location"},
+  {V_CHAR, 5, CONTAINERS_TABLE, "contact"},
+  {V_TYPE, 6, 0, "ace_type", 0, MR_ACE},
+  {V_TYPEDATA, 7, 0, 0, 0, MR_ACE},
+  {V_TYPE, 8, 0, "ace_type", 0, MR_ACE},
+  {V_TYPEDATA, 9, 0, 0, 0, MR_ACE},
+};
+
 static struct validate ucon_validate =
 {
   ucon_valobj,
-  9,
+  10,
   0,
   0,
   0,
@@ -3522,6 +3590,32 @@ static char *gtlc_fields[] = {
   "name",
 };
 
+static char *scli_fields[] = {
+  "containername",
+  "listname",
+};
+
+static struct valobj scli_valobj[] = {
+  {V_ID, 0, CONTAINERS_TABLE, "name", "cnt_id", MR_CONTAINER},
+  {V_ID, 1, LIST_TABLE, "name", "list_id", MR_LIST},
+};
+
+static struct validate scli_validate = {
+  scli_valobj,
+  2,
+  0,
+  0,
+  0,
+  0,
+  0,
+  setup_scli,
+  set_container_list,
+};
+
+static char *gcli_fields[] = {
+  "containername",
+  "containername", "listname",
+};
 
 /* Generalized Query Definitions */
 
@@ -6985,9 +7079,26 @@ struct query Queries[] = {
     "c",
     CONTAINERS_TABLE,
     "name, description, location, contact, acl_type, acl_id, memacl_type, memacl_id, TO_CHAR(modtime, 'DD-mon-YYYY HH24:MI:SS'), modby, modwith FROM containers",
-    gcon_fields,
+    gcon7_fields,
     11,
-    "name LIKE '%s' AND cnt_id != 0",
+    "LOWER(name) LIKE LOWER('%s') AND cnt_id != 0",
+    1,
+    NULL,
+    &gcon_validate,
+  },
+
+  {
+    /* Q_GCON - GET_CONTAINER, v9 */
+    "get_container",
+    "gcon",
+    9,
+    RETRIEVE,
+    "c",
+    CONTAINERS_TABLE,
+    "name, publicflg, description, location, contact, acl_type, acl_id, memacl_type, memacl_id, TO_CHAR(modtime, 'DD-mon-YYYY HH24:MI:SS'), modby, modwith FROM containers",
+    gcon_fields,
+    12,
+    "LOWER(name) LIKE LOWER('%s') AND cnt_id != 0",
     1,
     NULL,
     &gcon_validate,
@@ -7002,8 +7113,25 @@ struct query Queries[] = {
     "c",
     CONTAINERS_TABLE,
     "INTO containers (name, description, location, contact, acl_type, acl_id, memacl_type, memacl_id, cnt_id) VALUES ('%s', NVL('%s', CHR(0)), NVL('%s', CHR(0)), NVL('%s', CHR(0)), '%s', %d, '%s', %d, %s)",
-    acon_fields,
+    acon7_fields,
     8,
+    0,
+    0,
+    NULL,
+    &acon7_validate,
+  },
+
+  {
+    /* Q_ACON - ADD_CONTAINER, v9 */ /* uses prefetch_value() for cnt_id */
+    "add_container",
+    "acon",
+    9,
+    APPEND,
+    "c",
+    CONTAINERS_TABLE,
+    "INTO containers (name, publicflg, description, location, contact, acl_type, acl_id, memacl_type, memacl_id, cnt_id) VALUES ('%s', %s, NVL('%s', CHR(0)), NVL('%s', CHR(0)), NVL('%s', CHR(0)), '%s', %d, '%s', %d, %s)",
+    acon_fields,
+    9,
     0,
     0,
     NULL,
@@ -7019,8 +7147,25 @@ struct query Queries[] = {
     0,
     CONTAINERS_TABLE,
     0,
-    ucon_fields,
+    ucon7_fields,
     8,
+    0,
+    1,
+    NULL,
+    &ucon7_validate,
+  },
+
+  {
+    /* Q_UCON - UPDATE_CONTAINER, v9 */
+    "update_container",
+    "ucon",
+    9,
+    UPDATE,
+    0,
+    CONTAINERS_TABLE,
+    0,
+    ucon_fields,
+    9,
     0,
     1,
     NULL,
@@ -7143,6 +7288,40 @@ struct query Queries[] = {
     "name NOT LIKE '%%/%%'",
     0,
     "name",
+    NULL,
+  },
+
+  {
+    /* Q_SCLI - SET_CONTAINER_LIST, v9 */
+    "set_container_list",
+    "scli",
+    9,
+    UPDATE,
+    0,
+    CONTAINERS_TABLE,
+    0,
+    scli_fields,
+    1,
+    0,
+    1,
+    NULL,
+    &scli_validate,
+  },
+
+  {
+    /* Q_GCLI - GET_CONTAINER_LIST, v9 */
+    "get_container_list",
+    "gcli",
+    9,
+    RETRIEVE,
+    "c",
+    CONTAINERS_TABLE,
+    "c.name, l.name FROM containers c, list l",
+    gcli_fields,
+    2,
+    "LOWER(c.name) = LOWER('%s') AND c.list_id = l.list_id AND c.list_id != 0",
+    1,
+    NULL,
     NULL,
   },
 

@@ -1,4 +1,4 @@
-/* $Id: increment.pc,v 2.15 2002-04-30 02:19:03 zacheiss Exp $
+/* $Id: increment.pc,v 2.16 2002-08-02 10:30:07 zacheiss Exp $
  *
  * Deal with incremental updates
  *
@@ -20,7 +20,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/increment.pc,v 2.15 2002-04-30 02:19:03 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/increment.pc,v 2.16 2002-08-02 10:30:07 zacheiss Exp $");
 
 extern char *whoami;
 extern char *table_name[];
@@ -112,10 +112,10 @@ void incremental_before(enum tables table, char *qual, char **argv)
       break;
     case CONTAINERS_TABLE:
       sprintf(stmt_buf, "SELECT c.name, c.description, c.location, c.contact, "
-	      "c.acl_type, c.acl_id, c.cnt_id FROM containers c WHERE %s", 
-	      qual);
+	      "c.acl_type, c.acl_id, c.cnt_id, c.list_id FROM containers c "
+	      "WHERE %s", qual);
       dosql(before);
-      beforec = 7;
+      beforec = 8;
       name = xmalloc(0);
       id = atoi(before[5]);
       if (!strncmp(before[4], "USER", 4))
@@ -133,6 +133,9 @@ void incremental_before(enum tables table, char *qual, char **argv)
 	  id_to_name(id, STRINGS_TABLE, &name);
 	  strcpy(before[5], name);
 	}
+      id = atoi(before[7]);
+      id_to_name(id, LIST_TABLE, &name);
+      strcpy(before[7], name);
       break;
     case MCMAP_TABLE:
       strcpy(before[0], argv[0]);
@@ -146,7 +149,13 @@ void incremental_before(enum tables table, char *qual, char **argv)
       sprintf(before[2], "%d", id);
       name_to_id(before[1], CONTAINERS_TABLE, &id);
       sprintf(before[3], "%d", id);
-      beforec = 4;
+      name = xmalloc(0);
+      EXEC SQL SELECT list_id INTO :before[4] FROM containers
+	WHERE cnt_id = :id;
+      id = atoi(before[4]);
+      id_to_name(id, LIST_TABLE, &name);
+      strcpy(before[4], name);
+      beforec = 5;
       break;
     case SVC_TABLE:
       strcpy(before[0], argv[0]);
@@ -259,7 +268,7 @@ void incremental_after(enum tables table, char *qual, char **argv)
 {
   char *name, *name2;
   EXEC SQL BEGIN DECLARE SECTION;
-  int id;
+  int id; 
   EXEC SQL END DECLARE SECTION;
   struct iupdate *iu;
 
@@ -286,10 +295,10 @@ void incremental_after(enum tables table, char *qual, char **argv)
       break;
     case CONTAINERS_TABLE:
       sprintf(stmt_buf, "SELECT c.name, c.description, c.location, c.contact, "
-	      "c.acl_type, c.acl_id, c.cnt_id FROM containers c WHERE %s",
-	      qual);
+	      "c.acl_type, c.acl_id, c.cnt_id, c.list_id FROM containers c "
+	      "WHERE %s", qual);
       dosql(after);
-      afterc = 7;
+      afterc = 8;
       name = xmalloc(0);
       id = atoi(after[5]);
       if (!strncmp(after[4], "USER", 4))
@@ -307,6 +316,9 @@ void incremental_after(enum tables table, char *qual, char **argv)
 	  id_to_name(id, STRINGS_TABLE, &name);
 	  strcpy(after[5], name);
 	}
+      id = atoi(after[7]);
+      id_to_name(id, LIST_TABLE, &name);
+      strcpy(after[7], name);
       break;
     case MCMAP_TABLE:
       strcpy(after[0], argv[0]);
@@ -320,7 +332,13 @@ void incremental_after(enum tables table, char *qual, char **argv)
       sprintf(after[2], "%d", id);
       name_to_id(after[1], CONTAINERS_TABLE, &id);
       sprintf(after[3], "%d", id);
-      afterc = 4;
+      name = xmalloc(0);
+      EXEC SQL SELECT list_id INTO :after[4] FROM containers
+	WHERE cnt_id = :id;
+      id = atoi(after[4]);
+      id_to_name(id, LIST_TABLE, &name);
+      strcpy(after[4], name);
+      afterc = 5;
       break;
     case SVC_TABLE:
       strcpy(after[0], argv[0]);

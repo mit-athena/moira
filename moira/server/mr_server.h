@@ -1,4 +1,4 @@
-/* $Id: mr_server.h,v 1.58 2001-10-17 21:34:06 zacheiss Exp $
+/* $Id: mr_server.h,v 1.59 2002-08-02 10:30:07 zacheiss Exp $
  *
  * Copyright (C) 1987-1998 by the Massachusetts Institute of Technology
  * For copying and distribution information, please see the file
@@ -240,6 +240,8 @@ int setup_uhha(struct query *q, char *argv[], client *cl);
 int setup_aprn(struct query *q, char *argv[], client *cl);
 int setup_dpsv(struct query *q, char *argv[], client *cl);
 int setup_dcon(struct query *q, char *argv[], client *cl);
+int setup_acon(struct query *q, char *argv[], client *cl);
+int setup_scli(struct query *q, char *argv[], client *cl);
 
 /* prototypes from qsupport.pc */
 int set_pobox(struct query *q, char *argv[], client *cl);
@@ -250,6 +252,7 @@ int tag_member_of_list(struct query *q, char *argv[], client *cl);
 int register_user(struct query *q, char *argv[], client *cl);
 int do_user_reservation(struct query *q, char *argv[], client *cl);
 int update_container(struct query *q, char *argv[], client *cl);
+int set_container_list(struct query *q, char *argv[], client *cl);
 
 int get_ace_use(struct query *q, char **argv, client *cl,
 		int (*action)(int, char *[], void *), void *actarg);

@@ -1,13 +1,13 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/exec_002.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/exec_002.c,v 1.11 1992-09-22 14:16:03 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/exec_002.c,v 1.12 1993-05-24 15:11:55 mar Exp $
  */
 /*  (c) Copyright 1988 by the Massachusetts Institute of Technology. */
 /*  For copying and distribution information, please see the file */
 /*  <mit-copyright.h>. */
 
 #ifndef lint
-static char *rcsid_exec_002_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/exec_002.c,v 1.11 1992-09-22 14:16:03 mar Exp $";
+static char *rcsid_exec_002_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/exec_002.c,v 1.12 1993-05-24 15:11:55 mar Exp $";
 #endif	lint
 
 #include <mit-copyright.h>
@@ -33,12 +33,14 @@ int
 exec_002(str)
     char *str;
 {
-#ifdef _AIX
+#ifdef POSIX
     int waitb;
+    sigset_t mask,oldmask;
 #else
     union wait waitb;
+    int mask;
 #endif
-    int n, pid, mask;
+    int n, pid;
 
     if (config_lookup("noexec")) {
 	code = EPERM;
@@ -49,12 +51,22 @@ exec_002(str)
     str += 8;
     while (*str == ' ')
 	str++;
+#ifdef POSIX
+    sigemptyset(&mask);
+    sigaddset(&mask,SIGCHLD);
+    sigprocmask(SIG_BLOCK,&mask,&oldmask);
+#else
     mask = sigblock(sigmask(SIGCHLD));
+#endif
     pid = fork();
     switch (pid) {
     case -1:
 	n = errno;
+#ifdef POSIX
+	sigprocmask(SIG_UNBLOCK,&oldmask,&mask);
+#else
 	sigsetmask(mask);
+#endif
 	log_priority = log_ERROR;
 	com_err(whoami, errno, ": can't fork to run install script");
 	code = send_object(conn, (char *)&n, INTEGER_T);
@@ -66,10 +78,18 @@ exec_002(str)
 	    com_err(whoami, errno, "Unable to setuid to %d\n", uid);
 	    exit(1);
 	}
+#ifdef POSIX
+	sigprocmask(SIG_UNBLOCK,&oldmask,&mask);
+#else
 	sigsetmask(mask);
+#endif
 	execlp(str, str, (char *)NULL);
 	n = errno;
+#ifdef POSIX
+	sigprocmask(SIG_UNBLOCK,&oldmask,&mask);
+#else
 	sigsetmask(mask);
+#endif
 	log_priority = log_ERROR;
 	com_err(whoami, n, ": %s", str);
 	(void) send_object(conn, (char *)&n, INTEGER_T);
@@ -78,12 +98,24 @@ exec_002(str)
 	do {
 	    n = wait(&waitb);
 	} while (n != -1 && n != pid);
+#ifdef POSIX
+	sigprocmask(SIG_UNBLOCK,&oldmask,&mask);
+#else
 	sigsetmask(mask);
-	if (WEXITSTATUS(waitb)) {
+#endif
+#ifdef POSIX
+	if (WIFEXITED(waitb)) {
 	    n = WEXITSTATUS(waitb) + ERROR_TABLE_BASE_sms;
 	    log_priority = log_ERROR;
 	    com_err(whoami, n, " child exited with status %d",
 		    WEXITSTATUS(waitb));
+#else
+	if (waitb.w_status) {
+	    n = waitb.w_retcode + ERROR_TABLE_BASE_sms;
+	    log_priority = log_ERROR;
+	    com_err(whoami, n, " child exited with status %d",
+		    waitb.w_retcode);
+#endif
 	    code = send_object(conn, (char *)&n, INTEGER_T);
 	    if (code) {
 		exit(1);

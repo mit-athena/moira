@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/pobox.c,v 1.18 1991-01-04 17:09:56 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/pobox.c,v 1.19 1994-08-04 18:25:03 jweiss Exp $";
 #endif lint
 
 /*	This is the file pobox.c for the MOIRA Client, which allows a nieve
@@ -10,8 +10,8 @@
  *	By:		Chris D. Peterson
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/pobox.c,v $
- *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/pobox.c,v 1.18 1991-01-04 17:09:56 mar Exp $
+ *      $Author: jweiss $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/pobox.c,v 1.19 1994-08-04 18:25:03 jweiss Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -168,13 +168,30 @@ char **argv;
     register int status;
     char *type, temp_buf[BUFSIZ], *local_user, *args[10], box[BUFSIZ];
     char *temp_box;
+    struct qelem * top = NULL;
     local_user = argv[1];
 
     if (!ValidName(local_user))
 	return(DM_NORMAL);
     
-    (void) GetUserPOBox(argc, argv); /* print current info. */
-    
+    /* Print the current PO Box info */
+    switch (status = do_mr_query("get_pobox", 1, argv + 1, StoreInfo, 
+				  (char *)&top)) {
+    case MR_SUCCESS:
+	sprintf(temp_buf,"Current pobox for user %s: \n", local_user);
+	Put_message("");
+	top = QueueTop(top);
+	Loop(top, PrintPOBox);	/* should only return 1 box. */
+	FreeQueue(top);
+	break;
+    case MR_NO_MATCH:
+	Put_message("This user has no P.O. Box.");
+	break;
+    default:
+	com_err(program_name, status, " in get_pobox.");
+	return(DM_NORMAL); 
+    }
+
     sprintf(temp_buf, "Assign %s a local PO Box (y/n)", local_user);
     switch (YesNoQuestion(temp_buf, TRUE)) {
     case TRUE:
@@ -198,7 +215,7 @@ char **argv;
 		    return(DM_NORMAL);
 		break;
 	    default:
-		com_err(program_name, status, "in set_pobox_pop.");
+		com_err(program_name, status, " in set_pobox_pop.");
 		return(DM_NORMAL);
 	    }
 	    break;
@@ -270,7 +287,7 @@ char ** argv;
     if (Confirm(temp_buf)) {
 	if ( (status = do_mr_query("delete_pobox", 1, argv + 1,
 				    Scream, NULL)) != MR_SUCCESS)
-	    com_err(program_name, status, "in delete_pobox.");
+	    com_err(program_name, status, " in delete_pobox.");
 	else
 	    Put_message("PO Box removed.");
     }

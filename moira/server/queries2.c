@@ -1,4 +1,4 @@
-/* $Id: queries2.c,v 2.45 1998-05-20 14:49:11 danw Exp $
+/* $Id: queries2.c,v 2.46 1998-05-26 17:29:43 danw Exp $
  *
  * This file defines the query dispatch table for version 2 of the protocol
  *
@@ -185,7 +185,7 @@ static char *gubm_fields[] = {
 
 static char *gudf_fields[] = {
   "login",
-  "dirsuppress", "dirremote"
+  "dirsuppress", "dirmailhide"
 };
 
 static struct validate gudf_validate =
@@ -363,7 +363,7 @@ static struct validate uust_validate = {
 
 static char *uudf_fields[] = {
   "login",
-  "dirsuppress", "dirremote"
+  "dirsuppress", "dirhide"
 };
 
 static struct validate uudf_validate = {
@@ -2467,7 +2467,7 @@ struct query Queries2[] = {
     RETRIEVE,
     "u",
     USERS_TABLE,
-    "u.dirsuppress, u.dirremote FROM users u",
+    "u.dirsuppress, u.dirmailhide FROM users u",
     gudf_fields,
     2,
     "u.users_id = %d",
@@ -2611,7 +2611,7 @@ struct query Queries2[] = {
     UPDATE,
     "u",
     USERS_TABLE,
-    "users SET dirsuppress = %s, dirremote = %s",
+    "users SET dirsuppress = %s, dirmailhide = %s",
     uudf_fields,
     2,
     "users_id = %d",

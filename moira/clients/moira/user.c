@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.25 1992-01-02 13:55:45 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.26 1992-01-02 14:38:34 mar Exp $";
 #endif lint
 
 /*	This is the file user.c for the MOIRA Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.25 1992-01-02 13:55:45 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.26 1992-01-02 14:38:34 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -242,6 +242,7 @@ Bool name;
     }
     if (GetValueFromUser("User's MIT ID number", &info[U_MITID]) == SUB_ERROR)
       return(NULL);
+    RemoveHyphens(info[U_MITID]);
     if (GetTypeFromUser("User's MIT Year (class)", "class", &info[U_CLASS]) ==
 	SUB_ERROR)
       return(NULL);

@@ -1,4 +1,4 @@
-/* $Id: user.c,v 1.46 1998-03-10 21:09:44 danw Exp $
+/* $Id: user.c,v 1.47 1998-05-26 17:28:46 danw Exp $
  *
  *	This is the file user.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -30,7 +30,7 @@
 #include <gdss.h>
 #endif
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.46 1998-03-10 21:09:44 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.47 1998-05-26 17:28:46 danw Exp $");
 
 void CorrectCapitalization(char **name);
 char **AskUserInfo(char **info, Bool name);
@@ -1016,7 +1016,7 @@ int DeleteKrbmap(int argc, char **argv)
 
 int GetDirFlags(int argc, char **argv)
 {
-  int stat, flags;
+  int stat;
   struct mqelem *elem = NULL;
   char buf[BUFSIZ], **info;
 
@@ -1031,19 +1031,18 @@ int GetDirFlags(int argc, char **argv)
     }
 
   info = QueueTop(elem)->q_data;
-  flags = atoi(info[0]);
   FreeQueue(QueueTop(elem));
 
   Put_message("");
   sprintf(buf, "User: %s", argv[1]);
   Put_message(buf);
-  if (flags & DIRFLAGS_SUPPRESS)
+  if (atoi(info[0]) == 0)
       Put_message("Does NOT appear in the on-line directory.");
   else
     {
       Put_message("Does appear in the on-line directory.");
-      if (flags & DIRFLAGS_NONLOCAL)
-	Put_message("Is listed with non-MIT.EDU email address (if known)");
+      if (atoi(info[1]) == 0)
+	Put_message("Is listed with non-MIT.EDU email address (if any)");
       else
 	Put_message("Is listed with MIT.EDU email address.");
     }
@@ -1059,8 +1058,8 @@ int GetDirFlags(int argc, char **argv)
 
 int SetDirFlags(int argc, char **argv)
 {
-  int stat, flags;
-  char **info, buf[BUFSIZ], *args[2];
+  int stat;
+  char **info, buf[BUFSIZ], *args[3];
   struct mqelem *elem = NULL;
 
   if (!ValidName(argv[1]))
@@ -1074,26 +1073,23 @@ int SetDirFlags(int argc, char **argv)
       return DM_NORMAL;
     }
   info = QueueTop(elem)->q_data;
-  flags = atoi(info[0]);
   FreeQueue(QueueTop(elem));
 
   sprintf(buf, "List %s in the on-line directory (y/n)", argv[1]);
-  if (YesNoQuestion(buf, !(flags & DIRFLAGS_SUPPRESS)))
-    flags &= ~DIRFLAGS_SUPPRESS;
+  if (YesNoQuestion(buf, !atoi(info[0])))
+    args[1] = "0";
   else
-    flags |= DIRFLAGS_SUPPRESS;
+    args[1] = "1";
 
   sprintf(buf, "List MIT.EDU email address even when mail is "
 	  "forwarded elsewhere? (y/n)");
-  if (YesNoQuestion(buf, !(flags & DIRFLAGS_NONLOCAL)))
-    flags &= ~DIRFLAGS_NONLOCAL;
+  if (YesNoQuestion(buf, !atoi(info[1])))
+    args[2] = "0";
   else
-    flags |= DIRFLAGS_NONLOCAL;
+    args[2] = "1";
 
   args[0] = argv[1];
-  sprintf(buf, "%d", flags);
-  args[1] = buf;
-  if ((stat = do_mr_query("update_user_directory_flags", 2,
+  if ((stat = do_mr_query("update_user_directory_flags", 3,
 			  args, NULL, NULL)))
     com_err(program_name, stat, " in SetDirFlags");
   else

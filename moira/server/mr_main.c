@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v $
  *	$Author: wesommer $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.6 1987-06-03 17:41:00 wesommer Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.7 1987-06-08 02:44:44 wesommer Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
@@ -14,6 +14,9 @@
  * 	Let the reader beware.
  * 
  *	$Log: not supported by cvs2svn $
+ * Revision 1.6  87/06/03  17:41:00  wesommer
+ * Added startup support.
+ * 
  * Revision 1.5  87/06/03  16:07:17  wesommer
  * Fixes for lint.
  * 
@@ -31,7 +34,7 @@
  * 
  */
 
-static char *rcsid_sms_main_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.6 1987-06-03 17:41:00 wesommer Exp $";
+static char *rcsid_sms_main_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.7 1987-06-08 02:44:44 wesommer Exp $";
 
 #include <strings.h>
 #include <sys/errno.h>
@@ -370,7 +373,7 @@ oplist_append(oplp, op)
 	      size_of_list_of_operations((*oplp)->count));
 	newlist->count++;
 	newlist->op[count-1] = op;
-	db_free((*oplp), size_of_list_of_operations(count-1));
+	db_free((char *)(*oplp), size_of_list_of_operations(count-1));
 	(*oplp) = newlist;
 }
 

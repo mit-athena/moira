@@ -1,4 +1,4 @@
-/* $Id: sign.pc,v 1.3 1998-02-05 22:51:38 danw Exp $
+/* $Id: sign.pc,v 1.4 1998-02-23 19:24:00 danw Exp $
  *
  * This program will bulk sign user records in the database.
  *
@@ -10,6 +10,7 @@
 #include <mit-copyright.h>
 #include <moira.h>
 #include <moira_site.h>
+#include <moira_schema.h>
 
 #include <ctype.h>
 #include <stdio.h>
@@ -22,7 +23,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/sign.pc,v 1.3 1998-02-05 22:51:38 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/sign.pc,v 1.4 1998-02-23 19:24:00 danw Exp $");
 
 char *program;
 
@@ -33,7 +34,8 @@ int main(int argc, char **argv)
   SigInfo si;
   int found, status, i, wait;
   EXEC SQL BEGIN DECLARE SECTION;
-  char login[10], mid[32], rawsig[256], *db = "moira";
+  char login[USERS_LOGIN_SIZE], mid[USERS_CLEARID_SIZE];
+  char rawsig[512], *db = "moira";
   int id, timestamp, sms;
   EXEC SQL END DECLARE SECTION;
 

@@ -1,4 +1,4 @@
-/* $Id: network.pc,v 1.3 1998-02-05 22:51:11 danw Exp $
+/* $Id: network.pc,v 1.4 1998-02-23 19:23:44 danw Exp $
  *
  * This generates the network table.
  *
@@ -22,7 +22,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/network.pc,v 1.3 1998-02-05 22:51:11 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/network.pc,v 1.4 1998-02-23 19:23:44 danw Exp $");
 
 char *whoami = "network.gen";
 char *db = "moira/moira";
@@ -30,14 +30,14 @@ char *db = "moira/moira";
 int main(int argc, char **argv)
 {
   FILE *out = stdout;
-  char *outf = NULL, outft[64];
+  char *outf = NULL, outft[MAXPATHLEN];
   struct stat sb;
   struct timeval now;
   struct in_addr addr;
   int flag1;
   EXEC SQL BEGIN DECLARE SECTION;
   int id, saddr;
-  char name[65], description[65];
+  char name[SUBNET_NAME_SIZE], description[SUBNET_DESCRIPTION_SIZE];
   EXEC SQL END DECLARE SECTION;
 
   EXEC SQL CONNECT :db;

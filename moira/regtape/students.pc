@@ -1,4 +1,4 @@
-/* $Id: students.pc,v 1.6 1998-02-05 22:51:38 danw Exp $
+/* $Id: students.pc,v 1.7 1998-02-23 19:24:01 danw Exp $
  *
  * Load data into Moira from Registrar's Office data file
  *
@@ -10,6 +10,7 @@
 #include <mit-copyright.h>
 #include <moira.h>
 #include <moira_site.h>
+#include <moira_schema.h>
 
 #include <ctype.h>
 #include <stdio.h>
@@ -20,7 +21,7 @@
 EXEC SQL INCLUDE sqlca;
 extern void sqlglm(char *, unsigned int *, unsigned int *);
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/students.pc,v 1.6 1998-02-05 22:51:38 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/students.pc,v 1.7 1998-02-23 19:24:01 danw Exp $");
 
 #define WHO 11859		/* root */
 #define PROG "stu-tape"
@@ -104,7 +105,7 @@ int main(int argc, char **argv)
   FILE *in;
   struct entry *e;
   int i, wait = 0;
-  char buf[BUFSIZ], *file = NULL;
+  char buf[80], *file = NULL;
   EXEC SQL BEGIN DECLARE SECTION;
   char *db = "moira";
   EXEC SQL END DECLARE SECTION;
@@ -159,7 +160,7 @@ int main(int argc, char **argv)
 	{
 	  printf("Next");
 	  fflush(stdout);
-	  gets(buf);
+	  fgets(buf, sizeof(buf), stdin);
 	}
     }
 
@@ -289,24 +290,29 @@ struct entry *get_next_entry(FILE *in)
 void process_entry(struct entry *e)
 {
   int changed, nochange, encrypted;
-  char buf[BUFSIZ], *from, *to;
+  char buf[MAX_FIELD_WIDTH], *from, *to;
   EXEC SQL BEGIN DECLARE SECTION;
   char *first, *last, *middle, *eid, *sid, *name, *rdept;
   char *rtitle, *rophone, *rhphone, *prog;
-  char class[9], haddr[128], hphone[33], ophone[33], dept[33], raddr[128];
-  char dfirst[17], dlast[17], dmiddle[17];
+  char class[USERS_TYPE_SIZE], haddr[USERS_HOME_ADDR_SIZE];
+  char hphone[USERS_HOME_PHONE_SIZE], ophone[USERS_OFFICE_PHONE_SIZE];
+  char dept[USERS_DEPARTMENT_SIZE], raddr[USERS_XADDRESS_SIZE];
+  char dfirst[USERS_FIRST_SIZE], dlast[USERS_LAST_SIZE];
+  char dmiddle[USERS_MIDDLE_SIZE];
   int id, status, who;
   EXEC SQL END DECLARE SECTION;
 
   who = WHO;
   prog = PROG;
   first = e->first;
-  if (strlen(first) > 16)
-    first[16] = '\0';
+  if (strlen(first) > USERS_FIRST_SIZE - 1)
+    first[USERS_FIRST_SIZE - 1] = '\0';
   last = e->last;
-  if (strlen(last) > 16)
-    last[16] = '\0';
+  if (strlen(last) > USERS_LAST_SIZE - 1)
+    last[USERS_LAST_SIZE - 1] = '\0';
   middle = e->middle;
+  if (strlen(middle) > USERS_MIDDLE_SIZE - 1)
+    middle[USERS_MIDDLE_SIZE - 1] = '\0';
   eid = e->eid;
   sid = e->id;
   id = 0;
@@ -422,19 +428,19 @@ void process_entry(struct entry *e)
     {
       if (haddr[0] == ' ')
 	{
-	  strncpy(haddr, buf, 80);
-	  haddr[80] = '\0';
+	  strncpy(haddr, buf, USERS_HOME_ADDR_SIZE - 1);
+	  haddr[USERS_HOME_ADDR_SIZE - 1] = '\0';
 	  changed++;
 	}
-      else if (strncmp(strtrim(haddr), buf, 80))
+      else if (strncmp(strtrim(haddr), buf, USERS_HOME_ADDR_SIZE - 1))
 	nochange++;
     }
   else
     {
-      if (strncmp(strtrim(haddr), buf, 80))
+      if (strncmp(strtrim(haddr), buf, USERS_HOME_ADDR_SIZE - 1))
 	changed++;
-      strncpy(haddr, buf, 80);
-      haddr[80] = '\0';
+      strncpy(haddr, buf, USERS_HOME_ADDR_SIZE - 1);
+      haddr[USERS_HOME_ADDR_SIZE - 1] = '\0';
     }
   from = e->dphone;
   to = buf;
@@ -449,18 +455,18 @@ void process_entry(struct entry *e)
     {
       if (hphone[0] == ' ')
 	{
-	  strncpy(hphone, buf, 16);
-	  hphone[16] = '\0';
+	  strncpy(hphone, buf, USERS_HOME_PHONE_SIZE - 1);
+	  hphone[USERS_HOME_PHONE_SIZE - 1] = '\0';
 	}
-      else if (strncmp(strtrim(hphone), buf, 16))
+      else if (strncmp(strtrim(hphone), buf, USERS_HOME_PHONE_SIZE - 1))
 	nochange++;
     }
   else
     {
-      if (strncmp(strtrim(hphone), buf, 16))
+      if (strncmp(strtrim(hphone), buf, USERS_HOME_PHONE_SIZE - 1))
 	changed++;
-      strncpy(hphone, buf, 16);
-      hphone[16] = '\0';
+      strncpy(hphone, buf, USERS_HOME_PHONE_SIZE - 1);
+      hphone[USERS_HOME_PHONE_SIZE - 1] = '\0';
     }
   from = e->mphone;
   to = buf;
@@ -475,36 +481,36 @@ void process_entry(struct entry *e)
     {
       if (ophone[0] == ' ')
 	{
-	  strncpy(ophone, buf, 12);
-	  ophone[12] = '\0';
+	  strncpy(ophone, buf, USERS_OFFICE_PHONE_SIZE - 1);
+	  ophone[USERS_OFFICE_PHONE_SIZE - 1] = '\0';
 	}
-      else if (strncmp(strtrim(ophone), buf, 12))
+      else if (strncmp(strtrim(ophone), buf, USERS_OFFICE_PHONE_SIZE - 1))
 	nochange++;
     }
   else
     {
-      if (strncmp(strtrim(ophone), buf, 12))
+      if (strncmp(strtrim(ophone), buf, USERS_OFFICE_PHONE_SIZE - 1))
 	changed++;
-      strncpy(ophone, buf, 12);
-      ophone[12] = '\0';
+      strncpy(ophone, buf, USERS_OFFICE_PHONE_SIZE - 1);
+      ophone[USERS_OFFICE_PHONE_SIZE - 1] = '\0';
     }
   e->course = e->course;
   if (newfinger)
     {
       if (dept[0] == ' ')
 	{
-	  strncpy(dept, e->course, 12);
-	  dept[12] = '\0';
+	  strncpy(dept, e->course, USERS_DEPARTMENT_SIZE - 1);
+	  dept[USERS_DEPARTMENT_SIZE - 1] = '\0';
 	}
-      else if (strncmp(strtrim(dept), e->course, 11))
+      else if (strncmp(strtrim(dept), e->course, USERS_DEPARTMENT_SIZE - 1))
 	nochange++;
     }
   else
     {
-      if (strncmp(strtrim(dept), e->course, 11))
+      if (strncmp(strtrim(dept), e->course, USERS_DEPARTMENT_SIZE - 1))
 	changed++;
-      strncpy(dept, e->course, 12);
-      dept[12] = '\0';
+      strncpy(dept, e->course, USERS_DEPARTMENT_SIZE - 1);
+      dept[USERS_DEPARTMENT_SIZE - 1] = '\0';
     }
   sid = e->id;
   name = e->name;
@@ -583,8 +589,11 @@ void newuser(struct entry *e)
   char buf[512], *from, *to;
   EXEC SQL BEGIN DECLARE SECTION;
   int id, uid, who;
-  char *last, *first, *class, *middle, login[9], *sid, fullname[65], *prog;
-  char haddr[81], hphone[17], ophone[13], dept[24], *title, raddr[81], *name;
+  char *last, *first, *class, *middle, login[USERS_LOGIN_SIZE], *sid;
+  char fullname[USERS_FULLNAME_SIZE], *prog;
+  char haddr[USERS_HOME_ADDR_SIZE], hphone[USERS_HOME_PHONE_SIZE];
+  char ophone[USERS_OFFICE_PHONE_SIZE], dept[USERS_DEPARTMENT_SIZE];
+  char *title, raddr[USERS_XADDRESS_SIZE], *name;
   EXEC SQL END DECLARE SECTION;
 
   who = WHO;
@@ -605,7 +614,8 @@ void newuser(struct entry *e)
       strcat(buf, " ");
       strcat(buf, e->state);
     }
-  strncpy(haddr, buf, 80);
+  strncpy(haddr, buf, USERS_HOME_ADDR_SIZE - 1);
+  haddr[USERS_HOME_ADDR_SIZE - 1] = '\0';
   from = e->dphone;
   to = buf;
   while (*from)
@@ -615,7 +625,8 @@ void newuser(struct entry *e)
       from++;
     }
   *to = '\0';
-  strncpy(hphone, buf, 16);
+  strncpy(hphone, buf, USERS_HOME_PHONE_SIZE - 1);
+  hphone[USERS_HOME_PHONE_SIZE - 1] = '\0';
   from = e->mphone;
   to = buf;
   while (*from)
@@ -625,8 +636,10 @@ void newuser(struct entry *e)
       from++;
     }
   *to = '\0';
-  strncpy(ophone, buf, 12);
-  strncpy(dept, e->course, 12);
+  strncpy(ophone, buf, USERS_OFFICE_PHONE_SIZE - 1);
+  ophone[USERS_OFFICE_PHONE_SIZE - 1] = '\0';
+  strncpy(dept, e->course, USERS_DEPARTMENT_SIZE - 1);
+  dept[USERS_DEPARTMENT_SIZE - 1] = '\0';
 
   id = set_next_users_id(0);
   uid = set_next_uid(1);

@@ -1,4 +1,4 @@
-/* $Id: dcm.pc,v 1.5 1998-02-15 17:48:41 danw Exp $
+/* $Id: dcm.pc,v 1.6 1998-02-23 19:23:34 danw Exp $
  *
  * The Data Control Manager for Moira.
  *
@@ -10,6 +10,7 @@
 #include <mit-copyright.h>
 #include <moira.h>
 #include <moira_site.h>
+#include <moira_schema.h>
 #include "update.h"
 
 #include <sys/param.h>
@@ -26,7 +27,7 @@
 EXEC SQL INCLUDE sqlca;
 void sqlglm(char *, unsigned int *, unsigned int *);
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/dcm.pc,v 1.5 1998-02-15 17:48:41 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/dcm.pc,v 1.6 1998-02-23 19:23:34 danw Exp $");
 
 int generate_service(char *name, int force);
 void do_hosts(char *service);
@@ -45,7 +46,7 @@ int main(int argc, char **argv)
 {
   int i;
   EXEC SQL BEGIN DECLARE SECTION;
-  char buf[16], *name;
+  char buf[SERVERS_NAME_SIZE], *name;
   int enable;
   EXEC SQL END DECLARE SECTION;
   struct save_queue *sq;
@@ -143,13 +144,13 @@ int generate_service(char *name, int force)
   time_t now;
   const char *errmsg;
   EXEC SQL END DECLARE SECTION;
-  char dfgen_prog[64], dfgen_cmd[128];
+  char dfgen_prog[MAXPATHLEN], dfgen_cmd[2 * MAXPATHLEN];
   struct sigaction action, prevaction;
   int waits;
 
   EXEC SQL CONNECT :db IDENTIFIED BY :db;
 
-  EXEC SQL SELECT update_int, dfcheck	INTO :interval, :dfcheck
+  EXEC SQL SELECT update_int, dfcheck INTO :interval, :dfcheck
     FROM servers WHERE name = UPPER(:name);
   if (sqlca.sqlcode == SQL_NO_MATCH)
     {
@@ -231,7 +232,8 @@ int generate_service(char *name, int force)
 void do_hosts(char *service)
 {
   EXEC SQL BEGIN DECLARE SECTION;
-  char type[16], host[73], target[64], script[128];
+  char type[SERVERS_TYPE_SIZE], host[MACHINE_NAME_SIZE];
+  char target[SERVERS_TARGET_FILE_SIZE], script[SERVERS_SCRIPT_SIZE];
   const char *errmsg;
   int status = 0, dfgen, replicated;
   time_t now;

@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/afs.c,v 1.61 1998-02-05 22:51:19 danw Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/afs.c,v 1.62 1998-02-23 19:23:54 danw Exp $
  *
  * Do AFS incremental updates
  *
@@ -6,6 +6,10 @@
  * for copying and distribution information, please see the file
  * <mit-copyright.h>.
  */
+
+#include <moira.h>
+#include <moira_site.h>
+#include <moira_schema.h>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -18,8 +22,6 @@
 
 #include <com_err.h>
 #include <krb.h>
-#include <moira.h>
-#include <moira_site.h>
 
 #include <afs/param.h>
 #include <afs/cellconfig.h>
@@ -64,9 +66,9 @@ extern long pr_SIdToName();
 static char tbl_buf[1024];
 static struct member {
   int op;
-  char list[33];
-  char type[9];
-  char member[129];
+  char list[LIST_NAME_SIZE];
+  char type[IMEMBERS_MEMBER_TYPE_SIZE];
+  char member[MAX_FIELD_WIDTH];
   struct member *next;
 } *member_head = NULL;
 
@@ -197,7 +199,7 @@ void do_user(char **before, int beforec, char **after, int afterc)
 	 from Moira but not AFS */
       if (code == PRIDEXIST)
 	{
-	  char ename[255];
+	  char ename[PR_MAXNAMELEN];
 
 	  if (pr_try(pr_SIdToName, auid, ename) == 0 &&
 	      !strcmp(after[U_NAME], ename))
@@ -321,7 +323,7 @@ void do_list(char **before, int beforec, char **after, int afterc)
       code = pr_try(pr_CreateGroup, g1, g2, &id);
       if (code == PRIDEXIST)
 	{
-	  char ename[255];
+	  char ename[PR_MAXNAMELEN];
 
 	  if (pr_try(pr_SIdToName, -agid, ename) == 0 && !strcmp(g1, ename))
 	    return;

@@ -1,4 +1,4 @@
-/* $Id: directory.pc,v 1.2 1998-02-05 22:51:08 danw Exp $
+/* $Id: directory.pc,v 1.3 1998-02-23 19:23:41 danw Exp $
  *
  * This generates a master /etc/passwd containing all active (status != 0)
  * accounts.
@@ -16,9 +16,11 @@
 #include <stdio.h>
 #include <time.h>
 
+#include "util.h"
+
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/directory.pc,v 1.2 1998-02-05 22:51:08 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/directory.pc,v 1.3 1998-02-23 19:23:41 danw Exp $");
 
 char *whoami = "directory.gen";
 char *db = "moira/moira";
@@ -26,14 +28,16 @@ char *db = "moira/moira";
 int main(int argc, char **argv)
 {
   FILE *out = stdout;
-  char *outf = NULL, outft[64];
+  char *outf = NULL, outft[MAXPATHLEN];
   struct stat sb;
   int flag;
   EXEC SQL BEGIN DECLARE SECTION;
-  char login[9], last_name[17], first_name[17], middle_name[16];
-  char office_address[17], office_phone[13];
-  char home_address[82], home_phone[17];
-  char id[17], type[9];
+  char login[USERS_LOGIN_SIZE], last_name[USERS_LAST_SIZE];
+  char first_name[USERS_FIRST_SIZE], middle_name[USERS_MIDDLE_SIZE];
+  char office_address[USERS_OFFICE_ADDR_SIZE];
+  char office_phone[USERS_OFFICE_PHONE_SIZE];
+  char home_address[USERS_HOME_ADDR_SIZE], home_phone[USERS_HOME_PHONE_SIZE];
+  char id[USERS_CLEARID_SIZE], type[USERS_TYPE_SIZE];
   EXEC SQL END DECLARE SECTION;
 
   EXEC SQL CONNECT :db;

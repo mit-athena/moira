@@ -1,4 +1,4 @@
-/* $Id: warehouse.pc,v 1.8 1998-02-05 22:51:14 danw Exp $
+/* $Id: warehouse.pc,v 1.9 1998-02-23 19:23:48 danw Exp $
  *
  * This generates a database extract from the users table for the MIT
  * Warehouse.
@@ -29,7 +29,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/warehouse.pc,v 1.8 1998-02-05 22:51:14 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/warehouse.pc,v 1.9 1998-02-23 19:23:48 danw Exp $");
 
 char *whoami = "warehouse.gen";
 char *db = "moira/moira";
@@ -38,22 +38,24 @@ char *db = "moira/moira";
 #define WAREHOUSE_SUBDIR "warehouse"
 #endif
 
-char warehouse_dir[128];
+char warehouse_dir[MAXPATHLEN];
 
 int main(int argc, char **argv)
 {
   int out = STDOUT_FILENO;
-  char *outf = NULL, outft[64];
-  char control_fn[80], cmd[256];
+  char *outf = NULL, outft[MAXPATHLEN];
+  char control_fn[MAXPATHLEN], cmd[256];
   FILE *f;
   struct stat sb;
   int flag1;
   SigInfo si;
   int records = 0;
   EXEC SQL BEGIN DECLARE SECTION;
-  char login[9], sig[257], id[17], kname[257];
-  char fname[17], lname[17], middle[17];
-  EXEC SQL VAR sig IS STRING(257);
+  char login[USERS_LOGIN_SIZE], sig[USERS_SIGNATURE_SIZE];
+  char id[USERS_CLEARID_SIZE], kname[MAX_K_NAME_SZ];
+  char fname[USERS_FIRST_SIZE], lname[USERS_LAST_SIZE];
+  char middle[USERS_MIDDLE_SIZE];
+  EXEC SQL VAR sig IS STRING(USERS_SIGNATURE_SIZE);
   int timestamp, sigwho;
   struct {
     char login[12];

@@ -1,4 +1,4 @@
-/* $Id: hesiod.pc,v 1.6 1998-02-08 17:27:48 danw Exp $
+/* $Id: hesiod.pc,v 1.7 1998-02-23 19:23:42 danw Exp $
  *
  * This generates the zone files necessary to load a hesiod server.
  * The following zones are generated: passwd, uid, pobox, group,
@@ -23,7 +23,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/hesiod.pc,v 1.6 1998-02-08 17:27:48 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/hesiod.pc,v 1.7 1998-02-23 19:23:42 danw Exp $");
 
 #ifndef HTYPE
 #define HTYPE "TXT"
@@ -41,7 +41,7 @@ RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/ge
  */
 #define MAXHESSIZE 446
 
-char hesiod_dir[64];
+char hesiod_dir[MAXPATHLEN];
 
 #define min(x, y)	((x) < (y) ? (x) : (y))
 struct hash *machines = NULL;
@@ -54,7 +54,7 @@ struct grp {
   char *lid;
 };
 struct user {
-  char name[9];
+  char name[USERS_LOGIN_SIZE];
   struct grp *lists;
 };
 
@@ -138,7 +138,7 @@ void get_mach(void)
 {
   EXEC SQL BEGIN DECLARE SECTION;
   int id;
-  char name[41];
+  char name[MACHINE_NAME_SIZE];
   EXEC SQL END DECLARE SECTION;
 
   if (machines)
@@ -168,14 +168,17 @@ void get_mach(void)
 int do_passwd(void)
 {
   FILE *pout, *uout, *bout;
-  char poutf[64], uoutf[64], poutft[64], uoutft[64], boutf[64], boutft[64];
+  char poutf[MAXPATHLEN], uoutf[MAXPATHLEN], poutft[MAXPATHLEN];
+  char uoutft[MAXPATHLEN], boutf[MAXPATHLEN], boutft[MAXPATHLEN];
   struct stat psb, usb, bsb;
   time_t ftime;
   struct user *u;
   char *mach;
   EXEC SQL BEGIN DECLARE SECTION;
-  char login[9], shell[33], fullname[33], oa[17], op[13], hp[17];
-  char nn[17], ptype[9];
+  char login[USERS_LOGIN_SIZE], shell[USERS_SHELL_SIZE];
+  char fullname[USERS_FULLNAME_SIZE], oa[USERS_OFFICE_ADDR_SIZE];
+  char op[USERS_OFFICE_PHONE_SIZE], hp[USERS_HOME_PHONE_SIZE];
+  char nn[USERS_NICKNAME_SIZE], ptype[USERS_POTYPE_SIZE];
   int uid, flag1, flag2, id, pid, status;
   EXEC SQL END DECLARE SECTION;
 
@@ -281,7 +284,8 @@ int do_passwd(void)
 int do_groups(void)
 {
   FILE *iout, *gout, *lout;
-  char ioutf[64], goutf[64], loutf[64], buf[2048], *l;
+  char ioutf[MAXPATHLEN], goutf[MAXPATHLEN], loutf[MAXPATHLEN];
+  char buf[MAXPATHLEN], *l;
   struct hash *groups;
   struct bucket *b, **p;
   struct grp *g;
@@ -289,7 +293,7 @@ int do_groups(void)
   struct stat isb, gsb, lsb;
   time_t ftime;
   EXEC SQL BEGIN DECLARE SECTION;
-  char name[33];
+  char name[LIST_NAME_SIZE];
   int gid, id, lid, flag1, flag2, flag3, len;
   EXEC SQL END DECLARE SECTION;
 
@@ -354,6 +358,8 @@ int do_groups(void)
   EXEC SQL OPEN l_cursor;
   while (1)
     {
+      char buf[LIST_NAME_SIZE + 10];
+
       EXEC SQL FETCH l_cursor INTO :name, :gid, :lid;
       if (sqlca.sqlcode)
 	break;
@@ -462,13 +468,16 @@ sqlerr:
 int do_filsys(void)
 {
   FILE *out;
-  char outf[64], outft[64], *mach, *group;
+  char outf[MAXPATHLEN], outft[MAXPATHLEN], *mach, *group;
   struct stat sb;
   time_t ftime;
   struct save_queue *sq, *sq2;
   EXEC SQL BEGIN DECLARE SECTION;
-  char name[33], type[9], loc[81], access[2], mount[33], trans[257];
-  char comments[65];
+  char name[FILESYS_LABEL_SIZE], type[FILESYS_TYPE_SIZE];
+  char loc[FILESYS_NAME_SIZE], access[FILESYS_RWACCESS_SIZE];
+  char mount[FILESYS_MOUNT_SIZE], comments[FILESYS_COMMENTS_SIZE];
+  char key[FSGROUP_KEY_SIZE];
+  char aname[ALIAS_NAME_SIZE], trans[ALIAS_TRANS_SIZE];
   int flag1, flag2, flag3, flag4, id, fid;
   EXEC SQL END DECLARE SECTION;
 
@@ -541,13 +550,15 @@ int do_filsys(void)
 	}
       else if (!strcmp(type, "FSGROUP"))
 	{
-	  sprintf(trans, "%s:%d", strtrim(name), fid);
-	  sq_save_data(sq, strdup(trans));
+	  char buf[FILESYS_NAME_SIZE + 10];
+	  sprintf(buf, "%s:%d", strtrim(name), fid);
+	  sq_save_data(sq, strdup(buf));
 	}
       else if (!strcmp(type, "MUL"))
 	{
-	  sprintf(trans, "%s:%d", strtrim(name), fid);
-	  sq_save_data(sq2, strdup(trans));
+	  char buf[FILESYS_NAME_SIZE + 10];
+	  sprintf(buf, "%s:%d", strtrim(name), fid);
+	  sq_save_data(sq2, strdup(buf));
 	}
     }
   EXEC SQL CLOSE f_cursor;
@@ -567,7 +578,7 @@ int do_filsys(void)
       for (flag1 = 1; ; flag1++)
 	{
 	  EXEC SQL FETCH f_cursor2 INTO :type, :loc, :id, :access, :mount,
-	    :comments, :name, :trans;
+	    :comments, :name, :key;
 	  if (sqlca.sqlcode)
 	    break;
 	  strtrim(type);
@@ -610,7 +621,7 @@ int do_filsys(void)
       EXEC SQL OPEN f_cursor3;
       while (1)
 	{
-	  EXEC SQL FETCH f_cursor3 INTO :name, :trans;
+	  EXEC SQL FETCH f_cursor3 INTO :name, :key;
 	  if (sqlca.sqlcode)
 	    break;
 	  fprintf(out, " %s", strtrim(name));
@@ -628,11 +639,11 @@ int do_filsys(void)
   EXEC SQL OPEN a_cursor;
   while (1)
     {
-      EXEC SQL FETCH a_cursor INTO :name, :trans;
+      EXEC SQL FETCH a_cursor INTO :aname, :trans;
       if (sqlca.sqlcode)
 	break;
       fprintf(out, "%s.filsys\t%s CNAME %s.filsys\n",
-	      strtrim(name), HCLASS, strtrim(trans));
+	      strtrim(aname), HCLASS, strtrim(trans));
     }
   EXEC SQL CLOSE a_cursor;
 
@@ -650,7 +661,7 @@ sqlerr:
   return 0;
 }
 
- int nbitsset(set_mask *set)
+int nbitsset(set_mask *set)
 {
   int i, ret;
   ret = 0;
@@ -666,12 +677,14 @@ sqlerr:
 int do_cluster(void)
 {
   FILE *out;
-  char outf[64], outft[64], *mach, machbuf[64], clubuf[64], *p;
+  char outf[MAXPATHLEN], outft[MAXPATHLEN], *mach;
+  char machbuf[MACHINE_NAME_SIZE], clubuf[CLUSTERS_NAME_SIZE], *p;
   struct stat sb;
   time_t ftime;
   EXEC SQL BEGIN DECLARE SECTION;
   int flag1, flag2, flag3, flag4, maxmach, maxclu, mid, cid, id;
-  char name[41], label2[17], data[33];
+  char name[CLUSTERS_NAME_SIZE];
+  char label[SVC_SERV_LABEL_SIZE], data[SVC_SERV_CLUSTER_SIZE];
   EXEC SQL END DECLARE SECTION;
   set_mask **machs, *ms, *ps;
 
@@ -750,13 +763,13 @@ int do_cluster(void)
 		  EXEC SQL OPEN d_cursor;
 		  while (1)
 		    {
-		      EXEC SQL FETCH d_cursor INTO :label2, :data;
+		      EXEC SQL FETCH d_cursor INTO :label, :data;
 		      if (sqlca.sqlcode)
 			break;
-		      strtrim(label2);
+		      strtrim(label);
 		      strtrim(data);
 		      fprintf(out, "%s.cluster\t%s %s \"%s %s\"\n",
-			      clubuf, HCLASS, HTYPE, label2, data);
+			      clubuf, HCLASS, HTYPE, label, data);
 		    }
 		  EXEC SQL CLOSE d_cursor;
 		}
@@ -818,14 +831,14 @@ int do_cluster(void)
   EXEC SQL OPEN d_cursor2;
   while (1)
     {
-      EXEC SQL FETCH d_cursor2 INTO :name, :label2, :data;
+      EXEC SQL FETCH d_cursor2 INTO :name, :label, :data;
       if (sqlca.sqlcode)
 	break;
       strtrim(name);
-      strtrim(label2);
+      strtrim(label);
       strtrim(data);
       fprintf(out, "%s.cluster\t%s %s \"%s %s\"\n",
-	      name, HCLASS, HTYPE, label2, data);
+	      name, HCLASS, HTYPE, label, data);
     }
   free(machs);
   EXEC SQL COMMIT;
@@ -846,11 +859,11 @@ sqlerr:
 int do_printcap(void)
 {
   FILE *out;
-  char outf[64], outft[64];
+  char outf[MAXPATHLEN], outft[MAXPATHLEN];
   struct stat sb;
   time_t ftime;
   EXEC SQL BEGIN DECLARE SECTION;
-  char name[17], rp[17], sd[33];
+  char name[PRINTCAP_NAME_SIZE], rp[PRINTCAP_RP_SIZE], sd[PRINTCAP_DIR_SIZE];
   int flag1, flag2, ka, pc, rm, rq;
   EXEC SQL END DECLARE SECTION;
 
@@ -922,11 +935,12 @@ sqlerr:
 int do_palladium(void)
 {
   FILE *out;
-  char outf[64], outft[64];
+  char outf[MAXPATHLEN], outft[MAXPATHLEN];
   struct stat sb;
   time_t ftime;
   EXEC SQL BEGIN DECLARE SECTION;
-  char name[33], trans[129];
+  char name[PALLADIUM_NAME_SIZE], trans[ALIAS_TRANS_SIZE];
+  char aname[ALIAS_NAME_SIZE];
   int flag, flag1, identifier, rm;
   EXEC SQL END DECLARE SECTION;
 
@@ -981,12 +995,13 @@ int do_palladium(void)
   EXEC SQL OPEN a_cursor2;
   while (1)
     {
-      EXEC SQL FETCH a_cursor2 INTO :name, :trans;
+      EXEC SQL FETCH a_cursor2 INTO :aname, :trans;
       if (sqlca.sqlcode)
 	break;
-      strtrim(name);
+      strtrim(aname);
       strtrim(trans);
-      fprintf(out, "%s.palladium\t%s %s \"%s\"\n", name, HCLASS, HTYPE, trans);
+      fprintf(out, "%s.palladium\t%s %s \"%s\"\n",
+	      aname, HCLASS, HTYPE, trans);
     }
   EXEC SQL CLOSE a_cursor2;
 
@@ -1008,11 +1023,11 @@ sqlerr:
 int do_sloc(void)
 {
   FILE *out;
-  char outf[64], outft[64], *mach;
+  char outf[MAXPATHLEN], outft[MAXPATHLEN], *mach;
   struct stat sb;
   time_t ftime;
   EXEC SQL BEGIN DECLARE SECTION;
-  char service[17];
+  char service[SERVERHOSTS_SERVICE_SIZE];
   int flag1, flag2, id;
   EXEC SQL END DECLARE SECTION;
 
@@ -1076,11 +1091,12 @@ sqlerr:
 int do_service(void)
 {
   FILE *out;
-  char outf[64], outft[64];
+  char outf[MAXPATHLEN], outft[MAXPATHLEN];
   struct stat sb;
   time_t ftime;
   EXEC SQL BEGIN DECLARE SECTION;
-  char service[33], protocol[9], altserv[129];
+  char service[SERVICES_NAME_SIZE], protocol[SERVICES_PROTOCOL_SIZE];
+  char aname[ALIAS_NAME_SIZE], trans[ALIAS_TRANS_SIZE];
   int port, flag1;
   EXEC SQL END DECLARE SECTION;
 
@@ -1132,13 +1148,13 @@ int do_service(void)
   EXEC SQL OPEN a_cursor3;
   while (1)
     {
-      EXEC SQL FETCH a_cursor3 INTO :service, :altserv;
+      EXEC SQL FETCH a_cursor3 INTO :aname, :trans;
       if (sqlca.sqlcode)
 	break;
-      strtrim(service);
-      strtrim(altserv);
-      fprintf(out, "%s.service\t%s CNAME %s.service\n", service, HCLASS,
-	      altserv);
+      strtrim(aname);
+      strtrim(trans);
+      fprintf(out, "%s.service\t%s CNAME %s.service\n", aname, HCLASS,
+	      trans);
     }
   EXEC SQL CLOSE a_cursor3;
 

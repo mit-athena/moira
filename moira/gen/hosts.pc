@@ -1,4 +1,4 @@
-/* $Id: hosts.pc,v 1.4 1998-02-08 17:27:49 danw Exp $
+/* $Id: hosts.pc,v 1.5 1998-02-23 19:23:42 danw Exp $
  *
  * This generates the hstath.txt hosttable.
  *
@@ -24,7 +24,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/hosts.pc,v 1.4 1998-02-08 17:27:49 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/hosts.pc,v 1.5 1998-02-23 19:23:42 danw Exp $");
 
 char *whoami = "hosts.gen";
 char *db = "moira/moira";
@@ -32,14 +32,17 @@ char *db = "moira/moira";
 int main(int argc, char **argv)
 {
   FILE *out = stdout;
-  char *outf = NULL, outft[64], *p, buf[256];
+  char *outf = NULL, outft[MAXPATHLEN], *p;
+  char buf[MACHINE_NAME_SIZE + ALIAS_NAME_SIZE];
   struct stat sb;
   struct timeval now;
   int flag1, flag2, i;
   struct hash *aliases;
   EXEC SQL BEGIN DECLARE SECTION;
   int id;
-  char name[65], vendor[33], model[33], os[33], addr[17];
+  char name[MACHINE_NAME_SIZE], vendor[MACHINE_VENDOR_SIZE];
+  char model[MACHINE_MODEL_SIZE], os[MACHINE_OS_SIZE];
+  char addr[MACHINE_ADDRESS_SIZE];
   EXEC SQL END DECLARE SECTION;
 
   EXEC SQL CONNECT :db;

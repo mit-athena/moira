@@ -1,3 +1,8 @@
+#include <moira_schema.h>
+
+/* for MAXPATHLEN */
+#include <sys/param.h>
+
 void fix_file(char *targetfile);
 char *dequote(char *s);
 void db_error(int code);

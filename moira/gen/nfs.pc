@@ -1,4 +1,4 @@
-/* $Id: nfs.pc,v 1.6 1998-02-07 22:06:51 danw Exp $
+/* $Id: nfs.pc,v 1.7 1998-02-23 19:23:45 danw Exp $
  *
  * This generates the files necessary to load an nfs server.
  *
@@ -23,13 +23,13 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/nfs.pc,v 1.6 1998-02-07 22:06:51 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/nfs.pc,v 1.7 1998-02-23 19:23:45 danw Exp $");
 
 #define min(x, y)	((x) < (y) ? (x) : (y))
 
 char *whoami = "nfs.gen";
 char *db = "moira/moira";
-char nfs_dir[64];
+char nfs_dir[MAXPATHLEN];
 struct hash *users, *groups;
 
 int do_nfs(void);
@@ -82,7 +82,7 @@ int main(int argc, char **argv)
 int do_nfs(void)
 {
   EXEC SQL BEGIN DECLARE SECTION;
-  char machname[41], listname[33];
+  char machname[MACHINE_NAME_SIZE], listname[SERVERHOSTS_VALUE3_SIZE];
   EXEC SQL END DECLARE SECTION;
   struct save_queue *machs, *lists;
   int changed;
@@ -127,7 +127,7 @@ sqlerr:
 
 int do_lists(struct save_queue *lists)
 {
-  char file[64], *u;
+  char file[MAXPATHLEN], *u;
   FILE *fd;
   EXEC SQL BEGIN DECLARE SECTION;
   char *listname;
@@ -208,8 +208,9 @@ struct grp {
   struct grp *next;
   char *lid;
 };
+
 struct user {
-  char name[9];
+  char name[USERS_LOGIN_SIZE];
   int uid;
   struct grp *lists;
 };
@@ -217,12 +218,12 @@ struct user {
 
 void do_everyone(void)
 {
-  char buf[BUFSIZ], *l;
+  char buf[MAXPATHLEN], *l;
   struct user *u;
   struct grp *g;
   struct bucket *b, **p;
   EXEC SQL BEGIN DECLARE SECTION;
-  char name[33];
+  char name[USERS_LOGIN_SIZE];
   int gid, id, lid, uid;
   EXEC SQL END DECLARE SECTION;
   FILE *fd;
@@ -327,10 +328,12 @@ sqlerr:
 int do_machs(struct save_queue *machs)
 {
   EXEC SQL BEGIN DECLARE SECTION;
-  char *machname, listname[33], dev[33], dir[81], fstype[9];
+  char *machname, listname[SERVERHOSTS_VALUE3_SIZE];
+  char dev[NFSPHYS_DEVICE_SIZE], dir[FILESYS_NAME_SIZE];
+  char fstype[FILESYS_LOCKERTYPE_SIZE];
   int uid, quota, id, gid, flag1, flag2, flag3;
   EXEC SQL END DECLARE SECTION;
-  char file[64], f1[64], f2[64], *cp;
+  char file[MAXPATHLEN], f1[MAXPATHLEN], f2[MAXPATHLEN], *cp;
   int prevuid, quotasum, olddev, oldmach;
   FILE *fd;
   struct hash *machines;
@@ -531,3 +534,4 @@ sqlerr:
   db_error(sqlca.sqlcode);
   exit(MR_DBMS_ERR);
 }
+

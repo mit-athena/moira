@@ -1,4 +1,4 @@
-/* $Id: mailhub.pc,v 1.6 1998-02-05 22:51:10 danw Exp $
+/* $Id: mailhub.pc,v 1.7 1998-02-23 19:23:43 danw Exp $
  *
  * This generates the /usr/lib/aliases file for the mailhub.
  *
@@ -22,7 +22,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/mailhub.pc,v 1.6 1998-02-05 22:51:10 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/mailhub.pc,v 1.7 1998-02-23 19:23:43 danw Exp $");
 
 char *whoami = "mailhub.gen";
 char *db = "moira/moira";
@@ -39,9 +39,6 @@ FILE *out = stdout;
 struct hash *users, *machines, *strings, *lists, *names;
 struct user {
   char *login;
-  char *first;
-  char *last;
-  char mi;
   char *pobox;
 };
 struct member {
@@ -67,7 +64,6 @@ struct names {
 void get_info(void);
 void save_mlist(int id, void *list, void *force);
 void insert_login(int id, void *user, void *hint);
-void insert_names(int id, void *user, void *hint);
 void insert_name(char *s, int id, int nodups, int copy);
 int hashstr(char *s);
 void sort_info(void);
@@ -80,7 +76,7 @@ void do_people(void);
 int main(int argc, char **argv)
 {
   long tm = time(NULL);
-  char filename[64], *targetfile;
+  char filename[MAXPATHLEN], *targetfile;
   struct stat sb;
   EXEC SQL BEGIN DECLARE SECTION;
   int flag;
@@ -146,7 +142,10 @@ void get_info(void)
 {
   EXEC SQL BEGIN DECLARE SECTION;
   int id, pid, bid, cnt, maillistp, acl, mid;
-  char name[129], type[9], fname[17], mname[17], lname[17], buf[257];
+  char mname[MACHINE_NAME_SIZE], str[STRINGS_STRING_SIZE];
+  char login[USERS_LOGIN_SIZE], potype[USERS_POTYPE_SIZE];
+  char lname[LIST_NAME_SIZE], desc[LIST_DESCRIPTION_SIZE];
+  char type[LIST_ACL_TYPE_SIZE];
   EXEC SQL END DECLARE SECTION;
   char *s;
   struct user *u;
@@ -170,17 +169,17 @@ void get_info(void)
   EXEC SQL OPEN m_cursor;
   while (1)
     {
-      EXEC SQL FETCH m_cursor INTO :id, :name;
+      EXEC SQL FETCH m_cursor INTO :id, :mname;
       if (sqlca.sqlcode)
 	break;
-      if ((s = strchr(name, '.')))
+      if ((s = strchr(mname, '.')))
 	*s = '\0';
       else
-	strtrim(name);
+	strtrim(mname);
 #ifdef ATHENA
-      strcat(name, ".LOCAL");
+      strcat(mname, ".LOCAL");
 #endif
-      if (hash_store(machines, id, strdup(name)) < 0)
+      if (hash_store(machines, id, strdup(mname)) < 0)
 	{
 	  fprintf(stderr, "Out of memory!\n");
 	  exit(MR_NO_MEM);
@@ -201,10 +200,10 @@ void get_info(void)
   EXEC SQL OPEN s_cursor;
   while (1)
     {
-      EXEC SQL FETCH s_cursor INTO :id, :name;
+      EXEC SQL FETCH s_cursor INTO :id, :str;
       if (sqlca.sqlcode)
 	break;
-      if (hash_store(strings, id, strdup(strtrim(name))) < 0)
+      if (hash_store(strings, id, strdup(strtrim(str))) < 0)
 	{
 	  fprintf(stderr, "Out of memory!\n");
 	  exit(MR_NO_MEM);
@@ -219,32 +218,26 @@ void get_info(void)
   users = create_hash(13001);
 
   EXEC SQL DECLARE u_cursor CURSOR FOR
-    SELECT users_id, login, first, middle, last, potype, pop_id, box_id
+    SELECT users_id, login, potype, pop_id, box_id
     FROM users
     WHERE status != 3
     ORDER BY users_id;
   EXEC SQL OPEN u_cursor;
   while (1)
     {
-      EXEC SQL FETCH u_cursor INTO :id, :name, :fname, :mname, :lname,
-	:type, :pid, :bid;
+      EXEC SQL FETCH u_cursor INTO :id, :login, :potype, :pid, :bid;
       if (sqlca.sqlcode)
 	break;
       u = malloc(sizeof(struct user));
-      u->login = strdup(strtrim(name));
-      u->first = strdup(strtrim(fname));
-      u->last  = strdup(strtrim(lname));
-      if (mname[0] != ' ')
-	u->mi = mname[0];
-      else
-	u->mi = 0;
+      u->login = strdup(strtrim(login));
 
-      if (type[0] == 'P' && (s = hash_lookup(machines, pid)))
+      if (potype[0] == 'P' && (s = hash_lookup(machines, pid)))
 	{
+	  char *buf = malloc(strlen(u->login) + strlen(s) + 2);
 	  sprintf(buf, "%s@%s", u->login, s);
-	  u->pobox = strdup(buf);
+	  u->pobox = buf;
 	}
-      else if (type[0] ==  'S')
+      else if (potype[0] ==  'S')
 	u->pobox = hash_lookup(strings, bid);
       else
 	u->pobox = NULL;
@@ -269,13 +262,13 @@ void get_info(void)
   EXEC SQL OPEN l_cursor;
   while (1)
     {
-      EXEC SQL FETCH l_cursor INTO :id, :name, :maillistp, :buf, :type, :acl;
+      EXEC SQL FETCH l_cursor INTO :id, :lname, :maillistp, :desc, :type, :acl;
       if (sqlca.sqlcode)
 	break;
       l = malloc(sizeof(struct list));
-      l->name = strdup(strtrim(name));
+      l->name = strdup(strtrim(lname));
       l->maillist = maillistp;
-      l->description = strdup(strtrim(buf));
+      l->description = strdup(strtrim(desc));
       l->acl_t = type[0];
       l->acl_id = acl;
       l->m = NULL;
@@ -373,25 +366,6 @@ void insert_login(int id, void *user, void *hint)
   struct user *u = user;
   if (u->pobox && u->login[0] != '#')
     insert_name(u->login, id, TRUE, FALSE);
-}
-
-void insert_names(int id, void *user, void *hint)
-{
-  char buffer[256];
-  struct user *u = user;
-
-  insert_name(u->last, id, FALSE, FALSE);
-  sprintf(buffer, "%s_%s", u->first, u->last);
-  insert_name(buffer, id, FALSE, TRUE);
-#if 0
-  sprintf(buffer, "%c_%s", u->first[0], u->last);
-  insert_name(buffer, id, FALSE, TRUE);
-#endif
-  if (u->mi)
-    {
-      sprintf(buffer, "%s_%c_%s", u->first, u->mi, u->last);
-      insert_name(buffer, id, FALSE, TRUE);
-    }
 }
 
 int incount = 0;
@@ -513,10 +487,6 @@ void sort_info(void)
   fprintf(out, "\n%s\n# Mailing lists\n%s\n", divide, divide);
   hash_step(lists, save_mlist, FALSE);
   fprintf(stderr, "Output %d lists\n", incount);
-#ifdef NAME_ALIASES
-  hash_step(users, insert_names, NULL);
-  fprintf(stderr, "Inserted %d names\n", incount);
-#endif
 }
 
 
@@ -538,15 +508,7 @@ void output_data(int dummy, void *names, void *out)
 	  u = hash_lookup(users, ns->id);
 	  if (u->pobox)
 	    fprintf(out, "%s: %s\n", ns->name, u->pobox);
-#ifdef NAME_ALIASES
-	  else
-	    fprintf(out, "%s: =%s=@nobox\n", ns->name, ns->name);
-#endif
 	}
-#ifdef NAME_ALIASES
-      else if (ns->id == 0)
-	fprintf(out, "%s: =%s=@ambig\n", ns->name, ns->name);
-#endif
     }
 }
 

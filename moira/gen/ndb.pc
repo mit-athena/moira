@@ -1,4 +1,4 @@
-/* $Id: ndb.pc,v 1.3 1998-02-07 17:50:16 danw Exp $
+/* $Id: ndb.pc,v 1.4 1998-02-23 19:23:44 danw Exp $
  *
  * This generates the msql database for the network tables.
  *
@@ -19,7 +19,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/ndb.pc,v 1.3 1998-02-07 17:50:16 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/ndb.pc,v 1.4 1998-02-23 19:23:44 danw Exp $");
 
 char *whoami = "ndb.gen";
 char *db = "moira/moira";
@@ -30,7 +30,7 @@ void hosts(FILE *out);
 int main(int argc, char **argv)
 {
   FILE *out = stdout;
-  char *outf = NULL, outft[64];
+  char *outf = NULL, outft[MAXPATHLEN];
   struct stat sb;
   int flag;
 
@@ -61,7 +61,7 @@ int main(int argc, char **argv)
   fprintf(stderr, "hosts...\n");
   hosts(out);
 
-  if(fclose(out) < 0)
+  if (fclose(out) < 0)
     {
       perror("close failed");
       exit(MR_CCONFIG);
@@ -76,30 +76,36 @@ void users(FILE *out)
 {
   char *c;
   EXEC SQL BEGIN DECLARE SECTION;
-  char login[9], id[17];
+  char login[USERS_LOGIN_SIZE], id[USERS_CLEARID_SIZE];
+  char first[USERS_FIRST_SIZE], middle[USERS_MIDDLE_SIZE];
+  char last[USERS_LAST_SIZE], type[USERS_TYPE_SIZE];
+  int status, users_id;
   EXEC SQL END DECLARE SECTION;
 
   EXEC SQL WHENEVER SQLERROR GOTO sqlerr;
 
-  EXEC SQL DECLARE users1 CURSOR FOR SELECT login, clearid
+  EXEC SQL DECLARE users1 CURSOR FOR
+    SELECT login, clearid, users_id, type, status, first, middle, last
     FROM users WHERE clearid != '0' AND clearid != '999999999' 
-    AND login NOT LIKE '#%';		
+    AND login NOT LIKE '#%';
   EXEC SQL OPEN users1;
   while (1)
     {
-      EXEC SQL FETCH users1 INTO :login, id;
+      EXEC SQL FETCH users1 INTO :login, :id, :users_id, :type, :status,
+	:first, :middle, :last;
 
       if (sqlca.sqlcode)
 	break;
       strtrim(login);
       strtrim(id);
-      c = login;
-      while (*c)
-	{
-	  if (!isdigit(*c++))
-	    break;
-	}
-      fprintf(out, "user,%s,%s\n", id, login);
+      strtrim(type);
+      strtrim(first);
+      strtrim(middle);
+      strtrim(last);
+      if (!*id)
+	continue;
+      fprintf(out, "user,%d,%s,%s,%s,%d,%s,%s,%s\n", users_id, id, login,
+	      type, status, first, middle, last);
     }
 
   EXEC SQL CLOSE users1;
@@ -119,7 +125,8 @@ void hosts(FILE *out)
   char *p;
   int i;
   EXEC SQL BEGIN DECLARE SECTION;
-  char name[128], mitid[17], owner_type[9], addr[17], inuse[64];
+  char name[MACHINE_NAME_SIZE], owner_type[MACHINE_OWNER_TYPE_SIZE];
+  char addr[MACHINE_ADDRESS_SIZE];
   int id, use, status, owner;
   EXEC SQL END DECLARE SECTION;
 
@@ -140,7 +147,7 @@ void hosts(FILE *out)
 	continue;
       if (!*strtrim(name))
 	continue;
-      if ((i = strlen(name)) < 9 || strcmp(&name[i-8], ".MIT.EDU"))
+      if ((i = strlen(name)) < 9 || strcmp(&name[i - 8], ".MIT.EDU"))
 	{
 	  fprintf(stderr, "Name %s not in MIT domain\n", name);
 	  continue;
@@ -152,40 +159,15 @@ void hosts(FILE *out)
 
   EXEC SQL COMMIT;
 
-  fprintf(stderr, "users (again)...\n");
-
-  EXEC SQL DECLARE hosts2 CURSOR FOR SELECT
-    users_id, clearid FROM users 
-    WHERE clearid != '0' and clearid !='999999999';
-  EXEC SQL OPEN hosts2;
-  users = create_hash(20001);
-
-  while (1)
-    {
-      EXEC SQL FETCH hosts2 INTO :id, :mitid;
-      if (sqlca.sqlcode)
-	break;
-      if (id == 0)
-	continue;
-      if (!*strtrim(mitid))
-	continue;
-
-      hash_store(users, id, strdup(mitid));
-    }
-
-  EXEC SQL CLOSE hosts2;
-
-  EXEC SQL COMMIT;
-
   fprintf(stderr, "hosts (for real)...\n");
 
   EXEC SQL DECLARE hosts3 CURSOR FOR SELECT 
-    name, mach_id, address, use, inuse, status, owner_type, owner_id
+    name, mach_id, address, use, status, owner_type, owner_id
     FROM machine;
   EXEC SQL OPEN hosts3;
   while (1)
     {
-      EXEC SQL FETCH hosts3 INTO :name, :id, :addr, :use, :inuse, :status,
+      EXEC SQL FETCH hosts3 INTO :name, :id, :addr, :use, :status,
 	:owner_type, :owner;
       if (sqlca.sqlcode)
 	break;
@@ -193,17 +175,13 @@ void hosts(FILE *out)
 	continue;
       if (!*strtrim(name))
 	continue;
-      if ((i = strlen(name)) < 9 || strcmp(&name[i-8], ".MIT.EDU"))
+      if ((i = strlen(name)) < 9 || strcmp(&name[i - 8], ".MIT.EDU"))
 	continue;
       strtrim(addr);
       strtrim(owner_type);
-      strtrim(inuse);
-      fprintf(out, "host,%d,%s,%s,%d,0,%d", id,name,addr,use,status);
+      fprintf(out, "host,%d,%s,%s,%d,0,%d", id, name, addr, use, status);
       if (!strcmp(owner_type, "USER")) 
-	{
-	  if (p = hash_lookup(users, owner))
-	    fprintf(out, ",USER,%s\n", p);
-        }
+	fprintf(out, ",USER,%d\n", owner);
       else
 	fprintf(out, ",NONE,0\n");
     }

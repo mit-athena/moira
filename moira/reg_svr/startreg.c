@@ -1,18 +1,21 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/startreg.c,v $
- *	$Author: wesommer $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/startreg.c,v 1.1 1987-09-10 22:18:55 wesommer Exp $
+ *	$Author: mar $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/startreg.c,v 1.2 1988-09-13 14:46:21 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
+ *	For copying and distribution information, please see the file
+ *	<mit-copyright.h>.
  *
  * 	This program starts the user registration server
  * 	in a "clean" environment, and then waits for it to exit.
  */
 
 #ifndef lint
-static char *rcsid_sms_starter_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/startreg.c,v 1.1 1987-09-10 22:18:55 wesommer Exp $";
+static char *rcsid_sms_starter_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/startreg.c,v 1.2 1988-09-13 14:46:21 mar Exp $";
 #endif lint
 
+#include <mit-copyright.h>
 #include <stdio.h>
 #include <strings.h>
 #include <sys/types.h>

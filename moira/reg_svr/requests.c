@@ -1,9 +1,11 @@
 /*
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/requests.c,v $
- *      $Author: qjb $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/requests.c,v 1.1 1988-08-07 16:17:10 qjb Exp $
+ *      $Author: mar $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/requests.c,v 1.2 1988-09-13 14:46:08 mar Exp $
  *
- *      Copyright (C) 1987 by the Massachusetts Institute of Technology
+ *      Copyright (C) 1987, 1988 by the Massachusetts Institute of Technology
+ *	For copying and distribution information, please see the file
+ *	<mit-copyright.h>.
  *
  *      Server for user registration with SMS and Kerberos.
  *
@@ -12,7 +14,7 @@
  */
 
 #ifndef lint
-static char *rcsid_requests_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/requests.c,v 1.1 1988-08-07 16:17:10 qjb Exp $";
+static char *rcsid_requests_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/requests.c,v 1.2 1988-09-13 14:46:08 mar Exp $";
 #endif lint
 
 /*
@@ -20,6 +22,7 @@ static char *rcsid_requests_c = "$Header: /afs/.athena.mit.edu/astaff/project/mo
  * #defined, make sure that it is not already done in reg_svr.h 
  */
 
+#include <mit-copyright.h>
 #include "reg_svr.h"
 #include <sys/socket.h>
 #include <netinet/in.h>

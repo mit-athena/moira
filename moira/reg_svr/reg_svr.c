@@ -1,9 +1,11 @@
 /*
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.17 1988-09-07 15:02:46 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.18 1988-09-13 14:45:50 mar Exp $
  *
- *      Copyright (C) 1987 by the Massachusetts Institute of Technology
+ *      Copyright (C) 1987, 1988 by the Massachusetts Institute of Technology
+ *	For copying and distribution information, please see the file
+ *	<mit-copyright.h>.
  *
  *      Server for user registration with SMS and Kerberos.
  *
@@ -14,9 +16,10 @@
  */
 
 #ifndef lint
-static char *rcsid_reg_svr_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.17 1988-09-07 15:02:46 mar Exp $";
+static char *rcsid_reg_svr_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.18 1988-09-13 14:45:50 mar Exp $";
 #endif lint
 
+#include <mit-copyright.h>
 #include "reg_svr.h"
 #include "admin_server.h"
 #include "admin_err.h"

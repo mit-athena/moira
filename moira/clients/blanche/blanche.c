@@ -1,11 +1,18 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.1 1988-09-09 14:57:25 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.2 1988-09-14 03:07:10 qjb Exp $
  *
  * Command line oriented SMS List tool.
  *
  * by Mark Rosenstein, September 1988.
  *
  * Copyright 1989 by the Massachusetts Institute of Technology.
+ *
+ * (c) Copyright 1988 by the Massachusetts Institute of Technology.
+ * For copying and distribution information, please see the file
+ * <mit-copyright.h>.
  */
+
+/* ### Aren't there a lot of sq abstraction barrier violations here?
+   Do we need to improve the support for queue operations? */
 
 #include <mit-copyright.h>
 #include <stdio.h>
@@ -14,7 +21,7 @@
 #include <sms_app.h>
 
 #ifndef LINT
-static char smslist_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.1 1988-09-09 14:57:25 mar Exp $";
+static char smslist_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.2 1988-09-14 03:07:10 qjb Exp $";
 #endif
 
 
@@ -23,14 +30,18 @@ struct member {
     char *name;
 };
 
-/* member types */
+/* member types: ### This should be an enumerated type ?
+   It is important to membercmp that M_USER < M_LIST < M_STRING */
 #define M_ANY		0
 #define M_USER		1
 #define M_LIST		2
 #define M_STRING	3
 
+/* argument parsing macro */
+#define argis(a,b) ((strcmp(*arg+1, a) == 0) || (strcmp(*arg+1, b) == 0))
+
 /* flags from command line */
-int infoflg, verbose, syncflg, memberflg, debugflg;
+int infoflg, verbose, syncflg, memberflg, recursflg, debugflg;
 
 /* various member lists */
 struct save_queue *addlist, *dellist, *memberlist, *synclist;
@@ -41,6 +52,7 @@ extern char *index();
 extern int errno;
 
 int show_list_info(), show_list_count(), get_list_members(), scream();
+int show_list_members();
 struct member *parse_member();
 
 
@@ -55,7 +67,7 @@ char **argv;
     struct member *memberstruct;
 
     /* clear all flags & lists */
-    infoflg = verbose = syncflg = memberflg = debugflg = 0;
+    infoflg = verbose = syncflg = memberflg = debugflg = recursflg = 0;
     listname = NULL;
     addlist = sq_create();
     dellist = sq_create();
@@ -66,63 +78,58 @@ char **argv;
     /* parse args, building addlist, dellist, & synclist */
     while (++arg - argv < argc) {
 	if  (**arg == '-')
-	  switch((*arg)[1]) {
-	  case 'm':
-	      memberflg++;
-	      break;
-	  case 'D':
-	      debugflg++;
-	      break;
-	  case 'i':
+	{
+	    if (argis("m", "members"))
+		memberflg++;
+	    else if (argis("D", "debug"))
+		debugflg++;
+	    else if (argis("i","information"))
 	      infoflg++;
-	      break;
-	  case 'v':
+	    else if (argis("v","verbose"))
 	      verbose++;
-	      break;
-	  case 'a':
-	      if (arg - argv < argc - 1) {
-		  ++arg;
-		  if (memberstruct = parse_member(*arg))
-		    sq_save_data(addlist, memberstruct);
-	      } else
+	    else if (argis("r","recursive"))
+	      recursflg++;
+	    else if (argis("a","add"))
+		if (arg - argv < argc - 1) {
+		    ++arg;
+		    if (memberstruct = parse_member(*arg))
+			sq_save_data(addlist, memberstruct);
+		} else
+		    usage(argv);
+	    else if (argis("d","delete"))
+		if (arg - argv < argc - 1) {
+		    ++arg;
+		    if (memberstruct = parse_member(*arg))
+			sq_save_data(dellist, memberstruct);
+		} else
+		    usage(argv);
+	    else if (argis("f","file"))
+		if (arg - argv < argc - 1) {
+		    FILE *in;
+		    char buf[BUFSIZ];
+		    
+		    syncflg++;
+		    ++arg;
+		    if (!strcmp(*arg, "-"))
+			in = stdin;
+		    else {
+			in = fopen(*arg, "r");
+		if (!in) {
+			    com_err(whoami, errno, 
+				    " while opening %s for input", *arg);
+			    exit(2);
+			}
+		    }
+		    while (fgets(buf, BUFSIZ, in))
+			if (memberstruct = parse_member(buf))
+			    sq_save_data(synclist, memberstruct);
+		    if (!feof(in))
+			com_err(whoami, errno, " while reading from %s", *arg);
+		} else
+		    usage(argv);
+	    else
 		usage(argv);
-	      break;
-	  case 'd':
-	      if (arg - argv < argc - 1) {
-		  ++arg;
-		  if (memberstruct = parse_member(*arg))
-		    sq_save_data(dellist, memberstruct);
-	      } else
-		usage(argv);
-	      break;
-	  case 'f':
-	      if (arg - argv < argc - 1) {
-		  FILE *in;
-		  char buf[BUFSIZ];
-
-		  syncflg++;
-		  ++arg;
-		  if (!strcmp(*arg, "-"))
-		    in = stdin;
-		  else {
-		      in = fopen(*arg, "r");
-		      if (!in) {
-			  com_err(whoami, errno, " while opening %s for input",
-				  *arg);
-			  exit(2);
-		      }
-		  }
-		  while (fgets(buf, BUFSIZ, in))
-		    if (memberstruct = parse_member(buf))
-		      sq_save_data(synclist, memberstruct);
-		  if (!feof(in))
-		    com_err(whoami, errno, " while reading from %s", *arg);
-	      } else
-		usage(argv);
-	      break;
-	  default:
-	      usage(argv);
-	  }
+	}
 	else if (listname == NULL)
 	  listname = *arg;
 	else
@@ -169,7 +176,7 @@ char **argv;
      */
     if (syncflg) {
 	status = sms_query("get_members_of_list", 1, &listname,
-			   get_list_members, memberlist);
+			   get_list_members, (char *)memberlist);
 	if (status)
 	  com_err(whoami, status, " while getting members of list");
 	while (sq_get_data(synclist, &memberstruct)) {
@@ -177,7 +184,7 @@ char **argv;
 	    int removed = 0;
 
 	    for (q = memberlist->q_next; q != memberlist; q = q->q_next) {
-		if (membermatch(q->q_data, memberstruct)) {
+		if (membercmp(q->q_data, memberstruct) == 0) {
 		    q->q_prev->q_next = q->q_next;
 		    q->q_next->q_prev = q->q_prev;
 		    removed++;
@@ -274,37 +281,8 @@ char **argv;
     }
 
     /* Display the members of the list now, if requested */
-    if (memberflg) {
-	status = sms_query("get_members_of_list", 1, &listname,
-			   get_list_members, memberlist);
-	if (status)
-	  com_err(whoami, status, " while getting members of list");
-	while (sq_get_data(memberlist, &memberstruct)) {
-	    if (verbose) {
-		char *s;
-		switch (memberstruct->type) {
-		case M_USER:
-		    s = "USER";
-		    break;
-		case M_LIST:
-		    s = "LIST";
-		    break;
-		case M_STRING:
-		    s = "STRING";
-		    break;
-		}
-		printf("%s: %s\n", s, memberstruct->name);
-	    } else {
-		if (memberstruct->type == M_LIST)
-		  printf("LIST:%s\n", memberstruct->name);
-		else if (memberstruct->type == M_STRING &&
-			 !index(memberstruct->name, '@'))
-		  printf("STRING:%s\n", memberstruct->name);
-		else
-		  printf("%s\n", memberstruct->name);
-	    }
-	}
-    }
+    if (memberflg)
+	display_list_members();
 
     /* We're done! */
     sms_disconnect();
@@ -314,11 +292,53 @@ char **argv;
 usage(argv)
 char **argv;
 {
-    printf("Usage: %s [-i] [-v] [-m] listname [-a member] [-d member] [-f file]\n",
-	   argv[0]);
+    fprintf(stderr, "Usage: %s [options] listname [options]\n",argv[0]);
+    fprintf(stderr, "Options are\n");
+    fprintf(stderr, "   -v | -verbose\n");
+    fprintf(stderr, "   -m | -members\n");
+    fprintf(stderr, "   -i | -info\n");
+    fprintf(stderr, "   -r | -recursive\n");
+    fprintf(stderr, "   -a | -add member\n");
+    fprintf(stderr, "   -d | -delete member\n");
+    fprintf(stderr, "   -f | -file filename\n");
+#ifdef notdef
+    fprintf(stderr, "   -D | -debug\n");
+#endif
     exit(1);
 }
 
+
+show_list_members(memberlist)
+  struct sq *memberlist;
+{
+    struct member *memberstruct;
+
+    while (sq_get_data(memberlist, &memberstruct)) {
+	if (verbose) {
+	    char *s;
+	    switch (memberstruct->type) {
+	      case M_USER:
+		s = "USER";
+		break;
+	      case M_LIST:
+		s = "LIST";
+		break;
+	      case M_STRING:
+		s = "STRING";
+		break;
+	    }
+	    printf("%s:%s\n", s, memberstruct->name);
+	} else {
+	    if (memberstruct->type == M_LIST)
+		printf("LIST:%s\n", memberstruct->name);
+	    else if (memberstruct->type == M_STRING &&
+		     !index(memberstruct->name, '@'))
+		printf("STRING:%s\n", memberstruct->name);
+	    else
+		printf("%s\n", memberstruct->name);
+	}
+    }
+}
 
 show_list_info(argc, argv, hint)
 int argc;
@@ -331,7 +351,7 @@ int hint;
 	   atoi(argv[1]) ? "active" : "inactive",
 	   atoi(argv[2]) ? "public" : "private",
 	   atoi(argv[3]) ? "hidden" : "visible");
-    printf("%s is %sa maillist, and is %sa group", argv[0],
+    printf("%s is %sa maillist and is %sa group", argv[0],
 	   atoi(argv[4]) ? "" : "not ",
 	   atoi(argv[5]) ? "" : "not ");
     if (atoi(argv[5]))
@@ -352,6 +372,20 @@ int hint;
     printf("Members: %s\n", argv[0]);
 }
 
+
+display_list_members()
+{
+    int status;
+
+    status = sms_query("get_members_of_list", 1, &listname,
+		       get_list_members, (char *)memberlist);
+    if (status)
+	com_err(whoami, status, " while getting members of list");
+    if (recursflg) 
+	fprintf(stderr,"%s: The recursive flag is not yet implemented.\n",
+		whoami);
+    show_list_members(memberlist);
+}
 
 get_list_members(argc, argv, q)
 int argc;
@@ -429,15 +463,20 @@ register char *s;
 }
 
 
-int membermatch(m1, m2)
-struct member *m1, *m2;
+int membercmp(m1, m2)
+  struct member *m1, *m2;
+  /* 
+   * This routine two compares members by the following rules:
+   * 1.  A USER is less than a LIST
+   * 2.  A LIST is less than a STRING
+   * 3.  If two members are of the same type, the one alphabetically first
+   *     is less than the other
+   * It returs < 0 if the first member is less, 0 if they are identical, and
+   * > 0 if the second member is less (the first member is greater).
+   */
 {
-    if (strcmp(m1->name, m2->name))
-      return(0);
-    if (m1->type == M_ANY || m2->type  == M_ANY)
-      return(1);
-    if (m1->type == m2->type)
-      return(1);
+    if (m1->type == M_ANY || m2->type  == M_ANY || (m1->type == m2->type))
+	return(strcmp(m1->name, m2->name));
     else
-      return(0);
+	return(m1->type - m2->type);
 }

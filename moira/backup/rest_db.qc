@@ -1,15 +1,18 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/rest_db.qc,v $
- *	$Author: wesommer $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/rest_db.qc,v 1.1 1987-07-13 03:50:02 wesommer Exp $
+ *	$Author: mar $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/rest_db.qc,v 1.2 1988-05-10 11:34:37 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
  *	$Log: not supported by cvs2svn $
+ * Revision 1.1  87/07/13  03:50:02  wesommer
+ * Initial revision
+ * 
  */
 
 #ifndef lint
-static char *rcsid_rest_db_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/rest_db.qc,v 1.1 1987-07-13 03:50:02 wesommer Exp $";
+static char *rcsid_rest_db_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/rest_db.qc,v 1.2 1988-05-10 11:34:37 mar Exp $";
 #endif lint
 
 #include <sys/file.h>
@@ -148,9 +151,11 @@ void parse_str(f, buf, len)
     if (c == EOF)
 	return;
     
-    if (c != EOF && c != ':' && c != '\n')
+    if (c != EOF && c != ':' && c != '\n') {
 	fprintf(stderr, "Field too wide, truncated\n");
-    else {
+	while ((c = getc(f)) != EOF && c != ':' && c != '\n');
+	(void) ungetc(c, f);
+    } else {
 	*buf++ = 0;
 	(void) ungetc(c, f);
     }

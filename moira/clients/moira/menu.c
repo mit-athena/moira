@@ -1,4 +1,4 @@
-/* $Id: menu.c,v 1.53 1999-01-26 20:09:09 danw Exp $
+/* $Id: menu.c,v 1.54 1999-04-30 17:45:11 danw Exp $
  *
  * Generic menu system module.
  *
@@ -21,7 +21,7 @@
 #include <string.h>
 #include <unistd.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.53 1999-01-26 20:09:09 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.54 1999-04-30 17:45:11 danw Exp $");
 
 #ifdef MAX
 #undef MAX
@@ -245,7 +245,7 @@ int Do_menu(Menu *m, int margc, char *margv[])
       /* Now print the title and the menu */
       wclear(my_ms->ms_screen);
       wrefresh(my_ms->ms_screen);
-      wmove(my_ms->ms_title, 0, MAX(0, (COLS - strlen(m->m_title)) >> 1));
+      wmove(my_ms->ms_title, 0, MAX(0, (COLS - (int)strlen(m->m_title)) >> 1));
       wstandout(my_ms->ms_title);
       waddstr(my_ms->ms_title, m->m_title);
       wstandend(my_ms->ms_title);

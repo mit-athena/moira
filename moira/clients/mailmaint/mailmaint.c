@@ -1,4 +1,4 @@
-/* $Id: mailmaint.c,v 1.42 1998-10-21 19:27:04 danw Exp $
+/* $Id: mailmaint.c,v 1.43 1999-04-30 17:44:59 danw Exp $
  *
  * Simple add-me-to/remove-me-from list client
  *
@@ -25,7 +25,7 @@
 
 #include <krb.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v 1.42 1998-10-21 19:27:04 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v 1.43 1999-04-30 17:44:59 danw Exp $");
 
 #define STARTCOL 0
 #define STARTROW 3
@@ -755,7 +755,7 @@ void highlight(MENU *menu)
 /****************************************************/
 void title(char *buff)
 {
-  move(0, MAX(0, (COLS - strlen(buff)) >> 1));
+  move(0, MAX(0, (COLS - (int)strlen(buff)) >> 1));
   standout();
   addstr(buff);
   refresh();
@@ -765,7 +765,7 @@ void title(char *buff)
 /****************************************************/
 void center_text(int row, char *buff)
 {
-  move(row, MAX(0, (COLS - strlen(buff)) >> 1));
+  move(row, MAX(0, (COLS - (int)strlen(buff)) >> 1));
   addstr(buff);
   refresh();
 }

@@ -1,6 +1,6 @@
 #!/moira/bin/perl -Tw
 
-# $Id: stellar.gen,v 1.1 2002-01-18 06:54:45 zacheiss Exp $
+# $Id: stellar.gen,v 1.2 2002-01-18 23:39:08 zacheiss Exp $
 
 # The following exit codes are defined and MUST BE CONSISTENT with the
 # error codes the library uses:
@@ -77,7 +77,7 @@ while (($root_list_id, $hostname) = $sth0->fetchrow_array) {
     close(OUT);
 }
 
-system("cd $outdir && tar cf $outfile .") || exit $MR_OCONFIG;
+system("cd $outdir && tar cf $outfile .") == 0 || exit $MR_OCONFIG;
 
 $dbh->disconnect;
 

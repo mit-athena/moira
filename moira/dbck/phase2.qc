@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase2.qc,v 1.10 1990-04-13 17:33:36 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase2.qc,v 1.11 1992-06-24 16:36:15 mar Exp $
  *
  *  (c) Copyright 1988 by the Massachusetts Institute of Technology.
  *  For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
 #include <moira.h>
 #include "dbck.h"
 
-static char phase2_qc_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase2.qc,v 1.10 1990-04-13 17:33:36 mar Exp $";
+static char phase2_qc_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase2.qc,v 1.11 1992-06-24 16:36:15 mar Exp $";
 
 
 show_mcm_mach(id)
@@ -348,35 +348,32 @@ int hint;
     struct nfsphys *n;
     struct machine *m;
 
-    if (f->type == 'N' || f->type == 'R') {
-	if (!hash_lookup(machines, f->mach_id)) {
-	    printf("Filesys %s with bad machine %d\n", f->name, f->mach_id);
-	    if (single_fix("Fix", 0)) {
-##		replace filesys (mach_id = 0) where filesys.filsys_id = id
-##		inquire_equel(rowcount = "rowcount")
-		if (rowcount > 0)
-		  printf("%d entr%s fixed\n",rowcount, rowcount==1?"y":"ies");
-		else
-		  printf("Not fixed\n");
-		modified("filesys");
-		f->mach_id = 0;
-	    }
+    if (!hash_lookup(machines, f->mach_id)) {
+	printf("Filesys %s with bad machine %d\n", f->name, f->mach_id);
+	if (single_fix("Fix", 0)) {
+##	    replace filesys (mach_id = 0) where filesys.filsys_id = id
+##	    inquire_equel(rowcount = "rowcount")
+	    if (rowcount > 0)
+	      printf("%d entr%s fixed\n",rowcount, rowcount==1?"y":"ies");
+	    else
+	      printf("Not fixed\n");
+	    modified("filesys");
+	    f->mach_id = 0;
 	}
     }
-    if (f->type == 'N' || f->type == 'R' || f->type == 'A') {
-	if (!hash_lookup(users, f->owner)) {
-	    printf("Filesys %s with bad owning user %d\n", f->name, f->owner);
-	    if (single_fix("Fix", 1)) {
-		zero_fix("filesys", "owner", "filsys_id", f->filsys_id);
-		f->owner = 0;
-	    }
+
+    if (!hash_lookup(users, f->owner)) {
+	printf("Filesys %s with bad owning user %d\n", f->name, f->owner);
+	if (single_fix("Fix", 1)) {
+	    zero_fix("filesys", "owner", "filsys_id", f->filsys_id);
+	    f->owner = 0;
 	}
-	if (!hash_lookup(lists, f->owners)) {
-	    printf("Filesys %s with bad owning group %d\n", f->name, f->owners);
-	    if (single_fix("Fix", 1)) {
-		zero_fix("filesys", "owners", "filsys_id", f->filsys_id);
-		f->owners = 0;
-	    }
+    }
+    if (!hash_lookup(lists, f->owners)) {
+	printf("Filesys %s with bad owning group %d\n", f->name, f->owners);
+	if (single_fix("Fix", 1)) {
+	    zero_fix("filesys", "owners", "filsys_id", f->filsys_id);
+	    f->owners = 0;
 	}
     }
 
@@ -504,6 +501,9 @@ struct filesys *f;
 	break;
     case 'F':
 	t = "FSGROUP";
+	break;
+    case 'M':
+	t = "MUL";
 	break;
     default:
 	t = "???";
@@ -869,13 +869,10 @@ phase2()
 ##  retrieve (id1 = fsgroup.group_id, id2 = fsgroup.filsys_id) {
     	if (!(f = (struct filesys *) hash_lookup(filesys, id1)))
 	  sq_save_data(sq1, id1);
-	if (f->type  != 'F')
-	  sq_save_data(sq2, f);
     	if (!hash_lookup(filesys, id2))
 	  sq_save_data(sq3, id2);
 ##  }
     generic_delete(sq1, show_fsg_missing, "fsgroup", "group_id", 0);
-    generic_fix(sq2, show_fsg_type, "Change to \"FSTYPE\"", fix_fsg_type, 0);
     generic_delete(sq3, show_fsg_nomember, "fsgroup", "filsys_id", 1);
 
     dprintf("Checking quotas...\n");

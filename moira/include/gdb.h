@@ -1,5 +1,5 @@
 /*
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/include/gdb.h,v 1.3 1990-09-10 16:33:26 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/include/gdb.h,v 1.4 1991-03-08 11:03:23 mar Exp $
  */
 
 /************************************************************************
@@ -580,7 +580,7 @@ extern struct con_data gdb_cons[GDB_MAX_CONNECTIONS];
 extern fd_set gdb_crfds, gdb_cwfds, gdb_cefds;	/* connection related file */
 						/* descriptor maps to be */
 						/* used in select */
-fd_set last_crfds, last_cwfds, last_cefds;	/* these file desc. bit */
+extern fd_set last_crfds, last_cwfds, last_cefds;/* these file desc. bit */
 						/* masks are set up */
 						/* for each select call */
 						/* to include the user */

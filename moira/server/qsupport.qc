@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.35 1989-06-28 11:39:14 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.36 1989-06-29 18:29:39 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_qsupport_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.35 1989-06-28 11:39:14 mar Exp $";
+static char *rcsid_qsupport_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.36 1989-06-29 18:29:39 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -797,6 +797,19 @@ setup_dnfq(q, argv, cl)
 ##  repeat replace nfsphys (allocated = nfsphys.allocated - @quota)
 ##	where nfsphys.nfsphys_id = filesys.#phys_id and filesys.filsys_id = @fs
     return(SMS_SUCCESS);
+##}
+
+
+/* setup_sshi: don't exclusive lock the machine table during
+ * set_server_host_internal.
+ */
+
+setup_sshi(q, argv, cl)
+    struct query  *q;
+    char **argv;
+    client *cl;
+##{
+##  set lockmode session where readlock = system
 ##}
 
 

@@ -1,7 +1,7 @@
 /*
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.h,v $
- *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.h,v 1.7 1990-03-19 19:30:04 mar Exp $
+ *      $Author: danw $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.h,v 1.8 1997-01-29 23:25:29 danw Exp $
  *
  *      Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
@@ -35,9 +35,6 @@
 #define CRYPT_LEN 14		/* crypt() returns a 13 char string */
 #define LOGIN_LEN MAX_UNAME + 1	/* Leave room for a null */
 #define UID_LEN 7		/* Allow room for a 16 bit number */
-
-extern char *strdup();
-extern char *malloc();
 
 extern char *whoami;		/* Name of program - used by libraries */
 extern int errno;		/* Unix error number */

@@ -1,7 +1,7 @@
 /*
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/requests.c,v $
  *      $Author: danw $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/requests.c,v 1.7 1997-01-20 18:24:48 danw Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/requests.c,v 1.8 1997-01-29 23:25:30 danw Exp $
  *
  *      Copyright (C) 1987, 1988 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -14,7 +14,7 @@
  */
 
 #ifndef lint
-static char *rcsid_requests_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/requests.c,v 1.7 1997-01-20 18:24:48 danw Exp $";
+static char *rcsid_requests_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/requests.c,v 1.8 1997-01-29 23:25:30 danw Exp $";
 #endif lint
 
 /*
@@ -229,7 +229,7 @@ int format_pkt(packet, pktlenp, seqno, cl_status, message)
     {
 	status = FAILURE;	/* Message was truncated */
 	/* Truncate the message */
-	message[len-1] = NULL;
+	message[len-1] = '\0';
     }
 
     /* Copy the message into the packet */

@@ -1,4 +1,4 @@
-; $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/forms.txt,v 1.7 1992-11-09 17:11:30 mar Exp $
+; $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/forms.txt,v 1.8 1993-01-13 14:06:30 mar Exp $
 ;
 
 ; { FORM_NAME	INSTRUCTION FIELD
@@ -122,6 +122,7 @@
 { add_filsys	Enter the new filesystem information.
 	Name	s
 	Type|filesys	K
+	Lockertype|lockertype K
 	Machine/Cell	s
 	Remote name s
 	Mountpoint s
@@ -130,11 +131,11 @@
 	Owner	s
 	Owners	s
 	Propagate changes to fileserver? B
-	Lockertype|lockertype K
 }
 { mod_filsys	Update the filesystem information.
 	Name	s
 	Type|filesys	K
+	Lockertype|lockertype	K
 	Machine/Cell	s
 	Remote name s
 	Mountpoint s
@@ -143,7 +144,6 @@
 	Owner	s
 	Owners	s
 	Automatically create on fileserver? B
-	Lockertype|lockertype	K
 }
 { select_filsys	Enter the name of the filesystem to modify.
 	Name	s

@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/startmoira.c,v $
  *	$Author: danw $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/startmoira.c,v 1.15 1997-12-20 20:56:32 danw Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/startmoira.c,v 1.16 1998-01-05 14:58:20 danw Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -13,7 +13,7 @@
  */
 
 #ifndef lint
-static char *rcsid_mr_starter_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/startmoira.c,v 1.15 1997-12-20 20:56:32 danw Exp $";
+static char *rcsid_mr_starter_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/startmoira.c,v 1.16 1998-01-05 14:58:20 danw Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -56,7 +56,7 @@ void cleanup()
 		if (WIFSIGNALED(stat)) {
 			sprintf(buf, "exited on signal %d%s\n",
 				WTERMSIG(stat),
-				(WCOREDUMP(stat)?"; Core dumped":0));
+				(WCOREDUMP(stat)?"; Core dumped":""));
 			if(WCOREDUMP(stat))
 			  critical_alert("startmoira", "%s", buf);
 		}

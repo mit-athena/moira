@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/startreg.c,v $
  *	$Author: danw $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/startreg.c,v 1.8 1997-01-29 23:25:32 danw Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/startreg.c,v 1.9 1998-01-05 14:56:03 danw Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -12,7 +12,7 @@
  */
 
 #ifndef lint
-static char *rcsid_mr_starter_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/startreg.c,v 1.8 1997-01-29 23:25:32 danw Exp $";
+static char *rcsid_mr_starter_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/startreg.c,v 1.9 1998-01-05 14:56:03 danw Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -51,7 +51,7 @@ void cleanup()
 		if (WIFSIGNALED(stat)) {
 			sprintf(buf, "exited on signal %d%s\n",
 				WTERMSIG(stat),
-				(WCOREDUMP(stat)?"; Core dumped":0));
+				(WCOREDUMP(stat)?"; Core dumped":""));
 		}
 		write(rdpipe[1], buf, strlen(buf));
 		close(rdpipe[1]);

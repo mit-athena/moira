@@ -1,52 +1,29 @@
 /*
- *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_conn.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_conn.c,v 1.4 1992-12-01 11:51:46 mar Exp $
+ * $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_conn.c,v $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_conn.c,v 1.5 1993-05-04 18:14:01 mar Exp $
  */
 
 #ifndef lint
-static char *rcsid_gdb_conn_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_conn.c,v 1.4 1992-12-01 11:51:46 mar Exp $";
+static char *rcsid_gdb_conn_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_conn.c,v 1.5 1993-05-04 18:14:01 mar Exp $";
 #endif	lint
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-/************************************************************************/
-/*	
-/*			   gdb_conn.c
-/*	
-/*	      GDB - Connection Management Services
-/*	
-/*	Author: Noah Mendelsohn
-/*	Copyright: 1986 MIT Project Athena 
-/*		For copying and distribution information, please see
-/*	  	the file <mit-copyright.h>.
-/*	
-/*	Routines used in the creation and maintenance of CONNECTIONS.
-/*	Note: these are closely related to the services provided
-/*	by gdb_trans.c and gdb_trans2.c.
-/*	
-/*	
-/************************************************************************/
+/************************************************************************
+ *	
+ *			   gdb_conn.c
+ *	
+ *	      GDB - Connection Management Services
+ *	
+ *	Author: Noah Mendelsohn
+ *	Copyright: 1986 MIT Project Athena 
+ *		For copying and distribution information, please see
+ *	  	the file <mit-copyright.h>.
+ *	
+ *	Routines used in the creation and maintenance of CONNECTIONS.
+ *	Note: these are closely related to the services provided
+ *	by gdb_trans.c and gdb_trans2.c.
+ *	
+ *	
+ ************************************************************************/
 
 #include <mit-copyright.h>
 #include <stdio.h>
@@ -59,6 +36,9 @@ static char *rcsid_gdb_conn_c = "$Header: /afs/.athena.mit.edu/astaff/project/mo
 #include <netinet/in.h>
 #include <netdb.h>
 #include <errno.h>
+#ifdef SOLARIS
+#include <sys/filio.h>
+#endif /* SOLARIS */
 
 extern int errno;
 #ifdef vax

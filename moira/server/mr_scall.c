@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_scall.c,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_scall.c,v 1.21 1992-01-27 17:59:20 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_scall.c,v 1.22 1992-07-20 11:18:02 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_sms_scall_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_scall.c,v 1.21 1992-01-27 17:59:20 mar Exp $";
+static char *rcsid_sms_scall_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_scall.c,v 1.22 1992-07-20 11:18:02 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -278,6 +278,11 @@ do_retr(cl)
 	cl->reply.mr_status = 0;
 	row_count = 0;
 
+	if (cl->args->mr_argc < 1) {
+	    cl->reply.mr_status = MR_ARGS;
+	    com_err(whoami, MR_ARGS, "got nameless query");
+	    return;
+	}
 	queryname = cl->args->mr_argv[0];
 	
 	if (cl->args->mr_version_no == MR_VERSION_2)
@@ -290,7 +295,7 @@ do_retr(cl)
 	else {
 		cl->reply.mr_status = 
 			mr_process_query(cl,
-					  cl->args->mr_argv[0],
+					  queryname,
 					  cl->args->mr_argc-1,
 					  cl->args->mr_argv+1,
 					  retr_callback,
@@ -308,6 +313,11 @@ do_retr(cl)
 do_access(cl)
 	client *cl;
 {
+	if (cl->args->mr_argc < 1) {
+	    cl->reply.mr_status = MR_ARGS;
+	    com_err(whoami, MR_ARGS, "got nameless access");
+	    return;
+	}
 	cl->reply.mr_argc = 0;
 
 	cl->reply.mr_status = 

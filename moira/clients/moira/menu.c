@@ -4,9 +4,14 @@
  * "mit-copyright.h".
  *
  * $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v $
- * $Author: ambar $
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.4 1987-08-05 14:48:04 ambar Exp $
+ * $Author: poto $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.5 1987-08-07 18:09:46 poto Exp $
  * $Log: not supported by cvs2svn $
+ * Revision 1.4  87/08/05  14:48:04  ambar
+ * added latest set of hackery, to fix missing
+ * newlines, and not being able to quit out of
+ * the pager.
+ * 
  * Revision 1.3  87/08/03  05:10:34  wesommer
  * This one appears to work.
  * 
@@ -28,7 +33,7 @@
  */
 
 #ifndef lint
-static char rcsid_menu_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.4 1987-08-05 14:48:04 ambar Exp $";
+static char rcsid_menu_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.5 1987-08-07 18:09:46 poto Exp $";
 
 #endif lint
 
@@ -78,7 +83,8 @@ Start_menu(m)
     noecho();
     cur_ms = make_ms(0);	/* So we always have some current menu_screen */
     top_menu = m;
-    (void) Do_menu(m);		/* Run the menu */
+    /* Run the menu */
+    (void) Do_menu(m, 0, (char **) NULL);
     endwin();
 }
 
@@ -88,7 +94,8 @@ Start_no_menu(m)
 {
     cur_ms = NULLMS;
     top_menu = m;
-    (void) Do_menu(m);
+    /* Run the menu */
+    (void) Do_menu(m, 0, (char **) NULL);
 }
 
 /*
@@ -141,8 +148,10 @@ destroy_ms(ms)
  * This guy actually puts up the menu
  */
 int 
-Do_menu(m)
+Do_menu(m, margc, margv)
     Menu *m;
+    int margc;
+    char *margv[];
 {
     struct menu_screen *my_ms, *old_cur_ms;
     char argvals[MAX_ARGC][MAX_ARGLEN];	/* This is where args are stored */
@@ -156,7 +165,8 @@ Do_menu(m)
 
     /* Entry function gets called with old menu_screen still current */
     if (m->m_entry != NULLFUNC)
-	m->m_entry(m);
+	if (m->m_entry(m, margc, margv) == DM_QUIT)
+	    return DM_NORMAL;
 
     /* The following get run only in curses mode */
     if (cur_ms != NULLMS) {
@@ -247,7 +257,7 @@ Do_menu(m)
 	}
 	else if (command->ml_submenu != NULLMENU) {
 	    /* Else see if it is a submenu */
-	    quitflag = Do_menu(command->ml_submenu);
+	    quitflag = Do_menu(command->ml_submenu, argc, argv);
 	}
 	else {
 	    /* If it's got neither, something is wrong */

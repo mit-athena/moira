@@ -1,4 +1,4 @@
-/* $Id: queries2.c,v 2.63 1999-11-17 18:37:28 danw Exp $
+/* $Id: queries2.c,v 2.64 1999-11-18 01:05:10 danw Exp $
  *
  * This file defines the query dispatch table for version 2 of the protocol
  *
@@ -232,18 +232,17 @@ static struct validate ausr_validate = {
 };
 
 static char *rusr_fields[] = {
-  "unix_uid", "login", "fs_type"
+  "unix_uid", "login", "pobox_type"
 };
 
 static struct valobj rusr_valobj[] = {
   {V_NUM, 0},
   {V_CHAR, 1, USERS_TABLE, "login"},
-  {V_NUM, 2},
 };
 
 static struct validate rusr_validate = {
   rusr_valobj,
-  3,
+  2,
   0,
   0,
   0,

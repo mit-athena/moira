@@ -26,7 +26,9 @@ endif
 # parition, so find out where $DEST_DIR is and put $SRC_DIR there too.
 set old = $cwd
 chdir $DEST_DIR
-set SRC_DIR_TMP = $cwd:h/_nameserver
+# Don't use $cwd; it won't follow the link
+set CUR_DIR = `pwd`
+set SRC_DIR_TMP = $CUR_DIR:h/_nameserver
 if (! -d $SRC_DIR_TMP) then
    /bin/rm -f $SRC_DIR_TMP
    /bin/mkdir $SRC_DIR_TMP
@@ -37,26 +39,26 @@ cd $old
 unset old SRC_DIR_TMP
 
 # Alert if tarfile doesn't exist
-if (! -r $TARFILE) exit SMS_MISSINGFILE
+if (! -r $TARFILE) exit $SMS_MISSINGFILE
 
 # Empty the tar file one file at a time and move each file to the
 # appropriate place only if it is not zero length. 
 cd $SRC_DIR
-foreach  file (`/bin/tar tf $TARFILE | awk '{print $1}'`)
-   if (./ == $file) continue
+foreach  file (`/bin/tar tf $TARFILE | awk '{print $1}' | sed 's;/$;;'`)
+   if (. == $file) continue
 
    rm -rf $file
    echo extracting $file
    /bin/tar xf $TARFILE $file
    # Don't put up with errors extracting the information
-   if ($status) exit SMS_TARERR
+   if ($status) exit $SMS_TARERR
    # Make sure the file is not zero-length
    if (! -z $file) then
       /bin/mv -f $file $DEST_DIR
-      if ($status != 0) exit SMS_HESFILE
+      if ($status != 0) exit $SMS_HESFILE
    else
       /bin/rm -f $file
-      exit SMS_MISSINGFILE
+      exit $SMS_MISSINGFILE
    endif
 end
 
@@ -90,7 +92,7 @@ while ($i < $TIMEOUT)
 end
 
 # Did it time out?
-if ($i == $TIMEOUT) exit SMS_NAMED
+if ($i == $TIMEOUT) exit $SMS_NAMED
 
 # Clean up!
 /bin/rm -f $TARFILE
@@ -100,5 +102,5 @@ exit 0
 
 #
 # 	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/hesiod.sh,v $
-#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/hesiod.sh,v 1.5 1988-08-05 14:16:05 qjb Exp $
+#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/hesiod.sh,v 1.6 1988-08-06 16:41:53 qjb Exp $
 #

@@ -21,7 +21,7 @@ chmod 755 $SRC_DIR
 
 # Alert if the tarfile does not exist
 if (! -r $TARFILE) then
-   exit SMS_TARERR
+   exit $SMS_TARERR
 endif
 
 # Note that since SMS is going to be exported, assuming .MIT.EDU is 
@@ -40,7 +40,7 @@ foreach file (`/bin/tar tf $TARFILE | awk '{print $1}'`)
        ($file =~ ./install_*) || \
        ($file =~ ./list-*)) then
       tar xf $TARFILE $file
-      if ($status) exit SMS_TARERR
+      if ($status) exit $SMS_TARERR
    endif
 end
 
@@ -52,17 +52,17 @@ foreach type (dirs quotas)
           sed 's;@;/;g'`
       echo ${uchost}:$dev
       ./install_${type} $dev < $i
-      if ($status) exit $status
+      if ($status) exit $$status
    end
 end
 
 # build new credentials files.
 rm -f /usr/etc/credentials.new
 cp ${uchost}.cred /usr/etc/credentials.new
-if ($status) exit SMS_SMS_NOCRED
+if ($status) exit $SMS_SMS_NOCRED
 
 /usr/etc/mkcred /usr/etc/credentials.new
-if ($status) exit SMS_MKCRED
+if ($status) exit $SMS_MKCRED
 
 # Try to install the files
 foreach e ( "" .dir .pag)
@@ -71,7 +71,7 @@ end
 
 # If any of them didn't get installed, fail
 foreach e ( "" .dir .pag)
-   if (! -e /usr/etc/credentials$e) exit SMS_NOCRED
+   if (! -e /usr/etc/credentials$e) exit $SMS_NOCRED
 end
 
 # cleanup
@@ -84,5 +84,5 @@ exit 0
 
 #
 # 	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/nfs.sh,v $
-#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/nfs.sh,v 1.4 1988-08-05 14:29:46 qjb Exp $
+#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/nfs.sh,v 1.5 1988-08-06 16:42:17 qjb Exp $
 #

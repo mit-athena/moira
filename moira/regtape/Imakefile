@@ -1,4 +1,4 @@
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/Imakefile,v 1.6 1997-01-20 18:25:26 danw Exp $
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/Imakefile,v 1.7 1997-01-29 23:26:02 danw Exp $
 
 # Copyright 1992 by the Massachusetts Institute of Technology.
 #
@@ -8,7 +8,7 @@
 # Imakefile for moira regtape programs.
 
 SRCS= students.c employee.c sign.c verify.c vote.c rafnu.c
-CODE= students.dc employee.dc sign.dc verify.dc vote.dc rafnu.c
+CODE= students.pc employee.pc sign.pc verify.pc vote.pc rafnu.c
 SRCDIR = $(SRCTOP)/regtape
 DEFINES = $(GDSSINC)
 sqlrule()

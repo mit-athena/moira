@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/verify.dc,v 1.5 1997-01-20 18:25:31 danw Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/verify.pc,v 1.1 1997-01-29 23:26:10 danw Exp $
  *
  * This program will verify signatures on user records in the database.
  */

@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/sign.dc,v 1.5 1997-01-22 22:59:07 danw Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/sign.pc,v 1.1 1997-01-29 23:26:06 danw Exp $
  *
  * This program will bulk sign user records in the database.
  */

@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.35 1994-10-28 17:18:15 jweiss Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.36 1995-11-21 14:10:17 jweiss Exp $";
 #endif lint
 
 /*	This is the file user.c for the MOIRA Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v $
  *      $Author: jweiss $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.35 1994-10-28 17:18:15 jweiss Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.36 1995-11-21 14:10:17 jweiss Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -42,7 +42,11 @@
 #define CLASS 3
 #define ID 4
 
+#ifdef ATHENA
+#define DEFAULT_SHELL "/bin/athena/tcsh"
+#else
 #define DEFAULT_SHELL "/bin/csh"
+#endif
 #define DEFAULT_CLASS "?"
 
 

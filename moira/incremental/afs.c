@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/afs.c,v 1.45 1993-02-22 00:39:14 probe Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/afs.c,v 1.46 1993-02-22 03:35:22 probe Exp $
  *
  * Do AFS incremental updates
  *
@@ -534,6 +534,7 @@ edit_group(op, group, type, member)
 	    }
 	    moira_disconnect();
 	    if (!code && ustate!=1 && ustate!=2) return; /* inactive user */
+	    code = PRNOENT;
 	}
 
 	critical_alert("incremental",
@@ -645,13 +646,12 @@ moira_disconnect()
     struct member *m;
     
     if (!--mr_connections) {
-	while(member_head) {
-	    m = member_head;
+	mr_disconnect();
+	while(m = member_head) {
 	    edit_group(m->op, m->list, m->type, m->member);
 	    member_head = m->next;
 	    free(m);
 	}
-	mr_disconnect();
     }
     return 0;
 }

@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/afssync/sync.qc,v 1.8 1992-06-28 21:13:46 probe Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/afssync/sync.qc,v 1.9 1992-06-29 10:19:17 probe Exp $
  *
  *
  *  (c) Copyright 1989 by the Massachusetts Institute of Technology.
@@ -27,7 +27,6 @@ int dbase_fd;
 
 struct hash *users;
 struct hash *groups;
-struct hash *idpos;
 
 main(argc, argv)
 int argc;
@@ -59,7 +58,6 @@ char **argv;
     initialize_pt_error_table();
     Initdb();					/* Initialize prdb */
     
-    idpos = create_hash(20000);
     users = create_hash(10000);
     groups = create_hash(15000);
     
@@ -144,7 +142,7 @@ do_groups()
 
 	    /* If this list is hidden, set the pts entry to be s---- */
 	    if (hide && (status==0 || status==PRIDEXIST)) {
-		gpos = get_id(aid);
+		gpos = FindByID(0, aid);
 		status = pr_ReadEntry(0, 0, gpos, &gentry);
 		if (!status) {
 		    gentry.flags = PRGRP|PRACCESS|PRP_STATUS_ANY;
@@ -166,7 +164,7 @@ do_groups()
 	  (g = (long) hash_lookup(groups, lid))) {
 	  if (g==ANYUSERID || g==AUTHUSERID || u==ANONYMOUSID) {
 	      status = PRPERM;
-	  } else if ((gpos = get_id(g)) && (upos = get_id(u))) {
+	  } else if ((gpos = FindByID(0,g)) && (upos = FindByID(0,u))) {
 	      status = pr_ReadEntry(0,0,upos,&uentry);
 	      if (!status) status = pr_ReadEntry(0,0,gpos,&gentry);
 	      if (!status) status = AddToEntry (0, &gentry, gpos, u);
@@ -184,18 +182,6 @@ do_groups()
     fprintf(stderr, "Done: %s", ctime(&t));
 
 ##}
-
-
-get_id(id)
-{
-    long i;
-
-    if (i=(long)hash_lookup(idpos, id))
-        return i;
-    hash_store(idpos, id, i=FindByID(0, id));
-    return i;
-}
-
 
 
 /*

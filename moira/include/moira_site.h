@@ -1,4 +1,4 @@
-/* $Id: moira_site.h,v 1.38 2000-12-19 07:33:27 zacheiss Exp $
+/* $Id: moira_site.h,v 1.39 2001-05-31 21:35:12 zacheiss Exp $
  *
  * This file contains all definitions that allow easy access to
  * elements returned by most of the @i[Moira] queries.  It also defines
@@ -396,7 +396,20 @@
 #define	ZA_MODWITH	13
 #define ZA_END		14
 
+/* Container queries */
 
+#define CON_NAME        0
+#define CON_DESCRIPT    1
+#define CON_LOCATION    2
+#define CON_CONTACT     3
+#define CON_OWNER_TYPE  4
+#define CON_OWNER_NAME  5
+#define CON_MEMACE_TYPE 6
+#define CON_MEMACE_NAME 7
+#define CON_MODTIME     8
+#define CON_MODBY       9
+#define CON_MODWITH     10
+#define CON_END         11
 
 /* Directories & files used on the server machine: */
 

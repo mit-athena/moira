@@ -1,4 +1,4 @@
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/Imakefile,v 1.5 1997-01-20 18:14:06 danw Exp $
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/Imakefile,v 1.6 1997-01-29 22:57:31 danw Exp $
 #
 # Copyright 1990 by the Massachusetts Institute of Technology.
 #
@@ -10,8 +10,8 @@
 
 SRCS= dump_db.h dump_db.c bkup1.c bkup.c dumprest.c rest_db.c rest1.c rest.c
 SRCDIR=${SRCTOP}/backup
-CODE= db2bkup.awk db2rest.awk dump_db.h dump_db.dc dumprest.dc \
-	nightly.sh report.sh rest_db.dc
+CODE= db2bkup.awk db2rest.awk dump_db.h dump_db.pc dumprest.pc \
+	nightly.sh report.sh rest_db.pc
 BOBJS= dump_db.o bkup1.o bkup.o dumprest.o 
 ROBJS= rest_db.o rest1.o rest.o dumprest.o
 sqlrule()
@@ -19,14 +19,14 @@ sqlrule()
 program(mrbackup, ${BOBJS},${MR_LIBDEP}, ${CLIBS} ${SQL_LIB}, ${PROGDIR})
 program(mrrestore, ${ROBJS},${MR_LIBDEP}, ${CLIBS} ${SQL_LIB}, ${PROGDIR})
 
-bkup.dc: ../db/schema.sql db2bkup.awk
-	awk -f db2bkup.awk < ../db/schema.sql > bkup.dc
-bkup1.dc: bkup.dc
-rest.dc: ../db/schema.sql db2rest.awk
-	awk -f db2rest.awk < ../db/schema.sql > rest.dc
-rest1.dc: rest.dc
+bkup.pc: ../db/schema.sql db2bkup.awk
+	awk -f db2bkup.awk < ../db/schema.sql > bkup.pc
+bkup1.pc: bkup.pc
+rest.pc: ../db/schema.sql db2rest.awk
+	awk -f db2rest.awk < ../db/schema.sql > rest.pc
+rest1.pc: rest.pc
 clean::
-	$(RM) bkup.dc bkup1.dc rest.dc rest1.dc
+	$(RM) bkup.pc bkup1.pc rest.pc rest1.pc
 sqlfile(dump_db)
 sqlfile(rest_db)
 sqlfile(dumprest)

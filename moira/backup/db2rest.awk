@@ -1,5 +1,5 @@
 #	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/db2rest.awk,v $
-#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/db2rest.awk,v 1.4 1997-01-20 18:14:09 danw Exp $
+#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/db2rest.awk,v 1.5 1997-01-29 22:57:33 danw Exp $
 #
 #	This converts the file used to originally create the database
 #	into a program to restore it from a backup.
@@ -13,11 +13,11 @@ BEGIN {
 	print "EXEC SQL INCLUDE sqlca;";
 	print "void parse_nl(), parse_str(FILE *, char *, int), parse_sep();\n";
 
-	print "/* This file automatically generated */" > "rest1.dc";
-	print "/* Do not edit */\n" >> "rest1.dc";
-	print "#include <stdio.h>" >> "rest1.dc";
-	print "FILE *open_file();" >> "rest1.dc";
-	print "do_restores(prefix)\n\tchar *prefix;\n{" >> "rest1.dc";
+	print "/* This file automatically generated */" > "rest1.pc";
+	print "/* Do not edit */\n" >> "rest1.pc";
+	print "#include <stdio.h>" >> "rest1.pc";
+	print "FILE *open_file();" >> "rest1.pc";
+	print "do_restores(prefix)\n\tchar *prefix;\n{" >> "rest1.pc";
 }
 
 $1=="#" { next; }
@@ -25,7 +25,7 @@ $1=="#" { next; }
 /^create/ {
 	printf "restore_%s(f)\nFILE *f;\n", $3;
 	print "{\n\tEXEC SQL BEGIN DECLARE SECTION;";
-	printf "\trestore_%s(open_file(prefix, \"%s\"));\n", $3, $3 >> "rest1.dc";
+	printf "\trestore_%s(open_file(prefix, \"%s\"));\n", $3, $3 >> "rest1.pc";
 
 	tablename = $3;
 	rangename = substr(tablename, 1, 1);
@@ -105,5 +105,5 @@ NF >= 2 {
 
 END {
 	print "/* All done */";
-	print "}" >> "rest1.dc";
+	print "}" >> "rest1.pc";
 }

@@ -1,5 +1,5 @@
 #	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/db2bkup.awk,v $
-#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/db2bkup.awk,v 1.6 1997-01-20 18:14:09 danw Exp $
+#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/db2bkup.awk,v 1.7 1997-01-29 22:57:32 danw Exp $
 #
 #	This converts the file used to originally create the database
 #	into a program to back it up.
@@ -14,18 +14,18 @@ BEGIN {
 	print "#include \"dump_db.h\"";
 	print "#define dump_date dump_str\n";
 
-	print "/* This file automatically generated */" > "bkup1.dc";
-	print "/* Do not edit */\n" >> "bkup1.dc";
-	print "#include <stdio.h>" >> "bkup1.dc";
-	print "FILE *open_file();" >> "bkup1.dc";
-	print "do_backups(prefix)\n\tchar *prefix;\n{" >> "bkup1.dc";
+	print "/* This file automatically generated */" > "bkup1.pc";
+	print "/* Do not edit */\n" >> "bkup1.pc";
+	print "#include <stdio.h>" >> "bkup1.pc";
+	print "FILE *open_file();" >> "bkup1.pc";
+	print "do_backups(prefix)\n\tchar *prefix;\n{" >> "bkup1.pc";
 }
 
 $1=="#" { next; }
 
 /^create/ { 
 	printf "dump_%s(f)\nFILE *f;\n{\n\tEXEC SQL BEGIN DECLARE SECTION;\n", $3;
-	printf "\tdump_%s(open_file(prefix, \"%s\"));\n", $3, $3 >> "bkup1.dc";
+	printf "\tdump_%s(open_file(prefix, \"%s\"));\n", $3, $3 >> "bkup1.pc";
 
 	tablename = $3;
 	rangename = substr(tablename, 1, 1);
@@ -97,5 +97,5 @@ NF>=2 {
 
 END {
 	print "/* All done */";
-	print "}" >> "bkup1.dc";
+	print "}" >> "bkup1.pc";
 }

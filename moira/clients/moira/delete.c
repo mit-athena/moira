@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/delete.c,v 1.9 1988-08-07 18:25:37 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/delete.c,v 1.10 1988-08-07 21:34:08 mar Exp $";
 #endif lint
 
 /*	This is the file delete.c for the SMS Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/delete.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/delete.c,v 1.9 1988-08-07 18:25:37 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/delete.c,v 1.10 1988-08-07 21:34:08 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -557,7 +557,8 @@ char *argv[];
 
     list = NULL;
     
-    switch(status = sms_query("get_list_info", 1, argv + 1, StoreInfo, &list)){
+    switch(status = sms_query("get_list_info", 1, argv + 1,
+			      StoreInfo, (char *) &list)){
     case SMS_SUCCESS:
 	break;
 /*    case SMS_NO_WILDCARD:

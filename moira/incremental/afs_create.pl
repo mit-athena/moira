@@ -28,6 +28,7 @@ foreach $tries (1..3) {
     $code = system("$vos create $asrv $apart $vname -cell $cell >/dev/null");
     push(@except, $asrv);
     next if ($code);
+    break;
 }
 &fatal("Unable to create $vname in $cell") if ($code); # Too many create errors
 push(@clean, "$vos remove $asrv $apart $vname -cell $cell >/dev/null");

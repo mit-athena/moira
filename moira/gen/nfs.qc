@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/nfs.qc,v 1.5 1988-09-13 14:30:53 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/nfs.qc,v 1.6 1988-10-28 15:30:56 mar Exp $
  *
  * This generates the files necessary to load an nfs server.
  *
@@ -130,7 +130,7 @@ int do_nfs()
 int do_lists(lists)
 struct save_queue *lists;
 ##{
-    struct save_queue *sq;
+    struct save_queue *sq, *members;
     char file[64], *u;
     struct hash *users, *do_everyone();
     struct stat sb;
@@ -177,19 +177,24 @@ struct save_queue *lists;
 	}
 	sq = sq_create();
 	sq_save_data(sq, listname);
+	members = sq_create();
 	while (sq_get_data(sq, &lsname)) {
 ##	    repeat retrieve (lname = trim(l.name))
 ##		where m.list_id = l1.list_id and l1.name = @lsname and
 ##		      m.member_type = "LIST" and m.member_id = l.list_id {
-	      sq_save_unique_string(sq, lname);
+	      sq_save_unique_string(sq, strsave(lname));
 ##	    }
 ##	    repeat retrieve (id = m.member_id)
 ##		where m.list_id = l1.list_id and l1.name = @lsname and
 ##		      m.member_type = "USER" {
-	      if (u = hash_lookup(users, id)) 
-		fprintf(fd, "%s\n", u);
+	      if (u = hash_lookup(users, id)) {
+		  sq_save_unique_data(members, u);
+	      }
 ##	    }
 	}
+	while (sq_get_data(members, &lsname))
+	  fprintf(fd, "%s\n", lsname);
+	sq_destroy(members);
 	sq_destroy(sq);
 	if (fclose(fd)) {
 	    fprintf(stderr, "error closing %s\n", file);

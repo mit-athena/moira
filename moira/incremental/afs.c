@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/afs.c,v 1.18 1992-05-30 22:46:05 probe Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/afs.c,v 1.19 1992-05-31 17:40:13 probe Exp $
  *
  * Do AFS incremental updates
  *
@@ -132,7 +132,8 @@ int afterc;
     
     if (astate == bstate) {
 	/* Only a modify has to be done */
-	code = pr_ChangeEntry(before[U_NAME], after[U_NAME], auid, "");
+	code = pr_ChangeEntry(before[U_NAME], after[U_NAME],
+			      (auid==buid) ? 0 : auid, "");
 	if (code) {
 	    critical_alert("incremental",
 			   "Couldn't change user %s (id %d) to %s (id %d): %s",
@@ -199,7 +200,7 @@ int afterc;
 	strcpy(g2, "system:");
 	strcat(g1, before[L_NAME]);
 	strcat(g2, after[L_NAME]);
-	code = pr_ChangeEntry(g1, g2, -agid, "");
+	code = pr_ChangeEntry(g1, g2, (agid==bgid) ? 0 : -agid, "");
 	if (code) {
 	    critical_alert("incremental",
 			   "Couldn't change group %s (id %d) to %s (id %d): %s",

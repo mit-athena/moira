@@ -1,4 +1,4 @@
-/* $Id: addusr.c,v 1.14 1999-05-13 18:53:28 danw Exp $
+/* $Id: addusr.c,v 1.15 1999-12-30 17:30:27 danw Exp $
  *
  * Program to add users en masse to the moira database
  *
@@ -19,7 +19,7 @@
 #include <stdio.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/addusr/addusr.c,v 1.14 1999-05-13 18:53:28 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/addusr/addusr.c,v 1.15 1999-12-30 17:30:27 danw Exp $");
 
 #ifdef ATHENA
 #define DEFAULT_SHELL "/bin/athena/tcsh"
@@ -155,7 +155,7 @@ int main(int argc, char **argv)
     }
 
   /* fire up Moira */
-  if (mrcl_connect(server, "addusr", 1) != MRCL_SUCCESS)
+  if (mrcl_connect(server, "addusr", 2, 1) != MRCL_SUCCESS)
     exit(2);
 
   qargv[U_NAME] = UNIQUE_LOGIN;

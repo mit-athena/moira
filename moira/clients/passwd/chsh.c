@@ -1,4 +1,4 @@
-/* $Id: chsh.c,v 1.27 1999-07-28 23:01:05 danw Exp $
+/* $Id: chsh.c,v 1.28 1999-12-30 17:30:38 danw Exp $
  *
  * Talk to the Moira database to change a person's login shell.  The chosen
  * shell must exist.  A warning will be issued if the shell is not in
@@ -24,7 +24,7 @@
 #include <string.h>
 #include <unistd.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chsh.c,v 1.27 1999-07-28 23:01:05 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chsh.c,v 1.28 1999-12-30 17:30:38 danw Exp $");
 
 void usage(void);
 int chsh(char *uname);
@@ -71,7 +71,7 @@ int chsh(char *uname)
   int got_one = 0;		/* have we got a new shell yet? */
   char shell[BUFSIZ];		/* the new shell */
 
-  if (mrcl_connect(NULL, "chsh", 1) != MRCL_SUCCESS)
+  if (mrcl_connect(NULL, "chsh", 2, 1) != MRCL_SUCCESS)
     exit(1);
 
   /* First, do an access check */

@@ -1,4 +1,4 @@
-/* $Id: mailmaint.c,v 1.44 1999-05-13 18:53:43 danw Exp $
+/* $Id: mailmaint.c,v 1.45 1999-12-30 17:30:34 danw Exp $
  *
  * Simple add-me-to/remove-me-from list client
  *
@@ -26,7 +26,7 @@
 
 #include <krb.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v 1.44 1999-05-13 18:53:43 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v 1.45 1999-12-30 17:30:34 danw Exp $");
 
 #define STARTCOL 0
 #define STARTROW 3
@@ -145,7 +145,7 @@ int main(int argc, char *argv[])
 
   printf("Connecting to database for %s...please hold on.\n", username);
 
-  if (mrcl_connect(NULL, "mailmaint", 1))
+  if (mrcl_connect(NULL, "mailmaint", 2, 1))
     exit(2);
 
   initscr();

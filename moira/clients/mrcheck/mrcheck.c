@@ -1,4 +1,4 @@
-/* $Id: mrcheck.c,v 1.17 1999-05-13 18:53:45 danw Exp $
+/* $Id: mrcheck.c,v 1.18 1999-12-30 17:30:36 danw Exp $
  *
  * Verify that all Moira updates are successful
  *
@@ -19,7 +19,7 @@
 #include <string.h>
 #include <time.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrcheck/mrcheck.c,v 1.17 1999-05-13 18:53:45 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrcheck/mrcheck.c,v 1.18 1999-12-30 17:30:36 danw Exp $");
 
 char *atot(char *itime);
 int process_server(int argc, char **argv, void *sqv);
@@ -178,7 +178,7 @@ int main(int argc, char *argv[])
   else if (argc > 1)
     usage();
 
-  if (mrcl_connect(NULL, NULL, 0) != MRCL_SUCCESS)
+  if (mrcl_connect(NULL, NULL, 2, 0) != MRCL_SUCCESS)
     exit(2);
   status = mr_auth("mrcheck");
   if (status && auth_required)

@@ -1,4 +1,4 @@
-/* $Id: mrtest.c,v 1.47 1999-12-27 18:41:09 danw Exp $
+/* $Id: mrtest.c,v 1.48 1999-12-30 17:30:37 danw Exp $
  *
  * Bare-bones Moira client
  *
@@ -24,7 +24,7 @@
 #include "readline/history.h"
 #endif
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v 1.47 1999-12-27 18:41:09 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v 1.48 1999-12-30 17:30:37 danw Exp $");
 
 int recursion = 0, quote_output = 0, interactive;
 int count, quit = 0, cancel = 0;
@@ -50,6 +50,7 @@ void test_access(int argc, char **argv);
 void test_dcm(void);
 void test_script(int argc, char **argv);
 void test_list_requests(void);
+void test_version(int argc, char **argv);
 
 int main(int argc, char **argv)
 {
@@ -174,6 +175,8 @@ void execute_line(char *cmdbuf)
     test_list_requests();
   else if (!strcmp(argv[0], "quit") || !strcmp(argv[0], "Q"))
     quit = 1;
+  else if (!strcmp(argv[0], "version") || !strcmp(argv[0], "v"))
+    test_version(argc, argv);
   else
     {
       fprintf(stderr, "moira: Unknown request \"%s\".  "
@@ -261,6 +264,7 @@ void test_connect(int argc, char *argv[])
   status = mr_connect(server);
   if (status)
     com_err("moira (connect)", status, "");
+  mr_version(-1);
 }
 
 void test_disconnect(void)
@@ -501,4 +505,18 @@ void test_list_requests(void)
   printf("script, s\t\tRead commands from a script.\n");
   printf("list_requests, lr, ?\tList available commands.\n");
   printf("quit, Q\t\t\tLeave the subsystem.\n");
+}
+
+void test_version(int argc, char **argv)
+{
+  int status;
+
+  if (argc != 2)
+    {
+      com_err("moira (version)", 0, "Usage: version versionnumber");
+      return;
+    }
+  status = mr_version(atoi(argv[1]));
+  if (status)
+    com_err("moira (version)", status, "");
 }

@@ -1,4 +1,4 @@
-/* $Id: blanche.c,v 1.42 1999-12-14 20:13:59 danw Exp $
+/* $Id: blanche.c,v 1.43 1999-12-30 17:30:33 danw Exp $
  *
  * Command line oriented Moira List tool.
  *
@@ -20,7 +20,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.42 1999-12-14 20:13:59 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.43 1999-12-30 17:30:33 danw Exp $");
 
 struct member {
   int type;
@@ -278,7 +278,7 @@ int main(int argc, char **argv)
     showusers = showstrings = showlists = showkerberos = 1;
 
   /* fire up Moira */
-  status = mrcl_connect(server, "blanche", !noauth);
+  status = mrcl_connect(server, "blanche", 2, !noauth);
   if (status == MRCL_AUTH_ERROR)
     {
       com_err(whoami, 0, "Try the -noauth flag if you don't "

@@ -1,4 +1,4 @@
-/* $Id: main.c,v 1.35 1998-10-21 19:24:02 danw Exp $
+/* $Id: main.c,v 1.36 1999-12-30 17:30:35 danw Exp $
  *
  *	This is the file main.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -14,6 +14,7 @@
 
 #include <mit-copyright.h>
 #include <moira.h>
+#include <mrclient.h>
 #include "defs.h"
 #include "f_defs.h"
 #include "globals.h"
@@ -26,7 +27,7 @@
 
 #include <krb.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/main.c,v 1.35 1998-10-21 19:24:02 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/main.c,v 1.36 1999-12-30 17:30:35 danw Exp $");
 
 static void ErrorExit(char *buf, int status);
 static void Usage(void);
@@ -53,19 +54,8 @@ int main(int argc, char **argv)
 {
   int status;
   Menu *menu;
-  char *motd, **arg, pname[ANAME_SZ];
+  char **arg, pname[ANAME_SZ];
   struct sigaction act;
-
-  if ((status = tf_init(TKT_FILE, R_TKT_FIL)) ||
-      (status = tf_get_pname(pname)))
-    {
-      initialize_krb_error_table();
-      com_err(whoami, status + ERROR_TABLE_BASE_krb,
-	      "reading Kerberos ticket file");
-      exit(1);
-    }
-  tf_close();
-  user = pname;
 
   if (!(program_name = strrchr(argv[0], '/')))
     program_name = argv[0];
@@ -73,6 +63,10 @@ int main(int argc, char **argv)
     program_name++;
   program_name = strdup(program_name);
   whoami = strdup(program_name); /* used by menu.c,  ugh !!! */
+
+  user = mrcl_krb_user();
+  if (!user)
+    exit(1);
 
   verbose = TRUE;
   arg = argv;
@@ -113,18 +107,8 @@ int main(int argc, char **argv)
 	}
     }
 
-  if ((status = mr_connect(moira_server)))
-    ErrorExit("\nConnection to Moira server failed", status);
-
-  if ((status = mr_motd(&motd)))
-    ErrorExit("\nUnable to check server status", status);
-  if (motd)
-    {
-      fprintf(stderr, "The Moira server is currently unavailable:\n%s\n",
-	      motd);
-      mr_disconnect();
-      exit(1);
-    }
+  if (mrcl_connect(moira_server, program_name, 2, 0) != MRCL_SUCCESS)
+    exit(1);
 
   if ((status = mr_auth(program_name)))
     {

@@ -1,4 +1,4 @@
-/* $Id: chfn.c,v 1.19 1999-05-13 18:55:43 danw Exp $
+/* $Id: chfn.c,v 1.20 1999-12-30 17:30:37 danw Exp $
  *
  * Talk to the Moira database to change a person's GECOS information.
  *
@@ -22,7 +22,7 @@
 #include <stdio.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chfn.c,v 1.19 1999-05-13 18:55:43 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chfn.c,v 1.20 1999-12-30 17:30:37 danw Exp $");
 
 #define FALSE 0
 #define TRUE 1
@@ -81,7 +81,7 @@ int chfn(char *uname)
   struct finger_info old_info;
   struct finger_info new_info;
 
-  if (mrcl_connect(NULL, "chsh", 1) != MRCL_SUCCESS)
+  if (mrcl_connect(NULL, "chsh", 2, 1) != MRCL_SUCCESS)
     exit(1);
 
   /* First, do an access check. */

@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/strs.c,v $
  *	$Author: wesommer $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/strs.c,v 1.1 1987-09-02 17:16:20 wesommer Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/strs.c,v 1.2 1987-09-03 02:29:18 wesommer Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
@@ -9,9 +9,14 @@
  */
 
 #ifndef lint
-static char *rcsid_strs_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/strs.c,v 1.1 1987-09-02 17:16:20 wesommer Exp $";
+static char *rcsid_strs_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/strs.c,v 1.2 1987-09-03 02:29:18 wesommer Exp $";
 #endif lint
 
+#include <sys/types.h>
+#include <strings.h>
+#include <ctype.h>
+
+extern char *malloc(), *realloc();
 
 /*
  * Random string functions which should be in the C library..
@@ -24,8 +29,17 @@ char *
 strsave(s)
     char *s;
 {
-    register int len = strlen(s) + 1;
-    register char *p = malloc((u_int)len);
+    register int len;
+    register char *p;
+    /* Kludge for sloppy string semantics */
+    if (!s) {
+	    printf("NULL != \"\" !!!!\r\n");
+	    p = malloc(1);
+	    *p = "\0";
+	    return p;
+    }
+    len = strlen(s) + 1;
+    p = malloc((u_int)len);
     if (p) bcopy(s, p, len);
     return p;
 }

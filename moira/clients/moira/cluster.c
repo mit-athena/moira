@@ -1,4 +1,4 @@
-/* $Id: cluster.c,v 1.45 2000-09-07 20:09:57 zacheiss Exp $
+/* $Id: cluster.c,v 1.46 2000-12-19 07:34:04 zacheiss Exp $
  *
  *	This is the file cluster.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -105,6 +105,7 @@ static char **SetMachineDefaults(char **info, char *name)
   info[M_OS] = strdup(M_DEFAULT_TYPE);
   info[M_LOC] = strdup(M_DEFAULT_TYPE);
   info[M_CONTACT] = strdup(M_DEFAULT_TYPE);
+  info[M_BILL_CONTACT] = strdup(M_DEFAULT_TYPE);
   info[M_USE] = strdup("0");
   info[M_STAT] = strdup("1");
   info[M_SUBNET] = strdup("NONE");
@@ -113,7 +114,7 @@ static char **SetMachineDefaults(char **info, char *name)
   info[M_OWNER_NAME] = strdup("NONE");
   info[M_ACOMMENT] = strdup("");
   info[M_OCOMMENT] = strdup("");
-  info[15] = info[16] = NULL;
+  info[16] = info[17] = NULL;
   return info;
 }
 
@@ -220,11 +221,16 @@ static char *PrintMachInfo(char **info)
   Put_message(buf);
   Put_message("");
 
-  sprintf(buf, "Vendor:   %-16s    Model:      %-20s  OS:  %s",
-	  info[M_VENDOR], info[M_MODEL], info[M_OS]);
+  sprintf(buf, "Vendor:   %-16s    Location:        %s", info[M_VENDOR], 
+	  info[M_LOC]);
   Put_message(buf);
-  sprintf(buf, "Location: %-16s    Contact:    %-20s  Opt: %s",
-	  info[M_LOC], info[M_CONTACT], info[M_USE]);
+  sprintf(buf, "Model:    %-16s    Contact:         %s", info[M_MODEL], 
+	  info[M_CONTACT]);
+  Put_message(buf);
+  sprintf(buf, "OS:       %-16s    Billing Contact: %s", info[M_OS],
+	  info[M_BILL_CONTACT]);
+  Put_message(buf);
+  sprintf(buf, "\nOpt: %s", info[M_USE]);
   Put_message(buf);
   sprintf(buf, "\nAdm cmt: %s", info[M_ACOMMENT]);
   Put_message(buf);
@@ -535,6 +541,9 @@ char **AskMCDInfo(char **info, int type, Bool name)
       if (GetValueFromUser("Machine's contact", &info[M_CONTACT]) ==
 	  SUB_ERROR)
 	return NULL;
+      if (GetValueFromUser("Machine's billing contact", 
+			   &info[M_BILL_CONTACT]) == SUB_ERROR)
+	return NULL;
       while (1)
 	{
 	  int i;
@@ -566,38 +575,38 @@ char **AskMCDInfo(char **info, int type, Bool name)
 	   * was filled in thru a query to the db which does fill in this
 	   * field.
 	   */
-	  free(info[8]);
+	  free(info[9]);
 	}
 
-      info[8] = info[M_SUBNET];
-      info[9] = info[M_ADDR];
-      info[10] = info[M_OWNER_TYPE];
-      info[11] = info[M_OWNER_NAME];
-      info[12] = info[M_ACOMMENT];
-      info[13] = info[M_OCOMMENT];
+      info[9] = info[M_SUBNET];
+      info[10] = info[M_ADDR];
+      info[11] = info[M_OWNER_TYPE];
+      info[12] = info[M_OWNER_NAME];
+      info[13] = info[M_ACOMMENT];
+      info[14] = info[M_OCOMMENT];
 
       if (name)
 	{
-	  if (GetValueFromUser("Machine's network (or 'none')", &info[8])
+	  if (GetValueFromUser("Machine's network (or 'none')", &info[9])
 	      == SUB_ERROR)
 	    return NULL;
 	}
       if (GetValueFromUser("Machine's address (or 'unassigned' or 'unique')",
-			   &info[9]) == SUB_ERROR)
+			   &info[10]) == SUB_ERROR)
 	return NULL;
-      if (GetTypeFromUser("Machine's owner type", "ace_type", &info[10]) ==
+      if (GetTypeFromUser("Machine's owner type", "ace_type", &info[11]) ==
 	  SUB_ERROR)
 	return NULL;
-      if (strcmp(info[10], "NONE") &&
-	  GetValueFromUser("Owner's Name", &info[11]) == SUB_ERROR)
+      if (strcmp(info[11], "NONE") &&
+	  GetValueFromUser("Owner's Name", &info[12]) == SUB_ERROR)
 	return NULL;
-      if (GetValueFromUser("Administrative comment", &info[12]) == SUB_ERROR)
+      if (GetValueFromUser("Administrative comment", &info[13]) == SUB_ERROR)
 	return NULL;
-      if (GetValueFromUser("Operational comment", &info[13]) == SUB_ERROR)
+      if (GetValueFromUser("Operational comment", &info[14]) == SUB_ERROR)
 	return NULL;
-      info[14] = NULL;
-      FreeAndClear(&info[15], TRUE);
+      info[15] = NULL;
       FreeAndClear(&info[16], TRUE);
+      FreeAndClear(&info[17], TRUE);
       break;
     case SUBNET:
       if (GetValueFromUser("Network description", &info[SN_DESC]) == SUB_ERROR)

@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/nfs.qc,v 1.6 1988-10-28 15:30:56 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/nfs.qc,v 1.7 1988-12-07 16:56:00 mar Exp $
  *
  * This generates the files necessary to load an nfs server.
  *
@@ -18,21 +18,6 @@
 #define NFS_DIR	"/u1/sms/dcm/nfs"
 
 #define min(x,y)	((x) < (y) ? (x) : (y))
-
-struct np {
-    char mach[33];
-    char dev[33];
-    char list[33];
-};
-
-struct fs {
-    int nfsphys;
-    char *dir;
-    int owner;
-    int owners;
-    struct qt *quota;
-};
-
 
 char *whoami = "nfs.gen";
 char *malloc(), *strsave();

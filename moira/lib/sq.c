@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/sq.c,v 1.3 1988-12-07 17:21:30 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/sq.c,v 1.4 1989-12-28 16:15:32 mar Exp $
  *
  * Generic Queue Routines
  *
@@ -92,6 +92,29 @@ sq_get_data(sq, data)
     if (sq->q_lastget == sq) return(0);
     *data = sq->q_lastget->q_data;
     return(1);
+}
+
+sq_remove_data(sq, data)
+    register struct save_queue *sq;
+    register char **data;
+{
+    if (sq->q_next != sq) {
+	*data = sq->q_next->q_data;
+	sq->q_next = sq->q_next->q_next;
+	free(sq->q_next->q_prev);
+	sq->q_next->q_prev = sq;
+	return(1);
+    }
+    return(0);
+}
+
+int sq_empty(sq)
+    register struct save_queue *sq;
+{
+    if (sq->q_next == sq)
+      return(1);
+    else
+      return(0);
 }
 
 sq_destroy(sq)

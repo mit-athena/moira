@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.2 1988-09-14 03:07:10 qjb Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.3 1988-09-14 14:04:45 mar Exp $
  *
  * Command line oriented SMS List tool.
  *
@@ -21,7 +21,7 @@
 #include <sms_app.h>
 
 #ifndef LINT
-static char smslist_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.2 1988-09-14 03:07:10 qjb Exp $";
+static char smslist_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.3 1988-09-14 14:04:45 mar Exp $";
 #endif
 
 
@@ -30,8 +30,7 @@ struct member {
     char *name;
 };
 
-/* member types: ### This should be an enumerated type ?
-   It is important to membercmp that M_USER < M_LIST < M_STRING */
+/* It is important to membercmp that M_USER < M_LIST < M_STRING */
 #define M_ANY		0
 #define M_USER		1
 #define M_LIST		2
@@ -107,26 +106,26 @@ char **argv;
 		if (arg - argv < argc - 1) {
 		    FILE *in;
 		    char buf[BUFSIZ];
-		    
+
 		    syncflg++;
 		    ++arg;
 		    if (!strcmp(*arg, "-"))
-			in = stdin;
+		      in = stdin;
 		    else {
 			in = fopen(*arg, "r");
-		if (!in) {
+			if (!in) {
 			    com_err(whoami, errno, 
 				    " while opening %s for input", *arg);
 			    exit(2);
 			}
 		    }
 		    while (fgets(buf, BUFSIZ, in))
-			if (memberstruct = parse_member(buf))
-			    sq_save_data(synclist, memberstruct);
+		      if (memberstruct = parse_member(buf))
+			sq_save_data(synclist, memberstruct);
 		    if (!feof(in))
-			com_err(whoami, errno, " while reading from %s", *arg);
+		      com_err(whoami, errno, " while reading from %s", *arg);
 		} else
-		    usage(argv);
+		  usage(argv);
 	    else
 		usage(argv);
 	}
@@ -178,7 +177,7 @@ char **argv;
 	status = sms_query("get_members_of_list", 1, &listname,
 			   get_list_members, (char *)memberlist);
 	if (status)
-	  com_err(whoami, status, " while getting members of list");
+	  com_err(whoami, status, " getting members of list %s", listname);
 	while (sq_get_data(synclist, &memberstruct)) {
 	    struct save_queue *q;
 	    int removed = 0;
@@ -204,6 +203,10 @@ char **argv;
     while (sq_get_data(addlist, &memberstruct)) {
 	membervec[0] = listname;
 	membervec[2] = memberstruct->name;
+	if (verbose && syncflg) {
+	    printf("Adding member ");
+	    show_list_member(memberstruct);
+	}
 	switch (memberstruct->type) {
 	case M_ANY:
 	case M_USER:
@@ -241,6 +244,10 @@ char **argv;
     while (sq_get_data(dellist, &memberstruct)) {
 	membervec[0] = listname;
 	membervec[2] = memberstruct->name;
+	if (verbose && syncflg) {
+	    printf("Deleting member ");
+	    show_list_member(memberstruct);
+	}
 	switch (memberstruct->type) {
 	case M_ANY:
 	case M_USER:
@@ -281,8 +288,19 @@ char **argv;
     }
 
     /* Display the members of the list now, if requested */
-    if (memberflg)
-	display_list_members();
+    if (memberflg) {
+	if (recursflg)
+	  recursive_display_list_members();
+	else {
+	    status = sms_query("get_members_of_list", 1, &listname,
+			       get_list_members, (char *)memberlist);
+	    if (status)
+	      com_err(whoami, status, " while getting members of list %s",
+		      listname);
+	    while (sq_get_data(memberlist, &memberstruct))
+	      show_list_member(memberstruct);
+	}
+    }
 
     /* We're done! */
     sms_disconnect();
@@ -301,44 +319,46 @@ char **argv;
     fprintf(stderr, "   -a | -add member\n");
     fprintf(stderr, "   -d | -delete member\n");
     fprintf(stderr, "   -f | -file filename\n");
-#ifdef notdef
     fprintf(stderr, "   -D | -debug\n");
-#endif
     exit(1);
 }
 
 
-show_list_members(memberlist)
-  struct sq *memberlist;
-{
-    struct member *memberstruct;
+/* Display the members stored in the queue */
 
-    while (sq_get_data(memberlist, &memberstruct)) {
-	if (verbose) {
-	    char *s;
-	    switch (memberstruct->type) {
-	      case M_USER:
-		s = "USER";
-		break;
-	      case M_LIST:
-		s = "LIST";
-		break;
-	      case M_STRING:
-		s = "STRING";
-		break;
-	    }
-	    printf("%s:%s\n", s, memberstruct->name);
-	} else {
-	    if (memberstruct->type == M_LIST)
-		printf("LIST:%s\n", memberstruct->name);
-	    else if (memberstruct->type == M_STRING &&
-		     !index(memberstruct->name, '@'))
-		printf("STRING:%s\n", memberstruct->name);
-	    else
-		printf("%s\n", memberstruct->name);
+show_list_member(memberstruct)
+struct member *memberstruct;
+{
+    if (verbose) {
+	char *s;
+	switch (memberstruct->type) {
+	case M_USER:
+	    s = "USER";
+	    break;
+	case M_LIST:
+	    s = "LIST";
+	    break;
+	case M_STRING:
+	    s = "STRING";
+	    break;
+	case M_ANY:
+	    printf("%s\n", memberstruct->name);
+	    return;
 	}
+	printf("%s:%s\n", s, memberstruct->name);
+    } else {
+	if (memberstruct->type == M_LIST)
+	  printf("LIST:%s\n", memberstruct->name);
+	else if (memberstruct->type == M_STRING &&
+		 !index(memberstruct->name, '@'))
+	  printf("STRING:%s\n", memberstruct->name);
+	else
+	  printf("%s\n", memberstruct->name);
     }
 }
+
+
+/* Show the retrieved information about a list */
 
 show_list_info(argc, argv, hint)
 int argc;
@@ -364,6 +384,8 @@ int hint;
 }
 
 
+/* Show the retrieve list member count */
+
 show_list_count(argc, argv, hint)
 int argc;
 char **argv;
@@ -373,19 +395,66 @@ int hint;
 }
 
 
-display_list_members()
-{
-    int status;
+/* Recursively find all of the members of listname, and then display them */
 
-    status = sms_query("get_members_of_list", 1, &listname,
-		       get_list_members, (char *)memberlist);
-    if (status)
-	com_err(whoami, status, " while getting members of list");
-    if (recursflg) 
-	fprintf(stderr,"%s: The recursive flag is not yet implemented.\n",
-		whoami);
-    show_list_members(memberlist);
+recursive_display_list_members()
+{
+    int status, count, savecount;
+    struct save_queue *lists, *members;
+    struct member *m, *m1, *data;
+
+    lists = sq_create();
+    members = sq_create();
+    m = (struct member *) malloc(sizeof(struct member));
+    m->type = M_LIST;
+    m->name = listname;
+    sq_save_data(lists, m);
+
+    while (sq_get_data(lists, &m)) {
+	sq_destroy(memberlist);
+	memberlist = sq_create();
+	if (debugflg)
+	  fprintf(stderr, "Fetching members of %s\n", m->name);
+	status = sms_query("get_members_of_list", 1, &(m->name),
+			   get_list_members, (char *)memberlist);
+	if (status)
+	  com_err(whoami, status, " while getting members of list %s", m->name);
+	while (sq_get_data(memberlist, &m1)) {
+	    if (m1->type == M_LIST)
+	      unique_add_member(lists, m1);
+	    else
+	      unique_add_member(members, m1);
+	}
+    }
+    savecount = count = sq_count_elts(members);
+    data = (struct member *) malloc(count * sizeof(struct member));
+    count = 0;
+    while (sq_get_data(members, &m))
+      bcopy(m, &data[count++], sizeof(struct member));
+    qsort(data, count, sizeof(struct member), membercmp);
+    for (count = 0; count < savecount; count++) {
+	show_list_member(&data[count]);
+    }
 }
+
+
+/* add a struct member to a queue if that member isn't already there. */
+
+unique_add_member(q, m)
+struct save_queue  *q;
+struct member *m;
+{
+    struct save_queue *qp;
+
+    for (qp = q->q_next; qp != q; qp = qp->q_next) {
+	if (!membercmp(qp->q_data, m))
+	  return;
+    }
+    sq_save_data(q, m);
+}
+
+
+/* Collect the retrieved members of the list */
 
 get_list_members(argc, argv, q)
 int argc;
@@ -412,12 +481,19 @@ struct save_queue *q;
 }
 
 
+/* Called only if a query returns a value that we weren't expecting */
+
 scream()
 {
     fprintf(stderr, "Programmer botch\n");
     exit(3);
 }
 
+
+/* Parse a line of input, fetching a member.  NULL is returned if a member
+ * is not found.  Only the first token on the line is parsed.  ';' is a
+ * comment character.
+ */
 
 struct member *parse_member(s)
 register char *s;
@@ -463,8 +539,6 @@ register char *s;
 }
 
 
-int membercmp(m1, m2)
-  struct member *m1, *m2;
   /* 
    * This routine two compares members by the following rules:
    * 1.  A USER is less than a LIST
@@ -474,9 +548,25 @@ int membercmp(m1, m2)
    * It returs < 0 if the first member is less, 0 if they are identical, and
    * > 0 if the second member is less (the first member is greater).
    */
+
+int membercmp(m1, m2)
+  struct member *m1, *m2;
 {
     if (m1->type == M_ANY || m2->type  == M_ANY || (m1->type == m2->type))
 	return(strcmp(m1->name, m2->name));
     else
 	return(m1->type - m2->type);
+}
+
+
+sq_count_elts(q)
+struct save_queue *q;
+{
+    char  *foo;
+    int count;
+
+    count = 0;
+    while (sq_get_data(q, &foo))
+      count++;
+    return(count);
 }

@@ -1,5 +1,5 @@
 #ifndef lint
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/nfs.c,v 1.2 1988-06-10 18:37:20 kit Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/nfs.c,v 1.3 1988-06-27 16:12:38 kit Exp $";
 #endif lint
 
 /*	This is the file nfs.c for allmaint, the SMS client that allows
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/nfs.c,v $
  *      $Author: kit $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/nfs.c,v 1.2 1988-06-10 18:37:20 kit Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/nfs.c,v 1.3 1988-06-27 16:12:38 kit Exp $
  *	
  *  	Copyright 1987, 1988 by the Massachusetts Institute of Technology.
  *
@@ -100,6 +100,7 @@ char ** info;
  *	Returns: DM_NORMAL.
  */
 
+/* ARGSUSED */
 int 
 ShowNFSService(argc, argv)
 int argc;
@@ -130,6 +131,7 @@ char **argv;
  *	Returns: DM_NORMAL.
  */
 
+/* ARGSUSED */
 int
 AddNFSService(argc, argv)
 char **argv;
@@ -200,7 +202,7 @@ int argc;
 	return (DM_NORMAL);
     }
 
-    top = elem;
+    top = elem = QueueTop(elem);
     one_service = ( QueueCount(top) == 1 );
     while (elem != NULL) {
 	info = (char **) elem->q_data;
@@ -273,7 +275,7 @@ char **argv;
 	com_err(program_name, stat, " while checking usage of partition");
 
     length = strlen( dir );
-    top = elem;
+    top = elem = QueueTop(elem);
     while (elem != NULL) {
 	char buf[BUFSIZ];
 	char ** info = (char ** ) elem->q_data;

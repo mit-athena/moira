@@ -1,5 +1,5 @@
 #ifndef lint
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/main.c,v 1.2 1988-06-10 18:37:04 kit Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/main.c,v 1.3 1988-06-27 16:12:20 kit Exp $";
 #endif lint
 
 /*	This is the file main.c for allmaint, the SMS client that allows
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/main.c,v $
  *      $Author: kit $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/main.c,v 1.2 1988-06-10 18:37:04 kit Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/main.c,v 1.3 1988-06-27 16:12:20 kit Exp $
  *	
  *  	Copyright 1987, 1988 by the Massachusetts Institute of Technology.
  *
@@ -32,7 +32,10 @@
 #include "allmaint_funcs.h"
 #include "globals.h"
 
-extern Menu allmaint_top_menu;
+char * whoami;			/* used by menu.c ugh!!! */
+
+extern Menu sms_top_menu;
+
 static void ErrorExit(), Usage(), SignalHandler();
 char *getlogin();
 uid_t getuid();
@@ -78,7 +81,10 @@ main(argc, argv)
       Usage();
       break;
     }
-    
+
+    program_name = Strsave(program_name);
+    whoami = Strsave(program_name); /* used by menu.c,  ugh !!! */
+
     if ( status = sms_connect() ) 
 	ErrorExit("\nConnection to SMS server failed", status);
 
@@ -89,17 +95,20 @@ main(argc, argv)
  * These signals should not be set until just before we fire up the menu
  * system. 
  */
+
+#ifndef DEBUG
     (void) signal(SIGHUP, SignalHandler);
-    (void) signal(SIGINT, SignalHandler);
+    (void) signal(SIGINT, SignalHandler); 
     (void) signal(SIGQUIT, SignalHandler);
+#endif DEBUG
 
     if (use_menu) {		/* Start menus that execute program */
         Start_paging();
-	Start_menu(&allmaint_top_menu);
+	Start_menu(&sms_top_menu);
 	Stop_paging();
     }
     else			/* Start program without menus. */
-	Start_no_menu(&allmaint_top_menu);
+	Start_no_menu(&sms_top_menu);
 
     sms_disconnect();
     exit(0);
@@ -141,7 +150,7 @@ Usage()
  *	Returns: doesn't
  */
 
-void
+static void
 SignalHandler()
 {
     Put_message("Signal caught - exiting");

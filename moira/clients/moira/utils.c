@@ -1,5 +1,5 @@
 #ifndef lint
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v 1.2 1988-06-10 18:37:36 kit Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v 1.3 1988-06-27 16:12:56 kit Exp $";
 #endif lint
 
 /*	This is the file utils.c for allmaint, the SMS client that allows
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v $
  *      $Author: kit $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v 1.2 1988-06-10 18:37:36 kit Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v 1.3 1988-06-27 16:12:56 kit Exp $
  *	
  *  	Copyright 1987, 1988 by the Massachusetts Institute of Technology.
  *
@@ -46,9 +46,8 @@ void
 FreeInfo(info)
 char ** info;
 {
-    char *pointer = *info;
-    while (pointer != NULL) 
-	free(pointer++);
+    while (*info != NULL)
+	FreeAndClear(info++, TRUE);
 }
 
 /*	Function Name: FreeAndClear        - I couldn't resist the name.
@@ -104,7 +103,7 @@ struct qelem * elem;
 	FreeInfo( info ); /* free info fields */
 	free(elem->q_data);		/* free info array itself. */
     }
-    remque(elem);		/* remove this element from the queue */
+    RemoveQueue(elem);		/* remove this element from the queue */
     free(elem);			/* free its space. */
 }
 
@@ -127,6 +126,40 @@ struct qelem * elem;
     }
 }
 
+/*	Function Name: AddQueue
+ *	Description: Adds an element to a queue
+ *	Arguments: elem, pred - element and its predecessor.
+ *	Returns: none.
+ */
+
+AddQueue(elem, pred)
+struct qelem * elem, *pred;
+{
+    if (pred == NULL) {
+	elem->q_forw = NULL;
+	elem->q_back = NULL;
+	return;
+    }
+    elem->q_back = pred;
+    elem->q_forw = pred->q_forw;
+    pred->q_forw = elem;
+}
+
+/*	Function Name: RemoveQueue
+ *	Description: removes an element from a queue.
+ *	Arguments: elem.
+ *	Returns: none.
+ */
+
+RemoveQueue(elem)
+struct qelem *elem;
+{
+    if (elem->q_forw != NULL) 
+	(elem->q_forw)->q_back = elem->q_back;
+    if (elem->q_back != NULL)
+	(elem->q_back)->q_forw = elem->q_forw;
+}
+
 /*	Function Name: QueueCount
  *	Description: Counts the number of elements in a queue
  *	Arguments: elem - any element in the queue.
@@ -146,7 +179,6 @@ struct qelem * elem;
     return(count);
 }
 
-/* ARGSUSED */
 int
 StoreInfo(argc, argv, data)
 int argc;
@@ -162,14 +194,8 @@ char * data;
 	info[count] = Strsave(argv[count]);
     info[count] = NULL;		/* NULL terminate this sucker. */
 
-    if (*old_elem == (struct qelem *) NULL) {	 /* first elem. */
-	new_elem->q_data = (char *) info;
-	new_elem->q_forw = new_elem->q_back = (struct qelem *) NULL;
-    }
-    else {			/* all other elements. */
-	new_elem->q_data = (char *) info;
-	insque(new_elem, *old_elem);
-    }
+    new_elem->q_data = (char *) info;
+    AddQueue(new_elem, *old_elem);
 
     *old_elem = new_elem;
     return(SMS_CONT);
@@ -316,7 +342,7 @@ int
 Confirm(prompt)
 char * prompt;
 {
-  return( ~verbose || YesNoQuestion(prompt,FALSE) );
+  return( !verbose || YesNoQuestion(prompt,FALSE) );
 }
 
 /*	Function Name: ValidName
@@ -348,7 +374,7 @@ int
 ToggleVerboseMode()
 {
 
-  verbose = ~verbose;
+  verbose = !verbose;
 
   if (verbose)
     Put_message("Delete functions will first confirm\n");
@@ -376,7 +402,7 @@ NullFunc()
  *	Arguments: info - list that needs this name slipped into it.
  *                 name - the name to slip into the list.
  *	Returns: a pointer to the new list.
- *      NOTE:  This screws up the numbers if the elements of the array in a
+ *      NOTE:  This screws up the numbers of the elements of the array in a
  *             big way.
  */
 
@@ -388,9 +414,9 @@ char * name;
 
     /* This also pushes the NULL down. */
     for (i = CountArgs(info); i > 1; i--) { 
-	info[i+i] = info[i];
+	info[i] = info[i-1];
     }
-    info[1] = Strsave(name);	/* now slip in the name. */
+    info[1] = name;	/* now slip in the name. */
 }
 
 /*	Function Name: GetValueFromUser
@@ -409,7 +435,7 @@ char * prompt, ** pointer;
     char buf[BUFSIZ];
 
     PromptWithDefault(prompt, buf, BUFSIZ, *pointer);
-    if ( pointer != NULL)
+    if (*pointer != NULL)
 	free(*pointer);
     *pointer = Strsave(buf);
 }
@@ -427,14 +453,9 @@ char *machine;
     struct hostent *hostinfo;
 
     hostinfo = gethostbyname(machine);
+/* If this fails then we just return what we were passed. */
     if (hostinfo != (struct hostent *) NULL)
 	machine = hostinfo->h_name;
-    else			
-/*
- *  gethostbyname failed.  This should be very rare, since we're
- *  dealing with local hosts, so no fancy error recovery. 
- */
-	machine = (char *) NULL;
     return (machine);
 }
 

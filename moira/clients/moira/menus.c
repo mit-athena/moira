@@ -1,5 +1,5 @@
 #ifndef lint
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menus.c,v 1.2 1988-06-10 18:37:09 kit Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menus.c,v 1.3 1988-06-27 16:12:25 kit Exp $";
 #endif lint
 
 /*	This is the file menu.c for allmaint, the SMS client that allows
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menus.c,v $
  *      $Author: kit $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menus.c,v 1.2 1988-06-10 18:37:09 kit Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menus.c,v 1.3 1988-06-27 16:12:25 kit Exp $
  *	
  *  	Copyright 1987, 1988 by the Massachusetts Institute of Technology.
  *
@@ -60,23 +60,23 @@ Menu attachmaint_top_menu = {
   NULLFUNC, 
   NULLFUNC, 
   "Attach/Filesystem Maintenance", 
-  7,
+  6,
   {
     SUBMENU("filesystem", "Filesystem Work", &attachmaint_filemenu),
     { GetFSAlias, NULLMENU, 2, {
-      {"check", "Check An Association."},
-      {"name", "name (user/group/course): "}
+      {"check", "Check An Association"},
+      {"name", "alias name : "}
     } },
     { CreateFSAlias, NULLMENU, 2, {
-      {"alais", "Associate with a Filesystem."},
-      {"name", "name (user/course/project): "},
+      {"alias", "Associate with a Filesystem"},
+      {"name", "alias name : "},
     } },
     { DeleteFSAlias, NULLMENU, 2, {
-      {"unalias", "Disassociate from a Filesystem."},
-      {"name", "name (user/course/project): "},
+      {"unalias", "Disassociate from a Filesystem"},
+      {"name", "alias name : "},
     } },
-    SIMPLEFUNC("verbose", "Toggle Verbosity of Delete.", ToggleVerboseMode),
-    SIMPLEFUNC("help", "Help ...", AttachHelp)
+    SIMPLEFUNC("verbose", "Toggle Verbosity of Delete", ToggleVerboseMode),
+    SIMPLEFUNC("help", "Help ..", AttachHelp)
   }
 };
 
@@ -88,37 +88,38 @@ Menu clustermaint_machine_menu = {
   NULLFUNC,
   NULLFUNC,
   "Machine Maintenence",
-  6,
+  7,
   {
     { ShowMachineInfo, NULLMENU, 2, {
-      {"Show","Get machine information."},
+      {"show","Get machine information"},
       {"name","Machine's Name: "}
     } },
     { AddMachine, NULLMENU, 2, {
-      {"Add","Add a new machine."},
+      {"add","Add a new machine"},
       {"name","Machine's Name: "},
     } },
     { UpdateMachine, NULLMENU, 2, {
-      {"Update","Update machine information."},
+      {"update","Update machine information"},
       {"name","Machine's Name: "},
     } },
     { DeleteMachine, NULLMENU, 2, {
-      {"Delete","Delete this machine."},
+      {"delete","Delete this machine"},
       {"name","Machine's Name: "}
     } },
     { MachineToClusterMap, NULLMENU, 3, {
-      {"Map", "Show Machine to cluster mapping."},
-      {"name", "Machine's Name:"},
-      {"cluster", "Cluster's Name:"},
+      {"map", "Show Machine to cluster mapping"},
+      {"name", "Machine's Name: "},
+      {"cluster", "Cluster's Name: "},
     } },
     { AddMachineToCluster, NULLMENU, 3, {
-      {"AddCluster","Add this machine to a cluster."},
+      {"addcluster","Add machines to a clusters"},
       {"name","Machine's Name: "},
-      {"cluster", "Cluster's Name:"},
+      {"cluster", "Cluster's Name: "},
     } },
-    { RemoveMachineFromCluster, NULLMENU, 2, {
-      {"RemoveCluster", "Remove this machine from a cluster."},
+    { RemoveMachineFromCluster, NULLMENU, 3, {
+      {"remcluster", "Remove machines from clusters"},
       {"name","Machine's Name: "},
+      {"cluster", "Cluster's Name: "},
     } },
   }
 };
@@ -127,53 +128,63 @@ Menu clustermaint_cluster_menu = {
   NULLFUNC,
   NULLFUNC,
   "Cluster Information",
-  5,
+  7,
   {
     { ShowClusterInfo, NULLMENU, 2, {
-      {"Show", "Get cluster information."},
+      {"show", "Get cluster information"},
       {"name", "Cluster's Name: "}
     } },
     { MachinesInCluster, NULLMENU, 2, {
-      {"Machines", "List all machines in a cluster."},
+      {"machines", "List all machines in a cluster"},
       {"clus", "Cluster's Name: "}
     } },
     { AddCluster, NULLMENU, 2, {
-      {"add", "Add a new cluster."},
+      {"add", "Add a new cluster"},
       {"name","Cluster's Name: "},
     } },
     { UpdateCluster, NULLMENU, 2, {
-      {"update", "Update cluster information."},
+      {"update", "Update cluster information"},
       {"name","Cluster's Name: "},
     } },
     { DeleteCluster, NULLMENU, 2, {
-      {"delete", "Delete this cluster."},
+      {"delete", "Delete this cluster"},
       {"name", "Cluster's Name: "}
+    } },
+    { AddMachineToCluster, NULLMENU, 3, {
+      {"addcluster","Add machines to a clusters"},
+      {"name","Machine's Name: "},
+      {"cluster", "Cluster's Name: "},
+    } },
+    { RemoveMachineFromCluster, NULLMENU, 3, {
+      {"remcluster", "Remove machines from clusters"},
+      {"name","Machine's Name: "},
+      {"cluster", "Cluster's Name: "},
     } },
   }
 };
 
-Menu clustermaint_data_menu= {
+Menu clustermaint_data_menu = {
   NULLFUNC,
   NULLFUNC,
   "Cluster Data Maintenence",
   3,
   {
     { ShowClusterData, NULLMENU, 3, {
-      {"show_one", "Show Data on a given Cluster"},
+      {"show", "Show Data on a given Cluster"},
       {"clus", "Cluster's Name: "},
-      {"label", "Label Identifing the data"},
+      {"label", "Label Identifing the data: "},
     } },
     { AddClusterData, NULLMENU, 4, {
       {"add", "Add Data to a given Cluster"},
       {"clus", "Cluster Name: "},
-      {"label", "Label Identifing the data"},
-      {"data", "The data to be added"},
+      {"label", "Label Identifing the data: "},
+      {"data", "The data to be added: "},
     } },
     { RemoveClusterData, NULLMENU, 4, {
       {"delete", "Remove Data to a given Cluster"},
       {"clus", "Cluster's Name: "},
-      {"label", "Label Identifing the data"},
-      {"data", "The data to be removed"},
+      {"label", "Label Identifing the data: "},
+      {"data", "The data to be removed: "},
     } } 
   }
 };
@@ -186,7 +197,7 @@ Menu clustermaint_top_menu = {
   {
     SUBMENU("machine", "Work on Machines", &clustermaint_machine_menu),
     SUBMENU("cluster", "Work on Clusters", &clustermaint_cluster_menu),
-    SUBMENU("service", "Service Clusters", &clustermaint_data_menu),
+    SUBMENU("data", "Work with cluster data", &clustermaint_data_menu),
     {MachineToClusterMap, NULLMENU, 3, {
       {"map", "Machine to Cluster Mapping"},
       {"machine", "Machine Name: "},
@@ -311,31 +322,33 @@ Menu listmaint_top_menu = {
     "List Maintenance Menu",
     8,
     {
+	{ ShowListInfo, NULLMENU, 2, {
+	    {"show", "Display information about a list"},
+	    {"list name", "Name of list: "}
+	} },
         { NULLFUNC, &listmaint_member_menu, 2, {
 	    {"add", "Create new List"},
+	    {"list name", "Name of list (do not use wildcards): "}
+	} },
+	{ UpdateList, NULLMENU, 2, {
+	    {"update", "Update characteristics of a list"},
 	    {"list name", "Name of list: "}
 	} },
 	{ DeleteList, NULLMENU, 2, {
 	    {"delete", "Delete a List"},
 	    {"list name", "Name of list: "}
 	} },
-	{ ShowListInfo, NULLMENU, 2, {
-	    {"show", "Display information about a list"},
-	    {"list name", "Name of list: "}
-	} },
-	{ UpdateList, NULLMENU, 2, {
-	    {"update", "Update characteristics of a list"},
-	    {"list name", "Name of list: "}
-	} },
 	{ NULLFUNC, &listmaint_member_menu, 2, {
 	    {"members", "Change/Display the membership of a list"},
-	    {"list name", "Name of list: "}
+	    {"list name", "Name of list (do not use wildcards): "}
 	} },
 	SIMPLEFUNC("query_remove",
 		   "Interactively remove an item from all lists",
 		   InterRemoveItemFromLists),
 	SUBMENU("list_lists", "Display inventory of lists",
 		&listmaint_list_menu),
+	SIMPLEFUNC("verbose", "Toggle Verbosity of Delete", 
+		   ToggleVerboseMode),
 	SIMPLEFUNC("help", "How to use this program", ListHelp)
     } 
 };
@@ -351,7 +364,7 @@ Menu nfsmaint_top_menu = {
   5,
   {
     { ShowNFSService, NULLMENU, 3, {
-      { "show", "Show an NFS server " },
+      { "show", "Show an NFS server" },
       { "machine", "Machine Name: "},
       { "device", "Directory: "}
     } },
@@ -479,12 +492,12 @@ Menu usermaint_top_menu = {
        {"login name", "Desired login name: "}
      } },
     {ShowUserByName, NULLMENU, 3, {
-      {"full", "Show user information by name."},
+      {"full", "Show user information by name"},
       {"first", "First name: "},
       {"last", "Last name: "}
     } },
     {ShowUserByClass, NULLMENU, 2, {
-       {"login", "Show names of users in a given class."},
+       {"login", "Show names of users in a given class"},
        {"login name", "Desired class: "}
      } },    
     {ModifyUser, NULLMENU, 2, {
@@ -525,13 +538,13 @@ Menu usermaint_top_menu = {
 };
 
 /* 
- * Allmaint top menu
+ * Sms top menu
  */
 
-Menu allmaint_top_menu = {
+Menu sms_top_menu = {
   NULLFUNC,
   NULLFUNC,
-  "All Maint Top Level Menu",
+  "Sms Database Manipulation",
   5,
   {
     SUBMENU("attachmaint","open the attachmaint menu",&attachmaint_top_menu),

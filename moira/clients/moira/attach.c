@@ -1,5 +1,5 @@
 #ifndef lint
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.2 1988-06-10 18:36:10 kit Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.3 1988-06-27 16:11:20 kit Exp $";
 #endif lint
 
 /*	This is the file attach.c for allmaint, the SMS client that allows
@@ -14,7 +14,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v $
  *      $Author: kit $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.2 1988-06-10 18:36:10 kit Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.3 1988-06-27 16:11:20 kit Exp $
  *	
  *  	Copyright 1987, 1988 by the Massachusetts Institute of Technology.
  *
@@ -40,6 +40,43 @@
 #define GROUP        2
 #define ALIAS        3
 
+#define DEFAULT_TYPE     ("NFS")
+#define DEFAULT_MACHINE  DEFAULT_NONE
+#define DEFAULT_PACK     DEFAULT_NONE
+#define DEFAULT_M_POINT  DEFAULT_NONE
+#define DEFAULT_ACCESS   ("r")
+#define DEFAULT_COMMENTS DEFAULT_COMMENT
+#define DEFAULT_OWNER    (user)
+#define DEFAULT_OWNERS   (user)
+#define DEFAULT_CREATE   DEFAULT_YES
+#define DEFAULT_L_TYPE   ("HOMEDIR")
+
+/*	Function Name: SetDefaults
+ *	Description: sets the default values for filesystem additions.
+ *	Arguments: info - an array of char pointers to recieve defaults. 
+ *	Returns: char ** (this array, now filled).
+ */
+
+static char ** 
+SetDefaults(info, name)
+char ** info;
+char * name;
+{
+    info[FS_NAME] =     Strsave(name);
+    info[FS_TYPE] =     Strsave(DEFAULT_TYPE);
+    info[FS_MACHINE] =  Strsave(DEFAULT_MACHINE);
+    info[FS_PACK] =     Strsave(DEFAULT_PACK);
+    info[FS_M_POINT] =  Strsave(DEFAULT_M_POINT);
+    info[FS_ACCESS] =   Strsave(DEFAULT_ACCESS);
+    info[FS_COMMENTS] = Strsave(DEFAULT_COMMENTS);
+    info[FS_OWNER] =    Strsave(DEFAULT_OWNER);
+    info[FS_OWNERS] =   Strsave(DEFAULT_OWNERS);
+    info[FS_CREATE] =   Strsave(DEFAULT_CREATE);
+    info[FS_L_TYPE] =   Strsave(DEFAULT_L_TYPE);
+    info[FS_MODTIME] = info[FS_MODBY] = info[FS_MODWITH] = info[FS_END] = NULL;
+    return(info);
+}
+
 /*	Function Name: GetFSInfo
  *	Description: Stores the info in a queue.
  *	Arguments: type - type of information to get.
@@ -54,7 +91,7 @@ char *name;
 {
     int stat;
     struct qelem * elem = NULL;
-    char * args[2];
+    char * args[5];
 
     switch (type) {
     case LABEL:
@@ -79,15 +116,33 @@ char *name;
 	}
 	break;
     case ALIAS:
-	args[0] = name;
-	args[1] = FS_ALIAS_TYPE;
-	if ( (stat = sms_query("get_alias", 2, args, StoreInfo, &elem)) != 0) {
+	args[ALIAS_NAME] = name;
+	args[ALIAS_TYPE] = FS_ALIAS_TYPE;
+	args[ALIAS_TRANS] = "*";
+	if ( (stat = sms_query("get_alias", 3, args, StoreInfo, &elem)) != 0) {
 	    com_err(program_name, stat, " in get_alias.");
 	    return(NULL);
 	}
     }
 
     return(QueueTop(elem));
+}
+
+/*	Function Name: PrintFSAlias
+ *	Description: Prints a filesystem alias
+ *	Arguments: info - an array contains the strings of info.
+ *	Returns: none.
+ */
+
+static void
+PrintFSAlias(info)
+char ** info;
+{
+    char buf[BUFSIZ];
+
+    sprintf(buf,"Alias: %-25s Filesystem: %s",info[ALIAS_NAME], 
+	    info[ALIAS_TRANS]);
+    Put_message(buf);
 }
 
 /*	Function Name: PrintFSInfo
@@ -101,48 +156,27 @@ PrintFSInfo(info)
 char ** info;
 {
     char print_buf[BUFSIZ];
-    sprintf(print_buf,"Information about filesystem: %s", info[FS_NAME]);
+    FORMFEED;
+    sprintf(print_buf,"%20s Filesystem: %s", 
+	    " ",info[FS_NAME]);
     Put_message(print_buf);
-    sprintf(print_buf,"Type: %s\t\tMachine: %s\t\tPackname: %s",info[FS_TYPE],
-	    info[FS_MACHINE], info[FS_PACK]);
+    sprintf(print_buf,"Type: %-40s Machine: %-15s",
+	    info[FS_TYPE], info[FS_MACHINE]);
     Put_message(print_buf);
-    sprintf(print_buf,"Mountpoint %s\t\t Default Access: %s",info[FS_M_POINT],
-	    info[FS_ACCESS]);
+    sprintf(print_buf,"Default Access: %-2s Packname: %-17s Mountpoint %s ",
+	    info[FS_ACCESS], info[FS_PACK], info[FS_M_POINT]);
     Put_message(print_buf);
     sprintf(print_buf,"Comments; %s",info[FS_COMMENTS]);
     Put_message(print_buf);
-    sprintf(print_buf, "User Ownership: %s,\t\tGroup Ownership:\t\t%s",
+    sprintf(print_buf, "User Ownership: %-30s Group Ownership: %s",
 	    info[FS_OWNER], info[FS_OWNERS]);
     Put_message(print_buf);
-    sprintf(print_buf, "Auto Create %s\t\tLocker Type: %s",info[FS_CREATE], 
+    sprintf(print_buf, "Auto Create %-34s Locker Type: %s",info[FS_CREATE], 
 	    info[FS_L_TYPE]);
     Put_message(print_buf);
-    sprintf(print_buf, "Last Modified at %s, by %s with %s",info[FS_MODTIME],
-	    info[FS_MODBY], info[FS_MODWITH]);
+    sprintf(print_buf, "Last Modified at %s, by %s with %s",
+	    info[FS_MODTIME], info[FS_MODBY], info[FS_MODWITH]);
     Put_message(print_buf);
-}
-
-/*	Function Name: PrintAllFSInfo
- *	Description: Prints all infomation about a filesystem, stored in
- *                   a queue.
- *	Arguments: elem - a pointer to the first elem in the queue.
- *	Returns: none.
- */
-
-void
-PrintAllFSInfo(elem)
-struct qelem * elem;
-{
-/* 
- * Not nescessary, but makes it clear that we are not changing this value.
- */
-    struct qelem * local = elem;	
-			        
-    while(local != NULL) {
-	char ** info = (char **) local->q_data;
-	PrintFSInfo(info);
-	local = local->q_forw;
-    }
 }
 
 /*	Function Name: AskFSInfo.
@@ -161,25 +195,29 @@ Bool name;
 {
     char temp_buf[BUFSIZ], *newname;
 
-    sprintf(temp_buf, "\nChanging Attributes of user %s.\n", info[FS_NAME]);
+    sprintf(temp_buf, "\nChanging Attributes of filesystem: %s.\n", 
+	    info[FS_NAME]);
     Put_message(temp_buf);
 
     if (name) {
 	newname = Strsave(info[FS_NAME]);
-	GetValueFromUser("The new login name for this filesystem.",
+	GetValueFromUser("The new name for this filesystem.",
 			 &newname);
     }
 
     GetValueFromUser("Filesystem's Type:", &info[FS_TYPE]);
     GetValueFromUser("Filesystem's Machine:", &info[FS_MACHINE]);
+    strcpy(temp_buf, CanonicalizeHostname(info[FS_MACHINE]));
+    free(info[FS_MACHINE]);
+    info[FS_MACHINE] = Strsave(temp_buf);
     GetValueFromUser("Filesystem's Pack Name:", &info[FS_PACK]);
     GetValueFromUser("Filesystem's Mount Point:", &info[FS_M_POINT]);
     GetValueFromUser("Filesystem's Default Access:", &info[FS_ACCESS]);
-    GetValueFromUser("Commants about this Filesystem:", &info[FS_COMMENTS]);
+    GetValueFromUser("Comments about this Filesystem:", &info[FS_COMMENTS]);
     GetValueFromUser("Filesystem's owner (user):", &info[FS_OWNER]);
     GetValueFromUser("Filesystem's owners (group):", &info[FS_OWNERS]);
     GetValueFromUser("Automatically create this filsystem (0/1):",
-		     &info[FS_COMMENTS]);
+		     &info[FS_CREATE]);
     GetValueFromUser("Filesystem's lockertype:", &info[FS_L_TYPE]);
 
     FreeAndClear(&info[FS_MODTIME], TRUE);
@@ -206,11 +244,15 @@ GetFS(argc, argv)
 int argc;
 char **argv;
 {
-    struct qelem *elem;
+    struct qelem *top, *elem;
 
-    elem = GetFSInfo(LABEL, argv[1]); /* get info. */
-    PrintAllFSInfo(elem);	/* print it all. */
-    FreeQueue(elem);		/* clean the queue. */
+    top = elem = GetFSInfo(LABEL, argv[1]); /* get info. */
+    while(elem != NULL) {
+	char ** info = (char **) elem->q_data;
+	PrintFSInfo(info);
+	elem = elem->q_forw;
+    }
+    FreeQueue(top);		/* clean the queue. */
     return (DM_NORMAL);
 }
 
@@ -246,10 +288,10 @@ char **argv;
     while (temp_elem != NULL) {
 	char **info = (char **) temp_elem->q_data;
 	
-	if (one_filsys) {
+	if (!one_filsys) {
 	    PrintFSInfo(info);
 	
-	    answer = YesNoQuitQuestion("\nDelete this filesys?", FALSE); 
+	    answer = YesNoQuitQuestion("\nDelete this filesystem?", FALSE); 
 	    switch(answer) {
 	    case TRUE:
 		delete = TRUE;
@@ -312,10 +354,8 @@ int argc;
     one_filsys = (QueueCount(elem) == 1);
     while (temp_elem != NULL) {
 	char ** info = (char **) temp_elem->q_data;
-	if (one_filsys) {
-	    sprintf(buf, "%s %s %s (y/n/q)? ", "Would you like to change the",
-		    "information about the filesystem:", 
-		    info[FS_NAME]);
+	if (!one_filsys) {
+	    sprintf(buf, "Update filesystem %s (y/n/q)? ", info[FS_NAME]);
 	    info = (char **) temp_elem->q_data;
 	    answer = YesNoQuitQuestion(buf, FALSE);
 	    switch(answer) {
@@ -338,7 +378,7 @@ int argc;
 	    char ** args = AskFSInfo(info, TRUE);
 	    if ( (stat = sms_query("update_filesys", CountArgs(args), 
 				   args, NullFunc, NULL)) != 0)
-		com_err(program_name, stat, " in filesystem not updated");
+		com_err(program_name, stat, ", filesystem not updated");
 	    else
 		Put_message("filesystem sucessfully updated.");
 	}
@@ -361,7 +401,7 @@ char **argv;
 int argc;
 {
     char *info[MAX_ARGS_SIZE], **args;
-    int stat, count;
+    int stat;
 
     if ( !ValidName(argv[1]) )
 	return(DM_NORMAL);
@@ -375,12 +415,10 @@ int argc;
 	return(DM_NORMAL);
     } 
 
-    for (count = 0; count < 100; count++)
-	info[count] = NULL;
-    args = AskFSInfo(info, FALSE );
+    args = AskFSInfo(SetDefaults(info, argv[1]), FALSE );
 
-    if (stat = sms_query("add_filesys", CountArgs(args), args, 
-			 NullFunc, NULL) != 0)
+    if ( (stat = sms_query("add_filesys", CountArgs(args), args, 
+			 NullFunc, NULL)) != 0)
 	com_err(program_name, stat, " in AddFS");
 
     FreeInfo(info);
@@ -403,16 +441,14 @@ GetFSAlias(argc, argv)
 int argc;
 char **argv;
 {
-    char **info, buf[BUFSIZ];
     struct qelem *top, *elem;
 
     top = elem = GetFSInfo(ALIAS, argv[1]);
 
+    Put_message(" ");		/* blank line. */
     while (elem != NULL) {
-	info = (char **) elem->q_data;
-	sprintf(buf,"Alias: %s\tFilesystem: %s",info[ALIAS_NAME], 
-		info[ALIAS_TRANS]);
-	Put_message(buf);
+	char **info = (char **) elem->q_data;
+	PrintFSAlias(info);
 	elem = elem->q_forw;
     }
 
@@ -445,17 +481,18 @@ char **argv;
 
     args[ALIAS_NAME] = Strsave(argv[1]);
     args[ALIAS_TYPE] = Strsave(FS_ALIAS_TYPE);
+    args[ALIAS_TRANS] = Strsave("*");
 
 /*
  * Check to see if this alias already exists in the database, if so then
  * print out values, free memory used and then exit.
  */
 
-    if ( (stat = sms_query("get_alias", 2, args, StoreInfo, &elem)) == 0) {
-	top = elem;
+    if ( (stat = sms_query("get_alias", 3, args, StoreInfo, &elem)) == 0) {
+	top = elem = QueueTop(elem);
 	while (elem != NULL) {
 	    info = (char **) elem->q_data;	    
-	    sprintf(buf,"The alias: %s\tcurrently describes the filesystem %s",
+	    sprintf(buf,"The alias: %s currently describes the filesystem %s",
 		    info[ALIAS_NAME], info[ALIAS_TRANS]);
 	    Put_message(buf);
 	    elem = elem->q_forw;
@@ -494,7 +531,7 @@ int argc;
 char **argv;
 {
     register int stat;
-    char buf[BUFSIZ];
+    char *ptr;
     struct qelem *elem, *top;
     Bool one_alias, delete;
 
@@ -515,15 +552,13 @@ char **argv;
     while (elem != NULL) {
 	char **info = (char **) elem->q_data;
 
-	if (one_alias) {
+	Put_message(" ");	/* blank line. */
+	PrintFSAlias(info);
+	if (!one_alias) {
 	    int answer;
-
-	    sprintf(buf, "%s %s for the filesystem %s? (y/n)",
-		    "Confirm that you want to delete\n the alias",
-		    info[ALIAS_NAME], info[ALIAS_TRANS]);
-	    Put_message(buf);
 	    
-	    answer = YesNoQuitQuestion(buf, FALSE); 
+	    ptr = "Do you want to delete this alias (y/n/q)? ",
+	    answer = YesNoQuitQuestion(ptr, FALSE); 
 	    switch(answer) {
 	    case TRUE:
 		delete = TRUE;
@@ -538,17 +573,16 @@ char **argv;
 	    }
 	}
 	else {
-	    sprintf(buf, "Are you sure that you want to delete %s",
-		    "this filesystem alias?");
-	    delete = Confirm(buf);
+	    ptr = "Are you sure that you want to delete this alias?";
+	    delete = Confirm(ptr);
 	}
 /* 
  * Deletetions are  performed if the user hits 'y' on a list of multiple 
  * filesystem aliases, or if the user confirms on a unique alias.
  */
 	if (delete) {
-	    if ( (stat = sms_query("delete_filesys", 1,
-				     &info[ALIAS_NAME], Scream, NULL)) != 0)
+	    if ( (stat = sms_query("delete_alias", CountArgs(info),
+				     info, Scream, NULL)) != 0)
 		com_err(program_name, stat, " filesystem alias not deleted.");
 	    else
 		Put_message("Filesystem alias deleted.");
@@ -572,16 +606,15 @@ int
 AttachHelp()
 {
     static char *message[] = {
-	"These are the options:\n",
-	"get - get information about a filesystem.",
-	"add - add a new filesystem to the data base.",
-	"update - update the information in the database on a filesystem.",
-	"delete - delete a filesystem from the database.\n",
-	"check - check information about association of a name and a filesys.",
-	"alias - associate a name with a filsystem.",
-	"unalias - disassociate a name with a filesystem.",
-	"\twhere a name is: user, group, or project\n",
-	"verbose - toggle the request for delete confirmation\n",
+      "These are the options:\n\n",
+      "get - get information about a filesystem.\n",
+      "add - add a new filesystem to the data base.\n",
+      "update - update the information in the database on a filesystem.\n",
+      "delete - delete a filesystem from the database.\n",
+      "check - check information about association of a name and a filesys.\n",
+      "alias - associate a name with a filsystem.\n",
+      "unalias - disassociate a name with a filesystem.\n",
+      "verbose - toggle the request for delete confirmation.\n",
 	NULL,
     };
 

@@ -1,5 +1,5 @@
 #ifndef lint
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.2 1988-06-10 18:37:26 kit Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.3 1988-06-27 16:12:45 kit Exp $";
 #endif lint
 
 /*	This is the file user.c for allmaint, the SMS client that allows
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v $
  *      $Author: kit $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.2 1988-06-10 18:37:26 kit Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.3 1988-06-27 16:12:45 kit Exp $
  *	
  *  	Copyright 1987, 1988 by the Massachusetts Institute of Technology.
  *
@@ -114,7 +114,8 @@ char *name1, *name2;
 	args[0] = name1;
 	if ( (status = sms_query("get_user_by_login", 1, args,
 			       StoreInfo, (char *) &elem)) != 0) {
-	    com_err(program_name, status, " when attempting to get_use_by_login.");
+	    com_err(program_name, status, 
+		    " when attempting to get_use_by_login.");
       	    return (NULL);		 
 	}
 	break;
@@ -224,7 +225,7 @@ char *machine;
 	return( (char *) NULL);
     }
 
-    top = elem;
+    top = elem = QueueTop(elem);
     while (elem != NULL) {
 	char ** info = (char **) elem->q_data;
 	if (strcmp (info[1], machine) == 0) {
@@ -411,7 +412,7 @@ char *argv[];
     };
 
     sprintf(buf,"%s%s",
-	    "Are you sure that you want to change the default quota\n"
+	    "Are you sure that you want to change the default quota\n",
 	    "for all new users? (y/n) ");
     if(!Confirm(buf)) {
 	newval[2] = argv[1];
@@ -591,6 +592,7 @@ char *argv[];
  *	Returns: none.
  */
 
+/* ARGSUSED */
 int
 ShowUserByClass(argc, argv)
 int argc;
@@ -639,7 +641,7 @@ char ** info;
  */
 
 /* ARGSUSED */
-int
+static int
 PrintPOBoxes(argc, argv, junk)
 int argc;
 char **argv;
@@ -663,7 +665,7 @@ char * junk;
  *	Returns: none
  */
 
-void
+static void
 PrintUserInfo(info, name_only)
 char ** info;
 Bool name_only;

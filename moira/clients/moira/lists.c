@@ -1,5 +1,5 @@
 #ifndef lint
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v 1.2 1988-06-10 18:36:53 kit Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v 1.3 1988-06-27 16:12:08 kit Exp $";
 #endif lint
 
 /*	This is the file lists.c for allmaint, the SMS client that allows
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v $
  *      $Author: kit $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v 1.2 1988-06-10 18:36:53 kit Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v 1.3 1988-06-27 16:12:08 kit Exp $
  *	
  *  	Copyright 1987, 1988 by the Massachusetts Institute of Technology.
  *
@@ -35,9 +35,22 @@
 #define GLOM    2
 #define ACL_USE 3
 
+#define YES ("1")
+#define NO  ("0")
+
+#define DEFAULT_ACTIVE      DEFAULT_YES
+#define DEFAULT_PUBLIC      DEFAULT_YES
+#define DEFAULT_HIDDEN      DEFAULT_NO
+#define DEFAULT_MAILLIST    DEFAULT_YES
+#define DEFAULT_GROUP       DEFAULT_NO
+#define DEFAULT_GID         UNIQUE_GID
+#define DEFAULT_ACL_TYPE    "user"
+#define DEFAULT_ACL_NAME    (user)
+#define DEFAULT_DESCRIPTION DEFAULT_COMMENT
+
 /* globals only for this file. */
 
-static char * current_list;
+static char current_list[BUFSIZ];
 
 /*	Function Name: PrintListInfo
  *	Description: This function Prints out the List info in a coherent form.
@@ -51,9 +64,9 @@ char ** info;
 {
     char buf[BUFSIZ];
 
-    (void) sprintf(buf, "List: %s",info[L_NAME]);
+    (void) sprintf(buf, "\n%20sList: %s", "", info[L_NAME]);
     (void) Put_message(buf);
-    (void) sprintf(buf, "\nDescription: %s", info[L_DESC]);
+    (void) sprintf(buf, "Description: %s", info[L_DESC]);
     (void) Put_message(buf);
     if ( atoi(info[L_MAILLIST]))
 	Put_message("This list is a mailing list.");
@@ -76,9 +89,9 @@ char ** info;
     }
 
     (void) sprintf(buf, "This list is: %s, %s, and %s",
-		   info[L_ACTIVE] ? "active" : "inactive",
-		   info[L_PUBLIC] ? "public" : "private",
-		   info[L_HIDDEN] ? "hidden" : "visible");
+		   atoi(info[L_ACTIVE]) ? "active" : "inactive",
+		   atoi(info[L_PUBLIC]) ? "public" : "private",
+		   atoi(info[L_HIDDEN]) ? "hidden" : "visible");
     (void) Put_message(buf);
     (void) sprintf(buf, "Last modification at %s, by %s using the program %s",
 		   info[L_MODTIME], info[L_MODBY], info[L_MODWITH]);
@@ -107,7 +120,7 @@ char * name1, *name2;
 	args[0] = name1;
 	if ( (status = sms_query("get_list_info", 1, args,
 			       StoreInfo, (char *) &elem)) != 0) {
-	    com_err(program_name, status, " in get_nfs_quotas_by_user");
+	    com_err(program_name, status, " in get_list_info");
 	    return (NULL);
 	}
 	break;
@@ -115,7 +128,7 @@ char * name1, *name2;
 	args[0] = name1;
 	if ( (status = sms_query("get_members_of_list", 1, args,
 			       StoreInfo, (char *) &elem)) != 0) {
-	    com_err(program_name, status, " in get_nfs_quotas_by_user");
+	    com_err(program_name, status, " in get_members_of_list");
 	    return (NULL);
 	}
 	break;
@@ -124,7 +137,7 @@ char * name1, *name2;
 	args[1] = name2; 	
 	if ( (status =  sms_query("get_list_of_member", 2, args,
 			       StoreInfo, (char *) &elem)) != 0) {
-	    com_err(program_name, status, " in get_nfs_quotas_by_user");
+	    com_err(program_name, status, " in get_list_of_members");
 	    return (NULL);
 	}
 	break;
@@ -133,7 +146,7 @@ char * name1, *name2;
 	args[1] = name2; 	
 	if ( (status =  sms_query("get_acl_use", 2, args,
 			       StoreInfo, (char *) &elem)) != 0) {
-	    com_err(program_name, status, " in get_nfs_quotas_by_user");
+	    com_err(program_name, status, " in get_acl_use");
 	    return (NULL);
 	}
 	break;
@@ -157,7 +170,7 @@ Bool name;
 {
     char temp_buf[BUFSIZ], *newname;
 
-    sprintf(temp_buf,"\nChanging Attributes of list %s.\n",info[L_NAME]);
+    sprintf(temp_buf,"\nSetting information of list %s.\n",info[L_NAME]);
     Put_message(temp_buf);
 
     if (name) {
@@ -169,11 +182,9 @@ Bool name;
     GetValueFromUser("Is this list hidden (1/0): ", &info[L_HIDDEN]);
     GetValueFromUser("Is this a maillist  (1/0): ", &info[L_MAILLIST]);
     GetValueFromUser("is this a group     (1/0): ", &info[L_GROUP]);
-    if (atoi(info[L_GROUP])) {
-	sprintf(temp_buf, "What is the Gid for this group, %s",
-		"'#' gets unique gid:");
-	GetValueFromUser(temp_buf, &info[L_GID]);
-    }
+    if (atoi(info[L_GROUP]))
+	GetValueFromUser("What is the GID for this group.", &info[L_GID]);
+
     GetValueFromUser("What Type of Administrator (none, user, list): ",
 		     &info[L_ACL_TYPE]);
     if ( (strcmp(info[L_ACL_TYPE], "USER") == 0) || 
@@ -207,6 +218,7 @@ Bool name;
  *	Returns: DM status code.
  */
 
+/* ARGSUSED */
 int
 ShowListInfo(argc, argv)
 int argc;
@@ -225,35 +237,82 @@ char **argv;
 }
 
 /*	Function Name: UpdateList
- *	Description: 
+ *	Description: updates the information on a list.
  *	Arguments: argc, argv - name of list in argv[1].
  *	Returns: DM Status code.
  */
 
+/* ARGSUSED */
 int
 UpdateList(argc, argv)
 int argc;
 char **argv;
 {
-    char **info, **up_args;
+    char buf[BUFSIZ];
     struct qelem *top, *list;
     int status;
+    Bool one_list, update_it;
 
     list = top = GetListInfo(LIST, argv[1], (char *) NULL);
     
+    one_list = (QueueCount(top) == 1);
     while (list != NULL) {
-	info = (char **) list->q_data;
-	up_args = AskListInfo(info, TRUE);
-	if ( (status = sms_query("update_list", CountArgs(up_args), up_args,
-				 Scream, (char *) NULL)) != 0) {
-	    com_err(program_name, status, " in UpdateList.");	
-	    Put_message("List Not Updated.");
-	    list = list->q_forw;
+	char **up_args, **info = (char **) list->q_data;
+	if (one_list) 
+	    update_it = TRUE;
+	else {
+	    sprintf(buf, "Update the list %s (y/n/q) ? ",info[L_NAME]);
+	    switch (YesNoQuitQuestion(buf, FALSE)) {
+	    case TRUE:
+		update_it = TRUE;
+		break;
+	    case FALSE:
+		update_it = FALSE;
+		break;
+	    default:
+		Put_message("Aborting...");
+		FreeQueue(top);
+		return(DM_NORMAL);
+	    }
 	}
+	if (update_it) {
+	    up_args = AskListInfo(info, TRUE);
+	    if ( (status = sms_query("update_list", CountArgs(up_args), 
+			       up_args, Scream, (char *) NULL)) != 0) {
+		com_err(program_name, status, " in UpdateList.");	
+		Put_message("List Not Updated.");
+	    }
+	}
+	list = list->q_forw;
     }
-
     FreeQueue(top);
     return(DM_NORMAL);
+}
+
+/*	Function Name: SetDefaults
+ *	Description: sets defaults for AddList function
+ *	Arguments: info - the array to add them to.
+ *                 name - name of the program to add.
+ *	Returns: defaults - the default information.
+ */
+
+static char **
+SetDefaults(info, name)
+char ** info;
+char * name;
+{
+   info[L_NAME] =     Strsave(name);
+   info[L_ACTIVE] =   Strsave(DEFAULT_ACTIVE);
+   info[L_PUBLIC] =   Strsave(DEFAULT_PUBLIC);
+   info[L_HIDDEN] =   Strsave(DEFAULT_HIDDEN);
+   info[L_MAILLIST] = Strsave(DEFAULT_MAILLIST);
+   info[L_GROUP] =    Strsave(DEFAULT_GROUP);
+   info[L_GID] =      Strsave(DEFAULT_GID);
+   info[L_ACL_TYPE] = Strsave(DEFAULT_ACL_TYPE);
+   info[L_ACL_NAME] = Strsave(DEFAULT_ACL_NAME);
+   info[L_DESC] =     Strsave(DEFAULT_DESCRIPTION);
+   info[L_MODTIME] = info[L_MODBY] = info[L_MODWITH] = info[L_END] = NULL;
+   return(info);
 }
 
 /*	Function Name: AddList
@@ -262,6 +321,7 @@ char **argv;
  *	Returns: DM Status code.
  */
 
+/* ARGSUSED */
 int
 AddList(argc, argv)
 int argc;
@@ -283,7 +343,7 @@ char **argv;
 	return(DM_QUIT);
     }
 
-    add_args = AskListInfo(info, FALSE);
+    add_args = AskListInfo(SetDefaults(info,argv[1]), FALSE);
 
     if ( (status = sms_query("add_list", CountArgs(add_args), add_args,
 			     Scream, (char *) NULL)) != 0) {
@@ -396,8 +456,8 @@ char * type;
     register int status;
 
     found_some = FALSE;
-    if ( (status = sms_query("get_members_of_list", 1, &current_list, 
-			   PrintByType, type)) != 0)
+    if ( (status = sms_query("get_members_of_list", 1, current_list, 
+			     PrintByType, type)) != 0)
 	com_err(program_name, status, " in ListMembersByType\n");
     if (!found_some) {
 	if (type == NULL)
@@ -477,18 +537,21 @@ char *action, **ret_argv;
 
     ret_argv[LM_LIST] = Strsave(current_list);
     ret_argv[LM_MEMBER] = "nobody";
+    ret_argv[LM_TYPE]= "user";
 
+    switch (status = sms_access("add_member_to_list", 3, ret_argv)) {
+    case SMS_SUCCESS:
+	break;
+    case SMS_PERM:
+	Put_message("You are not allowed to add members to this list.");
+	return(SUB_ERROR);
+    default:
+	com_err(program_name, status, NULL);
+	return(SUB_ERROR);
+    }
     PromptWithDefault("Type of member (USER, LIST, or STRING)",
 			ret_buf, BUFSIZ, "USER");
     ret_argv[LM_TYPE]= Strsave(ret_buf);
-
-    status = sms_access("add_member_to_list", 3, ret_argv);
-    if (status == SMS_TYPE) {
-	Put_message("\"type\" must be one of 'STRING', 'LIST', or 'USER'.");
-	return(SUB_ERROR);
-    } else if (status) {
-	com_err(program_name, status, NULL);
-    }
 
     sprintf(temp_buf,"Name of member to %s", action);
     PromptWithDefault(temp_buf, ret_buf, BUFSIZ, user);

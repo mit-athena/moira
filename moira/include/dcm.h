@@ -1,13 +1,13 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/include/dcm.h,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/include/dcm.h,v 1.4 1989-11-28 17:08:23 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/include/dcm.h,v 1.5 1990-03-19 18:52:31 mar Exp $
  */
 
 #define UPCALL_CONT	0
 #define UPCALL_STOP	1
 
-#define HARD_FAIL(x)	(((x) != 0 ) && ((x) != SMS_NO_CHANGE))
-#define SOFT_FAIL(x)	(((x) == SMS_NO_MEM) || ((x) == SMS_CANT_CONNECT) || ((x) == SMS_CCONFIG) || ((x) == SMS_DEADLOCK))
+#define HARD_FAIL(x)	(((x) != 0 ) && ((x) != MR_NO_CHANGE))
+#define SOFT_FAIL(x)	(((x) == MR_NO_MEM) || ((x) == MR_CANT_CONNECT) || ((x) == MR_CCONFIG) || ((x) == MR_DEADLOCK))
 
 
 #define DEADLOCK_WAIT	(3 * 60)	/* number of seconds to wait after
@@ -79,7 +79,7 @@ struct svrhost {
 
 
 /*--> utils.c <--*/
-extern void init_sms();
+extern void init_mr();
 extern void dcm_com_err_hook();
 extern void leave();
 extern void scream();

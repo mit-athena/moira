@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/startdcm.c,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/startdcm.c,v 1.3 1989-09-08 18:33:32 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/startdcm.c,v 1.4 1990-03-19 18:52:51 mar Exp $
  *
  *	Copyright (C) 1987, 1988 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -12,7 +12,7 @@
  */
 
 #ifndef lint
-static char *rcsid_sms_starter_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/startdcm.c,v 1.3 1989-09-08 18:33:32 mar Exp $";
+static char *rcsid_mr_starter_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/startdcm.c,v 1.4 1990-03-19 18:52:51 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -23,7 +23,7 @@ static char *rcsid_sms_starter_c = "$Header: /afs/.athena.mit.edu/astaff/project
 #include <sys/wait.h>
 #include <sys/signal.h>
 #include <sys/ioctl.h>
-#include <sms_app.h>
+#include <moira_site.h>
 
 #define PROG 	"dcm"
 

@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/utils.c,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/utils.c,v 1.5 1990-02-14 15:29:54 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/utils.c,v 1.6 1990-03-19 18:52:54 mar Exp $
  *
  * 
  * 	Utility functions used by the DCM.
@@ -12,7 +12,7 @@
  */
 
 #ifndef lint
-static char *rcsid_utils_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/utils.c,v 1.5 1990-02-14 15:29:54 mar Exp $";
+static char *rcsid_utils_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/utils.c,v 1.6 1990-03-19 18:52:54 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -23,8 +23,8 @@ static char *rcsid_utils_c = "$Header: /afs/.athena.mit.edu/astaff/project/moira
 #include <sys/types.h>
 #include <sys/time.h>
 #include <sys/file.h>
-#include <sms.h>
-#include <sms_app.h>
+#include <moira.h>
+#include <moira_site.h>
 #include "dcm.h"
 
 
@@ -114,7 +114,7 @@ int exclusive;
 }
 
 
-int sms_query_with_retry(name, argc, argv, proc, hint)
+int mr_query_with_retry(name, argc, argv, proc, hint)
 char *name;
 int argc;
 char **argv;
@@ -124,8 +124,8 @@ char *hint;
     int status, tries;
 
     for (tries = 0; tries < DEADLOCK_TRIES; tries++) {
-	status = sms_query(name, argc, argv, proc, hint);
-	if (status != SMS_DEADLOCK)
+	status = mr_query(name, argc, argv, proc, hint);
+	if (status != MR_DEADLOCK)
 	  return(status);
 	sleep(DEADLOCK_WAIT);
     }

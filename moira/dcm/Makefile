@@ -1,6 +1,6 @@
 #	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/Makefile,v $
 #	$Author: mar $
-#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/Makefile,v 1.7 1990-02-14 11:23:34 mar Exp $
+#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/Makefile,v 1.8 1990-03-19 18:52:41 mar Exp $
 #
 # (c) Copyright 1988 by the Massachusetts Institute of Technology.
 # For copying and distribution information, please see the file
@@ -16,11 +16,11 @@ LDFLAGS = -L${SMS_DIR}/lib -L${SMS_DIR}/server
 
 QLIBS= ${INGRES_DIR}/lib/libqlib ${INGRES_DIR}/lib/compatlib
 
-# Libraries that talk to the SMS server:
-SERVER_LIBS = -lsmsglue -lsms -lgdb -lzephyr -lkrb -ldes -lcom_err $(QLIBS)
+# Libraries that talk to the MOIRA server:
+SERVER_LIBS = -lmoiraglue -lmoira -lgdb -lzephyr -lkrb -ldes -lcom_err $(QLIBS)
 
 DCM_SRCS = dcm.c utils.c
-DCM_OBJS = dcm.o utils.o ../update/sms_update.o
+DCM_OBJS = dcm.o utils.o ../update/moira_update.o
 
 
 all: dcm startdcm
@@ -61,14 +61,10 @@ depend:
 dcm.o: dcm.c /usr/include/stdio.h ../include/update.h /usr/include/sys/file.h
 dcm.o: /usr/include/sys/time.h /usr/include/sys/time.h
 dcm.o: /usr/include/sys/wait.h /usr/include/signal.h /usr/include/ctype.h
-dcm.o: ../include/sms.h /usr/include/sms_et.h ../include/sms_app.h
+dcm.o: ../include/moira.h ../include/mr_et.h ../include/moira_site.h
 dcm.o: ../include/mit-copyright.h ../include/dcm.h
 utils.o: utils.c ../include/mit-copyright.h /usr/include/stdio.h
-utils.o: /usr/include/strings.h /usr/include/varargs.h
+utils.o: /usr/include/strings.h /usr/include/errno.h /usr/include/varargs.h
 utils.o: /usr/include/sys/types.h /usr/include/sys/time.h
-utils.o: /usr/include/sys/time.h /usr/include/sys/file.h
-utils.o: /usr/include/zephyr/zephyr.h /usr/include/zephyr/mit-copyright.h
-utils.o: /usr/include/zephyr/zephyr_err.h /usr/include/zephyr/zephyr_conf.h
-utils.o: /usr/include/errno.h /usr/include/netinet/in.h ../include/krb.h
-utils.o: ../include/des.h ../include/sms.h /usr/include/sms_et.h
-utils.o: ../include/sms_app.h ../include/dcm.h
+utils.o: /usr/include/sys/time.h /usr/include/sys/file.h ../include/moira.h
+utils.o: ../include/mr_et.h ../include/moira_site.h ../include/dcm.h

@@ -1,5 +1,5 @@
 /*
- * The Data Control Manager for SMS.
+ * The Data Control Manager for MOIRA.
  *
  * Copyright 1987, 1988 by the Massachusetts Institute of Technology.
  * For copying and distribution information, see the file
@@ -7,11 +7,11 @@
  *
  * $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/dcm.c,v $
  * $Author: mar $
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/dcm.c,v 1.12 1989-11-28 17:09:06 mar Exp $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/dcm.c,v 1.13 1990-03-19 18:52:46 mar Exp $
  */
 
 #ifndef lint
-static char rcsid_dcm_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/dcm.c,v 1.12 1989-11-28 17:09:06 mar Exp $";
+static char rcsid_dcm_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/dcm.c,v 1.13 1990-03-19 18:52:46 mar Exp $";
 #endif lint
 
 #include <stdio.h>
@@ -21,8 +21,8 @@ static char rcsid_dcm_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moirad
 #include <sys/wait.h>
 #include <signal.h>
 #include <ctype.h>
-#include <sms.h>
-#include <sms_app.h>
+#include <moira.h>
+#include <moira_site.h>
 #include "dcm.h"
 #include "mit-copyright.h"
 
@@ -70,19 +70,19 @@ char *argv[];
 		exit(1);
 	} 
 
-	if (status = sms_connect("")) {
-	    com_err(whoami, status, " on sms_connect");
+	if (status = mr_connect("")) {
+	    com_err(whoami, status, " on mr_connect");
 	    leave("connect failed");
 	}
 
-	if (status = sms_auth("dcm")) {
+	if (status = mr_auth("dcm")) {
 	    com_err(whoami, status, " on \"authenticate\"");
 	    leave("auth failed");
 	}
 
 	/* if DCM is not enabled, exit after logging */
 	qargv[0] = "dcm_enable";
-	if (status = sms_query("get_value", 1, qargv, gqval, &i)) {
+	if (status = mr_query("get_value", 1, qargv, gqval, &i)) {
 	    com_err(whoami, status, " check dcm_enable");
 	    leave("query failed");
 	}
@@ -164,7 +164,7 @@ do_services()
     qargv[1] = "dontcare";
     qargv[2] = "false";
     sq = sq_create();
-    if (status = sms_query_with_retry("qualified_get_server", 3, qargv,
+    if (status = mr_query_with_retry("qualified_get_server", 3, qargv,
 				      qgetsv, sq)) {
 	com_err(whoami, status, " getting services");
 	leave("query failed");
@@ -184,7 +184,7 @@ do_services()
 	sprintf(dfgen_cmd, "exec %s %s/%s.out",
 		dfgen_prog, DCM_DIR, service);
 	gettimeofday(&tv, &tz);
-	if (status = sms_query_with_retry("get_server_info", 1, qargv,
+	if (status = mr_query_with_retry("get_server_info", 1, qargv,
 					  getsvinfo, &svc)) {
 	    com_err(whoami, status, " getting service %s info, skipping to next service", service);
 	    continue;
@@ -207,9 +207,9 @@ do_services()
 		qargv[3] = strsave("1");
 		qargv[4] = strsave("0");
 		qargv[5] = strsave("");
-		status = sms_query_with_retry("set_server_internal_flags", 6,
+		status = mr_query_with_retry("set_server_internal_flags", 6,
 					      qargv, scream, NULL);
-		if (status != SMS_SUCCESS) {
+		if (status != MR_SUCCESS) {
 		    com_err(whoami, status, " setting server state");
 		    goto free_service;
 		}
@@ -219,22 +219,22 @@ do_services()
 		waits.w_status = system(dfgen_cmd);
 		signal(SIGCHLD, cstat);
 		if (waits.w_termsig) {
-		    status = SMS_TAR_FAIL;
+		    status = MR_TAR_FAIL;
 		    com_err(whoami, status, " %s exited on signal %d",
 			    dfgen_prog, waits.w_termsig);
 		} else if (waits.w_retcode) {
 		    /* extract the process's exit value */
-		    status = waits.w_retcode + sms_err_base;
+		    status = waits.w_retcode + ERROR_TABLE_BASE_sms;
 		    com_err(whoami, status, " %s exited", dfgen_prog);
 		}
 		if (SOFT_FAIL(status)) {
 		    free(qargv[5]);
 		    qargv[5] = strsave(error_message(status));
-		} else if (status == SMS_NO_CHANGE) {
+		} else if (status == MR_NO_CHANGE) {
 		    free(qargv[2]);
 		    qargv[2] = itoa(tv.tv_sec);
 		    svc.dfcheck = tv.tv_sec;
-		} else if (status == SMS_SUCCESS) {
+		} else if (status == MR_SUCCESS) {
 		    free(qargv[1]);
 		    free(qargv[2]);
 		    qargv[1] = itoa(tv.tv_sec);
@@ -254,7 +254,7 @@ do_services()
 	    free_service:
 		free(qargv[3]);
 		qargv[3] = strsave("0");
-		status = sms_query_with_retry("set_server_internal_flags", 6,
+		status = mr_query_with_retry("set_server_internal_flags", 6,
 					      qargv, scream, NULL);
 		if (status)
 		  com_err(whoami, status, " setting service state");
@@ -338,9 +338,9 @@ struct service *svc;
     argv[1] = "TRUE";
     argv[2] = argv[3] = argv[4] = "DONTCARE";
     argv[5] = "FALSE";
-    status = sms_query_with_retry("qualified_get_server_host", 6, argv,
+    status = mr_query_with_retry("qualified_get_server_host", 6, argv,
 				  qgethost, sq);
-    if (status == SMS_NO_MATCH) {
+    if (status == MR_NO_MATCH) {
 	return;
     } else if (status) {
 	com_err(whoami, status, " getting server_hosts for  %s", svc->service);
@@ -350,7 +350,7 @@ struct service *svc;
 	if (dbg & DBG_TRACE)
 	  com_err(whoami, 0, "checking %s...", machine);
 	argv[1] = machine;
-	status = sms_query_with_retry("get_server_host_info", 2, argv,
+	status = mr_query_with_retry("get_server_host_info", 2, argv,
 				      gethostinfo, &shost);
 	if (status) {
 	    com_err(whoami,status, " getting server_host_info for %s", machine);
@@ -374,16 +374,16 @@ struct service *svc;
 	argv[6] = strsave("");
 	argv[7] = itoa(tv.tv_sec);
 	argv[8] = itoa(shost.lastsuccess);
-	status = sms_query_with_retry("set_server_host_internal", 9, argv,
+	status = mr_query_with_retry("set_server_host_internal", 9, argv,
 				      scream, NULL);
-	if (status != SMS_SUCCESS) {
+	if (status != MR_SUCCESS) {
 	    com_err(whoami,status," while setting internal state for %s:%s",
 		    svc->service, machine);
 	    goto free_mach;
 	}
-	status = sms_update_server(svc->service, machine, svc->target,
+	status = mr_update_server(svc->service, machine, svc->target,
 				   svc->script);
-	if (status == SMS_SUCCESS) {
+	if (status == MR_SUCCESS) {
 	    argv[2] = "0";
 	    argv[3] = "1";
 	    free(argv[8]);
@@ -409,7 +409,7 @@ struct service *svc;
 		qargv[3] = strsave("0");
 		qargv[4] = itoa(svc->harderror);
 		qargv[5] = strsave(svc->errmsg);
-		status = sms_query_with_retry("set_server_internal_flags",
+		status = mr_query_with_retry("set_server_internal_flags",
 					      6, qargv, scream, NULL);
 		if (status)
 		  com_err(whoami, status, " setting service state again");
@@ -423,7 +423,7 @@ struct service *svc;
 		free(argv[2]);
 		argv[4] = "0";
 		free(argv[5]);
-		status = sms_query_with_retry("set_server_host_internal",
+		status = mr_query_with_retry("set_server_host_internal",
 					      9, argv,scream,NULL);
 		if (status)
 		  com_err(whoami, status, " setting host state again");
@@ -434,7 +434,7 @@ struct service *svc;
 	}
 	argv[4] = "0";
 	close(lock_fd);
-	status = sms_query_with_retry("set_server_host_internal", 9, argv,
+	status = mr_query_with_retry("set_server_host_internal", 9, argv,
 				      scream, NULL);
 	if (status)
 	  com_err(whoami, status, " setting host state again");

@@ -1,7 +1,7 @@
 /*
  * $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/include/krb.h,v $
  * $Author: mar $
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/include/krb.h,v 1.1 1992-04-06 17:16:42 mar Exp $ 
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/include/krb.h,v 1.2 1992-04-06 17:16:59 mar Exp $ 
  *
  * Copyright 1987, 1988 by the Massachusetts Institute of Technology. 
  *
@@ -24,12 +24,14 @@
 #define		MAX_KRB_ERRORS	256
 extern char *krb_err_txt[MAX_KRB_ERRORS];
 
-/* These are not defined for at least SunOS 3.3 and Ultrix 2.2 */
-#if defined(ULTRIX022) || (defined(SunOS) && SunOS < 40)
-#define FD_ZERO(p)  ((p)->fds_bits[0] = 0)
-#define FD_SET(n, p)   ((p)->fds_bits[0] |= (1 << (n)))
-#define FD_ISSET(n, p)   ((p)->fds_bits[0] & (1 << (n)))
-#endif /* ULTRIX022 || SunOS */
+/*
+ * These are not defined for at least SunOS 3.3, Ultrix 2.2, and A/UX 2.0
+ */
+#if defined(ULTRIX022) || (defined(SunOS) && SunOS < 40) || defined(_AUX_SOURCE)
+#define FD_ZERO(p)	((p)->fds_bits[0] = 0)
+#define FD_SET(n, p)	((p)->fds_bits[0] |= (1 << (n)))
+#define FD_ISSET(n, p)	((p)->fds_bits[0] & (1 << (n)))
+#endif
 
 /* General definitions */
 #define		KSUCCESS	0
@@ -62,8 +64,8 @@ are these used anyplace '?';
 #define		PC_KRB_HSTFILE	"\\kerberos\\krbhst"
 #endif
 
-#define		KRB_CONF	"/etc/krb.conf"
-#define		KRB_RLM_TRANS	"/etc/krb.realms"
+#define		KRB_CONF	"/etc/athena/krb.conf"
+#define		KRB_RLM_TRANS	"/etc/athena/krb.realms"
 #define		KRB_MASTER	"kerberos"
 #define		KRB_HOST	 KRB_MASTER
 #define		KRB_REALM	"ATHENA.MIT.EDU"
@@ -83,8 +85,7 @@ are these used anyplace '?';
 #define		MAX_HSTNM	100
 
 #ifndef DEFAULT_TKT_LIFE		/* allow compile-time override */
-#define		DEFAULT_TKT_LIFE	96 /* default lifetime for krb_mk_req
-					      & co., 8 hrs */
+#define		DEFAULT_TKT_LIFE	120 /* default lifetime 10 hrs */
 #endif
 
 /* Definition of text structure used to pass text around */
@@ -110,17 +111,19 @@ typedef struct ktext KTEXT_ST;
 #define	W_TKT_FIL	1
 
 /* Definitions for cl_get_tgt */
+#ifndef CL_GTGT_INIT_FILE
 #ifdef PC
 #define CL_GTGT_INIT_FILE		"\\kerberos\\k_in_tkts"
 #else
-#define CL_GTGT_INIT_FILE		"/etc/k_in_tkts"
-#endif PC
+#define CL_GTGT_INIT_FILE		"/etc/athena/k_in_tkts"
+#endif /* PC */
+#endif /* CL_GTGT_INIT_FILE */
 
 /* Parameters for rd_ap_req */
 /* Maximum alloable clock skew in seconds */
 #define 	CLOCK_SKEW	5*60
 /* Filename for readservkey */
-#define		KEYFILE		"/etc/srvtab"
+#define		KEYFILE		"/etc/athena/srvtab"
 
 /* Structure definition for rd_ap_req */
 
@@ -176,7 +179,7 @@ typedef struct msg_dat MSG_DAT;
 #else
 #define TKT_FILE        tkt_string()
 #define TKT_ROOT        "/tmp/tkt"
-#endif PC
+#endif /* PC */
 
 /* Error codes returned from the KDC */
 #define		KDC_OK		0	/* Request OK */
@@ -337,7 +340,7 @@ typedef struct msg_dat MSG_DAT;
 
 #ifndef PC
 char *tkt_string();
-#endif	PC
+#endif	/* PC */
 
 #ifdef	OLDNAMES
 #define krb_mk_req	mk_ap_req
@@ -359,7 +362,7 @@ char *tkt_string();
 #define krb_get_phost		get_phost
 #define krb_get_krbhst		get_krbhst
 #define krb_get_lrealm		get_krbrlm
-#endif	OLDNAMES
+#endif	/* OLDNAMES */
 
 /* Defines for krb_sendauth and krb_recvauth */
 
@@ -375,6 +378,6 @@ char *tkt_string();
 
 #ifdef ATHENA_COMPAT
 #define	KOPT_DO_OLDSTYLE 0x00000008 /* use the old-style protocol */
-#endif ATHENA_COMPAT
+#endif /* ATHENA_COMPAT */
 
-#endif	KRB_DEFS
+#endif	/* KRB_DEFS */

@@ -1,4 +1,4 @@
-/* $Id: reg_svr.pc,v 1.4 1998-08-25 15:58:18 danw Exp $
+/* $Id: reg_svr.pc,v 1.5 1999-02-03 18:53:59 danw Exp $
  *
  * Server for user registration with Moira and Kerberos.
  *
@@ -37,7 +37,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.pc,v 1.4 1998-08-25 15:58:18 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.pc,v 1.5 1999-02-03 18:53:59 danw Exp $");
 
 char *whoami, *hostname, *shorthostname;
 
@@ -160,12 +160,12 @@ int main(int argc, char **argv)
     {
       if (state == RS_RUNNING && stat(MOIRA_MOTD_FILE, &st) == 0)
 	{
-	  state == RS_SLEEPING;
+	  state = RS_SLEEPING;
 	  com_err(whoami, 0, "found motd. reg_svr is sleeping");
 	}
       else if (state == RS_SLEEPING && stat(MOIRA_MOTD_FILE, &st) == -1)
 	{
-	  state == RS_RUNNING;
+	  state = RS_RUNNING;
 	  com_err(whoami, 0, "motd gone. reg_svr is running");
 	}
 

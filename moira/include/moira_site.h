@@ -1,4 +1,4 @@
-/* $Id: moira_site.h,v 1.44 2002-03-20 04:01:14 zacheiss Exp $
+/* $Id: moira_site.h,v 1.45 2002-03-29 02:23:56 zacheiss Exp $
  *
  * This file contains all definitions that allow easy access to
  * elements returned by most of the @i[Moira] queries.  It also defines
@@ -379,15 +379,17 @@
 
 /* User states (the value of argv[U_STATE] from a user query) */
 
-#define US_NO_LOGIN_YET 0
-#define US_REGISTERED   1
-#define US_NO_PASSWD    2
-#define US_DELETED      3
-#define US_NOT_ALLOWED  4
-#define US_ENROLLED	5
-#define US_ENROLL_NOT_ALLOWED 6
-#define US_HALF_ENROLLED 7
-#define US_END          8
+#define US_NO_LOGIN_YET               0
+#define US_REGISTERED                 1
+#define US_NO_PASSWD                  2
+#define US_DELETED                    3
+#define US_NOT_ALLOWED                4
+#define US_ENROLLED                   5
+#define US_ENROLL_NOT_ALLOWED         6
+#define US_HALF_ENROLLED              7
+#define US_NO_LOGIN_YET_KERBEROS_ONLY 8
+#define US_REGISTERED_KERBEROS_ONLY   9
+#define US_END                       10
 
 /* User shell queries */
 

@@ -1,4 +1,4 @@
-/* $Id: queries2.c,v 2.46 1998-05-26 17:29:43 danw Exp $
+/* $Id: queries2.c,v 2.47 1998-08-07 18:39:26 danw Exp $
  *
  * This file defines the query dispatch table for version 2 of the protocol
  *
@@ -183,24 +183,6 @@ static char *gubm_fields[] = {
   "clearid", "class", "modby", "modby", "modwith",
 };
 
-static char *gudf_fields[] = {
-  "login",
-  "dirsuppress", "dirmailhide"
-};
-
-static struct validate gudf_validate =
-{
-  VOuser0,
-  1,
-  0,
-  0,
-  0,
-  0,
-  access_user,
-  0,
-  0,
-};
-
 static char *auac_fields[] = {
   "login", "unix_uid", "shell", "last", "first", "middle", "status",
   "clearid", "class", "comments", "signature", "secure",
@@ -357,23 +339,6 @@ static struct validate uust_validate = {
   0,
   "users_id",
   0,
-  0,
-  set_modtime_by_id,
-};
-
-static char *uudf_fields[] = {
-  "login",
-  "dirsuppress", "dirhide"
-};
-
-static struct validate uudf_validate = {
-  uust_valobj,
-  3,
-  0,
-  0,
-  0,
-  "users_id",
-  access_user,
   0,
   set_modtime_by_id,
 };
@@ -2461,22 +2426,6 @@ struct query Queries2[] = {
   },
 
   {
-    /* Q_GUDF - GET_USER_DIRECTORY_FLAGS */
-    "get_user_directory_flags",
-    "gudf",
-    RETRIEVE,
-    "u",
-    USERS_TABLE,
-    "u.dirsuppress, u.dirmailhide FROM users u",
-    gudf_fields,
-    2,
-    "u.users_id = %d",
-    1,
-    NULL,
-    &gudf_validate,
-  },
-
-  {
     /* Q_AUAC - ADD_USER_ACCOUNT */  /* uses prefetch_value() for users_id */
     "add_user_account",
     "auac",
@@ -2602,22 +2551,6 @@ struct query Queries2[] = {
     1,
     NULL,
     &uust_validate,
-  },
-
-  {
-    /* Q_UUDF - UPDATE_USER_DIRECTORY_FLAGS */
-    "update_user_directory_flags",
-    "uudf",
-    UPDATE,
-    "u",
-    USERS_TABLE,
-    "users SET dirsuppress = %s, dirmailhide = %s",
-    uudf_fields,
-    2,
-    "users_id = %d",
-    1,
-    NULL,
-    &uudf_validate,
   },
 
   {

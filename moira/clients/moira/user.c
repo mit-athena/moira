@@ -19,6 +19,8 @@
 #include "f_defs.h"
 #include "globals.h"
 
+#include <sys/time.h>
+
 #include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -28,11 +30,11 @@
 #include <gdss.h>
 #endif
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.44 1998-02-05 22:50:49 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.45 1998-02-07 17:49:33 danw Exp $");
 
 void CorrectCapitalization(char **name);
 char **AskUserInfo(char **info, Bool name);
-struct qelem *GetUserInfo(int type, char *name1, char *name2);
+struct mqelem *GetUserInfo(int type, char *name1, char *name2);
 
 #define LOGIN 0
 #define UID   1
@@ -210,7 +212,7 @@ char **AskUserInfo(char **info, Bool name)
     }
   else
     {
-      struct qelem *elem = NULL;
+      struct mqelem *elem = NULL;
       char *argv[3];
 
       if (GetValueFromUser("User's last name", &info[U_LAST]) == SUB_ERROR)
@@ -363,11 +365,11 @@ char **AskUserInfo(char **info, Bool name)
  *
  */
 
-struct qelem *GetUserInfo(int type, char *name1, char *name2)
+struct mqelem *GetUserInfo(int type, char *name1, char *name2)
 {
   char *args[2];
   int status;
-  struct qelem *elem = NULL;
+  struct mqelem *elem = NULL;
 
   switch (type)
     {
@@ -477,7 +479,7 @@ static char *GetLoginName(void)
  *	Returns: uid - the malloced uid of the user that was chosen.
  */
 
-static char *ChooseUser(struct qelem *elem)
+static char *ChooseUser(struct mqelem *elem)
 {
   while (elem)
     {
@@ -507,7 +509,7 @@ static char *GetUidNumberFromName(void)
 {
   char *args[5], *uid, first[BUFSIZ], last[BUFSIZ];
   int status;
-  struct qelem *top = NULL;
+  struct mqelem *top = NULL;
 
   if (!Prompt_input("First Name: ", first, BUFSIZ))
     return NULL;
@@ -676,7 +678,7 @@ static void RealUpdateUser(char **info, Bool junk)
 
 int UpdateUser(int argc, char **argv)
 {
-  struct qelem *elem;
+  struct mqelem *elem;
 
   elem = GetUserInfo(LOGIN, argv[1], NULL);
   QueryLoop(elem, NullPrint, RealUpdateUser, "Update the user");
@@ -697,7 +699,7 @@ static void RealDeactivateUser(char **info, Bool one_item)
   int status;
   char txt_buf[BUFSIZ];
   char *qargs[2], **args;
-  struct qelem *elem = NULL;
+  struct mqelem *elem = NULL;
 
   if (one_item)
     {
@@ -789,7 +791,7 @@ static void RealDeactivateUser(char **info, Bool one_item)
 
 int DeactivateUser(int argc, char **argv)
 {
-  struct qelem *elem;
+  struct mqelem *elem;
 
   elem = GetUserInfo(LOGIN, argv[1], NULL);
   QueryLoop(elem, NullPrint, RealDeactivateUser, "Deactivate user");
@@ -814,7 +816,7 @@ int DeactivateUser(int argc, char **argv)
 int DeleteUserByUid(int argc, char **argv)
 {
   int status;
-  struct qelem *elem = NULL;
+  struct mqelem *elem = NULL;
   char **info;
 
   if (!ValidName(argv[1]))
@@ -841,7 +843,7 @@ int DeleteUserByUid(int argc, char **argv)
 
 int ShowUserByLogin(int argc, char *argv[])
 {
-  struct qelem *top, *elem;
+  struct mqelem *top, *elem;
 
   elem = top = GetUserInfo(LOGIN, argv[1], NULL);
   Loop(elem, PrintUserInfo);
@@ -859,7 +861,7 @@ int ShowUserByLogin(int argc, char *argv[])
 
 int ShowUserByName(int argc, char *argv[])
 {
-  struct qelem *top;
+  struct mqelem *top;
   char buf[BUFSIZ];
 
   top = GetUserInfo(BY_NAME, argv[1], argv[2]);
@@ -895,7 +897,7 @@ int ShowUserByName(int argc, char *argv[])
 
 int ShowUserByClass(int argc, char **argv)
 {
-  struct qelem *top;
+  struct mqelem *top;
 
   if (YesNoQuestion("This will take a long time.  Are you sure", 0) == FALSE)
     return DM_NORMAL;
@@ -915,7 +917,7 @@ int ShowUserByClass(int argc, char **argv)
 
 int ShowUserById(int argc, char *argv[])
 {
-  struct qelem *top, *elem;
+  struct mqelem *top, *elem;
 
   elem = top = GetUserInfo(ID, argv[1], NULL);
   Loop(elem, PrintUserInfo);
@@ -935,7 +937,7 @@ int ShowUserById(int argc, char *argv[])
 int GetKrbmap(int argc, char **argv)
 {
   int stat;
-  struct qelem *elem = NULL, *top;
+  struct mqelem *elem = NULL, *top;
   char buf[BUFSIZ];
 
   if ((stat = do_mr_query("get_kerberos_user_map", 2, &argv[1],
@@ -1015,7 +1017,7 @@ int DeleteKrbmap(int argc, char **argv)
 int GetDirFlags(int argc, char **argv)
 {
   int stat, flags;
-  struct qelem *elem = NULL;
+  struct mqelem *elem = NULL;
   char buf[BUFSIZ], **info;
 
   if (!ValidName(argv[1]))
@@ -1059,7 +1061,7 @@ int SetDirFlags(int argc, char **argv)
 {
   int stat, flags;
   char **info, buf[BUFSIZ], *args[2];
-  struct qelem *elem = NULL;
+  struct mqelem *elem = NULL;
 
   if (!ValidName(argv[1]))
     return DM_NORMAL;

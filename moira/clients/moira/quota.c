@@ -46,7 +46,7 @@ static char *GetDefaultUserQuota(Bool override)
 {
   int status;
   char **info;
-  struct qelem *top = NULL;
+  struct mqelem *top = NULL;
   static char *val[] = {"def_quota", NULL};
 
   if (override || (def_quota == NULL))
@@ -270,7 +270,7 @@ int ChangeDefaultQuota(int argc, char *argv[])
 
 int GetQuota(int argc, char **argv)
 {
-  struct qelem *top = NULL;
+  struct mqelem *top = NULL;
   int status;
   char **args;
 
@@ -300,7 +300,7 @@ int GetQuota(int argc, char **argv)
 
 int GetQuotaByFilesys(int argc, char **argv)
 {
-  struct qelem *top = NULL;
+  struct mqelem *top = NULL;
   int status;
   char **args = malloc(2 * sizeof(char *));
 
@@ -391,7 +391,7 @@ int UpdateQuota(int argc, char **argv)
 {
   int status;
   char **args;
-  struct qelem *top = NULL;
+  struct mqelem *top = NULL;
 
   if (!(args = GetQuotaArgs(FALSE)))
     return DM_NORMAL;
@@ -458,7 +458,7 @@ int DeleteQuota(int argc, char **argv)
 {
   int status;
   char **args;
-  struct qelem *top = NULL;
+  struct mqelem *top = NULL;
 
   if (!(args = GetQuotaArgs(FALSE)))
     return DM_NORMAL;

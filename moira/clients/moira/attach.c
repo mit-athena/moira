@@ -30,12 +30,12 @@
 #include <string.h>
 #include <unistd.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.45 1998-02-05 22:50:35 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.46 1998-02-07 17:49:24 danw Exp $");
 
 char *canonicalize_cell(char *c);
 int GetAliasValue(int argc, char **argv, void *retval);
 void RealDeleteFS(char **info, Bool one_item);
-char *SortAfter(struct qelem *elem, int count);
+char *SortAfter(struct mqelem *elem, int count);
 void RealDeleteFSAlias(char **info, Bool one_item);
 
 #define FS_ALIAS_TYPE "FILESYS"
@@ -91,10 +91,10 @@ static char **SetDefaults(char **info, char *name)
  *	Returns: a pointer to the first element in the queue.
  */
 
-static struct qelem *GetFSInfo(int type, char *name)
+static struct mqelem *GetFSInfo(int type, char *name)
 {
   int stat;
-  struct qelem *elem = NULL;
+  struct mqelem *elem = NULL;
   char *args[5];
 
   switch (type)
@@ -180,7 +180,7 @@ static char *PrintFSInfo(char **info)
   if (!strcmp(info[FS_TYPE], "FSGROUP") || !strcmp(info[FS_TYPE], "MUL"))
     {
       int stat;
-      struct qelem *elem = NULL;
+      struct mqelem *elem = NULL;
 
       if (!strcmp(info[FS_TYPE], "MUL"))
 	sprintf(print_buf, "%20s Multiple Filesystem: %s", " ", info[FS_NAME]);
@@ -453,7 +453,7 @@ static char **AskFSInfo(char **info, Bool name)
 
 int GetFS(int argc, char **argv)
 {
-  struct qelem *top;
+  struct mqelem *top;
 
   top = GetFSInfo(LABEL, argv[1]); /* get info. */
   Loop(top, (void (*)(char **))PrintFSInfo);
@@ -469,7 +469,7 @@ int GetFS(int argc, char **argv)
 
 int GetFSM(int argc, char **argv)
 {
-  struct qelem *top;
+  struct mqelem *top;
 
   argv[1] = canonicalize_hostname(strdup(argv[1]));
   top = GetFSInfo(MACHINE, argv[1]); /* get info. */
@@ -517,7 +517,7 @@ void RealDeleteFS(char **info, Bool one_item)
 
 int DeleteFS(int argc, char **argv)
 {
-  struct qelem *elem = GetFSInfo(LABEL, argv[1]);
+  struct mqelem *elem = GetFSInfo(LABEL, argv[1]);
   QueryLoop(elem, PrintFSInfo, RealDeleteFS, "Delete the Filesystem");
 
   FreeQueue(elem);
@@ -576,7 +576,7 @@ static void RealChangeFS(char **info, Bool junk)
 
 int ChangeFS(int argc, char **argv)
 {
-  struct qelem *elem = GetFSInfo(LABEL, argv[1]);
+  struct mqelem *elem = GetFSInfo(LABEL, argv[1]);
   QueryLoop(elem, NullPrint, RealChangeFS, "Update the Filesystem");
 
   FreeQueue(elem);
@@ -645,7 +645,7 @@ int AddFS(int argc, char **argv)
       static char *val[] = {"def_quota", NULL};
       static char *def_quota = NULL;
       char *argv[Q_QUOTA + 1];
-      struct qelem *top = NULL;
+      struct mqelem *top = NULL;
 
       if (!def_quota)
 	{
@@ -699,7 +699,7 @@ int AddFS(int argc, char **argv)
  *	Returns: sort key to use.
  */
 
-char *SortAfter(struct qelem *elem, int count)
+char *SortAfter(struct mqelem *elem, int count)
 {
   char *prev, *next, prevnext, *key, keybuf[9];
 
@@ -751,7 +751,7 @@ char *SortAfter(struct qelem *elem, int count)
 int AddFSToGroup(int argc, char **argv)
 {
   int stat, count;
-  struct qelem *elem = NULL;
+  struct mqelem *elem = NULL;
   char buf[BUFSIZ], *args[5], *bufp;
 
   if ((stat = do_mr_query("get_fsgroup_members", 1, argv + 1, StoreInfo,
@@ -827,7 +827,7 @@ int RemoveFSFromGroup(int argc, char **argv)
 int ChangeFSGroupOrder(int argc, char **argv)
 {
   int stat, src, dst, i;
-  struct qelem *elem = NULL, *top, *tmpelem;
+  struct mqelem *elem = NULL, *top, *tmpelem;
   char buf[BUFSIZ], *bufp, *args[3];
 
   if ((stat = do_mr_query("get_fsgroup_members", 1, argv + 1, StoreInfo,
@@ -930,7 +930,7 @@ int ChangeFSGroupOrder(int argc, char **argv)
 
 int GetFSAlias(int argc, char **argv)
 {
-  struct qelem *top;
+  struct mqelem *top;
 
   top = GetFSInfo(ALIAS, argv[1]);
   Put_message(" ");		/* blank line. */
@@ -950,7 +950,7 @@ int GetFSAlias(int argc, char **argv)
 int CreateFSAlias(int argc, char **argv)
 {
   int stat;
-  struct qelem *elem, *top;
+  struct mqelem *elem, *top;
   char *args[MAX_ARGS_SIZE], buf[BUFSIZ], **info;
 
   elem = NULL;
@@ -1042,7 +1042,7 @@ void RealDeleteFSAlias(char **info, Bool one_item)
 
 int DeleteFSAlias(int argc, char **argv)
 {
-  struct qelem *elem = GetFSInfo(ALIAS, argv[1]);
+  struct mqelem *elem = GetFSInfo(ALIAS, argv[1]);
   QueryLoop(elem, PrintFSAlias, RealDeleteFSAlias,
 	    "Delete the Filesystem Alias");
   FreeQueue(elem);

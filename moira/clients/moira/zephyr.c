@@ -18,7 +18,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/zephyr.c,v 1.6 1998-02-05 22:50:52 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/zephyr.c,v 1.7 1998-02-07 17:49:35 danw Exp $");
 
 void RealDeleteZephyr(char **info, Bool one_item);
 
@@ -43,10 +43,10 @@ static char **SetDefaults(char **info, char *name)
 
 /* Get info from database */
 
-static struct qelem *GetZephyrInfo(char *name)
+static struct mqelem *GetZephyrInfo(char *name)
 {
   int stat;
-  struct qelem *elem = NULL;
+  struct mqelem *elem = NULL;
 
   if ((stat = do_mr_query("get_zephyr_class", 1, &name, StoreInfo, &elem)))
     {
@@ -222,7 +222,7 @@ static char **AskZephyrInfo(char **info, Bool rename)
 /* Menu entry for get zephyr */
 int GetZephyr(int argc, char **argv)
 {
-  struct qelem *top;
+  struct mqelem *top;
 
   top = GetZephyrInfo(argv[1]);
   Loop(top, (void *) PrintZephyrInfo);
@@ -249,7 +249,7 @@ void RealDeleteZephyr(char **info, Bool one_item)
 
 int DeleteZephyr(int argc, char **argv)
 {
-  struct qelem *elem = GetZephyrInfo(argv[1]);
+  struct mqelem *elem = GetZephyrInfo(argv[1]);
   QueryLoop(elem, PrintZephyrInfo, RealDeleteZephyr,
 	    "Delete Zephyr class restriction for class ");
   FreeQueue(elem);
@@ -321,7 +321,7 @@ static void RealUpdateZephyr(char **info, Bool junk)
 
 int ChngZephyr(int argc, char **argv)
 {
-  struct qelem *top;
+  struct mqelem *top;
 
   top = GetZephyrInfo(argv[1]);
   QueryLoop(top, NullPrint, RealUpdateZephyr, "Update class");

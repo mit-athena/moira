@@ -23,9 +23,9 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v 1.34 1998-02-05 22:50:42 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v 1.35 1998-02-07 17:49:28 danw Exp $");
 
-struct qelem *GetListInfo(int type, char *name1, char *name2);
+struct mqelem *GetListInfo(int type, char *name1, char *name2);
 char **AskListInfo(char **info, Bool name);
 int AddList(int argc, char **argv);
 void ListMembersByType(char *type);
@@ -117,10 +117,10 @@ static void PrintListInfo(char **info)
  *	Returns: the first element in the queue.
  */
 
-struct qelem *GetListInfo(int type, char *name1, char *name2)
+struct mqelem *GetListInfo(int type, char *name1, char *name2)
 {
   char *args[2];
-  struct qelem *elem = NULL;
+  struct mqelem *elem = NULL;
   int status;
 
   switch (type)
@@ -253,7 +253,7 @@ char **AskListInfo(char **info, Bool name)
 
 int ShowListInfo(int argc, char **argv)
 {
-  struct qelem *top, *list;
+  struct mqelem *top, *list;
 
   top = list = GetListInfo(LIST, argv[1], NULL);
   while (list)
@@ -277,7 +277,7 @@ static void RealUpdateList(char **info, Bool junk)
 {
   int stat;
   char **args;
-  struct qelem *elem = NULL;
+  struct mqelem *elem = NULL;
 
   if (!(args = AskListInfo(info, TRUE)))
     {
@@ -326,7 +326,7 @@ static void RealUpdateList(char **info, Bool junk)
 
 int UpdateList(int argc, char **argv)
 {
-  struct qelem *top;
+  struct mqelem *top;
 
   top = GetListInfo(LIST, argv[1], (char *) NULL);
   QueryLoop(top, NullPrint, RealUpdateList, "Update the list");
@@ -368,7 +368,7 @@ int AddList(int argc, char **argv)
 {
   static char *info[MAX_ARGS_SIZE], **add_args;
   int status, ret_code = SUB_NORMAL;
-  struct qelem *elem = NULL;
+  struct mqelem *elem = NULL;
 
   if (!ValidName(argv[1]))
     return DM_NORMAL;
@@ -636,7 +636,7 @@ int AddMember(int argc, char **argv)
 {
   char *args[10], temp_buf[BUFSIZ], *p;
   int status;
-  struct qelem *mailhubs, *elem;
+  struct mqelem *mailhubs, *elem;
 
   if (GetMemberInfo("add", args) == SUB_ERROR)
     return DM_NORMAL;
@@ -732,7 +732,7 @@ int InterRemoveItemFromLists(int argc, char **argv)
 {
   int status;
   char *type, *name, *args[10], buf[BUFSIZ];
-  struct qelem *top, *elem;
+  struct mqelem *top, *elem;
 
   type = strdup("USER");
   if (GetTypeFromUser("Type of member", "member", &type) == SUB_ERROR)
@@ -793,7 +793,7 @@ int ListByMember(int argc, char **argv)
 {
   char buf[BUFSIZ], temp_buf[BUFSIZ], *type, *name, **info;
   Bool maillist, group;
-  struct qelem *top, *elem;
+  struct mqelem *top, *elem;
 
   type = strdup("USER");
   if (GetTypeFromUser("Type of member", "member", &type) == SUB_ERROR)
@@ -840,7 +840,7 @@ int ListByMember(int argc, char **argv)
 int ListByAdministrator(int argc, char **argv)
 {
   char buf[BUFSIZ], temp_buf[BUFSIZ], *type, *name;
-  struct qelem *top;
+  struct mqelem *top;
 
   type = strdup("USER");
   if (GetTypeFromUser("Type of member", "member", &type) == SUB_ERROR)

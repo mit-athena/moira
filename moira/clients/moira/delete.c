@@ -23,12 +23,12 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/delete.c,v 1.25 1998-02-05 22:50:39 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/delete.c,v 1.26 1998-02-07 17:49:27 danw Exp $");
 
 int CheckListForDeletion(char *name, Bool verbose);
 void CheckAce(char *type, char *name, Bool verbose);
 int CheckIfAce(char *name, char *type, Bool verbose);
-int RemoveItemFromLists(char *name, char *type, struct qelem **elem,
+int RemoveItemFromLists(char *name, char *type, struct mqelem **elem,
 			int verbose);
 int RemoveMembersOfList(char *name, Bool verbose);
 int DeleteUserGroup(char *name, Bool verbose);
@@ -45,7 +45,7 @@ void AttemptToDeleteList(char **list_info, Bool ask_first);
 
 int CheckListForDeletion(char *name, Bool verbose)
 {
-  struct qelem *elem = NULL;
+  struct mqelem *elem = NULL;
   int status;
   char *args[2], buf[BUFSIZ], **info;
 
@@ -135,7 +135,7 @@ void CheckAce(char *type, char *name, Bool verbose)
 int CheckIfAce(char *name, char *type, Bool verbose)
 {
   char *args[2], buf[BUFSIZ], **info;
-  struct qelem *local, *elem;
+  struct mqelem *local, *elem;
   int status;
   elem = NULL;
 
@@ -192,10 +192,10 @@ int CheckIfAce(char *name, char *type, Bool verbose)
  *	Returns: SUB_ERROR if there is an error.
  */
 
-int RemoveItemFromLists(char *name, char *type, struct qelem **elem,
+int RemoveItemFromLists(char *name, char *type, struct mqelem **elem,
 			int verbose)
 {
-  struct qelem *local;
+  struct mqelem *local;
   char *args[10], temp_buf[BUFSIZ];
   int lists;
   int status;
@@ -283,7 +283,7 @@ int RemoveItemFromLists(char *name, char *type, struct qelem **elem,
 int RemoveMembersOfList(char *name, Bool verbose)
 {
   char buf[BUFSIZ], *args[10];
-  struct qelem *local, *elem = NULL;
+  struct mqelem *local, *elem = NULL;
   int status, members;
   /*
    * Get the members of this list.
@@ -503,7 +503,7 @@ static int RealDeleteList(char *name)
 void AttemptToDeleteList(char **list_info, Bool ask_first)
 {
   int status;
-  struct qelem *local, *member_of;
+  struct mqelem *local, *member_of;
   char *name = list_info[L_NAME];
   member_of = NULL;
 
@@ -581,7 +581,7 @@ void AttemptToDeleteList(char **list_info, Bool ask_first)
 int DeleteList(int argc, char *argv[])
 {
   char buf[BUFSIZ];
-  struct qelem *top, *list;
+  struct mqelem *top, *list;
   int status;
   Bool one_list;
 
@@ -652,7 +652,7 @@ int DeleteUser(int argc, char **argv)
   char buf[BUFSIZ];
   char *name = argv[1];	/* name of the user we are deleting. */
 #ifndef ATHENA
-  struct qelem *local, *member_of = NULL;
+  struct mqelem *local, *member_of = NULL;
 #endif
 
   if (!ValidName(name))

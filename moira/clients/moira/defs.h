@@ -52,11 +52,11 @@ typedef int Bool;
 
 #define FORMFEED     Put_message(" ")
 
-/* for use with insqueue and remque. */
+/* NOT for use with insqueue and remque. */
 
-struct qelem {
-  struct qelem *q_forw;
-  struct qelem *q_back;
+struct mqelem {
+  struct mqelem *q_forw;
+  struct mqelem *q_back;
   void *q_data;
 };
 

@@ -23,7 +23,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/nfs.c,v 1.23 1998-02-05 22:50:47 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/nfs.c,v 1.24 1998-02-07 17:49:30 danw Exp $");
 
 char **AskNFSInfo(char **info);
 
@@ -155,7 +155,7 @@ char **AskNFSInfo(char **info)
 int ShowNFSService(int argc, char **argv)
 {
   int stat;
-  struct qelem *elem = NULL;
+  struct mqelem *elem = NULL;
   char *args[10];
 
   if (!ValidName(argv[1]))
@@ -262,7 +262,7 @@ static void RealUpdateNFSService(char **info, Bool junk)
 int UpdateNFSService(int argc, char **argv)
 {
   int stat;
-  struct qelem *elem = NULL;
+  struct mqelem *elem = NULL;
   char *args[10];
 
   if (!ValidName(argv[1]))
@@ -312,7 +312,7 @@ static void FSPartPrint(char **info)
 static void RealDeleteNFSService(char **info, Bool one_item)
 {
   char temp_buf[BUFSIZ], *args[10];
-  struct qelem *elem = NULL;
+  struct mqelem *elem = NULL;
   int stat;
 
   sprintf(temp_buf,
@@ -364,7 +364,7 @@ static void RealDeleteNFSService(char **info, Bool one_item)
 int DeleteNFSService(int argc, char **argv)
 {
   int stat;
-  struct qelem *elem = NULL;
+  struct mqelem *elem = NULL;
   char *args[10];
 
   if (!ValidName(argv[1]))

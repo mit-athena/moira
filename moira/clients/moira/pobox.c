@@ -23,7 +23,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/pobox.c,v 1.25 1998-02-05 22:50:47 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/pobox.c,v 1.26 1998-02-07 17:49:31 danw Exp $");
 
 #define FOREIGN_BOX ("SMTP")
 #define LOCAL_BOX ("POP")
@@ -66,7 +66,7 @@ static int PrintPOMachines(void)
 {
   int status;
   static char *args[] = {"pop", NULL};
-  struct qelem *top = NULL;
+  struct mqelem *top = NULL;
 
   if ((status = do_mr_query("get_server_locations", CountArgs(args), args,
 			    StoreInfo, &top)))
@@ -90,7 +90,7 @@ static int PrintPOMachines(void)
 int GetUserPOBox(int argc, char **argv)
 {
   int status;
-  struct qelem *top = NULL;
+  struct mqelem *top = NULL;
   char buf[BUFSIZ];
 
   if (!ValidName(argv[1]))
@@ -150,7 +150,7 @@ int SetUserPOBox(int argc, char **argv)
   int status;
   char *type, temp_buf[BUFSIZ], *local_user, *args[10], box[BUFSIZ];
   char *temp_box;
-  struct qelem *top = NULL;
+  struct mqelem *top = NULL;
   local_user = argv[1];
 
   if (!ValidName(local_user))

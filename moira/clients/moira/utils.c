@@ -19,6 +19,8 @@
 #include "f_defs.h"
 #include "globals.h"
 
+#include <sys/types.h>
+
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <netdb.h>		/* for gethostbyname. */
@@ -29,7 +31,7 @@
 #include <string.h>
 #include <time.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v 1.42 1998-02-05 22:50:51 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v 1.43 1998-02-07 17:49:34 danw Exp $");
 
 /*	Function Name: AddQueue
  *	Description: Adds an element to a queue
@@ -37,7 +39,7 @@ RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/cl
  *	Returns: none.
  */
 
-static void AddQueue(struct qelem *elem, struct qelem *pred)
+static void AddQueue(struct mqelem *elem, struct mqelem *pred)
 {
   if (!pred)
     {
@@ -56,7 +58,7 @@ static void AddQueue(struct qelem *elem, struct qelem *pred)
  *	Returns: none.
  */
 
-static void RemoveQueue(struct qelem *elem)
+static void RemoveQueue(struct mqelem *elem)
 {
   if (elem->q_forw)
     elem->q_forw->q_back = elem->q_back;
@@ -113,13 +115,13 @@ void FreeAndClear(char **pointer, Bool free_it)
 }
 
 /*	Function Name: QueueTop
- *	Description: returns a qelem pointer that points to the top of
+ *	Description: returns a mqelem pointer that points to the top of
  *                   a queue.
  *	Arguments: elem - any element of a queue.
  *	Returns: top element of a queue.
  */
 
-struct qelem *QueueTop(struct qelem *elem)
+struct mqelem *QueueTop(struct mqelem *elem)
 {
   if (!elem)		/* NULL returns NULL.  */
     return NULL;
@@ -134,7 +136,7 @@ struct qelem *QueueTop(struct qelem *elem)
  *	Returns: none
  */
 
-static void FreeQueueElem(struct qelem *elem)
+static void FreeQueueElem(struct mqelem *elem)
 {
   char **info = elem->q_data;
 
@@ -153,9 +155,9 @@ static void FreeQueueElem(struct qelem *elem)
  *	Returns: none.
  */
 
-void FreeQueue(struct qelem *elem)
+void FreeQueue(struct mqelem *elem)
 {
-  struct qelem *temp, *local = QueueTop(elem);
+  struct mqelem *temp, *local = QueueTop(elem);
 
   while (local)
     {
@@ -171,7 +173,7 @@ void FreeQueue(struct qelem *elem)
  *	Returns: none.
  */
 
-int QueueCount(struct qelem *elem)
+int QueueCount(struct mqelem *elem)
 {
   int count = 0;
   elem = QueueTop(elem);
@@ -188,7 +190,7 @@ int QueueCount(struct qelem *elem)
  *	Arguments: argc, argv, - information returned from the query returned
  *                               in argv.
  *                 data - the previous element on the queue, this data will be
- *                        stored in a qelem struct immediatly after this elem.
+ *                        stored in a mqelem struct immediatly after this elem.
  *                        If NULL then a new queue will be created.  This value
  *                        is updated to the current element at the end off the
  *                        call.
@@ -198,8 +200,8 @@ int QueueCount(struct qelem *elem)
 int StoreInfo(int argc, char **argv, void *data)
 {
   char **info = malloc(MAX_ARGS_SIZE * sizeof(char *));
-  struct qelem **old_elem = data;
-  struct qelem *new_elem = malloc(sizeof(struct qelem));
+  struct mqelem **old_elem = data;
+  struct mqelem *new_elem = malloc(sizeof(struct mqelem));
   int count;
 
   if (!new_elem || !info)
@@ -624,7 +626,7 @@ int PrintHelp(char **message)
  *	Returns: none.
  */
 
-void Loop(struct qelem *elem, void (*func)(char **))
+void Loop(struct mqelem *elem, void (*func)(char **))
 {
   while (elem)
     {
@@ -660,7 +662,7 @@ void Loop(struct qelem *elem, void (*func)(char **))
  *                              "Delete the list"
  */
 
-void QueryLoop(struct qelem *elem, char * (*print_func)(char **),
+void QueryLoop(struct mqelem *elem, char * (*print_func)(char **),
 	       void (*op_func)(char **, Bool), char *query_string)
 {
   Bool one_item;
@@ -712,15 +714,15 @@ char *NullPrint(char **info)
  *	Returns: argv of values
  */
 
-struct qelem *GetTypeValues(char *tname)
+struct mqelem *GetTypeValues(char *tname)
 {
   int stat;
   char *argv[3], *p, **pp;
-  struct qelem *elem, *oelem;
-  static struct qelem *cache = NULL;
+  struct mqelem *elem, *oelem;
+  static struct mqelem *cache = NULL;
   struct cache_elem {
     char *cache_name;
-    struct qelem *cache_data;
+    struct mqelem *cache_data;
   } *ce;
 
   for (elem = cache; elem; elem = elem->q_forw)
@@ -747,7 +749,7 @@ struct qelem *GetTypeValues(char *tname)
       FreeInfo(pp);
       elem->q_data = p;
     }
-  elem = malloc(sizeof(struct qelem));
+  elem = malloc(sizeof(struct mqelem));
   ce = malloc(sizeof(struct cache_elem));
   ce->cache_name = strdup(tname);
   ce->cache_data = QueueTop(oelem);
@@ -767,7 +769,7 @@ struct qelem *GetTypeValues(char *tname)
 int GetTypeFromUser(char *prompt, char *tname, char **pointer)
 {
   char def[BUFSIZ], buffer[BUFSIZ], *p, *argv[3];
-  struct qelem *elem;
+  struct mqelem *elem;
   int stat;
 
   strcpy(def, *pointer);
@@ -827,7 +829,7 @@ int GetTypeFromUser(char *prompt, char *tname, char **pointer)
 	com_err(program_name, stat, " in add_alias");
       else
 	{
-	  elem = malloc(sizeof(struct qelem));
+	  elem = malloc(sizeof(struct mqelem));
 	  elem->q_data = strdup(*pointer);
 	  AddQueue(elem, GetTypeValues(tname));
 	  Put_message("Done.");

@@ -32,7 +32,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/misc.c,v 1.8 1998-02-05 22:50:46 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/misc.c,v 1.9 1998-02-07 17:49:30 danw Exp $");
 
 void PrintStats(char **info);
 void PrintClients(char **info);
@@ -66,7 +66,7 @@ void PrintStats(char **info)
 int TableStats(int argc, char **argv)
 {
   int status;
-  struct qelem *elem = NULL;
+  struct mqelem *elem = NULL;
 
   if ((status = do_mr_query("get_all_table_stats", 0, NULL, StoreInfo, &elem)))
     {
@@ -116,7 +116,7 @@ void PrintClients(char **info)
 int ShowClients(int argc, char **argv)
 {
   int status;
-  struct qelem *elem = NULL;
+  struct mqelem *elem = NULL;
 
   if ((status = do_mr_query("_list_users", 0, NULL, StoreInfo, &elem)))
     {
@@ -152,7 +152,7 @@ void PrintValue(char **info)
 int ShowValue(int argc, char **argv)
 {
   int status;
-  struct qelem *elem = NULL;
+  struct mqelem *elem = NULL;
 
   if ((status = do_mr_query("get_value", 1, &argv[1], StoreInfo, &elem)))
     {
@@ -190,7 +190,7 @@ int ShowAlias(int argc, char **argv)
 {
   int status;
   char *info[4];
-  struct qelem *elem = NULL;
+  struct mqelem *elem = NULL;
 
   info[0] = argv[1];
   info[1] = argv[2];

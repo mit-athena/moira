@@ -23,7 +23,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/printer.c,v 1.18 1998-02-05 22:50:48 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/printer.c,v 1.19 1998-02-07 17:49:32 danw Exp $");
 
 void RealDeletePcap(char **info, Bool one_item);
 void ChangePcap(char **info, Bool one_item);
@@ -66,10 +66,10 @@ static char **SetDefaults(char **info, char *name)
  * 		if printer not found.
  */
 
-static struct qelem *GetPcapInfo(char *name)
+static struct mqelem *GetPcapInfo(char *name)
 {
   int stat;
-  struct qelem *elem = NULL;
+  struct mqelem *elem = NULL;
 
   if ((stat = do_mr_query("get_printcap_entry", 1, &name, StoreInfo, &elem)))
     {
@@ -168,7 +168,7 @@ static char **AskPcapInfo(char **info)
 
 int GetPcap(int argc, char **argv)
 {
-  struct qelem *top;
+  struct mqelem *top;
 
   top = GetPcapInfo(argv[1]); /* get info. */
   Loop(top, (void *) PrintPcapInfo);
@@ -203,7 +203,7 @@ void RealDeletePcap(char **info, Bool one_item)
 
 int DeletePcap(int argc, char **argv)
 {
-  struct qelem *elem = GetPcapInfo(argv[1]);
+  struct mqelem *elem = GetPcapInfo(argv[1]);
   QueryLoop(elem, PrintPcapInfo, RealDeletePcap, "Delete Printer");
 
   FreeQueue(elem);
@@ -293,7 +293,7 @@ void ChangePcap(char **info, Bool one_item)
 
 int ChngPcap(int argc, char **argv)
 {
-  struct qelem *elem = GetPcapInfo(argv[1]);
+  struct mqelem *elem = GetPcapInfo(argv[1]);
   QueryLoop(elem, NullPrint, ChangePcap, "Change the printer");
   FreeQueue(elem);
   return DM_NORMAL;
@@ -376,10 +376,10 @@ static char *PrintPalladiumInfo(char **info)
 }
 
 
-static struct qelem *GetPalladiumInfo(char *name)
+static struct mqelem *GetPalladiumInfo(char *name)
 {
   int status;
-  struct qelem *elem = NULL;
+  struct mqelem *elem = NULL;
 
   if ((status = do_mr_query("get_palladium", 1, &name, StoreInfo, &elem)))
     {
@@ -431,7 +431,7 @@ void RealDeletePalladium(char **info, Bool one_item)
 
 int GetPalladium(int argc, char **argv)
 {
-  struct qelem *top;
+  struct mqelem *top;
 
   top = GetPalladiumInfo(argv[1]);
   Loop(top, (void (*)(char **))PrintPalladiumInfo);
@@ -477,7 +477,7 @@ int AddPalladium(int argc, char **argv)
 
 int ChngPalladium(int argc, char **argv)
 {
-  struct qelem *elem = GetPalladiumInfo(argv[1]);
+  struct mqelem *elem = GetPalladiumInfo(argv[1]);
   QueryLoop(elem, NullPrint, ChangePalladium, "Change the server/supervisor");
   FreeQueue(elem);
   return DM_NORMAL;
@@ -486,7 +486,7 @@ int ChngPalladium(int argc, char **argv)
 
 int DeletePalladium(int argc, char **argv)
 {
-  struct qelem *elem = GetPalladiumInfo(argv[1]);
+  struct mqelem *elem = GetPalladiumInfo(argv[1]);
   QueryLoop(elem, PrintPalladiumInfo, RealDeletePalladium,
 	    "Delete server/supervisor");
   FreeQueue(elem);
@@ -495,7 +495,7 @@ int DeletePalladium(int argc, char **argv)
 
 int ShowPalladiumAlias(int argc, char **argv)
 {
-  struct qelem *elem = NULL;
+  struct mqelem *elem = NULL;
   char *qargv[3], buf[BUFSIZ];
   int status;
 

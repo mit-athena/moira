@@ -22,6 +22,7 @@
 #include "f_defs.h"
 #include "globals.h"
 
+#include <sys/types.h>
 #include <sys/utsname.h>
 
 #include <netinet/in.h>
@@ -34,7 +35,7 @@
 #include <string.h>
 
 void PrintAliases(char **info);
-struct qelem *GetMCInfo(int type, char *name1, char *name2);
+struct mqelem *GetMCInfo(int type, char *name1, char *name2);
 char **AskMCDInfo(char **info, int type, Bool name);
 int CheckAndRemoveFromCluster(char *name, Bool ask_user);
 int CheckAndRemoveMachines(char *name, Bool ask_first);
@@ -179,7 +180,7 @@ static char *PrintMachInfo(char **info)
 {
   char buf[BUFSIZ], tbuf[256];
   char *args[3];
-  struct qelem *elem = NULL;
+  struct mqelem *elem = NULL;
   int stat;
 
   Put_message("");
@@ -348,10 +349,10 @@ static char *PrintSubnetInfo(char **info)
  *	Returns: the top element of a queue containing the data or NULL.
  */
 
-struct qelem *GetMCInfo(int type, char *name1, char *name2)
+struct mqelem *GetMCInfo(int type, char *name1, char *name2)
 {
   int stat;
-  struct qelem *elem = NULL;
+  struct mqelem *elem = NULL;
   char *args[5];
 
   switch (type)
@@ -667,7 +668,7 @@ char **AskMCDInfo(char **info, int type, Bool name)
 
 int ShowMachineInfo(int argc, char **argv)
 {
-  struct qelem *top;
+  struct mqelem *top;
   char *tmpname;
 
   tmpname = canonicalize_hostname(strdup(argv[1]));
@@ -692,7 +693,7 @@ int ShowMachineInfo(int argc, char **argv)
 int ShowMachineQuery(int argc, char **argv)
 {
   int stat;
-  struct qelem *top, *elem = NULL;
+  struct mqelem *top, *elem = NULL;
   char *args[5];
 
   if (!strcmp(argv[1], "") && !strcmp(argv[2], "") &&
@@ -743,7 +744,7 @@ int AddMachine(int argc, char **argv)
 {
   char **args, *info[MAX_ARGS_SIZE], *name, buf[256], *xargs[5];
   char **rinfo;
-  struct qelem *elem = NULL;
+  struct mqelem *elem = NULL;
   int stat;
 
   if (!ValidName(argv[1]))	/* Checks for wildcards. */
@@ -842,7 +843,7 @@ static void RealUpdateMachine(char **info, Bool junk)
 
 int UpdateMachine(int argc, char **argv)
 {
-  struct qelem *top;
+  struct mqelem *top;
   char *tmpname;
 
   tmpname = canonicalize_hostname(strdup(argv[1]));
@@ -867,7 +868,7 @@ int CheckAndRemoveFromCluster(char *name, Bool ask_user)
   int stat, ret_value;
   Bool delete_it;
   char *args[10], temp_buf[BUFSIZ], *ptr;
-  struct qelem *top, *elem = NULL;
+  struct mqelem *top, *elem = NULL;
 
   ret_value = SUB_NORMAL;	/* initialize ret_value. */
   args[0] = name;
@@ -968,7 +969,7 @@ static void RealDeleteMachine(char **info, Bool one_machine)
 
 int DeleteMachine(int argc, char **argv)
 {
-  struct qelem *top;
+  struct mqelem *top;
   char *tmpname;
 
   tmpname = canonicalize_hostname(strdup(argv[1]));
@@ -1014,7 +1015,7 @@ char *partial_canonicalize_hostname(char *s)
 
 int ShowCname(int argc, char **argv)
 {
-  struct qelem *top;
+  struct mqelem *top;
   char *tmpalias, *tmpname;
 
   tmpalias = partial_canonicalize_hostname(strdup(argv[1]));
@@ -1079,7 +1080,7 @@ int AddMachineToCluster(int argc, char **argv)
   int stat;
   char *machine, *cluster, temp_buf[BUFSIZ], *args[10];
   Bool add_it, one_machine, one_cluster;
-  struct qelem *melem, *mtop, *celem, *ctop;
+  struct mqelem *melem, *mtop, *celem, *ctop;
 
   machine = canonicalize_hostname(strdup(argv[1]));
   if (strcasecmp(machine, argv[1]) && *argv[1] != '"')
@@ -1197,7 +1198,7 @@ static void RealRemoveMachineFromCluster(char **info, Bool one_map)
 
 int RemoveMachineFromCluster(int argc, char **argv)
 {
-  struct qelem *elem = NULL;
+  struct mqelem *elem = NULL;
   char buf[BUFSIZ], * args[10];
   int stat;
 
@@ -1243,7 +1244,7 @@ int RemoveMachineFromCluster(int argc, char **argv)
 
 int ShowSubnetInfo(int argc, char **argv)
 {
-  struct qelem *top;
+  struct mqelem *top;
 
   top = GetMCInfo(SUBNET, argv[1], (char *) NULL);
   Loop(top, (void *) PrintSubnetInfo);
@@ -1325,7 +1326,7 @@ static void RealUpdateSubnet(char **info, Bool junk)
 
 int UpdateSubnet(int argc, char **argv)
 {
-  struct qelem *top;
+  struct mqelem *top;
   top = GetMCInfo(SUBNET, argv[1], NULL);
   QueryLoop(top, NullPrint, RealUpdateSubnet, "Update the subnet");
 
@@ -1374,7 +1375,7 @@ static void RealDeleteSubnet(char **info, Bool one_subnet)
 
 int DeleteSubnet(int argc, char **argv)
 {
-  struct qelem *top;
+  struct mqelem *top;
 
   top = GetMCInfo(SUBNET, argv[1], NULL);
   QueryLoop(top, PrintSubnetInfo, RealDeleteSubnet, "Delete the subnet");
@@ -1393,7 +1394,7 @@ int DeleteSubnet(int argc, char **argv)
 
 int ShowClusterInfo(int argc, char **argv)
 {
-  struct qelem *top;
+  struct mqelem *top;
 
   top = GetMCInfo(CLUSTER, argv[1], NULL);
   Loop(top, (void *) PrintClusterInfo);
@@ -1477,7 +1478,7 @@ static void RealUpdateCluster(char **info, Bool junk)
 
 int UpdateCluster(int argc, char **argv)
 {
-  struct qelem *top;
+  struct mqelem *top;
   top = GetMCInfo(CLUSTER, argv[1], NULL);
   QueryLoop(top, NullPrint, RealUpdateCluster, "Update the cluster");
 
@@ -1499,7 +1500,7 @@ int CheckAndRemoveMachines(char *name, Bool ask_first)
   int stat, ret_value;
   Bool delete_it;
   char *args[10], temp_buf[BUFSIZ], *ptr;
-  struct qelem *top, *elem = NULL;
+  struct mqelem *top, *elem = NULL;
 
   ret_value = SUB_NORMAL;
   args[MAP_MACHINE] = "*";
@@ -1607,7 +1608,7 @@ static void RealDeleteCluster(char **info, Bool one_cluster)
 
 int DeleteCluster(int argc, char **argv)
 {
-  struct qelem *top;
+  struct mqelem *top;
 
   top = GetMCInfo(CLUSTER, argv[1], NULL);
   QueryLoop(top, PrintClusterInfo, RealDeleteCluster, "Delete the cluster");
@@ -1627,7 +1628,7 @@ int DeleteCluster(int argc, char **argv)
 
 int ShowClusterData(int argc, char **argv)
 {
-  struct qelem *elem, *top;
+  struct mqelem *elem, *top;
   char **info;
 
   top = elem = GetMCInfo(DATA, argv[1], argv[2]);
@@ -1697,7 +1698,7 @@ static void RealRemoveClusterData(char **info, Bool one_item)
 
 int RemoveClusterData(int argc, char **argv)
 {
-  struct qelem *top;
+  struct mqelem *top;
 
   top = GetMCInfo(DATA, argv[1], argv[2]);
   QueryLoop(top, PrintClusterData, RealRemoveClusterData,
@@ -1716,7 +1717,7 @@ int RemoveClusterData(int argc, char **argv)
 
 int MachineToClusterMap(int argc, char **argv)
 {
-  struct qelem *elem, *top;
+  struct mqelem *elem, *top;
   char *tmpname, temp_buf[256];
 
   tmpname = canonicalize_hostname(strdup(argv[1]));

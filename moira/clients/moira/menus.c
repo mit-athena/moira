@@ -12,7 +12,9 @@
  * <mit-copyright.h>.
  */
 
-#include <mit-copyright.h>
+#include <stdio.h>
+
+#include "mit-copyright.h"
 #include <moira.h>
 #include "defs.h"
 #include "f_defs.h"
@@ -20,7 +22,7 @@
 
 #include <stdio.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menus.c,v 1.32 1998-02-05 22:50:45 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menus.c,v 1.33 1998-02-07 17:49:29 danw Exp $");
 
 /* ------------------------- Second Tier Menus ------------------------- */
 

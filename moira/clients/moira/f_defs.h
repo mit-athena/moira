@@ -191,10 +191,10 @@ int ShowAlias(int argc, char **argv);
 
 char **CopyInfo(char **info);
 void FreeInfo(char **);
-void FreeQueue(struct qelem *elem);
+void FreeQueue(struct mqelem *elem);
 void FreeAndClear(char **pointer, Bool free_it);
-void Loop(struct qelem *elem, void (*func)(char **));
-void QueryLoop(struct qelem *elem, char * (*print_func)(char **),
+void Loop(struct mqelem *elem, void (*func)(char **));
+void QueryLoop(struct mqelem *elem, char * (*print_func)(char **),
 	       void (*op_func)(char **, Bool), char *query_string);
 void SlipInNewName(char **info, char *name);
 int CountArgs(char **args);
@@ -208,7 +208,7 @@ int StoreInfo(int argc, char **argv, void *data);
 int ToggleVerboseMode(int argc, char **argv);
 char *NullPrint(char **info);
 char *atot(char *itime);
-struct qelem *QueueTop(struct qelem *elem);
+struct mqelem *QueueTop(struct mqelem *elem);
 Bool Confirm(char *prompt);
 Bool YesNoQuestion(char *prompt, int bool_def);
 Bool YesNoQuitQuestion(char *prompt, int bool_def);
@@ -217,8 +217,8 @@ int do_mr_query(char *name, int argc, char **argv,
 int GetTypeFromUser(char *prompt, char *tname, char **pointer);
 int GetAddressFromUser(char *prompt, char **pointer);
 Bool ValidName(char *s);
-int QueueCount(struct qelem *elem);
+int QueueCount(struct mqelem *elem);
 int PromptWithDefault(char *prompt, char *buf, int buflen, char *def);
-struct qelem *GetTypeValues(char *tname);
+struct mqelem *GetTypeValues(char *tname);
 
 #endif /* _f_defs_ */

@@ -3,13 +3,13 @@
  * and distribution information, see the file "mit-copyright.h". 
  *
  * $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chfn.c,v $
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chfn.c,v 1.1 1988-12-20 22:39:39 qjb Exp $
- * $Author: qjb $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chfn.c,v 1.2 1988-12-26 14:37:27 mar Exp $
+ * $Author: mar $
  *
  */
 
 #ifndef lint
-static char *rcsid_chfn_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chfn.c,v 1.1 1988-12-20 22:39:39 qjb Exp $";
+static char *rcsid_chfn_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chfn.c,v 1.2 1988-12-26 14:37:27 mar Exp $";
 #endif not lint
 
 /*
@@ -230,7 +230,7 @@ char *ask(question, def_val, phone_num)
   char *def_val;
   int phone_num;		/* True if this must contain only digits */
 {
-    char buf[BUFSIZ];
+    static char buf[BUFSIZ];
     int ok = FALSE;
     char *result;
     int i;
@@ -242,7 +242,8 @@ char *ask(question, def_val, phone_num)
     {
 	ok = TRUE;
 	printf("%s [%s]: ", question, def_val);
-	(void) fgets(buf, sizeof(buf), stdin);
+	if (fgets(buf, sizeof(buf), stdin) == NULL)
+	  leave(0);
 	buf[strlen(buf) - 1] = NULL;
 	if (strlen(buf) == 0)
 	    result = def_val;
@@ -292,11 +293,9 @@ char *ask(question, def_val, phone_num)
     }
     
     /* Remove dashes if necessary */
-    if (dashes) {
+    if (dashes && result == buf) {
 	char *tmp1, *tmp2;
-	result = strsave(buf);
-	tmp1 = (char *)buf;
-	tmp2 = result;
+	tmp1 = tmp2 = (char *)buf;
 	do {
 	    if (*(tmp1) != '-')
 		*(tmp2++) = *(tmp1);

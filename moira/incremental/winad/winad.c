@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/winad/winad.c,v 1.31 2002-12-03 21:26:06 zacheiss Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/winad/winad.c,v 1.32 2003-03-10 09:05:12 zacheiss Exp $
 /* winad.incr arguments examples
  *
  * arguments when moira creates the account - ignored by winad.incr since the account is unusable.
@@ -497,6 +497,11 @@ int main(int argc, char **argv)
     }
   if (strlen(ldap_domain) == 0)
     strcpy(ldap_domain, "win.mit.edu");
+
+  /* zero trailing newline, if there is one. */
+  if (ldap_domain[strlen(ldap_domain) - 1] == '\n')
+    ldap_domain[strlen(ldap_domain) - 1] = '\0';
+
   initialize_sms_error_table();
   initialize_krb_error_table();
 

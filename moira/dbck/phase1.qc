@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase1.qc,v 1.1 1988-09-25 21:51:48 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase1.qc,v 1.2 1988-09-26 14:07:09 mar Exp $
  *
  *  (c) Copyright 1988 by the Massachusetts Institute of Technology.
  *  For copying and distribution information, please see the file
@@ -7,6 +7,8 @@
 
 #include <mit-copyright.h>
 #include "dbck.h"
+
+static char phase1_qc_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase1.qc,v 1.2 1988-09-26 14:07:09 mar Exp $";
 
 
 show_user_id(u)
@@ -48,6 +50,7 @@ struct save_queue *sq;
 		  printf("%d entr%s fixed\n", rowcount, rowcount==1?"y":"ies");
 		else
 		  printf("Not fixed\n");
+		modified("users");
 ##	    }
 	} else {
 	    uu = u;

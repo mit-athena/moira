@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase2.dc,v 1.3 1993-01-13 12:23:16 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase2.dc,v 1.4 1993-02-09 16:46:47 mar Exp $
  *
  *  (c) Copyright 1988 by the Massachusetts Institute of Technology.
  *  For copying and distribution information, please see the file
@@ -11,7 +11,7 @@
 #include "dbck.h"
 EXEC SQL INCLUDE sqlca;
 
-static char phase2_qc_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase2.dc,v 1.3 1993-01-13 12:23:16 mar Exp $";
+static char phase2_qc_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase2.dc,v 1.4 1993-02-09 16:46:47 mar Exp $";
 
 
 show_mcm_mach(id)
@@ -22,15 +22,16 @@ int id;
     char name[33];
     EXEC SQL END DECLARE SECTION; 
 
-/*  retrieve (name = cluster.#name) where cluster.clu_id = mcmap.clu_id
- *	and mcmap.mach_id = iid { */
     EXEC SQL DECLARE csr201 CURSOR FOR
       SELECT cluster.name FROM cluster, mcmap
         WHERE cluster.clu_id=mcmap.clu_id AND mcmap.mach_id = :iid;
     EXEC SQL OPEN csr201;
     while(1) {
 	EXEC SQL FETCH csr201 INTO :name;
-	if(sqlca.sqlcode != 0) break; 
+	if (sqlca.sqlcode != 0) {
+	  ingerr(&sqlca.sqlcode);
+	  break;
+	} 
 
 	strtrim(name);
 	found = 0;
@@ -48,15 +49,16 @@ int id;
     char name[33];
     EXEC SQL END DECLARE SECTION; 
 
-/*  retrieve (name = machine.#name) where machine.mach_id = mcmap.mach_id
- *	and mcmap.clu_id = iid { */
     EXEC SQL DECLARE csr202 CURSOR FOR
 	SELECT machine.name FROM machine, mcmap
 	    WHERE machine.mach_id=mcmap.mach_id AND mcmap.clu_id=:iid;
     EXEC SQL OPEN csr202;
     while(1) {
 	EXEC SQL FETCH csr202 INTO :name;
-	if(sqlca.sqlcode != 0) break; 
+	if (sqlca.sqlcode != 0) {
+	  ingerr(&sqlca.sqlcode);
+	  break;
+	} 
 
 	strtrim(name);
 	found = 0;
@@ -104,7 +106,7 @@ int id;
     EXEC SQL BEGIN DECLARE SECTION; 
     int rowcount, iid = id;
     EXEC SQL END DECLARE SECTION; 
-/*  replace users (potype = "NONE") where users.users_id = iid */
+
     EXEC SQL UPDATE users SET potype='NONE' WHERE users.users_id = :iid;
     EXEC SQL INQUIRE_SQL(:rowcount = rowcount);
     if (rowcount > 0)
@@ -122,15 +124,16 @@ int id;
     char label[17], data[33];
     EXEC SQL END DECLARE SECTION; 
 
-/*  retrieve (label = svc.serv_label, data = svc.serv_cluster) 
- *	where svc.clu_id = iid {  */
     EXEC SQL DECLARE csr203 CURSOR FOR
 	SELECT serv_label, serv_cluster FROM svc
 	    WHERE clu_id = :iid;
     EXEC SQL OPEN csr203;
     while(1) {
 	EXEC SQL FETCH csr203 INTO :label, :data;
-	if(sqlca.sqlcode != 0) break; 				    
+	if (sqlca.sqlcode != 0) {
+	  ingerr(&sqlca.sqlcode);
+	  break;
+	}
 
 	strtrim(label);
 	strtrim(data);
@@ -174,7 +177,6 @@ int id;
     int rowcount, iid = id;
     EXEC SQL END DECLARE SECTION; 
 
-/*  replace list (acl_id = iid, acl_type = "LIST") where list.list_id = iid */
     EXEC SQL UPDATE list SET acl_id = :iid, acl_type='LIST'
 	WHERE list_id = :iid;
     EXEC SQL INQUIRE_SQL(:rowcount = rowcount); 
@@ -194,15 +196,16 @@ int id;
     char mtype[9], *name = "";
     EXEC SQL END DECLARE SECTION;
 
-/*  retrieve (mtype = imembers.member_type, mid = imembers.member_id)
- *	where imembers.list_id = iid and imembers.direct = 1 { */
     EXEC SQL DECLARE csr204 CURSOR FOR
 	SELECT member_type, member_id FROM imembers
 	    WHERE list_id = :iid AND direct=1;
     EXEC SQL OPEN csr204;
     while(1) {
 	EXEC SQL FETCH csr204 INTO :mtype, :mid;
-	if(sqlca.sqlcode != 0) break; 
+	if (sqlca.sqlcode != 0) {
+	  ingerr(&sqlca.sqlcode);
+	  break;
+	} 
 
 	strtrim(mtype);
 	found = 0;
@@ -226,16 +229,16 @@ int id;
     char name[33];
     EXEC SQL END DECLARE SECTION; 
 
-/*  retrieve (lid = imembers.list_id)
- *	where imembers.member_id = iid and imembers.member_type = "USER" and
- *	      imembers.direct = 1 { */
     EXEC SQL DECLARE csr205 CURSOR FOR
       SELECT list_id FROM imembers
 	WHERE member_id = :iid AND member_type='USER' AND direct=1;
     EXEC SQL OPEN csr205;
     while(1) {
 	EXEC SQL FETCH csr205 INTO :lid;
-	if(sqlca.sqlcode != 0) break; 	
+	if (sqlca.sqlcode != 0) {
+	  ingerr(&sqlca.sqlcode);
+	  break;
+	} 	
 	
 	found = 0;
 	printf("List %s has non-existant user member, id %d\n",
@@ -253,16 +256,16 @@ int id;
     char name[33];
     EXEC SQL END DECLARE SECTION; 
 
-/*  retrieve (lid = imembers.list_id)
- *	where imembers.member_id = iid and imembers.member_type = "LIST" and
- *	      imembers.direct = 1 { */
     EXEC SQL DECLARE csr206 CURSOR FOR
 	SELECT list_id FROM imembers
 	    WHERE member_id = :iid AND member_type='LIST' AND direct=1;
     EXEC SQL OPEN csr206;
     while(1) {
 	EXEC SQL FETCH csr206 INTO :lid;
-	if(sqlca.sqlcode != 0) break; 
+	if (sqlca.sqlcode != 0) {
+	  ingerr(&sqlca.sqlcode);
+	  break;
+	} 
 
 	found = 0;
 	printf("List %s has non-existant list member, id %d\n",
@@ -280,16 +283,16 @@ int id;
     char name[33];
     EXEC SQL END DECLARE SECTION; 
 
-/*  retrieve (lid = imembers.list_id)
- *	where imembers.member_id = iid and imembers.member_type = "STRING" and
- *	      imembers.direct = 1 { */
     EXEC SQL DECLARE csr207 CURSOR FOR
 	SELECT list_id FROM imembers
 	    WHERE member_id = :iid AND member_type='STRING' AND direct=1;
     EXEC SQL OPEN csr207;
     while(1) {
 	EXEC SQL FETCH csr207 INTO :lid;
-	if(sqlca.sqlcode != 0) break; 
+	if (sqlca.sqlcode != 0) {
+	  ingerr(&sqlca.sqlcode);
+	  break;
+	} 
 	
 	found = 0;
 	printf("List %s has non-existant string member, id %d\n",
@@ -308,16 +311,16 @@ int id;
     char name[33];
     EXEC SQL END DECLARE SECTION; 
 
-/*  retrieve (lid = imembers.list_id)
- *	where imembers.member_id = iid and imembers.member_type = "KERBEROS" and
- *	      imembers.direct = 1 { */
     EXEC SQL DECLARE csr208 CURSOR FOR
 	SELECT list_id FROM imembers
 	    WHERE member_id = :iid AND member_type='KERBEROS' AND direct=1;
     EXEC SQL OPEN csr208;
     while(1) {
 	EXEC SQL FETCH csr208 INTO :lid;
-	if(sqlca.sqlcode != 0) break; 
+	if (sqlca.sqlcode != 0) {
+	  ingerr(&sqlca.sqlcode);
+	  break;
+	} 
 
 	found = 0;
 	printf("List %s has non-existant kerberos member, id %d\n",
@@ -337,8 +340,6 @@ EXEC SQL END DECLARE SECTION;
     int rowcount;
     EXEC SQL END DECLARE SECTION; 
 
-/*  delete imembers where imembers.member_type = "USER" and
- *	imembers.member_id = id and imembers.direct = 1 */
     EXEC SQL DELETE FROM imembers WHERE member_type='USER' AND
 	member_id = :id AND direct = 1;
     EXEC SQL INQUIRE_SQL(:rowcount = rowcount); 
@@ -358,8 +359,6 @@ EXEC SQL END DECLARE SECTION;
     int rowcount;
     EXEC SQL END DECLARE SECTION; 
 
-/*  delete imembers where imembers.member_type = "LIST" and
- *	imembers.member_id = id and imembers.direct = 1 */
     EXEC SQL DELETE FROM imembers WHERE member_type='LIST' AND
 	member_id = :id AND direct=1;
     EXEC SQL INQUIRE_SQL(:rowcount = rowcount); 
@@ -379,8 +378,6 @@ EXEC SQL END DECLARE SECTION;
     int rowcount;
     EXEC SQL END DECLARE SECTION; 
 
-/*  delete imembers where imembers.member_type = "STRING" and
- *	imembers.member_id = id and imembers.direct = 1 */
     EXEC SQL DELETE FROM imembers WHERE member_type='STRING' AND
 	member_id = :id AND direct=1;
     EXEC SQL INQUIRE_SQL(:rowcount = rowcount); 
@@ -401,8 +398,6 @@ EXEC SQL END DECLARE SECTION;
     int rowcount;
     EXEC SQL END DECLARE SECTION; 
 
-/*  delete imembers where imembers.member_type = "KERBEROS" and
- *	imembers.member_id = id and imembers.direct = 1 */
     EXEC SQL DELETE FROM imembers WHERE member_type='KERBEROS' AND
 	member_id = :id AND direct=1;
     EXEC SQL INQUIRE_SQL(:rowcount = rowcount); 
@@ -424,14 +419,16 @@ EXEC SQL END DECLARE SECTION;
     EXEC SQL END DECLARE SECTION; 
     int found = 1;
 
-/*  retrieve (name = serverhosts.service) where serverhosts.mach_id = id { */
     EXEC SQL DECLARE csr209 CURSOR FOR
 	SELECT service FROM serverhosts
 	    WHERE mach_id = :id;
     EXEC SQL OPEN csr209;
     while(1) {
 	EXEC SQL FETCH csr209 INTO :name;
-	if(sqlca.sqlcode != 0) break; 
+	if (sqlca.sqlcode != 0) {
+	  ingerr(&sqlca.sqlcode);
+	  break;
+	} 
 
 	found = 0;
 	printf("ServerHost entry for service %s non-existant host %d\n",
@@ -450,7 +447,6 @@ EXEC SQL END DECLARE SECTION;
     int rowcount;
     EXEC SQL END DECLARE SECTION; 
 
-/*  delete serverhosts where serverhosts.mach_id = id */
     EXEC SQL DELETE FROM serverhosts WHERE mach_id = :id;
     EXEC SQL INQUIRE_SQL(:rowcount = rowcount); 
     if (rowcount > 0)
@@ -494,7 +490,6 @@ int hint;
     if (!hash_lookup(machines, f->mach_id)) {
 	printf("Filesys %s with bad machine %d\n", f->name, f->mach_id);
 	if (single_fix("Fix", 0)) {
-/*	    replace filesys (mach_id = 0) where filesys.filsys_id = id */
 	    EXEC SQL UPDATE filesys SET mach_id = 0 WHERE filsys_id = :id;
 	    EXEC SQL INQUIRE_SQL(:rowcount = rowcount); 
 	    if (rowcount > 0)
@@ -532,7 +527,6 @@ int hint;
     		  id1 = f->phys_id;
 		  id2 = f->filsys_id;
 		  id3 = f->mach_id;
-/*		  replace filesys (phys_id = id1) where filesys.filsys_id = id2 */
 		  EXEC SQL UPDATE filesys SET phys_id = :id1 WHERE filsys_id = :id2;
 		  EXEC SQL INQUIRE_SQL(:rowcount = rowcount); 
 		  if (rowcount > 0)
@@ -552,22 +546,12 @@ int hint;
 			    printf("Unable to assign unique ID\n");
 			    return;
 			}
-/*			retrieve (id1 = values.value)
- *			  where values.name = "nfsphys_id"
- *			inquire_equel(rowcount = "rowcount")
- */
 		        EXEC SQL SELECT COUNT(*) INTO :rowcount FROM numvalues 
 			    WHERE name='nfsphys_id';
 			if (rowcount != 1) {
 			    printf("Unable to retrieve unique ID\n");
 			    return;
 			}
-/*			append nfsphys (nfsphys_id = id1, mach_id = id3,
- *					device = "???", #dir = dir, status = 0,
- *					allocated = 0, size = 0,
- *					modtime = "now", modby = 0,
- *					modwith = "dbck")
- */
 			EXEC SQL INSERT INTO mfsphys (mfsphys_id, mach_id,
 			    device, dir, status, allocated, size, modtime,
 			    modby, modwith) VALUES (:id1, :id3, '???', :dir,
@@ -588,8 +572,6 @@ int hint;
 			n->allocated = 0;
 			n->count = 0;
 			hash_store(nfsphys, id1, n);
-/*			replace filesys (phys_id = id1)
- *			  where filesys.filsys_id = id2 */
 			EXEC SQL UPDATE filesys SET phys_id = :id1
 			    WHERE filsys_id = :id2;
 			EXEC SQL INQUIRE_SQL(:rowcount = rowcount); 
@@ -630,14 +612,16 @@ EXEC SQL END DECLARE SECTION;
     EXEC SQL END DECLARE SECTION; 
     struct filesys *f;
 
-/*  retrieve (id1 = fsgroup.filsys_id) where fsgroup.group_id = id { */
     EXEC SQL DECLARE csr210 CURSOR FOR
 	SELECT filsys_id FROM fsgroup
 	    WHERE group_id = :id;
     EXEC SQL OPEN csr210;
     while(1) {
 	EXEC SQL FETCH csr210 INTO :id1;
-	if(sqlca.sqlcode != 0) break; 
+	if (sqlca.sqlcode != 0) {
+	  ingerr(&sqlca.sqlcode);
+	  break;
+	} 
 
 	found = 0;
 	if (f = (struct filesys *) hash_lookup(filesys, id1))
@@ -687,7 +671,6 @@ struct filesys *f;
     int rowcount, id = f->filsys_id;
     EXEC SQL END DECLARE SECTION; 
 
-/*  replace filesys (type = "FSGROUP") where filesys.filsys_id = id */
     EXEC SQL UPDATE filesys SET type='FSGROUP' WHERE filsys_id = :id;
     EXEC SQL INQUIRE_SQL(:rowcount = rowcount); 
     if (rowcount > 0)
@@ -707,14 +690,16 @@ EXEC SQL END DECLARE SECTION;
     EXEC SQL END DECLARE SECTION; 
     struct filesys *f;
 
-/*  retrieve (id1 = fsgroup.group_id) where fsgroup.filsys_id = id { */
     EXEC SQL DECLARE csr211 CURSOR FOR
 	SELECT group_id FROM fsgroup
 	    WHERE filsys_id = :id;
     EXEC SQL OPEN csr211;
     while(1) {
 	EXEC SQL FETCH csr211 INTO :id1;
-	if(sqlca.sqlcode != 0) break; 
+	if (sqlca.sqlcode != 0) {
+	  ingerr(&sqlca.sqlcode);
+	  break;
+	} 
 
 	found = 0;
 	if (f = (struct filesys *) hash_lookup(filesys, id1))
@@ -735,15 +720,16 @@ EXEC SQL END DECLARE SECTION;
     int id1, found = 1;
     EXEC SQL END DECLARE SECTION; 
 
-/*  retrieve (id1 = quota.filsys_id) where quota.entity_id = id and
- *	quota.type = "USER" { */
     EXEC SQL DECLARE csr212 CURSOR FOR
 	SELECT filsys_id FROM quota
 	    WHERE entity_id = :id AND type='USER';
     EXEC SQL OPEN csr212;
     while(1) {
 	EXEC SQL FETCH csr212 INTO :id1;
-	if(sqlca.sqlcode != 0) break; 
+	if (sqlca.sqlcode != 0) {
+	  ingerr(&sqlca.sqlcode);
+	  break;
+	} 
 
 	found = 0;
 	printf("Quota on fs %d for non-existant user %d\n", id1, id);
@@ -761,15 +747,16 @@ EXEC SQL END DECLARE SECTION;
     int id1, found = 1;
     EXEC SQL END DECLARE SECTION; 
 
-/*  retrieve (id1 = quota.filsys_id) where quota.entity_id = id and
- *	quota.type = "GROUP" { */
     EXEC SQL DECLARE csr213 CURSOR FOR
 	SELECT filsys_id FROM quota 
 	    WHERE entity_id = :id AND type='GROUP';
     EXEC SQL OPEN csr213;
     while(1) {
 	EXEC SQL FETCH csr213 INTO :id1;
-	if(sqlca.sqlcode != 0) break;
+	if (sqlca.sqlcode != 0) {
+	  ingerr(&sqlca.sqlcode);
+	  break;
+	}
  
 	found = 0;
 	printf("Quota on fs %d for non-existant list %d\n", id1, id);
@@ -788,7 +775,6 @@ EXEC SQL END DECLARE SECTION;
     EXEC SQL END DECLARE SECTION; 
 
     id1 = ((struct filesys *)hash_lookup(filesys, id))->phys_id;
-/*  delete quota where quota.entity_id = id and quota.type = "USER" */
     EXEC SQL DELETE FROM quota 
 	WHERE entity_id = :id AND type = 'USER';
     EXEC SQL INQUIRE_SQL(:rowcount = rowcount); 
@@ -809,7 +795,6 @@ EXEC SQL END DECLARE SECTION;
     EXEC SQL END DECLARE SECTION; 
 
     id1 = ((struct filesys *)hash_lookup(filesys, id))->phys_id;
-/*  delete quota where quota.entity_id = id and quota.type = "GROUP" */
     EXEC SQL DELETE FROM quota WHERE entity_id = :id AND type='GROUP';
     EXEC SQL INQUIRE_SQL(:rowcount = rowcount); 
     if (rowcount > 0)
@@ -829,15 +814,16 @@ EXEC SQL END DECLARE SECTION;
     char type[9];
     EXEC SQL END DECLARE SECTION; 
 
-/*  retrieve (id1 = quota.entity_id, type = quota.#type)
- *	where quota.filsys_id = id { */
     EXEC SQL DECLARE csr214 CURSOR FOR
 	SELECT entity_id, type FROM quota
 	    WHERE filsys_id = :id;
     EXEC SQL OPEN csr214;
     while(1) {
 	EXEC SQL FETCH csr214 INTO :id1, :type;
-	if(sqlca.sqlcode != 0) break; 
+	if (sqlca.sqlcode != 0) {
+	  ingerr(&sqlca.sqlcode);
+	  break;
+	} 
 	
 	found = 0;
 	printf("Quota for %s %d on non-existant filesys %d\n", type, id1, id);
@@ -864,15 +850,16 @@ EXEC SQL END DECLARE SECTION;
     struct filesys *f;
 
     f = (struct filesys *)hash_lookup(filesys, id);
-/*  retrieve (id1 = quota.entity_id, type = quota.#type)
- *	where quota.filsys_id = id { */
     EXEC SQL DECLARE csr215 CURSOR FOR
 	SELECT entity_id, type FROM quota
 	    WHERE filsys_id = :id;
     EXEC SQL OPEN csr215;
     while(1) {
 	EXEC SQL FETCH csr215 INTO :id1, :type;
-	if(sqlca.sqlcode != 0) break; 
+	if (sqlca.sqlcode != 0) {
+	  ingerr(&sqlca.sqlcode);
+	  break;
+	} 
 
 	found = 0;
 	printf("Quota for %s %d on filesys %s has wrong phys_id %d\n",
@@ -892,8 +879,6 @@ EXEC SQL END DECLARE SECTION;
     EXEC SQL END DECLARE SECTION; 
 
     id1 = ((struct filesys *)hash_lookup(filesys, id))->phys_id;
-/*  replace quota (phys_id = id1) where quota.filsys_id = id and
- *	quota.phys_id != id1	*/
     EXEC SQL UPDATE quota SET phys_id = :id1 
 	WHERE filsys_id = :id AND phys_id != :id1;
     EXEC SQL INQUIRE_SQL(:rowcount = rowcount); 
@@ -914,14 +899,16 @@ EXEC SQL END DECLARE SECTION;
     EXEC SQL END DECLARE SECTION; 
     int found = 1;
 
-/*  retrieve (name = s.#name) where s.acl_type = "USER" and s.acl_id = id { */
     EXEC SQL DECLARE csr216 CURSOR FOR
 	SELECT name FROM servers
 	    WHERE acl_type='USER' and acl_id = :id;
     EXEC SQL OPEN csr216;
     while(1) {
 	EXEC SQL FETCH csr216 INTO :name;
-	if(sqlca.sqlcode != 0) break; 
+	if (sqlca.sqlcode != 0) {
+	  ingerr(&sqlca.sqlcode);
+	  break;
+	} 
 	
 	strtrim(name);
 	printf("Service %s has acl non-existant user %d\n", name, id);
@@ -941,14 +928,16 @@ EXEC SQL END DECLARE SECTION;
     EXEC SQL END DECLARE SECTION; 
     int found = 1;
 
-/*  retrieve (name = s.#name) where s.acl_type = "LIST" and s.acl_id = id { */
     EXEC SQL DECLARE csr217 CURSOR FOR
 	SELECT name FROM servers
 	    WHERE acl_type='LIST' AND acl_id = :id;
     EXEC SQL OPEN csr217;
     while(1) {
 	EXEC SQL FETCH csr217 INTO :name;
-	if(sqlca.sqlcode != 0) break; 
+	if (sqlca.sqlcode != 0) {
+	  ingerr(&sqlca.sqlcode);
+	  break;
+	} 
 
 	strtrim(name);
 	printf("Service %s has acl non-existant list %d\n", name, id);
@@ -967,8 +956,6 @@ EXEC SQL END DECLARE SECTION;
     int rowcount;
     EXEC SQL END DECLARE SECTION; 
 
-/*  replace servers (acl_id = 0) where servers.acl_id = id and
- *	servers.acl_type = "USER" */
     EXEC SQL UPDATE servers SET acl_id=0 WHERE acl_id = :id AND
 	acl_type='USER';
     EXEC SQL INQUIRE_SQL(:rowcount = rowcount); 
@@ -988,8 +975,6 @@ EXEC SQL END DECLARE SECTION;
     int rowcount;
     EXEC SQL END DECLARE SECTION; 
 
-/*  replace servers (acl_id = 0) where servers.acl_id = id and
- *	servers.acl_type = "LIST" */
     EXEC SQL UPDATE servers SET acl_id=0 WHERE acl_id = :id AND
 	acl_type='LIST';
     EXEC SQL INQUIRE_SQL(:rowcount = rowcount); 
@@ -1012,14 +997,16 @@ EXEC SQL END DECLARE SECTION;
     struct string *s;
     char *ss;
 
-/*  retrieve (id1 = krbmap.string_id) where krbmap.users_id = id { */
     EXEC SQL DECLARE csr218 CURSOR FOR
 	SELECT string_id FROM krbmap
 	    WHERE users_id = :id ;
     EXEC SQL OPEN csr218;
     while(1) {
 	EXEC SQL FETCH csr218 INTO :id1;
-	if(sqlca.sqlcode != 0) break; 
+	if (sqlca.sqlcode != 0) {
+	  ingerr(&sqlca.sqlcode);
+	  break;
+	} 
 
 	if (s = ((struct string *)hash_lookup(strings, id1)))
 	    ss = s->name;
@@ -1045,14 +1032,16 @@ EXEC SQL END DECLARE SECTION;
     struct user *u;
     char *s;
 
-/*  retrieve (id1 = krbmap.users_id) where krbmap.string_id = id { */
     EXEC SQL DECLARE csr219 CURSOR FOR
 	SELECT users_id FROM krbmap
 	    WHERE string_id = :id;
     EXEC SQL OPEN csr219;
     while(1) {
 	EXEC SQL FETCH csr219 INTO :id1;
-	if(sqlca.sqlcode != 0) break; 
+	if (sqlca.sqlcode != 0) {
+	  ingerr(&sqlca.sqlcode);
+	  break;
+	} 
 
 	if (u = ((struct user *)hash_lookup(users, id1)))
 	    s = u->login;
@@ -1077,14 +1066,16 @@ EXEC SQL END DECLARE SECTION;
     EXEC SQL END DECLARE SECTION; 
     int found = 1;
 
-/*  retrieve (name = palladium.#name) where palladium.mach_id = id { */
     EXEC SQL DECLARE csr220 CURSOR FOR
 	SELECT name FROM palladium
 	    WHERE mach_id = :id;
     EXEC SQL OPEN csr220;
     while(1) {
 	EXEC SQL FETCH csr220 INTO :name;
-	if(sqlca.sqlcode != 0) break; 
+	if (sqlca.sqlcode != 0) {
+	  ingerr(&sqlca.sqlcode);
+	  break;
+	} 
 
 	strtrim(name);
         printf("Palladium server/supervisor %s is on non-existant machine %d\n",
@@ -1116,13 +1107,15 @@ phase2()
     dprintf("Checking mcmap...\n");
     sq1 = sq_create();
     sq2 = sq_create();
-/*  retrieve (id1 = mcmap.mach_id, id2 = mcmap.clu_id) { */
     EXEC SQL DECLARE csr221 CURSOR FOR
 	SELECT mach_id, clu_id FROM mcmap;
     EXEC SQL OPEN csr221;
     while(1) {
 	EXEC SQL FETCH csr221 INTO :id1, :id2;
-	if(sqlca.sqlcode != 0) break; 
+	if (sqlca.sqlcode != 0) {
+	  ingerr(&sqlca.sqlcode);
+	  break;
+	} 
 
 	if (!(m = (struct machine *)hash_lookup(machines, id1)))
 	    sq_save_unique_data(sq1, id1);
@@ -1136,13 +1129,15 @@ phase2()
 
     dprintf("Checking service clusters...\n");
     sq1 = sq_create();
-/*  retrieve (id1 = svc.clu_id) { */
     EXEC SQL DECLARE csr222 CURSOR FOR
 	SELECT clu_id FROM svc;
     EXEC SQL OPEN csr222;
     while(1) {
 	EXEC SQL FETCH csr222 INTO :id1;
-	if(sqlca.sqlcode != 0) break; 
+	if (sqlca.sqlcode != 0) {
+	  ingerr(&sqlca.sqlcode);
+	  break;
+	} 
 
     	if (!hash_lookup(clusters, id1))
 	  sq_save_unique_data(sq1, id1);
@@ -1166,7 +1161,10 @@ phase2()
     EXEC SQL OPEN csr223;
     while(1) {
 	EXEC SQL FETCH csr223 INTO :id1, :type, :id2, :id3, :id4;
-	if(sqlca.sqlcode != 0) break; 
+	if (sqlca.sqlcode != 0) {
+	  ingerr(&sqlca.sqlcode);
+	  break;
+	} 
 
 	if ((l = (struct list *) hash_lookup(lists, id1)) == NULL)
 	  sq_save_unique_data(sq1, id1);
@@ -1191,14 +1189,15 @@ phase2()
     dprintf("Checking servers...\n");
     sq1 = sq_create();
     sq2 = sq_create();
-/*  range of s is servers
- *  retrieve (name = s.#name, type = s.acl_type, id1 = s.acl_id) { */
     EXEC SQL DECLARE csr224 CURSOR FOR
 	SELECT name, acl_type, acl_id FROM servers;
     EXEC SQL OPEN csr224;
     while(1) {
 	EXEC SQL FETCH csr224 INTO :name, :type, :id1;
-	if(sqlca.sqlcode != 0) break; 
+	if (sqlca.sqlcode != 0) {
+	  ingerr(&sqlca.sqlcode);
+	  break;
+	} 
 
 	strtrim(type);
 	if (!strcmp(type, "USER") && !hash_lookup(users, id1)) {
@@ -1211,15 +1210,17 @@ phase2()
     generic_fix(sq1, show_srv_user, "Fix", zero_srv_user, 1);
     generic_fix(sq2, show_srv_list, "Fix", zero_srv_list, 1);
 
-    dprintf("Checking servershosts...\n");
+    dprintf("Checking serverhosts...\n");
     sq = sq_create();
-/*  retrieve (id1 = serverhosts.mach_id) { */
     EXEC SQL DECLARE csr225 CURSOR FOR
-	SELECT mach_id FROM servrhosts;
+	SELECT mach_id FROM serverhosts;
     EXEC SQL OPEN csr225;
     while(1) {
 	EXEC SQL FETCH csr225 INTO :id1;
-	if(sqlca.sqlcode != 0) break; 
+	if (sqlca.sqlcode != 0) {
+	  ingerr(&sqlca.sqlcode);
+	  break;
+	} 
 
     	if (!hash_lookup(machines, id1))
 	  sq_save_data(sq, id1);
@@ -1237,13 +1238,15 @@ phase2()
     sq1 = sq_create();
     sq2 = sq_create();
     sq3 = sq_create();
-/*  retrieve (id1 = fsgroup.group_id, id2 = fsgroup.filsys_id) { */
     EXEC SQL DECLARE csr226 CURSOR FOR
 	SELECT group_id, filsys_id FROM fsgroup;
     EXEC SQL OPEN csr226;
     while(1) {
 	EXEC SQL FETCH csr226 INTO :id1, :id2;
-	if(sqlca.sqlcode != 0) break; 
+	if (sqlca.sqlcode != 0) {
+	  ingerr(&sqlca.sqlcode);
+	  break;
+	} 
 
     	if (!(f = (struct filesys *) hash_lookup(filesys, id1)))
 	  sq_save_data(sq1, id1);
@@ -1259,14 +1262,15 @@ phase2()
     sq2 = sq_create();
     sq3 = sq_create();
     sq4 = sq_create();
-/*  retrieve (id1 = quota.entity_id, type = quota.#type, id2 = quota.filsys_id,
- *	      id3 = quota.phys_id, id4 = quota.quota) { */
     EXEC SQL DECLARE csr227 CURSOR FOR
 	SELECT entity_id, type, filsys_id, phys_id, quota FROM quota;
     EXEC SQL OPEN csr227;
     while(1) {
 	EXEC SQL FETCH csr227 INTO :id1, :type, :id2, :id3, :id4;
-	if(sqlca.sqlcode != 0) break; 
+	if (sqlca.sqlcode != 0) {
+	  ingerr(&sqlca.sqlcode);
+	  break;
+	} 
 
 	if (type[0] == 'U' && id1 != 0 && !hash_lookup(users, id1))
 	  sq_save_data(sq1, id1);
@@ -1290,14 +1294,15 @@ phase2()
     dprintf("Not checking zephyr.\n");
 
     dprintf("Checking hostaccess...\n");
-/*  range of h is hostaccess
- *  retrieve (id1 = h.mach_id, type = h.acl_type, id2 = h.acl_id) { */
     EXEC SQL DECLARE csr228 CURSOR FOR
 	SELECT mach_id, acl_type, acl_id FROM hostaccess;
     EXEC SQL OPEN csr228;
     while(1) {
 	EXEC SQL FETCH csr228 INTO :id1, :type, :id2;
-	if(sqlca.sqlcode != 0) break; 
+	if (sqlca.sqlcode != 0) {
+	  ingerr(&sqlca.sqlcode);
+	  break;
+	} 
 
 	strtrim(type);
 	if (!hash_lookup(machines, id1)) {
@@ -1316,14 +1321,15 @@ phase2()
 
     dprintf("Checking palladium...\n");
     sq1 = sq_create();
-/*  range of p is palladium
- *  retrieve (id1 = p.mach_id) { */
     EXEC SQL DECLARE csr229 CURSOR FOR
 	SELECT mach_id FROM palladium;
     EXEC SQL OPEN csr229;
     while(1) {
 	EXEC SQL FETCH csr229 INTO :id1;
-	if(sqlca.sqlcode != 0) break; 
+	if (sqlca.sqlcode != 0) {
+	  ingerr(&sqlca.sqlcode);
+	  break;
+	} 
 
 	if (!hash_lookup(machines, id1)) {
 	    sq_save_unique_data(sq1, id1);
@@ -1335,14 +1341,15 @@ phase2()
     dprintf("Checking krbmap...\n");
     sq1 = sq_create();
     sq2 = sq_create();
-/*  range of k is krbmap
- *  retrieve (id1 = k.users_id, id2 = k.string_id) { */
     EXEC SQL DECLARE csr230 CURSOR FOR
 	SELECT users_id, string_id FROM krbmap;
     EXEC SQL OPEN csr230;
     while(1) {
 	EXEC SQL FETCH csr230 INTO :id1, :id2;
-	if(sqlca.sqlcode != 0) break; 
+	if (sqlca.sqlcode != 0) {
+	  ingerr(&sqlca.sqlcode);
+	  break;
+	} 
 
     	if (!hash_lookup(users, id1))
 	  sq_save_unique_data(sq1, id1);
@@ -1354,13 +1361,15 @@ phase2()
     generic_delete(sq2, show_krb_str, "krbmap", "string_id", 1);
 
     dprintf("Checking capacls...\n");
-/*  retrieve (id1 = capacls.list_id, name = capacls.tag) { */
     EXEC SQL DECLARE csr231 CURSOR FOR
 	SELECT list_id, tag FROM capacls;
     EXEC SQL OPEN csr231;
     while(1) {
 	EXEC SQL FETCH csr231 INTO :id1, :name;
-	if(sqlca.sqlcode != 0) break; 
+	if (sqlca.sqlcode != 0) {
+	  ingerr(&sqlca.sqlcode);
+	  break;
+	} 
 
 	if (!hash_lookup(lists, id1)) {
 	    printf("Capacl for %s is non-existant list %d\n", name, id1);

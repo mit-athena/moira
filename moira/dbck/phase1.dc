@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase1.dc,v 1.3 1993-01-13 12:21:42 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase1.dc,v 1.4 1993-02-09 16:46:37 mar Exp $
  *
  *  (c) Copyright 1988 by the Massachusetts Institute of Technology.
  *  For copying and distribution information, please see the file
@@ -11,7 +11,7 @@
 EXEC SQL INCLUDE sqlca;
 
 
-static char phase1_qc_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase1.dc,v 1.3 1993-01-13 12:21:42 mar Exp $";
+static char phase1_qc_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase1.dc,v 1.4 1993-02-09 16:46:37 mar Exp $";
 
 
 show_user_id(u)
@@ -49,8 +49,6 @@ struct save_queue *sq;
     		int id = uu->users_id, rowcount;
 		EXEC SQL END DECLARE SECTION; 
 
-/*		replace users (login = "#"+text(users.uid), status = 0)
- *		    where users.users_id = id */
 		EXEC SQL UPDATE users SET login = '#'+CHAR(users.uid),
 		    status=0 WHERE users_id = :id;
 		EXEC SQL INQUIRE_SQL(:rowcount = rowcount);
@@ -207,7 +205,10 @@ phase1()
     EXEC SQL OPEN csr101;
     while(1) {
 	EXEC SQL FETCH csr101 INTO :id, :buf;
-	if(sqlca.sqlcode != 0) break;
+	if (sqlca.sqlcode != 0) {
+	  ingerr(&sqlca.sqlcode);
+	  break;
+	}
 
     	s = (struct string *) malloc(sizeof(struct string));
 	if (s == NULL)
@@ -235,7 +236,10 @@ phase1()
     while(1) {
 	EXEC SQL FETCH csr102 INTO :id, :name, :last, :first, :status,
             :buf, :id2, :id3, :sid, :sid2, :sid3, :sid4, :sid5;
-	if(sqlca.sqlcode != 0) break;
+	if (sqlca.sqlcode != 0) {
+	  ingerr(&sqlca.sqlcode);
+	  break;
+	}
 
     	u = (struct user *) malloc(sizeof(struct user));
 	if (u == NULL)
@@ -284,7 +288,10 @@ phase1()
 	EXEC SQL OPEN csr103;
 	while(1) {
 	    EXEC SQL FETCH csr103 INTO :id;
-	    if(sqlca.sqlcode != 0) break;
+	    if (sqlca.sqlcode != 0) {
+		ingerr(&sqlca.sqlcode);
+		break;
+	    }
 	    sq_save_data(sq, hash_lookup(users, id));
 	}
 	EXEC SQL CLOSE csr103; 
@@ -300,7 +307,10 @@ phase1()
     EXEC SQL OPEN csr104;
     while(1) {
 	EXEC SQL FETCH csr104 INTO :id, :name, :sid;
-	if(sqlca.sqlcode != 0) break; 
+	if (sqlca.sqlcode != 0) {
+	  ingerr(&sqlca.sqlcode);
+	  break;
+	} 
 
     	m = (struct machine *) malloc(sizeof(struct machine));
 	if (m == NULL)
@@ -327,7 +337,10 @@ phase1()
 	EXEC SQL OPEN csr105;
 	while(1) {
 	    EXEC SQL FETCH csr105 INTO :id;
-	    if(sqlca.sqlcode != 0) break; 
+	    if (sqlca.sqlcode != 0) {
+		ingerr(&sqlca.sqlcode);
+		break;
+	    } 
 
 	    sq_save_data(sq, hash_lookup(machines, id));
 	}
@@ -344,7 +357,10 @@ phase1()
     EXEC SQL OPEN csr106;
     while(1) {
 	EXEC SQL FETCH csr106 INTO :id, :name, :sid;
-	if(sqlca.sqlcode != 0) break; 
+	if (sqlca.sqlcode != 0) {
+	  ingerr(&sqlca.sqlcode);
+	  break;
+	} 
 
     	c = (struct cluster *) malloc(sizeof(struct cluster));
 	if (c == NULL)
@@ -365,12 +381,15 @@ phase1()
 	sq = sq_create();
 
 	EXEC SQL DECLARE csr107 CURSOR FOR
-	    SELECT clu_id FROM cluster c1, cluster c2
+	    SELECT c1.clu_id FROM cluster c1, cluster c2
 		WHERE c1.name=c2.name AND c1.tid != c2.tid;
 	EXEC SQL OPEN csr107;
 	while(1) {
 	    EXEC SQL FETCH csr107 INTO :id;
-	    if(sqlca.sqlcode != 0) break; 
+	    if (sqlca.sqlcode != 0) {
+		ingerr(&sqlca.sqlcode);
+		break;
+	    } 
 
 	    sq_save_data(sq, hash_lookup(clusters, id));
 	}
@@ -388,7 +407,10 @@ phase1()
     EXEC SQL OPEN csr108;
     while(1) {
 	EXEC SQL FETCH csr108 INTO :id, :name, :aid, :buf, :sid;
-	if (sqlca.sqlcode != 0) break;
+	if (sqlca.sqlcode != 0) {
+	  ingerr(&sqlca.sqlcode);
+	  break;
+	}
     	l = (struct list *) malloc(sizeof(struct list));
 	if (l == NULL)
 	  out_of_mem("storing lists");
@@ -411,12 +433,15 @@ phase1()
 	sq = sq_create();
 
 	EXEC SQL DECLARE csr109 CURSOR FOR
-	    SELECT list_id FROM list l1, list l2
+	    SELECT l1.list_id FROM list l1, list l2
 		WHERE l1.name=l2.name AND l1.tid != l2.tid;
 	EXEC SQL OPEN csr109;
 	while(1) {
 	    EXEC SQL FETCH csr109 INTO :id;
-	    if(sqlca.sqlcode != 0) break; 
+	    if (sqlca.sqlcode != 0) {
+		ingerr(&sqlca.sqlcode);
+		break;
+	    } 
 	    
 	    sq_save_data(sq, hash_lookup(lists, id));
 	}
@@ -435,7 +460,10 @@ phase1()
     while(1) {
 	EXEC SQL FETCH csr110 INTO :id, :name, :aid, :aid2, :id2, :id3, 
 	    :buf, :name1, :sid;
-	if(sqlca.sqlcode != 0) break;
+	if (sqlca.sqlcode != 0) {
+	  ingerr(&sqlca.sqlcode);
+	  break;
+	}
 
     	f = (struct filesys *) malloc(sizeof(struct filesys));
 	if (f == NULL)
@@ -468,7 +496,10 @@ phase1()
     EXEC SQL OPEN csr111;
     while(1) {
 	EXEC SQL FETCH csr111 INTO :id, :name, :id2, :id3, :sid;
-	if(sqlca.sqlcode != 0) break; 
+	if (sqlca.sqlcode != 0) {
+	    ingerr(&sqlca.sqlcode);
+	    break;
+	} 
 
     	n = (struct nfsphys *) malloc(sizeof(struct nfsphys));
 	if (n == NULL)
@@ -497,7 +528,10 @@ phase1()
 	EXEC SQL OPEN csr112;
 	while(1) {
 	    EXEC SQL FETCH csr112 INTO :id, :buf;
-	    if(sqlca.sqlcode != 0) break; 
+	    if (sqlca.sqlcode != 0) {
+		ingerr(&sqlca.sqlcode);
+		break;
+	    } 
 
 	    printf("String %s(%d) is a duplicate!\n", strtrim(buf), id);
 	    printf("Not fixing this error\n");
@@ -514,7 +548,10 @@ phase1()
 	EXEC SQL OPEN csr113;
 	while(1) {
 	    EXEC SQL FETCH csr113 INTO :id;
-	    if(sqlca.sqlcode != 0) break; 
+	    if (sqlca.sqlcode != 0) {
+		ingerr(&sqlca.sqlcode);
+		break;
+	    } 
 
 	    printf("User %d is in the krbmap more than once!\n", id);
 	    printf("Not fixing this error\n");
@@ -527,7 +564,10 @@ phase1()
 	EXEC SQL OPEN csr114;
 	while(1) {
 	    EXEC SQL FETCH csr114 INTO :id;
-	    if(sqlca.sqlcode != 0) break; 
+	    if (sqlca.sqlcode != 0) {
+		ingerr(&sqlca.sqlcode);
+		break;
+	    } 
 
 	    printf("Principal %d is in the krbmap more than once!\n", id);
 	    printf("Not fixing this error\n");

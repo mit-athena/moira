@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase4.dc,v 1.2 1993-01-12 22:11:20 genoa Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase4.dc,v 1.3 1993-02-09 16:46:51 mar Exp $
  *
  *  (c) Copyright 1988 by the Massachusetts Institute of Technology.
  *  For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
 #include "dbck.h"
 EXEC SQL INCLUDE sqlca;
 
-static char phase4_qc_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase4.dc,v 1.2 1993-01-12 22:11:20 genoa Exp $";
+static char phase4_qc_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase4.dc,v 1.3 1993-02-09 16:46:51 mar Exp $";
 
 
 count_boxes(id, u, boxes)
@@ -49,10 +49,6 @@ struct hash *counts;
 	       ((struct machine *) hash_lookup(machines, id))->name,
 	       oldval, cnt);
 	if (single_fix("Update", 1)) {
-/*	    range of s is serverhosts
- *    	    replace s (value1 = cnt) where
- *		s.service = "POP" and s.mach_id = id
- */
 	    EXEC SQL UPDATE serverhosts SET value1 = :cnt
 		WHERE service='POP' AND mach_id = :id;
   	    EXEC SQL INQUIRE_SQL(:rowcount = rowcount);
@@ -82,7 +78,6 @@ struct nfsphys *n;
 	       ((struct machine *) hash_lookup(machines, n->mach_id))->name,
 	       n->dir, n->allocated, val);
 	if (single_fix("Update", 1)) {
-/*	    replace nfsphys (allocated = val) where nfsphys.nfsphys_id = id */
 	    EXEC SQL UPDATE nfsphys SET allocated = :val 
 		WHERE nfsphys_id = :id;
   	    EXEC SQL INQUIRE_SQL(:rowcount = rowcount);
@@ -108,16 +103,16 @@ phase4()
     dprintf("Doing POBoxes...\n");
     boxes = create_hash(10);
     counts = create_hash(10);
-/*  retrieve (id = serverhosts.mach_id, cnt = serverhosts.value1)
- *	where serverhosts.service = "POP" {
- */
     EXEC SQL DECLARE csr401 CURSOR FOR
 	SELECT mach_id, value1 FROM serverhosts
 	    WHERE service='POP';
     EXEC SQL OPEN csr401;
     while(1) {
 	EXEC SQL FETCH csr401 INTO :id, :cnt;
-	if(sqlca.sqlcode != 0) break; 
+	if (sqlca.sqlcode != 0) {
+	  ingerr(&sqlca.sqlcode);
+	  break;
+	} 
 	
 	hash_store(boxes, id, 1);
 	hash_store(counts, id, cnt);
@@ -144,11 +139,6 @@ count_only_setup()
 
     dprintf("Loading users...\n");
     users = create_hash(10000);
-/*  range of u is users
- *  retrieve (id = u.users_id, name = u.login, last = u.#last,
- *	      first = u.#first, status = u.#status, buf = u.potype,
- *	      id2 = u.pop_id, id3 = u.box_id) 
- *    where u.potype = "POP" { */
     EXEC SQL DECLARE csr402 CURSOR FOR
 	SELECT users_id, login, last, first, status, 
 	       potype, pop_id, box_id FROM users
@@ -157,7 +147,10 @@ count_only_setup()
     while(1) {
 	EXEC SQL FETCH csr402 INTO :id, :name, :last, :first, :status, 
 	    :buf, :id2, :id3;
-	if(sqlca.sqlcode != 0) break; 
+	if (sqlca.sqlcode != 0) {
+	  ingerr(&sqlca.sqlcode);
+	  break;
+	} 
 
     	u = (struct user *) malloc(sizeof(struct user));
 	if (u == NULL)
@@ -184,14 +177,15 @@ count_only_setup()
 
     dprintf("Loading machines...\n");
     machines = create_hash(1000);
-/*  range of m is machine
- *  retrieve (id = m.mach_id, name = m.#name) { */
     EXEC SQL DECLARE csr403 CURSOR FOR
 	SELECT mach_id, name FROM machine;
     EXEC SQL OPEN csr403;
     while(1) {
 	EXEC SQL FETCH csr403 INTO :id, :name;
-	if(sqlca.sqlcode != 0) break; 
+	if (sqlca.sqlcode != 0) {
+	  ingerr(&sqlca.sqlcode);
+	  break;
+	} 
 
     	m = (struct machine *) malloc(sizeof(struct machine));
 	if (m == NULL)
@@ -204,14 +198,15 @@ count_only_setup()
 
     dprintf("Loading nfsphys...\n");
     nfsphys = create_hash(500);
-/*  retrieve (id = nfsphys.nfsphys_id, name = nfsphys.dir,
- *	      id2 = nfsphys.mach_id, id3 = nfsphys.allocated) { */
     EXEC SQL DECLARE csr404 CURSOR FOR
 	SELECT nfsphys_id, dir, mach_id, allocated FROM nfsphys;
     EXEC SQL OPEN csr404;
     while(1) {
 	EXEC SQL FETCH csr404 INTO :id, :name, :id2, :id3;
-	if(sqlca.sqlcode != 0) break; 
+	if (sqlca.sqlcode != 0) {
+	  ingerr(&sqlca.sqlcode);
+	  break;
+	} 
 
     	n = (struct nfsphys *) malloc(sizeof(struct nfsphys));
 	if (n == NULL)
@@ -226,13 +221,15 @@ count_only_setup()
     EXEC SQL CLOSE csr404; 
 
     dprintf("Counting quotas...\n");
-/*  retrieve (id = quota.phys_id, id2 = quota.quota) { */
     EXEC SQL DECLARE csr405 CURSOR FOR
 	SELECT phys_id, quota FROM quota;
     EXEC SQL OPEN csr405;
     while(1) {
 	EXEC SQL FETCH csr405 INTO :id, :id2;
-	if(sqlca.sqlcode != 0) break; 
+	if (sqlca.sqlcode != 0) {
+	  ingerr(&sqlca.sqlcode);
+	  break;
+	} 
 	
         if (n = (struct nfsphys  *) hash_lookup(nfsphys, id)) {
 	    n->count += id2;

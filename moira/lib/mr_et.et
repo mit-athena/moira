@@ -1,6 +1,6 @@
 #	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_et.et,v $
 #	$Author: mar $
-#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_et.et,v 1.17 1993-11-02 15:16:18 mar Exp $
+#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_et.et,v 1.18 1993-11-02 15:19:23 mar Exp $
 #
 	error_table sms
 
@@ -210,7 +210,7 @@ ec	MR_COREDUMP,
 ec	MR_SUBNET,
 	"Bad subnet"
 
-ec	MR_ADDRESS
+ec	MR_ADDRESS,
 	"Bad address"
 
 	end

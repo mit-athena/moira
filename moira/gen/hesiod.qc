@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/hesiod.qc,v 1.22 1990-02-27 18:56:02 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/hesiod.qc,v 1.23 1990-03-07 16:53:14 mar Exp $
  *
  * This generates the zone files necessary to load a hesiod server.
  * The following zones are generated: passwd, uid, pobox, group,
@@ -18,6 +18,12 @@
 #include <sys/time.h>
 #include <ctype.h>
 
+
+#ifdef ATHENA
+#define HTYPE "UNSPECA"
+#else
+#define HTYPE "TXT"
+#endif
 
 char hesiod_dir[64];
 
@@ -197,12 +203,12 @@ do_passwd()
 	    strcpy(u->name, login);
 	    u->lists = NULL;
 	    hash_store(users, id, u);
-    	    fprintf(pout, "%s.passwd\tHS UNSPECA \"%s:*:%d:101:%s,%s,%s,%s,%s:/mit/%s:%s\"\n",
-		    login, login, uid, fullname, nn, oa, op, hp, login, shell);
+    	    fprintf(pout, "%s.passwd\tHS %s \"%s:*:%d:101:%s,%s,%s,%s,%s:/mit/%s:%s\"\n",
+		    login, HTYPE, login, uid, fullname, nn, oa, op, hp, login, shell);
 	    fprintf(uout, "%d.uid\tHS CNAME %s.passwd\n", uid, login);
 	    if (ptype[0] == 'P' && (mach = hash_lookup(machines, pid))) {
-		fprintf(bout, "%s.pobox\tHS UNSPECA \"POP %s %s\"\n",
-			login, mach, login);
+		fprintf(bout, "%s.pobox\tHS %s \"POP %s %s\"\n",
+			login, HTYPE, mach, login);
 	    }
 ##  }
 
@@ -288,8 +294,8 @@ do_groups()
 	    sprintf(buf, "%s:%d", name, gid);
 	    hash_store(groups, lid, strsave(buf));
 	    fprintf(iout, "%d.gid\tHS CNAME %s.group\n", gid, name);
-	    fprintf(gout, "%s.group\tHS UNSPECA \"%s:*:%d:\"\n",
-		    name, name, gid);
+	    fprintf(gout, "%s.group\tHS %s \"%s:*:%d:\"\n",
+		    name, HTYPE, name, gid);
 ##  }
 
     fflush(iout);
@@ -323,8 +329,8 @@ do_groups()
 	for (b = *p; b; b = b->next) {
 	    if ((g = ((struct user *)b->data)->lists) == NULL)
 	      continue;
-	    fprintf(lout, "%s.grplist\tHS UNSPECA \"",
-		    ((struct user *)b->data)->name);
+	    fprintf(lout, "%s.grplist\tHS %s \"",
+		    ((struct user *)b->data)->name, HTYPE);
 	    for (; g; g = g->next)
 	      if (l = hash_lookup(groups, g->id)) {
 		  fputs(l, lout);
@@ -403,17 +409,17 @@ do_filsys()
 			  *p++ = *mach;
 		    }
 		    *p = 0;
-		    fprintf(out, "%s.filsys\tHS UNSPECA \"%s %s %s %s %s\"\n",
-			    strtrim(name), type, strtrim(loc), machbuf,
+		    fprintf(out, "%s.filsys\tHS %s \"%s %s %s %s %s\"\n",
+			    strtrim(name), HTYPE, type, strtrim(loc), machbuf,
 			    strtrim(access), strtrim(mount));
 		}
 	    } else if (!strcmp(type, "AFS")) {
-		fprintf(out, "%s.filsys\tHS UNSPECA \"AFS %s %s %s\"\n",
-			strtrim(name), strtrim(loc), strtrim(access),
+		fprintf(out, "%s.filsys\tHS %s \"AFS %s %s %s\"\n",
+			strtrim(name), HTYPE, strtrim(loc), strtrim(access),
 			strtrim(mount));
 	    } else if (!strcmp(type, "ERR")) {
-		fprintf(out, "%s.filsys\tHS UNSPECA \"ERR %s\"\n",
-			name, strtrim(comments));
+		fprintf(out, "%s.filsys\tHS %s \"ERR %s\"\n",
+			name, HTYPE, strtrim(comments));
 	    } else if (!strcmp(type, "FSGROUP")) {
 		sprintf(trans, "%s:%d", strtrim(name), fid);
 		sq_save_data(sq, strsave(trans));
@@ -439,16 +445,17 @@ do_filsys()
 			  *p++ = *mach;
 		    }
 		    *p = 0;
-		    fprintf(out, "%s.filsys\tHS UNSPECA \"%s %s %s %s %s\"\n",
-			    group, type, strtrim(loc), machbuf,
+		    fprintf(out, "%s.filsys\tHS %s \"%s %s %s %s %s\"\n",
+			    group, HTYPE, type, strtrim(loc), machbuf,
 			    strtrim(access), strtrim(mount));
 		}
 	    } else if (!strcmp(type, "AFS")) {
-		fprintf(out, "%s.filsys\tHS UNSPECA \"AFS %s %s %s\"\n",
-			group, strtrim(loc), strtrim(access), strtrim(mount));
+		fprintf(out, "%s.filsys\tHS %s \"AFS %s %s %s\"\n",
+			group, HTYPE, strtrim(loc), strtrim(access),
+			strtrim(mount));
 	    } else if (!strcmp(type, "ERR")) {
-		fprintf(out, "%s.filsys\tHS UNSPECA \"ERR %s\"\n",
-			group, strtrim(comments));
+		fprintf(out, "%s.filsys\tHS %s \"ERR %s\"\n",
+			group, HTYPE, strtrim(comments));
     	    }
 ##	}
 	free(group);
@@ -575,8 +582,8 @@ do_cluster()
 		      strtrim(label);
 		      strtrim(data);
 		      fprintf(out,
-			      "smsinternal-%d.cluster\tHS UNSPECA \"%s %s\"\n",
-			      mid, label, data);
+			      "smsinternal-%d.cluster\tHS %s \"%s %s\"\n",
+			      mid, HTYPE, label, data);
 ##		  }
 		}
 	    }
@@ -626,8 +633,8 @@ do_cluster()
 	    strtrim(name);
 	    strtrim(label);
 	    strtrim(data);
-	    fprintf(out, "%s.cluster\tHS UNSPECA \"%s %s\"\n",
-		    name, label, data);
+	    fprintf(out, "%s.cluster\tHS %s \"%s %s\"\n",
+		    name, HTYPE, label, data);
 ##  }
 ##  end transaction
     free(machs);
@@ -679,8 +686,8 @@ do_printcap()
 	strtrim(rp);
 	strtrim(sd);
 	strtrim(rm);
-	fprintf(out, "%s.pcap\tHS UNSPECA \"%s:rp=%s:rm=%s:sd=%s\"\n",
-		name, name, rp, rm, sd);
+	fprintf(out, "%s.pcap\tHS %s \"%s:rp=%s:rm=%s:sd=%s\"\n",
+		name, HTYPE, name, rp, rm, sd);
 ##  }
 
     if (fclose(out)) {
@@ -731,14 +738,14 @@ do_palladium()
 	strtrim(name);
 	strtrim(rm);
 	fprintf(out,
-		"%s.palladium\tHS UNSPECA \"%s %d %s interface directory\"\n",
-		name, rm, ident, name);
+		"%s.palladium\tHS %s \"%s %d %s interface directory\"\n",
+		name, HTYPE, rm, ident, name);
 ##  }
 ##  range of a is alias
 ##  retrieve (name = a.#name, trans = a.#trans) where a.#type = "PALLADIUM" {
     	strtrim(name);
 	strtrim(trans);
-	fprintf(out, "%s.palladium\tHS UNSPECA \"%s\"\n", name, trans);
+	fprintf(out, "%s.palladium\tHS %s \"%s\"\n", name, HTYPE, trans);
 ##  }
 
     if (fclose(out)) {
@@ -789,7 +796,7 @@ do_sloc()
 ##	sort by #service {
 	    strtrim(service);
 	    if (mach = hash_lookup(machines, id))
-	      fprintf(out, "%s.sloc\tHS UNSPECA %s\n", service, mach);
+	      fprintf(out, "%s.sloc\tHS %s %s\n", service, HTYPE, mach);
 ##  }
 
     if (fclose(out)) {
@@ -837,8 +844,8 @@ do_service()
 ##	      port = s.#port) {
 	strtrim(service);
 	strtrim(protocol);
-	fprintf(out, "%s.service\tHS UNSPECA \"%s %s %d\"\n",
-		service, service, protocol, port);
+	fprintf(out, "%s.service\tHS %s \"%s %s %d\"\n",
+		service, HTYPE, service, protocol, port);
 ##  }
 
 ##  range of a is alias

@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v 1.36 1989-12-28 17:17:26 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v 1.37 1990-01-11 18:31:01 mar Exp $
  *
  *	Copyright (C) 1987, 1988 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_qrtn_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v 1.36 1989-12-28 17:17:26 mar Exp $";
+static char *rcsid_qrtn_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v 1.37 1990-01-11 18:31:01 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -669,8 +669,8 @@ do_retrieve(q, pqual, psort, action, actarg)
 	}
     }
 
-##  inquire_equel (rowcount = "rowcount", errorno = "errorno")
-    if (errorno != 0) return(SMS_INGRES_ERR);
+    if (sms_errcode) return(sms_errcode);
+##  inquire_equel (rowcount = "rowcount")
     return ((rowcount == 0) ? SMS_NO_MATCH : SMS_SUCCESS);
 ##}
 
@@ -694,11 +694,7 @@ do_update(q, argv, qual, action, actarg)
 ##  replace rvar (param (q->tlist, argv))
 ##  where cqual
 
-##  inquire_equel (errorno = "errorno")
-    if (errorno == INGRES_BAD_INT)
-	return(SMS_INTEGER);
-    else if (errorno != 0)
-	return(SMS_INGRES_ERR);
+    if (sms_errcode) return(sms_errcode);
     return(SMS_SUCCESS);
 ##}
 
@@ -725,11 +721,7 @@ do_append(q, argv, pqual, action, actarg)
 ##      append to rtable (param (q->tlist, argv))
     }
 
-##  inquire_equel (errorno = "errorno")
-    if (errorno == INGRES_BAD_INT)
-	return(SMS_INTEGER);
-    else if (errorno != 0)
-	return(SMS_INGRES_ERR);
+    if (sms_errcode) return(sms_errcode);
     return(SMS_SUCCESS);
 ##}
 
@@ -751,8 +743,7 @@ do_delete(q, qual, action, actarg)
     cqual = qual;
 ##  delete rvar where cqual
 
-##  inquire_equel (errorno = "errorno")
-    if (errorno != 0) return(SMS_INGRES_ERR);
+    if (sms_errcode) return(sms_errcode);
     return(SMS_SUCCESS);
 ##}
 
@@ -828,7 +819,7 @@ int *uid;
 	return;
     }
 
-    if (name_to_id(name, "STRING", &k_id) == SMS_SUCCESS)
+    if (name_to_id(name, "STRINGS", &k_id) == SMS_SUCCESS)
       *kid = -k_id;
 
     if (!ok) {
@@ -836,7 +827,7 @@ int *uid;
 	return;
     }
 
-    if (name_to_id(login, "USER", uid) != SMS_SUCCESS)
+    if (name_to_id(login, "USERS", uid) != SMS_SUCCESS)
       *uid = 0;
 
     if (*kid == 0)

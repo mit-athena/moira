@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.22 1994-06-09 14:55:46 jweiss Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.23 1994-08-09 21:41:24 tytso Exp $
  *
  * Command line oriented Moira List tool.
  *
@@ -23,7 +23,7 @@
 #include <moira_site.h>
 
 #ifndef LINT
-static char blanche_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.22 1994-06-09 14:55:46 jweiss Exp $";
+static char blanche_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.23 1994-08-09 21:41:24 tytso Exp $";
 #endif
 
 
@@ -52,7 +52,6 @@ struct save_queue *addlist, *dellist, *memberlist, *synclist;
 char *listname, *whoami;
 
 #ifndef POSIX
-extern char *index();
 extern int errno;
 #endif
 

@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/printer.c,v 1.8 1990-03-17 17:11:12 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/printer.c,v 1.9 1990-04-05 18:14:42 mar Exp $";
 #endif lint
 
 /*	This is the file printer.c for the MOIRA Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/printer.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/printer.c,v 1.8 1990-03-17 17:11:12 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/printer.c,v 1.9 1990-04-05 18:14:42 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -53,6 +53,9 @@ char * name;
     info[PCAP_SPOOL_HOST] =	Strsave(DEFAULT_MACHINE);
     info[PCAP_SPOOL_DIR] =	Strsave(spool_dir);
     info[PCAP_RPRINTER] =	Strsave(name);
+    info[PCAP_QSERVER] =	Strsave("\\[NONE\\]");
+    info[PCAP_AUTH] =		Strsave("1");
+    info[PCAP_PRICE] =		Strsave("10");
     info[PCAP_COMMENTS] = 	Strsave("");
     info[PCAP_MODTIME] = info[PCAP_MODBY] = info[PCAP_MODWITH] = NULL;
     
@@ -75,7 +78,7 @@ char *name;
     int stat;
     struct qelem *elem = NULL;
 
-    if ( (stat = do_mr_query("get_printcap", 1, &name,
+    if ( (stat = do_mr_query("get_printcap_entry", 1, &name,
 			      StoreInfo, (char *)&elem)) != 0) {
 	    com_err(program_name, stat, NULL);
 	    return(NULL);
@@ -104,6 +107,10 @@ char ** info;
     Put_message(buf);
     sprintf(buf, "Spool directory: %-27s Remote Printer Name: %s",
 	    info[PCAP_SPOOL_DIR], info[PCAP_RPRINTER]);
+    Put_message(buf);
+    sprintf(buf, "Authentication: %-3s Price/page: %-3s  Quota Server: %s",
+	    atoi(info[PCAP_AUTH]) ? "yes" : "no",
+	    info[PCAP_PRICE], info[PCAP_QSERVER]);
     Put_message(buf);
     sprintf(buf, "Comments: ", info[PCAP_COMMENTS]);
     Put_message(buf);
@@ -136,6 +143,14 @@ char ** info;
     info[PCAP_SPOOL_HOST] = canonicalize_hostname(info[PCAP_SPOOL_HOST]);
     GetValueFromUser("Spool Directory", &info[PCAP_SPOOL_DIR]);
     GetValueFromUser("Remote Printer Name", &info[PCAP_RPRINTER]);
+    if (!strcmp(info[PCAP_QSERVER], "[NONE]")) {
+	free(info[PCAP_QSERVER]);
+	info[PCAP_QSERVER] = strsave("\\[NONE\\]");
+    }
+    GetValueFromUser("Quotaserver for this printer", &info[PCAP_QSERVER]);
+    info[PCAP_QSERVER] = canonicalize_hostname(info[PCAP_QSERVER]);
+    GetYesNoValueFromUser("Authentication required", &info[PCAP_AUTH]);
+    GetValueFromUser("Price/page", &info[PCAP_PRICE]);
     GetValueFromUser("Comments", &info[PCAP_COMMENTS]);
     
     FreeAndClear(&info[PCAP_MODTIME], TRUE);
@@ -183,7 +198,7 @@ Bool one_item;
     int stat;
     char temp_buf[BUFSIZ];
 
-    if ( (stat = do_mr_query("delete_printcap", 1,
+    if ( (stat = do_mr_query("delete_printcap_entry", 1,
 			      &info[PCAP_NAME], Scream, NULL)) != 0)
 	    com_err(program_name, stat, " printcap entry not deleted.");
     else
@@ -228,7 +243,7 @@ int argc;
     if ( !ValidName(argv[1]) )
 	return(DM_NORMAL);
 
-    if ( (stat = do_mr_query("get_printcap", 1, argv + 1,
+    if ( (stat = do_mr_query("get_printcap_entry", 1, argv + 1,
 			      NullFunc, NULL)) == 0) {
 	Put_message ("A Printer by that name already exists.");
 	return(DM_NORMAL);
@@ -239,7 +254,7 @@ int argc;
 
     args = AskPcapInfo(SetDefaults(info, argv[1]));
 
-    if ( (stat = do_mr_query("add_printcap", CountArgs(args), args, 
+    if ( (stat = do_mr_query("add_printcap_entry", CountArgs(args), args, 
 			      NullFunc, NULL)) != 0)
 	com_err(program_name, stat, " in AddPcap");
 
@@ -261,13 +276,13 @@ Bool one_item;
 {
     int stat;
 
-    if ((stat = do_mr_query("delete_printcap", 1, &info[PCAP_NAME],
+    if ((stat = do_mr_query("delete_printcap_entry", 1, &info[PCAP_NAME],
 			     Scream, NULL)) != 0) {
 	com_err(program_name, stat, " printcap entry not deleted.");
 	return(DM_NORMAL);
     }
     AskPcapInfo(info);
-    if ((stat = do_mr_query("add_printcap", CountArgs(info), info,
+    if ((stat = do_mr_query("add_printcap_entry", CountArgs(info), info,
 			     NullFunc, NULL)) != 0)
 	com_err(program_name, stat, " in ChngPcap");
     return(DM_NORMAL);

@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/aliases.qc,v 1.3 1988-08-05 19:17:06 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/aliases.qc,v 1.4 1988-08-20 20:41:56 mar Exp $
  *
  * This generates the /usr/lib/aliases mail aliases file for the mailhub.
  * The aliases file will contain:
@@ -118,6 +118,7 @@ get_info()
     register struct user *u;
     register struct list *l;
     register struct member *m;
+    register struct list *memberlist;
 
     fprintf(stderr, "Loading machines\n");
     machines = create_hash(1000);
@@ -186,8 +187,8 @@ get_info()
 		  m->name = u->login;
 	    } else if (type[0] == 'L') {
 		m->list_id = mid;
-		if (l = (struct list *) hash_lookup(lists, mid))
-		  m->name = l->name;
+		if (memberlist = (struct list *) hash_lookup(lists, mid))
+		  m->name = memberlist->name;
 	    } else if (type[0] == 'S') {
 		m->list_id = 0;
 		if (s = hash_lookup(strings, mid))
@@ -212,23 +213,12 @@ struct save_queue *sq;
 }
 
 
-/* Determine if a list, given by list_id, is a user group. 
- * We really need to figure out a way to do this right.
- */
-
-int user_group(id)
-int id;
-{
-    return(0);
-}
-
-
 /* Extract mailing lists.  Make a list of all mailinglists, then
  * process them, adding any sub-lists or acl lists to the list of lists
  * to be processed.  If further sublists are encountered, repeat...
  */
 
-int lwid, bol;
+int lwid, bol, awid;
 
 do_mlists(out)
 FILE *out;
@@ -256,8 +246,7 @@ FILE *out;
 	if (l->acl_t ==  'L') {
 	    if (l1 = (struct list *) hash_lookup(lists, l->acl_id)) {
 		fprintf(out, "owner-%s: %s\n", l->name, l1->name);
-		if (!user_group(l->acl_id))
-		  sq_save_unique_data(sq, l->acl_id);
+		sq_save_unique_data(sq, l->acl_id);
 	    }
 	} else if (l->acl_t ==  'U') {
 	    if (u = (struct user *) hash_lookup(users, l->acl_id))
@@ -267,14 +256,16 @@ FILE *out;
 	lwid = strlen(l->name) + 2;
 	bol = 1;
 	for (m = l->m; m; m = m->next) {
-	    if (m->list_id != 0  && user_group(m->list_id))
+	    if (m->list_id != 0)
 	      sq_save_unique_data(sq, m->list_id);
 	    do_member(out, m->name);
 	}
 	fprintf(out, "\n\n");
     }
 
-    sq_destroy(sq);
+/*  Removed for speed, since this take 10 minutes to free, and we don't
+ *  really need the memory reclaimed.
+ *  sq_destroy(sq); */
 }
 
 
@@ -285,13 +276,12 @@ FILE *out;
 register char *s;
 {
     register wwid;
-    static int awid;
     static int cont = 1;
 
     strtrim(s);
     wwid = strlen(s);
 
-    if (awid + wwid + 2 > AL_MAX_WID) {
+    if (!bol && awid + wwid + 2 > AL_MAX_WID) {
 	fprintf(out, ",\n\tcontinuation-%d\ncontinuation-%d: ", cont, cont);
 	cont++;
 	awid = lwid = bol = 17;
@@ -306,7 +296,7 @@ register char *s;
     }
     if (lwid + wwid + 2 > ML_WID) {
 	fprintf(out, ",\n\t%s", s);
-	awid = lwid + wwid + 2;
+	awid += lwid + wwid + 2;
 	lwid = wwid + 8;
 	return;
     }

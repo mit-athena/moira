@@ -1,11 +1,14 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v $
- *	$Author: wesommer $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v 1.7 1987-08-04 01:49:20 wesommer Exp $
+ *	$Author: mike $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v 1.8 1987-08-10 16:22:26 mike Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
  *	$Log: not supported by cvs2svn $
+ * Revision 1.7  87/08/04  01:49:20  wesommer
+ * Rearranged messages.
+ * 
  * Revision 1.6  87/08/04  01:30:54  wesommer
  * Mike's changes; checked in prior to working over messages.
  * 
@@ -19,7 +22,7 @@
  */
 
 #ifndef lint
-static char *rcsid_qrtn_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v 1.7 1987-08-04 01:49:20 wesommer Exp $";
+static char *rcsid_qrtn_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v 1.8 1987-08-10 16:22:26 mike Exp $";
 #endif lint
 
 #include "query.h"
@@ -42,6 +45,7 @@ static int ingerr(num)
     int *num;
 {
     ingres_errno = SMS_INGRES_ERR;
+    com_err(whoami, SMS_INGRES_ERR, " code %d\n", ingres_errno);
     return *num;
 }
 
@@ -309,7 +313,8 @@ sms_process_query(cl, name, argc, argv_ro, action, actarg)
     else
 ##      abort
 
-    if (status != SMS_SUCCESS) com_err(whoami, status, " (Query failed)");
+    if (status != SMS_SUCCESS && log_flags & LOG_RES)
+	com_err(whoami, status, " (Query failed)");
     return(status);
 }
 

@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/dumprest.pc,v $
  *	$Author: danw $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/dumprest.pc,v 1.1 1997-01-29 22:57:40 danw Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/dumprest.pc,v 1.2 1997-07-22 03:20:19 danw Exp $
  *
  *  (c) Copyright 1988 by the Massachusetts Institute of Technology.
  *  For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_dumprest_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/dumprest.pc,v 1.1 1997-01-29 22:57:40 danw Exp $";
+static char *rcsid_dumprest_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/dumprest.pc,v 1.2 1997-07-22 03:20:19 danw Exp $";
 #endif lint
 
 #include <stdio.h>
@@ -21,4 +21,17 @@ punt(msg)
 {
 	perror(msg);
 	exit(1);
+}
+
+dbmserr(void)
+{
+    EXEC SQL BEGIN DECLARE SECTION; 
+    char err_msg[256];
+    EXEC SQL END DECLARE SECTION;
+    int bufsize=256, msglength=0;
+ 
+    sqlglm(err_msg, &bufsize, &msglength);
+    err_msg[msglength]=0;
+    fprintf(stderr, "Fatal SQL error:\n%s", err_msg);
+    exit(1);
 }

@@ -1,5 +1,5 @@
 #	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/db2bkup.awk,v $
-#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/db2bkup.awk,v 1.9 1997-02-06 08:13:17 danw Exp $
+#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/db2bkup.awk,v 1.10 1997-07-22 03:20:17 danw Exp $
 #
 #	This converts the file used to originally create the database
 #	into a program to back it up.
@@ -11,6 +11,7 @@ BEGIN {
 	print "/* Do not edit */\n";
 	print "#include <stdio.h>";
 	print "EXEC SQL INCLUDE sqlca;";
+	print "EXEC SQL WHENEVER SQLERROR DO dbmserr();";
 	print "#include \"dump_db.h\"";
 	print "#define dump_bin dump_str\n";
 

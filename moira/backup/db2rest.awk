@@ -1,5 +1,5 @@
 #	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/db2rest.awk,v $
-#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/db2rest.awk,v 1.5 1997-01-29 22:57:33 danw Exp $
+#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/db2rest.awk,v 1.6 1997-07-22 03:20:18 danw Exp $
 #
 #	This converts the file used to originally create the database
 #	into a program to restore it from a backup.
@@ -11,6 +11,7 @@ BEGIN {
 	print "/* Do not edit */\n";
 	print "#include <stdio.h>";
 	print "EXEC SQL INCLUDE sqlca;";
+	print "EXEC SQL WHENEVER SQLERROR DO dbmserr();";
 	print "void parse_nl(), parse_str(FILE *, char *, int), parse_sep();\n";
 
 	print "/* This file automatically generated */" > "rest1.pc";

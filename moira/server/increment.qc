@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/increment.qc,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/increment.qc,v 1.11 1990-06-13 12:43:40 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/increment.qc,v 1.12 1990-06-18 12:58:30 mar Exp $
  *
  *	Copyright (C) 1989 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_qrtn_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/increment.qc,v 1.11 1990-06-13 12:43:40 mar Exp $";
+static char *rcsid_qrtn_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/increment.qc,v 1.12 1990-06-18 12:58:30 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -163,6 +163,7 @@ char **argv;
 	beforec = 10;
     } else if (!strcmp(table, "members")) {
 	id = (int) argv[0];
+##	retrieve (barg3 = text(list.group)) where list.list_id = id
 	name = malloc(0);
 	id_to_name(id, "LIST", &name);
 	strcpy(barg0, name);
@@ -179,7 +180,7 @@ char **argv;
 	}
 	strcpy(barg2, name);
 	free(name);
-	beforec = 3;
+	beforec = 4;
     } /* else
       com_err(whoami, 0, "unknown table in incremental_before"); */
 ##}
@@ -259,6 +260,7 @@ char **argv;
 	afterc = 10;
     } else if (!strcmp(table, "members")) {
 	id = (int) argv[0];
+##	retrieve (aarg3 = text(list.group)) where list.list_id = id
 	name = malloc(0);
 	id_to_name(id, "LIST", &name);
 	strcpy(aarg0, name);
@@ -275,7 +277,7 @@ char **argv;
 	}
 	strcpy(aarg2, name);
 	free(name);
-	afterc = 3;
+	afterc = 4;
     } else if (!strcmp(table, "clear")) {
 	afterc = 0;
 	table = beforetable;

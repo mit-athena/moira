@@ -1,4 +1,4 @@
-/* $Id: moira_site.h,v 1.28 1999-01-27 19:34:22 danw Exp $
+/* $Id: moira_site.h,v 1.29 1999-02-06 18:44:32 danw Exp $
  *
  * This file contains all definitions that allow easy access to
  * elements returned by most of the @i[Moira] queries.  It also defines
@@ -198,12 +198,16 @@
 #define PRN_PC		10
 #define PRN_AC		11
 #define PRN_LPC_ACL	12
-#define PRN_LOCATION	13
-#define PRN_CONTACT	14
-#define PRN_MODTIME	15
-#define PRN_MODBY	16
-#define PRN_MODWITH	17
-#define PRN_END		18
+#define PRN_BANNER	13
+#define PRN_LOCATION	14
+#define PRN_CONTACT	15
+#define PRN_MODTIME	16
+#define PRN_MODBY	17
+#define PRN_MODWITH	18
+#define PRN_END		19
+
+#define PRN_BANNER_FIRST 1
+#define PRN_BANNER_LAST  2
 
 /* PO box information queries */
 

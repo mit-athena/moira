@@ -3,36 +3,32 @@
  * and distribution information, see the file "mit-copyright.h". 
  *
  * $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chpobox.c,v $
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chpobox.c,v 1.1 1987-08-02 19:47:52 ambar Exp $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chpobox.c,v 1.2 1987-08-02 19:51:53 ambar Exp $
  * $Author: ambar $
  * $Log: not supported by cvs2svn $
- * Revision 1.3  87/07/31  14:47:35  ambar
- * fixed misleading message.
- * 
- * Revision 1.2  87/07/31  01:18:07  ambar
- * testable.
- *  
+ * Revision 1.1  87/08/02  19:47:52  ambar
+ * Initial revision
  *
  */
 
 #ifndef lint
-static char *rcsid_chhome_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chpobox.c,v 1.1 1987-08-02 19:47:52 ambar Exp $";
+static char *rcsid_chpobox_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chpobox.c,v 1.2 1987-08-02 19:51:53 ambar Exp $";
 #endif not lint
 
 /*
  * Talk to the SMS database to change a person's home mail machine. This may
  * be an Athena machine, or a completely arbitrary address.
  * 
- * chhome with no modifiers reports all current mailboxes.
+ * chpobox with no modifiers reports all current mailboxes.
  * 
- * chhome -a [address] means add (not replace) a mailbox to the ones
+ * chpobox -a [address] means add (not replace) a mailbox to the ones
  * the user already has.  Complains if the user tries to give herself
  * more than one mailbox of type pop.
  *
- * chhome -d [address] means delete the specified mailbox from the list.
+ * chpobox -d [address] means delete the specified mailbox from the list.
  * Complains if this would mean leaving the user with no mailbox at all. 
  *
- * chhome -u [user] is needed if you are logged in as one user, but
+ * chpobox -u [user] is needed if you are logged in as one user, but
  * are trying to change the email address of another.  You must have
  * Kerberos tickets as the person whose address you are trying to
  * change, or the attempt will fail.
@@ -52,6 +48,7 @@ static char *rcsid_chhome_c = "$Header: /afs/.athena.mit.edu/astaff/project/moir
 /* SMS includes */
 #include <sms.h>
 #include <sms_app.h>
+#include "mit-copyright.h"
 
 char *getlogin();
 char *malloc();
@@ -413,7 +410,8 @@ canon(machine)
 	machine = hostinfo->h_name;
     else			/* gethostbyname failed; this should be very
 				 * rare, since we're dealing with local
-				 * hosts, so no fancy error recovery. */
+				 * hosts, so no fancy error recovery.
+				 */
 	machine = (char *) NULL;
     return (machine);
 }

@@ -102,6 +102,10 @@ This library supports the Athena Service Management System protocol
 and related operations.  The library contains many routines beyond
 those described in this man page, but they are not intended to be used
 directly. Instead, they are called by the routines that are described.
+
+Be sure to link your application against these libraries:
+-lsms -lsmsgdb -lcom_err -lkrb -ldes, and also curses if the menu are
+routines are to be used.
 .TP
 Protocol functions
 All protocol routines return 0 on success, or a value from 

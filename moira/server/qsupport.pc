@@ -1,4 +1,4 @@
-/* $Id: qsupport.pc,v 2.12 1998-12-28 20:17:26 danw Exp $
+/* $Id: qsupport.pc,v 2.13 1999-07-17 21:42:17 danw Exp $
  *
  * Special query routines
  *
@@ -18,7 +18,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.pc,v 2.12 1998-12-28 20:17:26 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.pc,v 2.13 1999-07-17 21:42:17 danw Exp $");
 
 extern char *whoami, *table_name[];
 extern int dbms_errno, mr_errcode;
@@ -445,8 +445,11 @@ int delete_member_from_list(struct query *q, char **argv, client *cl)
 }
 
 
-/* Don't allow someone to add someone to a list which is the acl of a query
-   unless they're on the list acl, even if they're on the query acl! */
+/* Don't allow someone to add someone to a list which is the acl of a
+ * query unless they're on the list acl, even if they're on the amtl
+ * query acl! Also, don't allow someone proxying to add someone to a
+ * capacl.
+ */
 int acl_access_check(int list_id, client *cl)
 {
   EXEC SQL BEGIN DECLARE SECTION;
@@ -466,6 +469,9 @@ int acl_access_check(int list_id, client *cl)
 
   if (c1 == 0 && c2 == 0)
     return 0;
+
+  if (cl->proxy_id)
+    return 1;
 
   EXEC SQL SELECT acl_type, acl_id INTO :acl_type, :acl_id
     FROM list WHERE list_id=:lid;

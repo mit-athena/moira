@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.34 1989-06-14 15:11:46 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.35 1989-06-28 11:39:14 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_qsupport_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.34 1989-06-14 15:11:46 mar Exp $";
+static char *rcsid_qsupport_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.35 1989-06-28 11:39:14 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -1260,6 +1260,11 @@ followup_glin(q, sq, v, action, actarg, cl)
 ##	    inquire_equel(rowcount = "rowcount")
 	    if (rowcount != 1)
 		strcpy(name, "???");
+	} else if (!strcmp(type, "KERBEROS")) {
+##	    repeat retrieve (name = strings.string) where strings.string_id = @id
+##	    inquire_equel(rowcount = "rowcount")
+	    if (rowcount != 1)
+		strcpy(name, "???");
 	} else if (!strcmp(type, "NONE")) {
 	    strcpy(name, "NONE");
 	} else
@@ -1402,6 +1407,11 @@ followup_gzcl(q, sq, v, action, actarg, cl)
 ##		inquire_equel(rowcount = "rowcount")
 		if (rowcount != 1)
 		  strcpy(name, "???");
+	    } else if (!strcmp(argv[i], "KERBEROS")) {
+##		repeat retrieve (name = strings.string) where strings.string_id = @id
+##		inquire_equel(rowcount = "rowcount")
+		if (rowcount != 1)
+		  strcpy(name, "???");
 	    } else if (!strcmp(argv[i], "NONE")) {
 		strcpy(name, "NONE");
 	    } else {
@@ -1460,6 +1470,11 @@ followup_gsha(q, sq, v, action, actarg, cl)
 	      strcpy(name, "???");
 	} else if (!strcmp(argv[1], "USER")) {
 ##	    repeat retrieve (name = users.login) where users.users_id = @id
+##	    inquire_equel(rowcount = "rowcount")
+	    if (rowcount != 1)
+	      strcpy(name, "???");
+	} else if (!strcmp(argv[1], "KERBEROS")) {
+##	    repeat retrieve (name = strings.string) where strings.string_id = @id
 ##	    inquire_equel(rowcount = "rowcount")
 	    if (rowcount != 1)
 	      strcpy(name, "???");
@@ -1604,6 +1619,12 @@ get_list_info(q, aargv, cl, action, actarg)
 ##	    inquire_equel(rowcount = "rowcount")
 	    if (rowcount != 1)
 		strcpy(acl_name, "???");
+	} else if (!strcmp(acl_type, "KERBEROS")) {
+##	    repeat retrieve (acl_name = strings.string)
+##		where strings.string_id = @acl_id
+##	    inquire_equel(rowcount = "rowcount")
+	    if (rowcount != 1)
+		strcpy(acl_name, "???");
 	} else if (!strcmp(acl_type, "NONE")) {
 	    strcpy(acl_name, "NONE");
 	} else
@@ -1649,7 +1670,8 @@ int get_ace_use(q, argv, cl, action, actarg)
 
     atype = argv[0];
     aid = *(int *)argv[1];
-    if (!strcmp(atype, "LIST") || !strcmp(atype, "USER")) {
+    if (!strcmp(atype, "LIST") || !strcmp(atype, "USER") ||
+	!strcmp(atype, "KERBEROS")) {
 	return(get_ace_internal(atype, aid, action, actarg));
     }
 
@@ -1690,6 +1712,28 @@ int get_ace_use(q, argv, cl, action, actarg)
 	      found++;
 	}
 	if (get_ace_internal("USER", aid, action, actarg) == SMS_SUCCESS)
+	  found++;
+    }
+
+    if (!strcmp(atype, "RKERBERO")) {
+##	range of m is members
+##	repeat retrieve (listid = m.list_id)
+##		where m.member_type = "KERBEROS" and m.member_id = @aid {
+	    sq_save_data(sq, listid);
+##	}
+	/* get all the list_id's of containing lists */
+	while (sq_get_data(sq, &id)) {
+##	    repeat retrieve (listid = m.list_id)
+##		where m.member_type = "LIST" and m.member_id = @id {
+	      sq_save_unique_data(sq, listid);
+##	    }
+	  }
+	/* now process each one */
+	while (sq_get_data(sq, &id)) {
+	    if (get_ace_internal("LIST", id, action, actarg) == SMS_SUCCESS)
+	      found++;
+	}
+	if (get_ace_internal("KERBEROS", aid, action, actarg) == SMS_SUCCESS)
 	  found++;
     }
 
@@ -1798,7 +1842,8 @@ int get_lists_of_member(q, argv, cl, action, actarg)
     aid = *(int *)argv[1];
     if (!strcmp(atype, "LIST") ||
 	!strcmp(atype, "USER") ||
-	!strcmp(atype, "STRING")) {
+	!strcmp(atype, "STRING") ||
+	!strcmp(atype, "KERBEROS")) {
       return(glom_internal(atype, aid, action, actarg));
     }
 
@@ -1861,6 +1906,28 @@ int get_lists_of_member(q, argv, cl, action, actarg)
 	      found++;
 	}
 	if (glom_internal("STRING", aid, action, actarg) == SMS_SUCCESS)
+	  found++;
+    }
+
+    if (!strcmp(atype, "RKERBERO")) {
+##	range of m is members
+##	repeat retrieve (listid = m.list_id)
+##		where m.member_type = "KERBEROS" and m.member_id = @aid {
+	    sq_save_data(sq, listid);
+##	}
+	/* get all the list_id's of containing lists */
+	while (sq_get_data(sq, &id)) {
+##	    repeat retrieve (listid = m.list_id)
+##		where m.member_type = "LIST" and m.member_id = @id {
+	      sq_save_unique_data(sq, listid);
+##	    }
+	  }
+	/* now process each one */
+	while (sq_get_data(sq, &id)) {
+	    if (glom_internal("LIST", id, action, actarg) == SMS_SUCCESS)
+	      found++;
+	}
+	if (glom_internal("KERBEROS", aid, action, actarg) == SMS_SUCCESS)
 	  found++;
     }
 
@@ -1972,6 +2039,15 @@ get_members_of_list(q, argv, cl, action, actarg)
     targv[0] = "STRING";
 ##  repeat retrieve (member_name = strings.string)
 ##             where m.#list_id = @list_id and m.member_type = "STRING"
+##                   and m.member_id = strings.string_id
+##             sort by #member_name
+##  {
+	 (*action)(2, targv, actarg);
+##  }
+
+    targv[0] = "KERBEROS";
+##  repeat retrieve (member_name = strings.string)
+##             where m.#list_id = @list_id and m.member_type = "KERBEROS"
 ##                   and m.member_id = strings.string_id
 ##             sort by #member_name
 ##  {

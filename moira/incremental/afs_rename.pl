@@ -55,30 +55,51 @@ if ($oldtype eq "ERR") {
 $newvname = "X" . $newvname if ($newtype eq "ERR");
 $newvname =~ s/[^-A-Za-z0-9_.]//g;	# strip out illegal characters
 
-&run("$vos rename $oldvname $newvname -cell $newcell")
-    if ($oldvname ne $newvname);
-&run("$vos remove $oldbackup $oldvname.backup -cell $oldcell")
-    if ($oldbackup && $newvname =~ /^n\./);
+if ($oldbackup && $newvname =~ /^n\./) {
+    system("$vos remove $oldbackup $oldvname.backup -cell $oldcell");
+}
+if ($oldvname ne $newvname) {
+    &run("$vos rename $oldvname $newvname -cell $newcell");
+    push(@clean, "$vos rename $newvname $oldvname -cell $newcell");
+}
 
 if ($oldtype eq "AFS") {
     &run("$fs rmm $oldpath");
+    push(@clean, "$fs mkm $oldpath $oldvname");
     &release_parent($oldpath)
 	if ($newtype ne "AFS" || $oldpath ne $newpath);
 }
 if ($newtype eq "AFS") {
     &run("$fs mkm $newpath $newvname");
+    push(@clean, "$fs rmm $newpath");
     &release_parent($newpath);
 }
 
+&do_releases;
 exit;
 
 
 sub run
 {
     local(@cmd) = @_;
+
     system("@cmd >/dev/null");
-    die "@cmd: FAILED\n" if ($?);
+    &fatal("@cmd: FAILED") if ($?);
     return 0;
+}
+
+
+sub fatal
+{
+    local($cmd);
+    $_ = join(' ',@_);
+    s/\n$//;
+
+    while (@clean) {
+	$cmd = shift(@clean);
+	warn "$newname: Cleanup failed: $cmd\n" if (system("$cmd"));
+    }
+    die "$newname: $_\n";
 }
 
 
@@ -115,5 +136,17 @@ sub release_parent
     return if ($?);
 
     local(@tmp) = (split(/ /,$_));
-    &run("$vos release $tmp[$#tmp] -cell $newcell");
+    push(@vrelease, "$tmp[$#tmp] -cell $newcell");
+}
+
+
+sub do_releases
+{
+    local($lastv) = "";
+    local(@volumes) = sort @vrelease;
+    while (@volumes) {
+	$_ = shift(@volumes);
+	next if ($_ eq $lastv);
+	system("$vos release $_");
+    }
 }

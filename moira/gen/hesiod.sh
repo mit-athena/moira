@@ -1,7 +1,8 @@
-#!/bin/csh -f -x
+#!/bin/csh -f
 # This script performs updates of hesiod files on hesiod servers.  
-# 	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/hesiod.sh,v $
-echo	'$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/hesiod.sh,v 1.10 1990-03-19 19:06:02 mar Exp $'
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/hesiod.sh,v 1.11 1991-09-03 15:46:21 mar Exp $
+
+set path=(/etc /bin /usr/bin /usr/etc /usr/athena/etc)
 
 # The following exit codes are defined and MUST BE CONSISTENT with the
 # MR error codes the library uses:
@@ -21,9 +22,9 @@ set DEST_DIR=/etc/athena/nameserver
 
 # Create the destination directory if it doesn't exist
 if (! -d $DEST_DIR) then
-   /bin/rm -f $DEST_DIR
-   /bin/mkdir $DEST_DIR
-   /bin/chmod 755 $DEST_DIR
+   rm -f $DEST_DIR
+   mkdir $DEST_DIR
+   chmod 755 $DEST_DIR
 endif
 
 # If $SRC_DIR does not already exist, make sure that it gets created
@@ -32,7 +33,9 @@ if (! -d $SRC_DIR) then
 	chdir $DEST_DIR
 	mkdir ../_nameserver
 	chdir ../_nameserver
-	if ($SRC_DIR != `pwd`) ln -s `pwd` $SRC_DIR
+	if ($SRC_DIR != `pwd`) then
+		ln -s `pwd` $SRC_DIR
+	endif
 endif
 
 # Alert if tarfile doesn't exist
@@ -41,20 +44,20 @@ if (! -r $TARFILE) exit $MR_MISSINGFILE
 # Empty the tar file one file at a time and move each file to the
 # appropriate place only if it is not zero length. 
 cd $SRC_DIR
-foreach  file (`/bin/tar tf $TARFILE | awk '{print $1}' | sed 's;/$;;'`)
+foreach  file (`tar tf $TARFILE | awk '{print $1}' | sed 's;/$;;'`)
    if (. == $file) continue
 
    rm -rf $file
    echo extracting $file
-   /bin/tar xf $TARFILE $file
+   tar xf $TARFILE $file
    # Don't put up with errors extracting the information
    if ($status) exit $MR_TARERR
    # Make sure the file is not zero-length
    if (! -z $file) then
-      /bin/mv -f $file $DEST_DIR
+      mv -f $file $DEST_DIR
       if ($status != 0) exit $MR_HESFILE
    else
-      /bin/rm -f $file
+      rm -f $file
       exit $MR_MISSINGFILE
    endif
 end
@@ -63,9 +66,12 @@ end
 # important that this file be removed since the script uses its
 # existance as evidence that named as has been successfully restarted.
 
+# First, get statistics
+kill -IOT `cat /etc/named.pid`
+sleep 1
 # Use /bin/kill because, due to a bug in some versions of csh, failure
 # of a builtin will cause the script to abort
-/bin/kill -KILL `/bin/cat /etc/named.pid`
+kill -KILL `cat /etc/named.pid`
 rm -f /etc/named.pid
 
 # Restart named.
@@ -90,7 +96,7 @@ end
 if ($i == $TIMEOUT) exit $MR_NAMED
 
 # Clean up!
-/bin/rm -f $TARFILE
-/bin/rm -f $0
+rm -f $TARFILE
+rm -f $0
 
 exit 0

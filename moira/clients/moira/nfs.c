@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/nfs.c,v 1.16 1990-07-13 15:52:35 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/nfs.c,v 1.17 1991-01-04 16:57:44 mar Exp $";
 #endif lint
 
 /*	This is the file nfs.c for the MOIRA Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/nfs.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/nfs.c,v 1.16 1990-07-13 15:52:35 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/nfs.c,v 1.17 1991-01-04 16:57:44 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -267,7 +267,7 @@ Bool junk;
 
     if ((stat = do_mr_query("update_nfsphys", CountArgs(args), args,
 			     Scream, (char *)NULL)) != MR_SUCCESS) 
-	com_err(program_name, stat, (char *) NULL);
+	com_err(program_name, stat, " in RealUpdateNFSService");
 }
 
 /*	Function Name: UpdateNFSService

@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/printer.c,v 1.11 1990-06-14 11:13:06 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/printer.c,v 1.12 1991-01-04 16:58:21 mar Exp $";
 #endif lint
 
 /*	This is the file printer.c for the MOIRA Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/printer.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/printer.c,v 1.11 1990-06-14 11:13:06 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/printer.c,v 1.12 1991-01-04 16:58:21 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -80,7 +80,7 @@ char *name;
 
     if ( (stat = do_mr_query("get_printcap_entry", 1, &name,
 			      StoreInfo, (char *)&elem)) != 0) {
-	    com_err(program_name, stat, NULL);
+	    com_err(program_name, stat, " in GetPcapInfo");
 	    return(NULL);
     }
     return(QueueTop(elem));
@@ -289,7 +289,9 @@ char **info;
 Bool one_item;
 {
     int stat;
+    char **oldinfo;
 
+    oldinfo = CopyInfo(info);
     if (AskPcapInfo(info) == NULL)
       return(DM_QUIT);
     if ((stat = do_mr_query("delete_printcap_entry", 1, &info[PCAP_NAME],
@@ -298,8 +300,13 @@ Bool one_item;
 	return(DM_NORMAL);
     }
     if ((stat = do_mr_query("add_printcap_entry", CountArgs(info), info,
-			     NullFunc, NULL)) != 0)
+			     NullFunc, NULL)) != 0) {
 	com_err(program_name, stat, " in ChngPcap");
+	if ((stat = do_mr_query("add_printcap_entry", CountArgs(oldinfo) - 3,
+				oldinfo, NullFunc, NULL)) != 0)
+	  com_err(program_name, stat, " while attempting to put old info back");
+    }
+    FreeInfo(oldinfo);
     return(DM_NORMAL);
 }
 
@@ -412,7 +419,7 @@ char *name;
 
     if ((status = do_mr_query("get_palladium", 1, &name, StoreInfo, &elem))
 	!= 0) {
-	com_err(program_name, status, NULL);
+	com_err(program_name, status, " in GetPalladiumInfo");
 	return(NULL);
     }
     return(QueueTop(elem));

@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/zephyr.c,v 1.1 1990-07-31 18:42:09 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/zephyr.c,v 1.2 1991-01-04 16:59:49 mar Exp $
  *
  * Zephyr ACL routines for the Moira client
  *
@@ -54,7 +54,7 @@ char *name;
 
     if ((stat = do_mr_query("get_zephyr_class", 1, &name, StoreInfo,
 			    (char *)&elem)) != 0) {
-	com_err(program_name, stat, NULL);
+	com_err(program_name, stat, " in GetZephyrInfo");
 	return(NULL);
     }
     return(QueueTop(elem));

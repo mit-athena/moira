@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/hesiod.qc,v 1.10 1988-09-13 14:30:43 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/hesiod.qc,v 1.11 1989-03-23 16:49:19 mar Exp $
  *
  * This generates the zone files necessary to load a hesiod server.
  * The following zones are generated: passwd, uid, pobox, group,
@@ -473,13 +473,14 @@ register char *p;
 do_filsys()
 ##{
     FILE *out;
-    char outf[64], outft[64], *mach, machbuf[128];
+    char outf[64], outft[64], *mach, machbuf[128], *group;
     register char *p;
     struct stat sb;
     time_t ftime;
+    struct save_queue *sq, *sq_create();
 ##  char name[33], type[9], loc[33], access[2], mount[33], trans[257];
 ##  char *filetime, comments[65];
-##  int flag1, flag2, flag3, id;
+##  int flag1, flag2, flag3, flag4, id, fid;
 
     sprintf(outf, "%s/filsys.db", HESIOD_DIR);
 
@@ -492,7 +493,9 @@ do_filsys()
 ##	    where tblstats.table = "machine"
 ##	retrieve (flag3 = int4(interval("min", tblstats.modtime - filetime)))
 ##	    where tblstats.table = "alias"
-	if (flag1 < 0 && flag2 < 0 && flag3 < 0) {
+##	retrieve (flag4 = int4(interval("min", tblstats.modtime - filetime)))
+##	    where tblstats.table = "fsgroup"
+	if (flag1 < 0 && flag2 < 0 && flag3 < 0 && flag4 < 0) {
 	    fprintf(stderr, "File filsys.db does not need to be rebuilt.\n");
 	    return(0);
       }
@@ -507,13 +510,15 @@ do_filsys()
 
     fprintf(stderr, "Building filsys.db\n");
     get_mach();
+    sq = sq_create();
 
 ##  range of f is filesys
 ##  retrieve (name = f.label, type = f.#type, loc = f.#name, id = f.mach_id,
-##	      access = f.#access, mount = f.#mount, comments = f.#comments) {
+##	      access = f.#access, mount = f.#mount, comments = f.#comments,
+##	      fid = f.filsys_id) {
 	    strtrim(name);
 	    strtrim(type);
-	    if (strcmp(type, "ERR")) {
+	    if (!strcmp(type, "NFS") || !strcmp(type, "RVD")) {
 		strtrim(loc);
 		strtrim(access);
 		strtrim(mount);
@@ -528,14 +533,50 @@ do_filsys()
 		    fprintf(out, "%s.filsys\tHS UNSPECA \"%s %s %s %s %s\"\n",
 			    name, type, loc, machbuf, access, mount);
 		}
-	    } else {
+	    } else if (!strcmp(type, "ERR")) {
 		strtrim(comments);
 		fprintf(out, "%s.filsys\tHS UNSPECA \"ERR %s\"\n",
 			name, comments);
+	    } else if (!strcmp(type, "FSGROUP")) {
+		sprintf(trans, "%s:%d", name, fid);
+		sq_save_data(sq, strsave(trans));
 	    }
 ##  }
 
-
+##  range of g is fsgroup
+    while (sq_get_data(sq, &group)) {
+	fid = atoi(index(group, ':')+1);
+	*index(group, ':') = 0;
+##      retrieve (type = f.#type, loc = f.#name, id = f.mach_id,
+##		  access = f.#access, mount = f.#mount, comments = f.#comments,
+##		  name = f.#label, trans = g.#key)
+##	      where f.filsys_id = g.filsys_id and g.group_id = fid
+##	      sort by #trans, #name {
+	    strtrim(type);
+	    if (!strcmp(type, "NFS") || !strcmp(type, "RVD")) {
+		strtrim(loc);
+		strtrim(access);
+		strtrim(mount);
+		if (mach = hash_lookup(machines, id)) {
+		    for (p = machbuf; *mach && *mach != '.'; mach++) {
+			if (isupper(*mach))
+			  *p++ = tolower(*mach);
+			else
+			  *p++ = *mach;
+			*p = 0;
+		    }
+		    fprintf(out, "%s.filsys\tHS UNSPECA \"%s %s %s %s %s\"\n",
+			    group, type, loc, machbuf, access, mount);
+		}
+	    } else if (!strcmp(type, "ERR")) {
+		strtrim(comments);
+		fprintf(out, "%s.filsys\tHS UNSPECA \"ERR %s\"\n",
+			group, comments);
+    	    }
+##	}
+	free(group);
+    }
+    sq_destroy(sq);
 
 ##  range of a is alias
 ##  retrieve (name = a.#name, trans = a.#trans) where a.#type = "FILESYS" {

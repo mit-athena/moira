@@ -3,13 +3,13 @@
  * and distribution information, see the file "mit-copyright.h". 
  *
  * $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chpobox.c,v $
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chpobox.c,v 1.15 1992-03-25 23:32:43 mar Exp $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chpobox.c,v 1.16 1993-10-22 16:36:50 mar Exp $
  * $Author: mar $
  *
  */
 
 #ifndef lint
-static char *rcsid_chpobox_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chpobox.c,v 1.15 1992-03-25 23:32:43 mar Exp $";
+static char *rcsid_chpobox_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chpobox.c,v 1.16 1993-10-22 16:36:50 mar Exp $";
 #endif not lint
 
 /*
@@ -31,7 +31,7 @@ static char *rcsid_chpobox_c = "$Header: /afs/.athena.mit.edu/astaff/project/moi
 #include <sys/types.h>
 #include <stdio.h>
 #include <pwd.h>
-#include <strings.h>
+#include <string.h>
 #include <ctype.h>
 #include <errno.h>
 
@@ -70,7 +70,7 @@ main(argc, argv)
     address = uname = (char *) NULL;
     u = getuid();
 
-    if ((whoami = rindex(argv[0], '/')) == NULL)
+    if ((whoami = strrchr(argv[0], '/')) == NULL)
 	whoami = argv[0];
     else
 	whoami++;
@@ -153,7 +153,7 @@ main(argc, argv)
 	    fprintf(stderr, "%s: no address was specified.\n", whoami);
 	    goto show;
 	}
-	machine = index(address, '@');
+	machine = strchr(address, '@');
 	if (machine) {
 	    *machine++ = '\0';		/* get rid of the @ sign */
 	    machine = strtrim(machine);	/* get rid of whitespace */
@@ -175,8 +175,8 @@ main(argc, argv)
 	    strcat(address, "@");
 	    strcat(address, mrarg[2]);
 	    mrarg[2] = address;
-	    if ((address = index(address, '@')) &&
-		(address = index(address, '.')))
+	    if ((address = strchr(address, '@')) &&
+		(address = strchr(address, '.')))
 	      *address = 0;
 	    strcat(mrarg[2], ".LOCAL");
 	    mrarg[1] = "SMTP";

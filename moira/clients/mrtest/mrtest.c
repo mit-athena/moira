@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v 1.25 1993-05-04 18:04:01 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v 1.26 1993-10-22 16:33:30 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_test_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v 1.25 1993-05-04 18:04:01 mar Exp $";
+static char *rcsid_test_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v 1.26 1993-10-22 16:33:30 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -19,6 +19,7 @@ static char *rcsid_test_c = "$Header: /afs/.athena.mit.edu/astaff/project/moirad
 #include <sys/file.h>
 #include <fcntl.h>
 #include <ctype.h>
+#include <string.h>
 #include <moira.h>
 #include <ss.h>
 
@@ -79,7 +80,7 @@ test_connect(argc, argv)
 int argc;
 char *argv[];
 {
-    	char *server = "", *index();
+    	char *server = "";
 	int status;
 
 	if (argc > 1) {
@@ -100,7 +101,7 @@ test_host()
         char host[BUFSIZ];
         int status;
 
-        bzero(host, sizeof(host));
+        memset(host, 0, sizeof(host));
 
 	if (status = mr_host(host, sizeof(host) - 1))
 	    ss_perror(ss, status, "");
@@ -121,7 +122,7 @@ int argc;
 char *argv[];
 {
     FILE *inp;
-    char input[BUFSIZ], *cp, *index();
+    char input[BUFSIZ], *cp;
     int status, oldstdout, oldstderr;
 
     if (recursion > 8) {
@@ -166,7 +167,7 @@ char *argv[];
     for(;;) {
 	if (fgets(input, BUFSIZ, inp) == NULL)
 	  break;
-	if ((cp = index(input, '\n')) != (char *)NULL)
+	if ((cp = strchr(input, '\n')) != (char *)NULL)
 	  *cp = 0;
 	if (input[0] == 0) {
 	    printf("\n");
@@ -208,13 +209,13 @@ char *concat(str1, str2)
 	if (!str1) {
 		int len = strlen(str2) + 1 ;
 		rtn = malloc(len);
-		bcopy(str2, rtn, len);
+		memcpy(rtn, str2, len);
 	} else {
 		int len1 = strlen(str1);
 		int len2 = strlen(str2) + 1;
 		rtn = malloc(len1+len2);
-		bcopy(str1, rtn, len1);
-		bcopy(str2, rtn+len1, len2);
+		memcpy(rtn, str1, len1);
+		memcpy(rtn+len1, str2, len2);
 	}
 	return rtn;
 }

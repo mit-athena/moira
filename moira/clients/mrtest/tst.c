@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/tst.c,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/tst.c,v 1.3 1991-05-13 13:01:04 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/tst.c,v 1.4 1993-10-22 16:34:54 mar Exp $
  *
  *	Copyright (C) 1991 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -14,6 +14,7 @@
 #include <sys/types.h>
 #include <sys/file.h>
 #include <ctype.h>
+#include <string.h>
 #include <moira.h>
 #include <ss.h>
 #include "mr_err_array.h"
@@ -34,7 +35,7 @@ int argc;
 char *argv[];
 {
   FILE *inp, *outp;
-  char *cp, *index();
+  char *cp;
   int LineNum;
   int status;
   int NumArgs;
@@ -81,7 +82,7 @@ char *argv[];
 	strcpy (input, lastcmd);
 	lastcmd[0] = '\0';}
       else break;}
-    if ((cp = index(input, '\n')) != (char *)NULL)
+    if ((cp = strchr(input, '\n')) != (char *)NULL)
       *cp = 0;
     if (input[0] == 0) continue;
 
@@ -103,7 +104,7 @@ char *argv[];
 	continue;}
       else { /* Parse and Execute command with compare */
 	sprintf (cmd, "COMPARE_%s", lastcmd);
-	bzero((char *)ValArgs, sizeof(ValArgs));
+	memset((char *)ValArgs, 0, sizeof(ValArgs));
 	Partial_parse_string(0, cmd, &NumArgs, ValArgs); 
 	ValArgs[NumArgs] = (char *)malloc(sizeof(char) * (1+strlen(input)));
 	strcpy(ValArgs[NumArgs], input);
@@ -167,7 +168,7 @@ test_query_compare(argc, argv)
   count = 0;
 
   /* Parse comp string into '>', char, ErrMsg, NumEntries, and Data */
-  bzero((char *)CompTo, sizeof(CompTo));
+  memset((char *)CompTo, 0, sizeof(CompTo));
   Partial_parse_string (4, argv[argc-1], &NumWordsComp, CompTo);
   if (NumWordsComp < 3) { /* Too few args in comparison string */
         strcpy(ErrorBuf, "Malformed Comparison String1");}

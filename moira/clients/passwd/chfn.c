@@ -3,13 +3,13 @@
  * and distribution information, see the file "mit-copyright.h". 
  *
  * $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chfn.c,v $
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chfn.c,v 1.9 1990-03-26 05:42:13 marc Exp $
- * $Author: marc $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chfn.c,v 1.10 1993-10-22 16:35:52 mar Exp $
+ * $Author: mar $
  *
  */
 
 #ifndef lint
-static char *rcsid_chfn_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chfn.c,v 1.9 1990-03-26 05:42:13 marc Exp $";
+static char *rcsid_chfn_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chfn.c,v 1.10 1993-10-22 16:35:52 mar Exp $";
 #endif not lint
 
 /*
@@ -28,7 +28,7 @@ static char *rcsid_chfn_c = "$Header: /afs/.athena.mit.edu/astaff/project/moirad
 
 #include <sys/types.h>
 #include <stdio.h>
-#include <strings.h>
+#include <string.h>
 #include <sys/file.h>
 #include <krb.h>
 #include <ctype.h>
@@ -63,7 +63,7 @@ main(argc, argv)
     int k_errno;
     char *whoami;
 
-    if ((whoami = rindex(argv[0], '/')) == NULL)
+    if ((whoami = strrchr(argv[0], '/')) == NULL)
 	whoami = argv[0];
     else
 	whoami++;

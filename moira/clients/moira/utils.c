@@ -1,5 +1,5 @@
-#ifndef lint
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v 1.3 1988-06-27 16:12:56 kit Exp $";
+#if (!defined(lint) && !defined(SABER))
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v 1.4 1988-06-29 20:13:16 kit Exp $";
 #endif lint
 
 /*	This is the file utils.c for allmaint, the SMS client that allows
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v $
  *      $Author: kit $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v 1.3 1988-06-27 16:12:56 kit Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v 1.4 1988-06-29 20:13:16 kit Exp $
  *	
  *  	Copyright 1987, 1988 by the Massachusetts Institute of Technology.
  *
@@ -185,10 +185,17 @@ int argc;
 char ** argv;
 char * data;
 {
-    char ** info = (char **) malloc( MAX_ARGS_SIZE * sizeof(char *) );
+    char ** info = (char **) malloc( MAX_ARGS_SIZE * sizeof(char *));
     struct qelem ** old_elem = (struct qelem **) data;
     struct qelem * new_elem = (struct qelem *) malloc (sizeof (struct qelem));
     int count;
+
+    if ( (new_elem == (struct qelem *) NULL) || (info == (char **) NULL) ) {
+	Put_message("Could Not allocate more memory.");
+	FreeQueue(*old_elem);
+	*old_elem = (struct qelem *) NULL;
+	return(SMS_ABORT);
+    }
 
     for (count = 0; count < argc; count++)
 	info[count] = Strsave(argv[count]);
@@ -359,6 +366,8 @@ ValidName(s)
 	Put_message("Please use a non-empty name.");
     else if (index(s, ' '))
 	Put_message("You cannot use space (' ') in this name.");
+    else if (index(s, WILDCARD))
+	Put_message("Wildcards not accepted here.");
     else
 	return TRUE;
     return FALSE;
@@ -577,6 +586,100 @@ char ** message;
 {
     Print(CountArgs(message), message, (char *) NULL);
     return(DM_NORMAL);
+}
+
+/*	Function Name: Loop
+ *	Description: This function goes through the entire queue, and
+ *                   and executes the given function on each element.
+ *	Arguments: elem - top element of the queue.
+ *                 func - the function to execute.
+ *	Returns: none.
+ */
+
+void
+Loop(elem, func)
+FVoid func;
+struct qelem * elem;
+{
+    while (elem != NULL) {
+	char ** info = (char **) elem->q_data;
+	(*func) (info);
+	elem = elem->q_forw;
+    }
+}
+
+
+/*	Function Name: QueryLoop
+ *	Description: This functions loops through a queue containing
+ *                   information about some item that we want to perform
+ *                   an operation on, and then calls the correct routine
+ *                   perform that operation.
+ *	Arguments: top - top of the queue of information.
+ *                 print_func - print function.
+ *                 op_function - operation to be performed.
+ *                 query_string - string the prompts the user whether or not
+ *                                to perform this operation.
+ *	Returns: none.
+ *      NOTES:
+ *               print_opt - should expect one arguent, the info array
+ *                           of char *'s.
+ *                           is expected to return the name of the item.
+ *               op_func   - should expect two arguments.
+ *                           1) the info array of char *'s.
+ *                           2) a boolean the is true if there only
+ *                              one item in this queue, used for delete
+ *                              confirmation.
+ *               query_string - this should be of such a form that when the
+ *                              name of the object and '(y/n/q) ?' are appended
+ *                              then it should still make sense, an example is
+ *                              "Delete the list"
+ */
+
+void
+QueryLoop(elem, print_func, op_func, query_string)
+struct qelem *elem;
+FVoid op_func;
+FCharStar print_func;
+char * query_string;
+{
+    Bool one_item;
+    char temp_buf[BUFSIZ], *name;
+
+    one_item = (QueueCount(elem) == 1);
+    while (elem != NULL) {
+	char **info = (char **) elem->q_data;
+	
+	if (one_item)
+	    (*op_func) (info, one_item);
+	else {
+	    name = (*print_func) (info); /* call print function. */
+	    sprintf(temp_buf,"%s %s (y/n/q) ?", query_string, name);
+	    switch(YesNoQuitQuestion(temp_buf, FALSE)) {
+	    case TRUE:
+		(*op_func) (info, one_item);
+		break;
+	    case FALSE:
+		break;
+	    default:		/* Quit. */
+		Put_message("Aborting...");
+		return;
+	    }
+	}
+	elem = elem->q_forw;
+    }
+}
+
+/*	Function Name: NullPrint
+ *	Description: print function that returns nothing.
+ *	Arguments: info - a pointer to the info array - Not used.
+ *	Returns: none.
+ */
+
+char *
+NullPrint(info)
+char ** info;
+{
+    return(info[NAME]);
 }
 
 /*

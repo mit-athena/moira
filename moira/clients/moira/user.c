@@ -1,5 +1,5 @@
-#ifndef lint
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.3 1988-06-27 16:12:45 kit Exp $";
+#if (!defined(lint) && !defined(SABER))
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.4 1988-06-29 20:13:04 kit Exp $";
 #endif lint
 
 /*	This is the file user.c for allmaint, the SMS client that allows
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v $
  *      $Author: kit $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.3 1988-06-27 16:12:45 kit Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.4 1988-06-29 20:13:04 kit Exp $
  *	
  *  	Copyright 1987, 1988 by the Massachusetts Institute of Technology.
  *
@@ -33,7 +33,7 @@
 
 #define LOGIN 0
 #define UID   1
-#define NAME  2
+#define BY_NAME  2
 #define QUOTA 3
 #define CLASS 4
 
@@ -58,7 +58,7 @@ Bool name;
 {
     char temp_buf[BUFSIZ], *newname;
 
-    sprintf(temp_buf,"\nChanging Attributes of user %s.\n",info[NAME]);
+    sprintf(temp_buf,"\nChanging Attributes of user %s.\n",info[U_NAME]);
     Put_message(temp_buf);
 
     if (name) {
@@ -93,7 +93,7 @@ Bool name;
 /*	Function Name: GetUserInfo
  *	Description: Stores the user information in a queue.
  *	Arguments: type - type of field given to get info, one of:
- *                        LOGIN, UID, NAME, CLASS.
+ *                        LOGIN, UID, BY_NAME, CLASS.
  *                 name1 - name of thing specified by type (wildcards okay)
  *                 name2 - other name, only used in get user by first and last.
  *                         (wildcards okay).
@@ -128,7 +128,7 @@ char *name1, *name2;
 	    return (NULL);	
 	}
 	break;
-    case NAME:
+    case BY_NAME:
 	args[0] = name1;
 	args[1] = name2;    
 	if ( (status = sms_query("get_user_by_name", 1, args,
@@ -562,7 +562,7 @@ char *argv[];
     struct qelem *top, *elem;
     char buf;
 
-    elem = top = GetUserInfo(NAME, argv[1], argv[2]);
+    elem = top = GetUserInfo(BY_NAME, argv[1], argv[2]);
 
     if (!PromptWithDefault("Print full information, or just the names (F/N)?",
 			   &buf, 1, "F"))

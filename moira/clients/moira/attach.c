@@ -1,6 +1,6 @@
-#ifndef lint
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.3 1988-06-27 16:11:20 kit Exp $";
-#endif lint
+#if (!defined(lint) && !defined(SABER))
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.4 1988-06-29 20:11:24 kit Exp $";
+#endif
 
 /*	This is the file attach.c for allmaint, the SMS client that allows
  *      a user to maintaint most important parts of the SMS database.
@@ -14,7 +14,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v $
  *      $Author: kit $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.3 1988-06-27 16:11:20 kit Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.4 1988-06-29 20:11:24 kit Exp $
  *	
  *  	Copyright 1987, 1988 by the Massachusetts Institute of Technology.
  *
@@ -84,7 +84,7 @@ char * name;
  *	Returns: a pointer to the first element in the queue.
  */
 
-struct qelem *
+static struct qelem *
 GetFSInfo(type, name)
 int type;
 char *name;
@@ -131,10 +131,10 @@ char *name;
 /*	Function Name: PrintFSAlias
  *	Description: Prints a filesystem alias
  *	Arguments: info - an array contains the strings of info.
- *	Returns: none.
+ *	Returns: the name of the filesys - used be QueryLoop().
  */
 
-static void
+static char *
 PrintFSAlias(info)
 char ** info;
 {
@@ -143,6 +143,7 @@ char ** info;
     sprintf(buf,"Alias: %-25s Filesystem: %s",info[ALIAS_NAME], 
 	    info[ALIAS_TRANS]);
     Put_message(buf);
+    return(info[ALIAS_NAME]);
 }
 
 /*	Function Name: PrintFSInfo
@@ -151,7 +152,7 @@ char ** info;
  *	Returns: none.
  */
 
-void
+static char *
 PrintFSInfo(info)
 char ** info;
 {
@@ -177,6 +178,7 @@ char ** info;
     sprintf(print_buf, "Last Modified at %s, by %s with %s",
 	    info[FS_MODTIME], info[FS_MODBY], info[FS_MODWITH]);
     Put_message(print_buf);
+    return(info[FS_NAME]);
 }
 
 /*	Function Name: AskFSInfo.
@@ -188,37 +190,39 @@ char ** info;
  *	Returns: none.
  */
 
-char **
+static char **
 AskFSInfo(info, name)
 char ** info;
 Bool name;
 {
     char temp_buf[BUFSIZ], *newname;
 
-    sprintf(temp_buf, "\nChanging Attributes of filesystem: %s.\n", 
+    Put_message("");
+    sprintf(temp_buf, "Changing Attributes of filesystem %s.", 
 	    info[FS_NAME]);
     Put_message(temp_buf);
+    Put_message("");
 
     if (name) {
 	newname = Strsave(info[FS_NAME]);
-	GetValueFromUser("The new name for this filesystem.",
+	GetValueFromUser("The new name for this filesystem",
 			 &newname);
     }
 
-    GetValueFromUser("Filesystem's Type:", &info[FS_TYPE]);
-    GetValueFromUser("Filesystem's Machine:", &info[FS_MACHINE]);
+    GetValueFromUser("Filesystem's Type", &info[FS_TYPE]);
+    GetValueFromUser("Filesystem's Machine", &info[FS_MACHINE]);
     strcpy(temp_buf, CanonicalizeHostname(info[FS_MACHINE]));
     free(info[FS_MACHINE]);
     info[FS_MACHINE] = Strsave(temp_buf);
-    GetValueFromUser("Filesystem's Pack Name:", &info[FS_PACK]);
-    GetValueFromUser("Filesystem's Mount Point:", &info[FS_M_POINT]);
-    GetValueFromUser("Filesystem's Default Access:", &info[FS_ACCESS]);
-    GetValueFromUser("Comments about this Filesystem:", &info[FS_COMMENTS]);
-    GetValueFromUser("Filesystem's owner (user):", &info[FS_OWNER]);
-    GetValueFromUser("Filesystem's owners (group):", &info[FS_OWNERS]);
-    GetValueFromUser("Automatically create this filsystem (0/1):",
+    GetValueFromUser("Filesystem's Pack Name", &info[FS_PACK]);
+    GetValueFromUser("Filesystem's Mount Point", &info[FS_M_POINT]);
+    GetValueFromUser("Filesystem's Default Access", &info[FS_ACCESS]);
+    GetValueFromUser("Comments about this Filesystem", &info[FS_COMMENTS]);
+    GetValueFromUser("Filesystem's owner (user)", &info[FS_OWNER]);
+    GetValueFromUser("Filesystem's owners (group)", &info[FS_OWNERS]);
+    GetValueFromUser("Automatically create this filsystem (0/1)",
 		     &info[FS_CREATE]);
-    GetValueFromUser("Filesystem's lockertype:", &info[FS_L_TYPE]);
+    GetValueFromUser("Filesystem's lockertype", &info[FS_L_TYPE]);
 
     FreeAndClear(&info[FS_MODTIME], TRUE);
     FreeAndClear(&info[FS_MODBY], TRUE);
@@ -249,11 +253,44 @@ char **argv;
     top = elem = GetFSInfo(LABEL, argv[1]); /* get info. */
     while(elem != NULL) {
 	char ** info = (char **) elem->q_data;
-	PrintFSInfo(info);
+	(void) PrintFSInfo(info);
 	elem = elem->q_forw;
     }
     FreeQueue(top);		/* clean the queue. */
     return (DM_NORMAL);
+}
+
+/*	Function Name: RealDeleteFS
+ *	Description: Does the real deletion work.
+ *	Arguments: info - array of char *'s containing all useful info.
+ *                 one_item - a Boolean that is true if only one item 
+ *                              in queue that dumped us here.
+ *	Returns: none.
+ */
+
+void
+RealDeleteFS(info, one_item)
+char ** info;
+Bool one_item;
+{
+    int stat;
+    char temp_buf[BUFSIZ];
+
+/* 
+ * Deletetions are  performed if the user hits 'y' on a list of multiple 
+ * filesystem, or if the user confirms on a unique alias.
+ */
+    sprintf(temp_buf, "Are you sure that you want to delete filesystem %s",
+	    info[FS_NAME]);
+    if(!one_item || Confirm(temp_buf)) {
+	if ( (stat = sms_query("delete_filesys", 1,
+			       &info[FS_NAME], Scream, NULL)) != 0)
+	    com_err(program_name, stat, " filesystem not deleted.");
+	else
+	    Put_message("Filesystem deleted.");
+    }
+    else 
+	Put_message("Filesystem not deleted.");
 }
 
 /*	Function Name: DeleteFS
@@ -269,63 +306,34 @@ DeleteFS(argc, argv)
 int argc;
 char **argv;
 {
-    int stat, answer, delete;
-    Bool one_filsys;
-    struct qelem *elem, *temp_elem;
-    
-    if ( (temp_elem = elem = GetFSInfo(LABEL, argv[1])) == 
-	                                  (struct qelem *) NULL )
-	return(DM_NORMAL);
-/* 
- * 1) If there is no (zero) match then we exit immediately.
- * 2) If there is exactly 1 element then we ask for confirmation only if in
- *    verbose mode, via the Confirm function.  
- * 3) If there is more than 1 filesystem to be deleted then we ask
- *    about each one, and delete on yes only, and about if the user hits
- *    quit.
- */
-    one_filsys = (QueueCount(elem) == 1);
-    while (temp_elem != NULL) {
-	char **info = (char **) temp_elem->q_data;
-	
-	if (!one_filsys) {
-	    PrintFSInfo(info);
-	
-	    answer = YesNoQuitQuestion("\nDelete this filesystem?", FALSE); 
-	    switch(answer) {
-	    case TRUE:
-		delete = TRUE;
-		break;
-	    case FALSE:
-		delete = FALSE;
-		break;
-	    default:		/* Quit. */
-		Put_message("Aborting Delete Operation.");
-		FreeQueue(elem);
-		return(DM_NORMAL);
-	    }
-	}
-	else
-	    delete = 
-	     Confirm("Are you sure that you want to delete this filsystem."); 
-/* 
- * Deletetions are  performed if the user hits 'y' on a list of multiple 
- * filesystem, or if the user confirms on a unique alias.
- */
-	if (delete) {
-	    if ( (stat = sms_query("delete_filesys", 1,
-				     &info[FS_NAME], Scream, NULL)) != 0)
-		com_err(program_name, stat, " filesystem not deleted.");
-	    else
-		Put_message("Filesystem deleted.");
-	}
-	else 
-	    Put_message("Filesystem not deleted.");
-	temp_elem = temp_elem->q_forw;
-    }
+    struct qelem *elem = GetFSInfo(LABEL, argv[1]);
+    QueryLoop(elem, PrintFSInfo, RealDeleteFS, "Delete the Filesystem");
 
-    FreeQueue(elem);		/* free all members of the queue. */
+    FreeQueue(elem);
     return (DM_NORMAL);
+}
+
+/*	Function Name: RealChangeFS
+ *	Description: performs the actual change to the filesys.
+ *	Arguments: info - the information 
+ *                 junk - an unused boolean.
+ *	Returns: none.
+ */
+
+/* ARGSUSED. */
+static void
+RealChangeFS(info, junk)
+char ** info;
+Bool junk;
+{
+    int stat;
+    char ** args = AskFSInfo(info, TRUE);
+
+    if ( (stat = sms_query("update_filesys", CountArgs(args), 
+			   args, NullFunc, NULL)) != 0)
+	com_err(program_name, stat, ", filesystem not updated");
+    else
+	Put_message("filesystem sucessfully updated.");
 }
 
 /*	Function Name: ChangeFS
@@ -340,50 +348,9 @@ ChangeFS(argc, argv)
 char **argv;
 int argc;
 {
-    struct qelem *elem, *temp_elem;
-    int update, stat, answer;
-    Bool one_filsys;
-    char buf[BUFSIZ];
-    
-    elem = temp_elem = GetFSInfo(LABEL, argv[1]);
+    struct qelem *elem = GetFSInfo(LABEL, argv[1]);
+    QueryLoop(elem, NullPrint, RealChangeFS, "Update the Filesystem");
 
-/* 
- * This uses the same basic method as the deletion routine above.
- */
-
-    one_filsys = (QueueCount(elem) == 1);
-    while (temp_elem != NULL) {
-	char ** info = (char **) temp_elem->q_data;
-	if (!one_filsys) {
-	    sprintf(buf, "Update filesystem %s (y/n/q)? ", info[FS_NAME]);
-	    info = (char **) temp_elem->q_data;
-	    answer = YesNoQuitQuestion(buf, FALSE);
-	    switch(answer) {
-	    case TRUE:
-		update = TRUE;
-		break;
-	    case FALSE:
-		update = FALSE;
-		break;
-	    default:
-		Put_message("Aborting Operation.");
-		FreeQueue(elem);
-		return(DM_NORMAL);
-	    }
-	}
-	else
-	    update = TRUE;
-
-	if (update) {
-	    char ** args = AskFSInfo(info, TRUE);
-	    if ( (stat = sms_query("update_filesys", CountArgs(args), 
-				   args, NullFunc, NULL)) != 0)
-		com_err(program_name, stat, ", filesystem not updated");
-	    else
-		Put_message("filesystem sucessfully updated.");
-	}
-	temp_elem = temp_elem->q_forw;
-    }
     FreeQueue(elem);
     return (DM_NORMAL);
 }
@@ -515,6 +482,40 @@ char **argv;
     FreeInfo(args);
     return (DM_NORMAL);
 }
+    
+/*	Function Name: RealDeleteFSAlias
+ *	Description: Does the real deletion work.
+ *	Arguments: info - array of char *'s containing all useful info.
+ *                 one_item - a Boolean that is true if only one item 
+ *                              in queue that dumped us here.
+ *	Returns: none.
+ */
+
+void
+RealDeleteFSAlias(info, one_item)
+char ** info;
+Bool one_item;
+{
+    int stat;
+    char temp_buf[BUFSIZ];
+
+/* 
+ * Deletetions are  performed if the user hits 'y' on a list of multiple 
+ * filesystem, or if the user confirms on a unique alias.
+ */
+    sprintf(temp_buf, 
+	    "Are you sure that you want to delete the filesystem alias %s",
+	    info[ALIAS_NAME]);
+    if(!one_item || Confirm(temp_buf)) {
+	if ( (stat = sms_query("delete_alias", CountArgs(info),
+			       info, Scream, NULL)) != 0 )
+	    com_err(program_name, stat, " filesystem alias not deleted.");
+	else
+	    Put_message("Filesystem alias deleted.");
+    }
+    else 
+	Put_message("Filesystem alias not deleted.");
+}
 
 /*	Function Name: DeleteFSAlias
  *	Description: Delete an alias name for a filsystem
@@ -530,69 +531,10 @@ DeleteFSAlias(argc, argv)
 int argc;
 char **argv;
 {
-    register int stat;
-    char *ptr;
-    struct qelem *elem, *top;
-    Bool one_alias, delete;
-
-    if (!ValidName(argv[1]))
-	return(DM_NORMAL);
-
-    top = elem = GetFSInfo(ALIAS, argv[1]);
-
-/* 
- * 1) If there are no (zero) match in elements then we exit immediately.
- * 2) If there is exactly 1 element then we ask for confirmation only if in
- *    verbose mode, via the Confirm function.  
- * 3) If there is more than 1 filesystem alias to be deleted then we ask
- *    about each one, and delete on yes only, and about if the user hits
- *    quit.
- */
-    one_alias = ( QueueCount(top) == 1 );
-    while (elem != NULL) {
-	char **info = (char **) elem->q_data;
-
-	Put_message(" ");	/* blank line. */
-	PrintFSAlias(info);
-	if (!one_alias) {
-	    int answer;
-	    
-	    ptr = "Do you want to delete this alias (y/n/q)? ",
-	    answer = YesNoQuitQuestion(ptr, FALSE); 
-	    switch(answer) {
-	    case TRUE:
-		delete = TRUE;
-		break;
-	    case FALSE:
-		delete = FALSE;
-		break;
-	    default:		/* Quit. */
-		Put_message("Aborting Delete Operation.");
-		FreeQueue(top);
-		return(DM_NORMAL);
-	    }
-	}
-	else {
-	    ptr = "Are you sure that you want to delete this alias?";
-	    delete = Confirm(ptr);
-	}
-/* 
- * Deletetions are  performed if the user hits 'y' on a list of multiple 
- * filesystem aliases, or if the user confirms on a unique alias.
- */
-	if (delete) {
-	    if ( (stat = sms_query("delete_alias", CountArgs(info),
-				     info, Scream, NULL)) != 0)
-		com_err(program_name, stat, " filesystem alias not deleted.");
-	    else
-		Put_message("Filesystem alias deleted.");
-	}
-	else 
-	    Put_message("Filesystem alias not deleted.");
-	elem = elem->q_forw;
-    }
-
-    FreeQueue(top);
+    struct qelem *elem = GetFSInfo(ALIAS, argv[1]);
+    QueryLoop(elem, PrintFSAlias, RealDeleteFSAlias,
+	      "Delete the Filesystem Alias");
+    FreeQueue(elem);
     return (DM_NORMAL);
 }
 

@@ -1,5 +1,5 @@
-#ifndef lint
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/cluster.c,v 1.3 1988-06-27 16:11:33 kit Exp $";
+#if (!defined(lint) && !defined(SABER))
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/cluster.c,v 1.4 1988-06-29 20:11:35 kit Exp $";
 #endif lint
 
 /*	This is the file cluseter.c for allmaint, the SMS client that allows
@@ -12,7 +12,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/cluster.c,v $
  *      $Author: kit $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/cluster.c,v 1.3 1988-06-27 16:11:33 kit Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/cluster.c,v 1.4 1988-06-29 20:11:35 kit Exp $
  *	
  *  	Copyright 1987, 1988 by the Massachusetts Institute of Technology.
  *
@@ -55,7 +55,7 @@
  *	Returns: info - the array.
  */
 
-char **
+static char **
 SetMachineDefaults(info, name)
 char ** info, *name;
 {
@@ -72,7 +72,7 @@ char ** info, *name;
  *	Returns: info - the array.
  */
 
-char **
+static char **
 SetClusterDefaults(info, name)
 char ** info, *name;
 {
@@ -83,35 +83,16 @@ char ** info, *name;
     return(info);
 }
 
-/*	Function Name: SetClusterDataDefaults
- *	Description: Sets cluster data defaults.
- *	Arguments: info - an array to put the defaults into.
- *                 name - name of the Cluster.
- *	Returns: info - the array.
- */
-
-char **
-SetClusterDataDefaults(info, name)
-char ** info, *name;
-{
-    info[CD_NAME] = Strsave(name);
-    info[CD_LABEL] = Strsave(CD_DEFAULT_LABEL);
-    info[CD_DATA] = Strsave(CD_DEFAULT_DATA);
-/*info[CD_MODBY] = info[CD_MODTIME] = info[CD_MODWITH] = info[CD_END] = NULL;*/
-    info[CD_END] = NULL;
-    return(info);
-}
-
 /* -------------------- General Functions -------------------- */
 
 /*	Function Name: PrintMachInfo
  *	Description: This function Prints out the Machine info in 
  *                   a coherent form.
  *	Arguments: info - array of information about a machine.
- *	Returns: none.
+ *	Returns: The name of the Machine
  */
 
-void
+static char *
 PrintMachInfo(info)
 char ** info;
 {
@@ -123,16 +104,17 @@ char ** info;
     sprintf(buf, "Last Modified at %s, by %s with %s",info[M_MODTIME],
 	    info[M_MODBY], info[M_MODWITH]);
     Put_message(buf);
+    return(info[M_NAME]);
 }
 
 /*	Function Name: PrintClusterInfo
  *	Description: This function Prints out the cluster info 
  *                   in a coherent form.
  *	Arguments: info - array of information about a cluster.
- *	Returns: none.
+ *	Returns: The name of the cluster.
  */
 
-void
+static char *
 PrintClusterInfo(info)
 char ** info;
 {
@@ -148,15 +130,16 @@ char ** info;
     sprintf(buf, "Last Modified at %s, by %s with %s",info[C_MODTIME],
 	    info[C_MODBY], info[C_MODWITH]);
     Put_message(buf);
+    return(info[C_NAME]);
 }
 
 /*	Function Name: PrintClusterData
  *	Description: Prints the Data on a cluster
  *	Arguments: info a pointer to the data array.
- *	Returns: none
+ *	Returns: The name of the cluster.
  */
 
-void
+static char *
 PrintClusterData(info)
 char ** info;
 {
@@ -166,6 +149,7 @@ char ** info;
     sprintf(buf, "Cluster: %-20s Label: %-15s Data: %s",
 	    info[CD_NAME], info[CD_LABEL], info[CD_DATA]);
     Put_message(buf);
+    return(info[CD_NAME]);
 }
 
 /*	Function Name: PrintMCMap
@@ -174,7 +158,7 @@ char ** info;
  *	Returns: none
  */
 
-void
+static char *
 PrintMCMap(info)
 char ** info;
 {
@@ -182,6 +166,7 @@ char ** info;
     sprintf(buf, "Cluster: %-30s Machine: %-20s",
 	    info[MAP_CLUSTER], info[MAP_MACHINE]);
     Put_message(buf);
+    return("");			/* Used by QueryLoop(). */
 }
 
 /*	Function Name: GetMCInfo.
@@ -337,17 +322,10 @@ ShowMachineInfo(argc, argv)
 int argc;
 char **argv;
 {
-    struct qelem *elem, *top;
+    struct qelem *top;
 
-    top = elem = GetMCInfo(MACHINE, CanonicalizeHostname(argv[1]),
-			   (char *) NULL);
-
-    while (elem != NULL) {
-	char **info = (char **) elem->q_data;
-	PrintMachInfo(info);
-	elem = elem->q_forw;
-    }
-
+    top = GetMCInfo(MACHINE, CanonicalizeHostname(argv[1]), (char *) NULL);
+    Loop(top, ( (void *) PrintMachInfo) );
     FreeQueue(top);
     return(DM_NORMAL);
 }
@@ -366,6 +344,9 @@ char **argv;
 {
     char **args, *info[MAX_ARGS_SIZE], *name;
     int stat;
+
+    if (!ValidName(argv[1]))	/* Checks for wildcards. */
+	return(DM_NORMAL);
 /* 
  * Check to see if this machine already exists. 
  */
@@ -394,6 +375,28 @@ char **argv;
     return(DM_NORMAL);
 }
 
+/*	Function Name: RealUpdateMachine
+ *	Description: Performs the actual update of the machine data.
+ *	Arguments: info - the information on the machine to update.
+ *                 junk - an UNUSED Boolean.
+ *	Returns: none.
+ */
+
+/* ARGSUSED */
+static void
+RealUpdateMachine(info, junk)
+char ** info;
+Bool junk;
+{
+    register int stat;
+    char ** args = AskMCDInfo(info, MACHINE, TRUE);
+    if ( (stat = sms_query("update_machine", CountArgs(args), 
+			   args, Scream, NULL)) != 0)
+	com_err(program_name, stat, " in UpdateMachine.");
+    else
+	Put_message("Machine sucessfully updated.");
+}
+
 /*	Function Name: UpdateMachine
  *	Description: This function adds a new machine to the database.
  *	Arguments: argc, argv - the name of the machine in argv[1].
@@ -406,42 +409,10 @@ UpdateMachine(argc, argv)
 int argc;
 char **argv;
 {
-    struct qelem *elem, *top;
-    int stat;
-    char **args, **info, temp_buf[BUFSIZ];
-    Bool one_machine, update_it;
-    
-    elem = top = GetMCInfo( MACHINE,  CanonicalizeHostname(argv[1]),
-			   (char *) NULL);
+    struct qelem *top = GetMCInfo( MACHINE,  CanonicalizeHostname(argv[1]),
+				   (char *) NULL);
+    QueryLoop(top, NullPrint, RealUpdateMachine, "Update the machine");
 
-    one_machine = (QueueCount(top) == 1);
-    while (elem != NULL) {
-	info = (char **) elem->q_data;
-	if (one_machine)
-	    update_it = TRUE;
-	else {
-	    sprintf(temp_buf, "Update %s (y/n/q) ? ", info[M_NAME]);
-	    switch(YesNoQuitQuestion(temp_buf, FALSE)) {
-	    case TRUE:
-		update_it = TRUE;
-		break;
-	    case FALSE:
-		update_it = FALSE;
-		break;
-	    default:
-		Put_message("Aborting...");
-		FreeQueue(top);
-		return(DM_NORMAL);
-	    }
-	}
-	if (update_it) {
-	    args = AskMCDInfo(info, MACHINE, TRUE);
-	    if ( (stat = sms_query("update_machine", CountArgs(args), 
-				   args, Scream, NULL)) != 0)
-		com_err(program_name, stat, " in UpdateMachine.");
-	}
-	elem = elem->q_forw;
-    }
     FreeQueue(top);
     return(DM_NORMAL);
 }
@@ -464,7 +435,7 @@ Bool ask_user;
     char *args[10], temp_buf[BUFSIZ], *ptr;
     struct qelem *top, *elem = NULL;
     
-    ret_value = SUB_NORMAL;
+    ret_value = SUB_NORMAL;	/* initialize ret_value. */
     args[0] = name;
     args[1] = "*";
     stat = sms_query("get_machine_to_cluster_map", 2, args, 
@@ -473,19 +444,14 @@ Bool ask_user;
 	com_err(program_name, stat, " in get_machine_to_cluster_map.");
 	return(DM_NORMAL);
     }
-    if (stat == 0) {
+    if (stat == SMS_SUCCESS) {
 	elem = top = QueueTop(elem);
 	if (ask_user) {
 	    sprintf(temp_buf, "%s is assigned to the following clusters.",
 		    name);
 	    Put_message(temp_buf);
-	    while (elem != NULL) {
-		char **info = (char **) elem->q_data;
-		Print(1, &info[MAP_CLUSTER], (char *) NULL);
-		elem = elem->q_forw;
-	    }
+	    Loop(top, (void *) PrintMCMap);
 	    ptr = "Remove this machine from ** ALL ** these clusters?";
-
 	    if (YesNoQuestion(ptr, FALSE) == TRUE) /* may return -1. */
 		delete_it = TRUE;
 	    else {
@@ -498,8 +464,7 @@ Bool ask_user;
 	    delete_it = TRUE;
 
 	if (delete_it) {
-	    elem = top;
-	    while (elem != 0) {
+	    while (elem != NULL) {
 		char **info = (char **) elem->q_data;
 		if ( (stat = sms_query( "delete_machine_from_cluster",
 				       2, info, Scream, NULL)) != 0) {
@@ -518,6 +483,41 @@ Bool ask_user;
     return(ret_value);
 }
 
+/*	Function Name: RealDeleteMachine
+ *	Description: Actually Deletes the Machine.
+ *	Arguments: info - nescessary information stored as an array of char *'s
+ *                 one_machine - a boolean, true if there is only one item in
+ *                               the query.
+ *	Returns: none.
+ */
+
+static void
+RealDeleteMachine(info, one_machine)
+char ** info;
+Bool one_machine;
+{
+    register int stat;
+    char temp_buf[BUFSIZ];
+
+    sprintf(temp_buf, "Are you sure you want to delete the machine %s (y/n)? ",
+	    info[M_NAME]);
+    if(!one_machine || Confirm(temp_buf)) {
+	if (CheckAndRemoveFromCluster(info[M_NAME], TRUE) != SUB_ERROR) {
+	    if ( (stat = sms_query("delete_machine", 1,
+				   &info[M_NAME], Scream, NULL)) != 0) {
+		com_err(program_name, stat, " in DeleteMachine.");
+		sprintf(temp_buf, "%s ** NOT ** deleted.", 
+			info[M_NAME]);
+		Put_message(temp_buf);
+	    }
+	    else {
+		sprintf(temp_buf, "%s successfully Deleted.", info[M_NAME]);
+		Put_message(temp_buf);
+	    }
+	}
+    }
+}
+
 /*	Function Name: DeleteMachine
  *	Description: This function removes a machine from the data base.
  *	Arguments: argc, argv - the machines name int argv[1].
@@ -532,55 +532,10 @@ DeleteMachine(argc, argv)
 int argc;
 char **argv;
 {
-    int stat;
-    Bool one_machine, delete_it = FALSE;
-    char *name, temp_buf[BUFSIZ];
-    struct qelem *top, *elem = NULL;
+    struct qelem *top;
 
-    name =  CanonicalizeHostname(argv[1]);
-    top = elem = GetMCInfo(MACHINE, name, (char *) NULL);
-
-    one_machine = (QueueCount(top) == 1);
-    while (elem != NULL) {
-	char **info = (char **) elem->q_data;
-	if (one_machine) {
-	    if(Confirm("Are you sure that you want to delete this machine?"))
-		delete_it = TRUE;
-	}
-	else {
-	    sprintf(temp_buf, "Delete the machine %s (y/n/q)? ", info[M_NAME]);
-	    switch (YesNoQuitQuestion(temp_buf, FALSE)) {
-	    case TRUE:
-		delete_it = TRUE;
-		break;
-	    case FALSE:
-		delete_it = FALSE;
-		sprintf(temp_buf, "%s not Deleted.", info[M_NAME]);
-		Put_message(temp_buf);
-		break;
-	    default:	/* quit. */
-		Put_message("Aborting...");
-		FreeQueue(top);
-		return(DM_NORMAL);
-	    }
-	}
-	if (delete_it) {
-	    if (CheckAndRemoveFromCluster(info[M_NAME], TRUE) != SUB_ERROR) {
-		if ( (stat = sms_query("delete_machine", 1,
-				       &info[M_NAME], Scream, NULL)) != 0) {
-		    com_err(program_name, stat, " in DeleteMachine.");
-		    sprintf(temp_buf, "%s ** NOT ** deleted.", 
-			    info[M_NAME]);
-		Put_message(temp_buf);
-		}
-		else {
-		    sprintf(temp_buf, "%s sucesfully Deleted.", info[M_NAME]);
-		    Put_message(temp_buf);
-		}
-	    }
-	}
-	elem = elem->q_forw;
-    }
+    top = GetMCInfo(MACHINE, CanonicalizeHostname(argv[1]), (char *) NULL);
+    QueryLoop(top, PrintMachInfo, RealDeleteMachine, "Delete the machine");
     FreeQueue(top);
     return(DM_NORMAL);
 }
@@ -611,6 +566,8 @@ char ** argv;
 
     one_machine = (QueueCount(mtop) == 1);
     one_cluster = (QueueCount(ctop) == 1);
+
+    /* No good way to use QueryLoop() here, sigh */
 
     while (melem != NULL) {
 	char ** minfo = (char **) melem->q_data;
@@ -663,6 +620,39 @@ char ** argv;
     return(DM_NORMAL);
 }
 
+/*	Function Name: RealRemoveMachineFromCluster
+ *	Description: This function actually removes the machine from its 
+ *                   cluster.
+ *	Arguments: info - all information nescessary to perform the removal.
+ *                 one_map - True if there is only one case, and we should
+ *                           confirm.
+ *	Returns: none.
+ */
+
+static void
+RealRemoveMachineFromCluster(info, one_map)
+char ** info;
+Bool one_map;
+{
+    char temp_buf[BUFSIZ];
+    register int stat;
+
+    sprintf(temp_buf, "Remove %s from the cluster %s", 
+	    info[MAP_MACHINE], info[MAP_MACHINE]);
+    if (!one_map || Confirm(temp_buf)) {
+	if ( (stat = sms_query("delete_machine_from_cluster", 2, 
+			       info, Scream, NULL)) != 0 )
+	    com_err(program_name, stat, " in delete_machine_from_cluster");
+	else {
+	    sprintf(temp_buf, "%s has been removed from the cluster %s.",
+		    info[MAP_MACHINE], info[MAP_CLUSTER]);
+	    Put_message(temp_buf);
+	}
+    }
+    else
+	Put_message("Machine not removed.");
+}
+
 /*	Function Name: RemoveMachineFromCluster
  *	Description: Removes this machine form a specific cluster.
  *	Arguments: argc, argv - Name of machine in argv[1].
@@ -676,10 +666,9 @@ RemoveMachineFromCluster(argc, argv)
 int argc;
 char ** argv;
 {
-    int stat;
-    Bool remove_machine, one_item;
-    struct qelem *top, *elem = NULL;
+    struct qelem *elem = NULL;
     char buf[BUFSIZ], * args[10];
+    register int stat;
 
     args[MAP_MACHINE] = CanonicalizeHostname(argv[1]);
     args[MAP_CLUSTER] = argv[2];
@@ -696,41 +685,11 @@ char ** argv;
     if (stat)
 	com_err(program_name, stat, " in delete_machine_from_cluster");
 
-    top = elem = QueueTop(elem);
-    one_item = (QueueCount(top) == 1);
-    while (elem != NULL) {	
-	char **info = (char **) elem->q_data; 	
-	if (one_item) 
-	    remove_machine = TRUE;
-	else {
-	    sprintf(buf, "Remove %s from the cluster %s? (y/n/q)", 
-		    info[MAP_MACHINE], info[MAP_CLUSTER]);
-	    switch (YesNoQuitQuestion(buf, FALSE)) {
-	    case TRUE:
-		remove_machine = TRUE;
-	    break;
-	    case FALSE:
-		remove_machine = FALSE;
-		break;
-	    default:
-		Put_message("Aborting");
-		FreeQueue(top);
-		return(DM_NORMAL);
-	    }
-	}
-	if (remove_machine)
-	    if ( (stat = sms_query("delete_machine_from_cluster", 2, 
-				   info, Scream, NULL)) != 0 )
-		com_err(program_name, stat,
-			" in delete_machine_from_cluster");
-	    else {
-		sprintf(buf, "%s has been removed from the cluster %s.",
-			info[MAP_MACHINE], info[MAP_CLUSTER]);
-		Put_message(buf);
-	    }
-	elem = elem->q_forw;
-    }
-    FreeQueue(top);
+    elem = QueueTop(elem);
+    QueryLoop(elem, PrintMCMap, RealRemoveMachineFromCluster,
+	      "Remove this machine from this cluster");
+
+    FreeQueue(elem);
     return(DM_NORMAL);
 }
 
@@ -748,16 +707,10 @@ ShowClusterInfo(argc, argv)
 int argc;
 char ** argv;
 {
-    char **info;
-    struct qelem *elem, *top;
+    struct qelem *top;
 
-    top = elem = GetMCInfo( CLUSTER, CanonicalizeHostname(argv[1]),
-			   (char *) NULL);
-    while (elem != NULL) {
-	info = (char **) elem->q_data;
-	PrintClusterInfo(info);
-	elem = elem->q_forw;
-    }
+    top = GetMCInfo(CLUSTER, CanonicalizeHostname(argv[1]), (char *) NULL);
+    Loop(top, (void *) PrintClusterInfo);
     FreeQueue(top);
     return(DM_NORMAL);
 }
@@ -774,14 +727,16 @@ AddCluster(argc, argv)
 int argc;
 char ** argv;
 {
-    char **args, *info[MAX_ARGS_SIZE], *name;
+    char **args, *info[MAX_ARGS_SIZE], *name = argv[1];
     int stat;
 /* 
- * Check to see if this machine already exists. 
+ * Check to see if this cluster already exists. 
  */
-    name = argv[1];
+    if (!ValidName(name))
+	return(DM_NORMAL);
 
-    if ( (stat = sms_query("get_cluster", 1, &name, NullFunc, NULL)) == 0) {
+    if ( (stat = sms_query("get_cluster", 1, &name, 
+			   NullFunc, NULL)) == SMS_SUCCESS) {
 	Put_message("This cluster already exists.");
 	return(DM_NORMAL);
     }
@@ -789,19 +744,38 @@ char ** argv;
 	com_err(program_name, stat, " in AddCluster.");
 	return(DM_NORMAL);
     }
-
     args = AskMCDInfo(SetClusterDefaults(info, name), CLUSTER, FALSE);
-
 /*
  * Actually create the new Cluster.
  */
-    
     if ( (stat = sms_query("add_cluster", CountArgs(args), 
 			   args, Scream, NULL)) != 0)
 	com_err(program_name, stat, " in AddCluster.");
 
     FreeInfo(info);
     return(DM_NORMAL);
+}
+
+/*	Function Name: RealUpdateCluster
+ *	Description: This function actually performs the cluster update.
+ *	Arguments: info - all information nesc. for updating the cluster.
+ *                 junk - an UNUSED boolean.
+ *	Returns: none.
+ */
+
+/* ARGSUSED */
+static void
+RealUpdateCluster(info, junk)
+char ** info;
+Bool junk;
+{
+    register int stat;
+    char ** args = AskMCDInfo(info, CLUSTER, TRUE);
+    if ( (stat = sms_query("update_cluster", CountArgs(args), 
+			   args, Scream, NULL)) != 0)
+	com_err(program_name, stat, " in UpdateCluster.");
+    else
+	Put_message("Cluster successfully updated.");
 }
 
 /*	Function Name: UpdateCluster
@@ -816,41 +790,10 @@ UpdateCluster(argc, argv)
 int argc;
 char ** argv;
 {
-    struct qelem *elem, *top;    
-    char **args, **info, temp_buf[BUFSIZ];
-    int stat;
-    Bool one_cluster, update_it;
-    
-    elem = top = GetMCInfo( CLUSTER, argv[1], (char *) NULL );
+    struct qelem *top;    
+    top = GetMCInfo( CLUSTER, argv[1], (char *) NULL );
+    QueryLoop(top, NullPrint, RealUpdateCluster, "Update the cluster");
 
-    one_cluster = (QueueCount(top) == 1);
-    while (elem != NULL) {
-	info = (char **) elem->q_data;
-	if (one_cluster)
-	    update_it = TRUE;
-	else {
-	    sprintf(temp_buf, "Update Cluster %s (y/n/q) ? ", info[C_NAME]);
-	    switch(YesNoQuitQuestion(temp_buf, FALSE)) {
-	    case TRUE:
-		update_it = TRUE;
-		break;
-	    case FALSE:
-		update_it = FALSE;
-		break;
-	    default:
-		Put_message("Aborting...");
-		FreeQueue(top);
-		return(DM_NORMAL);
-	    }
-	}
-	if (update_it) {
-	    args = AskMCDInfo(info, CLUSTER, TRUE);
-	    if ( (stat = sms_query("update_cluster", CountArgs(args), 
-				   args, Scream, NULL)) != 0)
-		com_err(program_name, stat, " in UpdateCluster.");
-	}
-	elem = elem->q_forw;
-    }
     FreeQueue(top);
     return(DM_NORMAL);
 }
@@ -929,6 +872,42 @@ Bool ask_first;
     return(ret_value);
 }
 
+/*	Function Name: RealDeleteCluster
+ *	Description: Actually performs the cluster deletion.
+ *	Arguments: info - all information about this cluster.
+ *                 one_cluster - If true then there was only one cluster in
+ *                               the queue, and we should confirm.
+ *	Returns: none.
+ */
+
+static void
+RealDeleteCluster(info, one_cluster)
+char ** info;
+Bool one_cluster;
+{
+    register int stat;
+    char temp_buf[BUFSIZ];
+    
+    sprintf(temp_buf, 
+	    "Are you sure the you want to delete the cluster %s (y/n) ?", 
+	    info[C_NAME]);
+    if (!one_cluster || Confirm(temp_buf)) {
+	if (CheckAndRemoveMachines(info[C_NAME], TRUE) != SUB_ERROR) {
+	    if ( (stat = sms_query("delete_cluster", 1,
+				   &info[C_NAME], Scream, NULL)) != 0) {
+		com_err(program_name, stat, " in delete_cluster.");
+		sprintf(temp_buf, "Cluster %s ** NOT ** deleted.", 
+			info[C_NAME]);
+		Put_message(temp_buf);
+	    }
+	    else {
+		sprintf(temp_buf, "cluster %s sucesfully deleted.", 
+			info[C_NAME]);
+		Put_message(temp_buf);
+	    }
+	}
+    }
+}
 
 /*	Function Name: DeleteCluster
  *	Description: This function removes a cluster from the database.
@@ -942,60 +921,15 @@ DeleteCluster(argc, argv)
 int argc;
 char ** argv;
 {
-    char temp_buf[BUFSIZ];
-    int stat;
-    Bool one_cluster, delete_it = FALSE;
-    struct qelem *elem, *top;
+    struct qelem *top;
 
-    top = elem = GetMCInfo( CLUSTER, argv[1], (char *) NULL );
+    top = GetMCInfo( CLUSTER, argv[1], (char *) NULL );
+    QueryLoop(top, PrintClusterInfo, RealDeleteCluster, "Delete the cluster");
 
-    one_cluster = (QueueCount(top) == 1);
-    while (elem != NULL) {
-	char **info = (char **) elem->q_data;
-	if (one_cluster) {
-	    if(Confirm("Are you sure that you want to delete this cluster?"))
-		delete_it = TRUE;
-	}
-	else {
-	    PrintClusterInfo(info);
-	    sprintf(temp_buf, "Delete the cluster %s (y/n/q)? ", info[C_NAME]);
-	    switch (YesNoQuitQuestion(temp_buf, FALSE)) {
-	    case TRUE:
-		delete_it = TRUE;
-		break;
-	    case FALSE:
-		delete_it = FALSE;
-		sprintf(temp_buf, "%s not Deleted.", info[C_NAME]);
-		Put_message(temp_buf);
-		break;
-	    default:	/* quit. */
-		Put_message("Aborting...");
-		FreeQueue(top);
-		return(DM_NORMAL);
-	    }
-	}
-	if (delete_it) {
-	    if (CheckAndRemoveMachines(info[C_NAME], TRUE) != SUB_ERROR) {
-		if ( (stat = sms_query("delete_cluster", 1,
-				       &info[C_NAME], Scream, NULL)) != 0) {
-		    com_err(program_name, stat, " in DeleteCluster.");
-		    sprintf(temp_buf, "Cluster %s ** NOT ** deleted.", 
-			    info[C_NAME]);
-		    Put_message(temp_buf);
-		}
-		else {
-		    sprintf(temp_buf, "cluster %s sucesfully Deleted.", 
-			    info[C_NAME]);
-		    Put_message(temp_buf);
-		}
-	    }
-	}
-	elem = elem->q_forw;
-    }
     FreeQueue(top);
     return(DM_NORMAL);
 }
-
+    
 /* ----------- Cluster Data Menu -------------- */
 
 /*	Function Name: ShowClusterData
@@ -1046,6 +980,37 @@ char ** argv;
 
 }
 
+/*	Function Name: RealRemoveClusterData
+ *	Description: actually removes the cluster data.
+ *	Arguments: info - all info necessary to remove the cluster, in an array
+ *                        of strings.
+ *                 one_item - if true then the queue has only one elem and we
+ *                            should confirm.
+ *	Returns: none.
+ */
+
+static void
+RealRemoveClusterData(info, one_item)
+char ** info;
+Bool one_item;
+{
+    register int stat;
+    char * temp_ptr;
+
+    Put_message(" ");
+    temp_ptr = "Are you sure that you want to remove this cluster (y/n) ?";
+    if (!one_item) PrintClusterData(info);
+    if (!one_item || Confirm(temp_ptr)) {
+	if( (stat = sms_query("delete_cluster_data", 3, info,
+			      Scream, (char *) NULL)) != 0) {
+	    com_err(program_name, stat, " in DeleteClusterData.");
+	    Put_message("Data not removed.");
+	}
+	else
+	    Put_message("Removal sucessful.");
+    }
+}
+
 /*	Function Name: RemoveClusterData
  *	Description: This function removes data on a given cluster.
  *	Arguments: argv, argc:   argv[1] - the name of the cluster.
@@ -1060,53 +1025,15 @@ RemoveClusterData(argc, argv)
 int argc; 
 char ** argv; 
 {
-    Bool one_piece_of_data, remove_it;
-    int stat;
-    struct qelem *elem, *top;
+    struct qelem *top;
 
-    top = elem = GetMCInfo(DATA, argv[1], argv[2]);
+    top = GetMCInfo(DATA, argv[1], argv[2]);
+    QueryLoop(top, PrintClusterData, RealRemoveClusterData, 
+	      "Remove this cluster data");
 
-    one_piece_of_data = (QueueCount(elem) == 1);
-    while (elem != NULL) {
-	char **info = (char **) elem->q_data;
-	if (one_piece_of_data) {
-	    if(Confirm("Do you really want to remove this data?")) 
-		remove_it = TRUE;
-	    else 
-		Put_message("Operation aborted.\n");
-	}
-	else {
-	    PrintClusterData(info);
-	    switch (YesNoQuitQuestion
-		    ("Remove this piece of cluster data (y/n/q) ? ", FALSE)) {
-	    case TRUE:
-		remove_it = TRUE;
-		break;
-	    case FALSE:
-		remove_it = FALSE;
-		break;
-	    default:
-		Put_message("Aborting");
-		FreeQueue(top);
-		return(DM_NORMAL);
-	    }
-	}
-	if (remove_it) {
-	    if( (stat = sms_query("delete_cluster_data", 3, info,
-				  Scream, (char *) NULL)) != 0) {
-		com_err(program_name, stat, " in DeleteClusterData.");
-		Put_message("Data not removed.");
-	    }
-	    else
-		Put_message("Removal sucessful.");
-	}
-	elem = elem->q_forw;
-    }
     FreeQueue(top);
     return(DM_NORMAL);
 }
-
-/* Perhaps an interactive delete cluster data would be nice. */
 
 /*	Function Name: MachineToClusterMap
  *	Description: This Retrieves the mapping between machine and cluster

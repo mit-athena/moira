@@ -1,5 +1,5 @@
-#ifndef lint
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/delete.c,v 1.3 1988-06-27 16:11:48 kit Exp $";
+#if (!defined(lint) && !defined(SABER))
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/delete.c,v 1.4 1988-06-29 20:11:54 kit Exp $";
 #endif lint
 
 /*	This is the file delete.c for allmaint, the SMS client that allows
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/delete.c,v $
  *      $Author: kit $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/delete.c,v 1.3 1988-06-27 16:11:48 kit Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/delete.c,v 1.4 1988-06-29 20:11:54 kit Exp $
  *	
  *  	Copyright 1987, 1988 by the Massachusetts Institute of Technology.
  *
@@ -197,7 +197,7 @@ int verbose;
     if (status == SMS_NO_MATCH)
 	return(SUB_NORMAL);
 
-    if (status != 0) {	
+    if (status != SMS_SUCCESS) {	
 	com_err(program_name, status, " in DeleteList (get_lists_of_member).");
 	return(SUB_ERROR);
     }
@@ -214,7 +214,7 @@ int verbose;
 	local = *elem;
 	while (local != NULL) {
 	    char ** info = (char **) local->q_data;
-	    Print( CountArgs(info), info, NULL);
+	    Print( 1, &info[GLOM_NAME], (char *) NULL);
 	    local = local->q_forw;
 	}
 	sprintf(temp_buf,"Remove %s %s from these lists? ", type, name);
@@ -231,11 +231,11 @@ int verbose;
  */
 
     local = *elem;
-    args[1] = name;
-    args[2] = type;
+    args[DM_LIST] = name;
+    args[DM_TYPE] = type;
     while (local != NULL) {
 	char ** info = (char **) local->q_data;
-	args[0] = info[0];
+	args[DM_MEMBER] = info[GLOM_NAME];
 	if ( (status = sms_query("delete_member_from_list",
 				 3, args, Scream, NULL)) != 0) {
 	    com_err(program_name, status, " in delete_member\nAborting\n");
@@ -483,8 +483,9 @@ char * name;
 	com_err(program_name, status, ": list not deleted");
 	return(SUB_ERROR);
     }
-    (void) sprintf(buf, "List %s deleted./n", name);
+    (void) sprintf(buf, "List %s deleted.", name);
     Put_message(buf);
+    Put_message("");
     return(SUB_NORMAL);
 }
 
@@ -493,7 +494,7 @@ char * name;
  *                   1) try to delet it, if this fails in a known error then
  *                      a) try to clean up each of those known methods, or
  *                         at least explain why we failed.
- *	Arguments: list - name of list.
+ *	Arguments: list_info - info about this list.
  *                 ask_first - (T/F) query user before preparing for deletion,
  *                             and cleaning up?
  *	Returns: none - all is taken care of and error messages printed
@@ -501,14 +502,14 @@ char * name;
  */
 
 void
-AttemptToDeleteList(name, ask_first)
-char * name;
+AttemptToDeleteList(list_info, ask_first)
+char ** list_info;
 Bool ask_first;
 {
     int status;
-    struct qelem *local, *member_of, *list_info;
-    char ** info;
-    member_of = list_info = NULL;
+    struct qelem *local, *member_of;
+    char *name = list_info[L_NAME];
+    member_of = NULL;
     
     /*
      * Attempt delete. - will only work if:
@@ -530,23 +531,21 @@ Bool ask_first;
 	 */
 	
 	if ( (CheckIfAcl(name, "list", ask_first) == SUB_NORMAL) &&
+	    (RemoveMembersOfList(name, ask_first) == SUB_NORMAL) &&
 	    (RemoveItemFromLists(name, "list",
 				 &member_of, ask_first) == SUB_NORMAL) &&
-	    (RemoveMembersOfList(name, ask_first) == SUB_NORMAL) &&
 	    (RealDeleteList(name) == SUB_NORMAL) ) 
 	{		/* if... */
-	    info = (char **) list_info->q_data;
-	    CheckAcl(info[L_ACL_TYPE], info[L_ACL_NAME], ask_first);
+	    CheckAcl(list_info[L_ACL_TYPE], list_info[L_ACL_NAME], ask_first);
 	    
 	    local = member_of;
 	    while (local != NULL) {
-		info = (char **) local->q_data;
+		char ** info = (char **) local->q_data;
 		CheckListForDeletion(info[LM_LIST], ask_first);
 		local = local->q_forw;
 	    }
+	    FreeQueue(member_of);
 	}
-	FreeQueue(list_info);
-	FreeQueue(member_of);	/* bug here somwhere... */
 	break;
     default:
 	com_err(program_name, status, " in DeleteList (delete_list).");
@@ -581,7 +580,7 @@ char *argv[];
 	return(DM_NORMAL);
 */  case SMS_NO_MATCH:
     case SMS_LIST:
-	Put_message("There is not list that matches that name.");
+	Put_message("There is no list that matches that name.");
 	return(DM_NORMAL);
     default:
 	com_err(program_name, status,	" in DeleteList (get_list_info).");
@@ -593,14 +592,15 @@ char *argv[];
     while (list != NULL) {
 	char ** info = (char**) list->q_data;
 	if (one_list) {
-	    if (Confirm("Are you sure that you want to delete this list?"))
-		AttemptToDeleteList(info[L_NAME], TRUE);
+	    sprintf( buf, "Are you sure that you want to delete the list %s",
+		    info[L_NAME]);
+	    if ( Confirm(buf) ) AttemptToDeleteList(info, TRUE);
 	}
 	else {
 	    sprintf(buf, "Delete the list %s", info[L_NAME]);
 	    switch( YesNoQuestion( buf, FALSE ) ) {
 	    case TRUE:
-		AttemptToDeleteList(info[L_NAME], TRUE);
+		AttemptToDeleteList(info, TRUE);
 		break;
 	    case FALSE:
 		break;

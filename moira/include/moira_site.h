@@ -7,7 +7,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/include/moira_site.h,v $
  *      $Author: kit $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/include/moira_site.h,v 1.2 1988-06-10 18:36:48 kit Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/include/moira_site.h,v 1.3 1988-06-29 20:12:16 kit Exp $
  *	
  *  	Copyright 1987, 1988 by the Massachusetts Institute of Technology.
  *
@@ -32,16 +32,24 @@
 
 #include "mit-copyright.h"
 
+#define NAME 0
+
+/* get_acl_use */
+
+#define ACL_TYPE 0
+#define ACL_NAME 1
+#define ACL_END  2
+
 /* alias queries. */
 
-#define ALIAS_NAME  0
+#define ALIAS_NAME  NAME
 #define ALIAS_TYPE  1
 #define ALIAS_TRANS 2
 #define ALIAS_END   3
 
 /* Cluster information queries */
 
-#define C_NAME       0
+#define C_NAME       NAME
 #define C_DESCRIPT   1
 #define C_LOCATION   2
 #define C_MODTIME    3
@@ -51,7 +59,7 @@
 
 /* Cluster Data information queries */
 
-#define CD_NAME      0
+#define CD_NAME      NAME
 #define CD_LABEL     1
 #define CD_DATA      2
 #define CD_END       3
@@ -65,7 +73,7 @@
 
 /* Filesys queries (attachmaint) */
 
-#define FS_NAME         0
+#define FS_NAME         NAME
 #define FS_TYPE         1
 #define FS_MACHINE      2
 #define FS_PACK         3
@@ -83,7 +91,7 @@
 
 /* Get List Of Member queries. */
 
-#define GLOM_NAME     0
+#define GLOM_NAME     NAME
 #define GLOM_ACTIVE   1
 #define GLOM_PUBLIC   2
 #define GLOM_HIDDEN   3
@@ -93,7 +101,7 @@
 
 /* General List information Queries. */
 
-#define L_NAME     0
+#define L_NAME     NAME
 #define L_ACTIVE   1
 #define L_PUBLIC   2
 #define L_HIDDEN   3
@@ -104,7 +112,7 @@
 #define L_ACL_NAME 8
 #define L_DESC     9
 #define L_MODTIME  10
-#define L_MODBY   11
+#define L_MODBY    11
 #define L_MODWITH  12
 #define L_END      13
 
@@ -117,7 +125,7 @@
 
 /* Machine information queries */
 
-#define M_NAME       0
+#define M_NAME       NAME
 #define M_TYPE       1
 #define M_MODTIME    2
 #define M_MODBY      3
@@ -132,7 +140,7 @@
 
 /*  NFS phys. queries. */
 
-#define NFS_NAME    0
+#define NFS_NAME    NAME
 #define NFS_DIR     1
 #define NFS_DEVICE  2
 #define NFS_STATUS  3
@@ -145,7 +153,7 @@
 
 /* PO box infomarion queries */
 
-#define PO_NAME    0
+#define PO_NAME    NAME
 #define PO_TYPE    1
 #define PO_MACHINE 2
 #define PO_BOX     3
@@ -165,7 +173,7 @@
 
 /* User Information queries */
 
-#define U_NAME    0
+#define U_NAME    NAME
 #define U_NEWNAME 1
 #define U_UID     2
 #define U_SHELL   3

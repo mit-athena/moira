@@ -1,5 +1,5 @@
-#ifndef lint
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/main.c,v 1.3 1988-06-27 16:12:20 kit Exp $";
+#if (!defined(lint) && !defined(SABER))
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/main.c,v 1.4 1988-06-29 20:12:36 kit Exp $";
 #endif lint
 
 /*	This is the file main.c for allmaint, the SMS client that allows
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/main.c,v $
  *      $Author: kit $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/main.c,v 1.3 1988-06-27 16:12:20 kit Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/main.c,v 1.4 1988-06-29 20:12:36 kit Exp $
  *	
  *  	Copyright 1987, 1988 by the Massachusetts Institute of Technology.
  *
@@ -36,7 +36,11 @@ char * whoami;			/* used by menu.c ugh!!! */
 
 extern Menu sms_top_menu;
 
-static void ErrorExit(), Usage(), SignalHandler();
+#ifndef DEBUG
+static void SignalHandler();
+#endif DEBUG
+
+static void ErrorExit(), Usage();
 char *getlogin();
 uid_t getuid();
 struct passwd *getpwuid();
@@ -144,6 +148,7 @@ Usage()
     exit(1);
 }
 
+#ifndef DEBUG
 /*	Function Name: SignalHandler
  *	Description: This function cleans up from a signal interrupt.
  *	Arguments: none.
@@ -159,3 +164,4 @@ SignalHandler()
     sms_disconnect();
     exit(1);
 }
+#endif DEBUG

@@ -1,5 +1,5 @@
-#ifndef lint
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menus.c,v 1.3 1988-06-27 16:12:25 kit Exp $";
+#if (!defined(lint) && !defined(SABER))
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menus.c,v 1.4 1988-06-29 20:12:42 kit Exp $";
 #endif lint
 
 /*	This is the file menu.c for allmaint, the SMS client that allows
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menus.c,v $
  *      $Author: kit $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menus.c,v 1.3 1988-06-27 16:12:25 kit Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menus.c,v 1.4 1988-06-29 20:12:42 kit Exp $
  *	
  *  	Copyright 1987, 1988 by the Massachusetts Institute of Technology.
  *
@@ -283,8 +283,8 @@ Menu listmaint_list_menu = {
         SIMPLEFUNC("member",
 		   "List all lists to which a given member belongs",
 		   ListByMember),
-	SIMPLEFUNC("administrator",
-		   "List all lists which a given user can administer",
+	SIMPLEFUNC("admin",
+		   "List all items which a given member can administer",
 		   ListByAdministrator),
 	SIMPLEFUNC("groups", "List all lists which are groups",
 		   ListAllGroups),
@@ -299,20 +299,22 @@ Menu listmaint_member_menu = {
     ListmaintMemberMenuEntry,
     ListmaintMemberMenuExit,
     NULL,
-    6,
+    7,
     {
-	SIMPLEFUNC("add", "Add a member to the list",
+	SIMPLEFUNC("add", "Add a member to this list",
 		   AddMember),
-	SIMPLEFUNC("delete", "Delete a member from the list",
+	SIMPLEFUNC("remove", "Remove a member from this list",
 		   DeleteMember),
-	SIMPLEFUNC("all", "Show the members of the list",
+	SIMPLEFUNC("all", "Show the members of this list",
 		   ListAllMembers),
 	SIMPLEFUNC("user", "Show the members of type USER",
 		   ListUserMembers),
 	SIMPLEFUNC("list", "Show the members of type LIST",
 		   ListListMembers),
 	SIMPLEFUNC("string", "Show the members of type STRING",
-		   ListStringMembers)
+		   ListStringMembers),
+	SIMPLEFUNC("verbose", "Toggle Verbosity of Delete", 
+		   ToggleVerboseMode)
     } 
 };
     
@@ -328,7 +330,7 @@ Menu listmaint_top_menu = {
 	} },
         { NULLFUNC, &listmaint_member_menu, 2, {
 	    {"add", "Create new List"},
-	    {"list name", "Name of list (do not use wildcards): "}
+	    {"list name", "Name of list: "}
 	} },
 	{ UpdateList, NULLMENU, 2, {
 	    {"update", "Update characteristics of a list"},
@@ -340,7 +342,7 @@ Menu listmaint_top_menu = {
 	} },
 	{ NULLFUNC, &listmaint_member_menu, 2, {
 	    {"members", "Change/Display the membership of a list"},
-	    {"list name", "Name of list (do not use wildcards): "}
+	    {"list name", "Name of list: "}
 	} },
 	SIMPLEFUNC("query_remove",
 		   "Interactively remove an item from all lists",

@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/dump_db.qc,v $
- *	$Author: wesommer $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/dump_db.qc,v 1.2 1987-07-13 03:52:53 wesommer Exp $
+ *	$Author: mar $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/dump_db.qc,v 1.3 1988-08-16 16:25:30 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
@@ -9,6 +9,9 @@
  * which can be later read back into SMS in the event of a crash.
  * 
  *	$Log: not supported by cvs2svn $
+ * Revision 1.2  87/07/13  03:52:53  wesommer
+ * Modified to pass lint, do better backups.
+ * 
 Revision 1.1  87/07/11  19:51:05  wesommer
 Initial revision
 
@@ -16,7 +19,7 @@ Initial revision
  */
 
 #ifndef lint
-static char *rcsid_dump_db_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/dump_db.qc,v 1.2 1987-07-13 03:52:53 wesommer Exp $";
+static char *rcsid_dump_db_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/dump_db.qc,v 1.3 1988-08-16 16:25:30 mar Exp $";
 #endif lint
 
 #include <stdio.h>
@@ -79,7 +82,8 @@ dump_str(f, str)
     register FILE *f;
     register char *str;
 {
-    register char *ibp = str;
+    char  *strtrim();
+    register char *ibp = strtrim(str);
     register int c;		/* PCC doesn't put chars in registers.. */
     for (; c = *ibp; ibp++) {
 	c = toascii(c);		/* punt 8th bit */
@@ -141,6 +145,37 @@ FILE *open_file(prefix, suffix)
     fprintf(stderr, "Working on %s\n", name);
     return(f);
 }
+
+
+/*
+ * Trim whitespace off both ends of a string.
+ */
+char *strtrim(save)
+    register char *save;
+{
+    register char *t, *s;
+
+    s = save;
+    while (isspace(*s)) s++;
+    /* skip to end of string */
+    if (*s == '\0') {
+	*save = '\0';
+	return(save);
+    }
+
+    for (t = s; *t; t++) continue; 
+    while (t > s) {
+	--t;
+	if (!isspace(*t)) {
+	    t++;
+	    break;
+	}
+    }
+    *t = '\0';
+    return s;
+}
+
+
 
 /*
  * Local Variables:

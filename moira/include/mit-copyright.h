@@ -1,7 +1,6 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/include/mit-copyright.h,v 1.2 1988-09-12 15:50:40 mar Exp $ */
-/*
+/* $Id: mit-copyright.h,v 1.3 1998-02-05 22:51:16 danw Exp $
 
-Copyright 1987, 1988 by the Massachusetts Institute of Technology
+Copyright (C) 1987-1998 by the Massachusetts Institute of Technology
 
 Permission to use, copy, modify, and distribute this
 software and its documentation for any purpose and without

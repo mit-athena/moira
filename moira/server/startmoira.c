@@ -1,41 +1,34 @@
-/*
- *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/startmoira.c,v $
- *	$Author: danw $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/startmoira.c,v 1.18 1998-01-07 17:13:41 danw Exp $
+/* $Id: startmoira.c,v 1.19 1998-02-05 22:51:55 danw Exp $
  *
- *	Copyright (C) 1987 by the Massachusetts Institute of Technology
- *	For copying and distribution information, please see the file
- *	<mit-copyright.h>.
+ * This program starts the moira server in a "clean" environment.
+ * and then waits for it to exit.
  *
- * 	This program starts the moira server in a "clean" environment.
- *	and then waits for it to exit.
- *
+ * Copyright (C) 1987-1998 by the Massachusetts Institute of Technology
+ * For copying and distribution information, please see the file
+ * <mit-copyright.h>.
  */
 
-#ifndef lint
-static char *rcsid_mr_starter_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/startmoira.c,v 1.18 1998-01-07 17:13:41 danw Exp $";
-#endif lint
-
 #include <mit-copyright.h>
-#include <errno.h>
-#include <stdio.h>
-#include <string.h>
-#include <sys/types.h>
-#include <sys/file.h>
-#include <sys/wait.h>
-#include <sys/signal.h>
-#include <sys/ioctl.h>
-#include <time.h>
-#include <fcntl.h>
-#include <sys/resource.h>
+#include <moira.h>
 #include <moira_site.h>
 
+#include <sys/resource.h>
+#include <sys/wait.h>
+
+#include <errno.h>
+#include <fcntl.h>
+#include <signal.h>
+#include <stdio.h>
+#include <string.h>
+#include <unistd.h>
+
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/startmoira.c,v 1.19 1998-02-05 22:51:55 danw Exp $");
 
 #define PROG	"moirad"
 
 int rdpipe[2];
-extern int errno;
 char *whoami;
+void cleanup(void);
 
 void cleanup(void)
 {
@@ -71,11 +64,8 @@ int main(int argc, char *argv[])
 {
   char buf[BUFSIZ];
   FILE *log, *prog;
-  int logf, inf, i, done, pid, tty;
+  int logf, inf, i, done, pid;
   struct rlimit rl;
-
-  extern int errno;
-  extern char *sys_errlist[];
 
   struct sigaction action;
   int nfds;
@@ -149,7 +139,7 @@ int main(int argc, char *argv[])
 	  if (errno && errno != EINTR)
 	    {
 	      strcpy(buf, "Unable to read from program: ");
-	      strcat(buf, sys_errlist[errno]);
+	      strcat(buf, strerror(errno));
 	      strcat(buf, "\n");
 	    }
 	  else

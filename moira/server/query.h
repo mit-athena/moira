@@ -1,6 +1,10 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/query.h,v 2.4 1998-01-05 19:53:47 danw Exp $
+/* $Id: query.h,v 2.5 1998-02-05 22:51:54 danw Exp $
  *
  * Structures and constants used in the query dispatch table
+ *
+ * Copyright (C) 1987-1998 by the Massachusetts Institute of Technology.
+ * For copying and distribution information, please see the file
+ * <mit-copyright.h>.
  */
 
 /* Query Types */
@@ -46,15 +50,15 @@ struct validate
   /* values field containing current max object id */
   char *object_id;
   /* routine to verify access permission on objects */
-  int (*acs_rtn)();
+  int (*acs_rtn)(struct query *q, char *Argv[], client *cl);
   /* pre-processing routine (var setup only) */
-  int (*pre_rtn)();
+  int (*pre_rtn)(struct query *q, char *Argv[], client *cl);
   /* post-processing routine */
   int (*post_rtn)();
 };
 
 /* Validated Object Types */
-enum vo_type {V_NAME, V_ID, V_TYPE, V_TYPEDATA, V_DATE,
+enum vo_type {V_NAME, V_ID, V_TYPE, V_TYPEDATA,
 	      V_SORT, V_RENAME, V_CHAR, V_LOCK, V_WILD, V_UPWILD,
               V_RLOCK, V_LEN};
 
@@ -93,6 +97,8 @@ int check_query_access(struct query *q, char *argv[], client *cl);
 int set_next_object_id(char *objectx, enum tables table, int limit);
 
 /* prototypes from qsubs.c */
-void list_queries(int version, int (*action)(), char *actarg);
-void help_query(struct query *q, int (*action)(), char *actarg);
+void list_queries(int version, int (*action)(int, char *[], void *),
+		  void *actarg);
+void help_query(struct query *q, int (*action)(int, char *[], void *),
+		void *actarg);
 struct query *get_query_by_name(char *name, int version);

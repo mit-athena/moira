@@ -1,5 +1,4 @@
-#	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/db2bkup.awk,v $
-#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/db2bkup.awk,v 1.11 1998-01-05 19:51:32 danw Exp $
+#	$Id $
 #
 #	This converts the file used to originally create the database
 #	into a program to back it up.
@@ -9,24 +8,28 @@
 BEGIN {
 	print "/* This file automatically generated */";
 	print "/* Do not edit */\n";
-	print "#include <stdio.h>";
 	print "EXEC SQL INCLUDE sqlca;";
 	print "EXEC SQL WHENEVER SQLERROR DO dbmserr();";
 	print "#include \"dump_db.h\"";
+	print "#include \"bkup.h\"";
 	print "#define dump_bin dump_str\n";
 
 	print "/* This file automatically generated */" > "bkup1.pc";
 	print "/* Do not edit */\n" >> "bkup1.pc";
-	print "#include <stdio.h>" >> "bkup1.pc";
-	print "FILE *open_file(char *prefix, char *suffix);\n" >> "bkup1.pc";
-	print "int do_backups(char *prefix)\n{" >> "bkup1.pc";
+	print "#include \"dump_db.h\"" >> "bkup1.pc";
+	print "#include \"bkup.h\"" >> "bkup1.pc";
+	print "void do_backups(char *prefix)\n{" >> "bkup1.pc";
+
+	print "/* This file automatically generated */" > "bkup.h";
+	print "/* Do not edit */\n" >> "bkup.h";
 }
 
 $1=="#" { next; }
 
 /^create/ {
-	printf "int dump_%s(FILE *f)\n{\n  EXEC SQL BEGIN DECLARE SECTION;\n", $3;
+	printf "void dump_%s(FILE *f)\n{\n  EXEC SQL BEGIN DECLARE SECTION;\n", $3;
 	printf "  dump_%s(open_file(prefix, \"%s\"));\n", $3, $3 >> "bkup1.pc";
+	printf "void dump_%s(FILE *f);\n", $3 >> "bkup.h";
 
 	tablename = $3;
 	rangename = substr(tablename, 1, 1);

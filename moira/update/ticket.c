@@ -1,24 +1,22 @@
-/*
- *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/ticket.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/ticket.c,v 1.18 1998-01-06 20:40:22 danw Exp $
+/* $Id: ticket.c,v 1.19 1998-02-05 22:52:03 danw Exp $
+ *
+ * Copyright (C) 1988-1998 by the Massachusetts Institute of Technology.
+ * For copying and distribution information, please see the file
+ * <mit-copyright.h>.
  */
-/*  (c) Copyright 1988 by the Massachusetts Institute of Technology. */
-/*  For copying and distribution information, please see the file */
-/*  <mit-copyright.h>. */
-
-#ifndef lint
-static char *rcsid_ticket_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/ticket.c,v 1.18 1998-01-06 20:40:22 danw Exp $";
-#endif
 
 #include <mit-copyright.h>
-#include <stdio.h>
-#include <krb.h>
-#include <sys/types.h>
+#include <moira.h>
+
 #include <sys/stat.h>
+
+#include <stdio.h>
 #include <string.h>
+
+#include <krb.h>
 #include <update.h>
-#include <com_err.h>
-#include <krb_et.h>
+
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/ticket.c,v 1.19 1998-02-05 22:52:03 danw Exp $");
 
 extern char *whoami;
 
@@ -29,8 +27,9 @@ static char master[INST_SZ] = "sms";
 static char service[ANAME_SZ] = "rcmd";
 C_Block session;
 
+int get_mr_tgt(void);
 
-static init(void)
+static void init(void)
 {
   static int initialized = 0;
 

@@ -1,34 +1,35 @@
-#if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v 1.33 1998-01-07 17:12:59 danw Exp $";
-#endif
-
-/*	This is the file lists.c for the Moira Client, which allows users
+/* $Id $
+ *
+ *	This is the file lists.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
  *	It Contains: All list manipulation functions, except delete.
  *
  *	Created: 	4/12/88
  *	By:		Chris D. Peterson
  *
- *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v $
- *      $Author: danw $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v 1.33 1998-01-07 17:12:59 danw Exp $
- *
- *  	Copyright 1988 by the Massachusetts Institute of Technology.
- *
- *	For further information on copyright and distribution
- *	see the file mit-copyright.h
+ * Copyright (C) 1988-1998 by the Massachusetts Institute of Technology.
+ * For copying and distribution information, please see the file
+ * <mit-copyright.h>.
  */
 
-#include <stdio.h>
-#include <string.h>
+#include <mit-copyright.h>
 #include <moira.h>
 #include <moira_site.h>
-#include <menu.h>
-
-#include "mit-copyright.h"
 #include "defs.h"
 #include "f_defs.h"
 #include "globals.h"
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v 1.34 1998-02-05 22:50:42 danw Exp $");
+
+struct qelem *GetListInfo(int type, char *name1, char *name2);
+char **AskListInfo(char **info, Bool name);
+int AddList(int argc, char **argv);
+void ListMembersByType(char *type);
+int GetMemberInfo(char *action, char **ret_argv);
 
 #define LIST    0
 #define MEMBERS 1
@@ -126,8 +127,7 @@ struct qelem *GetListInfo(int type, char *name1, char *name2)
     {
     case LIST:
       args[0] = name1;
-      if ((status = do_mr_query("get_list_info", 1, args,
-				StoreInfo, (char *) &elem)))
+      if ((status = do_mr_query("get_list_info", 1, args, StoreInfo, &elem)))
 	{
 	  com_err(program_name, status, " in get_list_info");
 	  return NULL;
@@ -136,7 +136,7 @@ struct qelem *GetListInfo(int type, char *name1, char *name2)
     case MEMBERS:
       args[0] = name1;
       if ((status = do_mr_query("get_members_of_list", 1, args,
-				StoreInfo, (char *) &elem)))
+				StoreInfo, &elem)))
 	{
 	  com_err(program_name, status, " in get_members_of_list");
 	  return NULL;
@@ -146,7 +146,7 @@ struct qelem *GetListInfo(int type, char *name1, char *name2)
       args[0] = name1;
       args[1] = name2;
       if ((status = do_mr_query("get_lists_of_member", 2, args,
-				StoreInfo, (char *) &elem)))
+				StoreInfo, &elem)))
 	{
 	  com_err(program_name, status, " in get_list_of_members");
 	  return NULL;
@@ -155,8 +155,7 @@ struct qelem *GetListInfo(int type, char *name1, char *name2)
     case ACE_USE:
       args[0] = name1;
       args[1] = name2;
-      if ((status = do_mr_query("get_ace_use", 2, args,
-				StoreInfo, (char *) &elem)))
+      if ((status = do_mr_query("get_ace_use", 2, args, StoreInfo, &elem)))
 	{
 	  com_err(program_name, status, " in get_ace_use");
 	  return NULL;
@@ -188,7 +187,7 @@ char **AskListInfo(char **info, Bool name)
     {
       while (1)
 	{
-	  newname = Strsave(info[L_NAME]);
+	  newname = strdup(info[L_NAME]);
 	  if (GetValueFromUser("The new name for this list", &newname) ==
 	      SUB_ERROR)
 	    return NULL;
@@ -259,7 +258,7 @@ int ShowListInfo(int argc, char **argv)
   top = list = GetListInfo(LIST, argv[1], NULL);
   while (list)
     {
-      PrintListInfo((char **) list->q_data);
+      PrintListInfo(list->q_data);
       list = list->q_forw;
     }
 
@@ -292,7 +291,7 @@ static void RealUpdateList(char **info, Bool junk)
    */
   if ((strlen(args[2]) <= 8) &&
       do_mr_query("get_user_account_by_login", 1, args + 1,
-		  StoreInfo, (char *) &elem) != MR_NO_MATCH)
+		  StoreInfo, &elem) != MR_NO_MATCH)
     {
       char buf[256];
 
@@ -310,7 +309,7 @@ static void RealUpdateList(char **info, Bool junk)
     }
 
   if ((stat = do_mr_query("update_list", CountArgs(args), args,
-			  Scream, (char *) NULL)) != MR_SUCCESS)
+			  NULL, NULL)) != MR_SUCCESS)
     {
       com_err(program_name, stat, " in UpdateList.");
       Put_message("List ** NOT ** Updated.");
@@ -345,16 +344,16 @@ int UpdateList(int argc, char **argv)
 
 static char **SetDefaults(char **info, char *name)
 {
-  info[L_NAME] =     Strsave(name);
-  info[L_ACTIVE] =   Strsave(DEFAULT_ACTIVE);
-  info[L_PUBLIC] =   Strsave(DEFAULT_PUBLIC);
-  info[L_HIDDEN] =   Strsave(DEFAULT_HIDDEN);
-  info[L_MAILLIST] = Strsave(DEFAULT_MAILLIST);
-  info[L_GROUP] =    Strsave(DEFAULT_GROUP);
-  info[L_GID] =      Strsave(DEFAULT_GID);
-  info[L_ACE_TYPE] = Strsave(DEFAULT_ACE_TYPE);
-  info[L_ACE_NAME] = Strsave(DEFAULT_ACE_NAME);
-  info[L_DESC] =     Strsave(DEFAULT_DESCRIPTION);
+  info[L_NAME] =     strdup(name);
+  info[L_ACTIVE] =   strdup(DEFAULT_ACTIVE);
+  info[L_PUBLIC] =   strdup(DEFAULT_PUBLIC);
+  info[L_HIDDEN] =   strdup(DEFAULT_HIDDEN);
+  info[L_MAILLIST] = strdup(DEFAULT_MAILLIST);
+  info[L_GROUP] =    strdup(DEFAULT_GROUP);
+  info[L_GID] =      strdup(DEFAULT_GID);
+  info[L_ACE_TYPE] = strdup(DEFAULT_ACE_TYPE);
+  info[L_ACE_NAME] = strdup(DEFAULT_ACE_NAME);
+  info[L_DESC] =     strdup(DEFAULT_DESCRIPTION);
   info[L_MODTIME] = info[L_MODBY] = info[L_MODWITH] = info[L_END] = NULL;
   return info;
 }
@@ -373,7 +372,7 @@ int AddList(int argc, char **argv)
 
   if (!ValidName(argv[1]))
     return DM_NORMAL;
-  status = do_mr_query("get_list_info", 1, argv + 1, NullFunc, NULL);
+  status = do_mr_query("get_list_info", 1, argv + 1, NULL, NULL);
   if (status != MR_NO_MATCH)
     {
       if (status == MR_SUCCESS)
@@ -389,7 +388,7 @@ int AddList(int argc, char **argv)
    */
   if ((strlen(argv[1]) <= 8) &&
       do_mr_query("get_user_account_by_login", 1, argv + 1,
-		  StoreInfo, (char *) &elem) != MR_NO_MATCH)
+		  StoreInfo, &elem) != MR_NO_MATCH)
     {
       char buf[256];
 
@@ -409,7 +408,7 @@ int AddList(int argc, char **argv)
     }
 
   if ((status = do_mr_query("add_list", CountArgs(add_args), add_args,
-			    Scream, (char *) NULL)) != MR_SUCCESS)
+			    NULL, NULL)) != MR_SUCCESS)
     {
       com_err(program_name, status, " in AddList.");
       Put_message("List Not Created.");
@@ -426,7 +425,7 @@ int AddList(int argc, char **argv)
  *	Returns: DM Status Code.
  */
 
-int ListHelp(void)
+int ListHelp(int argc, char **argv)
 {
   static char *message[] = {
     "Listmaint handles the creation, deletion, and updating of lists.",
@@ -476,7 +475,7 @@ int ListmaintMemberMenuEntry(Menu *m, int argc, char **argv)
   else
     /* All we want to know is if it exists. */
     switch ((stat = do_mr_query("count_members_of_list", 1, argv + 1,
-				NullFunc, NULL)))
+				NULL, NULL)))
       {
       case MR_SUCCESS:
 	break;
@@ -492,7 +491,7 @@ int ListmaintMemberMenuEntry(Menu *m, int argc, char **argv)
       }
 
   sprintf(temp_buf, "Change/Display membership of '%s'", list_name);
-  m->m_title = Strsave(temp_buf);
+  m->m_title = strdup(temp_buf);
   strcpy(current_list, list_name);
   return DM_NORMAL;
 }
@@ -518,7 +517,7 @@ int ListmaintMemberMenuExit(Menu *m)
  *      NOTE: if type is NULL, all lists members are listed.
  */
 
-int ListMembersByType(char *type)
+void ListMembersByType(char *type)
 {
   char temp_buf[BUFSIZ];
   int status;
@@ -530,10 +529,7 @@ int ListMembersByType(char *type)
   found_some = FALSE;
   if ((status = do_mr_query("get_members_of_list", CountArgs(args), args,
 			    PrintByType, type)))
-    {
-      com_err(program_name, status, " in ListMembersByType");
-      return DM_NORMAL;
-    }
+    com_err(program_name, status, " in ListMembersByType");
   if (!found_some)
     {
       if (!type)
@@ -552,7 +548,7 @@ int ListMembersByType(char *type)
  *	Returns: DM_NORMAL
  */
 
-int ListAllMembers(void)
+int ListAllMembers(int argc, char **argv)
 {
   ListMembersByType(NULL);
   return DM_NORMAL;
@@ -564,7 +560,7 @@ int ListAllMembers(void)
  *	Returns: DM_NORMAL.
  */
 
-int ListUserMembers(void)
+int ListUserMembers(int argc, char **argv)
 {
   ListMembersByType("USER");
   return DM_NORMAL;
@@ -576,7 +572,7 @@ int ListUserMembers(void)
  *	Returns: DM_NORMAL.
  */
 
-int ListListMembers(void)
+int ListListMembers(int argc, char **argv)
 {
   ListMembersByType("LIST");
   return DM_NORMAL;
@@ -588,7 +584,7 @@ int ListListMembers(void)
  *	Returns: DM_NORMAL.
  */
 
-int ListStringMembers(void)
+int ListStringMembers(int argc, char **argv)
 {
   ListMembersByType("STRING");
   return DM_NORMAL;
@@ -608,15 +604,15 @@ int GetMemberInfo(char *action, char **ret_argv)
 {
   char temp_buf[BUFSIZ];
 
-  ret_argv[LM_LIST] = Strsave(current_list);
+  ret_argv[LM_LIST] = strdup(current_list);
 
-  ret_argv[LM_TYPE] = Strsave("user");
+  ret_argv[LM_TYPE] = strdup("user");
   if (GetTypeFromUser("Type of member", "member", &ret_argv[LM_TYPE]) ==
       SUB_ERROR)
     return SUB_ERROR;
 
   sprintf(temp_buf, "Name of %s to %s", ret_argv[LM_TYPE], action);
-  ret_argv[LM_MEMBER] = Strsave(user);
+  ret_argv[LM_MEMBER] = strdup(user);
   if (GetValueFromUser(temp_buf, &ret_argv[LM_MEMBER]) == SUB_ERROR)
     return SUB_ERROR;
   ret_argv[LM_END] = NULL;		/* NULL terminate this list. */
@@ -636,11 +632,11 @@ int GetMemberInfo(char *action, char **ret_argv)
  *	Returns: DM_NORMAL.
  */
 
-int AddMember(void)
+int AddMember(int argc, char **argv)
 {
   char *args[10], temp_buf[BUFSIZ], *p;
   int status;
-  struct qelem *mailhubs, *elem, *GetTypeValues();
+  struct qelem *mailhubs, *elem;
 
   if (GetMemberInfo("add", args) == SUB_ERROR)
     return DM_NORMAL;
@@ -649,14 +645,14 @@ int AddMember(void)
     {
       if ((p = strchr(args[LM_MEMBER], '@')))
 	{
-	  char *host = canonicalize_hostname(strsave(++p));
+	  char *host = canonicalize_hostname(strdup(++p));
 	  mailhubs = GetTypeValues("mailhub");
 	  for (elem = mailhubs; elem; elem = elem->q_forw)
 	    {
 	      if (!strcasecmp(host, elem->q_data))
 		{
 		  free(host);
-		  host = strsave(args[LM_MEMBER]);
+		  host = strdup(args[LM_MEMBER]);
 		  *(--p) = 0;
 		  sprintf(temp_buf, "String \"%s\" should be USER or LIST "
 			  "\"%s\" because it is a local name.", host,
@@ -678,7 +674,7 @@ int AddMember(void)
     }
 
   if ((status = do_mr_query("add_member_to_list", CountArgs(args), args,
-			    Scream, NULL)) != MR_SUCCESS)
+			    NULL, NULL)) != MR_SUCCESS)
     {
       if (status == MR_EXISTS)
 	{
@@ -700,7 +696,7 @@ int AddMember(void)
  *	Returns: DM_NORMAL
  */
 
-int DeleteMember(void)
+int DeleteMember(int argc, char **argv)
 {
   char *args[10];
   int status;
@@ -711,7 +707,7 @@ int DeleteMember(void)
   if (Confirm("Are you sure you want to delete this member?"))
     {
       if ((status = do_mr_query("delete_member_from_list", CountArgs(args),
-				args, Scream, NULL)))
+				args, NULL, NULL)))
 	com_err(program_name, status, " in DeleteMember");
       else
 	Put_message("Deletion Completed.");
@@ -732,18 +728,18 @@ int DeleteMember(void)
  *             enough information in it to delete the member from the list.
  */
 
-int InterRemoveItemFromLists(void)
+int InterRemoveItemFromLists(int argc, char **argv)
 {
   int status;
   char *type, *name, *args[10], buf[BUFSIZ];
   struct qelem *top, *elem;
 
-  type = strsave("USER");
+  type = strdup("USER");
   if (GetTypeFromUser("Type of member", "member", &type) == SUB_ERROR)
     return DM_NORMAL;
 
   sprintf(buf, "Name of %s", type);
-  name = strsave(user);
+  name = strdup(user);
   if (GetValueFromUser(buf, &name) == SUB_ERROR)
     return DM_NORMAL;
 
@@ -755,7 +751,7 @@ int InterRemoveItemFromLists(void)
   while (elem)
     {
       char line[BUFSIZ];
-      char **info = (char **) elem->q_data;
+      char **info = elem->q_data;
       sprintf(line, "Delete %s %s from the list \"%s\" (y/n/q)? ", type,
 	      name, info[GLOM_NAME]);
       switch (YesNoQuitQuestion(line, FALSE))
@@ -766,7 +762,7 @@ int InterRemoveItemFromLists(void)
 	  args[DM_TYPE] = type;
 	  args[DM_MEMBER] = name;
 	  if ((status = do_mr_query("delete_member_from_list", 3, args,
-				    Scream, (char *) NULL)))
+				    NULL, NULL)))
 	    {
 	      /* should probabally check to delete list. */
 	      com_err(program_name, status, " in delete_member");
@@ -793,25 +789,25 @@ int InterRemoveItemFromLists(void)
  *	Returns: DM_NORMAL.
  */
 
-int ListByMember(void)
+int ListByMember(int argc, char **argv)
 {
   char buf[BUFSIZ], temp_buf[BUFSIZ], *type, *name, **info;
   Bool maillist, group;
   struct qelem *top, *elem;
 
-  type = strsave("USER");
+  type = strdup("USER");
   if (GetTypeFromUser("Type of member", "member", &type) == SUB_ERROR)
     return DM_NORMAL;
 
   sprintf(buf, "Name of %s", type);
-  name = strsave(user);
+  name = strdup(user);
   if (GetValueFromUser(buf, &name) == SUB_ERROR)
     return DM_NORMAL;
 
   /* What we really want is a recursive search */
   sprintf(temp_buf, "R%s", type);
   free(type);
-  type = Strsave(temp_buf);
+  type = strdup(temp_buf);
 
   if ((maillist = YesNoQuestion("Show Lists that are Maillists (y/n) ?",
 				TRUE)) == -1)
@@ -824,7 +820,7 @@ int ListByMember(void)
 
   while (elem)
     {
-      info = (char **) elem->q_data;
+      info = elem->q_data;
       if ((maillist == TRUE && !strcmp(info[GLOM_MAILLIST], "1")) ||
 	  (group == TRUE && !strcmp(info[GLOM_GROUP], "1")))
 	Put_message(info[GLOM_NAME]);
@@ -841,17 +837,17 @@ int ListByMember(void)
  *	Returns: DM_NORMAL.
  */
 
-int ListByAdministrator(void)
+int ListByAdministrator(int argc, char **argv)
 {
   char buf[BUFSIZ], temp_buf[BUFSIZ], *type, *name;
   struct qelem *top;
 
-  type = strsave("USER");
+  type = strdup("USER");
   if (GetTypeFromUser("Type of member", "member", &type) == SUB_ERROR)
     return DM_NORMAL;
 
   sprintf(buf, "Name of %s", type);
-  name = strsave(user);
+  name = strdup(user);
   if (GetValueFromUser(buf, &name) == SUB_ERROR)
     return DM_NORMAL;
 
@@ -860,7 +856,7 @@ int ListByAdministrator(void)
     case TRUE:
       sprintf(temp_buf, "R%s", type);	/* "USER" to "RUSER" etc. */
       free(type);
-      type = Strsave(temp_buf);
+      type = strdup(temp_buf);
       break;
     case FALSE:
       break;
@@ -881,7 +877,7 @@ int ListByAdministrator(void)
  *	Returns: DM_NORMAL.
  */
 
-int ListAllPublicMailLists(void)
+int ListAllPublicMailLists(int argc, char **argv)
 {
   int status;
   static char *args[] = {
@@ -895,8 +891,8 @@ int ListAllPublicMailLists(void)
   if (YesNoQuestion("This query will take a while. Do you wish to continue?",
 		    TRUE) == TRUE)
     {
-      if (status = do_mr_query("qualified_get_lists", 5, args,
-			       Print, NULL) != MR_SUCCESS)
+      if ((status = do_mr_query("qualified_get_lists", 5, args,
+				Print, NULL)) != MR_SUCCESS)
 	com_err(program_name, status, " in ListAllGroups");
     }
 

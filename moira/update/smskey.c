@@ -1,15 +1,22 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/smskey.c,v 1.4 1998-01-05 19:53:56 danw Exp $ */
-
-/*  (c) Copyright 1988 by the Massachusetts Institute of Technology. */
-/*  For copying and distribution information, please see the file */
-/*  <mit-copyright.h>. */
-
+/* $Id: smskey.c,v 1.5 1998-02-05 22:52:02 danw Exp $
+ *
+ * Copyright (C) 1988-1998 by the Massachusetts Institute of Technology.
+ * For copying and distribution information, please see the file
+ * <mit-copyright.h>.
+ */
 
 #include <mit-copyright.h>
-#include <stdio.h>
-#include <sys/file.h>
+#include <moira.h>
+
 #include <fcntl.h>
+#include <stdio.h>
+#include <string.h>
+#include <unistd.h>
+
 #include <des.h>
+
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/smskey.c,v 1.5 1998-02-05 22:52:02 danw Exp $");
+
 int debug = 0;			/* goddamn des library breakage */
 char string[] = "sms\0\0Athena\0\1";
 char srvtab[] = "/etc/srvtab";
@@ -20,7 +27,7 @@ int main(int argc, char **argv)
 {
   int fd;
   C_Block key;
-  char *tty, *ttyname();
+  char *tty;
   tty = ttyname(0);
   if (!tty || strcmp(tty, "/dev/console"))
     {
@@ -45,4 +52,5 @@ int main(int argc, char **argv)
     perror(srvtab);
   close(fd);
   printf("\nKey written.\n");
+  exit(0);
 }

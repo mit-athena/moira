@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/afs.c,v 1.60 1998-01-06 20:39:53 danw Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/afs.c,v 1.61 1998-02-05 22:51:19 danw Exp $
  *
  * Do AFS incremental updates
  *
@@ -9,11 +9,14 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/resource.h>
 #include <sys/types.h>
+#include <sys/utsname.h>
 #include <sys/file.h>
 #include <string.h>
 #include <unistd.h>
 
+#include <com_err.h>
 #include <krb.h>
 #include <moira.h>
 #include <moira_site.h>
@@ -30,20 +33,22 @@
 char *whoami;
 
 /* Main stub routines */
-int do_user();
-int do_list();
-int do_member();
-int do_filesys();
-int do_quota();
+void do_user(char **before, int beforec, char **after, int afterc);
+void do_list(char **before, int beforec, char **after, int afterc);
+void do_member(char **before, int beforec, char **after, int afterc);
+void do_filesys(char **before, int beforec, char **after, int afterc);
+void do_quota(char **before, int beforec, char **after, int afterc);
 
 /* Support stub routines */
-int run_cmd();
-int add_user_lists();
-int add_list_members();
-int check_user();
-int edit_group();
+void run_cmd(char *cmd);
+int add_user_lists(int ac, char **av, void *user);
+int add_list_members(int ac, char **av, void  *group);
+int check_user(int ac, char **av, void *ustate);
+void edit_group(int op, char *group, char *type, char *member);
 long pr_try();
-int check_afs();
+void check_afs(void);
+int moira_connect(void);
+int moira_disconnect(void);
 
 /* libprot.a routines */
 extern long pr_Initialize();
@@ -71,8 +76,10 @@ int main(int argc, char **argv)
 {
   int beforec, afterc, i;
   char *table, **before, **after;
+  struct rlimit rl;
 
-  for (i = getdtablesize() - 1; i > 2; i--)
+  getrlimit(RLIMIT_NOFILE, &rl);
+  for (i = rl.rlim_cur; i > 2; i--)
     close(i);
 
   whoami = ((whoami = strrchr(argv[0], '/')) ? whoami+1 : argv[0]);
@@ -120,7 +127,7 @@ int main(int argc, char **argv)
 }
 
 
-do_user(char **before, int beforec, char **after, int afterc)
+void do_user(char **before, int beforec, char **after, int afterc)
 {
   int astate, bstate, auid, buid, code;
   char *av[2];
@@ -231,7 +238,7 @@ do_user(char **before, int beforec, char **after, int afterc)
 }
 
 
-do_list(char **before, int beforec, char **after, int afterc)
+void do_list(char **before, int beforec, char **after, int afterc)
 {
   int agid, bgid;
   int ahide, bhide;
@@ -374,11 +381,8 @@ do_list(char **before, int beforec, char **after, int afterc)
 #define LM_EXTRA_GID      (LM_END+5)
 #define LM_EXTRA_END      (LM_END+6)
 
-do_member(char **before, int beforec, char **after, int afterc)
+void do_member(char **before, int beforec, char **after, int afterc)
 {
-  int code;
-  char *p;
-
   if (afterc)
     {
       if (afterc < LM_EXTRA_END)
@@ -405,7 +409,7 @@ do_member(char **before, int beforec, char **after, int afterc)
 }
 
 
-do_filesys(char **before, int beforec, char **after, int afterc)
+void do_filesys(char **before, int beforec, char **after, int afterc)
 {
   char cmd[1024];
   int acreate, atype, bcreate, btype;
@@ -479,7 +483,7 @@ do_filesys(char **before, int beforec, char **after, int afterc)
 }
 
 
-do_quota(char **before, int beforec, char **after, int afterc)
+void do_quota(char **before, int beforec, char **after, int afterc)
 {
   char cmd[1024];
 
@@ -495,7 +499,7 @@ do_quota(char **before, int beforec, char **after, int afterc)
 }
 
 
-run_cmd(char *cmd)
+void run_cmd(char *cmd)
 {
   int success=0, tries=0;
 
@@ -514,7 +518,7 @@ run_cmd(char *cmd)
 }
 
 
-int add_user_lists(int ac, char *av[], char *user)
+int add_user_lists(int ac, char **av, void *user)
 {
   if (atoi(av[L_ACTIVE]) && atoi(av[L_GROUP]))	/* active group ? */
     edit_group(1, av[L_NAME], "USER", user);
@@ -522,20 +526,20 @@ int add_user_lists(int ac, char *av[], char *user)
 }
 
 
-int add_list_members(int ac, char *av[], char *group)
+int add_list_members(int ac, char **av, void *group)
 {
   edit_group(1, group, av[0], av[1]);
   return 0;
 }
 
-int check_user(int ac, char *av[], int *ustate)
+int check_user(int ac, char **av, void *ustate)
 {
-  *ustate = atoi(av[U_STATE]);
+  *(int *)ustate = atoi(av[U_STATE]);
   return 0;
 }
 
 
-edit_group(int op, char *group, char *type, char *member)
+void edit_group(int op, char *group, char *type, char *member)
 {
   char *p = 0;
   char buf[PR_MAXNAMELEN];
@@ -650,12 +654,12 @@ long pr_try(long (*fn)(), char *a1, char *a2, char *a3, char *a4, char *a5,
     {
       critical_alert("incremental", "Couldn't initialize libprot: %s",
 		     error_message(code));
-      return;
+      return code;
     }
 
   sleep(1);					/* give ptserver room */
 
-  while (code = (*fn)(a1, a2, a3, a4, a5, a6, a7, a8))
+  while ((code = (*fn)(a1, a2, a3, a4, a5, a6, a7, a8)))
     {
       if (++tries > 2)
 	break;		/* 3 tries */
@@ -681,7 +685,7 @@ long pr_try(long (*fn)(), char *a1, char *a2, char *a3, char *a4, char *a5,
 }
 
 
-check_afs(void)
+void check_afs(void)
 {
   int i;
 
@@ -701,13 +705,13 @@ check_afs(void)
 
 int moira_connect(void)
 {
-  static char hostname[64];
   long code;
 
   if (!mr_connections++)
     {
-      gethostname(hostname, sizeof(hostname));
-      code = mr_connect(hostname);
+      struct utsname uts;
+      uname(&uts);
+      code = mr_connect(uts.nodename);
       if (!code)
 	code = mr_auth("afs.incr");
       return code;
@@ -722,7 +726,7 @@ int moira_disconnect(void)
   if (!--mr_connections)
     {
       mr_disconnect();
-      while (m = member_head)
+      while ((m = member_head))
 	{
 	  edit_group(m->op, m->list, m->type, m->member);
 	  member_head = m->next;

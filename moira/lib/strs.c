@@ -1,49 +1,18 @@
-/*
- *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/strs.c,v $
- *	$Author: danw $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/strs.c,v 1.14 1998-01-06 20:40:05 danw Exp $
+/* $Id $
  *
- *	Copyright (C) 1987 by the Massachusetts Institute of Technology
- *	For copying and distribution information, please see the file
- *	<mit-copyright.h>.
+ * Miscellaneous string functions.
  *
- *	Miscellaneous string functions.
+ * Copyright (C) 1987-1998 by the Massachusetts Institute of Technology
+ * For copying and distribution information, please see the file
+ * <mit-copyright.h>.
  */
-
-#ifndef lint
-static char *rcsid_strs_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/strs.c,v 1.14 1998-01-06 20:40:05 danw Exp $";
-#endif
 
 #include <mit-copyright.h>
-#include <sys/types.h>
-#include <stdlib.h>
-#include <string.h>
+#include <moira.h>
+
 #include <ctype.h>
 
-/*
- * Random string functions which should be in the C library..
- */
-
-/*
- * Make a copy of a string.
- */
-char *strsave(char *s)
-{
-  int len;
-  char *p;
-  /* Kludge for sloppy string semantics */
-  if (!s)
-    {
-      p = malloc(1);
-      *p = '\0';
-      return p;
-    }
-  len = strlen(s) + 1;
-  p = malloc(len);
-  if (p)
-    memcpy(p, s, len);
-  return p;
-}
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/strs.c,v 1.15 1998-02-05 22:51:32 danw Exp $");
 
 /*
  * Trim whitespace off both ends of a string.

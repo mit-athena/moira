@@ -1,22 +1,24 @@
-/*
- *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_query.c,v $
- *	$Author: danw $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_query.c,v 1.13 1998-01-07 17:13:32 danw Exp $
+/* $Id $
  *
- *	Copyright (C) 1987 by the Massachusetts Institute of Technology
- *	For copying and distribution information, please see the file
- *	<mit-copyright.h>.
+ * Perform a Moira query
+ *
+ * Copyright (C) 1987-1998 by the Massachusetts Institute of Technology
+ * For copying and distribution information, please see the file
+ * <mit-copyright.h>.
  *
  */
 
-#ifndef lint
-static char *rcsid_mr_query_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_query.c,v 1.13 1998-01-07 17:13:32 danw Exp $";
-#endif
-
 #include <mit-copyright.h>
+#include <moira.h>
 #include "mr_private.h"
-#include <string.h>
+
 #include <stdlib.h>
+#include <string.h>
+
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_query.c,v 1.14 1998-02-05 22:51:30 danw Exp $");
+
+int mr_query_internal(int argc, char **argv,
+		      int (*callback)(int, char **, void *), void *callarg);
 
 /*
  * This routine is the primary external interface to the mr library.
@@ -27,7 +29,7 @@ static char *rcsid_mr_query_c = "$Header: /afs/.athena.mit.edu/astaff/project/mo
 static int level = 0;
 
 int mr_query(char *name, int argc, char **argv,
-	     int (*callproc)(), char *callarg)
+	     int (*callproc)(int, char **, void *), void *callarg)
 {
   char **nargv = malloc(sizeof(char *) * (argc + 1));
   int status = 0;
@@ -52,7 +54,8 @@ int mr_query(char *name, int argc, char **argv,
  * way to send it a quench..)
  */
 
-int mr_query_internal(int argc, char **argv, int (*callproc)(), char *callarg)
+int mr_query_internal(int argc, char **argv,
+		      int (*callproc)(int, char **, void *), void *callarg)
 {
   int status;
   mr_params params_st;
@@ -78,7 +81,7 @@ int mr_query_internal(int argc, char **argv, int (*callproc)(), char *callarg)
 
   while ((status = reply->mr_status) == MR_MORE_DATA)
     {
-      if (!stopcallbacks)
+      if (!stopcallbacks && callproc)
 	stopcallbacks = (*callproc)(reply->mr_argc, reply->mr_argv, callarg);
       mr_destroy_reply(reply);
       reply = NULL;
@@ -86,7 +89,7 @@ int mr_query_internal(int argc, char **argv, int (*callproc)(), char *callarg)
       initialize_operation(_mr_recv_op, mr_start_recv, &reply, NULL);
       queue_operation(_mr_conn, CON_INPUT, _mr_recv_op);
 
-      mr_complete_operation(_mr_recv_op);
+      complete_operation(_mr_recv_op);
       if (OP_STATUS(_mr_recv_op) != OP_COMPLETE)
 	{
 	  mr_disconnect();

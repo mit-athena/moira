@@ -1,39 +1,45 @@
-/*
- *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_scall.c,v $
- *	$Author: danw $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_scall.c,v 1.30 1998-01-07 17:13:38 danw Exp $
+/* $Id: mr_scall.c,v 1.31 1998-02-05 22:51:44 danw Exp $
  *
- *	Copyright (C) 1987 by the Massachusetts Institute of Technology
- *	For copying and distribution information, please see the file
- *	<mit-copyright.h>.
+ * Do RPC
+ *
+ * Copyright (C) 1987-1998 by the Massachusetts Institute of Technology
+ * For copying and distribution information, please see the file
+ * <mit-copyright.h>.
  *
  */
 
-#ifndef lint
-static char *rcsid_mr_scall_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_scall.c,v 1.30 1998-01-07 17:13:38 danw Exp $";
-#endif lint
-
 #include <mit-copyright.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <sys/file.h>
-#include <fcntl.h>
-#include <string.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <krb.h>
-#include <errno.h>
 #include "mr_server.h"
 #include "query.h"
+
+#include <sys/stat.h>
+#include <sys/types.h>
+
+#include <arpa/inet.h>
+#include <netinet/in.h>
+
+#include <errno.h>
+#include <fcntl.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_scall.c,v 1.31 1998-02-05 22:51:44 danw Exp $");
+
 extern char buf1[];
 extern int nclients;
 extern char *whoami;
-extern int errno;
 
-extern void clist_delete(), do_auth(), do_shutdown();
-void do_call();
 extern int dbms_errno, mr_errcode;
 static int row_count;
+
+void do_call(client *cl);
+void free_rtn_tuples(client *cp);
+int retr_callback(int argc, char **argv, void *p_cp);
+int list_users(int (*callbk)(int, char **, void *), char *callarg);
+void do_retr(client *cl);
+void do_access(client *cl);
+void get_motd(client *cl);
 
 /* Put this in a variable so that we can patch it if necessary */
 int max_row_count = 4096;
@@ -152,7 +158,7 @@ void do_call(client *cl)
       return;
 
     case MR_DO_UPDATE:
-      trigger_dcm(0, 0, cl);
+      trigger_dcm(NULL, NULL, cl);
       return;
 
     case MR_MOTD:
@@ -161,7 +167,7 @@ void do_call(client *cl)
     }
 }
 
-free_rtn_tuples(client *cp)
+void free_rtn_tuples(client *cp)
 {
   returned_tuples *temp;
   for (temp = cp->first; temp && OP_DONE(temp->op); )
@@ -178,9 +184,9 @@ free_rtn_tuples(client *cp)
   cp->first = temp;
 }
 
-retr_callback(int argc, char **argv, char *p_cp)
+int retr_callback(int argc, char **argv, void *p_cp)
 {
-  client *cp = (client *)p_cp;
+  client *cp = p_cp;
   mr_params *arg_tmp;
   returned_tuples *tp;
   OPERATION op_tmp;
@@ -190,15 +196,15 @@ retr_callback(int argc, char **argv, char *p_cp)
   if (row_count++ >= max_row_count)
     {
       dbms_errno = mr_errcode = MR_NO_MEM;
-      return;
+      return MR_ABORT;
     }
 
   /*
    * This takes too much advantage of the fact that
    * serialization of the data happens during the queue operation.
    */
-  arg_tmp = db_alloc(sizeof(mr_params));
-  tp = db_alloc(sizeof(returned_tuples));
+  arg_tmp = malloc(sizeof(mr_params));
+  tp = malloc(sizeof(returned_tuples));
   nargv = malloc(argc * sizeof(char *));
 
   op_tmp = create_operation();
@@ -235,9 +241,10 @@ retr_callback(int argc, char **argv, char *p_cp)
   reset_operation(op_tmp);
   initialize_operation(op_tmp, mr_start_send, (char *)arg_tmp, NULL);
   queue_operation(cp->con, CON_OUTPUT, op_tmp);
+  return MR_CONT;
 }
 
-int list_users(int (*callbk)(), char *callarg)
+int list_users(int (*callbk)(int, char **, void *), char *callarg)
 {
   char *argv[6];
   char buf[30];
@@ -245,7 +252,6 @@ int list_users(int (*callbk)(), char *callarg)
   int i;
   extern client **clients;
   char *cp;
-  char *ctime();
 
   for (i = 0; i < nclients; i++)
     {
@@ -268,7 +274,7 @@ int list_users(int (*callbk)(), char *callarg)
   return 0;
 }
 
-do_retr(client *cl)
+void do_retr(client *cl)
 {
   char *queryname;
 
@@ -296,7 +302,7 @@ do_retr(client *cl)
       cl->reply.mr_status = mr_process_query(cl, queryname,
 					     cl->args->mr_argc - 1,
 					     cl->args->mr_argv + 1,
-					     retr_callback, (char *)cl);
+					     retr_callback, cl);
     }
   if (row_count >= max_row_count)
     {
@@ -308,7 +314,7 @@ do_retr(client *cl)
     com_err(whoami, 0, "Query complete.");
 }
 
-do_access(client *cl)
+void do_access(client *cl)
 {
   if (cl->args->mr_argc < 1)
     {
@@ -335,7 +341,7 @@ struct query pseudo_query = {
   "tdcm",
 };
 
-int trigger_dcm(int dummy0, int dummy1, client *cl)
+int trigger_dcm(struct query *q, char *argv[], client *cl)
 {
   int pid;
   char prog[128];
@@ -363,7 +369,7 @@ int trigger_dcm(int dummy0, int dummy1, client *cl)
 }
 
 
-get_motd(client *cl)
+void get_motd(client *cl)
 {
   int motd, len;
   char buffer[1024];

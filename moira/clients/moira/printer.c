@@ -1,35 +1,34 @@
-#if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/printer.c,v 1.17 1998-01-07 17:13:06 danw Exp $";
-#endif
-
-/*	This is the file printer.c for the Moira Client, which allows users
+/* $Id $
+ *
+ *	This is the file printer.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
  *	It Contains: Functions for handling the printers.
  *
  *	Created: 	8/16/88
  *	By:		Theodore Y. Ts'o
  *
- *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/printer.c,v $
- *      $Author: danw $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/printer.c,v 1.17 1998-01-07 17:13:06 danw Exp $
- *
- *  	Copyright 1988 by the Massachusetts Institute of Technology.
- *
- *	For further information on copyright and distribution
- *	see the file mit-copyright.h
+ * Copyright (C) 1988-1998 by the Massachusetts Institute of Technology.
+ * For copying and distribution information, please see the file
+ * <mit-copyright.h>.
  */
 
-#include <stdio.h>
-#include <string.h>
-#include <ctype.h>
+#include <mit-copyright.h>
 #include <moira.h>
 #include <moira_site.h>
-#include <menu.h>
-
-#include "mit-copyright.h"
 #include "defs.h"
 #include "f_defs.h"
 #include "globals.h"
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/printer.c,v 1.18 1998-02-05 22:50:48 danw Exp $");
+
+void RealDeletePcap(char **info, Bool one_item);
+void ChangePcap(char **info, Bool one_item);
+void ChangePalladium(char **info, Bool one_item);
+void RealDeletePalladium(char **info, Bool one_item);
 
 #define DEFAULT_MACHINE "E40-PRINT-SERVER-1.MIT.EDU"
 
@@ -46,14 +45,14 @@ static char **SetDefaults(char **info, char *name)
   strcpy(spool_dir, "/usr/spool/printer/");
   strcat(spool_dir, name);
 
-  info[PCAP_NAME] = Strsave(name);
-  info[PCAP_SPOOL_HOST] = Strsave(DEFAULT_MACHINE);
-  info[PCAP_SPOOL_DIR] = Strsave(spool_dir);
-  info[PCAP_RPRINTER] = Strsave(name);
-  info[PCAP_QSERVER] = Strsave("[NONE]");
-  info[PCAP_AUTH] = Strsave("1");
-  info[PCAP_PRICE] = Strsave("10");
-  info[PCAP_COMMENTS] = Strsave("");
+  info[PCAP_NAME] = strdup(name);
+  info[PCAP_SPOOL_HOST] = strdup(DEFAULT_MACHINE);
+  info[PCAP_SPOOL_DIR] = strdup(spool_dir);
+  info[PCAP_RPRINTER] = strdup(name);
+  info[PCAP_QSERVER] = strdup("[NONE]");
+  info[PCAP_AUTH] = strdup("1");
+  info[PCAP_PRICE] = strdup("10");
+  info[PCAP_COMMENTS] = strdup("");
   info[PCAP_MODTIME] = info[PCAP_MODBY] = info[PCAP_MODWITH] = NULL;
 
   info[PCAP_END] = NULL;
@@ -72,8 +71,7 @@ static struct qelem *GetPcapInfo(char *name)
   int stat;
   struct qelem *elem = NULL;
 
-  if ((stat = do_mr_query("get_printcap_entry", 1, &name,
-			  StoreInfo, (char *)&elem)))
+  if ((stat = do_mr_query("get_printcap_entry", 1, &name, StoreInfo, &elem)))
     {
       com_err(program_name, stat, " in GetPcapInfo");
       return NULL;
@@ -84,17 +82,17 @@ static struct qelem *GetPcapInfo(char *name)
 /*	Function Name: PrintPcapInfo
  *	Description: Yet another specialized print function.
  *	Arguments: info - all info about this Printer.
- *	Returns: none
+ *	Returns: printer name
  */
 
-static void PrintPcapInfo(char **info)
+static char *PrintPcapInfo(char **info)
 {
   char buf[BUFSIZ];
 
   if (!info)		/* If no informaion */
     {
       Put_message("PrintPcapInfo called with null info!");
-      return;
+      return NULL;
     }
   sprintf(buf, "Printer: %-35s Spool host: %s", info[PCAP_NAME],
 	  info[PCAP_SPOOL_HOST]);
@@ -111,6 +109,8 @@ static void PrintPcapInfo(char **info)
   sprintf(buf, MOD_FORMAT, info[PCAP_MODBY], info[PCAP_MODTIME],
 	  info[PCAP_MODWITH]);
   Put_message(buf);
+
+  return info[PCAP_NAME];
 }
 
 /*	Function Name: AskPcapInfo.
@@ -189,7 +189,7 @@ void RealDeletePcap(char **info, Bool one_item)
   int stat;
 
   if ((stat = do_mr_query("delete_printcap_entry", 1,
-			  &info[PCAP_NAME], Scream, NULL)))
+			  &info[PCAP_NAME], NULL, NULL)))
     com_err(program_name, stat, " printcap entry not deleted.");
   else
     Put_message("Printcap entry deleted.");
@@ -225,7 +225,7 @@ int AddPcap(int argc, char **argv)
     return DM_NORMAL;
 
   if (!(stat = do_mr_query("get_printcap_entry", 1, argv + 1,
-			   NullFunc, NULL)))
+			   NULL, NULL)))
     {
       Put_message ("A Printer by that name already exists.");
       return DM_NORMAL;
@@ -244,7 +244,7 @@ int AddPcap(int argc, char **argv)
     }
 
   if ((stat = do_mr_query("add_printcap_entry", CountArgs(args), args,
-			  NullFunc, NULL)))
+			  NULL, NULL)))
     com_err(program_name, stat, " in AddPcap");
 
   FreeInfo(info);
@@ -258,30 +258,30 @@ int AddPcap(int argc, char **argv)
  *	Returns:
  */
 
-int ChangePcap(char **info, Bool one_item)
+void ChangePcap(char **info, Bool one_item)
 {
   int stat;
   char **oldinfo;
 
   oldinfo = CopyInfo(info);
   if (!AskPcapInfo(info))
-    return DM_QUIT;
+    return;
   if ((stat = do_mr_query("delete_printcap_entry", 1, &info[PCAP_NAME],
-			  Scream, NULL)))
+			  NULL, NULL)))
     {
       com_err(program_name, stat, " printcap entry not deleted.");
-      return DM_NORMAL;
+      return;
     }
   if ((stat = do_mr_query("add_printcap_entry", CountArgs(info), info,
-			  NullFunc, NULL)))
+			  NULL, NULL)))
     {
       com_err(program_name, stat, " in ChngPcap");
       if ((stat = do_mr_query("add_printcap_entry", CountArgs(oldinfo) - 3,
-			      oldinfo, NullFunc, NULL)))
+			      oldinfo, NULL, NULL)))
 	com_err(program_name, stat, " while attempting to put old info back");
     }
   FreeInfo(oldinfo);
-  return DM_NORMAL;
+  return;
 }
 
 
@@ -308,9 +308,9 @@ int ChngPcap(int argc, char **argv)
 
 static char **SetPdDefaults(char **info, char *name)
 {
-  info[PD_NAME] = Strsave(name);
-  info[PD_IDENT] = Strsave("10000");
-  info[PD_HOST] = Strsave(DEFAULT_MACHINE);
+  info[PD_NAME] = strdup(name);
+  info[PD_IDENT] = strdup("10000");
+  info[PD_HOST] = strdup(DEFAULT_MACHINE);
   info[PD_MODTIME] = info[PD_MODBY] = info[PD_MODWITH] = NULL;
 
   info[PD_END] = NULL;
@@ -353,17 +353,17 @@ static char **AskPalladiumInfo(char **info)
 /*	Function Name: PrintPalladiumInfo
  *	Description: Yet another specialized print function.
  *	Arguments: info - all info about this Printer.
- *	Returns: none
+ *	Returns: printer name
  */
 
-static void PrintPalladiumInfo(char **info)
+static char *PrintPalladiumInfo(char **info)
 {
   char buf[BUFSIZ];
 
   if (!info)		/* If no informaion */
     {
       Put_message("PrintPalladiumInfo called with null info!");
-      return;
+      return NULL;
     }
 
   sprintf(buf, "Name: %-24s Program #: %s  Host: %s",
@@ -372,6 +372,7 @@ static void PrintPalladiumInfo(char **info)
   sprintf(buf, MOD_FORMAT, info[PD_MODBY], info[PD_MODTIME],
 	  info[PD_MODWITH]);
   Put_message(buf);
+  return info[PD_NAME];
 }
 
 
@@ -389,22 +390,22 @@ static struct qelem *GetPalladiumInfo(char *name)
 }
 
 
-int ChangePalladium(char **info, Bool one_item)
+void ChangePalladium(char **info, Bool one_item)
 {
   int status;
 
   if (!AskPalladiumInfo(info))
-    return DM_QUIT;
+    return;
   if ((status = do_mr_query("delete_palladium", 1, &info[PD_NAME],
-			    Scream, NULL)))
+			    NULL, NULL)))
     {
       com_err(program_name, status, " palladium entry not deleted.");
-      return DM_NORMAL;
+      return;
     }
   if ((status = do_mr_query("add_palladium", CountArgs(info), info,
-			    NullFunc, NULL)))
+			    NULL, NULL)))
     com_err(program_name, status, " in ChngPalladium");
-  return DM_NORMAL;
+  return;
 }
 
 
@@ -421,7 +422,7 @@ void RealDeletePalladium(char **info, Bool one_item)
   int stat;
 
   if ((stat = do_mr_query("delete_palladium", 1,
-			  &info[PD_NAME], Scream, NULL)))
+			  &info[PD_NAME], NULL, NULL)))
     com_err(program_name, stat, " palladium entry not deleted.");
   else
     Put_message("Palladium entry deleted.");
@@ -433,7 +434,7 @@ int GetPalladium(int argc, char **argv)
   struct qelem *top;
 
   top = GetPalladiumInfo(argv[1]);
-  Loop(top, PrintPalladiumInfo);
+  Loop(top, (void (*)(char **))PrintPalladiumInfo);
   FreeQueue(top);
   return DM_NORMAL;
 }
@@ -447,7 +448,7 @@ int AddPalladium(int argc, char **argv)
   if (!ValidName(argv[1]))
     return DM_NORMAL;
 
-  if (!(status = do_mr_query("get_palladium", 1, &argv[1], NullFunc, NULL)))
+  if (!(status = do_mr_query("get_palladium", 1, &argv[1], NULL, NULL)))
     {
       Put_message("A server or supervisor by that name already exists.");
       return DM_NORMAL;
@@ -466,7 +467,7 @@ int AddPalladium(int argc, char **argv)
     }
 
   if ((status = do_mr_query("add_palladium", CountArgs(args), args,
-			    Scream, NULL)))
+			    NULL, NULL)))
     com_err(program_name, status, " in AddPalladium");
 
   FreeInfo(info);
@@ -510,7 +511,7 @@ int ShowPalladiumAlias(int argc, char **argv)
   Put_message("");
   while (elem)
     {
-      char **info = (char **) elem->q_data;
+      char **info = elem->q_data;
       sprintf(buf, "Printer: %-16s Server/Supervisor: %s", info[0], info[2]);
       Put_message(buf);
       elem = elem->q_forw;
@@ -528,7 +529,7 @@ int AddPalladiumAlias(int argc, char **argv)
   qargv[0] = argv[1];
   qargv[1] = "PALLADIUM";
   qargv[2] = argv[2];
-  if ((status = do_mr_query("add_alias", 3, qargv, Scream, NULL)))
+  if ((status = do_mr_query("add_alias", 3, qargv, NULL, NULL)))
     com_err(program_name, status, " in AddPalladiumAlias");
   return DM_NORMAL;
 }
@@ -541,7 +542,7 @@ int DeletePalladiumAlias(int argc, char **argv)
   qargv[0] = argv[1];
   qargv[1] = "PALLADIUM";
   qargv[2] = argv[2];
-  if ((status = do_mr_query("delete_alias", 3, qargv, Scream, NULL)))
+  if ((status = do_mr_query("delete_alias", 3, qargv, NULL, NULL)))
     com_err(program_name, status, " in DeletePalladiumAlias");
   return DM_NORMAL;
 }

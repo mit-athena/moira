@@ -1,9 +1,6 @@
-/*
- *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/include/mr_proto.h,v $
- *	$Author: danw $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/include/mr_proto.h,v 1.6 1997-01-29 23:21:23 danw Exp $
+/* $Id: mr_proto.h,v 1.7 1998-02-05 22:51:17 danw Exp $
  *
- *	Copyright (C) 1987, 1990 by the Massachusetts Institute of Technology
+ * Copyright (C) 1987-1998 by the Massachusetts Institute of Technology
  *
  */
 
@@ -27,4 +24,6 @@ typedef struct mr_params {
 	int mr_state;
 } mr_params;
 
-extern int mr_start_recv(), mr_start_send();
+int mr_start_send(OPERATION op, HALF_CONNECTION hcon, struct mr_params *arg);
+int mr_start_recv(OPERATION op, HALF_CONNECTION hcon, struct mr_params **argp);
+void mr_destroy_reply(mr_params *reply);

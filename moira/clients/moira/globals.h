@@ -1,21 +1,18 @@
-/*	This is the file globals.h for the Moira Client, which allows users
+/* $Id $
+ *
+ *	This is the file globals.h for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
  *	It Contains:  globals variable definitions.
  *
  *	Created: 	4/12/88
  *	By:		Chris D. Peterson
  *
- *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/globals.h,v $
- *      $Author: danw $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/globals.h,v 1.7 1998-01-07 17:12:58 danw Exp $
- *
- *  	Copyright 1988 by the Massachusetts Institute of Technology.
- *
- *	For further information on copyright and distribution
- *	see the file mit-copyright.h
+ * Copyright (C) 1988-1998 by the Massachusetts Institute of Technology.
+ * For copying and distribution information, please see the file
+ * <mit-copyright.h>.
  */
 
-#include "mit-copyright.h"
+#include <mit-copyright.h>
 #include "defs.h"
 
 #ifndef _moira_client_globals_

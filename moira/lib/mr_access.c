@@ -1,21 +1,22 @@
-/*
- *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_access.c,v $
- *	$Author: danw $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_access.c,v 1.10 1998-01-07 17:13:27 danw Exp $
+/* $Id $
  *
- *	Copyright (C) 1987, 1990 by the Massachusetts Institute of Technology
- *	For copying and distribution information, please see the file
- *	<mit-copyright.h>.
+ * Check access to a Moira query
+ *
+ * Copyright (C) 1987-1998 by the Massachusetts Institute of Technology
+ * For copying and distribution information, please see the file
+ * <mit-copyright.h>.
  */
 
-#ifndef lint
-static char *rcsid_mr_access_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_access.c,v 1.10 1998-01-07 17:13:27 danw Exp $";
-#endif
-
 #include <mit-copyright.h>
+#include <moira.h>
 #include "mr_private.h"
-#include <string.h>
+
 #include <stdlib.h>
+#include <string.h>
+
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_access.c,v 1.11 1998-02-05 22:51:25 danw Exp $");
+
+int mr_access_internal(int argc, char **argv);
 
 /*
  * Check access to a named query.

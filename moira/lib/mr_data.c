@@ -1,20 +1,17 @@
-/*
- *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_data.c,v $
- *	$Author: danw $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_data.c,v 1.8 1998-01-07 17:13:30 danw Exp $
+/* $Id $
  *
- *	Copyright (C) 1987 by the Massachusetts Institute of Technology
- *	For copying and distribution information, please see the file
- *	<mit-copyright.h>.
+ * A few variables
  *
+ * Copyright (C) 1987-1998 by the Massachusetts Institute of Technology
+ * For copying and distribution information, please see the file
+ * <mit-copyright.h>.
  */
 
-#ifndef lint
-static char *rcsid_mr_data_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_data.c,v 1.8 1998-01-07 17:13:30 danw Exp $";
-#endif
-
 #include <mit-copyright.h>
+#include <moira.h>
 #include "mr_private.h"
+
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_data.c,v 1.9 1998-02-05 22:51:28 danw Exp $");
 
 CONNECTION _mr_conn;
 

@@ -1,50 +1,41 @@
-#if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/main.c,v 1.29 1998-01-07 17:13:00 danw Exp $";
-#endif
-
-/*	This is the file main.c for the Moira Client, which allows users
+/* $Id $
+ *
+ *	This is the file main.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
  *	It Contains: The main driver for the Moira Client.
  *
  *	Created: 	4/12/88
  *	By:		Chris D. Peterson
  *
- *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/main.c,v $
- *      $Author: danw $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/main.c,v 1.29 1998-01-07 17:13:00 danw Exp $
- *
- *  	Copyright 1988 by the Massachusetts Institute of Technology.
- *
- *	For further information on copyright and distribution
- *	see the file mit-copyright.h
+ * Copyright (C) 1988-1998 by the Massachusetts Institute of Technology.
+ * For copying and distribution information, please see the file
+ * <mit-copyright.h>.
  */
+
+#include <mit-copyright.h>
+#include <moira.h>
+#include "defs.h"
+#include "f_defs.h"
+#include "globals.h"
 
 #include <pwd.h>
 #include <signal.h>
 #include <stdio.h>
 #include <string.h>
-#include <sys/types.h>
-#include <moira.h>
-#include <menu.h>
-#include <krb_et.h>
+#include <unistd.h>
 
-#include "mit-copyright.h"
-#include "defs.h"
-#include "f_defs.h"
-#include "globals.h"
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/main.c,v 1.30 1998-02-05 22:50:43 danw Exp $");
+
+static void ErrorExit(char *buf, int status);
+static void Usage(void);
+static void Signal_Handler(void);
+static void CatchInterrupt(void);
 
 char *whoami;			/* used by menu.c ugh!!! */
 char *moira_server;
 int interrupt = 0;
 
 extern Menu moira_top_menu, list_menu, user_menu, dcm_menu;
-
-static void Signal_Handler(), CatchInterrupt();
-
-static void ErrorExit(), Usage();
-char *getlogin();
-uid_t getuid();
-struct passwd *getpwuid();
 
 Bool use_menu = TRUE;		/* whether or not we are using a menu. */
 
@@ -63,14 +54,14 @@ void main(int argc, char **argv)
 
   if (!(user = getlogin()))
     user = getpwuid(getuid())->pw_name;
-  user = (user && strlen(user)) ? Strsave(user) : "";
+  user = (user && strlen(user)) ? strdup(user) : "";
 
   if (!(program_name = strrchr(argv[0], '/')))
     program_name = argv[0];
   else
     program_name++;
-  program_name = Strsave(program_name);
-  whoami = Strsave(program_name); /* used by menu.c,  ugh !!! */
+  program_name = strdup(program_name);
+  whoami = strdup(program_name); /* used by menu.c,  ugh !!! */
 
   verbose = TRUE;
   arg = argv;
@@ -91,10 +82,10 @@ void main(int argc, char **argv)
 		  ++arg;
 		  moira_server = *arg;
 		} else
-		  Usage(argv);
+		  Usage();
 	    }
 	  else
-	    Usage(argv);
+	    Usage();
 	}
     }
 
@@ -136,14 +127,14 @@ void main(int argc, char **argv)
 
   sigemptyset(&act.sa_mask);
   act.sa_flags = 0;
-  act.sa_handler = (void (*)()) Signal_Handler;
+  act.sa_handler = Signal_Handler;
   sigaction(SIGHUP, &act, NULL);
   sigaction(SIGQUIT, &act, NULL);
   if (use_menu)
     sigaction(SIGINT, &act, NULL);
   else
     {
-      act.sa_handler = (void (*)()) CatchInterrupt;
+      act.sa_handler = CatchInterrupt;
       sigaction(SIGINT, &act, NULL);
     }
 

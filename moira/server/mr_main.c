@@ -1,37 +1,36 @@
-/*
- *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v $
- *	$Author: danw $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.38 1998-01-07 17:13:37 danw Exp $
+/* $Id: mr_main.c,v 1.39 1998-02-05 22:51:42 danw Exp $
  *
- *	Copyright (C) 1987 by the Massachusetts Institute of Technology
- *	For copying and distribution information, please see the file
- *	<mit-copyright.h>.
+ * Moira server process.
  *
- * 	Moira server process.
- *
- * 	Most of this is stolen from ../gdb/tsr.c
- *
- * 	You are in a maze of twisty little finite automata, all different.
- * 	Let the reader beware.
+ * Copyright (C) 1987-1998 by the Massachusetts Institute of Technology
+ * For copying and distribution information, please see the file
+ * <mit-copyright.h>.
  *
  */
 
-static char *rcsid_mr_main_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.38 1998-01-07 17:13:37 danw Exp $";
-
 #include <mit-copyright.h>
-#include <string.h>
-#include <stdio.h>
-#include <sys/types.h>
-#include <sys/errno.h>
-#include <sys/signal.h>
-#include <sys/wait.h>
-#include <sys/stat.h>
-#include <unistd.h>
-#include <signal.h>
 #include "mr_server.h"
-#include <krb_et.h>
-#include <gdss_et.h>
+
+#include <sys/socket.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <sys/utsname.h>
+#include <sys/wait.h>
+
+#include <netinet/in.h>
 #include <arpa/inet.h>
+
+#include <ctype.h>
+#include <errno.h>
+#include <signal.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.39 1998-02-05 22:51:42 danw Exp $");
+
+extern char *krb_get_lrealm(char *, int);
 
 extern CONNECTION newconn, listencon;
 
@@ -48,13 +47,15 @@ extern TUPLE client_tuple;
 extern char *whoami;
 extern char buf1[BUFSIZ];
 extern char *takedown;
-extern int errno;
 extern FILE *journal;
 
 extern time_t now;
 
-char hostbuf[BUFSIZ], *host;
+char *host;
 
+void reapchild(int x);
+void godormant(int x);
+void gowakeup(int x);
 int do_listen(char *port);
 void do_reset_listen(void);
 void clist_append(client *cp);
@@ -77,6 +78,7 @@ int main(int argc, char **argv)
   char *port, *p;
   extern char *database;
   struct stat stbuf;
+  struct utsname uts;
 
   whoami = argv[0];
   /*
@@ -146,12 +148,12 @@ int main(int argc, char **argv)
   /*
    * Get moira server hostname for authentication
    */
-  if (gethostname(hostbuf, sizeof(hostbuf)) < 0)
+  if (uname(&uts) < 0)
     {
       com_err(whoami, errno, "Unable to get local hostname");
       exit(1);
     }
-  host = canonicalize_hostname(strsave(hostbuf));
+  host = canonicalize_hostname(strdup(uts.nodename));
   for (p = host; *p && *p != '.'; p++)
     {
       if (isupper(*p))
@@ -186,7 +188,7 @@ int main(int argc, char **argv)
   op_list = create_list_of_operations(1, listenop);
 
   com_err(whoami, 0, "started (pid %d)", getpid());
-  com_err(whoami, 0, rcsid_mr_main_c);
+  com_err(whoami, 0, rcsid);
   if (dormant != ASLEEP)
     send_zgram("MOIRA", "server started");
   else
@@ -369,7 +371,7 @@ int new_connection(void)
   cp->con = newconn;
   cp->id = counter++;
   cp->args = NULL;
-  cp->clname[0] = NULL;
+  cp->clname[0] = '\0';
   cp->reply.mr_argv = NULL;
   cp->first = NULL;
   cp->last = NULL;

@@ -1,27 +1,29 @@
-/*
- *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsetup.pc,v $
- *	$Author: danw $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsetup.pc,v 2.6 1998-01-06 20:40:17 danw Exp $
+/* $Id: qsetup.pc,v 2.7 1998-02-05 22:51:49 danw Exp $
  *
- *	Copyright (C) 1987 by the Massachusetts Institute of Technology
- *	For copying and distribution information, please see the file
- *	<mit-copyright.h>.
+ * Query setup routines
  *
+ * Copyright (C) 1987-1998 by the Massachusetts Institute of Technology
+ * For copying and distribution information, please see the file
+ * <mit-copyright.h>.
  */
-
-#ifndef lint
-static char *rcsid_qsupport_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsetup.pc,v 2.6 1998-01-06 20:40:17 danw Exp $";
-#endif lint
 
 #include <mit-copyright.h>
 #include "mr_server.h"
 #include "query.h"
-#include <ctype.h>
-#include <arpa/inet.h>
-EXEC SQL INCLUDE sqlca;
 #include "qrtn.h"
 
-extern char *whoami, *strsave();
+#include <arpa/inet.h>
+#include <netinet/in.h>
+
+#include <ctype.h>
+#include <stdlib.h>
+#include <string.h>
+
+EXEC SQL INCLUDE sqlca;
+
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsetup.pc,v 2.7 1998-02-05 22:51:49 danw Exp $");
+
+extern char *whoami;
 extern int dbms_errno, mr_errcode;
 
 EXEC SQL BEGIN DECLARE SECTION;
@@ -82,7 +84,7 @@ int setup_ausr(struct query *q, char *argv[], client *cl)
  * and may safely be deleted.
  */
 
-int setup_dusr(struct query *q, char **argv)
+int setup_dusr(struct query *q, char *argv[], client *cl)
 {
   EXEC SQL BEGIN DECLARE SECTION;
   int flag, id, cnt;
@@ -126,7 +128,7 @@ int setup_dusr(struct query *q, char **argv)
 /* setup_spop: verify that there is already a valid POP machine_id in the
  * pop_id field.  Also take care of keeping track of the post office usage.
  */
-int setup_spop(struct query *q, char **argv)
+int setup_spop(struct query *q, char *argv[], client *cl)
 {
   EXEC SQL BEGIN DECLARE SECTION;
   int id, mid;
@@ -136,11 +138,11 @@ int setup_spop(struct query *q, char **argv)
   id = *(int *)argv[0];
   EXEC SQL SELECT potype, pop_id INTO :type, :mid FROM users
     WHERE users_id = :id;
-  if (sqlca.sqlerrd[2] = 0)
+  if (sqlca.sqlerrd[2] == 0)
     return MR_MACHINE;
   EXEC SQL SELECT mach_id INTO :mid FROM machine
     WHERE mach_id = :mid;
-  if (sqlca.sqlerrd[2] = 0)
+  if (sqlca.sqlerrd[2] == 0)
     return MR_MACHINE;
   if (strcmp(strtrim(type), "POP"))
     set_pop_usage(mid, 1);
@@ -150,7 +152,7 @@ int setup_spop(struct query *q, char **argv)
 
 /* setup_dpob:  Take care of keeping track of the post office usage.
  */
-int setup_dpob(struct query *q, char **argv)
+int setup_dpob(struct query *q, char *argv[], client *cl)
 {
   EXEC SQL BEGIN DECLARE SECTION;
   int id, user;
@@ -173,7 +175,7 @@ int setup_dpob(struct query *q, char **argv)
  * and may safely be deleted.
  */
 
-int setup_dmac(struct query *q, char **argv)
+int setup_dmac(struct query *q, char *argv[], client *cl)
 {
   EXEC SQL BEGIN DECLARE SECTION;
   int flag, id, cnt;
@@ -229,7 +231,7 @@ int setup_dmac(struct query *q, char **argv)
  * and may safely be deleted.
  */
 
-int setup_dsnt(struct query *q, char **argv)
+int setup_dsnt(struct query *q, char *argv[], client *cl)
 {
   EXEC SQL BEGIN DECLARE SECTION;
   int id, cnt = 0;
@@ -248,7 +250,7 @@ int setup_dsnt(struct query *q, char **argv)
  * and may safely be deleted.
  */
 
-int setup_dclu(struct query *q, char **argv)
+int setup_dclu(struct query *q, char *argv[], client *cl)
 {
   EXEC SQL BEGIN DECLARE SECTION;
   int id, cnt;
@@ -342,7 +344,7 @@ int setup_alis(struct query *q, char *argv[], client *cl)
  * and may safely be deleted.
  */
 
-int setup_dlis(struct query *q, char **argv)
+int setup_dlis(struct query *q, char *argv[], client *cl)
 {
   int id;
   EXEC SQL BEGIN DECLARE SECTION;
@@ -410,7 +412,7 @@ int setup_dlis(struct query *q, char **argv)
  * and may safely be deleted.
  */
 
-int setup_dsin(struct query *q, char **argv)
+int setup_dsin(struct query *q, char *argv[], client *cl)
 {
   EXEC SQL BEGIN DECLARE SECTION;
   int ec, cnt;
@@ -438,7 +440,7 @@ int setup_dsin(struct query *q, char **argv)
  * and may safely be deleted.
  */
 
-int setup_dshi(struct query *q, char **argv)
+int setup_dshi(struct query *q, char *argv[], client *cl)
 {
   EXEC SQL BEGIN DECLARE SECTION;
   int id, ec;
@@ -999,7 +1001,7 @@ int setup_ahst(struct query *q, char **argv, client *cl)
 	       * make IP address is unique. If this a modify request
 	       * (row == 1), then we expect one record to exist.
 	       */
-	      if (row == 0 || row == 1 && cnt > 1)
+	      if (row == 0 || (row == 1 && cnt > 1))
 		return MR_ADDRESS;
 	      if (row == 1 && cnt == 1)
 		{
@@ -1022,7 +1024,7 @@ int setup_ahst(struct query *q, char **argv, client *cl)
 	      if (((id & 0xff) == 0) || ((id & 0xff) == 255))
 		continue;
 	      addr.s_addr = htonl(id);
-	      name = (char *)inet_ntoa(addr);
+	      name = inet_ntoa(addr);
 	      EXEC SQL SELECT count(mach_id) INTO :cnt FROM machine
 		WHERE address = :name;
 	      if (dbms_errno)

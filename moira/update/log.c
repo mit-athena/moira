@@ -1,38 +1,31 @@
-/*
- *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/log.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/log.c,v 1.13 1998-01-06 20:40:22 danw Exp $
- */
-/*  (c) Copyright 1988 by the Massachusetts Institute of Technology. */
-/*  For copying and distribution information, please see the file */
-/*  <mit-copyright.h>. */
-
-#ifndef lint
-static char *rcsid_log_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/log.c,v 1.13 1998-01-06 20:40:22 danw Exp $";
-#endif
-
-/*
+/* $Id: log.c,v 1.14 1998-02-05 22:52:01 danw Exp $
+ *
  * handle logging for dcm and update server
  *
- * this should eventually use zephyr
- */
-
-/*
- * define syslog for using syslog,
- * default to tty
+ * Copyright (C) 1988-1998 by the Massachusetts Institute of Technology.
+ * For copying and distribution information, please see the file
+ * <mit-copyright.h>.
  */
 
 #include <mit-copyright.h>
+#include <moira.h>
+#include "update_server.h"
+
 #include <stdio.h>
-#include "com_err.h"
 #include <stdarg.h>
+
 #include "update.h"
-#include <krb.h>
 
 #ifdef use_syslog
 #include <syslog.h>
 #else
 #define use_tty
 #endif
+
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/log.c,v 1.14 1998-02-05 22:52:01 danw Exp $");
+
+void mr_update_com_err_hook(const char *whoami, long code,
+			    const char *fmt, va_list args);
 
 #ifdef use_syslog
 int syslog_prio[] = {
@@ -49,7 +42,6 @@ void mr_update_com_err_hook(const char *whoami, long code,
 			    const char *fmt, va_list args)
 {
   char buf[BUFSIZ], *cp;
-  FILE _strbuf;
 
 #ifndef use_syslog
   strcpy(buf, whoami);
@@ -76,7 +68,7 @@ void mr_update_com_err_hook(const char *whoami, long code,
 #endif
 }
 
-mr_update_initialize(void)
+void mr_update_initialize(void)
 {
   static int initialized = 0;
   if (initialized)
@@ -93,7 +85,7 @@ mr_update_initialize(void)
 static char fmt[] = "[%s] %s";
 
 #define	def(name, level, prio) \
-name(char *msg)\
+void name(char *msg)\
 {\
    int old_prio; \
    old_prio = log_priority; \

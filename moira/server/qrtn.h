@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.h,v 1.3 1998-01-05 19:53:36 danw Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.h,v 1.4 1998-02-05 22:51:47 danw Exp $
  *
  *  Used by the SQL query routines of the Moira server.
  */
@@ -9,6 +9,6 @@
 extern int mr_sig_length;
 extern char stmt_buf[MR_STMTBUF_LEN];
 
-extern void dbmserr();
+void dbmserr(void);
 
 /* eof:qtrn.h */

@@ -1,27 +1,27 @@
-/*
- *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/fixname.c,v $
- *	$Author: danw $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/fixname.c,v 1.10 1998-01-06 20:39:57 danw Exp $
+/* $Id $
  *
- *	Copyright (C) 1987 by the Massachusetts Institute of Technology
- *	For copying and distribution information, please see the file
- *	<mit-copyright.h>.
+ * Put a name into Moira-canonical form
+ *
+ * Copyright (C) 1987-1998 by the Massachusetts Institute of Technology
+ * For copying and distribution information, please see the file
+ * <mit-copyright.h>.
  */
 
-#ifndef lint
-static char *rcsid_fixname_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/fixname.c,v 1.10 1998-01-06 20:39:57 danw Exp $";
-#endif
-
 #include <mit-copyright.h>
-#include <string.h>
+#include <moira.h>
+
 #include <ctype.h>
+#include <string.h>
+
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/fixname.c,v 1.11 1998-02-05 22:51:22 danw Exp $");
 
 #define LAST_LEN		100
 #define FIRST_LEN		100
 
 void FixName(char *ilnm, char *ifnm, char *last, char *first, char *middle)
 {
-  int ends_jr = 0, ends_iii = 0, ends_iv = 0, ends_ii = 0, ends_v = 0;
+  int ends_jr = 0, ends_sr = 0;
+  int ends_iii = 0, ends_iv = 0, ends_ii = 0, ends_v = 0;
 
   uppercase(ilnm);
   uppercase(ifnm);
@@ -29,7 +29,8 @@ void FixName(char *ilnm, char *ifnm, char *last, char *first, char *middle)
   /* Last name ... */
 
   TrimTrailingSpace(ilnm);
-  LookForJrAndIII(ilnm, &ends_jr, &ends_ii, &ends_iii, &ends_iv, &ends_v);
+  LookForJrAndIII(ilnm, &ends_jr, &ends_sr,
+		  &ends_ii, &ends_iii, &ends_iv, &ends_v);
   LookForSt(ilnm);
   LookForO(ilnm);
   FixCase(ilnm);
@@ -38,19 +39,16 @@ void FixName(char *ilnm, char *ifnm, char *last, char *first, char *middle)
   /* First name  & middle initial ... */
 
   TrimTrailingSpace(ifnm);
-  LookForJrAndIII(ifnm, &ends_jr, &ends_ii, &ends_iii, &ends_iv, &ends_v);
+  LookForJrAndIII(ifnm, &ends_jr, &ends_sr,
+		  &ends_ii, &ends_iii, &ends_iv, &ends_v);
 
   GetMidInit(ifnm, middle);
 
   FixCase(ifnm);
-#ifdef notdef
-  /* okay, finish up first name */
-  AppendJrOrIII(ifnm, &ends_jr, &ends_ii, &ends_iii, &ends_iv, &ends_v);
-#endif
   strncpy(first, ifnm, FIRST_LEN);
 }
 
-FixCase(char *p)
+void FixCase(char *p)
 {
   int cflag;	/* convert to lcase, unless at start or following */
 		/* a space or punctuation mark (e.g., '-') */
@@ -68,14 +66,19 @@ FixCase(char *p)
     }
 }
 
-LookForJrAndIII(char *nm, int *pends_jr, int *pends_ii, int *pends_iii,
-		int *pends_iv, int *pends_v)
+void LookForJrAndIII(char *nm, int *pends_jr, int *pends_sr, int *pends_ii,
+		     int *pends_iii, int *pends_iv, int *pends_v)
 {
   int len = strlen(nm);
 
   if (len >= 4 && !strcmp(nm + len - 3, " JR"))
     {
       *pends_jr = 1;
+      nm[len - 3] = '\0';
+    }
+  else if (len >= 4 && !strcmp(nm + len - 3, " SR"))
+    {
+      *pends_sr = 1;
       nm[len - 3] = '\0';
     }
   else if (len >= 4 && !strcmp(nm + len - 3, " IV"))
@@ -105,7 +108,7 @@ LookForJrAndIII(char *nm, int *pends_jr, int *pends_ii, int *pends_iii,
     }
 }
 
-LookForSt(char *nm)		/* ST PIERRE, etc. */
+void LookForSt(char *nm)		/* ST PIERRE, etc. */
 {
   char temp[256];
 
@@ -117,20 +120,20 @@ LookForSt(char *nm)		/* ST PIERRE, etc. */
     }
 }
 
-LookForO(char *nm)		/* O BRIEN, etc. */
+void LookForO(char *nm)		/* O BRIEN, etc. */
 {
   if (!strcmp(nm, "O ") && isalpha(nm[2]))
     nm[1] = '\'';
 }
 
-TrimTrailingSpace(char *ip)
+void TrimTrailingSpace(char *ip)
 {
   char *p;
   for (p = ip + strlen(ip) - 1; p >= ip && isspace(*p); p--)
     *p = '\0';
 }
 
-GetMidInit(char *nm, char *mi)
+void GetMidInit(char *nm, char *mi)
 {
   while (*nm && !isspace(*nm))
     nm++;

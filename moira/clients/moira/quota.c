@@ -1,35 +1,30 @@
-#if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/quota.c,v 1.26 1998-01-07 17:13:07 danw Exp $";
-#endif
-
-/*	This is the file quota.c for the Moira Client, which allows users
+/* $Id $
+ *
+ *	This is the file quota.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
  *	It Contains: Functions for manipulating the quota information.
  *
  *	Created: 	7/10/88
  *	By:		Chris D. Peterson
  *
- *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/quota.c,v $
- *      $Author: danw $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/quota.c,v 1.26 1998-01-07 17:13:07 danw Exp $
- *
- *  	Copyright 1988 by the Massachusetts Institute of Technology.
- *
- *	For further information on copyright and distribution
- *	see the file mit-copyright.h
+ * Copyright (C) 1988-1998 by the Massachusetts Institute of Technology.
+ * For copying and distribution information, please see the file
+ * <mit-copyright.h>.
  */
+
+#include <mit-copyright.h>
+#include <moira.h>
+#include <moira_site.h>
+#include "defs.h"
+#include "f_defs.h"
+#include "globals.h"
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <moira.h>
-#include <moira_site.h>
-#include <menu.h>
 
-#include "mit-copyright.h"
-#include "defs.h"
-#include "f_defs.h"
-#include "globals.h"
+int afsfilsyshelper(int argc, char **argv, void *hint);
+int afsfilesys(char *name);
 
 static char *def_quota = NULL;
 
@@ -57,13 +52,13 @@ static char *GetDefaultUserQuota(Bool override)
   if (override || (def_quota == NULL))
     {
       if ((status = do_mr_query("get_value", CountArgs(val), val,
-				StoreInfo, (char *) &top)))
+				StoreInfo, &top)))
 	{
 	  com_err(program_name, status, " in ShowDefaultQuota");
 	  if (!def_quota)
 	    {
 	      Put_message("No default Quota Found, setting default to 0.");
-	      def_quota = Strsave("0");
+	      def_quota = strdup("0");
 	    }
 	  else
 	    Put_message("No default Quota Found, retaining old value.");
@@ -71,9 +66,9 @@ static char *GetDefaultUserQuota(Bool override)
       else
 	{
 	  top = QueueTop(top);
-	  info = (char **) top->q_data;
+	  info = top->q_data;
 	  FreeAndClear(&def_quota, TRUE);
-	  def_quota = Strsave(info[0]);
+	  def_quota = strdup(info[0]);
 	  FreeQueue(top);
 	}
     }
@@ -123,10 +118,10 @@ static char *PrintQuota(char **info)
 }
 
 
-int afsfilsyshelper(int argc, char **argv, int *hint)
+int afsfilsyshelper(int argc, char **argv, void *hint)
 {
-  *hint = !strcmp(argv[FS_TYPE], "AFS");
-  return 0;
+  *(int *)hint = !strcmp(argv[FS_TYPE], "AFS");
+  return MR_CONT;
 }
 
 
@@ -162,12 +157,12 @@ static char **GetQuotaArgs(Bool quota)
       return NULL;
     }
 
-  args[Q_FILESYS] = Strsave(DEFAULT_FILESYS);
-  args[Q_TYPE] = Strsave(DEFAULT_QTYPE);
-  args[Q_NAME] = Strsave(DEFAULT_USER);
+  args[Q_FILESYS] = strdup(DEFAULT_FILESYS);
+  args[Q_TYPE] = strdup(DEFAULT_QTYPE);
+  args[Q_NAME] = strdup(DEFAULT_USER);
   if (quota)
     {
-      args[Q_QUOTA] = Strsave(GetDefaultUserQuota(FALSE));
+      args[Q_QUOTA] = strdup(GetDefaultUserQuota(FALSE));
       args[Q_QUOTA + 1] = NULL;	/* NULL terminate. */
     }
   else
@@ -191,8 +186,8 @@ static char **GetQuotaArgs(Bool quota)
     }
   if (af)
     {
-      args[Q_TYPE] = strsave("ANY");
-      args[Q_NAME] = strsave(NOBODY);
+      args[Q_TYPE] = strdup("ANY");
+      args[Q_NAME] = strdup(NOBODY);
     }
   else
     {
@@ -221,7 +216,7 @@ static char **GetQuotaArgs(Bool quota)
  *	Returns: DM_NORMAL.
  */
 
-int ShowDefaultQuota(void)
+int ShowDefaultQuota(int argc, char **argv)
 {
   PrintDefaultQuota(GetDefaultUserQuota(TRUE));
   return DM_NORMAL;
@@ -250,10 +245,10 @@ int ChangeDefaultQuota(int argc, char *argv[])
     {
       newval[1] = argv[1];
       if ((status = do_mr_query("update_value", CountArgs(newval),
-				newval, Scream, NULL)) == MR_SUCCESS)
+				newval, NULL, NULL)) == MR_SUCCESS)
 	{
 	  FreeAndClear(&def_quota, TRUE);
-	  def_quota = Strsave(argv[1]);
+	  def_quota = strdup(argv[1]);
 	}
       else
 	com_err(program_name, status, " in update_value");
@@ -273,7 +268,7 @@ int ChangeDefaultQuota(int argc, char *argv[])
  *      Returns: DM_NORMAL
  */
 
-int GetQuota(void)
+int GetQuota(int argc, char **argv)
 {
   struct qelem *top = NULL;
   int status;
@@ -283,7 +278,7 @@ int GetQuota(void)
     return DM_NORMAL;
 
   if ((status = do_mr_query("get_quota", CountArgs(args), args,
-			    StoreInfo, (char *) &top)) != MR_SUCCESS)
+			    StoreInfo, &top)) != MR_SUCCESS)
     com_err(program_name, status, " in get_quota");
 
   FreeInfo(args);
@@ -303,7 +298,7 @@ int GetQuota(void)
  *        Returns: DM_NORMAL
  */
 
-int GetQuotaByFilesys(void)
+int GetQuotaByFilesys(int argc, char **argv)
 {
   struct qelem *top = NULL;
   int status;
@@ -315,13 +310,13 @@ int GetQuotaByFilesys(void)
       return DM_NORMAL;
     }
 
-  args[0] = Strsave("");
+  args[0] = strdup("");
   args[1] = NULL;
   if (GetValueFromUser("Filesystem", &args[0]) == SUB_ERROR)
     return DM_NORMAL;
 
   if ((status = do_mr_query("get_quota_by_filesys", 1, args,
-			    StoreInfo, (char *) &top)) != MR_SUCCESS)
+			    StoreInfo, &top)) != MR_SUCCESS)
     com_err(program_name, status, " in get_quota_by_filesys");
 
   FreeInfo(args);
@@ -340,7 +335,7 @@ int GetQuotaByFilesys(void)
  *        Arguments: None
  *        Returns: DM_NORMAL
  */
-int AddQuota(void)
+int AddQuota(int argc, char **argv)
 {
   char **args;
   int status;
@@ -349,7 +344,7 @@ int AddQuota(void)
     return DM_NORMAL;
 
   if ((status = do_mr_query("add_quota", CountArgs(args), args,
-			    Scream, NULL)) != MR_SUCCESS)
+			    NULL, NULL)) != MR_SUCCESS)
     com_err(program_name, status, " in add_quota");
 
   FreeInfo(args);
@@ -375,9 +370,9 @@ static void RealUpdateQuota(char **info)
       return;
     }
 
-  if (status = do_mr_query("update_quota", 4, info,
-			    Scream, NULL) != MR_SUCCESS)
-    {
+  if ((status = do_mr_query("update_quota", 4, info,
+			    NULL, NULL)) != MR_SUCCESS)
+      {
       com_err(program_name, status, " in update_quota");
       sprintf(temp_buf, "Could not perform quota change on %s",
 	      info[Q_FILESYS]);
@@ -392,7 +387,7 @@ static void RealUpdateQuota(char **info)
  *        Returns: DM_NORMAL
  */
 
-int UpdateQuota(void)
+int UpdateQuota(int argc, char **argv)
 {
   int status;
   char **args;
@@ -402,7 +397,7 @@ int UpdateQuota(void)
     return DM_NORMAL;
 
   if ((status = do_mr_query("get_quota", CountArgs(args), args,
-			    StoreInfo, (char *) &top)) != MR_SUCCESS)
+			    StoreInfo, &top)) != MR_SUCCESS)
     com_err(program_name, status, " in get_quota");
 
   FreeInfo(args);		/* done with args, free them. */
@@ -443,7 +438,7 @@ static void RealDeleteQuota(char **info, Bool one_item)
   if (!one_item || Confirm(temp_buf))
     {
       if ((status = do_mr_query("delete_quota", 3, info,
-				Scream, NULL)) != MR_SUCCESS)
+				NULL, NULL)) != MR_SUCCESS)
 	com_err(program_name, status, " in delete_quota");
       else
 	Put_message("Quota sucessfully removed.");
@@ -459,7 +454,7 @@ static void RealDeleteQuota(char **info, Bool one_item)
  *        Returns: DM_NORMAL
  */
 
-int DeleteQuota(void)
+int DeleteQuota(int argc, char **argv)
 {
   int status;
   char **args;
@@ -468,8 +463,7 @@ int DeleteQuota(void)
   if (!(args = GetQuotaArgs(FALSE)))
     return DM_NORMAL;
 
-  if ((status = do_mr_query("get_quota", 3, args,
-			    StoreInfo, (char *) &top)))
+  if ((status = do_mr_query("get_quota", 3, args, StoreInfo, &top)))
     com_err(program_name, status, " in get_quota");
 
   FreeInfo(args);

@@ -1,9 +1,4 @@
-/*
- *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/files.h,v $
- *	$Author: mar $
- *	$Locker:  $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/files.h,v 1.7 1991-07-26 14:52:08 mar Exp $
- */
+/* $Id $ */
 
 #define WELCOME		"/mit/register/welcome"
 #define USERNAME_BLURB	"/mit/register/username_blurb"

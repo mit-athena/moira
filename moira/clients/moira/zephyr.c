@@ -1,39 +1,40 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/zephyr.c,v 1.5 1998-01-05 19:52:15 danw Exp $
+/* $Id $
  *
  * Zephyr ACL routines for the Moira client
  *
- * Copyright 1990 by the Massachusetts Institute of Technology.
- *
- * For further information on copyright and distribution see the
- * file mit-copyright.h
+ * Copyright (C) 1990-1998 by the Massachusetts Institute of Technology.
+ * For copying and distribution information, please see the file
+ * <mit-copyright.h>.
  */
 
-#include <stdio.h>
-#include <string.h>
-#include <ctype.h>
+#include <mit-copyright.h>
 #include <moira.h>
 #include <moira_site.h>
-#include <menu.h>
-#include <mit-copyright.h>
-
 #include "defs.h"
 #include "f_defs.h"
 #include "globals.h"
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/zephyr.c,v 1.6 1998-02-05 22:50:52 danw Exp $");
+
+void RealDeleteZephyr(char **info, Bool one_item);
 
 /* Set the default values for zephyr additions. */
 
 static char **SetDefaults(char **info, char *name)
 {
-  info[ZA_CLASS] = strsave(name);
-  info[ZA_XMT_TYPE] = strsave("LIST");
-  info[ZA_SUB_TYPE] = strsave("LIST");
-  info[ZA_IWS_TYPE] = strsave("LIST");
-  info[ZA_IUI_TYPE] = strsave("LIST");
-  info[ZA_XMT_ID] = strsave("empty");
-  info[ZA_SUB_ID] = strsave("empty");
-  info[ZA_IWS_ID] = strsave("empty");
-  info[ZA_IUI_ID] = strsave("empty");
+  info[ZA_CLASS] = strdup(name);
+  info[ZA_XMT_TYPE] = strdup("LIST");
+  info[ZA_SUB_TYPE] = strdup("LIST");
+  info[ZA_IWS_TYPE] = strdup("LIST");
+  info[ZA_IUI_TYPE] = strdup("LIST");
+  info[ZA_XMT_ID] = strdup("empty");
+  info[ZA_SUB_ID] = strdup("empty");
+  info[ZA_IWS_ID] = strdup("empty");
+  info[ZA_IUI_ID] = strdup("empty");
   info[ZA_MODTIME] = info[ZA_MODBY] = info[ZA_MODWITH] = NULL;
   info[ZA_END] = NULL;
   return info;
@@ -47,8 +48,7 @@ static struct qelem *GetZephyrInfo(char *name)
   int stat;
   struct qelem *elem = NULL;
 
-  if ((stat = do_mr_query("get_zephyr_class", 1, &name, StoreInfo,
-			  (char *)&elem)))
+  if ((stat = do_mr_query("get_zephyr_class", 1, &name, StoreInfo, &elem)))
     {
       com_err(program_name, stat, " in GetZephyrInfo");
       return NULL;
@@ -59,21 +59,21 @@ static struct qelem *GetZephyrInfo(char *name)
 
 /* Print zephyr acl info */
 
-static void PrintZephyrInfo(char **info)
+static char *PrintZephyrInfo(char **info)
 {
   char buf[BUFSIZ];
 
   if (!info)
     {
       Put_message("PrintZephyrInfo called with null info!");
-      return;
+      return NULL;
     }
   sprintf(buf, "        Zephyr class: %s", info[ZA_CLASS]);
   Put_message(buf);
   if (!strcmp(info[ZA_XMT_ID], "WILDCARD"))
     {
       free(info[ZA_XMT_ID]);
-      info[ZA_XMT_ID] = strsave("*.*@*");
+      info[ZA_XMT_ID] = strdup("*.*@*");
     }
   sprintf(buf, "Transmit ACL:           %s %s", info[ZA_XMT_TYPE],
 	  strcasecmp(info[ZA_XMT_TYPE], "NONE") ? info[ZA_XMT_ID] : "");
@@ -81,7 +81,7 @@ static void PrintZephyrInfo(char **info)
   if (!strcmp(info[ZA_SUB_ID], "WILDCARD"))
     {
       free(info[ZA_SUB_ID]);
-      info[ZA_SUB_ID] = strsave("*.*@*");
+      info[ZA_SUB_ID] = strdup("*.*@*");
     }
   sprintf(buf, "Subscription ACL:       %s %s", info[ZA_SUB_TYPE],
 	  strcasecmp(info[ZA_SUB_TYPE], "NONE") ? info[ZA_SUB_ID] : "");
@@ -89,7 +89,7 @@ static void PrintZephyrInfo(char **info)
   if (!strcmp(info[ZA_IWS_ID], "WILDCARD"))
     {
       free(info[ZA_IWS_ID]);
-      info[ZA_IWS_ID] = strsave("*.*@*");
+      info[ZA_IWS_ID] = strdup("*.*@*");
     }
   sprintf(buf, "Instance Wildcard ACL:  %s %s", info[ZA_IWS_TYPE],
 	  strcasecmp(info[ZA_IWS_TYPE], "NONE") ? info[ZA_IWS_ID] : "");
@@ -97,13 +97,15 @@ static void PrintZephyrInfo(char **info)
   if (!strcmp(info[ZA_IUI_ID], "WILDCARD"))
     {
       free(info[ZA_IUI_ID]);
-      info[ZA_IUI_ID] = strsave("*.*@*");
+      info[ZA_IUI_ID] = strdup("*.*@*");
     }
   sprintf(buf, "Instance Indentity ACL: %s %s", info[ZA_IUI_TYPE],
 	  strcasecmp(info[ZA_IUI_TYPE], "NONE") ? info[ZA_IUI_ID] : "");
   Put_message(buf);
   sprintf(buf, MOD_FORMAT, info[ZA_MODBY], info[ZA_MODTIME], info[ZA_MODWITH]);
   Put_message(buf);
+
+  return info[ZA_CLASS];
 }
 
 
@@ -122,7 +124,7 @@ static char **AskZephyrInfo(char **info, Bool rename)
     {
       while (1)
 	{
-	  newname = Strsave(info[ZA_CLASS]);
+	  newname = strdup(info[ZA_CLASS]);
 	  if (GetValueFromUser("The new name for this class", &newname) ==
 	      SUB_ERROR)
 	    return NULL;
@@ -139,7 +141,7 @@ static char **AskZephyrInfo(char **info, Bool rename)
       if (!strcmp(info[ZA_XMT_ID], "WILDCARD"))
 	{
 	  free(info[ZA_XMT_ID]);
-	  info[ZA_XMT_ID] = strsave("*.*@*");
+	  info[ZA_XMT_ID] = strdup("*.*@*");
 	}
       sprintf(buf, "Which %s: ", info[ZA_XMT_TYPE]);
       if (GetValueFromUser(buf, &info[ZA_XMT_ID]) == SUB_ERROR)
@@ -147,7 +149,7 @@ static char **AskZephyrInfo(char **info, Bool rename)
       if (!strcmp(info[ZA_XMT_ID], "*.*@*"))
 	{
 	  free(info[ZA_XMT_ID]);
-	  info[ZA_XMT_ID] = strsave("WILDCARD");
+	  info[ZA_XMT_ID] = strdup("WILDCARD");
 	}
     }
   if (GetTypeFromUser("What kind of subscription restriction", "ace_type",
@@ -158,7 +160,7 @@ static char **AskZephyrInfo(char **info, Bool rename)
       if (!strcmp(info[ZA_SUB_ID], "WILDCARD"))
 	{
 	  free(info[ZA_SUB_ID]);
-	  info[ZA_SUB_ID] = strsave("*.*@*");
+	  info[ZA_SUB_ID] = strdup("*.*@*");
 	}
       sprintf(buf, "Which %s: ", info[ZA_SUB_TYPE]);
       if (GetValueFromUser(buf, &info[ZA_SUB_ID]) == SUB_ERROR)
@@ -166,7 +168,7 @@ static char **AskZephyrInfo(char **info, Bool rename)
       if (!strcmp(info[ZA_SUB_ID], "*.*@*"))
 	{
 	  free(info[ZA_SUB_ID]);
-	  info[ZA_SUB_ID] = strsave("WILDCARD");
+	  info[ZA_SUB_ID] = strdup("WILDCARD");
 	}
     }
   if (GetTypeFromUser("What kind of wildcard instance restriction",
@@ -177,7 +179,7 @@ static char **AskZephyrInfo(char **info, Bool rename)
       if (!strcmp(info[ZA_IWS_ID], "WILDCARD"))
 	{
 	  free(info[ZA_IWS_ID]);
-	  info[ZA_IWS_ID] = strsave("*.*@*");
+	  info[ZA_IWS_ID] = strdup("*.*@*");
 	}
       sprintf(buf, "Which %s: ", info[ZA_IWS_TYPE]);
       if (GetValueFromUser(buf, &info[ZA_IWS_ID]) == SUB_ERROR)
@@ -185,7 +187,7 @@ static char **AskZephyrInfo(char **info, Bool rename)
       if (!strcmp(info[ZA_IWS_ID], "*.*@*"))
 	{
 	  free(info[ZA_IWS_ID]);
-	  info[ZA_IWS_ID] = strsave("WILDCARD");
+	  info[ZA_IWS_ID] = strdup("WILDCARD");
 	}
     }
   if (GetTypeFromUser("What kind of instance identity restriction",
@@ -196,7 +198,7 @@ static char **AskZephyrInfo(char **info, Bool rename)
       if (!strcmp(info[ZA_IUI_ID], "WILDCARD"))
 	{
 	  free(info[ZA_IUI_ID]);
-	  info[ZA_IUI_ID] = strsave("*.*@*");
+	  info[ZA_IUI_ID] = strdup("*.*@*");
 	}
       sprintf(buf, "Which %s: ", info[ZA_IUI_TYPE]);
       if (GetValueFromUser(buf, &info[ZA_IUI_ID]) == SUB_ERROR)
@@ -204,7 +206,7 @@ static char **AskZephyrInfo(char **info, Bool rename)
       if (!strcmp(info[ZA_IUI_ID], "*.*@*"))
 	{
 	  free(info[ZA_IUI_ID]);
-	  info[ZA_IUI_ID] = strsave("WILDCARD");
+	  info[ZA_IUI_ID] = strdup("WILDCARD");
 	}
     }
   FreeAndClear(&info[ZA_MODTIME], TRUE);
@@ -236,7 +238,7 @@ void RealDeleteZephyr(char **info, Bool one_item)
   int stat;
 
   if ((stat = do_mr_query("delete_zephyr_class", 1, &info[ZA_CLASS],
-			  Scream, NULL)))
+			  NULL, NULL)))
     com_err(program_name, stat, " zephyr class restriction not deleted.");
   else
     Put_message("Zephyr class restriction deleted.");
@@ -265,8 +267,7 @@ int AddZephyr(int argc, char **argv)
   if (!ValidName(argv[1]))
     return DM_NORMAL;
 
-  if (!(stat = do_mr_query("get_zephyr_class", 1, argv + 1,
-			   NullFunc, NULL)))
+  if (!(stat = do_mr_query("get_zephyr_class", 1, argv + 1, NULL, NULL)))
     {
       Put_message ("A Zephyr class by that name already exists.");
       return DM_NORMAL;
@@ -285,7 +286,7 @@ int AddZephyr(int argc, char **argv)
     }
 
   if ((stat = do_mr_query("add_zephyr_class", CountArgs(args), args,
-			  NullFunc, NULL)))
+			  NULL, NULL)))
     com_err(program_name, stat, " in AddZephyr");
 
   FreeInfo(info);
@@ -306,7 +307,7 @@ static void RealUpdateZephyr(char **info, Bool junk)
       return;
     }
   if ((stat = do_mr_query("update_zephyr_class", CountArgs(args), args,
-			  Scream, NULL)))
+			  NULL, NULL)))
     {
       com_err(program_name, stat, " in UpdateZephyr.");
       Put_message("Zephyr class ** NOT ** Updated.");

@@ -1,38 +1,28 @@
-/*
- *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/update_server.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/update_server.c,v 1.16 1998-01-07 17:13:42 danw Exp $
+/* $Id: update_server.c,v 1.17 1998-02-05 22:52:03 danw Exp $
+ *
+ * Copyright 1988-1998 by the Massachusetts Institute of Technology.
+ * For copying and distribution information, please see the file
+ * <mit-copyright.h>.
  */
-/*  (c) Copyright 1988 by the Massachusetts Institute of Technology. */
-/*  For copying and distribution information, please see the file */
-/*  <mit-copyright.h>. */
-
-#ifndef lint
-static char *rcsid_dispatch_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/update_server.c,v 1.16 1998-01-07 17:13:42 danw Exp $";
-#endif
 
 #include <mit-copyright.h>
+#include <moira.h>
+#include "update_server.h"
+
+#include <sys/stat.h>
+
+#include <pwd.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <gdb.h>
-#include <errno.h>
 #include <string.h>
-#include <pwd.h>
-#include <moira.h>
-#include <sys/file.h>
-#include <fcntl.h>
-#include <sys/ioctl.h>
-#ifdef POSIX
-#include <termios.h>
-#endif
+#include <unistd.h>
+
+#include <des.h>
+#include <gdb.h>
 #include "update.h"
-#include "des.h"
 
-extern int auth_002(), xfer_002(), xfer_003(), exec_002();
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/update_server.c,v 1.17 1998-02-05 22:52:03 danw Exp $");
 
-extern int sync_proc(), quit();
-extern char *config_lookup();
-
-extern void gdb_debug();
 extern int errno;
 
 CONNECTION conn;
@@ -51,14 +41,14 @@ int _send_int;
 
 struct _dt {
   char *str;
-  int (*proc)();
+  int (*proc)(char *);
 } dispatch_table[] = {
   { "AUTH_002", auth_002 },
   { "XFER_002", xfer_002 },
   { "XFER_003", xfer_003 },
   { "EXEC_002", exec_002 },
   { "quit", quit },
-  { NULL, (int (*)())abort }
+  { NULL, (int (*)(char *))abort }
 };
 
 /* general scratch space -- useful for building error messages et al... */
@@ -69,7 +59,6 @@ int main(int argc, char **argv)
   STRING str;
   struct _dt *d;
   char *p;
-  int n;
 
   whoami = strrchr(argv[0], '/');
   if (whoami)
@@ -187,7 +176,7 @@ int send_ok(void)
 }
 
 
-initialize(void)
+void initialize(void)
 {
   /* keep have_authorization around */
   have_file = 0;
@@ -221,7 +210,7 @@ int quit(char *str)
  * put <msg> to log as error, break connection, and exit
  */
 
-lose(char *msg)
+void lose(char *msg)
 {
   com_err(whoami, code, msg);
   if (conn)
@@ -235,7 +224,7 @@ lose(char *msg)
  * send back (external) <code>; if error, punt big with <lose(msg)>
  */
 
-report_error(char *msg)
+void report_error(char *msg)
 {
   code = send_object(conn, (char *)&code, INTEGER_T);
   if (code)
@@ -251,7 +240,7 @@ report_error(char *msg)
  * set (external) <code> to <c> and call <report_error>
  */
 
-reject_call(int c)
+void reject_call(int c)
 {
   code = c;
   report_error("call rejected");

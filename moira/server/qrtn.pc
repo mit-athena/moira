@@ -1,25 +1,25 @@
-/*
- *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.pc,v $
- *	$Author: danw $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.pc,v 2.7 1998-01-06 20:40:16 danw Exp $
+/* $Id: qrtn.pc,v 2.8 1998-02-05 22:51:48 danw Exp $
  *
- *	Copyright (C) 1987, 1988 by the Massachusetts Institute of Technology
- *	For copying and distribution information, please see the file
- *	<mit-copyright.h>.
+ * Query-processing routines
+ *
+ * Copyright (C) 1987-1998 by the Massachusetts Institute of Technology
+ * For copying and distribution information, please see the file
+ * <mit-copyright.h>.
  *
  */
 
-#ifndef lint
-static char *rcsid_qrtn_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.pc,v 2.7 1998-01-06 20:40:16 danw Exp $";
-#endif lint
-
 #include <mit-copyright.h>
-#include <string.h>
 #include "mr_server.h"
+#include "qrtn.h"
 #include "query.h"
+
+#include <stdlib.h>
+#include <string.h>
+
 EXEC SQL INCLUDE sqlca;  /* SQL Communications Area */
 EXEC SQL INCLUDE sqlda;  /* SQL Descriptor Area */
-#include "qrtn.h"
+
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.pc,v 2.8 1998-02-05 22:51:48 danw Exp $");
 
 SQLDA *mr_sqlda;
 EXEC SQL BEGIN DECLARE SECTION;
@@ -44,21 +44,21 @@ extern FILE *journal;
 
 int mr_verify_query(client *cl, struct query *q, int argc, char *argv_ro[]);
 int do_retrieve(struct query *q, char *pqual, char *psort,
-		int (*action)(), char *actarg);
+		int (*action)(int, char *[], void *), void *actarg);
 int do_update(struct query *q, char *argv[], char *qual,
-	      int (*action)(), char *actarg);
+	      int (*action)(int, char *[], void *), void *actarg);
 int do_append(struct query *q, char *argv[], char *pqual,
-	      int (*action)(), char *actarg);
+	      int (*action)(int, char *[], void *), void *actarg);
 int do_delete(struct query *q, char *qual,
-	      int (*action)(), char *actarg);
+	      int (*action)(int, char *[], void *), void *actarg);
 void build_sql_stmt(char *result_buf, char *cmd, char *targetlist,
 		    char *argv[], char *qual);
 char *build_sort(struct validate *v, char *sort);
+char *sqlstrstr(char *str, char *pat);
+void optimize_sql_stmt(char *buf);
 
-/* from qvalidate.dc */
-int validate_fields(struct query *q, char *argv[], struct valobj *vo, int n);
-int validate_row(struct query *q, char *argv[], struct validate *v);
-
+SQLDA *mr_alloc_sqlda(void);
+void sqlglm(char *, int *, int *);
 
 /*
  * dbmserr: Called when the DBMS indicates an error.
@@ -87,7 +87,6 @@ EXEC SQL WHENEVER SQLERROR DO dbmserr();
 int mr_open_database(void)
 {
   int i;
-  SQLDA *mr_alloc_sqlda();
   static first_open = 1;
 
   if (first_open)
@@ -143,7 +142,7 @@ int mr_check_access(client *cl, char *name, int argc, char *argv_ro[])
 }
 
 int mr_process_query(client *cl, char *name, int argc, char *argv_ro[],
-		     int (*action)(), char *actarg)
+		     int (*action)(int, char *[], void *), void *actarg)
 {
   struct query *q;
   int status;
@@ -192,7 +191,7 @@ int mr_process_query(client *cl, char *name, int argc, char *argv_ro[],
   /* perform any special query pre-processing */
   if (v && v->pre_rtn)
     {
-      status = (*v->pre_rtn)(q, Argv, cl, 0);
+      status = (*v->pre_rtn)(q, Argv, cl);
       if (status != MR_SUCCESS)
 	goto out;
     }
@@ -232,7 +231,7 @@ int mr_process_query(client *cl, char *name, int argc, char *argv_ro[],
 	  if (v && v->post_rtn)
 	    {
 	      sq = sq_create();
-	      status = do_retrieve(q, pqual, psort, sq_save_args, (char *)sq);
+	      status = do_retrieve(q, pqual, psort, sq_save_args, sq);
 	      if (status != MR_SUCCESS)
 		{
 		  sq_destroy(sq);
@@ -364,6 +363,9 @@ int mr_process_query(client *cl, char *name, int argc, char *argv_ro[],
       if (v->post_rtn)
 	status = (*v->post_rtn)(q, Argv, cl);
       break;
+
+    case SPECIAL:
+      break;
     }
 
 out:
@@ -389,7 +391,7 @@ out:
 
 	      fprintf(journal, "%% %s %s %s",
 		      cl->clname, cl->entity, ctime(&now));
-	      fprintf(journal, "%s[%d] ", q->name, cl->args->mr_version_no);
+	      fprintf(journal, "%s[%ld] ", q->name, cl->args->mr_version_no);
 	      for (i = 0; i < argc; i++)
 		{
 		  if (i != 0)
@@ -416,7 +418,7 @@ out:
   return status;
 }
 
-int build_qual(char *fmt_buf, int argc, char *argv[], char *qual)
+void build_qual(char *fmt_buf, int argc, char *argv[], char *qual)
 {
   char *res, *fmt;
 
@@ -626,7 +628,7 @@ int find_member(char *list_type, int list_id, client *cl)
 
 
 int do_retrieve(struct query *q, char *pqual, char *psort,
-		int (*action)(), char *actarg)
+		int (*action)(int, char *[], void *), void *actarg)
 {
   build_sql_stmt(stmt_buf, "SELECT", q->tlist, NULL, pqual);
   if (psort)
@@ -635,7 +637,7 @@ int do_retrieve(struct query *q, char *pqual, char *psort,
       strcat(stmt_buf, psort);
     }
 
-  return do_for_all_rows(stmt_buf, q->vcnt, action, (int)actarg);
+  return do_for_all_rows(stmt_buf, q->vcnt, action, actarg);
 }
 
 char *sqlstrstr(char *str, char *pat)
@@ -671,7 +673,7 @@ void optimize_sql_stmt(char *buf)
 {
   char *point = buf, *pat, *eopat, *esc1, *esc2, *csr;
 
-  for (point = buf; point = sqlstrstr(point, "LIKE"); point++)
+  for (point = buf; (point = sqlstrstr(point, "LIKE")); point++)
     {
       /* Now pointing to string "LIKE" */
 
@@ -797,7 +799,7 @@ void build_sql_stmt(char *result_buf, char *cmd, char *targetlist,
 }
 
 int do_update(struct query *q, char *argv[], char *qual,
-	      int (*action)(), char *actarg)
+	      int (*action)(int, char *[], void *), void *actarg)
 {
   build_sql_stmt(stmt_buf, "UPDATE", q->tlist, argv, qual);
   EXEC SQL EXECUTE IMMEDIATE :stmt_buf;
@@ -807,7 +809,7 @@ int do_update(struct query *q, char *argv[], char *qual,
 }
 
 int do_append(struct query *q, char *argv[], char *pqual,
-	      int (*action)(), char *actarg)
+	      int (*action)(int, char *[], void *), void *actarg)
 {
   build_sql_stmt(stmt_buf, "INSERT", q->tlist, argv, pqual);
   EXEC SQL EXECUTE IMMEDIATE :stmt_buf;
@@ -816,7 +818,8 @@ int do_append(struct query *q, char *argv[], char *pqual,
   return MR_SUCCESS;
 }
 
-int do_delete(struct query *q, char *qual, int (*action)(), char *actarg)
+int do_delete(struct query *q, char *qual,
+	      int (*action)(int, char *[], void *), void *actarg)
 {
   sprintf(stmt_buf, "DELETE FROM %s WHERE %s", table_name[q->rtable], qual);
   EXEC SQL EXECUTE IMMEDIATE :stmt_buf;
@@ -993,7 +996,8 @@ void dosql(char *buffers[])
     }
 }
 
-int do_for_all_rows(char *query, int count, int (*action)(), int actarg)
+int do_for_all_rows(char *query, int count,
+		    int (*action)(int, char *[], void *), void *actarg)
 {
   int i, rowcount = 0;
   EXEC SQL BEGIN DECLARE SECTION;
@@ -1002,7 +1006,7 @@ int do_for_all_rows(char *query, int count, int (*action)(), int actarg)
 
   EXEC SQL PREPARE stmt FROM :q;
   if (sqlca.sqlcode)
-    return;
+    return MR_INTERNAL;
   EXEC SQL DECLARE curs CURSOR FOR stmt;
   EXEC SQL OPEN curs;
   mr_sqlda->N = count;

@@ -2,11 +2,11 @@
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.h,v $
  *	$Author: danw $
  *	$Locker:  $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.h,v 1.9 1998-01-05 19:52:27 danw Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.h,v 1.10 1998-02-05 22:51:00 danw Exp $
  */
 
 #include <stdio.h>
-#include <ctype.h>
+#include "ureg_proto.h"
 #include "files.h"
 
 /*
@@ -58,16 +58,24 @@ struct alias {
 #define NO    0
 #define YES   1
 
-/* Externs from display.c */
-extern  setup_display ();
-extern  reset_display ();
-extern  restore_display ();
-extern  redisp ();
-extern  input ();
-extern  input_no_echo ();
-extern  display_text_line ();
-extern  display_text ();
-
 /* Global variables */
 extern struct user  user,
                     db_user;
+
+/* prototypes from disable.c */
+char *disabled(char **msg);
+
+/* prototypes from display.c */
+void setup_display(void);
+void reset_display(void);
+void redisp(void);
+void input(char *prompt, char *buf, int maxsize, int timeout, int emptyok);
+void input_no_echo(char *prompt, char *buf, int maxsize, int timeout);
+void wait_for_user(void);
+int askyn(char *prompt);
+void display_text_line(char *line);
+void display_text(char *filename, char *string);
+void restore_display(void);
+void timer_on(void);
+void timer_off(void);
+void wfeep(void);

@@ -1,9 +1,6 @@
-/*
- *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/include/moira.h,v $
- *	$Author: danw $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/include/moira.h,v 1.19 1997-01-20 18:04:14 danw Exp $
+/* $Id: moira.h,v 1.20 1998-02-05 22:51:16 danw Exp $
  *
- *	Copyright (C) 1987 by the Massachusetts Institute of Technology
+ * Copyright (C) 1987-1998 by the Massachusetts Institute of Technology
  *
  */
 
@@ -12,7 +9,11 @@
 
 /* return values from queries (and error codes) */
 
+#include <com_err.h>
 #include "mr_et.h"
+#include "krb_et.h"
+#include "gdss_et.h"
+#include "ureg_err.h"
 #define MR_SUCCESS 0		/* Query was successful */
 
 #define MR_VERSION_1 1		/* Version in use from 7/87 to 4/88 */
@@ -51,61 +52,104 @@
 /* Structure used by Save Queue routines (for temporary storage of data) */
 struct save_queue
 {
-    struct save_queue *q_next;
-    struct save_queue *q_prev;
-    struct save_queue *q_lastget;
-    char *q_data;
+  struct save_queue *q_next;
+  struct save_queue *q_prev;
+  struct save_queue *q_lastget;
+  void *q_data;
 };
 
 /* Hash table declarations */
 struct bucket {
-    struct bucket *next;
-    int	key;
-    char *data;
+  struct bucket *next;
+  int key;
+  void *data;
 };
 struct hash {
-    int	size;
-    struct bucket **data;
+  int size;
+  struct bucket **data;
 };
 
-#ifdef __STDC__
+/* prototypes from critical.c */
+void critical_alert(char *instance, char *msg, ...);
+void send_zgram(char *inst, char *msg);
+
+/* prototypes from fixhost.c */
+char *canonicalize_hostname(char *s);
+
+/* prototypes from fixname.c */
+void FixName(char *ilnm, char *ifnm, char *last, char *first, char *middle);
+void FixCase(char *p);
+void LookForJrAndIII(char *nm, int *pends_jr, int *pends_sr,
+		     int *pends_ii, int *pends_iii,
+		     int *pends_iv, int *pends_v);
+void LookForSt(char *nm);
+void LookForO(char *nm);
+void TrimTrailingSpace(char *ip);
+void GetMidInit(char *nm, char *mi);
+
+/* prototypes from gdss_convert.c */
+int gdss2et(int code);
+
+/* prototypes from hash.c */
+struct hash *create_hash(int size);
+void *hash_lookup(struct hash *h, int key);
+int hash_update(struct hash *h, int key, void *value);
+int hash_store(struct hash *h, int key, void *value);
+void hash_search(struct hash *h, void *value, void (*callback)(int));
+void hash_step(struct hash *h, void (*callback)(int, void *, void *),
+	       void *hint);
+void hash_destroy(struct hash *h);
+
+/* prototypes from idno.c */
+void RemoveHyphens(char *str);
+void EncryptID(char *sbuf, char *idnumber, char *first, char *last);
+
+/* prototypes from kname_unparse.c */
+char *kname_unparse(char *p, char *i, char *r);
+
+/* prototypes from nfsparttype.c */
+char *parse_filesys_type(char *fs_type_name);
+char *format_filesys_type(char *fs_status);
+
+/* prototypes from sq.c */
+struct save_queue *sq_create(void);
+int sq_save_data(struct save_queue *sq, void *data);
+int sq_save_args(int argc, char *argv[], struct save_queue *sq);
+int sq_save_unique_data(struct save_queue *sq, void *data);
+int sq_save_unique_string(struct save_queue *sq, char *data);
+/* in sq_get_data and sq_remove_data, the `data' arg should be a
+   pointer to a pointer */
+int sq_get_data(struct save_queue *sq, void *data);
+int sq_remove_data(struct save_queue *sq, void *data);
+int sq_empty(struct save_queue *sq);
+void sq_destroy(struct save_queue *sq);
+
+/* prototypes from strs.c */
+char *strtrim(char *s);
+char *uppercase(char *s);
+char *lowercase(char *s);
+
+/* mr_ functions */
+int mr_access(char *handle, int argc, char **argv);
+int mr_auth(char *prog);
 int mr_connect(char *server);
-int mr_disconnect();
+int mr_disconnect(void);
+int mr_do_update(void);
 int mr_host(char *host, int size);
 int mr_motd(char **motd);
-int mr_auth(char *prog);
-int mr_access(char *handle, int argc, char **argv);
-int mr_access_internal(int argc, char **argv);
+int mr_noop(void);
 int mr_query(char *handle, int argc, char **argv,
-	      int (*callback)(), char *callarg);
-int mr_query_internal(int argc, char **argv,
-		       int (*callback)(), char *callarg);
-int mr_noop();
-struct save_queue *sq_create();
-struct hash *create_hash(int size);
-char *hash_lookup(struct hash *h, int key);
-char *strsave(char *s);
-char *strtrim(char *s);
-char *canonicalize_hostname(char *s);
-#else /* !__STDC__ */
-int mr_connect();
-int mr_disconnect();
-int mr_host();
-int mr_motd();
-int mr_auth();
-int mr_access();
-int mr_query();
-int mr_noop();
-struct save_queue *sq_create();
-struct hash *create_hash();
-char *hash_lookup();
-char *strsave();
-char *strtrim();
-char *canonicalize_hostname();
-#endif  /* __STDC__ */
+	     int (*callback)(int, char **, void *), void *callarg);
 
 /* error-name backward compatibility */
 #define MR_INGRES_ERR		MR_DBMS_ERR
 #define MR_INGRES_SOFTFAIL	MR_DBMS_SOFTFAIL
+
+
+#ifndef __GNUC__
+#define __attribute__(x)
+#endif
+
+#define RCSID(id) static char *rcsid __attribute__ ((__unused__)) = id
 
 #endif /* _moira_h_ */		/* Do Not Add Anything after this line. */

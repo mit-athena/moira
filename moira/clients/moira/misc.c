@@ -1,4 +1,6 @@
-/*	This is the file misc.c for the Moira Client, which allows a naieve
+/* $Id $
+ *
+ *	This is the file misc.c for the Moira Client, which allows a naieve
  *      to quickly and easily maintain most parts of the Moira database.
  *	It Contains:
  *		TableStats
@@ -8,31 +10,34 @@
  *	Created: 	5 October 1988
  *	By:		Mark A. Rosenstein
  *
- *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/misc.c,v $
- *      $Author: danw $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/misc.c,v 1.7 1998-01-07 17:13:02 danw Exp $
- *
- *  	Copyright 1988 by the Massachusetts Institute of Technology.
- *
- *	For further information on copyright and distribution
- *	see the file mit-copyright.h
+ * Copyright (C) 1988-1998 by the Massachusetts Institute of Technology.
+ * For copying and distribution information, please see the file
+ * <mit-copyright.h>.
  */
 
-#include <stdio.h>
-#include <string.h>
+#include <mit-copyright.h>
 #include <moira.h>
 #include <moira_site.h>
-#include <menu.h>
-#include <sys/types.h>
-#include <netdb.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-
-#include "mit-copyright.h"
 #include "defs.h"
 #include "f_defs.h"
 #include "globals.h"
 
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <netdb.h>
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/misc.c,v 1.8 1998-02-05 22:50:46 danw Exp $");
+
+void PrintStats(char **info);
+void PrintClients(char **info);
+void PrintValue(char **info);
+void PrintAlias(char **info);
 
 /*	Function Name: PrintStats
  *	Description: print statistics from argv
@@ -40,7 +45,7 @@
  *	Returns: DM_NORMAL
  */
 
-int PrintStats(char **info)
+void PrintStats(char **info)
 {
   char buf[BUFSIZ];
 
@@ -58,13 +63,12 @@ int PrintStats(char **info)
  *	Returns: DM_NORMAL
  */
 
-int TableStats(void)
+int TableStats(int argc, char **argv)
 {
   int status;
   struct qelem *elem = NULL;
 
-  if ((status = do_mr_query("get_all_table_stats", 0, NULL,
-			    StoreInfo, (char *)&elem)))
+  if ((status = do_mr_query("get_all_table_stats", 0, NULL, StoreInfo, &elem)))
     {
       com_err(program_name, status, " in TableStats");
       return DM_NORMAL;
@@ -80,7 +84,7 @@ int TableStats(void)
  *	Arguments: argv
  */
 
-int PrintClients(char **info)
+void PrintClients(char **info)
 {
   char buf[BUFSIZ];
   unsigned long host_address;
@@ -93,7 +97,7 @@ int PrintClients(char **info)
       if (host_entry)
 	{
 	  free(info[1]);
-	  info[1] = Strsave(host_entry->h_name);
+	  info[1] = strdup(host_entry->h_name);
 	}
     }
   sprintf(buf, "Principal %s on %s (%s)", info[0], info[1], info[2]);
@@ -109,13 +113,12 @@ int PrintClients(char **info)
  *	Returns: DM_NORMAL
  */
 
-int ShowClients(void)
+int ShowClients(int argc, char **argv)
 {
   int status;
   struct qelem *elem = NULL;
 
-  if ((status = do_mr_query("_list_users", 0, NULL,
-			    StoreInfo, (char *) &elem)))
+  if ((status = do_mr_query("_list_users", 0, NULL, StoreInfo, &elem)))
     {
       com_err(program_name, status, " in ShowClients");
       return DM_NORMAL;
@@ -131,7 +134,7 @@ int ShowClients(void)
  *	Arguments: argv
  */
 
-int PrintValue(char **info)
+void PrintValue(char **info)
 {
   char buf[BUFSIZ];
 
@@ -151,8 +154,7 @@ int ShowValue(int argc, char **argv)
   int status;
   struct qelem *elem = NULL;
 
-  if ((status = do_mr_query("get_value", 1, &argv[1],
-			    StoreInfo, (char *) &elem)))
+  if ((status = do_mr_query("get_value", 1, &argv[1], StoreInfo, &elem)))
     {
       com_err(program_name, status, " in ShowValue");
       return DM_NORMAL;
@@ -168,7 +170,7 @@ int ShowValue(int argc, char **argv)
  *	Arguments: argv
  */
 
-int PrintAlias(char **info)
+void PrintAlias(char **info)
 {
   char buf[BUFSIZ];
 
@@ -193,8 +195,7 @@ int ShowAlias(int argc, char **argv)
   info[0] = argv[1];
   info[1] = argv[2];
   info[2] = "*";
-  if ((status = do_mr_query("get_alias", 3, info,
-			    StoreInfo, (char *) &elem)))
+  if ((status = do_mr_query("get_alias", 3, info, StoreInfo, &elem)))
     {
       com_err(program_name, status, " in ShowAlias");
       return DM_NORMAL;

@@ -1,5 +1,5 @@
 /*
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/include/gdb.h,v 1.8 1997-01-29 23:21:15 danw Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/include/gdb.h,v 1.9 1998-02-05 22:51:15 danw Exp $
  */
 
 /************************************************************************
@@ -19,6 +19,8 @@
  */
 #include <sys/types.h>
 #include <sys/time.h>
+
+#include <stdio.h>
 
 #ifndef TRUE
 #define TRUE 1

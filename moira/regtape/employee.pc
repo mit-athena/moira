@@ -1,14 +1,24 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/employee.pc,v 1.8 1998-01-05 19:53:22 danw Exp $
+/* $Id: employee.pc,v 1.9 1998-02-05 22:51:37 danw Exp $
+ *
+ * Load data into Moira from Personnel Office data file
+ *
+ * Copyright (C) 1990-1998 by the Massachusetts Institute of Technology
+ * For copying and distribution information, please see the file
+ * <mit-copyright.h>.
  */
 
-#include <stdio.h>
-#include <string.h>
-#include <ctype.h>
-#include <sys/time.h>
+#include <mit-copyright.h>
 #include <moira.h>
 #include <moira_site.h>
-EXEC SQL INCLUDE sqlca;
 
+#include <ctype.h>
+#include <stdio.h>
+#include <string.h>
+
+EXEC SQL INCLUDE sqlca;
+extern void sqlglm(char *, unsigned int *, unsigned int *);
+
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/employee.pc,v 1.9 1998-02-05 22:51:37 danw Exp $");
 
 #define WHO 11859		/* root */
 #define PROG "emp-tape"
@@ -67,6 +77,13 @@ struct entry {
   int highid;
 };
 
+struct entry *get_next_entry(FILE *in);
+void process_entry(struct entry *e);
+void newuser(struct entry *e);
+int set_next_users_id(int limit);
+int set_next_uid(int high);
+void sqlexit(void);
+void dbmserr(char *where, int what);
 
 char *whoami;
 int newfinger = 0;
@@ -78,7 +95,7 @@ int newfinger = 0;
 int main(int argc, char **argv)
 {
   FILE *in;
-  struct entry *e, *get_next_entry();
+  struct entry *e;
   int i, wait = 0;
   char buf[BUFSIZ], *file = NULL;
   EXEC SQL BEGIN DECLARE SECTION;
@@ -98,8 +115,6 @@ int main(int argc, char **argv)
     {
       if (!strcmp(argv[i], "-w"))
 	wait++;
-      else if (!strcmp(argv[i], "-D"))
-	setenv("ING_SET", "set printqry");
       else if (!strcmp(argv[i], "-n"))
 	newfinger++;
       else if (file)
@@ -126,7 +141,6 @@ int main(int argc, char **argv)
 
   while ((e = get_next_entry(in)))
     {
-    again:
       process_entry(e);
       EXEC SQL COMMIT WORK;
       if (sqlca.sqlcode)
@@ -145,24 +159,10 @@ int main(int argc, char **argv)
   exit(0);
 }
 
-
-char *substr(char *buf, char *key)
-{
-  int l;
-
-  for (l = strlen(key); *buf; buf++)
-    {
-      if (!strncmp(buf, key, l))
-	return buf;
-    }
-  return NULL;
-}
-
-
 struct entry *get_next_entry(FILE *in)
 {
   static struct entry e;
-  static char buf[BUFSIZ], mid[16], eid[16];
+  static char buf[BUFSIZ], eid[16];
   static char name[LEN_NAME + 1], sname[LEN_NAME + 1], id[LEN_ID + 1];
   static char office[LEN_OFFICE + 1], phone[LEN_PHONE + 1];
   static char phone2[LEN_PHONE2 + 1], dept[LEN_DEPT + 1], title[LEN_TITLE + 1];
@@ -204,7 +204,7 @@ struct entry *get_next_entry(FILE *in)
       while (isspace(*p))
 	p++;
       e.first = p;
-      if (p = strchr(e.first, ' '))
+      if ((p = strchr(e.first, ' ')))
 	{
 	  *p = '\0';
 	  e.first = strtrim(e.first);
@@ -224,10 +224,10 @@ struct entry *get_next_entry(FILE *in)
   ends_sr = ends_jr = ends_iii = ends_iv = ends_ii = ends_v = 0;
   LookForSt(e.last);
   LookForO(e.last);
-  LookForJrAndIII(e.last, &ends_sr, &ends_jr, &ends_iii, &ends_iv,
-		  &ends_ii, &ends_v);
-  LookForJrAndIII(e.first, &ends_sr, &ends_jr, &ends_iii, &ends_iv,
-		  &ends_ii, &ends_v);
+  LookForJrAndIII(e.last, &ends_jr, &ends_sr, &ends_ii, &ends_iii,
+		  &ends_iv, &ends_v);
+  LookForJrAndIII(e.first, &ends_jr, &ends_sr, &ends_ii, &ends_iii,
+		  &ends_iv, &ends_v);
   FixCase(e.last);
   FixCase(e.first);
   FixCase(e.middle);
@@ -244,7 +244,7 @@ struct entry *get_next_entry(FILE *in)
 
   e.class = "MITS";
   e.highid = 0;
-  if (substr(e.title, "PROF") || substr(e.title, "LECTURE"))
+  if (strstr(e.title, "PROF") || strstr(e.title, "LECTURE"))
     e.class = "FACULTY";
   if (!strcmp(e.dept, "LINCOLN LAB"))
     {
@@ -255,13 +255,12 @@ struct entry *get_next_entry(FILE *in)
   return &e;
 }
 
-
-process_entry(struct entry *e)
+void process_entry(struct entry *e)
 {
   int changed, nochange, encrypted;
   char buf[BUFSIZ], *from, *to;
   EXEC SQL BEGIN DECLARE SECTION;
-  char *first, *last, *middle, *eid, *sid, *name, *title, *phone2, *rdept;
+  char *first, *last, *middle, *eid, *sid, *name, *rdept;
   char *rtitle, *raddr, *rhphone, *rophone, *prog;
   char class[9], oaddr[25], ophone[17], dept[128];
   char dfirst[17], dlast[17], dmiddle[17];
@@ -472,13 +471,13 @@ process_entry(struct entry *e)
 }
 
 
-newuser(struct entry *e)
+void newuser(struct entry *e)
 {
   char *from, *to;
   EXEC SQL BEGIN DECLARE SECTION;
   int id, uid, st, who;
   char *last, *first, *class, *middle, login[9], *sid, fullname[65], *prog;
-  char oaddr[81], ophone[17], dept[128], *name, *title, phone2[17];
+  char oaddr[81], ophone[17], dept[128], *name, *title;
   char *rdept, *rhphone, *rophone;
   EXEC SQL END DECLARE SECTION;
 
@@ -546,10 +545,10 @@ newuser(struct entry *e)
 }
 
 
-set_next_users_id(int limit)
+int set_next_users_id(int limit)
 {
   EXEC SQL BEGIN DECLARE SECTION;
-  int rowcount, flag, value, retval;
+  int flag, value, retval;
   EXEC SQL END DECLARE SECTION;
 
   EXEC SQL SELECT value INTO :value FROM numvalues
@@ -597,10 +596,10 @@ set_next_users_id(int limit)
   return retval;
 }
 
-set_next_uid(int high)
+int set_next_uid(int high)
 {
   EXEC SQL BEGIN DECLARE SECTION;
-  int rowcount, flag, value, retval;
+  int flag, value, retval;
   char *name;
   EXEC SQL END DECLARE SECTION;
 
@@ -652,14 +651,14 @@ set_next_uid(int high)
 }
 
 
-sqlexit(void)
+void sqlexit(void)
 {
   dbmserr(NULL, sqlca.sqlcode);
   EXEC SQL ROLLBACK WORK;
   exit(1);
 }
 
-dbmserr(char *where, int what)
+void dbmserr(char *where, int what)
 {
   char err_msg[256];
   int bufsize = 256, msglength = 0;

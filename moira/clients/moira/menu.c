@@ -1,40 +1,25 @@
-/*
- * Copyright 1987 by the Massachusetts Institute of Technology.
- * For copying and distribution information, see the file
- * "mit-copyright.h".
- *
- * $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v $
- * $Author: danw $
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.47 1998-01-07 17:00:03 danw Exp $
+/* $Id $
  *
  * Generic menu system module.
  *
- * Basically, we define an enormous tree structure which represents the
- * menu.  Some extra pieces (ml_command, ma_doc) get thrown in so we can
- * also use the structure for a command-based system.
- *
- * By making the menu descriptions so general, we can ease porting to just
- * about anything.
+ * Copyright (C) 1987-1998 by the Massachusetts Institute of Technology.
+ * For copying and distribution information, see the file
+ * <mit-copyright.h>.
  */
 
-#ifndef lint
-static char rcsid_menu_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.47 1998-01-07 17:00:03 danw Exp $";
-#endif
-
 #include <mit-copyright.h>
-#include <sys/types.h>
+#include <moira.h>
+#include "menu.h"
+
+#include <ctype.h>
+#include <curses.h>
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <signal.h>
-#include <curses.h>
 #include <unistd.h>
-#include <termios.h>
-#include <stdarg.h>
-#include <ctype.h>
-#include <com_err.h>
-#include <moira.h>
-#include "menu.h"
+
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.48 1998-02-05 22:50:44 danw Exp $");
 
 #define MAX(A, B)	((A) > (B) ? (A) : (B))
 #define MIN(A, B)	((A) < (B) ? (A) : (B))
@@ -63,17 +48,26 @@ Menu *top_menu;			/* Root for command search */
 int parsed_argc;		/* used by extern routines to get additional */
 char **parsed_argv;		/*   comand line input */
 
+int Parse_words(char *buf, char *argv[], int n);
+void refresh_ms(struct menu_screen *ms);
+void Put_line(char *msg);
+void menu_com_err_hook(const char *who, long code, const char *fmt, ...);
+struct menu_screen *make_ms(int length);
+void destroy_ms(struct menu_screen *ms);
+struct menu_line *find_command_from(char *c, struct menu *m, int d);
+struct menu_line *Find_command(Menu *m, char *command);
+int toggle_logging(int argc, char *argv[]);
+
 /*
  * Hook function to cause error messages to be printed through
  * curses instead of around it.  Takes at most 5 args to the
  * printf string (crock...)
  */
 
-void menu_com_err_hook(const char *who, long code, const char *fmt,
-		       caddr_t arg1, caddr_t arg2, caddr_t arg3,
-		       caddr_t arg4, caddr_t arg5)
+void menu_com_err_hook(const char *who, long code, const char *fmt, ...)
 {
   char buf[BUFSIZ], *cp;
+  va_list ap;
 
   strcpy(buf, who);
   for (cp = buf; *cp; cp++)
@@ -86,7 +80,9 @@ void menu_com_err_hook(const char *who, long code, const char *fmt,
       while (*cp)
 	cp++;
     }
-  sprintf(cp, fmt, arg1, arg2, arg3, arg4, arg5);
+  va_start(ap, fmt);
+  vsprintf(cp, fmt, ap);
+  va_end(ap);
   Put_message(buf);
 }
 
@@ -96,9 +92,8 @@ void menu_com_err_hook(const char *who, long code, const char *fmt,
  * if user functions which run their own menus don't cooperate.)
  * Start_menu should only be called once, at the start of the program.
  */
-int Start_menu(Menu *m)
+void Start_menu(Menu *m)
 {
-  struct menu_screen *make_ms();
   void (*old_hook)(const char *, long, const char *, va_list) =
     set_com_err_hook((void (*) (const char *, long, const char *, va_list))menu_com_err_hook);
 
@@ -120,7 +115,7 @@ int Start_menu(Menu *m)
   Cleanup_menu();
 }
 
-int Cleanup_menu(void)
+void Cleanup_menu(void)
 {
   if (cur_ms)
     {
@@ -132,7 +127,7 @@ int Cleanup_menu(void)
 
 
 /* Like Start_menu, except it doesn't print menus and doesn't use curses */
-int Start_no_menu(Menu *m)
+void Start_no_menu(Menu *m)
 {
   cur_ms = NULLMS;
   COLS = 80;
@@ -173,7 +168,7 @@ struct menu_screen *make_ms(int length)
 /*
  * This routine destroys a menu_screen.
  */
-int destroy_ms(struct menu_screen *ms)
+void destroy_ms(struct menu_screen *ms)
 {
   delwin(ms->ms_title);
   delwin(ms->ms_menu);
@@ -195,10 +190,9 @@ int Do_menu(Menu *m, int margc, char *margv[])
   char *argv[MAX_ARGC];
   int line;
   int i;
-  struct menu_line *command, *Find_command();
+  struct menu_line *command;
   int argc;
   int quitflag, is_topmenu = (margc < 0);
-  int toggle_logging();
 
   /* Entry function gets called with old menu_screen still current */
   if (m->m_entry != NULLFUNC)
@@ -413,7 +407,7 @@ int Do_menu(Menu *m, int margc, char *margv[])
     }
 }
 
-int refresh_screen(void)
+void refresh_screen(void)
 {
   if (cur_ms != NULLMS)
     {
@@ -555,7 +549,7 @@ int lines_left;
 /* Start paging */
 /* This routine will cause the most recently put message to be the
    one at the top of the screen when a ---More--- prompt is displayed */
-int Start_paging(void)
+void Start_paging(void)
 {
   if (cur_ms != NULLMS)
     lines_left = LINES - cur_ms->ms_input_y - 1;
@@ -564,13 +558,13 @@ int Start_paging(void)
 }
 
 /* Turn off paging */
-int Stop_paging(void)
+void Stop_paging(void)
 {
   lines_left = -1;
 }
 
 /* Print a message in the input window of cur_ms.  */
-int Put_message(char *msg)
+void Put_message(char *msg)
 {
   char *copy, *line, *s;
 
@@ -607,7 +601,7 @@ int Put_message(char *msg)
 }
 
 /* Will be truncated to COLS characters.  */
-int Put_line(char *msg)
+void Put_line(char *msg)
 {
   int y, x, i;
   char *msg1, chr;
@@ -660,7 +654,7 @@ int Put_line(char *msg)
 }
 
 /* Refresh a menu_screen onto the real screen */
-int refresh_ms(struct menu_screen *ms)
+void refresh_ms(struct menu_screen *ms)
 {
   wrefresh(ms->ms_title);
   wrefresh(ms->ms_menu);

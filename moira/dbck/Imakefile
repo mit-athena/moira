@@ -1,4 +1,4 @@
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/Imakefile,v 1.5 1997-01-29 23:13:04 danw Exp $
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/Imakefile,v 1.6 1998-02-05 22:51:00 danw Exp $
 #
 # Copyright 1993 by the Massachusetts Institute of Technology.
 #
@@ -8,13 +8,13 @@
 # Imakefile for server directory.
 #
 
-SRCS = dbck.h dbck.c fix.c phase1.c phase2.c phase3.c phase4.c nhash.c
-OBJS = dbck.o fix.o phase1.o phase2.o phase3.o phase4.o nhash.o
-CODE = dbck.h dbck.pc fix.pc phase1.pc phase2.pc phase3.pc phase4.pc nhash.c
+SRCS = dbck.h dbck.c fix.c phase1.c phase2.c phase3.c phase4.c
+OBJS = dbck.o fix.o phase1.o phase2.o phase3.o phase4.o
+CODE = dbck.h dbck.pc fix.pc phase1.pc phase2.pc phase3.pc phase4.pc
 SRCDIR=$(SRCTOP)/dbck
 sqlrule()
 
-program(dbck, ${OBJS},,../lib/libmoira.a ../server/libmrglue.a $(SQL_LIB), ${PROGDIR})
+program(dbck, ${OBJS},,../lib/libmoira.a $(SQL_LIB), ${PROGDIR})
 sqlfile(dbck)
 sqlfile(fix)
 sqlfile(phase1)

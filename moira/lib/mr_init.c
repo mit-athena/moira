@@ -1,26 +1,24 @@
-/*
- *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_init.c,v $
- *	$Author: danw $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_init.c,v 1.8 1998-01-07 17:13:30 danw Exp $
+/* $Id $
  *
- *	Copyright (C) 1987, 1990 by the Massachusetts Institute of Technology
- *	For copying and distribution information, please see the file
- *	<mit-copyright.h>.
+ * Initialize libmoira
+ *
+ * Copyright (C) 1987-1990 by the Massachusetts Institute of Technology
+ * For copying and distribution information, please see the file
+ * <mit-copyright.h>.
  */
 
-#ifndef lint
-static char *rcsid_mr_init_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_init.c,v 1.8 1998-01-07 17:13:30 danw Exp $";
-#endif
-
 #include <mit-copyright.h>
+#include <moira.h>
 #include "mr_private.h"
+
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_init.c,v 1.9 1998-02-05 22:51:28 danw Exp $");
 
 int mr_inited = 0;
 
 /* the reference to link_against_the_moira_version_of_gdb is to make
  * sure that this is built with the proper libraries.
  */
-mr_init(void)
+void mr_init(void)
 {
   extern int link_against_the_moira_version_of_gdb;
   if (mr_inited)

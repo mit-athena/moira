@@ -1,4 +1,4 @@
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/Imakefile,v 1.8 1997-09-05 19:15:01 danw Exp $
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/Imakefile,v 1.9 1998-02-05 22:51:36 danw Exp $
 
 # Copyright 1992 by the Massachusetts Institute of Technology.
 #
@@ -7,21 +7,20 @@
 #
 # Imakefile for moira regtape programs.
 
-SRCS= students.c employee.c sign.c verify.c vote.c rafnu.c
-CODE= students.pc employee.pc sign.pc verify.pc vote.pc rafnu.c
+SRCS= students.c employee.c sign.c verify.c vote.c
+CODE= students.pc employee.pc sign.pc verify.pc vote.pc
 SRCDIR = $(SRCTOP)/regtape
 #ifdef USE_CRYPT_H
-DEFINES = $(GDSSINC) -DUSE_CRYPT_H
-#else
-DEFINES = $(GDSSINC)
+DEFINES = -DUSE_CRYPT_H
 #endif
+GDSS_INC = $(GDSSINC)
 sqlrule()
 
-program(students, students.o rafnu.o,,$(CLIBS) $(SQL_LIB), $(PROGDIR))
-program(employee, employee.o rafnu.o,,$(CLIBS) $(SQL_LIB), $(PROGDIR))
-program(verify, verify.o rafnu.o,,$(LIBGDSS) $(CLIBS) $(SQL_LIB), $(PROGDIR))
-program(sign, sign.o rafnu.o,,$(LIBGDSS) $(CLIBS) $(SQL_LIB), $(PROGDIR))
-program(vote, vote.o rafnu.o,,$(CLIBS) $(SQL_LIB), $(PROGDIR))
+program(students, students.o,,$(CLIBS) $(SQL_LIB), $(PROGDIR))
+program(employee, employee.o,,$(CLIBS) $(SQL_LIB), $(PROGDIR))
+program(verify, verify.o,,$(LIBGDSS) $(CLIBS) $(SQL_LIB), $(PROGDIR))
+program(sign, sign.o,,$(LIBGDSS) $(CLIBS) $(SQL_LIB), $(PROGDIR))
+program(vote, vote.o,,$(CLIBS) $(SQL_LIB), $(PROGDIR))
 
 sqlfile(students)
 sqlfile(employee)

@@ -1,5 +1,4 @@
-#	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/db2rest.awk,v $
-#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/db2rest.awk,v 1.7 1998-01-05 19:51:33 danw Exp $
+#	$Id $
 #
 #	This converts the file used to originally create the database
 #	into a program to restore it from a backup.
@@ -9,24 +8,29 @@
 BEGIN {
 	print "/* This file automatically generated */";
 	print "/* Do not edit */\n";
-	print "#include <stdio.h>";
 	print "EXEC SQL INCLUDE sqlca;";
 	print "EXEC SQL WHENEVER SQLERROR DO dbmserr();";
-	print "void parse_nl(FILE *), parse_str(FILE *, char *, int), parse_sep(FILE *);\n";
+	print "#include <com_err.h>";
+	print "#include \"dump_db.h\"";
+	print "#include \"rest.h\"";
 
 	print "/* This file automatically generated */" > "rest1.pc";
 	print "/* Do not edit */\n" >> "rest1.pc";
-	print "#include <stdio.h>" >> "rest1.pc";
-	print "FILE *open_file(char *prefix, char *suffix);\n" >> "rest1.pc";
-	print "int do_restores(char *prefix)\n{" >> "rest1.pc";
+	print "#include \"dump_db.h\"" >> "rest1.pc";
+	print "#include \"rest.h\"" >> "rest1.pc";
+	print "void do_restores(char *prefix)\n{" >> "rest1.pc";
+
+	print "/* This file automatically generated */" > "bkup.h";
+	print "/* Do not edit */\n" >> "bkup.h";
 }
 
 $1=="#" { next; }
 
 /^create/ {
-	printf "int restore_%s(FILE *f)\n", $3;
+	printf "void restore_%s(FILE *f)\n", $3;
 	print "{\n  EXEC SQL BEGIN DECLARE SECTION;";
 	printf "  restore_%s(open_file(prefix, \"%s\"));\n", $3, $3 >> "rest1.pc";
+	printf "void restore_%s(FILE *f);\n", $3 >> "rest.h";
 
 	tablename = $3;
 	rangename = substr(tablename, 1, 1);

@@ -1,19 +1,17 @@
-/*
- *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/checksum.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/checksum.c,v 1.7 1998-01-06 20:40:20 danw Exp $
+/* $Id: checksum.c,v 1.8 1998-02-05 22:51:57 danw Exp $
+ *
+ * Copyright (C) 1988-1998 by the Massachusetts Institute of Technology.
+ * For copying and distribution information, please see the file
+ * <mit-copyright.h>.
  */
-/*  (c) Copyright 1988 by the Massachusetts Institute of Technology. */
-/*  For copying and distribution information, please see the file */
-/*  <mit-copyright.h>. */
-
-#ifndef lint
-static char *rcsid_checksum_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/checksum.c,v 1.7 1998-01-06 20:40:20 danw Exp $";
-#endif
 
 #include <mit-copyright.h>
+#include <moira.h>
+#include "update_server.h"
+
 #include <stdio.h>
-#include <sys/types.h>
-#include <sys/file.h>
+
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/checksum.c,v 1.8 1998-02-05 22:51:57 danw Exp $");
 
 /*
  * checksum_fd(fd)

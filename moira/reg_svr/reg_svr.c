@@ -1,46 +1,55 @@
-/*
- *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v $
- *      $Author: danw $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.48 1998-01-07 17:13:33 danw Exp $
+/* $Id: reg_svr.c,v 1.49 1998-02-05 22:51:33 danw Exp $
  *
- *      Copyright (C) 1987, 1988 by the Massachusetts Institute of Technology
- *	For copying and distribution information, please see the file
- *	<mit-copyright.h>.
+ * Server for user registration with Moira and Kerberos.
  *
- *      Server for user registration with Moira and Kerberos.
+ * This program is a client of the Kerberos admin_server and a
+ * server for the userreg program.  It is not a client of the
+ * Moira server as it is linked with libmoiraglue which bypasses
+ * the network protocol.
  *
- *      This program is a client of the Kerberos admin_server and a
- *      server for the userreg program.  It is not a client of the
- *      Moira server as it is linked with libmoiraglue which bypasses
- *      the network protocol.
+ * Copyright (C) 1987-1998 by the Massachusetts Institute of Technology
+ * For copying and distribution information, please see the file
+ * <mit-copyright.h>.
  */
 
-#ifndef lint
-static char *rcsid_reg_svr_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.48 1998-01-07 17:13:33 danw Exp $";
-#endif lint
-
 #include <mit-copyright.h>
+#include <moira.h>
+#include <moira_site.h>
+
+#include <sys/utsname.h>
+
+#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <ctype.h>
-#include <sys/time.h>
-#include <sys/types.h>
-#include <sys/file.h>
-#include <krb.h>
+#include <time.h>
+
 #include <des.h>
 #include <kadm.h>
 #include <kadm_err.h>
-#include <krb_err.h>
-#include <errno.h>
-#include <com_err.h>
-#include "moira.h"
-#include "moira_site.h"
+#include <krb.h>
+
 #include "reg_svr.h"
+
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.49 1998-02-05 22:51:33 danw Exp $");
 
 extern char admin_errmsg[];
 
-void reg_com_err_hook();
+int parse_encrypted(struct msg *message, struct db_data *data);
+int parse_encrypted(struct msg *message, struct db_data *data);
+int db_callproc(int argc, char **argv, void *queue);
+int find_user(struct msg *message);
+int verify_user(struct msg *message, char *retval);
+int ureg_kadm_init(void);
+int reserve_krb(char *login);
+int setpass_krb(char *login, char *password);
+int reserve_user(struct msg *message, char *retval);
+int set_final_status(struct msg *message);
+int set_password(struct msg *message, char *retval);
+int getuserinfo(int argc, char **argv, void *qa);
+int set_identity(struct msg *message, char *retval);
+int get_secure(struct msg *message, char *retval);
+int set_secure(struct msg *message, char *retval);
 
 int main(int argc, char *argv[])
 {
@@ -48,17 +57,12 @@ int main(int argc, char *argv[])
   int status = SUCCESS;		/* Error status */
   char retval[BUFSIZ];		/* Buffer to hold return message for client */
 
-  void req_initialize();	/* Initialize request layer */
-  void get_request();		/* Get a request */
-  void report();		/* Respond to a request */
-
   /* Initialize */
   whoami = argv[0];
 
   /* Error messages sent one line at a time */
   setvbuf(stderr, NULL, _IOLBF, BUFSIZ);
   setvbuf(stdout, NULL, _IOLBF, BUFSIZ);
-  set_com_err_hook(reg_com_err_hook);
 
   /* Initialize com_err error tables */
   init_ureg_err_tbl();
@@ -159,7 +163,6 @@ int parse_encrypted(struct msg *message, struct db_data *data)
   des_key_schedule sched;	/* En/decryption schedule */
   static char decrypt[BUFSIZ];	/* Buffer to hold decrypted information */
   long decrypt_len;		/* Length of decypted ID information */
-  char recrypt[14];		/* Buffer to hold re-encrypted information */
   static char hashid[14];	/* Buffer to hold one-way encrypted ID */
   char idnumber[BUFSIZ];	/* Buffer to hold plain-text ID */
   char *temp;			/* A temporary string pointer */
@@ -241,7 +244,7 @@ int parse_encrypted(struct msg *message, struct db_data *data)
 
 /* This function is called by mr_query after each tuple found.  It is
    used by find_user to cache information about each user found.  */
-int db_callproc(int argc, char **argv, struct save_queue *queue)
+int db_callproc(int argc, char **argv, void*queue)
 {
   struct db_data *data;	/* Structure to store the information in */
   int status = SUCCESS;	/* Error status */
@@ -272,7 +275,7 @@ int db_callproc(int argc, char **argv, struct save_queue *queue)
 int find_user(struct msg *message)
 {
 #define GUBN_ARGS 2		/* Arguements needed by get_user_by_name */
-  char *q_name;			/* Name of query */
+  char *q_name;			/* Name of Moira query */
   int q_argc;			/* Number of arguments for query */
   char *q_argv[GUBN_ARGS];	/* Arguments to query */
   int status = SUCCESS;		/* Query return status */
@@ -297,7 +300,7 @@ int find_user(struct msg *message)
       queue = sq_create();
 
       /* Do it */
-      status = mr_query(q_name, q_argc, q_argv, db_callproc, (char *)queue);
+      status = mr_query(q_name, q_argc, q_argv, db_callproc, queue);
 
       if (status == MR_SUCCESS)
 	{
@@ -399,23 +402,24 @@ int ureg_kadm_init(void)
 {
   unsigned int status = SUCCESS;	 /* Return status */
   static char krbrealm[REALM_SZ];	 /* kerberos realm name */
-  static char hostbuf[BUFSIZ], *host;	 /* local hostname in principal fmt */
+  static char *host;			 /* local hostname in principal fmt */
   static int inited = 0;
   char *p;
+  struct utsname uts;
 
   if (!inited)
     {
       inited++;
       memset(krbrealm, 0, sizeof(krbrealm));
-      if (status = krb_get_lrealm(krbrealm, 1))
+      if ((status = krb_get_lrealm(krbrealm, 1)))
 	{
 	  status += krb_err_base;
 	  com_err(whoami, status, " fetching kerberos realm");
 	  exit(1);
 	}
-      if (gethostname(hostbuf, sizeof(hostbuf)) < 0)
+      if (uname(&uts) < 0)
 	com_err(whoami, errno, "getting local hostname");
-      host = canonicalize_hostname(strsave(hostbuf));
+      host = canonicalize_hostname(strdup(uts.nodename));
       for (p = host; *p && *p != '.'; p++)
 	{
 	  if (isupper(*p))
@@ -426,8 +430,8 @@ int ureg_kadm_init(void)
 
   /* Get keys for interacting with Kerberos admin server. */
   /* principal, instance, realm, service, service instance, life, file */
-  if (status = krb_get_svc_in_tkt(MOIRA_SNAME, host, krbrealm, PWSERV_NAME,
-				  KADM_SINST, 1, KEYFILE))
+  if ((status = krb_get_svc_in_tkt(MOIRA_SNAME, host, krbrealm, PWSERV_NAME,
+				   KADM_SINST, 1, KEYFILE)))
     status += krb_err_base;
 
   if (status != SUCCESS)
@@ -440,14 +444,6 @@ int ureg_kadm_init(void)
     }
 
   return status;
-}
-
-/* This routine is a null callback that should be used for queries that
-   do not return tuples.  If it ever gets called, something is wrong. */
-int null_callproc(int argc, char *argv[], char *message)
-{
-  critical_alert(FAIL_INST, "Something returned from an update query.");
-  return FAILURE;
 }
 
 /*
@@ -579,7 +575,7 @@ int reserve_user(struct msg *message, char *retval)
       q_argv[1] = login;
       q_argv[2] = fstype_buf;
       q_argc = 3;
-      status = mr_query(q_name, q_argc, q_argv, null_callproc, NULL);
+      status = mr_query(q_name, q_argc, q_argv, NULL, NULL);
       switch (status)
 	{
 	case MR_SUCCESS:
@@ -645,7 +641,7 @@ int set_final_status(struct msg *message)
   q_argc = 2;
   q_argv[0] = login;
   q_argv[1] = state;
-  if ((status = mr_query(q_name, q_argc, q_argv, null_callproc, NULL))
+  if ((status = mr_query(q_name, q_argc, q_argv, NULL, NULL))
       != MR_SUCCESS)
     {
       if (status == MR_DEADLOCK)
@@ -703,8 +699,9 @@ int set_password(struct msg *message, char *retval)
 }
 
 
-int getuserinfo(int argc, char **argv, char **qargv)
+int getuserinfo(int argc, char **argv, void *qa)
 {
+  char **qargv = qa;
   int status = SUCCESS;
   int  i;
 
@@ -716,9 +713,9 @@ int getuserinfo(int argc, char **argv, char **qargv)
     }
   else
     {
-      qargv[U_NAME] = strsave(argv[U_NAME]);
+      qargv[U_NAME] = strdup(argv[U_NAME]);
       for (i = 1; i < U_MODTIME; i++)
-	qargv[i + 1] = strsave(argv[i]);
+	qargv[i + 1] = strdup(argv[i]);
       qargv[U_MODTIME + 1] = NULL;
     }
   return status;
@@ -727,11 +724,8 @@ int getuserinfo(int argc, char **argv, char **qargv)
 
 int set_identity(struct msg *message, char *retval)
 {
-  int q_argc;			/* Number of arguments to query */
   char *q_argv[U_END];		/* Arguments to Moira query */
-  char *q_name;			/* Name of Moira query */
   int status = SUCCESS;		/* General purpose error status */
-  char fstype_buf[7];		/* Buffer to hold fs_type, a 16 bit number */
   char *login;			/* The login name the user wants */
   int i;			/* A counter */
 
@@ -777,7 +771,7 @@ int set_identity(struct msg *message, char *retval)
 
       q_argv[0] = message->db.uid;
       status = mr_query("get_user_account_by_uid", 1, q_argv,
-			getuserinfo, (char *)q_argv);
+			getuserinfo, q_argv);
       if (status != SUCCESS)
 	{
 	  com_err(whoami, status, " while getting user info");
@@ -787,7 +781,7 @@ int set_identity(struct msg *message, char *retval)
       q_argv[U_STATE + 1] = "7";
       q_argv[U_SIGNATURE + 1] = "";
       status = mr_query("update_user_account", U_MODTIME + 1, q_argv,
-			null_callproc, NULL);
+			NULL, NULL);
       switch (status)
 	{
 	case MR_SUCCESS:
@@ -826,22 +820,6 @@ int set_identity(struct msg *message, char *retval)
 }
 
 
-void reg_com_err_hook(char *whoami, int code, char *fmt, caddr_t pvar)
-{
-  if (whoami)
-    {
-      fputs(whoami, stderr);
-      fputs(": ", stderr);
-    }
-  if (code)
-    fputs(error_message(code), stderr);
-  if (fmt)
-    _doprnt(fmt, pvar, stderr);
-  putc('\n', stderr);
-  fflush(stderr);
-}
-
-
 /* Find out if someone's secure instance password is set.
  * Returns UREG_ALREADY_REGISTERED if set, SUCCESS (0) if not.
  */
@@ -854,8 +832,7 @@ int get_secure(struct msg *message, char *retval)
   com_err(whoami, 0, "checking status of secure password for %s",
 	  message->first);
   argv[0] = message->first;
-  status = mr_query("get_user_account_by_login", 1, argv, getuserinfo,
-		    (char *)argv);
+  status = mr_query("get_user_account_by_login", 1, argv, getuserinfo, argv);
   if (status != SUCCESS)
     {
       com_err(whoami, status, " while getting user info");
@@ -871,8 +848,8 @@ int get_secure(struct msg *message, char *retval)
 
 int set_secure(struct msg *message, char *retval)
 {
-  int status, i;
-  char *argv[U_END], hostbuf[256], *bp, *p, buf[512], *passwd, *id;
+  int status;
+  char *argv[U_END], *bp, buf[512], *passwd, *id;
   KTEXT_ST creds;
   AUTH_DAT auth;
   C_Block key;
@@ -882,20 +859,19 @@ int set_secure(struct msg *message, char *retval)
   struct timeval now;
   static int inited = 0;
   static char *host;
-  extern char *krb_get_phost(char *);
+  struct utsname uts;
 
   if (!inited)
     {
       inited++;
-      if (gethostname(hostbuf, sizeof(hostbuf)) < 0)
+      if (uname(&uts) < 0)
 	com_err(whoami, errno, "getting local hostname");
-      host = strsave(krb_get_phost(hostbuf));
+      host = strdup(krb_get_phost(uts.nodename));
     }
 
   com_err(whoami, 0, "setting secure passwd for %s", message->first);
   argv[0] = message->first;
-  status = mr_query("get_user_account_by_login", 1, argv, getuserinfo,
-		    (char *)argv);
+  status = mr_query("get_user_account_by_login", 1, argv, getuserinfo, argv);
   if (status != SUCCESS)
     {
       com_err(whoami, status, " while getting user info");
@@ -978,9 +954,8 @@ int set_secure(struct msg *message, char *retval)
   argv[0] = message->first;
   argv[1] = buf;
   gettimeofday(&now, NULL);
-  sprintf(buf, "%d", now.tv_sec);
-  status = mr_query("update_user_security_status", 2, argv, getuserinfo,
-		    (char *)argv);
+  sprintf(buf, "%ld", now.tv_sec);
+  status = mr_query("update_user_security_status", 2, argv, getuserinfo, argv);
   if (status != SUCCESS)
     {
       com_err(whoami, status, " while updating user status");

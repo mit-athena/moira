@@ -1,7 +1,7 @@
 /*
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.h,v $
  *      $Author: danw $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.h,v 1.10 1998-01-07 17:13:34 danw Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.h,v 1.11 1998-02-05 22:51:34 danw Exp $
  *
  *      Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
@@ -14,6 +14,7 @@
 #include <sys/types.h>
 #include <ctype.h>
 #include "ureg_err.h"
+#define REG_SVR
 #include "ureg_proto.h"
 
 #ifndef TRUE
@@ -37,7 +38,6 @@
 #define UID_LEN 7		/* Allow room for a 16 bit number */
 
 extern char *whoami;		/* Name of program - used by libraries */
-extern int errno;		/* Unix error number */
 
 /* This structure holds information from the Moira database that will be
    worth holding on to.  An instance of it appears in the formatted
@@ -67,14 +67,11 @@ struct msg
   struct db_data db;		/* Information from the Moira database */
 };
 
-void failure_alert();		/* Log an unexplainable failure */
-int parse_pkt();		/* Parse a packet from the client */
-int format_pkt();		/* Prepare a packet to send to client*/
-int verify_user();		/* Make sure user is allowed to register */
-int reserve_user();		/* Reserve a login for this user */
-int set_password();		/* Set this user's password */
-
-
 /* For logging successful database transactions */
 extern FILE *journal;
 
+/* prototypes from requests.c */
+void req_initialize(void);
+void get_request(struct msg *message);
+void report(int status, char *message);
+u_long cur_req_sender(void);

@@ -1,26 +1,29 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/hesiod.pc,v 1.4 1998-01-06 20:39:49 danw Exp $
+/* $Id: hesiod.pc,v 1.5 1998-02-05 22:51:08 danw Exp $
  *
  * This generates the zone files necessary to load a hesiod server.
  * The following zones are generated: passwd, uid, pobox, group,
  * grplist, gid, filsys, cluster, pcap, sloc, service.
  *
- *  (c) Copyright 1988, 1990 by the Massachusetts Institute of Technology.
- *  For copying and distribution information, please see the file
- *  <mit-copyright.h>.
+ * (c) Copyright 1988-1998 by the Massachusetts Institute of Technology.
+ * For copying and distribution information, please see the file
+ * <mit-copyright.h>.
  */
 
 #include <mit-copyright.h>
-#include <stdio.h>
-#include <stdlib.h>
 #include <moira.h>
 #include <moira_site.h>
-#include <sys/types.h>
+
 #include <sys/stat.h>
-#include <sys/time.h>
-#include <ctype.h>
+
+#include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
+
+#include "util.h"
+
 EXEC SQL INCLUDE sqlca;
 
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/hesiod.pc,v 1.5 1998-02-05 22:51:08 danw Exp $");
 
 #ifndef HTYPE
 #define HTYPE "TXT"
@@ -55,6 +58,36 @@ struct user {
   struct grp *lists;
 };
 
+/*
+ * Modified from sys/types.h:
+ */
+int setsize;	/* = howmany(setbits, NSETBITS) */
+
+typedef long	set_mask;
+#define NSETBITS	(sizeof(set_mask) * NBBY)	/* bits per mask */
+#ifndef howmany
+#define	howmany(x, y)	(((x) + ((y) - 1)) / (y))
+#endif
+
+#define	SET_SET(n, p)	((p)[(n)/NSETBITS] |=  (1 << ((n) % NSETBITS)))
+#define	SET_CLR(n, p)	((p)[(n)/NSETBITS] &= ~(1 << ((n) % NSETBITS)))
+#define	SET_ISSET(n, p)	((p)[(n)/NSETBITS] &   (1 << ((n) % NSETBITS)))
+#define SET_CREATE()	(malloc(setsize * sizeof(set_mask)))
+#define SET_ZERO(p)	memset(p, 0, setsize * sizeof(set_mask))
+#define SET_CMP(p1, p2) (memcmp(p1, p2, setsize * sizeof(set_mask)))
+
+
+void get_mach(void);
+int nbitsset(set_mask *set);
+
+int do_passwd(void);
+int do_groups(void);
+int do_filsys(void);
+int do_cluster(void);
+int do_printcap(void);
+int do_palladium(void);
+int do_sloc(void);
+int do_service(void);
 
 int main(int argc, char **argv)
 {
@@ -101,7 +134,7 @@ int main(int argc, char **argv)
 }
 
 
-get_mach(void)
+void get_mach(void)
 {
   EXEC SQL BEGIN DECLARE SECTION;
   int id;
@@ -123,7 +156,7 @@ get_mach(void)
       EXEC SQL FETCH m_cursor INTO :name, :id;
       if (sqlca.sqlcode)
 	break;
-      hash_store(machines, id, strsave(strtrim(name)));
+      hash_store(machines, id, strdup(strtrim(name)));
     }
   if (sqlca.sqlcode < 0)
     db_error(sqlca.sqlcode);
@@ -326,7 +359,7 @@ int do_groups(void)
 	break;
       strtrim(name);
       sprintf(buf, "%s:%d", name, gid);
-      hash_store(groups, lid, strsave(buf));
+      hash_store(groups, lid, strdup(buf));
       fprintf(iout, "%d.gid\t%s CNAME %s.group\n", gid, HCLASS, name);
       fprintf(gout, "%s.group\t%s %s \"%s:*:%d:\"\n",
 	      name, HCLASS, HTYPE, name, gid);
@@ -370,8 +403,7 @@ int do_groups(void)
       EXEC SQL FETCH i_cursor INTO :lid, :id;
       if (sqlca.sqlcode)
 	break;
-      if ((l = hash_lookup(groups, lid)) &&
-	  (u = (struct user *) hash_lookup(users, id)))
+      if ((l = hash_lookup(groups, lid)) && (u = hash_lookup(users, id)))
 	{
 	  g = malloc(sizeof(struct grp));
 	  g->next = u->lists;
@@ -431,10 +463,9 @@ int do_filsys(void)
 {
   FILE *out;
   char outf[64], outft[64], *mach, *group;
-  char *p;
   struct stat sb;
   time_t ftime;
-  struct save_queue *sq, *sq2, *sq_create();
+  struct save_queue *sq, *sq2;
   EXEC SQL BEGIN DECLARE SECTION;
   char name[33], type[9], loc[81], access[2], mount[33], trans[257];
   char comments[65];
@@ -490,7 +521,7 @@ int do_filsys(void)
       strtrim(type);
       if (!strcmp(type, "NFS") || !strcmp(type, "RVD"))
 	{
-	  if (mach = hash_lookup(machines, id))
+	  if ((mach = hash_lookup(machines, id)))
 	    {
 	      fprintf(out, "%s.filsys\t%s %s \"%s %s %s %s %s\"\n",
 		      strtrim(name), HCLASS, HTYPE, type, strtrim(loc),
@@ -511,12 +542,12 @@ int do_filsys(void)
       else if (!strcmp(type, "FSGROUP"))
 	{
 	  sprintf(trans, "%s:%d", strtrim(name), fid);
-	  sq_save_data(sq, strsave(trans));
+	  sq_save_data(sq, strdup(trans));
 	}
       else if (!strcmp(type, "MUL"))
 	{
 	  sprintf(trans, "%s:%d", strtrim(name), fid);
-	  sq_save_data(sq2, strsave(trans));
+	  sq_save_data(sq2, strdup(trans));
 	}
     }
   EXEC SQL CLOSE f_cursor;
@@ -542,7 +573,7 @@ int do_filsys(void)
 	  strtrim(type);
 	  if (!strcmp(type, "NFS") || !strcmp(type, "RVD"))
 	    {
-	      if (mach = hash_lookup(machines, id))
+	      if ((mach = hash_lookup(machines, id)))
 		{
 		  fprintf(out, "%s.filsys\t%s %s \"%s %s %s %s %s %d\"\n",
 			  group, HCLASS, HTYPE, type, strtrim(loc), mach,
@@ -619,26 +650,7 @@ sqlerr:
   return 0;
 }
 
-
-/*
- * Modified from sys/types.h:
- */
-int setsize;	/* = howmany(setbits, NSETBITS) */
-
-typedef long	set_mask;
-#define NSETBITS	(sizeof(set_mask) * NBBY)	/* bits per mask */
-#ifndef howmany
-#define	howmany(x, y)	(((x) + ((y) - 1)) / (y))
-#endif
-
-#define	SET_SET(n, p)	((p)[(n)/NSETBITS] |=  (1 << ((n) % NSETBITS)))
-#define	SET_CLR(n, p)	((p)[(n)/NSETBITS] &= ~(1 << ((n) % NSETBITS)))
-#define	SET_ISSET(n, p)	((p)[(n)/NSETBITS] &   (1 << ((n) % NSETBITS)))
-#define SET_CREATE()	(malloc(setsize * sizeof(set_mask)))
-#define SET_ZERO(p)	memset(p, 0, setsize * sizeof(set_mask))
-#define SET_CMP(p1, p2) (memcmp(p1, p2, setsize * sizeof(set_mask)))
-
-int nbitsset(set_mask *set)
+ int nbitsset(set_mask *set)
 {
   int i, ret;
   ret = 0;
@@ -891,10 +903,10 @@ int do_printcap(void)
       strtrim(rp);
       strtrim(sd);
       fprintf(out, "%s.pcap\t%s %s \"%s:rp=%s:rm=%s:sd=%s:ka#%d:pc#%d",
-	      name, HCLASS, HTYPE, name, rp, hash_lookup(machines, rm),
+	      name, HCLASS, HTYPE, name, rp, (char *)hash_lookup(machines, rm),
 	      sd, ka, pc);
       if (rq && hash_lookup(machines, rq))
-	fprintf(out, ":rq=%s\"\n", hash_lookup(machines, rq));
+	fprintf(out, ":rq=%s\"\n", (char *)hash_lookup(machines, rq));
       else
 	fputs("\"\n", out);
     }
@@ -965,8 +977,8 @@ int do_palladium(void)
 	break;
       strtrim(name);
       fprintf(out, "%s.palladium\t%s %s \"%s %d %s interface directory\"\n",
-	      name, HCLASS, HTYPE, hash_lookup(machines, rm), identifier,
-	      name);
+	      name, HCLASS, HTYPE, (char *)hash_lookup(machines, rm),
+	      identifier, name);
     }
   EXEC SQL CLOSE p_cursor3;
 
@@ -1049,7 +1061,7 @@ int do_sloc(void)
       if (sqlca.sqlcode)
 	break;
       strtrim(service);
-      if (mach = hash_lookup(machines, id))
+      if ((mach = hash_lookup(machines, id)))
 	fprintf(out, "%s.sloc\t%s %s %s\n", service, HCLASS, HTYPE, mach);
     }
   EXEC SQL CLOSE s_cursor;

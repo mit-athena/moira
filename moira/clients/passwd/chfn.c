@@ -1,18 +1,5 @@
-/*
- * Copyright 1988 by the Massachusetts Institute of Technology. For copying
- * and distribution information, see the file "mit-copyright.h".
+/* $Id $
  *
- * $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chfn.c,v $
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chfn.c,v 1.15 1998-01-07 17:01:56 danw Exp $
- * $Author: danw $
- *
- */
-
-#ifndef lint
-static char *rcsid_chfn_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chfn.c,v 1.15 1998-01-07 17:01:56 danw Exp $";
-#endif
-
-/*
  * Talk to the Moira database to change a person's GECOS information.
  *
  * chfn with no modifiers changes the information of the user who is
@@ -21,23 +8,25 @@ static char *rcsid_chfn_c = "$Header: /afs/.athena.mit.edu/astaff/project/moirad
  * If a commandline argument is given, it is taken to be the username
  * of the user whose information is to be changed.
  *
+ * Copyright (C) 1988-1998 by the Massachusetts Institute of Technology
+ * For copying and distribution information, please see the file
+ * <mit-copyright.h>.
  */
+
+#include <mit-copyright.h>
+#include <moira.h>
+#include <moira_site.h>
+
+#include <ctype.h>
+#include <stdio.h>
+#include <string.h>
+
+#include <krb.h>
+
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chfn.c,v 1.16 1998-02-05 22:50:54 danw Exp $");
 
 #define FALSE 0
 #define TRUE 1
-
-#include <sys/types.h>
-#include <stdio.h>
-#include <string.h>
-#include <sys/file.h>
-#include <krb.h>
-#include <ctype.h>
-#include <errno.h>
-
-/* Moira includes */
-#include <moira.h>
-#include <moira_site.h>
-#include "mit-copyright.h"
 
 char *whoami;
 
@@ -51,6 +40,13 @@ struct finger_info {
   char *mit_department;
   char *mit_year;
 };
+
+int usage(void);
+int leave(int status);
+int chfn(char *uname);
+int get_user_info(int argc, char *argv[], void *message);
+char *ask(char *question, char *def_val, int phone_num);
+void get_new_info(struct finger_info *old_info, struct finger_info *new_info);
 
 int main(int argc, char *argv[])
 {
@@ -81,7 +77,7 @@ int main(int argc, char *argv[])
 	  exit(1);
 	}
 
-      if (k_errno = tf_get_pname(pname))
+      if ((k_errno = tf_get_pname(pname)))
 	{
 	  com_err(whoami, k_errno, "getting kerberos principal name");
 	  exit(1);
@@ -101,12 +97,6 @@ int leave(int status)
   exit(status);
 }
 
-int scream(void)
-{
-  com_err(whoami, 0, "Unexpected return value from Moira -- programmer botch");
-  leave(1);
-}
-
 int chfn(char *uname)
 {
   int status;			/* general purpose exit status */
@@ -114,9 +104,6 @@ int chfn(char *uname)
   char *q_argv[F_END];		/* argv for mr_query */
   char *motd;			/* for Moira server status */
   int i;
-
-  int get_user_info();
-  void get_new_info();
 
   struct finger_info old_info;
   struct finger_info new_info;
@@ -171,7 +158,7 @@ int chfn(char *uname)
   q_argv[NAME] = uname;
   q_argc = NAME + 1;
   if ((status = mr_query("get_finger_by_login", q_argc, q_argv,
-			 get_user_info, (char *) &old_info)))
+			 get_user_info, &old_info)))
     {
       com_err(whoami, status, "while getting user information.");
       leave(2);
@@ -197,7 +184,7 @@ int chfn(char *uname)
   q_argc = F_MODTIME;		/* First non-update query argument */
 
   if ((status = mr_query("update_finger_by_login", q_argc, q_argv,
-			 scream, NULL)))
+			 NULL, NULL)))
     {
       com_err(whoami, status, "while updating finger information.");
       leave(1);
@@ -208,9 +195,9 @@ int chfn(char *uname)
   return 0;
 }
 
-int get_user_info(int argc, char *argv[], char *message)
+int get_user_info(int argc, char *argv[], void *message)
 {
-  struct finger_info *old_info = (struct finger_info *) message;
+  struct finger_info *old_info = message;
 
   if (argc != F_END)
     {
@@ -221,14 +208,14 @@ int get_user_info(int argc, char *argv[], char *message)
   printf("Info last changed on %s by user %s with %s.\n",
 	 argv[F_MODTIME], argv[F_MODBY], argv[F_MODWITH]);
 
-  old_info->fullname = strsave(argv[F_FULLNAME]);
-  old_info->nickname = strsave(argv[F_NICKNAME]);
-  old_info->home_address = strsave(argv[F_HOME_ADDR]);
-  old_info->home_phone = strsave(argv[F_HOME_PHONE]);
-  old_info->office_address = strsave(argv[F_OFFICE_ADDR]);
-  old_info->office_phone = strsave(argv[F_OFFICE_PHONE]);
-  old_info->mit_department = strsave(argv[F_MIT_DEPT]);
-  old_info->mit_year = strsave(argv[F_MIT_AFFIL]);
+  old_info->fullname = strdup(argv[F_FULLNAME]);
+  old_info->nickname = strdup(argv[F_NICKNAME]);
+  old_info->home_address = strdup(argv[F_HOME_ADDR]);
+  old_info->home_phone = strdup(argv[F_HOME_PHONE]);
+  old_info->office_address = strdup(argv[F_OFFICE_ADDR]);
+  old_info->office_phone = strdup(argv[F_OFFICE_PHONE]);
+  old_info->mit_department = strdup(argv[F_MIT_DEPT]);
+  old_info->mit_year = strdup(argv[F_MIT_AFFIL]);
 
   /* Only pay attention to the first match since login names are
      unique in the database. */
@@ -325,7 +312,7 @@ void get_new_info(struct finger_info *old_info, struct finger_info *new_info)
   printf("To accept the default, type <return>.\n");
   printf("To have a blank entry, type the word '%s'.\n\n", BLANK);
 
-#define GETINFO(m, v, n) new_info->v = strsave(ask(m, old_info->v, n))
+#define GETINFO(m, v, n) new_info->v = strdup(ask(m, old_info->v, n))
 
   GETINFO("Full name", fullname, FALSE);
   GETINFO("Nickname", nickname, FALSE);

@@ -14,22 +14,16 @@
  */
 
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <sys/param.h>
 #include <krb.h>
 /*#include <conf.h>*/
 
 char rcsid[] =
-    "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/ksrvtgt.c,v 1.6 1998-01-06 20:39:55 danw Exp $";
+    "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/ksrvtgt.c,v 1.7 1998-02-05 22:51:20 danw Exp $";
 
-
-void usage(char **argv)
-{
-  fprintf(stderr,
-	  "Usage: %s name instance [-r realm] [-s srvtab] [-l lifetime]\n",
-	  argv[0]);
-  exit(1);
-}
-
+void usage(char **argv);
 
 int main(int argc, char **argv)
 {
@@ -92,3 +86,10 @@ int main(int argc, char **argv)
   exit(code);
 }
 
+void usage(char **argv)
+{
+  fprintf(stderr,
+	  "Usage: %s name instance [-r realm] [-s srvtab] [-l lifetime]\n",
+	  argv[0]);
+  exit(1);
+}

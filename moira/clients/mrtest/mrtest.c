@@ -1,36 +1,32 @@
-/*
- *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v $
- *	$Author: danw $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v 1.37 1998-01-05 19:52:18 danw Exp $
+/* $Id $
  *
- *	Copyright (C) 1987 by the Massachusetts Institute of Technology
- *	For copying and distribution information, please see the file
- *	<mit-copyright.h>.
+ * Bare-bones Moira client
  *
+ * Copyright (C) 1987-1998 by the Massachusetts Institute of Technology
+ * For copying and distribution information, please see the file
+ * <mit-copyright.h>.
  */
 
-#ifndef lint
-static char *rcsid_test_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v 1.37 1998-01-05 19:52:18 danw Exp $";
-#endif /* lint */
-
 #include <mit-copyright.h>
-#include <stdio.h>
-#include <sys/types.h>
-#include <sys/file.h>
-#include <fcntl.h>
-#include <ctype.h>
-#include <string.h>
 #include <moira.h>
-#include <com_err.h>
+
+#include <errno.h>
+#include <fcntl.h>
 #include <setjmp.h>
 #include <signal.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
 
 #ifdef USE_READLINE
 #include "readline.h"
+#include "history.h"
 #endif
 
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v 1.38 1998-02-05 22:50:54 danw Exp $");
+
 int recursion = 0, interactive;
-extern int errno;
 extern int sending_version_no;
 int count, quit = 0, cancel = 0;
 char *whoami;
@@ -38,8 +34,24 @@ sigjmp_buf jb;
 
 #define MAXARGS 20
 
-void discard_input();
-char *mr_gets();
+void discard_input(void);
+char *mr_gets(char *prompt, char *buf, size_t len);
+void execute_line(char *cmdbuf);
+int parse(char *buf, char *argv[MAXARGS]);
+int print_reply(int argc, char **argv, void *hint);
+void test_noop(void);
+void test_connect(int argc, char **argv);
+void test_disconnect(void);
+void test_host(void);
+void test_new(void);
+void test_old(void);
+void test_motd(void);
+void test_query(int argc, char **argv);
+void test_auth(void);
+void test_access(int argc, char **argv);
+void test_dcm(void);
+void test_script(int argc, char **argv);
+void test_list_requests(void);
 
 int main(int argc, char **argv)
 {
@@ -114,7 +126,7 @@ char *mr_gets(char *prompt, char *buf, size_t len)
   return buf;
 }
 
-int execute_line(char *cmdbuf)
+void execute_line(char *cmdbuf)
 {
   int argc;
   char *argv[MAXARGS];
@@ -139,7 +151,7 @@ int execute_line(char *cmdbuf)
   else if (!strcmp(argv[0], "query") || !strcmp(argv[0], "qy"))
     test_query(argc, argv);
   else if (!strcmp(argv[0], "auth") || !strcmp(argv[0], "a"))
-    test_auth(argc, argv);
+    test_auth();
   else if (!strcmp(argv[0], "access"))
     test_access(argc, argv);
   else if (!strcmp(argv[0], "dcm"))
@@ -221,24 +233,24 @@ int parse(char *buf, char *argv[MAXARGS])
   return argc + 1;
 }
 
-int test_noop(void)
+void test_noop(void)
 {
   int status = mr_noop();
   if (status)
     com_err("moira (noop)", status, "");
 }
 
-int test_new(void)
+void test_new(void)
 {
   sending_version_no = MR_VERSION_2;
 }
 
-int test_old(void)
+void test_old(void)
 {
   sending_version_no = MR_VERSION_1;
 }
 
-int test_connect(int argc, char *argv[])
+void test_connect(int argc, char *argv[])
 {
   char *server = "";
   int status;
@@ -250,14 +262,14 @@ int test_connect(int argc, char *argv[])
     com_err("moira (connect)", status, "");
 }
 
-int test_disconnect(void)
+void test_disconnect(void)
 {
   int status = mr_disconnect();
   if (status)
     com_err("moira (disconnect)", status, "");
 }
 
-int test_host(void)
+void test_host(void)
 {
   char host[BUFSIZ];
   int status;
@@ -270,7 +282,7 @@ int test_host(void)
     printf("You are connected to host %s\n", host);
 }
 
-int test_auth(int argc, char *argv[])
+void test_auth(void)
 {
   int status;
 
@@ -279,7 +291,7 @@ int test_auth(int argc, char *argv[])
     com_err("moira (auth)", status, "");
 }
 
-int test_script(int argc, char *argv[])
+void test_script(int argc, char *argv[])
 {
   FILE *inp;
   char input[BUFSIZ], *cp;
@@ -371,7 +383,7 @@ int test_script(int argc, char *argv[])
     }
 }
 
-int print_reply(int argc, char **argv)
+int print_reply(int argc, char **argv, void *hint)
 {
   int i;
   for (i = 0; i < argc; i++)
@@ -385,7 +397,7 @@ int print_reply(int argc, char **argv)
   return MR_CONT;
 }
 
-int test_query(int argc, char **argv)
+void test_query(int argc, char **argv)
 {
   int status;
   sigset_t sigs;
@@ -409,7 +421,7 @@ int test_query(int argc, char **argv)
     com_err("moira (query)", status, "");
 }
 
-int test_access(int argc, char **argv)
+void test_access(int argc, char **argv)
 {
   int status;
   if (argc < 2)
@@ -422,7 +434,7 @@ int test_access(int argc, char **argv)
     com_err("moira (access)", status, "");
 }
 
-int test_dcm(int argc, char **argv)
+void test_dcm()
 {
   int status;
 
@@ -430,7 +442,7 @@ int test_dcm(int argc, char **argv)
     com_err("moira (dcm)", status, " while triggering dcm");
 }
 
-int test_motd(int argc, char **argv)
+void test_motd()
 {
   int status;
   char *motd;
@@ -443,7 +455,7 @@ int test_motd(int argc, char **argv)
     printf("No message of the day.\n");
 }
 
-int test_list_requests(void)
+void test_list_requests(void)
 {
   printf("Available moira requests:\n");
   printf("\n");

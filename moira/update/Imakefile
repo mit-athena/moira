@@ -1,4 +1,4 @@
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/Imakefile,v 1.9 1997-08-14 20:17:40 danw Exp $
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/Imakefile,v 1.10 1998-02-05 22:51:56 danw Exp $
 #
 # Copyright 1990 by the Massachusetts Institute of Technology.
 #
@@ -9,7 +9,7 @@
 #
 
 SRCS=	auth_002.c checksum.c client.c config.c exec_002.c \
-	get_file.c hostname.c log.c send_file.c ticket.c \
+	get_file.c log.c send_file.c ticket.c \
 	update_server.c update_test.c xfer_002.c xfer_003.c
 SRCDIR=${SRCTOP}/update
 CODE=${SRCS} Imakefile

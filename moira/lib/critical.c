@@ -1,50 +1,52 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/critical.c,v 1.15 1998-01-05 19:53:01 danw Exp $
+/* $Id $
  *
  * Log and send a zephyrgram about any critical errors.
  *
- *  (c) Copyright 1988 by the Massachusetts Institute of Technology.
- *  For copying and distribution information, please see the file
- *  <mit-copyright.h>.
+ * (c) Copyright 1988-1998 by the Massachusetts Institute of Technology.
+ * For copying and distribution information, please see the file
+ * <mit-copyright.h>.
  */
 
-#include <mit-copyright.h>
-#include <stdio.h>
-#include <sys/types.h>
-#include <sys/file.h>
-#include <moira_site.h>
+
 #ifdef ZEPHYR
+/* need to include before moira.h, which includes krb_et.h, because
+   zephyr.h is broken */
 #include <zephyr/zephyr.h>
+/* zephyr.h doesn't prototype this */
+extern Code_t ZSendNotice(ZNotice_t *notice, Z_AuthProc cert_routine);
 #endif
+
+#include <mit-copyright.h>
+#include <moira.h>
+#include <moira_site.h>
+
+#include <string.h>
 #ifdef SYSLOG
 #include <syslog.h>
 #endif
-#include <string.h>
-#include <time.h>
-#include <com_err.h>
+
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/critical.c,v 1.16 1998-02-05 22:51:21 danw Exp $");
 
 /* mode to create the file with */
 #define LOGFILEMODE	0644
 
 extern char *whoami;
 
-
 /* This routine sends a class MOIRA zephyrgram of specified instance
  * and logs to a special logfile the message passed to it via msg
  * and args in printf format.  *** It expects the global variable
  * whoami to be defined and contain the name of the calling program.
- * It's a kludge that it takes a max of 8 arguments in a way that
- * isn't necessarily portable, but varargs doesn't work here and we
- * don't necessarily have vsprintf().
  */
 
-void critical_alert(char *instance, char *msg, char *arg1, char *arg2,
-		    char *arg3, char *arg4, char *arg5, char *arg6,
-		    char *arg7, char *arg8)
+void critical_alert(char *instance, char *msg, ...)
 {
   FILE *crit;			/* FILE for critical log file */
   char buf[BUFSIZ];		/* Holds the formatted message */
+  va_list ap;
 
-  sprintf(buf, msg, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8);
+  va_start(ap, msg);
+  vsprintf(buf, msg, ap);
+  va_end(ap);
 
   /* Send zephyr notice */
   send_zgram(instance, buf);
@@ -59,7 +61,7 @@ void critical_alert(char *instance, char *msg, char *arg1, char *arg2,
       time_s = ctime(&t) + 4;
       time_s[strlen(time_s) - 6] = '\0';
 
-      fprintf(crit, "%s <%d> %s\n", time_s, getpid(), buf);
+      fprintf(crit, "%s <%ld> %s\n", time_s, (long)getpid(), buf);
       fclose(crit);
     }
 
@@ -72,7 +74,7 @@ void critical_alert(char *instance, char *msg, char *arg1, char *arg2,
  * errors while sending message.
  */
 
-send_zgram(char *inst, char *msg)
+void send_zgram(char *inst, char *msg)
 {
 #ifdef ZEPHYR
   ZNotice_t znotice;

@@ -1,22 +1,19 @@
-/*
- *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_server.h,v $
- *	$Author: danw $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_server.h,v 1.31 1998-01-07 17:13:39 danw Exp $
+/* $Id: mr_server.h,v 1.32 1998-02-05 22:51:44 danw Exp $
  *
- *	Copyright (C) 1987 by the Massachusetts Institute of Technology
- *
+ * Copyright (C) 1987-1998 by the Massachusetts Institute of Technology
+ * For copying and distribution information, please see the file
+ * <mit-copyright.h>.
  */
 
-#include <sys/types.h>
-#include <sys/uio.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include "mr_proto.h"
+#include <moira.h>
+#include <mr_proto.h>
 #include <moira_site.h>
-#include <krb.h>
-#include <com_err.h>
-#include <stdlib.h>
+
+#include <netinet/in.h>
+
 #include <stdarg.h>
+
+#include <krb.h>
 
 typedef struct returned_tuples {
   struct returned_tuples *next;
@@ -115,33 +112,23 @@ extern time_t inc_started, now;
 
 #define SQL_NO_MATCH 1403 /* oracle, not ingres (= 100) */
 
+/* types needed for prototypes */
+struct query;
+struct validate;
+struct valobj;
+
 /* prototypes from gdb */
 int gdb_init(void);
 int gdb_debug(int flag);
 void start_accepting_client(CONNECTION, OPERATION, CONNECTION *,
 			     char *, int *, TUPLE *);
-int initialize_operation(OPERATION, int (*init_function)(), char *,
-			 int (*cancel_function)());
+int initialize_operation(OPERATION, int (*init_function)(OPERATION, HALF_CONNECTION, void *),
+			 char *, int (*cancel_function)(HALF_CONNECTION, void *));
 int reset_operation(OPERATION);
 int delete_operation(OPERATION);
 int start_replying_to_client(OPERATION, CONNECTION, int, char *, char *);
 int op_select(LIST_OF_OPERATIONS, int, fd_set *, fd_set *, fd_set *,
 	      struct timeval *);
-
-/* prototypes from libmoira */
-struct save_queue *sq_create(void);
-int sq_save_data(struct save_queue *sq, void *data);
-int sq_save_unique_data(struct save_queue *sq, void *data);
-int sq_save_args(int argc, void *argv[], struct save_queue *sq);
-int sq_get_data(struct save_queue *sq, void *data);
-int sq_remove_data(struct save_queue *sq, void *data);
-int sq_empty(struct save_queue *sq);
-void sq_destroy(struct save_queue *sq);
-
-void send_zgram(char *instance, char *buf);
-void critical_alert(char *, char *, ...);
-void mr_destroy_reply(mr_params *reply);
-int gdss2et(int);
 
 /* prototypes from increment.dc */
 void incremental_init(void);
@@ -155,13 +142,14 @@ void dosql(char *buffers[]);
 int mr_open_database(void);
 void mr_close_database(void);
 int mr_process_query(client *cl, char *name, int argc, char *argv_ro[],
-		     int (*action)(), char *actarg);
+		     int (*action)(int, char *[], void *), void *actarg);
 int mr_check_access(client *cl, char *name, int argc, char *argv_ro[]);
 void sanity_check_queries(void);
 int set_krb_mapping(char *name, char *login, int ok, int *kid, int *uid);
 int find_member(char *list_type, int list_id, client *cl);
-int do_for_all_rows(char *query, int count, int (*action)(), int actarg);
-int build_qual(char *fmt, int argc, char *argv[], char *qual);
+int do_for_all_rows(char *query, int count,
+		    int (*action)(int, char *[], void *), void *actarg);
+void build_qual(char *fmt, int argc, char *argv[], char *qual);
 
 
 /* prototyoes from qsupport.dc */
@@ -180,7 +168,7 @@ void do_auth(client *cl);
 
 /* prototypes from mr_scall.c */
 void do_client(client *cp);
-int trigger_dcm(int dummy0, int dummy1, client *cl);
+int trigger_dcm(struct query *q, char *argv[], client *cl);
 
 /* prototypes from mr_shutdown.c */
 void sigshut(int);
@@ -192,3 +180,123 @@ void log_args(char *tag, int version, int argc, char **argv);
 void mr_com_err(const char *whoami, long code, const char *fmt, va_list pvar);
 int mr_trim_args(int argc, char **argv);
 char **mr_copy_args(char **argv, int argc);
+
+/* prototypes from qaccess.pc */
+int access_user(struct query *q, char *argv[], client *cl);
+int access_login(struct query *q, char *argv[], client *cl);
+int access_list(struct query *q, char *argv[], client *cl);
+int access_visible_list(struct query *q, char *argv[], client *cl);
+int access_vis_list_by_name(struct query *q, char *argv[], client *cl);
+int access_member(struct query *q, char *argv[], client *cl);
+int access_qgli(struct query *q, char *argv[], client *cl);
+int access_service(struct query *q, char *argv[], client *cl);
+int access_filesys(struct query *q, char *argv[], client *cl);
+int access_host(struct query *q, char *argv[], client *cl);
+int access_ahal(struct query *q, char *argv[], client *cl);
+int access_snt(struct query *q, char *argv[], client *cl);
+
+/* prototypes from qfollow.pc */
+int followup_fix_modby(struct query *q, struct save_queue *sq,
+		       struct validate *v, int (*action)(int, char **, void *),
+		       void *actarg, client *cl);
+int followup_gpob(struct query *q, struct save_queue *sq, struct validate *v,
+		  int (*action)(int, char **, void *), void *actarg,
+		  client *cl);
+int followup_glin(struct query *q, struct save_queue *sq, struct validate *v,
+		  int (*action)(int, char **, void *), void *actarg,
+		  client *cl);
+int followup_gzcl(struct query *q, struct save_queue *sq, struct validate *v,
+		  int (*action)(int, char **, void *), void *actarg,
+		  client *cl);
+int followup_gsha(struct query *q, struct save_queue *sq, struct validate *v,
+		  int (*action)(int, char **, void *), void *actarg,
+		  client *cl);
+int followup_gqot(struct query *q, struct save_queue *sq, struct validate *v,
+		  int (*action)(int, char **, void *), void *actarg,
+		  client *cl);
+int followup_gpce(struct query *q, struct save_queue *sq, struct validate *v,
+		  int (*action)(int, char **, void *), void *actarg,
+		  client *cl);
+int followup_guax(struct query *q, struct save_queue *sq, struct validate *v,
+		  int (*action)(int, char **, void *), void *actarg,
+		  client *cl);
+int followup_gsnt(struct query *q, struct save_queue *sq, struct validate *v,
+		  int (*action)(int, char **, void *), void *actarg,
+		  client *cl);
+int followup_ghst(struct query *q, struct save_queue *sq, struct validate *v,
+		  int (*action)(int, char **, void *), void *actarg,
+		  client *cl);
+
+int followup_ausr(struct query *q, char *argv[], client *cl);
+int followup_aqot(struct query *q, char *argv[], client *cl);
+int followup_dqot(struct query *q, char *argv[], client *cl);
+int followup_uuac(struct query *q, char *argv[], client *cl);
+
+int set_modtime(struct query *q, char *argv[], client *cl);
+int set_modtime_by_id(struct query *q, char *argv[], client *cl);
+int set_finger_modtime(struct query *q, char *argv[], client *cl);
+int set_pobox_modtime(struct query *q, char *argv[], client *cl);
+int set_uppercase_modtime(struct query *q, char *argv[], client *cl);
+int set_mach_modtime_by_id(struct query *q, char *argv[], client *cl);
+int set_cluster_modtime_by_id(struct query *q, char *argv[], client *cl);
+int set_serverhost_modtime(struct query *q, char *argv[], client *cl);
+int set_nfsphys_modtime(struct query *q, char *argv[], client *cl);
+int set_filesys_modtime(struct query *q, char *argv[], client *cl);
+int set_zephyr_modtime(struct query *q, char *argv[], client *cl);
+int _sdl_followup(struct query *q, char *argv[], client *cl);
+
+/* prototypes from qsetup.pc */
+int prefetch_value(struct query *q, char *argv[], client *cl);
+int prefetch_filesys(struct query *q, char *argv[], client *cl);
+int setup_ausr(struct query *q, char *argv[], client *cl);
+int setup_dusr(struct query *q, char *argv[], client *cl);
+int setup_spop(struct query *q, char *argv[], client *cl);
+int setup_dpob(struct query *q, char *argv[], client *cl);
+int setup_dmac(struct query *q, char *argv[], client *cl);
+int setup_dclu(struct query *q, char *argv[], client *cl);
+int setup_alis(struct query *q, char *argv[], client *cl);
+int setup_dlis(struct query *q, char *argv[], client *cl);
+int setup_dsin(struct query *q, char *argv[], client *cl);
+int setup_dshi(struct query *q, char *argv[], client *cl);
+int setup_afil(struct query *q, char *argv[], client *cl);
+int setup_ufil(struct query *q, char *argv[], client *cl);
+int setup_dfil(struct query *q, char *argv[], client *cl);
+int setup_aftg(struct query *q, char *argv[], client *cl);
+int setup_dnfp(struct query *q, char *argv[], client *cl);
+int setup_dqot(struct query *q, char *argv[], client *cl);
+int setup_akum(struct query *q, char *argv[], client *cl);
+int setup_dsnt(struct query *q, char *argv[], client *cl);
+int setup_ahst(struct query *q, char *argv[], client *cl);
+int setup_ahal(struct query *q, char *argv[], client *cl);
+
+/* prototypes from qsupport.pc */
+int set_pobox(struct query *q, char *argv[], client *cl);
+int add_member_to_list(struct query *q, char *argv[], client *cl);
+int delete_member_from_list(struct query *q, char *argv[], client *cl);
+int register_user(struct query *q, char *argv[], client *cl);
+
+int get_list_info(struct query *q, char **argv, client *cl,
+		  int (*action)(int, char *[], void *), void *actarg);
+int get_ace_use(struct query *q, char **argv, client *cl,
+		int (*action)(int, char *[], void *), void *actarg);
+int qualified_get_lists(struct query *q, char **argv, client *cl,
+			int (*action)(int, char *[], void *), void *actarg);
+int get_members_of_list(struct query *q, char **argv, client *cl,
+			int (*action)(int, char *[], void *), void *actarg);
+int get_end_members_of_list(struct query *q, char **argv, client *cl,
+			    int (*action)(int, char *[], void *),
+			    void *actarg);
+int qualified_get_server(struct query *q, char **argv, client *cl,
+			 int (*action)(int, char *[], void *), void *actarg);
+int qualified_get_serverhost(struct query *q, char **argv, client *cl,
+			     int (*action)(int, char *[], void *),
+			     void *actarg);
+int count_members_of_list(struct query *q, char **argv, client *cl,
+			  int (*action)(int, char *[], void *), void *actarg);
+int get_lists_of_member(struct query *q, char **argv, client *cl,
+			int (*action)(int, char *[], void *), void *actarg);
+
+/* prototypes from qvalidate.pc */
+/* from qvalidate.dc */
+int validate_fields(struct query *q, char *argv[], struct valobj *vo, int n);
+int validate_row(struct query *q, char *argv[], struct validate *v);

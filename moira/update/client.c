@@ -1,77 +1,29 @@
-/*
- *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/client.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/client.c,v 1.21 1998-01-07 17:13:41 danw Exp $
- */
-
-#ifndef lint
-static char *rcsid_client2_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/client.c,v 1.21 1998-01-07 17:13:41 danw Exp $";
-#endif	lint
-
-/*
- * MODULE IDENTIFICATION:
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/client.c,v 1.21 1998-01-07 17:13:41 danw Exp $
- *	Copyright 1987, 1988 by the Massachusetts Institute of Technology.
- *	For copying and distribution information, please see the file
- *	<mit-copyright.h>.
- * DESCRIPTION:
- *	This code handles the actual distribution of data files
- *	to servers in the Moira server-update program.
- * AUTHOR:
- *	Ken Raeburn (spook@athena.MIT.EDU),
- *		MIT Project Athena/MIT Information Systems.
- * DEFINED VALUES:
- *	conn
- *	mr_update_server
+/* $Id: client.c,v 1.22 1998-02-05 22:51:58 danw Exp $
+ *
+ * This code handles the actual distribution of data files
+ * to servers in the Moira server-update program.
+ *
+ * Copyright (C) 1987-1998 by the Massachusetts Institute of Technology.
+ * For copying and distribution information, please see the file
+ * <mit-copyright.h>.
  */
 
 #include <mit-copyright.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <gdb.h>
-#include <sys/param.h>
-#include <sys/wait.h>
-#include <sys/socket.h>
-#include <update.h>
-#include <errno.h>
 #include <moira.h>
-#include <moira_site.h>
+#include "update.h"
+
+#include <stdio.h>
+
+#include <des.h>
+#include <gdb.h>
 #include <krb.h>
 
-extern int errno, dbg;
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/client.c,v 1.22 1998-02-05 22:51:58 danw Exp $");
+
+extern int dbg;
 extern C_Block session;
 
-static char buf[BUFSIZ];
-static int code;
-
 CONNECTION conn;
-
-
-/*
- * FUNCTION:
- *	initialize()
- * DESCRIPTION:
- *	Insures that various libraries have a chance to get
- *	initialized.
- * INPUT:
- * OUTPUT:
- * RETURN VALUE:
- *	void
- * SIDE EFFECTS:
- *	Initializes GDB library.
- * PROBLEMS:
- *
- */
-static void initialize()
-{
-  static int initialized = 0;
-
-  if (!initialized)
-    {
-      gdb_init();
-      initialized++;
-    }
-}
 
 int send_auth(char *host_name)
 {
@@ -161,7 +113,7 @@ int execute(char *path)
   return MR_SUCCESS;
 }
 
-send_quit(void)
+void send_quit(void)
 {
   STRING str;
   if (!conn)

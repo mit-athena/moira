@@ -1,35 +1,29 @@
-#if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/pobox.c,v 1.24 1998-01-07 17:13:05 danw Exp $";
-#endif
-
-/*	This is the file pobox.c for the Moira Client, which allows users
+/* $Id $
+ *
+ *	This is the file pobox.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
  *	It Contains: Functions for handling the poboxes.
  *
  *	Created: 	7/10/88
  *	By:		Chris D. Peterson
  *
- *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/pobox.c,v $
- *      $Author: danw $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/pobox.c,v 1.24 1998-01-07 17:13:05 danw Exp $
- *
- *  	Copyright 1988 by the Massachusetts Institute of Technology.
- *
- *	For further information on copyright and distribution
- *	see the file mit-copyright.h
+ * Copyright (C) 1988-1998 by the Massachusetts Institute of Technology.
+ * For copying and distribution information, please see the file
+ * <mit-copyright.h>.
  */
 
-#include <stdio.h>
-#include <string.h>
-#include <ctype.h>
+#include <mit-copyright.h>
 #include <moira.h>
 #include <moira_site.h>
-#include <menu.h>
-
-#include "mit-copyright.h"
 #include "defs.h"
 #include "f_defs.h"
 #include "globals.h"
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/pobox.c,v 1.25 1998-02-05 22:50:47 danw Exp $");
 
 #define FOREIGN_BOX ("SMTP")
 #define LOCAL_BOX ("POP")
@@ -75,7 +69,7 @@ static int PrintPOMachines(void)
   struct qelem *top = NULL;
 
   if ((status = do_mr_query("get_server_locations", CountArgs(args), args,
-			    StoreInfo, (char *)&top)))
+			    StoreInfo, &top)))
     {
       com_err(program_name, status, " in get_server_locations.");
       return SUB_ERROR;
@@ -102,8 +96,7 @@ int GetUserPOBox(int argc, char **argv)
   if (!ValidName(argv[1]))
     return DM_NORMAL;
 
-  switch ((status = do_mr_query("get_pobox", 1, argv + 1, StoreInfo,
-				(char *)&top)))
+  switch ((status = do_mr_query("get_pobox", 1, argv + 1, StoreInfo, &top)))
     {
     case MR_NO_MATCH:
       Put_message("This user has no P.O. Box.");
@@ -140,7 +133,7 @@ static char *GetNewLocalPOBox(char *local_user)
       Put_message("");
       if (!Prompt_input("Which Machine? ", temp_buf, BUFSIZ))
 	return (char *) SUB_ERROR;
-      return canonicalize_hostname(strsave(temp_buf));
+      return canonicalize_hostname(strdup(temp_buf));
     }
   Put_message("Could not get machines to choose from, quitting.");
   return (char *) SUB_ERROR;
@@ -164,8 +157,7 @@ int SetUserPOBox(int argc, char **argv)
     return DM_NORMAL;
 
   /* Print the current PO Box info */
-  switch ((status = do_mr_query("get_pobox", 1, argv + 1, StoreInfo,
-				(char *)&top)))
+  switch ((status = do_mr_query("get_pobox", 1, argv + 1, StoreInfo, &top)))
     {
     case MR_SUCCESS:
       sprintf(temp_buf, "Current pobox for user %s: \n", local_user);
@@ -191,7 +183,7 @@ int SetUserPOBox(int argc, char **argv)
 	{
 	case TRUE:
 	  switch ((status = do_mr_query("set_pobox_pop", 1,
-					&local_user, Scream, NULL)))
+					&local_user, NULL, NULL)))
 	    {
 	    case MR_SUCCESS:
 	      return DM_NORMAL;
@@ -251,7 +243,7 @@ int SetUserPOBox(int argc, char **argv)
   args[PO_BOX] = box;
   args[PO_END] = NULL;
   if ((status = do_mr_query("set_pobox", CountArgs(args), args,
-			    Scream, NULL)))
+			    NULL, NULL)))
     com_err(program_name, status, " in ChangeUserPOBox");
   else
     Put_message("PO Box assigned.");
@@ -279,7 +271,7 @@ int RemoveUserPOBox(int argc, char **argv)
   if (Confirm(temp_buf))
     {
       if ((status = do_mr_query("delete_pobox", 1, argv + 1,
-				Scream, NULL)))
+				NULL, NULL)))
 	com_err(program_name, status, " in delete_pobox.");
       else
 	Put_message("PO Box removed.");

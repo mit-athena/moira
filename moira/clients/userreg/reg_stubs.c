@@ -1,41 +1,46 @@
-/*
- *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/reg_stubs.c,v $
- *	$Author: danw $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/reg_stubs.c,v 1.28 1998-01-07 17:13:15 danw Exp $
+/* $Id $
  *
- *  (c) Copyright 1988 by the Massachusetts Institute of Technology.
- *  For copying and distribution information, please see the file
- *  <mit-copyright.h>.
+ * Copyright (C) 1988-1998 by the Massachusetts Institute of Technology.
+ * For copying and distribution information, please see the file
+ * <mit-copyright.h>.
  */
 
-#ifndef lint
-static char *rcsid_reg_stubs_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/reg_stubs.c,v 1.28 1998-01-07 17:13:15 danw Exp $";
-#endif
-
 #include <mit-copyright.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <sys/types.h>
-#include <sys/time.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <netdb.h>
-#include <des.h>
-#include <krb.h>
-#include <krb_err.h>
-#include <errno.h>
 #include <moira.h>
 #include <moira_site.h>
-#include <hesiod.h>
-#include "ureg_err.h"
 #include "ureg_proto.h"
-#include <string.h>
+
+#include <sys/types.h>
+#include <sys/socket.h>
+
+#include <netdb.h>
+#include <netinet/in.h>
+
 #include <ctype.h>
+#include <errno.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+
+#include <des.h>
+#include <hesiod.h>
+#include <kadm_err.h>
+#include <krb.h>
+
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/reg_stubs.c,v 1.29 1998-02-05 22:50:58 danw Exp $");
+
+int do_operation(char *first, char *last, char *idnumber, char *hashidnumber,
+		 char *data, u_long opcode);
+int do_secure_operation(char *login, char *idnumber, char *passwd,
+			char *newpasswd, u_long opcode);
+int do_call(char *buf, int len, int seq_no, char *login);
+
+char *krb_realmofhost(char *);
 
 static int reg_sock = -1;
 static int seq_no = 0;
 static char *host;
-extern errno;
 #define UNKNOWN_HOST -1
 #define UNKNOWN_SERVICE -2
 
@@ -71,13 +76,13 @@ int ureg_init(void)
 #endif
   if (!host || (strlen(host) == 0))
     {
-      host = strsave(MOIRA_SERVER);
+      host = strdup(MOIRA_SERVER);
       s = strchr(host, ':');
       if (s)
 	*s = '\0';
     }
   hp = gethostbyname(host);
-  host = strsave(hp->h_name);
+  host = strdup(hp->h_name);
   if (hp == NULL)
     return UNKNOWN_HOST;
 
@@ -246,11 +251,10 @@ int do_secure_operation(char *login, char *idnumber, char *passwd,
   int call = ntohl(opcode);
   char inst[INST_SZ], hosti[INST_SZ];
   char *bp = buf, *src, *dst, *realm;
-  int len, status, i;
+  int len, status;
   KTEXT_ST cred;
   CREDENTIALS creds;
   Key_schedule keys;
-  char *krb_get_phost(), *krb_realmofhost();
 
   memmove(bp, &version, sizeof(int));
   bp += sizeof(int);
@@ -271,7 +275,7 @@ int do_secure_operation(char *login, char *idnumber, char *passwd,
   bp += strlen(bp) + 1;
 
   /* don't overwrite existing ticket file */
-  sprintf(tktstring, "/tmp/tkt_cpw_%d", getpid());
+  sprintf(tktstring, "/tmp/tkt_cpw_%ld", (long)getpid());
   krb_set_tkt_string(tktstring);
 
   /* get realm and canonizalized hostname of server */

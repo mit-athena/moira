@@ -1,4 +1,4 @@
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/Imakefile,v 1.6 1997-01-29 22:57:31 danw Exp $
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/Imakefile,v 1.7 1998-02-05 22:50:19 danw Exp $
 #
 # Copyright 1990 by the Massachusetts Institute of Technology.
 #
@@ -26,7 +26,7 @@ rest.pc: ../db/schema.sql db2rest.awk
 	awk -f db2rest.awk < ../db/schema.sql > rest.pc
 rest1.pc: rest.pc
 clean::
-	$(RM) bkup.pc bkup1.pc rest.pc rest1.pc
+	$(RM) bkup.pc bkup1.pc bkup.h rest.pc rest1.pc rest.h
 sqlfile(dump_db)
 sqlfile(rest_db)
 sqlfile(dumprest)

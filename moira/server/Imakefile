@@ -1,4 +1,4 @@
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/Imakefile,v 1.7 1997-01-29 23:27:03 danw Exp $
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/Imakefile,v 1.8 1998-02-05 22:51:40 danw Exp $
 #
 # Copyright 1990 by the Massachusetts Institute of Technology.
 #
@@ -8,7 +8,7 @@
 # Imakefile for server directory.
 #
 
-DEFINES= -I. $(GDSSINC)
+GDSS_INC=$(GDSSINC)
 
 SRCS = startmoira.c mr_main.c mr_sauth.c mr_scall.c \
 	mr_srvdata.c mr_shutdown.c mr_util.c \

@@ -1,26 +1,29 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/config.c,v 1.5 1998-01-05 19:53:52 danw Exp $
+/* $Id: config.c,v 1.6 1998-02-05 22:51:59 danw Exp $
  *
  * Routines to handle configuration file for Moira's update_server.
  * These routines must load the file into memory rather than parse
  * it each time as one of the things the server may do is chroot()
  * itself.
  *
- * (c) Copyright 1992 by the Massachusetts Institute of Technology.
+ * Copyright (C) 1992-1998 by the Massachusetts Institute of Technology.
  * For copying and distribution information, please see the file
  * <mit-copyright.h>.
  */
 
 #include <mit-copyright.h>
+#include <moira.h>
+#include "update_server.h"
+
+#include <sys/stat.h>
+
+#include <ctype.h>
+#include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <ctype.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <sys/file.h>
-#include <fcntl.h>
-#include <moira.h>
+#include <unistd.h>
 
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/config.c,v 1.6 1998-02-05 22:51:59 danw Exp $");
 
 #define CONFIG_FILE	"/etc/athena/moira.conf"
 
@@ -38,11 +41,11 @@ static char *config_buf = NULL;
 static char **config_keys, **config_values;
 
 
-static init()
+static int init(void)
 {
   int fd, count = 0;
   struct stat st;
-  char *p, *start;
+  char *p;
 
   /* Only execute once */
   if (config_buf)

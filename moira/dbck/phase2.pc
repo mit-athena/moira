@@ -1,25 +1,85 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase2.pc,v 1.4 1998-01-06 20:39:47 danw Exp $
+/* $Id: phase2.pc,v 1.5 1998-02-05 22:51:04 danw Exp $
  *
- *  (c) Copyright 1988 by the Massachusetts Institute of Technology.
- *  For copying and distribution information, please see the file
- *  <mit-copyright.h>.
+ * (c) Copyright 1988-1998 by the Massachusetts Institute of Technology.
+ * For copying and distribution information, please see the file
+ * <mit-copyright.h>.
  */
 
 #include <mit-copyright.h>
-#include <stdio.h>
-#include <stdlib.h>
 #include <moira.h>
 #include "dbck.h"
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
 EXEC SQL INCLUDE sqlca;
 
-static char phase2_qc_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase2.pc,v 1.4 1998-01-06 20:39:47 danw Exp $";
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase2.pc,v 1.5 1998-02-05 22:51:04 danw Exp $");
 
 EXEC SQL WHENEVER SQLERROR DO dbmserr();
 
-int show_mcm_mach(int id)
+int show_mcm_mach(void *id);
+int show_mcm_clu(void *id);
+int show_hostalias(void *id);
+int show_pcap_mach(void *id);
+int show_pcap_quota(void *id);
+void user_check(int id, void *user, void *hint);
+int maybe_fixup_unref_string(int sid, int oid, char *oname, char *table,
+			     char *field, char *idfield);
+int maybe_fixup_modby(int sid, int oid, char *oname, char *table,
+		      char *field, char *idfield);
+int maybe_fixup_unref_string2(char *table, char *field, char *cursor, int sid);
+int maybe_fixup_modby2(char *table, char *field, char *cursor, int id);
+void pobox_check(int id, struct user *u);
+void remove_pobox(int id);
+void fix_smtp_pobox(int id, int sid);
+void mach_check(int id, void *machine, void *hint);
+void subnet_check(int id, void *subnet, void *hint);
+void clear_subnet_owner(struct subnet *s);
+void clear_mach_owner(struct machine *m);
+void cluster_check(int id, void *cluster, void *hint);
+int show_svc(void *id);
+void list_check(int id, void *list, void *hint);
+void fix_list_acl(int id);
+int show_member_list(void *id);
+int show_mem_user(void *id);
+int show_mem_list(void *id);
+int show_mem_str(void *id);
+int show_mem_krb(void *id);
+void del_mem_user(void *id);
+void del_mem_list(void *id);
+void del_mem_str(void *id);
+void del_mem_krb(void *id);
+int show_sh(void *id);
+void del_sh_mach(void *id);
+void fsmatch(int id, void *nfsphys, void *filesys);
+void check_fs(int id, void *filesys, void *hint);
+void check_nfsphys(int id, void *nfsphys, void *hint);
+int show_fsg_missing(void *id);
+int show_fsg_type(void *filesys);
+void fix_fsg_type(void *filesys);
+int show_fsg_nomember(void *id);
+int show_quota_nouser(void *id);
+int show_quota_nolist(void *id);
+void fix_quota_nouser(void *id);
+void fix_quota_nolist(void *id);
+int show_quota_nofs(void *id);
+void fix_quota_nofs(void *id);
+int show_quota_wrongpid(void *id);
+void fix_quota_physid(void *id);
+int show_srv_user(void *id);
+int show_srv_list(void *id);
+void zero_srv_user(void *id);
+void zero_srv_list(void *id);
+int show_krb_usr(void *id);
+int show_krb_str(void *id);
+int show_pdm_mach(void *id);
+
+int show_mcm_mach(void *id)
 {
   EXEC SQL BEGIN DECLARE SECTION;
-  int iid = id, found = 1;
+  int iid = (int)id, found = 1;
   char name[33];
   EXEC SQL END DECLARE SECTION;
 
@@ -35,16 +95,17 @@ int show_mcm_mach(int id)
 
       strtrim(name);
       found = 0;
-      printf("Cluster %s, non-existant machine %d in cluster map\n", name, id);
+      printf("Cluster %s, non-existant machine %d in cluster map\n",
+	     name, iid);
     }
   EXEC SQL CLOSE csr201;
   return found;
 }
 
-int show_mcm_clu(int id)
+int show_mcm_clu(void *id)
 {
   EXEC SQL BEGIN DECLARE SECTION;
-  int iid = id, found = 1;
+  int iid = (int)id, found = 1;
   char name[33];
   EXEC SQL END DECLARE SECTION;
 
@@ -61,16 +122,17 @@ int show_mcm_clu(int id)
       strtrim(name);
 
       found = 0;
-      printf("Machine %s, non-existant cluster %d in cluster map\n", name, id);
+      printf("Machine %s, non-existant cluster %d in cluster map\n",
+	     name, iid);
     }
   EXEC SQL CLOSE csr202;
   return found;
 }
 
-int show_hostalias(int id)
+int show_hostalias(void *id)
 {
   EXEC SQL BEGIN DECLARE SECTION;
-  int iid = id, found = 1;
+  int iid = (int)id, found = 1;
   char name[33];
   EXEC SQL END DECLARE SECTION;
 
@@ -86,16 +148,17 @@ int show_hostalias(int id)
       strtrim(name);
 
       found = 0;
-      printf("Alias %s, non-existant machine %d in hostalias map\n", name, id);
+      printf("Alias %s, non-existant machine %d in hostalias map\n",
+	     name, iid);
     }
   EXEC SQL CLOSE csr234;
   return found;
 }
 
-int show_pcap_mach(int id)
+int show_pcap_mach(void *id)
 {
   EXEC SQL BEGIN DECLARE SECTION;
-  int iid = id, found = 1;
+  int iid = (int)id, found = 1;
   char name[33];
   EXEC SQL END DECLARE SECTION;
 
@@ -112,16 +175,16 @@ int show_pcap_mach(int id)
 
       found = 0;
       printf("Printer %s, non-existant spool machine %d in printcap table\n",
-	     name, id);
+	     name, iid);
     }
   EXEC SQL CLOSE csr235;
   return found;
 }
 
-int show_pcap_quota(int id)
+int show_pcap_quota(void *id)
 {
   EXEC SQL BEGIN DECLARE SECTION;
-  int iid = id, found = 1;
+  int iid = (int)id, found = 1;
   char name[33];
   EXEC SQL END DECLARE SECTION;
 
@@ -138,14 +201,16 @@ int show_pcap_quota(int id)
 
       found = 0;
       printf("Printer %s, non-existant quota server %d in printcap table\n",
-	     name, id);
+	     name, iid);
     }
   EXEC SQL CLOSE csr236;
   return found;
 }
 
-user_check(int id, struct user *u, int hint)
+void user_check(int id, void *user, void *hint)
 {
+  struct user *u = user;
+
   u->comment = maybe_fixup_unref_string(u->comment, id, u->login, "users",
 					"comments", "users_id");
 
@@ -161,7 +226,7 @@ user_check(int id, struct user *u, int hint)
   u->sigwho = maybe_fixup_unref_string(u->sigwho, id, u->login, "users",
 				       "sigwho", "users_id");
 
-  pobox_check(id, u, hint);
+  pobox_check(id, u);
 }
 
 int maybe_fixup_unref_string(int sid, int oid, char *oname, char *table,
@@ -173,7 +238,7 @@ int maybe_fixup_unref_string(int sid, int oid, char *oname, char *table,
   char stmt_buf[500];
   EXEC SQL END DECLARE SECTION;
 
-  if (newid = int_hash_lookup(string_dups, ret))
+  if ((newid = (int)hash_lookup(string_dups, ret)))
     {
       printf("%s entry %s(%d) has a %s with duplicate string %d\n",
 	     table, oname, oid, field, ret);
@@ -253,7 +318,7 @@ int maybe_fixup_unref_string2(char *table, char *field, char *cursor, int sid)
   char stmt_buf[500];
   EXEC SQL END DECLARE SECTION;
 
-  if ((newid = int_hash_lookup(string_dups, ret)))
+  if ((newid = (int)hash_lookup(string_dups, ret)))
     {
       printf("%s entry has a %s with duplicate string %d\n",
 	     table, field, ret);
@@ -323,7 +388,7 @@ int maybe_fixup_modby2(char *table, char *field, char *cursor, int id)
   return 1;
 }
 
-pobox_check(int id, struct user *u, int hint)
+void pobox_check(int id, struct user *u)
 {
   switch (u->potype)
     {
@@ -340,7 +405,7 @@ pobox_check(int id, struct user *u, int hint)
 	}
       break;
     case 'S':
-      if (int_hash_lookup(string_dups, u->pobox_id))
+      if (hash_lookup(string_dups, u->pobox_id))
 	{
 	  printf("User %s(%s) has P.O.Box with duplicate string %d\n",
 		 u->login, u->fullname, u->pobox_id);
@@ -348,8 +413,8 @@ pobox_check(int id, struct user *u, int hint)
 	    {
 	      printf("Replacing box_id dup string ID %d with %d\n",
 		     u->pobox_id,
-		     int_hash_lookup(string_dups, u->pobox_id));
-	      u->pobox_id = int_hash_lookup(string_dups, u->pobox_id);
+		     (int)hash_lookup(string_dups, u->pobox_id));
+	      u->pobox_id = (int)hash_lookup(string_dups, u->pobox_id);
 	      fix_smtp_pobox(u->users_id, u->pobox_id);
 	      string_check(u->pobox_id);
 	    }
@@ -371,10 +436,10 @@ pobox_check(int id, struct user *u, int hint)
 }
 
 
-remove_pobox(int id)
+void remove_pobox(int id)
 {
   EXEC SQL BEGIN DECLARE SECTION;
-  int rowcount, iid = id;
+  int rowcount, iid = (int)id;
   EXEC SQL END DECLARE SECTION;
 
   EXEC SQL UPDATE users SET potype = 'NONE' WHERE users.users_id = :iid;
@@ -386,7 +451,7 @@ remove_pobox(int id)
   modified("users");
 }
 
-fix_smtp_pobox(int id, int sid)
+void fix_smtp_pobox(int id, int sid)
 {
   EXEC SQL BEGIN DECLARE SECTION;
   int rowcount, iid = id, isid = sid;
@@ -401,8 +466,10 @@ fix_smtp_pobox(int id, int sid)
   modified("users");
 }
 
-mach_check(int id, struct machine *m, int hint)
+void mach_check(int id, void *machine, void *hint)
 {
+  struct machine *m = machine;
+
   if (!hash_lookup(subnets, m->snet_id))
     {
       printf("Machine %s is on a non-existant subnet %d\n",
@@ -466,8 +533,10 @@ mach_check(int id, struct machine *m, int hint)
 			       "modby", "mach_id");
 }
 
-subnet_check(int id, struct subnet *s, int hint)
+void subnet_check(int id, void *subnet, void *hint)
 {
+  struct subnet *s = subnet;
+
   switch (s->owner_type)
     {
     case 'U':
@@ -502,7 +571,7 @@ subnet_check(int id, struct subnet *s, int hint)
 			       "modby", "snet_id");
 }
 
-clear_subnet_owner(struct subnet *s)
+void clear_subnet_owner(struct subnet *s)
 {
   EXEC SQL BEGIN DECLARE SECTION;
   int rowcount, id = s->snet_id;
@@ -518,7 +587,7 @@ clear_subnet_owner(struct subnet *s)
   modified("subnet");
 }
 
-clear_mach_owner(struct machine *m)
+void clear_mach_owner(struct machine *m)
 {
   EXEC SQL BEGIN DECLARE SECTION;
   int rowcount, id = m->mach_id;
@@ -534,16 +603,18 @@ clear_mach_owner(struct machine *m)
   modified("machine");
 }
 
-cluster_check(int id, struct cluster *c, int hint)
+void cluster_check(int id, void *cluster, void *hint)
 {
+  struct cluster *c = cluster;
+
   c->modby = maybe_fixup_modby(c->modby, id, c->name, "clusters",
 			       "modby", "clu_id");
 }
 
-int show_svc(int id)
+int show_svc(void *id)
 {
   EXEC SQL BEGIN DECLARE SECTION;
-  int iid = id, found = 1;
+  int iid = (int)id, found = 1;
   char label[17], data[33];
   EXEC SQL END DECLARE SECTION;
 
@@ -561,14 +632,16 @@ int show_svc(int id)
       strtrim(data);
       found = 0;
       printf("Cluster data [%s] %s for non-existant cluster %d\n",
-	     label, data, id);
+	     label, data, iid);
     }
   EXEC SQL CLOSE csr203;
   return found;
 }
 
-list_check(int id, struct list *l, int hint)
+void list_check(int id, void *list, void *hint)
 {
+  struct list *l = list;
+
   switch (l->acl_type)
     {
     case 'L':
@@ -600,10 +673,10 @@ list_check(int id, struct list *l, int hint)
     }
 }
 
-fix_list_acl(int id)
+void fix_list_acl(int id)
 {
   EXEC SQL BEGIN DECLARE SECTION;
-  int rowcount, iid = id;
+  int rowcount, iid = (int)id;
   EXEC SQL END DECLARE SECTION;
 
   EXEC SQL UPDATE list SET acl_id = :iid, acl_type = 'LIST'
@@ -616,10 +689,10 @@ fix_list_acl(int id)
   modified("list");
 }
 
-int show_member_list(int id)
+int show_member_list(void *id)
 {
   EXEC SQL BEGIN DECLARE SECTION;
-  int mid, iid = id, found = 1;
+  int mid, iid = (int)id, found = 1;
   char mtype[9], *name = "";
   EXEC SQL END DECLARE SECTION;
 
@@ -647,11 +720,10 @@ int show_member_list(int id)
   return found;
 }
 
-int show_mem_user(int id)
+int show_mem_user(void *id)
 {
   EXEC SQL BEGIN DECLARE SECTION;
-  int lid, iid = id, found = 1;
-  char name[33];
+  int lid, iid = (int)id, found = 1;
   EXEC SQL END DECLARE SECTION;
 
   EXEC SQL DECLARE csr205 CURSOR FOR
@@ -672,11 +744,10 @@ int show_mem_user(int id)
   return found;
 }
 
-int show_mem_list(int id)
+int show_mem_list(void *id)
 {
   EXEC SQL BEGIN DECLARE SECTION;
-  int lid, iid = id, found = 1;
-  char name[33];
+  int lid, iid = (int)id, found = 1;
   EXEC SQL END DECLARE SECTION;
 
   EXEC SQL DECLARE csr206 CURSOR FOR
@@ -697,11 +768,10 @@ int show_mem_list(int id)
   return found;
 }
 
-int show_mem_str(int id)
+int show_mem_str(void *id)
 {
   EXEC SQL BEGIN DECLARE SECTION;
-  int lid, iid = id, found = 1;
-  char name[33];
+  int lid, iid = (int)id, found = 1;
   EXEC SQL END DECLARE SECTION;
 
   EXEC SQL DECLARE csr207 CURSOR FOR
@@ -723,11 +793,10 @@ int show_mem_str(int id)
 }
 
 
-int show_mem_krb(int id)
+int show_mem_krb(void *id)
 {
   EXEC SQL BEGIN DECLARE SECTION;
-  int lid, iid = id, found = 1;
-  char name[33];
+  int lid, iid = (int)id, found = 1;
   EXEC SQL END DECLARE SECTION;
 
   EXEC SQL DECLARE csr208 CURSOR FOR
@@ -749,10 +818,10 @@ int show_mem_krb(int id)
 }
 
 
-del_mem_user(int id)
+void del_mem_user(void *id)
 {
   EXEC SQL BEGIN DECLARE SECTION;
-  int iid = id, rowcount;
+  int iid = (int)id, rowcount;
   EXEC SQL END DECLARE SECTION;
 
   EXEC SQL DELETE FROM imembers WHERE member_type = 'USER' AND
@@ -765,10 +834,10 @@ del_mem_user(int id)
   modified("imembers");
 }
 
-del_mem_list(int id)
+void del_mem_list(void *id)
 {
   EXEC SQL BEGIN DECLARE SECTION;
-  int iid = id, rowcount;
+  int iid = (int)id, rowcount;
   EXEC SQL END DECLARE SECTION;
 
   EXEC SQL DELETE FROM imembers WHERE member_type = 'LIST' AND
@@ -781,10 +850,10 @@ del_mem_list(int id)
   modified("imembers");
 }
 
-del_mem_str(int id)
+void del_mem_str(void *id)
 {
   EXEC SQL BEGIN DECLARE SECTION;
-  int iid = id, rowcount;
+  int iid = (int)id, rowcount;
   EXEC SQL END DECLARE SECTION;
 
   EXEC SQL DELETE FROM imembers WHERE member_type = 'STRING' AND
@@ -798,10 +867,10 @@ del_mem_str(int id)
 }
 
 
-del_mem_krb(int id)
+void del_mem_krb(void *id)
 {
   EXEC SQL BEGIN DECLARE SECTION;
-  int iid = id, rowcount;
+  int iid = (int)id, rowcount;
   EXEC SQL END DECLARE SECTION;
 
   EXEC SQL DELETE FROM imembers WHERE member_type = 'KERBEROS' AND
@@ -815,11 +884,11 @@ del_mem_krb(int id)
 }
 
 
-int show_sh(int id)
+int show_sh(void *id)
 {
   EXEC SQL BEGIN DECLARE SECTION;
   char name[33];
-  int iid = id;
+  int iid = (int)id;
   EXEC SQL END DECLARE SECTION;
   int found = 1;
 
@@ -835,16 +904,16 @@ int show_sh(int id)
 
       found = 0;
       printf("ServerHost entry for service %s non-existant host %d\n",
-	     name, id);
+	     name, iid);
     }
   EXEC SQL CLOSE csr209;
   return found;
 }
 
-del_sh_mach(int id)
+void del_sh_mach(void *id)
 {
   EXEC SQL BEGIN DECLARE SECTION;
-  int iid = id, rowcount;
+  int iid = (int)id, rowcount;
   EXEC SQL END DECLARE SECTION;
 
   EXEC SQL DELETE FROM serverhosts WHERE mach_id = :iid;
@@ -859,8 +928,11 @@ del_sh_mach(int id)
 
 static int fnchecklen;
 
-fsmatch(int id, struct nfsphys *n, struct filesys *f)
+void fsmatch(int id, void *nfsphys, void *filesys)
 {
+  struct nfsphys *n = nfsphys;
+  struct filesys *f = filesys;
+
   if (n->mach_id == f->mach_id &&
       !strncmp(f->dir, n->dir, strlen(n->dir)) &&
       strlen(n->dir) > fnchecklen)
@@ -871,12 +943,13 @@ fsmatch(int id, struct nfsphys *n, struct filesys *f)
 }
 
 
-check_fs(int id, struct filesys *f, int hint)
+void check_fs(int id, void *filesys, void *hint)
 {
   EXEC SQL BEGIN DECLARE SECTION;
   int iid = id, id1, id2, id3, rowcount;
   char *dir;
   EXEC SQL END DECLARE SECTION;
+  struct filesys *f = filesys;
   struct nfsphys *n;
   struct machine *m;
 
@@ -919,7 +992,7 @@ check_fs(int id, struct filesys *f, int hint)
     {
       if (!hash_lookup(nfsphys, f->phys_id))
 	{
-	  m = (struct machine *)hash_lookup(machines, f->mach_id);
+	  m = hash_lookup(machines, f->mach_id);
 	  printf("Filesys %s with bad phys_id %d\n", f->name, f->phys_id);
 	  if (single_fix("Fix", 1))
 	    {
@@ -1004,8 +1077,10 @@ check_fs(int id, struct filesys *f, int hint)
     }
 }
 
-check_nfsphys(int id, struct nfsphys *n, int hint)
+void check_nfsphys(int id, void *nfsphys, void *hint)
 {
+  struct nfsphys *n = nfsphys;
+
   if (!hash_lookup(machines, n->mach_id))
     {
       printf("NFSphys %d(%s) on non-existant machine %d\n",
@@ -1015,10 +1090,10 @@ check_nfsphys(int id, struct nfsphys *n, int hint)
     }
 }
 
-int show_fsg_missing(int id)
+int show_fsg_missing(void *id)
 {
   EXEC SQL BEGIN DECLARE SECTION;
-  int iid = id, id1, found = 1;
+  int iid = (int)id, id1, found = 1;
   EXEC SQL END DECLARE SECTION;
   struct filesys *f;
 
@@ -1033,17 +1108,18 @@ int show_fsg_missing(int id)
 	break;
 
       found = 0;
-      if (f = (struct filesys *) hash_lookup(filesys, id1))
-	printf("Missing fsgroup %d has member filesystem %s\n", id, f->name);
+      if ((f = hash_lookup(filesys, id1)))
+	printf("Missing fsgroup %d has member filesystem %s\n", iid, f->name);
       else
-	printf("Missing fsgroup %d has member filesystem %d\n", id, id1);
+	printf("Missing fsgroup %d has member filesystem %d\n", iid, id1);
     }
   EXEC SQL CLOSE csr210;
   return found;
 }
 
-int show_fsg_type(struct filesys *f)
+int show_fsg_type(void *filesys)
 {
+  struct filesys *f = filesys;
   char *t;
 
   switch (f->type)
@@ -1073,8 +1149,9 @@ int show_fsg_type(struct filesys *f)
   return 0;
 }
 
-fix_fsg_type(struct filesys *f)
+void fix_fsg_type(void *filesys)
 {
+  struct filesys *f = filesys;
   EXEC SQL BEGIN DECLARE SECTION;
   int rowcount, id = f->filsys_id;
   EXEC SQL END DECLARE SECTION;
@@ -1088,10 +1165,10 @@ fix_fsg_type(struct filesys *f)
   modified("filesys");
 }
 
-int show_fsg_nomember(int id)
+int show_fsg_nomember(void *id)
 {
   EXEC SQL BEGIN DECLARE SECTION;
-  int iid = id, id1, found = 1;
+  int iid = (int)id, id1, found = 1;
   EXEC SQL END DECLARE SECTION;
   struct filesys *f;
 
@@ -1106,19 +1183,19 @@ int show_fsg_nomember(int id)
 	break;
 
       found = 0;
-      if (f = (struct filesys *) hash_lookup(filesys, id1))
-	printf("FSGroup %s has missing member %d\n", f->name, id);
+      if ((f = hash_lookup(filesys, id1)))
+	printf("FSGroup %s has missing member %d\n", f->name, iid);
       else
-	printf("FSGroup %d has missing member %d\n", id1, id);
+	printf("FSGroup %d has missing member %d\n", id1, iid);
     }
   EXEC SQL CLOSE csr211;
   return found;
 }
 
-int show_quota_nouser(int id)
+int show_quota_nouser(void *id)
 {
   EXEC SQL BEGIN DECLARE SECTION;
-  int iid = id, id1, found = 1;
+  int iid = (int)id, id1, found = 1;
   EXEC SQL END DECLARE SECTION;
 
   EXEC SQL DECLARE csr212 CURSOR FOR
@@ -1132,16 +1209,16 @@ int show_quota_nouser(int id)
 	break;
 
       found = 0;
-      printf("Quota on fs %d for non-existant user %d\n", id1, id);
+      printf("Quota on fs %d for non-existant user %d\n", id1, iid);
     }
   EXEC SQL CLOSE csr212;
   return found;
 }
 
-int show_quota_nolist(int id)
+int show_quota_nolist(void *id)
 {
   EXEC SQL BEGIN DECLARE SECTION;
-  int iid = id, id1, found = 1;
+  int iid = (int)id, id1, found = 1;
   EXEC SQL END DECLARE SECTION;
 
   EXEC SQL DECLARE csr213 CURSOR FOR
@@ -1155,19 +1232,19 @@ int show_quota_nolist(int id)
 	break;
 
       found = 0;
-      printf("Quota on fs %d for non-existant list %d\n", id1, id);
+      printf("Quota on fs %d for non-existant list %d\n", id1, iid);
     }
   EXEC SQL CLOSE csr213;
   return found;
 }
 
-fix_quota_nouser(int id)
+void fix_quota_nouser(void *id)
 {
   EXEC SQL BEGIN DECLARE SECTION;
-  int iid = id, rowcount, id1;
+  int iid = (int)id, rowcount, id1;
   EXEC SQL END DECLARE SECTION;
 
-  id1 = ((struct filesys *)hash_lookup(filesys, id))->phys_id;
+  id1 = ((struct filesys *)hash_lookup(filesys, iid))->phys_id;
   EXEC SQL DELETE FROM quota
     WHERE entity_id = :iid AND type = 'USER';
   rowcount = sqlca.sqlerrd[2];
@@ -1178,13 +1255,13 @@ fix_quota_nouser(int id)
   modified("quota");
 }
 
-fix_quota_nolist(int id)
+void fix_quota_nolist(void *id)
 {
   EXEC SQL BEGIN DECLARE SECTION;
-  int iid = id, rowcount, id1;
+  int iid = (int)id, rowcount, id1;
   EXEC SQL END DECLARE SECTION;
 
-  id1 = ((struct filesys *)hash_lookup(filesys, id))->phys_id;
+  id1 = ((struct filesys *)hash_lookup(filesys, iid))->phys_id;
   EXEC SQL DELETE FROM quota WHERE entity_id = :iid AND type = 'GROUP';
   rowcount = sqlca.sqlerrd[2];
   if (rowcount > 0)
@@ -1194,10 +1271,10 @@ fix_quota_nolist(int id)
   modified("quota");
 }
 
-int show_quota_nofs(int id)
+int show_quota_nofs(void *id)
 {
   EXEC SQL BEGIN DECLARE SECTION;
-  int iid = id, id1, found = 1;
+  int iid = (int)id, id1, found = 1;
   char type[9];
   EXEC SQL END DECLARE SECTION;
 
@@ -1212,27 +1289,26 @@ int show_quota_nofs(int id)
 	break;
 
       found = 0;
-      printf("Quota for %s %d on non-existant filesys %d\n", type, id1, id);
+      printf("Quota for %s %d on non-existant filesys %d\n", type, id1, iid);
     }
   EXEC SQL CLOSE csr214;
   return found;
 }
 
-fix_quota_nofs(int id)
+void fix_quota_nofs(void *id)
 {
-  single_delete("quota", "filsys_id", id);
+  single_delete("quota", "filsys_id", (int)id);
 }
 
-int show_quota_wrongpid(int id)
+int show_quota_wrongpid(void *id)
 {
   EXEC SQL BEGIN DECLARE SECTION;
-  int iid = id, id1, found = 1;
+  int iid = (int)id, id1, found = 1;
   char type[9];
   EXEC SQL END DECLARE SECTION;
-  struct user *u;
   struct filesys *f;
 
-  f = (struct filesys *)hash_lookup(filesys, id);
+  f = hash_lookup(filesys, iid);
   EXEC SQL DECLARE csr215 CURSOR FOR
     SELECT entity_id, type FROM quota
     WHERE filsys_id = :iid;
@@ -1245,19 +1321,19 @@ int show_quota_wrongpid(int id)
 
       found = 0;
       printf("Quota for %s %d on filesys %s has wrong phys_id %d\n",
-	     type, id1, f->name, id);
+	     type, id1, f->name, iid);
     }
   EXEC SQL CLOSE csr215;
   return found;
 }
 
-fix_quota_physid(int id)
+void fix_quota_physid(void *id)
 {
   EXEC SQL BEGIN DECLARE SECTION;
-  int iid = id, rowcount, id1;
+  int iid = (int)id, rowcount, id1;
   EXEC SQL END DECLARE SECTION;
 
-  id1 = ((struct filesys *)hash_lookup(filesys, id))->phys_id;
+  id1 = ((struct filesys *)hash_lookup(filesys, iid))->phys_id;
   EXEC SQL UPDATE quota SET phys_id = :id1
     WHERE filsys_id = :iid AND phys_id != :id1;
   rowcount = sqlca.sqlerrd[2];
@@ -1268,11 +1344,11 @@ fix_quota_physid(int id)
   modified("quota");
 }
 
-int show_srv_user(int id)
+int show_srv_user(void *id)
 {
   EXEC SQL BEGIN DECLARE SECTION;
   char name[33];
-  int iid = id;
+  int iid = (int)id;
   EXEC SQL END DECLARE SECTION;
   int found = 1;
 
@@ -1287,18 +1363,18 @@ int show_srv_user(int id)
 	break;
 
       strtrim(name);
-      printf("Service %s has acl non-existant user %d\n", name, id);
+      printf("Service %s has acl non-existant user %d\n", name, iid);
       found = 0;
     }
   EXEC SQL CLOSE csr216;
   return found;
 }
 
-int show_srv_list(int id)
+int show_srv_list(void *id)
 {
   EXEC SQL BEGIN DECLARE SECTION;
   char name[33];
-  int iid = id;
+  int iid = (int)id;
   EXEC SQL END DECLARE SECTION;
   int found = 1;
 
@@ -1313,17 +1389,17 @@ int show_srv_list(int id)
 	break;
 
       strtrim(name);
-      printf("Service %s has acl non-existant list %d\n", name, id);
+      printf("Service %s has acl non-existant list %d\n", name, iid);
       found = 0;
     }
   EXEC SQL CLOSE csr217;
   return found;
 }
 
-zero_srv_user(int id)
+void zero_srv_user(void *id)
 {
   EXEC SQL BEGIN DECLARE SECTION;
-  int iid = id, rowcount;
+  int iid = (int)id, rowcount;
   EXEC SQL END DECLARE SECTION;
 
   EXEC SQL UPDATE servers SET acl_id = 0 WHERE acl_id = :iid AND
@@ -1336,10 +1412,10 @@ zero_srv_user(int id)
   modified("servers");
 }
 
-zero_srv_list(int id)
+void zero_srv_list(void *id)
 {
   EXEC SQL BEGIN DECLARE SECTION;
-  int iid = id, rowcount;
+  int iid = (int)id, rowcount;
   EXEC SQL END DECLARE SECTION;
 
   EXEC SQL UPDATE servers SET acl_id = 0 WHERE acl_id = :iid AND
@@ -1352,10 +1428,10 @@ zero_srv_list(int id)
   modified("servers");
 }
 
-int show_krb_usr(int id)
+int show_krb_usr(void *id)
 {
   EXEC SQL BEGIN DECLARE SECTION;
-  int iid = id, found = 1, id1;
+  int iid = (int)id, found = 1, id1;
   EXEC SQL END DECLARE SECTION;
   struct string *s;
   char *ss;
@@ -1370,22 +1446,22 @@ int show_krb_usr(int id)
       if (sqlca.sqlcode)
 	break;
 
-      if ((s = ((struct string *)hash_lookup(strings, id1))))
+      if ((s = hash_lookup(strings, id1)))
 	ss = s->name;
       else
 	ss = "[unknown]";
       found = 0;
       printf("Kerberos map for non-existant user %d to principal %s\n",
-	     id, s);
+	     iid, ss);
     }
   EXEC SQL CLOSE csr218;
   return found;
 }
 
-int show_krb_str(int id)
+int show_krb_str(void *id)
 {
   EXEC SQL BEGIN DECLARE SECTION;
-  int iid = id, found = 1, id1;
+  int iid = (int)id, found = 1, id1;
   EXEC SQL END DECLARE SECTION;
   struct user *u;
   char *s;
@@ -1400,23 +1476,23 @@ int show_krb_str(int id)
       if (sqlca.sqlcode)
 	break;
 
-      if ((u = ((struct user *)hash_lookup(users, id1))))
+      if ((u = hash_lookup(users, id1)))
 	s = u->login;
       else
 	s = "[\?\?\?]";
       found = 0;
       printf("Kerberos map for user %s (%d) to non-existant string %d\n",
-	     s, id1, id);
+	     s, id1, iid);
     }
   EXEC SQL CLOSE csr219;
   return found;
 }
 
-int show_pdm_mach(int id)
+int show_pdm_mach(void *id)
 {
   EXEC SQL BEGIN DECLARE SECTION;
   char name[33];
-  int iid = id;
+  int iid = (int)id;
   EXEC SQL END DECLARE SECTION;
   int found = 1;
 
@@ -1432,7 +1508,7 @@ int show_pdm_mach(int id)
 
       strtrim(name);
       printf("Palladium server/supervisor %s is on non-existant machine %d\n",
-	     name, id);
+	     name, iid);
       found = 0;
     }
   EXEC SQL CLOSE csr220;
@@ -1440,7 +1516,7 @@ int show_pdm_mach(int id)
 }
 
 
-phase2(void)
+void phase2(void)
 {
   EXEC SQL BEGIN DECLARE SECTION;
   int id1, id2, id3, id4, id5;
@@ -1478,10 +1554,10 @@ phase2(void)
       if (sqlca.sqlcode)
 	break;
 
-      if (!(m = (struct machine *)hash_lookup(machines, id1)))
-	sq_save_unique_data(sq1, id1);
+      if (!(m = hash_lookup(machines, id1)))
+	sq_save_unique_data(sq1, (void *)id1);
       else if (!hash_lookup(clusters, id2))
-	sq_save_unique_data(sq2, id2);
+	sq_save_unique_data(sq2, (void *)id2);
       if (m)
 	m->clucount++;
     }
@@ -1501,7 +1577,7 @@ phase2(void)
 	break;
 
       if (!hash_lookup(clusters, id1))
-	sq_save_unique_data(sq1, id1);
+	sq_save_unique_data(sq1, (void *)id1);
     }
   EXEC SQL CLOSE csr222;
   generic_delete(sq1, show_svc, "svc", "clu_id", 1);
@@ -1526,16 +1602,16 @@ phase2(void)
       if (sqlca.sqlcode)
 	break;
 
-      if (!(l = (struct list *) hash_lookup(lists, id1)))
-	sq_save_unique_data(sq1, id1);
+      if (!(l = hash_lookup(lists, id1)))
+	sq_save_unique_data(sq1, (void *)id1);
       else if (type[0] == 'U' && !hash_lookup(users, id2))
-	sq_save_unique_data(sq2, id2);
+	sq_save_unique_data(sq2, (void *)id2);
       else if (type[0] == 'L' && !hash_lookup(lists, id2))
-	sq_save_unique_data(sq3, id2);
+	sq_save_unique_data(sq3, (void *)id2);
       else if (type[0] == 'S' && !maybe_fixup_unref_string2("imembers", "member_id", "csr223", id2))
-	sq_save_unique_data(sq4, id2);
+	sq_save_unique_data(sq4, (void *)id2);
       else if (type[0] == 'K' && !maybe_fixup_unref_string2("imembers", "member_id", "csr223", id2))
-	sq_save_unique_data(sq5, id2);
+	sq_save_unique_data(sq5, (void *)id2);
       else
 	l->members++;
     }
@@ -1562,9 +1638,9 @@ phase2(void)
       maybe_fixup_modby2("servers", "modby", "csr224", id2);
       strtrim(type);
       if (!strcmp(type, "USER") && !hash_lookup(users, id1))
-	sq_save_data(sq1, id1);
+	sq_save_data(sq1, (void *)id1);
       else if (!strcmp(type, "LIST") && !hash_lookup(lists, id1))
-	sq_save_data(sq2, id1);
+	sq_save_data(sq2, (void *)id1);
     }
   EXEC SQL CLOSE csr224;
   generic_fix(sq1, show_srv_user, "Fix", zero_srv_user, 1);
@@ -1584,7 +1660,7 @@ phase2(void)
 
       maybe_fixup_modby2("serverhosts", "modby", "csr225", id2);
       if (!hash_lookup(machines, id1))
-	sq_save_data(sq, id1);
+	sq_save_data(sq, (void *)id1);
     }
   EXEC SQL CLOSE csr225;
   generic_fix(sq, show_sh, "Delete", del_sh_mach, 0);
@@ -1608,10 +1684,10 @@ phase2(void)
       if (sqlca.sqlcode)
 	break;
 
-      if (!(f = (struct filesys *) hash_lookup(filesys, id1)))
-	sq_save_data(sq1, id1);
+      if (!(f = hash_lookup(filesys, id1)))
+	sq_save_data(sq1, (void *)id1);
       if (!hash_lookup(filesys, id2))
-	sq_save_data(sq3, id2);
+	sq_save_data(sq3, (void *)id2);
     }
   EXEC SQL CLOSE csr226;
   generic_delete(sq1, show_fsg_missing, "fsgroup", "group_id", 0);
@@ -1634,14 +1710,13 @@ phase2(void)
 
       maybe_fixup_modby2("quota", "modby", "csr227", id5);
       if (type[0] == 'U' && id1 != 0 && !hash_lookup(users, id1))
-	sq_save_data(sq1, id1);
+	sq_save_data(sq1, (void *)id1);
       else if (type[0] == 'G' && !hash_lookup(lists, id1))
-	sq_save_data(sq4, id1);
-      else if (!(f = (struct filesys *) hash_lookup(filesys, id2)))
-	sq_save_data(sq2, id2);
-      else if (id3 != f->phys_id ||
-	       !(n = (struct nfsphys *) hash_lookup(nfsphys, id3)))
-	sq_save_data(sq3, id2);
+	sq_save_data(sq4, (void *)id1);
+      else if (!(f = hash_lookup(filesys, id2)))
+	sq_save_data(sq2, (void *)id2);
+      else if (id3 != f->phys_id || !(n = hash_lookup(nfsphys, id3)))
+	sq_save_data(sq3, (void *)id2);
       else
 	n->count += id4;
     }
@@ -1698,7 +1773,7 @@ phase2(void)
 
       maybe_fixup_modby2("palladium", "modby", "csr229", id2);
       if (!hash_lookup(machines, id1))
-	sq_save_unique_data(sq1, id1);
+	sq_save_unique_data(sq1, (void *)id1);
     }
   EXEC SQL CLOSE csr229;
   generic_delete(sq1, show_pdm_mach, "palladium", "mach_id", 1);
@@ -1717,9 +1792,9 @@ phase2(void)
 	break;
 
       if (!hash_lookup(users, id1))
-	sq_save_unique_data(sq1, id1);
+	sq_save_unique_data(sq1, (void *)id1);
       else if (!maybe_fixup_unref_string2("krbmap", "string_id", "csr230", id2))
-	sq_save_unique_data(sq2, id2);
+	sq_save_unique_data(sq2, (void *)id2);
     }
   EXEC SQL CLOSE csr230;
   generic_delete(sq1, show_krb_usr, "krbmap", "users_id", 1);
@@ -1755,7 +1830,7 @@ phase2(void)
 	break;
 
       if (!hash_lookup(machines, id1))
-	sq_save_unique_data(sq1, id1);
+	sq_save_unique_data(sq1, (void *)id1);
     }
   EXEC SQL CLOSE csr232;
   generic_delete(sq1, show_hostalias, "hostalias", "mach_id", 1);
@@ -1774,9 +1849,9 @@ phase2(void)
 
       maybe_fixup_modby2("printcap", "modby", "csr233", id3);
       if (!hash_lookup(machines, id1))
-	sq_save_unique_data(sq1, id1);
+	sq_save_unique_data(sq1, (void *)id1);
       else if (!hash_lookup(machines, id2))
-	sq_save_unique_data(sq2, id2);
+	sq_save_unique_data(sq2, (void *)id2);
     }
   EXEC SQL CLOSE csr233;
   generic_delete(sq1, show_pcap_mach, "printcap", "mach_id", 1);

@@ -1,28 +1,22 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/update_test.c,v 1.7 1998-01-05 19:53:58 danw Exp $
+/* $Id: update_test.c,v 1.8 1998-02-05 22:52:04 danw Exp $
  *
  * Test client for update_server protocol.
  *
- * Reads commands from the command line:
- * test host [commands...]
- *	-s file file	sends file to host
- *	-S file file	sends encrypted file to host
- *	-i file		sends instruction file to host
- *	-x file		executes instructions
- *	-n		nop
+ * Copyright 1992-1998 by the Massachusetts Institute of Technology.
+ * For copying and distribution information, please see the file
+ * <mit-copyright.h>.
  */
 
 #include <mit-copyright.h>
-#include <stdio.h>
-#include <string.h>
-#include <gdb.h>
-#include <sys/param.h>
-#include <sys/wait.h>
-#include <sys/socket.h>
-#include <update.h>
-#include <errno.h>
 #include <moira.h>
-#include <moira_site.h>
-#include <krb.h>
+#include <update.h>
+
+#include <stdio.h>
+#include <stdlib.h>
+
+#include <gdb.h>
+
+void usage(void);
 
 CONNECTION conn;
 char *whoami;
@@ -30,7 +24,7 @@ char *whoami;
 int main(int argc, char **argv)
 {
   char *host, service_address[256], *file, *rfile, buf[256];
-  int code, i, count = 0;
+  int code, i;
 
   whoami = argv[0];
   initialize_sms_error_table();
@@ -122,7 +116,7 @@ int main(int argc, char **argv)
   exit(code);
 }
 
-usage(void)
+void usage(void)
 {
   fprintf(stderr, "Usage: test host [commands...]\n");
   fprintf(stderr, "  Commands are:\n");

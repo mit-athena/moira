@@ -1,20 +1,22 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/disable.c,v 1.9 1998-01-06 20:39:40 danw Exp $
+/* $Id $
  *
  * disabled: check to see if registration is enabled right now.  Most of this
  * code is stolen from the cron daemon.
  *
- *  (c) Copyright 1988 by the Massachusetts Institute of Technology.
- *  For copying and distribution information, please see the file
- *  <mit-copyright.h>.
+ * Copyright (C) 1988-1998 by the Massachusetts Institute of Technology.
+ * For copying and distribution information, please see the file
+ * <mit-copyright.h>.
  */
 
 #include <mit-copyright.h>
-#include <stdio.h>
+#include <moira.h>
+
 #include <ctype.h>
-#include <sys/types.h>
-#include <sys/time.h>
-#include <sys/file.h>
-#include "files.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
+
+#include "userreg.h"
 
 #define	LISTS	(2 * BUFSIZ)
 #define	MAXLIN	BUFSIZ
@@ -25,17 +27,16 @@
 #define	RANGE	103
 #define	EOS	104
 
-time_t	itime, time();
+time_t	itime;
 struct	tm *loct;
-struct	tm *localtime();
-char	*malloc();
-char	*realloc();
 int	flag;
 char	*list;
 char	*listend;
 unsigned listsize;
 
-char *cmp();
+char *cmp(char *p, int v);
+void init(void);
+void append(char *fn);
 int number(char c, FILE *f);
 
 /* This routine will determine if registration is enabled at this time.  If
@@ -146,7 +147,7 @@ char *cmp(char *p, int v)
   return cp;
 }
 
-init(void)
+void init(void)
 {
   /*
    * Don't free in case was longer than LISTS.  Trades off
@@ -161,13 +162,13 @@ init(void)
   listend = list;
 }
 
-append(char *fn)
+void append(char *fn)
 {
   int i, c;
   char *cp;
   char *ocp;
   int n;
-  FILE *f, *fopen();
+  FILE *f;
 
   if (!(f = fopen(fn, "r")))
     return;

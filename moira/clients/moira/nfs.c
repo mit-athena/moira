@@ -1,35 +1,31 @@
-#if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/nfs.c,v 1.22 1998-01-07 17:13:03 danw Exp $";
-#endif
-
-/*	This is the file nfs.c for the Moira Client, which allows users
+/* $Id $
+ *
+ *	This is the file nfs.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
  *	It Contains: All functions for manipulating NFS Physical directories.
  *
  *	Created: 	5/6/88
  *	By:		Chris D. Peterson
  *
- *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/nfs.c,v $
- *      $Author: danw $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/nfs.c,v 1.22 1998-01-07 17:13:03 danw Exp $
- *
- *  	Copyright 1988 by the Massachusetts Institute of Technology.
- *
- *	For further information on copyright and distribution
- *	see the file mit-copyright.h
+ * Copyright (C) 1988-1998 by the Massachusetts Institute of Technology.
+ * For copying and distribution information, please see the file
+ * <mit-copyright.h>.
  */
 
-#include <stdio.h>
-#include <string.h>
+#include <mit-copyright.h>
 #include <moira.h>
 #include <moira_site.h>
-#include <menu.h>
-
-#include "mit-copyright.h"
 #include "defs.h"
 #include "f_defs.h"
 #include "globals.h"
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/nfs.c,v 1.23 1998-02-05 22:50:47 danw Exp $");
+
+char **AskNFSInfo(char **info);
 
 #define TYPE_NFS    "NFS"
 
@@ -49,7 +45,7 @@ static char *UpdatePrint(char **info)
 {
   char temp_buf[BUFSIZ];
   sprintf(temp_buf, "Machine %s Directory %s", info[NFS_NAME], info[NFS_DIR]);
-  return Strsave(temp_buf);	/* Small memory leak here, but no good way
+  return strdup(temp_buf);	/* Small memory leak here, but no good way
 				   to avoid it that I see. */
 }
 
@@ -165,13 +161,12 @@ int ShowNFSService(int argc, char **argv)
   if (!ValidName(argv[1]))
     return DM_NORMAL;
 
-  args[0] = canonicalize_hostname(strsave(argv[1]));
-  args[1] = strsave(DEFAULT_DIR);
+  args[0] = canonicalize_hostname(strdup(argv[1]));
+  args[1] = strdup(DEFAULT_DIR);
   if (GetValueFromUser("Directory:", &args[1]) == SUB_ERROR)
     return DM_NORMAL;
 
-  if ((stat = do_mr_query("get_nfsphys", 2, args,
-			  StoreInfo, &elem)))
+  if ((stat = do_mr_query("get_nfsphys", 2, args, StoreInfo, &elem)))
     com_err(program_name, stat, " in ShowNFSServices.");
   free(args[0]);
   free(args[1]);		/* prevents memory leaks. */
@@ -195,15 +190,15 @@ int AddNFSService(int argc, char **argv)
   char *info[MAX_ARGS_SIZE];
   int stat;
 
-  args[0] = canonicalize_hostname(strsave(argv[1]));
-  args[1] = strsave(DEFAULT_DIR);
+  args[0] = canonicalize_hostname(strdup(argv[1]));
+  args[1] = strdup(DEFAULT_DIR);
   if (GetValueFromUser("Directory:", &args[1]) == SUB_ERROR)
     return DM_NORMAL;
 
   if (!ValidName(args[0]) || !ValidName(args[1]))
     return DM_NORMAL;
 
-  if (!(stat = do_mr_query("get_nfsphys", 2, args, NullFunc, NULL)))
+  if (!(stat = do_mr_query("get_nfsphys", 2, args, NULL, NULL)))
     stat = MR_EXISTS;
   if (stat != MR_NO_MATCH)
     {
@@ -211,12 +206,12 @@ int AddNFSService(int argc, char **argv)
       return DM_NORMAL;
     }
 
-  info[NFS_NAME]   = Strsave(args[0]);
+  info[NFS_NAME]   = strdup(args[0]);
   info[NFS_DIR]    = args[1];	/* already saved. */
-  info[NFS_DEVICE] = Strsave(DEFAULT_DEVICE);
-  info[NFS_STATUS] = Strsave(DEFAULT_STATUS);
-  info[NFS_ALLOC]  = Strsave(DEFAULT_ALLOC);
-  info[NFS_SIZE]   = Strsave(DEFAULT_SIZE);
+  info[NFS_DEVICE] = strdup(DEFAULT_DEVICE);
+  info[NFS_STATUS] = strdup(DEFAULT_STATUS);
+  info[NFS_ALLOC]  = strdup(DEFAULT_ALLOC);
+  info[NFS_SIZE]   = strdup(DEFAULT_SIZE);
   info[NFS_MODBY] = info[NFS_MODWITH] = info[NFS_MODTIME] = NULL;
   info[NFS_END] = NULL;
 
@@ -227,7 +222,7 @@ int AddNFSService(int argc, char **argv)
     }
 
   if ((stat = do_mr_query("add_nfsphys", CountArgs(add_args), add_args,
-			  Scream, NULL)))
+			  NULL, NULL)))
     com_err(program_name, stat, " in AdsNFSService");
 
   FreeInfo(info);
@@ -254,7 +249,7 @@ static void RealUpdateNFSService(char **info, Bool junk)
     }
 
   if ((stat = do_mr_query("update_nfsphys", CountArgs(args), args,
-			  Scream, NULL)))
+			  NULL, NULL)))
     com_err(program_name, stat, " in RealUpdateNFSService");
 }
 
@@ -273,12 +268,12 @@ int UpdateNFSService(int argc, char **argv)
   if (!ValidName(argv[1]))
     return DM_NORMAL;
 
-  args[0] = canonicalize_hostname(strsave(argv[1]));
-  args[1] = strsave(DEFAULT_DIR);
+  args[0] = canonicalize_hostname(strdup(argv[1]));
+  args[1] = strdup(DEFAULT_DIR);
   if (GetValueFromUser("Directory:", &args[1]) == SUB_ERROR)
     return DM_NORMAL;
 
-  if ((stat = do_mr_query("get_nfsphys", 2, args, StoreInfo, (char *) &elem)))
+  if ((stat = do_mr_query("get_nfsphys", 2, args, StoreInfo, &elem)))
     {
       com_err(program_name, stat, " in UpdateNFSService.");
       return DM_NORMAL;
@@ -334,10 +329,10 @@ static void RealDeleteNFSService(char **info, Bool one_item)
       args[1] = info[NFS_DIR];
       args[2] = NULL;
       switch ((stat = do_mr_query("get_filesys_by_nfsphys", CountArgs(args),
-				  args, StoreInfo, (char *)&elem)))
+				  args, StoreInfo, &elem)))
 	{
 	case MR_NO_MATCH:	/* it is unused, delete it. */
-	  if ((stat = do_mr_query("delete_nfsphys", 2, info, Scream, NULL)))
+	  if ((stat = do_mr_query("delete_nfsphys", 2, info, NULL, NULL)))
 	    com_err(program_name, stat, " in DeleteNFSService");
 	  else
 	    Put_message("Physical Filesystem Deleted.");
@@ -375,13 +370,12 @@ int DeleteNFSService(int argc, char **argv)
   if (!ValidName(argv[1]))
     return DM_NORMAL;
 
-  args[0] = canonicalize_hostname(strsave(argv[1]));
-  args[1] = strsave(DEFAULT_DIR);
+  args[0] = canonicalize_hostname(strdup(argv[1]));
+  args[1] = strdup(DEFAULT_DIR);
   if (GetValueFromUser("Directory:", &args[1]) == SUB_ERROR)
     return DM_NORMAL;
 
-  switch ((stat = do_mr_query("get_nfsphys", 2, args,
-			      StoreInfo, (char *) &elem)))
+  switch ((stat = do_mr_query("get_nfsphys", 2, args, StoreInfo, &elem)))
     {
     case MR_NO_MATCH:
       Put_message("This filsystem does not exist!");

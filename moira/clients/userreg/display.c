@@ -1,23 +1,27 @@
-/*
- *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/display.c,v $
- *	$Author: danw $
- *	$Locker:  $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/display.c,v 1.13 1998-01-05 19:52:24 danw Exp $
+/* $Id $
  *
- *  (c) Copyright 1988 by the Massachusetts Institute of Technology.
- *  For copying and distribution information, please see the file
- *  <mit-copyright.h>.
+ * Display function for userreg client
+ *
+ * Copyright (C) 1988-1998 by the Massachusetts Institute of Technology.
+ * For copying and distribution information, please see the file
+ * <mit-copyright.h>.
  */
 
-#ifndef lint
-static char *rcsid_display_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/display.c,v 1.13 1998-01-05 19:52:24 danw Exp $";
-#endif
-
 #include <mit-copyright.h>
-#include <stdio.h>
+#include <moira.h>
+
 #include <curses.h>
-#include <sys/time.h>
+#include <stdio.h>
+#include <time.h>
+#include <unistd.h>
+
 #include "userreg.h"
+
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/display.c,v 1.14 1998-02-05 22:50:57 danw Exp $");
+
+void make_border(int l);
+void query_user(char *prompt, char *buf, int maxsize, int timeout,
+		int echop, int emptyok, int valuep);
 
 #define DESC_WIDTH 18
 #define HEADER "*** Athena User Account Registration ***"
@@ -26,16 +30,14 @@ static char *rcsid_display_c = "$Header: /afs/.athena.mit.edu/astaff/project/moi
 #define MIN_COLS 80
 #define MIN_LINES 24
 
-WINDOW * displayw, *queryw;
-WINDOW * dataw, *helpw;
-WINDOW * fnamew, *midw, *lnamew, *idw, *loginw;
+WINDOW *displayw, *queryw;
+WINDOW *dataw, *helpw;
+WINDOW *fnamew, *midw, *lnamew, *idw, *loginw;
 extern char typed_mit_id[100];
 
 /* Set up the windows and subwindows on the display */
-setup_display(void)
+void setup_display(void)
 {
-  FILE *freopen();
-
   initscr();			/* Start up curses */
 
   if (COLS < MIN_COLS || LINES < MIN_LINES)
@@ -71,7 +73,7 @@ setup_display(void)
 }
 
 /* Clear and restore the display */
-reset_display(void)
+void reset_display(void)
 {
   clear();
 
@@ -100,7 +102,7 @@ reset_display(void)
 
 
 /* Make a one-line border on line l of stdscr */
-make_border(int l)
+void make_border(int l)
 {
   int i;
 
@@ -110,7 +112,7 @@ make_border(int l)
 }
 
 /* This replaces several "useful" display functions in the old userreg */
-redisp(void)
+void redisp(void)
 {
   mvwprintw(fnamew, 0, 0, "%-24s", user.u_first);
   wrefresh(fnamew);
@@ -126,19 +128,19 @@ redisp(void)
 
 
 /* Input and input_no_echo exist only to save on retyping */
-input(char *prompt, char *buf, int maxsize, int timeout, int emptyok)
+void input(char *prompt, char *buf, int maxsize, int timeout, int emptyok)
 {
   query_user(prompt, buf, maxsize, timeout, TRUE, emptyok, TRUE);
 }
 
-input_no_echo(char *prompt, char *buf, int maxsize, int timeout)
+void input_no_echo(char *prompt, char *buf, int maxsize, int timeout)
 {
   query_user(prompt, buf, maxsize, timeout, FALSE, FALSE, TRUE);
 }
 
 
 /* make the user press any key to continue */
-wait_for_user(void)
+void wait_for_user(void)
 {
   char buf[BUFSIZ];
 
@@ -151,8 +153,8 @@ wait_for_user(void)
 /* Gets input through the query buffer */
 /* Exit(1)'s on read errors */
 /* Signals SIGALRM after 'timeout' seconds */
-query_user(char *prompt, char *buf, int maxsize, int timeout,
-	   int echop, int emptyok, int valuep)
+void query_user(char *prompt, char *buf, int maxsize, int timeout,
+		int echop, int emptyok, int valuep)
 {
   int c;
   int i;
@@ -331,7 +333,7 @@ start:
 
 /* Display_text_line puts up a line of text in the display window */
 /* Special case: if line is 0, clear the display area */
-display_text_line(char *line)
+void display_text_line(char *line)
 {
   if (line)
     {
@@ -346,7 +348,7 @@ display_text_line(char *line)
 /* Display_text displays a canned message from a file.  The string
  * will get imbedded in any %s's in the text.
  */
-display_text(char *filename, char *string)
+void display_text(char *filename, char *string)
 {
   FILE * fp;
   char buf[100], buf1[110];
@@ -372,7 +374,7 @@ display_text(char *filename, char *string)
 }
 
 /* Clear_display wipes the display and turns off curses */
-restore_display(void)
+void restore_display(void)
 {
   clear();
   refresh();
@@ -381,7 +383,7 @@ restore_display(void)
   endwin();
 }
 
-timer_on(void)
+void timer_on(void)
 {
   struct itimerval it;
 
@@ -392,7 +394,7 @@ timer_on(void)
   setitimer(ITIMER_REAL, &it, NULL);
 }
 
-timer_off(void)
+void timer_off(void)
 {
   struct itimerval it;
 
@@ -404,7 +406,7 @@ timer_off(void)
 }
 
 
-wfeep(void)
+void wfeep(void)
 {
   char buf = '\007';
   write(1, &buf, 1);

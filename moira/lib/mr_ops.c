@@ -1,26 +1,21 @@
-/*
- *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_ops.c,v $
- *	$Author: danw $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_ops.c,v 1.12 1998-01-07 17:13:31 danw Exp $
+/* $Id $
  *
- *	Copyright (C) 1987, 1989, 1990 by the Massachusetts Institute of
- *	Technology
- *	For copying and distribution information, please see the file
- *	<mit-copyright.h>.
+ * This routine is part of the client library.  It handles
+ * the protocol operations: invoking an update and getting the
+ * Moira message of the day.
  *
- * 	This routine is part of the client library.  It handles
- *	the protocol operations: invoking an update and getting the
- *	Moira message of the day.
+ * Copyright (C) 1987-1998 by the Massachusetts Institute of Technology
+ * For copying and distribution information, please see the file
+ * <mit-copyright.h>.
  */
 
-#ifndef lint
-static char *rcsid_mr_do_update_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_ops.c,v 1.12 1998-01-07 17:13:31 danw Exp $";
-#endif
-
 #include <mit-copyright.h>
-#include <string.h>
+#include <moira.h>
 #include "mr_private.h"
 
+#include <string.h>
+
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_ops.c,v 1.13 1998-02-05 22:51:29 danw Exp $");
 
 /* Invoke a DCM update. */
 
@@ -85,7 +80,7 @@ int mr_motd(char **motd)
       initialize_operation(_mr_recv_op, mr_start_recv, &reply, NULL);
       queue_operation(_mr_conn, CON_INPUT, _mr_recv_op);
 
-      mr_complete_operation(_mr_recv_op);
+      complete_operation(_mr_recv_op);
       if (OP_STATUS(_mr_recv_op) != OP_COMPLETE)
 	{
 	  mr_disconnect();
@@ -101,61 +96,3 @@ punt:
   else
     return status;
 }
-
-
-/* Tell the library to take care of another input source while it is
- * processing a query.  For instance, an X toolkit application would
- * do something like
- *    mr_set_alternate_input(ConnectionNumber(XtDisplay(widget)), doxinput);
- * where doxinput is defined as:
- *    doxinput() {
- *	extern Widget toplevel;
- *	XEvent event;
- *	while (XPending(XtDisplay(toplevel))) {
- *	    XNextEvent(XtDisplay(toplevel), &event);
- *	    XtDispatchEvent(&event);
- *      }
- *      XFlush(XtDisplay(toplevel));
- *    }
- */
-
-static int mr_alternate_input = 0;
-static int (*mr_alternate_handler)();
-
-int mr_set_alternate_input(int fd, int (*proc)())
-{
-  if (mr_alternate_input != 0)
-    return MR_ALREADY_CONNECTED;
-  mr_alternate_input = fd;
-  mr_alternate_handler = proc;
-  return MR_SUCCESS;
-}
-
-
-/* This is used by the parts of the library that must wait for GDB.  It
- * handles alternate input streams (such as X) as well.
- */
-
-int mr_complete_operation(OPERATION op)
-{
-  long infd, outfd, exfd;
-  int rc;
-
-  gdb_progress();		/* try for an immediate completion */
-
-  if (mr_alternate_input == 0)
-    return complete_operation(op);
-
-  infd = 1 << mr_alternate_input;
-  outfd = exfd = 0;
-
-  while (op->status != OP_COMPLETE && op->status != OP_CANCELLED)
-    {
-      rc = con_select(mr_alternate_input, (fd_set *)&infd, (fd_set *)&outfd,
-		      (fd_set *)&exfd, NULL);
-      if (rc > 0 && mr_alternate_handler)
-	(*mr_alternate_handler)();
-    }
-  return op->status;
-}
-

@@ -1,33 +1,28 @@
-/*
- *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/auth_002.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/auth_002.c,v 1.6 1998-01-06 20:40:19 danw Exp $
+/* $Id: auth_002.c,v 1.7 1998-02-05 22:51:57 danw Exp $
+ *
+ * Copyright (C) 1988-1998 by the Massachusetts Institute of Technology.
+ * For copying and distribution information, please see the file
+ * <mit-copyright.h>.
  */
-/*  (c) Copyright 1988 by the Massachusetts Institute of Technology. */
-/*  For copying and distribution information, please see the file */
-/*  <mit-copyright.h>. */
-
-#ifndef lint
-static char *rcsid_auth_002_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/auth_002.c,v 1.6 1998-01-06 20:40:19 danw Exp $";
-#endif
 
 #include <mit-copyright.h>
+#include <moira.h>
+#include "update_server.h"
+
+#include <sys/utsname.h>
+
+#include <errno.h>
 #include <stdio.h>
-#include <string.h>
+
 #include <gdb.h>
 #include <krb.h>
-#include <krb_et.h>
-#include <netinet/in.h>
-#include <errno.h>
-#ifdef POSIX
-#include <sys/utsname.h>
-#endif
+
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/auth_002.c,v 1.7 1998-02-05 22:51:57 danw Exp $");
 
 extern char buf[BUFSIZ];
 extern int have_authorization;
-extern struct sockaddr_in *client_address();
 extern CONNECTION conn;
 extern int code;
-extern char *PrincipalHostname();
 static char service[] = "rcmd";
 static char master[] = "sms";
 static char qmark[] = "???";
@@ -49,10 +44,9 @@ extern C_Block session;
 int auth_002(char *str)
 {
   STRING data;
-  char realm[REALM_SZ];
   char aname[ANAME_SZ], ainst[INST_SZ], arealm[REALM_SZ];
   AUTH_DAT ad;
-  char *p, *first, *config_lookup();
+  char *p, *first;
   KTEXT_ST ticket_st;
   struct utsname name;
   des_key_schedule sched;
@@ -85,7 +79,7 @@ int auth_002(char *str)
    * authenticator we received, then accept it.  If there's no
    * auth record, assume [master]@[local realm].
    */
-  if (first = p = config_lookup("auth"))
+  if ((first = p = config_lookup("auth")))
     {
       do
 	{

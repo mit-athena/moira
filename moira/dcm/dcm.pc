@@ -1,33 +1,40 @@
-/*
- * The Data Control Manager for MOIRA.
+/* $Id: dcm.pc,v 1.4 1998-02-05 22:51:06 danw Exp $
  *
- * Copyright 1987, 1988 by the Massachusetts Institute of Technology.
+ * The Data Control Manager for Moira.
+ *
+ * Copyright (C) 1987-1998 by the Massachusetts Institute of Technology.
  * For copying and distribution information, see the file
- * "mit-copyright.h".
- *
- * $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/dcm.pc,v $
- * $Author: danw $
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/dcm.pc,v 1.3 1998-01-05 19:52:40 danw Exp $
+ * <mit-copyright.h>.
  */
 
-#ifndef lint
-static char rcsid_dcm_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/dcm.pc,v 1.3 1998-01-05 19:52:40 danw Exp $";
-#endif lint
+#include <mit-copyright.h>
+#include <moira.h>
+#include <moira_site.h>
+#include "update.h"
+
+#include <sys/param.h>
+#include <sys/stat.h>
+#include <sys/wait.h>
 
 #include <signal.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
-#include <time.h>
 #include <unistd.h>
-#include <sys/param.h>
-#include <sys/wait.h>
 
-#include <com_err.h>
 #include <gdb.h>
-#include <moira.h>
-#include <moira_site.h>
 
 EXEC SQL INCLUDE sqlca;
+void sqlglm(char *, unsigned int *, unsigned int *);
+
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/dcm.pc,v 1.4 1998-02-05 22:51:06 danw Exp $");
+
+int generate_service(char *name, int force);
+void do_hosts(char *service);
+int dcm_send_file(char *service, char *host, char *target);
+int dcm_execute(char *service, char *host, char *script);
+void dbmserr(void);
+
 EXEC SQL WHENEVER SQLERROR DO dbmserr();
 
 #define SQL_NO_MATCH 1403
@@ -128,6 +135,7 @@ int main(int argc, char **argv)
   while (waitpid(0, &status, 0) > 0)
     ;
   com_err(whoami, 0, "exiting");
+  exit(0);
 }
 
 int generate_service(char *name, int force)
@@ -135,7 +143,7 @@ int generate_service(char *name, int force)
   EXEC SQL BEGIN DECLARE SECTION;
   int interval, dfcheck, status;
   time_t now;
-  char *errmsg;
+  const char *errmsg;
   EXEC SQL END DECLARE SECTION;
   char dfgen_prog[64], dfgen_cmd[128];
   struct sigaction action, prevaction;
@@ -225,8 +233,9 @@ int generate_service(char *name, int force)
 void do_hosts(char *service)
 {
   EXEC SQL BEGIN DECLARE SECTION;
-  char type[16], host[73], target[64], script[128], *errmsg;
-  int status = 0, mid, dfgen, replicated;
+  char type[16], host[73], target[64], script[128];
+  const char *errmsg;
+  int status = 0, dfgen, replicated;
   time_t now;
   EXEC SQL END DECLARE SECTION;
 

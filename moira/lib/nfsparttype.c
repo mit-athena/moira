@@ -1,27 +1,21 @@
-/*
- *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/nfsparttype.c,v $
- *	$Author: danw $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/nfsparttype.c,v 1.8 1998-01-06 20:40:03 danw Exp $
+/* $Id $
  *
- *	Copyright (C) 1987 by the Massachusetts Institute of Technology
- *	For copying and distribution information, please see the file
- *	<mit-copyright.h>.
+ * Deal with NFS partition types
+ *
+ * Copyright (C) 1987-1998 by the Massachusetts Institute of Technology
+ * For copying and distribution information, please see the file
+ * <mit-copyright.h>.
  *
  */
 
-#ifndef lint
-static char *rcsid_nfsparttype_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/nfsparttype.c,v 1.8 1998-01-06 20:40:03 danw Exp $";
-#endif
-
 #include <mit-copyright.h>
 #include <moira.h>
-#include <stdio.h>
-#include <string.h>
-#include <ctype.h>
-#include <stdlib.h>
 
-extern char *strsave();
-extern char *strtrim();
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/nfsparttype.c,v 1.9 1998-02-05 22:51:31 danw Exp $");
 
 struct pair {
   int type;
@@ -78,7 +72,7 @@ char *format_filesys_type(char *fs_status)
     }
   if (!n_names)
     strcpy(buf, "none");
-  return strsave(buf);
+  return strdup(buf);
 }
 
 /*
@@ -121,5 +115,5 @@ char *parse_filesys_type(char *fs_type_name)
     }
   while (cp);
   sprintf(temp, "%d", flags);
-  return strsave(temp);
+  return strdup(temp);
 }

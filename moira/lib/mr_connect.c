@@ -1,26 +1,25 @@
-/*
- *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_connect.c,v $
- *	$Author: danw $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_connect.c,v 1.19 1998-01-07 17:13:29 danw Exp $
+/* $Id $
  *
- *	Copyright (C) 1987, 1990 by the Massachusetts Institute of Technology
- *	For copying and distribution information, please see the file
- *	<mit-copyright.h>.
+ * This routine is part of the client library.  It handles
+ * creating a connection to the moira server.
  *
- * 	This routine is part of the client library.  It handles
- *	creating a connection to the mr server.
+ * Copyright (C) 1987-1998 by the Massachusetts Institute of Technology
+ * For copying and distribution information, please see the file
+ * <mit-copyright.h>.
  */
 
-#ifndef lint
-static char *rcsid_mr_connect_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_connect.c,v 1.19 1998-01-07 17:13:29 danw Exp $";
-#endif
-
 #include <mit-copyright.h>
-#include "mr_private.h"
+#include <moira.h>
 #include <moira_site.h>
-#include <string.h>
+#include "mr_private.h"
+
+#include <errno.h>
 #include <stdlib.h>
+#include <string.h>
+
 #include <hesiod.h>
+
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_connect.c,v 1.20 1998-02-05 22:51:27 danw Exp $");
 
 static char *mr_server_host = 0;
 
@@ -32,7 +31,6 @@ static char *mr_server_host = 0;
 
 int mr_connect(char *server)
 {
-  extern int errno;
   char *p, **pp, sbuf[256];
 
   if (!mr_inited)
@@ -80,7 +78,7 @@ int mr_connect(char *server)
    * stash hostname for later use
    */
 
-  mr_server_host = strsave(server);
+  mr_server_host = strdup(server);
   if ((p = strchr(mr_server_host, ':')))
     *p = '\0';
   mr_server_host = canonicalize_hostname(mr_server_host);

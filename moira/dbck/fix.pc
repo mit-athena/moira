@@ -1,21 +1,22 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/fix.pc,v 1.2 1998-01-05 19:52:31 danw Exp $
+/* $Id: fix.pc,v 1.3 1998-02-05 22:51:02 danw Exp $
  *
  * User interface routines for dbck (Moira database consistency checker)
  *
- *  (c) Copyright 1988 by the Massachusetts Institute of Technology.
- *  For copying and distribution information, please see the file
- *  <mit-copyright.h>.
+ * (c) Copyright 1988-1998 by the Massachusetts Institute of Technology.
+ * For copying and distribution information, please see the file
+ * <mit-copyright.h>.
  */
 
 #include <mit-copyright.h>
 #include <moira.h>
-#include <stdio.h>
 #include "dbck.h"
+
+#include <stdio.h>
 
 EXEC SQL INCLUDE sqlca;  /* SQL Communications Area */
 EXEC SQL INCLUDE sqlda;  /* SQL Descriptor Area */
 
-static char fix_qc_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/fix.pc,v 1.2 1998-01-05 19:52:31 danw Exp $";
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/fix.pc,v 1.3 1998-02-05 22:51:02 danw Exp $");
 
 EXEC SQL BEGIN DECLARE SECTION;
 char *_table;
@@ -24,13 +25,14 @@ char stmt_buf[500];
 EXEC SQL END DECLARE SECTION;
 
 extern SQLDA *mr_sqlda;
+void generic_ffunc(void *id);
 
-int generic_ffunc(int id)
+void generic_ffunc(void *id)
 {
   int rowcount;
 
   sprintf(stmt_buf, "DELETE FROM %s WHERE %s.%s = %d",
-	  _table, _table, _idfield, id);
+	  _table, _table, _idfield, (int)id);
   EXEC SQL EXECUTE IMMEDIATE :stmt_buf;
   rowcount = sqlca.sqlerrd[2];
   if (rowcount > 0)
@@ -41,8 +43,8 @@ int generic_ffunc(int id)
 }
 
 
-int generic_delete(struct save_queue *sq, void (*pfunc)(), char *table,
-		   char *idfield, int preen)
+void generic_delete(struct save_queue *sq, int (*pfunc)(void *), char *table,
+		    char *idfield, int preen)
 {
   _table = table;
   _idfield = idfield;
@@ -50,15 +52,15 @@ int generic_delete(struct save_queue *sq, void (*pfunc)(), char *table,
 }
 
 
-int single_delete(char *table, char *idfield, int id)
+void single_delete(char *table, char *idfield, int id)
 {
   _table = table;
   _idfield = idfield;
-  generic_ffunc(id);
+  generic_ffunc((void *)id);
 }
 
 
-int zero_fix(char *tbl, char *zrfield, char *idfield, int id)
+void zero_fix(char *tbl, char *zrfield, char *idfield, int id)
 {
   int rowcount;
 
@@ -94,15 +96,15 @@ int single_fix(char *msg, int preen)
 }
 
 
-int generic_fix(struct save_queue *sq, int (*pfunc)(), char *msg,
-		int (*ffunc)(), int preen)
+void generic_fix(struct save_queue *sq, int (*pfunc)(void *), char *msg,
+		 void (*ffunc)(void *), int preen)
 {
   int id;
 
   while (sq_get_data(sq, &id))
     {
-      if ((*pfunc)(id) == 0 && single_fix(msg, preen))
-	(*ffunc)(id);
+      if ((*pfunc)((void *)id) == 0 && single_fix(msg, preen))
+	(*ffunc)((void *)id);
     }
   sq_destroy(sq);
 }

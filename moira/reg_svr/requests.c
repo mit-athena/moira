@@ -1,42 +1,33 @@
-/*
- *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/requests.c,v $
- *      $Author: danw $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/requests.c,v 1.12 1998-01-07 17:13:35 danw Exp $
+/* $Id: requests.c,v 1.13 1998-02-05 22:51:35 danw Exp $
  *
- *      Copyright (C) 1987, 1988 by the Massachusetts Institute of Technology
- *	For copying and distribution information, please see the file
- *	<mit-copyright.h>.
+ * Server for user registration with Moira and Kerberos.
  *
- *      Server for user registration with Moira and Kerberos.
+ * This file handles the processing of requests for the register
+ * server.
  *
- *      This file handles the processing of requests for the register
- *      server.
- */
-
-#ifndef lint
-static char *rcsid_requests_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/requests.c,v 1.12 1998-01-07 17:13:35 danw Exp $";
-#endif lint
-
-/*
- * Before you add anything to the list of things that are #included and
- * #defined, make sure that it is not already done in reg_svr.h
+ * Copyright (C) 1987-1998 by the Massachusetts Institute of Technology
+ * For copying and distribution information, please see the file
+ * <mit-copyright.h>.
  */
 
 #include <mit-copyright.h>
-#include <stdio.h>
-#include <strings.h>
-#include <ctype.h>
+#include <moira.h>
+#include <moira_site.h>
+
 #include <sys/types.h>
-#include <sys/file.h>
-#include <krb.h>
-#include <des.h>
-#include <errno.h>
 #include <sys/socket.h>
+
 #include <netinet/in.h>
+#include <arpa/inet.h>
 #include <netdb.h>
-#include "moira.h"
-#include "moira_site.h"
+
+#include <errno.h>
+#include <stdio.h>
+#include <string.h>
+
 #include "reg_svr.h"
+
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/requests.c,v 1.13 1998-02-05 22:51:35 danw Exp $");
 
 #define NUM_REQUESTS_SAVED 100	/* Number of transactions to save */
 #define CUR_REQ (requests[cur_request_index]) /* The current request */
@@ -61,6 +52,18 @@ struct request_save {
 
 static struct request_save requests[NUM_REQUESTS_SAVED]; /* Saved packets */
 static int cur_request_index = 0;	/* Index to the current request */
+
+void clear_req(struct request_save *req);
+void req_initialize(void);
+int handle_retransmitted(void);
+void respond(int status, char *text);
+void get_request(struct msg *message);
+void report(int status, char *message);
+int format_pkt(char *packet, int *pktlenp, U_32BIT seqno,
+	       int cl_status, char *message);
+int ureg_validate_char(char *s);
+int parse_pkt(char *packet, int pktlen, struct msg *message);
+u_long cur_req_sender(void);
 
 void clear_req(struct request_save *req)
 {
@@ -261,7 +264,7 @@ int ureg_validate_char(char *s)
 {
   while (*s)
     {
-      if (illegalchars[*s++])
+      if (illegalchars[(int)*s++])
 	return FAILURE;
     }
   return SUCCESS;

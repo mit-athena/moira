@@ -1,32 +1,41 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/nfs.pc,v 1.4 1998-01-07 17:13:19 danw Exp $
+/* $Id: nfs.pc,v 1.5 1998-02-05 22:51:12 danw Exp $
  *
  * This generates the files necessary to load an nfs server.
  *
- *  (c) Copyright 1988, 1990 by the Massachusetts Institute of Technology.
- *  For copying and distribution information, please see the file
- *  <mit-copyright.h>.
+ * Copyright (C) 1988-1998 by the Massachusetts Institute of Technology.
+ * For copying and distribution information, please see the file
+ * <mit-copyright.h>.
  */
 
 #include <mit-copyright.h>
+#include <moira.h>
+#include <moira_site.h>
+
+#include <sys/stat.h>
+#include <sys/types.h>
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <moira.h>
-#include <moira_site.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <sys/time.h>
+#include <unistd.h>
+
+#include "util.h"
+
 EXEC SQL INCLUDE sqlca;
 
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/nfs.pc,v 1.5 1998-02-05 22:51:12 danw Exp $");
 
 #define min(x, y)	((x) < (y) ? (x) : (y))
 
 char *whoami = "nfs.gen";
 char *db = "moira/moira";
-char *strsave();
 char nfs_dir[64];
 struct hash *users, *groups;
 
+int do_nfs(void);
+int do_lists(struct save_queue *lists);
+void do_everyone(void);
+int do_machs(struct save_queue *machs);
 
 int main(int argc, char **argv)
 {
@@ -97,8 +106,8 @@ int do_nfs(void)
       EXEC SQL FETCH s_cursor INTO :machname, :listname;
       if (sqlca.sqlcode)
 	break;
-      sq_save_unique_string(machs, strsave(strtrim(machname)));
-      sq_save_unique_string(lists, strsave(strtrim(listname)));
+      sq_save_unique_string(machs, strdup(strtrim(machname)));
+      sq_save_unique_string(lists, strdup(strtrim(listname)));
     }
   EXEC SQL CLOSE s_cursor;
 
@@ -119,11 +128,10 @@ sqlerr:
 int do_lists(struct save_queue *lists)
 {
   char file[64], *u;
-  struct stat sb;
   FILE *fd;
   EXEC SQL BEGIN DECLARE SECTION;
-  char *listname, *lsname, lname[33], uname[9];
-  int uid, id, flag1, flag2, flag3, flag4;
+  char *listname;
+  int id;
   EXEC SQL END DECLARE SECTION;
 
   sprintf(file, "%s/list-", nfs_dir);
@@ -207,7 +215,7 @@ struct user {
 };
 
 
-do_everyone(void)
+void do_everyone(void)
 {
   char buf[BUFSIZ], *l;
   struct user *u;
@@ -215,11 +223,9 @@ do_everyone(void)
   struct bucket *b, **p;
   EXEC SQL BEGIN DECLARE SECTION;
   char name[33];
-  int gid, id, lid, maxid, uid;
+  int gid, id, lid, uid;
   EXEC SQL END DECLARE SECTION;
   FILE *fd;
-  int i;
-  struct save_queue *sq;
 
   fprintf(stderr, "Building the list of everybody\n");
   sprintf(buf, "%s/list-", nfs_dir);
@@ -246,7 +252,7 @@ do_everyone(void)
       if (sqlca.sqlcode)
 	break;
       sprintf(buf, ":%d", gid);
-      hash_store(groups, lid, strsave(buf));
+      hash_store(groups, lid, strdup(buf));
     }
   EXEC SQL CLOSE l_cursor;
 
@@ -282,8 +288,7 @@ do_everyone(void)
       EXEC SQL FETCH m_cursor2 INTO :lid, :id;
       if (sqlca.sqlcode)
 	break;
-      if ((u = (struct user *) hash_lookup(users, id)) &&
-	  (l = hash_lookup(groups, lid)))
+      if ((u = hash_lookup(users, id)) && (l = hash_lookup(groups, lid)))
 	{
 	  g = malloc(sizeof(struct grp));
 	  g->next = u->lists;
@@ -301,13 +306,12 @@ do_everyone(void)
 	  sprintf(buf, "%s:%d", u->name, u->uid);
 	  for (g = u->lists; g; g = g->next)
 	    strcat(buf, g->lid);
-	  b->data = strsave(buf);
+	  b->data = strdup(buf);
 	  fprintf(fd, "%s\n", buf);
 	}
     }
 
   fclose(fd);
-  return 1;
 sqlerr:
   db_error(sqlca.sqlcode);
   exit(MR_DBMS_ERR);
@@ -322,7 +326,7 @@ int do_machs(struct save_queue *machs)
 {
   EXEC SQL BEGIN DECLARE SECTION;
   char *machname, listname[33], dev[33], dir[81], fstype[9];
-  int uid, quota, id, gid, flag1, flag2, flag3, flag4;
+  int uid, quota, id, gid, flag1, flag2, flag3;
   EXEC SQL END DECLARE SECTION;
   char file[64], f1[64], f2[64], *cp;
   int prevuid, quotasum, olddev, oldmach;
@@ -376,10 +380,10 @@ int do_machs(struct save_queue *machs)
 	    fclose(fd);
 	  olddev = flag1;
 	  oldmach = flag2;
-	  while (cp = strchr(dev, '/'))
+	  while ((cp = strchr(dev, '/')))
 	    *cp = '@';
 	  sprintf(file, "%s/%s.%s.quotas", nfs_dir,
-		  hash_lookup(machines, flag2), strtrim(dev));
+		  (char *)hash_lookup(machines, flag2), strtrim(dev));
 	  fd = fopen(file, "w");
 	  if (!fd)
 	    {
@@ -440,10 +444,10 @@ int do_machs(struct save_queue *machs)
 	    fclose(fd);
 	  olddev = flag1;
 	  oldmach = flag2;
-	  while (cp = strchr(dev, '/'))
+	  while ((cp = strchr(dev, '/')))
 	    *cp = '@';
 	  sprintf(file, "%s/%s.%s.quotas", nfs_dir,
-		  hash_lookup(machines, flag2), strtrim(dev));
+		  (char *)hash_lookup(machines, flag2), strtrim(dev));
 	  fd = fopen(file, "w");
 	  if (!fd)
 	    {
@@ -455,7 +459,7 @@ int do_machs(struct save_queue *machs)
 	}
       if (gid != prevuid)
 	{
-	  if (cp = hash_lookup(groups, prevuid))
+	  if ((cp = hash_lookup(groups, prevuid)))
 	    prevuid = atoi(cp + 1);
 	  if (quotasum)
 	    fprintf(fd, "%d %d\n", prevuid, quotasum);
@@ -501,10 +505,10 @@ int do_machs(struct save_queue *machs)
 	    fclose(fd);
 	  olddev = flag1;
 	  oldmach = flag2;
-	  while (cp = strchr(dev, '/'))
+	  while ((cp = strchr(dev, '/')))
 	    *cp = '@';
 	  sprintf(file, "%s/%s.%s.dirs", nfs_dir,
-		  hash_lookup(machines, flag2), strtrim(dev));
+		  (char *)hash_lookup(machines, flag2), strtrim(dev));
 	  fd = fopen(file, "w");
 	  if (!fd)
 	    {

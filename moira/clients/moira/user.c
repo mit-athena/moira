@@ -1,41 +1,38 @@
-#if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.43 1998-01-07 17:13:09 danw Exp $";
-#endif
-
-/*	This is the file user.c for the Moira Client, which allows users
+/* $Id $
+ *
+ *	This is the file user.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
  *	It Contains: Functions for manipulating user information.
  *
  *	Created: 	5/9/88
  *	By:		Chris D. Peterson
  *
- *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v $
- *      $Author: danw $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.43 1998-01-07 17:13:09 danw Exp $
- *
- *  	Copyright 1988 by the Massachusetts Institute of Technology.
- *
- *	For further information on copyright and distribution
- *	see the file mit-copyright.h
+ * Copyright (C) 1988-1998 by the Massachusetts Institute of Technology.
+ * For copying and distribution information, please see the file
+ * <mit-copyright.h>.
  */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include <mit-copyright.h>
 #include <moira.h>
 #include <moira_site.h>
-#include <menu.h>
-#include <ctype.h>
-#include <sys/time.h>
-#ifdef GDSS
-#include <des.h>
-#include <krb.h>
-#include <gdss.h>
-#endif
-#include "mit-copyright.h"
 #include "defs.h"
 #include "f_defs.h"
 #include "globals.h"
+
+#include <ctype.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <time.h>
+#ifdef GDSS
+#include <gdss.h>
+#endif
+
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.44 1998-02-05 22:50:49 danw Exp $");
+
+void CorrectCapitalization(char **name);
+char **AskUserInfo(char **info, Bool name);
+struct qelem *GetUserInfo(int type, char *name1, char *name2);
 
 #define LOGIN 0
 #define UID   1
@@ -148,18 +145,18 @@ static void PrintUserInfo(char **info)
 
 static char **SetUserDefaults(char **info)
 {
-  info[U_NAME] = Strsave(UNIQUE_LOGIN);
-  info[U_UID] = Strsave(UNIQUE_UID);
-  info[U_SHELL] = Strsave(DEFAULT_SHELL);
-  info[U_LAST] = Strsave(DEFAULT_NONE);
-  info[U_FIRST] = Strsave(DEFAULT_NONE);
-  info[U_MIDDLE] = Strsave(DEFAULT_NONE);
-  info[U_STATE] = Strsave(DEFAULT_NO);
-  info[U_MITID] = Strsave(DEFAULT_NONE);
-  info[U_CLASS] = Strsave(DEFAULT_CLASS);
-  info[U_COMMENT] = Strsave("");
-  info[U_SIGNATURE] = Strsave("");
-  info[U_SECURE] = Strsave("0");
+  info[U_NAME] = strdup(UNIQUE_LOGIN);
+  info[U_UID] = strdup(UNIQUE_UID);
+  info[U_SHELL] = strdup(DEFAULT_SHELL);
+  info[U_LAST] = strdup(DEFAULT_NONE);
+  info[U_FIRST] = strdup(DEFAULT_NONE);
+  info[U_MIDDLE] = strdup(DEFAULT_NONE);
+  info[U_STATE] = strdup(DEFAULT_NO);
+  info[U_MITID] = strdup(DEFAULT_NONE);
+  info[U_CLASS] = strdup(DEFAULT_CLASS);
+  info[U_COMMENT] = strdup("");
+  info[U_SIGNATURE] = strdup("");
+  info[U_SECURE] = strdup("0");
   info[U_MODTIME] = info[U_MODBY] = info[U_MODWITH] = info[U_END] = NULL;
   return info;
 }
@@ -169,7 +166,7 @@ static char **SetUserDefaults(char **info)
  * offer to correct it if not.
  */
 
-int CorrectCapitalization(char **name)
+void CorrectCapitalization(char **name)
 {
   char temp_buf[BUFSIZ], fixname[BUFSIZ];
 
@@ -182,7 +179,7 @@ int CorrectCapitalization(char **name)
       if (YesNoQuestion(temp_buf, 1) == TRUE)
 	{
 	  free(*name);
-	  *name = strsave(fixname);
+	  *name = strdup(fixname);
 	}
     }
 }
@@ -228,7 +225,7 @@ char **AskUserInfo(char **info, Bool name)
       argv[0] = info[U_FIRST];
       argv[1] = info[U_LAST];
       if (do_mr_query("get_user_account_by_name", 2, argv,
-		      StoreInfo, (char *) &elem) == MR_SUCCESS)
+		      StoreInfo, &elem) == MR_SUCCESS)
 	{
 	  Put_message("A user by that name already exists in the database.");
 	  Loop(QueueTop(elem), PrintUserInfo);
@@ -240,7 +237,7 @@ char **AskUserInfo(char **info, Bool name)
     }
   if (name)
     {
-      newname = Strsave(info[U_NAME]);
+      newname = strdup(info[U_NAME]);
       if (GetValueFromUser("The new login name for this user", &newname) ==
 	  SUB_ERROR)
 	return NULL;
@@ -293,7 +290,7 @@ char **AskUserInfo(char **info, Bool name)
 		    atoi(info[U_SECURE]) ? TRUE : FALSE) == FALSE)
     {
       free(info[U_SECURE]);
-      info[U_SECURE] = strsave("0");
+      info[U_SECURE] = strdup("0");
     }
   else if (!strcmp(info[U_SECURE], "0"))
     {
@@ -303,7 +300,7 @@ char **AskUserInfo(char **info, Bool name)
       gettimeofday(&tv, NULL);
       sprintf(buf, "%ld", (long) tv.tv_sec);
       free(info[U_SECURE]);
-      info[U_SECURE] = strsave(buf);
+      info[U_SECURE] = strdup(buf);
     }
 
   /* Sign record */
@@ -337,7 +334,7 @@ char **AskUserInfo(char **info, Bool name)
 	}
     }
 #else /* GDSS */
-  info[U_SIGNATURE] = strsave("");
+  info[U_SIGNATURE] = strdup("");
 #endif /* GDSS */
 
   FreeAndClear(&info[U_MODTIME], TRUE);
@@ -377,7 +374,7 @@ struct qelem *GetUserInfo(int type, char *name1, char *name2)
     case LOGIN:
       args[0] = name1;
       if ((status = do_mr_query("get_user_account_by_login", 1, args,
-				StoreInfo, (char *) &elem)))
+				StoreInfo, &elem)))
 	{
 	  com_err(program_name, status,
 		  " when attempting to get_user_account_by_login.");
@@ -387,7 +384,7 @@ struct qelem *GetUserInfo(int type, char *name1, char *name2)
     case UID:
       args[0] = name1;
       if ((status = do_mr_query("get_user_account_by_uid", 1, args,
-				StoreInfo, (char *) &elem)))
+				StoreInfo, &elem)))
 	{
 	  com_err(program_name, status,
 		  " when attempting to get_user_account_by_uid.");
@@ -398,7 +395,7 @@ struct qelem *GetUserInfo(int type, char *name1, char *name2)
       args[0] = name1;
       args[1] = name2;
       if ((status = do_mr_query("get_user_account_by_name", 2, args,
-				StoreInfo, (char *) &elem)))
+				StoreInfo, &elem)))
 	{
 	  com_err(program_name, status,
 		  " when attempting to get_user_account_by_name.");
@@ -408,7 +405,7 @@ struct qelem *GetUserInfo(int type, char *name1, char *name2)
     case CLASS:
       args[0] = name1;
       if ((status = do_mr_query("get_user_account_by_class", 1, args,
-				StoreInfo, (char *) &elem)))
+				StoreInfo, &elem)))
 	{
 	  com_err(program_name, status,
 		  " when attempting to get_user_account_by_class.");
@@ -418,7 +415,7 @@ struct qelem *GetUserInfo(int type, char *name1, char *name2)
     case ID:
       args[0] = name1;
       if ((status = do_mr_query("get_user_account_by_id", 1, args,
-				StoreInfo, (char *) &elem)))
+				StoreInfo, &elem)))
 	{
 	  com_err(program_name, status,
 		  " when attempting to get_user_account_by_id.");
@@ -435,7 +432,7 @@ struct qelem *GetUserInfo(int type, char *name1, char *name2)
  *	Returns: DM_NORMAL.
  */
 
-int AddNewUser(void)
+int AddNewUser(int argc, char **argv)
 {
   int status;
   char **args, *info[MAX_ARGS_SIZE];
@@ -446,7 +443,7 @@ int AddNewUser(void)
       return DM_NORMAL;
     }
   if ((status = do_mr_query("add_user_account", CountArgs(args),
-			    args, Scream, NULL)))
+			    args, NULL, NULL)))
     com_err(program_name, status, " in add_user_account");
   else
     Put_message("New user added to database.");
@@ -466,7 +463,7 @@ static char *GetLoginName(void)
 {
   char *name;
 
-  name = strsave("");
+  name = strdup("");
   if (GetValueFromUser("Login name for this user? ", &name) == SUB_ERROR)
     return NULL;
   Put_message("KERBEROS code not added, did not reserve name with kerberos.");
@@ -484,12 +481,12 @@ static char *ChooseUser(struct qelem *elem)
 {
   while (elem)
     {
-      char **info = (char **) elem->q_data;
+      char **info = elem->q_data;
       PrintUserInfo(info);
       switch (YesNoQuitQuestion("Is this the user you want (y/n/q)", FALSE))
 	{
 	case TRUE:
-	  return Strsave(info[U_UID]);
+	  return strdup(info[U_UID]);
 	case FALSE:
 	  break;
 	default:		/* quit or ^C. */
@@ -523,7 +520,7 @@ static char *GetUidNumberFromName(void)
   args[1] = last;
 
   switch ((status = do_mr_query("get_user_account_by_name", 2, args,
-				StoreInfo, (char *) &top)))
+				StoreInfo, &top)))
     {
     case MR_SUCCESS:
       break;
@@ -538,13 +535,13 @@ static char *GetUidNumberFromName(void)
   top = QueueTop(top);
   if (QueueCount(top) == 1) /* This is a unique name. */
     {
-      char **info = (char **) top->q_data;
+      char **info = top->q_data;
       Put_message("User ID Number retrieved for the user: ");
       Put_message("");
       PrintUserName(info);
-      uid = Strsave(info[U_UID]);
+      uid = strdup(info[U_UID]);
       FreeQueue(top);
-      return Strsave(uid);
+      return strdup(uid);
     }
 
   Put_message("That name is not unique, choose the user that you want.");
@@ -585,7 +582,7 @@ static void GiveBackLogin(char *name)
  *	Returns: DM_NORMAL.
  */
 
-int RegisterUser(void)
+int RegisterUser(int argc, char **argv)
 {
   char *args[MAX_ARGS_SIZE];
   char *login, *fstype = NULL;
@@ -599,7 +596,7 @@ int RegisterUser(void)
     {
     case TRUE:
       Prompt_input("What is the UID number of the user? ", temp_buf, BUFSIZ);
-      args[0] = Strsave(temp_buf);
+      args[0] = strdup(temp_buf);
       break;
     case FALSE:
       if (!(args[0] = GetUidNumberFromName()))
@@ -610,7 +607,7 @@ int RegisterUser(void)
     }
 
   sprintf(temp_buf, "u%s", args[0]);
-  login = strsave(temp_buf);
+  login = strdup(temp_buf);
   if ((GetValueFromUser("Login name for this user? ", &login) == SUB_ERROR) ||
       (GetFSTypes(&fstype, FALSE) == SUB_ERROR))
     {
@@ -624,7 +621,7 @@ int RegisterUser(void)
   args[3] = NULL;
 
   switch ((status = do_mr_query("register_user", CountArgs(args),
-				args, Scream, NULL)))
+				args, NULL, NULL)))
     {
     case MR_SUCCESS:
       sprintf(temp_buf, "User %s successfully registered.", login);
@@ -663,7 +660,7 @@ static void RealUpdateUser(char **info, Bool junk)
       return;
     }
   if ((status = do_mr_query("update_user_account", CountArgs(args),
-			    args, Scream, NULL)))
+			    args, NULL, NULL)))
     {
       com_err(program_name, status, " in ModifyFields");
       sprintf(error_buf, "User %s not updated due to errors.", info[NAME]);
@@ -711,7 +708,7 @@ static void RealDeactivateUser(char **info, Bool one_item)
 
   qargs[0] = info[NAME];
   qargs[1] = "3";
-  if ((status = do_mr_query("update_user_status", 2, qargs, Scream, NULL)))
+  if ((status = do_mr_query("update_user_status", 2, qargs, NULL, NULL)))
     {
       com_err(program_name, status, " in update_user_status");
       sprintf(txt_buf, "User %s not deactivated due to errors.", info[NAME]);
@@ -721,18 +718,18 @@ static void RealDeactivateUser(char **info, Bool one_item)
 			 FALSE) == TRUE)
     {
       status = do_mr_query("get_list_info", 1, &(info[NAME]), StoreInfo,
-			   (char *) &elem);
+			   &elem);
       if (status == MR_SUCCESS)
 	{
-	  args = (char **) (QueueTop(elem)->q_data);
+	  args = QueueTop(elem)->q_data;
 	  free(args[L_ACTIVE]);
-	  args[L_ACTIVE] = strsave("0");
+	  args[L_ACTIVE] = strdup("0");
 	  FreeAndClear(&args[L_MODTIME], TRUE);
 	  FreeAndClear(&args[L_MODBY], TRUE);
 	  FreeAndClear(&args[L_MODWITH], TRUE);
 	  SlipInNewName(args, args[L_NAME]);
 	  if ((status = do_mr_query("update_list", CountArgs(args), args,
-				    Scream, NULL)))
+				    NULL, NULL)))
 	    {
 	      com_err(program_name, status, " updating list, "
 		      "not deactivating list or filesystem");
@@ -752,7 +749,7 @@ static void RealDeactivateUser(char **info, Bool one_item)
 	}
 
       if ((status = do_mr_query("get_filesys_by_label", 1, &(info[NAME]),
-				StoreInfo, (char *) &elem)))
+				StoreInfo, &elem)))
 	{
 	  com_err(program_name, status, " getting filsys info, "
 		  "not deactivating filesystem");
@@ -760,17 +757,17 @@ static void RealDeactivateUser(char **info, Bool one_item)
 	  FreeQueue(elem);
 	  return;
 	}
-      args = (char **) (QueueTop(elem)->q_data);
+      args = QueueTop(elem)->q_data;
       free(args[FS_TYPE]);
-      args[FS_TYPE] = strsave("ERR");
+      args[FS_TYPE] = strdup("ERR");
       free(args[FS_COMMENTS]);
-      args[FS_COMMENTS] = strsave("Locker disabled; call 3-1325 for help");
+      args[FS_COMMENTS] = strdup("Locker disabled; call 3-1325 for help");
       FreeAndClear(&args[FS_MODTIME], TRUE);
       FreeAndClear(&args[FS_MODBY], TRUE);
       FreeAndClear(&args[FS_MODWITH], TRUE);
       SlipInNewName(args, args[FS_NAME]);
       if ((status = do_mr_query("update_filesys", CountArgs(args), args,
-				Scream, NULL)))
+				NULL, NULL)))
 	{
 	  com_err(program_name, status, " updating filesystem, "
 		  "not deactivating filesystem");
@@ -824,10 +821,10 @@ int DeleteUserByUid(int argc, char **argv)
     return DM_NORMAL;
 
   if ((status = do_mr_query("get_user_account_by_uid", 1, argv + 1, StoreInfo,
-			    (char *) &elem)))
+			    &elem)))
     com_err(program_name, status, " in get_user_account_by_uid");
 
-  info = (char **) elem->q_data;
+  info = elem->q_data;
   argv[1] = info[U_NAME];
 
   DeleteUser(argc, argv);
@@ -942,7 +939,7 @@ int GetKrbmap(int argc, char **argv)
   char buf[BUFSIZ];
 
   if ((stat = do_mr_query("get_kerberos_user_map", 2, &argv[1],
-			  StoreInfo, (char *)&elem)))
+			  StoreInfo, &elem)))
     {
       com_err(program_name, stat, " in GetKrbMap.");
       return DM_NORMAL;
@@ -952,7 +949,7 @@ int GetKrbmap(int argc, char **argv)
   Put_message("");
   while (elem)
     {
-      char **info = (char **) elem->q_data;
+      char **info = elem->q_data;
       sprintf(buf, "User: %-9s Principal: %s",
 	      info[KMAP_USER], info[KMAP_PRINCIPAL]);
       Put_message(buf);
@@ -981,7 +978,7 @@ int AddKrbmap(int argc, char **argv)
       return DM_NORMAL;
     }
   if ((stat = do_mr_query("add_kerberos_user_map", 2, &argv[1],
-			  Scream, NULL)))
+			  NULL, NULL)))
     {
       com_err(program_name, stat, " in AddKrbMap.");
       if (stat == MR_EXISTS)
@@ -1003,7 +1000,7 @@ int DeleteKrbmap(int argc, char **argv)
   int stat;
 
   if ((stat = do_mr_query("delete_kerberos_user_map", 2, &argv[1],
-			  Scream, NULL)))
+			  NULL, NULL)))
     com_err(program_name, stat, " in DeleteKrbMap.");
   return DM_NORMAL;
 }
@@ -1025,13 +1022,13 @@ int GetDirFlags(int argc, char **argv)
     return DM_NORMAL;
 
   if ((stat = do_mr_query("get_user_directory_flags", 1, &argv[1],
-			  StoreInfo, (char *)&elem)))
+			  StoreInfo, &elem)))
     {
       com_err(program_name, stat, " in GetDirFlags.");
       return DM_NORMAL;
     }
 
-  info = (char **) QueueTop(elem)->q_data;
+  info = QueueTop(elem)->q_data;
   flags = atoi(info[0]);
   FreeQueue(QueueTop(elem));
 
@@ -1069,12 +1066,12 @@ int SetDirFlags(int argc, char **argv)
 
   /* Fetch current prefs */
   if ((stat = do_mr_query("get_user_directory_flags", 1, &argv[1],
-			  StoreInfo, (char *) &elem)))
+			  StoreInfo, &elem)))
     {
       com_err(program_name, stat, " in GetDirFlags.");
       return DM_NORMAL;
     }
-  info = (char **) QueueTop(elem)->q_data;
+  info = QueueTop(elem)->q_data;
   flags = atoi(info[0]);
   FreeQueue(QueueTop(elem));
 
@@ -1095,7 +1092,7 @@ int SetDirFlags(int argc, char **argv)
   sprintf(buf, "%d", flags);
   args[1] = buf;
   if ((stat = do_mr_query("update_user_directory_flags", 2,
-			  args, Scream, NULL)))
+			  args, NULL, NULL)))
     com_err(program_name, stat, " in SetDirFlags");
   else
     Put_message("Directory preferences set.");

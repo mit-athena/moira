@@ -1,11 +1,10 @@
-/*
- *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_private.h,v $
- *	$Author: danw $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_private.h,v 1.8 1998-01-05 19:53:13 danw Exp $
+/* $Id $
  *
- *	Copyright (C) 1987 by the Massachusetts Institute of Technology
+ * Private declarations of the Moira library.
  *
- *	Private declarations of the Moira library.
+ * Copyright (C) 1987-1998 by the Massachusetts Institute of Technology
+ * For copying and distribution information, please see the file
+ * <mit-copyright.h>.
  */
 
 #include "mr_proto.h"
@@ -27,3 +26,16 @@ extern int sending_version_no;
 #define EVER (;;)
 
 #define CHECK_CONNECTED {if (!_mr_conn) return MR_NOT_CONNECTED;}
+
+/* prototypes from mr_call.h */
+int mr_do_call(struct mr_params *params, struct mr_params **reply);
+
+/* prototypes from mr_init.c */
+void mr_init(void);
+
+/* prototypes from mr_ops.c */
+int mr_complete_operation(OPERATION op);
+
+/* prototypes from mr_params.c */
+int mr_cont_send(OPERATION op, HALF_CONNECTION hcon, struct mr_params *arg);
+int mr_cont_recv(OPERATION op, HALF_CONNECTION hcon, mr_params **argp);

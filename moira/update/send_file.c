@@ -1,29 +1,29 @@
-/*
- *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/send_file.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/send_file.c,v 1.12 1998-01-05 19:53:55 danw Exp $
+/* $Id: send_file.c,v 1.13 1998-02-05 22:52:01 danw Exp $
+ *
+ * Copyright (C) 1988-1998 by the Massachusetts Institute of Technology.
+ * For copying and distribution information, please see the file
+ * <mit-copyright.h>.
  */
-/*  (c) Copyright 1988 by the Massachusetts Institute of Technology. */
-/*  For copying and distribution information, please see the file */
-/*  <mit-copyright.h>. */
-
-#ifndef lint
-static char *rcsid_send_file_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/send_file.c,v 1.12 1998-01-05 19:53:55 danw Exp $";
-#endif
 
 #include <mit-copyright.h>
-#include <stdio.h>
-#include <com_err.h>
-#include <gdb.h>
 #include <moira.h>
-#include <sys/file.h>
+#include "update_server.h"
+
 #include <sys/stat.h>
-#include <des.h>
-#include <krb.h>
-#include <update.h>
+
+#include <errno.h>
 #include <fcntl.h>
+#include <stdio.h>
+#include <string.h>
+#include <unistd.h>
+
+#include <des.h>
+#include <gdb.h>
+#include <update.h>
+
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/send_file.c,v 1.13 1998-02-05 22:52:01 danw Exp $");
 
 extern CONNECTION conn;
-extern int errno;
 char buf[BUFSIZ];
 extern C_Block session;
 extern char *whoami;

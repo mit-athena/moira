@@ -1,27 +1,24 @@
-/*
- *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/get_file.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/get_file.c,v 1.15 1998-01-06 20:40:21 danw Exp $
+/* $Id: get_file.c,v 1.16 1998-02-05 22:52:00 danw Exp $
+ *
+ * Copyright (C) 1988-1998 by the Massachusetts Institute of Technology.
+ * For copying and distribution information, please see the file
+ * <mit-copyright.h>.
  */
-/*  (c) Copyright 1988 by the Massachusetts Institute of Technology. */
-/*  For copying and distribution information, please see the file */
-/*  <mit-copyright.h>. */
-
-#ifndef lint
-static char *rcsid_get_file_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/get_file.c,v 1.15 1998-01-06 20:40:21 danw Exp $";
-#endif
 
 #include <mit-copyright.h>
-#include <stdio.h>
-#include <gdb.h>
-#include <ctype.h>
-#include <string.h>
-#include <sys/param.h>
-#include <sys/file.h>
-#include <fcntl.h>
-#include <des.h>
-#include <krb.h>
 #include <moira.h>
+#include "update_server.h"
 #include "update.h"
+
+#include <errno.h>
+#include <fcntl.h>
+#include <stdio.h>
+#include <unistd.h>
+
+#include <des.h>
+#include <gdb.h>
+
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/get_file.c,v 1.16 1998-02-05 22:52:00 danw Exp $");
 
 #ifndef MIN
 #define MIN(a, b)    (((a) < (b)) ? (a) : (b))
@@ -30,7 +27,7 @@ static char *rcsid_get_file_c = "$Header: /afs/.athena.mit.edu/astaff/project/mo
 extern CONNECTION conn;
 extern char buf[BUFSIZ];
 
-extern int code, errno, uid;
+extern int code, uid;
 extern char *whoami;
 
 extern int have_authorization, have_file, done;
@@ -38,7 +35,7 @@ extern C_Block session;
 static des_key_schedule sched;
 static des_cblock ivec;
 
-static int get_block();
+static int get_block(int fd, int max_size, int encrypt);
 
 /*
  * get_file()
@@ -135,7 +132,7 @@ int get_file(char *pathname, int file_size, int checksum,
 	}
       n_written += n_wrote;
     }
-  lseek(fd, 0, L_SET);
+  lseek(fd, 0, SEEK_SET);
   if (send_ok())
     lose("sending okay for file transfer (get_file)");
   if (encrypt)

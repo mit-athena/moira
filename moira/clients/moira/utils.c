@@ -1,41 +1,35 @@
-#if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v 1.41 1998-01-07 17:13:10 danw Exp $";
-#endif
-
-/*	This is the file utils.c for the Moira Client, which allows users
+/* $Id $
+ *
+ *	This is the file utils.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
  *	It Contains:  Many useful utility functions.
  *
  *	Created: 	4/25/88
  *	By:		Chris D. Peterson
  *
- *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v $
- *      $Author: danw $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v 1.41 1998-01-07 17:13:10 danw Exp $
- *
- *  	Copyright 1988 by the Massachusetts Institute of Technology.
- *
- *	For further information on copyright and distribution
- *	see the file mit-copyright.h
+ * Copyright (C) 1988-1998 by the Massachusetts Institute of Technology.
+ * For copying and distribution information, please see the file
+ * <mit-copyright.h>.
  */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include <mit-copyright.h>
 #include <moira.h>
 #include <moira_site.h>
-#include <menu.h>
-#include <ctype.h>
-
-#include "mit-copyright.h"
 #include "defs.h"
 #include "f_defs.h"
 #include "globals.h"
-#include <netdb.h>		/* for gethostbyname. */
-#include <sys/types.h>
+
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <netdb.h>		/* for gethostbyname. */
 
+#include <ctype.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <time.h>
+
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v 1.42 1998-02-05 22:50:51 danw Exp $");
 
 /*	Function Name: AddQueue
  *	Description: Adds an element to a queue
@@ -84,7 +78,7 @@ char **CopyInfo(char **info)
   if (!ret)
     return ret;
   for (i = 0; info[i]; i++)
-    ret[i] = Strsave(info[i]);
+    ret[i] = strdup(info[i]);
   ret[i] = NULL;
   return ret;
 }
@@ -142,7 +136,7 @@ struct qelem *QueueTop(struct qelem *elem)
 
 static void FreeQueueElem(struct qelem *elem)
 {
-  char **info = (char **) elem->q_data;
+  char **info = elem->q_data;
 
   if (info)
     {
@@ -201,10 +195,10 @@ int QueueCount(struct qelem *elem)
  *	Returns: MR_CONT, or MR_ABORT if it has problems.
  */
 
-int StoreInfo(int argc, char **argv, char *data)
+int StoreInfo(int argc, char **argv, void *data)
 {
   char **info = malloc(MAX_ARGS_SIZE * sizeof(char *));
-  struct qelem **old_elem = (struct qelem **) data;
+  struct qelem **old_elem = data;
   struct qelem *new_elem = malloc(sizeof(struct qelem));
   int count;
 
@@ -217,10 +211,10 @@ int StoreInfo(int argc, char **argv, char *data)
     }
 
   for (count = 0; count < argc; count++)
-    info[count] = Strsave(argv[count]);
+    info[count] = strdup(argv[count]);
   info[count] = NULL;		/* NULL terminate this sucker. */
 
-  new_elem->q_data = (char *) info;
+  new_elem->q_data = info;
   AddQueue(new_elem, *old_elem);
 
   *old_elem = new_elem;
@@ -245,23 +239,6 @@ int CountArgs(char **info)
     }
 
   return number;
-}
-
-/*	Function Name: Scream
- *	Description: Bitch Loudly and exit, it is intended as a callback
- *                   function for queries that should never return a value.
- *	Arguments: none
- *	Returns: doesn't exit.
- */
-
-int Scream(void)
-{
-  com_err(program_name, 0,
-	  "\nA Moira update returned a value -- programmer botch\n");
-  mr_disconnect();
-  exit(1);
-  /*NOTREACHED*/
-  return -1;
 }
 
 /*	Function Name: PromptWithDefault
@@ -401,7 +378,7 @@ Bool ValidName(char *s)
  *	Returns: DM_NORMAL.
  */
 
-int ToggleVerboseMode(void)
+int ToggleVerboseMode(int argc, char **argv)
 {
   verbose = !verbose;
 
@@ -411,17 +388,6 @@ int ToggleVerboseMode(void)
     Put_message("Delete functions will be silent\n");
 
   return DM_NORMAL;
-}
-
-/*	Function Name: NullFunc
- *	Description:  dummy callback routine
- *	Arguments: none
- *	Returns: MR_CONT
- */
-
-int NullFunc(void)
-{
-  return MR_CONT;
 }
 
 /*	Function Name: SlipInNewName
@@ -471,7 +437,7 @@ int GetValueFromUser(char *prompt, char **pointer)
       if (strcmp(buf, *pointer))
 	{
 	  free(*pointer);
-	  *pointer = Strsave(buf);
+	  *pointer = strdup(buf);
 	}
     }
   return SUB_NORMAL;
@@ -503,12 +469,12 @@ int GetYesNoValueFromUser(char *prompt, char **pointer)
     case TRUE:
       if (*pointer)
 	free(*pointer);
-      *pointer = Strsave(DEFAULT_YES);
+      *pointer = strdup(DEFAULT_YES);
       break;
     case FALSE:
       if (*pointer)
 	free(*pointer);
-      *pointer = Strsave(DEFAULT_NO);
+      *pointer = strdup(DEFAULT_NO);
       break;
     case -1:
     default:
@@ -576,33 +542,16 @@ int GetFSTypes(char **current, int options)
 
   FreeAndClear(current, TRUE);
   sprintf(ret_value, "%d", new_val);
-  *current = Strsave(ret_value);
+  *current = strdup(ret_value);
   return SUB_NORMAL;
 }
-
-/*	Function Name: Strsave
- *	Description: save a string.
- *	Arguments: string  - the string to save.
- *	Returns: The malloced string, now safely saved, or NULL.
- */
-
-char *Strsave(char *str)
-{
-  char *newstr = malloc(strlen(str) + 1);
-
-  if (!newstr)
-    return NULL;
-  else
-    return strcpy(newstr, str);
-}
-
 
 /* atot: convert ASCII integer unix time into human readable date string */
 
 char *atot(char *itime)
 {
   time_t time;
-  char *ct, *ctime();
+  char *ct;
 
   time = (time_t) atoi(itime);
   ct = ctime(&time);
@@ -618,7 +567,7 @@ char *atot(char *itime)
  *	Returns: MR_CONT
  */
 
-int Print(int argc, char **argv, char *callback)
+int Print(int argc, char **argv, void *callback)
 {
   char buf[BUFSIZ];
   int i;
@@ -641,7 +590,7 @@ int Print(int argc, char **argv, char *callback)
  *	Returns: MR_CONT or MR_QUIT.
  */
 
-int PrintByType(int argc, char **argv, char *callback)
+int PrintByType(int argc, char **argv, void *callback)
 {
   if (!callback)
     return Print(argc, argv, callback);
@@ -675,12 +624,11 @@ int PrintHelp(char **message)
  *	Returns: none.
  */
 
-void Loop(struct qelem *elem, FVoid func)
+void Loop(struct qelem *elem, void (*func)(char **))
 {
   while (elem)
     {
-      char **info = (char **) elem->q_data;
-      (*func) (info);
+      (*func) (elem->q_data);
       elem = elem->q_forw;
     }
 }
@@ -712,8 +660,8 @@ void Loop(struct qelem *elem, FVoid func)
  *                              "Delete the list"
  */
 
-void QueryLoop(struct qelem *elem, FCharStar print_func,
-	       FVoid op_func, char *query_string)
+void QueryLoop(struct qelem *elem, char * (*print_func)(char **),
+	       void (*op_func)(char **, Bool), char *query_string)
 {
   Bool one_item;
   char temp_buf[BUFSIZ], *name;
@@ -722,7 +670,7 @@ void QueryLoop(struct qelem *elem, FCharStar print_func,
   one_item = (QueueCount(elem) == 1);
   while (elem)
     {
-      char **info = (char **) elem->q_data;
+      char **info = elem->q_data;
 
       if (one_item)
 	(*op_func) (info, one_item);
@@ -767,7 +715,7 @@ char *NullPrint(char **info)
 struct qelem *GetTypeValues(char *tname)
 {
   int stat;
-  char *argv[3], *p, **pp, *strsave();
+  char *argv[3], *p, **pp;
   struct qelem *elem, *oelem;
   static struct qelem *cache = NULL;
   struct cache_elem {
@@ -777,7 +725,7 @@ struct qelem *GetTypeValues(char *tname)
 
   for (elem = cache; elem; elem = elem->q_forw)
     {
-      ce = (struct cache_elem *) elem->q_data;
+      ce = elem->q_data;
       if (!strcmp(ce->cache_name, tname))
 	return ce->cache_data;
     }
@@ -786,7 +734,7 @@ struct qelem *GetTypeValues(char *tname)
   argv[1] = "TYPE";
   argv[2] = "*";
   elem = NULL;
-  if ((stat = do_mr_query("get_alias", 3, argv, StoreInfo, (char *)&elem)))
+  if ((stat = do_mr_query("get_alias", 3, argv, StoreInfo, &elem)))
     {
       com_err(program_name, stat, " in GetTypeValues");
       return NULL;
@@ -794,16 +742,16 @@ struct qelem *GetTypeValues(char *tname)
   oelem = elem;
   for (elem = QueueTop(elem); elem; elem = elem->q_forw)
     {
-      pp = (char **) elem->q_data;
-      p = strsave(pp[2]);
+      pp = elem->q_data;
+      p = strdup(pp[2]);
       FreeInfo(pp);
       elem->q_data = p;
     }
   elem = malloc(sizeof(struct qelem));
   ce = malloc(sizeof(struct cache_elem));
-  ce->cache_name = strsave(tname);
+  ce->cache_name = strdup(tname);
   ce->cache_data = QueueTop(oelem);
-  elem->q_data = (char *) ce;
+  elem->q_data = ce;
   AddQueue(elem, cache);
   cache = QueueTop(elem);
   return ce->cache_data;
@@ -842,7 +790,7 @@ int GetTypeFromUser(char *prompt, char *tname, char **pointer)
       Put_message(buffer);
       for (elem = GetTypeValues(tname); elem; elem = elem->q_forw)
 	Put_message(elem->q_data);
-      *pointer = strsave(def);
+      *pointer = strdup(def);
       return GetTypeFromUser(prompt, tname, pointer);
     }
   for (elem = GetTypeValues(tname); elem; elem = elem->q_forw)
@@ -875,17 +823,17 @@ int GetTypeFromUser(char *prompt, char *tname, char **pointer)
 		*p = toupper(*p);
 	    }
 	}
-      if ((stat = do_mr_query("add_alias", 3, argv, Scream, NULL)))
+      if ((stat = do_mr_query("add_alias", 3, argv, NULL, NULL)))
 	com_err(program_name, stat, " in add_alias");
       else
 	{
 	  elem = malloc(sizeof(struct qelem));
-	  elem->q_data = strsave(*pointer);
+	  elem->q_data = strdup(*pointer);
 	  AddQueue(elem, GetTypeValues(tname));
 	  Put_message("Done.");
 	}
     }
-  *pointer = strsave(def);
+  *pointer = strdup(def);
   return GetTypeFromUser(prompt, tname, pointer);
 }
 
@@ -904,19 +852,20 @@ int GetAddressFromUser(char *prompt, char **pointer)
   int ret;
 
   addr.s_addr = htonl(atoi(*pointer));
-  value = strsave(inet_ntoa(addr));
+  value = strdup(inet_ntoa(addr));
   ret = GetValueFromUser(prompt, &value);
   if (ret == SUB_ERROR)
     return SUB_ERROR;
   addr.s_addr = inet_addr(value);
   free(pointer);
-  sprintf(buf, "%d", ntohl(addr.s_addr));
-  *pointer = strsave(buf);
+  sprintf(buf, "%ld", ntohl(addr.s_addr));
+  *pointer = strdup(buf);
   return SUB_NORMAL;
 }
 
 
-int do_mr_query(char *name, int argc, char **argv, int (*proc)(), char *hint)
+int do_mr_query(char *name, int argc, char **argv,
+		int (*proc)(int, char **, void *), void *hint)
 {
   int status;
   extern char *whoami, *moira_server;

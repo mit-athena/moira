@@ -1,28 +1,27 @@
-/*
- *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/xfer_002.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/xfer_002.c,v 1.11 1998-01-05 19:53:59 danw Exp $
+/* $Id: xfer_002.c,v 1.12 1998-02-05 22:52:04 danw Exp $
+ *
+ * Copyright (C) 1988-1998 by the Massachusetts Institute of Technology.
+ * For copying and distribution information, please see the file
+ * <mit-copyright.h>.
  */
-/*  (c) Copyright 1988 by the Massachusetts Institute of Technology. */
-/*  For copying and distribution information, please see the file */
-/*  <mit-copyright.h>. */
-
-#ifndef lint
-static char *rcsid_xfer_002_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/xfer_002.c,v 1.11 1998-01-05 19:53:59 danw Exp $";
-#endif
 
 #include <mit-copyright.h>
-#include <stdio.h>
-#include <gdb.h>
-#include <ctype.h>
-#include <sys/param.h>
-#include <sys/file.h>
-#include <string.h>
 #include <moira.h>
+#include "update_server.h"
+
+#include <ctype.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#include <gdb.h>
+
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/xfer_002.c,v 1.12 1998-02-05 22:52:04 danw Exp $");
 
 extern CONNECTION conn;
 extern char buf[BUFSIZ];
 
-extern int code, errno;
+extern int code;
 
 extern int have_authorization, have_file, done;
 

@@ -1,27 +1,28 @@
-/*
- *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/exec_002.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/exec_002.c,v 1.18 1998-01-05 19:53:53 danw Exp $
+/* $Id: exec_002.c,v 1.19 1998-02-05 22:51:59 danw Exp $
+ *
+ * Copyright (C) 1988-1998 by the Massachusetts Institute of Technology.
+ * For copying and distribution information, please see the file
+ * <mit-copyright.h>.
  */
-/*  (c) Copyright 1988 by the Massachusetts Institute of Technology. */
-/*  For copying and distribution information, please see the file */
-/*  <mit-copyright.h>. */
-
-#ifndef lint
-static char *rcsid_exec_002_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/exec_002.c,v 1.18 1998-01-05 19:53:53 danw Exp $";
-#endif
 
 #include <mit-copyright.h>
-#include <stdio.h>
-#include <errno.h>
-#include <sys/types.h>
-#include <sys/wait.h>
-#include <signal.h>
-#include <gdb.h>
 #include <moira.h>
+#include "update_server.h"
 #include "update.h"
 
+#include <sys/wait.h>
+
+#include <errno.h>
+#include <signal.h>
+#include <stdio.h>
+#include <unistd.h>
+
+#include <gdb.h>
+
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/exec_002.c,v 1.19 1998-02-05 22:51:59 danw Exp $");
+
 extern CONNECTION conn;
-extern int code, errno, uid, log_priority, have_authorization;
+extern int code, uid, log_priority, have_authorization;
 extern char *whoami;
 
 int exec_002(char *str)
@@ -106,4 +107,5 @@ int exec_002(char *str)
 	    exit(1);
 	}
     }
+  return 0;
 }

@@ -1,18 +1,5 @@
-/*
- * Copyright 1987 by the Massachusetts Institute of Technology. For copying
- * and distribution information, see the file "mit-copyright.h".
+/* $Id $
  *
- * $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chpobox.c,v $
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chpobox.c,v 1.19 1998-01-07 17:13:12 danw Exp $
- * $Author: danw $
- *
- */
-
-#ifndef lint
-static char *rcsid_chpobox_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chpobox.c,v 1.19 1998-01-07 17:13:12 danw Exp $";
-#endif
-
-/*
  * Talk to the Moira database to change a person's home mail machine. This may
  * be an Athena machine, or a completely arbitrary address.
  *
@@ -26,46 +13,47 @@ static char *rcsid_chpobox_c = "$Header: /afs/.athena.mit.edu/astaff/project/moi
  * are trying to change the email address of another.  You must have
  * Kerberos tickets as the person whose address you are trying to
  * change, or the attempt will fail.
+ *
+ * Copyright (C) 1987-1998 by the Massachusetts Institute of Technology
+ * For copying and distribution information, please see the file
+ * <mit-copyright.h>.
  */
 
-#include <sys/types.h>
-#include <stdio.h>
-#include <pwd.h>
-#include <string.h>
-#include <ctype.h>
-#include <errno.h>
-
-/* Moira includes */
+#include <mit-copyright.h>
 #include <moira.h>
 #include <moira_site.h>
-#include "mit-copyright.h"
 
-char *getlogin();
-char *malloc();
+#include <pwd.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chpobox.c,v 1.20 1998-02-05 22:50:55 danw Exp $");
+
+int get_pobox(int argc, char **argv, void *callarg);
+char *potype(char *machine);
+int check_match(int argc, char **argv, void *callback);
+int check_match3(int argc, char **argv, void *callback);
+int usage(void);
+
 char *whoami;
-uid_t getuid();
-
-int getopt();
 
 static int match;
-
 
 int main(int argc, char *argv[])
 {
   struct passwd *pwd;
   char *mrarg[3], buf[BUFSIZ];
-  char *potype();
   char *address, *uname, *machine, *motd;
   uid_t u;
-  char *canonicalize_hostname();
-  int get_pobox(), scream();
   int c, setflag, prevpop, usageflag, status;
 
   extern int optind;
   extern char *optarg;
 
   c = setflag = prevpop = usageflag = 0;
-  address = uname = (char *) NULL;
+  address = uname = NULL;
   u = getuid();
 
   if ((whoami = strrchr(argv[0], '/')) == NULL)
@@ -96,7 +84,7 @@ int main(int argc, char *argv[])
 	  prevpop++;
 	break;
       case 'u':
-	uname = strsave(optarg);
+	uname = strdup(optarg);
 	break;
       default:
 	usageflag++;
@@ -172,7 +160,7 @@ int main(int argc, char *argv[])
 		  whoami, address);
 	  goto show;
 	}
-      mrarg[2] = canonicalize_hostname(strsave(machine));
+      mrarg[2] = canonicalize_hostname(strdup(machine));
       mrarg[1] = potype(mrarg[2]);
       if (!strcmp(mrarg[1], "POP"))
 	{
@@ -224,7 +212,7 @@ int main(int argc, char *argv[])
 	  mrarg[2] = address;
 	} else
 	  goto show;
-      status = mr_query("set_pobox", 3, mrarg, scream, NULL);
+      status = mr_query("set_pobox", 3, mrarg, NULL, NULL);
       if (status)
 	com_err(whoami, status,
 		" while setting pobox for %s to type %s, box %s",
@@ -232,7 +220,7 @@ int main(int argc, char *argv[])
     }
   else if (prevpop)
     {
-      status = mr_query("set_pobox_pop", 1, mrarg, scream, NULL);
+      status = mr_query("set_pobox_pop", 1, mrarg, NULL, NULL);
       if (status == MR_MACHINE)
 	{
 	  fprintf(stderr,
@@ -256,18 +244,11 @@ show:
 }
 
 
-int scream(void)
-{
-  com_err(whoami, 0, "Unexpected return value from Moira -- programmer botch");
-  mr_disconnect();
-  exit(1);
-}
-
 /*
  * get_pobox gets all your poboxes and displays them.
  */
 
-int get_pobox(int argc, char **argv, char *callarg)
+int get_pobox(int argc, char **argv, void *callarg)
 {
   if (!strcmp(argv[1], "POP"))
     printf("User %s, Type %s, Box: %s@%s\n",
@@ -286,7 +267,7 @@ int get_pobox(int argc, char **argv, char *callarg)
 char *potype(char *machine)
 {
   char *service[1], *argv[3];
-  int check_match(), check_match3(), status;
+  int status;
 
   match = 0;
   service[0] = "POP";
@@ -324,7 +305,7 @@ char *potype(char *machine)
     return "SMTP";
 }
 
-int check_match(int argc, char **argv, char *callback)
+int check_match(int argc, char **argv, void *callback)
 {
   if (match)
     return 0;
@@ -335,7 +316,7 @@ int check_match(int argc, char **argv, char *callback)
   return 0;
 }
 
-int check_match3(int argc, char **argv, char *callback)
+int check_match3(int argc, char **argv, void *callback)
 {
   if (match)
     return 0;

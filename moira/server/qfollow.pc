@@ -1,28 +1,28 @@
-/*
- *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qfollow.pc,v $
- *	$Author: danw $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qfollow.pc,v 2.4 1998-01-06 20:40:15 danw Exp $
+/* $Id: qfollow.pc,v 2.5 1998-02-05 22:51:47 danw Exp $
  *
- *	Copyright (C) 1987 by the Massachusetts Institute of Technology
- *	For copying and distribution information, please see the file
- *	<mit-copyright.h>.
+ * Query followup routines
+ *
+ * Copyright (C) 1987-1998 by the Massachusetts Institute of Technology
+ * For copying and distribution information, please see the file
+ * <mit-copyright.h>.
  *
  */
-
-#ifndef lint
-static char *rcsid_qsupport_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qfollow.pc,v 2.4 1998-01-06 20:40:15 danw Exp $";
-#endif lint
 
 #include <mit-copyright.h>
 #include "mr_server.h"
 #include "query.h"
+#include "qrtn.h"
+
 #include <ctype.h>
+#include <stdlib.h>
 #include <string.h>
 #ifdef GDSS
 #include "gdss.h"
 #endif /* GDSS */
+
 EXEC SQL INCLUDE sqlca;
-#include "qrtn.h"
+
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qfollow.pc,v 2.5 1998-02-05 22:51:47 danw Exp $");
 
 extern char *whoami, *table_name[];
 extern int dbms_errno, mr_errcode;
@@ -291,8 +291,8 @@ int set_zephyr_modtime(struct query *q, char *argv[], client *cl)
  * username, or # + the users_id.
  */
 int followup_fix_modby(struct query *q, struct save_queue *sq,
-		       struct validate *v, int (*action)(), int actarg,
-		       client *cl)
+		       struct validate *v, int (*action)(int, char *[], void *),
+		       void *actarg, client *cl)
 {
   int i, j;
   char **argv;
@@ -327,7 +327,8 @@ int followup_fix_modby(struct query *q, struct save_queue *sq,
  * routine but don't have a signature.
  */
 int followup_guax(struct query *q, struct save_queue *sq, struct validate *v,
-		  int (*action)(), int actarg, client *cl)
+		  int (*action)(int, char *[], void *), void *actarg,
+		  client *cl)
 {
   int i, j;
   char **argv;
@@ -336,7 +337,7 @@ int followup_guax(struct query *q, struct save_queue *sq, struct validate *v,
   char *kname;
   SigInfo  si;
   EXEC SQL BEGIN DECLARE SECTION;
-  int timestamp, who, siglen;
+  int timestamp, who;
   char *login;
   char rsig[256];
   EXEC SQL VAR rsig IS STRING(256);
@@ -369,14 +370,14 @@ int followup_guax(struct query *q, struct save_queue *sq, struct validate *v,
 	  si.SigInfoVersion = 0; /* XXXXX this isn't used */
 	  kname_parse(si.pname, si.pinst, si.prealm, kname);
 	  free(kname);
-	  si.rawsig = (unsigned char *)strsave(rsig);
+	  si.rawsig = (unsigned char *)strdup(rsig);
 	  if (log_flags & LOG_GDSS)
 	    com_err(whoami, 0, "rawsig length = %d, sig=\"%s\"",
 		    strlen(si.rawsig), si.rawsig);
 	  GDSS_Recompose(&si, sigbuf);
 	  free(si.rawsig);
 	  free(argv[U_SIGNATURE]);
-	  argv[U_SIGNATURE] = strsave(sigbuf);
+	  argv[U_SIGNATURE] = strdup(sigbuf);
 	  if (log_flags & LOG_GDSS)
 	    com_err(whoami, 0, "generated signature length %d",
 		    strlen(sigbuf));
@@ -411,7 +412,7 @@ int followup_ausr(struct query *q, char *argv[], client *cl)
   char fullname[129];
   EXEC SQL END DECLARE SECTION;
 #ifdef GDSS
-  char databuf[32], *kname_unparse();
+  char databuf[32];
   EXEC SQL BEGIN DECLARE SECTION;
   char rawsig[128];
   int sigwho, timestamp;
@@ -507,7 +508,7 @@ int followup_uuac(struct query *q, char *argv[], client *cl)
   char *entity, *name;
   EXEC SQL END DECLARE SECTION;
 #ifdef GDSS
-  char databuf[32], *kname_unparse();
+  char databuf[32];
   EXEC SQL BEGIN DECLARE SECTION;
   char rawsig[128];
   char *login;
@@ -584,7 +585,8 @@ int followup_uuac(struct query *q, char *argv[], client *cl)
  */
 
 int followup_gpob(struct query *q, struct save_queue *sq, struct validate *v,
-		  int (*action)(), int actarg, client *cl)
+		  int (*action)(int, char *[], void *), void *actarg,
+		  client *cl)
 {
   char **argv;
   char *ptype, *p;
@@ -648,7 +650,8 @@ int followup_gpob(struct query *q, struct save_queue *sq, struct validate *v,
  */
 
 int followup_gsnt(struct query *q, struct save_queue *sq, struct validate *v,
-		  int (*action)(), int actarg, client *cl)
+		  int (*action)(int, char *[], void *), void *actarg,
+		  client *cl)
 {
   char **argv, *type;
   int id, i, idx, status;
@@ -680,13 +683,13 @@ int followup_gsnt(struct query *q, struct save_queue *sq, struct validate *v,
 	{
 	  status = 0;
 	  free(argv[idx]);
-	  argv[idx] = strsave("NONE");
+	  argv[idx] = strdup("NONE");
 	}
       else
 	{
 	  status = 0;
 	  free(argv[idx]);
-	  argv[idx] = strsave("???");
+	  argv[idx] = strdup("???");
 	}
       if (status && status != MR_NO_MATCH)
 	return status;
@@ -712,7 +715,8 @@ int followup_gsnt(struct query *q, struct save_queue *sq, struct validate *v,
  */
 
 int followup_ghst(struct query *q, struct save_queue *sq, struct validate *v,
-		  int (*action)(), int actarg, client *cl)
+		  int (*action)(int, char *[], void *), void *actarg,
+		  client *cl)
 {
   char **argv, *type;
   int id, i, idx, status;
@@ -759,13 +763,13 @@ int followup_ghst(struct query *q, struct save_queue *sq, struct validate *v,
 	{
 	  status = 0;
 	  free(argv[idx]);
-	  argv[idx] = strsave("NONE");
+	  argv[idx] = strdup("NONE");
 	}
       else
 	{
 	  status = 0;
 	  free(argv[idx]);
-	  argv[idx] = strsave("???");
+	  argv[idx] = strdup("???");
 	}
       if (status && status != MR_NO_MATCH)
 	return status;
@@ -791,7 +795,8 @@ int followup_ghst(struct query *q, struct save_queue *sq, struct validate *v,
  */
 
 int followup_glin(struct query *q, struct save_queue *sq, struct validate *v,
-		  int (*action)(), int actarg, client *cl)
+		  int (*action)(int, char *[], void *), void *actarg,
+		  client *cl)
 {
   char **argv, *type;
   int id, i, idx, status;
@@ -825,13 +830,13 @@ int followup_glin(struct query *q, struct save_queue *sq, struct validate *v,
 	{
 	  status = 0;
 	  free(argv[idx]);
-	  argv[idx] = strsave("NONE");
+	  argv[idx] = strdup("NONE");
 	}
       else
 	{
 	  status = 0;
 	  free(argv[idx]);
-	  argv[idx] = strsave("???");
+	  argv[idx] = strdup("???");
 	}
       if (status && status != MR_NO_MATCH)
 	return status;
@@ -864,7 +869,8 @@ int followup_glin(struct query *q, struct save_queue *sq, struct validate *v,
  */
 
 int followup_gqot(struct query *q, struct save_queue *sq, struct validate *v,
-		  int (*action)(), int actarg, client *cl)
+		  int (*action)(int, char *[], void *), void *actarg,
+		  client *cl)
 {
   int j;
   char **argv;
@@ -894,7 +900,7 @@ int followup_gqot(struct query *q, struct save_queue *sq, struct validate *v,
 	      break;
 	    case 'A':
 	      free(argv[2]);
-	      argv[2] = strsave("system:anyuser");
+	      argv[2] = strdup("system:anyuser");
 	      break;
 	    default:
 	      id = atoi(argv[2]);
@@ -1078,7 +1084,8 @@ int followup_dqot(struct query *q, char **argv, client *cl)
 
 
 int followup_gpce(struct query *q, struct save_queue *sq, struct validate *v,
-		  int (*action)(), int actarg, client *cl)
+		  int (*action)(int, char *[], void *), void *actarg,
+		  client *cl)
 {
   int i, j;
   char **argv;
@@ -1112,7 +1119,8 @@ int followup_gpce(struct query *q, struct save_queue *sq, struct validate *v,
  */
 
 int followup_gzcl(struct query *q, struct save_queue *sq, struct validate *v,
-		  int (*action)(), int actarg, client *cl)
+		  int (*action)(int, char *[], void *), void *actarg,
+		  client *cl)
 {
   int id, i, status;
   char **argv;
@@ -1142,13 +1150,13 @@ int followup_gzcl(struct query *q, struct save_queue *sq, struct validate *v,
 	    {
 	      status = 0;
 	      free(argv[i + 1]);
-	      argv[i + 1] = strsave("NONE");
+	      argv[i + 1] = strdup("NONE");
 	    }
 	  else
 	    {
 	      status = 0;
 	      free(argv[i + 1]);
-	      argv[i + 1] = strsave("???");
+	      argv[i + 1] = strdup("???");
 	    }
 	  if (status && status != MR_NO_MATCH)
 	    return status;
@@ -1171,7 +1179,8 @@ int followup_gzcl(struct query *q, struct save_queue *sq, struct validate *v,
  */
 
 int followup_gsha(struct query *q, struct save_queue *sq, struct validate *v,
-		  int (*action)(), int actarg, client *cl)
+		  int (*action)(int, char *[], void *), void *actarg,
+		  client *cl)
 {
   char **argv;
   int i, id, status;
@@ -1199,13 +1208,13 @@ int followup_gsha(struct query *q, struct save_queue *sq, struct validate *v,
 	{
 	  status = 0;
 	  free(argv[2]);
-	  argv[2] = strsave("NONE");
+	  argv[2] = strdup("NONE");
 	}
       else
 	{
 	  status = 0;
 	  free(argv[2]);
-	  argv[2] = strsave("???");
+	  argv[2] = strdup("???");
 	}
       if (status && status != MR_NO_MATCH)
 	return status;

@@ -1,14 +1,26 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/students.pc,v 1.5 1998-01-05 19:53:25 danw Exp $
+/* $Id: students.pc,v 1.6 1998-02-05 22:51:38 danw Exp $
+ *
+ * Load data into Moira from Registrar's Office data file
+ *
+ * Copyright (C) 1990-1998 by the Massachusetts Institute of Technology
+ * For copying and distribution information, please see the file
+ * <mit-copyright.h>.
  */
 
-#include <stdio.h>
-#include <string.h>
-#include <ctype.h>
-#include <sys/time.h>
+#include <mit-copyright.h>
 #include <moira.h>
 #include <moira_site.h>
-EXEC SQL INCLUDE sqlca;
 
+#include <ctype.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <time.h>
+
+EXEC SQL INCLUDE sqlca;
+extern void sqlglm(char *, unsigned int *, unsigned int *);
+
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/students.pc,v 1.6 1998-02-05 22:51:38 danw Exp $");
 
 #define WHO 11859		/* root */
 #define PROG "stu-tape"
@@ -73,9 +85,16 @@ struct entry {
   char *class;
 };
 
-
 char *whoami;
 int newfinger = 0;
+
+struct entry *get_next_entry(FILE *in);
+void process_entry(struct entry *e);
+void newuser(struct entry *e);
+int set_next_users_id(int limit);
+int set_next_uid(int limit);
+void sqlexit(void);
+void dbmserr(char *where, int what);
 
 #define SQL_DUPLICATE -2112
 #define sqlfail() (sqlca.sqlcode && sqlca.sqlcode != 1403)
@@ -83,7 +102,7 @@ int newfinger = 0;
 int main(int argc, char **argv)
 {
   FILE *in;
-  struct entry *e, *get_next_entry();
+  struct entry *e;
   int i, wait = 0;
   char buf[BUFSIZ], *file = NULL;
   EXEC SQL BEGIN DECLARE SECTION;
@@ -103,8 +122,6 @@ int main(int argc, char **argv)
     {
       if (!strcmp(argv[i], "-w"))
 	wait++;
-      else if (!strcmp(argv[i], "-D"))
-	setenv("ING_SET", "set printqry");
       else if (!strcmp(argv[i], "-n"))
 	newfinger++;
       else if (file)
@@ -131,7 +148,6 @@ int main(int argc, char **argv)
 
   while ((e = get_next_entry(in)))
     {
-    again:
       process_entry(e);
       EXEC SQL COMMIT WORK;
       if (sqlca.sqlcode)
@@ -154,7 +170,7 @@ int main(int argc, char **argv)
 struct entry *get_next_entry(FILE *in)
 {
   static struct entry e;
-  static char buf[BUFSIZ], eid[16], classbuf[10], titlebuf[12];
+  static char buf[BUFSIZ], eid[16], classbuf[10];
   static char name[LEN_NAME + 1], id[LEN_ID + 1], course[LEN_COURSE + 1];
   static char year[LEN_YEAR + 1], address[LEN_ADDRESS + 1];
   static char dorm_room[LEN_DORM_ROOM + 1], city[LEN_CITY + 1];
@@ -212,7 +228,7 @@ struct entry *get_next_entry(FILE *in)
       while (isspace(*p))
 	p++;
       e.first = p;
-      if (p = strchr(e.first, ' '))
+      if ((p = strchr(e.first, ' ')))
 	{
 	  *p = '\0';
 	  e.first = strtrim(e.first);
@@ -270,12 +286,12 @@ struct entry *get_next_entry(FILE *in)
 }
 
 
-process_entry(struct entry *e)
+void process_entry(struct entry *e)
 {
   int changed, nochange, encrypted;
   char buf[BUFSIZ], *from, *to;
   EXEC SQL BEGIN DECLARE SECTION;
-  char *first, *last, *middle, *eid, *title, *sid, *name, *rname, *rdept;
+  char *first, *last, *middle, *eid, *sid, *name, *rdept;
   char *rtitle, *rophone, *rhphone, *prog;
   char class[9], haddr[128], hphone[33], ophone[33], dept[33], raddr[128];
   char dfirst[17], dlast[17], dmiddle[17];
@@ -562,8 +578,7 @@ process_entry(struct entry *e)
     }
 }
 
-
-newuser(struct entry *e)
+void newuser(struct entry *e)
 {
   char buf[512], *from, *to;
   EXEC SQL BEGIN DECLARE SECTION;
@@ -685,7 +700,7 @@ newuser(struct entry *e)
 int set_next_users_id(int limit)
 {
   EXEC SQL BEGIN DECLARE SECTION;
-  int rowcount, flag, value, retval;
+  int flag, value, retval;
   EXEC SQL END DECLARE SECTION;
 
   EXEC SQL SELECT value INTO :value FROM numvalues
@@ -736,7 +751,7 @@ int set_next_users_id(int limit)
 int set_next_uid(int limit)
 {
   EXEC SQL BEGIN DECLARE SECTION;
-  int rowcount, flag, value, retval;
+  int flag, value, retval;
   EXEC SQL END DECLARE SECTION;
 
   EXEC SQL SELECT value INTO :value FROM numvalues
@@ -782,14 +797,14 @@ int set_next_uid(int limit)
 }
 
 
-sqlexit(void)
+void sqlexit(void)
 {
   dbmserr(NULL, sqlca.sqlcode);
   EXEC SQL ROLLBACK WORK;
   exit(1);
 }
 
-dbmserr(char *where, int what)
+void dbmserr(char *where, int what)
 {
   char err_msg[256];
   int bufsize = 256, msglength = 0;

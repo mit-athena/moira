@@ -1,21 +1,16 @@
-/*
- *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_srvdata.c,v $
- *	$Author: danw $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_srvdata.c,v 1.11 1998-01-07 17:13:40 danw Exp $
+/* $Id: mr_srvdata.c,v 1.12 1998-02-05 22:51:45 danw Exp $
  *
- *	Copyright (C) 1987 by the Massachusetts Institute of Technology
- *	For copying and distribution information, please see the file
- *	<mit-copyright.h>.
+ * Global variables inside the Moira server.
  *
- * 	Global variables inside the Moira server.
+ * Copyright (C) 1987-1998 by the Massachusetts Institute of Technology
+ * For copying and distribution information, please see the file
+ * <mit-copyright.h>.
  */
-
-#ifndef lint
-static char *rcsid_mr_srvdata_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_srvdata.c,v 1.11 1998-01-07 17:13:40 danw Exp $";
-#endif lint
 
 #include <mit-copyright.h>
 #include "mr_server.h"
+
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_srvdata.c,v 1.12 1998-02-05 22:51:45 danw Exp $");
 
 /*
  * Connections & clients:

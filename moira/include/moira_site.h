@@ -1,4 +1,5 @@
-/*
+/* $Id: moira_site.h,v 1.27 1998-02-05 22:51:17 danw Exp $
+ *
  * This file contains all definitions that allow easy access to
  * elements returned by most of the @i[Moira] queries.  It also defines
  * the default server location and the directories used on the server.
@@ -10,14 +11,9 @@
  *                                 Chris D. Peterson - kit@athena
  *                                   7/27/88
  *
- *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/include/moira_site.h,v $
- *      $Author: danw $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/include/moira_site.h,v 1.26 1998-01-07 17:13:23 danw Exp $
- *
- *  	Copyright 1988 by the Massachusetts Institute of Technology.
- *
- *	For further information on copyright and distribution
- *	see the file mit-copyright.h
+ * Copyright (C) 1988-1998 by the Massachusetts Institute of Technology.
+ * For further information on copyright and distribution
+ * see the file <mit-copyright.h>.
  */
 
 #ifndef _moira_site_

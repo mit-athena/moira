@@ -1,28 +1,24 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/addusr/addusr.c,v 1.7 1998-01-05 19:51:46 danw Exp $
+/* $Id $
  *
- * Program to add users en batch to the moira database
+ * Program to add users en masse to the moira database
  *
  * by Mark Rosenstein, July 1992.
  *
- * Copyright 1992 by the Massachusetts Institute of Technology.
- *
- * (c) Copyright 1992 by the Massachusetts Institute of Technology.
+ * Copyright (C) 1992-1998 by the Massachusetts Institute of Technology.
  * For copying and distribution information, please see the file
  * <mit-copyright.h>.
  */
 
 #include <mit-copyright.h>
-#include <string.h>
-#include <stdio.h>
-#include <ctype.h>
-#include <des.h>
-#include <krb.h>
 #include <moira.h>
 #include <moira_site.h>
 
-#ifndef LINT
-static char adduser_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/addusr/addusr.c,v 1.7 1998-01-05 19:51:46 danw Exp $";
-#endif
+#include <ctype.h>
+#include <errno.h>
+#include <stdio.h>
+#include <string.h>
+
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/addusr/addusr.c,v 1.8 1998-02-05 22:50:30 danw Exp $");
 
 #ifdef ATHENA
 #define DEFAULT_SHELL "/bin/athena/tcsh"
@@ -40,10 +36,15 @@ int reg_only, reg, verbose, nodupcheck;
 char *whoami;
 int duplicate, errors;
 
-extern char *FixCase(), *RemoveHyphens(), *strtrim();
-extern int errno;
-int usercheck(), scream();
+extern int ureg_init(void);
+extern int grab_login(char *first, char *last, char *idnumber,
+		      char *hashidnumber, char *login);
+extern int set_password(char *first, char *last, char *idnumber,
+			char *hashidnumber, char *password);
 
+
+void usage(char **argv);
+int usercheck(int argc, char **argv, void *qargv);
 
 int main(int argc, char **argv)
 {
@@ -296,7 +297,7 @@ int main(int argc, char **argv)
 	      dargv[1] = qargv[U_LAST];
 	      duplicate = 0;
 	      status = mr_query("get_user_account_by_name", 2, dargv,
-				usercheck, (char *) qargv);
+				usercheck, qargv);
 	      if (status && status != MR_NO_MATCH)
 		{
 		  com_err(whoami, status,
@@ -323,7 +324,7 @@ int main(int argc, char **argv)
 		}
 	    }
 	  status = mr_query("add_user_account", U_SECURE + 1, qargv,
-			    scream, NULL);
+			    NULL, NULL);
 	  if (status)
 	    {
 	      com_err(whoami, status, "adding user %s %s", first, last);
@@ -369,7 +370,7 @@ int main(int argc, char **argv)
 }
 
 
-usage(char **argv)
+void usage(char **argv)
 {
   fprintf(stderr, "Usage: %s [options]\n", argv[0]);
   fprintf(stderr, "Options are\n");
@@ -387,21 +388,14 @@ usage(char **argv)
 }
 
 
-/* Called only if a query returns a value that we weren't expecting */
-
-scream(void)
-{
-  fprintf(stderr, "Programmer botch\n");
-  exit(3);
-}
-
-
 /* query callback routine to check for duplicate users */
 
-usercheck(int argc, char **argv, char **qargv)
+int usercheck(int argc, char **argv, void *qargv)
 {
-  if (!strcmp(argv[U_MITID], qargv[U_MITID]))
+  if (!strcmp(argv[U_MITID], ((char **)qargv)[U_MITID]))
     duplicate++;
   else
     duplicate--;
+
+  return MR_CONT;
 }

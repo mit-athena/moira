@@ -1,18 +1,22 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/idno.c,v 1.5 1998-01-05 19:53:04 danw Exp $
+/* $Id $
  *
- * Routines to encrypt ID's
+ * Routines to deal with MIT IDs
  *
- *  (c) Copyright 1988 by the Massachusetts Institute of Technology.
- *  For copying and distribution information, please see the file
- *  <mit-copyright.h>.
+ * Copyright (C) 1988-1998 by the Massachusetts Institute of Technology.
+ * For copying and distribution information, please see the file
+ * <mit-copyright.h>.
  */
 
 #include <mit-copyright.h>
-#include <string.h>
+#include <moira.h>
+
 #include <ctype.h>
-#include <unistd.h>
+#include <string.h>
+
 #ifdef USE_CRYPT_H
 #include <crypt.h>
+#else
+#include <unistd.h>
 #endif
 
 /*	Function Name: RemoveHyphens

@@ -1,23 +1,18 @@
-/*
- *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_util.c,v $
- *	$Author: danw $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_util.c,v 1.28 1998-01-06 20:40:15 danw Exp $
+/* $Id: mr_util.c,v 1.29 1998-02-05 22:51:45 danw Exp $
  *
- *	Copyright (C) 1987 by the Massachusetts Institute of Technology
- *	For copying and distribution information, please see the file
- *	<mit-copyright.h>.
+ * Copyright (C) 1987-1998 by the Massachusetts Institute of Technology
+ * For copying and distribution information, please see the file
+ * <mit-copyright.h>.
  */
-
-#ifndef lint
-static char *rcsid_mr_util_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_util.c,v 1.28 1998-01-06 20:40:15 danw Exp $";
-#endif lint
 
 #include <mit-copyright.h>
 #include "mr_server.h"
-#include <com_err.h>
+
 #include <ctype.h>
-#include <sys/types.h>
+#include <stdlib.h>
 #include <string.h>
+
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_util.c,v 1.29 1998-02-05 22:51:45 danw Exp $");
 
 extern char *whoami;
 
@@ -91,7 +86,7 @@ void mr_com_err(const char *whoami, long code, const char *fmt, va_list pvar)
   if (code)
     fputs(error_message(code), stderr);
   if (fmt)
-    _doprnt(fmt, pvar, stderr);
+    vfprintf(stderr, fmt, pvar);
   putc('\n', stderr);
 }
 
@@ -147,6 +142,6 @@ char **mr_copy_args(char **argv, int argc)
   if (!a)
     return a;
   for (i = 0; i < argc; i++)
-    a[i] = strsave(argv[i]);
+    a[i] = strdup(argv[i]);
   return a;
 }

@@ -1,171 +1,186 @@
-/*	This is the file f_defs.h for the Moira Client, which allows users
+/* $Id $
+ *
+ *	This is the file f_defs.h for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
  *	It Contains: useful definitions.
  *
  *	Created: 	4/12/88
  *	By:		Chris D. Peterson
  *
- *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/f_defs.h,v $
- *      $Author: danw $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/f_defs.h,v 1.22 1998-01-07 17:12:56 danw Exp $
- *
- *  	Copyright 1988 by the Massachusetts Institute of Technology.
- *
- *	For further information on copyright and distribution
- *	see the file mit-copyright.h
+ * Copyright (C) 1988-1998 by the Massachusetts Institute of Technology.
+ * For copying and distribution information, please see the file
+ * <mit-copyright.h>.
  */
 
-#include "mit-copyright.h"
+#include <mit-copyright.h>
+#include "menu.h"
 
 #ifndef _f_defs_
 #define _f_defs_
 
 /* attach.c */
 
-int GetFS();			/* Get information about named filsys. */
-int GetFSM();			/* Get filesys by machine */
-int AddFS();			/* Adds a new Filsys to the database. */
-int ChangeFS();			/* Changes information in a Filsys entry. */
-int DeleteFS();			/* Delete a filesystem from the database. */
+int GetFS(int argc, char **argv);
+int GetFSM(int argc, char **argv);
+int AddFS(int argc, char **argv);
+int ChangeFS(int argc, char **argv);
+int DeleteFS(int argc, char **argv);
 
-int AddFSToGroup();		/* Add a filesystem to an fsgroup */
-int RemoveFSFromGroup();	/* remove a filesystem from an fsgroup */
-int ChangeFSGroupOrder();	/* change the sortorder on an fsgrouop */
-int FSGroupHelp();		/* print info about fsgroups */
+int AddFSToGroup(int argc, char **argv);
+int RemoveFSFromGroup(int argc, char **argv);
+int ChangeFSGroupOrder(int argc, char **argv);
+int FSGroupHelp(int argc, char **argv);
 
-int GetFSAlias();		/* Gets the value for a Filsys alias. */
-int CreateFSAlias();		/* Creates a new alias in the database. */
-int DeleteFSAlias();		/* Deletes an FS alias from the database. */
+int GetFSAlias(int argc, char **argv);
+int CreateFSAlias(int argc, char **argv);
+int DeleteFSAlias(int argc, char **argv);
 
-int AttachHelp();		/* Help information specific to filsys. */
+int AttachHelp(void);
 
 /* cluster.c */
 
-int ShowMachineInfo();		/* Show information on a(many) machine(s). */
-int ShowMachineQuery();		/* Show mach info based on complex query */
-int AddMachine();		/* add a new machine to teh database. */
-int UpdateMachine();		/* updates machine information. */
-int DeleteMachine();		/* delete a machine from the database. */
-int MachineToClusterMap();	/* show machines in clusters. */
-int AddMachineToCluster();	/* add a machine to a new cluster. */
-int RemoveMachineFromCluster();	/* remove a machine from a cluster. */
+int ShowMachineInfo(int argc, char **argv);
+int ShowMachineQuery(int argc, char **argv);
+int AddMachine(int argc, char **argv);
+int UpdateMachine(int argc, char **argv);
+int DeleteMachine(int argc, char **argv);
+int MachineToClusterMap(int argc, char **argv);
+int AddMachineToCluster(int argc, char **argv);
+int RemoveMachineFromCluster(int argc, char **argv);
 
-int ShowClusterInfo();		/* Show information about a cluster. */
-int AddCluster();		/* adds a new cluster to the database. */
-int UpdateCluster();		/* updates information about a cluster. */
-int DeleteCluster();		/* removes a cluste from the database. */
+int ShowClusterInfo(int argc, char **argv);
+int AddCluster(int argc, char **argv);
+int UpdateCluster(int argc, char **argv);
+int DeleteCluster(int argc, char **argv);
 
-int ShowClusterInfo();		/* show information about a cluster. */
-int MachinesInCluster();	/* list all machines in a give cluster. */
-int AddCluster();
-int UpdateCluster();		/* add, update, and delete clusters. */
-int DeleteCluster();
+int ShowClusterInfo(int argc, char **argv);
+int AddCluster(int argc, char **argv);
+int UpdateCluster(int argc, char **argv);
+int DeleteCluster(int argc, char **argv);
 
-int ShowClusterData();		/* Show, add, and remove data  */
-int AddClusterData();		/* associated with a cluster. */
-int RemoveClusterData();
+int ShowClusterData(int argc, char **argv);
+int AddClusterData(int argc, char **argv);
+int RemoveClusterData(int argc, char **argv);
 
-int ShowSubnetInfo();
-int AddSubnet();
-int UpdateSubnet();
-int DeleteSubnet();
+int ShowSubnetInfo(int argc, char **argv);
+int AddSubnet(int argc, char **argv);
+int UpdateSubnet(int argc, char **argv);
+int DeleteSubnet(int argc, char **argv);
 
-int ShowCname();
-int AddCname();
-int DeleteCname();
+int ShowCname(int argc, char **argv);
+int AddCname(int argc, char **argv);
+int DeleteCname(int argc, char **argv);
 
 /* delete.c */
 
-int DeleteList(), DeleteUser();
+int DeleteList(int argc, char **argv);
+int DeleteUser(int argc, char **argv);
 
 /* lists.c */
 
-int ListByMember();		/* list all list to which a member belongs. */
-int ListByAdministrator();	/* list all list to which a given member can
-				 administer. */
-int ListAllGroups();
-int ListAllPublicMailLists();	/* List misc. types of lists. */
-int ListAllMailLists();
+int ListByMember(int argc, char **argv);
+int ListByAdministrator(int argc, char **argv);
+int ListAllPublicMailLists(int argc, char **argv);
 
-int AddMember(), DeleteMember(); /* add and delete mamber of current list. */
-int ListAllMembers();
-int ListUserMembers();		/* List various members of the current list. */
-int ListListMembers();
-int ListStringMembers();
+int AddMember(int argc, char **argv);
+int DeleteMember(int argc, char **argv);
+int ListAllMembers(int argc, char **argv);
+int ListUserMembers(int argc, char **argv);
+int ListListMembers(int argc, char **argv);
+int ListStringMembers(int argc, char **argv);
 
-int ShowListInfo();		/* show info about a list. */
-int UpdateList();		/* change info about a list. */
-int InterRemoveItemFromLists();	/* Interactivly remove item from all lists */
+int ShowListInfo(int argc, char **argv);
+int UpdateList(int argc, char **argv);
+int InterRemoveItemFromLists(int argc, char **argv);
 
-int ListmaintMemberMenuEntry();	/* entry and exit functions for member menu. */
-int ListmaintMemberMenuExit();
-int ListHelp();			/* help function for lists. */
+int ListmaintMemberMenuEntry(Menu *m, int argc, char **argv);
+int ListmaintMemberMenuExit(Menu *m);
+int ListHelp(int argc, char **argv);
 
 /* nfs.c */
 
-int ShowNFSService();		/* functions that manipulate nfs physical  */
-int AddNFSService();		/* services. */
-int UpdateNFSService();
-int DeleteNFSService();
+int ShowNFSService(int argc, char **argv);
+int AddNFSService(int argc, char **argv);
+int UpdateNFSService(int argc, char **argv);
+int DeleteNFSService(int argc, char **argv);
 
 /* pobox.c */
 
-int GetUserPOBox();		/* operate on user post office boxes. */
-int SetUserPOBox();
-int RemoveUserPOBox();
+int GetUserPOBox(int argc, char **argv);
+int SetUserPOBox(int argc, char **argv);
+int RemoveUserPOBox(int argc, char **argv);
 
 /* quota.c */
 
-int ShowDefaultQuota();		/* show or change system default quota. */
-int ChangeDefaultQuota();
+int ShowDefaultQuota(int argc, char **argv);
+int ChangeDefaultQuota(int argc, char **argv);
 
-int GetQuota();	        	/* modify a user's quota. */
-int GetQuotaByFilesys();
-int AddQuota();
-int UpdateQuota();
-int DeleteQuota();
+int GetQuota(int argc, char **argv);
+int GetQuotaByFilesys(int argc, char **argv);
+int AddQuota(int argc, char **argv);
+int UpdateQuota(int argc, char **argv);
+int DeleteQuota(int argc, char **argv);
 
 /* user.c */
 
-int ShowUserByLogin();		/* misc. ways to show user. */
-int ShowUserByName();
-int ShowUserByClass();
-int ShowUserById();
-int AddNewUser();		/* add a new user to the database. */
-int RegisterUser();		/* register a user. */
-int UpdateUser();		/* modify info about a user. */
-int DeactivateUser();		/* change a user's status to DELETED */
-int ChangeUserPOBox();		/* change the PO box of a user. */
-int DeleteUserByUid();		/* detete a user by uid. */
-int GetKrbmap();		/* fetch a user->kerberos mapping */
-int AddKrbmap();
-int DeleteKrbmap();
-int GetDirFlags();
-int SetDirFlags();
+int ShowUserByLogin(int argc, char **argv);
+int ShowUserByName(int argc, char **argv);
+int ShowUserByClass(int argc, char **argv);
+int ShowUserById(int argc, char **argv);
+int AddNewUser(int argc, char **argv);
+int RegisterUser(int argc, char **argv);
+int UpdateUser(int argc, char **argv);
+int DeactivateUser(int argc, char **argv);
+int DeleteUserByUid(int argc, char **argv);
+int GetKrbmap(int argc, char **argv);
+int AddKrbmap(int argc, char **argv);
+int DeleteKrbmap(int argc, char **argv);
+int GetDirFlags(int argc, char **argv);
+int SetDirFlags(int argc, char **argv);
 
 /* printer.c */
-int AddPcap();
-int GetPcap();
-int ChngPcap();
-int DeletePcap();
-int GetPalladium(), AddPalladium(), ChngPalladium(), DeletePalladium();
-int ShowPalladiumAlias(), AddPalladiumAlias(), DeletePalladiumAlias();
+int AddPcap(int argc, char **argv);
+int GetPcap(int argc, char **argv);
+int ChngPcap(int argc, char **argv);
+int DeletePcap(int argc, char **argv);
+int GetPalladium(int argc, char **argv);
+int AddPalladium(int argc, char **argv);
+int ChngPalladium(int argc, char **argv);
+int DeletePalladium(int argc, char **argv);
+int ShowPalladiumAlias(int argc, char **argv);
+int AddPalladiumAlias(int argc, char **argv);
+int DeletePalladiumAlias(int argc, char **argv);
 
 /* zephyr.c */
-int AddZephyr();
-int GetZephyr();
-int ChngZephyr();
-int DeleteZephyr();
+int AddZephyr(int argc, char **argv);
+int GetZephyr(int argc, char **argv);
+int ChngZephyr(int argc, char **argv);
+int DeleteZephyr(int argc, char **argv);
 
-/* dcm.c */
-int EnableDcm(), InProgress(), DcmFailed(), Dcm();
-int enabledcm(), showserv(), addserv(), updateserv(), delserv();
-int showhost(), resetsrverr(), resetsrvc(), resethosterr();
-int resethost(), sethostor(), addhost(), updatehost(), delhost();
-int inprogress(), failed(), dcm();
+/* dcmmaint.c */
+int EnableDcm(int argc, char **argv);
+int InProgress(int argc, char **argv);
+int DcmFailed(int argc, char **argv);
+int Dcm(int argc, char **argv);
+int showserv(int argc, char **argv);
+int addserv(int argc, char **argv);
+int updateserv(int argc, char **argv);
+int delserv(int argc, char **argv);
+int showhost(int argc, char **argv);
+int resetsrverr(int argc, char **argv);
+int resetsrvc(int argc, char **argv);
+int resethosterr(int argc, char **argv);
+int resethost(int argc, char **argv);
+int sethostor(int argc, char **argv);
+int addhost(int argc, char **argv);
+int updatehost(int argc, char **argv);
+int delhost(int argc, char **argv);
 
 /* misc.c */
-int TableStats(), ShowClients(), ShowValue(), ShowAlias();
+int TableStats(int argc, char **argv);
+int ShowClients(int argc, char **argv);
+int ShowValue(int argc, char **argv);
+int ShowAlias(int argc, char **argv);
 
 /* utils.c */
 
@@ -174,41 +189,36 @@ int TableStats(), ShowClients(), ShowValue(), ShowAlias();
  * internals documentation.
  */
 
-void EncryptMITID();		/* Encrypts an mit id number. */
-char **CopyInfo();		/* Copies a NULL terminated array of strings */
-void FreeInfo();		/* Frees a NULL terminated array of strings. */
-void FreeQueue();		/* Frees an entire queue. */
-void FreeAndClear();		/* Frees a single pointer. */
-void Loop();			/* Performs an operation on every item in
-				   a queue. */
-void QueryLoop();		/* Queries the user before performing
-				   an operation on every item in
-				   a queue. */
-void RemoveHyphens();		/* Removes the hyphens from a string. */
-void SlipInNewName();		/* Slips a new name into an argument list in
-				   the correct place. */
-int CountArgs();		/* Counts the strings in a NULL terminated
-				   array. */
-int GetValueFromUser();		/* Updates value by asking the user. */
-int GetYesNoValueFromUser();	/* Updates yes/no value by asking the user. */
-int GetFSTypes();		/* Gets Filesystem types from a user. */
-int NullFunc();			/* NULL return function. */
-int Print();			/* Prints out array of strings. */
-int PrintByType();		/* Prints out array of strings by type. */
-int PrintHelp();		/* Prints out help information. */
-int StoreInfo();		/* Stores info returned from a Moira query
-				   in a queue. */
-int Scream();			/* Query Return function that yells if called*/
-int ToggleVerboseMode();	/* Turns on and off the verbose variable. */
-char *CanonicalizeHostname();	/* this is what it does. */
-char *NullPrint();		/* Prints nothing, returns argv[0]. */
-char *Strsave();		/* allocated space for a copy of the string. */
-char *atot();			/* convert unix time to date string */
-struct qelem *QueueTop();	/* Finds the top of a queue. */
-Bool Confirm();			/* Confirms a delete operation, with user. */
-Bool YesNoQuestion();		/* Asks a user a yes no type question. */
-Bool YesNoQuitQuestion();	/* Asks a user a yes - no - quit question. */
+char **CopyInfo(char **info);
+void FreeInfo(char **);
+void FreeQueue(struct qelem *elem);
+void FreeAndClear(char **pointer, Bool free_it);
+void Loop(struct qelem *elem, void (*func)(char **));
+void QueryLoop(struct qelem *elem, char * (*print_func)(char **),
+	       void (*op_func)(char **, Bool), char *query_string);
+void SlipInNewName(char **info, char *name);
+int CountArgs(char **args);
+int GetValueFromUser(char *prompt, char **pointer);
+int GetYesNoValueFromUser(char *prompt, char **pointer);
+int GetFSTypes(char **current, int options);
+int Print(int argc, char **argv, void *callback);
+int PrintByType(int argc, char **argv, void *callback);
+int PrintHelp(char **help);
+int StoreInfo(int argc, char **argv, void *data);
+int ToggleVerboseMode(int argc, char **argv);
+char *NullPrint(char **info);
+char *atot(char *itime);
+struct qelem *QueueTop(struct qelem *elem);
+Bool Confirm(char *prompt);
+Bool YesNoQuestion(char *prompt, int bool_def);
+Bool YesNoQuitQuestion(char *prompt, int bool_def);
+int do_mr_query(char *name, int argc, char **argv,
+		int (*proc)(int, char **, void *), void *hint);
+int GetTypeFromUser(char *prompt, char *tname, char **pointer);
+int GetAddressFromUser(char *prompt, char **pointer);
+Bool ValidName(char *s);
+int QueueCount(struct qelem *elem);
+int PromptWithDefault(char *prompt, char *buf, int buflen, char *def);
+struct qelem *GetTypeValues(char *tname);
 
-#endif /* _f_defs_ */		/* Do Not Add Anything After This Line */
-
-
+#endif /* _f_defs_ */

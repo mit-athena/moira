@@ -1,9 +1,6 @@
-/*
- *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/include/ureg_proto.h,v $
- *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/include/ureg_proto.h,v 1.4 1992-05-13 15:33:24 mar Exp $
+/* $Id: ureg_proto.h,v 1.5 1998-02-05 22:51:18 danw Exp $
  *
- *	Copyright (C) 1987 by the Massachusetts Institute of Technology
+ * Copyright (C) 1987-1998 by the Massachusetts Institute of Technology
  *
  */
 
@@ -15,4 +12,19 @@
 #define UREG_GET_SECURE 5
 #define UREG_SET_SECURE 6
 
-typedef u_long U_32BIT;
+typedef unsigned long U_32BIT;
+
+#ifndef REG_SVR
+/* (client) prototypes from reg_stubs.c */
+int ureg_init(void);
+int verify_user(char *first, char *last, char *idnumber,
+		char *hashidnumber, char *login);
+int grab_login(char *first, char *last, char *idnumber, char *hashidnumber,
+	       char *login);
+int enroll_login(char *first, char *last, char *idnumber, char *hashidnumber,
+		 char *login);
+int set_password(char *first, char *last, char *idnumber, char *hashidnumber,
+		 char *password);
+int get_krb(char *first, char *last, char *idnumber, char *hashidnumber,
+	    char *password);
+#endif

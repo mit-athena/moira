@@ -1,8 +1,8 @@
-/* This file defines the query dispatch table for version 2 of the protocol
+/* $Id: queries2.c,v 2.31 1998-02-05 22:51:52 danw Exp $
  *
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/queries2.c,v 2.30 1998-01-05 19:53:45 danw Exp $
+ * This file defines the query dispatch table for version 2 of the protocol
  *
- * Copyright 1987, 1988 by the Massachusetts Institute of Technology.
+ * Copyright (C) 1987-1998 by the Massachusetts Institute of Technology.
  * For copying and distribution information, please see the file
  * <mit-copyright.h>.
  */
@@ -13,96 +13,9 @@
 #undef ACE_NAME
 #undef NAME
 #include "query.h"
+
 #include "mr_et.h"
 
-/* Specialized Support Query Routines */
-
-/* Special Access Check Routines */
-int access_user();
-int access_login();
-int access_list();
-int access_visible_list();
-int access_vis_list_by_name();
-int access_member();
-int access_qgli();
-int access_service();
-int access_filesys();
-int access_host();
-int access_ahal();
-int access_snt();
-
-/* Query Setup Routines */
-int prefetch_value();
-int prefetch_filesys();
-int setup_ausr();
-int setup_dusr();
-int setup_spop();
-int setup_dpob();
-int setup_dmac();
-int setup_dsnet();
-int setup_dclu();
-int setup_alis();
-int setup_dlis();
-int setup_dsin();
-int setup_dshi();
-int setup_afil();
-int setup_ufil();
-int setup_dfil();
-int setup_aftg();
-int setup_dnfp();
-int setup_dqot();
-int setup_akum();
-int setup_dsnt();
-int setup_ahst();
-int setup_ahal();
-
-/* Query Followup Routines */
-int followup_fix_modby();
-int followup_ausr();
-int followup_gpob();
-int followup_glin();
-int followup_aqot();
-int followup_dqot();
-int followup_gzcl();
-int followup_gsha();
-int followup_gqot();
-int followup_gpce();
-int followup_guax();
-int followup_uuac();
-int followup_gsnt();
-int followup_ghst();
-
-int set_modtime();
-int set_modtime_by_id();
-int set_finger_modtime();
-int set_pobox_modtime();
-int set_uppercase_modtime();
-int set_mach_modtime_by_id();
-int set_cluster_modtime_by_id();
-int set_serverhost_modtime();
-int set_nfsphys_modtime();
-int set_filesys_modtime();
-int set_zephyr_modtime();
-
-/* Special Queries */
-int set_pobox();
-int get_list_info();
-int add_member_to_list();
-int delete_member_from_list();
-int get_ace_use();
-int qualified_get_lists();
-int get_members_of_list();
-int get_end_members_of_list();
-int qualified_get_server();
-int qualified_get_serverhost();
-int trigger_dcm();
-int count_members_of_list();
-int get_lists_of_member();
-int register_user();
-int _sdl_followup();
-
-
-
 /* String compression
  * These are commonly used strings in the table, defined here so that
  * they can be shared.
@@ -2683,8 +2596,8 @@ static struct validate _sdl_validate =
 {
   0,
   0,
-  (char *)0,
-  (char *)0,
+  NULL,
+  NULL,
   0,
   0,
   0,
@@ -2906,7 +2819,7 @@ struct query Queries2[] = {
     "INTO users (login, unix_uid, shell, last, first, middle, status, clearid, type, comments, signature, secure, users_id) VALUES ('%s', %s, '%s', NVL('%s', CHR(0)), NVL('%s', CHR(0)), NVL('%s', CHR(0)), %s, NVL('%s', CHR(0)), '%s', %d, LENGTH(NVL('%s', CHR(0))), %s, %s)", /* followup_ausr fixes signature field */
     auac_fields,
     12,
-    (char *)0,
+    NULL,
     0,
     &auac_validate,
   },
@@ -3038,7 +2951,7 @@ struct query Queries2[] = {
     DELETE,
     "u",
     USERS_TABLE,
-    (char *)0,
+    NULL,
     dusr_fields,
     0,
     "users_id = %d",
@@ -3053,7 +2966,7 @@ struct query Queries2[] = {
     DELETE,
     "u",
     USERS_TABLE,
-    (char *)0,
+    NULL,
     dubu_fields,
     0,
     "users_id = %d",
@@ -3206,7 +3119,7 @@ struct query Queries2[] = {
     0,
     spob_fields,
     3,
-    (char *)0,
+    NULL,
     0,
     &spob_validate,
   },
@@ -3293,7 +3206,7 @@ struct query Queries2[] = {
     DELETE,
     "m",
     MACHINE_TABLE,
-    (char *)0,
+    NULL,
     dhst_fields,
     0,
     "mach_id = %d",
@@ -3353,7 +3266,7 @@ struct query Queries2[] = {
     DELETE,
     "a",
     HOSTALIAS_TABLE,
-    (char *)0,
+    NULL,
     ghal_fields,
     0,
     "name = UPPER('%s') AND mach_id = %d",
@@ -3413,7 +3326,7 @@ struct query Queries2[] = {
     DELETE,
     "s",
     SUBNET_TABLE,
-    (char *)0,
+    NULL,
     dsnt_fields,
     0,
     "snet_id = %d",
@@ -3473,7 +3386,7 @@ struct query Queries2[] = {
     DELETE,
     "c",
     CLUSTER_TABLE,
-    (char *)0,
+    NULL,
     dclu_fields,
     0,
     "clu_id = %d",
@@ -3551,7 +3464,7 @@ struct query Queries2[] = {
     "INTO svc (clu_id, serv_label, serv_cluster) VALUES (%d, '%s', '%s')",
     acld_fields,
     3,
-    (char *)0,
+    NULL,
     0,
     &acld_validate,
   },
@@ -3563,7 +3476,7 @@ struct query Queries2[] = {
     DELETE,
     "svc",
     SVC_TABLE,
-    (char *)0,
+    NULL,
     acld_fields,
     0,
     "clu_id = %d AND serv_label = '%s' AND serv_cluster = '%s'",
@@ -3638,7 +3551,7 @@ struct query Queries2[] = {
     DELETE,
     "l",
     LIST_TABLE,
-    (char *)0,
+    NULL,
     dlis_fields,
     0,
     "list_id = %d",
@@ -3656,7 +3569,7 @@ struct query Queries2[] = {
     0,
     amtl_fields,
     3,
-    (char *)0,
+    NULL,
     0,
     &amtl_validate,
   },
@@ -3668,7 +3581,7 @@ struct query Queries2[] = {
     DELETE,
     0,
     IMEMBERS_TABLE,
-    (char *)0,
+    NULL,
     amtl_fields,
     0,
     0,
@@ -3711,12 +3624,12 @@ struct query Queries2[] = {
     "get_members_of_list",
     "gmol",
     RETRIEVE,
-    (char *)0,
+    NULL,
     IMEMBERS_TABLE,
-    (char *)0,
+    NULL,
     gmol_fields,
     2,
-    (char *)0,
+    NULL,
     1,
     &gmol_validate,
   },
@@ -3726,12 +3639,12 @@ struct query Queries2[] = {
     "get_end_members_of_list",
     "geml",
     RETRIEVE,
-    (char *)0,
+    NULL,
     IMEMBERS_TABLE,
-    (char *)0,
+    NULL,
     gmol_fields,
     2,
-    (char *)0,
+    NULL,
     1,
     &geml_validate,
   },
@@ -3806,7 +3719,7 @@ struct query Queries2[] = {
     "INTO servers (name, update_int, target_file, script, type, enable, acl_type, acl_id) VALUES (UPPER('%s'), %s, '%s', '%s', '%s', %s, '%s', %d)",
     asin_fields,
     8,
-    (char *)0,
+    NULL,
     0,
     &asin_validate,
   },
@@ -3863,7 +3776,7 @@ struct query Queries2[] = {
     DELETE,
     "s",
     SERVERS_TABLE,
-    (char *)0,
+    NULL,
     dsin_fields,
     0,
     "name = UPPER('%s')",
@@ -3911,7 +3824,7 @@ struct query Queries2[] = {
     "INTO serverhosts (service, mach_id, enable, value1, value2, value3) VALUES (UPPER('%s'), %d, %s, %s, %s, NVL('%s', CHR(0)))",
     ashi_fields,
     6,
-    (char *)0,
+    NULL,
     0,
     &ashi_validate,
   },
@@ -3983,7 +3896,7 @@ struct query Queries2[] = {
     DELETE,
     "sh",
     SERVERHOSTS_TABLE,
-    (char *)0,
+    NULL,
     dshi_fields,
     0,
     "service = UPPER('%s') AND mach_id = %d",
@@ -4118,7 +4031,7 @@ struct query Queries2[] = {
     DELETE,
     "fs",
     FILESYS_TABLE,
-    (char *)0,
+    NULL,
     dfil_fields,
     0,
     "filsys_id = %d",
@@ -4151,7 +4064,7 @@ struct query Queries2[] = {
     "INTO fsgroup (group_id, filsys_id, key) VALUES (%d, %d, '%s')",
     gfgm_fields,
     3,
-    (char *)0,
+    NULL,
     0,
     &aftg_validate,
   },
@@ -4163,7 +4076,7 @@ struct query Queries2[] = {
     DELETE,
     "fg",
     FSGROUP_TABLE,
-    (char *)0,
+    NULL,
     gfgm_fields,
     0,
     "group_id = %d AND filsys_id = %d",
@@ -4253,7 +4166,7 @@ struct query Queries2[] = {
     DELETE,
     "np",
     NFSPHYS_TABLE,
-    (char *)0,
+    NULL,
     dnfp_fields,
     0,
     "mach_id = %d AND dir = '%s'",
@@ -4301,7 +4214,7 @@ struct query Queries2[] = {
     "INTO quota (filsys_id, type, entity_id, quota, phys_id) VALUES ('%s', %d, %d, %s, %s)",
     aqot_fields,
     4,
-    (char *)0,
+    NULL,
     0,
     &aqot_validate,
   },
@@ -4328,7 +4241,7 @@ struct query Queries2[] = {
     DELETE,
     0,
     QUOTA_TABLE,
-    (char *)0,
+    NULL,
     aqot_fields,
     0,
     0,
@@ -4376,7 +4289,7 @@ struct query Queries2[] = {
     "INTO quota (type, filsys_id, entity_id, quota, phys_id ) VALUES ('USER', %d, %d, %s, %s)",
     anfq_fields,
     3,
-    (char *)0,
+    NULL,
     0,
     &anfq_validate,
   },
@@ -4403,7 +4316,7 @@ struct query Queries2[] = {
     DELETE,
     0,
     QUOTA_TABLE,
-    (char *)0,
+    NULL,
     anfq_fields,
     0,
     0,
@@ -4556,7 +4469,7 @@ struct query Queries2[] = {
     "INTO services (name, protocol, port, description) VALUES ('%s', '%s', %s, NVL('%s', CHR(0)))",
     asvc_fields,
     4,
-    (char *)0,
+    NULL,
     0,
     &asvc_validate,
   },
@@ -4721,7 +4634,7 @@ struct query Queries2[] = {
     "INTO alias (name, type, trans) VALUES ('%s', '%s', '%s')",
     aali_fields,
     3,
-    (char *)0,
+    NULL,
     0,
     &aali_validate,
   },
@@ -4733,7 +4646,7 @@ struct query Queries2[] = {
     DELETE,
     "a",
     ALIAS_TABLE,
-    (char *)0,
+    NULL,
     aali_fields,
     0,
     "name = '%s' AND type = '%s' AND  trans = '%s'",
@@ -4766,7 +4679,7 @@ struct query Queries2[] = {
     "INTO numvalues (name, value) VALUES ('%s', %s)",
     aval_fields,
     2,
-    (char *)0,
+    NULL,
     0,
     &aval_validate,
   },
@@ -4793,7 +4706,7 @@ struct query Queries2[] = {
     DELETE,
     "val",
     NUMVALUES_TABLE,
-    (char *)0,
+    NULL,
     dval_fields,
     0,
     "name = '%s'",
@@ -4811,7 +4724,7 @@ struct query Queries2[] = {
     "table_name, appends, updates, deletes, TO_CHAR(modtime, 'DD-mon-YYYY HH24:MI:SS') FROM tblstats",
     gats_fields,
     5,
-    (char *)0,
+    NULL,
     0,
     0,
   },
@@ -4821,12 +4734,12 @@ struct query Queries2[] = {
     "_set_debug_level",
     "_sdl",
     UPDATE,
-    (char *)0,
+    NULL,
     0,
-    (char *)0,
+    NULL,
     _sdl_fields,
     1,
-    (char *)0,
+    NULL,
     0,
     &_sdl_validate,
   },

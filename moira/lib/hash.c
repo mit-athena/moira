@@ -1,21 +1,20 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/hash.c,v 1.13 1998-01-06 20:39:58 danw Exp $
+/* $Id $
  *
  * Generic hash table routines.  Uses integer keys to store char * values.
  *
- *  (c) Copyright 1988 by the Massachusetts Institute of Technology.
- *  For copying and distribution information, please see the file
- *  <mit-copyright.h>.
+ * Copyright (C) 1988-1998 by the Massachusetts Institute of Technology.
+ * For copying and distribution information, please see the file
+ * <mit-copyright.h>.
  */
 
 #include <mit-copyright.h>
-#include <ctype.h>
 #include <moira.h>
-#include <string.h>
-#include <stdlib.h>
 
-#ifndef NULL
-#define NULL 0
-#endif
+#include <stdlib.h>
+#include <string.h>
+
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/hash.c,v 1.14 1998-02-05 22:51:23 danw Exp $");
+
 #define hash_func(h, key) (key >= 0 ? (key % h->size) : (-key % h->size))
 
 /* Create a hash table.  The size is just a hint, not a maximum. */
@@ -28,13 +27,13 @@ struct hash *create_hash(int size)
   if (!h)
     return NULL;
   h->size = size;
-  h->data = malloc(size * sizeof(char *));
+  h->data = malloc(size * sizeof(void *));
   if (!h->data)
     {
       free(h);
       return NULL;
     }
-  memset(h->data, 0, size * sizeof(char *));
+  memset(h->data, 0, size * sizeof(void *));
   return h;
 }
 
@@ -42,7 +41,7 @@ struct hash *create_hash(int size)
  * the key, or NULL (thus NULL is not a very good value to store...)
  */
 
-char *hash_lookup(struct hash *h, int key)
+void *hash_lookup(struct hash *h, int key)
 {
   struct bucket *b;
 
@@ -60,7 +59,7 @@ char *hash_lookup(struct hash *h, int key)
  * existed, or 0 if not.
  */
 
-int hash_update(struct hash *h, int key, char *value)
+int hash_update(struct hash *h, int key, void *value)
 {
   struct bucket *b;
 
@@ -81,7 +80,7 @@ int hash_update(struct hash *h, int key, char *value)
  * there, 1 if it was, or -1 if we ran out of memory.
  */
 
-int hash_store(struct hash *h, int key, char *value)
+int hash_store(struct hash *h, int key, void *value)
 {
   struct bucket *b, **p;
 
@@ -118,7 +117,7 @@ int hash_store(struct hash *h, int key, char *value)
  * data with that value, call the callback proc with the corresponding key.
  */
 
-hash_search(struct hash *h, char *value, void (*callback)())
+void hash_search(struct hash *h, void *value, void (*callback)(int))
 {
   struct bucket *b, **p;
 
@@ -136,7 +135,8 @@ hash_search(struct hash *h, char *value, void (*callback)())
 /* Step through the hash table, calling the callback proc with each key.
  */
 
-hash_step(struct hash *h, void (*callback)(), char *hint)
+void hash_step(struct hash *h, void (*callback)(int, void *, void *),
+	       void *hint)
 {
   struct bucket *b, **p;
 
@@ -150,7 +150,7 @@ hash_step(struct hash *h, void (*callback)(), char *hint)
 
 /* Deallocate all of the memory associated with a table */
 
-hash_destroy(struct hash *h)
+void hash_destroy(struct hash *h)
 {
   struct bucket *b, **p, *b1;
 

@@ -1,38 +1,40 @@
-/*
- *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_glue.c,v $
- *	$Author: danw $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_glue.c,v 1.22 1998-01-06 20:40:12 danw Exp $
+/* $Id: mr_glue.c,v 1.23 1998-02-05 22:51:42 danw Exp $
  *
- *	Copyright (C) 1987 by the Massachusetts Institute of Technology
- *	For copying and distribution information, please see the file
- *	<mit-copyright.h>.
+ * Glue routines to allow the database stuff to be linked in to
+ * a program expecting a library level interface.
  *
- *	Glue routines to allow the database stuff to be linked in to
- * 	a program expecting a library level interface.
+ * Copyright (C) 1987-1998 by the Massachusetts Institute of Technology
+ * For copying and distribution information, please see the file
+ * <mit-copyright.h>.
  */
 
-#ifndef lint
-static char *rcsid_mr_glue_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_glue.c,v 1.22 1998-01-06 20:40:12 danw Exp $";
-#endif lint
-
 #include <mit-copyright.h>
-#include <sys/types.h>
-#include <sys/signal.h>
-#include <sys/wait.h>
-#include <krb_et.h>
-#include <pwd.h>
 #include "mr_server.h"
 #include "query.h"
+
+#include <sys/wait.h>
+
+#include <errno.h>
+#include <pwd.h>
+#include <signal.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+
+extern char *krb_get_lrealm(char *, int);
+
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_glue.c,v 1.23 1998-02-05 22:51:42 danw Exp $");
 
 static int already_connected = 0;
 
 #define CHECK_CONNECTED { if (!already_connected) return MR_NOT_CONNECTED; }
 
 static client pseudo_client;
-extern int errno;
 extern char *whoami;
 extern time_t now;
-void reapchild();
+
+void reapchild(void);
+int callback(int argc, char **argv, void *arg);
 
 int mr_connect(char *server)
 {
@@ -85,7 +87,7 @@ int mr_auth(char *prog)
 {
   struct passwd *pw;
   extern char *krb_realm;
-  char buf[1024], *strsave();
+  char buf[1024];
 
   CHECK_CONNECTED;
   pw = getpwuid(getuid());
@@ -109,19 +111,21 @@ int mr_auth(char *prog)
 }
 
 struct hint {
-  int (*proc)();
+  int (*proc)(int, char **, void *);
   char *hint;
 };
 
-callback(int argc, char **argv, struct hint *arg)
+int callback(int argc, char **argv, void *arg)
 {
+  struct hint *hint = arg;
   if (mr_trim_args(argc, argv) == MR_NO_MEM)
     com_err(whoami, MR_NO_MEM, "while trimmming args");
-  (*arg->proc)(argc, argv, arg->hint);
+  return (*hint->proc)(argc, argv, hint->hint);
 }
 
 
-int mr_query(char *name, int argc, char **argv, int (*callproc)(), char *callarg)
+int mr_query(char *name, int argc, char **argv,
+	     int (*callproc)(int, char **, void *), void *callarg)
 {
   struct hint hints;
 
@@ -141,32 +145,6 @@ int mr_access(char *name, int argc, char **argv)
 			 mr_copy_args(argv, argc));
 }
 
-int mr_query_internal(int argc, char **argv, int (*callproc)(), char *callarg)
-{
-  struct hint hints;
-
-  time(&now);
-  hints.proc = callproc;
-  hints.hint = callarg;
-  next_incremental();
-  return mr_process_query(&pseudo_client, argv[0], argc - 1,
-			  mr_copy_args(argv + 1, argc - 1), callback,
-			  (char *)&hints);
-}
-
-int mr_access_internal(int argc, char **argv)
-{
-  time(&now);
-  return mr_check_access(&pseudo_client, argv[0], argc - 1,
-			 mr_copy_args(argv + 1, argc - 1));
-}
-
-mr_shutdown(char *why)
-{
-  fprintf(stderr, "Sorry, not implemented\n");
-}
-
-
 /* trigger_dcm is also used as a followup routine to the
  * set_server_host_override query, hence the two dummy arguments.
  */
@@ -176,7 +154,7 @@ struct query pseudo_query = {
   "tdcm",
 };
 
-int trigger_dcm(int dummy0, int dummy1, client *cl)
+int trigger_dcm(struct query *q, char *argv[], client *cl)
 {
   int pid, status;
   char prog[128];

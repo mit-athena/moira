@@ -1,21 +1,16 @@
-/*
- *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_shutdown.c,v $
- *	$Author: danw $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_shutdown.c,v 1.9 1998-01-07 17:13:39 danw Exp $
+/* $Id: mr_shutdown.c,v 1.10 1998-02-05 22:51:45 danw Exp $
  *
- *	Copyright (C) 1987 by the Massachusetts Institute of Technology
- *	For copying and distribution information, please see the file
- *	<mit-copyright.h>.
- *
+ * Copyright (C) 1987-1998 by the Massachusetts Institute of Technology
+ * For copying and distribution information, please see the file
+ * <mit-copyright.h>.
  */
 
-#ifndef lint
-static char *rcsid_mr_shutdown_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_shutdown.c,v 1.9 1998-01-07 17:13:39 danw Exp $";
-#endif lint
-
 #include <mit-copyright.h>
-#include <sys/errno.h>
 #include "mr_server.h"
+
+#include <errno.h>
+
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_shutdown.c,v 1.10 1998-02-05 22:51:45 danw Exp $");
 
 extern char *takedown;
 extern char *whoami;

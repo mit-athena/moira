@@ -1,22 +1,26 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/util.c,v 1.12 1998-01-06 20:39:51 danw Exp $
+/* $Id: util.c,v 1.13 1998-02-05 22:51:13 danw Exp $
  *
  * Utility routines used by the MOIRA extraction programs.
  *
- *  (c) Copyright 1988 by the Massachusetts Institute of Technology.
- *  For copying and distribution information, please see the file
- *  <mit-copyright.h>.
+ * Copyright (C) 1988-1998 by the Massachusetts Institute of Technology.
+ * For copying and distribution information, please see the file
+ * <mit-copyright.h>.
  */
 
-
 #include <mit-copyright.h>
-#include <stdio.h>
-#include <sys/time.h>
 #include <moira.h>
 #include <moira_site.h>
 
+#include <stdio.h>
+#include <unistd.h>
+
+#include "util.h"
+
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/util.c,v 1.13 1998-02-05 22:51:13 danw Exp $");
+
 extern void sqlglm(char buf[], int *, int *);
 
-fix_file(char *targetfile)
+void fix_file(char *targetfile)
 {
   char oldfile[64], filename[64];
 
@@ -65,7 +69,7 @@ char *dequote(char *s)
 }
 
 
-db_error(int code)
+void db_error(int code)
 {
   extern char *whoami;
   char buf[256];

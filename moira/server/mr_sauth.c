@@ -1,30 +1,27 @@
-/*
- *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_sauth.c,v $
- *	$Author: danw $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_sauth.c,v 1.23 1998-01-07 17:13:38 danw Exp $
+/* $Id: mr_sauth.c,v 1.24 1998-02-05 22:51:43 danw Exp $
  *
- *	Copyright (C) 1987 by the Massachusetts Institute of Technology
- *	For copying and distribution information, please see the file
- *	<mit-copyright.h>.
+ * Handle server side of authentication
+ *
+ * Copyright (C) 1987-1998 by the Massachusetts Institute of Technology
+ * For copying and distribution information, please see the file
+ * <mit-copyright.h>.
  *
  */
 
-#ifndef lint
-static char *rcsid_mr_sauth_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_sauth.c,v 1.23 1998-01-07 17:13:38 danw Exp $";
-#endif lint
-
 #include <mit-copyright.h>
-#include <string.h>
 #include "mr_server.h"
-#include <ctype.h>
-#include <krb_et.h>
-#include <moira.h>
-#include <time.h>
+
+#include <sys/types.h>
+
+#include <arpa/inet.h>
+#include <netinet/in.h>
+
+#include <stdlib.h>
+#include <string.h>
+
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_sauth.c,v 1.24 1998-02-05 22:51:43 danw Exp $");
 
 extern char *whoami, *host;
-
-/* from libmoira */
-char *kname_unparse(char *, char *, char *);
 
 typedef struct _replay_cache {
   KTEXT_ST auth;
@@ -47,7 +44,6 @@ void do_auth(client *cl)
   KTEXT_ST auth;
   AUTH_DAT ad;
   int status, ok;
-  extern int errno;
   replay_cache *rc, *rcnew;
   time_t now;
 

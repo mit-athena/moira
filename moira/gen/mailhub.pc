@@ -1,30 +1,31 @@
-
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/mailhub.pc,v 1.5 1998-01-15 18:51:20 danw Exp $
+/* $Id: mailhub.pc,v 1.6 1998-02-05 22:51:10 danw Exp $
  *
  * This generates the /usr/lib/aliases file for the mailhub.
  *
- *  (c) Copyright 1988, 1990 by the Massachusetts Institute of Technology.
- *  For copying and distribution information, please see the file
- *  <mit-copyright.h>.
+ * (c) Copyright 1988-1998 by the Massachusetts Institute of Technology.
+ * For copying and distribution information, please see the file
+ * <mit-copyright.h>.
  */
 
 #include <mit-copyright.h>
+#include <moira.h>
+#include <moira_site.h>
+
+#include <sys/stat.h>
+
+#include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <ctype.h>
-#include <errno.h>
-#include <moira.h>
-#include <moira_site.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <sys/time.h>
+
+#include "util.h"
+
 EXEC SQL INCLUDE sqlca;
+
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/mailhub.pc,v 1.6 1998-02-05 22:51:10 danw Exp $");
 
 char *whoami = "mailhub.gen";
 char *db = "moira/moira";
-char *perm_malloc();
-char *pstrsave();
 char *divide = "##############################################################";
 
 #define ML_WID	72
@@ -34,6 +35,47 @@ char *divide = "##############################################################";
 #define TRUE (!FALSE)
 
 FILE *out = stdout;
+
+struct hash *users, *machines, *strings, *lists, *names;
+struct user {
+  char *login;
+  char *first;
+  char *last;
+  char mi;
+  char *pobox;
+};
+struct member {
+  struct member *next;
+  char *name;
+  int list_id;
+};
+struct list {
+  char *name;
+  char maillist;
+  char *description;
+  char acl_t;
+  int acl_id;
+  struct member *m;
+};
+struct names {
+  char *name;
+  struct names *next;
+  int keep;
+  int id;
+};
+
+void get_info(void);
+void save_mlist(int id, void *list, void *force);
+void insert_login(int id, void *user, void *hint);
+void insert_names(int id, void *user, void *hint);
+void insert_name(char *s, int id, int nodups, int copy);
+int hashstr(char *s);
+void sort_info(void);
+void output_data(int dummy, void *names, void *out);
+void output_mlist(int id, struct list *l);
+void do_member(FILE *out, char *s);
+void put_fill(FILE *aliases, char *string);
+void do_people(void);
 
 int main(int argc, char **argv)
 {
@@ -100,38 +142,7 @@ int main(int argc, char **argv)
   exit(MR_SUCCESS);
 }
 
-
-
-struct hash *users, *machines, *strings, *lists, *names;
-struct user {
-  char *login;
-  char *first;
-  char *last;
-  char mi;
-  char *pobox;
-};
-struct member {
-  struct member *next;
-  char *name;
-  int list_id;
-};
-struct list {
-  char *name;
-  char maillist;
-  char *description;
-  char acl_t;
-  int acl_id;
-  struct member *m;
-};
-struct names {
-  char *name;
-  struct names *next;
-  int keep;
-  int id;
-};
-
-
-get_info(void)
+void get_info(void)
 {
   EXEC SQL BEGIN DECLARE SECTION;
   int id, pid, bid, cnt, maillistp, acl, mid;
@@ -162,14 +173,14 @@ get_info(void)
       EXEC SQL FETCH m_cursor INTO :id, :name;
       if (sqlca.sqlcode)
 	break;
-      if (s = strchr(name, '.'))
+      if ((s = strchr(name, '.')))
 	*s = '\0';
       else
 	strtrim(name);
 #ifdef ATHENA
       strcat(name, ".LOCAL");
 #endif
-      if (hash_store(machines, id, pstrsave(name)) < 0)
+      if (hash_store(machines, id, strdup(name)) < 0)
 	{
 	  fprintf(stderr, "Out of memory!\n");
 	  exit(MR_NO_MEM);
@@ -193,7 +204,7 @@ get_info(void)
       EXEC SQL FETCH s_cursor INTO :id, :name;
       if (sqlca.sqlcode)
 	break;
-      if (hash_store(strings, id, pstrsave(strtrim(name))) < 0)
+      if (hash_store(strings, id, strdup(strtrim(name))) < 0)
 	{
 	  fprintf(stderr, "Out of memory!\n");
 	  exit(MR_NO_MEM);
@@ -219,10 +230,10 @@ get_info(void)
 	:type, :pid, :bid;
       if (sqlca.sqlcode)
 	break;
-      u = (struct user *) perm_malloc(sizeof(struct user));
-      u->login = pstrsave(strtrim(name));
-      u->first = pstrsave(strtrim(fname));
-      u->last  = pstrsave(strtrim(lname));
+      u = malloc(sizeof(struct user));
+      u->login = strdup(strtrim(name));
+      u->first = strdup(strtrim(fname));
+      u->last  = strdup(strtrim(lname));
       if (mname[0] != ' ')
 	u->mi = mname[0];
       else
@@ -231,7 +242,7 @@ get_info(void)
       if (type[0] == 'P' && (s = hash_lookup(machines, pid)))
 	{
 	  sprintf(buf, "%s@%s", u->login, s);
-	  u->pobox = pstrsave(buf);
+	  u->pobox = strdup(buf);
 	}
       else if (type[0] ==  'S')
 	u->pobox = hash_lookup(strings, bid);
@@ -261,10 +272,10 @@ get_info(void)
       EXEC SQL FETCH l_cursor INTO :id, :name, :maillistp, :buf, :type, :acl;
       if (sqlca.sqlcode)
 	break;
-      l = (struct list *) perm_malloc(sizeof(struct list));
-      l->name = pstrsave(strtrim(name));
+      l = malloc(sizeof(struct list));
+      l->name = strdup(strtrim(name));
       l->maillist = maillistp;
-      l->description = pstrsave(strtrim(buf));
+      l->description = strdup(strtrim(buf));
       l->acl_t = type[0];
       l->acl_id = acl;
       l->m = NULL;
@@ -292,18 +303,17 @@ get_info(void)
       if (sqlca.sqlcode)
 	break;
       cnt++;
-      if ((l = (struct list *) hash_lookup(lists, id)))
+      if ((l = hash_lookup(lists, id)))
 	{
-	  m = (struct member *) perm_malloc(sizeof(struct member));
-	  if (type[0] == 'U' && (u = (struct user *) hash_lookup(users, mid)))
+	  m = malloc(sizeof(struct member));
+	  if (type[0] == 'U' && (u = hash_lookup(users, mid)))
 	    {
 	      m->list_id = 0;
 	      m->name = u->login;
 	      m->next = l->m;
 	      l->m = m;
 	    }
-	  else if (type[0] == 'L' &&
-		   (memberlist = (struct list *) hash_lookup(lists, mid)))
+	  else if (type[0] == 'L' && (memberlist = hash_lookup(lists, mid)))
 	    {
 	      m->list_id = mid;
 	      m->name = memberlist->name;
@@ -330,10 +340,10 @@ sqlerr:
 }
 
 
-save_mlist(int id, struct list *l, int force)
+void save_mlist(int id, void *list, void *force)
 {
   struct member *m;
-  struct list *l1;
+  struct list *l = list, *l1;
 
   if (l->maillist > 1 || (l->maillist == 0 && !force))
     return;
@@ -347,26 +357,28 @@ save_mlist(int id, struct list *l, int force)
   insert_name(l->name, -1, TRUE, FALSE);
   output_mlist(id, l);
 
-  if (l->acl_t == 'L' && (l1 = (struct list *)hash_lookup(lists, l->acl_id)))
-    save_mlist(0, l1, TRUE);
+  if (l->acl_t == 'L' && (l1 = hash_lookup(lists, l->acl_id)))
+    save_mlist(0, l1, (void *)TRUE);
 
   for (m = l->m; m; m = m->next)
     {
-      if (m->list_id && (l1 = (struct list *)hash_lookup(lists, m->list_id)))
-	save_mlist(0, l1, TRUE);
+      if (m->list_id && (l1 = hash_lookup(lists, m->list_id)))
+	save_mlist(0, l1, (void *)TRUE);
     }
 }
 
 
-insert_login(int id, struct user *u, int dummy)
+void insert_login(int id, void *user, void *hint)
 {
+  struct user *u = user;
   if (u->pobox && u->login[0] != '#')
     insert_name(u->login, id, TRUE, FALSE);
 }
 
-void insert_names(int id, struct user *u, int dummy)
+void insert_names(int id, void *user, void *hint)
 {
   char buffer[256];
+  struct user *u = user;
 
   insert_name(u->last, id, FALSE, FALSE);
   sprintf(buffer, "%s_%s", u->first, u->last);
@@ -384,23 +396,23 @@ void insert_names(int id, struct user *u, int dummy)
 
 int incount = 0;
 
-insert_name(char *s, int id, int nodups, int copy)
+void insert_name(char *s, int id, int nodups, int copy)
 {
   int code;
   struct names *ns;
 
   incount++;
   code = hashstr(s);
-  ns = (struct names *) hash_lookup(names, code);
+  ns = hash_lookup(names, code);
   if (!ns)
     {
-      if (!(ns = (struct names *) perm_malloc(sizeof(struct names))))
+      if (!(ns = malloc(sizeof(struct names))))
 	{
 	  fprintf(stderr, "ran out of memory inserting name (sorting)\n");
 	  exit(MR_NO_MEM);
 	}
       if (copy)
-	ns->name = pstrsave(s);
+	ns->name = strdup(s);
       else
 	ns->name = s;
       ns->keep = nodups;
@@ -421,14 +433,14 @@ insert_name(char *s, int id, int nodups, int copy)
 	  if (!strcasecmp(ns->name, s))
 	    goto foundns;
 	}
-      if (!(ns->next = (struct names *) perm_malloc(sizeof(struct names))))
+      if (!(ns->next = malloc(sizeof(struct names))))
 	{
 	  fprintf(stderr, "ran out of memory insterting name (sorting)\n");
 	  exit(MR_NO_MEM);
 	}
       ns = ns->next;
       if (copy)
-	ns->name = pstrsave(s);
+	ns->name = strdup(s);
       else
 	ns->name = s;
       ns->keep = nodups;
@@ -476,7 +488,7 @@ int hashstr(char *s)
   int result;
   int c;
 
-  for (result = 0; c = *s; s++)
+  for (result = 0; (c = *s); s++)
     {
       if (illegalchars[c])
 	{
@@ -493,7 +505,7 @@ int hashstr(char *s)
 }
 
 
-sort_info(void)
+void sort_info(void)
 {
   names = create_hash(20001);
   hash_step(users, insert_login, NULL);
@@ -508,9 +520,9 @@ sort_info(void)
 }
 
 
-output_data(int dummy, struct names *nms, FILE *out)
+void output_data(int dummy, void *names, void *out)
 {
-  struct names *ns;
+  struct names *ns, *nms = names;
   struct user *u;
 
   incount++;
@@ -523,7 +535,7 @@ output_data(int dummy, struct names *nms, FILE *out)
 	}
       if (ns->id > 0)
 	{
-	  u = (struct user *) hash_lookup(users, ns->id);
+	  u = hash_lookup(users, ns->id);
 	  if (u->pobox)
 	    fprintf(out, "%s: %s\n", ns->name, u->pobox);
 #ifdef NAME_ALIASES
@@ -541,17 +553,16 @@ output_data(int dummy, struct names *nms, FILE *out)
 
 int lwid, bol, awid;
 
-output_mlist(int id, struct list *l)
+void output_mlist(int id, struct list *l)
 {
   struct list *l1;
   struct member *m;
   struct user *u;
 
   put_fill(out, l->description);
-  if (l->acl_t ==  'L' && (l1 = (struct list *) hash_lookup(lists, l->acl_id)))
+  if (l->acl_t ==  'L' && (l1 = hash_lookup(lists, l->acl_id)))
     fprintf(out, "owner-%s: %s\n%s: ", l->name, l1->name, l->name);
-  else if (l->acl_t ==  'U' &&
-	     (u = (struct user *) hash_lookup(users, l->acl_id)))
+  else if (l->acl_t ==  'U' && (u = hash_lookup(users, l->acl_id)))
     fprintf(out, "owner-%s: %s\n%s: ", l->name, u->login, l->name);
   else
     fprintf(out, "%s: ", l->name);
@@ -569,9 +580,9 @@ output_mlist(int id, struct list *l)
 
 /* print out strings separated by commas, doing line breaks as appropriate */
 
-do_member(FILE *out, char *s)
+void do_member(FILE *out, char *s)
 {
-  wwid;
+  int wwid;
   static int cont = 1;
   char str[8];
 
@@ -610,7 +621,7 @@ do_member(FILE *out, char *s)
 }
 
 
-put_fill(FILE *aliases, char *string)
+void put_fill(FILE *aliases, char *string)
 {
   char *c;
   int lwid;
@@ -662,182 +673,10 @@ put_fill(FILE *aliases, char *string)
 }
 
 
-do_people(void)
+void do_people(void)
 {
   incount = 0;
   fprintf(out, "\n%s\n# People\n%s\n", divide, divide);
   hash_step(names, output_data, out);
   fprintf(stderr, "Output %d entries\n", incount);
-}
-
-
-#define chunk_size	102400
-
-char *perm_malloc(unsigned size)
-{
-  static char *pool = NULL;
-  static unsigned pool_size = 0;
-  char *ret;
-
-  if (size > pool_size)
-    {
-      pool = malloc(chunk_size);
-      pool_size = chunk_size;
-    }
-  ret = pool;
-  pool += size;
-  pool = (char *)(((unsigned) (pool + 3)) & ~3);
-  pool_size -= (pool - ret);
-  return ret;
-}
-
-
-/*
- * Make a (permenant) copy of a string.
- */
-char *pstrsave(char *s)
-{
-  int len;
-  char *p;
-  /* Kludge for sloppy string semantics */
-  if (!s)
-    {
-      printf("NULL != \"\" !!!!\r\n");
-      p = perm_malloc(1);
-      *p = '\0';
-      return p;
-    }
-  len = strlen(s) + 1;
-  p = perm_malloc((u_int)len);
-  if (p)
-    memcpy(p, s, len);
-  return p;
-}
-
-#define hash_func(h, key) (key >= 0 ? (key % h->size) : (-key % h->size))
-
-/* Create a hash table.  The size is just a hint, not a maximum. */
-
-struct hash *create_hash(int size)
-{
-  struct hash *h;
-
-  h = (struct hash *) perm_malloc(sizeof(struct hash));
-  if (!h)
-    return NULL;
-  h->size = size;
-  h->data = (struct bucket **) perm_malloc(size * sizeof(char *));
-  if (!h->data)
-    return NULL;
-  memset(h->data, 0, size * sizeof(char *));
-  return h;
-}
-
-/* Lookup an object in the hash table.  Returns the value associated with
- * the key, or NULL (thus NULL is not a very good value to store...)
- */
-
-char *hash_lookup(struct hash *h, int key)
-{
-  struct bucket *b;
-
-  b = h->data[hash_func(h, key)];
-  while (b && b->key != key)
-    b = b->next;
-  if (b && b->key == key)
-    return b->data;
-  else
-    return NULL;
-}
-
-
-/* Update an existing object in the hash table.  Returns 1 if the object
- * existed, or 0 if not.
- */
-
-int hash_update(struct hash *h, int key, char *value)
-{
-  struct bucket *b;
-
-  b = h->data[hash_func(h, key)];
-  while (b && b->key != key)
-    b = b->next;
-  if (b && b->key == key)
-    {
-      b->data = value;
-      return 1;
-    }
-  else
-    return 0;
-}
-
-
-/* Store an item in the hash table.  Returns 0 if the key was not previously
- * there, 1 if it was, or -1 if we ran out of memory.
- */
-
-int hash_store(struct hash *h, int key, char *value)
-{
-  struct bucket *b, **p;
-
-  p = &(h->data[hash_func(h, key)]);
-  if (!*p)
-    {
-      b = *p = (struct bucket *) perm_malloc(sizeof(struct bucket));
-      if (!b)
-	return -1;
-      b->next = NULL;
-      b->key = key;
-      b->data = value;
-      return 0;
-    }
-
-  for (b = *p; b && b->key != key; b = *p)
-    p = (struct bucket **) *p;
-  if (b && b->key == key)
-    {
-      b->data = value;
-      return 1;
-    }
-  b = *p = (struct bucket *) perm_malloc(sizeof(struct bucket));
-  if (!b)
-    return -1;
-  b->next = NULL;
-  b->key = key;
-  b->data = value;
-  return 0;
-}
-
-
-/* Search through the hash table for a given value.  For each piece of
- * data with that value, call the callback proc with the corresponding key.
- */
-
-hash_search(struct hash *h, char *value, void (*callback)())
-{
-  struct bucket *b, **p;
-
-  for (p = &(h->data[h->size - 1]); p >= h->data; p--)
-    {
-      for (b = *p; b; b = b->next)
-	{
-	  if (b->data == value)
-	    (*callback)(b->key);
-	}
-    }
-}
-
-
-/* Step through the hash table, calling the callback proc with each key.
- */
-
-hash_step(struct hash *h, void (*callback)(), char *hint)
-{
-  struct bucket *b, **p;
-
-  for (p = &(h->data[h->size - 1]); p >= h->data; p--)
-    {
-      for (b = *p; b; b = b->next)
-	(*callback)(b->key, b->data, hint);
-    }
 }

@@ -1,26 +1,24 @@
-/*
- *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_auth.c,v $
- *	$Author: danw $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_auth.c,v 1.19 1998-01-07 17:13:27 danw Exp $
+/* $Id $
  *
- *	Copyright (C) 1987, 1990 by the Massachusetts Institute of Technology
- *	For copying and distribution information, please see the file
- *	<mit-copyright.h>.
+ * Handles the client side of the sending of authenticators to the moira server
  *
- *	Handles the client side of the sending of authenticators to
- * the mr server.
+ * Copyright (C) 1987-1998 by the Massachusetts Institute of Technology
+ * For copying and distribution information, please see the file
+ * <mit-copyright.h>.
  */
 
-#ifndef lint
-static char *rcsid_mr_auth_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_auth.c,v 1.19 1998-01-07 17:13:27 danw Exp $";
-#endif
-
 #include <mit-copyright.h>
+#include <moira.h>
 #include "mr_private.h"
+
 #include <ctype.h>
-#include <krb.h>
-#include <krb_et.h>
 #include <string.h>
+
+#include <krb.h>
+extern char *krb_realmofhost(char *);
+extern int krb_mk_req(KTEXT, char *, char *, char *, int);
+
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_auth.c,v 1.20 1998-02-05 22:51:26 danw Exp $");
 
 /* Authenticate this client with the Moira server.  prog is the name of the
  * client program, and will be recorded in the database.
@@ -33,7 +31,6 @@ int mr_auth(char *prog)
   char *args[2];
   int argl[2];
   char realm[REALM_SZ], host[BUFSIZ], *p;
-
   mr_params *params = &params_st;
   mr_params *reply = NULL;
   KTEXT_ST auth;
@@ -46,7 +43,7 @@ int mr_auth(char *prog)
   if ((status = mr_host(host, sizeof(host) - 1)))
     return status;
 
-  strcpy(realm, (char *)krb_realmofhost(host));
+  strcpy(realm, krb_realmofhost(host));
   for (p = host; *p && *p != '.'; p++)
     {
       if (isupper(*p))

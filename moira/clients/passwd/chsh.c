@@ -1,18 +1,5 @@
-/*
- * Copyright 1988 by the Massachusetts Institute of Technology. For copying
- * and distribution information, see the file "mit-copyright.h".
+/* $Id $
  *
- * $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chsh.c,v $
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chsh.c,v 1.19 1998-01-07 17:13:13 danw Exp $
- * $Author: danw $
- *
- */
-
-#ifndef lint
-static char *rcsid_chsh_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chsh.c,v 1.19 1998-01-07 17:13:13 danw Exp $";
-#endif
-
-/*
  * Talk to the Moira database to change a person's login shell.  The chosen
  * shell must exist.  A warning will be issued if the shell is not in
  * /etc/shells.
@@ -23,24 +10,33 @@ static char *rcsid_chsh_c = "$Header: /afs/.athena.mit.edu/astaff/project/moirad
  * If a commandline argument is given, it is taken to be the username
  * of the user whose shell is to be changed.
  *
+ * Copyright (C) 1988-1998 by the Massachusetts Institute of Technology
+ * For copying and distribution information, please see the file
+ * <mit-copyright.h>.
  */
 
-#include <unistd.h>
-#include <sys/types.h>
-#include <stdio.h>
-#include <string.h>
-#include <sys/file.h>
-#include <krb.h>
-#include <ctype.h>
-#include <errno.h>
-
-/* Moira includes */
+#include <mit-copyright.h>
 #include <moira.h>
 #include <moira_site.h>
-#include "mit-copyright.h"
+
+#include <stdio.h>
+#include <string.h>
+#include <unistd.h>
+
+#include <krb.h>
+
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chsh.c,v 1.20 1998-02-05 22:50:56 danw Exp $");
+
+int usage(void);
+int leave(int status);
+int chsh(char *uname);
+int get_shell(int argc, char **argv, void *uname);
+void check_shell(char *shell);
+#if defined(NEED_GETUSERSHELL) || defined(SOLARIS)
+char *getusershell(void);
+#endif
 
 char *whoami;
-char *getusershell();
 
 int main(int argc, char *argv[])
 {
@@ -91,12 +87,6 @@ int leave(int status)
   exit(status);
 }
 
-int scream(void)
-{
-  com_err(whoami, 0, "Unexpected return value from Moira -- programmer botch");
-  leave(1);
-}
-
 int chsh(char *uname)
 {
   int status;			/* general purpose exit status */
@@ -106,8 +96,6 @@ int chsh(char *uname)
 
   int got_one = 0;		/* have we got a new shell yet? */
   char shell[BUFSIZ];		/* the new shell */
-  int get_shell();
-  void check_shell();		/* make sure new shell is valid */
 
   /* Try each query.  If we ever fail, print error message and exit. */
 
@@ -159,7 +147,7 @@ int chsh(char *uname)
   q_argc = NAME + 1;
 
   if ((status = mr_query("get_user_account_by_login", q_argc, q_argv,
-			 get_shell, (char *) uname)))
+			 get_shell, uname)))
     {
       com_err(whoami, status, " while getting user information.");
       leave(2);
@@ -186,8 +174,7 @@ int chsh(char *uname)
   q_argv[USH_NAME] = uname;
   q_argv[USH_SHELL] = shell;
   q_argc = USH_END;
-  if ((status = mr_query("update_user_shell", q_argc, q_argv,
-			 scream, NULL)))
+  if ((status = mr_query("update_user_shell", q_argc, q_argv, NULL, NULL)))
     {
       com_err(whoami, status, " while changing shell.");
       leave(2);
@@ -199,7 +186,7 @@ int chsh(char *uname)
   return 0;
 }
 
-int get_shell(int argc, char **argv, char *uname)
+int get_shell(int argc, char **argv, void *uname)
 {
   /* We'll just take the first information we get since login names
      cannot be duplicated in the database. */
@@ -212,7 +199,7 @@ int get_shell(int argc, char **argv, char *uname)
 
   printf("Account information last changed on %s\n", argv[U_MODTIME]);
   printf("by user %s with %s.\n", argv[U_MODBY], argv[U_MODWITH]);
-  printf("Current shell for %s is %s.\n", uname, argv[U_SHELL]);
+  printf("Current shell for %s is %s.\n", (char *)uname, argv[U_SHELL]);
 
   return MR_ABORT;		/* Don't pay attention to other matches. */
 }
@@ -267,7 +254,7 @@ int usage(void)
 }
 
 #ifdef NEED_GETUSERSHELL
-char *getusershell()
+char *getusershell(void)
 {
   static int count = 1;
 

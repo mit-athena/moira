@@ -1,16 +1,19 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/sq.c,v 1.11 1998-01-06 20:40:04 danw Exp $
+/* $Id $
  *
  * Generic Queue Routines
  *
- *  (c) Copyright 1988 by the Massachusetts Institute of Technology.
- *  For copying and distribution information, please see the file
- *  <mit-copyright.h>.
+ * Copyright (C) 1988-1998 by the Massachusetts Institute of Technology.
+ * For copying and distribution information, please see the file
+ * <mit-copyright.h>.
  */
 
 #include <mit-copyright.h>
 #include <moira.h>
-#include <string.h>
+
 #include <stdlib.h>
+#include <string.h>
+
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/sq.c,v 1.12 1998-02-05 22:51:32 danw Exp $");
 
 struct save_queue *sq_create(void)
 {
@@ -25,7 +28,7 @@ struct save_queue *sq_create(void)
   return sq;
 }
 
-int sq_save_data(struct save_queue *sq, char *data)
+int sq_save_data(struct save_queue *sq, void *data)
 {
   struct save_queue *q;
 
@@ -62,10 +65,10 @@ int sq_save_args(int argc, char *argv[], struct save_queue *sq)
       memcpy(argv_copy[i], argv[i], n);
     }
 
-  return sq_save_data(sq, (char *)argv_copy);
+  return sq_save_data(sq, argv_copy);
 }
 
-int sq_save_unique_data(struct save_queue *sq, char *data)
+int sq_save_unique_data(struct save_queue *sq, void *data)
 {
   struct save_queue *q;
 
@@ -91,24 +94,31 @@ int sq_save_unique_string(struct save_queue *sq, char *data)
   return sq_save_data(sq, data);
 }
 
-int sq_get_data(struct save_queue *sq, char **data)
+/* in sq_get_data and sq_remove_data, `data' is actually a pointer to the
+   variable to put the data in to. */
+
+int sq_get_data(struct save_queue *sq, void *data)
 {
-  if (sq->q_lastget == (struct save_queue *)0)
+  void **dptr = data;
+
+  if (sq->q_lastget == NULL)
     sq->q_lastget = sq->q_next;
   else
     sq->q_lastget = sq->q_lastget->q_next;
 
   if (sq->q_lastget == sq)
     return 0;
-  *data = sq->q_lastget->q_data;
+  *dptr = sq->q_lastget->q_data;
   return 1;
 }
 
-int sq_remove_data(struct save_queue *sq, char **data)
+int sq_remove_data(struct save_queue *sq, void *data)
 {
+  void **dptr = data;
+
   if (sq->q_next != sq)
     {
-      *data = sq->q_next->q_data;
+      *dptr = sq->q_next->q_data;
       sq->q_next = sq->q_next->q_next;
       free(sq->q_next->q_prev);
       sq->q_next->q_prev = sq;
@@ -125,7 +135,7 @@ int sq_empty(struct save_queue *sq)
     return 0;
 }
 
-sq_destroy(struct save_queue *sq)
+void sq_destroy(struct save_queue *sq)
 {
   struct save_queue *q;
 

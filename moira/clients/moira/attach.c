@@ -1,8 +1,6 @@
-#if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.44 1998-01-07 17:12:49 danw Exp $";
-#endif
-
-/*	This is the file attach.c for the Moira Client, which allows users
+/* $Id $
+ *
+ *	This is the file attach.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
  *	It Contains: Functions for maintaining data used by Hesiod
  *                   to map courses/projects/users to their file systems,
@@ -11,29 +9,34 @@
  *	Created: 	5/4/88
  *	By:		Chris D. Peterson
  *
- *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v $
- *      $Author: danw $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.44 1998-01-07 17:12:49 danw Exp $
- *	
- *  	Copyright 1988 by the Massachusetts Institute of Technology.
- *
- *	For further information on copyright and distribution
- *	see the file mit-copyright.h
+ * Copyright (C) 1988-1998 by the Massachusetts Institute of Technology.
+ * For copying and distribution information, please see the file
+ * <mit-copyright.h>.
  */
 
-#include <stdio.h>
-#include <string.h>
+#include <mit-copyright.h>
 #include <moira.h>
 #include <moira_site.h>
-#include <menu.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <ctype.h>
 
-#include "mit-copyright.h"
 #include "defs.h"
 #include "f_defs.h"
 #include "globals.h"
+
+#include <sys/stat.h>
+
+#include <ctype.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.45 1998-02-05 22:50:35 danw Exp $");
+
+char *canonicalize_cell(char *c);
+int GetAliasValue(int argc, char **argv, void *retval);
+void RealDeleteFS(char **info, Bool one_item);
+char *SortAfter(struct qelem *elem, int count);
+void RealDeleteFSAlias(char **info, Bool one_item);
 
 #define FS_ALIAS_TYPE "FILESYS"
 
@@ -65,18 +68,18 @@ static char **SetDefaults(char **info, char *name)
 {
   char buf[BUFSIZ];
 
-  info[FS_NAME] =     Strsave(name);
-  info[FS_TYPE] =     Strsave(DEFAULT_TYPE);
-  info[FS_MACHINE] =  Strsave(DEFAULT_MACHINE);
-  info[FS_PACK] =     Strsave(DEFAULT_PACK);
+  info[FS_NAME] =     strdup(name);
+  info[FS_TYPE] =     strdup(DEFAULT_TYPE);
+  info[FS_MACHINE] =  strdup(DEFAULT_MACHINE);
+  info[FS_PACK] =     strdup(DEFAULT_PACK);
   sprintf(buf, "/mit/%s", name);
-  info[FS_M_POINT] =  Strsave(buf);
-  info[FS_ACCESS] =   Strsave(DEFAULT_ACCESS);
-  info[FS_COMMENTS] = Strsave(DEFAULT_COMMENTS);
-  info[FS_OWNER] =    Strsave(DEFAULT_OWNER);
-  info[FS_OWNERS] =   Strsave(DEFAULT_OWNERS);
-  info[FS_CREATE] =   Strsave(DEFAULT_CREATE);
-  info[FS_L_TYPE] =   Strsave(DEFAULT_L_TYPE);
+  info[FS_M_POINT] =  strdup(buf);
+  info[FS_ACCESS] =   strdup(DEFAULT_ACCESS);
+  info[FS_COMMENTS] = strdup(DEFAULT_COMMENTS);
+  info[FS_OWNER] =    strdup(DEFAULT_OWNER);
+  info[FS_OWNERS] =   strdup(DEFAULT_OWNERS);
+  info[FS_CREATE] =   strdup(DEFAULT_CREATE);
+  info[FS_L_TYPE] =   strdup(DEFAULT_L_TYPE);
   info[FS_MODTIME] = info[FS_MODBY] = info[FS_MODWITH] = info[FS_END] = NULL;
   return info;
 }
@@ -98,7 +101,7 @@ static struct qelem *GetFSInfo(int type, char *name)
     {
     case LABEL:
       if ((stat = do_mr_query("get_filesys_by_label", 1, &name,
-			      StoreInfo, (char *)&elem)))
+			      StoreInfo, &elem)))
 	{
 	  com_err(program_name, stat, " in GetFSInfo");
 	  return NULL;
@@ -106,7 +109,7 @@ static struct qelem *GetFSInfo(int type, char *name)
       break;
     case MACHINE:
       if ((stat = do_mr_query("get_filesys_by_machine", 1, &name,
-			      StoreInfo, (char *)&elem)))
+			      StoreInfo, &elem)))
 	{
 	  com_err(program_name, stat, " in GetFSInfo");
 	  return NULL;
@@ -114,7 +117,7 @@ static struct qelem *GetFSInfo(int type, char *name)
       break;
     case GROUP:
       if ((stat = do_mr_query("get_filesys_by_group", 1, &name,
-			      StoreInfo, (char *)&elem)))
+			      StoreInfo, &elem)))
 	{
 	  com_err(program_name, stat, " in GetFSInfo");
 	  return NULL;
@@ -124,8 +127,7 @@ static struct qelem *GetFSInfo(int type, char *name)
       args[ALIAS_NAME] = name;
       args[ALIAS_TYPE] = FS_ALIAS_TYPE;
       args[ALIAS_TRANS] = "*";
-      if ((stat = do_mr_query("get_alias", 3, args, StoreInfo,
-			      (char *) &elem)))
+      if ((stat = do_mr_query("get_alias", 3, args, StoreInfo, &elem)))
 	{
 	  com_err(program_name, stat, " in get_alias.");
 	  return NULL;
@@ -153,14 +155,13 @@ static char *PrintFSAlias(char **info)
 
 static int fsgCount = 1;
 
-static char *PrintFSGMembers(char **info)
+static void PrintFSGMembers(char **info)
 {
   char print_buf[BUFSIZ];
 
   sprintf(print_buf, "  %d. Filesystem: %-32s (sort key: %s)",
 	  fsgCount++, info[0], info[1]);
   Put_message(print_buf);
-  return info[0];
 }
 
 
@@ -194,7 +195,7 @@ static char *PrintFSInfo(char **info)
       Put_message(print_buf);
       Put_message("Containing the filesystems (in order):");
       if ((stat = do_mr_query("get_fsgroup_members", 1, &info[FS_NAME],
-			      StoreInfo, (char *)&elem)))
+			      StoreInfo, &elem)))
 	{
 	  if (stat == MR_NO_MATCH)
 	    Put_message("    [no members]");
@@ -248,13 +249,13 @@ char *canonicalize_cell(char *c)
     return c;
   path[count] = 0;
   free(c);
-  return strsave(path);
+  return strdup(path);
 }
 
 
-int GetAliasValue(int argc, char **argv, char **retval)
+int GetAliasValue(int argc, char **argv, void *retval)
 {
-  *retval = strsave(argv[2]);
+  *(char **)retval = strdup(argv[2]);
   return MR_CONT;
 }
 
@@ -279,7 +280,7 @@ static char **AskFSInfo(char **info, Bool name)
 
   if (name)
     {
-      newname = Strsave(info[FS_NAME]);
+      newname = strdup(info[FS_NAME]);
       if (GetValueFromUser("The new name for this filesystem",
 			   &newname) == SUB_ERROR)
 	return NULL;
@@ -297,7 +298,7 @@ static char **AskFSInfo(char **info, Bool name)
   if (fsgroup)
     {
       free(info[FS_MACHINE]);
-      info[FS_MACHINE] = Strsave(NO_MACHINE);
+      info[FS_MACHINE] = strdup(NO_MACHINE);
     }
   else
     {
@@ -306,7 +307,7 @@ static char **AskFSInfo(char **info, Bool name)
 	  if (!name || newdefaults)
 	    {
 	      free(info[FS_MACHINE]);
-	      info[FS_MACHINE] = strsave(DEFAULT_CELL);
+	      info[FS_MACHINE] = strdup(DEFAULT_CELL);
 	    }
 	  if (GetValueFromUser("Filesystem's Cell", &info[FS_MACHINE]) ==
 		SUB_ERROR)
@@ -397,7 +398,7 @@ static char **AskFSInfo(char **info, Bool name)
 		  sprintf(temp_buf, "/afs/%s/%s/%s", info[FS_MACHINE],
 			  lowercase(info[FS_L_TYPE]), info[FS_NAME]);
 		}
-	      info[FS_PACK] = strsave(temp_buf);
+	      info[FS_PACK] = strdup(temp_buf);
 	    }
 	}
       if (GetValueFromUser("Filesystem's Pack Name", &info[FS_PACK]) ==
@@ -455,7 +456,7 @@ int GetFS(int argc, char **argv)
   struct qelem *top;
 
   top = GetFSInfo(LABEL, argv[1]); /* get info. */
-  Loop(top, PrintFSInfo);
+  Loop(top, (void (*)(char **))PrintFSInfo);
   FreeQueue(top);		/* clean the queue. */
   return DM_NORMAL;
 }
@@ -470,9 +471,9 @@ int GetFSM(int argc, char **argv)
 {
   struct qelem *top;
 
-  argv[1] = canonicalize_hostname(strsave(argv[1]));
+  argv[1] = canonicalize_hostname(strdup(argv[1]));
   top = GetFSInfo(MACHINE, argv[1]); /* get info. */
-  Loop(top, PrintFSInfo);
+  Loop(top, (void (*)(char **))PrintFSInfo);
   FreeQueue(top);		/* clean the queue. */
   return DM_NORMAL;
 }
@@ -499,7 +500,7 @@ void RealDeleteFS(char **info, Bool one_item)
   if (!one_item || Confirm(temp_buf))
     {
       if ((stat = do_mr_query("delete_filesys", 1,
-			      &info[FS_NAME], Scream, NULL)))
+			      &info[FS_NAME], NULL, NULL)))
 	com_err(program_name, stat, " filesystem not deleted.");
       else
 	Put_message("Filesystem deleted.");
@@ -542,7 +543,7 @@ static void RealChangeFS(char **info, Bool junk)
       Put_message("Aborted.");
       return;
     }
-  stat = do_mr_query("update_filesys", CountArgs(args), args, NullFunc, NULL);
+  stat = do_mr_query("update_filesys", CountArgs(args), args, NULL, NULL);
   switch (stat)
     {
     case MR_NFS:
@@ -553,7 +554,7 @@ static void RealChangeFS(char **info, Bool junk)
 	  if (YesNoQuestion("Retry filesystem update now (Y/N)", TRUE) == TRUE)
 	    {
 	      if ((stat = do_mr_query("update_filesys", CountArgs(args), args,
-				      NullFunc, NULL)))
+				      NULL, NULL)))
 		com_err(program_name, stat, " filesystem not updated");
 	      else
 		Put_message("filesystem sucessfully updated.");
@@ -598,7 +599,7 @@ int AddFS(int argc, char **argv)
     return DM_NORMAL;
 
   if (!(stat = do_mr_query("get_filesys_by_label", 1, argv + 1,
-			      NullFunc, NULL)))
+			      NULL, NULL)))
     {
       Put_message ("A Filesystem by that name already exists.");
       return DM_NORMAL;
@@ -615,7 +616,7 @@ int AddFS(int argc, char **argv)
       return DM_NORMAL;
     }
 
-  stat = do_mr_query("add_filesys", CountArgs(args), args, NullFunc, NULL);
+  stat = do_mr_query("add_filesys", CountArgs(args), args, NULL, NULL);
   switch (stat)
     {
     case MR_NFS:
@@ -626,7 +627,7 @@ int AddFS(int argc, char **argv)
 	  if (YesNoQuestion("Retry filesystem creation now (Y/N)", TRUE)
 	      == TRUE) {
 	    if ((stat = do_mr_query("add_filesys", CountArgs(args), args,
-				    NullFunc, NULL)))
+				    NULL, NULL)))
 	      com_err(program_name, stat, " in AddFS");
 	    else
 	      Put_message("Created.");
@@ -649,13 +650,13 @@ int AddFS(int argc, char **argv)
       if (!def_quota)
 	{
 	  stat = do_mr_query("get_value", CountArgs(val), val,
-			     StoreInfo, (char *) &top);
+			     StoreInfo, &top);
 	  if (stat != MR_SUCCESS)
 	    com_err(program_name, stat, " getting default quota");
 	  else
 	    {
 	      top = QueueTop(top);
-	      def_quota = Strsave(((char **)top->q_data)[0]);
+	      def_quota = strdup(((char **)top->q_data)[0]);
 	      FreeQueue(top);
 	    }
 	}
@@ -671,7 +672,7 @@ int AddFS(int argc, char **argv)
 	      else
 		argv[Q_TYPE] = "ANY";
 	      argv[Q_QUOTA] = def_quota;
-	      if ((stat = do_mr_query("add_quota", Q_QUOTA + 1, argv, Scream,
+	      if ((stat = do_mr_query("add_quota", Q_QUOTA + 1, argv, NULL,
 				      NULL)))
 		com_err(program_name, stat, " while adding quota");
 	    }
@@ -683,7 +684,7 @@ int AddFS(int argc, char **argv)
 	{
 	  parsed_argc = 1;
 	  parsed_argv[0] = info[FS_NAME];
-	  AddQuota();
+	  AddQuota(parsed_argc, parsed_argv);
 	}
     }
 
@@ -738,7 +739,7 @@ char *SortAfter(struct qelem *elem, int count)
       *key++ = (prevnext + 'Z') / 2;
     }
   *key = 0;
-  return Strsave(keybuf);
+  return strdup(keybuf);
 }
 
 /*	Function Name: AddFSToGroup
@@ -754,7 +755,7 @@ int AddFSToGroup(int argc, char **argv)
   char buf[BUFSIZ], *args[5], *bufp;
 
   if ((stat = do_mr_query("get_fsgroup_members", 1, argv + 1, StoreInfo,
-			  (char *)&elem)))
+			  &elem)))
     {
       if (stat != MR_NO_MATCH)
 	com_err(program_name, stat, " in AddFSToGroup");
@@ -764,7 +765,7 @@ int AddFSToGroup(int argc, char **argv)
       args[0] = argv[1];
       args[1] = argv[2];
       args[2] = "M";
-      stat = do_mr_query("add_filesys_to_fsgroup", 3, args, Scream, NULL);
+      stat = do_mr_query("add_filesys_to_fsgroup", 3, args, NULL, NULL);
       if (stat)
 	com_err(program_name, stat, " in AddFSToGroup");
       return DM_NORMAL;
@@ -773,7 +774,7 @@ int AddFSToGroup(int argc, char **argv)
   fsgCount = 1;
   Loop(elem, PrintFSGMembers);
   sprintf(buf, "%d", QueueCount(elem));
-  bufp = Strsave(buf);
+  bufp = strdup(buf);
   if (GetValueFromUser("Enter number of filesystem it should follow "
 		       "(0 to make it first):", &bufp) == SUB_ERROR)
     return DM_NORMAL;
@@ -784,7 +785,7 @@ int AddFSToGroup(int argc, char **argv)
   FreeQueue(QueueTop(elem));
   args[0] = argv[1];
   args[1] = argv[2];
-  stat = do_mr_query("add_filesys_to_fsgroup", 3, args, Scream, NULL);
+  stat = do_mr_query("add_filesys_to_fsgroup", 3, args, NULL, NULL);
   if (stat == MR_EXISTS)
     {
       Put_message("That filesystem is already a member of the group.");
@@ -812,7 +813,7 @@ int RemoveFSFromGroup(int argc, char **argv)
   if (!Confirm(buf))
     return DM_NORMAL;
   if ((stat = do_mr_query("remove_filesys_from_fsgroup", 2, argv + 1,
-			  Scream, NULL)))
+			  NULL, NULL)))
     com_err(program_name, stat, ", not removed.");
   return DM_NORMAL;
 }
@@ -830,7 +831,7 @@ int ChangeFSGroupOrder(int argc, char **argv)
   char buf[BUFSIZ], *bufp, *args[3];
 
   if ((stat = do_mr_query("get_fsgroup_members", 1, argv + 1, StoreInfo,
-			  (char *)&elem)))
+			  &elem)))
     {
       if (stat == MR_NO_MATCH)
 	{
@@ -848,7 +849,7 @@ int ChangeFSGroupOrder(int argc, char **argv)
   Loop(top, PrintFSGMembers);
   while (1)
     {
-      bufp = Strsave("1");
+      bufp = strdup("1");
       if (GetValueFromUser("Enter number of the filesystem to move:",
 			   &bufp) == SUB_ERROR)
 	return DM_NORMAL;
@@ -875,7 +876,7 @@ int ChangeFSGroupOrder(int argc, char **argv)
     }
   while (1)
     {
-      bufp = Strsave("0");
+      bufp = strdup("0");
       if (GetValueFromUser("Enter number of filesystem it should follow "
 			   "(0 to make it first):", &bufp) == SUB_ERROR)
 	return DM_NORMAL;
@@ -905,13 +906,13 @@ int ChangeFSGroupOrder(int argc, char **argv)
   args[0] = argv[1];
   args[1] = ((char **)elem->q_data)[0];
   if ((stat = do_mr_query("remove_filesys_from_fsgroup", 2, args,
-			  Scream, NULL)))
+			  NULL, NULL)))
     {
       com_err(program_name, stat, " in ChangeFSGroupOrder");
       return DM_NORMAL;
     }
   if ((stat = do_mr_query("add_filesys_to_fsgroup", 3, args,
-			     Scream, NULL)))
+			     NULL, NULL)))
     com_err(program_name, stat, " in ChangeFSGroupOrder");
   return DM_NORMAL;
 }
@@ -957,22 +958,21 @@ int CreateFSAlias(int argc, char **argv)
   if (!ValidName(argv[1]))
     return DM_NORMAL;
 
-  args[ALIAS_NAME] = Strsave(argv[1]);
-  args[ALIAS_TYPE] = Strsave(FS_ALIAS_TYPE);
-  args[ALIAS_TRANS] = Strsave("*");
+  args[ALIAS_NAME] = strdup(argv[1]);
+  args[ALIAS_TYPE] = strdup(FS_ALIAS_TYPE);
+  args[ALIAS_TRANS] = strdup("*");
 
   /*
    * Check to see if this alias already exists in the database, if so then
    * print out values, free memory used and then exit.
    */
 
-  if (!(stat = do_mr_query("get_alias", 3, args, StoreInfo,
-			   (char *)&elem)))
+  if (!(stat = do_mr_query("get_alias", 3, args, StoreInfo, &elem)))
     {
       top = elem = QueueTop(elem);
       while (elem)
 	{
-	  info = (char **) elem->q_data;
+	  info = elem->q_data;
 	  sprintf(buf, "The alias: %s currently describes the filesystem %s",
 		  info[ALIAS_NAME], info[ALIAS_TRANS]);
 	  Put_message(buf);
@@ -987,13 +987,13 @@ int CreateFSAlias(int argc, char **argv)
       return DM_NORMAL;
     }
 
-  args[ALIAS_TRANS] = Strsave("");
+  args[ALIAS_TRANS] = strdup("");
   args[ALIAS_END] = NULL;
   if (GetValueFromUser("Which filesystem will this alias point to?",
 		       &args[ALIAS_TRANS]) == SUB_ERROR)
     return DM_NORMAL;
 
-  if ((stat = do_mr_query("add_alias", 3, args, NullFunc, NULL)))
+  if ((stat = do_mr_query("add_alias", 3, args, NULL, NULL)))
     com_err(program_name, stat, " in CreateFSAlias.");
 
   FreeInfo(args);
@@ -1023,7 +1023,7 @@ void RealDeleteFSAlias(char **info, Bool one_item)
   if (!one_item || Confirm(temp_buf))
     {
       if ((stat = do_mr_query("delete_alias", CountArgs(info),
-			      info, Scream, NULL)))
+			      info, NULL, NULL)))
 	com_err(program_name, stat, " filesystem alias not deleted.");
       else
 	Put_message("Filesystem alias deleted.");
@@ -1080,7 +1080,7 @@ int AttachHelp(void)
  *	Returns: DM_NORMAL.
  */
 
-int FSGroupHelp(void)
+int FSGroupHelp(int argc, char **argv)
 {
   static char *message[] = {
     "A filesystem group is a named sorted list of filesystems.",

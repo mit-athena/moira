@@ -2,55 +2,65 @@
  * $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.c,v $
  * $Author: danw $
  * $Locker:  $
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.c,v 1.33 1998-01-06 20:39:44 danw Exp $ 
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.c,v 1.34 1998-02-05 22:50:59 danw Exp $ 
  *
  *  (c) Copyright 1988 by the Massachusetts Institute of Technology.
  *  For copying and distribution information, please see the file
  *  <mit-copyright.h>.
  */
 
-#ifndef lint
-static char    *rcsid_userreg_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.c,v 1.33 1998-01-06 20:39:44 danw Exp $";
-#endif
-
 #include <mit-copyright.h>
-#include <string.h>
-#include <curses.h>
-#include <signal.h>
-#include <sys/time.h>
-#include <setjmp.h>
+#include <moira.h>
+#include "userreg.h"
+
+#include <errno.h>
 #include <ctype.h>
+#include <curses.h>
+#include <setjmp.h>
+#include <signal.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+
 #include <kadm.h>
 #include <kadm_err.h>
 #include <krb.h>
-#include <des.h>
-#include <errno.h>
-#include "userreg.h"
-#include "ureg_err.h"
 
-/* 7.2 release compatibility */
-#ifndef KADM_INSECURE_PW
-#define KADM_INSECURE_PW	(-1783126240L)
-#endif
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.c,v 1.34 1998-02-05 22:50:59 danw Exp $");
+
+void fix_display(int sig);
+void reset(void);
+int dolook(void);
+int negotiate_login(void);
+int negotiate_passwd(void);
+void gfirst(void);
+void glast(void);
+void gpass(void);
+void glogin(void);
+void gmitid(void);
+void gmi(void);
+int qexit(void);
+int do_replace(void);
+int kinit(char *user, char *passwd);
+int lenient_strcmp(char *string1, char *string2);
+int strpasscmp(char *s1, char *s2);
+void restart(void);
+void canon_name(char *cp);
 
 #define EXIT -1
-
 
 struct user     user, db_user;
 struct alias    alias;
 char		realm[REALM_SZ];
 jmp_buf         redo;
-int             restart();
 
-extern int      errno;
 int             user_is_valid = 0;
 int		user_has_login = 0;
 int             already_registered = 0;
 int		enrollment = 0;
-extern char *disabled();
 char typed_mit_id[100];
 
-fix_display(sig)
+void fix_display(int sig)
 {
   struct sigaction act;
 
@@ -80,7 +90,7 @@ int main(int argc, char **argv)
       exit(1);
     }
 
-  if (when = disabled(&msg))
+  if ((when = disabled(&msg)))
     {
       printf("We're sorry, the registration service is unavailable right now\n");
       if (msg)
@@ -103,7 +113,7 @@ int main(int argc, char **argv)
 
   sigemptyset(&act.sa_mask);
   act.sa_flags = 0;
-  act.sa_handler = (void (*)()) fix_display;
+  act.sa_handler = fix_display;
   sigaction(SIGINT, &act, NULL);
   sigaction(SIGQUIT, &act, NULL);
   sigaction(SIGHUP, &act, NULL);
@@ -244,7 +254,7 @@ int main(int argc, char **argv)
   exit(0);
 }
 
-reset(void)
+void reset(void)
 {
   reset_display();
   memset(&user, 0, sizeof(user));
@@ -544,7 +554,7 @@ again:
 	  strcpy(lpassword, "moira");
 	}
 
-      sprintf(tktstring, "/tmp/tkt_cpw_%d", getpid());
+      sprintf(tktstring, "/tmp/tkt_cpw_%ld", (long)getpid());
       krb_set_tkt_string(tktstring);
       des_string_to_key(passwd, key);
       inst[0] = 0;
@@ -564,7 +574,7 @@ again:
 	}
       else if (result != KSUCCESS)
 	{
-	  display_text(NETWORK_DOWN);
+	  display_text(NETWORK_DOWN, "");
 	  display_text_line(" ");
 	  sprintf(fullname, "%s while verifying password",
 		  error_message(result));
@@ -602,7 +612,7 @@ again:
   return 0;
 }
 
-gfirst(void)
+void gfirst(void)
 {
   /* input the first name */
   char buf[FIRST_NAME_SIZE + 2];
@@ -610,7 +620,7 @@ gfirst(void)
 
   sigemptyset(&act.sa_mask);
   act.sa_flags = 0;
-  act.sa_handler = (void (*)()) fix_display;
+  act.sa_handler = fix_display;
   sigaction(SIGALRM, &act, NULL);
   input("Enter first Name:", buf, FIRST_NAME_SIZE + 1,
 	FIRSTNAME_TIMEOUT, TRUE);
@@ -620,7 +630,7 @@ gfirst(void)
   redisp();
 }
 
-glast(void)
+void glast(void)
 {
   /* input the last name */
   char buf[LAST_NAME_SIZE + 2];
@@ -628,7 +638,7 @@ glast(void)
 
   sigemptyset(&act.sa_mask);
   act.sa_flags = 0;
-  act.sa_handler = (void (*)()) fix_display;
+  act.sa_handler = fix_display;
   sigaction(SIGALRM, &act, NULL);
   input("Enter family Name:", buf, LAST_NAME_SIZE + 1,
 	LASTNAME_TIMEOUT, FALSE);
@@ -638,7 +648,7 @@ glast(void)
   redisp();
 }
 
-gpass(void)
+void gpass(void)
 {
   /* input password */
   char new_password[PASSWORD_SIZE + 1];
@@ -646,7 +656,7 @@ gpass(void)
 
   sigemptyset(&act.sa_mask);
   act.sa_flags = 0;
-  act.sa_handler = (void (*)()) fix_display;
+  act.sa_handler = fix_display;
   sigaction(SIGALRM, &act, NULL);
   input_no_echo("Enter password:", new_password,
 		PASSWORD_SIZE, NEW_PASSWORD_TIMEOUT);
@@ -657,14 +667,14 @@ gpass(void)
 
 /* get login name */
 
-glogin(void)
+void glogin(void)
 {
   char buf[LOGIN_SIZE + 2];
   struct sigaction act;
 
   sigemptyset(&act.sa_mask);
   act.sa_flags = 0;
-  act.sa_handler = (void (*)()) fix_display;
+  act.sa_handler = fix_display;
   sigaction(SIGALRM, &act, NULL);
   user.u_login[0] = '\0';
   input("Enter username:", buf, LOGIN_SIZE, USERNAME_TIMEOUT, FALSE);
@@ -672,7 +682,7 @@ glogin(void)
   redisp();
 }
 
-gmitid(void)
+void gmitid(void)
 {
   /* get mid id */
   int i;
@@ -683,7 +693,7 @@ gmitid(void)
 input_mit_id:
   sigemptyset(&act.sa_mask);
   act.sa_flags = 0;
-  act.sa_handler = (void (*)()) fix_display;
+  act.sa_handler = fix_display;
   sigaction(SIGALRM, &act, NULL);
   input("Enter MIT Id:", buf, 14, MITID_TIMEOUT, FALSE);
   i = 0;
@@ -715,7 +725,7 @@ input_mit_id:
   EncryptID(user.u_mit_id, typed_mit_id, user.u_first, user.u_last);
 }
 
-gmi(void)
+void gmi(void)
 {
   /* get middle initial */
   char buf[MID_INIT_SIZE + 2];
@@ -723,7 +733,7 @@ gmi(void)
 
   sigemptyset(&act.sa_mask);
   act.sa_flags = 0;
-  act.sa_handler = (void (*)()) fix_display;
+  act.sa_handler = fix_display;
   sigaction(SIGALRM, &act, NULL);
   input("Enter Middle Initial:", buf, MID_INIT_SIZE + 1, MI_TIMEOUT, TRUE);
   strncpy(user.u_mid_init, buf, MID_INIT_SIZE);
@@ -770,7 +780,7 @@ int do_replace(void)
   timer_on();
   if (status)
     {
-      display_text(NETWORK_DOWN);
+      display_text(NETWORK_DOWN, "");
       display_text_line(" ");
       sprintf(buf, "The specific error was: %s", error_message(status));
       display_text_line(buf);
@@ -858,13 +868,13 @@ int strpasscmp(char *s1, char *s2)
  */
 
 /* Go to asking for first name. */
-restart(void)
+void restart(void)
 {
   qexit();
   longjmp(redo, 1);
 }
 
-canon_name(char *cp)
+void canon_name(char *cp)
 {
   char *p2 = cp;
 

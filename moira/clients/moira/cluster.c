@@ -1,43 +1,44 @@
-#if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/cluster.c,v 1.33 1998-01-07 17:12:51 danw Exp $";
-#endif
-
-/*	This is the file cluster.c for the Moira Client, which allows users
+/* $Id $
+ *
+ *	This is the file cluster.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
  *	It Contains:
  *
  *	Created: 	4/22/88
  *	By:		Chris D. Peterson
  *
- *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/cluster.c,v $
- *      $Author: danw $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/cluster.c,v 1.33 1998-01-07 17:12:51 danw Exp $
- *
- *  	Copyright 1988 by the Massachusetts Institute of Technology.
- *
- *	For further information on copyright and distribution
- *	see the file mit-copyright.h
+ * Copyright (C) 1988-1998 by the Massachusetts Institute of Technology.
+ * For copying and distribution information, please see the file
+ * <mit-copyright.h>.
  */
 
 /* BTW: for anyone who cares MCD is short for Machine, Cluster, Data. */
 
-#include <stdio.h>
-#include <string.h>
+#include <mit-copyright.h>
 #include <moira.h>
 #include <moira_site.h>
-#include <menu.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <sys/utsname.h>
-#include <netdb.h>
-#include <ctype.h>
 
-#include "mit-copyright.h"
 #include "defs.h"
 #include "f_defs.h"
 #include "globals.h"
+
+#include <sys/utsname.h>
+
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <netdb.h>
+
+#include <ctype.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+void PrintAliases(char **info);
+struct qelem *GetMCInfo(int type, char *name1, char *name2);
+char **AskMCDInfo(char **info, int type, Bool name);
+int CheckAndRemoveFromCluster(char *name, Bool ask_user);
+int CheckAndRemoveMachines(char *name, Bool ask_first);
+char *partial_canonicalize_hostname(char *s);
 
 #define MACHINE  0
 #define CLUSTER  1
@@ -89,20 +90,20 @@ static char *MacState(int state)
 
 static char **SetMachineDefaults(char **info, char *name)
 {
-  info[M_NAME] = Strsave(name);
-  info[M_VENDOR] = Strsave(M_DEFAULT_TYPE);
-  info[M_MODEL] = Strsave(M_DEFAULT_TYPE);
-  info[M_OS] = Strsave(M_DEFAULT_TYPE);
-  info[M_LOC] = Strsave(M_DEFAULT_TYPE);
-  info[M_CONTACT] = Strsave(M_DEFAULT_TYPE);
-  info[M_USE] = Strsave("0");
-  info[M_STAT] = Strsave("1");
-  info[M_SUBNET] = Strsave("NONE");
-  info[M_ADDR] = Strsave("unique");
-  info[M_OWNER_TYPE] = Strsave("NONE");
-  info[M_OWNER_NAME] = Strsave("NONE");
-  info[M_ACOMMENT] = Strsave("");
-  info[M_OCOMMENT] = Strsave("");
+  info[M_NAME] = strdup(name);
+  info[M_VENDOR] = strdup(M_DEFAULT_TYPE);
+  info[M_MODEL] = strdup(M_DEFAULT_TYPE);
+  info[M_OS] = strdup(M_DEFAULT_TYPE);
+  info[M_LOC] = strdup(M_DEFAULT_TYPE);
+  info[M_CONTACT] = strdup(M_DEFAULT_TYPE);
+  info[M_USE] = strdup("0");
+  info[M_STAT] = strdup("1");
+  info[M_SUBNET] = strdup("NONE");
+  info[M_ADDR] = strdup("unique");
+  info[M_OWNER_TYPE] = strdup("NONE");
+  info[M_OWNER_NAME] = strdup("NONE");
+  info[M_ACOMMENT] = strdup("");
+  info[M_OCOMMENT] = strdup("");
   info[15] = info[16] = NULL;
   return info;
 }
@@ -116,9 +117,9 @@ static char **SetMachineDefaults(char **info, char *name)
 
 static char **SetClusterDefaults(char **info, char *name)
 {
-  info[C_NAME] = Strsave(name);
-  info[C_DESCRIPT] = Strsave(C_DEFAULT_DESCRIPT);
-  info[C_LOCATION] = Strsave(C_DEFAULT_LOCATION);
+  info[C_NAME] = strdup(name);
+  info[C_DESCRIPT] = strdup(C_DEFAULT_DESCRIPT);
+  info[C_LOCATION] = strdup(C_DEFAULT_LOCATION);
   info[C_MODBY] = info[C_MODTIME] = info[C_MODWITH] = info[C_END] = NULL;
   return info;
 }
@@ -134,19 +135,19 @@ static char **SetSubnetDefaults(char **info, char *name)
 {
   char buf[256];
 
-  info[C_NAME] = Strsave(name);
-  info[SN_DESC] = Strsave("");
+  info[C_NAME] = strdup(name);
+  info[SN_DESC] = strdup("");
   sprintf(buf, "%ld", ntohl(inet_addr("18.255.0.0")));
-  info[SN_ADDRESS] = Strsave(buf);
+  info[SN_ADDRESS] = strdup(buf);
   sprintf(buf, "%ld", ntohl(inet_addr("255.255.0.0")));
-  info[SN_MASK] = Strsave(buf);
+  info[SN_MASK] = strdup(buf);
   sprintf(buf, "%ld", ntohl(inet_addr(S_DEFAULT_LOW)));
-  info[SN_LOW] = Strsave(buf);
+  info[SN_LOW] = strdup(buf);
   sprintf(buf, "%ld", ntohl(inet_addr(S_DEFAULT_HIGH)));
-  info[SN_HIGH] = Strsave(buf);
-  info[SN_PREFIX] = Strsave("");
-  info[SN_ACE_TYPE] = Strsave("LIST");
-  info[SN_ACE_NAME] = Strsave("network");
+  info[SN_HIGH] = strdup(buf);
+  info[SN_PREFIX] = strdup("");
+  info[SN_ACE_TYPE] = strdup("LIST");
+  info[SN_ACE_NAME] = strdup("network");
   info[SN_MODBY] = info[SN_MODTIME] = info[SN_MODWITH] = info[SN_END] = NULL;
   return info;
 }
@@ -155,7 +156,7 @@ static char **SetSubnetDefaults(char **info, char *name)
 
 static char aliasbuf[256];
 
-static char *PrintAliases(char **info)
+void PrintAliases(char **info)
 {
   if (strlen(aliasbuf) == 0)
     sprintf(aliasbuf, "Aliases:  %s", info[0]);
@@ -186,7 +187,7 @@ static char *PrintMachInfo(char **info)
   Put_message(buf);
   args[0] = "*";
   args[1] = info[M_NAME];
-  if ((stat = do_mr_query("get_hostalias", 2, args, StoreInfo, (char *)&elem)))
+  if ((stat = do_mr_query("get_hostalias", 2, args, StoreInfo, &elem)))
     {
       if (stat != MR_NO_MATCH)
 	com_err(program_name, stat, " looking up aliases");
@@ -358,8 +359,7 @@ struct qelem *GetMCInfo(int type, char *name1, char *name2)
     case MACHINE:
       args[0] = name1;
       args[1] = args[2] = args[3] = "*";
-      if ((stat = do_mr_query("get_host", 4, args,
-			      StoreInfo, (char *)&elem)))
+      if ((stat = do_mr_query("get_host", 4, args, StoreInfo, &elem)))
 	{
 	  if (stat == MR_NO_MATCH)
 	    {
@@ -375,16 +375,14 @@ struct qelem *GetMCInfo(int type, char *name1, char *name2)
     case CNAME:
       args[0] = name1;
       args[1] = name2;
-      if ((stat = do_mr_query("get_hostalias", 2, args,
-			      StoreInfo, (char *)&elem)))
+      if ((stat = do_mr_query("get_hostalias", 2, args, StoreInfo, &elem)))
 	{
 	  com_err(program_name, stat, " in get_hostalias.");
 	  return NULL;
 	}
       break;
     case SUBNET:
-      if ((stat = do_mr_query("get_subnet", 1, &name1,
-			      StoreInfo, (char *)&elem)))
+      if ((stat = do_mr_query("get_subnet", 1, &name1, StoreInfo, &elem)))
 	{
 	  if (stat == MR_NO_MATCH)
 	    {
@@ -398,8 +396,7 @@ struct qelem *GetMCInfo(int type, char *name1, char *name2)
 	}
       break;
     case CLUSTER:
-      if ((stat = do_mr_query("get_cluster", 1, &name1,
-			      StoreInfo, (char *)&elem)))
+      if ((stat = do_mr_query("get_cluster", 1, &name1, StoreInfo, &elem)))
 	{
 	  com_err(program_name, stat, " in get_cluster.");
 	  return NULL;
@@ -409,7 +406,7 @@ struct qelem *GetMCInfo(int type, char *name1, char *name2)
       args[MAP_MACHINE] = name1;
       args[MAP_CLUSTER] = name2;
       if ((stat = do_mr_query("get_machine_to_cluster_map", 2, args,
-			      StoreInfo, (char *)&elem)))
+			      StoreInfo, &elem)))
 	{
 	  com_err(program_name, stat, " in get_machine_to_cluster_map.");
 	  return NULL;
@@ -418,8 +415,7 @@ struct qelem *GetMCInfo(int type, char *name1, char *name2)
     case DATA:
       args[CD_NAME] = name1;
       args[CD_LABEL] = name2;
-      if ((stat = do_mr_query("get_cluster_data", 2, args,
-			      StoreInfo, (char *)&elem)))
+      if ((stat = do_mr_query("get_cluster_data", 2, args, StoreInfo, &elem)))
 	{
 	  com_err(program_name, stat, " in get_cluster_data.");
 	  return NULL;
@@ -469,11 +465,11 @@ char **AskMCDInfo(char **info, int type, Bool name)
       switch (type)
 	{
 	case MACHINE:
-	  newname = Strsave(info[M_NAME]);
+	  newname = strdup(info[M_NAME]);
 	  if (GetValueFromUser("The new name for this machine? ", &newname) ==
 	      SUB_ERROR)
 	    return NULL;
-	  oldnewname = Strsave(newname);
+	  oldnewname = strdup(newname);
 	  newname = canonicalize_hostname(newname);
 	  if (strcasecmp(newname, oldnewname) && *oldnewname != '"')
 	    {
@@ -484,13 +480,13 @@ char **AskMCDInfo(char **info, int type, Bool name)
 	  free(oldnewname);
 	  break;
 	case SUBNET:
-	  newname = Strsave(info[SN_NAME]);
+	  newname = strdup(info[SN_NAME]);
 	  if (GetValueFromUser("The new name for this network? ", &newname) ==
 	      SUB_ERROR)
 	    return NULL;
 	  break;
 	case CLUSTER:
-	  newname = Strsave(info[C_NAME]);
+	  newname = strdup(info[C_NAME]);
 	  if (GetValueFromUser("The new name for this cluster? ", &newname) ==
 	      SUB_ERROR)
 	    return NULL;
@@ -597,8 +593,8 @@ char **AskMCDInfo(char **info, int type, Bool name)
 	  low.s_addr = atoi(info[SN_LOW]);
 	  low.s_addr = (low.s_addr & ~mask) | (addr & mask);
 	  free(info[SN_LOW]);
-	  sprintf(temp_buf, "%d", low.s_addr);
-	  info[SN_LOW] = strsave(temp_buf);
+	  sprintf(temp_buf, "%ld", low.s_addr);
+	  info[SN_LOW] = strdup(temp_buf);
 	}
       if (GetAddressFromUser("Lowest assignable address", &info[SN_LOW]) ==
 	  SUB_ERROR)
@@ -613,8 +609,8 @@ char **AskMCDInfo(char **info, int type, Bool name)
 	  high.s_addr = atoi(info[SN_HIGH]);
 	  high.s_addr = (high.s_addr & ~mask) | (addr & mask);
 	  free(info[SN_HIGH]);
-	  sprintf(temp_buf, "%d", high.s_addr);
-	  info[SN_HIGH] = strsave(temp_buf);
+	  sprintf(temp_buf, "%ld", high.s_addr);
+	  info[SN_HIGH] = strdup(temp_buf);
 	}
       if (GetAddressFromUser("Highest assignable address", &info[SN_HIGH]) ==
 	  SUB_ERROR)
@@ -674,7 +670,7 @@ int ShowMachineInfo(int argc, char **argv)
   struct qelem *top;
   char *tmpname;
 
-  tmpname = canonicalize_hostname(strsave(argv[1]));
+  tmpname = canonicalize_hostname(strdup(argv[1]));
   top = GetMCInfo(MACHINE, tmpname, NULL);
   Loop(top, ((void *) PrintMachInfo));
   FreeQueue(top);
@@ -707,7 +703,7 @@ int ShowMachineQuery(int argc, char **argv)
     }
 
   if (*argv[1])
-    args[0] = canonicalize_hostname(strsave(argv[1]));
+    args[0] = canonicalize_hostname(strdup(argv[1]));
   else
     args[0] = "*";
   if (*argv[2])
@@ -723,8 +719,7 @@ int ShowMachineQuery(int argc, char **argv)
   else
     args[3] = "*";
 
-  if ((stat = do_mr_query("get_host", 4, args, StoreInfo,
-			  (char *)&elem)))
+  if ((stat = do_mr_query("get_host", 4, args, StoreInfo, &elem)))
     {
       if (stat == MR_NO_MATCH)
 	Put_message("No machine(s) found matching query in the database.");
@@ -759,8 +754,7 @@ int AddMachine(int argc, char **argv)
    */
 
   if (strcasecmp(argv[1], "none") &&
-      (stat = do_mr_query("get_subnet", 1, &argv[1],
-			  StoreInfo, (char *)&elem)))
+      (stat = do_mr_query("get_subnet", 1, &argv[1], StoreInfo, &elem)))
     {
       if (stat == MR_NO_MATCH)
 	{
@@ -776,15 +770,15 @@ int AddMachine(int argc, char **argv)
    * Check to see if this machine already exists.
    */
 
-  name = strsave(""); /* want to put prefix here */
+  name = strdup(""); /* want to put prefix here */
   if (GetValueFromUser("Machine name", &name) == SUB_ERROR)
     return 0;
 
-  name = canonicalize_hostname(strsave(name));
+  name = canonicalize_hostname(strdup(name));
 
   xargs[0] = name;
   xargs[1] = xargs[2] = xargs[3] = "*";
-  if (!(stat = do_mr_query("get_host", 4, xargs, NullFunc, NULL)))
+  if (!(stat = do_mr_query("get_host", 4, xargs, NULL, NULL)))
     {
       sprintf(buf, "The machine '%s' already exists.", name);
       Put_message(buf);
@@ -799,7 +793,7 @@ int AddMachine(int argc, char **argv)
       return DM_NORMAL;
     }
   rinfo = SetMachineDefaults(info, name);
-  rinfo[M_SUBNET] = strsave(argv[1]);
+  rinfo[M_SUBNET] = strdup(argv[1]);
   if (!(args = AskMCDInfo(rinfo, MACHINE, FALSE)))
     {
       Put_message("Aborted.");
@@ -810,8 +804,7 @@ int AddMachine(int argc, char **argv)
    * Actually create the new Machine.
    */
 
-  if ((stat = do_mr_query("add_host", CountArgs(args),
-			  args, Scream, NULL)))
+  if ((stat = do_mr_query("add_host", CountArgs(args), args, NULL, NULL)))
     com_err(program_name, stat, " in AddMachine.");
 
   FreeInfo(info);
@@ -835,8 +828,7 @@ static void RealUpdateMachine(char **info, Bool junk)
       Put_message("Aborted.");
       return;
     }
-  if ((stat = do_mr_query("update_host", CountArgs(args),
-			  args, Scream, NULL)))
+  if ((stat = do_mr_query("update_host", CountArgs(args), args, NULL, NULL)))
     com_err(program_name, stat, " in UpdateMachine.");
   else
     Put_message("Machine successfully updated.");
@@ -853,7 +845,7 @@ int UpdateMachine(int argc, char **argv)
   struct qelem *top;
   char *tmpname;
 
-  tmpname = canonicalize_hostname(strsave(argv[1]));
+  tmpname = canonicalize_hostname(strdup(argv[1]));
   top = GetMCInfo(MACHINE, tmpname, NULL);
   QueryLoop(top, NullPrint, RealUpdateMachine, "Update the machine");
 
@@ -880,8 +872,7 @@ int CheckAndRemoveFromCluster(char *name, Bool ask_user)
   ret_value = SUB_NORMAL;	/* initialize ret_value. */
   args[0] = name;
   args[1] = "*";
-  stat = do_mr_query("get_machine_to_cluster_map", 2, args,
-		     StoreInfo, (char *)&elem);
+  stat = do_mr_query("get_machine_to_cluster_map", 2, args, StoreInfo, &elem);
   if (stat && stat != MR_NO_MATCH)
     {
       com_err(program_name, stat, " in get_machine_to_cluster_map.");
@@ -912,9 +903,9 @@ int CheckAndRemoveFromCluster(char *name, Bool ask_user)
 	{
 	  while (elem)
 	    {
-	      char **info = (char **) elem->q_data;
+	      char **info = elem->q_data;
 	      if ((stat = do_mr_query("delete_machine_from_cluster",
-				       2, info, Scream, NULL)))
+				       2, info, NULL, NULL)))
 		{
 		  ret_value = SUB_ERROR;
 		  com_err(program_name, stat,
@@ -951,7 +942,7 @@ static void RealDeleteMachine(char **info, Bool one_machine)
       if (CheckAndRemoveFromCluster(info[M_NAME], TRUE) != SUB_ERROR)
 	{
 	  if ((stat = do_mr_query("delete_host", 1,
-				  &info[M_NAME], Scream, NULL)))
+				  &info[M_NAME], NULL, NULL)))
 	    {
 	      com_err(program_name, stat, " in DeleteMachine.");
 	      sprintf(temp_buf, "%s ** NOT ** deleted.",
@@ -980,7 +971,7 @@ int DeleteMachine(int argc, char **argv)
   struct qelem *top;
   char *tmpname;
 
-  tmpname = canonicalize_hostname(strsave(argv[1]));
+  tmpname = canonicalize_hostname(strdup(argv[1]));
   top = GetMCInfo(MACHINE, tmpname, (char *) NULL);
   QueryLoop(top, PrintMachInfo, RealDeleteMachine, "Delete the machine");
   FreeQueue(top);
@@ -1002,7 +993,7 @@ char *partial_canonicalize_hostname(char *s)
       hp = gethostbyname(name.nodename);
       cp = strchr(hp->h_name, '.');
       if (cp)
-	def_domain = strsave(++cp);
+	def_domain = strdup(++cp);
       else
 	def_domain = "";
     }
@@ -1011,7 +1002,7 @@ char *partial_canonicalize_hostname(char *s)
     return s;
   sprintf(buf, "%s.%s", s, def_domain);
   free(s);
-  return strsave(buf);
+  return strdup(buf);
 }
 
 
@@ -1026,8 +1017,8 @@ int ShowCname(int argc, char **argv)
   struct qelem *top;
   char *tmpalias, *tmpname;
 
-  tmpalias = partial_canonicalize_hostname(strsave(argv[1]));
-  tmpname = canonicalize_hostname(strsave(argv[2]));
+  tmpalias = partial_canonicalize_hostname(strdup(argv[1]));
+  tmpname = canonicalize_hostname(strdup(argv[2]));
   top = GetMCInfo(CNAME, tmpalias, tmpname);
   Put_message("");		/* blank line on screen */
   Loop(top, ((void *) PrintCname));
@@ -1041,9 +1032,9 @@ int AddCname(int argc, char **argv)
   int stat;
   char *args[10];
 
-  args[0] = partial_canonicalize_hostname(strsave(argv[1]));
-  args[1] = canonicalize_hostname(strsave(argv[2]));
-  stat = do_mr_query("add_hostalias", 2, args, Scream, NULL);
+  args[0] = partial_canonicalize_hostname(strdup(argv[1]));
+  args[1] = canonicalize_hostname(strdup(argv[2]));
+  stat = do_mr_query("add_hostalias", 2, args, NULL, NULL);
   switch (stat)
     {
     case MR_SUCCESS:
@@ -1065,13 +1056,11 @@ int AddCname(int argc, char **argv)
 int DeleteCname(int argc, char **argv)
 {
   int stat;
-  char *machine, *cluster, temp_buf[BUFSIZ], *args[10];
-  Bool add_it, one_machine, one_cluster;
-  struct qelem *melem, *mtop, *celem, *ctop;
+  char *args[10];
 
-  args[0] = partial_canonicalize_hostname(strsave(argv[1]));
-  args[1] = canonicalize_hostname(strsave(argv[2]));
-  stat = do_mr_query("delete_hostalias", 2, args, Scream, NULL);
+  args[0] = partial_canonicalize_hostname(strdup(argv[1]));
+  args[1] = canonicalize_hostname(strdup(argv[2]));
+  stat = do_mr_query("delete_hostalias", 2, args, NULL, NULL);
   if (stat)
     com_err(program_name, stat, " in delete_hostalias");
   return DM_NORMAL;
@@ -1092,7 +1081,7 @@ int AddMachineToCluster(int argc, char **argv)
   Bool add_it, one_machine, one_cluster;
   struct qelem *melem, *mtop, *celem, *ctop;
 
-  machine = canonicalize_hostname(strsave(argv[1]));
+  machine = canonicalize_hostname(strdup(argv[1]));
   if (strcasecmp(machine, argv[1]) && *argv[1] != '"')
     {
       sprintf(temp_buf, "Warning: '%s' canonicalized to '%s'.",
@@ -1112,10 +1101,10 @@ int AddMachineToCluster(int argc, char **argv)
 
   while (melem)
     {
-      char **minfo = (char **) melem->q_data;
+      char **minfo = melem->q_data;
       while (celem)
 	{
-	  char **cinfo = (char **) celem->q_data;
+	  char **cinfo = celem->q_data;
 	  if (one_machine && one_cluster)
 	    add_it = TRUE;
 	  else
@@ -1142,7 +1131,7 @@ int AddMachineToCluster(int argc, char **argv)
 	      args[0] = minfo[M_NAME];
 	      args[1] = cinfo[C_NAME];
 	      stat = do_mr_query("add_machine_to_cluster", 2, args,
-				 Scream, NULL);
+				 NULL, NULL);
 	      switch (stat)
 		{
 		case MR_SUCCESS:
@@ -1186,7 +1175,7 @@ static void RealRemoveMachineFromCluster(char **info, Bool one_map)
   if (!one_map || Confirm(temp_buf))
     {
       if ((stat = do_mr_query("delete_machine_from_cluster", 2,
-			      info, Scream, NULL)))
+			      info, NULL, NULL)))
 	com_err(program_name, stat, " in delete_machine_from_cluster");
       else
 	{
@@ -1212,7 +1201,7 @@ int RemoveMachineFromCluster(int argc, char **argv)
   char buf[BUFSIZ], * args[10];
   int stat;
 
-  args[MAP_MACHINE] = canonicalize_hostname(strsave(argv[1]));
+  args[MAP_MACHINE] = canonicalize_hostname(strdup(argv[1]));
   if (strcasecmp(args[MAP_MACHINE], argv[1]) && *argv[1] != '"')
     {
       sprintf(buf, "Warning: '%s' canonicalized to '%s'.",
@@ -1223,7 +1212,7 @@ int RemoveMachineFromCluster(int argc, char **argv)
   args[MAP_END] = NULL;
 
   stat = do_mr_query("get_machine_to_cluster_map", CountArgs(args), args,
-		     StoreInfo, (char *)&elem);
+		     StoreInfo, &elem);
   if (stat == MR_NO_MATCH)
     {
       sprintf(buf, "The machine %s is not is the cluster %s.",
@@ -1279,8 +1268,7 @@ int AddSubnet(int argc, char **argv)
   if (!ValidName(name))
     return DM_NORMAL;
 
-  if ((stat = do_mr_query("get_subnet", 1, &name,
-			  NullFunc, NULL)) == MR_SUCCESS)
+  if ((stat = do_mr_query("get_subnet", 1, &name, NULL, NULL)) == MR_SUCCESS)
     {
       Put_message("This subnet already exists.");
       return DM_NORMAL;
@@ -1300,8 +1288,7 @@ int AddSubnet(int argc, char **argv)
   /*
    * Actually create the new Subnet.
    */
-  if ((stat = do_mr_query("add_subnet", CountArgs(args),
-			  args, Scream, NULL)))
+  if ((stat = do_mr_query("add_subnet", CountArgs(args), args, NULL, NULL)))
     com_err(program_name, stat, " in AddSubnet.");
 
   FreeInfo(info);
@@ -1324,8 +1311,7 @@ static void RealUpdateSubnet(char **info, Bool junk)
       Put_message("Aborted.");
       return;
     }
-  if ((stat = do_mr_query("update_subnet", CountArgs(args),
-			  args, Scream, NULL)))
+  if ((stat = do_mr_query("update_subnet", CountArgs(args), args, NULL, NULL)))
     com_err(program_name, stat, " in UpdateSubnet.");
   else
     Put_message("Subnet successfully updated.");
@@ -1365,8 +1351,7 @@ static void RealDeleteSubnet(char **info, Bool one_subnet)
 	  info[C_NAME]);
   if (!one_subnet || Confirm(temp_buf))
     {
-      if ((stat = do_mr_query("delete_subnet", 1,
-			      &info[C_NAME], Scream, NULL)))
+      if ((stat = do_mr_query("delete_subnet", 1, &info[C_NAME], NULL, NULL)))
 	{
 	  com_err(program_name, stat, " in delete_subnet.");
 	  sprintf(temp_buf, "Subnet %s ** NOT ** deleted.", info[C_NAME]);
@@ -1433,8 +1418,7 @@ int AddCluster(int argc, char **argv)
   if (!ValidName(name))
     return DM_NORMAL;
 
-  if ((stat = do_mr_query("get_cluster", 1, &name,
-			  NullFunc, NULL)) == MR_SUCCESS)
+  if ((stat = do_mr_query("get_cluster", 1, &name, NULL, NULL)) == MR_SUCCESS)
     {
       Put_message("This cluster already exists.");
       return DM_NORMAL;
@@ -1454,8 +1438,7 @@ int AddCluster(int argc, char **argv)
   /*
    * Actually create the new Cluster.
    */
-  if ((stat = do_mr_query("add_cluster", CountArgs(args),
-			  args, Scream, NULL)))
+  if ((stat = do_mr_query("add_cluster", CountArgs(args), args, NULL, NULL)))
     com_err(program_name, stat, " in AddCluster.");
 
   FreeInfo(info);
@@ -1480,7 +1463,7 @@ static void RealUpdateCluster(char **info, Bool junk)
       return;
     }
   if ((stat = do_mr_query("update_cluster", CountArgs(args),
-			  args, Scream, NULL)))
+			  args, NULL, NULL)))
     com_err(program_name, stat, " in UpdateCluster.");
   else
     Put_message("Cluster successfully updated.");
@@ -1521,8 +1504,7 @@ int CheckAndRemoveMachines(char *name, Bool ask_first)
   ret_value = SUB_NORMAL;
   args[MAP_MACHINE] = "*";
   args[MAP_CLUSTER] = name;
-  stat = do_mr_query("get_machine_to_cluster_map", 2, args,
-		     StoreInfo, (char *)&elem);
+  stat = do_mr_query("get_machine_to_cluster_map", 2, args, StoreInfo, &elem);
   if (stat && stat != MR_NO_MATCH)
     {
       com_err(program_name, stat, " in get_machine_to_cluster_map.");
@@ -1538,7 +1520,7 @@ int CheckAndRemoveMachines(char *name, Bool ask_first)
 	  Put_message(temp_buf);
 	  while (elem)
 	    {
-	      char **info = (char **) elem->q_data;
+	      char **info = elem->q_data;
 	      Print(1, &info[MAP_MACHINE], (char *) NULL);
 	      elem = elem->q_forw;
 	    }
@@ -1561,9 +1543,9 @@ int CheckAndRemoveMachines(char *name, Bool ask_first)
 	  elem = top;
 	  while (elem)
 	    {
-	      char **info = (char **) elem->q_data;
+	      char **info = elem->q_data;
 	      if ((stat = do_mr_query("delete_machine_from_cluster",
-				      2, info, Scream, NULL)))
+				      2, info, NULL, NULL)))
 		{
 		  ret_value = SUB_ERROR;
 		  com_err(program_name, stat,
@@ -1601,7 +1583,7 @@ static void RealDeleteCluster(char **info, Bool one_cluster)
       if (CheckAndRemoveMachines(info[C_NAME], TRUE) != SUB_ERROR)
 	{
 	  if ((stat = do_mr_query("delete_cluster", 1,
-				  &info[C_NAME], Scream, NULL)))
+				  &info[C_NAME], NULL, NULL)))
 	    {
 	      com_err(program_name, stat, " in delete_cluster.");
 	      sprintf(temp_buf, "Cluster %s ** NOT ** deleted.", info[C_NAME]);
@@ -1651,7 +1633,7 @@ int ShowClusterData(int argc, char **argv)
   top = elem = GetMCInfo(DATA, argv[1], argv[2]);
   while (elem)
     {
-      info = (char **) elem->q_data;
+      info = elem->q_data;
       PrintClusterData(info);
       elem = elem->q_forw;
     }
@@ -1671,8 +1653,7 @@ int AddClusterData(int argc, char **argv)
 {
   int stat;
 
-  if ((stat = do_mr_query("add_cluster_data", 3, argv + 1,
-			  Scream, (char *) NULL)))
+  if ((stat = do_mr_query("add_cluster_data", 3, argv + 1, NULL, NULL)))
     com_err(program_name, stat, " in AddClusterData.");
   return DM_NORMAL;
 }
@@ -1696,8 +1677,7 @@ static void RealRemoveClusterData(char **info, Bool one_item)
   PrintClusterData(info);
   if (!one_item || Confirm(temp_ptr))
     {
-      if ((stat = do_mr_query("delete_cluster_data", 3, info,
-			      Scream, (char *) NULL)))
+      if ((stat = do_mr_query("delete_cluster_data", 3, info, NULL, NULL)))
 	{
 	  com_err(program_name, stat, " in DeleteClusterData.");
 	  Put_message("Data not removed.");
@@ -1739,7 +1719,7 @@ int MachineToClusterMap(int argc, char **argv)
   struct qelem *elem, *top;
   char *tmpname, temp_buf[256];
 
-  tmpname = canonicalize_hostname(strsave(argv[1]));
+  tmpname = canonicalize_hostname(strdup(argv[1]));
   if (strcasecmp(tmpname, argv[1]) && *argv[1] != '"')
     {
       sprintf(temp_buf, "Warning: '%s' canonicalized to '%s'.",
@@ -1751,7 +1731,7 @@ int MachineToClusterMap(int argc, char **argv)
   Put_message("");		/* blank line on screen */
   while (elem)
     {
-      char **info = (char **) elem->q_data;
+      char **info = elem->q_data;
       PrintMCMap(info);
       elem = elem->q_forw;
     }

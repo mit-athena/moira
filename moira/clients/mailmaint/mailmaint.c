@@ -1,33 +1,27 @@
-/*
- *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v 1.37 1998-01-05 19:51:50 danw Exp $
+/* $Id $
+ *
+ * Simple add-me-to/remove-me-from list client
+ *
+ *  mailmaint.c - pjlevine - 20 August 1987
+ *
+ * Copyright (C) 1988-1998 by the Massachusetts Institute of Technology.
+ * For copying and distribution information, please see the file
+ * <mit-copyright.h>.
  */
 
-/*  (c) Copyright 1988 by the Massachusetts Institute of Technology. */
-/*  For copying and distribution information, please see the file */
-/*  <mit-copyright.h>. */
-
-#ifndef lint
-static char rcsid_mailmaint_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v 1.37 1998-01-05 19:51:50 danw Exp $";
-#endif
-
-/***********************************************************************/
-/*  mailmaint.c - pjlevine - 20 August 1987 */
-/***********************************************************************/
-#include <stdio.h>
-#include <pwd.h>
-#include <signal.h>
-#include <string.h>
-#include <curses.h>
-#include <sys/types.h>
-#include <stdarg.h>
-#include <stdlib.h>
-#include <com_err.h>
-#include <ctype.h>
+#include <mit-copyright.h>
 #include <moira.h>
 #include <moira_site.h>
-#include <mit-copyright.h>
 
+#include <ctype.h>
+#include <curses.h>
+#include <pwd.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v 1.38 1998-02-05 22:50:32 danw Exp $");
 
 #define STARTCOL 0
 #define STARTROW 3
@@ -39,8 +33,6 @@ static char rcsid_mailmaint_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/
 
 char *whoami;		/* should not be static, for logging package */
 static int status;
-static int scream();
-void menu_err_hook(const char *who, long code, const char *fmt, va_list args);
 
 typedef struct list_info {
   int active;
@@ -57,10 +49,7 @@ typedef struct list_info {
 } List_info;
 
 static char *ascbuff = {"0123456789"};
-static int print_2(), print_1();
 static List_info *current_li = (List_info *) NULL;
-static int get_list_info();
-static int fetch_list_info();
 
 typedef struct _menu {
   int num_items;
@@ -74,6 +63,36 @@ int position[2], oldpos[2];
 int level, found_some, currow, page, num_members;
 int moreflg, toggle, first_time;
 char *username;
+
+void get_main_input(void);
+void show_list_info(void);
+void display_buff(char *buf);
+void start_display_buff(char *buff);
+void add_member(void);
+void delete_member(void);
+void list_by_member(void);
+void show_all(void);
+static int print_1(int argc, char *argv[], void *callback);
+static int print_all(int argc, char *argv[], void *callback);
+void list_all_groups(void);
+void list_members(void);
+static int print_2(int argc, char *argv[], void *callback);
+void start_display(char *buff);
+void end_display(void);
+void display_menu(MENU *menu);
+void pack_main_menu(void);
+void pack_help_menu(void);
+void highlight(MENU *menu);
+void title(char *buff);
+void center_text(int row, char *buff);
+void show_text(int row, int col, char *buff);
+void erase_line(int row, int col);
+void cls(void);
+void clrwin(int erase_row);
+static int fetch_list_info(char *list, List_info *li);
+static int get_list_info(int argc, char **argv, void *hint);
+int Prompt(char *prompt, char *buf, int buflen, int crok);
+void menu_err_hook(const char *who, long code, const char *fmt, va_list args);
 
 /* This crock is because the original code was very broken and this makes
  * it work.  Someday, we should abandon the code or fix it right.
@@ -107,12 +126,8 @@ int main(int argc, char *argv[])
       current_li->modwith = NULL;
     }
   if (!(username = getlogin()))
-    {
-      struct passwd *getpwuid();
-
-      username = getpwuid(getuid())->pw_name;
-    }
-  username = (username && strlen(username)) ? strsave(username) : "";
+    username = getpwuid(getuid())->pw_name;
+  username = username ? strdup(username) : "";
 
   printf("Connecting to database for %s...please hold on.\n", username);
 
@@ -179,7 +194,7 @@ punt:
 }
 
 /****************************************************/
-int get_main_input(void)
+void get_main_input(void)
 {
   int c;
   int retflg;
@@ -276,7 +291,7 @@ int get_main_input(void)
 }
 
 /****************************************************/
-int show_list_info(void)
+void show_list_info(void)
 {
   char *buf;
 
@@ -315,7 +330,7 @@ int show_list_info(void)
 }
 
 /****************************************************/
-int display_buff(char *buf)
+void display_buff(char *buf)
 {
   int i, cnt;
   char *printbuf;
@@ -342,17 +357,17 @@ int display_buff(char *buf)
       start_display_buff(printbuf);
       free(printbuf);
     }
-  return 0;
+  return;
 }
 
 /****************************************************/
-int start_display_buff(char *buff)
+void start_display_buff(char *buff)
 {
   char buffer[5];
 
   num_members++;
   if (moreflg)
-    return 0;
+    return;
   if (currow >= LINES - 2)
     {
       page++;
@@ -364,7 +379,7 @@ int start_display_buff(char *buff)
 	  erase_line(currow, STARTCOL);
 	  show_text(currow, STARTCOL, "Flushing query...");
 	  moreflg = 1;
-	  return 0;
+	  return;
 	}
       clrwin(DISPROW + 2);
       currow = DISPROW + 2;
@@ -373,11 +388,11 @@ int start_display_buff(char *buff)
     }
   show_text(currow, STARTCOL, buff);
   currow++;
-  return 0;
+  return;
 }
 
 /****************************************************/
-int add_member(void)
+void add_member(void)
 {
   char *argv[3];
   char *buf;
@@ -387,10 +402,10 @@ int add_member(void)
   if (Prompt("Enter List Name: ", buf, LISTSIZE, 1) == 1)
     {
       display_buff("\n");
-      argv[0] = strsave(buf);
-      argv[1] = strsave("user");
-      argv[2] = strsave(username);
-      if ((status = mr_query("add_member_to_list", 3, argv, scream, NULL)))
+      argv[0] = strdup(buf);
+      argv[1] = strdup("user");
+      argv[2] = strdup(username);
+      if ((status = mr_query("add_member_to_list", 3, argv, NULL, NULL)))
 	{
 	  display_buff("\n");
 	  com_err(whoami, status, " found.\n");
@@ -408,7 +423,7 @@ int add_member(void)
 }
 
 /****************************************************/
-int delete_member(void)
+void delete_member(void)
 {
   char *argv[3];
   char *buf;
@@ -418,10 +433,10 @@ int delete_member(void)
   if (Prompt("Enter List Name: ", buf, LISTSIZE, 1) == 1)
     {
       display_buff("\n");
-      argv[0] = strsave(buf);
-      argv[1] = strsave("user");
-      argv[2] = strsave(username);
-      if ((status = mr_query("delete_member_from_list", 3, argv, scream, NULL)))
+      argv[0] = strdup(buf);
+      argv[1] = strdup("user");
+      argv[2] = strdup(username);
+      if ((status = mr_query("delete_member_from_list", 3, argv, NULL, NULL)))
 	{
 	  display_buff("\n");
 	  com_err(whoami, status, " found.\n");
@@ -439,13 +454,13 @@ int delete_member(void)
 }
 
 /****************************************************/
-int list_by_member(void)
+void list_by_member(void)
 {
   char *nargv[3];
   char *buf;
 
-  nargv[1] = strsave("ruser");
-  nargv[2] = strsave(username);
+  nargv[1] = strdup("ruser");
+  nargv[2] = strdup(username);
   buf = calloc(BUFSIZ, 1);
   sprintf(buf, "%s is on the following lists:\n", username);
   show_text(DISPROW, STARTCOL, buf);
@@ -460,11 +475,10 @@ int list_by_member(void)
   show_text(currow, STARTCOL, "Press any Key to continue...");
   getchar();
   clrwin(DISPROW);
-  return;
 }
 
 /****************************************************/
-int show_all(void)
+void show_all(void)
 {
   char c;
 
@@ -479,11 +493,10 @@ int show_all(void)
     }
   else
     erase_line(DISPROW, STARTCOL);
-  return;
 }
 
 /****************************************************/
-static int print_1(int argc, char *argv[], char *callback)
+static int print_1(int argc, char *argv[], void *callback)
 {
   char buf[BUFSIZ];
 
@@ -491,11 +504,11 @@ static int print_1(int argc, char *argv[], char *callback)
   sprintf(buf, "%s\n", argv[0]);
   start_display(buf);
 
-  return 0;
+  return MR_CONT;
 }
 
 /****************************************************/
-static int print_all(int argc, char *argv[], char *callback)
+static int print_all(int argc, char *argv[], void *callback)
 {
   char buf[BUFSIZ];
 
@@ -510,11 +523,11 @@ static int print_all(int argc, char *argv[], char *callback)
   sprintf(buf, "%s\n", argv[0]);
   start_display(buf);
 
-  return 0;
+  return MR_CONT;
 }
 
 /****************************************************/
-int list_all_groups(void)
+void list_all_groups(void)
 {
   char *argv[5];
   argv[0] = argv[1] = argv[3] = "true";
@@ -527,12 +540,10 @@ int list_all_groups(void)
       com_err(whoami, status, " in list_all_groups\n");
     }
   end_display();
-
-  return 0;
 }
 
 /****************************************************/
-int list_members(void)
+void list_members(void)
 {
   char *argv[1];
   char *buf;
@@ -564,14 +575,13 @@ int list_members(void)
 	  return;
 	}
       end_display();
-      return 0;
+      return;
     }
   clrwin(DISPROW);
-  return 0;
 }
 
 /****************************************************/
-static int print_2(int argc, char *argv[], char *callback)
+static int print_2(int argc, char *argv[], void *callback)
 {
   char buf[BUFSIZ];
 
@@ -579,11 +589,11 @@ static int print_2(int argc, char *argv[], char *callback)
   sprintf(buf, "%s %s", argv[0], argv[1]);
   start_display(buf);
 
-  return 0;
+  return MR_CONT;
 }
 
 /****************************************************/
-int start_display(char *buff)
+void start_display(char *buff)
 {
   char *buffer;
   int secondcol;   /* where to start the second column of text */
@@ -591,7 +601,7 @@ int start_display(char *buff)
   secondcol = (COLS / 2);  /* 1/2 was accross the screen */
   num_members++;
   if (moreflg)
-    return 0;
+    return;
   buffer = calloc(50, 1);
   if (currow >= LINES - 2)
     {
@@ -603,7 +613,7 @@ int start_display(char *buff)
 	  erase_line(currow, STARTCOL);
 	  show_text(currow, STARTCOL, "Flushing query...");
 	  moreflg = 1;
-	  return 0;
+	  return;
 	}
       clrwin(DISPROW + 2);
       currow = DISPROW + 2;
@@ -621,11 +631,10 @@ int start_display(char *buff)
       currow++;
     }
   toggle = !toggle;
-  return 0;
 }
 
 /****************************************************/
-int end_display(void)
+void end_display(void)
 {
   char *buffer;
 
@@ -646,7 +655,7 @@ int end_display(void)
 }
 
 /****************************************************/
-int display_menu(MENU *menu)
+void display_menu(MENU *menu)
 {
   int i;
 
@@ -680,7 +689,7 @@ int display_menu(MENU *menu)
 }
 
 /****************************************************/
-int pack_main_menu(void)
+void pack_main_menu(void)
 {
   char *buf;
 
@@ -690,33 +699,33 @@ int pack_main_menu(void)
 
   buf = calloc(50, 1);
   sprintf(buf, "Mail List Program for %s", username);
-  main_menu->title = strsave(buf);
-  main_menu->items[0] = strsave("1.  Show all public mailing lists.");
-  main_menu->items[1] = strsave("2.  Get all members of a mailing list.");
-  main_menu->items[2] = strsave("3.  Display lists of which you are a member.");
-  main_menu->items[3] = strsave("4.  Show description of list.");
-  main_menu->items[4] = strsave("5.  Add yourself to a mailing list.");
-  main_menu->items[5] = strsave("6.  Delete yourself from a mailing list.");
-  main_menu->items[6] = strsave("q.  Quit.");
+  main_menu->title = strdup(buf);
+  main_menu->items[0] = strdup("1.  Show all public mailing lists.");
+  main_menu->items[1] = strdup("2.  Get all members of a mailing list.");
+  main_menu->items[2] = strdup("3.  Display lists of which you are a member.");
+  main_menu->items[3] = strdup("4.  Show description of list.");
+  main_menu->items[4] = strdup("5.  Add yourself to a mailing list.");
+  main_menu->items[5] = strdup("6.  Delete yourself from a mailing list.");
+  main_menu->items[6] = strdup("q.  Quit.");
 }
 
 /****************************************************/
-int pack_help_menu(void)
+void pack_help_menu(void)
 {
   help_menu = malloc(sizeof(MENU));
   help_menu->num_items = 5;
   help_menu->items = malloc(sizeof(char *) * help_menu->num_items);
 
-  help_menu->title = strsave("mailmaint is designed as a basic mail list administration program.");
-  help_menu->items[0] = strsave("if you need to perform more advanced list manipulation like");
-  help_menu->items[1] = strsave("adding lists, or changing list characteristics, refer to the");
-  help_menu->items[2] = strsave("program listmaint.");
-  help_menu->items[3] = strsave(" ");
-  help_menu->items[4] = strsave("Press any key to continue.");
+  help_menu->title = strdup("mailmaint is designed as a basic mail list administration program.");
+  help_menu->items[0] = strdup("if you need to perform more advanced list manipulation like");
+  help_menu->items[1] = strdup("adding lists, or changing list characteristics, refer to the");
+  help_menu->items[2] = strdup("program listmaint.");
+  help_menu->items[3] = strdup(" ");
+  help_menu->items[4] = strdup("Press any key to continue.");
 }
 
 /****************************************************/
-int highlight(MENU *menu)
+void highlight(MENU *menu)
 {
   if (oldpos[level] != position[level])
     {
@@ -735,7 +744,7 @@ int highlight(MENU *menu)
 }
 
 /****************************************************/
-int title(char *buff)
+void title(char *buff)
 {
   move(0, MAX(0, (COLS - strlen(buff)) >> 1));
   standout();
@@ -745,7 +754,7 @@ int title(char *buff)
 }
 
 /****************************************************/
-int center_text(int row, char *buff)
+void center_text(int row, char *buff)
 {
   move(row, MAX(0, (COLS - strlen(buff)) >> 1));
   addstr(buff);
@@ -753,7 +762,7 @@ int center_text(int row, char *buff)
 }
 
 /****************************************************/
-int show_text(int row, int col, char *buff)
+void show_text(int row, int col, char *buff)
 {
   mvcur(0, 0, row, col);
   addstr(buff);
@@ -761,7 +770,7 @@ int show_text(int row, int col, char *buff)
 }
 
 /****************************************************/
-int erase_line(int row, int col)
+void erase_line(int row, int col)
 {
   char *buff;
   int i;
@@ -778,14 +787,14 @@ int erase_line(int row, int col)
 }
 
 /****************************************************/
-int cls(void)
+void cls(void)
 {
   clear();
   refresh();
 }
 
 /****************************************************/
-int clrwin(int erase_row)
+void clrwin(int erase_row)
 {
   int i;
   char *buff;
@@ -808,16 +817,6 @@ int clrwin(int erase_row)
 }
 
 /****************************************************/
-static int scream(void)
-{
-  com_err(whoami, status,
-	  "\nA Moira update returned a value -- programmer botch\n");
-  mr_disconnect();
-  exit(1);
-  return 0;	/* to keep compiler happy */
-}
-
-/****************************************************/
 static int fetch_list_info(char *list, List_info *li)
 {
   char *argv[1];
@@ -826,27 +825,27 @@ static int fetch_list_info(char *list, List_info *li)
   return mr_query("get_list_info", 1, argv, get_list_info, NULL);
 }
 
-static int get_list_info(int argc, char **argv)
+static int get_list_info(int argc, char **argv, void *hint)
 {
   if (current_li->acl_type)
     free(current_li->acl_type);
-  current_li->acl_type = strsave(argv[7]);
+  current_li->acl_type = strdup(argv[7]);
   if (current_li->acl_name)
     free(current_li->acl_name);
-  current_li->acl_name = strsave(argv[8]);
+  current_li->acl_name = strdup(argv[8]);
   if (current_li->desc)
     free(current_li->desc);
-  current_li->desc = strsave(argv[9]);
+  current_li->desc = strdup(argv[9]);
   if (current_li->modtime)
     free(current_li->modtime);
-  current_li->modtime = strsave(argv[10]);
+  current_li->modtime = strdup(argv[10]);
   if (current_li->modby)
     free(current_li->modby);
-  current_li->modby = strsave(argv[11]);
+  current_li->modby = strdup(argv[11]);
   if (current_li->modwith)
     free(current_li->modwith);
-  current_li->modwith = strsave(argv[12]);
-  return 0;
+  current_li->modwith = strdup(argv[12]);
+  return MR_CONT;
 }
 
 

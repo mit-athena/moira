@@ -1,32 +1,26 @@
-#if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menus.c,v 1.31 1998-01-07 17:13:01 danw Exp $";
-#endif
-
-/*	This is the file menus.c for the Moira Client, which allows users
+/* $Id $
+ *
+ *	This is the file menus.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
  *	It Contains: All menu definitions.
  *
  *	Created: 	4/11/88
  *	By:		Chris D. Peterson
  *
- *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menus.c,v $
- *      $Author: danw $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menus.c,v 1.31 1998-01-07 17:13:01 danw Exp $
- *
- *  	Copyright 1988 by the Massachusetts Institute of Technology.
- *
- *	For further information on copyright and distribution
- *	see the file mit-copyright.h
+ * Copyright (C) 1988-1998 by the Massachusetts Institute of Technology.
+ * For copying and distribution information, please see the file
+ * <mit-copyright.h>.
  */
 
-#include <stdio.h>
-#include <menu.h>
-
-#include "mit-copyright.h"
+#include <mit-copyright.h>
+#include <moira.h>
 #include "defs.h"
 #include "f_defs.h"
 #include "globals.h"
 
+#include <stdio.h>
+
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menus.c,v 1.32 1998-02-05 22:50:45 danw Exp $");
 
 /* ------------------------- Second Tier Menus ------------------------- */
 

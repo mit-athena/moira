@@ -1,25 +1,29 @@
-/*
+/* $Id $
+ *
  * Verify that all Moira updates are successful
  *
- * Copyright 1988, 1991 by the Massachusetts Institute of Technology.
- * For copying and distribution information, see the file "mit-copyright.h".
- *
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrcheck/mrcheck.c,v 1.12 1998-01-07 17:13:11 danw Exp $
- * $Author: danw $
+ * Copyright (C) 1988-1998 by the Massachusetts Institute of Technology.
+ * For copying and distribution information, please see the file
+ * <mit-copyright.h>.
  */
 
-#ifndef lint
-static char *rcsid_chsh_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrcheck/mrcheck.c,v 1.12 1998-01-07 17:13:11 danw Exp $";
-#endif
-
-#include <stdio.h>
+#include <mit-copyright.h>
 #include <moira.h>
 #include <moira_site.h>
-#include "mit-copyright.h"
-#include <sys/time.h>
+
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrcheck/mrcheck.c,v 1.13 1998-02-05 22:50:53 danw Exp $");
+
+char *atot(char *itime);
+int process_server(int argc, char **argv, void *sqv);
+void disp_svc(char **argv, char *msg);
+int process_host(int argc, char **argv, void *sqv);
+void disp_sh(char **argv, char *msg);
+int usage(void);
 
 static int count = 0;
 static char *whoami;
@@ -51,9 +55,10 @@ char *atot(char *itime)
  * interval for later use.
  */
 
-int process_server(int argc, char **argv, struct save_queue *sq)
+int process_server(int argc, char **argv, void *sqv)
 {
   struct service *s;
+  struct save_queue *sq = sqv;
 
   if (atoi(argv[SVC_ENABLE]))
     {
@@ -79,9 +84,9 @@ int process_server(int argc, char **argv, struct save_queue *sq)
 
 /* Format the information about a service. */
 
-int disp_svc(char **argv, char *msg)
+void disp_svc(char **argv, char *msg)
 {
-  char *tmp = strsave(atot(argv[SVC_DFGEN]));
+  char *tmp = strdup(atot(argv[SVC_DFGEN]));
 
   printf("Service %s Interval %s %s/%s/%s %s\n",
 	 argv[SVC_SERVICE], argv[SVC_INTERVAL],
@@ -100,10 +105,10 @@ int disp_svc(char **argv, char *msg)
 
 /* Decide if the host has an error or not. */
 
-int process_host(int argc, char **argv, struct save_queue *sq)
+int process_host(int argc, char **argv, void *sqv)
 {
   struct service *s = NULL;
-  struct save_queue *sq1;
+  struct save_queue *sq = sqv, *sq1;
   char *update_int = NULL;
 
   for (sq1 = sq->q_next; sq1 != sq; sq1 = sq1->q_next)
@@ -131,9 +136,9 @@ int process_host(int argc, char **argv, struct save_queue *sq)
 
 /* Format the information about a host. */
 
-int disp_sh(char **argv, char *msg)
+void disp_sh(char **argv, char *msg)
 {
-  char *tmp = strsave(atot(argv[SH_LASTTRY]));
+  char *tmp = strdup(atot(argv[SH_LASTTRY]));
 
   printf("Host %s:%s %s/%s/%s/%s/%s %s\n",
 	 argv[SH_SERVICE], argv[SH_MACHINE],
@@ -158,7 +163,6 @@ int main(int argc, char *argv[])
   char *args[2], buf[BUFSIZ], *motd;
   struct save_queue *sq;
   int status;
-  int scream();
   int auth_required = 1;
 
   if ((whoami = strrchr(argv[0], '/')) == NULL)
@@ -203,14 +207,12 @@ int main(int argc, char *argv[])
 
   /* Check services first */
   args[0] = "*";
-  if ((status = mr_query("get_server_info", 1, args,
-			 process_server, (char *)sq)) &&
+  if ((status = mr_query("get_server_info", 1, args, process_server, sq)) &&
       status != MR_NO_MATCH)
     com_err(whoami, status, " while getting servers");
 
   args[1] = "*";
-  if ((status = mr_query("get_server_host_info", 2, args,
-			 process_host, (char *)sq)) &&
+  if ((status = mr_query("get_server_host_info", 2, args, process_host, sq)) &&
       status != MR_NO_MATCH)
     com_err(whoami, status, " while getting servers");
 
@@ -225,15 +227,6 @@ int main(int argc, char *argv[])
 
 punt:
   com_err(whoami, status, buf);
-  mr_disconnect();
-  exit(1);
-}
-
-
-int scream(void)
-{
-  com_err(whoami, 0,
-	  "Update to Moira returned a value -- programmer botch.\n");
   mr_disconnect();
   exit(1);
 }

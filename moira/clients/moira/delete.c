@@ -1,34 +1,39 @@
-#if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/delete.c,v 1.24 1998-01-07 17:12:55 danw Exp $";
-#endif
-
-/*	This is the file delete.c for the Moira Client, which allows users
+/* $Id $
+ *
+ *	This is the file delete.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
  *	It Contains: functions for deleting users and lists.
  *
  *	Created: 	5/18/88
  *	By:		Chris D. Peterson
  *
- *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/delete.c,v $
- *      $Author: danw $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/delete.c,v 1.24 1998-01-07 17:12:55 danw Exp $
- *
- *  	Copyright 1988 by the Massachusetts Institute of Technology.
- *
- *	For further information on copyright and distribution
- *	see the file mit-copyright.h
+ * Copyright (C) 1988-1998 by the Massachusetts Institute of Technology.
+ * For copying and distribution information, please see the file
+ * <mit-copyright.h>.
  */
 
-#include <stdio.h>
-#include <string.h>
+#include <mit-copyright.h>
 #include <moira.h>
 #include <moira_site.h>
-#include <menu.h>
-
-#include "mit-copyright.h"
 #include "defs.h"
 #include "f_defs.h"
 #include "globals.h"
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/delete.c,v 1.25 1998-02-05 22:50:39 danw Exp $");
+
+int CheckListForDeletion(char *name, Bool verbose);
+void CheckAce(char *type, char *name, Bool verbose);
+int CheckIfAce(char *name, char *type, Bool verbose);
+int RemoveItemFromLists(char *name, char *type, struct qelem **elem,
+			int verbose);
+int RemoveMembersOfList(char *name, Bool verbose);
+int DeleteUserGroup(char *name, Bool verbose);
+int DeleteHomeFilesys(char *name, Bool verbose);
+void AttemptToDeleteList(char **list_info, Bool ask_first);
 
 /*	Function Name: CheckListForDeletion
  *	Description: Check one of the lists in which we just removed a member.
@@ -45,12 +50,12 @@ int CheckListForDeletion(char *name, Bool verbose)
   char *args[2], buf[BUFSIZ], **info;
 
   if ((status = do_mr_query("count_members_of_list", 1, &name, StoreInfo,
-			    (char *) &elem)))
+			    &elem)))
     {
       com_err(program_name, status, " in DeleteList (count_members_of_list).");
       return SUB_NORMAL;
     }
-  info = (char **) elem->q_data;
+  info = elem->q_data;
   if (!strcmp(info[NAME], "0"))
     {
       if (verbose)
@@ -96,7 +101,7 @@ void CheckAce(char *type, char *name, Bool verbose)
 
   args[0] = type;
   args[1] = name;
-  status = do_mr_query("get_ace_use", 2, args, NullFunc, NULL);
+  status = do_mr_query("get_ace_use", 2, args, NULL, NULL);
   if (status != MR_NO_MATCH)
     return;			/* If this query fails the ace will
 				   not be deleted even if it is empty. */
@@ -136,14 +141,13 @@ int CheckIfAce(char *name, char *type, Bool verbose)
 
   args[0] = type;
   args[1] = name;
-  switch ((status = do_mr_query("get_ace_use", 2, args,
-				StoreInfo, (char *) &elem)))
+  switch ((status = do_mr_query("get_ace_use", 2, args, StoreInfo, &elem)))
     {
     case MR_NO_MATCH:
       return DM_NORMAL;
     case MR_SUCCESS:
       local = elem = QueueTop(elem);
-      info = (char **) local->q_data;
+      info = local->q_data;
       if (QueueCount(elem) == 1 &&
 	  !strcmp(info[0], "LIST") &&
 	  !strcmp(info[1], name))
@@ -159,7 +163,7 @@ int CheckIfAce(char *name, char *type, Bool verbose)
 	  Put_message("");
 	  for (; local != NULL; local = local->q_forw)
 	    {
-	      info = (char **) local->q_data;
+	      info = local->q_data;
 	      if (!strcmp(info[0], "LIST") &&
 		  !strcmp(info[1], name))
 		continue;
@@ -204,8 +208,7 @@ int RemoveItemFromLists(char *name, char *type, struct qelem **elem,
    * Get all list of which this item is a member, and store them in a queue.
    */
 
-  status = do_mr_query("get_lists_of_member", 2, args, StoreInfo,
-		       (char *) elem);
+  status = do_mr_query("get_lists_of_member", 2, args, StoreInfo, elem);
 
   if (status == MR_NO_MATCH)
     return SUB_NORMAL;
@@ -232,7 +235,7 @@ int RemoveItemFromLists(char *name, char *type, struct qelem **elem,
       Put_message(temp_buf);
       while (local)
 	{
-	  char **info = (char **) local->q_data;
+	  char **info = local->q_data;
 	  Print(1, &info[GLOM_NAME], (char *) NULL);
 	    local = local->q_forw;
 	}
@@ -256,10 +259,10 @@ int RemoveItemFromLists(char *name, char *type, struct qelem **elem,
   args[DM_TYPE] = type;
   while (local)
     {
-      char **info = (char **) local->q_data;
+      char **info = local->q_data;
       args[DM_LIST] = info[GLOM_NAME];
       if ((status = do_mr_query("delete_member_from_list",
-				3, args, Scream, NULL)))
+				3, args, NULL, NULL)))
 	{
 	  com_err(program_name, status, " in delete_member\nAborting\n");
 	  FreeQueue(*elem);
@@ -285,8 +288,7 @@ int RemoveMembersOfList(char *name, Bool verbose)
   /*
    * Get the members of this list.
    */
-  status = do_mr_query("get_members_of_list", 1, &name, StoreInfo,
-		       (char *) &elem);
+  status = do_mr_query("get_members_of_list", 1, &name, StoreInfo, &elem);
   if (status == MR_NO_MATCH)
     return SUB_NORMAL;
 
@@ -309,7 +311,7 @@ int RemoveMembersOfList(char *name, Bool verbose)
       Put_message(" ");	/* Blank Line. */
       while (local)
 	{
-	  char **info = (char **) local->q_data;
+	  char **info = local->q_data;
 	  Print(CountArgs(info), info, NULL);
 	  local = local->q_forw;
 	}
@@ -331,11 +333,11 @@ int RemoveMembersOfList(char *name, Bool verbose)
   args[0] = name;
   while (local)
     {
-      char **info = (char **) local->q_data;
+      char **info = local->q_data;
       args[1] = info[0];
       args[2] = info[1];
       if ((status = do_mr_query("delete_member_from_list",
-				3, args, Scream, NULL)))
+				3, args, NULL, NULL)))
 	{
 	  com_err(program_name, status, " in delete_member\nAborting\n");
 	  FreeQueue(elem);
@@ -360,7 +362,7 @@ int DeleteUserGroup(char *name, Bool verbose)
   int status, ans;
   char buf[BUFSIZ], *args[10];
 
-  status = do_mr_query("get_list_info", 1, &name, NullFunc, (char *) NULL);
+  status = do_mr_query("get_list_info", 1, &name, NULL, NULL);
   if (!status)
     {
       if (verbose)
@@ -403,8 +405,7 @@ int DeleteHomeFilesys(char *name, Bool verbose)
   int status;
   char buf[BUFSIZ];
 
-  switch ((status = do_mr_query("get_filesys_by_label", 1, &name, NullFunc,
-				NULL)))
+  switch ((status = do_mr_query("get_filesys_by_label", 1, &name, NULL, NULL)))
     {
     case MR_NO_MATCH:
       break;
@@ -424,7 +425,7 @@ int DeleteHomeFilesys(char *name, Bool verbose)
 	      return SUB_ERROR;
 	    }
 	}
-      if ((status = do_mr_query("delete_filesys", 1, &name, Scream,
+      if ((status = do_mr_query("delete_filesys", 1, &name, NULL,
 				NULL)) != MR_SUCCESS)
 	{
 	  com_err(program_name, status, " in delete_filesys.");
@@ -452,7 +453,7 @@ static int RealDeleteUser(char *name)
   char buf[BUFSIZ];
   int status;
 
-  if ((status = do_mr_query("delete_user", 1, &name, Scream,
+  if ((status = do_mr_query("delete_user", 1, &name, NULL,
 			    NULL)) != MR_SUCCESS)
     {
       com_err(program_name, status, ": user not deleted");
@@ -475,7 +476,7 @@ static int RealDeleteList(char *name)
   char buf[BUFSIZ];
   int status;
 
-  if ((status = do_mr_query("delete_list", 1, &name, Scream,
+  if ((status = do_mr_query("delete_list", 1, &name, NULL,
 			    NULL)) != MR_SUCCESS)
     {
       com_err(program_name, status, ": list not deleted");
@@ -513,7 +514,7 @@ void AttemptToDeleteList(char **list_info, Bool ask_first)
    * 3) This list is not an ace of another object.
    */
 
-  switch ((status = do_mr_query("delete_list", 1, &name, Scream, NULL)))
+  switch ((status = do_mr_query("delete_list", 1, &name, NULL, NULL)))
     {
     case MR_SUCCESS:
       Put_message("List Sucessfully Deleted.");
@@ -539,11 +540,11 @@ void AttemptToDeleteList(char **list_info, Bool ask_first)
 	{
 	  free(list_info[L_ACE_TYPE]);
 	  free(list_info[L_ACE_NAME]);
-	  list_info[L_ACE_TYPE] = Strsave("USER");
-	  list_info[L_ACE_NAME] = Strsave(user);
-	  SlipInNewName(list_info, Strsave(list_info[L_NAME]));
+	  list_info[L_ACE_TYPE] = strdup("USER");
+	  list_info[L_ACE_NAME] = strdup(user);
+	  SlipInNewName(list_info, strdup(list_info[L_NAME]));
 	  if ((status = do_mr_query("update_list", CountArgs(list_info) - 3,
-				    list_info, Scream, NULL)) != MR_SUCCESS)
+				    list_info, NULL, NULL)) != MR_SUCCESS)
 	    {
 	      com_err(program_name, status, " while updating list owner");
 	      Put_message("List may be only partly deleted.");
@@ -557,7 +558,7 @@ void AttemptToDeleteList(char **list_info, Bool ask_first)
 	  local = QueueTop(member_of);
 	  while (local)
 	    {
-	      char **info = (char **) local->q_data;
+	      char **info = local->q_data;
 	      if (CheckListForDeletion(info[LM_LIST], ask_first) == SUB_ERROR)
 		break;
 	      local = local->q_forw;
@@ -587,7 +588,7 @@ int DeleteList(int argc, char *argv[])
   list = NULL;
 
   switch ((status = do_mr_query("get_list_info", 1, argv + 1,
-				StoreInfo, (char *) &list)))
+				StoreInfo, &list)))
     {
     case MR_SUCCESS:
       break;
@@ -609,7 +610,7 @@ int DeleteList(int argc, char *argv[])
   one_list = (QueueCount(list) == 1);
   while (list)
     {
-      char **info = (char **) list->q_data;
+      char **info = list->q_data;
       if (one_list)
 	{
 	  sprintf(buf, "Are you sure that you want to delete the list %s",
@@ -660,7 +661,7 @@ int DeleteUser(int argc, char **argv)
   if (!Confirm("Are you sure that you want to delete this user?"))
     return DM_NORMAL;
 
-  status = do_mr_query("delete_user", 1, &name, Scream, NULL);
+  status = do_mr_query("delete_user", 1, &name, NULL, NULL);
   if (status != MR_IN_USE && status != 0)
     {
       com_err(program_name, status, ": user not deleted");
@@ -709,7 +710,7 @@ int DeleteUser(int argc, char **argv)
   local = member_of;
   while (local)
     {
-      char **info = (char **) local->q_data;
+      char **info = local->q_data;
       if (CheckListForDeletion(info[0], TRUE) == SUB_ERROR)
 	break;
       local = local->q_forw;

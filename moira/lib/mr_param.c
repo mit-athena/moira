@@ -1,24 +1,24 @@
-/*
- *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_param.c,v $
- *	$Author: danw $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_param.c,v 1.11 1998-01-07 17:13:31 danw Exp $
+/* $Id $
  *
- *	Copyright (C) 1987, 1990 by the Massachusetts Institute of Technology
- *	For copying and distribution information, please see the file
- *	<mit-copyright.h>.
+ * Deal with mrgdb (bleah!)
+ *
+ * Copyright (C) 1987-1998 by the Massachusetts Institute of Technology
+ * For copying and distribution information, please see the file
+ * <mit-copyright.h>.
  *
  */
 
-#ifndef lint
-static char *rcsid_mr_param_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_param.c,v 1.11 1998-01-07 17:13:31 danw Exp $";
-#endif
-
 #include <mit-copyright.h>
+#include <moira.h>
+#include "mr_private.h"
+
 #include <sys/types.h>
 #include <netinet/in.h>
-#include "mr_private.h"
-#include <string.h>
+
 #include <stdlib.h>
+#include <string.h>
+
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_param.c,v 1.12 1998-02-05 22:51:29 danw Exp $");
 
 /*
  * GDB operations to send and recieve RPC requests and replies.
@@ -213,7 +213,7 @@ int mr_start_recv(OPERATION op, HALF_CONNECTION hcon, struct mr_params **argp)
   return mr_cont_recv(op, hcon, argp);
 }
 
-mr_destroy_reply(mr_params *reply)
+void mr_destroy_reply(mr_params *reply)
 {
   int i;
   if (reply)

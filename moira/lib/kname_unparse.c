@@ -1,12 +1,22 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/kname_unparse.c,v 1.2 1998-01-05 19:53:05 danw Exp $
+/* $Id $
  *
  * Don't know why this function is not in libkrb.a.  It's the inverse
  * of kname_parse() which is there.
+ *
+ * Copyright (C) 1993-1998 by the Massachusetts Institute of Technology
+ * For copying and distribution information, please see the file
+ * <mit-copyright.h>.
  */
 
+#include <mit-copyright.h>
+#include <moira.h>
+
 #include <stdio.h>
+
 #include <des.h>
 #include <krb.h>
+
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/kname_unparse.c,v 1.3 1998-02-05 22:51:24 danw Exp $");
 
 /* Turn a principal, instance, realm triple into a single non-ambiguous
  * string.  This is the inverse of kname_parse().  It returns a pointer

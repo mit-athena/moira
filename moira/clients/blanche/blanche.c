@@ -1,32 +1,25 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.36 1998-01-06 20:39:26 danw Exp $
+/* $Id $
  *
  * Command line oriented Moira List tool.
  *
  * by Mark Rosenstein, September 1988.
  *
- * Copyright 1989 by the Massachusetts Institute of Technology.
- *
- * (c) Copyright 1988 by the Massachusetts Institute of Technology.
+ * Copyright (C) 1988-1998 by the Massachusetts Institute of Technology.
  * For copying and distribution information, please see the file
  * <mit-copyright.h>.
  */
 
-/* ### Aren't there a lot of sq abstraction barrier violations here?
-   Do we need to improve the support for queue operations? */
-
 #include <mit-copyright.h>
-#include <errno.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <ctype.h>
-#include <string.h>
 #include <moira.h>
 #include <moira_site.h>
 
-#ifndef LINT
-static char blanche_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.36 1998-01-06 20:39:26 danw Exp $";
-#endif
+#include <ctype.h>
+#include <errno.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.37 1998-02-05 22:50:31 danw Exp $");
 
 struct member {
   int type;
@@ -55,9 +48,19 @@ struct save_queue *addlist, *dellist, *memberlist, *synclist;
 
 char *listname, *whoami;
 
-int show_list_info(), show_list_count(), get_list_members(), scream();
-int show_list_members(), membercmp(), save_list_info();
-struct member *parse_member();
+void usage(char **argv);
+void show_list_member(struct member *memberstruct);
+int show_list_info(int argc, char **argv, void *hint);
+int save_list_info(int argc, char **argv, void *hint);
+int show_list_count(int argc, char **argv, void *hint);
+void recursive_display_list_members(void);
+void unique_add_member(struct save_queue *q, struct member *m);
+int get_list_members(int argc, char **argv, void *sq);
+void get_members_from_file(char *filename, struct save_queue *queue);
+int collect(int argc, char **argv, void *l);
+struct member *parse_member(char *s);
+int membercmp(const void *mem1, const void *mem2);
+int sq_count_elts(struct save_queue *q);
 
 int main(int argc, char **argv)
 {
@@ -327,18 +330,18 @@ int main(int argc, char **argv)
 	    case M_ANY:
 	    case M_USER:
 	      argv[7] = "USER";
-	      status = mr_query("add_list", 10, argv, scream, NULL);
+	      status = mr_query("add_list", 10, argv, NULL, NULL);
 	      if (owner->type != M_ANY || status != MR_USER)
 		break;
 
 	    case M_LIST:
 	      argv[7] = "LIST";
-	      status = mr_query("add_list", 10, argv, scream, NULL);
+	      status = mr_query("add_list", 10, argv, NULL, NULL);
 	      break;
 
 	    case M_KERBEROS:
 	      argv[7] = "KERBEROS";
-	      status = mr_query("add_list", 10, argv, scream, NULL);
+	      status = mr_query("add_list", 10, argv, NULL, NULL);
 	      break;
 	    }
 	}
@@ -347,7 +350,7 @@ int main(int argc, char **argv)
 	  argv[7] = "USER";
 	  argv[8] = getenv("USER");
 
-	  status = mr_query("add_list", 10, argv, scream, NULL);
+	  status = mr_query("add_list", 10, argv, NULL, NULL);
 	}
 
       if (status)
@@ -361,7 +364,7 @@ int main(int argc, char **argv)
       char *argv[11];
 
       status = mr_query("get_list_info", 1, &listname,
-			save_list_info, (char *)argv);
+			save_list_info, argv);
       if (status)
 	{
 	  com_err(whoami, status, "while getting list information");
@@ -392,23 +395,23 @@ int main(int argc, char **argv)
 	    case M_ANY:
 	    case M_USER:
 	      argv[8] = "USER";
-	      status = mr_query("update_list", 11, argv, scream, NULL);
+	      status = mr_query("update_list", 11, argv, NULL, NULL);
 	      if (owner->type != M_ANY || status != MR_USER)
 		break;
 
 	    case M_LIST:
 	      argv[8] = "LIST";
-	      status = mr_query("update_list", 11, argv, scream, NULL);
+	      status = mr_query("update_list", 11, argv, NULL, NULL);
 	      break;
 
 	    case M_KERBEROS:
 	      argv[8] = "KERBEROS";
-	      status = mr_query("update_list", 11, argv, scream, NULL);
+	      status = mr_query("update_list", 11, argv, NULL, NULL);
 	      break;
 	    }
 	}
       else
-	status = mr_query("update_list", 11, argv, scream, NULL);
+	status = mr_query("update_list", 11, argv, NULL, NULL);
 
       if (status)
 	com_err(whoami, status, "while updating list.");
@@ -442,7 +445,7 @@ int main(int argc, char **argv)
   if (syncflg)
     {
       status = mr_query("get_members_of_list", 1, &listname,
-			get_list_members, (char *)memberlist);
+			get_list_members, memberlist);
       if (status)
 	{
 	  com_err(whoami, status, "getting members of list %s", listname);
@@ -479,10 +482,10 @@ int main(int argc, char **argv)
       if (memberstruct->type == M_STRING &&
 	  (p = strchr(memberstruct->name, '@')))
 	{
-	  char *host = canonicalize_hostname(strsave(++p));
+	  char *host = canonicalize_hostname(strdup(++p));
 	  static char **mailhubs = NULL;
 	  char *argv[4];
-	  int i, collect();
+	  int i;
 
 	  if (!mailhubs)
 	    {
@@ -492,7 +495,7 @@ int main(int argc, char **argv)
 	      mailhubs = malloc(sizeof(char *));
 	      mailhubs[0] = NULL;
 	      status = mr_query("get_alias", 3, argv, collect,
-				(char *)&mailhubs);
+				&mailhubs);
 	      if (status != MR_SUCCESS && status != MR_NO_MATCH)
 		{
 		  com_err(whoami, status,
@@ -504,7 +507,7 @@ int main(int argc, char **argv)
 	    {
 	      if (!strcasecmp(p, host))
 		{
-		  host = strsave(memberstruct->name);
+		  host = strdup(memberstruct->name);
 		  *(strchr(memberstruct->name, '@')) = 0;
 		  memberstruct->type = M_ANY;
 		  fprintf(stderr, "Warning: \"STRING:%s\" converted to "
@@ -528,7 +531,7 @@ int main(int argc, char **argv)
 	case M_ANY:
 	case M_USER:
 	  membervec[1] = "USER";
-	  status = mr_query("add_member_to_list", 3, membervec, scream, NULL);
+	  status = mr_query("add_member_to_list", 3, membervec, NULL, NULL);
 	  if (status == MR_SUCCESS)
 	    break;
 	  else if (status != MR_USER || memberstruct->type != M_ANY)
@@ -541,7 +544,7 @@ int main(int argc, char **argv)
 	case M_LIST:
 	  membervec[1] = "LIST";
 	  status = mr_query("add_member_to_list", 3, membervec,
-			    scream, NULL);
+			    NULL, NULL);
 	  if (status == MR_SUCCESS)
 	    {
 	      if (!strcmp(membervec[0], getenv("USER")))
@@ -581,7 +584,7 @@ int main(int argc, char **argv)
 
 	  membervec[1] = "STRING";
 	  status = mr_query("add_member_to_list", 3, membervec,
-			    scream, NULL);
+			    NULL, NULL);
 	  if (status != MR_SUCCESS)
 	    {
 	      com_err(whoami, status, "while adding member %s to %s",
@@ -592,7 +595,7 @@ int main(int argc, char **argv)
 	case M_KERBEROS:
 	  membervec[1] = "KERBEROS";
 	  status = mr_query("add_member_to_list", 3, membervec,
-			    scream, NULL);
+			    NULL, NULL);
 	  if (status != MR_SUCCESS)
 	    {
 	      com_err(whoami, status, "while adding member %s to %s",
@@ -618,7 +621,7 @@ int main(int argc, char **argv)
 	case M_USER:
 	  membervec[1] = "USER";
 	  status = mr_query("delete_member_from_list", 3, membervec,
-			    scream, NULL);
+			    NULL, NULL);
 	  if (status == MR_SUCCESS)
 	    break;
 	  else if ((status != MR_USER && status != MR_NO_MATCH) ||
@@ -632,7 +635,7 @@ int main(int argc, char **argv)
 	case M_LIST:
 	  membervec[1] = "LIST";
 	  status = mr_query("delete_member_from_list", 3, membervec,
-			    scream, NULL);
+			    NULL, NULL);
 	  if (status == MR_SUCCESS)
 	    break;
 	  else if ((status != MR_LIST && status != MR_NO_MATCH) ||
@@ -662,7 +665,7 @@ int main(int argc, char **argv)
 	case M_STRING:
 	  membervec[1] = "STRING";
 	  status = mr_query("delete_member_from_list", 3, membervec,
-			    scream, NULL);
+			    NULL, NULL);
 	  if (status == MR_STRING && memberstruct->type == M_ANY)
 	    {
 	      com_err(whoami, 0, " Unable to find member %s to delete from %s",
@@ -686,7 +689,7 @@ int main(int argc, char **argv)
 	case M_KERBEROS:
 	  membervec[1] = "KERBEROS";
 	  status = mr_query("delete_member_from_list", 3, membervec,
-			    scream, NULL);
+			    NULL, NULL);
 	  if (status != MR_SUCCESS)
 	    {
 	      com_err(whoami, status, "while deleting member %s from %s",
@@ -704,7 +707,7 @@ int main(int argc, char **argv)
       else
 	{
 	  status = mr_query("get_members_of_list", 1, &listname,
-			    get_list_members, (char *)memberlist);
+			    get_list_members, memberlist);
 	  if (status)
 	    com_err(whoami, status, "while getting members of list %s",
 		    listname);
@@ -718,7 +721,7 @@ int main(int argc, char **argv)
   exit(success ? 0 : 1);
 }
 
-usage(char **argv)
+void usage(char **argv)
 {
   fprintf(stderr, "Usage: %s listname [options]\n", argv[0]);
   fprintf(stderr, "Options are\n");
@@ -758,7 +761,7 @@ usage(char **argv)
 
 /* Display the members stored in the queue */
 
-show_list_member(struct member *memberstruct)
+void show_list_member(struct member *memberstruct)
 {
   char *s = "";
 
@@ -808,7 +811,7 @@ show_list_member(struct member *memberstruct)
 
 /* Show the retrieved information about a list */
 
-int show_list_info(int argc, char **argv, int hint)
+int show_list_info(int argc, char **argv, void *hint)
 {
   printf("List: %s\n", argv[0]);
   printf("Description: %s\n", argv[9]);
@@ -831,9 +834,9 @@ int show_list_info(int argc, char **argv, int hint)
 
 /* Copy retrieved information about a list into a new argv */
 
-int save_list_info(int argc, char **argv, int hint)
+int save_list_info(int argc, char **argv, void *hint)
 {
-  char **nargv = (char **)hint;
+  char **nargv = hint;
 
   for (argc = 0; argc < 10; argc++)
     nargv[argc + 1] = strdup(argv[argc]);
@@ -842,15 +845,16 @@ int save_list_info(int argc, char **argv, int hint)
 
 /* Show the retrieve list member count */
 
-show_list_count(int argc, char **argv, int hint)
+int show_list_count(int argc, char **argv, void *hint)
 {
   printf("Members: %s\n", argv[0]);
+  return MR_CONT;
 }
 
 
 /* Recursively find all of the members of listname, and then display them */
 
-recursive_display_list_members(void)
+void recursive_display_list_members(void)
 {
   int status, count, savecount;
   struct save_queue *lists, *members;
@@ -868,7 +872,7 @@ recursive_display_list_members(void)
       sq_destroy(memberlist);
       memberlist = sq_create();
       status = mr_query("get_members_of_list", 1, &(m->name),
-			get_list_members, (char *)memberlist);
+			get_list_members, memberlist);
       if (status)
 	com_err(whoami, status, "while getting members of list %s", m->name);
       while (sq_get_data(memberlist, &m1))
@@ -892,7 +896,7 @@ recursive_display_list_members(void)
 
 /* add a struct member to a queue if that member isn't already there. */
 
-unique_add_member(struct save_queue *q, struct member *m)
+void unique_add_member(struct save_queue *q, struct member *m)
 {
   struct save_queue *qp;
 
@@ -907,8 +911,9 @@ unique_add_member(struct save_queue *q, struct member *m)
 
 /* Collect the retrieved members of the list */
 
-int get_list_members(int argc, char **argv, struct save_queue *q)
+int get_list_members(int argc, char **argv, void *sq)
 {
+  struct save_queue *q = sq;
   struct member *m;
 
   m = malloc(sizeof(struct member));
@@ -927,23 +932,14 @@ int get_list_members(int argc, char **argv, struct save_queue *q)
       m->type = M_KERBEROS;
       break;
     }
-  m->name = strsave(argv[1]);
+  m->name = strdup(argv[1]);
   sq_save_data(q, m);
   return MR_CONT;
 }
 
 
-/* Called only if a query returns a value that we weren't expecting */
-
-scream(void)
-{
-  fprintf(stderr, "Programmer botch\n");
-  exit(3);
-}
-
-
 /* Open file, parse members from file, and put them on the specified queue */
-get_members_from_file(char *filename, struct save_queue *queue)
+void get_members_from_file(char *filename, struct save_queue *queue)
 {
   FILE *in;
   char buf[BUFSIZ];
@@ -976,14 +972,15 @@ get_members_from_file(char *filename, struct save_queue *queue)
 
 /* Collect the possible expansions of the alias MAILHUB */
 
-int collect(int argc, char **argv, char ***list)
+int collect(int argc, char **argv, void *l)
 {
+  char ***list = l;
   int i;
 
   for (i = 0; (*list)[i]; i++)
     ;
   *list = realloc(*list, (i + 2) * sizeof(char *));
-  (*list)[i] = strsave(argv[2]);
+  (*list)[i] = strdup(argv[2]);
   (*list)[i + 1] = NULL;
   return MR_CONT;
 }
@@ -1034,11 +1031,11 @@ struct member *parse_member(char *s)
 	  *(--p) = ':';
 	  m->name = s;
 	}
-      m->name = strsave(m->name);
+      m->name = strdup(m->name);
     }
   else
     {
-      m->name = strsave(s);
+      m->name = strdup(s);
       m->type = M_ANY;
     }
   return m;
@@ -1055,8 +1052,10 @@ struct member *parse_member(char *s)
  * > 0 if the second member is less (the first member is greater).
  */
 
-int membercmp(struct member *m1, struct member *m2)
+int membercmp(const void *mem1, const void *mem2)
 {
+  const struct member *m1 = mem1, *m2 = mem2;
+
   if (m1->type == M_ANY || m2->type == M_ANY || (m1->type == m2->type))
     return strcmp(m1->name, m2->name);
   else

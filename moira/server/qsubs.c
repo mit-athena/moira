@@ -1,25 +1,22 @@
-/*
- *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsubs.c,v $
- *	$Author: danw $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsubs.c,v 1.13 1998-01-06 20:40:18 danw Exp $
+/* $Id: qsubs.c,v 1.14 1998-02-05 22:51:50 danw Exp $
  *
- *	Copyright (C) 1987 by the Massachusetts Institute of Technology
- *	For copying and distribution information, please see the file
- *	<mit-copyright.h>.
- *
+ * Copyright (C) 1987-1998 by the Massachusetts Institute of Technology
+ * For copying and distribution information, please see the file
+ * <mit-copyright.h>.
  */
 
-#ifndef lint
-static char *rcsid_qsubs_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsubs.c,v 1.13 1998-01-06 20:40:18 danw Exp $";
-#endif lint
-
 #include <mit-copyright.h>
-#include <moira.h>
 #include "mr_server.h"
 #include "query.h"
 
+#include <stdlib.h>
+
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsubs.c,v 1.14 1998-02-05 22:51:50 danw Exp $");
+
 extern struct query Queries2[];
 extern int QueryCount2;
+
+int qcmp(const void *q1, const void *q2);
 
 struct query *get_query_by_name(char *name, int version)
 {
@@ -51,7 +48,8 @@ struct query *get_query_by_name(char *name, int version)
   return NULL;
 }
 
-void list_queries(int version, int (*action)(), char *actarg)
+void list_queries(int version, int (*action)(int, char *[], void *),
+		  void *actarg)
 {
   struct query *q;
   int i;
@@ -60,7 +58,6 @@ void list_queries(int version, int (*action)(), char *actarg)
   char qnames[80];
   char *qnp;
   int count;
-  int qcmp();
 
   count = QueryCount2;
   if (!squeries2)
@@ -88,7 +85,8 @@ void list_queries(int version, int (*action)(), char *actarg)
   (*action)(1, &qnp, actarg);
 }
 
-void help_query(struct query *q, int (*action)(), char *actarg)
+void help_query(struct query *q, int (*action)(int, char *[], void *),
+		void *actarg)
 {
   int argcount;
   int i;
@@ -146,7 +144,7 @@ void help_query(struct query *q, int (*action)(), char *actarg)
   (*action)(argcount, argv, actarg);
 }
 
-int qcmp(struct query **q1, struct query **q2)
+int qcmp(const void *q1, const void *q2)
 {
-  return strcmp((*q1)->name, (*q2)->name);
+  return strcmp((*(struct query **)q1)->name, (*(struct query **)q2)->name);
 }

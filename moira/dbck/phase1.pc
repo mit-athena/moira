@@ -1,29 +1,54 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase1.pc,v 1.4 1998-01-05 19:52:34 danw Exp $
+/* $Id: phase1.pc,v 1.5 1998-02-05 22:51:03 danw Exp $
  *
- *  (c) Copyright 1988 by the Massachusetts Institute of Technology.
- *  For copying and distribution information, please see the file
- *  <mit-copyright.h>.
+ * (c) Copyright 1988-1998 by the Massachusetts Institute of Technology.
+ * For copying and distribution information, please see the file
+ * <mit-copyright.h>.
  */
 
 #include <mit-copyright.h>
 #include <moira.h>
+#include "dbck.h"
+
 #include <stdio.h>
 #include <stdlib.h>
-#include "dbck.h"
+#include <string.h>
 EXEC SQL INCLUDE sqlca;
 
-static char phase1_qc_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase1.pc,v 1.4 1998-01-05 19:52:34 danw Exp $";
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase1.pc,v 1.5 1998-02-05 22:51:03 danw Exp $");
 
 EXEC SQL WHENEVER SQLERROR DO dbmserr();
+int show_user_id(void *user);
+void handle_duplicate_logins(struct save_queue *sq);
+void fix_user_id(void *user);
+void cant_fix(void *id);
+int show_mach_id(void *machine);
+int show_mach_name(void *machine);
+void fix_mach_id(void *machine);
+int show_snet_name(void *subnet);
+int show_clu_id(void *cluster);
+int show_clu_name(void *cluster);
+void fix_clu_id(void *cluster);
+int show_list_id(void *list);
+int show_list_name(void *list);
+void fix_list_id(void *list);
+int show_fs_id(void *filesys);
+void fix_fs_id(void *filesys);
+int show_fs_name(void *fs);
+int show_np_id(void *nfsphys);
+void fix_np_id(void *nfsphys);
+int show_str_id(void *string);
+int print_str_id(void *id);
+void print_dup_map(int key, void *data, void *hint);
 
-int show_user_id(struct user *u)
+int show_user_id(void *user)
 {
+  struct user *u = user;
   printf("User %s (%s, status %d) has duplicate ID\n",
 	 u->login, u->fullname, u->status);
   return 0;
 }
 
-handle_duplicate_logins(struct save_queue *sq)
+void handle_duplicate_logins(struct save_queue *sq)
 {
   struct user *u, *uu, *tmp;
 
@@ -45,9 +70,9 @@ handle_duplicate_logins(struct save_queue *sq)
 	      printf("User %s (%s, status %d) have duplicate logins\n",
 		     uu->login, uu->fullname, uu->status);
 	      if (!strcmp(u->fullname, uu->fullname) &&
-		  single_fix("Delete the second one"))
+		  single_fix("Delete the second one", 0))
 		single_delete("users", "users_id", uu->users_id);
-	      else if (single_fix("Unregister the second one"))
+	      else if (single_fix("Unregister the second one", 0))
 		{
 		  EXEC SQL BEGIN DECLARE SECTION;
 		  int id = uu->users_id, rowcount;
@@ -73,126 +98,143 @@ handle_duplicate_logins(struct save_queue *sq)
     }
 }
 
-fix_user_id(struct user *u)
+void fix_user_id(void *user)
 {
+  struct user *u = user;
   u->users_id = generic_fix_id("users", "users_id", "login",
 			       u->users_id, u->login);
 }
 
 
-cant_fix(int id)
+void cant_fix(void *id)
 {
   printf("Sorry, don't know how to fix that\n");
 }
 
-int show_mach_id(struct machine *m)
+int show_mach_id(void *machine)
 {
+  struct machine *m = machine;
   printf("Machine %s has duplicate ID %d\n", m->name, m->mach_id);
   return 0;
 }
 
-int show_mach_name(struct machine *m)
+int show_mach_name(void *machine)
 {
+  struct machine *m = machine;
   printf("Machine %s (%d) has duplicate name\n", m->name, m->mach_id);
   return 0;
 }
 
-fix_mach_id(struct machine *m)
+void fix_mach_id(void *machine)
 {
+  struct machine *m = machine;
   m->mach_id = generic_fix_id("machine", "mach_id", "name",
 			      m->mach_id, m->name);
 }
 
-int show_snet_name(struct subnet *s)
+int show_snet_name(void *subnet)
 {
+  struct subnet *s = subnet;
   printf("Subnet %s (%d) has duplicate name\n", s->name, s->snet_id);
   return 0;
 }
 
-int show_clu_id(struct cluster *c)
+int show_clu_id(void *cluster)
 {
+  struct cluster *c = cluster;
   printf("Cluster %s has duplicate ID %d\n", c->name, c->clu_id);
   return 0;
 }
 
-int show_clu_name(struct cluster *c)
+int show_clu_name(void *cluster)
 {
+  struct cluster *c = cluster;
   printf("Cluster %s (%d) has duplicate name\n", c->name, c->clu_id);
   return 0;
 }
 
-fix_clu_id(struct cluster *c)
+void fix_clu_id(void *cluster)
 {
+  struct cluster *c = cluster;
   c->clu_id = generic_fix_id("cluster", "clu_id", "name", c->clu_id, c->name);
 }
 
-int show_list_id(struct list *l)
+int show_list_id(void *list)
 {
+  struct list *l = list;
   printf("List %s has duplicate ID %d\n", l->name, l->list_id);
   return 0;
 }
 
-int show_list_name(struct list *l)
+int show_list_name(void *list)
 {
+  struct list *l = list;
   printf("List %s (%d) has duplicate name\n", l->name, l->list_id);
   return 0;
 }
 
-fix_list_id(struct list *l)
+void fix_list_id(void *list)
 {
+  struct list *l = list;
   l->list_id = generic_fix_id("list", "list_id", "name", l->list_id, l->name);
 }
 
-int show_fs_id(struct filesys *f)
+int show_fs_id(void *filesys)
 {
+  struct filesys *f = filesys;
   printf("Filesys %s has duplicate ID %d\n", f->name, f->filsys_id);
   return 0;
 }
 
-fix_fs_id(struct filesys *f)
+void fix_fs_id(void *filesys)
 {
+  struct filesys *f = filesys;
   f->filsys_id = generic_fix_id("filesys", "filsys_id", "label",
 				f->filsys_id, f->name);
 }
 
-int show_fs_name(struct filesys *fs)
+int show_fs_name(void *filesys)
 {
+  struct filesys *fs = filesys;
   printf("Filesys %s (%d) has duplicate name\n", fs->name, fs->filsys_id);
   return 0;
 }
 
-int show_np_id(struct nfsphys *n)
+int show_np_id(void *nfsphys)
 {
+  struct nfsphys *n = nfsphys;
   printf("NfsPhys %s:%s has duplicate ID %d\n",
 	 ((struct machine *)hash_lookup(machines, n->mach_id))->name,
 	 n->dir, n->nfsphys_id);
   return 0;
 }
 
-fix_np_id(struct nfsphys *n)
+void fix_np_id(void *nfsphys)
 {
+  struct nfsphys *n = nfsphys;
   n->nfsphys_id = generic_fix_id("nfsphys", "nfsphys_id", "dir",
 				 n->nfsphys_id, n->dir);
 }
 
-int show_str_id(struct string *s)
+int show_str_id(void *string)
 {
+  struct string *s = string;
   printf("String %s has duplicate ID %d\n", s->name, s->string_id);
   return 0;
 }
 
-int print_str_id(int id)
+int print_str_id(void *id)
 {
-  printf("String %d is a duplicate\n", id);
+  printf("String %d is a duplicate\n", (int)id);
   return 0;
 }
 
-print_dup_map(int key, int data, char *hint)
+void print_dup_map(int key, void *data, void *hint)
 {
-  printf("String %d is a duplicate of string %d\n", key, data);
+  printf("String %d is a duplicate of string %d\n", key, (int)data);
 }
 
-phase1(void)
+void phase1(void)
 {
   EXEC SQL BEGIN DECLARE SECTION;
   char name[81], name1[81], last[17], first[17], buf[257];
@@ -238,18 +280,18 @@ phase1(void)
 	break;
       q++;
       /*  If id2 is already stored, skip this row. */
-      i = int_hash_lookup(string_dups, id2);
+      i = (int)hash_lookup(string_dups, id2);
       if (i > 0)
 	continue;
       /*  Follow the chain of id1 equivalent IDs back to the lowest one. */
       id = id1;
-      while ((tmp = int_hash_lookup(string_dups, id)) > 0)
+      while ((tmp = (int)hash_lookup(string_dups, id)) > 0)
 	id = tmp;
-      int_hash_store(string_dups, id2, id);
+      hash_store(string_dups, id2, (void *)id);
     }
   EXEC SQL CLOSE csr116;
   dprintf("found %d duplicates\n", q);
-  int_hash_step(string_dups, print_dup_map, NULL);
+  hash_step(string_dups, print_dup_map, NULL);
   /* We don't want to delete the duplicates now because if the dbck
      is cancelled, a LOT of state will be lost. So, we'll just let
      them not get marked as used and then phase3 will clean them up */
@@ -273,7 +315,7 @@ phase1(void)
       s = malloc(sizeof(struct string));
       if (!s)
 	out_of_mem("storing strings");
-      s->name = strsave(strtrim(buf));
+      s->name = strdup(strtrim(buf));
       s->string_id = id;
       s->refc = 0;
       retval = hash_store(strings, id, s);
@@ -315,7 +357,7 @@ phase1(void)
       strcpy(u->login, strtrim(name));
       u->potype = buf[0];
       sprintf(buf, "%s, %s", strtrim(last), strtrim(first));
-      u->fullname = strsave(buf);
+      u->fullname = strdup(buf);
       u->status = status;
       u->users_id = id;
       u->modby = sid;

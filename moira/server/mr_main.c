@@ -1,4 +1,4 @@
-/* $Id: mr_main.c,v 1.46 1998-05-30 18:10:16 danw Exp $
+/* $Id: mr_main.c,v 1.47 1998-06-04 14:52:01 danw Exp $
  *
  * Moira server process.
  *
@@ -30,7 +30,7 @@
 
 #include <krb.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.46 1998-05-30 18:10:16 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.47 1998-06-04 14:52:01 danw Exp $");
 
 extern char *krb_get_lrealm(char *, int);
 
@@ -345,7 +345,7 @@ void reapchild(int x)
 	inc_running = 0;
       if (!takedown && (WTERMSIG(status) != 0 || WEXITSTATUS(status) != 0))
 	{
-	  critical_error("moirad", "%d: child exits with signal %d status %d",
+	  critical_alert("moirad", "%d: child exits with signal %d status %d",
 			 pid, WTERMSIG(status), WEXITSTATUS(status));
 	}
     }

@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/afssync/sync.qc,v 1.5 1992-06-07 04:20:08 probe Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/afssync/sync.qc,v 1.6 1992-06-07 04:33:22 probe Exp $
  *
  *
  *  (c) Copyright 1989 by the Massachusetts Institute of Technology.
@@ -150,7 +150,7 @@ do_passwd()
     users = create_hash(10000);
 ##  range of u is users
 ##  retrieve (login = u.#login, uid = u.#uid, id = u.users_id)
-##	where u.#status = 1 {
+##	where u.#status = 1 or u.#status = 2 {
 	    strtrim(login);
 	    hash_store(users, id, uid);
 	    status = PR_INewEntry(NULL, login, uid, 0);
@@ -189,14 +189,12 @@ do_groups()
 	    status = PR_INewEntry(NULL, namebuf, -gid, SYSADMINID);
 	    if (status)
 		prserror(status, "adding list %s gid %d", namebuf, -gid);
-	    else {
-		if (hide) {
-		    status = PR_SetFieldsEntry
-			(NULL/*call*/, -gid,
-			 PR_SF_ALLBITS/*mask*/,
-			 PRP_STATUS_MEM >> PRIVATE_SHIFT /*flags*/,
-			 0/*ngroups*/, 0/*nusers*/, 0/*spare1*/, 0/*spare2*/);
-		}
+	    if (hide) {
+		status = PR_SetFieldsEntry
+		    (NULL/*call*/, -gid,
+		     PR_SF_ALLBITS/*mask*/,
+		     PRP_STATUS_MEM >> PRIVATE_SHIFT /*flags*/,
+		     0/*ngroups*/, 0/*nusers*/, 0/*spare1*/, 0/*spare2*/);
 		if (status)
 		    prserror(status, "setting flags on list %s", namebuf);
 	    }

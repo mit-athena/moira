@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.23 1994-08-09 21:41:24 tytso Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.24 1994-09-13 16:36:04 tytso Exp $
  *
  * Command line oriented Moira List tool.
  *
@@ -23,7 +23,7 @@
 #include <moira_site.h>
 
 #ifndef LINT
-static char blanche_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.23 1994-08-09 21:41:24 tytso Exp $";
+static char blanche_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.24 1994-09-13 16:36:04 tytso Exp $";
 #endif
 
 
@@ -239,6 +239,14 @@ char **argv;
 
     /* Process the add list */
     while (sq_get_data(addlist, &memberstruct)) {
+	if ((memberstruct->type == M_STRING ||
+	     memberstruct->type == M_ANY) &&
+	    strchr(memberstruct->name, '\'')) {
+		fprintf(stderr, "Illegal character \"'\" in \"STRING:%s\", aborting blanche.\n",
+			memberstruct->name);
+		fprintf(stderr, "No changes were made.\n");
+		exit(1);
+	}
 	/* canonicalize string if necessary */
 	if (memberstruct->type == M_STRING &&
 	    (p = strchr(memberstruct->name, '@'))) {
@@ -310,6 +318,14 @@ char **argv;
 	    if (status != MR_SUCCESS)
 	      com_err(whoami, status, "while adding member %s to %s",
 		      memberstruct->name, listname);
+	    else if (!strchr(memberstruct->name, '@') &&
+		     !strchr(memberstruct->name, '!') &&
+		     !strchr(memberstruct->name, '%')) {
+		fprintf(stderr, "\nWARNING: \"STRING:%s\" was just added to list \"%s\".\n",
+			memberstruct->name, listname);
+		fprintf(stderr, "\tIf %s is a mailing list, this may cause it to stop working.\n", listname);
+		fprintf(stderr, "\tYou should consider removing \"STRING:%s\" from the list.\n", memberstruct->name);
+  	    }
 	    break;
 	case M_KERBEROS:
 	    membervec[1] = "KERBEROS";

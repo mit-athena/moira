@@ -1,6 +1,6 @@
 #
 # 	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/Makefile,v $
-#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/Makefile,v 1.3 1988-01-21 16:01:21 mar Exp $
+#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/Makefile,v 1.4 1988-07-21 15:06:22 mar Exp $
 #
 
 
@@ -17,20 +17,19 @@ CFLAGS= ${INCDIRS} ${COPTS}
 
 .ct.o: ; make_commands $*.ct
 
-all: smstest smsfinger
+all: smstest
 
-smstest: test_cmds.o test.o ${LIBS} 
+smstest: test_cmds.o test.o execute_cmd.o ${LIBS} 
 	rm -f smstest
-	cc ${COPTS} -o $@ test_cmds.o test.o ${LIBS} ${LLIBS}
+	cc ${COPTS} -o $@ test_cmds.o test.o execute_cmd.o \
+		${LIBS} ${LLIBS}
 
-smsfinger: smsfinger.o ${LIBS} 
-	cc ${COPTS} -o $@ smsfinger.o ${LIBS} ${LLIBS}
+execute_cmd.o: execute_cmd.c
+	cc -I/paris/source/4.3/athena.lib/ss -O -c execute_cmd.c
 
 clean:
 	rm -f *.o core \#* *~ gmon.out
-	rm -f smstest smsfinger
+	rm -f smstest
 
 install:
 	install smstest ../bin
-# NOT /usr/athena!!!
-	install smsfinger ../bin

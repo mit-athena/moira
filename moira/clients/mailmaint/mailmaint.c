@@ -1,10 +1,10 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v 1.8 1987-10-29 01:50:10 ambar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v 1.9 1988-05-16 22:48:55 mar Exp $
  */
 
 #ifndef lint
-static char rcsid_mailmaint_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v 1.8 1987-10-29 01:50:10 ambar Exp $";
+static char rcsid_mailmaint_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v 1.9 1988-05-16 22:48:55 mar Exp $";
 #endif lint
 
 /***********************************************************************/
@@ -19,6 +19,8 @@ static char rcsid_mailmaint_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/
 #include <strings.h>
 #include <curses.h>
 #include <sys/types.h>
+#include <varargs.h>
+#include <com_err.h>
 #include <ctype.h>
 #include "mit-copyright.h"
 
@@ -35,6 +37,7 @@ char *whoami;		/* should not be static, for logging package */
 static int status;
 static void scream();
 extern char *strsave();
+int menu_err_hook();
 
 typedef struct list_info {
     char *acl;
@@ -79,7 +82,7 @@ main(argc, argv)
     char *argv[];
 
 {
-
+    int (*old_hook)();
     int use_menu = 1;
     char buf[BUFSIZ];
 
@@ -135,6 +138,7 @@ lines, %d columns)\n", LINES, COLS);
 	}
 	raw();
 	noecho();
+	old_hook = set_com_err_hook(menu_err_hook);
 	position[0] = oldpos[0] = 1;
 	level = 0;
 	pack_main_menu();
@@ -143,6 +147,7 @@ lines, %d columns)\n", LINES, COLS);
 	get_main_input();
 	cls();
 	endwin();
+	set_com_err_hook(old_hook);
     }
     exit(0);
 
@@ -271,7 +276,7 @@ show_list_info()
 	    currow++;
 	}
 	else {
-	    show_text(currow, STARTCOL, "madm: No such list found.");
+	    show_text(currow, STARTCOL, "mailmaint: No such list found.");
 	    currow++;
 	}
 	show_text(currow, STARTCOL, "Press any Key to continue...");
@@ -531,6 +536,10 @@ list_members()
 	if (!found_some) {
 	    show_text(currow, STARTCOL, "List is empty (no members).");
 	    currow++;
+	    show_text(currow, STARTCOL, "Press any key to continue...");
+	    getchar();
+	    clrwin(DISPROW);
+	    return;
 	}
 	end_display();
 	return(0);
@@ -670,7 +679,7 @@ pack_help_menu()
     help_menu->num_items = 5;
     help_menu->items = (char **) malloc((unsigned) sizeof(char *) * help_menu->num_items);
 
-    help_menu->title = strsave("madm is designed as a basic mail list administration program.");
+    help_menu->title = strsave("mailmaint is designed as a basic mail list administration program.");
     help_menu->items[0] = strsave("if you need to perform more advanced list manipulation like");
     help_menu->items[1] = strsave("adding lists, or changing list characteristics, refer to the");
     help_menu->items[2] = strsave("program listmaint.");
@@ -801,14 +810,7 @@ fetch_list_info(list, li)
     char *argv[1];
 
     argv[0] = list;
-    if ((status = sms_query("get_list_info", 1, argv,
-			    get_list_info, (char *) NULL)) == 0) {
-	return status;
-    }
-    else {
-	com_err(whoami, status, " found.\n");
-	return status;
-    }
+    return sms_query("get_list_info", 1, argv, get_list_info, (char *) NULL);
 }
 
 /* ARGSUSED */
@@ -900,6 +902,41 @@ Prompt(prompt, buf, buflen)
     }
     return(0);
 }
+
+
+/*
+ * Hook function to cause error messages to be printed through
+ * curses instead of around it.
+ */
+
+int
+menu_err_hook(who, code, fmt, args)
+    char *who;
+    int code;
+    char *fmt;
+    va_list args;
+{
+    char buf[BUFSIZ], *cp;
+
+    FILE _strbuf;
+
+    (void) strcpy(buf, who);
+    for (cp = buf; *cp; cp++);
+    *cp++ = ':';
+    *cp++ = ' ';
+    if (code) {
+	(void) strcpy(cp, error_message(code));
+	while (*cp)
+	    cp++;
+    }
+    _strbuf._flag = _IOWRT + _IOSTRG;
+    _strbuf._ptr = cp;
+    _strbuf._cnt = BUFSIZ - (cp - buf);
+    _doprnt(fmt, args, &_strbuf);
+    (void) putc('\0', &_strbuf);
+    Put_message(buf);
+}
+
 
 /*
  * Local Variables:

@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/dbck.qc,v 1.4 1989-07-19 14:13:45 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/dbck.qc,v 1.5 1989-09-11 11:45:03 mar Exp $
  *
  * SMS database consistency checker
  *
@@ -14,7 +14,7 @@
 #include "dbck.h"
 
 
-static char dbck_qc_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/dbck.qc,v 1.4 1989-07-19 14:13:45 mar Exp $";
+static char dbck_qc_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/dbck.qc,v 1.5 1989-09-11 11:45:03 mar Exp $";
 
 
 int debug = 0;
@@ -22,7 +22,8 @@ int mode = MODE_ASK;
 int fast = 0;
 int warn = 1;
 int abort = 0;
-struct hash *users, *machines, *clusters, *lists, *filesys, *nfsphys, *strings;
+struct hash *users, *machines, *clusters, *lists, *filesys, *nfsphys;
+struct hash *strings, *members;
 ##int dcmenable;
 struct save_queue *modtables, *sq_create();
 int interrupt();
@@ -170,3 +171,13 @@ cleanup()
 ##  replace values (value = dcmenable) where values.name = "dcm_enable"
 ##  exit
 ##}
+
+
+out_of_mem(msg)
+char *msg;
+{
+    fprintf(stderr, "Out of memory while %s\n", msg);
+##  end transaction    
+    cleanup();
+    exit(1);
+}

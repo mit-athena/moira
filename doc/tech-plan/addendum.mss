@@ -289,6 +289,11 @@ indicating that permission was denied for the query.
   Returns: none
   Errors: SMS_MACHINE, SMS_NO_MATCH, SMS_NOT_UNIQUE
 
+@B(get_server_locations)
+  Args: (service)
+  Returns: {service, machine}
+  Errors: SMS_SERVICE
+
 @SubSection(Services)
 @label(Services)
 

@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.3 1998-05-27 17:33:07 danw Exp $
+# $Id: Makefile.in,v 1.4 1998-08-27 17:13:30 danw Exp $
 
 SHELL=/bin/sh
 @SET_MAKE@
@@ -15,6 +15,8 @@ PRO_C_OPTS=@PRO_C_OPTS@
 PRO_C_FLAGS=$(PRO_C_OPTS) $(PRO_C_DEFS) $(PRO_C_INCLUDES)
 LDFLAGS=@LDFLAGS@
 LIBS=@SQL_LIBS@ @GDSS_LIBS@ @LIBS@
+MR_LIBDEP=@MR_LIBDEP@
+GDSS_LIBDEP=@GDSS_LIBDEP@
 INSTALL=@INSTALL@
 INSTALL_TARGET=@INSTALL_TARGET@
 
@@ -54,29 +56,29 @@ depend: $(CFILES)
 install: all
 	@for p in $(TARGET); do $(INSTALL_PROGRAM) $$p $(mrbindir); done
 
-hesiod.gen: hesiod.o util.o moddiff.o
+hesiod.gen: hesiod.o util.o moddiff.o $(MR_LIBDEP)
 	$(CC) -o $@ $(LDFLAGS) hesiod.o util.o moddiff.o $(SQL_LIBS) $(LIBS)
 
-hosts.gen: hosts.o util.o moddiff.o
+hosts.gen: hosts.o util.o moddiff.o $(MR_LIBDEP)
 	$(CC) -o $@ $(LDFLAGS) hosts.o util.o moddiff.o $(SQL_LIBS) $(LIBS)
 
-nfs.gen: nfs.o util.o moddiff.o
+nfs.gen: nfs.o util.o moddiff.o $(MR_LIBDEP)
 	$(CC) -o $@ $(LDFLAGS) nfs.o util.o moddiff.o $(SQL_LIBS) $(LIBS)
 
-directory.gen: directory.o util.o moddiff.o
+directory.gen: directory.o util.o moddiff.o $(MR_LIBDEP)
 	$(CC) -o $@ $(LDFLAGS) directory.o util.o moddiff.o $(SQL_LIBS) $(LIBS)
 
-ndb.gen: ndb.o util.o moddiff.o
+ndb.gen: ndb.o util.o moddiff.o $(MR_LIBDEP)
 	$(CC) -o $@ $(LDFLAGS) ndb.o util.o moddiff.o $(SQL_LIBS) $(LIBS)
 
-mailhub.gen: mailhub.o util.o moddiff.o
+mailhub.gen: mailhub.o util.o moddiff.o $(MR_LIBDEP)
 	$(CC) -o $@ $(LDFLAGS) mailhub.o util.o moddiff.o $(SQL_LIBS) $(LIBS)
 
-pobox.gen: pobox.o util.o moddiff.o
+pobox.gen: pobox.o util.o moddiff.o $(MR_LIBDEP)
 	$(CC) -o $@ $(LDFLAGS) pobox.o util.o moddiff.o $(SQL_LIBS) $(LIBS)
 
-network.gen: network.o util.o moddiff.o
+network.gen: network.o util.o moddiff.o $(MR_LIBDEP)
 	$(CC) -o $@ $(LDFLAGS) network.o util.o moddiff.o $(SQL_LIBS) $(LIBS)
 
-warehouse.gen: warehouse.o util.o moddiff.o
+warehouse.gen: warehouse.o util.o moddiff.o $(MR_LIBDEP) $(GDSS_LIBDEP)
 	$(CC) -o $@ $(LDFLAGS) warehouse.o util.o moddiff.o $(SQL_LIBS) $(GDSS_LIBS) $(LIBS)

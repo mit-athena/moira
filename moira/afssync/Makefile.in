@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.3 1998-05-27 17:33:05 danw Exp $
+# $Id: Makefile.in,v 1.4 1998-08-27 17:13:20 danw Exp $
 
 SHELL=/bin/sh
 @SET_MAKE@
@@ -21,6 +21,7 @@ AFS_EXTRA_LIBS=@AFS_EXTRA_LIBS@
 AFS_DIR=@AFS_DIR@
 SQL_LIBS=@SQL_LIBS@
 LIBS=@LIBS@
+MR_LIBDEP=@MR_LIBDEP@
 INSTALL=@INSTALL@
 INSTALL_PROGRAM=@INSTALL_PROGRAM@
 
@@ -57,8 +58,8 @@ install: all
 	$(INSTALL_PROGRAM) pt_util $(mrbindir)
 	$(INSTALL_PROGRAM) $(srcdir)/pt_util.pl $(mrbindir)
 
-afssync: $(SYNC_OBJS)
+afssync: $(SYNC_OBJS) $(MR_LIBDEP)
 	$(CC) -o $@ $(LDFLAGS) $(SYNC_OBJS) $(AFS_LIBS) -llwp -lprot $(AFS_EXTRA_LIBS) $(SQL_LIBS) $(LIBS)
 
-pt_util: $(UTIL_OBJS)
+pt_util: $(UTIL_OBJS) $(MR_LIBDEP)
 	$(CC) -o $@ $(LDFLAGS) $(UTIL_OBJS) $(AFS_LIBS) -llwp -lprot $(AFS_EXTRA_LIBS) $(LIBS)

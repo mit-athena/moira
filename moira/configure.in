@@ -191,6 +191,7 @@ AC_ARG_WITH(gdss,
 	 fi
 	 MR_INCLUDE('-I$(SRCTOP)/util/gdss/include')
 	 GDSS_LIBS='-L$(BUILDTOP)/util/gdss/lib -lgdss'
+	 GDSS_LIBDEP='$(BUILDTOP)/util/gdss/lib/libgdss.a'
      else
          gdss=no
      fi])
@@ -207,6 +208,7 @@ AC_SUBST(GDSS_SUBDIR)
 AC_SUBST(GDSS_OBJS)
 AC_SUBST(GDSS_CFILES)
 AC_SUBST(GDSS_TARGET)
+AC_SUBST(GDSS_LIBDEP)
 
 # RSAREF support (default: build util/rsaref if present)
 AC_MSG_CHECKING(for RSAREF)
@@ -226,6 +228,7 @@ AC_ARG_WITH(rsaref,
 	 fi
 	 RSAREF_CPPFLAGS='-I$(SRCTOP)/util/rsaref'
 	 RSAREF_LIBS='$(BUILDTOP)/util/rsaref/rsaref.a'
+	 RSAREF_LIBDEP='$(BUILDTOP)/util/rsaref/rsaref.a'
      else
          rsaref=no
      fi])
@@ -236,6 +239,7 @@ fi
 AC_SUBST(RSAREF_CPPFLAGS)
 AC_SUBST(RSAREF_LIBS)
 AC_SUBST(RSAREF_SUBDIRS)
+AC_SUBST(RSAREF_LIBDEP)
 
 # Oracle (default: yes, if $ORACLE_HOME is set)
 AC_MSG_CHECKING(for Oracle)
@@ -368,6 +372,9 @@ LDFLAGS="$LDFLAGS -L\$(BUILDTOP)/lib $LIBPATH"
 KLIBS="-lzephyr $KRB4_LIBS -lcom_err -lhesiod $LIBS"
 LIBS="-lmoira $KLIBS"
 AC_SUBST(KLIBS)
+
+MR_LIBDEP='$(BUILDTOP)/lib/libmoira.a'
+AC_SUBST(MR_LIBDEP)
 
 AC_OUTPUT(Makefile lib/Makefile include/Makefile clients/Makefile \
 	  clients/addusr/Makefile clients/blanche/Makefile \

@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 2.3 1998-05-27 17:33:09 danw Exp $
+# $Id: Makefile.in,v 2.4 1998-08-27 17:13:34 danw Exp $
 
 SHELL=/bin/sh
 @SET_MAKE@
@@ -16,7 +16,8 @@ PRO_C_FLAGS=$(PRO_C_OPTS) $(PRO_C_DEFS) $(PRO_C_INCLUDES)
 LDFLAGS=@LDFLAGS@
 SERVER_LIBS=@GDSS_LIBS@ @SQL_LIBS@
 LIBS=@LIBS@
-RANLIB=@RANLIB@
+MR_LIBDEP=@MR_LIBDEP@
+GDSS_LIBDEP=@GDSS_LIBDEP@
 INSTALL=@INSTALL@
 INSTALL_PROGRAM=@INSTALL_PROGRAM@
 
@@ -56,7 +57,7 @@ install: all
 	$(INSTALL_PROGRAM) moirad $(mrbindir)
 	$(INSTALL_PROGRAM) startmoira $(mrbindir)
 
-moirad: $(SERVER_OBJS)
+moirad: $(SERVER_OBJS) $(SCHEMA_OBJS) $(MR_LIBDEP) $(GDSS_LIBDEP)
 	$(CC) -o $@ $(LDFLAGS) $(SERVER_OBJS) $(SCHEMA_OBJS) $(SERVER_LIBS) $(LIBS)
 
 startmoira: $(START_OBJS)

@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.3 1998-08-13 18:25:24 danw Exp $
+# $Id: Makefile.in,v 1.4 1998-08-27 17:13:24 danw Exp $
 
 SHELL=/bin/sh
 @SET_MAKE@
@@ -10,6 +10,8 @@ DEFS=@DEFS@
 ALL_CFLAGS=$(CPPFLAGS) $(CFLAGS) $(DEFS)
 LDFLAGS=@LDFLAGS@
 LIBS=@CURSES_LIBS@ @GDSS_LIBS@ @LIBS@
+MR_LIBDEP=@MR_LIBDEP@
+GDSS_LIBDEP=@GDSS_LIBDEP@
 INSTALL=@INSTALL@
 INSTALL_PROGRAM=@INSTALL_PROGRAM@
 
@@ -46,8 +48,8 @@ install: all
 	ln -s $(bindir)/dcmmaint moira
 	ln -s $(bindir)/usermaint moira
 
-moira: $(MOBJS)
+moira: $(MOBJS) $(MR_LIBDEP) $(GDSS_LIBDEP)
 	$(CC) -o $@ $(LDFLAGS) $(MOBJS) $(LIBS)
 
-namespace: $(NOBJS)
+namespace: $(NOBJS) $(MR_LIBDEP) $(GDSS_LIBDEP)
 	$(CC) -o $@ $(LDFLAGS) $(NOBJS) $(LIBS)

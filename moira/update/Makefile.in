@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.2 1998-05-26 21:50:13 danw Exp $
+# $Id: Makefile.in,v 1.3 1998-08-27 17:13:36 danw Exp $
 
 SHELL=/bin/sh
 @SET_MAKE@
@@ -10,6 +10,7 @@ DEFS=@DEFS@
 ALL_CFLAGS=$(CPPFLAGS) $(CFLAGS) $(DEFS)
 LDFLAGS=@LDFLAGS@
 LIBS=@LIBS@
+MR_LIBDEP=@MR_LIBDEP@
 INSTALL=@INSTALL@
 INSTALL_PROGRAM=@INSTALL_PROGRAM@
 
@@ -42,8 +43,8 @@ install: all
 	$(INSTALL_PROGRAM) update_test $(bindir)
 	$(INSTALL_PROGRAM) update_server $(sbindir)
 
-update_test: $(COBJS)
+update_test: $(COBJS) $(MR_LIBDEP)
 	$(CC) -o $@ $(LDFLAGS) $(COBJS) $(LIBS)
 
-update_server: $(SOBJS)
+update_server: $(SOBJS) $(MR_LIBDEP)
 	$(CC) -o $@ $(LDFLAGS) $(SOBJS) $(LIBS)

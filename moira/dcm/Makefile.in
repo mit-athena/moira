@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.3 1998-05-27 17:33:07 danw Exp $
+# $Id: Makefile.in,v 1.4 1998-08-27 17:13:29 danw Exp $
 
 SHELL=/bin/sh
 @SET_MAKE@
@@ -16,6 +16,7 @@ PRO_C_FLAGS=$(PRO_C_OPTS) $(PRO_C_DEFS) $(PRO_C_INCLUDES)
 LDFLAGS=@LDFLAGS@
 SQL_LIBS=@SQL_LIBS@
 LIBS=@LIBS@
+MR_LIBDEP=@MR_LIBDEP@
 INSTALL=@INSTALL@
 INSTALL_PROGRAM=$(INSTALL_PROGRAM)
 
@@ -53,7 +54,7 @@ install: all
 	$(INSTALL_PROGRAM) dcm $(mrbindir)
 	$(INSTALL_PROGRAM) startdcm $(mrbindir)
 
-dcm: $(DCM_OBJS)
+dcm: $(DCM_OBJS) $(UPDATE_OBJS) $(MR_LIBDEP)
 	$(CC) -o $@ $(LDFLAGS) $(DCM_OBJS) $(UPDATE_OBJS) $(SQL_LIBS) $(LIBS)
 
 startdcm: $(START_OBJS)

@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.3 1998-05-27 17:33:05 danw Exp $
+# $Id: Makefile.in,v 1.4 1998-08-27 17:13:21 danw Exp $
 
 SHELL=/bin/sh
 @SET_MAKE@
@@ -15,6 +15,7 @@ PRO_C_OPTS=@PRO_C_OPTS@
 PRO_C_FLAGS=$(PRO_C_OPTS) $(PRO_C_DEFS) $(PRO_C_INCLUDES)
 LDFLAGS=@LDFLAGS@
 LIBS=@SQL_LIBS@ @LIBS@
+MR_LIBDEP=@MR_LIBDEP@
 INSTALL=@INSTALL@
 INSTALL_PROGRAM=@INSTALL_PROGRAM@
 
@@ -51,10 +52,10 @@ install: all
 	$(INSTALL_PROGRAM) mrbackup $(mrbindir)
 	$(INSTALL_PROGRAM) mrrestore $(mrbindir)
 
-mrbackup: $(BOBJS)
+mrbackup: $(BOBJS) $(MR_LIBDEP)
 	$(CC) -o $@ $(LDFLAGS) $(BOBJS) $(LIBS)
 
-mrrestore: $(ROBJS)
+mrrestore: $(ROBJS) $(MR_LIBDEP)
 	$(CC) -o $@ $(LDFLAGS) $(ROBJS) $(LIBS)
 
 bkup.pc bkup1.pc bkup.h: $(SRCTOP)/db/schema.sql $(srcdir)/db2bkup.awk

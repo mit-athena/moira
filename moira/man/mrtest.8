@@ -1,0 +1,60 @@
+.TH SMSTEST 8 "25 Jan 1988" "Project Athena"
+\" RCSID: $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/man/mrtest.8,v 1.1 1988-01-25 18:19:56 mar Exp $
+.SH NAME
+smstest \- perform SMS operations manually
+.SH SYNOPSIS
+.B smstest
+.SH DESCRIPTION
+.I smstest
+allows one to perform by hand all operations allowed in the sms
+protocol.  There are no command line options, as commands are given to
+a prompt within the program.  Control operations are:
+.TP
+.B connnect
+make a network connection to the SMS server.
+.TP
+.B disconnect
+break the network connection to the SMS server.
+.TP
+.B script inputfile [outputfile]
+read commands from 
+.I inputfile.  If
+.I outputfile is specified, output will be redirected there while
+commands are read from
+.I inputfile.
+.TP
+.B list_requests
+lists all of the 
+.I smstest commands.
+.TP
+.B quit
+exits the program.
+.PP
+SMS protocol operations include:
+.TP
+.B noop
+does "no operation" to the server, just making sure the server is
+still there.
+.TP
+.B auth
+sends
+.I Kerberos
+tickets to the server to authenticate the user.
+.TP
+.B query query_handle [query arguments ...]
+performs a query operation on the server.  All of the real work is
+done in queries.  There are over 100 queries, each of which requires
+different arguments.  the arguments should be placed on the line
+following the name of the query, separated by whitespace.
+.TP
+.B access query_handle [query arguements ...]
+performs an authorization check on a query without actually executing
+the query.  The arguments are the same as those in the
+.B query
+command described above.
+.SH BUGS
+There is no way to enter whitespace into a string argument to a query.
+.SH SEE ALSO
+The Project Athena Technical Plan section on SMS for a list of queries
+and their arguements, and a description of the protocol this
+implements.

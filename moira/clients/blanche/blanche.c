@@ -1,4 +1,4 @@
-/* $Id: blanche.c,v 1.54 2000-12-20 09:39:18 zacheiss Exp $
+/* $Id: blanche.c,v 1.55 2001-04-04 20:40:38 zacheiss Exp $
  *
  * Command line oriented Moira List tool.
  *
@@ -20,7 +20,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.54 2000-12-20 09:39:18 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.55 2001-04-04 20:40:38 zacheiss Exp $");
 
 struct member {
   int type;
@@ -416,6 +416,10 @@ int main(int argc, char **argv)
 		mrcl_com_err(whoami);
 	      status = mr_query("add_list", 13, argv, NULL, NULL);
 	      break;
+	    case M_NONE:
+	      argv[L_ACE_TYPE] = argv[L_ACE_NAME] = "NONE";
+	      status = mr_query("add_list", 13, argv, NULL, NULL);
+	      break;
 	    }
 	}
       else
@@ -507,6 +511,10 @@ int main(int argc, char **argv)
 						     &argv[L_ACE_NAME + 1]);
 	      if (mrcl_get_message())
 		mrcl_com_err(whoami);
+	      status = mr_query("update_list", 14, argv, NULL, NULL);
+	      break;
+	    case M_NONE:
+	      argv[L_ACE_TYPE + 1] = argv[L_ACE_NAME + 1] = "NONE";
 	      status = mr_query("update_list", 14, argv, NULL, NULL);
 	      break;
 	    }

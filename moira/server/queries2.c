@@ -1,4 +1,4 @@
-/* $Id: queries2.c,v 2.61 1999-11-16 20:54:10 danw Exp $
+/* $Id: queries2.c,v 2.62 1999-11-16 22:56:05 danw Exp $
  *
  * This file defines the query dispatch table for version 2 of the protocol
  *
@@ -515,8 +515,8 @@ static struct validate spop_validate =	/* SET_POBOX_POP */
   0,
   0,
   access_user,
-  setup_spop,
-  set_pobox_modtime,
+  0,
+  set_pobox_pop,
 };
 
 static struct validate dpob_validate =	/* DELETE_POBOX */
@@ -2882,7 +2882,7 @@ struct query Queries2[] = {
     RETRIEVE,
     "u",
     USERS_TABLE,
-    "login, potype, pop_id || ':' || box_id, TO_CHAR(pmodtime, 'DD-mon-YYYY HH24:MI:SS'), pmodby, pmodwith FROM users",
+    "login, potype, users_id, TO_CHAR(pmodtime, 'DD-mon-YYYY HH24:MI:SS'), pmodby, pmodwith FROM users",
     gpob_fields,
     6,
     "users_id = %d",
@@ -2914,7 +2914,7 @@ struct query Queries2[] = {
     RETRIEVE,
     "u",
     USERS_TABLE,
-    "login, potype, pop_id || ':' || box_id FROM users",
+    "login, potype, users_id FROM users",
     gpox_fields,
     3,
     "potype = 'POP'",
@@ -2930,7 +2930,7 @@ struct query Queries2[] = {
     RETRIEVE,
     "u",
     USERS_TABLE,
-    "login, potype, pop_id || ':' || box_id FROM users",
+    "login, potype, users_id FROM users",
     gpox_fields,
     3,
     "potype = 'SMTP'",
@@ -2962,11 +2962,11 @@ struct query Queries2[] = {
     UPDATE,
     "u",
     USERS_TABLE,
-    "users SET potype = 'POP'",
+    0,
     spob_fields,
     0,
-    "users_id = %d",
-    1,
+    NULL,
+    0,
     NULL,
     &spop_validate,
   },

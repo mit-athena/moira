@@ -1,4 +1,4 @@
-/* $Id: qsupport.pc,v 2.15 1999-11-02 02:32:41 danw Exp $
+/* $Id: qsupport.pc,v 2.16 1999-11-16 22:56:05 danw Exp $
  *
  * Special query routines
  *
@@ -18,7 +18,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.pc,v 2.15 1999-11-02 02:32:41 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.pc,v 2.16 1999-11-16 22:56:05 danw Exp $");
 
 extern char *whoami, *table_name[];
 extern int dbms_errno, mr_errcode;
@@ -39,10 +39,10 @@ int qualified_get(struct query *q, char *argv[],
 /* set_pobox - this does all of the real work.
  *	 argv = user_id, type, box
  * if type is POP, then box should be a machine, and its ID should be put in
- * pop_id.  If type is SMTP, then box should be a string and its ID should
- * be put in box_id.  If type is NONE, then box doesn't matter.
+ * pop_id.  If type is IMAP, then box should be a filesys, and its ID should
+ * be put in pop_id.  If type is SMTP, then box should be a string and its
+ * ID should be put in box_id.  If type is NONE, then box doesn't matter.
  */
-
 
 int set_pobox(struct query *q, char **argv, client *cl)
 {
@@ -69,7 +69,7 @@ int set_pobox(struct query *q, char **argv, client *cl)
 	return MR_MACHINE;
       else if (status)
 	return status;
-      EXEC SQL UPDATE users SET potype = 'POP', pop_id = :id
+      EXEC SQL UPDATE users SET potype = 'POP', pop_id = :id, imap_id = 0
 	WHERE users_id = :user;
       set_pop_usage(id, 1);
     }
@@ -87,12 +87,11 @@ int set_pobox(struct query *q, char **argv, client *cl)
     }
   else if (!strcmp(argv[1], "IMAP"))
     {
-      status = name_to_id(box, FILESYS_TABLE, &id);
-      if (status == MR_NO_MATCH)
+      EXEC SQL SELECT filsys_id INTO :id FROM filesys
+	WHERE label = :box AND type = 'IMAP';
+      if (sqlca.sqlcode)
 	return MR_FILESYS;
-      else if (status)
-	return status;
-      EXEC SQL UPDATE users SET potype = 'IMAP', pop_id = :id
+      EXEC SQL UPDATE users SET potype = 'IMAP', imap_id = :id, pop_id = 0
 	WHERE users_id = :user;
     }
   else /* argv[1] == "NONE" */
@@ -108,6 +107,50 @@ int set_pobox(struct query *q, char **argv, client *cl)
     return mr_errcode;
   return MR_SUCCESS;
 }
+
+/* set_pobox_pop: Revert to existing POP or IMAP pobox.
+ * Also take care of keeping track of the post office usage.
+ */
+int set_pobox_pop(struct query *q, char **argv, client *cl)
+{
+  EXEC SQL BEGIN DECLARE SECTION;
+  int id, pid, iid, mid;
+  char type[USERS_POTYPE_SIZE];
+  EXEC SQL END DECLARE SECTION;
+
+  id = *(int *)argv[0];
+  EXEC SQL SELECT potype, pop_id, imap_id INTO :type, :pid, :iid
+    FROM users WHERE users_id = :id;
+  if (sqlca.sqlerrd[2] == 0 || (pid == 0 && iid == 0))
+    return MR_MACHINE;
+
+  if (pid)
+    {
+      EXEC SQL SELECT mach_id INTO :mid FROM machine
+	WHERE mach_id = :pid;
+      if (sqlca.sqlerrd[2] == 0)
+	return MR_MACHINE;
+      EXEC SQL UPDATE users SET potype = 'POP' WHERE users_id = :id;
+      if (strcmp(strtrim(type), "POP"))
+	set_pop_usage(mid, 1);
+    }
+  else
+    {
+      EXEC SQL SELECT filsys_id INTO :mid FROM filesys
+	WHERE filsys_id = :iid;
+      if (sqlca.sqlerrd[2] == 0)
+	return MR_MACHINE;
+      EXEC SQL UPDATE users SET potype = 'IMAP' WHERE users_id = :id;
+    }
+
+  set_pobox_modtime(q, argv, cl);
+  EXEC SQL UPDATE tblstats SET updates = updates + 1, modtime = SYSDATE
+    WHERE table_name = 'users';
+  if (dbms_errno)
+    return mr_errcode;
+  return MR_SUCCESS;
+}
+
 
 /* Add_member_to_list: do list flattening as we go!  MAXLISTDEPTH is
  * how many different ancestors a member is allowed to have.

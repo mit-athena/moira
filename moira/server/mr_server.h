@@ -1,4 +1,4 @@
-/* $Id: mr_server.h,v 1.46 1999-11-16 20:49:43 danw Exp $
+/* $Id: mr_server.h,v 1.47 1999-11-16 22:56:04 danw Exp $
  *
  * Copyright (C) 1987-1998 by the Massachusetts Institute of Technology
  * For copying and distribution information, please see the file
@@ -207,7 +207,6 @@ int prefetch_value(struct query *q, char *argv[], client *cl);
 int prefetch_filesys(struct query *q, char *argv[], client *cl);
 int setup_ausr(struct query *q, char *argv[], client *cl);
 int setup_dusr(struct query *q, char *argv[], client *cl);
-int setup_spop(struct query *q, char *argv[], client *cl);
 int setup_dpob(struct query *q, char *argv[], client *cl);
 int setup_dmac(struct query *q, char *argv[], client *cl);
 int setup_dclu(struct query *q, char *argv[], client *cl);
@@ -230,6 +229,7 @@ int setup_dpsv(struct query *q, char *argv[], client *cl);
 
 /* prototypes from qsupport.pc */
 int set_pobox(struct query *q, char *argv[], client *cl);
+int set_pobox_pop(struct query *q, char *argv[], client *cl);
 int add_member_to_list(struct query *q, char *argv[], client *cl);
 int delete_member_from_list(struct query *q, char *argv[], client *cl);
 int register_user(struct query *q, char *argv[], client *cl);

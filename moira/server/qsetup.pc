@@ -1,4 +1,4 @@
-/* $Id: qsetup.pc,v 2.34 1999-11-16 20:54:10 danw Exp $
+/* $Id: qsetup.pc,v 2.35 1999-11-16 22:56:04 danw Exp $
  *
  * Query setup routines
  *
@@ -21,7 +21,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsetup.pc,v 2.34 1999-11-16 20:54:10 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsetup.pc,v 2.35 1999-11-16 22:56:04 danw Exp $");
 
 extern char *whoami;
 extern int dbms_errno, mr_errcode;
@@ -127,31 +127,6 @@ int setup_dusr(struct query *q, char *argv[], client *cl)
     return MR_IN_USE;
   if (dbms_errno)
     return mr_errcode;
-  return MR_SUCCESS;
-}
-
-
-/* setup_spop: verify that there is already a valid POP machine_id in the
- * pop_id field.  Also take care of keeping track of the post office usage.
- */
-int setup_spop(struct query *q, char *argv[], client *cl)
-{
-  EXEC SQL BEGIN DECLARE SECTION;
-  int id, mid;
-  char type[USERS_POTYPE_SIZE];
-  EXEC SQL END DECLARE SECTION;
-
-  id = *(int *)argv[0];
-  EXEC SQL SELECT potype, pop_id INTO :type, :mid FROM users
-    WHERE users_id = :id;
-  if (sqlca.sqlerrd[2] == 0)
-    return MR_MACHINE;
-  EXEC SQL SELECT mach_id INTO :mid FROM machine
-    WHERE mach_id = :mid;
-  if (sqlca.sqlerrd[2] == 0)
-    return MR_MACHINE;
-  if (strcmp(strtrim(type), "POP"))
-    set_pop_usage(mid, 1);
   return MR_SUCCESS;
 }
 

@@ -1,6 +1,6 @@
 /* This file defines the query dispatch table for version 2 of the protocol
  *
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/queries2.c,v 2.2 1992-07-08 18:50:35 genoa Exp $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/queries2.c,v 2.3 1992-07-09 21:46:17 genoa Exp $
  *
  * Copyright 1987, 1988 by the Massachusetts Institute of Technology.
  * For copying and distribution information, please see the file
@@ -108,7 +108,7 @@ static char LOGIN[] = "login";
 static char MACH_ID[] = "mach_id";
 static char MACHINE[] = "machine";
 static char MIDDLE[] = "middle";
-static char MIT_ID[] = "mit_id";
+static char MIT_ID[] = "clearid";
 static char MOD1[] = "modtime";
 static char MOD2[] = "modby";
 static char MOD3[] = "modwith";
@@ -273,7 +273,7 @@ static struct validate ausr_validate = {
   ausr_valobj,
   7,
   LOGIN,
-  "users.login = \"%s\"",
+  "users.login = '%s'",
   1,
   USERS_ID,
   0,
@@ -444,7 +444,7 @@ static struct validate dkum_validate =
 static char *gfbl_fields[] = {
   LOGIN,
   LOGIN, "fullname", "nickname", "home_addr",
-  "home_phone", "office_address", "office_phone", "department", 
+  "home_phone", "office_addr", "office_phone", "department", 
   "affiliation", MOD1, MOD2, MOD3,
 };
 
@@ -463,7 +463,7 @@ static struct validate gfbl_validate = {
 static char *ufbl_fields[] = {
   LOGIN,
   "fullname", "nickname", "home_addr",
-  "home_phone", "office_address", "office_phone", "department", 
+  "home_phone", "office_addr", "office_phone", "department", 
   "affiliation",
 };
 
@@ -488,7 +488,7 @@ static struct validate gpob_validate = {
   VOuser0,
   1,
   "potype",
-  "users.potype != \"NONE\" and users.users_id=%d",
+  "users.potype != 'NONE' and users.users_id=%d",
   1,
   0,
   access_user,
@@ -580,7 +580,7 @@ static struct validate amac_validate = {
   amac_valobj,
   3,
   NAME,
-  "imembers.name = uppercase(\"%s\")",
+  "imembers.name = uppercase('%s')",
   1,
   MACH_ID,
   0,
@@ -652,9 +652,9 @@ static struct validate aclu_validate =	/* for aclu  */
   aclu_valobj,
   2,
   NAME,
-  "clusters.name = \"%s\"",
+  "clusters.name = '%s'",
   1,
-  "clu_id",
+  CLU_ID,
   0,
   0,
   set_modtime,
@@ -743,7 +743,7 @@ static struct validate acld_validate =	/* ADD_CLUSTER_DATA */
   acld_valobj,
   2,
   CLU_ID,
-  "svc.clu_id = %d and svc.serv_label = \"%s\" and svc.serv_cluster = \"%s\"",
+  "svc.clu_id = %d and svc.serv_label = '%s' and svc.serv_cluster = '%s'",
   3,
   0,
   0,
@@ -812,7 +812,7 @@ static struct validate asin_validate =	/* for asin, usin */
   asin_valobj,
   5,
   NAME,
-  "services.name = uppercase(\"%s\")",
+  "services.name = uppercase('%s')",
   1,
   0,
   0,
@@ -824,7 +824,7 @@ static struct validate rsve_validate = {
   asin_valobj,
   1,
   NAME,
-  "services.name = uppercase(\"%s\")",
+  "services.name = uppercase('%s')",
   1,
   0,
   access_service,
@@ -840,7 +840,7 @@ static struct validate ssif_validate = {
   asin_valobj,
   1,
   NAME,
-  "services.name = uppercase(\"%s\")",
+  "services.name = uppercase('%s')",
   1,
   0,
   0,
@@ -856,7 +856,7 @@ static struct validate dsin_validate = {
   asin_valobj,
   1,
   NAME,
-  "services.name = uppercase(\"%s\")",
+  "services.name = uppercase('%s')",
   1,
   0,
   0,
@@ -923,7 +923,7 @@ static struct validate ashi_validate = /* ashi & ushi */
   ashi_valobj,
   3,
   SERVICE,
-  "serverhosts.service = uppercase(\"%s\") and serverhosts.mach_id = %d",
+  "serverhosts.service = uppercase('%s') and serverhosts.mach_id = %d",
   2,
   0,
   access_service,
@@ -936,7 +936,7 @@ static struct validate rshe_validate =
   ashi_valobj,
   3,
   SERVICE,
-  "serverhosts.service = uppercase(\"%s\") and serverhosts.mach_id = %d",
+  "serverhosts.service = uppercase('%s') and serverhosts.mach_id = %d",
   2,
   0,
   access_service,
@@ -949,7 +949,7 @@ static struct validate ssho_validate =
   ashi_valobj,
   3,
   SERVICE,
-  "serverhosts.service = uppercase(\"%s\") and serverhosts.mach_id = %d",
+  "serverhosts.service = uppercase('%s') and serverhosts.mach_id = %d",
   2,
   0,
   access_service,
@@ -988,7 +988,7 @@ static struct validate dshi_validate =
   ashi_valobj,
   3,
   SERVICE,
-  "serverhosts.service = uppercase(\"%s\") and serverhosts.mach_id = %d",
+  "serverhosts.service = uppercase('%s') and serverhosts.mach_id = %d",
   2,
   0,
   access_service,
@@ -1110,7 +1110,7 @@ static struct validate afil_validate = {
   afil_valobj,
   8,
   LABEL,
-  "filesys.label = \"%s\"",
+  "filesys.label = '%s'",
   1,
   FILSYS_ID,
   0,
@@ -1238,7 +1238,7 @@ static struct validate anfp_validate = {
   anfp_valobj,
   2,
   DIR,
-  "nfsphys.mach_id = %d and nfsphys.dir = \"%s\"",
+  "nfsphys.mach_id = %d and nfsphys.dir = '%s'",
   2,
   "nfsphys_id",
   0,
@@ -1254,7 +1254,7 @@ static struct validate dnfp_validate = {
   VOmach0,
   1,
   DIR,
-  "nfsphys.mach_id = %d and nfsphys.dir = \"%s\"",
+  "nfsphys.mach_id = %d and nfsphys.dir = '%s'",
   2,
   "nfsphys_id",
   0,
@@ -1317,7 +1317,7 @@ static struct validate aqot_validate = {
   aqot_valobj,
   4,
   FILSYS_ID,
-  "quota.filsys_id = %d and quota.type = \"%s\" and quota.entity_id = %d",
+  "quota.filsys_id = %d and quota.type = '%s' and quota.entity_id = %d",
   3,
   0,
   0,
@@ -1329,7 +1329,7 @@ static struct validate uqot_validate = {
   aqot_valobj,
   4,
   FILSYS_ID,
-  "quota.filsys_id = %d and quota.type = \"%s\" and quota.entity_id = %d",
+  "quota.filsys_id = %d and quota.type = '%s' and quota.entity_id = %d",
   3,
   0,
   0,
@@ -1341,7 +1341,7 @@ static struct validate dqot_validate = {
   aqot_valobj,
   4,
   FILSYS_ID,
-  "quota.filsys_id = %d and quota.type = \"%s\" and quota.entity_id = %d",
+  "quota.filsys_id = %d and quota.type = '%s' and quota.entity_id = %d",
   3,
   0,
   0,
@@ -1379,7 +1379,7 @@ static struct validate anfq_validate = {
   VOfilsys0user1,
   3,
   FILSYS_ID,
-  "quota.filsys_id = %d and quota.type = \"USER\" and quota.entity_id = %d",
+  "quota.filsys_id = %d and quota.type = 'USER' and quota.entity_id = %d",
   2,
   0,
   0,
@@ -1391,7 +1391,7 @@ static struct validate unfq_validate = {
   VOfilsys0user1,
   3,
   FILSYS_ID,
-  "quota.filsys_id = %d and quota.type = \"USER\" and quota.entity_id = %d",
+  "quota.filsys_id = %d and quota.type = 'USER' and quota.entity_id = %d",
   2,
   0,
   0,
@@ -1445,7 +1445,7 @@ static struct validate alis_validate = {
   alis_valobj,
   4,
   NAME,
-  "list.name = \"%s\"",
+  "list.name = '%s'",
   1,
   LIST_ID,
   0,
@@ -1675,7 +1675,7 @@ static struct validate azcl_validate = {
   azcl_valobj,
   9,
   CLASS,
-  "zephyr.class = \"%s\"",
+  "zephyr.class = '%s'",
   1,
   0,
   0,
@@ -1704,7 +1704,7 @@ static struct validate uzcl_validate = {
   uzcl_valobj,
   9,
   CLASS,
-  "zephyr.class = \"%s\"",
+  "zephyr.class = '%s'",
   1,
   0,
   0,
@@ -1716,7 +1716,7 @@ static struct validate dzcl_validate = {
   0,
   0,
   CLASS,
-  "zephyr.class = \"%s\"",
+  "zephyr.class = '%s'",
   1,
   0,
   0,
@@ -1737,7 +1737,7 @@ static struct validate asvc_validate = {
   VOchar0,
   1,
   NAME,
-  "services.name = \"%s\"",
+  "services.name = '%s'",
   1,
   0,
   0,
@@ -1780,7 +1780,7 @@ static struct validate apce_validate = {
   apce_valobj,
   3,
   NAME,
-  "printcap.name = \"%s\"",
+  "printcap.name = '%s'",
   1,
   0,
   0,
@@ -1792,7 +1792,7 @@ static struct validate dpce_validate = {
   0,
   0,
   NAME,
-  "printcap.name = \"%s\"",
+  "printcap.name = '%s'",
   1,
   0,
   0,
@@ -1824,7 +1824,7 @@ static struct validate apdm_validate = {
   apdm_valobj,
   2,
   NAME,
-  "palladium.name = \"%s\"",
+  "palladium.name = '%s'",
   1,
   0,
   0,
@@ -1836,7 +1836,7 @@ static struct validate dpdm_validate = {
   0,
   0,
   NAME,
-  "palladium.name = \"%s\"",
+  "palladium.name = '%s'",
   1,
   0,
   0,
@@ -1863,7 +1863,7 @@ static struct validate aali_validate = {
   aali_valobj,
   3,
   "trans",
-  "alias.name = \"%s\" and alias.type = \"%s\" and alias.trans = \"%s\"",
+  "alias.name = '%s' and alias.type = '%s' and alias.trans = '%s'",
   3,
   0,
   0,
@@ -1876,7 +1876,7 @@ static struct validate dali_validate =	/* DELETE_ALIAS */
   0,
   0,
   "trans",
-  "alias.name = \"%s\" and alias.type = \"%s\" and alias.trans = \"%s\"",
+  "alias.name = '%s' and alias.type = '%s' and alias.trans = '%s'",
   3,
   0,
   0,
@@ -1913,7 +1913,7 @@ static struct validate aval_validate =	/* for aval, uval, and dval */
   VOchar0,
   1,
   NAME,
-  "numvalues.name = \"%s\"",
+  "numvalues.name = '%s'",
   1,
   0,
   0,
@@ -1970,8 +1970,8 @@ struct query Queries2[] = {
     "gubl",
     RETRIEVE,
     "u",
-    USERS,
-    "login, text(uid), shell, last, first, middle, text(status), mit_id, mit_year, modtime, text(modby), modwith FROM users",
+    USERS,  
+    "login, text(uid), shell, last, first, middle, text(status), clearid, type, modtime, text(modby), modwith FROM users",
     gubl_fields,
     12,
     "login = '%s' AND users_id != 0",
@@ -1986,7 +1986,7 @@ struct query Queries2[] = {
     RETRIEVE,
     "u",
     USERS,
-    "login, text(uid), shell, last, first, middle, text(status), mit_id, mit_year, modtime, text(modby), modwith FROM users",
+    "login, text(uid), shell, last, first, middle, text(status), clearid, type, modtime, text(modby), modwith FROM users",
     gubu_fields,
     12,
     "uid = %s AND users_id != 0",
@@ -2001,7 +2001,7 @@ struct query Queries2[] = {
     RETRIEVE,
     "u",
     USERS,
-    "login, text(uid), shell, last, first, middle, text(status), mit_id, mit_year, modtime, text(modby), modwith FROM users",
+    "login, text(uid), shell, last, first, middle, text(status), clearid, type, modtime, text(modby), modwith FROM users",
     gubn_fields,
     12,
     "first = '%s' AND last = '%s' AND users_id != 0",
@@ -2016,10 +2016,10 @@ struct query Queries2[] = {
     RETRIEVE,
     "u",
     USERS,
-    "login, text(uid), shell, last, first, middle, text(status), mit_id, mit_year, modtime, text(modby), modwith FROM users",
+    "login, text(uid), shell, last, first, middle, text(status), clearid, type, modtime, text(modby), modwith FROM users",
     gubc_fields,
     12,
-    "mit_year = uppercase('%s') AND u.users_id != 0",
+    "type = uppercase('%s') AND users_id != 0",
     1,
     &VDsortf,
   },
@@ -2031,10 +2031,10 @@ struct query Queries2[] = {
     RETRIEVE,
     "u",
     USERS,
-    "login, text(uid), shell, last, first, middle, text(status), mit_id, mit_year, modtime, text(modby), modwith FROM users",
+    "login, text(uid), shell, last, first, middle, text(status), clearid, type, modtime, text(modby), modwith FROM users",
     gubm_fields,
     12,
-    "mit_id = '%s' AND users_id != 0",
+    "clearid = '%s' AND users_id != 0",
     1,
     &VDsortf,
   },
@@ -2046,7 +2046,7 @@ struct query Queries2[] = {
     APPEND,
     "u",
     USERS,
-    "INTO users (login, users_id, uid, shell, last, first, middle, status, mit_id, mit_year) VALUES ( '%s', numvalues.value, %s, '%s', '%s',  '%s',  '%s',  %s, '%s',  '%s')",
+    "INTO users (login, users_id, uid, shell, last, first, middle, status, clearid, type) VALUES ( '%s', numvalues.value, %s, '%s', '%s',  '%s',  '%s',  %s, '%s',  '%s')",
     ausr_fields,
     9,
     "numvalues.name = 'users_id'",
@@ -2076,7 +2076,7 @@ struct query Queries2[] = {
     UPDATE,
     "u",
     USERS,
-    "users SET login = '%s', uid = %s, shell = '%s', last = '%s', first = '%s', middle = '%s', status = %s, mit_id = '%s',  mit_year = '%s'",
+    "users SET login = '%s', uid = %s, shell = '%s', last = '%s', first = '%s', middle = '%s', status = %s, clearid = '%s',  type = '%s'",
     uusr_fields,
     9,
     "users_id = %d",
@@ -2145,7 +2145,7 @@ struct query Queries2[] = {
   },
 
   {
-    /* Q_GKUM - GET_KERBEROS_USER_MAP */ /*! Benefits from FROM clause */
+    /* Q_GKUM - GET_KERBEROS_USER_MAP */ 
     "get_kerberos_user_map",
     "gkum",
     RETRIEVE,
@@ -2226,7 +2226,7 @@ struct query Queries2[] = {
     RETRIEVE,
     "u",
     USERS,
-    "login, potype, text(pop_id) + \":\" + text(box_id), pmodtime, text(pmodby), pmodwith FROM users",
+    "login, potype, text(pop_id) + ':' + text(box_id), pmodtime, text(pmodby), pmodwith FROM users",
     gpob_fields,
     6,
     "users_id = %d",
@@ -2241,7 +2241,7 @@ struct query Queries2[] = {
     RETRIEVE,
     "u",
     USERS,
-    "login, potype, text(pop_id) + \":\" + text(box_id) FROM users",
+    "login, potype, text(pop_id) + ':' + text(box_id) FROM users",
     gpox_fields,
     3,
     "potype != 'NONE'",
@@ -2256,7 +2256,7 @@ struct query Queries2[] = {
     RETRIEVE,
     "u",
     USERS,
-    "login, potype, text(pop_id) + \":\" + text(box_id) FROM users",
+    "login, potype, text(pop_id) + ':' + text(box_id) FROM users",
     gpox_fields,
     3,
     "potype = 'POP'",
@@ -2271,7 +2271,7 @@ struct query Queries2[] = {
     RETRIEVE,
     "u",
     USERS,
-    "login, potype, text(pop_id) + \":\" + text(box_id) FROM users",
+    "login, potype, text(pop_id) + ':' + text(box_id) FROM users",
     gpox_fields,
     3,
     "potype = 'SMTP'",
@@ -2445,7 +2445,7 @@ struct query Queries2[] = {
   },
 
   {
-    /* Q_GMCM - GET_MACHINE_TO_CLUSTER_MAP */ /*! Benefits from FROM clause */
+    /* Q_GMCM - GET_MACHINE_TO_CLUSTER_MAP */ 
     "get_machine_to_cluster_map",
     "gmcm",
     RETRIEVE,
@@ -2490,7 +2490,7 @@ struct query Queries2[] = {
   },
 
   {
-    /* Q_GCLD - GET_CLUSTER_DATA */ /*! Benefits from FROM clause */
+    /* Q_GCLD - GET_CLUSTER_DATA */
     "get_cluster_data",
     "gcld",
     RETRIEVE,
@@ -2640,7 +2640,7 @@ struct query Queries2[] = {
   },
 
   {
-    /* Q_GSHI - GET_SERVER_HOST_INFO */ /*! Benefits from FROM clause */
+    /* Q_GSHI - GET_SERVER_HOST_INFO */ 
     "get_server_host_info",
     "gshi",
     RETRIEVE,
@@ -2760,7 +2760,7 @@ struct query Queries2[] = {
   },
 
   {
-    /* Q_GSHA - GET_SERVER_HOST_ACCESS */ /*! Benefits from FROM clause */
+    /* Q_GSHA - GET_SERVER_HOST_ACCESS */ 
     "get_server_host_access",
     "gsha",
     RETRIEVE,
@@ -2820,7 +2820,7 @@ struct query Queries2[] = {
   },
 
   {
-    /* Q_GSLO - GET_SERVER_LOCATIONS */ /*! Benefits from FROM clause */
+    /* Q_GSLO - GET_SERVER_LOCATIONS */ 
     "get_server_locations",
     "gslo",
     RETRIEVE,
@@ -2835,7 +2835,7 @@ struct query Queries2[] = {
   },
 
   {
-    /* Q_GFSL - GET_FILESYS_BY_LABEL */ /*! Benefits from FROM clause */
+    /* Q_GFSL - GET_FILESYS_BY_LABEL */ 
     "get_filesys_by_label",
     "gfsl",
     RETRIEVE,
@@ -2850,7 +2850,7 @@ struct query Queries2[] = {
   },
 
   {
-    /* Q_GFSM - GET_FILESYS_BY_MACHINE */ /*! Benefits from FROM clause */
+    /* Q_GFSM - GET_FILESYS_BY_MACHINE */ 
     "get_filesys_by_machine",
     "gfsm",
     RETRIEVE,
@@ -2865,7 +2865,7 @@ struct query Queries2[] = {
   },
 
   {
-    /* Q_GFSN - GET_FILESYS_BY_NFSPHYS */ /*! Benefits from FROM clause */
+    /* Q_GFSN - GET_FILESYS_BY_NFSPHYS */ 
     "get_filesys_by_nfsphys",
     "gfsn",
     RETRIEVE,
@@ -2880,7 +2880,7 @@ struct query Queries2[] = {
   },
 
   {
-    /* Q_GFSG - GET_FILESYS_BY_GROUP */ /*! Benefits from FROM clause */ 
+    /* Q_GFSG - GET_FILESYS_BY_GROUP */ 
     "get_filesys_by_group",
     "gfsg",
     RETRIEVE,
@@ -2940,7 +2940,7 @@ struct query Queries2[] = {
   },
 
   {
-    /* Q_GFGM - GET_FSGROUOP_MEMBERS */ /*! */
+    /* Q_GFGM - GET_FSGROUOP_MEMBERS */ 
     "get_fsgroup_members",
     "gfgm",
     RETRIEVE,
@@ -2985,7 +2985,7 @@ struct query Queries2[] = {
   },
 
   {
-    /* Q_GANF - GET_ALL_NFSPHYS */ /*! */
+    /* Q_GANF - GET_ALL_NFSPHYS */ 
     "get_all_nfsphys",
     "ganf",
     RETRIEVE,
@@ -3000,7 +3000,7 @@ struct query Queries2[] = {
   },
 
   {
-    /* Q_GNFP - GET_NFSPHYS */ /*! */
+    /* Q_GNFP - GET_NFSPHYS */ 
     "get_nfsphys",
     "gnfp",
     RETRIEVE,
@@ -3075,7 +3075,7 @@ struct query Queries2[] = {
   },
 
   {
-    /* Q_GQOT - GET_QUOTA */ /*! */
+    /* Q_GQOT - GET_QUOTA */ 
     "get_quota",
     "gqot",
     RETRIEVE,
@@ -3090,7 +3090,7 @@ struct query Queries2[] = {
   },
 
   {
-    /* Q_GQBF - GET_QUOTA_BY_FILESYS */ /*! */
+    /* Q_GQBF - GET_QUOTA_BY_FILESYS */ 
     "get_quota_by_filesys",
     "gqbf",
     RETRIEVE,
@@ -3150,7 +3150,7 @@ struct query Queries2[] = {
   },
 
   {
-    /* Q_GNFQ - GET_NFS_QUOTAS */ /*! */
+    /* Q_GNFQ - GET_NFS_QUOTAS */ 
     "get_nfs_quota",
     "gnfq",
     RETRIEVE,
@@ -3165,7 +3165,7 @@ struct query Queries2[] = {
   },
 
   {
-    /* Q_GNQP - GET_NFS_QUOTAS_BY_PARTITION */ /*! */
+    /* Q_GNQP - GET_NFS_QUOTAS_BY_PARTITION */ 
     "get_nfs_quotas_by_partition",
     "gnqp",
     RETRIEVE,
@@ -3510,7 +3510,7 @@ struct query Queries2[] = {
   },
 
   {
-    /* Q_GPCE - GET_PRINTCAP_ENTRY */ /*! */
+    /* Q_GPCE - GET_PRINTCAP_ENTRY */ 
     "get_printcap_entry",
     "gpce",
     RETRIEVE,

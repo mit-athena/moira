@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/afssync/sync.qc,v 1.12 1992-07-08 18:32:22 probe Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/afssync/sync.qc,v 1.13 1992-11-07 23:08:16 probe Exp $
  *
  *
  *  (c) Copyright 1989 by the Massachusetts Institute of Technology.
@@ -163,26 +163,29 @@ do_groups()
 	    if (status)
 		fprintf(stderr, "Error adding group %s id %d: %s\n",
 			namebuf, aid, error_message(status));
-	    else {
+
+	    if ((status==0 || status==PRIDEXIST) &&
+		(aid!=ANYUSERID && aid!=AUTHUSERID)) {
+
 		g = (struct entry *)malloc(sizeof(struct entry));
 		g->id = aid;
 		g->members = 0;
 		hash_store(groups, lid, g);
 		gcount++;
-	    }
 
-	    /* Set modes on hidden lists (S----) */
-	    if (hide && (status==0 || status==PRIDEXIST)) {
-		pos = FindByID(0, aid);
-		status = pr_Read(0, 0, pos, &gentry, sizeof(gentry));
-		if (!status) {
-		    gentry.flags = htonl(PRGRP|PRACCESS|PRP_STATUS_ANY);
-		    status = pr_Write(0, 0, pos, &gentry, sizeof(gentry));
+		/* Set modes on hidden lists (S----) */
+		if (hide) {
+		    pos = FindByID(0, aid);
+		    status = pr_Read(0, 0, pos, &gentry, sizeof(gentry));
+		    if (!status) {
+			gentry.flags = htonl(PRGRP|PRACCESS|PRP_STATUS_ANY);
+			status = pr_Write(0, 0, pos, &gentry, sizeof(gentry));
+		    }
+		    if (status)
+			fprintf(stderr,
+				"Error setting flags on group %s: %s\n",
+				namebuf, error_message(status));
 		}
-		if (status)
-		    fprintf(stderr,
-			    "Error setting flags on group %s: %s\n",
-			    namebuf, error_message(status));
 	    }
 ##  }
 
@@ -202,6 +205,12 @@ do_groups()
 	      mcount++;
       }
 ##  }
+
+    /* Do the bulk of the membership quickly.
+     * Add PRSIZE members into the user/group record.  After that, we
+     * require the use of continuation records, but we assume this is
+     * few enough that we do this the slow way (AddToEntry).
+     */
     for (p = &(users->data[users->size - 1]); p >= users->data; p--) {
 	for (b = *p; b; b = b->next) {
 	    if ((u = (struct entry *)b->data)->members == 0)

@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_connect.c,v $
  *	$Author: wesommer $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_connect.c,v 1.4 1987-06-01 04:35:04 wesommer Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_connect.c,v 1.5 1987-06-16 17:47:58 wesommer Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_sms_connect_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_connect.c,v 1.4 1987-06-01 04:35:04 wesommer Exp $";
+static char *rcsid_sms_connect_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_connect.c,v 1.5 1987-06-16 17:47:58 wesommer Exp $";
 #endif lint
 
 #include "sms_private.h"
@@ -21,85 +21,60 @@ static char *rcsid_sms_connect_c = "$Header: /afs/.athena.mit.edu/astaff/project
 
 int sms_connect()
 {
-	extern int errno;
+    extern int errno;
 	
-	if (!sms_inited) sms_init();
-	
-	/* 
-	 * should do a hesiod call to find the sms machine name & service
-	 * number/name.
-	 */
-	/* XXX gdb doesn't give real return codes. Can we trust errno?*/
-	errno = 0;
-	_sms_conn = start_server_connection(SMS_GDB_SERV, ""); 
-	if (_sms_conn == NULL) {
-		return errno;
-	}
-	return 0;
+    if (!sms_inited) sms_init();
+    if (_sms_conn) return SMS_ALREADY_CONNECTED;
+		
+    /* 
+     * 	* should do a hesiod call to find the sms machine name & service
+     * 	 * number/name.
+     * 	 */
+    /* XXX gdb doesn't give real return codes. Can we trust errno?*/
+    errno = 0;
+    _sms_conn = start_server_connection(SMS_GDB_SERV, ""); 
+    if (_sms_conn == NULL) {
+	return errno;
+    }
+    return 0;
 }
 	
 int sms_disconnect()
 {
-	if (!_sms_conn) {
-		return SMS_NOT_CONNECTED;
-	}
-	/* Is this guaranteed NOT to fail?? I don't believe it, but.. */
-	_sms_conn = sever_connection(_sms_conn);
-	return 0;
+    CHECK_CONNECTED;
+    _sms_conn = sever_connection(_sms_conn);
+    return 0;
 }
 
 int sms_noop()
 {
-	int status;
-	struct sms_params *parms = NULL;
-	struct sms_params *reply = NULL;
-	
+    int status;
+    sms_params param_st;
+    struct sms_params *params = NULL;
+    struct sms_params *reply = NULL;
 
-	parms = (struct sms_params *) malloc(sizeof(*parms));
+    CHECK_CONNECTED;
+    params = &param_st;
+    params->sms_procno = SMS_NOOP;
+    params->sms_argc = 0;
+    params->sms_argl = NULL;
+    params->sms_argv = NULL;
 	
-	parms->sms_procno = SMS_NOOP;
-	parms->sms_argc = 0;
-	parms->sms_argl = NULL;
-	parms->sms_argv = NULL;
+    if ((status = sms_do_call(params, &reply)) == 0)
+	status = reply->sms_status;
 	
-	if ((status = sms_do_call(parms, &reply)) || (status = reply->sms_status))
-		goto punt;
-	
-	
-punt:
-	sms_destroy_reply(reply);
-ok:
-	free(parms);
-	return status;
+    sms_destroy_reply(reply);
+
+    return status;
 }
 
-int sms_shutdown(why)
-	char *why;
-{
-	int status;
-	sms_params *parms=NULL;
-	sms_params *reply=NULL;
-
-	parms = (sms_params *) malloc(sizeof(*parms));
-	
-	parms->sms_procno = SMS_SHUTDOWN;
-	parms->sms_argc = 1;
-	parms->sms_argv = (char **)malloc(sizeof(char *) * 2);
-	parms->sms_argv[0] = why;
-	parms->sms_argv[1] = NULL;
-	parms->sms_argl = NULL;
-	
-	if ((status = sms_do_call(parms, &reply)) || (status = reply->sms_status))
-		goto punt;
-	
-	
-punt:
-	sms_destroy_reply(reply);
-ok:
-	if(parms) {
-		if(parms->sms_argv)
-			free(parms->sms_argv);
-		free(parms);
-	}
-	return status;
-}
+/*
+ * Local Variables:
+ * mode: c
+ * c-indent-level: 4
+ * c-continued-statement-offset: 4
+ * c-brace-offset: -4
+ * c-argdecl-indent: 4
+ * c-label-offset: -4
+ * End:
+ */

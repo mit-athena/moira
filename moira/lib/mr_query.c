@@ -1,66 +1,109 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_query.c,v $
  *	$Author: wesommer $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_query.c,v 1.1 1987-06-04 01:29:32 wesommer Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_query.c,v 1.2 1987-06-16 17:48:58 wesommer Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
  *	$Log: not supported by cvs2svn $
+ * Revision 1.1  87/06/04  01:29:32  wesommer
+ * Initial revision
+ * 
  */
 
 #ifndef lint
-static char *rcsid_sms_query_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_query.c,v 1.1 1987-06-04 01:29:32 wesommer Exp $";
+static char *rcsid_sms_query_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_query.c,v 1.2 1987-06-16 17:48:58 wesommer Exp $";
 #endif lint
 
 #include "sms_private.h"
 
+/*
+ * This routine is the primary external interface to the sms library.
+ *
+ * It builds a new argument vector with the query handle prepended,
+ * and calls sms_query_internal.
+ */
+
 int sms_query(name, argc, argv, callproc, callarg)
-	char *name;		/* Query name */
-	int argc;		/* Arg count */
-	char **argv;		/* Args */
-	int (*callproc)();	/* Callback procedure */
-	char *callarg;		/* Callback argument */
+    char *name;		/* Query name */
+    int argc;		/* Arg count */
+    char **argv;		/* Args */
+    int (*callproc)();	/* Callback procedure */
+    char *callarg;		/* Callback argument */
 {
-	int status;
-	sms_params *params = NULL, *reply = NULL;
-	
-	if (!_sms_conn) {
-		return SMS_NOT_CONNECTED;
-	}
-	
-	params = (struct sms_params *) malloc(sizeof(*params));
-	params->sms_procno = SMS_QUERY;
-	params->sms_argc = 1 + argc;
-	params->sms_argl = NULL;
-
-	params->sms_argv = (char **)malloc(sizeof(char *) * params->sms_argc);
-
-	params->sms_argv[0] = name;
-	bcopy((char *)argv, (char *)(params->sms_argv + 1),
-	      sizeof(char *) * argc);
-	
-	if ((status = sms_do_call(params, &reply)))
-		goto punt;
-
-	while ((status = reply->sms_status) == SMS_MORE_DATA) {
-		(*callproc)(reply->sms_argc, reply->sms_argv, callarg);
-		sms_destroy_reply(reply);
-		reply = NULL;
-		/*XXX error handling here sucks */
-		initialize_operation(_sms_recv_op, sms_start_recv, &reply,
-				     (int (*)())NULL);
-		queue_operation(_sms_conn, CON_INPUT, _sms_recv_op);
-		complete_operation(_sms_recv_op);
-	}
-	
-punt:
-	sms_destroy_reply(reply);
-	if(params) {
-		if(params->sms_argv)
-			free(params->sms_argv);
-		if(params->sms_argl)
-			free(params->sms_argl);
-		free(params);
-	}
-	return status;
+    register char **nargv = (char **)malloc(sizeof(char *) * (argc+1));
+    register int status = 0;
+    nargv[0] = name;
+    bcopy((char *)argv, (char *)(nargv+1), sizeof(char *) * argc);
+    status = sms_query_internal(argc+1, nargv, callproc, callarg);
+    free(nargv);
+    return status;
 }
+/*
+ * This routine makes an SMS query.
+ *
+ * argv[0] is the query name.
+ * argv[1..argc-1] are the query arguments.
+ *
+ * callproc is called once for each returned value, with arguments
+ * argc, argv, and callarg.
+ * If it returns a non-zero value, further calls to it are not done, and
+ * all future data from the server is ignored (there should be some
+ * way to send it a quench..)
+ */
+
+int sms_query_internal(argc, argv, callproc, callarg)
+    int argc;		/* Arg count */
+    char **argv;		/* Args */
+    int (*callproc)();	/* Callback procedure */
+    char *callarg;		/* Callback argument */
+{
+    int status;
+    sms_params params_st;
+    register sms_params *params = NULL;
+    sms_params *reply = NULL;
+    int stopcallbacks = 0;
+    
+    CHECK_CONNECTED;
+
+    params = &params_st;
+    params->sms_procno = SMS_QUERY;
+    params->sms_argc = argc;
+    params->sms_argl = NULL;
+    params->sms_argv = argv;
+	
+    if ((status = sms_do_call(params, &reply)))
+	goto punt;
+
+    while ((status = reply->sms_status) == SMS_MORE_DATA) {
+	if (!stopcallbacks) 
+	    stopcallbacks =
+		(*callproc)(reply->sms_argc, reply->sms_argv, callarg);
+	sms_destroy_reply(reply);
+	reply = NULL;
+
+	initialize_operation(_sms_recv_op, sms_start_recv, &reply,
+			     (int (*)())NULL);
+	queue_operation(_sms_conn, CON_INPUT, _sms_recv_op);
+
+	complete_operation(_sms_recv_op);
+	if (OP_STATUS(_sms_recv_op) != OP_COMPLETE) {
+	    sms_disconnect();
+	    return SMS_ABORTED;
+	}
+    }	
+punt:
+    sms_destroy_reply(reply);
+
+    return status;
+}
+/*
+ * Local Variables:
+ * mode: c
+ * c-indent-level: 4
+ * c-continued-statement-offset: 4
+ * c-brace-offset: -4
+ * c-argdecl-indent: 4
+ * c-label-offset: -4
+ * End:
+ */

@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.pc,v $
  *	$Author: danw $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.pc,v 2.2 1997-07-08 19:51:17 danw Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.pc,v 2.3 1997-09-17 16:59:52 danw Exp $
  *
  *	Copyright (C) 1987, 1988 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_qrtn_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.pc,v 2.2 1997-07-08 19:51:17 danw Exp $";
+static char *rcsid_qrtn_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.pc,v 2.3 1997-09-17 16:59:52 danw Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -577,7 +577,8 @@ int find_member(list_type, list_id, cl)
     flag = 0;
     users_id = cl->users_id;
     client_id = -cl->client_id;
-    EXEC SQL SELECT member_id INTO :flag FROM imembers WHERE list_id = :list_id
+    EXEC SQL SELECT COUNT(member_id) INTO :flag FROM imembers
+	WHERE list_id = :list_id
 	AND ( ( member_type = 'USER' AND member_id = :users_id )
 	      OR (member_type = 'KERBEROS' AND member_id = :client_id ) );
     if (sqlca.sqlcode == 0)

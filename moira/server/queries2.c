@@ -1,4 +1,4 @@
-/* $Id: queries2.c,v 2.92 2001-10-17 21:34:06 zacheiss Exp $
+/* $Id: queries2.c,v 2.93 2001-10-18 14:02:12 zacheiss Exp $
  *
  * This file defines the query dispatch table
  *
@@ -106,6 +106,19 @@ static char *gubl_fields[] = {
   "creator", 
 };
 
+static struct validate gubl2_validate =
+{
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  access_login,
+  0,
+  followup_fix_modby,
+};
+
 static struct validate gubl_validate =
 {
   0,
@@ -145,6 +158,19 @@ static char *guan_fields[] = {
   "login", "unix_uid", "shell", "winconsoleshell", "last", "first", "middle", 
   "status", "clearid", "class", "comments", "signature", "secure",
   "modtime", "modby", "modwith", "created", "creator",
+};
+
+static struct validate guan2_validate =
+{
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  followup_fix_modby,
 };
 
 static struct validate guan_validate =
@@ -201,6 +227,19 @@ static char *gubu_fields[] = {
   "creator",
 };
 
+static struct validate gubu2_validate =
+{
+  VOnum0,
+  1,
+  0,
+  0,
+  0,
+  0,
+  access_login,
+  0,
+  followup_fix_modby,
+};
+
 static struct validate gubu_validate =
 {
   VOnum0,
@@ -225,6 +264,19 @@ static char *gubn_fields[] = {
   "login", "unix_uid", "shell", "winconsoleshell", "last", "first", "middle", 
   "status", "clearid", "class", "modtime", "modby", "modwith", "created",
   "creator",
+};
+
+static struct validate gubn2_validate =
+{
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  followup_fix_modby,
 };
 
 static struct validate gubn_validate =
@@ -3564,7 +3616,7 @@ struct query Queries[] = {
     "u.login LIKE '%s' AND u.users_id != 0 AND u.comments = str.string_id",
     1,
     "u.login",
-    &gubl_validate,
+    &gubl2_validate,
   },
 
   {
@@ -3598,7 +3650,7 @@ struct query Queries[] = {
     "u.unix_uid = %s AND u.users_id != 0 AND u.comments = str.string_id",
     1,
     "u.login",
-    &gubu_validate,
+    &gubu2_validate,
   },
 
   {
@@ -3632,7 +3684,7 @@ struct query Queries[] = {
     "u.first LIKE '%s' AND u.last LIKE '%s' AND u.users_id != 0 and u.comments = str.string_id",
     2,
     "u.login",
-    &guan_validate,
+    &guan2_validate,
   },
 
   {
@@ -3683,7 +3735,7 @@ struct query Queries[] = {
     "u.type = UPPER('%s') AND u.users_id != 0 AND u.comments = str.string_id",
     1,
     "u.login",
-    &VDfix_modby,
+    &guan_validate,
   },
 
   {
@@ -3717,7 +3769,7 @@ struct query Queries[] = {
     "u.clearid LIKE '%s' AND u.users_id != 0 AND u.comments = str.string_id",
     1,
     "u.login",
-    &VDfix_modby,
+    &guan_validate,
   },
 
   {
@@ -3734,7 +3786,7 @@ struct query Queries[] = {
     "u.login LIKE '%s' AND u.users_id != 0",
     1,
     "u.login",
-    &gubl_validate,
+    &gubl2_validate,
   },
 
   {
@@ -3768,7 +3820,7 @@ struct query Queries[] = {
     "u.unix_uid = %s AND u.users_id != 0",
     1,
     "u.login",
-    &gubu_validate,
+    &gubu2_validate,
   },
 
   {
@@ -3802,7 +3854,7 @@ struct query Queries[] = {
     "u.first LIKE '%s' AND u.last LIKE '%s' AND u.users_id != 0",
     2,
     "u.login",
-    &gubn_validate,
+    &gubn2_validate,
   },
 
   {
@@ -3853,7 +3905,7 @@ struct query Queries[] = {
     "u.type = UPPER('%s') AND u.users_id != 0",
     1,
     "u.login",
-    &VDfix_modby,
+    &guan_validate,
   },
 
   {
@@ -3887,7 +3939,7 @@ struct query Queries[] = {
     "u.clearid LIKE '%s' AND u.users_id != 0",
     1,
     "u.login",
-    &VDfix_modby,
+    &guan_validate,
   },
 
   {

@@ -1,4 +1,4 @@
-/* $Id: dbck.pc,v 1.4 1998-02-23 19:23:27 danw Exp $
+/* $Id: dbck.pc,v 1.5 1998-04-14 18:54:44 danw Exp $
  *
  * Moira database consistency checker
  *
@@ -18,7 +18,7 @@
 EXEC SQL INCLUDE sqlca;
 EXEC SQL INCLUDE sqlda;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/dbck.pc,v 1.4 1998-02-23 19:23:27 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/dbck.pc,v 1.5 1998-04-14 18:54:44 danw Exp $");
 
 int debug = 0;
 int mode = MODE_ASK;
@@ -110,10 +110,13 @@ int main(int argc, char **argv)
   fflush(stdout);
   EXEC SQL CONNECT :database IDENTIFIED BY :database;
   printf("done\n");
-  EXEC SQL SELECT value INTO :dcmenable FROM numvalues
-    WHERE name = 'dcm_enable';
-  dprintf("DCM disabled (was %d)\n", dcmenable);
-  EXEC SQL UPDATE numvalues SET value = 0 WHERE name = 'dcm_enable';
+  if (mode != MODE_NO)
+    {
+      EXEC SQL SELECT value INTO :dcmenable FROM numvalues
+	WHERE name = 'dcm_enable';
+      dprintf("DCM disabled (was %d)\n", dcmenable);
+      EXEC SQL UPDATE numvalues SET value = 0 WHERE name = 'dcm_enable';
+    }
 
   /* Begin transaction here. */
 

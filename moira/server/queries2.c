@@ -1,6 +1,6 @@
 /* This file defines the query dispatch table for version 2 of the protocol
  *
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/queries2.c,v 2.5 1992-07-20 15:50:52 genoa Exp $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/queries2.c,v 2.6 1992-07-20 20:46:07 genoa Exp $
  *
  * Copyright 1987, 1988 by the Massachusetts Institute of Technology.
  * For copying and distribution information, please see the file
@@ -135,6 +135,11 @@ static struct valobj VOsort0[] = {
   {V_SORT, 0, 0, 0, 0, 0},
 };
 
+static struct valobj VOwild0sort[] = {
+  {V_WILD, 0},
+  {V_SORT, 0, 0, 0, 0, 0},
+};
+
 static struct valobj VOdate1[] = {
   {V_DATE, 1, 0, 0, 0, MR_DATE},
 };
@@ -191,6 +196,7 @@ static struct valobj VOfilsys0user1[] = {
  */
 
 static struct validate VDmach = { VOmach0, 1 };
+static struct validate VDsort0= { VOsort0, 1 };
 static struct validate VDsort2= { VOsort01,2 };
 static struct validate VDsortf = { 
     VOsort0,
@@ -218,10 +224,10 @@ static char *gubl_fields[] = {
   MIT_ID, CLASS, MOD1, MOD2, MOD3
 };
 
-static struct validate gubx_validate =	/* gubl, gubu */
+static struct validate gubl_validate =	
 {
-  VOsort0,
-  1,
+  VOwild0sort,
+  2,
   0,
   0,
   0,
@@ -235,6 +241,19 @@ static char *gubu_fields[] = {
   UID,
   LOGIN, UID, SHELL, LAST, FIRST, MIDDLE, STATUS, 
   MIT_ID, CLASS, MOD1, MOD2, MOD3,
+};
+
+static struct validate gubu_validate =	
+{
+  VOsort0,
+  1,
+  0,
+  0,
+  0,
+  0,
+  access_login,
+  0,
+  followup_fix_modby,
 };
 
 static char *gubn_fields[] = {
@@ -1963,7 +1982,7 @@ struct query Queries2[] = {
     6,
     "users_id != 0",
     0,
-    0,
+    &VDsort0,
   },
 
   {
@@ -1978,7 +1997,7 @@ struct query Queries2[] = {
     6,
     "status = 1",
     0,
-    0,
+    &VDsort0,
   },
 
   {
@@ -1988,12 +2007,12 @@ struct query Queries2[] = {
     RETRIEVE,
     "u",
     USERS,  
-    "CHAR(login), CHAR(uid), shell, CHAR(last), CHAR(first), middle, CHAR(status), CHAR(clearid), CHAR(type), CHAR(modtime), CHAR(modby), modwith FROM users",
+    "CHAR(login), CHAR(uid), shell, CHAR(last), CHAR(first), middle, CHAR(status), CHAR(clearid), type, CHAR(modtime), CHAR(modby), modwith FROM users",
     gubl_fields,
     12,
     "login LIKE '%s' ESCAPE '*' AND users_id != 0",
     1,
-    &gubx_validate,
+    &gubl_validate,
   },
 
   {
@@ -2003,12 +2022,12 @@ struct query Queries2[] = {
     RETRIEVE,
     "u",
     USERS,
-    "CHAR(login), CHAR(uid), shell, CHAR(last), CHAR(first), middle, CHAR(status), CHAR(clearid), CHAR(type), CHAR(modtime), CHAR(modby), modwith FROM users",
+    "CHAR(login), CHAR(uid), shell, CHAR(last), CHAR(first), middle, CHAR(status), CHAR(clearid), type, CHAR(modtime), CHAR(modby), modwith FROM users",
     gubu_fields,
     12,
     "uid = %s AND users_id != 0",
     1,
-    &gubx_validate,
+    &gubu_validate,
   },
 
   {
@@ -2018,7 +2037,7 @@ struct query Queries2[] = {
     RETRIEVE,
     "u",
     USERS,
-    "CHAR(login), CHAR(uid), shell, CHAR(last), CHAR(first), middle, CHAR(status), CHAR(clearid), CHAR(type), CHAR(modtime), CHAR(modby), modwith FROM users",
+    "CHAR(login), CHAR(uid), shell, CHAR(last), CHAR(first), middle, CHAR(status), CHAR(clearid), type, CHAR(modtime), CHAR(modby), modwith FROM users",
     gubn_fields,
     12,
     "first LIKE '%s' ESCAPE '*' AND last LIKE '%s' ESCAPE '*' AND users_id != 0",
@@ -2033,7 +2052,7 @@ struct query Queries2[] = {
     RETRIEVE,
     "u",
     USERS,
-    "CHAR(login), CHAR(uid), shell, CHAR(last), CHAR(first), middle, CHAR(status), CHAR(clearid), CHAR(type), CHAR(modtime), CHAR(modby), modwith FROM users",
+    "CHAR(login), CHAR(uid), shell, CHAR(last), CHAR(first), middle, CHAR(status), CHAR(clearid), type, CHAR(modtime), CHAR(modby), modwith FROM users",
     gubc_fields,
     12,
     "type = uppercase('%s') AND users_id != 0",
@@ -2048,7 +2067,7 @@ struct query Queries2[] = {
     RETRIEVE,
     "u",
     USERS,
-    "CHAR(login), CHAR(uid), shell, CHAR(last), CHAR(first), middle, CHAR(status), CHAR(clearid), CHAR(type), CHAR(modtime), CHAR(modby), modwith FROM users",
+    "CHAR(login), CHAR(uid), shell, CHAR(last), CHAR(first), middle, CHAR(status), CHAR(clearid), type, CHAR(modtime), CHAR(modby), modwith FROM users",
     gubm_fields,
     12,
     "clearid LIKE '%s' ESCAPE '*' AND users_id != 0",

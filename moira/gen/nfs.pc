@@ -1,4 +1,4 @@
-/* $Id: nfs.pc,v 1.8 1998-07-14 01:29:54 danw Exp $
+/* $Id: nfs.pc,v 1.9 1999-09-01 16:47:55 jweiss Exp $
  *
  * This generates the files necessary to load an nfs server.
  *
@@ -23,7 +23,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/nfs.pc,v 1.8 1998-07-14 01:29:54 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/nfs.pc,v 1.9 1999-09-01 16:47:55 jweiss Exp $");
 
 #define min(x, y)	((x) < (y) ? (x) : (y))
 
@@ -218,7 +218,8 @@ struct user {
 
 void do_everyone(void)
 {
-  char buf[MAXPATHLEN], *l;
+  const buflen = MAXPATHLEN;
+  char buf[buflen], *l;
   struct user *u;
   struct grp *g;
   struct bucket *b, **p;
@@ -306,7 +307,16 @@ void do_everyone(void)
 	  u = (struct user *)b->data;
 	  sprintf(buf, "%s:%d:101", u->name, u->uid);
 	  for (g = u->lists; g; g = g->next)
-	    strcat(buf, g->lid);
+	    {
+	      if ((strlen(buf) + strlen(g->lid)) <= buflen)
+		strcat(buf, g->lid);
+	      else
+		{
+		  com_err(whoami, 0, "truncated server-side grp list for %s",
+			  u->name);
+		  break;
+		}
+	    }
 	  b->data = strdup(buf);
 	  fprintf(fd, "%s\n", buf);
 	}

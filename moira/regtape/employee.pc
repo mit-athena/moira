@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/employee.pc,v 1.4 1997-09-05 19:15:02 danw Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/employee.pc,v 1.5 1997-11-02 18:55:08 danw Exp $
  */
 
 #include <stdio.h>
@@ -64,6 +64,7 @@ struct entry {
     char *address;
     char *phone;
     char *phone2;
+    int highid;
 };
 
 
@@ -224,8 +225,13 @@ FILE *in;
     e.title = strtrim(title);
 
     e.class = "MITS";
+    e.highid = 0;
     if (substr(e.title, "PROF") || substr(e.title, "LECTURE"))
-      e.class = "FACULTY";
+	e.class = "FACULTY";
+    if (!strcmp(e.dept, "LINCOLN LAB")) {
+	e.class = "LINCOLN";
+	e.highid = 1;
+    }
 
     return(&e);
 }
@@ -448,7 +454,7 @@ struct entry *e;
     dept[12] = 0;
     
     id = set_next_users_id(0);
-    uid = set_next_uid(1);
+    uid = set_next_uid(e->highid);
     sprintf(login, "#%d", uid);
     last = e->last;
     first = e->first;
@@ -534,15 +540,21 @@ set_next_users_id(limit)
     return(retval);
 }
 
-set_next_uid(limit)
-    int limit;
+set_next_uid(high)
+    int high;
 {
     EXEC SQL BEGIN DECLARE SECTION;
     int rowcount, flag, value, retval;
+    char *name;
     EXEC SQL END DECLARE SECTION;
 
+    if (high)
+	name = "high_uid";
+    else
+	name = "unix_uid";
+
     EXEC SQL SELECT value INTO :value FROM numvalues 
-      WHERE name = 'unix_uid';
+      WHERE name = :name;
     if (sqlfail()) sqlexit();
     if (sqlca.sqlerrd[2] != 1) {
 	EXEC SQL ROLLBACK;
@@ -557,7 +569,7 @@ set_next_uid(limit)
       flag = 0;
     while (flag) {
 	value++;
-	if (limit && value > MAX_ID_VALUE)
+	if (!high && value > MAX_ID_VALUE)
 	    value = MIN_ID_VALUE;
 	flag = 0;
 	EXEC SQL SELECT unix_uid INTO :flag FROM users WHERE unix_uid = :value;
@@ -569,7 +581,7 @@ set_next_uid(limit)
     retval = value++;
     if (limit && value > MAX_ID_VALUE)
       value = MIN_ID_VALUE;
-    EXEC SQL UPDATE numvalues SET value = :value WHERE name = 'unix_uid';
+    EXEC SQL UPDATE numvalues SET value = :value WHERE name = :name;
     if (sqlca.sqlcode != 0) {
 	dbmserr("assigning ID", sqlca.sqlcode);
 	exit(1);

@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_sauth.c,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_sauth.c,v 1.11 1989-06-23 13:49:55 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_sauth.c,v 1.12 1989-08-08 15:05:08 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_sms_sauth_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_sauth.c,v 1.11 1989-06-23 13:49:55 mar Exp $";
+static char *rcsid_sms_sauth_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_sauth.c,v 1.12 1989-08-08 15:05:08 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -78,9 +78,9 @@ do_auth(cl)
 	
 	cl->clname = (char *)malloc((unsigned)(strlen(buf)+1));
 	(void) strcpy(cl->clname, buf);
-	bzero(&ad, sizeof(ad));	/* Clean up session key, etc. */
 
-	cl->users_id = get_users_id(cl->kname.name);
+	if (!strcmp(ad.prealm, krb_realm))
+	  cl->users_id = get_users_id(cl->kname.name);
 
 	if (cl->args->sms_version_no == SMS_VERSION_2) {
 	    unsigned len = strlen(cl->args->sms_argv[1]) + 1;
@@ -90,6 +90,7 @@ do_auth(cl)
 	} else {
 	    cl->entity = unknown;
 	}
+	bzero(&ad, sizeof(ad));	/* Clean up session key, etc. */
 
 	if (log_flags & LOG_RES)
 	    com_err(whoami, 0, "Authenticated to %s using %s, id %d",

@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/hesiod.qc,v 1.12 1989-06-08 16:26:16 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/hesiod.qc,v 1.13 1989-06-28 13:42:09 mar Exp $
  *
  * This generates the zone files necessary to load a hesiod server.
  * The following zones are generated: passwd, uid, pobox, group,
@@ -503,6 +503,12 @@ do_filsys()
 		    fprintf(out, "%s.filsys\tHS UNSPECA \"%s %s %s %s %s\"\n",
 			    name, type, loc, machbuf, access, mount);
 		}
+	    } else if (!strcmp(type, "AFS")) {
+		strtrim(loc);
+		strtrim(access);
+		strtrim(mount);
+		fprintf(out, "%s.filsys\tHS UNSPECA \"AFS %s %s %s\"\n",
+			name, loc, access, mount);
 	    } else if (!strcmp(type, "ERR")) {
 		strtrim(comments);
 		fprintf(out, "%s.filsys\tHS UNSPECA \"ERR %s\"\n",
@@ -538,6 +544,12 @@ do_filsys()
 		    fprintf(out, "%s.filsys\tHS UNSPECA \"%s %s %s %s %s\"\n",
 			    group, type, loc, machbuf, access, mount);
 		}
+	    } else if (!strcmp(type, "AFS")) {
+		strtrim(loc);
+		strtrim(access);
+		strtrim(mount);
+		fprintf(out, "%s.filsys\tHS UNSPECA \"AFS %s %s %s\"\n",
+			group, loc, access, mount);
 	    } else if (!strcmp(type, "ERR")) {
 		strtrim(comments);
 		fprintf(out, "%s.filsys\tHS UNSPECA \"ERR %s\"\n",

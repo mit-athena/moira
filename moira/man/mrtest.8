@@ -1,21 +1,27 @@
-.TH SMSTEST 8 "25 Jan 1988" "Project Athena"
-\" RCSID: $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/man/mrtest.8,v 1.5 1989-08-16 11:29:38 mar Exp $
+.TH MRTEST 8 "25 Jan 1988" "Project Athena"
+\" RCSID: $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/man/mrtest.8,v 1.6 1990-03-08 18:58:59 mar Exp $
 .SH NAME
-smstest \- perform SMS operations manually
+mrtest \- perform Moira operations manually
 .SH SYNOPSIS
-.B smstest
+.B mrtest
 .SH DESCRIPTION
-.I smstest
-allows one to perform by hand all operations allowed in the sms
+.I mrtest
+allows one to perform by hand all operations allowed in the Moira
 protocol.  There are no command line options, as commands are given to
 a prompt within the program.  Control operations are:
 .TP
 .B connect [server]
-make a network connection to the SMS server.  If no server is
-specified, the default "SMS.MIT.EDU:sms_db" will be used.
+make a network connection to the Moira server.  The server
+specification is optional.  If present, it is of the form
+hostname:portname.  The portname is optional as well, and if specified
+will be looked up in
+.B /etc/services.
+If no server is specified, then the server will be found from the
+MOIRASERVER environment variable, the "moira" sloc entry in hesiod, or
+the compiled in default, in that order.
 .TP
 .B disconnect
-break the network connection to the SMS server.
+break the network connection to the Moira server.
 .TP
 .B host
 show the name of the host the client is connected to.
@@ -40,13 +46,13 @@ script commands up to 8 scripts deep.
 .TP
 .B list_requests
 lists all of the 
-.I smstest
+.I mrtest
 commands.
 .TP
 .B quit
 exits the program.
 .PP
-SMS protocol operations include:
+Moira protocol operations include:
 .TP
 .B noop
 does "no operation" to the server, just making sure the server is
@@ -76,6 +82,6 @@ Due to problems in the ss library, standard input must be a terminal.
 If it is a file, only the first line will be read.  However, the
 script command allows one to read input from a file.
 .SH SEE ALSO
-The Project Athena Technical Plan section on SMS for a list of queries
+The Project Athena Technical Plan section on Moira for a list of queries
 and their arguments, and a description of the protocol this
 implements.

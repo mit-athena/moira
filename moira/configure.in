@@ -177,7 +177,7 @@ AC_MSG_CHECKING(for GDSS)
 AC_ARG_WITH(gdss,
     [  --with-gdss=PREFIX      Specify location of GDSS],
     [gdss="$withval"
-     GDSS_CPPFLAGS="-I$gdss/include"
+     MR_INCLUDE("$gdss/include")
      GDSS_LIBS="-L$gdss/lib -lgdss"],
     [if test -d $srcdir/util/gdss; then
          gdss=$srcdir/util/gdss
@@ -189,7 +189,7 @@ AC_ARG_WITH(gdss,
 	 if test ! -d util; then
 	     mkdir util
 	 fi
-	 MR_INCLUDE('-I$(SRCTOP)/util/gdss/include')
+	 MR_INCLUDE('$(SRCTOP)/util/gdss/include')
 	 GDSS_LIBS='-L$(BUILDTOP)/util/gdss/lib -lgdss'
 	 GDSS_LIBDEP='$(BUILDTOP)/util/gdss/lib/libgdss.a'
      else
@@ -253,11 +253,22 @@ AC_ARG_WITH(oracle,
      fi])
 AC_MSG_RESULT($oracle)
 if test "$oracle" != no; then
-    SQL_LIBS="-L$oracle/lib -lsql $oracle/lib/osntab.o -lsqlnet -lora -lsqlnet -lnlsrtl -lcv6 -lcore -lnlsrtl -lcore -lm"
+    AC_MSG_CHECKING(Pro*C version)
+    ORACLE_HOME=$oracle release=`$ORACLE_HOME/bin/proc | awk '/Release/ {print $3;}'`
+    AC_MSG_RESULT($release)
+    case $release in
+	2.0.6.0.0)
+	    SQL_LIBS="-L$oracle/lib -lsql $oracle/lib/osntab.o -lsqlnet -lora -lsqlnet -lnlsrtl -lcv6 -lcore -lnlsrtl -lcore -lm"
+	    ;;
+	*)
+	    SQL_LIBS="-L$oracle/lib -lclntsh -lxa -lsql -lsqlnet -lncr -lsqlnet -lclient -lcommon -lgeneric -lsqlnet -lncr -lsqlnet -lclient -lcommon -lgeneric   -lepc -lnlsrtl3 -lc3v6 -lcore3 -lnlsrtl3 -lcore3 -lnlsrtl3 `cat $oracle/rdbms/lib/sysliblist` -lm -lthread"
+	    ;;
+    esac
     SVRSUBDIRS='$(SVRDIRS)'
     SERVER_OUTPUT_FILES="db/Makefile server/Makefile afssync/Makefile backup/Makefile dbck/Makefile dcm/Makefile gen/Makefile incremental/Makefile reg_svr/Makefile regtape/Makefile"
     PRO_C=$oracle/bin/proc
     PRO_C_OPTS=CODE=ANSI_C
+    PRO_C_DEFS="DEFINE=_PROC_ $PRO_C_DEFS"
 fi
 AC_SUBST(PRO_C)
 AC_SUBST(PRO_C_DEFS)

@@ -1,8 +1,3 @@
-[This is a still-under-construction rewrite of the afssync
-instructions, adapted to the Ingres/Maxine -> Oracle/SPARC port, and
-is also being updated and simplified.]
-
-
 The executables are in /moira/bin/ on the moira server, with sources
 in /mit/moiradev/src/afssync/.  Most of the commands are run on the
 Moira server.
@@ -35,7 +30,8 @@ the old prdb for being reincorporated into the new prdb.
 		print $L unless $punt==1;}' > prdb.extra.trimmed
 to remove the personal groups for users who are deactivated
 
-	awk '/^[^ ][^:]*@/ {printf "KERBEROS:%s\n",$1}' prdb.extra > foreign
+	awk '/^[^ ][^:]*@/ {printf "KERBEROS:%s\n",$1}' prdb.extra.trimmed \
+		> foreign
 	blanche afs-foreign-users -f foreign
 Get a list of all the @andrew.cmu.edu type (non- athena.mit.edu cell)
 users, and sync the Moira list afs-foreign-users to this list.
@@ -44,8 +40,9 @@ thus keeping them from being lost in the prdb resync.
 Sanity checking the diffs before running the blanche command is recommended.
 
 	awk '/^[^ 0-9][^:@]*$/ {printf "KERBEROS:%s@ATHENA.MIT.EDU\n",$1}' \
-		prdb.extra > oddities
-	awk '/^[^ ][0-9.]* .*$/ {printf "KERBEROS:%s\n",$1}' prdb.extra >> oddities
+		prdb.extra.trimmed > oddities
+	awk '/^[^ ][0-9.]* .*$/ {printf "KERBEROS:%s\n",$1}' prdb.extra.trimmed\
+		 >> oddities
 	echo "LIST:afs-foreign-users" >> oddities
 	blanche afs-odd-entities -f oddities
 Do the equivalent of afs-foreign-users for domestic users.  We make

@@ -1,4 +1,4 @@
-/* $Id: qsetup.pc,v 2.35 1999-11-16 22:56:04 danw Exp $
+/* $Id: qsetup.pc,v 2.36 2000-01-11 19:50:25 danw Exp $
  *
  * Query setup routines
  *
@@ -21,7 +21,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsetup.pc,v 2.35 1999-11-16 22:56:04 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsetup.pc,v 2.36 2000-01-11 19:50:25 danw Exp $");
 
 extern char *whoami;
 extern int dbms_errno, mr_errcode;
@@ -94,17 +94,19 @@ int setup_dusr(struct query *q, char *argv[], client *cl)
 {
   EXEC SQL BEGIN DECLARE SECTION;
   int flag, id, cnt;
+  char resv[USERS_RESERVATIONS_SIZE];
   EXEC SQL END DECLARE SECTION;
 
   id = *(int *)argv[0];
 
-  /* For now, only allow users to be deleted if their status is 0 */
-  EXEC SQL SELECT status INTO :flag FROM users WHERE users_id = :id;
-  if (flag != 0 && flag != 4)
+  /* For now, only allow users to be deleted if their status is 0
+   * and we have no reservations about deleting them.
+   */
+  EXEC SQL SELECT status, reservations INTO :flag, :resv
+    FROM users WHERE users_id = :id;
+  if ((flag != 0 && flag != 4) || *resv)
     return MR_IN_USE;
 
-  EXEC SQL DELETE FROM quota WHERE entity_id = :id AND type = 'USER';
-  EXEC SQL DELETE FROM krbmap WHERE users_id = :id;
   EXEC SQL SELECT COUNT(member_id) INTO :cnt FROM imembers
     WHERE member_id = :id AND member_type = 'USER';
   if (cnt > 0)
@@ -127,6 +129,9 @@ int setup_dusr(struct query *q, char *argv[], client *cl)
     return MR_IN_USE;
   if (dbms_errno)
     return mr_errcode;
+
+  EXEC SQL DELETE FROM quota WHERE entity_id = :id AND type = 'USER';
+  EXEC SQL DELETE FROM krbmap WHERE users_id = :id;
   return MR_SUCCESS;
 }
 

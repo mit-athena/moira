@@ -1,4 +1,4 @@
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/Imakefile,v 1.2 1991-03-08 10:29:06 mar Exp $
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/Imakefile,v 1.3 1991-03-21 11:09:19 mar Exp $
 #
 # Copyright 1990 by the Massachusetts Institute of Technology.
 #
@@ -15,6 +15,6 @@ TEXT= welcome network_down username_blurb password_blurb improper_reg \
 CODE=${SRCS} ${TEXT} Imakefile files.h userreg.h
 OBJS=	userreg.o display.o reg_stubs.o disable.o
 
-program(userreg, ${OBJS},${MR_LIBDEP} ${GDB_LIBDEP}, ${CLIBS} -lcurses -ltermcap -lkadm, ${PROGDIR})
+program(userreg, ${OBJS},${MR_LIBDEP} ${GDB_LIBDEP}, ${CLIBS} -lcurses -ltermcap -lkadm,${PROGDIR})
 
 depend:: ${CODE}

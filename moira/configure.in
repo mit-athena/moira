@@ -384,7 +384,20 @@ AC_CHECK_FUNCS(getusershell strlcpy strlcat uname)
 
 AC_CHECK_FUNC(sigaction, AC_DEFINE(HAVE_POSIX_SIGNALS))
 
-AC_CHECK_HEADERS(unistd.h getopt.h netinet/in.h)
+AC_CHECK_HEADERS(unistd.h getopt.h)
+
+AC_CHECK_HEADER(netinet/in.h, AC_DEFINE(HAVE_NETINET_IN_H), no_netinet_in=yes)
+
+if test "$no_netinet_in" != "yes"; then
+    AC_MSG_CHECKING(for in_addr_t defined in netinet/in.h)
+    AC_EGREP_HEADER(in_addr_t, netinet/in.h,
+	ac_cv_type_in_addr_t=yes, ac_cv_type_in_addr_t=no)
+    AC_MSG_RESULT($ac_cv_type_in_addr_t)
+fi
+
+if test "$ac_cv_type_in_addr_t" != "yes"; then
+  AC_DEFINE(in_addr_t, uint32_t)
+fi
 
 MR_EXTEND(PRO_C_INCLUDES, INCLUDE='$(srcdir)')
 MR_INCLUDE('$(SRCTOP)/include')

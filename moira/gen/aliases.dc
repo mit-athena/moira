@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/aliases.dc,v 1.1 1990-08-16 17:50:41 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/aliases.dc,v 1.2 1990-08-20 11:04:43 mar Exp $
  *
  * This generates the /usr/lib/aliases mail aliases file for the mailhub.
  * The aliases file will contain:
@@ -29,7 +29,6 @@ EXEC SQL INCLUDE sqlca;
 char *divide = "########################################################################";
 extern int errno;
 char *whoami = "aliases.gen";
-char *ingres_date_and_time();
 FILE *out;
 
 main(argc, argv)

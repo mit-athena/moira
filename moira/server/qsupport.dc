@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.dc,v $
  *	$Author: genoa $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.dc,v 2.12 1992-12-07 10:38:17 genoa Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.dc,v 2.13 1993-01-04 15:25:54 genoa Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_qsupport_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.dc,v 2.12 1992-12-07 10:38:17 genoa Exp $";
+static char *rcsid_qsupport_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.dc,v 2.13 1993-01-04 15:25:54 genoa Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -833,6 +833,7 @@ setup_ufil(q, argv, cl)
     int fid, total, who;
     char *entity, ftype[32], *access;
     int var_phys_id = 0;
+    short int total_null;
     EXEC SQL END DECLARE SECTION;
 
     type = argv[2];
@@ -864,10 +865,10 @@ setup_ufil(q, argv, cl)
 	total = 0;
 	EXEC SQL REPEATED DELETE FROM quota
 	  WHERE type = 'ANY' AND filsys_id = :fid;
-	EXEC SQL SELECT SUM (quota) INTO :total FROM quota
+	EXEC SQL SELECT SUM (quota) INTO :total:total_null FROM quota
 	  WHERE filsys_id = :fid AND phys_id != 0;
 	if (ingres_errno) return(mr_errcode);
-	if (total != 0) {
+	if (!total_null && (total != 0)) {
 /*
  *             append quota (quota = total, filsys_id = fid,
  *			     phys_id = 0, entity_id = 0, type = "ANY",
@@ -1049,6 +1050,7 @@ setup_sshi(q, argv, cl)
     EXEC SQL set lockmode session where readlock = system;
 #endsql
 #endif
+    return(MR_SUCCESS);
 }
 
 

@@ -7,11 +7,11 @@
  *
  * $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/dcm.c,v $
  * $Author: mar $
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/dcm.c,v 1.7 1988-12-01 15:05:46 mar Exp $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/dcm.c,v 1.8 1989-06-29 14:36:57 mar Exp $
  */
 
 #ifndef lint
-static char rcsid_dcm_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/dcm.c,v 1.7 1988-12-01 15:05:46 mar Exp $";
+static char rcsid_dcm_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/dcm.c,v 1.8 1989-06-29 14:36:57 mar Exp $";
 #endif lint
 
 #include <stdio.h>
@@ -183,7 +183,8 @@ do_services()
 		dfgen_prog, SMS_DIR, service);
 	gettimeofday(&tv, &tz);
 	if (status = sms_query("get_server_info", 1, qargv, getsvinfo, &svc)) {
-	    com_err(whoami, status, " getting service %s info", service);
+	    com_err(whoami, status, " getting service %s info, skipping to next service", service);
+	    continue;
 	}
 	svc.service = strsave(service);
 	qargv[0] = strsave(service);
@@ -250,6 +251,14 @@ do_services()
 		qargv[3] = strsave("0");
 		status = sms_query("set_server_internal_flags", 6, qargv,
 				   scream, NULL);
+		if (status) {
+		    com_err(whoami, status,
+			    " setting service state, trying again");
+		    status = sms_query("set_server_internal_flags", 6, qargv,
+				       scream, NULL);
+		    if (status)
+		      com_err(whoami, status, " setting service state again");
+		}
 		close(lock_fd);
 		free(qargv[0]);
 		free(qargv[1]);
@@ -400,6 +409,14 @@ struct service *svc;
 		qargv[5] = strsave(svc->errmsg);
 		status = sms_query("set_server_internal_flags",
 				   6, qargv, scream, NULL);
+		if (status) {
+		    com_err(whoami, status,
+			    " setting service state, trying again");
+		    status = sms_query("set_server_internal_flags",
+				       6, qargv, scream, NULL);
+		    if (status)
+		      com_err(whoami, status, " setting service state again");
+		}
 		free(qargv[0]);
 		free(qargv[1]);
 		free(qargv[2]);
@@ -412,6 +429,14 @@ struct service *svc;
 		free(argv[5]);
 		status = sms_query("set_server_host_internal",
 				   9, argv,scream,NULL);
+		if (status) {
+		    com_err(whoami, status,
+			    " setting host state, trying again");
+		    status = sms_query("set_server_host_internal",
+				       9, argv,scream,NULL);
+		    if (status)
+		      com_err(whoami, status, " setting host state again");
+		}
 		return(-1);
 	    }
 	    free(argv[2]);
@@ -420,6 +445,12 @@ struct service *svc;
 	argv[4] = "0";
 	close(lock_fd);
 	status = sms_query("set_server_host_internal", 9, argv,scream,NULL);
+	if (status) {
+	    com_err(whoami, status, " setting host state, trying again");
+	    status = sms_query("set_server_host_internal", 9, argv,scream,NULL);
+	    if (status)
+	      com_err(whoami, status, " setting host state again");
+	}
     free_mach:
 	free(machine);
 	close(lock_fd);

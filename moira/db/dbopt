@@ -4,7 +4,7 @@ modify i_usr_login to btree
 index on users is i_usr_name (first, last)
 modify i_usr_name to cbtree on first, last
 index on users is i_usr_last (last, first)
-modify i_usr_name to cbtree on last, first
+modify i_usr_last to cbtree on last, first
 index on users is i_usr_uid (uid)
 modify i_usr_uid to btree
 index on users is i_usr_pop (pop_id)

@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/db/newmoira.qc,v 1.14 1990-03-30 19:24:52 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/db/newmoira.qc,v 1.15 1990-04-06 12:57:04 mar Exp $
  *
  * Creates a new sms database
  *
@@ -54,6 +54,13 @@ struct alias { char *name;
 		   {"filesys", "TYPE", "NFS"},
 		   {"filesys", "TYPE", "RVD"},
 		   {"filesys", "TYPE", "AFS"},
+		   {"fs_access_AFS", "TYPE", "w"},
+		   {"fs_access_AFS", "TYPE", "n"},
+		   {"fs_access_NFS", "TYPE", "r"},
+		   {"fs_access_NFS", "TYPE", "n"},
+		   {"fs_access_NFS", "TYPE", "w"},
+		   {"fs_access_RVD", "TYPE", "r"},
+		   {"fs_access_RVD", "TYPE", "x"},
 		   {"gaus", "TYPE", "LIST"},
 		   {"gaus", "TYPE", "USER"},
 		   {"gaus", "TYPE", "RLIST"},
@@ -316,96 +323,61 @@ int ingerr(num)
 
 
 /* dummy routines */
-int access_list() {}
-int access_visible_list() {}
-int access_maillist() {}
 int access_user() {}
 int access_login() {}
+int access_list() {}
+int access_visible_list() {}
+int access_vis_list_by_name() {}
+int access_member() {}
+int access_qgli() {}
+int access_service() {}
 int access_filesys() {}
 int setup_ausr() {}
-int setup_umac() {}
-int setup_dmac() {}
-int setup_uclu() {}
-int setup_dclu() {}
 int setup_dusr() {}
+int setup_spop() {}
+int setup_dpob() {}
+int setup_dmac() {}
+int setup_dclu() {}
+int setup_alis() {}
+int setup_dlis() {}
 int setup_dsin() {}
 int setup_dshi() {}
-int setup_dlis() {}
 int setup_afil() {}
 int setup_ufil() {}
-int setup_ssif() {}
+int setup_dfil() {}
+int setup_dnfp() {}
+int setup_dqot() {}
 int setup_sshi() {}
-int setup_dnfq() {}
-int uusr_login_check() {}
+int setup_akum() {}
+int followup_fix_modby() {}
+int followup_ausr() {}
+int followup_gpob() {}
+int followup_glin() {}
+int followup_aqot() {}
+int followup_gzcl() {}
+int followup_gsha() {}
+int followup_gqot() {}
 int set_modtime() {}
 int set_modtime_by_id() {}
-int set_user_modtime() {}
-int set_user_modtime_by_id() {}
 int set_finger_modtime() {}
-int set_filesys_modtime() {}
-int set_mach_modtime() {}
-int set_mach_modtime_by_id() {}
-int set_serverhost_modtime() {}
-int set_zephyr_modtime() {}
-int followup_amtl() {}
-int followup_ausr() {}
-int followup_delete_list() {}
-int followup_add_pobox() {}
-int followup_delete_pobox() {}
-int followup_usha() {}
-int followup_old_gpob() {}
-int followup_gsha() {}
-int followup_anfq() {}
-int followup_gzcl() {}
-int followup_fix_acl() {}
-int followup_fix_modby() {}
-int translate_ids() {}
-int expand_list_flags() {}
-int add_new_quota() {}
-int count_members_of_list() {}
-int get_list_is_group() {}
-int get_list_is_maillist() {}
-int add_locker() {}
-int delete_locker() {}
-int add_user_group() {}
-int set_user_pobox() {}
-int get_members_of_list() {}
-int get_groups_of_user() {}
-int get_groups_of_all_users() {}
-int get_all_poboxes() {}
-int get_new_poboxes() {}
-int get_lists_of_administrator() {}
-int followup_gpob() {}
-int set_pobox() {}
-int setup_spop() {}
 int set_pobox_modtime() {}
-int setup_dpob() {}
+int set_uppercase_modtime() {}
+int set_mach_modtime_by_id() {}
 int set_cluster_modtime_by_id() {}
-int access_service() {}
-int followup_glin() {}
+int set_serverhost_modtime() {}
+int set_nfsphys_modtime() {}
+int set_filesys_modtime() {}
+int set_zephyr_modtime() {}
+int set_pobox() {}
+int get_list_info() {}
+int add_member_to_list() {}
+int delete_member_from_list() {}
+int get_ace_use() {}
+int qualified_get_lists() {}
+int get_members_of_list() {}
 int qualified_get_server() {}
 int qualified_get_serverhost() {}
 int trigger_dcm() {}
-int set_nfsphys_modtime() {}
-int setup_alis() {}
-int access_member() {}
-int get_ace_use() {}
-int access_qgli() {}
-int qualified_get_lists() {}
-int delete_current_quota() {}
-int setup_add_group() {}
-int setup_dfil() {}
-int setup_dnfp() {}
+int count_members_of_list() {}
 int get_lists_of_member() {}
-int access_all() {}
-int get_list_info() {}
 int register_user() {}
-int access_vis_list_by_name() {}
-int set_uppercase_modtime() {}
-int add_member_to_list() {}
-int delete_member_from_list() {}
-int setup_akum() {}
-int followup_gnfq() {}
-int followup_gqot() {}
-int followup_aqot() {}
-int setup_dqot() {}

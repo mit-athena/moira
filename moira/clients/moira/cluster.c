@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/cluster.c,v 1.28 1997-01-29 23:06:12 danw Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/cluster.c,v 1.29 1997-05-29 16:50:04 danw Exp $";
 #endif
 
 /*	This is the file cluster.c for the MOIRA Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/cluster.c,v $
  *      $Author: danw $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/cluster.c,v 1.28 1997-01-29 23:06:12 danw Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/cluster.c,v 1.29 1997-05-29 16:50:04 danw Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -809,7 +809,7 @@ char **argv;
 	return(DM_NORMAL);
     }
     rinfo = SetMachineDefaults(info, name);
-    rinfo[M_SUBNET] = argv[1];
+    rinfo[M_SUBNET] = strsave(argv[1]);
     if ((args = AskMCDInfo(rinfo, MACHINE, FALSE)) == NULL) {
 	Put_message("Aborted.");
 	return(DM_NORMAL);

@@ -1,4 +1,4 @@
-/* $Id: hesiod.pc,v 1.7 1998-02-23 19:23:42 danw Exp $
+/* $Id: hesiod.pc,v 1.8 1998-05-22 16:49:01 danw Exp $
  *
  * This generates the zone files necessary to load a hesiod server.
  * The following zones are generated: passwd, uid, pobox, group,
@@ -23,7 +23,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/hesiod.pc,v 1.7 1998-02-23 19:23:42 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/hesiod.pc,v 1.8 1998-05-22 16:49:01 danw Exp $");
 
 #ifndef HTYPE
 #define HTYPE "TXT"
@@ -79,6 +79,7 @@ typedef long	set_mask;
 
 void get_mach(void);
 int nbitsset(set_mask *set);
+int valid(char *name);
 
 int do_passwd(void);
 int do_groups(void);
@@ -156,12 +157,37 @@ void get_mach(void)
       EXEC SQL FETCH m_cursor INTO :name, :id;
       if (sqlca.sqlcode)
 	break;
-      hash_store(machines, id, strdup(strtrim(name)));
+      strtrim(name);
+      if (!valid(name))
+	continue;
+      hash_store(machines, id, strdup(name));
     }
   if (sqlca.sqlcode < 0)
     db_error(sqlca.sqlcode);
   EXEC SQL CLOSE m_cursor;
   EXEC SQL COMMIT;
+}
+
+
+/* Determine whether or not a name is a valid DNS label.
+   (Can't start or end with . or have two .s in a row) */
+int valid(char *name)
+{
+  int sawdot;
+
+  for (sawdot = 1; *name; name++)
+    {
+      if (*name == '.')
+	{
+	  if (sawdot)
+	    return 0;
+	  else
+	    sawdot = 1;
+	}
+      else
+	sawdot = 0;
+    }
+  return !sawdot;
 }
 
 
@@ -364,6 +390,8 @@ int do_groups(void)
       if (sqlca.sqlcode)
 	break;
       strtrim(name);
+      if (!valid(name))
+	continue;
       sprintf(buf, "%s:%d", name, gid);
       hash_store(groups, lid, strdup(buf));
       fprintf(iout, "%d.gid\t%s CNAME %s.group\n", gid, HCLASS, name);
@@ -527,37 +555,40 @@ int do_filsys(void)
 	:mount, :comments, :fid;
       if (sqlca.sqlcode)
 	break;
+      strtrim(name);
+      if (!valid(name))
+	continue;
       strtrim(type);
       if (!strcmp(type, "NFS") || !strcmp(type, "RVD"))
 	{
 	  if ((mach = hash_lookup(machines, id)))
 	    {
 	      fprintf(out, "%s.filsys\t%s %s \"%s %s %s %s %s\"\n",
-		      strtrim(name), HCLASS, HTYPE, type, strtrim(loc),
+		      name, HCLASS, HTYPE, type, strtrim(loc),
 		      mach, strtrim(access), strtrim(mount));
 	    }
 	}
       else if (!strcmp(type, "AFS"))
 	{
 	  fprintf(out, "%s.filsys\t%s %s \"AFS %s %s %s\"\n",
-		  strtrim(name), HCLASS, HTYPE, strtrim(loc),
+		  name, HCLASS, HTYPE, strtrim(loc),
 		  strtrim(access), strtrim(mount));
 	}
       else if (!strcmp(type, "ERR"))
 	{
 	  fprintf(out, "%s.filsys\t%s %s \"ERR %s\"\n",
-		  strtrim(name), HCLASS, HTYPE, strtrim(comments));
+		  name, HCLASS, HTYPE, strtrim(comments));
 	}
       else if (!strcmp(type, "FSGROUP"))
 	{
 	  char buf[FILESYS_NAME_SIZE + 10];
-	  sprintf(buf, "%s:%d", strtrim(name), fid);
+	  sprintf(buf, "%s:%d", name, fid);
 	  sq_save_data(sq, strdup(buf));
 	}
       else if (!strcmp(type, "MUL"))
 	{
 	  char buf[FILESYS_NAME_SIZE + 10];
-	  sprintf(buf, "%s:%d", strtrim(name), fid);
+	  sprintf(buf, "%s:%d", name, fid);
 	  sq_save_data(sq2, strdup(buf));
 	}
     }
@@ -642,8 +673,12 @@ int do_filsys(void)
       EXEC SQL FETCH a_cursor INTO :aname, :trans;
       if (sqlca.sqlcode)
 	break;
+      strtrim(aname);
+      strtrim(trans);
+      if (!valid(aname) || !valid(trans))
+	continue;
       fprintf(out, "%s.filsys\t%s CNAME %s.filsys\n",
-	      strtrim(aname), HCLASS, strtrim(trans));
+	      aname, HCLASS, trans);
     }
   EXEC SQL CLOSE a_cursor;
 
@@ -783,6 +818,8 @@ int do_cluster(void)
 
 	  EXEC SQL SELECT name INTO :name FROM clusters WHERE clu_id = :cid;
 	  strtrim(name);
+	  if (!valid(name))
+	    continue;
 	  strcpy(clubuf, name);
 	}
 
@@ -835,6 +872,8 @@ int do_cluster(void)
       if (sqlca.sqlcode)
 	break;
       strtrim(name);
+      if (!valid(name))
+	continue;
       strtrim(label);
       strtrim(data);
       fprintf(out, "%s.cluster\t%s %s \"%s %s\"\n",
@@ -905,6 +944,8 @@ int do_printcap(void)
       if (!hash_lookup(machines, rm))
 	continue;
       strtrim(name);
+      if (!valid(name))
+	continue;
       strtrim(rp);
       strtrim(sd);
       fprintf(out, "%s.pcap\t%s %s \"%s:rp=%s:rm=%s:sd=%s:ka#%d:pc#%d",
@@ -982,6 +1023,8 @@ int do_palladium(void)
       if (!hash_lookup(machines, rm))
 	break;
       strtrim(name);
+      if (!valid(name))
+	continue;
       fprintf(out, "%s.palladium\t%s %s \"%s %d %s interface directory\"\n",
 	      name, HCLASS, HTYPE, (char *)hash_lookup(machines, rm),
 	      identifier, name);
@@ -999,6 +1042,8 @@ int do_palladium(void)
       if (sqlca.sqlcode)
 	break;
       strtrim(aname);
+      if (!valid(aname))
+	continue;
       strtrim(trans);
       fprintf(out, "%s.palladium\t%s %s \"%s\"\n",
 	      aname, HCLASS, HTYPE, trans);
@@ -1068,7 +1113,7 @@ int do_sloc(void)
       if (sqlca.sqlcode)
 	break;
       strtrim(service);
-      if ((mach = hash_lookup(machines, id)))
+      if (valid(service) && (mach = hash_lookup(machines, id)))
 	fprintf(out, "%s.sloc\t%s %s %s\n", service, HCLASS, HTYPE, mach);
     }
   EXEC SQL CLOSE s_cursor;
@@ -1135,6 +1180,8 @@ int do_service(void)
 	break;
       lowercase(protocol);      /* Convert protocol to lowercase */
       strtrim(service);
+      if (!valid(service))
+	continue;
       strtrim(protocol);
       fprintf(out, "%s.service\t%s %s \"%s %s %d\"\n",
 	      service, HCLASS, HTYPE, service, protocol, port);
@@ -1153,6 +1200,8 @@ int do_service(void)
 	break;
       strtrim(aname);
       strtrim(trans);
+      if (!valid(aname) || !valid(trans))
+	continue;
       fprintf(out, "%s.service\t%s CNAME %s.service\n", aname, HCLASS,
 	      trans);
     }

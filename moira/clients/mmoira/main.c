@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/main.c,v 1.5 1992-10-19 18:06:10 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/main.c,v 1.6 1992-10-23 19:00:15 mar Exp $
  *
  *  	Copyright 1991 by the Massachusetts Institute of Technology.
  *
@@ -120,6 +120,7 @@ caddr_t data;
     int status;
 
     MakeWatchCursor(toplevel);
+    XFlush(XtDisplay(toplevel));
     status = mr_query(query, argc, argv, callback, data);
     if (status != MR_ABORTED && status != MR_NOT_CONNECTED) {
 	MakeNormalCursor(toplevel);
@@ -147,7 +148,7 @@ caddr_t data;
 }
 
 
-static char form_override_table[] =
+char form_override_table[] =
     "None<Key>Return:	next-or-do-it()\n\
      Ctrl<Key>C:	cancel-form()\n\
      Shift<Key>Return:	execute-form()\n\

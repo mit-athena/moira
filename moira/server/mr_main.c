@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.25 1989-09-08 15:32:06 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.26 1989-10-06 19:10:47 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -16,7 +16,7 @@
  * 
  */
 
-static char *rcsid_sms_main_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.25 1989-09-08 15:32:06 mar Exp $";
+static char *rcsid_sms_main_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.26 1989-10-06 19:10:47 mar Exp $";
 
 #include <mit-copyright.h>
 #include <strings.h>
@@ -271,7 +271,7 @@ main(argc, argv)
 int
 do_listen()
 {
-	char *service = index(SMS_GDB_SERV, ':') + 1;
+	char *service = index(SMS_SERVER, ':') + 1;
 
 	listencon = create_listening_connection(service);
 

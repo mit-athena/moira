@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/increment.dc,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/increment.dc,v 2.9 1993-05-21 14:51:13 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/increment.dc,v 2.10 1993-11-10 15:33:29 mar Exp $
  *
  *	Copyright (C) 1989 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_increment_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/increment.dc,v 2.9 1993-05-21 14:51:13 mar Exp $";
+static char *rcsid_increment_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/increment.dc,v 2.10 1993-11-10 15:33:29 mar Exp $";
 #endif lint
 
 #include <fcntl.h>
@@ -133,7 +133,7 @@ char **argv;
 	  FROM users u WHERE :qual;
 	beforec = 9;
     } else if (!strcmp(table, "machine")) {
-	EXEC SQL SELECT m.name, m.type INTO :barg0, :barg1 FROM machine m
+	EXEC SQL SELECT m.name, m.vendor INTO :barg0, :barg1 FROM machine m
 	  WHERE :qual;
 	beforec = 2;
     } else if (!strcmp(table, "cluster")) {
@@ -248,7 +248,7 @@ EXEC SQL END DECLARE SECTION;
 	  FROM users u WHERE :qual;
 	afterc = 9;
     } else if (!strcmp(table, "machine")) {
-	EXEC SQL SELECT m.name, m.type INTO :aarg0, :aarg1
+	EXEC SQL SELECT m.name, m.vendor INTO :aarg0, :aarg1
 	  FROM machine m WHERE :qual;
 	afterc = 2;
     } else if (!strcmp(table, "cluster")) {

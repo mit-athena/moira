@@ -1,4 +1,4 @@
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/Imakefile,v 1.4 1997-01-20 18:22:15 danw Exp $
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/Imakefile,v 1.5 1997-07-07 22:48:43 danw Exp $
 
 # Copyright 1992 by the Massachusetts Institute of Technology.
 #
@@ -12,5 +12,5 @@ SRCS= startdcm.c dcm.c utils.c
 CODE=$(SRCS)
 OBJS=dcm.o utils.o
 
-program(dcm, $(OBJS),,../server/libmrglue.a $(LIBGDSS) ../update/moira_update.o $(CLIBS) $(SQL_LIB), ${PROGDIR})
+program(dcm, $(OBJS),,../update/moira_update.o $(CLIBS) $(SQL_LIB), ${PROGDIR})
 program(startdcm, startdcm.o,,,${PROGDIR})

@@ -1,13 +1,13 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/ticket.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/ticket.c,v 1.15 1997-09-02 22:23:03 danw Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/ticket.c,v 1.16 1997-09-05 20:16:10 danw Exp $
  */
 /*  (c) Copyright 1988 by the Massachusetts Institute of Technology. */
 /*  For copying and distribution information, please see the file */
 /*  <mit-copyright.h>. */
 
 #ifndef lint
-static char *rcsid_ticket_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/ticket.c,v 1.15 1997-09-02 22:23:03 danw Exp $";
+static char *rcsid_ticket_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/ticket.c,v 1.16 1997-09-05 20:16:10 danw Exp $";
 #endif
 
 #include <mit-copyright.h>
@@ -62,7 +62,7 @@ get_mr_update_ticket(host, ticket)
 	 if (pass == 1) {
 	     /* maybe we're taking too long? */
 	     if ((code = get_mr_tgt()) != 0) {
-		 com_err(whoami, code, " can't get Kerberos TGT");
+		 com_err(whoami, code, "can't get Kerberos TGT");
 		 return(code);
 	     }
 	     pass++;

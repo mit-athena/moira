@@ -1,20 +1,19 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/send_file.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/send_file.c,v 1.10 1997-09-02 22:23:02 danw Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/send_file.c,v 1.11 1997-09-05 20:16:09 danw Exp $
  */
 /*  (c) Copyright 1988 by the Massachusetts Institute of Technology. */
 /*  For copying and distribution information, please see the file */
 /*  <mit-copyright.h>. */
 
 #ifndef lint
-static char *rcsid_send_file_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/send_file.c,v 1.10 1997-09-02 22:23:02 danw Exp $";
+static char *rcsid_send_file_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/send_file.c,v 1.11 1997-09-05 20:16:09 danw Exp $";
 #endif
 
 #include <mit-copyright.h>
 #include <stdio.h>
 #include <com_err.h>
 #include <gdb.h>
-#include <dcm.h>
 #include <moira.h>
 #include <sys/file.h>
 #include <sys/stat.h>
@@ -29,6 +28,7 @@ extern CONNECTION conn;
 extern int errno;
 char buf[BUFSIZ];
 extern C_Block session;
+extern char *whoami;
 
 /*
  * syntax:

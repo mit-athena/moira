@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/update_test.c,v 1.5 1997-07-03 03:19:46 danw Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/update_test.c,v 1.6 1997-09-05 20:16:10 danw Exp $
  *
  * Test client for update_server protocol.
  * 
@@ -20,7 +20,6 @@
 #include <sys/socket.h>
 #include <update.h>
 #include <errno.h>
-#include <dcm.h>
 #include <moira.h>
 #include <moira_site.h>
 #include <krb.h>

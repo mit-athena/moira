@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v 1.39 1990-03-19 15:42:27 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v 1.40 1990-03-28 15:28:51 mar Exp $
  *
  *	Copyright (C) 1987, 1988 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_qrtn_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v 1.39 1990-03-19 15:42:27 mar Exp $";
+static char *rcsid_qrtn_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v 1.40 1990-03-28 15:28:51 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -798,7 +798,7 @@ set_next_object_id(object, table)
  * owns.  Sets the kerberos ID and user ID.
  */
 
-set_krb_mapping(name, login, ok, kid, uid)
+int set_krb_mapping(name, login, ok, kid, uid)
 char *name;
 char *login;
 int ok;
@@ -815,6 +815,7 @@ int *uid;
 ##  repeat retrieve (u_id = krbmap.#users_id, k_id = krbmap.#string_id)
 ##	where krbmap.string_id = strings.string_id and strings.string = @krbname
 ##  inquire_equel (rowcount = "rowcount")
+    if (ingres_errno) return(mr_errcode);
     
     if (rowcount == 1) {
 	*kid = -k_id;
@@ -835,6 +836,8 @@ int *uid;
 
     if (*kid == 0)
       *kid = *uid;
+    if (ingres_errno) return(mr_errcode);
+    return(MR_SUCCESS);
 ##}
 
 

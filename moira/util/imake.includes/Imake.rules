@@ -137,13 +137,6 @@ name::									@@\
 			echo "### Done with" `pwd`);		\	@@\
 	done
 
-#define src_target()							@@\
-src:: ${CODE}								@@\
-									@@\
-${CODE}:								@@\
-	$(RM) $@							@@\
-	-$(LN) ${SRCDIR}/$@ $@
-
 #define do_subdirs_no_imakefile(subdirs)				@@\
 	foreach_subdirs(all, subdirs)					@@\
 	foreach_subdirs(install, subdirs)				@@\

@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/afs.c,v 1.24 1992-06-08 16:57:24 probe Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/afs.c,v 1.25 1992-07-05 19:56:50 probe Exp $
  *
  * Do AFS incremental updates
  *
@@ -413,6 +413,26 @@ int afterc;
      * LABEL change: rename/remount
      * Deletion: rename/unmount
      */
+    if (afterc < FS_CREATE) {
+	if (!strcmp(before[FS_TYPE], "AFS"))
+	    critical_alert("incremental",
+			   "Could not delete AFS filesystem %s: Operation not supported\n",
+			   before[FS_NAME]);
+	return;
+    }
+
+    if (!strcmp(after[FS_TYPE], "AFS")) {
+	if (strcmp(before[FS_TYPE], "AFS")) {
+	    critical_alert("incremental",
+			   "Cannot convert %s to an AFS filesystem: Operation not supported\n",
+			   after[FS_NAME]);
+	} else {
+	    critical_alert("incremental",
+			   "Cannot change attributes of AFS filesystem %s: Operation not supported\n",
+			   after[FS_NAME]);
+	}
+	return;
+    }
 }
 
 

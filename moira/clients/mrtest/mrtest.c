@@ -1,4 +1,4 @@
-/* $Id: mrtest.c,v 1.44 1999-06-02 19:07:32 danw Exp $
+/* $Id: mrtest.c,v 1.45 1999-07-17 21:42:32 danw Exp $
  *
  * Bare-bones Moira client
  *
@@ -24,7 +24,7 @@
 #include "readline/history.h"
 #endif
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v 1.44 1999-06-02 19:07:32 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v 1.45 1999-07-17 21:42:32 danw Exp $");
 
 int recursion = 0, quote_output = 0, interactive;
 int count, quit = 0, cancel = 0;
@@ -45,6 +45,7 @@ void test_host(void);
 void test_motd(void);
 void test_query(int argc, char **argv);
 void test_auth(void);
+void test_proxy(int argc, char **argv);
 void test_access(int argc, char **argv);
 void test_dcm(void);
 void test_script(int argc, char **argv);
@@ -160,6 +161,8 @@ void execute_line(char *cmdbuf)
     test_query(argc, argv);
   else if (!strcmp(argv[0], "auth") || !strcmp(argv[0], "a"))
     test_auth();
+  else if (!strcmp(argv[0], "proxy") || !strcmp(argv[0], "p"))
+    test_proxy(argc, argv);
   else if (!strcmp(argv[0], "access"))
     test_access(argc, argv);
   else if (!strcmp(argv[0], "dcm"))
@@ -287,6 +290,20 @@ void test_auth(void)
   status = mr_auth("mrtest");
   if (status)
     com_err("moira (auth)", status, "");
+}
+
+void test_proxy(int argc, char *argv[])
+{
+  int status;
+
+  if (argc != 3)
+    {
+      com_err("moira (proxy)", 0, "Usage: proxy principal authtype");
+      return;
+    }
+  status = mr_proxy(argv[1], argv[2]);
+  if (status)
+    com_err("moira (proxy)", status, "");
 }
 
 void test_script(int argc, char *argv[])
@@ -477,6 +494,7 @@ void test_list_requests(void)
   printf("motd, m\t\t\tGet the Message of the Day\n");
   printf("query, qy\t\tMake a query.\n");
   printf("auth, a\t\t\tAuthenticate to Moira.\n");
+  printf("proxy, p\t\tProxy authenticate to Moira.\n");
   printf("access\t\t\tCheck access to a Moira query.\n");
   printf("dcm\t\t\tTrigger the DCM\n");
   printf("script, s\t\tRead commands from a script.\n");

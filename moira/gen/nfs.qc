@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/nfs.qc,v 1.11 1989-08-08 13:07:23 qjb Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/nfs.qc,v 1.12 1989-08-16 20:42:58 mar Exp $
  *
  * This generates the files necessary to load an nfs server.
  *
@@ -39,6 +39,7 @@ char **argv;
     }
 
     IIseterr(ingerr);
+    initialize_sms_error_table();
 ##  ingres sms
 ##  set lockmode session where level = table
 
@@ -117,7 +118,6 @@ int do_nfs()
 int do_lists(lists)
 struct save_queue *lists;
 ##{
-    struct save_queue *sq, *members;
     char file[64], *u;
     struct hash *users, *do_everyone();
     struct stat sb;
@@ -133,7 +133,7 @@ struct save_queue *lists;
 ##	retrieve (flag2 = int4(interval("min", tblstats.modtime - filetime)))
 ##		where tblstats.table = "list"
 ##	retrieve (flag3 = int4(interval("min", tblstats.modtime - filetime)))
-##		where tblstats.table = "members"
+##		where tblstats.table = "imembers"
 ##	retrieve (flag4 = int4(interval("min", tblstats.modtime - filetime)))
 ##		where tblstats.table = "serverhosts"
 	if (flag1 < 0 && flag2 < 0 && flag3 < 0 && flag4 < 0) {
@@ -156,7 +156,7 @@ struct save_queue *lists;
     /* now do each of the lists used by an NFS server */
 ##  range of l is list
 ##  range of l1 is list
-##  range of m is members
+##  range of m is imembers
 ##  range of u is users
     while (sq_get_data(lists, &listname)) {
 	if (strlen(listname) == 0)
@@ -167,29 +167,13 @@ struct save_queue *lists;
 	    fprintf(stderr, "cannot open %s for output\n", file);
 	    exit(SMS_OCONFIG);
 	}
-	sq = sq_create();
-	sq_save_data(sq, listname);
-	members = sq_create();
-	while (sq_get_data(sq, &lsname)) {
-##	    repeat retrieve (lname = trim(l.name))
-##		where m.list_id = l1.list_id and l1.name = @lsname and
-##		      m.member_type = "LIST" and m.member_id = l.list_id {
-	      sq_save_unique_string(sq, strsave(lname));
-##	    }
-##	    repeat retrieve (id = m.member_id)
-##		where m.list_id = l1.list_id and l1.name = @lsname and
-##		      m.member_type = "USER" {
-	      if (u = hash_lookup(users, id)) {
-		  sq_save_unique_data(members, u);
-	      }
-##	    }
-	}
-	while (sq_get_data(members, &lsname))
-	  fprintf(fd, "%s\n", lsname);
-/* test to see if this speeds things up; don't free anything!
-	sq_destroy(members);
-	sq_destroy(sq);
- */	if (fclose(fd)) {
+##	repeat retrieve (id = m.member_id)
+##	    where m.list_id = l1.list_id and l1.name = @lsname and
+##	    m.member_type = "USER" {
+	    if (u = hash_lookup(users, id))
+	      fprintf(fd, "%s\n", u);
+##	}
+	if (fclose(fd)) {
 	    fprintf(stderr, "error closing %s\n", file);
 	    exit(SMS_CCONFIG);
 	}
@@ -245,41 +229,6 @@ struct hash *do_everyone()
       hash_store(groups, lid, strsave(buf));
 ##  }
 
-    /* get special cases: lists that aren't groups themselves but are
-     * members of groups. */
-    sq = sq_create();
-##  range of m is members
-##  retrieve (gid = list.#gid, lid = l.list_id)
-##	where l.active != 0 and list.active != 0 and m.member_type = "LIST" and
-##		m.member_id = l.list_id and m.list_id = list.list_id and
-##		list.group != 0 {
-      if (l = hash_lookup(groups, lid)) {
-	  sprintf(buf, "%s:%d", l, gid);
-	  free(l);
-      } else {
-	  sprintf(buf, ":%d", gid);
-      }
-      hash_store(groups, lid, strsave(buf));
-      sq_save_data(sq, lid);
-##  }
-
-    while (sq_get_data(sq, &id)) {
-##	repeat retrieve (lid = l.list_id) where l.active != 0 and
-##		m.member_type = "LIST" and m.member_id = l.list_id and
-##		m.list_id = @id {
-	  if (l = hash_lookup(groups, lid)) {
-	      sprintf(buf, "%s%s", l, hash_lookup(groups, id));
-	      free(l);
-	      l = strsave(buf);
-	  } else {
-	      l = hash_lookup(groups, id);
-	  }
-	  hash_store(groups, lid, l);
-	  sq_save_unique_data(sq, lid);
-##      }
-    }
-    sq_destroy(sq);
-
     /* now do grplists */
     users = create_hash(10000);
 ##  range of u is users
@@ -292,8 +241,8 @@ struct hash *do_everyone()
       hash_store(users, id, u);
 ##  }
 
-##  repeat retrieve (lid = m.list_id, id = m.member_id)
-##	where m.member_type = "USER" {
+##  range of m is imembers
+##  retrieve (lid = m.list_id, id = m.member_id) where m.member_type = "USER" {
       if ((u = (struct user *) hash_lookup(users, id)) &&
 	  (hash_lookup(groups, lid) != NULL)) {
 	  g = (struct grp *) malloc(sizeof(struct grp));
@@ -313,10 +262,10 @@ struct hash *do_everyone()
 		  i++;
 		  strcat(buf, l);
 	      }
-	    /* should free stuff here... */
+	    /* should free stuff here...
 	    if (i > 1) {
 		remove_duplicate_groups(buf);
-	    }
+	    } */
 	    b->data = strsave(buf);
 	    fprintf(fd, "%s\n", buf);
 	}

@@ -1,4 +1,4 @@
-/* $Id: print.pc,v 1.8 2000-11-17 10:30:13 zacheiss Exp $
+/* $Id: print.pc,v 1.9 2000-12-13 19:52:19 zacheiss Exp $
  *
  * This generates printcaps and other files for Athena print servers
  *
@@ -22,7 +22,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/print.pc,v 1.8 2000-11-17 10:30:13 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/print.pc,v 1.9 2000-12-13 19:52:19 zacheiss Exp $");
 
 char *whoami = "print.gen";
 char *db = "moira/moira";
@@ -219,7 +219,7 @@ void do_host(char *host)
   fprintf(out, "ACCEPT SERVICE=M AUTH=USER,FWD AUTHJOB AUTHSAMEUSER\n\n");
 
   fprintf(out, "# Reject unauthentic print/lprm requests to authenticated queues\n");
-  fprintf(out, "REJECT SERVICE=R,M NOT AUTH"
+  fprintf(out, "REJECT SERVICE=R,M NOT AUTH "
 	  "PRINTER=</var/spool/printer/queues.secure\n\n");
 
   fprintf(out, "# Reject unauthentic print requests from off MITnet\n");

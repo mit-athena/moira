@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/afs.c,v 1.25 1992-07-05 19:56:50 probe Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/afs.c,v 1.26 1992-07-05 19:59:36 probe Exp $
  *
  * Do AFS incremental updates
  *
@@ -328,7 +328,8 @@ get_members(ac, av, group)
 	sleep(1);				/* give the ptserver room */
 	edit_group(1, group, av[0], av[1]);
     } else {
-	code = mr_query("get_members_of_list", 1, &av[1], get_members, group);
+	code = mr_query("get_end_members_of_list", 1, &av[1],
+			get_members, group);
 	if (code)
 	    critical_alert("incremental",
 			   "Couldn't retrieve full membership of %s: %s",

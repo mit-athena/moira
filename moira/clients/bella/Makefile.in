@@ -1,0 +1,46 @@
+# $Id: Makefile.in,v 1.1 2003-01-23 19:41:32 zacheiss Exp $
+
+SHELL=/bin/sh
+@SET_MAKE@
+
+CC=@CC@
+CPPFLAGS=@CPPFLAGS@
+CFLAGS=@CFLAGS@
+DEFS=@DEFS@
+ALL_CFLAGS=$(CPPFLAGS) $(CFLAGS) $(DEFS)
+LDFLAGS=@LDFLAGS@
+LIBS=../lib/libmrclient.a @LIBS@
+MR_LIBDEP=@MR_LIBDEP@
+INSTALL=@INSTALL@
+INSTALL_PROGRAM=@INSTALL_PROGRAM@
+
+srcdir=@srcdir@
+VPATH=@srcdir@
+SRCTOP=@top_srcdir@
+BUILDTOP=../..
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+bindir=@bindir@
+
+OBJS=bella.o
+
+TARGET=bella
+
+.c.o:
+	$(CC) -c $(ALL_CFLAGS) $<
+
+all: $(TARGET)
+
+clean:
+	rm -f $(OBJS) $(TARGET)
+
+cleandir distclean: clean
+	rm -f Makefile
+
+depend:
+
+install: all
+	$(INSTALL_PROGRAM) bella $(bindir)
+
+$(TARGET): $(OBJS) ../lib/libmrclient.a $(MR_LIBDEP)
+	$(CC) -o $@ $(LDFLAGS) $(OBJS) $(LIBS)

@@ -1,7 +1,7 @@
 /*
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.24 1989-08-25 11:27:01 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.25 1989-09-01 13:12:43 mar Exp $
  *
  *      Copyright (C) 1987, 1988 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -16,7 +16,7 @@
  */
 
 #ifndef lint
-static char *rcsid_reg_svr_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.24 1989-08-25 11:27:01 mar Exp $";
+static char *rcsid_reg_svr_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.25 1989-09-01 13:12:43 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -561,6 +561,9 @@ int reserve_user(message,retval)
 	  case SMS_IN_USE:
 	    status = UREG_LOGIN_USED;
 	    break;
+	  case SMS_DEADLOCK:
+	    status = UREG_MISC_ERROR;
+	    break;
 	  default:
 	    critical_alert(FAIL_INST,"%s returned from register_user.",
 			   error_message(status));
@@ -610,10 +613,13 @@ struct msg *message;
     q_argv[0] = login;
     q_argv[1] = state;
     if ((status = sms_query(q_name, q_argc, q_argv, null_callproc,
-			    (char *)0)) != SMS_SUCCESS)
-	critical_alert(FAIL_INST,"%s returned from update_user_status.",
-		       error_message(status));
-    
+			    (char *)0)) != SMS_SUCCESS) {
+	if (status == SMS_DEADLOCK)
+	  status = UREG_MISC_ERROR;
+	else
+	  critical_alert(FAIL_INST,"%s returned from update_user_status.",
+			 error_message(status));
+    }
     com_err(whoami,status," returned from set_final_status");
     return status;
 }
@@ -749,6 +755,9 @@ char *retval;
 	    break;
 	  case SMS_IN_USE:
 	    status = UREG_LOGIN_USED;
+	    break;
+	  case SMS_DEADLOCK:
+	    status = UREG_MISC_ERROR;
 	    break;
 	  default:
 	    critical_alert(FAIL_INST,"%s returned from update_user.",

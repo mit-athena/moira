@@ -1,0 +1,75 @@
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/passwd.dc,v 1.1 1988-06-07 13:21:21 mar Exp $
+ *
+ * This generates a master /etc/passwd containing all active (status != 0)
+ * accounts.
+ */
+
+#include <stdio.h>
+
+extern int errno;
+
+main(argc, argv)
+int argc;
+char **argv;
+{
+##  char login[9], shell[33], fullname[33], oa[17], op[13], hp[17];
+##  int uid, error;
+    FILE *out = stdout;
+
+    if (argc == 2) {
+	if ((out = fopen(argv[1], "w")) == NULL) {
+	    fprintf(stderr, "unable to open %s for output\n", argv[1]);
+	    exit(errno);
+	}
+    } else if (argc != 1) {
+	fprintf(stderr, "usage: %s [outfile]\n", argv[0]);
+	exit(-1);
+    }
+
+##  ingres sms
+##  set lockmode on users where readlock = nolock
+
+##  range of u is users
+##  retrieve (login = u.#login, uid = u.#uid, shell = u.#shell,
+##	      fullname = u.#fullname, oa = u.office_addr,
+##	      op = u.office_phone, hp = u.home_phone)
+##	where u.status != 0 sort by #login {
+	    trim(login);
+	    trim(fullname);
+	    trim(oa);
+	    trim(op);
+	    trim(hp);
+	    trim(shell);
+    	    fprintf(out, "%s:*:%d:101:%s,%s,%s,%s:/mit/%s:%s\n",
+		    login, uid, fullname, oa, op, hp, login, shell);
+##  }
+##  inquire_equel(error = "errorno")
+    if (error)  {
+	fprintf(out, "Ingres error %d\n", error);
+	exit(error);
+    }
+
+##  exit
+
+    if (fclose(out)) {
+	perror("close failed");
+	exit(errno);
+    }
+    exit(0);
+}
+
+trim(s)
+register char *s;
+{
+    register char *p;
+
+    for (p = s; *s; s++)
+      if (*s != ' ')
+	p = s;
+    if (p != s) {
+	if (*p == ' ')
+	  *p = 0;
+	else
+	  p[1] = 0;
+    }
+}

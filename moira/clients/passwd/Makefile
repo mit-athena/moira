@@ -3,7 +3,7 @@
 #	MIT Project Athena
 #
 #	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/Makefile,v $
-#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/Makefile,v 1.10 1990-01-10 18:29:01 mar Exp $
+#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/Makefile,v 1.11 1990-02-14 11:31:48 mar Exp $
 #	$Author: mar $
 # 
 # (c) Copyright 1988 by the Massachusetts Institute of Technology.
@@ -17,7 +17,7 @@ CFLAGS = -I../../include ${DEFINES}
 CONFDIR = ${DESTDIR}/usr/athena
 BINDIR = ${DESTDIR}/bin
 
-SMSLIB = -L../../lib -lsms -lgdb -lcom_err -lkrb -ldes
+SMSLIB = -L../../lib -lsms -lgdb -lcom_err -lkrb -ldes -lhesiod
 
 PROGS= chfn chsh chpobox
 
@@ -40,9 +40,9 @@ clean:
 	rm -f ${PROGS}
 
 install:	${PROGS}
-	install -s chsh ${DESTDIR}/usr/athena/chsh
-	install -s chfn ${DESTDIR}/usr/athena/chfn
-	install -s chpobox ${DESTDIR}/usr/athena/chpobox
+	install -c -s chsh ${DESTDIR}/usr/athena/chsh
+	install -c -s chfn ${DESTDIR}/usr/athena/chfn
+	install -c -s chpobox ${DESTDIR}/usr/athena/chpobox
 
 depend:
 	mkdep ${CFLAGS} chfn.c chpobox.c chsh.c

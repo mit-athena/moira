@@ -39,7 +39,7 @@
 	$(CC) PROF_FLAG -c $(CFLAGS) $*.c				@@\
 	$(MV) $*.o profiled/$*.o					@@\
 	$(CC) -c $(CFLAGS) $*.c						@@\
-	-$(LD) -x -r -o a.out $*.o					@@\
+	-$(LD) -r -o a.out $*.o						@@\
 	$(MV) a.out $*.o
 #endif
 #else /* ! mips && ! _AIX */

@@ -1,4 +1,4 @@
-; $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/forms.txt,v 1.6 1992-11-04 17:57:48 mar Exp $
+; $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/forms.txt,v 1.7 1992-11-09 17:11:30 mar Exp $
 ;
 
 ; { FORM_NAME	INSTRUCTION FIELD
@@ -421,8 +421,17 @@
 { show_service	Enter the service name to examine.
 	Name	s
 }
-; add/modify
 { add_service	Enter the service information.
+	Service name s
+	Interval (minutes) s
+	Destination file s
+	Script	s
+	Type|service	K
+	Enable	B
+	Owner type|ace_type K
+	Owner name s
+}
+{ mod_service	Update the service information.
 	Service name s
 	Interval (minutes) s
 	Destination file s
@@ -440,8 +449,15 @@
 	Service name s
 	Host name s
 }
-; add/modify
 { add_host	Enter the service/host tuple information.
+	Service s
+	Host name s
+	Enable	B
+	Value1	s
+	Value2	s
+	Value3	s
+}
+{ mod_host	Update the service/host tuple information.
 	Service s
 	Host name s
 	Enable	B

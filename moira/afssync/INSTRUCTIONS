@@ -10,18 +10,23 @@ Moira server.
 FULL INSTRUCTIONS
 ("SUMMARY" is below)
 
+####	Set up a workspace						####
+
+mkdir -p /moira/sync
+cd /moira/sync
+
 ####	This is preparation for the resync, to save non-Moira users.    ####
 First, get a recent copy of the prdb, and extract non-Moira entries:
 
-	/moira/bin/udebug orf -port 7002
-	rcp root@orf:/usr/afs/db/prdb.DB0 /var/prdb.old
-	/moira/bin/udebug orf -port 7002
+	/moira/bin/udebug aggy -port 7002
+	rcp root@aggy:/usr/afs/db/prdb.DB0 prdb.old
+	/moira/bin/udebug aggy -port 7002
 If the two udebugs show that the version changed, lather-rinse-repeat.
-(udebug can be found in afsuser; "orf" here and below is some DB server)
+(udebug can be found in afsuser; "aggy" here and below is some DB server)
 (Also check for "0 of them for write" at the end.  It might matter.)
 
-	/moira/bin/pt_util -x -m -u -g -d /var/prdb.extra -p /var/prdb.old
-	perl /moira/bin/pt_util.pl < /var/prdb.extra > /var/prdb.extra.sort
+	/moira/bin/pt_util -x -m -u -g -d prdb.extra -p prdb.old
+	perl /moira/bin/pt_util.pl < prdb.extra > prdb.extra.sort
 to extract and prepare the personal groups and special user entries in
 the old prdb for being reincorporated into the new prdb.
 
@@ -47,7 +52,7 @@ afs.incr (?) will wait 30 minutes on an incremental update before
 timing out, so the resync should complete in that time, or list
 changes in Moira might need to be propagated by hand.
 
-	/moira/bin/afssync /var/prdb.moira
+	/moira/bin/afssync prdb.moira
 to dump the prdb data that is in Moira (users, groups, and group
 memberships).  This step takes about ten minutes, but can be done
 concurrently with the next few steps.
@@ -57,8 +62,8 @@ prdb.extra from a now completely-up-to-date prdb.
 
 *** Make sure the "afssync" command has completed ***
 
-	cp /var/prdb.moira /var/prdb.new
-	/moira/bin/pt_util -w -d /var/prdb.extra.sort -p /var/prdb.new
+	cp prdb.moira prdb.new
+	/moira/bin/pt_util -w -d prdb.extra.sort -p prdb.new
 This use of pt_util will presumably log errors about failed user
 creations and list additions.  (To start over, do both the `cp` and
 `pt_util` again.)  You can filter out the "User or group doesn't exist"
@@ -120,7 +125,7 @@ may be processed out of order, and fail, and may need to be done by hand.
 SUMMARY
 
 	# db servers with sync site first:
-set db=(prill agamemnon chimera orf)
+set db=(prill agamemnon chimera)
 set u="/moira/bin/udebug -port 7002 -server"
 set prefix="/moira/sync/prdb"
 cd `dirname $prefix`

@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/dcmmaint.c,v 1.8 1990-03-27 11:40:41 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/dcmmaint.c,v 1.9 1990-04-25 12:42:04 mar Exp $
  *
  * Copyright 1987, 1988 by the Massachusetts Institute of Technology.
  * For copying and distribution information, please see the file
@@ -113,11 +113,11 @@ int argc;
 char **argv;
 {
     int status;
-    char *info[8];
+    char *info[SC_END];
 
     initserv(argv[1], info);
     askserv(info);
-    if (status = do_mr_query("add_server_info", 8, info, Scream, NULL))
+    if (status = do_mr_query("add_server_info", SC_END, info, Scream, NULL))
       com_err(whoami, status, " while updating server info");
     FreeInfo(info);
     return(DM_NORMAL);
@@ -178,7 +178,7 @@ updateserv(argc, argv)
 int argc;
 char **argv;
 {
-    char *qargv[9];
+    char *qargv[SC_END];
     int status;
 
     qargv[0] = (char *)argv[1];
@@ -188,7 +188,7 @@ char **argv;
 	return(DM_NORMAL);
     }
     askserv(qargv);
-    if (status = do_mr_query("update_server_info", 8, qargv, Scream, NULL))
+    if (status = do_mr_query("update_server_info", SC_END, qargv, Scream, NULL))
       com_err(whoami, status, " while updating server info");
     return(DM_NORMAL);
 }
@@ -256,7 +256,7 @@ int argc;
 char **argv;
 {
     int status;
-    char *qargv[5], buf[BUFSIZ];
+    char *qargv[6], buf[BUFSIZ];
 
     sprintf(buf, "Reset state for service %s (Y/N)", argv[1]);
     if (!Confirm(buf))
@@ -371,7 +371,7 @@ updatehost(argc, argv)
 int argc;
 char **argv;
 {
-    char *info[SHI_END+1];
+    char *info[SHI_END];
     int status;
 
     info[SHI_SERVICE] = strsave(argv[1]);
@@ -394,14 +394,15 @@ addhost(argc, argv)
 int argc;
 char **argv;
 {
-    char *info[SHI_END+1];
+    char *info[SHI_END];
     int status;
 
     info[SHI_SERVICE] = strsave(argv[1]);
     info[SHI_MACHINE] = strsave(canonicalize_hostname(argv[2]));
     inithost(info);
     askhost(info);
-    if (status = do_mr_query("add_server_host_info", 6, info, Scream, NULL))
+    if (status = do_mr_query("add_server_host_info", SHI_END, info,
+			     Scream, NULL))
       com_err(whoami, status, " while adding server/host info");
     FreeInfo(info);
     return(DM_NORMAL);

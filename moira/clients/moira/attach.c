@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.23 1990-04-05 17:35:57 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.24 1990-04-25 12:45:32 mar Exp $";
 #endif
 
 /*	This is the file attach.c for the MOIRA Client, which allows a nieve
@@ -13,7 +13,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.23 1990-04-05 17:35:57 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.24 1990-04-25 12:45:32 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -486,7 +486,7 @@ int argc;
     if (stat == MR_SUCCESS && !strcasecmp(info[FS_L_TYPE], "HOMEDIR")) {
 	static char *val[] = {"def_quota", NULL};
 	static char *def_quota = NULL;
-	char *argv[3];
+	char *argv[Q_QUOTA + 1];
 	struct qelem *top = NULL;
 
 	if (def_quota == NULL) {

@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/printer.c,v 1.1 1988-08-30 17:47:25 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/printer.c,v 1.2 1988-08-30 18:45:02 mar Exp $";
 #endif lint
 
 /*	This is the file printer.c for the SMS Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/printer.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/printer.c,v 1.1 1988-08-30 17:47:25 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/printer.c,v 1.2 1988-08-30 18:45:02 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -260,6 +260,49 @@ int argc;
 }
 
 
+/*	Function Name: ChangePcap
+ *	Description: Do the work of changing a pcap
+ *	Arguments: argc, argv - printcap info
+ *	Returns: 
+ */
+
+int
+ChangePcap(info, one_item)
+char **info;
+Bool one_item;
+{
+    int stat;
+
+    if ((stat = sms_query("delete_printcap", 1, &info[FS_NAME],
+			  Scream, NULL)) != 0) {
+	com_err(program_name, stat, " printcap entry not deleted.");
+	return(DM_NORMAL);
+    }
+    AskPcapInfo(info);
+    if ((stat = sms_query("add_printcap", CountArgs(info), info,
+			  NullFunc, NULL)) != 0)
+	com_err(program_name, stat, " in ChngPcap");
+    return(DM_NORMAL);
+}
+
+
+/*	Function Name: ChngPcap
+ *	Description:   Update the printcap information
+ *	Arguments:     argc, argv - name of printer in argv[1].
+ *	Returns:       DM_NORMAL.
+ */
+
+int
+ChngPcap(argc, argv)
+    int argc;
+    char **argv;
+{
+    struct qelem *elem = GetPcapInfo(argv[1]);
+    QueryLoop(elem, NullPrint, ChangePcap, "Change the printer");
+    FreeQueue(elem);
+    return(DM_NORMAL);
+}
+
 
 /*
  * Local Variables:
@@ -272,18 +315,3 @@ int argc;
  * End:
  */
 
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    

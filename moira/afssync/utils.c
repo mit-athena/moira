@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/afssync/utils.c,v 1.4 1990-09-21 15:22:49 mar Exp $";
+static char rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/afssync/utils.c,v 1.5 1992-05-31 20:25:07 probe Exp $";
 #endif
 
 /*	
@@ -20,6 +20,7 @@ static char rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/rep
 
 */
 
+#include <afs/param.h>
 #include <sys/types.h>
 #include <lock.h>
 #include <ubik.h>

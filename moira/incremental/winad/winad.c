@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/winad/winad.c,v 1.41 2004-07-26 20:16:41 zacheiss Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/winad/winad.c,v 1.42 2004-07-27 16:11:18 zacheiss Exp $
 /* winad.incr arguments examples
  *
  * arguments when moira creates the account - ignored by winad.incr since the account is unusable.
@@ -6002,7 +6002,7 @@ int tickets_get_k5()
     if (strlen(PrincipalName) == 0)
     {
         strcpy(PrincipalName, PRODUCTION_PRINCIPAL);
-        if (strcmp(ldap_domain, PRIMARY_DOMAIN))
+        if (strcasecmp(ldap_domain, PRIMARY_DOMAIN))
             strcpy(PrincipalName, TEST_PRINCIPAL);
     }
 

@@ -1,11 +1,14 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_auth.c,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_auth.c,v 1.6 1988-06-01 15:31:53 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_auth.c,v 1.7 1988-06-21 13:46:05 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
  *	$Log: not supported by cvs2svn $
+ * Revision 1.6  88/06/01  15:31:53  mar
+ * make auth do the right thing for version 2 of the protocol
+ * 
  * Revision 1.5  88/04/19  12:40:29  mar
  * pass version number on queries
  * 
@@ -27,7 +30,7 @@
  */
 
 #ifndef lint
-static char *rcsid_sms_auth_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_auth.c,v 1.6 1988-06-01 15:31:53 mar Exp $";
+static char *rcsid_sms_auth_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_auth.c,v 1.7 1988-06-21 13:46:05 mar Exp $";
 #endif lint
 
 #include "sms_private.h"
@@ -62,7 +65,7 @@ char *prog;
     if ((status = get_krbrlm(realm, 1)) != KSUCCESS) {
 	return status;
     }
-    status = mk_ap_req(&auth, "sms", "sms", realm, 0);
+    status = krb_mk_req(&auth, "sms", "sms", realm, 0);
     if (status != KSUCCESS) {
 	status += krb_err_base;
 	return status;

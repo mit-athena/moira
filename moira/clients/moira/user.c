@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.12 1988-10-03 13:05:43 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.13 1988-10-05 11:42:28 mar Exp $";
 #endif lint
 
 /*	This is the file user.c for the SMS Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.12 1988-10-03 13:05:43 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.13 1988-10-05 11:42:28 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -145,6 +145,24 @@ Bool name;
     if (name) {
 	sprintf(temp_buf,"\nChanging Attributes of user %s.\n",info[U_NAME]);
 	Put_message(temp_buf);
+    } else {
+	struct qelem *elem = NULL;
+	char *argv[3];
+
+	GetValueFromUser("User's last name", &info[U_LAST]);
+	GetValueFromUser("User's first name", &info[U_FIRST]);
+	GetValueFromUser("User's middle name", &info[U_MIDDLE]);
+	argv[0] = info[U_FIRST];
+	argv[1] = info[U_LAST];
+	if (do_sms_query("get_user_by_name", 2, argv,
+			 StoreInfo, (char *) &elem) == 0) {
+	    Put_message("A user by that name already exists in the database.");
+	    Loop(QueueTop(elem), PrintUserInfo);
+	    Loop(QueueTop(elem), FreeInfo);
+	    FreeQueue(elem);
+	    if (YesNoQuestion("Add new user anyway", TRUE) == FALSE)
+	      return(NULL);
+	}
     }
     if (name) {
 	newname = Strsave(info[U_NAME]);
@@ -155,9 +173,11 @@ Bool name;
 
     GetValueFromUser("User's UID", &info[U_UID]);
     GetValueFromUser("User's shell", &info[U_SHELL]);
-    GetValueFromUser("User's last name", &info[U_LAST]);
-    GetValueFromUser("User's first name", &info[U_FIRST]);
-    GetValueFromUser("User's middle name", &info[U_MIDDLE]);
+    if (name) {
+	GetValueFromUser("User's last name", &info[U_LAST]);
+	GetValueFromUser("User's first name", &info[U_FIRST]);
+	GetValueFromUser("User's middle name", &info[U_MIDDLE]);
+    }
     GetValueFromUser("User's status", &info[U_STATE]);
     temp_ptr = Strsave(info[U_MITID]);
     Put_message("User's MIT ID number (type a new unencrypted number, or keep same encryption)");
@@ -260,6 +280,8 @@ AddNewUser()
     char ** args, *info[MAX_ARGS_SIZE];
 
     args = AskUserInfo(SetUserDefaults(info), FALSE);
+    if (args == NULL)
+      return(DM_NORMAL);
     if ( (status = do_sms_query("add_user", CountArgs(args), 
 				args, Scream, (char *) NULL)) != SMS_SUCCESS)
 	com_err(program_name, status, " in add_user");

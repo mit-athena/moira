@@ -5,7 +5,7 @@
  *
  * $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v $
  * $Author: ambar $
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.13 1987-10-29 01:19:17 ambar Exp $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.14 1987-10-29 01:21:15 ambar Exp $
  *
  * Generic menu system module.
  *
@@ -18,7 +18,7 @@
  */
 
 #ifndef lint
-static char rcsid_menu_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.13 1987-10-29 01:19:17 ambar Exp $";
+static char rcsid_menu_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.14 1987-10-29 01:21:15 ambar Exp $";
 
 #endif lint
 
@@ -38,7 +38,12 @@ static char rcsid_menu_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moira
 
 #define MIN_INPUT 2		/* Minimum number of lines for input window */
 
+extern FILE *fdopen();
+extern int getpid();
 extern char *calloc();
+extern char *whoami;
+
+FILE *log_file = (FILE *) NULL;		/* file stream of log file */
 int more_flg = 1;
 
 /* Structure for holding current displayed menu */
@@ -201,6 +206,7 @@ Do_menu(m, margc, margv)
     struct menu_line *command, *Find_command();
     int argc;
     int quitflag, is_topmenu = (margc < 0);
+    int toggle_logging();
     
     /* Entry function gets called with old menu_screen still current */
     if (m->m_entry != NULLFUNC)
@@ -211,7 +217,8 @@ Do_menu(m, margc, margv)
     if (cur_ms != NULLMS) {
 	/* Get a menu_screen */
 	old_cur_ms = cur_ms;
-	cur_ms = my_ms = make_ms(m->m_length + 1 + (is_topmenu?0:1));
+	/* 2 is for the 2 obligatory lines; quit and toggle */
+	cur_ms = my_ms = make_ms(m->m_length + 2 + (is_topmenu ? 0 : 1));
 
 	/* Now print the title and the menu */
 	(void) wclear(my_ms->ms_menu);
@@ -236,8 +243,11 @@ Do_menu(m, margc, margv)
 	if (!is_topmenu) {
 	    (void) waddstr(my_ms->ms_menu,
 			   " r. (return)       Return to previous menu.");
-	    (void) wmove(my_ms->ms_menu, line, 0);
+	    (void) wmove(my_ms->ms_menu, line++, 0);
 	}
+	(void) waddstr(my_ms->ms_menu,
+			   " t. (toggle)       Toggle logging on and off.");
+	(void) wmove(my_ms->ms_menu, line, 0);
 	(void) waddstr(my_ms->ms_menu, " q. (quit)         Quit.");
     }
 
@@ -262,10 +272,9 @@ Do_menu(m, margc, margv)
 	    command = &m->m_lines[line - 1];
 	}
 	else if ((!is_topmenu &&
-		  (!strcmp(argv[0], "r")
-		   || !strcmp(argv[0], "return")))
-		 || !strcmp(argv[0], "q")
-		 || !strcmp(argv[0], "quit")) {
+		  (!strcmp(argv[0], "r") || !strcmp(argv[0], "return")))
+		 || !strcmp(argv[0], "q") || !strcmp(argv[0], "quit")) {
+		 
 	    /* here if it's either return or quit */
 	    if (cur_ms != NULLMS) {
 		cur_ms = old_cur_ms;
@@ -274,8 +283,12 @@ Do_menu(m, margc, margv)
 	    if (m->m_exit != NULLFUNC)
 		m->m_exit(m);
 	    return (*argv[0] == 'r' ? DM_NORMAL : DM_QUIT);
-	    /* finally, try to find it using Find_command */
 	}
+	else if (!strcmp(argv[0], "t") || !strcmp(argv[0], "toggle")) {
+	    toggle_logging(argc, argv);
+	    continue;
+	} 
+	/* finally, try to find it using Find_command */
 	else if ((command = Find_command(argvals[0])) ==
 		 (struct menu_line *) 0) {
 	    Put_message("Command not recognized");
@@ -350,7 +363,10 @@ int Prompt_input(prompt, buf, buflen)
 	p = buf;
 	while(1) {
 	    (void) wmove(cur_ms->ms_input, y, x);
+		(void) touchwin(cur_ms->ms_screen);
+#ifdef notdef
 	    (void) wclrtoeol(cur_ms->ms_input);
+#endif notdef
 	    refresh_ms(cur_ms);
 	    c = getchar();
 	    switch (c) {
@@ -365,7 +381,7 @@ int Prompt_input(prompt, buf, buflen)
 		(void) waddstr(cur_ms->ms_input, prompt);
 		(void) touchwin(cur_ms->ms_screen);
 #ifdef notdef
-		(void) wrefresh(curscr);
+		refresh_ms(cur_ms);
 #endif notdef
 		getyx(cur_ms->ms_input, y, x);
 		break;
@@ -535,6 +551,12 @@ char *msg;
 
     copy = (char *) malloc((u_int)COLS);
     s = line = msg;
+    if (log_file) {	/* if we're doing logging; we assume that the */
+			/* file has already been opened. */
+	(void) fprintf(log_file, "%s\n", msg);
+	fflush(log_file);
+    } 
+
     while(*s++) {
 	if (s - line >= COLS-1) {
 	    (void) strncpy(copy, line, COLS-1);
@@ -682,6 +704,47 @@ Find_command(command)
 	return (find_command_from(command, top_menu, MAX_MENU_DEPTH));
     }
 }
+
+/*ARGSUSED*/
+int
+toggle_logging(argc, argv)
+    int argc;
+    char *argv[];
+{
+    int pid;
+    char buf[BUFSIZ];
+    
+    if (log_file == (FILE *) NULL) {
+	pid = getpid();
+	if (!whoami) {
+	    char *whoami;
+	    Put_message("I've lost my SENSE of DIRECTION!  I have no IDEA who I AM!");
+	    Put_message("My God... You've turned him into a DEMOCRAT!!");
+	    Put_message("		-- Doonesbury");
+	    Put_message("");
+	    Put_message("translation:  your log file can be found in \"/usr/tmp/a.out.pid\".");
+	    whoami = "a.out";
+	    (void) sprintf(buf, "/usr/tmp/%s-log.%d", whoami, pid);
+	}
+	else
+	    (void) sprintf(buf, "/usr/tmp/%s-log.%d", whoami, pid);
+
+	/* open the file */
+	log_file = fopen(&buf,"a");
+
+	if (log_file == (FILE *) NULL)
+	    Put_message("Open of log file failed.  Logging is not on.");
+	else
+	    Put_message("Log file successfully opened.");
+    } 
+    else { /* log_file is a valid pointer; turn off logging. */
+	(void) fflush(log_file);
+	(void) fclose(log_file);
+	log_file = (FILE *) NULL;
+	Put_message("Logging off.");
+    }
+    return(DM_NORMAL);
+} 
 
 /*
  * Local Variables:

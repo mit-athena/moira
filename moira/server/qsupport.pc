@@ -1,4 +1,4 @@
-/* $Id: qsupport.pc,v 2.9 1998-02-23 19:24:38 danw Exp $
+/* $Id: qsupport.pc,v 2.10 1998-03-20 18:25:41 danw Exp $
  *
  * Special query routines
  *
@@ -18,7 +18,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.pc,v 2.9 1998-02-23 19:24:38 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.pc,v 2.10 1998-03-20 18:25:41 danw Exp $");
 
 extern char *whoami, *table_name[];
 extern int dbms_errno, mr_errcode;
@@ -101,123 +101,6 @@ int set_pobox(struct query *q, char **argv, client *cl)
     return mr_errcode;
   return MR_SUCCESS;
 }
-
-
-/* get_list_info:  passed a wildcard list name, returns lots of stuff about
- * each list.  This is tricky:  first build a queue of all requested
- * data.  Rest of processing consists of fixing gid, ace_name, and modby.
- */
-
-int get_list_info(struct query *q, char **aargv, client *cl,
-		  int (*action)(int, char *[], void *), void *actarg)
-{
-  char *argv[13];
-  EXEC SQL BEGIN DECLARE SECTION;
-  char *name, acl_type[LIST_ACL_TYPE_SIZE], listname[LIST_NAME_SIZE];
-  char active[5], public[5], hidden[5];
-  char maillist[5], grouplist[5], gid_str[LIST_GID_SIZE];
-  char desc[LIST_DESCRIPTION_SIZE], modtime[LIST_MODTIME_SIZE];
-  char modwith[LIST_MODWITH_SIZE];
-  int id, rowcount, acl_id, hid, modby_id;
-  EXEC SQL END DECLARE SECTION;
-  int returned, status;
-  struct save_queue *sq;
-
-  returned = rowcount = 0;
-  name = aargv[0];
-  convert_wildcards(name);
-
-  sq = sq_create();
-  EXEC SQL DECLARE csr102 CURSOR FOR SELECT list_id FROM list
-    WHERE name LIKE :name ESCAPE '*';
-  if (dbms_errno)
-    return mr_errcode;
-  EXEC SQL OPEN csr102;
-  if (dbms_errno)
-    return mr_errcode;
-  while (1)
-    {
-      EXEC SQL FETCH csr102 INTO :id;
-      if (sqlca.sqlcode)
-	break;
-      sq_save_data(sq, (void *)id);
-      rowcount++;
-    }
-  EXEC SQL CLOSE csr102;
-
-  if (dbms_errno)
-    return mr_errcode;
-  if (rowcount == 0)
-    return MR_NO_MATCH;
-
-  argv[0] = listname; argv[1] = active; argv[2] = public; argv[3] = hidden;
-  argv[4] = maillist; argv[5] = grouplist; argv[6] = gid_str;
-  argv[7] = acl_type; argv[9] = desc; argv[10] = modtime; argv[12] = modwith;
-
-  while (sq_get_data(sq, &id))
-    {
-      if (id == 0)
-	continue;
-      argv[6] = gid_str;
-      EXEC SQL SELECT name, active, publicflg,
-	hidden, hidden, maillist, grouplist, gid,
-	acl_type, acl_id, description,
-	TO_CHAR(modtime, 'DD-mon-YYYY HH24:MI:SS'), modby, modwith
-	INTO :listname, :active, :public, :hidden, :hid, :maillist,
-	:grouplist, :gid_str, :acl_type, :acl_id, :desc,
-	:modtime, :modby_id, :modwith
-	FROM list WHERE list_id = :id;
-
-      if (dbms_errno)
-	return mr_errcode;
-      strtrim(acl_type);
-
-      if (atoi(gid_str) == -1)
-	argv[6] = UNIQUE_GID;
-
-      argv[8] = malloc(0);
-      if (!strcmp(acl_type, "LIST"))
-	status = id_to_name(acl_id, LIST_TABLE, &argv[8]);
-      else if (!strcmp(acl_type, "USER"))
-	status = id_to_name(acl_id, USERS_TABLE, &argv[8]);
-      else if (!strcmp(acl_type, "KERBEROS"))
-	status = id_to_name(acl_id, STRINGS_TABLE, &argv[8]);
-      else if (!strcmp(acl_type, "NONE"))
-	{
-	  status = 0;
-	  free(argv[8]);
-	  argv[8] = xstrdup("NONE");
-	}
-      else
-	{
-	  status = 0;
-	  free(argv[8]);
-	  argv[8] = xstrdup("???");
-	}
-      if (status && status != MR_NO_MATCH)
-	return status;
-
-      argv[11] = malloc(0);
-      if (modby_id > 0)
-	status = id_to_name(modby_id, USERS_TABLE, &argv[11]);
-      else
-	status = id_to_name(-modby_id, STRINGS_TABLE, &argv[11]);
-      if (status && status != MR_NO_MATCH)
-	return status;
-
-      mr_trim_args(q->vcnt, argv);
-      returned++;
-      (*action)(q->vcnt, argv, actarg);
-      free(argv[8]);
-      free(argv[11]);
-    }
-
-  sq_destroy(sq);
-  if (dbms_errno)
-    return mr_errcode;
-  return MR_SUCCESS;
-}
-
 
 /* Add_member_to_list: do list flattening as we go!  MAXLISTDEPTH is
  * how many different ancestors a member is allowed to have.

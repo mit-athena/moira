@@ -1,4 +1,4 @@
-/* $Id: queries2.c,v 2.38 1998-03-18 23:25:50 danw Exp $
+/* $Id: queries2.c,v 2.39 1998-03-20 18:25:43 danw Exp $
  *
  * This file defines the query dispatch table for version 2 of the protocol
  *
@@ -3223,7 +3223,7 @@ struct query Queries2[] = {
     RETRIEVE,
     "l",
     LIST_TABLE,
-    "name, active, publicflg, hidden, maillist, group, gid, ace_type, ace_name, description, modtime, modby, modwith FROM list",
+    "name, active, publicflg, hidden, maillist, grouplist, gid, acl_type, acl_id, description, modtime, modby, modwith FROM list",
     glin_fields,
     13,
     "name LIKE '%s'",

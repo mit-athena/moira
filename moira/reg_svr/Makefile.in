@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.8 1998-11-18 19:20:52 danw Exp $
+# $Id: Makefile.in,v 1.9 1998-12-16 19:42:58 danw Exp $
 
 SHELL=/bin/sh
 @SET_MAKE@
@@ -55,6 +55,8 @@ depend: $(CFILES)
 install: all
 	$(INSTALL_PROGRAM) reg_svr $(mrbindir)
 	$(INSTALL_PROGRAM) startreg $(mrbindir)
+	$(INSTALL_PROGRAM) genkey $(mrbindir)
+	$(INSTALL_PROGRAM) genwords $(mrbindir)
 
 reg_svr: $(REG_OBJS) $(MR_LIBDEP) $(RSAREF_LIBDEP)
 	$(CC) -o $@ $(LDFLAGS) $(REG_OBJS) $(LIBS) $(SQL_LIBS)

@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.35 1992-06-01 00:20:32 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.36 1992-07-28 17:45:49 mar Exp $";
 #endif
 
 /*	This is the file attach.c for the MOIRA Client, which allows a nieve
@@ -13,7 +13,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.35 1992-06-01 00:20:32 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.36 1992-07-28 17:45:49 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -358,8 +358,10 @@ Bool name;
 			    if (islower(*p)) {
 				strcat(temp_buf, "/x");	
 				temp_buf[strlen(temp_buf)-1] = *p;
-			    } else
-			      strcat(temp_buf, "/other");
+			    } else {
+				sprintf(temp_buf, "/afs/%s/%s/other", info[FS_MACHINE], path);
+				break;
+			    }
 			}
 		    } else if (depth = -1) {
 			if (isdigit(info[FS_NAME][0])) {

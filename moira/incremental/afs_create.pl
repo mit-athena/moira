@@ -66,8 +66,10 @@ chop($_ = <FS>);
 close(FS);
 &fatal("Can't get information about $p") if ($?);
 @tmp = (split(/ /,$_));
-system("$vos release $tmp[$#tmp] -cell $cell >/dev/null") &&
-    &fatal("Can't release $tmp[$#tmp] in cell $cell");
+if ($tmp[$#tmp] !~ /user\../) {
+    system("$vos release $tmp[$#tmp] -cell $cell >/dev/null") &&
+	&fatal("Can't release $tmp[$#tmp] in cell $cell");
+}
 
 &afs_quota_adj($cell,$asrv,$apart,$quota);
 exit(0);

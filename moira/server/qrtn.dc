@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.dc,v $
  *	$Author: genoa $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.dc,v 2.7 1992-10-17 22:24:54 genoa Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.dc,v 2.8 1992-12-06 19:40:58 genoa Exp $
  *
  *	Copyright (C) 1987, 1988 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_qrtn_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.dc,v 2.7 1992-10-17 22:24:54 genoa Exp $";
+static char *rcsid_qrtn_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.dc,v 2.8 1992-12-06 19:40:58 genoa Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -38,12 +38,10 @@ EXEC SQL END DECLARE SECTION;
 extern char *whoami;
 extern FILE *journal;
 
-/** Maybe this should be replaced by something like tytso's sql_error */
-
 #define INGRES_BAD_DATE1  40206
 #define INGRES_BAD_DATE2  40207
 #define INGRES_DEADLOCK   49900
-
+#define INGRES_TIMEOUT    39100
 #define INGRES_BAD_COLUMN 30110
 #define INGRES_ASGN_ERR   40204
 #define INGRES_NO_CURSOR  30120
@@ -69,32 +67,31 @@ void ingerr()
 	mr_errcode = MR_DEADLOCK;
 	com_err(whoami, 0, "INGRES deadlock detected");
 	break;
-/*  I just don't know what the equivalent to this is, yet.
- *  case INGRES_TIMEOUT:
- *	mr_errcode = MR_BUSY;
- *	com_err(whoami, 0, "timed out getting lock");
- *	break;
- */
-    case INGRES_NO_CURSOR:
+      case INGRES_TIMEOUT:
+/* May be something other than timeout! #39100 is "Unknown error" 
+ * Really should parse the error message enough to decide if it's a timeout */
+  	mr_errcode = MR_BUSY;
+  	com_err(whoami, 0, "timed out getting lock");
+  	break;
+/* These should never come up unless someone breaks the query table */
+      case INGRES_NO_CURSOR:
 	mr_errcode = MR_INTERNAL;
 	com_err(whoami, 0, "Cursor not opened");
 	break;
-    case INGRES_NO_STMT:
+      case INGRES_NO_STMT:
 	mr_errcode = MR_INTERNAL;
 	com_err(whoami, 0, "Statement not declared");
 	break;
-#if 0
-    /* Taking these out during development lets default: give me the INGRES text */
-    case INGRES_BAD_COLUMN:
+      case INGRES_BAD_COLUMN:
 	mr_errcode = MR_INTERNAL;
 	com_err(whoami, 0, "Bad column name in query table");
         break;
-    case INGRES_ASGN_ERR:
+      case INGRES_ASGN_ERR:
 	mr_errcode = MR_INTERNAL;
 	com_err(whoami, 0, "Error in SQL assignment statement");
 	break;
-#endif
-    default:
+/* Others ??? */
+      default:
 	mr_errcode = MR_INGRES_ERR;
 	com_err(whoami, MR_INGRES_ERR, " code %d\n", ingres_errno);
 	EXEC SQL INQUIRE_SQL(:err_msg = errortext);
@@ -321,16 +318,6 @@ mr_process_query(cl, name, argc, argv_ro, action, actarg)
 	    if (status != MR_NO_MATCH) break;
 	}
 
-#ifdef NEVER
-	/* This is now done by a valobj, which also fetches the id value */
-
-	/* increment id number if necessary */
-	if (v->object_id) {
-	    status = set_next_object_id(v->object_id, q->rtable, 0);
-	    if (status != MR_SUCCESS) break;
-	}
-#endif
-
 	/* build "where" clause if needed */
 	if (q->qual) {
 	    build_qual(q->qual, q->argc, Argv, qual);
@@ -346,7 +333,7 @@ mr_process_query(cl, name, argc, argv_ro, action, actarg)
 	    status = do_append(q, &Argv[q->argc], pqual, action, actarg);
 	    if (status != MR_SUCCESS) break;
 	    if (v && v->object_id) {
-		sprintf(qual, "%s.%s = %s",q->rtable, v->object_id, 
+		sprintf(qual, "%s.%s = %s",q->rvar, v->object_id, 
 			Argv[q->argc+q->vcnt]);
 		incremental_after(q->rtable, qual, argv_ro);
 	    } else

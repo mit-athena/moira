@@ -3,6 +3,7 @@
 */
 
 #include	<ctype.h>
+#include	<stdio.h>
 #include	<X11/StringDefs.h>
 #include	<X11/Intrinsic.h>
 #include	<X11/Core.h>
@@ -12,7 +13,7 @@
 #include	"mmoira.h"
 #include	<sys/file.h>
 
-static char rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/stubs.c,v 1.11 1992-11-09 17:20:16 mar Exp $";
+static char rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/stubs.c,v 1.12 1992-12-10 10:59:19 mar Exp $";
 
 void	extra_help_callback();
 extern EntryForm *MoiraForms[];
@@ -278,6 +279,11 @@ char	*extrahelp;
 	int		n;
 	static XmString        label;
 
+	if (tty) {
+	    printf("%s\r\n", text);
+	    return;
+	}
+
 	if (label) {
 		XtFree(label);
 		XtDestroyWidget(child);
@@ -346,6 +352,11 @@ char	*text;
 	XmTextPosition	pos;
 	char		*string, *p;
 
+	if (tty) {
+	    fputs(text, stdout);
+	    return;
+	}
+
 	string = XmTextGetString(logwidget);
 	pos = strlen(string);
 	XtFree(string);
@@ -409,7 +420,7 @@ EntryForm	*spec;
 	int		n, kidcount;
 	Widget		kid;
 
-	if (spec->formpointer == NULL) return;
+	if (tty || spec->formpointer == NULL) return;
 
 	for (	current = (*myinputlines);
 		current; 

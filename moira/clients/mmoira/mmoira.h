@@ -1,9 +1,10 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/mmoira.h,v 1.6 1992-11-09 17:15:01 mar Exp $ */
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/mmoira.h,v 1.7 1992-12-10 10:58:24 mar Exp $ */
 
 #include "data.h"
 
 extern EntryForm *GetAndClearForm(), *GetForm();
 extern char *user, *program_name;
+extern int tty;
 extern char *user_states[], *nfs_states[];
 extern char *StringValue();
 extern int DisplayCallback(), MoiraValueChanged();

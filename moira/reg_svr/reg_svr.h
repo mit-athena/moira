@@ -1,7 +1,7 @@
 /*
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.h,v $
- *      $Author: qjb $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.h,v 1.1 1988-08-07 16:16:46 qjb Exp $
+ *      $Author: mar $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.h,v 1.2 1988-08-11 20:43:05 mar Exp $
  *
  *      Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
@@ -87,3 +87,9 @@ int format_pkt();		/* Prepare a packet to send to client*/
 int verify_user();		/* Make sure user is allowed to register */
 int reserve_user();		/* Reserve a login for this user */
 int set_password();		/* Set this user's password */
+
+
+/* For logging successful database transactions */
+#define JOURNAL "/u1/sms/journal.reg"
+extern FILE *journal;
+

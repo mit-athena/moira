@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/admin_call.c,v $
  *	$Author: wesommer $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/admin_call.c,v 1.1 1987-08-07 13:50:37 wesommer Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/admin_call.c,v 1.2 1987-08-22 17:13:59 wesommer Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
@@ -11,10 +11,13 @@
  *	Completely gutted and rewritten by Bill Sommerfeld, August 1987
  *
  *	$Log: not supported by cvs2svn $
+ * Revision 1.1  87/08/07  13:50:37  wesommer
+ * Initial revision
+ * 
  */
 
 #ifndef lint
-static char *rcsid_admin_call_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/admin_call.c,v 1.1 1987-08-07 13:50:37 wesommer Exp $";
+static char *rcsid_admin_call_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/admin_call.c,v 1.2 1987-08-22 17:13:59 wesommer Exp $";
 #endif lint
 
 #include <sys/errno.h>
@@ -28,6 +31,7 @@ static char *rcsid_admin_call_c = "$Header: /afs/.athena.mit.edu/astaff/project/
 #include <strings.h>
 #include <stdio.h>
 
+#define KERB_HOST "icarus"
 #include "admin_err.h"
 #include "admin_server.h"
 #include "prot.h"
@@ -48,7 +52,7 @@ static struct sockaddr_in my_addr;    /* address bound to admin_fd. */
 static int my_addr_len;		/* size of above address. */
 
 static char krbrlm[REALM_SZ];	/* Local kerberos realm */
-static char admin_errmsg[BUFSIZ]; /* Server error message */
+char admin_errmsg[BUFSIZ]; /* Server error message */
 
 /*
  * Initialize socket, etc. to use to talk to admin_server.

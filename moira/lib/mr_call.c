@@ -1,4 +1,4 @@
-/* $Id: mr_call.c,v 1.15 1998-07-15 20:39:31 danw Exp $
+/* $Id: mr_call.c,v 1.16 1999-04-30 17:38:37 danw Exp $
  *
  * Pass an mr_params off to the Moira server and get a reply
  *
@@ -17,7 +17,7 @@
 #include <string.h>
 #include <unistd.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_call.c,v 1.15 1998-07-15 20:39:31 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_call.c,v 1.16 1999-04-30 17:38:37 danw Exp $");
 
 /* Moira RPC format:
 
@@ -178,7 +178,7 @@ int mr_cont_receive(int fd, struct mr_params *reply)
       return ENOMEM;
     }
 
-  for (i = 0, p = reply->mr_flattened + 16; i < reply->mr_argc; i++)
+  for (i = 0, p = (char *)reply->mr_flattened + 16; i < reply->mr_argc; i++)
     {
       getlong(p, reply->mr_argl[i]);
       reply->mr_argv[i] = p + 4;

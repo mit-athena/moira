@@ -1,5 +1,5 @@
 
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/mailhub.dc,v 1.4 1993-04-15 10:24:38 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/mailhub.dc,v 1.5 1993-07-06 12:01:38 mar Exp $
  *
  * This generates the /usr/lib/aliases file for the mailhub.
  *
@@ -438,12 +438,12 @@ int copy;
 }
 
 
-/* Illegal chars: ! " % ( ) , . / : ; < = > @ [ \ ] ^ { | } */
+/* Illegal chars: ! " % ( ) , / : ; < = > @ [ \ ] ^ { | } */
 
 static int illegalchars[] = {
     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, /* ^@ - ^O */
     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, /* ^P - ^_ */
-    0, 1, 1, 0, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0, 1, 1, /* SPACE - / */
+    0, 1, 1, 0, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0, 0, 1, /* SPACE - / */
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, /* 0 - ? */
     1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, /* @ - O */
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, /* P - _ */

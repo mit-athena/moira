@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/fix.qc,v 1.1 1988-09-25 21:54:45 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/fix.qc,v 1.2 1988-09-26 14:06:14 mar Exp $
  *
  * User interface routines for dbck (SMS database consistency checker)
  *
@@ -11,6 +11,8 @@
 #include <sms.h>
 #include <stdio.h>
 #include "dbck.h"
+
+static char fix_qc_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/fix.qc,v 1.2 1988-09-26 14:06:14 mar Exp $";
 
 
 ##char *_table;
@@ -27,6 +29,7 @@
       printf("%d entr%s deleted\n", rowcount, rowcount==1?"y":"ies");
     else
       printf("Not deleted\n");
+    modified(_table);
 ##}
 
 
@@ -64,23 +67,8 @@ int id;
       printf("%d entr%s fixed\n", rowcount, rowcount==1?"y":"ies");
     else
       printf("Not fixed\n");
+    modified(table);
 ##}
-
-
-generic_fix(sq, pfunc, msg, ffunc, preen)
-struct save_queue *sq;
-char *msg;
-int (*pfunc)(), (*ffunc)();
-int preen;
-{
-    int id;
-
-    while (sq_get_data(sq, &id)) {
-	if ((*pfunc)(id) == 0 && singe_fix(msg, preen))
-	  (*ffunc)(id);
-    }
-    sq_destroy(sq);
-}
 
 
 int single_fix(msg, preen)
@@ -111,6 +99,22 @@ int preen;
 }
 
 
+generic_fix(sq, pfunc, msg, ffunc, preen)
+struct save_queue *sq;
+char *msg;
+int (*pfunc)(), (*ffunc)();
+int preen;
+{
+    int id;
+
+    while (sq_get_data(sq, &id)) {
+	if ((*pfunc)(id) == 0 && single_fix(msg, preen))
+	  (*ffunc)(id);
+    }
+    sq_destroy(sq);
+}
+
+
 int prompt(msg)
 char *msg;
 {
@@ -129,12 +133,14 @@ char *msg;
 	    if (prompt("Are you sure you want to quit")) {
 		if (prompt("Save database changes")) {
 ##		    end transaction
-##		    replace values (value = dcmenable)
-##			where values.name = "dcm_enable"
-##		    exit
+		    cleanup();
 		    exit(0);
 		} else {
-		    cleanup();
+##		    abort
+##		    replace values (value = dcmenable)
+##		    	where values.name = "dcm_enable"
+##		    exit
+		    exit(1);
 		}
 	    }
 	}
@@ -179,8 +185,9 @@ int set_next_object_id(object, table)
 ##	retrieve (exists = any(tbl.name where tbl.name = value))
     }
 
-    printf("setting ID %s to %d", name, value);
+    printf("setting ID %s to %d\n", name, value);
 ##  repeat replace v (#value = @value) where v.#name = @name
+    modified("values");
     return(SMS_SUCCESS);
 ##}
 
@@ -203,5 +210,6 @@ int set_next_object_id(object, table)
       printf("Fixed\n");
     else
       printf("Not fixed, rowcount = %d\n", rowcount);
+    modified(table);
     return(id);
 ##}

@@ -2,7 +2,7 @@
 # This script performs nfs updates on servers.
 #
 # $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/nfs.sh,v $
-echo '$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/nfs.sh,v 1.11 1990-04-09 18:32:03 mar Exp $'
+echo '$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/nfs.sh,v 1.12 1991-07-22 14:08:11 mar Exp $'
 
 # The following exit codes are defined and MUST BE CONSISTENT with the
 # MR error codes the library uses:
@@ -10,7 +10,7 @@ set MR_NOCRED = 47836470
 set MR_MKCRED = 47836474
 set MR_TARERR = 47836476
 
-set path=(/etc /bin /usr/bin /usr/etc)
+set path=(/etc /bin /usr/bin /usr/etc /usr/athena/etc)
 set nonomatch
 
 # The file containg the information for the update
@@ -63,7 +63,7 @@ rm -f /usr/etc/credentials.new
 cp ${uchost}.cred /usr/etc/credentials.new
 if ($status) exit $MR_NOCRED
 
-/usr/etc/mkcred /usr/etc/credentials.new
+mkcred /usr/etc/credentials.new
 if ($status) exit $MR_MKCRED
 
 # Try to install the files

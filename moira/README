@@ -29,7 +29,7 @@ Here are the steps for building the Moira source.
     want to define it.
 
     If you are building the server binaries, uncomment the #define
-    SVR_BUILD line, and make sure you have ORACLE_HOME set in your
+    SVRBUILD line, and make sure you have ORACLE_HOME set in your
     environment.
 
 4.  Cd to include.  Read through moira_site.h adjusting the paths to

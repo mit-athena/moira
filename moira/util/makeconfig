@@ -1,4 +1,4 @@
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/util/makeconfig,v 1.8 1997-07-11 00:32:25 danw Exp $
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/util/makeconfig,v 1.9 1997-07-11 00:46:43 danw Exp $
 #
 #  Copyright 1990 by the Massachusetts Institute of Technology.
 # 
@@ -22,8 +22,10 @@
 DESTDIR	= .
 SRCDIR 	= /mit/moiradev/src
 
+SYNCTREE = /usr/athena/etc/synctree
+
 all:
-	synctree -q -s $(SRCDIR) -d $(DESTDIR)
+	$(SYNCTREE) -q -s $(SRCDIR) -d $(DESTDIR)
 
 	rm -f $(DESTDIR)/Makefile
 	cp $(SRCDIR)/Makefile $(DESTDIR)/

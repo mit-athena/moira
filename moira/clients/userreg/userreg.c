@@ -2,7 +2,7 @@
  * $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.c,v $
  * $Author: mar $
  * $Locker:  $
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.c,v 1.14 1989-09-13 16:54:24 mar Exp $ 
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.c,v 1.15 1989-11-21 16:04:03 mar Exp $ 
  *
  *  (c) Copyright 1988 by the Massachusetts Institute of Technology.
  *  For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char    *rcsid_userreg_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.c,v 1.14 1989-09-13 16:54:24 mar Exp $";
+static char    *rcsid_userreg_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.c,v 1.15 1989-11-21 16:04:03 mar Exp $";
 #endif	lint
 
 #include <mit-copyright.h>
@@ -82,8 +82,7 @@ main(argc, argv)
 	signal(SIGQUIT, fix_display);
 	signal(SIGHUP, fix_display);
 
-	do {
-		
+	while (1) {
 		setjmp(redo);
 		reset();
 		ntimes = 0;
@@ -189,7 +188,8 @@ main(argc, argv)
 		display_text_line("You are now finished. Thank you!");
 		wait_for_user();
 		qexit();
-	} while (getuid() == 0);/* Loop forever if we're root */
+		break;
+	}
 	restore_display();
 	exit(0);
 }

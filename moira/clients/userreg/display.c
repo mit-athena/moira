@@ -2,7 +2,7 @@
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/display.c,v $
  *	$Author: mar $
  *	$Locker:  $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/display.c,v 1.7 1989-09-13 16:49:50 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/display.c,v 1.8 1989-11-21 16:04:21 mar Exp $
  *
  *  (c) Copyright 1988 by the Massachusetts Institute of Technology.
  *  For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_display_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/display.c,v 1.7 1989-09-13 16:49:50 mar Exp $";
+static char *rcsid_display_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/display.c,v 1.8 1989-11-21 16:04:21 mar Exp $";
 #endif	lint
 
 #include <mit-copyright.h>
@@ -203,13 +203,9 @@ retry:
 	}
 	break;
       case '\003':		/* Ctrl-C */
-	if (getuid() != 0) 
-	  { clear();		/* Exit if not root. */
-	    restore_display();
-	    exit(0);
-	  }
-	else
-	  restart();  
+	clear();
+	restore_display();
+	exit(0);
 	break;
       default: 
 	if (c >= ' ') {		/* Ignore all other control chars */
@@ -314,11 +310,9 @@ askyn(prompt)
 	exit(1);
 	break;
       case '\003':		/* Ctrl-C */
-/*	if (getuid() != 0) */
-	  { clear();		/* Exit if not root. */
-	    restore_display();
-	    exit(0);
-	  }
+	clear();
+	restore_display();
+	exit(0);
 	break;
       default:			/* Ignore everything else. */
 	break;

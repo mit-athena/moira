@@ -2,7 +2,7 @@
  * $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.c,v $
  * $Author: mar $
  * $Locker:  $
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.c,v 1.10 1988-09-12 17:29:19 mar Exp $ 
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.c,v 1.11 1989-08-04 13:57:56 mar Exp $ 
  *
  *  (c) Copyright 1988 by the Massachusetts Institute of Technology.
  *  For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char    *rcsid_userreg_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.c,v 1.10 1988-09-12 17:29:19 mar Exp $";
+static char    *rcsid_userreg_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.c,v 1.11 1989-08-04 13:57:56 mar Exp $";
 #endif	lint
 
 #include <mit-copyright.h>
@@ -183,7 +183,7 @@ main(argc, argv)
 		display_text_line(line);
 		display_text_line("you typed in earlier.");
 		display_text_line("");
-		display_text_line("Your account should be created within about 12 hours\n");
+		display_text_line("Your account should be created by tomorrow\n");
 		
 		display_text_line("");
 		display_text_line("You are now finished. Thank you!");

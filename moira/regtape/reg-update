@@ -1,0 +1,18 @@
+#!/bin/sh
+#
+#  Script to update Moira from Registrar's "tapes".
+
+date=`/usr/local/bin/gdate +%y%m%d`
+date=`expr $date - 1`
+
+for who in  staff students ; do
+  [ -f /moira/tapes/$who.input.$date.Z ] \
+  && cd /moira/ \
+  && mv $who.input.0 $who.input.1 \
+  && mv $who.input   $who.input.0 \
+  && zcat tapes/$who.input.$date.Z > $who.input \
+  && [ `diff $who.input.old $who.input | wc -l` -lt 500 ] \
+  && bin/$who -n $who.input > $who.output.$date 2>&1 \
+  && egrep -v "($who): (adding|updating)" $who.output.$date > $who.err 2>&1 \
+  && cat /usr/local/lib/mail_header $who.err | mail dkk
+done

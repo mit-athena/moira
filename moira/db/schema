@@ -1,275 +1,286 @@
 create table users
 (
-        login		CHAR(8),
-	users_id	INTEGER,
-	uid		SMALLINT,
-	shell		CHAR(32),
-	last		CHAR(16),
-	first		CHAR(16),
-	middle		CHAR(16),
-	status		SMALLINT,
-	clearid		CHAR(16),
-	encryptid	CHAR(16),
-	type		CHAR(8),
-	modtime		DATE,
-	modby		INTEGER,
-	modwith		CHAR(8),
-	fullname	CHAR(32),
-	nickname	CHAR(16),
-	home_addr	CHAR(82),
-	home_phone	CHAR(16),
-	office_addr	CHAR(16),
-	office_phone	CHAR(12),
-	deptartment	CHAR(20),
-	affiliation	CHAR(50),
-	fmodtime	DATE,
-	fmodby		INTEGER,
-	fmodwith	CHAR(8),
-	potype		CHAR(8),
-	pop_id		INTEGER,
-	box_id		INTEGER,
-	pmodtime	DATE,
-	pmodby		INTEGER,
-	pmodwith	CHAR(8),
-	misc		SMALLINT
+        login		VARCHAR(8) 	NOT NULL WITH DEFAULT,
+	users_id	INTEGER 	NOT NULL WITH DEFAULT,
+	uid		SMALLINT 	NOT NULL WITH DEFAULT,
+	shell		CHAR(32) 	NOT NULL WITH DEFAULT,
+	last		VARCHAR(16) 	NOT NULL WITH DEFAULT,
+	first		VARCHAR(16) 	NOT NULL WITH DEFAULT,
+	middle		CHAR(16) 	NOT NULL WITH DEFAULT,
+	status		SMALLINT 	NOT NULL WITH DEFAULT,
+	clearid		VARCHAR(16) 	NOT NULL WITH DEFAULT,
+	type		CHAR(8) 	NOT NULL WITH DEFAULT,
+	comment         INTEGER  	NOT NULL WITH DEFAULT,
+	modtime		DATE    	NOT NULL WITH DEFAULT,
+	modby		INTEGER 	NOT NULL WITH DEFAULT,
+	modwith		CHAR(8) 	NOT NULL WITH DEFAULT,
+	fullname	CHAR(32) 	NOT NULL WITH DEFAULT,
+	nickname	CHAR(16) 	NOT NULL WITH DEFAULT,
+	home_addr	CHAR(82) 	NOT NULL WITH DEFAULT,
+	home_phone	CHAR(16) 	NOT NULL WITH DEFAULT,
+	office_addr	CHAR(16) 	NOT NULL WITH DEFAULT,
+	office_phone	CHAR(12) 	NOT NULL WITH DEFAULT,
+	department	CHAR(20) 	NOT NULL WITH DEFAULT,
+	affiliation	CHAR(50) 	NOT NULL WITH DEFAULT,
+	fmodtime	DATE    	NOT NULL WITH DEFAULT,
+	fmodby		INTEGER 	NOT NULL WITH DEFAULT,
+	fmodwith	CHAR(8) 	NOT NULL WITH DEFAULT,
+	potype		CHAR(8) 	NOT NULL WITH DEFAULT,
+	pop_id		INTEGER 	NOT NULL WITH DEFAULT,
+	box_id		INTEGER 	NOT NULL WITH DEFAULT,
+	pmodtime	DATE    	NOT NULL WITH DEFAULT,
+	pmodby		INTEGER 	NOT NULL WITH DEFAULT,
+	pmodwith	CHAR(8) 	NOT NULL WITH DEFAULT,
+	xname           CHAR(30)        NOT NULL WITH DEFAULT,
+	xdept        	CHAR(20)        NOT NULL WITH DEFAULT,
+	xtitle       	CHAR(50)	NOT NULL WITH DEFAULT,
+	xaddress     	CHAR(82)	NOT NULL WITH DEFAULT,
+	xphone1      	CHAR(12)	NOT NULL WITH DEFAULT,
+	xphone2      	CHAR(12)	NOT NULL WITH DEFAULT,
+	xmodtime     	DATE         	NOT NULL WITH DEFAULT,
+	sigdate      	INTEGER		NOT NULL WITH DEFAULT,
+	sigwho       	INTEGER		NOT NULL WITH DEFAULT,
+	signature    	VARCHAR(68)	NOT NULL WITH DEFAULT,
+	secure       	INTEGER		NOT NULL WITH DEFAULT,       
+	flag         	INTEGER1	NOT NULL WITH DEFAULT
 );
 create table krbmap
 (
-	users_id	INTEGER,
-	string_id	INTEGER
+	users_id	INTEGER 	NOT NULL WITH DEFAULT,
+	string_id	INTEGER 	NOT NULL WITH DEFAULT
 );
 create table machine
 (
-	name		CHAR(32),
-	mach_id		INTEGER,
-	type		CHAR(8),
-	modtime		DATE,
-	modby		INTEGER,
-	modwith		CHAR(8)
+	name		VARCHAR(32) 	NOT NULL WITH DEFAULT,
+	mach_id		INTEGER 	NOT NULL WITH DEFAULT,
+	type		CHAR(8) 	NOT NULL WITH DEFAULT,
+	modtime		DATE    	NOT NULL WITH DEFAULT,
+	modby		INTEGER 	NOT NULL WITH DEFAULT,
+	modwith		CHAR(8) 	NOT NULL WITH DEFAULT
 );
-create table clusters
+create table cluster
 (
-	name		CHAR(32),
-	clu_id		INTEGER,
-	description	CHAR(32),
-	location	CHAR(64),
-	modtime	 	DATE,
-	modby		INTEGER,
-	modwith		CHAR(8)
+	name		VARCHAR(32) 	NOT NULL WITH DEFAULT,
+	clu_id		INTEGER 	NOT NULL WITH DEFAULT,
+	description	CHAR(32) 	NOT NULL WITH DEFAULT,
+	location	CHAR(64) 	NOT NULL WITH DEFAULT,
+	modtime	 	DATE    	NOT NULL WITH DEFAULT,
+	modby		INTEGER 	NOT NULL WITH DEFAULT,
+	modwith		CHAR(8) 	NOT NULL WITH DEFAULT
 );
 create table mcmap
 (
-	mach_id		INTEGER,
-	clu_id		INTEGER
+	mach_id		INTEGER 	NOT NULL WITH DEFAULT,
+	clu_id		INTEGER 	NOT NULL WITH DEFAULT
 );
-create table cludata
+create table svc
 (
-	clu_id		INTEGER,
-	label		CHAR(16),
-	data		CHAR(32)
+	clu_id		INTEGER 	NOT NULL WITH DEFAULT,
+	serv_label	VARCHAR(16) 	NOT NULL WITH DEFAULT,
+	serv_cluster	CHAR(32) 	NOT NULL WITH DEFAULT
 );
 create table list
 (
-	name		CHAR(32),
-	list_id		INTEGER,
-	active		SMALLINT,
-	publicflg	SMALLINT,
-	hidden		SMALLINT,
-	maillist	SMALLINT,
-	grouplist	SMALLINT,
-	gid		SMALLINT,
-	description	CHAR(255),
-	acl_type	CHAR(8),
-	acl_id		INTEGER,
-	modtime		DATE,
-	modby		INTEGER,
-	modwith		CHAR(8)
+	name		VARCHAR(32) 	NOT NULL WITH DEFAULT,
+	list_id		INTEGER 	NOT NULL WITH DEFAULT,
+	active		INTEGER1 	NOT NULL WITH DEFAULT,
+	publicflg	INTEGER1 	NOT NULL WITH DEFAULT,
+	hidden		INTEGER1 	NOT NULL WITH DEFAULT,
+	maillist	INTEGER1 	NOT NULL WITH DEFAULT,
+	grouplist	INTEGER1 	NOT NULL WITH DEFAULT,
+	gid		SMALLINT 	NOT NULL WITH DEFAULT,
+	description	CHAR(255) 	NOT NULL WITH DEFAULT,
+	acl_type	CHAR(8) 	NOT NULL WITH DEFAULT,
+	acl_id		INTEGER 	NOT NULL WITH DEFAULT,
+	modtime		DATE    	NOT NULL WITH DEFAULT,
+	modby		INTEGER 	NOT NULL WITH DEFAULT,
+	modwith		CHAR(8) 	NOT NULL WITH DEFAULT
 );
 create table imembers 
 (
-	list_id		INTEGER,
-	member_type	CHAR(8),
-	member_id	INTEGER,
-	ref_count	SMALLINT,
-	direct		SMALLINT
+	list_id		INTEGER 	NOT NULL WITH DEFAULT,
+	member_type	CHAR(8) 	NOT NULL WITH DEFAULT,
+	member_id	INTEGER 	NOT NULL WITH DEFAULT,
+	ref_count	SMALLINT 	NOT NULL WITH DEFAULT,
+	direct		SMALLINT 	NOT NULL WITH DEFAULT
 );
 create table servers 
 (
-	name		CHAR(16),
-	update_int	INTEGER,
-	target_file	CHAR(64),
-	script		CHAR(128),
-	dfgen		INTEGER,
-	dfcheck		INTEGER,
-	type		CHAR(8),
-	enable		SMALLINT,
-	inprogress	SMALLINT,
-	harderror	INTEGER,
-	errmsg		CHAR(80),
-	acl_type	CHAR(8),
-	acl_id		INTEGER,
-	modtime		DATE,
-	modby		INTEGER,
-	modwith		CHAR(8)
+	name		VARCHAR(16) 	NOT NULL WITH DEFAULT,
+	update_int	INTEGER 	NOT NULL WITH DEFAULT,
+	target_file	CHAR(64) 	NOT NULL WITH DEFAULT,
+	script		CHAR(128) 	NOT NULL WITH DEFAULT,
+	dfgen		INTEGER 	NOT NULL WITH DEFAULT,
+	dfcheck		INTEGER 	NOT NULL WITH DEFAULT,
+	type		CHAR(8) 	NOT NULL WITH DEFAULT,
+	enable		INTEGER1 	NOT NULL WITH DEFAULT,
+	inprogress	INTEGER1 	NOT NULL WITH DEFAULT,
+	harderror	INTEGER 	NOT NULL WITH DEFAULT,
+	errmsg		CHAR(80) 	NOT NULL WITH DEFAULT,
+	acl_type	CHAR(8) 	NOT NULL WITH DEFAULT,
+	acl_id		INTEGER 	NOT NULL WITH DEFAULT,
+	modtime		DATE    	NOT NULL WITH DEFAULT,
+	modby		INTEGER 	NOT NULL WITH DEFAULT,
+	modwith		CHAR(8) 	NOT NULL WITH DEFAULT 
 );
 create table serverhosts 
 (
-	service		CHAR(16),
-	mach_id		INTEGER,
-	success		SMALLINT,
-	enable		SMALLINT,
-	override	SMALLINT,
-	inprogress	SMALLINT,
-	hosterror	INTEGER,
-	hosterrmsg	CHAR(80),
-	ltt		INTEGER,
-	lts		INTEGER,
-	value1		INTEGER,
-	value2		INTEGER,
-	value3		CHAR(32),
-	modtime		DATE,
-	modby		INTEGER,
-	modwith		CHAR(8)
+	service		VARCHAR(16) 	NOT NULL WITH DEFAULT,
+	mach_id		INTEGER 	NOT NULL WITH DEFAULT,
+	success		INTEGER1 	NOT NULL WITH DEFAULT,
+	enable		INTEGER1 	NOT NULL WITH DEFAULT,
+	override	INTEGER1 	NOT NULL WITH DEFAULT,
+	inprogress	INTEGER1 	NOT NULL WITH DEFAULT,
+	hosterror	INTEGER 	NOT NULL WITH DEFAULT,
+	hosterrmsg	CHAR(80) 	NOT NULL WITH DEFAULT,
+	ltt		INTEGER 	NOT NULL WITH DEFAULT,
+	lts		INTEGER 	NOT NULL WITH DEFAULT,
+	value1		INTEGER 	NOT NULL WITH DEFAULT,
+	value2		INTEGER 	NOT NULL WITH DEFAULT,
+	value3		CHAR(32) 	NOT NULL WITH DEFAULT,
+	modtime		DATE    	NOT NULL WITH DEFAULT,
+	modby		INTEGER 	NOT NULL WITH DEFAULT,
+	modwith		CHAR(8) 	NOT NULL WITH DEFAULT
 );
 create table filesys 
 (
-	filsys_id	INTEGER,
-	phys_id		INTEGER,
-	label		CHAR(32),
-	type		CHAR(8),
-	mach_id		INTEGER,
-	name		CHAR(80),
-	mount		CHAR(32),
-	access		CHAR(1),
-	comments	CHAR(64),
-	owner		INTEGER,
-	owners		INTEGER,
-	createflg	SMALLINT,
-	lockertype	CHAR(8),
-	modtime		DATE,
-	modby		INTEGER,
-	modwith		CHAR(8)
+	filsys_id	INTEGER 	NOT NULL WITH DEFAULT,
+	phys_id		INTEGER 	NOT NULL WITH DEFAULT,
+	label		VARCHAR(32) 	NOT NULL WITH DEFAULT,
+	fs_order	INTEGER2	NOT NULL WITH DEFAULT,
+	type		CHAR(8) 	NOT NULL WITH DEFAULT,
+	mach_id		INTEGER 	NOT NULL WITH DEFAULT,
+	name		VARCHAR(80) 	NOT NULL WITH DEFAULT,
+	mount		CHAR(32) 	NOT NULL WITH DEFAULT,
+	access		CHAR(1) 	NOT NULL WITH DEFAULT,
+	comments	CHAR(64) 	NOT NULL WITH DEFAULT,
+	owner		INTEGER 	NOT NULL WITH DEFAULT,
+	owners		INTEGER 	NOT NULL WITH DEFAULT,
+	createflg	INTEGER1 	NOT NULL WITH DEFAULT,
+	lockertype	CHAR(8) 	NOT NULL WITH DEFAULT,
+	modtime		DATE    	NOT NULL WITH DEFAULT,
+	modby		INTEGER 	NOT NULL WITH DEFAULT,
+	modwith		CHAR(8) 	NOT NULL WITH DEFAULT 
 );
 create table fsgroup
 (
-	group_id	INTEGER,
-	filsys_id	INTEGER,
-	key		CHAR(8)
+	group_id	INTEGER 	NOT NULL WITH DEFAULT,
+	filsys_id	INTEGER 	NOT NULL WITH DEFAULT,
+	key		CHAR(8) 	NOT NULL WITH DEFAULT
 );
 create table nfsphys 
 (
-	nfsphys_id	INTEGER,
-	mach_id		INTEGER,
-	device		CHAR(16),
-	dir		CHAR(16),
-	status		SMALLINT,
-	allocated	INTEGER,
-	partsize	INTEGER,
-	modtime		DATE,
-	modby		INTEGER,
-	modwith		CHAR(8)
+	nfsphys_id	INTEGER 	NOT NULL WITH DEFAULT,
+	mach_id		INTEGER 	NOT NULL WITH DEFAULT,
+	device		CHAR(16) 	NOT NULL WITH DEFAULT,
+	dir		VARCHAR(16) 	NOT NULL WITH DEFAULT,
+	status		SMALLINT 	NOT NULL WITH DEFAULT,
+	allocated	INTEGER 	NOT NULL WITH DEFAULT,
+	partsize	INTEGER 	NOT NULL WITH DEFAULT,
+	modtime		DATE    	NOT NULL WITH DEFAULT,
+	modby		INTEGER 	NOT NULL WITH DEFAULT,
+	modwith		CHAR(8) 	NOT NULL WITH DEFAULT
 );
 create table quota 
 (
-	filsys_id	INTEGER,
-	type		CHAR(8),
-	entity_id	INTEGER,
-	phys_id		INTEGER,
-	quota		INTEGER,
-	modtime		DATE,
-	modby		INTEGER,
-	modwith		CHAR(8)
+	filsys_id	INTEGER 	NOT NULL WITH DEFAULT,
+	type		CHAR(8) 	NOT NULL WITH DEFAULT,
+	entity_id	INTEGER 	NOT NULL WITH DEFAULT,
+	phys_id		INTEGER 	NOT NULL WITH DEFAULT,
+	quota		INTEGER 	NOT NULL WITH DEFAULT,
+	modtime		DATE    	NOT NULL WITH DEFAULT,
+	modby		INTEGER 	NOT NULL WITH DEFAULT,
+	modwith		CHAR(8) 	NOT NULL WITH DEFAULT 
 );
 create table zephyr 
 (
-	class		CHAR(16),
-	xmt_type	CHAR(8),
-	xmt_id		INTEGER,
-	sub_type	CHAR(8),
-	sub_id		INTEGER,
-	iws_type	CHAR(8),
-	iws_id		INTEGER,
-	iui_type	CHAR(8),
-	iui_id		INTEGER,
-	modtime 	DATE,
-	modby		INTEGER,
-	modwith		CHAR(8)
+	class		VARCHAR(16) 	NOT NULL WITH DEFAULT,
+	xmt_type	CHAR(8) 	NOT NULL WITH DEFAULT,
+	xmt_id		INTEGER 	NOT NULL WITH DEFAULT,
+	sub_type	CHAR(8) 	NOT NULL WITH DEFAULT,
+	sub_id		INTEGER 	NOT NULL WITH DEFAULT,
+	iws_type	CHAR(8) 	NOT NULL WITH DEFAULT,
+	iws_id		INTEGER 	NOT NULL WITH DEFAULT,
+	iui_type	CHAR(8) 	NOT NULL WITH DEFAULT,
+	iui_id		INTEGER 	NOT NULL WITH DEFAULT,
+	modtime 	DATE    	NOT NULL WITH DEFAULT,
+	modby		INTEGER 	NOT NULL WITH DEFAULT,
+	modwith		CHAR(8) 	NOT NULL WITH DEFAULT 
 );
 create table hostaccess 
 (
-	mach_id		INTEGER,
-	acl_type	CHAR(8),
-	acl_id		INTEGER,
-	modtime		DATE,
-	modby		INTEGER,
-	modwith		CHAR(8)
+	mach_id		INTEGER 	NOT NULL WITH DEFAULT,
+	acl_type	CHAR(8) 	NOT NULL WITH DEFAULT,
+	acl_id		INTEGER 	NOT NULL WITH DEFAULT,
+	modtime		DATE    	NOT NULL WITH DEFAULT,
+	modby		INTEGER 	NOT NULL WITH DEFAULT,
+	modwith		CHAR(8) 	NOT NULL WITH DEFAULT
 );
 create table strings 
 (
-	string_id	INTEGER,
-	string		CHAR(128)
+	string_id	INTEGER 	NOT NULL WITH DEFAULT,
+	string		VARCHAR(128)	NOT NULL WITH DEFAULT
 );
 create table services 
 (
-	name		CHAR(16),
-	protocol	CHAR(8),
-	port		SMALLINT,
-	description	CHAR(64),
-	modtime		DATE,
-	modby		INTEGER,
-	modwith		CHAR(8)
+	name		VARCHAR(16) 	NOT NULL WITH DEFAULT,
+	protocol	CHAR(8) 	NOT NULL WITH DEFAULT,
+	port		SMALLINT 	NOT NULL WITH DEFAULT,
+	description	CHAR(64) 	NOT NULL WITH DEFAULT,
+	modtime		DATE    	NOT NULL WITH DEFAULT,
+	modby		INTEGER 	NOT NULL WITH DEFAULT,
+	modwith		CHAR(8) 	NOT NULL WITH DEFAULT 
 );
 create table printcap 
 (
-	name		CHAR(16),
-	mach_id		INTEGER,
-	dir		CHAR(32),
-	rp		CHAR(16),
-	quotaserver	INTEGER,
-	auth		SMALLINT,
-	price		SMALLINT,
-	comments	CHAR(64),
-	modtime		DATE,
-	modby		INTEGER,
-	modwith		CHAR(8)
+	name		VARCHAR(16) 	NOT NULL WITH DEFAULT,
+	mach_id		INTEGER 	NOT NULL WITH DEFAULT,
+	dir		CHAR(32) 	NOT NULL WITH DEFAULT,
+	rp		CHAR(16) 	NOT NULL WITH DEFAULT,
+	quotaserver	INTEGER 	NOT NULL WITH DEFAULT,
+	auth		INTEGER1 	NOT NULL WITH DEFAULT,
+	price		SMALLINT 	NOT NULL WITH DEFAULT,
+	comments	CHAR(64) 	NOT NULL WITH DEFAULT,
+	modtime		DATE    	NOT NULL WITH DEFAULT,
+	modby		INTEGER 	NOT NULL WITH DEFAULT,
+	modwith		CHAR(8) 	NOT NULL WITH DEFAULT
 );
 create table palladium
 (
-	name		CHAR(32),
-	ident		INTEGER,
-	mach_id		INTEGER,
-	modtime		DATE,
-	modby		INTEGER,
-	modwith		CHAR(8)
+	name		VARCHAR(32) 	NOT NULL WITH DEFAULT,
+	ident		INTEGER 	NOT NULL WITH DEFAULT,
+	mach_id		INTEGER 	NOT NULL WITH DEFAULT,
+	modtime		DATE    	NOT NULL WITH DEFAULT,
+	modby		INTEGER 	NOT NULL WITH DEFAULT,
+	modwith		CHAR(8) 	NOT NULL WITH DEFAULT
 );
 create table capacls 
 (
-	capability	CHAR(32),
-	tag		CHAR(4),
-	list_id		INTEGER
+	capability	CHAR(32) 	NOT NULL WITH DEFAULT,
+	tag		CHAR(4) 	NOT NULL WITH DEFAULT,
+	list_id		INTEGER 	NOT NULL WITH DEFAULT
 );
 create table alias 
 (
-	name		CHAR(32),
-	type		CHAR(16),
-	trans		CHAR(128)
+	name		VARCHAR(32) 	NOT NULL WITH DEFAULT,
+	type		VARCHAR(16) 	NOT NULL WITH DEFAULT,
+	trans		VARCHAR(128) 	NOT NULL WITH DEFAULT
 );
 create table numvalues 
 (
-	name		CHAR(32),
-	value		INTEGER
+	name		VARCHAR(32) 	NOT NULL WITH DEFAULT,
+	value		INTEGER 	NOT NULL WITH DEFAULT
 );
 create table tblstats 
 (
-	table_name	CHAR(12),
-	modtime		DATE,
-	retrieves	INTEGER,
-	appends		INTEGER,
-	updates		INTEGER,
-	deletes		INTEGER
+	table_name	CHAR(12) 	NOT NULL WITH DEFAULT,
+	modtime		DATE    	NOT NULL WITH DEFAULT,
+	appends		INTEGER 	NOT NULL WITH DEFAULT,
+	updates		INTEGER 	NOT NULL WITH DEFAULT,
+	deletes		INTEGER 	NOT NULL WITH DEFAULT
 );
 create table incremental
 (
-	tablename	CHAR(16),
-	service		CHAR(16)
+	tablename	CHAR(16) 	NOT NULL WITH DEFAULT,
+	service		CHAR(16) 	NOT NULL WITH DEFAULT
 );

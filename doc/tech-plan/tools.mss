@@ -635,23 +635,6 @@ END USERS: Administrator.  Staff.
 @end(multiple)
 
 @begin(multiple)
-PROGRAM NAME: ALIAS_MAINT - Alias list create/update.
-
-DESCRIPTION: Allows the user a method of creating/updating
-alias lists.
-
-PRE-DEFINED QUERIES USED:
-@begin(itemize, spread 0)
-
-
-
-@end(itemize)
-
-
-END USER: Administrator. Staff. Students
-@end(multiple)
-
-@begin(multiple)
 PROGRAM NAME: DB_MAINT - Data base integrity checker/intersective
 constrainer.
 

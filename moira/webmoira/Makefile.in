@@ -1,0 +1,55 @@
+# $Id: Makefile.in,v 1.1 2001-10-04 01:16:31 zacheiss Exp $
+
+SHELL=/bin/sh
+@SET_MAKE@
+
+CC=@CC@
+CPPFLAGS=@CPPFLAGS@ -I/usr/java/include -I/usr/java/include/solaris
+CFLAGS=@CFLAGS@
+DEFS=@DEFS@
+ALL_CFLAGS=$(CPPFLAGS) $(CFLAGS) $(DEFS)
+LDFLAGS=@LDFLAGS@
+LIBS=@LIBS@
+MR_LIBDEP=@MR_LIBDEP@
+INSTALL=@INSTALL@
+INSTALL_PROGRAM=@INSTALL_PROGRAM@
+
+srcdir=@srcdir@
+VPATH=@srcdir@
+SRCTOP=@top_srcdir@
+BUILDTOP=..
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+bindir=@bindir@
+
+CLASSES= mit/moira/AuthenticationError.class mit/moira/Coder.class mit/moira/Kticket.class mit/moira/ListInfo.class mit/moira/Member.class mit/moira/MoiraConnect.class mit/moira/MoiraException.class mit/moira/MoiraServlet.class
+OBJ=     moirai.o
+SOBJ=    mit/moira/libmoirajava.so
+SOBJG=   mit/moira/libmoirajava_g.so
+JHEADER= mit_moira_MoiraConnectInternal.h
+
+TARGET=	 $(SOBJ)
+
+.c.o:
+	$(CC) -c $(ALL_CFLAGS) $<
+
+all: $(TARGET)
+
+clean:
+	rm -f $(CLASSES) $(OBJ) $(SOBJ) $(SOBJG) $(JHEADER)
+
+cleandir distclean: clean
+	rm -f Makefile
+
+depend:
+
+$(SOBJ): $(JHEADER) $(OBJ)
+	$(CC) -G -o $@ $(LDFLAGS) $(OBJ) $(LIBS)
+	cp -p $@ $(SOBJG)
+
+$(JHEADER): java
+	javah -jni mit.moira.MoiraConnectInternal
+
+java:
+	javac -classpath /mit/moiradev/java/servlet.jar mit/moira/*.java
+

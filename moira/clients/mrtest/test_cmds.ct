@@ -1,8 +1,5 @@
 	command_table sms_test;
 
-	request ss_quit, "Exit the program",
-		quit, q;
-
 	request test_noop, "Ask SMS to do nothing",
 		noop;
 
@@ -23,6 +20,9 @@
 
 	request test_access, "Check access to an SMS query.",
 		access;
+
+	request test_script, "Read commands from a script.",
+		script, s;
 
 	request	ss_self_identify, "Identify the subsystem.",
 		".",

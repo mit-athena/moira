@@ -1,4 +1,4 @@
-/* $Id: students.pc,v 1.8 1998-08-07 15:45:08 danw Exp $
+/* $Id: students.pc,v 1.9 1998-08-13 18:20:53 danw Exp $
  *
  * Load data into Moira from Registrar's Office data file
  *
@@ -21,7 +21,7 @@
 EXEC SQL INCLUDE sqlca;
 extern void sqlglm(char *, unsigned int *, unsigned int *);
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/students.pc,v 1.8 1998-08-07 15:45:08 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/students.pc,v 1.9 1998-08-13 18:20:53 danw Exp $");
 
 #define WHO 11859		/* root */
 #define PROG "stu-tape"
@@ -74,7 +74,6 @@ struct entry {
   char *middle;
   char *title;
   char *id;
-  char *eid;
   char *course;
   char *year;
   char *address;
@@ -171,7 +170,7 @@ int main(int argc, char **argv)
 struct entry *get_next_entry(FILE *in)
 {
   static struct entry e;
-  static char buf[BUFSIZ], eid[16], classbuf[10];
+  static char buf[BUFSIZ], classbuf[10];
   static char name[LEN_NAME + 1], id[LEN_ID + 1], course[LEN_COURSE + 1];
   static char year[LEN_YEAR + 1], address[LEN_ADDRESS + 1];
   static char dorm_room[LEN_DORM_ROOM + 1], city[LEN_CITY + 1];
@@ -259,8 +258,6 @@ struct entry *get_next_entry(FILE *in)
 
   e.id = id;
   e.id[LEN_ID] = '\0';
-  e.eid = eid;
-  EncryptID(e.eid, e.id, e.first, e.last);
 
   e.year = strtrim(year);
   e.title = title;
@@ -289,10 +286,10 @@ struct entry *get_next_entry(FILE *in)
 
 void process_entry(struct entry *e)
 {
-  int changed, nochange, encrypted;
+  int changed, nochange;
   char buf[MAX_FIELD_WIDTH], *from, *to;
   EXEC SQL BEGIN DECLARE SECTION;
-  char *first, *last, *middle, *eid, *sid, *name, *rdept;
+  char *first, *last, *middle, *sid, *name, *rdept;
   char *rtitle, *rophone, *rhphone, *prog;
   char class[USERS_TYPE_SIZE], haddr[USERS_HOME_ADDR_SIZE];
   char hphone[USERS_HOME_PHONE_SIZE], ophone[USERS_OFFICE_PHONE_SIZE];
@@ -313,10 +310,8 @@ void process_entry(struct entry *e)
   middle = e->middle;
   if (strlen(middle) > USERS_MIDDLE_SIZE - 1)
     middle[USERS_MIDDLE_SIZE - 1] = '\0';
-  eid = e->eid;
   sid = e->id;
   id = 0;
-  encrypted = 0;
 
   /* Get user info */
   EXEC SQL SELECT users_id, first, last, middle, type, home_addr, home_phone,
@@ -338,20 +333,8 @@ void process_entry(struct entry *e)
     }
   if (id == 0)
     {
-      EXEC SQL SELECT users_id, first, last, middle, type, home_addr,
-	home_phone, office_phone, status, department
-	INTO :id, :dfirst, :dlast, :dmiddle, :class, :haddr,
-	:hphone, :ophone, :status, :dept
-	FROM users
-	WHERE last = :last and first = :first and clearid = :eid;
-      if (sqlfail())
-	sqlexit();
-      encrypted++;
-      if (id == 0)
-	{
-	  newuser(e);
-	  return;
-	}
+      newuser(e);
+      return;
     }
 
   /* See if class changed: if it's different, and the value in the database
@@ -401,8 +384,6 @@ void process_entry(struct entry *e)
 
   /* Deal with updating the finger info if necessary */
   changed = nochange = 0;
-  if (encrypted)
-    changed++;
   strcpy(buf, e->address);
   if (*e->dorm)
     {

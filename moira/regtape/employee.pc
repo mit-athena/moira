@@ -1,4 +1,4 @@
-/* $Id: employee.pc,v 1.10 1998-02-23 19:24:00 danw Exp $
+/* $Id: employee.pc,v 1.11 1998-08-13 18:20:52 danw Exp $
  *
  * Load data into Moira from Personnel Office data file
  *
@@ -19,7 +19,7 @@
 EXEC SQL INCLUDE sqlca;
 extern void sqlglm(char *, unsigned int *, unsigned int *);
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/employee.pc,v 1.10 1998-02-23 19:24:00 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/employee.pc,v 1.11 1998-08-13 18:20:52 danw Exp $");
 
 #define WHO 11859		/* root */
 #define PROG "emp-tape"
@@ -70,7 +70,6 @@ struct entry {
   char *title;
   char *class;
   char *id;
-  char *eid;
   char *dept;
   char *address;
   char *phone;
@@ -163,7 +162,7 @@ int main(int argc, char **argv)
 struct entry *get_next_entry(FILE *in)
 {
   static struct entry e;
-  static char buf[BUFSIZ], eid[16];
+  static char buf[BUFSIZ];
   static char name[LEN_NAME + 1], sname[LEN_NAME + 1], id[LEN_ID + 1];
   static char office[LEN_OFFICE + 1], phone[LEN_PHONE + 1];
   static char phone2[LEN_PHONE2 + 1], dept[LEN_DEPT + 1], title[LEN_TITLE + 1];
@@ -234,8 +233,6 @@ struct entry *get_next_entry(FILE *in)
   FixCase(e.middle);
 
   e.id = id;
-  e.eid = eid;
-  EncryptID(e.eid, e.id, e.first, e.last);
 
   e.address = strtrim(office);
   e.phone = strtrim(phone);
@@ -258,10 +255,10 @@ struct entry *get_next_entry(FILE *in)
 
 void process_entry(struct entry *e)
 {
-  int changed, nochange, encrypted;
+  int changed, nochange;
   char buf[MAX_FIELD_WIDTH], *from, *to;
   EXEC SQL BEGIN DECLARE SECTION;
-  char *first, *last, *middle, *eid, *sid, *name, *rdept;
+  char *first, *last, *middle, *sid, *name, *rdept;
   char *rtitle, *raddr, *rhphone, *rophone, *prog;
   char class[USERS_TYPE_SIZE], oaddr[USERS_OFFICE_ADDR_SIZE];
   char ophone[USERS_OFFICE_PHONE_SIZE], dept[USERS_DEPARTMENT_SIZE];
@@ -281,10 +278,8 @@ void process_entry(struct entry *e)
   middle = e->middle;
   if (strlen(middle) > USERS_MIDDLE_SIZE - 1)
     middle[USERS_MIDDLE_SIZE - 1] = '\0';
-  eid = e->eid;
   sid = e->id;
   id = 0;
-  encrypted = 0;
 
   /* Get user info */
   EXEC SQL SELECT users_id, first, last, middle, type, office_addr,
@@ -306,20 +301,8 @@ void process_entry(struct entry *e)
     }
   if (id == 0)
     {
-      EXEC SQL SELECT users_id, first, last, middle, type, office_addr,
-	office_phone, department, status
-	INTO :id, :dfirst, :dlast, :dmiddle, :class, :oaddr,
-	:ophone, :dept, :status
-	FROM users
-	WHERE last = :last and first = :first and clearid = :eid;
-      if (sqlfail() && sqlca.sqlcode != SQL_DUPLICATE)
-	sqlexit();
-      encrypted++;
-      if (id == 0)
-	{
-	  newuser(e);
-	  return;
-	}
+      newuser(e);
+      return;
     }
 
   /* Update class/state if necessary.  (Exclude several spacial cases.) */
@@ -364,8 +347,6 @@ void process_entry(struct entry *e)
     }
 
   changed = nochange = 0;
-  if (encrypted)
-    changed++;
   strcpy(buf, e->address);
   while ((to = strchr(buf, ',')))
     *to = ';';

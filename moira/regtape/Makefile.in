@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.3 1998-05-27 17:33:08 danw Exp $
+# $Id: Makefile.in,v 1.4 1998-08-13 18:20:51 danw Exp $
 
 SHELL=/bin/sh
 @SET_MAKE@
@@ -16,7 +16,6 @@ PRO_C_FLAGS=$(PRO_C_OPTS) $(PRO_C_DEFS) $(PRO_C_INCLUDES)
 LDFLAGS=@LDFLAGS@
 SQL_LIBS=@SQL_LIBS@
 GDSS_LIBS=@GDSS_LIBS@
-CRYPT_LIBS=@CRYPT_LIBS@
 LIBS=@LIBS@
 INSTALL=@INSTALL@
 INSTALL_PROGRAM=@INSTALL_PROGRAM@
@@ -57,10 +56,10 @@ install: all
 	@for p in $(TARGET); do $(INSTALL_PROGRAM) $$p $(mrbindir); done
 
 students: $(STUDENTS_OBJS)
-	$(CC) -o $@ $(LDFLAGS) $(STUDENTS_OBJS) $(SQL_LIBS) $(LIBS) $(CRYPT_LIBS)
+	$(CC) -o $@ $(LDFLAGS) $(STUDENTS_OBJS) $(SQL_LIBS) $(LIBS)
 
 employee: $(EMPLOYEE_OBJS)
-	$(CC) -o $@ $(LDFLAGS) $(EMPLOYEE_OBJS) $(SQL_LIBS) $(LIBS) $(CRYPT_LIBS)
+	$(CC) -o $@ $(LDFLAGS) $(EMPLOYEE_OBJS) $(SQL_LIBS) $(LIBS)
 
 vote: $(VOTE_OBJS)
 	$(CC) -o $@ $(LDFLAGS) $(VOTE_OBJS) $(SQL_LIBS) $(LIBS)

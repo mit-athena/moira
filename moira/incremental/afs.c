@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/afs.c,v 1.21 1992-06-02 16:54:43 probe Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/afs.c,v 1.22 1992-06-02 18:01:33 probe Exp $
  *
  * Do AFS incremental updates
  *
@@ -43,8 +43,7 @@ int argc;
     before = &argv[4];
     afterc = atoi(argv[3]);
     after = &argv[4 + beforec];
-
-    whoami = (whoami = rindex(argv[0], '/') ? ++whoami : argv[0]);
+    whoami = argv[0];
 
     strcpy(buf, table);
     strcat(buf, " (");

@@ -33,6 +33,7 @@ AC_PROG_MAKE_SET
 if test "$athena" = true; then
     enable_athena=yes
     with_readline=/mit/gnu
+    unset with_com_err
     prefix=/afs/athena.mit.edu/system/moira
     bindir=$prefix/arch/$ATHENA_SYS/bin
     sbindir=$bindir
@@ -168,7 +169,7 @@ AC_ARG_WITH(gdss,
 	 if test ! -d util; then
 	     mkdir util
 	 fi
-	 GDSS_CPPFLGAS="-I$gdss/include"
+	 GDSS_CPPFLAGS="-I$gdss/include"
 	 GDSS_LIBS='-L$(BUILDTOP)/util/gdss/lib -lgdss'
      else
          gdss=no
@@ -313,7 +314,9 @@ AC_CHECK_FUNC(crypt, :, AC_CHECK_LIB(crypt, crypt, CRYPT_LIBS=-lcrypt))
 AC_SUBST(CRYPT_CPPFLAGS)
 AC_SUBST(CRYPT_LIBS)
 
+MR_EXTEND(PRO_C_INCLUDES, INCLUDE='$(srcdir)')
 MR_INCLUDE('$(SRCTOP)/include')
+MR_INCLUDE('$(SRCTOP)/lib')
 MR_INCLUDE('$(BUILDTOP)/lib')
 MR_INCLUDE('$(BUILDTOP)/db')
 LDFLAGS="$LDFLAGS -L\$(BUILDTOP)/lib $LIBPATH"

@@ -1,4 +1,4 @@
-/* $Id: winad.pc,v 1.5 2003-08-14 02:43:09 zacheiss Exp $
+/* $Id: winad.pc,v 1.6 2004-07-26 20:17:10 zacheiss Exp $
  *
  * This generates the user, list, list membership, filesys data
  * for windows active directory update
@@ -222,7 +222,7 @@ int do_groups(void)
   char acltype[LIST_ACL_TYPE_SIZE];
   int aclid;
   char aclname[STRINGS_STRING_SIZE];
-  int list_id, active, maillist, grouplist;
+  int list_id, active, publicflg, hidden, maillist, grouplist;
   EXEC SQL END DECLARE SECTION;
 
   sprintf(foutf, "%s/wingroup.db", winad_dir);
@@ -236,16 +236,15 @@ int do_groups(void)
   }
 
   EXEC SQL DECLARE l_cursor CURSOR FOR
-    SELECT list_id, name, active, maillist, grouplist, description,
-acl_type, acl_id
+    SELECT list_id, name, active, publicflg, hidden, maillist,
+    grouplist, description, acl_type, acl_id
     FROM list
     ORDER BY list_id;
   EXEC SQL OPEN l_cursor;
   while (1)
     {
-      EXEC SQL FETCH l_cursor INTO :list_id, :listname, :active, :maillist,
-:grouplist,
-            :description, :acltype, :aclid;
+      EXEC SQL FETCH l_cursor INTO :list_id, :listname, :active, :publicflg,
+	:hidden, :maillist, :grouplist, :description, :acltype, :aclid;
       
       if (sqlca.sqlcode)
 	      break;
@@ -277,9 +276,9 @@ acl_type, acl_id
       
       strtrim(aclname);
        
-      fprintf(fout, "%d %s %d %d %d %s %s %s\n",
-		    list_id, listname, active, maillist, grouplist, acltype, aclname,
-description);
+      fprintf(fout, "%d %s %d %d %d %d %d %s %s %s\n",
+		    list_id, listname, active, publicflg, hidden, maillist,
+	      grouplist, acltype, aclname, description);
 	}
 
   if (sqlca.sqlcode < 0)
@@ -376,7 +375,28 @@ int do_groupmembership(void)
         db_error(sqlca.sqlcode);
 
       EXEC SQL CLOSE csr002;
+
+      /* get all the machines */
+      EXEC SQL DECLARE csr003 CURSOR FOR
+	SELECT i.member_type, m.name
+	FROM machine m, imembers i
+	WHERE i.list_id = :list_id AND i.member_type = 'MACHINE'
+	AND i.member_id = m.mach_id
+	ORDER BY m.name;
+
+      EXEC SQL OPEN csr003;
+      while (1)
+	{
+	  EXEC SQL FETCH csr003 into :member_type, :member_name;
+	  if (sqlca.sqlcode)
+	    break;
+	  fprintf(fout, "%d %s %s\n", list_id, member_type, member_name);
 	}
+
+      if (sqlca.sqlcode < 0)
+	db_error(sqlca.sqlcode);
+       EXEC SQL CLOSE csr003;
+    }
 
   if (sqlca.sqlcode < 0)
     db_error(sqlca.sqlcode);

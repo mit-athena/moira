@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.37 1989-08-04 11:29:09 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.38 1989-08-10 14:13:45 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_qsupport_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.37 1989-08-04 11:29:09 mar Exp $";
+static char *rcsid_qsupport_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.38 1989-08-10 14:13:45 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -104,8 +104,9 @@ access_list(q, argv, cl)
 	return(status);
 
     /* if amtl or dmfl and list is public allow client to add or delete self */
-    if ((!strcmp("amtl", q->shortname) || !strcmp("dmfl", q->shortname)) &&
-	(flags && !strcmp("USER", argv[1]))) {
+    if (((!strcmp("amtl", q->shortname) && flags) ||
+	 (!strcmp("dmfl", q->shortname))) &&
+	(!strcmp("USER", argv[1]))) {
 	if (*(int *)argv[2] == client_id) return(SMS_SUCCESS);
     /* if update_list, don't allow them to change the GID */
     } else if (!strcmp("ulis", q->shortname)) {
@@ -362,8 +363,8 @@ int setup_dusr(q, argv)
       return(SMS_IN_USE);
 
 ##  repeat delete nfsquota where nfsquota.users_id = @id
-##  repeat retrieve (flag = any(members.member_id where members.member_id=@id
-##			 and members.member_type = "USER"))
+##  repeat retrieve (flag = any(imembers.member_id where imembers.member_id=@id
+##			 and imembers.member_type = "USER"))
     if (flag)
 	return(SMS_IN_USE);
 ##  repeat retrieve (flag = any(filesys.label where filesys.owner=@id))
@@ -530,11 +531,11 @@ int setup_dlis(q, argv)
 ##  int flag, id;
 
     id = *(int *)argv[0];
-##  repeat retrieve (flag = any(members.member_id where members.member_id=@id
-##			 and members.member_type = "LIST"))
+##  repeat retrieve (flag = any(imembers.member_id where imembers.member_id=@id
+##			 and imembers.member_type = "LIST"))
     if (flag)
 	return(SMS_IN_USE);
-##  repeat retrieve (flag = any(members.member_id where members.list_id=@id))
+##  repeat retrieve (flag = any(imembers.member_id where imembers.list_id=@id))
     if (flag)
 	return(SMS_IN_USE);
 ##  repeat retrieve (flag = any(filesys.label where filesys.owners=@id))
@@ -1661,6 +1662,204 @@ get_list_info(q, aargv, cl, action, actarg)
 ##}
 
 
+/* Add_member_to_list: do list flattening as we go!  MAXLISTDEPTH is
+ * how many different ancestors a member is allowed to have.
+ */
+
+#define MAXLISTDEPTH	100
+
+int add_member_to_list(q, argv, cl)
+    struct query *q;
+    char **argv;
+    client *cl;
+##{
+##  int id, lid, mid, exists, error;
+##  char *mtype, dtype[9];
+    int ancestors[MAXLISTDEPTH], acount, a;
+    int descendants[MAXLISTDEPTH], dcount, d;
+    char *dtypes[MAXLISTDEPTH];
+
+##  range of m is imembers
+    lid = *(int *)argv[0];
+    mtype = argv[1];
+    mid = *(int *)argv[2];
+##  repeat retrieve (exists = any(m.list_id where m.list_id=@lid and 
+##			   m.member_id = @mid and m.member_type = @mtype
+##			   and m.direct = 1))
+    if (exists)
+      return(SMS_EXISTS);
+    ancestors[0] = lid;
+    acount = 1;
+##  repeat retrieve (id = m.list_id)
+##	where m.member_id = @lid and m.member_type = "LIST" {
+	ancestors[acount++] = id;
+	if (acount >= MAXLISTDEPTH) {
+##	    endretrieve
+	}
+##  }
+    if (acount >= MAXLISTDEPTH) {
+	return(SMS_INTERNAL);
+    }
+    descendants[0] = mid;
+    dtypes[0] = mtype;
+    dcount = 1;
+    error = 0;
+    if (!strcmp(mtype, "LIST")) {
+##	repeat retrieve (id = m.member_id, dtype = m.member_type)
+##	  where m.list_id = @mid {
+	    switch (dtype[0]) {
+	    case 'L':
+		dtypes[dcount] = "LIST";
+		break;
+	    case 'U':
+		dtypes[dcount] = "USER";
+		break;
+	    case 'S':
+		dtypes[dcount] = "STRING";
+		break;
+	    case 'K':
+		dtypes[dcount] = "KERBEROS";
+		break;
+	    default:
+		error++;
+##		endretrieve
+	    }
+	    descendants[dcount++] = id;
+	    if (dcount >= MAXLISTDEPTH) {
+		error++;
+##	        endretrieve
+	    }
+##	}
+	if (error)
+	  return(SMS_INTERNAL);
+    }
+    for (a = 0; a < acount; a++) {
+	lid = ancestors[a];
+	for (d = 0; d < dcount; d++) {
+	    mid = descendants[d];
+	    mtype = dtypes[d];
+	    if (mid == lid && !strcmp(mtype, "LIST")) {
+		return(SMS_LISTLOOP);
+	    }
+##	    repeat retrieve (exists = any(m.ref_count where m.list_id = @lid
+##					 and m.member_id = @mid
+##					 and m.member_type = @mtype))
+	    if (exists) {
+		if (a == 0 && d == 0)
+##		  replace m (ref_count = m.ref_count+1, direct = 1)
+##			     where m.list_id = lid and m.member_id = mid and
+##			     m.member_type = mtype
+		else
+##		  replace m (ref_count = m.ref_count+1)
+##			     where m.list_id = lid and m.member_id = mid and
+##			     m.member_type = mtype
+	    } else {
+		if (a == 0 && d == 0)
+##		  append imembers (list_id=lid, member_id = mid, direct = 1,
+##				   member_type=mtype, ref_count = 1)
+		else
+##		  append imembers (list_id=lid, member_id = mid,
+##				   member_type=mtype, ref_count = 1)
+	    }
+	}
+    }
+    return(SMS_SUCCESS);
+##}
+
+
+/* Delete_member_from_list: do list flattening as we go!
+ */
+
+int delete_member_from_list(q, argv, cl)
+    struct query *q;
+    char **argv;
+    client *cl;
+##{
+##  int id, lid, mid, cnt, exists, error;
+##  char *mtype, dtype[9];
+    int ancestors[MAXLISTDEPTH], acount, a;
+    int descendants[MAXLISTDEPTH], dcount, d;
+    char *dtypes[MAXLISTDEPTH];
+
+##  range of m is imembers
+    lid = *(int *)argv[0];
+    mtype = argv[1];
+    mid = *(int *)argv[2];
+##  repeat retrieve (exists = any(m.list_id where m.list_id=@lid and 
+##			   m.member_id = @mid and m.member_type = @mtype
+##			   and m.direct = 1))
+    if (!exists)
+      return(SMS_NO_MATCH);
+    ancestors[0] = lid;
+    acount = 1;
+##  repeat retrieve (id = m.list_id)
+##	where m.member_id = @lid and m.member_type = "LIST" {
+	ancestors[acount++] = id;
+	if (acount >= MAXLISTDEPTH)
+##	  endretrieve
+##  }
+    if (acount >= MAXLISTDEPTH)
+      return(SMS_INTERNAL);
+    descendants[0] = mid;
+    dtypes[0] = mtype;
+    dcount = 1;
+    error = 0;
+    if (!strcmp(mtype, "LIST")) {
+##	repeat retrieve (id = m.member_id, dtype = m.member_type)
+##	  where m.list_id = @mid {
+	    switch (dtype[0]) {
+	    case 'L':
+		dtypes[dcount] = "LIST";
+		break;
+	    case 'U':
+		dtypes[dcount] = "USER";
+		break;
+	    case 'S':
+		dtypes[dcount] = "STRING";
+		break;
+	    case 'K':
+		dtypes[dcount] = "KERBEROS";
+		break;
+	    default:
+		error++;
+##		endretrieve
+	    }
+	    descendants[dcount++] = id;
+	    if (dcount >= MAXLISTDEPTH)
+##	      endretrieve
+##	}
+	if (error)
+	  return(SMS_INTERNAL);
+    }
+    for (a = 0; a < acount; a++) {
+	lid = ancestors[a];
+	for (d = 0; d < dcount; d++) {
+	    mid = descendants[d];
+	    mtype = dtypes[d];
+	    if (mid == lid && !strcmp(mtype, "LIST")) {
+		return(SMS_LISTLOOP);
+	    }
+##	    repeat retrieve (cnt = m.ref_count)
+##		where m.list_id = @lid and m.member_id = @mid
+##		  and m.member_type = @mtype
+	    if (cnt <= 1) {
+##		delete m where m.list_id = lid and m.member_id = mid and
+##		    m.member_type = mtype
+	    } else if (a == 0 && d == 0) {
+##		replace m (ref_count = m.ref_count-1, direct = 0)
+##		    where m.list_id = lid and m.member_id = mid and
+##		    m.member_type = mtype
+	    } else {
+##		replace m (ref_count = m.ref_count-1)
+##		    where m.list_id = lid and m.member_idn = mid and
+##		    m.member_type = mtype
+	    }
+	}
+    }
+    return(SMS_SUCCESS);
+##}
+
+
 /* get_ace_use - given a type and a name, return a type and a name.
  * The ace_type is one of "LIST", "USER", "RLIST", or "RUSER" in argv[0],
  * and argv[1] will contain the ID of the entity in question.  The R*
@@ -1681,6 +1880,7 @@ int get_ace_use(q, argv, cl, action, actarg)
 ##  int aid, listid, id;
     struct save_queue *sq, *sq_create();
 
+##  range of m is imembers
     atype = argv[0];
     aid = *(int *)argv[1];
     if (!strcmp(atype, "LIST") || !strcmp(atype, "USER") ||
@@ -1692,13 +1892,11 @@ int get_ace_use(q, argv, cl, action, actarg)
     if (!strcmp(atype, "RLIST")) {
 	sq_save_data(sq, aid);
 	/* get all the list_id's of containing lists */
-##	range of m is members
-	while (sq_get_data(sq, &id)) {
-##	    repeat retrieve (listid = m.list_id)
+##	range of m is imembers
+##	repeat retrieve (listid = m.list_id)
 ##		where m.member_type = "LIST" and m.member_id = @id {
-	      sq_save_unique_data(sq, listid);
-##	    }
-	  }
+	    sq_save_unique_data(sq, listid);
+##	}
 	/* now process each one */
 	while (sq_get_data(sq, &id)) {
 	    if (get_ace_internal("LIST", id, action, actarg) == SMS_SUCCESS)
@@ -1707,18 +1905,10 @@ int get_ace_use(q, argv, cl, action, actarg)
     }
 
     if (!strcmp(atype, "RUSER")) {
-##	range of m is members
 ##	repeat retrieve (listid = m.list_id)
 ##		where m.member_type = "USER" and m.member_id = @aid {
 	    sq_save_data(sq, listid);
 ##	}
-	/* get all the list_id's of containing lists */
-	while (sq_get_data(sq, &id)) {
-##	    repeat retrieve (listid = m.list_id)
-##		where m.member_type = "LIST" and m.member_id = @id {
-	      sq_save_unique_data(sq, listid);
-##	    }
-	  }
 	/* now process each one */
 	while (sq_get_data(sq, &id)) {
 	    if (get_ace_internal("LIST", id, action, actarg) == SMS_SUCCESS)
@@ -1729,18 +1919,10 @@ int get_ace_use(q, argv, cl, action, actarg)
     }
 
     if (!strcmp(atype, "RKERBERO")) {
-##	range of m is members
 ##	repeat retrieve (listid = m.list_id)
 ##		where m.member_type = "KERBEROS" and m.member_id = @aid {
 	    sq_save_data(sq, listid);
 ##	}
-	/* get all the list_id's of containing lists */
-	while (sq_get_data(sq, &id)) {
-##	    repeat retrieve (listid = m.list_id)
-##		where m.member_type = "LIST" and m.member_id = @id {
-	      sq_save_unique_data(sq, listid);
-##	    }
-	  }
 	/* now process each one */
 	while (sq_get_data(sq, &id)) {
 	    if (get_ace_internal("LIST", id, action, actarg) == SMS_SUCCESS)
@@ -1846,126 +2028,30 @@ int get_lists_of_member(q, argv, cl, action, actarg)
     int (*action)();
     int actarg;
 ##{
-    int found = 0;
+    int found = 0, direct = 1;
+    char *rargv[6];
 ##  char *atype;
 ##  int aid, listid, id;
-    struct save_queue *sq, *sq_create();
+##  char name[33], active[5], public[5], hidden[5], maillist[5], group[5];
 
     atype = argv[0];
     aid = *(int *)argv[1];
-    if (!strcmp(atype, "LIST") ||
-	!strcmp(atype, "USER") ||
-	!strcmp(atype, "STRING") ||
-	!strcmp(atype, "KERBEROS")) {
-      return(glom_internal(atype, aid, action, actarg));
-    }
-
-    sq = sq_create();
     if (!strcmp(atype, "RLIST")) {
-	sq_save_data(sq, aid);
-	/* get all the list_id's of containing lists */
-##	range of m is members
-	while (sq_get_data(sq, &id)) {
-##	    repeat retrieve (listid = m.list_id)
-##		where m.member_type = "LIST" and m.member_id = @id {
-	      sq_save_unique_data(sq, listid);
-##	    }
-	  }
-	/* now process each one */
-	while (sq_get_data(sq, &id)) {
-	    if (glom_internal("LIST", id, action, actarg) == SMS_SUCCESS)
-	      found++;
-	}
+	atype = "LIST";
+	direct = 0;
     }
-
     if (!strcmp(atype, "RUSER")) {
-##	range of m is members
-##	repeat retrieve (listid = m.list_id)
-##		where m.member_type = "USER" and m.member_id = @aid {
-	    sq_save_data(sq, listid);
-##	}
-	/* get all the list_id's of containing lists */
-	while (sq_get_data(sq, &id)) {
-##	    repeat retrieve (listid = m.list_id)
-##		where m.member_type = "LIST" and m.member_id = @id {
-	      sq_save_unique_data(sq, listid);
-##	    }
-	  }
-	/* now process each one */
-	while (sq_get_data(sq, &id)) {
-	    if (glom_internal("LIST", id, action, actarg) == SMS_SUCCESS)
-	      found++;
-	}
-	if (glom_internal("USER", aid, action, actarg) == SMS_SUCCESS)
-	  found++;
+	atype = "USER";
+	direct = 0;
     }
-
     if (!strcmp(atype, "RSTRING")) {
-##	range of m is members
-##	repeat retrieve (listid = m.list_id)
-##		where m.member_type = "STRING" and m.member_id = @aid {
-	    sq_save_data(sq, listid);
-##	}
-	/* get all the list_id's of containing lists */
-	while (sq_get_data(sq, &id)) {
-##	    repeat retrieve (listid = m.list_id)
-##		where m.member_type = "LIST" and m.member_id = @id {
-	      sq_save_unique_data(sq, listid);
-##	    }
-	  }
-	/* now process each one */
-	while (sq_get_data(sq, &id)) {
-	    if (glom_internal("LIST", id, action, actarg) == SMS_SUCCESS)
-	      found++;
-	}
-	if (glom_internal("STRING", aid, action, actarg) == SMS_SUCCESS)
-	  found++;
+	atype = "STRING";
+	direct = 0;
     }
-
-    if (!strcmp(atype, "RKERBERO")) {
-##	range of m is members
-##	repeat retrieve (listid = m.list_id)
-##		where m.member_type = "KERBEROS" and m.member_id = @aid {
-	    sq_save_data(sq, listid);
-##	}
-	/* get all the list_id's of containing lists */
-	while (sq_get_data(sq, &id)) {
-##	    repeat retrieve (listid = m.list_id)
-##		where m.member_type = "LIST" and m.member_id = @id {
-	      sq_save_unique_data(sq, listid);
-##	    }
-	  }
-	/* now process each one */
-	while (sq_get_data(sq, &id)) {
-	    if (glom_internal("LIST", id, action, actarg) == SMS_SUCCESS)
-	      found++;
-	}
-	if (glom_internal("KERBEROS", aid, action, actarg) == SMS_SUCCESS)
-	  found++;
+    if (!strcmp(atype, "RKERBEROS")) {
+	atype = "KERBEROS";
+	direct = 0;
     }
-
-##  repeat replace tblstats (retrieves = tblstats.retrieves + 1)
-##	where tblstats.#table = "members"
-    sq_destroy(sq);	
-    if (!found) return(SMS_NO_MATCH);
-    return(SMS_SUCCESS);
-##}
-
-
-/* This looks up a single list, user, or string as a member.  atype must be
- * "USER", "LIST", or "STRING" and aid is the ID of the corresponding object.
- * This is used by get_lists_of_members above.
- */
-
-##glom_internal(atype, aid, action, actarg)
-##  char *atype;
-##  int aid;
-    int (*action)();
-    int actarg;
-##{
-    char *rargv[6];
-    int found = 0;
-##  char name[33], active[5], public[5], hidden[5], maillist[5], group[5];
 
     rargv[0] = name;
     rargv[1] = active;
@@ -1973,14 +2059,25 @@ int get_lists_of_member(q, argv, cl, action, actarg)
     rargv[3] = hidden;
     rargv[4] = maillist;
     rargv[5] = group;
-##  repeat retrieve (name = list.#name, active = text(list.#active), 
+    if (direct) {
+##    repeat retrieve (name = list.#name, active = text(list.#active), 
+##		     public = text(list.#public), hidden = text(list.#hidden),
+##		     maillist = text(list.#maillist), group = text(list.#group))
+##		where list.list_id = m.list_id and m.direct = 1 and
+##		      m.member_type = @atype and m.member_id = @aid {
+	 (*action)(6, rargv, actarg);
+	 found++;
+##    }
+    } else {
+##    repeat retrieve (name = list.#name, active = text(list.#active), 
 ##		     public = text(list.#public), hidden = text(list.#hidden),
 ##		     maillist = text(list.#maillist), group = text(list.#group))
 ##		where list.list_id = m.list_id and
 ##		      m.member_type = @atype and m.member_id = @aid {
 	 (*action)(6, rargv, actarg);
 	 found++;
-##  }
+##    }
+    }
 
     if (!found) return(SMS_NO_MATCH);
     return(SMS_SUCCESS);
@@ -2031,10 +2128,10 @@ get_members_of_list(q, argv, cl, action, actarg)
     targv[0] = "USER";
     targv[1] = member_name;
 
-##  range of m is members
+##  range of m is imembers
 ##  repeat retrieve (member_name = users.login)
 ##             where m.#list_id = @list_id and m.member_type = "USER"
-##                   and m.member_id = users.users_id
+##                   and m.member_id = users.users_id and m.direct = 1
 ##             sort by #member_name
 ##  {
 	 (*action)(2, targv, actarg);
@@ -2043,7 +2140,7 @@ get_members_of_list(q, argv, cl, action, actarg)
     targv[0] = "LIST";
 ##  repeat retrieve (member_name = list.name)
 ##             where m.#list_id = @list_id and m.member_type = "LIST"
-##                   and m.member_id = list.#list_id
+##                   and m.member_id = list.#list_id and m.direct = 1
 ##             sort by #member_name
 ##  {
 	 (*action)(2, targv, actarg);
@@ -2052,7 +2149,7 @@ get_members_of_list(q, argv, cl, action, actarg)
     targv[0] = "STRING";
 ##  repeat retrieve (member_name = strings.string)
 ##             where m.#list_id = @list_id and m.member_type = "STRING"
-##                   and m.member_id = strings.string_id
+##                   and m.member_id = strings.string_id and m.direct = 1
 ##             sort by #member_name
 ##  {
 	 (*action)(2, targv, actarg);
@@ -2061,14 +2158,12 @@ get_members_of_list(q, argv, cl, action, actarg)
     targv[0] = "KERBEROS";
 ##  repeat retrieve (member_name = strings.string)
 ##             where m.#list_id = @list_id and m.member_type = "KERBEROS"
-##                   and m.member_id = strings.string_id
+##                   and m.member_id = strings.string_id and m.direct = 1
 ##             sort by #member_name
 ##  {
 	 (*action)(2, targv, actarg);
 ##  }
 
-##  repeat replace tblstats (retrieves = tblstats.retrieves + 1)
-##	where tblstats.#table = "members"
     return(SMS_SUCCESS);
 ##}
 
@@ -2089,11 +2184,11 @@ int count_members_of_list(q, argv, cl, action, actarg)
 
     list = *(int *)argv[0];
     rargv[0] = countbuf;
-##  repeat retrieve (ct = count(members.list_id where members.list_id = @list))
+##  repeat retrieve (ct = count(imembers.list_id
+##				where imembers.list_id = @list and
+##				      imembers.direct = 1))
     sprintf(countbuf, "%d", ct);
     (*action)(1, rargv, actarg);
-##  repeat replace tblstats (retrieves = tblstats.retrieves + 1)
-##	where tblstats.#table = "members"
     return(SMS_SUCCESS);
 ##}
 
@@ -2306,8 +2401,8 @@ register_user(q, argv, cl)
 ##  inquire_equel(rowcount = "rowcount");
     if (rowcount != 1)
       return(SMS_INTERNAL);
-##  repeat append members (#list_id = @list_id, member_type = "USER",
-##			   member_id = @users_id)
+##  repeat append imembers (#list_id = @list_id, member_type = "USER",
+##			   member_id = @users_id, ref_count = 1, direct = 1)
 ##  inquire_equel(rowcount = "rowcount");
     if (rowcount != 1)
       return(SMS_INTERNAL);

@@ -1,4 +1,4 @@
-/* $Id: sendrecv.c,v 1.1 1998-02-15 17:49:29 danw Exp $
+/* $Id: sendrecv.c,v 1.2 1998-02-15 18:13:12 danw Exp $
  *
  * socket layer for update_server
  *
@@ -10,13 +10,14 @@
 #include <mit-copyright.h>
 #include <moira.h>
 
+#include <sys/types.h>
 #include <sys/uio.h>
 
 #include <errno.h>
 #include <stdlib.h>
 #include <unistd.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/sendrecv.c,v 1.1 1998-02-15 17:49:29 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/sendrecv.c,v 1.2 1998-02-15 18:13:12 danw Exp $");
 
 #define putlong(cp, l) { cp[0] = l >> 24; cp[1] = l >> 16; cp[2] = l >> 8; cp[3] = l; }
 #define getlong(cp, l) l = ((cp[0] * 256 + cp[1]) * 256 + cp[2]) * 256 + cp[3]

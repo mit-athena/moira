@@ -1,47 +1,14 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_scall.c,v $
- *	$Author: wesommer $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_scall.c,v 1.11 1987-08-19 22:03:52 wesommer Exp $
+ *	$Author: mar $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_scall.c,v 1.12 1988-06-30 12:36:43 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
- *	$Log: not supported by cvs2svn $
- * Revision 1.10  87/08/19  18:39:04  wesommer
- * Added list_users query.
- * 
- * Revision 1.9  87/08/04  02:41:22  wesommer
- * Clean up messages.
- * 
- * Revision 1.8  87/07/16  15:43:19  wesommer
- * Fixed bug where the argv was not copied to private storage
- * (it got changed out from under us before it got sent..).
- * 
- * Revision 1.7  87/07/14  00:39:01  wesommer
- * Rearranged loggin.
- * 
- * Revision 1.6  87/06/30  20:04:43  wesommer
- * Free returned tuples when possible.
- * 
- * Revision 1.5  87/06/26  10:55:53  wesommer
- * Added sms_access, now paiys attention to return code from 
- * sms_process_query, sms_check_access.
- * 
- * Revision 1.4  87/06/21  16:42:00  wesommer
- * Performance work, rearrangement of include files.
- * 
- * Revision 1.3  87/06/04  01:35:01  wesommer
- * Added a working query request handler.
- * 
- * Revision 1.2  87/06/03  16:07:50  wesommer
- * Fixes for lint.
- * 
- * Revision 1.1  87/06/02  20:07:10  wesommer
- * Initial revision
- * 
  */
 
 #ifndef lint
-static char *rcsid_sms_scall_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_scall.c,v 1.11 1987-08-19 22:03:52 wesommer Exp $";
+static char *rcsid_sms_scall_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_scall.c,v 1.12 1988-06-30 12:36:43 mar Exp $";
 #endif lint
 
 #include <krb.h>
@@ -66,9 +33,11 @@ do_client(cp)
 {
 	free_rtn_tuples(cp);
 	if (OP_STATUS(cp->pending_op) == OP_CANCELLED) {
-		com_err(whoami, 0, "Closed connection (now %d client%s)",
+		com_err(whoami, 0, "Closed connection (now %d client%s, %d new queries, %d old)",
 			nclients-1,
-			nclients!=2?"s":"");
+			nclients!=2?"s":"",
+			newqueries,
+			oldqueries);
 		clist_delete(cp);
 		return;
 	}
@@ -110,6 +79,7 @@ do_call(cl)
 	int pn;
 	cl->reply.sms_argc = 0;
 	cl->reply.sms_status = 0;
+	cl->reply.sms_version_no = cl->args->sms_version_no;
 	if (((pn = cl->args->sms_procno) < 0) ||
 	    (pn > SMS_MAX_PROC)) {
 		com_err(whoami, 0, "procno out of range");
@@ -117,8 +87,8 @@ do_call(cl)
 		return;
 	}
 	if (log_flags & LOG_ARGS)
-		log_args(procnames[pn], cl->args->sms_argc,
-			 cl->args->sms_argv);
+		log_args(procnames[pn], cl->args->sms_version_no,
+			 cl->args->sms_argc, cl->args->sms_argv);
 	else if (log_flags & LOG_REQUESTS)
 		com_err(whoami, 0, "%s", procnames[pn]);
 
@@ -144,7 +114,7 @@ do_call(cl)
 		return;
 
 	case SMS_DO_UPDATE:
-		trigger_dcm(cl);
+		trigger_dcm(0, 0, cl);
 		return;
 	}
 }
@@ -193,14 +163,18 @@ retr_callback(argc, argv, p_cp)
 	
 	OPERATION op_tmp = create_operation();
 
+	if (sms_trim_args(argc, argv) == SMS_NO_MEM) {
+	    com_err(whoami, SMS_NO_MEM, "while trimming args");
+	}
 	if (log_flags & LOG_RESP)
-		log_args("return: ", argc, argv);
+		log_args("return: ", cp->args->sms_version_no, argc, argv);
 
 	tp->op = op_tmp;
 	tp->retval = arg_tmp;
 	tp->next = NULL;
 	
 	arg_tmp->sms_status = SMS_MORE_DATA;
+	arg_tmp->sms_version_no = cp->args->sms_version_no;
 	arg_tmp->sms_argc = argc;
 	arg_tmp->sms_argv = nargv;
 	for (i = 0; i < argc; i++) {
@@ -267,6 +241,11 @@ do_retr(cl)
 
 	queryname = cl->args->sms_argv[0];
 	
+	if (cl->args->sms_version_no == SMS_VERSION_2)
+	  newqueries++;
+	else
+	  oldqueries++;
+
 	if (strcmp(queryname, "_list_users") == 0)
 		cl->reply.sms_status = list_users(retr_callback, (char *)cl);
 	else {
@@ -296,12 +275,18 @@ do_access(cl)
 	com_err(whoami, 0, "Access check complete.");
 }
 
+
+/* trigger_dcm is also used as a followup routine to the 
+ * set_server_host_override query, hence the two dummy arguments.
+ */
+
 struct query pseudo_query = {
 	"trigger_dcm",
 	"tdcm",
 };
 
-trigger_dcm(cl)
+trigger_dcm(dummy0, dummy1, cl)
+	int dummy0, dummy1;
 	client *cl;
 {
 	register int pid;
@@ -309,20 +294,20 @@ trigger_dcm(cl)
 	cl->reply.sms_argc = 0;
 
 	if (cl->reply.sms_status = check_query_access(&pseudo_query, 0, cl) )
-		return;
+		return(cl->reply.sms_status);
 
 	pid = vfork();
 	switch (pid) {
 	case 0:
-		execl("/u1/sms/bin/dcm", "dcm", 0);
+		execl("/u1/sms/bin/startdcm", "startdcm", 0);
 		exit(1);
 		
 	case -1:
 		cl->reply.sms_status = errno;
-		return;
+		return(0);
 
 	default:
-		return;
+		return(0);
 	}
 }
 

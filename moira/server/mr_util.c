@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_util.c,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_util.c,v 1.16 1990-03-19 15:42:24 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_util.c,v 1.17 1990-06-07 17:52:10 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -9,7 +9,7 @@
  */
 
 #ifndef lint
-static char *rcsid_mr_util_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_util.c,v 1.16 1990-03-19 15:42:24 mar Exp $";
+static char *rcsid_mr_util_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_util.c,v 1.17 1990-06-07 17:52:10 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -121,4 +121,22 @@ char **argv;
 	}
     }
     return(0);
+}
+
+
+/* returns a copy of the argv and all of it's strings */
+
+char **mr_copy_args(argv, argc)
+char **argv;
+int argc;
+{
+    char **a;
+    int i;
+
+    a = (char **) malloc(argc * sizeof(char *));
+    if (a == 0)
+      return(a);
+    for (i = 0; i < argc; i++)
+      a[i] = strsave(argv[i]);
+    return(a);
 }

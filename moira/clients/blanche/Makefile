@@ -3,7 +3,7 @@
 #	MIT Project Athena
 #
 #	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/Makefile,v $
-#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/Makefile,v 1.4 1990-02-12 15:58:10 mar Exp $
+#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/Makefile,v 1.5 1990-02-14 11:33:12 mar Exp $
 #	$Author: mar $
 # 
 # (c) Copyright 1988 by the Massachusetts Institute of Technology.
@@ -34,7 +34,7 @@ clean:
 	rm -f ${PROGS}
 
 install:	${PROGS}
-	install -s blanche ${DESTDIR}/usr/athena/blanche
+	install -c -s blanche ${DESTDIR}/usr/athena/blanche
 
 depend:
 	mkdep ${CFLAGS} blanche.c

@@ -1,4 +1,4 @@
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/db/Makefile,v 1.6 1989-12-15 17:35:36 mar Exp $
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/db/Makefile,v 1.7 1990-02-14 11:37:59 mar Exp $
 
 # (c) Copyright 1988 by the Massachusetts Institute of Technology.
 # For copying and distribution information, please see the file
@@ -39,7 +39,7 @@ clean:
 	rm -f imembers.c imembers
 
 install: newmoira
-	install newmoira ../bin
+	install -c newmoira ../bin
 
 depend: ${SRCS}
 	mkdep ${CFLAGS} ${SRCS}

@@ -1,6 +1,6 @@
 #
 # 	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/Makefile,v $
-#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/Makefile,v 1.14 1990-01-10 18:37:46 mar Exp $
+#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/Makefile,v 1.15 1990-02-14 11:40:54 mar Exp $
 #
 
 #
@@ -50,8 +50,8 @@ clean:
 	-rm -f core a.out *~ \#*
 
 install: update_server
-	install -s update_server ${DESTDIR}/usr/etc/update_server
-	install -s sms_untar ${DESTDIR}/etc/sms_untar
+	install -c -s update_server ${DESTDIR}/usr/etc/update_server
+	install -c -s sms_untar ${DESTDIR}/etc/sms_untar
 
 lint:
 	lint ${LINTFLAGS} ${SSRCS}

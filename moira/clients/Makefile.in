@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.1 1998-05-26 18:13:37 danw Exp $
+# $Id: Makefile.in,v 1.2 1998-08-04 03:07:51 danw Exp $
 
 SHELL=/bin/sh
 @SET_MAKE@
@@ -7,7 +7,7 @@ srcdir=@srcdir@
 VPATH=@srcdir@
 
 CURSES_SUBDIRS=mailmaint
-SUBDIRS=addusr blanche moira mrcheck mrtest passwd userreg @CURSES_SUBDIRS@
+SUBDIRS=addusr blanche moira mrcheck mrtest passwd @CURSES_SUBDIRS@
 
 all:
 	@for d in $(SUBDIRS); do (echo "### Making $@ in clients/$$d"; cd $$d; $(MAKE) $@) || exit 1; done

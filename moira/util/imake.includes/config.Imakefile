@@ -111,6 +111,7 @@ LZEPHYR=-lzephyr
  */
 #if !defined(linux) && !defined(__NetBSD__)
 #define GDSS
+#define DO_GDSS
 #ifdef sgi
 LIBGDSS= /mit/gdss/lib/libgdss.a
 #else

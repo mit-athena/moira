@@ -1,14 +1,9 @@
-/* Copyright (C) 1989 Transarc Corporation - All rights reserved */
-
+/* Copyright (C) 1990, 1989 Transarc Corporation - All rights reserved */
 /*
  * P_R_P_Q_# (C) COPYRIGHT IBM CORPORATION 1988
  * LICENSED MATERIALS - PROPERTY OF IBM
  * REFER TO COPYRIGHT INSTRUCTIONS FORM NUMBER G120-2083
  */
-
-#ifndef lint
-static char rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/afssync/ptprocs.c,v 1.3 1990-09-25 00:06:06 mar Exp $";
-#endif
 
 /*	
        Sherri Nichols
@@ -17,27 +12,35 @@ static char rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/rep
 */
 
 #include <afs/param.h>
+#include <afs/stds.h>
 #include <ctype.h>
 #include <stdio.h>
+#ifdef AFS_HPUX_ENV
+#include <string.h>
+#else
+#include <strings.h>
+#endif
 #include <lock.h>
 #include <ubik.h>
 #include <rx/xdr.h>
 #include <rx/rx.h>
-#include <rx/rx_vab.h>
 #include <rx/rxkad.h>
 #include <afs/auth.h>
 #include <netinet/in.h>
 #include "ptserver.h"
 #include "pterror.h"
-#include <strings.h>
 
-#ifdef AFS_ATHENA_STDENV
-#include <krb.h>
+#ifdef CROSS_CELL
+static long WhoIsThisWithName();
 #endif
+
+
+RCSID ("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/afssync/ptprocs.c,v 1.4 1992-05-31 21:05:33 probe Exp $")
 
 extern struct ubik_dbase *dbase;
 extern long Initdb();
 extern int pr_noAuth;
+extern char *prdir;
 
 static int CreateOK (ut, cid, oid, flag, admin)
   struct ubik_trans *ut;
@@ -59,57 +62,49 @@ static int CreateOK (ut, cid, oid, flag, admin)
     return 1;				/* OK! */
 }
 
-#if 0
-/*
- * WhoIsThis() has been replaced for the Moira-AFS synchronization.
- */ 
 long WhoIsThis (acall, at, aid)
   struct rx_call *acall;
   struct ubik_trans *at;
   long *aid;
 {
-    /* aid is set to the identity of the caller, if known, ANONYMOUSID otherwise */
+    /* aid is set to the identity of the caller, if known, else ANONYMOUSID */
     /* returns -1 and sets aid to ANONYMOUSID on any failure */
     register struct rx_connection *tconn;
-    struct rxvab_conn *tc;
     register long code;
     char tcell[MAXKTCREALMLEN];
-    long exp;
     char name[MAXKTCNAMELEN];
     char inst[MAXKTCNAMELEN];
     int  ilen;
     char vname[256];
+#ifdef CROSS_CELL
+    int foreign = 0;
+#endif
 
     *aid = ANONYMOUSID;
     tconn = rx_ConnectionOf(acall);
     code = rx_SecurityClassOf(tconn);
     if (code == 0) return 0;
     else if (code == 1) {		/* vab class */
-	tc = (struct rxvab_conn *) tconn->securityData;
-	if (!tc) goto done;
-	*aid = ntohl(tc->viceID);
-	code = 0;
+	goto done;			/* no longer supported */
     }
     else if (code == 2) {		/* kad class */
 	if (code = rxkad_GetServerInfo
-	    (acall->conn, (long *) 0, &exp, name, inst, tcell, (long *) 0))
+	    (acall->conn, (long *) 0, 0/*was &exp*/,
+	     name, inst, tcell, (long *) 0))
 	    goto done;
+#if 0
+	/* This test is unnecessary, since rxkad_GetServerInfo already check.
+         * In addition, this is wrong since exp must be unsigned. */
 	if (exp < FT_ApproxTime()) goto done;
+#endif
 	if (strlen (tcell)) {
-	    extern char *pr_realmName;
-#ifdef AFS_ATHENA_STDENV
-	    static char local_realm[REALM_SZ] = "";
-	    if (!local_realm[0]) {
-		krb_get_lrealm (local_realm, 0);
-	    }
-#endif
-	    if (
-#ifdef AFS_ATHENA_STDENV
-		strcasecmp (local_realm, tcell) &&
-#endif
-		strcasecmp (pr_realmName, tcell))
+	    if (!afsconf_LocalRealm(prdir, tcell)) {
+#ifdef CROSS_CELL
+		foreign = 1;
+#else
 		goto done;
-
+#endif
+	    }
 	}
 	strncpy (vname, name, sizeof(vname));
 	if (ilen = strlen (inst)) {
@@ -117,25 +112,26 @@ long WhoIsThis (acall, at, aid)
 	    strcat (vname, ".");
 	    strcat (vname, inst);
 	}
-	lcstring(vname, vname, sizeof(vname));
-	code = NameToID(at,vname,aid);
+#ifdef CROSS_CELL
+	if (foreign) {
+	    if ((strlen(name)+strlen(tcell)+1) >= sizeof(vname)) {
+		goto done;
+	    }
+	    strcat (vname, "@");
+	    strcat (vname, tcell);
+        }
+#endif
+	if (strcmp (AUTH_SUPERUSER, vname) == 0)
+	    *aid = SYSADMINID;		/* special case for the fileserver */
+	else {
+	    lcstring(vname, vname, sizeof(vname));
+	    code = NameToID(at,vname,aid);
+	}
     }
   done:
     if (code && !pr_noAuth) return -1;
     return 0;
 }
-#else /* AFS-Moira synchronization */
-#define USERSMS 14487
-
-long WhoIsThis(acall, at, aid)
-struct rx_call *acall;
-struct ubik_trans *at;
-long *aid;
-{
-    *aid = USERSMS;
-    return 0;
-}
-#endif
 
 long PR_INewEntry(call,aname,aid,oid)
   struct rx_call *call;
@@ -201,6 +197,9 @@ long PR_NewEntry (call, aname, flag, oid, aid)
     struct ubik_trans *tt;
     long cid;
     int  admin;
+#ifdef CROSS_CELL
+    char cname[PR_MAXNAMELEN];
+#endif
 
     stolower(aname);
     code = Initdb();
@@ -213,6 +212,22 @@ long PR_NewEntry (call, aname, flag, oid, aid)
 	ubik_AbortTrans(tt);
 	return code;
     }
+
+#ifdef CROSS_CELL
+    /* this is for cross-cell self registration */
+    code = WhoIsThisWithName(call,tt,&cid,cname);
+    if (code != 2) {	/* 2 specifies that this is a foreign cell request */
+        if (code) {
+	perm:
+	    ubik_AbortTrans(tt);
+	    return PRPERM;
+        }
+        admin = IsAMemberOf(tt,cid,SYSADMINID);
+    } else {
+        admin = (!strcmp(aname,cname)) || IsAMemberOf(tt,cid,SYSADMINID);
+        oid = cid = SYSADMINID;
+    }
+#else
     code = WhoIsThis(call,tt,&cid);
     if (code) {
       perm:
@@ -220,7 +235,8 @@ long PR_NewEntry (call, aname, flag, oid, aid)
 	return PRPERM;
     }
     admin = IsAMemberOf(tt,cid,SYSADMINID);
-
+#endif
+    
     if (!CreateOK (tt, cid, oid, flag, admin)) goto perm;
 
     code = CreateEntry (tt,aname,aid,0,flag,oid,cid);
@@ -273,7 +289,7 @@ struct prdebugentry *aentry;
 
     code = Initdb();
     if (code != PRSUCCESS) return code;
-    code = ubik_BeginTrans(dbase,UBIK_READTRANS,&tt);
+    code = ubik_BeginTransReadAny(dbase,UBIK_READTRANS,&tt);
     if (code) return code;
     code = ubik_SetLock(tt,1,1,LOCKREAD);
     if (code) {
@@ -284,10 +300,14 @@ struct prdebugentry *aentry;
     code = pr_ReadEntry(tt, 0, apos, aentry);
     if (code) goto abort;
 
+    /* Since prdebugentry is in the form of a prentry not a coentry, we will
+     * return the coentry slots in network order where the string is. */
+#if 0
     if (aentry->flags & PRCONT) {	/* wrong type, get coentry instead */
 	code = pr_ReadCoEntry(tt, 0, apos, aentry);
 	if (code) goto abort;
     }
+#endif
     code = ubik_EndTrans(tt);
     if (code) return code;
     return PRSUCCESS;
@@ -395,7 +415,7 @@ long PR_NameToID (call, aname, aid)
 
     code = Initdb();
     if (code != PRSUCCESS) return code;
-    code = ubik_BeginTrans(dbase,UBIK_READTRANS,&tt);
+    code = ubik_BeginTransReadAny(dbase,UBIK_READTRANS,&tt);
     if (code) return code;
     code = ubik_SetLock(tt,1,1,LOCKREAD);
     if (code) {
@@ -435,7 +455,7 @@ long PR_IDToName (call, aid, aname)
 
     code = Initdb();
     if (code != PRSUCCESS) return code;
-    code = ubik_BeginTrans(dbase,UBIK_READTRANS,&tt);
+    code = ubik_BeginTransReadAny(dbase,UBIK_READTRANS,&tt);
     if (code) return code;
     code = ubik_SetLock(tt,1,1,LOCKREAD);
     if (code) {
@@ -470,7 +490,8 @@ long PR_Delete (call, aid)
     code = Initdb();
     if (code) return code;
     if (code != PRSUCCESS) return code;
-    if (aid == SYSADMINID || aid == ANYUSERID || aid == AUTHUSERID || aid == ANONYMOUSID) return PRPERM;
+    if (aid == SYSADMINID || aid == ANYUSERID || aid == AUTHUSERID ||
+	aid == ANONYMOUSID) return PRPERM;
     code = ubik_BeginTrans(dbase,UBIK_WRITETRANS,&tt);
     if (code) return code;
     code = ubik_SetLock(tt,1,1,LOCKWRITE);
@@ -681,7 +702,7 @@ long PR_GetCPS (call, aid, alist, over)
     alist->prlist_val = (long *) 0;
     code = Initdb();
     if (code != PRSUCCESS) goto done;
-    code = ubik_BeginTrans(dbase,UBIK_READTRANS,&tt);
+    code = ubik_BeginTransReadAny(dbase,UBIK_READTRANS,&tt);
     if (code) goto done;
     code = ubik_SetLock(tt,1,1,LOCKREAD);
     if (code) {
@@ -690,18 +711,16 @@ long PR_GetCPS (call, aid, alist, over)
 	goto done;
     }
 
-
-    temp = FindByID(tt,aid);
+    temp = FindByID (tt, aid);
     if (!temp) {code = PRNOENT; goto abort;}
     code = pr_ReadEntry (tt, 0, temp, &tentry);
     if (code) goto abort;
 
-    if (0) {				/* afs doesn't authenticate yet */
-	code = WhoIsThis (call, tt, &cid);
-	if (code || !AccessOK (tt, cid, &tentry, PRP_MEMBER_MEM, PRP_MEMBER_ANY)) {
-	    code = PRPERM;
-	    goto abort;
-	}
+    /* afs does authenticate now */
+    code = WhoIsThis (call, tt, &cid);
+    if (code || !AccessOK (tt, cid, &tentry, PRP_MEMBER_MEM, PRP_MEMBER_ANY)) {
+	code = PRPERM;
+	goto abort;
     }
 	
     code = GetList(tt, &tentry, alist, 1);
@@ -731,7 +750,7 @@ long *gid;
 
     code = Initdb();
     if (code != PRSUCCESS) return code;
-    code = ubik_BeginTrans(dbase,UBIK_READTRANS,&tt);
+    code = ubik_BeginTransReadAny(dbase,UBIK_READTRANS,&tt);
     if (code) return code;
     code = ubik_SetLock(tt,1,1,LOCKREAD);
     if (code) {
@@ -805,7 +824,7 @@ struct prcheckentry *aentry;
 
     code = Initdb();
     if (code != PRSUCCESS) return code;
-    code = ubik_BeginTrans(dbase,UBIK_READTRANS,&tt);
+    code = ubik_BeginTransReadAny(dbase,UBIK_READTRANS,&tt);
     if (code) return code;
     code = ubik_SetLock(tt,1,1,LOCKREAD);
     if (code) {
@@ -828,14 +847,14 @@ struct prcheckentry *aentry;
 	ubik_AbortTrans(tt);
 	return code;
     } 
-    if (!AccessOK (tt, cid, &tentry, PRP_STATUS_MEM, PRP_STATUS_ANY)) goto perm;
+    if (!AccessOK (tt, cid, &tentry, PRP_STATUS_MEM, PRP_STATUS_ANY))
+	goto perm;
 
     aentry->flags = tentry.flags >> PRIVATE_SHIFT;
     if (aentry->flags == 0)
 	if (tentry.flags & PRGRP)
 	    aentry->flags = PRP_GROUP_DEFAULT >> PRIVATE_SHIFT;
 	else aentry->flags = PRP_USER_DEFAULT >> PRIVATE_SHIFT;
-    aentry->flags;
     aentry->owner = tentry.owner;
     aentry->id = tentry.id;
     strncpy(aentry->name,tentry.name,PR_MAXNAMELEN);
@@ -864,7 +883,8 @@ long newid;
     stolower(name);
     code = Initdb();
     if (code) return code;
-    if (aid == ANYUSERID || aid == AUTHUSERID || aid == ANONYMOUSID || aid == SYSADMINID) return PRPERM;
+    if (aid == ANYUSERID || aid == AUTHUSERID || aid == ANONYMOUSID ||
+	aid == SYSADMINID) return PRPERM;
     if (code != PRSUCCESS) return code;
     code = ubik_BeginTrans(dbase,UBIK_WRITETRANS,&tt);
     if (code) return code;
@@ -989,7 +1009,7 @@ long PR_ListElements (call, aid, alist, over)
 
     code = Initdb();
     if (code != PRSUCCESS) goto done;
-    code = ubik_BeginTrans(dbase,UBIK_READTRANS,&tt);
+    code = ubik_BeginTransReadAny(dbase,UBIK_READTRANS,&tt);
     if (code) goto done;
     code = ubik_SetLock(tt,1,1,LOCKREAD);
     if (code) {
@@ -1045,7 +1065,7 @@ PR_ListOwned (call, aid, alist, over)
 
     code = Initdb();
     if (code != PRSUCCESS) goto done;
-    code = ubik_BeginTrans(dbase,UBIK_READTRANS,&tt);
+    code = ubik_BeginTransReadAny(dbase,UBIK_READTRANS,&tt);
     if (code) goto done;
     code = ubik_SetLock(tt,1,1,LOCKREAD);
     if (code) {
@@ -1130,7 +1150,8 @@ long *flag;
 	    goto abort;
 	}
 	if (!AccessOK (tt, cid, &uentry, 0, PRP_MEMBER_ANY) &&
-	    !AccessOK (tt, cid, &gentry, PRP_MEMBER_MEM, PRP_MEMBER_ANY)) goto perm;
+	    !AccessOK (tt, cid, &gentry, PRP_MEMBER_MEM, PRP_MEMBER_ANY))
+	    goto perm;
     }
 	
     *flag = IsAMemberOf(tt,uid,gid);
@@ -1148,3 +1169,69 @@ register char *s;
 	s++;
     }
 }
+
+#ifdef CROSS_CELL
+static long WhoIsThisWithName(acall, at, aid, aname)
+    struct rx_call *acall;
+    struct ubik_trans *at;
+    long *aid;
+    char *aname;
+{
+    /* aid is set to the identity of the caller, if known, else ANONYMOUSID */
+    /* returns -1 and sets aid to ANONYMOUSID on any failure */
+
+    register struct rx_connection *tconn;
+    register long code;
+    char tcell[MAXKTCREALMLEN];
+    char name[MAXKTCNAMELEN];
+    char inst[MAXKTCNAMELEN];
+    int  ilen;
+    char vname[256];
+
+    *aid = ANONYMOUSID;
+    tconn = rx_ConnectionOf(acall);
+    code = rx_SecurityClassOf(tconn);
+    if (code == 0) return 0;
+    else if (code == 1) {			/* vab class */
+        goto done;				/* no longer supported */
+    }
+    else if (code == 2) {			/* kad class */
+
+        int clen;
+        extern char *pr_realmName;
+
+        if (code = rxkad_GetServerInfo
+            (acall->conn, (long *)0, 0		/*was &exp*/,
+             name, inst, tcell, (long *)0))
+            goto done;
+        strncpy (vname, name, sizeof(vname));
+        if (ilen = strlen (inst)) {
+            if (strlen(vname) + 1 + ilen >= sizeof(vname)) goto done;
+            strcat (vname, ".");
+            strcat (vname, inst);
+        }
+        if (clen = strlen (tcell)) {
+	    if (!afsconf_LocalRealm(prdir, tcell)) {
+		if (strlen(vname) + 1 + clen >= sizeof(vname)) goto done;
+		strcat(vname,"@");
+		strcat(vname,tcell);
+		lcstring(vname, vname, sizeof(vname));
+		code = NameToID(at,vname,aid);
+		strcpy(aname,vname);
+		return 2;
+	    }
+        }
+
+        if (strcmp (AUTH_SUPERUSER, vname) == 0)
+	    /* special case for the fileserver */
+            *aid = SYSADMINID;
+        else {
+            lcstring(vname, vname, sizeof(vname));
+            code = NameToID(at,vname,aid);
+        }
+    }
+done:
+    if (code && !pr_noAuth) return -1;
+    return 0;
+}
+#endif

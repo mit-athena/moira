@@ -124,7 +124,7 @@ sub athena_proc
     push(@acl,"system:anyuser rl")
 	if ($type =~ /^(ACTIVITY|APROJ|CONTRIB|REF|SYSTEM)/);
 
-    if ($type !~ /^(AREF|SYSTEM)/) {
+    if ($type !~ /^(AREF|ORG|SYSTEM)/) {
 	system("$fs mkm $path/OldFiles $vname.backup");
 	warn "$locker: Unable to create OldFiles mountpoint\n" if ($?);
     }
@@ -139,11 +139,12 @@ sub athena_proc
 
     if ($type eq "ORG") {
 	mkdir("$path/www",0755) || die "Unable to create subdirectories\n";
-	system("$fs sa $path @acl system:anyuser rl -clear") &&
+	system("$fs sa $path/www @acl system:anyuser rl -clear") &&
 	    die "Unable to set acl on www directory\n";
 
 	system("$fs sa $path @acl system:anyuser l -clear") &&
 	    die "Unable to set acl on top-level directory\n";
+	return;
     }
 
     if ($type eq "HOMEDIR") {

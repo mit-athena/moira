@@ -1,4 +1,4 @@
-; $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/forms.txt,v 1.4 1992-10-22 15:38:02 mar Exp $
+; $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/forms.txt,v 1.5 1992-10-23 19:05:03 mar Exp $
 ;
 
 ; { FORM_NAME	INSTRUCTION FIELD
@@ -149,7 +149,7 @@
 { del_filsys	Enter the name of the filesystem to delete.
 	Name	s
 }
-{ show_fsgroup	Enter the name of the filesyste group to show.
+{ show_fsgroup	Enter the name of the filesystem group to show.
 	Name	s
 }
 { add_fsgroup	Specify the filesystem for the filesystem group and where it goes in sort order.

@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v 1.27 1994-08-03 19:42:26 tytso Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v 1.28 1994-08-09 19:13:06 tytso Exp $";
 #endif lint
 
 /*	This is the file lists.c for the MOIRA Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v $
  *      $Author: tytso $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v 1.27 1994-08-03 19:42:26 tytso Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v 1.28 1994-08-09 19:13:06 tytso Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -374,7 +374,12 @@ char **argv;
 	return(SUB_ERROR);
     }
 
-    if (do_mr_query("get_user_account_by_login", 1, argv + 1,
+    /*
+     * If the listname is less than 8 characters, make sure it doesn't
+     * collide with a username.
+     */
+    if ((strlen(argv[1]) <= 8) &&
+	do_mr_query("get_user_account_by_login", 1, argv + 1,
 		    StoreInfo, (char *) &elem) == 0) {
 	    Put_message("A user by that name already exists in the database.");
 	    Loop(QueueTop(elem), FreeInfo);

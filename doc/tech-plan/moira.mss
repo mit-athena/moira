@@ -6,7 +6,7 @@
 @Modify(Author, Below 0, Above 0)
 
 @PlanHead(
-	VersionDate "Draft@Y<M>May 13, 1987",
+	VersionDate "Draft@Y<M>@value<date>",
 	PlanSection "Section E.1",
 	Title "Service Management System",
 	CopyrightDate "1987",

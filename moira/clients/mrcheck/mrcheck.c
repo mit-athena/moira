@@ -4,12 +4,12 @@
  * Copyright 1988, 1991 by the Massachusetts Institute of Technology. 
  * For copying and distribution information, see the file "mit-copyright.h". 
  *
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrcheck/mrcheck.c,v 1.7 1991-06-28 17:48:02 mar Exp $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrcheck/mrcheck.c,v 1.8 1992-03-10 16:40:26 mar Exp $
  * $Author: mar $
  */
 
 #ifndef lint
-static char *rcsid_chsh_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrcheck/mrcheck.c,v 1.7 1991-06-28 17:48:02 mar Exp $";
+static char *rcsid_chsh_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrcheck/mrcheck.c,v 1.8 1992-03-10 16:40:26 mar Exp $";
 #endif	lint
 
 #include <stdio.h>
@@ -172,15 +172,17 @@ char *argv[];
     struct save_queue *sq;
     int status;
     int scream();
+    int auth_required = 1;
 
     if ((whoami = rindex(argv[0], '/')) == NULL)
 	whoami = argv[0];
     else
 	whoami++;
 
-    if (argc > 1) {
-	usage();
-    }
+    if (argc == 2 && !strcmp(argv[1], "-noauth"))
+      auth_required = 0;
+    else if (argc > 1)
+      usage();
 
     status = mr_connect(NULL);
     if (status) {
@@ -200,7 +202,7 @@ char *argv[];
 	exit(2);
     }
     status = mr_auth("mrcheck");
-    if (status) {
+    if (status && auth_required) {
 	(void) sprintf(buf, "\nAuthorization failure -- run \"kinit\" \
 and try again");
 	goto punt;
@@ -248,6 +250,6 @@ scream()
 
 usage()
 {
-    fprintf(stderr, "Usage: %s\n", whoami);
+    fprintf(stderr, "Usage: %s [-noauth]\n", whoami);
     exit(1);
 }

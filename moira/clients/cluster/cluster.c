@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/cluster/cluster.c,v 1.2 1993-10-21 15:02:27 mar Exp $ */
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/cluster/cluster.c,v 1.3 1997-01-29 23:00:08 danw Exp $ */
 
 #include <stdio.h>
 #include <Wc/WcCreate.h>
@@ -8,7 +8,7 @@
 #include "MList.h"
 #include <moira.h>
 #include <moira_site.h>
-#include <strings.h>
+#include <string.h>
 
 extern void AriRegisterAthena();
 extern int errno;
@@ -123,7 +123,7 @@ char* argv[];
 
 /*    setenv("XFILESEARCHPATH", "/afs/athena/system/moira/lib/%N", 1); */
     setenv("XFILESEARCHPATH", "/afs/athena/astaff/project/moiradev/src/clients/cluster/%N", 1);
-    if ((program_name = rindex(argv[0], '/')) == NULL)
+    if ((program_name = strrchr(argv[0], '/')) == NULL)
       program_name = argv[0];
     else
       program_name++;
@@ -437,7 +437,7 @@ void getClusterServer()
     }
     suppress_updates = 1;
     while (sq_get_data(cluq, &argv)) {
-	mach = index(argv[2], ' ');
+	mach = strchr(argv[2], ' ');
 	if (mach) *mach = 0;
 	printf("Searching for filsys %s\n", argv[2]);
 	for (sq = fsq->q_next; sq != fsq; sq = sq->q_next)
@@ -711,7 +711,7 @@ void getMachineTypes()
     for (i = 0; i < nmachines; i++) {
 	if (strlen(machattr[i].type) == 0) {
 	    mach = machines[i];
-	    p = index(mach, ' ');
+	    p = strchr(mach, ' ');
 	    if (p) *p = 0;
 	    status = MoiraQuery("get_machine", 1, &mach, collect, sq);
 	    if (status)
@@ -787,10 +787,10 @@ void addMachineCluster()
     for (c = 0; c < ccount; c++) {
 	for (m = 0; m < mcount; m++) {
 	    argv[0] = strsave(machines[machs[m].list_index]);
-	    p = index(argv[0], ' ');
+	    p = strchr(argv[0], ' ');
 	    if (p) *p = 0;
 	    argv[1] = strsave(clusters[clus[c].list_index]);
-	    p = index(argv[1], ' ');
+	    p = strchr(argv[1], ' ');
 	    if (p) *p = 0;
 	    status = MoiraQuery("add_machine_to_cluster", 2, argv,
 				collect, NULL);
@@ -816,10 +816,10 @@ void removeMachineCluster()
     for (c = 0; c < ccount; c++) {
 	for (m = 0; m < mcount; m++) {
 	    argv[0] = strsave(machs[m].string);
-	    p = index(argv[0], ' ');
+	    p = strchr(argv[0], ' ');
 	    if (p) *p = 0;
 	    argv[1] = strsave(clus[c].string);
-	    p = index(argv[1], ' ');
+	    p = strchr(argv[1], ' ');
 	    if (p) *p = 0;
 	    status = MoiraQuery("delete_machine_from_cluster", 2, argv,
 				collect, NULL);
@@ -846,7 +846,7 @@ void removeMachineAllCluster()
     for (m = 0; m < mcount; m++) {
 	sq = sq_create();
 	argv[0] = strsave(machs[m].string);
-	p = index(argv[0], ' ');
+	p = strchr(argv[0], ' ');
 	if (p) *p = 0;
 	argv[1] = "*";
 	status = MoiraQuery("get_machine_to_cluster_map", 2, argv,
@@ -1072,7 +1072,7 @@ char *f, *s;
 {
     char *p;
 
-    while (p = index(s, *f)) {
+    while (p = strchr(s, *f)) {
 	if (!strncmp(f, p, strlen(f)))
 	  return(p);
 	s++;

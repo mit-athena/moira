@@ -1,4 +1,4 @@
-/* $Id: attach.c,v 1.49 2000-03-15 22:44:02 rbasch Exp $
+/* $Id: attach.c,v 1.50 2000-08-03 21:49:13 zacheiss Exp $
  *
  *	This is the file attach.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -32,7 +32,7 @@
 #include <unistd.h>
 #endif /* HAVE_UNISTD_H */
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.49 2000-03-15 22:44:02 rbasch Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.50 2000-08-03 21:49:13 zacheiss Exp $");
 
 char *canonicalize_cell(char *c);
 int GetAliasValue(int argc, char **argv, void *retval);
@@ -46,6 +46,8 @@ void RealDeleteFSAlias(char **info, Bool one_item);
 #define MACHINE      1
 #define GROUP        2
 #define ALIAS        3
+#define ALIAS_CHECK  4
+#define FS_ALIASES   5
 
 #define NO_MACHINE	 ("[NONE]")
 
@@ -126,14 +128,28 @@ static struct mqelem *GetFSInfo(int type, char *name)
 	}
       break;
     case ALIAS:
+    case ALIAS_CHECK:
       args[ALIAS_NAME] = name;
       args[ALIAS_TYPE] = FS_ALIAS_TYPE;
       args[ALIAS_TRANS] = "*";
       if ((stat = do_mr_query("get_alias", 3, args, StoreInfo, &elem)))
 	{
-	  com_err(program_name, stat, " in get_alias.");
+	  if (type != ALIAS_CHECK || stat != MR_NO_MATCH)
+	    com_err(program_name, stat, " in get_alias.");
 	  return NULL;
 	}
+      break;
+    case FS_ALIASES:
+      args[ALIAS_NAME] = "*";
+      args[ALIAS_TYPE] = FS_ALIAS_TYPE;
+      args[ALIAS_TRANS] = name;
+      if ((stat = do_mr_query("get_alias", 3, args, StoreInfo, &elem)))
+	{
+	  if (stat != MR_NO_MATCH)
+	    com_err(program_name, stat, " in get_alias.");
+	  return NULL;
+	}
+      break;
     }
 
   return QueueTop(elem);
@@ -153,6 +169,26 @@ static char *PrintFSAlias(char **info)
 	  info[ALIAS_TRANS]);
   Put_message(buf);
   return info[ALIAS_NAME];
+}
+
+static char aliasbuf[256];
+
+static char *PrintFSAliasList(char **info)
+{
+  if (strlen(aliasbuf) == 0)
+    snprintf(aliasbuf, sizeof(aliasbuf), "Aliases: %s", info[ALIAS_NAME]);
+  else
+    {
+      strncat(aliasbuf, ", ", sizeof(aliasbuf));
+      strncat(aliasbuf, info[ALIAS_NAME], sizeof(aliasbuf));
+    }
+}
+
+static char labelbuf[256];
+
+static char *GetFSLabel(char **info)
+{
+  snprintf(labelbuf, sizeof(labelbuf), info[ALIAS_TRANS]);
 }
 
 static int fsgCount = 1;
@@ -176,6 +212,7 @@ static void PrintFSGMembers(char **info)
 static char *PrintFSInfo(char **info)
 {
   char print_buf[BUFSIZ];
+  struct mqelem *top;
 
   FORMFEED;
 
@@ -189,6 +226,14 @@ static char *PrintFSInfo(char **info)
       else
 	sprintf(print_buf, "%20s Filesystem Group: %s", " ", info[FS_NAME]);
       Put_message(print_buf);
+
+      top = GetFSInfo(FS_ALIASES, info[FS_NAME]);
+      if (top != NULL) {
+	*aliasbuf = 0;
+	Loop(top, (void (*)(char **))PrintFSAliasList);
+	Put_message(aliasbuf);
+	FreeQueue(top);		/* clean the queue. */
+      }
 
       sprintf(print_buf, "Comments: %s", info[FS_COMMENTS]);
       Put_message(print_buf);
@@ -215,6 +260,15 @@ static char *PrintFSInfo(char **info)
     {
       sprintf(print_buf, "%20s Filesystem: %s", " ", info[FS_NAME]);
       Put_message(print_buf);
+
+      top = GetFSInfo(FS_ALIASES, info[FS_NAME]);
+      if (top != NULL) {
+	*aliasbuf = 0;
+	Loop(top, (void (*)(char **))PrintFSAliasList);
+	Put_message(aliasbuf);
+	FreeQueue(top);		/* clean the queue. */
+      }
+
       sprintf(print_buf, "Type: %-40s Machine: %-15s",
 	      info[FS_TYPE], info[FS_MACHINE]);
       Put_message(print_buf);
@@ -459,8 +513,17 @@ static char **AskFSInfo(char **info, Bool name)
 int GetFS(int argc, char **argv)
 {
   struct mqelem *top;
+  char *fs_label;
 
-  top = GetFSInfo(LABEL, argv[1]); /* get info. */
+  fs_label = argv[1];
+
+  top = GetFSInfo(ALIAS_CHECK, argv[1]);
+  if (top != NULL) {
+    Loop(top, (void (*)(char **))GetFSLabel);
+    fs_label = labelbuf;
+  }
+
+  top = GetFSInfo(LABEL, fs_label); /* get info. */
   Loop(top, (void (*)(char **))PrintFSInfo);
   FreeQueue(top);		/* clean the queue. */
   return DM_NORMAL;

@@ -1,4 +1,4 @@
-/* $Id: menus.c,v 1.41 2000-03-30 21:59:53 zacheiss Exp $
+/* $Id: menus.c,v 1.42 2000-08-03 21:49:14 zacheiss Exp $
  *
  *	This is the file menus.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -22,7 +22,7 @@
 
 #include <stdio.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menus.c,v 1.41 2000-03-30 21:59:53 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menus.c,v 1.42 2000-08-03 21:49:14 zacheiss Exp $");
 
 /* ------------------------- Second Tier Menus ------------------------- */
 
@@ -375,15 +375,15 @@ Menu filesys_menu = {
     SUBMENU("fsgroups", "File System Groups Menu", &fsgroup_menu),
     { GetFSAlias, NULLMENU, 2, {
       {"check", "Check An Association"},
-      {"name", "alias name : "}
+      {"name", "Alias name: "}
     } },
     { CreateFSAlias, NULLMENU, 2, {
       {"alias", "Associate with a Filesystem"},
-      {"name", "alias name : "},
+      {"name", "Alias name: "},
     } },
     { DeleteFSAlias, NULLMENU, 2, {
       {"unalias", "Disassociate from a Filesystem"},
-      {"name", "alias name : "},
+      {"name", "Alias name: "},
     } },
     SUBMENU("quotas", "Quota Menu", &quota_menu),
 /*    SIMPLEFUNC("verbose", "Toggle Verbosity of Delete", ToggleVerboseMode), */

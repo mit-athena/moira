@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/main.c,v 1.8 1992-11-04 18:00:16 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/main.c,v 1.9 1992-11-09 17:06:51 mar Exp $
  *
  *  	Copyright 1991 by the Massachusetts Institute of Technology.
  *
@@ -16,7 +16,6 @@
 #include	<Xm/PushB.h>
 #include	<Xm/BulletinB.h>
 #include	<Xm/RowColumn.h>
-#include	<Xm/RowColumnP.h>
 #include	"mmoira.h"
 
 extern MenuItem MenuRoot;
@@ -30,7 +29,9 @@ MoiraResources resources;
 
 static XrmOptionDescRec options[] = {
     {"-db",	"*database",	XrmoptionSepArg,	NULL},
+    {"-noauth",	"*noAuth",	XrmoptionNoArg,		(caddr_t) "true"},
     {"-helpfile","*helpFile",	XrmoptionSepArg,	NULL},
+    {"-logsize","*logSize",	XrmoptionSepArg,	NULL},
 };
 
 
@@ -47,6 +48,10 @@ static XtResource my_resources[] = {
        Offset(help_file), XtRImmediate, (caddr_t) "/afs/athena.mit.edu/system/moira/lib/mmoira.helpfile"},
     {"database", XtCString, XtRString, sizeof(String),
        Offset(db), XtRImmediate, (caddr_t) NULL},
+    {"noAuth", XtCBoolean, XtRBoolean, sizeof(Boolean),
+       Offset(noauth), XtRImmediate, (caddr_t) False},
+    {"logSize", XtCValue, XtRInt, sizeof(int),
+       Offset(maxlogsize), XtRImmediate, (caddr_t) MAXLOGSIZE},
 };
 
 #undef Offset
@@ -67,7 +72,7 @@ int argc;
 char *argv[];
 {
 	Widget	button, bboard, menuwidget;
-	char *motd, *env;
+	char *motd, *env, buf[256], host[64];
 	int	n, status;
 	char *getlogin(), *getenv();
 
@@ -125,14 +130,16 @@ char *argv[];
 	    exit(1);
 	}
 
-      	status = mr_auth("mmoira");
-	if (status == MR_USER_AUTH) {
-	    char buf[BUFSIZ];
-	    com_err(program_name, status, "\nPress [RETURN] to continue");
-	    gets(buf);
-	} else if (status) {
-	    com_err(program_name, status, "; authorization failed - may need to run kinit");
-	    exit(1);
+	if (!resources.noauth) {
+	    status = mr_auth("mmoira");
+	    if (status == MR_USER_AUTH) {
+		char buf[BUFSIZ];
+		com_err(program_name, status, "\nPress [RETURN] to continue");
+		gets(buf);
+	    } else if (status) {
+		com_err(program_name, status, "; authorization failed - may need to run kinit");
+		exit(1);
+	    }
 	}
 
 	bboard = XtCreateManagedWidget(	"bboard",
@@ -146,6 +153,14 @@ char *argv[];
 	set_com_err_hook(popup_error_hook);
 	mr_set_alternate_input(ConnectionNumber(XtDisplay(toplevel)),
 			       mr_x_input);
+	mr_host(host, sizeof(host));
+	if (resources.noauth)
+	  sprintf(buf, "UNAUTHENTICATED connection to Moira server %s\n\n",
+		  host);
+	else
+	  sprintf(buf, "Connected to Moira server %s\n\n", host);
+	AppendToLog(buf);
+
 	XtMainLoop();
 }
 
@@ -202,13 +217,9 @@ EntryForm	*spec;
 	XtManageChild(w);
 	for (i = 0; spec->inputlines[i]; i++) {
 	    XtOverrideTranslations(spec->inputlines[i]->mywidget, trans);
-	    if (spec->inputlines[i]->type == FT_KEYWORD) {
-		XmRowColumnWidget rc;
-
-		rc = (XmRowColumnWidget) spec->inputlines[i]->mywidget;
-		for (j = 0; j < rc->composite.num_children; j++)
-		  XtOverrideTranslations(rc->composite.children[j], trans);
-	    }
+	    if (spec->inputlines[i]->type == FT_KEYWORD)
+	      for (j = 0; j < NumChildren(spec->inputlines[i]->mywidget); j++)
+		XtOverrideTranslations(NthChild(spec->inputlines[i]->mywidget, j), trans);
 	}
 	/* set the focus to the first line of the form */
 	_XmGrabTheFocus(spec->inputlines[0]->mywidget, NULL);

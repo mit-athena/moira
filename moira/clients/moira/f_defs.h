@@ -1,4 +1,4 @@
-/* $Id: f_defs.h,v 1.34 2001-05-31 21:34:34 zacheiss Exp $
+/* $Id: f_defs.h,v 1.35 2001-08-19 02:49:57 zacheiss Exp $
  *
  *	This is the file f_defs.h for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -86,6 +86,7 @@ int MachineToContainerMap(int argc, char **argv);
 int AddMachineToContainer(int argc, char **argv);
 int RemoveMachineFromContainer(int argc, char **argv);
 int GetMachinesOfContainer(int argc, char **argv);
+int GetTopLevelCont(int argc, char **argv);
 
 /* delete.c */
 

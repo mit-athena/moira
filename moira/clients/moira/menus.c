@@ -1,4 +1,4 @@
-/* $Id: menus.c,v 1.44 2001-05-31 21:34:34 zacheiss Exp $
+/* $Id: menus.c,v 1.45 2001-08-19 02:49:58 zacheiss Exp $
  *
  *	This is the file menus.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -22,7 +22,7 @@
 
 #include <stdio.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menus.c,v 1.44 2001-05-31 21:34:34 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menus.c,v 1.45 2001-08-19 02:49:58 zacheiss Exp $");
 
 /* ------------------------- Second Tier Menus ------------------------- */
 
@@ -850,7 +850,7 @@ Menu container_menu = {
   NULLFUNC,
   NULLFUNC,
   "Container Menu",
-  7,
+  8,
   {
     { ShowContainerInfo, NULLMENU, 2, {
       {"show", "Get container information"},
@@ -872,6 +872,7 @@ Menu container_menu = {
       {"subcont", "Get subcontainers of container"},
       {"name", "Container's Name: "}
     } },
+    SIMPLEFUNC("toplevel", "Get all top level containers", GetTopLevelCont),
     SUBMENU("mappings", "Machine to Container Mappings Menu", &cmappings_menu),
     SIMPLEFUNC("verbose", "Toggle Verbosity of Delete", ToggleVerboseMode)
   }

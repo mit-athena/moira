@@ -1,4 +1,4 @@
-/* $Id: cluster.c,v 1.51 2001-08-12 19:34:00 zacheiss Exp $
+/* $Id: cluster.c,v 1.52 2001-08-19 02:49:48 zacheiss Exp $
  *
  *	This is the file cluster.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -2460,5 +2460,20 @@ int GetMachinesOfContainer(int argc, char **argv)
   top = QueueTop(elem);
   Loop(top, ((void (*)(char **)) PrintMContMap));
   FreeQueue(top);
+  return DM_NORMAL;
+}
+
+int GetTopLevelCont(int argc, char **argv)
+{
+  int status;
+  struct mqelem *elem = NULL;
+  if (status = do_mr_query("get_toplevel_containers", 0, NULL, StoreInfo, 
+			   &elem))
+    {
+      com_err(program_name, status, " in get_toplevel_containers");
+      return DM_NORMAL;
+    }
+  Loop(QueueTop(elem), (void(*)(char **)) PrintContainer);
+  FreeQueue(elem);
   return DM_NORMAL;
 }

@@ -1,11 +1,7 @@
 #
 # 	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/Makefile,v $
-#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/Makefile,v 1.1 1987-08-02 22:17:24 wesommer Exp $
-#
-
-#	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/Makefile,v $
 #	$Author: wesommer $
-#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/Makefile,v 1.1 1987-08-02 22:17:24 wesommer Exp $
+#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/Makefile,v 1.2 1987-08-02 22:23:30 wesommer Exp $
 #
 # Revised makefile for GDB library.
 #
@@ -149,10 +145,10 @@ ftp: tar.file
 #
 
 clean:
-	rm -f *.o libgdb.a tar.file *.PS *.err \#* *~ profiled/*.o
+	rm -f *.o libgdb.a libgdb_p.a tar.file *.PS *.err \#* *~ profiled/*.o
 
-depend: $(CFILES)
-	$(CC) -M $(CFLAGS) $(CFILES) | \
+depend: $(GDBCSRCS)
+	$(CC) -M $(CFLAGS) $(GDBCSRCS) | \
 	sed -e 's; ./; ;' \
 	    -e ':loop' \
 	    -e 's/\.\.\/[^ /]*\/\.\./../' \
@@ -171,5 +167,44 @@ depend: $(CFILES)
 # the last constant line in the makefile should be...
 # DO NOT DELETE THIS LINE
 
-
-
+gdb_struct.o: gdb_struct.c /usr/include/stdio.h /usr/include/strings.h gdb.h
+gdb_struct.o: /usr/include/sys/types.h /usr/include/sys/time.h
+gdb_struct.o: /usr/include/time.h
+gdb_stype.o: gdb_stype.c /usr/include/stdio.h /usr/include/strings.h gdb.h
+gdb_stype.o: /usr/include/sys/types.h /usr/include/sys/time.h
+gdb_stype.o: /usr/include/time.h /usr/include/netinet/in.h
+gdb.o: gdb.c /usr/include/stdio.h /usr/include/strings.h /usr/include/signal.h
+gdb.o: /usr/include/pwd.h gdb.h /usr/include/sys/types.h
+gdb.o: /usr/include/sys/time.h /usr/include/time.h gdb_lib.h
+gdb.o: /usr/include/errno.h
+gdb_trans.o: gdb_trans.c /usr/include/sys/types.h /usr/include/strings.h
+gdb_trans.o: /usr/include/stdio.h /usr/include/varargs.h /usr/include/errno.h
+gdb_trans.o: gdb.h /usr/include/sys/types.h /usr/include/sys/time.h
+gdb_trans.o: /usr/include/time.h
+gdb_trans2.o: gdb_trans2.c /usr/include/sys/types.h /usr/include/errno.h
+gdb_trans2.o: /usr/include/stdio.h gdb.h /usr/include/sys/types.h
+gdb_trans2.o: /usr/include/sys/time.h /usr/include/time.h
+gdb_trans2.o: /usr/include/sys/uio.h /usr/include/sys/socket.h
+gdb_conn.o: gdb_conn.c /usr/include/stdio.h /usr/include/strings.h gdb.h
+gdb_conn.o: /usr/include/sys/types.h /usr/include/sys/time.h
+gdb_conn.o: /usr/include/time.h /usr/include/sys/types.h /usr/include/sys/uio.h
+gdb_conn.o: /usr/include/sys/socket.h /usr/include/sys/ioctl.h
+gdb_conn.o: /usr/include/sys/ttychars.h /usr/include/sys/ttydev.h
+gdb_conn.o: /usr/include/netinet/in.h /usr/include/netdb.h /usr/include/errno.h
+gdb_serv.o: gdb_serv.c /usr/include/stdio.h /usr/include/strings.h gdb.h
+gdb_serv.o: /usr/include/sys/types.h /usr/include/sys/time.h
+gdb_serv.o: /usr/include/time.h /usr/include/sys/ioctl.h
+gdb_serv.o: /usr/include/sys/ttychars.h /usr/include/sys/ttydev.h
+gdb_fserv.o: gdb_fserv.c /usr/include/stdio.h /usr/include/sys/types.h
+gdb_fserv.o: /usr/include/sys/uio.h /usr/include/sys/socket.h
+gdb_fserv.o: /usr/include/sys/wait.h /usr/include/sys/signal.h gdb.h
+gdb_fserv.o: /usr/include/sys/types.h /usr/include/sys/time.h
+gdb_fserv.o: /usr/include/time.h /usr/include/sys/resource.h
+gdb_db.o: gdb_db.c /usr/include/stdio.h /usr/include/strings.h gdb.h
+gdb_db.o: /usr/include/sys/types.h /usr/include/sys/time.h /usr/include/time.h
+gdb_debug.o: gdb_debug.c /usr/include/stdio.h gdb.h /usr/include/sys/types.h
+gdb_debug.o: /usr/include/sys/time.h /usr/include/time.h
+gdb_ops.o: gdb_ops.c /usr/include/stdio.h gdb.h /usr/include/sys/types.h
+gdb_ops.o: /usr/include/sys/time.h /usr/include/time.h
+gdb_ops.o: /usr/include/netinet/in.h /usr/include/sys/ioctl.h
+gdb_ops.o: /usr/include/sys/ttychars.h /usr/include/sys/ttydev.h

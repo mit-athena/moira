@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.dc,v $
  *	$Author: kostas $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.dc,v 1.3 1990-09-18 09:47:11 kostas Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.dc,v 1.4 1990-09-25 11:18:21 kostas Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_qsupport_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.dc,v 1.3 1990-09-18 09:47:11 kostas Exp $";
+static char *rcsid_qsupport_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.dc,v 1.4 1990-09-25 11:18:21 kostas Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -363,7 +363,7 @@ setup_ausr(q, argv, cl)
 	  return(MR_INGRES_ERR);
         EXEC SQL SELECT value  
              INTO :nuid
-             FROM values
+             FROM values_tbl
              WHERE name = "uid";
         if (sqlca.sqlcode < 0 || sqlca.sqlerrd[2] != 1)
 	  return(MR_INTERNAL);
@@ -569,7 +569,7 @@ char **argv;
 	      return(MR_INGRES_ERR);
             EXEC SQL SELECT value 
                      INTO :ngid
-                     FROM values
+                     FROM values_tbl
                      WHERE name = "gid";
 	    if (ingres_errno) return(mr_errcode);
 	    sprintf(argv[idx], "%d", ngid);
@@ -888,13 +888,13 @@ setup_dnfp(q, argv, cl)
     client *cl;
 {
     EXEC SQL BEGIN DECLARE SECTION;
-    int id, exists;
+    int id, exist;
     char *dir;
     EXEC SQL END DECLARE SECTION;
 
     id = *(int *)argv[0];
     dir = argv[1];
-##  repeat retrieve (exists = any(filesys.label where filesys.mach_id = @id
+##  repeat retrieve (exist = any(filesys.label where filesys.mach_id = @id
 ##				  and filesys.phys_id = nfsphys.nfsphys_id and
 ##				  nfsphys.mach_id = @id and nfsphys.#dir = @dir))
     if (exists)
@@ -972,7 +972,7 @@ client *cl;
 	if (q->type != APPEND) return(MR_STRING);
     EXEC SQL SELECT value
              INTO :id
-             FROM values
+             FROM values_tbl
              WHERE name = "strings_id";
 	id++;
 ##	replace v (value = id) where v.#name = "strings_id"
@@ -999,17 +999,17 @@ set_modtime(q, argv, cl)
     client *cl;
 {
     EXEC SQL BEGIN DECLARE SECTION;
-    char *name, *entity, *table;
+    char *name, *entity, *tbl;
     int who;
     EXEC SQL END DECLARE SECTION;
 
     entity = cl->entity;
     who = cl->client_id;
-    table = q->rtable;
+    tbl = q->rtable;
     name = argv[0];
 
-##  replace table (modtime = "now", modby = who, modwith = entity)
-##	 where table.#name = name
+##  replace tbl (modtime = "now", modby = who, modwith = entity)
+##	 where tbl.#name = name
     return(MR_SUCCESS);
 }
 
@@ -1025,18 +1025,18 @@ set_modtime_by_id(q, argv, cl)
     client *cl;
 {
     EXEC SQL BEGIN DECLARE SECTION;
-    char *entity, *table, *id_name;
+    char *entity, *tbl, *id_name;
     int who, id;
     EXEC SQL END DECLARE SECTION;
 
     entity = cl->entity;
     who = cl->client_id;
-    table = q->rtable;
+    tbl = q->rtable;
     id_name = q->validate->object_id;
 
     id = *(int *)argv[0];
-##  replace table (modtime = "now", modby = who, modwith = entity)
-##	 where table.id_name = id
+##  replace tbl (modtime = "now", modby = who, modwith = entity)
+##	 where tbl.id_name = id
     return(MR_SUCCESS);
 }
 
@@ -1096,17 +1096,17 @@ set_uppercase_modtime(q, argv, cl)
     client *cl;
 {
     EXEC SQL BEGIN DECLARE SECTION;
-    char *name, *entity, *table;
+    char *name, *entity, *tbl;
     int who;
     EXEC SQL END DECLARE SECTION;
 
     entity = cl->entity;
     who = cl->client_id;
-    table = q->rtable;
+    tbl = q->rtable;
     name = argv[0];
 
-##  replace table (modtime = "now", modby = who, modwith = entity)
-##	 where table.#name = uppercase(name)
+##  replace tbl (modtime = "now", modby = who, modwith = entity)
+##	 where tbl.#name = uppercase(name)
     return(MR_SUCCESS);
 }
 
@@ -1803,10 +1803,10 @@ int set_pobox(q, argv, cl)
 	if (status == MR_NO_MATCH) {
             EXEC SQL SELECT value 
                      INTO :id 
-                     FROM values 
+                     FROM values_tbl 
                      WHERE name =  "strings_id";
 	    id++;
-##          repeat replace values (value = @id) where values.name = "strings_id"
+##          repeat replace values_tbl.(value = @id) where values_tbl.name = "strings_id"
 ##	    append to strings (string_id = id, string = box)
 	} else if (status)
 	  return(status);
@@ -1839,7 +1839,7 @@ get_list_info(q, aargv, cl, action, actarg)
     char *argv[13], *malloc(), *realloc();
     EXEC SQL BEGIN DECLARE SECTION;
     char *name, acl_type[9], listname[33], active[5], public[5], hidden[5];
-    char maillist[5], group[5], gid[6], acl_name[256], desc[256], modtime[27];
+    char maillist[5], grp[5], gid[6], acl_name[256], desc[256], modtime[27];
     char modby[256], modwith[9];
     int id, rowcount, acl_id, hid, modby_id;
     EXEC SQL END DECLARE SECTION;
@@ -1867,7 +1867,7 @@ get_list_info(q, aargv, cl, action, actarg)
       return(MR_NO_MATCH);
 
     argv[0] = listname; argv[1] = active; argv[2] = public; argv[3] = hidden;
-    argv[4] = maillist; argv[5] = group; argv[6] = gid; argv[7] = acl_type;
+    argv[4] = maillist; argv[5] = grp; argv[6] = gid; argv[7] = acl_type;
     argv[9] = desc; argv[10] = modtime; argv[12] = modwith;
 
     while (sq_get_data(sq, &id)) {
@@ -1877,7 +1877,7 @@ get_list_info(q, aargv, cl, action, actarg)
 ##	repeat retrieve (listname = l.#name, active = text(l.#active), 
 ##		public = text(l.#public), hidden = text(l.#hidden),
 ##		hid = l.#hidden, maillist = text(l.#maillist),
-##		group = text(l.#group), gid = text(l.#gid),
+##		group = text(l.#grp), gid = text(l.#gid),
 ##		acl_type = trim(l.#acl_type), acl_id = l.#acl_id,
 ##		desc = l.#desc, modtime = l.#modtime, modby_id = l.#modby,
 ##		modwith =l.#modwith)
@@ -1937,7 +1937,7 @@ int add_member_to_list(q, argv, cl)
     client *cl;
 {
     EXEC SQL BEGIN DECLARE SECTION;
-    int id, lid, mid, exists, error, who, ref;
+    int id, lid, mid, exist, error, who, ref;
     char *mtype, dtype[9], *entity;
     EXEC SQL END DECLARE SECTION;
     int ancestors[MAXLISTDEPTH], aref[MAXLISTDEPTH], acount, a;
@@ -1946,21 +1946,20 @@ int add_member_to_list(q, argv, cl)
     char *dtypes[MAXLISTDEPTH];
     char *iargv[3], *buf;
 
-
-    EXEC SQL DECLARE m_cursor CURSOR FOR
+    EXEC SQL DECLARE m_cursor_a CURSOR FOR
           SELECT M.list_id, M.ref_count
           FROM IMEMBERS M
           WHERE M.member_id = :lid AND M.member_type = "LIST";
-    EXEC SQL OPEN m_cursor;
+    EXEC SQL OPEN m_cursor_a;
 
     lid = *(int *)argv[0];
     mtype = argv[1];
     mid = *(int *)argv[2];
     /* if the member is already a direct member of the list, punt */
-##  repeat retrieve (exists = any(m.list_id where m.list_id=@lid and 
+##  repeat retrieve (exist = any(m.list_id where m.list_id=@lid and 
 ##			   m.member_id = @mid and m.member_type = @mtype
 ##			   and m.direct = 1))
-    if (exists)
+    if (exist)
       return(MR_EXISTS);
     if (!strcasecmp(mtype, "STRING")) {
 	buf = malloc(0);
@@ -1977,7 +1976,7 @@ int add_member_to_list(q, argv, cl)
     aref[0] = 1;
     acount = 1;
     while (1) {
-        EXEC SQL FETCH m_cursor INTO :id, :ref;
+        EXEC SQL FETCH m_cursor_a INTO :id, :ref;
         if (sqlca.sqlcode != 0) break;
 	aref[acount] = ref;
 	ancestors[acount++] = id;
@@ -1989,7 +1988,7 @@ int add_member_to_list(q, argv, cl)
     if (acount >= MAXLISTDEPTH) {
 	return(MR_INTERNAL);
     }
-    EXEC SQL CLOSE m_cursor;
+    EXEC SQL CLOSE m_cursor_a;
     descendants[0] = mid;
     dtypes[0] = mtype;
     dref[0] = 1;
@@ -1998,13 +1997,13 @@ int add_member_to_list(q, argv, cl)
 
 
     if (!strcmp(mtype, "LIST")) {
-        EXEC SQL DECLARE m_cursor CURSOR FOR
+        EXEC SQL DECLARE m_cursor_l CURSOR FOR
              SELECT M.member_id, M.memeber_type, M.ref_count
              FROM IMEMBERS M
              WHERE M.list_id = :mid;
-        EXEC SQL OPEN m_cursor;
+        EXEC SQL OPEN m_cursor_l;
         while (1) {
-            EXEC SQL FETCH m_cursor INTO :id, :dtype, :ref;
+            EXEC SQL FETCH m_cursor_l INTO :id, :dtype, :ref;
             if (sqlca.sqlcode != 0) break;
 	    switch (dtype[0]) {
 	    case 'L':
@@ -2028,7 +2027,7 @@ int add_member_to_list(q, argv, cl)
 		error++;
 	    }
   	}
-        EXEC SQL CLOSE m_cursor;
+        EXEC SQL CLOSE m_cursor_l;
 	if (ingres_errno) return(mr_errcode);
 	if (error)
 	  return(MR_INTERNAL);
@@ -2041,11 +2040,11 @@ int add_member_to_list(q, argv, cl)
 	    if (mid == lid && !strcmp(mtype, "LIST")) {
 		return(MR_LISTLOOP);
 	    }
-##	    repeat retrieve (exists = any(m.ref_count where m.list_id = @lid
+##	    repeat retrieve (exist = any(m.ref_count where m.list_id = @lid
 ##					 and m.member_id = @mid
 ##					 and m.member_type = @mtype))
 	    ref = aref[a] * dref[d];
-	    if (exists) {
+	    if (exist) {
 		if (a == 0 && d == 0)
 ##		  replace m (ref_count = m.ref_count+ref, direct = 1)
 ##			     where m.list_id = lid and m.member_id = mid and
@@ -2088,7 +2087,7 @@ int delete_member_from_list(q, argv, cl)
     client *cl;
 {
     EXEC SQL BEGIN DECLARE SECTION;
-    int id, lid, mid, cnt, exists, error, who, ref;
+    int id, lid, mid, cnt, exist, error, who, ref;
     char *mtype, dtype[9], *entity;
     EXEC SQL END DECLARE SECTION;
     int ancestors[MAXLISTDEPTH], aref[MAXLISTDEPTH], acount, a;
@@ -2101,30 +2100,30 @@ int delete_member_from_list(q, argv, cl)
     mtype = argv[1];
     mid = *(int *)argv[2];
     /* if the member is not a direct member of the list, punt */
-##  repeat retrieve (exists = any(m.list_id where m.list_id=@lid and 
+##  repeat retrieve (exist = any(m.list_id where m.list_id=@lid and 
 ##			   m.member_id = @mid and m.member_type = @mtype
 ##			   and m.direct = 1))
     if (ingres_errno) return(mr_errcode);
-    if (!exists)
+    if (!exist)
       return(MR_NO_MATCH);
     ancestors[0] = lid;
     aref[0] = 1;
     acount = 1;
 
-    EXEC SQL DECLARE m1_cursor CURSOR FOR
+    EXEC SQL DECLARE m3_cursor CURSOR FOR
          SELECT M.list_id, M.ref_count
          FROM IMEMBERS M
          WHERE M.member_id = :lid AND M.member_type = "LIST";
-    EXEC SQL OPEN m1_cursor;
+    EXEC SQL OPEN m3_cursor;
     while (1) {
-        EXEC SQL FETCH m1_cursor INTO :id, :ref;
+        EXEC SQL FETCH m3_cursor INTO :id, :ref;
         if (sqlca.sqlcode != 0) break;
         aref[acount] = ref;
 	ancestors[acount++] = id;
 	if (acount >= MAXLISTDEPTH)
           break; 
     }
-    EXEC SQL CLOSE m1_cursor;
+    EXEC SQL CLOSE m3_cursor;
     if (ingres_errno) return(mr_errcode);
     if (acount >= MAXLISTDEPTH)
       return(MR_INTERNAL);
@@ -2134,13 +2133,13 @@ int delete_member_from_list(q, argv, cl)
     dcount = 1;
     error = 0;
     if (!strcmp(mtype, "LIST")) {
-        EXEC SQL DECLARE m_cursor CURSOR FOR
+        EXEC SQL DECLARE m4_cursor CURSOR FOR
              SELECT M.member_id, M.memeber_type, M.ref_count
              FROM IMEMBERS M
              WHERE M.list_id = :mid;
-        EXEC SQL OPEN m_cursor;
+        EXEC SQL OPEN m4_cursor;
         while (1) {
-            EXEC SQL FETCH m_cursor INTO :id, :dtype, :ref;
+            EXEC SQL FETCH m4_cursor INTO :id, :dtype, :ref;
             if (sqlca.sqlcode != 0) break;
 	    switch (dtype[0]) {
 	    case 'L':
@@ -2163,16 +2162,16 @@ int delete_member_from_list(q, argv, cl)
 	    if (dcount >= MAXLISTDEPTH)
                break;
         }
-        EXEC SQL CLOSE m_cursor;
+        EXEC SQL CLOSE m4_cursor;
 	if (ingres_errno) return(mr_errcode);
 	if (error)
 	  return(MR_INTERNAL);
     }
-    EXEC SQL DECLARE m1_cursor CURSOR FOR
+    EXEC SQL DECLARE m5_cursor CURSOR FOR
      SELECT M.ref_count
      FROM IMEMBERS M
      WHERE M.list_id = :lid AND M.member_id = :mid AND M.member_type = :mtype;
-    EXEC SQL OPEN m1_cursor;
+    EXEC SQL OPEN m5_cursor;
     for (a = 0; a < acount; a++) {
 	lid = ancestors[a];
 	for (d = 0; d < dcount; d++) {
@@ -2181,7 +2180,7 @@ int delete_member_from_list(q, argv, cl)
 	    if (mid == lid && !strcmp(mtype, "LIST")) {
 		return(MR_LISTLOOP);
 	    }
-            EXEC SQL FETCH m1_cursor INTO :cnt;
+            EXEC SQL FETCH m5_cursor INTO :cnt;
             if (sqlca.sqlcode != 0) break;
 	    ref = aref[a] * dref[d];
 	    if (cnt <= ref) {
@@ -2207,7 +2206,7 @@ int delete_member_from_list(q, argv, cl)
 	    }
 	}
     }
-    EXEC SQL CLOSE m1_cursor;
+    EXEC SQL CLOSE m5_cursor;
     lid = *(int *)argv[0];
     entity = cl->entity;
     who = cl->client_id;
@@ -2252,13 +2251,13 @@ int get_ace_use(q, argv, cl, action, actarg)
     if (!strcmp(atype, "RLIST")) {
 	sq_save_data(sq, aid);
 	/* get all the list_id's of containing lists */
-        EXEC SQL DECLARE m1_cursor CURSOR FOR
+        EXEC SQL DECLARE m6_cursor CURSOR FOR
          SELECT M.list_id
          FROM IMEMBERS M
          WHERE M.member_type = "LIST" AND M.member_id = :id;
-        EXEC SQL OPEN m1_cursor;
+        EXEC SQL OPEN m6_cursor;
         while (1) {
-            EXEC SQL FETCH m1_cursor INTO :listid;
+            EXEC SQL FETCH m6_cursor INTO :listid;
             if (sqlca.sqlcode != 0) break;
 	    sq_save_unique_data(sq, listid);
 	}
@@ -2267,17 +2266,17 @@ int get_ace_use(q, argv, cl, action, actarg)
 	    if (get_ace_internal("LIST", id, action, actarg) == MR_SUCCESS)
 	      found++;
 	}
-    EXEC SQL CLOSE m1_cursor;
+    EXEC SQL CLOSE m6_cursor;
     }
 
     if (!strcmp(atype, "RUSER")) {
-        EXEC SQL DECLARE m2_cursor CURSOR FOR
+        EXEC SQL DECLARE m7_cursor CURSOR FOR
          SELECT M.list_id
          FROM IMEMBERS M
          WHERE M.member_type = "USER" AND M.member_id = :aid;
-        EXEC SQL OPEN m2_cursor;
+        EXEC SQL OPEN m7_cursor;
         while (1) {
-            EXEC SQL FETCH m2_cursor INTO :listid;
+            EXEC SQL FETCH m7_cursor INTO :listid;
             if (sqlca.sqlcode != 0) break;
 	    sq_save_data(sq, listid);
 	}
@@ -2288,17 +2287,17 @@ int get_ace_use(q, argv, cl, action, actarg)
 	}
 	if (get_ace_internal("USER", aid, action, actarg) == MR_SUCCESS)
 	  found++;
-    EXEC SQL CLOSE m2_cursor;
+    EXEC SQL CLOSE m7_cursor;
     }
 
     if (!strcmp(atype, "RKERBERO")) {
-        EXEC SQL DECLARE m3_cursor CURSOR FOR
+        EXEC SQL DECLARE m8_cursor CURSOR FOR
          SELECT M.list_id
          FROM IMEMBERS M
          WHERE M.member_type = "KERBEROS" AND M.member_id = :aid;
-        EXEC SQL OPEN m3_cursor;
+        EXEC SQL OPEN m8_cursor;
         while (1) {
-            EXEC SQL FETCH m3_cursor INTO :listid;
+            EXEC SQL FETCH m8_cursor INTO :listid;
             if (sqlca.sqlcode != 0) break;
 	    sq_save_data(sq, listid);
 	}
@@ -2309,7 +2308,7 @@ int get_ace_use(q, argv, cl, action, actarg)
 	}
 	if (get_ace_internal("KERBEROS", aid, action, actarg) == MR_SUCCESS)
 	  found++;
-    EXEC SQL CLOSE m3_cursor;
+    EXEC SQL CLOSE m8_cursor;
     }
 
     sq_destroy(sq);	
@@ -2379,19 +2378,19 @@ int get_ace_use(q, argv, cl, action, actarg)
     EXEC SQL CLOSE C1_cursor;
 
     rargv[0] = "LIST";
-    EXEC SQL DECLARE l_cursor CURSOR FOR
+    EXEC SQL DECLARE l8_cursor CURSOR FOR
          SELECT L.name
          FROM LIST L
          WHERE L.acl_type = :atype AND L.acl_id = :aid;
-    EXEC SQL OPEN l_cursor;
+    EXEC SQL OPEN l8_cursor;
 
     while (1) {
-         EXEC SQL FETCH l_cursor INTO :name;
+         EXEC SQL FETCH l8_cursor INTO :name;
          if (sqlca.sqlcode != 0) break;
 	 (*action)(2, rargv, actarg);
 	 found++;
     }
-    EXEC SQL CLOSE l_cursor;
+    EXEC SQL CLOSE l8_cursor;
 
     rargv[0] = "SERVICE";
     EXEC SQL DECLARE s_cursor CURSOR FOR
@@ -2466,7 +2465,7 @@ int get_lists_of_member(q, argv, cl, action, actarg)
     EXEC SQL BEGIN DECLARE SECTION;
     char *atype;
     int aid, listid, id;
-    char name[33], active[5], public[5], hidden[5], maillist[5], group[5];
+    char name[33], active[5], public[5], hidden[5], maillist[5], grp[5];
     EXEC SQL END DECLARE SECTION;
 
     atype = argv[0];
@@ -2493,12 +2492,12 @@ int get_lists_of_member(q, argv, cl, action, actarg)
     rargv[2] = public;
     rargv[3] = hidden;
     rargv[4] = maillist;
-    rargv[5] = group;
+    rargv[5] = grp;
 ##  range of m is imembers
     if (direct) {
 ##    repeat retrieve (name = list.#name, active = text(list.#active), 
 ##		     public = text(list.#public), hidden = text(list.#hidden),
-##		     maillist = text(list.#maillist), group = text(list.#group))
+##		     maillist = text(list.#maillist), grp = text(list.#group))
 ##		where list.list_id = m.list_id and m.direct = 1 and
 ##		      m.member_type = @atype and m.member_id = @aid {
 	 (*action)(6, rargv, actarg);
@@ -2507,7 +2506,7 @@ int get_lists_of_member(q, argv, cl, action, actarg)
     } else {
 ##    repeat retrieve (name = list.#name, active = text(list.#active), 
 ##		     public = text(list.#public), hidden = text(list.#hidden),
-##		     maillist = text(list.#maillist), group = text(list.#group))
+##		     maillist = text(list.#maillist), grp = text(list.#group))
 ##		where list.list_id = m.list_id and
 ##		      m.member_type = @atype and m.member_id = @aid {
 	 (*action)(6, rargv, actarg);
@@ -2569,19 +2568,19 @@ get_members_of_list(q, argv, cl, action, actarg)
     members = 0;
     sq = sq_create();
 
-    EXEC SQL DECLARE m_cursor CURSOR FOR
-         SELECT M.member_type M.member_id
+    EXEC SQL DECLARE m9_cursor CURSOR FOR
+         SELECT M.member_type, M.member_id
          FROM IMEMBERS M
          WHERE M.list_id = :list_id AND M.direct = 1;
-    EXEC SQL OPEN m_cursor;
+    EXEC SQL OPEN m9_cursor;
     while (1) {
-      EXEC SQL FETCH m_cursor INTO :member_type, :member_id;
+      EXEC SQL FETCH m9_cursor INTO :member_type, :member_id;
       if (sqlca.sqlcode != 0) break;
       if (members++ > 49)
          break;
       sq_save_data(sq, (member_type[0] << 24) | (member_id & 0xffffff));
     }
-    EXEC SQL CLOSE m_cursor;
+    EXEC SQL CLOSE m9_cursor;
     if (members <= 49) {
 	targv[1] = malloc(0);
 	while (sq_remove_data(sq, &member_id)) {
@@ -2751,17 +2750,17 @@ int qualified_get(q, argv, action, actarg, start, range, field, flags)
     rvar = range;
     rtbl = q->rtable;
     rfield = field;
-    EXEC SQL DECLARE r_cursor CURSOR FOR
+    EXEC SQL DECLARE r9_cursor CURSOR FOR
          SELECT R.rfield
          FROM RTBL R
          WHERE qual;
-    EXEC SQL OPEN r_cursor;
+    EXEC SQL OPEN r9_cursor;
     while (1) {
-      EXEC SQL FETCH r_cursor INTO :name;
+      EXEC SQL FETCH r9_cursor INTO :name;
       if (sqlca.sqlcode != 0) break;
 	(*action)(1, rargv, actarg);
     }
-    EXEC SQL CLOSE r_cursor;
+    EXEC SQL CLOSE r9_cursor;
     if (ingres_errno) return(mr_errcode);
     if (sqlca.sqlcode == 100) return(MR_NO_MATCH);
     return(MR_SUCCESS);
@@ -2804,17 +2803,17 @@ int qualified_get_serverhost(q, argv, cl, action, actarg)
       
     rargv[0] = sname;
     rargv[1] = mname;
-    EXEC SQL DECLARE s_cursor CURSOR FOR
+    EXEC SQL DECLARE s9_cursor CURSOR FOR
          SELECT S.service, M.name
          FROM SERVERHOSTS S, MACHINE M
          WHERE qual;
-    EXEC SQL OPEN s_cursor;
+    EXEC SQL OPEN s9_cursor;
     while (1) {
       EXEC SQL FETCH s_cursor INTO :sname, :mname;
       if (sqlca.sqlcode != 0) break;
 	(*action)(2, rargv, actarg);
     }
-    EXEC SQL CLOSE s_cursor;
+    EXEC SQL CLOSE s9_cursor;
     if (ingres_errno) return(mr_errcode);
     if (sqlca.sqlcode == 100) return(MR_NO_MATCH);
     return(MR_SUCCESS);
@@ -2912,7 +2911,7 @@ register_user(q, argv, cl)
 
     EXEC SQL DECLARE v_cursor CURSOR FOR
          SELECT V.value
-         FROM VALUES V
+         FROM values_tbl V
          WHERE V.name = "list_id";
     EXEC SQL OPEN v_cursor;
     while (1) {
@@ -2927,10 +2926,10 @@ register_user(q, argv, cl)
     incremental_clear_before();
 ##  repeat append list (name = @login, #list_id = @list_id, active = 1,
 ##			public = 0, hidden = 0, maillist = 0, group = 1,
-##			#gid = values.value, desc = "User Group",
+##			#gid = values_tbl.value, desc = "User Group",
 ##			acl_type = "USER", acl_id = @users_id, modtime = "now",
 ##			modby = @who, modwith = @entity)
-##	where values.name = "gid"
+##	where values_tbl.name = "gid"
     if (ingres_errno) return(mr_errcode);
     if (sqlca.sqlcode < 0 || sqlca.sqlerrd[2] != 1)
       return(MR_INTERNAL);
@@ -2971,7 +2970,7 @@ register_user(q, argv, cl)
     if (set_next_object_id("filsys_id", "filesys"))
       return(MR_NO_ID);
     incremental_clear_before();	
-##  repeat append filesys (filsys_id = values.value, phys_id = @pid,
+##  repeat append filesys (filsys_id = values_tbl.value, phys_id = @pid,
 ##			   label = @login, type = "NFS", mach_id = @m_id,
 ##			   name = @directory + "/" + @login,
 ##			   mount = "/mit/" + @login,
@@ -2979,40 +2978,40 @@ register_user(q, argv, cl)
 ##			   owner = @users_id, owners = @list_id, createflg = 1,
 ##			   lockertype = "HOMEDIR", modtime = "now",
 ##			   modby = @who, modwith = @entity)
-##	where values.name = "filsys_id"
+##	where values_tbl.name = "filsys_id"
     if (ingres_errno) return(mr_errcode);
     if (sqlca.sqlcode < 0 || sqlca.sqlerrd[2] != 1)
       return(MR_INTERNAL);
     incremental_after("filesys", 
-	  "fs.filsys_id = values.value and values.name = \"filsys_id\"",
+	  "fs.filsys_id = values_tbl.value and values_tbl.name = \"filsys_id\"",
 		      0);
     com_err(whoami, 0, "filesys created on mach %d in %s/%s", m_id,
 	    directory, login);
 
     /* set quota */
-##  repeat retrieve (quota = values.value) where values.name = "def_quota"
+##  repeat retrieve (quota = values_tbl.value) where values_tbl.name = "def_quota"
     if (ingres_errno) return(mr_errcode);
     if (sqlca.sqlcode < 0 || sqlca.sqlerrd[2] != 1)
       return(MR_NO_QUOTA);
     incremental_clear_before();
-##  repeat append #quota (entity_id = @users_id, filsys_id = values.value,
+##  repeat append #quota (entity_id = @users_id, filsys_id = values_tbl.value,
 ##			  type = "USER",
 ##			  #quota = @quota, phys_id = @pid, modtime = "now",
 ##			  modby = @who, modwith = @entity)
-##	where values.name = "filsys_id"
+##	where values_tbl.name = "filsys_id"
     if (ingres_errno) return(mr_errcode);
     if (sqlca.sqlcode < 0 || sqlca.sqlerrd[2] != 1)
       return(MR_INTERNAL);
 ##  repeat replace nfsphys (allocated = nfsphys.allocated + @quota)
 ##	where nfsphys.nfsphys_id = filesys.#phys_id and
-##	      filesys.filsys_id = values.value and values.name = "filsys_id"
+##	      filesys.filsys_id = values_tbl.value and values_tbl.name = "filsys_id"
     if (ingres_errno) return(mr_errcode);
     if (sqlca.sqlcode < 0 || sqlca.sqlerrd[2] != 1)
       return(MR_INTERNAL);
     aargv[0] = login;
     aargv[1] = "USER";
     aargv[2] = login;
-    sprintf(buffer, "q.entity_id = %d and q.filsys_id = values.value and q.type = \"USER\" and values.name = \"filsys_id\"", users_id);
+    sprintf(buffer, "q.entity_id = %d and q.filsys_id = values_tbl.value and q.type = \"USER\" and values_tbl.name = \"filsys_id\"", users_id);
     incremental_after("quota", buffer, aargv);
     com_err(whoami, 0, "quota of %d assigned", quota);
     if (ingres_errno) return(mr_errcode);
@@ -3020,12 +3019,13 @@ register_user(q, argv, cl)
     cache_entry(login, "USER", users_id);
 
     EXEC SQL UPDATE tblstats
-         SET updates = update + 1, modtime = "now"
-         WHERE table = "users";
+         SET updates = tblstats.update + 1, modtime = "now"
+         WHERE table_name = "users";
 
     EXEC SQL UPDATE tblstats
-         SET appends = appends + 1, modtime = "now"
-         WHERE table = "list" OR table = "filesys" OR table = "quota";
+         SET appends = tblstats.appends + 1, modtime = "now"
+         WHERE table_name = "list" OR table_name = "filesys" 
+               OR table_name = "quota";
 
     if (ingres_errno) return(mr_errcode);
     return(MR_SUCCESS);
@@ -3072,7 +3072,7 @@ validate_row(q, argv, v)
 {
     EXEC SQL BEGIN DECLARE SECTION;
     char *rvar;
-    char *table;
+    char *tbl;
     char *name;
     char qual[128];
     int rowcount;
@@ -3083,7 +3083,7 @@ validate_row(q, argv, v)
 
     /* setup ingres variables */
     rvar = q->rvar;
-    table = q->rtable;
+    tbl = q->rtable;
     name = v->field;
 
     if (log_flags & LOG_VALID)
@@ -3091,7 +3091,7 @@ validate_row(q, argv, v)
 	com_err(whoami, 0, "validating row: %s", qual);
     
     /* look for the record */
-##  range of rvar is table
+##  range of rvar is tbl
 ##  retrieve (rowcount = count(rvar.name where qual))
     if (ingres_errno) return(mr_errcode);
     if (rowcount == 0) return(MR_NO_MATCH);
@@ -3213,7 +3213,7 @@ validate_id(argv, vo)
 {
     EXEC SQL BEGIN DECLARE SECTION;
     char *name;
-    char *table;
+    char *tbl;
     char *namefield;
     char *idfield;
     int id, rowcount;
@@ -3223,19 +3223,19 @@ validate_id(argv, vo)
 
 
     name = argv[vo->index];
-    table = vo->table;
+    tbl = vo->table;
     namefield = vo->namefield;
     idfield = vo->idfield;
 
-    if ((!strcmp(table, "users") && !strcmp(namefield, "login")) ||
-	!strcmp(table, "machine") ||
-	!strcmp(table, "filesys") ||
-	!strcmp(table, "list") ||
-	!strcmp(table, "cluster") ||
-	!strcmp(table, "string")) {
-	if (!strcmp(table, "machine"))
+    if ((!strcmp(tbl, "users") && !strcmp(namefield, "login")) ||
+	!strcmp(tbl, "machine") ||
+	!strcmp(tbl, "filesys") ||
+	!strcmp(tbl, "list") ||
+	!strcmp(tbl, "cluster") ||
+	!strcmp(tbl, "string")) {
+	if (!strcmp(tbl, "machine"))
 	  for (c = name; *c; c++) if (islower(*c)) *c = toupper(*c);
-	status = name_to_id(name, table, &id);
+	status = name_to_id(name, tbl, &id);
 	if (status == 0) {
 	    *(int *)argv[vo->index] = id;
 	    return(MR_EXISTS);
@@ -3246,7 +3246,7 @@ validate_id(argv, vo)
     }
 
     if (!strcmp(namefield, "uid")) {
-##    retrieve (id = table.idfield) where table.namefield = int4(name)
+##    retrieve (id = tbl.idfield) where tbl.namefield = int4(name)
       if (ingres_errno) return(mr_errcode);
     } else {
 ##    retrieve (id = table.idfield) where table.namefield = name
@@ -3264,22 +3264,22 @@ validate_name(argv, vo)
 {
     EXEC SQL BEGIN DECLARE SECTION;
     char *name;
-    char *table;
+    char *tbl;
     char *namefield;
     int rowcount;
     EXEC SQL END DECLARE SECTION;
     register char *c;
 
     name = argv[vo->index];
-    table = vo->table;
+    tbl = vo->table;
     namefield = vo->namefield;
-    if (!strcmp(table, "servers") && !strcmp(namefield, "name")) {
+    if (!strcmp(tbl, "servers") && !strcmp(namefield, "name")) {
 	for (c = name; *c; c++)
 	  if (islower(*c))
 	    *c = toupper(*c);
     }
-##  retrieve (rowcount = countu(table.namefield 
-##            where table.namefield = name))
+##  retrieve (rowcount = countu(tbl.namefield 
+##            where tbl.namefield = name))
     if (ingres_errno) return(mr_errcode);
     return ((rowcount == 1) ? MR_EXISTS : vo->error);
 }
@@ -3307,7 +3307,7 @@ char *argv[];
 struct valobj *vo;
 {
     EXEC SQL BEGIN DECLARE SECTION;
-    char *name, *table, *namefield, *idfield;
+    char *name, *tbl, *namefield, *idfield;
     int id;
     EXEC SQL END DECLARE SECTION;
     int status;
@@ -3317,9 +3317,9 @@ struct valobj *vo;
     while (*c)
       if (illegalchars[*c++])
 	return(MR_BAD_CHAR);
-    table = vo->table;
+    tbl = vo->table;
     /* minor kludge to upcasify machine names */
-    if (!strcmp(table, "machine"))
+    if (!strcmp(tbl, "machine"))
 	for (c = name; *c; c++) if (islower(*c)) *c = toupper(*c);
     namefield = vo->namefield;
     idfield = vo->idfield;
@@ -3327,14 +3327,14 @@ struct valobj *vo;
     if (idfield == 0) {
 	if (!strcmp(argv[vo->index], argv[vo->index - 1]))
 	  return(MR_EXISTS);
-##	retrieve (id = any(table.namefield where table.namefield = name))
+##	retrieve (id = any(tbl.namefield where tbl.namefield = name))
 	if (ingres_errno) return(mr_errcode);
 	if (id)
 	  return(vo->error);
 	else
 	  return(MR_EXISTS);
     }
-    status = name_to_id(name, table, &id);
+    status = name_to_id(name, tbl, &id);
     if (status == MR_NO_MATCH || id == *(int *)argv[vo->index - 1])
       return(MR_EXISTS);
     else
@@ -3349,7 +3349,7 @@ validate_type(argv, vo)
     EXEC SQL BEGIN DECLARE SECTION;
     char *typename;
     char *value;
-    int exists;
+    int exist;
     EXEC SQL END DECLARE SECTION;
     register char *c;
 
@@ -3362,10 +3362,10 @@ validate_type(argv, vo)
     /* uppercase type fields */
     for (c = value; *c; c++) if (islower(*c)) *c = toupper(*c);
 
-##  repeat retrieve (exists = any(alias.trans where alias.name = @typename and
+##  repeat retrieve (exist = any(alias.trans where alias.name = @typename and
 ##				  alias.type = "TYPE" and alias.trans = @value))
     if (ingres_errno) return(mr_errcode);
-    return (exists ? MR_EXISTS : vo->error);
+    return (exist ? MR_EXISTS : vo->error);
 }
 
 /* validate member or type-specific data field */
@@ -3416,12 +3416,12 @@ validate_typedata(q, argv, vo)
 	if (status == MR_NO_MATCH) {
 	    /* if idfield is non-zero, then if argv[0] matches the string
 	     * that we're trying to resolve, we should get the value of
-	     * values.[idfield] for the id.
+	     * values_tbl.[idfield] for the id.
 	     */
 	    if (vo->idfield && !strcmp(argv[0], argv[vo->index])) {
 		set_next_object_id(q->validate->object_id, q->rtable);
 		name = vo->idfield;
-##		repeat retrieve (id = values.value) where values.#name = @name
+##		repeat retrieve (id = values_tbl.value) where values_tbl.#name = @name
                 if (sqlca.sqlcode < 0 || sqlca.sqlerrd[2] != 1)
                   return(MR_LIST);
 	    } else
@@ -3441,9 +3441,9 @@ validate_typedata(q, argv, vo)
 	  return(MR_STRING);
 	if (status == MR_NO_MATCH) {
 	    if (q->type != APPEND && q->type != UPDATE) return(MR_STRING);
-##          retrieve (id = values.value) where values.#name = "strings_id"
+##          retrieve (id = values_tbl.value) where values_tbl.#name = "strings_id"
 	    id++;
-##          replace values (value = id) where values.#name = "strings_id"
+##          replace values_tbl.(value = id) where values_tbl.#name = "strings_id"
 ##	    append to strings (string_id = id, string = name)
 	} else if (status) return(status);
     } else if (!strcmp(data_type, "none")) {
@@ -3465,13 +3465,13 @@ lock_table(vo)
 struct valobj *vo;
 {
     EXEC SQL BEGIN DECLARE SECTION;
-    char *table, *idfield;
+    char *tbl, *idfield;
     int rowcount;
     EXEC SQL END DECLARE SECTION;
 
-    table = vo->table;
+    tbl = vo->table;
     idfield = vo->idfield;
-##  replace table (modtime = "now") where table.idfield = 0
+##  replace tbl (modtime = "now") where tbl.idfield = 0
     if (ingres_errno) return(mr_errcode);
     if (sqlca.sqlcode < 0 || sqlca.sqlerrd[2] != 1)
       return(vo->error);

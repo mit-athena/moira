@@ -1,13 +1,13 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/send_file.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/send_file.c,v 1.6 1992-09-22 13:43:21 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/send_file.c,v 1.7 1994-04-29 19:50:15 jweiss Exp $
  */
 /*  (c) Copyright 1988 by the Massachusetts Institute of Technology. */
 /*  For copying and distribution information, please see the file */
 /*  <mit-copyright.h>. */
 
 #ifndef lint
-static char *rcsid_send_file_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/send_file.c,v 1.6 1992-09-22 13:43:21 mar Exp $";
+static char *rcsid_send_file_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/send_file.c,v 1.7 1994-04-29 19:50:15 jweiss Exp $";
 #endif	lint
 
 #include <mit-copyright.h>
@@ -21,7 +21,9 @@ static char *rcsid_send_file_c = "$Header: /afs/.athena.mit.edu/astaff/project/m
 #include <des.h>
 #include <krb.h>
 #include <update.h>
-
+#ifdef POSIX
+#include <sys/fcntl.h>
+#endif
 
 extern CONNECTION conn;
 extern int errno;
@@ -113,7 +115,11 @@ int  encrypt;
 	       session[4], session[5], session[6], session[7]);
 #endif /* DEBUG */
 	des_key_sched(session, sched);
+#ifdef POSIX
+	memmove(ivec, session, sizeof(ivec));
+#else
 	bcopy(session, ivec, sizeof(ivec));
+#endif
     }
 
     while (n_to_send > 0) {
@@ -129,8 +135,12 @@ int  encrypt;
 	MAX_STRING_SIZE(data) = n;
 	if (encrypt) {
 	    src = (unsigned char *)STRING_DATA(data);
+#ifdef POSIX
+	    memmove(dst, src, n);
+#else
 	    bcopy(src, dst, n);
-	    bzero(dst + n, 7);
+#endif
+	    memset(dst + n, 0, 7);
 	    /* encrypt! */
 	    des_pcbc_encrypt(dst, src, n, sched, ivec, 0);
 	    /* save vector to continue chaining */

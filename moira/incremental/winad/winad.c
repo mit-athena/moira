@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/winad/winad.c,v 1.42 2004-07-27 16:11:18 zacheiss Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/winad/winad.c,v 1.43 2004-08-04 18:02:30 zacheiss Exp $
 /* winad.incr arguments examples
  *
  * arguments when moira creates the account - ignored by winad.incr since the account is unusable.
@@ -3011,6 +3011,7 @@ int user_update(LDAP *ldap_handle, char *dn_path, char *user_name,
   rc = attribute_update(ldap_handle, distinguished_name, MoiraId, "mitMoiraId", user_name);
 
   n = 0;
+  uid_v[0] = Uid;
   if (!UseSFU30)
     {
       ADD_ATTR("uidNumber", uid_v, LDAP_MOD_REPLACE);
@@ -5286,7 +5287,7 @@ int Moira_container_group_update(char **before, char **after)
       argv[L_NAME + 1] = AfterGroupName;
       argv[L_ACTIVE + 1] = "1";
       argv[L_PUBLIC + 1] = "0";
-      argv[L_HIDDEN + 1] = "1";
+      argv[L_HIDDEN + 1] = "0";
       argv[L_MAILLIST + 1] = "0";
       argv[L_GROUP + 1] = "1";
       argv[L_GID + 1] = UNIQUE_GID;

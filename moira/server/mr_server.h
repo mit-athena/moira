@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_server.h,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_server.h,v 1.15 1989-08-28 17:28:27 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_server.h,v 1.16 1989-08-31 10:37:29 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
@@ -35,8 +35,6 @@ struct krbname {
  * allocated for each active client.
  */
 
-#define NLISTS 100
-   
 typedef struct _client {
 	OPERATION pending_op;	/* Primary pending operation */
 	CONNECTION con;		/* Connection to the client */
@@ -51,7 +49,6 @@ typedef struct _client {
 	returned_tuples *first, *last;
 	time_t last_time_used;  /* Last time connection used */
 	char entity[9];		/* entity on other end of the connection */
-	int lists[NLISTS];	/* lists this person is a member of */
 } client;
 
 /*

@@ -1,4 +1,4 @@
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/afs_utils.pl,v 1.13 1994-10-18 13:45:04 probe Exp $
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/afs_utils.pl,v 1.14 1994-11-02 11:28:10 probe Exp $
 
 $afsbin="/moira/bin";
 $vos="$afsbin/vos";
@@ -68,8 +68,8 @@ sub afs_unlock
 #    max[ (2*free space) - (unused quota) ]
 #    = max(2*total - usage - alloc)
 #
-# Note: This routine does not actually adjust the quota; the caller
-# should use afs_quota_adj();
+# Note: This routine does not actually adjust the quota;
+# the calling routine should use afs_quota_adj();
 
 sub afs_find
 {
@@ -101,7 +101,7 @@ sub afs_find
 #
 sub afs_quota_adj
 {
-    local($cell,$asrv,$apart,$adj) = @_;
+    local($cell,$asrv,$apart,$adj,$dusage) = @_;
     local($found) = 0;
 
     &afs_lock;
@@ -110,8 +110,9 @@ sub afs_quota_adj
     for (@afs_data) {
 	local ($c, $as, $ap, $t, $total, $used, $alloc) = split(/\s+/,$_);
 	if ($c eq $cell && $as eq $asrv && $ap eq $apart) {
+	    $dusage = $used unless ($dusage);
 	    $alloc += $adj;
-	    $_ = join(' ',$c,$asrv,$apart,$t,$total,$used,$alloc);
+	    $_ = join(' ',$c,$asrv,$apart,$t,$total,$dusage,$alloc);
 	    $found = 1;
 	}
 	print SRV "$_\n";

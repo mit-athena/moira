@@ -71,7 +71,8 @@ if ($tmp[$#tmp] !~ /user\../) {
 	&fatal("Can't release $tmp[$#tmp] in cell $cell");
 }
 
-&afs_quota_adj($cell,$asrv,$apart,$quota);
+# Update the quota records.
+&afs_quota_adj($cell,$asrv,$apart,$quota,0);
 exit(0);
 
 sub fatal

@@ -52,7 +52,7 @@ $dusage = $dtotal - $tmp[5];
 system("$fs","sq",$path,$newq);
 die "Unable to change quota on $path\n" if ($?);
 
-&afs_quota_adj($cell,$asrv,$apart,$newq-$oldq);
+&afs_quota_adj($cell,$asrv,$apart,$newq-$oldq,$dusage);
 
 if ($dusage > (0.9 * $dtotal)) {
     system("$zwrite","-q","-n","-c","afsadm","-m",
@@ -70,8 +70,3 @@ elsif ($newq-$oldq > 39999) {
     system("$zwrite","-q","-n","-c","afsadm","-m",
 	   "Increased quota on volume $vname ($asrv:$apart) from $oldq to $newq");
 }
-
-#$stat_fs = $?;
-#$stat_qa = &afs_quota_adj($cell,$asrv,$apart,($stat_fs ? 0 : $newq-$oldq));
-#die "Unable to change quota on $path\n" if ($stat_fs && $stat_qa);
-#warn "Unable to change quota on $path\n" if ($stat_fs);

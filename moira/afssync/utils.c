@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/afssync/utils.c,v 1.1 1989-09-23 18:44:04 mar Exp $ */
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/afssync/utils.c,v 1.2 1989-09-23 18:44:59 mar Exp $ */
 /* $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/afssync/utils.c,v $ */
 
 
@@ -28,7 +28,6 @@
 #include <rx/xdr.h>
 #include <rx/rx.h>
 #include <rx/rx_vab.h>
-#include <rx/rxkad.h>
 #include "print.h"
 #include "prserver.h"
 #include "prerror.h"
@@ -697,47 +696,7 @@ struct rx_call *acall;
 struct ubik_trans *at;
 long *aid;
 {
-    /* aid is set to the identity of the caller, if known, ANONYMOUSID otherwise */
-    /* returns -1 and sets aid to ANONYMOUSID on any failure */
-    register struct rx_connection *tconn;
-    struct rxvab_conn *tc;
-    register long code;
-    char tcell[64];
-    long exp;
-    char vname[256];
-
-    tconn = rx_ConnectionOf(acall);
-    code = rx_SecurityClassOf(tconn);
-    if (code == 0) 
-	*aid = ANONYMOUSID;
-    else if (code == 1) {
-	/* vab class */
-	tc = (struct rxvab_conn *) tconn->securityData;
-	if (!tc) {
-	    *aid = ANONYMOUSID; /* set it to something harmless */
-	    return -1;
-	}
-	*aid = ntohl(tc->viceID);
-    }
-    else if (code == 2) {
-	/* kad class */
-	code = rxkad_GetServerInfo(acall->conn,(long *) 0, &exp, vname, (char *) 0, tcell, (long *) 0);
-	if (code) {
-	    *aid = ANONYMOUSID;
-	    return -1;
-	}
-	if (exp < FT_ApproxTime()) return -1;
-	code = NameToID(at,vname,aid);
-	if (code) {
-	    *aid = ANONYMOUSID;
-	    return -1;
-	}
-	return 0;
-    }
-    else {
-	*aid = ANONYMOUSID;
-	return -1;
-    }
+    *aid = SYSADMINID;
     return 0;
 }
 

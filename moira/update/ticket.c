@@ -1,4 +1,4 @@
-/* $Id: ticket.c,v 1.20 1998-02-15 17:49:30 danw Exp $
+/* $Id: ticket.c,v 1.21 1998-08-07 14:26:17 danw Exp $
  *
  * Copyright (C) 1988-1998 by the Massachusetts Institute of Technology.
  * For copying and distribution information, please see the file
@@ -16,9 +16,8 @@
 #include <krb.h>
 #include <update.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/ticket.c,v 1.20 1998-02-15 17:49:30 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/ticket.c,v 1.21 1998-08-07 14:26:17 danw Exp $");
 
-static char *srvtab = KEYFILE; /* default == /etc/srvtab */
 static char realm[REALM_SZ];
 static char master[INST_SZ] = "sms";
 static char service[ANAME_SZ] = "rcmd";
@@ -73,7 +72,7 @@ static int get_mr_tgt(void)
   linst[0] = '\0';
   strcpy(kinst, "krbtgt");
   code = krb_get_svc_in_tkt(master, linst, realm, kinst, realm,
-			    DEFAULT_TKT_LIFE, srvtab);
+			    DEFAULT_TKT_LIFE, KEYFILE);
   if (!code)
     return 0;
   else

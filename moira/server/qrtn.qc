@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v 1.26 1989-01-23 12:26:27 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v 1.27 1989-06-14 15:14:07 mar Exp $
  *
  *	Copyright (C) 1987, 1988 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_qrtn_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v 1.26 1989-01-23 12:26:27 mar Exp $";
+static char *rcsid_qrtn_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v 1.27 1989-06-14 15:14:07 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -19,13 +19,16 @@ static char *rcsid_qrtn_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moira
 
 char *Argv[16];
 
-static int ingres_errno = 0;
+int ingres_errno = 0;
+int sms_errcode = 0;
+## int query_timeout = 30;
 extern char *whoami;
 extern FILE *journal;
 
 #define INGRES_BAD_INT 4111
 #define INGRES_BAD_DATE 4302
 #define INGRES_DEADLOCK 4700
+#define INGRES_TIMEOUT 4702
 
 /*
  * ingerr: (supposedly) called when Ingres indicates an error.
@@ -36,21 +39,25 @@ extern FILE *journal;
 static int ingerr(num)
     int *num;
 {
-    char buf[256];
+    ingres_errno = *num;
 
     switch (*num) {
     case INGRES_BAD_INT:
-	ingres_errno = SMS_INTEGER;
+	sms_errcode = SMS_INTEGER;
 	break;
     case INGRES_BAD_DATE:
-	ingres_errno = SMS_DATE;
+	sms_errcode = SMS_DATE;
 	break;
     case INGRES_DEADLOCK:
+	sms_errcode = SMS_DEADLOCK;
 	com_err(whoami, 0, "INGRES deadlock detected");
-	ingres_errno = SMS_DEADLOCK;
+	break;
+    case INGRES_TIMEOUT:
+	sms_errcode = SMS_BUSY;
+	com_err(whoami, 0, "timed out getting lock");
 	break;
     default:
-	ingres_errno = SMS_INGRES_ERR;
+	sms_errcode = SMS_INGRES_ERR;
 	com_err(whoami, SMS_INGRES_ERR, " code %d\n", *num);
 	critical_alert("SMS", "SMS server encountered INGRES ERROR %d", *num);
 	return (*num);
@@ -73,6 +80,7 @@ int sms_open_database()
 	
     /* open the database */
 ##  ingres sms
+##  set lockmode session where level = table, timeout = query_timeout
     return ingres_errno;
 }
 
@@ -89,6 +97,8 @@ sms_check_access(cl, name, argc, argv_ro)
 {
     struct query *q;
     struct query *get_query_by_name();
+
+    ingres_errno = 0;
 
     q = get_query_by_name(name, cl->args->sms_version_no);
     if (q == (struct query *)0)
@@ -118,6 +128,8 @@ sms_process_query(cl, name, argc, argv_ro, action, actarg)
     int sq_save_args();
     struct save_queue *sq_create();
     char *build_sort();
+
+    ingres_errno = 0;
 
     /* list queries command */
     if (!strcmp(name, "_list_queries")) {
@@ -294,7 +306,6 @@ out:
     if (q->type != RETRIEVE) {
         if (status == SMS_SUCCESS) {
 ##          end transaction	/* commit to this */
-##	    set lockmode session where readlock = system
 	    if (journal) {
 		char buf[1024], *bp;
 		int i;
@@ -314,14 +325,26 @@ out:
 		fflush(journal);
 	    }
 	} else {
-	    if (status != SMS_DEADLOCK) {
+	    if (ingres_errno != INGRES_DEADLOCK) {
 ##          	abort		/* it never happened */
 	    }
 	}
+##      set lockmode session where readlock = system
+    }
+
+    if (status == SMS_SUCCESS && ingres_errno != 0) {
+	critical_alert("SMS", "Server didn't notice INGRES ERROR %d",
+		       ingres_errno);
+	status = SMS_INTERNAL;
     }
 
     if (status != SMS_SUCCESS && log_flags & LOG_RES)
 	com_err(whoami, status, " (Query failed)");
+    /* until all the clients know about SMS_BUSY, convert this error
+     * to one they will recognize.
+     */
+    if (status == SMS_BUSY)
+      status = SMS_DEADLOCK;
     return(status);
 }
 

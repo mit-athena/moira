@@ -711,6 +711,14 @@ indicating that permission was denied for the query.
   Integrity: list must exist
   Errors: SMS_EXISTS, SMS_LIST
 
+@B(add_user_group)
+  Args: (login)
+  Returns: none
+  Errors: SMS_USER, SMS_LIST
+  Description: Optimized query for creating a user group (list) and adding
+               the user as a member.  Returns SMS_LIST if a list already
+               exists with the user's name.
+
 @B(delete_group)
   Args: (list)
   Returns: none
@@ -754,12 +762,26 @@ indicating that permission was denied for the query.
   Returns: none
   Errors: SMS_NO_MATCH, SMS_NOT_UNIQUE
 
-@SubHeading(Miscellaneous)
+@SubSection(Values)
+@label(Values)
+@Begin(Text, Below 1.5, Above 1)
+This section contains values that are needed by the server or application
+programs for updating the database.  Some examples are:
+@Begin(Itemize)
+
+next users_id
+
+next list_id
+
+default user disk quota
+
+@End(Itemize)
+@End(Text)
 
 @B(get_value)
   Args: (name)
   Returns: {value}
-  Errors: SMS_NO_MATCH
+  Errors: SMS_NO_MATCH, SMS_NOT_UNIQUE
 
 @B(add_value)
   Args: (name, value)
@@ -769,12 +791,15 @@ indicating that permission was denied for the query.
 @B(update_value)
   Args: (name, value)
   Returns: none
-  Errors: SMS_NO_MATCH
+  Errors: SMS_NO_MATCH, SMS_NOT_UNIQUE
 
 @B(delete_value)
   Args: (name)
   Returns: none
-  Errors: SMS_NO_MATCH
+  Errors: SMS_NO_MATCH, SMS_NOT_UNIQUE
+
+@SubSection(Table Statistics)
+@Lable(Tblstats)
 
 @B(get_all_table_stats)
   Args: none
@@ -786,73 +811,38 @@ indicating that permission was denied for the query.
 
 @End(Verbatim)
 
-@SubSection(Values)
-@label(Values)
-
-@Begin(Text, Below 1.5)
-This section contains values that are needed by the server or application
-programs for updating the database.  Some examples are:
-@Begin(Itemize)
-
-next users_id
-
-default user disk quota
-
-max users per nfs server
-
-max users per post office
-
-@End(Itemize)
-@End(Text)
-
-@Begin(Verbatim)
-@B(get_value)
-  Args: (name)
-  Returns: {value}
-  Errors: SMS_NO_MATCH, SMS_NOT_UNIQUE
-
-@B(add_value)
-  Args: (name, value)
-  Returns: none
-  Errors: SMS_EXISTS
-
-@B(update_value)
-  Args: (name, value)
-  Returns: none
-  Errors: SMS_NO_MATCH, SMS_NOT_UNIQUE
-
-@B(delete_value)
-  Args: (name)
-  Returns: none
-  Errors: SMS_NO_MATCH, SMS_NOT_UNIQUE
-
-@End(Verbatim)
-
 @Section(Errors)
 
 @Begin(Format)
 
-General errors (returned by all queries):
+General errors (may be returned by all queries):
 
-SMS_SUCCESS - query completed successfully
-SMS_PERM - permission denied
+SMS_SUCCESS - Query completed successfully
+SMS_PERM - Insufficient permission to perform requested database access
 
 Query specific errors:
 
-SMS_NO_MATCH - no records match query arguments
-SMS_NOT_UNIQUE - argument not unique as required
-SMS_EXISTS - record already exists
-SMS_DATE - invalid date
-SMS_USER - no such user
-SMS_CLUSTER - no such cluster
-SMS_MACHINE - no such machine
-SMS_SERVICE - no such service
-SMS_FILESYS - no such file system
-SMS_PRINTER - no such printer
-SMS_QUEUE - no such queue
-SMS_DEVICE - no such device
-SMS_LIST - no such list
-SMS_TYPE - unknown member type
+SMS_ACL - No such access control list
+SMS_ARGS - Insufficient number of arguments
+SMS_CLUSTER - Unknown cluster
+SMS_DATE - Invalid date
+SMS_DEVICE - No such device
+SMS_EXISTS - Record already exists
+SMS_FILESYS - Named file system does not exist
+SMS_FILESYS_ACCESS - invalid filesys access
+SMS_FILESYS_EXISTS - Named file system already exists
+SMS_LIST - No such list
+SMS_MACHINE - Unknown machine
+SMS_NFS - specified directory not exported
+SMS_NFSPHYS - Machine/device pair not in nfsphys
+SMS_NOT_UNIQUE - Arguments not unique
+SMS_PRINTER - Unknown printer
+SMS_QUEUE - Unknown queue
+SMS_RVD - no such rvd
+SMS_SERVICE - Unknown service
+SMS_STRING - Unknown string
+SMS_TYPE - Invalid type
+SMS_USER - No such user
 
 @End(Format)
 

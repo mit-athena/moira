@@ -1,5 +1,5 @@
 .TH DCM 8 "30 Nov 1988" "Project Athena"
-\" RCSID: $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/man/dcm.8,v 1.2 1988-11-30 13:52:48 mar Exp $
+\" RCSID: $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/man/dcm.8,v 1.3 1988-11-30 14:45:02 mar Exp $
 .SH NAME
 dcm \- build config files from SMS database and update servers
 .br
@@ -42,6 +42,15 @@ and in a zephyrgram to class
 instance
 .B DCM
 in addition to standard output.
+For the
+.B dcm
+to function properly,
+.I root
+must both be authorized to access each of the tables by RTI Ingres,
+and on the query acls for each of the queries the 
+.B dcm
+will execute.
+.PP
 For the actual generation of config files, the
 .B dcm
 will for off generator programs of the form

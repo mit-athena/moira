@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.20 1993-10-22 16:09:06 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.21 1994-04-15 15:38:00 jweiss Exp $
  *
  * Command line oriented Moira List tool.
  *
@@ -15,6 +15,7 @@
    Do we need to improve the support for queue operations? */
 
 #include <mit-copyright.h>
+#include <errno.h>
 #include <stdio.h>
 #include <ctype.h>
 #include <string.h>
@@ -22,7 +23,7 @@
 #include <moira_site.h>
 
 #ifndef LINT
-static char blanche_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.20 1993-10-22 16:09:06 mar Exp $";
+static char blanche_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.21 1994-04-15 15:38:00 jweiss Exp $";
 #endif
 
 

@@ -1,13 +1,13 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/exec_002.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/exec_002.c,v 1.4 1988-09-14 12:15:58 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/exec_002.c,v 1.5 1989-06-26 14:13:14 mar Exp $
  */
 /*  (c) Copyright 1988 by the Massachusetts Institute of Technology. */
 /*  For copying and distribution information, please see the file */
 /*  <mit-copyright.h>. */
 
 #ifndef lint
-static char *rcsid_exec_002_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/exec_002.c,v 1.4 1988-09-14 12:15:58 mar Exp $";
+static char *rcsid_exec_002_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/exec_002.c,v 1.5 1989-06-26 14:13:14 mar Exp $";
 #endif	lint
 
 #include <mit-copyright.h>
@@ -58,7 +58,7 @@ exec_002(str)
 	} while (n != -1 && n != pid);
 	sigsetmask(mask);
 	if (waitb.w_status) {
-	    n = waitb.w_retcode + sms_err_base;
+	    n = waitb.w_retcode + ERROR_TABLE_BASE_sms;
 	    log_priority = log_ERROR;
 	    com_err(whoami, n, " child exited with status %d", waitb.w_retcode);
 	    code = send_object(conn, (char *)&n, INTEGER_T);

@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/reg_stubs.c,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/reg_stubs.c,v 1.21 1993-10-22 17:15:20 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/reg_stubs.c,v 1.22 1993-10-25 16:39:01 mar Exp $
  *
  *  (c) Copyright 1988 by the Massachusetts Institute of Technology.
  *  For copying and distribution information, please see the file
@@ -9,7 +9,7 @@
  */
 
 #ifndef lint
-static char *rcsid_reg_stubs_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/reg_stubs.c,v 1.21 1993-10-22 17:15:20 mar Exp $";
+static char *rcsid_reg_stubs_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/reg_stubs.c,v 1.22 1993-10-25 16:39:01 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -86,7 +86,7 @@ ureg_init()
     reg_sock = socket(AF_INET, SOCK_DGRAM, 0);
     if (reg_sock < 0) return errno;
 
-    memset((char *)&s_in, 0, sizeof(sin));
+    memset((char *)&s_in, 0, sizeof(s_in));
     s_in.sin_port = sp->s_port;
     memcpy((char *)&s_in.sin_addr, hp->h_addr, sizeof(struct in_addr));
     s_in.sin_family = AF_INET;

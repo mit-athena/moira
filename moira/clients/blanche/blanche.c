@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.8 1989-08-28 23:17:12 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.9 1989-11-14 17:38:42 mar Exp $
  *
  * Command line oriented SMS List tool.
  *
@@ -21,7 +21,7 @@
 #include <sms_app.h>
 
 #ifndef LINT
-static char smslist_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.8 1989-08-28 23:17:12 mar Exp $";
+static char smslist_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.9 1989-11-14 17:38:42 mar Exp $";
 #endif
 
 
@@ -94,7 +94,7 @@ char **argv;
 	      	showkerberos++;
 	    else if (argis("D", "debug"))
 		debugflg++;
-	    else if (argis("i","information"))
+	    else if (argis("i","info"))
 	      infoflg++;
 	    else if (argis("n","noauth"))
 	      noauth++;

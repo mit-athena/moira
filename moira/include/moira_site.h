@@ -1,4 +1,4 @@
-/* $Id: moira_site.h,v 1.34 2000-04-19 23:16:22 zacheiss Exp $
+/* $Id: moira_site.h,v 1.35 2000-04-21 19:48:06 zacheiss Exp $
  *
  * This file contains all definitions that allow easy access to
  * elements returned by most of the @i[Moira] queries.  It also defines
@@ -337,24 +337,25 @@
 #define SN_MODWITH	11
 #define SN_END		12
 
-/* User Information queries */
+/* User Information queries, v3 */
 
 #define U_NAME    0
 #define U_UID     1
 #define U_SHELL   2
-#define U_LAST    3
-#define U_FIRST   4
-#define U_MIDDLE  5
-#define U_STATE   6
-#define U_MITID   7
-#define U_CLASS   8
-#define U_COMMENT 9
-#define U_SIGNATURE 10
-#define U_SECURE  11
-#define U_MODTIME 12
-#define U_MODBY   13
-#define U_MODWITH 14
-#define U_END     15
+#define U_WINCONSOLESHELL 3
+#define U_LAST    4
+#define U_FIRST   5
+#define U_MIDDLE  6
+#define U_STATE   7
+#define U_MITID   8
+#define U_CLASS   9
+#define U_COMMENT 10
+#define U_SIGNATURE 11
+#define U_SECURE  12
+#define U_MODTIME 13
+#define U_MODBY   14
+#define U_MODWITH 15
+#define U_END     16
 
 /* User states (the value of argv[U_STATE] from a user query) */
 

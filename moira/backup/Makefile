@@ -1,3 +1,9 @@
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/Makefile,v 1.5 1988-09-12 13:49:13 mar Exp $
+#
+# (c) Copyright 1988 by the Massachusetts Institute of Technology.
+# For copying and distribution information, please see the file
+# <mit-copyright.h>.
+
 .SUFFIXES:
 .SUFFIXES: .qc .o
 CFLAGS= -O
@@ -10,19 +16,13 @@ EQLIBS = /usr/rtingres/lib/libqlib /usr/rtingres/lib/compatlib
 	cc -c ${CFLAGS} $*.c
 	rm -f $*.c
 
-all: smsbackup smsrestore # counts copy_backups
+all: smsbackup smsrestore
 
 smsbackup: dump_db.o bkup1.o bkup.o dumprest.o
 	cc -o $@ ${CFLAGS} dump_db.o bkup1.o bkup.o dumprest.o ${EQLIBS}
 
 smsrestore: rest_db.o rest1.o rest.o dumprest.o
 	cc -o $@ ${CFLAGS} rest_db.o rest1.o rest.o dumprest.o ${EQLIBS}
-
-counts: counts.o
-	cc -o $@ ${CFLAGS} counts.o ${EQLIBS}
-
-salvager: salvager.o
-	cc -o $@ ${CFLAGS} salvager.o ${EQLIBS}
 
 copy_backups: copy_backups.c
 	cc -o $@ ${CFLAGS} -I../include copy_backups.c \
@@ -53,8 +53,6 @@ clean:
 install:
 	install smsbackup ../bin/smsbackup
 	install smsrestore ../bin/smsrestore
-	install counts ../bin/counts
-	install salvager ../bin/salvager
 	install nightly.sh ../bin/nightly.sh
 
 

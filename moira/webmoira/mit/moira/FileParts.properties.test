@@ -1,0 +1,15 @@
+top=/mit/jis/javahacking/moira/fileparts/top.html
+editme=/mit/jis/javahacking/moira/fileparts/editme.html
+getmembers=/mit/jis/javahacking/moira/fileparts/getmembers.html
+addmember=/mit/jis/javahacking/moira/fileparts/addmember.html
+addfinal=/mit/jis/javahacking/moira/fileparts/addfinal.html
+removemembers=/mit/jis/javahacking/moira/fileparts/removemembers.html
+displaylistinfo=/mit/jis/javahacking/moira/fileparts/displaylistinfo.html
+updatelistinfo=/mit/jis/javahacking/moira/fileparts/updatelistinfo.html
+updatelistinfoconf=/mit/jis/javahacking/moira/fileparts/updatelistinfoconf.html
+delmembers=/mit/jis/javahacking/moira/fileparts/delmembers.html
+delconfirm=/mit/jis/javahacking/moira/fileparts/delconfirm.html
+addme=/mit/jis/javahacking/moira/fileparts/addme.html
+delme=/mit/jis/javahacking/moira/fileparts/delme.html
+getnewlist=/mit/jis/javahacking/moira/fileparts/getnewlist.html
+help=/mit/jis/javahacking/moira/fileparts/help.html

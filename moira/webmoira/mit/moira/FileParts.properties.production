@@ -1,0 +1,15 @@
+top=/afs/net/project/webprojects/webmoira/fileparts/top.html
+editme=/afs/net/project/webprojects/webmoira/fileparts/editme.html
+getmembers=/afs/net/project/webprojects/webmoira/fileparts/getmembers.html
+addmember=/afs/net/project/webprojects/webmoira/fileparts/addmember.html
+addfinal=/afs/net/project/webprojects/webmoira/fileparts/addfinal.html
+removemembers=/afs/net/project/webprojects/webmoira/fileparts/removemembers.html
+displaylistinfo=/afs/net/project/webprojects/webmoira/fileparts/displaylistinfo.html
+updatelistinfo=/afs/net/project/webprojects/webmoira/fileparts/updatelistinfo.html
+updatelistinfoconf=/afs/net/project/webprojects/webmoira/fileparts/updatelistinfoconf.html
+delmembers=/afs/net/project/webprojects/webmoira/fileparts/delmembers.html
+delconfirm=/afs/net/project/webprojects/webmoira/fileparts/delconfirm.html
+addme=/afs/net/project/webprojects/webmoira/fileparts/addme.html
+delme=/afs/net/project/webprojects/webmoira/fileparts/delme.html
+getnewlist=/afs/net/project/webprojects/webmoira/fileparts/getnewlist.html
+help=/afs/net/project/webprojects/webmoira/fileparts/help.html

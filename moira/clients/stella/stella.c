@@ -31,7 +31,7 @@ typedef unsigned long in_addr_t;
 #include <arpa/inet.h>
 #endif
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/stella/stella.c,v 1.19 2002-09-25 20:44:59 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/stella/stella.c,v 1.20 2003-12-20 02:55:49 zacheiss Exp $");
 
 struct owner_type {
   int type;
@@ -243,7 +243,7 @@ int main(int argc, char **argv)
 	    } else
 	      usage(argv);
 	  }
-	  else if (argis("a", "aliasadd")) {
+	  else if (argis("a", "addalias")) {
 	    if (arg - argv < argc - 1) {
 	      arg++;
 	      alias_add_queue=add_to_string_list(alias_add_queue, *arg);
@@ -251,7 +251,7 @@ int main(int argc, char **argv)
 	      usage(argv);
 	    update_alias_flag++;
 	  }
-	  else if (argis("d", "aliasdelete")) {
+	  else if (argis("d", "deletealias")) {
 	    if (arg - argv < argc - 1) {
 	      arg++;
 	      alias_remove_queue=add_to_string_list(alias_remove_queue, *arg);

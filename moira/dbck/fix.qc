@@ -1,6 +1,6 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/fix.qc,v 1.3 1988-10-06 17:39:44 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/fix.qc,v 1.4 1990-03-19 18:43:59 mar Exp $
  *
- * User interface routines for dbck (SMS database consistency checker)
+ * User interface routines for dbck (Moira database consistency checker)
  *
  *  (c) Copyright 1988 by the Massachusetts Institute of Technology.
  *  For copying and distribution information, please see the file
@@ -8,11 +8,11 @@
  */
 
 #include <mit-copyright.h>
-#include <sms.h>
+#include <moira.h>
 #include <stdio.h>
 #include "dbck.h"
 
-static char fix_qc_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/fix.qc,v 1.3 1988-10-06 17:39:44 mar Exp $";
+static char fix_qc_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/fix.qc,v 1.4 1990-03-19 18:43:59 mar Exp $";
 
 
 ##char *_table;
@@ -165,12 +165,12 @@ int set_next_object_id(object, table)
 ##  repeat retrieve (value = v.#value) where v.#name = @name
 ##  inquire_equel(rowcount = "rowcount")
     if (rowcount != 1)
-	return(SMS_NO_ID);
+	return(MR_NO_ID);
 
 ##  retrieve (exists = any(tbl.name where tbl.name = value))
 ##  inquire_equel(rowcount = "rowcount")
     if (rowcount != 1)
-	return(SMS_NO_ID);
+	return(MR_NO_ID);
     while (exists) {
 	value++;
 	if (value > MAX_ID_VALUE)
@@ -181,7 +181,7 @@ int set_next_object_id(object, table)
     printf("setting ID %s to %d\n", name, value);
 ##  repeat replace v (#value = @value) where v.#name = @name
     modified("values");
-    return(SMS_SUCCESS);
+    return(MR_SUCCESS);
 ##}
 
 

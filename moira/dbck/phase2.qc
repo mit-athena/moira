@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase2.qc,v 1.8 1989-09-12 17:37:41 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase2.qc,v 1.9 1990-03-19 18:44:07 mar Exp $
  *
  *  (c) Copyright 1988 by the Massachusetts Institute of Technology.
  *  For copying and distribution information, please see the file
@@ -7,10 +7,10 @@
 
 #include <mit-copyright.h>
 #include <stdio.h>
-#include <sms.h>
+#include <moira.h>
 #include "dbck.h"
 
-static char phase2_qc_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase2.qc,v 1.8 1989-09-12 17:37:41 mar Exp $";
+static char phase2_qc_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase2.qc,v 1.9 1990-03-19 18:44:07 mar Exp $";
 
 
 show_mcm_mach(id)
@@ -406,7 +406,7 @@ int hint;
 			id2 = f->filsys_id;
 			id3 = f->mach_id;
 			if (set_next_object_id("nfsphys_id", "nfsphys") !=
-				SMS_SUCCESS) {
+				MR_SUCCESS) {
 			    printf("Unable to assign unique ID\n");
 			    return;
 			}

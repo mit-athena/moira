@@ -1,13 +1,13 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/dbck.h,v 1.3 1989-09-11 12:18:22 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/dbck.h,v 1.4 1990-03-19 18:43:54 mar Exp $
  *
- * Declarations for SMS database consistancy checker
+ * Declarations for Moira database consistancy checker
  *
  *  (c) Copyright 1988 by the Massachusetts Institute of Technology.
  *  For copying and distribution information, please see the file
  *  <mit-copyright.h>.
  */
 
-#include <sms_app.h>
+#include <moira_site.h>
 #include <mit-copyright.h>
 
 #define NULL 0

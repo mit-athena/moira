@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase4.qc,v 1.5 1989-09-11 11:46:39 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase4.qc,v 1.6 1990-03-19 18:44:16 mar Exp $
  *
  *  (c) Copyright 1988 by the Massachusetts Institute of Technology.
  *  For copying and distribution information, please see the file
@@ -6,10 +6,10 @@
  */
 
 #include <mit-copyright.h>
-#include <sms.h>
+#include <moira.h>
 #include "dbck.h"
 
-static char phase4_qc_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase4.qc,v 1.5 1989-09-11 11:46:39 mar Exp $";
+static char phase4_qc_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase4.qc,v 1.6 1990-03-19 18:44:16 mar Exp $";
 
 
 count_boxes(id, u, boxes)

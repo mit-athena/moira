@@ -118,4 +118,10 @@ which reside with the data.
 
 Fail gracefully.
 
+Does not require 100% availability.  SMS is intended to work with
+other services (i.e., Hesiod, Kerberos) which do provide 100%
+availability to critical information.
+
+
 @End(Itemize)
+

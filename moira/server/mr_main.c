@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v $
  *	$Author: danw $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.34 1997-07-03 02:56:27 danw Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.35 1997-07-08 21:59:47 danw Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -16,7 +16,7 @@
  * 
  */
 
-static char *rcsid_mr_main_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.34 1997-07-03 02:56:27 danw Exp $";
+static char *rcsid_mr_main_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.35 1997-07-08 21:59:47 danw Exp $";
 
 #include <mit-copyright.h>
 #include <string.h>
@@ -288,7 +288,7 @@ int main(argc, argv)
 		}
 	}
 	com_err(whoami, 0, "%s", takedown);
-	mr_close_database();
+	if (dormant != ASLEEP) mr_close_database();
 	send_zgram("MOIRA", takedown);
 	return 0;
 }

@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/hesiod.qc,v 1.25 1990-03-19 19:05:56 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/hesiod.qc,v 1.26 1990-04-06 12:06:47 mar Exp $
  *
  * This generates the zone files necessary to load a hesiod server.
  * The following zones are generated: passwd, uid, pobox, group,
@@ -653,8 +653,8 @@ do_printcap()
     char outf[64], outft[64];
     struct stat sb;
     time_t ftime;
-##  char name[17], rp[17], sd[33], rm[33], *filetime;
-##  int flag;
+##  char name[17], rp[17], sd[33], rm[33], rq[33], *filetime;
+##  int flag, ka, pc;
 
     sprintf(outf, "%s/printcap.db", hesiod_dir);
 
@@ -679,14 +679,21 @@ do_printcap()
     fprintf(stderr, "Building printcap.db\n");
 
 ##  range of p is printcap
-##  retrieve (name = p.#name, rp = p.#rp, sd = p.dir, rm = machine.#name)
-##    where machine.mach_id = p.mach_id {
+##  range of m is machine
+##  retrieve (name = p.#name, rp = p.#rp, sd = p.dir, rm = machine.#name,
+##	      ka = p.auth, pc = p.price, rq = m.#name)
+##    where machine.mach_id = p.mach_id and m.mach_id = p.quotaserver {
 	strtrim(name);
 	strtrim(rp);
 	strtrim(sd);
 	strtrim(rm);
-	fprintf(out, "%s.pcap\tHS %s \"%s:rp=%s:rm=%s:sd=%s\"\n",
-		name, HTYPE, name, rp, rm, sd);
+	strtrim(rq);
+	fprintf(out, "%s.pcap\tHS %s \"%s:rp=%s:rm=%s:sd=%s:ka#%d:pc#%d",
+		name, HTYPE, name, rp, rm, sd, ka, pc);
+	if (strcmp(rq, "[NONE]"))
+	  fprintf(out, ":rq=%s\"\n", rq);
+	else
+	  fputs("\"\n", out);
 ##  }
 
     if (fclose(out)) {

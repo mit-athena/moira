@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v 1.17 1988-12-07 18:49:03 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v 1.18 1989-08-04 16:09:55 mar Exp $";
 #endif lint
 
 /*	This is the file lists.c for the SMS Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v 1.17 1988-12-07 18:49:03 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v 1.18 1989-08-04 16:09:55 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -569,7 +569,8 @@ char *action, **ret_argv;
     GetValueFromUser(temp_buf, &ret_argv[LM_MEMBER]);
     ret_argv[LM_END] = NULL;		/* NULL terminate this list. */
 
-    if (!ValidName( ret_argv[LM_MEMBER] ) ) {
+    if (strcasecmp(ret_argv[LM_TYPE], "string") &&
+	!ValidName( ret_argv[LM_MEMBER] ) ) {
 	FreeInfo(ret_argv);
 	return(SUB_ERROR);
     }

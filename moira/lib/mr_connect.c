@@ -1,4 +1,4 @@
-/* $Id: mr_connect.c,v 1.21 1998-02-08 19:31:19 danw Exp $
+/* $Id: mr_connect.c,v 1.22 1998-02-08 20:37:52 danw Exp $
  *
  * This routine is part of the client library.  It handles
  * creating a connection to the moira server.
@@ -19,7 +19,7 @@
 
 #include <hesiod.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_connect.c,v 1.21 1998-02-08 19:31:19 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_connect.c,v 1.22 1998-02-08 20:37:52 danw Exp $");
 
 static char *mr_server_host = 0;
 
@@ -31,7 +31,7 @@ static char *mr_server_host = 0;
 
 int mr_connect(char *server)
 {
-  char *p, **pp, sbuf[256];
+  char *p, **pp, *sbuf = NULL;
 
   if (!mr_inited)
     mr_init();
@@ -57,6 +57,9 @@ int mr_connect(char *server)
     {
       p = strchr(MOIRA_SERVER, ':');
       p++;
+      sbuf = malloc(strlen(server) + strlen(p) + 2);
+      if (!sbuf)
+	return ENOMEM;
       sprintf(sbuf, "%s:%s", server, p);
       server = sbuf;
     }
@@ -78,7 +81,9 @@ int mr_connect(char *server)
    * stash hostname for later use
    */
 
-  mr_server_host = strdup(server);
+  if (!sbuf)
+    sbuf = strdup(server);
+  mr_server_host = sbuf;
   if ((p = strchr(mr_server_host, ':')))
     *p = '\0';
   mr_server_host = canonicalize_hostname(mr_server_host);

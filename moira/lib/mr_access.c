@@ -1,4 +1,4 @@
-/* $Id: mr_access.c,v 1.12 1998-02-08 19:31:18 danw Exp $
+/* $Id: mr_access.c,v 1.13 1998-02-08 20:37:52 danw Exp $
  *
  * Check access to a Moira query
  *
@@ -11,10 +11,11 @@
 #include <moira.h>
 #include "mr_private.h"
 
+#include <errno.h>
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_access.c,v 1.12 1998-02-08 19:31:18 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_access.c,v 1.13 1998-02-08 20:37:52 danw Exp $");
 
 int mr_access_internal(int argc, char **argv);
 
@@ -26,6 +27,8 @@ int mr_access(char *name, int argc, char **argv)
   char **nargv = malloc(sizeof(char *) * (argc + 1));
   int status = 0;
 
+  if (!nargv)
+    return ENOMEM;
   nargv[0] = name;
   memcpy(nargv + 1, argv, sizeof(char *) * argc);
   status = mr_access_internal(argc + 1, nargv);

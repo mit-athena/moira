@@ -1,4 +1,4 @@
-/* $Id: mr_ops.c,v 1.14 1998-02-08 19:31:21 danw Exp $
+/* $Id: mr_ops.c,v 1.15 1998-02-08 20:37:53 danw Exp $
  *
  * This routine is part of the client library.  It handles
  * the protocol operations: invoking an update and getting the
@@ -13,9 +13,11 @@
 #include <moira.h>
 #include "mr_private.h"
 
+#include <errno.h>
+#include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_ops.c,v 1.14 1998-02-08 19:31:21 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_ops.c,v 1.15 1998-02-08 20:37:53 danw Exp $");
 
 /* Invoke a DCM update. */
 
@@ -53,7 +55,7 @@ int mr_motd(char **motd)
   mr_params param_st;
   struct mr_params *params = NULL;
   struct mr_params *reply = NULL;
-  static char buffer[1024];
+  static char *buffer = NULL;
 
   *motd = NULL;
   CHECK_CONNECTED;
@@ -71,7 +73,13 @@ int mr_motd(char **motd)
     {
       if (reply->mr_argc > 0)
 	{
-	  strncpy(buffer, reply->mr_argv[0], sizeof(buffer));
+	  buffer = realloc(buffer, reply->mr_argl[0] + 1);
+	  if (!buffer)
+	    {
+	      mr_disconnect();
+	      return ENOMEM;
+	    }
+	  strcpy(buffer, reply->mr_argv[0]);
 	  *motd = buffer;
 	}
       mr_destroy_reply(reply);

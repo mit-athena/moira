@@ -1,4 +1,4 @@
-/* $Id: mr_query.c,v 1.15 1998-02-08 19:31:22 danw Exp $
+/* $Id: mr_query.c,v 1.16 1998-02-08 20:37:53 danw Exp $
  *
  * Perform a Moira query
  *
@@ -12,10 +12,11 @@
 #include <moira.h>
 #include "mr_private.h"
 
+#include <errno.h>
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_query.c,v 1.15 1998-02-08 19:31:22 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_query.c,v 1.16 1998-02-08 20:37:53 danw Exp $");
 
 int mr_query_internal(int argc, char **argv,
 		      int (*callback)(int, char **, void *), void *callarg);
@@ -34,6 +35,8 @@ int mr_query(char *name, int argc, char **argv,
   char **nargv = malloc(sizeof(char *) * (argc + 1));
   int status = 0;
 
+  if (!nargv)
+    return ENOMEM;
   nargv[0] = name;
   memcpy(nargv + 1, argv, sizeof(char *) * argc);
   status = mr_query_internal(argc + 1, nargv, callproc, callarg);

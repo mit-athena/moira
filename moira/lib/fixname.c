@@ -1,4 +1,4 @@
-/* $Id: fixname.c,v 1.12 1998-02-08 19:31:16 danw Exp $
+/* $Id: fixname.c,v 1.13 1998-02-08 20:37:51 danw Exp $
  *
  * Put a name into Moira-canonical form
  *
@@ -13,7 +13,7 @@
 #include <ctype.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/fixname.c,v 1.12 1998-02-08 19:31:16 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/fixname.c,v 1.13 1998-02-08 20:37:51 danw Exp $");
 
 #define LAST_LEN		100
 #define FIRST_LEN		100
@@ -108,6 +108,8 @@ void LookForJrAndIII(char *nm, int *pends_jr, int *pends_sr, int *pends_ii,
     }
 }
 
+/* XXX no way to avoid possible buffer overrun here since we don't know
+   how long nm is and we're trying to make it one longer */
 void LookForSt(char *nm)		/* ST PIERRE, etc. */
 {
   char temp[256];

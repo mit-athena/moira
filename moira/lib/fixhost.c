@@ -1,4 +1,4 @@
-/* $Id: fixhost.c,v 1.16 1998-02-08 19:31:15 danw Exp $
+/* $Id: fixhost.c,v 1.17 1998-02-08 20:37:51 danw Exp $
  *
  * Canonicalize a hostname
  *
@@ -22,7 +22,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/fixhost.c,v 1.16 1998-02-08 19:31:15 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/fixhost.c,v 1.17 1998-02-08 20:37:51 danw Exp $");
 
 /*
  * Canonicalize hostname:
@@ -38,31 +38,32 @@ RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/li
 char *canonicalize_hostname(char *host)
 {
   struct hostent *hp;
-  int n_len;
+  int len;
   int has_dot = 0;
-  char tbuf[BUFSIZ];
-  struct utsname name;
-  char *cp;
+  char *tbuf, *cp;
 
-  if (strlen(host) > 2 && host[0] == '"' && host[strlen(host) - 1] == '"')
+  len = strlen(host);
+  if (len > 2 && host[0] == '"' && host[len - 1] == '"')
     {
-      strcpy(tbuf, host + 1);
+      tbuf = malloc(len - 1);
+      if (!tbuf)
+	return NULL;
+      strncpy(tbuf, host + 1, len - 2);
+      tbuf[len - 1] = '\0';
       free(host);
-      tbuf[strlen(tbuf) - 1] = '\0';
-      return strdup(tbuf);
+      return tbuf;
     }
 
-  if (strchr(host, '*') || strchr(host, '?') || strchr(host, '['))
+  if (strchr(host, '*') || strchr(host, '?'))
     return host;
 
   hp = gethostbyname(host);
 
   if (hp)
     {
-      n_len = strlen(hp->h_name) + 1;
-      host = realloc(host, n_len);
-
-      strcpy(host, hp->h_name);
+      host = realloc(host, strlen(hp->h_name) + 1);
+      if (host)
+	strcpy(host, hp->h_name);
       return host;
     }
   else
@@ -70,10 +71,9 @@ char *canonicalize_hostname(char *host)
       /* can't get name from nameserver; fix up the format a bit */
       for (cp = host; *cp; cp++)
 	{
-	  int c;
-	  if (islower(c = *cp))
-	    *cp = toupper(c);
-	  has_dot |= (c == '.');
+	  if (islower(*cp))
+	    *cp = toupper(*cp);
+	  has_dot |= (*cp == '.');
 	}
       if (!has_dot)
 	{
@@ -81,17 +81,27 @@ char *canonicalize_hostname(char *host)
 
 	  if (domain == NULL)
 	    {
+	      struct utsname name;
+
 	      uname(&name);
 	      hp = gethostbyname(name.nodename);
-	      cp = strchr(hp->h_name, '.');
-	      if (cp)
-		domain = strdup(++cp);
+	      if (hp)
+		{
+		  cp = strchr(hp->h_name, '.');
+		  if (cp)
+		    domain = strdup(++cp);
+		  if (!domain)
+		    domain = "";
+		}
 	      else
 		domain = "";
 	    }
+	  tbuf = malloc(strlen(host) + strlen(domain) + 2);
+	  if (!tbuf)
+	    return NULL;
 	  sprintf(tbuf, "%s.%s", host, domain);
 	  free(host);
-	  host = strdup(tbuf);
+	  host = tbuf;
 	}
       return host;
     }

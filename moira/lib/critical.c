@@ -1,4 +1,4 @@
-/* $Id: critical.c,v 1.18 1998-02-08 19:31:15 danw Exp $
+/* $Id: critical.c,v 1.19 1998-02-08 20:37:50 danw Exp $
  *
  * Log and send a zephyrgram about any critical errors.
  *
@@ -26,7 +26,7 @@ extern Code_t ZSendNotice(ZNotice_t *notice, Z_AuthProc cert_routine);
 #include <syslog.h>
 #endif
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/critical.c,v 1.18 1998-02-08 19:31:15 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/critical.c,v 1.19 1998-02-08 20:37:50 danw Exp $");
 
 /* mode to create the file with */
 #define LOGFILEMODE	0644
@@ -41,16 +41,10 @@ extern char *whoami;
 
 void critical_alert(char *instance, char *msg, ...)
 {
-  FILE *crit;			/* FILE for critical log file */
-  char buf[BUFSIZ];		/* Holds the formatted message */
+  FILE *crit;
+  char *buf;
   va_list ap;
-
-  va_start(ap, msg);
-  vsprintf(buf, msg, ap);
-  va_end(ap);
-
-  /* Send zephyr notice */
-  send_zgram(instance, buf);
+  long start;
 
   /* Log message to critical file */
   if ((crit = fopen(CRITERRLOG, "a")))
@@ -62,13 +56,35 @@ void critical_alert(char *instance, char *msg, ...)
       time_s = ctime(&t) + 4;
       time_s[strlen(time_s) - 6] = '\0';
 
-      fprintf(crit, "%s <%ld> %s\n", time_s, (long)getpid(), buf);
+      fprintf(crit, "%s <%ld>", time_s, (long)getpid());
+      start = ftell(crit);
+      va_start(ap, msg);
+      vfprintf(crit, msg, ap);
+      va_end(ap);
+      fprintf(crit, "\n");
+
+      buf = malloc(ftell(crit) - start);
       fclose(crit);
+
+      if (buf)
+	{
+	  va_start(ap, msg);
+	  vsprintf(buf, msg, ap);
+	  va_end(ap);
+
+	  send_zgram(instance, buf);
+	  com_err(whoami, 0, buf);
+
+	  free(buf);
+	}
     }
 
-  com_err(whoami, 0, buf);
+  if (!crit || !buf)
+    {
+      send_zgram(instance, "Couldn't format critical syslog!");
+      com_err(whoami, 0, "Couldn't format critical syslog!");
+    }
 }
-
 
 
 /* Sends a zephyrgram of class "MOIRA", instance as a parameter.  Ignores
@@ -77,6 +93,10 @@ void critical_alert(char *instance, char *msg, ...)
 
 void send_zgram(char *inst, char *msg)
 {
+#ifdef SYSLOG
+  char *buf;
+#endif
+
 #ifdef ZEPHYR
   ZNotice_t znotice;
 
@@ -93,10 +113,12 @@ void send_zgram(char *inst, char *msg)
   ZSendNotice(&znotice, ZNOAUTH);
 #endif
 #ifdef SYSLOG
-  {
-    char buf[512];
-    sprintf(buf, "MOIRA: %s %s", inst, msg);
-    syslog(LOG_ERR, buf);
-  }
+  buf = malloc(9 + strlen(instance) + strlen(msg));
+  if (buf)
+    {
+      sprintf(buf, "MOIRA: %s %s", inst, msg);
+      syslog(LOG_ERR, buf);
+      free(buf);
+    }
 #endif
 }

@@ -1,4 +1,4 @@
-/* $Id: pobox.c,v 1.27 1998-03-10 21:09:42 danw Exp $
+/* $Id: pobox.c,v 1.28 1999-05-13 18:57:09 danw Exp $
  *
  *	This is the file pobox.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -15,6 +15,7 @@
 #include <mit-copyright.h>
 #include <moira.h>
 #include <moira_site.h>
+#include <mrclient.h>
 #include "defs.h"
 #include "f_defs.h"
 #include "globals.h"
@@ -23,7 +24,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/pobox.c,v 1.27 1998-03-10 21:09:42 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/pobox.c,v 1.28 1999-05-13 18:57:09 danw Exp $");
 
 #define FOREIGN_BOX ("SMTP")
 #define LOCAL_BOX ("POP")
@@ -148,7 +149,7 @@ static char *GetNewLocalPOBox(char *local_user)
 int SetUserPOBox(int argc, char **argv)
 {
   int status;
-  char *type, temp_buf[BUFSIZ], *local_user, *args[10], box[BUFSIZ];
+  char *type, temp_buf[BUFSIZ], *local_user, *args[10], *box;
   char *temp_box;
   struct mqelem *top = NULL;
   local_user = argv[1];
@@ -191,13 +192,7 @@ int SetUserPOBox(int argc, char **argv)
 	      sprintf(temp_buf, "%s did not have a previous local PO Box.",
 		      local_user);
 	      Put_message(temp_buf);
-	      if ((temp_box = GetNewLocalPOBox(local_user)) !=
-		  (char *) SUB_ERROR)
-		{
-		  strcpy(box, temp_box);
-		  free(temp_box);
-		}
-	      else
+	      if ((box = GetNewLocalPOBox(local_user)) == (char *) SUB_ERROR)
 		return DM_NORMAL;
 	      break;
 	    default:
@@ -206,13 +201,7 @@ int SetUserPOBox(int argc, char **argv)
 	    }
 	  break;
 	case FALSE:
-	  if ((temp_box = GetNewLocalPOBox(local_user)) !=
-	      (char *) SUB_ERROR)
-	    {
-	      strcpy(box, temp_box);
-	      free(temp_box);
-	    }
-	  else
+	  if ((box = GetNewLocalPOBox(local_user)) == (char *) SUB_ERROR)
 	    return DM_NORMAL;
 	  break;
 	default:
@@ -225,7 +214,10 @@ int SetUserPOBox(int argc, char **argv)
       switch (YesNoQuestion(temp_buf, TRUE))
 	{
 	case TRUE:
-	  if (!Prompt_input("Foreign PO Box for this user? ", box, BUFSIZ))
+	  if (!Prompt_input("Foreign PO Box for this user? ", temp_buf, BUFSIZ))
+	    return DM_NORMAL;
+	  if (mrcl_validate_pobox_smtp(local_user, temp_buf, &box) !=
+	      MRCL_SUCCESS)
 	    return DM_NORMAL;
 	  break;
 	case FALSE:
@@ -247,6 +239,7 @@ int SetUserPOBox(int argc, char **argv)
     com_err(program_name, status, " in ChangeUserPOBox");
   else
     Put_message("PO Box assigned.");
+  free(box);
 
   return DM_NORMAL;
 }

@@ -1,4 +1,4 @@
-/* $Id: menu.c,v 1.54 1999-04-30 17:45:11 danw Exp $
+/* $Id: menu.c,v 1.55 1999-05-13 18:57:08 danw Exp $
  *
  * Generic menu system module.
  *
@@ -21,7 +21,7 @@
 #include <string.h>
 #include <unistd.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.54 1999-04-30 17:45:11 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.55 1999-05-13 18:57:08 danw Exp $");
 
 #ifdef MAX
 #undef MAX
@@ -81,11 +81,19 @@ void menu_com_err_hook(const char *who, long code, const char *fmt, ...)
   char buf[BUFSIZ], *cp;
   va_list ap;
 
-  strcpy(buf, who);
-  for (cp = buf; *cp; cp++)
-    ;
-  *cp++ = ':';
-  *cp++ = ' ';
+  if (who)
+    {
+      strcpy(buf, who);
+      for (cp = buf; *cp; cp++)
+	;
+      *cp++ = ':';
+      *cp++ = ' ';
+    }
+  else
+    {
+      cp = buf;
+      *cp = '\0';
+    }
   if (code)
     {
       strcpy(cp, error_message(code));

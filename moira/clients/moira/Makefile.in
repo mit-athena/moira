@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.4 1998-08-27 17:13:24 danw Exp $
+# $Id: Makefile.in,v 1.5 1999-05-13 18:57:07 danw Exp $
 
 SHELL=/bin/sh
 @SET_MAKE@
@@ -9,7 +9,7 @@ CFLAGS=@CFLAGS@
 DEFS=@DEFS@
 ALL_CFLAGS=$(CPPFLAGS) $(CFLAGS) $(DEFS)
 LDFLAGS=@LDFLAGS@
-LIBS=@CURSES_LIBS@ @GDSS_LIBS@ @LIBS@
+LIBS=../lib/libmrclient.a @CURSES_LIBS@ @GDSS_LIBS@ @LIBS@
 MR_LIBDEP=@MR_LIBDEP@
 GDSS_LIBDEP=@GDSS_LIBDEP@
 INSTALL=@INSTALL@
@@ -48,8 +48,8 @@ install: all
 	ln -s $(bindir)/dcmmaint moira
 	ln -s $(bindir)/usermaint moira
 
-moira: $(MOBJS) $(MR_LIBDEP) $(GDSS_LIBDEP)
+moira: $(MOBJS) ../lib/libmrclient.a $(MR_LIBDEP) $(GDSS_LIBDEP)
 	$(CC) -o $@ $(LDFLAGS) $(MOBJS) $(LIBS)
 
-namespace: $(NOBJS) $(MR_LIBDEP) $(GDSS_LIBDEP)
+namespace: $(NOBJS) ../lib/libmrclient.a $(MR_LIBDEP) $(GDSS_LIBDEP)
 	$(CC) -o $@ $(LDFLAGS) $(NOBJS) $(LIBS)

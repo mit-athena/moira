@@ -4,8 +4,8 @@
  * "mit-copyright.h".
  *
  * $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v $
- * $Author: tom $
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.41 1994-06-25 15:07:27 tom Exp $
+ * $Author: danw $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.42 1997-01-16 01:26:51 danw Exp $
  *
  * Generic menu system module.
  *
@@ -18,7 +18,7 @@
  */
 
 #ifndef lint
-static char rcsid_menu_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.41 1994-06-25 15:07:27 tom Exp $";
+static char rcsid_menu_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.42 1997-01-16 01:26:51 danw Exp $";
 
 #endif lint
 
@@ -679,6 +679,7 @@ char *msg;
     while(*s++) {
 	if (s - line >= COLS-1) {
 	    (void) strncpy(copy, line, COLS-1);
+	    copy[COLS-1] = '\0';
 	    line += COLS-1;
 	} else if (*s == '\n') {
 	    *s = '\0';

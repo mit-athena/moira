@@ -1,6 +1,6 @@
 /* This file defines the query dispatch table for version 2 of the protocol
  *
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/queries2.c,v 2.10 1992-10-17 20:51:07 genoa Exp $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/queries2.c,v 2.11 1992-10-20 00:39:37 genoa Exp $
  *
  * Copyright 1987, 1988 by the Massachusetts Institute of Technology.
  * For copying and distribution information, please see the file
@@ -663,7 +663,7 @@ static struct validate gpob_validate = {
   VOuser0,
   1,
   "potype",
-  "u.potype != 'NONE' and u.users_id=%d",
+  "potype != 'NONE' and users_id=%d",
   1,
   0,
   access_user,
@@ -827,7 +827,7 @@ static struct validate aclu_validate =
   aclu_valobj,
   2,
   NAME,
-  "c.name = LEFT('%s',SIZE(c.name))",
+  "name = LEFT('%s',SIZE(name))",
   1,
   CLU_ID,
   0,
@@ -1996,7 +1996,7 @@ static struct validate dzcl_validate = {
   0,
   0,
   CLASS,
-  "z.class = '%s'",
+  "class = '%s'",
   1,
   0,
   0,
@@ -2143,7 +2143,7 @@ static struct validate aali_validate = {
   aali_valobj,
   3,
   "trans",
-  "a.name = LEFT('%s',SIZE(a.name)) and a.type = '%s' and a.trans = LEFT('%s',SIZE(a.trans))",
+  "name = LEFT('%s',SIZE(name)) and type = '%s' and trans = LEFT('%s',SIZE(trans))",
   3,
   0,
   0,
@@ -2156,7 +2156,7 @@ static struct validate dali_validate =	/* DELETE_ALIAS */
   0,
   0,
   "trans",
-  "a.name = '%s' and a.type = '%s' and a.trans = '%s'",
+  "name = '%s' and type = '%s' and trans = '%s'",
   3,
   0,
   0,
@@ -2193,7 +2193,7 @@ static struct validate aval_validate =	/* for aval, uval, and dval */
   VOchar0,
   1,
   NAME,
-  "val.name = LEFT('%s',SIZE(val.name))",  /* LEFT() only needed for aval */
+  "name = LEFT('%s',SIZE(name))",  /* LEFT() only needed for aval */
   1,
   0,
   0,
@@ -2675,7 +2675,7 @@ struct query Queries2[] = {
     RETRIEVE,
     "u",
     USERS,
-    "CHAR(u.login), u.potype, CHAR(u.pop_id) + ':' + CHAR(u.box_id) FROM users",
+    "CHAR(u.login), u.potype, CHAR(u.pop_id) + ':' + CHAR(u.box_id) FROM users u",
     gpox_fields,
     3,
     "u.potype = 'SMTP'",

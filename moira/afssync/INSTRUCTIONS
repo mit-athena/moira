@@ -23,11 +23,41 @@ to extract and prepare the personal groups and special user entries in
 the old prdb for being reincorporated into the new prdb.
 
 	awk -F\| '$9 == 3 {print $1}' /backup/backup_1/users > /tmp/deactivated
-	perl -e 'for(`cat /tmp/deactivated`) { chop; $ex{$_}=1;} \
-		$punt=0; foreach $L (`cat prdb.extra.sort`){ \
-		@w=split(/ /,$L);  $_=$w[0]; if ( /:/ ) \
-		{@x=split(/:/,$w[0]); if($ex{$x[0]}) {$punt=1;}else{$punt=0;}} \
-		print $L unless $punt==1;}' > prdb.extra.trimmed
+
+and the following perl script:
+
+#!/usr/athena/bin/perl -w
+
+open(OUT, ">prdb.extra.trimmed");
+
+for ( `cat /tmp/deactivated` ) {
+    chop;
+    $ex{$_} = 1;
+}
+
+$punt = 0;
+
+foreach $L ( `cat prdb.extra.sort` ) {
+    @w = split(/ /,$L);
+    $_ = $w[0];
+    if ( /:/ ) {
+        @x = split(/:/,$w[0]);
+        if ($ex{$x[0]}) {
+            $punt=1;
+        } else {
+            $punt=0;
+        }
+    } else {
+	# If we got here, we're either a user, a prefixless
+	# group, or a group member.
+	$punt = 0 if $w[0];
+    }
+    print OUT $L unless $punt == 1;
+}
+
+close(OUT);
+exit 0;
+
 to remove the personal groups for users who are deactivated
 
 	awk '/^[^ ][^:]*@/ {printf "KERBEROS:%s\n",$1}' prdb.extra.trimmed \

@@ -1,0 +1,296 @@
+create table users 
+(
+        login           CHAR( 8 ),
+        users_id        INTEGER,
+        uid             SMALLINT,
+        shell           CHAR( 32 ),
+        last            CHAR( 16 ),
+        first           CHAR( 16 ),
+        middle          CHAR( 16 ),
+        status          SMALLINT,
+        mit_id          CHAR( 13 ),
+        mit_year        CHAR( 8 ), 
+        modtime         DATE,
+        modby           INTEGER,
+        modwith         CHAR( 8 ),
+        fullname        CHAR( 32 ),
+        nickname        CHAR( 16 ),
+        home_addr       CHAR( 80 ),
+        home_phone      CHAR( 16 ),
+        office_addr     CHAR( 16 ),
+        office_phone    CHAR( 12 ),
+        mit_dept        CHAR( 12 ),
+        mit_affil       CHAR( 4 ),
+        fmodtime        DATE,
+        fmodby          INTEGER,
+        fmodwith        CHAR( 8 ),
+        potype          CHAR( 8 ),
+        pop_id          INTEGER,
+        box_id          INTEGER,
+        pmodtime        DATE,
+        pmodby          INTEGER,
+        pmodwith        CHAR( 8 ),
+        gid             SMALLINT,
+        uglist_id       INTEGER,
+        ugdefault       SMALLINT
+)
+
+create table krbmap
+(
+        users_id        INTEGER,
+        string_id       INTEGER
+)
+
+create table machine 
+(
+        name            CHAR( 32 ),
+        mach_id         INTEGER,
+        type            CHAR( 8 ),
+        modtime         DATE,
+        modby           INTEGER,
+        modwith         CHAR( 8 )
+)
+
+create table cluster 
+(
+        name            CHAR( 32 ),
+        clu_id          INTEGER,
+        desc            CHAR( 32 ),
+        location        CHAR( 64 ),
+        modtime         DATE,
+        modby           INTEGER,
+        modwith         CHAR( 8 )
+)
+
+create table mcmap 
+(
+        mach_id         INTEGER,
+        clu_id          INTEGER
+)
+
+create table svc 
+(
+        clu_id          INTEGER,
+        serv_label      CHAR( 16 ),
+        serv_cluster    CHAR( 32 )
+)
+
+create table list 
+(
+        name            CHAR( 32 ),
+        list_id         INTEGER,
+        active          SMALLINT,
+        public          SMALLINT,
+        hidden          SMALLINT,
+        maillist        SMALLINT,
+        group           SMALLINT,
+        gid             SMALLINT,
+        desc            CHAR( 255 ),
+        acl_type        CHAR( 8 ),
+        acl_id          INTEGER,
+        modtime         DATE,
+        modby           INTEGER,
+        modwith         CHAR( 8 )
+)
+create table imembers 
+(
+        list_id         INTEGER,
+        member_type     CHAR( 8 ),
+        member_id       INTEGER,
+        ref_count       SMALLINT,
+        direct          SMALLINT
+)
+
+create table servers 
+(
+        name            CHAR( 16 ),
+        update_int      INTEGER,
+        target_file     CHAR( 64 ),
+        script          CHAR( 128 ),
+        dfgen           INTEGER,
+        dfcheck         INTEGER,
+        type            CHAR( 8 ),
+        enable          SMALLINT,
+        inprogress      SMALLINT,
+        harderror       INTEGER,
+        errmsg          CHAR( 80 ),
+        acl_type        CHAR( 8 ),
+        acl_id          INTEGER,
+        modtime         DATE,
+        modby           INTEGER,
+        modwith         CHAR( 8 )
+)
+
+create table serverhosts 
+(
+        service          CHAR( 16 ),
+        mach_id          INTEGER,
+        success          SMALLINT,
+        enable           SMALLINT,
+        override         SMALLINT,
+        inprogress       SMALLINT,
+        hosterror        INTEGER,
+        hosterrmsg       CHAR( 80 ),
+        ltt              INTEGER,
+        lts              INTEGER,
+        value1           INTEGER,
+        value2           INTEGER,
+        value3           CHAR( 32 ),
+        modtime          DATE,
+        modby            INTEGER,
+        modwith          CHAR( 8 )
+)
+
+create table filesys 
+(
+        filsys_id        INTEGER,
+        phys_id          INTEGER,
+        label            CHAR( 32 ),
+        order            SMALLINT,
+        type             CHAR( 8 ),
+        mach_id          INTEGER,
+        name             CHAR( 80 ),
+        mount            CHAR( 32 ),
+        access           CHAR( 1 ),
+        comments         CHAR( 64 ),
+        owner            INTEGER,
+        owners           INTEGER,
+        createflg        SMALLINT,
+        lockertype       CHAR( 8 ),
+        modtime          DATE,
+        modby            INTEGER,
+        modwith          CHAR( 8 )
+)
+
+create table fsgroup
+(
+        group_id         INTEGER,
+        filsys_id        INTEGER,
+        key              CHAR( 8 )
+)
+
+create table nfsphys 
+(
+        nfsphys_id       INTEGER,
+        mach_id          INTEGER,
+        device           CHAR( 16 ),
+        dir              CHAR( 16 ),
+        status           SMALLINT,
+        allocated        INTEGER,
+        size             INTEGER,
+        modtime          DATE,
+        modby            INTEGER,
+        modwith          CHAR( 8 )
+)
+
+create table quota 
+(
+        filsys_id        INTEGER,
+        type             CHAR( 8 ),
+        entity_id        INTEGER,
+        phys_id          INTEGER,
+        quota            INTEGER,
+        modtime          DATE,
+        modby            INTEGER,
+        modwith          CHAR( 8 )
+)
+
+create table zephyr 
+(
+        class            CHAR( 16 ),
+        xmt_type         CHAR( 8 ),
+        xmt_id           INTEGER,
+        sub_type         CHAR( 8 ),
+        sub_id           INTEGER,
+        iws_type         CHAR( 8 ),
+        iws_id           INTEGER,
+        iui_type         CHAR( 8 ),
+        iui_id           INTEGER,
+        modtime          DATE,
+        modby            INTEGER,
+        modwith          CHAR( 8 )
+)
+
+create table hostaccess 
+(
+        mach_id          INTEGER,
+        acl_type         CHAR( 8 ),
+        acl_id           INTEGER,
+        modtime          DATE,
+        modby            INTEGER,
+        modwith          CHAR( 8 )
+)
+
+create table strings 
+(
+        string_id        INTEGER,
+        string           CHAR( 128 )
+)
+
+create table services 
+(
+        name             CHAR( 16 ),
+        protocol         CHAR( 8 ),
+        port             SMALLINT,
+        desc             CHAR( 64 ),
+        modtime          DATE,
+        modby            INTEGER,
+        modwith          CHAR( 8 )
+)
+
+create table printcap 
+(
+        name             CHAR( 16 ),
+        mach_id          INTEGER,
+        dir              CHAR( 32 ),
+        rp               CHAR( 16 ),
+        comments         CHAR( 64,
+        modtime          DATE,
+        modby            INTEGER,
+        modwith          CHAR( 8 )
+)
+
+create table palladium
+(
+        name             CHAR( 32 ),
+        ident            INTEGER,
+        mach_id          INTEGER,
+        modtime          DATE,
+        modby            INTEGER,
+        modwith          CHAR( 8 )
+)
+
+create table capacls 
+(
+        capability       CHAR( 32 ),
+        tag              CHAR( 4 ),
+        list_id          INTEGER
+)
+
+create table alias 
+(
+        name             CHAR( 32 ),
+        type             CHAR( 16 ),
+        trans            CHAR( 128 )
+)
+
+create table values_tbl
+(
+        name             CHAR( 32 ),
+        value            INTEGER
+)
+
+create table tblstats 
+(
+        tbl              CHAR( 12 ),
+        modtime          DATE,
+        appends          INTEGER,
+        updates          INTEGER,
+        deletes          INTEGER
+)
+
+create table incremental
+(
+        tbl              CHAR( 16 ),
+        service          CHAR( 16 )
+)

@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/pobox.c,v 1.9 1988-08-11 20:28:19 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/pobox.c,v 1.10 1988-09-01 14:02:38 mar Exp $";
 #endif lint
 
 /*	This is the file pobox.c for the SMS Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/pobox.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/pobox.c,v 1.9 1988-08-11 20:28:19 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/pobox.c,v 1.10 1988-09-01 14:02:38 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -147,7 +147,7 @@ char * local_user;
     if (PrintPOMachines() == SUB_NORMAL) {
 	Put_message("");
 	Prompt_input("Which Machine? ", temp_buf, BUFSIZ);
-	return( Strsave(temp_buf) );
+	return(Strsave(CanonicalizeHostname(temp_buf)));
     }
     Put_message("Could not get machines to choose from, quitting.");
     return((char *) SUB_ERROR);

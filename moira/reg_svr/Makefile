@@ -2,7 +2,7 @@
 # 	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/Makefile,v $
 #	$Author: mar $
 #	$Locker:  $
-#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/Makefile,v 1.14 1989-09-04 17:07:04 mar Exp $
+#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/Makefile,v 1.15 1989-09-08 18:44:18 mar Exp $
 #
 # (c) Copyright 1988 by the Massachusetts Institute of Technology.
 # For copying and distribution information, please see the file
@@ -25,8 +25,8 @@ reg_svr.o requests.o: reg_svr.h admin_err.h
 admin_err.c admin_err.h: admin_err.et
 	../et/compile_et admin_err.et
 
-startreg: startreg.c
-	cc -o startreg startreg.c
+startreg: startreg.o
+	cc -o startreg startreg.o
 
 clean: /tmp
 	rm -f a.out core *.o

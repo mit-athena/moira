@@ -3,13 +3,13 @@
  * and distribution information, see the file "mit-copyright.h". 
  *
  * $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chpobox.c,v $
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chpobox.c,v 1.4 1988-02-05 17:35:01 mar Exp $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chpobox.c,v 1.5 1988-08-04 13:22:25 mar Exp $
  * $Author: mar $
  *
  */
 
 #ifndef lint
-static char *rcsid_chpobox_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chpobox.c,v 1.4 1988-02-05 17:35:01 mar Exp $";
+static char *rcsid_chpobox_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chpobox.c,v 1.5 1988-08-04 13:22:25 mar Exp $";
 #endif not lint
 
 /*
@@ -75,11 +75,11 @@ main(argc, argv)
     struct passwd *pwd;
     struct pobox_values getnewmach(), pobox;
     char *smsarg[1], buf[BUFSIZ];
-    char *ds(), *trim(), *in(), *canon();
+    char *strsave(), *trim(), *in(), *canon();
     char *address, *uname, *machine;
     char **return_args, **crunch_pobox_args();
     uid_t u;
-    int get_machine(), scream();
+    int get_pobox(), scream();
     int c, delflag, add, usageflag;
 
     extern int optind;
@@ -108,7 +108,7 @@ main(argc, argv)
 		usageflag++;
 	    else {
 		delflag++;
-		address = ds(optarg);
+		address = strsave(optarg);
 	    }
 	    break;
 	case 'a':
@@ -116,11 +116,11 @@ main(argc, argv)
 		usageflag++;
 	    else {
 		add++;
-		address = ds(optarg);
+		address = strsave(optarg);
 	    }
 	    break;
 	case 'u':
-	    uname = ds(optarg);
+	    uname = strsave(optarg);
 	    break;
 	default:
 	    usageflag++;
@@ -149,7 +149,7 @@ main(argc, argv)
 	goto punt;
     }
 
-    status = sms_auth();
+    status = sms_auth("chpobox");
     if (status) {
 	(void) sprintf(buf, "\nAuthorization failed -- please \
 run \"kinit\" and try again.");
@@ -160,14 +160,13 @@ run \"kinit\" and try again.");
      * set up some bogus arguments to feed to sms_access 
      */
     pobox.login = uname;
-    pobox.type = "FOREIGN";
+    pobox.type = "SMTP";
     pobox.box = "foo";
-    pobox.machine = "baz.bat.quux";
     return_args = crunch_pobox_args(pobox);
     /*
      * do an access check. 
      */
-    status = sms_access("add_pobox", 4, return_args);
+    status = sms_access("set_pobox", 3, return_args);
     if (status) {
 	(void) sprintf(buf, "\nUnauthorized attempt to modify %s's \
 email address.", uname);
@@ -177,7 +176,7 @@ email address.", uname);
     /*
      * get a list of current boxes
      */
-    status = sms_query("get_pobox", 1, smsarg, get_machine, NULL);
+    status = sms_query("get_pobox", 1, smsarg, get_pobox, NULL);
     if (status && status != SMS_NO_MATCH) {
 	com_err(whoami, status, "while retrieving current mailboxes\n");
 	goto punt;
@@ -263,17 +262,12 @@ database.");
 	exit(0);
     }
 
-    printf("Current mail address%s for %s %s:\n",
-	   nboxes < 2 ? "" : "es",
-	   uname,
-	   nboxes < 2 ? "is" : "are");
+    printf("Current mail address for %s is: ", uname);
     if (nboxes == 0)
 	printf("  None\n");
     else {
-	int i;
-	for (i = 0; i < nboxes; i++)
-	    printf("  type: %s, address: %s@%s\n", boxes[i].type,
-		   boxes[i].box, boxes[i].machine);
+	printf("%s\n  last modified on %s by user %s using %s\n",
+	      boxes[0].box, boxes[0].modtime, boxes[0].modby, boxes[0].modwith);
     }
 
     sms_disconnect();
@@ -295,34 +289,24 @@ programmer botch\n");
 }
 
 /*
- * get_machine gets all your poboxes and displays them.
+ * get_pobox gets all your poboxes and displays them.
  */
 
 /* ARGSUSED */
 int
-get_machine(argc, argv, callarg)
+get_pobox(argc, argv, callarg)
     int argc;
     char **argv, *callarg;
 {
     struct pobox_values *pobox = &boxes[nboxes++];
 
-    pobox->type = ds(argv[1]);
-    pobox->machine = ds(argv[2]);
-    pobox->box = ds(argv[3]);
+    pobox->type = strsave(argv[1]);
+    pobox->box = strsave(argv[2]);
+    pobox->modtime = strsave(argv[3]);
+    pobox->modby = strsave(argv[4]);
+    pobox->modwith = strsave(argv[5]);
 
     return (0);
-}
-
-char *
-ds(str)
-    char *str;
-{
-    register char *newstr = malloc((unsigned) strlen(str) + 1);
-
-    if (newstr == (char *) NULL)
-	return ((char *) NULL);
-    else
-	return (strcpy(newstr, str));
 }
 
 char **
@@ -331,11 +315,13 @@ crunch_pobox_args(in)
 {
     char **out;
 
-    out = (char **) malloc((unsigned) sizeof(char *) * 4);
+    out = (char **) malloc((unsigned) sizeof(char *) * 6);
     out[0] = in.login;
     out[1] = in.type;
-    out[2] = in.machine;
-    out[3] = in.box;
+    out[2] = in.box;
+    out[3] = in.modtime;
+    out[4] = in.modby;
+    out[5] = in.modwith;
     return (out);
 }
 
@@ -374,7 +360,7 @@ in(machine)
     int check_match();
 
     match = 0;
-    service[0] = ds("pop");
+    service[0] = strsave("pop");
     status = sms_query("get_server_locations", 1, service,
 		       check_match, machine);
     if (status && (status != SMS_NO_MATCH)) {
@@ -385,7 +371,7 @@ database.");
     if (match)
 	return ("pop");
 
-    service[0] = ds("local");
+    service[0] = strsave("local");
     status = sms_query("get_server_locations", 1, service,
 		       check_match, machine);
     if (status && (status != SMS_NO_MATCH)) {
@@ -430,7 +416,7 @@ canon(machine)
 
     hostinfo = gethostbyname(machine);
     if (hostinfo != (struct hostent *) NULL)
-	machine = ds(hostinfo->h_name);
+	machine = strsave(hostinfo->h_name);
     else			/* gethostbyname failed; this should be very
 				 * rare, since we're dealing with local
 				 * hosts, so no fancy error recovery.

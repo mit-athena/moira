@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/delete.c,v 1.8 1988-08-07 17:31:15 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/delete.c,v 1.9 1988-08-07 18:25:37 mar Exp $";
 #endif lint
 
 /*	This is the file delete.c for the SMS Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/delete.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/delete.c,v 1.8 1988-08-07 17:31:15 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/delete.c,v 1.9 1988-08-07 18:25:37 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -156,187 +156,187 @@ Bool verbose;
 		if (!strcmp(info[0], "LIST") &&
 		    !strcmp(info[1], name))
 		    continue;
-		print( countargs(info), info, null);
+		Print(CountArgs(info), info, NULL);
 		local = local->q_forw;
 	    }
-	    put_message("");
-	    put_message(
-                 "the ace for each of these items must be changed before");
+	    Put_message("");
+	    Put_message(
+                 "The ACE for each of these items must be changed before");
 	    sprintf(buf,"the %s %s can be deleted.\n", type, name);
-	    put_message(buf);
+	    Put_message(buf);
 	}
 	break;
     default:
-	com_err(program_name, status, " in checkiface (get_ace_use).");
-	return(sub_error);
+	com_err(program_name, status, " in CheckIfAce (get_ace_use).");
+	return(SUB_ERROR);
     }
-    freequeue(elem);
-    return(sub_error);
+    FreeQueue(elem);
+    return(SUB_ERROR);
 }
 
-/*	function name: removeitemfromlists
- *	description: this function removes a list from all other lists of
+/*	Function Name: RemoveItemFromLists
+ *	Description: this function removes a list from all other lists of
  *                   which it is a member.
- *	arguments: name - name of the item
- *                 elem - a pointer to a queue element. returned
+ *	Arguments: name - name of the item
+ *                 elem - a pointer to a queue element. RETURNED
  *                 verbose - verbose mode.
- *	returns: sub_error if there is an error.
+ *	Returns: SUB_ERROR if there is an error.
  */
 
 int
-removeitemfromlists(name, type, elem, verbose)
+RemoveItemFromLists(name, type, elem, verbose)
 char * name, *type;
 struct qelem ** elem;
 int verbose;
 {
     struct qelem *local;
-    char *args[10], temp_buf[bufsiz];
+    char *args[10], temp_buf[BUFSIZ];
     int lists;
     register int status;
     
     args[0] = type;
     args[1] = name;
-    *elem = null;
+    *elem = NULL;
 
 /* 
- * get all list of which this item is a member, and store them in a queue.
+ * Get all list of which this item is a member, and store them in a queue.
  */
 
-    status = sms_query("get_lists_of_member", 2, args, storeinfo,
+    status = sms_query("get_lists_of_member", 2, args, StoreInfo,
 		       (char *) elem);
 
-    if (status == sms_no_match)
-	return(sub_normal);
+    if (status == SMS_NO_MATCH)
+	return(SUB_NORMAL);
 
-    if (status != sms_success) {	
-	com_err(program_name, status, " in deletelist (get_lists_of_member).");
-	return(sub_error);
+    if (status != SMS_SUCCESS) {	
+	com_err(program_name, status, " in DeleteList (get_lists_of_member).");
+	return(SUB_ERROR);
     }
 
 /*
- * if verbose mode, ask user of we should remove our list from 
+ * If verbose mode, ask user of we should remove our list from 
  * all these lists.
  */
 
-    local = *elem = queuetop(*elem);
-    lists = queuecount(*elem);
+    local = *elem = QueueTop(*elem);
+    lists = QueueCount(*elem);
     if (lists == 0)
-	return(sub_normal);
+	return(SUB_NORMAL);
     if (verbose) {
 	sprintf(temp_buf, "%s %s is a member of %d other list%s.\n", type,
 		name, lists, ((lists == 1) ? "" : "s") );
-	put_message(temp_buf);
-	while (local != null) {
+	Put_message(temp_buf);
+	while (local != NULL) {
 	    char ** info = (char **) local->q_data;
-	    print( 1, &info[glom_name], (char *) null);
+	    Print( 1, &info[GLOM_NAME], (char *) NULL);
 	    local = local->q_forw;
 	}
-	put_message(" ");	/* blank line. */
-	sprintf(temp_buf,"remove %s %s from these lists? ", type, name);
-	if (yesnoquestion(temp_buf, false) != true) {
-	    put_message("aborting...");
-	    freequeue(*elem);
-	    *elem = null;
-	    return(sub_error);
+	Put_message(" ");	/* Blank Line. */
+	sprintf(temp_buf,"Remove %s %s from these lists? ", type, name);
+	if (YesNoQuestion(temp_buf, FALSE) != TRUE) {
+	    Put_message("Aborting...");
+	    FreeQueue(*elem);
+	    *elem = NULL;
+	    return(SUB_ERROR);
 	}
     }
 
 /*
- * remove this list from all lists that it is a member of.
+ * Remove this list from all lists that it is a member of.
  */
 
     local = *elem;
-    args[dm_member] = name;
-    args[dm_type] = type;
-    while (local != null) {
+    args[DM_MEMBER] = name;
+    args[DM_TYPE] = type;
+    while (local != NULL) {
 	char ** info = (char **) local->q_data;
-	args[dm_list] = info[glom_name];
+	args[DM_LIST] = info[GLOM_NAME];
 	if ( (status = sms_query("delete_member_from_list",
-				 3, args, scream, null)) != 0) {
-	    com_err(program_name, status, " in delete_member\naborting\n");
-	    freequeue(*elem);
-	    return(sub_error);
+				 3, args, Scream, NULL)) != 0) {
+	    com_err(program_name, status, " in delete_member\nAborting\n");
+	    FreeQueue(*elem);
+	    return(SUB_ERROR);
 	}
 	local = local->q_forw;
     }
-    return(sub_normal);
+    return(SUB_NORMAL);
 }
 
-/*	function name: removemembersoflist
- *	description: deletes the members of the list.
- *	arguments: name - name of the list.
+/*	Function Name: RemoveMembersOfList
+ *	Description: Deletes the members of the list.
+ *	Arguments: name - name of the list.
  *                 verbose - query user, about deletion?
- *	returns: sub_error - if we could not delete, or the user abouted.
+ *	Returns: SUB_ERROR - if we could not delete, or the user abouted.
  */
 
 int
-removemembersoflist(name, verbose)
+RemoveMembersOfList(name, verbose)
 char * name;
-bool verbose;
+Bool verbose;
 {
-    char buf[bufsiz], *args[10];
-    struct qelem *local, *elem = null;
+    char buf[BUFSIZ], *args[10];
+    struct qelem *local, *elem = NULL;
     int status, members;
 /* 
- * get the members of this list.
+ * Get the members of this list.
  */
-    status = sms_query("get_members_of_list", 1, &name, storeinfo,
+    status = sms_query("get_members_of_list", 1, &name, StoreInfo,
 		       (char *) &elem);
-    if (status == sms_no_match) 
-	return(sub_normal);
+    if (status == SMS_NO_MATCH) 
+	return(SUB_NORMAL);
 
     if (status != 0) {	
-	com_err(program_name, status, " in deletelist (get_members_of_list).");
-	return(sub_error);
+	com_err(program_name, status, " in DeleteList (get_members_of_list).");
+	return(SUB_ERROR);
     }
 /*
- * if verbose mode, then ask the user if we should delete.
+ * If verbose mode, then ask the user if we should delete.
  */
-    local = elem = queuetop(elem);
-    if ( (members = queuecount(elem)) == 0)
-	return(sub_normal);
+    local = elem = QueueTop(elem);
+    if ( (members = QueueCount(elem)) == 0)
+	return(SUB_NORMAL);
     if (verbose) {
-	sprintf(buf, "list %s has %d member%s:", name, queuecount(elem),
+	sprintf(buf, "List %s has %d member%s:", name, QueueCount(elem),
 		((members == 1) ? "" : "s") );
-	put_message(buf);
-	put_message(" ");	/* blank line. */
-	while (local != null) {
+	Put_message(buf);
+	Put_message(" ");	/* Blank Line. */
+	while (local != NULL) {
 	    char ** info = (char **) local->q_data;
-	    print( countargs(info), info, null);
+	    Print( CountArgs(info), info, NULL);
 	    local = local->q_forw;
 	}
-	put_message(" ");	/* blank line. */
-	sprintf(buf, "remove th%s member%s from list %s? ", 
+	Put_message(" ");	/* Blank Line. */
+	sprintf(buf, "Remove th%s member%s from list %s? ", 
 		((members == 1) ? "is" : "ese"), 
 		((members == 1) ? "" : "s"), name );
-	if ( yesnoquestion(buf, false) != true) {
-	    put_message("aborting...");
-	    freequeue(elem);
-	    return(sub_error);
+	if ( YesNoQuestion(buf, FALSE) != TRUE) {
+	    Put_message("Aborting...");
+	    FreeQueue(elem);
+	    return(SUB_ERROR);
 	}
     }
 /*
- * perform the removal.
+ * Perform The Removal.
  */
     local = elem;
     args[0] = name; 
-    while (local != null) {
+    while (local != NULL) {
 	char ** info = (char **) local->q_data;
 	args[1] = info[0];
 	args[2] = info[1];
 	if ( (status = sms_query("delete_member_from_list",
-				 3, args, scream, null)) != 0) {
-	    com_err(program_name, status, " in delete_member\naborting\n");
-	    freequeue(elem);
-	    return(sub_error);
+				 3, args, Scream, NULL)) != 0) {
+	    com_err(program_name, status, " in delete_member\nAborting\n");
+	    FreeQueue(elem);
+	    return(SUB_ERROR);
 	}
 	local = local->q_forw;
     }
-    return(sub_normal);
+    return(SUB_NORMAL);
 }
 
-/*	function name: deleteusergroup
- *	description: deletes the list given by name if it exists.
+/*	Function Name: DeleteUserGroup
+ *	Description: Deletes the list given by name if it exists.
  *                   intended to be used to delete user groups
  *	Arguments: name - the name of the list to delete.
  *                 verbose - flag that if TRUE queries the user to
@@ -557,8 +557,7 @@ char *argv[];
 
     list = NULL;
     
-    switch(status = sms_query("get_list_info", 1, argv + 1, StoreInfo,
-			      (char *) &list)){
+    switch(status = sms_query("get_list_info", 1, argv + 1, StoreInfo, &list)){
     case SMS_SUCCESS:
 	break;
 /*    case SMS_NO_WILDCARD:
@@ -627,19 +626,16 @@ char ** argv;
 
     status = sms_query("delete_user", 1, &name, Scream, (char *) NULL);
     if (status != SMS_IN_USE && status != 0) {
-	com_err(program_name, status, ": user not deleted");
+	com_err(program_name, status, ": user not deleted");	
 	return(DM_NORMAL);
     }
     if (status == 0) {
 	sprintf(buf,"User %s deleted.", name);
 	Put_message(buf);
     }
-
-/* By design decision, if a user has been registered, we will not
- * delete them.  So if the simple delete fails, give up.
+/* Design decision not to allow registered users to be deleted.
  */
     Put_message("Sorry, registered users cannot be deleted.");
-
 #ifdef notdef
     else if (status == SMS_IN_USE) {
 

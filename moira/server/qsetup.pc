@@ -1,4 +1,4 @@
-/* $Id: qsetup.pc,v 2.51 2002-11-28 03:05:56 zacheiss Exp $
+/* $Id: qsetup.pc,v 2.52 2002-12-03 21:22:26 zacheiss Exp $
  *
  * Query setup routines
  *
@@ -21,7 +21,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsetup.pc,v 2.51 2002-11-28 03:05:56 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsetup.pc,v 2.52 2002-12-03 21:22:26 zacheiss Exp $");
 
 extern char *whoami;
 extern int dbms_errno, mr_errcode;
@@ -36,6 +36,7 @@ int hostname_check(char *name);
 int hostinfo_check(char *name, int num);
 int prefetch_value(struct query *q, char **argv, client *cl);
 int check_nfs(int mach_idx, char *name, char *access);
+int check_mailman_listname(char *name, const char *suffix);
 
 /* Setup Routines */
 
@@ -367,11 +368,11 @@ static int badlistchars[] = {
 int setup_alis(struct query *q, char *argv[], client *cl)
 {
   EXEC SQL BEGIN DECLARE SECTION;
-  int ngid, cnt;
+  int ngid, cnt, mailman, mailman_id;
   char *name, *desc;
   EXEC SQL END DECLARE SECTION;
   unsigned char *p;
-  int idx, err;
+  int idx, err, best = -1, usage;
 
   if (!strcmp(q->shortname, "alis"))
     idx = 0;
@@ -383,8 +384,10 @@ int setup_alis(struct query *q, char *argv[], client *cl)
     desc = argv[9 + idx];
   else if (q->version == 3)
     desc = argv[10 + idx];
-  else if (q->version >= 4)
+  else if (q->version == 4)
     desc = argv[12 + idx];
+  else if (q->version >= 10)
+    desc = argv[14 + idx];
 
   if (idx == 1)
     {
@@ -429,6 +432,68 @@ int setup_alis(struct query *q, char *argv[], client *cl)
 	}
       else
 	strcpy(argv[6 + idx], "-1");
+    }
+
+  /* Don't let someone rename a list to one of the magic mailman names
+   * (foo-admin, etc) if foo already exists as a mailman list.
+   */
+  if ((err = check_mailman_listname(name, "-admin")) != MR_SUCCESS)
+    return err;
+  if ((err = check_mailman_listname(name, "-owner")) != MR_SUCCESS)
+    return err;
+  if ((err = check_mailman_listname(name, "-request")) != MR_SUCCESS)
+    return err;
+
+  if (q->version >= 10)
+    {
+      /* Don't let them take this name for a mailman list if we can't
+       * reserve the -admin, -owner, and -request names.
+       */
+      if (atoi(argv[8 + idx]))
+	{
+	  EXEC SQL SELECT  COUNT(name) INTO :cnt FROM list
+	    WHERE (name = :name || '-admin' OR name = :name || '-owner' OR
+		   name = :name || '-request');
+	  if (cnt)
+	    return MR_EXISTS;
+	}
+
+      /* Handle the [ANY] case for mailman server. */
+      mailman_id = *(int *)argv[9 + idx];
+      if (mailman_id == -1)
+	{
+	  EXEC SQL DECLARE csr_mailman CURSOR FOR
+	    SELECT mach_id FROM serverhosts WHERE service = 'MAILMAN'
+	    AND enable = 1;
+	  if (dbms_errno)
+	    return mr_errcode;
+	  EXEC SQL OPEN csr_mailman;
+	  if (dbms_errno)
+	    return mr_errcode;
+
+	  while (1)
+	    {
+	      EXEC SQL FETCH csr_mailman INTO :mailman_id;
+	      if (sqlca.sqlcode)
+		break;
+	      
+	      EXEC SQL SELECT COUNT(name) INTO :usage FROM list
+		WHERE mailman_id = :mailman_id;
+
+	      if (best < 0 || usage < best)
+		{
+		  best = usage;
+		  *(int *)argv[9 + idx] = mailman_id;
+		  break;
+		}
+	    }
+	  EXEC SQL CLOSE csr_mailman;
+	  if (dbms_errno)
+	    return mr_errcode;
+
+	  if (best == -1)
+	    return MR_SERVICE;
+	}
     }
 
   if ((mr_errcode = prefetch_value(q, argv, cl)) != MR_SUCCESS)
@@ -1471,5 +1536,29 @@ int setup_acon(struct query *q, char *argv[], client *cl)
   if ((mr_errcode = prefetch_value(q, argv, cl)) != MR_SUCCESS)
     return mr_errcode;
   
+  return MR_SUCCESS;
+}
+
+int check_mailman_listname(char *name, const char *suffix)
+{
+  char *p;
+  EXEC SQL BEGIN DECLARE SECTION;
+  int i, cnt;
+  EXEC SQL END DECLARE SECTION;
+
+  p = strstr(name, suffix);
+  if (p)
+    {
+      if (strlen(name) == (p - name + strlen(suffix)))
+	{
+	  /* list is of the form "name-suffix" */
+	  i = (p - name);
+	  EXEC SQL SELECT COUNT(name) INTO :cnt FROM list
+	    WHERE name = SUBSTR(:name, 1, :i) AND mailman = 1;
+	  if (cnt > 0)
+	    return MR_EXISTS;
+	}
+    }
+
   return MR_SUCCESS;
 }

@@ -1,4 +1,4 @@
-/* $Id: increment.pc,v 2.17 2002-08-13 15:51:51 zacheiss Exp $
+/* $Id: increment.pc,v 2.18 2002-12-03 21:22:26 zacheiss Exp $
  *
  * Deal with incremental updates
  *
@@ -20,7 +20,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/increment.pc,v 2.17 2002-08-13 15:51:51 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/increment.pc,v 2.18 2002-12-03 21:22:26 zacheiss Exp $");
 
 extern char *whoami;
 extern char *table_name[];
@@ -197,9 +197,15 @@ void incremental_before(enum tables table, char *qual, char **argv)
     case LIST_TABLE:
       sprintf(stmt_buf, "SELECT l.name, l.active, l.publicflg, l.hidden, "
 	      "l.maillist, l.grouplist, l.gid, l.acl_type, l.acl_id, "
-	      "l.description, l.list_id FROM list l WHERE %s", qual);
+	      "l.description, l.list_id, l.mailman, l.mailman_id "
+	      "FROM list l WHERE %s", qual);
       dosql(before);
-      beforec = 11;
+      name = xmalloc(0);
+      id = atoi(before[12]);
+      id_to_name(id, MACHINE_TABLE, &name);
+      strcpy(before[12], name);
+      free(name);
+      beforec = 13;
       break;
     case IMEMBERS_TABLE:
       id = (int) argv[0];
@@ -380,9 +386,15 @@ void incremental_after(enum tables table, char *qual, char **argv)
     case LIST_TABLE:
       sprintf(stmt_buf, "SELECT l.name, l.active, l.publicflg, l.hidden, "
 	      "l.maillist, l.grouplist, l.gid, l.acl_type, l.acl_id, "
-	      "l.description, l.list_id FROM list l WHERE %s", qual);
+	      "l.description, l.list_id, l.mailman, l.mailman_id "
+	      "FROM list l WHERE %s", qual);
       dosql(after);
-      afterc = 11;
+      name = xmalloc(0);
+      id = atoi(after[12]);
+      id_to_name(id, MACHINE_TABLE, &name);
+      strcpy(after[12], name);
+      free(name);
+      afterc = 13;
       break;
     case IMEMBERS_TABLE:
       id = (int) argv[0];

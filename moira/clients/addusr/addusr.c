@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/addusr/addusr.c,v 1.2 1992-07-06 15:58:09 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/addusr/addusr.c,v 1.3 1993-01-26 15:36:36 mar Exp $
  *
  * Program to add users en batch to the moira database
  *
@@ -20,7 +20,7 @@
 #include <moira_site.h>
 
 #ifndef LINT
-static char adduser_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/addusr/addusr.c,v 1.2 1992-07-06 15:58:09 mar Exp $";
+static char adduser_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/addusr/addusr.c,v 1.3 1993-01-26 15:36:36 mar Exp $";
 #endif
 
 /* flags from command line */
@@ -256,7 +256,7 @@ char **argv;
 		} else if (duplicate < 0) {
 		    com_err(whoami, MR_EXISTS,
 			    "user %s %s already exists with different ID number",
-			    qargv[0], qargv[1]);
+			    qargv[U_FIRST], qargv[U_LAST]);
 		    com_err(whoami, 0, "ADDING user anyway");
 		}
 	    }
@@ -274,7 +274,7 @@ char **argv;
 	    status = grab_login(qargv[U_FIRST], qargv[U_LAST],
 				qargv[U_MITID], idbuf, login);
 	    if (status) {
-		com_err(whoami, status, "While registering (login) %s %s",
+		com_err(whoami, status, "while registering (login) %s %s",
 			qargv[U_FIRST], qargv[U_LAST]);
 		errors++;
 		continue;

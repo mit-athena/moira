@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/fixhost.c,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/fixhost.c,v 1.7 1990-03-17 00:35:05 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/fixhost.c,v 1.8 1990-04-05 17:45:11 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -9,7 +9,7 @@
  */
 
 #ifndef lint
-static char *rcsid_fixhost_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/fixhost.c,v 1.7 1990-03-17 00:35:05 mar Exp $";
+static char *rcsid_fixhost_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/fixhost.c,v 1.8 1990-04-05 17:45:11 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -59,7 +59,7 @@ canonicalize_hostname(host)
 	return(strsave(tbuf));
     }
 
-    if (index(host, '*') || index(host, '?'))
+    if (index(host, '*') || index(host, '?') || index(host, '['))
       return(host);
 
     hp = gethostbyname(host);

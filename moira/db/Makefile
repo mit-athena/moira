@@ -1,4 +1,4 @@
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/db/Makefile,v 1.2 1988-09-13 13:46:03 mar Exp $
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/db/Makefile,v 1.3 1988-12-29 18:48:31 mar Exp $
 
 # (c) Copyright 1988 by the Massachusetts Institute of Technology.
 # For copying and distribution information, please see the file
@@ -24,11 +24,6 @@ newsms.c: newsms.qc
 tables.c: newdb db2tbls.awk
 	awk -f db2tbls.awk < newdb > tables.c
 
-extractdb: extract.o
-	cc -o extractdb extract.o ${INGLIB}
-
-extract.c: extract.qc
-
 class: class.o
 	cc -o class class.o ../lib/libsms.a ${INGLIB}
 
@@ -45,6 +40,5 @@ clean:
 	rm -f *.o newsms.c tables.c newsms extractdb extract.c class class.c
 	rm -f convert conv.c match.c data.c
 
-install: newsms extractdb
+install: newsms
 	install newsms ../bin
-	install extractdb ../bin

@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/sis.dc,v 1.2 1992-12-21 17:58:31 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/sis.dc,v 1.3 1993-04-15 12:14:51 mar Exp $
  *
  * This generates a list of users and their MIT ID numbers and the
  * signatures which guarentee this mapping.
@@ -131,7 +131,7 @@ char **argv;
  sqlerr:
     com_err(whoami, MR_INGRES_ERR, " code %d\n", sqlca.sqlcode);
 #ifsql INGRES
-    if (sqlca.sqlcode == 17700)
+    if (sqlca.sqlcode == 17700 || sqlca.sqlcode == -37000)
       exit(MR_DEADLOCK);
 #endsql
     critical_alert("DCM", "SIS build encountered INGRES ERROR %d",

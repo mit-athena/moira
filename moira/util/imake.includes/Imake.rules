@@ -1,6 +1,6 @@
 /**/#	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/util/imake.includes/Imake.rules,v $
-/**/#	$Author: jtkohl $
-/**/#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/util/imake.includes/Imake.rules,v 4.13 1989-07-27 19:07:51 jtkohl Exp $
+/**/#	$Author: qjb $
+/**/#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/util/imake.includes/Imake.rules,v 4.14 1989-08-03 14:48:48 qjb Exp $
 /**/#
 
 #ifdef __STDC__
@@ -94,11 +94,18 @@ install:: 								@@\
  * Rule for building objects in libraries.
  */
 
+#ifdef DEBUG_LIBS
+/* When debugging, leave symbols alone (don't do LD) */
+#define library_obj_rule()						@@\
+.c.o:									@@\
+	$(CC) -c $(CFLAGS) $*.c
+#else
 #define library_obj_rule()						@@\
 .c.o:									@@\
 	$(CC) -c $(CFLAGS) $*.c						@@\
 	-$(LD) -x -r -o a.out $*.o					@@\
 	$(MV) a.out $*.o
+#endif
 
 #define library_ro_object(cfile)					@@\
 concat(cfile,.o): concat(cfile,.c)					@@\

@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase2.qc,v 1.1 1988-09-25 21:57:55 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase2.qc,v 1.2 1988-09-26 14:07:48 mar Exp $
  *
  *  (c) Copyright 1988 by the Massachusetts Institute of Technology.
  *  For copying and distribution information, please see the file
@@ -9,6 +9,9 @@
 #include <stdio.h>
 #include <sms.h>
 #include "dbck.h"
+
+static char phase2_qc_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase2.qc,v 1.2 1988-09-26 14:07:48 mar Exp $";
+
 
 show_mcm_mach(id)
 int id;
@@ -82,6 +85,7 @@ int id;
       printf("%d entr%s removed\n", rowcount, rowcount==1?"y":"ies");
     else
       printf("Not removed\n");
+    modified("users");
 ##}
 
 show_svc(id)
@@ -136,6 +140,7 @@ int id;
       printf("%d entr%s fixed\n", rowcount, rowcount==1?"y":"ies");
     else
       printf("Not fixed\n");
+    modified("list");
 ##}
 
 
@@ -218,6 +223,7 @@ int id;
       printf("%d entr%s deleted\n", rowcount, rowcount==1?"y":"ies");
     else
       printf("Not deleted\n");
+    modified("members");
 ##}
 
 ##del_mem_list(id)
@@ -232,6 +238,7 @@ int id;
       printf("%d entr%s deleted\n", rowcount, rowcount==1?"y":"ies");
     else
       printf("Not deleted\n");
+    modified("members");
 ##}
 
 ##del_mem_str(id)
@@ -246,6 +253,7 @@ int id;
       printf("%d entr%s deleted\n", rowcount, rowcount==1?"y":"ies");
     else
       printf("Not deleted\n");
+    modified("members");
 ##}
 
 
@@ -274,6 +282,7 @@ int id;
       printf("%d entr%s deleted\n", rowcount, rowcount==1?"y":"ies");
     else
       printf("Not deleted\n");
+    modified("serverhosts");
 ##}
 
 
@@ -313,6 +322,7 @@ int hint;
 		  printf("%d entr%s fixed\n",rowcount, rowcount==1?"y":"ies");
 		else
 		  printf("Not fixed\n");
+		modified("filesys");
 		f->mach_id = 0;
 	    }
 	}
@@ -349,6 +359,7 @@ int hint;
 		    printf("%d entr%s fixed\n",rowcount, rowcount==1?"y":"ies");
 		  else
 		    printf("Not fixed\n");
+		  modified("filesys");
 		} else {
 		    printf("No NFSphys exsits for %s:%s\n", m->name, f->dir);
 		    if (single_fix("Create", 0)) {
@@ -379,6 +390,7 @@ int hint;
 				 rowcount==1?"y":"ies");
 			else
 			  printf("Not created\n");
+			modified("nfsphys");
 			n = (struct nfsphys *)malloc(sizeof(struct nfsphys));
 			strcpy(n->dir, dir);
 			n->mach_id = id3;
@@ -387,13 +399,14 @@ int hint;
 			n->count = 0;
 			hash_store(nfsphys, id1, n);
 ##			replace filesys (phys_id = id1)
-##			  where filesys.filsys_id = id
+##			  where filesys.filsys_id = id2
 ##			inquire_equel(rowcount = "rowcount")
 			if (rowcount > 0)
 			  printf("%d filesys entr%s fixed\n", rowcount,
 				 rowcount==1?"y":"ies");
 			else
 			  printf("Not fixed\n");
+			modified("filesys");
 		    }
 	        }
 	    }
@@ -481,6 +494,7 @@ fix_quota_nofs(id)
       printf("%d entr%s fixed\n",rowcount, rowcount==1?"y":"ies");
     else
       printf("Not fixed\n");
+    modified("nfsquota");
 ##}
 
 

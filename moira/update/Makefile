@@ -1,6 +1,6 @@
 #
 # 	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/Makefile,v $
-#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/Makefile,v 1.9 1988-12-27 18:23:29 mar Exp $
+#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/Makefile,v 1.10 1989-01-30 15:55:53 mar Exp $
 #
 
 #
@@ -31,7 +31,7 @@ CSRCS=	client.c ticket.c send_file.c checksum.c hostname.c
 
 LIBS=	-L../lib -lsms -lgdb -lkrb -ldes -lcom_err
 
-all:	sms_update.o update_server
+all:	sms_update.o update_server sms_untar
 
 update_server: ${SOBJS}
 	cc ${CFLAGS} -o update_server ${SOBJS} ${LIBS}
@@ -39,14 +39,19 @@ update_server: ${SOBJS}
 sms_update.o: ${COBJS}
 	ld -r -o sms_update.o ${COBJS}
 
+sms_untar: sms_untar.c
+	cc -o sms_untar sms_untar.c
+
 
 clean:	
 	-rm -f ${COBJS} ${SOBJS}
 	-rm -f update_server sms_update.o
+	-rm -f sms_untar
 	-rm -f core a.out *~ \#*
 
 install: update_server
 	install -s update_server ${DESTDIR}/usr/etc/update_server
+	install -s sms_untar ${DESTDIR}/etc/sms_untar
 
 lint:
 	lint ${LINTFLAGS} ${SSRCS}

@@ -1,4 +1,4 @@
-/* $Id: qsetup.pc,v 2.7 1998-02-05 22:51:49 danw Exp $
+/* $Id: qsetup.pc,v 2.8 1998-02-08 17:34:51 danw Exp $
  *
  * Query setup routines
  *
@@ -21,7 +21,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsetup.pc,v 2.7 1998-02-05 22:51:49 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsetup.pc,v 2.8 1998-02-08 17:34:51 danw Exp $");
 
 extern char *whoami;
 extern int dbms_errno, mr_errcode;
@@ -979,7 +979,7 @@ int setup_ahst(struct query *q, char **argv, client *cl)
 	  /*
 	   * someone specified an IP address for the host record
 	   */
-	  if ((value & mask) != saddr)
+	  if ((value & mask) != saddr || value < low || value > high)
 	    return MR_ADDRESS;
 	  /*
 	   * run the address argument through inet_addr(). This

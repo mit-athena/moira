@@ -1,4 +1,4 @@
-/* $Id: moira_site.h,v 1.36 2000-08-10 02:26:35 zacheiss Exp $
+/* $Id: moira_site.h,v 1.37 2000-09-25 22:52:18 zacheiss Exp $
  *
  * This file contains all definitions that allow easy access to
  * elements returned by most of the @i[Moira] queries.  It also defines
@@ -388,10 +388,12 @@
 #define	ZA_IWS_ID	6
 #define	ZA_IUI_TYPE	7
 #define	ZA_IUI_ID	8
-#define	ZA_MODTIME 	9
-#define	ZA_MODBY	10
-#define	ZA_MODWITH	11
-#define ZA_END		12
+#define ZA_OWNER_TYPE   9
+#define ZA_OWNER_ID     10
+#define	ZA_MODTIME 	11
+#define	ZA_MODBY	12
+#define	ZA_MODWITH	13
+#define ZA_END		14
 
 
 

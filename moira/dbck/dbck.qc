@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/dbck.qc,v 1.2 1988-09-26 14:05:10 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/dbck.qc,v 1.3 1988-09-26 15:27:33 mar Exp $
  *
  * SMS database consistency checker
  *
@@ -14,12 +14,14 @@
 #include "dbck.h"
 
 
-static char dbck_qc_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/dbck.qc,v 1.2 1988-09-26 14:05:10 mar Exp $";
+static char dbck_qc_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/dbck.qc,v 1.3 1988-09-26 15:27:33 mar Exp $";
 
 
-int debug = 1;
+int debug = 0;
 int mode = MODE_ASK;
 int fast = 0;
+int warn = 1;
+int abort = 0;
 struct hash *users, *machines, *clusters, *lists, *filesys, *nfsphys, *strings;
 ##int dcmenable;
 struct save_queue *modtables;
@@ -61,6 +63,13 @@ char **argv;
 	  case 'f':
 	      fast++;
 	      break;
+	  case 'w':
+	      warn = 0;
+	      break;
+	  default:
+	      printf("Usage: %s [-d level] [-n] [-y] [-p] [-a] [-c] [-f] [-w] [database]\n",
+		     argv[0]);
+	      exit(1);
 	  }
 	else
 	  database = *arg;
@@ -114,7 +123,10 @@ int	*num;
 {
     printf("An ingres error occuurred, code %d\n", *num);
     printf("Aborting...\n");
-##  abort
+    if (!abort) {
+	abort++;
+##	abort
+    }
     exit(1);
 }
 
@@ -123,12 +135,19 @@ int interrupt()
 ##{
     printf("Signal caught\n");
     if (prompt("Save database changes")) {
+	/* break out of a retrieve loop */
+	IIbreak();
 ##	end transaction
 	cleanup();
 	exit(0);
     }
     printf("Aborting transaction\n");
-##  abort
+    if (!abort) {
+	abort++;
+	/* break out of a retrieve loop */
+	IIbreak();
+##  	abort
+    }
 ##  replace values (value = dcmenable) where values.name = "dcm_enable"
 ##  exit
     exit(0);

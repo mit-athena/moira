@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/startmoira.c,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/startmoira.c,v 1.7 1990-03-19 20:52:07 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/startmoira.c,v 1.8 1991-01-15 13:05:18 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -13,7 +13,7 @@
  */
 
 #ifndef lint
-static char *rcsid_mr_starter_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/startmoira.c,v 1.7 1990-03-19 20:52:07 mar Exp $";
+static char *rcsid_mr_starter_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/startmoira.c,v 1.8 1991-01-15 13:05:18 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -29,41 +29,7 @@ static char *rcsid_mr_starter_c = "$Header: /afs/.athena.mit.edu/astaff/project/
 #define PROG	"moirad"
 
 int rdpipe[2];
-char *sigdescr[] = {
-	0,
-	"hangup",
-	"interrupt",	
-	"quit",
-	"illegal instruction",
-	"trace/BPT trap",
-	"IOT trap",
-	"EMT trap",
-	"floating exception",
-	"kill",
-	"bus error",
-	"segmentation violation",
-	"bad system call",
-	"broken pipe",
-	"alarm clock",
-	"termination",
-	"urgent I/O condition",
-	"stopped",
-	"stopped",
-	"continued",
-	"child exited",
-	"stopped (tty input)",
-	"stopped (tty output)",
-	"I/O possible",
-	"cputime limit exceeded",
-	"filesize limit exceeded",
-	"virtual timer expired",
-	"profiling timer expired",
-	"window size changed",
-	"signal 29",
-	"user defined signal 1",
-	"user defined signal 2",
-	"signal 32"
-};
+extern char *sys_siglist[];
 
 cleanup()
 {
@@ -83,7 +49,7 @@ cleanup()
 		}
 		if (WIFSIGNALED(stat)) {
 			sprintf(buf, "exited on %s signal%s\n",
-				sigdescr[stat.w_termsig],
+				sys_siglist[stat.w_termsig],
 				(stat.w_coredump?"; Core dumped":0));
 		}
 		write(rdpipe[1], buf, strlen(buf));
@@ -119,7 +85,7 @@ main(argc, argv)
 	}
 	pipe(rdpipe);
 	if (fork()) {
-		exit();
+		exit(0);
 	}
 	chdir("/");	
 	close(0);
@@ -170,7 +136,7 @@ main(argc, argv)
 		time(&foo);
 		time_s = ctime(&foo)+4;
 		time_s[strlen(time_s)-6]='\0';
-		fprintf(log, "%s <%d> %s", time_s, pid, buf);
+		fprintf(log, "%s %s", time_s, buf);
 		fflush(log);
 	} while (!done);
 	exit(0);

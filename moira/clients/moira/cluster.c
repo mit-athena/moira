@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/cluster.c,v 1.14 1989-02-23 16:28:22 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/cluster.c,v 1.15 1989-06-01 21:20:47 mar Exp $";
 #endif lint
 
 /*	This is the file cluster.c for the SMS Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/cluster.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/cluster.c,v 1.14 1989-02-23 16:28:22 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/cluster.c,v 1.15 1989-06-01 21:20:47 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -260,9 +260,7 @@ Bool name;
 	case MACHINE:
 	    newname = Strsave(info[M_NAME]);
 	    GetValueFromUser("The new name for this machine? ", &newname);
-	    strcpy(temp_buf, CanonicalizeHostname(newname));
-	    free(newname);
-	    newname = Strsave(temp_buf);
+	    newname = canonicalize_hostname(newname);
 	    break;
 	case CLUSTER:
 	    newname = Strsave(info[C_NAME]);
@@ -320,8 +318,10 @@ int argc;
 char **argv;
 {
     struct qelem *top;
+    char *tmpname;
 
-    top = GetMCInfo(MACHINE, CanonicalizeHostname(argv[1]), (char *) NULL);
+    tmpname = canonicalize_hostname(strsave(argv[1]));
+    top = GetMCInfo(MACHINE, tmpname, (char *) NULL);
     Loop(top, ( (void *) PrintMachInfo) );
     FreeQueue(top);
     return(DM_NORMAL);
@@ -347,14 +347,16 @@ char **argv;
 /* 
  * Check to see if this machine already exists. 
  */
-    name =  CanonicalizeHostname(argv[1]);
+    name =  canonicalize_hostname(strsave(argv[1]));
 
     if ( (stat = do_sms_query("get_machine", 1, &name, NullFunc, NULL)) == 0) {
 	Put_message("This machine already exists.");
+	free(name);
 	return(DM_NORMAL);
     }
     else if (stat != SMS_NO_MATCH) {
 	com_err(program_name, stat, " in AddMachine.");
+	free(name);
 	return(DM_NORMAL);
     }
 
@@ -369,6 +371,7 @@ char **argv;
 	com_err(program_name, stat, " in AddMachine.");
 
     FreeInfo(info);
+    free(name);
     return(DM_NORMAL);
 }
 
@@ -406,11 +409,15 @@ UpdateMachine(argc, argv)
 int argc;
 char **argv;
 {
-    struct qelem *top = GetMCInfo( MACHINE,  CanonicalizeHostname(argv[1]),
-				   (char *) NULL);
+    struct qelem *top;
+    char *tmpname;
+
+    tmpname = canonicalize_hostname(strsave(argv[1]));
+    top = GetMCInfo( MACHINE,  tmpname, (char *) NULL);
     QueryLoop(top, NullPrint, RealUpdateMachine, "Update the machine");
 
     FreeQueue(top);
+    free(tmpname);
     return(DM_NORMAL);
 }
 
@@ -530,10 +537,13 @@ int argc;
 char **argv;
 {
     struct qelem *top;
+    char *tmpname;
 
-    top = GetMCInfo(MACHINE, CanonicalizeHostname(argv[1]), (char *) NULL);
+    tmpname = canonicalize_hostname(strsave(argv[1]));
+    top = GetMCInfo(MACHINE, tmpname, (char *) NULL);
     QueryLoop(top, PrintMachInfo, RealDeleteMachine, "Delete the machine");
     FreeQueue(top);
+    free(tmpname);
     return(DM_NORMAL);
 }
 
@@ -555,11 +565,12 @@ char ** argv;
     Bool add_it, one_machine, one_cluster;
     struct qelem * melem, *mtop, *celem, *ctop;
 
-    machine = CanonicalizeHostname(argv[1]);
+    machine = canonicalize_hostname(strsave(argv[1]));
     cluster = argv[2];
 
     celem = ctop = GetMCInfo(CLUSTER,  cluster, (char *) NULL);
     melem = mtop = GetMCInfo(MACHINE,  machine, (char *) NULL);
+    free(machine);
 
     one_machine = (QueueCount(mtop) == 1);
     one_cluster = (QueueCount(ctop) == 1);
@@ -667,7 +678,7 @@ char ** argv;
     char buf[BUFSIZ], * args[10];
     register int stat;
 
-    args[MAP_MACHINE] = CanonicalizeHostname(argv[1]);
+    args[MAP_MACHINE] = canonicalize_hostname(strsave(argv[1]));
     args[MAP_CLUSTER] = argv[2];
     args[MAP_END] = NULL;
 
@@ -677,6 +688,7 @@ char ** argv;
 	sprintf(buf, "The machine %s is not is the cluster %s.",
 		args[MAP_MACHINE], args[MAP_CLUSTER]);
 	Put_message(buf);
+	free(args[MAP_MACHINE]);
 	return(DM_NORMAL);
     }
     if (stat != SMS_SUCCESS)
@@ -687,6 +699,7 @@ char ** argv;
 	      "Remove this machine from this cluster");
 
     FreeQueue(elem);
+    free(args[MAP_MACHINE]);
     return(DM_NORMAL);
 }
 
@@ -705,10 +718,13 @@ int argc;
 char ** argv;
 {
     struct qelem *top;
+    char *tmpname;
 
-    top = GetMCInfo(CLUSTER, CanonicalizeHostname(argv[1]), (char *) NULL);
+    tmpname = canonicalize_hostname(strsave(argv[1]));
+    top = GetMCInfo(CLUSTER, tmpname, (char *) NULL);
     Loop(top, (void *) PrintClusterInfo);
     FreeQueue(top);
+    free(tmpname);
     return(DM_NORMAL);
 }
 
@@ -1046,8 +1062,10 @@ int argc;
 char **argv;
 {
     struct qelem *elem, *top;
+    char *tmpname;
 
-    top = elem = GetMCInfo(MAP, CanonicalizeHostname(argv[1]), argv[2]);
+    tmpname = canonicalize_hostname(strsave(argv[1]));
+    top = elem = GetMCInfo(MAP, tmpname, argv[2]);
   
     Put_message("");		/* blank line on screen */
     while (elem != NULL) {
@@ -1057,5 +1075,6 @@ char **argv;
     }
 
     FreeQueue(top);
+    free(tmpname);
     return(DM_NORMAL);
 }

@@ -3,13 +3,13 @@
  * and distribution information, see the file "mit-copyright.h". 
  *
  * $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chpobox.c,v $
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chpobox.c,v 1.3 1987-09-12 14:50:16 ambar Exp $
- * $Author: ambar $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chpobox.c,v 1.4 1988-02-05 17:35:01 mar Exp $
+ * $Author: mar $
  *
  */
 
 #ifndef lint
-static char *rcsid_chpobox_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chpobox.c,v 1.3 1987-09-12 14:50:16 ambar Exp $";
+static char *rcsid_chpobox_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chpobox.c,v 1.4 1988-02-05 17:35:01 mar Exp $";
 #endif not lint
 
 /*
@@ -56,8 +56,12 @@ char *whoami;
 int getopt();
 int status;
 
+#define MAXBOX 16
+
 extern int h_errno;
 static int match;
+static struct pobox_values boxes[MAXBOX];
+static int nboxes = 0;
 
 uid_t getuid();
 
@@ -169,6 +173,16 @@ run \"kinit\" and try again.");
 email address.", uname);
 	goto punt;
     }
+
+    /*
+     * get a list of current boxes
+     */
+    status = sms_query("get_pobox", 1, smsarg, get_machine, NULL);
+    if (status && status != SMS_NO_MATCH) {
+	com_err(whoami, status, "while retrieving current mailboxes\n");
+	goto punt;
+    }
+
     /*
      * address, if it exists, is of form user@host.  It needs to be split up. 
      */
@@ -198,15 +212,23 @@ later.\n");
     }
 
     if (add) {
-	printf("\nAdding email address %s@%s for %s.",
-	       pobox.box, pobox.machine, uname);
-
 	if (strcmp(pobox.type, "pop") == 0) {
+	    int i;
 	    /*
 	     * check to be sure that they're not getting more than one. If
 	     * they are, punt. 
 	     */
+	    for (i = 0; i < nboxes; i++) {
+		if (!strcmp(boxes[i].type, "POP")) {
+		    printf("%s already has a pobox on %s\n",
+			   uname, boxes[i].machine);
+		    goto punt;
+		}
+	    }
 	}
+	printf("Adding email address %s@%s for %s.",
+	       pobox.box, pobox.machine, uname);
+
 	return_args = crunch_pobox_args(pobox);
 	status = sms_query("add_pobox", 4, return_args, scream,
 			   (char *) NULL);
@@ -219,8 +241,13 @@ database.");
 	sms_disconnect();
 	exit(0);
     }
-    else if (delflag) {		/* isn't yet checking to make sure that the
-				 * user isn't being left without a mailbox. */
+    else if (delflag) {
+	/* check to make sure that the
+	 * user isn't being left without a mailbox. */
+	if (nboxes < 2) {
+	    printf("That would leave %s without a mailbox\n", uname);
+	    goto punt;
+	}
 	printf("Deleting email address %s@%s for %s.", pobox.box,
 	       pobox.machine, uname);
 	return_args = crunch_pobox_args(pobox);
@@ -235,25 +262,26 @@ database.");
 	sms_disconnect();
 	exit(0);
     }
-    else {			/* report all current poboxes */
-	printf("Current mail address(es) for %s is/are:", uname);
-	status = sms_query("get_pobox", 1, smsarg, get_machine,
-			   (char *) &pobox);
-	if (status) {
-	    if (status == SMS_NO_MATCH)
-		printf("  None\n");
-	    else {
-		(void) sprintf(buf, "\nRetrieve from \
-SMS database failed.");
-		goto punt;
-	    }
-	}
+
+    printf("Current mail address%s for %s %s:\n",
+	   nboxes < 2 ? "" : "es",
+	   uname,
+	   nboxes < 2 ? "is" : "are");
+    if (nboxes == 0)
+	printf("  None\n");
+    else {
+	int i;
+	for (i = 0; i < nboxes; i++)
+	    printf("  type: %s, address: %s@%s\n", boxes[i].type,
+		   boxes[i].box, boxes[i].machine);
     }
+
     sms_disconnect();
     exit(0);
 
 punt:
-    com_err(whoami, status, buf);
+    if (status)
+	com_err(whoami, status, buf);
     sms_disconnect();
     exit(1);
 }
@@ -276,14 +304,12 @@ get_machine(argc, argv, callarg)
     int argc;
     char **argv, *callarg;
 {
-    struct pobox_values *pobox = (struct pobox_values *) callarg;
+    struct pobox_values *pobox = &boxes[nboxes++];
 
     pobox->type = ds(argv[1]);
     pobox->machine = ds(argv[2]);
     pobox->box = ds(argv[3]);
 
-    printf("type: %s\naddress: %s@%s\n", pobox->type,
-	   pobox->box, pobox->machine);
     return (0);
 }
 

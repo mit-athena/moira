@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.7 1988-07-29 18:33:23 kit Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.8 1988-07-30 17:29:12 mar Exp $";
 #endif lint
 
 /*	This is the file user.c for the SMS Client, which allows a nieve
@@ -10,8 +10,8 @@
  *	By:		Chris D. Peterson
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v $
- *      $Author: kit $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.7 1988-07-29 18:33:23 kit Exp $
+ *      $Author: mar $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.8 1988-07-30 17:29:12 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -34,6 +34,27 @@
 #define UID   1
 #define BY_NAME  2
 #define CLASS 3
+
+/*	Function Name: UserState
+ *	Description: Convert a numeric state into a descriptive string.
+ *	Arguments: state value
+ *	Returns: pointer to statically allocated string.
+ */
+
+static char *states[] = { "Not registered",
+			  "Active",
+			  "Half registered",
+			  "Marked for deletion",
+			  "Not registerable" };
+
+static char *UserState(state)
+int state;
+{
+    if (state < 0 || state > 4)
+	return("Unknown");
+    return(states[state]);
+}
+
 
 /*	Function Name: PrintUserName
  *	Description: Print name of a user.
@@ -71,7 +92,7 @@ char ** info;
 	    info[U_UID], info[U_SHELL], info[U_CLASS]);
     Put_message(buf);
     sprintf(buf, "Account is: %-10s Encrypted MIT ID number: %s",
-	    atoi(info[U_STATE]) ? "active" : "inactive", info[U_MITID]);
+	    UserState(atoi(info[U_STATE])), info[U_MITID]);
     Put_message(buf);
     sprintf(buf, MOD_FORMAT, info[U_MODBY], info[U_MODTIME],info[U_MODWITH]);
     Put_message(buf);

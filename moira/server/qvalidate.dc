@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qvalidate.dc,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qvalidate.dc,v 1.1 1993-11-01 12:04:03 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qvalidate.dc,v 1.2 1993-11-10 15:31:20 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_qsupport_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qvalidate.dc,v 1.1 1993-11-01 12:04:03 mar Exp $";
+static char *rcsid_qsupport_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qvalidate.dc,v 1.2 1993-11-10 15:31:20 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -514,7 +514,7 @@ MR_SQLDA_T *mr_alloc_SQLDA()
     }
 
     for(j=0; j<QMAXARGS; j++) {
-	if((it->sqlvar[j].sqldata=malloc(sizeof(short)+ARGLEN))==NULL) {
+	if((it->sqlvar[j].sqldata=(char *)malloc(sizeof(short)+ARGLEN))==NULL) {
 	    com_err(whoami, MR_NO_MEM, "setting up SQLDA variables");
 	    exit(1);
 	}
@@ -556,78 +556,6 @@ mr_fix_nulls_in_SQLDA(da)
 	    break;
 	}
     }
-}
-
-/* prefetch_value():
- * This routine fetches an appropriate value from the numvalues table.
- * It is a little hack to get around the fact that SQL doesn't let you
- * do something like INSERT INTO table (foo) VALUES (other_table.bar).
- *
- * It is called from the query table as (*v->pre_rtn)(q,Argv,cl) or
- * from within a setup_...() routine with the appropriate arguments.
- *
- * Correct functioning of this routine may depend on the assumption
- * that this query is an APPEND.
- */
-
-prefetch_value(q,argv,cl)
-    struct query *q;
-    char **argv;
-    client *cl;
-{
-    EXEC SQL BEGIN DECLARE SECTION;
-    char *name = q->validate->object_id;
-    int value;
-    EXEC SQL END DECLARE SECTION;
-    int status, limit, argc;
-
-    /* set next object id, limiting it if necessary */
-    if(!strcmp(name, "uid") || !strcmp(name, "gid"))
-      limit = 1; /* So far as I know, this isn't needed.  Just CMA. */
-    else
-      limit = 0;
-    if((status = set_next_object_id(name, q->rtable, limit)) != MR_SUCCESS)
-      return(status);
-
-    /* fetch object id */
-    EXEC SQL SELECT value INTO :value FROM numvalues WHERE name=:name;
-    if(ingres_errno) return(mr_errcode);
-    if(sqlca.sqlerrd[2] != 1) return(MR_INTERNAL);
-
-    argc = q->argc + q->vcnt;   /* end of Argv for APPENDs */
-    sprintf(argv[argc],"%d",value);  /** Could save this step by changing tlist from %s to %d **/
-
-    return(MR_SUCCESS);
-}
-
-/* prefetch_filesys():
- * Fetches the phys_id from filesys based on the filsys_id in argv[0].
- * Appends the filsys_id and the phys_id to the argv so they can be
- * referenced in an INSERT into a table other than filesys.  Also
- * see comments at prefetch_value().
- *
- * Assumes the existence of a row where filsys_id = argv[0], since a
- * filesys label has already been resolved to a filsys_id.
- */
-prefetch_filesys(q,argv,cl)
-    struct query *q;
-    char **argv;
-    client *cl;
-{
-    EXEC SQL BEGIN DECLARE SECTION;
-    int fid,phid;
-    EXEC SQL END DECLARE SECTION;
-    int argc;
-
-    fid = *(int *)argv[0];
-    EXEC SQL SELECT phys_id INTO :phid FROM filesys WHERE filsys_id = :fid;
-    if(ingres_errno) return(mr_errcode);
-
-    argc=q->argc+q->vcnt;
-    sprintf(argv[argc++],"%d",phid);
-    sprintf(argv[argc],"%d",fid);
-
-    return(MR_SUCCESS);
 }
 
 /* Convert normal Unix-style wildcards to SQL voodoo */

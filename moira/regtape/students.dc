@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/students.dc,v 1.13 1992-02-10 18:34:30 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/students.dc,v 1.14 1992-05-13 10:11:52 mar Exp $
  */
 
 #include <stdio.h>
@@ -75,7 +75,6 @@ struct entry {
 
 char *whoami;
 int newfinger = 0;
-int addxuser = 0;
 
 
 main(argc, argv)
@@ -100,10 +99,8 @@ char **argv;
 	  setenv("ING_SET", "set printqry");
 	else if (!strcmp(argv[i], "-n"))
 	  newfinger++;
-	else if (!strcmp(argv[i], "-u"))
-	  addxuser++;
 	else if (file != NULL)
-	  fprintf(stderr, "Usage: %s [-w] [-D] [-n] [-u] inputfile\n", whoami);
+	  fprintf(stderr, "Usage: %s [-w] [-D] [-n] inputfile\n", whoami);
 	else
 	  file = argv[i];
     }
@@ -113,6 +110,9 @@ char **argv;
 	fprintf(stderr, "Unable to open %s for input\n", file);
 	exit(1);
     }
+
+    setlinebuf(stdout);
+    setlinebuf(stderr);
 
 ##  ingres sms
 ##  range of u is users

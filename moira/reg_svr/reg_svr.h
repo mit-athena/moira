@@ -1,7 +1,7 @@
 /*
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.h,v $
- *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.h,v 1.5 1989-09-08 14:58:35 mar Exp $
+ *      $Author: qjb $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.h,v 1.6 1990-01-12 11:22:48 qjb Exp $
  *
  *      Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
@@ -11,18 +11,10 @@
  *      files for the user registration server.
  */
 
-#include <stdio.h>
-#include <strings.h>
-#include <ctype.h>
 #include <sys/types.h>
-#include <sys/file.h>
-#include <krb.h>
-#include <des.h>
-#include <errno.h>
+#include <ctype.h>
 #include "ureg_err.h"
 #include "ureg_proto.h"
-#include "sms.h"
-#include "sms_app.h"
 
 #ifndef TRUE
 #define TRUE 1

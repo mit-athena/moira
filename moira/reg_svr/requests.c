@@ -1,7 +1,7 @@
 /*
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/requests.c,v $
- *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/requests.c,v 1.2 1988-09-13 14:46:08 mar Exp $
+ *      $Author: qjb $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/requests.c,v 1.3 1990-01-12 11:22:08 qjb Exp $
  *
  *      Copyright (C) 1987, 1988 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -14,7 +14,7 @@
  */
 
 #ifndef lint
-static char *rcsid_requests_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/requests.c,v 1.2 1988-09-13 14:46:08 mar Exp $";
+static char *rcsid_requests_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/requests.c,v 1.3 1990-01-12 11:22:08 qjb Exp $";
 #endif lint
 
 /*
@@ -23,10 +23,20 @@ static char *rcsid_requests_c = "$Header: /afs/.athena.mit.edu/astaff/project/mo
  */
 
 #include <mit-copyright.h>
-#include "reg_svr.h"
+#include <stdio.h>
+#include <strings.h>
+#include <ctype.h>
+#include <sys/types.h>
+#include <sys/file.h>
+#include <krb.h>
+#include <des.h>
+#include <errno.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <netdb.h>
+#include "sms.h"
+#include "sms_app.h"
+#include "reg_svr.h"
 
 #define NUM_REQUESTS_SAVED 100	/* Number of transactions to save */
 #define CUR_REQ (requests[cur_request_index]) /* The current request */

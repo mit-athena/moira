@@ -1,6 +1,6 @@
 /* This file defines the query dispatch table for version 2 of the protocol
  *
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/queries2.c,v 2.12 1992-10-27 02:46:35 genoa Exp $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/queries2.c,v 2.13 1992-12-30 16:57:40 mar Exp $
  *
  * Copyright 1987, 1988 by the Massachusetts Institute of Technology.
  * For copying and distribution information, please see the file
@@ -52,6 +52,7 @@ int followup_ausr();
 int followup_gpob();
 int followup_glin();
 int followup_aqot();
+int followup_dqot();
 int followup_gzcl();
 int followup_gsha();
 int followup_gqot();
@@ -600,8 +601,8 @@ static struct validate akum_validate =
   USERS_ID,
   access_user,
   setup_akum,
-  0
-    };
+  0,
+};
 
 static struct validate dkum_validate =
 {
@@ -613,8 +614,8 @@ static struct validate dkum_validate =
   USERS_ID,
   access_user,
   0,
-  0
-    };
+  0,
+};
 
 static char *gfbl_fields[] = {
   LOGIN,
@@ -1529,6 +1530,7 @@ static char *gqot_fields[] = {
 };
 
 static struct valobj gqot_valobj[] = {
+  {V_WILD, 0},
   {V_TYPE, 1, QUOTA_TYPE, 0, 0, MR_TYPE},
   {V_TYPEDATA, 2, 0, 0, 0, MR_ACE},
   {V_SORT, 0, 0, 0, 0, 0},
@@ -1536,7 +1538,7 @@ static struct valobj gqot_valobj[] = {
 
 static struct validate gqot_validate = {
   gqot_valobj,
-  3,
+  4,
   0,
   0,
   0,
@@ -1552,8 +1554,8 @@ static char *gqbf_fields[] = {
 };
 
 static struct validate gqbf_validate = {
-  VOsort0,
-  1,
+  VOwild0sort,
+  2,
   0,
   0,
   0,
@@ -1607,7 +1609,7 @@ static struct validate dqot_validate = {
   0,
   0,
   setup_dqot,
-  0,
+  followup_dqot,
 };
 
 static char *gnfq_fields[] = {
@@ -1649,7 +1651,7 @@ static struct validate anfq_validate = {
   FILSYS_ID,
   "filsys_id = %d AND type = 'USER' AND entity_id = %d",
   2,
-  0,
+  0, /* object ? */
   0,
   prefetch_filesys,
   followup_aqot,
@@ -1676,7 +1678,7 @@ static struct validate dnfq_validate = {
   0,
   0,
   setup_dqot,
-  0,
+  followup_dqot,
 };
 
 static char *glin_fields[] = {
@@ -2255,7 +2257,7 @@ struct query Queries2[] = {
     RETRIEVE,
     "u",
     USERS,
-    "CHAR(u.login), CHAR(u.uid), u.shell, CHAR(u.last), CHAR(u.first), u.middle, CHAR(u.status), CHAR(u.clearid), u.type, str.string, CHAR(u.signature), CHAR(u.secure), CHAR(u.modtime), CHAR(u.modby), u.modwith FROM users u, strings str",
+    "CHAR(u.login), CHAR(u.uid), u.shell, CHAR(u.last), CHAR(u.first), u.middle, CHAR(u.status), CHAR(u.clearid), u.type, CHAR(str.string), CHAR(u.signature), CHAR(u.secure), CHAR(u.modtime), CHAR(u.modby), u.modwith FROM users u, strings str",
     gual_fields,
     15,
     "u.login LIKE '%s' ESCAPE '*' AND u.users_id != 0 AND u.comment = str.string_id",
@@ -2270,7 +2272,7 @@ struct query Queries2[] = {
     RETRIEVE,
     "u",
     USERS,
-    "CHAR(u.login), CHAR(u.uid), u.shell, CHAR(u.last), CHAR(u.first), u.middle, CHAR(u.status), CHAR(u.clearid), u.type, str.string, CHAR(u.signature), CHAR(u.secure), CHAR(u.modtime), CHAR(u.modby), u.modwith FROM users u, strings str",
+    "CHAR(u.login), CHAR(u.uid), u.shell, CHAR(u.last), CHAR(u.first), u.middle, CHAR(u.status), CHAR(u.clearid), u.type, CHAR(str.string), CHAR(u.signature), CHAR(u.secure), CHAR(u.modtime), CHAR(u.modby), u.modwith FROM users u, strings str",
     guau_fields,
     15,
     "u.uid = %s AND u.users_id != 0 AND u.comment = str.string_id",
@@ -2285,7 +2287,7 @@ struct query Queries2[] = {
     RETRIEVE,
     "u",
     USERS,
-    "CHAR(u.login), CHAR(u.uid), u.shell, CHAR(u.last), CHAR(u.first), u.middle, CHAR(u.status), CHAR(u.clearid), u.type, str.string, CHAR(u.signature), CHAR(u.secure), CHAR(u.modtime), CHAR(u.modby), u.modwith FROM users u, strings str",
+    "CHAR(u.login), CHAR(u.uid), u.shell, CHAR(u.last), CHAR(u.first), u.middle, CHAR(u.status), CHAR(u.clearid), u.type, CHAR(str.string), CHAR(u.signature), CHAR(u.secure), CHAR(u.modtime), CHAR(u.modby), u.modwith FROM users u, strings str",
     guan_fields,
     15,
     "u.first LIKE '%s' ESCAPE '*' AND u.last LIKE '%s' ESCAPE '*' AND u.users_id != 0 and u.comment = str.string_id",
@@ -2300,7 +2302,7 @@ struct query Queries2[] = {
     RETRIEVE,
     "u",
     USERS,
-    "CHAR(u.login), CHAR(u.uid), u.shell, CHAR(u.last), CHAR(u.first), u.middle, CHAR(u.status), CHAR(u.clearid), u.type, str.string, CHAR(u.signature), CHAR(u.secure), CHAR(u.modtime), CHAR(u.modby), u.modwith FROM users u, strings str",
+    "CHAR(u.login), CHAR(u.uid), u.shell, CHAR(u.last), CHAR(u.first), u.middle, CHAR(u.status), CHAR(u.clearid), u.type, CHAR(str.string), CHAR(u.signature), CHAR(u.secure), CHAR(u.modtime), CHAR(u.modby), u.modwith FROM users u, strings str",
     guac_fields,
     15,
     "u.type = uppercase('%s') AND u.users_id != 0 AND u.comment = str.string_id",
@@ -2315,7 +2317,7 @@ struct query Queries2[] = {
     RETRIEVE,
     "u",
     USERS,
-    "CHAR(u.login), CHAR(u.uid), u.shell, CHAR(u.last), CHAR(u.first), u.middle, CHAR(u.status), CHAR(u.clearid), u.type, str.string, CHAR(u.signature), CHAR(u.secure), CHAR(u.modtime), CHAR(u.modby), u.modwith FROM users u, strings str",
+    "CHAR(u.login), CHAR(u.uid), u.shell, CHAR(u.last), CHAR(u.first), u.middle, CHAR(u.status), CHAR(u.clearid), u.type, CHAR(str.string), CHAR(u.signature), CHAR(u.secure), CHAR(u.modtime), CHAR(u.modby), u.modwith FROM users u, strings str",
     guam_fields,
     15,
     "u.clearid LIKE '%s' ESCAPE '*' AND u.users_id != 0 AND u.comment = str.string_id",
@@ -2510,7 +2512,7 @@ struct query Queries2[] = {
     UPDATE,
     "u",
     USERS,
-    "secure = %s",
+    "users SET secure = %s",
     uuss_fields,
     1,
     "users_id = %d",
@@ -3059,11 +3061,11 @@ struct query Queries2[] = {
   },
 
   {
-    /* Q_QGSV - QUALIFIED_GET_SERVER_HOST */
+    /* Q_QGSH - QUALIFIED_GET_SERVER_HOST */
     "qualified_get_server_host",
     "qgsh",
     RETRIEVE,
-    "sh",
+    0,
     "serverhosts",
     0,
     qgsh_fields,
@@ -3455,8 +3457,8 @@ struct query Queries2[] = {
     UPDATE,
     "np",
     "nfsphys",
-    "nfsphys SET device = '%s', status = '%s', allocated = %s, partsize = %s",
-    gnfp_fields,
+    "nfsphys SET device = '%s', status = %s, allocated = %s, partsize = %s",
+    ganf_fields,
     4,
     "mach_id = %d AND dir = '%s'", 
     2,
@@ -3524,15 +3526,15 @@ struct query Queries2[] = {
   },
 
   {
-    /* Q_AQOT - ADD_QUOTA */ /* prefetch_filsys() gets last 2 values */
+    /* Q_AQOT - ADD_QUOTA */ /* prefetch_filsys() gets last 1 value */
     "add_quota",
     "aqot",
     APPEND,
-    "q",
+    0,
     QUOTA,
-    "INTO quota (type, entity_id, quota, filsys_id, phys_id) VALUES ('%s', %d, %s, %s, %s)",
+    "INTO quota (filsys_id, type, entity_id, quota, phys_id) VALUES ('%s', %d, %d, %s, %s)",
     aqot_fields,
-    3,
+    4,
     (char *)0,
     0,
     &aqot_validate,
@@ -3543,12 +3545,12 @@ struct query Queries2[] = {
     "update_quota",
     "uqot",
     UPDATE,
-    "q",
+    0,
     QUOTA,
     "quota SET quota = %s",
     aqot_fields,
     1,
-    "q.filsys_id = %d AND q.type = '%s' AND q.entity_id = %d",
+    0,
     3,
     &uqot_validate,
   },
@@ -3558,12 +3560,12 @@ struct query Queries2[] = {
     "delete_quota",
     "dqot",
     DELETE,
-    "q",
+    0,
     QUOTA,
     (char *)0,
     aqot_fields,
     0,
-    "q.filsys_id = %d AND q.type = '%s' AND q.entity_id = %d",
+    0,
     3,
     &dqot_validate,
   },
@@ -3599,31 +3601,31 @@ struct query Queries2[] = {
   },
 
   {
-    /* Q_ANFQ - ADD_NFS_QUOTA */ /* prefetch_filsys() gets last 2 values */
+    /* Q_ANFQ - ADD_NFS_QUOTA */ /* prefetch_filsys() gets last 1 value */
     "add_nfs_quota",
     "anfq",
     APPEND,
-    "q",
+    0,
     QUOTA,
-    "INTO quota (type, entity_id, quota, filsys_id, phys_id) VALUES ('USER', %d, %s, %s, %s)",
+    "INTO quota (type, filsys_id, entity_id, quota, phys_id ) VALUES ('USER', %d, %d, %s, %s)",
     anfq_fields,
-    2,
+    3,
     (char *)0,
     0,
     &anfq_validate,
   },
 
   {
-    /* Q_UNFQ - UPDATE_NFS_QUOTA */
+    /* Q_UNFQ - UPDATE_NFS_QUOTA */ 
     "update_nfs_quota",
     "unfq",
     UPDATE,
-    "q",
+    0,
     QUOTA,
     "quota SET quota = %s",
     anfq_fields,
     1,
-    "filsys_id = %d AND type = 'USER' AND entity_id = %d",
+    0,
     2,
     &unfq_validate,
   },
@@ -3633,12 +3635,12 @@ struct query Queries2[] = {
     "delete_nfs_quota",
     "dnfq",
     DELETE,
-    "q",
+    0,
     QUOTA,
     (char *)0,
     anfq_fields,
     0,
-    "filsys_id = %d AND type = 'USER' AND entity_id = %d",
+    0,
     2,
     &dnfq_validate,
   },
@@ -3875,7 +3877,7 @@ struct query Queries2[] = {
     UPDATE,
     "z",
     "zephyr",
-    "zephyr SET class = '%s', xmt_type = '%d', xmt_id = %d, sub_type = '%s', sub_id = %d, iws_type = '%s', iws_id = %d, iui_type = '%s', iui_id = %d",
+    "zephyr SET class = '%s', xmt_type = '%s', xmt_id = %d, sub_type = '%s', sub_id = %d, iws_type = '%s', iws_id = %d, iui_type = '%s', iui_id = %d",
     uzcl_fields,
     9,
     "class = '%s'",

@@ -1,6 +1,6 @@
 /* This file defines the query dispatch table for version 2 of the protocol
  *
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/queries2.c,v 1.22 1990-04-09 12:41:06 mar Exp $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/queries2.c,v 1.23 1990-05-31 17:12:46 mar Exp $
  *
  * Copyright 1987, 1988 by the Massachusetts Institute of Technology.
  * For copying and distribution information, please see the file
@@ -52,6 +52,7 @@ int followup_aqot();
 int followup_gzcl();
 int followup_gsha();
 int followup_gqot();
+int followup_gpce();
 
 int set_modtime();
 int set_modtime_by_id();
@@ -1749,6 +1750,18 @@ static char *gpce_fields[] = {
     "printer", "spooling_host", "spool_directory", "rprinter",
     "quotaserver", "authenticate", "price", "comments",
     MOD1, MOD2, MOD3,
+};
+
+static struct validate gpce_validate = {
+  VOsort0,
+  1,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  followup_gpce,
 };
 
 static char *apce_fields[] = {
@@ -3503,12 +3516,12 @@ struct query Queries2[] = {
     RETRIEVE,
     "p",
     "printcap",
-    "%c = p.name, %c = machine.name, %c = p.dir, %c = p.rp, %c = m.name, %c = text(p.auth), %c = text(p.price), %c = p.comments, %c = p.modtime, %c = text(p.modby), %c = p.modwith",
+    "%c = p.name, %c = machine.name, %c = p.dir, %c = p.rp, %c = text(p.quotaserver), %c = text(p.auth), %c = text(p.price), %c = p.comments, %c = p.modtime, %c = text(p.modby), %c = p.modwith",
     gpce_fields,
     11,
-    "p.name = \"%s\" and machine.mach_id = p.mach_id and m.mach_id = p.quotaserver",
+    "p.name = \"%s\" and machine.mach_id = p.mach_id",
     1,
-    &VDsortf,
+    &gpce_validate,
   },
 
   {

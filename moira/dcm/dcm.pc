@@ -1,4 +1,4 @@
-/* $Id: dcm.pc,v 1.9 1998-04-16 20:49:26 danw Exp $
+/* $Id: dcm.pc,v 1.10 1998-07-24 15:24:34 danw Exp $
  *
  * The Data Control Manager for Moira.
  *
@@ -27,7 +27,7 @@
 EXEC SQL INCLUDE sqlca;
 void sqlglm(char *, unsigned int *, unsigned int *);
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/dcm.pc,v 1.9 1998-04-16 20:49:26 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/dcm.pc,v 1.10 1998-07-24 15:24:34 danw Exp $");
 
 int generate_service(char *name, int force);
 void do_hosts(char *service);
@@ -370,7 +370,7 @@ void do_hosts(char *service)
     }
 
   EXEC SQL WHENEVER SQLERROR DO dbmserr();
-  if (status && replicated)
+  if (status && !SOFT_FAIL(status) && replicated)
     {
       EXEC SQL UPDATE servers SET harderror = :status, errmsg = :errmsg
 	WHERE name = UPPER(:service);

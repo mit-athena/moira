@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase2.dc,v 1.4 1993-02-09 16:46:47 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase2.dc,v 1.5 1993-02-09 18:35:43 mar Exp $
  *
  *  (c) Copyright 1988 by the Massachusetts Institute of Technology.
  *  For copying and distribution information, please see the file
@@ -11,7 +11,7 @@
 #include "dbck.h"
 EXEC SQL INCLUDE sqlca;
 
-static char phase2_qc_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase2.dc,v 1.4 1993-02-09 16:46:47 mar Exp $";
+static char phase2_qc_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase2.dc,v 1.5 1993-02-09 18:35:43 mar Exp $";
 
 
 show_mcm_mach(id)
@@ -25,6 +25,7 @@ int id;
     EXEC SQL DECLARE csr201 CURSOR FOR
       SELECT cluster.name FROM cluster, mcmap
         WHERE cluster.clu_id=mcmap.clu_id AND mcmap.mach_id = :iid;
+    if (sqlca.sqlcode != 0) ingerr(&sqlca.sqlcode);
     EXEC SQL OPEN csr201;
     while(1) {
 	EXEC SQL FETCH csr201 INTO :name;
@@ -52,6 +53,7 @@ int id;
     EXEC SQL DECLARE csr202 CURSOR FOR
 	SELECT machine.name FROM machine, mcmap
 	    WHERE machine.mach_id=mcmap.mach_id AND mcmap.clu_id=:iid;
+    if (sqlca.sqlcode != 0) ingerr(&sqlca.sqlcode);
     EXEC SQL OPEN csr202;
     while(1) {
 	EXEC SQL FETCH csr202 INTO :name;
@@ -127,6 +129,7 @@ int id;
     EXEC SQL DECLARE csr203 CURSOR FOR
 	SELECT serv_label, serv_cluster FROM svc
 	    WHERE clu_id = :iid;
+    if (sqlca.sqlcode != 0) ingerr(&sqlca.sqlcode);
     EXEC SQL OPEN csr203;
     while(1) {
 	EXEC SQL FETCH csr203 INTO :label, :data;
@@ -199,6 +202,7 @@ int id;
     EXEC SQL DECLARE csr204 CURSOR FOR
 	SELECT member_type, member_id FROM imembers
 	    WHERE list_id = :iid AND direct=1;
+    if (sqlca.sqlcode != 0) ingerr(&sqlca.sqlcode);
     EXEC SQL OPEN csr204;
     while(1) {
 	EXEC SQL FETCH csr204 INTO :mtype, :mid;
@@ -232,6 +236,7 @@ int id;
     EXEC SQL DECLARE csr205 CURSOR FOR
       SELECT list_id FROM imembers
 	WHERE member_id = :iid AND member_type='USER' AND direct=1;
+    if (sqlca.sqlcode != 0) ingerr(&sqlca.sqlcode);
     EXEC SQL OPEN csr205;
     while(1) {
 	EXEC SQL FETCH csr205 INTO :lid;
@@ -259,6 +264,7 @@ int id;
     EXEC SQL DECLARE csr206 CURSOR FOR
 	SELECT list_id FROM imembers
 	    WHERE member_id = :iid AND member_type='LIST' AND direct=1;
+    if (sqlca.sqlcode != 0) ingerr(&sqlca.sqlcode);
     EXEC SQL OPEN csr206;
     while(1) {
 	EXEC SQL FETCH csr206 INTO :lid;
@@ -286,6 +292,7 @@ int id;
     EXEC SQL DECLARE csr207 CURSOR FOR
 	SELECT list_id FROM imembers
 	    WHERE member_id = :iid AND member_type='STRING' AND direct=1;
+    if (sqlca.sqlcode != 0) ingerr(&sqlca.sqlcode);
     EXEC SQL OPEN csr207;
     while(1) {
 	EXEC SQL FETCH csr207 INTO :lid;
@@ -314,6 +321,7 @@ int id;
     EXEC SQL DECLARE csr208 CURSOR FOR
 	SELECT list_id FROM imembers
 	    WHERE member_id = :iid AND member_type='KERBEROS' AND direct=1;
+    if (sqlca.sqlcode != 0) ingerr(&sqlca.sqlcode);
     EXEC SQL OPEN csr208;
     while(1) {
 	EXEC SQL FETCH csr208 INTO :lid;
@@ -422,6 +430,7 @@ EXEC SQL END DECLARE SECTION;
     EXEC SQL DECLARE csr209 CURSOR FOR
 	SELECT service FROM serverhosts
 	    WHERE mach_id = :id;
+    if (sqlca.sqlcode != 0) ingerr(&sqlca.sqlcode);
     EXEC SQL OPEN csr209;
     while(1) {
 	EXEC SQL FETCH csr209 INTO :name;
@@ -615,6 +624,7 @@ EXEC SQL END DECLARE SECTION;
     EXEC SQL DECLARE csr210 CURSOR FOR
 	SELECT filsys_id FROM fsgroup
 	    WHERE group_id = :id;
+    if (sqlca.sqlcode != 0) ingerr(&sqlca.sqlcode);
     EXEC SQL OPEN csr210;
     while(1) {
 	EXEC SQL FETCH csr210 INTO :id1;
@@ -693,6 +703,7 @@ EXEC SQL END DECLARE SECTION;
     EXEC SQL DECLARE csr211 CURSOR FOR
 	SELECT group_id FROM fsgroup
 	    WHERE filsys_id = :id;
+    if (sqlca.sqlcode != 0) ingerr(&sqlca.sqlcode);
     EXEC SQL OPEN csr211;
     while(1) {
 	EXEC SQL FETCH csr211 INTO :id1;
@@ -723,6 +734,7 @@ EXEC SQL END DECLARE SECTION;
     EXEC SQL DECLARE csr212 CURSOR FOR
 	SELECT filsys_id FROM quota
 	    WHERE entity_id = :id AND type='USER';
+    if (sqlca.sqlcode != 0) ingerr(&sqlca.sqlcode);
     EXEC SQL OPEN csr212;
     while(1) {
 	EXEC SQL FETCH csr212 INTO :id1;
@@ -750,6 +762,7 @@ EXEC SQL END DECLARE SECTION;
     EXEC SQL DECLARE csr213 CURSOR FOR
 	SELECT filsys_id FROM quota 
 	    WHERE entity_id = :id AND type='GROUP';
+    if (sqlca.sqlcode != 0) ingerr(&sqlca.sqlcode);
     EXEC SQL OPEN csr213;
     while(1) {
 	EXEC SQL FETCH csr213 INTO :id1;
@@ -817,6 +830,7 @@ EXEC SQL END DECLARE SECTION;
     EXEC SQL DECLARE csr214 CURSOR FOR
 	SELECT entity_id, type FROM quota
 	    WHERE filsys_id = :id;
+    if (sqlca.sqlcode != 0) ingerr(&sqlca.sqlcode);
     EXEC SQL OPEN csr214;
     while(1) {
 	EXEC SQL FETCH csr214 INTO :id1, :type;
@@ -853,6 +867,7 @@ EXEC SQL END DECLARE SECTION;
     EXEC SQL DECLARE csr215 CURSOR FOR
 	SELECT entity_id, type FROM quota
 	    WHERE filsys_id = :id;
+    if (sqlca.sqlcode != 0) ingerr(&sqlca.sqlcode);
     EXEC SQL OPEN csr215;
     while(1) {
 	EXEC SQL FETCH csr215 INTO :id1, :type;
@@ -902,6 +917,7 @@ EXEC SQL END DECLARE SECTION;
     EXEC SQL DECLARE csr216 CURSOR FOR
 	SELECT name FROM servers
 	    WHERE acl_type='USER' and acl_id = :id;
+    if (sqlca.sqlcode != 0) ingerr(&sqlca.sqlcode);
     EXEC SQL OPEN csr216;
     while(1) {
 	EXEC SQL FETCH csr216 INTO :name;
@@ -931,6 +947,7 @@ EXEC SQL END DECLARE SECTION;
     EXEC SQL DECLARE csr217 CURSOR FOR
 	SELECT name FROM servers
 	    WHERE acl_type='LIST' AND acl_id = :id;
+    if (sqlca.sqlcode != 0) ingerr(&sqlca.sqlcode);
     EXEC SQL OPEN csr217;
     while(1) {
 	EXEC SQL FETCH csr217 INTO :name;
@@ -1000,6 +1017,7 @@ EXEC SQL END DECLARE SECTION;
     EXEC SQL DECLARE csr218 CURSOR FOR
 	SELECT string_id FROM krbmap
 	    WHERE users_id = :id ;
+    if (sqlca.sqlcode != 0) ingerr(&sqlca.sqlcode);
     EXEC SQL OPEN csr218;
     while(1) {
 	EXEC SQL FETCH csr218 INTO :id1;
@@ -1035,6 +1053,7 @@ EXEC SQL END DECLARE SECTION;
     EXEC SQL DECLARE csr219 CURSOR FOR
 	SELECT users_id FROM krbmap
 	    WHERE string_id = :id;
+    if (sqlca.sqlcode != 0) ingerr(&sqlca.sqlcode);
     EXEC SQL OPEN csr219;
     while(1) {
 	EXEC SQL FETCH csr219 INTO :id1;
@@ -1069,6 +1088,7 @@ EXEC SQL END DECLARE SECTION;
     EXEC SQL DECLARE csr220 CURSOR FOR
 	SELECT name FROM palladium
 	    WHERE mach_id = :id;
+    if (sqlca.sqlcode != 0) ingerr(&sqlca.sqlcode);
     EXEC SQL OPEN csr220;
     while(1) {
 	EXEC SQL FETCH csr220 INTO :name;
@@ -1109,6 +1129,7 @@ phase2()
     sq2 = sq_create();
     EXEC SQL DECLARE csr221 CURSOR FOR
 	SELECT mach_id, clu_id FROM mcmap;
+    if (sqlca.sqlcode != 0) ingerr(&sqlca.sqlcode);
     EXEC SQL OPEN csr221;
     while(1) {
 	EXEC SQL FETCH csr221 INTO :id1, :id2;
@@ -1131,6 +1152,7 @@ phase2()
     sq1 = sq_create();
     EXEC SQL DECLARE csr222 CURSOR FOR
 	SELECT clu_id FROM svc;
+    if (sqlca.sqlcode != 0) ingerr(&sqlca.sqlcode);
     EXEC SQL OPEN csr222;
     while(1) {
 	EXEC SQL FETCH csr222 INTO :id1;
@@ -1158,6 +1180,7 @@ phase2()
     EXEC SQL DECLARE csr223 CURSOR FOR
 	SELECT list_id, member_type, member_id, ref_count, direct 
 	FROM imembers ORDER BY list_id;
+    if (sqlca.sqlcode != 0) ingerr(&sqlca.sqlcode);
     EXEC SQL OPEN csr223;
     while(1) {
 	EXEC SQL FETCH csr223 INTO :id1, :type, :id2, :id3, :id4;
@@ -1191,6 +1214,7 @@ phase2()
     sq2 = sq_create();
     EXEC SQL DECLARE csr224 CURSOR FOR
 	SELECT name, acl_type, acl_id FROM servers;
+    if (sqlca.sqlcode != 0) ingerr(&sqlca.sqlcode);
     EXEC SQL OPEN csr224;
     while(1) {
 	EXEC SQL FETCH csr224 INTO :name, :type, :id1;
@@ -1214,6 +1238,7 @@ phase2()
     sq = sq_create();
     EXEC SQL DECLARE csr225 CURSOR FOR
 	SELECT mach_id FROM serverhosts;
+    if (sqlca.sqlcode != 0) ingerr(&sqlca.sqlcode);
     EXEC SQL OPEN csr225;
     while(1) {
 	EXEC SQL FETCH csr225 INTO :id1;
@@ -1240,6 +1265,7 @@ phase2()
     sq3 = sq_create();
     EXEC SQL DECLARE csr226 CURSOR FOR
 	SELECT group_id, filsys_id FROM fsgroup;
+    if (sqlca.sqlcode != 0) ingerr(&sqlca.sqlcode);
     EXEC SQL OPEN csr226;
     while(1) {
 	EXEC SQL FETCH csr226 INTO :id1, :id2;
@@ -1264,6 +1290,7 @@ phase2()
     sq4 = sq_create();
     EXEC SQL DECLARE csr227 CURSOR FOR
 	SELECT entity_id, type, filsys_id, phys_id, quota FROM quota;
+    if (sqlca.sqlcode != 0) ingerr(&sqlca.sqlcode);
     EXEC SQL OPEN csr227;
     while(1) {
 	EXEC SQL FETCH csr227 INTO :id1, :type, :id2, :id3, :id4;
@@ -1296,6 +1323,7 @@ phase2()
     dprintf("Checking hostaccess...\n");
     EXEC SQL DECLARE csr228 CURSOR FOR
 	SELECT mach_id, acl_type, acl_id FROM hostaccess;
+    if (sqlca.sqlcode != 0) ingerr(&sqlca.sqlcode);
     EXEC SQL OPEN csr228;
     while(1) {
 	EXEC SQL FETCH csr228 INTO :id1, :type, :id2;
@@ -1323,6 +1351,7 @@ phase2()
     sq1 = sq_create();
     EXEC SQL DECLARE csr229 CURSOR FOR
 	SELECT mach_id FROM palladium;
+    if (sqlca.sqlcode != 0) ingerr(&sqlca.sqlcode);
     EXEC SQL OPEN csr229;
     while(1) {
 	EXEC SQL FETCH csr229 INTO :id1;
@@ -1343,6 +1372,7 @@ phase2()
     sq2 = sq_create();
     EXEC SQL DECLARE csr230 CURSOR FOR
 	SELECT users_id, string_id FROM krbmap;
+    if (sqlca.sqlcode != 0) ingerr(&sqlca.sqlcode);
     EXEC SQL OPEN csr230;
     while(1) {
 	EXEC SQL FETCH csr230 INTO :id1, :id2;
@@ -1363,6 +1393,7 @@ phase2()
     dprintf("Checking capacls...\n");
     EXEC SQL DECLARE csr231 CURSOR FOR
 	SELECT list_id, tag FROM capacls;
+    if (sqlca.sqlcode != 0) ingerr(&sqlca.sqlcode);
     EXEC SQL OPEN csr231;
     while(1) {
 	EXEC SQL FETCH csr231 INTO :id1, :name;

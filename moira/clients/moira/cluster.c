@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/cluster.c,v 1.22 1993-11-10 15:41:42 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/cluster.c,v 1.23 1993-11-24 11:17:30 mar Exp $";
 #endif lint
 
 /*	This is the file cluster.c for the MOIRA Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/cluster.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/cluster.c,v 1.22 1993-11-10 15:41:42 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/cluster.c,v 1.23 1993-11-24 11:17:30 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -30,6 +30,10 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#ifdef POSIX
+#include <sys/utsname.h>
+#endif
+#include <netdb.h>
 
 #include "mit-copyright.h"
 #include "defs.h"
@@ -51,6 +55,8 @@
 #define CD_DEFAULT_LABEL   DEFAULT_NONE
 #define CD_DEFAULT_DATA    DEFAULT_NONE
 
+#define S_DEFAULT_LOW	"18.0.0.10"
+#define S_DEFAULT_HIGH	"18.0.2.252"
 
 static char *states[] = { "Reserved (0)",
 			  "Active (1)",
@@ -135,14 +141,15 @@ char ** info, *name;
 
     info[C_NAME] = Strsave(name);
     info[SN_DESC] = Strsave("");
-    sprintf(buf, "%d", ntohl(inet_addr("18.0.0.0")));
+    sprintf(buf, "%d", ntohl(inet_addr("18.255.0.0")));
     info[SN_ADDRESS] = Strsave(buf);
     sprintf(buf, "%d", ntohl(inet_addr("255.255.0.0")));
     info[SN_MASK] = Strsave(buf);
-    sprintf(buf, "%d", ntohl(inet_addr("18.0.0.10")));
+    sprintf(buf, "%d", ntohl(inet_addr(S_DEFAULT_LOW)));
     info[SN_LOW] = Strsave(buf);
-    sprintf(buf, "%d", ntohl(inet_addr("18.0.1.252")));
+    sprintf(buf, "%d", ntohl(inet_addr(S_DEFAULT_HIGH)));
     info[SN_HIGH] = Strsave(buf);
+    info[SN_PREFIX] = Strsave("");
     info[SN_ACE_TYPE] = Strsave("LIST");
     info[SN_ACE_NAME] = Strsave("network_acl");
     info[SN_MODBY] = info[SN_MODTIME] = info[SN_MODWITH] = info[SN_END] = NULL;
@@ -150,6 +157,21 @@ char ** info, *name;
 }
 
 /* -------------------- General Functions -------------------- */
+
+static char aliasbuf[256];
+
+static char *
+PrintAliases(info)
+char **info;
+{
+    if (strlen(aliasbuf) == 0)
+      sprintf(aliasbuf, "Aliases:  %s", info[0]);
+    else {
+	strcat(aliasbuf, ", ");
+	strcat(aliasbuf, info[0]);
+    }
+}
+
 
 /*	Function Name: PrintMachInfo
  *	Description: This function Prints out the Machine info in 
@@ -162,28 +184,50 @@ static char *
 PrintMachInfo(info)
 char ** info;
 {
-    char buf[BUFSIZ];
+    char buf[BUFSIZ], tbuf[256];
+    char *args[3];
+    struct qelem *elem = NULL;
+    int stat;
 
     Put_message("");
-    sprintf(buf, "Machine: %s Vendor: %s, Model: %s, OS: %s",
-	    info[M_NAME], info[M_VENDOR], info[M_MODEL], info[M_OS]);
+    sprintf(buf, "Machine:  %s", info[M_NAME]);
     Put_message(buf);
-    sprintf(buf, "Location: %s, Contact: %s, Owner: %s %s",
-	    info[M_LOC], info[M_CONTACT], info[M_OWNER_TYPE],
-	    strcmp(info[M_OWNER_TYPE], "NONE") ? info[M_OWNER_NAME] : "");
+    args[0] = "*";
+    args[1] = info[M_NAME];
+    if ((stat = do_mr_query("get_hostalias", 2, args, StoreInfo, (char *)&elem))
+	!= 0) {
+	if (stat != MR_NO_MATCH)
+	  com_err(program_name, stat, " looking up aliases");
+    } else {
+	aliasbuf[0] = 0;
+	Loop(QueueTop(elem), (void *) PrintAliases);
+	FreeQueue(elem);
+	Put_message(aliasbuf);
+    }
+    sprintf(buf, "Address:  %-16s  Subnet:    %s",
+	    info[M_ADDR], info[M_SUBNET]);
     Put_message(buf);
-    sprintf(buf, "Address: %s, Subnet: %s, Use code: %s",
-	    info[M_ADDR], info[M_SUBNET], info[M_USE]);
-    Put_message(buf);
-    sprintf(buf, "Status: %s, Status Changed %s",
+    sprintf(buf, "Status:   %-16s  Changed:   %s",
 	    MacState(atoi(info[M_STAT])), info[M_STAT_CHNG]);
     Put_message(buf);
-    sprintf(buf, "Created on %s by %s", info[M_CREATED], info[M_CREATOR]);
+    sprintf(tbuf, "%s %s", info[M_OWNER_TYPE],
+	    strcmp(info[M_OWNER_TYPE], "NONE") ? info[M_OWNER_NAME] : "");
+    sprintf(buf, "Owner:    %-16s  Last poll: %s", tbuf, info[M_INUSE]);
     Put_message(buf);
-    sprintf(buf, "Last known use %s", info[M_INUSE]);
+    Put_message("");
+
+    sprintf(buf, "Vendor:   %-16s  Model: %-24s  OS: %s",
+	    info[M_VENDOR], info[M_MODEL], info[M_OS]);
     Put_message(buf);
-    sprintf(buf, "Admin cmt: %s; Op cmt: %s",
-	    info[M_ACOMMENT], info[M_OCOMMENT]);
+    sprintf(buf, "Location: %-16s  Contact:   %s  Use code: %s",
+	    info[M_LOC], info[M_CONTACT], info[M_USE]);
+    Put_message(buf);
+    sprintf(buf, "Admn cmt: %s", info[M_ACOMMENT]);
+    Put_message(buf);
+    sprintf(buf, "Op cmt:   %s", info[M_OCOMMENT]);
+    Put_message(buf);
+    Put_message("");
+    sprintf(buf, "Created  by %s on %s", info[M_CREATOR], info[M_CREATED]);
     Put_message(buf);
     sprintf(buf, MOD_FORMAT, info[M_MODBY], info[M_MODTIME], info[M_MODWITH]);
     Put_message(buf);
@@ -300,6 +344,8 @@ char ** info;
     strcat(buf, inet_ntoa(high));
     strcat(buf, ", Low ");
     strcat(buf, inet_ntoa(low));
+    Put_message(buf);
+    sprintf(buf, "Hostname prefix: %s", info[SN_PREFIX]);
     Put_message(buf);
     sprintf(buf, "Owner: %s %s", info[SN_ACE_TYPE],
 	    strcmp(info[SN_ACE_TYPE],"NONE") ? info[SN_ACE_NAME] : "");
@@ -525,9 +571,35 @@ Bool name;
 	  return(NULL);
 	if (GetAddressFromUser("Subnet Mask", &info[SN_MASK]) == SUB_ERROR)
 	  return(NULL);
+	if (atoi(info[SN_LOW]) == ntohl(inet_addr(S_DEFAULT_LOW))) {
+	    struct in_addr low;
+	    unsigned long mask, addr;
+
+	    addr = atoi(info[SN_ADDRESS]);
+	    mask = atoi(info[SN_MASK]);
+	    low.s_addr = atoi(info[SN_LOW]);
+	    low.s_addr = (low.s_addr & ~mask) | (addr & mask);
+	    free(info[SN_LOW]);
+	    sprintf(temp_buf, "%d", low.s_addr);
+	    info[SN_LOW] = strsave(temp_buf);
+	}
 	if (GetAddressFromUser("Lowest assignable address", &info[SN_LOW]) == SUB_ERROR)
 	  return(NULL);
+	if (atoi(info[SN_HIGH]) == ntohl(inet_addr(S_DEFAULT_HIGH))) {
+	    struct in_addr high;
+	    unsigned long mask, addr;
+
+	    addr = atoi(info[SN_ADDRESS]);
+	    mask = atoi(info[SN_MASK]);
+	    high.s_addr = atoi(info[SN_HIGH]);
+	    high.s_addr = (high.s_addr & ~mask) | (addr & mask);
+	    free(info[SN_HIGH]);
+	    sprintf(temp_buf, "%d", high.s_addr);
+	    info[SN_HIGH] = strsave(temp_buf);
+	}
 	if (GetAddressFromUser("Highest assignable address", &info[SN_HIGH]) == SUB_ERROR)
+	  return(NULL);
+	if (GetValueFromUser("Hostname prefix", &info[SN_PREFIX]) == SUB_ERROR)
 	  return(NULL);
 	if (GetTypeFromUser("Owner Type", "ace_type", &info[SN_ACE_TYPE]) == SUB_ERROR)
 	  return(NULL);
@@ -883,6 +955,40 @@ char **argv;
     return(DM_NORMAL);
 }
 
+
+char *partial_canonicalize_hostname(s)
+char *s;
+{
+    char buf[256], *cp;
+    static char *def_domain = NULL;
+    struct hostent *hp;
+#ifdef POSIX
+    struct utsname name;
+#endif
+
+    if (!def_domain) {
+#ifdef POSIX
+	(void) uname(&name);
+	strncpy(buf, name.nodename, sizeof(buf));
+#else
+	gethostname(buf, sizeof(buf));
+#endif
+	hp = gethostbyname(buf);
+	cp = strchr(hp->h_name, '.');
+	if (cp)
+	  def_domain = strsave(++cp);
+	else
+	  def_domain = "";
+    }
+
+    if (strchr(s, '.') || strchr(s, '*'))
+      return(s);
+    sprintf(buf, "%s.%s", s, def_domain);
+    free(s);
+    return(strsave(buf));
+}
+
+
 /*	Function Name: ShowCname
  *	Description: This function shows machine aliases
  *	Arguments: argc, argv - the alias argv[1], the real name in argv[2]
@@ -898,7 +1004,7 @@ char **argv;
     struct qelem *top;
     char *tmpalias, *tmpname;
 
-    tmpalias = canonicalize_hostname(strsave(argv[1]));
+    tmpalias = partial_canonicalize_hostname(strsave(argv[1]));
     tmpname = canonicalize_hostname(strsave(argv[2]));
     top = GetMCInfo(CNAME, tmpalias, tmpname);
     Put_message("");		/* blank line on screen */
@@ -919,7 +1025,7 @@ char ** argv;
     Bool add_it, one_machine, one_cluster;
     struct qelem * melem, *mtop, *celem, *ctop;
 
-    args[0] = canonicalize_hostname(strsave(argv[1]));
+    args[0] = partial_canonicalize_hostname(strsave(argv[1]));
     args[1] = canonicalize_hostname(strsave(argv[2]));
     stat = do_mr_query("add_hostalias", 2, args, Scream, NULL);
     switch (stat) {
@@ -949,7 +1055,7 @@ char ** argv;
     Bool add_it, one_machine, one_cluster;
     struct qelem * melem, *mtop, *celem, *ctop;
 
-    args[0] = canonicalize_hostname(strsave(argv[1]));
+    args[0] = partial_canonicalize_hostname(strsave(argv[1]));
     args[1] = canonicalize_hostname(strsave(argv[2]));
     stat = do_mr_query("delete_hostalias", 2, args, Scream, NULL);
     if (stat)

@@ -1,4 +1,4 @@
-/* $Id: dump_db.h,v 1.5 1998-03-10 21:18:03 danw Exp $ */
+/* $Id: dump_db.h,v 1.6 2000-03-10 20:55:04 zacheiss Exp $ */
 
 #include <stdio.h>
 #include <moira.h>
@@ -23,3 +23,4 @@ void punt(char *msg);
 void dbmserr(void);
 void safe_close(FILE *stream);
 FILE *open_file(char *prefix, char *suffix);
+char *endtrim(char *save);

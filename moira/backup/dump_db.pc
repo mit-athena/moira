@@ -1,4 +1,4 @@
-/* $Id: dump_db.pc,v 1.8 1998-03-10 21:18:04 danw Exp $
+/* $Id: dump_db.pc,v 1.9 2000-03-10 20:55:04 zacheiss Exp $
  *
  * 	This program dumps the Moira database to a series of output files
  * which can be later read back into Moira in the event of a crash.
@@ -19,7 +19,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/dump_db.pc,v 1.8 1998-03-10 21:18:04 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/dump_db.pc,v 1.9 2000-03-10 20:55:04 zacheiss Exp $");
 
 EXEC SQL BEGIN DECLARE SECTION;
 char *db = "moira";
@@ -114,4 +114,28 @@ FILE *open_file(char *prefix, char *suffix)
     }
   fprintf(stderr, "Working on %s\n", name);
   return f;
+}
+
+/*
+ * Trim whitespace off the tail end of a string
+ */
+char *endtrim(char *save)
+{
+  char *t, *s;
+
+  s = save;
+  for (t = s; *t; t++)
+    continue;
+  while (t > s)
+    {
+      --t;
+      if (!isspace(*t))
+	{
+	  t++;
+	  break;
+	}
+    }
+  if (*t)
+    *t = '\0';
+  return s;
 }

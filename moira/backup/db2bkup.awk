@@ -1,4 +1,4 @@
-#	$Id: db2bkup.awk,v 1.13 1998-02-13 21:32:26 danw Exp $
+#	$Id: db2bkup.awk,v 1.14 2000-03-10 20:55:03 zacheiss Exp $
 #
 #	This converts the file used to originally create the database
 #	into a program to back it up.
@@ -87,7 +87,7 @@ NF>=2 {
 	for (i = 0; i < count; i++) {
 		if (i != 0) print "      dump_sep(f);";
 		if (vtype[i] ~ /str/ || vtype[i] ~ /date/) {
-			printf "      dump_str(f, strtrim(t_%s));\n", vname[i];
+			printf "      dump_str(f, endtrim(t_%s));\n", vname[i];
 		} else {
 			printf "      dump_%s(f, t_%s);\n", vtype[i], vname[i];
 		}

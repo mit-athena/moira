@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/reg_stubs.c,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/reg_stubs.c,v 1.10 1989-12-28 17:35:25 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/reg_stubs.c,v 1.11 1990-02-28 12:13:09 mar Exp $
  *
  *  (c) Copyright 1988 by the Massachusetts Institute of Technology.
  *  For copying and distribution information, please see the file
@@ -9,7 +9,7 @@
  */
 
 #ifndef lint
-static char *rcsid_reg_stubs_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/reg_stubs.c,v 1.10 1989-12-28 17:35:25 mar Exp $";
+static char *rcsid_reg_stubs_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/reg_stubs.c,v 1.11 1990-02-28 12:13:09 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -21,6 +21,8 @@ static char *rcsid_reg_stubs_c = "$Header: /afs/.athena.mit.edu/astaff/project/m
 #include <netdb.h>
 #include <des.h>
 #include <errno.h>
+#include <sms.h>
+#include <sms_app.h>
 #include "ureg_err.h"
 #include "ureg_proto.h"
 #include <strings.h>
@@ -34,14 +36,28 @@ extern errno;
 ureg_init()
 {
     struct servent *sp;
+    char *host, **p;
     struct hostent *hp;
     struct sockaddr_in sin;
+    extern char *getenv(), **hes_resolve();
     
     initialize_ureg_error_table();
     
     seq_no = getpid();
 
-    hp = gethostbyname("sms.mit.edu");
+    host = NULL;
+    host = getenv("REGSERVER");
+#ifdef HESIOD
+    if (!host || (strlen(host) == 0)) {
+	p = hes_resolve("registration", "sloc");
+	if (p) host = *p;
+    }
+#endif HESIOD
+    if (!host || (strlen(host) == 0)) {
+	host = strsave(SMS_SERVER);
+	*index(host, ':') = 0;
+    }
+    hp = gethostbyname(host);
     if (hp == NULL) return UNKNOWN_HOST;
 
     sp = getservbyname("sms_ureg", "udp");

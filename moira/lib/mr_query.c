@@ -1,11 +1,14 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_query.c,v $
  *	$Author: wesommer $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_query.c,v 1.3 1987-08-02 21:49:53 wesommer Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_query.c,v 1.4 1987-08-22 17:11:16 wesommer Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
  *	$Log: not supported by cvs2svn $
+ * Revision 1.3  87/08/02  21:49:53  wesommer
+ * Prevent recursive query call.
+ * 
  * Revision 1.2  87/06/16  17:48:58  wesommer
  * Clean up memory allocation, indenting.
  * 
@@ -15,7 +18,7 @@
  */
 
 #ifndef lint
-static char *rcsid_sms_query_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_query.c,v 1.3 1987-08-02 21:49:53 wesommer Exp $";
+static char *rcsid_sms_query_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_query.c,v 1.4 1987-08-22 17:11:16 wesommer Exp $";
 #endif lint
 
 #include "sms_private.h"
@@ -69,9 +72,9 @@ int sms_query_internal(argc, argv, callproc, callarg)
     int stopcallbacks = 0;
 
     if (level) return SMS_QUERY_NOT_REENTRANT;
-    level++;
     
     CHECK_CONNECTED;
+    level++;
 
     params = &params_st;
     params->sms_procno = SMS_QUERY;

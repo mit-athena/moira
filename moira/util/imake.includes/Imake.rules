@@ -1,6 +1,6 @@
 /**/#	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/util/imake.includes/Imake.rules,v $
 /**/#	$Author: steiner $
-/**/#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/util/imake.includes/Imake.rules,v 4.4 1988-12-09 15:37:15 steiner Exp $
+/**/#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/util/imake.includes/Imake.rules,v 4.5 1988-12-16 09:36:53 steiner Exp $
 /**/#
 
 #ifdef __STDC__
@@ -75,10 +75,12 @@ clean:: 								@@\
 	$(RM) profiled/?*.o						@@\
 									@@\
 install:: 								@@\
-	$(INSTALLFILE) concat3(lib,libname,.a) concat4($(DESTDIR)$(LIBDIR)/,lib,libname,.a)	@@\
+	$(INSTALLRAW) -m 644 concat3(lib,libname,.a) concat4($(DESTDIR)$(LIBDIR)/,lib,libname,.a)	@@\
 	$(RANLIB) -t concat4($(DESTDIR)$(LIBDIR)/,lib,libname,.a)	@@\
-	$(INSTALLFILE) concat3(lib,libname,_p.a) concat4($(DESTDIR)$(LIBDIR)/,lib,libname,_p.a)	@@\
+	$(CHMOD) 444 concat4($(DESTDIR)$(LIBDIR)/,lib,libname,.a)	@@\
+	$(INSTALLRAW) -m 644 concat3(lib,libname,_p.a) concat4($(DESTDIR)$(LIBDIR)/,lib,libname,_p.a)	@@\
 	$(RANLIB) -t concat4($(DESTDIR)$(LIBDIR)/,lib,libname,_p.a)	@@\
+	$(CHMOD) 444 concat4($(DESTDIR)$(LIBDIR)/,lib,libname,_p.a)	@@\
 	$(INSTALLFILE) concat3(llib-l,libname,.ln) concat4($(DESTDIR)$(LINTLIBDIR)/,llib-l,libname,.ln)	@@\
 
 #else /* !PROFILED_LIBS */
@@ -124,8 +126,9 @@ clean:: 								@@\
 	$(RM) objs							@@\
 									@@\
 install:: 								@@\
-	$(INSTALLFILE) concat3(lib,libname,.a) concat4($(DESTDIR)$(LIBDIR)/,lib,libname,.a)	@@\
+	$(INSTALLRAW) -m 644 concat3(lib,libname,.a) concat4($(DESTDIR)$(LIBDIR)/,lib,libname,.a)	@@\
 	$(RANLIB) -t concat4($(DESTDIR)$(LIBDIR)/,lib,libname,.a)	@@\
+	$(CHMOD) 444 concat4($(DESTDIR)$(LIBDIR)/,lib,libname,.a)	@@\
 	$(INSTALLFILE) concat3(llib-l,libname,.ln) concat4($(DESTDIR)$(LINTLIBBDIR)/,llib-l,libname,.ln)	@@\
 
 #endif /* PROFILED_LIBS */

@@ -1,4 +1,4 @@
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/util/makeconfig,v 1.6 1996-10-29 23:34:22 danw Exp $
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/util/makeconfig,v 1.7 1997-01-29 23:29:48 danw Exp $
 #
 #  Copyright 1990 by the Massachusetts Institute of Technology.
 # 
@@ -31,9 +31,6 @@ SUBDIR	= backup clients db dbck dcm gdb gen include incremental \
 	clients/mailmaint clients/moira clients/mrcheck clients/mrtest \
 	clients/passwd clients/userreg clients/addusr clients/mmoira util man
 
-# Empty directories which also need to be built.
-MTDIR	= lib/profiled server/profiled gdb/profiled
-
 all:
 	rm -f ${DESTDIR}/Makefile
 	${LN} ${SRCDIR}/Makefile ${DESTDIR}/Makefile
@@ -45,7 +42,6 @@ all:
 		rm -f ${DESTDIR}/$$i/Imakefile; \
 		${SYMLINK} ${SRCDIR}/$$i/Imakefile ${DESTDIR}/$$i/Imakefile; \
 	done
-	-for i in ${MTDIR}; do mkdir ${DESTDIR}/$$i; done
 	for i in imake makedepend imake.includes et; do \
 		make ${MFLAGS} -f ${SRCDIR}/util/$$i/Makefile SRCDIR=${SRCDIR} DESTDIR=${DESTDIR} config; \
 	done

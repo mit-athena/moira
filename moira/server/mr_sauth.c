@@ -1,14 +1,14 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_sauth.c,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_sauth.c,v 1.8 1988-06-30 12:37:36 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_sauth.c,v 1.9 1988-07-23 18:48:52 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
  */
 
 #ifndef lint
-static char *rcsid_sms_sauth_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_sauth.c,v 1.8 1988-06-30 12:37:36 mar Exp $";
+static char *rcsid_sms_sauth_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_sauth.c,v 1.9 1988-07-23 18:48:52 mar Exp $";
 #endif lint
 
 extern int krb_err_base;
@@ -92,4 +92,6 @@ do_auth(cl)
 	if (log_flags & LOG_RES)
 	    com_err(whoami, 0, "Authenticated to %s using %s, id %d",
 		    cl->clname, cl->entity, cl->users_id);
+	if (cl->users_id == 0)
+	  cl->reply.sms_status = SMS_USER_AUTH;
 }

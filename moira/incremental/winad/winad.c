@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/winad/winad.c,v 1.29 2002-04-30 02:21:25 zacheiss Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/winad/winad.c,v 1.30 2002-08-06 22:09:24 zacheiss Exp $
 /* winad.incr arguments examples
  *
  * arguments when moira creates the account - ignored by winad.incr since the account is unusable.
@@ -81,21 +81,21 @@
  * filesys 12 0 username AFS ATHENA.MIT.EDU /afs/athena.mit.edu/user/n/e/username /mit/username w descripton username wheel 1 HOMEDIR 101727
  *
  * arguments when moira creates a container (OU).
- * containers 0 7 machines/test/bottom description location contact USER 105316 2222
+ * containers 0 8 machines/test/bottom description location contact USER 105316 2222 [none]
  *
  * arguments when moira deletes a container (OU).
- * containers 7 0 machines/test/bottom description location contact USER 105316 2222
+ * containers 8 0 machines/test/bottom description location contact USER 105316 2222 groupname
  *
  * arguments when moira modifies a container information (OU).
- * containers 7 7 machines/test/bottom description location contact USER 105316 2222 machines/test/bottom description1 location contact USER 105316 2222
+ * containers 8 8 machines/test/bottom description location contact USER 105316 2222 groupname machines/test/bottom description1 location contact USER 105316 2222 groupname
  *
  * arguments when moira adds a machine from an OU
  * table name, beforec, afterc, machine_name, container_name, mach_id, cnt_id
- * mcntmap 0 4 DAVIDT.MIT.EDU dttest/dttest1 76767 46
+ * mcntmap 0 5 DAVIDT.MIT.EDU dttest/dttest1 76767 46 groupname
  *
  * arguments when moira removes a machine from an OU
  * table name, beforec, afterc, machine_name, container_name, mach_id, cnt_id
- * mcntmap 0 4 DAVIDT.MIT.EDU dttest/dttest1 76767 46
+ * mcntmap 0 5 DAVIDT.MIT.EDU dttest/dttest1 76767 46 groupname
  *
 */
 #include <mit-copyright.h>
@@ -239,19 +239,21 @@ typedef struct _SID {
 #define AD_NO_USER_FOUND          -9
 
 /* container arguments */
-#define CONTAINER_NAME     0
-#define CONTAINER_DESC     1
-#define CONTAINER_LOCATION 2
-#define CONTAINER_CONTACT  3
-#define CONTAINER_TYPE     4
-#define CONTAINER_ID       5
-#define CONTAINER_ROWID    6
+#define CONTAINER_NAME       0
+#define CONTAINER_DESC       1
+#define CONTAINER_LOCATION   2
+#define CONTAINER_CONTACT    3
+#define CONTAINER_TYPE       4
+#define CONTAINER_ID         5
+#define CONTAINER_ROWID      6
+#define CONTAINER_GROUP_NAME 7
 
 /*mcntmap arguments*/
 #define OU_MACHINE_NAME        0
 #define OU_CONTAINER_NAME      1
 #define OU_MACHINE_ID          2
 #define OU_CONTAINER_ID        3
+#define OU_CONTAINER_GROUP     4
 
 typedef struct lk_entry {
   int     op;
@@ -343,6 +345,18 @@ int GetAceInfo(int ac, char **av, void *ptr);
 int get_group_membership(char *group_membership, char *group_ou, 
                          int *security_flag, char **av);
 int get_machine_ou(LDAP *ldap_handle, char *dn_path, char *member, char *machine_ou);
+int Moira_container_group_create(char **after);
+int Moira_container_group_delete(char **before);
+int Moira_groupname_create(char *GroupName, char *ContainerName,
+			   char *ContainerRowID);
+int Moira_container_group_update(char **before, char **after);
+int Moira_process_machine_container_group(char *MachineName, char* groupName,
+					  int DeleteMachine);
+int Moira_addGroupToParent(char *origContainerName, char *GroupName);
+int Moira_getContainerGroup(int ac, char **av, void *ptr);
+int Moira_getGroupName(char *origContainerName, char *GroupName,
+		       int ParentFlag);
+int Moira_setContainerGroup(char *ContainerName, char *GroupName);
 int ProcessAce(LDAP *ldap_handle, char *dn_path, char *group_name, char *Type,
                int UpdateGroup, int *ProcessGroup);
 int process_group(LDAP *ldap_handle, char *dn_path, char *MoiraId, 
@@ -532,9 +546,13 @@ void do_mcntmap(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
     char    ADContainerName[128];
     char    MachineName[128];
     long    rc;
+    int     DeleteMachine;
+    char    MoiraContainerGroup[64];
 
-    memset(MoiraContainerName, '\0', sizeof(MoiraContainerName));
+    DeleteMachine = 0;
     memset(ADContainerName, '\0', sizeof(ADContainerName));
+    memset(MoiraContainerName, '\0', sizeof(MoiraContainerName));
+
     if ((beforec == 0) && (afterc == 0))
         return;
 
@@ -549,26 +567,37 @@ void do_mcntmap(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
     if ((beforec != 0) && (afterc == 0)) /*remove a machine*/
     {
         strcpy(MachineName, before[OU_MACHINE_NAME]);
+	strcpy(MoiraContainerGroup, before[OU_CONTAINER_GROUP]);
+	DeleteMachine = 1;
         com_err(whoami, 0, "removing machine %s from %s", MachineName, before[OU_CONTAINER_NAME]);
     }
     else if ((beforec == 0) && (afterc != 0)) /*add a machine*/
     {
         strcpy(MachineName, after[OU_MACHINE_NAME]);
+	strcpy(MoiraContainerGroup, after[OU_CONTAINER_GROUP]);
         com_err(whoami, 0, "adding machine %s to container %s", MachineName, after[OU_CONTAINER_NAME]);
     }
     else
+      {
+	moira_disconnect();
         return;
+      }
 
+    Moira_process_machine_container_group(MachineName, MoiraContainerGroup,
+					  DeleteMachine);
     if (machine_check(ldap_handle, dn_path, MachineName))
     {
         com_err(whoami, 0, "machine %s not found in AD.", MachineName);
+	moira_disconnect();
         return;
     }
+    memset(MoiraContainerName, '\0', sizeof(MoiraContainerName));
     machine_get_moira_container(ldap_handle, dn_path, MachineName, MoiraContainerName);
     if (strlen(MoiraContainerName) == 0)
     {
         com_err(whoami, 0, "machine %s container not found in Moira - moving to orphans OU.", MachineName);
         machine_move_to_ou(ldap_handle, dn_path, MachineName, orphans_machines_ou);
+	moira_disconnect();
         return;
     }
     container_get_dn(MoiraContainerName, ADContainerName);
@@ -576,20 +605,31 @@ void do_mcntmap(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
        strcat(MoiraContainerName, "/");
     container_check(ldap_handle, dn_path, MoiraContainerName);
     machine_move_to_ou(ldap_handle, dn_path, MachineName, ADContainerName);
+    moira_disconnect();
     return;
 }
 
 void do_container(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
              char **before, int beforec, char **after, int afterc)
 {
+  long rc;
 
   if ((beforec == 0) && (afterc == 0))
     return;
+
+  if (rc = moira_connect())
+    {
+      critical_alert("AD incremental", "Error contacting Moira server : %s",
+		     error_message(rc));
+      return;
+    }
 
   if ((beforec != 0) && (afterc == 0)) /*delete a new container*/
     {
       com_err(whoami, 0, "deleting container %s", before[CONTAINER_NAME]);
       container_delete(ldap_handle, dn_path, beforec, before);
+      Moira_container_group_delete(before);
+      moira_disconnect();
       return;
     }
   if ((beforec == 0) && (afterc != 0)) /*create a container*/
@@ -597,6 +637,8 @@ void do_container(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
       com_err(whoami, 0, "creating container %s", after[CONTAINER_NAME]);
       container_check(ldap_handle, dn_path, after[CONTAINER_NAME]);
       container_create(ldap_handle, dn_path, afterc, after);
+      Moira_container_group_create(after);
+      moira_disconnect();
       return;
     }
 
@@ -604,10 +646,14 @@ void do_container(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
     {
       com_err(whoami, 0, "renaming container %s to %s", before[CONTAINER_NAME], after[CONTAINER_NAME]);
       container_rename(ldap_handle, dn_path, beforec, before, afterc, after);
+      Moira_container_group_update(before, after);
+      moira_disconnect();
       return;
     }
   com_err(whoami, 0, "updating container %s information", after[CONTAINER_NAME]);
   container_update(ldap_handle, dn_path, beforec, before, afterc, after);
+  Moira_container_group_update(before, after);
+  moira_disconnect();
   return;
 }
 
@@ -5036,3 +5082,311 @@ int machine_GetMoiraContainer(int ac, char **av, void *ptr)
     return(0);
 }
 
+int Moira_container_group_create(char **after)
+{
+  long rc;
+  char GroupName[64];
+  char *argv[13];
+  
+  memset(GroupName, '\0', sizeof(GroupName));
+  rc = Moira_groupname_create(GroupName, after[CONTAINER_NAME], 
+			      after[CONTAINER_ROWID]);
+  if (rc)
+    return rc;
+  
+  argv[L_NAME] = GroupName;
+  argv[L_ACTIVE] = "1";
+  argv[L_PUBLIC] = "0";
+  argv[L_HIDDEN] = "0";
+  argv[L_MAILLIST] = "0";
+  argv[L_GROUP] = "1";
+  argv[L_GID] = UNIQUE_GID;
+  argv[L_NFSGROUP] = "0";
+  argv[L_DESC] = "auto created container group";
+  argv[L_ACE_TYPE] = "USER";
+  argv[L_MEMACE_TYPE] = "USER";
+  argv[L_ACE_NAME] = "sms";
+  argv[L_MEMACE_NAME] = "sms";
+
+  if (rc = mr_query("add_list", 13, argv, NULL, NULL))
+    {
+      com_err(whoami, 0, "couldn't create container group %s for container %s: %s",
+	      GroupName, after[CONTAINER_NAME], error_message(rc));
+    }
+
+  Moira_setContainerGroup(after[CONTAINER_NAME], GroupName);
+  Moira_addGroupToParent(after[CONTAINER_NAME], GroupName);
+  
+  return(rc);
+}
+
+int Moira_container_group_update(char **before, char **after)
+{
+  long rc;
+  char BeforeGroupName[64];
+  char AfterGroupName[64];
+  char *argv[15];
+  
+  if (!strcasecmp(after[CONTAINER_NAME], before[CONTAINER_NAME]))
+    return(0);
+
+  memset(BeforeGroupName, '\0', sizeof(BeforeGroupName));
+  Moira_getGroupName(after[CONTAINER_NAME], BeforeGroupName, 0);
+  if (strlen(BeforeGroupName) == 0)
+    return(0);
+
+  memset(AfterGroupName, '\0', sizeof(AfterGroupName));
+  rc = Moira_groupname_create(AfterGroupName, after[CONTAINER_NAME], 
+			      after[CONTAINER_ROWID]);
+  if (rc)
+    return rc;
+
+  if (strcasecmp(BeforeGroupName, AfterGroupName))
+    {
+      argv[L_NAME] = BeforeGroupName;
+      argv[L_NAME + 1] = AfterGroupName;
+      argv[L_ACTIVE + 1] = "1";
+      argv[L_PUBLIC + 1] = "0";
+      argv[L_HIDDEN + 1] = "1";
+      argv[L_MAILLIST + 1] = "0";
+      argv[L_GROUP + 1] = "1";
+      argv[L_GID + 1] = UNIQUE_GID;
+      argv[L_NFSGROUP + 1] = "0";
+      argv[L_DESC + 1] = "auto created container group";
+      argv[L_ACE_TYPE + 1] = "USER";
+      argv[L_MEMACE_TYPE + 1] = "USER";
+      argv[L_ACE_NAME + 1] = "sms";
+      argv[L_MEMACE_NAME + 1] = "sms";
+      
+      if (rc = mr_query("update_list", 14, argv, NULL, NULL))
+	{
+	  com_err(whoami, 0, "couldn't rename container group from %s to %s: %s",
+		  BeforeGroupName, AfterGroupName, error_message(rc));
+	}
+    }
+  
+  return(rc);
+}
+
+int Moira_container_group_delete(char **before)
+{
+  long rc = 0;
+  char *argv[13];
+  char GroupName[64];
+  char ParentGroupName[64];
+  
+  memset(ParentGroupName, '\0', sizeof(ParentGroupName));
+  Moira_getGroupName(before[CONTAINER_NAME], ParentGroupName, 1);
+
+  memset(GroupName, '\0', sizeof(GroupName));
+  if (strcmp(before[CONTAINER_GROUP_NAME], "[none]"))
+    strcpy(GroupName, before[CONTAINER_GROUP_NAME]);
+  
+  if ((strlen(ParentGroupName) != 0) && (strlen(GroupName) != 0))
+    {
+      argv[0] = ParentGroupName;
+      argv[1] = "LIST";
+      argv[2] = GroupName;
+      if (rc = mr_query("delete_member_from_list", 3, argv, NULL, NULL))
+	{
+	  com_err(whoami, 0, "couldn't delete container group %s from list: %s",
+		  GroupName, ParentGroupName, error_message(rc));
+	}
+    }
+  
+  if (strlen(GroupName) != 0)
+    {
+      argv[0] = GroupName;
+      if (rc = mr_query("delete_list", 1, argv, NULL, NULL))
+	{
+	  com_err(whoami, 0, "couldn't delete container group %s : %s",
+		  GroupName, error_message(rc));
+	}
+     }
+  
+  return(rc);
+}
+
+int Moira_groupname_create(char *GroupName, char *ContainerName,
+			   char *ContainerRowID)
+{
+  char *ptr;
+  char *ptr1;
+  char temp[64];
+  char newGroupName[64];
+  char tempGroupName[64];
+  char *argv[1];
+  int  i;
+  long rc;
+
+  strcpy(temp, ContainerName);
+  
+  ptr1 = strrchr(temp, '/');
+  if (ptr1 != NULL)
+    ptr = ++ptr1;
+  else
+    ptr = temp;
+
+  if (strlen(ptr) > 25)
+    ptr[25] ='\0';
+
+  sprintf(newGroupName, "cnt-%s", ptr);
+
+  /* change everything to lower case */
+  ptr = newGroupName;
+  while (*ptr)
+    {
+      if (isupper(*ptr))
+	*ptr = tolower(*ptr);
+      if (*ptr == ' ')
+	*ptr = '-';
+      ptr++;
+    }
+
+  strcpy(tempGroupName, newGroupName);
+  i = (int)'0';
+  /* append 0-9 then a-z if a duplicate is found */
+  while(1)
+    {
+      argv[0] = newGroupName;
+      if (rc = mr_query("get_list_info", 1, argv, NULL, NULL))
+	{
+	  if (rc == MR_NO_MATCH)
+	    break;
+	  com_err(whoami, 0, "Moira error while creating group name for container %s : %s",
+		  ContainerName, error_message(rc));
+	  return rc;
+	}
+      sprintf(newGroupName, "%s-%c", tempGroupName, i);
+      if (i == (int)'z')
+	{
+	  com_err(whoami, 0, "Can not find a unique group name for container %s: too many duplicate container names",
+		  ContainerName);
+	  return 1;
+	}
+      if (i == '9')
+	i = 'a';
+      else
+	i++;
+    }
+
+  strcpy(GroupName, newGroupName);
+  return(0);
+}
+
+int Moira_setContainerGroup(char *origContainerName, char *GroupName)
+{
+  long rc;
+  char *argv[3];
+  
+  argv[0] = origContainerName;
+  argv[1] = GroupName;
+
+  if ((rc = mr_query("set_container_list", 2, argv, NULL, NULL)))
+    {
+         com_err(whoami, 0, "couldn't set container group %s in container %s: %s",
+                 GroupName, origContainerName, error_message(rc));
+    }
+
+  return(0);
+}
+
+ int Moira_addGroupToParent(char *origContainerName, char *GroupName)
+ {
+   char ContainerName[64];
+   char ParentGroupName[64];
+   char *argv[3];
+   long rc;
+
+   strcpy(ContainerName, origContainerName);
+
+   Moira_getGroupName(ContainerName, ParentGroupName, 1);
+   /* top-level container */
+   if (strlen(ParentGroupName) == 0)
+     return(0);
+   
+   argv[0] = ParentGroupName;
+   argv[1] = "LIST";
+   argv[2] = GroupName;
+   if ((rc = mr_query("add_member_to_list", 3, argv, NULL, NULL)))
+     {
+       com_err(whoami, 0, "couldn't add container group %s to parent group %s: %s",
+	       GroupName, ParentGroupName, error_message(rc));
+     }
+   return(0);
+ }
+
+int Moira_getContainerGroup(int ac, char **av, void *ptr)
+{
+  char **call_args;
+  
+  call_args = ptr;
+  strcpy(call_args[0], av[1]);
+  return(0);
+}
+
+int Moira_getGroupName(char *origContainerName, char *GroupName,
+		       int ParentFlag)
+{
+  int  i;
+  char ContainerName[64];
+  char *argv[3];
+  char *call_args[3];
+  char *ptr;
+  long rc;
+
+  strcpy(ContainerName, origContainerName);
+
+  if (ParentFlag)
+    {
+      ptr = strrchr(ContainerName, '/');
+      if (ptr != NULL)
+	(*ptr) = '\0';
+      else
+	return(0);
+    }
+
+  argv[0] = ContainerName;
+  argv[1] = NULL;
+  call_args[0] = GroupName;
+  call_args[1] = NULL;
+
+  if (!(rc = mr_query("get_container_list", 1, argv, Moira_getContainerGroup,
+		      call_args)))
+    {
+      if (strlen(GroupName) != 0)
+	return(0);
+    }
+
+  if (rc)
+    com_err(whoami, 0, "couldn't get container group from container %s: %s",
+	    ContainerName, error_message(rc));
+  else
+    com_err(whoami, 0, "couldn't get container group from container %s",
+	    ContainerName);
+     return(0);
+}
+
+int Moira_process_machine_container_group(char *MachineName, char* GroupName, 
+					  int DeleteMachine)
+{
+  char *argv[3];
+  long rc;
+
+  if (strcmp(GroupName, "[none]") == 0)
+    return 0;
+
+  argv[0] = GroupName;
+  argv[1] = "MACHINE";
+  argv[2] = MachineName;
+  if (!DeleteMachine)
+    rc = mr_query("add_member_to_list", 3, argv, NULL, NULL);
+  else
+    rc = mr_query("delete_member_from_list", 3, argv, NULL, NULL);
+  if (rc)
+    {
+      com_err(whoami, 0, "couldn't add machine %s to container group%s: %s",
+	      MachineName, GroupName, error_message(rc));
+    }
+  return(0);
+}

@@ -12,16 +12,8 @@ Minor Changes
 
 -  Add Kerberos code to register user.
  
--  Exit Updates in Ask*Info on ^C. (use return vales).
-
--  re-organize the files
-   a) cluster.c
-
 Major Fixes and Additions
 -------------------------
-
--  Update Filesystem menu stuff to handle new spec. for
-   multiple filesystems with the same name.
 
 -  Fix the D*** Menu Package.
    a) It loses when the machine runs out of memory.

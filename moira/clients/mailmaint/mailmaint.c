@@ -1,10 +1,10 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v 1.9 1988-05-16 22:48:55 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v 1.10 1988-06-02 17:36:39 mar Exp $
  */
 
 #ifndef lint
-static char rcsid_mailmaint_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v 1.9 1988-05-16 22:48:55 mar Exp $";
+static char rcsid_mailmaint_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v 1.10 1988-06-02 17:36:39 mar Exp $";
 #endif lint
 
 /***********************************************************************/
@@ -40,9 +40,17 @@ extern char *strsave();
 int menu_err_hook();
 
 typedef struct list_info {
-    char *acl;
+    int active;
+    int public;
+    int hidden;
+    int maillist;
+    int group;
+    char *acl_type;
+    char *acl_name;
     char *desc;
-    char *expdate;
+    char *modtime;
+    char *modby;
+    char *modwith;
 }         List_info;
 
 static char *ascbuff = {"0123456789"};
@@ -100,9 +108,12 @@ main(argc, argv)
 	goto punt;
     }
     else {
-	current_li->acl = (char *) NULL;
+	current_li->acl_type = (char *) NULL;
+	current_li->acl_name = (char *) NULL;
 	current_li->desc = (char *) NULL;
-	current_li->expdate = (char *) NULL;
+	current_li->modtime = (char *) NULL;
+	current_li->modby = (char *) NULL;
+	current_li->modwith = (char *) NULL;
     }
     if ((uname = getlogin()) == NULL) {
 	struct passwd *getpwuid();
@@ -119,7 +130,7 @@ main(argc, argv)
 	goto punt;
     }
 
-    status = sms_auth();
+    status = sms_auth("mailmaint");
     if (status) {
 	(void) sprintf(buf, "\nAuthorization failed.\n");
 	goto punt;
@@ -268,10 +279,13 @@ show_list_info()
 	    else
 		show_text(currow, STARTCOL, buf);
 	    currow++;
-	    (void) sprintf(buf, "List Administrator: %s", current_li->acl);
+	    (void) sprintf(buf, "List Administrator: %s %s",
+			   current_li->acl_type, current_li->acl_name);
 	    show_text(currow, STARTCOL, buf);
 	    currow++;
-	    (void) sprintf(buf, "Expiration date: %s", current_li->expdate);
+	    (void) sprintf(buf, "Modified on %s by user %s with %s",
+			   current_li->modtime, current_li->modby,
+			   current_li->modwith);
 	    show_text(currow, STARTCOL, buf);
 	    currow++;
 	}
@@ -348,12 +362,7 @@ start_display_buff(buff)
 /****************************************************/
 add_member()
 {
-    static char *argv[] = {
-	"add_member_to_list",
-	0,
-	0,
-	0
-	};
+    char *argv[3];
     char *buf;
     char c;
 
@@ -361,10 +370,11 @@ add_member()
     buf = calloc(LISTMAX, 1);
     if (Prompt("Enter List Name: ", buf, LISTSIZE) == 1) {
 	Put_message("\r\n");
-	argv[1] = strsave(buf);
-	argv[2] = strsave("user");
-	argv[3] = strsave(uname);
-	if (status = sms_query_internal(3, argv, scream, (char *) NULL)) {
+	argv[0] = strsave(buf);
+	argv[1] = strsave("user");
+	argv[2] = strsave(uname);
+	if (status = sms_query("add_member_to_list", 3, argv,
+			       scream, (char *) NULL)) {
 	    Put_message("\r\n");
 	    com_err(whoami, status, " found.\n");
 	}
@@ -382,12 +392,7 @@ add_member()
 /****************************************************/
 delete_member()
 {
-    static char *argv[] = {
-	"delete_member_from_list",
-	0,
-	0,
-	0
-	};
+    char *argv[3];
     char *buf;
     char c;
 
@@ -395,10 +400,11 @@ delete_member()
     buf = calloc(LISTMAX, 1);
     if (Prompt("Enter List Name: ", buf, LISTSIZE) == 1) {
 	Put_message("\r\n");
-	argv[1] = strsave(buf);
-	argv[2] = strsave("user");
-	argv[3] = strsave(uname);
-	if (status = sms_query_internal(3, argv, scream, (char *) NULL)) {
+	argv[0] = strsave(buf);
+	argv[1] = strsave("user");
+	argv[2] = strsave(uname);
+	if (status = sms_query("delete_member_from_list", 3, argv,
+			       scream, (char *) NULL)) {
 	    Put_message("\r\n");
 	    com_err(whoami, status, " found.\n");
 	}
@@ -420,7 +426,7 @@ list_by_member()
     char *buf;
     char c;
 
-    nargv[1] = strsave("user");
+    nargv[1] = strsave("ruser");
     nargv[2] = strsave(uname);
     buf = calloc(BUFSIZ, 1);
     (void) sprintf(buf, "%s is on the following lists:\r", uname);
@@ -446,7 +452,7 @@ show_all()
     show_text(DISPROW, STARTCOL, "This function may take a \
 while... proceed? [y] ");
     c = getchar();
-    if (c == 'y' || c == 'Y') {
+    if (c == 'y' || c == 'Y' || c == '\n') {
 	move(DISPROW + 1, STARTCOL);
 	addstr("Processing query...please hold");
 	refresh();
@@ -499,9 +505,12 @@ print_all(argc, argv, callback)
 /****************************************************/
 list_all_groups()
 {
-
+    char *argv[5];
+    argv[0] = argv[3] = "true";
+    argv[1] = argv[4] = "dontcare";
+    argv[2] = "false";
     first_time = 1;
-    if (status = sms_query("get_all_visible_maillists", 0, (char **) NULL,
+    if (status = sms_query("qualified_get_lists", 5, argv,
 			   print_all, (char *) NULL)) {
 	Put_message("\r\n");
 	com_err(whoami, status, " in list_all_groups\n");
@@ -820,15 +829,24 @@ get_list_info(argc, argv)
     char **argv;
 {
 
-    if (current_li->acl)
-	free(current_li->acl);
-    current_li->acl = strsave(argv[2]);
+    if (current_li->acl_type)
+	free(current_li->acl_type);
+    current_li->acl_type = strsave(argv[7]);
+    if (current_li->acl_name)
+	free(current_li->acl_name);
+    current_li->acl_name = strsave(argv[8]);
     if (current_li->desc)
 	free(current_li->desc);
-    current_li->desc = strsave(argv[3]);
-    if (current_li->expdate)
-	free(current_li->expdate);
-    current_li->expdate = strsave(argv[4]);
+    current_li->desc = strsave(argv[9]);
+    if (current_li->modtime)
+	free(current_li->modtime);
+    current_li->modtime = strsave(argv[10]);
+    if (current_li->modby)
+	free(current_li->modby);
+    current_li->modby = strsave(argv[11]);
+    if (current_li->modwith)
+	free(current_li->modwith);
+    current_li->modwith = strsave(argv[12]);
     return (0);
 }
 

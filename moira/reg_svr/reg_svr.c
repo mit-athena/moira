@@ -1,7 +1,7 @@
 /*
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.34 1992-01-02 17:30:45 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.35 1992-05-13 13:19:03 mar Exp $
  *
  *      Copyright (C) 1987, 1988 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -16,13 +16,14 @@
  */
 
 #ifndef lint
-static char *rcsid_reg_svr_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.34 1992-01-02 17:30:45 mar Exp $";
+static char *rcsid_reg_svr_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.35 1992-05-13 13:19:03 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
 #include <stdio.h>
 #include <strings.h>
 #include <ctype.h>
+#include <sys/time.h>
 #include <sys/types.h>
 #include <sys/file.h>
 #include <krb.h>
@@ -114,6 +115,12 @@ main(argc,argv)
 	    break;
 	  case UREG_SET_IDENT:
 	    status = set_identity(&message,retval);
+	    break;
+	  case UREG_GET_SECURE:
+	    status = get_secure(&message,retval);
+	    break;
+	  case UREG_SET_SECURE:
+	    status = set_secure(&message,retval);
 	    break;
 	  default:
 	    status = UREG_UNKNOWN_REQUEST;
@@ -906,4 +913,150 @@ void reg_com_err_hook(whoami, code, fmt, pvar)
 	}
 	putc('\n', stderr);
 	fflush(stderr);
+}
+
+
+/* Find out of someone's secure instance password is set.
+ * Returns UREG_ALREADY_REGISTERED if set, SUCCESS (0) if not.
+ */
+
+int get_secure(message, retval)
+struct msg *message;
+char *retval;
+{
+    int status;
+    char *argv[U_END];
+
+    com_err(whoami, 0, "checking status of secure password for %s",
+	    message->first);
+    argv[0] = message->first;
+    status = mr_query("get_user_account_by_login", 1, argv, getuserinfo, argv);
+    if (status != SUCCESS) {
+	com_err(whoami, status, " while getting user info");
+	return(status);
+    }
+    if (atoi(argv[U_SECURE]))
+      return UREG_ALREADY_REGISTERED;
+    return SUCCESS;
+}
+
+
+/* Set someone's secure instance password. */
+
+int set_secure(message, retval)
+struct msg *message;
+char *retval;
+{
+    int status, i;
+    char *argv[U_END], hostbuf[256], *bp, *p, buf[512], *passwd, *id;
+    KTEXT_ST creds;
+    AUTH_DAT auth;
+    C_Block key;
+    Key_schedule keys;
+    Kadm_vals kv;
+    u_long *lkey = (u_long *)key;
+    struct timeval now;
+    static int inited = 0;
+    static char *host;
+
+    if (!inited) {
+	inited++;
+	if (gethostname(hostbuf, sizeof(hostbuf)) < 0)
+	  com_err(whoami, errno, "getting local hostname");
+	host = strsave(krb_get_phost(hostbuf));
+    }
+
+    com_err(whoami, 0, "setting secure passwd for %s", message->first);
+    argv[0] = message->first;
+    status = mr_query("get_user_account_by_login", 1, argv, getuserinfo, argv);
+    if (status != SUCCESS) {
+	com_err(whoami, status, " while getting user info");
+	return(status);
+    }
+    if (atoi(argv[U_SECURE + 1])) {
+	com_err(whoami, UREG_ALREADY_REGISTERED, "in set_secure()");
+	return UREG_ALREADY_REGISTERED;
+    }
+
+    bp = message->encrypted;
+    /* round up to word boundary */
+    bp = (char *)((((u_long)bp + 3) >> 2) << 2);
+    
+    creds.length = ntohl(*((int *)bp));
+    bp += sizeof(int);
+    bcopy(bp, creds.dat, creds.length);
+    creds.mbz = 0;
+    bp += creds.length;
+
+#ifdef DEBUG
+    com_err(whoami, 0, "Cred: length %d", creds.length);
+    for (i = 0; i < creds.length; i += 16)
+      com_err(whoami, 0, " %02x %02x %02x %02x %02x %02x %02x %02x  %02x %02x %02x %02x %02x %02x %02x %02x",
+	      creds.dat[i+0], creds.dat[i+1], creds.dat[i+2], creds.dat[i+3],
+	      creds.dat[i+4], creds.dat[i+5], creds.dat[i+6], creds.dat[i+7],
+	      creds.dat[i+8], creds.dat[i+9], creds.dat[i+10], creds.dat[i+11],
+	      creds.dat[i+12], creds.dat[i+13], creds.dat[i+14], creds.dat[i+15]);
+#endif /* DEBUG */
+    
+    status = krb_rd_req(&creds, "changepw", host, cur_req_sender(),
+			&auth, "");
+    if (status) {
+	status += krb_err_base;
+	com_err(whoami, status, " verifying credentials in set_secure()");
+	return(status);
+    }
+
+    message->leftover_len = ntohl(*((int*)(bp)));
+    bp += sizeof(int);
+    message->leftover = bp;
+
+    des_key_sched(auth.session, keys);
+    des_pcbc_encrypt(message->leftover, buf, message->leftover_len,
+		     keys, auth.session, 0);
+
+    id = buf;
+    passwd = index(buf, ',');
+    *passwd++ = 0;
+#ifdef DEBUG
+    com_err(whoami, 0, "Got id: %s, passwd %d chars", id, strlen(passwd));
+#endif
+
+    if (strcmp(id, argv[U_MITID + 1])) {
+	status = UREG_USER_NOT_FOUND;
+	com_err(whoami, status, "IDs mismatch: %s, %s", id, argv[U_MITID + 1]);
+	return status;
+    }
+
+    /* now do actual password setting stuff */
+
+    if ((status = ureg_kadm_init()) != SUCCESS) {
+	com_err(whoami, status, "initing kadm stuff");
+	return(status);
+    }
+
+    bzero((char *)&kv, sizeof(kv));
+    SET_FIELD(KADM_DESKEY, kv.fields);
+    SET_FIELD(KADM_NAME, kv.fields);
+    SET_FIELD(KADM_INST, kv.fields);
+    (void) des_string_to_key(passwd, key);
+    kv.key_low = htonl(lkey[0]);
+    kv.key_high = htonl(lkey[1]);
+    strcpy(kv.name, message->first);
+    strcpy(kv.instance, "secure");
+
+    if ((status = kadm_add(&kv)) != KADM_SUCCESS) {
+	com_err(whoami, status, " while creating kerberos principal");
+	return(status);
+    }
+
+    argv[0] = message->first;
+    argv[1] = buf;
+    gettimeofday(&now, NULL);
+    sprintf(buf, "%d", now.tv_sec);
+    status = mr_query("update_user_security_status", 2, argv, getuserinfo, argv);
+    if (status != SUCCESS) {
+	com_err(whoami, status, " while updating user status");
+	return(status);
+    }
+    return SUCCESS;
 }

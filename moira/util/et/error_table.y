@@ -1,5 +1,6 @@
 %{
 #include <stdio.h>
+#include <stdlib.h>
 
 char *gensym(const char *x);
 static char *ds(const char *string);
@@ -84,7 +85,7 @@ description	:	QUOTED_STRING
 #include <sys/time.h>
 #include "error_table.h"
 
-static const char rcsid[] = "$Id: error_table.y,v 1.2 1998-02-05 22:13:08 danw Exp $";
+static const char rcsid[] = "$Id: error_table.y,v 1.3 1999-04-06 21:35:04 danw Exp $";
 
 #include "et_lex.lex.c"
 

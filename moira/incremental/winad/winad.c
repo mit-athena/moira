@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/winad/winad.c,v 1.11 2001-05-02 21:28:55 zacheiss Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/winad/winad.c,v 1.12 2001-05-03 21:57:14 zacheiss Exp $
 /* test parameters for creating a user account - done 
  * users 10 10 a_chen 31275 sh cmd Lastname Firstname Middlename 0 950000000 STAFF a_chen 31275 sh cmd Lastname Firstname Middlename 2 950000000 STAFF
  * users 10 10 a_chen 31275 sh cmd Lastname Firstname Middlename 2 950000000 STAFF a_chen 31275 sh cmd Lastname Firstname Middlename 1 950000000 STAFF
@@ -215,6 +215,7 @@ int  group_flag;
 int  mr_connections = 0;
 int  callback_rc;
 char default_server[256];
+static char tbl_buf[1024];
 
 extern int set_password(char *user, char *password, char *domain);
 
@@ -318,22 +319,13 @@ int main(int argc, char **argv)
   before = &argv[4];
   after = &argv[4 + beforec];
 
-  strcpy(tbl_buf, table);
-  strcat(tbl_buf, " (");
-  for (i = 0; i < beforec; i++)
+  for (i = 1; i < argc; i++)
     {
-      if (i > 0)
-        strcat(tbl_buf, ",");
-      strcat(tbl_buf, before[i]);
+      strcat(tbl_buf, argv[i]);
+      strcat(tbl_buf, " ");
     }
-  strcat(tbl_buf, ")->(");
-  for (i = 0; i < afterc; i++)
-    {
-      if (i > 0)
-        strcat(tbl_buf, ",");
-      strcat(tbl_buf, after[i]);
-    }
-  strcat(tbl_buf, ")");
+  com_err(whoami, 0, "%s", tbl_buf);
+
   check_winad();
   
   memset(ldap_domain, '\0', sizeof(ldap_domain));
@@ -589,6 +581,14 @@ void do_list(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
                          after[L_NAME], error_message(rc));
             goto cleanup;
         }
+      if ((call_args[3] == NULL) || (call_args[4] == NULL) || (call_args[5] == NULL))
+        {
+          linklist_free(member_base);
+          linklist_free(sid_base);
+          sid_base = NULL;
+          member_base = NULL;
+          goto cleanup;
+        }
       if (sid_base != NULL)
         {
           sid_update(ldap_handle, dn_path);
@@ -678,29 +678,35 @@ void do_member(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
   sid_ptr = &sid_base;
   if (!(rc = mr_query("get_list_info", 1, av, group_create, call_args)))
     {
-      if (sid_base != NULL)
+      rc = 1;
+      if ((call_args[3] != NULL) && (call_args[4] != NULL) && (call_args[5]
+= NULL))
         {
-          sid_update(ldap_handle, dn_path);
-          linklist_free(sid_base);
-          sid_base = NULL;
-        }
-      member_base = NULL;
-      sleep(1);
-
-      if (!(rc = mr_query("get_end_members_of_list", 1, av, member_list_build,
-                          call_args)))
-        {
-          if (member_base == NULL)
+          rc = 0;
+          if (sid_base != NULL)
             {
-              member_remove(ldap_handle, dn_path, group_name,
-                            call_args[3], call_args[4], call_args[5]);
+              sid_update(ldap_handle, dn_path);
+              linklist_free(sid_base);
+              sid_base = NULL;
             }
-          else
+          member_base = NULL;
+          sleep(1);
+
+          if (!(rc = mr_query("get_end_members_of_list", 1, av, member_list_build,
+                              call_args)))
             {
-              rc = member_list_process(ldap_handle, dn_path, group_name,
-                                       call_args[3], call_args[4], call_args[5],
-                                       MOIRA_USERS | MOIRA_KERBEROS | MOIRA_STRINGS);
-              expand_groups(ldap_handle, dn_path, group_name);
+              if (member_base == NULL)
+                {
+                  member_remove(ldap_handle, dn_path, group_name,
+                                call_args[3], call_args[4], call_args[5]);
+                }
+              else
+                {
+                  rc = member_list_process(ldap_handle, dn_path, group_name,
+                                           call_args[3], call_args[4], call_args[5],
+                                           MOIRA_USERS | MOIRA_KERBEROS | MOIRA_STRINGS);
+                  expand_groups(ldap_handle, dn_path, group_name);
+                }
             }
         }
     }
@@ -714,6 +720,7 @@ void do_member(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
                        user_name, group_name);
     }
   linklist_free(member_base);
+  linklist_free(sid_base);
   member_base = NULL;
   if (call_args[3] != NULL)
     free(call_args[3]);
@@ -2400,6 +2407,7 @@ int filesys_process(int ac, char **av, void *ptr)
       return(0);
     }
 
+  sleep(10);
   strcpy(fs_name, av[FS_NAME]);
   group_count = 0;
   group_base = NULL;
@@ -2456,7 +2464,7 @@ int filesys_process(int ac, char **av, void *ptr)
     {
       if ((rc = ldap_modify_s((LDAP *)call_args[0], distinguished_name, mods)) == LDAP_SUCCESS)
         break;
-      sleep(20);
+      sleep(10);
     }
   if (rc != LDAP_SUCCESS)
     {
@@ -3004,6 +3012,17 @@ void expand_groups(LDAP *ldap_handle, char *dn_path, char *group_name)
       if (rc = mr_query("get_list_info", 1, av, group_create, call_args))
         {
           linklist_free(member_base);
+          linklist_free(sid_base);
+          sid_base = NULL;
+          member_base = NULL;
+          ptr = ptr->next;
+          continue;
+        }
+      if ((call_args[3] == NULL) || (call_args[4] == NULL) || (call_args[5] == NULL))
+        {
+          linklist_free(member_base);
+          linklist_free(sid_base);
+          sid_base = NULL;
           member_base = NULL;
           ptr = ptr->next;
           continue;

@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.dc,v $
- *	$Author: root $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.dc,v 2.15 1993-01-04 17:18:33 root Exp $
+ *	$Author: mar $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.dc,v 2.16 1993-01-12 12:02:18 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_qsupport_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.dc,v 2.15 1993-01-04 17:18:33 root Exp $";
+static char *rcsid_qsupport_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.dc,v 2.16 1993-01-12 12:02:18 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -1539,7 +1539,7 @@ followup_ausr(q, argv, cl)
                 EXEC SQL INSERT INTO strings (string_id, string) 
 		  VALUES (:sigwho, :name);
             } else if (status)
-              return(gdss2et(status));
+              return(status);
             timestamp = si.timestamp;
         } else
           return(gdss2et(status));
@@ -1639,7 +1639,7 @@ followup_uuac(q, argv, cl)
                 EXEC SQL INSERT INTO strings (string_id, string) 
 		  VALUES (:sigwho, :name);
             } else if (status)
-              return(gdss2et(status));
+              return(status);
             timestamp = si.timestamp;
         } else
           return(gdss2et(status));
@@ -3499,6 +3499,21 @@ static int set_pop_usage(id, cnt)
 
     if (ingres_errno) return(mr_errcode);
     return(MR_SUCCESS);
+}
+
+int _sdl_followup(q, argv, cl)
+    struct query *q;
+    char **argv;
+    client *cl;
+{
+    int i;
+    i = atoi(argv[0]);
+    log_flags = i;
+    if (i && LOG_SQL) {
+	EXEC SQL set printqry;
+    } else {
+	EXEC SQL set no printqry;
+    }
 }
 
 

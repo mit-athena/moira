@@ -18,8 +18,7 @@ therefore, must be carefully monitored so that the SMS fields which are
 Because Athena will not support time sharing systems in the future, SMS
 will not support time sharing.  This then assumes that the old database
 will support the time sharing environment as long as it still
-exists.@foot(This might not work.  Are the staff really going to do
-system builds on microvaxen? -- AMBAR)
+exists.
 
 The following development schedule is planned:
 

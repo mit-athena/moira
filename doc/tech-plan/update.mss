@@ -48,9 +48,7 @@ the SMS database.  (Building the data file is handled with a locking
 strategy that ensures that "the" data file available for distribution
 is not an incomplete one.  The new data file is placed in position for
 transfer once it is complete using the @f(rename) system
-call.)@foot(Does this mean that SMS can only update one file at any
-one time? @foot(No, it should all be on a file-by-file basis. -- KR)
--- AMBAR)
+call.)
 
 Extract from SMS the list of server machines to update, and the
 instructions for installing the file.  Perform the remaining steps
@@ -95,12 +93,7 @@ erroneous installation.
 Send a signal to a specified process.  The process_id is assumed to be
 recorded in a file; the pathname of this file is a parameter to this
 instruction.  The process_id is read out of the file at the time of
-execution of this instruction.@foot(Does this mean that we're going to
-have to be keeping around lots more @f(daemon.pid) files than we do
-now? @foot(Yes, but it's either that or read kernel data structures
-for the info, and have to recompile the update program with each new
-kernel. -- KR)
--- AMBAR)
+execution of this instruction.
 
 Execute a supplied command.
 

@@ -1,4 +1,4 @@
-/* $Id: cluster.c,v 1.59 2001-09-16 00:18:32 zacheiss Exp $
+/* $Id: cluster.c,v 1.60 2001-09-24 08:02:02 zacheiss Exp $
  *
  *	This is the file cluster.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -303,7 +303,7 @@ static char *PrintMachInfo(char **info)
       Put_message("");
       sprintf(buf, "Warning:  This host is on a private subnet.");
       Put_message(buf);
-      sprintf(buf, "Billing information shown is superceded by billing information for the subnet.");
+      sprintf(buf, "Billing information shown is superseded by billing information for the subnet.");
       Put_message(buf);
       FreeQueue(elem2);
     }

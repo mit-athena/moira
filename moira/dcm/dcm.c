@@ -7,11 +7,11 @@
  *
  * $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/dcm.c,v $
  * $Author: mar $
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/dcm.c,v 1.13 1990-03-19 18:52:46 mar Exp $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/dcm.c,v 1.14 1990-04-09 18:41:45 mar Exp $
  */
 
 #ifndef lint
-static char rcsid_dcm_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/dcm.c,v 1.13 1990-03-19 18:52:46 mar Exp $";
+static char rcsid_dcm_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/dcm.c,v 1.14 1990-04-09 18:41:45 mar Exp $";
 #endif lint
 
 #include <stdio.h>
@@ -219,7 +219,7 @@ do_services()
 		waits.w_status = system(dfgen_cmd);
 		signal(SIGCHLD, cstat);
 		if (waits.w_termsig) {
-		    status = MR_TAR_FAIL;
+		    status = MR_COREDUMP;
 		    com_err(whoami, status, " %s exited on signal %d",
 			    dfgen_prog, waits.w_termsig);
 		} else if (waits.w_retcode) {

@@ -1,9 +1,9 @@
 /*
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_fserv.c,v 1.3 1991-03-08 10:18:05 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_fserv.c,v 1.4 1991-04-24 10:47:39 mar Exp $
  */
 
 #ifndef lint
-static char *rcsid_gdb_fserv_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_fserv.c,v 1.3 1991-03-08 10:18:05 mar Exp $";
+static char *rcsid_gdb_fserv_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_fserv.c,v 1.4 1991-04-24 10:47:39 mar Exp $";
 #endif	lint
 
 
@@ -96,7 +96,7 @@ int (*validate)();
 	g_do_signals();				/* set up signal handling */
 
 	incoming = create_listening_connection(service);
-	if (incoming == NULL)
+	if (incoming == NULL || connection_status(incoming) != CON_UP)
 		GDB_GIVEUP("create_forking_server: can't create listening connection")
 
 	/*----------------------------------------------------------*/
@@ -113,8 +113,12 @@ int (*validate)();
 				       gdb_sockaddr_of_client, &gdb_socklen,
 				       &gdb_client_tuple);
 		if(complete_operation(listenop) != OP_COMPLETE ||
-		   client == NULL) 
-			GDB_GIVEUP("create_forking_server: failed to accept client")
+		   client == NULL) {
+		    gdb_perror("GDB create_forking_server: failed to accept client");
+		    reset_operation(listenop);
+		    (void) sever_connection(client);
+		    continue;
+		  }
 		
 
                 /*

@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/employee.dc,v 1.17 1993-09-30 15:43:55 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/employee.dc,v 1.18 1993-10-21 15:18:47 mar Exp $
  */
 
 #include <stdio.h>
@@ -226,12 +226,8 @@ FILE *in;
     e.title = strtrim(title);
 
     e.class = "MITS";
-    if (!strcmp(e.dept, "PROJECT ATHENA"))
-      e.class = "STAFF";
-    else if (substr(e.title, "PROF") || substr(e.title, "LECTURE"))
+    if (substr(e.title, "PROF") || substr(e.title, "LECTURE"))
       e.class = "FACULTY";
-    else if (!strcmp(e.title, "VISITING SCIENTIST"))
-      e.class = "VSCIENTI";
 
     strcpy(email, strtrim(username));
     if (host[0] == '@')
@@ -253,6 +249,10 @@ struct entry *e;
     char class[9], oaddr[25], ophone[17], dept[128], dfirst[17], dlast[17], dmiddle[17];
     int id, status, who;
     EXEC SQL END DECLARE SECTION;
+
+    /* Don't process Lincoln Labs */
+    if (!strncmp(e->address, "LL", 2))
+      return;
 
     who = WHO;
     prog = PROG;

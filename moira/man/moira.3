@@ -2,7 +2,7 @@
 .FM mit
 .SH NAME
 sms_connect, sms_auth, sms_disconnect, sms_noop, sms_access,
-sms_query, sms_do_update, format_filesys_type, parse_filesys_type,
+sms_query, sms_do_update, sms_motd, format_filesys_type, parse_filesys_type,
 canonicalize_hostname, strsave, strtrim, sq_create, sq_destroy,
 sq_get_data, sq_save_args, sq_save_data, sq_save_unique_data,
 sq_save_unique_string, Start_paging, Stop_paging, Start_menu,
@@ -18,6 +18,9 @@ Protocol functions
 
 .B int sms_connect(server);
 .B	char *server;
+
+.B int sms_motd(motd);
+.B	char **motd;
 
 .B int sms_auth(prog);
 .B	char *prog;
@@ -110,8 +113,8 @@ routines are to be used.
 Protocol functions
 All protocol routines return 0 on success, or a value from 
 .I <sms_et.h>
-on failure.  An application should connect, authenticate, perform
-queries, then disconnect.
+on failure.  An application should connect, check the motd in case the
+server is closed, authenticate, perform queries, then disconnect.
 
 .I sending_version_no
 may be set to
@@ -128,6 +131,13 @@ establishes a connection with the SMS server.  The
 specification is of the form hostname:portname, where the portname can
 be looked up in 
 .B /etc/services.
+
+.B sms_motd
+will check to see if the server is closed and if so, will retrieve an
+explanatory message (the so-called motd).  This routine will always
+return 0 if no error occurs.  *motd will be NULL if the server is
+functioning normally, or a pointer to a static string with the
+explanation if the server is down.
 
 .B sms_auth
 authenticates an established connection using Kerberos.

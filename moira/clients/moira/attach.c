@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.30 1991-07-19 14:36:40 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.31 1991-10-29 15:44:44 mar Exp $";
 #endif
 
 /*	This is the file attach.c for the MOIRA Client, which allows a nieve
@@ -13,7 +13,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.30 1991-07-19 14:36:40 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.31 1991-10-29 15:44:44 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -338,6 +338,27 @@ char **argv;
     struct qelem *top;
 
     top = GetFSInfo(LABEL, argv[1]); /* get info. */
+    Loop(top, (void *) PrintFSInfo);
+    FreeQueue(top);		/* clean the queue. */
+    return (DM_NORMAL);
+}
+
+/*	Function Name: GetFSM
+ *	Description: Get Filesystem information by machine.
+ *	Arguments: argc, argv - name of server in argv[1].
+ *	Returns: DM_NORMAL.
+ */
+
+/* ARGSUSED */
+int
+GetFSM(argc, argv)
+int argc;
+char **argv;
+{
+    struct qelem *top;
+
+    argv[1] = canonicalize_hostname(argv[1]);
+    top = GetFSInfo(MACHINE, argv[1]); /* get info. */
     Loop(top, (void *) PrintFSInfo);
     FreeQueue(top);		/* clean the queue. */
     return (DM_NORMAL);

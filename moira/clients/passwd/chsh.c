@@ -1,4 +1,4 @@
-/* $Id: chsh.c,v 1.24 1999-04-30 17:39:38 danw Exp $
+/* $Id: chsh.c,v 1.25 1999-05-13 18:55:44 danw Exp $
  *
  * Talk to the Moira database to change a person's login shell.  The chosen
  * shell must exist.  A warning will be issued if the shell is not in
@@ -18,17 +18,15 @@
 #include <mit-copyright.h>
 #include <moira.h>
 #include <moira_site.h>
+#include <mrclient.h>
 
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
 
-#include <krb.h>
-
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chsh.c,v 1.24 1999-04-30 17:39:38 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chsh.c,v 1.25 1999-05-13 18:55:44 danw Exp $");
 
 void usage(void);
-void leave(int status);
 int chsh(char *uname);
 int get_shell(int argc, char **argv, void *uname);
 int get_fmodtime(int argc, char **argv, void *uname);
@@ -41,11 +39,7 @@ char *whoami;
 
 int main(int argc, char *argv[])
 {
-  char pname[ANAME_SZ];
-  char *uname = pname;
-  int k_errno;
-
-  initialize_krb_error_table();
+  char *uname;
 
   if ((whoami = strrchr(argv[0], '/')) == NULL)
     whoami = argv[0];
@@ -59,33 +53,12 @@ int main(int argc, char *argv[])
     uname = argv[1];
   else
     {
-      /* Do it right; get name from kerberos ticket file rather than
-	 from passord file. */
-
-      if ((k_errno = tf_init(TKT_FILE, R_TKT_FIL)))
-	{
-	  com_err(whoami, k_errno, "reading ticket file");
-	  exit(1);
-	}
-
-      if ((k_errno = tf_get_pname(pname)))
-	{
-	  com_err(whoami, k_errno, "getting kerberos principal name");
-	  exit(1);
-	}
-
-      tf_close();
+      uname = mrcl_krb_user();
+      if (!uname)
+	exit(1);
     }
 
   exit(chsh(uname));
-}
-
-/* This should be called rather than exit once connection to moira server
-   has been established. */
-void leave(int status)
-{
-  mr_disconnect();
-  exit(status);
 }
 
 int chsh(char *uname)
@@ -98,35 +71,8 @@ int chsh(char *uname)
   int got_one = 0;		/* have we got a new shell yet? */
   char shell[BUFSIZ];		/* the new shell */
 
-  /* Try each query.  If we ever fail, print error message and exit. */
-
-  status = mr_connect(NULL);
-  if (status)
-    {
-      com_err(whoami, status, " while connecting to Moira");
-      exit(1);
-    }
-
-  status = mr_motd(&motd);
-  if (status)
-    {
-      com_err(whoami, status, " unable to check server status");
-      leave(1);
-    }
-  if (motd)
-    {
-      fprintf(stderr, "The Moira server is currently unavailable:\n%s\n",
-	      motd);
-      leave(1);
-    }
-
-  status = mr_auth("chsh");	/* Don't use argv[0] - too easy to fake */
-  if (status)
-    {
-      com_err(whoami, status,
-	      " while authenticating -- run \"kinit\" and try again.");
-      leave(1);
-    }
+  if (mrcl_connect(NULL, "chsh", 1) != MRCL_SUCCESS)
+    exit(1);
 
   /* First, do an access check */
 
@@ -137,7 +83,7 @@ int chsh(char *uname)
   if ((status = mr_access("update_user_shell", q_argc, q_argv)))
     {
       com_err(whoami, status, "; shell not\nchanged.");
-      leave(2);
+      exit(2);
     }
 
   printf("Changing login shell for %s.\n", uname);
@@ -151,14 +97,14 @@ int chsh(char *uname)
 			 get_fmodtime, uname)))
     {
       com_err(whoami, status, " while getting user information.");
-      leave(2);
+      exit(2);
     }
 
   if ((status = mr_query("get_user_account_by_login", q_argc, q_argv,
 			 get_shell, uname)))
     {
       com_err(whoami, status, " while getting user information.");
-      leave(2);
+      exit(2);
     }
 
   /* Ask for new shell */
@@ -166,7 +112,7 @@ int chsh(char *uname)
     {
       printf("New shell: ");
       if (!fgets(shell, sizeof(shell), stdin))
-	leave(0);
+	exit(0);
       got_one = (strlen(shell) > 1);
     }
 
@@ -185,7 +131,7 @@ int chsh(char *uname)
   if ((status = mr_query("update_user_shell", q_argc, q_argv, NULL, NULL)))
     {
       com_err(whoami, status, " while changing shell.");
-      leave(2);
+      exit(2);
     }
 
   printf("Shell successfully changed.\n");
@@ -202,7 +148,7 @@ int get_shell(int argc, char **argv, void *uname)
   if (argc < U_END || strcmp(argv[U_NAME], uname))
     {
       fprintf(stderr, "Some internal error has occurred.  Try again.\n");
-      leave(3);
+      exit(3);
     }
 
   printf("Current shell for %s is %s.\n", (char *)uname, argv[U_SHELL]);
@@ -218,7 +164,7 @@ int get_fmodtime(int argc, char **argv, void *uname)
   if (argc < F_END || strcmp(argv[F_NAME], uname))
     {
       fprintf(stderr, "Some internal error has occurred.  Try again.\n");
-      leave(3);
+      exit(3);
     }
 
   printf("Finger information last changed on %s\n", argv[F_MODTIME]);
@@ -255,12 +201,12 @@ void check_shell(char *shell)
 	  fprintf(stderr, "You may choose to use a nonstandard\n");
 	  fprintf(stderr, "shell, but you must specify its complete ");
 	  fprintf(stderr, "path name.\n");
-	  leave(2);
+	  exit(2);
 	}
       else if (access(shell, X_OK))
 	{
 	  fprintf(stderr, "%s is not available.\n", shell);
-	  leave(2);
+	  exit(2);
 	}
       else
 	{

@@ -1,4 +1,4 @@
-/* $Id: chfn.c,v 1.18 1999-04-30 17:39:37 danw Exp $
+/* $Id: chfn.c,v 1.19 1999-05-13 18:55:43 danw Exp $
  *
  * Talk to the Moira database to change a person's GECOS information.
  *
@@ -16,14 +16,13 @@
 #include <mit-copyright.h>
 #include <moira.h>
 #include <moira_site.h>
+#include <mrclient.h>
 
 #include <ctype.h>
 #include <stdio.h>
 #include <string.h>
 
-#include <krb.h>
-
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chfn.c,v 1.18 1999-04-30 17:39:37 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chfn.c,v 1.19 1999-05-13 18:55:43 danw Exp $");
 
 #define FALSE 0
 #define TRUE 1
@@ -42,7 +41,6 @@ struct finger_info {
 };
 
 void usage(void);
-void leave(int status);
 int chfn(char *uname);
 int get_user_info(int argc, char *argv[], void *message);
 char *ask(char *question, char *def_val, int phone_num);
@@ -50,11 +48,7 @@ void get_new_info(struct finger_info *old_info, struct finger_info *new_info);
 
 int main(int argc, char *argv[])
 {
-  char pname[ANAME_SZ];
-  char *uname = pname;
-  int k_errno;
-
-  initialize_krb_error_table();
+  char *uname;
 
   if ((whoami = strrchr(argv[0], '/')) == NULL)
     whoami = argv[0];
@@ -68,33 +62,12 @@ int main(int argc, char *argv[])
     uname = argv[1];
   else
     {
-      /* Do it right; get name from kerberos ticket file rather than
-	 from passord file. */
-
-      if ((k_errno = tf_init(TKT_FILE, R_TKT_FIL)))
-	{
-	  com_err(whoami, k_errno, "reading ticket file");
-	  exit(1);
-	}
-
-      if ((k_errno = tf_get_pname(pname)))
-	{
-	  com_err(whoami, k_errno, "getting kerberos principal name");
-	  exit(1);
-	}
-
-      tf_close();
+      uname = mrcl_krb_user();
+      if (!uname)
+	exit(1);
     }
 
   exit(chfn(uname));
-}
-
-/* This should be called rather than exit once connection to moira server
-   has been established. */
-void leave(int status)
-{
-  mr_disconnect();
-  exit(status);
 }
 
 int chfn(char *uname)
@@ -108,35 +81,8 @@ int chfn(char *uname)
   struct finger_info old_info;
   struct finger_info new_info;
 
-  /* Try each query.  If we ever fail, print error message and exit. */
-
-  status = mr_connect(NULL);
-  if (status)
-    {
-      com_err(whoami, status, "while connecting to Moira");
-      exit(1);
-    }
-
-  status = mr_motd(&motd);
-  if (status)
-    {
-      com_err(whoami, status, "unable to check server status");
-      leave(1);
-    }
-  if (motd)
-    {
-      fprintf(stderr, "The Moira server is currently unavailable:\n%s\n",
-	      motd);
-      leave(1);
-    }
-
-  status = mr_auth("chfn");	/* Don't use argv[0] - too easy to fake */
-  if (status)
-    {
-      com_err(whoami, status,
-	      "while authenticating -- run \"kinit\" and try again.");
-      leave(1);
-    }
+  if (mrcl_connect(NULL, "chsh", 1) != MRCL_SUCCESS)
+    exit(1);
 
   /* First, do an access check. */
 
@@ -148,7 +94,7 @@ int chfn(char *uname)
   if ((status = mr_access("update_finger_by_login", q_argc, q_argv)))
     {
       com_err(whoami, status, "; finger\ninformation not changed.");
-      leave(2);
+      exit(2);
     }
 
   printf("Changing finger information for %s.\n", uname);
@@ -161,7 +107,7 @@ int chfn(char *uname)
 			 get_user_info, &old_info)))
     {
       com_err(whoami, status, "while getting user information.");
-      leave(2);
+      exit(2);
     }
 
   /* Get the new information from the user */
@@ -187,7 +133,7 @@ int chfn(char *uname)
 			 NULL, NULL)))
     {
       com_err(whoami, status, "while updating finger information.");
-      leave(1);
+      exit(1);
     }
 
   printf("Finger information updated succesfully.\n");
@@ -202,7 +148,7 @@ int get_user_info(int argc, char *argv[], void *message)
   if (argc != F_END)
     {
       fprintf(stderr, "Some internal error occurred; try again.\n");
-      leave(3);
+      exit(3);
     }
 
   printf("Info last changed on %s by user %s with %s.\n",
@@ -237,7 +183,7 @@ char *ask(char *question, char *def_val, int phone_num)
       ok = TRUE;
       printf("%s [%s]: ", question, def_val);
       if (!fgets(buf, sizeof(buf), stdin))
-	leave(0);
+	exit(0);
       buf[strlen(buf) - 1] = '\0';
       if (strlen(buf) == 0)
 	result = def_val;

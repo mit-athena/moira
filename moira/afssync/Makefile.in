@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.5 1999-07-12 16:20:40 danw Exp $
+# $Id: Makefile.in,v 1.6 2000-01-20 19:18:20 danw Exp $
 
 SHELL=/bin/sh
 @SET_MAKE@
@@ -56,7 +56,7 @@ cleandir distclean: clean
 
 depend: $(CFILES)
 
-install: all
+install:
 	$(INSTALL_PROGRAM) afssync $(mrbindir)
 	$(INSTALL_PROGRAM) pt_util $(mrbindir)
 	$(INSTALL_PROGRAM) $(srcdir)/pt_util.pl $(mrbindir)

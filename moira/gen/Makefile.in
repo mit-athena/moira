@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.13 2000-01-10 21:56:35 danw Exp $
+# $Id: Makefile.in,v 1.14 2000-01-20 19:18:47 danw Exp $
 
 SHELL=/bin/sh
 @SET_MAKE@
@@ -68,7 +68,7 @@ cleandir distclean: clean
 
 depend: $(LIB_CFILES) $(CFILES)
 
-install: all
+install:
 	@set -x; for p in $(TARGET); do $(INSTALL_PROGRAM) $$p $(mrbindir); done
 	@set -x; for p in $(SCRIPTS); do $(INSTALL) -m 755 $$p $(mrbindir); done
 

@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.11 1999-11-29 22:07:44 danw Exp $
+# $Id: Makefile.in,v 1.12 2000-01-20 19:18:49 danw Exp $
 
 SHELL=/bin/sh
 @SET_MAKE@
@@ -55,7 +55,7 @@ cleandir distclean: clean
 
 depend: $(CFILES)
 
-install: all
+install:
 	$(INSTALL_PROGRAM) reg_svr $(mrbindir)
 	$(INSTALL_PROGRAM) startreg $(mrbindir)
 	$(INSTALL_PROGRAM) genkey $(mrbindir)

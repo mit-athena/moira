@@ -1,7 +1,7 @@
 /*
  * Copyright (C) 1998-2000 Luke Howard. All rights reserved.
  * CONFIDENTIAL
- * $Id: ldap_adgssapi_bind.c,v 1.3 2000-11-21 16:43:56 zacheiss Exp $
+ * $Id: ldap_adgssapi_bind.c,v 1.4 2003-05-23 16:38:16 zacheiss Exp $
  *
  * Implementation of GSS-API client side binding for SASL
  */
@@ -72,7 +72,7 @@ char *__service = NULL;
  */
 static gss_ctx_id_t security_context;
 static int security_layer = 0;
-static int security_token_size = 0;
+static unsigned long security_token_size = 0;
 
 LDAP_CALLBACK int LDAP_C ldap_gssapi_read(LBER_SOCKET sock, void *data,
                                           int len)
@@ -83,6 +83,7 @@ LDAP_CALLBACK int LDAP_C ldap_gssapi_read(LBER_SOCKET sock, void *data,
   OM_uint32   pdulen;
   gss_buffer_desc recv_tok;
   gss_buffer_desc wrapped_tok;
+  int         count;
 
   if (security_layer & 
     (GSSSASL_INTEGRITY_PROTECTION | GSSSASL_PRIVACY_PROTECTION))
@@ -102,8 +103,8 @@ LDAP_CALLBACK int LDAP_C ldap_gssapi_read(LBER_SOCKET sock, void *data,
       wrapped_tok.value = malloc(wrapped_tok.length);
       if (wrapped_tok.value == NULL)
         return (0);
-      if (recv(sock, wrapped_tok.value, wrapped_tok.length, 0)
-          != (int)wrapped_tok.length)
+      count = recv(sock, wrapped_tok.value, wrapped_tok.length, 0);
+      if (count != (int)wrapped_tok.length)
         {
           gss_release_buffer(&rc, &wrapped_tok);
           return (0);
@@ -550,6 +551,7 @@ static int negotiate_security_options(gssldap_client_state_t state,
   gss_buffer_desc recv_tok;
   gss_buffer_desc send_tok;
   OM_uint32       rc;
+  OM_uint32       ret;
   size_t          mask_length;
   gsssasl_security_negotiation_t  send_mask;
   gsssasl_security_negotiation_t  recv_mask;
@@ -601,8 +603,7 @@ static int negotiate_security_options(gssldap_client_state_t state,
       TRACE("<== negotiate_security_options (unsupported security layer)");
       return -1;
       }
-  mask_length = sizeof(recv_mask) + 
-                       GSSAPI_LDAP_DN_PREFIX_LEN + strlen(state->binddn);
+  mask_length = sizeof(recv_mask);
   send_mask = NSLDAPI_MALLOC(mask_length);
   if (send_mask == NULL) 
     {
@@ -610,12 +611,10 @@ static int negotiate_security_options(gssldap_client_state_t state,
       TRACE("<== negotiate_security_options (malloc failed)");
       return -1;
     }
+  memset(send_mask, '\0', mask_length);
   send_mask->security_layer = layer;
   send_mask->token_size = recv_mask->token_size;
-  memcpy(send_mask->identity, GSSAPI_LDAP_DN_PREFIX, GSSAPI_LDAP_DN_PREFIX_LEN);
-  memcpy(send_mask->identity + GSSAPI_LDAP_DN_PREFIX_LEN,
-         state->binddn,
-         mask_length - sizeof(recv_mask) - GSSAPI_LDAP_DN_PREFIX_LEN);
+  memcpy(send_mask->identity, "", strlen(""));
   free(recv_mask);
 
 #ifdef GSSSASL_DEBUG
@@ -646,11 +645,15 @@ static int negotiate_security_options(gssldap_client_state_t state,
     }
   rc = parse_bind_result(state);
 
+  ret = rc;
   if (rc == 0) 
     {
       security_context = state->context;
       security_layer = layer;
-      security_token_size = send_mask->token_size;
+      security_token_size = ntohl(send_mask->token_size);
+#ifdef _WIN32
+      security_token_size >>= 8;
+#endif
       }
 
   NSLDAPI_FREE(send_mask);
@@ -659,7 +662,7 @@ static int negotiate_security_options(gssldap_client_state_t state,
   if (recv_tok.value != NULL)
     gss_release_buffer(&rc, &recv_tok);
   TRACE("<== negotiate_security_options");
-  return rc;
+  return ret;
 }
 
 #ifdef GSSSASL_DEBUG
@@ -687,6 +690,7 @@ LDAP_CALL ldap_adgssapi_bind(LDAP *ld, const char *who, int layer)
   int         rc;
   int         i;
   struct ldap_io_fns iofns;
+  char        *realm;
 
   if (!NSLDAPI_VALID_LDAP_POINTER(ld) || ld->ld_defhost == NULL) 
     {
@@ -703,7 +707,11 @@ LDAP_CALL ldap_adgssapi_bind(LDAP *ld, const char *who, int layer)
       return -1;
     }
   strcpy(service_name, GSSAPI_LDAP_SERVICE_NAME "@");
-  strcat(service_name, ld->ld_defhost);
+  realm = strdup(ldap_domain_name);
+  for (i = 0; i < (int)strlen(realm); i++)
+      realm[i] = toupper(realm[i]);
+  strcat(service_name, realm);
+  free(realm);
 
 #ifdef GSSSASL_DEBUG
   if (debug_) 
@@ -820,10 +828,12 @@ unsigned long gsssasl_pack_security_token(OM_uint32 *min_stat,
   wrapped_tok->length = 0;
   wrapped_tok->value = NULL;
 
+/*
   if (masklength < sizeof(gsssasl_security_negotiation_desc))
     return GSS_S_FAILURE;
+*/
 
-  inmask->token_size = htonl(inmask->token_size);
+  inmask->token_size = inmask->token_size;
 
   send_tok.length = masklength;
   send_tok.value = inmask;
@@ -836,7 +846,7 @@ unsigned long gsssasl_pack_security_token(OM_uint32 *min_stat,
                       (int *)&rc,
                       wrapped_tok);
 
-  inmask->token_size = ntohl(inmask->token_size);
+/*  inmask->token_size = ntohl(inmask->token_size);*/
 
   return maj_stat;
 }

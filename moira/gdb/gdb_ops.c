@@ -1,66 +1,51 @@
 /*
- *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_ops.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_ops.c,v 1.4 1991-03-08 10:17:02 mar Exp $
+ * $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_ops.c,v $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_ops.c,v 1.5 1993-04-29 15:05:42 mar Exp $
  */
 
 #ifndef lint
-static char *rcsid_gdb_ops_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_ops.c,v 1.4 1991-03-08 10:17:02 mar Exp $";
+static char *rcsid_gdb_ops_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_ops.c,v 1.5 1993-04-29 15:05:42 mar Exp $";
 #endif	lint
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-/************************************************************************/
-/*	
-/*			   gdb_ops.c
-/*	
-/*	      GDB - Asynchronous Operations and Their Synchronous
-/*		    Counterparts
-/*	
-/*	Author: Noah Mendelsohn
-/*	Copyright: 1986 MIT Project Athena 
-/*		For copying and distribution information, please see
-/*	  	the file <mit-copyright.h>.
-/*	
-/*	These routines provide a suite of asynchronous operations 
-/*	on connections.
-/*	
-/************************************************************************/
+/************************************************************************
+ *	
+ *			   gdb_ops.c
+ *	
+ *	      GDB - Asynchronous Operations and Their Synchronous
+ *		    Counterparts
+ *	
+ *	Author: Noah Mendelsohn
+ *	Copyright: 1986 MIT Project Athena 
+ *		For copying and distribution information, please see
+ *	  	the file <mit-copyright.h>.
+ *	
+ *	These routines provide a suite of asynchronous operations 
+ *	on connections.
+ *	
+ ************************************************************************/
 
 #include <mit-copyright.h>
 #include <stdio.h>
 #include "gdb.h"
 #include <netinet/in.h>
 #include <sys/ioctl.h>
+#ifdef SOLARIS
+#include <sys/filio.h>
+#endif
 #ifdef vax
 extern u_long htonl();
 #endif vax
-
-/************************************************************************/
-/*	
-/*			send_object (send_object)
-/*	
-/*	Synchronous form of start_sending_object.  Returns either
-/*	OP_CANCELLED, or OP_RESULT(op).
-/*	
-/************************************************************************/
+
+
+/************************************************************************
+ *	
+ *			send_object (send_object)
+ *	
+ *	Synchronous form of start_sending_object.  Returns either
+ *	OP_CANCELLED, or OP_RESULT(op).
+ *	
+ ************************************************************************/
 
 int
 send_object(con, objp, type)
@@ -82,7 +67,8 @@ int type;
 	delete_operation(op);
 	return retval;
 }
-
+
+
 /************************************************************************/
 /*	
 /*			start_send_object (g_snobj)
@@ -236,7 +222,7 @@ struct obj_data *arg;
 	return OP_COMPLETE;
 }
 
-
+
 /************************************************************************/
 /*	
 /*			receive_object (receive_object)
@@ -265,7 +251,8 @@ int type;
 	delete_operation(op);
 	return retval;
 }
-
+
+
 /************************************************************************/
 /*	
 /*			start_receiving_object (g_rcobj)
@@ -478,7 +465,8 @@ struct robj_data *arg;
 	db_free((char *)arg, sizeof(struct robj_data));	/* free the state structure */
 	return OP_COMPLETE;
 }
-
+
+
 /************************************************************************/
 /*	
 /*			complete_operation(complete_operation)
@@ -511,7 +499,7 @@ OPERATION op;
 
 }
 
-
+
 /************************************************************************/
 /*	
 /*			cancel_operation(cancel_operation)
@@ -552,7 +540,8 @@ OPERATION op;
 
 	return OP_CANCELLED;
 }
-
+
+
 /************************************************************************/
 /*	
 /*			start_listening
@@ -671,7 +660,7 @@ struct lis_data *arg;
 	return OP_COMPLETE;
 }
 
-
+
 /************************************************************************/
 /*	
 /*			start_accepting_client

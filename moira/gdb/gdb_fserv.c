@@ -1,11 +1,10 @@
 /*
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_fserv.c,v 1.5 1992-04-06 17:53:24 mar Exp $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_fserv.c,v 1.6 1993-04-29 15:03:13 mar Exp $
  */
 
 #ifndef lint
-static char *rcsid_gdb_fserv_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_fserv.c,v 1.5 1992-04-06 17:53:24 mar Exp $";
+static char *rcsid_gdb_fserv_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_fserv.c,v 1.6 1993-04-29 15:03:13 mar Exp $";
 #endif	lint
-
 
 
 /************************************************************************
@@ -30,7 +29,8 @@ static char *rcsid_gdb_fserv_c = "$Header: /afs/.athena.mit.edu/astaff/project/m
 #include <sys/signal.h>
 #include "gdb.h"
 #include <sys/resource.h>
-
+
+
 /************************************************************************
  *	
  *			create_forking_server (create_forking_server)
@@ -165,30 +165,25 @@ int (*validate)();
 /*	Called on SIGCHILD to reap all dead children.
 /*	
 /************************************************************************/
-#ifndef sun
+#ifndef POSIX
 int
 #else
 void
 #endif
 gdb_reaper()
 {
+#ifdef POSIX
+	int status
+#else
 	union wait status;
+#endif
 	extern char *sys_siglist[];
        
-	while (wait3(&status, WNOHANG, (struct rusage *)0) >0) {
-#ifdef notdef
-		if (WIFEXITED(status)) {
-			if (status.w_retcode)
-				printf("exited with code %d\n",
-					status.w_retcode);
-		}
-		if (WIFSIGNALED(status)) {
-			printf("exited on %s signal%s\n",
-			       sys_siglist[status.w_termsig],
-			       (status.w_coredump?"; core dumped":0));
-		}
-#endif notdef
-	}
+#ifdef POSIX
+	while (waitpid(-1, &status, WNOHANG) >0);
+#else
+	while (wait3(&status, WNOHANG, (struct rusage *)0) >0);
+#endif
 }
 
 /************************************************************************/
@@ -202,13 +197,13 @@ gdb_reaper()
 int
 g_do_signals()
 {
-#ifdef sun
-    struct sigvec act;
+#ifdef POSIX
+    struct sigaction act;
 
-    act.sv_handler = gdb_reaper;
-    act.sv_mask = 0;
-    act.sv_flags = 0;
-    (void) sigvec(SIGCHLD, &act, NULL);
+    act.sa_handler = gdb_reaper;
+    sigemptyset(&act.sa_mask);
+    act.sa_flags = 0;
+    (void) sigaction(SIGCHLD, &act, (struct sigaction *)0);
 #else /* sun */
     (void) signal(SIGCHLD, gdb_reaper);
 #endif 

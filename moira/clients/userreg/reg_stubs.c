@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/reg_stubs.c,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/reg_stubs.c,v 1.11 1990-02-28 12:13:09 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/reg_stubs.c,v 1.12 1990-03-12 15:54:18 mar Exp $
  *
  *  (c) Copyright 1988 by the Massachusetts Institute of Technology.
  *  For copying and distribution information, please see the file
@@ -9,7 +9,7 @@
  */
 
 #ifndef lint
-static char *rcsid_reg_stubs_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/reg_stubs.c,v 1.11 1990-02-28 12:13:09 mar Exp $";
+static char *rcsid_reg_stubs_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/reg_stubs.c,v 1.12 1990-03-12 15:54:18 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -115,7 +115,7 @@ verify_user(first, last, idnumber, hashidnumber, login)
 
     des_string_to_key(hashidnumber, key);
     des_key_sched(key, ks);
-    des_pcbc_encrypt(crypt_src, bp, len+14, ks, key, 1);
+    des_pcbc_encrypt(crypt_src, bp, len+13, ks, key, DES_ENCRYPT);
     bp += len+14+8;
     len = bp - buf;
     return do_call(buf, len, seq_no, login);

@@ -1,13 +1,13 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/auth_001.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/auth_001.c,v 1.7 1992-08-25 14:40:17 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/auth_001.c,v 1.8 1992-09-21 12:28:17 mar Exp $
  */
 /*  (c) Copyright 1988 by the Massachusetts Institute of Technology. */
 /*  For copying and distribution information, please see the file */
 /*  <mit-copyright.h>. */
 
 #ifndef lint
-static char *rcsid_auth_001_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/auth_001.c,v 1.7 1992-08-25 14:40:17 mar Exp $";
+static char *rcsid_auth_001_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/auth_001.c,v 1.8 1992-09-21 12:28:17 mar Exp $";
 #endif	lint
 
 #include <mit-copyright.h>
@@ -28,6 +28,7 @@ extern char *PrincipalHostname();
 static char service[] = "rcmd";
 static char master[] = "sms";
 static char qmark[] = "???";
+C_Block session;
 
 /*
  * authentication request auth_001:
@@ -100,6 +101,8 @@ auth_001(str)
     if (send_ok())
 	lose("sending approval of authorization");
     have_authorization = 1;
+    /* Stash away session key */
+    bcopy(ad.session, session, sizeof(session));
     return(0);
 auth_failed:
     sprintf(buf, "auth for %s.%s@%s failed: %s",

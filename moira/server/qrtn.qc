@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v 1.37 1990-01-11 18:31:01 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v 1.38 1990-02-01 14:16:52 mar Exp $
  *
  *	Copyright (C) 1987, 1988 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_qrtn_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v 1.37 1990-01-11 18:31:01 mar Exp $";
+static char *rcsid_qrtn_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v 1.38 1990-02-01 14:16:52 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -84,6 +84,7 @@ int sms_open_database()
     }
 	
     ingres_errno = 0;
+    sms_errcode = 0;
 
     /* open the database */
 ##  ingres sms
@@ -109,6 +110,7 @@ sms_check_access(cl, name, argc, argv_ro)
     struct query *get_query_by_name();
 
     ingres_errno = 0;
+    sms_errcode = 0;
 
     q = get_query_by_name(name, cl->args->sms_version_no);
     if (q == (struct query *)0)
@@ -140,6 +142,7 @@ sms_process_query(cl, name, argc, argv_ro, action, actarg)
     char *build_sort();
 
     ingres_errno = 0;
+    sms_errcode = 0;
 
     /* list queries command */
     if (!strcmp(name, "_list_queries")) {

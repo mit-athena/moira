@@ -1,4 +1,4 @@
-/* $Id: chfn.c,v 1.1 2000-03-16 06:03:12 zacheiss Exp $
+/* $Id: chfn.c,v 1.2 2001-07-28 07:53:57 zacheiss Exp $
  *
  * Talk to the Moira database to change a person's GECOS information.
  *
@@ -22,7 +22,7 @@
 #include <stdio.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/chfn/chfn.c,v 1.1 2000-03-16 06:03:12 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/chfn/chfn.c,v 1.2 2001-07-28 07:53:57 zacheiss Exp $");
 
 #define FALSE 0
 #define TRUE 1
@@ -220,38 +220,8 @@ char *ask(char *question, char *def_val, int phone_num)
 	  if (!ok)
 	    break;
 	}
-
-      if (phone_num && ok)
-	{
-	  len = strlen(result);
-	  for (i = 0; i < len; i++)
-	    {
-	      if (!isdigit(result[i]) && (result[i] != '-'))
-		{
-		  printf("Phone numbers can contain only digits.\n");
-		  ok = FALSE;
-		  break;
-		}
-	      if (result[i] == '-')
-		dashes = TRUE;
-            }
-        }
     }
-
-  /* Remove dashes if necessary */
-  if (dashes && result == buf)
-    {
-      char *tmp1, *tmp2;
-      tmp1 = tmp2 = (char *)buf;
-      do
-	{
-	  if (*tmp1 != '-')
-	    *tmp2++ = *tmp1;
-	}
-      while (*tmp1++);
-    }
-
-    return result;
+  return result;
 }
 
 void get_new_info(struct finger_info *old_info, struct finger_info *new_info)

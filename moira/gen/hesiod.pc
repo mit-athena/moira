@@ -1,4 +1,4 @@
-/* $Id: hesiod.pc,v 1.12 1999-05-26 17:19:50 danw Exp $
+/* $Id: hesiod.pc,v 1.13 1999-06-14 17:11:25 danw Exp $
  *
  * This generates the zone files necessary to load a hesiod server.
  * The following zones are generated: passwd, uid, pobox, group,
@@ -23,7 +23,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/hesiod.pc,v 1.12 1999-05-26 17:19:50 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/hesiod.pc,v 1.13 1999-06-14 17:11:25 danw Exp $");
 
 #ifndef HTYPE
 #define HTYPE "TXT"
@@ -958,7 +958,10 @@ int do_printcap(void)
       if (!strcmp(pskind, "BSD"))
 	fprintf(out, "auth=none:remote_support=RQM:");
       else if (!strcmp(pskind, "ATHENA"))
-	fprintf(out, "auth=kerberos4:az:remote_support=RQM:");
+	{
+	  fprintf(out, "auth=%s:az:remote_support=RQM:",
+		  ka ? "kerberos4" : "none");
+	}
       else if (!strcmp(pskind, "LPRNG"))
 	fprintf(out, "auth=kerberos5:xn:");
 
@@ -982,7 +985,10 @@ int do_printcap(void)
       if (!strcmp(pskind, "BSD"))
 	fprintf(out, "auth=none:remote_support=RQM:");
       else if (!strcmp(pskind, "ATHENA"))
-	fprintf(out, "auth=kerberos4:az:remote_support=RQM:");
+	{
+	  fprintf(out, "auth=%s:az:remote_support=RQM:",
+		  ka ? "kerberos4" : "none");
+	}
       else if (!strcmp(pskind, "LPRNG"))
 	fprintf(out, "auth=kerberos5:xn:");
 

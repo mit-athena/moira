@@ -1,13 +1,13 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/get_file.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/get_file.c,v 1.7 1991-01-15 15:18:47 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/get_file.c,v 1.8 1992-08-25 14:43:59 mar Exp $
  */
 /*  (c) Copyright 1988 by the Massachusetts Institute of Technology. */
 /*  For copying and distribution information, please see the file */
 /*  <mit-copyright.h>. */
 
 #ifndef lint
-static char *rcsid_get_file_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/get_file.c,v 1.7 1991-01-15 15:18:47 mar Exp $";
+static char *rcsid_get_file_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/get_file.c,v 1.8 1992-08-25 14:43:59 mar Exp $";
 #endif	lint
 
 #include <mit-copyright.h>
@@ -26,7 +26,7 @@ static char *rcsid_get_file_c = "$Header: /afs/.athena.mit.edu/astaff/project/mo
 extern CONNECTION conn;
 char buf[BUFSIZ];
 
-extern int code, errno;
+extern int code, errno, uid;
 
 extern int have_authorization, have_file, done;
 
@@ -65,10 +65,11 @@ int get_block();
  */
 
 int
-get_file(pathname, file_size, checksum)
+get_file(pathname, file_size, checksum, mode)
     char *pathname;
     int file_size;
     int checksum;
+    int mode;
 {
     int fd, n_written;
     int found_checksum;
@@ -79,16 +80,25 @@ get_file(pathname, file_size, checksum)
     }
     if (done)			/* re-initialize data */
 	initialize();
+    if (setreuid(0, uid) < 0) {
+	com_err(whoami, errno, "Unable to setuid to %d\n", uid);
+	exit(1);
+    }
     /* unlink old file */
-    (void) unlink(pathname);
+    if (!config_lookup("noclobber"))
+      (void) unlink(pathname);
     /* open file descriptor */
-    fd = open(pathname, O_CREAT|O_EXCL|O_WRONLY, 0700);
+    fd = open(pathname, O_CREAT|O_EXCL|O_WRONLY, mode);
     if (fd == -1) {
 	code = errno;
 	sprintf(buf, "%s: creating file %s (get_file)",
 		error_message(code), pathname);
 	mr_log_error(buf);
 	report_error("reporting file creation error (get_file)");
+	if (setuid(0) < 0) {
+	    com_err(whoami, errno, "Unable to setuid back to %d\n", 0);
+	    exit(1);
+	}
 	return(1);
     }
     /* check to see if we've got the disk space */
@@ -106,6 +116,10 @@ get_file(pathname, file_size, checksum)
 	    (void) ftruncate(fd, 0);
 	    (void) close(fd);
 	    report_error("reporting test-write error (get_file)");
+	    if (setuid(0) < 0) {
+		com_err(whoami, errno, "Unable to setuid back to %d\n", 0);
+		exit(1);
+	    }
 	    return(1);
 	}
 	n_written += n_wrote;
@@ -119,6 +133,10 @@ get_file(pathname, file_size, checksum)
 	if (n_got == -1) {
 	    /* get_block has already printed a message */
 	    unlink(pathname);
+	    if (setuid(0) < 0) {
+		com_err(whoami, errno, "Unable to setuid back to %d\n", 0);
+		exit(1);
+	    }
 	    return(1);
 	}
 	n_written += n_got;
@@ -129,12 +147,20 @@ get_file(pathname, file_size, checksum)
     if (code) {
 	code = connection_errno(conn);
 	report_error("reading file (get_file)");
+	if (setuid(0) < 0) {
+	    com_err(whoami, errno, "Unable to setuid back to %d\n", 0);
+	    exit(1);
+	}
 	return(1);
     }
     fsync(fd);
     ftruncate(fd, file_size);
     fsync(fd);
     close(fd);
+    if (setuid(0) < 0) {
+	com_err(whoami, errno, "Unable to setuid back to %d\n", 0);
+	exit(1);
+    }
     /* validate checksum */
     found_checksum = checksum_file(pathname);
     if (checksum != found_checksum) {

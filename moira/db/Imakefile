@@ -1,4 +1,4 @@
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/db/Imakefile,v 1.3 1997-01-20 18:16:45 danw Exp $
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/db/Imakefile,v 1.4 1998-02-23 19:23:00 danw Exp $
 #
 # Copyright 1990 by the Massachusetts Institute of Technology.
 #
@@ -13,4 +13,15 @@ CODE= Imakefile schema.sql unschema.sql dbopt.sql
 
 depend:: ${CODE}
 
-all:
+depend:: moira_schema.c moira_schema.h
+
+moira_schema.h: schema.sql
+	tr '[a-z]' '[A-Z]' < schema.sql | awk -f doschema.awk > moira_schema.h
+
+moira_schema.c: schema.sql
+	awk -f doschema.awk < schema.sql > moira_schema.c
+
+clean::
+	rm -f moira_schema.h moira_schema.c
+
+all: moira_schema.h moira_schema.c moira_schema.o

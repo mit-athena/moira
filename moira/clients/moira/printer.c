@@ -1,4 +1,4 @@
-/* $Id: printer.c,v 1.22 1999-01-28 21:13:14 danw Exp $
+/* $Id: printer.c,v 1.23 1999-02-06 18:45:33 danw Exp $
  *
  *	This is the file printer.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -23,7 +23,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/printer.c,v 1.22 1999-01-28 21:13:14 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/printer.c,v 1.23 1999-02-06 18:45:33 danw Exp $");
 
 void RealDeletePrn(char **info, Bool one_item);
 void ChangePrn(char **info, Bool one_item);
@@ -67,6 +67,7 @@ static char **SetDefaults(char **info, char *name)
   info[PRN_PC] = strdup("10");
   info[PRN_AC] = strdup("[none]");
   info[PRN_LPC_ACL] = strdup("[none]");
+  info[PRN_BANNER] = strdup("1");
   info[PRN_LOCATION] = strdup("");
   info[PRN_CONTACT] = strdup("");
   info[PRN_MODTIME] = info[PRN_MODBY] = info[PRN_MODWITH] = NULL;
@@ -140,7 +141,7 @@ static struct mqelem *GetPrnInfo(char *name, int how)
 static char *PrintPrnInfo(char **info)
 {
   char buf[BUFSIZ], *hwaddr;
-  int status;
+  int status, banner = atoi(info[PRN_BANNER]);
 
   if (!info)		/* If no informaion */
     {
@@ -169,7 +170,8 @@ static char *PrintPrnInfo(char **info)
   Put_message(buf);
   sprintf(buf, "Spool host: %s", info[PRN_RM]);
   Put_message(buf);
-  sprintf(buf, "Remote Printer Name: %s", info[PRN_RP]);
+  sprintf(buf, "Remote Printer Name: %-38s Banner page: %s", info[PRN_RP],
+	  banner ? ( banner == PRN_BANNER_FIRST ? "Yes" : "Last" ) : "No");
   Put_message(buf);
   sprintf(buf, "Authentication: %-3s Price/page: %-3s  Quota Server: %s",
 	  atoi(info[PRN_KA]) ? "yes" : "no", info[PRN_PC], info[PRN_RQ]);
@@ -249,6 +251,8 @@ static char **AskPrnInfo(char **info)
       info[PRN_LPC_ACL] = lpc_acl;
     }
   if (GetValueFromUser("LPC ACL", &info[PRN_LPC_ACL]) == SUB_ERROR)
+    return NULL;
+  if (GetYesNoValueFromUser("Banner page", &info[PRN_BANNER]) == SUB_ERROR)
     return NULL;
   if (GetValueFromUser("Location", &info[PRN_LOCATION]) == SUB_ERROR)
     return NULL;

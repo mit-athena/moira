@@ -1,21 +1,21 @@
 #	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/Makefile,v $
-#	$Author: wesommer $
-#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/Makefile,v 1.1 1987-08-22 17:16:33 wesommer Exp $
+#	$Author: mar $
+#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/Makefile,v 1.2 1988-02-08 14:26:38 mar Exp $
 #
 #	Makefile for SMS library.
 #
 LIBSRC=sms_auth.c sms_call.c sms_connect.c sms_data.c sms_init.c \
 	sms_shutdown.c sms_query.c sms_param.c sms_access.c sms_misc.c \
-	sms_al_filsys.c sms_al_pobox.c menu.c admin_call.c admin_util_new.c \
-	sms_do_update.c fixname.c
+	sms_al_filsys.c sms_al_pobox.c menu.c admin_call.c admin_util.c \
+	sms_do_update.c fixname.c strs.c fixhost.c nfsparttype.c
 
 CFILES=${LIBSRC}
 
 LIBOBJ=sms_auth.o sms_call.o sms_connect.o sms_data.o sms_et.o \
 	sms_init.o sms_shutdown.o sms_query.o sms_param.o sms_access.o \
 	sms_misc.o sms_al_filsys.o sms_al_pobox.o krb_et.o menu.o \
-	admin_call.o admin_util_new.o admin_err.o sms_do_update.o \
-	fixname.o
+	admin_call.o admin_util.o admin_err.o sms_do_update.o \
+	fixname.o strs.o fixhost.o nfsparttype.o
 
 COPTS= -O
 
@@ -37,7 +37,7 @@ ALL=libsms.a llib-lsms.ln libsms_p.a
 all: ${ALL}
 
 libsms.a: ${LIBOBJ}
-	ar cruv $@ ${LIBOBJ}
+	ar cruv $@ `lorder ${LIBOBJ} | tsort`
 	ranlib $@
 	(cd profiled; ar cruv ../libsms_p.a ${LIBOBJ}; ranlib ../libsms_p.a)
 
@@ -141,10 +141,12 @@ sms_misc.o: sms_misc.c /usr/include/strings.h
 sms_al_filsys.o: sms_al_filsys.c ../include/sms_et.h /usr/include/stdio.h
 sms_al_pobox.o: sms_al_pobox.c ../include/sms_et.h /usr/include/stdio.h
 sms_al_pobox.o: /usr/include/ctype.h
-menu.o: menu.c /usr/include/stdio.h /usr/include/curses.h /usr/include/stdio.h
+menu.o: menu.c /usr/include/sys/types.h /usr/include/stdio.h
+menu.o: /usr/include/signal.h /usr/include/curses.h /usr/include/stdio.h
 menu.o: /usr/include/sgtty.h /usr/include/sys/ioctl.h
 menu.o: /usr/include/sys/ttychars.h /usr/include/sys/ttydev.h
-menu.o: /usr/include/ctype.h ../include/menu.h
+menu.o: /usr/include/ctype.h /usr/include/strings.h /usr/include/varargs.h
+menu.o: ../include/com_err.h ../include/mit-sipb-copyright.h ../include/menu.h
 admin_call.o: admin_call.c /usr/include/sys/errno.h /usr/include/sys/types.h
 admin_call.o: /usr/include/sys/time.h /usr/include/time.h
 admin_call.o: /usr/include/sys/ioctl.h /usr/include/sys/ttychars.h
@@ -152,12 +154,25 @@ admin_call.o: /usr/include/sys/ttydev.h /usr/include/sys/socket.h
 admin_call.o: /usr/include/netinet/in.h /usr/include/netdb.h
 admin_call.o: /usr/include/strings.h /usr/include/stdio.h admin_err.h
 admin_call.o: admin_server.h prot.h /usr/include/krb.h /usr/include/des.h
-admin_util_new.o: admin_util_new.c /usr/include/sys/types.h
-admin_util_new.o: /usr/include/sys/errno.h /usr/include/sys/ioctl.h
-admin_util_new.o: /usr/include/sys/ttychars.h /usr/include/sys/ttydev.h
-admin_util_new.o: /usr/include/sys/signal.h /usr/include/sys/file.h
-admin_util_new.o: /usr/include/sys/param.h /usr/include/machine/machparam.h
-admin_util_new.o: /usr/include/signal.h /usr/include/sys/types.h
-admin_util_new.o: /usr/include/stdio.h /usr/include/strings.h
-admin_util_new.o: /usr/include/krb.h /usr/include/des.h /usr/include/setjmp.h
-admin_util_new.o: /usr/include/pwd.h admin_server.h prot.h admin_err.h
+admin_util.o: admin_util.c /usr/include/sys/types.h /usr/include/sys/errno.h
+admin_util.o: /usr/include/sys/ioctl.h /usr/include/sys/ttychars.h
+admin_util.o: /usr/include/sys/ttydev.h /usr/include/sys/signal.h
+admin_util.o: /usr/include/sys/file.h /usr/include/sys/param.h
+admin_util.o: /usr/include/machine/machparam.h /usr/include/signal.h
+admin_util.o: /usr/include/sys/types.h /usr/include/stdio.h
+admin_util.o: /usr/include/strings.h /usr/include/krb.h /usr/include/des.h
+admin_util.o: /usr/include/setjmp.h /usr/include/pwd.h admin_server.h prot.h
+admin_util.o: admin_err.h
+sms_do_update.o: sms_do_update.c sms_private.h sms_proto.h /usr/include/stdio.h
+sms_do_update.o: ../include/gdb.h /usr/include/sys/types.h
+sms_do_update.o: /usr/include/sys/time.h /usr/include/time.h ../include/sms.h
+sms_do_update.o: ../include/sms_et.h
+fixname.o: fixname.c /usr/include/strings.h /usr/include/ctype.h
+strs.o: strs.c /usr/include/sys/types.h /usr/include/strings.h
+strs.o: /usr/include/ctype.h
+fixhost.o: fixhost.c /usr/include/sys/types.h /usr/include/sys/socket.h
+fixhost.o: /usr/include/netinet/in.h /usr/include/arpa/nameser.h
+fixhost.o: /usr/include/arpa/resolv.h /usr/include/netdb.h /usr/include/stdio.h
+fixhost.o: /usr/include/strings.h /usr/include/ctype.h
+nfsparttype.o: nfsparttype.c ../include/sms.h ../include/sms_et.h
+nfsparttype.o: /usr/include/stdio.h /usr/include/strings.h /usr/include/ctype.h

@@ -42,7 +42,8 @@ themselves to be dealt with.
 @Begin(Itemize, Spread 1)
 @Begin(Multiple)
 
-PROGRAM NAME: rvd_maint - Create/update an RVD server.  
+PROGRAM NAME: RVD_MAINT - Create/update an RVD server.  
+
 DESCRIPTION: This administrative program
 will allow for the master copy of rvddb's to be updated and created.
 The DCM will distribute the RVD information automatically to the servers
@@ -60,21 +61,47 @@ It will become the responsibility of SMS to maintain the present file
 /site/rvd/rvddb.  The DCM will automatically load the RVD server with
 information.
 
-DATABASE QUERIES USED:
+PRE_DEFINED QUERIES USED:
+@begin(itemize, spread 0)
 
+get_rvd_server
 
-get_rvd_physical();
-add_rvd_physical();
-delete_rvd_physical();
+add_rvd_server
+
+delete_rvd_server
+@end(itemize)
+
+manipulates the following fields:
+(machine id, operations pwd, admin pwd, shutdown pwd)
+RVDSRV relation
+@begin(itemize, spread 0)
+
+get_rvd_physical
+
+add_rvd_physical
+
+delete_rvd_physical
+@end(itemize)
+
 manipulates the following fields:
 (machine id, device, size create-time, modify-time)
+RVDPHYS relation
 
-get_rvd_virtual();
-add_rvd_virtual();
-delete_rvd_physical();
+@begin(itemize, spread 0)
+
+get_rvd_virtual
+
+add_rvd_virtual
+
+delete_rvd_virtual
+
+update_rvd_virtual
+@end(itemize)
+
 manipulates the following fields:
 (machine id, physical device, name, pack id, owner, rocap,
 excap, shcap, modes, offset, blocks, ownhost, create-time, modify-time)
+RVDVIRT relation
 
 END USERS:
 Administrators.
@@ -82,8 +109,11 @@ Administrators.
 @End(Multiple)
 
 @begin(multiple)
-attach_maint - This program will allow the administrator to associate a
-user, a project, or a course to an filesystem, whether it is an RVD
+PROGRAM NAME: ATTACH_MAINT - Associate information to filesystems. 
+
+DESCRIPTION: This program will allow the 
+administrator to associate a
+user, a project, or a course to a filesystem, whether it is an RVD
 pack, or an NFS-exported filesystem.  Right now, each workstation has
 the file /etc/rvdtab which is manually updated by the operations staff.
 By associating a course to a filesystem in the SMS database, Hesiod, the
@@ -91,13 +121,42 @@ Athena name server, will be able to find arbitrary filesystem
 information, and the system will no longer require /etc/rvdtab.
 
 This program will maintain the database tables ufs (fields userid,
-filesys), and filesys (label, type, machine_id, name, mount, access,
-acl_id).
+filesys), and filesys (label, type, machine_id, name, mount, access)
+
+PRE-DEFINED QUERIES USED:
+@begin(itemize, spread 0)
+
+update_user_home - for user to filesys mapping
+
+add_alias - user, project, or course
+@end(itemize)
+
+manipulates the following fields:
+(home) - USERS relation.
+(name, type, translation) ALIAS relation.
+
+@begin(itemize, spread 0)
+
+add_filesys
+
+update_filesys
+
+delete_filesys
+@end(itemize)
+
+manipulates the following fields:
+(label, type, machine_id, name, mount, access) FILESYS relation
+
+END USERS:
+Administrators.
+
 @end(multiple)
 
 @Begin(Multiple)
 
-user_maint - Adding/changing user information.  Presently, there are two
+PROGRAM NAME: USER_MAINT - Adding/changing user information.  
+
+DESCRIPTION: Presently, there are two
 programs which the system administrator uses to register a new user:
 register and admin.  These programs register the user and enter the
 private key information to Kerberos, respectively.  The new application
@@ -105,10 +164,32 @@ will provide these, and offer a third feature which allows the
 administrator to check the fields of the SMS database and verify that
 all of the database fields are correct.  (Currently this is done by
 exiting the program and using INGRES query commands to verify data.)
-The user registration fields which this program will affect are:
 
-login, mit_id, first, last, mid_init, exp_date, shell, status, users_id,
-modtime, quota
+PRE-DEFINED QUERIES USED
+
+@begin(itemize, spread 0)
+get_user_by_login
+
+get_user_by_firstname
+
+get_user_by_lastname
+
+get_user_by_first_and_last
+
+add_user
+
+update_user_shell
+
+update_user_status
+
+update_user_home
+
+update_user
+@end(itemize)
+
+manipulates the following fields:
+(login, mit_id, first, last, mid_init, exp_date, shell, status, users_id,
+modtime, home) USER relation
 
 This program will also allocate and change home directory storage space.
 It will allow the adminstrator to check storage allocation on a server
@@ -122,12 +203,69 @@ should be taken into consideration when assigning a server.  (Trying to
 assign people to servers reasonably "near" them is an attempt to
 decrease the load on the network.)
 
+For home directory allocation\change the following predefined queries
+are used:
+
+@begin(itemize, spread 0)
+
+get_nfs_quota
+
+add_nfs_quota
+
+update_nfs_quota
+
+@end(itemize)
+
+manipulates the following fields:
+(machine, login, quota) NFSQUOTA relation
+
+
+@begin(itemize, spread 0)
+
+get_server_info
+
+add_server
+
+update_server
+
+@end(itemize)
+
+manipulates the following fields:
+(value) SERVERS relation
+
+@begin(itemize, spread 0)
+
+get_value - for default PO allocation
+
+@end(itemize)
+
+manipulates the following field:
+(value) VALUE relation.
+
+In the SERVERS, relation the @i[value] field represents the 
+total currently allocated
+space (but not necessarily used).  In the VALUE relation, the @i[value]
+field represents the default nfs quota for a user (used in new user home
+allocation).
+For example, if 20 users have been 
+allocated to a machine
+and each has a fielsys quota of 2 Meg, then the value field will
+be 40 Meg.  If the server reports back that its free space is
+80 Meg, then another 20 users can be given allocated space on this
+disk.  As long as the free space minus the allocated space is greater
+or equal to the quota of the current allocation, the disk is OK to use.
+This mechanism will prevent over allocation of home directory 
+storage space.
+
+END USER: Administrator.
+
 @end(multiple)
 
 @begin(multiple)
-chfn - This will allow users to change their finger information.  Fields
-affected will be: fullname, nickname, home_address, home_phone,
-office_address, office_phone, department, year, modtime.
+PROGRAM NAME: CHFN - Finger Information.
+
+DESCRIPTION: This program allows users to change their 
+finger information.
 
 The functionality of the old finger should not be changed.  A new
 program (athenafinger) should be provided that will ask Hesiod for a
@@ -137,50 +275,425 @@ they will be printed out.  So far, there are no changes in functionality
 -- but the difference is that no machine need be specified.  The user no
 longer has to know (or guess at) which of the many possible machines his
 target might be logged into.
+
+PRE-DEFINED QUERIES USED:
+@begin(itemize, spread 0)
+
+get_finger_by_login
+
+get_finger_by_first_last
+
+update_finger_by_login
+@end(itemize)
+
+manipulates the following fields:
+(fullname, nickname, home_address, home_phone,
+office_address, office_phone, department, year, modtime) FINGER relation
+
+END USERS:
+Administrator.  Staff.  Students.
+
 @end(multiple)
 
-po_maint - Allocate/change home mail host.  The name service and a mail
+@begin(multiple)
+PROGRAM NAME: PO_MAINT - Allocate/change home mail host.  
+
+DESCRIPTION: The name service and a mail
 forwarding service need to know where a user's post office is.  When a
 new user registers this program checks the number of users already
 assigned to various post offices and allocates space to a user in a post
 office with available space.
 
-reg_tape - Add or remove students from the system using Registrar's
-tape.  Each term, when the Registrar releases a tape of current
+PRE-DEFINED QUERIES USED:
+@begin(itemize, spread 0)
+
+get_po_box
+
+add_po_box
+
+delete_po_box
+
+@end(itemize)
+
+manipulates the following fields:
+(login, type, machine, box) POBOX relation
+
+@begin(itemize, spread 0)
+
+get_server_info
+
+add_server
+
+update_server
+
+@end(itemize)
+
+manipulates the following fields:
+(value) SERVERS relation
+
+@begin(itemize, spread 0)
+
+get_value - for default PO allocation
+
+@end(itemize)
+
+manipulates the following field:
+(value) VALUE relation.
+
+In this program, the @i[value] field represents the number of allocated
+post office boxes on a machine.  A default value of post office box allocations
+will be compared to the actual nuber of allocated boxes.
+
+END USERS:  Administrator. Staff. Students.
+@end(multiple)
+
+@begin(multiple)
+PROGRAM NAME: REG_TAPE - Add or remove students from 
+the system using Registrar's
+tape.  
+
+DESCRIPTION: Each term, when the Registrar releases a tape of current
 students, the system administrator must load the names of new users and
 delete all old users.  This program will automatically use the
 Registrar's tape as a means of keeping current the SMS database.
 
-server_maint - Add/update system servers.  This program not only interacts
+PRE-DEFINED QUERIES USED:
+@begin(itemize, spread 0)
+
+update_user
+
+update_user_status
+
+@end(itemize)
+
+manipulates the following fields:
+(status, expdate) USERS relation.
+
+END USERS: Administrator.
+
+The isssue of deleting users is a sensitive issue.  The removal 
+of a user will reflect this sensitivity.  When deleting a user,
+the expiration date field will be set to the current date, but 
+the user will not be 
+removed.  The program db_maint will, among other things, check 
+the expiration stamp of the users.  If a stamp is within
+critical expiration time, the program will notify the administrator
+that a time-to-live date has been reached.  If correct, the administrator will
+set the user's status field to INACTIVE and set the
+time to some date in the future.  When that date and INACTIVE 
+status are reached, the user is flushed.  If incorrect, the administrator
+will set the date to some time in the future and leave the status 
+field ACTIVE. 
+@end(multiple)
+
+
+@begin(multiple)
+
+PROGRAM NAME: SERVER_MAINT - Add/update system servers.  
+
+DESCRIPTION: This program not only interacts
 with the database and updates the server tuple set, but also allows the
 administrator to update the SDF, server description files, and the
 frequency of updates.  This gives the DCM the knowledge necessary to
 update the system.
 
-mail_maint - This program handles mailing lists, in all of their
+PRE-DEFINED QUERIES USED:
+@begin(itemize, spread 0)
+
+get_server_info
+
+add_server
+
+update_server
+
+@end(itemize)
+
+manipulates the following fields:
+(update_interval, target_dir) SERVERS relation
+
+END USERS: Administrator.  Staff.
+@end(multiple)
+@begin(multiple)
+PROGRAM NAME: MAIL_MAINT - Mail Administration
+
+DESCRIPTION: 
+This program handles mailing lists, in all of their
 infinite variety.  It is similar in function to the current madm.
 
-cluster_maint - This program manages machines and clusters.  It handles
-the following tables and fields: machine (name, machine_id, type, model,
-satus, serial, ethernet, sys_type); cluster (name, description,
-location, cluster_id, acl_id); svc (cluster_id, environment variable,
-service cluster).
+PRE-DEFINED QUERIES USED:
+@begin(itemize, spread 0)
 
-service_maint - This program manages what today is /etc/services:  it
+get_alll_mail_lists
+
+add_mail_list
+
+delete_mail_list
+
+get_list_info
+
+add_list
+
+update_list
+
+delete_list
+
+add_member_to_list
+
+delete_member_from_list
+
+get_members_of_list
+@end(itemize)
+
+manipulates the following fields:
+(name, type, list_id, flags, description, expdate, modtime) LIST relation
+
+(list_id, member_type, member_id) MEMBERS relation
+
+(member_id, string) STRINGS relation
+
+END USERS: Administrator. Staff. Students.
+@end(multiple)
+
+@begin(multiple)
+PROGRAM NAME: CLUSTER_MAINT - This program manages machines and clusters.  
+
+DESCRIPTION: Handles the relationships of various machines and clusters.
+
+PRE-DEFINED QUERIES USED:
+
+MACHINE:
+@begin(itemize, spread 0)
+
+get_machine_by_name
+
+add_machine
+
+update_machine
+
+delete_machine
+@end(itemize)
+
+manipulates the following fields:
+
+(name, machine_id, type, model, status, serial, ethernet, 
+sys_type) MACHINE relation
+
+CLUSTERS:
+@begin(itemize, spread 0)
+get_cluster_info
+
+add_cluster
+
+update_cluster
+
+delete_cluster
+
+get_machine_to_cluster_map
+
+add_machine_to_cluster
+
+delete_machine_from_cluster
+@end(itemize)
+
+manipulates the following fields:
+
+(name, description, location, cluster_id) CLUSTER relation
+
+SERVICE CLUSTERS
+@begin(itemize, spread 0)
+get_all_service_clusters
+
+add_service_clusters
+
+delete_service_clusters
+@end(itemize)
+
+manipulates the following fields:
+
+(cluster_id, serv_label, service_cluster) .
+
+END USERS: Administrator. Staff.
+
+@end(multiple)
+@begin(multiple)
+
+PROGRAM NAME: SERVICE_MAINT - Services management.
+
+DESCRIPTION: 
+This program manages what today is /etc/services:  it
 informs Hesiod of the association between services and reserved ports.
 
-printer_maint - This program will manage printers and queues for the
+PRE-DEFINED QUERIES USED:
+@begin(itemize, spread 0)
+get_all_services
+
+add_service
+
+delete_service
+
+update_service
+
+get_all_service_aliases
+
+add_service_alias
+
+delete_service_alias
+@end(itemize)
+
+manipulates the following fields:
+
+(service, protocol, port) SERVICES relation
+
+(name, type, trans) ALIAS relation
+
+END USERS: Administrator. Staff
+@end(multiple)
+
+@begin(multiple)
+PROGRAM NAME: PRINTER_MAINT - Printer maintenance.
+
+DESCRIPTION: 
+This program will manage printers and queues for the
 Multiple Device Queueing System (MDQS).  It handles associations between
 printers and machines, printers and abilities (such as windowdumps,
 postscript, etc.), machines, printers, and queues, and printers and
 printcaps.
 
-sms_maint - This is the master program.  It can do anything that any of
+PRE-DEFINED QUERIES USED:
+@begin(itemize, spread 0)
+
+get_all_printers
+
+get_printer_info
+
+add_printer
+
+update_printer
+
+delete_printer
+
+get_printer_ability
+
+add_printer_ability
+
+delete_printer_ability
+
+get_all_queues
+
+get_queue_info
+
+add_queue
+
+update_queue
+
+delete_queue
+
+add_printer_to_queue
+
+get_qdev
+
+add_qdev
+
+update_qdev
+
+delete_qdev
+
+add_queue_device_map
+
+update_queue_device_map
+
+delete_queue_device_map
+
+get_all_printcap
+
+get_printcap
+
+add_printcap
+
+update_printcap
+
+delete_printcap
+@end(itemize)
+
+updates the following fields:
+
+(name, printer_id, type, machine_id) PRINTER relation
+
+(printer_id, ability) PRABILITY relation
+
+(name, queue_id, machine_id, ability, status) QUEUE relation
+
+(printer_id, queue_id) PQM relation
+
+(machine_id, qdev_id, name, device, status) QDEV relation
+
+(machine_id, queue_id, device_id, server) QDM relation
+
+END USERS: Administrator.  Staff.
+@end(multiple)
+
+@begin(multiple)
+PROGRAM NAME: ALIAS_MAINT - Alias list create/update.
+
+DESCRIPTION: Allows the user a method of creating/updating
+alias lists.
+
+PRE-DEFINED QUERIES USED:
+@begin(itemize, spread 0)
+
+
+
+@end(itemize)
+
+END USER: Administrator. Staff. Students
+
+
+
+@begin(multiple)
+PROGRAM NAME: DB_MAINT - Data base integrity checker/intersective
+constrainer.
+
+DESCRIPTION - This program systematically checks the database 
+for user date expirations, INACTIVE status fields, and does a complete
+integrity check of the lists when a user or list is deleted.
+The program will also alert the system administrator if a user's
+expiration time has been reached and if there is an inconsistency
+with the database.  This is the program which provides interactive
+constraint capability.  The program is invoked automatically every 24
+hours.
+
+PRE-DEFINED QUERIES USED:
+@begin(itemize, spread 0)
+
+To be determined
+
+@end(itemize)
+
+END USER: Administrator. Cron (automatically invoked).
+@end(multiple)
+
+@begin(multiple)
+
+PROGRAM NAME: SMS_MAINT - Master SMS program.
+
+DESCRIPTION: This program can do anything that any of
 the above-described programs can do, but attendant with that ability is
 an increase in complexity unsuited for random users or faculty
 administrators.  Given this program (and a listing in the appropriate
 database acls), there is nothing in the SMS database that you cannot
 view and update.  It is intended for the one or two people whose main
 responsibility is the care and feeding of SMS.
+
+PRE-DEFINED QUERIES USED:
+
+ALL
+
+manipulates the following fields:
+
+ALL
+
+END USER: Administrator.  God.
+
+@end(multiple)
 
 @End(Itemize)

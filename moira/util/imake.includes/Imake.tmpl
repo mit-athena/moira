@@ -3,8 +3,11 @@
 /**/# or you may lose your changes when imake generates makefiles again.
 /**/# Ignore this message if you are not using imake.
 /**/#
+/**/#	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/util/imake.includes/Imake.tmpl,v $
+/**/#	$Author: jtkohl $
+/**/#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/util/imake.includes/Imake.tmpl,v 4.1 1988-03-18 15:46:56 jtkohl Exp $
+/**/#
 
-SRCTOP=/mit/kerberos/src
 #ifndef NEW_TOP
 NEWTOP=.
 BUILDTOP=.
@@ -21,7 +24,7 @@ DES_LIB=$(BUILDTOP)/lib/des/libdes.a
 KDB_LIB=$(BUILDTOP)/lib/kdb/libkdb.a
 
 INCLUDE= -I$(BUILDTOP)/include
-CFLAGS=$(DBG) $(INCLUDE) $(DEFINES)
+CFLAGS=$(DBG) $(INCLUDE) $(DEFINES) $(GLOBAL_CDEFS)
 
 #include "config.Imakefile"
  

@@ -1,6 +1,6 @@
 /* This file defines the query dispatch table for version 2 of the protocol
  *
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/queries2.c,v 1.18 1989-09-08 17:52:32 mar Exp $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/queries2.c,v 1.19 1989-12-28 17:22:27 mar Exp $
  *
  * Copyright 1987, 1988 by the Massachusetts Institute of Technology.
  * For copying and distribution information, please see the file
@@ -1264,14 +1264,9 @@ static char *gnfq_fields[] = {
   FILESYS, LOGIN, "quota", DIR, MACHINE, MOD1, MOD2, MOD3,
 };
 
-static struct valobj gnfq_valobj[] = {
-  {V_ID, 1, USERS, LOGIN, USERS_ID, SMS_USER},
-  {V_SORT, 0},
-};
-
 static struct validate gnfq_validate = {
-  gnfq_valobj,
-  2,
+  VOsort0,
+  1,
   0,
   0,
   0,
@@ -2961,7 +2956,7 @@ struct query Queries2[] = {
     "%c = filesys.label, %c = users.login, %c = text(nq.quota), %c = text(nq.phys_id), %c = machine.name, %c = nq.modtime, %c = text(nq.modby), %c = nq.modwith",
     gnfq_fields,
     8,
-    "filesys.label = \"%s\" and nq.users_id = %d and filesys.filsys_id = nq.filsys_id and machine.mach_id = filesys.mach_id and users.users_id = nq.users_id",
+    "filesys.label = \"%s\" and nq.users_id = users.users_id and filesys.filsys_id = nq.filsys_id and machine.mach_id = filesys.mach_id and users.login = \"%s\"",
     2,
     &gnfq_validate,
   },

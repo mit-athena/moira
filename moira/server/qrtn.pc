@@ -1,4 +1,4 @@
-/* $Id: qrtn.pc,v 2.16 1999-06-30 20:56:16 danw Exp $
+/* $Id: qrtn.pc,v 2.17 1999-07-17 21:40:27 danw Exp $
  *
  * Query-processing routines
  *
@@ -20,12 +20,13 @@
 EXEC SQL INCLUDE sqlca;  /* SQL Communications Area */
 EXEC SQL INCLUDE sqlda;  /* SQL Descriptor Area */
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.pc,v 2.16 1999-06-30 20:56:16 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.pc,v 2.17 1999-07-17 21:40:27 danw Exp $");
 
 SQLDA *mr_sqlda;
 EXEC SQL BEGIN DECLARE SECTION;
 int mr_sig_length;
 char stmt_buf[MR_STMTBUF_LEN];
+int proxy_acl;
 EXEC SQL END DECLARE SECTION;
 
 char *Argv[QMAXARGS];
@@ -113,7 +114,10 @@ int mr_open_database(void)
 
   EXEC SQL SELECT data_length INTO :mr_sig_length FROM user_tab_columns
     WHERE table_name = 'USERS' and column_name = 'SIGNATURE';
-  EXEC SQL COMMIT WORK;
+  if (dbms_errno)
+    return mr_errcode;
+  EXEC SQL SELECT list_id INTO :proxy_acl FROM capacls
+    WHERE capability = 'proxy';
   if (dbms_errno)
     return mr_errcode;
 
@@ -568,12 +572,15 @@ int mr_verify_query(client *cl, struct query *q, int argc, char *argv_ro[])
 	return MR_BAD_CHAR;
     }
 
-  /* check initial query access */
-  status = check_query_access(q, Argv, cl);
-  if (status != MR_SUCCESS && status != MR_PERM)
-    return status;
-  if (status == MR_SUCCESS)
-    privileged++;
+  /* check initial query access, unless we're acting as a proxy */
+  if (!cl->proxy_id)
+    {
+      status = check_query_access(q, Argv, cl);
+      if (status != MR_SUCCESS && status != MR_PERM)
+	return status;
+      if (status == MR_SUCCESS)
+	privileged++;
+    }
 
   /* validate arguments */
   if (v && v->valobj)
@@ -644,7 +651,6 @@ int check_query_access(struct query *q, char *argv[], client *cl)
   else
     return MR_PERM;
 }
-
 
 int find_member(char *list_type, int list_id, client *cl)
 {

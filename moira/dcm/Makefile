@@ -1,6 +1,6 @@
 #	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/Makefile,v $
 #	$Author: mar $
-#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/Makefile,v 1.4 1989-06-01 15:10:56 mar Exp $
+#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/Makefile,v 1.5 1989-07-12 18:12:36 mar Exp $
 #
 # (c) Copyright 1988 by the Massachusetts Institute of Technology.
 # For copying and distribution information, please see the file
@@ -17,7 +17,7 @@ LDFLAGS = -L${SMS_DIR}/lib -L${SMS_DIR}/server
 QLIBS= ${INGRES_DIR}/lib/libqlib ${INGRES_DIR}/lib/compatlib
 
 # Libraries that talk to the SMS server:
-SERVER_LIBS = -lcom_err -lsmsglue -lsms -lgdb -lzephyr -lkrb -ldes $(QLIBS)
+SERVER_LIBS = -lsmsglue -lsms -lgdb -lzephyr -lkrb -ldes -lcom_err $(QLIBS)
 
 DCM_SRCS = dcm.c utils.c
 DCM_OBJS = dcm.o utils.o ../update/sms_update.o

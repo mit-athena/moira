@@ -7,11 +7,11 @@
  *
  * $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/dcm.c,v $
  * $Author: mar $
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/dcm.c,v 1.15 1990-05-31 14:29:27 mar Exp $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/dcm.c,v 1.16 1992-12-30 17:28:15 mar Exp $
  */
 
 #ifndef lint
-static char rcsid_dcm_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/dcm.c,v 1.15 1990-05-31 14:29:27 mar Exp $";
+static char rcsid_dcm_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/dcm.c,v 1.16 1992-12-30 17:28:15 mar Exp $";
 #endif lint
 
 #include <stdio.h>
@@ -386,15 +386,17 @@ struct service *svc;
 	status = mr_update_server(svc->service, machine, svc->target,
 				   svc->script);
 	if (status == MR_SUCCESS) {
-	    argv[2] = "0";
+	    argv[2] = argv[4] = "0";
 	    argv[3] = "1";
 	    free(argv[8]);
 	    argv[8] = itoa(tv.tv_sec);
 	} else if (SOFT_FAIL(status)) {
+	    argv[4] = "0";
 	    free(argv[6]);
 	    argv[6] = strsave(error_message(status));
 	} else { /* HARD_FAIL */
 	    argv[2] = itoa(shost.override);
+	    argv[4] = "0";
 	    argv[5] = itoa(status);
 	    free(argv[6]);
 	    argv[6] = strsave(error_message(status));
@@ -422,24 +424,22 @@ struct service *svc;
 		free(qargv[4]);
 		free(qargv[5]);
 		close(lock_fd);
-		free(argv[2]);
-		argv[4] = "0";
-		free(argv[5]);
 		status = mr_query_with_retry("set_server_host_internal",
 					      9, argv,scream,NULL);
+		free(argv[2]);
+		free(argv[5]);
 		if (status)
 		  com_err(whoami, status, " setting host state again");
 		return(-1);
 	    }
-	    free(argv[2]);
-	    free(argv[5]);
 	}
-	argv[4] = "0";
 	close(lock_fd);
 	status = mr_query_with_retry("set_server_host_internal", 9, argv,
 				      scream, NULL);
 	if (status)
 	  com_err(whoami, status, " setting host state again");
+/*	free(argv[2]);
+	free(argv[5]); */
     free_mach:
 	free(machine);
 	close(lock_fd);

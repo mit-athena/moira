@@ -5,7 +5,7 @@
  *
  * $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v $
  * $Author: mar $
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.39 1993-10-22 17:56:23 mar Exp $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.40 1993-10-22 18:10:41 mar Exp $
  *
  * Generic menu system module.
  *
@@ -18,24 +18,26 @@
  */
 
 #ifndef lint
-static char rcsid_menu_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.39 1993-10-22 17:56:23 mar Exp $";
+static char rcsid_menu_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.40 1993-10-22 18:10:41 mar Exp $";
 
 #endif lint
 
 #include <mit-copyright.h>
 #include <sys/types.h>
 #include <stdio.h>
+#include <string.h>
 #include <signal.h>
 #include <curses.h>
 #ifdef POSIX
+#include <unistd.h>
 #include <termios.h>
 #endif /* POSIX */
 #include <ctype.h>
-#include <string.h>
 #ifndef sun
 #include <varargs.h>
 #endif
 #include <com_err.h>
+#include <moira.h>
 #include "menu.h"
 
 #ifndef __STDC__
@@ -56,6 +58,10 @@ extern char *whoami;
 
 FILE *log_file = (FILE *) NULL;		/* file stream of log file */
 int more_flg = 1;
+
+#ifdef POSIX
+extern char *malloc();
+#endif
 
 /* Structure for holding current displayed menu */
 struct menu_screen {
@@ -160,7 +166,6 @@ make_ms(length)
     int length;
 {
     struct menu_screen *ms;
-    char *malloc();
 
     if (MAX_TITLE + length + MIN_INPUT > LINES) {
 	fputs("Menu too big!\n", stderr);

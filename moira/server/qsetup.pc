@@ -1,4 +1,4 @@
-/* $Id: qsetup.pc,v 2.37 2000-04-21 19:47:40 zacheiss Exp $
+/* $Id: qsetup.pc,v 2.38 2000-07-06 20:29:42 zacheiss Exp $
  *
  * Query setup routines
  *
@@ -21,7 +21,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsetup.pc,v 2.37 2000-04-21 19:47:40 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsetup.pc,v 2.38 2000-07-06 20:29:42 zacheiss Exp $");
 
 extern char *whoami;
 extern int dbms_errno, mr_errcode;
@@ -276,6 +276,9 @@ int setup_dclu(struct query *q, char *argv[], client *cl)
  * a -1 there.  Remember that this is also used for ulis, with the indexes
  * at 6 & 7.  Also check that the list name does not contain uppercase
  * characters, control characters, @, or :.
+ *
+ *  Newlines in list descriptions do bad things to the aliases file
+ *  moira generates, so make sure the description doesn't contain any, too.
  */
 
 static int badlistchars[] = {
@@ -301,7 +304,7 @@ int setup_alis(struct query *q, char *argv[], client *cl)
 {
   EXEC SQL BEGIN DECLARE SECTION;
   int ngid, cnt;
-  char *name;
+  char *name, *desc;
   EXEC SQL END DECLARE SECTION;
   unsigned char *p;
   int idx, err;
@@ -311,6 +314,7 @@ int setup_alis(struct query *q, char *argv[], client *cl)
   else if (!strcmp(q->shortname, "ulis"))
     idx = 1;
   name = argv[idx];
+  desc = argv[10 + idx];
 
   if (idx == 1)
     {
@@ -325,6 +329,12 @@ int setup_alis(struct query *q, char *argv[], client *cl)
   for (p = (unsigned char *) name; *p; p++)
     {
       if (badlistchars[*p])
+	return MR_BAD_CHAR;
+    }
+
+  for (p = (unsigned char *) desc; *p; p++)
+    {
+      if (*p == '\n')
 	return MR_BAD_CHAR;
     }
 

@@ -1,13 +1,13 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/xfer_002.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/xfer_002.c,v 1.6 1992-08-25 14:39:41 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/xfer_002.c,v 1.7 1992-09-21 12:31:57 mar Exp $
  */
 /*  (c) Copyright 1988 by the Massachusetts Institute of Technology. */
 /*  For copying and distribution information, please see the file */
 /*  <mit-copyright.h>. */
 
 #ifndef lint
-static char *rcsid_xfer_002_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/xfer_002.c,v 1.6 1992-08-25 14:39:41 mar Exp $";
+static char *rcsid_xfer_002_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/xfer_002.c,v 1.7 1992-09-21 12:31:57 mar Exp $";
 #endif	lint
 
 #include <mit-copyright.h>
@@ -85,7 +85,7 @@ xfer_002(str)
     code = send_ok();
     if (code)
 	lose("sending ok for file xfer (2)");
-    code = get_file(pathname, file_size, checksum, 0700);
+    code = get_file(pathname, file_size, checksum, 0700, 0);
     if (!code) {
 	char buf[BUFSIZ];
 	have_file = 1;

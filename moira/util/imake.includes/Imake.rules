@@ -1,6 +1,6 @@
 /**/#	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/util/imake.includes/Imake.rules,v $
 /**/#	$Author: qjb $
-/**/#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/util/imake.includes/Imake.rules,v 4.14 1989-08-03 14:48:48 qjb Exp $
+/**/#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/util/imake.includes/Imake.rules,v 4.15 1989-09-26 14:34:51 qjb Exp $
 /**/#
 
 #ifdef __STDC__
@@ -22,6 +22,18 @@
  * Rule for building objects in libraries.
  */
 
+#ifdef mips
+/*
+ * The MIPS loader doesn't have the -X flag or its functionality.
+ */
+#define library_obj_rule()						@@\
+.c.o:									@@\
+	$(CC) PROF_FLAG -c $(CFLAGS) $*.c				@@\
+	$(MV) $*.o profiled/$*.o					@@\
+	$(CC) -c $(CFLAGS) $*.c						@@\
+	-$(LD) -x -r -o a.out $*.o					@@\
+	$(MV) a.out $*.o
+#else /* ! mips */
 #define library_obj_rule()						@@\
 .c.o:									@@\
 	$(CC) PROF_FLAG -c $(CFLAGS) $*.c				@@\
@@ -29,7 +41,7 @@
 	$(CC) -c $(CFLAGS) $*.c						@@\
 	-$(LD) -x -r -o a.out $*.o					@@\
 	$(MV) a.out $*.o
-
+#endif /* mips */
 /*
  * cc -R breaks profiling with -p on 4.3BSD on the VAX 
  * (and probably elsewhere), so we don't do it for the profiled version.
@@ -207,8 +219,8 @@ concat(tbl,.h) concat(tbl,.o): concat(tbl,.et)				@@\
 	$(MV) concat(tbl,.et.o) concat3(profiled/,tbl,.o)		@@\
 	$(COMPILE_ET) concat(tbl,.et)					@@\
 clean::									@@\
-	$(RM) concat(src,.o) concat(src,.h)				@@\
-depend:: concat(src,.h)
+	$(RM) concat(tbl,.o) concat(tbl,.h)				@@\
+depend:: concat(tbl,.h)
 #else /* !PROFILED_LIBS */
 #define comp_et_prof(tbl) comp_et(tbl)
 #endif /* PROFILED_LIBS */
@@ -217,10 +229,10 @@ depend:: concat(src,.h)
 concat(tbl,.h) concat(tbl,.o): concat(tbl,.et)				@@\
 	$(COMPILE_ET) concat(tbl,.et)					@@\
 clean::									@@\
-	$(RM) concat(src,.o) concat(src,.h)
+	$(RM) concat(tbl,.o) concat(tbl,.h)
 
 #define comp_et_depend(src)						@@\
-	comp_et(src)							@@\
+	comp_et_prof(src)						@@\
 									@@\
 depend:: concat(src,.h)
 
@@ -228,7 +240,7 @@ depend:: concat(src,.h)
 concat(tbl,.o): concat(tbl,.ct)						@@\
 	$(MAKE_COMMANDS) concat(tbl,.ct)				@@\
 clean::									@@\
-	$(RM) concat(src,.o)
+	$(RM) concat(tbl,.o)
 
 /*
  * Rule for building some random object module

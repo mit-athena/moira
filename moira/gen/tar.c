@@ -1,4 +1,4 @@
-/* $Id: tar.c,v 1.1 1999-01-27 19:38:07 danw Exp $
+/* $Id: tar.c,v 1.2 1999-07-12 16:27:56 danw Exp $
  *
  * Utility routines for writing tar files.
  *
@@ -16,7 +16,7 @@
 
 #include "util.h"
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/tar.c,v 1.1 1999-01-27 19:38:07 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/tar.c,v 1.2 1999-07-12 16:27:56 danw Exp $");
 
 static char tar_zeros[512];
 
@@ -71,7 +71,7 @@ FILE *tarfile_start(TARFILE *tf, char *name, mode_t mode, uid_t uid, gid_t gid,
 {
   memset(&(tf->th), 0, sizeof(tf->th));
   memset(tf->th.chksum, ' ', sizeof(tf->th.chksum));
-  strcpy(tf->th.name, name);
+  strcpy(tf->th.name, (name[0] == '/' ? name + 1 : name));
   sprintf(tf->th.mode, "%07lo", (unsigned long)mode);
   sprintf(tf->th.uid, "%07lo", (unsigned long)uid);
   sprintf(tf->th.gid, "%07lo", (unsigned long)gid);

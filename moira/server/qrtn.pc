@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.pc,v $
  *	$Author: danw $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.pc,v 2.1 1997-01-29 23:27:17 danw Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.pc,v 2.2 1997-07-08 19:51:17 danw Exp $
  *
  *	Copyright (C) 1987, 1988 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_qrtn_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.pc,v 2.1 1997-01-29 23:27:17 danw Exp $";
+static char *rcsid_qrtn_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.pc,v 2.2 1997-07-08 19:51:17 danw Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -520,8 +520,6 @@ int check_query_access(q, argv, cl)
     int acl_id;
     static int def_uid;
     EXEC SQL END DECLARE SECTION; 
-    int client_id;
-    char *client_type;
 
     /* initialize default uid */
     if (def_uid == 0) {
@@ -551,53 +549,37 @@ int check_query_access(q, argv, cl)
     if (q->everybody)
       return(MR_SUCCESS);
 
-    if (get_client(cl, &client_type, &client_id) != MR_SUCCESS)
-      return(MR_PERM);
-    if (find_member("LIST", acl_id, client_type, client_id))
+    if (find_member("LIST", acl_id, cl))
       return(MR_SUCCESS);
     else
       return(MR_PERM);
 }
 
 
-int get_client(cl, client_type, client_id)
+int find_member(list_type, list_id, cl)
+     char *list_type;
+     int list_id;
      client *cl;
-     char **client_type;
-     int *client_id;
-{
-    if (cl->users_id > 0) {
-	*client_id = cl->users_id;
-	*client_type = "USER";
-	return(MR_SUCCESS);
-    }
-
-    if (cl->client_id < 0) {
-	*client_id = -cl->users_id;
-	*client_type = "KERBEROS";
-	return(MR_SUCCESS);
-    }
-
-    return(MR_PERM);
-}
-
-int find_member(list_type, list_id, member_type, member_id)
-     char *list_type, *member_type;
-     int list_id, member_id;
 {
     EXEC SQL BEGIN DECLARE SECTION; 
-    int flag;
+    int flag, users_id, client_id;
     EXEC SQL END DECLARE SECTION; 
 
-    if (!strcmp(strtrim(list_type), strtrim(member_type)) &&
-	list_id == member_id)
+    if (!strcmp(strtrim(list_type), "USER") &&
+	list_id == cl->users_id)
 	return(1);
 
-    /* see if client is a direct member of list */
+    if (!strcmp(strtrim(list_type), "KERBEROS") &&
+	list_id == -cl->client_id)
+	return(1);
+
+    /* see if client is a member of list */
     flag = 0;
-    EXEC SQL SELECT member_id INTO :flag FROM imembers
-      WHERE list_id = :list_id AND member_type = :member_type 
-	AND member_id = :member_id;
-    if(flag!=0) flag=1;             /** Not strictly necessary */
+    users_id = cl->users_id;
+    client_id = -cl->client_id;
+    EXEC SQL SELECT member_id INTO :flag FROM imembers WHERE list_id = :list_id
+	AND ( ( member_type = 'USER' AND member_id = :users_id )
+	      OR (member_type = 'KERBEROS' AND member_id = :client_id ) );
     if (sqlca.sqlcode == 0)
       return(flag);            
     return(0);

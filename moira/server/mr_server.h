@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_server.h,v $
  *	$Author: danw $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_server.h,v 1.27 1997-01-29 23:27:10 danw Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_server.h,v 1.28 1997-07-08 19:51:15 danw Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
@@ -158,9 +158,7 @@ int mr_process_query(client *cl, char *name, int argc, char *argv_ro[],
 int mr_check_access(client *cl, char *name, int argc, char *argv_ro[]);
 void sanity_check_queries(void);
 int set_krb_mapping(char *name, char *login, int ok, int *kid, int *uid);
-int get_client(client *cl, char **client_type, int *client_id);
-int find_member(char *list_type, int list_id, char *member_type,
-		int member_id);
+int find_member(char *list_type, int list_id, client *cl);
 int do_for_all_rows(char *query, int count, int (*action)(), int actarg);
 int build_qual(char *fmt, int argc, char *argv[], char *qual);
 

@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qaccess.pc,v $
  *	$Author: danw $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qaccess.pc,v 2.2 1997-06-17 20:20:24 danw Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qaccess.pc,v 2.3 1997-07-08 19:51:16 danw Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_qsupport_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qaccess.pc,v 2.2 1997-06-17 20:20:24 danw Exp $";
+static char *rcsid_qsupport_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qaccess.pc,v 2.3 1997-07-08 19:51:16 danw Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -116,8 +116,7 @@ int access_list(q, argv, cl)
     int list_id, acl_id, flags, gid, users_id;
     char acl_type[9], *newname;
     EXEC SQL END DECLARE SECTION;
-    char *client_type;
-    int client_id, status;
+    int status;
 
     list_id = *(int *)argv[0];
     EXEC SQL SELECT acl_id, acl_type, gid, publicflg
@@ -128,15 +127,13 @@ int access_list(q, argv, cl)
     if (sqlca.sqlerrd[2] != 1)
       return(MR_INTERNAL);
 
-    /* parse client structure */
-    if ((status = get_client(cl, &client_type, &client_id)) != MR_SUCCESS)
-	return(status);
-
     /* if amtl or dmfl and list is public allow client to add or delete self */
     if (((!strcmp("amtl", q->shortname) && flags) ||
-	 (!strcmp("dmfl", q->shortname))) &&
-	(!strcmp("USER", argv[1]))) {
-	if (*(int *)argv[2] == client_id) return(MR_SUCCESS);
+	 (!strcmp("dmfl", q->shortname)))) {
+	if (!strcmp("USER", argv[1]) && *(int *)argv[2] == cl->users_id)
+	    return(MR_SUCCESS);
+	if (!strcmp("KERBEROS", argv[1]) && *(int *)argv[2] == -cl->client_id)
+	    return(MR_SUCCESS);
     /* if update_list, don't allow them to change the GID or rename to
        a username other than their own */
     } else if (!strcmp("ulis", q->shortname)) {
@@ -148,12 +145,12 @@ int access_list(q, argv, cl)
       newname = argv[1];
       EXEC SQL SELECT users_id INTO :users_id FROM users
 	  WHERE login=:newname;
-      if ((sqlca.sqlcode != SQL_NO_MATCH) && (users_id != client_id))
+      if ((sqlca.sqlcode != SQL_NO_MATCH) && (users_id != cl->users_id))
 	  return MR_PERM;
     }
 
     /* check for client in access control list */
-    status = find_member(acl_type, acl_id, client_type, client_id);
+    status = find_member(acl_type, acl_id, cl);
     if (!status) return(MR_PERM);
 
     return(MR_SUCCESS);
@@ -176,8 +173,7 @@ int access_visible_list(q, argv, cl)
     int list_id, acl_id, flags ;
     char acl_type[9];
     EXEC SQL END DECLARE SECTION;
-    char *client_type;
-    int client_id, status;
+    int status;
 
     list_id = *(int *)argv[0];
     EXEC SQL SELECT hidden, acl_id, acl_type
@@ -189,12 +185,8 @@ int access_visible_list(q, argv, cl)
     if (!flags)
         return(MR_SUCCESS);
 
-    /* parse client structure */
-    if ((status = get_client(cl, &client_type, &client_id)) != MR_SUCCESS)
-	return(status);
-
     /* check for client in access control list */
-    status = find_member(acl_type, acl_id, client_type, client_id);
+    status = find_member(acl_type, acl_id, cl);
     if (!status)
 	return(MR_PERM);
 
@@ -218,8 +210,7 @@ int access_vis_list_by_name(q, argv, cl)
     int acl_id, flags, rowcount;
     char acl_type[9], *listname;
     EXEC SQL END DECLARE SECTION;
-    char *client_type;
-    int client_id, status;
+    int status;
 
     listname = argv[0];
     EXEC SQL SELECT hidden, acl_id, acl_type INTO :flags, :acl_id, :acl_type
@@ -233,12 +224,8 @@ int access_vis_list_by_name(q, argv, cl)
     if (!flags)
 	return(MR_SUCCESS);
 
-    /* parse client structure */
-    if ((status = get_client(cl, &client_type, &client_id)) != MR_SUCCESS)
-	return(status);
-
     /* check for client in access control list */
-    status = find_member(acl_type, acl_id, client_type, client_id);
+    status = find_member(acl_type, acl_id, cl);
     if (!status)
 	return(MR_PERM);
 
@@ -247,7 +234,8 @@ int access_vis_list_by_name(q, argv, cl)
 
 
 /* access_member - allow user to access member of type "USER" and name matches
- * username, or to access member of type "LIST" and list is one that user is
+ * username, or to access member of type "KERBEROS" and the principal matches
+ * the user, or to access member of type "LIST" and list is one that user is
  * on the acl of, or the list is visible.
  */
 
@@ -264,8 +252,8 @@ int access_member(q, argv, cl)
 	  return(MR_SUCCESS);
     }
 
-    if (!strcmp(argv[0], "KERBEROS") || !strcmp(argv[0], "RKERBERO")) {
-        if (cl->client_id == *(int *)argv[1])
+    if (!strcmp(argv[0], "KERBEROS") || !strcmp(argv[0], "RKERBEROS")) {
+        if (cl->client_id == -*(int *)argv[1])
 	  return(MR_SUCCESS);
     }
 
@@ -301,8 +289,8 @@ int access_service(q, argv, cl)
     int acl_id;
     char *name, acl_type[9];
     EXEC SQL END DECLARE SECTION;
-    int client_id, status;
-    char *client_type, *c;
+    int status;
+    char *c;
 
     name = argv[0];
     for(c=name;*c;c++) if(islower(*c)) *c = toupper(*c);  /* uppercasify */
@@ -311,12 +299,8 @@ int access_service(q, argv, cl)
     if (sqlca.sqlerrd[2] > 1)
       return(MR_PERM);
 
-    /* parse client structure */
-    if ((status = get_client(cl, &client_type, &client_id)) != MR_SUCCESS)
-	return(status);
-
     /* check for client in access control list */
-    status = find_member(acl_type, acl_id, client_type, client_id);
+    status = find_member(acl_type, acl_id, cl);
     if (!status) return(MR_PERM);
 
     return(MR_SUCCESS);
@@ -336,8 +320,7 @@ int access_filesys(q, argv, cl)
     int users_id, list_id;
     char *name;
     EXEC SQL END DECLARE SECTION;
-    int status, client_id;
-    char *client_type;
+    int status;
 
     name = argv[0];
     EXEC SQL SELECT owner, owners INTO :users_id, :list_id FROM filesys
@@ -347,9 +330,7 @@ int access_filesys(q, argv, cl)
       return(MR_PERM);
     if (users_id == cl->users_id)
       return(MR_SUCCESS);
-    if ((status = get_client(cl, &client_type, &client_id)) != MR_SUCCESS)
-      return(status);
-    status = find_member("LIST", list_id, client_type, client_id);
+    status = find_member("LIST", list_id, cl);
     if (status)
       return(MR_SUCCESS);
     else
@@ -371,8 +352,7 @@ int access_host(q, argv, cl)
     int mid, sid, id;
     char mtype[9], stype[9];
     EXEC SQL END DECLARE SECTION;
-    int status, client_id;
-    char *client_type;
+    int status;
 
     if (q->type == APPEND) {
 	id = *(int *)argv[8];
@@ -391,14 +371,12 @@ int access_host(q, argv, cl)
     if (sqlca.sqlerrd[2] != 1)
       return(MR_PERM);
 
-    if ((status = get_client(cl, &client_type, &client_id)) != MR_SUCCESS)
-      return(status);
-    status = find_member(stype, sid, client_type, client_id);
+    status = find_member(stype, sid, cl);
     if (status) {
 	host_access_level = 1;
 	return(MR_SUCCESS);
     }
-    status = find_member(mtype, mid, client_type, client_id);
+    status = find_member(mtype, mid, cl);
     if (status) {
 	host_access_level = 2;
 	return(MR_SUCCESS);
@@ -422,8 +400,7 @@ int access_ahal(q, argv, cl)
     int cnt, id, mid, sid;
     char mtype[256], stype[256];
     EXEC SQL END DECLARE SECTION;
-    char *client_type;
-    int status, client_id;
+    int status;
 
     if (q->type == RETRIEVE)
       return(MR_SUCCESS);
@@ -441,12 +418,10 @@ int access_ahal(q, argv, cl)
     EXEC SQL SELECT m.owner_type, m.owner_id, s.owner_type, s.owner_id
       INTO :mtype, :mid, :stype, :sid FROM machine m, subnet s
       WHERE m.mach_id=:id and s.snet_id=m.snet_id;
-    if ((status = get_client(cl, &client_type, &client_id)) != MR_SUCCESS)
-      return(status);
-    status = find_member(mtype, mid, client_type, client_id);
+    status = find_member(mtype, mid, cl);
     if (status)
       return(MR_SUCCESS);
-    status = find_member(stype, sid, client_type, client_id);
+    status = find_member(stype, sid, cl);
     if (status)
       return(MR_SUCCESS);
     else

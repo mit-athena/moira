@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/display.c,v 1.5 1992-10-19 18:09:37 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/display.c,v 1.6 1992-10-23 19:06:23 mar Exp $
  */
 
 #include <stdio.h>
@@ -140,6 +140,19 @@ EntryForm *form;
     case MM_SHOW_FILSYS:
     case MM_SHOW_FSGROUP:
 	sq_save_args(argc, info, form->extrastuff);
+	break;
+    case MM_SHOW_NFS:
+	sprintf(buf,"Machine: %-20s Directory: %-15s Device: %s\n",
+		info[NFS_NAME], info[NFS_DIR], info[NFS_DEVICE]);
+	AppendToLog(buf);
+	sprintf(buf, "Status: %s\n", format_filesys_type(info[NFS_STATUS]));
+	AppendToLog(buf);
+	sprintf(buf, "Quota Allocated: %-17s Size: %s\n",
+		info[NFS_ALLOC], info[NFS_SIZE]);
+	AppendToLog(buf);
+	sprintf(buf, MOD_FORMAT, info[NFS_MODBY], info[NFS_MODTIME],
+		info[NFS_MODWITH]);
+	AppendToLog(buf);
 	break;
     case MM_SHOW_QUOTA:
 	if (!strcmp(info[Q_TYPE], "ANY"))

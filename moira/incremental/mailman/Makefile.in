@@ -1,0 +1,22 @@
+# $Id: Makefile.in,v 1.1 2002-12-03 21:40:33 zacheiss Exp $
+
+SHELL=/bin/sh
+@SET_MAKE@
+
+INSTALL=@INSTALL@
+INSTALL_PROGRAM=@INSTALL_PROGRAM@
+
+srcdir=@srcdir@
+VPATH=@srcdir@
+SRCTOP=@top_srcdir@
+BUILDTOP=../..
+mrbindir=@mrbindir@
+
+TARGET=mailman.incr
+
+all:
+
+clean:
+
+install:
+	${INSTALL_PROGRAM} ${TARGET} ${mrbindir}

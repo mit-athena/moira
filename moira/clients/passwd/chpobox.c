@@ -3,14 +3,14 @@
  * and distribution information, see the file "mit-copyright.h". 
  *
  * $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chpobox.c,v $
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chpobox.c,v 1.16 1993-10-22 16:36:50 mar Exp $
- * $Author: mar $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chpobox.c,v 1.17 1997-01-29 23:10:33 danw Exp $
+ * $Author: danw $
  *
  */
 
 #ifndef lint
-static char *rcsid_chpobox_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chpobox.c,v 1.16 1993-10-22 16:36:50 mar Exp $";
-#endif not lint
+static char *rcsid_chpobox_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chpobox.c,v 1.17 1997-01-29 23:10:33 danw Exp $";
+#endif
 
 /*
  * Talk to the MOIRA database to change a person's home mail machine. This may

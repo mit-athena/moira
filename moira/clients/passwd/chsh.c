@@ -3,14 +3,14 @@
  * and distribution information, see the file "mit-copyright.h". 
  *
  * $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chsh.c,v $
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chsh.c,v 1.14 1996-07-29 22:39:54 jweiss Exp $
- * $Author: jweiss $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chsh.c,v 1.15 1997-01-29 23:10:35 danw Exp $
+ * $Author: danw $
  *
  */
 
 #ifndef lint
-static char *rcsid_chsh_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chsh.c,v 1.14 1996-07-29 22:39:54 jweiss Exp $";
-#endif not lint
+static char *rcsid_chsh_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chsh.c,v 1.15 1997-01-29 23:10:35 danw Exp $";
+#endif
 
 /*
  * Talk to the MOIRA database to change a person's login shell.  The chosen
@@ -53,6 +53,8 @@ main(argc, argv)
     int k_errno;
     char *whoami;
 
+    initialize_krb_error_table();
+
     if ((whoami = strrchr(argv[0], '/')) == NULL)
 	whoami = argv[0];
     else
@@ -70,12 +72,12 @@ main(argc, argv)
 	   from passord file. */
 	
 	if (k_errno = tf_init(TKT_FILE, R_TKT_FIL)) {
-	    fprintf(stderr, "%s: %s\n", whoami, krb_err_txt[k_errno]);
+	    com_err(whoami, k_errno, "reading ticket file");
 	    exit(1);
 	}
 	
 	if (k_errno = tf_get_pname(pname)) {
-	    fprintf(stderr, "%s: %s\n", whoami, krb_err_txt[k_errno]);
+	    com_err(whoami, k_errno, "getting kerberos principal name");
 	    exit(1);
 	}
 
@@ -226,11 +228,11 @@ void check_shell(shell)
     int ok = 0;
 
     while (valid_shell = getusershell()) {
-	if (strcmp(shell, valid_shell) == NULL) {
+	if (strcmp(shell, valid_shell) == 0) {
 	    ok = 1;
 	    break;
 	}
-	else if (strcmp(shell, 1+strrchr(valid_shell, '/')) == NULL) {
+	else if (strcmp(shell, 1+strrchr(valid_shell, '/')) == 0) {
 	    ok = 1;
 	    (void) strcpy(shell, valid_shell);
 	    break;

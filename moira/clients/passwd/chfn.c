@@ -3,14 +3,14 @@
  * and distribution information, see the file "mit-copyright.h". 
  *
  * $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chfn.c,v $
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chfn.c,v 1.11 1996-07-29 22:39:52 jweiss Exp $
- * $Author: jweiss $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chfn.c,v 1.12 1997-01-29 23:10:31 danw Exp $
+ * $Author: danw $
  *
  */
 
 #ifndef lint
-static char *rcsid_chfn_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chfn.c,v 1.11 1996-07-29 22:39:52 jweiss Exp $";
-#endif not lint
+static char *rcsid_chfn_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chfn.c,v 1.12 1997-01-29 23:10:31 danw Exp $";
+#endif
 
 /*
  * Talk to the MOIRA database to change a person's GECOS information.
@@ -61,6 +61,8 @@ main(argc, argv)
     int k_errno;
     char *whoami;
 
+    initialize_krb_error_table();
+
     if ((whoami = strrchr(argv[0], '/')) == NULL)
 	whoami = argv[0];
     else
@@ -78,12 +80,12 @@ main(argc, argv)
 	   from passord file. */
 	
 	if (k_errno = tf_init(TKT_FILE, R_TKT_FIL)) {
-	    fprintf(stderr, "%s: %s\n", whoami, krb_err_txt[k_errno]);
+	    com_err(whoami, k_errno, "reading ticket file");
 	    exit(1);
 	}
 	
 	if (k_errno = tf_get_pname(pname)) {
-	    fprintf(stderr, "%s: %s\n", whoami, krb_err_txt[k_errno]);
+	    com_err(whoami, k_errno, "getting kerberos principal name");
 	    exit(1);
 	}
 
@@ -252,10 +254,10 @@ char *ask(question, def_val, phone_num)
 	printf("%s [%s]: ", question, def_val);
 	if (fgets(buf, sizeof(buf), stdin) == NULL)
 	  leave(0);
-	buf[strlen(buf) - 1] = NULL;
+	buf[strlen(buf) - 1] = '\0';
 	if (strlen(buf) == 0)
 	    result = def_val;
-	else if (strcasecmp(buf, BLANK) == NULL)
+	else if (strcasecmp(buf, BLANK) == 0)
 	    result = "";
 	else 
 	    result = buf;

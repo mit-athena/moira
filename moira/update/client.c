@@ -1,15 +1,15 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/client.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/client.c,v 1.10 1990-03-19 13:02:11 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/client.c,v 1.11 1991-01-15 13:15:19 mar Exp $
  */
 
 #ifndef lint
-static char *rcsid_client2_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/client.c,v 1.10 1990-03-19 13:02:11 mar Exp $";
+static char *rcsid_client2_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/client.c,v 1.11 1991-01-15 13:15:19 mar Exp $";
 #endif	lint
 
 /*
  * MODULE IDENTIFICATION:
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/client.c,v 1.10 1990-03-19 13:02:11 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/client.c,v 1.11 1991-01-15 13:15:19 mar Exp $
  *	Copyright 1987, 1988 by the Massachusetts Institute of Technology.
  *	For copying and distribution information, please see the file
  *	<mit-copyright.h>.
@@ -145,7 +145,7 @@ char *instructions;
     com_err(whoami, 0, "starting update for %s", service_updated);
     
     /* open connection */
-    conn = start_server_connection(service_address, 0);
+    conn = start_server_connection(service_address, "");
     if (!conn || (connection_status(conn) == CON_STOPPED)) {
 	com_err(whoami, connection_errno(conn),
 		" can't connect to update %s", service_address);

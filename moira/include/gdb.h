@@ -1,5 +1,5 @@
 /*
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/include/gdb.h,v 1.5 1991-05-10 15:16:43 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/include/gdb.h,v 1.6 1992-12-01 11:39:59 mar Exp $
  */
 
 /************************************************************************
@@ -82,6 +82,8 @@ typedef struct fd_set {fd_mask fds_bits[howmany(FD_SETSIZE, NFDBITS)];} fd_set;
 
 #define GDB_ROUNDUP(n,b) ((((n)+(b)-1)/(b))*(b))
 
+extern int	gdb_Options;			/* Control optional features */
+#define GDB_OPT_KEEPALIVE	1
 extern int	gdb_Debug;			/* debugging flags are */
 						/* stored here */
 extern FILE *gdb_log;				/* file descriptor for */

@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.1 1998-05-26 18:13:56 danw Exp $
+# $Id: Makefile.in,v 1.2 1999-07-12 16:21:01 danw Exp $
 
 SHELL=/bin/sh
 @SET_MAKE@
@@ -21,6 +21,9 @@ all: moira_schema.h moira_schema.c moira_schema.o
 
 clean:
 	rm -f moira_schema.h moira_schema.c moira_schema.o
+
+cleandir distclean: clean
+	rm -f Makefile
 
 depend: moira_schema.c moira_schema.h
 

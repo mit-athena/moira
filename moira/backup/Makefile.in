@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.5 1998-10-30 18:18:00 danw Exp $
+# $Id: Makefile.in,v 1.6 1999-07-12 16:20:41 danw Exp $
 
 SHELL=/bin/sh
 @SET_MAKE@
@@ -45,6 +45,9 @@ all: $(TARGET)
 
 clean:
 	rm -f $(BOBJS) $(ROBJS) $(CFILES) $(GENFILES) $(TARGET)
+
+cleandir distclean: clean
+	rm -f Makefile
 
 depend: $(GENFILES) $(CFILES)
 

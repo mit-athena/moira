@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.3 1999-07-06 16:31:33 danw Exp $
+# $Id: Makefile.in,v 1.4 1999-07-12 16:21:07 danw Exp $
 
 SHELL=/bin/sh
 
@@ -35,6 +35,9 @@ all: depend libmoira.a
 
 clean:
 	rm -f $(OBJS) $(ET_H) $(ET_C) libmoira.a
+
+cleandir distclean: clean
+	rm -f Makefile
 
 depend: $(ET_C)
 

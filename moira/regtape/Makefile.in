@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.7 1999-01-09 05:50:35 danw Exp $
+# $Id: Makefile.in,v 1.8 1999-07-12 16:21:11 danw Exp $
 
 SHELL=/bin/sh
 @SET_MAKE@
@@ -51,6 +51,9 @@ all: $(TARGET)
 clean:
 	rm -f $(STDENTS_OBJS) $(STAFF_OBJS) $(VOTE_OBJS)
 	rm -f $(VERIFY_OBJS) $(SIGN_OBJS) $(CFILES) $(TARGET)
+
+cleandir distclean: clean
+	rm -f Makefile
 
 depend: $(CFILES)
 

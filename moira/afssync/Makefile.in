@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.4 1998-08-27 17:13:20 danw Exp $
+# $Id: Makefile.in,v 1.5 1999-07-12 16:20:40 danw Exp $
 
 SHELL=/bin/sh
 @SET_MAKE@
@@ -50,6 +50,9 @@ all: $(TARGET)
 
 clean:
 	rm -f $(SYNC_OBJS) $(UTIL_OBJS) $(CFILES) $(TARGET)
+
+cleandir distclean: clean
+	rm -f Makefile
 
 depend: $(CFILES)
 

@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.2 1998-05-26 21:50:11 danw Exp $
+# $Id: Makefile.in,v 1.3 1999-07-12 16:21:08 danw Exp $
 
 SHELL=/bin/sh
 @SET_MAKE@
@@ -25,6 +25,9 @@ MAN8=	dcm.8 moirad.8 mrtest.8 reg_svr.8 setquota.8 startdcm.8 \
 all:
 
 clean:
+
+cleandir distclean: clean
+	rm -f Makefile
 
 depend:
 

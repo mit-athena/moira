@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.7 1998-10-30 18:17:26 danw Exp $
+# $Id: Makefile.in,v 1.8 1999-07-12 16:20:33 danw Exp $
 
 SHELL=/bin/sh
 @SET_MAKE@
@@ -22,6 +22,10 @@ all:
 	@for d in $(SUBDIRS); do (echo "### Making $@ in $$d"; cd $$d; $(MAKE) $@) || exit 1; done
 
 clean:
+	@for d in $(SUBDIRS); do (echo "### Making $@ in $$d"; cd $$d; $(MAKE) $@) || exit 1; done
+
+cleandir distclean:
+	rm -f config.log config.cache config.status Makefile
 	@for d in $(SUBDIRS); do (echo "### Making $@ in $$d"; cd $$d; $(MAKE) $@) || exit 1; done
 
 depend:

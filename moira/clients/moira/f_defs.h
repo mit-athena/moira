@@ -1,4 +1,4 @@
-/* $Id: f_defs.h,v 1.33 2000-08-16 05:38:40 zacheiss Exp $
+/* $Id: f_defs.h,v 1.34 2001-05-31 21:34:34 zacheiss Exp $
  *
  *	This is the file f_defs.h for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -76,6 +76,16 @@ int DeleteSubnet(int argc, char **argv);
 int ShowCname(int argc, char **argv);
 int AddCname(int argc, char **argv);
 int DeleteCname(int argc, char **argv);
+
+int ShowContainerInfo(int argc, char **argv);
+int AddContainer(int argc, char **argv);
+int UpdateContainer(int argc, char **argv);
+int DeleteContainer(int argc, char **argv);
+int GetSubContainers(int argc, char **argv);
+int MachineToContainerMap(int argc, char **argv);
+int AddMachineToContainer(int argc, char **argv);
+int RemoveMachineFromContainer(int argc, char **argv);
+int GetMachinesOfContainer(int argc, char **argv);
 
 /* delete.c */
 

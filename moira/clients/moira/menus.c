@@ -1,4 +1,4 @@
-/* $Id: menus.c,v 1.43 2000-08-10 02:29:44 zacheiss Exp $
+/* $Id: menus.c,v 1.44 2001-05-31 21:34:34 zacheiss Exp $
  *
  *	This is the file menus.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -22,7 +22,7 @@
 
 #include <stdio.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menus.c,v 1.43 2000-08-10 02:29:44 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menus.c,v 1.44 2001-05-31 21:34:34 zacheiss Exp $");
 
 /* ------------------------- Second Tier Menus ------------------------- */
 
@@ -138,6 +138,38 @@ Menu mappings_menu = {
       {"remcluster", "Remove machines from clusters"},
       {"name", "Machine's Name: "},
       {"cluster", "Cluster's Name: "},
+    } },
+    SIMPLEFUNC("verbose", "Toggle Verbosity of Delete", ToggleVerboseMode),
+  }
+};
+
+/*
+ * Machine to Container Mappings Menu
+ */
+
+Menu cmappings_menu = {
+  NULLFUNC,
+  NULLFUNC,
+  "Machine to Container Mappings Menu",
+  5,
+  {
+    { MachineToContainerMap, NULLMENU, 2, {
+      {"map", "Show Machine to container mapping"},
+      {"name", "Machine's Name: "}
+    } },
+    { AddMachineToContainer, NULLMENU, 3, {
+      {"addcontainer", "Add machine to a container"},
+      {"name", "Machine's Name: "},
+      {"container", "Container's Name: "},
+    } },
+    { RemoveMachineFromContainer, NULLMENU, 3, {
+      {"remcontainer", "Remove machine from a container"},
+      {"name", "Machine's Name: "},
+      {"container", "Container's Name: "},
+    } },
+    { GetMachinesOfContainer, NULLMENU, 2, {
+      {"machofcont", "Show all machines in a container"},
+      {"name", "Container's Name: "},
     } },
     SIMPLEFUNC("verbose", "Toggle Verbosity of Delete", ToggleVerboseMode),
   }
@@ -811,6 +843,41 @@ Menu acl_menu = {
 };
 
 /*
+ * Container Menu
+ */
+
+Menu container_menu = {
+  NULLFUNC,
+  NULLFUNC,
+  "Container Menu",
+  7,
+  {
+    { ShowContainerInfo, NULLMENU, 2, {
+      {"show", "Get container information"},
+      {"name", "Container's Name: "}
+    } },
+    { AddContainer, NULLMENU, 2, {
+      {"add", "Add a new container"},
+      {"name", "Container's Name: "}
+    } },
+    { UpdateContainer, NULLMENU, 2, {
+      {"update", "Update container information"},
+      {"name", "Container's Name: "}
+    } },
+    { DeleteContainer, NULLMENU, 2, {
+      {"delete", "Delete this container"},
+      {"name", "Container's Name: "}
+    } },
+    { GetSubContainers, NULLMENU, 2, {
+      {"subcont", "Get subcontainers of container"},
+      {"name", "Container's Name: "}
+    } },
+    SUBMENU("mappings", "Machine to Container Mappings Menu", &cmappings_menu),
+    SIMPLEFUNC("verbose", "Toggle Verbosity of Delete", ToggleVerboseMode)
+  }
+};
+
+/*
  * Miscellaneous Menu
  */
 
@@ -845,7 +912,7 @@ Menu moira_top_menu = {
   NULLFUNC,
   NULLFUNC,
   "Moira Database Manipulation",
-  11,
+  13,
   {
     SUBMENU("cluster", "Cluster Menu", &cluster_menu),
     SUBMENU("filesys", "Filesystem Menu", &filesys_menu),
@@ -858,6 +925,7 @@ Menu moira_top_menu = {
     SUBMENU("zephyr", "Zephyr ACLS Menu", &zephyr_menu),
     SUBMENU("dcm", "DCM Menu", &dcm_menu),
     SUBMENU("acl", "Generic ACL Menu", &acl_menu),
+    SUBMENU("container", "Container Menu", &container_menu),
     SUBMENU("misc", "Miscellaneous Menu", &misc_menu)
   }
 };

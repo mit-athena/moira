@@ -1,4 +1,4 @@
-/* $Id: cluster.c,v 1.48 2001-05-09 21:27:36 zacheiss Exp $
+/* $Id: cluster.c,v 1.49 2001-05-31 21:34:31 zacheiss Exp $
  *
  *	This is the file cluster.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -49,17 +49,26 @@ int CheckAndRemoveFromCluster(char *name, Bool ask_user);
 int CheckAndRemoveCnames(char *name, Bool ask_user);
 int CheckAndRemoveMachines(char *name, Bool ask_first);
 
-#define MACHINE  0
-#define CLUSTER  1
-#define DATA     2
-#define MAP      3
-#define SUBNET	 4
-#define CNAME	 5
+static char *PrintContainerInfo(char **info);
+static void RealUpdateContainer(char **info, Bool junk);
+static void RealDeleteContainer(char **info, Bool one_container);
+static void RealRemoveMachineFromContainer(char **info, Bool one_contmap);
+
+#define MACHINE   0
+#define CLUSTER   1
+#define DATA      2
+#define MAP       3
+#define SUBNET	  4
+#define CNAME	  5
+#define CONTAINER 6
+#define CONTMAP   7
 
 #define M_DEFAULT_TYPE     DEFAULT_NONE
 
 #define C_DEFAULT_DESCRIPT DEFAULT_NONE
 #define C_DEFAULT_LOCATION DEFAULT_NONE
+
+#define CON_DEFAULT_TYPE   DEFAULT_NONE
 
 #define CD_DEFAULT_LABEL   DEFAULT_NONE
 #define CD_DEFAULT_DATA    DEFAULT_NONE
@@ -131,6 +140,21 @@ static char **SetClusterDefaults(char **info, char *name)
   info[C_DESCRIPT] = strdup(C_DEFAULT_DESCRIPT);
   info[C_LOCATION] = strdup(C_DEFAULT_LOCATION);
   info[C_MODBY] = info[C_MODTIME] = info[C_MODWITH] = info[C_END] = NULL;
+  return info;
+}
+
+static char **SetContainerDefaults(char **info, char *name)
+{
+  info[CON_NAME] = strdup(name);
+  info[CON_DESCRIPT] = strdup(CON_DEFAULT_TYPE);
+  info[CON_LOCATION] = strdup(CON_DEFAULT_TYPE);
+  info[CON_CONTACT] = strdup(CON_DEFAULT_TYPE);
+  info[CON_OWNER_TYPE] = strdup("NONE");
+  info[CON_OWNER_NAME] = strdup("NONE");
+  info[CON_MEMACE_TYPE] = strdup("NONE");
+  info[CON_MEMACE_NAME] = strdup("NONE");
+  info[CON_MODBY] = info[CON_MODTIME] = info[CON_MODWITH] = NULL;
+  info[CON_END] = NULL;
   return info;
 }
 
@@ -451,6 +475,23 @@ struct mqelem *GetMCInfo(int type, char *name1, char *name2)
 	  com_err(program_name, stat, " in get_cluster_data.");
 	  return NULL;
 	}
+      break;
+    case CONTAINER:
+      args[CON_NAME] = name1;
+      if ((stat = do_mr_query("get_container", 1, &name1, StoreInfo, &elem)))
+	{
+	  com_err(program_name, stat, " in get_container.");
+	  return NULL;
+	}
+      break;
+    case CONTMAP:
+      args[0] = name1;
+      if ((stat = do_mr_query("get_machine_to_container_map", 1, &name1,
+			      StoreInfo, &elem)))
+	{
+	  com_err(program_name, stat, " in get_machine_to_container_map.");
+	  return NULL;
+	}
     }
   return QueueTop(elem);
 }
@@ -462,6 +503,7 @@ struct mqelem *GetMCInfo(int type, char *name1, char *name2)
  *                 type - type of information - MACHINE
  *                                              CLUSTER
  *                                              DATA
+ *                                              CONTAINER
  *                 name - T/F : change the name of this type.
  *	Returns: none.
  */
@@ -487,6 +529,10 @@ char **AskMCDInfo(char **info, int type, Bool name)
     case DATA:
       sprintf(temp_buf, "Setting the Data for the Cluster %s...",
 	      info[CD_NAME]);
+      break;
+    case CONTAINER:
+      sprintf(temp_buf, "Setting the Data for the Container %s...",
+	      info[CON_NAME]);
       break;
     }
   Put_message(temp_buf);
@@ -520,6 +566,12 @@ char **AskMCDInfo(char **info, int type, Bool name)
 	  newname = strdup(info[C_NAME]);
 	  if (GetValueFromUser("The new name for this cluster? ", &newname) ==
 	      SUB_ERROR)
+	    return NULL;
+	  break;
+	case CONTAINER:
+	  newname = strdup(info[CON_NAME]);
+	  if (GetValueFromUser("The new name for this container? ", &newname)
+	      == SUB_ERROR)
 	    return NULL;
 	  break;
 	default:
@@ -698,6 +750,53 @@ char **AskMCDInfo(char **info, int type, Bool name)
 	return NULL;
       if (GetValueFromUser("The data itself ? ", &info[CD_DATA]) == SUB_ERROR)
 	return NULL;
+      break;
+    case CONTAINER:
+      if (GetValueFromUser("Container's Description:", &info[CON_DESCRIPT]) ==
+	  SUB_ERROR)
+	return NULL;
+      if (GetValueFromUser("Container's Location:", &info[CON_LOCATION]) ==
+	  SUB_ERROR)
+	return NULL;
+      if (GetValueFromUser("Container's Contact:", &info[CON_CONTACT]) == 
+	  SUB_ERROR)
+	return NULL;
+      if (GetTypeFromUser("Container's owner type", "ace_type", 
+			  &info[CON_OWNER_TYPE]) == SUB_ERROR)
+	return NULL;
+      if (strcmp(info[CON_OWNER_TYPE], "NONE") &&
+	  GetValueFromUser("Owner's Name", &info[CON_OWNER_NAME]) == SUB_ERROR)
+	return NULL;
+      if (!strcmp(info[CON_OWNER_TYPE], "KERBEROS"))
+	{
+	  char *canon;
+
+	  mrcl_validate_kerberos_member(info[CON_OWNER_NAME], &canon);
+	  if (mrcl_get_message())
+	    Put_message(mrcl_get_message());
+	  free(info[CON_OWNER_NAME]);
+	  info[CON_OWNER_NAME] = canon;
+	}
+      if (GetTypeFromUser("Container's Membership ACL", "ace_type",
+			  &info[CON_MEMACE_TYPE]) == SUB_ERROR)
+	return NULL;
+      if (strcmp(info[CON_MEMACE_TYPE], "NONE") &&
+	  GetValueFromUser("Membership ACL", &info[CON_MEMACE_NAME])
+	  == SUB_ERROR)
+	return NULL;
+      if (!strcmp(info[CON_MEMACE_TYPE], "KERBEROS"))
+	{
+	  char *canon;
+
+	  mrcl_validate_kerberos_member(info[CON_MEMACE_NAME], &canon);
+	  if (mrcl_get_message())
+	    Put_message(mrcl_get_message());
+	  free(info[CON_MEMACE_NAME]);
+	  info[CON_MEMACE_NAME] = canon;
+	}
+      FreeAndClear(&info[CON_MODTIME], TRUE);
+      FreeAndClear(&info[CON_MODBY], TRUE);
+      FreeAndClear(&info[CON_MODWITH], TRUE);
       break;
     }
 
@@ -1296,7 +1395,7 @@ static void RealRemoveMachineFromCluster(char **info, Bool one_map)
 int RemoveMachineFromCluster(int argc, char **argv)
 {
   struct mqelem *elem = NULL;
-  char buf[BUFSIZ], * args[10];
+  char buf[BUFSIZ], *args[10];
   int stat;
 
   args[MAP_MACHINE] = canonicalize_hostname(strdup(argv[1]));
@@ -1313,7 +1412,7 @@ int RemoveMachineFromCluster(int argc, char **argv)
 		     StoreInfo, &elem);
   if (stat == MR_NO_MATCH)
     {
-      sprintf(buf, "The machine %s is not is the cluster %s.",
+      sprintf(buf, "The machine %s is not in the cluster %s.",
 	      args[MAP_MACHINE], args[MAP_CLUSTER]);
       Put_message(buf);
       free(args[MAP_MACHINE]);
@@ -1902,4 +2001,446 @@ struct mqelem *GetMachineByOwner(char *type, char *name)
       return NULL;
     }
   return QueueTop(elem);
+}
+
+int ShowContainerInfo(int argc, char **argv)
+{
+  struct mqelem *top;
+
+  top = GetMCInfo(CONTAINER, argv[1], NULL);
+  Loop(top, (void (*)(char **)) PrintContainerInfo);
+  FreeQueue(top);
+  return DM_NORMAL;
+}
+
+static char *PrintContainerInfo(char **info)
+{
+  char buf[BUFSIZ], tbuf[256];
+
+  Put_message("");
+  sprintf(buf, "Container:      %-16s", info[CON_NAME]);
+  Put_message(buf);
+  sprintf(buf, "Description:    %-16s", info[CON_DESCRIPT]);
+  Put_message(buf);
+  sprintf(buf, "Location:       %-16s    Contact:     %s", info[CON_LOCATION],
+	  info[CON_CONTACT]);
+  Put_message(buf);
+  sprintf(tbuf, "%s %s", info[CON_OWNER_TYPE],
+	  strcmp(info[CON_OWNER_TYPE], "NONE") ? info[CON_OWNER_NAME] : "");
+  sprintf(buf, "Owner:          %-16s", tbuf);
+  Put_message(buf);
+  sprintf(tbuf, "%s %s", info[CON_MEMACE_TYPE],
+	  strcmp(info[CON_MEMACE_TYPE], "NONE") ? info[CON_MEMACE_NAME] : "");
+  sprintf(buf, "Membership ACL: %-16s", tbuf);
+  Put_message(buf);
+  Put_message("");
+  sprintf(buf, MOD_FORMAT, info[CON_MODBY], info[CON_MODTIME], 
+	  info[CON_MODWITH]);
+  Put_message(buf);
+  return info[CON_NAME];
+}
+
+static char *PrintContainer(char **info)
+{
+  char buf[BUFSIZ];
+
+  sprintf(buf, "Container: %s", info[CON_NAME]);
+  Put_message(buf);
+}
+
+static char *PrintMContMap(char **info)
+{
+  char buf[BUFSIZ];
+  sprintf(buf, "Container: %-30s Machine: %-20s",
+	  info[1], info[0]);
+  Put_message(buf);
+  return "";
+}
+
+int AddContainer(int argc, char **argv)
+{
+  char **args, *info[MAX_ARGS_SIZE], *name = argv[1];
+  int stat;
+
+  if (!ValidName(name))
+    return DM_NORMAL;
+
+  /* Check if this cluster already exists. */
+  if ((stat = do_mr_query("get_container", 1, &name, NULL, NULL))
+      == MR_SUCCESS)
+    {
+      Put_message("This container already exists.");
+      return DM_NORMAL;
+    }
+  else if (stat != MR_NO_MATCH)
+    {
+      com_err(program_name, stat, " in AddContainer.");
+      return DM_NORMAL;
+    }
+  if (!(args = AskMCDInfo(SetContainerDefaults(info, name), CONTAINER, FALSE)))
+    {
+      Put_message("Aborted.");
+      FreeInfo(info);
+      return DM_NORMAL;
+    }
+
+  /* Create the new container. */
+  if ((stat = do_mr_query("add_container", CountArgs(args), args, NULL, NULL)))
+    com_err(program_name, stat, " in AddContainer.");
+
+  FreeInfo(info);
+  return DM_NORMAL;
+}
+
+int UpdateContainer(int argc, char **argv)
+{
+  struct mqelem *top;
+  top = GetMCInfo(CONTAINER, argv[1], NULL);
+  QueryLoop(top, NullPrint, RealUpdateContainer, "Update the container");
+
+  FreeQueue(top);
+  return DM_NORMAL;
+}
+
+static void RealUpdateContainer(char **info, Bool junk)
+{
+  int stat;
+  char **args = AskMCDInfo(info, CONTAINER, TRUE);
+
+  if (!args)
+    {
+      Put_message("Aborted.");
+      return;
+    }
+  if ((stat = do_mr_query("update_container", CountArgs(args), args,
+			  NULL, NULL)))
+    com_err(program_name, stat, " in UpdateContainer.");
+  else
+    Put_message("Container successfully updated.");
+}
+
+int DeleteContainer(int argc, char **argv)
+{
+  struct mqelem *top;
+
+  top = GetMCInfo(CONTAINER, argv[1], NULL);
+  QueryLoop(top, PrintClusterInfo, RealDeleteContainer, 
+	    "Delete the container");
+
+  FreeQueue(top);
+  return DM_NORMAL;
+}
+
+static void RealDeleteContainer(char **info, Bool one_container)
+{
+  int stat;
+  char temp_buf[BUFSIZ];
+
+  sprintf(temp_buf,
+	  "Are you sure you want to delete the container %s (y/n) ?",
+	  info[CON_NAME]);
+  if (!one_container || Confirm(temp_buf))
+    {
+      if (CheckAndRemoveMachinesFromContainer(info[CON_NAME], TRUE) 
+	  != SUB_ERROR)
+	{
+	  if ((stat = do_mr_query("delete_container", 1, &info[CON_NAME],
+				  NULL, NULL)))
+	    {
+	      com_err(program_name, stat, " in delete_container.");
+	      sprintf(temp_buf, "Container %s ** NOT ** deleted.", 
+		      info[CON_NAME]);
+	      Put_message(temp_buf);
+	    }
+	  else
+	    {
+	      sprintf(temp_buf, "Container %s successfully deleted.",
+		      info[CON_NAME]);
+	      Put_message(temp_buf);
+	    }
+	}
+    }
+}
+
+int CheckAndRemoveMachinesFromContainer(char *name, Bool ask_first)
+{
+  int stat, ret_value;
+  Bool delete_it;
+  char *args[10], temp_buf[BUFSIZ], *ptr;
+  struct mqelem *top, *elem = NULL;
+  
+  ret_value = SUB_NORMAL;
+  args[0] = name;
+  args[1] = "0";
+  stat = do_mr_query("get_machines_of_container", 2, args, StoreInfo, 
+		     &elem);
+  if (stat && stat != MR_NO_MATCH)
+    {
+      com_err(program_name, stat, " in get_machines_of_container");
+      return DM_NORMAL;
+    }
+  if (stat == MR_SUCCESS)
+    {
+      elem = top = QueueTop(elem);
+      if (ask_first)
+	{
+	  sprintf(temp_buf,
+		  "The container %s has the following machines in it:", name);
+	  Put_message(temp_buf);
+	  while (elem)
+	    {
+	      char **info = elem->q_data;
+	      Print(1, &info[0], (char *) NULL);
+	      elem = elem->q_forw;
+	    }
+	  ptr = "Remove ** ALL ** these machines from this container?";
+
+	  if (YesNoQuestion(ptr, FALSE) == TRUE) /* may return -1. */
+	    delete_it = TRUE;
+	  else
+	    {
+	      Put_message("Aborting...");
+	      FreeQueue(top);
+	      return SUB_ERROR;
+	    }
+	}
+      else
+	delete_it = TRUE;
+
+      if (delete_it)
+	{
+	  elem = top;
+	  while (elem)
+	    {
+	      char **info = elem->q_data;
+	      if ((stat = do_mr_query("delete_machine_from_container",
+				      2, info, NULL, NULL)))
+		{
+		  ret_value = SUB_ERROR;
+		  com_err(program_name, stat, 
+			  " in delete_machine_from_container.");
+		  sprintf(temp_buf, 
+			  "Machine %s ** NOT ** removed from container %s.",
+			  info[0], info[1]);
+		  Put_message(temp_buf);
+		}
+	      elem = elem->q_forw;
+	    }
+	}
+    }
+  return ret_value;
+}
+
+int GetSubContainers(int argc, char **argv)
+{
+  char *args[2];
+  struct mqelem *elem = NULL, *top = NULL;
+  int stat;
+
+  args[0] = argv[1];
+
+  if (YesNoQuestion("Do you want a recursive search?", TRUE) == TRUE)
+    args[1] = "1";
+  else
+    args[1] = "0";
+
+  if (stat = do_mr_query("get_subcontainers_of_container", 2, args,
+			 StoreInfo, &elem))
+    com_err(program_name, stat, " in get_subcontainers_of_container");
+
+  top = QueueTop(elem);
+  Loop(top, ((void (*)(char **)) PrintContainer));
+  FreeQueue(top);
+  return DM_NORMAL;
+}
+
+int MachineToContainerMap(int argc, char **argv)
+{
+  struct mqelem *elem, *top;
+  char *tmpname, temp_buf[256];
+
+  tmpname = canonicalize_hostname(strdup(argv[1]));
+  if (strcasecmp(tmpname, argv[1]) && *argv[1] != '"')
+    {
+      sprintf(temp_buf, "Warning: '%s' canonicalized to '%s'.",
+	      argv[1], tmpname);
+      Put_message(temp_buf);
+    }
+  top = elem = GetMCInfo(CONTMAP, tmpname, NULL);
+
+  Put_message("");
+  while (elem)
+    {
+      char **info = elem->q_data;
+      PrintMContMap(info);
+      elem = elem->q_forw;
+    }
+
+  FreeQueue(top);
+  free(tmpname);
+  return DM_NORMAL;
+}
+
+int AddMachineToContainer(int argc, char **argv)
+{
+  int stat;
+  char *machine, *container, temp_buf[BUFSIZ], *args[10];
+  Bool add_it, one_machine, one_container;
+  struct mqelem *melem, *mtop, *celem, *ctop;
+
+  machine = canonicalize_hostname(strdup(argv[1]));
+  if (strcasecmp(machine, argv[1]) && *argv[1] != '"')
+    {
+      sprintf(temp_buf, "Warning: '%s' canonicalized to '%s'.",
+	      argv[1], machine);
+      Put_message(temp_buf);
+    }
+  container = argv[2];
+
+  celem = ctop = GetMCInfo(CONTAINER, container, NULL);
+  melem = mtop = GetMCInfo(MACHINE, machine, NULL);
+  free(machine);
+
+  one_machine = (QueueCount(mtop) == 1);
+  one_container = (QueueCount(ctop) == 1);
+
+  while (melem)
+    {
+      char **minfo = melem->q_data;
+      while (celem)
+	{
+	  char **cinfo = celem->q_data;
+	  if (one_machine && one_container)
+	    add_it = TRUE;
+	  else
+	    {
+	      sprintf(temp_buf, "Add machine %s to container %s (y/n/q) ?",
+		      minfo[M_NAME], cinfo[CON_NAME]);
+	      switch (YesNoQuestion(temp_buf, FALSE))
+		{
+		case TRUE:
+		  add_it = TRUE;
+		  break;
+		case FALSE:
+		  add_it = FALSE;
+		  break;
+	    default:
+	      Put_message("Aborting...");
+	      FreeQueue(ctop);
+	      FreeQueue(mtop);
+	      return DM_NORMAL;
+		}
+	    }
+	  if (add_it)
+	    {
+	      args[0] = minfo[M_NAME];
+	      args[1] = cinfo[CON_NAME];
+	      stat = do_mr_query("add_machine_to_container", 2, args, NULL, 
+				 NULL);
+	      switch (stat)
+		{
+		case MR_SUCCESS:
+		  break;
+		case MR_EXISTS:
+		  sprintf(temp_buf, "%s is already in container %s",
+			  minfo[M_NAME], cinfo[CON_NAME]);
+		  Put_message(temp_buf);
+		  break;
+		default:
+		  com_err(program_name, stat, " in AddMachineToContainer.");
+		  break;
+		}
+	    }
+	  celem = celem->q_forw;
+	}
+      celem = ctop;
+      melem = melem->q_forw;
+    }
+  FreeQueue(ctop);
+  FreeQueue(mtop);
+  return DM_NORMAL;
+}
+
+int RemoveMachineFromContainer(int argc, char **argv)
+{
+  struct mqelem *elem = NULL;
+  char buf[BUFSIZ], *args[10];
+  int stat;
+
+  args[0] = canonicalize_hostname(strdup(argv[1]));
+  if (strcasecmp(args[0], argv[1]) && *argv[1] != '"')
+    {
+      sprintf(buf, "Warning: '%s' canonicalized to '%s'.",
+	      argv[1], args[0]);
+      Put_message(buf);
+    }
+  args[1] = argv[2];
+  args[2] = NULL;
+
+  stat = do_mr_query("get_machine_to_container_map", 1, args, StoreInfo, 
+		     &elem);
+  if (stat == MR_NO_MATCH)
+    {
+      sprintf(buf, "The machine %s is not in the container %s.",
+	      args[0], args[1]);
+      Put_message(buf);
+      free(args[0]);
+      return DM_NORMAL;
+    }
+  if (stat != MR_SUCCESS)
+    com_err(program_name, stat, " in deleter_machine_from_container");
+
+  elem = QueueTop(elem);
+  QueryLoop(elem, PrintMContMap, RealRemoveMachineFromContainer, 
+	    "Remove this machine from this container");
+  
+  FreeQueue(elem);
+  free(args[0]);
+  return DM_NORMAL;
+}
+
+static void RealRemoveMachineFromContainer(char **info, Bool one_contmap)
+{
+  char temp_buf[BUFSIZ];
+  int stat;
+
+  sprintf(temp_buf, "Remove %s from the container %s",
+	  info[0], info[1]);
+  if (!one_contmap || Confirm(temp_buf))
+    {
+      if ((stat = do_mr_query("delete_machine_from_container", 2,
+			      info, NULL, NULL)))
+	com_err(program_name, stat, " in delete_machine_from_container");
+      else
+	{
+	  sprintf(temp_buf, "%s has been removed from the container %s.",
+		  info[0], info[1]);
+	  Put_message(temp_buf);
+	}
+    }
+  else
+    Put_message("Machine not removed.");
+}
+
+int GetMachinesOfContainer(int argc, char **argv)
+{
+  char *args[2];
+  struct mqelem *elem = NULL, *top = NULL;
+  int stat;
+
+  args[0] = argv[1];
+
+  if (YesNoQuestion("Do you want a recursive search?", TRUE) == TRUE)
+    args[1] = "1";
+  else
+    args[1] = "0";
+
+  if (stat = do_mr_query("get_machines_of_container", 2, args,
+			 StoreInfo, &elem))
+    com_err(program_name, stat, " in get_machines_of_container");
+
+  top = QueueTop(elem);
+  Loop(top, ((void (*)(char **)) PrintMContMap));
+  FreeQueue(top);
+  return DM_NORMAL;
 }

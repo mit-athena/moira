@@ -21,7 +21,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/stella/stella.c,v 1.9 2000-12-20 09:39:46 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/stella/stella.c,v 1.10 2001-05-31 21:34:48 zacheiss Exp $");
 
 struct owner_type {
   int type;
@@ -51,9 +51,11 @@ struct string_list {
 /* flags from command line */
 int info_flag, update_flag, create_flag, delete_flag, list_map_flag;
 int update_alias_flag, update_map_flag, verbose, noauth;
+int list_container_flag, update_container_flag;
 
 struct string_list *alias_add_queue, *alias_remove_queue;
 struct string_list *map_add_queue, *map_remove_queue;
+struct string_list *container_add_queue, *container_remove_queue;
 
 char *hostname, *whoami;
 
@@ -66,6 +68,7 @@ void usage(char **argv);
 int store_host_info(int argc, char **argv, void *hint);
 void show_host_info(char **argv);
 int show_machine_in_cluster(int argc, char **argv, void *hint);
+int show_machine_in_container(int argc, char **argv, void *hint);
 struct owner_type *parse_member(char *s);
 struct string_list *add_to_string_list(struct string_list *old_list, char *s);
 int wrap_mr_query(char *handle, int argc, char **argv,
@@ -81,11 +84,13 @@ int main(int argc, char **argv)
   /* clear all flags & lists */
   info_flag = update_flag = create_flag = list_map_flag = update_map_flag = 0;
   update_alias_flag = verbose = noauth = 0;
+  list_container_flag = update_container_flag = 0;
   newname = address = network = h_status = vendor = model = NULL;
   os = location = contact = billing_contact = adm_cmt = op_cmt = NULL;
   owner = NULL;
   alias_add_queue = alias_remove_queue = NULL;
   map_add_queue = map_remove_queue = NULL;
+  container_add_queue = container_remove_queue = NULL;
   whoami = argv[0];
 
   success = 1;
@@ -250,6 +255,26 @@ int main(int argc, char **argv)
 	  }
 	  else if (argis("lm", "listmap"))
 	    list_map_flag++;
+	  else if (argis("acn", "addcontainer")) {
+	    if (arg - argv < argc - 1) {
+	      arg++;
+	      container_add_queue = 
+		add_to_string_list(container_add_queue, *arg);
+	    } else
+	      usage(argv);
+	    update_container_flag++;
+	  }
+	  else if (argis("dcn", "deletecontainer")) {
+	    if (arg - argv < argc - 1) {
+	      arg++;
+	      container_remove_queue =
+		add_to_string_list(container_remove_queue, *arg);
+	    } else
+	      usage(argv);
+	    update_container_flag++;
+	  }
+	  else if (argis("lcn", "listcontainer"))
+	    list_container_flag++;
 	  else if (argis("n", "noauth"))
 	    noauth++;
 	  else if (argis("v", "verbose"))
@@ -278,12 +303,13 @@ int main(int argc, char **argv)
   /* default to info_flag if nothing else was specified */
   if(!(info_flag   || update_flag   || create_flag     || \
        delete_flag || list_map_flag || update_map_flag || \
-       update_alias_flag)) {
+       update_alias_flag || update_container_flag || \
+       list_container_flag)) {
     info_flag++;
   }
 
   /* fire up Moira */
-  status = mrcl_connect(server, "stella", 6, !noauth);
+  status = mrcl_connect(server, "stella", 7, !noauth);
   if (status == MRCL_AUTH_ERROR)
     {
       com_err(whoami, 0, "Try the -noauth flag if you don't "
@@ -558,6 +584,50 @@ int main(int argc, char **argv)
     }
   }
 
+  /* add container mappings */
+  if (container_add_queue) {
+    struct string_list *q = container_add_queue;
+
+    while (q) {
+      char *containername = q->string;
+      char *args[2];
+
+      args[0] = canonicalize_hostname(strdup(hostname));
+      args[1] = containername;
+      status = wrap_mr_query("add_machine_to_container", 2, args,
+			     NULL, NULL);
+
+      if (status) {
+	com_err(whoami, status, "while adding container mapping");
+	exit(1);
+      }
+
+      q = q->next;
+    }
+  }
+
+  /* delete container mappings */
+  if (container_remove_queue) {
+    struct string_list *q = container_remove_queue;
+
+    while (q) {
+      char *containername = q->string;
+      char *args[2];
+
+      args[0] = canonicalize_hostname(strdup(hostname));
+      args[1] = containername;
+      status = wrap_mr_query("delete_machine_from_container", 2, args,
+			     NULL, NULL);
+
+      if (status) {
+	com_err(whoami, status, "while deleting container mapping");
+	exit(1);
+      }
+
+      q = q->next;
+    }
+  }
+
   /* display list info if requested to */
   if (info_flag) {
     struct mqelem *elem = NULL;
@@ -586,6 +656,21 @@ int main(int argc, char **argv)
       if (status != MR_NO_MATCH) {
         com_err(whoami, status, "while getting cluster mappings");
         exit(1);
+      }
+  }
+
+  /* list container mappings if needed */
+  if (list_container_flag) {
+    char *argv[1];
+
+    argv[0] = canonicalize_hostname(strdup(hostname));
+    status = wrap_mr_query("get_machine_to_container_map", 1, argv,
+			   show_machine_in_container, NULL);
+
+    if (status)
+      if (status != MR_NO_MATCH) {
+	com_err(whoami, status, "while getting container mappings");
+	exit(1);
       }
   }
 
@@ -630,10 +715,13 @@ void usage(char **argv)
 	  "-N   | -network network");
   fprintf(stderr, USAGE_OPTIONS_FORMAT, "-am  | -addmap cluster",
 	  "-dm  | deletemap cluster");
+  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-acn | -addcontainer container",
+	  "-dcn | -deletecontainer container");
   fprintf(stderr, USAGE_OPTIONS_FORMAT, "-lm  | -listmap",
-	  "-db  | -database host[:port]");
+	  "-lcn | -listcontainer");
   fprintf(stderr, USAGE_OPTIONS_FORMAT, "-v   | -verbose",
 	  "-n   | -noauth");
+  fprintf(stderr, "  %-39s\n" , "-db  | -database host[:port]");
   exit(1);
 }
 
@@ -727,6 +815,13 @@ void show_host_info(char **argv)
 int show_machine_in_cluster(int argc, char **argv, void *hint)
 {
   printf("Machine: %-30s Cluster: %-30s\n", argv[0], argv[1]);
+
+  return MR_CONT;
+}
+
+int show_machine_in_container(int argc, char **argv, void *hint)
+{
+  printf("Machine: %-30s Container: %-25s\n", argv[0], argv[1]); 
 
   return MR_CONT;
 }

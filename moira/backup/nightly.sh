@@ -51,6 +51,8 @@ echo -n "2"
 mv backup_1 backup_2
 echo -n "1"
 mv in_progress backup_1
+echo
+/bin/df /moira/moira.log | /usr/ucb/tail -1
 echo 
 echo -n "deleting last backup"
 rm -rf stale

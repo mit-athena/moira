@@ -1,8 +1,8 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.h,v $
- *	$Author: wesommer $
+ *	$Author: mar $
  *	$Locker:  $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.h,v 1.3 1987-09-03 03:04:18 wesommer Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.h,v 1.4 1988-08-09 17:50:54 mar Exp $
  */
 
 #include <stdio.h>
@@ -48,9 +48,9 @@ struct alias {
 #define MI_TIMEOUT                    90
 #define LASTNAME_TIMEOUT              90
 #define MITID_TIMEOUT                 90
-#define USERNAME_TIMEOUT              90 /* This should not be too long */
+#define USERNAME_TIMEOUT             180 /* This should not be too long */
 #define OLD_PASSWORD_TIMEOUT          90
-#define NEW_PASSWORD_TIMEOUT          90 /* Neither should this */
+#define NEW_PASSWORD_TIMEOUT         180 /* Neither should this */
 #define REENTER_PASSWORD_TIMEOUT      90
 #define YN_TIMEOUT                    90
 #define TIMER_TIMEOUT                 90 /* default timeout for timer_on() */

@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.46 1989-10-26 14:51:36 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.47 1989-12-28 17:21:04 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_qsupport_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.46 1989-10-26 14:51:36 mar Exp $";
+static char *rcsid_qsupport_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.47 1989-12-28 17:21:04 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -778,10 +778,9 @@ setup_dfil(q, argv, cl)
 
     id = *(int *)argv[0];
 ##  range of q is nfsquota
-##  range of fs is filesys
 ##  range of n is nfsphys
 ##  repeat replace n (allocated=n.allocated-sum(q.quota where q.filsys_id=@id))
-##	where n.nfsphys_id = fs.phys_id and fs.filsys_id = @id
+##	where n.nfsphys_id = filesys.phys_id and filesys.filsys_id = @id
 
 ##  repeat delete q where q.filsys_id = @id
 ##  repeat delete fsgroup where fsgroup.filsys_id = @id
@@ -863,16 +862,14 @@ client *cl;
 ##  char *name;
 
     name = argv[1];
-##  range of s is strings
-##  repeat retrieve (id = s.string_id) where s.string = @name
-##  inquire_equel (rowcount = "rowcount")
-    if (rowcount == 0) {
+    if (name_to_id(name, "STRING", &id) != SMS_SUCCESS) {
 	if (q->type != APPEND) return(SMS_STRING);
 ##	range of v is values
 ##	retrieve (id = v.value) where v.#name = "strings_id"
 	id++;
 ##	replace v (value = id) where v.#name = "strings_id"
 ##	append to strings (string_id = id, string = name)
+	cache_entry(name, "STRING", id);
     }
     if (ingres_errno) return(sms_errcode);
     *(int *)argv[1] = id;
@@ -1013,9 +1010,8 @@ set_mach_modtime_by_id(q, argv, cl)
     who = cl->client_id;
 
     id = *(int *)argv[0];
-##  range of m is machine
-##  repeat replace m (modtime = "now", modby = @who, modwith = @entity)
-##	 where m.mach_id = @id
+##  repeat replace machine (modtime = "now", modby = @who, modwith = @entity)
+##	 where machine.mach_id = @id
     return(SMS_SUCCESS);
 ##}
 
@@ -1037,9 +1033,8 @@ set_cluster_modtime_by_id(q, argv, cl)
     who = cl->client_id;
 
     id = *(int *)argv[0];
-##  range of c is cluster
-##  repeat replace c (modtime = "now", modby = @who, modwith = @entity)
-##	 where c.clu_id = @id
+##  repeat replace cluster (modtime = "now", modby = @who, modwith = @entity)
+##	 where cluster.clu_id = @id
     return(SMS_SUCCESS);
 ##}
 
@@ -1150,38 +1145,28 @@ followup_fix_modby(q, sq, v, action, actarg, cl)
     register int (*action)();
     register int actarg;
     client *cl;
-##{
+{
     register int i, j;
     char **argv, *malloc();
-##  int id, rowcount;
-##  char *name;
+    int id, status;
 
     i = q->vcnt - 2;
     while (sq_get_data(sq, &argv)) {
 	id = atoi(argv[i]);
-	free(argv[i]);
-	argv[i] = malloc(256);
-	name = argv[i];
 	if (id > 0)
-##	  repeat retrieve (name = users.login) where users.users_id = @id
-	else {
-	    id = -id;
-##	    repeat retrieve (name = strings.string) where strings.string_id = @id
-	    id = -id;
-	}
-##	inquire_equel(rowcount = "rowcount")
-	if (rowcount != 1) {
-	    sprintf(argv[i], "#%d", id);
-	}
+	  status = id_to_name(id, "USER", &argv[i]);
+	else
+	  status = id_to_name(-id, "STRING", &argv[i]);
+	if (status && status != SMS_NO_MATCH)
+	  return(status);
 	(*action)(q->vcnt, argv, actarg);
 	for (j = 0; j < q->vcnt; j++)
 	  free(argv[j]);
 	free(argv);
     }
     sq_destroy(sq);
-    if (ingres_errno) return(sms_errcode);
     return(SMS_SUCCESS);
-##}
+}
 
 
 /**
@@ -1243,11 +1228,10 @@ followup_gpob(q, sq, v, action, actarg, cl)
     register int (*action)();
     int actarg;
     client *cl;
-##{
+{
     char **argv, *index();
     char *ptype, *p;
-##  char box[129], *name;
-##  int mid, sid, rowcount;
+    int mid, sid, status;
 
     /* for each row */
     while (sq_get_data(sq, &argv)) {
@@ -1257,41 +1241,29 @@ followup_gpob(q, sq, v, action, actarg, cl)
 	*p++ = 0;
 	mid = atoi(argv[2]);
 	sid = atoi(p);
-	free(argv[2]);
 
 	if (!strcmp(ptype, "POP")) {
-##	    repeat retrieve (box=machine.#name) where machine.mach_id=@mid
-##	    inquire_equel(rowcount = "rowcount")
-	    if (rowcount != 1)
+	    status = id_to_name(mid, "MACHINE", &argv[2]);
+	    if (status == SMS_NO_MATCH)
 	      return(SMS_MACHINE);
 	} else if (!strcmp(ptype, "SMTP")) {
-##	    repeat retrieve (box=strings.string) where strings.string_id=@sid
-##	    inquire_equel(rowcount = "rowcount")
-	    if (rowcount != 1)
+	    status = id_to_name(sid, "STRING", &argv[2]);
+	    if (status == SMS_NO_MATCH)
 	      return(SMS_STRING);
 	} else /* ptype == "NONE" */ {
 	    goto skip;
 	}
+	if (status) return(status);
 
 	if (!strcmp(q->shortname, "gpob")) {
 	    sid = atoi(argv[4]);
-	    free(argv[4]);
-	    argv[4] = malloc(256);
-	    name = argv[4];
 	    if (sid > 0)
-##	      repeat retrieve (name = users.login) where users.users_id = @sid
-	    else {
-	      sid = -sid;
-##	      repeat retrieve (name = strings.string) 
-##		  where strings.string_id = @sid
-	      sid = -sid;
-	    }
-##	    inquire_equel(rowcount = "rowcount")
-	    if (rowcount != 1)
-	      sprintf(name, "#%d", sid);
+	      status = id_to_name(sid, "USER", &argv[4]);
+	    else
+	      status = id_to_name(-sid, "STRING", &argv[4]);
 	}
+	if (status && status != SMS_NO_MATCH) return(status);
 
-	argv[2] = box;
 	(*action)(q->vcnt, argv, actarg);
     skip:
 	/* free saved data */
@@ -1303,7 +1275,7 @@ followup_gpob(q, sq, v, action, actarg, cl)
 
     sq_destroy(sq);
     return (SMS_SUCCESS);
-##}
+}
 
 
 /* followup_glin: fix the ace_name in argv[8].  argv[7] will contain the
@@ -1319,11 +1291,9 @@ followup_glin(q, sq, v, action, actarg, cl)
     register int (*action)();
     int actarg;
     client *cl;
-##{
+{
     char **argv, *malloc(), *realloc(), *type;
-##  char *name;
-##  int id, rowcount;
-    int i, idx;
+    int id, i, idx, status;
 
     idx = 8;
     if (!strcmp(q->shortname, "gsin"))
@@ -1333,45 +1303,33 @@ followup_glin(q, sq, v, action, actarg, cl)
 	sms_trim_args(q->vcnt, argv);
 
 	id = atoi(argv[i = q->vcnt - 2]);
-	free(argv[i]);
-	name = argv[i] = malloc(256);
 	if (id > 0)
-##	  repeat retrieve (name = users.login) where users.users_id = @id
-	else {
-	  id = -id;
-##	  repeat retrieve (name = strings.string) where strings.string_id = @id
-	  id = -id;
-	}
-##	inquire_equel(rowcount = "rowcount")
-	if (rowcount != 1)
-	  sprintf(argv[i], "#%d", id);
+	  status = id_to_name(id, "USER", &argv[i]);
+	else
+	  status = id_to_name(-id, "STRING", &argv[i]);
+	if (status && status != SMS_NO_MATCH)
+	  return(status);
 
 	id = atoi(argv[idx]);
 	type = argv[idx - 1];
-	if ((name = malloc(33)) == NULL)
-	    return(SMS_NO_MEM);
 
 	if (!strcmp(type, "LIST")) {
-##	    repeat retrieve (name = list.#name) where list.list_id = @id
-##	    inquire_equel(rowcount = "rowcount")
-	    if (rowcount != 1)
-		strcpy(name, "???");
+	    status = id_to_name(id, "LIST", &argv[idx]);
 	} else if (!strcmp(type, "USER")) {
-##	    repeat retrieve (name = users.login) where users.users_id = @id
-##	    inquire_equel(rowcount = "rowcount")
-	    if (rowcount != 1)
-		strcpy(name, "???");
+	    status = id_to_name(id, "USER", &argv[idx]);
 	} else if (!strcmp(type, "KERBEROS")) {
-##	    repeat retrieve (name = strings.string) where strings.string_id = @id
-##	    inquire_equel(rowcount = "rowcount")
-	    if (rowcount != 1)
-		strcpy(name, "???");
+	    status = id_to_name(id, "STRING", &argv[idx]);
 	} else if (!strcmp(type, "NONE")) {
-	    strcpy(name, "NONE");
-	} else
-	  strcpy(name, "???");
-	free(argv[idx]);
-	argv[idx] = name;
+	    status = 0;
+	    free(argv[idx]);
+	    argv[idx] = strsave("NONE");
+	} else {
+	    status = 0;
+	    free(argv[idx]);
+	    argv[idx] = strsave("???");
+	}
+	if (status && status != SMS_NO_MATCH)
+	  return(status);
 
 	if (!strcmp(q->shortname, "glin") && atoi(argv[6]) == -1) {
 	    argv[6] = realloc(argv[6], strlen(UNIQUE_GID) + 1);
@@ -1389,7 +1347,7 @@ followup_glin(q, sq, v, action, actarg, cl)
 
     sq_destroy(sq);
     return (SMS_SUCCESS);
-##}
+}
 
 
 /* followup_gnfq: Fix the directory name & modby fields
@@ -1409,6 +1367,7 @@ followup_gnfq(q, sq, v, action, actarg, cl)
     char **argv, *malloc();
 ##  int id, rowcount;
 ##  char *name, *label;
+    int status;
 
     while (sq_get_data(sq, &argv)) {
 	id = atoi(argv[3]);
@@ -1427,20 +1386,12 @@ followup_gnfq(q, sq, v, action, actarg, cl)
 	}
 
 	id = atoi(argv[6]);
-	free(argv[6]);
-	argv[6] = malloc(256);
-	name = argv[6];
 	if (id > 0)
-##	  repeat retrieve (name = users.login) where users.users_id = @id
-	else {
-	    id = -id;
-##	    repeat retrieve (name = strings.string) where strings.string_id = @id
-	    id = -id;
-	}
-##	inquire_equel(rowcount = "rowcount")
-	if (rowcount != 1) {
-	    sprintf(argv[6], "#%d", id);
-	}
+	  status = id_to_name(id, "USER", &argv[6]);
+	else
+	  status = id_to_name(-id, "STRING", &argv[6]);
+	if (status && status != SMS_NO_MATCH)
+	  return(status);
 	(*action)(q->vcnt, argv, actarg);
 	for (j = 0; j < q->vcnt; j++)
 	  free(argv[j]);
@@ -1489,54 +1440,40 @@ followup_gzcl(q, sq, v, action, actarg, cl)
     register int (*action)();
     int actarg;
     client *cl;
-##{
-##  char *name;
-##  int rowcount, id;
+{
+    int id, i, status;
     char **argv;
-    int i;
 
     while (sq_get_data(sq, &argv)) {
 	sms_trim_args(q->vcnt, argv);
 
 	id = atoi(argv[i = q->vcnt - 2]);
-	free(argv[i]);
-	name = argv[i] = malloc(256);
 	if (id > 0)
-##	  repeat retrieve (name = users.login) where users.users_id = @id
-	else {
-	  id = -id;
-##	  repeat retrieve (name = strings.string) where strings.string_id = @id
-	  id = -id;
-	}
-##	inquire_equel(rowcount = "rowcount")
-	if (rowcount != 1)
-	  sprintf(argv[i], "#%d", id);
+	  status = id_to_name(id, "USER", &argv[i]);
+	else
+	  status = id_to_name(-id, "STRING", &argv[i]);
+	if (status && status != SMS_NO_MATCH)
+	  return(status);
 
 	for (i = 1; i < 8; i+=2) {
 	    id = atoi(argv[i+1]);
-	    free(argv[i+1]);
-	    if ((name = argv[i+1] = malloc(33)) == NULL)
-	      return(SMS_NO_MEM);
 	    if (!strcmp(argv[i], "LIST")) {
-##		repeat retrieve (name = list.#name) where list.list_id = @id
-##		inquire_equel(rowcount = "rowcount")
-		if (rowcount != 1)
-		  strcpy(name, "???");
+		status = id_to_name(id, "LIST", &argv[i+1]);
 	    } else if (!strcmp(argv[i], "USER")) {
-##		repeat retrieve (name = users.login) where users.users_id = @id
-##		inquire_equel(rowcount = "rowcount")
-		if (rowcount != 1)
-		  strcpy(name, "???");
+		status = id_to_name(id, "USER", &argv[i+1]);
 	    } else if (!strcmp(argv[i], "KERBEROS")) {
-##		repeat retrieve (name = strings.string) where strings.string_id = @id
-##		inquire_equel(rowcount = "rowcount")
-		if (rowcount != 1)
-		  strcpy(name, "???");
+		status = id_to_name(id, "STRING", &argv[i+1]);
 	    } else if (!strcmp(argv[i], "NONE")) {
-		strcpy(name, "NONE");
+		status = 0;
+		free(argv[i+1]);
+		argv[i+1] = strsave("NONE");
 	    } else {
-		strcpy(name, "???");
+		status = 0;
+		free(argv[i+1]);
+		argv[i+1] = strsave("???");
 	    }
+	    if (status && status != SMS_NO_MATCH)
+	      return(status);
 	}
 
 	/* send the data */
@@ -1549,7 +1486,7 @@ followup_gzcl(q, sq, v, action, actarg, cl)
     }
     sq_destroy(sq);
     return(SMS_SUCCESS);
-##}
+}
 
 
 /* followup_gsha:
@@ -1562,53 +1499,39 @@ followup_gsha(q, sq, v, action, actarg, cl)
     register int (*action)();
     int actarg;
     client *cl;
-##{
-##  char *name;
-##  int rowcount, id;
+{
     char **argv;
-    int i;
+    int i, id, status;
 
     while (sq_get_data(sq, &argv)) {
 	sms_trim_args(q->vcnt, argv);
 
 	id = atoi(argv[4]);
-	free(argv[4]);
-	name = argv[4] = malloc(256);
 	if (id > 0)
-##	  repeat retrieve (name = users.login) where users.users_id = @id
-	else {
-	  id = -id;
-##	  repeat retrieve (name = strings.string) where strings.string_id = @id
-	  id = -id;
-	}
-##	inquire_equel(rowcount = "rowcount")
-	if (rowcount != 1)
-	  sprintf(argv[4], "#%d", id);
+	  status = id_to_name(id, "USER", &argv[4]);
+	else
+	  status = id_to_name(-id, "STRING", &argv[4]);
+	if (status && status != SMS_NO_MATCH)
+	  return(status);
 
 	id = atoi(argv[2]);
-	free(argv[2]);
-	if ((name = argv[2] = malloc(33)) == NULL)
-	  return(SMS_NO_MEM);
 	if (!strcmp(argv[1], "LIST")) {
-##	    repeat retrieve (name = list.#name) where list.list_id = @id
-##	    inquire_equel(rowcount = "rowcount")
-	    if (rowcount != 1)
-	      strcpy(name, "???");
+	    status = id_to_name(id, "LIST", &argv[2]);
 	} else if (!strcmp(argv[1], "USER")) {
-##	    repeat retrieve (name = users.login) where users.users_id = @id
-##	    inquire_equel(rowcount = "rowcount")
-	    if (rowcount != 1)
-	      strcpy(name, "???");
+	    status = id_to_name(id, "USER", &argv[2]);
 	} else if (!strcmp(argv[1], "KERBEROS")) {
-##	    repeat retrieve (name = strings.string) where strings.string_id = @id
-##	    inquire_equel(rowcount = "rowcount")
-	    if (rowcount != 1)
-	      strcpy(name, "???");
+	    status = id_to_name(id, "STRING", &argv[2]);
 	} else if (!strcmp(argv[1], "NONE")) {
-	    strcpy(name, "NONE");
+	    status = 0;
+	    free(argv[2]);
+	    argv[2] = strsave("NONE");
 	} else {
-	    strcpy(name, "???");
+	    status = 0;
+	    free(argv[2]);
+	    argv[2] = strsave("???");
 	}
+	if (status && status != SMS_NO_MATCH)
+	  return(status);
 
 	/* send the data */
 	(*action)(q->vcnt, argv, actarg);
@@ -1620,7 +1543,7 @@ followup_gsha(q, sq, v, action, actarg, cl)
     }
     sq_destroy(sq);
     return(SMS_SUCCESS);
-##}
+}
 
 
 
@@ -1640,6 +1563,7 @@ int set_pobox(q, argv, cl)
 ##{
 ##  int user, id, rowcount;
 ##  char *box, potype[9];
+    int status;
 
     box = argv[2];
     user = *(int *)argv[0];
@@ -1651,26 +1575,25 @@ int set_pobox(q, argv, cl)
       set_pop_usage(id, -1);
 
     if (!strcmp(argv[1], "POP")) {
-##	repeat retrieve (id=machine.mach_id) where machine.name=uppercase(@box)
-##	inquire_equel(rowcount = "rowcount")
-	if (rowcount != 1)
-	    return(SMS_MACHINE);
+	status = name_to_id(box, "MACHINE", &id);
+	if (status == SMS_NO_MATCH)
+	  return(SMS_MACHINE);
+	else if (status)
+	  return(status);
 ##	repeat replace users (#potype = "POP", pop_id = @id)
 ##		where users.users_id = @user
 	set_pop_usage(id, 1);
     } else if (!strcmp(argv[1], "SMTP")) {
 	if (index(box, '/') || index(box, '|'))
 	  return(SMS_BAD_CHAR);
-##      range of s is strings
-##      repeat retrieve (id = s.string_id) where s.string = @box
-##      inquire_equel (rowcount = "rowcount")
-	if (rowcount == 0) {
-##          range of v is values
-##          repeat retrieve (id = v.value) where v.name = "strings_id"
+	status = name_to_id(box, "STRING", &id);
+	if (status == SMS_NO_MATCH) {
+##          repeat retrieve (id = values.value) where values.name = "strings_id"
 	    id++;
-##          repeat replace v (value = @id) where v.name = "strings_id"
+##          repeat replace values (value = @id) where values.name = "strings_id"
 ##	    append to strings (string_id = id, string = box)
-	}
+	} else if (status)
+	  return(status);
 ##	repeat replace users (#potype = "SMTP", box_id = @id) 
 ##	       where users.users_id = @user
     } else /* argv[1] == "NONE" */ {
@@ -1702,7 +1625,7 @@ get_list_info(q, aargv, cl, action, actarg)
 ##  char maillist[5], group[5], gid[6], acl_name[256], desc[256], modtime[27];
 ##  char modby[256], modwith[9];
 ##  int id, rowcount, acl_id, hid, modby_id;
-    int returned;
+    int returned, status;
     struct save_queue *sq, *sq_create();
 
     returned = rowcount = 0;
@@ -1720,8 +1643,7 @@ get_list_info(q, aargv, cl, action, actarg)
 
     argv[0] = listname; argv[1] = active; argv[2] = public; argv[3] = hidden;
     argv[4] = maillist; argv[5] = group; argv[6] = gid; argv[7] = acl_type;
-    argv[8] = acl_name; argv[9] = desc; argv[10] = modtime; argv[11] = modby;
-    argv[12] = modwith;
+    argv[9] = desc; argv[10] = modtime; argv[12] = modwith;
 
     while (sq_get_data(sq, &id)) {
 	if (id == 0)
@@ -1740,51 +1662,40 @@ get_list_info(q, aargv, cl, action, actarg)
 	if (atoi(gid) == -1)
 	    argv[6] = UNIQUE_GID;
 
+	argv[8] = malloc(0);
 	if (!strcmp(acl_type, "LIST")) {
-##	    repeat retrieve (acl_name = l.#name) where l.list_id = @acl_id
-##	    inquire_equel(rowcount = "rowcount")
-	    if (rowcount != 1)
-		strcpy(acl_name, "???");
+	    status = id_to_name(acl_id, "LIST", &argv[8]);
 	} else if (!strcmp(acl_type, "USER")) {
-##	    repeat retrieve (acl_name = users.#login)
-##		where users.users_id = @acl_id
-##	    inquire_equel(rowcount = "rowcount")
-	    if (rowcount != 1)
-		strcpy(acl_name, "???");
+	    status = id_to_name(acl_id, "USER", &argv[8]);
 	} else if (!strcmp(acl_type, "KERBEROS")) {
-##	    repeat retrieve (acl_name = strings.string)
-##		where strings.string_id = @acl_id
-##	    inquire_equel(rowcount = "rowcount")
-	    if (rowcount != 1)
-		strcpy(acl_name, "???");
+	    status = id_to_name(acl_id, "STRING", &argv[8]);
 	} else if (!strcmp(acl_type, "NONE")) {
-	    strcpy(acl_name, "NONE");
-	} else
-	  strcpy(acl_name, "???");
-
-	if (modby_id > 0)
-##	  repeat retrieve (modby = users.login) where users.users_id = @modby_id
-	else {
-	    modby_id = -modby_id;
-##	     repeat retrieve (modby = strings.string) 
-##		where strings.string_id = @modby_id
-	    modby_id = -modby_id;
+	    status = 0;
+	    free(argv[8]);
+	    argv[8] = strsave("NONE");
+	} else {
+	    status = 0;
+	    free(argv[8]);
+	    argv[8] = strsave("???");
 	}
-##	inquire_equel(rowcount = "rowcount")
-	if (rowcount != 1)
-	  sprintf(modby, "#%d", modby_id);
-	if (ingres_errno) return(sms_errcode);
+	if (status && status != SMS_NO_MATCH) return(status);
+
+	argv[11] = malloc(0);
+	if (modby_id > 0)
+	  status = id_to_name(modby_id, "USER", &argv[11]);
+	else
+	  status = id_to_name(-modby_id, "STRING", &argv[11]);
+	if (status && status != SMS_NO_MATCH) return(status);
 
 	sms_trim_args(q->vcnt, argv);
 	returned++;
 	(*action)(q->vcnt, argv, actarg);
+	free(argv[8]);
+	free(argv[11]);
     }
 
     sq_destroy(sq);
     if (ingres_errno) return(sms_errcode);
-##  repeat replace tblstats (retrieves = tblstats.retrieves + 1)
-##	where tblstats.#table = "list"
-
     return (SMS_SUCCESS);
 ##}
 
@@ -1801,11 +1712,12 @@ int add_member_to_list(q, argv, cl)
     client *cl;
 ##{
 ##  int id, lid, mid, exists, error, who, ref;
-##  char *mtype, dtype[9], buf[256], *entity;
+##  char *mtype, dtype[9], *entity;
     int ancestors[MAXLISTDEPTH], aref[MAXLISTDEPTH], acount, a;
     int descendants[MAXLISTDEPTH], dref[MAXLISTDEPTH], dcount, d;
+    int status;
     char *dtypes[MAXLISTDEPTH];
-    char *iargv[3];
+    char *iargv[3], *buf;
 
 ##  range of m is imembers
     lid = *(int *)argv[0];
@@ -1818,9 +1730,14 @@ int add_member_to_list(q, argv, cl)
     if (exists)
       return(SMS_EXISTS);
     if (!strcasecmp(mtype, "STRING")) {
-##	repeat retrieve (buf = strings.string) where strings.string_id = @mid
-	if (index(buf, '/') || index(buf, '|'))
-	  return(SMS_BAD_CHAR);
+	buf = malloc(0);
+	status = id_to_name(mid, "STRING", &buf);
+	if (status) return(status);
+	if (index(buf, '/') || index(buf, '|')) {
+	    free(buf);
+	    return(SMS_BAD_CHAR);
+	}
+	free(buf);
     }
 
     ancestors[0] = lid;
@@ -2068,7 +1985,6 @@ int get_ace_use(q, argv, cl, action, actarg)
     if (!strcmp(atype, "RLIST")) {
 	sq_save_data(sq, aid);
 	/* get all the list_id's of containing lists */
-##	range of m is imembers
 ##	repeat retrieve (listid = m.list_id)
 ##		where m.member_type = "LIST" and m.member_id = @id {
 	    sq_save_unique_data(sq, listid);
@@ -2441,8 +2357,6 @@ int qualified_get(q, argv, action, actarg, start, range, field, flags)
 ##  }
     if (ingres_errno) return(sms_errcode);
 ##  inquire_equel(rowcount = "rowcount")
-##  repeat replace tblstats (retrieves = tblstats.retrieves + 1)
-##	where tblstats.#table = @rtbl
     if (rowcount == 0)
       return(SMS_NO_MATCH);
     return(SMS_SUCCESS);
@@ -2489,8 +2403,6 @@ int qualified_get_serverhost(q, argv, cl, action, actarg)
 ##  }
     if (ingres_errno) return(sms_errcode);
 ##  inquire_equel(rowcount = "rowcount")
-##  repeat replace tblstats (retrieves = tblstats.retrieves + 1)
-##	where tblstats.#table = "serverhosts"
     if (rowcount == 0)
       return(SMS_NO_MATCH);
     return(SMS_SUCCESS);
@@ -2682,6 +2594,8 @@ register_user(q, argv, cl)
     com_err(whoami, 0, "quota of %d assigned", quota);
     if (ingres_errno) return(sms_errcode);
 
+    cache_entry(login, "USER", users_id);
+
 ##  repeat replace tblstats (updates = tblstats.updates + 1, modtime = "now")
 ##	where tblstats.table = "users"
 ##  repeat replace tblstats (appends = tblstats.appends + 1, modtime = "now")
@@ -2711,9 +2625,8 @@ int count;
 ##  int mach_id = id;
 ##  int n = count;
 
-##  range of sh is serverhosts
-##  repeat replace sh (value1 = sh.value1 + @n)
-##         where sh.service = "POP" and sh.#mach_id = @mach_id
+##  repeat replace serverhosts (value1 = serverhosts.value1 + @n)
+##         where serverhosts.service = "POP" and serverhosts.#mach_id = @mach_id
 
     if (ingres_errno) return(sms_errcode);
     return(SMS_SUCCESS);
@@ -2871,17 +2784,34 @@ validate_id(argv, vo)
 ##  char *table;
 ##  char *namefield;
 ##  char *idfield;
-##  int id;
-##  int rowcount;
+##  int id, rowcount;
+    int status;
     register char *c;
+
 
     name = argv[vo->index];
     table = vo->table;
-    /* minor kludge to upcasify machine names */
-    if (!strcmp(table, "machine"))
-	for (c = name; *c; c++) if (islower(*c)) *c = toupper(*c);
     namefield = vo->namefield;
     idfield = vo->idfield;
+
+    if ((!strcmp(table, "users") && !strcmp(namefield, "login")) ||
+	!strcmp(table, "machine") ||
+	!strcmp(table, "filesys") ||
+	!strcmp(table, "list") ||
+	!strcmp(table, "cluster") ||
+	!strcmp(table, "string")) {
+	if (!strcmp(table, "machine"))
+	  for (c = name; *c; c++) if (islower(*c)) *c = toupper(*c);
+	status = name_to_id(name, table, &id);
+	if (status == 0) {
+	    *(int *)argv[vo->index] = id;
+	    return(SMS_EXISTS);
+	} else if (status == SMS_NO_MATCH || status == SMS_NOT_UNIQUE)
+	  return(vo->error);
+	else
+	  return(status);
+    }
+
     if (!strcmp(namefield, "uid")) {
 ##    retrieve (id = table.idfield) where table.namefield = int4(name)
       if (ingres_errno) return(sms_errcode);
@@ -2943,6 +2873,7 @@ struct valobj *vo;
 ##{
 ##  char *name, *table, *namefield, *idfield;
 ##  int id;
+    int status;
     register char *c;
 
     c = name = argv[vo->index];
@@ -2966,9 +2897,8 @@ struct valobj *vo;
 	else
 	  return(SMS_EXISTS);
     }
-##  retrieve (id = table.idfield) where table.namefield = name
-    if (ingres_errno) return(sms_errcode);
-    if (id == -1 || id == *(int *)argv[vo->index - 1])
+    status = name_to_id(name, table, &id);
+    if (status == SMS_NO_MATCH || id == *(int *)argv[vo->index - 1])
       return(SMS_EXISTS);
     else
       return(vo->error);
@@ -2993,10 +2923,8 @@ validate_type(argv, vo)
     /* uppercase type fields */
     for (c = value; *c; c++) if (islower(*c)) *c = toupper(*c);
 
-##  range of a is alias
-##  repeat retrieve (exists = any(a.trans where a.name = @typename and
-##				      a.type = "TYPE" and
-##				      a.trans = @value))
+##  repeat retrieve (exists = any(alias.trans where alias.name = @typename and
+##				  alias.type = "TYPE" and alias.trans = @value))
     if (ingres_errno) return(sms_errcode);
     return (exists ? SMS_EXISTS : vo->error);
 ##}
@@ -3011,8 +2939,8 @@ validate_typedata(q, argv, vo)
 ##  char *name;
 ##  char *field_type;
 ##  char data_type[129];
-##  int id;
-##  int rowcount;
+##  int id, rowcount;
+    int status;
     char *index();
     register char *c;
 
@@ -3034,15 +2962,16 @@ validate_typedata(q, argv, vo)
 	*index(data_type, ' ') = 0;
     if (!strcmp(data_type, "user")) {
 	/* USER */
-##	repeat retrieve (id = users.users_id) where users.login = @name
-##	inquire_equel (rowcount = "rowcount")
-	if (rowcount != 1) return(SMS_USER);
-
+	status = name_to_id(name, data_type, &id);
+	if (status && (status == SMS_NO_MATCH || status == SMS_NOT_UNIQUE))
+	  return(SMS_USER);
+	if (status) return(status);
     } else if (!strcmp(data_type, "list")) {
 	/* LIST */
-##	repeat retrieve (id = list.list_id) where list.#name = @name
-##	inquire_equel (rowcount = "rowcount")
-	if (rowcount != 1) {
+	status = name_to_id(name, data_type, &id);
+	if (status && status == SMS_NOT_UNIQUE)
+	  return(SMS_LIST);
+	if (status == SMS_NO_MATCH) {
 	    /* if idfield is non-zero, then if argv[0] matches the string
 	     * that we're trying to resolve, we should get the value of
 	     * values.[idfield] for the id.
@@ -3055,27 +2984,26 @@ validate_typedata(q, argv, vo)
 		if (rowcount != 1) return(SMS_LIST);
 	    } else
 	      return(SMS_LIST);
-	}
+	} else if (status) return(status);
     } else if (!strcmp(data_type, "machine")) {
 	/* MACHINE */
 	for (c = name; *c; c++) if (islower(*c)) *c = toupper(*c);
-##      repeat retrieve (id = machine.mach_id) where machine.#name = @name
-##      inquire_equel (rowcount = "rowcount")
-	if (rowcount != 1) return(SMS_MACHINE);
-
+	status = name_to_id(name, data_type, &id);
+	if (status && (status == SMS_NO_MATCH || status == SMS_NOT_UNIQUE))
+	  return(SMS_MACHINE);
+	if (status) return(status);
     } else if (!strcmp(data_type, "string")) {
 	/* STRING */
-##      range of s is strings
-##      repeat retrieve (id = s.string_id) where s.string = @name
-##      inquire_equel (rowcount = "rowcount")
-	if (rowcount == 0) {
+	status = name_to_id(name, data_type, &id);
+	if (status && status == SMS_NOT_UNIQUE)
+	  return(SMS_STRING);
+	if (status == SMS_NO_MATCH) {
 	    if (q->type != APPEND && q->type != UPDATE) return(SMS_STRING);
-##          range of v is values
-##          retrieve (id = v.value) where v.#name = "strings_id"
+##          retrieve (id = values.value) where values.#name = "strings_id"
 	    id++;
-##          replace v (value = id) where v.#name = "strings_id"
+##          replace values (value = id) where values.#name = "strings_id"
 ##	    append to strings (string_id = id, string = name)
-	}
+	} else if (status) return(status);
     } else if (!strcmp(data_type, "none")) {
 	id = 0;
     } else {

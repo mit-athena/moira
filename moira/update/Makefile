@@ -1,6 +1,6 @@
 #
 # 	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/Makefile,v $
-#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/Makefile,v 1.4 1987-08-23 01:43:34 wesommer Exp $
+#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/Makefile,v 1.5 1987-08-24 08:01:56 spook Exp $
 #
 
 #
@@ -33,10 +33,9 @@ CSRCS=	client.c ticket.c send_file.c client2.c
 
 COMSRCS= log_error.c hostname.c log.c checksum.c
 
-# libmisc.a includes libcom_err.a and a working malloc()
 LIBS=	-L../lib -lgdb -lkrb -ldes -lcom_err
 
-all:	server sms_update.o test
+all:	server sms_update.o test smskey
 
 clean:	
 	-rm -f ${COBJS} ${SOBJS} ${COMOBJS} client.o
@@ -47,14 +46,19 @@ install:
 # This is probably wrong..
 	install server ../bin/update_server
 	install test ../bin/update_test
+	install smskey ../bin/smskey
 
 lint:
 	lint ${LINTFLAGS} ${SSRCS} ${COMSRCS}
 	lint ${LINTFLAGS} ${CSRCS} ${COMSRCS}
+	lint ${LINTFLAGS} smskey.c
 
 server:	${SOBJS} ${COMOBJS}
 	rm -f server
 	${CC} ${CFLAGS} -o server ${SOBJS} ${COMOBJS} ${LIBS}
+
+smskey:	smskey.c
+	${CC} ${CFLAGS} -o smskey smskey.c -ldes
 
 sms_update.o:	${COBJS} ${COMOBJS}
 	ld ${LDFLAGS} -r -o sms_update.o ${COBJS} ${COMOBJS}
@@ -71,7 +75,7 @@ test:	test.o sms_update.o
 	rm -f test
 	${CC} ${CFLAGS} -o test test.o sms_update.o ${LIBS}
 
-SRCS=	${SSRCS} ${CSRCS} ${COMSRCS}
+SRCS=	${SSRCS} ${CSRCS} ${COMSRCS} smskey.c
 depend:	smsu_int.h
 	-rm -f eddep makedep
 	${CC} -M ${CFLAGS} ${SRCS} | \
@@ -148,7 +152,6 @@ client.o: /usr/include/sys/param.h /usr/include/machine/machparam.h
 client.o: /usr/include/signal.h /usr/include/sys/types.h ../include/update.h
 client.o: /usr/include/errno.h sms_update_int.h smsu_int.h /usr/include/krb.h
 client.o: /usr/include/des.h kludge.h
-stubs.o: stubs.c ../include/update.h
 ticket.o: ticket.c /usr/include/stdio.h /usr/include/krb.h /usr/include/des.h
 ticket.o: /usr/include/sys/types.h /usr/include/sys/stat.h
 ticket.o: /usr/include/strings.h sms_update_int.h ../include/com_err.h
@@ -172,4 +175,7 @@ hostname.o: /usr/include/strings.h
 log.o: log.c /usr/include/stdio.h ../include/com_err.h
 log.o: ../include/mit-sipb-copyright.h /usr/include/varargs.h
 log.o: ../include/update.h /usr/include/krb.h /usr/include/des.h
+log.o: /usr/include/syslog.h
 checksum.o: checksum.c /usr/include/stdio.h /usr/include/sys/file.h
+smskey.o: smskey.c /usr/include/stdio.h /usr/include/sys/file.h
+smskey.o: /usr/include/des.h

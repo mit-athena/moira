@@ -1,6 +1,6 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v 1.15 1989-01-09 20:01:06 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v 1.16 1989-06-05 17:32:14 mar Exp $
  */
 
 /*  (c) Copyright 1988 by the Massachusetts Institute of Technology. */
@@ -8,7 +8,7 @@
 /*  <mit-copyright.h>. */
 
 #ifndef lint
-static char rcsid_mailmaint_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v 1.15 1989-01-09 20:01:06 mar Exp $";
+static char rcsid_mailmaint_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v 1.16 1989-06-05 17:32:14 mar Exp $";
 #endif lint
 
 /***********************************************************************/
@@ -41,7 +41,7 @@ static char rcsid_mailmaint_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/
 
 char *whoami;		/* should not be static, for logging package */
 static int status;
-static void scream();
+static int scream();
 extern char *strsave();
 int menu_err_hook();
 
@@ -60,8 +60,7 @@ typedef struct list_info {
 }         List_info;
 
 static char *ascbuff = {"0123456789"};
-static int 
-print_2(), print_1();
+static int print_2(), print_1();
 static List_info *current_li = (List_info *) NULL;
 static int get_list_info();
 static int fetch_list_info();
@@ -272,7 +271,6 @@ get_main_input()
 show_list_info()
 {
     char *buf;
-    char c;
 
     show_text(DISPROW, STARTCOL, "Show information about a list.\n\r");
     buf = calloc((unsigned)1024, 1);
@@ -370,7 +368,6 @@ add_member()
 {
     char *argv[3];
     char *buf;
-    char c;
 
     show_text(DISPROW, STARTCOL, "Add yourself to a list\n\r");
     buf = calloc(LISTMAX, 1);
@@ -400,7 +397,6 @@ delete_member()
 {
     char *argv[3];
     char *buf;
-    char c;
 
     show_text(DISPROW, STARTCOL, "Remove yourself from a list\n\r");
     buf = calloc(LISTMAX, 1);
@@ -430,7 +426,6 @@ list_by_member()
 {
     char *nargv[3];
     char *buf;
-    char c;
 
     nargv[1] = strsave("ruser");
     nargv[2] = strsave(uname);
@@ -620,7 +615,7 @@ start_display(buff)
 /****************************************************/
 end_display()
 {
-    char *buffer, c;
+    char *buffer;
 
     if (moreflg) {
 	clrwin(DISPROW);
@@ -807,7 +802,7 @@ clrwin(erase_row)
 
 /****************************************************/
 
-static void 
+static int
 scream()
 {
     com_err(whoami, status, "\nAn SMS update returned a value -- programmer \
@@ -871,7 +866,6 @@ Prompt(prompt, buf, buflen, crok)
 {
     int c;
     char *p;
-    int x, oldx;
 
     printf("%s", prompt);
     refresh();
@@ -900,14 +894,12 @@ Prompt(prompt, buf, buflen, crok)
 	case '\177':
 	    if (p > buf) {
 		p--;
-		x--;
 		printf("\b \b");
 	    }
 	    break;
 	case CTL('U'):
 	case CTL('G'):
 	case CTL('['):
-	    x = oldx;
 	    while (p-- > buf)
 		printf("\b \b");
 	    p = buf;
@@ -920,7 +912,6 @@ Prompt(prompt, buf, buflen, crok)
 	    if (isprint(c)) {
 		(void) addch(c);
 		*p++ = c;
-		x++;
 	    }
 	    else
 		(void) putchar(CTL('G'));

@@ -1,4 +1,4 @@
-/* $Id: qsetup.pc,v 2.40 2000-09-27 03:33:15 zacheiss Exp $
+/* $Id: qsetup.pc,v 2.41 2000-10-18 19:02:36 zacheiss Exp $
  *
  * Query setup routines
  *
@@ -21,7 +21,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsetup.pc,v 2.40 2000-09-27 03:33:15 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsetup.pc,v 2.41 2000-10-18 19:02:36 zacheiss Exp $");
 
 extern char *whoami;
 extern int dbms_errno, mr_errcode;
@@ -284,7 +284,7 @@ int setup_dclu(struct query *q, char *argv[], client *cl)
 static int badlistchars[] = {
   1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, /* ^@ - ^O */
   1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, /* ^P - ^_ */
-  1, 1, 1, 0, 0, 1, 0, 0, 1, 1, 1, 0, 1, 0, 0, 1, /* SPACE - / */
+  1, 1, 1, 0, 0, 1, 0, 0, 1, 1, 1, 1, 1, 0, 0, 1, /* SPACE - / */
   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, /* 0 - ? */
   1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, /* @ - O */
   1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, /* P - _ */
@@ -314,7 +314,13 @@ int setup_alis(struct query *q, char *argv[], client *cl)
   else if (!strcmp(q->shortname, "ulis"))
     idx = 1;
   name = argv[idx];
-  desc = argv[10 + idx];
+
+  if (q->version == 2)
+    desc = argv[9 + idx];
+  else if (q->version == 3)
+    desc = argv[10 + idx];
+  else if (q->version >= 4)
+    desc = argv[12 + idx];
 
   if (idx == 1)
     {

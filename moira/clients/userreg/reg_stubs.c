@@ -1,11 +1,14 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/reg_stubs.c,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/reg_stubs.c,v 1.3 1988-08-03 20:16:10 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/reg_stubs.c,v 1.4 1988-08-07 22:20:21 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
  *	$Log: not supported by cvs2svn $
+ * Revision 1.3  88/08/03  20:16:10  mar
+ * increase timeout; don't copy login out of packet unless packet is long enough
+ * 
  * Revision 1.2  87/09/04  22:57:33  wesommer
  * Rearranged timeouts, max retransmits.
  * 
@@ -15,7 +18,7 @@
  */
 
 #ifndef lint
-static char *rcsid_reg_stubs_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/reg_stubs.c,v 1.3 1988-08-03 20:16:10 mar Exp $";
+static char *rcsid_reg_stubs_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/reg_stubs.c,v 1.4 1988-08-07 22:20:21 mar Exp $";
 #endif lint
 #include <stdio.h>
 #include <sys/types.h>
@@ -43,7 +46,7 @@ ureg_init()
     init_ureg_err_tbl();
     init_sms_err_tbl();
     
-    hp = gethostbyname("sms.mit.edu");
+    hp = gethostbyname("dodo.mit.edu");
     if (hp == NULL) return UNKNOWN_HOST;
 
     sp = getservbyname("sms_ureg", "udp");
@@ -250,7 +253,7 @@ static do_call(buf, len, seq_no, login)
 
 	FD_ZERO(&set);
 	FD_SET(reg_sock, &set);
-	timeout.tv_sec = 45;
+	timeout.tv_sec = 30;
 	timeout.tv_usec = 0;
 	do {
 	    int rtn;

@@ -1,4 +1,4 @@
-/* $Id: qsetup.pc,v 2.54 2003-01-16 22:54:07 zacheiss Exp $
+/* $Id: qsetup.pc,v 2.55 2003-03-12 00:42:55 zacheiss Exp $
  *
  * Query setup routines
  *
@@ -21,7 +21,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsetup.pc,v 2.54 2003-01-16 22:54:07 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsetup.pc,v 2.55 2003-03-12 00:42:55 zacheiss Exp $");
 
 extern char *whoami;
 extern int dbms_errno, mr_errcode;
@@ -373,7 +373,7 @@ static const char *mailman_suffixes[] = { "-admin", "-owner", "-request",
 int setup_alis(struct query *q, char *argv[], client *cl)
 {
   EXEC SQL BEGIN DECLARE SECTION;
-  int ngid, cnt, mailman, mailman_id;
+  int ngid, cnt, mailman, mailman_id, lid;
   char *name, *desc;
   EXEC SQL END DECLARE SECTION;
   unsigned char *p;
@@ -396,9 +396,7 @@ int setup_alis(struct query *q, char *argv[], client *cl)
 
   if (idx == 1)
     {
-      EXEC SQL BEGIN DECLARE SECTION;
-      int lid = *(int *)argv[0];
-      EXEC SQL END DECLARE SECTION;
+      lid = *(int *)argv[0];
 
       if (acl_access_check(lid, cl))
 	return MR_PERM;
@@ -504,15 +502,21 @@ int setup_alis(struct query *q, char *argv[], client *cl)
     {
       /* Client too old to know about the mailman code.
        * Use existing value of mailman boolean in the table.
+       * Don't do this for add_list from an old client, since the row
+       * they're creating won't exist yet, and there's no way for them to
+       * create a list with the mailman bit set, anyway.
        */
-      EXEC SQL SELECT mailman INTO :mailman FROM list WHERE name = :name;
-      if (mailman)
+      if (idx == 1)
 	{
-	  EXEC SQL SELECT  COUNT(name) INTO :cnt FROM list
-	    WHERE (name = :name || '-admin' OR name = :name || '-owner' OR
-		   name = :name || '-request');
-	  if (cnt)
-	    return MR_EXISTS;
+	  EXEC SQL SELECT mailman INTO :mailman FROM list WHERE list_id = :lid;
+	  if (mailman)
+	    {
+	      EXEC SQL SELECT  COUNT(name) INTO :cnt FROM list
+		WHERE (name = :name || '-admin' OR name = :name || '-owner' OR
+		       name = :name || '-request');
+	      if (cnt)
+		return MR_EXISTS;
+	    }
 	}
     }
 

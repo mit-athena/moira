@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.4 1998-08-27 17:13:30 danw Exp $
+# $Id: Makefile.in,v 1.5 1998-10-30 18:18:25 danw Exp $
 
 SHELL=/bin/sh
 @SET_MAKE@
@@ -18,7 +18,7 @@ LIBS=@SQL_LIBS@ @GDSS_LIBS@ @LIBS@
 MR_LIBDEP=@MR_LIBDEP@
 GDSS_LIBDEP=@GDSS_LIBDEP@
 INSTALL=@INSTALL@
-INSTALL_TARGET=@INSTALL_TARGET@
+INSTALL_PROGRAM=@INSTALL_PROGRAM@
 
 srcdir=@srcdir@
 VPATH=@srcdir@
@@ -54,7 +54,7 @@ clean:
 depend: $(CFILES)
 
 install: all
-	@for p in $(TARGET); do $(INSTALL_PROGRAM) $$p $(mrbindir); done
+	@set -x; for p in $(TARGET); do $(INSTALL_PROGRAM) $$p $(mrbindir); done
 
 hesiod.gen: hesiod.o util.o moddiff.o $(MR_LIBDEP)
 	$(CC) -o $@ $(LDFLAGS) hesiod.o util.o moddiff.o $(SQL_LIBS) $(LIBS)

@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.4 1998-08-27 17:13:29 danw Exp $
+# $Id: Makefile.in,v 1.5 1998-10-30 18:18:14 danw Exp $
 
 SHELL=/bin/sh
 @SET_MAKE@
@@ -18,7 +18,7 @@ SQL_LIBS=@SQL_LIBS@
 LIBS=@LIBS@
 MR_LIBDEP=@MR_LIBDEP@
 INSTALL=@INSTALL@
-INSTALL_PROGRAM=$(INSTALL_PROGRAM)
+INSTALL_PROGRAM=@INSTALL_PROGRAM@
 
 srcdir=@srcdir@
 VPATH=@srcdir@

@@ -38,7 +38,7 @@ secondary purpose is to provide a single point of contact for
 authoritative information about Athena administration.
 
 @include[intro.mss]
-@include[structure.mss]
+@include[sys_model.mss]
 @include[db_analysis.mss]
 @include[protocol.mss]
 @include[server.mss]
@@ -46,9 +46,14 @@ authoritative information about Athena administration.
 @include[dcm.mss]
 @include[server_arrang.mss]
 @include[update.mss]
-@include[tools.mss]
 @include[user_reg.mss]
 @include[deploy.mss]
+@include[structure.mss]
+@include[queries.mss]
+@include[tools.mss]
 @include[addendum.mss]
 @unnumbered[References]
 @bibliography
+
+
+

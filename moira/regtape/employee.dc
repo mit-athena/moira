@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/employee.dc,v 1.13 1993-01-04 15:57:08 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/employee.dc,v 1.14 1993-03-10 13:46:27 mar Exp $
  */
 
 #include <stdio.h>
@@ -71,6 +71,9 @@ struct entry {
 char *whoami;
 int newfinger = 0;
 
+#define sqlfail() (sqlca.sqlcode && sqlca.sqlcode != 100)
+#define SQL_DUPLICATE -40100
+
 
 main(argc, argv)
 int argc;
@@ -110,10 +113,18 @@ char **argv;
     setlinebuf(stderr);
 
     EXEC SQL CONNECT moira;
+    if (sqlca.sqlcode != 0) {
+	com_err(whoami, 0, "ingres error %d", sqlca.sqlcode);
+	exit(1);
+    }
 
     while (e = get_next_entry(in)) {
 	process_entry(e);
-	EXEC SQL COMMIT;
+	EXEC SQL COMMIT WORK;
+	if (sqlca.sqlcode != 0) {
+	    com_err(whoami, 0, "ingres error %d", sqlca.sqlcode);
+	    exit(1);
+	}
 	if (wait) {
 	    printf("Next");
 	    fflush(stdout);
@@ -227,41 +238,55 @@ FILE *in;
 process_entry(e)
 struct entry *e;
 {
-    int changed, nochange;
+    int changed, nochange, encrypted;
     char buf[BUFSIZ], *from, *to;
     EXEC SQL BEGIN DECLARE SECTION;
-    char *first, *last, *eid, *sid, *name, *title, *phone2, *rdept, *rtitle;
-    char *raddr, *rhphone, *rophone;
-    char class[9], oaddr[25], ophone[17], dept[128];
-    int id, status;
+    char *first, *last, *middle, *eid, *sid, *name, *title, *phone2, *rdept, *rtitle;
+    char *raddr, *rhphone, *rophone, *prog;
+    char class[9], oaddr[25], ophone[17], dept[128], dfirst[17], dlast[17], dmiddle[17];
+    int id, status, who;
     EXEC SQL END DECLARE SECTION;
 
+    who = WHO;
+    prog = PROG;
     first = e->first;
     if (strlen(first) > 16)
       first[16] = 0;
     last = e->last;
     if (strlen(last) > 16)
       last[16] = 0;
+    middle = e->middle;
     eid = e->eid;
     sid = e->id;
     id = 0;
+    encrypted = 0;
 
     /* Get user info */
-    EXEC SQL SELECT users_id, mit_year, office_addr, office_phone, mit_dept, status
-      INTO :id, :class, :oaddr, :ophone, :dept, :status
+    EXEC SQL SELECT users_id, first, last, middle, type, office_addr, office_phone, department, status
+      INTO :id, :dfirst, :dlast, :dmiddle, :class, :oaddr, :ophone, :dept, :status
       FROM users
-      WHERE last = :last and first = :first and clearid = :sid;
+      WHERE clearid = :sid;
+    if (sqlfail()) {
+	if (sqlca.sqlcode == SQL_DUPLICATE) {
+	    com_err(whoami, 0, "duplicate ID number %s on user %s %s", sid, first, last);
+	    return;
+	} else
+	  sqlexit();
+    }
     if (id == 0) {
-	EXEC SQL SELECT users_id, mit_year, office_addr, office_phone, mit_dept, status
-	  INTO :id, :class, :oaddr, :ophone, :dept, :status
+	EXEC SQL SELECT users_id, first, last, middle, type, office_addr, office_phone, department, status
+	  INTO :id, :dfirst, :dlast, :dmiddle, :class, :oaddr, :ophone, :dept, :status
 	  FROM users
 	  WHERE last = :last and first = :first and clearid = :eid;
+	if (sqlfail() && sqlca.sqlcode != SQL_DUPLICATE) sqlexit();
+	encrypted++;
 	if (id == 0) {
 	    newuser(e);
 	    return;
 	}
     }
 
+    /* Update class/state if necessary */
     if (strcmp(e->class, strtrim(class)) &&
 	strcmp(class, "STAFF") && strcmp(class, "SIPB")) {
 	com_err(whoami, 0, "updating class for %s %s from %s to %s",
@@ -273,11 +298,31 @@ struct entry *e;
 	strcpy(class, e->class);
 	EXEC SQL UPDATE users
 	  SET type = :class, status = :status, modtime = 'now',
-		modby = WHO, modwith = PROG
+		modby = :who, modwith = :prog
 	  WHERE users_id = :id;
+	if (sqlca.sqlcode != 0) {
+	    com_err(whoami, 0, "ingres error %d", sqlca.sqlcode);
+	    exit(1);
+	}
+    }
+
+    /* Update name if necessary */
+    if (strcmp(first, strtrim(dfirst)) ||
+	strcmp(last, strtrim(dlast)) ||
+	strcmp(middle, strtrim(dmiddle))) {
+	com_err(whoami, 0, "updating real name for %s %s", first, last);
+	EXEC SQL UPDATE users
+	  SET first = :first, last = :last, middle = :middle,
+	  	modby = :who, modwith = :prog, modtime = 'now'
+	  WHERE users_id = :id;
+	if (sqlca.sqlcode != 0) {
+	    com_err(whoami, 0, "ingres error %d", sqlca.sqlcode);
+	    exit(1);
+	}
     }
 
     changed = nochange = 0;
+    if (encrypted) changed++;
     strcpy(buf, e->address);
     while (to = index(buf, ','))
       *to = ';';
@@ -340,18 +385,26 @@ struct entry *e;
     if (changed) {
 	com_err(whoami, 0, "updating finger for %s %s", first, last);
 	EXEC SQL REPEATED UPDATE users
-	  SET office_addr = :oaddr, office_phone = :ophone, mit_dept = :dept,
-	    fmodtime = 'now', fmodby = WHO, fmodwith = PROG,
+	  SET office_addr = :oaddr, office_phone = :ophone, department = :dept,
+	    fmodtime = 'now', fmodby = :who, fmodwith = :prog,
 	    xname = :name, xdept = :rdept, xtitle = :rtitle,
 	    xaddress = :raddr, xphone1 = :rhphone, xphone2 = :rophone,
-	    xmodtime = 'now', mit_id = :sid
+	    xmodtime = 'now', clearid = :sid
 	  WHERE users_id = :id;
+	if (sqlca.sqlcode != 0) {
+	    com_err(whoami, 0, "ingres error %d", sqlca.sqlcode);
+	    exit(1);
+	}
     } else {
 	EXEC SQL REPEATED UPDATE users
 	  SET xname = :name, xdept = :rdept, xtitle = :rtitle,
 	    xaddress = :raddr, xphone1 = :rhphone, xphone2 = :rophone,
-	    xmodtime = 'now', mit_id = :sid
+	    xmodtime = 'now', clearid = :sid
 	  WHERE users_id = :id;
+	if (sqlca.sqlcode != 0) {
+	    com_err(whoami, 0, "ingres error %d", sqlca.sqlcode);
+	    exit(1);
+	}
     }
 }
 
@@ -387,8 +440,8 @@ struct entry *e;
     strncpy(dept, e->dept, 12);
     dept[12] = 0;
     
-    id = set_next_object_id("users_id", 0);
-    uid = set_next_object_id("uid", 1);
+    id = set_next_users_id(0);
+    uid = set_next_uid(1);
     sprintf(login, "#%d", uid);
     last = e->last;
     first = e->first;
@@ -409,7 +462,7 @@ struct entry *e;
     rhphone = e->phone;
     rophone = e->phone2;
 
-    EXEC SQL INSERT INTO users
+    EXEC SQL REPEATED INSERT INTO users
       (login, users_id, uid, shell, last, first, middle, status,
        clearid, type, modtime, modby, modwith, fullname, office_addr,
        office_phone, department, fmodtime, fmodby, fmodwith,
@@ -418,20 +471,24 @@ struct entry *e;
 	      :sid, :class, 'now', :who, :prog, :fullname, :oaddr, :ophone,
 	      :dept, 'now', :who, :prog, 'NONE', :name, :rdept,
 	      :title, :oaddr, :rhphone, :rophone, 'now');
+    if (sqlca.sqlcode != 0) {
+	com_err(whoami, 0, "ingres error %d", sqlca.sqlcode);
+	exit(1);
+    } else
+      com_err(whoami, 0, "adding user %s %s", e->first, e->last);
 }
 
 
-set_next_object_id(object, limit)
-    char *object;
+set_next_users_id(limit)
     int limit;
 {
     EXEC SQL BEGIN DECLARE SECTION;
-    char *name;
-    int rowcount, flag, value;
+    int rowcount, flag, value, retval;
     EXEC SQL END DECLARE SECTION;
 
-    name = object;
-    EXEC SQL SELECT value INTO :value FROM numvalues WHERE name = :name;
+    EXEC SQL REPEATED SELECT value INTO :value FROM numvalues 
+      WHERE name = 'users_id';
+    if (sqlfail()) sqlexit();
     if (sqlca.sqlerrd[2] != 1) {
 	EXEC SQL ROLLBACK;
 	com_err(whoami, MR_INTERNAL, "values table inconsistancy");
@@ -439,7 +496,9 @@ set_next_object_id(object, limit)
     }
 
     flag = 0;
-    EXEC SQL SELECT :name INTO :flag FROM users WHERE :name = :value;
+    EXEC SQL REPEATED SELECT users_id INTO :flag FROM users
+      WHERE users_id = :value;
+    if (sqlfail()) sqlexit();
     if (sqlca.sqlerrd[2] == 0)
       flag = 0;
     while (flag) {
@@ -447,14 +506,72 @@ set_next_object_id(object, limit)
 	if (limit && value > MAX_ID_VALUE)
 	    value = MIN_ID_VALUE;
 	flag = 0;
-	EXEC SQL SELECT :name INTO :flag FROM users WHERE :name = :value;
+	EXEC SQL REPEATED SELECT users_id INTO :flag FROM users 
+	  WHERE users_id = :value;
+	if (sqlfail()) sqlexit();
 	if (sqlca.sqlerrd[2] == 0)
 	  flag = 0;
     }
 
-    value++;
+    retval = value++;
     if (limit && value > MAX_ID_VALUE)
       value = MIN_ID_VALUE;
-    EXEC SQL REPEATED UPDATE numvalues SET value = :value WHERE name = :name;
-    return(value);
+    EXEC SQL REPEATED UPDATE numvalues SET value = :value
+      WHERE name = 'users_id';
+    if (sqlca.sqlcode != 0) {
+	com_err(whoami, 0, "ingres error %d", sqlca.sqlcode);
+	exit(1);
+    }
+    return(retval);
+}
+
+set_next_uid(limit)
+    int limit;
+{
+    EXEC SQL BEGIN DECLARE SECTION;
+    int rowcount, flag, value, retval;
+    EXEC SQL END DECLARE SECTION;
+
+    EXEC SQL REPEATED SELECT value INTO :value FROM numvalues 
+      WHERE name = 'uid';
+    if (sqlfail()) sqlexit();
+    if (sqlca.sqlerrd[2] != 1) {
+	EXEC SQL ROLLBACK;
+	com_err(whoami, MR_INTERNAL, "values table inconsistancy");
+	exit(1);
+    }
+
+    flag = 0;
+    EXEC SQL REPEATED SELECT uid INTO :flag FROM users WHERE uid = :value;
+    if (sqlfail()) sqlexit();
+    if (sqlca.sqlerrd[2] == 0)
+      flag = 0;
+    while (flag) {
+	value++;
+	if (limit && value > MAX_ID_VALUE)
+	    value = MIN_ID_VALUE;
+	flag = 0;
+	EXEC SQL REPEATED SELECT uid INTO :flag FROM users WHERE uid = :value;
+	if (sqlfail()) sqlexit();
+	if (sqlca.sqlerrd[2] == 0)
+	  flag = 0;
+    }
+
+    retval = value++;
+    if (limit && value > MAX_ID_VALUE)
+      value = MIN_ID_VALUE;
+    EXEC SQL REPEATED UPDATE numvalues SET value = :value WHERE name = 'uid';
+    if (sqlca.sqlcode != 0) {
+	com_err(whoami, 0, "ingres error %d", sqlca.sqlcode);
+	exit(1);
+    }
+    return(retval);
+}
+
+
+sqlexit()
+{
+    com_err(whoami, 0, "ingres error %d", sqlca.sqlcode);
+    EXEC SQL ROLLBACK WORK;
+    exit(1);
 }

@@ -7,43 +7,50 @@
  *
  */
 
-#include <stdio.h>
-#include <sys/types.h>
-#include <sys/file.h>
-#include <string.h>
-#include <sys/param.h>
 #include "mit-sipb-copyright.h"
-#include "compiler.h"
 
-#ifndef __STDC__
-#define const
-#endif
+#include <sys/types.h>
+#include <sys/param.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <errno.h>
+#include <unistd.h>
 
-#ifndef lint
 static const char copyright[] =
     "Copyright 1987,1988 by MIT Student Information Processing Board";
 
-static const char rcsid_compile_et_c[] =
-    "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/util/et/compile_et.c,v 1.1 1996-07-08 22:28:59 danw Exp $";
-#endif
+static const char rcsid[] = "$Id: compile_et.c,v 1.2 1998-02-05 22:13:04 danw Exp $";
 
-extern char *gensym();
+enum lang {
+    lang_C,			/* ANSI C (default) */
+    lang_KRC,			/* C: ANSI + K&R */
+    lang_CPP			/* C++ */
+};
+
+/* From gensym.y. */
+extern char *gensym(const char *x);
+extern int yyparse(void);
 extern char *current_token;
 extern int table_number, current;
-char buffer[BUFSIZ];
-char *table_name = (char *)NULL;
-FILE *hfile, *cfile;
 
-/* C library */
-extern char *malloc();
-extern int errno;
-
-/* lex stuff */
+/* From et_lex.lex.l. */
 extern FILE *yyin;
-extern int yylineno;
+extern int num_lines;
 
-char * xmalloc (size) unsigned int size; {
+FILE *hfile;
+FILE *cfile;
+char *table_name = NULL;
+
+static int debug;			/* dump debugging info? */
+static char *filename;			/* error table source */
+static enum lang language;
+static const char *whoami;
+
+char *xmalloc(unsigned int size)
+{
     char * p = malloc (size);
+
     if (!p) {
 	perror (whoami);
 	exit (1);
@@ -51,7 +58,8 @@ char * xmalloc (size) unsigned int size; {
     return p;
 }
 
-static int check_arg (str_list, arg) char const *const *str_list, *arg; {
+static int check_arg(const char *const *str_list, const char *arg)
+{
     while (*str_list)
 	if (!strcmp(arg, *str_list++))
 	    return 1;
@@ -114,19 +122,21 @@ static const char warning[] =
 char c_file[MAXPATHLEN];	/* output file */
 char h_file[MAXPATHLEN];	/* output */
 
-static void usage () {
+static void usage() {
     fprintf (stderr, "%s: usage: %s ERROR_TABLE\n",
 	     whoami, whoami);
     exit (1);
 }
 
-static void dup_err (type, one, two) char const *type, *one, *two; {
+static void dup_err(const char *type, const char *one, const char *two)
+{
     fprintf (stderr, "%s: multiple %s specified: `%s' and `%s'\n",
 	     whoami, type, one, two);
     usage ();
 }
 
-int main (argc, argv) int argc; char **argv; {
+int main(int argc, char **argv)
+{
     char *p, *ename;
     int len;
     char const * const *cpp;
@@ -157,18 +167,18 @@ int main (argc, argv) int argc; char **argv; {
 		    usage ();
 		if (language)
 		    dup_err ("languanges", language_names[(int)language], arg);
-#define check_lang(x,y,v) else if (!strcmp(arg,x)||!strcmp(arg,y)) language = v
-		check_lang ("c", "C", lang_C);
-		check_lang ("ansi_c", "ANSI_C", lang_C);
-		check_lang ("ansi-c", "ANSI-C", lang_C);
-		check_lang ("krc", "KRC", lang_KRC);
-		check_lang ("kr_c", "KR_C", lang_KRC);
-		check_lang ("kr-c", "KR-C", lang_KRC);
-		check_lang ("k&r-c", "K&R-C", lang_KRC);
-		check_lang ("k&r_c", "K&R_C", lang_KRC);
-		check_lang ("c++", "C++", lang_CPP);
-		check_lang ("cplusplus", "CPLUSPLUS", lang_CPP);
-		check_lang ("c-plus-plus", "C-PLUS-PLUS", lang_CPP);
+#define check_lang(x,v) else if (!strcasecmp(arg,x)) language = v
+		check_lang ("c", lang_C);
+		check_lang ("ansi_c", lang_C);
+		check_lang ("ansi-c", lang_C);
+		check_lang ("krc", lang_KRC);
+		check_lang ("kr_c", lang_KRC);
+		check_lang ("kr-c", lang_KRC);
+		check_lang ("k&r-c", lang_KRC);
+		check_lang ("k&r_c", lang_KRC);
+		check_lang ("c++", lang_CPP);
+		check_lang ("cplusplus", lang_CPP);
+		check_lang ("c-plus-plus", lang_CPP);
 #undef check_lang
 		else {
 		    fprintf (stderr, "%s: unknown language name `%s'\n",
@@ -187,7 +197,7 @@ int main (argc, argv) int argc; char **argv; {
     if (!filename)
 	usage ();
     if (!got_language)
-	language = lang_KRC;
+	language = lang_C;
     else if (language == lang_CPP) {
 	fprintf (stderr, "%s: Sorry, C++ support is not yet finished.\n",
 		 whoami);
@@ -198,7 +208,7 @@ int main (argc, argv) int argc; char **argv; {
     strcpy (p, filename);
     filename = p;
     p = strrchr(filename, '/');
-    if (p == (char *)NULL)
+    if (p == NULL)
 	p = filename;
     else
 	p++;
@@ -223,14 +233,14 @@ int main (argc, argv) int argc; char **argv; {
     }
 
     hfile = fopen(h_file, "w");
-    if (hfile == (FILE *)NULL) {
+    if (hfile == NULL) {
 	perror(h_file);
 	exit(1);
     }
     fprintf (hfile, warning, h_file);
 
     cfile = fopen(c_file, "w");
-    if (cfile == (FILE *)NULL) {
+    if (cfile == NULL) {
 	perror(c_file);
 	exit(1);
     }
@@ -254,24 +264,29 @@ int main (argc, argv) int argc; char **argv; {
     for (cpp = struct_def; *cpp; cpp++)
 	fputs (*cpp, cfile);
     fprintf(cfile,
-	    "static const struct error_table et = { text, %ldL, %d };\n\n",
-	    table_number, current);
-    fputs("static struct et_list link = { 0, 0 };\n\n",
+	    "const struct error_table et_%s_error_table = { text, %ldL, %d };",
+	    table_name, (long) table_number, current);
+    fputs("\n\nstatic struct et_list link = { 0, 0 };\n\n",
 	  cfile);
     fprintf(cfile, "void initialize_%s_error_table (%s) {\n",
 	    table_name, (language == lang_C) ? "void" : "NOARGS");
     fputs("    if (!link.table) {\n", cfile);
     fputs("        link.next = _et_list;\n", cfile);
-    fputs("        link.table = &et;\n", cfile);
+    fprintf(cfile, "        link.table = &et_%s_error_table;\n", table_name);
     fputs("        _et_list = &link;\n", cfile);
     fputs("    }\n", cfile);
     fputs("}\n", cfile);
     fclose(cfile);
 
-    fprintf (hfile, "extern void initialize_%s_error_table ();\n",
-	     table_name);
+    if (language == lang_KRC) {
+	fprintf (hfile, "extern void initialize_%s_error_table ();\n",
+		 table_name);
+    } else {
+	fprintf (hfile, "void initialize_%s_error_table (void);\n",
+		 table_name);
+    }
     fprintf (hfile, "#define ERROR_TABLE_BASE_%s (%ldL)\n",
-	     table_name, table_number);
+	     table_name, (long) table_number);
     /* compatibility... */
     fprintf (hfile, "\n/* for compatibility with older versions... */\n");
     fprintf (hfile, "#define init_%s_err_tbl initialize_%s_error_table\n",
@@ -283,8 +298,10 @@ int main (argc, argv) int argc; char **argv; {
     return 0;
 }
 
-int yyerror(s) char *s; {
+int yyerror(char *s)
+{
     fputs(s, stderr);
     fprintf(stderr, "\nLine number %d; last token was '%s'\n",
-	    yylineno, current_token);
+	    num_lines, current_token);
+    return 0;
 }

@@ -1,0 +1,49 @@
+# $Id: Makefile.in,v 1.1 1998-02-05 22:12:59 danw Exp $
+
+SHELL=/bin/sh
+VPATH=@srcdir@
+INSTALL=@INSTALL@
+INSTALL_PROGRAM=@INSTALL_PROGRAM@
+RANLIB=@RANLIB@
+srcdir=@srcdir@
+top_srcdir=@top_srcdir@
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+bindir=@bindir@
+libdir=@libdir@
+includedir=@includedir@
+mandir=@mandir@
+
+CC=@CC@
+YACC=@YACC@
+LEX=@LEX@
+CPPFLAGS=@CPPFLAGS@
+CFLAGS=@CFLAGS@
+LDFLAGS=@LDFLAGS@
+LIBS=@LIBS@
+ALL_CFLAGS=${CPPFLAGS} ${CFLAGS}
+
+LIBOBJS=com_err.o error_message.o et_name.o init_et.o
+BINOBJS=compile_et.o error_table.o
+
+all: libcom_err.a compile_et
+
+libcom_err.a: ${LIBOBJS}
+	ar cru $@ ${LIBOBJS}
+	${RANLIB} $@
+
+compile_et: ${BINOBJS}
+	${CC} ${LDFLAGS} -o compile_et ${BINOBJS} ${LIBS}
+
+error_table.o: et_lex.lex.c
+
+.c.o:
+	${CC} -c ${ALL_CFLAGS} $<
+
+check:
+
+clean:
+	rm -f ${LIBOBJS} ${BINOBJS} compile_et libcom_err.a et_lex.lex.c
+
+distclean: clean
+	rm -f config.cache config.log config.status Makefile

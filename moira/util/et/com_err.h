@@ -8,29 +8,18 @@
  * with this package.
  */
 
-#ifndef __COM_ERR_H
+#ifndef COM_ERR__H
+#define COM_ERR__H
 
-#ifdef __STDC__
-#ifndef __HIGHC__		/* gives us STDC but not stdarg */
 #include <stdarg.h>
-#else
-#include <varargs.h>
-#endif
-/* ANSI C -- use prototypes etc */
-void com_err (const char *, long, const char *, ...);
-char const *error_message (long);
-void (*com_err_hook) (const char *, long, const char *, va_list);
-void (*set_com_err_hook (void (*) (const char *, long, const char *, va_list)))
-    (const char *, long, const char *, va_list);
-void (*reset_com_err_hook ()) (const char *, long, const char *, va_list);
-#else
-/* no prototypes */
-void com_err ();
-char *error_message ();
-void (*com_err_hook) ();
-void (*set_com_err_hook ()) ();
-void (*reset_com_err_hook ()) ();
-#endif
 
-#define __COM_ERR_H
-#endif /* ! defined(__COM_ERR_H) */
+typedef void (*com_err_handler_t)(const char *, long, const char *, va_list);
+
+void com_err(const char *progname, long code, const char *fmt, ...);
+void com_err_va(const char *progname, long code, const char *fmt,
+		va_list args);
+char const *error_message(long code);
+com_err_handler_t set_com_err_hook(com_err_handler_t handler);
+com_err_handler_t reset_com_err_hook(void);
+
+#endif

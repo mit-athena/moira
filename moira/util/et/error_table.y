@@ -1,7 +1,20 @@
 %{
 #include <stdio.h>
-char *str_concat(), *ds(), *quote(), *malloc(), *realloc();
-char *current_token = (char *)NULL;
+
+char *gensym(const char *x);
+static char *ds(const char *string);
+static void add_ec(const char *name, const char *description);
+static void add_ec_val(const char *name, const char *val,
+		       const char *description);
+static void put_ecs(void);
+static int char_to_num(char c);
+static void set_table_num(char *string);
+
+static long gensym_n = 0;
+
+char *current_token = NULL;
+
+extern int yyerror(char *s);
 extern char *table_name;
 %}
 %union {
@@ -62,29 +75,25 @@ description	:	QUOTED_STRING
  * For copyright info, see mit-sipb-copyright.h.
  */
 
+#include "mit-sipb-copyright.h"
+
 #include <string.h>
 #include <assert.h>
 #include <ctype.h>
 #include <sys/types.h>
 #include <sys/time.h>
-#include "internal.h"
 #include "error_table.h"
-#include "mit-sipb-copyright.h"
 
-#ifndef	lint
-static char const rcsid_error_table_y[] =
-    "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/util/et/error_table.y,v 1.1 1996-07-08 22:29:09 danw Exp $";
-#endif
+static const char rcsid[] = "$Id: error_table.y,v 1.2 1998-02-05 22:13:08 danw Exp $";
 
-char *malloc(), *realloc();
+#include "et_lex.lex.c"
+
 extern FILE *hfile, *cfile;
 
-static long gensym_n = 0;
-char *
-gensym(x)
-	char const *x;
+char *gensym(const char *x)
 {
 	char *symbol;
+
 	if (!gensym_n) {
 		struct timeval tv;
 		struct timezone tzp;
@@ -97,50 +106,36 @@ gensym(x)
 	return(symbol);
 }
 
-char *
-ds(string)
-	char const *string;
+static char *ds(const char *string)
 {
 	char *rv;
+
 	rv = malloc(strlen(string)+1);
 	strcpy(rv, string);
 	return(rv);
 }
 
-char *
-quote(string)
-	char const *string;
-{
-	char *rv;
-	rv = malloc(strlen(string)+3);
-	strcpy(rv, "\"");
-	strcat(rv, string);
-	strcat(rv, "\"");
-	return(rv);
-}
-
 long table_number;
 int current = 0;
-char **error_codes = (char **)NULL;
+char **error_codes = NULL;
 
-add_ec(name, description)
-	char const *name, *description;
+static void add_ec(const char *name, const char *description)
 {
 	fprintf(cfile, "\t\"%s\",\n", description);
-	if (error_codes == (char **)NULL) {
-		error_codes = (char **)malloc(sizeof(char *));
-		*error_codes = (char *)NULL;
+	if (error_codes == NULL) {
+		error_codes = malloc(sizeof(char *));
+		*error_codes = NULL;
 	}
-	error_codes = (char **)realloc((char *)error_codes,
-				       (current + 2)*sizeof(char *));
+	error_codes = realloc(error_codes, (current + 2) * sizeof(char *));
 	error_codes[current++] = ds(name);
-	error_codes[current] = (char *)NULL;
+	error_codes[current] = NULL;
 }
 
-add_ec_val(name, val, description)
-	char const *name, *val, *description;
+static void add_ec_val(const char *name, const char *val,
+		       const char *description)
 {
 	const int ncurrent = atoi(val);
+
 	if (ncurrent < current) {
 		printf("Error code %s (%d) out of order", name,
 		       current);
@@ -148,24 +143,23 @@ add_ec_val(name, val, description)
 	}
       
 	while (ncurrent > current)
-	     fputs("\t(char *)NULL,\n", cfile), current++;
+	     fputs("\tNULL,\n", cfile), current++;
 	
 	fprintf(cfile, "\t\"%s\",\n", description);
-	if (error_codes == (char **)NULL) {
-		error_codes = (char **)malloc(sizeof(char *));
-		*error_codes = (char *)NULL;
+	if (error_codes == NULL) {
+		error_codes = malloc(sizeof(char *));
+		*error_codes = NULL;
 	}
-	error_codes = (char **)realloc((char *)error_codes,
-				       (current + 2)*sizeof(char *));
+	error_codes = realloc(error_codes, (current + 2) * sizeof(char *));
 	error_codes[current++] = ds(name);
-	error_codes[current] = (char *)NULL;
+	error_codes[current] = NULL;
 } 
 
-put_ecs()
+static void put_ecs(void)
 {
 	int i;
 	for (i = 0; i < current; i++) {
-	     if (error_codes[i] != (char *)NULL)
+	     if (error_codes[i] != NULL)
 		  fprintf(hfile, "#define %-40s (%ldL)\n",
 			  error_codes[i], table_number + i);
 	}
@@ -182,8 +176,7 @@ put_ecs()
 static const char char_set[] =
 	"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_";
 
-int char_to_num(c)
-	char c;
+static int char_to_num(char c)
 {
 	const char *where;
 	int diff;
@@ -205,8 +198,7 @@ int char_to_num(c)
 	exit (1);
 }
 
-set_table_num(string)
-	char *string;
+static void set_table_num(char *string)
 {
 	if (char_to_num (string[0]) > char_to_num ('z')) {
 		fprintf (stderr, "%s%s%s%s",
@@ -228,5 +220,3 @@ set_table_num(string)
 	}
 	table_number = table_number << ERRCODE_RANGE;
 }
-
-#include "et_lex.lex.c"

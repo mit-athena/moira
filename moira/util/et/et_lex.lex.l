@@ -1,6 +1,12 @@
+%{
+#undef yywrap
+int num_lines = 0;
+%}
+
 PC	[^\"]
 AN	[A-Z_a-z0-9]
 %%
+\n		++num_lines;
 
 error_table	return ERROR_TABLE;
 et		return ERROR_TABLE;
@@ -11,7 +17,8 @@ end		return END;
 [\t\n ]		;
 
 \"{PC}*\"	{ register char *p; yylval.dynstr = ds(yytext+1);
-		  if (p=rindex(yylval.dynstr, '"')) *p='\0';
+		  p=strrchr(yylval.dynstr, '"');
+		  if (p) *p='\0';
 		  return QUOTED_STRING;
 		}
 
@@ -21,6 +28,9 @@ end		return END;
 
 .		{ return (*yytext); }
 %%
-#ifndef lint
-static char rcsid_et_lex_lex_l[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/util/et/et_lex.lex.l,v 1.1 1996-07-08 22:29:12 danw Exp $";
-#endif
+static const char l_rcsid[] = "$Id: et_lex.lex.l,v 1.2 1998-02-05 22:13:09 danw Exp $";
+
+int yywrap()
+{
+	return 1;
+}

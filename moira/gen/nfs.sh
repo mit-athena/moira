@@ -2,7 +2,7 @@
 # This script performs nfs updates on servers.
 #
 # $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/nfs.sh,v $
-echo '$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/nfs.sh,v 1.8 1989-12-13 17:16:40 mar Exp $'
+echo '$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/nfs.sh,v 1.9 1990-03-08 22:16:19 mar Exp $'
 
 # The following exit codes are defined and MUST BE CONSISTENT with the
 # SMS error codes the library uses:
@@ -11,6 +11,7 @@ set SMS_MKCRED = 47836474
 set SMS_TARERR = 47836476
 
 set path=(/etc /bin /usr/bin /usr/etc)
+set nonomatch
 
 # The file containg the information for the update
 set TARFILE=/tmp/nfs.out
@@ -43,13 +44,15 @@ if ($status) exit $SMS_TARERR
 foreach type (dirs quotas)
    echo "Installing ${type}:"
    foreach i ( ${uchost}*.${type} )
-      # Convert the from the filename HOST.@dev@device.type to /dev/device
-      set dev=`echo $i |  sed "s,.${type},," | sed "s,${uchost}.,," | sed "s,@,/,g"`
-      echo ${uchost}:$dev
-      ./install_${type} $dev < $i
-      if ($status) exit $status
-      if ($type == quotas) ./zero_quotas $dev < $i
-      if ($status) exit $status
+     if (-e $i) then
+	# Convert the from the filename HOST.@dev@device.type to /dev/device
+	set dev=`echo $i |  sed "s,.${type},," | sed "s,${uchost}.,," | sed "s,@,/,g"`
+	echo ${uchost}:$dev
+	./install_${type} $dev < $i
+	if ($status) exit $status
+	if ($type == quotas) ./zero_quotas $dev < $i
+	if ($status) exit $status
+     endif
    end
 end
 

@@ -1,72 +1,24 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v 1.14 1988-01-14 13:37:57 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v 1.15 1988-06-30 12:50:24 mar Exp $
  *
- *	Copyright (C) 1987 by the Massachusetts Institute of Technology
- *
- *	$Log: not supported by cvs2svn $
- * Revision 1.14  88/01/14  13:14:37  mar
- * 1. separate access checking from setup routines
- * 2. check max argument length
- * 
- * Revision 1.13  88/01/04  12:02:13  mar
- * moved transaction start before pre-routines (wesommer)
- * 
- * Revision 1.13  87/11/12  18:13:12  wesommer
- * Move transaction boundary to include the pre routine.
- * 
- * Revision 1.12  87/09/12  20:42:11  wesommer
- * Clean up after Gretzinger: cl->kname is not valid unless cl->clname is
- * non-NULL.
- * 
- * Revision 1.12  87/09/12  20:06:46  wesommer
- * Fix security hole/null dereference bug: if clname is NULL, return
- * permission denied in get_client.
- * 
- * Revision 1.11  87/09/01  16:10:01  wesommer
- * This change was made by Mike, who didn't feel like checking it in.
- * Temp hack: ignore instances.
- * 
- * Revision 1.10  87/08/28  14:57:51  mike
- * Modified sms_query to not enclose RETRIEVE queries in begin/end transaction.
- * This was necessary to allow get_all_poboxes and get_groups_of_all_users
- * to temporarily change the Ingres lockmode.
- * 
- * Revision 1.9  87/08/22  17:47:38  wesommer
- * Cleanup (these changes were by Mike).
- * 
- * Revision 1.8  87/08/10  16:22:26  mike
- * wesommer modified error reporting.
- * 
- * Revision 1.7  87/08/04  01:49:20  wesommer
- * Rearranged messages.
- * 
- * Revision 1.6  87/08/04  01:30:54  wesommer
- * Mike's changes; checked in prior to working over messages.
- * 
- * Revision 1.5  87/06/21  16:37:58  wesommer
- * Changed include files, reindented things.
- * 
- * 
- * Revision 1.4  87/06/08  05:03:27  wesommer
- * Reindented; added header and trailer.
+ *	Copyright (C) 1987, 1988 by the Massachusetts Institute of Technology
  * 
  */
 
 #ifndef lint
-static char *rcsid_qrtn_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v 1.14 1988-01-14 13:37:57 mar Exp $";
+static char *rcsid_qrtn_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v 1.15 1988-06-30 12:50:24 mar Exp $";
 #endif lint
 
 #include "query.h"
 #include "sms_server.h"
 
-#define SMS_SUCCESS 0
-
 char *Argv[16];
 
 static int ingres_errno = 0;
 extern char *whoami;
+extern FILE *journal;
 
 /*
  * ingerr: (supposedly) called when Ingres indicates an error.
@@ -85,10 +37,11 @@ static int ingerr(num)
 int sms_open_database()
 {
     register int i;
+    char *malloc();
 
     /* initialize local argv */
     for (i = 0; i < 16; i++)
-	Argv[i] = (char *)malloc(ARGLEN);
+	Argv[i] = malloc(ARGLEN);
 
     IIseterr(ingerr);
 	
@@ -113,7 +66,7 @@ sms_check_access(cl, name, argc, argv_ro)
     struct query *q;
     struct query *get_query_by_name();
 
-    q = get_query_by_name(name);
+    q = get_query_by_name(name, cl->args->sms_version_no);
     if (q == (struct query *)0)
 	return(SMS_NO_HANDLE);
 
@@ -144,20 +97,22 @@ sms_process_query(cl, name, argc, argv_ro, action, actarg)
 
     /* list queries command */
     if (!strcmp(name, "_list_queries")) {
-	list_queries(action, actarg);
+	list_queries(cl->args->sms_version_no, action, actarg);
 	return(SMS_SUCCESS);
     }
 
     /* help query command */
     if (!strcmp(name, "_help")) {
-	q = get_query_by_name(argv_ro[0]);
+	if (argc < 1)
+	    return(SMS_ARGS);
+	q = get_query_by_name(argv_ro[0], cl->args->sms_version_no);
 	if (q == (struct query *)0) return(SMS_NO_HANDLE);
 	help_query(q, action, actarg);
 	return(SMS_SUCCESS);
     }
 
     /* get query structure, return error if named query does not exist */
-    q = get_query_by_name(name);
+    q = get_query_by_name(name, cl->args->sms_version_no);
     if (q == (struct query *)0) return(SMS_NO_HANDLE);
     v = q->validate;
 
@@ -210,7 +165,7 @@ sms_process_query(cl, name, argc, argv_ro, action, actarg)
 		    sq_destroy(sq);
 		    break;
 		}
-		status = (*v->post_rtn)(q, sq, v, action, actarg);
+		status = (*v->post_rtn)(q, sq, v, action, actarg, cl);
 	    } else {
 		/* normal retrieve */
 		status = do_retrieve(q, pqual, psort, action, actarg);
@@ -220,7 +175,7 @@ sms_process_query(cl, name, argc, argv_ro, action, actarg)
 ##          repeat replace tblstats (retrieves = tblstats.retrieves + 1)
 ##                 where tblstats.#table = @table
 	} else {
-	    status = (*v->post_rtn)(q, Argv, action, actarg);
+	    status = (*v->post_rtn)(q, Argv, cl, action, actarg);
 	}
 
 	break;
@@ -245,7 +200,7 @@ sms_process_query(cl, name, argc, argv_ro, action, actarg)
 	}
 
 	/* execute followup routine (if any) */
-	if (v->post_rtn) status = (*v->post_rtn)(q, Argv);
+	if (v->post_rtn) status = (*v->post_rtn)(q, Argv, cl);
 
 	break;
 
@@ -258,7 +213,7 @@ sms_process_query(cl, name, argc, argv_ro, action, actarg)
 
 	/* increment id number if necessary */
 	if (v->object_id) {
-	    status = set_next_object_id(v->object_id);
+	    status = set_next_object_id(v->object_id, q->rtable);
 	    if (status != SMS_SUCCESS) break;
 	}
 
@@ -282,7 +237,7 @@ sms_process_query(cl, name, argc, argv_ro, action, actarg)
 	}
 	
 	/* execute followup routine */
-	if (v->post_rtn) status = (*v->post_rtn)(q, Argv);
+	if (v->post_rtn) status = (*v->post_rtn)(q, Argv, cl);
 	break;
 
     case DELETE:
@@ -305,7 +260,7 @@ sms_process_query(cl, name, argc, argv_ro, action, actarg)
 	}
 
 	/* execute followup routine */
-	if (v->post_rtn) status = (*v->post_rtn)(q, Argv);
+	if (v->post_rtn) status = (*v->post_rtn)(q, Argv, cl);
 	break;
 
     }
@@ -314,6 +269,24 @@ out:
     if (q->type != RETRIEVE) {
         if (status == SMS_SUCCESS) {
 ##          end transaction	/* commit to this */
+	    if (journal) {
+		char buf[1024], *bp;
+		int i;
+		extern time_t now;
+
+		fprintf(journal, "%% %s %s %s",
+			cl->clname, cl->entity, ctime(&now));
+		fprintf(journal, "%s[%d] ", q->name, cl->args->sms_version_no);
+		for (i = 0; i < argc; i++) {
+		    if (i != 0) {
+			putc(' ', journal);
+		    }
+		    requote(buf, argv_ro[i], sizeof(buf));
+		    fputs(buf, journal);
+		}
+		putc('\n', journal);
+		fflush(journal);
+	    }
 	} else {
 ##          abort		/* it never happened */
 	}
@@ -333,10 +306,11 @@ build_qual(fmt, argc, argv, qual)
     register char *c;
     register int i;
     char *args[4];
+    char *index();
 
     c = fmt;
     for (i = 0; i < argc; i++) {
-	c = (char *)index(c, '%');
+	c = index(c, '%');
 	if (c++ == (char *)0) return(SMS_ARGS);
 	if (*c == 's')
 	    args[i] = argv[i];
@@ -367,6 +341,7 @@ build_qual(fmt, argc, argv, qual)
 	sprintf(qual, fmt, args[0], args[1], args[2], args[3]);
 	break;
     }
+    return(SMS_SUCCESS);
 }
 
 char *
@@ -485,7 +460,7 @@ check_query_access(q, argv, cl)
     if (status != SMS_SUCCESS) return(status);
 
     /* see if client is in the list (or any of its sub-lists) */
-    exists = find_member(acl_id, client_type, client_id, 0);
+    exists = find_member("LIST", acl_id, client_type, client_id, 0);
     return ((exists) ? SMS_SUCCESS : SMS_PERM);
 ##}
 
@@ -507,26 +482,27 @@ get_client(cl, client_type, client_id)
 
     /* if client is from local realm, get users_id */
     if (!strcmp(krb->realm, krb_realm)) {
-	name = krb->name;
-##	repeat retrieve (member_id = users.users_id) where users.login = @name
+	*client_id = cl->users_id;
 	*client_type = "USER";
-    } else {
-	/* otherwise use string_id */
-	name = cl->clname;
-##	repeat retrieve (member_id = strings.string_id) 
-##          where strings.string = @name
-	*client_type = "STRING";
+	return(SMS_SUCCESS);
     }
+
+    /* otherwise use string_id */
+    name = cl->clname;
+##  repeat retrieve (member_id = strings.string_id) 
+##      where strings.string = @name
 	
     /* make sure we found a users or string id */
 ##  inquire_equel (rowcount = "rowcount")
     if (rowcount == 0) return(SMS_PERM);
 
+    *client_type = "STRING";
     *client_id = member_id;
     return(SMS_SUCCESS);
 ##}
 
-##find_member(list_id, member_type, member_id, sq)
+##find_member(list_type, list_id, member_type, member_id, sq)
+    char *list_type;
 ##  int list_id;
 ##  char *member_type;
 ##  int member_id;
@@ -567,17 +543,20 @@ get_client(cl, client_type, client_id)
 	 sq_save_unique_data(sq, sublist);
 ##  }
 
-    if (child) return;
+    if (child) return(0);
 
     /* at top-level, check sub-lists for client (breadth-first search) */
     while (sq_get_data(sq, &sublist)) {
-	exists = find_member(sublist, member_type, member_id, sq);
+	exists = find_member(list_type, sublist, member_type, member_id, sq);
 	if (exists) {
 	    sq_destroy(sq);
 	    return(1);
 	}
     }
+    sq_destroy(sq);
+    return(0);
 ##}
+
 
 do_retrieve(q, pqual, psort, action, actarg)
     register struct query *q;
@@ -592,6 +571,22 @@ do_retrieve(q, pqual, psort, action, actarg)
 ##  char *csort;
 ##  int rowcount;
 ##  int errorno;
+    static char **vaddrs = (char **)NULL;
+
+    if (!vaddrs) {
+	register int i;
+
+	if ((vaddrs = (char **)malloc(sizeof(char *) * QMAXARGS)) == NULL) {
+	    com_err(whoami, SMS_NO_MEM, "setting up static argv");
+	    exit(1);
+	}
+	for (i = 0; i < QMAXARGS; i++) {
+	    if ((vaddrs[i] = malloc(QMAXARGSIZE)) == NULL) {
+		com_err(whoami, SMS_NO_MEM, "setting up static argv");
+		exit(1);
+	    }
+	}
+    }
 
     if (q->rvar) {
 	rvar = q->rvar;
@@ -603,30 +598,30 @@ do_retrieve(q, pqual, psort, action, actarg)
 	csort = psort;
 	if (pqual) {
 	    cqual = pqual;
-##          retrieve unique (param (q->tlist, q->vaddr)) where cqual
+##          retrieve unique (param (q->tlist, vaddrs)) where cqual
 ##                   sort by csort
 ##          {
-		 (*action)(q->vcnt, q->vaddr, actarg);
+		 (*action)(q->vcnt, vaddrs, actarg);
 ##          }
 	} else {
-##          retrieve unique (param (q->tlist, q->vaddr))
+##          retrieve unique (param (q->tlist, vaddrs))
 ##                   sort by csort
 ##          {
-		 (*action)(q->vcnt, q->vaddr, actarg);
+		 (*action)(q->vcnt, vaddrs, actarg);
 ##          }
 	}
 
     } else {
 	if (pqual) {
 	    cqual = pqual;
-##          retrieve unique (param (q->tlist, q->vaddr)) where cqual
+##          retrieve unique (param (q->tlist, vaddrs)) where cqual
 ##          {
-		 (*action)(q->vcnt, q->vaddr, actarg);
+		 (*action)(q->vcnt, vaddrs, actarg);
 ##          }
 	} else {
-##          retrieve unique (param (q->tlist, q->vaddr))
+##          retrieve unique (param (q->tlist, vaddrs))
 ##          {
-		 (*action)(q->vcnt, q->vaddr, actarg);
+		 (*action)(q->vcnt, vaddrs, actarg);
 ##          }
 	}
     }
@@ -646,7 +641,6 @@ do_update(q, argv, qual, action, actarg)
 ##  char *rvar;
 ##  char *rtable;
 ##  char *cqual;
-##  int rowcount;
 ##  int errorno;
       
     rvar = q->rvar;
@@ -712,6 +706,75 @@ do_delete(q, qual, action, actarg)
     if (errorno != 0) return(SMS_INGRES_ERR);
     return(SMS_SUCCESS);
 ##}
+
+
+/**
+ ** set_next_object_id - set next object id in values table
+ **
+ ** Inputs: object - object name in values table and in objects
+ **	    table - name of table objects are found in
+ **
+ ** - called before an APPEND operation to set the next object id to
+ **   be used for the new record to the next free value
+ **
+ **/
+
+set_next_object_id(object, table)
+    char *object;
+    char *table;
+##{
+##  char *name, *tbl;
+##  int rowcount, exists, value;
+
+    name = object;
+    tbl = table;
+##  range of v is values
+##  repeat retrieve (value = v.#value) where v.#name = @name
+##  inquire_equel(rowcount = "rowcount")
+    if (rowcount != 1)
+	return(SMS_INGRES_ERR);
+
+##  retrieve (exists = any(tbl.name where tbl.name = value))
+##  inquire_equel(rowcount = "rowcount")
+    if (rowcount != 1)
+	return(SMS_INGRES_ERR);
+    while (exists) {
+	value++;
+##	retrieve (exists = any(tbl.name where tbl.name = value))
+    }
+
+    if (LOG_RES)
+        com_err(whoami, 0, "setting ID %s to %d", name, value);
+##  repeat replace v (#value = @value) where v.#name = @name
+    return(SMS_SUCCESS);
+##}
+
+
+/* For now this just checks the argc's.  It should also see that there
+ * are no duplicate names.
+ */
+
+sanity_check_queries()
+{
+    register int i;
+    int maxv = 0, maxa = 0;
+    extern int QueryCount1, QueryCount2;
+    extern struct query Queries1[], Queries2[];
+#define MAX(x,y) ((x) > (y) ? (x) : (y))
+
+    for (i = 0; i < QueryCount1; i++) {
+	maxv = MAX(maxv, Queries1[i].vcnt);
+	maxa = MAX(maxa, Queries1[i].argc);
+    }
+    for (i = 0; i < QueryCount2; i++) {
+	maxv = MAX(maxv, Queries2[i].vcnt);
+	maxa = MAX(maxa, Queries2[i].argc);
+    }
+    if (MAX(maxv, maxa) > QMAXARGS) {
+	com_err(whoami, 0, "A query has more args than QMAXARGS");
+	exit(1);
+    }
+}
 
 
 /*

@@ -1,5 +1,5 @@
 .TH BLANCHE 1 "14 Sep 1988" "Project Athena"
-\" RCSID: $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/man/blanche.1,v 1.13 1997-09-08 19:51:00 danw Exp $
+\" RCSID: $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/man/blanche.1,v 1.14 2000-04-19 23:16:48 zacheiss Exp $
 .SH NAME
 blanche \- examine and modify memberships in Moira lists
 .SH SYNOPSIS
@@ -122,6 +122,11 @@ Toggle whether or not the list is a mailing list.
 .IP \fB-group\ \fR(\fB-G\fR)\ \fRor\ \fB-notgroup\ \fR(\fB-NG\fR)
 Toggle whether or not the list is a group. (Groups can be used on the
 ACLs of directories in AFS.)
+.IP \fB-nfsgroup\ \fR(\fB-N\fR)\ \fRor\ \fB-notnfs\ \fR(\fB-NN\fR)
+Toggle whether or not the list is an NFS group.  (NFS groups are
+included in a user's hesiod group list and in Moira-generated NFS
+credentials file, and can be used for controlling access to NFS exported
+filesystems.)
 .IP \fB-desc\ \fIdescription\ \fRor\ \fB-D\ \fIdescription\fR
 Set the description of the list.
 .IP \fB-owner\ \fIowner\ \fRor\ \fB-O\ \fIowner\fR

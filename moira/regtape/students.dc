@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/students.dc,v 1.4 1990-01-19 15:00:41 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/students.dc,v 1.5 1990-01-22 16:18:26 mar Exp $
  */
 
 #include <stdio.h>
@@ -147,7 +147,8 @@ FILE *in;
 	  year++;
     }
 
-    fgets(buf, sizeof(buf), in);
+    if (fgets(buf, sizeof(buf), in) == NULL)
+      return((struct entry *)NULL);
     buf[LEN_NAME] = 0;
     p = index(&buf[LOC_NAME], ',');
     if (p)

@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/util.c,v 1.2 1988-08-05 19:14:53 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/util.c,v 1.3 1988-08-30 15:17:26 mar Exp $
  *
  * Utility routines used by the SMS extraction programs.
  */
@@ -115,5 +115,8 @@ register char *s;
 	  last = s;
 	s++;
     }
-    *(++last) = '\0';
+    if (*last == ' ')
+      *last = '\0';
+    else
+      *(++last) = '\0';
 }

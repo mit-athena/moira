@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.17 1989-06-01 21:13:26 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.18 1989-06-26 11:46:02 mar Exp $";
 #endif
 
 /*	This is the file attach.c for the SMS Client, which allows a nieve
@@ -13,7 +13,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.17 1989-06-01 21:13:26 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.18 1989-06-26 11:46:02 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -255,9 +255,9 @@ Bool name;
     }
 
     GetTypeFromUser("Filesystem's Type", "filesys", &info[FS_TYPE]);
-    if (!strcmp(info[FS_TYPE], "FSGROUP") || !strcmp(info[FS_TYPE], "fsgroup"))
+    if (!strcasecmp(info[FS_TYPE], "FSGROUP"))
       fsgroup++;
-    if (fsgroup) {
+    if (fsgroup || !strcasecmp(info[FS_TYPE], "AFS")) {
 	free(info[FS_MACHINE]);
 	info[FS_MACHINE] = Strsave(NO_MACHINE);
     } else {

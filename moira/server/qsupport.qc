@@ -1,11 +1,14 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v $
  *	$Author: wesommer $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.3 1987-07-30 00:26:11 wesommer Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.4 1987-07-30 00:30:21 wesommer Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
  *	$Log: not supported by cvs2svn $
+Revision 1.3  87/07/30  00:26:11  wesommer
+Changes by mike prior to "appends" fix.
+
 Revision 1.2  87/07/29  16:00:39  wesommer
 Fixed add_locker.
 
@@ -15,7 +18,7 @@ Initial revision
  */
 
 #ifndef lint
-static char *rcsid_qsupport_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.3 1987-07-30 00:26:11 wesommer Exp $";
+static char *rcsid_qsupport_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.4 1987-07-30 00:30:21 wesommer Exp $";
 #endif lint
 
 #include "query.h"
@@ -567,7 +570,7 @@ add_locker(q, argv)
     /* create nfsquota entry */
 ##  append nfsquota (#users_id = users_id, #mach_id = mach_id,
 ##		     #device = device, #quota = quota)
-##  repeat replace tbs (appends = appends + 1, modtime = "now")
+##  repeat replace tbs (appends = tbs.appends + 1, modtime = "now")
 ##             where tbs.table = "nfsquota"
 
     return(SMS_SUCCESS);

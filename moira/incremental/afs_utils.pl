@@ -1,10 +1,10 @@
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/afs_utils.pl,v 1.12 1994-10-18 13:42:39 probe Exp $
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/afs_utils.pl,v 1.13 1994-10-18 13:45:04 probe Exp $
 
 $afsbin="/moira/bin";
 $vos="$afsbin/vos";
 $pts="$afsbin/pts";
 $fs="$afsbin/fs";
-$zwrite="/usr/athena/bin/zwrite"
+$zwrite="/usr/athena/bin/zwrite";
 
 $afs_data="/moira/afs/afs_data";
 $afs_save="$afs_data.tmp";

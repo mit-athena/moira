@@ -5,7 +5,7 @@
  *
  * $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v $
  * $Author: mar $
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.25 1989-08-08 15:35:03 mar Exp $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.26 1990-01-19 18:02:30 mar Exp $
  *
  * Generic menu system module.
  *
@@ -18,7 +18,7 @@
  */
 
 #ifndef lint
-static char rcsid_menu_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.25 1989-08-08 15:35:03 mar Exp $";
+static char rcsid_menu_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.26 1990-01-19 18:02:30 mar Exp $";
 
 #endif lint
 
@@ -420,10 +420,9 @@ int Prompt_input(prompt, buf, buflen)
 	    case CTL('L'):
 		(void) wclear(cur_ms->ms_input);
 		(void) waddstr(cur_ms->ms_input, prompt);
-		(void) touchwin(cur_ms->ms_screen);
-#ifdef notdef
-		refresh_ms(cur_ms);
-#endif notdef
+		(void) touchwin(cur_ms->ms_input);
+		(void) mvcur(0, COLS - 1, LINES - 1, 0);
+		(void) wrefresh(curscr);
 		getyx(cur_ms->ms_input, y, x);
 		oldy = y;
 		oldx = x;
@@ -528,6 +527,8 @@ int Password_input(prompt, buf, buflen)
 		(void) wclear(cur_ms->ms_input);
 		(void) waddstr(cur_ms->ms_input, prompt);
 		refresh_ms(cur_ms);
+		(void) mvcur(0, COLS - 1, LINES - 1, 0);
+		(void) wrefresh(curscr);
 		getyx(cur_ms->ms_input, y, x);
 		break;
 	    case '\n':

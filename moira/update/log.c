@@ -1,13 +1,13 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/log.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/log.c,v 1.3 1988-09-14 12:16:18 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/log.c,v 1.4 1989-06-26 12:31:19 mar Exp $
  */
 /*  (c) Copyright 1988 by the Massachusetts Institute of Technology. */
 /*  For copying and distribution information, please see the file */
 /*  <mit-copyright.h>. */
 
 #ifndef lint
-static char *rcsid_log_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/log.c,v 1.3 1988-09-14 12:16:18 mar Exp $";
+static char *rcsid_log_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/log.c,v 1.4 1989-06-26 12:31:19 mar Exp $";
 #endif	lint
 
 /*
@@ -28,6 +28,10 @@ static char *rcsid_log_c = "$Header: /afs/.athena.mit.edu/astaff/project/moirade
 #include "update.h"
 #include <krb.h>
 
+#ifndef __STDC__
+#define const
+#endif
+
 #ifdef use_syslog
 #include <syslog.h>
 #else
@@ -45,10 +49,10 @@ int syslog_prio[] = {
 int log_priority;
 extern char *whoami;
 
-sms_update_com_err_hook(whoami, code, fmt, args)
-    char *whoami;
-    int code;
-    char *fmt;
+void sms_update_com_err_hook(whoami, code, fmt, args)
+    const char *whoami;
+    long code;
+    const char *fmt;
     va_list args;
 {
     char buf[BUFSIZ], *cp;

@@ -6,8 +6,8 @@
  *	By:		Chris D. Peterson
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/include/moira_site.h,v $
- *      $Author: qjb $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/include/moira_site.h,v 1.8 1988-08-02 00:07:35 qjb Exp $
+ *      $Author: mar $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/include/moira_site.h,v 1.9 1988-10-05 15:42:09 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -193,5 +193,63 @@
 #define US_DELETED      3
 #define US_NOT_ALLOWED  4
 #define US_END          5
+
+/* Service info */
+#define SVC_SERVICE	0
+#define SVC_INTERVAL	1
+#define SVC_TARGET	2
+#define SVC_SCRIPT	3
+#define SVC_DFGEN	4
+#define SVC_DFCHECK	5
+#define SVC_TYPE	6
+#define SVC_ENABLE	7
+#define SVC_INPROGRESS	8
+#define SVC_HARDERROR	9
+#define SVC_ERRMSG	10
+#define SVC_ACE_TYPE	11
+#define SVC_ACE_NAME	12
+#define SVC_MODTIME	13
+#define SVC_MODBY	14
+#define SVC_MODWITH	15
+#define SVC_END		16
+
+/* Service add/update */
+#define SC_SERVICE	0
+#define SC_INTERVAL	1
+#define SC_TARGET	2
+#define SC_SCRIPT	3
+#define SC_TYPE		4
+#define SC_ENABLE	5
+#define SC_ACE_TYPE	6
+#define SC_ACE_NAME	7
+#define SC_END		8
+
+/* Service/host tuples */
+#define SH_SERVICE	0
+#define SH_MACHINE	1
+#define SH_ENABLE	2
+#define SH_OVERRIDE	3
+#define SH_SUCCESS	4
+#define SH_INPROGRESS	5
+#define SH_HOSTERROR	6
+#define SH_ERRMSG	7
+#define SH_LASTTRY	8
+#define SH_LASTSUCCESS	9
+#define SH_VALUE1	10
+#define SH_VALUE2	11
+#define SH_VALUE3	12
+#define SH_MODTIME	13
+#define SH_MODBY	14
+#define SH_MODWITH	15
+#define SH_END		16
+
+/* Service/host tuple add & updates */
+#define SHI_SERVICE	0
+#define SHI_MACHINE	1
+#define SHI_ENABLE	2
+#define SHI_VALUE1	3
+#define SHI_VALUE2	4
+#define SHI_VALUE3	5
+#define SHI_END		6
 
 #endif _infodefs_		/* Do not add anything after this line. */

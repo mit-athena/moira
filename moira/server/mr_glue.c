@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_glue.c,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_glue.c,v 1.16 1990-03-28 19:02:06 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_glue.c,v 1.17 1990-06-07 17:51:37 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -12,7 +12,7 @@
  */
 
 #ifndef lint
-static char *rcsid_mr_glue_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_glue.c,v 1.16 1990-03-28 19:02:06 mar Exp $";
+static char *rcsid_mr_glue_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_glue.c,v 1.17 1990-06-07 17:51:37 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -130,8 +130,8 @@ int mr_query(name, argc, argv, callproc, callarg)
     hints.proc = callproc;
     hints.hint = callarg;
     next_incremental();
-    return mr_process_query(&pseudo_client, name, argc, argv,
-			     callback, &hints);
+    return mr_process_query(&pseudo_client, name, argc,
+			    mr_copy_args(argv, argc), callback, &hints);
 
 }
 
@@ -141,7 +141,8 @@ int mr_access(name, argc, argv)
     char **argv;		/* Args */
 {
     time(&now);
-    return mr_check_access(&pseudo_client, name, argc, argv);
+    return mr_check_access(&pseudo_client, name, argc,
+			   mr_copy_args(argv, argc));
 }
 
 int mr_query_internal(argc, argv, callproc, callarg)
@@ -156,8 +157,8 @@ int mr_query_internal(argc, argv, callproc, callarg)
     hints.proc = callproc;
     hints.hint = callarg;
     next_incremental();
-    return mr_process_query(&pseudo_client, argv[0], argc-1, argv+1,
-			     callback, &hints);
+    return mr_process_query(&pseudo_client, argv[0], argc-1,
+			    mr_copy_args(argv+1, argc-1), callback, &hints);
 }
 
 int mr_access_internal(argc, argv)
@@ -165,7 +166,8 @@ int mr_access_internal(argc, argv)
     char **argv;
 {
     time(&now);
-    return mr_check_access(&pseudo_client, argv[0], argc-1, argv+1);
+    return mr_check_access(&pseudo_client, argv[0], argc-1,
+			   mr_copy_args(argv+1, argc-1));
 }
 
 mr_shutdown(why)

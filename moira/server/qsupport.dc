@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.dc,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.dc,v 2.23 1993-04-28 11:56:40 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.dc,v 2.24 1993-05-10 13:30:55 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_qsupport_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.dc,v 2.23 1993-04-28 11:56:40 mar Exp $";
+static char *rcsid_qsupport_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.dc,v 2.24 1993-05-10 13:30:55 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -4025,11 +4025,11 @@ MR_SQLDA_T *mr_alloc_SQLDA()
     }
 
     for(j=0; j<QMAXARGS; j++) {
-	if((it->sqlvar[j].sqldata=malloc(sizeof(short)+QMAXARGSIZE))==NULL) {
+	if((it->sqlvar[j].sqldata=malloc(sizeof(short)+ARGLEN))==NULL) {
 	    com_err(whoami, MR_NO_MEM, "setting up SQLDA variables");
 	    exit(1);
 	}
-	it->sqlvar[j].sqllen=QMAXARGSIZE;
+	it->sqlvar[j].sqllen=ARGLEN;
 	it->sqlvar[j].sqlind=null_indicators+j;
 	null_indicators[j]=0;
     }
@@ -4145,7 +4145,7 @@ prefetch_filesys(q,argv,cl)
 convert_wildcards(arg)
     char *arg;
 {
-    static char buffer[QMAXARGSIZE];
+    static char buffer[ARGLEN];
     register char *s, *d;
 
     for(d=buffer,s=arg;*s;s++) {
@@ -4175,7 +4175,7 @@ convert_wildcards(arg)
 convert_wildcards_uppercase(arg)
     char *arg;
 {
-    static char buffer[QMAXARGSIZE];
+    static char buffer[ARGLEN];
     register char *s, *d;
 
     for(d=buffer,s=arg;*s;s++) {

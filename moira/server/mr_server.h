@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_server.h,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_server.h,v 1.22 1993-01-12 12:06:11 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_server.h,v 1.23 1993-05-10 13:30:42 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
@@ -87,6 +87,8 @@ extern int log_flags;
 
 /* max length of query argument allowed */
 #define ARGLEN	257
+/* Used to setup static argv, maximum argc */
+#define QMAXARGS	20
 
 /* statistics on number of queries by version number */
 extern int newqueries, oldqueries;

@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/query.h,v 2.0 1992-08-04 12:10:42 genoa Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/query.h,v 2.1 1993-05-10 13:30:52 mar Exp $
  *
  * Structures and constants used in the query dispatch table
  */
@@ -58,8 +58,3 @@ struct valobj
     char *idfield;		/* table's corresponding id field (if any) */
     int error;
 };
-
-/* Used to setup static argv, maximum argc and argument lengths */
-#define QMAXARGS	20
-#define QMAXARGSIZE	513
-

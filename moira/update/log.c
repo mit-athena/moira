@@ -1,10 +1,10 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/log.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/log.c,v 1.1 1987-08-22 17:54:37 wesommer Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/log.c,v 1.2 1988-08-22 16:21:05 mar Exp $
  */
 
 #ifndef lint
-static char *rcsid_log_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/log.c,v 1.1 1987-08-22 17:54:37 wesommer Exp $";
+static char *rcsid_log_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/log.c,v 1.2 1988-08-22 16:21:05 mar Exp $";
 #endif	lint
 
 /*
@@ -17,7 +17,6 @@ static char *rcsid_log_c = "$Header: /afs/.athena.mit.edu/astaff/project/moirade
  * define syslog for using syslog,
  * default to tty
  */
-#define use_syslog
 
 #include <stdio.h>
 #include "com_err.h"
@@ -40,6 +39,7 @@ int syslog_prio[] = {
 };
 #endif
 int log_priority;
+extern char *whoami;
 
 sms_update_com_err_hook(whoami, code, fmt, args)
     char *whoami;
@@ -90,3 +90,22 @@ sms_update_initialize()
     log_priority = log_INFO;
     initialized = 1;
 }
+
+
+static char fmt[] = "[%s] %s";
+
+#define	def(name,level,prio) \
+    name(msg) \
+    char *msg; \
+{\
+     register int old_prio; \
+     old_prio = log_priority; \
+     sms_update_initialize(); \
+     com_err(whoami, 0, fmt, level, msg); \
+     log_priority = old_prio; \
+}
+
+def(sms_log_error, "error", log_ERROR)
+def(sms_log_warning, "warning", log_WARNING)
+def(sms_log_info, "info", log_INFO)
+def(sms_debug, "debug", log_DEBUG)

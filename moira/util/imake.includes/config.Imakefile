@@ -17,11 +17,11 @@ OSDEFS= -DPOSIX
 #endif
 
 #ifdef sgi
-OSDEFS= -DPOSIX -DSYSV
+OSDEFS= -DPOSIX
 #endif
 
 #if defined(SOLARIS)
-OSDEFS= -DPOSIX -DSOLARIS -DSYSV
+OSDEFS= -DPOSIX -DSOLARIS
 OSLIBS= -lresolv -lsocket -lnsl
 #endif
 
@@ -88,7 +88,8 @@ MANDIR= /usr/athena/man
  * your environment the following libraries and associated tools:
 	com_err
  */
-#define USELOCALLIBS
+/* we want the newer versions from our source tree */
+/* #define USELOCALLIBS */
 
 /*
  * Define HESIOD if you have hesiod installed on your system and want

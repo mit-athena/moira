@@ -1,9 +1,12 @@
 @Comment[
 	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/doc/tech-plan/dcm.mss,v $
 	$Author: ambar $
-	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/doc/tech-plan/dcm.mss,v 1.9 1987-06-01 16:27:39 ambar Exp $
+	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/doc/tech-plan/dcm.mss,v 1.10 1987-06-02 15:42:45 ambar Exp $
 
 	$Log: not supported by cvs2svn $
+Revision 1.9  87/06/01  16:27:39  ambar
+consistency checks.
+
 Revision 1.8  87/06/01  10:51:22  spook
 Merged update.mss into dcm.mss where it belongs.
 
@@ -69,13 +72,13 @@ A description of each field follows:
 @begin(itemize, spread 0)
 
 @i[Last Time of Update] - This field holds the time when a last 
-successful update occured.  This time will be used against 
+successful update occurred.  This time will be used against 
 the current time to determine if the interval criteria has been met.
 
 @i[Success] - Flag for indicating whether or not the last time tried was
 successful. 0-fail, 1-success
 
-@i[Time interval] - Dervived from the SMS database.  Gives the interval
+@i[Time interval] - Derived from the SMS database.  Gives the interval
 update time for each server's information needs.
 
 @i[Server] - This is the server name.  Derived from SMS database.
@@ -112,13 +115,13 @@ The data control manager acts as an interpreter on the SDF's.  The basic
 mechanism is for the DCM to read the above entry table, determine which
 servers need updating and then locate the appropriate SDF for interpretation.
 The breakdown of the SDF is a procedure based primarily on the associated
-query handle and it's associated input and output structure.  The ouput of the
+query handle and it's associated input and output structure.  The output of the
 DCM is a file stored on the SMS host which is exactly the same
 format of the server-based file.  The update mechanism takes this localized
 data and ships it over the net. 
 
 The most used statements in an SDF are the commands which set up a query 
-request.  In partcular, these commands are:
+request.  In particular, these commands are:
 
 @begin(verbatim)
 
@@ -149,7 +152,7 @@ request.  In partcular, these commands are:
 				statement.
 @end(verbatim)
 
-The complete operation of a DCM intrpretive cycle follows:
+The complete operation of a DCM interpretive cycle follows:
 
 The input fields are checked to see if they exist given the query handle.
 Two files are checked.  One file handle.h contains the mapping between
@@ -235,7 +238,7 @@ the structure itself to the query routine.
 
 The converse is applied on output.  The canonical output name is
 used to map a memory image of the output structure.  This structure
-stays resident throuought the DCM operation and can be referenced
+stays resident throughout the DCM operation and can be referenced
 by subsequent query requests.  
 
 @SubSection(Server Description Files)
@@ -243,11 +246,11 @@ by subsequent query requests.
 The server description files, or SDF, are files which contains a unique
 description of each server SMS updates.
 
-Hand created, these files hold information, in english-like syntax, 
+Hand created, these files hold information, in English-like syntax, 
 which the DCM uses for
-manipulating generic data into server specific form.  Accomodating new
+manipulating generic data into server specific form.  Accommodating new
 servers requires, simply, adding a new SDF to the system.  The purpose of
-the server description files is to provide a parsable, readable text files
+the server description files is to provide a parseable, readable text files
 for determining the structure and personality of a given server.  The three
 reasons for SDF:
 
@@ -256,7 +259,7 @@ reasons for SDF:
 To provide a local, uniform and expandable method of providing server
 information to the Data Control Manager.
 
-To maintain simplicity and readabilility.
+To maintain simplicity and readability.
 
 To present a regular way of describing many models of servers.
 
@@ -272,12 +275,12 @@ generalized syntax and logic check.  Assuming the file is syntactically
 correct, the DCM will use the format of the SDF to generate a server
 specific file.  
 
-The SDF is comprised of a generallized syntax which allows the user to
+The SDF is comprised of a generalized syntax which allows the user to
 create the information needs of any system server.  The limitations are
 that the data must be in character format. 
 
 The Server Description Language consists of key words and commands which the DCM
-interprets.  The format of the files is line oriented and parsable.  An
+interprets.  The format of the files is line oriented and parseable.  An
 example of an SDF is:
 
 @Begin(Verbatim, LeftMargin +.5inch)
@@ -291,7 +294,7 @@ var name, attribute
 
 begin header
 
-	<"this is verbatim infomation">
+	<"this is verbatim information">
 	<"this is the header">
 
 end header
@@ -549,7 +552,7 @@ servers again if the name service is lost.  Also, if the server
 machine crashes, it may not be able to come up to full operational
 capacity if it relies on the databases which have been corrupted; in
 this case, it is possible that the database may not be easily
-replacable.  Manual intervention would be required for recovery.
+replaceable.  Manual intervention would be required for recovery.
 
 @SubSection(Data Transport Security)
 
@@ -566,5 +569,5 @@ or change data while it is in transit.
 
 Encryption of the data itself is an option that can be invoked depending
 on the sensitivity of the data involved.  For instance, files such as
-/etc/rvdtdab are not particularly secret, but the MIT id numbers of
+/etc/rvdtab are not particularly secret, but the MIT id numbers of
 users are.

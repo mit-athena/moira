@@ -1,4 +1,4 @@
-/* $Id: qrtn.pc,v 2.18 1999-12-30 17:27:14 danw Exp $
+/* $Id: qrtn.pc,v 2.19 2000-01-10 20:54:15 danw Exp $
  *
  * Query-processing routines
  *
@@ -20,7 +20,7 @@
 EXEC SQL INCLUDE sqlca;  /* SQL Communications Area */
 EXEC SQL INCLUDE sqlda;  /* SQL Descriptor Area */
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.pc,v 2.18 1999-12-30 17:27:14 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.pc,v 2.19 2000-01-10 20:54:15 danw Exp $");
 
 SQLDA *mr_sqlda;
 EXEC SQL BEGIN DECLARE SECTION;
@@ -96,7 +96,7 @@ int mr_open_database(void)
       first_open = 0;
 
       /* initialize local argv */
-      for (i = 0; i < 16; i++)
+      for (i = 0; i < QMAXARGS; i++)
 	Argv[i] = xmalloc(MAX_FIELD_WIDTH);
 
       mr_sqlda = mr_alloc_sqlda();

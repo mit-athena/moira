@@ -1,4 +1,4 @@
-/* $Id: mailhub.pc,v 1.10 1999-11-16 04:47:30 danw Exp $
+/* $Id: mailhub.pc,v 1.11 2000-01-25 17:35:20 danw Exp $
  *
  * This generates the /usr/lib/aliases file for the mailhub.
  *
@@ -22,7 +22,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/mailhub.pc,v 1.10 1999-11-16 04:47:30 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/mailhub.pc,v 1.11 2000-01-25 17:35:20 danw Exp $");
 
 char *whoami = "mailhub.gen";
 char *db = "moira/moira";
@@ -160,7 +160,9 @@ void get_info(void)
     SELECT mach_id, name
     FROM machine
     WHERE status = 1
-    AND mach_id IN ( SELECT UNIQUE pop_id FROM users )
+    AND ( mach_id IN ( SELECT UNIQUE pop_id FROM users ) OR
+	  mach_id IN ( SELECT UNIQUE mach_id FROM filesys
+		       WHERE type = 'IMAP' ) )
     ORDER BY mach_id;
   EXEC SQL OPEN m_cursor;
   while (1)

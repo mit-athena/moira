@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/hesiod.dc,v 1.12 1993-07-30 17:51:13 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/hesiod.dc,v 1.13 1993-11-23 17:31:54 mar Exp $
  *
  * This generates the zone files necessary to load a hesiod server.
  * The following zones are generated: passwd, uid, pobox, group,
@@ -122,6 +122,7 @@ get_mach()
     EXEC SQL DECLARE m_cursor CURSOR FOR
       SELECT name, mach_id
       FROM machine
+      WHERE status = 1
       ORDER BY mach_id;
     EXEC SQL OPEN m_cursor;
     while (1) {

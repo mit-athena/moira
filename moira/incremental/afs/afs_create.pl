@@ -126,6 +126,7 @@ sub athena_proc
 	if ($type =~ /^(ACTIVITY|APROJ|CONTRIB|ORG|REF|SYSTEM)/);
 
     if ($type !~ /^(AREF|ORG|SYSTEM)/) {
+	system("$vos backup $vname >/dev/null");
 	system("$fs mkm $path/OldFiles $vname.backup");
 	warn "$locker: Unable to create OldFiles mountpoint\n" if ($?);
     }

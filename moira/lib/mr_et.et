@@ -1,204 +1,204 @@
 #	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_et.et,v $
 #	$Author: mar $
-#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_et.et,v 1.13 1989-08-30 19:13:13 mar Exp $
+#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_et.et,v 1.14 1990-03-17 16:37:37 mar Exp $
 #
 	error_table sms
 
-ec	SMS_NOT_CONNECTED,
+ec	MR_NOT_CONNECTED,
 	"Not connected to Moira server"
 
-ec	SMS_CANT_CONNECT,
+ec	MR_CANT_CONNECT,
 	"Can't connect to Moira server"
 
-ec	SMS_VERSION_MISMATCH,
+ec	MR_VERSION_MISMATCH,
 	"Moira version mismatch"
 
-ec	SMS_ABORTED,
+ec	MR_ABORTED,
 	"Moira operation aborted"
 
-ec	SMS_UNKNOWN_PROC,
+ec	MR_UNKNOWN_PROC,
 	"Unknown procedure"
 
-ec	SMS_INGRES_ERR,
+ec	MR_INGRES_ERR,
 	"Ingres system error occurred"
 
-ec	SMS_MORE_DATA,
+ec	MR_MORE_DATA,
 	"More data is available from Moira"
 
-ec	SMS_NO_MATCH,
+ec	MR_NO_MATCH,
 	"No records in database match query"
 
-ec	SMS_NO_HANDLE,
+ec	MR_NO_HANDLE,
 	"Unknown query handle"
 
-ec 	SMS_ALREADY_CONNECTED,
+ec 	MR_ALREADY_CONNECTED,
 	"Already connected to the moira server"
 
-ec	SMS_ARGS,
+ec	MR_ARGS,
 	"Incorrect number of arguments"
 
-ec	SMS_NOT_UNIQUE,
+ec	MR_NOT_UNIQUE,
 	"Arguments not unique"
 
-ec	SMS_PERM,
+ec	MR_PERM,
 	"Insufficient permission to perform requested database access"
 
-ec	SMS_LIST,
+ec	MR_LIST,
 	"No such list"
 
-ec	SMS_USER,
+ec	MR_USER,
 	"No such user"
 
-ec	SMS_STRING,
+ec	MR_STRING,
 	"Unknown string"
 
-ec	SMS_TYPE,
+ec	MR_TYPE,
 	"Invalid type"
 
-ec	SMS_EXISTS,
+ec	MR_EXISTS,
 	"Record already exists"
 
-ec	SMS_DATE,
+ec	MR_DATE,
 	"Invalid date"
 
-ec	SMS_CLUSTER,
+ec	MR_CLUSTER,
 	"Unknown cluster"
 
-ec	SMS_MACHINE,
+ec	MR_MACHINE,
 	"Unknown machine"
 
-ec	SMS_SERVICE,
+ec	MR_SERVICE,
 	"Unknown service"
 
-ec	SMS_FILESYS,
+ec	MR_FILESYS,
 	"Named file system does not exist"
 
-ec	SMS_PRINTER,
+ec	MR_PRINTER,
 	"Unknown printer"
 
-ec	SMS_QUEUE,
+ec	MR_QUEUE,
 	"Unknown queue"
 	
-ec	SMS_DEVICE,
+ec	MR_DEVICE,
 	"No such device"
 
-ec	SMS_ACE,
+ec	MR_ACE,
 	"No such access control entity"
 
-ec	SMS_NFSPHYS,
+ec	MR_NFSPHYS,
 	"Machine/device pair not in nfsphys"
 
-ec	SMS_FILESYS_EXISTS,
+ec	MR_FILESYS_EXISTS,
 	"Named file system already exists"
 
-ec	SMS_QUERY_NOT_REENTRANT,
+ec	MR_QUERY_NOT_REENTRANT,
 	"Cannot do query from callback routine"
 
-ec	SMS_RVD,
+ec	MR_RVD,
 	"No such rvd"
 
-ec	SMS_NFS,
+ec	MR_NFS,
 	"Specified directory not exported"
 
-ec	SMS_FILESYS_ACCESS,
+ec	MR_FILESYS_ACCESS,
 	"Invalid filesys access"
 
-ec	SMS_USER_GROUP,
+ec	MR_USER_GROUP,
 	"List is a user group"
 
-ec	SMS_ARG_TOO_LONG,
+ec	MR_ARG_TOO_LONG,
 	"An argument is too long"
 
 # These appear only in version 2 of the protocol and later:
 
-ec	SMS_NO_MEM,
+ec	MR_NO_MEM,
 	"Server ran out of memory"
 
-ec	SMS_IN_USE,
+ec	MR_IN_USE,
 	"Object is in use"
 
-ec	SMS_BAD_CLASS,
+ec	MR_BAD_CLASS,
 	"Specified class is not known"
 
-ec	SMS_INTERNAL,
+ec	MR_INTERNAL,
 	"Moira internal consistency failure"
 
-ec	SMS_BAD_CHAR,
+ec	MR_BAD_CHAR,
 	"Illegal character in argument"
 
-ec	SMS_BAD_GROUP,
+ec	MR_BAD_GROUP,
 	"Invalid group ID"
 
-ec	SMS_WILDCARD,
+ec	MR_WILDCARD,
 	"Wildcards not allowed in this case"
 
-ec	SMS_NO_CHANGE,
+ec	MR_NO_CHANGE,
 	"The database has not changed, files not rebuilt"
 
-ec	SMS_TAR_FAIL,
+ec	MR_TAR_FAIL,
 	"Unable to build archive of config files"
 
-ec	SMS_OCONFIG,
+ec	MR_OCONFIG,
 	"Unable to open DCM file"
 
-ec	SMS_CCONFIG,
+ec	MR_CCONFIG,
 	"Error closing DCM output file"
 
-ec	SMS_FSTYPE,
+ec	MR_FSTYPE,
 	"Unknown filesys type"
 
-ec	SMS_INTEGER,
+ec	MR_INTEGER,
 	"String could not be parsed as an integer"
 
-ec	SMS_NO_ID,
+ec	MR_NO_ID,
 	"Cannot allocate new ID"
 
-ec	SMS_NO_FILESYS,
+ec	MR_NO_FILESYS,
 	"Cannot find space for filesys"
 
-ec	SMS_NO_POBOX,
+ec	MR_NO_POBOX,
 	"Cannot find space for pobox"
 
-ec	SMS_NO_QUOTA,
+ec	MR_NO_QUOTA,
 	"No default quota specified"
 
-ec	SMS_USER_AUTH,
+ec	MR_USER_AUTH,
 	"Cannot find you in the database, access will be restricted"
 
-ec	SMS_DEADLOCK,
+ec	MR_DEADLOCK,
 	"Database deadlock; try again later"
 
-ec	SMS_NOCRED,
+ec	MR_NOCRED,
 	"Unable to install new credentials files"
 
-ec	SMS_SETQUOTA,
+ec	MR_SETQUOTA,
 	"Failure setting user quota"
 
-ec	SMS_HESFILE,
+ec	MR_HESFILE,
 	"Failure updating hesiod file (probably disk full)"
 
-ec	SMS_MISSINGFILE,
+ec	MR_MISSINGFILE,
 	"Did not receive file for update"
 
-ec	SMS_MKCRED,
+ec	MR_MKCRED,
 	"unable to compile database files"
 
-ec	SMS_NAMED,
+ec	MR_NAMED,
 	"name daemon failed to start"
 
-ec	SMS_TARERR,
+ec	MR_TARERR,
 	"Tar of update file failed (disk full?)"
 
-ec	SMS_PROTO,
+ec	MR_PROTO,
 	"Failed to put prototype files in new locker"
 
-ec	SMS_BUSY,
+ec	MR_BUSY,
 	"the database is busy; try again later"
 
-ec	SMS_DOWN,
+ec	MR_DOWN,
 	"the database is closed right now; try again later"
 
-ec	SMS_LISTLOOP,
+ec	MR_LISTLOOP,
 	"Lists are not allowed to contain themselves as members"
 
 	end

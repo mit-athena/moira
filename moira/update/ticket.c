@@ -1,13 +1,13 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/ticket.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/ticket.c,v 1.10 1992-09-21 12:31:34 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/ticket.c,v 1.11 1992-12-30 17:46:33 mar Exp $
  */
 /*  (c) Copyright 1988 by the Massachusetts Institute of Technology. */
 /*  For copying and distribution information, please see the file */
 /*  <mit-copyright.h>. */
 
 #ifndef lint
-static char *rcsid_ticket_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/ticket.c,v 1.10 1992-09-21 12:31:34 mar Exp $";
+static char *rcsid_ticket_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/ticket.c,v 1.11 1992-12-30 17:46:33 mar Exp $";
 #endif	lint
 
 #include <mit-copyright.h>
@@ -57,23 +57,20 @@ get_mr_update_ticket(host, ticket)
  try_it:
      code = krb_mk_req(ticket, service, phost, realm, (long)0);
      if (code) {
-	 code += ERROR_TABLE_BASE_krb;
+	 if (pass == 1) {
+	     /* maybe we're taking too long? */
+	     if ((code = get_mr_tgt()) != 0) {
+		 com_err(whoami, code, " can't get Kerberos TGT");
+		 return(code);
+	     }
+	     pass++;
+	     goto try_it;
+	 }
 	 com_err(whoami, code, "in krb_mk_req");
      } else {
 	 code = krb_get_cred(service, phost, realm, &cr);
 	 bcopy(cr.session, session, sizeof(session));
      }
-#ifdef notdef
-     if (pass == 1) {
-	 /* maybe we're taking too long? */
-	 if ((code = get_mr_tgt()) != 0) {
-	     com_err(whoami, code, " can't get Kerberos TGT");
-	     return(code);
-	 }
-	 pass++;
-	 goto try_it;
-     }
-#endif /* notdef */
      return(code);
 }
 

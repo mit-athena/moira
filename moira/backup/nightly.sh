@@ -1,9 +1,9 @@
-#!/bin/sh -x
+#!/bin/sh
 #
 #	Nightly script for backing up Moira.
 #
 #
-BKUPDIRDIR=/u1/backups
+BKUPDIRDIR=/backup
 PATH=/bin:/athena/bin:/usr/athena/bin:/usr/bin:/usr/ucb:/usr/new; export PATH
 . /usr/ingres/sqluser.profile
 chdir ${BKUPDIRDIR}
@@ -28,12 +28,27 @@ fi
 chmod 750 in_progress
 if /moira/bin/mrbackup ${BKUPDIRDIR}/in_progress/
 then
-	ftotal=`ls ${BKUPDIRDIR}/in_progress/ | awk '{n++} END {print n}'`
-	fzero=`ls -s ${BKUPDIRDIR}/in_progress/|awk '$1==0{z++} END{print z}'`
-	echo "Dumped $ftotal files, of which $fzero are zero length"
-	if [ "$fzero" -gt 2 ]
+	failed=`ls -s ${BKUPDIRDIR}/in_progress/ \
+		| awk '	!/total/ { 
+			  if ( FILENAME ~ /conf$/ ) {
+			    minsize[$2]=$1;
+			  } else {
+			    size[$2]=$1
+			  }
+			} 
+			END {
+			  for ( i in minsize ) {
+			    if ( minsize[i] > size[i] ) {
+			      j+=1
+			    }
+			  }
+			  print j
+			}' ${BKUPDIRDIR}/conf -`
+	if [ "$failed" -gt 0 ]
 	then
-		echo "Backup was incomplete!"
+		echo "Backup was incomplete!  $failed table(s) too small!"
+		echo "Current file sizes:"
+		ls -s in_progress/
 		exit 1
 	fi
 	echo "Backup successful"
@@ -53,19 +68,20 @@ fi
 echo -n "Shifting backups "
 
 mv backup_3 stale
-echo -n "3"
+echo -n "3 "
 mv backup_2 backup_3
-echo -n "2"
+echo -n "2 "
 mv backup_1 backup_2
-echo -n "1"
+echo -n "1 "
 mv in_progress backup_1
 echo
 /bin/df /moira/moira.log | /usr/ucb/tail -1
 echo 
 echo -n "deleting last backup"
 rm -rf stale
-echo "Shipping over the net:"
-rcp -rpx ${BKUPDIRDIR}/* oregano:/u1/moira
+echo
+echo "Shipping over the net"
+rcp -rpx ${BKUPDIRDIR}/* oregano:/backup
 rcp -rpx ${BKUPDIRDIR}/* nessus:/backup/moira
 
 if [ "`/usr/bin/find /moira/critical.log -mtime -1 -print`" = "/moira/critical.log" ]; then
@@ -73,5 +89,10 @@ if [ "`/usr/bin/find /moira/critical.log -mtime -1 -print`" = "/moira/critical.l
 	 /bin/echo "Subject: Moira update status";\
 	 /usr/ucb/tail /moira/critical.log) | /bin/mail dbadmin
 fi
+
+plfile=/afs/athena.mit.edu/system/info/public-mailing-lists
+awk -F\| '$3==1 && $4==1 && $5==0 && $6==1 {printf "%-20s %s\n", $1, $9}' \
+	${BKUPDIRDIR}/backup_1/list \
+	| sort > $plfile.new && mv -f $plfile.new $plfile
 
 exit 0

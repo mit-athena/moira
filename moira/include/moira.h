@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/include/moira.h,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/include/moira.h,v 1.12 1989-06-27 12:40:51 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/include/moira.h,v 1.13 1990-02-15 16:22:49 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
@@ -23,6 +23,8 @@
 #define SMS_CONT 0		/* Everything okay, continue sending values. */
 #define SMS_ABORT -1		/* Something went wrong don't send anymore
 				   values. */
+
+#define MOIRA_SNAME	"moira"	/* Kerberos service key to use */
 
 /* Protocol operations */
 #define SMS_NOOP 0

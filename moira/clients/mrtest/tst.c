@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/tst.c,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/tst.c,v 1.1 1991-05-07 16:40:16 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/tst.c,v 1.2 1991-05-13 12:59:03 mar Exp $
  *
  *	Copyright (C) 1991 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -56,14 +56,16 @@ char *argv[];
   
   inp = fopen(argv[1], "r");
   if (inp == NULL) {
-    ss_perror(ss, 0, "Cannot open input file %s", argv[1]);
+    sprintf(cmd, "Cannot open input file %s", argv[1]);
+    ss_perror(ss, 0, cmd);
     return;
   }
   
   if (argc == 3) {
     outp = fopen(argv[2], "a");
     if (!outp) {
-      ss_perror(ss, errno, "Unable to open output for %s\n", argv[2]);   
+      sprintf(cmd, "Unable to open output for %s\n", argv[2]);   
+      ss_perror(ss, errno, cmd);
       return;}}
   else outp = stdout;
 

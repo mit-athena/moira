@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v 1.23 1991-05-07 16:39:47 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v 1.24 1991-05-13 12:57:32 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_test_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v 1.23 1991-05-07 16:39:47 mar Exp $";
+static char *rcsid_test_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v 1.24 1991-05-13 12:57:32 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -135,7 +135,8 @@ char *argv[];
 
     inp = fopen(argv[1], "r");
     if (inp == NULL) {
-	ss_perror(ss, 0, "Cannot open input file %s", argv[1]);
+	sprintf(input, "Cannot open input file %s", argv[1]);
+	ss_perror(ss, 0, input);
 	return;
     }
 
@@ -149,7 +150,8 @@ char *argv[];
 	    close(status);
 	    dup2(oldstdout, 1);
 	    argc = 2;
-	    ss_perror(ss, errno, "Unable to redirect output to %s\n", argv[2]);
+	    sprintf(input, "Unable to redirect output to %s\n", argv[2]);
+	    ss_perror(ss, errno, input);
 	} else {
 	    fflush(stderr);
 	    oldstderr = dup(2);

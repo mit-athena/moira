@@ -1,9 +1,12 @@
 @Comment[
 	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/doc/tech-plan/dcm.mss,v $
-	$Author: spook $
-	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/doc/tech-plan/dcm.mss,v 1.8 1987-06-01 10:51:22 spook Exp $
+	$Author: ambar $
+	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/doc/tech-plan/dcm.mss,v 1.9 1987-06-01 16:27:39 ambar Exp $
 
 	$Log: not supported by cvs2svn $
+Revision 1.8  87/06/01  10:51:22  spook
+Merged update.mss into dcm.mss where it belongs.
+
 Revision 1.7  87/05/29  18:26:53  ambar
 fixed scribe error.
 
@@ -33,16 +36,16 @@ Initial revision
 The data control manager, or DCM, is a program responsible for
 distributing information to servers. Basically, the DCM is invoked by
 cron at times which are relevant to the data update needs of each
-server.  The update frequency is stored in the sms database.  A
-server/host relationship is unique to each update time.  Through the sms
-query mechanism, the DCM extracts sms data and converts it to server
+server.  The update frequency is stored in the SMS database.  A
+server/host relationship is unique to each update time.  Through the SMS
+query mechanism, the DCM extracts SMS data and converts it to server
 dependent form.  The conversion of database specific information to site
 specific information is done through a server description file, a
-sms-unique language which is used to describe the personality of a
+SMS-unique language which is used to describe the personality of a
 target service.
 
 When invoked the DCM will perform some preliminary operations to
-establish the relationship between the sms data and each server.
+establish the relationship between the SMS data and each server.
 The very first time the DCM is called, a table is constructed 
 describing the relationship between servers and update frequency.
 The table will be the primary mechanism used by the DCM for recognizing
@@ -72,16 +75,16 @@ the current time to determine if the interval criteria has been met.
 @i[Success] - Flag for indicating whether or not the last time tried was
 successful. 0-fail, 1-success
 
-@i[Time interval] - Dervived from the sms database.  Gives the interval
+@i[Time interval] - Dervived from the SMS database.  Gives the interval
 update time for each server's information needs.
 
-@i[Server] - This is the server name.  Derived from sms database.
+@i[Server] - This is the server name.  Derived from SMS database.
 
 @i[Hostname] - This is the host name where the server resides. Derived from
-the sms database.
+the SMS database.
 
 @i[Target Pathname] - Gives the location of the file which needs to be 
-updated on the target or server end.  Derived from the sms database.
+updated on the target or server end.  Derived from the SMS database.
 
 @i[Override] - Provides an automatic facility for the authorized
 user to invoke a used-once mechanism for overriding the established
@@ -110,7 +113,7 @@ mechanism is for the DCM to read the above entry table, determine which
 servers need updating and then locate the appropriate SDF for interpretation.
 The breakdown of the SDF is a procedure based primarily on the associated
 query handle and it's associated input and output structure.  The ouput of the
-DCM is a file stored on the sms host which is exactly the same
+DCM is a file stored on the SMS host which is exactly the same
 format of the server-based file.  The update mechanism takes this localized
 data and ships it over the net. 
 
@@ -131,7 +134,7 @@ request.  In partcular, these commands are:
 		output - is the output cache for the query result.
 
 		field1 and field2 - refer to the precise structure fields
-			found in struct.h, the sms input file of associated
+			found in struct.h, the SMS input file of associated
 			query handles and input structures.
 		var1 - the canonical name given to the buffer whose contents
 			will contain the output of this query.

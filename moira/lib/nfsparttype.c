@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/nfsparttype.c,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/nfsparttype.c,v 1.2 1988-09-13 15:51:44 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/nfsparttype.c,v 1.3 1990-03-17 16:37:13 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,11 +10,11 @@
  */
 
 #ifndef lint
-static char *rcsid_nfsparttype_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/nfsparttype.c,v 1.2 1988-09-13 15:51:44 mar Exp $";
+static char *rcsid_nfsparttype_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/nfsparttype.c,v 1.3 1990-03-17 16:37:13 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
-#include <sms.h>
+#include <moira.h>
 #include <stdio.h>
 #include <strings.h>
 #include <ctype.h>
@@ -32,12 +32,12 @@ struct pair {
  */
 
 static struct pair fs_names[] = {
-    { SMS_FS_STUDENT, "Student" },
-    { SMS_FS_FACULTY, "Faculty/Project" },
-    { SMS_FS_FACULTY, "Faculty" },
-    { SMS_FS_FACULTY, "Project" },
-    { SMS_FS_STAFF, "Staff" },
-    { SMS_FS_MISC, "Other" },
+    { MR_FS_STUDENT, "Student" },
+    { MR_FS_FACULTY, "Faculty/Project" },
+    { MR_FS_FACULTY, "Faculty" },
+    { MR_FS_FACULTY, "Project" },
+    { MR_FS_STAFF, "Staff" },
+    { MR_FS_MISC, "Other" },
     /* Insert new entries before the 0,0 pair */
     { 0, 0 },
 };

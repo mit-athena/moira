@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_query.c,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_query.c,v 1.7 1989-09-06 17:19:39 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_query.c,v 1.8 1990-03-17 16:37:10 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,21 +10,21 @@
  */
 
 #ifndef lint
-static char *rcsid_sms_query_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_query.c,v 1.7 1989-09-06 17:19:39 mar Exp $";
+static char *rcsid_sms_query_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_query.c,v 1.8 1990-03-17 16:37:10 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
-#include "sms_private.h"
+#include "mr_private.h"
 
 /*
- * This routine is the primary external interface to the sms library.
+ * This routine is the primary external interface to the mr library.
  *
  * It builds a new argument vector with the query handle prepended,
- * and calls sms_query_internal.
+ * and calls mr_query_internal.
  */
 int level = 0;
 
-int sms_query(name, argc, argv, callproc, callarg)
+int mr_query(name, argc, argv, callproc, callarg)
     char *name;		/* Query name */
     int argc;		/* Arg count */
     char **argv;		/* Args */
@@ -35,12 +35,12 @@ int sms_query(name, argc, argv, callproc, callarg)
     register int status = 0;
     nargv[0] = name;
     bcopy((char *)argv, (char *)(nargv+1), sizeof(char *) * argc);
-    status = sms_query_internal(argc+1, nargv, callproc, callarg);
+    status = mr_query_internal(argc+1, nargv, callproc, callarg);
     free(nargv);
     return status;
 }
 /*
- * This routine makes an SMS query.
+ * This routine makes an MR query.
  *
  * argv[0] is the query name.
  * argv[1..argc-1] are the query arguments.
@@ -52,53 +52,53 @@ int sms_query(name, argc, argv, callproc, callarg)
  * way to send it a quench..)
  */
 
-int sms_query_internal(argc, argv, callproc, callarg)
+int mr_query_internal(argc, argv, callproc, callarg)
     int argc;		/* Arg count */
     char **argv;		/* Args */
     int (*callproc)();	/* Callback procedure */
     char *callarg;		/* Callback argument */
 {
     int status;
-    sms_params params_st;
-    register sms_params *params = NULL;
-    sms_params *reply = NULL;
+    mr_params params_st;
+    register mr_params *params = NULL;
+    mr_params *reply = NULL;
     int stopcallbacks = 0;
 
-    if (level) return SMS_QUERY_NOT_REENTRANT;
+    if (level) return MR_QUERY_NOT_REENTRANT;
     
     CHECK_CONNECTED;
     level++;
 
     params = &params_st; 
-    params->sms_version_no = sending_version_no;
-    params->sms_procno = SMS_QUERY;
-    params->sms_argc = argc;
-    params->sms_argl = NULL;
-    params->sms_argv = argv;
+    params->mr_version_no = sending_version_no;
+    params->mr_procno = MR_QUERY;
+    params->mr_argc = argc;
+    params->mr_argl = NULL;
+    params->mr_argv = argv;
 	
-    if ((status = sms_do_call(params, &reply)))
+    if ((status = mr_do_call(params, &reply)))
 	goto punt;
 
-    while ((status = reply->sms_status) == SMS_MORE_DATA) {
+    while ((status = reply->mr_status) == MR_MORE_DATA) {
 	if (!stopcallbacks) 
 	    stopcallbacks =
-		(*callproc)(reply->sms_argc, reply->sms_argv, callarg);
-	sms_destroy_reply(reply);
+		(*callproc)(reply->mr_argc, reply->mr_argv, callarg);
+	mr_destroy_reply(reply);
 	reply = NULL;
 
-	initialize_operation(_sms_recv_op, sms_start_recv, &reply,
+	initialize_operation(_mr_recv_op, mr_start_recv, &reply,
 			     (int (*)())NULL);
-	queue_operation(_sms_conn, CON_INPUT, _sms_recv_op);
+	queue_operation(_mr_conn, CON_INPUT, _mr_recv_op);
 
-	sms_complete_operation(_sms_recv_op);
-	if (OP_STATUS(_sms_recv_op) != OP_COMPLETE) {
-	    sms_disconnect();
-	    status = SMS_ABORTED;
+	mr_complete_operation(_mr_recv_op);
+	if (OP_STATUS(_mr_recv_op) != OP_COMPLETE) {
+	    mr_disconnect();
+	    status = MR_ABORTED;
 	    goto punt_1;
 	}
     }	
 punt:
-    sms_destroy_reply(reply);
+    mr_destroy_reply(reply);
 punt_1:
     level--;
     return status;

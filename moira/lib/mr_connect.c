@@ -1,42 +1,42 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_connect.c,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_connect.c,v 1.13 1990-02-05 12:48:18 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_connect.c,v 1.14 1990-03-17 16:36:54 mar Exp $
  *
- *	Copyright (C) 1987 by the Massachusetts Institute of Technology
+ *	Copyright (C) 1987, 1990 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
  *	<mit-copyright.h>.
  *	
  * 	This routine is part of the client library.  It handles
- *	creating a connection to the sms server.
+ *	creating a connection to the mr server.
  */
 
 #ifndef lint
-static char *rcsid_sms_connect_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_connect.c,v 1.13 1990-02-05 12:48:18 mar Exp $";
+static char *rcsid_sms_connect_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_connect.c,v 1.14 1990-03-17 16:36:54 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
-#include "sms_private.h"
-#include <sms_app.h>
+#include "mr_private.h"
+#include <moira_site.h>
 #include <strings.h>
 
-static char *sms_server_host = 0;
+static char *mr_server_host = 0;
 
 /*
- * Open a connection to the sms server.  Looks for the server name
+ * Open a connection to the mr server.  Looks for the server name
  * 1) passed as an argument, 2) in environment variable, 3) by hesiod
  * 4) compiled in default (from sms_app.h).
  */
 
-int sms_connect(server)
+int mr_connect(server)
 char *server;
 {
     extern int errno;
     char *p, **pp, sbuf[256];
     extern char *getenv(), **hes_resolve();
 	
-    if (!sms_inited) sms_init();
-    if (_sms_conn) return SMS_ALREADY_CONNECTED;
+    if (!mr_inited) mr_init();
+    if (_mr_conn) return MR_ALREADY_CONNECTED;
 		
     if (!server || (strlen(server) == 0)) {
 	server = getenv("MOIRASERVER");
@@ -50,24 +50,24 @@ char *server;
 #endif HESIOD
 
     if (!server || (strlen(server) == 0)) {
-	server = SMS_SERVER;
+	server = MOIRA_SERVER;
     }
 
     if (!index(server, ':')) {
-	p = index(SMS_SERVER, ':');
+	p = index(MOIRA_SERVER, ':');
 	p++;
 	sprintf(sbuf, "%s:%s", server, p);
 	server = sbuf;
     }
 
     errno = 0;
-    _sms_conn = start_server_connection(server, ""); 
-    if (_sms_conn == NULL)
+    _mr_conn = start_server_connection(server, ""); 
+    if (_mr_conn == NULL)
 	return errno;
-    if (connection_status(_sms_conn) == CON_STOPPED) {
-	register status = connection_errno(_sms_conn);
-	if (!status) status = SMS_CANT_CONNECT;
-	sms_disconnect();
+    if (connection_status(_mr_conn) == CON_STOPPED) {
+	register status = connection_errno(_mr_conn);
+	if (!status) status = MR_CANT_CONNECT;
+	mr_disconnect();
 	return status;
     }
 
@@ -75,52 +75,52 @@ char *server;
      * stash hostname for later use
      */
 
-    sms_server_host = strsave(server);
-    if (p = index(sms_server_host, ':'))
+    mr_server_host = strsave(server);
+    if (p = index(mr_server_host, ':'))
 	*p = 0;
-    sms_server_host = canonicalize_hostname(sms_server_host);
+    mr_server_host = canonicalize_hostname(mr_server_host);
     return 0;
 }
 	
-int sms_disconnect()
+int mr_disconnect()
 {
     CHECK_CONNECTED;
-    _sms_conn = sever_connection(_sms_conn);
-    free(sms_server_host);
-    sms_server_host = 0;
+    _mr_conn = sever_connection(_mr_conn);
+    free(mr_server_host);
+    mr_server_host = 0;
     return 0;
 }
 
-int sms_host(host, size)
+int mr_host(host, size)
   char *host;
   int size;
 {
     CHECK_CONNECTED;
 
-    /* If we are connected, sms_server_host points to a valid string. */
-    strncpy(host, sms_server_host, size);
+    /* If we are connected, mr_server_host points to a valid string. */
+    strncpy(host, mr_server_host, size);
     return(0);
 }
 
-int sms_noop()
+int mr_noop()
 {
     int status;
-    sms_params param_st;
-    struct sms_params *params = NULL;
-    struct sms_params *reply = NULL;
+    mr_params param_st;
+    struct mr_params *params = NULL;
+    struct mr_params *reply = NULL;
 
     CHECK_CONNECTED;
     params = &param_st;
-    params->sms_version_no = sending_version_no;
-    params->sms_procno = SMS_NOOP;
-    params->sms_argc = 0;
-    params->sms_argl = NULL;
-    params->sms_argv = NULL;
+    params->mr_version_no = sending_version_no;
+    params->mr_procno = MR_NOOP;
+    params->mr_argc = 0;
+    params->mr_argl = NULL;
+    params->mr_argv = NULL;
 	
-    if ((status = sms_do_call(params, &reply)) == 0)
-	status = reply->sms_status;
+    if ((status = mr_do_call(params, &reply)) == 0)
+	status = reply->mr_status;
 	
-    sms_destroy_reply(reply);
+    mr_destroy_reply(reply);
 
     return status;
 }

@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/sq.c,v 1.4 1989-12-28 16:15:32 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/sq.c,v 1.5 1990-03-17 16:37:16 mar Exp $
  *
  * Generic Queue Routines
  *
@@ -8,7 +8,7 @@
  */
 
 #include <mit-copyright.h>
-#include <sms.h>
+#include <moira.h>
 
 struct save_queue *
 sq_create()

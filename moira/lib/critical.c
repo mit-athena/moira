@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/critical.c,v 1.9 1990-02-05 12:34:30 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/critical.c,v 1.10 1990-03-17 16:36:28 mar Exp $
  *
  * Log and send a zephyrgram about any critical errors.
  *
@@ -10,7 +10,7 @@
 #include <mit-copyright.h>
 #include <stdio.h>
 #include <sys/file.h>
-#include <sms_app.h>
+#include <moira_site.h>
 #ifdef ZEPHYR
 #include <zephyr/zephyr.h>
 #endif
@@ -25,7 +25,7 @@
 extern char *whoami;
 
 
-/* This routine sends a class SMS zephyrgram of specified instance
+/* This routine sends a class MOIRA zephyrgram of specified instance
  * and logs to a special logfile the message passed to it via msg
  * and args in printf format.  *** It expects the global variable
  * whoami to be defined and contain the name of the calling program.
@@ -67,7 +67,7 @@ void critical_alert(instance, msg, arg1, arg2, arg3, arg4,
 
 
 
-/* Sends a zephyrgram of class "SMS", instance as a parameter.  Ignores
+/* Sends a zephyrgram of class "MOIRA", instance as a parameter.  Ignores
  * errors while sending message.
  */
 
@@ -80,9 +80,9 @@ char *msg;
 
     bzero (&znotice, sizeof (znotice));
     znotice.z_kind = UNSAFE;
-    znotice.z_class = "SMS";
+    znotice.z_class = "MOIRA";
     znotice.z_class_inst = inst;
-    znotice.z_default_format = "SMS $instance:\n $message\n";
+    znotice.z_default_format = "MOIRA $instance:\n $message\n";
     (void) ZInitialize ();
     znotice.z_message = msg;
     znotice.z_message_len = strlen(msg) + 1;
@@ -93,7 +93,7 @@ char *msg;
 #ifdef SYSLOG
     {
 	char buf[512];
-	sprintf(buf, "SMS: %s %s", inst, msg);
+	sprintf(buf, "MOIRA: %s %s", inst, msg);
 	syslog(LOG_ERR, buf);
     }
 #endif

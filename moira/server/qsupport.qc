@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.32 1989-01-03 17:15:20 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.33 1989-03-21 18:14:15 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_qsupport_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.32 1989-01-03 17:15:20 mar Exp $";
+static char *rcsid_qsupport_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.33 1989-03-21 18:14:15 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -731,8 +731,8 @@ setup_ufil(q, argv)
 ##}
 
 
-/* setup_dfil: free any quota records associated with a filesystem
- * when it is deleted.
+/* setup_dfil: free any quota records and fsgroup info associated with
+ * a filesystem when it is deleted.  Also adjust the allocation numbers.
  */
 
 setup_dfil(q, argv, cl)
@@ -750,6 +750,8 @@ setup_dfil(q, argv, cl)
 ##	where n.nfsphys_id = fs.phys_id and fs.filsys_id = @id
 
 ##  repeat delete q where q.filsys_id = @id
+##  repeat delete fsgroup where fsgroup.filsys_id = @id
+##  repeat delete fsgroup where fsgroup.group_id = @id
     return(SMS_SUCCESS);
 ##}
 

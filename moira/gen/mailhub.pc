@@ -1,5 +1,5 @@
 
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/mailhub.pc,v 1.4 1998-01-06 20:39:50 danw Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/mailhub.pc,v 1.5 1998-01-15 18:51:20 danw Exp $
  *
  * This generates the /usr/lib/aliases file for the mailhub.
  *
@@ -501,8 +501,10 @@ sort_info(void)
   fprintf(out, "\n%s\n# Mailing lists\n%s\n", divide, divide);
   hash_step(lists, save_mlist, FALSE);
   fprintf(stderr, "Output %d lists\n", incount);
+#ifdef NAME_ALIASES
   hash_step(users, insert_names, NULL);
   fprintf(stderr, "Inserted %d names\n", incount);
+#endif
 }
 
 
@@ -524,11 +526,15 @@ output_data(int dummy, struct names *nms, FILE *out)
 	  u = (struct user *) hash_lookup(users, ns->id);
 	  if (u->pobox)
 	    fprintf(out, "%s: %s\n", ns->name, u->pobox);
+#ifdef NAME_ALIASES
 	  else
 	    fprintf(out, "%s: =%s=@nobox\n", ns->name, ns->name);
+#endif
 	}
+#ifdef NAME_ALIASES
       else if (ns->id == 0)
 	fprintf(out, "%s: =%s=@ambig\n", ns->name, ns->name);
+#endif
     }
 }
 

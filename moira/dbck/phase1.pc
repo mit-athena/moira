@@ -1,4 +1,4 @@
-/* $Id: phase1.pc,v 1.5 1998-02-05 22:51:03 danw Exp $
+/* $Id: phase1.pc,v 1.6 1998-02-23 19:23:28 danw Exp $
  *
  * (c) Copyright 1988-1998 by the Massachusetts Institute of Technology.
  * For copying and distribution information, please see the file
@@ -14,7 +14,7 @@
 #include <string.h>
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase1.pc,v 1.5 1998-02-05 22:51:03 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase1.pc,v 1.6 1998-02-23 19:23:28 danw Exp $");
 
 EXEC SQL WHENEVER SQLERROR DO dbmserr();
 int show_user_id(void *user);
@@ -237,9 +237,7 @@ void print_dup_map(int key, void *data, void *hint)
 void phase1(void)
 {
   EXEC SQL BEGIN DECLARE SECTION;
-  char name[81], name1[81], last[17], first[17], buf[257];
-  int id, id1, id2, id3, aid, aid2, status;
-  int sid, sid2, sid3, sid4, sid5;
+  int id;
   EXEC SQL END DECLARE SECTION;
   int i, q, retval, tmp;
   struct save_queue *sq;
@@ -275,6 +273,10 @@ void phase1(void)
   q = 0;
   while (1)
     {
+      EXEC SQL BEGIN DECLARE SECTION;
+      int id1, id2;
+      EXEC SQL END DECLARE SECTION;
+
       EXEC SQL FETCH csr116 INTO :id1, :id2;
       if (sqlca.sqlcode)
 	break;
@@ -308,6 +310,11 @@ void phase1(void)
   q = 0;
   while (1)
     {
+      EXEC SQL BEGIN DECLARE SECTION;
+      int id;
+      char buf[STRINGS_STRING_SIZE];
+      EXEC SQL END DECLARE SECTION;
+
       EXEC SQL FETCH csr101 INTO :id, :buf;
       if (sqlca.sqlcode)
 	break;
@@ -346,43 +353,52 @@ void phase1(void)
   EXEC SQL OPEN csr102;
   while (1)
     {
-      EXEC SQL FETCH csr102 INTO :id, :name, :last, :first, :status,
-	:buf, :id2, :id3, :sid, :sid2, :sid3, :sid4, :sid5;
+      EXEC SQL BEGIN DECLARE SECTION;
+      char login[USERS_LOGIN_SIZE], nbuf[USERS_FIRST_SIZE + USERS_LAST_SIZE];
+      char last[USERS_LAST_SIZE], first[USERS_FIRST_SIZE];
+      char potype[USERS_POTYPE_SIZE];
+      int users_id, status, pop_id, box_id, modby, fmodby, pmodby;
+      int comments, sigwho;
+      EXEC SQL END DECLARE SECTION;
+
+      EXEC SQL FETCH csr102 INTO :users_id, :login, :last, :first,
+	:status, :potype, :pop_id, :box_id, :modby, :fmodby, :pmodby,
+	:comments, :sigwho;
       if (sqlca.sqlcode)
 	break;
 
       u = malloc(sizeof(struct user));
       if (!u)
 	out_of_mem("storing users");
-      strcpy(u->login, strtrim(name));
-      u->potype = buf[0];
-      sprintf(buf, "%s, %s", strtrim(last), strtrim(first));
-      u->fullname = strdup(buf);
+      strcpy(u->login, strtrim(login));
+      u->potype = potype[0];
+      sprintf(nbuf, "%s, %s", strtrim(last), strtrim(first));
+      u->fullname = strdup(nbuf);
       u->status = status;
-      u->users_id = id;
-      u->modby = sid;
-      u->fmodby = sid2;
-      u->pmodby = sid3;
-      u->comment = sid4;
-      u->sigwho = sid5;
+      u->users_id = users_id;
+      u->modby = modby;
+      u->fmodby = fmodby;
+      u->pmodby = pmodby;
+      u->comment = comments;
+      u->sigwho = sigwho;
       switch (u->potype)
 	{
 	case 'P':
-	  u->pobox_id = id2;
+	  u->pobox_id = pop_id;
 	  break;
 	case 'S':
 	  /*  If potype is SMTP, box_id is a string_id for the strings tbl */
-	  u->pobox_id = id3;
+	  u->pobox_id = box_id;
 	  break;
 	default:
 	  u->pobox_id = 0;
 	}
-      retval = hash_store(users, id, u);
+      retval = hash_store(users, users_id, u);
       if (retval == -1)
 	out_of_mem("storing users in hash table");
       else if (retval == 1)
 	{
-	  sq_save_data(sq, hash_lookup(users, id));
+	  sq_save_data(sq, hash_lookup(users, users_id));
 	  sq_save_data(sq, u);
 	}
     }
@@ -459,8 +475,13 @@ void phase1(void)
   EXEC SQL OPEN csr104;
   while (1)
     {
-      EXEC SQL FETCH csr104 INTO :id, :name, :id2, :buf, :id3, :sid2,
-	:sid3, :sid4, :sid;
+      EXEC SQL BEGIN DECLARE SECTION;
+      int mach_id, snet_id, owner_id, acomment, ocomment, creator, modby;
+      char name[MACHINE_NAME_SIZE], owner_type[MACHINE_OWNER_TYPE_SIZE];
+      EXEC SQL END DECLARE SECTION;
+
+      EXEC SQL FETCH csr104 INTO :mach_id, :name, :snet_id,
+	:owner_type, :owner_id, :acomment, :ocomment, :creator, :modby;
       if (sqlca.sqlcode)
 	break;
 
@@ -468,21 +489,21 @@ void phase1(void)
       if (!m)
 	out_of_mem("storing machines");
       strcpy(m->name, strtrim(name));
-      m->owner_type = buf[0];
-      m->owner_id = id3;
-      m->snet_id = id2;
-      m->mach_id = id;
+      m->owner_type = owner_type[0];
+      m->owner_id = owner_id;
+      m->snet_id = snet_id;
+      m->mach_id = mach_id;
       m->clucount = 0;
-      m->acomment = sid2;
-      m->ocomment = sid3;
-      m->creator = sid4;
-      m->modby = sid;
-      retval = hash_store(machines, id, m);
+      m->acomment = acomment;
+      m->ocomment = ocomment;
+      m->creator = creator;
+      m->modby = modby;
+      retval = hash_store(machines, mach_id, m);
       if (retval == -1)
 	out_of_mem("storing machines in hash table");
       else if (retval == 1)
 	{
-	  sq_save_data(sq, hash_lookup(machines, id));
+	  sq_save_data(sq, hash_lookup(machines, mach_id));
 	  sq_save_data(sq, m);
 	}
     }
@@ -491,6 +512,11 @@ void phase1(void)
 
   if (!fast)
     {
+      EXEC SQL BEGIN DECLARE SECTION;
+      char name[HOSTALIAS_NAME_SIZE];
+      int id1, id2;
+      EXEC SQL END DECLARE SECTION;
+
       sq = sq_create();
       if (!sq)
 	out_of_mem("looking for duplicate machine names");
@@ -554,7 +580,13 @@ void phase1(void)
   EXEC SQL OPEN csr115;
   while (1)
     {
-      EXEC SQL FETCH csr115 INTO :id, :name, :buf, :id2, :sid;
+      EXEC SQL BEGIN DECLARE SECTION;
+      char name[SUBNET_NAME_SIZE], owner_type[SUBNET_OWNER_TYPE_SIZE];
+      int snet_id, owner_id, modby;
+      EXEC SQL END DECLARE SECTION;
+
+      EXEC SQL FETCH csr115 INTO :snet_id, :name, :owner_type,
+	:owner_id, :modby;
       if (sqlca.sqlcode)
 	break;
 
@@ -562,11 +594,11 @@ void phase1(void)
       if (!sn)
 	out_of_mem("storing subnets");
       strcpy(sn->name, strtrim(name));
-      sn->owner_type = buf[0];
-      sn->owner_id = id2;
-      sn->snet_id = id;
-      sn->modby = sid;
-      retval = hash_store(subnets, id, sn);
+      sn->owner_type = owner_type[0];
+      sn->owner_id = owner_id;
+      sn->snet_id = snet_id;
+      sn->modby = modby;
+      retval = hash_store(subnets, snet_id, sn);
       if (retval == -1)
 	out_of_mem("storing subnets in hash table");
       else if (retval == 1)
@@ -611,7 +643,12 @@ void phase1(void)
   EXEC SQL OPEN csr106;
   while (1)
     {
-      EXEC SQL FETCH csr106 INTO :id, :name, :sid;
+      EXEC SQL BEGIN DECLARE SECTION;
+      int clu_id, modby;
+      char name[CLUSTERS_NAME_SIZE];
+      EXEC SQL END DECLARE SECTION;
+
+      EXEC SQL FETCH csr106 INTO :clu_id, :name, :modby;
       if (sqlca.sqlcode)
 	break;
 
@@ -619,14 +656,14 @@ void phase1(void)
       if (!c)
 	out_of_mem("storing clusters");
       strcpy(c->name, strtrim(name));
-      c->clu_id = id;
-      c->modby = sid;
-      retval = hash_store(clusters, id, c);
+      c->clu_id = clu_id;
+      c->modby = modby;
+      retval = hash_store(clusters, clu_id, c);
       if (retval == -1)
 	out_of_mem("storing clusters in hash table");
       else if (retval == 1)
 	{
-	  sq_save_data(sq, hash_lookup(clusters, id));
+	  sq_save_data(sq, hash_lookup(clusters, clu_id));
 	  sq_save_data(sq, c);
 	}
     }
@@ -667,23 +704,29 @@ void phase1(void)
   EXEC SQL OPEN csr108;
   while (1)
     {
-      EXEC SQL FETCH csr108 INTO :id, :name, :aid, :buf, :sid;
+      EXEC SQL BEGIN DECLARE SECTION;
+      int list_id, acl_id, modby;
+      char name[LIST_NAME_SIZE], acl_type[LIST_ACL_TYPE_SIZE];
+      EXEC SQL END DECLARE SECTION;
+
+      EXEC SQL FETCH csr108 INTO :list_id, :name, :acl_id, :acl_type, :modby;
       if (sqlca.sqlcode)
 	break;
       l = malloc(sizeof(struct list));
       if (!l)
 	out_of_mem("storing lists");
       strcpy(l->name, strtrim(name));
-      l->acl_type = buf[0];
-      l->acl_id = aid;
-      l->list_id = id;
+      l->acl_type = acl_type[0];
+      l->acl_id = acl_id;
+      l->list_id = list_id;
+      l->modby = modby;
       l->members = 0;
-      retval = hash_store(lists, id, l);
+      retval = hash_store(lists, list_id, l);
       if (retval == -1)
 	out_of_mem("storing lists in hash table");
       else if (retval == 1)
 	{
-	  sq_save_data(sq, hash_lookup(lists, id));
+	  sq_save_data(sq, hash_lookup(lists, list_id));
 	  sq_save_data(sq, l);
 	}
     }
@@ -724,28 +767,34 @@ void phase1(void)
   EXEC SQL OPEN csr110;
   while (1)
     {
-      EXEC SQL FETCH csr110 INTO :id, :name, :aid, :aid2, :id2, :id3,
-	:buf, :name1, :sid;
+      EXEC SQL BEGIN DECLARE SECTION;
+      int filsys_id, owner, owners, phys_id, mach_id, modby;
+      char label[FILESYS_LABEL_SIZE], type[FILESYS_TYPE_SIZE];
+      char name[FILESYS_NAME_SIZE];
+      EXEC SQL END DECLARE SECTION;
+
+      EXEC SQL FETCH csr110 INTO :filsys_id, :label, :owner, :owners,
+	:phys_id, :mach_id, :type, :name, :modby;
       if (sqlca.sqlcode)
 	break;
 
       f = malloc(sizeof(struct filesys));
       if (!f)
 	out_of_mem("storing filesystems");
-      strcpy(f->name, strtrim(name));
-      strcpy(f->dir, strtrim(name1));
-      f->filsys_id = id;
-      f->owner = aid;
-      f->owners = aid2;
-      f->phys_id = id2;
-      f->mach_id = id3;
-      f->type = buf[0];
-      retval = hash_store(filesys, id, f);
+      strcpy(f->name, strtrim(label));
+      strcpy(f->dir, strtrim(name));
+      f->filsys_id = filsys_id;
+      f->owner = owner;
+      f->owners = owners;
+      f->phys_id = phys_id;
+      f->mach_id = mach_id;
+      f->type = type[0];
+      retval = hash_store(filesys, filsys_id, f);
       if (retval == -1)
 	out_of_mem("storing filesys in hash table");
       else if (retval == 1)
 	{
-	  sq_save_data(sq, hash_lookup(filesys, id));
+	  sq_save_data(sq, hash_lookup(filesys, filsys_id));
 	  sq_save_data(sq, f);
 	}
     }
@@ -786,24 +835,31 @@ void phase1(void)
   EXEC SQL OPEN csr111;
   while (1)
     {
-      EXEC SQL FETCH csr111 INTO :id, :name, :id2, :id3, :sid;
+      EXEC SQL BEGIN DECLARE SECTION;
+      int nfsphys_id, mach_id, allocated, modby;
+      char dir[NFSPHYS_DIR_SIZE];
+      EXEC SQL END DECLARE SECTION;
+
+      EXEC SQL FETCH csr111 INTO :nfsphys_id, :dir, :mach_id,
+	:allocated, :modby;
       if (sqlca.sqlcode)
 	break;
 
       n = malloc(sizeof(struct nfsphys));
       if (!n)
 	out_of_mem("storing nfsphys");
-      strcpy(n->dir, strtrim(name));
-      n->mach_id = id2;
-      n->nfsphys_id = id;
-      n->allocated = id3;
+      strcpy(n->dir, strtrim(dir));
+      n->mach_id = mach_id;
+      n->nfsphys_id = nfsphys_id;
+      n->allocated = allocated;
+      n->modby = modby;
       n->count = 0;
-      retval = hash_store(nfsphys, id, n);
+      retval = hash_store(nfsphys, nfsphys_id, n);
       if (retval == -1)
 	out_of_mem("storing nfsphys in hash table");
       else if (retval == 1)
 	{
-	  sq_save_data(sq, hash_lookup(nfsphys, id));
+	  sq_save_data(sq, hash_lookup(nfsphys, nfsphys_id));
 	  sq_save_data(sq, n);
 	}
     }
@@ -819,6 +875,10 @@ void phase1(void)
   EXEC SQL OPEN csr119;
   while (1)
     {
+      EXEC SQL BEGIN DECLARE SECTION;
+      char name[PRINTCAP_NAME_SIZE];
+      EXEC SQL END DECLARE SECTION;
+
       EXEC SQL FETCH csr119 INTO :name;
       if (sqlca.sqlcode)
 	break;

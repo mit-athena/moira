@@ -1,4 +1,4 @@
-/* $Id: phase2.pc,v 1.5 1998-02-05 22:51:04 danw Exp $
+/* $Id: phase2.pc,v 1.6 1998-02-23 19:23:29 danw Exp $
  *
  * (c) Copyright 1988-1998 by the Massachusetts Institute of Technology.
  * For copying and distribution information, please see the file
@@ -15,7 +15,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase2.pc,v 1.5 1998-02-05 22:51:04 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase2.pc,v 1.6 1998-02-23 19:23:29 danw Exp $");
 
 EXEC SQL WHENEVER SQLERROR DO dbmserr();
 
@@ -80,7 +80,7 @@ int show_mcm_mach(void *id)
 {
   EXEC SQL BEGIN DECLARE SECTION;
   int iid = (int)id, found = 1;
-  char name[33];
+  char name[CLUSTERS_NAME_SIZE];
   EXEC SQL END DECLARE SECTION;
 
   EXEC SQL DECLARE csr201 CURSOR FOR
@@ -106,7 +106,7 @@ int show_mcm_clu(void *id)
 {
   EXEC SQL BEGIN DECLARE SECTION;
   int iid = (int)id, found = 1;
-  char name[33];
+  char name[MACHINE_NAME_SIZE];
   EXEC SQL END DECLARE SECTION;
 
   EXEC SQL DECLARE csr202 CURSOR FOR
@@ -133,7 +133,7 @@ int show_hostalias(void *id)
 {
   EXEC SQL BEGIN DECLARE SECTION;
   int iid = (int)id, found = 1;
-  char name[33];
+  char name[HOSTALIAS_NAME_SIZE];
   EXEC SQL END DECLARE SECTION;
 
   EXEC SQL DECLARE csr234 CURSOR FOR
@@ -159,7 +159,7 @@ int show_pcap_mach(void *id)
 {
   EXEC SQL BEGIN DECLARE SECTION;
   int iid = (int)id, found = 1;
-  char name[33];
+  char name[PRINTCAP_NAME_SIZE];
   EXEC SQL END DECLARE SECTION;
 
   EXEC SQL DECLARE csr235 CURSOR FOR
@@ -185,7 +185,7 @@ int show_pcap_quota(void *id)
 {
   EXEC SQL BEGIN DECLARE SECTION;
   int iid = (int)id, found = 1;
-  char name[33];
+  char name[PRINTCAP_NAME_SIZE];
   EXEC SQL END DECLARE SECTION;
 
   EXEC SQL DECLARE csr236 CURSOR FOR
@@ -615,7 +615,7 @@ int show_svc(void *id)
 {
   EXEC SQL BEGIN DECLARE SECTION;
   int iid = (int)id, found = 1;
-  char label[17], data[33];
+  char label[SVC_SERV_LABEL_SIZE], data[SVC_SERV_CLUSTER_SIZE];
   EXEC SQL END DECLARE SECTION;
 
   EXEC SQL DECLARE csr203 CURSOR FOR
@@ -641,6 +641,9 @@ int show_svc(void *id)
 void list_check(int id, void *list, void *hint)
 {
   struct list *l = list;
+
+  l->modby = maybe_fixup_modby(l->modby, id, l->name, "list",
+			       "modby", "list_id");
 
   switch (l->acl_type)
     {
@@ -693,7 +696,7 @@ int show_member_list(void *id)
 {
   EXEC SQL BEGIN DECLARE SECTION;
   int mid, iid = (int)id, found = 1;
-  char mtype[9], *name = "";
+  char mtype[IMEMBERS_MEMBER_TYPE_SIZE], *name = "";
   EXEC SQL END DECLARE SECTION;
 
   EXEC SQL DECLARE csr204 CURSOR FOR
@@ -887,7 +890,7 @@ void del_mem_krb(void *id)
 int show_sh(void *id)
 {
   EXEC SQL BEGIN DECLARE SECTION;
-  char name[33];
+  char name[SERVERHOSTS_SERVICE_SIZE];
   int iid = (int)id;
   EXEC SQL END DECLARE SECTION;
   int found = 1;
@@ -1080,6 +1083,9 @@ void check_fs(int id, void *filesys, void *hint)
 void check_nfsphys(int id, void *nfsphys, void *hint)
 {
   struct nfsphys *n = nfsphys;
+
+  n->modby = maybe_fixup_modby(n->modby, id, n->dir, "nfsphys",
+			       "modby", "nfsphys_id");
 
   if (!hash_lookup(machines, n->mach_id))
     {
@@ -1275,7 +1281,7 @@ int show_quota_nofs(void *id)
 {
   EXEC SQL BEGIN DECLARE SECTION;
   int iid = (int)id, id1, found = 1;
-  char type[9];
+  char type[QUOTA_TYPE_SIZE];
   EXEC SQL END DECLARE SECTION;
 
   EXEC SQL DECLARE csr214 CURSOR FOR
@@ -1304,7 +1310,7 @@ int show_quota_wrongpid(void *id)
 {
   EXEC SQL BEGIN DECLARE SECTION;
   int iid = (int)id, id1, found = 1;
-  char type[9];
+  char type[QUOTA_TYPE_SIZE];
   EXEC SQL END DECLARE SECTION;
   struct filesys *f;
 
@@ -1347,7 +1353,7 @@ void fix_quota_physid(void *id)
 int show_srv_user(void *id)
 {
   EXEC SQL BEGIN DECLARE SECTION;
-  char name[33];
+  char name[SERVERS_NAME_SIZE];
   int iid = (int)id;
   EXEC SQL END DECLARE SECTION;
   int found = 1;
@@ -1373,7 +1379,7 @@ int show_srv_user(void *id)
 int show_srv_list(void *id)
 {
   EXEC SQL BEGIN DECLARE SECTION;
-  char name[33];
+  char name[SERVERS_NAME_SIZE];
   int iid = (int)id;
   EXEC SQL END DECLARE SECTION;
   int found = 1;
@@ -1491,7 +1497,7 @@ int show_krb_str(void *id)
 int show_pdm_mach(void *id)
 {
   EXEC SQL BEGIN DECLARE SECTION;
-  char name[33];
+  char name[PALLADIUM_NAME_SIZE];
   int iid = (int)id;
   EXEC SQL END DECLARE SECTION;
   int found = 1;
@@ -1518,10 +1524,6 @@ int show_pdm_mach(void *id)
 
 void phase2(void)
 {
-  EXEC SQL BEGIN DECLARE SECTION;
-  int id1, id2, id3, id4, id5;
-  char type[9], name[33];
-  EXEC SQL END DECLARE SECTION;
   struct save_queue *sq, *sq1, *sq2, *sq3, *sq4, *sq5;
   struct filesys *f;
   struct list *l;
@@ -1550,14 +1552,18 @@ void phase2(void)
   EXEC SQL OPEN csr221;
   while (1)
     {
-      EXEC SQL FETCH csr221 INTO :id1, :id2;
+      EXEC SQL BEGIN DECLARE SECTION;
+      int mach_id, clu_id;
+      EXEC SQL END DECLARE SECTION;
+
+      EXEC SQL FETCH csr221 INTO :mach_id, :clu_id;
       if (sqlca.sqlcode)
 	break;
 
-      if (!(m = hash_lookup(machines, id1)))
-	sq_save_unique_data(sq1, (void *)id1);
-      else if (!hash_lookup(clusters, id2))
-	sq_save_unique_data(sq2, (void *)id2);
+      if (!(m = hash_lookup(machines, mach_id)))
+	sq_save_unique_data(sq1, (void *)mach_id);
+      else if (!hash_lookup(clusters, clu_id))
+	sq_save_unique_data(sq2, (void *)clu_id);
       if (m)
 	m->clucount++;
     }
@@ -1572,12 +1578,16 @@ void phase2(void)
   EXEC SQL OPEN csr222;
   while (1)
     {
-      EXEC SQL FETCH csr222 INTO :id1;
+      EXEC SQL BEGIN DECLARE SECTION;
+      int clu_id;
+      EXEC SQL END DECLARE SECTION;
+
+      EXEC SQL FETCH csr222 INTO :clu_id;
       if (sqlca.sqlcode)
 	break;
 
-      if (!hash_lookup(clusters, id1))
-	sq_save_unique_data(sq1, (void *)id1);
+      if (!hash_lookup(clusters, clu_id))
+	sq_save_unique_data(sq1, (void *)clu_id);
     }
   EXEC SQL CLOSE csr222;
   generic_delete(sq1, show_svc, "svc", "clu_id", 1);
@@ -1598,20 +1608,26 @@ void phase2(void)
   EXEC SQL OPEN csr223;
   while (1)
     {
-      EXEC SQL FETCH csr223 INTO :id1, :type, :id2, :id3, :id4;
+      EXEC SQL BEGIN DECLARE SECTION;
+      int list_id, id, ref_count, direct;
+      char type[IMEMBERS_MEMBER_TYPE_SIZE];
+      EXEC SQL END DECLARE SECTION;
+
+      EXEC SQL FETCH csr223 INTO :list_id, :type, :id,
+	:ref_count, :direct;
       if (sqlca.sqlcode)
 	break;
 
-      if (!(l = hash_lookup(lists, id1)))
-	sq_save_unique_data(sq1, (void *)id1);
-      else if (type[0] == 'U' && !hash_lookup(users, id2))
-	sq_save_unique_data(sq2, (void *)id2);
-      else if (type[0] == 'L' && !hash_lookup(lists, id2))
-	sq_save_unique_data(sq3, (void *)id2);
-      else if (type[0] == 'S' && !maybe_fixup_unref_string2("imembers", "member_id", "csr223", id2))
-	sq_save_unique_data(sq4, (void *)id2);
-      else if (type[0] == 'K' && !maybe_fixup_unref_string2("imembers", "member_id", "csr223", id2))
-	sq_save_unique_data(sq5, (void *)id2);
+      if (!(l = hash_lookup(lists, list_id)))
+	sq_save_unique_data(sq1, (void *)list_id);
+      else if (type[0] == 'U' && !hash_lookup(users, id))
+	sq_save_unique_data(sq2, (void *)id);
+      else if (type[0] == 'L' && !hash_lookup(lists, id))
+	sq_save_unique_data(sq3, (void *)id);
+      else if (type[0] == 'S' && !maybe_fixup_unref_string2("imembers", "member_id", "csr223", id))
+	sq_save_unique_data(sq4, (void *)id);
+      else if (type[0] == 'K' && !maybe_fixup_unref_string2("imembers", "member_id", "csr223", id))
+	sq_save_unique_data(sq5, (void *)id);
       else
 	l->members++;
     }
@@ -1631,16 +1647,21 @@ void phase2(void)
   EXEC SQL OPEN csr224;
   while (1)
     {
-      EXEC SQL FETCH csr224 INTO :name, :type, :id1, :id2;
+      EXEC SQL BEGIN DECLARE SECTION;
+      int acl_id, modby;
+      char name[SERVERS_NAME_SIZE], acl_type[SERVERS_ACL_TYPE_SIZE];
+      EXEC SQL END DECLARE SECTION;
+
+      EXEC SQL FETCH csr224 INTO :name, :acl_type, :acl_id, :modby;
       if (sqlca.sqlcode)
 	break;
 
-      maybe_fixup_modby2("servers", "modby", "csr224", id2);
-      strtrim(type);
-      if (!strcmp(type, "USER") && !hash_lookup(users, id1))
-	sq_save_data(sq1, (void *)id1);
-      else if (!strcmp(type, "LIST") && !hash_lookup(lists, id1))
-	sq_save_data(sq2, (void *)id1);
+      maybe_fixup_modby2("servers", "modby", "csr224", modby);
+      strtrim(acl_type);
+      if (!strcmp(acl_type, "USER") && !hash_lookup(users, acl_id))
+	sq_save_data(sq1, (void *)acl_id);
+      else if (!strcmp(acl_type, "LIST") && !hash_lookup(lists, acl_id))
+	sq_save_data(sq2, (void *)acl_id);
     }
   EXEC SQL CLOSE csr224;
   generic_fix(sq1, show_srv_user, "Fix", zero_srv_user, 1);
@@ -1654,13 +1675,17 @@ void phase2(void)
   EXEC SQL OPEN csr225;
   while (1)
     {
-      EXEC SQL FETCH csr225 INTO :id1, :id2;
+      EXEC SQL BEGIN DECLARE SECTION;
+      int mach_id, modby;
+      EXEC SQL END DECLARE SECTION;
+
+      EXEC SQL FETCH csr225 INTO :mach_id, :modby;
       if (sqlca.sqlcode)
 	break;
 
-      maybe_fixup_modby2("serverhosts", "modby", "csr225", id2);
-      if (!hash_lookup(machines, id1))
-	sq_save_data(sq, (void *)id1);
+      maybe_fixup_modby2("serverhosts", "modby", "csr225", modby);
+      if (!hash_lookup(machines, mach_id))
+	sq_save_data(sq, (void *)mach_id);
     }
   EXEC SQL CLOSE csr225;
   generic_fix(sq, show_sh, "Delete", del_sh_mach, 0);
@@ -1680,14 +1705,18 @@ void phase2(void)
   EXEC SQL OPEN csr226;
   while (1)
     {
-      EXEC SQL FETCH csr226 INTO :id1, :id2;
+      EXEC SQL BEGIN DECLARE SECTION;
+      int group_id, filsys_id;
+      EXEC SQL END DECLARE SECTION;
+
+      EXEC SQL FETCH csr226 INTO :group_id, :filsys_id;
       if (sqlca.sqlcode)
 	break;
 
-      if (!(f = hash_lookup(filesys, id1)))
-	sq_save_data(sq1, (void *)id1);
-      if (!hash_lookup(filesys, id2))
-	sq_save_data(sq3, (void *)id2);
+      if (!(f = hash_lookup(filesys, group_id)))
+	sq_save_data(sq1, (void *)group_id);
+      if (!hash_lookup(filesys, filsys_id))
+	sq_save_data(sq3, (void *)filsys_id);
     }
   EXEC SQL CLOSE csr226;
   generic_delete(sq1, show_fsg_missing, "fsgroup", "group_id", 0);
@@ -1704,21 +1733,27 @@ void phase2(void)
   EXEC SQL OPEN csr227;
   while (1)
     {
-      EXEC SQL FETCH csr227 INTO :id1, :type, :id2, :id3, :id4, :id5;
+      EXEC SQL BEGIN DECLARE SECTION;
+      int entity_id, filsys_id, phys_id, quota, modby;
+      char type[QUOTA_TYPE_SIZE];
+      EXEC SQL END DECLARE SECTION;
+
+      EXEC SQL FETCH csr227 INTO :entity_id, :type, :filsys_id,
+	:phys_id, :quota, :modby;
       if (sqlca.sqlcode)
 	break;
 
-      maybe_fixup_modby2("quota", "modby", "csr227", id5);
-      if (type[0] == 'U' && id1 != 0 && !hash_lookup(users, id1))
-	sq_save_data(sq1, (void *)id1);
-      else if (type[0] == 'G' && !hash_lookup(lists, id1))
-	sq_save_data(sq4, (void *)id1);
-      else if (!(f = hash_lookup(filesys, id2)))
-	sq_save_data(sq2, (void *)id2);
-      else if (id3 != f->phys_id || !(n = hash_lookup(nfsphys, id3)))
-	sq_save_data(sq3, (void *)id2);
+      maybe_fixup_modby2("quota", "modby", "csr227", modby);
+      if (type[0] == 'U' && entity_id != 0 && !hash_lookup(users, entity_id))
+	sq_save_data(sq1, (void *)entity_id);
+      else if (type[0] == 'G' && !hash_lookup(lists, entity_id))
+	sq_save_data(sq4, (void *)entity_id);
+      else if (!(f = hash_lookup(filesys, filsys_id)))
+	sq_save_data(sq2, (void *)filsys_id);
+      else if (phys_id != f->phys_id || !(n = hash_lookup(nfsphys, phys_id)))
+	sq_save_data(sq3, (void *)phys_id);
       else
-	n->count += id4;
+	n->count += quota;
     }
   EXEC SQL CLOSE csr227;
   generic_fix(sq1, show_quota_nouser, "Delete", fix_quota_nouser, 1);
@@ -1735,25 +1770,30 @@ void phase2(void)
   EXEC SQL OPEN csr228;
   while (1)
     {
-      EXEC SQL FETCH csr228 INTO :id1, :type, :id2, :id3;
+      EXEC SQL BEGIN DECLARE SECTION;
+      int mach_id, acl_id, modby;
+      char acl_type[HOSTACCESS_ACL_TYPE_SIZE];
+      EXEC SQL END DECLARE SECTION;
+
+      EXEC SQL FETCH csr228 INTO :mach_id, :acl_type, :acl_id, :modby;
       if (sqlca.sqlcode)
 	break;
 
-      maybe_fixup_modby2("hostaccess", "modby", "csr228", id3);
-      strtrim(type);
-      if (!hash_lookup(machines, id1))
+      maybe_fixup_modby2("hostaccess", "modby", "csr228", modby);
+      strtrim(acl_type);
+      if (!hash_lookup(machines, mach_id))
 	{
-	  printf("Hostaccess for non-existant host %d\n", id1);
+	  printf("Hostaccess for non-existant host %d\n", mach_id);
 	  printf("Not fixing this error\n");
 	}
-      if (!strcmp(type, "USER") && !hash_lookup(users, id2))
+      if (!strcmp(acl_type, "USER") && !hash_lookup(users, acl_id))
 	{
-	  printf("Hostaccess for %d is non-existant user %d\n", id1, id2);
+	  printf("Hostaccess for %d is non-existant user %d\n", mach_id, acl_id);
 	  printf("Not fixing this error\n");
 	}
-      else if (!strcmp(type, "LIST") && !hash_lookup(lists, id2))
+      else if (!strcmp(acl_type, "LIST") && !hash_lookup(lists, acl_id))
 	{
-	  printf("Hostaccess for %d is non-existant list %d\n", id1, id2);
+	  printf("Hostaccess for %d is non-existant list %d\n", mach_id, acl_id);
 	  printf("Not fixing this error\n");
 	}
     }
@@ -1767,13 +1807,17 @@ void phase2(void)
   EXEC SQL OPEN csr229;
   while (1)
     {
-      EXEC SQL FETCH csr229 INTO :id1, :id2;
+      EXEC SQL BEGIN DECLARE SECTION;
+      int mach_id, modby;
+      EXEC SQL END DECLARE SECTION;
+
+      EXEC SQL FETCH csr229 INTO :mach_id, :modby;
       if (sqlca.sqlcode)
 	break;
 
-      maybe_fixup_modby2("palladium", "modby", "csr229", id2);
-      if (!hash_lookup(machines, id1))
-	sq_save_unique_data(sq1, (void *)id1);
+      maybe_fixup_modby2("palladium", "modby", "csr229", modby);
+      if (!hash_lookup(machines, mach_id))
+	sq_save_unique_data(sq1, (void *)mach_id);
     }
   EXEC SQL CLOSE csr229;
   generic_delete(sq1, show_pdm_mach, "palladium", "mach_id", 1);
@@ -1787,14 +1831,18 @@ void phase2(void)
   EXEC SQL OPEN csr230;
   while (1)
     {
-      EXEC SQL FETCH csr230 INTO :id1, :id2;
+      EXEC SQL BEGIN DECLARE SECTION;
+      int users_id, string_id;
+      EXEC SQL END DECLARE SECTION;
+
+      EXEC SQL FETCH csr230 INTO :users_id, :string_id;
       if (sqlca.sqlcode)
 	break;
 
-      if (!hash_lookup(users, id1))
-	sq_save_unique_data(sq1, (void *)id1);
-      else if (!maybe_fixup_unref_string2("krbmap", "string_id", "csr230", id2))
-	sq_save_unique_data(sq2, (void *)id2);
+      if (!hash_lookup(users, users_id))
+	sq_save_unique_data(sq1, (void *)users_id);
+      else if (!maybe_fixup_unref_string2("krbmap", "string_id", "csr230", string_id))
+	sq_save_unique_data(sq2, (void *)string_id);
     }
   EXEC SQL CLOSE csr230;
   generic_delete(sq1, show_krb_usr, "krbmap", "users_id", 1);
@@ -1806,13 +1854,18 @@ void phase2(void)
   EXEC SQL OPEN csr231;
   while (1)
     {
-      EXEC SQL FETCH csr231 INTO :id1, :name;
+      EXEC SQL BEGIN DECLARE SECTION;
+      int list_id;
+      char tag[CAPACLS_TAG_SIZE];
+      EXEC SQL END DECLARE SECTION;
+
+      EXEC SQL FETCH csr231 INTO :list_id, :tag;
       if (sqlca.sqlcode)
 	break;
 
-      if (!hash_lookup(lists, id1))
+      if (!hash_lookup(lists, list_id))
 	{
-	  printf("Capacl for %s is non-existant list %d\n", name, id1);
+	  printf("Capacl for %s is non-existant list %d\n", tag, list_id);
 	  printf("Not fixing this error\n");
 	}
     }
@@ -1825,12 +1878,16 @@ void phase2(void)
   EXEC SQL OPEN csr232;
   while (1)
     {
-      EXEC SQL FETCH csr232 INTO :id1;
+      EXEC SQL BEGIN DECLARE SECTION;
+      int mach_id;
+      EXEC SQL END DECLARE SECTION;
+
+      EXEC SQL FETCH csr232 INTO :mach_id;
       if (sqlca.sqlcode)
 	break;
 
-      if (!hash_lookup(machines, id1))
-	sq_save_unique_data(sq1, (void *)id1);
+      if (!hash_lookup(machines, mach_id))
+	sq_save_unique_data(sq1, (void *)mach_id);
     }
   EXEC SQL CLOSE csr232;
   generic_delete(sq1, show_hostalias, "hostalias", "mach_id", 1);
@@ -1843,15 +1900,19 @@ void phase2(void)
   EXEC SQL OPEN csr233;
   while (1)
     {
-      EXEC SQL FETCH csr233 INTO :id1, :id2, :id3;
+      EXEC SQL BEGIN DECLARE SECTION;
+      int mach_id, quotaserver, modby;
+      EXEC SQL END DECLARE SECTION;
+
+      EXEC SQL FETCH csr233 INTO :mach_id, :quotaserver, :modby;
       if (sqlca.sqlcode)
 	break;
 
-      maybe_fixup_modby2("printcap", "modby", "csr233", id3);
-      if (!hash_lookup(machines, id1))
-	sq_save_unique_data(sq1, (void *)id1);
-      else if (!hash_lookup(machines, id2))
-	sq_save_unique_data(sq2, (void *)id2);
+      maybe_fixup_modby2("printcap", "modby", "csr233", modby);
+      if (!hash_lookup(machines, mach_id))
+	sq_save_unique_data(sq1, (void *)mach_id);
+      else if (!hash_lookup(machines, quotaserver))
+	sq_save_unique_data(sq2, (void *)quotaserver);
     }
   EXEC SQL CLOSE csr233;
   generic_delete(sq1, show_pcap_mach, "printcap", "mach_id", 1);

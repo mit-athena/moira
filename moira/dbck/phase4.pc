@@ -1,4 +1,4 @@
-/* $Id: phase4.pc,v 1.4 1998-02-05 22:51:06 danw Exp $
+/* $Id: phase4.pc,v 1.5 1998-02-23 19:23:30 danw Exp $
  *
  * (c) Copyright 1988-1998 by the Massachusetts Institute of Technology.
  * For copying and distribution information, please see the file
@@ -15,7 +15,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase4.pc,v 1.4 1998-02-05 22:51:06 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase4.pc,v 1.5 1998-02-23 19:23:30 danw Exp $");
 
 EXEC SQL WHENEVER SQLERROR DO dbmserr();
 
@@ -132,115 +132,4 @@ void phase4(void)
 
   dprintf("Doing NFSphys...\n");
   hash_step(nfsphys, check_nfs_counts, 0);
-}
-
-
-void count_only_setup(void)
-{
-  EXEC SQL BEGIN DECLARE SECTION;
-  int id, status, id2, id3;
-  char name[33], last[17], first[17], buf[257];
-  EXEC SQL END DECLARE SECTION;
-  struct user *u;
-  struct nfsphys *n;
-  struct machine *m;
-
-  dprintf("Loading users...\n");
-  users = create_hash(30000);
-  EXEC SQL DECLARE csr402 CURSOR FOR
-    SELECT users_id, login, last, first, status,
-    potype, pop_id, box_id FROM users
-    WHERE potype = 'POP';
-  EXEC SQL OPEN csr402;
-  while (1)
-    {
-      EXEC SQL FETCH csr402 INTO :id, :name, :last, :first, :status,
-	:buf, :id2, :id3;
-      if (sqlca.sqlcode)
-	break;
-
-      u = malloc(sizeof(struct user));
-      if (!u)
-	out_of_mem("storing users");
-      strcpy(u->login, strtrim(name));
-      u->potype = buf[0];
-      sprintf(buf, "%s, %s", strtrim(last), strtrim(first));
-      u->fullname = strdup(buf);
-      u->status = status;
-      u->users_id = id;
-      switch (u->potype)
-	{
-	case 'P':
-	  u->pobox_id = id2;
-	  break;
-	case 'S':
-	  u->pobox_id = id3;
-	  break;
-	default:
-	  u->pobox_id = 0;
-	}
-      if (hash_store(users, id, u) == -1)
-	out_of_mem("storing users in hash table");
-    }
-  EXEC SQL CLOSE csr402;
-
-  dprintf("Loading machines...\n");
-  machines = create_hash(20000);
-  EXEC SQL DECLARE csr403 CURSOR FOR
-    SELECT mach_id, name FROM machine;
-  EXEC SQL OPEN csr403;
-  while (1)
-    {
-      EXEC SQL FETCH csr403 INTO :id, :name;
-      if (sqlca.sqlcode)
-	break;
-
-    	m = malloc(sizeof(struct machine));
-	if (!m)
-	  out_of_mem("storing machines");
-	strcpy(m->name, strtrim(name));
-	m->mach_id = id;
-	if (hash_store(machines, id, m) == -1)
-	  out_of_mem("storing users in hash table");
-    }
-  EXEC SQL CLOSE csr403;
-
-  dprintf("Loading nfsphys...\n");
-  nfsphys = create_hash(500);
-  EXEC SQL DECLARE csr404 CURSOR FOR
-    SELECT nfsphys_id, dir, mach_id, allocated FROM nfsphys;
-  EXEC SQL OPEN csr404;
-  while (1)
-    {
-      EXEC SQL FETCH csr404 INTO :id, :name, :id2, :id3;
-      if (sqlca.sqlcode)
-	break;
-
-      n = malloc(sizeof(struct nfsphys));
-      if (!n)
-	out_of_mem("storing nfsphys");
-      strcpy(n->dir, strtrim(name));
-      n->mach_id = id2;
-      n->nfsphys_id = id;
-      n->allocated = id3;
-      n->count = 0;
-      if (hash_store(nfsphys, id, n) == -1)
-	out_of_mem("storing nfsphys in hash table");
-    }
-  EXEC SQL CLOSE csr404;
-
-  dprintf("Counting quotas...\n");
-  EXEC SQL DECLARE csr405 CURSOR FOR
-    SELECT phys_id, quota FROM quota;
-  EXEC SQL OPEN csr405;
-  while (1)
-    {
-      EXEC SQL FETCH csr405 INTO :id, :id2;
-      if (sqlca.sqlcode)
-	break;
-
-      if ((n = hash_lookup(nfsphys, id)))
-	n->count += id2;
-    }
-  EXEC SQL CLOSE csr405;
 }

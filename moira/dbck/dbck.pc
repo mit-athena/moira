@@ -1,4 +1,4 @@
-/* $Id: dbck.pc,v 1.3 1998-02-05 22:51:01 danw Exp $
+/* $Id: dbck.pc,v 1.4 1998-02-23 19:23:27 danw Exp $
  *
  * Moira database consistency checker
  *
@@ -18,7 +18,7 @@
 EXEC SQL INCLUDE sqlca;
 EXEC SQL INCLUDE sqlda;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/dbck.pc,v 1.3 1998-02-05 22:51:01 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/dbck.pc,v 1.4 1998-02-23 19:23:27 danw Exp $");
 
 int debug = 0;
 int mode = MODE_ASK;
@@ -43,7 +43,6 @@ int main(int argc, char **argv)
   EXEC SQL BEGIN DECLARE SECTION;
   char *database;
   EXEC SQL END DECLARE SECTION;
-  int countonly = 0;
   struct sigaction sa;
 
   database = "moira";
@@ -70,9 +69,6 @@ int main(int argc, char **argv)
 	    case 'a':
 	      mode = MODE_ASK;
 	      break;
-	    case 'c':
-	      countonly++;
-	      break;
 	    case 'f':
 	      fast++;
 	      break;
@@ -80,7 +76,7 @@ int main(int argc, char **argv)
 	      warn = 0;
 	      break;
 	    default:
-	      printf("Usage: %s [-d level] [-n] [-y] [-p] [-a] [-c] [-f] [-w] [database]\n",
+	      printf("Usage: %s [-d level] [-n] [-y] [-p] [-a] [-f] [-w] [database]\n",
 		     argv[0]);
 	      exit(1);
 	    }
@@ -88,9 +84,7 @@ int main(int argc, char **argv)
       else
 	database = *arg;
     }
-  if (countonly)
-    printf("Only doing counts\n");
-  else if (fast)
+  if (fast)
     printf("Doing fast version (skipping some checks)\n");
   if (mode == MODE_NO)
     printf("Will NOT modify the database\n");
@@ -123,20 +117,12 @@ int main(int argc, char **argv)
 
   /* Begin transaction here. */
 
-  if (!countonly)
-    {
-      phase1();
-      EXEC SQL COMMIT WORK;
-      phase2();
-      EXEC SQL COMMIT WORK;
-      phase3();
-      EXEC SQL COMMIT WORK;
-    }
-  else
-    {
-      count_only_setup();
-      EXEC SQL COMMIT WORK;
-    }
+  phase1();
+  EXEC SQL COMMIT WORK;
+  phase2();
+  EXEC SQL COMMIT WORK;
+  phase3();
+  EXEC SQL COMMIT WORK;
   phase4();
   EXEC SQL COMMIT WORK;
 
@@ -148,7 +134,7 @@ int main(int argc, char **argv)
 void dbmserr(void)
 {
   EXEC SQL BEGIN DECLARE SECTION;
-  char buf[512];
+  char buf[256];
   EXEC SQL END DECLARE SECTION;
   int bufsize = 256, msglength = 0;
 

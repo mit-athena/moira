@@ -3,13 +3,13 @@
  * and distribution information, see the file "mit-copyright.h". 
  *
  * $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chfn.c,v $
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chfn.c,v 1.2 1988-12-26 14:37:27 mar Exp $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chfn.c,v 1.3 1989-06-28 13:19:26 mar Exp $
  * $Author: mar $
  *
  */
 
 #ifndef lint
-static char *rcsid_chfn_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chfn.c,v 1.2 1988-12-26 14:37:27 mar Exp $";
+static char *rcsid_chfn_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chfn.c,v 1.3 1989-06-28 13:19:26 mar Exp $";
 #endif not lint
 
 /*
@@ -117,6 +117,7 @@ chfn(uname)
     int status;			/* general purpose exit status */
     int q_argc;			/* argc for sms_query */
     char *q_argv[F_END];	/* argv for sms_query */
+    char *motd;			/* for SMS server status */
     int i;
 
     int get_user_info();
@@ -131,6 +132,16 @@ chfn(uname)
     if (status) {
 	com_err(whoami, status, " while connecting to SMS");
 	exit(1);
+    }
+
+    status = sms_motd(&motd);
+    if (status) {
+        com_err(whoami, status, " unable to check server status");
+	leave(1);
+    }
+    if (motd) {
+	fprintf(stderr, "The SMS server is currently unavailable:\n%s\n", motd);
+	leave(1);
     }
 
     status = sms_auth("chfn");	/* Don't use argv[0] - too easy to fake */

@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/main.c,v 1.12 1989-06-26 11:47:16 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/main.c,v 1.13 1989-06-28 13:20:33 mar Exp $";
 #endif lint
 
 /*	This is the file main.c for the SMS Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/main.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/main.c,v 1.12 1989-06-26 11:47:16 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/main.c,v 1.13 1989-06-28 13:20:33 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -60,6 +60,7 @@ main(argc, argv)
 {
     int status;
     Menu *menu;
+    char *motd;
 
     if ((user = getlogin()) == NULL) 
 	user = getpwuid((int) getuid())->pw_name;
@@ -90,6 +91,14 @@ main(argc, argv)
 
     if ( status = sms_connect(SMS_SERVER) ) 
 	ErrorExit("\nConnection to SMS server failed", status);
+
+    if ( status = sms_motd(&motd) )
+        ErrorExit("\nUnable to check server status", status);
+    if (motd) {
+	fprintf(stderr, "The SMS server is currently unavailable:\n%s\n", motd);
+	sms_disconnect();
+	exit(1);
+    }
 
     if ( status = sms_auth(program_name) ) 
 	ErrorExit("\nAuthorization failed -- please run kinit", status);

@@ -3,13 +3,13 @@
  * and distribution information, see the file "mit-copyright.h". 
  *
  * $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chpobox.c,v $
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chpobox.c,v 1.9 1989-04-12 19:11:42 mar Exp $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chpobox.c,v 1.10 1989-06-28 13:19:49 mar Exp $
  * $Author: mar $
  *
  */
 
 #ifndef lint
-static char *rcsid_chpobox_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chpobox.c,v 1.9 1989-04-12 19:11:42 mar Exp $";
+static char *rcsid_chpobox_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chpobox.c,v 1.10 1989-06-28 13:19:49 mar Exp $";
 #endif not lint
 
 /*
@@ -57,7 +57,7 @@ main(argc, argv)
     struct passwd *pwd;
     char *smsarg[3], buf[BUFSIZ];
     char *potype(), *index();
-    char *address, *uname, *machine;
+    char *address, *uname, *machine, *motd;
     uid_t u;
     char *canonicalize_hostname();
     int get_pobox(), scream();
@@ -125,6 +125,18 @@ main(argc, argv)
     status = sms_connect(SMS_SERVER);
     if (status) {
 	com_err(whoami, status, " while connecting to SMS");
+	exit(1);
+    }
+
+    status = sms_motd(&motd);
+    if (status) {
+	sms_disconnect();
+        com_err(whoami, status, " unable to check server status");
+	exit(1);
+    }
+    if (motd) {
+	fprintf(stderr, "The SMS server is currently unavailable:\n%s\n", motd);
+	sms_disconnect();
 	exit(1);
     }
 

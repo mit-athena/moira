@@ -3,13 +3,13 @@
  * and distribution information, see the file "mit-copyright.h". 
  *
  * $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chsh.c,v $
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chsh.c,v 1.2 1988-12-26 14:19:55 mar Exp $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chsh.c,v 1.3 1989-06-28 13:19:57 mar Exp $
  * $Author: mar $
  *
  */
 
 #ifndef lint
-static char *rcsid_chsh_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chsh.c,v 1.2 1988-12-26 14:19:55 mar Exp $";
+static char *rcsid_chsh_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chsh.c,v 1.3 1989-06-28 13:19:57 mar Exp $";
 #endif not lint
 
 /*
@@ -105,6 +105,7 @@ chsh(uname)
     int status;			/* general purpose exit status */
     int q_argc;			/* argc for sms_query */
     char *q_argv[U_END];	/* argv for sms_query */
+    char *motd;			/* determine SMS server status */
 
     int got_one = 0;		/* have we got a new shell yet? */
     char shell[BUFSIZ];		/* the new shell */
@@ -117,6 +118,16 @@ chsh(uname)
     if (status) {
 	com_err(whoami, status, " while connecting to SMS");
 	exit(1);
+    }
+
+    status = sms_motd(&motd);
+    if (status) {
+        com_err(whoami, status, " unable to check server status");
+	leave(1);
+    }
+    if (motd) {
+	fprintf(stderr, "The SMS server is currently unavailable:\n%s\n", motd);
+	leave(1);
     }
 
     status = sms_auth("chsh");	/* Don't use argv[0] - too easy to fake */

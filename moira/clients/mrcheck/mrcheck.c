@@ -5,12 +5,12 @@
  * and distribution information, see the file "mit-copyright.h". 
  *
  * $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrcheck/mrcheck.c,v $
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrcheck/mrcheck.c,v 1.2 1989-06-27 12:09:35 mar Exp $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrcheck/mrcheck.c,v 1.3 1989-06-28 13:20:16 mar Exp $
  * $Author: mar $
  */
 
 #ifndef lint
-static char *rcsid_chsh_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrcheck/mrcheck.c,v 1.2 1989-06-27 12:09:35 mar Exp $";
+static char *rcsid_chsh_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrcheck/mrcheck.c,v 1.3 1989-06-28 13:20:16 mar Exp $";
 #endif	lint
 
 #include <stdio.h>
@@ -77,7 +77,7 @@ main(argc, argv)
     char *argv[];
 
 {
-    char *args[6], buf[BUFSIZ], **service, **host;
+    char *args[6], buf[BUFSIZ], **service, **host, *motd;
     struct save_queue *services, *hosts;
     int count = 0, scream();
 
@@ -96,6 +96,16 @@ main(argc, argv)
 	goto punt;
     }
 
+    status = sms_motd(&motd);
+    if (status) {
+        com_err(whoami, status, " unable to check server status");
+	exit(2);
+    }
+    if (motd) {
+	fprintf(stderr, "The SMS server is currently unavailable:\n%s\n", motd);
+	sms_disconnect();
+	exit(2);
+    }
     status = sms_auth("smscheck");
     if (status) {
 	(void) sprintf(buf, "\nAuthorization failure -- run \"kinit\" \

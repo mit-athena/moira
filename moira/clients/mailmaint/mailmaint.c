@@ -1,6 +1,6 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v 1.17 1989-06-27 11:48:09 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v 1.18 1989-06-28 13:21:29 mar Exp $
  */
 
 /*  (c) Copyright 1988 by the Massachusetts Institute of Technology. */
@@ -8,7 +8,7 @@
 /*  <mit-copyright.h>. */
 
 #ifndef lint
-static char rcsid_mailmaint_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v 1.17 1989-06-27 11:48:09 mar Exp $";
+static char rcsid_mailmaint_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v 1.18 1989-06-28 13:21:29 mar Exp $";
 #endif lint
 
 /***********************************************************************/
@@ -106,7 +106,7 @@ main(argc, argv)
     void (*old_hook)();
 #endif
     int use_menu = 1;
-    char buf[BUFSIZ];
+    char buf[BUFSIZ], *motd;
 
     if ((whoami = rindex(argv[0], '/')) == NULL)
 	whoami = argv[0];
@@ -141,6 +141,17 @@ main(argc, argv)
 	goto punt;
     }
 
+    status = sms_motd(&motd);
+    if (status) {
+        com_err(whoami, status, " unable to check server status");
+	sms_disconnect();
+	exit(2);
+    }
+    if (motd) {
+	fprintf(stderr, "The SMS server is currently unavailable:\n%s\n", motd);
+	sms_disconnect();
+	exit(2);
+    }
     status = sms_auth("mailmaint");
     if (status) {
 	(void) sprintf(buf, "\nAuthorization failed.\n");

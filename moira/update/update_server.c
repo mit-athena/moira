@@ -1,13 +1,13 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/update_server.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/update_server.c,v 1.5 1989-08-16 21:00:09 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/update_server.c,v 1.6 1989-10-05 12:39:16 mar Exp $
  */
 /*  (c) Copyright 1988 by the Massachusetts Institute of Technology. */
 /*  For copying and distribution information, please see the file */
 /*  <mit-copyright.h>. */
 
 #ifndef lint
-static char *rcsid_dispatch_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/update_server.c,v 1.5 1989-08-16 21:00:09 mar Exp $";
+static char *rcsid_dispatch_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/update_server.c,v 1.6 1989-10-05 12:39:16 mar Exp $";
 #endif	lint
 
 #include <mit-copyright.h>
@@ -96,7 +96,7 @@ main(argc, argv)
 #ifndef DEBUG
      if (fork())
        exit(0);
-     n = open("/dev/tty", O_RDWR|O_NDELAY);
+     n = open("/dev/tty", O_RDWR|FNDELAY);
      if (n > 0) {
 	 (void) ioctl(n, TIOCNOTTY, (char *)NULL);
 	 (void) close(n);

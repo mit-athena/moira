@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/afs.c,v 1.33 1992-07-28 14:59:31 probe Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/afs.c,v 1.34 1992-07-30 18:00:21 probe Exp $
  *
  * Do AFS incremental updates
  *
@@ -7,6 +7,7 @@
  * <mit-copyright.h>.
  */
 
+#include <stdio.h>
 #include <sys/types.h>
 #include <sys/file.h>
 #include <strings.h>
@@ -23,6 +24,10 @@
 
 #define STOP_FILE "/moira/afs/noafs"
 #define file_exists(file) (access((file), F_OK) == 0)
+
+#if defined(vax) && !defined(__STDC__)
+#define volatile
+#endif
 
 char *whoami;
 
@@ -486,7 +491,7 @@ long pr_try(fn, a1, a2, a3, a4, a5, a6, a7, a8)
     char *a1, *a2, *a3, *a4, *a5, *a6, *a7, *a8;
 {
     static int initd=0;
-    register long code;
+    volatile register long code;
     register int tries = 0;
 #ifdef DEBUG
     char fname[64];
@@ -502,9 +507,8 @@ long pr_try(fn, a1, a2, a3, a4, a5, a6, a7, a8)
 	    return;
 	}
 	initd = 1;
-    } else {
-	sleep(1);				/* give ptserver room */
     }
+    sleep(1);					/* give ptserver room */
 
     while (code = (*fn)(a1, a2, a3, a4, a5, a6, a7, a8)) {
 #ifdef DEBUG
@@ -519,16 +523,25 @@ long pr_try(fn, a1, a2, a3, a4, a5, a6, a7, a8)
 	else if (fn == pr_ChangeEntry) strcpy(fname, "pr_ChangeEntry");
 	else if (fn == pr_SetFieldsEntry) strcpy(fname, "pr_SetFieldsEntry");
 	else if (fn == pr_AddToGroup) strcpy(fname, "pr_AddToGroup");
-	else {
+	else
 	    sprintf(fname, "pr_??? (0x%08x)", (long)fn);
-	}
 
-	com_err(whoami, code, "%s failed (try %d @%u)", fname, tries+1, t);
+	com_err(whoami, code, "- %s failed (try %d @%u)", fname, tries+1, t);
 #endif
-	if (++tries > 2)
-	    return code;
-	if (code == UNOQUORUM) { sleep(90); continue; }
-	else { sleep(15); continue; }
+	if (++tries > 2) break;		/* 3 tries */
+	
+	if (code == UNOQUORUM) sleep(90);
+	else sleep(15);
+
+	/* Re-initialize the prdb connection */
+    	code=pr_Initialize(0, AFSCONF_CLIENTNAME, 0);
+    	if (!code) code=pr_Initialize(1, AFSCONF_CLIENTNAME, 0);
+	if (code) {
+	    critical_alert("incremental", "Couldn't re-initialize libprot: %s",
+			   error_message(code));
+	    initd = 0;				/* we lost */
+	    break;
+	}
     }
     return code;
 }

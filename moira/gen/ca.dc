@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/ca.dc,v 1.1 1991-09-03 15:34:13 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/ca.dc,v 1.2 1991-09-03 16:53:50 mar Exp $
  *
  * This generates a list of users and their home directories for the
  * Centra America daemon.
@@ -15,6 +15,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/time.h>
+#include <strings.h>
 EXEC SQL INCLUDE sqlca;
 
 extern int errno;
@@ -32,7 +33,7 @@ int argc;
 char **argv;
 {
     FILE *out = stdout;
-    char *outf = NULL, outft[64];
+    char *outf = NULL, outft[64], *p, last[256];
     struct stat sb;
     struct save_queue *sq;
     struct prec *prec;
@@ -124,17 +125,16 @@ char **argv;
       SELECT DISTINCT u.login, u.fullname, f.name
       FROM users u, filesys f
 	WHERE f.label = u.login and u.status = 1 and f.type = "AFS"
-    	ORDER BY login;
+    	ORDER BY name;
     EXEC SQL OPEN z;
-    first = 0;
     while (1) {
 	EXEC SQL FETCH z INTO :login, :name, :dir;
 	if (sqlca.sqlcode != 0) break;
-	if (strncmp(dir, "/afs/athena", 11)) break;
-	if (first != login[0]) {
-	    first = login[0];
-	    fprintf(out, "*%s:%s%c\n", "AFS", "/afs/athena.mit.edu/user/",
-		    first);
+	p = rindex(dir, '/');
+	if (p) *p = 0;
+	if (strcmp(last, dir)) {
+	    strcpy(last, dir);
+	    fprintf(out, "*%s:%s\n", "AFS", dir);
 	}
 	strtrim(login);
 	strtrim(name);

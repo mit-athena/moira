@@ -87,7 +87,7 @@ query version by default.
 
 A query has at most 5 phases:
 
-\begin{enumerate}
+\begin{description}
 \item[Validation]---The number, size, and type of the query arguments
 are checked. Most queries that update or look up objects make sure
 that the named objects exist during this step, and most queries that
@@ -99,7 +99,7 @@ capacls} table. If an entry is found, the server checks if the client
 is on the indicated list. If so, the {\it priviliged\/} flag is set,
 and the access check phase is done. Otherwise, the query-specific
 access routine, if any, is run. If the query has no access routine and
-the client is not on the capacl, the server returns {\tt MR_PERM}.
+the client is not on the capacl, the server returns {\tt MR\_PERM}.
 
 \item[Setup]---If the query has a setup routine, it is run next.
 Queries that delete objects use this step to make sure the object to
@@ -120,7 +120,7 @@ However, followup routines are always needed to parse type/ID
 combinations (like ACLs), and modby fields. This is also the step
 where the modby/modwith/modtime fields are set by queries that change
 the database.
-\end{enumerate}
+\end{description}
 
 {\tt mr\_process\_query} is the heart of the server. First it catches
 the special queries {\bf \_list\_queries} and {\bf \_help}. If the
@@ -299,8 +299,10 @@ of the original string arguments with a number.)
 {\it argc\/} is the number of args that will be used in the qualifier, as
 described above.
 
-Validation support: if {\it validate\/} is non-null, it points to a
-validation structure:
+\bigskip
+
+\noindent Validation support: if {\it validate\/} is non-null, it
+points to a validation structure:
 
 \begin{verbatim}
 /* Query Validation Structure */
@@ -362,6 +364,8 @@ mr\_process\_query} with different arguments in different
 circumstances. This will probably be changing in a later release of
 Moira.
 
+\bigskip
+
 \noindent Validation objects are defined as follows:
 
 \begin{verbatim}
@@ -389,43 +393,45 @@ error to return if validation fails.
 
 The validation types are:
 
-\begin{itemize}
-\item[V_NAME]---Used by {\tt APPEND} queris to verify that the
+\begin{description}
+\item[V\_NAME]---Used by {\tt APPEND} queris to verify that the
 indicated argument does not have the same name (as indicated by the
 {\it namefield\/}) as any other existing row. Also checks that the
 name fits in the given table field.
 
-\item[V_ID]---Verifies that the named argument exists in the table,
+\item[V\_ID]---Verifies that the named argument exists in the table,
 and replaces the char * pointing to the name in the query argv with
 an int * pointing to its ID (meaning the query {\it tlist\/} will use
-a {\tt %d} to refer to it).
+a {\tt \%d} to refer to it).
 
-\item[V_TYPE]---Verifies that the argument is one of the values in the
+\item[V\_TYPE]---Verifies that the argument is one of the values in the
 {\it alias\/} table with name indicated by {\it namefield} and type
 ``TYPE''. (E.g., if the {\it namefield} contains the string
 ``boolean'', the argument must be one of ``TRUE'', ``FALSE'', and
 ``DONTCARE''.)
 
-\item[V_TYPEDATA]---Must follow a {\bf V_TYPE} validation. Checks that
-the argument matches the kind of data indicated for the given type in
-the {\it alias\/} table, and replaces it with an ID, as with {\bf
-V_ID} above. For example, if the {\bf V_TYPE} was ``member'', and the
-argument was ``LIST'', the {\bf V_TYPEDATA} must be a list (the value
-of the {\it alias} entry with name ``LIST'' and type ``TYPEDATA''),
-and the validation will translate the list name into a {\it
-list\_id}.
+\item[V\_TYPEDATA]---Must follow a {\bf V\_TYPE} validation. Checks
+that the argument matches the kind of data indicated for the given
+type in the {\it alias\/} table, and replaces it with an ID, as with
+{\bf V\_ID} above. For example, if the {\bf V\_TYPE} was ``member'',
+and the argument was ``LIST'', the {\bf V\_TYPEDATA} must be a list
+(the value of the {\it alias} entry with name ``LIST'' and type
+``TYPEDATA''), and the validation will translate the list name into a
+{\it list\_id}.
 
-\item[V_RENAME]---Like {\bf V_NAME}, but for {\tt UPDATE} queries.
+\item[V\_RENAME]---Like {\bf V\_NAME}, but for {\tt UPDATE} queries.
 Checks that the new name is either unique, or the same as the old
 name. (It assumes the old name is the query argument immediately
 before the new name.)
 
-\item[V_CHAR]---Verifies that the argument consists only of
+\item[V\_CHAR]---Verifies that the argument consists only of
 ``reasonable'' characters, and fits in the given table field.
 
-\item[V_LEN]---Verifies only that the argument fits into the given
+\item[V\_LEN]---Verifies only that the argument fits into the given
 table field.
 
-\item[V_INT]---Verifies that the argument is a number.
+\item[V\_INT]---Verifies that the argument is a number.
+
+\end{description}
 
 \end{document}

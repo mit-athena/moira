@@ -1,4 +1,4 @@
-/* $Id: mr_main.c,v 1.44 1998-04-06 15:59:21 danw Exp $
+/* $Id: mr_main.c,v 1.45 1998-04-07 17:53:45 danw Exp $
  *
  * Moira server process.
  *
@@ -30,7 +30,7 @@
 
 #include <krb.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.44 1998-04-06 15:59:21 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.45 1998-04-07 17:53:45 danw Exp $");
 
 extern char *krb_get_lrealm(char *, int);
 
@@ -185,7 +185,7 @@ int main(int argc, char **argv)
   while (!takedown)
     {
       int i;
-      struct timeval timeout;
+      struct timeval timeout = {60, 0}; /* 1 minute */
 
       /* If we're supposed to go down and we can, do it */
       if (((dormant == AWAKE) && (nclients == 0) &&
@@ -202,8 +202,7 @@ int main(int argc, char **argv)
       /* Block until something happens. */
       memcpy(&readfds, &xreadfds, sizeof(readfds));
       memcpy(&writefds, &xwritefds, sizeof(writefds));
-      /* XXX set timeout */
-      if (select(nfds, &readfds, &writefds, NULL, NULL) == -1)
+      if (select(nfds, &readfds, &writefds, NULL, &timeout) == -1)
 	{
 	  if (errno != EINTR)
 	    com_err(whoami, errno, "in select");

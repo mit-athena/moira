@@ -1,4 +1,4 @@
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/Imakefile,v 1.1 1990-08-22 13:06:38 mar Exp $
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/Imakefile,v 1.2 1991-03-08 11:34:49 mar Exp $
 #
 # Copyright 1990 by the Massachusetts Institute of Technology.
 #
@@ -10,8 +10,8 @@
 
 #define have_subdirs
 CODE=Imakefile
-CLIENTDIRS=util gdb rpc clients man mrtest update
-SRVRDIRS=server backup db dbck dcm gen reg_svr incremental regtape
+CLIENTDIRS=util include gdb lib clients man update
+SVRDIRS=server db backup dbck dcm gen reg_svr incremental regtape
 #ifdef SVRBUILD
 SUBDIRS=$(CLIENTDIRS) $(SVRDIRS)
 #else
@@ -19,6 +19,8 @@ SUBDIRS=$(CLIENTDIRS)
 #endif
 
 all:: 
+
+#ifndef USELOCALTOOLS
 
 world::
 	make ${MFLAGS} clean-imake
@@ -33,6 +35,16 @@ clean-imake:
 
 imake::
 	cd util/imake; make 
+
+#else /* USELOCALTOOLS */
+
+world::
+	make ${MFLAGS} Makefile
+	make ${MFLAGS} Makefiles
+	make ${MFLAGS} depend
+	make ${MFLAGS} all
+#endif /* USELOCALTOOLS */
+
 
 install::
 	-mkdir ${DESTDIR}
@@ -49,7 +61,13 @@ install::
 	-mkdir ${DESTDIR}${MANDIR}/man8
 	-mkdir ./bin
 
+#ifdef USELOCALTOOLS
 depend::
 	cd util/makedepend; make
+#endif
+
+#ifdef USELOCALLIBS
+depend::
 	cd util/et; make ${MFLAGS} DEPEND=../../$(DEPEND) depend; make ${MFLAGS} all
 	cd util/ss; make ${MFLAGS} DEPEND=../../$(DEPEND) depend; make ${MFLAGS} all
+#endif

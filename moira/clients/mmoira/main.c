@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/main.c,v 1.4 1992-10-13 11:15:25 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/main.c,v 1.5 1992-10-19 18:06:10 mar Exp $
  *
  *  	Copyright 1991 by the Massachusetts Institute of Technology.
  *
@@ -57,6 +57,10 @@ char *argv[];
 	for (n = 1; n < argc - 1; n++)
 	  if (!strcmp(argv[n], "-db"))
 	    moira_server = argv[n + 1];
+
+#ifdef GDSS
+	initialize_gdss_error_table();
+#endif /* GDSS */
 
 	status = mr_connect(moira_server);
 	if (status) {

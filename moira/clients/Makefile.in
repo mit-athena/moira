@@ -1,0 +1,22 @@
+# $Id: Makefile.in,v 1.1 1998-05-26 18:13:37 danw Exp $
+
+SHELL=/bin/sh
+@SET_MAKE@
+
+srcdir=@srcdir@
+VPATH=@srcdir@
+
+CURSES_SUBDIRS=mailmaint
+SUBDIRS=addusr blanche moira mrcheck mrtest passwd userreg @CURSES_SUBDIRS@
+
+all:
+	@for d in $(SUBDIRS); do (echo "### Making $@ in clients/$$d"; cd $$d; $(MAKE) $@) || exit 1; done
+
+clean:
+	@for d in $(SUBDIRS); do (echo "### Making $@ in clients/$$d"; cd $$d; $(MAKE) $@) || exit 1; done
+
+depend:
+	@for d in $(SUBDIRS); do (echo "### Making $@ in clients/$$d"; cd $$d; $(MAKE) $@) || exit 1; done
+
+install:
+	@for d in $(SUBDIRS); do (echo "### Making $@ in clients/$$d"; cd $$d; $(MAKE) $@) || exit 1; done

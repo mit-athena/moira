@@ -1,0 +1,52 @@
+# $Id: Makefile.in,v 1.1 1998-05-26 18:13:42 danw Exp $
+
+SHELL=/bin/sh
+@SET_MAKE@
+
+CC=@CC@
+CPPFLAGS=@CPPFLAGS@ @CRYPT_CPPFLAGS@ @CURSES_CPPFLAGS@ @GDSS_CPPFLAGS@
+CFLAGS=@CFLAGS@
+DEFS=@DEFS@
+ALL_CFLAGS=$(CPPFLAGS) $(CFLAGS) $(DEFS)
+LDFLAGS=@LDFLAGS@
+LIBS=@CRYPT_LIBS@ @CURSES_LIBS@ @GDSS_LIBS@ @LIBS@
+INSTALL_PROGRAM=@INSTALL_PROGRAM@
+
+srcdir=@srcdir@
+VPATH=@srcdir@
+SRCTOP=@top_srcdir@
+BUILDTOP=../..
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+bindir=@bindir@
+
+MOBJS=	attach.o cluster.o delete.o globals.o lists.o main.o menu.o \
+	menus.o nfs.o pobox.o quota.o user.o utils.o dcmmaint.o printer.o \
+	misc.o zephyr.o
+NOBJS=	namespace.o globals.o lists.o menu.o pobox.o user.o utils.o misc.o
+OBJS=	${MOBJS} ${NOBJS}
+
+TARGET=moira namespace
+
+.c.o:
+	$(CC) -c $(ALL_CFLAGS) $<
+
+all: $(TARGET)
+
+clean:
+	rm -f $(OBJS) $(TARGET)
+
+depend:
+
+install: all
+	$(INSTALL_PROGRAM) namespace $(bindir)
+	$(INSTALL_PROGRAM) moira $(bindir)
+	ln -s $(bindir)/listmaint moira
+	ln -s $(bindir)/dcmmaint moira
+	ln -s $(bindir)/usermaint moira
+
+moira: $(MOBJS)
+	$(CC) -o $@ $(LDFLAGS) $(MOBJS) $(LIBS)
+
+namespace: $(NOBJS)
+	$(CC) -o $@ $(LDFLAGS) $(NOBJS) $(LIBS)

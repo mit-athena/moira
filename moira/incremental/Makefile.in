@@ -1,0 +1,60 @@
+# $Id: Makefile.in,v 1.1 1998-05-26 18:14:04 danw Exp $
+
+SHELL=/bin/sh
+@SET_MAKE@
+
+CC=@CC@
+CPPFLAGS=@CPPFLAGS@
+AFS_CPPFLAGS=@AFS_CPPFLAGS@
+CFLAGS=@CFLAGS@
+DEFS=@DEFS@
+ALL_CFLAGS=$(CPPFLAGS) $(AFS_CPPFLAGS) $(CFLAGS) $(DEFS)
+LDFLAGS=@LDFLAGS@
+AFS_LIBS=@AFS_LIBS@
+AFS_EXTRA_LIBS=@AFS_EXTRA_LIBS@
+AFS_DIR=@AFS_DIR@
+LIBS=@LIBS@
+INSTALL_PROGRAM=@INSTALL_PROGRAM@
+
+srcdir=@srcdir@
+VPATH=@srcdir@
+SRCTOP=@top_srcdir@
+BUILDTOP=..
+mrbindir=@mrbindir@
+
+AFS_OBJS=afs.o
+KSRVTGT_OBJS=ksrvtgt.o
+
+TARGET=afs.incr ksrvtgt
+
+.SUFFIXES: .pc
+
+.pc.c:
+	$(PRO_C) $(PRO_C_FLAGS) INAME=$<
+
+.c.o:
+	$(CC) -c $(ALL_CFLAGS) $<
+
+all: $(TARGET)
+
+clean:
+	rm -f $(AFS_OBJS) $(KSRVTGT_OBJS) $(TARGET)
+
+depend:
+
+install: all
+	$(INSTALL_PROGRAM) afs.incr $(mrbindir)
+	$(INSTALL_PROGRAM) ksrvtgt $(mrbindir)
+	@for p in afs_create.pl afs_nightly.pl afs_quota.pl afs_rename.pl afs_utils.pl; do $(INSTALL_PROGRAM) $$p $(mrbindir); done
+
+afs.incr: $(AFS_OBJS)
+	$(CC) -o $@ $(LDFLAGS) $(AFS_OBJS) $(AFS_LIBS) -lprot -lauth -lrxkad -lrx -llwp -lubik -lsys -laudit $(AFS_DIR)/lib/afs/util.a $(AFS_EXTRA_LIBS) $(LIBS)
+
+ksrvtgt: $(KSRVTGT_OBJS)
+	$(CC) -o $@ $(LDFLAGS) $(KSRVTGT_OBJS) $(LIBS)
+
+AFSLIBS=$(AFSDIR)/lib/afs/libprot.a    $(AFSDIR)/lib/afs/libauth.a \
+	$(AFSDIR)/lib/libubik.a        $(AFSDIR)/lib/afs/util.a \
+	$(AFSDIR)/lib/librxkad.a       $(AFSDIR)/lib/afs/libsys.a \
+	$(AFSDIR)/lib/librx.a          $(AFSDIR)/lib/liblwp.a \
+	$(AFSDIR)/lib/afs/libaudit.a   -lbsd

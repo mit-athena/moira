@@ -1,4 +1,4 @@
-/* $Id: reg_stubs.c,v 1.31 1998-03-10 21:16:52 danw Exp $
+/* $Id: reg_stubs.c,v 1.32 1998-05-26 18:13:54 danw Exp $
  *
  * Copyright (C) 1988-1998 by the Massachusetts Institute of Technology.
  * For copying and distribution information, please see the file
@@ -25,11 +25,13 @@
 #include <unistd.h>
 
 #include <des.h>
-#include <hesiod.h>
 #include <kadm_err.h>
 #include <krb.h>
+#ifdef HAVE_HESIOD
+#include <hesiod.h>
+#endif
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/reg_stubs.c,v 1.31 1998-03-10 21:16:52 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/reg_stubs.c,v 1.32 1998-05-26 18:13:54 danw Exp $");
 
 int do_operation(char *first, char *last, char *idnumber, char *hashidnumber,
 		 char *data, u_long opcode);
@@ -67,7 +69,7 @@ int ureg_init(void)
 
   host = NULL;
   host = getenv("REGSERVER");
-#ifdef HESIOD
+#ifdef HAVE_HESIOD
   if (!host || (strlen(host) == 0))
     {
       p = hes_resolve("registration", "sloc");

@@ -1,0 +1,49 @@
+# $Id: Makefile.in,v 1.1 1998-05-26 18:13:51 danw Exp $
+
+SHELL=/bin/sh
+@SET_MAKE@
+
+CC=@CC@
+CPPFLAGS=@CPPFLAGS@
+CFLAGS=@CFLAGS@
+DEFS=@DEFS@
+ALL_CFLAGS=$(CPPFLAGS) $(CFLAGS) $(DEFS)
+LDFLAGS=@LDFLAGS@
+LIBS=@LIBS@
+INSTALL_PROGRAM=@INSTALL_PROGRAM@
+
+srcdir=@srcdir@
+VPATH=@srcdir@
+SRCTOP=@top_srcdir@
+BUILDTOP=../..
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+bindir=@bindir@
+
+OBJS=chfn.o chpobox.o chsh.o
+
+TARGET=chfn chpobox chsh
+
+.c.o:
+	$(CC) -c $(ALL_CFLAGS) $<
+
+all: $(TARGET)
+
+clean:
+	rm -f $(OBJS) $(TARGET)
+
+depend:
+
+install: all
+	$(INSTALL_PROGRAM) chfn $(bindir)
+	$(INSTALL_PROGRAM0 chpobox $(bindir)
+	$(INSTALL_PROGRAM) chsh $(bindir)
+
+chfn: chfn.o
+	$(CC) -o $@ $(LDFLAGS) $@.o $(LIBS)
+
+chpobox: chpobox.o
+	$(CC) -o $@ $(LDFLAGS) $@.o $(LIBS)
+
+chsh: chsh.o
+	$(CC) -o $@ $(LDFLAGS) $@.o $(LIBS)

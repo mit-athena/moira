@@ -2,7 +2,7 @@
  * $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.c,v $
  * $Author: danw $
  * $Locker:  $
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.c,v 1.34 1998-02-05 22:50:59 danw Exp $ 
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.c,v 1.35 1998-05-26 18:13:55 danw Exp $ 
  *
  *  (c) Copyright 1988 by the Massachusetts Institute of Technology.
  *  For copying and distribution information, please see the file
@@ -26,7 +26,7 @@
 #include <kadm_err.h>
 #include <krb.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.c,v 1.34 1998-02-05 22:50:59 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.c,v 1.35 1998-05-26 18:13:55 danw Exp $");
 
 void fix_display(int sig);
 void reset(void);
@@ -803,10 +803,6 @@ int kinit(char *user, char *passwd)
   return status;
 }
 
-
-#ifndef _toupper
-#define _toupper(c) ((c) & ~0x20)
-#endif
 
 int lenient_strcmp(char *string1, char *string2)
 {

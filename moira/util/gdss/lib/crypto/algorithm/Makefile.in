@@ -1,0 +1,31 @@
+# $Id: Makefile.in,v 1.1 1998-05-26 18:14:29 danw Exp $
+
+SHELL=/bin/sh
+@SET_MAKE@
+
+srcdir=@srcdir@
+VPATH=@srcdir@
+
+CC=@CC@
+CFLAGS=@CFLAGS@ -I. -I$(srcdir)/../../../include -I$(srcdir)/../bignum/h
+LDFLAGS=@LDFLAGS@
+
+OBJS=random.o random_BigNum.o bigrsacode.o bigkeygen.o bigsignverify.o
+
+.c.o:
+	$(CC) -c $(CFLAGS) $<
+
+all: depend $(OBJS)
+
+clean:
+	rm -f $(OBJS) gentables gentables.o tables.h endian.h
+
+depend: tables.h
+
+install:
+
+endian.h tables.h: gentables
+	./gentables
+
+gentables: gentables.o
+	$(CC) $(LDFLAGS) -o $@ gentables.o

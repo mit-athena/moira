@@ -1,46 +1,42 @@
-README file for creating Moira*
+README file for building Moira*
 
 This is the root directory of MIT Athena's Moira service management
 system source code.
 
-The Makefiles are set up so that the source tree can be
-separate from the tree(s) containing binaries.  We have
-found this useful since we have to have separate sets of binaries,
-for different platforms.
-
 Here are the steps for building the Moira source.
 
-1.  Create a directory to hold the tree of object files,
-    say it's /foo/bar/baz.
+1.  If you want to build in the directory with the sources, run
+       ./configure
+    in that directory. If you want to build in another directory, run
+       /path/to/moira/sources/configure
+    from that directory. Note that for this to work you will need to
+    be using a "make" program that supports VPATH.
 
-2.  Cd to that directory and run the command:
+    Some options you might want to use:
+	 --with-com_err=PREFIX (defaults to util/et)
+	 --with-krb4=PREFIX (required)
+	 --with-hesiod=PREFIX
+	 --with-zephyr=PREFIX
+	 --with-gdss=PREFIX (defaults to util/gdss, if present)
+	 --with-oracle=PREFIX (defaults to $ORACLE_HOME, if present)
+	 --with-afs=PREFIX (defaults to /usr/afsws, if present)
+	 --with-readline=PREFIX
 
-	make -f /x/y/z/util/makeconfig SRCDIR=/x/y/z
+    (When building Moira on Athena, you should use the Athena source
+    tree config.site file, either by doing
+	 setenv CONFIG_SITE /mit/source/packs/build/config.site
+    before running configure, or by using the Athena build system
+    script /mit/source/packs/build/do.sh.)
 
-    where /x/y/z is the root of the source tree (not necessary
-    if the root is /mit/moiradev/src).  This creates the necessary
-    directories and copies Makefiles into them.
-
-3.  Cd to util/imake.includes.  Read through config.Imakefile, turning
-    on appropriate flags for your installation, and setting the paths
-    to your include files, libs, etc for Kerberos, Hesiod and Zephyr.*
-    Note that we are not licensed to distribute gdss, so it is not
-    included in this distribution.  Therefore you will probably not
-    want to define it.
-
-    If you are building the server binaries, uncomment the #define
-    SVRBUILD line, and make sure you have ORACLE_HOME set in your
-    environment.
-
-4.  Cd to include.  Read through moira_site.h adjusting the paths to
+2.  cd to include.  Read through moira_site.h adjusting the paths to
     what you want on your system.  Also change the #define of
     MOIRA_SERVER to be the name of the server you are planning on
     using. (Note that this is only used if hesiod lookup fails.)
 
-5.  Still in the top of the object directory (/foo/bar/baz
-    of Step 1), type "make world"
+3.  After configuring, run "make" to build everything. The server-side
+    programs will be built if Oracle was found by configure.
 
-6.  Run "make install".  You may want to check that programs
+4.  Run "make install".  You may want to check that programs
     are installed where you want.  Then add the appropriate
     directories to your PATH environment variable.
 

@@ -1,0 +1,72 @@
+# $Id: Makefile.in,v 1.1 1998-05-26 18:14:18 danw Exp $
+
+SHELL=/bin/sh
+@SET_MAKE@
+
+CC=@CC@
+CPPFLAGS=@CPPFLAGS@
+CFLAGS=@CFLAGS@
+DEFS=@DEFS@
+ALL_CFLAGS=$(CPPFLAGS) $(CFLAGS) $(DEFS)
+PRO_C=@PRO_C@
+PRO_C_DEFS=@PRO_C_DEFS@
+PRO_C_INCLUDES=@PRO_C_INCLUDES@
+PRO_C_OPTS=@PRO_C_OPTS@
+PRO_C_FLAGS=$(PRO_C_OPTS) $(PRO_C_DEFS) $(PRO_C_INCLUDES)
+LDFLAGS=@LDFLAGS@
+SQL_LIBS=@SQL_LIBS@
+GDSS_LIBS=@GDSS_LIBS@
+CRYPT_LIBS=@CRYPT_LIBS@
+LIBS=@LIBS@
+INSTALL_PROGRAM=@INSTALL_PROGRAM@
+
+srcdir=@srcdir@
+VPATH=@srcdir@
+SRCTOP=@top_srcdir@
+BUILDTOP=..
+mrbindir=@mrbindir@
+
+STUDENTS_OBJS=students.o
+EMPLOYEE_OBJS=employee.o
+VOTE_OBJS=vote.o
+SIGN_OBJS=sign.o
+VERIFY_OBJS=verify.o
+
+CFILES=students.c employee.c vote.c sign.c verify.c
+
+TARGET=students employee vote sign verify
+
+.SUFFIXES: .pc
+
+.pc.c:
+	$(PRO_C) $(PRO_C_FLAGS) INAME=$<
+
+.c.o:
+	$(CC) -c $(ALL_CFLAGS) $<
+
+all: $(TARGET)
+
+clean:
+	rm -f $(STDENTS_OBJS) $(EMPLOYEE_OBJS) $(VOTE_OBJS)
+	rm -f $(VERIFY_OBJS) $(SIGN_OBJS) $(CFILES) $(TARGET)
+
+depend: $(CFILES)
+
+install: all
+	@for p in $(TARGET); do $(INSTALL_PROGRAM) $$p $(mrbindir); done
+
+students: $(STUDENTS_OBJS)
+	$(CC) -o $@ $(LDFLAGS) $(STUDENTS_OBJS) $(SQL_LIBS) $(LIBS) $(CRYPT_LIBS)
+
+employee: $(EMPLOYEE_OBJS)
+	$(CC) -o $@ $(LDFLAGS) $(EMPLOYEE_OBJS) $(SQL_LIBS) $(LIBS) $(CRYPT_LIBS)
+
+vote: $(VOTE_OBJS)
+	$(CC) -o $@ $(LDFLAGS) $(VOTE_OBJS) $(SQL_LIBS) $(LIBS)
+
+sign: $(SIGN_OBJS)
+	$(CC) -o $@ $(LDFLAGS) $(SIGN_OBJS) $(SQL_LIBS) $(GDSS_LIBS) $(LIBS)
+
+verify: $(VERIFY_OBJS)
+	$(CC) -o $@ $(LDFLAGS) $(VERIFY_OBJS) $(SQL_LIBS) $(GDSS_LIBS) $(LIBS)
+

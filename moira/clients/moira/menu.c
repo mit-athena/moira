@@ -1,4 +1,4 @@
-/* $Id: menu.c,v 1.50 1998-03-10 21:09:38 danw Exp $
+/* $Id: menu.c,v 1.51 1998-05-26 18:13:45 danw Exp $
  *
  * Generic menu system module.
  *
@@ -12,14 +12,16 @@
 #include "menu.h"
 
 #include <ctype.h>
+#ifdef HAVE_CURSES
 #include <curses.h>
+#endif
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.50 1998-03-10 21:09:38 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.51 1998-05-26 18:13:45 danw Exp $");
 
 #define MAX(A, B)	((A) > (B) ? (A) : (B))
 #define MIN(A, B)	((A) < (B) ? (A) : (B))
@@ -35,12 +37,18 @@ int more_flg = 1;
 
 /* Structure for holding current displayed menu */
 struct menu_screen {
+#ifdef HAVE_CURSES
   WINDOW *ms_screen;		/* Window for this menu */
   WINDOW *ms_title;		/* Title subwindow */
   WINDOW *ms_menu;		/* Menu subwindow */
   WINDOW *ms_input;		/* Input subwindow */
+#endif /* HAVE_CURSES */
   int ms_input_y;		/* Input subwindow reference coordinate */
 } *cur_ms;
+
+#ifndef HAVE_CURSES
+int COLS;
+#endif
 
 #define NULLMS ((struct menu_screen *) 0)
 
@@ -86,6 +94,7 @@ void menu_com_err_hook(const char *who, long code, const char *fmt, ...)
   Put_message(buf);
 }
 
+#ifdef HAVE_CURSES
 /*
  * Start_menu takes a menu as an argument.  It initializes curses u.s.w.,
  * and a quit in any submenu should unwind back to here.  (it might not,
@@ -123,16 +132,6 @@ void Cleanup_menu(void)
       wrefresh(cur_ms->ms_screen);
     }
   endwin();
-}
-
-
-/* Like Start_menu, except it doesn't print menus and doesn't use curses */
-void Start_no_menu(Menu *m)
-{
-  cur_ms = NULLMS;
-  COLS = 80;
-  /* Run the menu */
-  Do_menu(m, -1, NULL);
 }
 
 /*
@@ -176,6 +175,16 @@ void destroy_ms(struct menu_screen *ms)
   delwin(ms->ms_screen);
   free(ms);
 }
+#endif /* HAVE_CURSES */
+
+/* Like Start_menu, except it doesn't print menus and doesn't use curses */
+void Start_no_menu(Menu *m)
+{
+  cur_ms = NULLMS;
+  COLS = 80;
+  /* Run the menu */
+  Do_menu(m, -1, NULL);
+}
 
 /*
  * This guy actually puts up the menu
@@ -213,6 +222,7 @@ int Do_menu(Menu *m, int margc, char *margv[])
 
   parsed_argc = 0;
 
+#ifdef HAVE_CURSES
   /* The following get run only in curses mode */
   if (cur_ms != NULLMS)
     {
@@ -253,6 +263,7 @@ int Do_menu(Menu *m, int margc, char *margv[])
       waddstr(my_ms->ms_menu, " q. (quit)         Quit.");
     }
   else
+#endif /* HAVE_CURSES */
     {
       Put_message(m->m_title);
       for (line = 0; line < m->m_length; line++)
@@ -274,12 +285,14 @@ int Do_menu(Menu *m, int margc, char *margv[])
     {
       /* This will be set by a return val from func or submenu */
       quitflag = DM_NORMAL;
+#ifdef HAVE_CURSES
       /* This is here because we may be coming from another menu */
       if (cur_ms != NULL)
 	{
 	  touchwin(my_ms->ms_screen);
 	  wrefresh(my_ms->ms_screen);
 	}
+#endif /* HAVE_CURSES */
       if (margc > 1)
 	{
 	  /* Initialize argv */
@@ -316,11 +329,13 @@ int Do_menu(Menu *m, int margc, char *margv[])
 	       !strcmp(argv[0], "q") || !strcmp(argv[0], "quit"))
 	{
 	  /* here if it's either return or quit */
+#ifdef HAVE_CURSES
 	  if (cur_ms != NULLMS)
 	    {
 	      cur_ms = old_cur_ms;
 	      destroy_ms(my_ms);
 	    }
+#endif /* HAVE_CURSES */
 	  if (m->m_exit != NULLFUNC)
 	    m->m_exit(m);
 	  return *argv[0] == 'r' ? DM_NORMAL : DM_QUIT;
@@ -392,11 +407,13 @@ int Do_menu(Menu *m, int margc, char *margv[])
 	}
       if (quitflag == DM_QUIT)
 	{
+#ifdef HAVE_CURSES
 	  if (cur_ms != NULLMS)
 	    {
 	      cur_ms = old_cur_ms;
 	      destroy_ms(my_ms);
 	    }
+#endif /* HAVE_CURSES */
 	  if (m->m_exit != NULLFUNC)
 	    m->m_exit(m);
 	  parsed_argc = 0;
@@ -409,11 +426,13 @@ int Do_menu(Menu *m, int margc, char *margv[])
 
 void refresh_screen(void)
 {
+#ifdef HAVE_CURSES
   if (cur_ms != NULLMS)
     {
       touchwin(cur_ms->ms_screen);
       refresh_ms(cur_ms);
     }
+#endif /* HAVE_CURSES */
 }
 
 
@@ -424,6 +443,7 @@ int Prompt_input(char *prompt, char *buf, int buflen)
   char *p;
   int y, x, oldx, oldy;
 
+#ifdef HAVE_CURSES
   if (cur_ms != NULLMS)
     {
       more_flg = 1;
@@ -480,11 +500,7 @@ int Prompt_input(char *prompt, char *buf, int buflen)
 		      wmove(cur_ms->ms_input, y, 0);
 		      wclrtoeol(cur_ms->ms_input);
 		      y--;
-#ifdef __NetBSD__
-		      x = cur_ms->ms_input->maxx - 1;
-#else
-		      x = cur_ms->ms_input->_maxx - 1;
-#endif
+		      x = getmaxx(cur_ms->ms_input) - 1;
 		    }
 		}
 	      break;
@@ -502,11 +518,7 @@ int Prompt_input(char *prompt, char *buf, int buflen)
 		  waddch(cur_ms->ms_input, c);
 		  *p++ = c;
 		  x++;
-#ifdef __NetBSD__
-		  if (x >= cur_ms->ms_input->maxx)
-#else
-		  if (x >= cur_ms->ms_input->_maxx)
-#endif
+		  if (x >= getmaxx(cur_ms->ms_input))
 		    {
 		      x = 0;
 		      y++;
@@ -528,6 +540,7 @@ int Prompt_input(char *prompt, char *buf, int buflen)
       return 1;
     }
   else
+#endif /* HAVE_CURSES */
     {
       char bigbuf[BUFSIZ];
 
@@ -556,9 +569,11 @@ int lines_left;
    one at the top of the screen when a ---More--- prompt is displayed */
 void Start_paging(void)
 {
+#ifdef HAVE_CURSES
   if (cur_ms != NULLMS)
     lines_left = LINES - cur_ms->ms_input_y - 1;
   else
+#endif /* HAVE_CURSES */
     lines_left = 23;
 }
 
@@ -619,6 +634,7 @@ void Put_line(char *msg)
       if (--lines_left == 0)
 	{
 	  /* Give the user a more prompt */
+#ifdef HAVE_CURSES
 	  if (cur_ms != NULLMS)
 	    {
 	      wstandout(cur_ms->ms_input);
@@ -638,6 +654,7 @@ void Put_line(char *msg)
 	      wclrtoeol(cur_ms->ms_input);
 	    }
 	  else
+#endif /* HAVE_CURSES */
 	    {
 	      printf("---More (hit return)---");
 	      getchar();
@@ -646,6 +663,7 @@ void Put_line(char *msg)
 	}
     }
 
+#ifdef HAVE_CURSES
   if (cur_ms != NULLMS)
     {
       msg1 = calloc(COLS, 1);
@@ -655,9 +673,11 @@ void Put_line(char *msg)
       wprintw(cur_ms->ms_input, "%s\n", msg1);
     }
   else
+#endif /* HAVE_CURSES */
     puts(msg);
 }
 
+#ifdef HAVE_CURSES
 /* Refresh a menu_screen onto the real screen */
 void refresh_ms(struct menu_screen *ms)
 {
@@ -665,6 +685,7 @@ void refresh_ms(struct menu_screen *ms)
   wrefresh(ms->ms_menu);
   wrefresh(ms->ms_input);
 }
+#endif /* HAVE_CURSES */
 
 /* Parse buf into a list of words, which will be placed in strings specified by
    argv.  Space for these strings must have already been allocated.

@@ -1,4 +1,4 @@
-/* $Id: delete.c,v 1.27 1998-03-10 21:09:35 danw Exp $
+/* $Id: delete.c,v 1.28 1998-05-26 18:13:43 danw Exp $
  *
  *	This is the file delete.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -23,7 +23,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/delete.c,v 1.27 1998-03-10 21:09:35 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/delete.c,v 1.28 1998-05-26 18:13:43 danw Exp $");
 
 int CheckListForDeletion(char *name, Bool verbose);
 void CheckAce(char *type, char *name, Bool verbose);
@@ -592,11 +592,6 @@ int DeleteList(int argc, char *argv[])
     {
     case MR_SUCCESS:
       break;
-#if 0
-    case MR_NO_WILDCARD:
-      Put_message("Wildcards are not accepted here.");
-      return DM_NORMAL;
-#endif
     case MR_NO_MATCH:
     case MR_LIST:
       Put_message("There is no list that matches that name.");

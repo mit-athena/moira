@@ -1,4 +1,4 @@
-/* $Id: update_test.c,v 1.9 1998-02-15 17:49:31 danw Exp $
+/* $Id: update_test.c,v 1.10 1998-05-26 18:14:23 danw Exp $
  *
  * Test client for update_server protocol.
  *
@@ -14,6 +14,7 @@
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 void usage(void);
 

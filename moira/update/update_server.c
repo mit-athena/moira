@@ -1,4 +1,4 @@
-/* $Id: update_server.c,v 1.18 1998-02-15 17:49:30 danw Exp $
+/* $Id: update_server.c,v 1.19 1998-05-26 18:14:22 danw Exp $
  *
  * Copyright 1988-1998 by the Massachusetts Institute of Technology.
  * For copying and distribution information, please see the file
@@ -12,8 +12,8 @@
 #include <sys/stat.h>
 #include <sys/utsname.h>
 
-#include <arpa/inet.h>
 #include <netinet/in.h>
+#include <arpa/inet.h>
 
 #include <errno.h>
 #include <pwd.h>
@@ -25,7 +25,7 @@
 #include <des.h>
 #include "update.h"
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/update_server.c,v 1.18 1998-02-15 17:49:30 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/update_server.c,v 1.19 1998-05-26 18:14:22 danw Exp $");
 
 char *whoami, *hostname;
 

@@ -1,10 +1,10 @@
 .TH DCM 8 "30 Nov 1988" "Project Athena"
-\" RCSID: $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/man/dcm.8,v 1.7 1998-01-07 17:10:30 danw Exp $
+\" RCSID: $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/man/dcm.8,v 1.8 1998-05-26 18:14:11 danw Exp $
 .SH NAME
 dcm, startdcm \- build config files from Moira database and update servers
 .SH SYNOPSIS
 .B dcm
-[-d level]
+[servicename ...]
 .br
 .B startdcm
 .SH DESCRIPTION
@@ -63,8 +63,6 @@ if it is non-zero.
 .br
 /moira/critical.log
 .br
-/moira/dcm/locks/* \- empty files will be created here for advisory locks.
-.br
 /moira/bin/*.gen \- service file generators will be searched for
 here.
 .br
@@ -74,3 +72,4 @@ here.
 (null instance).
 .SH "SEE ALSO"
 The Project Athena Technical Plan section on Moira.
+

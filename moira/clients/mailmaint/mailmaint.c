@@ -1,4 +1,4 @@
-/* $Id: mailmaint.c,v 1.40 1998-03-26 21:07:13 danw Exp $
+/* $Id: mailmaint.c,v 1.41 1998-05-26 18:13:40 danw Exp $
  *
  * Simple add-me-to/remove-me-from list client
  *
@@ -14,7 +14,9 @@
 #include <moira_site.h>
 
 #include <ctype.h>
+#ifdef HAVE_CURSES
 #include <curses.h>
+#endif
 #include <pwd.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -23,7 +25,7 @@
 
 #include <krb.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v 1.40 1998-03-26 21:07:13 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v 1.41 1998-05-26 18:13:40 danw Exp $");
 
 #define STARTCOL 0
 #define STARTROW 3
@@ -167,33 +169,29 @@ int main(int argc, char *argv[])
       goto punt;
     }
 
-  if (use_menu)
+  initscr();
+  if ((LINES < 24) || (COLS < 60))
     {
-      initscr();
-      if ((LINES < 24) || (COLS < 60))
-	{
-	  display_buff("Display window too small.\n\n");
-	  sprintf(buf,
-		  "Current window parameters are (%d lines, %d columns)\n",
-		  LINES, COLS);
-	  display_buff(buf);
-	  display_buff("Please resize your window\n");
-	  display_buff("to at least 24 lines and 60 columns.\n");
-	  exit(0);
-	}
-      raw();
-      noecho();
-      old_hook = set_com_err_hook(menu_err_hook);
-      position[0] = oldpos[0] = 1;
-      level = 0;
-      pack_main_menu();
-      pack_help_menu();
-      display_menu(main_menu);
-      get_main_input();
-      cls();
-      endwin();
-      set_com_err_hook(old_hook);
+      display_buff("Display window too small.\n\n");
+      sprintf(buf, "Current window parameters are (%d lines, %d columns)\n",
+	      LINES, COLS);
+      display_buff(buf);
+      display_buff("Please resize your window\n");
+      display_buff("to at least 24 lines and 60 columns.\n");
+      exit(0);
     }
+  raw();
+  noecho();
+  old_hook = set_com_err_hook(menu_err_hook);
+  position[0] = oldpos[0] = 1;
+  level = 0;
+  pack_main_menu();
+  pack_help_menu();
+  display_menu(main_menu);
+  get_main_input();
+  cls();
+  endwin();
+  set_com_err_hook(old_hook);
   exit(0);
 
 punt:

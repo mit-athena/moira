@@ -1,0 +1,29 @@
+# $Id: Makefile.in,v 1.1 1998-05-26 18:14:27 danw Exp $
+
+SHELL=/bin/sh
+@SET_MAKE@
+
+srcdir=@srcdir@
+VPATH=@srcdir@
+
+CC=@CC@
+CFLAGS=@CFLAGS@ -I$(srcdir)/../../include -I$(srcdir)/bignum/h
+
+OBJS =  hashes.o read_password.o crypto_util.o dumphex.o \
+	read_privkey.o read_pubkey.o write_pubkey.o KeyFromPQ.o
+
+.c.o:
+	$(CC) -c $(CFLAGS) $<
+
+all: $(OBJS)
+	@(cd algorithm; $(MAKE) $@) && (cd bignum; $(MAKE) $@)
+
+clean:
+	rm -f $(OBJS)
+	@(cd algorithm; $(MAKE) $@) && (cd bignum; $(MAKE) $@)
+
+depend:
+	@(cd algorithm; $(MAKE) $@) && (cd bignum; $(MAKE) $@)
+
+install:
+	@(cd algorithm; $(MAKE) $@) && (cd bignum; $(MAKE) $@)

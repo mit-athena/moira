@@ -1,4 +1,4 @@
-/* $Id: display.c,v 1.16 1998-03-10 21:16:51 danw Exp $
+/* $Id: display.c,v 1.17 1998-05-26 18:13:53 danw Exp $
  *
  * Display function for userreg client
  *
@@ -19,7 +19,7 @@
 
 #include "userreg.h"
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/display.c,v 1.16 1998-03-10 21:16:51 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/display.c,v 1.17 1998-05-26 18:13:53 danw Exp $");
 
 void make_border(int l);
 void query_user(char *prompt, char *buf, int maxsize, int timeout,
@@ -352,13 +352,13 @@ void display_text_line(char *line)
  */
 void display_text(char *filename, char *string)
 {
-  FILE * fp;
+  FILE *fp;
   char buf[100], buf1[110];
 
   werase(displayw);
-  if (!(fp = fopen (filename, "r")))
+  if (!(fp = fopen(filename, "r")))
     {
-      wprintw (displayw, "Can't open file %s for reading.\n", filename);
+      wprintw(displayw, "Can't open file %s for reading.\n", filename);
       return;
     }
 

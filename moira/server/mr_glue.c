@@ -1,4 +1,4 @@
-/* $Id: mr_glue.c,v 1.25 1998-02-23 19:24:29 danw Exp $
+/* $Id: mr_glue.c,v 1.26 1998-05-26 18:14:20 danw Exp $
  *
  * Glue routines to allow the database stuff to be linked in to
  * a program expecting a library level interface.
@@ -23,15 +23,16 @@
 
 extern char *krb_get_lrealm(char *, int);
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_glue.c,v 1.25 1998-02-23 19:24:29 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_glue.c,v 1.26 1998-05-26 18:14:20 danw Exp $");
 
 static int already_connected = 0;
 
 #define CHECK_CONNECTED { if (!already_connected) return MR_NOT_CONNECTED; }
 
 static client pseudo_client;
+client *cur_client = &pseudo_client;
 extern char *whoami;
-extern time_t now;
+time_t now;
 
 void reapchild(void);
 int callback(int argc, char **argv, void *arg);
@@ -94,7 +95,6 @@ int mr_auth(char *prog)
     return KDC_PR_UNKNOWN + ERROR_TABLE_BASE_krb;
   strcpy(pseudo_client.kname.name, pw->pw_name);
   krb_get_lrealm(pseudo_client.kname.realm, 1);
-  krb_get_lrealm(krb_realm, 1);
 
   strcpy(buf, pw->pw_name);
   strcat(buf, "@");
@@ -141,40 +141,6 @@ int mr_access(char *name, int argc, char **argv)
   return mr_check_access(&pseudo_client, name, argc,
 			 mr_copy_args(argv, argc));
 }
-
-/* trigger_dcm is also used as a followup routine to the
- * set_server_host_override query, hence the two dummy arguments.
- */
-
-struct query pseudo_query = {
-  "trigger_dcm",
-  "tdcm",
-};
-
-int trigger_dcm(struct query *q, char *argv[], client *cl)
-{
-  int pid, status;
-  char prog[MAXPATHLEN];
-
-  if ((status = check_query_access(&pseudo_query, 0, cl)))
-    return status;
-
-  sprintf(prog, "%s/startdcm", BIN_DIR);
-  pid = vfork();
-  switch (pid)
-    {
-    case 0:
-      execl(prog, "startdcm", 0);
-      exit(1);
-
-    case -1:
-      return errno;
-
-    default:
-      return MR_SUCCESS;
-    }
-}
-
 
 void reapchild(void)
 {

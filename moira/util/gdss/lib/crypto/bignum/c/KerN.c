@@ -84,11 +84,7 @@ register int 	nl;
 	    *mm++ = *nn++;
 #else
         /* be care: bcopy (SRC, DEST, L): SRC-->DEST !!! */
-#ifdef SOLARIS
         memmove (mm, nn, nl*BN_DIGIT_SIZE/BN_BYTE_SIZE);
-#else
-        bcopy (nn, mm, nl*BN_DIGIT_SIZE/BN_BYTE_SIZE);
-#endif
 #endif
     else
     if (mm > nn)

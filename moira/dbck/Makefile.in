@@ -1,0 +1,51 @@
+# $Id: Makefile.in,v 1.1 1998-05-26 18:13:58 danw Exp $
+
+SHELL=/bin/sh
+@SET_MAKE@
+
+CC=@CC@
+CPPFLAGS=@CPPFLAGS@
+CFLAGS=@CFLAGS@
+DEFS=@DEFS@
+ALL_CFLAGS=$(CPPFLAGS) $(CFLAGS) $(DEFS)
+PRO_C=@PRO_C@
+PRO_C_DEFS=@PRO_C_DEFS@
+PRO_C_INCLUDES=@PRO_C_INCLUDES@
+PRO_C_OPTS=@PRO_C_OPTS@
+PRO_C_FLAGS=$(PRO_C_OPTS) $(PRO_C_DEFS) $(PRO_C_INCLUDES)
+LDFLAGS=@LDFLAGS@
+LIBS=@SQL_LIBS@ @LIBS@
+INSTALL_PROGRAM=@INSTALL_PROGRAM@
+
+srcdir=@srcdir@
+VPATH=@srcdir@
+SRCTOP=@top_srcdir@
+BUILDTOP=..
+mrbindir=@mrbindir@
+
+OBJS=dbck.o fix.o phase1.o phase2.o phase3.o phase4.o
+
+CFILES=dbck.c fix.c phase1.c phase2.c phase3.c phase4.c
+
+TARGET=dbck
+
+.SUFFIXES: .pc
+
+.pc.c:
+	$(PRO_C) $(PRO_C_FLAGS) INAME=$<
+
+.c.o:
+	$(CC) -c $(ALL_CFLAGS) $<
+
+all: $(TARGET)
+
+clean:
+	rm -f $(OBJS) $(CFILES) $(TARGET)
+
+depend: $(CFILES)
+
+install: all
+	$(INSTALL_PROGRAM) dbck $(mrbindir)
+
+$(TARGET): $(OBJS)
+	$(CC) -o $@ $(LDFLAGS) $(OBJS) $(LIBS)

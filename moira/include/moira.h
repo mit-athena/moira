@@ -1,4 +1,4 @@
-/* $Id: moira.h,v 1.20 1998-02-05 22:51:16 danw Exp $
+/* $Id: moira.h,v 1.21 1998-05-26 18:14:03 danw Exp $
  *
  * Copyright (C) 1987-1998 by the Massachusetts Institute of Technology
  *
@@ -146,7 +146,11 @@ int mr_query(char *handle, int argc, char **argv,
 #define MR_INGRES_SOFTFAIL	MR_DBMS_SOFTFAIL
 
 
-#ifndef __GNUC__
+#ifdef __GNUC__
+#if __GNUC_MINOR__ < 7
+#define __attribute__(x)
+#endif
+#else /* ! __GNUC __ */
 #define __attribute__(x)
 #endif
 

@@ -1,4 +1,4 @@
-/* $Id: mrtest.c,v 1.40 1998-03-10 21:22:40 danw Exp $
+/* $Id: mrtest.c,v 1.41 1998-05-26 18:13:49 danw Exp $
  *
  * Bare-bones Moira client
  *
@@ -19,12 +19,12 @@
 #include <string.h>
 #include <unistd.h>
 
-#ifdef USE_READLINE
+#ifdef HAVE_READLINE
 #include "readline.h"
 #include "history.h"
 #endif
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v 1.40 1998-03-10 21:22:40 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v 1.41 1998-05-26 18:13:49 danw Exp $");
 
 int recursion = 0, interactive;
 int count, quit = 0, cancel = 0;
@@ -61,7 +61,7 @@ int main(int argc, char **argv)
   initialize_sms_error_table();
   initialize_krb_error_table();
 
-#ifdef USE_READLINE
+#ifdef HAVE_READLINE
   /* we don't want filename completion */
   rl_bind_key('\t', rl_insert);
 #endif
@@ -97,7 +97,7 @@ void discard_input(void)
 char *mr_gets(char *prompt, char *buf, size_t len)
 {
   char *in;
-#ifdef USE_READLINE
+#ifdef HAVE_READLINE
   if (interactive)
     {
       in = readline(prompt);

@@ -1,0 +1,330 @@
+AC_INIT(patchlevel.h)
+
+dnl On Athena at least, many of the packages (krb, zephyr, hesiod, etc)
+dnl will all be in /usr/athena... this hack lets us not end up with 10
+dnl copies of -I/usr/athena/include -L/usr/athena/lib in our command lines
+AC_DEFUN(MR_EXTEND, [
+    case $$1 in
+	*$2*) ;;
+	*) $1=$2\ $$1 ;;
+    esac
+])
+
+dnl Define for both C and Pro*C
+AC_DEFUN(MR_DEFINE, [
+    AC_DEFINE($1)
+    MR_EXTEND(PRO_C_DEFS, DEFINE=$1)
+])
+
+dnl Add to include path for both C and Pro*C
+AC_DEFUN(MR_INCLUDE, [
+    MR_EXTEND(CPPFLAGS, -I$1)
+    MR_EXTEND(PRO_C_INCLUDES, INCLUDE=$1)
+]) 
+
+dnl Add to lib path
+AC_DEFUN(MR_LIBS, [MR_EXTEND(LIBPATH, -L$1)])
+
+AC_PROG_CC
+AC_PROG_INSTALL
+AC_PROG_RANLIB
+AC_PROG_MAKE_SET
+
+if test "$athena" = true; then
+    enable_athena=yes
+    with_readline=/mit/gnu
+    prefix=/afs/athena.mit.edu/system/moira
+    bindir=$prefix/arch/$ATHENA_SYS/bin
+    sbindir=$bindir
+fi
+
+# We currently just don't support changing this
+mrbindir=/moira/bin
+AC_SUBST(mrbindir)
+
+# Athena-local policy decisions
+AC_MSG_CHECKING(for Athena)
+AC_ARG_ENABLE(athena,
+    [  --enable-athena         Enable Athena-specific policy decisions],
+    , [if test "$athena" = true; then
+           enableval=yes
+       else
+	   enableval=no
+       fi])
+AC_MSG_RESULT($enableval)
+if test "$enableval" = yes; then
+    MR_DEFINE(ATHENA)
+fi
+
+# Networking libraries
+AC_CHECKING(network libraries...)
+AC_CHECK_FUNC(gethostbyname, :,
+	      AC_CHECK_LIB(nsl, gethostbyname, ,
+			   AC_CHECK_LIB(resolv, gethostbyname)))
+AC_CHECK_FUNC(socket, :,
+	      AC_CHECK_LIB(socket, socket, ,
+			   AC_CHECK_LIB(socket, socket,
+					LIBS="-lsocket -lnsl $LIBS", :,
+					-lnsl)))
+
+# com_err (required, but can be built)
+AC_MSG_CHECKING(for com_err)
+AC_ARG_WITH(com_err,
+    [  --with-com_err=PREFIX   Specify location of com_err],
+    [AC_MSG_RESULT($withval)
+     if test $withval = "no"; then
+         AC_MSG_ERROR(com_err is required for Moira)
+     fi
+     if test $withval != "yes"; then
+	 MR_INCLUDE($withval/include)
+	 MR_LIBS($withval/lib)
+     fi
+     COMPILE_ET=compile_et],
+    [AC_MSG_RESULT(util/et)
+     COM_ERR_SUBDIR=util/et;
+     MR_INCLUDE(`pwd`/util/et)
+     MR_LIBS(`pwd`/util/et)
+     COMPILE_ET=`pwd`/util/et/compile_et
+     AC_CONFIG_SUBDIRS($COM_ERR_SUBDIR)])
+AC_SUBST(COM_ERR_SUBDIR)
+AC_SUBST(COMPILE_ET)
+
+# Kerberos (required)
+AC_MSG_CHECKING(for Kerberos 4)
+AC_ARG_WITH(krb4,
+    [  --with-krb4=PREFIX      Specify location of krb4],
+    [krb4="$withval"], [krb4=no])
+AC_MSG_RESULT($krb4)
+if test $krb4 = "no"; then
+    AC_MSG_ERROR(Kerberos is required for Moira)
+fi
+if test "$krb4" != yes; then
+    MR_INCLUDE($krb4/include)
+    if test -d "$krb4/include/kerberosIV"; then
+	MR_INCLUDE($krb4/include/kerberosIV)
+    fi
+    MR_LIBS($krb4/lib)
+elif test -d /usr/include/kerberosIV; then
+    MR_INCLUDE(/usr/include/kerberosIV)
+fi
+AC_CHECK_LIB(krb4, krb_rd_req,
+	     [KRB4_LIBS="-lkrb4 -ldes425 -lkrb5 -lcrypto"],
+	     [AC_CHECK_LIB(krb, krb_rd_req,
+			   [KRB4_LIBS="-lkrb -ldes"],
+			   [AC_MSG_ERROR(Kerberos 4 libraries not found)],
+			   $LIBPATH -ldes)],
+	     $LIBPATH -ldes425 -lkrb5 -lcrypto)
+
+# Hesiod support
+AC_MSG_CHECKING(for Hesiod)
+AC_ARG_WITH(hesiod,
+    [  --with-hesiod=PREFIX    Specify location of Hesiod],
+    [hesiod="$withval"], [hesiod=no])
+AC_MSG_RESULT($hesiod)
+if test "$hesiod" != no; then
+    if test "$hesiod" != yes; then
+	MR_INCLUDE($hesiod/include)
+	MR_LIBS($hesiod/lib)
+    fi
+    AC_CHECK_FUNC(res_send, :,
+		  AC_CHECK_LIB(resolv, res_send))
+    AC_CHECK_LIB(hesiod, hes_resolve, :,
+		 [AC_MSG_ERROR(Hesiod library not found)],
+		 $LIBPATH $LIBS)
+    MR_DEFINE(HAVE_HESIOD)
+fi
+
+# Zephyr support
+AC_MSG_CHECKING(for Zephyr)
+AC_ARG_WITH(zephyr,
+    [  --with-zephyr=PREFIX    Specify location of Zephyr],
+    [zephyr="$withval"], [zephyr=no])
+AC_MSG_RESULT($zephyr)
+if test "$zephyr" != no; then
+    if test "$zephyr" != yes; then
+	MR_INCLUDE($zephyr/include)
+	MR_LIBS($zephyr/lib)
+    fi
+    AC_CHECK_LIB(zephyr, ZInitialize, :,
+		 [AC_MSG_ERROR(Zephyr library not found)],
+		 $LIBPATH $KRB4_LIBS -lcom_err)
+    MR_DEFINE(HAVE_ZEPHYR)
+fi
+
+# GDSS support (default: build util/gdss if present)
+AC_MSG_CHECKING(for GDSS)
+AC_ARG_WITH(gdss,
+    [  --with-gdss=PREFIX      Specify location of GDSS],
+    [gdss="$withval"
+     GDSS_CPPFLAGS="-I$gdss/include"
+     GDSS_LIBS="-L$gdss/lib -lgdss"],
+    [if test -d $srcdir/util/gdss; then
+         gdss=$srcdir/util/gdss
+	 GDSS_SUBDIR=util/gdss
+	 GDSS_OUTPUT_FILES="util/gdss/Makefile util/gdss/lib/Makefile \
+	     util/gdss/lib/crypto/Makefile util/gdss/lib/crypto/bignum/Makefile \
+	     util/gdss/lib/crypto/algorithm/Makefile"
+	 # autoconf can't deal with creating util/gdss if util doesn't exist
+	 if test ! -d util; then
+	     mkdir util
+	 fi
+	 GDSS_CPPFLGAS="-I$gdss/include"
+	 GDSS_LIBS='-L$(BUILDTOP)/util/gdss/lib -lgdss'
+     else
+         gdss=no
+     fi])
+AC_MSG_RESULT($gdss)
+if test "$gdss" != no; then
+    GDSS_OBJS='$(GDSS_OBJS)'
+    GDSS_CFILES='$(GDSS_CFILES)'
+    GDSS_TARGET='$(GDSS_TARGET)'
+    MR_DEFINE(HAVE_GDSS)
+fi
+AC_SUBST(GDSS_CPPFLAGS)
+AC_SUBST(GDSS_LIBS)
+AC_SUBST(GDSS_SUBDIR)
+AC_SUBST(GDSS_OBJS)
+AC_SUBST(GDSS_CFILES)
+AC_SUBST(GDSS_TARGET)
+
+# Oracle (default: yes, if $ORACLE_HOME is set)
+AC_MSG_CHECKING(for Oracle)
+AC_ARG_WITH(oracle,
+    [  --with-oracle=PREFIX    Specify location of Oracle (for server)],
+    [oracle="$withval"],
+    [if test -n "$ORACLE_HOME" -a -d "$ORACLE_HOME"; then
+         oracle=$ORACLE_HOME
+     else
+	 oracle=no
+     fi])
+AC_MSG_RESULT($oracle)
+if test "$oracle" != no; then
+    SQL_LIBS="-L$oracle/lib -lsql $oracle/lib/osntab.o -lsqlnet -lora -lsqlnet -lnlsrtl -lcv6 -lcore -lnlsrtl -lcore -lm"
+    SVRSUBDIRS='$(SVRDIRS)'
+    SERVER_OUTPUT_FILES="db/Makefile server/Makefile afssync/Makefile backup/Makefile dbck/Makefile dcm/Makefile gen/Makefile incremental/Makefile reg_svr/Makefile regtape/Makefile"
+    PRO_C=$oracle/bin/proc
+    PRO_C_OPTS=CODE=ANSI_C
+fi
+AC_SUBST(PRO_C)
+AC_SUBST(PRO_C_DEFS)
+AC_SUBST(PRO_C_INCLUDES)
+AC_SUBST(PRO_C_OPTS)
+AC_SUBST(SQL_LIBS)
+AC_SUBST(SVRSUBDIRS)
+
+# AFS support
+AC_MSG_CHECKING(for AFS)
+AC_ARG_WITH(afs,
+    [  --with-afs=PREFIX       Specify location of AFS libs (for server)],
+    [afs="$withval"], [afs=no])
+AC_MSG_RESULT($afs)
+if test "$afs" != no -a "$oracle" != no; then
+    if test "$afs" != yes; then
+	AFS_CPPFLAGS="-I$afs/include -I$afs/include/afs -I$afs/include/rx"
+	AFS_PRO_C_INCLUDES="INCLUDE=$afs/include INCLUDE=$afs/include/afs INCLUDE=$afs/include/rx"
+	AFS_LIBS="-L$afs/lib -L$afs/lib/afs"
+	AFS_DIR=$afs
+    fi
+    AC_CHECK_FUNC(insque, :, AC_CHECK_LIB(compat, insque,
+					  AFS_EXTRA_LIBS="-lcompat",
+					  AC_MSG_ERROR(insque not found)))
+    AC_CHECK_FUNC(sigvec, :, AC_CHECK_LIB(ucb, sigvec,
+					  AFS_EXTRA_LIBS="$AFS_EXTRA_LIBS -L/usr/ucblib -lc -lucb",
+					  :, -L/usr/ucblib))
+    AC_CHECK_LIB(sys, pioctl, :,
+		 [AC_MSG_ERROR(AFS libraries not found)],
+		 $AFS_LIBS -lrx -llwp -lsys $AFS_EXTRA_LIBS)
+    MR_DEFINE(HAVE_AFS)
+fi
+AC_SUBST(AFS_CPPFLAGS)
+AC_SUBST(AFS_PRO_C_INCLUDES)
+AC_SUBST(AFS_LIBS)
+AC_SUBST(AFS_EXTRA_LIBS)
+AC_SUBST(AFS_DIR)
+
+# GNU readline
+AC_CHECKING(for GNU readline...)
+AC_ARG_WITH(readline,
+    [  --with-readline=PREFIX  Specify location of GNU readline],
+    [readline="$withval"],
+    [AC_CHECK_LIB(readline, readline, [readline=yes], :, -ltermcap)])
+if test "$readline" != no; then
+    if test "$readline" != yes; then
+	READLINE_CPPFLAGS="-I$readline/include/readline -DHAVE_READLINE"
+	READLINE_LIBS="-L$readline/lib -lreadline -ltermcap"
+    fi
+fi
+AC_SUBST(READLINE_CPPFLAGS)
+AC_SUBST(READLINE_LIBS)
+
+# Curses
+curses=curses
+AC_CHECKING(for curses)
+AC_CHECK_LIB(curses, main, :, AC_CHECK_LIB(ncurses, main, curses=ncurses))
+if test -n "$curses"; then
+    OLDLIBS=$LIBS
+    LIBS=-l$curses
+    AC_CHECKING(if curses needs termcap)
+    dnl we need to use AC_TRY_RUN because under NetBSD, the program will
+    dnl link with just -lcurses, but then fail with a runtime linker error
+    dnl because you didn't use -ltermcap
+    AC_TRY_RUN([#include <curses.h>
+		main(int argc, char **argv)
+		{
+		    initscr();
+		    endwin();
+		    return 0;
+		}], [CURSES_LIBS="-l$curses"],
+		LIBS="-l$curses -ltermcap"
+		AC_TRY_RUN([#include <curses.h>
+			    main(int argc, char **argv)
+			    {
+				initscr();
+				endwin();
+				return 0;
+			    }], [CURSES_LIBS="-l$curses -ltermcap"],
+			    :, :),
+		:)
+    LIBS=$OLDLIBS
+fi
+if test -n "$CURSES_LIBS"; then
+    OLDLIBS=$LIBS
+    LIBS=$CURSES_LIBS
+    AC_TRY_LINK([#include <curses.h>],[WINDOW *w; getmaxx(w);],
+		:,
+		AC_TRY_COMPILE([#include <curses.h>],[WINDOW *w; w->_maxx;],
+			       [CURSES_CPPFLAGS="-D'getmaxx(w)=w->_maxx'"],
+			       [CURSES_CPPFLAGS="-D'getmaxx(w)=w->maxx'"]))
+    LIBS=$OLDLIBS
+    CURSES_CPPFLAGS="-DHAVE_CURSES $CURSES_CPPFLAGS"
+    CURSES_SUBDIRS='$(CURSES_SUBDIRS)'
+else
+    AC_MSG_WARN(Couldn't find -lcurses)
+fi
+AC_SUBST(CURSES_CPPFLAGS)
+AC_SUBST(CURSES_LIBS)
+AC_SUBST(CURSES_SUBDIRS)
+
+
+AC_CHECK_FUNCS(getusershell)
+
+AC_CHECK_HEADER(crypt.h, CRYPT_CPPFLAGS=-DHAVE_CRYPT_H)
+AC_CHECK_FUNC(crypt, :, AC_CHECK_LIB(crypt, crypt, CRYPT_LIBS=-lcrypt))
+AC_SUBST(CRYPT_CPPFLAGS)
+AC_SUBST(CRYPT_LIBS)
+
+MR_INCLUDE('$(SRCTOP)/include')
+MR_INCLUDE('$(BUILDTOP)/lib')
+MR_INCLUDE('$(BUILDTOP)/db')
+LDFLAGS="$LDFLAGS -L\$(BUILDTOP)/lib $LIBPATH"
+KLIBS="-lzephyr $KRB4_LIBS -lcom_err -lhesiod $LIBS"
+LIBS="-lmoira $KLIBS"
+AC_SUBST(KLIBS)
+
+AC_OUTPUT(Makefile lib/Makefile include/Makefile clients/Makefile \
+	  clients/addusr/Makefile clients/blanche/Makefile \
+	  clients/mailmaint/Makefile clients/moira/Makefile \
+	  clients/mrcheck/Makefile clients/mrtest/Makefile \
+	  clients/passwd/Makefile clients/userreg/Makefile \
+	  update/Makefile man/Makefile \
+	  $SERVER_OUTPUT_FILES $GDSS_OUTPUT_FILES)

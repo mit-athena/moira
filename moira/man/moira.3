@@ -12,78 +12,73 @@ sq_save_unique_data, sq_save_unique_string
 .nj
 .TP
 Protocol functions
-.B #include <moira.h>
+.B
+int mr_connect(char *server);
 
-.B int mr_connect(server);
-.B	char *server;
+.B
+int mr_host(char *host, int size);
 
-.B int mr_host(host, size);
-.B	char *server;
+.B
+int mr_motd(char **motd);
 
-.B int mr_motd(motd);
-.B	char **motd;
+.B
+int mr_auth(char *prog);
 
-.B int mr_auth(prog);
-.B	char *prog;
+.B
+int mr_disconnect(void);
 
-.B int mr_disconnect();
+.B
+int mr_noop(void);
 
-.B int mr_noop();
+.B
+int mr_access(char *name, int argc, char **argv);
 
-.B int mr_access(name, argc, argv);
-.B	char *name;
-.B	int argc;
-.B	char **argv;
+.B
+int mr_query(char *name, int argc, char **argv,
+.B
+	int (*callproc)(int, char **, void *), void *callarg);
 
-.B int mr_query(name, argc, argv, callproc, callarg);
-.B	char *name;
-.B	int argc;
-.B	char **argv;
-.B	int (*callproc)(int, char **, char *);
-.B	char *callarg;
-
-.B int mr_do_update();
-
-.B int mr_set_alternate_input(fd, proc)
-.B	int fd;
-.B	void (*proc)();
 .TP
 Data manipulation
-.B char *format_filesys_type(fs_status);
-.B	char *fs_status;
+.B
+char *format_filesys_type(char *fs_status);
 
-.B char *parse_filesys_type(fs_type_name);
-.B	char *fs_type_name;
+.B
+char *parse_filesys_type(char *fs_type_name);
 
-.B char *canonicalize_hostname(host);
-.B	char *host;
+.B
+char *canonicalize_hostname(char *host);
 
-.B char *strsave(s);
-.B	char *s;
-
-.B char *strtrim(s);
-.B	char *s;
+.B
+char *strtrim(char *s);
 .TP
 Simple Queues
-.B struct save_queue *sq_create();
+.B
+struct save_queue *sq_create(void);
 
-.B sq_destroy(sq);
-.B	struct save_queue *sq;
+.B
+void sq_destroy(struct save_queue *sq);
 
-.B int sq_get_data(sq, data);
-.B	char **data;
+.B
+int sq_get_data(struct save_queue *sq, void *data);
 
-.B int sq_remove_data(sq, data);
+.B
+int sq_remove_data(struct save_queue *sq, void *data);
 
-.B int sq_empty(sq);
+.B
+int sq_empty(struct save_queue *sq);
 
-.B sq_save_args(argc, argv, sq);
+.B
+sq_save_args(int argc, char **argv, struct save_queue *sq);
 
-.B sq_save_data(sq, data);
+.B
+sq_save_data(struct save_queue *sq, void *data);
 
-.B sq_save_unique_data(sq, data);
+.B
+sq_save_unique_data(struct save_queue *sq, void *data);
 
-.B sq_save_unique_string(sq, data);
+.B
+sq_save_unique_string(struct save_queue *sq, char *data);
 .fi
 .SH DESCRIPTION
 This library supports the Athena Service Management System protocol
@@ -92,7 +87,7 @@ those described in this man page, but they are not intended to be used
 directly. Instead, they are called by the routines that are described.
 
 Be sure to link your application against these libraries:
--lmoira -lcom_err -lkrb -ldes
+-lmoira -lkrb -ldes -lcom_err
 .TP
 Protocol functions
 All protocol routines return 0 on success, or a value from 
@@ -162,18 +157,6 @@ and the value passed to
 as
 .I callarg.
 
-.B mr_do_update
-triggers a DCM update immediately on the Moira server.
-
-.B mr_set_alternate_input
-tells the Moira library that you want to allow some asynchronus
-actions while a query is being processed.  During query processing, if
-any data is available to be read on the specified file descriptor,
-then the specified function will be called to handle it.  For
-instance, calling mr_set_alternate_input with the connection to the X
-server and a routine which will dispatch X events will allow a toolkit
-application to handle mouse and expose events while a query is being
-processed.
 .TP
 Data manipulation
 .B format_filesys_type
@@ -199,10 +182,6 @@ was allocated using
 .I malloc(),
 and may be freed or realloc'ed before returning.  The returned value
 will be a malloc'ed value, possibly the same buffer as the argument.
-
-.B strsave
-will malloc some memory and make a copy of
-.I s.
 
 .B strtrim
 will trim whitespace off of both ends of the string

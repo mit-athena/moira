@@ -1,4 +1,4 @@
-/* $Id: main.c,v 1.32 1998-03-26 21:07:19 danw Exp $
+/* $Id: main.c,v 1.33 1998-05-26 18:13:44 danw Exp $
  *
  *	This is the file main.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -26,7 +26,7 @@
 
 #include <krb.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/main.c,v 1.32 1998-03-26 21:07:19 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/main.c,v 1.33 1998-05-26 18:13:44 danw Exp $");
 
 static void ErrorExit(char *buf, int status);
 static void Usage(void);
@@ -39,7 +39,9 @@ int interrupt = 0;
 
 extern Menu moira_top_menu, list_menu, user_menu, dcm_menu;
 
+#ifdef HAVE_CURSES
 Bool use_menu = TRUE;		/* whether or not we are using a menu. */
+#endif
 
 /*	Function Name: main
  *	Description: The main driver for the Moira Client.
@@ -79,9 +81,22 @@ void main(int argc, char **argv)
       if (**arg == '-')
 	{
 	  if (!strcmp(*arg, "-nomenu"))
-	    use_menu = FALSE;
+	    {
+#ifdef HAVE_CURSES
+	      use_menu = FALSE;
+#else
+	      ;
+#endif
+	    }
 	  else if (!strcmp(*arg, "-menu"))
-	    use_menu = TRUE;
+	    {
+#ifdef HAVE_CURSES
+	      use_menu = TRUE;
+#else
+	      fprintf(stderr, "%s: No curses support. -menu option ignored\n",
+		      whoami);
+#endif
+	    }
 	  else if (!strcmp(*arg, "-db"))
 	    {
 	      if (arg - argv < argc - 1)
@@ -137,9 +152,11 @@ void main(int argc, char **argv)
   act.sa_handler = Signal_Handler;
   sigaction(SIGHUP, &act, NULL);
   sigaction(SIGQUIT, &act, NULL);
+#ifdef HAVE_CURSES
   if (use_menu)
     sigaction(SIGINT, &act, NULL);
   else
+#endif
     {
       act.sa_handler = CatchInterrupt;
       sigaction(SIGINT, &act, NULL);
@@ -156,6 +173,7 @@ void main(int argc, char **argv)
   else
     menu = &moira_top_menu;
 
+#ifdef HAVE_CURSES
   if (use_menu)		/* Start menus that execute program */
     {
       Start_paging();
@@ -163,6 +181,7 @@ void main(int argc, char **argv)
       Stop_paging();
     }
   else			/* Start program without menus. */
+#endif
     Start_no_menu(menu);
 
   mr_disconnect();
@@ -205,8 +224,10 @@ static void Usage(void)
 static void Signal_Handler(void)
 {
   Put_message("Signal caught - exiting");
+#ifdef HAVE_CURSES
   if (use_menu)
     Cleanup_menu();
+#endif
   mr_disconnect();
   exit(1);
 }

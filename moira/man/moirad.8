@@ -1,5 +1,5 @@
 .TH MOIRAD 8 "30 Nov 1988" "Project Athena"
-\" RCSID: $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/man/moirad.8,v 1.6 1998-01-07 17:10:31 danw Exp $
+\" RCSID: $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/man/moirad.8,v 1.7 1998-05-26 18:14:12 danw Exp $
 .SH NAME
 moirad, startmoira \- Moira query daemon
 .SH SYNOPSIS
@@ -17,12 +17,6 @@ which starts the daemon running in the proper working directory and
 captures logging messages.
 .PP
 Logging is done to standard output.
-How much gets logged by
-.B moirad
-is controlled by the variable
-.I log_flags
-which is compiled into the file
-.I mr_srvdata.c.
 If critical errors are detected, they are logged to
 .B /moira/critical.log
 and in a zephyrgram to class
@@ -35,10 +29,10 @@ Also, a journal file is kept in
 logging every successful change of the database in a format that can
 be replayed by
 .I mrtest(8).
-For the server to be able to function properly, if must be run as root
+For the server to be able to function properly, it must be run as root
 and root must have access to the tables in the DBMS.
 .PP
-It is possible to shutdown the database side of the server when it is
+It is possible to shut down the database side of the server when it is
 necessary to lock out clients.  In this state the server will only
 respond to noop and motd requests.  When the file
 .B /etc/smsdown

@@ -32,11 +32,7 @@
  */
 
 #include <stdio.h>
-#ifndef ultrix
 #include <sys/time.h>
-#else
-#include <time.h>
-#endif
 #include <sys/types.h>
 #include "random.h"
 #include "BigNum.h"

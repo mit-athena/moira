@@ -1,4 +1,4 @@
-/* $Id: user.c,v 1.47 1998-05-26 17:28:46 danw Exp $
+/* $Id: user.c,v 1.48 1998-05-26 18:13:47 danw Exp $
  *
  *	This is the file user.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -26,11 +26,13 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
-#ifdef GDSS
+
+#include <krb.h>
+#ifdef HAVE_GDSS
 #include <gdss.h>
 #endif
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.47 1998-05-26 17:28:46 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.48 1998-05-26 18:13:47 danw Exp $");
 
 void CorrectCapitalization(char **name);
 char **AskUserInfo(char **info, Bool name);
@@ -105,7 +107,7 @@ static void PrintUserInfo(char **info)
 {
   char name[BUFSIZ], buf[BUFSIZ];
   int status;
-#ifdef GDSS
+#ifdef HAVE_GDSS
   SigInfo si;
 #endif
 
@@ -116,7 +118,7 @@ static void PrintUserInfo(char **info)
 	  info[U_UID], info[U_SHELL], info[U_CLASS]);
   Put_message(buf);
 
-#ifdef GDSS
+#ifdef HAVE_GDSS
   sprintf(buf, "%s:%s", info[U_NAME], info[U_MITID]);
   si.rawsig = NULL;
   status = GDSS_Verify(buf, strlen(buf), info[U_SIGNATURE], &si);
@@ -200,7 +202,7 @@ void CorrectCapitalization(char **name)
 char **AskUserInfo(char **info, Bool name)
 {
   int i;
-#ifdef GDSS
+#ifdef HAVE_GDSS
   SigInfo si;
 #endif
   char temp_buf[BUFSIZ], *newname;
@@ -306,7 +308,7 @@ char **AskUserInfo(char **info, Bool name)
     }
 
   /* Sign record */
-#ifdef GDSS
+#ifdef HAVE_GDSS
   if (strcmp(info[U_NAME], UNIQUE_LOGIN))
     {
       if (name)

@@ -1,4 +1,4 @@
-/* $Id: critical.c,v 1.19 1998-02-08 20:37:50 danw Exp $
+/* $Id: critical.c,v 1.20 1998-05-26 18:14:08 danw Exp $
  *
  * Log and send a zephyrgram about any critical errors.
  *
@@ -8,7 +8,7 @@
  */
 
 
-#ifdef ZEPHYR
+#ifdef HAVE_ZEPHYR
 /* need to include before moira.h, which includes krb_et.h, because
    zephyr.h is broken */
 #include <zephyr/zephyr.h>
@@ -21,12 +21,14 @@ extern Code_t ZSendNotice(ZNotice_t *notice, Z_AuthProc cert_routine);
 #include <moira_site.h>
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
-#ifdef SYSLOG
+#ifndef HAVE_ZEPHYR
 #include <syslog.h>
 #endif
+#include <time.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/critical.c,v 1.19 1998-02-08 20:37:50 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/critical.c,v 1.20 1998-05-26 18:14:08 danw Exp $");
 
 /* mode to create the file with */
 #define LOGFILEMODE	0644
@@ -93,11 +95,7 @@ void critical_alert(char *instance, char *msg, ...)
 
 void send_zgram(char *inst, char *msg)
 {
-#ifdef SYSLOG
-  char *buf;
-#endif
-
-#ifdef ZEPHYR
+#ifdef HAVE_ZEPHYR
   ZNotice_t znotice;
 
   memset(&znotice, 0, sizeof(znotice));
@@ -111,9 +109,10 @@ void send_zgram(char *inst, char *msg)
   znotice.z_opcode = "";
   znotice.z_recipient = "";
   ZSendNotice(&znotice, ZNOAUTH);
-#endif
-#ifdef SYSLOG
-  buf = malloc(9 + strlen(instance) + strlen(msg));
+#else
+  char *buf;
+
+  buf = malloc(9 + strlen(inst) + strlen(msg));
   if (buf)
     {
       sprintf(buf, "MOIRA: %s %s", inst, msg);

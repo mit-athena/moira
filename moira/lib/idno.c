@@ -1,4 +1,4 @@
-/* $Id: idno.c,v 1.7 1998-02-08 19:31:17 danw Exp $
+/* $Id: idno.c,v 1.8 1998-05-26 18:14:08 danw Exp $
  *
  * Routines to deal with MIT IDs
  *
@@ -13,7 +13,7 @@
 #include <ctype.h>
 #include <string.h>
 
-#ifdef USE_CRYPT_H
+#ifdef HAVE_CRYPT_H
 #include <crypt.h>
 #else
 #include <unistd.h>

@@ -43,19 +43,11 @@
  */
  
 #include <stdio.h>
-#ifndef ultrix
 #include <sys/time.h>
-#else
-#include <time.h>
-#endif
 #include <sys/types.h>
 #include <sys/resource.h>
-#ifdef POSIX
 #include <sys/utsname.h>
-#endif
-#ifdef SOLARIS
 #include <sys/times.h>
-#endif
 
 #include "DEScrypto.h"
 
@@ -95,43 +87,28 @@ int nl;
 {  
    struct timezone tz;
    struct timeval tv;
-   struct rusage *rs;
-   int i;
+   struct tms buffer;
+   int i, sum = 0;
+   struct utsname name;
 
    /* start with hash of input string */
    DES_load_key_local(scramble_key, &random_key_schedule) ;
    DES_MAC (0, seed, nl, &rng.key, &random_key_schedule) ;
 
    /* get whatever resource usage there is */
-#ifdef SOLARIS
-   rs = (struct rusage *)malloc (sizeof(struct tms));
-   (void) times((struct tms *)rs);
-   DES_MAC (0, rs, sizeof(struct tms), &rng.seed, &random_key_schedule) ;
-#else
-   rs = (struct rusage *) malloc(sizeof(struct rusage));
-   getrusage(0,rs);
-   rs->ru_stime.tv_sec += (long) rs ;
-   DES_MAC (0, rs, sizeof(struct rusage), &rng.seed, &random_key_schedule) ;
-#endif
-   free(rs);
+   times(&buffer);
+   DES_MAC (0, &buffer, sizeof(struct tms), &rng.seed, &random_key_schedule) ;
 
    /* get the current wall clock time, mix in process id */
    gettimeofday(&tv,&tz);
    rng.seed.longwords[0] = tv.tv_sec + getpid() + (long) &tz ;
    rng.seed.longwords[1] = tv.tv_usec + clock();
-#ifdef POSIX
-   {
-       struct utsname name;
-       int i, sum = 0;
 
-       (void) uname(&name);
-       for (i = 0; name.nodename[i]; i++)
-	 sum = (sum<<1) + name.nodename[i];
-       rng.seed.longwords[1] += sum;
-   }
-#else
-   rng.seed.longwords[1] += gethostid();
-#endif
+   /* and hostname */
+   uname(&name);
+   for (i = 0; name.nodename[i]; i++)
+     sum = (sum<<1) + name.nodename[i];
+   rng.seed.longwords[1] += sum;
 
    DES_load_key_local( &rng.key, &random_key_schedule);
    DESencrypt_local(&rng.seed, &rng.key, &random_key_schedule);

@@ -1,5 +1,5 @@
 .TH MRTEST 8 "25 Jan 1988" "Project Athena"
-\" RCSID: $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/man/mrtest.8,v 1.8 1998-01-07 17:09:50 danw Exp $
+\" RCSID: $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/man/mrtest.8,v 1.9 1998-05-26 18:14:13 danw Exp $
 .SH NAME
 mrtest \- perform Moira operations manually
 .SH SYNOPSIS
@@ -25,12 +25,6 @@ break the network connection to the Moira server.
 .TP
 .B host
 show the name of the host the client is connected to.
-.TP
-.B new
-specify use of version 2.0 of the protocol.
-.TP
-.B old
-specify use of version 1.0 of the protocol.
 .TP
 .B script inputfile [outputfile]
 read commands from 
@@ -77,9 +71,6 @@ performs an authorization check on a query without actually executing
 the query.  The arguments are the same as those in the
 .B query
 command described above.
-.TP
-.B dcm
-instructs the server to trigger a DCM update immediately.
 .SH SEE ALSO
 The Project Athena Technical Plan section on Moira for a list of queries
 and their arguments, and a description of the protocol this

@@ -1,0 +1,35 @@
+# $Id: Makefile.in,v 1.1 1998-05-26 18:13:22 danw Exp $
+
+SHELL=/bin/sh
+@SET_MAKE@
+
+srcdir=@srcdir@
+VPATH=@srcdir@
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+bindir=@bindir@
+sbindir=@sbindir@
+mandir=@mandir@
+mrbindir=@mrbindir@
+
+CLIENTDIRS=@GDSS_SUBDIR@ include lib clients update man
+SVRDIRS=db server backup dbck dcm gen reg_svr incremental regtape afssync
+DEPDIRS=@COM_ERR_SUBDIR@
+
+SUBDIRS=$(CLIENTDIRS) @SVRSUBDIRS@
+
+world: depend all
+
+all:
+	@for d in $(SUBDIRS); do (echo "### Making $@ in $$d"; cd $$d; $(MAKE) $@) || exit 1; done
+
+clean:
+	@for d in $(SUBDIRS); do (echo "### Making $@ in $$d"; cd $$d; $(MAKE) $@) || exit 1; done
+
+depend:
+	@for d in $(DEPDIRS); do (echo "### Making all in $$d"; cd $$d; $(MAKE) all) || exit 1; done
+	@for d in $(SUBDIRS); do (echo "### Making $@ in $$d"; cd $$d; $(MAKE) $@) || exit 1; done
+
+install:
+	$(srcdir)/mkinstalldirs $(bindir) $(sbindir) $(mrbindir) $(mandir)
+	@for d in $(SUBDIRS); do (echo "### Making $@ in $$d"; cd $$d; $(MAKE) $@) || exit 1; done

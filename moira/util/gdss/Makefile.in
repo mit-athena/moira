@@ -1,0 +1,32 @@
+# $Id: Makefile.in,v 1.1 1998-05-26 18:14:25 danw Exp $
+
+SHELL=/bin/sh
+@SET_MAKE@
+
+srcdir=@srcdir@
+VPATH=@srcdir@
+SRCTOP=@top_srcdir@
+BUILDTOP=../..
+
+CC=@CC@
+CPPFLAGS=@CPPFLAGS@
+LIBS=@KLIBS@
+
+all:
+	@(cd lib; $(MAKE) $@)
+
+clean:
+	@(cd lib; $(MAKE) $@)
+	rm -f gdss_test
+
+depend:
+	@(cd lib; $(MAKE) $@)
+
+install:
+	@(cd lib; $(MAKE) $@)
+
+check: gdss_test
+	./gdss_test
+
+gdss_test: all
+	$(CC) -I./include $(CPPFLAGS) -o $@ $@.c lib/libgdss.a $(LIBS)

@@ -1,0 +1,45 @@
+# $Id: Makefile.in,v 1.1 1998-05-26 18:14:16 danw Exp $
+
+SHELL=/bin/sh
+@SET_MAKE@
+
+CC=@CC@
+CPPFLAGS=@CPPFLAGS@
+CFLAGS=@CFLAGS@
+DEFS=@DEFS@
+ALL_CFLAGS=$(CPPFLAGS) $(CFLAGS) $(DEFS)
+LDFLAGS=@LDFLAGS@
+SQL_LIBS=@SQL_LIBS@
+LIBS=-lkadm @LIBS@
+INSTALL_PROGRAM=@INSTALL_PROGRAM@
+
+srcdir=@srcdir@
+VPATH=@srcdir@
+SRCTOP=@top_srcdir@
+BUILDTOP=..
+mrbindir=@mrbindir@
+
+REG_OBJS=reg_svr.o requests.o
+START_OBJS=startreg.o
+
+TARGET=reg_svr startreg
+
+.c.o:
+	$(CC) -c $(ALL_CFLAGS) $<
+
+all: $(TARGET)
+
+clean:
+	rm -f $(REG_OBJS) $(START_OBJS) $(TARGET)
+
+depend:
+
+install: all
+	$(INSTALL_PROGRAM) reg_svr $(mrbindir)
+	$(INSTALL_PROGRAM) startreg $(mrbindir)
+
+reg_svr: $(REG_OBJS)
+	$(CC) -o $@ $(LDFLAGS) $(REG_OBJS) ../server/libmrglue.a $(SQL_LIBS) $(LIBS)
+
+startreg: $(START_OBJS)
+	$(CC) -o $@ $(LDFLAGS) $(START_OBJS) $(LIBS)

@@ -1,0 +1,45 @@
+# $Id: Makefile.in,v 1.1 1998-05-26 18:14:07 danw Exp $
+
+SHELL=/bin/sh
+
+CC=@CC@
+CPPFLAGS=@CPPFLAGS@ @CRYPT_CPPFLAGS@
+CFLAGS=@CFLAGS@
+DEFS=@DEFS@
+ALL_CFLAGS=$(CPPFLAGS) $(CFLAGS) $(DEFS)
+RANLIB=@RANLIB@
+COMPILE_ET=@COMPILE_ET@
+
+srcdir=@srcdir@
+VPATH=@srcdir@
+SRCTOP=@top_srcdir@
+BUILDTOP=..
+
+OBJS=	critical.o fixhost.o fixname.o gdss_convert.o gdss_et.o \
+	hash.o idno.o kname_unparse.o krb_et.o mr_access.o mr_auth.o \
+	mr_call.o mr_connect.o mr_et.o mr_init.o mr_ops.o mr_query.o \
+	nfsparttype.o sq.o strs.o ureg_err.o
+
+ET_H=	mr_et.h krb_et.h ureg_err.h gdss_et.h
+ET_C=	mr_et.c krb_et.c ureg_err.c gdss_et.c
+
+.c.o:
+	$(CC) -c $(ALL_CFLAGS) $<
+
+.SUFFIXES: .et
+
+.et.h:
+	$(COMPILE_ET) $<
+
+all: depend libmoira.a
+
+clean:
+	rm -f $(OBJS) $(ET_H) $(ET_C) libmoira.a
+
+depend: $(ET_H)
+
+install: all
+
+libmoira.a: $(OBJS)
+	ar cru $@ $(OBJS)
+	$(RANLIB) $@

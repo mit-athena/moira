@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_scall.c,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_scall.c,v 1.16 1989-06-27 16:30:24 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_scall.c,v 1.17 1989-06-28 14:02:18 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,12 +10,13 @@
  */
 
 #ifndef lint
-static char *rcsid_sms_scall_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_scall.c,v 1.16 1989-06-27 16:30:24 mar Exp $";
+static char *rcsid_sms_scall_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_scall.c,v 1.17 1989-06-28 14:02:18 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/file.h>
 #include <krb.h>
 #include <errno.h>
 #include "query.h"
@@ -336,16 +337,17 @@ trigger_dcm(dummy0, dummy1, cl)
 get_motd(cl)
 client *cl;
 {
-    FILE *motd;
+    int motd, len;
     char buffer[1024];
     char *arg[1];
 
     arg[0] = buffer;
     cl->reply.sms_status = 0;
-    motd = fopen(SMS_MOTD_FILE, "r");
-    if (motd == NULL) return;
-    fgets(buffer, sizeof(buffer), motd);
-    fclose(motd);
+    motd = open(SMS_MOTD_FILE, 0, O_RDONLY);
+    if (motd < 0) return;
+    len = read(motd, buffer, sizeof(buffer) - 1);
+    close(motd);
+    buffer[len] = 0;
     retr_callback(1, arg, cl);
     cl->reply.sms_status = 0;
 }

@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/mitdir.dc,v 1.1.1.1 1992-09-15 00:11:15 genoa Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/mitdir.dc,v 1.2 1992-12-21 17:56:29 mar Exp $
  *
  * This generates the input file for the mkdirdb program for the MIT.EDU
  * mailhub.
@@ -41,6 +41,7 @@ char **argv;
 
 #ifsql INGRES
     EXEC SQL CONNECT moira;
+    EXEC SQL SET LOCKMODE SESSION WHERE LEVEL=TABLE, READLOCK=SHARED;
 #endsql
 #ifsql INFORMIX
     EXEC SQL DATABASE moira;
@@ -100,10 +101,6 @@ FILE *out;
     char affil[5];
     EXEC SQL END DECLARE SECTION;
 
-    /* The following is declarative, not executed,
-     * and so is dependent on where it is in the file,
-     * not in the order of execution of statements.
-     */
     EXEC SQL WHENEVER SQLERROR GOTO sqlerr;
 
     /* get locks */
@@ -123,7 +120,7 @@ FILE *out;
 
     EXEC SQL DECLARE u_cursor1 CURSOR FOR
       SELECT users_id, login, first, middle, last,
-	     affiliation, department, office_addr, office_phone,
+	     mit_year, mit_dept, office_addr, office_phone,
 	     home_addr, home_phone, potype, box_id
       FROM users
       WHERE status != 3;

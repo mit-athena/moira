@@ -1,0 +1,30 @@
+#!/bin/csh
+
+set path=(. /bin /usr/bin ~rtingres/bin)
+
+if ($user != smsdba) then
+	echo "This script must be run as smsdba"
+	exit 1
+endif
+
+createdb smstemp
+if ($status) then
+	echo "unable to create database"
+	exit 2
+endif
+
+cd /mit/smsdev/backup
+
+ingres smstemp < dodbbuild
+
+smsrestore
+
+ingres smstemp < dodbopt
+
+sysmod smstemp
+
+echo "When you are satisfied that this is correct, rename the smstemp database"
+echo "to sms by renaming directories under ~rtingres/data/default, then run"
+echo "'finddbs -r' to fix the ingres database database."
+
+exit 0

@@ -1,0 +1,53 @@
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/Imakefile,v 1.1 1993-10-21 14:43:13 mar Exp $
+#
+# Copyright 1993 by the Massachusetts Institute of Technology.
+#
+# For copying and distribution information,
+# please see the file <mit-copyright.h>.
+#
+# Imakefile for server directory.
+#
+
+SRCS = util.c moddiff.c ca.c passwd.c zephyr.c aliases.c hesiod.c \
+	nfs.c mailhub.c mitdir.c prlogger.c stats.c sis.c pobox.c \
+	letter.c 
+OBJS = util.o moddiff.o ca.o passwd.o zephyr.o aliases.o hesiod.o \
+	nfs.o mailhub.o mitdir.o prlogger.o stats.o sis.o pobox.o \
+	letter.o
+CODE = util.c moddiff.dc ca.dc passwd.dc zephyr.dc aliases.dc hesiod.dc \
+	nfs.dc mailhub.dc mitdir.dc prlogger.dc stats.dc sis.dc pobox.dc \
+	letter.dc
+LIBS =  -L/usr/athena/lib ../lib/libmoira.a -lcom_err -lzephyr \
+	../server/libmrglue.a /mit/gdss/`machtype`/libgdss.a \
+	-lkrb -ldes -lhesiod ${SQL_LIB}
+SRCDIR = $(SRCTOP)/gen
+DEFINES = -I/mit/gdss/include
+sqlrule()
+
+program(ca.gen, ca.o util.o moddiff.o,${MR_LIBDEP},${LIBS},${PROGDIR})
+sqlfile(moddiff)
+sqlfile(ca)
+program(passwd.gen, passwd.o util.o moddiff.o,${MR_LIBDEP},${LIBS},${PROGDIR})
+sqlfile(passwd)
+program(zephyr.gen, zephyr.o util.o moddiff.o,${MR_LIBDEP},${LIBS},${PROGDIR})
+sqlfile(zephyr)
+program(aliases.gen, aliases.o util.o moddiff.o,${MR_LIBDEP},${LIBS},${PROGDIR})
+sqlfile(aliases)
+program(hesiod.gen, hesiod.o util.o moddiff.o,${MR_LIBDEP},${LIBS},${PROGDIR})
+sqlfile(hesiod)
+program(nfs.gen, nfs.o util.o moddiff.o,${MR_LIBDEP},${LIBS},${PROGDIR})
+sqlfile(nfs)
+program(mailhub.gen, mailhub.o util.o moddiff.o,${MR_LIBDEP},${LIBS},${PROGDIR})
+sqlfile(mailhub)
+program(mitdir.gen, mitdir.o util.o moddiff.o,${MR_LIBDEP},${LIBS},${PROGDIR})
+sqlfile(mitdir)
+program(prlogger.gen, prlogger.o util.o moddiff.o,${MR_LIBDEP},${LIBS},${PROGDIR})
+sqlfile(prlogger)
+program(stats.gen, stats.o util.o moddiff.o,${MR_LIBDEP},${LIBS},${PROGDIR})
+sqlfile(stats)
+program(sis.gen, sis.o util.o moddiff.o,${MR_LIBDEP},${LIBS},${PROGDIR})
+sqlfile(sis)
+program(pobox.gen, pobox.o util.o moddiff.o,${MR_LIBDEP},${LIBS},${PROGDIR})
+sqlfile(pobox)
+program(letter.gen, letter.o util.o moddiff.o,${MR_LIBDEP},${LIBS},${PROGDIR})
+sqlfile(letter)

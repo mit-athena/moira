@@ -2,7 +2,7 @@
  * $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.c,v $
  * $Author: mar $
  * $Locker:  $
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.c,v 1.19 1990-04-09 14:41:00 mar Exp $ 
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.c,v 1.20 1990-04-09 19:08:33 mar Exp $ 
  *
  *  (c) Copyright 1988 by the Massachusetts Institute of Technology.
  *  For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char    *rcsid_userreg_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.c,v 1.19 1990-04-09 14:41:00 mar Exp $";
+static char    *rcsid_userreg_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.c,v 1.20 1990-04-09 19:08:33 mar Exp $";
 #endif	lint
 
 #include <mit-copyright.h>
@@ -675,8 +675,5 @@ canon_name(cp)
 		while (p2 >= cp && isspace(*p2)) *(--p2) = '\0';
 	}
 	/* Make it capitalized */
-	for (p2=cp; *p2; p2++) {
-		if (isupper(*p2)) *p2 = tolower(*p2);
-	}
-	if (islower(*cp)) *cp=toupper(*cp);
+	FixCase(cp);
 }

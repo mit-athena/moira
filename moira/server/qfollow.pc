@@ -1,4 +1,4 @@
-/* $Id: qfollow.pc,v 2.13 2000-01-28 00:03:33 danw Exp $
+/* $Id: qfollow.pc,v 2.14 2000-01-28 00:31:57 danw Exp $
  *
  * Query followup routines
  *
@@ -20,7 +20,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qfollow.pc,v 2.13 2000-01-28 00:03:33 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qfollow.pc,v 2.14 2000-01-28 00:31:57 danw Exp $");
 
 extern char *whoami, *table_name[];
 extern int dbms_errno, mr_errcode;
@@ -371,7 +371,7 @@ int followup_gpob(struct query *q, struct save_queue *sq, struct validate *v,
   char *ptype, *p;
   int mid, sid, status, i;
   EXEC SQL BEGIN DECLARE SECTION;
-  int users_id;
+  int users_id, pid, iid, bid;
   char mach[MACHINE_NAME_SIZE], fs[FILESYS_LABEL_SIZE];
   char str[STRINGS_STRING_SIZE];
   EXEC SQL END DECLARE SECTION;
@@ -383,42 +383,68 @@ int followup_gpob(struct query *q, struct save_queue *sq, struct validate *v,
       ptype = argv[1];
       users_id = atoi(argv[2]);
 
-      if (!strcmp(ptype, "POP"))
+      EXEC SQL SELECT pop_id, imap_id, box_id INTO :pid, :iid, :bid
+	FROM users WHERE users_id = :users_id;
+      if (sqlca.sqlcode)
+	return MR_USER;
+
+      if (ptype[0] == 'S')
 	{
+	  /* SMTP or SPLIT */
+	  EXEC SQL SELECT string INTO :str FROM strings
+	    WHERE string_id = :bid;
+	  if (sqlca.sqlcode)
+	    return MR_STRING;
+
+	  /* If SMTP, don't bother fetching IMAP and POP boxes. */
+	  if (ptype[1] == 'M')
+	    pid = iid = 0;
+	}
+      if (iid)
+	{
+	  /* IMAP, or SPLIT with IMAP */
+	  EXEC SQL SELECT f.label, m.name INTO :fs, :mach
+	    FROM filesys f, machine m
+	    WHERE f.filsys_id = :iid AND f.mach_id = m.mach_id;
+	  if (sqlca.sqlcode)
+	    return MR_FILESYS;
+	}
+      if (pid)
+	{
+	  /* POP, or SPLIT with POP */
 	  EXEC SQL SELECT m.name INTO :mach FROM machine m, users u
 	    WHERE u.users_id = :users_id AND u.pop_id = m.mach_id;
 	  if (sqlca.sqlcode)
 	    return MR_MACHINE;
-	  free(argv[2]);
+	}
+
+      free(argv[2]);
+      free(argv[3]);
+
+      /* Now assemble the right answer. */
+      if (!strcmp(ptype, "POP"))
+	{
 	  argv[2] = xstrdup(strtrim(mach));
-	  free(argv[3]);
 	  argv[3] = xmalloc(strlen(argv[0]) + strlen(argv[2]) + 2);
 	  sprintf(argv[3], "%s@%s", argv[0], argv[2]);
 	}
       else if (!strcmp(ptype, "SMTP"))
 	{
-	  EXEC SQL SELECT s.string INTO :str FROM strings s, users u
-	    WHERE u.users_id = :users_id AND u.box_id = s.string_id;
-	  if (sqlca.sqlcode)
-	    return MR_STRING;
-	  free(argv[2]);
-	  free(argv[3]);
 	  argv[2] = xstrdup(strtrim(str));
 	  argv[3] = xstrdup(str);
 	}
       else if (!strcmp(ptype, "IMAP"))
 	{
-	  EXEC SQL SELECT f.label, m.name INTO :fs, :mach
-	    FROM filesys f, machine m, users u
-	    WHERE u.users_id = :users_id AND f.filsys_id = u.imap_id
-	    AND f.mach_id = m.mach_id;
-	  if (sqlca.sqlcode)
-	    return MR_FILESYS;
-	  free(argv[2]);
 	  argv[2] = xstrdup(strtrim(fs));
-	  free(argv[3]);
 	  argv[3] = xmalloc(strlen(argv[0]) + strlen(strtrim(mach)) + 2);
 	  sprintf(argv[3], "%s@%s", argv[0], mach);
+	}
+      else if (!strcmp(ptype, "SPLIT"))
+	{
+	  argv[2] = xstrdup(strtrim(str));
+	  argv[3] = xmalloc(strlen(argv[0]) + strlen(strtrim(mach)) +
+			    strlen(str) + 4);
+	  sprintf(argv[3], "%s@%s, %s", argv[0], mach, str);
 	}
       else /* ptype == "NONE" */
 	goto skip;

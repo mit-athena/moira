@@ -1,4 +1,4 @@
-/* $Id: pobox.c,v 1.31 2000-01-26 18:04:53 danw Exp $
+/* $Id: pobox.c,v 1.32 2000-01-28 00:31:54 danw Exp $
  *
  *	This is the file pobox.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -24,7 +24,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/pobox.c,v 1.31 2000-01-26 18:04:53 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/pobox.c,v 1.32 2000-01-28 00:31:54 danw Exp $");
 
 /*	Function Name: PrintPOBox
  *	Description: Yet another specialized print function.
@@ -507,6 +507,42 @@ int SetUserPOBox(int argc, char **argv)
     com_err(program_name, status, " in ChangeUserPOBox");
   else
     Put_message("PO Box assigned.");
+  free(box);
+
+  return DM_NORMAL;
+}
+
+/*	Function Name: SplitUserPOBox
+ *	Description: Splits the user's PO Box between local and SMTP
+ *	Arguments: argc, argv - name of user in argv[1].
+ *	Returns: DM_NORMAL.
+ */
+
+int SplitUserPOBox(int argc, char **argv)
+{
+  char temp_buf[BUFSIZ], *args[3], *box;
+  int status;
+
+  if (!ValidName(argv[1]))
+    return DM_NORMAL;
+
+  if (!Prompt_input("Foreign PO Box for this user? ", temp_buf, BUFSIZ))
+    return DM_NORMAL;
+  if (mrcl_validate_pobox_smtp(argv[1], temp_buf, &box) !=
+      MRCL_SUCCESS)
+    return DM_NORMAL;
+
+  args[0] = argv[1];
+  args[1] = "SPLIT";
+  args[2] = box;
+
+  status = do_mr_query("set_pobox", 3, args, NULL, NULL);
+  if (status == MR_MACHINE)
+    Put_message("User has no local PO Box--PO Box unchanged.");
+  else if (status)
+    com_err(program_name, status, " in SplitUserPOBox");
+  else
+    Put_message("PO Box split.");
   free(box);
 
   return DM_NORMAL;

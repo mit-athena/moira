@@ -1,4 +1,4 @@
-/* $Id: menus.c,v 1.39 2000-01-07 21:14:05 danw Exp $
+/* $Id: menus.c,v 1.40 2000-01-28 00:31:53 danw Exp $
  *
  *	This is the file menus.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -22,7 +22,7 @@
 
 #include <stdio.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menus.c,v 1.39 2000-01-07 21:14:05 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menus.c,v 1.40 2000-01-28 00:31:53 danw Exp $");
 
 /* ------------------------- Second Tier Menus ------------------------- */
 
@@ -151,7 +151,7 @@ Menu pobox_menu = {
   NULLFUNC,
   NULLFUNC,
   "Post Office Box Menu",
-  4,
+  5,
   {
     {GetUserPOBox, NULLMENU, 2, {
       {"show", "Show a user's post office box"},
@@ -159,6 +159,10 @@ Menu pobox_menu = {
     } },
     {SetUserPOBox, NULLMENU, 2, {
       {"set", "Set (Add or Change) a user's post office box"},
+      {"login name", "login name: "}
+    } },
+    {SplitUserPOBox, NULLMENU, 2, {
+      {"split", "Split a user's post office box"},
       {"login name", "login name: "}
     } },
     {RemoveUserPOBox, NULLMENU, 2, {

@@ -1,4 +1,4 @@
-/* $Id: mailhub.pc,v 1.11 2000-01-25 17:35:20 danw Exp $
+/* $Id: mailhub.pc,v 1.12 2000-01-28 00:31:56 danw Exp $
  *
  * This generates the /usr/lib/aliases file for the mailhub.
  *
@@ -22,7 +22,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/mailhub.pc,v 1.11 2000-01-25 17:35:20 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/mailhub.pc,v 1.12 2000-01-28 00:31:56 danw Exp $");
 
 char *whoami = "mailhub.gen";
 char *db = "moira/moira";
@@ -223,29 +223,52 @@ void get_info(void)
   EXEC SQL OPEN u_cursor;
   while (1)
     {
+      char *saddr = NULL, *paddr = NULL;
+
       EXEC SQL FETCH u_cursor INTO :id, :login, :potype, :pid, :iid, :bid;
       if (sqlca.sqlcode)
 	break;
       u = malloc(sizeof(struct user));
       u->login = strdup(strtrim(login));
 
-      if (potype[0] == 'I')
-	{
-	  EXEC SQL SELECT f.mach_id INTO :pid FROM filesys f, users u
-	    WHERE u.users_id = :id AND f.filsys_id = u.imap_id;
-	  if (sqlca.sqlcode == 0)
-	    potype[0] = 'P';
-	}
-      if (potype[0] == 'P' && (s = hash_lookup(machines, pid)))
-	{
-	  char *buf = malloc(strlen(u->login) + strlen(s) + 2);
-	  sprintf(buf, "%s@%s", u->login, s);
-	  u->pobox = buf;
-	}
-      else if (potype[0] ==  'S')
-	u->pobox = hash_lookup(strings, bid);
-      else
+      if (!strcmp(strtrim(potype), "NONE"))
 	u->pobox = NULL;
+      else
+	{
+	  /* If SMTP or SPLIT, get SMTP address. */
+	  if (potype[0] == 'S')
+	    {
+	      saddr = hash_lookup(strings, bid);
+
+	      /* If SMTP, clear pid and iid. */
+	      if (potype[1] == 'M')
+		pid = iid = 0;
+	    }
+
+	  /* If IMAP, or SPLIT with IMAP, set pid to mach_id. */
+	  if (potype[0] == 'I' || (potype[0] == 'S' && iid))
+	    {
+	      EXEC SQL SELECT mach_id INTO :pid FROM filesys
+		WHERE filsys_id = :iid;
+	    }
+
+	  if (pid && (s = hash_lookup(machines, pid)))
+	    {
+	      paddr = malloc(strlen(u->login) + strlen(s) + 2);
+	      sprintf(paddr, "%s@%s", u->login, s);
+	    }
+
+	  if (paddr && saddr)
+	    {
+	      u->pobox = malloc(strlen(paddr) + strlen(saddr) + 3);
+	      sprintf(u->pobox, "%s, %s", paddr, saddr);
+	      free(paddr);
+	    }
+	  else if (paddr)
+	    u->pobox = paddr;
+	  else
+	    u->pobox = saddr;
+	}
 
       check_string(u->login);
       if (hash_store(users, id, u) < 0)

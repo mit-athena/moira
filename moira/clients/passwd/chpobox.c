@@ -1,4 +1,4 @@
-/* $Id: chpobox.c,v 1.27 1999-12-30 17:30:38 danw Exp $
+/* $Id: chpobox.c,v 1.28 2000-01-28 00:31:55 danw Exp $
  *
  * Talk to the Moira database to change a person's home mail machine. This may
  * be an Athena machine, or a completely arbitrary address.
@@ -8,6 +8,8 @@
  * chpobox -s address means set the mailbox to this address.
  *
  * chpobox -p restores the pobox to a previous POP/IMAP box, if there was one.
+ *
+ * chpobox -S address means split mail between POP/IMAP and SMTP
  *
  * chpobox -u [user] is needed if you are logged in as one user, but
  * are trying to change the email address of another.  You must have
@@ -30,7 +32,7 @@
 #include <string.h>
 #include <unistd.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chpobox.c,v 1.27 1999-12-30 17:30:38 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chpobox.c,v 1.28 2000-01-28 00:31:55 danw Exp $");
 
 int get_pobox(int argc, char **argv, void *callarg);
 void usage(void);
@@ -44,9 +46,9 @@ int main(int argc, char *argv[])
   struct passwd *pwd;
   char *mrarg[3];
   char *address, *uname;
-  int c, setflag, prevpop, status;
+  int c, setflag, splitflag, prevflag, status;
 
-  setflag = prevpop = 0;
+  setflag = splitflag = prevflag = 0;
   address = uname = NULL;
 
   if ((whoami = strrchr(argv[0], '/')) == NULL)
@@ -57,27 +59,27 @@ int main(int argc, char *argv[])
   if (argc > 5)
     usage();
 
-  while ((c = getopt(argc, argv, "s:pu:")) != -1)
+  while ((c = getopt(argc, argv, "s:S:pu:")) != -1)
     switch (c)
       {
       case 's':
-	if (prevpop)
-	  usage();
-	else
-	  {
-	    setflag++;
-	    address = optarg;
-	  }
+	setflag++;
+	address = optarg;
 	break;
+
+      case 'S':
+	splitflag++;
+	address = optarg;
+	break;
+
       case 'p':
-	if (setflag)
-	  usage();
-	else
-	  prevpop++;
+	prevflag++;
 	break;
+
       case 'u':
 	uname = optarg;
 	break;
+
       default:
 	usage();
 	break;
@@ -85,7 +87,7 @@ int main(int argc, char *argv[])
   if (argc == 2 && optind == 1 && !uname)
     uname = argv[optind++];
 
-  if (optind != argc)
+  if (optind != argc || (prevflag + splitflag + setflag > 1))
     usage();
 
   if (!uname)
@@ -99,7 +101,7 @@ int main(int argc, char *argv[])
   if (mrcl_connect(NULL, "chpobox", 2, 1) != MRCL_SUCCESS)
     exit(1);
 
-  if (setflag)
+  if (setflag || splitflag)
     {
       char *addr;
       if (mrcl_validate_pobox_smtp(uname, address, &addr) != MRCL_SUCCESS)
@@ -107,7 +109,7 @@ int main(int argc, char *argv[])
 	  printf("\n");
 	  goto show;
 	}
-      mrarg[1] = "SMTP";
+      mrarg[1] = setflag ? "SMTP" : "SPLIT";
       mrarg[2] = addr;
       status = mr_query("set_pobox", 3, mrarg, NULL, NULL);
       free(addr);
@@ -118,7 +120,7 @@ int main(int argc, char *argv[])
 		  mrarg[0], mrarg[1], mrarg[2]);
 	}
     }
-  else if (prevpop)
+  else if (prevflag)
     {
       status = mr_query("set_pobox_pop", 1, mrarg, NULL, NULL);
       if (status == MR_MACHINE)

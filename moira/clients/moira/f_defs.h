@@ -1,4 +1,4 @@
-/* $Id: f_defs.h,v 1.29 2000-01-26 18:04:52 danw Exp $
+/* $Id: f_defs.h,v 1.30 2000-01-28 00:31:53 danw Exp $
  *
  *	This is the file f_defs.h for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -117,6 +117,7 @@ int DeleteNFSService(int argc, char **argv);
 
 int GetUserPOBox(int argc, char **argv);
 int SetUserPOBox(int argc, char **argv);
+int SplitUserPOBox(int argc, char **argv);
 int RemoveUserPOBox(int argc, char **argv);
 
 /* quota.c */

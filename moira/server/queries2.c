@@ -1,4 +1,4 @@
-/* $Id: queries2.c,v 2.99 2003-10-20 19:42:10 zacheiss Exp $
+/* $Id: queries2.c,v 2.100 2003-12-05 21:08:14 zacheiss Exp $
  *
  * This file defines the query dispatch table
  *
@@ -1027,8 +1027,8 @@ static struct validate ghst_validate = {
   0,
   0,
   0,
-  access_host,
   0,
+  setup_ghst,
   followup_ghst,
 };
 

@@ -1,6 +1,6 @@
 #	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/Makefile,v $
 #	$Author: kostas $
-#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/Makefile,v 1.1 1990-10-02 09:31:56 kostas Exp $
+#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/Makefile,v 1.2 1990-10-02 09:42:16 kostas Exp $
 #
 
 CFILES = startmoira.c mr_main.c mr_sauth.c mr_scall.c \
@@ -160,7 +160,8 @@ qrtn.o: ../include/mr_proto.h /usr/include/stdio.h ../include/gdb.h
 qrtn.o: /usr/include/sys/time.h /usr/include/sys/time.h ../include/moira.h
 qrtn.o: ../include/mr_et.h ../include/moira_site.h ../include/krb.h
 qrtn.o: ../include/des.h
-qsupport.o: qsupport.c ../include/mit-copyright.h query.h mr_server.h
+qsupport.o: qsupport.c ../include/mit-copyright.h query.h sql_defs.h 
+qsupport.o: mr_server.h
 qsupport.o: /usr/include/sys/types.h /usr/include/sys/uio.h
 qsupport.o: /usr/include/sys/socket.h /usr/include/netinet/in.h
 qsupport.o: ../include/mr_proto.h /usr/include/stdio.h ../include/gdb.h

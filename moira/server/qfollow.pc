@@ -1,4 +1,4 @@
-/* $Id: qfollow.pc,v 2.17 2000-08-10 02:03:58 zacheiss Exp $
+/* $Id: qfollow.pc,v 2.18 2000-08-10 02:23:49 zacheiss Exp $
  *
  * Query followup routines
  *
@@ -20,7 +20,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qfollow.pc,v 2.17 2000-08-10 02:03:58 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qfollow.pc,v 2.18 2000-08-10 02:23:49 zacheiss Exp $");
 
 extern char *whoami, *table_name[];
 extern int dbms_errno, mr_errcode;
@@ -586,27 +586,50 @@ int followup_glin(struct query *q, struct save_queue *sq, struct validate *v,
 		  client *cl)
 {
   char **argv;
-  int id, i, idx, status;
-
-  idx = 7;
-  if (!strcmp(q->shortname, "glin")  && q->version > 2)
-    idx = 8;
-  if (!strcmp(q->shortname, "gsin"))
-    idx = 11;
+  int status;
 
   while (sq_get_data(sq, &argv))
     {
       mr_trim_args(q->vcnt, argv);
 
-      status = fix_ace(argv[idx], &argv[idx + 1]);
+      if (q->version == 2)
+	status = fix_ace(argv[7], &argv[8]);
+      else 
+	status = fix_ace(argv[8], &argv[9]);
       if (status && status != MR_NO_MATCH)
 	return status;
+      if (q->version > 3)
+	{
+	  status = fix_ace(argv[10], &argv[11]);
+	  if (status && status != MR_NO_MATCH)
+	    return status;
+	}
 
-      if (!strcmp(q->shortname, "glin") && atoi(argv[6]) == -1)
+      if (atoi(argv[6]) == -1)
 	{
 	  argv[6] = xrealloc(argv[6], strlen(UNIQUE_GID) + 1);
 	  strcpy(argv[6], UNIQUE_GID);
 	}
+    }
+
+  return followup_fix_modby(q, sq, v, action, actarg, cl);
+}
+
+/* followup_gsin: fix the ace_name and modby. */
+int followup_gsin(struct query *q, struct save_queue *sq, struct validate *v,
+		  int (*action)(int, char *[], void *), void *actarg,
+		  client *cl)
+{
+  char **argv;
+  int status;
+
+  while (sq_get_data(sq, &argv))
+    {
+      mr_trim_args(q->vcnt, argv);
+
+      status = fix_ace(argv[11], &argv[12]);
+      if (status && status != MR_NO_MATCH)
+	return status;
     }
 
   return followup_fix_modby(q, sq, v, action, actarg, cl);

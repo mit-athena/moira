@@ -1,4 +1,4 @@
-/* $Id: mr_server.h,v 1.53 2000-08-10 02:03:58 zacheiss Exp $
+/* $Id: mr_server.h,v 1.54 2000-08-10 02:23:49 zacheiss Exp $
  *
  * Copyright (C) 1987-1998 by the Massachusetts Institute of Technology
  * For copying and distribution information, please see the file
@@ -160,6 +160,9 @@ int followup_gpob(struct query *q, struct save_queue *sq, struct validate *v,
 		  int (*action)(int, char **, void *), void *actarg,
 		  client *cl);
 int followup_glin(struct query *q, struct save_queue *sq, struct validate *v,
+		  int (*action)(int, char **, void *), void *actarg,
+		  client *cl);
+int followup_gsin(struct query *q, struct save_queue *sq, struct validate *v,
 		  int (*action)(int, char **, void *), void *actarg,
 		  client *cl);
 int followup_gzcl(struct query *q, struct save_queue *sq, struct validate *v,

@@ -1,4 +1,4 @@
-/* $Id: qsupport.pc,v 2.25 2000-06-29 18:22:54 zacheiss Exp $
+/* $Id: qsupport.pc,v 2.26 2000-08-10 02:23:50 zacheiss Exp $
  *
  * Special query routines
  *
@@ -18,7 +18,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.pc,v 2.25 2000-06-29 18:22:54 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.pc,v 2.26 2000-08-10 02:23:50 zacheiss Exp $");
 
 extern char *whoami, *table_name[];
 extern int dbms_errno, mr_errcode;
@@ -551,8 +551,8 @@ int tag_member_of_list(struct query *q, char **argv, client *cl)
 int acl_access_check(int list_id, client *cl)
 {
   EXEC SQL BEGIN DECLARE SECTION;
-  int c1, c2, lid = list_id, acl_id;
-  char acl_type[LIST_ACL_TYPE_SIZE];
+  int c1, c2, lid = list_id, acl_id, memacl_id;
+  char acl_type[LIST_ACL_TYPE_SIZE], memacl_type[LIST_ACL_TYPE_SIZE];
   EXEC SQL END DECLARE SECTION;
 
   /* Check if the list is directly a capacl */
@@ -571,9 +571,17 @@ int acl_access_check(int list_id, client *cl)
   if (cl->proxy_id)
     return 1;
 
-  EXEC SQL SELECT acl_type, acl_id INTO :acl_type, :acl_id
+  EXEC SQL SELECT acl_type, acl_id, memacl_type, memacl_id
+    INTO :acl_type, :acl_id, :memacl_type, :memacl_id
     FROM list WHERE list_id=:lid;
-  return !find_member(acl_type, acl_id, cl);
+
+  if (!find_member(acl_type, acl_id, cl))
+    {
+      if (!find_member(memacl_type, memacl_id, cl))
+	return 1;
+    }
+
+  return 0;
 }
 
 

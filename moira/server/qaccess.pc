@@ -1,4 +1,4 @@
-/* $Id: qaccess.pc,v 2.17 2000-07-05 19:33:26 zacheiss Exp $
+/* $Id: qaccess.pc,v 2.18 2000-08-10 02:23:49 zacheiss Exp $
  *
  * Check access to queries
  *
@@ -17,7 +17,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qaccess.pc,v 2.17 2000-07-05 19:33:26 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qaccess.pc,v 2.18 2000-08-10 02:23:49 zacheiss Exp $");
 
 extern char *whoami;
 extern int dbms_errno, mr_errcode;
@@ -128,47 +128,27 @@ int access_list(struct query *q, char *argv[], client *cl)
 {
   EXEC SQL BEGIN DECLARE SECTION;
   int list_id, acl_id, flags, gid, users_id, member_id, member_acl_id;
+  int memacl_id;
   char acl_type[LIST_ACL_TYPE_SIZE], name[LIST_NAME_SIZE], *newname;
-  char member_acl_type[LIST_ACL_TYPE_SIZE];
+  char member_acl_type[LIST_ACL_TYPE_SIZE], memacl_type[LIST_ACL_TYPE_SIZE];
   EXEC SQL END DECLARE SECTION;
   int status;
 
   list_id = *(int *)argv[0];
   member_id = *(int *)argv[2];
-  EXEC SQL SELECT acl_id, acl_type, gid, publicflg, name
-    INTO :acl_id, :acl_type, :gid, :flags, :name
+  EXEC SQL SELECT acl_id, acl_type, memacl_id, memacl_type,
+    gid, publicflg, name
+    INTO :acl_id, :acl_type, :memacl_id, :memacl_type, 
+    :gid, :flags, :name
     FROM list
     WHERE list_id = :list_id;
 
   if (sqlca.sqlerrd[2] != 1)
     return MR_INTERNAL;
 
-  /* Allow client to add self to public list or delete self from any
-   * list.  Also allow client to add a list they own to a public list
-   * and remove a list they own from any list.
-   */
-  if ((((!strcmp("amtl", q->shortname) ||
-	 !strcmp("atml", q->shortname)) && flags) ||
-       (!strcmp("dmfl", q->shortname))))
-    {
-      if (!strcmp("USER", argv[1]) && *(int *)argv[2] == cl->users_id)
-	return MR_SUCCESS;
-      if (!strcmp("KERBEROS", argv[1]) && *(int *)argv[2] == -cl->client_id)
-	return MR_SUCCESS;
-      if (!strcmp("LIST", argv[1]) && !strcmp("dmfl", q->shortname))
-	  {
-	    EXEC SQL SELECT acl_id, acl_type INTO :member_acl_id, 
-	      :member_acl_type 
-	      FROM list
-	      WHERE list_id = :member_id; 
-	   
-	    if (find_member(member_acl_type, member_acl_id, cl))
-	      return MR_SUCCESS;
-	  }
-	    
-    } /* if update_list, don't allow them to change the GID or rename to
-	 a username other than their own */
-  else if (!strcmp("ulis", q->shortname))
+  /* if update_list, don't allow them to change the GID or rename to a
+	 username other than their own */
+  if (!strcmp("ulis", q->shortname))
     {
       if (!strcmp(argv[7], UNIQUE_GID))
 	{
@@ -211,12 +191,39 @@ int access_list(struct query *q, char *argv[], client *cl)
 	return MR_PERM;
     }
 
-  /* check for client in access control list */
-  status = find_member(acl_type, acl_id, cl);
-  if (!status)
+  /* check for client in access control list and return success right 
+   * away if it's there. */
+  if (find_member(acl_type, acl_id, cl))
+    return MR_SUCCESS;
+
+  /* If not amtl, atml, or dmfl, we lose. */
+  if (strcmp(q->shortname, "amtl") && strcmp(q->shortname, "atml") &&
+      strcmp(q->shortname, "dmfl"))
     return MR_PERM;
 
-  return MR_SUCCESS;
+  if (find_member(memacl_type, memacl_id, cl))
+    return MR_SUCCESS;
+
+  if (flags || q->type == DELETE)
+    {
+      if (!strcmp("USER", argv[1]) && *(int *)argv[2] == cl->users_id)
+        return MR_SUCCESS;
+      if (!strcmp("KERBEROS", argv[1]) && *(int *)argv[2] == -cl->client_id)
+        return MR_SUCCESS;
+      if (!strcmp("LIST", argv[1]) && !strcmp("dmfl", q->shortname))
+	{
+	  EXEC SQL SELECT acl_id, acl_type INTO :member_acl_id, 
+	    :member_acl_type 
+	    FROM list
+	    WHERE list_id = :member_id; 
+	  
+	  if (find_member(member_acl_type, member_acl_id, cl))
+	    return MR_SUCCESS;
+	}
+    }
+
+  /* Otherwise fail. */
+  return MR_PERM;
 }
 
 
@@ -230,14 +237,14 @@ int access_list(struct query *q, char *argv[], client *cl)
 int access_visible_list(struct query *q, char *argv[], client *cl)
 {
   EXEC SQL BEGIN DECLARE SECTION;
-  int list_id, acl_id, flags ;
-  char acl_type[LIST_ACL_TYPE_SIZE];
+  int list_id, acl_id, memacl_id, flags ;
+  char acl_type[LIST_ACL_TYPE_SIZE], memacl_type[LIST_ACL_TYPE_SIZE];
   EXEC SQL END DECLARE SECTION;
   int status;
 
   list_id = *(int *)argv[0];
-  EXEC SQL SELECT hidden, acl_id, acl_type
-    INTO :flags, :acl_id, :acl_type
+  EXEC SQL SELECT hidden, acl_id, acl_type, memacl_id, memacl_type
+    INTO :flags, :acl_id, :acl_type, :memacl_id, :memacl_type
     FROM list
     WHERE list_id = :list_id;
   if (sqlca.sqlerrd[2] != 1)
@@ -248,8 +255,11 @@ int access_visible_list(struct query *q, char *argv[], client *cl)
   /* check for client in access control list */
   status = find_member(acl_type, acl_id, cl);
   if (!status)
-    return MR_PERM;
-
+    {
+      status = find_member(memacl_type, memacl_id, cl);
+      if (!status)
+	return MR_PERM;
+    }
   return MR_SUCCESS;
 }
 
@@ -264,14 +274,17 @@ int access_visible_list(struct query *q, char *argv[], client *cl)
 int access_vis_list_by_name(struct query *q, char *argv[], client *cl)
 {
   EXEC SQL BEGIN DECLARE SECTION;
-  int acl_id, flags, rowcount;
-  char acl_type[LIST_ACL_TYPE_SIZE], *listname;
+  int acl_id, memacl_id, flags, rowcount;
+  char acl_type[LIST_ACL_TYPE_SIZE], memacl_type[LIST_ACL_TYPE_SIZE];
+  char *listname;
   EXEC SQL END DECLARE SECTION;
   int status;
 
   listname = argv[0];
-  EXEC SQL SELECT hidden, acl_id, acl_type INTO :flags, :acl_id, :acl_type
-    FROM list WHERE name = :listname;
+  EXEC SQL SELECT hidden, acl_id, acl_type, memacl_id, memacl_type 
+    INTO :flags, :acl_id, :acl_type, :memacl_id, :memacl_type
+    FROM list 
+    WHERE name = :listname;
 
   rowcount = sqlca.sqlerrd[2];
   if (rowcount > 1)
@@ -284,8 +297,11 @@ int access_vis_list_by_name(struct query *q, char *argv[], client *cl)
   /* check for client in access control list */
   status = find_member(acl_type, acl_id, cl);
   if (!status)
-    return MR_PERM;
-
+    {
+      status = find_member(memacl_type, memacl_id, cl);
+      if (!status)
+	return MR_PERM;
+    }
   return MR_SUCCESS;
 }
 

@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v 1.25 1990-04-09 18:05:03 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v 1.26 1990-05-02 13:13:32 mar Exp $";
 #endif lint
 
 /*	This is the file utils.c for the MOIRA Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v 1.25 1990-04-09 18:05:03 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v 1.26 1990-05-02 13:13:32 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -864,7 +864,7 @@ char  **pointer;
 	return(GetTypeFromUser(prompt, tname, pointer));
     }
     for (elem = GetTypeValues(tname); elem; elem = elem->q_forw) {
-	if (!cistrcmp(elem->q_data, *pointer)) {
+	if (!strcasecmp(elem->q_data, *pointer)) {
 	    strcpy(*pointer, elem->q_data);
 	    return(SUB_NORMAL);
 	}

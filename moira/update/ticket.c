@@ -1,13 +1,13 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/ticket.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/ticket.c,v 1.4 1988-09-14 12:16:39 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/ticket.c,v 1.5 1989-06-26 09:09:25 mar Exp $
  */
 /*  (c) Copyright 1988 by the Massachusetts Institute of Technology. */
 /*  For copying and distribution information, please see the file */
 /*  <mit-copyright.h>. */
 
 #ifndef lint
-static char *rcsid_ticket_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/ticket.c,v 1.4 1988-09-14 12:16:39 mar Exp $";
+static char *rcsid_ticket_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/ticket.c,v 1.5 1989-06-26 09:09:25 mar Exp $";
 #endif	lint
 
 #include <mit-copyright.h>
@@ -18,6 +18,7 @@ static char *rcsid_ticket_c = "$Header: /afs/.athena.mit.edu/astaff/project/moir
 #include <strings.h>
 #include <update.h>
 #include <com_err.h>
+#include <krb_et.h>
 
 /* too bad we can't set the pathname easily */
 static char *srvtab = KEYFILE; /* default == /etc/srvtab */
@@ -26,7 +27,7 @@ static char master[] = "sms";
 static char service[] = "rcmd";
 
 extern char *tkt_string(), *PrincipalHostname();
-extern int krb_err_base;
+
 
 static init()
 {
@@ -34,7 +35,7 @@ static init()
 
     if (!initialized) {
 	get_krbrlm(realm, 1);
-	init_krb_err_tbl();
+	initialize_krb_error_table();
 	initialized=1;
     }
 }
@@ -55,7 +56,7 @@ get_sms_update_ticket(host, ticket)
  try_it:
      code = krb_mk_req(ticket, service, phost, realm, (long)0);
      if (code)
-       code += krb_err_base;
+       code += ERROR_TABLE_BASE_krb;
      if (pass == 1) {
 	 /* maybe we're taking too long? */
 	 if ((code = get_sms_tgt()) != 0) {
@@ -78,5 +79,5 @@ get_sms_tgt()
     if (!code)
 	return(0);
     else
-	return(code + krb_err_base);
+	return(code + ERROR_TABLE_BASE_krb);
 }

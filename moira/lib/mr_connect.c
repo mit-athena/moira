@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_connect.c,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_connect.c,v 1.10 1988-12-01 15:10:11 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_connect.c,v 1.11 1989-08-16 11:23:21 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -12,11 +12,14 @@
  */
 
 #ifndef lint
-static char *rcsid_sms_connect_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_connect.c,v 1.10 1988-12-01 15:10:11 mar Exp $";
+static char *rcsid_sms_connect_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_connect.c,v 1.11 1989-08-16 11:23:21 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
 #include "sms_private.h"
+#include <strings.h>
+
+static char *sms_server_host = 0;
 
 /*
  * Open a connection to the sms server.
@@ -26,6 +29,7 @@ int sms_connect(server)
 char *server;
 {
     extern int errno;
+    char *p;
 	
     if (!sms_inited) sms_init();
     if (_sms_conn) return SMS_ALREADY_CONNECTED;
@@ -46,6 +50,15 @@ char *server;
 	sms_disconnect();
 	return status;
     }
+
+    /*
+     * stash hostname for later use
+     */
+
+    sms_server_host = strsave(server);
+    if (p = index(sms_server_host, ':'))
+	*p = 0;
+    sms_server_host = canonicalize_hostname(sms_server_host);
     return 0;
 }
 	
@@ -53,7 +66,20 @@ int sms_disconnect()
 {
     CHECK_CONNECTED;
     _sms_conn = sever_connection(_sms_conn);
+    free(sms_server_host);
+    sms_server_host = 0;
     return 0;
+}
+
+int sms_host(host, size)
+  char *host;
+  int size;
+{
+    CHECK_CONNECTED;
+
+    /* If we are connected, sms_server_host points to a valid string. */
+    strncpy(host, sms_server_host, size);
+    return(0);
 }
 
 int sms_noop()

@@ -1,4 +1,4 @@
-/* $Id: queries2.c,v 2.56 1999-06-22 00:45:29 danw Exp $
+/* $Id: queries2.c,v 2.57 1999-08-06 18:46:12 danw Exp $
  *
  * This file defines the query dispatch table for version 2 of the protocol
  *
@@ -1051,10 +1051,15 @@ static char *amtl_fields[] = {
   "list_name", "member_type", "member_name",
 };
 
+static char *atml_fields[] = {
+  "list_name", "member_type", "member_name", "tag",
+};
+
 static struct valobj amtl_valobj[] = {
   {V_ID, 0, LIST_TABLE, "name", "list_id", MR_LIST},
   {V_TYPE, 1, 0, "member", 0, MR_TYPE},
   {V_TYPEDATA, 2, 0, 0, 0, MR_NO_MATCH},
+  {V_ID, 3, STRINGS_TABLE, "string", "string_id", MR_NO_MATCH},
 };
 
 static struct validate amtl_validate =
@@ -1068,6 +1073,32 @@ static struct validate amtl_validate =
   access_list,
   0,
   add_member_to_list,
+};
+
+static struct validate atml_validate =
+{
+  amtl_valobj,
+  4,
+  0,
+  0,
+  0,
+  0,
+  access_list,
+  0,
+  add_member_to_list,
+};
+
+static struct validate tmol_validate =
+{
+  amtl_valobj,
+  4,
+  "tag",
+  "list_id = %d AND member_type = '%s' AND member_id = %d",
+  3,
+  0,
+  access_list,
+  0,
+  0,
 };
 
 static struct validate dmfl_validate =
@@ -1135,6 +1166,11 @@ static char *gmol_fields[] = {
   "member_type", "member_name",
 };
 
+static char *gtml_fields[] = {
+  "list_name",
+  "member_type", "member_name", "tag",
+};
+
 static struct validate gmol_validate = {
   VOlist0,
   1,
@@ -1145,18 +1181,6 @@ static struct validate gmol_validate = {
   access_visible_list,
   0,
   get_members_of_list,
-};
-
-static struct validate geml_validate = {
-  VOlist0,
-  1,
-  0,
-  0,
-  0,
-  0,
-  access_visible_list,
-  0,
-  get_end_members_of_list,
 };
 
 static char *glom_fields[] = {
@@ -1927,13 +1951,13 @@ static char *azcl_fields[] = {
 
 static struct valobj azcl_valobj[] = {
   {V_CHAR, 0, ZEPHYR_TABLE, "class"},
-  {V_TYPE, 1, 0, "ace_type", 0, MR_ACE},
+  {V_TYPE, 1, 0, "zace_type", 0, MR_ACE},
   {V_TYPEDATA, 2, 0, 0, "list_id", MR_ACE},
-  {V_TYPE, 3, 0, "ace_type", 0, MR_ACE},
+  {V_TYPE, 3, 0, "zace_type", 0, MR_ACE},
   {V_TYPEDATA, 4, 0, 0, "list_id", MR_ACE},
-  {V_TYPE, 5, 0, "ace_type", 0, MR_ACE},
+  {V_TYPE, 5, 0, "zace_type", 0, MR_ACE},
   {V_TYPEDATA, 6, 0, 0, "list_id", MR_ACE},
-  {V_TYPE, 7, 0, "ace_type", 0, MR_ACE},
+  {V_TYPE, 7, 0, "zace_type", 0, MR_ACE},
   {V_TYPEDATA, 8, 0, 0, "list_id", MR_ACE},
 };
 
@@ -1957,13 +1981,13 @@ static char *uzcl_fields[] = {
 static struct valobj uzcl_valobj[] = {
   {V_NAME, 0, ZEPHYR_TABLE, "class", 0, MR_BAD_CLASS},
   {V_RENAME, 1, ZEPHYR_TABLE, "class", 0, MR_NOT_UNIQUE},
-  {V_TYPE, 2, 0, "ace_type", 0, MR_ACE},
+  {V_TYPE, 2, 0, "zace_type", 0, MR_ACE},
   {V_TYPEDATA, 3, 0, 0, "list_id", MR_ACE},
-  {V_TYPE, 4, 0, "ace_type", 0, MR_ACE},
+  {V_TYPE, 4, 0, "zace_type", 0, MR_ACE},
   {V_TYPEDATA, 5, 0, 0, "list_id", MR_ACE},
-  {V_TYPE, 6, 0, "ace_type", 0, MR_ACE},
+  {V_TYPE, 6, 0, "zace_type", 0, MR_ACE},
   {V_TYPEDATA, 7, 0, 0, "list_id", MR_ACE},
-  {V_TYPE, 8, 0, "ace_type", 0, MR_ACE},
+  {V_TYPE, 8, 0, "zace_type", 0, MR_ACE},
   {V_TYPEDATA, 9, 0, 0, "list_id", MR_ACE},
 };
 
@@ -2030,6 +2054,52 @@ static struct validate asha_validate =
   0,
   0,
   set_modtime_by_id,
+};
+
+static char *gacl_fields[] = {
+  "machine", "target",
+  "machine", "target", "kind", "list",
+};
+
+static char *aacl_fields[] = {
+  "machine", "target", "kind", "list",
+};
+
+static char *dacl_fields[] = {
+  "machine", "target",
+};
+
+static struct valobj aacl_valobj[] = {
+  {V_ID, 0, MACHINE_TABLE, "name", "mach_id", MR_MACHINE},
+  {V_CHAR, 1, ACL_TABLE, "target"},
+  {V_TYPE, 2, 0, "acl_kind", 0, MR_TYPE},
+  {V_ID, 3, LIST_TABLE, "name", "list_id", MR_LIST},
+};
+
+static struct validate gacl_validate =
+{
+  aacl_valobj,
+  1,
+  NULL,
+  NULL,
+  0,
+  "mach_id",
+  /* access_acl */ 0,
+  0,
+  0,
+};
+
+static struct validate aacl_validate =
+{
+  aacl_valobj,
+  4,
+  "mach_id",
+  "mach_id = %d AND target = '%s'",
+  2,
+  "mach_id",
+  /* access_acl */ 0,
+  0,
+  0,
 };
 
 static char *gsvc_fields[] = {
@@ -3402,6 +3472,38 @@ struct query Queries2[] = {
   },
 
   {
+    /* Q_ATML - ADD_TAGGED_MEMBER_TO_LIST */
+    "add_tagged_member_to_list",
+    "atml",
+    APPEND,
+    0,
+    IMEMBERS_TABLE,
+    0,
+    atml_fields,
+    4,
+    NULL,
+    0,
+    NULL,
+    &atml_validate,
+  },
+
+  {
+    /* Q_TMOL - TAG_MEMBER_OF_LIST */
+    "tag_member_of_list",
+    "tmol",
+    UPDATE,
+    "im",
+    IMEMBERS_TABLE,
+    "imembers SET tag = %d",
+    atml_fields,
+    1,
+    "list_id = %d AND member_type = '%s' and member_id = %d",
+    3,
+    NULL,
+    &tmol_validate,
+  },
+
+  {
     /* Q_DMFL - DELETE_MEMBER_FROM_LIST */
     "delete_member_from_list",
     "dmfl",
@@ -3478,7 +3580,23 @@ struct query Queries2[] = {
     NULL,
     1,
     NULL,
-    &geml_validate,
+    &gmol_validate,
+  },
+
+  {
+    /* Q_GTML - GET_TAGGED_MEMBERS_OF_LIST */
+    "get_tagged_members_of_list",
+    "gtml",
+    RETRIEVE,
+    NULL,
+    IMEMBERS_TABLE,
+    NULL,
+    gtml_fields,
+    3,
+    NULL,
+    1,
+    NULL,
+    &gmol_validate,
   },
 
   {
@@ -4327,6 +4445,54 @@ struct query Queries2[] = {
     1,
     NULL,
     &VDmach,
+  },
+
+  {
+    /* Q_GACL - GET_ACL */
+    "get_acl",
+    "gacl",
+    RETRIEVE,
+    "ac",
+    ACL_TABLE,
+    "m.name, ac.target, ac.kind, l.name FROM acl ac, machine m, list l",
+    gacl_fields,
+    4,
+    "m.mach_id = %d AND m.mach_id = ac.mach_id AND ac.target LIKE '%s' AND l.list_id = ac.list_id",
+    2,
+    "m.name, ac.target, ac.kind",
+    &gacl_validate,
+  },
+
+  {
+    /* Q_AACL - ADD_ACL */
+    "add_acl",
+    "aacl",
+    APPEND,
+    "ac",
+    ACL_TABLE,
+    "INTO acl (mach_id, target, kind, list_id) VALUES (%d, '%s', '%s', %d)",
+    aacl_fields,
+    4,
+    0,
+    0,
+    NULL,
+    &aacl_validate,
+  },
+
+  {
+    /* Q_DACL - DELETE_ACL */
+    "delete_acl",
+    "dacl",
+    DELETE,
+    "ac",
+    ACL_TABLE,
+    0,
+    dacl_fields,
+    0,
+    "mach_id = %d AND target = '%s'",
+    2,
+    NULL,
+    &gacl_validate,
   },
 
   {

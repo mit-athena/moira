@@ -1,4 +1,4 @@
-/* $Id: mr_server.h,v 1.44 1999-07-17 21:41:40 danw Exp $
+/* $Id: mr_server.h,v 1.45 1999-08-06 18:46:09 danw Exp $
  *
  * Copyright (C) 1987-1998 by the Massachusetts Institute of Technology
  * For copying and distribution information, please see the file
@@ -239,9 +239,6 @@ int qualified_get_lists(struct query *q, char **argv, client *cl,
 			int (*action)(int, char *[], void *), void *actarg);
 int get_members_of_list(struct query *q, char **argv, client *cl,
 			int (*action)(int, char *[], void *), void *actarg);
-int get_end_members_of_list(struct query *q, char **argv, client *cl,
-			    int (*action)(int, char *[], void *),
-			    void *actarg);
 int qualified_get_server(struct query *q, char **argv, client *cl,
 			 int (*action)(int, char *[], void *), void *actarg);
 int qualified_get_serverhost(struct query *q, char **argv, client *cl,

@@ -1,4 +1,4 @@
-/* $Id: qsupport.pc,v 2.13 1999-07-17 21:42:17 danw Exp $
+/* $Id: qsupport.pc,v 2.14 1999-08-06 18:46:10 danw Exp $
  *
  * Special query routines
  *
@@ -18,7 +18,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.pc,v 2.13 1999-07-17 21:42:17 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.pc,v 2.14 1999-08-06 18:46:10 danw Exp $");
 
 extern char *whoami, *table_name[];
 extern int dbms_errno, mr_errcode;
@@ -31,9 +31,6 @@ EXEC SQL WHENEVER SQLERROR DO dbmserr();
 
 int get_ace_internal(char *atypex, int aid,
 		     int (*action)(int, char *[], void *), void *actarg);
-int gmol_internal(struct query *q, char *argv[], client *cl,
-		  int (*action)(int, char *[], void *), void *actarg,
-		  int flag);
 int qualified_get(struct query *q, char *argv[],
 		  int (*action)(int, char *[], void *), void *actarg,
 		  char *start, char *range, char *field, char *flags[]);
@@ -111,7 +108,7 @@ int set_pobox(struct query *q, char **argv, client *cl)
 int add_member_to_list(struct query *q, char **argv, client *cl)
 {
   EXEC SQL BEGIN DECLARE SECTION;
-  int id, lid, mid, error, who, ref, rowcnt;
+  int id, lid, mid, tag, error, who, ref, rowcnt;
   char *mtype, dtype[IMEMBERS_MEMBER_TYPE_SIZE], *entity;
   EXEC SQL END DECLARE SECTION;
   int ancestors[MAXLISTDEPTH], aref[MAXLISTDEPTH], acount, a;
@@ -123,6 +120,7 @@ int add_member_to_list(struct query *q, char **argv, client *cl)
   lid = *(int *)argv[0];
   mtype = argv[1];
   mid = *(int *)argv[2];
+  tag = !strcmp(q->shortname, "atml") ? *(int *)argv[3] : 0;
 
   if (acl_access_check(lid, cl))
     return MR_PERM;
@@ -245,7 +243,7 @@ int add_member_to_list(struct query *q, char **argv, client *cl)
 	      if (a == 0 && d == 0)
 		{
 		  EXEC SQL UPDATE imembers
-		    SET ref_count = ref_count + :ref, direct = 1
+		    SET ref_count = ref_count + :ref, direct = 1, tag = :tag
 		    WHERE list_id = :lid AND member_id = :mid
 		    AND member_type = :mtype;
 		}
@@ -263,14 +261,14 @@ int add_member_to_list(struct query *q, char **argv, client *cl)
 	      if (a == 0 && d == 0)
 		{
 		  EXEC SQL INSERT INTO imembers
-		    (list_id, member_id, direct, member_type, ref_count)
-		    VALUES (:lid, :mid, 1, :mtype, 1);
+		    (list_id, member_type, member_id, tag, direct, ref_count)
+		    VALUES (:lid, :mtype, :mid, :tag, 1, 1);
 		}
 	      else
 		{
 		  EXEC SQL INSERT INTO imembers
-		    (list_id, member_id, direct, member_type, ref_count)
-		    VALUES (:lid, :mid, 0, :mtype, 1);
+		    (list_id, member_type, member_id, tag, direct, ref_count)
+		    VALUES (:lid, :mtype, :mid, :tag, 0, 1);
 		}
 	      iargv[0] = (char *)lid;
 	      iargv[1] = mtype;
@@ -881,56 +879,39 @@ int qualified_get_lists(struct query *q, char *argv[], client *cl,
 }
 
 
-/* get_members_of_list - this gets only direct members */
-
 int get_members_of_list(struct query *q, char *argv[], client *cl,
 			int (*action)(int, char *[], void *), void *actarg)
 {
-  return gmol_internal(q, argv, cl, action, actarg, 1);
-}
-
-/* get_end_members_of_list - this gets direct or indirect members */
-
-int get_end_members_of_list(struct query *q, char *argv[], client *cl,
-			    int (*action)(int, char *[], void *), void *actarg)
-{
-  return gmol_internal(q, argv, cl, action, actarg, 0);
-}
-
-/** gmol_internal - optimized query for retrieval of list members
- **   used by both get_members_of_list and get_end_members_of_list
- **
- ** Inputs:
- **   argv[0] - list_id
- **
- ** Description:
- **   - retrieve USER members, then LIST members, then STRING members
- **/
-
-int gmol_internal(struct query *q, char *argv[], client *cl,
-		  int (*action)(int, char *[], void *), void *actarg, int flag)
-{
   EXEC SQL BEGIN DECLARE SECTION;
   int list_id, direct;
-  char member_name[MAX_FIELD_WIDTH];
+  char member_name[MAX_FIELD_WIDTH], tag[STRINGS_STRING_SIZE];
   EXEC SQL END DECLARE SECTION;
-  char *targv[2];
+  char *targv[3];
+  int targc;
 
-  /* true/false flag indicates whether to display only direct members. */
-  if (flag)
-    direct = 0;
-  else
+  /* For gmol or gtml, only get direct members. For geml, get all. */
+  if (!strcmp(q->shortname, "geml"))
     direct = -1;
+  else
+    direct = 0;
+
+  /* For gmol or geml, only return type and name. For gtml, return tag too. */
+  if (!strcmp(q->shortname, "gtml"))
+    targc = 3;
+  else
+    targc = 2;
 
   list_id = *(int *)argv[0];
 
   targv[1] = member_name;
+  targv[2] = tag;
+
   targv[0] = "USER";
   EXEC SQL DECLARE csr119 CURSOR FOR
-    SELECT u.login FROM users u, imembers im
+    SELECT u.login, s.string FROM users u, imembers im, strings s
     WHERE im.list_id = :list_id AND im.member_type = 'USER'
     AND im.member_id = u.users_id AND im.direct > :direct
-    ORDER BY 1;
+    AND s.string_id = im.tag ORDER BY 1;
   if (dbms_errno)
     return mr_errcode;
   EXEC SQL OPEN csr119;
@@ -938,10 +919,10 @@ int gmol_internal(struct query *q, char *argv[], client *cl,
     return mr_errcode;
   while (1)
     {
-      EXEC SQL FETCH csr119 INTO :member_name;
+      EXEC SQL FETCH csr119 INTO :member_name, :tag;
       if (sqlca.sqlcode)
 	break;
-      (*action)(2, targv, actarg);
+      (*action)(targc, targv, actarg);
     }
   EXEC SQL CLOSE csr119;
   if (dbms_errno)
@@ -949,10 +930,10 @@ int gmol_internal(struct query *q, char *argv[], client *cl,
 
   targv[0] = "LIST";
   EXEC SQL DECLARE csr120 CURSOR FOR
-    SELECT l.name FROM list l, imembers im
+    SELECT l.name, s.string FROM list l, imembers im, strings s
     WHERE im.list_id = :list_id AND im.member_type = 'LIST'
     AND im.member_id = l.list_id AND im.direct > :direct
-    ORDER BY 1;
+    AND s.string_id = im.tag ORDER BY 1;
   if (dbms_errno)
     return mr_errcode;
   EXEC SQL OPEN csr120;
@@ -960,10 +941,10 @@ int gmol_internal(struct query *q, char *argv[], client *cl,
     return mr_errcode;
   while (1)
     {
-      EXEC SQL FETCH csr120 INTO :member_name;
+      EXEC SQL FETCH csr120 INTO :member_name, :tag;
       if (sqlca.sqlcode)
 	break;
-      (*action)(2, targv, actarg);
+      (*action)(targc, targv, actarg);
     }
   EXEC SQL CLOSE csr120;
   if (dbms_errno)
@@ -971,10 +952,10 @@ int gmol_internal(struct query *q, char *argv[], client *cl,
 
   targv[0] = "STRING";
   EXEC SQL DECLARE csr121 CURSOR FOR
-    SELECT str.string FROM strings str, imembers im
+    SELECT str.string, s.string FROM strings str, imembers im, strings s
     WHERE im.list_id = :list_id AND im.member_type = 'STRING'
     AND im.member_id = str.string_id AND im.direct > :direct
-    ORDER BY 1;
+    AND s.string_id = im.tag ORDER BY 1;
   if (dbms_errno)
     return mr_errcode;
   EXEC SQL OPEN csr121;
@@ -982,10 +963,10 @@ int gmol_internal(struct query *q, char *argv[], client *cl,
     return mr_errcode;
   while (1)
     {
-      EXEC SQL FETCH csr121 INTO :member_name;
+      EXEC SQL FETCH csr121 INTO :member_name, :tag;
       if (sqlca.sqlcode)
 	break;
-      (*action)(2, targv, actarg);
+      (*action)(targc, targv, actarg);
     }
   EXEC SQL CLOSE csr121;
   if (dbms_errno)
@@ -993,11 +974,10 @@ int gmol_internal(struct query *q, char *argv[], client *cl,
 
   targv[0] = "KERBEROS";
   EXEC SQL DECLARE csr122 CURSOR FOR
-    SELECT str.string FROM strings str, imembers im
+    SELECT str.string, s.string FROM strings str, imembers im, strings s
     WHERE im.list_id = :list_id AND im.member_type = 'KERBEROS'
-    AND im.member_id = str.string_id
-    AND im.direct > :direct
-    ORDER BY 1;
+    AND im.member_id = str.string_id AND im.direct > :direct
+    AND s.string_id = im.tag ORDER BY 1;
   if (dbms_errno)
     return mr_errcode;
   EXEC SQL OPEN csr122;
@@ -1005,10 +985,10 @@ int gmol_internal(struct query *q, char *argv[], client *cl,
     return mr_errcode;
   while (1)
     {
-      EXEC SQL FETCH csr122 INTO :member_name;
+      EXEC SQL FETCH csr122 INTO :member_name, :tag;
       if (sqlca.sqlcode)
 	break;
-      (*action)(2, targv, actarg);
+      (*action)(targc, targv, actarg);
     }
   EXEC SQL CLOSE csr122;
   if (dbms_errno)

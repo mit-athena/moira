@@ -1,6 +1,6 @@
 #!/bin/csh -f
 #
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/zero_quotas,v 1.1 1989-12-13 17:16:11 mar Exp $
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/zero_quotas,v 1.2 1989-12-13 17:31:13 mar Exp $
 #
 # This script zeros quotas for uid's which are not in standard input
 # Note that the input must be sorted in increasing order by uid.
@@ -32,7 +32,7 @@ if ( -f /etc/zero_old_quotas ) then
       # zero all quotas between current_uid and uid (not including uid)
       if ($current_uid != $uid) then
 	@ uid_high = $uid - 1
-        setquota -r $dev $current_uid $uid_high $2
+        setquota -r $dev $current_uid $uid_high 0
       endif
 
      # skip over $uid
@@ -41,7 +41,7 @@ if ( -f /etc/zero_old_quotas ) then
    end
   
    # zero all remaining quotas, except for nobody (32767).
-   if ($current_uid != 32767) setquota -r $dev $current_uid 32766 $2
+   if ($current_uid != 32767) setquota -r $dev $current_uid 32766 0
    
 endif
 

@@ -1,4 +1,4 @@
-/* $Id: chpobox.c,v 1.4 2000-08-10 02:27:41 zacheiss Exp $
+/* $Id: chpobox.c,v 1.5 2000-08-10 06:52:05 zacheiss Exp $
  *
  * Talk to the Moira database to change a person's home mail machine. This may
  * be an Athena machine, or a completely arbitrary address.
@@ -36,7 +36,7 @@
 #include <getopt.h>
 #endif
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/chpobox/chpobox.c,v 1.4 2000-08-10 02:27:41 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/chpobox/chpobox.c,v 1.5 2000-08-10 06:52:05 zacheiss Exp $");
 
 int get_pobox(int argc, char **argv, void *callarg);
 void usage(void);
@@ -107,10 +107,11 @@ int main(int argc, char *argv[])
   if (setflag || splitflag)
     {
       char *addr;
-      if (mrcl_validate_pobox_smtp(uname, address, &addr) != MRCL_SUCCESS)
+      status = mrcl_validate_pobox_smtp(uname, address, &addr);
+      if (mrcl_get_message())
+	mrcl_com_err(whoami);
+      if (status != MRCL_SUCCESS)
 	{
-	  if (mrcl_get_message())
-	    mrcl_com_err(whoami);
 	  printf("\n");
 	  goto show;
 	}

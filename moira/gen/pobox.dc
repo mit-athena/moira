@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/pobox.dc,v 1.4 1993-11-26 15:44:53 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/pobox.dc,v 1.5 1996-08-21 03:30:13 danw Exp $
  *
  * This generates a list of everyone's poboxes for the mitdir.
  *
@@ -14,6 +14,7 @@
 #include <sys/stat.h>
 #include <sys/time.h>
 #include <ctype.h>
+#include <string.h>
 EXEC SQL INCLUDE sqlca;
 
 extern int errno;
@@ -99,6 +100,8 @@ char **argv;
 		!strcasecmp(".local", string + i - 6)) {
 		string[i-6] = 0;
 		fprintf(out, "%s %s.mit.edu\n", id, string);
+	    } else if ( !strchr(string, '@') ) {
+	      fprintf(out, "%s %s@mit.edu\n", id, string);
 	    } else
 	      fprintf(out, "%s %s\n", id, string);
 	}

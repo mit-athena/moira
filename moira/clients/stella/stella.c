@@ -10,12 +10,6 @@
  * <mit-copyright.h>.
  */
 
-#include <sys/types.h>
-#include <sys/socket.h>
-
-#include <netinet/in.h>
-#include <arpa/inet.h>
-
 #include <mit-copyright.h>
 #include <moira.h>
 #include <moira_site.h>
@@ -27,7 +21,17 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/stella/stella.c,v 1.12 2001-08-20 23:23:52 zacheiss Exp $");
+#ifdef _WIN32
+typedef unsigned long in_addr_t;
+#else
+#include <sys/types.h>
+#include <sys/socket.h>
+
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#endif
+
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/stella/stella.c,v 1.13 2001-08-21 21:56:54 zacheiss Exp $");
 
 struct owner_type {
   int type;
@@ -854,7 +858,6 @@ void show_host_info(char **argv)
 
 void show_host_info_unformatted(char **argv)
 {
-  char tbuf[256];
   char *args[3];
   struct mqelem *elem = NULL;
   int stat;

@@ -1,4 +1,4 @@
-/* $Id: chpobox.c,v 1.24 1999-05-13 18:55:17 danw Exp $
+/* $Id: chpobox.c,v 1.25 1999-07-28 23:01:05 danw Exp $
  *
  * Talk to the Moira database to change a person's home mail machine. This may
  * be an Athena machine, or a completely arbitrary address.
@@ -30,7 +30,7 @@
 #include <string.h>
 #include <unistd.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chpobox.c,v 1.24 1999-05-13 18:55:17 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chpobox.c,v 1.25 1999-07-28 23:01:05 danw Exp $");
 
 int get_pobox(int argc, char **argv, void *callarg);
 void usage(void);
@@ -127,7 +127,7 @@ int main(int argc, char *argv[])
 		  "Moira has no record of a previous POP box for %s\n", uname);
 	}
       else if (status != 0)
-	com_err(whoami, status, " while setting pobox");
+	com_err(whoami, status, "while setting pobox");
     }
 
   /*
@@ -138,7 +138,7 @@ show:
   if (status == MR_NO_MATCH)
     printf("User %s has no pobox.\n", uname);
   else if (status != 0)
-    com_err(whoami, status, " while retrieving current mailbox");
+    com_err(whoami, status, "while retrieving current mailbox");
   mr_disconnect();
   exit(0);
 }

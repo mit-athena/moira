@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/fix.qc,v 1.2 1988-09-26 14:06:14 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/fix.qc,v 1.3 1988-10-06 17:39:44 mar Exp $
  *
  * User interface routines for dbck (SMS database consistency checker)
  *
@@ -12,7 +12,7 @@
 #include <stdio.h>
 #include "dbck.h"
 
-static char fix_qc_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/fix.qc,v 1.2 1988-09-26 14:06:14 mar Exp $";
+static char fix_qc_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/fix.qc,v 1.3 1988-10-06 17:39:44 mar Exp $";
 
 
 ##char *_table;
@@ -75,17 +75,10 @@ int single_fix(msg, preen)
 char *msg;
 int preen;
 {
-    int lmode;
+    if (mode == MODE_PREEN)
+      return(preen);
 
-    lmode = mode;
-    if (mode == MODE_PREEN) {
-	if (preen)
-	  lmode = MODE_YES;
-	else
-	  lmode = MODE_NO;
-    }
-
-    switch (lmode) {
+    switch (mode) {
     case MODE_ASK:
 	if (!prompt(msg))
 	  break;

@@ -1,4 +1,4 @@
-/* $Id: mailhub.pc,v 1.16 2002-12-03 21:25:02 zacheiss Exp $
+/* $Id: mailhub.pc,v 1.17 2003-01-02 01:05:05 zacheiss Exp $
  *
  * This generates the /usr/lib/aliases file for the mailhub.
  *
@@ -22,7 +22,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/mailhub.pc,v 1.16 2002-12-03 21:25:02 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/mailhub.pc,v 1.17 2003-01-02 01:05:05 zacheiss Exp $");
 
 char *whoami = "mailhub.gen";
 char *db = "moira/moira";
@@ -396,9 +396,6 @@ void output_mlist(int id, void *list, void *out)
 	      l->mailman_server);
       fprintf(out, "%s-request: %s-request@%s\n", l->name, l->name,
 	      l->mailman_server);
-      fprintf(out, "%s: %s@%s\n", l->name, l->name, l->mailman_server);
-      incount++;
-      return;
     }
 
   if (l->acl_t ==  'L' && (l1 = hash_lookup(lists, l->acl_id)))

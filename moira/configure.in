@@ -372,7 +372,7 @@ AC_OUTPUT(Makefile lib/Makefile include/Makefile clients/Makefile \
 	  clients/lib/Makefile clients/addusr/Makefile \
 	  clients/blanche/Makefile clients/mailmaint/Makefile
 	  clients/moira/Makefile clients/mrcheck/Makefile
-	  clients/mrtest/Makefile clients/passwd/Makefile
-	  update/Makefile man/Makefile \
+	  clients/mrtest/Makefile clients/stella/Makefile \
+	  clients/passwd/Makefile update/Makefile man/Makefile \
 	  $SERVER_OUTPUT_FILES $AFS_OUTPUT_FILES \
 	  $RSAREF_OUTPUT_FILES)

@@ -1,20 +1,22 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/dumprest.qc,v $
- *	$Author: wesommer $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/dumprest.qc,v 1.1 1987-07-13 03:53:09 wesommer Exp $
+ *	$Author: mar $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/dumprest.qc,v 1.2 1988-09-12 13:59:04 mar Exp $
  *
- *	Copyright (C) 1987 by the Massachusetts Institute of Technology
+ *  (c) Copyright 1988 by the Massachusetts Institute of Technology.
+ *  For copying and distribution information, please see the file
+ *  <mit-copyright.h>.
  *
- *	$Log: not supported by cvs2svn $
  */
 
 #ifndef lint
-static char *rcsid_dumprest_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/dumprest.qc,v 1.1 1987-07-13 03:53:09 wesommer Exp $";
+static char *rcsid_dumprest_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/dumprest.qc,v 1.2 1988-09-12 13:59:04 mar Exp $";
 #endif lint
 
 #include <stdio.h>
 #include <sys/file.h>
 #include <strings.h>
+#include <mit-copyright.h>
 
 punt(msg)
 	char *msg;

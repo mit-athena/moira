@@ -1,30 +1,25 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/dump_db.qc,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/dump_db.qc,v 1.3 1988-08-16 16:25:30 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/dump_db.qc,v 1.4 1988-09-12 13:58:53 mar Exp $
  *
- *	Copyright (C) 1987 by the Massachusetts Institute of Technology
+ *	(c) Copyright 1988 by the Massachusetts Institute of Technology.
+ *	For copying and distribution information, please see the file
+ *	<mit-copyright.h>.
  *
  * 	This program dumps the SMS database to a series of output files
  * which can be later read back into SMS in the event of a crash.
  * 
- *	$Log: not supported by cvs2svn $
- * Revision 1.2  87/07/13  03:52:53  wesommer
- * Modified to pass lint, do better backups.
- * 
-Revision 1.1  87/07/11  19:51:05  wesommer
-Initial revision
-
- *
  */
 
 #ifndef lint
-static char *rcsid_dump_db_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/dump_db.qc,v 1.3 1988-08-16 16:25:30 mar Exp $";
+static char *rcsid_dump_db_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/dump_db.qc,v 1.4 1988-09-12 13:58:53 mar Exp $";
 #endif lint
 
 #include <stdio.h>
 #include <sys/file.h>
 #include <ctype.h>
+#include <mit-copyright.h>
 
 /* putc without the line buffer hair */
 

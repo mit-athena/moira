@@ -1,23 +1,23 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/rest_db.qc,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/rest_db.qc,v 1.2 1988-05-10 11:34:37 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/rest_db.qc,v 1.3 1988-09-12 13:59:10 mar Exp $
  *
- *	Copyright (C) 1987 by the Massachusetts Institute of Technology
- *
- *	$Log: not supported by cvs2svn $
- * Revision 1.1  87/07/13  03:50:02  wesommer
- * Initial revision
+ *  (c) Copyright 1988 by the Massachusetts Institute of Technology.
+ *  For copying and distribution information, please see the file
+ *  <mit-copyright.h>.
  * 
  */
 
 #ifndef lint
-static char *rcsid_rest_db_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/rest_db.qc,v 1.2 1988-05-10 11:34:37 mar Exp $";
+static char *rcsid_rest_db_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/rest_db.qc,v 1.3 1988-09-12 13:59:10 mar Exp $";
 #endif lint
 
 #include <sys/file.h>
 #include <stdio.h>
 #include <ctype.h>
+#include <mit-copyright.h>
+
 
 /*ARGSUSED*/
 main(argc, argv)

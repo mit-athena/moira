@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/fixname.c,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/fixname.c,v 1.3 1988-09-13 15:51:13 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/fixname.c,v 1.4 1990-05-02 15:52:10 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -9,7 +9,7 @@
  */
 
 #ifndef lint
-static char *rcsid_fixname_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/fixname.c,v 1.3 1988-09-13 15:51:13 mar Exp $";
+static char *rcsid_fixname_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/fixname.c,v 1.4 1990-05-02 15:52:10 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -51,24 +51,7 @@ void FixName(ilnm, ifnm, last, first, middle)
 #endif notdef
 	strncpy(first, ifnm, FIRST_LEN);
 }
-#ifdef notdef
-AppendJrOrIII(nm, phas_jr, phas_iii, phas_iv)
-register char *nm;
-register int *phas_jr;
-register int *phas_iii;
-register int *phas_iv;
-{
-    if (*phas_jr) {
-	strcat(nm, ", Jr.");
-    }
-    else if (*phas_iii) {
-	strcat(nm, " III");
-    }
-    else if (*phas_iv) {
-	strcat(nm, " IV");
-    }
-}
-#endif notdef
+
 FixCase(p)
 register char *p;
 {
@@ -76,15 +59,14 @@ register char *p;
 			/* a space or punctuation mark (e.g., '-') */
 
     for (cflag = 0; *p; p++) {
-	if (cflag && isupper(*p)) {
-	    *p = tolower(*p);
-	}
-	else if (isspace(*p) || ispunct(*p)) {
-	    cflag = 0;
-	}
-	else {
-	    cflag = 1;
-	}
+	if (cflag && isupper(*p))
+	  *p = tolower(*p);
+	else if (!cflag && islower(*p))
+	  *p = toupper(*p);
+	if (isalpha(*p))
+	  cflag = 1;
+	else
+	  cflag = 0;
     }
 }
 

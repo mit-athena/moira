@@ -1,10 +1,10 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_trans.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_trans.c,v 1.2 1988-09-13 14:26:57 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_trans.c,v 1.3 1994-09-16 16:25:19 jweiss Exp $
  */
 
 #ifndef lint
-static char *rcsid_gdb_trans_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_trans.c,v 1.2 1988-09-13 14:26:57 mar Exp $";
+static char *rcsid_gdb_trans_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_trans.c,v 1.3 1994-09-16 16:25:19 jweiss Exp $";
 #endif	lint
 
 
@@ -49,7 +49,7 @@ static char *rcsid_gdb_trans_c = "$Header: /afs/.athena.mit.edu/astaff/project/m
 
 #include <mit-copyright.h>
 #include <sys/types.h>
-#include <strings.h>
+#include <string.h>
 #include <stdio.h>
 #include <varargs.h>
 #include <errno.h>

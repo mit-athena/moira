@@ -1,10 +1,10 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_db.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_db.c,v 1.3 1991-03-08 10:17:39 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_db.c,v 1.4 1994-09-16 16:23:29 jweiss Exp $
  */
 
 #ifndef lint
-static char *rcsid_gdb_db_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_db.c,v 1.3 1991-03-08 10:17:39 mar Exp $";
+static char *rcsid_gdb_db_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_db.c,v 1.4 1994-09-16 16:23:29 jweiss Exp $";
 #endif	lint
 
 /************************************************************************/
@@ -21,7 +21,7 @@ static char *rcsid_gdb_db_c = "$Header: /afs/.athena.mit.edu/astaff/project/moir
 
 #include <mit-copyright.h>
 #include <stdio.h>
-#include <strings.h>
+#include <string.h>
 #include "gdb.h"
 
 

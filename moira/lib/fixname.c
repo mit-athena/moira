@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/fixname.c,v $
- *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/fixname.c,v 1.5 1992-05-20 12:07:11 mar Exp $
+ *	$Author: jweiss $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/fixname.c,v 1.6 1994-09-16 16:30:10 jweiss Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -9,11 +9,11 @@
  */
 
 #ifndef lint
-static char *rcsid_fixname_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/fixname.c,v 1.5 1992-05-20 12:07:11 mar Exp $";
+static char *rcsid_fixname_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/fixname.c,v 1.6 1994-09-16 16:30:10 jweiss Exp $";
 #endif lint
 
 #include <mit-copyright.h>
-#include <strings.h>
+#include <string.h>
 #include <ctype.h>
 
 #define LAST_LEN		100

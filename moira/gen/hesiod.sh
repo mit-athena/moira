@@ -1,7 +1,7 @@
 #!/bin/csh -f -x
 # This script performs updates of hesiod files on hesiod servers.  
 # 	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/hesiod.sh,v $
-echo	'$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/hesiod.sh,v 1.7 1988-12-29 19:07:25 mar Exp $'
+echo	'$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/hesiod.sh,v 1.8 1989-09-26 18:27:32 mar Exp $'
 
 # The following exit codes are defined and MUST BE CONSISTENT with the
 # SMS error codes the library uses:
@@ -18,8 +18,8 @@ set TARFILE=/tmp/hesiod.out
 set SRC_DIR=/etc/athena/_nameserver
 # Directory into which we will put the final product
 set DEST_DIR=/etc/athena/nameserver
-# Files to verify nameserver loaded
-set CHECKFILES="passwd.db pobox.db cluster.db grplist.db group.db"
+# Files to verify nameserver loaded-if empty, no check is done
+set CHECKFILES=""
 
 # Create the destination directory if it doesn't exist
 if (! -d $DEST_DIR) then

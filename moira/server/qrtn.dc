@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.dc,v 1.1 1990-09-07 11:14:13 kostas Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.dc,v 1.2 1990-09-21 11:52:27 kostas Exp $
  *
  * Copyright (C) 1987, 1988, 1990 by the Massachusetts Institute of Technology
  * For copying and distribution information, please see the file
@@ -6,13 +6,14 @@
  */
 
 #ifndef lint
-static char *rcsid_qrtn_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.dc,v 1.1 1990-09-07 11:14:13 kostas Exp $";
+static char *rcsid_qrtn_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.dc,v 1.2 1990-09-21 11:52:27 kostas Exp $";
 #endif lint
 
 #include <mit-copyright.h>
 #include "query.h"
 #include "mr_server.h"
-EXEC SQL INCLUDE sqlca;
+EXEC SQL INCLUDE sqlca;  /* SQL Communications Area */
+EXEC SQL INCLUDE SQLDA;  /* SQL Descriptor Area */
 
 char *Argv[16];
 
@@ -794,7 +795,11 @@ char *table;
     EXEC SQL BEGIN DECLARE SECTION;
     char *name, *tbl, buf[257];
     int value;
+    char stmt_1_str[256];
     EXEC SQL END DECLARE SECTION;
+
+    EXEC SQL DECLARE stmt_1 STATEMENT;
+    EXEC SQL DECLARE cursor_1 CURSOR FOR stmt_1;
 
     name = object;
     tbl = table;
@@ -802,21 +807,31 @@ char *table;
     if (sqlca.sqlcode < 0 || sqlca.sqlerrd[2] != 1)
       return(MR_NO_ID);
 
-    EXEC SQL SELECT :name INTO :buf FROM :tbl WHERE :name = :value;
+    sprintf(stmt_t_str, "SELECT %s INTO %s FROM %s WHERE %s = %d",
+	    name, buf, tbl, name, value);
+
+    EXEC SQL PREPARE stmt_1 FROM :stmt_1_str;
+    EXEC SQL DESCRIBE stnt_1 INTO SQLDA;
+/*  EXEC SQL EXECUTE stmt_1;  -- wait on this use a cursor instead */
+
+    EXEC SQL OPEN cursor_1;
+    EXEC SQL FETCH cursor_1 USING DESCRIPTOR SQLDA;
     if (sqlca.sqlcode != 0 && sqlca.sqlcode != 100)
       return(MR_NO_ID);
 
-    while (sqlca.sqlerrd[2]) {
+    while (1) {
 	value++;
 	if (value > MAX_ID_VALUE)
 	    value = MIN_ID_VALUE;
-	EXEC SQL SELECT :name INTO :buf FROM :tbl WHERE :name = :value;
+        EXEC SQL FETCH cursor_1 USING DESCRIPTOR SQLDA;
 	if (sqlca.sqlcode != 0 && sqlca.sqlcode != 100)
 	  return(MR_NO_ID);
     }
+    EXEC SQL CLOSE cursor_1;
 
     if (LOG_RES)
         com_err(whoami, 0, "setting ID %s to %d", name, value);
+
     EXEC SQL UPDATE values_tbl SET value = :value WHERE name = :name;
     if (sqlca.sqlcode != 0)
       return(MR_NO_ID);

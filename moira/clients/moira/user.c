@@ -1,4 +1,4 @@
-/* $Id: user.c,v 1.55 2000-01-28 00:03:24 danw Exp $
+/* $Id: user.c,v 1.56 2000-03-09 19:59:54 zacheiss Exp $
  *
  *	This is the file user.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -29,7 +29,7 @@
 
 #include <krb.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.55 2000-01-28 00:03:24 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.56 2000-03-09 19:59:54 zacheiss Exp $");
 
 void CorrectCapitalization(char **name);
 char **AskUserInfo(char **info, Bool name);
@@ -543,7 +543,7 @@ static void SetUserPassword(char *name)
 static void GiveBackLogin(char *name)
 {
   name = name;			/* make saber happy. */
-  Put_message("kerberos code not implimented, name not given back.");
+  Put_message("kerberos code not implemented, name not given back.");
   /* send mail to db maintainer if this fails. */
 }
 

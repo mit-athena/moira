@@ -1,4 +1,4 @@
-/* $Id: mr_connect.c,v 1.24 1998-05-26 18:14:09 danw Exp $
+/* $Id: mr_connect.c,v 1.25 1998-07-15 20:39:32 danw Exp $
  *
  * This routine is part of the client library.  It handles
  * creating a connection to the moira server.
@@ -28,7 +28,7 @@
 #include <hesiod.h>
 #endif
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_connect.c,v 1.24 1998-05-26 18:14:09 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_connect.c,v 1.25 1998-07-15 20:39:32 danw Exp $");
 
 int _mr_conn = 0;
 static char *mr_server_host = NULL;
@@ -170,7 +170,7 @@ int mr_connect_internal(char *server, char *port)
   for (size = 0; size < sizeof(actualresponse); size += more)
     {
       more = read(fd, actualresponse + size, sizeof(actualresponse) - size);
-      if (!more)
+      if (more <= 0)
 	break;
     }
   if (size != sizeof(actualresponse))
@@ -270,61 +270,82 @@ int mr_listen(char *port)
   return s;
 }
 
+/* mr_accept returns -1 on accept() error, 0 on bad connection,
+   or connection fd on success */
+
 int mr_accept(int s, struct sockaddr_in *sin)
 {
-  int conn, addrlen = sizeof(struct sockaddr_in);
-  char lbuf[4], *buf;
-  long len, size, more;
+  int conn, addrlen = sizeof(struct sockaddr_in), nread, status;
+  char *buf;
 
   conn = accept(s, (struct sockaddr *)sin, &addrlen);
   if (conn < 0)
     return -1;
 
-  /* Now do mrgdb accept protocol */
-  /* XXX timeout */
+  do
+    status = mr_cont_accept(conn, &buf, &nread);
+  while (status == -1);
 
-  if (read(conn, lbuf, 4) != 4)
+  return status;
+}
+
+int mr_cont_accept(int conn, char **buf, int *nread)
+{
+  long len, more;
+
+  if (!*buf)
     {
-      close(conn);
+      char lbuf[4];
+      if (read(conn, lbuf, 4) != 4)
+	{
+	  close(conn);
+	  return -1;
+	}
+      getlong(lbuf, len);
+      len += 4;
+
+      *buf = malloc(len);
+      if (!*buf || len < 58)
+	{
+	  close(conn);
+	  free(buf);
+	  return 0;
+	}
+      putlong(*buf, len);
+      *nread = 4;
       return -1;
     }
-  getlong(lbuf, len);
+  else
+    getlong(*buf, len);
 
-  buf = malloc(len);
-  if (!buf || len < 54)
+  more = read(conn, *buf + *nread, len - *nread);
+
+  if (more == -1 && errno != EINTR)
     {
       close(conn);
-      free(buf);
-      return -1;
-    }
-
-  for (size = 0; size < len; size += more)
-    {
-      more = read(conn, buf + size, len - size);
-      if (!more)
-	break;
-    }
-  if (size != len)
-    {
-      close(conn);
-      free(buf);
+      free(*buf);
       return 0;
     }
 
-  if (memcmp(buf, challenge + 4, 34))
+  *nread += more;
+
+  if (*nread != len)
+    return -1;
+
+  if (memcmp(*buf + 4, challenge + 4, 34))
     {
       close(conn);
-      free(buf);
+      free(*buf);
       return 0;
     }
 
   /* good enough */
-  free(buf);
+  free(*buf);
 
   if (write(conn, response, sizeof(response)) != sizeof(response))
     {
       close(conn);
-      return -1;
+      return 0;
     }
   return conn;
 }

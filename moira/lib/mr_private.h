@@ -1,4 +1,4 @@
-/* $Id: mr_private.h,v 1.11 1998-02-15 17:49:06 danw Exp $
+/* $Id: mr_private.h,v 1.12 1998-07-15 20:39:32 danw Exp $
  *
  * Private declarations of the Moira library.
  *
@@ -26,21 +26,24 @@ typedef struct mr_params {
   char **mr_argv;
   int *mr_argl;
   unsigned char *mr_flattened;
+  u_long mr_filled;
 } mr_params;
 
 #define CHECK_CONNECTED if (!_mr_conn) return MR_NOT_CONNECTED
 
-#define getlong(cp, l) l = ((((unsigned char *)cp)[0] * 256 + ((unsigned char *)cp)[1]) * 256 + ((unsigned char *)cp)[2]) * 256 + ((unsigned char *)cp)[3]
-#define putlong(cp, l) do { ((unsigned char *)cp)[0] = l >> 24; ((unsigned char *)cp)[1] = l >> 16; ((unsigned char *)cp)[2] = l >> 8; ((unsigned char *)cp)[3] = l; } while(0);
+#define getlong(cp, l) do { l = ((((unsigned char *)cp)[0] * 256 + ((unsigned char *)cp)[1]) * 256 + ((unsigned char *)cp)[2]) * 256 + ((unsigned char *)cp)[3]; } while(0)
+#define putlong(cp, l) do { ((unsigned char *)cp)[0] = l >> 24; ((unsigned char *)cp)[1] = l >> 16; ((unsigned char *)cp)[2] = l >> 8; ((unsigned char *)cp)[3] = l; } while(0)
 
 /* prototypes from mr_call.h */
 int mr_do_call(struct mr_params *params, struct mr_params *reply);
 int mr_send(int fd, struct mr_params *params);
 int mr_receive(int fd, struct mr_params *params);
+int mr_cont_receive(int fd, struct mr_params *params);
 void mr_destroy_reply(mr_params reply);
 
 /* prototypes from mr_connect.h */
 int mr_accept(int s, struct sockaddr_in *sin);
+int mr_cont_accept(int conn, char **buf, int *nread);
 int mr_connect_internal(char *server, char *port);
 int mr_listen(char *port);
 

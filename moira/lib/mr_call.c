@@ -1,4 +1,4 @@
-/* $Id: mr_call.c,v 1.14 1998-02-15 17:49:01 danw Exp $
+/* $Id: mr_call.c,v 1.15 1998-07-15 20:39:31 danw Exp $
  *
  * Pass an mr_params off to the Moira server and get a reply
  *
@@ -17,7 +17,7 @@
 #include <string.h>
 #include <unistd.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_call.c,v 1.14 1998-02-15 17:49:01 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_call.c,v 1.15 1998-07-15 20:39:31 danw Exp $");
 
 /* Moira RPC format:
 
@@ -112,42 +112,64 @@ int mr_send(int fd, struct mr_params *params)
 
 int mr_receive(int fd, struct mr_params *reply)
 {
+  int status;
+
+  memset(reply, 0, sizeof(struct mr_params));
+  do
+    status = mr_cont_receive(fd, reply);
+  while (status == -1);
+
+  return status;
+}
+  
+int mr_cont_receive(int fd, struct mr_params *reply)
+{
   u_long length, data;
   ssize_t size, more;
   char *p;
   int i;
 
-  memset(reply, 0, sizeof(struct mr_params));
-
-  size = read(fd, &data, 4);
-  if (size != 4)
-    return size ? MR_ABORTED : MR_NOT_CONNECTED;
-  length = ntohl(data) - 4;
-  reply->mr_flattened = malloc(length);
   if (!reply->mr_flattened)
-    return ENOMEM;
-
-  for (size = 0; size < length; size += more)
     {
-      more = read(fd, reply->mr_flattened + size, length - size);
-      if (!more)
-	break;
+      char lbuf[4];
+
+      size = read(fd, lbuf, 4);
+      if (size != 4)
+	return size ? MR_ABORTED : MR_NOT_CONNECTED;
+      getlong(lbuf, length);
+      reply->mr_flattened = malloc(length);
+      if (!reply->mr_flattened)
+	return ENOMEM;
+      memcpy(reply->mr_flattened, lbuf, 4);
+      reply->mr_filled = 4;
+
+      return -1;
     }
-  if (size != length)
+  else
+    getlong(reply->mr_flattened, length);
+
+  more = read(fd, reply->mr_flattened + reply->mr_filled,
+	      length - reply->mr_filled);
+  if (more == -1)
     {
       mr_destroy_reply(*reply);
       return MR_ABORTED;
     }
 
-  getlong(reply->mr_flattened, data);
+  reply->mr_filled += more;
+  
+  if (reply->mr_filled != length)
+    return -1;
+
+  getlong(reply->mr_flattened + 4, data);
   if (data != MR_VERSION_2)
     {
       mr_destroy_reply(*reply);
       return MR_VERSION_MISMATCH;
     }
 
-  getlong(reply->mr_flattened + 4, reply->u.mr_status);
-  getlong(reply->mr_flattened + 8, reply->mr_argc);
+  getlong(reply->mr_flattened + 8, reply->u.mr_status);
+  getlong(reply->mr_flattened + 12, reply->mr_argc);
   reply->mr_argv = malloc(reply->mr_argc * sizeof(char *));
   reply->mr_argl = malloc(reply->mr_argc * sizeof(int));
   if (reply->mr_argc && (!reply->mr_argv || !reply->mr_argl))
@@ -156,7 +178,7 @@ int mr_receive(int fd, struct mr_params *reply)
       return ENOMEM;
     }
 
-  for (i = 0, p = reply->mr_flattened + 12; i < reply->mr_argc; i++)
+  for (i = 0, p = reply->mr_flattened + 16; i < reply->mr_argc; i++)
     {
       getlong(p, reply->mr_argl[i]);
       reply->mr_argv[i] = p + 4;

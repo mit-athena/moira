@@ -1,6 +1,7 @@
 /*
  * This file contains all definitions that allow easy access to 
- * elements returned by most of the @i[SMS] queries.
+ * elements returned by most of the @i[SMS] queries.  It also defines
+ * the default server location and the directories used on the server.
  *
  * If the order of the arguments in the @i[SMS] queries change (again)
  * then all that needs to be changed are the values of these items 
@@ -11,7 +12,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/include/moira_site.h,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/include/moira_site.h,v 1.12 1989-08-22 17:50:06 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/include/moira_site.h,v 1.13 1989-09-08 18:45:45 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -303,5 +304,20 @@
 #define USH_NAME        0
 #define USH_SHELL       1
 #define USH_END         2
+
+
+/* Directories & files used on the server machine: */
+
+#define SMS_DIR		"/u1/sms"	/* home directory of the system */
+#define BIN_DIR		"/u1/sms/bin"	/* where progs live */
+#define DCM_DIR		"/u1/sms/dcm"	/* where DCM output files end up */
+#define LOCK_DIR	"/u1/sms/dcm/locks" /* where DCM puts lock files */
+
+#define CRITERRLOG	"/u1/sms/critical.log"
+#define JOURNAL		"/u1/sms/journal"
+#define REGJOURNAL	"/u1/sms/journal.reg"
+#define NODCMFILE	"/etc/nodcm"	/* flag to inhibit DCM running */
+#define SMS_MOTD_FILE	"/etc/smsdown"	/* make the server go to sleep */
+
 
 #endif _sms_app_		/* Do not add anything after this line. */

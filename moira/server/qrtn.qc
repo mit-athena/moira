@@ -1,11 +1,14 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v $
- *	$Author: wesommer $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v 1.9 1987-08-22 17:47:38 wesommer Exp $
+ *	$Author: mike $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v 1.10 1987-08-28 14:57:51 mike Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
  *	$Log: not supported by cvs2svn $
+ * Revision 1.9  87/08/22  17:47:38  wesommer
+ * Cleanup (these changes were by Mike).
+ * 
  * Revision 1.8  87/08/10  16:22:26  mike
  * wesommer modified error reporting.
  * 
@@ -25,7 +28,7 @@
  */
 
 #ifndef lint
-static char *rcsid_qrtn_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v 1.9 1987-08-22 17:47:38 wesommer Exp $";
+static char *rcsid_qrtn_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v 1.10 1987-08-28 14:57:51 mike Exp $";
 #endif lint
 
 #include "query.h"
@@ -206,7 +209,8 @@ sms_process_query(cl, name, argc, argv_ro, action, actarg)
 	    return(status);
     }
 
-##  begin transaction
+    if (q->type != RETRIEVE)
+##      begin transaction
 
     switch (q->type) {
     case RETRIEVE:
@@ -340,10 +344,13 @@ sms_process_query(cl, name, argc, argv_ro, action, actarg)
 
     }
 
-    if (status == SMS_SUCCESS)
-##      end transaction
-    else
-##      abort
+    if (q->type != RETRIEVE) {
+        if (status == SMS_SUCCESS) {
+##          end transaction
+	} else {
+##          abort
+	}
+    }
 
     if (status != SMS_SUCCESS && log_flags & LOG_RES)
 	com_err(whoami, status, " (Query failed)");

@@ -7,9 +7,6 @@ The executables are in /moira/bin/ on the moira server, with sources
 in /mit/moiradev/src/afssync/.  Most of the commands are run on the
 Moira server.
 
-FULL INSTRUCTIONS
-("SUMMARY" is below)
-
 ####	Set up a workspace						####
 
 mkdir -p /moira/sync
@@ -19,7 +16,7 @@ cd /moira/sync
 First, get a recent copy of the prdb, and extract non-Moira entries:
 
 	/moira/bin/udebug aggy -port 7002
-	rcp root@aggy:/usr/afs/db/prdb.DB0 prdb.old
+	rcp -px root@aggy:/usr/afs/db/prdb.DB0 prdb.old
 	/moira/bin/udebug aggy -port 7002
 If the two udebugs show that the version changed, lather-rinse-repeat.
 (udebug can be found in afsuser; "aggy" here and below is some DB server)
@@ -106,7 +103,7 @@ be renamed, and you should regenerate prdb.extra.trimmed starting with
 a fresh prdb from aggy.  (You may want to abort and
 rm /moira/afs/noafs and try again later.)
 
-	pts listmax > /var/prdb.listmax
+	pts listmax > prdb.listmax
 	foreach i ( <db servers> )
 	    rsh $i -l root -x /bin/athena/detach -a 	# detach packs
 	    rsh $i -l root -x rm -f /usr/afs/db/{prdb.new,pre-resync-prdb}
@@ -133,7 +130,7 @@ fileservers may get excessively backlogged, and restart servers, if
 necessary, if the congestion remains excessive.
 
 	pts listmax
-	cat /var/prdb.listmax
+	cat prdb.listmax
 and if the id maxima are lower than the saved ones, reset them
 appropriately to the saved ones using `pts setmax`.
 
@@ -155,57 +152,3 @@ available, with certain mistakes.
 critical log, and you may have to do some operations by hand when the
 operation is complete.  Also, if requests depend on other requests, they
 may be processed out of order, and fail, and may need to be done by hand.
-
-
-SUMMARY
-
-	# db servers with sync site first:
-set db=(prill agamemnon chimera)
-set u="/moira/bin/udebug -port 7002 -server"
-set prefix="/moira/sync/prdb"
-cd `dirname $prefix`
-
-#######    The following DOES NOT WORK currently.  pt_util needs fixing
-####	BEFORE Moira and afs.incr are closed off:
-	# repeat as necessary:
-$u $db[2]; rcp root@$db[2]\:/usr/afs/db/prdb.DB0 $prefix.old; $u $db[2]
-/moira/bin/pt_util -x -m -u -g -d $prefix.extra -p $prefix.old
-awk '/^[^ ][^:]*@/ {printf "KERBEROS:%s\n",$1}' $prefix.extra > extra.foreign
-blanche afs-foreign-users -f extra.foreign
-awk '/^[^ ][^:@]*$/ {printf "KERBEROS:%s\n",$1}' $prefix.extra > extra.domestic
-echo "LIST:afs-foreign-users" >> extra.domestic
-blanche afs-odd-entities -f extra.domestic
-
-####	WAIT for the above afs.incr events to take place (see moira.log)
-touch /moira/afs/noafs
-/moira/bin/afssync $prefix.moira >& $prefix.afssync.err &
-	# repeat as necessary:
-$u $db[2]; rcp root@$db[2]\:/usr/afs/db/prdb.DB0 $prefix.old; $u $db[2]
-/moira/bin/pt_util -x -m -u -g -d $prefix.extra -p $prefix.old
-perl /moira/bin/pt_util.pl < $prefix.extra > $prefix.extra.sort
-wait
-more $prefix.afssync.err
-cp $prefix.moira $prefix.new
-/moira/bin/pt_util -w -d $prefix.extra.sort -p $prefix.new >& $prefix.extra.err
-	# and review $prefix.extra.err
-
-pts listmax > $prefix.listmax
-set dbdir=/usr/afs/db
-foreach i ( $db )
-    echo "$i..."
-    rcp -px $prefix.new ${i}:$dbdir
-end
-foreach i ( $db )
-    bos shutdown $i ptserver
-    bos exec $i "rm $dbdir/prdb.DB*; mv $dbdir/prdb.new $dbdir/prdb.DB0"
-end
-foreach i ( $db )
-    bos restart $i ptserver
-end
-
-	# checks, etc:
-$u $db[1]
-
-######## more on checks
-
-rm /moira/afs/noafs

@@ -1,4 +1,4 @@
-/* $Id: user.c,v 1.51 1998-08-11 18:42:32 danw Exp $
+/* $Id: user.c,v 1.52 1998-09-07 18:36:13 danw Exp $
  *
  *	This is the file user.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -32,7 +32,7 @@
 #include <gdss.h>
 #endif
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.51 1998-08-11 18:42:32 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.52 1998-09-07 18:36:13 danw Exp $");
 
 void CorrectCapitalization(char **name);
 char **AskUserInfo(char **info, Bool name);
@@ -251,8 +251,24 @@ char **AskUserInfo(char **info, Bool name)
 	   SUB_ERROR)
     return NULL;
 
+  strcpy(temp_buf, info[U_UID]);
   if (GetValueFromUser("User's UID", &info[U_UID]) == SUB_ERROR)
     return NULL;
+  if (strcmp(info[U_UID], UNIQUE_UID) && strcmp(info[U_UID], temp_buf))
+    {
+      struct mqelem *elem = NULL;
+      if (do_mr_query("get_user_account_by_uid", 1, &info[U_UID],
+		      StoreInfo, &elem) == MR_SUCCESS)
+	{
+	  Put_message("A user with that uid already exists in the database.");
+	  Loop(QueueTop(elem), PrintUserInfo);
+	  Loop(QueueTop(elem), FreeInfo);
+	  FreeQueue(elem);
+	  if (YesNoQuestion("Add new user anyway", TRUE) != TRUE)
+	    return NULL;
+	}
+    }
+
   if (GetValueFromUser("User's shell", &info[U_SHELL]) == SUB_ERROR)
     return NULL;
   if (name)

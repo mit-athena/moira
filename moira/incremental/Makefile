@@ -1,16 +1,15 @@
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/Makefile,v 1.4 1992-05-30 20:20:21 probe Exp $
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/Makefile,v 1.5 1992-06-02 14:32:03 probe Exp $
 
 AFSDIR = /mit/afsdev/bld/dest
 AFSLIBS=$(AFSDIR)/lib/afs/libprot.a    $(AFSDIR)/lib/afs/libauth.a \
 	$(AFSDIR)/lib/libubik.a        $(AFSDIR)/lib/afs/util.a \
-	$(AFSDIR)/lib/afs/libcmd.a     $(AFSDIR)/lib/librxkad.a \
-	$(AFSDIR)/lib/afs/libsys.a     $(AFSDIR)/lib/librx.a \
-	$(AFSDIR)/lib/liblwp.a
+	$(AFSDIR)/lib/librxkad.a       $(AFSDIR)/lib/afs/libsys.a \
+	$(AFSDIR)/lib/librx.a          $(AFSDIR)/lib/liblwp.a
 
 SRCS = afs.c ksrvtgt.c
 DEBUG = -O
 CFLAGS = -I../include -I$(AFSDIR)/include $(DEBUG)
-LIBS = -L../lib -lmoira -lcom_err -lzephyr -lkrb -ldes
+LIBS = -L../lib -lmoira -lzephyr -lgdb -lcom_err -lhesiod -lkrb -ldes
 
 all: afs.incr ksrvtgt
 

@@ -1,6 +1,6 @@
 #
 # 	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/Makefile,v $
-#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/Makefile,v 1.4 1988-09-12 17:09:05 mar Exp $
+#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/Makefile,v 1.5 1990-01-10 18:34:58 mar Exp $
 #
 # (c) Copyright 1988 by the Massachusetts Institute of Technology.
 # For copying and distribution information, please see the file
@@ -38,3 +38,17 @@ clean:
 
 install:	${PROGS}
 	install -s mailmaint ${DESTDIR}/usr/athena/mailmaint
+
+depend:
+	mkdep ${CFLAGS} ${SRCS}
+
+# DO NOT DELETE THIS LINE -- mkdep uses it.
+
+mailmaint.o: mailmaint.c /usr/include/stdio.h /usr/include/pwd.h
+mailmaint.o: /usr/include/signal.h /usr/include/strings.h
+mailmaint.o: /usr/include/curses.h /usr/include/sgtty.h
+mailmaint.o: /usr/include/sys/ioctl.h /usr/include/sys/ttychars.h
+mailmaint.o: /usr/include/sys/ttydev.h /usr/include/sys/types.h
+mailmaint.o: /usr/include/varargs.h ../../include/com_err.h
+mailmaint.o: /usr/include/ctype.h ../../include/sms.h /usr/include/sms_et.h
+mailmaint.o: ../../include/sms_app.h ../../include/mit-copyright.h

@@ -1,6 +1,6 @@
 #
 # 	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/Makefile,v $
-#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/Makefile,v 1.13 1989-10-05 17:38:08 mar Exp $
+#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/Makefile,v 1.14 1990-01-10 18:37:46 mar Exp $
 #
 
 #
@@ -61,88 +61,68 @@ lint:
 smskey:	smskey.c
 	${CC} ${CFLAGS} -o smskey smskey.c -ldes
 
-SRCS=	${SSRCS} ${CSRCS}
 depend:
-	-rm -f eddep makedep
-	${CC} -M ${CFLAGS} ${SRCS} | \
-	sed -e 's; ./; ;' \
-	    -e ':loop' \
-	    -e 's/\.\.\/[^ /]*\/\.\./../' \
-	    -e 't loop' | \
-	awk ' { if ($$1 != prev) { print rec; rec = $$0; prev = $$1; } \
-		else { if (length(rec $$2) > 78) { print rec; rec = $$0; } \
-		       else rec = rec " " $$2 } } \
-	      END { print rec } ' > makedep
-	echo '/^# DO NOT DELETE THIS LINE/+1,$$d' >eddep
-	echo '$$r makedep' >>eddep
-	echo 'w' >>eddep
-	-rm -f Makefile.bak
-	cp Makefile Makefile.bak
-	ed - Makefile < eddep
-	rm -f eddep makedep
+	mkdep ${CFLAGS} ${SSRCS} ${CSRCS}
 
-# the last line in the makefile should be...
-# DO NOT DELETE THIS LINE
+# DO NOT DELETE THIS LINE -- mkdep uses it.
 
 update_server.o: update_server.c ../include/mit-copyright.h
-update_server.o: /usr/include/stdio.h ../include/gdb.h /usr/include/sys/types.h
-update_server.o: /usr/include/sys/time.h /usr/include/time.h
-update_server.o: /usr/include/errno.h /usr/include/strings.h ../include/sms.h
-update_server.o: /usr/include/sms_et.h /usr/include/sys/file.h
-update_server.o: /usr/include/sys/ioctl.h /usr/include/sys/ttychars.h
-update_server.o: /usr/include/sys/ttydev.h ../include/update.h
+update_server.o: /usr/include/stdio.h ../include/gdb.h
+update_server.o: /usr/include/sys/types.h /usr/include/sys/time.h
+update_server.o: /usr/include/sys/time.h /usr/include/errno.h
+update_server.o: /usr/include/strings.h ../include/sms.h ../include/sms_et.h
+update_server.o: /usr/include/sys/file.h /usr/include/sys/ioctl.h
+update_server.o: /usr/include/sys/ttychars.h /usr/include/sys/ttydev.h
+update_server.o: ../include/update.h
 auth_001.o: auth_001.c ../include/mit-copyright.h /usr/include/stdio.h
 auth_001.o: /usr/include/strings.h ../include/gdb.h /usr/include/sys/types.h
-auth_001.o: /usr/include/sys/time.h /usr/include/time.h ../include/krb.h
-auth_001.o: ../include/mit-copyright.h ../include/des.h
-auth_001.o: ../include/mit-copyright.h ../include/krb_et.h
-auth_001.o: /usr/include/netinet/in.h /usr/include/errno.h
+auth_001.o: /usr/include/sys/time.h /usr/include/sys/time.h ../include/krb.h
+auth_001.o: ../include/des.h ../include/krb_et.h /usr/include/netinet/in.h
+auth_001.o: /usr/include/errno.h
 inst_001.o: inst_001.c ../include/mit-copyright.h /usr/include/stdio.h
 inst_001.o: ../include/gdb.h /usr/include/sys/types.h /usr/include/sys/time.h
-inst_001.o: /usr/include/time.h
+inst_001.o: /usr/include/sys/time.h
 xfer_002.o: xfer_002.c ../include/mit-copyright.h /usr/include/stdio.h
 xfer_002.o: ../include/gdb.h /usr/include/sys/types.h /usr/include/sys/time.h
-xfer_002.o: /usr/include/time.h /usr/include/ctype.h /usr/include/sys/param.h
-xfer_002.o: /usr/include/machine/machparam.h /usr/include/signal.h
-xfer_002.o: /usr/include/sys/types.h /usr/include/sys/file.h
-xfer_002.o: /usr/include/strings.h ../include/sms.h /usr/include/sms_et.h
+xfer_002.o: /usr/include/sys/time.h /usr/include/ctype.h
+xfer_002.o: /usr/include/sys/param.h /usr/include/machine/machparam.h
+xfer_002.o: /usr/include/sys/signal.h /usr/include/sys/file.h
+xfer_002.o: /usr/include/strings.h ../include/sms.h ../include/sms_et.h
 exec_002.o: exec_002.c ../include/mit-copyright.h /usr/include/stdio.h
-exec_002.o: /usr/include/sys/wait.h /usr/include/signal.h ../include/gdb.h
-exec_002.o: /usr/include/sys/types.h /usr/include/sys/time.h
-exec_002.o: /usr/include/time.h ../include/sms.h /usr/include/sms_et.h
+exec_002.o: /usr/include/sys/wait.h /usr/include/sys/signal.h
+exec_002.o: ../include/gdb.h /usr/include/sys/types.h /usr/include/sys/time.h
+exec_002.o: /usr/include/sys/time.h ../include/sms.h ../include/sms_et.h
 exec_002.o: ../include/update.h
 hostname.o: hostname.c ../include/mit-copyright.h /usr/include/stdio.h
 hostname.o: /usr/include/sys/types.h /usr/include/netinet/in.h
 hostname.o: /usr/include/netdb.h /usr/include/ctype.h /usr/include/strings.h
 log.o: log.c ../include/mit-copyright.h /usr/include/stdio.h
 log.o: ../include/com_err.h /usr/include/varargs.h ../include/update.h
-log.o: ../include/krb.h ../include/mit-copyright.h ../include/des.h
-log.o: ../include/mit-copyright.h
+log.o: ../include/krb.h ../include/des.h
 get_file.o: get_file.c ../include/mit-copyright.h /usr/include/stdio.h
 get_file.o: ../include/gdb.h /usr/include/sys/types.h /usr/include/sys/time.h
-get_file.o: /usr/include/time.h /usr/include/ctype.h /usr/include/sys/param.h
-get_file.o: /usr/include/machine/machparam.h /usr/include/signal.h
-get_file.o: /usr/include/sys/types.h /usr/include/sys/file.h ../include/sms.h
-get_file.o: /usr/include/sms_et.h ../include/update.h
+get_file.o: /usr/include/sys/time.h /usr/include/ctype.h
+get_file.o: /usr/include/sys/param.h /usr/include/machine/machparam.h
+get_file.o: /usr/include/sys/signal.h /usr/include/sys/file.h
+get_file.o: ../include/sms.h ../include/sms_et.h ../include/update.h
 checksum.o: checksum.c ../include/mit-copyright.h /usr/include/stdio.h
 checksum.o: /usr/include/sys/file.h
 client.o: client.c ../include/mit-copyright.h /usr/include/stdio.h
 client.o: /usr/include/strings.h ../include/gdb.h /usr/include/sys/types.h
-client.o: /usr/include/sys/time.h /usr/include/time.h /usr/include/sys/param.h
-client.o: /usr/include/machine/machparam.h /usr/include/signal.h
-client.o: /usr/include/sys/types.h /usr/include/sys/wait.h ../include/update.h
-client.o: /usr/include/errno.h ../include/dcm.h ../include/sms.h
-client.o: /usr/include/sms_et.h ../include/krb.h ../include/mit-copyright.h
-client.o: ../include/des.h ../include/mit-copyright.h
+client.o: /usr/include/sys/time.h /usr/include/sys/time.h
+client.o: /usr/include/sys/param.h /usr/include/machine/machparam.h
+client.o: /usr/include/sys/signal.h /usr/include/sys/wait.h
+client.o: /usr/include/sys/socket.h ../include/update.h /usr/include/errno.h
+client.o: ../include/dcm.h ../include/sms.h ../include/sms_et.h
+client.o: ../include/sms_app.h ../include/krb.h ../include/des.h
 ticket.o: ticket.c ../include/mit-copyright.h /usr/include/stdio.h
-ticket.o: ../include/krb.h ../include/mit-copyright.h ../include/des.h
-ticket.o: ../include/mit-copyright.h /usr/include/sys/types.h
+ticket.o: ../include/krb.h ../include/des.h /usr/include/sys/types.h
 ticket.o: /usr/include/sys/stat.h /usr/include/strings.h ../include/update.h
 ticket.o: ../include/com_err.h ../include/krb_et.h
 send_file.o: send_file.c ../include/mit-copyright.h /usr/include/stdio.h
 send_file.o: ../include/com_err.h ../include/gdb.h /usr/include/sys/types.h
-send_file.o: /usr/include/sys/time.h /usr/include/time.h ../include/dcm.h
-send_file.o: ../include/sms.h /usr/include/sms_et.h /usr/include/sys/file.h
+send_file.o: /usr/include/sys/time.h /usr/include/sys/time.h ../include/dcm.h
+send_file.o: ../include/sms.h ../include/sms_et.h /usr/include/sys/file.h
 send_file.o: /usr/include/sys/stat.h ../include/update.h
 checksum.o: checksum.c ../include/mit-copyright.h /usr/include/stdio.h
 checksum.o: /usr/include/sys/file.h

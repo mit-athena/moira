@@ -1,4 +1,4 @@
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrcheck/Makefile,v 1.2 1989-01-21 16:29:30 mar Exp $
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrcheck/Makefile,v 1.3 1990-01-10 18:30:47 mar Exp $
 # (c) Copyright 1988 by the Massachusetts Institute of Technology.
 # For copying and distribution information, please see the file
 # <mit-copyright.h>.
@@ -33,3 +33,12 @@ clean:
 
 install:	${PROGS}
 	install -s mrcheck ${DESTDIR}/usr/athena/mrcheck
+
+depend:
+	mkdep ${CFLAGS} ${SRCS}
+
+# DO NOT DELETE THIS LINE -- mkdep uses it.
+
+mrcheck.o: mrcheck.c /usr/include/stdio.h ../../include/sms.h
+mrcheck.o: /usr/include/sms_et.h ../../include/sms_app.h
+mrcheck.o: ../../include/mit-copyright.h

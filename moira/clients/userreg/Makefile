@@ -2,7 +2,7 @@
 # 	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/Makefile,v $
 #	$Author: mar $
 #	$Locker:  $
-#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/Makefile,v 1.6 1988-09-12 17:28:16 mar Exp $
+#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/Makefile,v 1.7 1990-01-10 18:34:00 mar Exp $
 #
 # (c) Copyright 1988 by the Massachusetts Institute of Technology.
 # For copying and distribution information, please see the file
@@ -33,3 +33,31 @@ install_real: all
 	for i in ${TEXT}; do \
 		install -c -m 444 $$i ${DESTDIR}/mit/register/$$i; \
 		done;
+
+depend:
+	mkdep ${CFLAGS} userreg.c display.c reg_stubs.c disable.c
+
+# DO NOT DELETE THIS LINE -- mkdep uses it.
+
+userreg.o: userreg.c ../../include/mit-copyright.h /usr/include/curses.h
+userreg.o: /usr/include/stdio.h /usr/include/sgtty.h /usr/include/sys/ioctl.h
+userreg.o: /usr/include/sys/ttychars.h /usr/include/sys/ttydev.h
+userreg.o: /usr/include/signal.h /usr/include/sys/time.h
+userreg.o: /usr/include/sys/time.h /usr/include/setjmp.h /usr/include/ctype.h
+userreg.o: ../../include/krb.h ../../include/des.h /usr/include/errno.h
+userreg.o: userreg.h files.h ureg_err.h
+display.o: display.c ../../include/mit-copyright.h /usr/include/stdio.h
+display.o: /usr/include/curses.h /usr/include/sgtty.h
+display.o: /usr/include/sys/ioctl.h /usr/include/sys/ttychars.h
+display.o: /usr/include/sys/ttydev.h /usr/include/sys/time.h
+display.o: /usr/include/sys/time.h userreg.h /usr/include/ctype.h files.h
+reg_stubs.o: reg_stubs.c ../../include/mit-copyright.h /usr/include/stdio.h
+reg_stubs.o: /usr/include/sys/types.h /usr/include/sys/time.h
+reg_stubs.o: /usr/include/sys/time.h /usr/include/sys/socket.h
+reg_stubs.o: /usr/include/netinet/in.h /usr/include/netdb.h
+reg_stubs.o: ../../include/des.h /usr/include/errno.h ureg_err.h
+reg_stubs.o: ../../include/ureg_proto.h /usr/include/strings.h
+disable.o: disable.c ../../include/mit-copyright.h /usr/include/stdio.h
+disable.o: /usr/include/ctype.h /usr/include/sys/types.h
+disable.o: /usr/include/sys/time.h /usr/include/sys/time.h
+disable.o: /usr/include/sys/file.h

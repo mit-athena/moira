@@ -2,7 +2,7 @@
 # 	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/Makefile,v $
 #	$Author: qjb $
 #	$Locker:  $
-#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/Makefile,v 1.7 1988-07-31 15:44:29 qjb Exp $
+#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/Makefile,v 1.8 1988-08-01 00:26:27 qjb Exp $
 #
 
 CFLAGS= -O -I../include
@@ -10,17 +10,9 @@ CFLAGS= -O -I../include
 all: reg_svr startreg
 
 reg_svr: reg_svr.o
-	cc ${CFLAGS} -o reg_svr reg_svr.o -L../../lib \
-		../rpc/sms_al_filsys.o \
-		../rpc/sms_al_pobox.o \
-		../rpc/sms_misc.o \
-		../rpc/admin_call.o \
-		../rpc/admin_err.o \
-		../rpc/ureg_err.o \
-		../rpc/sq.o \
-		../rpc/strs.o \
+	cc ${CFLAGS} -o reg_svr reg_svr.o -L../lib \
 		../server/libsmsglue.a \
-		-lcom_err -lkrb -ldes -lzephyr \
+		-lsms -lcom_err -lkrb -ldes -lzephyr \
 		/usr/rtingres/lib/libqlib /usr/rtingres/lib/compatlib
 
 startreg: startreg.c

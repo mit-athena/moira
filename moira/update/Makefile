@@ -1,6 +1,6 @@
 #
 # 	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/Makefile,v $
-#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/Makefile,v 1.5 1987-08-24 08:01:56 spook Exp $
+#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/Makefile,v 1.6 1988-08-04 14:27:42 mar Exp $
 #
 
 #
@@ -20,7 +20,7 @@ SOBJS=	dispatch.o initialize_server.o \
 	exec_001.o get_file.o xfer_002.o exec_002.o
 
 # client object files
-COBJS=	client2.o ticket.o send_file.o
+COBJS=	client.o ticket.o send_file.o checksum.o hostname.o
 
 # common object files
 COMOBJS= log_error.o hostname.o smsu_int.o log.o checksum.o
@@ -29,17 +29,23 @@ SSRCS=	dispatch.c initialize_server.c \
 	quit.c xfer_001.c misc.c inst_001.c sync.c auth_001.c \
 	exec_001.c get_file.c xfer_002.c exec_002.c
 
-CSRCS=	client.c ticket.c send_file.c client2.c
+CSRCS=	client.c ticket.c send_file.c checksum.c hostname.c
 
 COMSRCS= log_error.c hostname.c log.c checksum.c
 
 LIBS=	-L../lib -lgdb -lkrb -ldes -lcom_err
 
-all:	server sms_update.o test smskey
+all:	sms_update.o # server test smskey
+
+sms_update.o: ${COBJS}
+	ld -r -o sms_update.o ${COBJS}
+
+client.o: client.c
+
 
 clean:	
 	-rm -f ${COBJS} ${SOBJS} ${COMOBJS} client.o
-	-rm -f server sms_update.o test test.o smsu_int.h
+	-rm -f server sms_update.o test test.o smsu_int.h smskey
 	-rm -f core a.out *~ \#*
 
 install:
@@ -60,9 +66,9 @@ server:	${SOBJS} ${COMOBJS}
 smskey:	smskey.c
 	${CC} ${CFLAGS} -o smskey smskey.c -ldes
 
-sms_update.o:	${COBJS} ${COMOBJS}
-	ld ${LDFLAGS} -r -o sms_update.o ${COBJS} ${COMOBJS}
-	-chmod -x sms_update.o
+# sms_update.o:	${COBJS} ${COMOBJS}
+#	ld ${LDFLAGS} -r -o sms_update.o ${COBJS} ${COMOBJS}
+#	-chmod -x sms_update.o
 
 smsu_int.o smsu_int.h: smsu_int.et
 	compile_et smsu_int
@@ -97,85 +103,3 @@ depend:	smsu_int.h
 #
 # the last line in the makefile should be...
 # DO NOT DELETE THIS LINE
-
-dispatch.o: dispatch.c /usr/include/stdio.h ../include/gdb.h
-dispatch.o: /usr/include/sys/types.h /usr/include/sys/time.h
-dispatch.o: /usr/include/time.h /usr/include/errno.h /usr/include/strings.h
-dispatch.o: ../include/update.h sms_update_int.h smsu_int.h kludge.h
-initialize_server.o: initialize_server.c /usr/include/stdio.h ../include/gdb.h
-initialize_server.o: /usr/include/sys/types.h /usr/include/sys/time.h
-initialize_server.o: /usr/include/time.h
-quit.o: quit.c /usr/include/stdio.h ../include/gdb.h /usr/include/sys/types.h
-quit.o: /usr/include/sys/time.h /usr/include/time.h
-xfer_001.o: xfer_001.c /usr/include/stdio.h /usr/include/strings.h
-xfer_001.o: ../include/gdb.h /usr/include/sys/types.h /usr/include/sys/time.h
-xfer_001.o: /usr/include/time.h /usr/include/ctype.h /usr/include/sys/param.h
-xfer_001.o: /usr/include/machine/machparam.h /usr/include/signal.h
-xfer_001.o: /usr/include/sys/types.h /usr/include/sys/file.h smsu_int.h
-xfer_001.o: kludge.h
-misc.o: misc.c /usr/include/stdio.h ../include/gdb.h /usr/include/sys/types.h
-misc.o: /usr/include/sys/time.h /usr/include/time.h sms_update_int.h kludge.h
-misc.o: /usr/include/sys/param.h /usr/include/machine/machparam.h
-misc.o: /usr/include/signal.h /usr/include/sys/types.h smsu_int.h
-inst_001.o: inst_001.c /usr/include/stdio.h ../include/gdb.h
-inst_001.o: /usr/include/sys/types.h /usr/include/sys/time.h
-inst_001.o: /usr/include/time.h kludge.h sms_update_int.h
-sync.o: sync.c /usr/include/stdio.h ../include/gdb.h /usr/include/sys/types.h
-sync.o: /usr/include/sys/time.h /usr/include/time.h kludge.h smsu_int.h
-auth_001.o: auth_001.c /usr/include/stdio.h /usr/include/strings.h
-auth_001.o: ../include/gdb.h /usr/include/sys/types.h /usr/include/sys/time.h
-auth_001.o: /usr/include/time.h smsu_int.h kludge.h /usr/include/krb.h
-auth_001.o: /usr/include/des.h /usr/include/netinet/in.h /usr/include/errno.h
-exec_001.o: exec_001.c /usr/include/stdio.h ../include/gdb.h
-exec_001.o: /usr/include/sys/types.h /usr/include/sys/time.h
-exec_001.o: /usr/include/time.h sms_update_int.h kludge.h smsu_int.h
-get_file.o: get_file.c /usr/include/stdio.h ../include/gdb.h
-get_file.o: /usr/include/sys/types.h /usr/include/sys/time.h
-get_file.o: /usr/include/time.h /usr/include/ctype.h /usr/include/sys/param.h
-get_file.o: /usr/include/machine/machparam.h /usr/include/signal.h
-get_file.o: /usr/include/sys/types.h /usr/include/sys/file.h
-get_file.o: ../include/update.h smsu_int.h kludge.h
-xfer_002.o: xfer_002.c /usr/include/stdio.h ../include/gdb.h
-xfer_002.o: /usr/include/sys/types.h /usr/include/sys/time.h
-xfer_002.o: /usr/include/time.h /usr/include/ctype.h /usr/include/sys/param.h
-xfer_002.o: /usr/include/machine/machparam.h /usr/include/signal.h
-xfer_002.o: /usr/include/sys/types.h /usr/include/sys/file.h smsu_int.h
-xfer_002.o: kludge.h /usr/include/strings.h
-exec_002.o: exec_002.c /usr/include/stdio.h /usr/include/sys/wait.h
-exec_002.o: ../include/gdb.h /usr/include/sys/types.h /usr/include/sys/time.h
-exec_002.o: /usr/include/time.h ../include/update.h sms_update_int.h kludge.h
-exec_002.o: smsu_int.h
-client.o: client.c /usr/include/stdio.h ../include/gdb.h
-client.o: /usr/include/sys/types.h /usr/include/sys/time.h /usr/include/time.h
-client.o: /usr/include/sys/stat.h /usr/include/sys/file.h
-client.o: /usr/include/sys/param.h /usr/include/machine/machparam.h
-client.o: /usr/include/signal.h /usr/include/sys/types.h ../include/update.h
-client.o: /usr/include/errno.h sms_update_int.h smsu_int.h /usr/include/krb.h
-client.o: /usr/include/des.h kludge.h
-ticket.o: ticket.c /usr/include/stdio.h /usr/include/krb.h /usr/include/des.h
-ticket.o: /usr/include/sys/types.h /usr/include/sys/stat.h
-ticket.o: /usr/include/strings.h sms_update_int.h ../include/com_err.h
-ticket.o: ../include/mit-sipb-copyright.h kludge.h
-send_file.o: send_file.c /usr/include/stdio.h ../include/com_err.h
-send_file.o: ../include/mit-sipb-copyright.h ../include/gdb.h
-send_file.o: /usr/include/sys/types.h /usr/include/sys/time.h
-send_file.o: /usr/include/time.h smsu_int.h /usr/include/sys/file.h
-send_file.o: ../include/update.h sms_update_int.h kludge.h
-client2.o: client2.c /usr/include/stdio.h /usr/include/strings.h
-client2.o: ../include/gdb.h /usr/include/sys/types.h /usr/include/sys/time.h
-client2.o: /usr/include/time.h /usr/include/sys/stat.h /usr/include/sys/file.h
-client2.o: /usr/include/sys/param.h /usr/include/machine/machparam.h
-client2.o: /usr/include/signal.h /usr/include/sys/types.h ../include/update.h
-client2.o: /usr/include/errno.h sms_update_int.h smsu_int.h /usr/include/krb.h
-client2.o: /usr/include/des.h kludge.h
-log_error.o: log_error.c /usr/include/stdio.h /usr/include/syslog.h
-hostname.o: hostname.c /usr/include/stdio.h /usr/include/sys/types.h
-hostname.o: /usr/include/netinet/in.h /usr/include/netdb.h /usr/include/ctype.h
-hostname.o: /usr/include/strings.h
-log.o: log.c /usr/include/stdio.h ../include/com_err.h
-log.o: ../include/mit-sipb-copyright.h /usr/include/varargs.h
-log.o: ../include/update.h /usr/include/krb.h /usr/include/des.h
-log.o: /usr/include/syslog.h
-checksum.o: checksum.c /usr/include/stdio.h /usr/include/sys/file.h
-smskey.o: smskey.c /usr/include/stdio.h /usr/include/sys/file.h
-smskey.o: /usr/include/des.h

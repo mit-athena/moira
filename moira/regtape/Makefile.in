@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.11 2000-07-12 22:11:41 zacheiss Exp $
+# $Id: Makefile.in,v 1.12 2002-09-16 22:19:33 zacheiss Exp $
 
 SHELL=/bin/sh
 @SET_MAKE@
@@ -33,6 +33,7 @@ VOTE_OBJS=vote.o
 CFILES=student.c staff.c common.c vote.c
 
 TARGET=student staff vote
+SCRIPTS=grouper.pl staff.sql student.sql
 
 .SUFFIXES: .pc
 
@@ -55,7 +56,7 @@ depend: $(CFILES)
 
 install:
 	@set -x; for p in $(TARGET); do $(INSTALL_PROGRAM) $$p $(mrbindir); done
-
+	@set -x; for p in $(SCRIPTS); do $(INSTALL_PROGRAM) $$p $(mrbindir); done
 student: $(STUDENT_OBJS) $(MR_LIBDEP)
 	$(CC) -o $@ $(LDFLAGS) $(STUDENT_OBJS) $(SQL_LIBS) $(LIBS)
 

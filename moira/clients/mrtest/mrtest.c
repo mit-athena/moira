@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v $
  *	$Author: danw $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v 1.30 1996-11-17 23:14:58 danw Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v 1.31 1996-12-14 21:01:16 danw Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,8 +10,8 @@
  */
 
 #ifndef lint
-static char *rcsid_test_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v 1.30 1996-11-17 23:14:58 danw Exp $";
-#endif lint
+static char *rcsid_test_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v 1.31 1996-12-14 21:01:16 danw Exp $";
+#endif /* lint */
 
 #include <mit-copyright.h>
 #include <stdio.h>
@@ -34,11 +34,15 @@ extern int errno;
 extern int sending_version_no;
 int count, quit=0;
 char *whoami;
+#ifdef POSIX
+sigjmp_buf jb;
+#else
 jmp_buf jb;
+#endif
 
 #define MAXARGS 20
 
-void discard_input(int, int, struct sigcontext *);
+void discard_input(void);
 char *mr_gets(char *, char *, size_t);
 
 main(argc, argv)
@@ -61,10 +65,11 @@ main(argc, argv)
 	action.sa_flags = 0;
 	sigemptyset(&action.sa_mask);
 	sigaction(SIGINT, &action, NULL);
+	sigsetjmp(jb, 1);
 #else
 	signal(SIGINT, discard_input);
-#endif
 	setjmp(jb);
+#endif
 
 	while(!quit) {
 		if(!mr_gets("moira:  ",cmdbuf,BUFSIZ)) break;
@@ -74,10 +79,14 @@ main(argc, argv)
 	exit(0);
 }
 
-void discard_input(int sig, int code, struct sigcontext *scp)
+void discard_input(void)
 {
   putc('\n', stdout);
+#ifdef POSIX
+  siglongjmp(jb, 1);
+#else
   longjmp(jb, 1);
+#endif
 }
 
 char *mr_gets(char *prompt, char *buf, size_t len)
@@ -90,9 +99,9 @@ char *mr_gets(char *prompt, char *buf, size_t len)
     if (!in) return NULL;
     if (*in) {
       add_history(in);
-      strncpy(buf, in, len-1);
-      buf[len]=0;
     }
+    strncpy(buf, in, len-1);
+    buf[len]=0;
     
     return buf;
   }

@@ -1,6 +1,6 @@
 /* This file defines the query dispatch table for version 2 of the protocol
  *
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/queries2.c,v 1.10 1988-10-03 15:31:23 mar Exp $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/queries2.c,v 1.11 1989-03-21 18:12:32 mar Exp $
  *
  * Copyright 1987, 1988 by the Massachusetts Institute of Technology.
  * For copying and distribution information, please see the file
@@ -147,6 +147,10 @@ static struct valobj VOclu0[] = {
 
 static struct valobj VOlist0[] = {
   {V_ID, 0, LIST, NAME, LIST_ID, SMS_LIST},
+};
+
+static struct valobj VOfilsys0[] = {
+  {V_ID, 0, FILESYS, LABEL, FILSYS_ID, SMS_FILESYS},
 };
 
 static struct valobj VOchar0[] = {
@@ -1086,6 +1090,45 @@ static struct validate dfil_validate = {
   0,
   setup_dfil,
   0,
+};
+
+static char *gfgm_fields[] = {
+    "fsgroup", FILESYS, "sortkey"
+};
+
+static struct valobj gfgm_valobj[] = {
+    {V_ID, 0, FILESYS, LABEL, FILSYS_ID, SMS_FILESYS},
+    {V_SORT, 1},
+    {V_SORT, 0},
+};
+
+static struct validate gfgm_validate = {
+    gfgm_valobj,
+    3,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+};
+
+static struct valobj aftg_valobj[] = {
+    {V_ID, 0, FILESYS, LABEL, FILSYS_ID, SMS_FILESYS},
+    {V_ID, 1, FILESYS, LABEL, FILSYS_ID, SMS_FILESYS},
+};
+
+static struct validate aftg_validate = {
+    aftg_valobj,
+    2,
+    "group_id",
+    "fg.group_id = %d and fg.filsys_id = %d",
+    2,
+    0,
+    0,
+    0,
+    0,
 };
 
 static char *ganf_fields[] = {
@@ -2614,6 +2657,51 @@ struct query Queries2[] = {
     "fs.filsys_id = %d",
     1,
     &dfil_validate,
+  },
+
+  {
+    /* Q_GFGM - GET_FSGROUOP_MEMBERS */
+    "get_fsgroup_members",
+    "gfgm",
+    RETRIEVE,
+    "fg",
+    "fsgroup",
+    "%c = filesys.label, %c = fg.key",
+    gfgm_fields,
+    2,
+    "fg.group_id = %d and filesys.filsys_id = fg.filsys_id",
+    1,
+    &gfgm_validate,
+  },
+
+  {
+    /* Q_AFTG - ADD_FILESYS_TO_FSGROUP */
+    "add_filesys_to_fsgroup",
+    "aftg",
+    APPEND,
+    "fg",
+    "fsgroup",
+    "group_id = filesys.filsys_id, filsys_id = %i4, key = %c",
+    gfgm_fields,
+    2,
+    "filesys.filsys_id = %d and filesys.type = \"FSGROUP\"",
+    1,
+    &aftg_validate,
+  },
+
+  {
+    /* Q_RFFG - REMOVE_FILESYS_FROM_FSGROUP */
+    "remove_filesys_from_fsgroup",
+    "rffg",
+    DELETE,
+    "fg",
+    "fsgroup",
+    (char *)0,
+    gfgm_fields,
+    0,
+    "fg.group_id = %d and fg.filsys_id = %d",
+    2,
+    &aftg_validate,
   },
 
   {

@@ -1,4 +1,4 @@
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/afs_utils.pl,v 1.9 1993-06-03 16:55:50 mar Exp $
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/afs_utils.pl,v 1.10 1993-08-30 11:38:15 mar Exp $
 
 $afsbin="/moira/bin";
 $vos="$afsbin/vos";
@@ -73,7 +73,7 @@ sub afs_find
 {
     local($cell,$type,$quota,@except) = @_;
     local($j,$k);
-    local(@max) = '';
+    local(@max) = ("", "", -10000000);
 
     &afs_lock;
     chop(@afs_data);

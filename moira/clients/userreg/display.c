@@ -1,12 +1,12 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/display.c,v $
- *	$Author: ostlund $
+ *	$Author: wesommer $
  *	$Locker:  $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/display.c,v 1.1 1986-08-21 18:06:01 ostlund Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/display.c,v 1.2 1987-08-22 18:38:28 wesommer Exp $
  */
 
 #ifndef lint
-static char *rcsid_display_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/display.c,v 1.1 1986-08-21 18:06:01 ostlund Exp $";
+static char *rcsid_display_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/display.c,v 1.2 1987-08-22 18:38:28 wesommer Exp $";
 #endif	lint
 
 #include <stdio.h>
@@ -16,7 +16,13 @@ static char *rcsid_display_c = "$Header: /afs/.athena.mit.edu/astaff/project/moi
 
 #define DESC_WIDTH 18
 #define HEADER "*** Athena User Registration ***"
+#ifdef ibm032
 #define HELP   " Press backspace to delete a character.  Press Ctrl-C to start over."
+#else
+#ifdef vax
+#define HELP   " Press the key marked <X| to delete a character.  Press Ctrl-C to start over."
+#endif
+#endif
 #define BORDER_CHAR '-'
 #define MIN_COLS 80
 #define MIN_LINES 24
@@ -30,14 +36,15 @@ setup_display () {
   FILE * freopen ();
 
   initscr ();			/* Start up curses */
-  noecho ();			/* And the tty input */
-  raw ();
-  freopen ("/dev/null", "w", stderr);/* Toss the standard error output */
 
   if (COLS < MIN_COLS || LINES < MIN_LINES) {
     fprintf (stderr, "Screen must be at least %d x %d\n", MIN_LINES, MIN_COLS);
     exit (1);
   }
+
+  noecho ();			/* And the tty input */
+  raw ();
+  freopen ("/dev/null", "w", stderr);/* Toss the standard error output */
 
  /* Make sure the place is clean */
   clear ();

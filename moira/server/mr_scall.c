@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_scall.c,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_scall.c,v 1.15 1989-04-21 19:06:37 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_scall.c,v 1.16 1989-06-27 16:30:24 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,10 +10,12 @@
  */
 
 #ifndef lint
-static char *rcsid_sms_scall_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_scall.c,v 1.15 1989-04-21 19:06:37 mar Exp $";
+static char *rcsid_sms_scall_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_scall.c,v 1.16 1989-06-27 16:30:24 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 #include <krb.h>
 #include <errno.h>
 #include "query.h"
@@ -34,6 +36,8 @@ void
 do_client(cp)
 	client *cp;
 {
+    	struct stat stbuf;
+
 	free_rtn_tuples(cp);
 	if (OP_STATUS(cp->pending_op) == OP_CANCELLED) {
 		com_err(whoami, 0, "Closed connection (now %d client%s, %d new queries, %d old)",
@@ -42,6 +46,14 @@ do_client(cp)
 			newqueries,
 			oldqueries);
 		clist_delete(cp);
+		/* if we no longer have any clients, and we're supposed to
+		 * go down, then go down now.
+		 */
+		if ((dormant == AWAKE) && (nclients == 0) &&
+		    (stat(SMS_MOTD_FILE, &stbuf) == 0)) {
+		    com_err(whoami, 0, "motd file exists, slumbertime");
+		    dormant = SLEEPY;
+		}
 		return;
 	}
 	switch (cp->action) {
@@ -72,6 +84,8 @@ char *procnames[] = {
 	 "shutdown",
 	 "query",
 	 "access",
+	 "dcm",
+	 "motd",
 };
 
 
@@ -94,6 +108,14 @@ do_call(cl)
 			 cl->args->sms_argc, cl->args->sms_argv);
 	else if (log_flags & LOG_REQUESTS)
 		com_err(whoami, 0, "%s", procnames[pn]);
+
+	if ((dormant == ASLEEP || dormant == GROGGY) &&
+	    pn != SMS_NOOP && pn != SMS_MOTD) {
+	    cl->reply.sms_status = SMS_DOWN;
+	    if (log_flags & LOG_RES)
+	      com_err(whoami, SMS_DOWN, "(query refused)");
+	    return;
+	}
 
 	switch(pn) {
 	case SMS_NOOP:
@@ -118,6 +140,10 @@ do_call(cl)
 
 	case SMS_DO_UPDATE:
 		trigger_dcm(0, 0, cl);
+		return;
+
+	case SMS_MOTD:
+		get_motd(cl);
 		return;
 	}
 }
@@ -306,3 +332,20 @@ trigger_dcm(dummy0, dummy1, cl)
 	}
 }
 
+
+get_motd(cl)
+client *cl;
+{
+    FILE *motd;
+    char buffer[1024];
+    char *arg[1];
+
+    arg[0] = buffer;
+    cl->reply.sms_status = 0;
+    motd = fopen(SMS_MOTD_FILE, "r");
+    if (motd == NULL) return;
+    fgets(buffer, sizeof(buffer), motd);
+    fclose(motd);
+    retr_callback(1, arg, cl);
+    cl->reply.sms_status = 0;
+}

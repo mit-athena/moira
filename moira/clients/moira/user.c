@@ -1,19 +1,19 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.5 1988-07-08 18:26:25 kit Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.6 1988-07-27 19:21:24 kit Exp $";
 #endif lint
 
-/*	This is the file user.c for allmaint, the SMS client that allows
- *      a user to maintaint most important parts of the SMS database.
- *	It Contains: the functions for usermaint.
+/*	This is the file user.c for the SMS Client, which allows a nieve
+ *      user to quickly and easily maintain most parts of the SMS database.
+ *	It Contains: Functions for manipulating user information.
  *	
  *	Created: 	5/9/88
  *	By:		Chris D. Peterson
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v $
  *      $Author: kit $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.5 1988-07-08 18:26:25 kit Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.6 1988-07-27 19:21:24 kit Exp $
  *	
- *  	Copyright 1987, 1988 by the Massachusetts Institute of Technology.
+ *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
  *	For further information on copyright and distribution 
  *	see the file mit-copyright.h
@@ -25,8 +25,8 @@
 #include <menu.h>
 
 #include "mit-copyright.h"
-#include "allmaint.h"
-#include "allmaint_funcs.h"
+#include "defs.h"
+#include "f_defs.h"
 #include "globals.h"
 #include "infodefs.h"
 

@@ -1,24 +1,23 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v 1.5 1988-07-08 18:26:38 kit Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v 1.6 1988-07-27 19:21:35 kit Exp $";
 #endif lint
 
-/*	This is the file utils.c for allmaint, the SMS client that allows
- *      a user to maintaint most important parts of the SMS database.
- *	It Contains: Many utilities used by allmaint.
+/*	This is the file utils.c for the SMS Client, which allows a nieve
+ *      user to quickly and easily maintain most parts of the SMS database.
+ *	It Contains:  Many useful utility functions.
  *	
  *	Created: 	4/25/88
  *	By:		Chris D. Peterson
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v $
  *      $Author: kit $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v 1.5 1988-07-08 18:26:38 kit Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v 1.6 1988-07-27 19:21:35 kit Exp $
  *	
- *  	Copyright 1987, 1988 by the Massachusetts Institute of Technology.
+ *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
  *	For further information on copyright and distribution 
  *	see the file mit-copyright.h
  */
-
 
 #include <stdio.h>
 #include <strings.h>
@@ -26,12 +25,48 @@
 #include <menu.h>
 
 #include "mit-copyright.h"
-#include "allmaint.h"
-#include "allmaint_funcs.h"
+#include "defs.h"
+#include "f_defs.h"
 #include "globals.h"
 #include "infodefs.h"
 
 #include <netdb.h>		/* for gethostbyname. */
+
+/*	Function Name: AddQueue
+ *	Description: Adds an element to a queue
+ *	Arguments: elem, pred - element and its predecessor.
+ *	Returns: none.
+ */
+
+static void
+AddQueue(elem, pred)
+struct qelem * elem, *pred;
+{
+    if (pred == NULL) {
+	elem->q_forw = NULL;
+	elem->q_back = NULL;
+	return;
+    }
+    elem->q_back = pred;
+    elem->q_forw = pred->q_forw;
+    pred->q_forw = elem;
+}
+
+/*	Function Name: RemoveQueue
+ *	Description: removes an element from a queue.
+ *	Arguments: elem.
+ *	Returns: none.
+ */
+
+static void
+RemoveQueue(elem)
+struct qelem *elem;
+{
+    if (elem->q_forw != NULL) 
+	(elem->q_forw)->q_back = elem->q_back;
+    if (elem->q_back != NULL)
+	(elem->q_back)->q_forw = elem->q_forw;
+}
 
 /*	Function Name: FreeInfo
  *	Description: Frees all elements of a NULL terminated arrary of char*'s
@@ -90,7 +125,7 @@ struct qelem * elem;
  *	Returns: none
  */
 
-void
+static void
 FreeQueueElem(elem)
 struct qelem * elem;
 {
@@ -123,40 +158,6 @@ struct qelem * elem;
     }
 }
 
-/*	Function Name: AddQueue
- *	Description: Adds an element to a queue
- *	Arguments: elem, pred - element and its predecessor.
- *	Returns: none.
- */
-
-AddQueue(elem, pred)
-struct qelem * elem, *pred;
-{
-    if (pred == NULL) {
-	elem->q_forw = NULL;
-	elem->q_back = NULL;
-	return;
-    }
-    elem->q_back = pred;
-    elem->q_forw = pred->q_forw;
-    pred->q_forw = elem;
-}
-
-/*	Function Name: RemoveQueue
- *	Description: removes an element from a queue.
- *	Arguments: elem.
- *	Returns: none.
- */
-
-RemoveQueue(elem)
-struct qelem *elem;
-{
-    if (elem->q_forw != NULL) 
-	(elem->q_forw)->q_back = elem->q_back;
-    if (elem->q_back != NULL)
-	(elem->q_back)->q_forw = elem->q_forw;
-}
-
 /*	Function Name: QueueCount
  *	Description: Counts the number of elements in a queue
  *	Arguments: elem - any element in the queue.
@@ -175,6 +176,18 @@ struct qelem * elem;
     }
     return(count);
 }
+
+/*	Function Name: StoreInfo
+ *	Description: Stores information from an sms query into a queue.
+ *	Arguments: argc, argv, - information returned from the query returned
+ *                               in argv.
+ *                 data - the previous element on the queue, this data will be
+ *                        stored in a qelem struct immediatly after this elem.
+ *                        If NULL then a new queue will be created.  This value
+ *                        is updated to the current element at the end off the
+ *                        call.
+ *	Returns: SMS_CONT, or SMS_ABORT if it has problems.
+ */
 
 int
 StoreInfo(argc, argv, data)
@@ -342,11 +355,11 @@ int bool_def;
  *	Returns:   TRUE/FALSE - wether or not the confirmation occured.
  */
 
-int
+Bool
 Confirm(prompt)
 char * prompt;
 {
-  return( !verbose || YesNoQuestion(prompt,FALSE) );
+  return( !verbose || (YesNoQuestion(prompt,FALSE) == TRUE) );
 }
 
 /*	Function Name: ValidName
@@ -357,7 +370,7 @@ char * prompt;
 
 Bool
 ValidName(s)
-    char *s;
+char *s;
 {
     if (IS_EMPTY(s))
 	Put_message("Please use a non-empty name.");
@@ -412,6 +425,7 @@ NullFunc()
  *             big way.
  */
 
+void
 SlipInNewName(info, name)
 char ** info;
 char * name;
@@ -441,12 +455,20 @@ char * prompt, ** pointer;
     char buf[BUFSIZ];
 
     if (PromptWithDefault(prompt, buf, BUFSIZ, *pointer) == -1)
-	return(FALSE);
+	return(SUB_ERROR);
 
-    if (*pointer != NULL)
-	free(*pointer);
-    *pointer = Strsave(buf);
-    return(TRUE);
+/* 
+ * If these are the same then there is no need to allocate a new string.
+ *
+ * a difference that makes no difference, IS no difference.
+ */
+
+    if (strcmp(buf, *pointer) != 0) { 
+	if (*pointer != NULL)
+	    free(*pointer);
+	*pointer = Strsave(buf);
+    }
+    return(SUB_NORMAL);
 }
 
 /*	Function Name: GetYesNoValueFromUser
@@ -476,18 +498,18 @@ char * prompt, ** pointer;
     case TRUE:
 	if (*pointer != NULL)
 	    free(*pointer);
-	*pointer = Strsave("1");
+	*pointer = Strsave(DEFAULT_YES);
 	break;
     case FALSE:
 	if (*pointer != NULL)
 	    free(*pointer);
-	*pointer = Strsave("0");
+	*pointer = Strsave(DEFAULT_NO);
 	break;
     case -1:
     default:
-	return(FALSE);
+	return(SUB_ERROR);
     }
-    return(TRUE);
+    return(SUB_NORMAL);
 }
 
 /*	Function Name: GetFSVal
@@ -671,7 +693,7 @@ char **argv, *callback;
     if (callback == NULL)
 	return( Print(argc, argv, callback) );
     if (strcmp(argv[0], callback) == 0) 
-	return( Print(1, argv + 1, callback) );
+	return( Print(argc, argv, callback) );
     return(SMS_CONT);
 }
 
@@ -755,7 +777,7 @@ char * query_string;
 	    (*op_func) (info, one_item);
 	else {
 	    name = (*print_func) (info); /* call print function. */
-	    sprintf(temp_buf,"%s %s (y/n/q) ?", query_string, name);
+	    sprintf(temp_buf,"%s %s (y/n/q)", query_string, name);
 	    switch(YesNoQuitQuestion(temp_buf, FALSE)) {
 	    case TRUE:
 		(*op_func) (info, one_item);

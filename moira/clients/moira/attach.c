@@ -1,22 +1,21 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.5 1988-07-08 18:24:39 kit Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.6 1988-07-27 19:19:07 kit Exp $";
 #endif
 
-/*	This is the file attach.c for allmaint, the SMS client that allows
- *      a user to maintaint most important parts of the SMS database.
+/*	This is the file attach.c for the SMS Client, which allows a nieve
+ *      user to quickly and easily maintain most parts of the SMS database.
  *	It Contains: Functions for maintaining data used by Hesiod 
  *                   to map courses/projects/users to their file systems, 
  *                   and maintain filesys info. 
  *	
  *	Created: 	5/4/88
  *	By:		Chris D. Peterson
- *      Based Upon:     attach.c 87/07/24 marcus
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v $
  *      $Author: kit $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.5 1988-07-08 18:24:39 kit Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.6 1988-07-27 19:19:07 kit Exp $
  *	
- *  	Copyright 1987, 1988 by the Massachusetts Institute of Technology.
+ *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
  *	For further information on copyright and distribution 
  *	see the file mit-copyright.h
@@ -28,8 +27,8 @@
 #include <menu.h>
 
 #include "mit-copyright.h"
-#include "allmaint.h"
-#include "allmaint_funcs.h"
+#include "defs.h"
+#include "f_defs.h"
 #include "globals.h"
 #include "infodefs.h"
 
@@ -249,14 +248,10 @@ GetFS(argc, argv)
 int argc;
 char **argv;
 {
-    struct qelem *top, *elem;
+    struct qelem *top;
 
-    top = elem = GetFSInfo(LABEL, argv[1]); /* get info. */
-    while(elem != NULL) {
-	char ** info = (char **) elem->q_data;
-	(void) PrintFSInfo(info);
-	elem = elem->q_forw;
-    }
+    top = GetFSInfo(LABEL, argv[1]); /* get info. */
+    Loop(top, (void *) PrintFSInfo);
     FreeQueue(top);		/* clean the queue. */
     return (DM_NORMAL);
 }
@@ -409,17 +404,11 @@ GetFSAlias(argc, argv)
 int argc;
 char **argv;
 {
-    struct qelem *top, *elem;
+    struct qelem *top;
 
-    top = elem = GetFSInfo(ALIAS, argv[1]);
-
+    top = GetFSInfo(ALIAS, argv[1]);
     Put_message(" ");		/* blank line. */
-    while (elem != NULL) {
-	char **info = (char **) elem->q_data;
-	PrintFSAlias(info);
-	elem = elem->q_forw;
-    }
-
+    Loop(top, (void *) PrintFSAlias);
     FreeQueue(top);
     return(DM_NORMAL);
 }

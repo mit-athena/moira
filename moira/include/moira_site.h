@@ -1,30 +1,30 @@
-/*	This is the file infodefs.h for allmaint, the SMS client that allows
- *      a user to maintaint most important parts of the SMS database.
- *	It Contains: Definitions
+/*	This is the file infodefs.h for the SMS Client, which allows a nieve
+ *      user to quickly and easily maintain most parts of the SMS database.
+ *	It Contains: useful typdefs.
  *	
  *	Created: 	6/8/88
  *	By:		Chris D. Peterson
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/include/moira_site.h,v $
  *      $Author: kit $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/include/moira_site.h,v 1.4 1988-07-08 18:25:25 kit Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/include/moira_site.h,v 1.5 1988-07-27 19:20:09 kit Exp $
  *	
- *  	Copyright 1987, 1988 by the Massachusetts Institute of Technology.
+ *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
  *	For further information on copyright and distribution 
  *	see the file mit-copyright.h
  */
 
 /*
- *     This file contains all the definitions that allow easy access to 
- * elements returned by most of the SMS queries that return information.
+ *     This file contains all definitions that allow easy access to 
+ * elements returned by most of the @i[SMS] queries.
  *
- *     If order of the arguments in the SMS queries change (again) then all
- * that need to be changed is the values of these items and all
- * should be well.
+ *     If the order of the arguments in the @i[SMS] queries change (again)
+ *  then all that needs to be changed are the values of these items 
+ * and all should be well, (hopefully :-).
  *
  *                                 Chris D. Peterson - kit@athena
- *                                   6/8/88
+ *                                   7/27/88
  */
 
 #ifndef _infodefs_

@@ -1,20 +1,19 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/cluster.c,v 1.5 1988-07-08 18:24:51 kit Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/cluster.c,v 1.6 1988-07-27 19:19:20 kit Exp $";
 #endif lint
 
-/*	This is the file cluseter.c for allmaint, the SMS client that allows
- *      a user to maintaint most important parts of the SMS database.
+/*	This is the file cluster.c for the SMS Client, which allows a nieve
+ *      user to quickly and easily maintain most parts of the SMS database.
  *	It Contains: 
  *	
  *	Created: 	4/22/88
  *	By:		Chris D. Peterson
- *      Based upon:  Clusermaint.c by marcus: 87/07/22
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/cluster.c,v $
  *      $Author: kit $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/cluster.c,v 1.5 1988-07-08 18:24:51 kit Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/cluster.c,v 1.6 1988-07-27 19:19:20 kit Exp $
  *	
- *  	Copyright 1987, 1988 by the Massachusetts Institute of Technology.
+ *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
  *	For further information on copyright and distribution 
  *	see the file mit-copyright.h
@@ -28,8 +27,8 @@
 #include <menu.h>
 
 #include "mit-copyright.h"
-#include "allmaint.h"
-#include "allmaint_funcs.h"
+#include "defs.h"
+#include "f_defs.h"
 #include "globals.h"
 #include "infodefs.h"
 
@@ -680,7 +679,7 @@ char ** argv;
 	Put_message(buf);
 	return(DM_NORMAL);
     }
-    if (stat)
+    if (stat != SMS_SUCCESS)
 	com_err(program_name, stat, " in delete_machine_from_cluster");
 
     elem = QueueTop(elem);
@@ -1059,25 +1058,6 @@ char **argv;
 
     FreeQueue(top);
     return(DM_NORMAL);
-}
-
-/*	Function Name: MachinesInCluster
- *	Description: Shows all machines in a give cluster.
- *	Arguments: argv, argc - name of cluster in argv[1].
- *	Returns: DM_NORMAL;
- */
-
-/* ARGSUSED */
-int
-MachinesInCluster(argc, argv)
-int argc;
-char **argv;
-{
-    char *info[10];
-    info[0] = argv[0];
-    info[2] = argv[1];
-    info[1] = "*";
-    return(MachineToClusterMap(3, info));
 }
 
 /* 

@@ -1,24 +1,23 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/pobox.c,v 1.1 1988-07-08 18:26:16 kit Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/pobox.c,v 1.2 1988-07-27 19:21:08 kit Exp $";
 #endif lint
 
-/*	This is the file ***FILE for allmaint, the SMS client that allows
- *      a user to maintaint most important parts of the SMS database.
- *	It Contains: 
+/*	This is the file pobox.c for the SMS Client, which allows a nieve
+ *      user to quickly and easily maintain most parts of the SMS database.
+ *	It Contains: Functions for handling the poboxes.
  *	
- *	Created: 	
- *	By:		
+ *	Created: 	7/10/88
+ *	By:		Chris D. Peterson
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/pobox.c,v $
  *      $Author: kit $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/pobox.c,v 1.1 1988-07-08 18:26:16 kit Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/pobox.c,v 1.2 1988-07-27 19:21:08 kit Exp $
  *	
- *  	Copyright 1987, 1988 by the Massachusetts Institute of Technology.
+ *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
  *	For further information on copyright and distribution 
  *	see the file mit-copyright.h
  */
-
 
 #include <stdio.h>
 #include <strings.h>
@@ -27,8 +26,8 @@
 #include <menu.h>
 
 #include "mit-copyright.h"
-#include "allmaint.h"
-#include "allmaint_funcs.h"
+#include "defs.h"
+#include "f_defs.h"
 #include "globals.h"
 #include "infodefs.h"
 
@@ -68,10 +67,10 @@ char ** info;
 /*	Function Name: PrintPOMachines
  *	Description: Prints all current post offices.
  *	Arguments: none.
- *	Returns: none.
+ *	Returns: SUB_ERROR if the machines could not be printed.
  */
 
-static void
+static int
 PrintPOMachines()
 {
     register int status;
@@ -79,12 +78,15 @@ PrintPOMachines()
     struct qelem * top = NULL;
     
     if ( (status = sms_query("get_server_locations", CountArgs(args), args,
-			     StoreInfo, &top)) != SMS_SUCCESS)
-	com_err(program_name, status, "in get_server_locations.");
+			     StoreInfo, &top)) != SMS_SUCCESS) {
+	com_err(program_name, status, " in get_server_locations.");
+	return(SUB_ERROR);
+    }
     
     top = QueueTop(top);
     Loop(top, RealPrintPOMachines);
     FreeQueue(top);
+    return(SUB_NORMAL);
 }
 
 /*	Function Name: GetUserPOBox
@@ -126,7 +128,7 @@ char ** argv;
 /*	Function Name: GetNewLocalPOBox
  *	Description: get the machine for a new local pop Box for the user.
  *	Arguments: local_user - name of the local user.
- *	Returns: machine - name of the machine for then new pop box.
+ *	Returns: machine - name of the machine for then new pop box, or NULL.
  */
 
 static char *
@@ -140,10 +142,14 @@ char * local_user;
     sprintf(temp_buf,"%s %s", "Pick one of the following",
 	    "machines for this user's Post Office.");
     Put_message(temp_buf);
-    PrintPOMachines();
     Put_message("");
-    Prompt_input("Which Machine? ", temp_buf, BUFSIZ);
-    return( Strsave(temp_buf) );
+    if (PrintPOMachines() == SUB_NORMAL) {
+	Put_message("");
+	Prompt_input("Which Machine? ", temp_buf, BUFSIZ);
+	return( Strsave(temp_buf) );
+    }
+    Put_message("Could not get machines to choose from, quitting.");
+    return(NULL);
 }
 
 /*	Function Name: SetUserPOBox
@@ -159,6 +165,7 @@ char **argv;
 {
     register int status;
     char *type, temp_buf[BUFSIZ], *local_user, *args[10], box[BUFSIZ];
+    char *temp_box;
     local_user = argv[1];
 
     if (!ValidName(local_user))
@@ -177,14 +184,24 @@ char **argv;
 	    case SMS_SUCCESS:
 		return(DM_NORMAL);
 	    case SMS_MACHINE:
-		strcpy(box, GetNewLocalPOBox(local_user));
+		if ( (temp_box = GetNewLocalPOBox(local_user)) == SUB_NORMAL) {
+		    strcpy(box, temp_box);
+		    free(temp_box);
+		}
+		else
+		    return(DM_NORMAL);
 		break;
 	    default:
 		com_err(program_name, status, "in set_pobox_pop.");
 		return(DM_NORMAL);
 	    }
 	case FALSE:
-	    strcpy(box, GetNewLocalPOBox(local_user));
+		if ( (temp_box = GetNewLocalPOBox(local_user)) == SUB_NORMAL) {
+		    strcpy(box, temp_box);
+		    free(temp_box);
+		}
+		else
+		    return(DM_NORMAL);
 	    break;
 	default:
 	    return(DM_NORMAL);

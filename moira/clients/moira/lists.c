@@ -1,19 +1,19 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v 1.5 1988-07-08 18:25:32 kit Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v 1.6 1988-07-27 19:20:19 kit Exp $";
 #endif lint
 
-/*	This is the file lists.c for allmaint, the SMS client that allows
- *      a user to maintaint most important parts of the SMS database.
- *	It Contains: 
+/*	This is the file lists.c for the SMS Client, which allows a nieve
+ *      user to quickly and easily maintain most parts of the SMS database.
+ *	It Contains: All list manipulation functions, except delete.
  *	
- *	Borrowed from listmaint code: 	4/12/88
- *	By:		                Chris D. Peterson
+ *	Created: 	4/12/88
+ *	By:		Chris D. Peterson
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v $
  *      $Author: kit $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v 1.5 1988-07-08 18:25:32 kit Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v 1.6 1988-07-27 19:20:19 kit Exp $
  *	
- *  	Copyright 1987, 1988 by the Massachusetts Institute of Technology.
+ *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
  *	For further information on copyright and distribution 
  *	see the file mit-copyright.h
@@ -25,8 +25,8 @@
 #include <menu.h>
 
 #include "mit-copyright.h"
-#include "allmaint.h"
-#include "allmaint_funcs.h"
+#include "defs.h"
+#include "f_defs.h"
 #include "globals.h"
 #include "infodefs.h"
 
@@ -561,22 +561,15 @@ char *action, **ret_argv;
     register int status;
 
     ret_argv[LM_LIST] = Strsave(current_list);
-    ret_argv[LM_MEMBER] = "nobody";
-    ret_argv[LM_TYPE]= "user";
 
-    switch (status = sms_access("add_member_to_list", 3, ret_argv)) {
-    case SMS_SUCCESS:
-	break;
-    case SMS_PERM:
-	Put_message("You are not allowed to add members to this list.");
-	return(SUB_ERROR);
-    default:
-	com_err(program_name, status, NULL);
-	return(SUB_ERROR);
-    }
     PromptWithDefault("Type of member (user, list, or string)",
 			ret_buf, BUFSIZ, "user");
     ret_argv[LM_TYPE]= Strsave(ret_buf);
+
+/*
+ * A type check needs to be added here, to see if we match the
+ * allowable types, currently (user, list, and string). 
+ */
 
     sprintf(temp_buf,"Name of %s to %s", ret_argv[LM_TYPE], action);
     PromptWithDefault(temp_buf, ret_buf, BUFSIZ, user);

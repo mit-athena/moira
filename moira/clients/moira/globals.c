@@ -1,26 +1,26 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/globals.c,v 1.3 1988-06-29 20:12:07 kit Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/globals.c,v 1.4 1988-07-27 19:19:57 kit Exp $";
 #endif lint
 
-/*	This is the file globals.h for allmaint, the SMS client that allows
- *      a user to maintaint most important parts of the SMS database.
- *	It Contains: globals variable definitions
+/*	This is the file globals.c for the SMS Client, which allows a nieve
+ *      user to quickly and easily maintain most parts of the SMS database.
+ *	It Contains:  globals variable definitions.
  *	
  *	Created: 	4/12/88
- *	By:		4/12/88
+ *	By:		Chris D. Peterson
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/globals.c,v $
  *      $Author: kit $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/globals.c,v 1.3 1988-06-29 20:12:07 kit Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/globals.c,v 1.4 1988-07-27 19:19:57 kit Exp $
  *	
- *  	Copyright 1987, 1988 by the Massachusetts Institute of Technology.
+ *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
  *	For further information on copyright and distribution 
  *	see the file mit-copyright.h
  */
 
 #include "mit-copyright.h"
-#include "allmaint.h"
+#include "defs.h"
 
 Bool verbose;			/* TRUE if verbose mode is active (default). */
 Bool found_some;		/* used by lists.c for determining if there 

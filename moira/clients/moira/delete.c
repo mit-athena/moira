@@ -1,9 +1,9 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/delete.c,v 1.5 1988-07-08 18:25:04 kit Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/delete.c,v 1.6 1988-07-27 19:19:40 kit Exp $";
 #endif lint
 
-/*	This is the file delete.c for allmaint, the SMS client that allows
- *      a user to maintaint most important parts of the SMS database.
+/*	This is the file delete.c for the SMS Client, which allows a nieve
+ *      user to quickly and easily maintain most parts of the SMS database.
  *	It Contains: functions for deleting users and lists.
  *	
  *	Created: 	5/18/88
@@ -11,9 +11,9 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/delete.c,v $
  *      $Author: kit $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/delete.c,v 1.5 1988-07-08 18:25:04 kit Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/delete.c,v 1.6 1988-07-27 19:19:40 kit Exp $
  *	
- *  	Copyright 1987, 1988 by the Massachusetts Institute of Technology.
+ *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
  *	For further information on copyright and distribution 
  *	see the file mit-copyright.h
@@ -25,8 +25,8 @@
 #include <menu.h>
 
 #include "mit-copyright.h"
-#include "allmaint.h"
-#include "allmaint_funcs.h"
+#include "defs.h"
+#include "f_defs.h"
 #include "globals.h"
 #include "infodefs.h"
 
@@ -54,7 +54,7 @@ Bool verbose;
 	return;
     }
     info = (char **) elem->q_data;
-    if (info[0] == 0) {
+    if ( strcmp(info[NAME],"0") == 0) {
 	if (verbose) {
 	    sprintf(buf, "Delete the empty list %s? ", name);
 	    if (YesNoQuestion(buf, FALSE) != TRUE) {
@@ -96,7 +96,8 @@ Bool verbose;
 	return;			/* If this query fails the ace will
 				   not be deleted even if it is empty. */
     if (verbose) {
-	sprintf(buf, "Delete the unused Access Control List (ACE) %s? ", name);
+	sprintf(buf, "Delete the unused Access Control Entity (ACE) %s? ",
+		name);
 	if ( YesNoQuestion(buf, FALSE) != TRUE) {
 	    Put_message("Aborting Deletion!");
 	    return;
@@ -179,6 +180,7 @@ int verbose;
 {
     struct qelem *local;
     char *args[10], temp_buf[BUFSIZ];
+    int lists;
     register int status;
     
     args[0] = type;
@@ -206,15 +208,19 @@ int verbose;
  */
 
     local = *elem = QueueTop(*elem);
+    lists = QueueCount(*elem);
+    if (lists == 0)
+	return(SUB_NORMAL);
     if (verbose) {
-	sprintf(temp_buf, "%s %s is a member of %d other list(s).\n", type,
-		name, QueueCount(*elem) );
+	sprintf(temp_buf, "%s %s is a member of %d other list%s.\n", type,
+		name, lists, ((lists == 1) ? "" : "s") );
 	Put_message(temp_buf);
 	while (local != NULL) {
 	    char ** info = (char **) local->q_data;
 	    Print( 1, &info[GLOM_NAME], (char *) NULL);
 	    local = local->q_forw;
 	}
+	Put_message(" ");	/* Blank Line. */
 	sprintf(temp_buf,"Remove %s %s from these lists? ", type, name);
 	if (YesNoQuestion(temp_buf, FALSE) != TRUE) {
 	    Put_message("Aborting...");
@@ -259,8 +265,7 @@ Bool verbose;
 {
     char buf[BUFSIZ], *args[10];
     struct qelem *local, *elem = NULL;
-    int status;
-    Bool one_member;
+    int status, members;
 /* 
  * Get the members of this list.
  */
@@ -277,18 +282,22 @@ Bool verbose;
  * If verbose mode, then ask the user if we should delete.
  */
     local = elem = QueueTop(elem);
+    if ( (members = QueueCount(elem)) == 0)
+	return(SUB_NORMAL);
     if (verbose) {
-	one_member = (QueueCount(elem) == 1);
 	sprintf(buf, "List %s has %d member%s:", name, QueueCount(elem),
-		one_member ? "" : "s");
+		((members == 1) ? "" : "s") );
 	Put_message(buf);
+	Put_message(" ");	/* Blank Line. */
 	while (local != NULL) {
 	    char ** info = (char **) local->q_data;
 	    Print( CountArgs(info), info, NULL);
 	    local = local->q_forw;
 	}
+	Put_message(" ");	/* Blank Line. */
 	sprintf(buf, "Remove th%s member%s from list %s? ", 
-		one_member ? "is" : "ese", one_member ? "" : "s", name);
+		((members == 1) ? "is" : "ese"), 
+		((members == 1) ? "" : "s", name) );
 	if ( YesNoQuestion(buf, FALSE) != TRUE) {
 	    Put_message("Aborting...");
 	    FreeQueue(elem);
@@ -486,6 +495,7 @@ Bool ask_first;
 			       Scream, (char *) NULL)) {
     case SMS_SUCCESS:
 	Put_message("List Sucessfully Deleted.");
+	CheckAce(list_info[L_ACE_TYPE], list_info[L_ACE_NAME], ask_first);
 	break;
     case SMS_IN_USE:
 	/* 
@@ -502,7 +512,7 @@ Bool ask_first;
 	{		/* if... */
 	    CheckAce(list_info[L_ACE_TYPE], list_info[L_ACE_NAME], ask_first);
 	    
-	    local = member_of;
+	    local = QueueTop(member_of);
 	    while (local != NULL) {
 		char ** info = (char **) local->q_data;
 		CheckListForDeletion(info[LM_LIST], ask_first);

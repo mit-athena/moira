@@ -1,4 +1,4 @@
-/* $Id: cluster.c,v 1.36 1998-03-10 21:09:33 danw Exp $
+/* $Id: cluster.c,v 1.37 1998-07-09 20:27:20 danw Exp $
  *
  *	This is the file cluster.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -985,17 +985,27 @@ char *partial_canonicalize_hostname(char *s)
 {
   char buf[256], *cp;
   static char *def_domain = NULL;
-  struct hostent *hp;
-  struct utsname name;
 
   if (!def_domain)
     {
-      uname(&name);
-      hp = gethostbyname(name.nodename);
-      cp = strchr(hp->h_name, '.');
-      if (cp)
-	def_domain = strdup(++cp);
+      if (mr_host(buf, sizeof(buf)) == MR_SUCCESS)
+	{
+	  cp = strchr(buf, '.');
+	  if (cp)
+	    def_domain = strdup(++cp);
+	}
       else
+	{
+	  struct hostent *hp;
+	  struct utsname name;
+
+	  uname(&name);
+	  hp = gethostbyname(name.nodename);
+	  cp = strchr(hp->h_name, '.');
+	  if (cp)
+	    def_domain = strdup(++cp);
+	}
+      if (!def_domain)
 	def_domain = "";
     }
 

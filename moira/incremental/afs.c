@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/afs.c,v 1.50 1993-05-21 14:55:31 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/afs.c,v 1.51 1993-11-30 11:50:03 mar Exp $
  *
  * Do AFS incremental updates
  *
@@ -341,9 +341,6 @@ int afterc;
 #define LM_EXTRA_GID      (LM_END+5)
 #define LM_EXTRA_END      (LM_END+6)
 
-#define LM_EXTRA_OLD_GROUP (LM_END)
-#define LM_EXTRA_OLD_END   (LM_END+1)
-
 do_member(before, beforec, after, afterc)
 char **before;
 int beforec;
@@ -354,20 +351,20 @@ int afterc;
     char *p;
 
     if (afterc) {
- 	if (afterc < LM_EXTRA_OLD_END) {
+ 	if (afterc < LM_EXTRA_END) {
  	    return;
  	} else if (afterc < LM_EXTRA_END) {
- 	    if (!atoi(after[LM_EXTRA_OLD_GROUP])) return;
+ 	    if (!atoi(after[LM_EXTRA_GROUP])) return;
  	} else
 	  if (!atoi(after[LM_EXTRA_ACTIVE]) && !atoi(after[LM_EXTRA_GROUP]))
 	    return;
  	
   	edit_group(1, after[LM_LIST], after[LM_TYPE], after[LM_MEMBER]);
     } else if (beforec) {
- 	if (beforec < LM_EXTRA_OLD_END) {
+ 	if (beforec < LM_EXTRA_END) {
  	    return;
  	} else if (beforec < LM_EXTRA_END) {
- 	    if (!atoi(before[LM_EXTRA_OLD_GROUP])) return;
+ 	    if (!atoi(before[LM_EXTRA_GROUP])) return;
  	} else
 	  if (!atoi(before[LM_EXTRA_ACTIVE]) && !atoi(before[LM_EXTRA_GROUP]))
 	    return;

@@ -1,4 +1,4 @@
-/* $Id: pobox.c,v 1.3 2000-02-22 17:45:50 rbasch Exp $
+/* $Id: pobox.c,v 1.4 2000-03-14 21:51:44 zacheiss Exp $
  *
  * Shared routines for pobox changing.
  *
@@ -17,9 +17,9 @@
 
 #include <com_err.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/lib/pobox.c,v 1.3 2000-02-22 17:45:50 rbasch Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/lib/pobox.c,v 1.4 2000-03-14 21:51:44 zacheiss Exp $");
 
-enum { POTYPE_ERROR, POTYPE_POP, POTYPE_LOCAL, POTYPE_MAILHUB, POTYPE_SMTP };
+enum { POTYPE_ERROR, POTYPE_POP, POTYPE_LOCAL, POTYPE_MAILHUB, POTYPE_SMTP, POTYPE_IMAP };
 static int potype(char *machine);
 static int save_sloc_machine(int argc, char **argv, void *sq);
 static int save_alias_value(int argc, char **argv, void *sq);
@@ -69,6 +69,14 @@ int mrcl_validate_pobox_smtp(char *user, char *address, char **ret)
       
       switch (potype(machine))
 	{
+	case POTYPE_IMAP:
+	  com_err(whoami, 0, "Cannot forward mail to IMAP server %s", 
+		  machine);
+	  com_err(NULL, 0, "Use \"chpobox -p\" if you are trying to unset "
+		  "your mail forwarding.");
+	  status = MRCL_REJECT;
+	  goto cleanup;
+
 	case POTYPE_POP:
 	  if (strcmp(p, user))
 	    {
@@ -137,8 +145,9 @@ int mrcl_validate_pobox_smtp(char *user, char *address, char **ret)
   return status;
 }
 
-/* Given a canonicalized machine name, ask the Moira server if it is of type
- * POP, LOCAL, or MAILHUB -- if none of those, we assume it's foreign.
+/* Given a canonicalized machine name, ask the Moira server if it is
+ * of type IMAP, POP, LOCAL, or MAILHUB -- if none of those, we assume
+ * it's foreign.  
  */
 static int potype(char *machine)
 {
@@ -146,6 +155,35 @@ static int potype(char *machine)
   int status, match = 0;
   static struct save_queue *pop = NULL, *local = NULL;
   static struct save_queue *mailhub = NULL, *mailhub_name = NULL;
+  static struct save_queue *imap = NULL;
+
+  /* 0. Check if the machine is an IMAP server. */
+  if (!imap)
+    {
+      char *service = "POSTOFFICE";
+      imap = sq_create();
+      status = mr_query("get_server_locations", 1, &service,
+			save_sloc_machine, imap);
+      if (status && (status != MR_NO_MATCH))
+	{
+	  com_err(whoami, status, "while reading list of IMAP servers");
+	  return POTYPE_ERROR;
+	}
+    }
+
+  /* Because of how sq_get_data works, we need to go through the entire
+   * queue even if we find a match, so that it gets reset for the next
+   * call.
+   */
+  while (sq_get_data(imap, &name))
+    {
+      if (!match && !strcasecmp(name, machine))
+	match = 1;
+    }
+
+  if (match)
+    return POTYPE_IMAP;
+
 
   /* 1. Check if the machine is a POP server. */
   if (!pop)
@@ -161,10 +199,6 @@ static int potype(char *machine)
 	}
     }
 
-  /* Because of how sq_get_data works, we need to go through the entire
-   * queue even if we find a match, so that it gets reset for the next
-   * call.
-   */
   while (sq_get_data(pop, &name))
     {
       if (!match && !strcasecmp(name, machine))

@@ -1,19 +1,21 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v $
  *	$Author: wesommer $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v 1.4 1987-06-08 05:03:27 wesommer Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v 1.5 1987-06-21 16:37:58 wesommer Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
  *	$Log: not supported by cvs2svn $
+ * Revision 1.4  87/06/08  05:03:27  wesommer
+ * Reindented; added header and trailer.
+ * 
  */
 
 #ifndef lint
-static char *rcsid_qrtn_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v 1.4 1987-06-08 05:03:27 wesommer Exp $";
+static char *rcsid_qrtn_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v 1.5 1987-06-21 16:37:58 wesommer Exp $";
 #endif lint
 
 #include "query.h"
-#include "sms_private.h"
 #include "sms_server.h"
 
 char *Argv[16];
@@ -75,7 +77,7 @@ sms_process_query(name, argc, argv_ro, action, actarg)
     q = get_query_by_name(name);
 
     switch (q->type) {
-	    case RETRIEVE:
+    case RETRIEVE:
 	if (q->qual) {
 	    build_qual(q->qual, q->argc, Argv, qual);
 	    do_retrieve_with_qual(q, qual, action, actarg);
@@ -83,7 +85,7 @@ sms_process_query(name, argc, argv_ro, action, actarg)
 	    do_retrieve(q, action, actarg);
 	break;
 
-	    case UPDATE:
+    case UPDATE:
 	if (q->support_rtn) {
 	    if ((*q->support_rtn)(Argv, action, actarg) == -1) 
 		break;
@@ -92,7 +94,7 @@ sms_process_query(name, argc, argv_ro, action, actarg)
 	do_update(q, &Argv[q->sargc + q->argc], qual, action, actarg);
 	break;
 
-	    case APPEND:
+    case APPEND:
 	if (q->support_rtn) {
 	    if ((*q->support_rtn)(Argv, action, actarg) == -1) 
 		break;
@@ -100,7 +102,7 @@ sms_process_query(name, argc, argv_ro, action, actarg)
 	do_append(q, &Argv[q->sargc + q->argc], action, actarg);
 	break;
 
-	    case DELETE:
+    case DELETE:
 	if (q->support_rtn) {
 	    if ((*q->support_rtn)(Argv, action, actarg) == -1) 
 		break;

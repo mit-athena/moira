@@ -1,11 +1,14 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/include/moira.h,v $
  *	$Author: kit $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/include/moira.h,v 1.7 1988-04-19 14:30:47 kit Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/include/moira.h,v 1.8 1988-04-19 14:40:17 kit Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
  *	$Log: not supported by cvs2svn $
+ * Revision 1.7  88/04/19  14:30:47  kit
+ * Added new sms_version_2 for new version.
+ * 
  * Revision 1.6  87/08/22  17:11:59  wesommer
  * Added flags for user filesystems.
  * 
@@ -23,10 +26,20 @@
  * 
  */
 
+#ifndef _sms_h_
+#define _sms_h_
+
 #include "sms_et.h"
 
 #define SMS_VERSION_1 1		/* Version in use from 7/87 to 4/88 */
 #define SMS_VERSION_2 2		/* After 4/88, new query lib */
+
+/* return values for sms server calls, used by clients */
+
+#define SMS_CONT 0		/* Everything okay, continue sending values. */
+#define SMS_ABORT -1		/* Something went wrong don't send anymore
+				   values. */
+
 
 #define SMS_NOOP 0
 #define SMS_AUTH 1
@@ -62,3 +75,5 @@ int sms_query();
 int sms_noop();
 int sms_shutdown();
 #endif __STDC__
+
+#endif _sms_h_			/* Do Not Add Anything after this line. */

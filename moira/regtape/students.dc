@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/students.dc,v 1.5 1990-01-22 16:18:26 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/students.dc,v 1.6 1990-01-30 18:08:23 mar Exp $
  */
 
 #include <stdio.h>
@@ -133,7 +133,7 @@ FILE *in;
     static struct entry e;
     static char buf[BUFSIZ], eid[16], classbuf[10], titlebuf[12];
     static int year = 0;
-    int ends_jr, ends_iii, ends_iv;
+    int ends_jr, ends_iii, ends_iv, ends_sr;
     char *p;
 
     if (year == 0) {
@@ -164,17 +164,17 @@ FILE *in;
     } else
       e.first = "";
     e.first = strtrim(e.first);
-    ends_jr = ends_iii = ends_iv = 0;
+    ends_jr = ends_iii = ends_iv = ends_sr = 0;
     LookForSt(e.last);
     LookForO(e.last);
-    LookForJrAndIII(e.last, &ends_jr, &ends_iii, &ends_iv);
-    LookForJrAndIII(e.first, &ends_jr, &ends_iii, &ends_iv);
+    LookForJrAndIII(e.last, &ends_sr, &ends_jr, &ends_iii, &ends_iv);
+    LookForJrAndIII(e.first, &ends_sr, &ends_jr, &ends_iii, &ends_iv);
     FixCase(e.last);
     FixCase(e.first);
     FixCase(e.middle);
     e.title = titlebuf;
     titlebuf[0] = 0;
-    AppendJrOrIII(titlebuf, &ends_jr, &ends_iii, &ends_iv);
+    AppendJrOrIII(titlebuf, &ends_sr, &ends_jr, &ends_iii, &ends_iv);
 
     e.id = &buf[LOC_ID];
     e.id[LEN_ID] = 0;
@@ -228,7 +228,7 @@ struct entry *e;
 	newuser(e);
 	return;
     }
-    if (strcmp(e->class, strtrim(class))) {
+    if (strcmp(e->class, strtrim(class)) && strcmp(class, "STAFF")) {
 	com_err(whoami, 0, "updating class for user %s %s from %s to %s",
 		first, last, class, e->class);
 	strcpy(class, e->class);

@@ -7,7 +7,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/f_defs.h,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/f_defs.h,v 1.13 1990-04-04 11:15:00 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/f_defs.h,v 1.14 1990-07-31 18:41:28 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -140,6 +140,12 @@ int ChngPcap();
 int DeletePcap();
 int GetPalladium(), AddPalladium(), ChngPalladium(), DeletePalladium();
 int ShowPalladiumAlias(), AddPalladiumAlias(), DeletePalladiumAlias();
+
+/* zephyr.c */
+int AddZephyr();
+int GetZephyr();
+int ChngZephyr();
+int DeleteZephyr();
 
 /* dcm.c */
 int EnableDcm(), InProgress(), DcmFailed(), Dcm();

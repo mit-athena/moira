@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase1.dc,v 1.2 1993-01-12 22:11:20 genoa Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase1.dc,v 1.3 1993-01-13 12:21:42 mar Exp $
  *
  *  (c) Copyright 1988 by the Massachusetts Institute of Technology.
  *  For copying and distribution information, please see the file
@@ -11,7 +11,7 @@
 EXEC SQL INCLUDE sqlca;
 
 
-static char phase1_qc_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase1.dc,v 1.2 1993-01-12 22:11:20 genoa Exp $";
+static char phase1_qc_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase1.dc,v 1.3 1993-01-13 12:21:42 mar Exp $";
 
 
 show_user_id(u)
@@ -201,11 +201,9 @@ phase1()
     dprintf("Loading strings...\n");
     sq = sq_create();
     strings = create_hash(5000);
-/*  range of s is strings 
- *  retrieve (id = s.string_id, buf = s.string) { 
- */
+
     EXEC SQL DECLARE csr101 CURSOR FOR
-      SELECT string_id, string FROM strings;
+      SELECT string_id, string FROM strings ORDER BY string_id;
     EXEC SQL OPEN csr101;
     while(1) {
 	EXEC SQL FETCH csr101 INTO :id, :buf;
@@ -229,15 +227,10 @@ phase1()
     dprintf("Loading users...\n");
     sq = sq_create();
     users = create_hash(10000);
-/*  range of u is users
- *  retrieve (id = u.users_id, name = u.login, last = u.#last,
- *	      first = u.#first, status = u.#status, buf = u.potype,
- *	      id2 = u.pop_id, id3 = u.box_id, sid = u.modby, sid2 = u.fmodby,
- *	      sid3 = u.pmodby, sid4 = u.comment, sid5 = u.sigwho) {
- */
+
     EXEC SQL DECLARE csr102 CURSOR FOR 
       SELECT users_id, login, last, first, status, potype, pop_id, box_id,
-	  modby, fmodby, pmodby, comment, sigwho FROM users;
+	  modby, fmodby, pmodby, comment, sigwho FROM users ORDER BY users_id;
     EXEC SQL OPEN csr102;
     while(1) {
 	EXEC SQL FETCH csr102 INTO :id, :name, :last, :first, :status,
@@ -284,11 +277,10 @@ phase1()
 
     if (!fast) {
 	sq = sq_create();
-/*	retrieve (id = u.users_id)
- *	    where u.login = users.login and u.tid != users.tid {
- */
+
 	EXEC SQL DECLARE csr103 CURSOR FOR 
-	    SELECT users_id FROM users;
+	    SELECT u1.users_id FROM users u1, users u2
+	    WHERE u1.login = u2.login and u1.tid != u2.tid;
 	EXEC SQL OPEN csr103;
 	while(1) {
 	    EXEC SQL FETCH csr103 INTO :id;
@@ -302,11 +294,9 @@ phase1()
     dprintf("Loading machines...\n");
     machines = create_hash(1000);
     sq = sq_create();
-/*  range of m is machine
- *  retrieve (id = m.mach_id, name = m.#name, sid = m.modby) {
- */
+
     EXEC SQL DECLARE csr104 CURSOR FOR
-	SELECT mach_id, name, modby FROM machine;
+	SELECT mach_id, name, modby FROM machine ORDER BY mach_id;
     EXEC SQL OPEN csr104;
     while(1) {
 	EXEC SQL FETCH csr104 INTO :id, :name, :sid;
@@ -330,9 +320,7 @@ phase1()
 
     if (!fast) {
 	sq = sq_create();
-/*	retrieve (id = m.mach_id)
- *	    where m.#name = machine.#name and m.tid != machine.tid {
- */
+
 	EXEC SQL DECLARE csr105 CURSOR FOR
 	    SELECT m1.mach_id FROM machine m1, machine m2
 		WHERE m1.name = m2.name AND m1.tid != m2.tid;
@@ -350,9 +338,7 @@ phase1()
     dprintf("Loading clusters...\n");
     sq = sq_create();
     clusters = create_hash(100);
-/*  range of c is cluster
- *  retrieve (id = c.clu_id, name = c.#name, sid = c.modby) {
- */
+
     EXEC SQL DECLARE csr106 CURSOR FOR
 	SELECT clu_id, name, modby FROM cluster;
     EXEC SQL OPEN csr106;
@@ -377,9 +363,7 @@ phase1()
 
     if (!fast) {
 	sq = sq_create();
-/*	retrieve (id = c.clu_id)
- *	    where c.#name = cluster.#name and c.tid != cluster.tid {
- */
+
 	EXEC SQL DECLARE csr107 CURSOR FOR
 	    SELECT clu_id FROM cluster c1, cluster c2
 		WHERE c1.name=c2.name AND c1.tid != c2.tid;
@@ -397,16 +381,14 @@ phase1()
     dprintf("Loading lists...\n");
     sq = sq_create();
     lists = create_hash(10000);
-/*  range of l is list
- *  retrieve (id = l.list_id, name = l.#name,
- *	      aid = l.acl_id, buf = l.acl_type, sid = l.modby) {
- */
+
     EXEC SQL DECLARE csr108 CURSOR FOR
-	SELECT list_id, name, acl_id, acl_type, modby  FROM list;
+	SELECT list_id, name, acl_id, acl_type, modby  FROM list 
+	ORDER BY list_id;
     EXEC SQL OPEN csr108;
     while(1) {
 	EXEC SQL FETCH csr108 INTO :id, :name, :aid, :buf, :sid;
-	if(sqlca.sqlcode != 0) break; 								    
+	if (sqlca.sqlcode != 0) break;
     	l = (struct list *) malloc(sizeof(struct list));
 	if (l == NULL)
 	  out_of_mem("storing lists");
@@ -427,9 +409,7 @@ phase1()
 
     if (!fast) {
 	sq = sq_create();
-/*	retrieve (id = l.list_id)
- *	    where l.#name = list.#name and l.tid != list.tid {
- */
+
 	EXEC SQL DECLARE csr109 CURSOR FOR
 	    SELECT list_id FROM list l1, list l2
 		WHERE l1.name=l2.name AND l1.tid != l2.tid;
@@ -447,14 +427,10 @@ phase1()
     dprintf("Loading filesys...\n");
     sq = sq_create();
     filesys = create_hash(10000);
-/*  retrieve (id = filesys.filsys_id, name = filesys.label, aid = filesys.owner,
- *	      aid2 = filesys.owners, id2 = filesys.phys_id,
- *	      id3 = filesys.mach_id, buf = filesys.type,
- *	      name1 = filesys.#name, sid = filesys.modby) {
- */
+
     EXEC SQL DECLARE csr110 CURSOR FOR
 	SELECT filsys_id, label, owner, owners, phys_id, mach_id,
-	        type, name, modby FROM filesys;
+	        type, name, modby FROM filesys ORDER BY filsys_id;
     EXEC SQL OPEN csr110;
     while(1) {
 	EXEC SQL FETCH csr110 INTO :id, :name, :aid, :aid2, :id2, :id3, 
@@ -486,10 +462,7 @@ phase1()
     dprintf("Loading nfsphys...\n");
     sq = sq_create();
     nfsphys = create_hash(500);
-/*  retrieve (id = nfsphys.nfsphys_id, name = nfsphys.dir,
- *	      id2 = nfsphys.mach_id, id3 = nfsphys.allocated,
- *	      sid = nfsphys.modby) {
- */
+
     EXEC SQL DECLARE csr111 CURSOR FOR
 	SELECT nfsphys_id, dir, mach_id, allocated, modby FROM nfsphys;
     EXEC SQL OPEN csr111;
@@ -517,10 +490,7 @@ phase1()
     generic_fix(sq, show_np_id, "Change ID", fix_np_id, 0);
 
     if (!fast) {
-/*	range of s is strings
- *	retrieve (id = s.string_id, buf = s.string)
- *	    where s.string = strings.string and s.tid != strings.tid {
- */
+
 	EXEC SQL DECLARE csr112 CURSOR FOR
 	    SELECT s1.string_id, s1.string FROM strings s1, strings s2
 		WHERE s1.string=s2.string AND s1.tid != s2.tid;
@@ -537,10 +507,7 @@ phase1()
 
     if (!fast) {
 	dprintf("Scanning krbmap...\n");
-/*	range of k is krbmap
- *	retrieve (id = k.users_id)
- *	    where k.users_id = krbmap.users_id and k.tid != krbmap.tid {
- */
+
 	EXEC SQL DECLARE csr113 CURSOR FOR
 	    SELECT k1.users_id FROM krbmap k1, krbmap k2
 		WHERE k1.users_id = k2.users_id AND k1.tid != k2.tid;
@@ -554,9 +521,6 @@ phase1()
 	}
 	EXEC SQL CLOSE csr113; 
 
-/*	retrieve (id = k.string_id)
- *	    where k.string_id = krbmap.string_id and k.tid != krbmap.tid {
- */
 	EXEC SQL DECLARE csr114 CURSOR FOR
 	    SELECT k1.string_id FROM krbmap k1, krbmap k2
 		WHERE k1.string_id = k2.string_id AND k1.tid != k2.tid;

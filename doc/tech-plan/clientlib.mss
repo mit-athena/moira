@@ -1,9 +1,12 @@
 @Comment[
 	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/doc/tech-plan/clientlib.mss,v $
-	$Author: wesommer $
-	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/doc/tech-plan/clientlib.mss,v 1.2 1987-06-18 15:53:41 wesommer Exp $
+	$Author: pjlevine $
+	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/doc/tech-plan/clientlib.mss,v 1.3 1987-06-18 17:03:10 pjlevine Exp $
 
 	$Log: not supported by cvs2svn $
+Revision 1.2  87/06/18  15:53:41  wesommer
+Added specs for low level library.
+
 Revision 1.1  87/05/20  14:40:45  wesommer
 Initial revision
 
@@ -115,9 +118,11 @@ This runs an SMS query named @[name] with arguments
 the tuple, a pointer to an array of characters (the data), and
 @t[callarg].
 
-@Subsection(Higher level library) The upper layer consists of
+@Subsection(Higher level application library) The upper layer consists of
 query-handle specific routines, such as "retrieve finger information
 by login name" or "get all servers".  The actual specifications for
 these routines will be somewhat fluid depending on exactly what query
 handles are available; it is intended that these routines should be
-easy to write in terms of the previous library.
+easy to write in terms of the previous library.  The use and description
+of the application library can be found in Addendum 2.
+

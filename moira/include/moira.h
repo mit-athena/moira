@@ -1,11 +1,14 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/include/moira.h,v $
  *	$Author: wesommer $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/include/moira.h,v 1.5 1987-08-02 21:50:25 wesommer Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/include/moira.h,v 1.6 1987-08-22 17:11:59 wesommer Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
  *	$Log: not supported by cvs2svn $
+ * Revision 1.5  87/08/02  21:50:25  wesommer
+ * Added function prototypes.
+ * 
  * Revision 1.4  87/06/23  16:13:36  wesommer
  * Added new request.
  * 
@@ -26,7 +29,13 @@
 #define SMS_SHUTDOWN 2
 #define SMS_QUERY 3
 #define SMS_ACCESS 4
-#define SMS_MAX_PROC 4
+#define SMS_DO_UPDATE 5
+#define SMS_MAX_PROC 5
+
+#define SMS_FS_STUDENT	0x0001
+#define	SMS_FS_FACULTY  0x0002
+#define SMS_FS_STAFF	0x0004
+#define SMS_FS_MISC	0x0008
 
 #ifdef __STDC__
 int sms_connect();

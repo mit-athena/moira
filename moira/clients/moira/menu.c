@@ -19,7 +19,7 @@
 #include <string.h>
 #include <unistd.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.48 1998-02-05 22:50:44 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.49 1998-02-08 20:16:38 danw Exp $");
 
 #define MAX(A, B)	((A) > (B) ? (A) : (B))
 #define MIN(A, B)	((A) < (B) ? (A) : (B))
@@ -524,12 +524,15 @@ int Prompt_input(char *prompt, char *buf, int buflen)
       refresh_ms(cur_ms);
       *p = '\0';
       Start_paging();
-      goto gotit;
+      strcpy(buf, strtrim(buf));
+      return 1;
     }
   else
     {
+      char bigbuf[BUFSIZ];
+
       printf("%s", prompt);
-      if (!fgets(buf, buflen, stdin))
+      if (!fgets(bigbuf, BUFSIZ, stdin))
 	return 0;
       if (interrupt)
 	{
@@ -537,11 +540,13 @@ int Prompt_input(char *prompt, char *buf, int buflen)
 	  return 0;
 	}
       Start_paging();
-      goto gotit;
+      strncpy(buf, strtrim(bigbuf), buflen);
+      if (strchr(buf, '\n'))
+	*strchr(buf, '\n') = '\0';
+      else
+	buf[buflen - 1] = '\0';
+      return 1;
     }
-gotit:
-  strcpy(buf, strtrim(buf));
-  return 1;
 }
 
 int lines_left;

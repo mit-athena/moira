@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/db/newmoira.qc,v 1.4 1989-03-21 18:18:10 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/db/newmoira.qc,v 1.5 1989-04-28 16:27:16 mar Exp $
  *
  * Creates a new sms database
  *
@@ -176,7 +176,7 @@ char **argv;
 	printf("Unable to install 0 user\n");
 	exit(1);
     }
-##  append machine (name = "[none]", #type="NONE")
+##  append machine (name = "[NONE]", #type="NONE")
     if (ingres_errno) {
 	printf("Unable to install 0 machine\n");
 	exit(1);

@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.11 1990-02-12 16:11:45 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.12 1990-03-17 16:48:52 mar Exp $
  *
  * Command line oriented Moira List tool.
  *
@@ -17,11 +17,11 @@
 #include <mit-copyright.h>
 #include <stdio.h>
 #include <ctype.h>
-#include <sms.h>
-#include <sms_app.h>
+#include <moira.h>
+#include <moira_site.h>
 
 #ifndef LINT
-static char blanche_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.11 1990-02-12 16:11:45 mar Exp $";
+static char blanche_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.12 1990-03-17 16:48:52 mar Exp $";
 #endif
 
 
@@ -167,21 +167,21 @@ char **argv;
       showusers = showstrings = showlists = showkerberos = 1;
 
     /* fire up Moira */
-    if (status = sms_connect(server)) {
+    if (status = mr_connect(server)) {
 	com_err(whoami, status, "unable to connect to the Moira server");
 	exit(2);
     }
-    if ( status = sms_motd(&motd) ) {
+    if ( status = mr_motd(&motd) ) {
         com_err(whoami, status, "unable to check server status");
 	exit(2);
     }
     if (motd) {
 	fprintf(stderr, "The Moira server is currently unavailable:\n%s\n", motd);
-	sms_disconnect();
+	mr_disconnect();
 	exit(2);
     }
 
-    if (!noauth && (status = sms_auth("blanche"))) {
+    if (!noauth && (status = mr_auth("blanche"))) {
 	com_err(whoami, status, "unable to authenticate to Moira");
 	com_err(whoami, 0,
 		" Try the -noauth flag if you don't need authentication");
@@ -190,11 +190,11 @@ char **argv;
 
     /* display list info if requested to */
     if (infoflg) {
-	status = sms_query("get_list_info", 1, &listname, show_list_info,NULL);
+	status = mr_query("get_list_info", 1, &listname, show_list_info,NULL);
 	if (status)
 	  com_err(whoami, status, "while getting list information");
 	if (verbose && !memberflg) {
-	    status = sms_query("count_members_of_list", 1, &listname,
+	    status = mr_query("count_members_of_list", 1, &listname,
 			       show_list_count, NULL);
 	    if (status)
 	      com_err(whoami, status, "while getting list count");
@@ -210,7 +210,7 @@ char **argv;
      * lastly, reset memberlist so we can use it again later
      */
     if (syncflg) {
-	status = sms_query("get_members_of_list", 1, &listname,
+	status = mr_query("get_members_of_list", 1, &listname,
 			   get_list_members, (char *)memberlist);
 	if (status)
 	  com_err(whoami, status, "getting members of list %s", listname);
@@ -247,38 +247,38 @@ char **argv;
 	case M_ANY:
 	case M_USER:
 	    membervec[1] = "USER";
-	    status = sms_query("add_member_to_list", 3, membervec, scream, NULL);
-	    if (status == SMS_SUCCESS)
+	    status = mr_query("add_member_to_list", 3, membervec, scream, NULL);
+	    if (status == MR_SUCCESS)
 	      break;
-	    else if (status != SMS_USER || memberstruct->type != M_ANY) {
+	    else if (status != MR_USER || memberstruct->type != M_ANY) {
 		com_err(whoami, status, "while adding member %s to %s",
 			memberstruct->name, listname);
 		break;
 	    }
 	case M_LIST:
 	    membervec[1] = "LIST";
-	    status = sms_query("add_member_to_list", 3, membervec,
+	    status = mr_query("add_member_to_list", 3, membervec,
 			       scream, NULL);
-	    if (status == SMS_SUCCESS)
+	    if (status == MR_SUCCESS)
 	      break;
-	    else if (status != SMS_LIST || memberstruct->type != M_ANY) {
+	    else if (status != MR_LIST || memberstruct->type != M_ANY) {
 		com_err(whoami, status, "while adding member %s to %s",
 			memberstruct->name, listname);
 		break;
 	    }
 	case M_STRING:
 	    membervec[1] = "STRING";
-	    status = sms_query("add_member_to_list", 3, membervec,
+	    status = mr_query("add_member_to_list", 3, membervec,
 			       scream, NULL);
-	    if (status != SMS_SUCCESS)
+	    if (status != MR_SUCCESS)
 	      com_err(whoami, status, "while adding member %s to %s",
 		      memberstruct->name, listname);
 	    break;
 	case M_KERBEROS:
 	    membervec[1] = "KERBEROS";
-	    status = sms_query("add_member_to_list", 3, membervec,
+	    status = mr_query("add_member_to_list", 3, membervec,
 			       scream, NULL);
-	    if (status != SMS_SUCCESS)
+	    if (status != MR_SUCCESS)
 	      com_err(whoami, status, "while adding member %s to %s",
 		      memberstruct->name, listname);
 	}
@@ -296,11 +296,11 @@ char **argv;
 	case M_ANY:
 	case M_USER:
 	    membervec[1] = "USER";
-	    status = sms_query("delete_member_from_list", 3, membervec,
+	    status = mr_query("delete_member_from_list", 3, membervec,
 			       scream, NULL);
-	    if (status == SMS_SUCCESS)
+	    if (status == MR_SUCCESS)
 	      break;
-	    else if ((status != SMS_USER && status != SMS_NO_MATCH) ||
+	    else if ((status != MR_USER && status != MR_NO_MATCH) ||
 		     memberstruct->type != M_ANY) {
 		com_err(whoami, status, "while deleting member %s from %s",
 			memberstruct->name, listname);
@@ -308,11 +308,11 @@ char **argv;
 	    }
 	case M_LIST:
 	    membervec[1] = "LIST";
-	    status = sms_query("delete_member_from_list", 3, membervec,
+	    status = mr_query("delete_member_from_list", 3, membervec,
 			       scream, NULL);
-	    if (status == SMS_SUCCESS)
+	    if (status == MR_SUCCESS)
 	      break;
-	    else if ((status != SMS_LIST && status != SMS_NO_MATCH) ||
+	    else if ((status != MR_LIST && status != MR_NO_MATCH) ||
 		     memberstruct->type != M_ANY) {
 		com_err(whoami, status, "while deleting member %s from %s",
 			memberstruct->name, listname);
@@ -320,20 +320,20 @@ char **argv;
 	    }
 	case M_STRING:
 	    membervec[1] = "STRING";
-	    status = sms_query("delete_member_from_list", 3, membervec,
+	    status = mr_query("delete_member_from_list", 3, membervec,
 			       scream, NULL);
-	    if (status == SMS_STRING && memberstruct->type == M_ANY)
+	    if (status == MR_STRING && memberstruct->type == M_ANY)
 	      com_err(whoami, 0, " Unable to find member %s to delete from %s",
 		      memberstruct->name, listname);
-	    else if (status != SMS_SUCCESS)
+	    else if (status != MR_SUCCESS)
 	      com_err(whoami, status, "while deleting member %s from %s",
 		      memberstruct->name, listname);
 	    break;
 	case M_KERBEROS:
 	    membervec[1] = "KERBEROS";
-	    status = sms_query("delete_member_from_list", 3, membervec,
+	    status = mr_query("delete_member_from_list", 3, membervec,
 			       scream, NULL);
-	    if (status != SMS_SUCCESS)
+	    if (status != MR_SUCCESS)
 	      com_err(whoami, status, "while deleting member %s from %s",
 		      memberstruct->name, listname);
 	}
@@ -344,7 +344,7 @@ char **argv;
 	if (recursflg)
 	  recursive_display_list_members();
 	else {
-	    status = sms_query("get_members_of_list", 1, &listname,
+	    status = mr_query("get_members_of_list", 1, &listname,
 			       get_list_members, (char *)memberlist);
 	    if (status)
 	      com_err(whoami, status, "while getting members of list %s",
@@ -355,7 +355,7 @@ char **argv;
     }
 
     /* We're done! */
-    sms_disconnect();
+    mr_disconnect();
     exit(0);
 }
 
@@ -453,7 +453,7 @@ int hint;
       printf("\n");
     printf("Owner: %s %s\n", argv[7], argv[8]);
     printf("Last modified by %s with %s on %s\n", argv[11], argv[12], argv[10]);
-    return(SMS_CONT);
+    return(MR_CONT);
 }
 
 
@@ -488,7 +488,7 @@ recursive_display_list_members()
 	memberlist = sq_create();
 	if (debugflg)
 	  fprintf(stderr, "Fetching members of %s\n", m->name);
-	status = sms_query("get_members_of_list", 1, &(m->name),
+	status = mr_query("get_members_of_list", 1, &(m->name),
 			   get_list_members, (char *)memberlist);
 	if (status)
 	  com_err(whoami, status, "while getting members of list %s", m->name);
@@ -553,7 +553,7 @@ struct save_queue *q;
     }
     m->name = strsave(argv[1]);
     sq_save_data(q, m);
-    return(SMS_CONT);
+    return(MR_CONT);
 }
 
 

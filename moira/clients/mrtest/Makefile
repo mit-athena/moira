@@ -1,13 +1,13 @@
 #
 # 	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/Makefile,v $
-#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/Makefile,v 1.10 1990-02-14 11:39:58 mar Exp $
+#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/Makefile,v 1.11 1990-03-17 16:44:36 mar Exp $
 #
 # (c) Copyright 1988 by the Massachusetts Institute of Technology.
 # For copying and distribution information, please see the file
 # <mit-copyright.h>.
 
 
-LIBS = ../rpc/libsms.a ../gdb/libgdb.a 
+LIBS = ../rpc/libmoira.a ../gdb/libgdb.a 
 LLIBS= -L../lib -lhesiod -lkrb -ldes -lhesiod -lss -lcom_err -lm -lc 
 
 SRCS= test.c
@@ -41,5 +41,5 @@ depend:
 # DO NOT DELETE THIS LINE -- mkdep uses it.
 
 test.o: test.c ../include/mit-copyright.h /usr/include/stdio.h
-test.o: /usr/include/sys/file.h /usr/include/ctype.h ../include/sms.h
-test.o: ../include/sms_et.h ../include/ss.h
+test.o: /usr/include/sys/file.h /usr/include/ctype.h ../include/moira.h
+test.o: ../include/mr_et.h ../include/ss.h

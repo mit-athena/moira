@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/employee.dc,v 1.3 1990-01-30 18:09:36 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/employee.dc,v 1.4 1990-02-14 10:42:14 mar Exp $
  */
 
 #include <stdio.h>
@@ -143,7 +143,7 @@ FILE *in;
 
     if (fgets(buf, sizeof(buf), in) == NULL)
       return((struct entry *)NULL);
-    buf[LEN_NAME] = 0;
+    buf[LOC_NAME + LEN_NAME] = 0;
     p = index(&buf[LOC_NAME], ',');
     if (p)
       *p = 0;
@@ -188,7 +188,7 @@ FILE *in;
     e.class = "MITS";
     if (!strcmp(e.dept, "PROJECT ATHENA"))
       e.class = "STAFF";
-    else if (substr(e.title, "PROF"))
+    else if (substr(e.title, "PROF") || substr(e.title, "LECTURE"))
       e.class = "FACULTY";
     else if (!strcmp(e.title, "VISITING SCIENTIST"))
       e.class = "VSCIENTI";
@@ -223,7 +223,8 @@ struct entry *e;
 	newuser(e);
 	return;
     }
-    if (strcmp(e->class, strtrim(class)) && strcmp(class, "STAFF")) {
+    if (strcmp(e->class, strtrim(class)) &&
+	strcmp(class, "STAFF") && strcmp(class, "SIPB")) {
 	com_err(whoami, 0, "updating class for %s %s from %s to %s",
 		first, last, class, e->class);
 	strcpy(class, e->class);
@@ -331,7 +332,7 @@ struct entry *e;
     else
       sprintf(fullname, "%s %s", first, last);
     st = US_NOT_ALLOWED;
-    if (!strcmp(e->class, "FACULTY"))
+    if (!strcmp(e->class, "FACULTY") || !strcmp(e->class, "STAFF"))
       st = US_NO_LOGIN_YET;
     
 ##  append users (#login = login, users_id = id, #uid = uid, shell = "/bin/csh",

@@ -524,6 +524,11 @@ indicating that permission was denied for the query.
   Integrity: printer and queue must exist
   Errors: SMS_PRINTER, SMS_QUEUE
 
+@B(delete_printer_from_queue)
+  Args: (printer, queue)
+  Returns: none
+  Errors: SMS_PRINTER, SMS_QUEUE
+
 @B(get_qdev)
   Args: (machine)
   Returns: {device, physical, machine, status}

@@ -1,7 +1,7 @@
 /*
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.40 1992-07-29 13:41:22 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.41 1993-01-27 11:49:47 mar Exp $
  *
  *      Copyright (C) 1987, 1988 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -16,7 +16,7 @@
  */
 
 #ifndef lint
-static char *rcsid_reg_svr_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.40 1992-07-29 13:41:22 mar Exp $";
+static char *rcsid_reg_svr_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.41 1993-01-27 11:49:47 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -862,6 +862,7 @@ char *retval;
 	    status = SUCCESS;
 	    break;
 	  case MR_IN_USE:
+	  case MR_NOT_UNIQUE:
 	    status = UREG_LOGIN_USED;
 	    break;
 	  case MR_DEADLOCK:

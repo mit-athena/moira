@@ -1,13 +1,13 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/get_file.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/get_file.c,v 1.8 1992-08-25 14:43:59 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/get_file.c,v 1.9 1992-09-21 12:30:49 mar Exp $
  */
 /*  (c) Copyright 1988 by the Massachusetts Institute of Technology. */
 /*  For copying and distribution information, please see the file */
 /*  <mit-copyright.h>. */
 
 #ifndef lint
-static char *rcsid_get_file_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/get_file.c,v 1.8 1992-08-25 14:43:59 mar Exp $";
+static char *rcsid_get_file_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/get_file.c,v 1.9 1992-09-21 12:30:49 mar Exp $";
 #endif	lint
 
 #include <mit-copyright.h>
@@ -16,6 +16,8 @@ static char *rcsid_get_file_c = "$Header: /afs/.athena.mit.edu/astaff/project/mo
 #include <ctype.h>
 #include <sys/param.h>
 #include <sys/file.h>
+#include <des.h>
+#include <krb.h>
 #include <moira.h>
 #include "update.h"
 
@@ -29,6 +31,7 @@ char buf[BUFSIZ];
 extern int code, errno, uid;
 
 extern int have_authorization, have_file, done;
+extern C_Block session;
 
 int get_block();
 
@@ -65,11 +68,12 @@ int get_block();
  */
 
 int
-get_file(pathname, file_size, checksum, mode)
+get_file(pathname, file_size, checksum, mode, encrypt)
     char *pathname;
     int file_size;
     int checksum;
     int mode;
+    int encrypt;
 {
     int fd, n_written;
     int found_checksum;
@@ -129,7 +133,7 @@ get_file(pathname, file_size, checksum, mode)
 	lose("sending okay for file transfer (get_file)");
     n_written = 0;
     while (n_written < file_size && code == 0) {
-	int n_got = get_block(fd, file_size - n_written);
+	int n_got = get_block(fd, file_size - n_written, encrypt);
 	if (n_got == -1) {
 	    /* get_block has already printed a message */
 	    unlink(pathname);
@@ -182,9 +186,10 @@ get_file(pathname, file_size, checksum, mode)
 }
 
 static int
-get_block(fd, max_size)
+get_block(fd, max_size, encrypt)
     int fd;
     int max_size;
+    int encrypt;
 {
     STRING data;
     int n_read, n;
@@ -195,6 +200,20 @@ get_block(fd, max_size)
 	lose("receiving data file (get_file)");
     }
     n_read = MIN(MAX_STRING_SIZE(data), max_size);
+    if (encrypt) {
+	des_key_schedule sched;
+	des_cblock ivec;
+	STRING newdata;
+
+	des_key_sched(session, sched);
+	bzero(ivec, sizeof(ivec));
+	STRING_DATA(newdata) = (char *) malloc(n_read+9);
+	des_pcbc_encrypt(STRING_DATA(data), STRING_DATA(newdata),
+			 n_read, sched, &ivec, 1);
+	string_free(&data);
+	data.ptr = newdata.ptr;
+    }
+
     n = 0;
     while (n < n_read) {
 	register int n_wrote;

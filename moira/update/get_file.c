@@ -1,19 +1,20 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/get_file.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/get_file.c,v 1.11 1993-04-29 14:46:22 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/get_file.c,v 1.12 1993-10-25 17:11:55 mar Exp $
  */
 /*  (c) Copyright 1988 by the Massachusetts Institute of Technology. */
 /*  For copying and distribution information, please see the file */
 /*  <mit-copyright.h>. */
 
 #ifndef lint
-static char *rcsid_get_file_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/get_file.c,v 1.11 1993-04-29 14:46:22 mar Exp $";
+static char *rcsid_get_file_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/get_file.c,v 1.12 1993-10-25 17:11:55 mar Exp $";
 #endif	lint
 
 #include <mit-copyright.h>
 #include <stdio.h>
 #include <gdb.h>
 #include <ctype.h>
+#include <string.h>
 #include <sys/param.h>
 #include <sys/file.h>
 #include <fcntl.h>
@@ -87,7 +88,11 @@ get_file(pathname, file_size, checksum, mode, encrypt)
     }
     if (done)			/* re-initialize data */
 	initialize();
+#ifdef POSIX
+    if (setuid(uid) < 0) {
+#else
     if (setreuid(0, uid) < 0) {
+#endif
 	com_err(whoami, errno, "Unable to setuid to %d\n", uid);
 	exit(1);
     }
@@ -141,7 +146,7 @@ get_file(pathname, file_size, checksum, mode, encrypt)
 		session[4], session[5], session[6], session[7]);
 #endif /* DEBUG */
 	des_key_sched(session, sched);
-	bcopy(session, ivec, sizeof(ivec));
+	memcpy(ivec, session, sizeof(ivec));
     }
     n_written = 0;
     while (n_written < file_size && code == 0) {
@@ -219,7 +224,7 @@ get_block(fd, max_size, encrypt)
 	des_pcbc_encrypt(src, dst, n, sched, ivec, 1);
 	for (i = 0; i < 8; i++)
 	  ivec[i] = src[n - 8 + i] ^ dst[n - 8 + i];
-	bcopy(dst, STRING_DATA(data), n);
+	memcpy(STRING_DATA(data), dst, n);
     }
 
     n_read = MIN(MAX_STRING_SIZE(data), max_size);

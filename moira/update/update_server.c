@@ -1,26 +1,26 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/update_server.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/update_server.c,v 1.10 1993-04-29 14:45:12 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/update_server.c,v 1.11 1993-10-25 17:11:15 mar Exp $
  */
 /*  (c) Copyright 1988 by the Massachusetts Institute of Technology. */
 /*  For copying and distribution information, please see the file */
 /*  <mit-copyright.h>. */
 
 #ifndef lint
-static char *rcsid_dispatch_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/update_server.c,v 1.10 1993-04-29 14:45:12 mar Exp $";
+static char *rcsid_dispatch_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/update_server.c,v 1.11 1993-10-25 17:11:15 mar Exp $";
 #endif	lint
 
 #include <mit-copyright.h>
 #include <stdio.h>
 #include <gdb.h>
 #include <errno.h>
-#include <strings.h>
+#include <string.h>
 #include <pwd.h>
 #include <moira.h>
 #include <sys/file.h>
 #include <fcntl.h>
 #include <sys/ioctl.h>
-#ifdef SOLARIS
+#ifdef POSIX
 #include <termios.h>
 #endif
 #include "update.h"
@@ -82,7 +82,7 @@ main(argc, argv)
      gdb_debug(GDB_NOFORK);
 #endif /* DEBUG */
 
-     whoami = rindex(argv[0], '/');
+     whoami = strrchr(argv[0], '/');
      if (whoami)
 	 whoami++;
      else
@@ -98,11 +98,15 @@ main(argc, argv)
      if (!config_lookup("nofork")) {
 	 if (fork())
 	   exit(0);
+#ifdef POSIX
+	 setsid();
+#else
 	 n = open("/dev/tty", O_RDWR|FNDELAY);
 	 if (n > 0) {
 	     (void) ioctl(n, TIOCNOTTY, (char *)NULL);
 	     (void) close(n);
 	 }
+#endif
      } else
        gdb_debug(GDB_NOFORK);
 #endif
@@ -163,7 +167,7 @@ main(argc, argv)
 	      sever_connection(conn);
 	      exit(1);
 	  }
-	  cp = index(STRING_DATA(str), ' ');
+	  cp = strchr(STRING_DATA(str), ' ');
 	  if (cp)
 	       *cp = '\0';
 	  for (d = dispatch_table; d->str; d++) {

@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase2.qc,v 1.3 1988-09-26 15:20:51 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase2.qc,v 1.4 1988-10-05 15:43:22 mar Exp $
  *
  *  (c) Copyright 1988 by the Massachusetts Institute of Technology.
  *  For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
 #include <sms.h>
 #include "dbck.h"
 
-static char phase2_qc_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase2.qc,v 1.3 1988-09-26 15:20:51 mar Exp $";
+static char phase2_qc_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase2.qc,v 1.4 1988-10-05 15:43:22 mar Exp $";
 
 
 show_mcm_mach(id)
@@ -497,6 +497,65 @@ fix_quota_nofs(id)
     modified("nfsquota");
 ##}
 
+##show_srv_user(id)
+##int id;
+##{
+##  char name[33];
+    int found = 1;
+
+##  retrieve (name = s.#name) where s.acl_type = "USER" and s.acl_id = id {
+	strtrim(name);
+	printf("Service %s has acl non-existant user %d\n", name, id);
+	found = 0;
+##  }
+    return(found);
+##}
+
+##show_srv_list(id)
+##int id;
+##{
+##  char name[33];
+    int found = 1;
+
+##  retrieve (name = s.#name) where s.acl_type = "LIST" and s.acl_id = id {
+	strtrim(name);
+	printf("Service %s has acl non-existant list %d\n", name, id);
+	found = 0;
+##  }
+    return(found);
+##}
+
+##zero_srv_user(id)
+##int id;
+##{
+##  int rowcount;
+
+##  replace servers (acl_id = 0) where servers.acl_id = id and
+##	servers.acl_type = "USER"
+##  inquire_equel(rowcount = "rowcount")
+    if (rowcount > 0)
+      printf("%d entr%s fixed\n", rowcount, rowcount==1?"y":"ies");
+    else
+      printf("Not fixed\n");
+    modified("servers");
+##}
+
+##zero_srv_list(id)
+##int id;
+##{
+##  int rowcount;
+
+##  replace servers (acl_id = 0) where servers.acl_id = id and
+##	servers.acl_type = "LIST"
+##  inquire_equel(rowcount = "rowcount")
+    if (rowcount > 0)
+      printf("%d entr%s fixed\n", rowcount, rowcount==1?"y":"ies");
+    else
+      printf("Not fixed\n");
+    modified("servers");
+##}
+
+
 
 phase2()
 ##{
@@ -561,17 +620,19 @@ phase2()
     generic_fix(sq4, show_mem_str, "Delete", del_mem_str, 1);
 
     dprintf("Checking servers...\n");
+    sq1 = sq_create();
+    sq2 = sq_create();
 ##  range of s is servers
 ##  retrieve (name = s.#name, type = s.acl_type, id1 = s.acl_id) {
 	strtrim(type);
 	if (!strcmp(type, "USER") && !hash_lookup(users, id1)) {
-	    printf("Service %s has acl non-existant user %d\n", name, id1);
-	    printf("Not fixing this error\n");
+	    sq_save_data(sq1, id1);
 	} else if (!strcmp(type, "LIST") && !hash_lookup(lists, id1)) {
-	    printf("Service %s has acl non-existant list %d\n", name, id1);
-	    printf("Not fixing this error\n");
+	    sq_save_data(sq2, id1);
 	}
 ##  }
+    generic_fix(sq1, show_srv_user, "Fix", zero_srv_user, 1);
+    generic_fix(sq2, show_srv_list, "Fix", zero_srv_list, 1);
 
     dprintf("Checking servershosts...\n");
     sq = sq_create();
@@ -579,7 +640,7 @@ phase2()
     	if (!hash_lookup(machines, id1))
 	  sq_save_data(sq, id1);
 ##  }
-    generic_fix(sq, show_sh, "Delete", del_sh_mach, 1);
+    generic_fix(sq, show_sh, "Delete", del_sh_mach, 0);
 
     dprintf("Checking nfsphys...\n");
     hash_step(nfsphys, check_nfsphys, NULL);

@@ -1,10 +1,10 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_db.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_db.c,v 1.2 1988-09-13 14:25:32 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_db.c,v 1.3 1991-03-08 10:17:39 mar Exp $
  */
 
 #ifndef lint
-static char *rcsid_gdb_db_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_db.c,v 1.2 1988-09-13 14:25:32 mar Exp $";
+static char *rcsid_gdb_db_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_db.c,v 1.3 1991-03-08 10:17:39 mar Exp $";
 #endif	lint
 
 /************************************************************************/
@@ -238,6 +238,7 @@ DATABASE *db_handle;
 	/*	
 	/*----------------------------------------------------------*/
 
+/*ARGSUSED*/
 int
 g_iadb(op, hcon, arg)
 OPERATION op;
@@ -568,6 +569,7 @@ char *request;
 	/*	
 	/*----------------------------------------------------------*/
 
+/*ARGSUSED*/
 int
 g_ipdb(op, hcon, arg)
 OPERATION op;
@@ -888,6 +890,7 @@ char *query;
 	/*	
 	/*----------------------------------------------------------*/
 
+/*ARGSUSED*/
 int
 g_idbq(op, hcon, arg)
 OPERATION op;
@@ -971,6 +974,7 @@ struct dbq_data *arg;
 	/*	
 	/*----------------------------------------------------------*/
 
+/*ARGSUSED*/
 int
 g_cdbq(op, hcon, arg)
 OPERATION op;

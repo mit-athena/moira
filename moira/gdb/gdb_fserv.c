@@ -1,44 +1,25 @@
 /*
- *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_fserv.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_fserv.c,v 1.2 1988-09-13 14:25:57 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_fserv.c,v 1.3 1991-03-08 10:18:05 mar Exp $
  */
 
 #ifndef lint
-static char *rcsid_gdb_fserv_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_fserv.c,v 1.2 1988-09-13 14:25:57 mar Exp $";
+static char *rcsid_gdb_fserv_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_fserv.c,v 1.3 1991-03-08 10:18:05 mar Exp $";
 #endif	lint
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-/************************************************************************/
-/*	
-/*			   gdb_fserv.c
-/*	
-/*	      GDB - Routines to implement forking servers.
-/*	
-/*	Author: Noah Mendelsohn
-/*	Copyright: 1986 MIT Project Athena 
-/*		For copying and distribution information, please see
-/*	  	the file <mit-copyright.h>.
-/*	
-/************************************************************************/
+/************************************************************************
+ *	
+ *			   gdb_fserv.c
+ *	
+ *	      GDB - Routines to implement forking servers.
+ *	
+ *	Author: Noah Mendelsohn
+ *	Copyright: 1986 MIT Project Athena 
+ *		For copying and distribution information, please see
+ *	  	the file <mit-copyright.h>.
+ *	
+ ************************************************************************/
 
 #include <mit-copyright.h>
 #include <stdio.h>
@@ -50,45 +31,45 @@ static char *rcsid_gdb_fserv_c = "$Header: /afs/.athena.mit.edu/astaff/project/m
 #include "gdb.h"
 #include <sys/resource.h>
 
-/************************************************************************/
-/*	
-/*			create_forking_server (create_forking_server)
-/*	
-/*	Called by an application to turn itself into a forking model
-/*	server.  Returns from this routine occur only in the forked
-/*	children.  The parent lives in this routine forever, waiting
-/*	for incoming connection requests and doing the appropriate
-/*	forking.
-/*	
-/*	Children are expected to do their own cleanup, but this routine
-/*	does do the work of reaping the resulting zombie processes.
-/*	
-/*	ARGUMENTS:
-/*	----------
-/*	
-/*		service-id	identifies the port to be used for
-/*				listening.  Same rules as for
-/*				create_listening_connection.
-/*	
-/*		validate-rtn	pointer to a function to be called to
-/*				validate the incoming client.  Should
-/*				return TRUE if client is acceptable,
-/*				else false.  If this is NULL, all clients
-/*				are accepted.
-/*	
-/*	GLOBAL VARIABLES
-/*	----------------
-/*	
-/*	Children created by this routine inherit the global variables
-/*	gdb_sockaddr_of_client, which is of type sockaddr_in and 
-/*	gdb_socklen, which is the returned length of the sockaddr.
-/*	These are the Berkeley identifiers of the clients as accepted.
-/*	Use of this interface is non-portable to other than Berkeley 
-/*	systems.
-/*	
-/*	The client's request tuple may be found in gdb_client_tuple.
-/*	
-/************************************************************************/
+/************************************************************************
+ *	
+ *			create_forking_server (create_forking_server)
+ *	
+ *	Called by an application to turn itself into a forking model
+ *	server.  Returns from this routine occur only in the forked
+ *	children.  The parent lives in this routine forever, waiting
+ *	for incoming connection requests and doing the appropriate
+ *	forking.
+ *	
+ *	Children are expected to do their own cleanup, but this routine
+ *	does do the work of reaping the resulting zombie processes.
+ *	
+ *	ARGUMENTS:
+ *	----------
+ *	
+ *		service-id	identifies the port to be used for
+ *				listening.  Same rules as for
+ *				create_listening_connection.
+ *	
+ *		validate-rtn	pointer to a function to be called to
+ *				validate the incoming client.  Should
+ *				return TRUE if client is acceptable,
+ *				else false.  If this is NULL, all clients
+ *				are accepted.
+ *	
+ *	GLOBAL VARIABLES
+ *	----------------
+ *	
+ *	Children created by this routine inherit the global variables
+ *	gdb_sockaddr_of_client, which is of type sockaddr_in and 
+ *	gdb_socklen, which is the returned length of the sockaddr.
+ *	These are the Berkeley identifiers of the clients as accepted.
+ *	Use of this interface is non-portable to other than Berkeley 
+ *	systems.
+ *	
+ *	The client's request tuple may be found in gdb_client_tuple.
+ *	
+ ************************************************************************/
 
 
 CONNECTION
@@ -96,7 +77,7 @@ create_forking_server(service, validate)
 char *service;
 int (*validate)();
 {
-
+	void start_accepting_client();
 	CONNECTION incoming;			/* listen for incoming */
 						/* children here */
 	CONNECTION client = NULL;		/* connection to client */

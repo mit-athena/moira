@@ -1,10 +1,10 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_ops.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_ops.c,v 1.3 1989-07-11 16:48:29 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_ops.c,v 1.4 1991-03-08 10:17:02 mar Exp $
  */
 
 #ifndef lint
-static char *rcsid_gdb_ops_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_ops.c,v 1.3 1989-07-11 16:48:29 mar Exp $";
+static char *rcsid_gdb_ops_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_ops.c,v 1.4 1991-03-08 10:17:02 mar Exp $";
 #endif	lint
 
 
@@ -222,6 +222,7 @@ struct obj_data *arg;
 	/*	
 	/*----------------------------------------------------------*/
 
+/*ARGSUSED*/
 int
 g_csnobj(op, hcon, arg)
 OPERATION op;
@@ -657,6 +658,7 @@ struct lis_data *arg;
 	/*	
 	/*----------------------------------------------------------*/
 
+/*ARGSUSED*/
 int
 g_clis(op, hcon, arg)
 OPERATION op;
@@ -774,6 +776,7 @@ TUPLE *tuplep;
 	/*	
 	/*----------------------------------------------------------*/
 
+/*ARGSUSED*/
 int
 g_iacc(op, hcon, arg)
 OPERATION op;
@@ -878,6 +881,7 @@ struct acc_data *arg;
 	/*	
 	/*----------------------------------------------------------*/
 
+/*ARGSUSED*/
 int
 g_i2acc(op, hcon, arg)
 OPERATION op;

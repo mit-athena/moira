@@ -1,6 +1,6 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_lib.h,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_lib.h,v 1.1 1987-08-02 22:17:09 wesommer Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_lib.h,v 1.2 1991-03-08 10:18:55 mar Exp $
  */
 
 /************************************************************************/
@@ -132,6 +132,14 @@ struct con_data gdb_cons[GDB_MAX_CONNECTIONS];	/* actual connection data */
 fd_set gdb_crfds, gdb_cwfds, gdb_cefds;		/* connection related file */
 						/* descriptor maps to be */
 						/* used in select */
+fd_set last_crfds, last_cwfds, last_cefds;	/* these file desc. bit */
+						/* masks are set up */
+						/* for each select call */
+						/* to include the user */
+						/* supplied and the */
+						/* connection related */
+						/* fd's */
+
 	/*----------------------------------------------------------*/
 	/*	
 	/*			gdb_notime

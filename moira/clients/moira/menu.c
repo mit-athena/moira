@@ -5,7 +5,7 @@
  *
  * $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v $
  * $Author: mar $
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.33 1991-01-11 11:58:05 mar Exp $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.34 1991-03-08 10:21:35 mar Exp $
  *
  * Generic menu system module.
  *
@@ -18,7 +18,7 @@
  */
 
 #ifndef lint
-static char rcsid_menu_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.33 1991-01-11 11:58:05 mar Exp $";
+static char rcsid_menu_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.34 1991-03-08 10:21:35 mar Exp $";
 
 #endif lint
 
@@ -115,7 +115,7 @@ Start_menu(m)
     register void (*old_hook)() = set_com_err_hook(menu_com_err_hook);
 #endif
     
-    if (initscr() == ERR) {
+    if (initscr() == (WINDOW *)ERR) {
 	fputs("Can't initialize curses!\n", stderr);
 	Start_no_menu(m);
     } else {

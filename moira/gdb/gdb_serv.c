@@ -1,10 +1,10 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_serv.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_serv.c,v 1.2 1988-09-13 14:26:15 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_serv.c,v 1.3 1991-03-08 10:16:42 mar Exp $
  */
 
 #ifndef lint
-static char *rcsid_gdb_serv_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_serv.c,v 1.2 1988-09-13 14:26:15 mar Exp $";
+static char *rcsid_gdb_serv_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_serv.c,v 1.3 1991-03-08 10:16:42 mar Exp $";
 #endif	lint
 
 
@@ -462,6 +462,7 @@ char *parms;					/*   "     "       */
 	/*	
 	/*----------------------------------------------------------*/
 
+/*ARGSUSED*/
 int
 g_irtc(op, hcon, arg)
 OPERATION op;

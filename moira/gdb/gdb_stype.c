@@ -1,10 +1,10 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_stype.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_stype.c,v 1.2 1988-09-13 14:26:37 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_stype.c,v 1.3 1991-03-08 10:15:52 mar Exp $
  */
 
 #ifndef lint
-static char *rcsid_gdb_stype_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_stype.c,v 1.2 1988-09-13 14:26:37 mar Exp $";
+static char *rcsid_gdb_stype_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_stype.c,v 1.3 1991-03-08 10:15:52 mar Exp $";
 #endif	lint
 
 
@@ -113,6 +113,7 @@ char *dp;					/* pointer to the data */
 	/*----------------------------------------------------------*/
 
 
+/*ARGSUSED*/
 int
 g_in_cdlen(dp,hcon)
 char *dp;					/* pointer to the data */
@@ -129,6 +130,7 @@ HALF_CONNECTION hcon;
 	/*	
 	/*----------------------------------------------------------*/
 
+/*ARGSUSED*/
 int
 g_in_enc(dp, hcon, outp)
 char *dp;					/* pointer to data */
@@ -169,6 +171,7 @@ char *outp;					/* place to put the output */
 	/*	
 	/*----------------------------------------------------------*/
 
+/*ARGSUSED*/
 int
 g_in_dec(outp, hcon, inp)
 char *inp;					/* pointer to data */
@@ -444,6 +447,7 @@ char *dp;					/* pointer to the data */
 	/*----------------------------------------------------------*/
 
 
+/*ARGSUSED*/
 int
 g_rl_cdlen(dp,hcon)
 char *dp;					/* pointer to the data */
@@ -460,6 +464,7 @@ HALF_CONNECTION hcon;
 	/*	
 	/*----------------------------------------------------------*/
 
+/*ARGSUSED*/
 int
 g_rl_enc(dp, hcon, outp)
 char *dp;					/* pointer to data */
@@ -500,6 +505,7 @@ char *outp;					/* place to put the output */
 	/*	
 	/*----------------------------------------------------------*/
 
+/*ARGSUSED*/
 int
 g_rl_dec(outp, hcon, inp)
 char *inp;					/* pointer to data */
@@ -577,6 +583,7 @@ char *dp;					/* pointer to the data */
 	/*----------------------------------------------------------*/
 
 
+/*ARGSUSED*/
 int
 g_dt_cdlen(dp,hcon)
 char *dp;					/* pointer to the data */
@@ -593,6 +600,7 @@ HALF_CONNECTION hcon;
 	/*	
 	/*----------------------------------------------------------*/
 
+/*ARGSUSED*/
 int
 g_dt_enc(dp, hcon, outp)
 char *dp;					/* pointer to data */
@@ -622,6 +630,7 @@ char *outp;					/* place to put the output */
 	/*	
 	/*----------------------------------------------------------*/
 
+/*ARGSUSED*/
 int
 g_dt_dec(outp, hcon, inp)
 char *inp;					/* pointer to data */

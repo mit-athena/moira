@@ -1,5 +1,5 @@
 
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/mailhub.qc,v 1.3 1990-02-15 15:04:10 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/mailhub.qc,v 1.4 1990-03-13 15:22:03 mar Exp $
  *
  * This generates the /usr/lib/aliases file for the mailhub.
  *
@@ -22,6 +22,7 @@
 extern int errno;
 char *whoami = "mailhub.gen";
 char *ingres_date_and_time();
+char *perm_malloc();
 char *divide = "##############################################################";
 
 #define ML_WID	72
@@ -168,8 +169,12 @@ get_info()
 ##  retrieve (id = machine.mach_id, name = machine.#name) {
       if (s = index(name, '.'))
 	*s = 0;
+#ifdef ATHENA
       sprintf(buf, "%s.LOCAL", name);
       if (hash_store(machines, id, strsave(buf)) < 0) {
+#else
+      if (hash_store(machines, id, strsave(name)) < 0) {
+#endif
 	  fprintf(stderr, "Out of memory!\n");
 	  exit(SMS_NO_MEM);
       }
@@ -195,7 +200,7 @@ get_info()
 ##	      mname = u.middle, lname = u.last,
 ##	      type = u.potype, pid = u.pop_id, bid = u.box_id) 
 ##	where u.status != 3 {
-	u = (struct user *) malloc(sizeof(struct user));
+	u = (struct user *) perm_malloc(sizeof(struct user));
 	u->login = strsave(strtrim(name));
 	u->first = strsave(strtrim(fname));
 	u->last  = strsave(strtrim(lname));
@@ -225,7 +230,7 @@ get_info()
 ##  retrieve (id = l.list_id, name = l.#name, maillistp = l.maillist,
 ##	      type = l.acl_type, acl = l.acl_id)
 ##    where l.active != 0 {
-	l = (struct list *) malloc(sizeof(struct list));
+	l = (struct list *) perm_malloc(sizeof(struct list));
 	l->name = strsave(strtrim(name));
 	l->maillist = maillistp;
 	l->acl_t = type[0];
@@ -245,7 +250,7 @@ get_info()
 ##    	where m.direct = 1  {
 	cnt++;
 	if (l = (struct list *) hash_lookup(lists, id)) {
-	    m = (struct member *) malloc(sizeof(struct member));
+	    m = (struct member *) perm_malloc(sizeof(struct member));
 	    if (type[0] == 'U' &&
 		(u = (struct user *) hash_lookup(users, mid))) {
 		m->list_id = 0;
@@ -346,7 +351,7 @@ int copy;
     code = hashstr(s);
     ns = (struct names *) hash_lookup(names, code);
     if (ns == NULL) {
-	if ((ns = (struct names *) malloc(sizeof(struct names))) == NULL) {
+	if ((ns = (struct names *) perm_malloc(sizeof(struct names))) == NULL) {
 	    fprintf(stderr, "ran out of memory inserting name (sorting)\n");
 	    exit(SMS_NO_MEM);
 	}
@@ -368,7 +373,8 @@ int copy;
 	    if (!strcasecmp(ns->name, s))
 	      goto foundns;
 	}
-	if ((ns->next = (struct names *)malloc(sizeof(struct names))) == NULL) {
+	if ((ns->next = (struct names *) perm_malloc(sizeof(struct names)))
+	    	== NULL) {
 	    fprintf(stderr, "ran out of memory insterting name (sorting)\n");
 	    exit(SMS_NO_MEM);
 	}
@@ -388,6 +394,30 @@ int copy;
 }
 
 
+/* Illegal chars: ! " % ( ) , . / : ; < = > @ [ \ ] ^ { | } */
+
+static int illegalchars[] = {
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, /* ^@ - ^O */
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, /* ^P - ^_ */
+    0, 1, 1, 0, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0, 1, 1, /* SPACE - / */
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, /* 0 - ? */
+    1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, /* @ - O */
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, /* P - _ */
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, /* ` - o */
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 1, /* p - ^? */
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+};
+
+
+/* While hashing the string, punt any illegal characters */
+
 int hashstr(s)
 register char *s;
 {
@@ -395,6 +425,12 @@ register char *s;
     register int c;
 
     for (result = 0; c = *s; s++) {
+	if (illegalchars[c]) {
+	    register char *p;
+	    for (p = s; *p; p++)
+	      *p = p[1];
+	    continue;
+	}
 	if (isupper(c))
 	  c = *s = tolower(c);
 /*	result = result * 31 + *s; */
@@ -421,7 +457,6 @@ FILE *out;
 {
     register struct names *ns;
     register struct user *u;
-    int i;
 
     incount++;
     for (ns = nms; ns; ns = ns->next) {
@@ -458,12 +493,11 @@ FILE *out;
       return;
     if (l->acl_t ==  'L' &&
 	(l1 = (struct list *) hash_lookup(lists, l->acl_id)))
-      fprintf(out, "owner-%s: %s\n", l->name, l1->name);
+      fprintf(out, "owner-%s: %s\n%s: ", l->name, l1->name, l->name);
     else if (l->acl_t ==  'U' &&
 	     (u = (struct user *) hash_lookup(users, l->acl_id)))
-      fprintf(out, "owner-%s: %s\n", l->name, u->login);
+      fprintf(out, "owner-%s: %s\n%s: ", l->name, u->login, l->name);
 
-    fprintf(out, "%s: ", l->name);
     lwid = strlen(l->name) + 2;
     bol = 1;
     for (m = l->m; m; m = m->next) {
@@ -530,3 +564,25 @@ FILE *out;
     hash_step(names, output_data, out);
     fprintf(stderr, "Output %d entries\n", incount);
 }
+
+
+#define chunk_size	102400
+
+char *perm_malloc(size)
+unsigned size;
+{
+    static char *pool = NULL;
+    static unsigned pool_size = 0;
+    register char *ret;
+
+    if (size > pool_size) {
+	pool = (char *) malloc(chunk_size);
+	pool_size = chunk_size;
+    }
+    ret = pool;
+    pool += size;
+    pool = (char *)(((unsigned) (pool + 1)) & ~1);
+    pool_size -= (pool - ret);
+    return(ret);
+}
+

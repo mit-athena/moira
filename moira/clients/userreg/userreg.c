@@ -2,11 +2,11 @@
  * $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.c,v $
  * $Author: wesommer $
  * $Locker:  $
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.c,v 1.3 1987-07-20 13:15:00 wesommer Exp $ 
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.c,v 1.4 1987-08-22 18:40:44 wesommer Exp $ 
  */
 
 #ifndef lint
-static char    *rcsid_userreg_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.c,v 1.3 1987-07-20 13:15:00 wesommer Exp $";
+static char    *rcsid_userreg_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.c,v 1.4 1987-08-22 18:40:44 wesommer Exp $";
 #endif	lint
 
 #include <curses.h>
@@ -14,7 +14,10 @@ static char    *rcsid_userreg_c = "$Header: /afs/.athena.mit.edu/astaff/project/
 #include <signal.h>
 #include <sys/time.h>
 #include <setjmp.h>
-
+#include <ctype.h>
+#include "ureg_err.h"
+#include <krb.h>
+#include <errno.h>
 #define EXIT -1
 
 
@@ -27,6 +30,7 @@ int             restart();
 
 extern int      errno;
 int             user_is_valid = 0;
+int		user_has_login = 0;
 int             already_registered = 0;
 
 fix_display(sig)
@@ -45,6 +49,13 @@ main(argc, argv)
 	register int    ntimes;
 	register int    reencrypt;
 	char            line[100];
+	int status;
+	
+	status = ureg_init();
+	if (status) {
+		com_err(argv[0], status, "while trying to initialize");
+		exit(1);
+	}
 
 	setup_display();
 
@@ -120,7 +131,13 @@ main(argc, argv)
 			continue;
 		}
 		redisp();
-		if (negotiate_login_and_password() == -1) {
+		if (!user_has_login) {
+			if (negotiate_login() == -1) {
+				qexit();
+				continue;
+			}
+		}
+		if (negotiate_passwd() == -1) {
 			qexit();
 			continue;
 		}
@@ -149,8 +166,6 @@ reset()
 	redisp();
 }
 
-
-
 dolook()
 {
 	/* do the database lookup */
@@ -164,185 +179,138 @@ dolook()
 	display_text_line(0);
 	display_text_line(
 	 "Looking you up in the database.... This may take a few minutes.");
-	timer_off();
-	result = sms_connect();
-	timer_on();
-	if (result == SUCCESS) {
-		timer_off();
-		result = get_user_by_mit_id(&db_user, user.u_mit_id);
-		sms_disconnect();
-		timer_on();
-		if (result == SUCCESS) {
-			/* check to see if the first and last names match */
-			if (lenient_strcmp(user.u_first, db_user.u_first))
-				return (1);
-			if (lenient_strcmp(user.u_last, db_user.u_last))
-				return (1);
-			/* at this point the user has been verified */
-			bcopy((char *) &db_user, (char *) &user, sizeof(user));
-			user_is_valid = 1;
-			if (user.u_status & 1) {
-				already_registered = 1;
-				/*
-				 * we have to reset this so we dont ask for a
-				 * new username 
-				 */
-				user_is_valid = 0;
-				display_text_line("You are already registered.  An account for you probably already exists");
-				display_text_line("on one of the W20 systems (if not, it will appear within 12 hours).");
-				display_text_line("Refer to the documents 'Essential Athena' and 'Essential Unix'");
-				sprintf(line, "for help logging in.  Remember, the username you chose was '%s'",
-					db_user.u_login);
-				display_text_line(line);
-				redisp();
-				sleep(5);
-				return (0);
-			}
-			display_text_line("You have been located in the user registration database.");
-			sleep(1);
-			return (0);
-		}
-	}
-	if (result == FAILURE) {
-		display_text(NETWORK_DOWN);
+
+	result = verify_user(user.u_first, user.u_last,
+			     typed_mit_id, user.u_mit_id, db_user.u_login);
+	switch(result) {
+	case 0:
+		display_text_line("You have been located in the user registration database.");
+		user_is_valid = 1;
+		user_has_login = 0;
+		sleep(1);
+		return 0;
+	case UREG_NO_PASSWD_YET:
+		user_is_valid = 1;
+		user_has_login = 1;
+		display_text_line ("You have chosen a login name, but you have not yet chosen a password.");
+		sprintf(line, "Remember: the username you chose was '%s'",
+			db_user.u_login);
+		strcpy(user.u_login, db_user.u_login);
+		display_text_line(line);
+		redisp();
 		sleep(5);
-		restart();
+		return (0);
+		
+	case UREG_ALREADY_REGISTERED:
+		already_registered = 1;
+		/*
+		 * we have to reset this so we dont ask for a
+		 * new username 
+		 */	
+		user_is_valid = 0;
+		display_text_line("You are already registered.  An account for you probably already exists");
+		display_text_line("(if not, it will appear within 12 hours).");
+		display_text_line("");
+		display_text_line("Refer to the documents 'Essential Athena' and 'Essential Unix'");
+		strcpy(user.u_login, db_user.u_login);
+		sprintf(line, "for help logging in.  Remember, the username you chose was '%s'",
+			db_user.u_login);
+		display_text_line(line);
+		redisp();
+		sleep(5);
+		return (0);
+	case UREG_USER_NOT_FOUND:
+		return (1);
+	case ECONNREFUSED:
+		display_text(NETWORK_DOWN);
+		return (0);
+		
+	default:
+		display_text_line("An unexpected error occurred while trying to access the database");
+		display_text_line(error_message(result));
+		redisp();
+		sleep(5);
+		return(1);
 	}
-	return (1);
 }
 
-negotiate_login_and_password()
+negotiate_login()
 {
 	register int    result, result2;
 	int             same;
 	char            line[100];
 	char            old_login[LOGIN_SIZE];
 	char            old_password[PASSWORD_SIZE];
-
+	int		i;
+	
 	display_text(USERNAME_BLURB);
+	user.u_login[0] = user.u_first[0];
+	user.u_login[1] = user.u_mid_init[0];
+	strncpy(user.u_login+2, user.u_last, 6);
+	for (i=0; user.u_login[i]; i++)
+		if (isupper(user.u_login[i]))
+			user.u_login[i]=tolower(user.u_login[i]);
+	
 	strcpy(old_login, user.u_login);
 	sprintf(line, "We suggest the username '%s'.", user.u_login);
 	display_text_line(line);
 	display_text_line(
 			  "If you are sure you would prefer another username,  feel free to enter");
 	display_text_line(
-			  "one,  but  remember  that it will remain with you for all the time you");
-	display_text_line("are at MIT.");
+			  "a different one,  but  remember  that it will remain with you for all the ");
+	display_text_line("time you are at MIT.");
 
-get_login:
 	while (1) {
 		glogin();
-		/*
-		 * compare the typed username with the one we have already *
-		 * reserved. We use lenient_strcmp because the username we *
-		 * get form the database may have extra spaces... 
-		 */
-		if (same = !lenient_strcmp(old_login, user.u_login)) {
-			break;	/* he didnt change the default */
-		}
+
 		display_text_line(0);
 		display_text_line("Looking up that username in the database...  This may take a few minutes.");
-		timer_off();
-		result = sms_connect();
-		timer_on();
-		if (result == SUCCESS) {
-			timer_off();
-			result = get_user_by_login(&db_user, user.u_login);
-			result2 = get_alias_by_name(&alias, user.u_login);
-			sms_disconnect();
-			timer_on();
-		}
-		if (result == FAILURE || result2 == FAILURE) {
-			display_text(NETWORK_DOWN);
-			sleep(5);
-			restart();
-		} else if (result != NOT_FOUND || result2 != NOT_FOUND) {
+		/*
+		 * Rather than bother SMS with a bunch of different
+		 * usernames, all in use, we first try and see if this
+		 * guy is known to Kerberos.
+		 */
+		result = get_in_tkt(user.u_login, "", "ATHENA.MIT.EDU", "krbtgt", "ATHENA.MIT.EDU", "");
+		if (result != KDC_PR_UNKNOWN) {
+		in_use:
 			strcpy(user.u_login, old_login);
 			redisp();
-			display_text_line("I'm sorry, but that username is already taken.  Please try again.");
+			display_text_line("I'm sorry, but that username is already taken.  Please try again with a different username");
 			continue;
-		} else {	/* yay! we can go ahead and change it! */
-			/*
-			 * technically, this is not sound. Somebody may have
-			 * grabbed the username before us. It's unlikely, so
-			 * we just hope it won't happen. 
-			 */
-			display_text_line(0);
-			sprintf(line, "No one else is using \"%s\" as a username so you can have it.", user.u_login);
-			display_text_line(line);
-			if (askyn("Are you sure that is the one you want? ") == NO) {
-				display_text_line(0);
-				if (askyn("Do you want to abort this session? ") == YES) {
-					display_text_line(" ");
-					display_text_line(" ");
-					display_text_line("aborting...");
-					return (-1);
-				}
-				display_text_line(0);
-				redisp();
-				continue;
-			}
-			break;
 		}
+		/*
+		 * If he isn't, let's try through SMS.
+		 */
+		result = grab_login(user.u_first, user.u_last,
+				    typed_mit_id, user.u_mit_id,
+				    user.u_login);
+		if (result != 0) {
+			if (result == UREG_LOGIN_USED) goto in_use;
+			display_text(NETWORK_DOWN);
+			return (qexit());
+		} else break;
 	}
-
-get_password:
-
 	/* at this point we have successfully negotiated a username */
 
-	sprintf(line, "O.K. your username will be \"%s.\"", user.u_login);
+	sprintf(line, "O.K. your username will be \"%s\".", user.u_login);
 	display_text_line(0);
 	display_text_line(line);
 	redisp();
 	sleep(3);
+	return 0;
+}
+negotiate_passwd()
+{
 	display_text_line(0);
 	display_text(PASSWORD_BLURB);
+
 	gpass();
-	display_text_line("You password is now established.");
-	/*
-	 * we now make sure that the user must type his old password the next
-	 * time he tries to change it 
-	 */
-	already_registered = 1;
-	user.u_status = 1;
-	display_text_line("Storing information in the database...  This may take a few minutes.");
-	/*
-	 * Check one more time to make sure someone hasn't grabbed that login
-	 * since last time we checked. 
-	 */
-	if (!same) {		/* Recheck username if it was changed. */
-		timer_off();
-		result = sms_connect();
-		timer_on();
-		if (result == SUCCESS) {
-			timer_off();
-			result = get_user_by_login(&db_user, user.u_login);
-			result2 = get_alias_by_name(&alias, user.u_login);
-			sms_disconnect();
-			timer_on();
-		}
-		if (result == FAILURE || result2 == FAILURE) {
-			display_text(NETWORK_DOWN);
-			return (-1);
-		} else if (result != NOT_FOUND || result2 != NOT_FOUND) {
-			strcpy(user.u_login, old_login);
-			redisp();
-			display_text_line(0);
-			display_text_line("You're not going to believe this, but someone just now took the username");
-			display_text_line("you wanted.");
-			display_text_line(" ");
-			display_text_line("You will have to choose a new username.");
-			goto get_login;
-		}
-	}
-	/*
-	 * Do the database update and hope nobody grabs the same login before
-	 * we do.  Its really not very likely that they will. 
-	 */
+	display_text_line("Storing password in the database...  This may take a few minutes.");
 	if (do_replace()) {
 		return (-1);
 	}
 	display_text_line("done.");
+
 }
 
 gfirst()
@@ -354,6 +322,7 @@ gfirst()
 	input("Enter first Name:", buf, 100, FIRSTNAME_TIMEOUT);
 	strncpy(user.u_first, buf, FIRST_NAME_SIZE);
 	user.u_first[FIRST_NAME_SIZE - 1] = '\0';
+	canon_name(user.u_first);
 	redisp();
 }
 
@@ -366,6 +335,7 @@ glast()
 	input("Enter last Name:", buf, 100, LASTNAME_TIMEOUT);
 	strncpy(user.u_last, buf, LAST_NAME_SIZE);
 	user.u_last[LAST_NAME_SIZE - 1] = '\0';
+	canon_name(user.u_last);
 	redisp();
 }
 
@@ -410,7 +380,7 @@ do_input:
 	 * name as a seed 
 	 */
 
-	strcpy(user.u_password, crypt(new_password, user.u_login));
+	strcpy(user.u_password, new_password);
 	redisp();
 }
 
@@ -445,6 +415,7 @@ input_login:
 	if (strlen(user.u_login) < 2) {
 		goto input_login;
 	}
+#ifdef notdef
 	/* This part added to fix home directories -- asp */
 	strcpy(user.u_home_dir, "/mit/");
 	user.u_home_dir[5] = user.u_login[0];
@@ -452,7 +423,7 @@ input_login:
 	user.u_home_dir[7] = user.u_login[1];
 	user.u_home_dir[8] = '/';
 	strcpy(user.u_home_dir + 9, user.u_login);
-
+#endif notdef
 	redisp();
 }
 
@@ -519,6 +490,7 @@ gmi()
 	input("Enter Middle Initial:", buf, 100, MI_TIMEOUT);
 	strncpy(user.u_mid_init, buf, MID_INIT_SIZE);
 	user.u_mid_init[MID_INIT_SIZE - 1] = '\0';
+	canon_name(user.u_mid_init);
 	redisp();
 }
 
@@ -537,44 +509,18 @@ qexit()
 
 do_replace()
 {
+	int status;
+	
 	/*
 	 * replaces a user in the database. If there is an error, it informs
 	 * the user and calls qexit(); It returns only if is is successful 
 	 */
-
-	register int    result, uid;
-
-	signal(SIGALRM, SIG_IGN);	/* Don't bother me */
-	uid = getuid();
-	setruid(0);		/* Look, I'm root! */
-	timer_off();
-	result = sms_connect();
-	timer_on();
-	if (result == SUCCESS) {
-		timer_off();
-		result = replace_user_admin(&user);
-		sms_disconnect();
-		timer_on();
-	}
-	setruid(uid);		/* Back to normal */
-	signal(SIGALRM, restart);
-
-	if (result == FAILURE) {
-		display_text(NETWORK_DOWN);
+	status = set_password(user.u_first, user.u_last, typed_mit_id,
+		     user.u_mit_id, user.u_password);
+	if (status) {
+		display_text (NETWORK_DOWN);
 		return (-1);
-	}
-	if (result != SUCCESS) {
-		display_text_line(0);
-		display_text_line("There was an unknown error in trying to give you that username.");
-		display_text_line("The database was not updated.");
-		display_text_line("Please try again later.");
-		printf("Replace error %d\n", result);
-		return (-1);
-	}
-	/* finally, if we get to here, there are no problems */
-	else {
-		return (0);
-	}
+	} else return 0;
 }
 
 #define _toupper(c) ((c) & ~0x20)
@@ -617,4 +563,24 @@ restart()
 {
 	qexit();
 	longjmp(redo);
+}
+
+canon_name(cp)
+	register char *cp;
+{
+	register char *p2 = cp;
+      
+	/* Trim whitespace off both ends. */
+	for (; *p2 && isspace(*p2); p2++) ;
+	if (*p2) {
+		strcpy(cp, p2);
+		p2 = cp + strlen(cp);
+		--p2;
+		while (p2 >= cp && isspace(*p2)) *(--p2) = '\0';
+	}
+	/* Make it capitalized */
+	for (p2=cp; *p2; p2++) {
+		if (isupper(*p2)) *p2 = tolower(*p2);
+	}
+	if (islower(*cp)) *cp=toupper(*cp);
 }

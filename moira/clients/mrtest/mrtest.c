@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v $
- *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v 1.10 1988-12-01 16:51:19 mar Exp $
+ *	$Author: qjb $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v 1.11 1988-12-18 23:11:36 qjb Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_test_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v 1.10 1988-12-01 16:51:19 mar Exp $";
+static char *rcsid_test_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v 1.11 1988-12-18 23:11:36 qjb Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -57,6 +57,7 @@ sms()
 		com_err(whoami, status, 0);
 		exit(1);
 	}
+	exit(0);
 }
 
 test_noop()

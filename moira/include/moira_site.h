@@ -1,4 +1,4 @@
-/* $Id: moira_site.h,v 1.29 1999-02-06 18:44:32 danw Exp $
+/* $Id: moira_site.h,v 1.30 1999-05-25 19:12:27 danw Exp $
  *
  * This file contains all definitions that allow easy access to
  * elements returned by most of the @i[Moira] queries.  It also defines
@@ -206,8 +206,22 @@
 #define PRN_MODWITH	18
 #define PRN_END		19
 
+#define PRN_BANNER_NONE  0
 #define PRN_BANNER_FIRST 1
 #define PRN_BANNER_LAST  2
+
+/* Print Server queries */
+
+#define PRINTSERVER_HOST	0
+#define PRINTSERVER_KIND	1
+#define PRINTSERVER_TYPES	2
+#define PRINTSERVER_OWNER_TYPE	3
+#define PRINTSERVER_OWNER_NAME	4
+#define PRINTSERVER_LPC_ACL	5
+#define PRINTSERVER_MODTIME	6
+#define PRINTSERVER_MODBY	7
+#define PRINTSERVER_MODWITH	8
+#define PRINTSERVER_END		9
 
 /* PO box information queries */
 

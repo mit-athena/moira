@@ -1,4 +1,4 @@
-/* $Id: increment.pc,v 2.11 2001-07-29 15:14:26 zacheiss Exp $
+/* $Id: increment.pc,v 2.12 2001-08-28 14:26:01 zacheiss Exp $
  *
  * Deal with incremental updates
  *
@@ -20,7 +20,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/increment.pc,v 2.11 2001-07-29 15:14:26 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/increment.pc,v 2.12 2001-08-28 14:26:01 zacheiss Exp $");
 
 extern char *whoami;
 extern char *table_name[];
@@ -116,6 +116,23 @@ void incremental_before(enum tables table, char *qual, char **argv)
 	      qual);
       dosql(before);
       beforec = 7;
+      name = xmalloc(0);
+      id = atoi(before[5]);
+      if (!strncmp(before[4], "USER", 4))
+	{
+	  id_to_name(id, USERS_TABLE, &name);
+	  strcpy(before[5], name);
+	}
+      else if (!strncmp(before[4], "LIST", 4))
+	{
+	  id_to_name(id, LIST_TABLE, &name);
+	  strcpy(before[5], name);
+	}
+      else if (!strncmp(before[4], "KERBEROS", 8))
+	{
+	  id_to_name(id, STRINGS_TABLE, &name);
+	  strcpy(before[5], name);
+	}
       break;
     case MCMAP_TABLE:
       strcpy(before[0], argv[0]);
@@ -256,6 +273,23 @@ void incremental_after(enum tables table, char *qual, char **argv)
 	      qual);
       dosql(after);
       afterc = 7;
+      name = xmalloc(0);
+      id = atoi(after[5]);
+      if (!strncmp(after[4], "USER", 4))
+	{
+	  id_to_name(id, USERS_TABLE, &name);
+	  strcpy(after[5], name);
+	}
+      else if (!strncmp(after[4], "LIST", 4))
+	{
+	  id_to_name(id, LIST_TABLE, &name);
+	  strcpy(after[5], name);
+	}
+      else if (!strncmp(after[4], "KERBEROS", 8))
+	{
+	  id_to_name(id, STRINGS_TABLE, &name);
+	  strcpy(after[5], name);
+	}
       break;
     case MCMAP_TABLE:
       strcpy(after[0], argv[0]);

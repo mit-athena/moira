@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.10 1999-07-12 16:21:09 danw Exp $
+# $Id: Makefile.in,v 1.11 1999-11-29 22:07:44 danw Exp $
 
 SHELL=/bin/sh
 @SET_MAKE@
@@ -32,7 +32,7 @@ START_OBJS=	startreg.o
 GENKEY_OBJS=	genkey.o
 GENWORDS_OBJS=	genwords.o words.o
 
-CFILES=		reg_svr.c
+CFILES=		reg_svr.c genwords.c
 
 TARGET=		reg_svr startreg genkey genwords
 
@@ -71,4 +71,4 @@ genkey: $(GENKEY_OBJS)
 	$(CC) -o $@ $(LDFLAGS) $(GENKEY_OBJS) $(LIBS)
 
 genwords: $(GENWORDS_OBJS)
-	$(CC) -o $@ $(LDFLAGS) $(GENWORDS_OBJS) $(LIBS)
+	$(CC) -o $@ $(LDFLAGS) $(GENWORDS_OBJS) $(LIBS) $(SQL_LIBS)

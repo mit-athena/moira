@@ -9,6 +9,20 @@ $afs_save="$afs_data.tmp";
 $LOCK_EX=2;
 $LOCK_UN=8;
 
+%vtypes_ATHENA_MIT_EDU =
+    ("ACTIVITY", "activity",
+     "APROJ", "aproj",
+     "AREF", "aref",
+     "CONTRIB", "contrib",
+     "COURSE", "course",
+     "HOMEDIR", "user",
+     "PROJECT", "project",
+     "REF", "ref",
+     "SW", "sw",
+     "SYSTEM", "system",
+     "UROP", "urop",
+     );
+
 # File format:
 #    cell server partition total used alloc
 

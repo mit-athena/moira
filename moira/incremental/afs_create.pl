@@ -6,20 +6,6 @@ require "/moira/bin/afs_utils.pl";
 $protodir="/moira/dotfiles";
 $quota=1;
 
-%vtypes_ATHENA_MIT_EDU =
-    ("ACTIVITY", "activity",
-     "APROJ", "aproj",
-     "AREF", "aref",
-     "CONTRIB", "contrib",
-     "COURSE", "course",
-     "HOMEDIR", "user",
-     "PROJECT", "project",
-     "REF", "ref",
-     "SW", "sw",
-     "SYSTEM", "system",
-     "UROP", "urop",
-     );
-
 %proc =
     ("ATHENA.MIT.EDU", 'athena_proc' );
 

@@ -1,26 +1,33 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v $
  *	$Author: wesommer $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v 1.5 1987-06-21 16:37:58 wesommer Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v 1.6 1987-08-04 01:30:54 wesommer Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
  *	$Log: not supported by cvs2svn $
+ * Revision 1.5  87/06/21  16:37:58  wesommer
+ * Changed include files, reindented things.
+ * 
+ * 
  * Revision 1.4  87/06/08  05:03:27  wesommer
  * Reindented; added header and trailer.
  * 
  */
 
 #ifndef lint
-static char *rcsid_qrtn_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v 1.5 1987-06-21 16:37:58 wesommer Exp $";
+static char *rcsid_qrtn_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v 1.6 1987-08-04 01:30:54 wesommer Exp $";
 #endif lint
 
 #include "query.h"
 #include "sms_server.h"
 
+#define SMS_SUCCESS 0
+
 char *Argv[16];
 
 static int ingres_errno = 0;
+extern char *whoami;
 
 /*
  * ingerr: (supposedly) called when Ingres indicates an error.
@@ -55,10 +62,62 @@ int sms_open_database()
 int sms_close_database()
 {
 ##  exit
-    
 }
 
-sms_process_query(name, argc, argv_ro, action, actarg)
+sms_check_access(cl, name, argc, argv_ro)
+    client *cl;
+    char *name;
+    int argc;
+    char *argv_ro[];
+{
+    register struct query *q;
+    register int argreq;
+    register int status;
+    register struct validate *v;
+    register int i;
+    register int privileged;
+    struct query *get_query_by_name();
+    int access_user();
+    int access_pop();
+
+    q = get_query_by_name(name);
+    if (q == (struct query *)0) return(SMS_NO_HANDLE);
+    v = q->validate;
+
+    /* copy the arguments into a local argv that we can modify */
+    for (i = 0; i < argc; i++)
+	strcpy(Argv[i], argv_ro[i]);
+
+    /* check initial query access */
+    status = check_query_access(q, Argv, cl);
+    privileged = (status == SMS_SUCCESS) ? 1 : 0;
+    if (status != SMS_SUCCESS && !(v && (v->pre_rtn == access_user ||
+					 v->pre_rtn == access_pop))) 
+	return(status);
+
+    /* check argument count */
+    argreq = q->argc;
+    if (q->type == UPDATE || q->type == APPEND) argreq += q->vcnt;
+    if (argc != argreq) return(SMS_ARGS);
+
+    /* validate arguments */
+    if (v && v->valobj) {
+	status = validate_fields(q, Argv, v->valobj, v->objcnt);
+	if (status != SMS_SUCCESS) return(status);
+    }
+
+    /* perform special query access check */
+    if (v && v->pre_rtn) {
+	status = (*v->pre_rtn)(q, Argv, cl, 1);
+	if (status != SMS_SUCCESS && (status != SMS_PERM || !privileged)) 
+	    return(status);
+    }
+
+    return(SMS_SUCCESS);
+}
+
+sms_process_query(cl, name, argc, argv_ro, action, actarg)
+    client *cl;
     char *name;
     int argc;
     char *argv_ro[];
@@ -67,50 +126,188 @@ sms_process_query(name, argc, argv_ro, action, actarg)
 {
     register struct query *q;
     register int i;
+    register int status;
+    register int argreq;
+    register struct validate *v;
+    int privileged;
+    char qual[256];
+    char *pqual;
+##  char *table;
+    struct save_queue *sq;
     struct query *get_query_by_name();
-    char qual[128];
+    int sq_save_args();
+    struct save_queue *sq_create();
+    int access_user();
 
     /* copy the arguments into a local argv that we can modify */
     for (i = 0; i < argc; i++)
 	strcpy(Argv[i], argv_ro[i]);
 
+    /* list queries command */
+    if (!strcmp(name, "_list_queries")) {
+	list_queries(action, actarg);
+	return(SMS_SUCCESS);
+    }
+
+    /* help query command */
+    if (!strcmp(name, "_help")) {
+	q = get_query_by_name(Argv[0]);
+	if (q == (struct query *)0) return(SMS_NO_HANDLE);
+	help_query(q, action, actarg);
+	return(SMS_SUCCESS);
+    }
+
+    /* get query structure, return error if named query does not exist */
     q = get_query_by_name(name);
+    if (q == (struct query *)0) return(SMS_NO_HANDLE);
+    v = q->validate;
+
+    /* check query access */
+    status = check_query_access(q, Argv, cl);
+    privileged = (status == SMS_SUCCESS) ? 1 : 0;
+    if (status != SMS_SUCCESS && !(v && (v->pre_rtn == access_user)))
+	return(status);
+
+    /* check argument count */
+    argreq = q->argc;
+    if (q->type == UPDATE || q->type == APPEND) argreq += q->vcnt;
+    if (argc != argreq) return(SMS_ARGS);
+
+    /* validate arguments */
+    if (v && v->valobj) {
+	status = validate_fields(q, Argv, v->valobj, v->objcnt);
+	if (status != SMS_SUCCESS) return(status);
+    }
+
+    /* perform any special query pre-processing */
+    if (v && v->pre_rtn) {
+	status = (*v->pre_rtn)(q, Argv, cl, 0);
+	if (status != SMS_SUCCESS && (status != SMS_PERM || !privileged))
+	    return(status);
+    }
+
+##  begin transaction
 
     switch (q->type) {
     case RETRIEVE:
+	/* for queries that do not permit wildcarding, check if row
+	   uniquely exists */
+	if (v && v->field) {
+	    status = validate_row(q, Argv, v);
+	    if (status != SMS_EXISTS) break;
+	}
+
+	/* build "where" clause if needed */
 	if (q->qual) {
 	    build_qual(q->qual, q->argc, Argv, qual);
-	    do_retrieve_with_qual(q, qual, action, actarg);
-	} else
-	    do_retrieve(q, action, actarg);
+	    pqual = qual;
+	} else {
+	    pqual = 0;
+	}
+
+	/* if there is a followup routine, then we must save the results */
+	/* of the first query for use by the followup routine */
+	/* if q->rtable = NULL, perform post_rtn only */
+	if (table = q->rtable) {
+	    if (v && v->post_rtn) {
+		sq = sq_create();
+		status = do_retrieve(q, pqual, sq_save_args, sq);
+		if (status != SMS_SUCCESS) {
+		    sq_destroy(sq);
+		    break;
+		}
+		status = (*v->post_rtn)(q, sq, v, action, actarg);
+	    } else {
+		/* normal retrieve */
+		status = do_retrieve(q, pqual, action, actarg);
+	    }
+	    if (status != SMS_SUCCESS) break;
+##          repeat replace tblstats (retrieves = tblstats.retrieves + 1)
+##                 where tblstats.#table = @table
+	} else {
+	    status = (*v->post_rtn)(q, Argv, action, actarg);
+	}
+
 	break;
 
     case UPDATE:
-	if (q->support_rtn) {
-	    if ((*q->support_rtn)(Argv, action, actarg) == -1) 
-		break;
+	/* see if row already exists */
+	if (v->field) {
+	    status = validate_row(q, Argv, v);
+	    if (status != SMS_EXISTS) break;
 	}
-	build_qual(q->qual, q->argc, &Argv[q->sargc], qual);
-	do_update(q, &Argv[q->sargc + q->argc], qual, action, actarg);
+
+	/* build "where" clause and perform update */
+	/* if q->rtable = NULL, perform post_rtn only */
+	if (table = q->rtable) {
+	    build_qual(q->qual, q->argc, Argv, qual);
+	    status = do_update(q, &Argv[q->argc], qual, action, actarg);
+	    if (status != SMS_SUCCESS) break;
+##	    repeat replace tblstats (updates = tblstats.updates + 1,
+##				     modtime = "now")
+##		where tblstats.#table = @table
+	}
+
+	/* execute followup routine (if any) */
+	if (v->post_rtn) status = (*v->post_rtn)(q, Argv);
+
 	break;
 
     case APPEND:
-	if (q->support_rtn) {
-	    if ((*q->support_rtn)(Argv, action, actarg) == -1) 
-		break;
+	/* see if row already exists */
+	if (v->field) {
+	    status = validate_row(q, Argv, v);
+	    if (status != SMS_NO_MATCH) break;
 	}
-	do_append(q, &Argv[q->sargc + q->argc], action, actarg);
+
+	/* increment id number if necessary */
+	if (v->object_id) set_next_object_id(v->object_id);
+
+	/* perform the append */
+	/* if q->rtable = NULL, perform post_rtn only */
+	if (table = q->rtable) {
+	    status = do_append(q, &Argv[q->argc], action, actarg);
+	    if (status != SMS_SUCCESS) break;
+##	    repeat replace tblstats (appends = tblstats.appends + 1,
+##				     modtime = "now")
+##		where tblstats.#table = @table
+	}
+	
+	/* execute followup routine */
+	if (v->post_rtn) status = (*v->post_rtn)(q, Argv);
 	break;
 
     case DELETE:
-	if (q->support_rtn) {
-	    if ((*q->support_rtn)(Argv, action, actarg) == -1) 
-		break;
+	/* see if row already exists */
+	if (v->field) {
+	    status = validate_row(q, Argv, v);
+	    if (status != SMS_EXISTS) break;
 	}
-	build_qual(q->qual, q->argc, &Argv[q->sargc], qual);
-	do_delete(q, qual, action, actarg);
+
+	/* build "where" clause and perform delete */
+	/* if q->rtable = NULL, perform post_rtn only */
+	if (table = q->rtable) {
+	    build_qual(q->qual, q->argc, Argv, qual);
+	    status = do_delete(q, qual, action, actarg);
+	    if (status != SMS_SUCCESS) break;
+##	    repeat replace tblstats (deletes = tblstats.deletes + 1,
+##				     modtime = "now")
+##		where tblstats.#table = @table
+	}
+
+	/* execute followup routine */
+	if (v->post_rtn) status = (*v->post_rtn)(q, Argv);
 	break;
+
     }
+
+    if (status == SMS_SUCCESS)
+##      end transaction
+    else
+##      abort
+
+    if (status != SMS_SUCCESS) com_err(whoami, status, " (Query failed)");
+    return(status);
 }
 
 build_qual(fmt, argc, argv, qual)
@@ -119,62 +316,178 @@ build_qual(fmt, argc, argv, qual)
 	char *argv[];
 	char *qual;
 {
+    register char *c;
+    register int i;
+    char *args[4];
+
+    c = fmt;
+    for (i = 0; i < argc; i++) {
+	c = (char *)index(c, '%');
+	if (c++ == (char *)0) return(SMS_ARGS);
+	if (*c == 's')
+	    args[i] = argv[i];
+	else if (*c == 'd')
+	    *(int *)&args[i] = *(int *)argv[i];	/* sigh */
+	else
+	    return(SMS_INGRES_ERR);
+    }
+
     switch (argc) {
     case 0:
 	strcpy(qual, fmt);
 	break;
 
     case 1:
-	sprintf(qual, fmt, argv[0]);
+	sprintf(qual, fmt, args[0]);
 	break;
 
     case 2:
-	sprintf(qual, fmt, argv[0], argv[1]);
+	sprintf(qual, fmt, args[0], args[1]);
 	break;
 
     case 3:
-	sprintf(qual, fmt, argv[0], argv[1], argv[2]);
+	sprintf(qual, fmt, args[0], args[1], args[2]);
 	break;
 
     case 4:
-	sprintf(qual, fmt, argv[0], argv[1], argv[2], argv[3]);
+	sprintf(qual, fmt, args[0], args[1], args[2], args[3]);
 	break;
     }
 }
 
-do_retrieve(q, action, actarg)
-    register struct query *q;
-    int (*action)();
-    char *actarg;
+check_query_access(q, argv, cl)
+    struct query *q;
+    char *argv[];
+    client *cl;
 ##{
-##  char *rvar;
-##  char *rtable;
+##  char *name;
+##  int acl_id;
+##  int exists;
 ##  int rowcount;
+##  static int def_uid;
+    int status;
+    int client_id;
+    char *client_type;
 
-    if (q->rvar) {
-	rvar = q->rvar;
-	rtable = q->rtable;
-##     	range of rvar is rtable
-    }
-
-##  retrieve (param (q->tlist, q->vaddr)) {
-	if (q->support_rtn)	
-	    /* save result */
-	    (*q->support_rtn)(q->vcnt, q->vaddr, 0, 0); 
-	else
-	    (*action)(q->vcnt, q->vaddr, actarg);
-##  }
-
+    /* get query access control list */
+    name = q->shortname;
+##  repeat retrieve (acl_id = capacls.list_id) where capacls.tag = @name
 ##  inquire_equel (rowcount = "rowcount")
+    if (rowcount == 0) return(SMS_PERM);
 
-    if (q->support_rtn) {
-	/* process and send saved results */
-	(*q->support_rtn)(0, 0, &q->vnames[q->argc], action, actarg);
+    /* initialize default uid */
+    if (def_uid == 0) {
+##	retrieve (def_uid = users.users_id) where users.login = "default"
     }
 
+    com_err(whoami, 0, "checking for default access");
+    /* check for default access */
+##  range of m is members
+##  repeat retrieve (exists = any(m.#member_id where m.list_id = @acl_id and
+##                   m.member_type = "USER" and m.#member_id = def_uid))
+    if (exists) return(SMS_SUCCESS);
+
+    /* parse client name */
+    status = get_client(cl, &client_type, &client_id);
+    if (status != SMS_SUCCESS) return(status);
+
+    com_err(whoami, 0, "checking for client in acl");
+    /* see if client is in the list (or any of its sub-lists) */
+    exists = find_member(acl_id, client_type, client_id, 0);
+    return ((exists) ? SMS_SUCCESS : SMS_PERM);
 ##}
 
-do_retrieve_with_qual(q, qual, action, actarg)
+get_client(cl, client_type, client_id)
+    client *cl;
+    char **client_type;
+    int *client_id;
+##{
+    struct krbname *krb;
+##  int member_id;
+##  char *name;
+##  int rowcount;
+
+    /* for now accept only null instances */
+    krb = &cl->kname;
+    if (krb->inst[0]) return(SMS_PERM);
+
+    /* if client is from local realm, get users_id */
+    if (!strcmp(krb->realm, krb_realm)) {
+	name = krb->name;
+##	repeat retrieve (member_id = users.users_id) where users.login = @name
+	*client_type = "USER";
+    } else {
+	/* otherwise use string_id */
+	name = cl->clname;
+##	repeat retrieve (member_id = strings.string_id) 
+##          where strings.string = @name
+	*client_type = "STRING";
+    }
+	
+    /* make sure we found a users or string id */
+##  inquire_equel (rowcount = "rowcount")
+    if (rowcount == 0) return(SMS_PERM);
+
+    *client_id = member_id;
+    return(SMS_SUCCESS);
+##}
+
+##find_member(list_id, member_type, member_id, sq)
+##  int list_id;
+##  char *member_type;
+##  int member_id;
+    struct save_queue *sq;
+##{
+##  int exists;
+##  int sublist;
+    int child;
+    struct save_queue *sq_create();
+
+    /* see if client is a direct member of list */
+##  repeat retrieve (exists = any(m.#member_id where 
+##				  m.#list_id = @list_id and
+##				  m.#member_type = @member_type and 
+##				  m.#member_id = @member_id))
+    if (exists) return(1);
+
+    /* are there any sub-lists? */
+    com_err(whoami, 0, "checking for sub-lists");
+##  repeat retrieve (exists = any(m.#member_id where m.#list_id = @list_id and
+##                   m.#member_type = "LIST"))
+    if (!exists) return(0);
+
+    /* yes; now recurse through sublists */
+
+    /* create a save queue */
+    if (sq == (struct save_queue *)0) {
+	sq = sq_create();
+	child = 0;
+    } else {
+	child = 1;
+    }
+
+    /* save all sublist ids */
+##  range of m is members
+##  retrieve (sublist = m.#member_id) 
+##      where m.#list_id = list_id and m.#member_type = "LIST"
+##  {
+	 sq_save_unique_data(sq, sublist);
+##  }
+
+    if (child) return;
+
+    com_err(whoami, 0, "checking for client in sub-lists");
+    /* at top-level, check sub-lists for client (breadth-first search) */
+    while (sq_get_data(sq, &sublist)) {
+	exists = find_member(sublist, member_type, member_id, sq);
+	if (exists) {
+	    sq_destroy(sq);
+	    return(1);
+	}
+    }
+##}
+
+do_retrieve(q, qual, action, actarg)
     register struct query *q;
     char *qual;
     int (*action)();
@@ -184,28 +497,29 @@ do_retrieve_with_qual(q, qual, action, actarg)
 ##  char *rtable;
 ##  char *cqual;
 ##  int rowcount;
-      
+
     if (q->rvar) {
 	rvar = q->rvar;
 	rtable = q->rtable;
 ##     	range of rvar is rtable
     }
 
-    cqual = qual;
-##  retrieve (param (q->tlist, q->vaddr))
-##  where cqual {
-	if (q->support_rtn)
-	    (*q->support_rtn)(q->vcnt, q->vaddr, 0, 0);
-	else
-	    (*action)(q->vcnt, q->vaddr, actarg);
-##  }
+    if (qual) {
+	cqual = qual;
+##      retrieve unique (param (q->tlist, q->vaddr)) where cqual
+##      {
+	     (*action)(q->vcnt, q->vaddr, actarg);
+##      }
+    } else {
+##      retrieve unique (param (q->tlist, q->vaddr))
+##      {
+	     (*action)(q->vcnt, q->vaddr, actarg);
+##      }
+    }
 
 ##  inquire_equel (rowcount = "rowcount")
 
-    if (q->support_rtn) {
-	(*q->support_rtn)(0, 0, &q->vnames[q->argc], action, actarg);
-    }
-
+    return ((rowcount == 0) ? SMS_NO_MATCH : SMS_SUCCESS);
 ##}
 
 do_update(q, argv, qual, action, actarg)
@@ -228,6 +542,7 @@ do_update(q, argv, qual, action, actarg)
 ##  replace rvar (param (q->tlist, argv))
 ##  where cqual
 
+    return(SMS_SUCCESS);
 ##}
 
 do_append(q, argv, action, actarg)
@@ -238,13 +553,20 @@ do_append(q, argv, action, actarg)
 ##{
 ##  char *rvar;
 ##  char *rtable;
+##  char *cqual;
 
     rvar = q->rvar;
     rtable = q->rtable;
 ##  range of rvar is rtable
 
-##  append to rtable (param (q->tlist, argv))
+    if (q->qual) {
+	cqual = q->qual;
+##      append to rtable (param (q->tlist, argv)) where cqual
+    } else {
+##      append to rtable (param (q->tlist, argv))
+    }
 
+    return(SMS_SUCCESS);
 ##}
 
 do_delete(q, qual, action, actarg)
@@ -264,193 +586,9 @@ do_delete(q, qual, action, actarg)
     cqual = qual;
 ##  delete rvar where cqual
 
+    return(SMS_SUCCESS);
 ##}
 
-/* Support Queries */
-
-support_alis(argv, action, actarg)
-    char *argv[];
-    int (*action)();
-    char *actarg;
-##{
-##  static int list_id;
-
-##  range of tbi is tbinfo
-
-##  repeat retrieve (list_id = tbi.value1) where tbi.table = "list"
-    list_id++;
-##  repeat replace tbi (value1 = @list_id) where tbi.table = "list"
-
-    argv[0] = (char *)&list_id;
-##}
-
-/**
- ** support_member():
- **
- ** support for ADD_MEMBER_TO_LIST
- ** support for DELETE_MEMBER_FROM_LIST
- ** support for UPDATE_MEMBER_STATUS
- **
- **           Input                     Output
- ** argv[0]   List Type       argv[4]   List ID
- ** argv[1]   List Name       argv[5]   Member ID
- ** argv[2]   Member Type     argv[6]   Member Type
- ** argv[3]   Member Name
- **/
-
-support_member(argv, action, actarg)
-	char *argv[];
-	int (*action)();
-        char *actarg;
-##{
-##  char *list_name;
-##  char *list_type;
-##  char *member_name;
-##  char *member_type;
-##  int list_id;
-##  int value;
-##  int rowcount;
-    char errmsg[64];
-    char *p_errmsg = errmsg;
-
-    list_type = argv[0];
-    list_name = argv[1];
-    member_type = argv[2];
-    member_name = argv[3];
-
-##  range of l is list
-##  repeat retrieve (list_id = l.id) 
-##      where l.name = @list_name and l.type = @list_type
-    sprintf(argv[4], "%d", list_id);
-
-    if (!strcmp(member_type, "acl") || !strcmp(member_type, "group") ||
-	!strcmp(member_type, "mail")) {
-##      repeat retrieve (value = l.id)
-##          where l.name = @member_name and l.type = @member_type
-##      inquire_equel (rowcount = "rowcount")
-	if (rowcount == 0) {
-	    sprintf(errmsg, "(No such list: %s)", member_name);
-	    (*action)(1, p_errmsg, actarg);
-	    return(-1);
-	}
-    } else if (!strcmp(member_type, "user")) {
-##      range of u is users
-##      repeat retrieve (value = u.id) where u.login = @member_name
-##	inquire_equel (rowcount = "rowcount")
-	if (rowcount == 0) {
-	    sprintf(errmsg, "(No such user: %s)", member_name);
-	    (*action)(1, p_errmsg, actarg);
-	    return(-1);
-	}
-    } else if (!strcmp(member_type, "string")) {
-##      range of s is strings
-##	repeat retrieve (value = s.id) where s.string = @member_name
-##      inquire_equel (rowcount = "rowcount")
-	if (rowcount == 0) {
-##          range of tbi is tbinfo
-##          retrieve (value = tbi.value1) where tbi.table = "strings"
-	    value++;
-##          replace tbi (value1 = value) where tbi.table = "strings"
-##	    append to strings (id = value, string = member_name)
-	}
-    } else {
-	sprintf(errmsg, "(Unknown member type: %s)", member_type);
-	(*action)(1, p_errmsg, actarg);
-	return(-1);
-    }
-
-    sprintf(argv[5], "%d", value);
-    strcpy(argv[6], member_type);
-    return(0);
-##}
-
-/**
- ** support for GET_LIST_MEMBERS
- **
- **           Input           Output
- ** argv[0]   Member Type     Member Type
- ** argv[1]   Member Id       Member Name (ACL, Group, Maillist, User, String)
- ** argv[2]   Member Status   Member Status
- **
- ** This routine performs two functions:
- **   When called with argc > 0, it copies and saves argv in a queue
- **   When called with argc = 0, it does post-processing on the saved
- **     data, and sends the data to the client using the supplied action
- **     routine.
- **/
-
-support_gmol(argc, argv, vnames, action, actarg)
-    int argc;
-    char *argv[];
-    char *vnames[];
-    int (*action)();
-    char *actarg;
-##{	
-##  char *member_type;
-##  int member_id;
-##  char member_name[33];
-    char **sargv;
-    char *nargv[3];
-    register int n;
-    static struct save_queue *sq = (struct save_queue *)0;
-    struct save_queue *sq_create();
-
-    if (argc > 0) {
-	if (sq == (struct save_queue *)0) {
-	    sq = sq_create();
-	}
-	sargv = (char **)malloc(3 * sizeof (char *));
-	/* copy member_type */
-	n = strlen(argv[0]) + 1;
-	sargv[0] = (char *)malloc(n);
-	bcopy(argv[0], sargv[0], n);
-	/* copy member_id */
-	sargv[1] = (char *)malloc(sizeof (int));
-	*(int *)sargv[1] = *(int *)argv[1];
-	/* copy member_status */
-	n = strlen(argv[2]) + 1;
-	sargv[2] = (char *)malloc(n);
-	bcopy(argv[2], sargv[2], n);
-	/* store data */
-	sq_save_data(sq, sargv);
-	return;
-    }
-
-    while (sq_get_data(sq, &sargv)) {
-	member_type = sargv[0];
-	member_id = *(int *)sargv[1];
-
-	nargv[0] = member_type;
-	nargv[1] = member_name;
-	nargv[2] = sargv[2];
-
-	if (!strcmp(member_type, "acl") ||
-	    !strcmp(member_type, "group") ||
-	    !strcmp(member_type, "mail")) {
-##	    range of l is list
-##          repeat retrieve (member_name = l.name)
-##		where l.id = @member_id
-	} else if (!strcmp(member_type, "user")) {
-##          range of u is users
-##	    repeat retrieve (member_name = u.login) 
-##		where u.id = @member_id
-	} else if (!strcmp(member_type, "string")) {
-##	    range of s is strings
-##	    repeat retrieve (member_name = s.string)
-##		where s.id = @member_id
-	} else {
-	    sprintf(member_name, "%d", member_id);
-	}
-
-	(*action)(3, nargv, vnames, actarg);
-	free(sargv[0]);
-	free(sargv[1]);
-	free(sargv[2]);
-    }
-
-    sq_destroy(sq);
-    sq = (struct save_queue *)0;
-##}
 
 /*
  * Local Variables:

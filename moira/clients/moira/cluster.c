@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/cluster.c,v 1.10 1988-10-03 13:03:43 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/cluster.c,v 1.11 1988-10-03 18:00:11 mar Exp $";
 #endif lint
 
 /*	This is the file cluster.c for the SMS Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/cluster.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/cluster.c,v 1.10 1988-10-03 13:03:43 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/cluster.c,v 1.11 1988-10-03 18:00:11 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -995,8 +995,8 @@ Bool one_item;
     char * temp_ptr;
 
     Put_message(" ");
-    temp_ptr = "Are you sure that you want to remove this cluster (y/n) ?";
-    if (!one_item) PrintClusterData(info);
+    temp_ptr = "Are you sure that you want to remove this cluster data (y/n) ?";
+    PrintClusterData(info);
     if (!one_item || Confirm(temp_ptr)) {
 	if( (stat = do_sms_query("delete_cluster_data", 3, info,
 				 Scream, (char *) NULL)) != 0) {

@@ -1,4 +1,4 @@
-/* $Id: mr_util.c,v 1.31 1998-02-23 19:24:33 danw Exp $
+/* $Id: mr_util.c,v 1.32 1998-10-19 20:18:58 danw Exp $
  *
  * Copyright (C) 1987-1998 by the Massachusetts Institute of Technology
  * For copying and distribution information, please see the file
@@ -13,7 +13,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_util.c,v 1.31 1998-02-23 19:24:33 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_util.c,v 1.32 1998-10-19 20:18:58 danw Exp $");
 
 extern char *whoami;
 
@@ -38,7 +38,7 @@ char *requote(char *cp)
 	}
       else
 	{
-	  sprintf(op, "\\%03o", *cp++);
+	  sprintf(op, "\\%03o", (unsigned char)*cp++);
 	  op += 4;
 	  len += 4;
 	}

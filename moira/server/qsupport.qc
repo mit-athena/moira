@@ -1,11 +1,14 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v $
  *	$Author: wesommer $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.6 1987-08-04 01:10:02 wesommer Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.7 1987-08-04 01:49:41 wesommer Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
  *	$Log: not supported by cvs2svn $
+Revision 1.6  87/08/04  01:10:02  wesommer
+Changes by mike; checked in prior to my hacking.
+
 Revision 1.5  87/07/30  14:54:13  wesommer
 Added debugging code in an attempt to catch a flakey problem.
 
@@ -24,7 +27,7 @@ Initial revision
  */
 
 #ifndef lint
-static char *rcsid_qsupport_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.6 1987-08-04 01:10:02 wesommer Exp $";
+static char *rcsid_qsupport_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.7 1987-08-04 01:49:41 wesommer Exp $";
 #endif lint
 
 #include "query.h"
@@ -896,14 +899,13 @@ validate_row(q, argv, v)
     table = q->rtable;
     name = v->field;
 
-    /* tell the logfile what we're doing */
-    com_err(whoami, 0, "validating row");
-    com_err(whoami, 0, qual);
-
+    if (log_flags & LOG_RES)
+	/* tell the logfile what we're doing */
+	com_err(whoami, 0, "validating row: %s", qual);
+    
     /* look for the record */
 ##  range of rvar is table
 ##  retrieve (rowcount = count(rvar.name where qual))
-    com_err(whoami, 0, "row validated");
     if (rowcount == 0) return(SMS_NO_MATCH);
     if (rowcount > 1) return(SMS_NOT_UNIQUE);
     return(SMS_EXISTS);
@@ -921,30 +923,30 @@ validate_fields(q, argv, vo, n)
     while (--n >= 0) {
 	switch (vo->type) {
 	case V_NAME:
-	    sprintf(buf, "validating %s in %s: %s", 
+	    if (log_flags&LOG_RES)
+		com_err(whoami, 0, "validating %s in %s: %s", 
 		    vo->namefield, vo->table, argv[vo->index]);
-	    com_err(whoami, 0, buf);
 	    status = validate_name(argv, vo);
 	    break;
 
 	case V_ID:
-	    sprintf(buf, "validating %s in %s: %s", 
+	    if (log_flags&LOG_RES)
+		com_err(whoami, 0, "validating %s in %s: %s", 
 		    vo->idfield, vo->table, argv[vo->index]);
-	    com_err(whoami, 0, buf);
 	    status = validate_id(argv, vo);
 	    break;
 
 	case V_TYPE:
-	    sprintf(buf, "validating %s type: %s",
+	    if (log_flags&LOG_RES)
+		com_err(whoami, 0, "validating %s type: %s",
 		    vo->table, argv[vo->index]);
-	    com_err(whoami, 0, buf);
 	    status = validate_type(argv, vo);
 	    break;
 
 	case V_TYPEDATA:
-	    sprintf(buf, "validating type-specific data: %s",
+	    if (log_flags&LOG_RES)
+		com_err(whoami, 0, "validating type-specific data: %s",
 		    argv[vo->index]);
-	    com_err(whoami, 0, buf);
 	    status = validate_typedata(q, argv, vo);
 	    break;
 

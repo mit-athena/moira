@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v $
  *	$Author: wesommer $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.11 1987-07-29 16:04:54 wesommer Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.12 1987-08-04 01:50:00 wesommer Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
@@ -14,6 +14,9 @@
  * 	Let the reader beware.
  * 
  *	$Log: not supported by cvs2svn $
+ * Revision 1.11  87/07/29  16:04:54  wesommer
+ * Add keepalive feature.
+ * 
  * Revision 1.10  87/06/30  20:02:26  wesommer
  * Added returned tuple chain to client structure.
  * Added local realm global variable.
@@ -47,7 +50,7 @@
  * 
  */
 
-static char *rcsid_sms_main_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.11 1987-07-29 16:04:54 wesommer Exp $";
+static char *rcsid_sms_main_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.12 1987-08-04 01:50:00 wesommer Exp $";
 
 #include <strings.h>
 #include <sys/errno.h>
@@ -107,7 +110,8 @@ main(argc, argv)
 	init_sms_err_tbl();
 	init_krb_err_tbl();
 	set_com_err_hook(sms_com_err);
-
+	setlinebuf(stderr);
+	
 	if (argc != 1) {
 		com_err(whoami, 0, "Usage: smsd");
 		exit(1);
@@ -162,8 +166,7 @@ main(argc, argv)
 	
 	op_list = create_list_of_operations(1, listenop);
 	
-	(void) sprintf(buf1, "started (pid %d)", getpid());
-	com_err(whoami, 0, buf1);
+	com_err(whoami, 0, "started (pid %d)", getpid());
 	com_err(whoami, 0, rcsid_sms_main_c);
 
 	/*
@@ -195,6 +198,27 @@ main(argc, argv)
 		fprintf(stderr, "    tick\n");
 #endif notdef
 		/*
+		 * Handle any new connections; this comes first so
+		 * errno isn't tromped on.
+		 */
+		if (OP_DONE(listenop)) {
+			if (OP_STATUS(listenop) == OP_CANCELLED) {
+				if (errno == EWOULDBLOCK) {
+					do_reset_listen();
+				} else {
+					com_err(whoami, errno,
+						"error on listen");
+					exit(1);
+				}
+			} else if ((status = new_connection()) != 0) {
+				com_err(whoami, errno,
+					"Error on listening operation.");
+				/*
+				 * Sleep here to prevent hosing?
+				 */
+			}
+		}
+		/*
 		 * Handle any existing connections.
 		 */
 		tardy = now - 30*60;
@@ -211,24 +235,8 @@ main(argc, argv)
 			cur_client = NULL;
 			if (takedown) break;
 		}
-		/*
-		 * Handle any new connections.
-		 */
-		if (OP_DONE(listenop)) {
-			if (OP_STATUS(listenop) == OP_CANCELLED) {
-				com_err(whoami, errno, "Error on listen");
-				exit(1);
-
-			} else if ((status = new_connection()) != 0) {
-				com_err(whoami, errno,
-					"Error on listening operation.");
-				/*
-				 * Sleep here to prevent hosing?
-				 */
-			}
-		}
 	}
-	com_err(whoami, 0, takedown);
+	com_err(whoami, 0, "%s", takedown);
 	sms_close_database();
 	return 0;
 }
@@ -254,6 +262,15 @@ do_listen()
 			       (char *)&client_addr,
 			       &client_addrlen, &client_tuple);
 	return 0;
+}
+
+
+do_reset_listen()
+{
+	client_addrlen = sizeof(client_addr);
+	start_accepting_client(listencon, listenop, &newconn,
+			       (char *)&client_addr,
+			       &client_addrlen, &client_tuple);
 }
 
 /*
@@ -316,13 +333,11 @@ new_connection()
 	 * Log new connection.
 	 */
 	
-	(void) sprintf(buf1,
-		       "New connection from %s port %d (now %d client%s)",
-		       inet_ntoa(cp->haddr.sin_addr),
-		       (int)ntohs(cp->haddr.sin_port),
-		       nclients,
-		       nclients!=1?"s":"");
-	com_err(whoami, 0, buf1);
+	com_err(whoami, 0, "New connection from %s port %d (now %d client%s)",
+		inet_ntoa(cp->haddr.sin_addr),
+		(int)ntohs(cp->haddr.sin_port),
+		nclients,
+		nclients!=1?"s":"");
 	
 	/*
 	 * Get ready to accept the next connection.

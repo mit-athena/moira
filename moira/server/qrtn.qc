@@ -1,11 +1,14 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v $
  *	$Author: wesommer $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v 1.6 1987-08-04 01:30:54 wesommer Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v 1.7 1987-08-04 01:49:20 wesommer Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
  *	$Log: not supported by cvs2svn $
+ * Revision 1.6  87/08/04  01:30:54  wesommer
+ * Mike's changes; checked in prior to working over messages.
+ * 
  * Revision 1.5  87/06/21  16:37:58  wesommer
  * Changed include files, reindented things.
  * 
@@ -16,7 +19,7 @@
  */
 
 #ifndef lint
-static char *rcsid_qrtn_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v 1.6 1987-08-04 01:30:54 wesommer Exp $";
+static char *rcsid_qrtn_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v 1.7 1987-08-04 01:49:20 wesommer Exp $";
 #endif lint
 
 #include "query.h"
@@ -380,7 +383,6 @@ check_query_access(q, argv, cl)
 ##	retrieve (def_uid = users.users_id) where users.login = "default"
     }
 
-    com_err(whoami, 0, "checking for default access");
     /* check for default access */
 ##  range of m is members
 ##  repeat retrieve (exists = any(m.#member_id where m.list_id = @acl_id and
@@ -391,7 +393,6 @@ check_query_access(q, argv, cl)
     status = get_client(cl, &client_type, &client_id);
     if (status != SMS_SUCCESS) return(status);
 
-    com_err(whoami, 0, "checking for client in acl");
     /* see if client is in the list (or any of its sub-lists) */
     exists = find_member(acl_id, client_type, client_id, 0);
     return ((exists) ? SMS_SUCCESS : SMS_PERM);
@@ -451,7 +452,6 @@ get_client(cl, client_type, client_id)
     if (exists) return(1);
 
     /* are there any sub-lists? */
-    com_err(whoami, 0, "checking for sub-lists");
 ##  repeat retrieve (exists = any(m.#member_id where m.#list_id = @list_id and
 ##                   m.#member_type = "LIST"))
     if (!exists) return(0);
@@ -476,7 +476,6 @@ get_client(cl, client_type, client_id)
 
     if (child) return;
 
-    com_err(whoami, 0, "checking for client in sub-lists");
     /* at top-level, check sub-lists for client (breadth-first search) */
     while (sq_get_data(sq, &sublist)) {
 	exists = find_member(sublist, member_type, member_id, sq);

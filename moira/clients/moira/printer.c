@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/printer.c,v 1.9 1990-04-05 18:14:42 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/printer.c,v 1.10 1990-04-25 12:52:04 mar Exp $";
 #endif lint
 
 /*	This is the file printer.c for the MOIRA Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/printer.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/printer.c,v 1.9 1990-04-05 18:14:42 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/printer.c,v 1.10 1990-04-25 12:52:04 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -131,7 +131,7 @@ static char **
 AskPcapInfo(info)
 char ** info;
 {
-    char temp_buf[BUFSIZ], *newname;
+    char temp_buf[BUFSIZ];
 
     Put_message("");
     sprintf(temp_buf, "Printcap entry for %s.", 
@@ -196,7 +196,6 @@ char ** info;
 Bool one_item;
 {
     int stat;
-    char temp_buf[BUFSIZ];
 
     if ( (stat = do_mr_query("delete_printcap_entry", 1,
 			      &info[PCAP_NAME], Scream, NULL)) != 0)
@@ -339,7 +338,7 @@ static char **
 AskPalladiumInfo(info)
 char ** info;
 {
-    char temp_buf[BUFSIZ], *newname;
+    char temp_buf[BUFSIZ];
 
     Put_message("");
     sprintf(temp_buf, "Palladium Server/Supervisor entry for %s.", 
@@ -434,7 +433,6 @@ char ** info;
 Bool one_item;
 {
     int stat;
-    char temp_buf[BUFSIZ];
 
     if ( (stat = do_mr_query("delete_palladium", 1,
 			      &info[PD_NAME], Scream, NULL)) != 0)
@@ -448,8 +446,7 @@ int GetPalladium(argc, argv)
 int argc;
 char **argv;
 {
-    struct qelem *elem, *top;
-    char buf[BUFSIZ];
+    struct qelem *top;
 
     top = GetPalladiumInfo(argv[1]);
     Loop(top, PrintPalladiumInfo);

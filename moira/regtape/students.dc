@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/students.dc,v 1.14 1992-05-13 10:11:52 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/students.dc,v 1.15 1992-05-20 12:33:50 mar Exp $
  */
 
 #include <stdio.h>
@@ -142,7 +142,7 @@ FILE *in;
     static char state[LEN_STATE+1], dphone[LEN_DPHONE+1], mphone[LEN_MPHONE+1];
     static char sname[LEN_NAME+1], title[128];
     static int nyear = 0;
-    int ends_jr, ends_iii, ends_iv, ends_sr;
+    int ends_jr, ends_iii, ends_iv, ends_sr, ends_ii, ends_v;
     char *p;
 
     if (nyear == 0) {
@@ -193,11 +193,13 @@ FILE *in;
 	e.first = "";
 	e.middle = "";
     }
-    ends_jr = ends_iii = ends_iv = ends_sr = 0;
+    ends_jr = ends_iii = ends_iv = ends_sr = ends_ii = ends_v = 0;
     LookForSt(e.last);
     LookForO(e.last);
-    LookForJrAndIII(e.last, &ends_sr, &ends_jr, &ends_iii, &ends_iv);
-    LookForJrAndIII(e.first, &ends_sr, &ends_jr, &ends_iii, &ends_iv);
+    LookForJrAndIII(e.last, &ends_sr, &ends_jr, &ends_iii, &ends_iv,
+		    &ends_ii, &ends_v);
+    LookForJrAndIII(e.first, &ends_sr, &ends_jr, &ends_iii, &ends_iv,
+		    &ends_ii, &ends_v);
     FixCase(e.last);
     FixCase(e.first);
     FixCase(e.middle);

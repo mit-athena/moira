@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/employee.dc,v 1.10 1992-05-13 10:09:45 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/employee.dc,v 1.11 1992-05-20 12:34:00 mar Exp $
  */
 
 #include <stdio.h>
@@ -147,7 +147,7 @@ FILE *in;
     static char office[LEN_OFFICE+1], phone[LEN_PHONE+1], phone2[LEN_PHONE2+1];
     static char dept[LEN_DEPT+1], title[LEN_TITLE+1], username[LEN_USERNAME+1];
     static char host[LEN_HOST+1];
-    int ends_sr, ends_jr, ends_iii, ends_iv;
+    int ends_sr, ends_jr, ends_iii, ends_iv, ends_ii, ends_v;
     char *p;
 
     if (fgets(buf, sizeof(buf), in) == NULL)
@@ -186,11 +186,13 @@ FILE *in;
 	e.first = "";
 	e.middle = "";
     }
-    ends_sr = ends_jr = ends_iii = ends_iv = 0;
+    ends_sr = ends_jr = ends_iii = ends_iv = ends_ii = ends_v = 0;
     LookForSt(e.last);
     LookForO(e.last);
-    LookForJrAndIII(e.last, &ends_sr, &ends_jr, &ends_iii, &ends_iv);
-    LookForJrAndIII(e.first, &ends_sr, &ends_jr, &ends_iii, &ends_iv);
+    LookForJrAndIII(e.last, &ends_sr, &ends_jr, &ends_iii, &ends_iv,
+		    &ends_ii, &ends_v);
+    LookForJrAndIII(e.first, &ends_sr, &ends_jr, &ends_iii, &ends_iv,
+		    &ends_ii, &ends_v);
     FixCase(e.last);
     FixCase(e.first);
     FixCase(e.middle);

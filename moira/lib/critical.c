@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/critical.c,v 1.10 1990-03-17 16:36:28 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/critical.c,v 1.11 1990-03-19 13:08:49 mar Exp $
  *
  * Log and send a zephyrgram about any critical errors.
  *
@@ -82,7 +82,7 @@ char *msg;
     znotice.z_kind = UNSAFE;
     znotice.z_class = "MOIRA";
     znotice.z_class_inst = inst;
-    znotice.z_default_format = "MOIRA $instance:\n $message\n";
+    znotice.z_default_format = "MOIRA $instance on $fromhost:\n $message\n";
     (void) ZInitialize ();
     znotice.z_message = msg;
     znotice.z_message_len = strlen(msg) + 1;

@@ -3,13 +3,13 @@
  * and distribution information, see the file "mit-copyright.h". 
  *
  * $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chsh.c,v $
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chsh.c,v 1.16 1997-09-28 17:02:44 danw Exp $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chsh.c,v 1.17 1997-09-28 17:03:58 danw Exp $
  * $Author: danw $
  *
  */
 
 #ifndef lint
-static char *rcsid_chsh_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chsh.c,v 1.16 1997-09-28 17:02:44 danw Exp $";
+static char *rcsid_chsh_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chsh.c,v 1.17 1997-09-28 17:03:58 danw Exp $";
 #endif
 
 /*
@@ -240,7 +240,7 @@ void check_shell(shell)
     
     if (!ok) {
 	if (shell[0] != '/') {
-	    fprintf(stderr, "%s it not a standard shell.  ", shell);
+	    fprintf(stderr, "%s is not a standard shell.  ", shell);
 	    fprintf(stderr, "You may choose to use a nonstandard\n");
 	    fprintf(stderr, "shell, but you must specify its complete ");
 	    fprintf(stderr, "path name.\n");

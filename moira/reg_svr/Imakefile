@@ -1,0 +1,16 @@
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/Imakefile,v 1.1 1992-12-30 17:44:16 mar Exp $
+
+# Copyright 1992 by the Massachusetts Institute of Technology.
+#
+# For copying and distribution information,
+# please see the file <mit-copyright.h>.
+#
+# Imakefile for moira reg_svr.
+
+SRCS= startreg.c reg_svr.c requests.c
+CODE=$(SRCS)
+OBJS=requests.o reg_svr.o
+GDSSLIB=../gdss/rgdss.o /mit/gdss/`machtype`/libgdss.a
+
+program(reg_svr, $(OBJS),,../server/libmrglue.a -lkadm $(GDSSLIB) $(CLIBS) $(SQL_LIB), ${PROGDIR})
+program(startreg, startreg.o,,,${PROGDIR})

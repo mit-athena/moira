@@ -15,6 +15,8 @@
 	ec	UREG_NOT_ALLOWED, "You may not register at this time."
 	ec	UREG_KRB_TAKEN, "Authentication setup failed."
 	ec	UREG_MISC_ERROR, "System error."
+	ec	UREG_ENROLLED, "Enrolled in campus namespace."
+	ec	UREG_ENROLL_NOT_ALLOWED, "Enrolled in campus namespace, not eligable for an Athena account."
 	end
 
 	

@@ -15,7 +15,7 @@ listed for each query, the following two error codes may be returned by any
 query: SMS_SUCCESS for successful completion of the query, and SMS_PERM
 indicating that permission was denied for the query.
 
-@Begin(Verbatim)
+@Begin(Verbatim, Size -1)
 
 @SubSection(Users)
 @label(Users)
@@ -89,19 +89,19 @@ indicating that permission was denied for the query.
   Args: (login, uid, shell, home, last, first, middle, status, 
 	 mit_id, mit_year, expdate)
   Returns: none
-  Integrity: application must check for valid shell and status values; home
-	     must be a valid filesys entry; expdate must be reasonable;
-	     modtime is set by the server.
+  Integrity: application must check for valid shell and status
+	     values; home must be a valid filesys entry; expdate must
+	     be reasonable; modtime is set by the server.
   Errors: SMS_EXISTS, SMS_FILESYS, SMS_DATE
   Side Effects: blank finger entry created
 
 @B(update_user)
-  Args: (login, newlogin, uid, shell, home, last, first, middle, status, 
-	 mit_id, mit_year, expdate)
+  Args: (login, newlogin, uid, shell, home, last, first, middle, 
+	 status, mit_id, mit_year, expdate)
   Returns: none
-  Integrity: application must check for valid shell and status values; home
-	     must be a valid filesys entry; expdate must be reasonable;
-	     modtime is set by the server.
+  Integrity: application must check for valid shell and status
+	     values; home must be a valid filesys entry; expdate must
+	     be reasonable; modtime is set by the server.
   Errors: SMS_NO_MATCH, SMS_NOT_UNIQUE, SMS_FILESYS, SMS_DATE
 
 @B(delete_user)
@@ -115,23 +115,23 @@ indicating that permission was denied for the query.
 
 @B(get_finger_by_login)
   Args: (login(*))
-  Returns: {login, fullname, nickname, home_addr, home_phone, office_addr,
-	    office_phone, mit_dept, mit_year, modtime}
+  Returns: {login, fullname, nickname, home_addr, home_phone,
+	    office_addr, office_phone, mit_dept, mit_year, modtime}
   Errors: SMS_NO_MATCH, SMS_USER
 
 @B(get_finger_by_first_last)
   Args: (first(*), last(*))
-  Returns: {login, fullname, nickname, home_addr, home_phone, office_addr,
-	    office_phone, mit_dept, mit_year, modtime}
+  Returns: {login, fullname, nickname, home_addr, home_phone, 
+	    office_addr, office_phone, mit_dept, mit_year, modtime}
   Errors: SMS_NO_MATCH
 
 @B(update_finger_by_login)
-  Args: (login, fullname, nickname, home_addr, home_phone, office_addr, 
-	 office_phone, mit_dept, mit_year, *modtime)
+  Args: (login, fullname, nickname, home_addr, home_phone, 
+	 office_addr, office_phone, mit_dept, mit_year, *modtime)
   Returns: none
-  Integrity: modtime set by server, all other fields validated by 
-	     application. (Perhaps there will be a table specifying valid
-	     values for the mit_year field.)
+  Integrity: modtime set by server, all other fields validated by
+	     application. (Perhaps there will be a table specifying
+	     valid values for the mit_year field.)
   Errors: SMS_NO_MATCH, SMS_USER
 
 @SubSection(Machine)
@@ -145,15 +145,15 @@ indicating that permission was denied for the query.
 @B(add_machine)
   Args: (name, type, model, status, serial, sys_type)
   Returns: none
-  Integrity: type, model, and sys_type are checked against valid values
-	     in the database
+  Integrity: type, model, and sys_type are checked against valid
+	     values in the database
   Errors: SMS_EXISTS, SMS_TYPE
 
 @B(update_machine)
   Args: (name, newname, type, model, status, serial, sys_type)
   Returns: none
-  Integrity: type, model, and sys_type are checked against valid values
-	     in the database
+  Integrity: type, model, and sys_type are checked against valid
+	     values in the database
   Errors: SMS_MACHINE, SMS_TYPE
 
 @B(delete_machine)
@@ -191,7 +191,8 @@ indicating that permission was denied for the query.
 @B(add_machine_to_cluster)
   Args: (machine, cluster)
   Returns: none
-  Integrity: machine and cluster must exist is machine and cluster tables.
+  Integrity: machine and cluster must exist is machine and cluster
+	     tables.
   Errors: SMS_MACHINE, SMS_CLUSTER, SMS_EXISTS
 
 @B(delete_machine_from_cluster)
@@ -209,8 +210,8 @@ indicating that permission was denied for the query.
 @B(add_service_cluster)
   Args: (cluster, service-label, service-cluster)
   Returns: none
-  Integrity: cluster must exist in cluster table; cluster/service-label must
-	     be unique.
+  Integrity: cluster must exist in cluster table;
+	     cluster/service-label must be unique.
   Errors: SMS_CLUSTER, SMS_EXISTS
 
 @B(update_service_cluster)
@@ -232,7 +233,8 @@ indicating that permission was denied for the query.
 
 @B(get_printers_of_cluster)
   Args: (prcluster)
-  Returns: {printer, queue, machine, printer-type, abilities, default}
+  Returns: {printer, queue, machine, printer-type, abilities, 
+	    default}
   Errors: SMS_CLUSTER
 
 @SubSection(Servers)
@@ -246,15 +248,15 @@ indicating that permission was denied for the query.
 @B(add_server_info)
   Args: (service, update_int, target_file, script, dfgen)
   Returns: none
-  Integrity: application must verify that target_dir and script exist;
-	     dfgen must be a valid date
+  Integrity: application must verify that target_dir and script
+	     exist; dfgen must be a valid date
   Errors: SMS_EXISTS, SMS_DATE
 
 @B(update_server_info)
   Args: (service, update_int, target_file, script, dfgen)
   Returns: none
-  Integrity: application must verify that target_dir and script exist;
-	     dfgen must be a valid date
+  Integrity: application must verify that target_dir and script
+	     exist; dfgen must be a valid date
   Errors: SMS_NO_MATCH, SMS_NOT_UNIQUE, SMS_DATE
 
 @B(delete_server_info)
@@ -264,17 +266,20 @@ indicating that permission was denied for the query.
 
 @B(get_server_host_info)
   Args: (service(*), machine(*))
-  Returns: {service, machine, enable, overide, ltt, success, value1, value2}
+  Returns: {service, machine, enable, overide, ltt, success, value1, 
+	    value2}
   Errors: SMS_NO_MATCH
 
 @B(add_server_host)
-  Args: (service, machine, enable, overide, ltt, success, value1, value2)
+  Args: (service, machine, enable, overide, ltt, success, value1, 
+	 value2)
   Returns: none
   Integrity: machine must exist; last must be a valid date or null.
   Errors: SMS_EXISTS, SMS_MACHINE, SMS_DATE
 
 @B(update_server_host)
-  Args: (service, machine, enable, overide, ltt, success, value1, value2)
+  Args: (service, machine, enable, overide, ltt, success, value1, 
+	 value2)
   Returns: none
   Integrity: last must be a valid date or null.
   Errors: SMS_MACHINE, SMS_NO_MATCH, SMS_NOT_UNIQUE, SMS_DATE
@@ -332,13 +337,15 @@ indicating that permission was denied for the query.
 @B(add_filesys)
   Args: (label, type, machine, name, mount, access)
   Returns: none
-  Integrity: type must be a known type; machine must exist in machine table
+  Integrity: type must be a known type; machine must exist in machine
+             table.
   Errors: SMS_EXISTS, SMS_TYPE, SMS_MACHINE
 
 @B(update_filesys)
   Args: (label, type, machine, name, mount, access)
   Returns: none
-  Integrity: type must be a known type; machine must exist in machine table
+  Integrity: type must be a known type; machine must exist in machine
+             table.
   Errors: SMS_NO_MATCH, SMS_NOT_UNIQUE, SMS_TYPE, SMS_MACHINE
 
 @B(delete_filesys)
@@ -372,8 +379,8 @@ indicating that permission was denied for the query.
   Args: (machine)
   Returns: none
   Errors: SMS_MACHINE, SMS_NO_MATCH
-  Side Effects: deletes all rvd_physical and rvd_virtual entries associated
-		with the server.
+  Side Effects: deletes all rvd_physical and rvd_virtual entries 
+		associated with the server.
 
 @B(get_all_rvd_physical)
   Args: (machine)
@@ -398,27 +405,27 @@ indicating that permission was denied for the query.
 
 @B(get_all_rvd_virtual)
   Args: (machine)
-  Returns: {name, device, packid, owner, rocap, excap, shcap, modes, offset,
-	    size, created, modified, ownhost}
+  Returns: {name, device, packid, owner, rocap, excap, shcap, modes, 
+	    offset, size, created, modified, ownhost}
   Errors: SMS_MACHINE, SMS_NO_MATCH
 
 @B(get_rvd_virtual)
   Args: (machine, name)
-  Returns: {device, packid, owner, rocap, excap, shcap, modes, offset,
-	    size, created, modified, ownhost}
+  Returns: {device, packid, owner, rocap, excap, shcap, modes, 
+	    offset, size, created, modified, ownhost}
   Errors: SMS_NO_MATCH  
 
 @B(add_rvd_virtual)
-  Args: (machine, name, device, packid, owner, rocap, excap, shcap, modes,
-	 offset, size, created, modified, ownhost)
+  Args: (machine, name, device, packid, owner, rocap, excap, shcap, 
+	 modes, offset, size, created, modified, ownhost)
   Returns: none
-  Integrity: machine, ownhost must exist in machine table; machine/device
-	     must exist in rvdphys table.
+  Integrity: machine, ownhost must exist in machine table;
+             machine/device must exist in rvdphys table.
   Errors: SMS_EXISTS, SMS_MACHINE, SMS_DEVICE
 
 @B(update_rvd_virtual)
-  Args: (machine, name, newname, device, packid, owner, rocap, excap, shcap,
-	 modes, offset, size, created, modified, ownhost)
+  Args: (machine, name, newname, device, packid, owner, rocap, excap, 
+	 shcap, modes, offset, size, created, modified, ownhost)
   Returns: none
   Integrity: ownhost must exist in machine table.
   Errors: SMS_NO_MATCH, SMS_NOT_UNIQUE, SMS_MACHINE
@@ -526,13 +533,13 @@ indicating that permission was denied for the query.
 @B(add_queue)
   Args: (queue, machine, abilities, default, status)
   Returns: none
-  Integrity: machine must exist; abilty  is validated by application
+  Integrity: machine must exist; abilty is validated by application
   Errors: SMS_EXISTS, SMS_MACHINE
 
 @B(update_queue)
   Args: (queue, machine, abilities, default, status)
   Returns: none
-  Integrity: machine must exist; abilty  is validated by application
+  Integrity: machine must exist; abilty is validated by application
   Errors: SMS_QUEUE, SMS_NO_MATCH, SMS_MACHINE
 
 @B(delete_queue)
@@ -559,8 +566,8 @@ indicating that permission was denied for the query.
 @B(add_qdev)
   Args: (device, physical, machine, status)
   Returns: none
-  Integrity: machine must exist; application must verify that physical 
-	     device exists.
+  Integrity: machine must exist; application must verify that
+	     physical device exists.
   Errors: SMS_EXISTS, SMS_MACHINE
 
 @B(update_qdev)
@@ -582,15 +589,15 @@ indicating that permission was denied for the query.
 @B(add_queue_device_map)
   Args: (queue, device, machine, server)
   Returns: none
-  Integrity: queue, device, machine must exist; application must verify that
-	     server program exists.
+  Integrity: queue, device, machine must exist; application must
+             verify that server program exists.
   Errors: SMS_QUEUE, SMS_DEVICE, SMS_MACHINE
 
 @B(update_queue_device_map)
   Args: (queue, device, machine, server)
   Returns: none
-  Integrity: only server may be updated; application must verify existence
-	     of server program.
+  Integrity: only server may be updated; application must verify
+             existence of server program.
   Errors: SMS_NO_MATCH, SMS_NOT_UNIQUE
 
 @B(delete_queue_device_map)
@@ -624,20 +631,23 @@ indicating that permission was denied for the query.
 
 @B(get_list_info)
   Args: (list_name)
-  Returns: {list_name, description, flags, admin_acl, expdate, modtime}
+  Returns: {list_name, description, flags, admin_acl, expdate, 
+	    modtime}
   Errors: SMS_LIST
 
 @B(add_list)
   Args: (list_name, description, flags, admin_acl, expdate)
   Returns: none
-  Integrity: expdate must be reasonable; application is responsible for
+  Integrity: expdate must be reasonable; application is responsible
+             for
 	     flags; modtime set by server.
   Errors: SMS_EXISTS, SMS_ACL, SMS_DATE
 
 @B(update_list)
   Args: (list_name, description, flags, admin_acl, expdate)
   Returns: none
-  Integrity: expdate must be reasonable; application is responsible for flags.
+  Integrity: expdate must be reasonable; application is responsible
+             for flags.
   Errors: SMS_LIST, SMS_ACL, SMS_DATE
 
 @B(update_list_admin)
@@ -658,18 +668,18 @@ indicating that permission was denied for the query.
   Integrity: member_type must be known; list_name and member_name
 	     must be unique; if member_type is "user" or "list",
 	     then corresponding user or list must exist.
-  Side Effects: if member_type = "string", entry added to strings table; 
-		list modtime updated.
+  Side Effects: if member_type = "string", entry added to strings
+		table; list modtime updated.
   Errors: SMS_EXISTS, SMS_TYPE, SMS_LIST, SMS_USER, SMS_NO_MATCH, 
 	  SMS_NOT_UNIQUE
 
 @B(delete_member_from_list)
   Args: (list_name, member_type, member_name)
   Returns: none
-  Integrity: member_type must be known; list_name and member_name must 
-	     be unique.
-  Side Effects: if member_type is "string", then corresponding string entry
-		is deleted; list modtime updated.
+  Integrity: member_type must be known; list_name and member_name
+	     must be unique.
+  Side Effects: if member_type is "string", then corresponding string
+		entry is deleted; list modtime updated.
   Errors: SMS_TYPE, SMS_NO_MATCH, SMS_NOT_UNIQUE
 
 @B(get_members_of_list)
@@ -715,9 +725,9 @@ indicating that permission was denied for the query.
   Args: (login)
   Returns: none
   Errors: SMS_USER, SMS_LIST
-  Description: Optimized query for creating a user group (list) and adding
-               the user as a member.  Returns SMS_LIST if a list already
-               exists with the user's name.
+  Description: Optimized query for creating a user group (list) and
+               adding the user as a member.  Returns SMS_LIST if a
+               list already exists with the user's name.
 
 @B(delete_group)
   Args: (list)
@@ -754,7 +764,8 @@ indicating that permission was denied for the query.
 @B(add_alias)
   Args: (name, type, trans)
   Returns: none
-  Integrity: type must exist as a translation of get_alias("alias", "TYPE").
+  Integrity: type must exist as a translation of 
+	     get_alias("alias", "TYPE").
   Errors: SMS_EXISTS, SMS_TYPE
 
 @B(delete_alias)
@@ -799,7 +810,7 @@ default user disk quota
   Errors: SMS_NO_MATCH, SMS_NOT_UNIQUE
 
 @SubSection(Table Statistics)
-@Lable(Tblstats)
+@Label(Tblstats)
 
 @B(get_all_table_stats)
   Args: none

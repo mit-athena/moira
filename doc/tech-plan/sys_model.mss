@@ -1,4 +1,4 @@
-@part[sys_model, root "sms.mss"]
+@part[sysmodel, root "sms.mss"]
 @MajorSection(System Model)
 
 The model is derived from requirements listed in the previous section.  As
@@ -90,44 +90,72 @@ Each hesiod server will receive the same 9 files. Each RVD server requires one
 file, each file being different.  Each NFS server requires two files,
 one identical file to all NFS servers, one different file to each filesystem
 on each server.  Usr/lib/aliases is one file.
-@begin(verbatim)
-File organization:
 
-Service          File          Size       Number   # propagations  Interval
-                                           
-Hesiod           cluster.db    22300      1          3              6 hours
-                 service.db    10100      1          3              6 hours
-                 printers.db   3833       1          3              6 hours
-                 lpr.db        3250       1          3              6 hours
-                 printcap.db   9800       1          3              6 hours
-                 pobox.db      325000     1          3              6 hours
-                 sloc.db       300        1          3              6 hours
-                 filesys.db    36000      1          3              6 hours
-                 passwd.db     880000     1          3              6 hours
+@StandardTable( Name FileOrg, Columns 6, TopHeading FlushLeft, 
+		ColumnHeadings FlushLeft, FlushTop)
+@Begin(FileOrg)
+@TableId(FileOrg)
 
+@TableHeading( Immediate, RowFormat FileOrgTopHeading, 
+	       Line 'File Organization')
 
-RVD              /site/rvddb   2000(90%) - 
-                               20000        10       10             15 minutes
-                 /site/rvd/acl/OP.acl       10       10             15 minutes
-                 /site/rvd/acl/AD.acl       10       10             15 minutes
-                 /site/rvd/acl/SH.acl       10       10             15 minutes
-                 /site/rvd/acl/file.acl     10 (min) 10             15 minutes
-                 (.acl files are small)
+@TableHeading( Immediate, RowFormat FileOrgColumnHeadings,
+	       Line 'Service@\File@\Size@\Number@\Propagations@\Interval')
 
-NFS              /site/nfsid   880000       1        25             6 hours
-                 /mit/quota    35000        25       25             6 hours
- 
-Mail             /usr/lib/aliases 445000    1        1             24 hours
+Hesiod@\cluster.db@\22300@\1@\3@Hsp(.625inch)@\6 hours
 
+@\service.db@\10100@\1@\3@Hsp(.625inch)@\6 hours
 
-TOTAL -                                    86        110
+@\printers.db@\3833@\1@\3@\6 hours
 
-NOTE: The above files will only be generated and propagated if the
-      data has changed during the time interval.  For example,  although
-      the RVD interval is 15 minutes, there is no effect on
-      system resources unless the information relevant to RVD's changed
-      during the previous 15 minute interval.
-@end(verbatim)
+@\lpr.db@\3250@\1@\3@\6 hours
+
+@\printcap.db@\9800@\1@\3@\6 hours
+
+@\pobox.db@\325000@\1@\3@\6 hours
+
+@\sloc.db@\300@\1@\3@\6 hours
+
+@\filesys.db@\36000@\1@\3@\6 hours
+
+@\passwd.db@\880000@\1@\3@\6 hours
+
+@BlankSpace(1 line)@\@\@\@\@\
+
+RVD@\/site/rvddb@\2000(90%) - 
+20000@\10@\10@\15 minutes
+
+@\/site/rvd/acl/OP.acl@\small@\10@\10@\15 min
+
+@\/site/rvd/acl/AD.acl@\small@\10@\10@\15 min
+
+@\/site/rvd/acl/SH.acl@\small@\10@\10@\15 min
+
+@\/site/rvd/acl/file.acl@\small@\10@\10@\15 min
+
+@BlankSpace(1 line)@\@\@\@\@\
+
+NFS@\/site/nfsid@\880000@\1@\25@\6 hours
+
+@\/mit/quota@\35000@\25@\25@\6 hours
+
+@BlankSpace(1 line)@\@\@\@\@\ 
+
+Mail@\/usr/lib/aliases@\445000@\1@\1@\24 hours
+
+@BlankSpace(1 line)@\@\@\@\@\
+
+TOTAL@\@\@\86@\110@\
+
+@End(FileOrg)
+
+@Begin(Description)
+NOTE:@\The above files will only be generated and propagated if the
+data has changed during the time interval.  For example,  although
+the RVD interval is 15 minutes, there is no effect on
+system resources unless the information relevant to RVD's changed
+during the previous 15 minute interval.
+@End(Description)
 
 Application interfaces provide all the mechanisms to change database
 fields.  There will be no need for any sms updating to be done
@@ -136,8 +164,6 @@ at least one application interface.  Currently there are twelve
 interface programs.
 
 @end(enumerate)
-
-
 
 @Section(The Database)
 

@@ -57,7 +57,7 @@ reel-to-reel tape is open to discussion at this point.
 existance of a empty database named "smstemp"@footnote(The eventual
 production version will work on a database named "sms"; however, for
 test use, "smstemp" is used instead), created as follows:
-@begin(programexample) 
+@begin(programexample, Size -1) 
 # createdb smstemp
 # quel smstemp
 * \i /u1/sms/db/dbbuild			@i(load DB definition)

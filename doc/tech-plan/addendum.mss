@@ -1,4 +1,4 @@
-@part[queries, root="sms.mss"]
+@part[addendum, root="sms.mss"]
 @NewPage()
 @MajorSection[Addendum]
 

@@ -257,8 +257,8 @@ interface.  Basically there are two options:
 Usage: chpobox [-d|a address] [-u user]
 
 where:
-@\@\-d deletes a currently used mail address
-@\@\-a adds a mail address
+    -d deletes a currently used mail address
+    -a adds a mail address
 
 Chpobox without any option will return the current state of the
 user's mail addresses (see below).
@@ -291,10 +291,10 @@ A SESSION USING CHPOBOX:
 % chpobox
 Current mail address(es) for pjlevine is/are:
 type: LOCAL
-address: pjlevine@menelaus.mit.edu
+address: pjlevine@@menelaus.mit.edu
 %
-%chpobox -a pjlevine@menelaus.mit.edu  ;adds a new mail address
-%chpobox -d pjlevine@menelaus.mit.edu  ;deletes a mail address
+%chpobox -a pjlevine@@menelaus.mit.edu  ;adds a new mail address
+%chpobox -d pjlevine@@menelaus.mit.edu  ;deletes a mail address
 %
 @end(display)
 @end(multiple)
@@ -402,7 +402,7 @@ A SESSION WITH CLUSTER_MAINT:
 @center([See next page])
 
 
-@begin(display)
+@begin(display, Size -1)
                              Cluster Maintenence
  1. (machine     ) Work on Machines.
  2. (cluster     ) Work on Clusters.
@@ -544,7 +544,7 @@ A SESSION WITH DCM_MAINT:
 Command: 
 @end(display)
 
-@begin(display)
+@begin(display, Size -2)
 Command:1
        Change table entry [host: ATHENA-PO-1.MIT.EDU, service: ]
  1. (show        ) Show values of entry.
@@ -557,7 +557,6 @@ Command:1
  r. (return      ) Return to previous menu.
  q. (quit        ) Quit.
 Command: 
-
 
 Command: 2
 Create new entry for the table
@@ -592,7 +591,6 @@ Create new service
 Which service[]: 
 service_name   interval       target_path    instructions   dfgen
 
-
 Add service to database? [y]:
 Service created
 
@@ -610,7 +608,6 @@ pop                          /dev/null      /dev/null
 
 @end(display)
 @end(multiple)
-
 
 @newpage()
 @begin(multiple)
@@ -693,7 +690,7 @@ SUPPORTED SERVICE(S):
 @end(itemize)
 
 A SESSION WITH LISTMAINT:
-@begin(display)
+@begin(display, Size -1)
 
 %listmaint
                            List Maintenance Functions
@@ -1035,7 +1032,7 @@ Command: 1
 Services Info
 Service Name: 
 
-@cennter([Continued on next page])
+@center([Continued on next page])
 
 @end(display)
 

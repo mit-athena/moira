@@ -1,4 +1,4 @@
-@part[db, root="sms.mss"]
+@part[serverarr, root="sms.mss"]
 @section(Server Arrangement)
 
 Currently, sms acts to update a variety of servers.  Although the data 
@@ -112,259 +112,284 @@ Data format : BIND
 
 Target locations :
 @begin(display) 
-     JASON.MIT.EDU: /etc/athena/nameserver
-     ZEUS.MIT.EDU: /etc/athena/nameserver
-     MENELAUS.MIT.EDU: /etc/athena/nameserver
+JASON.MIT.EDU: /etc/athena/nameserver
+ZEUS.MIT.EDU: /etc/athena/nameserver
+MENELAUS.MIT.EDU: /etc/athena/nameserver
 @end(display)
 
 Files:
-@begin(display)
-   HESIOD.DB - Hesiod data 
+@Begin(Display, RightMargin 0)
+HESIOD.DB - Hesiod data 
 
-        Description:
-           Contains hesiod specific data.                 
+Description:
+   Contains hesiod specific data.                 
 
-        Queries used:
-           NOT CREATED FROM SMS QUERY
+Queries used:
+   NOT CREATED FROM SMS QUERY
 
-        How modified:
-           EDITOR by system administrator.
+How modified:
+   EDITOR by system administrator.
 
-        Client(s):
-           Hesiod
+Client(s):
+   Hesiod
 
-        Example contents:
+Example contents:
 
-           ; Hesiod-specific cache data (for ATHENA.MIT.EDU)
-           ;
-           ;       $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/doc/tech-plan/server_arrang.mss,v $      
-           ;       $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/doc/tech-plan/server_arrang.mss,v 1.8 1987-08-05 23:14:05 mike Exp $
-           ; pointers to Hesiod name servers
-           NS.ATHENA.MIT.EDU. 99999999 HS  NS          JASON.MIT.EDU.
-           NS.ATHENA.MIT.EDU. 99999999 HS  NS          ZEUS.MIT.EDU.
-           NS.ATHENA.MIT.EDU. 99999999 HS  NS          MENELAUS.MIT.EDU.
-           ; Hesiod address records (simply duplicates of IN address records)
-           JASON.MIT.EDU.  99999999        HS      A           18.71.0.7
-           ZEUS.MIT.EDU.   99999999        HS      A           18.58.0.2
-           MENELAUS.MIT.EDU. 99999999        HS      A           18.72.0.7
-           ; Internet address records for the same Hesiod servers
-           ; required because of implementations of gethostbyname() which use
-           ; C_ANY/T_A queries.
-           JASON.MIT.EDU.  99999999        IN      A           18.71.0.7
-           ZEUS.MIT.EDU.   99999999        IN      A           18.58.0.2
-           MENELAUS.MIT.EDU. 99999999        IN      A           18.72.0.7
-           ;
-
-   CLUSTER.DB - Cluster data
-        Description:
-           Cluster.db holds the relationships between machines,
-           clusters, and services to service clusters.           
-
-        Queries used:
-           get_all_service_clusers() -> 
-               (cluster, service_label, service_cluster)
-           get_machine_to_cluster_map(*,*) -> (machine, cluster)
-
-        How modified:
-           cluster_maint
-
-        Client(s):
-
-        Example contents:
-
-           ; Cluster info for timesharing machines and workstations
-           ; format is:
-           ; lines for per-cluster info (both vs and rt) (type UNSPECA)
-           ; followed by line for each machine (CNAME referring to one 
-           ; of the lines above)
-           ;
-           ; E40 cluster
-           bldge40-vstesters.cluster HS UNSPECA "zephyr neskaya.mit.edu"
-           bldge40-rttesters.cluster HS UNSPECA "zephyr neskaya.mit.edu"
-           bldge40-vstesters.cluster HS UNSPECA "lpr e40"
-           bldge40-rttesters.cluster HS UNSPECA "lpr e40"
-           ;
-
-   SERVICE.DB - services
-        Description:
-           Holds the relationship between a canonical service name and
-           its physical protocol, port, and tranlation.
-
-        Queries used:
-           get_all_services -> (service, protocol, port, description)
-           get_alias(*, service) -> (name, type, translation)
-
-        How modified:
-           service_maint
-
-        Client(s):
+   ; Hesiod-specific cache data (for ATHENA.MIT.EDU)
+   ;
+   ;       $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/doc/tech-plan/server_arrang.mss,v $      
+   ;       $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/doc/tech-plan/server_arrang.mss,v 1.9 1987-08-06 00:46:09 mike Exp $
+   ; pointers to Hesiod name servers
+   NS.ATHENA.MIT.EDU. 99999999 HS  NS          JASON.MIT.EDU.
+   NS.ATHENA.MIT.EDU. 99999999 HS  NS          ZEUS.MIT.EDU.
+   NS.ATHENA.MIT.EDU. 99999999 HS  NS          MENELAUS.MIT.EDU.
+   ; Hesiod address records (simply duplicates of IN address records)
+   JASON.MIT.EDU.  99999999        HS      A           18.71.0.7
+   ZEUS.MIT.EDU.   99999999        HS      A           18.58.0.2
+   MENELAUS.MIT.EDU. 99999999        HS      A           18.72.0.7
+   ; Internet address records for the same Hesiod servers
+   ; required because of implementations of gethostbyname() which use
+   ; C_ANY/T_A queries.
+   JASON.MIT.EDU.  99999999        IN      A           18.71.0.7
+   ZEUS.MIT.EDU.   99999999        IN      A           18.58.0.2
+   MENELAUS.MIT.EDU. 99999999        IN      A           18.72.0.7
+   ;
 
 
-        Example contents:
+@Hinge()
+CLUSTER.DB - Cluster data
 
-           ;
-           ; Network services, Internet style
-           ;
-           echo.service    HS      UNSPECA "echo tcp 7"
-           echo.service    HS      UNSPECA "echo udp 7"
-           discard.service HS      UNSPECA "discard tcp 9 sink null"
-           sink.service    HS      CNAME   discard.service
-           null.service    HS      CNAME   discard.service
-           discard.service HS      UNSPECA "discard udp 9 sink null"
-           systat.service  HS      UNSPECA "systat tcp 11 users"
-           users.service   HS      CNAME   systat.service
-           daytime.service HS      UNSPECA "daytime tcp 13"
+Description:
+   Cluster.db holds the relationships between machines,
+   clusters, and services to service clusters.           
 
-   PASSWD.DB - username and group information
+Queries used:
+   get_all_service_clusers() -> 
+       (cluster, service_label, service_cluster)
+   get_machine_to_cluster_map(*,*) -> (machine, cluster)
 
-        Description:
-           This file is used as a template for toehold. Its contents
-           are username, uid, gid (all users get gid = 101), fullname,
-           home filesys (now limited to /mit/<username>), and shell.
+How modified:
+   cluster_maint
 
-        Queries used:
-           get_all_passwds() -> returns all active logins.           
+Client(s):
 
-        How modified:
-           ueser_maint
-           userreg -> initial info
-           attach_maint
+Example contents:
 
-        Client(s):
-           Toehold
-
-        Example contents:
-           pjlevine.passwd   HS      UNSPECA "pjlevine:*:1:101:
-                                   Peter J. Levine,,,,:/mit/pjlevine:/bin/csh"
-
-   PRINTERS.DB - MDQS printer info
-        Description:
-           Maps printer clusters to physical locations.
-
-        Queries used:
-           get_all_printer_clusters() -> (cluster)
-           get_printers_of_cluster(cluster) -> 
-               (pname, qname, serverhost, ability, hwtype)
-
-        How modified:
-           printer_maint
-
-        Client(s):
-           MDQS
-
-        Example contents:
-            MDQS Hesiod printer info
-            ;
-            ; prclusterlist returns all print clusters
-            ;
-            *.prclusterlist HS UNSPECA bldge40
-            *.prclusterlist HS UNSPECA bldg1
-            *.prclusterlist HS UNSPECA bldgw20
+   ; Cluster info for timesharing machines and workstations
+   ; format is:
+   ; lines for per-cluster info (both vs and rt) (type UNSPECA)
+   ; followed by line for each machine (CNAME referring to one 
+   ; of the lines above)
+   ;
+   ; E40 cluster
+   bldge40-vstesters.cluster HS UNSPECA "zephyr neskaya.mit.edu"
+   bldge40-rttesters.cluster HS UNSPECA "zephyr neskaya.mit.edu"
+   bldge40-vstesters.cluster HS UNSPECA "lpr e40"
+   bldge40-rttesters.cluster HS UNSPECA "lpr e40"
+   ;
 
 
-   LPR.DB - lpr printer info
-        Description:
-           Line printer information.
+@Hinge()
+SERVICE.DB - services
 
-        Queries used:
-           NOT GENERATED BY SMS
+Description:
+   Holds the relationship between a canonical service name and
+   its physical protocol, port, and tranlation.
 
-        How modified:
-           HAND
+Queries used:
+   get_all_services -> (service, protocol, port, description)
+   get_alias(*, service) -> (name, type, translation)
 
-        Example contents:
+How modified:
+   service_maint
 
-   PINTCAP.DB - line printer information
-        Description:
-           Line printer info, derived from /etc/printcap
-
-        Queries used:
-           NOT GENERATED BY SMS
-
-        How modified:
-           HAND
-
-        Example contents:
-
-   POBOX.DB - post office info
-        Description: 
-           Contains a username to post office mapping.
-           
-        Queries used:
-           get_poboxes_pop(*)
-           get_poboxes_local(*)
-           get_poboxes_foreign(*) -> (login, type, machine, box)
-
-        How modified:
-           userreg
-           usermaint
-           chpobox
-
-        Client(s):
-                      
-        Example contents:
-
-           abbate.pobox     HS      UNSPECA "POP E40-PO.MIT.EDU abbate"
-           ackerman.pobox     HS      UNSPECA "POP E40-PO.MIT.EDU ackerman"
-           ajericks.pobox     HS      UNSPECA "POP E40-PO.MIT.EDU ajericks"
-           ambar.pobox     HS      UNSPECA "POP E40-PO.MIT.EDU ambar"
-           andrew.pobox     HS      UNSPECA "POP E40-PO.MIT.EDU andrew"
-           annette.pobox     HS      UNSPECA "POP E40-PO.MIT.EDU annette"
-           austin.pobox     HS      UNSPECA "POP E40-PO.MIT.EDU austin"
-
-   SLOC.DB - service location
-        Description:
-           This file maps a service name to a machine name.
-
-        Queries used:
-           get_server_location(*) -> (server, location)
-
-        How modified:
-           dcm_maint
-           
-        Client(s):
-
-        Example contents:
-           lcprimaryhost.sloc     HS      UNSPECA matisse.MIT.EDU
-           olctesthost.sloc        HS      UNSPECA castor.MIT.EDU
-           kerberos.sloc   HS      UNSPECA kerberos.MIT.EDU
-
-           zephyr.sloc     HS      UNSPECA NESKAYA.MIT.EDU
-           zephyr.sloc     HS      UNSPECA ARILINN.MIT.EDU
-           zephyr.sloc     HS      UNSPECA HOBBES.MIT.EDU
-           zephyr.sloc     HS      UNSPECA ORPHEUS.MIT.EDU
+Client(s):
 
 
-   FILESYS.DB - Filesystem info
-        Description:
-           This file contains all the filesystems and their related 
-           information.  The information presented in this file
-           is a filesystem name relating to the following information:
-           filesystem type, server name, filesystem name, default mount
-           point, and access mode.    
+Example contents:
 
-        Queries used:
-           get_all_filesys() -> (label, type, machine, name, mount, access)
-           get_alias(*, FILESYS) -> (name, type, trans)
-       
-        How modified:
-           attach_maint   
-           user_reg -> associates user to a new filesys.
+   ;
+   ; Network services, Internet style
+   ;
+   echo.service    HS      UNSPECA "echo tcp 7"
+   echo.service    HS      UNSPECA "echo udp 7"
+   discard.service HS      UNSPECA "discard tcp 9 sink null"
+   sink.service    HS      CNAME   discard.service
+   null.service    HS      CNAME   discard.service
+   discard.service HS      UNSPECA "discard udp 9 sink null"
+   systat.service  HS      UNSPECA "systat tcp 11 users"
+   users.service   HS      CNAME   systat.service
+   daytime.service HS      UNSPECA "daytime tcp 13"
 
-        Client(s):
-           attach
 
-        Example contents:
+@Hinge()
+PASSWD.DB - username and group information
 
-           NewrtStaffTool.filsys   HS      UNSPECA 
-               "RVD NewrtStaffTool helen r /mit/StaffTools"
-           NewvsStaffTool.filsys   HS      UNSPECA 
-               "RVD NewvsStaffTool helen r /mit/StaffTools"
-           Saltzer.filsys  HS      UNSPECA "RVD Saltzer helen r /mnt"
-           athena-backup.filsys    HS      UNSPECA 
-               "RVD athena-backup castor r /mnt"
+Description:
+   This file is used as a template for toehold. Its contents
+   are username, uid, gid (all users get gid = 101), fullname,
+   home filesys (now limited to /mit/<username>), and shell.
 
-@end(display)
+Queries used:
+   get_all_passwds() -> returns all active logins.           
+
+How modified:
+   ueser_maint
+   userreg -> initial info
+   attach_maint
+
+Client(s):
+   Toehold
+
+Example contents:
+   pjlevine.passwd   HS      UNSPECA "pjlevine:*:1:101:
+			   Peter J. Levine,,,,:/mit/pjlevine:/bin/csh"
+
+
+@Hinge()
+PRINTERS.DB - MDQS printer info
+
+Description:
+   Maps printer clusters to physical locations.
+
+Queries used:
+   get_all_printer_clusters() -> (cluster)
+   get_printers_of_cluster(cluster) -> 
+       (pname, qname, serverhost, ability, hwtype)
+
+How modified:
+   printer_maint
+
+Client(s):
+   MDQS
+
+Example contents:
+    MDQS Hesiod printer info
+    ;
+    ; prclusterlist returns all print clusters
+    ;
+    *.prclusterlist HS UNSPECA bldge40
+    *.prclusterlist HS UNSPECA bldg1
+    *.prclusterlist HS UNSPECA bldgw20
+
+
+@Hinge()
+LPR.DB - lpr printer info
+
+Description:
+   Line printer information.
+
+Queries used:
+   NOT GENERATED BY SMS
+
+How modified:
+   HAND
+
+Example contents:
+
+
+@Hinge()
+PRINTCAP.DB - line printer information
+
+Description:
+   Line printer info, derived from /etc/printcap
+
+Queries used:
+   NOT GENERATED BY SMS
+
+How modified:
+   HAND
+
+Example contents:
+
+
+@Hinge()
+POBOX.DB - post office info
+
+Description: 
+   Contains a username to post office mapping.
+
+Queries used:
+   get_poboxes_pop(*)
+   get_poboxes_local(*)
+   get_poboxes_foreign(*) -> (login, type, machine, box)
+
+How modified:
+   userreg
+   usermaint
+   chpobox
+
+Client(s):
+
+Example contents:
+
+   abbate.pobox     HS      UNSPECA "POP E40-PO.MIT.EDU abbate"
+   ackerman.pobox   HS      UNSPECA "POP E40-PO.MIT.EDU ackerman"
+   ajericks.pobox   HS      UNSPECA "POP E40-PO.MIT.EDU ajericks"
+   ambar.pobox      HS      UNSPECA "POP E40-PO.MIT.EDU ambar"
+   andrew.pobox     HS      UNSPECA "POP E40-PO.MIT.EDU andrew"
+   annette.pobox    HS      UNSPECA "POP E40-PO.MIT.EDU annette"
+   austin.pobox     HS      UNSPECA "POP E40-PO.MIT.EDU austin"
+
+
+@Hinge()
+SLOC.DB - service location
+
+Description:
+   This file maps a service name to a machine name.
+
+Queries used:
+   get_server_location(*) -> (server, location)
+
+How modified:
+   dcm_maint
+
+Client(s):
+
+Example contents:
+   lcprimaryhost.sloc     HS      UNSPECA matisse.MIT.EDU
+   olctesthost.sloc        HS      UNSPECA castor.MIT.EDU
+   kerberos.sloc   HS      UNSPECA kerberos.MIT.EDU
+
+   zephyr.sloc     HS      UNSPECA NESKAYA.MIT.EDU
+   zephyr.sloc     HS      UNSPECA ARILINN.MIT.EDU
+   zephyr.sloc     HS      UNSPECA HOBBES.MIT.EDU
+   zephyr.sloc     HS      UNSPECA ORPHEUS.MIT.EDU
+
+
+@Hinge()
+FILESYS.DB - Filesystem info
+
+Description:
+   This file contains all the filesystems and their related 
+   information.  The information presented in this file
+   is a filesystem name relating to the following information:
+   filesystem type, server name, filesystem name, default mount
+   point, and access mode.    
+
+Queries used:
+   get_all_filesys() -> (label, type, machine, name, mount, access)
+   get_alias(*, FILESYS) -> (name, type, trans)
+
+How modified:
+   attach_maint   
+   user_reg -> associates user to a new filesys.
+
+Client(s):
+   attach
+
+Example contents:
+
+   NewrtStaffTool.filsys   HS      UNSPECA 
+       "RVD NewrtStaffTool helen r /mit/StaffTools"
+   NewvsStaffTool.filsys   HS      UNSPECA 
+       "RVD NewvsStaffTool helen r /mit/StaffTools"
+   Saltzer.filsys  HS      UNSPECA "RVD Saltzer helen r /mnt"
+   athena-backup.filsys    HS      UNSPECA 
+       "RVD athena-backup castor r /mnt"
+
+@end(Display)
+
 Update mechanism:
 Updating hesiod is a relatively simple process.  Every six
 hours the DCM will initiate a build on each of the above
@@ -455,8 +480,8 @@ File(s):
    Queries used:
       get_rvd_servers(machine) -> (oper, admin, shutdown)
       get_rvd_physical(machine) -> (device, size, created, modified)
-      get_all_rvd)_virtual(machine) -> (name, device, packid, ownert, rocap
-        (excap, shcap, modes, offset, size, created, modified, ownhost)
+      get_all_rvd_virtual(machine) -> (name, device, packid, owner, rocap
+         excap, shcap, modes, offset, size, created, modified, ownhost)
       get_members_of_list(list) -> (member_type, member_name)
 
    How modified:
@@ -492,7 +517,7 @@ File(s):
 
 
 
-@end(itemize)
+@end(display)
 
 @begin(itemize)
 Service: NFS
@@ -503,7 +528,7 @@ NFS operation.   These files are:
 /site/nfsid
 
 /mit/quota
-@end(itemze)
+@end(itemize)
 @end(itemize)
 
 These files reside on the NFS target machine and are used to allocate NFS 
@@ -567,11 +592,12 @@ Files updated:
 
         Contents example:
 
-             <username> <UID> <GID1, GID2,...GID32>
+            <username> <UID> <GID1, GID2,...GID32>
 
-             where: username is the user's login name (Ex: pjlevine)
-                    UID is the users id number (Ex: 123456)
-                    GIDn is the groups which the user is a member (max 32)
+            where: username is the user's login name (Ex: pjlevine)
+                   UID is the users id number (Ex: 123456)
+                   GIDn are the groups in which the user is a member
+                        (max 32)
 
 
    /MIT/QUOTA - file containing username to quota mapping.
@@ -637,6 +663,8 @@ File(s):
       userreg -> initial info for poboxes.
 
    Contents example:
-@nd(display)
+@end(display)
 
 @end(itemize)
+@End(Itemize)
+

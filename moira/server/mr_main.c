@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v $
- *	$Author: wesommer $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.14 1987-09-12 20:41:50 wesommer Exp $
+ *	$Author: mar $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.15 1988-06-30 12:42:30 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
@@ -13,54 +13,9 @@
  * 	You are in a maze of twisty little finite automata, all different.
  * 	Let the reader beware.
  * 
- *	$Log: not supported by cvs2svn $
- * Revision 1.14  87/09/12  20:08:01  wesommer
- * Add some defensive programming to defend against people who don't
- * understand what the contents of the cl struct mean.
- * 
- * Revision 1.13  87/08/04  02:40:30  wesommer
- * Do end run around minor hotspot.
- * 
- * Revision 1.12  87/08/04  01:50:00  wesommer
- * Rearranged messages.
- * 
- * Revision 1.11  87/07/29  16:04:54  wesommer
- * Add keepalive feature.
- * 
- * Revision 1.10  87/06/30  20:02:26  wesommer
- * Added returned tuple chain to client structure.
- * Added local realm global variable.
- * 
- * Revision 1.9  87/06/21  16:39:54  wesommer
- * Performance work, rearrangement of include files.
- * 
- * Revision 1.8  87/06/09  18:44:45  wesommer
- * modified error handling.
- * 
- * Revision 1.7  87/06/08  02:44:44  wesommer
- * Minor lint fix.
- * 
- * Revision 1.6  87/06/03  17:41:00  wesommer
- * Added startup support.
- * 
- * Revision 1.5  87/06/03  16:07:17  wesommer
- * Fixes for lint.
- * 
- * Revision 1.4  87/06/02  20:05:11  wesommer
- * Bug fixes on memory allocation.
- * 
- * Revision 1.3  87/06/01  04:34:27  wesommer
- * Changed returned error code.
- * 
- * Revision 1.2  87/06/01  03:34:53  wesommer
- * Added shutdown, logging.
- * 
- * Revision 1.1  87/05/31  22:06:56  wesommer
- * Initial revision
- * 
  */
 
-static char *rcsid_sms_main_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.14 1987-09-12 20:41:50 wesommer Exp $";
+static char *rcsid_sms_main_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.15 1988-06-30 12:42:30 mar Exp $";
 
 #include <strings.h>
 #include <sys/errno.h>
@@ -83,7 +38,8 @@ extern char *whoami;
 extern char buf1[BUFSIZ];
 extern char *takedown;
 extern int errno;
-
+extern FILE *journal;
+#define JOURNAL "/u1/sms/journal"
 
 extern char *malloc();
 extern int free();
@@ -94,7 +50,6 @@ extern void do_client();
 extern int sigshut();
 void clist_append();
 void oplist_append();
-extern u_short ntohs();
 
 extern time_t now;
 
@@ -151,10 +106,13 @@ main(argc, argv)
 	 */
 
 	if ((status = sms_open_database()) != 0) {
-		com_err(whoami, status, "when trying to open database.");
+		com_err(whoami, status, " when trying to open database.");
 		exit(1);
 	}
 	
+	sanity_check_queries();
+	sanity_check_database();
+
 	/*
 	 * Set up client array handler.
 	 */
@@ -168,16 +126,22 @@ main(argc, argv)
 	
 	if ((((int)signal (SIGTERM, sigshut)) < 0) ||
 	    (((int)signal (SIGHUP, sigshut)) < 0)) {
-		com_err(whoami, errno, "Unable to establish signal handler.");
+		com_err(whoami, errno, " Unable to establish signal handler.");
 		exit(1);
 	}
 	
+	journal = fopen(JOURNAL, "a");
+	if (journal == NULL) {
+	    com_err(whoami, errno, " while opening journal file");
+	    exit(1);
+	}
+
 	/*
 	 * Establish template connection.
 	 */
 	if ((status = do_listen()) != 0) {
 		com_err(whoami, status,
-			"while trying to create listening connection");
+			" while trying to create listening connection");
 		exit(1);
 	}
 	
@@ -203,10 +167,10 @@ main(argc, argv)
 				       (fd_set *)NULL, (struct timeval *)NULL);
 
 		if (status == -1) {
-			com_err(whoami, errno, "error from op_select");
+			com_err(whoami, errno, " error from op_select");
 			continue;
 		} else if (status != -2) {
-			com_err(whoami, 0, "wrong return from op_select_any");
+			com_err(whoami, 0, " wrong return from op_select_any");
 			continue;
 		}
 		if (takedown) break;
@@ -224,12 +188,12 @@ main(argc, argv)
 					do_reset_listen();
 				} else {
 					com_err(whoami, errno,
-						"error on listen");
+						" error on listen");
 					exit(1);
 				}
 			} else if ((status = new_connection()) != 0) {
 				com_err(whoami, errno,
-					"Error on listening operation.");
+					" Error on listening operation.");
 				/*
 				 * Sleep here to prevent hosing?
 				 */

@@ -1,15 +1,18 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/reg_stubs.c,v $
  *	$Author: wesommer $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/reg_stubs.c,v 1.1 1987-08-22 18:39:29 wesommer Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/reg_stubs.c,v 1.2 1987-09-04 22:57:33 wesommer Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
  *	$Log: not supported by cvs2svn $
+ * Revision 1.1  87/08/22  18:39:29  wesommer
+ * Initial revision
+ * 
  */
 
 #ifndef lint
-static char *rcsid_reg_stubs_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/reg_stubs.c,v 1.1 1987-08-22 18:39:29 wesommer Exp $";
+static char *rcsid_reg_stubs_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/reg_stubs.c,v 1.2 1987-09-04 22:57:33 wesommer Exp $";
 #endif lint
 #include <stdio.h>
 #include <sys/types.h>
@@ -246,7 +249,7 @@ static do_call(buf, len, seq_no, login)
 
 	FD_ZERO(&set);
 	FD_SET(reg_sock, &set);
-	timeout.tv_sec = 10;
+	timeout.tv_sec = 25;
 	timeout.tv_usec = 0;
 	do {
 	    int rtn;
@@ -279,7 +282,7 @@ static do_call(buf, len, seq_no, login)
 	    }
 	    return stat;
 	} while (1);
-    } while (++retry < 6);
+    } while (++retry < 10);
     return ETIMEDOUT;
 }    
 

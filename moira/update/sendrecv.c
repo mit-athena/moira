@@ -1,4 +1,4 @@
-/* $Id: sendrecv.c,v 1.4 1998-03-26 20:34:03 danw Exp $
+/* $Id: sendrecv.c,v 1.5 1999-09-21 17:29:57 danw Exp $
  *
  * socket layer for update_server
  *
@@ -17,7 +17,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/sendrecv.c,v 1.4 1998-03-26 20:34:03 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/sendrecv.c,v 1.5 1999-09-21 17:29:57 danw Exp $");
 
 #define putlong(cp, l) { ((unsigned char *)cp)[0] = l >> 24; ((unsigned char *)cp)[1] = l >> 16; ((unsigned char *)cp)[2] = l >> 8; ((unsigned char *)cp)[3] = l; }
 #define getlong(cp, l) l = ((((unsigned char *)cp)[0] * 256 + ((unsigned char *)cp)[1]) * 256 + ((unsigned char *)cp)[2]) * 256 + ((unsigned char *)cp)[3]
@@ -42,11 +42,18 @@ int send_int(int conn, long data)
 int recv_int(int conn, long *data)
 {
   char buf[8];
+  int len;
 
-  if (read(conn, buf, 8) != 8)
+  len = read(conn, buf, 8);
+  if (len == -1)
     {
       fail(conn, errno, "reading integer");
       return errno;
+    }
+  else if (len < 8)
+    {
+      fail(conn, 0, "remote connection closed while reading integer");
+      return EIO;
     }
   getlong((buf + 4), *data);
   return 0;
@@ -81,15 +88,28 @@ int recv_string(int conn, char **buf, size_t *len)
   char tmp[4];
   int size, more;
 
-  if (read(conn, tmp, 4) != 4)
+  size = read(conn, tmp, 4);
+  if (size == -1)
     {
       fail(conn, errno, "reading string");
       return errno;
     }
-  if (read(conn, tmp, 4) != 4)
+  else if (size < 4)
+    {
+      fail(conn, 0, "remote connection closed while reading string");
+      return EIO;
+    }
+
+  size = read(conn, tmp, 4);
+  if (size == -1)
     {
       fail(conn, errno, "reading string");
       return errno;
+    }
+  else if (size < 4)
+    {
+      fail(conn, 0, "remote connection closed while reading string");
+      return EIO;
     }
   getlong(tmp, *len);
 

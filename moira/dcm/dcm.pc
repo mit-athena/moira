@@ -1,4 +1,4 @@
-/* $Id: dcm.pc,v 1.7 1998-04-01 17:32:53 danw Exp $
+/* $Id: dcm.pc,v 1.8 1998-04-15 02:58:58 danw Exp $
  *
  * The Data Control Manager for Moira.
  *
@@ -27,7 +27,7 @@
 EXEC SQL INCLUDE sqlca;
 void sqlglm(char *, unsigned int *, unsigned int *);
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/dcm.pc,v 1.7 1998-04-01 17:32:53 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/dcm.pc,v 1.8 1998-04-15 02:58:58 danw Exp $");
 
 int generate_service(char *name, int force);
 void do_hosts(char *service);
@@ -241,13 +241,13 @@ gen_cleanup:
 void do_hosts(char *service)
 {
   EXEC SQL BEGIN DECLARE SECTION;
-  char type[SERVERS_TYPE_SIZE], host[MACHINE_NAME_SIZE];
+  char type[SERVERS_TYPE_SIZE], host[MACHINE_NAME_SIZE], *name;
   char target[SERVERS_TARGET_FILE_SIZE], script[SERVERS_SCRIPT_SIZE];
   const char *errmsg;
   int status = 0, dfgen, replicated, mid;
   time_t now;
   EXEC SQL END DECLARE SECTION;
-  struct save_queue sq;
+  struct save_queue *sq;
 
   time(&now);
   mr_init();
@@ -293,11 +293,11 @@ void do_hosts(char *service)
 	  errmsg = error_message(status);
 	  EXEC SQL UPDATE serverhosts SET hosterrmsg = :errmsg,
 	    inprogress = 0, success = 0, ltt = :now
-	    WHERE service = UPPER(:service) AND mach_id = :mach_id;
+	    WHERE service = UPPER(:service) AND mach_id = :mid;
 	  if (!SOFT_FAIL(status))
 	    {
 	      EXEC SQL UPDATE serverhosts SET hosterror = :status
-		WHERE CURRENT OF csr_hst1;
+		WHERE service = UPPER(:service) AND mach_id = :mid;
 	      critical_alert("DCM", "DCM updating %s:%s: %s",
 			     service, name, errmsg);
 	    }

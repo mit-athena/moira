@@ -21,7 +21,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/stanley/stanley.c,v 1.1 2001-09-25 23:00:01 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/stanley/stanley.c,v 1.2 2001-09-26 02:51:00 zacheiss Exp $");
 
 struct string_list {
   char *string;
@@ -225,7 +225,7 @@ int main(int argc, char **argv)
 	      usage(argv);
 	    update_res_flag++;
 	  }
-	  else if (argis("lr", "listreservations"))
+	  else if (argis("lr", "listreservation"))
 	    list_res_flag++;
 	  else if (argis("u", "unformatted"))
 	    unformatted_flag++;
@@ -251,7 +251,7 @@ int main(int argc, char **argv)
       else
 	usage(argv);
     }
-  if (username == NULL)
+  if (username == NULL && !create_flag)
     usage(argv);
 
   /* default to info_flag if nothing else was specified */
@@ -278,10 +278,13 @@ int main(int argc, char **argv)
       int cnt;
 
       for (cnt = 0; cnt < 14; cnt++) {
-	argv[cnt] == "";
+	argv[cnt] = "";
       }
 
-      argv[U_NAME] = username;
+      if (username)
+	argv[U_NAME] = username;
+      else
+	argv[U_NAME] = UNIQUE_LOGIN;
       if (uid)
 	argv[U_UID] = uid;
       else
@@ -318,7 +321,6 @@ int main(int argc, char **argv)
 	argv[U_SECURE] = "0";
 
       status = wrap_mr_query("add_user_account", 13, argv, NULL, NULL);
-
       if (status)
 	{
 	  com_err(whoami, status, "while adding user account.");
@@ -389,6 +391,7 @@ int main(int argc, char **argv)
 	username = newlogin;
     }
 
+  /* Deactivate a user, and the matching list and filesystem if they exist */
   if (deact_flag)
     {
       char *args[2];
@@ -405,45 +408,49 @@ int main(int argc, char **argv)
 	  exit(1);
 	}
 
-      status = wrap_mr_query("get_list_into", 1, args, save_query_info, argv);
-      if (status)
+      status = wrap_mr_query("get_list_info", 1, args, save_query_info, argv);
+      if (status == MR_SUCCESS)
+	{
+	  for (i = 13; i > 0; i--)
+	    argv[i + 1] = argv[i];
+	  argv[1] = username;
+	  argv[L_ACTIVE + 1] = "0";
+	  
+	  status = wrap_mr_query("update_list", 14, argv, NULL, NULL);
+	  if (status)
+	    {
+	      com_err(whoami, status, "while updating list, "
+		      "not deactivating list or filesystem.");
+	      exit(1);
+	    }
+	}
+      else if (status && status != MR_NO_MATCH)
 	{
 	  com_err(whoami, status, "while retrieving list information.");
 	  exit(1);
 	}
 
-      for (i = 13; i > 0; i--)
-	argv[i + 1] = argv[i];
-      argv[1] = username;
-      argv[L_ACTIVE] = "0";
-
-      status = wrap_mr_query("update_list", 14, argv, NULL, NULL);
-      if (status)
-	{
-	  com_err(whoami, status, "while updating list, "
-		  "not deactivating list or filesystem.");
-	  exit(1);
-	}
-
       status = wrap_mr_query("get_filesys_by_label", 1, args, save_query_info,
 			     argv);
-      if (status)
+      if (status == MR_SUCCESS)
+	{
+	  for (i = 11; i > 0; i--)
+	    argv[i + 1] = argv[i];
+	  argv[1] = username;
+	  argv[FS_TYPE + 1] = "ERR";
+	  argv[FS_COMMENTS + 1] = "Locker disabled; call 3-1325 for help";
+	  
+	  status = wrap_mr_query("update_filesys", 12, argv, NULL, NULL);
+	  if (status)
+	    {
+	      com_err(whoami, status, "while updating filesystem, "
+		      "not deactivating filesystem.");
+	      exit(1);
+	    }
+	}
+      else if (status && status != MR_NO_MATCH)
 	{
 	  com_err(whoami, status, "while retrieving filesystem information.");
-	  exit(1);
-	}
-
-      for (i = 11; i > 0; i--)
-	argv[i + 1] = argv[i];
-      argv[1] = username;
-      argv[FS_TYPE] = "ERR";
-      argv[FS_COMMENTS] = "Locker disabled; call 3-1325 for help";
-
-      status = wrap_mr_query("update_filesys", 12, argv, NULL, NULL);
-      if (status)
-	{
-	  com_err(whoami, status, "while updating filesystem, "
-		  "not deactivating filesystem.");
 	  exit(1);
 	}
     }
@@ -473,7 +480,6 @@ int main(int argc, char **argv)
     {
       char *args[3];
       char *argv[20];
-      char uid[10];
 
       args[0] = username;
       status = wrap_mr_query("get_user_account_by_login", 1, args,
@@ -485,8 +491,8 @@ int main(int argc, char **argv)
 	}
 
       args[0] = argv[U_UID];
-      argv[1] = username;
-      argv[2] = "IMAP";
+      args[1] = username;
+      args[2] = "IMAP";
 
       status = wrap_mr_query("register_user", 3, args, NULL, NULL);
       if (status)
@@ -607,14 +613,6 @@ void print_query(char *query_name, int argc, char **argv) {
   printf("\n");
 }
 
-void usage(char **argv)
-{
-#define USAGE_OPTIONS_FORMAT "  %-39s%s\n"
-  fprintf(stderr, "Usage: %s username [options]\n", argv[0]);
-  /* More here.  Just want this this to compile now. */
-  exit(1);
-}
-
 void show_user_info(char **argv)
 {
   char tbuf[BUFSIZ];
@@ -630,7 +628,7 @@ void show_user_info(char **argv)
   status = atoi(argv[U_STATE]);
   if (status == 0 || status == 2)
     {
-      sprintf(tbuf, "User %s secure Account Coupon to register\n",
+      printf("User %s secure Account Coupon to register\n",
 	      atoi(argv[U_SECURE]) ? "needs" : "does not need");
     }
   printf("Comments: %s\n", argv[U_COMMENT]);
@@ -656,4 +654,35 @@ void show_user_info_unformatted(char **argv)
   printf("Last mod by:           %s\n", argv[U_MODBY]);
   printf("Last mod on:           %s\n", argv[U_MODTIME]);
   printf("Last mod with:         %s\n", argv[U_MODWITH]);
+}
+
+void usage(char **argv)
+{
+#define USAGE_OPTIONS_FORMAT "  %-39s%s\n"
+  fprintf(stderr, "Usage: %s username [options]\n", argv[0]);
+  fprintf(stderr, "Options are\n");
+  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-C   | -create",
+          "-D   | -deact");
+  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-r   | -register",
+	  "-R   | -rename newname");
+  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-U   | -uid uid",
+	  "-s   | -shell shell");
+  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-S   | -status status",
+	  "-w   | -winshell winshell");
+  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-F   | -first firstname",
+	  "-L   | -last lastname");
+  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-M   | -middle middlename",
+	  "-I   | -clearid mitid");
+  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-cl  | -class class",
+	  "-c   | -comment comment");
+  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-6   | -secure 0|1",
+	  "-lr  | -listreservation");
+  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-ar  | -addreservation reservation",
+	  "-dr  | -deletereservation reservation");
+  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-u   | -unformatted",
+	  "-n   | -noauth");
+  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-v   | -verbose",
+	  "-db  | -database host[:port]");
+
+  exit(1);
 }

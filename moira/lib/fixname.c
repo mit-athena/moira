@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/fixname.c,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/fixname.c,v 1.4 1990-05-02 15:52:10 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/fixname.c,v 1.5 1992-05-20 12:07:11 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -9,7 +9,7 @@
  */
 
 #ifndef lint
-static char *rcsid_fixname_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/fixname.c,v 1.4 1990-05-02 15:52:10 mar Exp $";
+static char *rcsid_fixname_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/fixname.c,v 1.5 1992-05-20 12:07:11 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -23,7 +23,7 @@ void FixName(ilnm, ifnm, last, first, middle)
 	char *ilnm, *ifnm;
 	char *first, *last, *middle;
 {
-	int ends_jr=0, ends_iii=0, ends_iv=0;
+	int ends_jr=0, ends_iii=0, ends_iv=0, ends_ii=0, ends_v=0;
 
 	Upcase(ilnm);
 	Upcase(ifnm);
@@ -31,7 +31,7 @@ void FixName(ilnm, ifnm, last, first, middle)
 	/* Last name ... */
 
 	TrimTrailingSpace(ilnm);
-	LookForJrAndIII(ilnm, &ends_jr, &ends_iii, &ends_iv);
+	LookForJrAndIII(ilnm, &ends_jr, &ends_ii, &ends_iii, &ends_iv, &ends_v);
 	LookForSt(ilnm);
 	LookForO(ilnm);
 	FixCase(ilnm);
@@ -40,14 +40,14 @@ void FixName(ilnm, ifnm, last, first, middle)
 		/* First name  & middle initial ... */
 
 	TrimTrailingSpace(ifnm);
-	LookForJrAndIII(ifnm, &ends_jr, &ends_iii, &ends_iv);
+	LookForJrAndIII(ifnm, &ends_jr, &ends_ii, &ends_iii, &ends_iv, &ends_v);
 
         GetMidInit(ifnm, middle);
 
 	FixCase(ifnm);
 #ifdef notdef
 		/* okay, finish up first name */
-	AppendJrOrIII(ifnm, &ends_jr, &ends_iii, &ends_iv);
+	AppendJrOrIII(ifnm, &ends_jr, &ends_ii, &ends_iii, &ends_iv, &ends_v);
 #endif notdef
 	strncpy(first, ifnm, FIRST_LEN);
 }
@@ -70,11 +70,13 @@ register char *p;
     }
 }
 
-LookForJrAndIII(nm, pends_jr, pends_iii, pends_iv)
+LookForJrAndIII(nm, pends_jr, pends_ii, pends_iii, pends_iv, pends_v)
 register char *nm;
 register int *pends_jr;
+int *pends_ii;
 register int *pends_iii;
 register int *pends_iv;
+int *pends_v;
 {
     register int len = strlen(nm);
 
@@ -93,6 +95,14 @@ register int *pends_iv;
     else if (len >= 5 && !strcmp(nm + len - 4, " III")) {
 	*pends_iii = 1;
 	nm[len - 4] = '\0';
+    }
+    else if (len >= 4 && !strcmp(nm + len - 3, " II")) {
+	*pends_ii = 1;
+	nm[len - 3] = '\0';
+    }
+    else if (len >= 3 && !strcmp(nm + len - 2, " V")) {
+	*pends_v = 1;
+	nm[len - 2] = '\0';
     }
 }
 

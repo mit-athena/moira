@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/disable.c,v 1.1 1988-07-31 17:29:56 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/disable.c,v 1.2 1988-08-03 20:12:57 mar Exp $
  *
  * disabled: check to see if registration is enabled right now.  Most of this
  * code is stolen from the cron daemon.
@@ -38,11 +38,13 @@ char *cmp();
  * will indicate the time that registration will be re-enabled.
  */
 
-char *disabled()
+char *disabled(msg)
+char **msg;
 {
     register char *cp;
     int hit;
 
+    *msg = 0;
     init();
     append(FILENAME);
     *listend++ = EOS;
@@ -63,6 +65,7 @@ char *disabled()
 	cp = cmp(cp, loct->tm_mon);
 	cp = cmp(cp, loct->tm_wday);
 	if(flag == 0) {
+	    *msg = cp;
 	    hit++;
 	    break;
 	}
@@ -154,8 +157,9 @@ char *fn;
 	register char *cp;
 	register char *ocp;
 	register int n;
+	FILE *f, *fopen();
 
-	if (freopen(fn, "r", stdin) == NULL)
+	if ((f = fopen(fn, "r")) == (FILE *) NULL)
 		return;
 	cp = listend;
 loop:
@@ -169,7 +173,7 @@ loop:
 	ocp = cp;
 	for(i=0;; i++) {
 		do
-			c = getchar();
+			c = getc(f);
 		while(c == ' ' || c == '\t')
 			;
 		if(c == EOF || c == '\n')
@@ -180,9 +184,9 @@ loop:
 			*cp++ = ANY;
 			continue;
 		}
-		if ((n = number(c)) < 0)
+		if ((n = number(c, f)) < 0)
 			goto ignore;
-		c = getchar();
+		c = getc(f);
 		if(c == ',')
 			goto mlist;
 		if(c == '-')
@@ -197,10 +201,10 @@ loop:
 		*cp++ = LIST;
 		*cp++ = n;
 		do {
-			if ((n = number(getchar())) < 0)
+			if ((n = number(getc(f), f)) < 0)
 				goto ignore;
 			*cp++ = n;
-			c = getchar();
+			c = getc(f);
 		} while (c==',');
 		if(c != '\t' && c != ' ')
 			goto ignore;
@@ -210,9 +214,9 @@ loop:
 	mrange:
 		*cp++ = RANGE;
 		*cp++ = n;
-		if ((n = number(getchar())) < 0)
+		if ((n = number(getc(f), f)) < 0)
 			goto ignore;
-		c = getchar();
+		c = getc(f);
 		if(c != '\t' && c != ' ')
 			goto ignore;
 		*cp++ = n;
@@ -223,7 +227,7 @@ loop:
 		if(c == '%')
 			c = '\n';
 		*cp++ = c;
-		c = getchar();
+		c = getc(f);
 	}
 	*cp++ = '\n';
 	*cp++ = 0;
@@ -233,25 +237,26 @@ ignore:
 	cp = ocp;
 	while(c != '\n') {
 		if(c == EOF) {
-			(void) fclose(stdin);
+			(void) fclose(f);
 			listend = cp;
 			return;
 		}
-		c = getchar();
+		c = getc(f);
 	}
 	goto loop;
 }
 
-static number(c)
+static number(c, f)
 register c;
+FILE *f;
 {
 	register n = 0;
 
 	while (isdigit(c)) {
 		n = n*10 + c - '0';
-		c = getchar();
+		c = getc(f);
 	}
-	(void) ungetc(c, stdin);
+	(void) ungetc(c, f);
 	if (n>=100)
 		return(-1);
 	return(n);

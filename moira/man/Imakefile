@@ -1,4 +1,4 @@
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/man/Imakefile,v 1.2 1992-05-28 13:57:22 mar Exp $
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/man/Imakefile,v 1.3 1992-07-06 15:57:06 mar Exp $
 #
 # Copyright 1990 by the Massachusetts Institute of Technology.
 #
@@ -19,8 +19,9 @@ CODE=blanche.1 chfn.1 chpobox.1 chsh.1 dcmmaint.1 listmaint.1 \
 	sq_remove_data.3 sq_empty.3 sq_save_args.3 sq_save_data.3 \
 	sq_save_unique_data.3 sq_save_unique_string.3 \
 	dcm.8 mrtest.8 reg_svr.8 moirad.8 startdcm.8 startreg.8 \
-	startmoira.8 update_server.8
+	startmoira.8 update_server.8 addusr.1
 
+manpage(1,addusr.1)
 manpage(1,blanche.1)
 manpage(1,chfn.1)
 manpage(1,chpobox.1)

@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/display.c,v 1.8 1992-11-09 17:08:14 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/display.c,v 1.9 1992-12-10 10:40:12 mar Exp $
  */
 
 #include <stdio.h>
@@ -133,7 +133,7 @@ EntryForm *form;
 	AppendToLog(buf);
 	break;
     case MM_SHOW_KRBMAP:
-	sprintf(buf, "Kerberos mapping: User %-9s Principal %s\n",
+	sprintf(buf, "Kerberos mapping: User %-9s Principal %s",
 		info[KMAP_USER], info[KMAP_PRINCIPAL]);
 	AppendToLog(buf);
 	break;
@@ -217,25 +217,25 @@ EntryForm *form;
 	AppendToLog(buf);
 	break;
     case MM_SHOW_CLDATA:
-	sprintf(buf, "Cluster: %-20s Label: %-15s Data: %s\n",
+	sprintf(buf, "Cluster: %-20s Label: %-15s Data: %s",
 		info[CD_NAME], info[CD_LABEL], info[CD_DATA]);
 	AppendToLog(buf);
 	break;
     case MM_SHOW_MCMAP:
-	sprintf(buf, "Machine: %-20s Cluster: %s\n", info[0], info[1]);
+	sprintf(buf, "Machine: %-20s Cluster: %s", info[0], info[1]);
 	AppendToLog(buf);
 	break;
     case MM_SHOW_MEMBERS:
 	if (argc == 2)
-	  sprintf(buf, "%-9s %s\n", info[0], info[1]);
+	  sprintf(buf, "%-9s %s", info[0], info[1]);
 	else
-	  sprintf(buf, "%s\n", info[0]);
+	  sprintf(buf, "%s", info[0]);
 	AppendToLog(buf);
 	break;
     case MM_STATS:
 	sprintf(buf, "Table: %-20s Modified: %s\n", info[0], info[5]);
 	AppendToLog(buf);
-	sprintf(buf, "  %-8D appends, %-8d updates, %-8d deletes\n",
+	sprintf(buf, "  %-8D appends, %-8d updates, %-8d deletes",
 		info[2], info[3], info[4]);
 	AppendToLog(buf);
 	break;
@@ -255,7 +255,7 @@ EntryForm *form;
 	}
 	sprintf(buf, "Principal %s on %s (%s)\n", info[0], info[1], info[2]);
 	AppendToLog(buf);
-	sprintf(buf, "  Connected at %s, client %s\n", info[3], info[4]);
+	sprintf(buf, "  Connected at %s, client %s", info[3], info[4]);
 	AppendToLog(buf);
 	break;
     case MM_SHOW_VALUE:
@@ -374,7 +374,7 @@ EntryForm *form;
 	AppendToLog(buf);
 	break;
     case MM_SHOW_ACE_USE:
-	sprintf(buf, "%s: %s\n", info[0], info[1]);
+	sprintf(buf, "%s: %s", info[0], info[1]);
 	AppendToLog(buf);
 	break;
     case MM_SHOW_FS_ALIAS:

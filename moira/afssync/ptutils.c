@@ -33,7 +33,7 @@
 #include "ptserver.h"
 #include "pterror.h"
 
-RCSID ("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/afssync/ptutils.c,v 1.5 1992-05-31 20:25:31 probe Exp $")
+RCSID ("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/afssync/ptutils.c,v 1.6 1992-06-07 13:26:17 probe Exp $")
 
 extern struct ubik_dbase *dbase;
 extern struct afsconf_dir *prdir;
@@ -299,7 +299,7 @@ long CreateEntry (at, aname, aid, idflag, flag, oid, creator)
 		}
 
 		centry.ngroups = htonl(ntohl(centry.ngroups) - 1);
-		if ( centry.ngroups < 0)
+		if (ntohl(centry.ngroups) < 0)
 		    if (!pr_noAuth) return PRNOMORE;
 		
 #if !ADD_TO_AUTHUSER_GROUP

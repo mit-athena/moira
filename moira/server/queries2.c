@@ -1,6 +1,6 @@
 /* This file defines the query dispatch table for version 2 of the protocol
  *
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/queries2.c,v 1.15 1989-08-10 14:19:41 mar Exp $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/queries2.c,v 1.16 1989-08-25 14:46:30 mar Exp $
  *
  * Copyright 1987, 1988 by the Massachusetts Institute of Technology.
  * For copying and distribution information, please see the file
@@ -41,6 +41,7 @@ int setup_dfil();
 int setup_dnfp();
 int setup_dnfq();
 int setup_sshi();
+int setup_akum();
 
 /* Query Followup Routines */
 int followup_fix_modby();
@@ -391,6 +392,43 @@ static struct validate dubu_validate = {
   0,
   setup_dusr,
   0,
+};
+
+static char *gkum_fields[] = { LOGIN, "kerberos",
+			       LOGIN, "kerberos" };
+
+static char *akum_fields[] = { LOGIN, "kerberos" };
+
+static struct valobj akum_valobj[] =
+{
+    {V_ID, 0, USERS, LOGIN, USERS_ID, SMS_USER},
+    {V_ID, 1, "strings", "string", "string_id", SMS_NO_MATCH},
+};
+
+static struct validate akum_validate =
+{
+    akum_valobj,
+    1,
+    USERS_ID,
+    "k.users_id = %d or k.string_id = %d",
+    2,
+    USERS_ID,
+    access_user,
+    setup_akum,
+    0
+};
+
+static struct validate dkum_validate =
+{
+    akum_valobj,
+    2,
+    USERS_ID,
+    "k.users_id = %d and k.string_id = %d",
+    2,
+    USERS_ID,
+    access_user,
+    0,
+    0
 };
 
 static char *gfbl_fields[] = {
@@ -1233,7 +1271,7 @@ static struct validate gnfq_validate = {
   0,
   access_filesys,
   0,
-  followup_fix_modby,
+  followup_gnfq,
 };
 
 static char *gnqp_fields[] = {
@@ -1638,6 +1676,44 @@ static struct validate dpcp_validate = {
   0,
 };
 
+static char *gpdm_fields[] = {
+    NAME,
+    NAME, "rpcnum", "host", MOD1, MOD2, MOD3,
+};
+
+static char *apdm_fields[] = {
+    NAME, "rpcnum", "host"
+};
+
+static struct valobj apdm_valobj[] = {
+    {V_CHAR, 0},
+    {V_ID, 2, MACHINE, NAME, MACH_ID, SMS_MACHINE},
+};
+
+static struct validate apdm_validate = {
+  apdm_valobj,
+  2,
+  NAME,
+  "p.name = \"%s\"",
+  1,
+  0,
+  0,
+  0,
+  set_modtime,
+};
+
+static struct validate dpdm_validate = {
+  0,
+  0,
+  NAME,
+  "p.name = \"%s\"",
+  1,
+  0,
+  0,
+  0,
+  0,
+};
+
 static char *gali_fields[] = {
   NAME, TYPE, "trans",
   NAME, TYPE, "trans",
@@ -1936,6 +2012,51 @@ struct query Queries2[] = {
     "u.users_id = %d",
     1,
     &dubu_validate,
+  },
+
+  {
+    /* Q_GKUM - GET_KERBEROS_USER_MAP */
+    "get_kerberos_user_map",
+    "gkum",
+    RETRIEVE,
+    "k",
+    "krbmap",
+    "%c = users.login, %c = strings.string",
+    gkum_fields,
+    2,
+    "users.login = \"%s\" and strings.string = \"%s\" and k.users_id = users.users_id and k.string_id = strings.string_id",
+    2,
+    &VDsort2,
+  },
+
+  {
+    /* Q_AKUM - ADD_KERBEROS_USER_MAP */
+    "add_kerberos_user_map",
+    "akum",
+    APPEND,
+    "k",
+    "krbmap",
+    "users_id = %i4, string_id = %i4",
+    akum_fields,
+    2,
+    0,
+    0,
+    &akum_validate,
+  },
+
+  {
+    /* Q_DKUM - DELETE_KERBEROS_USER_MAP */
+    "delete_kerberos_user_map",
+    "dkum",
+    DELETE,
+    "k",
+    "krbmap",
+    0,
+    akum_fields,
+    0,
+    "k.users_id = %d and k.string_id = %d",
+    2,
+    &dkum_validate,
   },
 
   {
@@ -2830,10 +2951,10 @@ struct query Queries2[] = {
     RETRIEVE,
     "nq",
     "nfsquota",
-    "%c = filesys.label, %c = users.login, %c = text(nq.quota), %c = nfsphys.dir, %c = machine.name, %c = nq.modtime, %c = text(nq.modby), %c = nq.modwith",
+    "%c = filesys.label, %c = users.login, %c = text(nq.quota), %c = text(nq.phys_id), %c = machine.name, %c = nq.modtime, %c = text(nq.modby), %c = nq.modwith",
     gnfq_fields,
     8,
-    "filesys.label = \"%s\" and nq.users_id = %d and filesys.filsys_id = nq.filsys_id and nfsphys.nfsphys_id = nq.phys_id and machine.mach_id = filesys.mach_id and users.users_id = nq.users_id",
+    "filesys.label = \"%s\" and nq.users_id = %d and filesys.filsys_id = nq.filsys_id and machine.mach_id = filesys.mach_id and users.users_id = nq.users_id",
     2,
     &gnfq_validate,
   },
@@ -3226,6 +3347,51 @@ struct query Queries2[] = {
     "p.name = \"%s\"",
     1,
     &dpcp_validate,
+  },
+
+  {
+    /* Q_GPDM - GET_PALLADIUM */
+    "get_palladium",
+    "gpdm",
+    RETRIEVE,
+    "p",
+    "palladium",
+    "%c = p.name, %c = text(p.ident), %c = machine.name, %c = p.modtime, %c = text(p.modby), %c = p.modwith",
+    gpdm_fields,
+    6,
+    "p.name = \"%s\" and machine.mach_id = p.mach_id",
+    1,
+    &VDsortf,
+  },
+
+  {
+    /* Q_APDM - ADD_PALLADIUM */
+    "add_palladium",
+    "apdm",
+    APPEND,
+    "p",
+    "palladium",
+    "name = %c, ident = int4(%c), mach_id = %i4",
+    apdm_fields,
+    3,
+    0,
+    0,
+    &apdm_validate,
+  },
+
+  {
+    /* Q_DPDM - DELETE_PALLADIUM */
+    "delete_palladium",
+    "dpdm",
+    DELETE,
+    "p",
+    "palladium",
+    0,
+    apdm_fields,
+    0,
+    "p.name = \"%s\"",
+    1,
+    &dpdm_validate,
   },
 
   {

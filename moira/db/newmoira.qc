@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/db/newmoira.qc,v 1.12 1990-03-17 00:10:01 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/db/newmoira.qc,v 1.13 1990-03-23 12:24:27 mar Exp $
  *
  * Creates a new sms database
  *
@@ -255,6 +255,12 @@ char **argv;
 ##  append users (login = user, users_id = 3, potype="NONE")
     if (ingres_errno) {
 	printf("Unable to install user %s\n", buffer);
+	exit(1);
+    }
+##  append imembers (list_id = 2, member_type = "USER", member_id = 2,
+##		     ref_count = 1, direct = 1)
+    if (ingres_errno) {
+	printf("Unable to put user root on list dbadmin\n");
 	exit(1);
     }
 ##  append imembers (list_id = 2, member_type = "USER", member_id = 3,

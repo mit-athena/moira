@@ -1,4 +1,4 @@
-/* $Id: chsh.c,v 1.23 1998-10-30 18:10:35 kcr Exp $
+/* $Id: chsh.c,v 1.24 1999-04-30 17:39:38 danw Exp $
  *
  * Talk to the Moira database to change a person's login shell.  The chosen
  * shell must exist.  A warning will be issued if the shell is not in
@@ -25,10 +25,10 @@
 
 #include <krb.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chsh.c,v 1.23 1998-10-30 18:10:35 kcr Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chsh.c,v 1.24 1999-04-30 17:39:38 danw Exp $");
 
-int usage(void);
-int leave(int status);
+void usage(void);
+void leave(int status);
 int chsh(char *uname);
 int get_shell(int argc, char **argv, void *uname);
 int get_fmodtime(int argc, char **argv, void *uname);
@@ -82,7 +82,7 @@ int main(int argc, char *argv[])
 
 /* This should be called rather than exit once connection to moira server
    has been established. */
-int leave(int status)
+void leave(int status)
 {
   mr_disconnect();
   exit(status);
@@ -270,7 +270,7 @@ void check_shell(char *shell)
     }
 }
 
-int usage(void)
+void usage(void)
 {
   fprintf(stderr, "Usage: %s [user]\n", whoami);
   exit(1);

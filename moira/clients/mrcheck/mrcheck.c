@@ -1,4 +1,4 @@
-/* $Id: mrcheck.c,v 1.15 1998-03-10 21:22:39 danw Exp $
+/* $Id: mrcheck.c,v 1.16 1999-04-30 17:39:36 danw Exp $
  *
  * Verify that all Moira updates are successful
  *
@@ -18,14 +18,14 @@
 #include <string.h>
 #include <time.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrcheck/mrcheck.c,v 1.15 1998-03-10 21:22:39 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrcheck/mrcheck.c,v 1.16 1999-04-30 17:39:36 danw Exp $");
 
 char *atot(char *itime);
 int process_server(int argc, char **argv, void *sqv);
 void disp_svc(char **argv, char *msg);
 int process_host(int argc, char **argv, void *sqv);
 void disp_sh(char **argv, char *msg);
-int usage(void);
+void usage(void);
 
 static int count = 0;
 static char *whoami;
@@ -233,7 +233,7 @@ punt:
   exit(1);
 }
 
-int usage(void)
+void usage(void)
 {
   fprintf(stderr, "Usage: %s [-noauth]\n", whoami);
   exit(1);

@@ -1,4 +1,4 @@
-/* $Id: chfn.c,v 1.17 1998-03-10 21:22:41 danw Exp $
+/* $Id: chfn.c,v 1.18 1999-04-30 17:39:37 danw Exp $
  *
  * Talk to the Moira database to change a person's GECOS information.
  *
@@ -23,7 +23,7 @@
 
 #include <krb.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chfn.c,v 1.17 1998-03-10 21:22:41 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chfn.c,v 1.18 1999-04-30 17:39:37 danw Exp $");
 
 #define FALSE 0
 #define TRUE 1
@@ -41,8 +41,8 @@ struct finger_info {
   char *mit_year;
 };
 
-int usage(void);
-int leave(int status);
+void usage(void);
+void leave(int status);
 int chfn(char *uname);
 int get_user_info(int argc, char *argv[], void *message);
 char *ask(char *question, char *def_val, int phone_num);
@@ -91,7 +91,7 @@ int main(int argc, char *argv[])
 
 /* This should be called rather than exit once connection to moira server
    has been established. */
-int leave(int status)
+void leave(int status)
 {
   mr_disconnect();
   exit(status);
@@ -326,7 +326,7 @@ void get_new_info(struct finger_info *old_info, struct finger_info *new_info)
   GETINFO("MIT year (Exs: 1989, '91, Faculty, Grad)", mit_year, FALSE);
 }
 
-int usage(void)
+void usage(void)
 {
   fprintf(stderr, "Usage: %s [user]\n", whoami);
   exit(1);

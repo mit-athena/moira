@@ -1,4 +1,4 @@
-/* $Id: qsubs.c,v 1.18 2000-01-11 05:57:31 danw Exp $
+/* $Id: qsubs.c,v 1.19 2001-11-26 18:20:28 zacheiss Exp $
  *
  * Copyright (C) 1987-1998 by the Massachusetts Institute of Technology
  * For copying and distribution information, please see the file
@@ -11,7 +11,7 @@
 
 #include <stdlib.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsubs.c,v 1.18 2000-01-11 05:57:31 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsubs.c,v 1.19 2001-11-26 18:20:28 zacheiss Exp $");
 
 extern struct query Queries[];
 extern int QueryCount;
@@ -49,28 +49,29 @@ struct query *get_query_by_name(char *name, int version)
 void list_queries(client *cl, int (*action)(int, char *[], void *),
 		  void *actarg)
 {
-  static struct query **squeries = NULL;
-  static int qcount;
+  struct query **squeries = NULL;
+  int qcount;
   struct query *q, **sq;
   char qnames[80];
   char *qnp;
   int i;
 
-  if (!squeries)
+  squeries = sq = xmalloc(QueryCount * sizeof(struct query *));
+  q = Queries;
+  for (i = 0; i < QueryCount; i++)
     {
-      squeries = sq = xmalloc(QueryCount * sizeof(struct query *));
-      q = Queries;
-      for (i = 0; i < QueryCount; i++)
+      if (q->version > cl->version)
 	{
-	  if (q->version > cl->version)
-	    continue;
-	  if (i > 0 && strcmp((*sq)->name, q->name))
-	    sq++;
-	  *sq = q++;
+	  q++;
+	  continue;
 	}
-      qcount = (sq - squeries) + 1;
-      qsort(squeries, qcount, sizeof(struct query *), qcmp);
+      if (i > 0 && strcmp((*sq)->name, q->name))
+	sq++;
+      *sq = q++;
     }
+  qcount = (sq - squeries) + 1;
+  qsort(squeries, qcount, sizeof(struct query *), qcmp);
+
   sq = squeries;
 
   qnp = qnames;
@@ -85,6 +86,8 @@ void list_queries(client *cl, int (*action)(int, char *[], void *),
   (*action)(1, &qnp, actarg);
   strcpy(qnames, "_list_users");
   (*action)(1, &qnp, actarg);
+
+  free(squeries);
 }
 
 void help_query(struct query *q, int (*action)(int, char *[], void *),

@@ -1,25 +1,25 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/send_file.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/send_file.c,v 1.1 1987-08-22 17:54:57 wesommer Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/send_file.c,v 1.2 1988-08-04 14:24:00 mar Exp $
  */
 
 #ifndef lint
-static char *rcsid_send_file_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/send_file.c,v 1.1 1987-08-22 17:54:57 wesommer Exp $";
+static char *rcsid_send_file_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/send_file.c,v 1.2 1988-08-04 14:24:00 mar Exp $";
 #endif	lint
 
 #include <stdio.h>
-#include "com_err.h"
-#include "gdb.h"
-#include "smsu_int.h"
+#include <com_err.h>
+#include <gdb.h>
+#include <dcm.h>
+#include <sms.h>
 #include <sys/file.h>
-#include "update.h"
-#include "sms_update_int.h"
-#include "kludge.h"
+#include <sys/stat.h>
+#include <update.h>
+
 
 extern CONNECTION conn;
 extern int errno;
 char buf[BUFSIZ];
-extern struct update_desc *info;
 
 /*
  * syntax:
@@ -39,75 +39,95 @@ extern struct update_desc *info;
  */
 
 int
-send_file(pathname, n_to_send)
-    char *pathname;
-    int n_to_send;
+send_file(pathname, target_path)
+char *pathname;
+char *target_path;
 {
-    int n, fd, code;
+    int n, fd, code, n_to_send;
     STRING data;
+    struct stat statb;
 
+    string_alloc(&data, UPDATE_BUFSIZ);
+
+    /* send file over */
     fd = open(pathname, O_RDONLY, 0);
-    if (fd == -1) {
-	sprintf(buf, "%s: can't open %s for transmission",
-		error_message(errno), pathname);
-	sms_log_error(buf);
-	return(1);
+    if (fd < 0) {
+	com_err(whoami, errno, "unable to open %s for read", pathname);
+	return(SMS_OCONFIG);
+    }
+    if (fstat(fd, &statb)) {
+	com_err(whoami, errno, "unable to stat %s", pathname);
+	close(fd);
+	return(SMS_OCONFIG);
+    }
+    n_to_send = statb.st_size;
+    
+    sprintf(STRING_DATA(data), "XFER_002 %d %d %s",
+	    n_to_send, checksum_file(pathname), target_path);
+    code = send_object(conn, (char *)&data, STRING_T);
+    if (code) {
+	com_err(whoami, code, " sending XFER_002 request");
+	close(fd);
+	return(code);
     }
     code = receive_object(conn, (char *)&n, INTEGER_T);
     if (code) {
-	com_err(whoami, connection_errno(conn), ": lost connection");
-	info->override = INTERVAL_connection_lost;
+	com_err(whoami, code, " getting reply from XFER_002 request");
 	close(fd);
-	return(1);
+	return(code);
     }
     if (n) {
-	log_priority = log_ERROR;
-	com_err(whoami, n, ": from remote server: can't update %s",
-		pathname);
-	info->override = INTERVAL_update_failed;
+	com_err(whoami, n, " transfer request (XFER_002) rejected");
 	close(fd);
-	return(1);
+	return(n);
     }
-    string_alloc(&data, UPDATE_BUFSIZ);
+    
+    code = receive_object(conn, (char *)&n, INTEGER_T);
+    if (code) {
+	com_err(whoami, connection_errno(conn), ": lost connection");
+	close(fd);
+	return(code);
+    }
+    if (n) {
+	com_err(whoami, n, " from remote server: can't update %s",
+		pathname);
+	close(fd);
+	return(n);
+    }
     while (n_to_send > 0) {
 #ifdef	DEBUG
 	printf("n_to_send = %d\n", n_to_send);
 #endif	/* DEBUG */
 	n = read(fd, STRING_DATA(data), UPDATE_BUFSIZ);
 	if (n < 0) {
-	    sprintf(buf, "%s: reading %s for transmission",
-		    error_message(errno), pathname);
-	    sms_log_error(buf);
+	    com_err(whoami, errno, " reading %s for transmission", pathname);
 	    close(fd);
-	    return(1);
+	    return(SMS_ABORTED);
 	}
 	MAX_STRING_SIZE(data) = n;
 	code = send_object(conn, (char *)&data, STRING_T);
 	if (code) {
-	    sprintf(buf, "%s: transmitting file %s",
-		    error_message(connection_errno(conn)), pathname);
-	    sms_log_error(buf);
+	    com_err(whoami, connection_errno(conn), " transmitting file %s",
+		    pathname);
 	    close(fd);
-	    return(1);
+	    return(code);
 	}
 	n_to_send -= n;
 	code = receive_object(conn, (char *)&n, INTEGER_T);
 	if (code) {
-	    sprintf(buf,
-		    "%s: awaiting ACK remote server during transmission of %s",
-		    error_message(connection_errno(conn)), pathname);
-	    sms_log_error(buf);
+	    com_err(whoami, connection_errno(conn),
+		    " awaiting ACK remote server during transmission of %s",
+		    pathname);
 	    close(fd);
-	    return(1);
+	    return(code);
 	}
 	if (n) {
-	    sprintf(buf, "%s: from remote server during transmission of %s",
-		    error_message(n), pathname);
-	    sms_log_error(buf);
+	    com_err(whoami, n, " from remote server during transmission of %s",
+		    pathname);
 	    close(fd);
-	    return(1);
+	    return(n);
 	}
     }
     close(fd);
-    return(0);
+    return(SMS_SUCCESS);
 }

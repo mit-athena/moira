@@ -21,7 +21,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/stella/stella.c,v 1.4 2000-03-29 20:05:10 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/stella/stella.c,v 1.5 2000-04-05 22:03:52 zacheiss Exp $");
 
 struct owner_type {
   int type;
@@ -39,13 +39,11 @@ struct string_list {
   struct string_list *next;
 };
 
-/* It is important to membercmp that M_USER < M_LIST < M_STRING */
 #define M_ANY		0
 #define M_USER		1
 #define M_LIST		2
-#define M_STRING	3
-#define M_KERBEROS	4
-#define	M_NONE		5
+#define M_KERBEROS	3
+#define M_NONE		4
 
 /* argument parsing macro */
 #define argis(a, b) (!strcmp(*arg + 1, a) || !strcmp(*arg + 1, b))
@@ -742,8 +740,6 @@ struct owner_type *parse_member(char *s)
 	m->type = M_USER;
       else if (!strcasecmp("list", s))
 	m->type = M_LIST;
-      else if (!strcasecmp("string", s))
-	m->type = M_STRING;
       else if (!strcasecmp("kerberos", s))
 	m->type = M_KERBEROS;
       else if (!strcasecmp("none", s))

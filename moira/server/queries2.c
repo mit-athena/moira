@@ -1,4 +1,4 @@
-/* $Id: queries2.c,v 2.48 1998-09-04 03:01:50 danw Exp $
+/* $Id: queries2.c,v 2.49 1998-10-30 18:08:20 kcr Exp $
  *
  * This file defines the query dispatch table for version 2 of the protocol
  *
@@ -312,7 +312,7 @@ static struct validate uush_validate = {
   "users_id",
   access_user,
   0,
-  set_modtime_by_id,
+  set_finger_modtime,
 };
 
 static char *uust_fields[] = {

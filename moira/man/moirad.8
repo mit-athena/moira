@@ -1,0 +1,67 @@
+.TH SMSD 8 "30 Nov 1988" "Project Athena"
+\" RCSID: $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/man/moirad.8,v 1.1 1988-11-30 14:44:48 mar Exp $
+.SH NAME
+smsd \- SMS query daemon
+.br
+startsms \- start the SMS daemon running, capturing log files
+.SH SYNOPSIS
+.B smsd
+.br
+.B startsms
+.SH DESCRIPTION
+The SMS server
+must be running on the machine hosting the SMS database for any of the
+SMS clients to function.  Rather than invoke
+.B smsd
+directly, it is started by
+.B startsms,
+which starts the daemon running in the proper working directory and
+captures logging messages.
+.PP
+Logging is done to standard output.
+How much gets logged by
+.B smsd
+is controlled by the variable
+.I log_flags
+which is compiled into the file
+.I sms_srvdata.c.
+If critical errors are detected, they are logged to
+.B /u1/sms/critical.log
+and in a zephyrgram to class
+.B SMS
+instance
+.B SMS
+in addition to standard output.
+Also, a journal file is kept in
+.B /u1/sms/journal
+logging every successful change of the database in a format that can
+be replayed by
+.I smstest(8).
+For the server to be able to function properly, if must be run as root
+and root must have access to the tables through RTI Ingres.
+.PP
+.B startsms
+sets its working directory to the root, disconnects from the terminal
+and puts itself in the background.  It then starts
+.B /u1/sms/bin/smsd,
+and will capture lines the server writes to standard output and log them
+in
+.B /u1/sms/sms.log
+along with a timestamp.
+.B startsms
+will also log the exit status of the
+.B smsd
+if it is non-zero.
+.SH FILES
+/u1/sms/sms.log
+.br
+/u1/sms/critical.log
+.br
+/u1/sms/journal
+.br
+.br
+/tmp/tkt_dcm \- temporary Kerberos ticket storage.
+.br
+/etc/srvtab \- The dcm must be able to get Kerberos tickets for "sms.sms".
+.SH "SEE ALSO"
+The Project Athena Technical Plan section on SMS.

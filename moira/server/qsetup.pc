@@ -1,4 +1,4 @@
-/* $Id: qsetup.pc,v 2.41 2000-10-18 19:02:36 zacheiss Exp $
+/* $Id: qsetup.pc,v 2.42 2000-12-19 07:32:46 zacheiss Exp $
  *
  * Query setup routines
  *
@@ -21,7 +21,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsetup.pc,v 2.41 2000-10-18 19:02:36 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsetup.pc,v 2.42 2000-12-19 07:32:46 zacheiss Exp $");
 
 extern char *whoami;
 extern int dbms_errno, mr_errcode;
@@ -879,7 +879,7 @@ int setup_ahst(struct query *q, char **argv, client *cl)
   int value, id, ssaddr, smask, shigh, slow, cnt;
   unsigned int saddr, mask, high, low;
   EXEC SQL END DECLARE SECTION;
-  int row;
+  int row, idx;
   struct in_addr addr;
 
   id = *(int *)argv[0];
@@ -893,6 +893,11 @@ int setup_ahst(struct query *q, char **argv, client *cl)
     }
   else
     row = 0;
+
+  if (q->version < 6)
+    idx = 0;
+  else
+    idx = 1;
 
   /* Sanity check name, vendor, model, and os. */
   if ((row == 0 || strcasecmp(argv[1], oldname)) &&
@@ -918,18 +923,18 @@ int setup_ahst(struct query *q, char **argv, client *cl)
     return MR_EXISTS;
 
   /* check address */
-  if (!strcmp(argv[9 + row], "unassigned"))
+  if (!strcmp(argv[9 + row + idx], "unassigned"))
     value = -1;
-  else if (!strcmp(argv[9 + row], "unique"))
+  else if (!strcmp(argv[9 + row + idx], "unique"))
     {
-      if (*(int *)argv[8 + row] == 0)
+      if (*(int *)argv[8 + row + idx] == 0)
 	value = -1;
       else
 	value = -2;
     }
   else
     {
-      value = ntohl(inet_addr(argv[9 + row]));
+      value = ntohl(inet_addr(argv[9 + row + idx]));
       if (value == -1)
 	return MR_ADDRESS;
     }
@@ -940,7 +945,7 @@ int setup_ahst(struct query *q, char **argv, client *cl)
       /*
        * an address or unique was specified.
        */
-      id = *(int *)argv[8 + row];
+      id = *(int *)argv[8 + row + idx];
       EXEC SQL SELECT saddr, mask, high, low INTO :ssaddr, :smask,
 	:shigh, :slow FROM subnet WHERE snet_id = :id;
       if (dbms_errno)
@@ -964,7 +969,7 @@ int setup_ahst(struct query *q, char **argv, client *cl)
 	   * link in an inet_addr() that returns an error for
 	   * this case.
 	   */
-	  addr.s_addr = inet_addr(argv[9 + row]);
+	  addr.s_addr = inet_addr(argv[9 + row + idx]);
 	  name = inet_ntoa(addr);
 	  EXEC SQL SELECT count(mach_id) INTO :cnt FROM machine
 	    WHERE address = :name;
@@ -1016,13 +1021,13 @@ int setup_ahst(struct query *q, char **argv, client *cl)
        * we have an address in value. Convert it to a string and store it.
        */
       addr.s_addr = htonl(value);
-      strcpy(argv[9 + row], inet_ntoa(addr));
+      strcpy(argv[9 + row + idx], inet_ntoa(addr));
     }
   else
-    strcpy(argv[9 + row], "unassigned");
+    strcpy(argv[9 + row + idx], "unassigned");
 
   /* status checking */
-  value = atoi(argv[7 + row]);
+  value = atoi(argv[7 + row + idx]);
   if (row == 0 && !(value == 1 || value == 0))
     return MR_TYPE;
   if (row == 1)

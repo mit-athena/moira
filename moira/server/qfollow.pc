@@ -1,4 +1,4 @@
-/* $Id: qfollow.pc,v 2.19 2000-09-25 22:48:49 zacheiss Exp $
+/* $Id: qfollow.pc,v 2.20 2000-12-19 07:32:46 zacheiss Exp $
  *
  * Query followup routines
  *
@@ -20,7 +20,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qfollow.pc,v 2.19 2000-09-25 22:48:49 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qfollow.pc,v 2.20 2000-12-19 07:32:46 zacheiss Exp $");
 
 extern char *whoami, *table_name[];
 extern int dbms_errno, mr_errcode;
@@ -548,29 +548,34 @@ int followup_ghst(struct query *q, struct save_queue *sq, struct validate *v,
 		  client *cl)
 {
   char **argv;
-  int id, status;
+  int id, status, idx;
+
+  if (q->version < 6)
+    idx = 0;
+  else
+    idx = 1;
 
   while (sq_get_data(sq, &argv))
     {
       mr_trim_args(q->vcnt, argv);
 
-      id = atoi(argv[13]);
-      status = id_to_name(id, STRINGS_TABLE, &argv[13]);
+      id = atoi(argv[13 + idx]);
+      status = id_to_name(id, STRINGS_TABLE, &argv[13 + idx]);
       if (status)
 	return status;
-      id = atoi(argv[14]);
-      status = id_to_name(id, STRINGS_TABLE, &argv[14]);
+      id = atoi(argv[14 + idx]);
+      status = id_to_name(id, STRINGS_TABLE, &argv[14 + idx]);
       if (status)
 	return status;
-      id = atoi(argv[16]);
+      id = atoi(argv[16 + idx]);
       if (id < 0)
-	status = id_to_name(-id, STRINGS_TABLE, &argv[16]);
+	status = id_to_name(-id, STRINGS_TABLE, &argv[16 + idx]);
       else
-	status = id_to_name(id, USERS_TABLE, &argv[16]);
+	status = id_to_name(id, USERS_TABLE, &argv[16 + idx]);
       if (status && status != MR_NO_MATCH)
 	return status;
 
-      status = fix_ace(argv[11], &argv[12]);
+      status = fix_ace(argv[11 + idx], &argv[12 + idx]);
       if (status && status != MR_NO_MATCH)
 	return status;
     }

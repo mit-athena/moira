@@ -1,4 +1,4 @@
-/* $Id: queries2.c,v 2.81 2000-11-15 10:11:42 zacheiss Exp $
+/* $Id: queries2.c,v 2.82 2000-12-19 07:32:47 zacheiss Exp $
  *
  * This file defines the query dispatch table
  *
@@ -767,7 +767,7 @@ static char *gmac_fields[] = {
   "name", "type", "modtime", "modby", "modwith",
 };
 
-static char *ghst_fields[] = {
+static char *ghst2_fields[] = {
   "name", "address", "location", "network",
   "name", "vendor", "model", "os", "location", "contact", "use",
   "status", "status_change", "network", "address", "ace_type",
@@ -775,10 +775,26 @@ static char *ghst_fields[] = {
   "inuse", "modtime", "modby", "modwith",
 };
 
-static char *ghbh_fields[] = {
+static char *ghbh2_fields[] = {
   "hwaddr",
   "name", "vendor", "model", "os", "location", "contact", "use",
   "status", "status_change", "network", "address", "ace_type",
+  "ace_name", "admin_comment", "ops_comment", "created", "creator",
+  "inuse", "modtime", "modby", "modwith",
+};
+
+static char *ghst_fields[] = {
+  "name", "address", "location", "network",
+  "name", "vendor", "model", "os", "location", "contact", "billing_contact",
+  "use", "status", "status_change", "network", "address", "ace_type",
+  "ace_name", "admin_comment", "ops_comment", "created", "creator",
+  "inuse", "modtime", "modby", "modwith",
+};
+
+static char *ghbh_fields[] = {
+  "hwaddr",
+  "name", "vendor", "model", "os", "location", "contact", "billing_contact",
+  "use", "status", "status_change", "network", "address", "ace_type",
   "ace_name", "admin_comment", "ops_comment", "created", "creator",
   "inuse", "modtime", "modby", "modwith",
 };
@@ -800,13 +816,13 @@ static char *ghha_fields[] = {
   "hwaddr",
 };
 
-static char *ahst_fields[] = {
+static char *ahst2_fields[] = {
   "name", "vendor", "model", "os", "location", "contact", "use",
   "status", "subnet", "address", "ace_type", "ace_name",
   "admin_comment", "ops_comment",
 };
 
-static struct valobj ahst_valobj[] = {
+static struct valobj ahst2_valobj[] = {
   {V_CHAR, 0, MACHINE_TABLE, "name"},
   {V_CHAR, 1, MACHINE_TABLE, "vendor"},
   {V_CHAR, 2, MACHINE_TABLE, "model"},
@@ -822,8 +838,8 @@ static struct valobj ahst_valobj[] = {
   {V_ID, 13, STRINGS_TABLE, "string", "string_id", MR_NO_MATCH},
 };
 
-static struct validate ahst_validate = {
-  ahst_valobj,
+static struct validate ahst2_validate = {
+  ahst2_valobj,
   13,
   "name",
   "name = UPPER('%s')",
@@ -834,14 +850,49 @@ static struct validate ahst_validate = {
   set_uppercase_modtime,
 };
 
-static char *uhst_fields[] = {
+static char *ahst_fields[] = {
+  "name", "vendor", "model", "os", "location", "contact", "billing_contact",
+  "use", "status", "subnet", "address", "ace_type", "ace_name",
+  "admin_comment", "ops_comment",
+};
+
+static struct valobj ahst_valobj[] = {
+  {V_CHAR, 0, MACHINE_TABLE, "name"},
+  {V_CHAR, 1, MACHINE_TABLE, "vendor"},
+  {V_CHAR, 2, MACHINE_TABLE, "model"},
+  {V_CHAR, 3, MACHINE_TABLE, "os"},
+  {V_CHAR, 4, MACHINE_TABLE, "location"},
+  {V_CHAR, 5, MACHINE_TABLE, "contact"},
+  {V_CHAR, 6, MACHINE_TABLE, "billing_contact"},
+  {V_NUM, 7},
+  {V_NUM, 8},
+  {V_ID, 9, SUBNET_TABLE, "name", "snet_id", MR_SUBNET},
+  {V_TYPE, 11, 0, "ace_type", 0, MR_ACE},
+  {V_TYPEDATA, 12, 0, 0, 0, MR_ACE},
+  {V_ID, 13, STRINGS_TABLE, "string", "string_id", MR_NO_MATCH},
+  {V_ID, 14, STRINGS_TABLE, "string", "string_id", MR_NO_MATCH},
+};
+
+static struct validate ahst_validate = {
+  ahst_valobj,
+  14,
+  "name",
+  "name = UPPER('%s')",
+  1,
+  "mach_id",
+  access_host,
+  setup_ahst,
+  set_uppercase_modtime,
+};
+
+static char *uhst2_fields[] = {
   "name",
   "newname", "vendor", "model", "os", "location", "contact", "use",
   "status", "subnet", "address", "ace_type", "ace_name",
   "admin_comment", "ops_comment",
 };
 
-static struct valobj uhst_valobj[] = {
+static struct valobj uhst2_valobj[] = {
   {V_CHAR, 0, MACHINE_TABLE, "name"},
   {V_ID, 0, MACHINE_TABLE, "name", "mach_id", MR_MACHINE},
   {V_RENAME, 1, MACHINE_TABLE, "name", "mach_id", MR_NOT_UNIQUE},
@@ -859,9 +910,47 @@ static struct valobj uhst_valobj[] = {
   {V_ID, 14, STRINGS_TABLE, "string", "string_id", MR_NO_MATCH},
 };
 
+static struct validate uhst2_validate = {
+  uhst2_valobj,
+  15,
+  0,
+  0,
+  0,
+  "mach_id",
+  access_host,
+  setup_ahst,
+  set_modtime_by_id,
+};
+
+static char *uhst_fields[] = {
+  "name",
+  "newname", "vendor", "model", "os", "location", "contact", "billing_contact",
+  "use", "status", "subnet", "address", "ace_type", "ace_name",
+  "admin_comment", "ops_comment",
+};
+
+static struct valobj uhst_valobj[] = {
+  {V_CHAR, 0, MACHINE_TABLE, "name"},
+  {V_ID, 0, MACHINE_TABLE, "name", "mach_id", MR_MACHINE},
+  {V_RENAME, 1, MACHINE_TABLE, "name", "mach_id", MR_NOT_UNIQUE},
+  {V_CHAR, 2, MACHINE_TABLE, "vendor"},
+  {V_CHAR, 3, MACHINE_TABLE, "model"},
+  {V_CHAR, 4, MACHINE_TABLE, "os"},
+  {V_CHAR, 5, MACHINE_TABLE, "location"},
+  {V_CHAR, 6, MACHINE_TABLE, "contact"},
+  {V_CHAR, 7, MACHINE_TABLE, "billing_contact"},
+  {V_NUM, 8},
+  {V_NUM, 9},
+  {V_ID, 10, SUBNET_TABLE, "name", "snet_id", MR_SUBNET},
+  {V_TYPE, 12, 0, "ace_type", 0, MR_ACE},
+  {V_TYPEDATA, 13, 0, 0, 0, MR_ACE},
+  {V_ID, 14, STRINGS_TABLE, "string", "string_id", MR_NO_MATCH},
+  {V_ID, 15, STRINGS_TABLE, "string", "string_id", MR_NO_MATCH},
+};
+
 static struct validate uhst_validate = {
   uhst_valobj,
-  15,
+  16,
   0,
   0,
   0,
@@ -3958,7 +4047,7 @@ struct query Queries[] = {
   },
 
   {
-    /* Q_GHST - GET_HOST */
+    /* Q_GHST - GET_HOST, v2 */
     "get_host",
     "ghst",
     2,
@@ -3966,7 +4055,7 @@ struct query Queries[] = {
     "m",
     MACHINE_TABLE,
     "m.name, m.vendor, m.model, m.os, m.location, m.contact, m.use, m.status, TO_CHAR(m.statuschange, 'DD-mon-YYYY HH24:MI:SS'), s.name, m.address, m.owner_type, m.owner_id, m.acomment, m.ocomment, TO_CHAR(m.created, 'DD-mon-YYYY HH24:MI:SS'), m.creator, TO_CHAR(m.inuse, 'DD-mon-YYYY HH24:MI:SS'), TO_CHAR(m.modtime, 'DD-mon-YYYY HH24:MI:SS'), m.modby, m.modwith FROM machine m, subnet s",
-    ghst_fields,
+    ghst2_fields,
     21,
     "m.name LIKE UPPER('%s') AND m.address LIKE '%s' AND m.location LIKE UPPER('%s') AND s.name LIKE UPPER('%s') AND m.mach_id != 0 AND s.snet_id = m.snet_id",
     4,
@@ -3975,7 +4064,24 @@ struct query Queries[] = {
   },
 
   {
-    /* Q_GHBH - GET_HOST_BY_HWADDR */
+    /* Q_GHST - GET_HOST, v6 */
+    "get_host",
+    "ghst",
+    6,
+    RETRIEVE,
+    "m",
+    MACHINE_TABLE,
+    "m.name, m.vendor, m.model, m.os, m.location, m.contact, m.billing_contact, m.use, m.status, TO_CHAR(m.statuschange, 'DD-mon-YYYY HH24:MI:SS'), s.name, m.address, m.owner_type, m.owner_id, m.acomment, m.ocomment, TO_CHAR(m.created, 'DD-mon-YYYY HH24:MI:SS'), m.creator, TO_CHAR(m.inuse, 'DD-mon-YYYY HH24:MI:SS'), TO_CHAR(m.modtime, 'DD-mon-YYYY HH24:MI:SS'), m.modby, m.modwith FROM machine m, subnet s",
+    ghst_fields,
+    22,
+    "m.name LIKE UPPER('%s') AND m.address LIKE '%s' AND m.location LIKE UPPER('%s') AND s.name LIKE UPPER('%s') AND m.mach_id != 0 AND s.snet_id = m.snet_id",
+    4,
+    "m.name",
+    &ghst_validate,
+  },
+
+  {
+    /* Q_GHBH - GET_HOST_BY_HWADDR, v2 */
     "get_host_by_hwaddr",
     "ghbh",
     2,
@@ -3983,8 +4089,25 @@ struct query Queries[] = {
     "m",
     MACHINE_TABLE,
     "m.name, m.vendor, m.model, m.os, m.location, m.contact, m.use, m.status, TO_CHAR(m.statuschange, 'DD-mon-YYYY HH24:MI:SS'), s.name, m.address, m.owner_type, m.owner_id, m.acomment, m.ocomment, TO_CHAR(m.created, 'DD-mon-YYYY HH24:MI:SS'), m.creator, TO_CHAR(m.inuse, 'DD-mon-YYYY HH24:MI:SS'), TO_CHAR(m.modtime, 'DD-mon-YYYY HH24:MI:SS'), m.modby, m.modwith FROM machine m, subnet s",
-    ghbh_fields,
+    ghbh2_fields,
     21,
+    "m.hwaddr LIKE LOWER('%s') AND m.mach_id != 0 AND s.snet_id = m.snet_id",
+    1,
+    "m.name",
+    &ghst_validate,
+  },
+
+  {
+    /* Q_GHBH - GET_HOST_BY_HWADDR, v6 */
+    "get_host_by_hwaddr",
+    "ghbh",
+    6,
+    RETRIEVE,
+    "m",
+    MACHINE_TABLE,
+    "m.name, m.vendor, m.model, m.os, m.location, m.contact, m.billing_contact, m.use, m.status, TO_CHAR(m.statuschange, 'DD-mon-YYYY HH24:MI:SS'), s.name, m.address, m.owner_type, m.owner_id, m.acomment, m.ocomment, TO_CHAR(m.created, 'DD-mon-YYYY HH24:MI:SS'), m.creator, TO_CHAR(m.inuse, 'DD-mon-YYYY HH24:MI:SS'), TO_CHAR(m.modtime, 'DD-mon-YYYY HH24:MI:SS'), m.modby, m.modwith FROM machine m, subnet s",
+    ghbh_fields,
+    22,
     "m.hwaddr LIKE LOWER('%s') AND m.mach_id != 0 AND s.snet_id = m.snet_id",
     1,
     "m.name",
@@ -4009,7 +4132,7 @@ struct query Queries[] = {
   },
 
   {
-    /* Q_AHST - ADD_HOST */ /* uses prefetch_value() for mach_id */
+    /* Q_AHST - ADD_HOST, v2 */ /* uses prefetch_value() for mach_id */
     "add_host",
     "ahst",
     2,
@@ -4017,8 +4140,25 @@ struct query Queries[] = {
     "m",
     MACHINE_TABLE,
     "INTO machine (name, vendor, model, os, location, contact, use, status, statuschange, snet_id, address, owner_type, owner_id, acomment, ocomment, created, inuse, mach_id, creator) VALUES (UPPER('%s'), NVL(UPPER('%s'), CHR(0)), NVL(UPPER('%s'), CHR(0)), NVL(UPPER('%s'), CHR(0)), NVL(UPPER('%s'), CHR(0)), NVL('%s', CHR(0)), %s, %s, SYSDATE, %d, '%s', '%s', %d, %d, %d, SYSDATE, SYSDATE, %s, %s)",
-    ahst_fields,
+    ahst2_fields,
     14,
+    0,
+    0,
+    NULL,
+    &ahst2_validate,
+  },
+
+  {
+    /* Q_AHST - ADD_HOST, v6 */ /* uses prefetch_value() for mach_id */
+    "add_host",
+    "ahst",
+    6,
+    APPEND,
+    "m",
+    MACHINE_TABLE,
+    "INTO machine (name, vendor, model, os, location, contact, billing_contact, use, status, statuschange, snet_id, address, owner_type, owner_id, acomment, ocomment, created, inuse, mach_id, creator) VALUES (UPPER('%s'), NVL(UPPER('%s'), CHR(0)), NVL(UPPER('%s'), CHR(0)), NVL(UPPER('%s'), CHR(0)), NVL(UPPER('%s'), CHR(0)), NVL('%s', CHR(0)), NVL('%s', CHR(0)), %s, %s, SYSDATE, %d, '%s', '%s', %d, %d, %d, SYSDATE, SYSDATE, %s, %s)",
+    ahst_fields,
+    15,
     0,
     0,
     NULL,
@@ -4026,7 +4166,7 @@ struct query Queries[] = {
   },
 
   {
-    /* Q_UHST - UPDATE_HOST */
+    /* Q_UHST - UPDATE_HOST, v2 */
     "update_host",
     "uhst",
     2,
@@ -4034,8 +4174,25 @@ struct query Queries[] = {
     "m",
     MACHINE_TABLE,
     "machine SET name = NVL(UPPER('%s'), CHR(0)), vendor = NVL(UPPER('%s'), CHR(0)), model = NVL(UPPER('%s'), CHR(0)), os = NVL(UPPER('%s'), CHR(0)), location = NVL(UPPER('%s'), CHR(0)), contact = NVL('%s', CHR(0)), use = %s, status = %s, snet_id = %d, address = '%s', owner_type = '%s', owner_id = %d, acomment = %d, ocomment = %d",
-    uhst_fields,
+    uhst2_fields,
     14,
+    "mach_id = %d",
+    1,
+    NULL,
+    &uhst2_validate,
+  },
+
+  {
+    /* Q_UHST - UPDATE_HOST, v6 */
+    "update_host",
+    "uhst",
+    6,
+    UPDATE,
+    "m",
+    MACHINE_TABLE,
+    "machine SET name = NVL(UPPER('%s'), CHR(0)), vendor = NVL(UPPER('%s'), CHR(0)), model = NVL(UPPER('%s'), CHR(0)), os = NVL(UPPER('%s'), CHR(0)), location = NVL(UPPER('%s'), CHR(0)), contact = NVL('%s', CHR(0)), billing_contact = NVL('%s', CHR(0)), use = %s, status = %s, snet_id = %d, address = '%s', owner_type = '%s', owner_id = %d, acomment = %d, ocomment = %d",
+    uhst_fields,
+    15,
     "mach_id = %d",
     1,
     NULL,

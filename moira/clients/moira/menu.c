@@ -5,7 +5,7 @@
  *
  * $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v $
  * $Author: mar $
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.31 1991-01-04 16:57:26 mar Exp $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.32 1991-01-10 15:57:07 mar Exp $
  *
  * Generic menu system module.
  *
@@ -18,7 +18,7 @@
  */
 
 #ifndef lint
-static char rcsid_menu_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.31 1991-01-04 16:57:26 mar Exp $";
+static char rcsid_menu_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.32 1991-01-10 15:57:07 mar Exp $";
 
 #endif lint
 
@@ -429,8 +429,7 @@ int Prompt_input(prompt, buf, buflen)
 	getyx(cur_ms->ms_input, y, x);
 	(void) wmove(cur_ms->ms_input, y, 0);
 
-	touchwin(cur_ms->ms_screen);
-	refresh_ms(cur_ms);
+	refresh_screen();
 	(void) waddstr(cur_ms->ms_input, prompt);
 	getyx(cur_ms->ms_input, y, x);
 
@@ -441,7 +440,7 @@ int Prompt_input(prompt, buf, buflen)
 	    (void) wmove(cur_ms->ms_input, y, x);
 		(void) touchwin(cur_ms->ms_screen);
 	    (void) wclrtoeol(cur_ms->ms_input);
-	    refresh_ms(cur_ms);
+	    (void) wrefresh(cur_ms->ms_input);
 	    c = getchar() & 0x7f;
 	    switch (c) {
 	    case CTL('C'):
@@ -725,7 +724,6 @@ char *msg;
 	for (i = strlen(msg1); i < COLS - 1; i++)
 	    msg1[i] = ' ';
 	(void) wprintw(cur_ms->ms_input, "%s\n", msg1);
-/*	refresh_ms(cur_ms); */
     }
     else {
 	puts(msg);
@@ -736,11 +734,9 @@ char *msg;
 refresh_ms(ms)
     struct menu_screen *ms;
 {
-    int y, x;
-
-    getyx(ms->ms_input, y, x);
-    (void) wmove(ms->ms_screen, y + ms->ms_input_y, x);
-    (void) wrefresh(ms->ms_screen);
+    (void) wrefresh(ms->ms_title);
+    (void) wrefresh(ms->ms_menu);
+    (void) wrefresh(ms->ms_input);
 }
 
 /* Parse buf into a list of words, which will be placed in strings specified by

@@ -1,4 +1,4 @@
-; $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/forms.txt,v 1.3 1992-10-13 11:25:19 mar Exp $
+; $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/forms.txt,v 1.4 1992-10-22 15:38:02 mar Exp $
 ;
 
 ; { FORM_NAME	INSTRUCTION FIELD
@@ -26,6 +26,8 @@
 	Account status	K
 	ID number	s
 	Class|class	K
+	Comments	s
+	Extra password	b
 }
 { mod_user	Modify a user in the database.
 	New login name	S
@@ -37,6 +39,8 @@
 	Account status	K
 	ID number	s
 	Class|class	K
+	Comments	s
+	Extra password	b
 }
 { register_user	Register a user with an active account.  Specify user by real name or uid.
 	First name	s
@@ -62,7 +66,7 @@
 	Login	s
 }
 
-{ mod_finger	Enter the new info for the user.
+{ mod_finger	Update the info for the user.
 	Real Name	s
 	Nickname	s
 	Home Address	S
@@ -123,10 +127,10 @@
 	Comments s
 	Owner	s
 	Owners	s
-	Automatically create on fileserver? B
+	Propagate changes to fileserver? B
 	Lockertype|lockertype K
 }
-{ mod_filsys	Enter the new filesystem information.
+{ mod_filsys	Update the filesystem information.
 	Name	s
 	Type|filesys	K
 	Machine	s
@@ -155,12 +159,12 @@
 }
 { order_fsgroup	Specify the filesystem in the filesystem group and where it should go in sort order.
 	Filesystem group name s
-	Filesystem name s
+	Filesystem to move k
 	Select filesystem to insert after in sort order k
 }
 { del_fsgroup	Specify the filesystem to remove from the filesystem group.
 	Filesystem group name s
-	Filesystem name s
+	Filesystem to delete k
 }
 { show_fs_alias	Specify the alias or real name of the filesystem alias to show.
 	Real filesystem name s
@@ -262,7 +266,7 @@
 	Owner name s
 	Description s
 }
-{ mod_list	Enter the list information.
+{ mod_list	Update the list information.
 	Name	s
 	Active	B
 	Public	B
@@ -431,21 +435,21 @@
 }
 ; show/delete/clear error/reset state
 { show_host	Enter the host and or service name of the service/host tuple to examine.
-	Host name s
 	Service name s
+	Host name s
 }
 ; add/modify
 { add_host	Enter the service/host tuple information.
-	Host name s
 	Service s
+	Host name s
 	Enable	B
 	Value1	s
 	Value2	s
 	Value3	s
 }
 { select_host	Enter the host and service name to select a service/host tuple.
-	Host name s
 	Service name s
+	Host name s
 }
 
 

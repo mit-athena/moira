@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menus.c,v 1.11 1988-10-05 13:14:39 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menus.c,v 1.12 1989-03-27 14:59:00 mar Exp $";
 #endif lint
 
 /*	This is the file menus.c for the SMS Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menus.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menus.c,v 1.11 1988-10-05 13:14:39 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menus.c,v 1.12 1989-03-27 14:59:00 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -188,6 +188,35 @@ Menu quota_menu = {
   } 
 };
 
+Menu fsgroup_menu = {
+    NULLFUNC,
+    NULLFUNC,
+    "Filesystem Group Menu",
+    6,
+    {
+	{ GetFS, NULLMENU, 2, {
+	    {"get", "Get individual or group filesystem information"},
+	    {"name", "Name of Filesystem: "}
+	} },
+	{ AddFSToGroup, NULLMENU, 3, {
+	    {"add", "Add a new filesystem to an FS group"},
+	    {"group", "FS Group name:"},
+	    {"filsys", "Filesystem name:"}
+	} },
+	{ RemoveFSFromGroup, NULLMENU, 3, {
+	    {"remove", "Remove a filesystem from an FS group"},
+	    {"group", "FS Group name:"},
+	    {"filsys", "Filesystem name:"}
+	} },
+	{ ChangeFSGroupOrder, NULLMENU, 2, {
+	    {"order", "Change the order of filesystems in a group"},
+	    {"group", "FS Group name:"}
+	} },
+	SIMPLEFUNC("help", "Info on Filesystem Groups", FSGroupHelp),
+	SIMPLEFUNC("verbose", "Toggle Verbosity of Delete", ToggleVerboseMode)
+    }
+};
+
 Menu service_menu = {
     NULLFUNC,
     NULLFUNC,
@@ -307,7 +336,7 @@ Menu filesys_menu = {
   NULLFUNC, 
   NULLFUNC, 
   "Filesystem Menu",
-  10,
+  9,
   {
     { GetFS, NULLMENU, 2, {
       {"get", "Get Filesystem Name Information"},
@@ -325,6 +354,7 @@ Menu filesys_menu = {
       {"delete", "Delete Filesystem"},
       {"name", "Filesystem Name: "}
     } },
+    SUBMENU("fsgroups", "File System Groups Menu", &fsgroup_menu),
     { GetFSAlias, NULLMENU, 2, {
       {"check", "Check An Association"},
       {"name", "alias name : "}
@@ -338,8 +368,8 @@ Menu filesys_menu = {
       {"name", "alias name : "},
     } },
     SUBMENU("quotas","Quota Menu", &quota_menu),
-    SIMPLEFUNC("verbose", "Toggle Verbosity of Delete", ToggleVerboseMode),
-    SIMPLEFUNC("help", "Help ..", AttachHelp)
+/*    SIMPLEFUNC("verbose", "Toggle Verbosity of Delete", ToggleVerboseMode), */
+/*    SIMPLEFUNC("help", "Help ..", AttachHelp) */
   }
 };
 
@@ -382,7 +412,7 @@ Menu list_menu = {
     NULLFUNC,
     NULLFUNC,
     "List Menu",
-    10,
+    9,
     {
 	{ ShowListInfo, NULLMENU, 2, {
 	    {"show", "Display information about a list"},
@@ -410,7 +440,7 @@ Menu list_menu = {
 	SUBMENU("list_info", "List Info Menu",
 		&list_info_menu),
 	SUBMENU("quotas","Quota Menu", &quota_menu),	
-	SIMPLEFUNC("verbose", "Toggle Verbosity of Delete", ToggleVerboseMode),
+/*	SIMPLEFUNC("verbose", "Toggle Verbosity of Delete", ToggleVerboseMode), */
 	SIMPLEFUNC("help", "Print Help", ListHelp)
     } 
 };

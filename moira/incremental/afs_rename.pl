@@ -27,6 +27,10 @@ die "Cannot handle $newltype volumes\n" unless $vtype;
 $newvname = $vtype . "." . $newname;
 
 if ($oldtype eq "ERR") {
+    # If volume was never unmounted, we don't need to do anything.
+    system("$fs lsm $oldpath > /dev/null");
+    exit(0) if ($? == 0);
+
     # Lookup volume type for old locker
     ($c = $oldcell) =~ s/\./_/g;
     $vtype = eval "\$vtypes_$c{$oldltype}";

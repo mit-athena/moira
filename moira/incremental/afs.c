@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/afs.c,v 1.55 1997-06-24 20:31:58 danw Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/afs.c,v 1.56 1997-07-14 20:21:58 danw Exp $
  *
  * Do AFS incremental updates
  *
@@ -53,6 +53,7 @@ extern long pr_ChangeEntry();
 extern long pr_SetFieldsEntry();
 extern long pr_AddToGroup();
 extern long pr_RemoveUserFromGroup();
+extern long pr_SIdToName();
 
 static char tbl_buf[1024];
 static struct member {
@@ -180,6 +181,16 @@ int afterc;
 	       after[U_NAME], auid);
 	
 	code = pr_try(pr_CreateUser, after[U_NAME], &auid);
+	/* if we get PRIDEXIST, it's only an error if the username
+	   doesn't match (otherwise it just means the user was deleted
+	   from Moira but not AFS */
+	if (code == PRIDEXIST) {
+	    char ename[255];
+	    
+	    if (pr_try(pr_SIdToName, auid, ename) == 0 &&
+		!strcmp(after[U_NAME], ename))
+		return;
+	}
 	if (code) {
 	    critical_alert("incremental",
 			   "Couldn't create user %s (id %d): %s",
@@ -289,6 +300,12 @@ int afterc;
 	com_err(whoami, 0, "Creating %s group %s (gid %d)",
 	       (ahide ? "hidden" : "visible"), after[L_NAME], agid);
 	code = pr_try(pr_CreateGroup, g1, g2, &id);
+	if (code == PRIDEXIST) {
+	    char ename[255];
+	    
+	    if (pr_try(pr_SIdToName, -agid, ename) == 0 && !strcmp(g1, ename))
+		return;
+	}
 	if (code) {
 	    critical_alert("incremental",
 			   "Couldn't create group %s (id %d): %s",

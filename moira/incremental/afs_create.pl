@@ -1,4 +1,4 @@
-#!/afs/athena/contrib/perl/perl
+#!/usr/athena/bin/perl
 # Usage: afs_create locker type cell path quota user group
 
 require "/moira/bin/afs_utils.pl";
@@ -49,7 +49,7 @@ system("$fs checkb >/dev/null; $fs mkm $path $vname");
 &fatal("Unable to create $path") if ($?);
 push(@clean, "$fs rmm $path");
 
-# Obtain user/group information
+# Obtain user/group information (uid >= 0, gid <= 0)
 $uid = $gid = 0;
 open(PTS, "$pts ex $user -cell $cell|");
 chop($_ = <PTS>);
@@ -60,7 +60,6 @@ open(PTS, "$pts ex system:$group -cell $cell|");
 chop($_ = <PTS>);
 close(PTS);
 ($gid,$gid,$gid,$gid) = split(/[:,] /, $_) unless ($?);
-$gid = 0-$gid;
 
 # Dispatch to the cell-specific creation routines
 eval "&$proc{$cell}";
@@ -124,7 +123,7 @@ sub athena_proc
 	if ($uid != 0 && $type =~ /^(ACTIVITY|APROJ|AREF|CONTRIB|COURSE|HOMEDIR|PROJECT|REF|SW|UROP)/);
     push(@acl,"system:$group all")
 	if ($gid != 0 && $type =~ /^(ACTIVITY|APROJ|COURSE|PROJECT|UROP)/);
-    push(@acl,"system:$group rl") if ($gid != -1 && $type =~ /^(AREF)/);
+    push(@acl,"system:$group rl") if ($gid != 0 && $type =~ /^(AREF)/);
     push(@acl,"system:authuser rl")
 	if ($type =~ /^(COURSE|SW|UROP)/);
     push(@acl,"system:anyuser rl")
@@ -133,6 +132,14 @@ sub athena_proc
     if ($type !~ /^(AREF|SYSTEM)/) {
 	system("$fs mkm $path/OldFiles $vname.backup");
 	warn "$locker: Unable to create OldFiles mountpoint\n" if ($?);
+    }
+
+    if ($type =~ /ACTIVITY|APROJ|PROJECT/) {
+	chown($gid,0,$path) ||
+	    die "Unable to set volume ownership\n";
+    } elsif ($type =~ /HOMEDIR|UROP/) {
+	chown($uid,0,$path) ||
+	    die "Unable to set volume ownership\n";
     }
 
     if ($type eq "HOMEDIR") {
@@ -161,9 +168,8 @@ sub athena_proc
 	    close(IN);
 	    chown($uid,0,"$path/$i");
 	}
-	chown($uid,0,$path) && 
-	    system("$fs sa $path @acl system:anyuser l -clear") &&
-		die "Unable to set acl on top-level directory\n";
+	system("$fs sa $path @acl system:anyuser l -clear") &&
+	    die "Unable to set acl on top-level directory\n";
 	return;
     }
 

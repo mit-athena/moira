@@ -1,4 +1,4 @@
-/* $Id: qsupport.pc,v 2.20 2000-03-14 21:50:17 zacheiss Exp $
+/* $Id: qsupport.pc,v 2.21 2000-03-18 08:29:30 mwhitson Exp $
  *
  * Special query routines
  *
@@ -18,7 +18,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.pc,v 2.20 2000-03-14 21:50:17 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.pc,v 2.21 2000-03-18 08:29:30 mwhitson Exp $");
 
 extern char *whoami, *table_name[];
 extern int dbms_errno, mr_errcode;
@@ -1436,6 +1436,10 @@ int register_user(struct query *q, char **argv, client *cl)
   com_err(whoami, 0, "set login name to %s", login);
   incremental_after(USERS_TABLE, buffer, 0);
 
+  /* We've just changed the login name in the DB; recache it in case
+     the wrong thing got into the cache earlier. */
+  cache_entry(login, USERS_TABLE, users_id);
+
   /* create filesystem */
   if (set_next_object_id("filsys_id", FILESYS_TABLE, 0))
     return MR_NO_ID;
@@ -1484,8 +1488,6 @@ int register_user(struct query *q, char **argv, client *cl)
   com_err(whoami, 0, "quota of %d assigned", def_quota);
   if (dbms_errno)
     return mr_errcode;
-
-  cache_entry(login, USERS_TABLE, users_id);
 
   EXEC SQL UPDATE tblstats SET updates = updates + 1, modtime = SYSDATE
     WHERE table_name = 'users';

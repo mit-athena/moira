@@ -1,11 +1,14 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v $
- *	$Author: wesommer $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.13 1987-09-01 16:24:01 wesommer Exp $
+ *	$Author: mike $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.14 1987-09-04 17:50:03 mike Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
  *	$Log: not supported by cvs2svn $
+Revision 1.13  87/09/01  16:24:01  wesommer
+A list should be considered modified if its acl changes.
+
 Revision 1.12  87/08/29  00:05:54  mike
 Fixed bug in check_nfs.
 Added code to upcasify machine names in validate_id.
@@ -51,7 +54,7 @@ Initial revision
  */
 
 #ifndef lint
-static char *rcsid_qsupport_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.13 1987-09-01 16:24:01 wesommer Exp $";
+static char *rcsid_qsupport_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.14 1987-09-04 17:50:03 mike Exp $";
 #endif lint
 
 #include "query.h"
@@ -878,8 +881,9 @@ followup_usha(q, argv)
 ##}
 
 /**
- ** delete_list_members - called after the delete_list query to clean up
- **			  members table.
+ ** followup_delete_list - called after the delete_list query to clean up
+ **			   members table; also deletes list from maillist
+ **                        and groups tables.
  **
  ** Inputs: argv[0] - list_id
  **
@@ -889,7 +893,7 @@ followup_usha(q, argv)
  **
  **/
 
-delete_list_members(q, argv)
+followup_delete_list(q, argv)
     struct query *q;
     register char *argv[];
 ##{
@@ -924,6 +928,8 @@ delete_list_members(q, argv)
     sq_destroy(sq);
 
 ##  repeat delete m where m.#list_id = @list_id
+##  repeat delete maillists where maillists.#list_id = @list_id
+##  repeat delete groups where groups.#list_id = @list_id
 
     return(SMS_SUCCESS);
 ##}
@@ -1753,6 +1759,29 @@ validate_name(argv, vo)
 ##            where table.namefield = name))
     return ((rowcount == 1) ? SMS_EXISTS : vo->error);
 ##}
+
+/* Special validation routine for get_filesys */
+validate_label(q, argv)
+    struct query *q;
+    char *argv[];
+{
+    register char *label;
+    register char *c;
+
+    label = argv[0];
+    c = (char *)index(label, '*');
+    if (c == label) return(SMS_NOT_UNIQUE);
+    return(SMS_SUCCESS);
+}
+
+/* Special validation routine for delete_filesys */
+validate_label_2(q, argv)
+    struct query *q;
+    char *argv[];
+{
+    if (index(argv[0], '*') != 0) return(SMS_NOT_UNIQUE);
+    return(SMS_SUCCESS);
+}
 
 validate_date(argv, vo)
     char *argv[];

@@ -1,6 +1,6 @@
 #	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_et.et,v $
 #	$Author: mar $
-#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_et.et,v 1.7 1988-01-14 13:05:41 mar Exp $
+#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_et.et,v 1.8 1988-01-14 13:54:54 mar Exp $
 #
 	error_table sms
 
@@ -36,9 +36,6 @@ ec 	SMS_ALREADY_CONNECTED,
 
 ec	SMS_ARGS,
 	"Insufficient number of arguments"
-
-ec	SMS_ARG_TOO_LONG,
-	"An argument is too long"
 
 ec	SMS_NOT_UNIQUE,
 	"Arguments not unique"
@@ -108,5 +105,8 @@ ec	SMS_FILESYS_ACCESS,
 
 ec	SMS_USER_GROUP,
 	"list is a user group"
+
+ec	SMS_ARG_TOO_LONG,
+	"An argument is too long"
 
 	end

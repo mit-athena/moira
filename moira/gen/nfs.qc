@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/nfs.qc,v 1.8 1989-06-08 16:25:39 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/nfs.qc,v 1.9 1989-06-08 16:49:59 mar Exp $
  *
  * This generates the files necessary to load an nfs server.
  *
@@ -15,6 +15,7 @@
 #include <sys/stat.h>
 #include <sys/time.h>
 
+#undef NFS_DIR
 #define NFS_DIR	"/u1/sms/dcm/nfs"
 
 #define min(x,y)	((x) < (y) ? (x) : (y))

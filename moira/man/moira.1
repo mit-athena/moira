@@ -1,5 +1,5 @@
 .TH MOIRA 1 "29 Nov 1988" "Project Athena"
-\" RCSID: $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/man/moira.1,v 1.7 1996-08-02 21:28:31 jweiss Exp $
+\" RCSID: $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/man/moira.1,v 1.8 1998-01-07 17:09:39 danw Exp $
 .SH NAME
 moira, listmaint, usermaint, dcmmaint \- maintain information stored in moira
 .SH SYNOPSIS
@@ -36,8 +36,7 @@ The option:
 will cause moira to not take over the screen.  With this option
 specified, the screen
 will be handled like a printing terminal.  Each menu will be displayed
-only once.  Typing '?' will cause a menu to be redisplayed.  This option
-is the default on the RS6000 and may be overridden with the \-menu option.
+only once.  Typing '?' will cause a menu to be redisplayed.
 .PP
 When called without options,
 .I moira
@@ -66,7 +65,7 @@ Return to the menu above this one in the menu tree.
 .B toggle
 Toggle logging on and off.  When logging is turned on, all output in
 the lower half of the screen will also be written to
-.I /usr/tmp/moira-log.XXXX,
+.I /var/tmp/moira-log.XXXX,
 where XXXX is the process-ID of the moira client.
 .TP
 .B quit
@@ -93,6 +92,3 @@ cast of thousands
 .SH "SEE ALSO"
 chfn(1), chpobox(1), chsh(1), mailmaint(1), blanche(1),
 Moira section of the Project Athena Technical Plan
-.SH NOTES
-Moira was previously called SMS, and some places still refer to it by
-this name.

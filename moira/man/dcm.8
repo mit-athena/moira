@@ -1,5 +1,5 @@
 .TH DCM 8 "30 Nov 1988" "Project Athena"
-\" RCSID: $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/man/dcm.8,v 1.1 1988-11-30 13:45:26 mar Exp $
+\" RCSID: $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/man/dcm.8,v 1.2 1988-11-30 13:52:48 mar Exp $
 .SH NAME
 dcm \- build config files from SMS database and update servers
 .br
@@ -78,6 +78,9 @@ if it is non-zero.
 /u1/sms/bin/*.gen \- service file generators will be searched for
 here.
 .br
-/etc/srvtab \- The dcm must be able to get Kerberos tickets for "rcmd.sms".
+/tmp/tkt_dcm \- temporary Kerberos ticket storage.
+.br
+/etc/srvtab \- The dcm must be able to get Kerberos tickets for "sms"
+(null instance).
 .SH "SEE ALSO"
 The Project Athena Technical Plan section on SMS.

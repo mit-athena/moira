@@ -1,17 +1,18 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/exec_002.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/exec_002.c,v 1.9 1991-03-08 17:43:25 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/exec_002.c,v 1.10 1992-08-25 14:43:12 mar Exp $
  */
 /*  (c) Copyright 1988 by the Massachusetts Institute of Technology. */
 /*  For copying and distribution information, please see the file */
 /*  <mit-copyright.h>. */
 
 #ifndef lint
-static char *rcsid_exec_002_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/exec_002.c,v 1.9 1991-03-08 17:43:25 mar Exp $";
+static char *rcsid_exec_002_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/exec_002.c,v 1.10 1992-08-25 14:43:12 mar Exp $";
 #endif	lint
 
 #include <mit-copyright.h>
 #include <stdio.h>
+#include <errno.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <signal.h>
@@ -20,7 +21,9 @@ static char *rcsid_exec_002_c = "$Header: /afs/.athena.mit.edu/astaff/project/mo
 #include "update.h"
 
 extern CONNECTION conn;
-extern int code, errno;
+extern int code, errno, uid;
+extern char *whoami;
+
 
 int
 exec_002(str)
@@ -29,6 +32,12 @@ exec_002(str)
     union wait waitb;
     int n, pid, mask;
 
+    if (config_lookup("noexec")) {
+	code = EPERM;
+	code = send_object(conn, (char *)&code, INTEGER_T);
+	com_err(whoami, code, "Not allowed to execute");
+	return;
+    }
     str += 8;
     while (*str == ' ')
 	str++;
@@ -45,6 +54,10 @@ exec_002(str)
 	    exit(1);
 	return;
     case 0:
+	if (setuid(uid) < 0) {
+	    com_err(whoami, errno, "Unable to setuid to %d\n", uid);
+	    exit(1);
+	}
 	sigsetmask(mask);
 	execlp(str, str, (char *)NULL);
 	n = errno;

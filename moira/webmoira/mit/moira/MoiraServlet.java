@@ -587,6 +587,7 @@ public class MoiraServlet extends HttpServlet {
 	    } catch (Exception e) {
 		e.printStackTrace();
 	    }
+	    return(msg);
 	} finally {
 	    if (mc != null) mc.done();
 	}

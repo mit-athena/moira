@@ -1,4 +1,4 @@
-/* $Id: boot.pc,v 1.2 1999-01-28 17:49:47 danw Exp $
+/* $Id: boot.pc,v 1.3 1999-02-03 18:27:08 danw Exp $
  *
  * This generates the bootptab and associated files.
  *
@@ -22,7 +22,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/boot.pc,v 1.2 1999-01-28 17:49:47 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/boot.pc,v 1.3 1999-02-03 18:27:08 danw Exp $");
 
 char *whoami = "boot.gen";
 char *db = "moira/moira";
@@ -135,7 +135,7 @@ int main(int argc, char **argv)
     FROM printers pr, machine m, machine m2, machine m3
     WHERE pr.hwtype = 'HP' AND pr.mach_id != 0
     AND pr.mach_id = m.mach_id AND pr.rm = m2.mach_id
-    AND pr.loghost = m3.mach_id;
+    AND pr.loghost = m3.mach_id AND pr.type != 'ALIAS';
   EXEC SQL OPEN csr_boot2;
   while (1)
     {
@@ -162,9 +162,12 @@ int main(int argc, char **argv)
       out = tarfile_start(tf, filename, 0755, 0, 0, "root", "root",
 			  unixtime(modtime));
 
-      fprintf(out, "name: %s\nlocation: %s\ncontact: %s\n\n",
-	      shortname, location, contact);
-      fprintf(out, "allow: %s\nallow: %s\n", logaddr, addr);
+      fprintf(out, "name: %s\nlocation: %s\ncontact: %s\n\n", shortname,
+	      *location ? location : "unknown",
+	      *contact ? contact : "unknown");
+      if (*logaddr)
+	fprintf(out, "trap-dest: %s\nallow: %s\n", logaddr, logaddr);
+      fprintf(out, "allow: %s\n", addr);
       typelen = strlen(type);
       for (i = allows = 0; i < alcount && allows < 9; i++)
 	{
@@ -190,7 +193,6 @@ int main(int argc, char **argv)
 	  fprintf(out, "allow: %s\n", allowlist[i].host);
 	  allows++;
 	}
-      fprintf(out, "trap-dest: %s\n", logaddr);
       /* Rest of data is same for all printers and is appended from a
        * a file on the boot server.
        */

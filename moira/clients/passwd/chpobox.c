@@ -3,35 +3,29 @@
  * and distribution information, see the file "mit-copyright.h". 
  *
  * $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chpobox.c,v $
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chpobox.c,v 1.5 1988-08-04 13:22:25 mar Exp $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chpobox.c,v 1.6 1988-09-27 16:47:06 mar Exp $
  * $Author: mar $
  *
  */
 
 #ifndef lint
-static char *rcsid_chpobox_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chpobox.c,v 1.5 1988-08-04 13:22:25 mar Exp $";
+static char *rcsid_chpobox_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chpobox.c,v 1.6 1988-09-27 16:47:06 mar Exp $";
 #endif not lint
 
 /*
  * Talk to the SMS database to change a person's home mail machine. This may
  * be an Athena machine, or a completely arbitrary address.
  * 
- * chpobox with no modifiers reports all current mailboxes.
+ * chpobox with no modifiers reports the current mailbox.
  * 
- * chpobox -a [address] means add (not replace) a mailbox to the ones
- * the user already has.  Complains if the user tries to give herself
- * more than one mailbox of type pop.
+ * chpobox -s [address] means set the mailbox to this address.
  *
- * chpobox -d [address] means delete the specified mailbox from the list.
- * Complains if this would mean leaving the user with no mailbox at all. 
+ * chpobox -p restores the pobox to a previous POP box, if there was one.
  *
  * chpobox -u [user] is needed if you are logged in as one user, but
  * are trying to change the email address of another.  You must have
  * Kerberos tickets as the person whose address you are trying to
  * change, or the attempt will fail.
- *
- * [address] must always have an @ sign in it. 
- *
  */
 
 #include <sys/types.h>
@@ -39,7 +33,6 @@ static char *rcsid_chpobox_c = "$Header: /afs/.athena.mit.edu/astaff/project/moi
 #include <pwd.h>
 #include <strings.h>
 #include <ctype.h>
-#include <netdb.h>
 #include <errno.h>
 
 /* SMS includes */
@@ -49,45 +42,31 @@ static char *rcsid_chpobox_c = "$Header: /afs/.athena.mit.edu/astaff/project/moi
 
 char *getlogin();
 char *malloc();
-char *strcpy();
-char *strcat();
 char *whoami;
-
-int getopt();
-int status;
-
-#define MAXBOX 16
-
-extern int h_errno;
-static int match;
-static struct pobox_values boxes[MAXBOX];
-static int nboxes = 0;
-
 uid_t getuid();
 
-#define DOMAIN ".MIT.EDU"
-#define NET_ADDRESS_SIZE 500	/* You would not believe the length of some
-				 * addresses.. */
-main(argc, argv)
-    char *argv[];
+int getopt();
 
+static int match;
+
+
+main(argc, argv)
+    int argc;
+    char *argv[];
 {
     struct passwd *pwd;
-    struct pobox_values getnewmach(), pobox;
-    char *smsarg[1], buf[BUFSIZ];
-    char *strsave(), *trim(), *in(), *canon();
+    char *smsarg[3];
+    char *potype();
     char *address, *uname, *machine;
-    char **return_args, **crunch_pobox_args();
     uid_t u;
+    char *canonicalize_hostname();
     int get_pobox(), scream();
-    int c, delflag, add, usageflag;
+    int c, setflag, prevpop, usageflag, status;
 
     extern int optind;
     extern char *optarg;
 
-    init_sms_err_tbl();
-    init_krb_err_tbl();
-    c = delflag = add = usageflag = 0;
+    c = usageflag = 0;
     address = uname = (char *) NULL;
     u = getuid();
 
@@ -100,23 +79,22 @@ main(argc, argv)
 	usage();
     }
 
-    while ((c = getopt(argc, argv, "d:a:u:")) != EOF)
+    while ((c = getopt(argc, argv, "s:pu:")) != EOF)
 	switch (c) {
 
-	case 'd':
-	    if (add)
+	case 's':
+	    if (prevpop)
 		usageflag++;
 	    else {
-		delflag++;
+		setflag++;
 		address = strsave(optarg);
 	    }
 	    break;
-	case 'a':
-	    if (delflag)
+	case 'p':
+	    if (setflag)
 		usageflag++;
 	    else {
-		add++;
-		address = strsave(optarg);
+		prevpop++;
 	    }
 	    break;
 	case 'u':
@@ -145,145 +123,85 @@ main(argc, argv)
 
     status = sms_connect();
     if (status) {
-	(void) sprintf(buf, "\nConnection to SMS server failed.");
-	goto punt;
+	com_err(whoami, status, " while connecting to SMS");
+	exit(1);
     }
 
     status = sms_auth("chpobox");
     if (status) {
-	(void) sprintf(buf, "\nAuthorization failed -- please \
-run \"kinit\" and try again.");
-	goto punt;
+	com_err(whoami, status, " while authenticating -- run \"kinit\" and try again.");
+	sms_disconnect();
+	exit(1);
     }
 
-    /*
-     * set up some bogus arguments to feed to sms_access 
-     */
-    pobox.login = uname;
-    pobox.type = "SMTP";
-    pobox.box = "foo";
-    return_args = crunch_pobox_args(pobox);
-    /*
-     * do an access check. 
-     */
-    status = sms_access("set_pobox", 3, return_args);
-    if (status) {
-	(void) sprintf(buf, "\nUnauthorized attempt to modify %s's \
-email address.", uname);
-	goto punt;
-    }
-
-    /*
-     * get a list of current boxes
-     */
-    status = sms_query("get_pobox", 1, smsarg, get_pobox, NULL);
-    if (status && status != SMS_NO_MATCH) {
-	com_err(whoami, status, "while retrieving current mailboxes\n");
-	goto punt;
-    }
-
-    /*
-     * address, if it exists, is of form user@host.  It needs to be split up. 
-     */
-    if (address) {
+    if (setflag) {
+	/* Address is of form user@host.  Split it up. */
+	if (!address) {
+	    fprintf(stderr, "%s: no address was specified.\n", whoami);
+	    goto show;
+	}
 	machine = index(address, '@');
 	if (machine) {
-	    *machine++ = '\0';	/* get rid of the @ sign */
-	    machine = trim(machine);	/* get rid of whitespace */
+	    *machine++ = '\0';		/* get rid of the @ sign */
+	    machine = strtrim(machine);	/* get rid of whitespace */
+	} else {
+	    fprintf(stderr, "%s: no at sign (@) in address \"%s\"\n",
+		    whoami, address);
+	    goto show;
 	}
-	else {
-	    fprintf(stderr, "%s: no at sign (@) in address\n",
-		    whoami);
-	    sms_disconnect();
-	    exit(1);
-	}			/* now machine points to the machine name,
-				 * and address points to the "box" name */
-	pobox.machine = canon(machine);	/* canonicalize the machine name */
-	if (pobox.machine == (char *) NULL) {/* nameserver failed in canon */
-	    (void) sprintf(buf, "\nNameserver lookup \
-failed.\nI cannot change your mailbox at this time.  Please try again \
-later.\n");
-	    goto punt;
-	}
-	pobox.type = in(pobox.machine);	/* find out the type	 */
-	pobox.login = uname;	/* whose is changing?		 */
-	pobox.box = address;	/* to what mailbox?		 */
-    }
-
-    if (add) {
-	if (strcmp(pobox.type, "pop") == 0) {
-	    int i;
-	    /*
-	     * check to be sure that they're not getting more than one. If
-	     * they are, punt. 
-	     */
-	    for (i = 0; i < nboxes; i++) {
-		if (!strcmp(boxes[i].type, "POP")) {
-		    printf("%s already has a pobox on %s\n",
-			   uname, boxes[i].machine);
-		    goto punt;
-		}
+	smsarg[2] = canonicalize_hostname(machine);
+	smsarg[1] = potype(smsarg[2]);
+	if (!strcmp(smsarg[1], "POP")) {
+	    if (strcmp(address, uname)) {
+		fprintf(stderr,
+			"%s: the name on the POP box must match the username\n",
+			whoami);
+		goto show;
 	    }
-	}
-	printf("Adding email address %s@%s for %s.",
-	       pobox.box, pobox.machine, uname);
-
-	return_args = crunch_pobox_args(pobox);
-	status = sms_query("add_pobox", 4, return_args, scream,
-			   (char *) NULL);
-	if (status) {
-	    (void) sprintf(buf, "\nWrite failed to SMS \
-database.");
-	    goto punt;
-	}
-	printf("..done.\n");
-	sms_disconnect();
-	exit(0);
-    }
-    else if (delflag) {
-	/* check to make sure that the
-	 * user isn't being left without a mailbox. */
-	if (nboxes < 2) {
-	    printf("That would leave %s without a mailbox\n", uname);
-	    goto punt;
-	}
-	printf("Deleting email address %s@%s for %s.", pobox.box,
-	       pobox.machine, uname);
-	return_args = crunch_pobox_args(pobox);
-	status = sms_query("delete_pobox", 4, return_args, scream,
-			   (char *) NULL);
-	if (status) {
-	    (void) sprintf(buf, "\nWrite failed to SMS \
-database.");
-	    goto punt;
-	}
-	printf("..done.\n");
-	sms_disconnect();
-	exit(0);
+	} else if (!strcmp(smsarg[1], "LOCAL")) {
+	    smsarg[2] = address;
+	    *(--machine) = '@';
+	    address = index(machine, '.');
+	    if (address == NULL)
+	      address = &machine[strlen(machine)];
+	    sprintf(address, ".LOCAL");
+	    smsarg[1] = "SMTP";
+	} else if (smsarg[1]) {
+	    smsarg[2] = address;
+	    *(--machine) = '@';
+	} else
+	  goto show;
+	status = sms_query("set_pobox", 3, smsarg, scream, NULL);
+	if (status)
+	  com_err(whoami, status,
+		  " while setting pobox for %s to type %s, box %s",
+		  smsarg[0], smsarg[1], smsarg[2]);
+    } else if (prevpop) {
+	status = sms_query("set_pobox_pop", 1, smsarg, scream, NULL);
+	if (status == SMS_MACHINE) {
+	    fprintf(stderr,
+		    "SMS has no record of a previous POP box for %s\n", uname);
+	} else if (status != 0)
+	  com_err(whoami, status, " while setting pobox");
     }
 
-    printf("Current mail address for %s is: ", uname);
-    if (nboxes == 0)
-	printf("  None\n");
-    else {
-	printf("%s\n  last modified on %s by user %s using %s\n",
-	      boxes[0].box, boxes[0].modtime, boxes[0].modby, boxes[0].modwith);
-    }
-
+    /*
+     * get current box
+     */
+show:
+    status = sms_query("get_pobox", 1, smsarg, get_pobox, NULL);
+    if (status == SMS_NO_MATCH)
+      printf("User %s has no pobox.\n", uname);
+    else if (status != 0)
+      com_err(whoami, status, " while retrieving current mailbox");
     sms_disconnect();
     exit(0);
-
-punt:
-    if (status)
-	com_err(whoami, status, buf);
-    sms_disconnect();
-    exit(1);
 }
+
 
 scream()
 {
-    com_err(whoami, status, "Unexpected return value from SMS -- \
-programmer botch\n");
+    com_err(whoami, 0, "Unexpected return value from SMS -- programmer botch");
     sms_disconnect();
     exit(1);
 }
@@ -298,54 +216,14 @@ get_pobox(argc, argv, callarg)
     int argc;
     char **argv, *callarg;
 {
-    struct pobox_values *pobox = &boxes[nboxes++];
-
-    pobox->type = strsave(argv[1]);
-    pobox->box = strsave(argv[2]);
-    pobox->modtime = strsave(argv[3]);
-    pobox->modby = strsave(argv[4]);
-    pobox->modwith = strsave(argv[5]);
-
+    if (!strcmp(argv[1], "POP"))
+      printf("User %s, Type %s, Box: %s@%s\n",
+	     argv[0], argv[1], argv[0], argv[2]);
+    else
+      printf("User %s, Type %s, Box: %s\n",
+	     argv[0], argv[1], argv[2]);
+    printf("  Modified by %s on %s with %s\n", argv[4], argv[3], argv[5]);
     return (0);
-}
-
-char **
-crunch_pobox_args(in)
-    struct pobox_values in;
-{
-    char **out;
-
-    out = (char **) malloc((unsigned) sizeof(char *) * 6);
-    out[0] = in.login;
-    out[1] = in.type;
-    out[2] = in.box;
-    out[3] = in.modtime;
-    out[4] = in.modby;
-    out[5] = in.modwith;
-    return (out);
-}
-
-/*
- * Trim whitespace off of cp.  Side-effects cp. 
- */
-char *
-trim(cp)
-    register char *cp;
-{
-    register char *ep;
-
-    while (isspace(*cp))
-	cp++;
-    ep = cp;
-    while (*ep)
-	ep++;
-    if (ep > cp) {
-	for (--ep; isspace(*ep); --ep)
-	    continue;
-	ep++;
-	*ep = '\0';
-    }
-    return cp;
 }
 
 /*
@@ -353,40 +231,34 @@ trim(cp)
  * pop, or of type local -- if neither, we assume that it's of type foreign. 
  */
 char *
-in(machine)
+potype(machine)
     char *machine;
 {
     char *service[1], buf[BUFSIZ];
-    int check_match();
+    int check_match(), status;
 
     match = 0;
-    service[0] = strsave("pop");
+    service[0] = "POP";
     status = sms_query("get_server_locations", 1, service,
 		       check_match, machine);
     if (status && (status != SMS_NO_MATCH)) {
-	(void) sprintf(buf, "\nRead failed from SMS \
-database.");
-	goto punt;
+	com_err(whoami, status, " while reading list of POP servers");
+	return(NULL);
     }
     if (match)
-	return ("pop");
+	return ("POP");
 
-    service[0] = strsave("local");
+    service[0] = "LOCAL";
     status = sms_query("get_server_locations", 1, service,
 		       check_match, machine);
     if (status && (status != SMS_NO_MATCH)) {
-	(void) sprintf(buf, "\nRead failed from SMS \
-database.");
-	goto punt;
+	com_err(whoami, status, " while reading list of LOCAL servers");
+	return(NULL);
     }
     if (match)
-	return ("local");
+	return ("LOCAL");
     else
-	return ("foreign");
-punt:
-    com_err(whoami, status, buf);
-    sms_disconnect();
-    exit(1);
+	return ("SMTP");
 }
 
 /* ARGSUSED */
@@ -398,46 +270,14 @@ check_match(argc, argv, callback)
     if (match)
 	return (0);
 
-    if (strcmp(argv[1], callback) == 0)
+    if (strcasecmp(argv[1], callback) == 0)
 	match = 1;
 
     return (0);
 }
 
-/*
- * given a machine name, canonicalize it and return it.  Returns (char *)
- * NULL if the nameserver returns any error. 
- */
-char *
-canon(machine)
-    char *machine;
-{
-    struct hostent *hostinfo;
-
-    hostinfo = gethostbyname(machine);
-    if (hostinfo != (struct hostent *) NULL)
-	machine = strsave(hostinfo->h_name);
-    else			/* gethostbyname failed; this should be very
-				 * rare, since we're dealing with local
-				 * hosts, so no fancy error recovery.
-				 */
-	machine = (char *) NULL;
-    return (machine);
-}
-
 usage()
 {
-    fprintf(stderr, "Usage: %s [-d|a address] [-u user]\n", whoami);
+    fprintf(stderr, "Usage: %s [-s address] [-p] [-u user]\n", whoami);
     exit(1);
 }
-
-/*
- * Local Variables:
- * mode: c
- * c-indent-level: 4
- * c-continued-statement-offset: 4
- * c-brace-offset: -4
- * c-argdecl-indent: 4
- * c-label-offset: -4
- * End:
- */

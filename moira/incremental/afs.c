@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/afs.c,v 1.23 1992-06-07 04:21:40 probe Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/afs.c,v 1.24 1992-06-08 16:57:24 probe Exp $
  *
  * Do AFS incremental updates
  *
@@ -225,7 +225,7 @@ int afterc;
 	if (ahide != bhide) {
 	    code = pr_SetFieldsEntry
 		(-agid, PR_SF_ALLBITS,
-		 (ahide ? PRP_STATUS_MEM : PRP_GROUP_DEFAULT) >> PRIVATE_SHIFT,
+		 (ahide ? PRP_STATUS_ANY : PRP_GROUP_DEFAULT) >> PRIVATE_SHIFT,
 		 0 /*ngroups*/, 0 /*nusers*/);
 	    if (code) {
 		critical_alert("incremental",
@@ -259,7 +259,7 @@ int afterc;
 	if (ahide) {
 	    code = pr_SetFieldsEntry
 		(-agid, PR_SF_ALLBITS,
-		 (ahide ? PRP_STATUS_MEM : PRP_GROUP_DEFAULT) >> PRIVATE_SHIFT,
+		 (ahide ? PRP_STATUS_ANY : PRP_GROUP_DEFAULT) >> PRIVATE_SHIFT,
 		 0 /*ngroups*/, 0 /*nusers*/);
 	    if (code) {
 		critical_alert("incremental",
@@ -313,7 +313,7 @@ int afterc;
     if (afterc) 
 	edit_group(1, after[LM_LIST], after[LM_TYPE], after[LM_MEMBER]);
     if (beforec)
-	edit_group(0, after[LM_LIST], after[LM_TYPE], after[LM_MEMBER]);
+	edit_group(0, before[LM_LIST], before[LM_TYPE], before[LM_MEMBER]);
 }
 
 

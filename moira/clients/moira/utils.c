@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v 1.37 1997-09-05 19:14:43 danw Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v 1.38 1997-12-16 20:53:03 danw Exp $";
 #endif
 
 /*	This is the file utils.c for the MOIRA Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v $
  *      $Author: danw $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v 1.37 1997-09-05 19:14:43 danw Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v 1.38 1997-12-16 20:53:03 danw Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -414,7 +414,7 @@ char *s;
 	Put_message("Please use a non-empty name.");
     else if (strchr(s, ' '))
 	Put_message("You cannot use space (' ') in this name.");
-    else if (strchr(s, '*') || strchr(s, '?') || strchr(s, '['))
+    else if (strchr(s, '*') || strchr(s, '?'))
 	Put_message("Wildcards not accepted here.");
     else
 	return TRUE;

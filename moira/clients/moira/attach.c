@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.39 1994-10-28 16:54:45 jweiss Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.40 1997-12-16 20:53:00 danw Exp $";
 #endif
 
 /*	This is the file attach.c for the MOIRA Client, which allows a nieve
@@ -12,8 +12,8 @@
  *	By:		Chris D. Peterson
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v $
- *      $Author: jweiss $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.39 1994-10-28 16:54:45 jweiss Exp $
+ *      $Author: danw $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.40 1997-12-16 20:53:00 danw Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -42,9 +42,7 @@
 #define GROUP        2
 #define ALIAS        3
 
-#define NO_MACHINE	 ("\\[NONE\\]")	/* C will remove one of the /'s here,
-					 * and the other quotes the [ for
-					 * ingres' regexp facility. */
+#define NO_MACHINE	 ("[NONE]")
 #define NO_MACHINE_BAD	 ("[NONE]")
 
 #define DEFAULT_TYPE     ("AFS")
@@ -308,10 +306,6 @@ Bool name;
 	free(info[FS_MACHINE]);
 	info[FS_MACHINE] = Strsave(NO_MACHINE);
     } else {
-	if (!strcmp(info[FS_MACHINE], NO_MACHINE_BAD)) {
-	    free(info[FS_MACHINE]);
-	    info[FS_MACHINE] = Strsave(NO_MACHINE);
-	}
 	if (!strcasecmp(info[FS_TYPE], "AFS")) {
 	    if (!name || newdefaults) {
 		free(info[FS_MACHINE]);

@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/quota.c,v 1.22 1997-01-29 23:06:25 danw Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/quota.c,v 1.23 1997-12-16 20:53:02 danw Exp $";
 #endif
 
 /*	This is the file quota.c for the MOIRA Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/quota.c,v $
  *      $Author: danw $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/quota.c,v 1.22 1997-01-29 23:06:25 danw Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/quota.c,v 1.23 1997-12-16 20:53:02 danw Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -34,7 +34,7 @@ static char * def_quota = NULL;
   
 #define DEFAULT_FILESYS DEFAULT_NONE
 #define DEFAULT_USER user	/* this is the user who started moira. */
-#define NOBODY	"\\[nobody\\]"
+#define NOBODY	"[nobody]"
 #define DEFAULT_QTYPE   "USER"
 
 

@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/printer.c,v 1.14 1997-01-29 23:06:24 danw Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/printer.c,v 1.15 1997-12-16 20:53:01 danw Exp $";
 #endif
 
 /*	This is the file printer.c for the MOIRA Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/printer.c,v $
  *      $Author: danw $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/printer.c,v 1.14 1997-01-29 23:06:24 danw Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/printer.c,v 1.15 1997-12-16 20:53:01 danw Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -53,7 +53,7 @@ char * name;
     info[PCAP_SPOOL_HOST] =	Strsave(DEFAULT_MACHINE);
     info[PCAP_SPOOL_DIR] =	Strsave(spool_dir);
     info[PCAP_RPRINTER] =	Strsave(name);
-    info[PCAP_QSERVER] =	Strsave("\\[NONE\\]");
+    info[PCAP_QSERVER] =	Strsave("[NONE]");
     info[PCAP_AUTH] =		Strsave("1");
     info[PCAP_PRICE] =		Strsave("10");
     info[PCAP_COMMENTS] = 	Strsave("");
@@ -148,10 +148,6 @@ char ** info;
     if (GetValueFromUser("Remote Printer Name", &info[PCAP_RPRINTER]) ==
 	SUB_ERROR)
       return(NULL);
-    if (!strcmp(info[PCAP_QSERVER], "[NONE]")) {
-	free(info[PCAP_QSERVER]);
-	info[PCAP_QSERVER] = strsave("\\[NONE\\]");
-    }
     if (GetValueFromUser("Quotaserver for this printer", &info[PCAP_QSERVER]) ==
 	SUB_ERROR)
       return(NULL);

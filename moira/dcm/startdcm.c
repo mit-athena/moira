@@ -1,18 +1,21 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/startdcm.c,v $
- *	$Author: wesommer $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/startdcm.c,v 1.1 1987-09-09 08:43:21 wesommer Exp $
+ *	$Author: mar $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/startdcm.c,v 1.2 1988-09-13 14:09:13 mar Exp $
  *
- *	Copyright (C) 1987 by the Massachusetts Institute of Technology
+ *	Copyright (C) 1987, 1988 by the Massachusetts Institute of Technology
+ *	For copying and distribution information, please see the file
+ *	<mit-copyright.h>.
  *
  * 	This program starts the DCM in a "clean" environment.
  *	and then waits for it to exit.
  */
 
 #ifndef lint
-static char *rcsid_sms_starter_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/startdcm.c,v 1.1 1987-09-09 08:43:21 wesommer Exp $";
+static char *rcsid_sms_starter_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/startdcm.c,v 1.2 1988-09-13 14:09:13 mar Exp $";
 #endif lint
 
+#include <mit-copyright.h>
 #include <stdio.h>
 #include <strings.h>
 #include <sys/types.h>

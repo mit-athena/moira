@@ -1,17 +1,21 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/utils.c,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/utils.c,v 1.1 1988-08-07 22:41:08 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/utils.c,v 1.2 1988-09-13 14:09:28 mar Exp $
  *
- *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  * 
  * 	Utility functions used by the DCM.
+ *
+ *  (c) Copyright 1987, 1988 by the Massachusetts Institute of Technology.
+ *  For copying and distribution information, please see the file
+ *  <mit-copyright.h>.
  */
 
 #ifndef lint
-static char *rcsid_utils_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/utils.c,v 1.1 1988-08-07 22:41:08 mar Exp $";
+static char *rcsid_utils_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/utils.c,v 1.2 1988-09-13 14:09:28 mar Exp $";
 #endif lint
 
+#include <mit-copyright.h>
 #include <stdio.h>
 #include <strings.h>
 #include <varargs.h>

@@ -14,7 +14,6 @@ import java.io.InputStream;
 import java.io.IOException;
 import java.awt.event.*;
 import java.applet.*;
-import mit.cipher.test;
 import mit.cipher.MITCipherException;
 import mit.cipher.Encap;
 

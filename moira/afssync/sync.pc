@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/afssync/sync.pc,v 1.1 1997-01-29 22:56:49 danw Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/afssync/sync.pc,v 1.2 1997-10-10 20:29:02 danw Exp $
  *
  *
  *  (c) Copyright 1989 by the Massachusetts Institute of Technology.
@@ -79,7 +79,7 @@ char **argv;
 
     dbase_fd = open(argv[1], O_RDWR|O_CREAT|O_TRUNC, 0660);
     if (dbase_fd < 0) {
-	perror("opening file %s", argv[1]);
+	perror("opening data file");
 	exit(1);
     }
 

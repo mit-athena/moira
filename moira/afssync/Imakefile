@@ -1,8 +1,7 @@
-DBCFLAGS=
-DBLIBS= -L/usr/ingres/lib -lingres -lm
-
 DEFINES= -I$(AFSDIR)/include -I$(AFSDIR)/include/afs -I../include
-LIBS= -L../lib -L/usr/athena/lib -lmoira -lcom_err -lkrb -ldes ${DBLIBS}
+ORAINCLUDES= INCLUDE=$(AFSDIR)/include INCLUDE=$(AFSDIR)/include/afs \
+	INCLUDE=$(AFSDIR)/include/rx INCLUDE=../include
+LIBS= -L../lib -L/usr/athena/lib -lmoira -lcom_err -lkrb -ldes ${SQL_LIB}
 
 OBJS= ptutils.o utils.o ubik.o
 SRCS= ptutils.c utils.c ubik.c
@@ -12,7 +11,8 @@ AFSDIR = /mit/afsuser
 AFSLIBS=$(AFSDIR)/lib/afs/libprot.a   $(AFSDIR)/lib/afs/libauth.a \
 	$(AFSDIR)/lib/libubik.a       $(AFSDIR)/lib/afs/util.a \
 	$(AFSDIR)/lib/librxkad.a      $(AFSDIR)/lib/afs/libsys.a \
-	$(AFSDIR)/lib/librx.a         $(AFSDIR)/lib/liblwp.a
+	$(AFSDIR)/lib/librx.a         $(AFSDIR)/lib/liblwp.a \
+	-lbsd
 
 sqlrule()
 

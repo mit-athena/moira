@@ -132,7 +132,7 @@ char **argv;
 	    break;
 	default:
 	    fprintf(stderr,
-		    "Usage: ptdump [options] [-d data] [-p prdb]\n");
+		    "Usage: pt_util [options] [-d data] [-p prdb]\n");
 	    fputs("  Options:\n", stderr);
 	    fputs("    -w  Update prdb with contents of data file\n", stderr);
 	    fputs("    -u  Display users\n", stderr);

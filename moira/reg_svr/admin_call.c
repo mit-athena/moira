@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/admin_call.c,v $
- *	$Author: wesommer $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/admin_call.c,v 1.4 1987-09-09 14:59:06 wesommer Exp $
+ *	$Author: qjb $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/admin_call.c,v 1.5 1988-08-01 00:42:54 qjb Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
@@ -11,6 +11,10 @@
  *	Completely gutted and rewritten by Bill Sommerfeld, August 1987
  *
  *	$Log: not supported by cvs2svn $
+ * Revision 1.4  87/09/09  14:59:06  wesommer
+ * Allocate a new socket each time rather than keeping one around, 
+ * due to protocol problems.
+ * 
  * Revision 1.3  87/09/04  22:30:34  wesommer
  * Un-crock the KDC host (oops -- this one got distributed!!).
  * 
@@ -24,7 +28,7 @@
  */
 
 #ifndef lint
-static char *rcsid_admin_call_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/admin_call.c,v 1.4 1987-09-09 14:59:06 wesommer Exp $";
+static char *rcsid_admin_call_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/admin_call.c,v 1.5 1988-08-01 00:42:54 qjb Exp $";
 #endif lint
 
 #include <sys/errno.h>
@@ -188,7 +192,7 @@ admin_call(opcode, pname, old_passwd, new_passwd, crypt_passwd)
      * find our session key.
      */
 
-    if (status = get_credentials("changepw", "kerberos", krbrlm, &cred)) {
+    if (status = krb_get_cred("changepw", "kerberos", krbrlm, &cred)) {
 	status += krb_err_base;
 	goto bad;
     }
@@ -239,7 +243,7 @@ admin_call(opcode, pname, old_passwd, new_passwd, crypt_passwd)
      * Since this contains passwords, it must be kept from prying eyes.
      */
 
-    sealed_len = mk_private_msg(pvt_buf, sealed_buf, pvt_len,
+    sealed_len = krb_mk_priv(pvt_buf, sealed_buf, pvt_len,
 				    sess_sched, sess_key, &my_addr,
 				    &admin_addr);
     if (sealed_len < 0) {
@@ -258,7 +262,7 @@ admin_call(opcode, pname, old_passwd, new_passwd, crypt_passwd)
      * and know who we are.
      */
 
-    if (status = mk_ap_req(&authent, "changepw", "kerberos", krbrlm,
+    if (status = krb_mk_req(&authent, "changepw", "kerberos", krbrlm,
 			   checksum)) {
 	status += krb_err_base;
 	goto bad;
@@ -354,7 +358,7 @@ admin_call(opcode, pname, old_passwd, new_passwd, crypt_passwd)
 	    goto bad;
 	}
     }
-    status = rd_private_msg(reply.dat, reply.length,
+    status = krb_rd_priv(reply.dat, reply.length,
 			    sess_sched, sess_key,
 			    &admin_addr, &my_addr,
 			    &msg_data);

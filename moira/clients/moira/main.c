@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/main.c,v 1.6 1988-07-29 18:31:39 kit Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/main.c,v 1.7 1988-07-30 17:30:17 mar Exp $";
 #endif lint
 
 /*	This is the file main.c for the SMS Client, which allows a nieve
@@ -10,8 +10,8 @@
  *	By:		Chris D. Peterson
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/main.c,v $
- *      $Author: kit $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/main.c,v 1.6 1988-07-29 18:31:39 kit Exp $
+ *      $Author: mar $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/main.c,v 1.7 1988-07-30 17:30:17 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -34,7 +34,7 @@
 
 char * whoami;			/* used by menu.c ugh!!! */
 
-extern Menu sms_top_menu;
+extern Menu sms_top_menu, list_menu, user_menu;
 
 #ifndef DEBUG
 static void SignalHandler();
@@ -59,6 +59,7 @@ main(argc, argv)
     char ** argv;
 {
     int status;
+    Menu *menu;
 
     if ((user = getlogin()) == NULL) 
 	user = getpwuid((int) getuid())->pw_name;
@@ -106,13 +107,20 @@ main(argc, argv)
     (void) signal(SIGQUIT, SignalHandler);
 #endif DEBUG
 
+    if (!strcmp(program_name, "listmaint"))
+      menu = &list_menu;
+    else if (!strcmp(program_name, "usermaint"))
+      menu = &user_menu;
+    else
+      menu = &sms_top_menu;
+
     if (use_menu) {		/* Start menus that execute program */
         Start_paging();
-	Start_menu(&sms_top_menu);
+	Start_menu(menu);
 	Stop_paging();
     }
     else			/* Start program without menus. */
-	Start_no_menu(&sms_top_menu);
+	Start_no_menu(menu);
 
     sms_disconnect();
     exit(0);

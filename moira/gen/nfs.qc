@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/nfs.qc,v 1.18 1990-03-19 19:07:10 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/nfs.qc,v 1.19 1990-04-04 19:20:49 mar Exp $
  *
  * This generates the files necessary to load an nfs server.
  *
@@ -291,7 +291,7 @@ struct save_queue *machs;
 ##  range of s is serverhosts
 ##  range of m is machine
 ##  range of n is nfsphys
-##  range of q is nfsquota
+##  range of q is #quota
 ##  range of f is filesys
 ##  range of u is users
 ##  range of l is list
@@ -321,8 +321,8 @@ struct save_queue *machs;
     fd = stdin;
 ##  retrieve (quota = q.#quota, uid = u.#uid, flag1 = q.phys_id,
 ##	      dev = n.device, flag2 = n.mach_id)
-##	where u.users_id = q.users_id and n.nfsphys_id = q.phys_id and
-##	      q.phys_id != 0
+##	where u.users_id = q.entity_id and n.nfsphys_id = q.phys_id and
+##	      q.phys_id != 0 and n.status < 16 and q.type = "USER"
 ##	sort by #flag2, #flag1, #uid {
       if (flag1 != olddev || flag2 != oldmach) {
 	  fclose(fd);
@@ -350,7 +350,45 @@ struct save_queue *machs;
 ##  }
     if (quotasum)
       fprintf(fd, "%d %d\n", prevuid, quotasum);
-    if (fclose(fd)) {
+    if (fd != stdin && fclose(fd)) {
+	fprintf(stderr, "error closing %s", file);
+	exit(MR_CCONFIG);
+    }
+
+    olddev = oldmach = -1;
+    fd = stdin;
+##  retrieve (quota = q.#quota, gid = l.#gid, flag1 = q.phys_id,
+##	      dev = n.device, flag2 = n.mach_id, flag3 = n.status)
+##	where l.list_id = q.entity_id and n.nfsphys_id = q.phys_id and
+##	      q.phys_id != 0 and n.status > 15 and q.type = "GROUP"
+##	sort by #flag2, #flag1, #gid {
+      if (flag1 != olddev || flag2 != oldmach) {
+	  fclose(fd);
+	  olddev = flag1;
+	  oldmach = flag2;
+	  while (cp = index(dev, '/')) *cp = '@';
+	  sprintf(file, "%s/%s.%s.quotas", nfs_dir,
+		  hash_lookup(machines, flag2), strtrim(dev));
+	  fd = fopen(file, "w");
+	  if (!fd) {
+	      fprintf(stderr, "cannot open %s for output\n", file);
+	      exit(MR_OCONFIG);
+	  }
+	  prevuid = -1;
+	  quotasum = 0;
+      }
+      if (gid != prevuid) {
+	  if (quotasum)
+	    fprintf(fd, "%d %d\n", prevuid, quotasum);
+	  prevuid = gid;
+	  quotasum = quota;
+      } else {
+	  quotasum += quota;
+      }
+##  }
+    if (quotasum)
+      fprintf(fd, "%d %d\n", prevuid, quotasum);
+    if (fd != stdin && fclose(fd)) {
 	fprintf(stderr, "error closing %s", file);
 	exit(MR_CCONFIG);
     }

@@ -100,7 +100,7 @@ sub athena_proc
     # COURSE    <user> all <group> all system:facdev all system:authuser rl
     # HOMEDIR   <user> all
     # LEASE	<user> all
-    # ORG	<user> all <group> all system:cwisfac all
+    # ORG	<user> all <group> all system:cwisfac all system:anyuser rl
     # PROJECT   <user> all <group> all
     # REF       <user> all system:anyuser rl
     # SW        <user> all system:swmaint all system:authuser rl
@@ -123,7 +123,7 @@ sub athena_proc
     push(@acl,"system:authuser rl")
 	if ($type =~ /^(COURSE|SW|UROP)/);
     push(@acl,"system:anyuser rl")
-	if ($type =~ /^(ACTIVITY|APROJ|CONTRIB|REF|SYSTEM)/);
+	if ($type =~ /^(ACTIVITY|APROJ|CONTRIB|ORG|REF|SYSTEM)/);
 
     if ($type !~ /^(AREF|ORG|SYSTEM)/) {
 	system("$fs mkm $path/OldFiles $vname.backup");
@@ -138,7 +138,7 @@ sub athena_proc
 	    die "Unable to set volume ownership\n";
     }
 
-    if ($type =~ /^(ORG|COURSE)/) {
+    if ($type eq "COURSE") {
 	mkdir("$path/www",0755) &&
 	    chown(0,0,"$path/www") ||
 		die "Unable to create subdirectories\n";

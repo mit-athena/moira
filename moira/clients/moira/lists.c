@@ -1,4 +1,4 @@
-/* $Id: lists.c,v 1.46 2001-04-04 23:19:49 zacheiss Exp $
+/* $Id: lists.c,v 1.47 2001-05-14 19:40:00 zacheiss Exp $
  *
  *	This is the file lists.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -24,7 +24,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v 1.46 2001-04-04 23:19:49 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v 1.47 2001-05-14 19:40:00 zacheiss Exp $");
 
 struct mqelem *GetListInfo(int type, char *name1, char *name2);
 char **AskListInfo(char **info, Bool name);
@@ -703,11 +703,11 @@ int AddMember(int argc, char **argv)
 
   if (!strcmp(args[LM_TYPE], "STRING"))
     {
-      if (mrcl_validate_string_member(args[LM_MEMBER]) != MRCL_SUCCESS)
-	{
-	  Put_message(mrcl_get_message());
-	  return DM_NORMAL;
-	}
+      status = mrcl_validate_string_member(args[LM_MEMBER]);
+      if (status != MRCL_SUCCESS)
+	Put_message(mrcl_get_message());
+      if (status == MRCL_REJECT)
+	return DM_NORMAL;
     }
   else if (!strcmp(args[LM_TYPE], "KERBEROS"))
     {

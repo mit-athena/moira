@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase1.pc,v 1.2 1997-07-03 08:58:30 danw Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase1.pc,v 1.3 1998-01-05 15:00:49 danw Exp $
  *
  *  (c) Copyright 1988 by the Massachusetts Institute of Technology.
  *  For copying and distribution information, please see the file
@@ -11,7 +11,7 @@
 #include "dbck.h"
 EXEC SQL INCLUDE sqlca;
 
-static char phase1_qc_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase1.pc,v 1.2 1997-07-03 08:58:30 danw Exp $";
+static char phase1_qc_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase1.pc,v 1.3 1998-01-05 15:00:49 danw Exp $";
 
 EXEC SQL WHENEVER SQLERROR DO dbmserr();
 
@@ -468,7 +468,7 @@ phase1()
 	  if(sqlca.sqlcode!=0) break;
 	  printf("Aliases for machines %d and %d have duplicate name %s\n",
 		 id1, id2, strtrim(name));
-	  cant_fix();
+	  cant_fix(0);
 	}
 	EXEC SQL CLOSE csr_hal1;
 
@@ -482,7 +482,7 @@ phase1()
 	  if(sqlca.sqlcode!=0) break;
 	  printf("Machine %d has alias `%s' that conflicts with machine %d\n",
 		 id2, strtrim(name), id1);
-	  cant_fix();
+	  cant_fix(0);
 	}
 	EXEC SQL CLOSE csr_hal2;
     }	
@@ -512,6 +512,7 @@ phase1()
 	} else if ( retval == 1 ) {
 	    printf("Duplicate subnet ID: %d (%s)\n", id, name);
 	    /* should add code to delete */
+	    cant_fix(0);
 	}
     }
     EXEC SQL CLOSE csr115;

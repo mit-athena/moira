@@ -1,4 +1,4 @@
-/* $Id: staff.pc,v 1.4 2000-07-12 22:11:41 zacheiss Exp $
+/* $Id: staff.pc,v 1.5 2000-07-27 01:08:32 zacheiss Exp $
  *
  * Load data into Moira from Personnel Office data file
  *
@@ -19,7 +19,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/staff.pc,v 1.4 2000-07-12 22:11:41 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/staff.pc,v 1.5 2000-07-27 01:08:32 zacheiss Exp $");
 
 /* File format is:
  *
@@ -81,9 +81,18 @@ int main(int argc, char **argv)
       if (!strcmp(argv[i], "-w"))
 	wait++;
       else if (file)
-	fprintf(stderr, "Usage: %s [-w] inputfile\n", whoami);
+	{
+	  fprintf(stderr, "Usage: %s [-w] inputfile\n", whoami);
+	  exit(1);
+	}
       else
 	file = argv[i];
+    }
+
+  if (!file)
+    {
+      fprintf(stderr, "Usage: %s [-w] inputfile\n", whoami);
+      exit(1);
     }
 
   in = fopen(file, "r");

@@ -1,4 +1,4 @@
-/* $Id: queries2.c,v 2.43 1998-04-11 18:45:52 danw Exp $
+/* $Id: queries2.c,v 2.44 1998-05-06 23:33:39 danw Exp $
  *
  * This file defines the query dispatch table for version 2 of the protocol
  *
@@ -191,7 +191,7 @@ static char *gudf_fields[] = {
 static struct validate gudf_validate =
 {
   VOuser0,
-  2,
+  1,
   0,
   0,
   0,

@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v 1.24 1990-04-05 17:35:14 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v 1.25 1990-04-09 18:05:03 mar Exp $";
 #endif lint
 
 /*	This is the file utils.c for the MOIRA Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v 1.24 1990-04-05 17:35:14 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v 1.25 1990-04-09 18:05:03 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -262,7 +262,7 @@ Scream()
  *	Arguments: prompt - the prompt string.
  *                 buf, buflen - buffer to be returned and its MAX size?
  *                 default value for the answer.
- *	Returns: the value returned by prompt_input.
+ *	Returns: zero on failure
  */
 
 int
@@ -273,6 +273,15 @@ char *def;
 {
     char tmp[BUFSIZ];
     int ans;
+
+    if (parsed_argc > 0) {
+	parsed_argc--;
+	strncpy(buf, parsed_argv[0], buflen);
+	sprintf(tmp, "%s: %s", prompt, buf);
+	Put_message(tmp);
+	parsed_argv++;
+	return(1);
+    }
 
     (void) sprintf(tmp, "%s [%s]: ", prompt, def ? def : "");
     ans = Prompt_input(tmp, buf, buflen);
@@ -465,7 +474,7 @@ char * prompt, ** pointer;
 {
     char buf[BUFSIZ];
 
-    if (PromptWithDefault(prompt, buf, BUFSIZ, *pointer) == -1)
+    if (PromptWithDefault(prompt, buf, BUFSIZ, *pointer) == 0)
 	return(SUB_ERROR);
 
 /* 
@@ -558,8 +567,9 @@ int mask, current, *new;
  */
 
 int
-GetFSTypes(current)
+GetFSTypes(current, options)
 char **  current;
+int options;
 {
     int c_value, new_val = 0;	/* current value of filesys type (int). */
     char ret_value[BUFSIZ];
@@ -577,8 +587,11 @@ char **  current;
 	return(SUB_ERROR);
     if (GetFSVal("miscellaneous", MR_FS_MISC, c_value, &new_val) == FALSE)
 	return(SUB_ERROR);
-    if (GetFSVal("Group Quotas", MR_FS_GROUPQUOTA, c_value, &new_val) == FALSE)
-	return(SUB_ERROR);
+    if (options) {
+	if (GetFSVal("Group Quotas", MR_FS_GROUPQUOTA, c_value, &new_val) ==
+	    FALSE)
+	  return(SUB_ERROR);
+    }
 
     FreeAndClear(current, TRUE);
     sprintf(ret_value, "%d", new_val);
@@ -851,8 +864,10 @@ char  **pointer;
 	return(GetTypeFromUser(prompt, tname, pointer));
     }
     for (elem = GetTypeValues(tname); elem; elem = elem->q_forw) {
-	if (!cistrcmp(elem->q_data, *pointer))
+	if (!cistrcmp(elem->q_data, *pointer)) {
+	    strcpy(*pointer, elem->q_data);
 	    return(SUB_NORMAL);
+	}
     }
     sprintf(buffer, "\"%s\" is not a legal value for %s.  Use one of:",
 	    *pointer, tname);

@@ -1,8 +1,13 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/sq.c,v 1.1 1988-06-21 13:46:45 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/sq.c,v 1.2 1988-09-13 15:52:43 mar Exp $
  *
  * Generic Queue Routines
+ *
+ *  (c) Copyright 1988 by the Massachusetts Institute of Technology.
+ *  For copying and distribution information, please see the file
+ *  <mit-copyright.h>.
  */
 
+#include <mit-copyright.h>
 #include "sms_app.h"
 
 struct save_queue *

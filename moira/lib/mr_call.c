@@ -1,17 +1,18 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_call.c,v $
- *	$Author: wesommer $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_call.c,v 1.5 1987-06-16 17:47:50 wesommer Exp $
+ *	$Author: mar $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_call.c,v 1.6 1988-09-13 15:52:02 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
- *
- *	$Log: not supported by cvs2svn $
+ *	For copying and distribution information, please see the file
+ *	<mit-copyright.h>.
  */
 
 #ifndef lint
-static char *rcsid_sms_call_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_call.c,v 1.5 1987-06-16 17:47:50 wesommer Exp $";
+static char *rcsid_sms_call_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_call.c,v 1.6 1988-09-13 15:52:02 mar Exp $";
 #endif lint
 
+#include <mit-copyright.h>
 #include "sms_private.h"
 
 sms_do_call(params, reply)

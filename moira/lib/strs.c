@@ -1,17 +1,20 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/strs.c,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/strs.c,v 1.4 1988-08-04 19:06:33 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/strs.c,v 1.5 1988-09-13 15:52:49 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
+ *	For copying and distribution information, please see the file
+ *	<mit-copyright.h>.
  *
  *	Miscellaneous string functions.
  */
 
 #ifndef lint
-static char *rcsid_strs_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/strs.c,v 1.4 1988-08-04 19:06:33 mar Exp $";
+static char *rcsid_strs_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/strs.c,v 1.5 1988-09-13 15:52:49 mar Exp $";
 #endif lint
 
+#include <mit-copyright.h>
 #include <sys/types.h>
 #include <strings.h>
 #include <ctype.h>

@@ -1,23 +1,19 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_data.c,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_data.c,v 1.4 1988-06-01 15:23:23 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_data.c,v 1.5 1988-09-13 15:52:14 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
+ *	For copying and distribution information, please see the file
+ *	<mit-copyright.h>.
  *
- *	$Log: not supported by cvs2svn $
- * Revision 1.3  88/04/19  12:42:10  mar
- * added version number variable
- * 
- * Revision 1.2  87/06/01  03:31:36  wesommer
- * Added RCS headers.
- * 
  */
 
 #ifndef lint
-static char *rcsid_sms_data_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_data.c,v 1.4 1988-06-01 15:23:23 mar Exp $";
+static char *rcsid_sms_data_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_data.c,v 1.5 1988-09-13 15:52:14 mar Exp $";
 #endif lint
 
+#include <mit-copyright.h>
 #include "sms_private.h"
 
 CONNECTION _sms_conn;

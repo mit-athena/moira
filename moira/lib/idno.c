@@ -1,8 +1,13 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/idno.c,v 1.1 1988-08-02 21:12:45 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/idno.c,v 1.2 1988-09-13 15:51:27 mar Exp $
  *
  * Routines to encrypt ID's
+ *
+ *  (c) Copyright 1988 by the Massachusetts Institute of Technology.
+ *  For copying and distribution information, please see the file
+ *  <mit-copyright.h>.
  */
 
+#include <mit-copyright.h>
 #include <strings.h>
 #include <ctype.h>
 

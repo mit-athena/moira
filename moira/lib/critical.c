@@ -1,8 +1,13 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/critical.c,v 1.4 1988-08-07 14:41:44 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/critical.c,v 1.5 1988-09-13 15:50:56 mar Exp $
  *
  * Log and send a zephyrgram about any critical errors.
+ *
+ *  (c) Copyright 1988 by the Massachusetts Institute of Technology.
+ *  For copying and distribution information, please see the file
+ *  <mit-copyright.h>.
  */
 
+#include <mit-copyright.h>
 #include <stdio.h>
 #include <sys/file.h>
 #include <zephyr/zephyr.h>

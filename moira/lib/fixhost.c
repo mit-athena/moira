@@ -1,20 +1,18 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/fixhost.c,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/fixhost.c,v 1.2 1988-08-02 21:12:18 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/fixhost.c,v 1.3 1988-09-13 15:51:06 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
- *
- *	$Log: not supported by cvs2svn $
- * Revision 1.1  87/09/03  03:12:45  wesommer
- * Initial revision
- * 
+ *	For copying and distribution information, please see the file
+ *	<mit-copyright.h>.
  */
 
 #ifndef lint
-static char *rcsid_fixhost_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/fixhost.c,v 1.2 1988-08-02 21:12:18 mar Exp $";
+static char *rcsid_fixhost_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/fixhost.c,v 1.3 1988-09-13 15:51:06 mar Exp $";
 #endif lint
 
+#include <mit-copyright.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>

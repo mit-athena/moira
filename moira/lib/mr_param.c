@@ -1,32 +1,19 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_param.c,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_param.c,v 1.3 1988-04-19 12:45:20 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_param.c,v 1.4 1988-09-13 15:52:30 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
+ *	For copying and distribution information, please see the file
+ *	<mit-copyright.h>.
  *
- *	$Log: not supported by cvs2svn $
- * Revision 1.2  87/08/02  21:49:15  wesommer
- * Clean up error handling, memory handling.
- * 
- * Revision 1.1  87/06/16  17:48:21  wesommer
- * Initial revision
- * 
- * Revision 1.4  87/06/04  01:32:18  wesommer
- * Renamed gdb calls.
- * 
- * Revision 1.3  87/06/01  03:33:54  wesommer
- * Added destroy_reply.
- * 
- * Revision 1.2  87/05/31  22:03:37  wesommer
- * Fixed numerous bugs; still shaky.
- * 
  */
 
 #ifndef lint
-static char *rcsid_sms_param_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_param.c,v 1.3 1988-04-19 12:45:20 mar Exp $";
+static char *rcsid_sms_param_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_param.c,v 1.4 1988-09-13 15:52:30 mar Exp $";
 #endif lint
 
+#include <mit-copyright.h>
 #include <sys/types.h>
 #include <netinet/in.h>
 #include "sms_private.h"

@@ -1,8 +1,13 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/hash.c,v 1.3 1988-08-04 10:48:21 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/hash.c,v 1.4 1988-09-13 15:51:21 mar Exp $
  *
  * Generic hash table routines.  Uses integer keys to store char * values.
+ *
+ *  (c) Copyright 1988 by the Massachusetts Institute of Technology.
+ *  For copying and distribution information, please see the file
+ *  <mit-copyright.h>.
  */
 
+#include <mit-copyright.h>
 #include <ctype.h>
 #include "sms_app.h"
 #define NULL 0

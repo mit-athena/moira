@@ -1,20 +1,18 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/fixname.c,v $
- *	$Author: wesommer $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/fixname.c,v 1.2 1987-09-03 03:21:34 wesommer Exp $
+ *	$Author: mar $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/fixname.c,v 1.3 1988-09-13 15:51:13 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
- *
- *	$Log: not supported by cvs2svn $
- * Revision 1.1  87/08/22  17:14:30  wesommer
- * Initial revision
- * 
+ *	For copying and distribution information, please see the file
+ *	<mit-copyright.h>.
  */
 
 #ifndef lint
-static char *rcsid_fixname_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/fixname.c,v 1.2 1987-09-03 03:21:34 wesommer Exp $";
+static char *rcsid_fixname_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/fixname.c,v 1.3 1988-09-13 15:51:13 mar Exp $";
 #endif lint
 
+#include <mit-copyright.h>
 #include <strings.h>
 #include <ctype.h>
 

@@ -1,9 +1,11 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/admin_call.c,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/admin_call.c,v 1.7 1988-08-02 21:09:53 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/admin_call.c,v 1.8 1988-09-13 15:50:39 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
+ *	For copying and distribution information, please see the file
+ *	<mit-copyright.h>.
  *
  *	Utility functions for communication with the Kerberos admin_server
  *
@@ -13,9 +15,10 @@
  */
 
 #ifndef lint
-static char *rcsid_admin_call_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/admin_call.c,v 1.7 1988-08-02 21:09:53 mar Exp $";
+static char *rcsid_admin_call_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/admin_call.c,v 1.8 1988-09-13 15:50:39 mar Exp $";
 #endif lint
 
+#include <mit-copyright.h>
 #include <sys/errno.h>
 #include <sys/types.h>
 #include <sys/time.h>

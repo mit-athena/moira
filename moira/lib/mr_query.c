@@ -1,29 +1,19 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_query.c,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_query.c,v 1.5 1988-04-19 12:38:41 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_query.c,v 1.6 1988-09-13 15:52:37 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
- *
- *	$Log: not supported by cvs2svn $
- * Revision 1.4  87/08/22  17:11:16  wesommer
- * Increment the nesting level only after we know we're connected.
- * 
- * Revision 1.3  87/08/02  21:49:53  wesommer
- * Prevent recursive query call.
- * 
- * Revision 1.2  87/06/16  17:48:58  wesommer
- * Clean up memory allocation, indenting.
- * 
- * Revision 1.1  87/06/04  01:29:32  wesommer
- * Initial revision
+ *	For copying and distribution information, please see the file
+ *	<mit-copyright.h>.
  * 
  */
 
 #ifndef lint
-static char *rcsid_sms_query_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_query.c,v 1.5 1988-04-19 12:38:41 mar Exp $";
+static char *rcsid_sms_query_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_query.c,v 1.6 1988-09-13 15:52:37 mar Exp $";
 #endif lint
 
+#include <mit-copyright.h>
 #include "sms_private.h"
 
 /*

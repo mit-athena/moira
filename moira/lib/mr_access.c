@@ -1,23 +1,18 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_access.c,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_access.c,v 1.3 1988-04-19 12:41:39 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_access.c,v 1.4 1988-09-13 15:51:51 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
- *
- *	$Log: not supported by cvs2svn $
- * Revision 1.2  87/08/02  21:48:35  wesommer
- * Got direction of test incorrect.
- * 
- * Revision 1.1  87/06/23  16:13:00  wesommer
- * Initial revision
- * 
+ *	For copying and distribution information, please see the file
+ *	<mit-copyright.h>.
  */
 
 #ifndef lint
-static char *rcsid_sms_access_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_access.c,v 1.3 1988-04-19 12:41:39 mar Exp $";
+static char *rcsid_sms_access_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_access.c,v 1.4 1988-09-13 15:51:51 mar Exp $";
 #endif lint
 
+#include <mit-copyright.h>
 #include "sms_private.h"
 
 /*

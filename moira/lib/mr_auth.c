@@ -1,38 +1,21 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_auth.c,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_auth.c,v 1.7 1988-06-21 13:46:05 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_auth.c,v 1.8 1988-09-13 15:51:56 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
- *
- *	$Log: not supported by cvs2svn $
- * Revision 1.6  88/06/01  15:31:53  mar
- * make auth do the right thing for version 2 of the protocol
- * 
- * Revision 1.5  88/04/19  12:40:29  mar
- * pass version number on queries
- * 
- * Revision 1.4  87/10/20  15:09:22  mar
- * replace hardcoded ATHENA realm with call to get_krbrlm();
- * 
- * Revision 1.3  87/06/16  17:47:20  wesommer
- * Clean up memory allocation, indenting.
- * 
- * Revision 1.2  87/05/31  22:03:23  wesommer
- * It's working better.
- * 
- * Revision 1.1  87/05/20  03:11:18  wesommer
- * Initial revision
- * 
+ *	For copying and distribution information, please see the file
+ *	<mit-copyright.h>.
  *
  *	Handles the client side of the sending of authenticators to
  * the sms server. 	
  */
 
 #ifndef lint
-static char *rcsid_sms_auth_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_auth.c,v 1.7 1988-06-21 13:46:05 mar Exp $";
+static char *rcsid_sms_auth_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_auth.c,v 1.8 1988-09-13 15:51:56 mar Exp $";
 #endif lint
 
+#include <mit-copyright.h>
 #include "sms_private.h"
 #include <krb.h>
 

@@ -1,6 +1,8 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/afssync/ubik.c,v 1.2 1990-09-21 15:22:14 mar Exp $ */
+/* $Id: ubik.c,v 1.3 1992-06-07 04:19:28 probe Exp $ */
 
 #include <sys/types.h>
+#include <netinet/in.h>
+
 #include <lock.h>
 #define UBIK_INTERNALS
 #include <ubik.h>
@@ -8,7 +10,7 @@
 #include "print.h"
 #include "prserver.h"
 
-
+extern int dbase_fd;
 struct ubik_dbase *dbase;
 
 int ubik_ServerInit()
@@ -18,6 +20,19 @@ int ubik_ServerInit()
 
 int ubik_BeginTrans()
 {
+    static int init=0;
+    struct ubik_hdr thdr;
+
+    if (!init) {
+	thdr.version.epoch = htonl(0);
+	thdr.version.counter = htonl(0);
+	thdr.magic = htonl(UBIK_MAGIC);
+	thdr.size = htonl(HDRSIZE);
+	lseek(dbase_fd, 0, 0);
+	write(dbase_fd, &thdr, sizeof(thdr));
+	fsync(dbase_fd);
+	init = 1;
+    }
     return(0);
 }
 
@@ -78,8 +93,6 @@ struct ubik_version *ver;
     return(0);
 }
 
-
-extern int dbase_fd;
 
 int ubik_Seek(tt, afd, pos)
 struct ubik_trans *tt;

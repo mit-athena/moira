@@ -47,6 +47,7 @@ authoritative information about Athena administration.
 @include[server_arrang.mss]
 @include[update.mss]
 @include[tools.mss]
+@include[user_reg.mss]
 @include[deploy.mss]
 @include[addendum.mss]
 @unnumbered[References]

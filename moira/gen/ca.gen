@@ -1,6 +1,6 @@
 #!/moira/bin/perl -Tw
 
-# $Id: ca.gen,v 1.1 2000-09-15 05:09:37 zacheiss Exp $
+# $Id: ca.gen,v 1.2 2000-09-15 05:23:22 zacheiss Exp $
 
 # The following exit codes are defined and MUST BE CONSISTENT with the
 # error codes the library uses:
@@ -35,9 +35,13 @@ while (($id, $dir, $machname) = $sth->fetchrow_array) {
     while (($login, $fullname) = $foo->fetchrow_array) {
 	if ($first) {
 	    $first = 0;
-	    print OUT "*$machname:$dir\n";
+	    $row = "*$machname:$dir\n";
+	    $row =~ s/\0//g;
+	    print OUT $row;
 	}
-	print OUT "$login,$fullname\n";
+	$row = "$login,$fullname\n";
+	$row =~ s/\0//g;
+	print OUT $row;
     }
 }
 
@@ -55,9 +59,13 @@ while (($login, $name, $dir) = $sth->fetchrow_array) {
     $path = $1;
     if ($path ne $last) {
 	$last = $path;
-	print OUT "*AFS:$path\n";
+	$row = "*AFS:$path\n";
+	$row =~ s/\0//g;
+	print OUT $row;
     }
-    print OUT "$login,$name\n";
+    $row = "$login,$name\n";
+    $row =~ s/\0//g;
+    print OUT $row;
 }
 
 close(OUT);

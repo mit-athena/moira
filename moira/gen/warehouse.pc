@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/warehouse.pc,v 1.5 1997-10-09 14:53:30 tytso Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/warehouse.pc,v 1.6 1998-01-05 14:54:09 danw Exp $
  *
  * This generates a database extract from the users table for the MIT
  * Warehouse.
@@ -25,7 +25,7 @@
 EXEC SQL INCLUDE sqlca;
 
 extern int errno;
-char *whoami = "sis.gen";
+char *whoami = "warehouse.gen";
 char *db = "moira/moira";
 
 #ifndef WAREHOUSE_SUBDIR

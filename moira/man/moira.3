@@ -1,8 +1,8 @@
-.TH SMS 3 "8 Jan 1989"
+.TH MOIRA 3 "8 Jan 1989"
 .FM mit
 .SH NAME
-sms_connect, sms_host, sms_auth, sms_disconnect, sms_noop, sms_access,
-sms_query, sms_do_update, sms_motd, sms_set_alternate_input,
+mr_connect, mr_host, mr_auth, mr_disconnect, mr_noop, mr_access,
+mr_query, mr_do_update, mr_motd, mr_set_alternate_input,
 format_filesys_type, parse_filesys_type,
 canonicalize_hostname, strsave, strtrim, sq_create, sq_destroy,
 sq_get_data, sq_remove_data, sq_empty, sq_save_args, sq_save_data,
@@ -12,39 +12,39 @@ sq_save_unique_data, sq_save_unique_string
 .nj
 .TP
 Protocol functions
-.B #include <sms.h>
+.B #include <moira.h>
 
-.B int sms_connect(server);
+.B int mr_connect(server);
 .B	char *server;
 
-.B int sms_host(host, size);
+.B int mr_host(host, size);
 .B	char *server;
 
-.B int sms_motd(motd);
+.B int mr_motd(motd);
 .B	char **motd;
 
-.B int sms_auth(prog);
+.B int mr_auth(prog);
 .B	char *prog;
 
-.B int sms_disconnect();
+.B int mr_disconnect();
 
-.B int sms_noop();
+.B int mr_noop();
 
-.B int sms_access(name, argc, argv);
+.B int mr_access(name, argc, argv);
 .B	char *name;
 .B	int argc;
 .B	char **argv;
 
-.B int sms_query(name, argc, argv, callproc, callarg);
+.B int mr_query(name, argc, argv, callproc, callarg);
 .B	char *name;
 .B	int argc;
 .B	char **argv;
 .B	int (*callproc)(int, char **, char *);
 .B	char *callarg;
 
-.B int sms_do_update();
+.B int mr_do_update();
 
-.B int sms_set_alternate_input(fd, proc)
+.B int mr_set_alternate_input(fd, proc)
 .B	int fd;
 .B	void (*proc)();
 .TP
@@ -92,16 +92,16 @@ those described in this man page, but they are not intended to be used
 directly. Instead, they are called by the routines that are described.
 
 Be sure to link your application against these libraries:
--lsms -lsmsgdb -lcom_err -lkrb -ldes
+-lmoira -lmrgdb -lcom_err -lkrb -ldes
 .TP
 Protocol functions
 All protocol routines return 0 on success, or a value from 
-.I <sms_et.h>
+.I <mr_et.h>
 on failure.  An application should connect, check the motd in case the
 server is closed, authenticate, perform queries, then disconnect.
 
-.B sms_connect
-establishes a connection with the SMS server.  The
+.B mr_connect
+establishes a connection with the Moira server.  The
 .I server
 specification is optional.  If present, it is of the form
 hostname:portname, where the portname can be looked up in 
@@ -112,40 +112,40 @@ then the server will be found from the MOIRASERVER environment
 variable, the "moira" sloc entry in hesiod, or the compiled in
 default, in that order.
 
-.B sms_host
+.B mr_host
 initializes
 .I host
 with the name of the host that the client is currently connected to.
 
-.B sms_motd
+.B mr_motd
 will check to see if the server is closed and if so, will retrieve an
 explanatory message (the so-called motd).  This routine will always
 return 0 if no error occurs.  *motd will be NULL if the server is
 functioning normally, or a pointer to a static string with the
 explanation if the server is down.
 
-.B sms_auth
+.B mr_auth
 authenticates an established connection using Kerberos.
 .I prog
 is the name of the program making the connection.  The program name
 and the kerberos principal name will be recorded with any changes made
 to the database through this connection.
 
-.B sms_disconnect
-severs the connection with the SMS server.
+.B mr_disconnect
+severs the connection with the Moira server.
 
-.B sms_noop
-pings the SMS server through a "no operation" request, verifying that
+.B mr_noop
+pings the Moira server through a "no operation" request, verifying that
 the connection is still working.
 
-.B sms_access
+.B mr_access
 Verifies that the authenticated user has the necessary access to
 perform the query specified by
 .I name, argc,
 and
 .I argv.
 
-.B sms_query
+.B mr_query
 performs a query.  This query may be a retrieval, append, delete, or
 update of the database.  Query
 .I name
@@ -158,19 +158,19 @@ For each return tuple,
 will be called with an
 .I argc, argv,
 and the value passed to
-.B sms_query
+.B mr_query
 as
 .I callarg.
 
-.B sms_do_update
-triggers a DCM update immediately on the SMS server.
+.B mr_do_update
+triggers a DCM update immediately on the Moira server.
 
-.B sms_set_alternate_input
+.B mr_set_alternate_input
 tells the Moira library that you want to allow some asynchronus
 actions while a query is being processed.  During query processing, if
 any data is available to be read on the specified file descriptor,
 then the specified function will be called to handle it.  For
-instance, calling sms_set_alternate_input with the connection to the X
+instance, calling mr_set_alternate_input with the connection to the X
 server and a routine which will dispatch X events will allow a toolkit
 application to handle mouse and expose events while a query is being
 processed.
@@ -260,15 +260,15 @@ is like
 except that it uses strcmp on the elements rather than comparing the
 addresses directly.
 .SH FILES
-/usr/include/sms.h
+/usr/include/moira.h
 .br
-/usr/include/sms_et.h
+/usr/include/mr_et.h
 .br
 /tmp/tkt###
 .SH "SEE ALSO"
 mrtest(8), The Moira section of the Athena Technical Plan
 .SH DIAGNOSTICS
-The error codes returned are those defined in <sms_et.h>, or
+The error codes returned are those defined in <mr_et.h>, or
 <krb_et.h>.  They may be easily decoded using the com_err library.
 .SH RESTRICTIONS
 COPYRIGHT 1987,1988,1989 Massachusetts Institute of Technology

@@ -1,4 +1,4 @@
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/Imakefile,v 1.7 1997-02-06 18:58:30 tytso Exp $
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/Imakefile,v 1.8 1997-02-07 19:44:08 tytso Exp $
 #
 # Copyright 1993 by the Massachusetts Institute of Technology.
 #
@@ -9,7 +9,7 @@
 #
 
 SRCDIR = $(SRCTOP)/gen
-#ifdef GDSS
+#ifdef DO_GDSS
 SRCS = util.c moddiff.c passwd.c hesiod.c \
 	nfs.c mailhub.c sis.c pobox.c \
 	hosts.c network.c warehouse.c
@@ -22,20 +22,20 @@ CODE = util.c moddiff.pc passwd.pc hesiod.pc \
 LIBS =  -L/usr/athena/lib ../lib/libmoira.a -lcom_err -lzephyr \
 	../server/libmrglue.a $(LIBGDSS) -lkrb -ldes -lhesiod ${SQL_LIB}
 DEFINES = $(GDSSINC)
-#else /* GDSS */
+#else /* DO_GDSS */
 SRCS = util.c moddiff.c passwd.c hesiod.c \
 	nfs.c mailhub.c pobox.c \
-	hosts.c network.c warehouse.c
+	hosts.c network.c 
 OBJS = util.o moddiff.o passwd.o hesiod.o \
 	nfs.o mailhub.o pobox.o \
-	hosts.o network.o warehouse.o
+	hosts.o network.o 
 CODE = util.c moddiff.pc passwd.pc hesiod.pc \
 	nfs.pc mailhub.pc pobox.pc \
-	hosts.pc network.pc warehouse.pc
+	hosts.pc network.pc 
 LIBS =  -L/usr/athena/lib ../lib/libmoira.a -lcom_err -lzephyr \
 	../server/libmrglue.a -lkrb -ldes -lhesiod ${SQL_LIB}
 DEFINES =
-#endif /* GDSS */
+#endif /* DO_GDSS */
 sqlrule()
 
 program(passwd.gen, passwd.o util.o moddiff.o,${MR_LIBDEP},${LIBS},${PROGDIR})
@@ -47,9 +47,11 @@ program(nfs.gen, nfs.o util.o moddiff.o,${MR_LIBDEP},${LIBS},${PROGDIR})
 sqlfile(nfs)
 program(mailhub.gen, mailhub.o util.o moddiff.o,${MR_LIBDEP},${LIBS},${PROGDIR})
 sqlfile(mailhub)
-#ifdef GDSS
+#ifdef DO_GDSS
 program(sis.gen, sis.o util.o moddiff.o,${MR_LIBDEP},${LIBS},${PROGDIR})
 sqlfile(sis)
+program(warehouse.gen, warehouse.o util.o moddiff.o,${MR_LIBDEP},${LIBS},${PROGDIR})
+sqlfile(warehouse)
 #endif
 program(pobox.gen, pobox.o util.o moddiff.o,${MR_LIBDEP},${LIBS},${PROGDIR})
 sqlfile(pobox)
@@ -57,6 +59,4 @@ program(hosts.gen, hosts.o util.o moddiff.o,${MR_LIBDEP},${LIBS},${PROGDIR})
 sqlfile(hosts)
 program(network.gen, network.o util.o moddiff.o,${MR_LIBDEP},${LIBS},${PROGDIR})
 sqlfile(network)
-program(warehouse.gen, warehouse.o util.o moddiff.o,${MR_LIBDEP},${LIBS},${PROGDIR})
-sqlfile(warehouse)
 

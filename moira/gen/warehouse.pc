@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/warehouse.pc,v 1.1 1997-02-06 18:58:31 tytso Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/warehouse.pc,v 1.2 1997-02-07 19:44:09 tytso Exp $
  *
  * This generates a database extract from the users table for the MIT
  * Warehouse.
@@ -14,6 +14,7 @@
 #include <moira_site.h>
 #include <des.h>
 #include <krb.h>
+#include <gdss.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/time.h>
@@ -24,7 +25,7 @@
 EXEC SQL INCLUDE sqlca;
 
 extern int errno;
-char *whoami = "warehouse.gen";
+char *whoami = "sis.gen";
 char *db = "moira/moira";
 
 main(argc, argv)
@@ -35,20 +36,15 @@ char **argv;
     char *outf = NULL, outft[64];
     struct stat sb;
     int flag1;
+    SigInfo si;
     struct timeval now;
     EXEC SQL BEGIN DECLARE SECTION;
-    char login[9], signature[68], clearid[17], kname[257];
-    EXEC SQL VAR signature IS STRING(68);
-    char last[17], first[17], middle[17], type[9];
-    int sigdate, sigwho;
-    struct { char clearid[17];
-	     char login[12];
-	     char last[17];
-	     char middle[17];
-	     char first[17];
-	     char sigdate[12];
-	     char sigwho[60];
-	     char signature[69];
+    char login[9], sig[257], id[17], kname[257];
+    EXEC SQL VAR sig IS STRING(257);
+    int timestamp, sigwho;
+    struct { char login[12];
+	     char id[12];
+	     char sig[256];
 	 } outrec;
     EXEC SQL END DECLARE SECTION;
 
@@ -85,35 +81,27 @@ char **argv;
     EXEC SQL WHENEVER SQLERROR GOTO sqlerr;
 
     EXEC SQL DECLARE x CURSOR FOR
-      SELECT u.clearid, u.login, u.last, u.first, u.middle, u.type, 
-		u.sigdate, u.sigwho, u.signature
-      FROM users u WHERE u.status = 1 or u.status=5 or u.status=6;
+      SELECT u.login, u.clearid, u.signature, u.sigdate, s.string, u.sigwho
+      FROM users u, strings s
+	WHERE u.status = 1 and u.sigwho = s.string_id;
     EXEC SQL OPEN x;
     while (1) {
-	EXEC SQL FETCH x INTO :clearid, :login, :last, :first,
-		:middle, :type, :sigdate, :sigwho, :signature;
+	EXEC SQL FETCH x INTO :login, :id, :sig, :timestamp, :kname, :sigwho;
 	if (sqlca.sqlcode != 0) break;
+	if (id == 0) continue;
 	if (!isdigit(id[1])) continue;
 	strtrim(login);
-	strtrim(clearid);
-	strtrim(last);
-	strtrim(first);
-	strtrim(middle);
-	strtrim(type);
+	strtrim(id);
+	strtrim(kname);
 	memset(&outrec, 0, sizeof(outrec));
 	strcpy(outrec.login, login);
 	strcpy(outrec.id, id);
-	strcpy(outrec.last, last);
-	strcpy(outrec.first, first);
-	strcpy(outrec.middle, middle);
-	strcpy(outrec.type, type);
 	if (sigwho) {
-		sprintf(outrec.sigdate, "%d", sigdate);
-		memcpy(outrec.signature, signature, sizeof(signature));
-		EXEC SQL SELECT string from strings 
-			WHERE string_id = :sigwho
-			INTO :kname;
-		strcpy(outrec.sigwho, kname);
+		si.timestamp = timestamp;
+		si.SigInfoVersion = 0; /* XXXXXX this isn't used */
+		kname_parse(si.pname, si.pinst, si.prealm, kname);
+		si.rawsig = (unsigned char *)sig;
+		GDSS_Recompose(&si, outrec.sig);
 	}
 	write(out, &outrec, sizeof(outrec));
     }

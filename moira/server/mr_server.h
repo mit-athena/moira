@@ -1,4 +1,4 @@
-/* $Id: mr_server.h,v 1.36 1998-03-25 17:59:25 danw Exp $
+/* $Id: mr_server.h,v 1.37 1998-07-15 20:40:47 danw Exp $
  *
  * Copyright (C) 1987-1998 by the Massachusetts Institute of Technology
  * For copying and distribution information, please see the file
@@ -24,6 +24,8 @@ struct krbname {
   char realm[REALM_SZ];
 };
 
+enum clstate { CL_ACCEPTING, CL_ACTIVE, CL_CLOSING };
+
 /*
  * This structure holds all per-client information; one of these is
  * allocated for each active client.
@@ -33,17 +35,20 @@ typedef struct _client {
   int con;			/* Connection to the client */
   int id;			/* Unique id of client */
   struct sockaddr_in haddr; 	/* IP address of client */
+  enum clstate state;		/* State of the connection */
   char clname[MAX_K_NAME_SZ];	/* Name client authenticated to */
   struct krbname kname; 	/* Parsed version of the above */
   char entity[9];		/* client program being used */
   int users_id;			/* Moira-internal ID of authenticated user */
   int client_id;		/* Moira-internal ID of client */
   time_t last_time_used;	/* Last time connection used */
+  mr_params req;		/* Current request */
   mr_params *tuples;		/* Tuples waiting to send back to client */
   int ntuples;			/* Number of tuples waiting */
   int tuplessize;		/* Current size of tuple array */
   int nexttuple;		/* Next tuple to return */
-  int done;			/* Close up next time through loop */
+  char *hsbuf;			/* Buffer for initial connection handshaking */
+  int hslen;			/* Length of data in hsbuf */
 } client;
 
 extern char krb_realm[REALM_SZ];
@@ -114,7 +119,7 @@ int convert_wildcards(char *arg);
 void clist_delete(client *cp);
 
 /* prototypes from mr_sauth.c */
-void do_auth(client *cl, mr_params req);
+void do_auth(client *cl);
 
 /* prototypes from mr_scall.c */
 void do_client(client *cl);

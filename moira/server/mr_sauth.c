@@ -1,4 +1,4 @@
-/* $Id: mr_sauth.c,v 1.26 1998-02-23 19:24:31 danw Exp $
+/* $Id: mr_sauth.c,v 1.27 1998-07-15 20:40:46 danw Exp $
  *
  * Handle server side of authentication
  *
@@ -19,7 +19,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_sauth.c,v 1.26 1998-02-23 19:24:31 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_sauth.c,v 1.27 1998-07-15 20:40:46 danw Exp $");
 
 extern char *whoami, *host;
 
@@ -39,7 +39,7 @@ replay_cache *rcache = NULL;
  * cl->cl_name.
  */
 
-void do_auth(client *cl, mr_params req)
+void do_auth(client *cl)
 {
   KTEXT_ST auth;
   AUTH_DAT ad;
@@ -47,8 +47,8 @@ void do_auth(client *cl, mr_params req)
   replay_cache *rc, *rcnew;
   time_t now;
 
-  auth.length = req.mr_argl[0];
-  memcpy(auth.dat, req.mr_argv[0], auth.length);
+  auth.length = cl->req.mr_argl[0];
+  memcpy(auth.dat, cl->req.mr_argv[0], auth.length);
   auth.mbz = 0;
 
   if ((status = krb_rd_req(&auth, MOIRA_SNAME, host,
@@ -118,7 +118,7 @@ void do_auth(client *cl, mr_params req)
   status = set_krb_mapping(cl->clname, ad.pname, ok,
 			   &cl->client_id, &cl->users_id);
 
-  strncpy(cl->entity, req.mr_argv[1], 8);
+  strncpy(cl->entity, cl->req.mr_argv[1], 8);
   cl->entity[8] = 0;
 
   memset(&ad, 0, sizeof(ad));	/* Clean up session key, etc. */

@@ -1,4 +1,4 @@
-/* $Id: mr_main.c,v 1.47 1998-06-04 14:52:01 danw Exp $
+/* $Id: mr_main.c,v 1.48 1998-07-15 20:40:45 danw Exp $
  *
  * Moira server process.
  *
@@ -30,7 +30,7 @@
 
 #include <krb.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.47 1998-06-04 14:52:01 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.48 1998-07-15 20:40:45 danw Exp $");
 
 extern char *krb_get_lrealm(char *, int);
 
@@ -232,11 +232,11 @@ int main(int argc, char **argv)
       /* Handle any new connections */
       if (FD_ISSET(listener, &readfds))
 	{
-	  int newconn;
+	  int newconn, addrlen = sizeof(struct sockaddr_in);
 	  struct sockaddr_in addr;
 	  client *cp;
 
-	  newconn = mr_accept(listener, &addr);
+	  newconn = accept(listener, (struct sockaddr *)&addr, &addrlen);
 	  if (newconn == -1)
 	    com_err(whoami, errno, "accepting new connection");
 	  else if (newconn > 0)
@@ -262,6 +262,7 @@ int main(int argc, char **argv)
 	      cp->tuplessize = 1;
 	      cp->tuples = xmalloc(sizeof(mr_params));
 	      memset(cp->tuples, 0, sizeof(mr_params));
+	      cp->state = CL_ACCEPTING;
 
 	      cur_client = cp;
 	      com_err(whoami, 0,
@@ -283,7 +284,6 @@ int main(int argc, char **argv)
 	      if (!clients[i]->ntuples)
 		{
 		  FD_CLR(clients[i]->con, &xwritefds);
-		  /* Now that we're done writing we can read again */
 		  FD_SET(clients[i]->con, &xreadfds);
 		}
 	      clients[i]->last_time_used = now;
@@ -291,19 +291,44 @@ int main(int argc, char **argv)
 
 	  if (FD_ISSET(clients[i]->con, &readfds))
 	    {
-	      client_read(clients[i]);
-	      if (clients[i]->ntuples)
-		FD_SET(clients[i]->con, &xwritefds);
-	      clients[i]->last_time_used = now;
+	      if (clients[i]->state == CL_ACCEPTING)
+		{
+		  switch(mr_cont_accept(clients[i]->con,
+					&clients[i]->hsbuf,
+					&clients[i]->hslen))
+		    {
+		    case -1:
+		      break;
+
+		    case 0:
+		      clients[i]->state = CL_CLOSING;
+		      break;
+
+		    default:
+		      clients[i]->state = CL_ACTIVE;
+		      clients[i]->hsbuf = NULL;
+		      break;
+		    }
+		}
+	      else
+		{
+		  client_read(clients[i]);
+		  if (clients[i]->ntuples)
+		    {
+		      FD_CLR(clients[i]->con, &xreadfds);
+		      FD_SET(clients[i]->con, &xwritefds);
+		    }
+		  clients[i]->last_time_used = now;
+		}
 	    }
 
 	  if (clients[i]->last_time_used < tardy)
 	    {
 	      com_err(whoami, 0, "Shutting down connection due to inactivity");
-	      clients[i]->done = 1;
+	      clients[i]->state = CL_CLOSING;
 	    }
 
-	  if (clients[i]->done)
+	  if (clients[i]->state == CL_CLOSING)
 	    {
 	      client *old;
 
@@ -317,6 +342,7 @@ int main(int argc, char **argv)
 	      FD_CLR(clients[i]->con, &xwritefds);
 	      free_rtn_tuples(clients[i]);
 	      free(clients[i]->tuples);
+	      free(clients[i]->hsbuf);
 	      old = clients[i];
 	      clients[i] = clients[--nclients];
 	      free(old);

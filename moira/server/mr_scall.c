@@ -1,4 +1,4 @@
-/* $Id: mr_scall.c,v 1.34 1998-05-30 18:17:21 danw Exp $
+/* $Id: mr_scall.c,v 1.35 1998-07-15 20:40:46 danw Exp $
  *
  * Do RPC
  *
@@ -24,7 +24,7 @@
 #include <string.h>
 #include <unistd.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_scall.c,v 1.34 1998-05-30 18:17:21 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_scall.c,v 1.35 1998-07-15 20:40:46 danw Exp $");
 
 extern int nclients;
 extern client **clients;
@@ -36,8 +36,8 @@ void do_call(client *cl);
 void free_rtn_tuples(client *cp);
 int retr_callback(int argc, char **argv, void *p_cl);
 int list_users(client *cl);
-void do_retr(client *cl, mr_params req);
-void do_access(client *cl, mr_params req);
+void do_retr(client *cl);
+void do_access(client *cl);
 void get_motd(client *cl);
 
 char *procnames[] = {
@@ -54,33 +54,34 @@ int newqueries;
 
 void client_read(client *cl)
 {
-  mr_params req;
   int status, pn;
 
-  status = mr_receive(cl->con, &req);
-  if (status != MR_SUCCESS)
+  status = mr_cont_receive(cl->con, &cl->req);
+  if (status == -1)
+    return;
+  else if (status != MR_SUCCESS)
     {
-      cl->done = 1;
+      cl->state = CL_CLOSING;
       if (status != MR_NOT_CONNECTED)
 	com_err(whoami, status, "while reading from socket");
       return;
     }
 
-  pn = req.u.mr_procno;
+  pn = cl->req.u.mr_procno;
   if (pn < 0 || pn > MR_MAX_PROC)
     {
       com_err(whoami, 0, "procno out of range");
       client_reply(cl, MR_UNKNOWN_PROC);
-      mr_destroy_reply(req);
+      mr_destroy_reply(cl->req);
       return;
     }
-  log_args(procnames[pn], 2, req.mr_argc, req.mr_argv);
+  log_args(procnames[pn], 2, cl->req.mr_argc, cl->req.mr_argv);
 
   if (dormant == ASLEEP && pn != MR_NOOP && pn != MR_MOTD)
     {
       client_reply(cl, MR_DOWN);
       com_err(whoami, MR_DOWN, "(query refused)");
-      mr_destroy_reply(req);
+      mr_destroy_reply(cl->req);
       return;
     }
 
@@ -94,15 +95,15 @@ void client_read(client *cl)
       break;
 
     case MR_AUTH:
-      do_auth(cl, req);
+      do_auth(cl);
       break;
 
     case MR_QUERY:
-      do_retr(cl, req);
+      do_retr(cl);
       break;
 
     case MR_ACCESS:
-      do_access(cl, req);
+      do_access(cl);
       break;
 
     case MR_SHUTDOWN:
@@ -117,7 +118,8 @@ void client_read(client *cl)
       get_motd(cl);
       break;
     }
-  mr_destroy_reply(req);
+  mr_destroy_reply(cl->req);
+  memset(&cl->req, 0, sizeof(mr_params));
 }
 
 /* Set the final return status for a query. We always keep one more
@@ -133,7 +135,7 @@ void client_reply(client *cl, long status)
 
 void client_return_tuple(client *cl, int argc, char **argv)
 {
-  if (cl->done || dbms_errno)
+  if (cl->state == CL_CLOSING || dbms_errno)
     return;
 
   if (cl->ntuples == cl->tuplessize - 1)
@@ -167,7 +169,7 @@ void client_write(client *cl)
   if (status)
     {
       com_err(whoami, status, "writing to socket");
-      cl->done = 1;
+      cl->state = CL_CLOSING;
     }
   else
     {
@@ -189,25 +191,25 @@ void free_rtn_tuples(client *cl)
   cl->ntuples = cl->nexttuple = 0;
 }
 
-void do_retr(client *cl, mr_params req)
+void do_retr(client *cl)
 {
   char *queryname;
   int status;
 
-  if (req.mr_argc < 1)
+  if (cl->req.mr_argc < 1)
     {
       client_reply(cl, MR_ARGS);
       com_err(whoami, MR_ARGS, "got nameless query");
       return;
     }
-  queryname = req.mr_argv[0];
+  queryname = cl->req.mr_argv[0];
   newqueries++;
 
   if (!strcmp(queryname, "_list_users"))
     status = list_users(cl);
   else
-    status = mr_process_query(cl, queryname, req.mr_argc - 1, req.mr_argv + 1,
-			      retr_callback, cl);
+    status = mr_process_query(cl, queryname, cl->req.mr_argc - 1,
+			      cl->req.mr_argv + 1, retr_callback, cl);
 
   client_reply(cl, status);
 
@@ -222,19 +224,19 @@ int retr_callback(int argc, char **argv, void *p_cl)
   client_return_tuple(cl, argc, argv);
 }
 
-void do_access(client *cl, mr_params req)
+void do_access(client *cl)
 {
   int status;
 
-  if (req.mr_argc < 1)
+  if (cl->req.mr_argc < 1)
     {
       client_reply(cl, MR_ARGS);
       com_err(whoami, MR_ARGS, "got nameless access");
       return;
     }
 
-  status = mr_check_access(cl, req.mr_argv[0], req. mr_argc - 1,
-			   req.mr_argv + 1);
+  status = mr_check_access(cl, cl->req.mr_argv[0], cl->req.mr_argc - 1,
+			   cl->req.mr_argv + 1);
   client_reply(cl, status);
 
   com_err(whoami, 0, "Access check complete.");

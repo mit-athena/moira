@@ -5,12 +5,12 @@
  * and distribution information, see the file "mit-copyright.h". 
  *
  * $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrcheck/mrcheck.c,v $
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrcheck/mrcheck.c,v 1.1 1988-12-01 15:00:25 mar Exp $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrcheck/mrcheck.c,v 1.2 1989-06-27 12:09:35 mar Exp $
  * $Author: mar $
  */
 
 #ifndef lint
-static char *rcsid_chsh_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrcheck/mrcheck.c,v 1.1 1988-12-01 15:00:25 mar Exp $";
+static char *rcsid_chsh_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrcheck/mrcheck.c,v 1.2 1989-06-27 12:09:35 mar Exp $";
 #endif	lint
 
 #include <stdio.h>
@@ -80,9 +80,6 @@ main(argc, argv)
     char *args[6], buf[BUFSIZ], **service, **host;
     struct save_queue *services, *hosts;
     int count = 0, scream();
-
-    init_sms_err_tbl();
-    init_krb_err_tbl();
 
     if ((whoami = rindex(argv[0], '/')) == NULL)
 	whoami = argv[0];

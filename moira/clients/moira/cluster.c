@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/cluster.c,v 1.17 1990-03-17 17:10:08 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/cluster.c,v 1.18 1990-04-25 12:34:59 mar Exp $";
 #endif lint
 
 /*	This is the file cluster.c for the MOIRA Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/cluster.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/cluster.c,v 1.17 1990-03-17 17:10:08 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/cluster.c,v 1.18 1990-04-25 12:34:59 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -987,7 +987,7 @@ char ** argv;
     if( (stat = do_mr_query("add_cluster_data", 3, argv + 1,
 			     Scream, (char *) NULL)) != 0)
 	com_err(program_name, stat, " in AddClusterData.");
-
+    return(DM_NORMAL);
 }
 
 /*	Function Name: RealRemoveClusterData

@@ -1,11 +1,14 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v $
  *	$Author: wesommer $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.5 1987-07-30 14:54:13 wesommer Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.6 1987-08-04 01:10:02 wesommer Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
  *	$Log: not supported by cvs2svn $
+Revision 1.5  87/07/30  14:54:13  wesommer
+Added debugging code in an attempt to catch a flakey problem.
+
 Revision 1.4  87/07/30  00:30:21  wesommer
 replaced appends = appends+1 with appends = tbs.appends+1
 
@@ -21,7 +24,7 @@ Initial revision
  */
 
 #ifndef lint
-static char *rcsid_qsupport_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.5 1987-07-30 14:54:13 wesommer Exp $";
+static char *rcsid_qsupport_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.6 1987-08-04 01:10:02 wesommer Exp $";
 #endif lint
 
 #include "query.h"
@@ -231,6 +234,127 @@ setup_add_group(q, argv, cl, access_check)
 
 ##  repeat replace v (value = @ngid) where v.name = "gid"
     return(SMS_SUCCESS);
+##}
+
+/**
+ ** setup_add_filesys - verify existance of referenced file systems
+ ** setup_update_filesys - same, except argv[1..5] --> argv[2..6]
+ **
+ ** Inputs:     Add         Update
+ **   argv[0] - label       label
+ **   argv[1] - type        new label
+ **   argv[2] - mach_id     type
+ **   argv[3] - name        mach_id
+ **   argv[4] - mount       name
+ **   argv[5] - access      mount
+ **   argv[6] -             access
+ **
+ ** Description:
+ **   - for type = RVD:
+ **        * verify mach_id/name in rvdvirt
+ **        * verify access in {r, x, R, X}
+ **   - for type = NFS:
+ **        * extract directory prefix from name
+ **        * verify mach_id/dir in nfsphys
+ **        * verify access in {r, w, R, W}
+ **
+ ** Errors:
+ **   SMS_RVD - no such rvd
+ **   SMS_NFS - specified directory not exported
+ **   SMS_FILESYS_ACCESS - invalid filesys access
+ **
+ **/
+
+setup_add_filesys(q, argv)
+    struct query *q;
+    char *argv[];
+{
+    char *type;
+    int mach_id;
+    char *name;
+    char *access;  
+
+    type = argv[1];
+    mach_id = *(int *)argv[2];
+    name = argv[3];
+    access = argv[5];
+
+    if (!bcmp(type, "RVD", 3))
+	return (check_rvd(mach_id, name, access));
+    else if (!bcmp(type, "NFS", 3))
+	return (check_nfs(mach_id, name, access));
+    else
+	return(SMS_SUCCESS);
+}
+
+setup_update_filesys(q, argv)
+    struct query *q;
+    char *argv[];
+{
+    char *type;
+    int mach_id;
+    char *name;
+    char *access;  
+
+    type = argv[2];
+    mach_id = *(int *)argv[3];
+    name = argv[4];
+    access = argv[6];
+
+    if (!bcmp(type, "RVD", 3))
+	return (check_rvd(mach_id, name, access));
+    else if (!bcmp(type, "NFS", 3))
+	return (check_nfs(mach_id, name, access));
+    else
+	return(SMS_SUCCESS);
+}
+
+##check_rvd(mach_id, name, access)
+##  int mach_id;
+##  char *name;
+    char *access;
+##{
+##  int rowcount;
+    char caccess;
+
+##  range of rv is rvdvirt
+##  retrieve (rowcount = any(rv.#name where rv.#mach_id = mach_id and
+##                           rv.#name = name))
+    if (rowcount == 0) return(SMS_RVD);
+
+    caccess = (isupper(*access)) ? tolower(*access) : *access;
+    if (caccess != 'r' && caccess != 'x') return(SMS_FILESYS_ACCESS);
+
+    return(SMS_SUCCESS);
+##}
+
+##check_nfs(mach_id, name, access)
+##  int mach_id;
+    char *name;
+    char *access;
+##{
+##  int rowcount;
+##  char dir[32];
+    char caccess;
+    register char *cp1;
+    register char *cp2;
+
+    caccess = (isupper(*access)) ? tolower(*access) : *access;
+    if (caccess != 'r' && caccess != 'w') return(SMS_FILESYS_ACCESS);
+
+##  range of np is nfsphys
+##  retrieve (dir = np.#dir) where np.#mach_id = mach_id
+##  {
+	 cp1 = name;
+	 cp2 = dir;
+	 while (*cp2) {
+	     if (*cp1++ != *cp2) break;
+	     cp2++;
+	 }
+	 if (*cp2 == 0) return(SMS_SUCCESS);
+##  }
+
+    return(SMS_NFS);
 ##}
 
 /* Followup Routines */
@@ -644,6 +768,109 @@ delete_locker(q, argv)
 ##                  nq.#device = device
 ##  repeat replace tbs (deletes = tbs.deletes + 1, modtime = "now")
 ##             where tbs.table = "nfsquota"
+
+    return(SMS_SUCCESS);
+##}
+
+/**
+ ** get_members_of_list - optimized query for retrieval of list members
+ **
+ ** Inputs:
+ **   argv[0] - list_id
+ **
+ ** Description:
+ **   - retrieve USER members, then LIST members, then STRING members
+ **
+ **/
+
+get_members_of_list(q, argv, action, actarg)
+    struct query *q;
+    char *argv[];
+    int (*action)();
+    int actarg;
+##{
+##  int list_id;
+##  char member_name[129];
+    char *targv[2];
+
+    list_id = *(int *)argv[0];
+    targv[0] = "USER";
+    targv[1] = member_name;
+
+##  range of m is members
+##  repeat retrieve (member_name = users.login)
+##             where m.#list_id = @list_id and m.member_type = "USER"
+##                   and m.member_id = users.users_id
+##  {
+	 (*action)(2, targv, actarg);
+##  }
+
+    targv[0] = "LIST";
+##  repeat retrieve (member_name = list.name)
+##             where m.#list_id = @list_id and m.member_type = "LIST"
+##                   and m.member_id = list.#list_id
+##  {
+	 (*action)(2, targv, actarg);
+##  }
+
+    targv[0] = "STRING";
+##  repeat retrieve (member_name = strings.string)
+##             where m.#list_id = @list_id and m.member_type = "STRING"
+##                   and m.member_id = strings.string_id
+##  {
+	 (*action)(2, targv, actarg);
+##  }
+
+    return(SMS_SUCCESS);
+##}
+
+/**
+ ** get_all_poboxes - optimize query for retrieval of all poboxes
+ **
+ ** Description:
+ **   - retrieve LOCAL boxes, then POP boxes, then FOREIGN boxes
+ **
+ **/
+
+get_all_poboxes(q, argv, action, actarg)
+    struct query *q;
+    char *argv[];
+    int (*action)();
+    int actarg;
+##{
+##  char login[9];
+##  char machine[129];
+##  char box[129];
+    char *targv[4];
+
+    targv[0] = login;
+    targv[2] = machine;
+    targv[3] = box;
+
+    targv[1] = "LOCAL";
+##  range of p is pobox
+##  repeat retrieve (login=users.#login, machine = #machine.name, box=p.#box)
+##             where p.type = "LOCAL" and p.users_id = users.users_id
+##                   and p.mach_id = #machine.mach_id
+##  {
+	 (*action)(4, targv, actarg);
+##  }
+
+    targv[1] = "POP";
+##  repeat retrieve (login=users.#login, machine = #machine.name, box=p.#box)
+##             where p.type = "POP" and p.users_id = users.users_id
+##                   and p.mach_id = #machine.mach_id
+##  {
+	 (*action)(4, targv, actarg);
+##  }
+
+    targv[1] = "FOREIGN";
+##  repeat retrieve (login=users.#login, machine=strings.string, box=p.#box)
+##             where p.type = "FOREIGN" and p.users_id = users.users_id
+##                   and p.mach_id = strings.string_id
+##  {
+	 (*action)(4, targv, actarg);
+##  }
 
     return(SMS_SUCCESS);
 ##}

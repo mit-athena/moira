@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/students.dc,v 1.20 1993-08-19 15:05:22 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/students.dc,v 1.21 1996-07-02 01:54:29 tytso Exp $
  */
 
 #include <stdio.h>
@@ -117,6 +117,7 @@ char **argv;
 
     setlinebuf(stdout);
     setlinebuf(stderr);
+    initialize_sms_error_table();
 
     EXEC SQL CONNECT moira;
     if (sqlca.sqlcode != 0) {

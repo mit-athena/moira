@@ -3,13 +3,13 @@
  * and distribution information, see the file "mit-copyright.h". 
  *
  * $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chsh.c,v $
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chsh.c,v 1.10 1992-09-02 11:49:51 mar Exp $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chsh.c,v 1.11 1993-05-04 18:05:51 mar Exp $
  * $Author: mar $
  *
  */
 
 #ifndef lint
-static char *rcsid_chsh_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chsh.c,v 1.10 1992-09-02 11:49:51 mar Exp $";
+static char *rcsid_chsh_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chsh.c,v 1.11 1993-05-04 18:05:51 mar Exp $";
 #endif not lint
 
 /*
@@ -25,6 +25,9 @@ static char *rcsid_chsh_c = "$Header: /afs/.athena.mit.edu/astaff/project/moirad
  *
  */
 
+#ifdef POSIX
+#include <unistd.h>
+#endif
 #include <sys/types.h>
 #include <stdio.h>
 #include <strings.h>
@@ -205,7 +208,7 @@ get_shell(argc, argv, uname)
     /* We'll just take the first information we get since login names 
        cannot be duplicated in the database. */
     
-    if (strcmp(argv[U_NAME], uname))
+    if (argc < U_END || strcmp(argv[U_NAME], uname))
     {
 	fprintf(stderr, "Some internal error has occurred.  Try again.\n");
 	leave(3);

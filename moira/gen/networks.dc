@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/networks.dc,v 1.1 1994-01-14 16:02:02 tom Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/networks.dc,v 1.2 1994-01-14 16:10:00 tom Exp $
  *
  * This generates the network table.
  *
@@ -85,7 +85,7 @@ char **argv;
 	if (sqlca.sqlcode != 0) break;
 	if (id == 0) continue;
 	if (*strtrim(name) == 0) continue;
-	fprintf(out, "NETWORK : %-16.16s : %-13.13s : %s \n", name, inet_ntoa(htonl(addr)), 
+	fprintf(out, "NETWORK : %-16.16s : %-12.12s : %s\n", name, inet_ntoa(htonl(addr)), 
 	   description);
     }
 

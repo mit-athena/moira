@@ -2,7 +2,7 @@
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.h,v $
  *	$Author: mar $
  *	$Locker:  $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.h,v 1.6 1989-11-21 16:03:26 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.h,v 1.7 1991-07-26 14:52:34 mar Exp $
  */
 
 #include <stdio.h>
@@ -35,7 +35,7 @@ struct alias {
 #define LAST_NAME_SIZE 17
 #define MID_INIT_SIZE 17
 #define LOGIN_SIZE 9
-#define PASSWORD_SIZE 9
+#define PASSWORD_SIZE 64
 
 /* Input timeouts.  The most important timeouts are those for the username
    and the new password which should not be any longer than necessary.  The

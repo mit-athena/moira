@@ -1,4 +1,4 @@
-/* $Id: hesiod.pc,v 1.14 1999-09-29 20:07:07 kcr Exp $
+/* $Id: hesiod.pc,v 1.15 1999-11-16 04:43:20 danw Exp $
  *
  * This generates the zone files necessary to load a hesiod server.
  * The following zones are generated: passwd, uid, pobox, group,
@@ -23,7 +23,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/hesiod.pc,v 1.14 1999-09-29 20:07:07 kcr Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/hesiod.pc,v 1.15 1999-11-16 04:43:20 danw Exp $");
 
 #ifndef HTYPE
 #define HTYPE "TXT"
@@ -904,7 +904,7 @@ int do_printcap(void)
   char name[PRINTERS_NAME_SIZE], duplexname[PRINTERS_DUPLEXNAME_SIZE];
   char rp[PRINTERS_RP_SIZE], type[PRINTERS_TYPE_SIZE];
   char duplexrp[PRINTERS_RP_SIZE], pskind[PRINTSERVERS_KIND_SIZE];
-  int flag1, flag2, ka, rm;
+  int flag1, flag2, ka, rm, mc;
   EXEC SQL END DECLARE SECTION;
   char *rmname;
 
@@ -936,14 +936,14 @@ int do_printcap(void)
   get_mach();
 
   EXEC SQL DECLARE p_cursor2 CURSOR FOR
-    SELECT p.name, p.duplexname, p.type, p.rp, p.rm, p.ka, ps.kind
+    SELECT p.name, p.duplexname, p.type, p.rp, p.rm, p.ka, p.mc, ps.kind
     FROM printers p, printservers ps
     WHERE p.rm = ps.mach_id;
   EXEC SQL OPEN p_cursor2;
   while (1)
     {
       EXEC SQL FETCH p_cursor2 INTO :name, :duplexname, :type,
-	:rp, :rm, :ka, :pskind;
+	:rp, :rm, :ka, :mc, :pskind;
       if (sqlca.sqlcode)
 	break;
       if (!(rmname = hash_lookup(machines, rm)))
@@ -952,8 +952,8 @@ int do_printcap(void)
       if (!valid(name))
 	continue;
       strtrim(rp);
-      fprintf(out, "%s.pcap\t%s %s \"%s:rp=%s:rm=%s:ka#%d:",
-	      name, HCLASS, HTYPE, name, rp, rmname, ka);
+      fprintf(out, "%s.pcap\t%s %s \"%s:rp=%s:rm=%s:ka#%d:mc#%d:",
+	      name, HCLASS, HTYPE, name, rp, rmname, ka, mc);
 
       strtrim(pskind);
       if (!strcmp(pskind, "BSD"))
@@ -979,9 +979,9 @@ int do_printcap(void)
 	}
       else
 	strcpy(duplexrp, duplexname);
-      fprintf(out, "%s.pcap\t%s %s \"%s:rp=%s:rm=%s:ka#%d:",
+      fprintf(out, "%s.pcap\t%s %s \"%s:rp=%s:rm=%s:ka#%d:mc#%d:",
 	      duplexname, HCLASS, HTYPE, duplexname, duplexrp,
-	      rmname, ka);
+	      rmname, ka, mc);
 
       if (!strcmp(pskind, "BSD"))
 	fprintf(out, "auth=none:remote_support=RQM:");

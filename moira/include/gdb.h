@@ -1,5 +1,5 @@
 /*
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/include/gdb.h,v 1.4 1991-03-08 11:03:23 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/include/gdb.h,v 1.5 1991-05-10 15:16:43 mar Exp $
  */
 
 /************************************************************************
@@ -42,11 +42,16 @@
 #ifndef howmany
 #define	howmany(x, y)	(((x)+((y)-1))/(y))
 #endif
+#ifndef FD_SETSIZE
+#define FD_SETSIZE 256
+#endif
 #ifndef FD_SET
 #define FD_SET(n, p)    ((p)->fds_bits[(n)/NFDBITS] |= (1 << ((n) % NFDBITS)))
 #define FD_CLR(n, p)    ((p)->fds_bits[(n)/NFDBITS] &= ~(1 << ((n) % NFDBITS)))
 #define FD_ISSET(n, p)  ((p)->fds_bits[(n)/NFDBITS] & (1 << ((n) % NFDBITS)))
 #define FD_ZERO(p)      bzero(p, sizeof(*(p)))
+typedef long fd_mask;
+typedef struct fd_set {fd_mask fds_bits[howmany(FD_SETSIZE, NFDBITS)];} fd_set;
 #endif 
 
 

@@ -1,4 +1,4 @@
-/* $Id: dcm.pc,v 1.11 1998-09-10 18:27:23 danw Exp $
+/* $Id: dcm.pc,v 1.12 1999-01-27 19:45:07 danw Exp $
  *
  * The Data Control Manager for Moira.
  *
@@ -27,11 +27,11 @@
 EXEC SQL INCLUDE sqlca;
 void sqlglm(char *, unsigned int *, unsigned int *);
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/dcm.pc,v 1.11 1998-09-10 18:27:23 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/dcm.pc,v 1.12 1999-01-27 19:45:07 danw Exp $");
 
 int generate_service(char *name, int force);
 void do_hosts(char *service);
-int dcm_send_file(char *service, char *host, char *target);
+int dcm_send_file(char *service, int type, char *host, char *target);
 int dcm_execute(char *service, char *host, char *script);
 void dbmserr(void);
 
@@ -39,6 +39,8 @@ void dbmserr(void);
 #define SOFT_FAIL(x) (((x) == MR_NO_MEM) || ((x) == MR_CANT_CONNECT) || ((x) == MR_CCONFIG) || ((x) == MR_DEADLOCK) || ((x) == MR_BUSY) || ((x) == MR_ABORT))
 
 char whobuf[256], *whoami = whobuf, *db = "moira";
+
+enum { UNIQUE, DISTRIBUTED, REPLICATED };
 
 int main(int argc, char **argv)
 {
@@ -241,10 +243,10 @@ gen_cleanup:
 void do_hosts(char *service)
 {
   EXEC SQL BEGIN DECLARE SECTION;
-  char type[SERVERS_TYPE_SIZE], host[MACHINE_NAME_SIZE], *name;
+  char server_type[SERVERS_TYPE_SIZE], host[MACHINE_NAME_SIZE], *name;
   char target[SERVERS_TARGET_FILE_SIZE], script[SERVERS_SCRIPT_SIZE];
   const char *errmsg;
-  int status = 0, dfgen, replicated, mid;
+  int status = 0, dfgen, type, mid;
   time_t now;
   EXEC SQL END DECLARE SECTION;
   struct save_queue *sq;
@@ -255,9 +257,14 @@ void do_hosts(char *service)
   EXEC SQL CONNECT :db IDENTIFIED BY :db;
 
   EXEC SQL SELECT dfgen, type, target_file, script
-    INTO :dfgen, :type, :target, :script
+    INTO :dfgen, :server_type, :target, :script
     FROM servers WHERE name = UPPER(:service);
-  replicated = !strncmp(type, "REPLICAT", 8);
+  if (!strncmp(strtrim(server_type), "REPLICAT", 8))
+    type = REPLICATED;
+  else if (!strncmp(server_type, "DISTRIB", 8))
+    type = DISTRIBUTED;
+  else
+    type = UNIQUE;
   strtrim(target);
   strtrim(script);
 
@@ -287,7 +294,7 @@ void do_hosts(char *service)
       EXEC SQL UPDATE serverhosts SET inprogress = 1
 	WHERE service = UPPER(:service) AND mach_id = :mid;
       EXEC SQL COMMIT;
-      status = dcm_send_file(service, name, target);
+      status = dcm_send_file(service, type, name, target);
       if (status)
 	{
 	  errmsg = error_message(status);
@@ -303,13 +310,13 @@ void do_hosts(char *service)
 	    }
 	  EXEC SQL COMMIT;
 
-	  if (replicated)
+	  if (type == REPLICATED)
 	    break;
 	}
     }
   sq_destroy(sq);
 
-  if (status == MR_SUCCESS || !replicated)
+  if (status == MR_SUCCESS || type != REPLICATED)
     {
       EXEC SQL DECLARE csr_hst2 CURSOR FOR
 	SELECT m.name, m.mach_id FROM machine m, serverhosts sh
@@ -349,7 +356,7 @@ void do_hosts(char *service)
 				 service, name, errmsg);
 		}
 
-	      if (replicated)
+	      if (type == REPLICATED)
 		{
 		  /* We're giving up, so clear the inprogress flag on
 		     any hosts in this service we haven't gotten to yet */
@@ -370,7 +377,7 @@ void do_hosts(char *service)
     }
 
   EXEC SQL WHENEVER SQLERROR DO dbmserr();
-  if (status && !SOFT_FAIL(status) && replicated)
+  if (status && !SOFT_FAIL(status) && type == REPLICATED)
     {
       EXEC SQL UPDATE servers SET harderror = :status, errmsg = :errmsg
 	WHERE name = UPPER(:service);
@@ -383,14 +390,14 @@ host_cleanup:
   EXEC SQL UPDATE serverhosts SET inprogress = 0, success = 0, ltt = :now,
     hosterror = MR_INTERNAL, hosterrmsg = 'DBMS Internal Error'
     WHERE service = UPPER(:service) AND mach_id = :mid;
-  if (replicated)
+  if (type == REPLICATED)
     {
       EXEC SQL UPDATE servers SET harderror = MR_INTERNAL,
 	errmsg = 'DBMS Internal Error' WHERE name = UPPER(:service);
     }
 }
 
-int dcm_send_file(char *service, char *host, char *target)
+int dcm_send_file(char *service, int type, char *host, char *target)
 {
   char data[MAXPATHLEN];
   int code, conn;
@@ -409,7 +416,10 @@ int dcm_send_file(char *service, char *host, char *target)
       goto done;
     }
 
-  sprintf(data, "%s/%s.out", DCM_DIR, service);
+  if (type == DISTRIBUTED)
+    sprintf(data, "%s/%s/%s", DCM_DIR, service, host);
+  else
+    sprintf(data, "%s/%s.out", DCM_DIR, service);
   code = send_file(conn, data, target, 0);
   if (code)
     com_err(whoami, code, "sending data to %s", host);

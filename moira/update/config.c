@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/config.c,v 1.1 1992-08-25 14:42:50 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/config.c,v 1.2 1992-09-22 14:35:14 mar Exp $
  *
  * Routines to handle configuration file for Moira's update_server.
  * These routines must load the file into memory rather than parse
@@ -115,6 +115,7 @@ char *key;
 
     start = i++;
     if (config_keys[i] == NULL) i = 0;
+    if (config_keys[i] == NULL) return(NULL);
 
     do {
       if (!strcasecmp(key, config_keys[i]))

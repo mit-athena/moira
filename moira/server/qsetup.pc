@@ -1,4 +1,4 @@
-/* $Id: qsetup.pc,v 2.24 1998-12-28 17:42:13 danw Exp $
+/* $Id: qsetup.pc,v 2.25 1999-01-03 17:44:16 danw Exp $
  *
  * Query setup routines
  *
@@ -21,7 +21,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsetup.pc,v 2.24 1998-12-28 17:42:13 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsetup.pc,v 2.25 1999-01-03 17:44:16 danw Exp $");
 
 extern char *whoami;
 extern int dbms_errno, mr_errcode;
@@ -338,7 +338,7 @@ int setup_alis(struct query *q, char *argv[], client *cl)
   /* Check that it doesn't conflict with a pre-existing weirdly-cased
    * name. */
   EXEC SQL SELECT COUNT(name) INTO :cnt FROM list
-    WHERE LOWER(name) = :name;
+    WHERE LOWER(name) = :name AND name != :name;
   if (cnt)
     return MR_EXISTS;
 

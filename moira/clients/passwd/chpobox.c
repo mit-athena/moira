@@ -3,13 +3,13 @@
  * and distribution information, see the file "mit-copyright.h". 
  *
  * $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chpobox.c,v $
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chpobox.c,v 1.6 1988-09-27 16:47:06 mar Exp $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chpobox.c,v 1.7 1988-09-27 18:04:40 mar Exp $
  * $Author: mar $
  *
  */
 
 #ifndef lint
-static char *rcsid_chpobox_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chpobox.c,v 1.6 1988-09-27 16:47:06 mar Exp $";
+static char *rcsid_chpobox_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chpobox.c,v 1.7 1988-09-27 18:04:40 mar Exp $";
 #endif not lint
 
 /*
@@ -55,7 +55,7 @@ main(argc, argv)
     char *argv[];
 {
     struct passwd *pwd;
-    char *smsarg[3];
+    char *smsarg[3], buf[BUFSIZ];
     char *potype();
     char *address, *uname, *machine;
     uid_t u;
@@ -66,7 +66,7 @@ main(argc, argv)
     extern int optind;
     extern char *optarg;
 
-    c = usageflag = 0;
+    c = setflag = prevpop = usageflag = 0;
     address = uname = (char *) NULL;
     u = getuid();
 
@@ -87,7 +87,8 @@ main(argc, argv)
 		usageflag++;
 	    else {
 		setflag++;
-		address = strsave(optarg);
+		strcpy(buf, optarg);
+		address = buf;
 	    }
 	    break;
 	case 'p':
@@ -234,7 +235,7 @@ char *
 potype(machine)
     char *machine;
 {
-    char *service[1], buf[BUFSIZ];
+    char *service[1];
     int check_match(), status;
 
     match = 0;

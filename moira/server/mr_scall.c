@@ -1,11 +1,14 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_scall.c,v $
  *	$Author: wesommer $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_scall.c,v 1.4 1987-06-21 16:42:00 wesommer Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_scall.c,v 1.5 1987-06-26 10:55:53 wesommer Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
  *	$Log: not supported by cvs2svn $
+ * Revision 1.4  87/06/21  16:42:00  wesommer
+ * Performance work, rearrangement of include files.
+ * 
  * Revision 1.3  87/06/04  01:35:01  wesommer
  * Added a working query request handler.
  * 
@@ -18,7 +21,7 @@
  */
 
 #ifndef lint
-static char *rcsid_sms_scall_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_scall.c,v 1.4 1987-06-21 16:42:00 wesommer Exp $";
+static char *rcsid_sms_scall_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_scall.c,v 1.5 1987-06-26 10:55:53 wesommer Exp $";
 #endif lint
 
 #include <krb.h>
@@ -102,6 +105,7 @@ do_call(cl)
 		cl->reply.sms_status = 0;
 		com_err(whoami, 0, "noop");
 		return;
+
 	case SMS_AUTH:
 		do_auth(cl);
 		return;
@@ -110,6 +114,10 @@ do_call(cl)
 		do_retr(cl);
 		return;
 
+	case SMS_ACCESS:
+		do_access(cl);
+		return;
+		
 	case SMS_SHUTDOWN:
 		do_shutdown(cl);
 		return;
@@ -162,12 +170,37 @@ do_retr(cl)
 	com_err(whoami, 0, "Processing query: ");
 	log_args(cl->args->sms_argc, cl->args->sms_argv);
 	
-	sms_process_query(cl->args->sms_argv[0],
-			  cl->args->sms_argc-1,
-			  cl->args->sms_argv+1,
-			  retr_callback,
-			  (char *)cl);
+	cl->reply.sms_status = 
+	  sms_process_query(cl,
+			    cl->args->sms_argv[0],
+			    cl->args->sms_argc-1,
+			    cl->args->sms_argv+1,
+			    retr_callback,
+			    (char *)cl);
 
 	com_err(whoami, 0, "Query complete.");
 }
 
+do_access(cl)
+	client *cl;
+{
+	cl->reply.sms_argc = 0;
+	cl->reply.sms_status = 0;
+#ifdef notdef
+	if (!cl->clname) {
+		com_err(whoami, 0, "Unauthenticated query rejected");
+		cl->reply.sms_status = EACCES;
+		return;
+	}
+#endif notdef
+	com_err(whoami, 0, "Checking access: ");
+	log_args(cl->args->sms_argc, cl->args->sms_argv);
+	
+	cl->reply.sms_status = 
+	  sms_check_access(cl,
+			   cl->args->sms_argv[0],
+			   cl->args->sms_argc-1,
+			   cl->args->sms_argv+1);
+	
+	com_err(whoami, 0, "Access check complete.");
+}

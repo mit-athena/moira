@@ -45,7 +45,7 @@ CURSES=
 
 #ifdef NeXT
 OSLIBS= -lresolv
-#else
+#endif
 
 
 GLOBAL_CDEFS= -DHESIOD -DZEPHYR -DGDSS -DATHENA -DDBMS=INGRES -I/usr/athena/include $(OSDEFS)

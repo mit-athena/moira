@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.dc,v $
  *	$Author: genoa $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.dc,v 2.5 1992-08-04 21:02:57 genoa Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.dc,v 2.6 1992-08-23 21:37:02 genoa Exp $
  *
  *	Copyright (C) 1987, 1988 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_qrtn_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.dc,v 2.5 1992-08-04 21:02:57 genoa Exp $";
+static char *rcsid_qrtn_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.dc,v 2.6 1992-08-23 21:37:02 genoa Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -22,6 +22,7 @@ EXEC SQL INCLUDE sqlda;  /* SQL Descriptor Area */
 
 MR_SQLDA_T *SQLDA;
 EXEC SQL BEGIN DECLARE SECTION; 
+int mr_sig_length;
 int idummy;                            
 char cdummy[MR_CDUMMY_LEN];            
 char stmt_buf[MR_STMTBUF_LEN];
@@ -39,9 +40,9 @@ extern FILE *journal;
 
 /** Maybe this should be replaced by something like tytso's sql_error */
 
-#define INGRES_BAD_DATE1 41206
-#define INGRES_BAD_DATE2 40207
-#define INGRES_DEADLOCK 49900
+#define INGRES_BAD_DATE1  40206
+#define INGRES_BAD_DATE2  40207
+#define INGRES_DEADLOCK   49900
 
 #define INGRES_BAD_COLUMN 30110
 #define INGRES_ASGN_ERR   40204
@@ -49,16 +50,7 @@ extern FILE *journal;
 #define INGRES_NO_STMT    30130
 
 /*
-#define INGRES_BAD_INT 
-#define INGRES_TIMEOUT 
-#define INGRES_NO_RANGE 
- */
-
-
-/*
- * ingerr: (supposedly) called when Ingres indicates an error.
- * I have not yet been able to get this to work to intercept a
- * database open error.
+ * ingerr: Called when Ingres indicates an error.
  */
 
 void ingerr()
@@ -69,16 +61,11 @@ void ingerr()
     ingres_errno = -sqlca.sqlcode;
 
     switch (ingres_errno) {
-/*
- *  case INGRES_BAD_INT:
- *	mr_errcode = MR_INTEGER;
- *	break;
- */
-    case INGRES_BAD_DATE1:
-    case INGRES_BAD_DATE2:
+      case INGRES_BAD_DATE1:
+      case INGRES_BAD_DATE2:
 	mr_errcode = MR_DATE;
 	break;
-    case INGRES_DEADLOCK:
+      case INGRES_DEADLOCK:
 	mr_errcode = MR_DEADLOCK;
 	com_err(whoami, 0, "INGRES deadlock detected");
 	break;
@@ -88,22 +75,6 @@ void ingerr()
  *	com_err(whoami, 0, "timed out getting lock");
  *	break;
  */
-/*  This probably has no equivalent.
- *  case INGRES_NO_RANGE:
- *	mr_errcode = MR_INGRES_SOFTFAIL;
- *	com_err(whoami, 0, "INGRES missing range statement");
- *	break;
- */
-#ifdef NEVER
-    /* #ifdef-ing these out lets default: give me the INGRES text */
-    case INGRES_BAD_COLUMN:
-	mr_errcode = MR_INTERNAL;
-	com_err(whoami, 0, "Bad column name in query table");
-        break;
-    case INGRES_ASGN_ERR:
-	mr_errcode = MR_INTERNAL;
-	com_err(whoami, 0, "Error in SQL assignment statement");
-	break;
     case INGRES_NO_CURSOR:
 	mr_errcode = MR_INTERNAL;
 	com_err(whoami, 0, "Cursor not opened");
@@ -112,9 +83,18 @@ void ingerr()
 	mr_errcode = MR_INTERNAL;
 	com_err(whoami, 0, "Statement not declared");
 	break;
+#if 0
+    /* Taking these out during development lets default: give me the INGRES text */
+    case INGRES_BAD_COLUMN:
+	mr_errcode = MR_INTERNAL;
+	com_err(whoami, 0, "Bad column name in query table");
+        break;
+    case INGRES_ASGN_ERR:
+	mr_errcode = MR_INTERNAL;
+	com_err(whoami, 0, "Error in SQL assignment statement");
+	break;
 #endif
     default:
-	/** Add the INGRES error_text to the alert message ??? **/
 	mr_errcode = MR_INGRES_ERR;
 	com_err(whoami, MR_INGRES_ERR, " code %d\n", ingres_errno);
 	EXEC SQL INQUIRE_SQL(:err_msg = errortext);
@@ -152,6 +132,8 @@ int mr_open_database()
     /* open the database */
 #ifsql INGRES
     EXEC SQL CONNECT moira;
+    if(ingres_errno) 
+      return (ingres_errno);
     EXEC SQL set lockmode session where level = table, timeout = :query_timeout;
     EXEC SQL set lockmode on capacls where readlock = shared;
     EXEC SQL set lockmode on alias where readlock = shared;
@@ -159,7 +141,15 @@ int mr_open_database()
 #ifsql INFORMIX
     EXEC SQL DATABASE moira
 #endsql
-    return ingres_errno;
+
+    if(ingres_errno) 
+        return(mr_errcode);
+
+    EXEC SQL SELECT SIZE(signature) INTO :mr_sig_length FROM users WHERE users_id=0; /* Harmless on second open */
+    if(ingres_errno)
+        return(mr_errcode);
+
+    return(MR_SUCCESS);
 }
 
 int mr_close_database()

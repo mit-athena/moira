@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/db/newmoira.qc,v 1.7 1989-08-16 20:34:15 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/db/newmoira.qc,v 1.8 1989-08-25 11:36:25 mar Exp $
  *
  * Creates a new sms database
  *
@@ -30,6 +30,7 @@ struct alias { char *name;
 		   {"ace_type", "TYPE", "LIST"},
 		   {"ace_type", "TYPE", "NONE"},
 		   {"alias", "TYPE", "FILESYS"},
+		   {"alias", "TYPE", "PALLADIUM"},
 		   {"alias", "TYPE", "TYPE"},
 		   {"alias", "TYPE", "SERVICE"},
 		   {"alias", "TYPE", "TYPEDATA"},
@@ -369,3 +370,5 @@ int access_vis_list_by_name() {}
 int set_uppercase_modtime() {}
 int add_member_to_list() {}
 int delete_member_from_list() {}
+int setup_akum() {}
+int followup_gnfq() {}

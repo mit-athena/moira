@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.dc,v $
  *	$Author: genoa $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.dc,v 2.13 1993-01-04 15:25:54 genoa Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.dc,v 2.14 1993-01-04 15:42:46 genoa Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_qsupport_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.dc,v 2.13 1993-01-04 15:25:54 genoa Exp $";
+static char *rcsid_qsupport_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.dc,v 2.14 1993-01-04 15:42:46 genoa Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -398,7 +398,7 @@ int setup_dusr(q, argv)
     char **argv;
 {
     EXEC SQL BEGIN DECLARE SECTION;
-    int flag, id;
+    int flag, id, cnt;
     EXEC SQL END DECLARE SECTION;
 
     id = *(int *)argv[0];
@@ -409,26 +409,27 @@ int setup_dusr(q, argv)
     if (flag != 0 && flag != 4)
       return(MR_IN_USE);
 
-    EXEC SQL REPEATED DELETE FROM quota WHERE entity_id = :id AND type = 'USER';
+    EXEC SQL REPEATED DELETE FROM quota WHERE entity_id = :id AND type='USER';
     EXEC SQL REPEATED DELETE FROM krbmap WHERE users_id = :id;
-    EXEC SQL REPEATED SELECT member_id INTO :idummy FROM imembers
+    EXEC SQL REPEATED SELECT COUNT(member_id) INTO :cnt FROM imembers
       WHERE member_id = :id AND member_type = 'USER';
-    if (sqlca.sqlerrd[2] > 0)
+    if (cnt > 0)
 	return(MR_IN_USE);
-    EXEC SQL REPEATED SELECT label INTO :cdummy FROM filesys WHERE owner = :id;
-    if (sqlca.sqlerrd[2]> 0)
+    EXEC SQL REPEATED SELECT COUNT(label) INTO :cnt FROM filesys 
+	WHERE owner = :id;
+    if (cnt > 0)
 	return(MR_IN_USE);
-    EXEC SQL REPEATED SELECT name INTO :cdummy FROM list
+    EXEC SQL REPEATED SELECT COUNT(name) INTO :cnt FROM list
       WHERE acl_id = :id AND acl_type = 'USER';
-    if (sqlca.sqlerrd[2] > 0)
+    if (cnt > 0)
 	return(MR_IN_USE);
-    EXEC SQL REPEATED SELECT name INTO :cdummy FROM servers
+    EXEC SQL REPEATED SELECT COUNT(name) INTO :cnt FROM servers
       WHERE acl_id = :id AND acl_type = 'USER';
-    if (sqlca.sqlerrd[2] > 0)
+    if (cnt > 0)
 	return(MR_IN_USE);
-    EXEC SQL REPEATED SELECT acl_id INTO :idummy FROM hostaccess
+    EXEC SQL REPEATED SELECT COUNT(acl_id) INTO :cnt FROM hostaccess
       WHERE acl_id = :id AND acl_type = 'USER';
-    if (sqlca.sqlerrd[2] > 0)
+    if (cnt > 0)
 	return(MR_IN_USE);
     if (ingres_errno)
 	return(mr_errcode);
@@ -494,37 +495,37 @@ int setup_dmac(q, argv)
     char **argv;
 {
     EXEC SQL BEGIN DECLARE SECTION;
-    int flag, id;
+    int flag, id, cnt;
     EXEC SQL END DECLARE SECTION;
 
     id = *(int *)argv[0];
-    EXEC SQL REPEATED SELECT login INTO :cdummy FROM users
+    EXEC SQL REPEATED SELECT COUNT(login) INTO :cnt FROM users
       WHERE potype='POP' AND pop_id = :id;
-    if (sqlca.sqlerrd[2] > 0)
+    if (cnt > 0)
 	return(MR_IN_USE);
-    EXEC SQL REPEATED SELECT mach_id INTO :idummy FROM serverhosts
+    EXEC SQL REPEATED SELECT COUNT(mach_id) INTO :cnt FROM serverhosts
       WHERE mach_id = :id;
-    if (sqlca.sqlerrd[2] > 0)
+    if (cnt > 0)
 	return(MR_IN_USE);
-    EXEC SQL REPEATED SELECT mach_id INTO :idummy FROM nfsphys
+    EXEC SQL REPEATED SELECT COUNT(mach_id) INTO :cnt FROM nfsphys
       WHERE mach_id = :id;
-    if (sqlca.sqlerrd[2] > 0)
+    if (cnt > 0)
 	return(MR_IN_USE);
-    EXEC SQL REPEATED SELECT mach_id INTO :idummy FROM hostaccess
+    EXEC SQL REPEATED SELECT COUNT(mach_id) INTO :cnt FROM hostaccess
       WHERE mach_id = :id;
-    if (sqlca.sqlerrd[2] > 0)
+    if (cnt > 0)
 	return(MR_IN_USE);
-    EXEC SQL REPEATED SELECT mach_id INTO :idummy FROM printcap
+    EXEC SQL REPEATED SELECT COUNT(mach_id) INTO :cnt FROM printcap
       WHERE mach_id = :id;
-    if (sqlca.sqlerrd[2] > 0)
+    if (cnt > 0)
 	return(MR_IN_USE);
-    EXEC SQL REPEATED SELECT quotaserver INTO :idummy FROM printcap
+    EXEC SQL REPEATED SELECT COUNT(quotaserver) INTO :cnt FROM printcap
       WHERE quotaserver = :id;
-    if (sqlca.sqlerrd[2] > 0)
+    if (cnt > 0)
 	return(MR_IN_USE);
-    EXEC SQL REPEATED SELECT mach_id INTO :idummy FROM palladium
+    EXEC SQL REPEATED SELECT COUNT(mach_id) INTO :cnt FROM palladium
       WHERE mach_id = :id;
-    if (sqlca.sqlerrd[2] > 0)
+    if (cnt > 0)
 	return(MR_IN_USE);
 
     EXEC SQL REPEATED DELETE FROM mcmap WHERE mach_id = :id;
@@ -542,15 +543,15 @@ int setup_dclu(q, argv)
     char **argv;
 {
     EXEC SQL BEGIN DECLARE SECTION;
-    int id;
+    int id, cnt;
     EXEC SQL END DECLARE SECTION;
 
     id = *(int *)argv[0];
-    EXEC SQL REPEATED SELECT mach_id INTO :idummy FROM mcmap
+    EXEC SQL REPEATED SELECT COUNT(mach_id) INTO :cnt FROM mcmap
       WHERE clu_id = :id;
     if (sqlca.sqlerrd[2] > 0)
 	return(MR_IN_USE);
-    EXEC SQL REPEATED SELECT clu_id INTO :idummy FROM svc
+    EXEC SQL REPEATED SELECT COUNT(clu_id) INTO :cnt FROM svc
       WHERE clu_id = :id;
     if (sqlca.sqlerrd[2] > 0)
 	return(MR_IN_USE);
@@ -802,10 +803,10 @@ setup_afil(q, argv, cl)
     var_phys_id = 0;
 
     sprintf(ftype, "fs_access_%s", type);
-    EXEC SQL SELECT trans INTO :cdummy FROM alias
-      WHERE name = :ftype AND type = 'TYPE' and trans = :access;   /** Use mr_select_any() */
+    EXEC SQL SELECT COUNT(trans) INTO :ok FROM alias
+	WHERE name = :ftype AND type = 'TYPE' and trans = :access;   
     if (ingres_errno) return(mr_errcode);
-    if (sqlca.sqlerrd[2] == 0) return(MR_FILESYS_ACCESS);
+    if (ok == 0) return(MR_FILESYS_ACCESS);
 
     if((mr_errcode=prefetch_value(q,argv,cl))!=MR_SUCCESS)
       return(mr_errcode);
@@ -830,7 +831,7 @@ setup_ufil(q, argv, cl)
     int mach_id, status;
     char *type, *name;
     EXEC SQL BEGIN DECLARE SECTION;
-    int fid, total, who;
+    int fid, total, who, ok;
     char *entity, ftype[32], *access;
     int var_phys_id = 0;
     short int total_null;
@@ -845,10 +846,10 @@ setup_ufil(q, argv, cl)
     entity = cl->entity;
 
     sprintf(ftype, "fs_access_%s", type);
-    EXEC SQL SELECT trans INTO :cdummy FROM alias
+    EXEC SQL SELECT COUNT(trans) INTO :ok FROM alias
       WHERE name = :ftype AND type='TYPE' AND trans = :access;
     if (ingres_errno) return(mr_errcode);
-    if (sqlca.sqlerrd[2] == 0) return(MR_FILESYS_ACCESS);
+    if (ok == 0) return(MR_FILESYS_ACCESS);
 
     EXEC SQL SELECT type INTO :ftype FROM filesys
       WHERE filsys_id = :fid;
@@ -982,16 +983,16 @@ setup_dnfp(q, argv, cl)
     client *cl;
 {
     EXEC SQL BEGIN DECLARE SECTION;
-    int id;
+    int id, cnt;
     char *dir;
     EXEC SQL END DECLARE SECTION;
 
     id = *(int *)argv[0];
     dir = argv[1];
-    EXEC SQL REPEATED SELECT label INTO :cdummy FROM filesys fs, nfsphys np
+    EXEC SQL REPEATED SELECT label INTO :cnt FROM filesys fs, nfsphys np
       WHERE fs.mach_id = :id AND fs.phys_id = np.nfsphys_id
 	AND np.mach_id = :id AND np.dir = :dir;
-    if (sqlca.sqlerrd[2] > 0)
+    if (cnt > 0)
       return(MR_IN_USE);
     if (ingres_errno)
       return(mr_errcode);
@@ -2349,7 +2350,7 @@ int add_member_to_list(q, argv, cl)
     client *cl;
 {
     EXEC SQL BEGIN DECLARE SECTION;
-    int id, lid, mid, error, who, ref;
+    int id, lid, mid, error, who, ref, rowcnt;
     char *mtype, dtype[9], *entity;
     EXEC SQL END DECLARE SECTION;
     int ancestors[MAXLISTDEPTH], aref[MAXLISTDEPTH], acount, a;
@@ -2448,11 +2449,12 @@ int add_member_to_list(q, argv, cl)
 	    if (mid == lid && !strcmp(mtype, "LIST")) {
 		return(MR_LISTLOOP);
 	    }
-	    EXEC SQL REPEATED SELECT ref_count INTO :idummy FROM imembers
+	    EXEC SQL REPEATED SELECT COUNT(ref_count) INTO :rowcnt 
+		FROM imembers
 	      WHERE list_id = :lid AND member_id = :mid
 		AND member_type = :mtype;
 	    ref = aref[a] * dref[d];
-	    if (sqlca.sqlerrd[2] > 0) {
+	    if (rowcnt > 0) {
 		if (a == 0 && d == 0) {
 		    EXEC SQL UPDATE imembers
 		      SET ref_count = ref_count+:ref, direct=1
@@ -3318,18 +3320,18 @@ register_user(q, argv, cl)
       return(MR_NOT_UNIQUE);
 
     /* check new login name */
-    EXEC SQL REPEATED SELECT login INTO :cdummy FROM users
+    EXEC SQL REPEATED SELECT COUNT(login) INTO :rowcount FROM users
       WHERE login = LEFT(:login,SIZE(login)) AND users_id != :users_id;
     if (ingres_errno) return(mr_errcode);
-    if (sqlca.sqlerrd[2] > 0) return(MR_IN_USE);
-    EXEC SQL REPEATED SELECT name INTO :cdummy FROM list
+    if (rowcount > 0) return(MR_IN_USE);
+    EXEC SQL REPEATED SELECT COUNT(name) INTO :rowcount FROM list
       WHERE name = LEFT(:login,SIZE(name));
     if (ingres_errno) return(mr_errcode);
-    if (sqlca.sqlerrd[2] > 0) return(MR_IN_USE);
-    EXEC SQL REPEATED SELECT label INTO :cdummy FROM filesys
+    if (rowcount > 0) return(MR_IN_USE);
+    EXEC SQL REPEATED SELECT COUNT(label) INTO :rowcount FROM filesys
       WHERE label = LEFT(:login,SIZE(label));
     if (ingres_errno) return(mr_errcode);
-    if (sqlca.sqlerrd[2] > 0) return(MR_IN_USE);
+    if (rowcount > 0) return(MR_IN_USE);
     com_err(whoami, 0, "login name OK");
 
     /* choose place for pobox, put in mid */

@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/hesiod.dc,v 1.14 1993-11-24 15:50:05 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/hesiod.dc,v 1.15 1996-10-12 22:39:13 danw Exp $
  *
  * This generates the zone files necessary to load a hesiod server.
  * The following zones are generated: passwd, uid, pobox, group,
@@ -502,21 +502,21 @@ do_filsys()
 	  WHERE f.filsys_id = g.filsys_id AND g.group_id = :fid
 	  ORDER BY key, label;
 	EXEC SQL OPEN f_cursor2;
-        while (1) {
+        for (flag1=1;;flag1++) {
             EXEC SQL FETCH f_cursor2 INTO :type, :loc, :id, :access,:mount,
                                     :comments, :name, :trans;
             if (sqlca.sqlcode != 0) break;
 	    strtrim(type);
 	    if (!strcmp(type, "NFS") || !strcmp(type, "RVD")) {
 		if (mach = hash_lookup(machines, id)) {
-		    fprintf(out, "%s.filsys\tHS %s \"%s %s %s %s %s\"\n",
+		    fprintf(out, "%s.filsys\tHS %s \"%s %s %s %s %s %d\"\n",
 			    group, HTYPE, type, strtrim(loc), mach,
-			    strtrim(access), strtrim(mount));
+			    strtrim(access), strtrim(mount), flag1);
 		}
 	    } else if (!strcmp(type, "AFS")) {
-		fprintf(out, "%s.filsys\tHS %s \"AFS %s %s %s\"\n",
+		fprintf(out, "%s.filsys\tHS %s \"AFS %s %s %s %d\"\n",
 			group, HTYPE, strtrim(loc), strtrim(access),
-			strtrim(mount));
+			strtrim(mount), flag1);
 	    } else if (!strcmp(type, "ERR")) {
 		fprintf(out, "%s.filsys\tHS %s \"ERR %s\"\n",
 			group, HTYPE, strtrim(comments));
@@ -818,7 +818,7 @@ do_printcap()
 	strtrim(sd);
 	fprintf(out, "%s.pcap\tHS %s \"%s:rp=%s:rm=%s:sd=%s:ka#%d:pc#%d",
 		name, HTYPE, name, rp, hash_lookup(machines, rm), sd, ka, pc);
-	if (rq)
+	if (rq && hash_lookup(machines, rq))
 	  fprintf(out, ":rq=%s\"\n", hash_lookup(machines, rq));
 	else
 	  fputs("\"\n", out);

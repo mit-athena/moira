@@ -207,6 +207,12 @@ verifying that the database survived any system crash.  We also have
 DCMs started every 15 minutes won't do anything until we removed that
 file.
 
+A final piece of configuration is regular backups.  We backup the
+database over the net, rather than backing up the filesystem.  This
+allows us to restore the database on another machine architecture, if
+necessary.  We do this by having @i(cron) run BIN_DIR@i(/nightly.sh)
+at 5am each morning.
+
 
 @SubHeading(Customization)
 
@@ -225,7 +231,7 @@ Design the Ingres table to record this information.  Integers may be
 objects such as users, lists, machines, etc. should be referenced by
 their internal ID numbers.  If you're creating a new type that may be
 referenced by other tables, assign each object a unique ID number as
-well as its name.  Add this table specification to @i(db/dbbuild), so
+well as its name.  Add this table specification to @i(db/newdb), so
 that recompiling the backup and restore programs will cause them to
 know about the new table(s).
 

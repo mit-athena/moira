@@ -1,7 +1,7 @@
 .TH DCM 8 "30 Nov 1988" "Project Athena"
-\" RCSID: $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/man/dcm.8,v 1.4 1988-11-30 15:21:15 mar Exp $
+\" RCSID: $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/man/dcm.8,v 1.5 1990-03-08 18:04:34 mar Exp $
 .SH NAME
-dcm, startdcm \- build config files from SMS database and update servers
+dcm, startdcm \- build config files from Moira database and update servers
 .SH SYNOPSIS
 .B dcm
 [-d level]
@@ -10,7 +10,7 @@ dcm, startdcm \- build config files from SMS database and update servers
 .SH DESCRIPTION
 The
 .B dcm
-must be run periodically on the SMS server.  It is usually run every
+must be run periodically on the Moira server.  It is usually run every
 15 minutes by the
 .I cron
 daemon.  Rather than invoke
@@ -26,7 +26,7 @@ may be disabled by the presence of the file
 .I /etc/nodcm
 or by setting the value of
 .I dcm_enable
-to zero in the SMS database.  Debug mode may be enabled in the dcm by
+to zero in the Moira database.  Debug mode may be enabled in the dcm by
 specifying an integer on the command line or by setting the
 environment variable
 .B DEBUG.
@@ -36,7 +36,7 @@ DBG_VERBOSE = 02, DBG_TRACE = 04.  Logging is done to standard output.
 If critical errors are detected, they are logged to
 .B /u1/sms/critical.log
 and in a zephyrgram to class
-.B SMS
+.B Moira
 instance
 .B DCM
 in addition to standard output.
@@ -51,7 +51,7 @@ will execute.
 .PP
 For the actual generation of config files, the
 .B dcm
-will for off generator programs of the form
+will fork off generator programs of the form
 .B /u1/sms/bin/\fIservice\fB.gen.
 Each generator takes as an argument the name of the output file to
 produce.  Many of them also require working directories in
@@ -90,4 +90,4 @@ here.
 /etc/srvtab \- The dcm must be able to get Kerberos tickets for "sms"
 (null instance).
 .SH "SEE ALSO"
-The Project Athena Technical Plan section on SMS.
+The Project Athena Technical Plan section on Moira.

@@ -1987,7 +1987,7 @@ echo "configure:1976: checking Pro*C version" >&5
 	    ;;
     esac
     SVRSUBDIRS='$(SVRDIRS)'
-    SERVER_OUTPUT_FILES="db/Makefile server/Makefile backup/Makefile dbck/Makefile dcm/Makefile gen/Makefile incremental/Makefile reg_svr/Makefile regtape/Makefile"
+    SERVER_OUTPUT_FILES="db/Makefile server/Makefile backup/Makefile dbck/Makefile dcm/Makefile gen/Makefile incremental/Makefile incremental/mailman/Makefile reg_svr/Makefile regtape/Makefile"
     PRO_C=$oracle/bin/proc
     PRO_C_OPTS=CODE=ANSI_C
     PRO_C_DEFS="DEFINE=_PROC_ $PRO_C_DEFS"

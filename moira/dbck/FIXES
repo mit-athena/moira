@@ -48,6 +48,8 @@ PHASE 2: checking references
 	Delete pobox
    Each user's SMTP pobox must have a string
 	Delete pobox
+   Each user's IMAP pobox must be an existing IMAP filesystem
+	Delete pobox
 P  Every machine must be on a subnet
 	Set to placeholder subnet
 P  Every machine owner must exist
@@ -84,7 +86,7 @@ P  Every filesys' owning user must exist
 	Make it user 0
 P  Every filesys' owning group must exist
 	Make it list 0
-   Every NFS filesys' phys_id must exist
+   Every NFS or IMAP filesys' phys_id must exist
 P	Set to correct one if found
 	    else create one
    Every fsgroup must exist

@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.7 1989-08-21 21:57:59 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.8 1989-08-28 23:17:12 mar Exp $
  *
  * Command line oriented SMS List tool.
  *
@@ -21,7 +21,7 @@
 #include <sms_app.h>
 
 #ifndef LINT
-static char smslist_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.7 1989-08-21 21:57:59 mar Exp $";
+static char smslist_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.8 1989-08-28 23:17:12 mar Exp $";
 #endif
 
 
@@ -168,7 +168,7 @@ char **argv;
 
     /* fire up SMS */
     if (status = sms_connect(server)) {
-	com_err(whoami, status, " unable to connect to SMS");
+	com_err(whoami, status, " unable to connect to the Moira server");
 	exit(2);
     }
     if ( status = sms_motd(&motd) ) {
@@ -176,13 +176,13 @@ char **argv;
 	exit(2);
     }
     if (motd) {
-	fprintf(stderr, "The SMS server is currently unavailable:\n%s\n", motd);
+	fprintf(stderr, "The Moira server is currently unavailable:\n%s\n", motd);
 	sms_disconnect();
 	exit(2);
     }
 
     if (!noauth && (status = sms_auth("blanche"))) {
-	com_err(whoami, status, " unable to authenticate to SMS");
+	com_err(whoami, status, " unable to authenticate to Moira");
 	com_err(whoami, 0,
 		"Try the -noauth flag if you don't need authentication");
 	exit(2);

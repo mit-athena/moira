@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menus.c,v 1.14 1989-08-25 14:00:54 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menus.c,v 1.15 1989-08-28 23:21:55 mar Exp $";
 #endif lint
 
 /*	This is the file menus.c for the SMS Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menus.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menus.c,v 1.14 1989-08-25 14:00:54 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menus.c,v 1.15 1989-08-28 23:21:55 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -650,7 +650,7 @@ Menu misc_menu = {
     4,
     {
 	SIMPLEFUNC("statistics", "Show database statistics", TableStats),
-	SIMPLEFUNC("clients", "Show active SMS clients", ShowClients),
+	SIMPLEFUNC("clients", "Show active Moira clients", ShowClients),
 	{ ShowValue, NULLMENU, 2, {
 	    {"getval", "Show a database variable value"},
 	    {"name", "variable name: "},
@@ -673,7 +673,7 @@ Menu misc_menu = {
 Menu sms_top_menu = {
   NULLFUNC,
   NULLFUNC,
-  "Sms Database Manipulation",
+  "Moira Database Manipulation",
   10,
   {
     SUBMENU("cluster","Cluster Menu",&cluster_menu),

@@ -1,6 +1,6 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v 1.18 1989-06-28 13:21:29 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v 1.19 1989-08-28 23:18:40 mar Exp $
  */
 
 /*  (c) Copyright 1988 by the Massachusetts Institute of Technology. */
@@ -8,7 +8,7 @@
 /*  <mit-copyright.h>. */
 
 #ifndef lint
-static char rcsid_mailmaint_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v 1.18 1989-06-28 13:21:29 mar Exp $";
+static char rcsid_mailmaint_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v 1.19 1989-08-28 23:18:40 mar Exp $";
 #endif lint
 
 /***********************************************************************/
@@ -137,7 +137,7 @@ main(argc, argv)
 
     status = sms_connect(SMS_SERVER);
     if (status) {
-	(void) sprintf(buf, "\nConnection to SMS server failed");
+	(void) sprintf(buf, "\nConnection to Moira server failed");
 	goto punt;
     }
 
@@ -148,7 +148,7 @@ main(argc, argv)
 	exit(2);
     }
     if (motd) {
-	fprintf(stderr, "The SMS server is currently unavailable:\n%s\n", motd);
+	fprintf(stderr, "The Moira server is currently unavailable:\n%s\n", motd);
 	sms_disconnect();
 	exit(2);
     }
@@ -822,7 +822,7 @@ clrwin(erase_row)
 static int
 scream()
 {
-    com_err(whoami, status, "\nAn SMS update returned a value -- programmer \
+    com_err(whoami, status, "\nA Moira update returned a value -- programmer \
 botch\n");
     sms_disconnect();
     exit(1);

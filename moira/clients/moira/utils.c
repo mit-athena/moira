@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v 1.18 1989-08-25 12:37:21 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v 1.19 1989-08-28 23:22:19 mar Exp $";
 #endif lint
 
 /*	This is the file utils.c for the SMS Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v 1.18 1989-08-25 12:37:21 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v 1.19 1989-08-28 23:22:19 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -251,7 +251,7 @@ int
 Scream()
 {
     com_err(program_name, 0,
-	    "\nAn SMS update returned a value -- programmer botch\n");
+	    "\nA Moira update returned a value -- programmer botch\n");
     sms_disconnect();
     exit(1);
 }
@@ -897,12 +897,14 @@ char *hint;
       return(status);
     status = sms_connect(moira_server);
     if (status) {
-	com_err(whoami, status, " while re-connecting to server");
+	com_err(whoami, status, " while re-connecting to server %s",
+		moira_server);
 	return(SMS_ABORTED);
     }
     status = sms_auth(whoami);
     if (status) {
-	com_err(whoami, status, " while re-authenticating to server");
+	com_err(whoami, status, " while re-authenticating to server %s",
+		moira_server);
 	sms_disconnect();
 	return(SMS_ABORTED);
     }

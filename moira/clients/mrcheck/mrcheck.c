@@ -5,12 +5,12 @@
  * and distribution information, see the file "mit-copyright.h". 
  *
  * $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrcheck/mrcheck.c,v $
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrcheck/mrcheck.c,v 1.3 1989-06-28 13:20:16 mar Exp $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrcheck/mrcheck.c,v 1.4 1989-08-28 23:23:36 mar Exp $
  * $Author: mar $
  */
 
 #ifndef lint
-static char *rcsid_chsh_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrcheck/mrcheck.c,v 1.3 1989-06-28 13:20:16 mar Exp $";
+static char *rcsid_chsh_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrcheck/mrcheck.c,v 1.4 1989-08-28 23:23:36 mar Exp $";
 #endif	lint
 
 #include <stdio.h>
@@ -92,7 +92,7 @@ main(argc, argv)
 
     status = sms_connect(SMS_SERVER);
     if (status) {
-	(void) sprintf(buf, "\nConnection to the SMS server failed.");
+	(void) sprintf(buf, "\nConnection to the Moira server failed.");
 	goto punt;
     }
 
@@ -102,11 +102,11 @@ main(argc, argv)
 	exit(2);
     }
     if (motd) {
-	fprintf(stderr, "The SMS server is currently unavailable:\n%s\n", motd);
+	fprintf(stderr, "The Moira server is currently unavailable:\n%s\n", motd);
 	sms_disconnect();
 	exit(2);
     }
-    status = sms_auth("smscheck");
+    status = sms_auth("mrcheck");
     if (status) {
 	(void) sprintf(buf, "\nAuthorization failure -- run \"kinit\" \
 and try again");
@@ -163,7 +163,7 @@ punt:
 
 scream()
 {
-    com_err(whoami, status, "Update to SMS returned a value -- \
+    com_err(whoami, status, "Update to Moira returned a value -- \
 programmer botch.\n");
     sms_disconnect();
     exit(1);

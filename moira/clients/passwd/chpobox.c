@@ -3,13 +3,13 @@
  * and distribution information, see the file "mit-copyright.h". 
  *
  * $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chpobox.c,v $
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chpobox.c,v 1.10 1989-06-28 13:19:49 mar Exp $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chpobox.c,v 1.11 1989-08-28 23:26:42 mar Exp $
  * $Author: mar $
  *
  */
 
 #ifndef lint
-static char *rcsid_chpobox_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chpobox.c,v 1.10 1989-06-28 13:19:49 mar Exp $";
+static char *rcsid_chpobox_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chpobox.c,v 1.11 1989-08-28 23:26:42 mar Exp $";
 #endif not lint
 
 /*
@@ -124,7 +124,7 @@ main(argc, argv)
 
     status = sms_connect(SMS_SERVER);
     if (status) {
-	com_err(whoami, status, " while connecting to SMS");
+	com_err(whoami, status, " while connecting to Moira");
 	exit(1);
     }
 
@@ -135,7 +135,7 @@ main(argc, argv)
 	exit(1);
     }
     if (motd) {
-	fprintf(stderr, "The SMS server is currently unavailable:\n%s\n", motd);
+	fprintf(stderr, "The Moira server is currently unavailable:\n%s\n", motd);
 	sms_disconnect();
 	exit(1);
     }
@@ -198,7 +198,7 @@ main(argc, argv)
 	status = sms_query("set_pobox_pop", 1, smsarg, scream, NULL);
 	if (status == SMS_MACHINE) {
 	    fprintf(stderr,
-		    "SMS has no record of a previous POP box for %s\n", uname);
+		    "Moira has no record of a previous POP box for %s\n", uname);
 	} else if (status != 0)
 	  com_err(whoami, status, " while setting pobox");
     }
@@ -219,7 +219,7 @@ show:
 
 scream()
 {
-    com_err(whoami, 0, "Unexpected return value from SMS -- programmer botch");
+    com_err(whoami, 0, "Unexpected return value from Moira -- programmer botch");
     sms_disconnect();
     exit(1);
 }

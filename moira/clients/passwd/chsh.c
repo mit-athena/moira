@@ -3,13 +3,13 @@
  * and distribution information, see the file "mit-copyright.h". 
  *
  * $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chsh.c,v $
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chsh.c,v 1.4 1989-08-16 22:23:43 mar Exp $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chsh.c,v 1.5 1989-08-28 23:27:07 mar Exp $
  * $Author: mar $
  *
  */
 
 #ifndef lint
-static char *rcsid_chsh_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chsh.c,v 1.4 1989-08-16 22:23:43 mar Exp $";
+static char *rcsid_chsh_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chsh.c,v 1.5 1989-08-28 23:27:07 mar Exp $";
 #endif not lint
 
 /*
@@ -95,7 +95,7 @@ leave(status)
 
 scream()
 {
-    com_err(whoami, 0, "Unexpected return value from SMS -- programmer botch");
+    com_err(whoami, 0, "Unexpected return value from Moira -- programmer botch");
     leave(1);
 }
 
@@ -116,7 +116,7 @@ chsh(uname)
 
     status = sms_connect(SMS_SERVER);
     if (status) {
-	com_err(whoami, status, " while connecting to SMS");
+	com_err(whoami, status, " while connecting to Moira");
 	exit(1);
     }
 
@@ -126,7 +126,7 @@ chsh(uname)
 	leave(1);
     }
     if (motd) {
-	fprintf(stderr, "The SMS server is currently unavailable:\n%s\n", motd);
+	fprintf(stderr, "The Moira server is currently unavailable:\n%s\n", motd);
 	leave(1);
     }
 

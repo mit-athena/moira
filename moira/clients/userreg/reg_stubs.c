@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/reg_stubs.c,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/reg_stubs.c,v 1.12 1990-03-12 15:54:18 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/reg_stubs.c,v 1.13 1990-03-13 13:19:44 mar Exp $
  *
  *  (c) Copyright 1988 by the Massachusetts Institute of Technology.
  *  For copying and distribution information, please see the file
@@ -9,7 +9,7 @@
  */
 
 #ifndef lint
-static char *rcsid_reg_stubs_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/reg_stubs.c,v 1.12 1990-03-12 15:54:18 mar Exp $";
+static char *rcsid_reg_stubs_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/reg_stubs.c,v 1.13 1990-03-13 13:19:44 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -121,12 +121,13 @@ verify_user(first, last, idnumber, hashidnumber, login)
     return do_call(buf, len, seq_no, login);
 }
 
-grab_login(first, last, idnumber, hashidnumber, login)
-    char *first, *last, *idnumber, *hashidnumber, *login;
+do_operation(first, last, idnumber, hashidnumber, data, opcode)
+    char *first, *last, *idnumber, *hashidnumber, *data;
+    u_long opcode;
 {
     char buf[1024];
     int version = ntohl((u_long)1);
-    int call = ntohl((u_long)UREG_RESERVE_LOGIN);
+    int call = ntohl(opcode);
     des_cblock key;
     des_key_schedule ks;
     register char *bp = buf;
@@ -161,20 +162,14 @@ grab_login(first, last, idnumber, hashidnumber, login)
     bcopy(hashidnumber, cbp, 14);
     cbp += 14;
     
-    len = strlen(login) + 1;
-    bcopy(login, cbp, len);
+    len = strlen(data) + 1;
+    bcopy(data, cbp, len);
     cbp += len;
 
     len = cbp - crypt_src;
     des_string_to_key(hashidnumber, key);
     des_key_sched(key, ks);
     des_pcbc_encrypt(crypt_src, bp, len, ks, key, 1);
-#ifdef notdef    
-    for (i = 0; i < len; i++) {
-	printf("%02.2x ", (unsigned char)bp[i]);
-    }
-    printf("\n");
-#endif notdef
     len = ((len + 7) >> 3) << 3;
     bp += len;
     
@@ -183,66 +178,32 @@ grab_login(first, last, idnumber, hashidnumber, login)
 
 }
 
+grab_login(first, last, idnumber, hashidnumber, login)
+    char *first, *last, *idnumber, *hashidnumber, *login;
+{
+    return(do_operation(first, last, idnumber, hashidnumber, login,
+			UREG_RESERVE_LOGIN));
+}
+
+enroll_login(first, last, idnumber, hashidnumber, login)
+    char *first, *last, *idnumber, *hashidnumber, *login;
+{
+    return(do_operation(first, last, idnumber, hashidnumber, login,
+			UREG_SET_IDENT));
+}
+
 set_password(first, last, idnumber, hashidnumber, password)
     char *first, *last, *idnumber, *hashidnumber, *password;
 {
-    char buf[1024];
-    int version = ntohl((u_long)1);
-    int call = ntohl((u_long)UREG_SET_PASSWORD);
-    des_cblock key;
-    des_key_schedule ks;
-    register char *bp = buf;
-    register int len;
-    
-    char crypt_src[1024];
-    char *cbp;
-    
-    bcopy((char *)&version, bp, sizeof(int));
-    bp += sizeof(int);
-    seq_no++;
-    bcopy((char *)&seq_no, bp, sizeof(int));
+    return(do_operation(first, last, idnumber, hashidnumber, password,
+			UREG_SET_PASSWORD));
+}
 
-    bp += sizeof(int);
-
-    bcopy((char *)&call, bp, sizeof(int));
-
-    bp += sizeof(int);
-
-    (void) strcpy(bp, first);
-    bp += strlen(bp)+1;
-
-    (void) strcpy(bp, last);
-    bp += strlen(bp)+1;
-
-    len = strlen(idnumber) + 1;
-    cbp = crypt_src;
-    
-    bcopy(idnumber, crypt_src, len);
-    cbp += len;
-    
-    bcopy(hashidnumber, cbp, 14);
-    cbp += 14;
-    
-    len = strlen(password) + 1;
-    bcopy(password, cbp, len);
-    cbp += len;
-
-    len = cbp - crypt_src;
-    des_string_to_key(hashidnumber, key);
-    des_key_sched(key, ks);
-    des_pcbc_encrypt(crypt_src, bp, len, ks, key, 1);
-#ifdef notdef    
-    for (i = 0; i < len; i++) {
-	printf("%02.2x ", (unsigned char)bp[i]);
-    }
-    printf("\n");
-#endif notdef
-    len = ((len + 7) >> 3) << 3;
-    bp += len;
-    
-    len = bp - buf;
-    return do_call(buf, len, seq_no, 0);
-
+get_krb(first, last, idnumber, hashidnumber, password)
+    char *first, *last, *idnumber, *hashidnumber, *password;
+{
+    return(do_operation(first, last, idnumber, hashidnumber, password,
+			UREG_GET_KRB));
 }
 
 static do_call(buf, len, seq_no, login)

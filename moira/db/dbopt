@@ -1,89 +1,88 @@
-modify users to cbtree unique on users_id
-index on users is i_usr_login (login)
-modify i_usr_login to btree
-index on users is i_usr_name (first, last)
-modify i_usr_name to cbtree on first, last
-index on users is i_usr_last (last, first)
-modify i_usr_last to cbtree on last, first
-index on users is i_usr_uid (uid)
-modify i_usr_uid to btree
-index on users is i_usr_pop (pop_id)
-modify i_usr_pop to btree
-
-modify krbmap to btree unique on users_id
-index on krbmap is i_krb_str (string_id)
-modify i_krb_str to btree
-
-modify machine to cbtree unique on mach_id
-index on machine is i_mac_name (name)
-modify i_mac_name to btree
-
-modify cluster to cbtree unique on clu_id
-index on cluster is i_clu_name (name)
-modify i_clu_name to btree
-
-modify mcmap to cbtree on clu_id
-index on mcmap is i_mcm_mach (mach_id)
-modify i_mcm_mach to cbtree
-
-modify svc to cbtree on clu_id
-
-modify servers to btree on name
-
-modify serverhosts to btree on service
-index on serverhosts is i_sho_mach (mach_id)
-modify i_sho_mach to cbtree
-
-modify list to cbtree unique on list_id
-index on list is i_lis_name (name)
-modify i_lis_name to btree
-index on list is i_lis_mail (maillist)
-index on list is i_lis_group (group)
-index on list is i_lis_gid (gid)
-modify i_lis_gid to btree
-
-modify imembers to cbtree on member_id, member_type
-index on imembers is i_imem_list (list_id)
-modify i_imem_list to hash
-
-modify strings to cbtree unique on string_id
-index on strings is i_str_name (string)
-modify i_str_name to hash
-
-modify nfsphys to cbtree unique on nfsphys_id
-index on nfsphys is i_nfs_mach (mach_id)
-modify i_nfs_mach to btree
-
-modify filesys to cbtree unique on filsys_id
-index on filesys is i_fil_name (label)
-modify i_fil_name to cbtree
-index on filesys is i_fil_mach (mach_id)
-modify i_fil_mach to btree
-index on filesys is i_fil_phys (phys_id)
-modify i_fil_phys to cbtree
-index on filesys is i_fil_grp (owners)
-modify i_fil_grp to btree
-index on filesys is i_fil_user (owner)
-modify i_fil_user to btree
-
-modify fsgroup to cbtree on group_id
-index on fsgroup is i_fsg_filsys (filsys_id)
-modify i_fsg_filsys to btree
-
-modify quota to cbtree on entity_id
-index on quota is i_qot_fil (filsys_id)
-modify i_qot_fil to cbtree
-index on quota is i_qot_phys (phys_id)
-modify i_qot_phys to cbtree
-
-modify zephyr to cbtree unique on class
-
-modify hostaccess to cbtree unique on mach_id
-
-modify printcap to cbtree on name
-index on printcap is i_pcp_mach (mach_id)
-modify i_pcp_mach to btree
-
-modify palladium to cbtree on name
-
-modify capacls to cbtree on tag
+modify users to cbtree unique on users_id;\g
+create index i_usr_login on users (login);\g
+modify i_usr_login to btree;\g
+create index i_usr_name on  users (first, last);\g
+modify i_usr_name to cbtree on first, last;\g
+create index i_usr_last on  users (last, first);\g
+modify i_usr_last to cbtree on last, first;\g
+create index i_usr_uid on  users (uid);\g
+modify i_usr_uid to btree;\g
+create index i_usr_pop on  users (pop_id);\g
+;\g
+modify krbmap to btree unique on users_id;\g
+create index i_krb_str on  krbmap (string_id);\g
+modify i_krb_str to btree;\g
+;\g
+modify machine to cbtree unique on mach_id;\g
+create index i_mac_name on  machine (name);\g
+modify i_mac_name to btree;\g
+;\g
+modify cluster to cbtree unique on clu_id;\g
+create index i_clu_name on  cluster (name);\g
+modify i_clu_name to btree;\g
+;\g
+modify mcmap to cbtree on clu_id;\g
+create index i_mcm_mach on  mcmap (mach_id);\g
+modify i_mcm_mach to cbtree;\g
+;\g
+modify svc to cbtree on clu_id;\g
+;\g
+modify servers to btree on name;\g
+;\g
+modify serverhosts to btree on service;\g
+create index i_sho_mach on  serverhosts (mach_id);\g
+modify i_sho_mach to cbtree;\g
+;\g
+modify list to cbtree unique on list_id;\g
+create index i_lis_name on  list (name);\g
+modify i_lis_name to cbtree;\g
+create index i_lis_mail on  list (maillist);\g
+create index i_lis_group on  list (grouplist);\g
+create index i_lis_gid on  list (gid);\g
+modify i_lis_gid to btree;\g
+;\g
+modify imembers to cbtree on member_id, member_type;\g
+create index i_imem_list on  imembers (list_id);\g
+modify i_imem_list to hash;\g
+;\g
+modify strings to cbtree unique on string_id;\g
+create index i_str_name on  strings (string);\g
+modify i_str_name to hash;\g
+;\g
+modify nfsphys to cbtree unique on nfsphys_id;\g
+create index i_nfs_mach on  nfsphys (mach_id);\g
+modify i_nfs_mach to btree;\g
+;\g
+modify filesys to cbtree unique on filsys_id;\g
+create index i_fil_name on  filesys (label);\g
+modify i_fil_name to cbtree;\g
+create index i_fil_mach on  filesys (mach_id);\g
+modify i_fil_mach to btree;\g
+create index i_fil_phys on  filesys (phys_id);\g
+modify i_fil_phys to cbtree;\g
+create index i_fil_grp on  filesys (owners);\g
+modify i_fil_grp to btree;\g
+create index i_fil_user on  filesys (owner);\g
+modify i_fil_user to btree;\g
+;\g
+modify fsgroup to cbtree on group_id;\g
+create index i_fsg_filsys on  fsgroup (filsys_id);\g
+modify i_fsg_filsys to btree;\g
+;\g
+modify quota to cbtree on entity_id;\g
+create index i_qot_fil on  quota (filsys_id);\g
+modify i_qot_fil to cbtree;\g
+create index i_qot_phys on  quota (phys_id);\g
+modify i_qot_phys to cbtree;\g
+;\g
+modify zephyr to cbtree unique on class;\g
+;\g
+modify hostaccess to cbtree unique on mach_id;\g
+;\g
+modify printcap to cbtree on name;\g
+create index i_pcp_mach on  printcap (mach_id);\g
+modify i_pcp_mach to btree;\g
+;\g
+modify palladium to cbtree on name;\g
+;\g
+modify capacls to cbtree on tag;\g

@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menus.c,v 1.10 1988-09-01 16:03:24 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menus.c,v 1.11 1988-10-05 13:14:39 mar Exp $";
 #endif lint
 
 /*	This is the file menus.c for the SMS Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menus.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menus.c,v 1.10 1988-09-01 16:03:24 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menus.c,v 1.11 1988-10-05 13:14:39 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -542,6 +542,32 @@ Menu printer_menu = {
   }
 };
 
+
+/*
+ * Miscellaneous Menu
+ */
+
+Menu misc_menu = {
+    NULLFUNC,
+    NULLFUNC,
+    "Miscellaneous Menu",
+    4,
+    {
+	SIMPLEFUNC("statistics", "Show database statistics", TableStats),
+	SIMPLEFUNC("clients", "Show active SMS clients", ShowClients),
+	{ ShowValue, NULLMENU, 2, {
+	    {"getval", "Show a database variable value"},
+	    {"name", "variable name: "},
+	} },
+	{ ShowAlias, NULLMENU, 3, {
+	    {"getalias", "Show an alias relation"},
+	    {"name", "Alias name: "},
+	    {"type", "Alias type: "},
+	} },
+    }
+};
+
+
 /* ------------------------- Root Menu ------------------------- */
 
 /* 
@@ -552,7 +578,7 @@ Menu sms_top_menu = {
   NULLFUNC,
   NULLFUNC,
   "Sms Database Manipulation",
-  8,
+  9,
   {
     SUBMENU("cluster","Cluster Menu",&cluster_menu),
     SUBMENU("filesys","Filesystem Menu", &filesys_menu),
@@ -561,6 +587,7 @@ Menu sms_top_menu = {
     SUBMENU("nfs","NFS Physical Menu", &nfsphys_menu),
     SUBMENU("user","User Menu", &user_menu),
     SUBMENU("printer", "Printer Menu", &printer_menu),
-    SUBMENU("dcm", "DCM Menu", &dcm_menu)
+    SUBMENU("dcm", "DCM Menu", &dcm_menu),
+    SUBMENU("misc", "Miscellaneous Menu", &misc_menu)
   }
 };  

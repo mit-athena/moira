@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.40 1989-08-31 12:48:37 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.41 1989-09-01 15:01:07 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_qsupport_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.40 1989-08-31 12:48:37 mar Exp $";
+static char *rcsid_qsupport_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.41 1989-09-01 15:01:07 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -386,8 +386,9 @@ int setup_dusr(q, argv)
 ##			hostaccess.acl_type = "USER"))
     if (flag)
 	return(SMS_IN_USE);
-    else
-	return(SMS_SUCCESS);
+    if (ingres_errno)
+	return(sms_errcode);
+    return(SMS_SUCCESS);
 ##}
 
 
@@ -426,6 +427,7 @@ char **argv;
     user = *(int *)argv[0];
 ##  repeat retrieve (type = u.potype, id = u.pop_id)
 ##		where u.users_id = @user
+    if (ingres_errno) return(sms_errcode);
 
     if (!strcmp(strtrim(type), "POP"))
       set_pop_usage(id, -1);
@@ -466,6 +468,7 @@ int setup_dmac(q, argv)
 	return(SMS_IN_USE);
 
 ##  repeat delete mcmap where mcmap.mach_id = @id
+    if (ingres_errno) return(sms_errcode);
     return(SMS_SUCCESS);
 ##}
 
@@ -487,8 +490,9 @@ int setup_dclu(q, argv)
 ##  repeat retrieve (flag = any(svc.clu_id where svc.clu_id=@id))
     if (flag)
 	return(SMS_IN_USE);
-    else
-	return(SMS_SUCCESS);
+    if (ingres_errno)
+	return(sms_errcode);
+    return(SMS_SUCCESS);
 ##}
 
 
@@ -517,6 +521,7 @@ char **argv;
 	    if (set_next_object_id("gid", "list"))
 	      return(SMS_INGRES_ERR);
 ##	    repeat retrieve (ngid = values.value) where values.name = "gid"
+	    if (ingres_errno) return(sms_errcode);
 	    sprintf(argv[idx], "%d", ngid);
 	} else {
 	    strcpy(argv[idx], "-1");
@@ -570,8 +575,9 @@ int setup_dlis(q, argv)
 ##		      zephyr.iui_type = "LIST" and zephyr.iui_id = @id))
     if (flag)
         return(SMS_IN_USE);
-    else
-	return(SMS_SUCCESS);
+    if (ingres_errno)
+	return(sms_errcode);
+    return(SMS_SUCCESS);
 ##}
 
 
@@ -594,8 +600,9 @@ int setup_dsin(q, argv)
 ##  repeat retrieve (flag = servers.inprogress) where servers.#name = @name
     if (flag)
 	return(SMS_IN_USE);
-    else
-	return(SMS_SUCCESS);
+    if (ingres_errno)
+	return(sms_errcode);
+    return(SMS_SUCCESS);
 ##}
 
 
@@ -616,8 +623,9 @@ int setup_dshi(q, argv)
 ##	where serverhosts.service=uppercase(@name) and serverhosts.mach_id=@id
     if (flag)
 	return(SMS_IN_USE);
-    else
-	return(SMS_SUCCESS);
+    if (ingres_errno)
+	return(sms_errcode);
+    return(SMS_SUCCESS);
 ##}
 
 
@@ -694,6 +702,7 @@ setup_ufil(q, argv)
 	status = check_nfs(mach_id, name, access);
 	fid = *(int *)argv[0];
 ##	replace nfsquota (phys_id = var_phys_id) where nfsquota.filsys_id = fid
+	if (ingres_errno) return(sms_errcode);
 	return(status);
     } else
       return(SMS_SUCCESS);
@@ -735,7 +744,8 @@ setup_ufil(q, argv)
 ##           endretrieve
 	 }
 ##  }
-
+    if (ingres_errno)
+	return(sms_errcode);
     return(status);
 ##}
 
@@ -761,6 +771,7 @@ setup_dfil(q, argv, cl)
 ##  repeat delete q where q.filsys_id = @id
 ##  repeat delete fsgroup where fsgroup.filsys_id = @id
 ##  repeat delete fsgroup where fsgroup.group_id = @id
+    if (ingres_errno) return(sms_errcode);
     return(SMS_SUCCESS);
 ##}
 
@@ -780,6 +791,8 @@ setup_dnfp(q, argv, cl)
 ##  repeat retrieve (exists = any(filesys.label where filesys.phys_id = @id))
     if (exists)
       return(SMS_IN_USE);
+    if (ingres_errno)
+      return(sms_errcode);
     return(SMS_SUCCESS);
 ##}
 
@@ -804,6 +817,7 @@ setup_dnfq(q, argv, cl)
 ##	q.filsys_id = @fs
 ##  repeat replace nfsphys (allocated = nfsphys.allocated - @quota)
 ##	where nfsphys.nfsphys_id = filesys.#phys_id and filesys.filsys_id = @fs
+    if (ingres_errno) return(sms_errcode);
     return(SMS_SUCCESS);
 ##}
 
@@ -845,8 +859,9 @@ client *cl;
 ##	replace v (value = id) where v.#name = "strings_id"
 ##	append to strings (string_id = id, string = name)
     }
+    if (ingres_errno) return(sms_errcode);
     *(int *)argv[1] = id;
-    return(0);
+    return(SMS_SUCCESS);
 ##}
 
 
@@ -1149,6 +1164,7 @@ followup_fix_modby(q, sq, v, action, actarg, cl)
 	free(argv);
     }
     sq_destroy(sq);
+    if (ingres_errno) return(sms_errcode);
     return(SMS_SUCCESS);
 ##}
 
@@ -1490,6 +1506,7 @@ followup_anfq(q, argv, cl)
 ##	where nq.filsys_id = @fs and nq.users_id = @user
 ##  repeat replace nfsphys (allocated = nfsphys.allocated + @quota)
 ##	where nfsphys.nfsphys_id = filesys.#phys_id and filesys.filsys_id = @fs
+    if (ingres_errno) return(sms_errcode);
     return(SMS_SUCCESS);
 ##}
 
@@ -1661,6 +1678,7 @@ int set_pobox(q, argv, cl)
 
 ##  repeat retrieve (id = users.pop_id, potype = users.#potype)
 ##		where users.users_id = @user
+    if (ingres_errno) return(sms_errcode);
     if (!strcmp(strtrim(potype), "POP"))
       set_pop_usage(id, -1);
 
@@ -1692,6 +1710,7 @@ int set_pobox(q, argv, cl)
     set_pobox_modtime(q, argv, cl);
 ##  repeat replace tblstats (updates = tblstats.updates + 1, modtime = "now")
 ##	where tblstats.#table = "users"
+    if (ingres_errno) return(sms_errcode);
     return(SMS_SUCCESS);
 ##}
 
@@ -1792,6 +1811,7 @@ get_list_info(q, aargv, cl, action, actarg)
     }
 
     sq_destroy(sq);
+    if (ingres_errno) return(sms_errcode);
 ##  repeat replace tblstats (retrieves = tblstats.retrieves + 1)
 ##	where tblstats.#table = "list"
 
@@ -2089,6 +2109,7 @@ int get_ace_use(q, argv, cl, action, actarg)
     }
 
     sq_destroy(sq);	
+    if (ingres_errno) return(sms_errcode);
     if (!found) return(SMS_NO_MATCH);
     return(SMS_SUCCESS);
 ##}
@@ -2235,6 +2256,7 @@ int get_lists_of_member(q, argv, cl, action, actarg)
 ##    }
     }
 
+    if (ingres_errno) return(sms_errcode);
     if (!found) return(SMS_NO_MATCH);
     return(SMS_SUCCESS);
 ##}
@@ -2292,6 +2314,7 @@ get_members_of_list(q, argv, cl, action, actarg)
 ##  {
 	 (*action)(2, targv, actarg);
 ##  }
+    if (ingres_errno) return(sms_errcode);
 
     targv[0] = "LIST";
 ##  repeat retrieve (member_name = list.name)
@@ -2301,6 +2324,7 @@ get_members_of_list(q, argv, cl, action, actarg)
 ##  {
 	 (*action)(2, targv, actarg);
 ##  }
+    if (ingres_errno) return(sms_errcode);
 
     targv[0] = "STRING";
 ##  repeat retrieve (member_name = strings.string)
@@ -2310,6 +2334,7 @@ get_members_of_list(q, argv, cl, action, actarg)
 ##  {
 	 (*action)(2, targv, actarg);
 ##  }
+    if (ingres_errno) return(sms_errcode);
 
     targv[0] = "KERBEROS";
 ##  repeat retrieve (member_name = strings.string)
@@ -2319,6 +2344,7 @@ get_members_of_list(q, argv, cl, action, actarg)
 ##  {
 	 (*action)(2, targv, actarg);
 ##  }
+    if (ingres_errno) return(sms_errcode);
 
     return(SMS_SUCCESS);
 ##}
@@ -2343,6 +2369,7 @@ int count_members_of_list(q, argv, cl, action, actarg)
 ##  repeat retrieve (ct = count(imembers.list_id
 ##				where imembers.list_id = @list and
 ##				      imembers.direct = 1))
+    if (ingres_errno) return(sms_errcode);
     sprintf(countbuf, "%d", ct);
     (*action)(1, rargv, actarg);
     return(SMS_SUCCESS);
@@ -2411,6 +2438,7 @@ int qualified_get(q, argv, action, actarg, start, range, field, flags)
 ##  retrieve (name = rvar.rfield) where qual {
 	(*action)(1, rargv, actarg);
 ##  }
+    if (ingres_errno) return(sms_errcode);
 ##  inquire_equel(rowcount = "rowcount")
 ##  repeat replace tblstats (retrieves = tblstats.retrieves + 1)
 ##	where tblstats.#table = @rtbl
@@ -2458,6 +2486,7 @@ int qualified_get_serverhost(q, argv, cl, action, actarg)
 ##  retrieve (sname = sh.service, mname = machine.name) where qual {
 	(*action)(2, rargv, actarg);
 ##  }
+    if (ingres_errno) return(sms_errcode);
 ##  inquire_equel(rowcount = "rowcount")
 ##  repeat replace tblstats (retrieves = tblstats.retrieves + 1)
 ##	where tblstats.#table = "serverhosts"
@@ -2524,6 +2553,7 @@ register_user(q, argv, cl)
 ##  repeat retrieve (mid = sh.mach_id, machname = m.name)
 ##    where sh.service = "POP" and m.mach_id = sh.mach_id and
 ##	sh.value2 - sh.value1 = max(sh.value2-sh.value1 where sh.service="POP")
+    if (ingres_errno) return(sms_errcode);
 ##  inquire_equel(rowcount = "rowcount");
     if (rowcount == 0)
       return(SMS_NO_POBOX);
@@ -2537,6 +2567,7 @@ register_user(q, argv, cl)
 ##		      pmodwith=@entity)
 ##	where u.#users_id = @users_id
 ##  inquire_equel(rowcount = "rowcount");
+    if (ingres_errno) return(sms_errcode);
     if (rowcount != 1)
       return(SMS_INTERNAL);
     set_pop_usage(mid, 1);
@@ -2550,6 +2581,7 @@ register_user(q, argv, cl)
     if (set_next_object_id("list_id", "list"))
       return(SMS_NO_ID);
 ##  repeat retrieve (list_id = values.value) where values.name = "list_id"
+    if (ingres_errno) return(sms_errcode);
 ##  inquire_equel(rowcount = "rowcount");
     if (rowcount != 1)
       return(SMS_INTERNAL);
@@ -2560,6 +2592,7 @@ register_user(q, argv, cl)
 ##			acl_type = "USER", acl_id = @users_id, modtime = "now",
 ##			modby = @who, modwith = @entity)
 ##	where values.name = "gid"
+    if (ingres_errno) return(sms_errcode);
 ##  inquire_equel(rowcount = "rowcount");
     if (rowcount != 1)
       return(SMS_INTERNAL);
@@ -2571,6 +2604,7 @@ register_user(q, argv, cl)
     incremental_clear_before();
 ##  repeat append imembers (#list_id = @list_id, member_type = "USER",
 ##			   member_id = @users_id, ref_count = 1, direct = 1)
+    if (ingres_errno) return(sms_errcode);
 ##  inquire_equel(rowcount = "rowcount");
     if (rowcount != 1)
       return(SMS_INTERNAL);
@@ -2591,6 +2625,7 @@ register_user(q, argv, cl)
 	    m_id = mid;
 	}
 ##  }
+    if (ingres_errno) return(sms_errcode);
     if (maxsize == 0)
       return(SMS_NO_FILESYS);
 
@@ -2607,6 +2642,7 @@ register_user(q, argv, cl)
 ##			   lockertype = "HOMEDIR", modtime = "now",
 ##			   modby = @who, modwith = @entity)
 ##	where values.name = "filsys_id"
+    if (ingres_errno) return(sms_errcode);
 ##  inquire_equel(rowcount = "rowcount");
     if (rowcount != 1)
       return(SMS_INTERNAL);
@@ -2618,6 +2654,7 @@ register_user(q, argv, cl)
 
     /* set quota */
 ##  repeat retrieve (quota = values.value) where values.name = "def_quota"
+    if (ingres_errno) return(sms_errcode);
 ##  inquire_equel(rowcount = "rowcount");
     if (rowcount != 1)
       return(SMS_NO_QUOTA);
@@ -2626,12 +2663,14 @@ register_user(q, argv, cl)
 ##			    #quota = @quota, phys_id = @pid, modtime = "now",
 ##			    modby = @who, modwith = @entity)
 ##	where values.name = "filsys_id"
+    if (ingres_errno) return(sms_errcode);
 ##  inquire_equel(rowcount = "rowcount");
     if (rowcount != 1)
       return(SMS_INTERNAL);
 ##  repeat replace nfsphys (allocated = nfsphys.allocated + @quota)
 ##	where nfsphys.nfsphys_id = filesys.#phys_id and
 ##	      filesys.filsys_id = values.value and values.name = "filsys_id"
+    if (ingres_errno) return(sms_errcode);
 ##  inquire_equel(rowcount = "rowcount");
     if (rowcount != 1)
       return(SMS_INTERNAL);
@@ -2640,12 +2679,14 @@ register_user(q, argv, cl)
     sprintf(buffer, "nq.users_id = %d and nq.filsys_id = values.value and values.name = \"filsys_id\"", users_id);
     incremental_after("nfsquota", buffer, argv);
     com_err(whoami, 0, "quota of %d assigned", quota);
+    if (ingres_errno) return(sms_errcode);
 
 ##  repeat replace tblstats (updates = tblstats.updates + 1, modtime = "now")
 ##	where tblstats.table = "users"
 ##  repeat replace tblstats (appends = tblstats.appends + 1, modtime = "now")
 ##	where tblstats.table = "list" or tblstats.table = "filesys" or
 ##	      tblstats.table = "nfsquota"
+    if (ingres_errno) return(sms_errcode);
     return(SMS_SUCCESS);
 ##}
 
@@ -2673,6 +2714,7 @@ int count;
 ##  repeat replace sh (value1 = sh.value1 + @n)
 ##         where sh.service = "POP" and sh.#mach_id = @mach_id
 
+    if (ingres_errno) return(sms_errcode);
     return(SMS_SUCCESS);
 ##}
 
@@ -2782,6 +2824,7 @@ validate_fields(q, argv, vo, n)
 	vo++;
     }
 
+    if (ingres_errno) return(sms_errcode);
     return(SMS_SUCCESS);
 }
 

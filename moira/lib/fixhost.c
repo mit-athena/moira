@@ -1,4 +1,4 @@
-/* $Id: fixhost.c,v 1.19 1998-02-27 20:53:42 danw Exp $
+/* $Id: fixhost.c,v 1.20 1998-07-09 18:57:30 danw Exp $
  *
  * Canonicalize a hostname
  *
@@ -22,7 +22,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/fixhost.c,v 1.19 1998-02-27 20:53:42 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/fixhost.c,v 1.20 1998-07-09 18:57:30 danw Exp $");
 
 /*
  * Canonicalize hostname:
@@ -81,19 +81,27 @@ char *canonicalize_hostname(char *host)
 
 	  if (domain == NULL)
 	    {
-	      struct utsname name;
+	      char hostbuf[256];
 
-	      uname(&name);
-	      hp = gethostbyname(name.nodename);
-	      if (hp)
+	      if (mr_host(hostbuf, sizeof(hostbuf)) == MR_SUCCESS)
 		{
-		  cp = strchr(hp->h_name, '.');
+		  cp = strchr(hostbuf, '.');
 		  if (cp)
 		    domain = strdup(++cp);
-		  if (!domain)
-		    domain = "";
 		}
 	      else
+		{
+		  struct utsname name;
+		  uname(&name);
+		  hp = gethostbyname(name.nodename);
+		  if (hp)
+		    {
+		      cp = strchr(hp->h_name, '.');
+		      if (cp)
+			domain = strdup(++cp);
+		    }
+		}
+	      if (!domain)
 		domain = "";
 	    }
 	  tbuf = malloc(strlen(host) + strlen(domain) + 2);

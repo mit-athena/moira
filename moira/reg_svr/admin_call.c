@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/admin_call.c,v $
  *	$Author: wesommer $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/admin_call.c,v 1.2 1987-08-22 17:13:59 wesommer Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/admin_call.c,v 1.3 1987-09-04 22:30:34 wesommer Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
@@ -11,13 +11,17 @@
  *	Completely gutted and rewritten by Bill Sommerfeld, August 1987
  *
  *	$Log: not supported by cvs2svn $
+ * Revision 1.2  87/08/22  17:13:59  wesommer
+ * Make admin_errmsg external rather than static.
+ * Crock up KDC host.
+ * 
  * Revision 1.1  87/08/07  13:50:37  wesommer
  * Initial revision
  * 
  */
 
 #ifndef lint
-static char *rcsid_admin_call_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/admin_call.c,v 1.2 1987-08-22 17:13:59 wesommer Exp $";
+static char *rcsid_admin_call_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/admin_call.c,v 1.3 1987-09-04 22:30:34 wesommer Exp $";
 #endif lint
 
 #include <sys/errno.h>
@@ -31,7 +35,6 @@ static char *rcsid_admin_call_c = "$Header: /afs/.athena.mit.edu/astaff/project/
 #include <strings.h>
 #include <stdio.h>
 
-#define KERB_HOST "icarus"
 #include "admin_err.h"
 #include "admin_server.h"
 #include "prot.h"

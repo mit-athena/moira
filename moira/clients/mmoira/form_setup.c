@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/form_setup.c,v 1.7 1992-10-28 16:14:06 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/form_setup.c,v 1.8 1992-11-09 17:10:39 mar Exp $
  */
 
 #include <stdio.h>
@@ -92,13 +92,28 @@ char **retval;
 }
 
 
+static int GetArgv(argc, argv, info)
+int argc;
+char **argv;
+char ***info;
+{
+    int i;
+    char *malloc();
+
+    *info = (char **)malloc((argc + 1) * sizeof(char *));
+    for (i = 0; i < argc; i++)
+      (*info)[i] = strsave(argv[i]);
+    (*info)[i] = NULL;
+    return(MR_ABORT);
+}
+
 
 MoiraValueChanged(f, prompt)
 EntryForm *f;
 UserPrompt *prompt;
 {
     char buf[1024];
-    char *argv[5], *p;
+    char *argv[5], *p, **info;
     int i, size, field;
     struct save_queue *sq, *s;
 #define maybechange(f, n, v)	{if (f->inputlines[n]->insensitive != v) { f->inputlines[n]->insensitive=v; f->inputlines[n]->changed = True; }}
@@ -109,11 +124,14 @@ UserPrompt *prompt;
     switch (f->menu->operation) {
     case MM_ADD_LIST:
     case MM_MOD_LIST:
-	maybechange(f, L_GID, !boolval(f, L_GROUP));
-	if (!strcmp(stringval(f, L_ACE_TYPE), "NONE"))
-	  maybechange(f, L_ACE_NAME, True)
-	else
-	  maybechange(f, L_ACE_NAME, False)
+	if (field == L_GROUP)
+	  maybechange(f, L_GID, !boolval(f, L_GROUP));
+	if (field == L_ACE_TYPE) {
+	    if (!strcmp(stringval(f, L_ACE_TYPE), "NONE"))
+	      maybechange(f, L_ACE_NAME, True)
+	    else
+	      maybechange(f, L_ACE_NAME, False)
+	}
 	break;
     case MM_ADD_FILSYS:
     case MM_MOD_FILSYS:
@@ -226,10 +244,38 @@ UserPrompt *prompt;
 	break;
     case MM_ADD_QUOTA:
     case MM_MOD_QUOTA:
-	if (!strcmp(stringval(f, Q_TYPE), "ANY"))
-	  maybechange(f, Q_NAME, True)
-	else
-	  maybechange(f, Q_NAME, False)
+	if (field == Q_FILESYS) {
+	    argv[0] = stringval(f, 0);
+	    i = MoiraQuery("get_filesys_by_label", 1, argv, GetArgv, &info);
+	    if (i == MR_SUCCESS) {
+		if (!strcmp(info[FS_TYPE], "AFS")) {
+		    StoreField(f, 1, "ANY");
+		} else if (!strcmp(info[FS_TYPE], "NFS")) {
+		    argv[0] = strsave(info[FS_MACHINE]);
+		    argv[1] = strsave(info[FS_PACK]);
+		    p = rindex(argv[1], '/');
+		    if (p) *p = 0;
+		    for (i = 0; info[i]; i++) free(info[i]);
+		    free(info);
+		    i = MoiraQuery("get_nfsphys", 2, argv, GetArgv, &info);
+		    if (i == MR_SUCCESS) {
+			i = atoi(info[NFS_STATUS]);
+			if (i & MR_FS_GROUPQUOTA)
+			  StoreField(f, 1, "GROUP");
+			else
+			  StoreField(f, 1, "USER");
+			for (i = 0; info[i]; i++) free(info[i]);
+			free(info);
+		    }
+		}
+	    }
+	}
+	if (field == Q_TYPE) {
+	    if (!strcmp(stringval(f, Q_TYPE), "ANY"))
+	      maybechange(f, Q_NAME, True)
+	    else
+	      maybechange(f, Q_NAME, False)
+	}
 	break;
     case MM_ADD_ZEPHYR:
     case MM_MOD_ZEPHYR:
@@ -450,6 +496,7 @@ MenuItem	*menu;
     case MM_DEL_QUOTA:
     case MM_MOD_QUOTA:
 	GetKeywords(f, 1, "quota_type");
+	f->inputlines[Q_FILESYS]->valuechanged = MoiraValueChanged;
 	f->inputlines[Q_TYPE]->valuechanged = MoiraValueChanged;
 	break;
     case MM_SHOW_ACE_USE:

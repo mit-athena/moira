@@ -1,4 +1,4 @@
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/Makefile,v 1.3 1990-03-19 18:43:48 mar Exp $
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/Makefile,v 1.4 1992-06-24 16:39:09 mar Exp $
 # Database consistency checker
 #
 # (c) Copyright 1988 by the Massachusetts Institute of Technology.
@@ -8,7 +8,7 @@
 
 .SUFFIXES:
 .SUFFIXES: .o .c .qc
-CFLAGS= -I../include -O
+CFLAGS= -I../include -I../lib -O
 
 SRCS = dbck.c fix.c phase1.c phase2.c phase3.c phase4.c members.c
 OBJS = dbck.o fix.o phase1.o phase2.o phase3.o phase4.o
@@ -52,19 +52,3 @@ depend: ${SRCS}
 	mkdep ${CFLAGS} ${SRCS}
 
 # DO NOT DELETE THIS LINE -- mkdep uses it.
-
-dbck.o: dbck.c ../include/mit-copyright.h /usr/include/stdio.h
-dbck.o: /usr/include/strings.h /usr/include/signal.h dbck.h
-dbck.o: ../include/moira_site.h
-fix.o: fix.c ../include/mit-copyright.h ../include/moira.h ../include/mr_et.h
-fix.o: /usr/include/stdio.h dbck.h ../include/moira_site.h
-phase1.o: phase1.c ../include/mit-copyright.h ../include/moira.h
-phase1.o: ../include/mr_et.h dbck.h ../include/moira_site.h
-phase2.o: phase2.c ../include/mit-copyright.h /usr/include/stdio.h
-phase2.o: ../include/moira.h ../include/mr_et.h dbck.h
-phase2.o: ../include/moira_site.h
-phase3.o: phase3.c ../include/mit-copyright.h dbck.h ../include/moira_site.h
-phase4.o: phase4.c ../include/mit-copyright.h ../include/moira.h
-phase4.o: ../include/mr_et.h dbck.h ../include/moira_site.h
-members.o: members.c /usr/include/stdio.h /usr/include/signal.h
-members.o: ../include/moira.h ../include/mr_et.h

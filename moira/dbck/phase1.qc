@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase1.qc,v 1.4 1989-07-19 14:03:16 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase1.qc,v 1.5 1989-09-11 11:44:17 mar Exp $
  *
  *  (c) Copyright 1988 by the Massachusetts Institute of Technology.
  *  For copying and distribution information, please see the file
@@ -9,7 +9,7 @@
 #include <sms.h>
 #include "dbck.h"
 
-static char phase1_qc_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase1.qc,v 1.4 1989-07-19 14:03:16 mar Exp $";
+static char phase1_qc_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase1.qc,v 1.5 1989-09-11 11:44:17 mar Exp $";
 
 
 show_user_id(u)
@@ -175,8 +175,8 @@ struct string *s;
 
 phase1()
 ##{
-##  char name[33], name1[33], last[17], first[17], buf[257];
-##  int id, id2, id3, aid, aid2, status;
+##  char name[81], name1[81], last[17], first[17], buf[257];
+##  int id, id2, id3, aid, aid2, status, sid, sid2, sid3;
     struct save_queue *sq;
     struct user *u;
     struct machine *m;
@@ -188,14 +188,35 @@ phase1()
 
     printf("Phase 1 - Looking for duplicates\n");
 
+    dprintf("Loading strings...\n");
+    sq = sq_create();
+    strings = create_hash(5000);
+##  range of s is strings
+##  retrieve (id = s.string_id, buf = s.string) {
+    	s = (struct string *) malloc(sizeof(struct string));
+	if (s == NULL)
+	  out_of_mem("storing strings");
+	s->name = strsave(strtrim(buf));
+	s->string_id = id;
+	s->refc = 0;
+	if (hash_store(strings, id, s)) {
+	    sq_save_data(sq, hash_lookup(strings, id));
+	    sq_save_data(sq, s);
+	}
+##  }
+    generic_delete(sq, show_str_id, "strings", "string_id", 0);
+
     dprintf("Loading users...\n");
     sq = sq_create();
     users = create_hash(10000);
 ##  range of u is users
 ##  retrieve (id = u.users_id, name = u.login, last = u.#last,
 ##	      first = u.#first, status = u.#status, buf = u.potype,
-##	      id2 = u.pop_id, id3 = u.box_id) {
+##	      id2 = u.pop_id, id3 = u.box_id, sid = u.modby, sid2 = u.fmodby,
+##	      sid3 = u.pmodby) {
     	u = (struct user *) malloc(sizeof(struct user));
+	if (u == NULL)
+	  out_of_mem("storing users");
 	strcpy(u->login, strtrim(name));
 	u->potype = buf[0];
 	sprintf(buf, "%s, %s", strtrim(last), strtrim(first));
@@ -216,6 +237,12 @@ phase1()
 	    sq_save_data(sq, hash_lookup(users, id));
 	    sq_save_data(sq, u);
 	}
+	if (sid < 0)
+	  string_check(-sid);
+	if (sid2 < 0)
+	  string_check(-sid2);
+	if (sid3 < 0)
+	  string_check(-sid3);
 ##  }
     generic_fix(sq, show_user_id, "Change ID", fix_user_id, 0);
 
@@ -232,8 +259,10 @@ phase1()
     machines = create_hash(1000);
     sq = sq_create();
 ##  range of m is machine
-##  retrieve (id = m.mach_id, name = m.#name) {
+##  retrieve (id = m.mach_id, name = m.#name, sid = m.modby) {
     	m = (struct machine *) malloc(sizeof(struct machine));
+	if (m == NULL)
+	  out_of_mem("storing machines");
 	strcpy(m->name, strtrim(name));
 	m->mach_id = id;
 	m->clucount = 0;
@@ -241,6 +270,8 @@ phase1()
 	    sq_save_data(sq, hash_lookup(machines, id));
 	    sq_save_data(sq, m);
 	}
+	if (sid < 0)
+	  string_check(-sid);
 ##  }
     generic_fix(sq, show_mach_id, "Change ID", fix_mach_id, 0);
 
@@ -257,14 +288,18 @@ phase1()
     sq = sq_create();
     clusters = create_hash(100);
 ##  range of c is cluster
-##  retrieve (id = cluster.clu_id, name = cluster.#name) {
+##  retrieve (id = c.clu_id, name = c.#name, sid = c.modby) {
     	c = (struct cluster *) malloc(sizeof(struct cluster));
+	if (c == NULL)
+	  out_of_mem("storing clusters");
 	strcpy(c->name, strtrim(name));
 	c->clu_id = id;
 	if (hash_store(clusters, id, c)) {
 	    sq_save_data(sq, hash_lookup(clusters, id));
 	    sq_save_data(sq, c);
 	}
+	if (sid < 0)
+	  string_check(-sid);
 ##  }
     generic_fix(sq, show_clu_id, "Change ID", fix_clu_id, 0);
 
@@ -282,8 +317,10 @@ phase1()
     lists = create_hash(10000);
 ##  range of l is list
 ##  retrieve (id = l.list_id, name = l.#name,
-##	      aid = l.acl_id, buf = l.acl_type) {
+##	      aid = l.acl_id, buf = l.acl_type, sid = l.modby) {
     	l = (struct list *) malloc(sizeof(struct list));
+	if (l == NULL)
+	  out_of_mem("storing lists");
 	strcpy(l->name, strtrim(name));
 	l->acl_type = buf[0];
 	l->acl_id = aid;
@@ -293,6 +330,8 @@ phase1()
 	    sq_save_data(sq, hash_lookup(lists, id));
 	    sq_save_data(sq, l);
 	}
+	if (sid < 0)
+	  string_check(-sid);
 ##  }
     generic_fix(sq, show_list_id, "Change ID", fix_list_id, 0);
 
@@ -311,8 +350,10 @@ phase1()
 ##  retrieve (id = filesys.filsys_id, name = filesys.label, aid = filesys.owner,
 ##	      aid2 = filesys.owners, id2 = filesys.phys_id,
 ##	      id3 = filesys.mach_id, buf = filesys.type,
-##	      name1 = filesys.#name) {
+##	      name1 = filesys.#name, sid = filesys.modby) {
     	f = (struct filesys *) malloc(sizeof(struct filesys));
+	if (f == NULL)
+	  out_of_mem("storing filesystems");
 	strcpy(f->name, strtrim(name));
 	strcpy(f->dir, strtrim(name1));
 	f->filsys_id = id;
@@ -325,6 +366,8 @@ phase1()
 	    sq_save_data(sq, hash_lookup(filesys, id));
 	    sq_save_data(sq, f);
 	}
+	if (sid < 0)
+	  string_check(-sid);
 ##  }
     generic_fix(sq, show_fs_id, "Change ID", fix_fs_id, 0);
 
@@ -332,8 +375,11 @@ phase1()
     sq = sq_create();
     nfsphys = create_hash(500);
 ##  retrieve (id = nfsphys.nfsphys_id, name = nfsphys.dir,
-##	      id2 = nfsphys.mach_id, id3 = nfsphys.allocated) {
+##	      id2 = nfsphys.mach_id, id3 = nfsphys.allocated,
+##	      sid = nfsphys.modby) {
     	n = (struct nfsphys *) malloc(sizeof(struct nfsphys));
+	if (n == NULL)
+	  out_of_mem("storing nfsphys");
 	strcpy(n->dir, strtrim(name));
 	n->mach_id = id2;
 	n->nfsphys_id = id;
@@ -343,29 +389,31 @@ phase1()
 	    sq_save_data(sq, hash_lookup(nfsphys, id));
 	    sq_save_data(sq, n);
 	}
+	if (sid < 0)
+	  string_check(-sid);
 ##  }
     generic_fix(sq, show_np_id, "Change ID", fix_np_id, 0);
 
-    dprintf("Loading strings...\n");
-    sq = sq_create();
-    strings = create_hash(5000);
-##  range of s is strings
-##  retrieve (id = s.string_id, buf = s.string) {
-    	s = (struct string *) malloc(sizeof(struct string));
-	s->name = strsave(strtrim(buf));
-	s->string_id = id;
-	s->refc = 0;
-	if (hash_store(strings, id, s)) {
-	    sq_save_data(sq, hash_lookup(strings, id));
-	    sq_save_data(sq, s);
-	}
-##  }
-    generic_delete(sq, show_str_id, "strings", "string_id", 0);
-
     if (!fast) {
+##	range of s is strings
 ##	retrieve (id = s.string_id, buf = s.string)
 ##	    where s.string = strings.string and s.tid != strings.tid {
 	  printf("String %s(%d) is a duplicate!\n", strtrim(buf), id);
+	  printf("Not fixing this error\n");
+##	}
+    }
+
+    if (!fast) {
+	dprintf("Scanning krbmap...\n");
+##	range of k is krbmap
+##	retrieve (id = k.users_id)
+##	    where k.users_id = krbmap.users_id and k.tid != krbmap.tid {
+    	  printf("User %d is in the krbmap more than once!\n", id);
+	  printf("Not fixing this error\n");
+##	}
+##	retrieve (id = k.string_id)
+##	    where k.string_id = krbmap.string_id and k.tid != krbmap.tid {
+    	  printf("Principal %d is in the krbmap more than once!\n", id);
 	  printf("Not fixing this error\n");
 ##	}
     }

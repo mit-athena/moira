@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/passwd.dc,v 1.10 1990-08-17 10:31:32 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/passwd.dc,v 1.11 1990-08-20 11:17:53 mar Exp $
  *
  * This generates a master /etc/passwd containing all active (status != 0)
  * accounts.
@@ -25,7 +25,7 @@ int argc;
 char **argv;
 {
     FILE *out = stdout;
-    char *outf, outft[64];
+    char *outf = NULL, outft[64];
     struct stat sb;
     int flag;
     EXEC SQL BEGIN DECLARE SECTION;
@@ -89,6 +89,9 @@ char **argv;
     EXEC SQL CLOSE x;
 #ifsql INGRES
     EXEC SQL DISCONNECT;
+#endsql
+#ifsql INFORMIX
+    EXEC SQL CLOSE DATABASE;
 #endsql
 
     if (fclose(out)) {

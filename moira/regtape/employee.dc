@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/employee.dc,v 1.15 1993-09-30 14:36:29 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/employee.dc,v 1.16 1993-09-30 14:43:12 mar Exp $
  */
 
 #include <stdio.h>
@@ -120,6 +120,7 @@ char **argv;
     }
 
     while (e = get_next_entry(in)) {
+    again:
 	process_entry(e);
 	EXEC SQL COMMIT WORK;
 	if (sqlca.sqlcode != 0) {
@@ -548,14 +549,8 @@ set_next_users_id(limit)
     EXEC SQL REPEATED UPDATE numvalues SET value = :value
       WHERE name = 'users_id';
     if (sqlca.sqlcode != 0) {
-        if (sqlca.sqlcode == SQL_DEADLOCK) {
-            com_err(whoami, MR_DEADLOCK, "adding user %s", sid);
-            EXEC SQL ROLLBACK;
-            return newuser(e);
-        } else {
-            com_err(whoami, 0, "ingres error %d", sqlca.sqlcode);
-            exit(1);
-        }
+	com_err(whoami, 0, "ingres error %d", sqlca.sqlcode);
+	exit(1);
     }
     return(retval);
 }

@@ -1,4 +1,4 @@
-/* $Id: lists.c,v 1.53 2003-04-06 16:57:42 zacheiss Exp $
+/* $Id: lists.c,v 1.54 2004-11-22 19:24:18 zacheiss Exp $
  *
  *	This is the file lists.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -24,7 +24,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v 1.53 2003-04-06 16:57:42 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v 1.54 2004-11-22 19:24:18 zacheiss Exp $");
 
 struct mqelem *GetListInfo(int type, char *name1, char *name2);
 char **AskListInfo(char **info, Bool name);
@@ -867,7 +867,6 @@ int DeleteMember(int argc, char **argv)
 	    {
 	      char *canon;
 	      canon = canonicalize_hostname(args[LM_MEMBER]);
-	      free(args[LM_MEMBER]);
 	      args[LM_MEMBER] = canon;
 	      if (do_mr_query("delete_member_from_list", CountArgs(args),
 			      args, NULL, NULL) == MR_SUCCESS)

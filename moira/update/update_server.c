@@ -1,13 +1,13 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/update_server.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/update_server.c,v 1.4 1989-06-26 09:05:18 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/update_server.c,v 1.5 1989-08-16 21:00:09 mar Exp $
  */
 /*  (c) Copyright 1988 by the Massachusetts Institute of Technology. */
 /*  For copying and distribution information, please see the file */
 /*  <mit-copyright.h>. */
 
 #ifndef lint
-static char *rcsid_dispatch_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/update_server.c,v 1.4 1989-06-26 09:05:18 mar Exp $";
+static char *rcsid_dispatch_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/update_server.c,v 1.5 1989-08-16 21:00:09 mar Exp $";
 #endif	lint
 
 #include <mit-copyright.h>
@@ -19,10 +19,6 @@ static char *rcsid_dispatch_c = "$Header: /afs/.athena.mit.edu/astaff/project/mo
 #include <sys/file.h>
 #include <sys/ioctl.h>
 #include "update.h"
-
-/* XXX */
-#include "kludge.h"
-/* XXX */
 
 extern int auth_001(), inst_001();
 extern int xfer_002(), exec_002();

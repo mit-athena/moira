@@ -1,13 +1,13 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/exec_002.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/exec_002.c,v 1.5 1989-06-26 14:13:14 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/exec_002.c,v 1.6 1989-08-16 20:59:57 mar Exp $
  */
 /*  (c) Copyright 1988 by the Massachusetts Institute of Technology. */
 /*  For copying and distribution information, please see the file */
 /*  <mit-copyright.h>. */
 
 #ifndef lint
-static char *rcsid_exec_002_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/exec_002.c,v 1.5 1989-06-26 14:13:14 mar Exp $";
+static char *rcsid_exec_002_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/exec_002.c,v 1.6 1989-08-16 20:59:57 mar Exp $";
 #endif	lint
 
 #include <mit-copyright.h>
@@ -17,7 +17,6 @@ static char *rcsid_exec_002_c = "$Header: /afs/.athena.mit.edu/astaff/project/mo
 #include <gdb.h>
 #include <sms.h>
 #include "update.h"
-#include "kludge.h"
 
 extern CONNECTION conn;
 extern int code, errno;

@@ -1,4 +1,4 @@
-/* $Id: pobox.c,v 1.32 2000-01-28 00:31:54 danw Exp $
+/* $Id: pobox.c,v 1.33 2000-02-18 17:07:58 rbasch Exp $
  *
  *	This is the file pobox.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -24,7 +24,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/pobox.c,v 1.32 2000-01-28 00:31:54 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/pobox.c,v 1.33 2000-02-18 17:07:58 rbasch Exp $");
 
 /*	Function Name: PrintPOBox
  *	Description: Yet another specialized print function.
@@ -205,7 +205,7 @@ static int AddImapPartitions(char *server, struct mqelem **parts)
 char *CreateImapBox(char *user)
 {
   int status;
-  struct mqelem *elem, *servers = NULL, *partitions = NULL;
+  struct mqelem *elem = NULL, *servers = NULL, *partitions = NULL;
   char *server = NULL, *partition = NULL;
   char *argv[11], *fsname, temp_buf[BUFSIZ];
   static char *default_imap_quota = NULL;

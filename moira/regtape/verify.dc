@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/verify.dc,v 1.1 1993-01-04 16:37:29 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/verify.dc,v 1.2 1993-01-04 16:37:54 mar Exp $
  *
  * This program will verify signatures on user records in the database.
  */
@@ -12,6 +12,7 @@
 #include <des.h>
 #include <krb.h>
 #include <gdss.h>
+EXEC SQL INCLUDE sqlca;
 
 
 char *program;
@@ -19,21 +20,23 @@ char *program;
 main(argc, argv)
 int argc;
 char **argv;
-##{
-     char buf[BUFSIZ], *usercheck[100], sigbuf[256];
-     SigInfo si;
-     int status, i, wait, check, debug;
-##   char login[10], mid[32], rawsig[256], who[257];
-##   int id, timestamp;
+{
+    char buf[BUFSIZ], *usercheck[100], sigbuf[256];
+    SigInfo si;
+    int status, i, wait, check, debug;
+    EXEC SQL BEGIN DECLARE SECTION;
+    char login[10], mid[32], rawsig[256], who[257];
+    int id, timestamp;
+    EXEC SQL END DECLARE SECTION;
 
-     initialize_sms_error_table();
-     initialize_krb_error_table();
-     initialize_gdss_error_table();
+    initialize_sms_error_table();
+    initialize_krb_error_table();
+    initialize_gdss_error_table();
 
-     program = "sign";
-     check = debug = 0;
+    program = "sign";
+    check = debug = 0;
 
-     for (i = 1; i < argc; i++) {
+    for (i = 1; i < argc; i++) {
 	if (!strcmp(argv[i], "-w"))
 	  wait++;
 	else if (!strcmp(argv[i], "-d"))
@@ -45,14 +48,17 @@ char **argv;
 	else usercheck[check++] = argv[i];
     }
 
-##   ingres sms
-##   range of u is users
-##   range of s is strings
+    EXEC SQL CONNECT moira;
 
-     if (check == 0) {
-##	retrieve (login = u.#login, mid = u.mit_id, rawsig = u.signature,
-##		  who = s.string, timestamp = u.sigdate)
-##	      where u.signature != "" and u.sigwho = s.string_id {
+    if (check == 0) {
+	EXEC SQL DECLARE c CURSOR FOR
+	  SELECT login, clearid, signature, string, sigdate
+	  FROM users, strings
+	  WHERE signature != '' and sigwho = string_id;
+	EXEC SQL OPEN c;
+	while (1) {
+	    EXEC SQL FETCH c INTO :login, :mid, :rawsig, :who, :timestamp;
+	    if (sqlca.sqlcode != 0) break;
 	    sprintf(buf, "%s:%s", strtrim(login), strtrim(mid));
 	    si.timestamp = timestamp;
 	    si.SigInfoVersion = 0;
@@ -60,7 +66,8 @@ char **argv;
 	    si.rawsig = (unsigned char *) &rawsig[0];
 	    status = GDSS_Recompose(&si, sigbuf);
 	    if (status) {
-		com_err(program, gdss2et(status), "recomposing for user %s", login);
+		com_err(program, gdss2et(status), "recomposing for user %s",
+			login);
 		continue;
 	    }
 	    si.rawsig = NULL;
@@ -73,14 +80,18 @@ char **argv;
 		fflush(stdout);
 		gets(buf);
 	    }
-##	}
+	}
     } else {
 	for (i = check - 1; i >= 0; i--) {
 	    strcpy(login, usercheck[i]);
-##	    retrieve (mid = u.mit_id, rawsig = u.signature,
-##		      who = s.string, timestamp = u.sigdate)
-##	          where u.signature != "" and u.sigwho = s.string_id 
-##			and u.#login = login {
+	    EXEC SQL DECLARE s CURSOR FOR
+	      SELECT clearid, signature, string, sigdate
+	      FROM users, strings
+	      WHERE signature != '' and sigwho = string_id and login = :login;
+	    EXEC SQL OPEN s;
+	    while (1) {
+		EXEC SQL FETCH s INTO :mid, :rawsig, :who, :timestamp;
+		if (sqlca.sqlcode != 0) break;
 		sprintf(buf, "%s:%s", strtrim(login), strtrim(mid));
 		if (debug) {
 		    printf("Verifying \"%s\"\n", buf);
@@ -109,13 +120,12 @@ char **argv;
 		    fflush(stdout);
 		    gets(buf);
 		}
-##	    }
+	    }
 	}
     }
 
-##   exit
      exit(0);
-##}
+}
 
 
 hex_dump(p)

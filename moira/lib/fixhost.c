@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/fixhost.c,v $
  *	$Author: danw $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/fixhost.c,v 1.11 1997-01-29 23:24:08 danw Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/fixhost.c,v 1.12 1998-01-05 14:54:47 danw Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -9,7 +9,7 @@
  */
 
 #ifndef lint
-static char *rcsid_fixhost_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/fixhost.c,v 1.11 1997-01-29 23:24:08 danw Exp $";
+static char *rcsid_fixhost_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/fixhost.c,v 1.12 1998-01-05 14:54:47 danw Exp $";
 #endif
 
 #include <mit-copyright.h>
@@ -19,9 +19,7 @@ static char *rcsid_fixhost_c = "$Header: /afs/.athena.mit.edu/astaff/project/moi
 #include <netdb.h>
 #include <stdio.h>
 #include <stdlib.h>
-#ifdef POSIX
 #include <sys/utsname.h>
-#endif
 #include <string.h>
 #include <ctype.h>
 #include <moira.h>
@@ -45,9 +43,7 @@ canonicalize_hostname(host)
     int n_len;
     int has_dot = 0;
     char tbuf[BUFSIZ];
-#ifdef POSIX
     struct utsname name;
-#endif
     register char *cp;
     
     if (strlen(host) > 2 && host[0] == '"' && host[strlen(host)-1] == '"') {
@@ -79,13 +75,8 @@ canonicalize_hostname(host)
 	    static char *domain = NULL;
 
 	    if (domain == NULL) {
-#ifdef POSIX
 		(void) uname(&name);
-		strncpy(tbuf, name.nodename, sizeof(tbuf));
-#else
-		gethostname(tbuf, sizeof(tbuf));
-#endif
-		hp = gethostbyname(tbuf);
+		hp = gethostbyname(name.nodename);
 		cp = strchr(hp->h_name, '.');
 		if (cp)
 		  domain = strsave(++cp);

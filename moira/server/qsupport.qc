@@ -1,11 +1,14 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v $
- *	$Author: wesommer $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.9 1987-08-22 17:41:34 wesommer Exp $
+ *	$Author: mike $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.10 1987-08-25 15:56:54 mike Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
  *	$Log: not supported by cvs2svn $
+Revision 1.9  87/08/22  17:41:34  wesommer
+More of Mike's changes. 
+
 Revision 1.8  87/08/18  15:05:20  wesommer
 Fixed definition of add_locker.
 
@@ -33,7 +36,7 @@ Initial revision
  */
 
 #ifndef lint
-static char *rcsid_qsupport_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.9 1987-08-22 17:41:34 wesommer Exp $";
+static char *rcsid_qsupport_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.10 1987-08-25 15:56:54 mike Exp $";
 #endif lint
 
 #include "query.h"
@@ -778,6 +781,81 @@ delete_current_quota(q, argv, cl, access_check)
 ##}
 
 /**
+ ** add_hostaccess - create entry in hostaccess table upon adding a new
+ **                  machine to the serverhosts table where service =
+ **                  "hostaccess".
+ **
+ ** Inputs:
+ **   argv[0] - service
+ **   argv[1] - mach_id
+ **
+ **/
+
+add_hostaccess(q, argv)
+    struct query *q;
+    char *argv[];
+##{
+##  int mach_id;
+
+    /* only work with service = "hostaccess" */
+    if (bcmp(argv[0], "hostaccess", 10)) return(SMS_SUCCESS);
+
+    mach_id = *(int *)argv[1];
+##  repeat append hostaccess (#mach_id = @mach_id, status = 0)
+##  repeat replace tblstats (modtime = "now", appends = tblstats.appends + 1)
+##         where tblstats.table = "hostaccess"
+    return(SMS_SUCCESS);
+##}
+
+/* followup to delete_server_host_info */
+
+delete_hostaccess(q, argv)
+    struct query *q;
+    char *argv[];
+##{
+##  int mach_id;
+
+    /* only work with service = "hostaccess" */
+    if (bcmp(argv[0], "hostaccess", 10)) return(SMS_SUCCESS);
+
+    mach_id = *(int *)argv[1];
+##  repeat delete hostaccess where hostaccess.#mach_id = @mach_id
+##  repeat replace tblstats (modtime = "now", deletes = tblstats.deletes + 1)
+##         where tblstats.table = "hostaccess"
+    return(SMS_SUCCESS);
+##}
+
+followup_ushp(q, argv)
+    struct query *q;
+    char *argv[];
+##{
+##  int mach_id;
+##  int status;
+
+    mach_id = *(int *)argv[0];
+##  range of ha is hostaccess
+##  repeat retrieve (status = ha.#status) where ha.#mach_id = @mach_id
+    status |= 1;
+##  repeat replace ha (#status = @status) where ha.#mach_id = @mach_id
+    return(SMS_SUCCESS);
+##}
+
+followup_usha(q, argv)
+    struct query *q;
+    char *argv[];
+##{
+##  int mach_id;
+##  int status;
+
+    mach_id = *(int *)argv[0];
+##  range of ha is hostaccess
+##  repeat retrieve (status = ha.#status) where ha.#mach_id = @mach_id
+    status |= 2;
+##  repeat replace ha (#status = @status) where ha.#mach_id = @mach_id
+    return(SMS_SUCCESS);
+##}
+
+/**
  ** delete_list_members - called after the delete_list query to clean up
  **			  members table.
  **
@@ -829,7 +907,7 @@ delete_list_members(q, argv)
 ##}
 
 /**
- ** grvd_support - Support routine for get_rvd_servers query
+ ** followup_grvd - Support routine for get_rvd_servers query
  **
  ** Inputs:
  **    q     - grvd query structure
@@ -844,7 +922,7 @@ delete_list_members(q, argv)
  **
  **/
 
-grvd_support(q, sq, v, action, actarg)
+followup_grvd(q, sq, v, action, actarg)
     struct query *q;
     struct save_queue *sq;
     struct validate *v;
@@ -882,7 +960,7 @@ grvd_support(q, sq, v, action, actarg)
     return(SMS_SUCCESS);
 ##}
 
-gars_support(q, sq, v, action, actarg)
+followup_gars(q, sq, v, action, actarg)
     struct query *q;
     struct save_queue *sq;
     struct validate *v;
@@ -1235,13 +1313,18 @@ add_user_group(q, argv)
 ##  repeat replace values (value = @list_id) where values.name = "list_id"
 
     /* create the list */
+##  range of tbs is tblstats
 ##  repeat append list (name = @login, #list_id = @list_id, flags = 1,
 ##                      desc = "User Group", acl_id = @list_id,
 ##			expdate = "today" + "5 years", modtime = "now")
+##  repeat replace tbs (modtime = "now", appends = tbs.appends + 1)
+##         where tbs.table = "list"
 
     /* add user to list */
 ##  repeat append members (#list_id = @list_id, member_type = "USER",
 ##			   member_id = @users_id)
+##  repeat replace tbs (modtime = "now", appends = tbs.appends + 1)
+##         where tbs.table = "members"
 
     /* get new gid */
 ##  range of g is groups
@@ -1257,6 +1340,8 @@ add_user_group(q, argv)
     /* add list to group table */
 ##  repeat append groups (#list_id = @list_id, ltid = list.tid, #gid = @gid)
 ##      where list.#list_id = @list_id
+##  repeat replace tbs (modtime = "now", appends = tbs.appends + 1)
+##         where tbs.table = "members"
 
     /* and we're done */
     return(SMS_SUCCESS);
@@ -1363,18 +1448,26 @@ get_groups_of_all_users(q, argv, action, actarg)
 ##  char login[9];
 ##  char group[33];
 ##  char gid[11];
+    char *targv[3];
 ##  int errorno;
+
+    targv[0] = login;
+    targv[1] = group;
+    targv[2] = gid;
 
 ##  range of u is users
 ##  range of l is list
 ##  range of m is members
 ##  range of g is groups
 
-##  repeat retrieve (login = u.#login, group = l.name, gid = g.#gid)
+##  repeat retrieve (login = u.#login, group = l.name, gid = text(g.#gid))
 ##         where m.member_type = "USER" and m.member_id = u.users_id and
 ##               u.status != 0 and m.list_id = g.list_id and
 ##               g.ltid = l.tid
 ##         sort by #login, #group
+##  {
+	 (*action)(3, targv, actarg);
+##  }
 
 ##  inquire_equel (errorno = "errorno")
 

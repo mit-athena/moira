@@ -14,6 +14,7 @@ create index i_mac_name on  machine (name);
 create index i_mac_addr on machine (address);
 create index i_mac_loc on machine (location);
 create index i_mac_snet on machine (snet_id);
+create index i_mac_hwaddr on machine (hwaddr);
 
 create unique index i_hal_name on hostalias  (name);
 create index i_hal_id on hostalias (mach_id);
@@ -69,9 +70,11 @@ create unique index i_zph_class on zephyr  (class);
 
 create unique index i_hac_mid on hostaccess  (mach_id);
 
-create index i_pcp_name on printcap (name);
-create index i_pcp_mach on  printcap (mach_id);
-
-create index i_plad_name on palladium (name);
+create index i_prn_name on printers (name);
+create index i_prn_dname on printers (duplexname);
+create index i_prn_mach on printers (mach_id);
+create index i_prn_rm on printers (rm);
+create index i_prn_loc on printers (location);
+create index i_prn_con on printers (contact);
 
 create index i_cap_tag on capacls (tag);

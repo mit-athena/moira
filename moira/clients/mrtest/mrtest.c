@@ -1,4 +1,4 @@
-/* $Id: mrtest.c,v 1.42 1998-12-29 02:11:27 danw Exp $
+/* $Id: mrtest.c,v 1.43 1999-04-06 21:39:15 danw Exp $
  *
  * Bare-bones Moira client
  *
@@ -24,7 +24,7 @@
 #include "history.h"
 #endif
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v 1.42 1998-12-29 02:11:27 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v 1.43 1999-04-06 21:39:15 danw Exp $");
 
 int recursion = 0, quote_output = 0, interactive;
 int count, quit = 0, cancel = 0;
@@ -37,7 +37,7 @@ void discard_input(void);
 char *mr_gets(char *prompt, char *buf, size_t len);
 void execute_line(char *cmdbuf);
 int parse(char *buf, char *argv[MAXARGS]);
-int print_reply(int argc, char **argv, void *hint);
+int print_reply(int argc, char **argv, void *help);
 void test_noop(void);
 void test_connect(int argc, char **argv);
 void test_disconnect(void);
@@ -381,14 +381,14 @@ void test_script(int argc, char *argv[])
     }
 }
 
-int print_reply(int argc, char **argv, void *hint)
+int print_reply(int argc, char **argv, void *help)
 {
   int i;
   for (i = 0; i < argc; i++)
     {
       if (i != 0)
 	printf(", ");
-      if (quote_output)
+      if (quote_output && !*(int *)help)
 	{
 	  unsigned char *p;
 
@@ -410,7 +410,7 @@ int print_reply(int argc, char **argv, void *hint)
 
 void test_query(int argc, char **argv)
 {
-  int status;
+  int status, help = !strcmp(argv[1], "_help");
   sigset_t sigs;
 
   if (argc < 2)
@@ -425,7 +425,7 @@ void test_query(int argc, char **argv)
   sigemptyset(&sigs);
   sigaddset(&sigs, SIGINT);
   sigprocmask(SIG_BLOCK, &sigs, NULL);
-  status = mr_query(argv[1], argc - 2, argv + 2, print_reply, NULL);
+  status = mr_query(argv[1], argc - 2, argv + 2, print_reply, &help);
   sigprocmask(SIG_UNBLOCK, &sigs, NULL);
   printf("%d tuple%s\n", count, ((count == 1) ? "" : "s"));
   if (status)

@@ -1,0 +1,74 @@
+.TH BLANCHE 1 "14 Sep 1988" "Project Athena"
+\" RCSID: $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/man/blanche.1,v 1.1 1988-09-15 12:32:36 mar Exp $
+.SH NAME
+blanche \- examine and modify memberships in SMS lists
+.SH SYNOPSIS
+.B blanche [options] listname [options]
+.SH DESCRIPTION
+.I Blanche
+is a tool for maintaining the membership of SMS lists.  It is more
+limited than the menu-oriented listmaint, but has a more traditional
+unix user interface which makes it easier to use in scripts.  It can
+also read a set of list members from a file and synchronize the list
+in SMS to that file.
+
+Whenever a member is specified, it may be specified explicitly, as
+user:username, list:listname, or string:string_text; or the type may
+be left off if the member name is non ambiguous.  A member having
+punctuation characters (such as at-sign) in it is immediately assumed
+to be a string.  Otherwise,
+.B blanche
+will try first as a user, and if that fails will try the member as a
+list, and finally fall back to string if both of those fail.
+
+The default output mode is similar, in that usernames are displayed
+without any identifying type, lists are always displayed as
+list:listname, and strings will only be labeled as a string if they do
+not have any punctuation characters in them.
+.SH OPTIONS
+.IP \fB-add\ \fImember\ \fRor\ \fB-a\ \fImember\fR:
+This will add the specified member to the target list.  This option
+may be specified multiple times with different members on the same
+command line.
+.IP \fB-delete\ \fImember\ \fRor\ \fB-d\ \fImember\fR:
+This will delete the specified member from the target list.  This
+option may be specified multiple times with different members on the
+same command line.
+.IP \fB-file\ \fIfilename\ \fRor\ \fB-f\ \fIfilename\fR:
+This will read a list of members from the named file, and make those
+members be the membership of the target list.  It will do this by
+extracting the current membership of the target list from SMS, then
+diff these two sets of members, and determine who has to be added and
+deleted from the list so it will match the contents of the file.
+
+The file contains one member per line.  It may have blank lines.
+Anything following a semicolon is considered a comment.  If the 
+.I filename
+is "-",
+.B blanche
+will read from standard input.
+.IP \fB-info\ \fRor\ \fB-i\fR:
+Display other information about the target list besides the
+membership.  This includes the description, flags, maillist and group
+status, owner, and last modification.
+.IP \fB-members\ \fRor\ \fB-m\fR:
+Display the membership of the target list.  This is the default if no
+other options are specified.
+.IP \fB-recursive\ \fRor\ \fB-r\fR:
+When displaying the membership of the target list, recursively track
+down all lists which are members of the target, and get their
+membership.  Only the user and string members will be displayed, not
+the intermediate lists.
+.IP \fB-verbose\ \fRor\ \fB-v\fR:
+Give more information.  With the info flag, it will also display the
+number of members on the list.  With the members flag, it will display
+the type of each member, not just those that are ambiguous.  When
+changing the membership of a list, it will print a message for each
+member added or deleted.
+.IP \fB-debug\ \fRor\ \fB-D\fR:
+Turn on debugging messages.
+
+.SH AUTHORS
+Mark Rosenstein and Jay Berkenbilt.
+.SH SEE ALSO
+listmaint(1)

@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/hesiod.qc,v 1.8 1988-08-30 15:12:25 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/hesiod.qc,v 1.9 1988-09-06 14:51:16 mar Exp $
  *
  * This generates the zone files necessary to load a hesiod server.
  * The following zones are generated: passwd, uid, pobox, group,
@@ -609,9 +609,11 @@ do_cluster()
 ##  range of c is cluster
 ##  begin transaction
 ##  retrieve (maxclu = max(c.clu_id))
+    maxclu++;
     setsize = howmany(maxclu, NSETBITS);
 ##  range of m is machine
 ##  retrieve (maxmach = max(m.mach_id))
+    maxmach++;
     machs = (set_mask **)malloc((maxmach + 1) * sizeof(set_mask **));
     bzero(machs, (maxmach + 1) * sizeof(int));
 

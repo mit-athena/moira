@@ -1,5 +1,5 @@
 #	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/db2bkup.awk,v $
-#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/db2bkup.awk,v 1.8 1997-02-04 22:53:41 danw Exp $
+#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/db2bkup.awk,v 1.9 1997-02-06 08:13:17 danw Exp $
 #
 #	This converts the file used to originally create the database
 #	into a program to back it up.
@@ -47,6 +47,7 @@ NF>=2 {
 		printf "\tchar\tt_%s[%d];\n", vname[count], temp2[1]+1;
 		if ($1 == "signature") {
 			vtype[count]="bin";
+			printf "\tEXEC SQL VAR t_signature IS STRING(%d);\n", temp2[1]+1;
 		} else {
 			vtype[count]="str";
 		}

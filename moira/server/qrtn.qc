@@ -58,32 +58,35 @@ sms_process_query(name, argc, argv_ro, action, actarg)
 	case RETRIEVE:
 		if (q->qual) {
 			build_qual(q->qual, q->argc, Argv, qual);
-			do_retrieve_with_qual(q, qual, action);
+			do_retrieve_with_qual(q, qual, action, actarg);
 		} else
-			do_retrieve(q, action);
+			do_retrieve(q, action, actarg);
 		break;
 
 	case UPDATE:
 		if (q->support_rtn) {
-			if ((*q->support_rtn)(Argv, action) == -1) break;
+			if ((*q->support_rtn)(Argv, action, actarg) == -1) 
+			  break;
 		}
 		build_qual(q->qual, q->argc, &Argv[q->sargc], qual);
-		do_update(q, &Argv[q->sargc + q->argc], qual, action);
+		do_update(q, &Argv[q->sargc + q->argc], qual, action, actarg);
 		break;
 
 	case APPEND:
 		if (q->support_rtn) {
-			if ((*q->support_rtn)(Argv, action) == -1) break;
+			if ((*q->support_rtn)(Argv, action, actarg) == -1) 
+			  break;
 		}
-		do_append(q, &Argv[q->sargc + q->argc], action);
+		do_append(q, &Argv[q->sargc + q->argc], action, actarg);
 		break;
 
 	case DELETE:
 		if (q->support_rtn) {
-			if ((*q->support_rtn)(Argv, action) == -1) break;
+			if ((*q->support_rtn)(Argv, action, actarg) == -1) 
+			  break;
 		}
 		build_qual(q->qual, q->argc, &Argv[q->sargc], qual);
-		do_delete(q, qual, action);
+		do_delete(q, qual, action, actarg);
 		break;
 	}
 }
@@ -117,9 +120,10 @@ build_qual(fmt, argc, argv, qual)
 	}
 }
 
-do_retrieve(q, action)
+do_retrieve(q, action, actarg)
 	register struct query *q;
 	int (*action)();
+        char *actarg;
 ## {
 ##	char *rvar;
 ##	char *rtable;
@@ -139,24 +143,25 @@ do_retrieve(q, action)
 		       /* save result */
 		       (*q->support_rtn)(q->vcnt, q->vaddr, 0, 0); 
 	       else
-		       (*action)(q->vcnt, q->vaddr, &q->vnames[q->argc]);
+		       (*action)(q->vcnt, q->vaddr, actarg);
 ## 	}
 
 ## 	inquire_equel (rowcount = "rowcount")
 
 	if (q->support_rtn) {
 		/* process and send saved results */
-		(*q->support_rtn)(0, 0, &q->vnames[q->argc], action);
+		(*q->support_rtn)(0, 0, &q->vnames[q->argc], action, actarg);
 	}
 
 	sprintf(status, "(%d row%s)", rowcount, (rowcount == 1)? "" : "s");
-	(*action)(1, &sp, 0);
+	(*action)(1, &sp, actarg);
 ## }
 
-do_retrieve_with_qual(q, qual, action)
+do_retrieve_with_qual(q, qual, action, actarg)
 	register struct query *q;
 	char *qual;
 	int (*action)();
+        char *actarg;
 ## {
 ##	char *rvar;
 ##	char *rtable;
@@ -178,24 +183,25 @@ do_retrieve_with_qual(q, qual, action)
 		if (q->support_rtn)
 			(*q->support_rtn)(q->vcnt, q->vaddr, 0, 0);
 		else
-			(*action)(q->vcnt, q->vaddr, &q->vnames[q->argc]);
+			(*action)(q->vcnt, q->vaddr, actarg);
 ##    	}
 
 ##    	inquire_equel (rowcount = "rowcount")
 
 	if (q->support_rtn) {
-		(*q->support_rtn)(0, 0, &q->vnames[q->argc], action);
+		(*q->support_rtn)(0, 0, &q->vnames[q->argc], action, actarg);
 	}
 
 	sprintf(status, "(%d row%s)", rowcount, (rowcount == 1)? "" : "s");
-	(*action)(1, &sp, 0);
+	(*action)(1, &sp, actarg);
 ## }
 
-do_update(q, argv, qual, action)
+do_update(q, argv, qual, action, actarg)
 	register struct query *q;
 	char *argv[];
 	char *qual;
 	int (*action)();
+        char *actarg;
 ## {
 ##    char *rvar;
 ##    char *rtable;
@@ -214,13 +220,14 @@ do_update(q, argv, qual, action)
 
 ##    	inquire_equel (rowcount = "rowcount")
 	sprintf(status, "(%d row%s)", rowcount, (rowcount == 1)? "" : "s");
-	(*action)(1, &sp, 0);
+	(*action)(1, &sp, actarg);
 ## }
 
-do_append(q, argv, action)
+do_append(q, argv, action, actarg)
 	register struct query *q;
 	char *argv[];
 	int (*action)();
+        char *actarg;
 ## {
 ##    	char *rvar;
 ##	char *rtable;
@@ -236,13 +243,14 @@ do_append(q, argv, action)
 
 ##      inquire_equel (rowcount = "rowcount")
 	sprintf(status, "(%d row%s)", rowcount, (rowcount == 1)? "" : "s");
-	(*action)(1, &sp, 0);
+	(*action)(1, &sp, actarg);
 ## }
 
-do_delete(q, qual, action)
+do_delete(q, qual, action, actarg)
 	register struct query *q;
 	char *qual;
 	int (*action)();
+        char *actarg;
 ## {
 ##      char *rvar;
 ##      char *rtable;
@@ -260,14 +268,15 @@ do_delete(q, qual, action)
 
 ##      inquire_equel (rowcount = "rowcount")
 	sprintf(status, "(%d row%s)", rowcount, (rowcount == 1)? "" : "s");
-	(*action)(1, &sp, 0);
+	(*action)(1, &sp, actarg);
 ## }
 
 /* Support Queries */
 
-support_alis(argv, action)
+support_alis(argv, action, actarg)
 	char *argv[];
 	int (*action)();
+        char *actarg;
 ## {
 ##	static int list_id;
 
@@ -294,9 +303,10 @@ support_alis(argv, action)
  ** argv[3]   Member Name
  **/
 
-support_member(argv, action)
+support_member(argv, action, actarg)
 	char *argv[];
 	int (*action)();
+        char *actarg;
 ## {
 ##    char *list_name;
 ##    char *list_type;
@@ -325,7 +335,7 @@ support_member(argv, action)
 ##	  inquire_equel (rowcount = "rowcount")
 	  if (rowcount == 0) {
 	      sprintf(errmsg, "(No such list: %s)", member_name);
-	      (*action)(1, p_errmsg, 0);
+	      (*action)(1, p_errmsg, actarg);
 	      return(-1);
 	    }
 	} else if (!strcmp(member_type, "user")) {
@@ -334,7 +344,7 @@ support_member(argv, action)
 ##	  inquire_equel (rowcount = "rowcount")
 	  if (rowcount == 0) {
 	      sprintf(errmsg, "(No such user: %s)", member_name);
-	      (*action)(1, p_errmsg, 0);
+	      (*action)(1, p_errmsg, actarg);
 	      return(-1);
 	    }
 	} else if (!strcmp(member_type, "string")) {
@@ -350,7 +360,7 @@ support_member(argv, action)
 	    }
 	} else {
 	  sprintf(errmsg, "(Unknown member type: %s)", member_type);
-	  (*action)(1, p_errmsg, 0);
+	  (*action)(1, p_errmsg, actarg);
 	  return(-1);
 	}
 
@@ -373,11 +383,12 @@ support_member(argv, action)
  **     routine.
  **/
 
-support_gmol(argc, argv, vnames, action)
+support_gmol(argc, argv, vnames, action, actarg)
 	int argc;
 	char *argv[];
 	char *vnames[];
 	int (*action)();
+        char *actarg;
 ## {
 ##      char *member_type;
 ##      int member_id;
@@ -425,7 +436,8 @@ support_gmol(argc, argv, vnames, action)
 ##			where l.id = @member_id
 	        } else if (!strcmp(member_type, "user")) {
 ##	      		range of u is users
-##	      		repeat retrieve (member_name = u.login) where u.id = @member_id
+##	      		repeat retrieve (member_name = u.login) 
+##				where u.id = @member_id
 		} else if (!strcmp(member_type, "string")) {
 ##	      		range of s is strings
 ##	      		repeat retrieve (member_name = s.string)
@@ -434,7 +446,7 @@ support_gmol(argc, argv, vnames, action)
 			sprintf(member_name, "%d", member_id);
 		}
 
-		(*action)(3, nargv, vnames);
+		(*action)(3, nargv, vnames, actarg);
 		free(sargv[0]);
 		free(sargv[1]);
 		free(sargv[2]);

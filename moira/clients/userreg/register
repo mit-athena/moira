@@ -1,7 +1,36 @@
 #!/bin/csh -f 
+set path=( /mit/register/@sys $path )
+if ( `machtype`x != sun4x ) then
+	stty dec
+endif
+
 reset
+setenv SHELL csh
+
+if ( ${?TERM} == 0 ) then
+	setenv TERM network
+endif
+
+if ( ( ${TERM}x == networkx ) || ( ${TERM}x == switchx ) ) then
+	set noglob; eval `tset -s -I -Q ?vt100` || unset noglob
+else
+	set noglob; eval `tset -s -I -Q` || unset noglob
+endif
+
 while (1)
-	/mit/register/userreg.`/bin/athena/machtype`
+	clear
+	if ( $status ) then
+		echo "Unknown (or not powerful enough) terminal type."
+		set noglob; eval `tset -s -I -Q ?vt100` || unset noglob
+	else
+		break
+	endif
+end
+
+cd /mit/register
+
+while (1)
+	/mit/register/@sys/userreg
 	reset
 	echo -n "Do you want to register another user? "
 	set answer = $<

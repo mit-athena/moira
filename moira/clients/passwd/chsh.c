@@ -3,13 +3,13 @@
  * and distribution information, see the file "mit-copyright.h". 
  *
  * $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chsh.c,v $
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chsh.c,v 1.1 1988-12-20 22:38:16 qjb Exp $
- * $Author: qjb $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chsh.c,v 1.2 1988-12-26 14:19:55 mar Exp $
+ * $Author: mar $
  *
  */
 
 #ifndef lint
-static char *rcsid_chsh_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chsh.c,v 1.1 1988-12-20 22:38:16 qjb Exp $";
+static char *rcsid_chsh_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chsh.c,v 1.2 1988-12-26 14:19:55 mar Exp $";
 #endif not lint
 
 /*
@@ -156,7 +156,8 @@ chsh(uname)
     while (!got_one)
     {
 	printf("New shell: ");
-	(void) fgets(shell, sizeof(shell), stdin);
+	if (fgets(shell, sizeof(shell), stdin) == NULL)
+	  leave(0);
 	got_one = (strlen(shell) > 1);
     }
 

@@ -1,4 +1,4 @@
-/* $Id: mrclient.h,v 1.2 1999-12-30 17:29:54 danw Exp $
+/* $Id: mrclient.h,v 1.3 2000-03-29 20:49:35 zacheiss Exp $
  *
  * Copyright (C) 1999 by the Massachusetts Institute of Technology
  *
@@ -16,6 +16,7 @@
 
 int mrcl_connect(char *server, char *client, int version, int auth);
 char *mrcl_krb_user(void);
+char *partial_canonicalize_hostname(char *s);
 
 int mrcl_validate_pobox_smtp(char *user, char *address, char **ret);
 

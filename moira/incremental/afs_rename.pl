@@ -55,14 +55,20 @@ if ($oldtype eq "ERR") {
 $newvname = "X" . $newvname if ($newtype eq "ERR");
 $newvname =~ s/[^-A-Za-z0-9_.]//g;	# strip out illegal characters
 
-&run("$fs rmm $oldpath");
 &run("$vos rename $oldvname $newvname -cell $newcell")
     if ($oldvname ne $newvname);
 &run("$vos remove $oldbackup $oldvname.backup -cell $oldcell")
     if ($oldbackup && $newvname =~ /^n\./);
-&run("$fs mkm $newpath $newvname")
-    if ($newtype eq "AFS");
-&release_parent($newpath);
+
+if ($oldtype eq "AFS") {
+    &run("$fs rmm $oldpath");
+    &release_parent($oldpath)
+	if ($newtype ne "AFS" || $oldpath ne $newpath);
+}
+if ($newtype eq "AFS") {
+    &run("$fs mkm $newpath $newvname");
+    &release_parent($newpath);
+}
 
 exit;
 

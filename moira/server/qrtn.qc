@@ -1,11 +1,19 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v $
  *	$Author: wesommer $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v 1.11 1987-09-01 16:10:01 wesommer Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v 1.12 1987-09-12 20:42:11 wesommer Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
  *	$Log: not supported by cvs2svn $
+ * Revision 1.12  87/09/12  20:06:46  wesommer
+ * Fix security hole/null dereference bug: if clname is NULL, return
+ * permission denied in get_client.
+ * 
+ * Revision 1.11  87/09/01  16:10:01  wesommer
+ * This change was made by Mike, who didn't feel like checking it in.
+ * Temp hack: ignore instances.
+ * 
  * Revision 1.10  87/08/28  14:57:51  mike
  * Modified sms_query to not enclose RETRIEVE queries in begin/end transaction.
  * This was necessary to allow get_all_poboxes and get_groups_of_all_users
@@ -33,7 +41,7 @@
  */
 
 #ifndef lint
-static char *rcsid_qrtn_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v 1.11 1987-09-01 16:10:01 wesommer Exp $";
+static char *rcsid_qrtn_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v 1.12 1987-09-12 20:42:11 wesommer Exp $";
 #endif lint
 
 #include "query.h"
@@ -484,6 +492,9 @@ get_client(cl, client_type, client_id)
 ##  char *name;
 ##  int rowcount;
 
+    if (cl->clname == NULL)
+	return SMS_PERM;
+    
     /* for now ignore instances */
     krb = &cl->kname;
 

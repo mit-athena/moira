@@ -1,10 +1,11 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/update_test.c,v 1.1 1992-08-25 14:47:13 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/update_test.c,v 1.2 1992-09-22 13:43:51 mar Exp $
  *
  * Test client for update_server protocol.
  * 
  * Reads commands from the command line:
  * test host [commands...]
  *	-s file file	sends file to host
+ *	-S file file	sends encrypted file to host
  *	-i file		sends instruction file to host
  *	-x file		executes instructions
  *	-n		nop
@@ -63,7 +64,14 @@ char **argv;
 	    file = argv[++i];
 	    rfile = argv[++i];
 	    fprintf(stderr, "Sending file %s to %s as %s\n", file, host, rfile);
-	    send_file(file, rfile);
+	    send_file(file, rfile, 0);
+	    break;
+	case 'S':
+	    if (i+2 >= argc) usage();
+	    file = argv[++i];
+	    rfile = argv[++i];
+	    fprintf(stderr, "Sending (encrypted) file %s to %s as %s\n", file, host, rfile);
+	    send_file(file, rfile, 1);
 	    break;
 	case 'i':
 	    if (i+1 >= argc) usage();
@@ -72,7 +80,7 @@ char **argv;
 	    mktemp(buf);
 	    fprintf(stderr, "Sending instructions %s to %s as %s\n",
 		    file, host, buf);
-	    send_file(file, buf);
+	    send_file(file, buf, 0);
 	    break;
 	case 'I':
 	    if (i+2 >= argc) usage();
@@ -81,7 +89,7 @@ char **argv;
 	    strcpy(buf, rfile);
 	    fprintf(stderr, "Sending instructions %s to %s as %s\n",
 		    file, host, buf);
-	    send_file(file, buf);
+	    send_file(file, buf, 0);
 	    break;
 	case 'x':
 	    fprintf(stderr, "Executing instructions %s on %s\n", buf, host);
@@ -111,6 +119,7 @@ usage()
     fprintf(stderr, "Usage: test host [commands...]\n");
     fprintf(stderr, "  Commands are:\n");
     fprintf(stderr, "\t-s srcfile dstfile\tsends file\n");
+    fprintf(stderr, "\t-S srcfile dstfile\tsends encrypted file\n");
     fprintf(stderr, "\t-i srcfile\t\tsends instructions\n");
     fprintf(stderr, "\t-I srcfile dstfile\tsends instructions\n");
     fprintf(stderr, "\t-x\t\texecutes last instructions\n");

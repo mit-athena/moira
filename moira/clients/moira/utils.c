@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v 1.13 1988-10-13 14:19:38 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v 1.14 1988-12-01 14:58:16 mar Exp $";
 #endif lint
 
 /*	This is the file utils.c for the SMS Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v 1.13 1988-10-13 14:19:38 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v 1.14 1988-12-01 14:58:16 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -913,7 +913,7 @@ char *hint;
     status = sms_query(name, argc, argv, proc, hint);
     if (status != SMS_ABORTED && status != SMS_NOT_CONNECTED)
       return(status);
-    status = sms_connect();
+    status = sms_connect(SMS_SERVER);
     if (status) {
 	com_err(whoami, status, " while re-connecting to server");
 	return(SMS_ABORTED);

@@ -1,6 +1,6 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v 1.13 1988-09-12 17:08:48 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v 1.14 1988-12-01 14:55:17 mar Exp $
  */
 
 /*  (c) Copyright 1988 by the Massachusetts Institute of Technology. */
@@ -8,7 +8,7 @@
 /*  <mit-copyright.h>. */
 
 #ifndef lint
-static char rcsid_mailmaint_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v 1.13 1988-09-12 17:08:48 mar Exp $";
+static char rcsid_mailmaint_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v 1.14 1988-12-01 14:55:17 mar Exp $";
 #endif lint
 
 /***********************************************************************/
@@ -26,6 +26,8 @@ static char rcsid_mailmaint_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/
 #include <varargs.h>
 #include <com_err.h>
 #include <ctype.h>
+#include <sms.h>
+#include <sms_app.h>
 #include <mit-copyright.h>
 
 #define STARTCOL 0
@@ -128,7 +130,7 @@ main(argc, argv)
 
     printf("Connecting to database for %s...please hold on.\n", uname);
 
-    status = sms_connect();
+    status = sms_connect(SMS_SERVER);
     if (status) {
 	(void) sprintf(buf, "\nConnection to SMS server failed");
 	goto punt;
@@ -960,15 +962,3 @@ menu_err_hook(who, code, fmt, args)
     (void) putc('\0', &_strbuf);
     Put_message(buf);
 }
-
-
-/*
- * Local Variables:
- * mode: c
- * c-indent-level: 4
- * c-continued-statement-offset: 4
- * c-brace-offset: -4
- * c-argdecl-indent: 4
- * c-label-offset: -4
- * End: 
- */

@@ -13,6 +13,11 @@
  *     These will be passed to the compile along with the contents of the
  *     make variable BOOTSTRAPCFLAGS.
  */
+
+#ifdef sparc
+#define imake_ccflags "-DSYSV"
+#endif
+
 #ifdef hpux
 #define imake_ccflags "-Wc,-Nd4000,-Ns3000 -DSYSV"
 #endif

@@ -1,4 +1,4 @@
-/* $Id: quota.c,v 1.30 1999-04-30 17:41:09 danw Exp $
+/* $Id: quota.c,v 1.31 2003-09-22 20:44:16 zacheiss Exp $
  *
  *	This is the file quota.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -150,6 +150,7 @@ static char **GetQuotaArgs(Bool quota)
 {
   char **args = malloc(MAX_ARGS_SIZE * sizeof(char *));
   int af;
+  char *canon;
 
   if (!args)
     {
@@ -206,6 +207,11 @@ static char **GetQuotaArgs(Bool quota)
 	return NULL;
       if (!ValidName(args[Q_QUOTA]))
 	return NULL;
+      canon = ParseQuotaString(args[Q_QUOTA]);
+      if (!canon)
+	return NULL;
+      free(args[Q_QUOTA]);
+      args[Q_QUOTA] = canon;
     }
   return args;
 }
@@ -362,6 +368,7 @@ static void RealUpdateQuota(char **info)
 {
   int status;
   char temp_buf[BUFSIZ];
+  char *canon;
 
   sprintf(temp_buf, "New quota for filesystem %s (in KB)", info[Q_FILESYS]);
   if (GetValueFromUser(temp_buf, &info[Q_QUOTA]) == SUB_ERROR)
@@ -369,6 +376,12 @@ static void RealUpdateQuota(char **info)
       Put_message("Not changed.");
       return;
     }
+
+  canon = ParseQuotaString(info[Q_QUOTA]);
+  if (!canon)
+    return;
+  free(info[Q_QUOTA]);
+  info[Q_QUOTA] = canon;
 
   if ((status = do_mr_query("update_quota", 4, info,
 			    NULL, NULL)) != MR_SUCCESS)
@@ -474,4 +487,45 @@ int DeleteQuota(int argc, char **argv)
 
   FreeQueue(top);
   return DM_NORMAL;
+}
+
+char *ParseQuotaString(char *quota)
+{
+  char *s, *value;
+  float ngigs, nmegs;
+  int calcvalue;
+
+  s = quota;
+  while (*s && (isdigit(*s) || (*s == '.')))
+    s++;
+
+  /* If we didn't find a unit specifier, just return the old value. */
+  if (!*s)
+    return strdup(quota);
+
+  switch (*s) {
+  case 'm':
+  case 'M':
+    /* value specified in megabytes. */
+    if (!sscanf(quota, "%f2", &nmegs))
+      return strdup(quota);
+    calcvalue = (int)(nmegs * 1000);
+    break;
+  case 'g':
+  case 'G':
+    /* value specified in gigabytes. */
+    if (!sscanf(quota, "%f2", &ngigs))
+      return strdup(quota);
+    calcvalue = (int)(ngigs * 1000 * 1000);
+    break;
+  default:
+    /* Couldn't parse it.  Just return the old value. */
+    return strdup(quota);
+  }
+
+  value = malloc(BUFSIZ);
+  if (!value)
+    return NULL;
+  sprintf(value, "%d", calcvalue);
+  return value;
 }

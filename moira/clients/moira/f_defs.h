@@ -1,4 +1,4 @@
-/* $Id: f_defs.h,v 1.36 2001-09-13 02:31:23 zacheiss Exp $
+/* $Id: f_defs.h,v 1.37 2003-09-22 20:44:16 zacheiss Exp $
  *
  *	This is the file f_defs.h for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -143,6 +143,7 @@ int GetQuotaByFilesys(int argc, char **argv);
 int AddQuota(int argc, char **argv);
 int UpdateQuota(int argc, char **argv);
 int DeleteQuota(int argc, char **argv);
+char *ParseQuotaString(char *quota);
 
 /* user.c */
 

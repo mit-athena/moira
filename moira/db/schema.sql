@@ -44,6 +44,7 @@ create table users
 	sigwho       	INTEGER		DEFAULT 0	NOT NULL,
 	signature    	VARCHAR(68)	DEFAULT CHR(0)	NOT NULL,
 	secure       	INTEGER		DEFAULT 0	NOT NULL,       
+	pin		VARCHAR(10)	DEFAULT CHR(0)	NOT NULL,
 	reservations	VARCHAR(10)	DEFAULT CHR(0)	NOT NULL,
 	flag         	INTEGER		DEFAULT 0	NOT NULL,
 	created		DATE		DEFAULT SYSDATE	NOT NULL,

@@ -1,0 +1,36 @@
+Care and feeding of the SMS server:
+
+There is a log of all SMS server activity to /u1/sms/sms.log; doing a
+"tail -f /u1/sms/sms.log" will let you know what's going on with the
+server right now.
+
+The format of each line of the log file is usually:
+
+{some date} <pid> smsd[#conn-id]: message
+
+where  {some date} is the date at which the message was logged
+<pid> is the process ID of the SMS server
+[#conn-id] is the connection id the server is currently working on, and
+"message" is a message the daemon felt like printing.
+
+You may also see errors of the form
+INGRES ERROR #xxxxx blah blah blah.
+
+If you see one of these, call a guru; they should not happen.
+
+The conn-id field is a serial number for each connection so that you
+can figure out which client requested a particular action logged in
+the log; all connects, disconnects, and requests are logged, as are
+some other things (for debugging purposes).  It starts with zero and
+goes up by one for each new connection.
+
+To stop the daemon, send it a SIGTERM or SIGHUP.
+
+	kill -HUP pid
+
+To restart the daemon, run /u1/sms/bin/startsms.
+
+
+
+
+

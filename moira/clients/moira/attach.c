@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.27 1990-07-14 16:04:04 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.28 1991-01-04 16:50:22 mar Exp $";
 #endif
 
 /*	This is the file attach.c for the MOIRA Client, which allows a nieve
@@ -13,7 +13,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.27 1990-07-14 16:04:04 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.28 1991-01-04 16:50:22 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -103,21 +103,21 @@ char *name;
     case LABEL:
 	if ( (stat = do_mr_query("get_filesys_by_label", 1, &name,
 				  StoreInfo, (char *)&elem)) != 0) {
-	    com_err(program_name, stat, NULL);
+	    com_err(program_name, stat, " in GetFSInfo");
 	    return(NULL);
 	}
 	break;
     case MACHINE:
 	if ( (stat = do_mr_query("get_filesys_by_machine", 1, &name,
 				  StoreInfo, (char *)&elem)) != 0) {
-	    com_err(program_name, stat, NULL);
+	    com_err(program_name, stat, " in GetFSInfo");
 	    return(NULL);
 	}
 	break;
     case GROUP:
 	if ( (stat = do_mr_query("get_filesys_by_group", 1, &name,
 				  StoreInfo, (char *)&elem)) != 0) {
-	    com_err(program_name, stat, NULL);
+	    com_err(program_name, stat, " in GetFSInfo");
 	    return(NULL);
 	}
 	break;
@@ -188,7 +188,7 @@ char ** info;
 	sprintf(print_buf,"%20s Filesystem Group: %s", " ", info[FS_NAME]);
 	Put_message(print_buf);
 
-	sprintf(print_buf,"Comments; %s",info[FS_COMMENTS]);
+	sprintf(print_buf,"Comments: %s",info[FS_COMMENTS]);
 	Put_message(print_buf);
 	sprintf(print_buf, MOD_FORMAT, info[FS_MODBY], info[FS_MODTIME], 
 		info[FS_MODWITH]);
@@ -199,7 +199,7 @@ char ** info;
 	    if (stat == MR_NO_MATCH)
 	      Put_message("    [no members]");
 	    else
-	      com_err(program_name, stat, NULL);
+	      com_err(program_name, stat, " in PrintFSInfo");
 	} else {
 	    fsgCount = 1;
 	    Loop(QueueTop(elem), (void *) PrintFSGMembers);
@@ -214,7 +214,7 @@ char ** info;
 	sprintf(print_buf,"Default Access: %-2s Packname: %-17s Mountpoint %s ",
 		info[FS_ACCESS], info[FS_PACK], info[FS_M_POINT]);
 	Put_message(print_buf);
-	sprintf(print_buf,"Comments; %s",info[FS_COMMENTS]);
+	sprintf(print_buf,"Comments: %s",info[FS_COMMENTS]);
 	Put_message(print_buf);
 	sprintf(print_buf, "User Ownership: %-30s Group Ownership: %s",
 		info[FS_OWNER], info[FS_OWNERS]);
@@ -406,9 +406,14 @@ char ** info;
 Bool junk;
 {
     int stat;
-    char ** args = AskFSInfo(info, TRUE);
+    char ** args;
     extern Menu nfsphys_menu;
 
+    args = AskFSInfo(info, TRUE);
+    if (args == NULL) {
+	Put_message("Aborted.");
+	return;
+    }
     stat = do_mr_query("update_filesys", CountArgs(args), args,
 			NullFunc, NULL);
     switch (stat) {

@@ -1,4 +1,4 @@
-/* $Id: hesiod.pc,v 1.9 1998-08-07 14:18:29 danw Exp $
+/* $Id: hesiod.pc,v 1.10 1999-01-27 19:39:43 danw Exp $
  *
  * This generates the zone files necessary to load a hesiod server.
  * The following zones are generated: passwd, uid, pobox, group,
@@ -23,7 +23,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/hesiod.pc,v 1.9 1998-08-07 14:18:29 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/hesiod.pc,v 1.10 1999-01-27 19:39:43 danw Exp $");
 
 #ifndef HTYPE
 #define HTYPE "TXT"
@@ -86,7 +86,6 @@ int do_groups(void);
 int do_filsys(void);
 int do_cluster(void);
 int do_printcap(void);
-int do_palladium(void);
 int do_sloc(void);
 int do_service(void);
 
@@ -111,7 +110,6 @@ int main(int argc, char **argv)
   changed += do_filsys();
   changed += do_cluster();
   changed += do_printcap();
-  changed += do_palladium();
   changed += do_sloc();
   changed += do_service();
   changed += do_groups();
@@ -902,9 +900,12 @@ int do_printcap(void)
   struct stat sb;
   time_t ftime;
   EXEC SQL BEGIN DECLARE SECTION;
-  char name[PRINTCAP_NAME_SIZE], rp[PRINTCAP_RP_SIZE], sd[PRINTCAP_DIR_SIZE];
+  char name[PRINTERS_NAME_SIZE], duplexname[PRINTERS_DUPLEXNAME_SIZE];
+  char rp[PRINTERS_RP_SIZE], type[PRINTERS_TYPE_SIZE];
+  char duplexrp[PRINTERS_RP_SIZE];
   int flag1, flag2, ka, pc, rm, rq;
   EXEC SQL END DECLARE SECTION;
+  char *rmname, *rqname;
 
   sprintf(outf, "%s/printcap.db", hesiod_dir);
 
@@ -933,26 +934,45 @@ int do_printcap(void)
   get_mach();
 
   EXEC SQL DECLARE p_cursor2 CURSOR FOR
-    SELECT name, rp, dir, mach_id, auth, price, quotaserver
-    FROM printcap;
+    SELECT name, duplexname, type, rp, rm, ka, pc, rq
+    FROM printers;
   EXEC SQL OPEN p_cursor2;
   while (1)
     {
-      EXEC SQL FETCH p_cursor2 INTO :name, :rp, :sd, :rm, :ka, :pc, :rq;
+      EXEC SQL FETCH p_cursor2 INTO :name, :duplexname, :type,
+	:rp, :rm, :ka, :pc, :rq;
       if (sqlca.sqlcode)
 	break;
-      if (!hash_lookup(machines, rm))
+      if (!(rmname = hash_lookup(machines, rm)))
 	continue;
+      rqname = rq ? hash_lookup(machines, rq) : NULL;
       strtrim(name);
       if (!valid(name))
 	continue;
       strtrim(rp);
-      strtrim(sd);
-      fprintf(out, "%s.pcap\t%s %s \"%s:rp=%s:rm=%s:sd=%s:ka#%d:pc#%d",
-	      name, HCLASS, HTYPE, name, rp, (char *)hash_lookup(machines, rm),
-	      sd, ka, pc);
-      if (rq && hash_lookup(machines, rq))
-	fprintf(out, ":rq=%s\"\n", (char *)hash_lookup(machines, rq));
+      fprintf(out, "%s.pcap\t%s %s \"%s:rp=%s:rm=%s:ka#%d:pc#%d",
+	      name, HCLASS, HTYPE, name, rp, rmname, ka, pc);
+      if (rqname)
+	fprintf(out, ":rq=%s\"\n", rqname);
+      else
+	fputs("\"\n", out);
+
+      strtrim(duplexname);
+      if (!valid(duplexname))
+	continue;
+      if (!strcmp(strtrim(type), "ALIAS"))
+	{
+	  EXEC SQL SELECT duplexname INTO :duplexrp
+	    FROM printers WHERE name = :rp;
+	  strtrim(duplexrp);
+	}
+      else
+	strcpy(duplexrp, duplexname);
+      fprintf(out, "%s.pcap\t%s %s \"%s:rp=%s:rm=%s:ka#%d:pc#%d",
+	      duplexname, HCLASS, HTYPE, duplexname, duplexrp,
+	      rmname, ka, pc);
+      if (rqname)
+	fprintf(out, ":rq=%s\"\n", rqname);
       else
 	fputs("\"\n", out);
     }
@@ -963,98 +983,6 @@ int do_printcap(void)
   if (fclose(out))
     {
       fprintf(stderr, "Unsuccessful close of pcap.db\n");
-      exit(MR_CCONFIG);
-    }
-  fix_file(outf);
-  return 1;
-sqlerr:
-  db_error(sqlca.sqlcode);
-  return 0;
-}
-
-
-int do_palladium(void)
-{
-  FILE *out;
-  char outf[MAXPATHLEN], outft[MAXPATHLEN];
-  struct stat sb;
-  time_t ftime;
-  EXEC SQL BEGIN DECLARE SECTION;
-  char name[PALLADIUM_NAME_SIZE], trans[ALIAS_TRANS_SIZE];
-  char aname[ALIAS_NAME_SIZE];
-  int flag, flag1, identifier, rm;
-  EXEC SQL END DECLARE SECTION;
-
-  sprintf(outf, "%s/palladium.db", hesiod_dir);
-
-  if (stat(outf, &sb) == 0)
-    {
-      ftime = sb.st_mtime;
-      if ((ModDiff (&flag, "palladium", ftime)) ||
-	  (ModDiff (&flag1, "alias", ftime)))
-	exit(MR_DATE);
-      if (flag < 0 && flag1 < 0)
-	{
-	  fprintf(stderr, "File palladium.db does not need to be rebuilt.\n");
-	  return 0;
-	}
-    }
-
-  sprintf(outft, "%s~", outf);
-  out = fopen(outft, "w");
-  if (!out)
-    {
-      perror("cannot open palladium.db for write");
-      exit(MR_OCONFIG);
-    }
-
-  fprintf(stderr, "Building palladium.db\n");
-  get_mach();
-
-  EXEC SQL DECLARE p_cursor3 CURSOR FOR
-    SELECT name, identifier, mach_id
-    FROM palladium;
-  EXEC SQL OPEN p_cursor3;
-  while (1)
-    {
-      EXEC SQL FETCH p_cursor3 INTO :name, :identifier, :rm;
-      if (sqlca.sqlcode)
-	break;
-      if (!hash_lookup(machines, rm))
-	break;
-      strtrim(name);
-      if (!valid(name))
-	continue;
-      fprintf(out, "%s.palladium\t%s %s \"%s %d %s interface directory\"\n",
-	      name, HCLASS, HTYPE, (char *)hash_lookup(machines, rm),
-	      identifier, name);
-    }
-  EXEC SQL CLOSE p_cursor3;
-
-  EXEC SQL DECLARE a_cursor2 CURSOR FOR
-    SELECT name, trans
-    FROM alias
-    WHERE type = 'PALLADIUM';
-  EXEC SQL OPEN a_cursor2;
-  while (1)
-    {
-      EXEC SQL FETCH a_cursor2 INTO :aname, :trans;
-      if (sqlca.sqlcode)
-	break;
-      strtrim(aname);
-      if (!valid(aname))
-	continue;
-      strtrim(trans);
-      fprintf(out, "%s.palladium\t%s %s \"%s\"\n",
-	      aname, HCLASS, HTYPE, trans);
-    }
-  EXEC SQL CLOSE a_cursor2;
-
-  EXEC SQL COMMIT;
-
-  if (fclose(out))
-    {
-      fprintf(stderr, "Unsuccessful close of palladium.db\n");
       exit(MR_CCONFIG);
     }
   fix_file(outf);

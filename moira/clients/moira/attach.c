@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.38 1993-10-22 16:11:32 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.39 1994-10-28 16:54:45 jweiss Exp $";
 #endif
 
 /*	This is the file attach.c for the MOIRA Client, which allows a nieve
@@ -12,8 +12,8 @@
  *	By:		Chris D. Peterson
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v $
- *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.38 1993-10-22 16:11:32 mar Exp $
+ *      $Author: jweiss $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.39 1994-10-28 16:54:45 jweiss Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -47,7 +47,7 @@
 					 * ingres' regexp facility. */
 #define NO_MACHINE_BAD	 ("[NONE]")
 
-#define DEFAULT_TYPE     ("NFS")
+#define DEFAULT_TYPE     ("AFS")
 #define DEFAULT_MACHINE  DEFAULT_NONE
 #define DEFAULT_PACK     DEFAULT_NONE
 #define DEFAULT_ACCESS   ("w")

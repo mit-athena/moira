@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menus.c,v 1.25 1993-11-10 15:40:42 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menus.c,v 1.26 1994-06-07 17:55:43 tom Exp $";
 #endif lint
 
 /*	This is the file menus.c for the MOIRA Client, which allows a nieve
@@ -10,8 +10,8 @@
  *	By:		Chris D. Peterson
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menus.c,v $
- *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menus.c,v 1.25 1993-11-10 15:40:42 mar Exp $
+ *      $Author: tom $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menus.c,v 1.26 1994-06-07 17:55:43 tom Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -378,24 +378,24 @@ Menu filesys_menu = {
 Menu subnet_menu = {
   NULLFUNC,
   NULLFUNC,
-  "Subnet Menu",
+  "Network Menu",
   5,
   {
     { ShowSubnetInfo, NULLMENU, 2, {
-      {"show","Get subnet information"},
-      {"name","Subnet's Name: "}
+      {"show","Get network information"},
+      {"name","Network's Name: "}
     } },
     { AddSubnet, NULLMENU, 2, {
-      {"add","Add a new subnet"},
-      {"name","Subnet's Name: "},
+      {"add","Add a new network"},
+      {"name","Network's Name: "},
     } },
     { UpdateSubnet, NULLMENU, 2, {
-      {"update","Update subnet information"},
-      {"name","Subnet's Name: "},
+      {"update","Update network information"},
+      {"name","Network's Name: "},
     } },
     { DeleteSubnet, NULLMENU, 2, {
-      {"delete","Delete this subnet"},
-      {"name","Subnet's Name: "}
+      {"delete","Delete this network"},
+      {"name","Network's Name: "}
     } },
     SIMPLEFUNC("verbose", "Toggle Verbosity of Delete", ToggleVerboseMode)
   }
@@ -440,7 +440,7 @@ Menu machine_menu = {
       {"show","Get machine information"},
       {"name","Machine's Name: "}
     } },
-    { ShowMachineQuery, NULLMENU, 5, {
+    { ShowMachineQuery, NULLMENU, 4, {
 	{"query", "Lookup machines"},
 	{"name", "Machine Name (or leave empty to match any): "},
 	{"address", "Address in dotted notation (or leave empty to match any): "},
@@ -449,7 +449,7 @@ Menu machine_menu = {
     } },
     { AddMachine, NULLMENU, 2, {
       {"add","Add a new machine"},
-      {"name","Machine's Name: "},
+      {"network","Network assignment: "},
     } },
     { UpdateMachine, NULLMENU, 2, {
       {"update","Update machine information"},
@@ -775,12 +775,12 @@ Menu moira_top_menu = {
     SUBMENU("cluster","Cluster Menu",&cluster_menu),
     SUBMENU("filesys","Filesystem Menu", &filesys_menu),
     SUBMENU("list","Lists and Group Menu", &list_menu),
-    SUBMENU("machine","Machine Menu",&machine_menu),
-    SUBMENU("subnet", "Subnet Menu", &subnet_menu),
+    SUBMENU("machine","Machine Menu", &machine_menu),
+    SUBMENU("network", "Network Menu", &subnet_menu),
     SUBMENU("nfs","NFS Physical Menu", &nfsphys_menu),
-    SUBMENU("user","User Menu", &user_menu),
-    SUBMENU("printcap", "Printcap Printer Menu", &printer_menu),
     SUBMENU("palladium", "Palladium Printer Menu", &palladium_menu),
+    SUBMENU("printcap", "Printcap Printer Menu", &printer_menu),
+    SUBMENU("user","User Menu", &user_menu),
     SUBMENU("zephyr", "Zephyr ACLS Menu", &zephyr_menu),
     SUBMENU("dcm", "DCM Menu", &dcm_menu),
     SUBMENU("misc", "Miscellaneous Menu", &misc_menu)

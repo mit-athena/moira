@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.16 1988-07-08 14:03:35 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.17 1988-08-03 19:00:25 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
@@ -15,11 +15,12 @@
  * 
  */
 
-static char *rcsid_sms_main_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.16 1988-07-08 14:03:35 mar Exp $";
+static char *rcsid_sms_main_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.17 1988-08-03 19:00:25 mar Exp $";
 
 #include <strings.h>
 #include <sys/errno.h>
 #include <sys/signal.h>
+#include <sys/wait.h>
 #include "sms_server.h"
 
 extern CONNECTION newconn, listencon;
@@ -50,6 +51,7 @@ extern void do_client();
 extern int sigshut();
 void clist_append();
 void oplist_append();
+void reapchild();
 
 extern time_t now;
 
@@ -429,4 +431,19 @@ oplist_delete(oplp, op)
 		}
 	}
 	abort();
+}
+
+
+void reapchild()
+{
+    union wait status;
+    int pid;
+
+    while ((pid = wait3(&status, WNOHANG, (struct rusage *)0)) > 0) {
+	if  (status.w_termsig == 0 && status.w_retcode == 0)
+	  com_err(whoami, 0, "dcm started successfully");
+	else
+	  com_err(whoami, 0, "%d: startdcm exits with signal %d status %d",
+		  pid, status.w_termsig, status.w_retcode);
+    }
 }

@@ -1,6 +1,6 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v 1.16 1989-06-05 17:32:14 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v 1.17 1989-06-27 11:48:09 mar Exp $
  */
 
 /*  (c) Copyright 1988 by the Massachusetts Institute of Technology. */
@@ -8,7 +8,7 @@
 /*  <mit-copyright.h>. */
 
 #ifndef lint
-static char rcsid_mailmaint_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v 1.16 1989-06-05 17:32:14 mar Exp $";
+static char rcsid_mailmaint_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v 1.17 1989-06-27 11:48:09 mar Exp $";
 #endif lint
 
 /***********************************************************************/
@@ -43,7 +43,12 @@ char *whoami;		/* should not be static, for logging package */
 static int status;
 static int scream();
 extern char *strsave();
-int menu_err_hook();
+#ifdef __STDC__
+void menu_err_hook(const char *who, long code, const char *fmt, va_list args);
+#else
+void menu_err_hook();
+#define const
+#endif
 
 typedef struct list_info {
     int active;
@@ -95,12 +100,13 @@ main(argc, argv)
     char *argv[];
 
 {
-    int (*old_hook)();
+#ifdef __STDC__
+    void (*old_hook)(const char *, long, const char *, va_list);
+#else
+    void (*old_hook)();
+#endif
     int use_menu = 1;
     char buf[BUFSIZ];
-
-    init_sms_err_tbl();
-    init_krb_err_tbl();
 
     if ((whoami = rindex(argv[0], '/')) == NULL)
 	whoami = argv[0];
@@ -809,6 +815,7 @@ scream()
 botch\n");
     sms_disconnect();
     exit(1);
+    return(0);	/* to keep compiler happy */
 }
 
 /****************************************************/
@@ -927,11 +934,11 @@ Prompt(prompt, buf, buflen, crok)
  * curses instead of around it.
  */
 
-int
+void
 menu_err_hook(who, code, fmt, args)
-    char *who;
-    int code;
-    char *fmt;
+    const char *who;
+    long code;
+    const char *fmt;
     va_list args;
 {
     char buf[BUFSIZ], *cp;

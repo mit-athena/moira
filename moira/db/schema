@@ -51,7 +51,7 @@ create table krbmap
 );
 create table machine
 (
-	name		VARCHAR(32) 	NOT NULL WITH DEFAULT,
+	name		VARCHAR(40) 	NOT NULL WITH DEFAULT,
 	mach_id		INTEGER 	NOT NULL WITH DEFAULT,
 	vendor		CHAR(16) 	NOT NULL WITH DEFAULT,
 	model		CHAR(24) 	NOT NULL WITH DEFAULT,
@@ -76,7 +76,7 @@ create table machine
 );
 create table hostalias
 (
-	name		VARCHAR(32) 	NOT NULL WITH DEFAULT,
+	name		VARCHAR(40) 	NOT NULL WITH DEFAULT,
 	mach_id		INTEGER	 	NOT NULL WITH DEFAULT
 );
 create table subnet

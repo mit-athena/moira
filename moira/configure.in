@@ -248,7 +248,7 @@ if test "$oracle" != no; then
 	    SQL_LIBS="-L$oracle/lib -lclntsh -lxa -lsql -lsqlnet -lncr -lsqlnet -lclient -lcommon -lgeneric -lsqlnet -lncr -lsqlnet -lclient -lcommon -lgeneric   -lepc -lnlsrtl3 -lc3v6 -lcore3 -lnlsrtl3 -lcore3 -lnlsrtl3 `cat $oracle/rdbms/lib/sysliblist` -lm -lthread"
 	    ;;
 	*)
-	    SQL_LIBS="-L$oracle/lib -lclntsh -lsql8 -lclient8 -lcommon8 -lgeneric8 -lnls8 -lcore8 `cat $oracle/lib/sysliblist` -lm -lthread"
+	    SQL_LIBS="-L$oracle/lib -lclntsh `cat $oracle/lib/sysliblist` -R$oracle/lib -laio -lm -lthread"
 	    ;;
     esac
     SVRSUBDIRS='$(SVRDIRS)'

@@ -4,13 +4,13 @@
  * Copyright 1988, 1991 by the Massachusetts Institute of Technology. 
  * For copying and distribution information, see the file "mit-copyright.h". 
  *
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrcheck/mrcheck.c,v 1.9 1993-10-22 16:24:20 mar Exp $
- * $Author: mar $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrcheck/mrcheck.c,v 1.10 1997-01-29 23:07:40 danw Exp $
+ * $Author: danw $
  */
 
 #ifndef lint
-static char *rcsid_chsh_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrcheck/mrcheck.c,v 1.9 1993-10-22 16:24:20 mar Exp $";
-#endif	lint
+static char *rcsid_chsh_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrcheck/mrcheck.c,v 1.10 1997-01-29 23:07:40 danw Exp $";
+#endif
 
 #include <stdio.h>
 #include <moira.h>
@@ -39,7 +39,7 @@ struct service {
 char *atot(itime)
 char *itime;
 {
-    int time;
+    time_t time;
     char *ct, *ctime();
 
     time = atoi(itime);

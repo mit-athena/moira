@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v 1.9 1988-09-02 12:37:52 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v 1.10 1988-09-13 15:46:52 mar Exp $";
 #endif lint
 
 /*	This is the file lists.c for the SMS Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v 1.9 1988-09-02 12:37:52 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v 1.10 1988-09-13 15:46:52 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -198,7 +198,7 @@ Bool name;
     GetYesNoValueFromUser("Is this a public list", &info[L_PUBLIC]);
     GetYesNoValueFromUser("Is this a hidden list", &info[L_HIDDEN]);
     GetYesNoValueFromUser("Is this a maillist", &info[L_MAILLIST]);
-    GetYesNoValueFromUser("is this a group", &info[L_GROUP]);
+    GetYesNoValueFromUser("Is this a group", &info[L_GROUP]);
     if (atoi(info[L_GROUP]))
 	GetValueFromUser("What is the GID for this group.", &info[L_GID]);
 
@@ -757,7 +757,7 @@ ListByAdministrator()
 			    BUFSIZ, "user")) )
 	return(DM_NORMAL);
 
-    if ( YesNoQuestion("Do you want a recursive search (y/n)", TRUE) == 1 ) {
+    if ( YesNoQuestion("Do you want a recursive search (y/n)", FALSE) == 1 ) {
 	sprintf(temp_buf, "R%s", buf);	/* "USER" to "RUSER" etc. */
 	type = Strsave(temp_buf);
     }

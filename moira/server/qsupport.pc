@@ -1,4 +1,4 @@
-/* $Id: qsupport.pc,v 2.40 2001-12-14 21:05:35 zacheiss Exp $
+/* $Id: qsupport.pc,v 2.41 2002-03-29 02:24:25 zacheiss Exp $
  *
  * Special query routines
  *
@@ -18,7 +18,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.pc,v 2.40 2001-12-14 21:05:35 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.pc,v 2.41 2002-03-29 02:24:25 zacheiss Exp $");
 
 extern char *whoami, *table_name[];
 extern int dbms_errno, mr_errcode;
@@ -1474,7 +1474,8 @@ int register_user(struct query *q, char **argv, client *cl)
   /* find user */
   EXEC SQL SELECT users_id, status INTO :users_id, :ostatus
     FROM users
-    WHERE unix_uid = :uid AND (status = 0 OR status = 5 OR status = 6);
+    WHERE unix_uid = :uid AND
+    (status = 0 OR status = 5 OR status = 6 OR status = 9);
 
   if (sqlca.sqlerrd[2] == 0)
     return MR_NO_MATCH;
@@ -1510,7 +1511,7 @@ int register_user(struct query *q, char **argv, client *cl)
 	WHERE label = :login || '.po';
       if (dbms_errno)
 	return mr_errcode;
-      if ((ostatus == 0) || (tmp != users_id))
+      if ((ostatus == 0 || ostatus == 9) || (tmp != users_id))
 	return MR_IN_USE;
       else
 	po_exists = 1;
@@ -1657,7 +1658,7 @@ int register_user(struct query *q, char **argv, client *cl)
   sprintf(buffer, "u.users_id = %d", users_id);
   incremental_before(USERS_TABLE, buffer, 0);
   nstatus = 2;
-  if (ostatus == 5 || ostatus == 6)
+  if (ostatus == 5 || ostatus == 6 || ostatus == 9)
     nstatus = 1;
   EXEC SQL UPDATE users SET login = :login, status = :nstatus,
     modtime = SYSDATE, modby = :who, modwith = :entity,

@@ -28,6 +28,14 @@ fi
 chmod 750 in_progress
 if /moira/bin/mrbackup ${BKUPDIRDIR}/in_progress/
 then
+	ftotal=`ls ${BKUPDIRDIR}/in_progress/ | awk '{n++} END {print n}'`
+	fzero=`ls -s ${BKUPDIRDIR}/in_progress/|awk '$1==0{z++} END{print z}'`
+	echo "Dumped $ftotal files, of which $fzero are zero length"
+	if [ "$fzero" -gt 2 ]
+	then
+		echo "Backup was incomplete!"
+		exit 1
+	fi
 	echo "Backup successful"
 else
 	echo "Backup failed!"
@@ -57,8 +65,8 @@ echo
 echo -n "deleting last backup"
 rm -rf stale
 echo "Shipping over the net:"
-rcp -rp ${BKUPDIRDIR}/* oregano:/u1/moira
-rcp -rp ${BKUPDIRDIR}/* nessus:/backup/moira
+rcp -rpx ${BKUPDIRDIR}/* oregano:/u1/moira
+rcp -rpx ${BKUPDIRDIR}/* nessus:/backup/moira
 
 if [ "`/usr/bin/find /moira/critical.log -mtime -1 -print`" = "/moira/critical.log" ]; then
 	(/bin/echo "To: dbadmin";\

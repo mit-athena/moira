@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/dbck.dc,v 1.6 1996-10-24 21:34:42 danw Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/dbck.dc,v 1.7 1997-01-20 18:20:11 danw Exp $
  *
  * Moira database consistency checker
  *
@@ -13,9 +13,9 @@
 #include <signal.h>
 #include "dbck.h"
 EXEC SQL INCLUDE sqlca;
+EXEC SQL INCLUDE sqlda;
 
-
-static char dbck_qc_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/dbck.dc,v 1.6 1996-10-24 21:34:42 danw Exp $";
+static char dbck_qc_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/dbck.dc,v 1.7 1997-01-20 18:20:11 danw Exp $";
 
 
 int debug = 0;
@@ -29,7 +29,8 @@ EXEC SQL BEGIN DECLARE SECTION;
 int dcmenable;
 EXEC SQL END DECLARE SECTION; 
 struct save_queue *modtables, *sq_create();
-int interrupt();
+void interrupt();
+SQLDA *mr_sqlda;
 
 
 main(argc, argv)
@@ -44,6 +45,7 @@ EXEC SQL END DECLARE SECTION;
     int countonly = 0;
 
     database = "moira";
+    setvbuf(stdout, NULL, _IOLBF, BUFSIZ);
 
     while (++arg - argv < argc) {
 	if  (**arg == '-')
@@ -93,17 +95,17 @@ EXEC SQL END DECLARE SECTION;
     if (debug)
       printf("Debug level is %d\n", debug);
 
-    setlinebuf(stdout);
-
     signal(SIGHUP, interrupt);
     signal(SIGQUIT, interrupt);
     signal(SIGINT, interrupt);
-    modtables = sq_create();
 
-    IIseterr(ingerr);
+    modtables = sq_create();
+    mr_sqlda = sqlald(1, 255, 0);
+
+    EXEC SQL WHENEVER SQLERROR DO dbmserr();
     printf("Opening database %s...", database);
     fflush(stdout);
-    EXEC SQL CONNECT :database;
+    EXEC SQL CONNECT :database IDENTIFIED BY :database;
     printf("done\n");
     EXEC SQL SELECT value INTO :dcmenable FROM numvalues 
 	WHERE name='dcm_enable'; 
@@ -131,16 +133,17 @@ EXEC SQL END DECLARE SECTION;
     exit(0);
 }
 
-ingerr(num)
-int	*num;
+dbmserr()
 {
 EXEC SQL BEGIN DECLARE SECTION;
     char buf[512];
 EXEC SQL END DECLARE SECTION;
+    int bufsize=256, msglength=0;
 
-    if (*num == 100) return;
-    printf("An ingres error occurred, code %d\n", *num);
-    EXEC SQL INQUIRE_SQL(:buf = errortext);
+    if (sqlca.sqlcode==1403) return;
+    printf("A DBMS error occurred, code %d\n", sqlca.sqlcode);
+    sqlglm(buf, &bufsize, &msglength);
+    buf[msglength]=0;
     printf("%s\n", buf);
     printf("Aborting...\n");
     if (!abort_p) {
@@ -151,13 +154,10 @@ EXEC SQL END DECLARE SECTION;
 }
 
 
-int interrupt()
+void interrupt()
 {
     printf("Signal caught\n");
     if (prompt("Save database changes")) {
-	/* break out of a retrieve loop */
-	IIbreak();
-
 	EXEC SQL COMMIT WORK;
 	cleanup();
 	exit(0);
@@ -165,8 +165,6 @@ int interrupt()
     printf("Aborting transaction\n");
     if (!abort_p) {
 	abort_p++;
-	/* break out of a retrieve loop */
-	IIbreak();
 	EXEC SQL ROLLBACK WORK;
     }
 
@@ -190,7 +188,7 @@ cleanup()
     EXEC SQL END DECLARE SECTION; 
 
     while (sq_get_data(modtables, &tab)) {
-	EXEC SQL REPEATED UPDATE tblstats SET modtime='now'
+	EXEC SQL UPDATE tblstats SET modtime=SYSDATE
 	    WHERE table_name = :tab;
     }
     EXEC SQL UPDATE numvalues SET value = :dcmenable
@@ -203,15 +201,11 @@ char *msg;
 {
     fprintf(stderr, "Out of memory while %s\n", msg);
     if (prompt("Save database changes")) {
-	/* break out of a retrieve loop */
-	IIbreak();
-
 	EXEC SQL COMMIT WORK;
 	cleanup();
 	exit(1);
     }
     printf("Aborting transaction\n");
-    IIbreak();
     EXEC SQL ROLLBACK WORK;
     exit(1);
 }

@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/nhash.c,v 1.1 1996-10-24 21:35:05 danw Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/nhash.c,v 1.2 1997-01-20 18:20:14 danw Exp $
  *
  * Generic hash table routines.  Uses integer keys to store integer values.
  *
@@ -42,7 +42,7 @@ int size;
 	free(h);
 	return((struct int_hash *) NULL);
     }
-    bzero(h->data, size * sizeof(char *));
+    memset(h->data, 0, size * sizeof(char *));
     return(h);
 }
 

@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/dbck.h,v 1.6 1996-10-24 21:34:47 danw Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/dbck.h,v 1.7 1997-01-20 18:20:12 danw Exp $
  *
  * Declarations for Moira database consistancy checker
  *
@@ -83,7 +83,7 @@ struct string {
 
 struct filesys {
     char name[33];
-    char dir[33];
+    char dir[81];
     char type;
     int filsys_id;
     int mach_id;

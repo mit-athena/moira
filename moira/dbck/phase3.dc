@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase3.dc,v 1.3 1996-10-24 21:35:22 danw Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase3.dc,v 1.4 1997-01-20 18:20:22 danw Exp $
  *
  *  (c) Copyright 1988 by the Massachusetts Institute of Technology.
  *  For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
 
 #define NULL 0
 
-static char phase3_qc_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase3.dc,v 1.3 1996-10-24 21:35:22 danw Exp $";
+static char phase3_qc_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase3.dc,v 1.4 1997-01-20 18:20:22 danw Exp $";
 
 
 empty_list_check(id, l, hint)
@@ -78,10 +78,7 @@ phase3()
 	hash_step(lists, empty_list_check, NULL);
     }
 
-    EXEC SQL SET autocommit on;
     dprintf("Checking strings...\n");
     hash_step(strings, unref_string_check, NULL);
-    EXEC SQL SET autocommit off;
-
 }
 

@@ -1,0 +1,295 @@
+/* $Id: print.pc,v 1.1 1999-01-27 19:39:09 danw Exp $
+ *
+ * This generates printcaps and other files for Athena print servers
+ *
+ * Copyright (C) 1992-1998 by the Massachusetts Institute of Technology.
+ * For copying and distribution information, please see the file
+ * <mit-copyright.h>.
+ */
+
+#include <mit-copyright.h>
+#include <moira.h>
+#include <moira_site.h>
+
+#include <sys/stat.h>
+#include <sys/types.h>
+
+#include <ctype.h>
+#include <stdio.h>
+#include <string.h>
+
+#include "util.h"
+
+EXEC SQL INCLUDE sqlca;
+
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/print.pc,v 1.1 1999-01-27 19:39:09 danw Exp $");
+
+char *whoami = "print.gen";
+char *db = "moira/moira";
+
+void do_host(char *host);
+void dump_acl(FILE *out, int id, int realms);
+void sqlerr(void);
+#ifndef MAX
+#define MAX(a, b) ( (a) > (b) ? (a) : (b) )
+#endif
+
+int main(int argc, char **argv)
+{
+  EXEC SQL BEGIN DECLARE SECTION;
+  char name[MACHINE_NAME_SIZE];
+  EXEC SQL END DECLARE SECTION;
+
+  EXEC SQL CONNECT :db;
+
+  EXEC SQL WHENEVER SQLERROR DO sqlerr();
+
+  EXEC SQL DECLARE csr_hosts CURSOR FOR
+    SELECT m.name FROM machine m, serverhosts sh
+    WHERE m.mach_id = sh.mach_id AND sh.service = 'PRINT' AND sh.enable = 1;
+  EXEC SQL OPEN csr_hosts;
+  while (1)
+    {
+      EXEC SQL FETCH csr_hosts INTO :name;
+      if (sqlca.sqlcode)
+	break;
+
+      strtrim(name);
+      do_host(name);
+    }
+  EXEC SQL CLOSE csr_hosts;
+
+  exit(MR_SUCCESS);
+}
+
+void do_host(char *host)
+{
+  EXEC SQL BEGIN DECLARE SECTION;
+  char rp[PRINTERS_RP_SIZE], name[PRINTERS_NAME_SIZE];
+  char duplexname[PRINTERS_DUPLEXNAME_SIZE], location[PRINTERS_LOCATION_SIZE];
+  char hwtype[PRINTERS_HWTYPE_SIZE], hostname[MACHINE_NAME_SIZE];
+  char rm[MACHINE_NAME_SIZE], rq[MACHINE_NAME_SIZE];
+  char modtime[PRINTERS_MODTIME_SIZE], lmodtime[LIST_MODTIME_SIZE];
+  char contact[PRINTERS_CONTACT_SIZE];
+  char *spoolhost = host, *unixtime_fmt = UNIXTIME_FMT;
+  int ka, pc, ac, lpc_acl;
+  EXEC SQL END DECLARE SECTION;
+  TARFILE *tf;
+  FILE *out;
+  char filename[MAXPATHLEN];
+  time_t mtime, lmtime, now = time(NULL);
+
+  sprintf(filename, "%s/print/%s", DCM_DIR, host);
+  tf = tarfile_open(filename);
+
+  out = tarfile_start(tf, "/etc/printcap.moira", 0644, 0, 0,
+		      "root", "root", now);
+
+  EXEC SQL DECLARE csr_printcap CURSOR FOR
+    SELECT pr.rp, pr.name, pr.duplexname, pr.hwtype,
+    m.name, mrm.name, mrq.name, pr.ka, pr.pc, pr.ac,
+    pr.location, pr.contact
+    FROM printers pr, machine m, machine mrm, machine mrq
+    WHERE m.mach_id = pr.mach_id AND mrq.mach_id = pr.rq
+    AND mrm.mach_id = pr.rm AND mrm.name = :spoolhost
+    AND pr.type != 'ALIAS';
+  EXEC SQL OPEN csr_printcap;
+  while (1)
+    {
+      EXEC SQL FETCH csr_printcap INTO :rp, :name, :duplexname,
+	:hwtype, :hostname, :rm, :rq, :ka, :pc, :ac, :location, :contact;
+      if (sqlca.sqlcode)
+	break;
+
+      strtrim(rp);
+      strtrim(name);
+      strtrim(duplexname);
+      strtrim(hwtype);
+      strtrim(hostname);
+      strtrim(rm);
+      strtrim(rq);
+      strtrim(location);
+      strtrim(contact);
+
+      if (location[0])
+	fprintf(out, "# %s: %s\n", name, location);
+      else
+	fprintf(out, "# %s\n", name);
+      if (strcmp(location, contact))
+	fprintf(out, "# contact: %s\n", contact);
+
+      fprintf(out, "%s|%s %s", rp, location, hwtype);
+      if (*duplexname)
+	fprintf(out, "|%s", duplexname);
+      fprintf(out, ":\\\n\t:lp=/dev/null:rp=%s:rm=%s:\\\n"
+	      "\t:sd=/var/spool/printer/%s:\\\n"
+	      "\t:lf=/var/spool/printer/%s/%s-log:\\\n"
+	      "\t:af=/var/spool/printer/%s/%s-acct:\\\n"
+	      "\t:ka#%d:pc#%d:\\\n",
+	      !strcmp(hwtype, "LPR") ? "raw" : rp,
+	      !strcmp(hwtype, "HP") ? rm : hostname,
+	      rp, rp, rp, rp, rp, ka, pc);
+      if (strcmp(rq, "[NONE]"))
+	fprintf(out, "\t:rq=%s:\\\n", rq);
+      if (ac)
+	fprintf(out, "\t:ac=/var/spool/printer/%s/restrict.list:pa:\\\n", rp);
+
+      if (!strcmp(hwtype, "HP"))
+	{
+	  fprintf(out, "\t:if=/usr/athena/lib/lpdfilters/hpif:\\\n"
+		  "\t:of=/usr/athena/lib/lpdfilters/hpof:\\\n"
+		  "\t:gf=/usr/athena/lib/lpdfilters/hpgf:\\\n"
+		  "\t:nf=/usr/athena/lib/lpdfilters/hpnf:\\\n"
+		  "\t:tf=/usr/athena/lib/lpdfilters/hptf:\\\n"
+		  "\t:rf=/usr/athena/lib/lpdfilters/hprf:\\\n"
+		  "\t:vf=/usr/athena/lib/lpdfilters/hpvf:\\\n"
+		  "\t:cf=/usr/athena/lib/lpdfilters/hpcf:\\\n"
+		  "\t:df=/usr/athena/lib/lpdfilters/hpdf:\\\n"
+		  "\t:sf:sb:mx#0:\n\n");
+	}
+      else
+	fprintf(out, "\t:mx#0:\n\n");
+    }
+  EXEC SQL CLOSE csr_printcap;
+  tarfile_end(tf);
+
+  EXEC SQL DECLARE csr_spool CURSOR FOR
+    SELECT UNIQUE pr.rp, pr.duplexname, pr.hwtype, m.name, pr.ac,
+    pr.lpc_acl, TO_CHAR(pr.modtime, :unixtime_fmt)
+    FROM printers pr, machine m, machine mrm
+    WHERE m.mach_id = pr.mach_id
+    AND mrm.mach_id = pr.rm AND mrm.name = :spoolhost;
+  EXEC SQL OPEN csr_spool;
+  while (1)
+    {
+      EXEC SQL FETCH csr_spool INTO :name, :duplexname, :hwtype,
+	:hostname, :ac, :lpc_acl, :modtime;
+      if (sqlca.sqlcode)
+	break;
+
+      strtrim(name);
+      strtrim(duplexname);
+      strtrim(hwtype);
+      strtrim(hostname);
+      mtime = unixtime(strtrim(modtime));
+
+      sprintf(filename, "/var/spool/printer/%s", name);
+      tarfile_mkdir(tf, filename, 0755, 1, 1, "daemon", "daemon", mtime);
+
+      /* If spooling to an HP printer, make a .options file. */
+      if (!strcmp(hwtype, "HP"))
+	{
+	  sprintf(filename, "/var/spool/printer/%s/.options", name);
+	  out = tarfile_start(tf, filename, 0755, 1, 1, "daemon", "daemon",
+			      mtime);
+	  fprintf(out, "BANNERFIRST=1\nBANNERLAST=0\nREVERSE=\n"
+		  "DUPLEXING=0\nINTERFACE=0\nNETNAME=%s\nPRINTER=%s\n"
+		  "export BANNERFIRST BANNERLAST REVERSE DUPLEXING\n"
+		  "export PRINTER NETNAME INTERFACE VERBOSELOG\n",
+		  hostname, name);
+	  tarfile_end(tf);
+	}
+
+      /* If we have a duplex name, make a .spooler file. */
+      if (*duplexname)
+	{
+	  sprintf(filename, "/var/spool/printer/%s/.spooler", name);
+	  out = tarfile_start(tf, filename, 0755, 1, 1, "daemon", "daemon",
+			      mtime);
+	  fprintf(out, "%s -F /usr/athena/lib/lpdfilters/duplex2\n",
+		  duplexname);
+	  tarfile_end(tf);
+	}
+
+      /* Access-control list. */
+      if (ac)
+	{
+	  EXEC SQL SELECT TO_CHAR(modtime, :unixtime_fmt) INTO :lmodtime
+	    FROM list WHERE list_id = :ac;
+	  lmtime = unixtime(lmodtime);
+
+	  sprintf(filename, "/var/spool/printer/%s/restrict.list", name);
+	  out = tarfile_start(tf, filename, 0755, 1, 1, "daemon", "daemon",
+			      MAX(mtime, lmtime));
+	  dump_acl(out, ac, 0);
+	  tarfile_end(tf);
+	}
+
+      /* printer-specific lpc access. */
+      if (lpc_acl)
+	{
+	  EXEC SQL SELECT TO_CHAR(modtime, :unixtime_fmt) INTO :lmodtime
+	    FROM list WHERE list_id = :lpc_acl;
+	  lmtime = unixtime(lmodtime);
+
+	  sprintf(filename, "/var/spool/printer/%s/lpcaccess.%s", name, name);
+	  out = tarfile_start(tf, filename, 0755, 1, 1, "daemon", "daemon",
+			      MAX(mtime, lmtime));
+	  fprintf(out, "all:\n");
+	  dump_acl(out, lpc_acl, 1);
+	  tarfile_end(tf);
+	}
+
+      /* Make the next two files with modtime 0 so they won't overwrite
+       * existing ones.
+       */
+      sprintf(filename, "/var/spool/printer/%s/%s-log", name, name);
+      tarfile_start(tf, filename, 0755, 1, 1, "daemon", "daemon", 0);
+      tarfile_end(tf);
+      sprintf(filename, "/var/spool/printer/%s/%s-acct", name, name);
+      tarfile_start(tf, filename, 0755, 1, 1, "daemon", "daemon", 0);
+      tarfile_end(tf);
+    }
+  EXEC SQL CLOSE csr_spool;
+
+  tarfile_close(tf);
+}
+
+void dump_acl(FILE *out, int id, int realms)
+{
+  EXEC SQL BEGIN DECLARE SECTION;
+  int lid = id;
+  char login[USERS_LOGIN_SIZE], princ[STRINGS_STRING_SIZE];
+  EXEC SQL END DECLARE SECTION;
+
+  EXEC SQL DECLARE csr_users CURSOR FOR
+    SELECT u.login FROM users u, imembers im
+    WHERE u.users_id = im.member_id
+    AND im.member_type = 'USER' AND im.list_id = :lid;
+  EXEC SQL OPEN csr_users;
+  while (1)
+    {
+      EXEC SQL FETCH csr_users INTO :login;
+      if (sqlca.sqlcode)
+	break;
+
+      fprintf(out, "%s%s\n", strtrim(login), realms ? "@ATHENA.MIT.EDU" : "");
+    }
+  EXEC SQL CLOSE csr_users;
+
+  EXEC SQL DECLARE csr_krb CURSOR FOR
+    SELECT s.string FROM strings s, imembers im
+    WHERE s.string_id = im.member_id
+    AND im.member_type = 'KERBEROS' AND im.list_id = :lid;
+  EXEC SQL OPEN csr_krb;
+  while (1)
+    {
+      EXEC SQL FETCH csr_krb INTO :princ;
+      if (sqlca.sqlcode)
+	break;
+
+      if (!realms)
+	{
+	  if (strchr(princ, '@'))
+	    *strchr(princ, '@') = '\0';
+	}
+
+      fprintf(out, "%s\n", strtrim(princ));
+    }
+  EXEC SQL CLOSE csr_krb;
+}
+
+void sqlerr(void)
+{
+  db_error(sqlca.sqlcode);
+}

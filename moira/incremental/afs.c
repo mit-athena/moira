@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/afs.c,v 1.3 1989-08-28 15:11:47 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/afs.c,v 1.4 1989-09-04 17:03:47 mar Exp $
  *
  * Do AFS incremental updates
  *
@@ -18,7 +18,6 @@
 
 #define file_exists(file) (access((file), F_OK) == 0)
 
-#define LOCALCELL "sms_test.mit.edu"
 #define PRS	"/u1/sms/bin/prs"
 #define FS	"/u1/sms/bin/fs"
 
@@ -31,6 +30,10 @@ int argc;
 {
     int beforec, afterc;
     char *table, **before, **after;
+#ifdef DEBUG
+    char buf[1024];
+    int i;
+#endif
 
     table = argv[1];
     beforec = atoi(argv[2]);
@@ -38,6 +41,23 @@ int argc;
     afterc = atoi(argv[3]);
     after = &argv[4 + beforec];
     whoami = argv[0];
+
+#ifdef DEBUG
+    sprintf(buf, "%s (", table);
+    for (i = 0; i < beforec; i++) {
+	if (i > 0)
+	  strcat(buf, ",");
+	strcat(buf, before[i]);
+    }
+    strcat(buf, ")->(");
+    for (i = 0; i < afterc; i++) {
+	if (i > 0)
+	  strcat(buf, ",");
+	strcat(buf, after[i]);
+    }
+    strcat(buf, ")\n");
+    write(1,buf,strlen(buf));
+#endif
 
     initialize_sms_error_table();
     initialize_krb_error_table();
@@ -63,10 +83,10 @@ char *cmd;
 {
     char realm[REALM_SZ + 1];
     static int inited = 0;
-    int success = 0, tries = 0;
+    int success = 0, tries = 0, fd, cc;
     CREDENTIALS *c, *get_ticket();
     struct passwd *pw;
-    char buf[128];
+    char buf[128], localcell[128], *p, *index();
 
     while (success == 0 && tries < 3) {
 	if (!inited) {
@@ -74,12 +94,24 @@ char *cmd;
 	      (void) strcpy(realm, KRB_REALM);
 	    sprintf(buf, "/tmp/tkt_%d_afsinc", getpid());
 	    krb_set_tkt_string(buf);
-	    
+
+	    if ((fd = open("/usr/vice/etc/ThisCell", O_RDONLY, 0)) < 0) {
+		critical_alert("incremental", "unable to find AFS cell");
+		exit(1);
+	    }
+	    if ((cc = read(fd, localcell, sizeof(localcell))) < 0) {
+		critical_alert("incremental", "unable to read AFS cell");
+		exit(1);
+	    }
+	    close(fd);
+	    p = index(localcell, '\n');
+	    if (p) *p = 0;
+
 	    if (((pw = getpwnam("smsdba")) == NULL) ||
-		((c = get_ticket("sms", "", realm, LOCALCELL)) == NULL) ||
+		((c = get_ticket("sms", "", realm, localcell)) == NULL) ||
 		(setpag() < 0) ||
 		(setreuid(pw->pw_uid, pw->pw_uid) < 0) ||
-		aklog(c, LOCALCELL)) {
+		aklog(c, localcell)) {
 		com_err(whoami, 0, "failed to authenticate");
 	    } else
 	      inited++;
@@ -114,16 +146,18 @@ int afterc;
       astate = atoi(after[U_STATE]);
     if (beforec > U_STATE)
       bstate = atoi(before[U_STATE]);
+    if (astate == 2) astate = 1;
+    if (bstate == 2) bstate = 1;
 
     if (astate != 1 && bstate != 1)
       return;
     if (astate == 1 && bstate != 1) {
-	sprintf(cmd, "%s newuser -name %s -id %s -cell %s",
-		PRS, after[U_NAME], after[U_UID], LOCALCELL);
+	sprintf(cmd, "%s newuser -name %s -id %s",
+		PRS, after[U_NAME], after[U_UID]);
 	do_cmd(cmd);
 	return;
     } else if (astate != 1 && bstate == 1) {
-	sprintf(cmd, "%s delete %s -cell %s", PRS, before[U_NAME], LOCALCELL);
+	sprintf(cmd, "%s delete %s", PRS, before[U_NAME]);
 	do_cmd(cmd);
 	return;
     }
@@ -136,8 +170,8 @@ int afterc;
 
     if (beforec > U_NAME && afterc > U_NAME &&
 	strcmp(before[U_NAME], after[U_NAME])) {
-	sprintf(cmd, "%s chname -oldname %s -newname %s -cell %s",
-		PRS, before[U_NAME], after[U_NAME], LOCALCELL);
+	sprintf(cmd, "%s chname -oldname %s -newname %s",
+		PRS, before[U_NAME], after[U_NAME]);
 	do_cmd(cmd);
     }
 }
@@ -160,14 +194,14 @@ int afterc;
       agid = atoi(after[L_GID]);
 
     if (bgid == 0 && agid != 0) {
-	sprintf(cmd, "%s create -name system:%s -id %s -cell %s",
-		PRS, after[L_NAME], after[L_GID], LOCALCELL);
+	sprintf(cmd,
+		"%s create -name system:%s -id %s -owner system:administrators",
+		PRS, after[L_NAME], after[L_GID]);
 	do_cmd(cmd);
 	return;
     }
     if (agid == 0 && bgid != 0) {
-	sprintf(cmd, "%s delete -name system:%s -cell %s",
-		PRS, before[L_NAME], LOCALCELL);
+	sprintf(cmd, "%s delete -name system:%s", PRS, before[L_NAME]);
 	do_cmd(cmd);
 	return;
     }
@@ -175,8 +209,8 @@ int afterc;
       return;
     if (strcmp(before[L_NAME], after[L_NAME])) {
 	sprintf(cmd,
-		"%s chname -oldname system:%s -newname system:%s -cell %s",
-		PRS, before[L_NAME], after[L_NAME], LOCALCELL);
+		"%s chname -oldname system:%s -newname system:%s",
+		PRS, before[L_NAME], after[L_NAME]);
 	do_cmd(cmd);
 	return;
     }
@@ -192,14 +226,14 @@ int afterc;
     char cmd[512];
 
     if (beforec == 0 && !strcmp(after[LM_TYPE], "USER")) {
-	sprintf(cmd, "%s add -user %s -group system:%s -cell %s",
-		PRS, after[LM_MEMBER], after[LM_LIST], LOCALCELL);
+	sprintf(cmd, "%s add -user %s -group system:%s",
+		PRS, after[LM_MEMBER], after[LM_LIST]);
 	do_cmd(cmd);
 	return;
     }
     if (afterc == 0 && !strcmp(before[LM_TYPE], "USER")) {
-	sprintf(cmd, "%s remove -user %s -group system:%s -cell %s",
-		PRS, before[LM_MEMBER], before[LM_LIST], LOCALCELL);
+	sprintf(cmd, "%s remove -user %s -group system:%s",
+		PRS, before[LM_MEMBER], before[LM_LIST]);
 	do_cmd(cmd);
 	return;
     }

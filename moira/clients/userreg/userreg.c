@@ -2,7 +2,7 @@
  * $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.c,v $
  * $Author: mar $
  * $Locker:  $
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.c,v 1.22 1991-05-13 12:46:25 mar Exp $ 
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.c,v 1.23 1991-07-26 14:51:41 mar Exp $ 
  *
  *  (c) Copyright 1988 by the Massachusetts Institute of Technology.
  *  For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char    *rcsid_userreg_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.c,v 1.22 1991-05-13 12:46:25 mar Exp $";
+static char    *rcsid_userreg_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.c,v 1.23 1991-07-26 14:51:41 mar Exp $";
 #endif	lint
 
 #include <mit-copyright.h>
@@ -20,9 +20,17 @@ static char    *rcsid_userreg_c = "$Header: /afs/.athena.mit.edu/astaff/project/
 #include <setjmp.h>
 #include <ctype.h>
 #include <krb.h>
+#include <des.h>
+#include <kadm.h>
+#include <kadm_err.h>
 #include <errno.h>
 #include "userreg.h"
 #include "ureg_err.h"
+
+/* 7.2 release compatibility */
+#ifndef KADM_INSECURE_PW
+#define KADM_INSECURE_PW	(-1783126240L)
+#endif
 
 #define EXIT -1
 
@@ -30,7 +38,7 @@ static char    *rcsid_userreg_c = "$Header: /afs/.athena.mit.edu/astaff/project/
 struct user     user, db_user;
 struct alias    alias;
 char            typed_mit_id[100];
-
+char		realm[REALM_SZ];
 jmp_buf         redo;
 int             restart();
 
@@ -77,6 +85,12 @@ main(argc, argv)
 	    exit(0);
 	}
 
+	/* stash the realm for later use */
+	if ((status = krb_get_lrealm(realm, 1)) != KSUCCESS) {
+	    printf("System error; please try another workstation.");
+	    exit(1);
+	}
+
 	setup_display();
 
 	signal(SIGINT, fix_display);
@@ -88,7 +102,7 @@ main(argc, argv)
 		reset();
 		ntimes = 0;
 
-		display_text(WELCOME);
+		display_text(WELCOME, "");
 
 		gfirst();
 		gmi();
@@ -177,19 +191,22 @@ main(argc, argv)
 			continue;
 		}
 		sleep(1);
-		display_text_line(0);
 		if (!enrollment)
-		  display_text_line("You are now registered to get an Athena account.");
-		sprintf(line, "Please remember your username of \"%s\" and the password",
-			user.u_login);
-		display_text_line(line);
-		display_text_line("you typed in earlier.");
-		display_text_line("");
-		if (!enrollment)
-		  display_text_line("Your account should be created by tomorrow\n");
-		
-		display_text_line("");
-		display_text_line("You are now finished. Thank you!");
+		  display_text(FINISHED, user.u_login);
+		else {
+		    display_text(FINISHEDE, user.u_login);
+		    if (askyn("Do you wish to set your mailbox now? (Yes or No) ")) {
+			clear();
+			refresh();
+			noraw();
+			echo();
+			kinit(user.u_login, user.u_password);
+			system(NAMESPACE_PROG);
+			dest_tkt();
+			qexit();
+			exit(0);
+		    }
+		}
 		wait_for_user();
 		qexit();
 		break;
@@ -270,12 +287,12 @@ dolook()
 		wait_for_user();
 		return (0);
 	case UREG_DELETED:
-		display_text(DELETED_ACCT);
+		display_text(DELETED_ACCT, db_user.u_login);
 		wait_for_user();
 		restore_display();
 		exit(0);
 	case UREG_NOT_ALLOWED:
-		display_text(OFFER_ENROLL);
+		display_text(OFFER_ENROLL, db_user.u_login);
 		redisp();
 		if (!askyn("Continue choosing a name and password (Y/N)? ")) {
 		    already_registered = 1;
@@ -286,12 +303,12 @@ dolook()
 		enrollment = 1;
 		return(0);
 	case UREG_ENROLL_NOT_ALLOWED:
-		display_text(NOT_ALLOWED);
+		display_text(NOT_ALLOWED, db_user.u_login);
 		wait_for_user();
 		restore_display();
 		exit(0);
 	case UREG_KRB_TAKEN:
-		display_text(IMPROPER_LOGIN);
+		display_text(IMPROPER_LOGIN, db_user.u_login);
 		wait_for_user();
 		return(0);
 	case UREG_USER_NOT_FOUND:
@@ -300,7 +317,7 @@ dolook()
 	case ECONNREFUSED:
 	case ETIMEDOUT:
 	case UREG_MISC_ERROR:
-		display_text(NETWORK_DOWN);
+		display_text(NETWORK_DOWN, db_user.u_login);
 		display_text_line(" ");
 		sprintf(line, "The specific error was: %s",
 			error_message(result));
@@ -317,113 +334,208 @@ dolook()
 	}
 }
 
+
+/* Get a login name from the user and register it.  There are several steps
+ * to this: display help message, get name, check name, display confirmation
+ * message, get confirmation, register name.
+ */
+
 negotiate_login()
 {
-	register int    result;
-	char            line[100];
-	char            old_login[LOGIN_SIZE+2];
-	char		realm[REALM_SZ];
-	int		i;
-	char *cp;
+    int result, i;
+    char line[100], old_login[LOGIN_SIZE+2];
+    char *error, *cp;
 	
-	display_text(USERNAME_BLURB);
-	cp = user.u_login;
-	if (isalpha(user.u_first[0]))
-		*cp++ = user.u_first[0];
-	if (isalpha(user.u_mid_init[0]))
-		*cp++ = user.u_mid_init[0];
+    /* build suggested username */
+    cp = user.u_login;
+    if (isalpha(user.u_first[0]))
+      *cp++ = user.u_first[0];
+    if (isalpha(user.u_mid_init[0]))
+      *cp++ = user.u_mid_init[0];
+    for (i = 0; user.u_last[i] && cp - user.u_login < 8; i++)
+      if (isalpha(user.u_last[i]))
+	*cp++ = user.u_last[i];
+    for (i=0; user.u_login[i]; i++)
+      if (isupper(user.u_login[i]))
+	user.u_login[i]=tolower(user.u_login[i]);
+    strcpy(old_login, user.u_login);
 	
-	for (i = 0; user.u_last[i] && cp - user.u_login < 8; i++) {
-	        if (isalpha(user.u_last[i])) *cp++ = user.u_last[i];
-	}
+    /* print message */
+    display_text(USERNAME_BLURB, user.u_login);
 
-	for (i=0; user.u_login[i]; i++)
-		if (isupper(user.u_login[i]))
-			user.u_login[i]=tolower(user.u_login[i]);
-	
-	strcpy(old_login, user.u_login);
-	sprintf(line, "We suggest the username '%s'.", user.u_login);
-	display_text_line(line);
-	display_text_line(
-			  "If you are sure you would prefer another username, feel free to enter");
-	display_text_line(
-			  "a different one.  Keep in mind that it will remain with you for all the ");
-	display_text_line("time you are at MIT.");
+ again:
+    /* get name from user */
+    glogin();
 
-	while (1) {
-		glogin();
+    display_text_line(0);
+    display_text_line("Testing that username...");
+    error = "";
+    if (strlen(user.u_login) < 3)
+      error = "Your username must be at least 3 characters long.";
+    else if (strlen(user.u_login) > 8)
+      error = "Your username cannot be longer than 8 characters.";
+    else if (!isalpha(user.u_login[0]) || !islower(user.u_login[0]))
+      error = "Your username must start with a lowercase letter.";
+    else for (i = 1; i < strlen(user.u_login); i++)
+      if (!islower(user.u_login[i]) &&
+	  !isdigit(user.u_login[i]) &&
+	  user.u_login[i] != '_')
+	error = "Your username must contain only lower case letters, numbers, and underscore";
+    timer_off();
+    result = krb_get_pw_in_tkt(user.u_login, "", realm, 
+			       "krbtgt", realm, 1, "");
+    timer_on();
+    if (*error == 0 && result != KDC_PR_UNKNOWN)
+      error = "That username is already taken.";
 
-		display_text_line(0);
-		display_text_line("Trying to assign that username...  This may take a few minutes.");
-		timer_off();
-		/*
-		 * Rather than bother SMS with a bunch of different
-		 * usernames, all in use, we first try and see if this
-		 * guy is known to Kerberos.
-		 */
-		if ((result = krb_get_lrealm(realm, 1)) != KSUCCESS) {
-		    display_text_line("System error; please try another workstation.");
-		    continue;
-		}
-		result = krb_get_pw_in_tkt(user.u_login, "", realm, 
-					   "krbtgt", realm, 1, "");
-		timer_on();
-		if (result != KDC_PR_UNKNOWN) {
-		in_use:
-			strcpy(user.u_login, old_login);
-			redisp();
-			display_text_line("That username is already taken.  Please try again with a different username");
-			continue;
-		}
-
-		/*
-		 * If he isn't, let's try through SMS.
-		 */
-		timer_off();
-		if (!enrollment)
-		  result = grab_login(user.u_first, user.u_last,
-				      typed_mit_id, user.u_mit_id,
-				      user.u_login);
-		else
-		  result = enroll_login(user.u_first, user.u_last,
-					typed_mit_id, user.u_mit_id,
-					user.u_login);
-		wfeep();
-		timer_on();
-		if (result != 0) {
-		    	char buf[BUFSIZ];
-
-			if (result == UREG_LOGIN_USED) goto in_use;
-			display_text(NETWORK_DOWN);
-			display_text_line(" ");
-			sprintf(buf, "The specific error was: %s",
-				error_message(result));
-			display_text_line(buf);
-			wait_for_user();
-			return (qexit());
-		} else break;
-	}
-	/* at this point we have successfully negotiated a username */
-
-	sprintf(line, "O.K. your username will be \"%s\".", user.u_login);
-	display_text_line(0);
-	display_text_line(line);
+    /* if it's bad, get another name from user */
+    if (*error) {
+	strcpy(user.u_login, old_login);
 	redisp();
-	sleep(3);
-	return 0;
+	display_text_line(error);
+	display_text_line("Please choose another username.");
+	goto again;
+    }
+
+    /* name is OK, make sure */
+    display_text(USERNAME_BLURB2, user.u_login);
+    if (!askyn("Do you want to register this username? (Yes or No) "))
+      goto again;
+
+    display_text_line(0);
+    display_text_line("Trying to assign that username...  This may take a few minutes.");
+
+    /* Do It! */
+    timer_off();
+    if (!enrollment)
+      result = grab_login(user.u_first, user.u_last,
+			  typed_mit_id, user.u_mit_id,
+			  user.u_login);
+    else
+      result = enroll_login(user.u_first, user.u_last,
+			    typed_mit_id, user.u_mit_id,
+			    user.u_login);
+    wfeep();
+    timer_on();
+    if (result != 0) {
+	char buf[BUFSIZ];
+
+	if (result == UREG_LOGIN_USED) {
+	    /* name was in moira but not kerberos */
+	    error = "Sorry, that username really was in use after all.";
+	    strcpy(user.u_login, old_login);
+	    redisp();
+	    display_text_line(error);
+	    display_text_line("Please choose another username.");
+	    goto again;
+	}
+
+	display_text(NETWORK_DOWN, "");
+	display_text_line(" ");
+	sprintf(buf, "The specific error was: %s", error_message(result));
+	display_text_line(buf);
+	wait_for_user();
+	return (qexit());
+    }
+
+    /* at this point we have successfully negotiated a username */
+    sprintf(line, "O.K. your username will be \"%s\".", user.u_login);
+    display_text_line(0);
+    display_text_line(line);
+    redisp();
+    sleep(3);
+    return 0;
 }
+
+
 negotiate_passwd()
 {
-	display_text_line(0);
-	display_text(PASSWORD_BLURB);
+    char *passwd, *error;
+    char old_passwd[256], fullname[256], tktstring[256], inst[INST_SZ];
+    char login[ANAME_SZ], lpassword[PASSWORD_SIZE];
+    int result;
+    des_cblock key;
+    FILE *in;
 
-	gpass();
-	display_text_line("Storing password in the database...  This may take a few minutes.");
-	if (do_replace()) {
-		return (-1);
+ again:
+    display_text(PASSWORD_BLURB, "");
+    gpass();
+
+    /* validate password */
+    error = NULL;
+    passwd = user.u_password;
+    sprintf(fullname, "%s%s", user.u_first, user.u_last);
+    if (strlen(passwd) < 6)
+      error = "Please choose a longer password.";
+    if (!strpasscmp(passwd, user.u_first) ||
+	!strpasscmp(passwd, user.u_last) ||
+	!strpasscmp(passwd, user.u_login) ||
+	!strpasscmp(passwd, fullname) ||
+	!strpasscmp(passwd, typed_mit_id))
+      error = "Please do not use your name or ID number for your password.";
+    if (!error) {
+	in = fopen(LOGIN_INFO, "r");
+	if (in != NULL) {
+	    fgets(login, sizeof(login), in);
+	    /* trim trailing newline */
+	    if (strlen(login))
+	      login[strlen(login) - 1] = 0;
+	    fgets(lpassword, sizeof(lpassword), in);
+	    /* trim trailing newline */
+	    if (strlen(lpassword))
+	      lpassword[strlen(lpassword) - 1] = 0;
+	    fclose(in);
+	} else {
+	    strcpy(login, "moira");
+	    strcpy(lpassword, "moira");
 	}
-	display_text_line("done.");
-	return(0);
+
+	sprintf(tktstring, "/tmp/tkt_cpw_%d", getpid());
+	krb_set_tkt_string(tktstring);	
+	des_string_to_key(passwd, key);
+	inst[0] = 0;
+
+	result = krb_get_pw_in_tkt(login, inst, realm, PWSERV_NAME,
+				   KADM_SINST, 1, lpassword);
+	if (result == KSUCCESS)
+	  result = kadm_init_link(PWSERV_NAME, KRB_MASTER, realm);
+	if (result == KSUCCESS)
+	  result = kadm_check_pw(key, passwd, &error);
+	dest_tkt();
+	if (result != KSUCCESS && result != KADM_INSECURE_PW) {
+	    display_text(NETWORK_DOWN);
+	    display_text_line(" ");
+	    sprintf(fullname, "%s while verifying password",
+		    error_message(result));
+	    display_text_line(fullname);
+	    wait_for_user();
+	    return(-1);
+	}
+    }
+
+    if (error) {
+	display_text_line(0);
+	display_text_line(error);
+	wait_for_user();
+	goto again;
+    }
+
+    display_text(PASSWORD_BLURB2, "");
+    strcpy(old_passwd, user.u_password);
+    gpass();
+    if (strcmp(old_passwd, user.u_password)) {
+	display_text_line(0);
+	display_text_line("What you just typed did not match the password you gave the first time.");
+	sleep(8);
+	goto again;
+    }
+
+    display_text_line("Storing password in the database...  This may take a few minutes.");
+    if (do_replace()) {
+	return (-1);
+    }
+    display_text_line("done.");
+    return(0);
 }
 
 gfirst()
@@ -457,74 +569,26 @@ glast()
 gpass()
 {
 	/* input password */
-	char            new_password[PASSWORD_SIZE * 2 + 1];
-	char            new_password_again[PASSWORD_SIZE * 2 + 1];
+	char            new_password[PASSWORD_SIZE + 1];
 
-do_input:
 	signal(SIGALRM, restart);
 	input_no_echo("Enter password:", new_password,
-		      enrollment ? PASSWORD_SIZE * 2 : PASSWORD_SIZE,
-		      NEW_PASSWORD_TIMEOUT);
-	if (strlen(new_password) < 4) {
-		display_text_line("Please use a password of at least 4 characters.");
-		goto do_input;
-	}
-	wfeep();
-	signal(SIGALRM, restart);
-	input_no_echo("Enter your password again:", new_password_again,
-		      enrollment ? PASSWORD_SIZE * 2 : PASSWORD_SIZE,
-		      REENTER_PASSWORD_TIMEOUT);
-	if (strcmp(new_password, new_password_again)) {
-		display_text_line("Sorry, the two passwords you just typed in don't match.");
-		display_text_line("Please try again.");
-		goto do_input;
-	}
-
+		      PASSWORD_SIZE, NEW_PASSWORD_TIMEOUT);
 	strcpy(user.u_password, new_password);
 	redisp();
 }
 
+
+/* get login name */
+
 glogin()
 {
-	/* get login name */
-	register int    i;
-	char            buf[LOGIN_SIZE+2];
-	register char  *nbuf = buf;
+	char buf[LOGIN_SIZE+2];
 
-input_login:
-	i = 0;
 	user.u_login[0] = '\0';
-	nbuf = &buf[0];
 	signal(SIGALRM, restart);
 	input("Enter username:", buf, LOGIN_SIZE, USERNAME_TIMEOUT, FALSE);
-	if (!islower(*nbuf) && !isdigit(*nbuf)) {
-	    user.u_login[0] = 0;
-	    display_text_line("Your username must start with a lower case letter or number.");
-	    goto input_login;
-	}
-	while (*nbuf != '\0') {
-		if (!islower(*nbuf) && !isdigit(*nbuf)
-		    && (*nbuf != '_')) {
-			user.u_login[0] = 0;
-			display_text_line("Your username must be all lowercase letters or numbers.");
-			goto input_login;
-		}
-		user.u_login[i] = *nbuf++;
-		i++;
-		if (i > LOGIN_SIZE) {
-			user.u_login[0] = 0;
-			display_text_line("Your username must be no more than 8 characters long.");
-			goto input_login;
-		}
-	}
-	if (i != 0) {
-		user.u_login[i] = '\0';
-	}
-	if (strlen(user.u_login) < 3) {
-		user.u_login[0] = 0;
-		display_text_line("Your username must be 3 or more characters long.\n");
-		goto input_login;
-	}
+	strcpy(user.u_login, buf);
 	redisp();
 }
 
@@ -619,6 +683,20 @@ do_replace()
 	} else return 0;
 }
 
+
+kinit(user, passwd)
+char *user, *passwd;
+{
+    int status;
+    char inst[INST_SZ];
+
+    inst[0] = 0;
+    status = krb_get_pw_in_tkt(user, inst, realm, "krbtgt",
+			       realm, DEFAULT_TKT_LIFE, 0);
+    return(status);
+}
+
+
 #ifndef _toupper
 #define _toupper(c) ((c) & ~0x20)
 #endif
@@ -636,11 +714,13 @@ lenient_strcmp(string1, string2)
 		if (*string1 == '\0' && *string2 == '\0') {
 			return (0);
 		}
-		if (*string1 == ' ' || *string1 == '.' || *string1 == '-' || *string1 == '\'') {
+		if (*string1 == ' ' || *string1 == '.' || *string1 == '-' ||
+		    *string1 == '\'' || *string1 == '_') {
 			string1++;
 			continue;
 		}
-		if (*string2 == ' ' || *string2 == '.' || *string2 == '-' || *string2 == '\'') {
+		if (*string2 == ' ' || *string2 == '.' || *string2 == '-' ||
+		    *string2 == '\'' || *string2 == '_') {
 			string2++;
 			continue;
 		}
@@ -651,6 +731,31 @@ lenient_strcmp(string1, string2)
 		string2++;
 	}
 }
+
+
+/* See if the strings match in forward & reverse direction, ignoring
+ * case and spaces/punctuation.
+ */
+
+strpasscmp(s1, s2)
+char *s1, *s2;
+{
+    char buf[256], *from, *to;
+
+    if (!lenient_strcmp(s1, s2))
+      return(0);
+    /* if s2 is empty, say OK */
+    if (!*s2)
+      return(1);
+
+    from = &s2[strlen(s2)];
+    from--;
+    for (to = &buf[0]; from >= s2; from--)
+      *to++ = *from;
+
+    return(lenient_strcmp(s1, buf));
+}
+
 
 /*
  * Input timeout handler.  Loop back to asking for the first name. 

@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/aliases.qc,v 1.10 1989-08-21 21:47:43 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/aliases.qc,v 1.11 1989-12-08 18:23:05 mar Exp $
  *
  * This generates the /usr/lib/aliases mail aliases file for the mailhub.
  * The aliases file will contain:
@@ -29,20 +29,20 @@ char *divide = "################################################################
 extern int errno;
 char *whoami = "aliases.gen";
 char *ingres_date_and_time();
-
+FILE *out;
 
 main(argc, argv)
 int argc;
 char **argv;
 {
     long tm = time(NULL);
-    FILE *out= stdout;
     char filename[64], *targetfile;
     struct stat sb;
 ##  int flag1, flag2, flag3;
 ##  char *filetime;
     int ingerr();
 
+    out= stdout;
     IIseterr(ingerr);
     initialize_sms_error_table();
 ##  ingres sms
@@ -245,13 +245,65 @@ get_info()
 ##}
 
 
-void save_mlist(id, l, sq)
+save_mlist(id, l, force)
 int id;
 struct list *l;
-struct save_queue *sq;
+int force;
 {
-    if (l->maillist)
-      sq_save_unique_data(sq, id);
+    register struct member *m;
+    register struct list *l1;
+
+    if (l->maillist == 2 ||
+	(l->maillist == 0 && !force))
+      return;
+
+    if (l->m && l->m->next == NULL &&
+	!strcasecmp(l->name, l->m->name)) {
+	l->maillist = 0;
+	return;
+    }
+    l->maillist = 2;
+    output_mlist(id, l, out);
+
+    if (l->acl_t == 'L' && (l1 = (struct list *)hash_lookup(lists, l->acl_id)))
+      save_mlist(0, l1, 1);
+    
+    for (m = l->m; m; m = m->next) {
+	if (m->list_id && (l1 = (struct list *)hash_lookup(lists, m->list_id)))
+	  save_mlist(0, l1, 0);
+    }
+}
+
+
+int lwid, bol, awid;
+
+output_mlist(id, l, out)
+int id;
+register struct list *l;
+FILE *out;
+{
+    struct list *l1;
+    register struct member *m;
+    struct user *u;
+    int id;
+
+    put_fill(out, l->description);
+    if (l->acl_t ==  'L') {
+	if (l1 = (struct list *) hash_lookup(lists, l->acl_id))
+	  fprintf(out, "owner-%s: %s\n", l->name, l1->name);
+    } else if (l->acl_t ==  'U') {
+	if (u = (struct user *) hash_lookup(users, l->acl_id))
+	  fprintf(out, "owner-%s: %s\n", l->name, u->login);
+    }
+
+    fprintf(out, "%s: ", l->name);
+    lwid = strlen(l->name) + 2;
+    bol = 1;
+    for (m = l->m; m; m = m->next)
+      do_member(out, m->name);
+    if (l->m == (struct member *)NULL)
+      fprintf(out, "/dev/null");
+    fprintf(out, "\n\n");
 }
 
 
@@ -260,54 +312,11 @@ struct save_queue *sq;
  * to be processed.  If further sublists are encountered, repeat...
  */
 
-int lwid, bol, awid;
-
 do_mlists(out)
 FILE *out;
 {
-    register struct list *l;
-    struct list *l1;
-    register struct member *m;
-    struct user *u;
-    register struct save_queue *sq;
-    struct save_queue *sq_create();
-    int id;
-
-    sq = sq_create();
     fprintf(out, "\n%s\n# Mailing lists\n%s\n", divide, divide);
-
-    hash_step(lists, save_mlist, sq);
-
-    while (sq_get_data(sq, &id)) {
-	l = (struct list *) hash_lookup(lists, id);
-	if (l->m &&			  /* there's at least one member */
-	    l->m->next == NULL &&	  /* there's only one member */
-	    !strcmp(l->name, l->m->name)) /* the member is same as list */
-	  continue;
-	put_fill(out, l->description);
-	if (l->acl_t ==  'L') {
-	    if (l1 = (struct list *) hash_lookup(lists, l->acl_id)) {
-		fprintf(out, "owner-%s: %s\n", l->name, l1->name);
-		sq_save_unique_data(sq, l->acl_id);
-	    }
-	} else if (l->acl_t ==  'U') {
-	    if (u = (struct user *) hash_lookup(users, l->acl_id))
-	      fprintf(out, "owner-%s: %s\n", l->name, u->login);
-	}
-	fprintf(out, "%s: ", l->name);
-	lwid = strlen(l->name) + 2;
-	bol = 1;
-	for (m = l->m; m; m = m->next) {
-	    if (m->list_id != 0)
-	      sq_save_unique_data(sq, m->list_id);
-	    do_member(out, m->name);
-	}
-	fprintf(out, "\n\n");
-    }
-
-/*  Removed for speed, since this take 10 minutes to free, and we don't
- *  really need the memory reclaimed.
- *  sq_destroy(sq); */
+    hash_step(lists, save_mlist, 0);
 }
 
 

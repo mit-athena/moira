@@ -1,13 +1,17 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_srvdata.c,v $
- *	$Author: wesommer $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_srvdata.c,v 1.5 1987-07-29 16:03:15 wesommer Exp $
+ *	$Author: mar $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_srvdata.c,v 1.6 1988-06-30 12:38:46 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
  * 	Global variables inside the SMS server.
  * 
  *	$Log: not supported by cvs2svn $
+ * Revision 1.5  87/07/29  16:03:15  wesommer
+ * Added "now" variable.
+ * ,
+ * 
  * Revision 1.4  87/07/14  00:38:14  wesommer
  * Added log_flags global variable.
  * 
@@ -23,7 +27,7 @@
  */
 
 #ifndef lint
-static char *rcsid_sms_srvdata_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_srvdata.c,v 1.5 1987-07-29 16:03:15 wesommer Exp $";
+static char *rcsid_sms_srvdata_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_srvdata.c,v 1.6 1988-06-30 12:38:46 mar Exp $";
 #endif lint
 
 #include "sms_server.h"
@@ -90,3 +94,16 @@ int log_flags = LOG_CONNECT|LOG_REQUESTS|LOG_ARGS|LOG_RES;
  * Time of last time through main loop.
  */
 time_t now;
+
+
+/*
+ * Statistics on number of queries of each version that have been attempted
+ */
+
+int newqueries = 0;
+int oldqueries = 0;
+
+
+/* Journalling file */
+FILE *journal = NULL;
+

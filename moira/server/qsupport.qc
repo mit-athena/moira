@@ -1,14 +1,14 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.23 1988-08-05 16:06:13 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.24 1988-08-11 22:45:36 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
  */
 
 #ifndef lint
-static char *rcsid_qsupport_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.23 1988-08-05 16:06:13 mar Exp $";
+static char *rcsid_qsupport_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.24 1988-08-11 22:45:36 mar Exp $";
 #endif lint
 
 #include "query.h"
@@ -69,7 +69,8 @@ access_login(q, argv, cl)
  * Inputs: argv[0] - list_id
  *	    q - query name
  *	    argv[2] - member ID (only for queries "amtl" and  "dmfl")
- *         cl - client name
+ *	    argv[7] - group IID (only for query "ulis")
+ *          cl - client name
  *
  * - check that client is a member of the access control list
  * - OR, if the query is add_member_to_list or delete_member_from_list
@@ -81,14 +82,14 @@ access_list(q, argv, cl)
     char *argv[];
     client *cl;
 ##{
-##  int list_id, acl_id, flags, rowcount;
+##  int list_id, acl_id, flags, rowcount, gid;
 ##  char acl_type[9];
     char *client_type;
     int client_id, status;
 
     list_id = *(int *)argv[0];
 ##  repeat retrieve (acl_id = list.#acl_id, acl_type = list.#acl_type,
-##		     flags = list.#public) 
+##		     gid = list.#gid, flags = list.#public) 
 ##	   where list.#list_id = @list_id
 ##  inquire_equel(rowcount = "rowcount")
     if (rowcount != 1)
@@ -102,6 +103,11 @@ access_list(q, argv, cl)
     if ((!strcmp("amtl", q->shortname) || !strcmp("dmfl", q->shortname)) &&
 	(flags && !strcmp("USER", argv[1]))) {
 	if (*(int *)argv[2] == client_id) return(SMS_SUCCESS);
+    /* if update_list, don't allow them to change the GID */
+    } else if (!strcmp("ulis", q->shortname)) {
+	if ((!strcmp(argv[7], UNIQUE_GID) && (gid != -1)) ||
+	    (strcmp(argv[7], UNIQUE_GID) && (gid != atoi(argv[7]))))
+	  return(SMS_PERM);
     }
 
     /* check for client in access control list */
@@ -206,7 +212,7 @@ access_member(q, argv, cl)
       return(access_visible_list(q, &argv[1], cl));
 
     if (!strcmp(argv[0], "USER") || !strcmp(argv[0], "RUSER")) {
-	if (!strcmp(cl->kname.name, argv[1]))
+	if (cl->users_id == *(int *)argv[1])
 	  return(SMS_SUCCESS);
     }
 

@@ -1,13 +1,13 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/send_file.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/send_file.c,v 1.5 1990-03-19 13:02:29 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/send_file.c,v 1.6 1992-09-22 13:43:21 mar Exp $
  */
 /*  (c) Copyright 1988 by the Massachusetts Institute of Technology. */
 /*  For copying and distribution information, please see the file */
 /*  <mit-copyright.h>. */
 
 #ifndef lint
-static char *rcsid_send_file_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/send_file.c,v 1.5 1990-03-19 13:02:29 mar Exp $";
+static char *rcsid_send_file_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/send_file.c,v 1.6 1992-09-22 13:43:21 mar Exp $";
 #endif	lint
 
 #include <mit-copyright.h>
@@ -18,12 +18,15 @@ static char *rcsid_send_file_c = "$Header: /afs/.athena.mit.edu/astaff/project/m
 #include <moira.h>
 #include <sys/file.h>
 #include <sys/stat.h>
+#include <des.h>
+#include <krb.h>
 #include <update.h>
 
 
 extern CONNECTION conn;
 extern int errno;
 char buf[BUFSIZ];
+extern C_Block session;
 
 /*
  * syntax:
@@ -43,15 +46,17 @@ char buf[BUFSIZ];
  */
 
 int
-send_file(pathname, target_path)
+send_file(pathname, target_path, encrypt)
 char *pathname;
 char *target_path;
+int  encrypt;
 {
-    int n, fd, code, n_to_send;
+    int n, fd, code, n_to_send, i;
     STRING data;
+    unsigned char dst[UPDATE_BUFSIZ + 8], *src;
     struct stat statb;
-
-    string_alloc(&data, UPDATE_BUFSIZ);
+    des_key_schedule sched;
+    des_cblock ivec;
 
     /* send file over */
     fd = open(pathname, O_RDONLY, 0);
@@ -66,22 +71,24 @@ char *target_path;
     }
     n_to_send = statb.st_size;
     
-    sprintf(STRING_DATA(data), "XFER_002 %d %d %s",
-	    n_to_send, checksum_file(pathname), target_path);
+    string_alloc(&data, UPDATE_BUFSIZ);
+    sprintf(STRING_DATA(data), "XFER_00%c %d %d %s",
+	    (encrypt ? '3' : '2'), n_to_send,
+	    checksum_file(pathname), target_path);
     code = send_object(conn, (char *)&data, STRING_T);
     if (code) {
-	com_err(whoami, code, " sending XFER_002 request");
+	com_err(whoami, code, " sending XFER request");
 	close(fd);
 	return(code);
     }
     code = receive_object(conn, (char *)&n, INTEGER_T);
     if (code) {
-	com_err(whoami, code, " getting reply from XFER_002 request");
+	com_err(whoami, code, " getting reply from XFER request");
 	close(fd);
 	return(code);
     }
     if (n) {
-	com_err(whoami, n, " transfer request (XFER_002) rejected");
+	com_err(whoami, n, " transfer request (XFER) rejected");
 	close(fd);
 	return(n);
     }
@@ -99,6 +106,16 @@ char *target_path;
 	return(n);
     }
 
+    if (encrypt) {
+#ifdef DEBUG
+	printf("Session key %02x %02x %02x %02x  %02x %02x %02x %02x\n",
+	       session[0], session[1], session[2], session[3], 
+	       session[4], session[5], session[6], session[7]);
+#endif /* DEBUG */
+	des_key_sched(session, sched);
+	bcopy(session, ivec, sizeof(ivec));
+    }
+
     while (n_to_send > 0) {
 #ifdef	DEBUG
 	printf("n_to_send = %d\n", n_to_send);
@@ -110,6 +127,18 @@ char *target_path;
 	    return(MR_ABORTED);
 	}
 	MAX_STRING_SIZE(data) = n;
+	if (encrypt) {
+	    src = (unsigned char *)STRING_DATA(data);
+	    bcopy(src, dst, n);
+	    bzero(dst + n, 7);
+	    /* encrypt! */
+	    des_pcbc_encrypt(dst, src, n, sched, ivec, 0);
+	    /* save vector to continue chaining */
+	    for (i = 0; i < 8; i++)
+	      ivec[i] = dst[n - 8 + i] ^ src[n - 8 + i];
+	    /* round up to multiple of 8 */
+	    data.length = (data.length + 7) & 0xfffffff8;
+	}
 	code = send_object(conn, (char *)&data, STRING_T);
 	if (code) {
 	    com_err(whoami, connection_errno(conn), " transmitting file %s",

@@ -1,13 +1,13 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/get_file.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/get_file.c,v 1.9 1992-09-21 12:30:49 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/get_file.c,v 1.10 1992-09-22 13:42:13 mar Exp $
  */
 /*  (c) Copyright 1988 by the Massachusetts Institute of Technology. */
 /*  For copying and distribution information, please see the file */
 /*  <mit-copyright.h>. */
 
 #ifndef lint
-static char *rcsid_get_file_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/get_file.c,v 1.9 1992-09-21 12:30:49 mar Exp $";
+static char *rcsid_get_file_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/get_file.c,v 1.10 1992-09-22 13:42:13 mar Exp $";
 #endif	lint
 
 #include <mit-copyright.h>
@@ -32,6 +32,8 @@ extern int code, errno, uid;
 
 extern int have_authorization, have_file, done;
 extern C_Block session;
+static des_key_schedule sched;
+static des_cblock ivec;
 
 int get_block();
 
@@ -131,6 +133,15 @@ get_file(pathname, file_size, checksum, mode, encrypt)
     lseek(fd, 0, L_SET);
     if (send_ok())
 	lose("sending okay for file transfer (get_file)");
+    if (encrypt) {
+#ifdef DEBUG
+	com_err(whoami, 0, "Session %02x %02x %02x %02x  %02x %02x %02x %02x",
+		session[0], session[1], session[2], session[3], 
+		session[4], session[5], session[6], session[7]);
+#endif /* DEBUG */
+	des_key_sched(session, sched);
+	bcopy(session, ivec, sizeof(ivec));
+    }
     n_written = 0;
     while (n_written < file_size && code == 0) {
 	int n_got = get_block(fd, file_size - n_written, encrypt);
@@ -192,28 +203,25 @@ get_block(fd, max_size, encrypt)
     int encrypt;
 {
     STRING data;
-    int n_read, n;
+    unsigned char dst[UPDATE_BUFSIZ + 8], *src;
+    int n_read, n, i;
 
     code = receive_object(conn, (char *)&data, STRING_T);
     if (code) {
 	code = connection_errno(conn);
 	lose("receiving data file (get_file)");
     }
-    n_read = MIN(MAX_STRING_SIZE(data), max_size);
-    if (encrypt) {
-	des_key_schedule sched;
-	des_cblock ivec;
-	STRING newdata;
 
-	des_key_sched(session, sched);
-	bzero(ivec, sizeof(ivec));
-	STRING_DATA(newdata) = (char *) malloc(n_read+9);
-	des_pcbc_encrypt(STRING_DATA(data), STRING_DATA(newdata),
-			 n_read, sched, &ivec, 1);
-	string_free(&data);
-	data.ptr = newdata.ptr;
+    if (encrypt) {
+	src = (unsigned char *)STRING_DATA(data);
+	n = MAX_STRING_SIZE(data);
+	des_pcbc_encrypt(src, dst, n, sched, ivec, 1);
+	for (i = 0; i < 8; i++)
+	  ivec[i] = src[n - 8 + i] ^ dst[n - 8 + i];
+	bcopy(dst, STRING_DATA(data), n);
     }
 
+    n_read = MIN(MAX_STRING_SIZE(data), max_size);
     n = 0;
     while (n < n_read) {
 	register int n_wrote;

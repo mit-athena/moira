@@ -3,7 +3,7 @@
 #	MIT Project Athena
 #
 #	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/Makefile,v $
-#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/Makefile,v 1.7 1988-08-04 13:22:57 mar Exp $
+#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/Makefile,v 1.8 1988-08-07 21:33:08 mar Exp $
 #	$Author: mar $
 # 
 #
@@ -36,6 +36,6 @@ clean:
 	rm -f ${PROGS}
 
 install:	${PROGS}
-	install chsh ${DESTDIR}/usr/athena/chsh
-	install chfn ${DESTDIR}/usr/athena/chfn
-	install chpobox ${DESTDIR}/usr/athena/chpobox
+	install -s chsh ${DESTDIR}/usr/athena/chsh
+	install -s chfn ${DESTDIR}/usr/athena/chfn
+	install -s chpobox ${DESTDIR}/usr/athena/chpobox

@@ -1,4 +1,4 @@
-/* $Id: member.c,v 1.3 2000-08-25 23:06:56 zacheiss Exp $
+/* $Id: member.c,v 1.4 2001-08-24 05:57:07 zacheiss Exp $
  *
  * Shared routines for playing with list membership.
  *
@@ -15,16 +15,27 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 
 #include <krb.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/lib/member.c,v 1.3 2000-08-25 23:06:56 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/lib/member.c,v 1.4 2001-08-24 05:57:07 zacheiss Exp $");
 
 static char default_realm[REALM_SZ];
 
 int mrcl_validate_string_member(char *str)
 {
-  char *p, *lname;
+  char *p, *lname, *ret;
+
+  for (ret = str; *ret; ret++)
+    {
+      if (iscntrl(*ret))
+	{
+	  mrcl_set_message("STRING \"%s\" contains control characters, "
+			   "which are not allowed.", str);
+	  return MRCL_REJECT;
+	}
+    }
 
   p = strchr(str, '@');
   if (p)

@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.27 1996-10-10 20:28:44 danw Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.28 1996-10-17 20:54:28 danw Exp $
  *
  * Command line oriented Moira List tool.
  *
@@ -24,7 +24,7 @@
 #include <moira_site.h>
 
 #ifndef LINT
-static char blanche_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.27 1996-10-10 20:28:44 danw Exp $";
+static char blanche_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.28 1996-10-17 20:54:28 danw Exp $";
 #endif
 
 
@@ -245,10 +245,9 @@ char **argv;
 	if ((memberstruct->type == M_STRING ||
 	     memberstruct->type == M_ANY) &&
 	    strchr(memberstruct->name, '\'')) {
-		fprintf(stderr, "Illegal character \"'\" in \"STRING:%s\", aborting blanche.\n",
-			memberstruct->name);
-		fprintf(stderr, "No changes were made.\n");
-		exit(2);
+		fprintf(stderr, "%s: Illegal character \"'\" in argument while adding \"STRING:%s\" to %s.\n",
+			whoami, memberstruct->name, listname);
+		continue;
 	}
 	/* canonicalize string if necessary */
 	if (memberstruct->type == M_STRING &&

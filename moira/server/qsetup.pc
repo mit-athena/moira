@@ -1,4 +1,4 @@
-/* $Id: qsetup.pc,v 2.22 1998-11-10 19:08:04 danw Exp $
+/* $Id: qsetup.pc,v 2.23 1998-12-14 18:53:35 danw Exp $
  *
  * Query setup routines
  *
@@ -21,7 +21,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsetup.pc,v 2.22 1998-11-10 19:08:04 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsetup.pc,v 2.23 1998-12-14 18:53:35 danw Exp $");
 
 extern char *whoami;
 extern int dbms_errno, mr_errcode;
@@ -858,68 +858,19 @@ int setup_ahst(struct query *q, char **argv, client *cl)
   else
     row = 0;
 
-  if (row == 0 || strcasecmp(argv[1], oldname))
-    {
-      if (!hostname_check(argv[row]))
-	return MR_BAD_CHAR;
-    }
-
-  /* sanity check host vendor: must start with a letter, contain only
-   * letters, numerals, and hyphen, and end with an alphanumeric.
-   */
-  if (*argv[row + 1] && (row == 0 || strcasecmp(argv[2], vendor)))
-    {
-      char *p = argv[row + 1];
-
-      if (!isalpha(*p))
-	return MR_BAD_CHAR;
-      for (; *p; p++)
-	{
-	  if ((!isalnum(*p) && *p != '-' && *p != '.') ||
-	      (*p == '-' && p[1] == '.'))
-	    return MR_BAD_CHAR;
-	}
-      if (!isalnum(*(p - 1)))
-	return MR_BAD_CHAR;
-    }
-
-  /* sanity check host type: must start with a letter, contain only
-   * letters, numerals, and hyphen, and end with an alphanumeric.
-   */
-  if (*argv[row + 2] && (row == 0 || strcasecmp(argv[3], model)))
-    {
-      char *p = argv[row + 2];
-
-      if (!isalnum(*p))
-	return MR_BAD_CHAR;
-      for (; *p; p++)
-	{
-	  if ((!isalnum(*p) && *p != '-' && *p != '.') ||
-	      (*p == '-' && p[1] == '.'))
-	    return MR_BAD_CHAR;
-	}
-      if (!isalnum(*(p - 1)))
-	return MR_BAD_CHAR;
-    }
-
-  /* sanity check host os: must start with a letter, contain only
-   * letters, numerals, and hyphen, and end with an hyphen alphanumeric.
-   */
-  if (*argv[row + 3] && (row == 0 || strcasecmp(argv[4], os)))
-    {
-      char *p = argv[row + 3];
-
-      if (!isalpha(*p))
-	return MR_BAD_CHAR;
-      for (; *p; p++)
-	{
-	  if ((!isalnum(*p) && *p != '-' && *p != '.') ||
-	      (*p == '-' && p[1] == '.'))
-	    return MR_BAD_CHAR;
-	}
-      if (!isalnum(*(p - 1)))
-	return MR_BAD_CHAR;
-    }
+  /* Sanity check name, vendor, model, and os. */
+  if ((row == 0 || strcasecmp(argv[1], oldname)) &&
+      !hostname_check(argv[row]))
+    return MR_BAD_CHAR;
+  if ((row == 0 || strcasecmp(argv[2], vendor)) &&
+      !hostinfo_check(argv[row + 1]))
+    return MR_BAD_CHAR;
+  if ((row == 0 || strcasecmp(argv[3], model)) &&
+      !hostinfo_check(argv[row + 2]))
+    return MR_BAD_CHAR;
+  if ((row == 0 || strcasecmp(argv[4], os)) &&
+      !hostinfo_check(argv[row + 3]))
+    return MR_BAD_CHAR;
 
   /* check for duplicate name */
   name = argv[row];
@@ -1095,7 +1046,7 @@ int setup_ahal(struct query *q, char **argv, client *cl)
 }
 
 /* hostname_check()
- * validate the rfc1035-ness of a hostname
+ * validate the rfc1035/rfc1123-ness of a hostname
  */
 
 int hostname_check(char *name)
@@ -1103,17 +1054,12 @@ int hostname_check(char *name)
   char *p;
   int count;
 
-  /* sanity check name: must start with a letter, contain only
-   * letters, numerals, and hyphen, and not end with a hyphen.
-   * also make sure no label (the thing the .s seperate) is longer
-   * than 63 characters.
+  /* Sanity check name: must contain only letters, numerals, and
+   * hyphen, and not start or end with a hyphen. Also make sure no
+   * label (the thing the .s seperate) is longer than 63 characters.
    */
 
-  p = name;
-  if (!isalpha(*p))
-    return 0;
-  count = 0;
-  for (; *p; p++)
+  for (p = name, count = 0; *p; p++)
     {
       count++;
       if ((!isalnum(*p) && *p != '-' && *p != '.') ||
@@ -1127,4 +1073,27 @@ int hostname_check(char *name)
   if (*(p - 1) == '-')
     return 0;
   return 1;
+}
+
+int hostinfo_check(char *info)
+{
+  char *p;
+
+  if (!*info)
+    return 1;
+
+  /* Sanity check host hostinfo: must start with a letter, contain
+   * only letters, numerals, and hyphen, and not end with a hyphen.
+   */
+
+  if (!isalpha(*info))
+    return 0;
+  for (p = info; *p; p++)
+    {
+      if ((!isalnum(*p) && *p != '-' && *p != '.') ||
+	  (*p == '-' && p[1] == '.'))
+	return 0;
+    }
+  if (!isalnum(*(p - 1)))
+    return 1;
 }

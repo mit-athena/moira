@@ -1,4 +1,4 @@
-/* $Id: mr_server.h,v 1.38 1998-11-01 23:30:17 kcr Exp $
+/* $Id: mr_server.h,v 1.39 1998-12-14 18:53:33 danw Exp $
  *
  * Copyright (C) 1987-1998 by the Massachusetts Institute of Technology
  * For copying and distribution information, please see the file
@@ -230,6 +230,7 @@ int setup_dsnt(struct query *q, char *argv[], client *cl);
 int setup_ahst(struct query *q, char *argv[], client *cl);
 int setup_ahal(struct query *q, char *argv[], client *cl);
 int hostname_check(char *name);
+int hostinfo_check(char *name);
 
 /* prototypes from qsupport.pc */
 int set_pobox(struct query *q, char *argv[], client *cl);

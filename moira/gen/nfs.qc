@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/nfs.qc,v 1.16 1990-01-19 15:26:32 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/nfs.qc,v 1.17 1990-03-08 23:22:32 mar Exp $
  *
  * This generates the files necessary to load an nfs server.
  *
@@ -102,10 +102,11 @@ int do_nfs()
     machs = sq_create();
     lists = sq_create();
 ##  range of s is serverhosts
-##  retrieve (machname = trim(machine.name), listname = trim(s.value3))
-##	where machine.mach_id = s.mach_id and s.enable != 0 {
-      sq_save_unique_string(machs, strsave(machname));
-      sq_save_unique_string(lists, strsave(listname));
+##  retrieve (machname = machine.name, listname = s.value3)
+##	where machine.mach_id = s.mach_id and s.service = "NFS"
+##	and s.enable != 0 {
+      sq_save_unique_string(machs, strsave(strtrim(machname)));
+      sq_save_unique_string(lists, strsave(strtrim(listname)));
 ##  }
 
     changed = do_lists(lists);
@@ -191,7 +192,7 @@ struct save_queue *lists;
 /*  Build the list of everybody. */
 struct grp {
     struct grp *next;
-    int id;
+    char *lid;
 };
 struct user {
     char name[9];
@@ -246,24 +247,20 @@ struct hash *do_everyone()
 ##  range of m is imembers
 ##  retrieve (lid = m.list_id, id = m.member_id) where m.member_type = "USER" {
       if ((u = (struct user *) hash_lookup(users, id)) &&
-	  (hash_lookup(groups, lid) != NULL)) {
+	  ((l = hash_lookup(groups, lid)) != NULL)) {
 	  g = (struct grp *) malloc(sizeof(struct grp));
 	  g->next = u->lists;
 	  u->lists = g;
-	  g->id = lid;
+	  g->lid = l;
       }
 ##  }
 
     for (p = &(users->data[users->size - 1]); p >= users->data; p--) {
 	for (b = *p; b; b = b->next) {
-	    i = 0;
 	    u = (struct user *)b->data;
 	    sprintf(buf, "%s:%d", u->name, u->uid);
 	    for (g = u->lists; g; g = g->next)
-	      if (l = hash_lookup(groups, g->id)) {
-		  i++;
-		  strcat(buf, l);
-	      }
+	      strcat(buf, g->lid);
 	    b->data = strsave(buf);
 	    fprintf(fd, "%s\n", buf);
 	}
@@ -282,33 +279,12 @@ struct hash *do_everyone()
 int do_machs(machs)
 struct save_queue *machs;
 ##{
-##  char *machname, listname[33], dev[33], *device, dir[64], fstype[9];
-##  char *filetime;
+##  char *machname, listname[33], dev[33], dir[81], fstype[9];
 ##  int uid, quota, id, gid, flag1, flag2, flag3, flag4;
     char file[64], f1[64], f2[64], *cp, *index();
-    int prevuid, quotasum;
+    int prevuid, quotasum, olddev, oldmach;
     FILE *fd;
-    struct stat sb;
-    struct save_queue *sq;
-
-/*
-    sprintf(file, "%s/list-", nfs_dir);
-    if (stat(file, &sb) == 0) {
-	filetime = ingres_date_and_time(sb.st_mtime);
- #	retrieve (flag1 = int4(interval("min", tblstats.modtime - filetime)))
- #		where tblstats.table = "serverhosts"
- #	retrieve (flag2 = int4(interval("min", tblstats.modtime - filetime)))
- #		where tblstats.table = "filesys"
- #	retrieve (flag3 = int4(interval("min", tblstats.modtime - filetime)))
- #		where tblstats.table = "nfsquota"
- #	retrieve (flag4 = int4(interval("min", tblstats.modtime - filetime)))
- #		where tblstats.table = "nfsphys"
-	if (flag1 < 0 && flag2 < 0 && flag3 < 0 && flag4 < 0) {
-	    fprintf(stderr, "The machine files do not need to be rebuilt.\n");
-	    return(0);
-	}
-    }
-*/
+    struct hash *machines;
 
     fprintf(stderr, "Building machine files\n");
 
@@ -320,77 +296,91 @@ struct save_queue *machs;
 ##  range of u is users
 ##  range of l is list
 
-/* acquire locks on users, lists, machines & filesystems */
+/* acquire locks on machines & filesystems */
 ##  begin transaction
 ##  retrieve (listname = u.modtime) where u.users_id = 0
-##  retrieve (listname = l.modtime) where l.list_id = 0
 ##  retrieve (listname = m.modtime) where m.mach_id = 0
 ##  retrieve (listname = f.modtime) where f.filsys_id = 0
 
+    machines = create_hash(100);
     while (sq_get_data(machs, &machname)) {
-##	repeat retrieve (listname = trim(s.value3))
+##	repeat retrieve (listname = s.value3, id = m.mach_id)
 ##	    where s.mach_id = m.mach_id and m.name = @machname
 	strtrim(machname);
-	sprintf(f1, "%s/list-%s", nfs_dir, listname);
+	sprintf(f1, "%s/list-%s", nfs_dir, strtrim(listname));
 	sprintf(f2, "%s/%s.cred", nfs_dir, machname);
 	unlink(f2); /* ignore errors on this unlink */
 	if (link(f1, f2)) {
 	    fprintf(stderr, "Cannot link %s to %s\n", f1, f2);
 	    exit(SMS_OCONFIG);
 	}
-	sq = sq_create();
-##	repeat retrieve (dev = trim(n.#device))
-##	    where n.mach_id = m.mach_id and m.name = @machname {
-	  sq_save_data(sq, strsave(dev));
-##	}
-	while (sq_get_data(sq, &device)) {
-##	    repeat retrieve (id = n.nfsphys_id) where n.mach_id = m.mach_id and
-##		m.#name = @machname and n.#device = @device
-	    while (cp = index(device, '/')) *cp = '@';
-	    sprintf(file, "%s/%s.%s.quotas", nfs_dir, machname, device);
-	    fd = fopen(file, "w");
-	    if (!fd) {
-		fprintf(stderr, "cannot open %s for output\n", file);
-		exit(SMS_OCONFIG);
-	    }
-	    prevuid = -1;
-	    quotasum = 0;
-##	    repeat retrieve (uid = u.#uid, quota = q.#quota, flag1=q.filsys_id)
-##		where q.users_id = u.users_id and q.phys_id = @id and
-##		      u.status != 0 sort by #uid {
-    		if (uid != prevuid) {
-		    if (quotasum)
-		      fprintf(fd, "%d %d\n", prevuid, quotasum);
-		    prevuid = uid;
-		    quotasum = quota;
-		} else {
-		    quotasum += quota;
-		}
-##	    }
-	    if (quotasum)
-	      fprintf(fd, "%d %d\n", prevuid, quotasum);
-	    if (fclose(fd)) {
-		fprintf(stderr, "error closing %s", file);
-		exit(SMS_CCONFIG);
-	    }
-	    sprintf(file, "%s/%s.%s.dirs", nfs_dir, machname, device);
-	    fd = fopen(file, "w");
-	    if (!fd) {
-		fprintf(stderr, "cannot open %s for output\n", file);
-		exit(SMS_OCONFIG);
-	    }
-##	    repeat retrieve (dir = trim(f.#name), fstype = trim(f.lockertype),
-##			     uid = u.#uid, gid = l.#gid)
-##		where f.phys_id = @id and f.owner = u.users_id and 
-##		      f.owners = l.list_id and f.createflg != 0 {
-	      fprintf(fd, "%s %d %d %s\n", dir, uid, gid, fstype);
-##	    }
-	    if (fclose(fd)) {
-		fprintf(stderr, "error closing %s", file);
-		exit(SMS_CCONFIG);
-	    }
-	}
-	sq_destroy(sq);
+	hash_store(machines, id, machname);
+    }
+
+    olddev = oldmach = -1;
+    fd = stdin;
+##  retrieve (quota = q.#quota, uid = u.#uid, flag1 = q.phys_id,
+##	      dev = n.device, flag2 = n.mach_id)
+##	where u.users_id = q.users_id and n.nfsphys_id = q.phys_id and
+##	      q.phys_id != 0
+##	sort by #flag2, #flag1, #uid {
+      if (flag1 != olddev || flag2 != oldmach) {
+	  fclose(fd);
+	  olddev = flag1;
+	  oldmach = flag2;
+	  while (cp = index(dev, '/')) *cp = '@';
+	  sprintf(file, "%s/%s.%s.quotas", nfs_dir,
+		  hash_lookup(machines, flag2), strtrim(dev));
+	  fd = fopen(file, "w");
+	  if (!fd) {
+	      fprintf(stderr, "cannot open %s for output\n", file);
+	      exit(SMS_OCONFIG);
+	  }
+	  prevuid = -1;
+	  quotasum = 0;
+      }
+      if (uid != prevuid) {
+	  if (quotasum)
+	    fprintf(fd, "%d %d\n", prevuid, quotasum);
+	  prevuid = uid;
+	  quotasum = quota;
+      } else {
+	  quotasum += quota;
+      }
+##  }
+    if (quotasum)
+      fprintf(fd, "%d %d\n", prevuid, quotasum);
+    if (fclose(fd)) {
+	fprintf(stderr, "error closing %s", file);
+	exit(SMS_CCONFIG);
+    }
+
+    olddev = oldmach = -1;
+##  retrieve (dir = f.#name, fstype = f.lockertype, uid = u.#uid,
+##	      gid = l.#gid, flag1 = f.phys_id, flag2 = f.mach_id,
+##	      dev = n.device)
+##	where u.users_id = f.owner and l.list_id = f.owners and
+##	      f.createflg != 0 and f.phys_id != 0 and f.type = "NFS" and
+##	      f.phys_id = n.nfsphys_id
+##	sort by #flag2, #flag1 {
+      if (flag1 != olddev || flag2 != oldmach) {
+	  fclose(fd);
+	  olddev = flag1;
+	  oldmach = flag2;
+	  while (cp = index(dev, '/')) *cp = '@';
+	  sprintf(file, "%s/%s.%s.dirs", nfs_dir,
+		  hash_lookup(machines, flag2), strtrim(dev));
+	  fd = fopen(file, "w");
+	  if (!fd) {
+	      fprintf(stderr, "cannot open %s for output\n", file);
+	      exit(SMS_OCONFIG);
+	  }
+      }
+      fprintf(fd, "%s %d %d %s\n", strtrim(dir), uid, gid, strtrim(fstype));
+##  }
+    if (fclose(fd)) {
+	fprintf(stderr, "error closing %s", file);
+	exit(SMS_CCONFIG);
     }
 ##  end transaction
     return(1);

@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/afs.c,v 1.11 1990-04-04 14:49:50 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/afs.c,v 1.12 1990-06-07 13:04:34 mar Exp $
  *
  * Do AFS incremental updates
  *
@@ -67,7 +67,7 @@ int argc;
 	do_member(before, beforec, after, afterc);
     } else if (!strcmp(table, "filesys")) {
 	do_filesys(before, beforec, after, afterc);
-    } else if (!strcmp(table, "nfsquota")) {
+    } else if (!strcmp(table, "quota")) {
 	do_quota(before, beforec, after, afterc);
     }
     exit(0);
@@ -227,15 +227,12 @@ int afterc;
 {
     char cmd[512];
 
-    if (!(afterc >= Q_DIRECTORY && !strncmp("/afs", after[Q_DIRECTORY], 4)) &&
-	!(beforec >= Q_DIRECTORY && !strncmp("/afs", before[Q_DIRECTORY], 4)))
+    if (afterc < Q_DIRECTORY || strcmp("ANY", after[Q_TYPE]) ||
+	strncmp("/afs", after[Q_DIRECTORY], 4))
       return;
-    if (afterc < Q_TYPE || strcmp("ANY", after[Q_TYPE]))
-      return;
-    if (afterc != 0) {
-	sprintf(cmd, "%s setquota -dir %s -quota %s",
-		fs, after[Q_DIRECTORY], after[Q_QUOTA]);
-	do_cmd(cmd);
-	return;
-    }
+
+    sprintf(cmd, "%s setquota -dir %s -quota %s", fs,
+	    after[Q_DIRECTORY], after[Q_QUOTA]);
+    do_cmd(cmd);
+    return;
 }

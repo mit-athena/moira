@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.dc,v $
  *	$Author: genoa $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.dc,v 2.11 1992-12-06 20:40:25 genoa Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.dc,v 2.12 1992-12-07 10:38:17 genoa Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_qsupport_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.dc,v 2.11 1992-12-06 20:40:25 genoa Exp $";
+static char *rcsid_qsupport_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.dc,v 2.12 1992-12-07 10:38:17 genoa Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -2248,6 +2248,7 @@ get_list_info(q, aargv, cl, action, actarg)
     char maillist[5], grouplist[5], gid_str[6], acl_name[256], desc[256];
     char modtime[27], modby[256], modwith[9];
     int id, rowcount, acl_id, hid, modby_id;
+    char qual[80];
     EXEC SQL END DECLARE SECTION;
     int returned, status;
     struct save_queue *sq, *sq_create();
@@ -2257,8 +2258,10 @@ get_list_info(q, aargv, cl, action, actarg)
     convert_wildcards(name);
 
     sq = sq_create();
+    sprintf(qual,"name LIKE '%s' ESCAPE '*'",name);
+    optimize_sql_stmt(qual);
     EXEC SQL DECLARE csr102 CURSOR FOR SELECT list_id FROM list
-      WHERE name LIKE :name ESCAPE '*';
+      WHERE :qual;
     EXEC SQL OPEN csr102;
     while(1)
     {

@@ -1,4 +1,4 @@
-/* $Id: qrtn.pc,v 2.12 1998-03-18 23:25:48 danw Exp $
+/* $Id: qrtn.pc,v 2.13 1998-03-25 17:59:51 danw Exp $
  *
  * Query-processing routines
  *
@@ -20,7 +20,7 @@
 EXEC SQL INCLUDE sqlca;  /* SQL Communications Area */
 EXEC SQL INCLUDE sqlda;  /* SQL Descriptor Area */
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.pc,v 2.12 1998-03-18 23:25:48 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.pc,v 2.13 1998-03-25 17:59:51 danw Exp $");
 
 SQLDA *mr_sqlda;
 EXEC SQL BEGIN DECLARE SECTION;
@@ -459,7 +459,8 @@ char *build_qual(char *fmt_buf, int argc, char *argv[])
 	  arg = strchr(fmt, '%');
 	} else {
 	  /* LIKE arg: copy over up to the arg, then copy and convert arg */
-	  int escape = 0;
+	  int escape = 0, pattern = 0;
+	  char *likepos = res + (like - fmt);
 
 	  strncpy(res, fmt, arg - fmt);
 	  res += arg - fmt;
@@ -473,10 +474,12 @@ char *build_qual(char *fmt_buf, int argc, char *argv[])
 		case '*':
 		  *res++ = '%';
 		  *res++ = '%'; /* need to double for build_sql_stmt */
+		  pattern = 1;
 		  break;
 
 		case '?':
 		  *res++ = '_';
+		  pattern = 1;
 		  break;
 
 		case '%':
@@ -497,8 +500,12 @@ char *build_qual(char *fmt_buf, int argc, char *argv[])
 		}
 	    }
 
+	  /* if no pattern characters, write over "LIKE" with " =  " */
+	  if (!pattern)
+	    memcpy(likepos, " =  ", 4);
+
 	  fmt = arg + 2;
-	  if (*fmt == '\'')
+	  while (*fmt != ' ')
 	    *res++ = *fmt++;
 
 	  if (escape)

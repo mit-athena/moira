@@ -1,4 +1,4 @@
-/* $Id: www.pc,v 1.7 2001-09-14 23:17:50 zacheiss Exp $
+/* $Id: www.pc,v 1.8 2002-04-05 22:53:50 zacheiss Exp $
  *
  * This generates the web server user & group data.
  *
@@ -21,7 +21,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/www.pc,v 1.7 2001-09-14 23:17:50 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/www.pc,v 1.8 2002-04-05 22:53:50 zacheiss Exp $");
 
 
 #ifndef WWW_SUBDIR
@@ -234,7 +234,7 @@ void group(FILE *out)
   EXEC SQL WHENEVER SQLERROR GOTO sqlerr;
 
   EXEC SQL DECLARE user_cursor CURSOR FOR
-    SELECT login FROM users WHERE status=1 OR status=2 OR status=6 
+    SELECT login FROM users WHERE status=1 OR status=2 OR status=6 OR status=9
     ORDER by login;
   EXEC SQL OPEN user_cursor;
 

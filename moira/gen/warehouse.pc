@@ -1,4 +1,4 @@
-/* $Id: warehouse.pc,v 1.11 2000-11-30 23:27:49 zacheiss Exp $
+/* $Id: warehouse.pc,v 1.12 2002-04-05 22:53:50 zacheiss Exp $
  *
  * This generates a database extract from the users table for the MIT
  * Warehouse.
@@ -28,7 +28,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/warehouse.pc,v 1.11 2000-11-30 23:27:49 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/warehouse.pc,v 1.12 2002-04-05 22:53:50 zacheiss Exp $");
 
 char *whoami = "warehouse.gen";
 char *db = "moira/moira";
@@ -96,7 +96,7 @@ int main(int argc, char **argv)
     SELECT login, clearid, first, last, middle
     FROM users
     WHERE (status = 1 or status = 2 or status = 5 OR
-	   status = 6 or status = 7);
+	   status = 6 or status = 7 or status = 9);
   EXEC SQL OPEN x;
   while (1)
     {

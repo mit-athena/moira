@@ -1,4 +1,4 @@
-/* $Id: moira.h,v 1.24 1999-07-17 21:39:24 danw Exp $
+/* $Id: moira.h,v 1.25 1999-10-06 03:03:44 danw Exp $
  *
  * Copyright (C) 1987-1998 by the Massachusetts Institute of Technology
  *
@@ -9,6 +9,7 @@
 
 /* return values from queries (and error codes) */
 
+#include <sys/types.h>
 #include <com_err.h>
 #include "mr_et.h"
 #include "krb_et.h"
@@ -127,6 +128,12 @@ void sq_destroy(struct save_queue *sq);
 char *strtrim(char *s);
 char *uppercase(char *s);
 char *lowercase(char *s);
+#ifndef HAVE_STRLCPY
+size_t strlcpy(char *dst, const char *src, size_t size);
+#endif
+#ifndef HAVE_STRLCAT
+size_t strlcat(char *dst, const char *src, size_t size);
+#endif
 
 /* mr_ functions */
 int mr_access(char *handle, int argc, char **argv);

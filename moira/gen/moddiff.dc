@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/moddiff.dc,v 1.4 1991-09-03 17:20:26 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/moddiff.dc,v 1.5 1992-12-21 16:41:59 mar Exp $
  *
  *  (c) Copyright 1990 by the Massachusetts Institute of Technology.
  *  For copying and distribution information, please see the file
@@ -31,23 +31,30 @@ int *flag;
 char *tbl;
 time_t ModTime;
 {
-    int filetimeno;
+    time_t filetimeno;
     EXEC SQL BEGIN DECLARE SECTION;
-    char filetime[29], *tbl_name;
+    char filetime[48], *tbl_name;
     EXEC SQL END DECLARE SECTION;
 
     *flag = 0;
     tbl_name = tbl;
-    EXEC SQL SELECT modtime INTO :filetime FROM tblstats WHERE tbl = :tbl_name;
+    EXEC SQL SELECT modtime INTO :filetime FROM tblstats 
+      WHERE table_name = :tbl_name;
     if (sqlca.sqlcode != 0) {
 	fprintf(stderr, "Query failed: %d\n", sqlca.sqlcode);
 	return(MR_DATE);
     }
+#ifdef DEBUG
+    printf("about to call Date2Sec, flag = 0x%x\n", flag);
+#endif
     if (Date2Sec (filetime, &filetimeno)) {
 	fprintf(stderr,"Unable to parse mod. date for file %s\n", tbl);
 	return(MR_DATE);
     }
-    *flag = (filetimeno - ModTime);
+#ifdef DEBUG
+    printf("got time, flag = 0x%x\n", flag);
+#endif
+    *flag = (int) (filetimeno - ModTime);
     return(0);
 }
 
@@ -60,15 +67,14 @@ time_t ModTime;
 
 Date2Sec(DS, UTime)
 char *DS;
-struct timeval *UTime;
+time_t *UTime;
 {
     static int defzone = -1;
     int Day, Month, Year, Hour, Minute, Sec, Err, TotalDays, Iter;
+    struct timeval tv;
+    struct timezone tz;
 
     if (defzone == -1) {
-	struct timeval tv;
-	struct timezone tz;
-
 	if (gettimeofday(&tv, &tz))
 	  defzone = 0;
 	else
@@ -76,7 +82,7 @@ struct timeval *UTime;
     }
 
 #ifdef DEBUG
-    printf("Date2Sec(\"%s\", %d.%d)\n", DS, UTime->tv_sec, UTime->tv_usec);
+    printf("Date2Sec(\"%s\", %d)\n", DS, *UTime);
 #endif
     Err = ParseDateString (DS, &Day, &Month, &Year, &Hour, &Minute,&Sec);
 #ifdef DEBUG
@@ -95,9 +101,8 @@ struct timeval *UTime;
 #ifdef DEBUG
 	printf("Days after months & days: %d\n", TotalDays);
 #endif
-	UTime->tv_sec = -((((24 * TotalDays) + 24 - Hour) * 60 - Minute) * 60 -
+	*UTime = -((((24 * TotalDays) + 24 - Hour) * 60 - Minute) * 60 -
 			  Sec) + defzone;
-	UTime->tv_usec = 0;
 	return (0);
     } else {
 	for (TotalDays = 0, Iter = 1970; Iter < Year; Iter++) {
@@ -112,10 +117,13 @@ struct timeval *UTime;
 	TotalDays += (Day - 1);
 #ifdef DEBUG
 	printf("Days after Days  : %d\n", TotalDays);
+	printf("Calculating seconds...(UTime = 0x%x)\n", *UTime);
 #endif
-	UTime->tv_sec = (((24 * TotalDays) + Hour) * 60 + Minute) * 60 +
+	*UTime = (((24 * TotalDays) + Hour) * 60 + Minute) * 60 +
 			Sec + defzone;
-	UTime->tv_usec = 0;
+#ifdef DEBUG
+	printf("Calculated value of %d\n", *UTime);
+#endif
 	return (0);
     }
 }
@@ -173,8 +181,8 @@ int *Day, *Month, *Year, *Hour, *Minute, *Sec;
     char *M, *D, *Temp;
     int Y=0, H=0, Min=0, S=0, DayNum=0, MonthNum=0;
 
-    M = (char *)malloc(strlen(DS));
-    D = (char *)malloc(strlen(DS));
+    M = (char *)malloc(strlen(DS) + 2);
+    D = (char *)malloc(strlen(DS) + 2);
     if (!(M && D)) return (1);
     Gotten = sscanf (DS, "%[^-]-%[^-]-%d %d:%d:%d", D, M, &Y, &H, &Min, &S);
     if (Gotten < 3) 

@@ -1,4 +1,4 @@
-/* $Id: lists.c,v 1.52 2003-01-02 01:03:36 zacheiss Exp $
+/* $Id: lists.c,v 1.53 2003-04-06 16:57:42 zacheiss Exp $
  *
  *	This is the file lists.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -24,7 +24,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v 1.52 2003-01-02 01:03:36 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v 1.53 2003-04-06 16:57:42 zacheiss Exp $");
 
 struct mqelem *GetListInfo(int type, char *name1, char *name2);
 char **AskListInfo(char **info, Bool name);
@@ -303,7 +303,7 @@ char **AskListInfo(char **info, Bool name)
 	if (GetValueFromUser(temp_buf, &info[L_MEMACE_NAME]) == SUB_ERROR)
 	  return NULL;
       }
-    else
+    else if (atoi(info[L_MAILMAN]))
       {
 	Put_message("Setting the Membership Administrator of a Mailman list to 'NONE'");
 	Put_message("means no one will receive the list administrator password.");

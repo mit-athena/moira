@@ -2,7 +2,7 @@
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/display.c,v $
  *	$Author: mar $
  *	$Locker:  $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/display.c,v 1.4 1988-09-12 17:29:04 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/display.c,v 1.5 1989-07-19 15:34:08 mar Exp $
  *
  *  (c) Copyright 1988 by the Massachusetts Institute of Technology.
  *  For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_display_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/display.c,v 1.4 1988-09-12 17:29:04 mar Exp $";
+static char *rcsid_display_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/display.c,v 1.5 1989-07-19 15:34:08 mar Exp $";
 #endif	lint
 
 #include <mit-copyright.h>
@@ -21,12 +21,11 @@ static char *rcsid_display_c = "$Header: /afs/.athena.mit.edu/astaff/project/moi
 
 #define DESC_WIDTH 18
 #define HEADER "*** Project Athena User Registration ***"
-#ifdef ibm032
-#define HELP   " Press backspace to delete a character.  Press Ctrl-C to start over."
-#else
-#ifdef vax
+#if defined(vax) || defined(mips)
 #define HELP   " Press the key marked <X| to delete a character.  Press Ctrl-C to start over."
 #endif
+#ifndef HELP
+#define HELP   " Press backspace to delete a character.  Press Ctrl-C to start over."
 #endif
 #define BORDER_CHAR '-'
 #define MIN_COLS 80

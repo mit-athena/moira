@@ -1,4 +1,4 @@
-/* $Id: addusr.c,v 1.17 2000-03-15 22:43:55 rbasch Exp $
+/* $Id: addusr.c,v 1.18 2000-04-21 19:48:35 zacheiss Exp $
  *
  * Program to add users en masse to the moira database
  *
@@ -19,7 +19,7 @@
 #include <stdio.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/addusr/addusr.c,v 1.17 2000-03-15 22:43:55 rbasch Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/addusr/addusr.c,v 1.18 2000-04-21 19:48:35 zacheiss Exp $");
 
 #ifdef ATHENA
 #define DEFAULT_SHELL "/bin/athena/tcsh"
@@ -27,8 +27,10 @@ RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/cl
 #define DEFAULT_SHELL "/bin/csh"
 #endif
 
+#define DEFAULT_WINCONSOLESHELL "cmd"
+
 /* flags from command line */
-char *class, *comment, *status_str, *shell, *filename;
+char *class, *comment, *status_str, *shell, *winconsoleshell, *filename;
 int reg_only, reg, verbose, nodupcheck, securereg;
 
 /* argument parsing macro */
@@ -54,6 +56,7 @@ int main(int argc, char **argv)
   server = NULL;
   filename = "-";
   shell = DEFAULT_SHELL;
+  winconsoleshell = DEFAULT_WINCONSOLESHELL;
   class = "TEMP";
   comment = "";
   status_str = "0";
@@ -103,6 +106,16 @@ int main(int argc, char **argv)
 		  shell = *arg;
 		}
 	      else
+		usage(argv);
+	    }
+	  else if (argis("w", "winshell"))
+	    {
+	      if (arg - argv < argc - 1)
+		{
+		  ++arg;
+		  winconsoleshell = *arg;
+		}
+	      else 
 		usage(argv);
 	    }
 	  else if (argis("6", "secure"))
@@ -155,12 +168,13 @@ int main(int argc, char **argv)
     }
 
   /* fire up Moira */
-  if (mrcl_connect(server, "addusr", 2, 1) != MRCL_SUCCESS)
+  if (mrcl_connect(server, "addusr", 3, 1) != MRCL_SUCCESS)
     exit(2);
 
   qargv[U_NAME] = UNIQUE_LOGIN;
   qargv[U_UID] = UNIQUE_UID;
   qargv[U_SHELL] = shell;
+  qargv[U_WINCONSOLESHELL] = winconsoleshell;
   qargv[U_STATE] = status_str;
   qargv[U_CLASS] = class;
   qargv[U_COMMENT] = comment;
@@ -338,6 +352,8 @@ void usage(char **argv)
   fprintf(stderr, "   -C | -comment \"comment\" (default \"\")\n");
   fprintf(stderr, "   -s | -status status (default 0)\n");
   fprintf(stderr, "   -h | -shell shell (default %s)\n", DEFAULT_SHELL);
+  fprintf(stderr, "   -w | -winshell windows console shell (default %s)\n",
+	  DEFAULT_WINCONSOLESHELL);
   fprintf(stderr, "   -r | -reg_only\n");
   fprintf(stderr, "   -R | -register (and add to database)\n");
   fprintf(stderr, "   -v | -verbose\n");

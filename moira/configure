@@ -2873,12 +2873,12 @@ ac_given_INSTALL="$INSTALL"
 
 trap 'rm -fr `echo "Makefile lib/Makefile include/Makefile clients/Makefile \
 	  clients/lib/Makefile clients/addusr/Makefile \
-	  clients/blanche/Makefile clients/mailmaint/Makefile
-	  clients/moira/Makefile clients/mrcheck/Makefile
-	  clients/mrtest/Makefile clients/stella/Makefile \
-	  clients/passwd/Makefile update/Makefile man/Makefile \
-	  $SERVER_OUTPUT_FILES $AFS_OUTPUT_FILES \
-	  $RSAREF_OUTPUT_FILES" | sed "s/:[^ ]*//g"` conftest*; exit 1' 1 2 15
+	  clients/blanche/Makefile clients/chfn/Makefile \
+	  clients/chpobox/Makefile clients/chsh/Makefile \
+	  clients/mailmaint/Makefile clients/moira/Makefile \
+	  clients/mrcheck/Makefile clients/mrtest/Makefile \
+	  clients/stella/Makefile update/Makefile man/Makefile \
+	  $SERVER_OUTPUT_FILES $AFS_OUTPUT_FILES $RSAREF_OUTPUT_FILES" | sed "s/:[^ ]*//g"` conftest*; exit 1' 1 2 15
 EOF
 cat >> $CONFIG_STATUS <<EOF
 
@@ -2990,12 +2990,12 @@ cat >> $CONFIG_STATUS <<EOF
 
 CONFIG_FILES=\${CONFIG_FILES-"Makefile lib/Makefile include/Makefile clients/Makefile \
 	  clients/lib/Makefile clients/addusr/Makefile \
-	  clients/blanche/Makefile clients/mailmaint/Makefile
-	  clients/moira/Makefile clients/mrcheck/Makefile
-	  clients/mrtest/Makefile clients/stella/Makefile \
-	  clients/passwd/Makefile update/Makefile man/Makefile \
-	  $SERVER_OUTPUT_FILES $AFS_OUTPUT_FILES \
-	  $RSAREF_OUTPUT_FILES"}
+	  clients/blanche/Makefile clients/chfn/Makefile \
+	  clients/chpobox/Makefile clients/chsh/Makefile \
+	  clients/mailmaint/Makefile clients/moira/Makefile \
+	  clients/mrcheck/Makefile clients/mrtest/Makefile \
+	  clients/stella/Makefile update/Makefile man/Makefile \
+	  $SERVER_OUTPUT_FILES $AFS_OUTPUT_FILES $RSAREF_OUTPUT_FILES"}
 EOF
 cat >> $CONFIG_STATUS <<\EOF
 for ac_file in .. $CONFIG_FILES; do if test "x$ac_file" != x..; then

@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_sauth.c,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_sauth.c,v 1.14 1990-02-15 15:32:14 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_sauth.c,v 1.15 1990-02-16 15:21:51 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_sms_sauth_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_sauth.c,v 1.14 1990-02-15 15:32:14 mar Exp $";
+static char *rcsid_sms_sauth_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_sauth.c,v 1.15 1990-02-16 15:21:51 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -41,6 +41,7 @@ do_auth(cl)
 	AUTH_DAT ad;
 	int status, ok;
 	char buf[REALM_SZ+INST_SZ+ANAME_SZ], hostbuf[BUFSIZ], *host, *p;
+	extern int errno;
 
 	auth.length = cl->args->sms_argl[0];
 	bcopy(cl->args->sms_argv[0], (char *)auth.dat, auth.length);

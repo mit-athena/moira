@@ -1717,7 +1717,7 @@ fi
 
 
 
-# Oracle (default: yes, if /usr/oracle is present)
+# Oracle (default: yes, if $ORACLE_HOME is set)
 echo $ac_n "checking for Oracle""... $ac_c" 1>&6
 echo "configure:1723: checking for Oracle" >&5
 # Check whether --with-oracle or --without-oracle was given.
@@ -1725,8 +1725,8 @@ if test "${with_oracle+set}" = set; then
   withval="$with_oracle"
   oracle="$withval"
 else
-  if test -d /usr/oracle; then
-         oracle=/usr/oracle
+  if test -n "$ORACLE_HOME" -a -d "$ORACLE_HOME"; then
+         oracle=$ORACLE_HOME
      else
 	 oracle=no
      fi

@@ -2,7 +2,7 @@
  * $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.c,v $
  * $Author: mar $
  * $Locker:  $
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.c,v 1.17 1990-03-15 14:31:01 mar Exp $ 
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.c,v 1.18 1990-04-09 14:29:41 mar Exp $ 
  *
  *  (c) Copyright 1988 by the Massachusetts Institute of Technology.
  *  For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char    *rcsid_userreg_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.c,v 1.17 1990-03-15 14:31:01 mar Exp $";
+static char    *rcsid_userreg_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.c,v 1.18 1990-04-09 14:29:41 mar Exp $";
 #endif	lint
 
 #include <mit-copyright.h>
@@ -299,6 +299,10 @@ dolook()
 	case ETIMEDOUT:
 	case UREG_MISC_ERROR:
 		display_text(NETWORK_DOWN);
+		display_text_line(" ");
+		sprintf(line, "The specific error was: %s",
+			error_message(result));
+		display_text_line(line);
 		wait_for_user();
 		return (0);
 		
@@ -587,6 +591,7 @@ qexit()
 do_replace()
 {
 	int status;
+	char buf[100];
 	
 	/*
 	 * replaces a user in the database. If there is an error, it informs
@@ -603,6 +608,11 @@ do_replace()
 	timer_on();
 	if (status) {
 		display_text (NETWORK_DOWN);
+		display_text_line(" ");
+		sprintf(buf, "The specific error was: %s",
+			error_message(status));
+		display_text_line(buf);
+		wait_for_user();
 		return (-1);
 	} else return 0;
 }

@@ -1,5 +1,5 @@
 #!/bin/sh
-# $Id: acl.sh,v 1.4 2000-05-08 18:30:29 zacheiss Exp $
+# $Id: acl.sh,v 1.5 2000-06-06 04:44:27 zacheiss Exp $
 if [ -d /var/athena ] && [ -w /var/athena ]; then
     exec >/var/athena/moira_update.log 2>&1
 else 
@@ -8,6 +8,7 @@ fi
 
 # The following exit codes are defined and MUST BE CONSISTENT with the
 # error codes the library uses:
+MR_NOCRED=47836470
 MR_MISSINGFILE=47836473
 MR_MKCRED=47836474
 MR_TARERR=47836476
@@ -16,13 +17,15 @@ status=0
 
 PATH=/bin:/usr/bin
 TARFILE=/var/tmp/acl.out
+SRCDIR=/var/tmp/acltmp
 
 # Alert if the tar file does not exist
 test -r $TARFILE || exit $MR_MISSINGFILE
 
 # Make a temporary directory to unpack the tar file into
-mkdir /var/tmp/acltmp || exit $MR_MKCRED
-cd /var/tmp/acltmp || exit $MR_MKCRED
+rm -rf $SRCDIR
+mkdir $SRCDIR || exit $MR_MKCRED
+cd $SRCDIR || exit $MR_MKCRED
 tar xpf $TARFILE || exit $MR_TARERR
 
 # Copy over each file which is new or has changed
@@ -82,9 +85,17 @@ for file in `find . -type f -print | sed -e 's/^\.//'`; do
     fi
 done
 
+# Test if a site-specific post dcm script exists, and run it if it does
+if [ -x /etc/athena/postacldcm ]; then
+    /etc/athena/postacldcm >/dev/null 2>&1
+    if [ $? != 0 ]; then
+	exit $MR_NOCRED
+    fi
+fi
+
 # cleanup
 cd /
-rm -rf /var/tmp/acltmp
+rm -rf $SRCDIR
 test -f $TARFILE && rm -f $TARFILE
 test -f $0 && rm -f $0
 

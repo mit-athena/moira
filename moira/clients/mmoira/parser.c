@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/parser.c,v 1.2 1992-12-31 13:55:45 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/parser.c,v 1.3 1993-01-04 10:21:57 mar Exp $
  *
  * TOPS-20 style command parser
  *
@@ -156,6 +156,7 @@ char *prompt;
 
     n = nod;
     state = MATCH;
+    best = NULNODE;
     for (ln = line; n && state == MATCH; best && (n = best->p_next)) {
 	last = best;
 	state = single_parse(&ln, n, &best, &ambig, &nomatch);

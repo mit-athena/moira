@@ -1,4 +1,4 @@
-/* $Id: cluster.c,v 1.41 2000-03-29 22:25:18 zacheiss Exp $
+/* $Id: cluster.c,v 1.42 2000-03-30 21:59:52 zacheiss Exp $
  *
  *	This is the file cluster.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -41,7 +41,9 @@
 #include <string.h>
 
 void PrintAliases(char **info);
+void PrintMachine(char **info);
 struct mqelem *GetMCInfo(int type, char *name1, char *name2);
+struct mqelem *GetMachineByOwner(char *type, char *name);
 char **AskMCDInfo(char **info, int type, Bool name);
 int CheckAndRemoveFromCluster(char *name, Bool ask_user);
 int CheckAndRemoveMachines(char *name, Bool ask_first);
@@ -233,6 +235,20 @@ static char *PrintMachInfo(char **info)
   sprintf(buf, MOD_FORMAT, info[M_MODBY], info[M_MODTIME], info[M_MODWITH]);
   Put_message(buf);
   return info[M_NAME];
+}
+
+/*      Function Name: PrintMachine
+ *      Description: Prints the name of a machine record
+ *      Arguments: info - array of information about the machine.
+ *      Returns: nothing.
+ */
+
+static void PrintMachine(char **info)
+{
+     char buf[BUFSIZ];
+
+     sprintf(buf, "Machine: %s", info[M_NAME]);
+     Put_message(buf);
 }
 
 /*	Function Name: PrintCname
@@ -1719,4 +1735,69 @@ int MachineToClusterMap(int argc, char **argv)
   FreeQueue(top);
   free(tmpname);
   return DM_NORMAL;
+}
+
+/*        Function Name: MachineByOwner
+ *        Description: This function prints all machines which are owned by 
+ *                     a given user or group.
+ *        Arguments: none.
+ *        Returns: DM_NORMAL.
+ */
+
+int MachineByOwner(int argc, char **argv)
+{
+  char buf[BUFSIZ], temp_buf[BUFSIZ], *type, *name;
+  struct mqelem *top;
+
+  type = strdup("USER");
+  if (GetTypeFromUser("Type of owner", "ace_type", &type) == SUB_ERROR)
+    return DM_NORMAL;
+
+  sprintf(buf, "Name of %s", type);
+  name = strdup(user);
+  if (GetValueFromUser(buf, &name) == SUB_ERROR)
+    return DM_NORMAL;
+
+  switch (YesNoQuestion("Do you want a recursive search (y/n)", FALSE))
+    {
+    case TRUE:
+      sprintf(temp_buf, "R%s", type);     /* "USER to "RUSER", etc. */
+      free(type);
+      type = strdup(temp_buf);
+      break;
+    case FALSE:
+      break;
+    default:
+      return DM_NORMAL;
+    }
+
+  top = GetMachineByOwner(type, name);
+  Loop(top, PrintMachine);
+
+  FreeQueue(top);
+  return DM_NORMAL;
+}
+
+/*         Function Name: GetMachineByOwner
+ *         Description: This function stores information retrieved by 
+ *                      the get_host_by_owner query
+ *         Arguments: type - an ace_type, argv[0] for the query
+ *                    name - name of machine, argv[1] for the query
+ *         Returns: the top element of a queue returning the data, or NULL.
+ */
+
+struct mqelem *GetMachineByOwner(char *type, char *name)
+{
+  char *args[2];
+  struct mqelem *elem = NULL;
+  int status;
+
+  args[0] = type;
+  args[1] = name;
+  if ((status = do_mr_query("get_host_by_owner", 2, args, StoreInfo, &elem)))
+    {
+      com_err(program_name, status, " in get_host_by_owner");
+      return NULL;
+    }
+  return QueueTop(elem);
 }

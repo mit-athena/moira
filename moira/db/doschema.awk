@@ -1,4 +1,4 @@
-# $Id: doschema.awk,v 1.1 1998-03-03 00:04:19 danw Exp $
+# $Id: doschema.awk,v 1.2 1998-04-15 03:00:15 danw Exp $
 #
 # Build moira_schema.c and .h from the schema.sql file
 # It knows which one to build cased on whether or not its input is
@@ -66,7 +66,7 @@ NF >= 2 {
 
 END {
   if (hfile) {
-    printf "\n#define MAX_FIELD_WIDTH %d\n", maxsize;
+    printf "\n#define MAX_FIELD_WIDTH %d\n", maxsize + 1;
     printf "\nenum tables { NO_TABLE,";
     len = 22;
   } else {

@@ -1,6 +1,6 @@
 /* This file defines the query dispatch table for version 2 of the protocol
  *
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/queries2.c,v 2.16 1993-11-01 12:06:44 mar Exp $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/queries2.c,v 2.17 1993-11-10 15:32:49 mar Exp $
  *
  * Copyright 1987, 1988 by the Massachusetts Institute of Technology.
  * For copying and distribution information, please see the file
@@ -23,6 +23,8 @@ int access_member();
 int access_qgli();
 int access_service();
 int access_filesys();
+int access_host();
+int access_ahal();
 
 /* Query Setup Routines */
 int prefetch_value();
@@ -47,6 +49,8 @@ int setup_dqot();
 int setup_sshi();
 int setup_akum();
 int setup_dsnt();
+int setup_ahst();
+int setup_ahal();
 
 /* Query Followup Routines */
 int followup_fix_modby();
@@ -62,6 +66,7 @@ int followup_gpce();
 int followup_guax();
 int followup_uuac();
 int followup_gsnt();
+int followup_ghst();
 
 int set_modtime();
 int set_modtime_by_id();
@@ -102,6 +107,7 @@ int _sdl_followup();
 static char ACE_NAME[] = "ace_name";
 static char ACE_TYPE[] = "ace_type";
 static char ADDRESS[] = "address";
+static char ALIAS[] = "alias";
 static char CLASS[] = "class";
 static char CLU_ID[] = "clu_id";
 static char CLUSTER[] = "cluster";
@@ -762,63 +768,105 @@ static char *gmac_fields[] = {
   NAME, TYPE, MOD1, MOD2, MOD3,
 };
 
-static char *amac_fields[] = {
-  NAME, TYPE,
+static char *ghst_fields[] = {
+  NAME, ADDRESS, "location", "contact",
+  NAME, "vendor", "model", "os", "location", "contact", "use", "status", "status_change", SUBNET, ADDRESS, ACE_TYPE, ACE_NAME, "admin_comment", "ops_comment", "created", "creator", "inuse", MOD1, MOD2, MOD3,
 };
 
-static struct valobj amac_valobj[] = {
+static struct valobj ghst_valobj[] = {
+  {V_UPWILD, 0},
+  {V_UPWILD, 1},
+  {V_UPWILD, 2},
+  {V_UPWILD, 3},
+  {V_SORT, 0},
+};
+
+static struct validate ghst_validate = { 
+  ghst_valobj,
+  5,
+  0,
+  0,
+  0,
+  0,
+  access_host,
+  0,
+  followup_ghst,
+};
+
+static char *ahst_fields[] = {
+  NAME, "vendor", "model", "os", "location", "contact", "use", "status", SUBNET, ADDRESS, ACE_TYPE, ACE_NAME, "admin_comment", "ops_comment",
+};
+
+static struct valobj ahst_valobj[] = {
   {V_CHAR, 0},
+  {V_CHAR, 1},
+  {V_CHAR, 2},
+  {V_CHAR, 3},
+  {V_CHAR, 4},
   {V_LOCK, 0, MACHINE, 0, MACH_ID, MR_DEADLOCK},
-  {V_TYPE, 1, "mac_type", 0, 0, MR_TYPE},
+  {V_ID, 8, SUBNET, NAME, SNET_ID, MR_SUBNET},
+  {V_TYPE, 10, ACE_TYPE, 0, 0, MR_ACE},
+  {V_TYPEDATA, 11, 0, 0, 0, MR_ACE},
+  {V_ID, 12, "strings", "string", "string_id", MR_NO_MATCH},
+  {V_ID, 13, "strings", "string", "string_id", MR_NO_MATCH},
 };
 
-static struct validate amac_validate = {
-  amac_valobj,
-  3,
+static struct validate ahst_validate = {
+  ahst_valobj,
+  11,
   NAME,
   "name = uppercase(LEFT('%s',SIZE(name)))",
   1,
   MACH_ID,
-  0,
-  prefetch_value,
+  access_host,
+  setup_ahst,
   set_uppercase_modtime,
 };
 
-static char *umac_fields[] = {
+static char *uhst_fields[] = {
   NAME,
-  "newname", TYPE,
+  "newname", "vendor", "model", "os", "location", "contact", "use", "status", SUBNET, ADDRESS, ACE_TYPE, ACE_NAME, "admin_comment", "ops_comment",
 };
 
-static struct valobj umac_valobj[] = {
-  {V_LOCK, 0, MACHINE, 0, MACH_ID, MR_DEADLOCK},
+static struct valobj uhst_valobj[] = {
+  {V_CHAR, 0},
   {V_ID, 0, MACHINE, NAME, MACH_ID, MR_MACHINE},
   {V_RENAME, 1, MACHINE, NAME, MACH_ID, MR_NOT_UNIQUE},
-  {V_TYPE, 2, "mac_type", 0, 0, MR_TYPE},
+  {V_CHAR, 2},
+  {V_CHAR, 3},
+  {V_CHAR, 4},
+  {V_CHAR, 5},
+  {V_LOCK, 0, MACHINE, 0, MACH_ID, MR_DEADLOCK},
+  {V_ID, 9, SUBNET, NAME, SNET_ID, MR_SUBNET},
+  {V_TYPE, 11, ACE_TYPE, 0, 0, MR_ACE},
+  {V_TYPEDATA, 12, 0, 0, 0, MR_ACE},
+  {V_ID, 13, "strings", "string", "string_id", MR_NO_MATCH},
+  {V_ID, 14, "strings", "string", "string_id", MR_NO_MATCH},
 };
 
-static struct validate umac_validate = {
-  umac_valobj,
-  4,
+static struct validate uhst_validate = {
+  uhst_valobj,
+  13,
   0,
   0,
   0,
   MACH_ID,
-  0,
-  0,
+  access_host,
+  setup_ahst,
   set_modtime_by_id,
 };
 
-static char *dmac_fields[] = {
+static char *dhst_fields[] = {
   NAME,
 };
 
-static struct valobj dmac_valobj[] = {
+static struct valobj dhst_valobj[] = {
   {V_LOCK, 0, MACHINE, 0, MACH_ID, MR_DEADLOCK},
   {V_ID, 0, MACHINE, NAME, MACH_ID, MR_MACHINE},
 };
 
-static struct validate dmac_validate = {
-  dmac_valobj,
+static struct validate dhst_validate = {
+  dhst_valobj,
   2,
   0,
   0,
@@ -826,6 +874,65 @@ static struct validate dmac_validate = {
   0,
   0,
   setup_dmac,
+  0,
+};
+
+static char *ghal_fields[] = {
+    ALIAS, "canonical_hostname",
+    ALIAS, "canonical_hostname"
+};
+
+static struct valobj ghal_valobj[] = {
+  {V_UPWILD, 0},
+  {V_UPWILD, 1},
+  {V_SORT, 0},
+};
+
+static struct validate ghal_validate = {
+  ghal_valobj,
+  3,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+};
+
+static struct valobj ahal_valobj[] = {
+  {V_CHAR, 0},
+  {V_UPWILD, 0},
+  {V_ID, 1, MACHINE, NAME, MACH_ID, MR_MACHINE},
+};
+
+static struct validate ahal_validate = {
+  ahal_valobj,
+  3,
+  NAME,
+  "name = LEFT('%s',SIZE(name))",
+  1,
+  MACH_ID,
+  access_ahal,
+  setup_ahal,
+  0,
+};
+
+static struct valobj dhal_valobj[] = {
+    {V_UPWILD, 0},
+    {V_LOCK, 0, MACHINE, 0, MACH_ID, MR_DEADLOCK},
+    {V_ID, 1, MACHINE, NAME, MACH_ID, MR_MACHINE},
+};
+
+static struct validate dhal_validate = {
+  dhal_valobj,
+  3,
+  NAME,
+  "name = LEFT('%s',SIZE(name)) AND mach_id = %d",
+  2,
+  MACH_ID,
+  access_ahal,
+  0,
   0,
 };
 
@@ -860,7 +967,7 @@ static struct valobj asnt_valobj[] = {
   {V_LOCK, 0, SUBNET, 0, SNET_ID, MR_DEADLOCK},
   {V_CHAR, 0},
   {V_TYPE, 6, ACE_TYPE, 0, 0, MR_ACE},
-  {V_TYPEDATA, 7, 0, 0, LIST_ID, MR_ACE},
+  {V_TYPEDATA, 7, 0, 0, 0, MR_ACE},
 };
 
 static struct validate asnt_validate = 
@@ -868,8 +975,8 @@ static struct validate asnt_validate =
     asnt_valobj,
     4,
     NAME,
-    "name = uppercase(LEFT('%s',SIZE(name)))",
-    1,
+    "name = uppercase(LEFT('%s',SIZE(name))) OR description = '__'+'%s' OR saddr = '%s'",
+    3,
     SNET_ID,
     0,
     prefetch_value,
@@ -886,7 +993,7 @@ static struct valobj usnt_valobj[] = {
   {V_ID, 0, SUBNET, NAME, SNET_ID, MR_NO_MATCH},
   {V_RENAME, 1, SUBNET, NAME, SNET_ID, MR_NOT_UNIQUE},
   {V_TYPE, 7, ACE_TYPE, 0, 0, MR_ACE},
-  {V_TYPEDATA, 8, 0, 0, LIST_ID, MR_ACE},
+  {V_TYPEDATA, 8, 0, 0, 0, MR_ACE},
 };
 
 static struct validate usnt_validate = 
@@ -894,8 +1001,8 @@ static struct validate usnt_validate =
     usnt_valobj,
     5,
     NAME,
-    "snet_id = %d",
-    1,
+    "snet_id = %d OR description = '__'+'%s' OR description = '__'+'%s' OR saddr = '%s'",
+    4,
     SNET_ID,
     0,
     0,
@@ -908,7 +1015,7 @@ static char *dsnt_fields[] = {
 
 static struct valobj dsnt_valobj[] = {
   {V_LOCK, 0, SUBNET, 0, SNET_ID, MR_DEADLOCK},
-  {V_ID, 0, SUBNET, NAME, SNET_ID, MR_MACHINE},
+  {V_ID, 0, SUBNET, NAME, SNET_ID, MR_SUBNET},
 };
 
 static struct validate dsnt_validate = {
@@ -2251,7 +2358,7 @@ static char *aali_fields[] = {
 
 static struct valobj aali_valobj[] = {
   {V_CHAR, 0},
-  {V_TYPE, 1, "alias", 0, 0, MR_TYPE},
+  {V_TYPE, 1, ALIAS, 0, 0, MR_TYPE},
   {V_CHAR, 2},
 };
 
@@ -2868,7 +2975,7 @@ struct query Queries2[] = {
     RETRIEVE,
     "m",
     MACHINE,
-    "CHAR(m.name), m.type, CHAR(m.modtime), CHAR(m.modby), modwith FROM machine m",
+    "CHAR(m.name), m.vendor, CHAR(m.modtime), CHAR(m.modby), m.modwith FROM machine m",
     gmac_fields,
     5,
     "m.name LIKE '%s' ESCAPE '*' AND m.mach_id != 0", 
@@ -2877,48 +2984,108 @@ struct query Queries2[] = {
   },
 
   {
-    /* Q_AMAC - ADD_MACHINE */ /* uses prefetch_value() for mach_id */
-    "add_machine",
-    "amac",
+    /* Q_GHST - GET_HOST */
+    "get_host",
+    "ghst",
+    RETRIEVE,
+    "m",
+    MACHINE,
+    "CHAR(m.name), m.vendor, m.model, m.os, m.location, m.contact, CHAR(m.use), CHAR(m.status), CHAR(m.statuschange), CHAR(s.name), m.address, m.owner_type, CHAR(m.owner_id), CHAR(m.acomment), CHAR(m.ocomment), CHAR(m.created), CHAR(m.creator), CHAR(m.inuse), CHAR(m.modtime), CHAR(m.modby), m.modwith FROM machine m, subnet s",
+    ghst_fields,
+    21,
+    "m.name LIKE '%s' ESCAPE '*' AND m.address LIKE '%s' ESCAPE '*' AND m.location LIKE '%s' ESCAPE '*' AND m.contact LIKE '%s' ESCAPE '*' AND m.mach_id != 0 AND s.snet_id = m.snet_id", 
+    4,
+    &ghst_validate,
+  },
+
+  {
+    /* Q_AHST - ADD_HOST */ /* uses prefetch_value() for mach_id */
+    "add_host",
+    "ahst",
     APPEND,
     "m",
     MACHINE,
-    "INTO machine (name, type, mach_id) VALUES (uppercase('%s'),'%s',%s)",
-    amac_fields,
-    2,
+    "INTO machine (name, vendor, model, os, location, contact, use, status, statuschange, snet_id, address, owner_type, owner_id, acomment, ocomment, created, inuse, mach_id, creator) VALUES (uppercase('%s'),uppercase('%s'),uppercase('%s'),uppercase('%s'),uppercase('%s'),'%s',%s,%s,date('now'),%d,'%s','%s',%d,%d,%d,date('now'),date('now'),%s,%s)",
+    ahst_fields,
+    14,
     0,
     0,
-    &amac_validate,
+    &ahst_validate,
   },
 
   {
-    /* Q_UMAC - UPDATE_MACHINE */
-    "update_machine",
-    "umac",
+    /* Q_UHST - UPDATE_HOST */
+    "update_host",
+    "uhst",
     UPDATE,
     "m",
     MACHINE,
-    "machine SET name = uppercase('%s'), type = '%s'",
-    umac_fields,
-    2,
+    "machine SET name=uppercase('%s'),vendor=uppercase('%s'),model=uppercase('%s'),os=uppercase('%s'),location=uppercase('%s'),contact='%s',use=%s,status=%s,snet_id=%d,address='%s',owner_type='%s',owner_id=%d,acomment=%d,ocomment=%d",
+    uhst_fields,
+    14,
     "mach_id = %d",
     1,
-    &umac_validate,
+    &uhst_validate,
   },
 
   {
-    /* Q_DMAC - DELETE_MACHINE */
-    "delete_machine",
-    "dmac",
+    /* Q_DHST - DELETE_HOST */
+    "delete_host",
+    "dhst",
     DELETE,
     "m",
     MACHINE,
     (char *)0,
-    dmac_fields,
+    dhst_fields,
     0,
     "mach_id = %d",
     1,
-    &dmac_validate,
+    &dhst_validate,
+  },
+
+  {
+    /* Q_GHAL - GET_HOSTALIAS */
+    "get_hostalias",
+    "ghal",
+    RETRIEVE,
+    "a",
+    "hostalias",
+    "CHAR(a.name), CHAR(m.name) FROM hostalias a, machine m",
+    ghal_fields,
+    2,
+    "m.mach_id = a.mach_id and a.name LIKE '%s' ESCAPE '*' AND m.name LIKE '%s' ESCAPE '*'",
+    2,
+    &ghal_validate,
+  },
+
+  {
+    /* Q_AHAL - ADD_HOSTALIAS */
+    "add_hostalias",
+    "ahal",
+    APPEND,
+    "a",
+    "hostalias",
+    "INTO hostalias (name, mach_id) VALUES (uppercase('%s'),%d)",
+    ghal_fields,
+    2,
+    0,
+    0,
+    &ahal_validate,
+  },
+
+  {
+    /* Q_DHAL - DELETE_HOSTALIAS */
+    "delete_hostalias",
+    "dhal",
+    DELETE,
+    "a",
+    "hostalias",
+    (char *)0,
+    ghal_fields,
+    0,
+    "name = uppercase('%s') AND mach_id = %d",
+    2,
+    &dhal_validate,
   },
 
   {
@@ -4262,7 +4429,7 @@ struct query Queries2[] = {
     "gali",
     RETRIEVE,
     "a",
-    "alias",
+    ALIAS,
     "CHAR(a.name), CHAR(a.type), CHAR(a.trans) FROM alias a",
     gali_fields,
     3,
@@ -4277,7 +4444,7 @@ struct query Queries2[] = {
     "aali",
     APPEND,
     "a",
-    "alias",
+    ALIAS,
     "INTO alias (name, type, trans) VALUES ('%s', '%s', '%s')",
     aali_fields,
     3,
@@ -4292,7 +4459,7 @@ struct query Queries2[] = {
     "dali",
     DELETE,
     "a",
-    "alias",
+    ALIAS,
     (char *)0,
     aali_fields,
     0,

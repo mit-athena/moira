@@ -2,7 +2,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.dc,v $
  *	$Author: genoa $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.dc,v 2.1 1992-06-22 22:57:52 genoa Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.dc,v 2.2 1992-07-07 22:36:30 genoa Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -11,7 +11,7 @@
  */
 
 #ifndef lint
-static char *rcsid_qsupport_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.dc,v 2.1 1992-06-22 22:57:52 genoa Exp $";
+static char *rcsid_qsupport_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.dc,v 2.2 1992-07-07 22:36:30 genoa Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -28,7 +28,6 @@ EXEC SQL INCLUDE sqlda;
 extern char *whoami, *strsave();
 extern int ingres_errno, mr_errcode;
 
-extern MR_SQLDA_T *SQLDA;
 EXEC SQL BEGIN DECLARE SECTION; 
 int idummy;                            
 extern char *cdummy, *stmt_buf;
@@ -41,6 +40,8 @@ EXEC SQL END DECLARE SECTION;
  *  - since field validation routines are called first, a users_id is
  *    now in argv[0] instead of the login name.
  */
+
+EXEC SQL WHENEVER SQLERROR CALL ingerr;
 
 access_user(q, argv, cl)
     struct query *q;
@@ -685,7 +686,7 @@ int setup_dshi(q, argv)
 {
     EXEC SQL BEGIN DECLARE SECTION; 
     int id;
-    char *name;
+    char *name, *c;
     EXEC SQL END DECLARE SECTION; 
 
     name = argv[0];
@@ -1123,7 +1124,7 @@ set_uppercase_modtime(q, argv, cl)
     char **argv;
     client *cl;
 {
-    char *name, *entity, *table;
+    char *name, *entity, *table, *c;
     int who;
 
     entity = cl->entity;
@@ -2007,7 +2008,7 @@ get_list_info(q, aargv, cl, action, actarg)
 	if (id == 0)
 	  continue;
 	argv[6] = gid_str;
- *
+/*
  *	repeat retrieve (listname = l.#name, active = text(l.#active), 
  *		public = text(l.#public), hidden = text(l.#hidden),
  *		hid = l.#hidden, maillist = text(l.#maillist),
@@ -2739,7 +2740,7 @@ get_members_of_list(q, argv, cl, action, actarg)
 	if (sqlca.sqlcode != 0) break;
 	if (members++ > 49) 
 	  break;
-	sq_save_data(sq, (member_type[0] << 24) | (member_id & 0xffffff));
+	sq_save_data(sq, ((int)member_type[0] << 24) | (member_id & 0xffffff));
     }
     EXEC SQL CLOSE csr118;
 
@@ -2812,7 +2813,7 @@ get_members_of_list(q, argv, cl, action, actarg)
     targv[0] = "STRING";
     EXEC SQL DECLARE csr121 CURSOR FOR 
       SELECT strings.string FROM strings, imembers
-	WHERE imembers.list_id = :listid AND imembers.member_type='STRING'
+	WHERE imembers.list_id = :list_id AND imembers.member_type='STRING'
 	  AND imembers.member_id = strings.string_id AND imembers.direct=1
 	ORDER BY 1;
     EXEC SQL OPEN csr121;
@@ -2827,7 +2828,7 @@ get_members_of_list(q, argv, cl, action, actarg)
     targv[0] = "KERBEROS";
     EXEC SQL DECLARE csr122 CURSOR FOR 
       SELECT strings.string FROM strings, imembers
-	WHERE imembers.list_id = :listid AND imembers.member_type='KERBEROS'
+	WHERE imembers.list_id = :list_id AND imembers.member_type='KERBEROS'
 	  AND imembers.member_id = strings.string_id AND imembers.direct=1
 	ORDER BY 1;
     EXEC SQL OPEN csr122;
@@ -2909,7 +2910,7 @@ int qualified_get(q, argv, action, actarg, start, range, field, flags)
     char *field;
     char *flags[];
 {
-    char name[33], qual[256], *rvar, *rtbl, *rfield;
+    char name[33], qual[256];
     int rowcount=0, i;
     char *rargv[1], buf[32];
 
@@ -2924,20 +2925,17 @@ int qualified_get(q, argv, action, actarg, start, range, field, flags)
 	}
     }
       
-    rargv[0] = name;
-    rvar = range;
-    rtbl = q->rtable;
-    rfield = field;
-    sprintf(stmt_buf,"SELECT %s.%s FROM %s WHERE %s",rtbl,rfield,rtbl,qual);
-    EXEC SQL PREPARE stmt FROM :stmt_buf; 
-    EXEC SQL DESCRIBE stmt INTO :SQLDA; 
-    SQLDA->sqlvar[0].sqldata=name;
-    SQLDA->sqlvar[0].sqllen=32;
+    rargv[0] = SQLDA->sqlvar[0].sqldata;
+    sprintf(stmt_buf,"SELECT %s.%s FROM %s WHERE %s",q->rtable,field,q->rtable,qual);
+    EXEC SQL PREPARE stmt INTO :SQLDA USING NAMES FROM :stmt_buf; 
+    if((mr_errcode=mr_check_SQLDA(SQLDA)) != MR_SUCCESS)
+      return(mr_errcode);
     EXEC SQL DECLARE csr123 CURSOR FOR stmt;
     EXEC SQL OPEN csr123;
     while(1) {
         EXEC SQL FETCH csr123 USING DESCRIPTOR :SQLDA;
         if(sqlca.sqlcode != 0) break;
+	mr_fix_nulls_in_SQLDA(SQLDA); 
         rowcount++;
 	(*action)(1, rargv, actarg);
     }
@@ -3247,7 +3245,7 @@ validate_row(q, argv, v)
     register struct validate *v;
 {
     EXEC SQL BEGIN DECLARE SECTION; 
-    char *rvar, *tbl, *name;
+    char *name;
     char qual[128];
     int rowcount;
     EXEC SQL END DECLARE SECTION; 
@@ -3255,10 +3253,11 @@ validate_row(q, argv, v)
     /* build where clause */
     build_qual(v->qual, v->argc, argv, qual);
 
+#ifdef NEVER
+    /** I'm pretty sure we don't need this now */
     /* setup ingres variables */
-    rvar = q->rvar;
-    tbl = q->rtable;
     name = v->field;
+#endif
 
     if (log_flags & LOG_VALID)
 	/* tell the logfile what we're doing */
@@ -3269,15 +3268,13 @@ validate_row(q, argv, v)
  *  range of rvar is table
  *  retrieve (rowcount = count(rvar.name where qual))
  */    
-    sprintf(stmt_buf,"SELECT COUNT (*) FROM %s %s WHERE %s",tbl,rvar,qual);
-    EXEC SQL PREPARE stmt FROM :stmt_buf; 
-    EXEC SQL DESCRIBE stmt INTO :SQLDA; 
-    SQLDA->sqlvar[0].sqldata=&rowcount;    
-    SQLDA->sqlvar[0].sqllen=sizeof(rowcount);
+    sprintf(stmt_buf,"SELECT COUNT (*) FROM %s %s WHERE %s",q->rtable,q->rvar,qual);
+    EXEC SQL PREPARE stmt INTO :SQLDA USING NAMES FROM :stmt_buf; 
     EXEC SQL DECLARE csr126 CURSOR FOR stmt;
     EXEC SQL OPEN csr126;
     EXEC SQL FETCH csr126 USING DESCRIPTOR :SQLDA;
     EXEC SQL CLOSE csr126;
+    rowcount=*(int *)SQLDA->[0].sqldata;
 
     if (ingres_errno) return(mr_errcode);
     if (rowcount == 0) return(MR_NO_MATCH);
@@ -3406,7 +3403,7 @@ validate_id(q, argv, vo)
     register char *c;
 
     name = argv[vo->index];
-    table = vo->table;
+    tbl = vo->table;
     namefield = vo->namefield;
     idfield = vo->idfield;
 
@@ -3448,23 +3445,23 @@ validate_id(q, argv, vo)
 /*
  *    retrieve (id = table.idfield) where table.namefield = name
  */
-      sprintf(stmt_buf,SELECT %s FROM %s WHERE %s.%s = '%s'",idfield,tbl,tbl,namefield,name);
+      sprintf(stmt_buf,"SELECT %s FROM %s WHERE %s.%s = '%s'",idfield,tbl,tbl,namefield,name);
       if (ingres_errno) return(mr_errcode);
     }
-    EXEC SQL PREPARE stmt FROM :stmt_buf; 
-    EXEC SQL DESCRIBE stmt INTO :SQLDA; 
-    SQLDA->sqlvar[0].sqldata=&id;
-    SQLDA->sqlvar[0].sqllen=sizeof(id);
+    EXEC SQL PREPARE stmt INTO :SQLDA USING NAMES FROM :stmt_buf; 
     EXEC SQL DECLARE csr127 CURSOR FOR stmt;
     EXEC SQL OPEN csr127;
+    rowcount=0;
     EXEC SQL FETCH csr127 USING DESCRIPTOR :SQLDA;
-    if(sqlca.sqlcode == 0) rowcount=1; else rowcount=0;
-    EXEC SQL FETCH csr127 USING DESCRIPTOR :SQLDA;
-    if(sqlca.sqlcode == 0) rowcount=2;
+    if(sqlca.sqlcode == 0) {
+	rowcount++;
+	EXEC SQL FETCH csr127 USING DESCRIPTOR :SQLDA;
+	if(sqlca.sqlcode == 0) rowcount++
+    }
     EXEC SQL CLOSE csr127;
 
     if (rowcount != 1) return(vo->error);
-    *(int *)argv[vo->index] = id;
+    *argv[vo->index] = *SQLDA->sqlvar[0]->sqldata;
     return(MR_EXISTS);
 }
 
@@ -3492,14 +3489,11 @@ validate_name(argv, vo)
  */
     sprintf(stmt_buf,"SELECT COUNT (DISTINCT *) FROM %s WHERE %s.%s = '%s'",
 	    tbl,tbl,namefield,name);
-    EXEC SQL PREPARE stmt FROM :stmt_buf; 
-    EXEC SQL DESCRIBE stmt INTO :SQLDA;
-    SQLDA->sqlvar[0].sqldata=&rowcount;
-    SQLDA->sqlvar[0].sqllen=sizeof(rowcount);
-    rowcount=0;
+    EXEC SQL PREPARE stmt INTO :SQLDA USING NAMES FROM :stmt_buf; 
     EXEC SQL DECLARE csr128 CURSOR FOR stmt;
     EXEC SQL OPEN csr128;
     EXEC SQL FETCH csr128 USING DESCRIPTOR :SQLDA; 
+    rowcount=*(int *)SQLDA->sqlvar[0]->sqldata;
     EXEC SQL CLOSE csr128;
 
     if (ingres_errno) return(mr_errcode);
@@ -3557,10 +3551,7 @@ struct valobj *vo;
  */
 	sprintf(stmt_buf,"SELECT %s FROM %s WHERE %s.%s = '%s'",
 		namefield,tbl,tbl,namefield,name);
-	EXEC SQL PREPARE stmt FROM :stmt_buf; 
-	EXEC SQL DESCRIBE stmt INTO :SQLDA; 
-	SQLDA->sqlvar[0].sqldata = cdummy;
-	SQLDA->sqlvar[0].sqllen = MR_CDUMMY_LEN-1;
+	EXEC SQL PREPARE stmt INTO :SQLDA USING NAMES FROM :stmt_buf; 
         EXEC SQL DECLARE csr129 CURSOR FOR stmt;
 	EXEC SQL OPEN csr129;
         EXEC SQL FETCH csr129 USING DESCRIPTOR :SQLDA; 
@@ -3719,4 +3710,72 @@ struct valobj *vo;
 
 sanity_check_database()
 {
+}
+
+
+/* Dynamic SQL support routines */
+MR_SQLDA_T *mr_alloc_SQLDA()
+{
+    MR_SQLDA_T *it;
+    short *null_indicators;
+    register int j;
+
+    if((it=(MR_SQLDA_T *)malloc(sizeof(MR_SQLDA_T)))==NULL) {
+	com_err(whoami, MR_NO_MEM, "setting up SQLDA");
+	exit(1);
+    }
+
+    if((null_indicators=(short *)calloc(QMAXARGS,sizeof(short)))==NULL) {
+	com_err(whoami, MR_NO_MEM, "setting up SQLDA null indicators");
+	exit(1);
+    }
+
+    for(j=0; j<QMAXARGS; j++) {
+	if((it->sqlvar[j].sqldata=malloc(sizeof(short)+QMAXARGSIZE))==NULL) {
+	    com_err(whoami, MR_NO_MEM, "setting up SQLDA variables");
+	    exit(1);
+	}
+	it->sqlvar[j].sqllen=QMAXARGSIZE;
+	it->sqlvar[j].sqlind=null_indicators+j;
+	null_indicators[j]=0;
+    }
+    it->sqln=QMAXARGS;
+    return it;
+}
+
+
+/* Use mr_check_SQLDA before OPEN CURSOR or EXECUTE */
+mr_check_SQLDA(da)
+    MR_SQLDA_T *da;
+{
+    if(da->sqld > da->sqln) {
+	com_err(whoami, MR_INTERNAL,
+                "Internal arg count error preparing for dynamic query");
+        return(MR_INTERNAL);
+    }
+
+    return(MR_SUCCESS);
+}
+
+mr_fix_nulls_in_SQLDA(da)
+    MR_SQLDA_T *da;
+{
+    register IISQLVAR *var;
+    register int j;
+    int *intp;
+
+    for(j=0, var=da->sqlvar; j<da->sqld; j++, var++) {
+	switch(var->sqltype) {
+	  case -IISQ_CHA_TYPE:
+	    if(*var->sqlind)
+	      *var->sqldata='\0';
+	    break;
+	  case -IISQ_INT_TYPE:
+	    if(*var->sqlind) {
+		intp=(int *)var->sqldata;
+		*intp=0;
+	    }
+	    break;
+	} /** I believe that these two are the only types Moira encounters */
+    }
 }

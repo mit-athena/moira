@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_param.c,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_param.c,v 1.6 1991-03-08 10:32:30 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_param.c,v 1.7 1993-10-22 14:18:10 mar Exp $
  *
  *	Copyright (C) 1987, 1990 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,13 +10,14 @@
  */
 
 #ifndef lint
-static char *rcsid_sms_param_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_param.c,v 1.6 1991-03-08 10:32:30 mar Exp $";
+static char *rcsid_sms_param_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_param.c,v 1.7 1993-10-22 14:18:10 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
 #include <sys/types.h>
 #include <netinet/in.h>
 #include "mr_private.h"
+#include <string.h>
 
 /*
  * GDB operations to send and recieve RPC requests and replies.
@@ -91,7 +92,7 @@ mr_start_send(op, hcon, arg)
 	
     arg->mr_flattened = buf = malloc(mr_size);
 
-    bzero(arg->mr_flattened, mr_size);
+    memset(arg->mr_flattened, 0, mr_size);
 	
     arg->mr_size = mr_size;
 	
@@ -117,7 +118,7 @@ mr_start_send(op, hcon, arg)
 	len = argl[i];
 	*((long *)bp) = htonl(len);
 	bp += sizeof(long);
-	bcopy(arg->mr_argv[i], bp, len);
+	memcpy(bp, arg->mr_argv[i], len);
 	bp += sizeof(long) * howmany(len, sizeof(long));
     }
     op->fcn.cont = mr_cont_send;
@@ -160,7 +161,7 @@ mr_cont_recv(op, hcon, argp)
 	    }
 	    arg->mr_flattened = malloc(arg->mr_size);
 	    arg->mr_state = S_DECODE_DATA;
-	    bcopy((caddr_t)&arg->mr_size, arg->mr_flattened, sizeof(long));
+	    memcpy(arg->mr_flattened, (caddr_t)&arg->mr_size, sizeof(long));
 			
 	    if (gdb_receive_data(hcon,
 				 arg->mr_flattened + sizeof(long),
@@ -193,7 +194,7 @@ mr_cont_recv(op, hcon, argp)
 		    return OP_CANCELLED;
 		}		    
 		arg->mr_argv[i] = (char *)malloc(nlen);
-		bcopy(cp, arg->mr_argv[i], nlen);
+		memcpy(arg->mr_argv[i], cp, nlen);
 		arg->mr_argl[i]=nlen;
 		cp += sizeof(long) * howmany(nlen, sizeof(long));
 	    }

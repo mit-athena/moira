@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_query.c,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_query.c,v 1.8 1990-03-17 16:37:10 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_query.c,v 1.9 1993-10-22 14:19:04 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,11 +10,12 @@
  */
 
 #ifndef lint
-static char *rcsid_sms_query_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_query.c,v 1.8 1990-03-17 16:37:10 mar Exp $";
+static char *rcsid_sms_query_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_query.c,v 1.9 1993-10-22 14:19:04 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
 #include "mr_private.h"
+#include <string.h>
 
 /*
  * This routine is the primary external interface to the mr library.
@@ -34,7 +35,7 @@ int mr_query(name, argc, argv, callproc, callarg)
     register char **nargv = (char **)malloc(sizeof(char *) * (argc+1));
     register int status = 0;
     nargv[0] = name;
-    bcopy((char *)argv, (char *)(nargv+1), sizeof(char *) * argc);
+    memcpy((char *)(nargv+1), (char *)argv, sizeof(char *) * argc);
     status = mr_query_internal(argc+1, nargv, callproc, callarg);
     free(nargv);
     return status;

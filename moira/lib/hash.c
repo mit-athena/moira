@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/hash.c,v 1.9 1991-03-08 10:31:46 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/hash.c,v 1.10 1993-10-22 14:10:47 mar Exp $
  *
  * Generic hash table routines.  Uses integer keys to store char * values.
  *
@@ -10,6 +10,7 @@
 #include <mit-copyright.h>
 #include <ctype.h>
 #include <moira.h>
+#include <string.h>
 
 extern char *malloc();
 
@@ -32,7 +33,7 @@ int size;
 	free(h);
 	return((struct hash *) NULL);
     }
-    bzero(h->data, size * sizeof(char *));
+    memset(h->data, 0, size * sizeof(char *));
     return(h);
 }
 

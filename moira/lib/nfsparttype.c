@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/nfsparttype.c,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/nfsparttype.c,v 1.4 1990-05-02 13:12:20 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/nfsparttype.c,v 1.5 1993-10-22 14:19:56 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,13 +10,13 @@
  */
 
 #ifndef lint
-static char *rcsid_nfsparttype_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/nfsparttype.c,v 1.4 1990-05-02 13:12:20 mar Exp $";
+static char *rcsid_nfsparttype_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/nfsparttype.c,v 1.5 1993-10-22 14:19:56 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
 #include <moira.h>
 #include <stdio.h>
-#include <strings.h>
+#include <string.h>
 #include <ctype.h>
 
 extern char *strsave();
@@ -91,9 +91,9 @@ parse_filesys_type(fs_type_name)
     
     do {
 	/* Copy next component of type to temp */
-	char *t = index (cp, ',');
+	char *t = strchr (cp, ',');
 	if (t) {
-	    bcopy(cp, temp, t-cp);
+	    memcpy(temp, cp, t-cp);
 	    temp[t-cp]='\0';
 	    cp = t + 1; /* one after the comma */
 	} else {

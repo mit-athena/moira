@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_access.c,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_access.c,v 1.5 1990-03-17 16:36:44 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_access.c,v 1.6 1993-10-22 14:13:48 mar Exp $
  *
  *	Copyright (C) 1987, 1990 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -9,11 +9,13 @@
  */
 
 #ifndef lint
-static char *rcsid_sms_access_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_access.c,v 1.5 1990-03-17 16:36:44 mar Exp $";
+static char *rcsid_sms_access_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_access.c,v 1.6 1993-10-22 14:13:48 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
 #include "mr_private.h"
+#include <string.h>
+
 
 /*
  * Check access to a named query.
@@ -26,7 +28,7 @@ int mr_access(name, argc, argv)
     register char **nargv = (char **)malloc(sizeof(char *) * (argc+1));
     register int status = 0;
     nargv[0] = name;
-    bcopy((char *)argv, (char *)(nargv+1), sizeof(char *) * argc);
+    memcpy((char *)(nargv+1), (char *)argv, sizeof(char *) * argc);
     status = mr_access_internal(argc+1, nargv);
     free(nargv);
     return status;

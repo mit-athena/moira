@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/idno.c,v 1.2 1988-09-13 15:51:27 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/idno.c,v 1.3 1993-10-22 14:12:17 mar Exp $
  *
  * Routines to encrypt ID's
  *
@@ -8,7 +8,7 @@
  */
 
 #include <mit-copyright.h>
-#include <strings.h>
+#include <string.h>
 #include <ctype.h>
 
 
@@ -24,7 +24,7 @@ char *str;
 {
     char *hyphen;
 
-    while ((hyphen = index(str, '-')) != (char *)0)
+    while ((hyphen = strchr(str, '-')) != (char *)0)
 	(void) strcpy(hyphen, hyphen + 1);
 }
 

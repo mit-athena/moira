@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/strs.c,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/strs.c,v 1.9 1991-03-08 10:31:12 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/strs.c,v 1.10 1993-10-22 14:21:45 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -11,7 +11,7 @@
  */
 
 #ifndef lint
-static char *rcsid_strs_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/strs.c,v 1.9 1991-03-08 10:31:12 mar Exp $";
+static char *rcsid_strs_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/strs.c,v 1.10 1993-10-22 14:21:45 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -43,7 +43,7 @@ strsave(s)
     }
     len = strlen(s) + 1;
     p = malloc((u_int)len);
-    if (p) bcopy(s, p, len);
+    if (p) memcpy(p, s, len);
     return p;
 }
 /*

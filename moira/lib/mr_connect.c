@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_connect.c,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_connect.c,v 1.14 1990-03-17 16:36:54 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_connect.c,v 1.15 1993-10-22 14:16:07 mar Exp $
  *
  *	Copyright (C) 1987, 1990 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -12,13 +12,13 @@
  */
 
 #ifndef lint
-static char *rcsid_sms_connect_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_connect.c,v 1.14 1990-03-17 16:36:54 mar Exp $";
+static char *rcsid_sms_connect_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_connect.c,v 1.15 1993-10-22 14:16:07 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
 #include "mr_private.h"
 #include <moira_site.h>
-#include <strings.h>
+#include <string.h>
 
 static char *mr_server_host = 0;
 
@@ -53,8 +53,8 @@ char *server;
 	server = MOIRA_SERVER;
     }
 
-    if (!index(server, ':')) {
-	p = index(MOIRA_SERVER, ':');
+    if (!strchr(server, ':')) {
+	p = strchr(MOIRA_SERVER, ':');
 	p++;
 	sprintf(sbuf, "%s:%s", server, p);
 	server = sbuf;
@@ -76,7 +76,7 @@ char *server;
      */
 
     mr_server_host = strsave(server);
-    if (p = index(mr_server_host, ':'))
+    if (p = strchr(mr_server_host, ':'))
 	*p = 0;
     mr_server_host = canonicalize_hostname(mr_server_host);
     return 0;

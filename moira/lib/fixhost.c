@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/fixhost.c,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/fixhost.c,v 1.9 1991-03-08 11:29:35 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/fixhost.c,v 1.10 1993-10-22 14:09:29 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -9,7 +9,7 @@
  */
 
 #ifndef lint
-static char *rcsid_fixhost_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/fixhost.c,v 1.9 1991-03-08 11:29:35 mar Exp $";
+static char *rcsid_fixhost_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/fixhost.c,v 1.10 1993-10-22 14:09:29 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -18,7 +18,10 @@ static char *rcsid_fixhost_c = "$Header: /afs/.athena.mit.edu/astaff/project/moi
 #include <netinet/in.h>
 #include <netdb.h>
 #include <stdio.h>
-#include <strings.h>
+#ifdef POSIX
+#include <sys/utsname.h>
+#endif
+#include <string.h>
 #include <ctype.h>
 #include <moira.h>
 
@@ -44,6 +47,9 @@ canonicalize_hostname(host)
     int n_len;
     int has_dot = 0;
     char tbuf[BUFSIZ];
+#ifdef POSIX
+    struct utsname name;
+#endif
     register char *cp;
     
     if (strlen(host) > 2 && host[0] == '"' && host[strlen(host)-1] == '"') {
@@ -53,7 +59,7 @@ canonicalize_hostname(host)
 	return(strsave(tbuf));
     }
 
-    if (index(host, '*') || index(host, '?') || index(host, '['))
+    if (strchr(host, '*') || strchr(host, '?') || strchr(host, '['))
       return(host);
 
     hp = gethostbyname(host);
@@ -75,9 +81,14 @@ canonicalize_hostname(host)
 	    static char *domain = NULL;
 
 	    if (domain == NULL) {
+#ifdef POSIX
+		(void) uname(&name);
+		strncpy(tbuf, name.nodename, sizeof(tbuf));
+#else
 		gethostname(tbuf, sizeof(tbuf));
+#endif
 		hp = gethostbyname(tbuf);
-		cp = index(hp->h_name, '.');
+		cp = strchr(hp->h_name, '.');
 		if (cp)
 		  domain = strsave(++cp);
 		else

@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/queries.c,v 1.9 1992-11-04 17:56:17 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/queries.c,v 1.10 1992-11-09 17:17:54 mar Exp $
  */
 
 #include <stdio.h>
@@ -11,9 +11,6 @@
 #include <netdb.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
-#include <X11/IntrinsicP.h>
-#include <X11/CoreP.h>
-#include <X11/CompositeP.h>
 #include <Xm/Xm.h>
 #include "mmoira.h"
 #ifdef GDSS
@@ -112,8 +109,35 @@ EntryForm *form;
 	count = PCAP_MODTIME;
 	break;
     case MM_MOD_SERVICE:
-	fn = "mod_service";
-	count = SH_MODTIME;
+	f = GetAndClearForm("mod_service");
+	if (f == NULL) {
+	    display_error("Unknown form in ModifyCallback of mod_service\n");
+	    return;
+	}
+	f->extrastuff = form->extrastuff;
+	f->menu = form->menu;
+	for (i = 0; i < 4; i++) StoreField(f, i, argv[i]);
+	StoreField(f, 4, argv[6]);
+	f->inputlines[5]->returnvalue.booleanvalue = atoi(argv[7]);
+	StoreField(f, 6, argv[11]);
+	StoreField(f, 7, argv[12]);
+	return;
+	break;
+    case MM_MOD_HOST:
+	f = GetAndClearForm("mod_host");
+	if (f == NULL) {
+	    display_error("Unknown form in ModifyCallback of mod_host\n");
+	    return;
+	}
+	f->extrastuff = form->extrastuff;
+	f->menu = form->menu;
+	StoreField(f, 0, argv[0]);
+	StoreField(f, 1, argv[1]);
+	f->inputlines[2]->returnvalue.booleanvalue = atoi(argv[2]);
+	StoreField(f, 3, argv[10]);
+	StoreField(f, 4, argv[11]);
+	StoreField(f, 5, argv[12]);
+	return;
 	break;
     }
 
@@ -397,7 +421,11 @@ int remove;
 	    argv[1] = stringval(form, 2);
 	    argc = 2;
 	} else {
-	    sprintf(buf, "Members of list: %s\n", argv[0]);
+	    if (boolval(form, 3)) {
+		qy = "get_end_members_of_list";
+		sprintf(buf, "Recursive members of list: %s\n", argv[0]);
+	    } else 
+	      sprintf(buf, "Members of list: %s\n", argv[0]);
 	    AppendToLog(buf);
 	}
 	break;
@@ -482,16 +510,15 @@ int remove;
 	 */
 	{ 
 	    Widget w, kid;
-	    CompositeRec *cr;
 
 	    argv[3] = "";
-	    cr = (CompositeRec *)form->inputlines[2]->mywidget;
-	    for (i = 0; i < cr->composite.num_children; i++) {
-		kid = cr->composite.children[i];
+	    w = form->inputlines[2]->mywidget;
+	    for (i = 0; i < NumChildren(w); i++) {
+		kid = NthChild(w, i);
 		if (!strcmp(XtName(kid), stringval(form, 2))) {
 		    i++;
-		    if (i < cr->composite.num_children) {
-			argv[3] = strsave(XtName(cr->composite.children[i]));
+		    if (i < NumChildren(w)) {
+			argv[3] = strsave(XtName(NthChild(w, i)));
 			s = index(argv[3], ' ');
 			if (s) {
 			    argv[3] = s+2;
@@ -661,11 +688,29 @@ int remove;
 	break;
     case MM_MOD_SERVICE:
 	if (!strcmp(form->formname, "mod_service")) {
-	    qy = "update_server_host_info";
-	    argc = SH_MODTIME;
+	    qy = "update_server_info";
+	    argc = SC_END;
 	    break;
 	}
 	form->extrastuff = (caddr_t) "mod_service";
+	retfunc = ModifyCallback;
+	break;
+    case MM_SHOW_HOST:
+	if (!*stringval(form, 0))
+	  argv[0] = "*";
+	if (!*stringval(form, 1))
+	  argv[1] = "*";
+	else
+	  StoreHost(form, 1, &argv[1]);
+	break;
+    case MM_MOD_HOST:
+	if (!strcmp(form->formname, "mod_host")) {
+	    qy = "update_server_host_info";
+	    argc = SHI_END;
+	    break;
+	}
+	StoreHost(form, 1, &argv[1]);
+	form->extrastuff = (caddr_t)  "mod_host";
 	retfunc = ModifyCallback;
 	break;
     case MM_SAVE_LOG:
@@ -720,6 +765,12 @@ int remove;
 	    f->inputlines[L_ACE_TYPE]->valuechanged = MoiraValueChanged;
 	} else
 	  AppendToLog("Done.\n");	  
+	break;
+    case MM_MOD_SERVICE:
+	if (f) {
+	    GetKeywords(f, SC_TYPE, "service");
+	    GetKeywords(f, SC_ACE_TYPE, "ace_type");
+	}
 	break;
     case MM_MOD_FILSYS:
 	if (f) {
@@ -833,8 +884,6 @@ int remove;
 
     if (f)
       DisplayForm(f);
-    else
-      AppendToLog("\n");
 }
 
 

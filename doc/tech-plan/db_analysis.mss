@@ -24,7 +24,7 @@ those fields which require explicit data checking.
 
 @subsection(Backup)
 
-As an authoritative system, SMS will require a specific plan for baking up
+As an authoritative system, SMS will require a specific plan for backing up
 the database.  In the event of disk failure, software disasters, and update
 mistakes, the backup mechanism will allow full data restoration.  SMS will
 us an ascii backup/recover scheme for data redundancy.  Every 24 hours, the

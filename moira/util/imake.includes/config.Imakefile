@@ -272,7 +272,7 @@ CC=cc			/* The name of the C compiler for the target */
 CPP=$(CC) -E		/* A command which invokes the C preprocessor */
 
 #ifndef _AIX		/* RS6K optomizer is buggy, we don't know if it wall affect moira */
-DBG=-O			/* Debug or optimize? */
+DBG=-g			/* Debug or optimize? */
 #endif /* _AIX */
 
 SHELL=/bin/sh		/* shell to use from make */

@@ -9,6 +9,9 @@
 	request test_disconnect, "Disconnect from SMS",
 		disconnect, d;
 
+	request test_host, "Identify the server host",
+		host;
+
 	request test_new, "Use new protocol",
 		new, 2;
 

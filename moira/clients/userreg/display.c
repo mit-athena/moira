@@ -1,12 +1,12 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/display.c,v $
- *	$Author: wesommer $
+ *	$Author: mar $
  *	$Locker:  $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/display.c,v 1.2 1987-08-22 18:38:28 wesommer Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/display.c,v 1.3 1988-08-09 17:52:30 mar Exp $
  */
 
 #ifndef lint
-static char *rcsid_display_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/display.c,v 1.2 1987-08-22 18:38:28 wesommer Exp $";
+static char *rcsid_display_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/display.c,v 1.3 1988-08-09 17:52:30 mar Exp $";
 #endif	lint
 
 #include <stdio.h>
@@ -15,7 +15,7 @@ static char *rcsid_display_c = "$Header: /afs/.athena.mit.edu/astaff/project/moi
 #include "userreg.h"
 
 #define DESC_WIDTH 18
-#define HEADER "*** Athena User Registration ***"
+#define HEADER "*** Project Athena User Registration ***"
 #ifdef ibm032
 #define HELP   " Press backspace to delete a character.  Press Ctrl-C to start over."
 #else
@@ -83,7 +83,7 @@ reset_display () {
   wmove (dataw, 0, 0);
   waddstr (dataw, "First Name:\n");
   waddstr (dataw, "Middle Initial:\n");
-  waddstr (dataw, "Last Name:\n");
+  waddstr (dataw, "Family Name:\n");
   waddstr (dataw, "MIT ID #:\n\n");
   waddstr (dataw, "Username:\n");
   wclrtoeol (dataw);
@@ -122,12 +122,12 @@ redisp () {
 
 
 /* Input and input_no_echo exist only to save on retyping */
-input (prompt, buf, maxsize, timeout)
+input (prompt, buf, maxsize, timeout, emptyok)
 char *prompt;
 char *buf;
-int   maxsize, timeout;
+int   maxsize, timeout, emptyok;
 {
-  query_user (prompt, buf, maxsize, timeout, TRUE);
+  query_user (prompt, buf, maxsize, timeout, TRUE, emptyok, TRUE);
 }
 
 input_no_echo (prompt, buf, maxsize, timeout)
@@ -135,19 +135,29 @@ char *prompt;
 char *buf;
 int   maxsize, timeout;
 {
-  query_user (prompt, buf, maxsize, timeout, FALSE);
+  query_user (prompt, buf, maxsize, timeout, FALSE, FALSE, TRUE);
 }
 
+
+/* make the user press any key to continue */
+wait_for_user ()
+{
+    char buf[BUFSIZ];
+
+    redisp();
+    query_user ("Press RETURN or ENTER to continue", buf, 1,
+		15 * 60, FALSE, TRUE, FALSE);
+}
 
 
 /* Gets input through the query buffer */
 /* Exit(1)'s on read errors */
 /* Signals SIGALRM after 'timeout' seconds */
-query_user (prompt, buf, maxsize, timeout, echop)
+query_user (prompt, buf, maxsize, timeout, echop, emptyok, valuep)
 char *prompt;
 char *buf;
 int   maxsize, timeout;
-bool echop;
+bool echop, emptyok, valuep;
 {
   char  c;
   int   i;
@@ -207,7 +217,7 @@ retry:
 	}
 	break;
     }
-    if (i >= maxsize) {
+    if (valuep && i >= maxsize) {
       wprintw (displayw,
   "You are not allowed to type more than %d characters for this answer.\n",
 	  maxsize);
@@ -216,9 +226,16 @@ retry:
     }
  }
 
-  if (i == 0)
-    if (askyn("Do you really want this field left blank (y/n)? ") == NO)
-      goto retry;
+  if (i == 0) {
+      if (emptyok && valuep &&
+	  (askyn("Do you really want this field left blank (y/n)? ") == NO))
+	goto retry;
+      if (!emptyok) {
+	  wprintw(displayw, "You must enter something here.\n");
+	  wrefresh(displayw);
+	  goto retry;
+      }
+  }
     
 
   /* Input is complete so disable interval timer. */
@@ -382,3 +399,9 @@ timer_off()
   setitimer (ITIMER_REAL, &it, (struct itimerval *) 0);
 }
 
+
+wfeep()
+{
+    char buf = '\007';
+    write(1, &buf, 1);
+}

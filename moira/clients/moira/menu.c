@@ -1,4 +1,4 @@
-/* $Id: menu.c,v 1.51 1998-05-26 18:13:45 danw Exp $
+/* $Id: menu.c,v 1.52 1998-10-21 19:24:51 danw Exp $
  *
  * Generic menu system module.
  *
@@ -21,8 +21,12 @@
 #include <string.h>
 #include <unistd.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.51 1998-05-26 18:13:45 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.52 1998-10-21 19:24:51 danw Exp $");
 
+#ifdef MAX
+#undef MAX
+#undef MIN
+#endif
 #define MAX(A, B)	((A) > (B) ? (A) : (B))
 #define MIN(A, B)	((A) < (B) ? (A) : (B))
 #define CTL(ch)		((ch) & 037)

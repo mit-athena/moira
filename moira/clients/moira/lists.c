@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v 1.13 1988-10-03 17:49:04 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v 1.14 1988-11-01 17:03:03 mar Exp $";
 #endif lint
 
 /*	This is the file lists.c for the SMS Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v 1.13 1988-10-03 17:49:04 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v 1.14 1988-11-01 17:03:03 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -88,7 +88,7 @@ char ** info;
     else
 	Put_message("This list is NOT a mailing list.");
     if ( atoi(info[L_GROUP]) ) {
-	(void) sprintf(buf,"This list is Group and its ID number is %s",
+	(void) sprintf(buf,"This list is a Group and its ID number is %s",
 		       info[L_GID]);
 	Put_message(buf);
     }

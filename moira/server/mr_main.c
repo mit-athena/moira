@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v $
  *	$Author: wesommer $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.5 1987-06-03 16:07:17 wesommer Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.6 1987-06-03 17:41:00 wesommer Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
@@ -14,6 +14,9 @@
  * 	Let the reader beware.
  * 
  *	$Log: not supported by cvs2svn $
+ * Revision 1.5  87/06/03  16:07:17  wesommer
+ * Fixes for lint.
+ * 
  * Revision 1.4  87/06/02  20:05:11  wesommer
  * Bug fixes on memory allocation.
  * 
@@ -28,7 +31,7 @@
  * 
  */
 
-static char *rcsid_sms_main_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.5 1987-06-03 16:07:17 wesommer Exp $";
+static char *rcsid_sms_main_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.6 1987-06-03 17:41:00 wesommer Exp $";
 
 #include <strings.h>
 #include <sys/errno.h>
@@ -101,6 +104,15 @@ main(argc, argv)
 	}
 
 	/*
+	 * Database initialization.
+	 */
+
+	if ((status = sms_open_database()) != 0) {
+		com_err(whoami, status, "when trying to open database.");
+		exit(1);
+	}
+	
+	/*
 	 * Set up client array handler.
 	 */
 	nclients = 0;
@@ -108,6 +120,7 @@ main(argc, argv)
 	
 	/*
 	 * Signal handlers
+	 *	There should probably be a few more of these.
 	 */
 	
 	if ((((int)signal (SIGTERM, sigshut)) < 0) ||
@@ -183,6 +196,7 @@ main(argc, argv)
 		}
 	}
 	com_err(whoami, 0, takedown);
+	sms_close_database();
 	return 0;
 }
 

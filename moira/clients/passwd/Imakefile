@@ -1,0 +1,18 @@
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/Imakefile,v 1.1 1990-08-27 14:58:29 mar Exp $
+#
+# Copyright 1990 by the Massachusetts Institute of Technology.
+#
+# For copying and distribution information,
+# please see the file <mit-copyright.h>.
+#
+# Imakefile for passwd utilities.
+#
+
+SRCS=chfn.c chpobox.c chsh.c
+SRCDIR=${SRCTOP}/clients/passwd
+CODE=${SRCS} Imakefile
+OBJS=chfn.o chpobox.o chsh.o
+
+program(chfn, chfn.o,${MR_LIBDEP} ${GDB_LIBDEP}, ${CLIBS}, ${PROGDIR})
+program(chpobox, chpobox.o,${MR_LIBDEP} ${GDB_LIBDEP}, ${CLIBS}, ${PROGDIR})
+program(chsh, chsh.o,${MR_LIBDEP} ${GDB_LIBDEP}, ${CLIBS}, ${PROGDIR})

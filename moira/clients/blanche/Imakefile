@@ -1,0 +1,16 @@
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/Imakefile,v 1.1 1990-08-27 14:55:52 mar Exp $
+#
+# Copyright 1990 by the Massachusetts Institute of Technology.
+#
+# For copying and distribution information,
+# please see the file <mit-copyright.h>.
+#
+# Imakefile for blanche.
+#
+
+SRCS=blanche.c
+SRCDIR=${SRCTOP}/clients/blanche
+CODE=${SRCS} Imakefile
+OBJS=blanche.o
+
+program(blanche,${OBJS},${MR_LIBDEP} ${GDB_LIBDEP}, ${CLIBS}, ${PROGDIR})

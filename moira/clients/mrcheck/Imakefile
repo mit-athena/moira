@@ -1,0 +1,16 @@
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrcheck/Imakefile,v 1.1 1990-08-27 14:57:51 mar Exp $
+#
+# Copyright 1990 by the Massachusetts Institute of Technology.
+#
+# For copying and distribution information,
+# please see the file <mit-copyright.h>.
+#
+# Imakefile for mrcheck.
+#
+
+SRCS=mrcheck.c
+SRCDIR=${SRCTOP}/clients/mrcheck
+CODE=${SRCS} Imakefile
+OBJS=mrcheck.o
+
+program(mrcheck,${OBJS},${MR_LIBDEP} ${GDB_LIBDEP}, ${CLIBS}, ${PROGDIR})

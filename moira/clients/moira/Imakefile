@@ -1,0 +1,25 @@
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/Imakefile,v 1.1 1990-08-27 14:57:14 mar Exp $
+#
+# Copyright 1990 by the Massachusetts Institute of Technology.
+#
+# For copying and distribution information,
+# please see the file <mit-copyright.h>.
+#
+# Imakefile for moira client.
+#
+
+MSRCS=	utils.c attach.c cluster.c delete.c globals.c lists.c main.c \
+	menu.c menus.c nfs.c pobox.c quota.c user.c dcmmaint.c printer.c \
+	misc.c zephyr.c
+SRCS=	${MSRCS} namespace.c
+SRCDIR=${SRCTOP}/clients/moira
+CODE=${SRCS} Imakefile defs.h f_defs.h globals.h menu.h
+MOBJS=	attach.o cluster.o delete.o globals.o lists.o main.o menu.o \
+	menus.o nfs.o pobox.o quota.o user.o utils.o dcmmaint.o printer.o \
+	misc.o zephyr.o
+NOBJS=	namespace.o globals.o lists.o menu.o \
+	pobox.o user.o utils.o misc.o
+OBJS=	${MOBJS} ${NOBJS}
+
+program(moira, ${MOBJS},${MR_LIBDEP} ${GDB_LIBDEP}, ${CLIBS}, ${PROGDIR})
+program(namespace, ${NOBJS},${MR_LIBDEP} ${GDB_LIBDEP}, ${CLIBS}, ${PROGDIR})

@@ -6,8 +6,7 @@ sms_query, sms_do_update, sms_motd, sms_set_alternate_input,
 format_filesys_type, parse_filesys_type,
 canonicalize_hostname, strsave, strtrim, sq_create, sq_destroy,
 sq_get_data, sq_save_args, sq_save_data, sq_save_unique_data,
-sq_save_unique_string, Start_paging, Stop_paging, Start_menu,
-Start_no_menu, Cleanup_menu, Prompt_input, Password_input, Put_message
+sq_save_unique_string
 .SH SYNOPSIS
 .nf
 .nj
@@ -83,30 +82,6 @@ Simple Queues
 .B sq_save_unique_data(sq, data);
 
 .B sq_save_unique_string(sq, data);
-.TP
-Menus
-.B #include <menu.h>
-.B char *whoami = argv[0];
-
-.B Start_paging();
-
-.B Stop_paging();
-
-.B Start_menu(top_menu);
-.B	Menu *top_menu;
-
-.B Start_no_menu(top_menu);
-
-.B Cleanup_menu();
-
-.B Prompt_input(prompt, buf, buflen);
-.B	char *prompt, buf;
-.B	int buflen;
-
-.B Password_input(prompt, buf, buflen);
-
-.B Put_message(msg);
-.B	char *msg;
 .fi
 .SH DESCRIPTION
 This library supports the Athena Service Management System protocol
@@ -115,8 +90,7 @@ those described in this man page, but they are not intended to be used
 directly. Instead, they are called by the routines that are described.
 
 Be sure to link your application against these libraries:
--lsms -lsmsgdb -lcom_err -lkrb -ldes, and also curses if the menu are
-routines are to be used.
+-lsms -lsmsgdb -lcom_err -lkrb -ldes
 .TP
 Protocol functions
 All protocol routines return 0 on success, or a value from 
@@ -278,51 +252,6 @@ is like
 .B sq_save_unique_data,
 except that it uses strcmp on the elements rather than comparing the
 addresses directly.
-.TP
-Menus
-The menu package requires that the string
-.B whoami
-be defined.  It is usually set to argv[0] of the program.
-
-.B Start_paging
-initializes menu package and sets up the screen.
-
-.B Stop_paging
-resets the screen to normal mode.  This must be done before the
-program exits to put the tty back into a sane mode.
-
-.B Start_menu
-starts interpreting menus with
-.I top_menu,
-giving the menu package complete control of the screen.
-.B Start_paging
-must have been called first.
-
-.B Start_no_menu
-starts interpreting menus, but does not entirely give up control of
-the screen.  The menu package will treat the tty as a printing
-terminal.
-
-.B Cleanup_menu
-aborts the menu package and returns the tty to sane modes.
-
-.B Prompt_input
-will get input from the user, using the dialogue window on the screen.
-It will first display
-.I prompt,
-then read up to
-.I buflen
-bytes into the buffer
-.I buf.
-
-.B Password_input
-is like
-.I Prompt_input, 
-except that the value the user types is not echoed.
-.B Put_message
-writes
-.I msg
-to the screen, appending a newline at the end.
 .SH FILES
 /usr/include/sms.h
 .br

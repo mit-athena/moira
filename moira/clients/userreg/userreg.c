@@ -2,11 +2,11 @@
  * $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.c,v $
  * $Author: wesommer $
  * $Locker:  $
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.c,v 1.5 1987-09-03 03:05:57 wesommer Exp $ 
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.c,v 1.6 1987-09-21 15:21:09 wesommer Exp $ 
  */
 
 #ifndef lint
-static char    *rcsid_userreg_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.c,v 1.5 1987-09-03 03:05:57 wesommer Exp $";
+static char    *rcsid_userreg_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.c,v 1.6 1987-09-21 15:21:09 wesommer Exp $";
 #endif	lint
 
 #include <curses.h>
@@ -416,7 +416,8 @@ input_login:
 	signal(SIGALRM, restart);
 	input("Enter username:", buf, 100, USERNAME_TIMEOUT);
 	while (*nbuf != '\0') {
-		if (!islower(*nbuf)) {
+		if (!islower(*nbuf) && !isdigit(*nbuf)
+		    && (*nbuf != '_') && (*nbuf != '.')) {
 			display_text_line("Your username must be all lowercase alphabetic characters.");
 			goto input_login;
 		}
@@ -434,15 +435,6 @@ input_login:
 		display_text_line("Your username must be 3 or more characters long.\n");
 		goto input_login;
 	}
-#ifdef notdef
-	/* This part added to fix home directories -- asp */
-	strcpy(user.u_home_dir, "/mit/");
-	user.u_home_dir[5] = user.u_login[0];
-	user.u_home_dir[6] = '/';
-	user.u_home_dir[7] = user.u_login[1];
-	user.u_home_dir[8] = '/';
-	strcpy(user.u_home_dir + 9, user.u_login);
-#endif notdef
 	redisp();
 }
 

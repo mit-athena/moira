@@ -13,9 +13,10 @@
 #include	"mmoira.h"
 #include	<sys/file.h>
 
-static char rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/stubs.c,v 1.7 1992-10-22 15:25:34 mar Exp $";
+static char rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/stubs.c,v 1.8 1992-10-23 18:58:16 mar Exp $";
 
 void	extra_help_callback();
+extern EntryForm *MoiraForms[];
 
 static Widget	logwidget = NULL;
 
@@ -73,8 +74,16 @@ static XtActionsRec myactions[] = {
     { "noop", noopACT },
 };
 
+
+/* These are the additional translations added to the Motif text widget
+ * for the log window.  The two noop translations are here to avoid
+ * nasty interactions with the selection mechanism.  They match the
+ * existing translations that involve shifted mouse buttons.
+ */
+
 #define newtrans "~Ctrl  Shift ~Meta ~Alt<Btn1Down>: moiraRetrieve()\n\
 	~Ctrl ~Meta ~Alt<Btn1Up>: noop()\n\
+	~Ctrl Shift ~Meta ~Alt<Btn1Motion>: noop()\n\
 	~Ctrl  Shift ~Meta ~Alt<Btn2Down>: moiraModify()"
 
 
@@ -172,6 +181,7 @@ int modify;
     } else if (!strcasecmp(type, "MACHINE") ||
 	       !strcmp(type, "host") ||
 	       !strcmp(type, "Server") ||
+	       !strcmp(type, "on") ||
 	       !strcmp(type, "Box")) {
 	DoReference(name, "select_machine", MM_MOD_MACH, MM_SHOW_MACH,
 		    "get_machine", modify);
@@ -347,6 +357,7 @@ MakeWatchCursor(topW)
 Widget	topW;
 {
     static Cursor mycursor = NULL;
+    EntryForm **fp;
 
     if (!topW)
       return;
@@ -355,16 +366,24 @@ Widget	topW;
       mycursor = XCreateFontCursor (XtDisplay(topW), XC_watch);
 
     XDefineCursor(XtDisplay(topW), XtWindow(topW), mycursor);
+    for (fp = MoiraForms; *fp; fp++)
+      if ((*fp)->formpointer && XtIsManaged((*fp)->formpointer))
+	XDefineCursor(XtDisplay(topW), XtWindow((*fp)->formpointer), mycursor);
 }
 
 void
 MakeNormalCursor(topW)
 Widget	topW;
 {
-	if (!topW)
-		return;
+    EntryForm **fp;
 
-	XUndefineCursor(XtDisplay(topW), XtWindow(topW));
+    if (!topW)
+      return;
+
+    XUndefineCursor(XtDisplay(topW), XtWindow(topW));
+    for (fp = MoiraForms; *fp; fp++)
+      if ((*fp)->formpointer && XtIsManaged((*fp)->formpointer))
+	XUndefineCursor(XtDisplay(topW), XtWindow((*fp)->formpointer));
 }
 
 /*
@@ -446,7 +465,7 @@ Widget	w;
 char	*client_data;
 XmAnyCallbackStruct	*call_data;
 {
-	PopupHelpWindow(client_data);
+    help(client_data);
 }
 
 
@@ -554,5 +573,5 @@ char *text, *helpname;
 display_error(msg)
 char *msg;
 {
-    PopupErrorMessage(msg, "Sorry, no further help is available");
+    PopupErrorMessage(msg, "no_more_help");
 }

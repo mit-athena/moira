@@ -1,13 +1,16 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_private.h,v $
- *	$Author: wesommer $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_private.h,v 1.3 1987-06-16 17:48:39 wesommer Exp $
+ *	$Author: mar $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_private.h,v 1.4 1988-04-19 12:42:49 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
  *	Private declarations of the SMS library.
  * 
  *	$Log: not supported by cvs2svn $
+ * Revision 1.3  87/06/16  17:48:39  wesommer
+ * Clean up memory allocation, indenting.
+ * 
  * Revision 1.2  87/05/31  22:07:06  wesommer
  * Private data to the sms server and library.
  * 
@@ -22,6 +25,7 @@ extern CONNECTION _sms_conn;
 extern OPERATION _sms_send_op, _sms_recv_op;
 
 extern int sms_inited;
+extern int sending_version_no;
 
 /*
  * You are in a maze of twisty little FSM's, all different.

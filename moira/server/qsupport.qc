@@ -1,11 +1,16 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v $
- *	$Author: wesommer $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.16 1988-01-04 11:56:09 wesommer Exp $
+ *	$Author: mar $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.17 1988-01-04 12:09:00 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
  *	$Log: not supported by cvs2svn $
+Revision 1.16  87/11/12  18:16:56  wesommer
+Add support for delete_user_by_uid.
+Fix access_pop.
+Check a few return codes.
+
 Revision 1.15  87/09/11  15:31:58  wesommer
 add_user_group modified to side-effect the time for tbs for groups as 
 well as the other things.
@@ -68,7 +73,7 @@ Initial revision
  */
 
 #ifndef lint
-static char *rcsid_qsupport_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.16 1988-01-04 11:56:09 wesommer Exp $";
+static char *rcsid_qsupport_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.17 1988-01-04 12:09:00 mar Exp $";
 #endif lint
 
 #include "query.h"
@@ -140,12 +145,15 @@ access_pop(q, argv, cl)
 ##  int exists;
 
     if (!bcmp(q->name, "add_pobox", 10) && !bcmp(argv[1], "POP", 4)) {
+	box = argv[3];
+	if (strcmp(cl->kname.name, box) != 0) return SMS_PERM;
+	
 	users_id = *(int *)argv[0];
 	mach_id = *(int *)argv[2];
-	box = argv[3];
+	    
 ##      range of p is pobox
-##      repeat retrieve (exists = any(p.#box where p.#users_id = @users_id))
-
+##      repeat retrieve (exists = any(p.#box where p.#users_id = @users_id
+##				      and p.type = "POP"))
 	if (exists) return(SMS_EXISTS);
     }
 
@@ -249,7 +257,8 @@ setup_add_group(q, argv, cl, access_check)
 ##{
 ##  int ngid;
 ##  int exists;
-    int status;
+##  int rowcount;
+       int status;
 
     status = access_list(q, argv, cl);
 
@@ -265,7 +274,9 @@ setup_add_group(q, argv, cl, access_check)
     }
 
 ##  repeat replace v (value = @ngid) where v.name = "gid"
-    return(SMS_SUCCESS);
+##  inquire_equel (rowcount = "rowcount")
+    if (rowcount != 1) return SMS_INGRES_ERR;
+    else return(SMS_SUCCESS);
 ##}
 
 /**
@@ -1054,11 +1065,15 @@ set_next_object_id(object)
     char *object;
 ##{
 ##  char *name;
+##  int rowcount;
 
-    name = object;
+       name = object;
 ##  range of v is values
 ##  repeat replace v (value = v.value + 1) where v.#name = @name
-    return(SMS_SUCCESS);
+##      inquire_equel (rowcount = "rowcount")
+    if (rowcount != 1)
+	return SMS_INGRES_ERR;
+    else return(SMS_SUCCESS);
 ##}
 
 /**

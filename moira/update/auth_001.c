@@ -1,13 +1,13 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/auth_001.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/auth_001.c,v 1.4 1988-09-14 12:15:42 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/auth_001.c,v 1.5 1989-08-16 11:28:43 mar Exp $
  */
 /*  (c) Copyright 1988 by the Massachusetts Institute of Technology. */
 /*  For copying and distribution information, please see the file */
 /*  <mit-copyright.h>. */
 
 #ifndef lint
-static char *rcsid_auth_001_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/auth_001.c,v 1.4 1988-09-14 12:15:42 mar Exp $";
+static char *rcsid_auth_001_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/auth_001.c,v 1.5 1989-08-16 11:28:43 mar Exp $";
 #endif	lint
 
 #include <mit-copyright.h>
@@ -62,7 +62,7 @@ auth_001(str)
     bcopy(STRING_DATA(data), ticket_st.dat, MAX_STRING_SIZE(data));
     code = krb_rd_req(&ticket_st, service,
 		     PrincipalHostname(host), 0,
-		     &ad, "/etc/srvtab");
+		     &ad, KEYFILE);
     if (code) {
 	code = krb_err_frob(code);
 	strcpy(ad.pname, qmark);
@@ -70,8 +70,8 @@ auth_001(str)
 	strcpy(ad.prealm, qmark);
 	goto auth_failed;
     }
-    if (get_krbrlm(realm,0))
-	realm[0] = '\0';
+    if (krb_get_lrealm(realm,1))
+	strcpy(realm, KRB_REALM);
     code = EPERM;
     if (strcmp(master, ad.pname))
 	goto auth_failed;

@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v 1.31 1989-08-10 14:18:34 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v 1.32 1989-08-28 18:37:19 mar Exp $
  *
  *	Copyright (C) 1987, 1988 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_qrtn_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v 1.31 1989-08-10 14:18:34 mar Exp $";
+static char *rcsid_qrtn_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v 1.32 1989-08-28 18:37:19 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -73,6 +73,7 @@ int sms_open_database()
     /* initialize local argv */
     for (i = 0; i < 16; i++)
 	Argv[i] = malloc(ARGLEN);
+    incremental_init();
 
     IIseterr(ingerr);
 	
@@ -155,7 +156,6 @@ sms_process_query(cl, name, argc, argv_ro, action, actarg)
     v = q->validate;
 
     if (q->type != RETRIEVE) {
-##	set lockmode session where readlock = exclusive
 ##      begin transaction
     }
 
@@ -228,7 +228,9 @@ sms_process_query(cl, name, argc, argv_ro, action, actarg)
 	/* if q->rvar = NULL, perform post_rtn only */
 	if (q->rvar) {
 	    build_qual(q->qual, q->argc, Argv, qual);
+	    incremental_before(q->rtable, qual, argv_ro);
 	    status = do_update(q, &Argv[q->argc], qual, action, actarg);
+	    incremental_after(q->rtable, qual, argv_ro);
 	    if (status != SMS_SUCCESS) break;
 	    table = q->rtable;
 	    if (strcmp(q->shortname, "sshi") && strcmp(q->shortname, "ssif")) {
@@ -267,8 +269,16 @@ sms_process_query(cl, name, argc, argv_ro, action, actarg)
 	/* perform the append */
 	/* if q->rvar = NULL, perform post_rtn only */
 	if (q->rvar) {
+	    incremental_clear_before();
 	    status = do_append(q, &Argv[q->argc], pqual, action, actarg);
 	    if (status != SMS_SUCCESS) break;
+	    if (v && v->object_id) {
+		sprintf(qual, "%s.%s = values.value and values.name = \"%s\"",
+			q->rvar, v->object_id, v->object_id);
+		incremental_after(q->rtable, qual, argv_ro);
+	    } else
+	      incremental_after(q->rtable, pqual, argv_ro);
+
 	    table = q->rtable;
 ##	    repeat replace tblstats (appends = tblstats.appends + 1,
 ##				     modtime = "now")
@@ -290,7 +300,9 @@ sms_process_query(cl, name, argc, argv_ro, action, actarg)
 	/* if q->rvar = NULL, perform post_rtn only */
 	if (q->rvar) {
 	    build_qual(q->qual, q->argc, Argv, qual);
+	    incremental_before(q->rtable, qual, argv_ro);
 	    status = do_delete(q, qual, action, actarg);
+	    incremental_clear_after();
 	    if (status != SMS_SUCCESS) break;
 	    table = q->rtable;
 ##	    repeat replace tblstats (deletes = tblstats.deletes + 1,
@@ -326,10 +338,12 @@ out:
 		putc('\n', journal);
 		fflush(journal);
 	    }
+	    incremental_update();
 	} else {
 	    if (ingres_errno != INGRES_DEADLOCK) {
 ##          	abort		/* it never happened */
 	    }
+	    incremental_flush();
 	}
 ##      set lockmode session where readlock = system
     }
@@ -342,11 +356,6 @@ out:
 
     if (status != SMS_SUCCESS && log_flags & LOG_RES)
 	com_err(whoami, status, " (Query failed)");
-    /* until all the clients know about SMS_BUSY, convert this error
-     * to one they will recognize.
-     */
-    if (status == SMS_BUSY)
-      status = SMS_DEADLOCK;
     return(status);
 }
 
@@ -480,6 +489,11 @@ sms_verify_query(cl, q, argc, argv_ro)
     return(privileged ? SMS_SUCCESS : SMS_PERM);
 }
 
+
+/* This routine caches info from the database.  Each query acl is stored
+ * in the query structure, and whether that acl contains everybody.
+ */
+
 check_query_access(q, argv, cl)
     struct query *q;
     char *argv[];
@@ -495,69 +509,88 @@ check_query_access(q, argv, cl)
     int client_id;
     char *client_type;
 
-    /* get query access control list */
-    name = q->shortname;
-##  repeat retrieve (acl_id = capacls.list_id) where capacls.tag = @name
-##  inquire_equel (rowcount = "rowcount", errorno = "errorno")
-    if (errorno != 0) return(SMS_INGRES_ERR);
-    if (rowcount == 0) return(SMS_PERM);
-
     /* initialize default uid */
     if (def_uid == 0) {
 ##	retrieve (def_uid = users.users_id) where users.login = "default"
     }
 
-    /* check for default access */
-##  range of m is imembers
-##  repeat retrieve (exists = any(m.#member_id where m.list_id = @acl_id and
-##                   m.member_type = "USER" and m.#member_id = def_uid))
-    if (exists) return(SMS_SUCCESS);
+    /* get query access control list */
+    if (q->acl != 0)
+      acl_id = q->acl;
+    else {
+	name = q->shortname;
+##	repeat retrieve (acl_id = capacls.list_id) where capacls.tag = @name
+##	inquire_equel (rowcount = "rowcount", errorno = "errorno")
+	if (errorno != 0) return(SMS_INGRES_ERR);
+	if (rowcount == 0) return(SMS_PERM);
+	q->acl = acl_id;
+
+	/* check for default access */
+##	repeat retrieve (exists = any(imembers.#member_id where
+##				      imembers.list_id = @acl_id and
+##				      imembers.member_type = "USER" and
+##				      imembers.#member_id = def_uid))
+	q->everybody = exists;
+    }
+
+    if (q->everybody)
+      return(SMS_SUCCESS);
+
+    if (client_is_member(cl, acl_id))
+      return(SMS_SUCCESS);
+    else
+      return(SMS_PERM);
+##}
+
+
+/* If this client has cached list information, use that.  Otherwise, 
+ * use the general get_client & find_member routines to determine if
+ * the user is a member of the list.
+ */
+
+int client_is_member(cl, id)
+client *cl;
+int id;
+{
+    char *client_type;
+    int client_id, status;
+
+    if (cl->lists[0]) {
+	register int i;
+	for (i = 0; cl->lists[i] && i < NLISTS; i++)
+	  if (cl->lists[i] == id)
+	    return(1);
+	return(0);
+    }
 
     /* parse client name */
-    status = get_client(cl, &client_type, &client_id);
-    if (status != SMS_SUCCESS) return(status);
+    if (get_client(cl, &client_type, &client_id) != SMS_SUCCESS)
+      return(0);
 
     /* see if client is in the list (or any of its sub-lists) */
-    exists = find_member("LIST", acl_id, client_type, client_id, 0);
-    return ((exists) ? SMS_SUCCESS : SMS_PERM);
-##}
+    return(find_member("LIST", id, client_type, client_id, 0));
+}
+
 
 get_client(cl, client_type, client_id)
     client *cl;
     char **client_type;
     int *client_id;
-##{
-    struct krbname *krb;
-##  int member_id;
-##  char *name;
-##  int rowcount;
-
-    if (cl->clname == NULL)
-	return SMS_PERM;
-    
-    /* for now ignore instances */
-    krb = &cl->kname;
-
-    /* if client is from local realm, get users_id */
-    if (!strcmp(krb->realm, krb_realm)) {
+{
+    if (cl->users_id > 0) {
 	*client_id = cl->users_id;
 	*client_type = "USER";
 	return(SMS_SUCCESS);
     }
 
-    /* otherwise use string_id */
-    name = cl->clname;
-##  repeat retrieve (member_id = strings.string_id) 
-##      where strings.string = @name
-	
-    /* make sure we found a users or string id */
-##  inquire_equel (rowcount = "rowcount")
-    if (rowcount == 0) return(SMS_PERM);
+    if (cl->client_id < 0) {
+	*client_id = -cl->users_id;
+	*client_type = "KERBEROS";
+	return(SMS_SUCCESS);
+    }
 
-    *client_type = "STRING";
-    *client_id = member_id;
-    return(SMS_SUCCESS);
-##}
+    return(SMS_PERM);
+}
 
 ##find_member(list_type, list_id, member_type, member_id)
     char *list_type;
@@ -572,11 +605,10 @@ get_client(cl, client_type, client_id)
 	return(1);
 
     /* see if client is a direct member of list */
-##  range of m is imembers
-##  repeat retrieve (exists = any(m.#member_id where 
-##				  m.#list_id = @list_id and
-##				  m.#member_type = @member_type and 
-##				  m.#member_id = @member_id))
+##  repeat retrieve (exists = any(imembers.#member_id where 
+##				  imembers.#list_id = @list_id and
+##				  imembers.#member_type = @member_type and 
+##				  imembers.#member_id = @member_id))
 ##  inquire_equel(errorno = "errorno")
     if (errorno == 0)
       return(exists);
@@ -782,6 +814,113 @@ set_next_object_id(object, table)
         com_err(whoami, 0, "setting ID %s to %d", name, value);
 ##  repeat replace v (#value = @value) where v.#name = @name
     return(SMS_SUCCESS);
+##}
+
+
+/* This looks up a login name and returns the SMS internal ID.  It is used
+ * by authenticate to put the users_id in the client structure.
+ */
+
+int get_users_id(name)
+char *name;
+##{
+##  int id, rowcount;
+##  char *login;
+
+    login = name;
+
+##  range of u is users
+##  repeat retrieve (id = u.#users_id) where u.#login = @login
+##  inquire_equel (rowcount = "rowcount")
+    
+    if (rowcount == 1)
+	return(id);
+    else
+	return(0);
+##}
+
+
+/* Turn a kerberos name into the user's ID of the account that principal
+ * owns.  Sets the kerberos ID and user ID.
+ */
+
+set_krb_mapping(name, login, ok, kid, uid)
+char *name;
+char *login;
+int ok;
+int *kid;
+int *uid;
+##{
+##  int u_id, k_id, rowcount;
+##  char *krbname;
+
+    krbname = name;
+    *kid = 0;
+    *uid = 0;
+
+##  range of k is krbmap
+##  range of s is strings
+##  repeat retrieve (u_id = k.#users_id, k_id = k.#string_id)
+##	where k.string_id = s.string_id and s.string = @krbname
+##  inquire_equel (rowcount = "rowcount")
+    
+    if (rowcount == 1) {
+	*kid = -k_id;
+	*uid = u_id;
+	return;
+    }
+
+##  repeat retrieve (k_id = s.#string_id) where s.string = @krbname
+##  inquire_equel (rowcount = "rowcount")
+
+    if (rowcount == 1) {
+	*kid = -k_id;
+    }
+
+    if (!ok) {
+	*uid = *kid;
+	return;
+    }
+
+    *uid = get_users_id(login);
+    if (*kid == 0)
+      *kid = *uid;
+##}
+
+
+/* Cache the lists that the client is a member of.  These will be used
+ * to speed up access checking later.
+ */
+
+set_client_lists(cl)
+client *cl;
+##{
+##  int lid, mid;
+##  char *type;
+    int count = 0;
+
+    cl->lists[count] = 0;
+    if (cl->users_id != 0) {
+	type = "USER";
+	mid = cl->users_id;
+    } else if (cl->client_id != 0) {
+	type = "KERBEROS";
+	mid = -cl->client_id;
+    } else
+      return;
+
+##  range of m is members
+##  repeat retrieve (lid = m.list_id) where m.member_type = @type and 
+##    	m.member_id = @mid {
+	    cl->lists[count++] = lid;
+	    if (count >= NLISTS)
+##	      endretrieve
+##  }
+    if (count >= NLISTS) {
+	cl->lists[0] = 0;
+	com_err(whoami, 0, "too many lists to cache");
+    } else
+      cl->lists[count] = 0;
 ##}
 
 

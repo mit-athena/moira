@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.3 1988-09-14 14:04:45 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.4 1988-12-07 18:45:55 mar Exp $
  *
  * Command line oriented SMS List tool.
  *
@@ -21,7 +21,7 @@
 #include <sms_app.h>
 
 #ifndef LINT
-static char smslist_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.3 1988-09-14 14:04:45 mar Exp $";
+static char smslist_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.4 1988-12-07 18:45:55 mar Exp $";
 #endif
 
 
@@ -143,7 +143,7 @@ char **argv;
       memberflg++;
 
     /* fire up SMS */
-    if (status = sms_connect()) {
+    if (status = sms_connect(SMS_SERVER)) {
 	com_err(whoami, status, " unable to connect to SMS");
 	exit(2);
     }

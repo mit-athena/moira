@@ -1,6 +1,6 @@
-/* $Id: dhcp.pc,v 1.2 2000-08-17 05:52:49 zacheiss Exp $
+/* $Id: dhcp.pc,v 1.3 2001-01-05 07:37:20 zacheiss Exp $
  *
- * This generates the dhcpd.conf.pring and associated files.
+ * This generates the dhcpd.conf.print and associated files.
  *
  * Copyright (C) 1992-1998 by the Massachusetts Institute of Technology.
  * For copying and distribution information, please see the file
@@ -20,12 +20,16 @@
 
 #include "util.h"
 
+#define MACHINE_CHWADDR_SIZE 18
+
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/dhcp.pc,v 1.2 2000-08-17 05:52:49 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/dhcp.pc,v 1.3 2001-01-05 07:37:20 zacheiss Exp $");
 
 char *whoami = "dhcp.gen";
 char *db = "moira/moira";
+
+void hwcolonify(char *from, char *to);
 
 void sqlerr(void);
 
@@ -33,6 +37,7 @@ int main(int argc, char **argv)
 {
   EXEC SQL BEGIN DECLARE SECTION;
   char name[MACHINE_NAME_SIZE], hwaddr[MACHINE_HWADDR_SIZE];
+  char chwaddr[MACHINE_CHWADDR_SIZE];
   char ohwaddr[MACHINE_HWADDR_SIZE], hwtype[PRINTERS_HWTYPE_SIZE];
   char addr[MACHINE_ADDRESS_SIZE], location[PRINTERS_LOCATION_SIZE];
   char contact[PRINTERS_CONTACT_SIZE], logaddr[MACHINE_ADDRESS_SIZE];
@@ -110,6 +115,8 @@ int main(int argc, char **argv)
 	}
       strcpy(ohwaddr, hwaddr);
 
+      hwcolonify(hwaddr, chwaddr); 
+
       strtrim(name);
       strtrim(addr);
       strtrim(logaddr);
@@ -129,9 +136,12 @@ int main(int argc, char **argv)
 	continue;
 
       fprintf(out, "# %s: %s\n# contact: %s\nhost %s {\n\t"
-	      "hardware ethernet %s;\n\tfixed-address %s;\n"
-	      "\toption log-servers %s;\n",
-	      shortname, location, contact, name, hwaddr, addr, logaddr);
+	      "hardware ethernet %s;\n\tfixed-address %s;\n",
+	      shortname, location, contact, name, chwaddr, addr);
+      
+      if (strlen(logaddr) != 0)
+	      fprintf(out, "\toption log-servers %s;\n", logaddr);
+	      
       if (!strncmp(hwtype, "HP", 2))
 	fprintf(out, "\toption option-144 \"/hp/%s\";\n", shortname);
       fprintf(out, "}\n\n");
@@ -217,6 +227,23 @@ int main(int argc, char **argv)
   tarfile_close(tf);
 
   exit(MR_SUCCESS);
+}
+
+void hwcolonify(char *from, char *to)
+{
+  int f = 0, t = 0;
+  int mod = 2;
+
+  for (f = 0 ; f < MACHINE_HWADDR_SIZE - 1 ; )
+    {
+      to[t++] = from[f++];
+      if (f % mod == 0)
+	to[t++] = ':';
+    }
+	
+  if (f % mod == 0)
+    t--;
+  to[t] = '\0';
 }
 
 void sqlerr(void)

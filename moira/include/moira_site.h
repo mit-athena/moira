@@ -1,13 +1,17 @@
-/*	This is the file infodefs.h for the SMS Client, which allows a nieve
- *      user to quickly and easily maintain most parts of the SMS database.
- *	It Contains: useful typdefs.
- *	
- *	Created: 	6/8/88
- *	By:		Chris D. Peterson
+/*
+ * This file contains all definitions that allow easy access to 
+ * elements returned by most of the @i[SMS] queries.
+ *
+ * If the order of the arguments in the @i[SMS] queries change (again)
+ * then all that needs to be changed are the values of these items 
+ * and all should be well, (hopefully :-).
+ *
+ *                                 Chris D. Peterson - kit@athena
+ *                                   7/27/88
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/include/moira_site.h,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/include/moira_site.h,v 1.9 1988-10-05 15:42:09 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/include/moira_site.h,v 1.10 1988-12-06 16:31:42 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -15,22 +19,13 @@
  *	see the file mit-copyright.h
  */
 
-/*
- *     This file contains all definitions that allow easy access to 
- * elements returned by most of the @i[SMS] queries.
- *
- *     If the order of the arguments in the @i[SMS] queries change (again)
- *  then all that needs to be changed are the values of these items 
- * and all should be well, (hopefully :-).
- *
- *                                 Chris D. Peterson - kit@athena
- *                                   7/27/88
- */
-
-#ifndef _infodefs_
-#define _infodefs_
+#ifndef _sms_app_
+#define _sms_app_
 
 #include "mit-copyright.h"
+
+/* Default SMS server to connect to */
+#define SMS_SERVER	"SMS.MIT.EDU:sms_db"
 
 #define NAME 0
 
@@ -252,4 +247,4 @@
 #define SHI_VALUE3	5
 #define SHI_END		6
 
-#endif _infodefs_		/* Do not add anything after this line. */
+#endif _sms_app_		/* Do not add anything after this line. */

@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/students.dc,v 1.3 1990-01-19 14:31:10 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/students.dc,v 1.4 1990-01-19 15:00:41 mar Exp $
  */
 
 #include <stdio.h>
@@ -233,7 +233,7 @@ struct entry *e;
 	strcpy(class, e->class);
 ##	repeat replace u (mit_year = @class,
 ##		   modtime = "now", modby = WHO, modwith = PROG)
-##	    where u.users_id = id
+##	    where u.users_id = @id
     }
     changed = nochange = 0;
     strcpy(buf, strtrim(e->address));

@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.12 1988-09-01 15:41:43 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.13 1988-09-02 12:25:42 mar Exp $";
 #endif
 
 /*	This is the file attach.c for the SMS Client, which allows a nieve
@@ -13,7 +13,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.12 1988-09-01 15:41:43 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.13 1988-09-02 12:25:42 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -342,8 +342,10 @@ Bool junk;
 	    }
 	}
 	break;
+    case SMS_SUCCESS:
+	break;
     default:
-	com_err(program_name, stat, " in AddFS");
+	com_err(program_name, stat, " in UpdateFS");
     }
 }
 
@@ -410,6 +412,8 @@ int argc;
 		    Put_message("Created.");
 	    }
 	}
+	break;
+    case SMS_SUCCESS:
 	break;
     default:
 	com_err(program_name, stat, " in AddFS");

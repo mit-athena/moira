@@ -1,4 +1,4 @@
-/* $Id: qsupport.pc,v 2.45 2002-08-13 15:50:14 zacheiss Exp $
+/* $Id: qsupport.pc,v 2.46 2002-11-18 20:19:33 zacheiss Exp $
  *
  * Special query routines
  *
@@ -18,7 +18,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.pc,v 2.45 2002-08-13 15:50:14 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.pc,v 2.46 2002-11-18 20:19:33 zacheiss Exp $");
 
 extern char *whoami, *table_name[];
 extern int dbms_errno, mr_errcode;
@@ -888,7 +888,24 @@ int get_ace_internal(char *atype, int aid,
       found++;
     }
   EXEC SQL CLOSE csr116;
-  
+
+  rargv[0] = "CONTAINER";
+  EXEC SQL DECLARE csr117c CURSOR FOR
+    SELECT name FROM containers c
+    WHERE c.acl_type = :type AND c.acl_id = :id;
+  if (dbms_errno)
+    return mr_errcode;
+  EXEC SQL OPEN csr117c;
+  while (1)
+    {
+      EXEC SQL FETCH csr117c INTO :name;
+      if (sqlca.sqlcode)
+	break;
+      (*action)(2, rargv, actarg);
+      found++;
+    }
+  EXEC SQL CLOSE csr117c;
+
   if (!found)
     return MR_NO_MATCH;
   return MR_SUCCESS;

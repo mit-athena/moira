@@ -1,3 +1,18 @@
+/*
+ *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/include/admin_server.h,v $
+ *	$Author: wesommer $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/include/admin_server.h,v 1.2 1987-08-09 00:22:52 wesommer Exp $
+ *
+ *	Copyright (C) 1987 by the Massachusetts Institute of Technology
+ *
+ * 	Defines for talking to the kerberos admin_server, for changing
+ * 	passwords, etc.
+ *
+ * 	Originally by Jeffery I. Schiller, January 1987.
+ * 
+ *	$Log: not supported by cvs2svn $
+ */
+
 
 #define PW_SRV_VERSION	2		/* version number */
 #ifndef KERB_HOST

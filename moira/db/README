@@ -1,36 +1,40 @@
-/mit/smsdev/db/README: $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/db/README,v 1.4 1990-04-25 14:54:12 mar Exp $
+/mit/moiradev/db/README: $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/db/README,v 1.5 1996-07-08 19:22:28 dkk Exp $
 
-This directory contains stuff necessary to create and initialize an
-sms database.  Note that some other directories rely on files here
-(notably newdb), and that the newsms program relies on other files.
+This directory contains stuff necessary to create and initialize a
+Moira database.  Note that some other directories rely on files here
+(notably newdb), and that the newmoira program relies on other files.
 
-STEPS TO CREATE A DATABASE:
+STEPS TO CREATE A DATABASE (Ingres-specific instructions):
 
-1. run "createdb sms" from the shell
-2. run the quel commands in newdb to create the tables
-3. run newmoira
-4. if you want any queries to be publically executable, change their
+-1.Make sure there is enough disk space on the partition which is to
+   hold the database.  Building the indexes for Athena takes something
+   like 50 Meg of free disk space, *after* the ~100 Meg for the base DB.
+0. If necessary, run "destroydb moira" from the shell. [a few seconds]
+1. Run "createdb moira" from the shell. [a minute or so]
+2. Run the sql commands in src/db/schema to create the tables. [a few seconds]
+3. Run mrrestore. [10-20 hours on a decstation]
+4. If you want any queries to be publically executable, change their
    capacls entries from list_id 2 to 1.
-5. run the quel commands in dbopt to create indices on the data.
+5. Run the sql commands in src/db/dbopt to create indices on the data.
+   Any failures are probably due to insufficient disk space.  (Check
+   /ingres/files/errlog.log to make sure.) [ <= 1 hour on a decstation]  
+  
 
 Example:
 
-    createdb sms
-    quel sms
-	    \i newdb
-	    \g
-	    \q
-    newmoira
-	    mar
-
-	    19000
-	    19000
-	    600
-	    mar
-    quel sms
-	    \i dbopt
-	    \g
-	    \q
+    createdb moira
+    sql moira
+	\include schema
+	\go
+	\quit
+    /moira/bin/mrrestore moira
+	yes
+	yes
+	<path prefix with trailing '/'>
+	yes
+    sql moira
+	\include dbopt
+	\quit
 
 
 THINGS TO DO:

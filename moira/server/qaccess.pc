@@ -1,4 +1,4 @@
-/* $Id: qaccess.pc,v 2.21 2001-01-11 19:38:56 zacheiss Exp $
+/* $Id: qaccess.pc,v 2.22 2001-03-14 20:51:44 zacheiss Exp $
  *
  * Check access to queries
  *
@@ -17,7 +17,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qaccess.pc,v 2.21 2001-01-11 19:38:56 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qaccess.pc,v 2.22 2001-03-14 20:51:44 zacheiss Exp $");
 
 extern char *whoami;
 extern int dbms_errno, mr_errcode;
@@ -198,7 +198,7 @@ int access_list(struct query *q, char *argv[], client *cl)
 
   /* If not amtl, atml, or dmfl, we lose. */
   if (strcmp(q->shortname, "amtl") && strcmp(q->shortname, "atml") &&
-      strcmp(q->shortname, "dmfl"))
+      strcmp(q->shortname, "dmfl") && strcmp(q->shortname, "tmol"))
     return MR_PERM;
 
   if (find_member(memacl_type, memacl_id, cl))

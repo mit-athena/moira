@@ -1,4 +1,4 @@
-/* $Id: mr_connect.c,v 1.34 2000-12-14 05:17:19 zacheiss Exp $
+/* $Id: mr_connect.c,v 1.35 2001-07-18 02:47:50 zacheiss Exp $
  *
  * This routine is part of the client library.  It handles
  * creating a connection to the moira server.
@@ -37,9 +37,15 @@
 
 #ifdef HAVE_HESIOD
 #include <hesiod.h>
+#ifdef _WIN32
+/* This is declared in wshelper's resolv.h, but the definition of
+ * the putlong macro conflicts with Moira's
+ */
+struct hostent * WINAPI rgethostbyname(char *name);
+#endif
 #endif
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_connect.c,v 1.34 2000-12-14 05:17:19 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_connect.c,v 1.35 2001-07-18 02:47:50 zacheiss Exp $");
 
 #define DEFAULT_SERV "moira_db"
 #define DEFAULT_PORT 775
@@ -142,7 +148,11 @@ int mr_connect_internal(char *server, char *port)
   int ok = 0;
   int on = 1; /* Value variable for setsockopt() */
 
+#if defined(_WIN32) && defined(HAVE_HESIOD)
+  shost = rgethostbyname(server);
+#else
   shost = gethostbyname(server);
+#endif
   if (!shost)
     goto cleanup;
 
@@ -263,6 +273,7 @@ int mr_listen(char *port)
   int s, on = 1;
 
   memset(&sin, 0, sizeof(sin));
+  sin.sin_family = AF_INET;
   if (port[0] == '#')
     sin.sin_port = atoi(port + 1);
   else
@@ -272,9 +283,19 @@ int mr_listen(char *port)
       if (s)
 	sin.sin_port = s->s_port;
       else
+#ifndef HAVE_HESIOD
 	return -1;
+#else
+      {
+        s = hes_getservbyname(port, "tcp");
+	if (s)
+	  sin.sin_port = s->s_port;
+	else
+	  return -1;
+      }
+#endif /* HAVE_HESIOD */
     }
-
+  
   s = socket(AF_INET, SOCK_STREAM, 0);
   if (s < 0)
     return -1;

@@ -3,13 +3,13 @@
  * and distribution information, see the file "mit-copyright.h". 
  *
  * $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chfn.c,v $
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chfn.c,v 1.5 1989-09-07 14:10:43 mar Exp $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chfn.c,v 1.6 1989-12-28 18:06:32 mar Exp $
  * $Author: mar $
  *
  */
 
 #ifndef lint
-static char *rcsid_chfn_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chfn.c,v 1.5 1989-09-07 14:10:43 mar Exp $";
+static char *rcsid_chfn_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chfn.c,v 1.6 1989-12-28 18:06:32 mar Exp $";
 #endif not lint
 
 /*
@@ -29,7 +29,6 @@ static char *rcsid_chfn_c = "$Header: /afs/.athena.mit.edu/astaff/project/moirad
 #include <sys/types.h>
 #include <stdio.h>
 #include <strings.h>
-#include <ctype.h>
 #include <sys/file.h>
 #include <krb.h>
 #include <ctype.h>

@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/printer.c,v 1.6 1989-08-22 15:56:35 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/printer.c,v 1.7 1989-08-25 14:01:14 mar Exp $";
 #endif lint
 
 /*	This is the file printer.c for the SMS Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/printer.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/printer.c,v 1.6 1989-08-22 15:56:35 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/printer.c,v 1.7 1989-08-25 14:01:14 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -304,7 +304,7 @@ char ** info;
 char * name;
 {
     info[PD_NAME] =		Strsave(name);
-    info[PD_IDENT] =		Strsave("1");
+    info[PD_IDENT] =		Strsave("10000");
     info[PD_HOST] =		Strsave(DEFAULT_MACHINE);
     info[PD_MODTIME] = info[PD_MODBY] = info[PD_MODWITH] = NULL;
 
@@ -327,13 +327,13 @@ char ** info;
     char temp_buf[BUFSIZ], *newname;
 
     Put_message("");
-    sprintf(temp_buf, "Palladium entry for %s.", 
+    sprintf(temp_buf, "Palladium Server/Supervisor entry for %s.", 
 	    info[PD_NAME]);
     Put_message(temp_buf);
     Put_message("");
 
-    GetValueFromUser("Printer Identification Number", &info[PD_IDENT]);
-    GetValueFromUser("Printer Server", &info[PD_HOST]);
+    GetValueFromUser("RPC Program Number", &info[PD_IDENT]);
+    GetValueFromUser("Print Server/Supervisor Host", &info[PD_HOST]);
     info[PD_HOST] = canonicalize_hostname(info[PD_HOST]);
     
     FreeAndClear(&info[PD_MODTIME], TRUE);
@@ -361,7 +361,7 @@ char ** info;
 	    return;
     }
 
-    sprintf(buf, "Name: %-24s Ident: %s  Host: %s",
+    sprintf(buf, "Name: %-24s Program #: %s  Host: %s",
 	    info[PD_NAME], info[PD_IDENT], info[PD_HOST]);
     Put_message(buf);
     sprintf(buf, MOD_FORMAT, info[PD_MODBY], info[PD_MODTIME],
@@ -455,7 +455,7 @@ char **argv;
 
     if ((status = do_sms_query("get_palladium", 1, &argv[1], NullFunc, NULL))
 	== 0) {
-	Put_message("A printer by that name already exists.");
+	Put_message("A server or supervisor by that name already exists.");
 	return(DM_NORMAL);
     } else if (status != SMS_NO_MATCH) {
 	com_err(program_name, status, " in AddPalladium");
@@ -478,7 +478,7 @@ int argc;
 char **argv;
 {
     struct qelem *elem = GetPalladiumInfo(argv[1]);
-    QueryLoop(elem, NullPrint, ChangePalladium, "Change the printer");
+    QueryLoop(elem, NullPrint, ChangePalladium, "Change the server/supervisor");
     FreeQueue(elem);
     return(DM_NORMAL);
 }
@@ -489,7 +489,7 @@ int argc;
 char **argv;
 {
     struct qelem *elem = GetPalladiumInfo(argv[1]);
-    QueryLoop(elem, PrintPalladiumInfo, RealDeletePalladium, "Delete Printer");
+    QueryLoop(elem, PrintPalladiumInfo, RealDeletePalladium, "Delete server/supervisor");
     FreeQueue(elem);
     return(DM_NORMAL);
 }
@@ -513,7 +513,7 @@ char **argv;
     Put_message("");
     while (elem != NULL) {
 	char **info = (char **) elem->q_data;
-	sprintf(buf, "Queue: %-16s Server: %s", info[0], info[2]);
+	sprintf(buf, "Printer: %-16s Server/Supervisor: %s", info[0], info[2]);
 	Put_message(buf);
 	elem = elem->q_forw;
     }

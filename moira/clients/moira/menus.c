@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menus.c,v 1.13 1989-08-22 15:55:01 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menus.c,v 1.14 1989-08-25 14:00:54 mar Exp $";
 #endif lint
 
 /*	This is the file menus.c for the SMS Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menus.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menus.c,v 1.13 1989-08-22 15:55:01 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menus.c,v 1.14 1989-08-25 14:00:54 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -603,35 +603,35 @@ Menu palladium_menu = {
   7,
   {
     { GetPalladium, NULLMENU, 2, {
-      {"get", "Get Palladium Server Information"},
+      {"get", "Get Palladium Server/Supervisor Information"},
       {"name", "Name of Printer: "}
     } },
     { AddPalladium, NULLMENU, 2, {
-      {"add", "Add New Palladium Server to Database"},
+      {"add", "Add New Palladium Server/Supervisor to Database"},
       {"name", "Supervisor/server name: "},
     } },
     { ChngPalladium, NULLMENU, 2, {
-      {"change", "Update Palladium Server Information"},
+      {"change", "Update Palladium Server/Supervisor Information"},
       {"name", "name: "},
     } },
     { DeletePalladium, NULLMENU, 2, {
-      {"delete", "Delete Palladium Server Entry"},
+      {"delete", "Delete Palladium Server/Supervisor Entry"},
       {"name", "Printer Name: "}
     } },
     { ShowPalladiumAlias, NULLMENU, 3, {
-      {"aliases", "Show Alternate Queue Names"},
-      {"newname", "Alternate name: "},
-      {"server", "Real supervisor or server name: "},
+      {"getprinter", "Show Logical Printers"},
+      {"newname", "Printer name: "},
+      {"server", "Supervisor or Server name: "},
     } },
     { AddPalladiumAlias, NULLMENU, 3, {
-      {"alias", "Add Alternate Queue Name"},
-      {"newname", "New name: "},
-      {"server", "Real supervisor or server name: "},
+      {"addprinter", "Add Logical Printer"},
+      {"newname", "New printer: "},
+      {"server", "Supervisor or Server name: "},
     } },
     { DeletePalladiumAlias, NULLMENU, 3, {
-      {"unalias", "Remove Alternate Queue Name"},
-      {"newname", "Alternate name: "},
-      {"server", "Real supervisor or server name: "},
+      {"delprinter", "Remove Logical Printer"},
+      {"newname", "Printer name: "},
+      {"server", "Supervisor or Server name: "},
     } },
   }
 };

@@ -1,0 +1,168 @@
+Date: Tue, 26 Jul 1994 14:37:39 -0400
+To: Kimberly Carney <kim@MIT.EDU>
+Cc: dkk@MIT.EDU, op@MIT.EDU
+In-Reply-To: Kimberly Carney's message of Tue, 26 Jul 1994 14:00:29 EDT,
+	<9407261800.AA13079@chich.MIT.EDU>
+Subject: Re: AFS prdb sync'd with Moira 
+From: "Richard Basch" <basch@MIT.EDU>
+
+[ Note: make sure that you have the binaries from afsuser copied
+  locally onto your local machine; also make sure that you have all
+  scripts (see below) copied locally before you start, since AFS may
+  disappear on you.  Altnertiavely, your machine should not be
+  depending on the Athena cell.  For syspacks, root.afs (/afs), etc.
+  Make sure you have superuser tokens for all cells that you might need.]
+
+The binaries are now in /moira/sync/ on the Moira server.
+Most of the commands must be done on the Moira server.
+
+  touch /moira/afs/noafs
+(This gives you some grace time, but watch for critical AFS errors after
+this happens, as you will have to handle those by hand.)
+
+[ 30 minutes after an AFS incrementals starts, they will time out.... 
+	So after that, they will log critical error and then they will
+	have to be done by hand! ]
+
+  /moira/sync/afssync /var/prdb.moira
+(I recommend that you do the following few steps concurrently with this,
+as the "noafs" lock file doesn't give you too much grace time.)
+[ ^^ This takes roughly 20-40 minutes.]
+
+[ Check all PTS servers to make sure they have a consistent versions.
+  Note the PTS database version number, make sure no write
+  transactions are in progress.   "udebug -p 7002".]
+
+  rcp root@orf:/usr/afs/db/prdb.DB0 /var/prdb.old
+(use "udebug <server> -p 7002" before and after to make sure the version
+hasn't changed.)
+
+[ Check to make sure that the version number is the same with udebug.]
+
+  /moira/sync/pt_util -x -m -u -g -d /var/prdb.extra -p /var/prdb.old
+  perl /moira/sync/pt_util.pl < /var/prdb.extra > /var/prdb.extra.sort
+(These two commands extract and prepare the personal groups and special
+user entries in the old prdb for being reincorporated into the new prdb.)
+
+*** Make sure the "afssync" command has completed ***
+  cp /var/prdb.moira /var/prdb.new
+  /moira/sync/pt_util -w -d /var/prdb.extra.sort -p /var/prdb.new
+(This almost completes the preparation of the prdb.)
+[ ^^ This takes 40 minutes, may take longer.  Exponentially with
+number of personal groups.]
+
+  pts listmax
+(Save the numbers printed.)
+
+copy /var/prdb.new to *ALL* the database servers (/usr/afs/db/prdb.new)
+
+The following should be done as quickly as possible...
+
+foreach i ( <db servers> )
+  bos shutdown $i ptserver
+  bos exec $i "rm /usr/afs/db/prdb.DB*; mv /usr/afs/db/prdb.new /usr/afs/db/prdb.DB0"
+end
+
+foreach i ( <db servers> )
+  bos restart $i ptserver
+end
+
+Watch the status of the servers using "udebug" to make sure things are
+going well...  make sure the beacons are working, and that once quorom
+is established that the servers are resynchronizing their notions of the
+databases and that the dbcurrent and up fields all become set and the
+state goes to 1f.  Also watch out for large rx packet queues on port
+7002 using rxdebug, as the fileservers may get excessively backlogged,
+and restart servers, if necessary, if the congestion remains excessive.
+
+[ Use udebug on prill.... will take 75 seconds for the pts servers to
+elect a master, and then additional time for the master to propagate
+its database to the rest of the pts servers.]
+
+  pts listmax
+(if the id's are lower than the saved ones, reset them appropriately to
+the saved one's, using "pts setmax").
+
+  pts ex system:administrators
+(good spot check, especially since it has special people)
+(also spot check one of the personal groups and perhaps, something like
+the membership of rcmd.ronald-ann)
+
+  rm /moira/afs/noafs
+(You need to remove the lock file you put on.)
+
+-Richard
+
+***************************************************************************
+
+NOTES:
+
+1. There is also a faster pt_util command for integrating the various personal
+groups.  However, it has not been fully verified.  It can be found in the 
+development sources as pt_util-fast.c.  Feel free to try using this one, but
+I would also recommend generating the database the old way just in case...
+
+2. The goal is to minimize the outage and minimize the potential for changes
+so concurrency is highly recommended.
+
+3. Make sure you copy the database to all the protection servers, as the
+servers will be more than happy to give "no such user" answers and users
+will not be able to reestablish authentic connections without doing
+"aklog -force".
+
+4. Don't do this when you're tired...  There may be no cleanup procedure
+available, with certain mistakes.
+
+5. /moira/afs/noafs is only good for 30 minutes.  Keep track of the
+critical log, and you may have to do some operations by hand when the
+operation is complete.  Also, if requests depend on other requests, they
+may be processed out of order, and fail, and may need to be done by hand.
+
+***************************************************************************
+
+(The following is a very old message...)
+
+
+To: op@MIT.EDU, mar@MIT.EDU
+Cc: tjm@MIT.EDU
+Subject: AFS/Moira sync
+From: "Richard Basch" <basch@MIT.EDU>
+
+
+I have rebuilt the AFS protection database from the information in the
+Moira and old prdb (for the special entries and personal groups).  It
+has been installed without a problem.  The old prdb is in
+
+	prill:/usr/afs/db/prdb.old
+
+As usual, I installed it with no interruption of service (there may have
+been a couple minutes when AFS was a bit slow as the protection database
+servers were being restarted, but that's it).
+
+The following is the basic procedure I used to create the new prdb...
+
+-Richard
+
+
+moira2# /moira/bin/afssync /var/prdb
+Doing users: Tue Sep  7 23:59:37 1993
+Doing groups: Wed Sep  8 00:16:26 1993
+Error adding group system:mit id -101: Entry for id already exists
+Error adding group system:authuser id -102: Entry for id already exists
+Error adding group system:administrators id -204: Entry for id already exists
+Reading/preparing members: Wed Sep  8 00:30:11 1993
+Doing members: Wed Sep  8 00:34:22 1993
+Done (16591 users, 18144 groups, 23 kerberos, 39097 members): Wed Sep  8 00:41:10 1993
+
+prill# /mit/opssrc/moira/afssync/pt_util -x -m -u -g -d /tmp/xxx
+prill# perl /mit/moiradev/pmax/afssync/pt_util.pl < /tmp/xxx > /tmp/prdb.extra
+
+moira2# cd /var
+moira2# cp -p prdb prdb.new
+moira2# /mit/moiradev/pmax/afssync/pt_util -w -d /var/prdb.extra -p /var/prdb.new
+Ubik Version is: 0.0
+Error while creating who:rune-staff: User or group doesn't exist
+Error while creating system:gsipbbin: Entry for id already exists
+Error while creating celine:admin: User or group doesn't exist
+Error while creating celine:titan: User or group doesn't exist
+

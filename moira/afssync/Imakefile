@@ -1,0 +1,24 @@
+DBCFLAGS=
+DBLIBS= -L/usr/ingres/lib -lingres -lm
+
+DEFINES= -I$(AFSDIR)/include -I$(AFSDIR)/include/afs -I../include
+LIBS= -L../lib -L/usr/athena/lib -lmoira -lcom_err -lkrb -ldes ${DBLIBS}
+
+OBJS= ptutils.o utils.o ubik.o
+SRCS= ptutils.c utils.c ubik.c
+CODE= $(SRCS) migrate.qc sync.dc
+
+AFSDIR = /mit/afsdev/bld/dest
+AFSLIBS=$(AFSDIR)/lib/afs/libprot.a   $(AFSDIR)/lib/afs/libauth.a \
+	$(AFSDIR)/lib/libubik.a       $(AFSDIR)/lib/afs/util.a \
+	$(AFSDIR)/lib/librxkad.a      $(AFSDIR)/lib/afs/libsys.a \
+	$(AFSDIR)/lib/librx.a         $(AFSDIR)/lib/liblwp.a
+
+sqlrule()
+
+genutil(afssync,sync.o $(OBJS),,$(AFSLIBS) $(LIBS))
+genutil(pt_util,pt_util.o $(OBJS),,$(AFSLIBS) -L../lib -L/usr/athena/lib -lcom_err -ldes)
+/* genutil(ptdump,ptdump.o $(OBJS),,) */
+
+sqlfile(sync)
+sqlfile(migrate)

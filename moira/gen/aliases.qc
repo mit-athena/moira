@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/aliases.qc,v 1.12 1989-12-11 17:46:57 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/aliases.qc,v 1.13 1990-03-07 14:38:17 mar Exp $
  *
  * This generates the /usr/lib/aliases mail aliases file for the mailhub.
  * The aliases file will contain:
@@ -165,7 +165,9 @@ get_info()
 ##  retrieve (id = machine.mach_id, name = machine.#name) {
       if (s = index(name, '.'))
 	*s = 0;
+#ifdef ATHENA
       strcat(name, ".LOCAL");
+#endif
       hash_store(machines, id, strsave(name));
 ##  }
 

@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/afssync/sync.qc,v 1.11 1992-07-05 17:34:33 probe Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/afssync/sync.qc,v 1.12 1992-07-08 18:32:22 probe Exp $
  *
  *
  *  (c) Copyright 1989 by the Massachusetts Institute of Technology.
@@ -51,6 +51,8 @@ char **argv;
     
     int status;
     int ingerr();
+
+    strcpy(db, "sms");
 
     if (!strcmp(argv[1], "-db")) {
 	strncpy(db, argv[2], sizeof(db)-1);

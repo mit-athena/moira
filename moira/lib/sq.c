@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/sq.c,v 1.5 1990-03-17 16:37:16 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/sq.c,v 1.6 1991-03-08 10:33:07 mar Exp $
  *
  * Generic Queue Routines
  *
@@ -9,6 +9,8 @@
 
 #include <mit-copyright.h>
 #include <moira.h>
+
+extern char *malloc();
 
 struct save_queue *
 sq_create()
@@ -52,7 +54,7 @@ sq_save_args(argc, argv, sq)
 	bcopy(argv[i], argv_copy[i], n);
     }
 
-    sq_save_data(sq, argv_copy);
+    sq_save_data(sq, (char *)argv_copy);
 }
 
 sq_save_unique_data(sq, data)

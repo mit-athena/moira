@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.14 1990-09-19 11:50:00 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.15 1991-03-08 10:26:40 mar Exp $
  *
  * Command line oriented Moira List tool.
  *
@@ -21,7 +21,7 @@
 #include <moira_site.h>
 
 #ifndef LINT
-static char blanche_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.14 1990-09-19 11:50:00 mar Exp $";
+static char blanche_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.15 1991-03-08 10:26:40 mar Exp $";
 #endif
 
 
@@ -388,7 +388,7 @@ char **argv;
 show_list_member(memberstruct)
 struct member *memberstruct;
 {
-    char *s;
+    char *s = "";
 
     switch (memberstruct->type) {
     case M_USER:

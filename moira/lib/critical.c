@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/critical.c,v 1.11 1990-03-19 13:08:49 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/critical.c,v 1.12 1991-03-08 10:31:31 mar Exp $
  *
  * Log and send a zephyrgram about any critical errors.
  *
@@ -9,6 +9,7 @@
 
 #include <mit-copyright.h>
 #include <stdio.h>
+#include <sys/types.h>
 #include <sys/file.h>
 #include <moira_site.h>
 #ifdef ZEPHYR
@@ -51,7 +52,7 @@ void critical_alert(instance, msg, arg1, arg2, arg3, arg4,
     /* Log message to critical file */
     if ((crit = fopen(CRITERRLOG, "a")) != (FILE *)NULL) 
     {
-	long t;
+	long t, time();
 	char  *time_s;
 
 	time(&t);

@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_auth.c,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_auth.c,v 1.13 1990-03-17 16:36:46 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_auth.c,v 1.14 1991-03-08 10:32:03 mar Exp $
  *
  *	Copyright (C) 1987, 1990 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -12,7 +12,7 @@
  */
 
 #ifndef lint
-static char *rcsid_sms_auth_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_auth.c,v 1.13 1990-03-17 16:36:46 mar Exp $";
+static char *rcsid_sms_auth_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_auth.c,v 1.14 1991-03-08 10:32:03 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -20,6 +20,7 @@ static char *rcsid_sms_auth_c = "$Header: /afs/.athena.mit.edu/astaff/project/mo
 #include <ctype.h>
 #include <krb.h>
 #include <krb_et.h>
+#include <strings.h>
 
 /* Authenticate this client with the MR server.  prog is the name of the
  * client program, and will be recorded in the database.

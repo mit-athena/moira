@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_ops.c,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_ops.c,v 1.7 1990-03-17 16:37:01 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_ops.c,v 1.8 1991-03-08 10:32:17 mar Exp $
  *
  *	Copyright (C) 1987, 1989, 1990 by the Massachusetts Institute of
  *	Technology
@@ -14,10 +14,11 @@
  */
 
 #ifndef lint
-static char *rcsid_sms_do_update_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_ops.c,v 1.7 1990-03-17 16:37:01 mar Exp $";
+static char *rcsid_sms_do_update_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_ops.c,v 1.8 1991-03-08 10:32:17 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
+#include <strings.h>
 #include "mr_private.h"
 
 

@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_param.c,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_param.c,v 1.5 1990-03-17 16:37:04 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_param.c,v 1.6 1991-03-08 10:32:30 mar Exp $
  *
  *	Copyright (C) 1987, 1990 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_sms_param_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_param.c,v 1.5 1990-03-17 16:37:04 mar Exp $";
+static char *rcsid_sms_param_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_param.c,v 1.6 1991-03-08 10:32:30 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -28,6 +28,7 @@ static char *rcsid_sms_param_c = "$Header: /afs/.athena.mit.edu/astaff/project/m
  * write of the next bunch of data.
  */
 
+/*ARGSUSED*/
 mr_cont_send(op, hcon, arg)
     OPERATION op;
     HALF_CONNECTION hcon;
@@ -129,6 +130,7 @@ mr_start_send(op, hcon, arg)
     else return OP_RUNNING;
 }	
 	
+/*ARGSUSED*/
 mr_cont_recv(op, hcon, argp)
     OPERATION op;
     HALF_CONNECTION hcon;

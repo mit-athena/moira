@@ -1,4 +1,4 @@
-/* $Id: phase2.pc,v 1.13 2000-01-11 18:04:28 danw Exp $
+/* $Id: phase2.pc,v 1.14 2000-01-13 01:39:46 danw Exp $
  *
  * (c) Copyright 1988-1998 by the Massachusetts Institute of Technology.
  * For copying and distribution information, please see the file
@@ -15,7 +15,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase2.pc,v 1.13 2000-01-11 18:04:28 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase2.pc,v 1.14 2000-01-13 01:39:46 danw Exp $");
 
 EXEC SQL WHENEVER SQLERROR DO dbmserr();
 
@@ -23,6 +23,7 @@ int show_mcm_mach(void *id);
 int show_mcm_clu(void *id);
 int show_hostalias(void *id);
 int show_printer_mach(void *id);
+int show_printer_server(void *id);
 int show_printer_loghost(void *id);
 int show_printer_spool(void *id);
 int show_printer_quota(void *id);
@@ -62,6 +63,7 @@ void del_sh_mach(void *id);
 void fsmatch(int id, void *nfsphys, void *filesys);
 void check_fs(int id, void *filesys, void *hint);
 void check_nfsphys(int id, void *nfsphys, void *hint);
+void check_ps(int id, void *printserver, void *hint);
 int show_fsg_missing(void *id);
 int show_fsg_type(void *filesys);
 void fix_fsg_type(void *filesys);
@@ -184,6 +186,32 @@ int show_printer_mach(void *id)
 	     name, iid);
     }
   EXEC SQL CLOSE csr235;
+  return found;
+}
+
+int show_printer_server(void *id)
+{
+  EXEC SQL BEGIN DECLARE SECTION;
+  int iid = (int)id, found = 1;
+  char name[PRINTERS_NAME_SIZE];
+  EXEC SQL END DECLARE SECTION;
+
+  EXEC SQL DECLARE csr_sps CURSOR FOR
+    SELECT name FROM printers WHERE mach_id = :iid;
+  EXEC SQL OPEN csr_sps;
+  while (1)
+    {
+      EXEC SQL FETCH csr_sps INTO :name;
+      if (sqlca.sqlcode)
+	break;
+
+      strtrim(name);
+
+      found = 0;
+      printf("Printer %s, non-existant printserver %d in printers table\n",
+	     name, iid);
+    }
+  EXEC SQL CLOSE csr_sps;
   return found;
 }
 
@@ -1295,6 +1323,103 @@ void check_nfsphys(int id, void *nfsphys, void *hint)
     }
 }
 
+static void clear_ps_owner(struct printserver *ps)
+{
+  EXEC SQL BEGIN DECLARE SECTION;
+  int rowcount, id = ps->mach_id;
+  EXEC SQL END DECLARE SECTION;
+
+  EXEC SQL UPDATE printserver SET owner_type = 'NONE', owner_id = 0
+    WHERE mach_id = :id;
+  rowcount = sqlca.sqlerrd[2];
+  if (rowcount > 0)
+    printf("%d entr%s fixed\n", rowcount, rowcount == 1 ? "y" : "ies");
+  else
+    printf("Not fixed\n");
+  modified("printservers");
+}
+
+static void clear_ps_lpc(struct printserver *ps)
+{
+  EXEC SQL BEGIN DECLARE SECTION;
+  int rowcount, id = ps->mach_id;
+  EXEC SQL END DECLARE SECTION;
+
+  EXEC SQL UPDATE printserver SET lpc_acl = 0
+    WHERE mach_id = :id;
+  rowcount = sqlca.sqlerrd[2];
+  if (rowcount > 0)
+    printf("%d entr%s fixed\n", rowcount, rowcount == 1 ? "y" : "ies");
+  else
+    printf("Not fixed\n");
+  modified("printservers");
+}
+
+void check_ps(int id, void *printserver, void *hint)
+{
+  struct printserver *ps = printserver;
+  struct machine *m;
+  char *name;
+
+  m = hash_lookup(machines, id);
+  if (!m)
+    {
+      printf("Printserver on non-existant machine %d\n", id);
+      if (single_fix("Delete", 0))
+	{
+	  single_delete("printserver", "mach_id", id);
+	  return;
+	}
+      else
+	name = "[UNKNOWN]";
+    }
+  else
+    name = m->name;      
+
+  ps->modby = maybe_fixup_modby(ps->modby, id, name, "printserver",
+				"modby", "mach_id");
+  ps->printer_types = maybe_fixup_unref_string(ps->printer_types, id, name,
+					       "printservers", "printer_types",
+					       "mach_id");
+
+  switch (ps->owner_type)
+    {
+    case 'U':
+      if (!hash_lookup(users, ps->owner_id))
+	{
+	  printf("Printserver %s has non-existant USER owner %d\n",
+		 name, ps->owner_id);
+	  if (single_fix("Set to no owner", 1))
+	    clear_ps_owner(ps);
+	}
+      break;
+    case 'L':
+      if (!hash_lookup(lists, ps->owner_id))
+	{
+	  printf("Printserver %s has non-existant LIST owner %d\n",
+		 name, ps->owner_id);
+	  if (single_fix("Set to no owner", 1))
+	    clear_ps_owner(ps);
+	}
+      break;
+    case 'K':
+      if (ps->owner_id)
+	ps->owner_id = maybe_fixup_unref_string(ps->owner_id, id, name,
+					       "printserver", "owner_id",
+					       "mach_id");
+      if (ps->owner_id == 0)
+	clear_ps_owner(ps);
+    }
+
+  if (!hash_lookup(lists, ps->lpc_acl))
+    {
+      printf("Printserver %s has non-existent lpc_acl %d\n",
+	     name, ps->lpc_acl);
+      if (single_fix("Set to no lpc_acl", 1))
+	clear_ps_lpc(ps);
+    }
+}
+
 int show_fsg_missing(void *id)
 {
   EXEC SQL BEGIN DECLARE SECTION;
@@ -1693,7 +1818,7 @@ int show_krb_str(void *id)
 
 void phase2(void)
 {
-  struct save_queue *sq, *sq1, *sq2, *sq3, *sq4, *sq5;
+  struct save_queue *sq, *sq1, *sq2, *sq3, *sq4, *sq5, *sq6;
   struct filesys *f;
   struct list *l;
   struct nfsphys *n;
@@ -2045,6 +2170,7 @@ void phase2(void)
   sq3 = sq_create();
   sq4 = sq_create();
   sq5 = sq_create();
+  sq6 = sq_create();
   EXEC SQL DECLARE csr233 CURSOR FOR
     SELECT mach_id, loghost, rm, rq, ac, lpc_acl, modby, rowid FROM printers;
   EXEC SQL OPEN csr233;
@@ -2064,6 +2190,8 @@ void phase2(void)
 	sq_save_unique_data(sq1, (void *)mach_id);
       else if (!hash_lookup(machines, rm))
 	sq_save_unique_data(sq2, (void *)rm);
+      else if (!hash_lookup(printservers, rm))
+	sq_save_unique_data(sq6, (void *)mach_id);
       else if (!hash_lookup(machines, rq))
 	sq_save_unique_data(sq3, (void *)rq);
       else {
@@ -2080,9 +2208,13 @@ void phase2(void)
     }
   EXEC SQL CLOSE csr233;
   generic_delete(sq1, show_printer_mach, "printers", "mach_id", 1);
+  generic_delete(sq6, show_printer_server, "printers", "mach_id", 1);
   generic_delete(sq2, show_printer_spool, "printers", "rm", 1);
   generic_delete(sq3, show_printer_quota, "printers", "rq", 1);
   generic_fix(sq4, show_printer_ac, "Clear", fix_printer_ac, 1);
   generic_fix(sq5, show_printer_lpc_acl, "Clear", fix_printer_lpc_acl, 1);
+
+  dprintf("Checking printservers\n");
+  hash_step(printservers, check_ps, NULL);
 }
  

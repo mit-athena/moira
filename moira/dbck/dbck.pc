@@ -1,4 +1,4 @@
-/* $Id: dbck.pc,v 1.5 1998-04-14 18:54:44 danw Exp $
+/* $Id: dbck.pc,v 1.6 2000-01-13 01:39:45 danw Exp $
  *
  * Moira database consistency checker
  *
@@ -18,7 +18,7 @@
 EXEC SQL INCLUDE sqlca;
 EXEC SQL INCLUDE sqlda;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/dbck.pc,v 1.5 1998-04-14 18:54:44 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/dbck.pc,v 1.6 2000-01-13 01:39:45 danw Exp $");
 
 int debug = 0;
 int mode = MODE_ASK;
@@ -26,7 +26,7 @@ int fast = 0;
 int warn = 1;
 int abort_p = 0;
 struct hash *users, *machines, *clusters, *lists, *filesys, *nfsphys;
-struct hash *strings, *members, *subnets, *string_dups;
+struct hash *strings, *members, *subnets, *string_dups, *printservers;
 EXEC SQL BEGIN DECLARE SECTION;
 int dcmenable;
 EXEC SQL END DECLARE SECTION;
@@ -50,7 +50,7 @@ int main(int argc, char **argv)
 
   while (++arg - argv < argc)
     {
-      if  (**arg == '-')
+      if (**arg == '-')
 	{
 	  switch ((*arg)[1])
 	    {

@@ -37,6 +37,7 @@ F* Each filesys name must be unique
    Each string_id must be unique
 	Delete all copies
 F* Each printer name must be unique
+ * Each printserver entry must be for a unique mach_id
 
 PHASE 2: checking references
 
@@ -109,10 +110,20 @@ P  Every quota's phys_id must match the filesys' phys_id
  * Every hostaccess LIST must exist
    Every printer must have real printer, spool, and quota machines
 	Delete the printer
+   Every print must be on a printserver
+	Delete the printer
  * Every printer must have a real log machine
 	Reset to WSLOGGER.MIT.EDU
    Every print ac/lpc_acl must exist
 	Make it list 0
+   Every printserver must correspond to an existing machine
+	Delete printserver
+   Every printserver printer_types must be a real string
+	Set to empty string
+   Every printserver owner must be a real user/list/kerberos
+	Set to NONE
+   Every printserver lpc_acl must be a real list
+	Set to list 0
 P  Every user in the krbmap must exist
 	Delete map entry
 P  Every string in the krbmap must exist

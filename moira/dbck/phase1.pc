@@ -1,4 +1,4 @@
-/* $Id: phase1.pc,v 1.8 2000-01-11 18:04:28 danw Exp $
+/* $Id: phase1.pc,v 1.9 2000-01-13 01:39:46 danw Exp $
  *
  * (c) Copyright 1988-1998 by the Massachusetts Institute of Technology.
  * For copying and distribution information, please see the file
@@ -14,7 +14,7 @@
 #include <string.h>
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase1.pc,v 1.8 2000-01-11 18:04:28 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase1.pc,v 1.9 2000-01-13 01:39:46 danw Exp $");
 
 EXEC SQL WHENEVER SQLERROR DO dbmserr();
 int show_user_id(void *user);
@@ -249,6 +249,7 @@ void phase1(void)
   struct string *s;
   struct filesys *f;
   struct nfsphys *n;
+  struct printserver *ps;
 
   printf("Phase 1 - Looking for duplicates\n");
 
@@ -894,4 +895,44 @@ void phase1(void)
 	}
       EXEC SQL CLOSE csr119;
     }
+
+  dprintf("Loading printservers...\n");
+  printservers = create_hash(100);
+  if (!printservers)
+    out_of_mem("loading printservers");
+
+  EXEC SQL DECLARE csr_ps CURSOR FOR
+    SELECT mach_id, printer_types, owner_type, owner_id, lpc_acl, modby
+    FROM printservers;
+  EXEC SQL OPEN csr_ps;
+  while (1)
+    {
+      EXEC SQL BEGIN DECLARE SECTION;
+      int mach_id, printer_types, owner_id, lpc_acl, modby;
+      char owner_type[PRINTSERVERS_OWNER_TYPE_SIZE];
+      EXEC SQL END DECLARE SECTION;
+
+      EXEC SQL FETCH csr_ps INTO :mach_id, :printer_types, :owner_type,
+	:owner_id, :lpc_acl, :modby;
+      if (sqlca.sqlcode)
+	break;
+
+      ps = malloc(sizeof(struct printserver));
+      if (!ps)
+	out_of_mem("storing printserver");
+      ps->mach_id = mach_id;
+      ps->owner_type = owner_type[0];
+      ps->owner_id = owner_id;
+      ps->lpc_acl = lpc_acl;
+      ps->modby = modby;
+      retval = hash_store(printservers, mach_id, ps);
+      if (retval == -1)
+	out_of_mem("storing printserver in hash table");
+      else if (retval == 1)
+	{
+	  printf("Duplicate printserver mach_id %d\n", mach_id);
+	  cant_fix(0);
+	}
+    }
+  EXEC SQL CLOSE csr111;
 }

@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/admin_call.c,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/admin_call.c,v 1.8 1988-09-13 15:50:39 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/admin_call.c,v 1.9 1989-06-26 12:15:47 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -15,7 +15,7 @@
  */
 
 #ifndef lint
-static char *rcsid_admin_call_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/admin_call.c,v 1.8 1988-09-13 15:50:39 mar Exp $";
+static char *rcsid_admin_call_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/admin_call.c,v 1.9 1989-06-26 12:15:47 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -35,8 +35,8 @@ static char *rcsid_admin_call_c = "$Header: /afs/.athena.mit.edu/astaff/project/
 #include "admin_server.h"
 #include "prot.h"
 #include "krb.h"
+#include "krb_et.h"
 
-extern int krb_err_base;	/* Offset between com_err and kerberos codes */
 extern int errno;		/* System call error numbers */
 
 extern long gethostid();
@@ -66,9 +66,9 @@ int admin_call_init()
 	struct hostent *hp;	/* host to talk to */
 	struct servent *sp;	/* service to talk to */
 
-	init_kadm_err_tbl();
+	initialize_kadm_error_table();
 	if (status = get_krbrlm(krbrlm, 1)) {
-	    status += krb_err_base;
+	    status += ERROR_TABLE_BASE_krb;
 	    goto punt;
 	}
 
@@ -77,7 +77,7 @@ int admin_call_init()
 	 */
 
 	if (status = get_krbhst(krbhost, krbrlm, 1)) {
-	    status += krb_err_base;
+	    status += ERROR_TABLE_BASE_krb;
 	    goto punt;
 	}
 	hp = gethostbyname(krbhost);
@@ -197,7 +197,7 @@ admin_call(opcode, pname, old_passwd, new_passwd, crypt_passwd)
      */
 
     if (status = krb_get_cred("changepw", krbhost, krbrlm, &cred)) {
-	status += krb_err_base;
+	status += ERROR_TABLE_BASE_krb;
 	goto bad;
     }
 
@@ -268,7 +268,7 @@ admin_call(opcode, pname, old_passwd, new_passwd, crypt_passwd)
 
     if (status = krb_mk_req(&authent, "changepw", krbhost, krbrlm,
 			   checksum)) {
-	status += krb_err_base;
+	status += ERROR_TABLE_BASE_krb;
 	goto bad;
     }
 
@@ -367,7 +367,7 @@ admin_call(opcode, pname, old_passwd, new_passwd, crypt_passwd)
 			    &admin_addr, &my_addr,
 			    &msg_data);
     if (status) {
-	status += krb_err_base;
+	status += ERROR_TABLE_BASE_krb;
 	goto bad;
     }
     bp = msg_data.app_data;
@@ -418,14 +418,3 @@ static u_char *strapp(dest, source, end)
 	return dest + length;
     }
 }
-
-/*
- * Local Variables:
- * mode: c
- * c-indent-level: 4
- * c-continued-statement-offset: 4
- * c-brace-offset: -4
- * c-argdecl-indent: 4
- * c-label-offset: -4
- * End:
- */

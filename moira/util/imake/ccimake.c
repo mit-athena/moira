@@ -1,15 +1,21 @@
-#ifdef hpux
-#define ccflags "-Wc,-Nd4000,-Ns3000 -DSYSV"
-#else
-#ifdef _AIX
-#define ccflags "-D_BSD -D_BSD_INCLUDES -O"
-#else
-#define ccflags "-O"
-#endif
+/*
+ * $XConsortium: ccimake.c,v 1.12 89/10/16 12:09:23 jim Exp $
+ * 
+ * Warning:  This file must be kept as simple as posible so that it can 
+ * compile without any special flags on all systems.  Do not touch it unless
+ * you *really* know what you're doing.  Make changes in imakemdep.h, not here.
+ */
+
+#define CCIMAKE			/* only get imake_ccflags definitions */
+#include "imakemdep.h"		/* things to set when porting imake */
+
+#ifndef imake_ccflags
+#define imake_ccflags "-O"
 #endif
 
 main()
 {
-	write(1, ccflags, sizeof(ccflags) - 1);
+	write(1, imake_ccflags, sizeof(imake_ccflags) - 1);
 	exit(0);
 }
+

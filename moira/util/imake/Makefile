@@ -1,45 +1,51 @@
 #
-# WARNING! This is NOT an automatically generated Makefile!
-# This is hand-crafted as a bootstrap, may need editing for your system.
+#   WARNING    WARNING    WARNING    WARNING    WARNING    WARNING    WARNING
+#
+# This is NOT an automatically generated Makefile!  It is hand-crafted as a 
+# bootstrap, may need editing for your system.  The BOOTSTRAPCFLAGS variable
+# may be given at the top of the build tree for systems that do not define
+# any machine-specific preprocessor symbols.
+#
 
+BOOTSTRAPCFLAGS = 
+    CDEBUGFLAGS = -O
+         CFLAGS = $(BOOTSTRAPCFLAGS) $(CDEBUGFLAGS)
           SHELL = /bin/sh
              RM = rm -f
            MAKE = make
          RM_CMD = $(RM) *.CKP *.ln *.BAK *.bak *.o core errs ,* *~ *.a \
 			tags TAGS make.log
-             LN = cp
-        DESTDIR = 
-         SRCDIR = /mit/kerberos/src
-        SOURCES = ${SRCDIR}/util/imake/imake.c ${SRCDIR}/util/imake/ccflags.c ${SRCDIR}/util/imake/Makefile
+          NPROC = 1
 
-all: imake
+imake::
+	@echo "making imake with BOOTSTRAPCFLAGS=$(BOOTSTRAPCFLAGS)"
 
-imake: ccflags imake.c
-	$(CC) -o imake imake.c `./ccflags`
+imake:: ccimake imake.c
+	$(CC) -o imake $(CFLAGS) imake.c `./ccimake`
 
-ccflags: ccflags.c
-	$(CC) -o ccflags ccflags.c
+ccimake: ccimake.c
+	$(CC) -o ccimake $(CFLAGS) ccimake.c
 
 relink:
 	$(RM) imake
 	$(MAKE) $(MFLAGS) imake
 
 clean:
-	$(RM) ccflags imake
+	$(RM) ccimake imake
 	$(RM_CMD) \#*
 
 depend:
 
-Makefile:
+
+# for manual use
+
+Makefile: imake
+	imake -DNEWTOP=../
 
 tags:
 
 install:
 
-Makefiles:
+install.man:
 
-config: $(SOURCES)
-	-mkdir $(DESTDIR)/util/imake
-	for i in $(SOURCES); do \
-		$(RM) ${DESTDIR}/util/imake/`basename $$i`; \
-		$(LN) $$i ${DESTDIR}/util/imake/`basename $$i`; done
+Makefiles:

@@ -1,3 +1,14 @@
+/*****************************************************************************\
+ *                                                                           *
+ *                                Porting Note                               *
+ *                                                                           *
+ * Add the value of BOOTSTRAPCFLAGS to the cpp_argv table so that it will be *
+ * passed to the template file.                                              *
+ *                                                                           *
+\*****************************************************************************/
+
+
+
 /*
  * 
  * Copyright 1985, 1986, 1987 by the Massachusetts Institute of Technology
@@ -14,7 +25,7 @@
  * this software for any purpose.  It is provided "as is"
  * without express or implied warranty.
  * 
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/util/imake/imake.c,v 4.1 1989-08-30 11:25:31 jtkohl Exp $
+ * $XConsortium: imake.c,v 1.51 89/12/12 12:37:30 jim Exp $
  * $Locker:  $
  *
  * Author:
@@ -24,25 +35,25 @@
  *
  * imake: the include-make program.
  *
- * Usage: imake [-Idir] [-Ddefine] [-T] [-f imakefile ] [-s] [-v] [make flags]
+ * Usage: imake [-Idir] [-Ddefine] [-T] [-f imakefile ] [-s] [-e] [-v] [make flags]
  *
- * Imake takes a template makefile (Imake.template) and runs cpp on it
- * producing a temporary makefile in /usr/tmp.  It then runs make on
+ * Imake takes a template makefile (Imake.tmpl) and runs cpp on it
+ * producing a temporary makefile in /tmp.  It then runs make on
  * this pre-processed makefile.
  * Options:
  *		-D	define.  Same as cpp -D argument.
  *		-I	Include directory.  Same as cpp -I argument.
  *		-T	template.  Designate a template other
- * 			than Imake.template
- *		-s	show.  Show the produced makefile on the standard
+ * 			than Imake.tmpl
+ *		-s[F]	show.  Show the produced makefile on the standard
  *			output.  Make is not run is this case.  If a file
  *			argument is provided, the output is placed there.
+ *              -e[F]   execute instead of show; optionally name Makefile F
  *		-v	verbose.  Show the make command line executed.
  *
  * Environment variables:
  *		
- *		IMAKEINCLUDE	Include directory to use in addition to
- *				"." and "/usr/lib/local/imake.include".
+ *		IMAKEINCLUDE	Include directory to use in addition to "."
  *		IMAKECPP	Cpp to use instead of /lib/cpp
  *		IMAKEMAKE	make program to use other than what is
  *				found by searching the $PATH variable.
@@ -64,10 +75,10 @@
  *	Call this <imakefile>.  This gets added to the arguments for
  *	make as MAKEFILE=<imakefile>.
  *   2. Determine the name of the template from the command line (-T)
- *	or the default, Imake.template.  Call this <template>
+ *	or the default, Imake.tmpl.  Call this <template>
  *   3. Start up cpp an provide it with three lines of input:
- *		#define IMAKE_TEMPLATE		"<template>"
- *		#define INCLUDE_IMAKEFILE	"<imakefile>"
+ *		#define IMAKE_TEMPLATE		" <template> "
+ *		#define INCLUDE_IMAKEFILE	< <imakefile> >
  *		#include IMAKE_TEMPLATE
  *	Note that the define for INCLUDE_IMAKEFILE is intended for
  *	use in the template file.  This implies that the imake is
@@ -88,25 +99,23 @@
 #include	<stdio.h>
 #include	<ctype.h>
 #include	<sys/types.h>
-#include	<sys/file.h>
 #ifdef SYSV
+#ifndef macII			/* mac will get the stuff out of file.h */
 #include	<fcntl.h>
+#endif
 #else	/* !SYSV */
 #include	<sys/wait.h>
 #endif	/* !SYSV */
-#include	<sys/signal.h>
+#include	<sys/file.h>
+#include	<signal.h>
 #include	<sys/stat.h>
+#include "imakemdep.h"
 
-#ifdef SYSV
-#define	dup2(fd1,fd2)	((fd1 == fd2) ? fd1 : \
-				(close(fd2), fcntl(fd1, F_DUPFD, fd2)))
-#endif	/* SYSV */
+
 #define	TRUE		1
 #define	FALSE		0
-#define	ARGUMENTS	50
 
-#if defined(sun) || defined(hpux)
-#define REDUCED_TO_ASCII_SPACE
+#ifdef FIXUP_CPP_WHITESPACE
 int	InRule = FALSE;
 #endif
 
@@ -115,43 +124,29 @@ int	InRule = FALSE;
  * space.  In addition, the escaped newline may be replaced with a
  * space instead of being deleted.  Blech.
  */
-#ifndef REDUCED_TO_ASCII_SPACE
+#ifndef FIXUP_CPP_WHITESPACE
 #define KludgeOutputLine(arg)
 #define KludgeResetRule()
 #endif
 
-typedef	u_char	boolean;
+typedef	unsigned char	boolean;
 
-#include <sys/param.h>
-#if BSD > 43
-char	*cpp = "/usr/bin/cpp";
-#else
-#ifdef	apollo
-char	*cpp = "/usr/lib/cpp";
-#else
-char	*cpp = "/lib/cpp";
-#endif
+#ifndef DEFAULT_CPP
+#define DEFAULT_CPP "/lib/cpp"
 #endif
 
-char	*tmpMakefile    = "/usr/tmp/tmp-make.XXXXXX";
-char	*tmpImakefile    = "/usr/tmp/tmp-imake.XXXXXX";
+char *cpp = DEFAULT_CPP;
+
+char	*tmpMakefile    = "/tmp/Imf.XXXXXX";
+char	*tmpImakefile    = "/tmp/IIf.XXXXXX";
 char	*make_argv[ ARGUMENTS ] = { "make" };
-char	*cpp_argv[ ARGUMENTS ] = {
-	"cpp",
-	"-I.",
-#ifdef unix
-	"-Uunix",
-#endif /* unix */
-#ifdef pegasus
-	"-Dpegasus",
-#endif /* pegasus */
-};
+
 int	make_argindex;
 int	cpp_argindex;
 char	*make = NULL;
 char	*Imakefile = NULL;
-char	*Makefile = NULL;
-char	*Template = "Imake.template";
+char	*Makefile = "Makefile";
+char	*Template = "Imake.tmpl";
 char	*program;
 char	*FindImakefile();
 char	*ReadLine();
@@ -159,7 +154,7 @@ char	*CleanCppInput();
 char	*strdup();
 
 boolean	verbose = FALSE;
-boolean	show = FALSE;
+boolean	show = TRUE;
 extern int	errno;
 extern char	*Emalloc();
 extern char	*realloc();
@@ -177,8 +172,6 @@ main(argc, argv)
 	init();
 	SetOpts(argc, argv);
 
-	AddCppArg("-I/usr/lib/local/imake.includes");
-
 	Imakefile = FindImakefile(Imakefile);
 	if (Makefile)
 		tmpMakefile = Makefile;
@@ -194,7 +187,7 @@ main(argc, argv)
 	if ((tmpfd = fopen(tmpMakefile, "w+")) == NULL)
 		LogFatal("Cannot create temporary file %s.", tmpMakefile);
 
-	cppit(Imakefile, Template, tmpfd);
+	cppit(Imakefile, Template, tmpfd, tmpMakefile);
 
 	if (show) {
 		if (Makefile == NULL)
@@ -225,6 +218,11 @@ wrapup()
 	unlink(tmpImakefile);
 }
 
+#if SIGNALRETURNSINT
+int
+#else
+void
+#endif
 catch(sig)
 	int	sig;
 {
@@ -320,12 +318,15 @@ SetOpts(argc, argv)
 		    }
 		} else if (argv[0][1] == 's') {
 		    if (argv[0][2])
-			Makefile = argv[0]+2;
+			Makefile = (argv[0][2] == '-') ? NULL : argv[0]+2;
 		    else if (argc > 1 && argv[1][0] != '-') {
 			argc--, argv++;
 			Makefile = argv[0];
 		    }
 		    show = TRUE;
+		} else if (argv[0][1] == 'e') {
+		   Makefile = (argv[0][2] ? argv[0]+2 : NULL);
+		   show = FALSE;
 		} else if (argv[0][1] == 'T') {
 		    if (argv[0][2])
 			Template = argv[0]+2;
@@ -400,10 +401,11 @@ showargs(argv)
 	fprintf(stderr, "\n");
 }
 
-cppit(Imakefile, template, outfd)
+cppit(Imakefile, template, outfd, outfname)
 	char	*Imakefile;
 	char	*template;
 	FILE	*outfd;
+	char	*outfname;
 {
 	FILE	*pipeFile;
 	int	pid, pipefd[2];
@@ -423,7 +425,7 @@ cppit(Imakefile, template, outfd)
 	/*
 	 * Fork and exec cpp
 	 */
-	pid = vfork();
+	pid = fork();
 	if (pid < 0)
 		LogFatal("Cannot fork.", "");
 	if (pid) {	/* parent */
@@ -433,7 +435,7 @@ cppit(Imakefile, template, outfd)
 			LogFatalI("Cannot fdopen fd %d for output.", pipefd[1]);
 		fprintf(pipeFile, "#define IMAKE_TEMPLATE\t\"%s\"\n",
 			template);
-		fprintf(pipeFile, "#define INCLUDE_IMAKEFILE\t\"%s\"\n",
+		fprintf(pipeFile, "#define INCLUDE_IMAKEFILE\t<%s>\n",
 			cleanedImakefile);
 		fprintf(pipeFile, "#include IMAKE_TEMPLATE\n");
 		fclose(pipeFile);
@@ -451,7 +453,7 @@ cppit(Imakefile, template, outfd)
 				LogFatalI("Exit code %d.", status.w_retcode);
 #endif	/* !SYSV */
 		}
-		CleanCppOutput(outfd);
+		CleanCppOutput(outfd, outfname);
 	} else {	/* child... dup and exec cpp */
 		if (verbose)
 			showargs(cpp_argv);
@@ -475,7 +477,7 @@ makeit()
 	/*
 	 * Fork and exec make
 	 */
-	pid = vfork();
+	pid = fork();
 	if (pid < 0)
 		LogFatal("Cannot fork.", "");
 	if (pid) {	/* parent... simply wait */
@@ -575,13 +577,14 @@ char *CleanCppInput(Imakefile)
 	return(cleanedImakefile);
 }
 
-CleanCppOutput(tmpfd)
+CleanCppOutput(tmpfd, tmpfname)
 	FILE	*tmpfd;
+	char	*tmpfname;
 {
 	char	*input;
 	int	blankline = 0;
 
-	while(input = ReadLine(tmpfd)) {
+	while(input = ReadLine(tmpfd, tmpfname)) {
 		if (isempty(input)) {
 			if (blankline++)
 				continue;
@@ -594,6 +597,14 @@ CleanCppOutput(tmpfd)
 		putc('\n', tmpfd);
 	}
 	fflush(tmpfd);
+#ifdef NFS_STDOUT_BUG
+	/*
+	 * On some systems, NFS seems to leave a large number of nulls at
+	 * the end of the file.  Ralph Swick says that this kludge makes the
+	 * problem go away.
+	 */
+	ftruncate (fileno(tmpfd), (off_t)ftell(tmpfd));
+#endif
 }
 
 /*
@@ -637,8 +648,10 @@ isempty(line)
 	return (*line == '\0');
 }
 
-char *ReadLine(tmpfd)
+/*ARGSUSED*/
+char *ReadLine(tmpfd, tmpfname)
 	FILE	*tmpfd;
+	char	*tmpfname;
 {
 	static boolean	initialized = FALSE;
 	static char	*buf, *pline, *end;
@@ -660,17 +673,32 @@ char *ReadLine(tmpfd)
 		end = buf + st.st_size;
 		*end = '\0';
 		lseek(fileno(tmpfd), 0, 0);
+#ifdef SYSV
+		freopen(tmpfname, "w+", tmpfd);
+#else	/* !SYSV */
 		ftruncate(fileno(tmpfd), 0);
+#endif	/* !SYSV */
 		initialized = TRUE;
-#ifdef REDUCED_TO_ASCII_SPACE
-	fprintf(tmpfd, "#\n");
-	fprintf(tmpfd, "# Warning: the cpp used on this machine replaces\n");
-	fprintf(tmpfd, "# all newlines and multiple tabs/spaces in a macro\n");
-	fprintf(tmpfd, "# expansion with a single space.  Imake tries to\n");
-	fprintf(tmpfd, "# compensate for this, but is not always\n");
-	fprintf(tmpfd, "# successful.\n");
-	fprintf(tmpfd, "#\n");
-#endif /* REDUCED_TO_ASCII_SPACE */
+	    fprintf (tmpfd, "# Makefile generated by imake - do not edit!\n");
+	    fprintf (tmpfd, "# %s\n",
+		"$XConsortium: imake.c,v 1.51 89/12/12 12:37:30 jim Exp $");
+
+#ifdef FIXUP_CPP_WHITESPACE
+	    {
+		static char *cpp_warning[] = {
+"#",
+"# The cpp used on this machine replaces all newlines and multiple tabs and",
+"# spaces in a macro expansion with a single space.  Imake tries to compensate",
+"# for this, but is not always successful.",
+"#",
+NULL };
+		char **cpp;
+
+		for (cpp = cpp_warning; *cpp; cpp++) {
+		    fprintf (tmpfd, "%s\n", *cpp);
+		}
+	    }
+#endif /* FIXUP_CPP_WHITESPACE */
 	}
 
 	for (p1 = pline; p1 < end; p1++) {
@@ -713,7 +741,7 @@ char *Emalloc(size)
 	return(p);
 }
 
-#ifdef REDUCED_TO_ASCII_SPACE
+#ifdef FIXUP_CPP_WHITESPACE
 KludgeOutputLine(pline)
 	char	**pline;
 {
@@ -726,7 +754,8 @@ KludgeOutputLine(pline)
 	    	break;
 	    case ' ':	/*May need a tab*/
 	    default:
-		while (*p) if (*p++ == ':') {
+		for (; *p; p++) if (p[0] == ':' && 
+				    p > *pline && p[-1] != '\\') {
 		    if (**pline == ' ')
 			(*pline)++;
 		    InRule = TRUE;
@@ -742,7 +771,7 @@ KludgeResetRule()
 {
 	InRule = FALSE;
 }
-#endif /* REDUCED_TO_ASCII_SPACE */
+#endif /* FIXUP_CPP_WHITESPACE */
 
 char *strdup(cp)
 	register char *cp;

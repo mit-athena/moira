@@ -1,4 +1,4 @@
-/* $Id: menus.c,v 1.36 1998-08-07 18:46:09 danw Exp $
+/* $Id: menus.c,v 1.37 1999-01-27 19:36:50 danw Exp $
  *
  *	This is the file menus.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -22,7 +22,7 @@
 
 #include <stdio.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menus.c,v 1.36 1998-08-07 18:46:09 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menus.c,v 1.37 1999-01-27 19:36:50 danw Exp $");
 
 /* ------------------------- Second Tier Menus ------------------------- */
 
@@ -621,79 +621,57 @@ Menu dcm_menu = {
 };
 
 /*
- * Printcap Printer Menu
+ * Printer Menu
  */
 
 Menu printer_menu = {
   NULLFUNC,
   NULLFUNC,
   "Printer Menu",
-  4,
+  10,
   {
-    { GetPcap, NULLMENU, 2, {
-      {"get", "Get Printcap Entry Information"},
+    { GetPrn, NULLMENU, 2, {
+      {"get", "Get Printer Information"},
       {"name", "Name of Printer: "}
     } },
-    { AddPcap, NULLMENU, 2, {
-      {"add", "Add New Printcap Entry to Database"},
+    { GetPrnByHostname, NULLMENU, 2, {
+      {"hostname", "Look up Printer Information by Printer Hostname"},
+      {"name", "Hostname of Printer: "}
+    } },
+    { GetPrnByEthernet, NULLMENU, 2, {
+      {"ether", "Look up Printer Information by Ethernet address"},
+      {"hwaddr", "Ethernet address of Printer: "}
+    } },
+    { GetPrnByRM, NULLMENU, 2, {
+      {"rm", "Look up Printer Information by Print Spooler"},
+      {"name", "Hostname of spooler: "}
+    } },
+    { GetPrnByLocation, NULLMENU, 2, {
+      {"loc", "Look up Printer Information by Location"},
+      {"location", "Location: "}
+    } },
+    { GetPrnByContact, NULLMENU, 2, {
+      {"contact", "Look up Printer Information by Contact Info"},
+      {"contact", "Contact: "}
+    } },
+    { AddPrn, NULLMENU, 2, {
+      {"add", "Add New Printer to Database"},
       {"name", "name: "},
     } },
-    { ChngPcap, NULLMENU, 2, {
+    { ChngPrn, NULLMENU, 2, {
       {"change", "Update Printer Information"},
       {"name", "name: "},
     } },
-    { DeletePcap, NULLMENU, 2, {
-      {"delete", "Delete Printcap Entry"},
+    { DeletePrn, NULLMENU, 2, {
+      {"delete", "Delete Printer"},
       {"name", "Printer Name: "}
+    } },
+    { UpdateHWAddr, NULLMENU, 2, {
+      {"hwaddr", "Update Printer Hardware Address"},
+      {"name", "Printer hostname: "}
     } }
   }
 };
-
-
-/*
- * Palladium Printer Menu
- */
-
-Menu palladium_menu = {
-  NULLFUNC,
-  NULLFUNC,
-  "Printer Menu",
-  7,
-  {
-    { GetPalladium, NULLMENU, 2, {
-      {"get", "Get Palladium Server/Supervisor Information"},
-      {"name", "Name of Printer: "}
-    } },
-    { AddPalladium, NULLMENU, 2, {
-      {"add", "Add New Palladium Server/Supervisor to Database"},
-      {"name", "Supervisor/server name: "},
-    } },
-    { ChngPalladium, NULLMENU, 2, {
-      {"change", "Update Palladium Server/Supervisor Information"},
-      {"name", "name: "},
-    } },
-    { DeletePalladium, NULLMENU, 2, {
-      {"delete", "Delete Palladium Server/Supervisor Entry"},
-      {"name", "Printer Name: "}
-    } },
-    { ShowPalladiumAlias, NULLMENU, 3, {
-      {"getprinter", "Show Logical Printers"},
-      {"newname", "Printer name: "},
-      {"server", "Supervisor or Server name: "},
-    } },
-    { AddPalladiumAlias, NULLMENU, 3, {
-      {"addprinter", "Add Logical Printer"},
-      {"newname", "New printer: "},
-      {"server", "Supervisor or Server name: "},
-    } },
-    { DeletePalladiumAlias, NULLMENU, 3, {
-      {"delprinter", "Remove Logical Printer"},
-      {"newname", "Printer name: "},
-      {"server", "Supervisor or Server name: "},
-    } },
-  }
-};
-
 
 
 /*
@@ -765,7 +743,7 @@ Menu moira_top_menu = {
   NULLFUNC,
   NULLFUNC,
   "Moira Database Manipulation",
-  12,
+  11,
   {
     SUBMENU("cluster", "Cluster Menu", &cluster_menu),
     SUBMENU("filesys", "Filesystem Menu", &filesys_menu),
@@ -773,8 +751,7 @@ Menu moira_top_menu = {
     SUBMENU("machine", "Machine Menu", &machine_menu),
     SUBMENU("network", "Network Menu", &subnet_menu),
     SUBMENU("nfs", "NFS Physical Menu", &nfsphys_menu),
-    SUBMENU("palladium", "Palladium Printer Menu", &palladium_menu),
-    SUBMENU("printcap", "Printcap Printer Menu", &printer_menu),
+    SUBMENU("printer", "Printer Menu", &printer_menu),
     SUBMENU("user", "User Menu", &user_menu),
     SUBMENU("zephyr", "Zephyr ACLS Menu", &zephyr_menu),
     SUBMENU("dcm", "DCM Menu", &dcm_menu),

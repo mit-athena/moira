@@ -1,4 +1,4 @@
-/* $Id: f_defs.h,v 1.25 1998-03-10 21:09:36 danw Exp $
+/* $Id: f_defs.h,v 1.26 1999-01-27 19:36:49 danw Exp $
  *
  *	This is the file f_defs.h for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -139,17 +139,16 @@ int GetDirFlags(int argc, char **argv);
 int SetDirFlags(int argc, char **argv);
 
 /* printer.c */
-int AddPcap(int argc, char **argv);
-int GetPcap(int argc, char **argv);
-int ChngPcap(int argc, char **argv);
-int DeletePcap(int argc, char **argv);
-int GetPalladium(int argc, char **argv);
-int AddPalladium(int argc, char **argv);
-int ChngPalladium(int argc, char **argv);
-int DeletePalladium(int argc, char **argv);
-int ShowPalladiumAlias(int argc, char **argv);
-int AddPalladiumAlias(int argc, char **argv);
-int DeletePalladiumAlias(int argc, char **argv);
+int GetPrn(int argc, char **argv);
+int GetPrnByEthernet(int argc, char **argv);
+int GetPrnByHostname(int argc, char **argv);
+int GetPrnByRM(int argc, char **argv);
+int GetPrnByLocation(int argc, char **argv);
+int GetPrnByContact(int argc, char **argv);
+int DeletePrn(int argc, char **argv);
+int AddPrn(int argc, char **argv);
+int ChngPrn(int argc, char **argv);
+int UpdateHWAddr(int argc, char **argv);
 
 /* zephyr.c */
 int AddZephyr(int argc, char **argv);

@@ -1,4 +1,4 @@
-/* $Id: printer.c,v 1.20 1998-03-10 21:09:42 danw Exp $
+/* $Id: printer.c,v 1.21 1999-01-27 19:36:51 danw Exp $
  *
  *	This is the file printer.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -23,14 +23,28 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/printer.c,v 1.20 1998-03-10 21:09:42 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/printer.c,v 1.21 1999-01-27 19:36:51 danw Exp $");
 
-void RealDeletePcap(char **info, Bool one_item);
-void ChangePcap(char **info, Bool one_item);
-void ChangePalladium(char **info, Bool one_item);
-void RealDeletePalladium(char **info, Bool one_item);
+void RealDeletePrn(char **info, Bool one_item);
+void ChangePrn(char **info, Bool one_item);
+extern int GetAliasValue(int argc, char **argv, void *retval);
+int StoreHWAddr(int argc, char **argv, void *retval);
 
-#define DEFAULT_MACHINE "E40-PRINT-SERVER-1.MIT.EDU"
+#define BY_NAME 0
+#define BY_ETHERNET 1
+#define BY_HOSTNAME 2
+#define BY_RM 3
+#define BY_LOCATION 4
+#define BY_CONTACT 5
+
+#define DEFAULT_LOGHOST "WSLOGGER.MIT.EDU"
+
+int StoreHWAddr(int argc, char **argv, void *retval)
+{
+  char **p = retval;
+  *p = strdup(argv[0]);
+  return MR_CONT;
+}
 
 /*	Function Name: SetDefaults
  *	Description: sets the default values for filesystem additions.
@@ -40,143 +54,284 @@ void RealDeletePalladium(char **info, Bool one_item);
 
 static char **SetDefaults(char **info, char *name)
 {
-  char spool_dir[256];
+  info[PRN_NAME] = strdup(name);
+  info[PRN_TYPE] = strdup("PRIVATE");
+  info[PRN_HWTYPE] = strdup("HP");
+  info[PRN_DUPLEXNAME] = strdup("");
+  info[PRN_HOSTNAME] = strdup(name);
+  info[PRN_LOGHOST] = strdup(DEFAULT_LOGHOST);
+  info[PRN_RM] = strdup("[ANY]");
+  info[PRN_RP] = strdup(name);
+  info[PRN_RQ] = strdup("[NONE]");
+  info[PRN_KA] = strdup("1");
+  info[PRN_PC] = strdup("10");
+  info[PRN_AC] = strdup("[none]");
+  info[PRN_LPC_ACL] = strdup("[none]");
+  info[PRN_LOCATION] = strdup("");
+  info[PRN_CONTACT] = strdup("");
+  info[PRN_MODTIME] = info[PRN_MODBY] = info[PRN_MODWITH] = NULL;
 
-  strcpy(spool_dir, "/usr/spool/printer/");
-  strcat(spool_dir, name);
-
-  info[PCAP_NAME] = strdup(name);
-  info[PCAP_SPOOL_HOST] = strdup(DEFAULT_MACHINE);
-  info[PCAP_SPOOL_DIR] = strdup(spool_dir);
-  info[PCAP_RPRINTER] = strdup(name);
-  info[PCAP_QSERVER] = strdup("[NONE]");
-  info[PCAP_AUTH] = strdup("1");
-  info[PCAP_PRICE] = strdup("10");
-  info[PCAP_COMMENTS] = strdup("");
-  info[PCAP_MODTIME] = info[PCAP_MODBY] = info[PCAP_MODWITH] = NULL;
-
-  info[PCAP_END] = NULL;
+  info[PRN_END] = NULL;
   return info;
 }
 
-/*	Function Name: GetPcapInfo
+/*	Function Name: GetPrnInfo
  *	Description: Stores the info in a queue.
  *	Arguments: name - name of the item to get information on.
  *	Returns: a pointer to the first element in the queue or null
  * 		if printer not found.
  */
 
-static struct mqelem *GetPcapInfo(char *name)
+static struct mqelem *GetPrnInfo(char *name, int how)
 {
   int stat;
   struct mqelem *elem = NULL;
 
-  if ((stat = do_mr_query("get_printcap_entry", 1, &name, StoreInfo, &elem)))
+  switch (how)
     {
-      com_err(program_name, stat, " in GetPcapInfo");
+    case BY_NAME:
+      stat = do_mr_query("get_printer", 1, &name, StoreInfo, &elem);
+      if (stat == MR_NO_MATCH)
+	{
+	  stat = do_mr_query("get_printer_by_duplexname", 1, &name,
+			     StoreInfo, &elem);
+	}
+      break;
+    case BY_ETHERNET:
+      stat = do_mr_query("get_printer_by_ethernet", 1, &name,
+			 StoreInfo, &elem);
+      break;
+    case BY_HOSTNAME:
+      name = canonicalize_hostname(strdup(name));
+      stat = do_mr_query("get_printer_by_hostname", 1, &name,
+			 StoreInfo, &elem);
+      free(name);
+      break;
+    case BY_RM:
+      name = canonicalize_hostname(strdup(name));
+      stat = do_mr_query("get_printer_by_rm", 1, &name,
+			 StoreInfo, &elem);
+      free(name);
+      break;
+    case BY_LOCATION:
+      stat = do_mr_query("get_printer_by_location", 1, &name,
+			 StoreInfo, &elem);
+      break;
+    case BY_CONTACT:
+      stat = do_mr_query("get_printer_by_contact", 1, &name,
+			 StoreInfo, &elem);
+      break;
+    }
+
+  if (stat)
+    {
+      com_err(program_name, stat, " in GetPrnInfo");
       return NULL;
     }
   return QueueTop(elem);
 }
 
-/*	Function Name: PrintPcapInfo
+/*	Function Name: PrintPrnInfo
  *	Description: Yet another specialized print function.
  *	Arguments: info - all info about this Printer.
  *	Returns: printer name
  */
 
-static char *PrintPcapInfo(char **info)
+static char *PrintPrnInfo(char **info)
 {
-  char buf[BUFSIZ];
+  char buf[BUFSIZ], *hwaddr;
+  int status;
 
   if (!info)		/* If no informaion */
     {
-      Put_message("PrintPcapInfo called with null info!");
+      Put_message("PrintPrnInfo called with null info!");
       return NULL;
     }
-  sprintf(buf, "Printer: %-35s Spool host: %s", info[PCAP_NAME],
-	  info[PCAP_SPOOL_HOST]);
+  Put_message("");
+  sprintf(buf, "Printer: %-18s Duplex queue: %-18s", info[PRN_NAME],
+	  *info[PRN_DUPLEXNAME] ? info[PRN_DUPLEXNAME] : "[none]");
   Put_message(buf);
-  sprintf(buf, "Spool directory: %-27s Remote Printer Name: %s",
-	  info[PCAP_SPOOL_DIR], info[PCAP_RPRINTER]);
+  sprintf(buf, "Type: %-10s Hardware type: %-10s Hardware address: ",
+	  info[PRN_TYPE], info[PRN_HWTYPE]);
+  status = do_mr_query("get_host_hwaddr", 1, &info[PRN_HOSTNAME],
+		       StoreHWAddr, &hwaddr);
+  if (status == MR_SUCCESS)
+    {
+      strcat(buf, hwaddr);
+      free(hwaddr);
+    }
+  else
+    strcat(buf, "none");
+  Put_message(buf);
+  sprintf(buf, "Printer hostname: %s", info[PRN_HOSTNAME]);
+  Put_message(buf);
+  sprintf(buf, "Printer log host: %s", info[PRN_LOGHOST]);
+  Put_message(buf);
+  sprintf(buf, "Spool host: %s", info[PRN_RM]);
+  Put_message(buf);
+  sprintf(buf, "Remote Printer Name: %s", info[PRN_RP]);
   Put_message(buf);
   sprintf(buf, "Authentication: %-3s Price/page: %-3s  Quota Server: %s",
-	  atoi(info[PCAP_AUTH]) ? "yes" : "no",
-	  info[PCAP_PRICE], info[PCAP_QSERVER]);
+	  atoi(info[PRN_KA]) ? "yes" : "no", info[PRN_PC], info[PRN_RQ]);
   Put_message(buf);
-  sprintf(buf, "Comments: %s", info[PCAP_COMMENTS]);
+  sprintf(buf, "Restrict list: %-23s  LPC ACL: %-23s",
+	  info[PRN_AC], info[PRN_LPC_ACL]);
   Put_message(buf);
-  sprintf(buf, MOD_FORMAT, info[PCAP_MODBY], info[PCAP_MODTIME],
-	  info[PCAP_MODWITH]);
+  sprintf(buf, "Location: %s", info[PRN_LOCATION]);
+  Put_message(buf);
+  sprintf(buf, "Contact: %s", info[PRN_CONTACT]);
+  Put_message(buf);
+  sprintf(buf, MOD_FORMAT, info[PRN_MODBY], info[PRN_MODTIME],
+	  info[PRN_MODWITH]);
   Put_message(buf);
 
-  return info[PCAP_NAME];
+  return info[PRN_NAME];
 }
 
-/*	Function Name: AskPcapInfo.
+/*	Function Name: AskPrnInfo.
  *	Description: This function askes the user for information about a
  *                   printer and saves it into a structure.
  *	Arguments: info - a pointer the the structure to put the
- *                             info into.
+ *                        info into.
  *	Returns: none.
  */
 
-static char **AskPcapInfo(char **info)
+static char **AskPrnInfo(char **info)
 {
   char temp_buf[BUFSIZ];
+  char *args[3], *lpc_acl;
+  char *s, *d;
+  int status;
 
   Put_message("");
-  sprintf(temp_buf, "Printcap entry for %s.", info[PCAP_NAME]);
+  sprintf(temp_buf, "Printer entry for %s.", info[PRN_NAME]);
   Put_message(temp_buf);
   Put_message("");
 
-  if (GetValueFromUser("Printer Server", &info[PCAP_SPOOL_HOST]) == SUB_ERROR)
-    return NULL;
-  info[PCAP_SPOOL_HOST] = canonicalize_hostname(info[PCAP_SPOOL_HOST]);
-  if (GetValueFromUser("Spool Directory", &info[PCAP_SPOOL_DIR]) ==
+  if (GetTypeFromUser("Type of Printer", "printertype", &info[PRN_TYPE]) ==
       SUB_ERROR)
     return NULL;
-  if (GetValueFromUser("Remote Printer Name", &info[PCAP_RPRINTER]) ==
+  if (GetTypeFromUser("Hardware Type", "printerhwtype", &info[PRN_HWTYPE]) ==
       SUB_ERROR)
     return NULL;
-  if (GetValueFromUser("Quotaserver for this printer", &info[PCAP_QSERVER]) ==
+  if (GetValueFromUser("Duplex spool name", &info[PRN_DUPLEXNAME]) ==
       SUB_ERROR)
     return NULL;
-  info[PCAP_QSERVER] = canonicalize_hostname(info[PCAP_QSERVER]);
-  if (GetYesNoValueFromUser("Authentication required", &info[PCAP_AUTH]) ==
+  if (GetValueFromUser("Printer hostname (or [none])", &info[PRN_HOSTNAME]) ==
       SUB_ERROR)
     return NULL;
-  if (GetValueFromUser("Price/page", &info[PCAP_PRICE]) == SUB_ERROR)
+  info[PRN_HOSTNAME] = canonicalize_hostname(info[PRN_HOSTNAME]);
+  if (GetValueFromUser("Log host", &info[PRN_LOGHOST]) == SUB_ERROR)
     return NULL;
-  if (GetValueFromUser("Comments", &info[PCAP_COMMENTS]) == SUB_ERROR)
+  info[PRN_LOGHOST] = canonicalize_hostname(info[PRN_LOGHOST]);
+  if (GetValueFromUser("Spool host (or [any])", &info[PRN_RM]) == SUB_ERROR)
+    return NULL;
+  info[PRN_RM] = canonicalize_hostname(info[PRN_RM]);
+  if (GetValueFromUser("Remote printer name", &info[PRN_RP]) == SUB_ERROR)
+    return NULL;
+  if (GetValueFromUser("Quota server", &info[PRN_RQ]) == SUB_ERROR)
+    return NULL;
+  info[PRN_RQ] = canonicalize_hostname(info[PRN_RQ]);
+  if (GetYesNoValueFromUser("Kerberos authenticated", &info[PRN_KA]) ==
+      SUB_ERROR)
+    return NULL;
+  if (GetValueFromUser("Price per page", &info[PRN_PC]) == SUB_ERROR)
+    return NULL;
+  if (GetValueFromUser("Restrict list", &info[PRN_AC]) == SUB_ERROR)
+    return NULL;
+  args[0] = info[PRN_TYPE];
+  args[1] = "LPC_ACL";
+  args[2] = "*";
+  status = do_mr_query("get_alias", 3, args, GetAliasValue, &lpc_acl);
+  if (status == MR_SUCCESS)
+    {
+      free(info[PRN_LPC_ACL]);
+      info[PRN_LPC_ACL] = lpc_acl;
+    }
+  if (GetValueFromUser("LPC ACL", &info[PRN_LPC_ACL]) == SUB_ERROR)
+    return NULL;
+  if (GetValueFromUser("Location", &info[PRN_LOCATION]) == SUB_ERROR)
+    return NULL;
+  if (GetValueFromUser("Contact", &info[PRN_CONTACT]) == SUB_ERROR)
     return NULL;
 
-  FreeAndClear(&info[PCAP_MODTIME], TRUE);
-  FreeAndClear(&info[PCAP_MODBY], TRUE);
-  FreeAndClear(&info[PCAP_MODWITH], TRUE);
+  FreeAndClear(&info[PRN_MODTIME], TRUE);
+  FreeAndClear(&info[PRN_MODBY], TRUE);
+  FreeAndClear(&info[PRN_MODWITH], TRUE);
 
   return info;
 }
 
 /* ---------------- Printer Menu ------------------ */
 
-/*	Function Name: GetPcap
- *	Description: Get Printcap information
- *	Arguments: argc, argv - name of filsys in argv[1].
+/*	Function Name: GetPrn
+ *	Description: Get Printer information
+ *	Arguments: argc, argv - name of printer in argv[1].
  *	Returns: DM_NORMAL.
  */
 
-int GetPcap(int argc, char **argv)
+int GetPrn(int argc, char **argv)
 {
   struct mqelem *top;
 
-  top = GetPcapInfo(argv[1]); /* get info. */
-  Loop(top, (void *) PrintPcapInfo);
+  top = GetPrnInfo(argv[1], BY_NAME); /* get info. */
+  Loop(top, (void *) PrintPrnInfo);
   FreeQueue(top);		/* clean the queue. */
   return DM_NORMAL;
 }
 
-/*	Function Name: RealDeletePcap
+int GetPrnByEthernet(int argc, char **argv)
+{
+  struct mqelem *top;
+
+  top = GetPrnInfo(argv[1], BY_ETHERNET); /* get info. */
+  Loop(top, (void *) PrintPrnInfo);
+  FreeQueue(top);		/* clean the queue. */
+  return DM_NORMAL;
+}
+
+int GetPrnByHostname(int argc, char **argv)
+{
+  struct mqelem *top;
+
+  top = GetPrnInfo(argv[1], BY_HOSTNAME); /* get info. */
+  Loop(top, (void *) PrintPrnInfo);
+  FreeQueue(top);		/* clean the queue. */
+  return DM_NORMAL;
+}
+
+int GetPrnByRM(int argc, char **argv)
+{
+  struct mqelem *top;
+
+  top = GetPrnInfo(argv[1], BY_RM); /* get info. */
+  Loop(top, (void *) PrintPrnInfo);
+  FreeQueue(top);		/* clean the queue. */
+  return DM_NORMAL;
+}
+
+int GetPrnByLocation(int argc, char **argv)
+{
+  struct mqelem *top;
+
+  top = GetPrnInfo(argv[1], BY_LOCATION); /* get info. */
+  Loop(top, (void *) PrintPrnInfo);
+  FreeQueue(top);		/* clean the queue. */
+  return DM_NORMAL;
+}
+
+int GetPrnByContact(int argc, char **argv)
+{
+  struct mqelem *top;
+
+  top = GetPrnInfo(argv[1], BY_CONTACT); /* get info. */
+  Loop(top, (void *) PrintPrnInfo);
+  FreeQueue(top);		/* clean the queue. */
+  return DM_NORMAL;
+}
+
+
+/*	Function Name: RealDeletePrn
  *	Description: Does the real deletion work.
  *	Arguments: info - array of char *'s containing all useful info.
  *                 one_item - a Boolean that is true if only one item
@@ -184,39 +339,38 @@ int GetPcap(int argc, char **argv)
  *	Returns: none.
  */
 
-void RealDeletePcap(char **info, Bool one_item)
+void RealDeletePrn(char **info, Bool one_item)
 {
   int stat;
 
-  if ((stat = do_mr_query("delete_printcap_entry", 1,
-			  &info[PCAP_NAME], NULL, NULL)))
-    com_err(program_name, stat, " printcap entry not deleted.");
+  if ((stat = do_mr_query("delete_printer", 1, &info[PRN_NAME], NULL, NULL)))
+    com_err(program_name, stat, " printer not deleted.");
   else
-    Put_message("Printcap entry deleted.");
+    Put_message("Printer deleted.");
 }
 
-/*	Function Name: DeletePcap
- *	Description: Delete a printcap entry given its name.
+/*	Function Name: DeletePrn
+ *	Description: Delete a printer given its name.
  *	Arguments: argc, argv - argv[1] is the name of the printer.
  *	Returns: none.
  */
 
-int DeletePcap(int argc, char **argv)
+int DeletePrn(int argc, char **argv)
 {
-  struct mqelem *elem = GetPcapInfo(argv[1]);
-  QueryLoop(elem, PrintPcapInfo, RealDeletePcap, "Delete Printer");
+  struct mqelem *elem = GetPrnInfo(argv[1], BY_NAME);
+  QueryLoop(elem, PrintPrnInfo, RealDeletePrn, "Delete Printer");
 
   FreeQueue(elem);
   return DM_NORMAL;
 }
 
-/*	Function Name: AddPcap
- *	Description: Add a printcap entry
+/*	Function Name: AddPrn
+ *	Description: Add a printer
  *	Arguments: arc, argv - name of printer in argv[1].
  *	Returns: DM_NORMAL.
  */
 
-int AddPcap(int argc, char **argv)
+int AddPrn(int argc, char **argv)
 {
   char *info[MAX_ARGS_SIZE], **args;
   int stat;
@@ -224,7 +378,8 @@ int AddPcap(int argc, char **argv)
   if (!ValidName(argv[1]))
     return DM_NORMAL;
 
-  if (!(stat = do_mr_query("get_printcap_entry", 1, argv + 1,
+  if (!(stat = do_mr_query("get_printer", 1, argv + 1, NULL, NULL)) ||
+      !(stat = do_mr_query("get_printer_by_duplexname", 1, argv + 1,
 			   NULL, NULL)))
     {
       Put_message ("A Printer by that name already exists.");
@@ -232,51 +387,51 @@ int AddPcap(int argc, char **argv)
     }
   else if (stat != MR_NO_MATCH)
     {
-      com_err(program_name, stat, " in AddPcap");
+      com_err(program_name, stat, " in AddPrn");
       return DM_NORMAL;
     }
 
-  args = AskPcapInfo(SetDefaults(info, argv[1]));
+  args = AskPrnInfo(SetDefaults(info, argv[1]));
   if (!args)
     {
       Put_message("Aborted.");
       return DM_NORMAL;
     }
 
-  if ((stat = do_mr_query("add_printcap_entry", CountArgs(args), args,
-			  NULL, NULL)))
-    com_err(program_name, stat, " in AddPcap");
+  if ((stat = do_mr_query("add_printer", CountArgs(args), args, NULL, NULL)))
+    com_err(program_name, stat, " in AddPrn");
+
+  if (stat == MR_SUCCESS && strcasecmp(info[PRN_HOSTNAME], "[NONE]"))
+    UpdateHWAddr(1, &info[PRN_HOSTNAME]);
 
   FreeInfo(info);
   return DM_NORMAL;
 }
 
 
-/*	Function Name: ChangePcap
- *	Description: Do the work of changing a pcap
+/*	Function Name: ChangePrn
+ *	Description: Do the work of changing a Prn
  *	Arguments: argc, argv - printcap info
  *	Returns:
  */
 
-void ChangePcap(char **info, Bool one_item)
+void ChangePrn(char **info, Bool one_item)
 {
   int stat;
   char **oldinfo;
 
   oldinfo = CopyInfo(info);
-  if (!AskPcapInfo(info))
+  if (!AskPrnInfo(info))
     return;
-  if ((stat = do_mr_query("delete_printcap_entry", 1, &info[PCAP_NAME],
-			  NULL, NULL)))
+  if ((stat = do_mr_query("delete_printer", 1, &info[PRN_NAME], NULL, NULL)))
     {
-      com_err(program_name, stat, " printcap entry not deleted.");
+      com_err(program_name, stat, " printer not updated.");
       return;
     }
-  if ((stat = do_mr_query("add_printcap_entry", CountArgs(info), info,
-			  NULL, NULL)))
+  if ((stat = do_mr_query("add_printer", CountArgs(info), info, NULL, NULL)))
     {
-      com_err(program_name, stat, " in ChngPcap");
-      if ((stat = do_mr_query("add_printcap_entry", CountArgs(oldinfo) - 3,
+      com_err(program_name, stat, " in ChngPrn");
+      if ((stat = do_mr_query("add_printer", CountArgs(oldinfo) - 3,
 			      oldinfo, NULL, NULL)))
 	com_err(program_name, stat, " while attempting to put old info back");
     }
@@ -285,264 +440,55 @@ void ChangePcap(char **info, Bool one_item)
 }
 
 
-/*	Function Name: ChngPcap
+/*	Function Name: ChngPrn
  *	Description:   Update the printcap information
  *	Arguments:     argc, argv - name of printer in argv[1].
  *	Returns:       DM_NORMAL.
  */
 
-int ChngPcap(int argc, char **argv)
+int ChngPrn(int argc, char **argv)
 {
-  struct mqelem *elem = GetPcapInfo(argv[1]);
-  QueryLoop(elem, NullPrint, ChangePcap, "Change the printer");
+  struct mqelem *elem = GetPrnInfo(argv[1], BY_NAME);
+  QueryLoop(elem, NullPrint, ChangePrn, "Change the printer");
   FreeQueue(elem);
   return DM_NORMAL;
 }
 
 
-/*	Function Name: SetPdDefaults
- *	Description: sets the default values for palladium additions.
- *	Arguments: info - an array of char pointers to recieve defaults.
- *	Returns: char ** (this array, now filled).
- */
-
-static char **SetPdDefaults(char **info, char *name)
-{
-  info[PD_NAME] = strdup(name);
-  info[PD_IDENT] = strdup("10000");
-  info[PD_HOST] = strdup(DEFAULT_MACHINE);
-  info[PD_MODTIME] = info[PD_MODBY] = info[PD_MODWITH] = NULL;
-
-  info[PD_END] = NULL;
-  return info;
-}
-
-/*	Function Name: AskPalladiumInfo.
- *	Description: This function askes the user for information about a
- *                   printer and saves it into a structure.
- *	Arguments: info - a pointer the the structure to put the
- *                             info into.
- *	Returns: none.
- */
-
-static char **AskPalladiumInfo(char **info)
-{
-  char temp_buf[BUFSIZ];
-
-  Put_message("");
-  sprintf(temp_buf, "Palladium Server/Supervisor entry for %s.",
-	  info[PD_NAME]);
-  Put_message(temp_buf);
-  Put_message("");
-
-  if (GetValueFromUser("RPC Program Number", &info[PD_IDENT]) == SUB_ERROR)
-    return NULL;
-  if (GetValueFromUser("Print Server/Supervisor Host", &info[PD_HOST]) ==
-      SUB_ERROR)
-    return NULL;
-  info[PD_HOST] = canonicalize_hostname(info[PD_HOST]);
-
-  FreeAndClear(&info[PD_MODTIME], TRUE);
-  FreeAndClear(&info[PD_MODBY], TRUE);
-  FreeAndClear(&info[PD_MODWITH], TRUE);
-
-  return info;
-}
-
-
-/*	Function Name: PrintPalladiumInfo
- *	Description: Yet another specialized print function.
- *	Arguments: info - all info about this Printer.
- *	Returns: printer name
- */
-
-static char *PrintPalladiumInfo(char **info)
-{
-  char buf[BUFSIZ];
-
-  if (!info)		/* If no informaion */
-    {
-      Put_message("PrintPalladiumInfo called with null info!");
-      return NULL;
-    }
-
-  sprintf(buf, "Name: %-24s Program #: %s  Host: %s",
-	  info[PD_NAME], info[PD_IDENT], info[PD_HOST]);
-  Put_message(buf);
-  sprintf(buf, MOD_FORMAT, info[PD_MODBY], info[PD_MODTIME],
-	  info[PD_MODWITH]);
-  Put_message(buf);
-  return info[PD_NAME];
-}
-
-
-static struct mqelem *GetPalladiumInfo(char *name)
-{
-  int status;
-  struct mqelem *elem = NULL;
-
-  if ((status = do_mr_query("get_palladium", 1, &name, StoreInfo, &elem)))
-    {
-      com_err(program_name, status, " in GetPalladiumInfo");
-      return NULL;
-    }
-  return QueueTop(elem);
-}
-
-
-void ChangePalladium(char **info, Bool one_item)
-{
-  int status;
-
-  if (!AskPalladiumInfo(info))
-    return;
-  if ((status = do_mr_query("delete_palladium", 1, &info[PD_NAME],
-			    NULL, NULL)))
-    {
-      com_err(program_name, status, " palladium entry not deleted.");
-      return;
-    }
-  if ((status = do_mr_query("add_palladium", CountArgs(info), info,
-			    NULL, NULL)))
-    com_err(program_name, status, " in ChngPalladium");
-  return;
-}
-
-
-/*	Function Name: RealDeletePalladium
- *	Description: Does the real deletion work.
- *	Arguments: info - array of char *'s containing all useful info.
- *                 one_item - a Boolean that is true if only one item
- *                              in queue that dumped us here.
- *	Returns: none.
- */
-
-void RealDeletePalladium(char **info, Bool one_item)
+int UpdateHWAddr(int argc, char **argv)
 {
   int stat;
+  char *name, *hwaddr, *s, *d, *uargv[2];
 
-  if ((stat = do_mr_query("delete_palladium", 1,
-			  &info[PD_NAME], NULL, NULL)))
-    com_err(program_name, stat, " palladium entry not deleted.");
-  else
-    Put_message("Palladium entry deleted.");
-}
-
-
-int GetPalladium(int argc, char **argv)
-{
-  struct mqelem *top;
-
-  top = GetPalladiumInfo(argv[1]);
-  Loop(top, (void (*)(char **))PrintPalladiumInfo);
-  FreeQueue(top);
-  return DM_NORMAL;
-}
-
-
-int AddPalladium(int argc, char **argv)
-{
-  char *info[MAX_ARGS_SIZE], **args;
-  int status;
-
-  if (!ValidName(argv[1]))
-    return DM_NORMAL;
-
-  if (!(status = do_mr_query("get_palladium", 1, &argv[1], NULL, NULL)))
+  name = canonicalize_hostname(strdup(argv[1]));
+  stat = do_mr_query("get_host_hwaddr", 1, &name, StoreHWAddr, &hwaddr);
+  if (stat != MR_SUCCESS)
     {
-      Put_message("A server or supervisor by that name already exists.");
-      return DM_NORMAL;
-    }
-  else if (status != MR_NO_MATCH)
-    {
-      com_err(program_name, status, " in AddPalladium");
+      free(name);
+      com_err(program_name, stat, " checking host ethernet address");
       return DM_NORMAL;
     }
 
-  args = AskPalladiumInfo(SetPdDefaults(info, argv[1]));
-  if (!args)
+  if (GetValueFromUser("Hardware ethernet address", &hwaddr) == SUB_ERROR)
     {
-      Put_message("Aborted.");
+      free(name);
       return DM_NORMAL;
     }
 
-  if ((status = do_mr_query("add_palladium", CountArgs(args), args,
-			    NULL, NULL)))
-    com_err(program_name, status, " in AddPalladium");
-
-  FreeInfo(info);
-  return DM_NORMAL;
-}
-
-
-int ChngPalladium(int argc, char **argv)
-{
-  struct mqelem *elem = GetPalladiumInfo(argv[1]);
-  QueryLoop(elem, NullPrint, ChangePalladium, "Change the server/supervisor");
-  FreeQueue(elem);
-  return DM_NORMAL;
-}
-
-
-int DeletePalladium(int argc, char **argv)
-{
-  struct mqelem *elem = GetPalladiumInfo(argv[1]);
-  QueryLoop(elem, PrintPalladiumInfo, RealDeletePalladium,
-	    "Delete server/supervisor");
-  FreeQueue(elem);
-  return DM_NORMAL;
-}
-
-int ShowPalladiumAlias(int argc, char **argv)
-{
-  struct mqelem *elem = NULL;
-  char *qargv[3], buf[BUFSIZ];
-  int status;
-
-  qargv[0] = argv[1];
-  qargv[1] = "PALLADIUM";
-  qargv[2] = argv[2];
-  if ((status = do_mr_query("get_alias", 3, qargv, StoreInfo, &elem)))
+  s = d = hwaddr;
+  do
     {
-      com_err(program_name, status, " in ShowPalladiumAlias");
-      return DM_NORMAL;
+      if (*s != ':')
+	*d++ = *s;
     }
-  elem = QueueTop(elem);
-  Put_message("");
-  while (elem)
-    {
-      char **info = elem->q_data;
-      sprintf(buf, "Printer: %-16s Server/Supervisor: %s", info[0], info[2]);
-      Put_message(buf);
-      elem = elem->q_forw;
-    }
+  while (*s++);
 
-  FreeQueue(QueueTop(elem));
-  return DM_NORMAL;
-}
+  uargv[0] = name;
+  uargv[1] = hwaddr;
+  if ((stat = do_mr_query("update_host_hwaddr", 2, uargv, NULL, NULL)))
+    com_err(program_name, stat, " updating ethernet address.");
 
-int AddPalladiumAlias(int argc, char **argv)
-{
-  int status;
-  char *qargv[3];
-
-  qargv[0] = argv[1];
-  qargv[1] = "PALLADIUM";
-  qargv[2] = argv[2];
-  if ((status = do_mr_query("add_alias", 3, qargv, NULL, NULL)))
-    com_err(program_name, status, " in AddPalladiumAlias");
-  return DM_NORMAL;
-}
-
-int DeletePalladiumAlias(int argc, char **argv)
-{
-  int status;
-  char *qargv[3];
-
-  qargv[0] = argv[1];
-  qargv[1] = "PALLADIUM";
-  qargv[2] = argv[2];
-  if ((status = do_mr_query("delete_alias", 3, qargv, NULL, NULL)))
-    com_err(program_name, status, " in DeletePalladiumAlias");
+  free(name);
+  free(hwaddr);
   return DM_NORMAL;
 }

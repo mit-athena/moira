@@ -1,4 +1,4 @@
-/* $Id: reg_svr.pc,v 1.8 2001-09-04 18:56:34 zacheiss Exp $
+/* $Id: reg_svr.pc,v 1.9 2001-10-21 23:34:05 zacheiss Exp $
  *
  * Server for user registration with Moira and Kerberos.
  *
@@ -37,7 +37,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.pc,v 1.8 2001-09-04 18:56:34 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.pc,v 1.9 2001-10-21 23:34:05 zacheiss Exp $");
 
 char *whoami, *hostname, *shorthostname;
 
@@ -301,7 +301,7 @@ void RIFO(reg_client *rc, int argc, char **argv)
   char middle[USERS_MIDDLE_SIZE], last[USERS_LAST_SIZE];
   char fullname[USERS_FIRST_SIZE + USERS_MIDDLE_SIZE + USERS_LAST_SIZE];
   char class[USERS_TYPE_SIZE];
-  int uid, status, secure, sqlstatus;
+  int uid, status, secure, sqlstatus, string_id;
   EXEC SQL END DECLARE SECTION;
 
   if (rc->uid || argc != 4)
@@ -425,7 +425,15 @@ void RIFO(reg_client *rc, int argc, char **argv)
 	{
 	  status = check_kerberos(login);
 	  if (status == MR_SUCCESS)
-	    status = register_user(rc->uid, login);
+	    if (!strcmp(class, "LINCOLN"))
+	      {
+		EXEC SQL SELECT string_id INTO :string_id FROM strings
+		  WHERE string = 'LINCOLN: no pobox or filesys';
+		EXEC SQL UPDATE users SET comments = :string_id 
+		  WHERE login = :login;
+	      }
+	    else
+	      status = register_user(rc->uid, login);
 	  if (status == MR_IN_USE)
 	    {
 	      reply(rc, RESERVED_USERNAME_UNAVAILABLE, "INIT", "c", NULL, 

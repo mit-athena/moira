@@ -15,7 +15,7 @@ Cambridge, Massachusetts  02139
 Maintaining, managing, and supporting an unbounded
 number of distributed network services on multiple server instances
 requires new solutions.
-The Athena Service Management System provides centralized control of data
+Moira, the Athena Service Management System provides centralized control of data
 administration, a protocol for interface to the database, tools for
 accessing and modifying the database, and an automated mechanism for
 data distribution.
@@ -24,31 +24,31 @@ data distribution.
 .NH 1
 Introduction
 .PP
-The purpose of the Athena Service Management System (SMS) is to
+The purpose of Moira is to
 provide a single point of contact for authoritative information about
 resources and services in a distributed computing environment.
-SMS is a centralized data administrator providing
+Moira is a centralized data administrator providing
 network-based update and maintenance of system servers.\(dg
 .FS
 \(dg Care must be taken to distinguish among different senses of the
 word ``server'':
-the SMS server, which manages a database;
+the Moira server, which manages a database;
 the servers which provide system services and whose
-maintenance are SMS's reason for existence; and the update servers
-which allow SMS to affect these system services.
+maintenance are Moira's reason for existence; and the update servers
+which allow Moira to affect these system services.
 .FE
 .IP \0\0\(bu 4
-Conceptually, SMS provides mechanisms for managing servers and
-resources.  This aspect comprises the fundamental design of SMS.
+Conceptually, Moira provides mechanisms for managing servers and
+resources.  This aspect comprises the fundamental design of Moira.
 .IP \0\0\(bu 4
-Economically, SMS provides a replacement for labor-intensive
+Economically, Moira provides a replacement for labor-intensive
 hand-management of server configuration files.
 .IP \0\0\(bu 4
-Technically, SMS consists of a database, a server and its protocol
+Technically, Moira consists of a database, a server and its protocol
 interface, a data distribution manager, and tools for accessing and
-modifying SMS data.
+modifying Moira data.
 .LP
-SMS provides coherent data access and data update.
+Moira provides coherent data access and data update.
 Access to data is provided through a
 standard application interface.
 Programs designed to reconfigure network
@@ -62,7 +62,7 @@ Management reports and operational feedback are also provided.
 .NH 2
 Requirements
 .PP
-The requirements for the initial Athena SMS include:
+The requirements for the initial Athena Moira include:
 .IP \0\0\(bu 4
 Management of 15,000 accounts, including individual users, course,
 and project accounts, and special accounts used by system services.
@@ -87,7 +87,7 @@ This must be accomplished with the utmost robustness.
 The system must be easily expandable,
 both to support additional instances of a particular service
 and to offer additional services in the future.
-At this time, SMS is used to update three services (with RVD to be
+At this time, Moira is used to update three services (with RVD to be
 added shortly):
 .IP \0\0\(bu 4
 .I Hesiod:
@@ -96,7 +96,7 @@ The Athena Name Service,
 provides service-to-server
 and label translation.
 It can be thought of as a high-performance, read-only
-front-end to the SMS database.
+front-end to the Moira database.
 See the companion paper in this volume.
 .[
 Dyer Hesiod 1988
@@ -108,7 +108,7 @@ are provided by a locally modified form of the Network File System.
 .[
 Sandberg NFSUsenix 1985
 .]
-SMS manages the NFS server hosts,
+Moira manages the NFS server hosts,
 providing quota-based resource allocation,
 and load balancing.
 Also refer to the companion paper in this volume.
@@ -129,7 +129,7 @@ Rose POP 1985
 Rand MH 1985
 .]
 (MH) package.
-SMS allocates individual post office boxes to post office servers, and
+Moira allocates individual post office boxes to post office servers, and
 builds the
 .I /usr/lib/aliases
 control file used on the central mail hub.
@@ -138,7 +138,7 @@ RVD:
 At Athena, most shared-access read-only file systems
 are provided by
 a Remote Virtual Disk system.
-SMS manages the RVD server hosts,
+Moira manages the RVD server hosts,
 providing access control lists and
 server configuration files.
 .PP
@@ -146,7 +146,7 @@ Each of these server hosts are controlled by some number of
 server-specific data files;
 over 50 separate files are required
 to support the services described above.
-SMS currently supports three 
+Moira currently supports three 
 .I Hesiod
 servers, 17 RVD file servers,
 32 NFS file servers,
@@ -183,13 +183,13 @@ Time Efficiency
 Space Efficiency
 .RE
 .PP
-SMS must be reliable.
+Moira must be reliable.
 In particular, it must be designed to allow
-straightforward recreation of SMS on replacement hardware from backups,
+straightforward recreation of Moira on replacement hardware from backups,
 should the need arise.
-The backup regime for SMS consists of frequent database backups
+The backup regime for Moira consists of frequent database backups
 in ASCII format, to redundant sites.
-All components of the SMS system are designed such that a duplicate
+All components of the Moira system are designed such that a duplicate
 configuration can be kept running as a test platform without
 interfering with normal, ``real,'' operations.
 Service updates are verified by testing the server before calling an
@@ -209,13 +209,13 @@ running only what can be built from source)
 is part of the design.
 .PP
 In addition to having authoritative control of the data,
-SMS must see that the data is kept consistent.
+Moira must see that the data is kept consistent.
 To guarantee internal consistency,
-SMS clients do not touch the database directly;
-they do not even see the database system used by SMS.
+Moira clients do not touch the database directly;
+they do not even see the database system used by Moira.
 Each application uses the application library to access the database.
 This library is a collection of functions allowing access to the database by
-communicating with the SMS server using the SMS protocol.
+communicating with the Moira server using the Moira protocol.
 Many of the database consistency constraints are handled by the library.
 A number of consistency verification applications also exist.
 To make this consistency reliable,
@@ -230,26 +230,26 @@ See the companion paper in this volume.
 Steiner KUsenix 1988
 .]
 .PP
-Beyond these goals, SMS must be flexible in both its database
+Beyond these goals, Moira must be flexible in both its database
 underpinnings and the services it supports.
 As discussed later in the design section, the
-particular Database Management System used is insulated from SMS
+particular Database Management System used is insulated from Moira
 through a Global DataBase
 (GDB) library,
 .[
 Mendelsohn GDB 1987
 .]
-making SMS plug-compatible with other database
+making Moira plug-compatible with other database
 foundations.
 It is independent of the individual services\(emwhile each
-service updated by SMS has its own particular data format and
-structure, the SMS database stores data in one coherent format.
+service updated by Moira has its own particular data format and
+structure, the Moira database stores data in one coherent format.
 A separate program,
 the Data Control Manager (DCM),
-converts SMS database (internal) structure to
+converts Moira database (internal) structure to
 server-appropriate structure (such as a configuration file).
 When a new service is supported, the database can be changed and only
-minimal updates are necessary in the SMS server, and 
+minimal updates are necessary in the Moira server, and 
 a new module is
 added to the DCM specifying the additional specific
 output data format to be manufactured.
@@ -276,7 +276,7 @@ in the server only through combining simpler queries.
 .NH
 System Design
 .PP
-There are three sides to the SMS system:
+There are three sides to the Moira system:
 .IP \0\0\(bu 4
 The input side,
 which contains all of the user-interface programs,
@@ -284,7 +284,7 @@ allowing the user to enter, examine, or modify data in the database.
 .IP \0\0\(bu 4
 The database side,
 which consists of the actual database,
-the SMS server which manipulates the database,
+the Moira server which manipulates the database,
 and utility programs to backup, restore,
 and verify the internal consistency of the database.
 .IP \0\0\(bu 4
@@ -296,7 +296,7 @@ servers by propagating these files.
 .PS
 linewid=.25i; circlerad=.5i
 circle "Input" "\s8User Interface\s0"
-line <->; circle "Database" "\s8SMS Server\s0"
+line <->; circle "Database" "\s8Moira Server\s0"
 arrow; circle "Output" "\s8DCM & Update\s0"
 .PE
 
@@ -312,18 +312,18 @@ which is influenced
 by the organization of the database (but not its exact format,
 which is hidden through the protocol).
 .NH 2
-The SMS Protocol
+The Moira Protocol
 .PP
-The SMS protocol is the fundamental
-interface to SMS for client applications.
-It allows all clients of SMS to speak a common,
+The Moira protocol is the fundamental
+interface to Moira for client applications.
+It allows all clients of Moira to speak a common,
 network-transparent language.
 .PP
-The SMS protocol is a remote procedure call protocol based on the GDB
+The Moira protocol is a remote procedure call protocol based on the GDB
 library,
 which in turn uses a TCP stream.
 Each client program makes a connection to a
-well known port to contact the SMS server,
+well known port to contact the Moira server,
 sending requests and receiving replies
 over that stream.
 Each request consists of a major request number,
@@ -333,7 +333,7 @@ counted strings of bytes.
 Requests and replies also contain a protocol version number,
 to allow clean handling of version skew.
 .PP
-The following major requests are defined for SMS.
+The following major requests are defined for Moira.
 It should be noted that each query
 defines its own signature of arguments and results.
 For some of these actions the server checks authorization based on the
@@ -380,7 +380,7 @@ that an operation with side effects will succeed before attempting it.
 Queries
 .PP
 All access to the database by clients is provided by the
-application library via the SMS protocol.
+application library via the Moira protocol.
 This interface provides a limited set of predefined, named queries,
 allowing tightly controlled access to database information.
 Queries fall into four
@@ -393,19 +393,19 @@ as the clients to read the database.
 Since the database can be modified and extended, the application
 library has been designed to allow the easy addition of queries.
 .PP
-The generalized layer of functions makes SMS independent of the
+The generalized layer of functions makes Moira independent of the
 underlying database.
 If a different database management system is required,
 the only change needed
-will be a new SMS server.
+will be a new Moira server.
 It is made by linking the pre-defined queries to a set of data
 manipulation procedures provided by a version of GDB suited to
 the alternate DBMS.
 .PP
 At this time there are over 100 supported queries.  See the complete
-technical description of SMS for a listing.
+technical description of Moira for a listing.
 .[
-SMSTech
+MRTech
 .]
 Some sample queries include:
 .IP \fBget_nfs_quotas\fP
@@ -442,7 +442,7 @@ Returns: nothing
 Errors: already exists, bad type
 .br
 .I
-Appends a new machine to the list of machines known by SMS.
+Appends a new machine to the list of machines known by Moira.
 .R
 .IP \fBupdate_server_info\fP
 .br
@@ -477,10 +477,10 @@ and
 .NH 2
 The Database Management System
 .PP
-The database is the core of SMS.
+The database is the core of Moira.
 It provides the storage mechanism
 for the complete system.
-SMS expects its database to consist of
+Moira expects its database to consist of
 several tables of records with strings, integers, and dates.
 Tables
 are keyed on one or more fields in each record allowing efficient
@@ -496,16 +496,16 @@ a C library of routines,
 and a command interface language.
 Its advantages are that it is available and that it mostly works.
 By design,
-SMS does not depend on any special feature of Ingres
+Moira does not depend on any special feature of Ingres
 so as to retain the option to
 utilize other relational database systems.
 .PP
-The database is an independent entity from the SMS system.
+The database is an independent entity from the Moira system.
 The Ingres query bindings and database-specific routines are layered
-at the lower levels of the SMS server.
+at the lower levels of the Moira server.
 All applications are independent of database-specific routines.
 An application passes
-query handles to the SMS server which then resolves the request into
+query handles to the Moira server which then resolves the request into
 an appropriate database query.
 .PP
 The database contains several types of objects.  Each object in the
@@ -562,28 +562,28 @@ Internal control information: next user ID, group ID, machine ID, and
 cluster ID to assign (these are just hints); an ACL for each query; usage
 statistics
 .NH 2
-SMS-to-Server Update Protocol
+Moira-to-Server Update Protocol
 .PP
-SMS provides a reliable mechanism for updating the servers it manages.
+Moira provides a reliable mechanism for updating the servers it manages.
 The goals of the server update protocol are:
 .IP \0\0\(bu 4
 Rational, automatic update for normal cases and expected kinds of failures.
 .IP \0\0\(bu 4
 Ability to survive clean (target) server crashes.
 .IP \0\0\(bu 4
-Ability to survive clean SMS crashes.
+Ability to survive clean Moira crashes.
 .IP \0\0\(bu 4
 Easily understood state so that straightforward recovery by hand is
 possible.
 .PP
-All actions are initiated by the SMS system.
+All actions are initiated by the Moira system.
 Updates of managed servers are performed such that a partially completed
 update is harmless.
 Updates not completed are simply rescheduled for retry until
 they succeed, or until an update can not be initiated.
 In the latter case, a human operator will be notified.
 .PP
-The update protocol is based on the GDB library just as is the SMS protocol
+The update protocol is based on the GDB library just as is the Moira protocol
 itself.  In the update protocol, there are four commands:
 .IP \fBauthenticate\fP 11
 A 
@@ -616,21 +616,21 @@ preparation are completed without error, the execution is then
 allowed.  This usually consists of moving files around, then sending a
 signal to or restarting a server process.  The update server then
 performs a plausibility check on the result by verifying the operation
-of the system server, and sends SMS an indicative return code.
+of the system server, and sends Moira an indicative return code.
 .NH 1
 System Components
 .PP
-Six software components make up the SMS system.
+Six software components make up the Moira system.
 .IP \0\0\(bu 4
 The database, currently built on the commercial database system
 RTI Ingres.
 .IP \0\0\(bu 4
-The SMS server, a program always running on the machine containing the
+The Moira server, a program always running on the machine containing the
 database.  It accesses the database for the client programs.
 .IP \0\0\(bu 4
-The application library, a collection of routines implementing the SMS
+The application library, a collection of routines implementing the Moira
 protocol.  It is used by client programs to communicate with the
-SMS server.
+Moira server.
 .IP \0\0\(bu 4
 The client programs, a collection of programs that make up
 the user interface to the system.
@@ -642,10 +642,10 @@ It constructs up-to-date server configuration
 files and installs these files on the servers.
 .IP \0\0\(bu 4
 The update servers, which run on each machine containing a server that
-SMS updates.
+Moira updates.
 These are contacted by the data control manager to
 install the new configuration files and notify the real servers being
-managed by SMS.
+managed by Moira.
 
 .PS
 linewid = .25i; lineht = .2i
@@ -664,7 +664,7 @@ move to CH+(.45,.7); box invis width 1.8 "User Workstation"
 
 move to CH+(-.05,-1)
 SVR:
-circle "SMS" "server"
+circle "Moira" "server"
 move to SVR.e; arrow right
 DB:
 box "database"
@@ -677,11 +677,11 @@ BU:
 circle "backup"
 move to BU.n; arrow to DB.s
 move to SVR+(.5,.4); box dashed width 1.8 height 1.8
-move to SVR+(.5,-1); box invis width 1.8 "SMS Machine"
+move to SVR+(.5,-1); box invis width 1.8 "Moira Machine"
 
 arrow from CH to SVR chop .35 chop .3
 arrow from MM to SVR chop .35 chop .3
-move to SVR+(.2,.8); box invis width 1.7 "SMS Protocol"
+move to SVR+(.2,.8); box invis width 1.7 "Moira Protocol"
 
 move to DCM+(0,-1)
 UL:
@@ -698,18 +698,18 @@ box invis at UL+(.2,.55) "Update Protocol"
 .PE
 
 .PP
-Because SMS has a variety of interfaces, a distinction must be
+Because Moira has a variety of interfaces, a distinction must be
 maintained between applications called clients that directly read and
-write to SMS (i.e., administrative programs) and services which use
-information distributed from SMS (i.e. a name server).  In both cases
-the interface to the SMS database is through the SMS server, using the SMS
+write to Moira (i.e., administrative programs) and services which use
+information distributed from Moira (i.e. a name server).  In both cases
+the interface to the Moira database is through the Moira server, using the Moira
 protocol.  The significant difference is that server update is handled
 automatically through the Data Control Manager; administrative programs
 are executed by users.
 .NH 2
 Clients
 .PP
-SMS includes a set of specialized management tools to grant system
+Moira includes a set of specialized management tools to grant system
 administrators overall control of system resources.
 For each system service there
 is an administrative interface.  To accommodate novice and occasional
@@ -821,10 +821,10 @@ usermaint
 - maintain user information including file service and
 post office location
 .LP
-Finally, this program is used only in debugging SMS:
+Finally, this program is used only in debugging Moira:
 .IP \0\0\(bu 4
 .I
-smstest
+mrtest
 .R
 - perform any query manually
 .NH 3
@@ -855,9 +855,9 @@ to any workstation and logs in using the username of ``register''.
 This produces a form-like interface prompting for the user's first
 name, middle initial, last name, and student ID number.  The
 .I register
-program does not talk to the SMS server directly, but goes through a
+program does not talk to the Moira server directly, but goes through a
 registration server first.  The registration server deals with access
-control to the SMS server and the
+control to the Moira server and the
 .I Kerberos
 administration server.
 Register encrypts the ID number, and sends a
@@ -870,7 +870,7 @@ or
 .B OK.
 After this the
 register server will do work on behalf of the user; the user still
-cannot contact SMS directly until he or she obtains a login name and
+cannot contact Moira directly until he or she obtains a login name and
 user ID.
 .PP
 If the user has been validated,
@@ -898,7 +898,7 @@ on the least-loaded post office server,
 and returns a success code
 to
 .I register.
-SMS keeps track of loading on servers in the database, incrementing
+Moira keeps track of loading on servers in the database, incrementing
 and decrementing its estimate of the load as it allocates and
 deallocates resources on each server.
 .PP
@@ -915,13 +915,13 @@ name service, the central mail hub, and the user's home fileserver,
 the user's account has been established.
 These updates may take up to 12 hours to complete.
 .NH 2
-The SMS Server
+The Moira Server
 .PP
 As previously stated,
-all remote communication with the SMS database is done through the SMS
-server, using the SMS protocol.  The SMS server runs as a single 
+all remote communication with the Moira database is done through the Moira
+server, using the Moira protocol.  The Moira server runs as a single 
 UNIX
-process on the SMS database machine.  It listens for connections on a
+process on the Moira database machine.  It listens for connections on a
 well known service port and processes remote procedure call requests
 on each connection it accepts.
 .PP
@@ -929,7 +929,7 @@ GDB, through the use of BSD
 UNIX
 non-blocking I/O, allows the
 programmer to set up a single-process server that handles multiple
-simultaneous TCP connections.  The SMS server will be able to make
+simultaneous TCP connections.  The Moira server will be able to make
 progress reading new RPC requests and sending old replies
 simultaneously, which is important if a reasonably large amount of
 data is to be sent back.  The RPC system from Sun Microsystems was
@@ -940,7 +940,7 @@ values, such as might be returned by a complex query.
 A major concern for efficiency in some DBMS's is the time it
 takes to begin accessing the database, sometimes requiring starting up
 a backend process.  Since this is a heavyweight operation, the
-SMS server will do this only once when it starts.
+Moira server will do this only once when it starts.
 .PP
 The server performs access control checks on all queries.  An access control
 list (ACL) is associated with each query handle, and with many objects within
@@ -953,7 +953,7 @@ In addition, lists, users, machines, and
 file systems have lists of additional users who are allowed to modify
 them.
 The concept of an all powerful database administrator is
-not necessary with SMS, although could be implemented by having the
+not necessary with Moira, although could be implemented by having the
 same ACL for all queries that affect the database.
 .PP
 Because one of the requests that the server supports is a request to
@@ -968,20 +968,20 @@ Input Data Checking
 .PP
 Without proper checks on input values, a user could easily enter data
 of the wrong type or of a nonsensical value for that
-type into SMS.  For example, consider the case of updating a user's mail
+type into Moira.  For example, consider the case of updating a user's mail
 address.  If, instead of typing ``athena-po-1'' (a valid post office server),
 a user accounts administrator
 typed in ``athena-po1'' (a nonexistent machine), all the user's mail
 would be returned to sender as undeliverable. 
 .PP
-Input checking is done by both the SMS server and by applications
-using SMS.  Each query supported by the server may have a validation
+Input checking is done by both the Moira server and by applications
+using Moira.  Each query supported by the server may have a validation
 routine supplied which checks that the arguments to the query are
 legitimate.  Queries that do not have side effects on the database do
 not need a validation routine.
 .PP
 Some checks are better done in applications programs; for example, the
-SMS server is not in a good position to tell if a user's new choice
+Moira server is not in a good position to tell if a user's new choice
 for a login shell exists.  However, other checks, such as verifying
 that a user's home directory is a valid file system name, are conducted
 by the server.  An error condition will be returned if the value
@@ -990,33 +990,33 @@ fields which require explicit data checking.
 .NH 2
 Backup
 .PP
-It is not critical that the SMS database be available 24
+It is not critical that the Moira database be available 24
 hours a day; what is important is that the database remain internally
 consistent and that the data never be lost.  With that in
-mind, the database backup system for SMS has been set up to maximize
+mind, the database backup system for Moira has been set up to maximize
 recoverability if the database is damaged.  Backup is done
 in a simple ASCII format to avoid dependence on the actual DBMS in use.
 .PP
 Two programs
-.I (smsbackup
+.I (mrbackup
 and
-.I smsrestore)
+.I mrrestore)
 are generated
 automatically (using an
 .I awk
 script) from the database description
 file.
-.I smsbackup
-copies each relation of the current SMS database
+.I mrbackup
+copies each relation of the current Moira database
 into an ASCII file.
-.I Smsbackup
+.I Mrbackup
 is invoked nightly by a command
 file that maintains the last three backups on-line.  These backups
 are put on a separate physical disk drive from the drive containing
 the actual database and copied over the network to other locations.
-.I Smsrestore
+.I Mrrestore
 does the inverse of
-.I smsbackup,
+.I mrbackup,
 taking a set of ASCII files and recreating the
 database.  These backups by themselves provide recovery with the loss of no
 more than roughly a day's transactions.  To obtain complete recovery,
@@ -1065,7 +1065,7 @@ requesting that another attempt be made to update this server sooner
 than indicated by the default update interval.
 .PP
 For performance reasons, some parts of the DCM currently touch the
-database directly rather than going through the SMS server.  Nothing
+database directly rather than going through the Moira server.  Nothing
 is being done that could not be done through the server.  However,
 bypassing the server makes extracting large amounts of information
 much faster and avoids slowing down the server for these operations.
@@ -1090,12 +1090,12 @@ tool for 5000 active users, 650 workstations, and 65 servers.
 .NH 2
 Availability
 .PP
-The SMS server has nearly always been accessible.  Some queries, such
+The Moira server has nearly always been accessible.  Some queries, such
 as listing all publicly accessible mailing lists, will tie up the
 server for a short period of time.  Regular users are prohibited from
 the longer queries such as listing all users, which will lock up the
 server for several minutes.  The server is occasionally down for
-safety when an SMS administrator wishes to modify the database directly
+safety when an Moira administrator wishes to modify the database directly
 through Ingres.
 .NH 2
 Security
@@ -1127,8 +1127,8 @@ problem is potentially compounded by the very
 .I
 raison d'\*^etre
 .R
-of SMS.
-With hundreds of workstations in the field there is no guarantee that SMS
+of Moira.
+With hundreds of workstations in the field there is no guarantee that Moira
 client programs installed on them are all at current revision level.
 There are also a few problems suspected in the
 database system itself (Ingres), but these are difficult to pinpoint.
@@ -1140,7 +1140,7 @@ A database consistency checker, in the spirit of
 .I fsck,
 is run
 regularly, but only for informational purposes.  Because of the
-dangers involved in modifying the database outside the SMS server, it
+dangers involved in modifying the database outside the Moira server, it
 is not modified by this checker at this time.
 .PP
 A shortcoming of the current system is that it is occasionally
@@ -1156,10 +1156,10 @@ operations are either done by hand through the regular clients, or
 edited into a script that can be run through the raw Ingres
 interpreter.  Availability of this interpreter makes such operations
 relatively easy; yet there is the temptation to fix too many things
-that way, bypassing the checks built in to the client library and SMS
+that way, bypassing the checks built in to the client library and Moira
 server.
 .PP
-Care must be taken to avoid hardcoding into the SMS design current
+Care must be taken to avoid hardcoding into the Moira design current
 policy decisions about accounts and resources here at Athena.  Yet by
 maintaining this flexibility, it sometimes is too easy to break the
 rules.  This is more often an error than an intentional breaking of
@@ -1172,7 +1172,7 @@ Conclusion
 Systems for managing the otherwise unmanageable need
 to be designed well, burned in realistically, and
 provided with seamless upgrades.
-With the Athena SMS, we have an example
+With the Athena Moira, we have an example
 of a system that is working for the scale of 1,000
 workstations, but needs significant
 refinement to go to the 10,000 workstation level.
@@ -1184,7 +1184,7 @@ will and will be back to report to you with our results.
 Acknowledgments
 .PP
 The authors would like to acknowledge the following people
-from M.I.T. Project Athena for their help in making SMS a
+from M.I.T. Project Athena for their help in making Moira a
 reality:
 Michael R. Gretzinger, a former Systems Programmer, and William E.
 Sommerfeld, Jean Marie Diaz, Ken Raeburn, Jos\*'e J. Cap\*'o, and Mark

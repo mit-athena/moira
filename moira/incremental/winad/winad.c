@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/winad/winad.c,v 1.3 2000-11-26 02:03:42 zacheiss Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/winad/winad.c,v 1.4 2000-12-08 00:07:02 zacheiss Exp $
 / *test parameters for creating a user account - done
  * users 0 3 6_d0006 950 2
  * users 0 3 6_d0006 950 1
@@ -10,6 +10,10 @@
  *test parameters for reactivating a user account - done
  * users 0 3 6_d0006 950 2
  * users 0 3 6_d0006 950 1
+ *
+ *test parameters for updating user account info - done
+ * users 1 0 6_d0006
+ * currently, this only occurs when the U_UID or U_MITID changes
  *
  * test parameters for changing account name - done
  * users 3 3 6_d0006 950 1 alexp 950 1
@@ -28,10 +32,13 @@
  * 
  * test parameters for deleting a group/list - done
  * list 7 0 pismere-team 1 0 1 1 1 760
+ * L_NAME L_ACTIVE L_PUBLIC L_HIDDEN L_MAILLIST L_GROUP L_GID
+ * used when ever L_ACTIVE changes
  *
  * test parameters for renaming a group/list
- * list 7 7 testgroup 1 0 1 1 1 760 pismere-team 1 0 1 1 1 760
- *
+ * list 7 7 6_d0006-acl 1 0 1 0 0 760 1.00students 1 0 1 1 1 760
+ * L_NAME L_ACTIVE L_PUBLIC L_HIDDEN L_MAILLIST L_GROUP L_GID
+ * used whenever L_NAME, L_MAILLIST or L_GROUP changes
 */
 #include <mit-copyright.h>
 #ifdef _WIN32
@@ -209,10 +216,10 @@ char group_manager[64];
 char ldap_domain[256];
 char list_type[32];
 char GroupType[2];
-char Group_OU[64];
 int  maillist_flag;
 int  group_flag;
 int  mr_connections = 0;
+int  callback_rc;
 
 extern int locate_ldap_server(char *domain, char *server_name[]);
 extern int set_password(char *user, char *domain);
@@ -221,16 +228,19 @@ int user_create(int ac, char **av, void *ptr);
 int user_change_status(int ac, char **av, void *ptr);
 int user_delete(LDAP *ldap_handle, char *dn_path, char *u_name);
 int user_rename(int ac, char **av, void *ptr);
+int user_update(int ac, char **av, void *ptr);
 int contact_create(LDAP *ld, char *bind_path, char *user, char *group_ou);
 int get_group_info(int ac, char**av, void *ptr);
 int group_create(int ac, char **av, void *ptr);
 int group_delete(int ac, char **av, void *ptr);
-int group_ad_delete(LDAP *ldap_handle, char *dn_path, char *group_gid);
+int group_ad_delete(LDAP *ldap_handle, char *dn_path, char *group_name);
 int group_list_build(int ac, char **av, void *ptr);
 int group_rename(int ac, char **av, void *ptr);
 int member_list_build(int ac, char **av, void *ptr);
 int member_list_process(LDAP *ldap_handle, char *dn_path, char *group_name, 
                         char *group_ou, char *group_membership, char *group_gid);
+int member_remove(LDAP *ldap_handle, char *dn_path, char *group_name, 
+                  char *group_ou, char *group_membership, char *group_gid);
 int sid_update(LDAP *ldap_handle, char *dn_path);
 int check_string(char *s);
 void convert_b_to_a(char *string, UCHAR *binary, int length);
@@ -399,6 +409,8 @@ void do_list(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
   int     bhide;
   int     apublic;
   int     bpublic;
+  int     bgroup;
+  int     agroup;
   int     amaillist;
   int     bmailist;
   long    rc;
@@ -419,6 +431,7 @@ void do_list(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
       bhide = atoi(before[BEFORE_L_HIDDEN]);
       bpublic = atoi(before[BEFORE_L_PUBLIC]);
       bmailist = atoi(before[BEFORE_L_MAILLIST]);
+      bgroup = atoi(before[BEFORE_L_GROUP]);
     }
   if (afterc > AFTER_L_GROUP)
     {
@@ -426,38 +439,45 @@ void do_list(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
       ahide = atoi(after[AFTER_L_HIDDEN]);
       apublic = atoi(after[AFTER_L_PUBLIC]);
       amaillist = atoi(after[AFTER_L_MAILLIST]);
+      agroup = atoi(after[AFTER_L_GROUP]);
     }
 
   if (rc = moira_connect())
     {
       critical_alert("AD incremental",
-                     "Error contacting Moira server: %s",
+                     "Error contacting Moira server : %s",
                      error_message(rc));
       return;
     }
 
   if (beforec && afterc)
     {
-      if (strcmp(after[AFTER_L_NAME], before[BEFORE_L_NAME]))
-        {
-          com_err(whoami, 0, "Changing group %s to %s",
-                  before[BEFORE_L_NAME], after[AFTER_L_NAME]);
+       com_err(whoami, 0, "Changing group %s to %s",
+                before[BEFORE_L_NAME], after[AFTER_L_NAME]);
 
-          av[0] = after[AFTER_L_NAME];
-          call_args[0] = (char *)ldap_handle;
-          call_args[1] = dn_path;
-          call_args[2] = before[BEFORE_L_NAME];
-          call_args[3] = NULL;
-          call_args[4] = NULL;
-          call_args[5] = NULL;
-          if (rc = mr_query("get_list_info", 1, av, group_rename, call_args))
-            {
-              critical_alert("AD incremental", "Couldn't find group %s ",
-                             after[AFTER_L_NAME]);
-              goto cleanup;
-            }
-        }
-      goto cleanup;
+       av[0] = after[AFTER_L_NAME];
+       call_args[0] = (char *)ldap_handle;
+       call_args[1] = dn_path;
+       call_args[2] = before[BEFORE_L_NAME];
+       call_args[3] = before[BEFORE_L_MAILLIST];
+       call_args[4] = before[BEFORE_L_GROUP];
+       call_args[5] = NULL;
+       callback_rc = 0;
+       if (rc = mr_query("get_list_info", 1, av, group_rename, call_args))
+         {
+            if (rc != LDAP_NO_SUCH_OBJECT)
+              {
+                critical_alert("AD incremental",
+                               "Could not change list %s to %s : %s",
+                               before[BEFORE_L_NAME], 
+                               after[AFTER_L_NAME], error_message(rc));
+                goto cleanup;
+              }
+            callback_rc = LDAP_NO_SUCH_OBJECT;
+          }
+       if (callback_rc != LDAP_NO_SUCH_OBJECT)
+         goto cleanup;
+       beforec = 0;
     }
   if (beforec)
     {
@@ -478,11 +498,10 @@ void do_list(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
       call_args[5] = NULL;
       sid_base = NULL;
       sid_ptr = &sid_base;
-      rc = mr_query("get_list_info", 1, av, group_create, call_args);
-      if ((rc) && (rc != LDAP_ALREADY_EXISTS))
+      if (rc = mr_query("get_list_info", 1, av, group_create, call_args))
         {
-          critical_alert("AD incremental", "Couldn't create group %s",
-                         after[AFTER_L_NAME]);
+          critical_alert("AD incremental", "Couldn't create list %s : %s",
+                         after[AFTER_L_NAME], error_message(rc));
             goto cleanup;
         }
       if (sid_base != NULL)
@@ -493,16 +512,18 @@ void do_list(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
 
       if (afterc == 0)
         goto cleanup;
+      member_base = NULL;
       if (!(rc = mr_query("get_members_of_list", 1, av, member_list_build,
                           call_args)))
         {
-          rc = member_list_process(ldap_handle, dn_path, after[AFTER_L_NAME],
-                                   call_args[3], call_args[4], call_args[5]);
+          if (member_base != NULL)
+            rc = member_list_process(ldap_handle, dn_path, after[AFTER_L_NAME],
+                                     call_args[3], call_args[4], call_args[5]);
         }
-      if (rc)
+      else
         {
           critical_alert("AD incremental",
-                         "Error contacting Moira server to resolve %s: %s",
+                         "Error contacting Moira server to resolve %s : %s",
                          after[AFTER_L_NAME], error_message(rc));
         }
       linklist_free(member_base);
@@ -548,7 +569,7 @@ void do_member(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
   if (rc = moira_connect())
     {
       critical_alert("AD incremental", 
-                     "Moira error retrieving grouplist of user %s: %s",
+                     "Moira error retrieving grouplist of user %s : %s",
                      user_name, error_message(rc));
       return;
     }
@@ -569,11 +590,20 @@ void do_member(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
           sid_update(ldap_handle, dn_path);
           linklist_free(sid_base);
         }
+      member_base = NULL;
       if (!(rc = mr_query("get_members_of_list", 1, av, member_list_build,
                           call_args)))
         {
-          rc = member_list_process(ldap_handle, dn_path, group_name,
-                                   call_args[3], call_args[4], call_args[5]);
+          if (member_base == NULL)
+            {
+              member_remove(ldap_handle, dn_path, group_name,
+                            call_args[3], call_args[4], call_args[5]);
+            }
+          else
+            {
+              rc = member_list_process(ldap_handle, dn_path, group_name,
+                                       call_args[3], call_args[4], call_args[5]);
+            }
         }
     }
   if (rc)
@@ -605,11 +635,30 @@ void do_user(LDAP *ldap_handle, LDAPMessage *ldap_entry, char *ldap_hostname,
   if (rc = moira_connect())
     {
       critical_alert("AD incremental", 
-                     "Error connection to Moira: %s",
+                     "Error connection to Moira : %s",
                      error_message(rc));
       return;
     }
 
+  if ((beforec == 1) && (afterc == 0))
+    {
+      com_err(whoami, 0, "Updating user %s info", before[BEFORE_U_NAME]);
+      av[0] = before[BEFORE_U_NAME];
+      call_args[0] = (char *)ldap_handle;
+      call_args[1] = dn_path;
+      sid_base = NULL;
+      sid_ptr = &sid_base;
+      callback_rc = 0;
+      if (rc = mr_query("get_user_account_by_login", 1, av, user_update,
+                        call_args))
+        {
+          critical_alert("AD incremental",
+                         "Could not update user %s info : %s",
+                         before[BEFORE_U_NAME], 
+                         error_message(rc));
+        }
+      goto cleanup;
+    }
   if ((beforec != 0) && (afterc != 0))
     {
       if (beforec != afterc)
@@ -625,15 +674,23 @@ void do_user(LDAP *ldap_handle, LDAPMessage *ldap_entry, char *ldap_hostname,
       call_args[3] = before[BEFORE_U_NAME];
       sid_base = NULL;
       sid_ptr = &sid_base;
+      callback_rc = 0;
       if (rc = mr_query("get_user_account_by_login", 1, av, user_rename,
                         call_args))
         {
-          critical_alert("AD incremental",
-                         "Couldn't change user name for %s to %s",
-                         before[BEFORE_U_NAME], after[AFTER_U_NAME]);
-          goto cleanup;
+          if (rc != LDAP_NO_SUCH_OBJECT)
+            {
+              critical_alert("AD incremental",
+                             "Could not change user %s to %s : %s",
+                             before[BEFORE_U_NAME], 
+                             after[AFTER_U_NAME], error_message(rc));
+              goto cleanup;
+            }
+          callback_rc = LDAP_NO_SUCH_OBJECT;
         }
-      goto cleanup;
+      if (callback_rc != LDAP_NO_SUCH_OBJECT)
+        goto cleanup;
+      beforec = 0;
     }
   if (beforec != 0)
     {
@@ -646,8 +703,8 @@ void do_user(LDAP *ldap_handle, LDAPMessage *ldap_entry, char *ldap_hostname,
                         call_args))
         {
           critical_alert("AD incremental",
-                         "Couldn't deactivate user %s in the AD",
-                         before[BEFORE_U_NAME]);
+                         "Couldn't deactivate user %s in the AD : %s",
+                         before[BEFORE_U_NAME], error_message(rc));
         }
       goto cleanup;
     }
@@ -666,8 +723,8 @@ void do_user(LDAP *ldap_handle, LDAPMessage *ldap_entry, char *ldap_hostname,
       if (rc = mr_query("get_user_account_by_login", 1, av, user_create,
                         call_args))
         {
-          critical_alert("AD incremental", "Couldn't activate user %s",
-                         after[AFTER_U_NAME]);
+          critical_alert("AD incremental", "Couldn't create/activate user %s : %s",
+                         after[AFTER_U_NAME], error_message(rc));
           goto cleanup;
         }
       if (sid_base != NULL)
@@ -1182,7 +1239,7 @@ int get_group_info(int ac, char**av, void *ptr)
     return(0);
   if (ptr == NULL)
     {
-      get_group_membership(GroupType, Group_OU, NULL, av);
+      get_group_membership(GroupType, NULL, NULL, av);
     }
   else
     {
@@ -1198,13 +1255,14 @@ int group_rename(int ac, char **av, void *ptr)
   LDAPMod   *mods[20];
   char      old_dn[512];
   char      new_dn[512];
-  char      group_name[256];
+  char      new_dn_path[512];
   char      group_ou[256];
-  char      rel_path[256];
+  char      sam_name[256];
   char      group_membership[2];
   char      filter_exp[4096];
   char      *attr_array[3];
   char      *name_v[] = {NULL, NULL};
+  char      *samAccountName_v[] = {NULL, NULL};
   int       n;
   int       i;
   int       rc;
@@ -1212,34 +1270,53 @@ int group_rename(int ac, char **av, void *ptr)
   LK_ENTRY  *group_base;
   int       group_count;
   char      **call_args;
+  char      *maillist_flag = NULL;
+  char      *group_flag = NULL;
 
   call_args = ptr;
 
-  strcpy(group_name, av[L_NAME]);
+  if (!check_string(call_args[2]))
+    {
+      callback_rc = LDAP_NO_SUCH_OBJECT;
+      return(0);
+    }
+  if (!check_string(av[L_NAME]))
+    {
+      critical_alert("AD incremental - list rename",
+                      "invalid LDAP list name %s",
+                      av[L_NAME]);
+      return(0);
+    }
+
   memset(group_ou, 0, sizeof(group_ou));
   memset(group_membership, 0, sizeof(group_membership));
   security_flag = 0;
-  get_group_membership(group_membership, group_ou, &security_flag, av);
-  sprintf(new_dn, "cn=%s", group_name);
-  sprintf(rel_path, "%s,%s", group_ou, call_args[1]);
 
+  maillist_flag = av[L_MAILLIST];
+  group_flag = av[L_GROUP];
+  av[L_MAILLIST] = call_args[3];
+  av[L_GROUP] = call_args[4];
+  get_group_membership(group_membership, NULL, NULL, av);
+  av[L_MAILLIST] = maillist_flag;
+  av[L_GROUP] = group_flag;
 
-  sprintf(filter_exp, "(sAMAccountName=%s_zZx%c)", av[L_NAME], group_membership[0]);
+  sprintf(filter_exp, "(sAMAccountName=%s_zZx%c)", call_args[2], group_membership[0]);
   attr_array[0] = "distinguishedName";
   attr_array[1] = NULL;
   if ((rc = linklist_build((LDAP *)call_args[0], call_args[1], filter_exp, attr_array, 
                            &group_base, &group_count)) != 0)
     {
-      critical_alert("AD incremental",
-                      "LDAP server unable to get group %s info: %d",
-                      group_name, rc);
+      critical_alert("AD incremental - list rename",
+                      "LDAP server unable to get list %s dn : %s",
+                      call_args[2], ldap_err2string(rc));
       return(0);
     }
   if (group_count != 1)
     {
-      critical_alert("AD incremental",
-                      "LDAP server unable to find group %s in AD.",
-                      group_name);
+      critical_alert("AD incremental - list rename",
+                      "LDAP server unable to find list %s in AD.",
+                      call_args[2]);
+      callback_rc = LDAP_NO_SUCH_OBJECT;
       return(0);
     }
   strcpy(old_dn, group_base->value);
@@ -1247,19 +1324,35 @@ int group_rename(int ac, char **av, void *ptr)
   group_base = NULL;
   group_count = 0;
 
-  rc = ldap_rename_s((LDAP *)call_args[0], old_dn, new_dn, rel_path, TRUE, NULL, NULL);
+  get_group_membership(group_membership, group_ou, &security_flag, av);
+  sprintf(sam_name, "%s_zZx%c", av[L_NAME], group_membership[0]);
+  sprintf(new_dn_path, "%s,%s", group_ou, call_args[1]);
+  sprintf(new_dn, "cn=%s", av[L_NAME]);
+  if ((rc = ldap_rename_s((LDAP *)call_args[0], old_dn, new_dn, new_dn_path,
+                          TRUE, NULL, NULL)) != LDAP_SUCCESS)
+    {
+      critical_alert("AD incremental - list rename",
+                     "Couldn't rename list from %s to %s : %s",
+                     call_args[2], av[L_NAME], ldap_err2string(rc));
+      return(0);
+    }
 
-  name_v[0] = group_name;
+  name_v[0] = av[L_NAME];
+  samAccountName_v[0] = sam_name;
   n = 0;
   ADD_ATTR("displayName", name_v, LDAP_MOD_REPLACE);
+  ADD_ATTR("sAMAccountName", samAccountName_v, LDAP_MOD_REPLACE);
   mods[n] = NULL;
-  sprintf(new_dn, "cn=%s,%s,%s", group_name, group_ou, call_args[1]);
-  rc = ldap_modify_s((LDAP *)call_args[0], new_dn, mods);
+  sprintf(new_dn, "cn=%s,%s,%s", av[L_NAME], group_ou, call_args[1]);
+  if ((rc = ldap_modify_s((LDAP *)call_args[0], new_dn, mods)) != LDAP_SUCCESS)
+    {
+       critical_alert("AD incremental - list rename", 
+                      "After renaming, couldn't modify list data for %s : %s",
+                       av[L_NAME], ldap_err2string(rc));
+    }
   for (i = 0; i < n; i++)
     free(mods[i]);
-  return(rc);
-
-  return(rc);
+  return(0);
 }
 
 int group_create(int ac, char **av, void *ptr)
@@ -1297,7 +1390,12 @@ int group_create(int ac, char **av, void *ptr)
   if (!atoi(av[L_ACTIVE]))
     return(0);
   if (!check_string(av[L_NAME]))
-    return(0);
+    {
+      critical_alert("AD incremental - list create",
+                      "invalid LDAP list name %s",
+                      av[L_NAME]);
+      return(0);
+    }
   memset(group_ou, 0, sizeof(group_ou));
   memset(group_membership, 0, sizeof(group_membership));
   security_flag = 0;
@@ -1334,7 +1432,7 @@ int group_create(int ac, char **av, void *ptr)
       ADD_ATTR("description", desc_v, LDAP_MOD_ADD);
     }
   ADD_ATTR("groupType", groupTypeControl_v, LDAP_MOD_ADD);
-  if (!strcmp(av[L_ACE_TYPE], "LIST"))
+  if (strlen(av[L_ACE_NAME]) != 0)
     {
       sprintf(info, "The Administrator of this list is the LIST: %s", av[L_ACE_NAME]);
       info_v[0] = info;
@@ -1347,7 +1445,12 @@ int group_create(int ac, char **av, void *ptr)
   for (i = 0; i < n; i++)
     free(mods[i]);
   if ((rc != LDAP_SUCCESS) && (rc != LDAP_ALREADY_EXISTS))
-    return(rc);
+    {
+      critical_alert("AD incremental - list rename",
+                      "Unable to create list %s in AD : %s",
+                      av[L_NAME], ldap_err2string(rc));
+      return(0);
+    }
   sprintf(filter_exp, "(sAMAccountName=%s)", sam_group_name);
   attr_array[0] = "objectSid";
   attr_array[1] = NULL;
@@ -1362,7 +1465,7 @@ int group_create(int ac, char **av, void *ptr)
           sid_ptr = &(*sid_ptr)->next;
         }
     }
-  return(LDAP_SUCCESS);
+  return(0);
 }
 
 int group_delete(int ac, char **av, void *ptr)
@@ -1381,7 +1484,12 @@ int group_delete(int ac, char **av, void *ptr)
   call_args = ptr;
 
   if (!check_string(av[L_NAME]))
-    return(0);
+    {
+      critical_alert("AD incremental - list delete",
+                      "invalid LDAP list name %s",
+                      av[L_NAME]);
+      return(0);
+    }
   memset(group_ou, 0, sizeof(group_ou));
   memset(group_membership, 0, sizeof(group_membership));
   security_flag = 0;
@@ -1399,19 +1507,26 @@ int group_delete(int ac, char **av, void *ptr)
                            attr_array, &group_base, &group_count)) != 0)
     goto cleanup;
   if (group_count == 1)
-    rc = ldap_delete_s((LDAP *)call_args[0], group_base->value);
-  if (rc != LDAP_SUCCESS)
     {
-      critical_alert("AD incremental",
-                     "Couldn't delete group %s: %s",
-                     av[L_NAME], ldap_err2string(rc));
+      if ((rc = ldap_delete_s((LDAP *)call_args[0], group_base->value)) != LDAP_SUCCESS)
+        {
+          critical_alert("AD incremental - list delete",
+                         "Couldn't delete group %s : %s",
+                         av[L_NAME], ldap_err2string(rc));
+        }
+    }
+  else
+    {
+      critical_alert("AD incremental - list delete",
+                      "Unable to find list %s in AD.",
+                      av[L_NAME]);
     }
 cleanup:
   linklist_free(group_base);
-  return(rc);
+  return(0);
 }
 
-int group_ad_delete(LDAP *ldap_handle, char *dn_path, char *group_gid)
+int group_ad_delete(LDAP *ldap_handle, char *dn_path, char *group_name)
 {
   LK_ENTRY  *group_base;
   char      *attr_array[3];
@@ -1421,22 +1536,43 @@ int group_ad_delete(LDAP *ldap_handle, char *dn_path, char *group_gid)
   int       group_count;
   int       rc;
 
+  if (!check_string(group_name))
+    {
+      critical_alert("AD incremental - list AD delete",
+                      "invalid LDAP list name %s",
+                      group_name);
+      return(0);
+    }
   rc = 1;
   group_count = 0;
   group_base = NULL;
   attr_array[0] = "distinguishedName";
   attr_array[1] = NULL;
-  strcpy(sam_group_name, group_gid);
+  strcpy(sam_group_name, group_name);
   sprintf(temp, "%s,%s", group_ou_root, dn_path);
   sprintf(filter_exp, "(sAMAccountName=%s_zZx*)", sam_group_name);
   if (linklist_build(ldap_handle, temp, filter_exp, attr_array, 
                            &group_base, &group_count) != 0)
     goto cleanup;
   if (group_count == 1)
-    rc = ldap_delete_s(ldap_handle, group_base->value);
+    {
+      if ((rc = ldap_delete_s(ldap_handle, group_base->value)) != LDAP_SUCCESS)
+        {
+          critical_alert("AD incremental - list AD delete",
+                          "Unable to delete list %s from AD : %s",
+                          group_name, ldap_err2string(rc));
+          return(0);
+        }
+    }
+  else
+    {
+      critical_alert("AD incremental - list AD delete",
+                     "Unable to find list %s in AD.",
+                      group_name);
+    }
 cleanup:
   linklist_free(group_base);
-  return(rc);
+  return(0);
 }
 
 int group_list_build(int ac, char **av, void *ptr)
@@ -1473,7 +1609,7 @@ int group_list_build(int ac, char **av, void *ptr)
 int member_list_build(int ac, char **av, void *ptr)
 {
   LK_ENTRY  *linklist;
-  char      temp[128];
+  char      temp[1024];
   char      **call_args;
 
   call_args = ptr;
@@ -1483,7 +1619,8 @@ int member_list_build(int ac, char **av, void *ptr)
     return(0);
   if (!strcmp(av[ACE_TYPE], "STRING"))
     {
-    contact_create((LDAP *)call_args[0], call_args[1], temp, contact_ou);
+    if (contact_create((LDAP *)call_args[0], call_args[1], temp, contact_ou))
+      return(0);
     }
   else if (!strcmp(av[ACE_TYPE], "LIST"))
     {
@@ -1491,7 +1628,8 @@ int member_list_build(int ac, char **av, void *ptr)
     }
   else if (strcmp(av[ACE_TYPE], "USER"))
     {
-    contact_create((LDAP *)call_args[0], call_args[1], temp, kerberos_ou);
+    if (contact_create((LDAP *)call_args[0], call_args[1], temp, kerberos_ou))
+      return(0);
     }
   linklist = member_base;
   while (linklist)
@@ -1512,6 +1650,87 @@ int member_list_build(int ac, char **av, void *ptr)
   linklist->next = member_base;
   member_base = linklist;
   return(0);
+}
+
+int member_remove(LDAP *ldap_handle, char *dn_path, char *group_name, 
+                  char *group_ou, char *group_membership, char *group_gid)
+{
+  char        distinguished_name[1024];
+  char        **modvalues;
+  char        filter_exp[4096];
+  char        *attr_array[3];
+  char        temp[256];
+  int         group_count;
+  int         i;
+  int         n;
+  LDAPMod     *mods[20];
+  LK_ENTRY    *group_base;
+  ULONG       rc;
+
+  if (!check_string(group_name))
+    return(0);
+  strcpy(temp, group_name);
+  sprintf(filter_exp, "(sAMAccountName=%s_zZx%c)", group_gid, group_membership[0]);
+  attr_array[0] = "distinguishedName";
+  attr_array[1] = NULL;
+  if ((rc = linklist_build(ldap_handle, dn_path, filter_exp, attr_array, 
+                           &group_base, &group_count)) != 0)
+    {
+      critical_alert("AD incremental - member remove",
+                      "LDAP server unable to get list %s info : %s",
+                      group_name, ldap_err2string(rc));
+      goto cleanup;
+    }
+  if (group_count != 1)
+    {
+      critical_alert("AD incremental - member remove",
+                      "LDAP server unable to find list %s in AD.",
+                      group_name);
+      goto cleanup;
+    }
+  strcpy(distinguished_name, group_base->value);
+  linklist_free(group_base);
+  group_base = NULL;
+  group_count = 0;
+  attr_array[0] = "member";
+  attr_array[1] = NULL;
+  if ((rc = linklist_build(ldap_handle, distinguished_name, filter_exp, attr_array, 
+                           &group_base, &group_count)) != 0)
+    {
+      critical_alert("AD incremental - member remove",
+                      "LDAP server unable to get list %s info : %s",
+                      group_name, ldap_err2string(rc));
+      goto cleanup;
+    }
+
+  modvalues = NULL;
+  if (group_count != 0)
+    {
+      if ((rc = construct_newvalues(group_base, group_count, NULL, NULL,
+                                    &modvalues, REPLACE)) == 1)
+          goto cleanup;
+      n = 0;
+      ADD_ATTR("member", modvalues, LDAP_MOD_DELETE);
+      mods[n] = NULL;
+      rc = ldap_modify_s(ldap_handle, distinguished_name, mods);
+      for (i = 0; i < n; i++)
+        free(mods[i]);
+      if (rc != LDAP_SUCCESS)
+        {
+          critical_alert("AD incremental - member remove",
+                          "LDAP server unable to modify list %s members : %s",
+                          group_name, ldap_err2string(rc));
+          goto cleanup;
+        }
+      linklist_free(group_base);
+      group_count = 0;
+      group_base = NULL;
+    }
+
+cleanup:
+  free_values(modvalues);
+  linklist_free(group_base);
+  return(rc);
 }
 
 #define USER_COUNT  5
@@ -1563,18 +1782,16 @@ int member_list_process(LDAP *ldap_handle, char *dn_path, char *group_name,
   if ((rc = linklist_build(ldap_handle, dn_path, filter_exp, attr_array, 
                            &group_base, &group_count)) != 0)
     {
-      critical_alert("AD incremental",
-                      "LDAP server unable to get group %s info: %d",
-                      group_name, rc);
-      rc = 1;
+      critical_alert("AD incremental - member list process",
+                      "LDAP server unable to get list %s info : %s",
+                      group_name, ldap_err2string(rc));
       goto cleanup;
     }
   if (group_count != 1)
     {
-      critical_alert("AD incremental",
-                      "LDAP server unable to find group %s in AD.",
+      critical_alert("AD incremental - member list process",
+                      "LDAP server unable to find list %s in AD.",
                       group_name);
-      rc = 1;
       goto cleanup;
     }
   strcpy(distinguished_name, group_base->value);
@@ -1603,16 +1820,8 @@ int member_list_process(LDAP *ldap_handle, char *dn_path, char *group_name,
           if (!strcmp(pPtr->type, "LIST"))
             {
               args[0] = pPtr->member;
-              memset(Group_OU, 0, sizeof(Group_OU));
               rc = mr_query("get_list_info", 1, args, get_group_info, NULL);
-              if (strlen(Group_OU) == 0)
-                {
-                  pPtr = pPtr->next;
-                  if (pPtr == NULL)
-                    break;
-                  continue;
-                }
-              sprintf(temp, "(distinguishedName=cn=%s,%s,%s)", group_member, Group_OU, dn_path);
+              sprintf(temp, "(sAMAccountName=%s_zZx%c)", group_member, GroupType[0]);
             }
           else if (!strcmp(pPtr->type, "USER"))
             {
@@ -1642,10 +1851,9 @@ int member_list_process(LDAP *ldap_handle, char *dn_path, char *group_name,
       if ((rc = linklist_build(ldap_handle, dn_path, filter_exp, attr_array, 
                                &new_list, &new_list_count)) != 0)
         {
-          critical_alert("AD incremental",
-                         "LDAP server unable to get group %s members from AD: %d",
-                         group_name, rc);
-          rc = 1;
+          critical_alert("AD incremental - member list process",
+                         "LDAP server unable to get list %s members from AD : %s",
+                         group_name, ldap_err2string(rc));
           goto cleanup;
         }
       group_count += new_list_count;
@@ -1689,12 +1897,19 @@ int member_list_process(LDAP *ldap_handle, char *dn_path, char *group_name,
       linklist_free(group_base);
       group_count = 0;
       group_base = NULL;
+      if (rc != LDAP_SUCCESS)
+        {
+          critical_alert("AD incremental - member list process",
+                         "LDAP server unable to modify list %s members in AD : %s",
+                         group_name, ldap_err2string(rc));
+          goto cleanup;
+        }
     }
 
 cleanup:
   free_values(modvalues);
   linklist_free(group_base);
-  return(rc);
+  return(0);
 }
 
 int contact_create(LDAP *ld, char *bind_path, char *user, char *group_ou)
@@ -1715,7 +1930,12 @@ int contact_create(LDAP *ld, char *bind_path, char *user, char *group_ou)
   int  i;
 
   if (!check_string(user))
-    return(0);
+    {
+      critical_alert("AD incremental - contact create",
+                      "invalid LDAP name %s",
+                      user);
+      return(1);
+    }
   strcpy(contact_name, user);
   sprintf(cn_user_name,"CN=%s,%s,%s", contact_name, group_ou, bind_path);
   cn_v[0] = cn_user_name;
@@ -1736,8 +1956,93 @@ int contact_create(LDAP *ld, char *bind_path, char *user, char *group_ou)
   for (i = 0; i < n; i++)
     free(mods[i]);
   if ((rc != LDAP_SUCCESS) && (rc != LDAP_ALREADY_EXISTS))
-    return(rc);
-  return(LDAP_SUCCESS);
+    {
+      critical_alert("AD incremental - contact create", 
+                     "could not create contact %s : %s",
+                     user, ldap_err2string(rc));
+      return(1);
+    }
+  return(0);
+}
+
+int user_update(int ac, char **av, void *ptr)
+{
+  LDAPMod   *mods[20];
+  LK_ENTRY  *group_base;
+  int  group_count;
+  char distinguished_name[256];
+  char user_name[256];
+  char *uid_v[] = {NULL, NULL};
+  char *mitid_v[] = {NULL, NULL};
+  int  n;
+  int  rc;
+  int  i;
+  char **call_args;
+  char filter_exp[256];
+  char *attr_array[3];
+
+  call_args = ptr;
+
+  if (!check_string(av[U_NAME]))
+    {
+      critical_alert("AD incremental - user update",
+                      "invalid LDAP user name %s",
+                      av[U_NAME]);
+      return(0);
+    }
+
+  strcpy(user_name, av[U_NAME]);
+  group_count = 0;
+  group_base = NULL;
+  sprintf(filter_exp, "(sAMAccountName=%s)", av[U_NAME]);
+  attr_array[0] = "cn";
+  attr_array[1] = NULL;
+  if ((rc = linklist_build((LDAP *)call_args[0], call_args[1], filter_exp, attr_array, 
+                           &group_base, &group_count)) != 0)
+    {
+      critical_alert("AD incremental - user update",
+                     "LDAP server couldn't process user %s : %s",
+                      user_name, ldap_err2string(rc));
+      goto cleanup;
+    }
+
+  if (group_count != 1)
+    {
+      critical_alert("AD incremental - user update",
+                     "LDAP server unable to find user %s in AD.",
+                      user_name);
+      goto cleanup;
+    }
+  strcpy(distinguished_name, group_base->dn);
+
+  n = 0;
+  if (strlen(av[U_UID]) != 0)
+    {
+      uid_v[0] = av[U_UID];
+      ADD_ATTR("uid", uid_v, LDAP_MOD_REPLACE);
+      ADD_ATTR("uidNumber", uid_v, LDAP_MOD_REPLACE);
+    }
+  if (strlen(av[U_MITID]) != 0)
+    {
+      mitid_v[0] = av[U_MITID];
+      ADD_ATTR("employeeID", mitid_v, LDAP_MOD_REPLACE);
+    }
+  mods[n] = NULL;
+  if (n != 0)
+    {
+      if ((rc = ldap_modify_s((LDAP *)call_args[0], distinguished_name, mods)) != LDAP_SUCCESS)
+        {
+           critical_alert("AD incremental - user update", 
+                          "Couldn't modify user data for %s : %s",
+                           user_name, ldap_err2string(rc));
+        }
+      for (i = 0; i < n; i++)
+        free(mods[i]);
+    }
+
+cleanup:
+  linklist_free(group_base);
+  return(0);
 }
 
 int user_rename(int ac, char **av, void *ptr)
@@ -1751,6 +2056,9 @@ int user_rename(int ac, char **av, void *ptr)
   char *userPrincipalName_v[] = {NULL, NULL};
   char *altSecurityIdentities_v[] = {NULL, NULL};
   char *name_v[] = {NULL, NULL};
+  char *samAccountName_v[] = {NULL, NULL};
+  char *uid_v[] = {NULL, NULL};
+  char *mitid_v[] = {NULL, NULL};
   int  n;
   int  rc;
   int  i;
@@ -1758,13 +2066,23 @@ int user_rename(int ac, char **av, void *ptr)
 
   call_args = ptr;
 
-  if (!check_string(av[U_NAME]))
-    return(0);
   if ((atoi(av[U_STATE]) != US_REGISTERED) && (atoi(av[U_STATE]) != US_NO_PASSWD) && 
       (atoi(av[U_STATE]) != US_ENROLL_NOT_ALLOWED))
+    return(0);
   if (!strncmp(av[U_NAME], "#", 1))
     return(0);
-
+  if (!check_string(call_args[3]))
+    {
+    callback_rc = LDAP_NO_SUCH_OBJECT;
+    return(0);
+    }
+  if (!check_string(av[U_NAME]))
+    {
+      critical_alert("AD incremental - user rename",
+                      "invalid LDAP user name %s",
+                      av[U_NAME]);
+      return(0);
+    }
 
   strcpy(user_name, av[U_NAME]);
   sprintf(old_dn, "cn=%s,%s,%s", call_args[3], user_ou, call_args[1]);
@@ -1773,9 +2091,15 @@ int user_rename(int ac, char **av, void *ptr)
   if ((rc = ldap_rename_s((LDAP *)call_args[0], old_dn, new_dn, NULL, TRUE, 
                            NULL, NULL)) != LDAP_SUCCESS)
     {
-       critical_alert("AD incremental", "Couldn't rename user from %s to %s: %ld",
-                       call_args[3], user_name, rc);
-       return(rc);
+      if (rc == LDAP_NO_SUCH_OBJECT)
+        {
+          callback_rc = LDAP_NO_SUCH_OBJECT;
+          return(0);
+        }
+      critical_alert("AD incremental - user rename", 
+                     "Couldn't rename user from %s to %s : %s",
+                      call_args[3], user_name, ldap_err2string(rc));
+      return(0);
     }
 
   name_v[0] = user_name;
@@ -1783,23 +2107,35 @@ int user_rename(int ac, char **av, void *ptr)
   userPrincipalName_v[0] = upn;
   sprintf(temp, "Kerberos:%s@%s", user_name, PRIMARY_REALM);
   altSecurityIdentities_v[0] = temp;
+  samAccountName_v[0] = user_name;
 
   n = 0;
   ADD_ATTR("altSecurityIdentities", altSecurityIdentities_v, LDAP_MOD_REPLACE);
   ADD_ATTR("userPrincipalName", userPrincipalName_v, LDAP_MOD_REPLACE);
   ADD_ATTR("displayName", name_v, LDAP_MOD_REPLACE);
+  ADD_ATTR("sAMAccountName", samAccountName_v, LDAP_MOD_REPLACE);
+  if (strlen(av[U_UID]) != 0)
+    {
+      uid_v[0] = av[U_UID];
+      ADD_ATTR("uid", uid_v, LDAP_MOD_REPLACE);
+      ADD_ATTR("uidNumber", uid_v, LDAP_MOD_REPLACE);
+    }
+  if (strlen(av[U_MITID]) != 0)
+    {
+      mitid_v[0] = av[U_MITID];
+      ADD_ATTR("employeeID", mitid_v, LDAP_MOD_REPLACE);
+    }
   mods[n] = NULL;
   sprintf(new_dn, "cn=%s,%s,%s", user_name, user_ou, call_args[1]);
   if ((rc = ldap_modify_s((LDAP *)call_args[0], new_dn, mods)) != LDAP_SUCCESS)
     {
-       critical_alert("AD incremental", 
-                      "After renaming, couldn't modify user data for %s: %ld",
-                       user_name, rc);
-       return(rc);
+       critical_alert("AD incremental - user rename", 
+                      "After renaming, couldn't modify user data for %s : %s",
+                       user_name, ldap_err2string(rc));
     }
   for (i = 0; i < n; i++)
     free(mods[i]);
-  return(rc);
+  return(0);
 }
 
 int user_create(int ac, char **av, void *ptr)
@@ -1820,6 +2156,8 @@ int user_create(int ac, char **av, void *ptr)
   char upn[256];
   char *userPrincipalName_v[] = {NULL, NULL};
   char *userAccountControl_v[] = {NULL, NULL};
+  char *uid_v[] = {NULL, NULL};
+  char *mitid_v[] = {NULL, NULL};
   char userAccountControlStr[80];
   char temp[128];
   u_int userAccountControl = UF_NORMAL_ACCOUNT | UF_DONT_EXPIRE_PASSWD | UF_PASSWD_CANT_CHANGE;
@@ -1833,16 +2171,22 @@ int user_create(int ac, char **av, void *ptr)
 
   call_args = ptr;
 
-  if (!check_string(av[U_NAME]))
-    return(0);
   if ((atoi(av[U_STATE]) != US_REGISTERED) && (atoi(av[U_STATE]) != US_NO_PASSWD) && 
       (atoi(av[U_STATE]) != US_ENROLL_NOT_ALLOWED))
+    return(0);
   if (!strncmp(av[U_NAME], "#", 1))
     return(0);
+  if (!check_string(av[U_NAME]))
+    {
+      critical_alert("AD incremental - user create",
+                      "invalid LDAP user name %s",
+                      av[U_NAME]);
+      return(0);
+    }
 
   strcpy(user_name, av[U_NAME]);
   sprintf(upn, "%s@%s", user_name, ldap_domain);
-  sprintf(sam_name, "%s", av[U_UID]);
+  sprintf(sam_name, "%s", av[U_NAME]);
   samAccountName_v[0] = sam_name;
   if (atoi(av[U_STATE]) == US_DELETED)
     userAccountControl |= UF_ACCOUNTDISABLE;
@@ -1867,36 +2211,52 @@ int user_create(int ac, char **av, void *ptr)
   ADD_ATTR("displayName", name_v, LDAP_MOD_ADD);
   ADD_ATTR("description", desc_v, LDAP_MOD_ADD);
   ADD_ATTR("altSecurityIdentities", altSecurityIdentities_v, LDAP_MOD_ADD);
+  if (strlen(av[U_UID]) != 0)
+    {
+      uid_v[0] = av[U_UID];
+      ADD_ATTR("uid", uid_v, LDAP_MOD_ADD);
+      ADD_ATTR("uidNumber", uid_v, LDAP_MOD_ADD);
+    }
+  if (strlen(av[U_MITID]) != 0)
+      mitid_v[0] = av[U_MITID];
+  else
+      mitid_v[0] = "none";
+  ADD_ATTR("employeeID", mitid_v, LDAP_MOD_ADD);
   mods[n] = NULL;
 
   rc = ldap_add_ext_s((LDAP *)call_args[0], new_dn, mods, NULL, NULL);
+  for (i = 0; i < n; i++)
+    free(mods[i]);
   if (rc == LDAP_ALREADY_EXISTS)
     {
       rc = user_change_status(ac, av, ptr);
-      rc = LDAP_ALREADY_EXISTS;
+      return(0);
     }
-  for (i = 0; i < n; i++)
-    free(mods[i]);
   if ((rc != LDAP_SUCCESS) && (rc != LDAP_ALREADY_EXISTS))
-    return(rc);
+    {
+       critical_alert("AD incremental - user create", 
+                      "could not create user %s : %s",
+                       user_name, ldap_err2string(rc));
+       return(0);
+    }
   if (rc == LDAP_SUCCESS)
     {
       if ((rc = set_password(sam_name, ldap_domain)) != 0)
         {
           if ((rc = set_password(user_name, ldap_domain)) != 0)
             {
-              critical_alert("AD incremental", "Couldn't set password for user %s: %ld",
+              critical_alert("AD incremental - user create", 
+                             "Couldn't set password for user %s : %ld",
                              user_name, rc);
-              return(rc);
             }
         }
     }
-  sprintf(filter_exp, "(sAMAccountName=%s)", av[U_UID]);
+  sprintf(filter_exp, "(sAMAccountName=%s)", av[U_NAME]);
   attr_array[0] = "objectSid";
   attr_array[1] = NULL;
   sid_count = 0;
   if ((rc = linklist_build((LDAP *)call_args[0], call_args[1], filter_exp, attr_array, 
-                               sid_ptr, &sid_count)) == LDAP_SUCCESS)
+                           sid_ptr, &sid_count)) == LDAP_SUCCESS)
     {
       if (sid_count == 1)
         {
@@ -1905,7 +2265,7 @@ int user_create(int ac, char **av, void *ptr)
           sid_ptr = &(*sid_ptr)->next;
         }
     }
-  return(LDAP_SUCCESS);
+  return(0);
 }
 
 int user_change_status(int ac, char **av, void *ptr)
@@ -1928,29 +2288,34 @@ int user_change_status(int ac, char **av, void *ptr)
 
   call_args = ptr;
 
-  if (!check_string(av[0]))
-    return(0);
-  strcpy(user_name, av[0]);
+  if (!check_string(av[U_NAME]))
+    {
+      critical_alert("AD incremental - user change status",
+                      "invalid LDAP user name %s",
+                      av[U_NAME]);
+      return(0);
+    }
+  strcpy(user_name, av[U_NAME]);
   operation = (int)call_args[2];
   group_count = 0;
   group_base = NULL;
-  sprintf(filter_exp, "(sAMAccountName=%s)", av[U_UID]);
+  sprintf(filter_exp, "(sAMAccountName=%s)", av[U_NAME]);
   attr_array[0] = "UserAccountControl";
   attr_array[1] = NULL;
   if ((rc = linklist_build((LDAP *)call_args[0], call_args[1], filter_exp, attr_array, 
                            &group_base, &group_count)) != 0)
     {
-      critical_alert("AD incremental",
-                     "LDAP server couldn't process user %s: %s",
-                      user_name, "no memory");
+      critical_alert("AD incremental - user change status",
+                     "LDAP server couldn't process user %s : %s",
+                      user_name, ldap_err2string(rc));
       goto cleanup;
     }
 
-  if (group_count == 0)
+  if (group_count != 1)
     {
-      critical_alert("AD incremental",
-                     "LDAP server couldn't process user %s: %s",
-                      user_name, "user not found in AD");
+      critical_alert("AD incremental - user change status",
+                     "LDAP server unable to find user %s in AD.",
+                      user_name);
       goto cleanup;
     }
 
@@ -1976,13 +2341,13 @@ int user_change_status(int ac, char **av, void *ptr)
   free_values(modvalues);
   if (rc != LDAP_SUCCESS)
     {
-      critical_alert("AD incremental",
-                     "LDAP server couldn't process user %s: %d",
-                     user_name, rc);
+      critical_alert("AD incremental - user change status",
+                     "LDAP server could not change status of user %s : %s",
+                     user_name, ldap_err2string(rc));
     }
 cleanup:
   linklist_free(group_base);
-  return(rc);
+  return(0);
 }
 
 int user_delete(LDAP *ldap_handle, char *dn_path, char *u_name)
@@ -2007,16 +2372,16 @@ int user_delete(LDAP *ldap_handle, char *dn_path, char *u_name)
                            &group_base, &group_count)) != 0)
     {
       critical_alert("AD incremental",
-                     "LDAP server couldn't process user %s: %s",
-                      user_name, "no memory");
+                     "LDAP server couldn't process user %s : %s",
+                      user_name, ldap_err2string(rc));
       goto cleanup;
     }
 
-  if (group_count == 0)
+  if (group_count != 1)
     {
-      critical_alert("AD incremental",
-                     "LDAP server couldn't process user %s: %s",
-                      user_name, "user not found in AD");
+      critical_alert("AD incremental - user change status",
+                     "LDAP server unable to find user %s in AD.",
+                      user_name);
       goto cleanup;
     }
 
@@ -2024,13 +2389,13 @@ int user_delete(LDAP *ldap_handle, char *dn_path, char *u_name)
   if (rc = ldap_delete_s(ldap_handle, distinguished_name))
     {
       critical_alert("AD incremental",
-                     "LDAP server couldn't process user %s: %s",
-                      user_name, "cannot delete user from AD");
+                     "LDAP server couldn't process user %s : %s",
+                      user_name, ldap_err2string(rc));
     }
 
 cleanup:
   linklist_free(group_base);
-  return(rc);
+  return(0);
 }
 
 void linklist_free(LK_ENTRY *linklist_base)
@@ -2151,11 +2516,14 @@ static int illegalchars[] = {
 
 int check_string(char *s)
 {
+  char  character;
+
   for (; *s; s++)
     {
-      if (isupper(*s))
-        *s = tolower(*s);
-      if (illegalchars[(unsigned) *s])
+      character = *s;
+      if (isupper(character))
+        character = tolower(character);
+      if (illegalchars[(unsigned) character])
         return 0;
     }
   return 1;

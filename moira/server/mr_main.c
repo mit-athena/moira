@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.21 1989-06-23 13:49:20 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.22 1989-06-27 16:31:44 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -16,13 +16,15 @@
  * 
  */
 
-static char *rcsid_sms_main_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.21 1989-06-23 13:49:20 mar Exp $";
+static char *rcsid_sms_main_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.22 1989-06-27 16:31:44 mar Exp $";
 
 #include <mit-copyright.h>
 #include <strings.h>
+#include <sys/types.h>
 #include <sys/errno.h>
 #include <sys/signal.h>
 #include <sys/wait.h>
+#include <sys/stat.h>
 #include "sms_server.h"
 #include <krb_et.h>
 
@@ -54,7 +56,7 @@ extern void do_client();
 extern int sigshut();
 void clist_append();
 void oplist_append();
-void reapchild();
+void reapchild(), godormant(), gowakeup();
 
 extern time_t now;
 
@@ -73,6 +75,7 @@ main(argc, argv)
 {
 	int status;
 	time_t tardy;
+	struct stat stbuf;
 	
 	whoami = argv[0];
 	/*
@@ -126,13 +129,17 @@ main(argc, argv)
 	
 	/*
 	 * Signal handlers
-	 *	There should probably be a few more of these.
+	 *	There should probably be a few more of these. This is
+	 *	duplicated on the next page, be sure to also add any
+	 *	additional handlers there.
 	 */
 	
 	if ((((int)signal (SIGTERM, sigshut)) < 0) ||
 	    (((int)signal (SIGCHLD, reapchild)) < 0) ||
+	    (((int)signal (SIGUSR1, godormant)) < 0) ||
+	    (((int)signal (SIGUSR2, gowakeup)) < 0) ||
 	    (((int)signal (SIGHUP, sigshut)) < 0)) {
-		com_err(whoami, errno, " Unable to establish signal handler.");
+		com_err(whoami, errno, " Unable to establish signal handlers.");
 		exit(1);
 	}
 	
@@ -168,13 +175,34 @@ main(argc, argv)
 #ifdef notdef
 		com_err(whoami, 0, "tick");
 #endif notdef
+		if (dormant == SLEEPY) {
+		    sms_close_database();
+		    com_err(whoami, 0, "database closed");
+		    send_zgram("SMS", "database closed");
+		    dormant = ASLEEP;
+		} else if (dormant == GROGGY) {
+		    sms_open_database();
+		    com_err(whoami, 0, "database open");
+		    if ((((int)signal (SIGTERM, sigshut)) < 0) ||
+			(((int)signal (SIGCHLD, reapchild)) < 0) ||
+			(((int)signal (SIGUSR1, godormant)) < 0) ||
+			(((int)signal (SIGUSR2, gowakeup)) < 0) ||
+			(((int)signal (SIGHUP, sigshut)) < 0)) {
+			com_err(whoami, errno,
+				" Unable to reestablish signal handlers.");
+			exit(1);
+		    }
+		    send_zgram("SMS", "database open again");
+		    dormant = AWAKE;
+		}
+
 		errno = 0;
 		status = op_select_any(op_list, 0,
 				       (fd_set *)NULL, (fd_set *)NULL,
 				       (fd_set *)NULL, (struct timeval *)NULL);
 
 		if (status == -1) {
-			com_err(whoami, errno, " error from op_select");
+		    	com_err(whoami, errno, " error from op_select");
 			continue;
 		} else if (status != -2) {
 			com_err(whoami, 0, " wrong return from op_select_any");
@@ -205,6 +233,25 @@ main(argc, argv)
 				 * Sleep here to prevent hosing?
 				 */
 			}
+			/* if the new connection is our only connection,
+			 * and the server is supposed to be down, then go
+			 * down now.
+			 */
+			if ((dormant == AWAKE) && (nclients == 1) &&
+			    (stat(SMS_MOTD_FILE, &stbuf) == 0)) {
+			    com_err(whoami, 0, "motd file exists, slumbertime");
+			    dormant = SLEEPY;
+			}
+			/* on new connection, if we are no longer supposed
+			 * to be down, then wake up.
+			 */
+			if ((dormant == ASLEEP) &&
+			    (stat(SMS_MOTD_FILE, &stbuf) == -1) &&
+			    (errno == ENOENT)) {
+			    com_err(whoami, 0, "motd file no longer exists, waking up");
+			    dormant = GROGGY;
+			}
+			  
 		}
 		/*
 		 * Handle any existing connections.
@@ -442,13 +489,47 @@ void reapchild()
     union wait status;
     int pid;
 
-    if (takedown)
+    if (takedown || dormant == ASLEEP)
       return;
     while ((pid = wait3(&status, WNOHANG, (struct rusage *)0)) > 0) {
 	if  (status.w_termsig == 0 && status.w_retcode == 0)
-	  com_err(whoami, 0, "dcm started successfully");
+	  com_err(whoami, 0, "child exited successfully");
 	else
-	  com_err(whoami, 0, "%d: startdcm exits with signal %d status %d",
+	  com_err(whoami, 0, "%d: child exits with signal %d status %d",
 		  pid, status.w_termsig, status.w_retcode);
     }
+}
+
+
+void godormant()
+{
+    switch (dormant) {
+    case AWAKE:
+    case GROGGY:
+	com_err(whoami, 0, "requested to go dormant");
+	break;
+    case ASLEEP:
+	com_err(whoami, 0, "already asleep");
+	break;
+    case SLEEPY:
+	break;
+    }
+    dormant = SLEEPY;
+}
+
+
+void gowakeup()
+{
+    switch (dormant) {
+    case ASLEEP:
+    case SLEEPY:
+	com_err(whoami, 0, "Good morning");
+	break;
+    case AWAKE:
+	com_err(whoami, 0, "already awake");
+	break;
+    case GROGGY:
+	break;
+    }
+    dormant = GROGGY;
 }

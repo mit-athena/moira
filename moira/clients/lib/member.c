@@ -1,4 +1,4 @@
-/* $Id: member.c,v 1.1 2000-08-10 02:05:35 zacheiss Exp $
+/* $Id: member.c,v 1.2 2000-08-21 04:54:26 zacheiss Exp $
  *
  * Shared routines for playing with list membership.
  *
@@ -18,7 +18,7 @@
 
 #include <krb.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/lib/member.c,v 1.1 2000-08-10 02:05:35 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/lib/member.c,v 1.2 2000-08-21 04:54:26 zacheiss Exp $");
 
 static char default_realm[REALM_SZ];
 
@@ -47,8 +47,8 @@ int mrcl_validate_string_member(char *str)
     {
       mrcl_set_message("STRING \"%s\" is not a foreign mail address.\nAdding "
 		       "it to a mailing list may cause the list to break.",
-		       lname);
-      return MRCL_REJECT;
+		       str);
+      return MRCL_SUCCESS;
     }
 
   mrcl_clear_message();

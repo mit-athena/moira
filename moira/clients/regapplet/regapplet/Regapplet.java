@@ -64,7 +64,7 @@ public class Regapplet extends Applet {
   TextBlock PinInstructions = new TextBlock(600,40);
   Button PinCancelButton = new Button();
   Button PinContButton = new Button();
-  TextField Pin = new TextField("", 9);
+  TextField Pin = new TextField("", 8);
   Label PinLabel = new Label();
   GridBagLayout gridBagLayout7 = new GridBagLayout();
 

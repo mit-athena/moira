@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/hosts.dc,v 1.3 1993-11-26 15:44:46 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/hosts.dc,v 1.4 1993-12-01 14:08:29 mar Exp $
  *
  * This generates the hstath.txt hosttable.
  *
@@ -113,17 +113,20 @@ char **argv;
 	strtrim(model);
 	strtrim(os);
 	strtrim(addr);
-	if (*addr == 0)
+	if (*addr == 0 || inet_addr(addr) == -1)
 	  continue;
 	if (p = hash_lookup(aliases, id))
 	  sprintf(buf, "%s,%s", name, p);
 	else
 	  strcpy(buf, name);
 	fprintf(out, "HOST : %s : %s : ", addr, buf);
-	if (*vendor && *model)
-	  fprintf(out, "%s/%s : %s :\n", vendor, model, os);
-	else
-	  fprintf(out, "%s%s : %s :\n", vendor, model, os);
+	if ((*vendor || *model) && *os) {
+	    if (*vendor && *model)
+	      fprintf(out, "%s/%s : %s :\n", vendor, model, os);
+	    else
+	      fprintf(out, "%s%s : %s :\n", vendor, model, os);
+	} else
+	  fputs("\n", out);
     }
 
     EXEC SQL CLOSE x;

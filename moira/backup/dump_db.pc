@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/dump_db.pc,v $
  *	$Author: danw $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/dump_db.pc,v 1.1 1997-01-29 22:57:38 danw Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/dump_db.pc,v 1.2 1997-02-04 22:53:43 danw Exp $
  *
  *	(c) Copyright 1988 by the Massachusetts Institute of Technology.
  *	For copying and distribution information, please see the file
@@ -13,7 +13,7 @@
  */
 
 #ifndef lint
-static char *rcsid_dump_db_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/dump_db.pc,v 1.1 1997-01-29 22:57:38 danw Exp $";
+static char *rcsid_dump_db_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/dump_db.pc,v 1.2 1997-02-04 22:53:43 danw Exp $";
 #endif lint
 
 #include <stdio.h>
@@ -32,7 +32,6 @@ EXEC SQL INCLUDE sqlca;
 
 FILE *open_file();
 
-char act[257];
 EXEC SQL BEGIN DECLARE SECTION;
 char *db="moira";
 EXEC SQL END DECLARE SECTION;
@@ -50,14 +49,6 @@ main(argc, argv)
     }
     prefix = argv[1];
 
-    memset(act, 0, 256);
-
-    for (i=0; i<' '; i++) act[i]=2;
-    for (i=128; i<256; i++) act[i]=2;
-    act[SEP_CHAR]=1;
-    act['\\']=1;
-    act[127]=2;
-    
     EXEC SQL CONNECT :db IDENTIFIED BY :db;
 
     do_backups(prefix);
@@ -89,15 +80,7 @@ dump_str(f, str)
     register int t;
 
     for (ibp = str; c = (unsigned char) *ibp; ibp++) {
-	switch(act[c]) {
-	case 1:
-	    if (putc1('\\', f) < 0) wpunt();
-	    /* fall thru.. */
-	case 0:
-	    if (putc1(c, f) < 0) wpunt();
-	    
-	    break;
-	case 2:
+	if(c<32 || c>126 || c==SEP_CHAR || c=='\\') {
 	    if (putc1('\\', f) < 0) wpunt();	    
 	    t = ((c>>6)&7) + '0';
 	    if (putc1(t,f) < 0) wpunt();
@@ -105,43 +88,8 @@ dump_str(f, str)
 	    if (putc1(t,f) < 0) wpunt();
 	    t = (c&7) + '0';
 	    if (putc1(t,f) < 0) wpunt();
-	    break;
-	    
-	default:
-	    punt("Can't get here");
-	}
-    }
-}
-
-dump_bin(f, str)
-    register FILE *f;
-    register char *str;
-{
-    register char *ibp = str;
-    register int c;		/* PCC doesn't put chars in registers.. */
-    register int t;
-
-    for (; c = (unsigned char) *ibp; ibp++) {
-	switch(act[c]) {
-	case 1:
-	    if (putc1('\\', f) < 0) wpunt();
-	    /* fall thru.. */
-	case 0:
+	} else {
 	    if (putc1(c, f) < 0) wpunt();
-	    
-	    break;
-	case 2:
-	    if (putc1('\\', f) < 0) wpunt();	    
-	    t = ((c>>6)&7) + '0';
-	    if (putc1(t,f) < 0) wpunt();
-	    t = ((c>>3)&7) + '0';
-	    if (putc1(t,f) < 0) wpunt();
-	    t = (c&7) + '0';
-	    if (putc1(t,f) < 0) wpunt();
-	    break;
-	    
-	default:
-	    punt("Can't get here");
 	}
     }
 }

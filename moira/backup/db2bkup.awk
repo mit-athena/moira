@@ -1,5 +1,5 @@
 #	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/db2bkup.awk,v $
-#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/db2bkup.awk,v 1.7 1997-01-29 22:57:32 danw Exp $
+#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/db2bkup.awk,v 1.8 1997-02-04 22:53:41 danw Exp $
 #
 #	This converts the file used to originally create the database
 #	into a program to back it up.
@@ -12,7 +12,7 @@ BEGIN {
 	print "#include <stdio.h>";
 	print "EXEC SQL INCLUDE sqlca;";
 	print "#include \"dump_db.h\"";
-	print "#define dump_date dump_str\n";
+	print "#define dump_bin dump_str\n";
 
 	print "/* This file automatically generated */" > "bkup1.pc";
 	print "/* Do not edit */\n" >> "bkup1.pc";
@@ -82,7 +82,7 @@ NF>=2 {
 	printf "\t\tif(sqlca.sqlcode != 0) break;\n";
 	for (i = 0; i < count; i++) {
 		if (i != 0) print "\t\tdump_sep(f);";
-		if (vtype[i] ~ /str/) {
+		if (vtype[i] ~ /str/ || vtype[i] ~ /date/) {
 			printf "\t\tdump_str(f, strtrim(t_%s));\n", vname[i];
 		} else {
 			printf "\t\tdump_%s(f, t_%s);\n", vtype[i], vname[i];

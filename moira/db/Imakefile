@@ -1,0 +1,24 @@
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/db/Imakefile,v 1.1 1992-12-30 17:22:57 mar Exp $
+#
+# Copyright 1990 by the Massachusetts Institute of Technology.
+#
+# For copying and distribution information,
+# please see the file <mit-copyright.h>.
+#
+# Imakefile for db directory.
+#
+
+SRCS=	newmoira.c
+SRCDIR=${SRCTOP}/db
+CODE= newmoira.dc Imakefile db2tbls.awk schema optimizations
+OBJS=	newmoira.o tables.o
+INCLUDE= -I$(BUILDTOP)/include
+sqlrule()
+
+program(newmoira, ${OBJS},${MR_LIBDEP} ${GDB_LIBDEP}, ../server/queries2.o ${CLIBS} ${SQL_LIB}, ${PROGDIR})
+sqlfile(newmoira)
+
+tables.c: schema db2tbls.awk
+	awk -f db2tbls.awk < schema > tables.c
+clean::
+	$(RM) tables.c

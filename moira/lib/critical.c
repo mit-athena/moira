@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/critical.c,v 1.2 1988-08-03 20:19:14 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/critical.c,v 1.3 1988-08-07 14:18:02 qjb Exp $
  *
  * Log and send a zephyrgram about any critical errors.
  */
@@ -21,7 +21,8 @@ void critical_alert(instance, msg, args)
 				/* args = arguements, printf style */
   /* This routine sends a class SMS zephyrgram of specified instance
      and logs to a special logfile the message passed to it via msg
-     and args in printf format. */
+     and args in printf format.  *** It expects the global variable
+     whoami to be defined and contain the name of the calling program. */
   /* Note: The part of this code that process the variable arguements
      was stolen from sprintf(). */
 {
@@ -52,6 +53,8 @@ void critical_alert(instance, msg, args)
 	fprintf(crit, "%s <%d> %s\n", time_s, getpid(), buf);
 	fclose(crit);
     }
+
+    com_err(whoami, 0, buf);
 }
 
 

@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/afs.c,v 1.22 1992-06-02 18:01:33 probe Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/afs.c,v 1.23 1992-06-07 04:21:40 probe Exp $
  *
  * Do AFS incremental updates
  *
@@ -180,22 +180,25 @@ int beforec;
 char **after;
 int afterc;
 {
-    int agid, bgid;
+    register int agid, bgid;
+    int ahide, bhide;
     long code, id;
     char hostname[64];
     char g1[PR_MAXNAMELEN], g2[PR_MAXNAMELEN];
     char *av[2];
 
     agid = bgid = 0;
-    if (beforec > L_GID && atoi(before[L_ACTIVE]) && atoi(before[L_GROUP]))
+    if (beforec > L_GID && atoi(before[L_ACTIVE]) && atoi(before[L_GROUP])) {
 	bgid = atoi(before[L_GID]);
-    if (afterc > L_GID && atoi(after[L_ACTIVE]) && atoi(after[L_GROUP]))
+	bhide = atoi(before[L_HIDDEN]);
+    }
+    if (afterc > L_GID && atoi(after[L_ACTIVE]) && atoi(after[L_GROUP])) {
 	agid = atoi(after[L_GID]);
+	ahide = atoi(after[L_HIDDEN]);
+    }
 
     if (agid == 0 && bgid == 0)			/* Not active groups */
 	return;
-    if (agid == bgid && !strcmp(after[L_NAME], before[L_NAME]))
-	return;					/* No change */
 
     code=pr_Initialize(1, AFSCONF_CLIENTNAME, 0);
     if (code) {
@@ -205,17 +208,30 @@ int afterc;
     }
 
     if (agid && bgid) {
-	/* Only a modify is required */
-	strcpy(g1, "system:");
-	strcpy(g2, "system:");
-	strcat(g1, before[L_NAME]);
-	strcat(g2, after[L_NAME]);
-	code = pr_ChangeEntry(g1, g2, (agid==bgid) ? 0 : -agid, "");
-	if (code) {
-	    critical_alert("incremental",
-			   "Couldn't change group %s (id %d) to %s (id %d): %s",
-			   before[L_NAME], -bgid, after[L_NAME], -agid,
-			   error_message(code));
+	if (strcmp(after[L_NAME], before[L_NAME])) {
+	    /* Only a modify is required */
+	    strcpy(g1, "system:");
+	    strcpy(g2, "system:");
+	    strcat(g1, before[L_NAME]);
+	    strcat(g2, after[L_NAME]);
+	    code = pr_ChangeEntry(g1, g2, (agid==bgid) ? 0 : -agid, "");
+	    if (code) {
+		critical_alert("incremental",
+			       "Couldn't change group %s (id %d) to %s (id %d): %s",
+			       before[L_NAME], -bgid, after[L_NAME], -agid,
+			       error_message(code));
+	    }
+	}
+	if (ahide != bhide) {
+	    code = pr_SetFieldsEntry
+		(-agid, PR_SF_ALLBITS,
+		 (ahide ? PRP_STATUS_MEM : PRP_GROUP_DEFAULT) >> PRIVATE_SHIFT,
+		 0 /*ngroups*/, 0 /*nusers*/);
+	    if (code) {
+		critical_alert("incremental",
+			       "Couldn't set flags of group %s: %s",
+			       after[L_NAME], error_message(code));
+	    }
 	}
 	return;
     }
@@ -239,6 +255,17 @@ int afterc;
 			   "Couldn't create group %s (id %d): %s",
 			   after[L_NAME], id, error_message(code));
 	    return;
+	}
+	if (ahide) {
+	    code = pr_SetFieldsEntry
+		(-agid, PR_SF_ALLBITS,
+		 (ahide ? PRP_STATUS_MEM : PRP_GROUP_DEFAULT) >> PRIVATE_SHIFT,
+		 0 /*ngroups*/, 0 /*nusers*/);
+	    if (code) {
+		critical_alert("incremental",
+			       "Couldn't set flags of group %s: %s",
+			       after[L_NAME], error_message(code));
+	    }
 	}
 
 	/* We need to make sure the group is properly populated */

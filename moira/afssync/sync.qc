@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/afssync/sync.qc,v 1.4 1990-09-21 15:21:14 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/afssync/sync.qc,v 1.5 1992-06-07 04:20:08 probe Exp $
  *
  *
  *  (c) Copyright 1989 by the Massachusetts Institute of Technology.
@@ -9,15 +9,15 @@
 #include <mit-copyright.h>
 #include <stdio.h>
 #include <sys/file.h>
+
 #include <rx/xdr.h>
-#include <afs/ptint.h>
-#include <afs/ptserver.h>
-#include <afs/pterror.h>
+#include "ptint.h"
+#include "ptserver.h"
+#include "pterror.h"
+
 #include <moira.h>
 #include <moira_site.h>
 #include <ctype.h>
-
-#define USERSMS 14487
 
 #define min(x,y)	((x) < (y) ? (x) : (y))
 struct hash *users = NULL;
@@ -52,10 +52,13 @@ char **argv;
 ##  begin transaction
 
     do_passwd();
+#if 0
+#define USERSMS 14487
     status = PR_AddToGroup(NULL, USERSMS, SYSADMINID);
     if (status) {
 	prserror(status, "adding MR to system:administrators", 0, 0);
     }
+#endif
     do_groups();
 
 ##  end transaction
@@ -164,7 +167,7 @@ do_groups()
     struct hash *groups;
     long u, g, status;
 ##  char name[33], namebuf[128];
-##  int gid, id, lid;
+##  int gid, id, lid, hide;
 
     fprintf(stderr, "Doing groups\n");
 
@@ -178,14 +181,25 @@ do_groups()
 ##  retrieve (name = l.modtime) where l.list_id = 0
 ##  retrieve (name = users.modtime) where users.users_id = 0
 
-##  retrieve (name = l.#name, gid = l.#gid, lid = l.list_id)
+##  retrieve (name = l.#name, gid = l.#gid, lid = l.list_id, hide = l.hidden)
 ##	where l.group != 0 and l.active != 0 {
 	    strtrim(name);
 	    sprintf(namebuf, "system:%s", name);
 	    hash_store(groups, lid, -gid);
 	    status = PR_INewEntry(NULL, namebuf, -gid, SYSADMINID);
 	    if (status)
-	      prserror(status, "adding list %s gid %d", namebuf, -gid);
+		prserror(status, "adding list %s gid %d", namebuf, -gid);
+	    else {
+		if (hide) {
+		    status = PR_SetFieldsEntry
+			(NULL/*call*/, -gid,
+			 PR_SF_ALLBITS/*mask*/,
+			 PRP_STATUS_MEM >> PRIVATE_SHIFT /*flags*/,
+			 0/*ngroups*/, 0/*nusers*/, 0/*spare1*/, 0/*spare2*/);
+		}
+		if (status)
+		    prserror(status, "setting flags on list %s", namebuf);
+	    }
 ##  }
 
 

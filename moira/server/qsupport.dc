@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.dc,v $
  *	$Author: kostas $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.dc,v 1.2 1990-09-12 10:52:03 kostas Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.dc,v 1.3 1990-09-18 09:47:11 kostas Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_qsupport_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.dc,v 1.2 1990-09-12 10:52:03 kostas Exp $";
+static char *rcsid_qsupport_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.dc,v 1.3 1990-09-18 09:47:11 kostas Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -56,19 +56,19 @@ access_login(q, argv, cl)
 
 {
     EXEC SQL BEGIN DECLARE SECTION;
-    int rowcount, id;
+    int id;
     char qual[256];
     EXEC SQL END DECLARE SECTION;
 
     build_qual(q->qual, q->argc, argv, qual);
 
-##  range of u is users
-##  retrieve (id = u.users_id) where qual
-##  inquire_equel(rowcount = "rowcount")
-    if (rowcount != 1 || id != cl->users_id)
-	return(MR_PERM);
+    EXEC SQL SELECT users_id INTO :id FROM users WHERE qual;
+
+    if (sqlca.sqlcode < 0 || sqlca.sqlerrd[2] != 1 || id != cl->users_id)
+        return(MR_PERM);
     else
-	return(MR_SUCCESS);
+        return(MR_SUCCESS);
+
 }
 
     
@@ -99,11 +99,11 @@ access_list(q, argv, cl)
     int client_id, status;
 
     list_id = *(int *)argv[0];
-##  repeat retrieve (acl_id = list.#acl_id, acl_type = list.#acl_type,
-##		     gid = list.#gid, flags = list.#public) 
-##	   where list.#list_id = @list_id
-##  inquire_equel(rowcount = "rowcount")
-    if (rowcount != 1)
+    EXEC SQL SELECT acl_id, acl_type, gid, public
+             INTO :acl_id, :acl_type, :gid, :flags
+             FROM list
+             WHERE list_id = :list_id;
+    if (sqlca.sqlcode < 0 || sqlca.sqlerrd[2] != 1)
       return(MR_INTERNAL);
 
     /* parse client structure */
@@ -150,10 +150,11 @@ access_visible_list(q, argv, cl)
     int client_id, status;
 
     list_id = *(int *)argv[0];
-##  repeat retrieve (flags = list.hidden, acl_id = list.#acl_id, 
-##	acl_type = list.#acl_type) where list.#list_id = @list_id
-##  inquire_equel(rowcount = "rowcount")
-    if (rowcount != 1)
+    EXEC SQL SELECT hidden, acl_id, acl_type
+             INTO :flags, :acl_id, :acl_type
+             FROM list
+             WHERE list_id = :list_id;
+    if (sqlca.sqlcode < 0 || sqlca.sqlerrd[2] != 1)
       return(MR_INTERNAL);
     if (!flags)
 	return(MR_SUCCESS);
@@ -192,13 +193,12 @@ access_vis_list_by_name(q, argv, cl)
     int client_id, status;
 
     listname = argv[0];
-##  repeat retrieve (flags = list.hidden, acl_id = list.#acl_id, 
-##	acl_type = list.#acl_type) where list.#name = @listname
-##  inquire_equel(rowcount = "rowcount");
-    if (rowcount > 1)
-      return(MR_WILDCARD);
-    if (rowcount == 0)
-      return(MR_NO_MATCH);
+    EXEC SQL SELECT hidden, acl_id, acl_type
+             INTO :flags, :acl_id, :acl_type
+             FROM list
+             WHERE name = :listname;
+    if (sqlca.sqlerrd[2] > 1)  return(MR_WILDCARD);
+    if (sqlca.sqlcode == 100) return(MR_NO_MATCH);
     if (!flags)
 	return(MR_SUCCESS);
 
@@ -269,12 +269,12 @@ access_service(q, argv, cl)
     char *client_type;
 
     name = argv[0];
-##  repeat retrieve (acl_id = servers.#acl_id, acl_type = servers.#acl_type)
-##	where servers.#name = uppercase(@name)
-##  inquire_equel(rowcount = "rowcount")
-    if (rowcount > 1)
-      return(MR_PERM);
-
+    uppercase(name);
+    EXEC SQL SELECT acl_id, acl_type
+             INTO :acl_id, :acl_type
+             FROM servers
+             WHERE name = :name;
+    if (sqlca.sqlerrd[2] > 1) return(MR_PERM);
     /* parse client structure */
     if ((status = get_client(cl, &client_type, &client_id)) != MR_SUCCESS)
 	return(status);
@@ -298,19 +298,20 @@ access_filesys(q, argv, cl)
     client *cl;
 {
     EXEC SQL BEGIN DECLARE SECTION;
-    int rowcount, users_id, list_id;
+    int users_id, list_id;
     char *name;
     EXEC SQL END DECLARE SECTION;
     int status, client_id;
     char *client_type;
 
     name = argv[0];
-##  repeat retrieve (users_id = filesys.owner, list_id = filesys.owners)
-##	where filesys.label = @name
-##  inquire_equel(rowcount = "rowcount")
-
-    if (rowcount != 1)
+    EXEC SQL SELECT owner, owners 
+             INTO :users_id, :list_id
+             FROM filesys
+             WHERE label = :name;
+    if (sqlca.sqlcode < 0 || sqlca.sqlerrd[2] != 1)
       return(MR_PERM);
+
     if (users_id == cl->users_id)
       return(MR_SUCCESS);
     if ((status = get_client(cl, &client_type, &client_id)) != MR_SUCCESS)
@@ -343,7 +344,7 @@ setup_ausr(q, argv, cl)
     client *cl;
 {
     EXEC SQL BEGIN DECLARE SECTION;
-    int nuid, rowcount;
+    int nuid;
     char *mit_id;
     EXEC SQL END DECLARE SECTION;
 
@@ -360,9 +361,11 @@ setup_ausr(q, argv, cl)
     if (!strcmp(argv[1], UNIQUE_UID) || atoi(argv[1]) == -1) {
 	if (set_next_object_id("uid", "users"))
 	  return(MR_INGRES_ERR);
-##      repeat retrieve (nuid = values.value) where values.name = "uid"
-##	inquire_equel(rowcount = "rowcount")
-	if (rowcount != 1)
+        EXEC SQL SELECT value  
+             INTO :nuid
+             FROM values
+             WHERE name = "uid";
+        if (sqlca.sqlcode < 0 || sqlca.sqlerrd[2] != 1)
 	  return(MR_INTERNAL);
 	sprintf(argv[1], "%d", nuid);
     }
@@ -458,8 +461,10 @@ char **argv;
     EXEC SQL END DECLARE SECTION;
 
     user = *(int *)argv[0];
-##  repeat retrieve (type = u.potype, id = u.pop_id)
-##		where u.users_id = @user
+    EXEC SQL SELECT potype, pop_id
+             INTO :type, :id
+             FROM users
+             WHERE users_id = :user;
     if (ingres_errno) return(mr_errcode);
 
     if (!strcmp(strtrim(type), "POP"))
@@ -562,7 +567,10 @@ char **argv;
 	if (atoi(argv[idx - 1])) {
 	    if (set_next_object_id("gid", "list"))
 	      return(MR_INGRES_ERR);
-##	    repeat retrieve (ngid = values.value) where values.name = "gid"
+            EXEC SQL SELECT value 
+                     INTO :ngid
+                     FROM values
+                     WHERE name = "gid";
 	    if (ingres_errno) return(mr_errcode);
 	    sprintf(argv[idx], "%d", ngid);
 	} else {
@@ -647,7 +655,10 @@ int setup_dsin(q, argv)
 ##				where serverhosts.service=uppercase(@name)))
     if (flag)
 	return(MR_IN_USE);
-##  repeat retrieve (flag = servers.inprogress) where servers.#name = @name
+    EXEC SQL SELECT inprogress  
+             INTO :flag
+             FROM servers
+             WHERE name = :name;
     if (flag)
 	return(MR_IN_USE);
     if (ingres_errno)
@@ -671,8 +682,11 @@ int setup_dshi(q, argv)
 
     name = argv[0];
     id = *(int *)argv[1];
-##  repeat retrieve (flag=serverhosts.inprogress) 
-##	where serverhosts.service=uppercase(@name) and serverhosts.mach_id=@id
+    uppercase(name);
+    EXEC SQL SELECT inprogress  
+             INTO :flag
+             FROM serverhosts
+             WHERE service = :name AND mach_id = :id;
     if (flag)
 	return(MR_IN_USE);
     if (ingres_errno)
@@ -915,10 +929,10 @@ setup_dqot(q, argv, cl)
 	qtype = "USER";
 	id = *(int *)argv[1];
     }
-
-##  range of q is #quota
-##  repeat retrieve (quota = q.#quota) where q.type = @qtype and
-##    	q.entity_id = @id and q.filsys_id = @fs
+    EXEC SQL SELECT quota_value
+             INTO :quota
+             FROM quota
+             WHERE type = :qtype AND entity_id = :id AND filsys_id = :fs;
 ##  repeat replace nfsphys (allocated = nfsphys.allocated - @quota)
 ##	where nfsphys.nfsphys_id = filesys.#phys_id and filesys.filsys_id = @fs
     if (ingres_errno) return(mr_errcode);
@@ -956,8 +970,10 @@ client *cl;
     name = argv[1];
     if (name_to_id(name, "STRING", &id) != MR_SUCCESS) {
 	if (q->type != APPEND) return(MR_STRING);
-##	range of v is values
-##	retrieve (id = v.value) where v.#name = "strings_id"
+    EXEC SQL SELECT value
+             INTO :id
+             FROM values
+             WHERE name = "strings_id";
 	id++;
 ##	replace v (value = id) where v.#name = "strings_id"
 ##	append to strings (string_id = id, string = name)
@@ -1520,12 +1536,17 @@ followup_gqot(q, sq, v, action, actarg, cl)
 	name = argv[idx];
 	if (id == 0) {
 	    label = argv[0];
-##	    repeat retrieve (name = filesys.#name) where filesys.#label = @label
+            EXEC SQL SELECT name
+                     INTO :name
+                     FROM filesys
+                     WHERE label = :label;
 	} else {
-##	    repeat retrieve (name = nfsphys.dir) where nfsphys.nfsphys_id = @id
+            EXEC SQL SELECT dir
+                     INTO :name
+                     FROM nfsphys
+                     WHERE nfsphys_id = :id;
 	}
-##	inquire_equel(rowcount = "rowcount")
-	if (rowcount != 1) {
+        if (sqlca.sqlcode < 0 || sqlca.sqlerrd[2] != 1) {
 	    sprintf(argv[idx], "#%d", id);
 	}
 
@@ -1751,16 +1772,17 @@ int set_pobox(q, argv, cl)
     client *cl;
 {
     EXEC SQL BEGIN DECLARE SECTION;
-    int user, id, rowcount;
+    int user, id;
     char *box, potype[9];
     EXEC SQL END DECLARE SECTION;
     int status;
 
     box = argv[2];
     user = *(int *)argv[0];
-
-##  repeat retrieve (id = users.pop_id, potype = users.#potype)
-##		where users.users_id = @user
+    EXEC SQL SELECT pop_id, potype
+             INTO :id, :potype
+             FROM users
+             WHERE users_id = :user;
     if (ingres_errno) return(mr_errcode);
     if (!strcmp(strtrim(potype), "POP"))
       set_pop_usage(id, -1);
@@ -1779,7 +1801,10 @@ int set_pobox(q, argv, cl)
 	  return(MR_BAD_CHAR);
 	status = name_to_id(box, "STRING", &id);
 	if (status == MR_NO_MATCH) {
-##          repeat retrieve (id = values.value) where values.name = "strings_id"
+            EXEC SQL SELECT value 
+                     INTO :id 
+                     FROM values 
+                     WHERE name =  "strings_id";
 	    id++;
 ##          repeat replace values (value = @id) where values.name = "strings_id"
 ##	    append to strings (string_id = id, string = box)
@@ -1825,11 +1850,18 @@ get_list_info(q, aargv, cl, action, actarg)
     name = aargv[0];
 
     sq = sq_create();
-##  range of l is list
-##  repeat retrieve (id = l.list_id) where l.#name = @name {
+    EXEC SQL DECLARE l_cursor CURSOR FOR
+          SELECT L.list_id
+          FROM LIST L
+          WHERE L.name = :name;
+    EXEC SQL OPEN l_cursor;
+    while (1) {
+        EXEC SQL FETCH l_cursor INTO :id;
+        if (sqlca.sqlcode != 0) break;
 	sq_save_data(sq, id);
 	rowcount++;
-##  }
+    }
+    EXEC SQL CLOSE l_cursor;
     if (ingres_errno) return(mr_errcode);
     if (rowcount == 0)
       return(MR_NO_MATCH);
@@ -1914,7 +1946,13 @@ int add_member_to_list(q, argv, cl)
     char *dtypes[MAXLISTDEPTH];
     char *iargv[3], *buf;
 
-##  range of m is imembers
+
+    EXEC SQL DECLARE m_cursor CURSOR FOR
+          SELECT M.list_id, M.ref_count
+          FROM IMEMBERS M
+          WHERE M.member_id = :lid AND M.member_type = "LIST";
+    EXEC SQL OPEN m_cursor;
+
     lid = *(int *)argv[0];
     mtype = argv[1];
     mid = *(int *)argv[2];
@@ -1938,27 +1976,36 @@ int add_member_to_list(q, argv, cl)
     ancestors[0] = lid;
     aref[0] = 1;
     acount = 1;
-##  repeat retrieve (id = m.list_id, ref = m.ref_count)
-##	where m.member_id = @lid and m.member_type = "LIST" {
+    while (1) {
+        EXEC SQL FETCH m_cursor INTO :id, :ref;
+        if (sqlca.sqlcode != 0) break;
 	aref[acount] = ref;
 	ancestors[acount++] = id;
 	if (acount >= MAXLISTDEPTH) {
-##	    endretrieve
+           return(MR_INTERNAL);
 	}
-##  }
+    }
     if (ingres_errno) return(mr_errcode);
     if (acount >= MAXLISTDEPTH) {
 	return(MR_INTERNAL);
     }
+    EXEC SQL CLOSE m_cursor;
     descendants[0] = mid;
     dtypes[0] = mtype;
     dref[0] = 1;
     dcount = 1;
     error = 0;
+
+
     if (!strcmp(mtype, "LIST")) {
-##	repeat retrieve (id = m.member_id, dtype = m.member_type,
-##			 ref = m.ref_count)
-##	  where m.list_id = @mid {
+        EXEC SQL DECLARE m_cursor CURSOR FOR
+             SELECT M.member_id, M.memeber_type, M.ref_count
+             FROM IMEMBERS M
+             WHERE M.list_id = :mid;
+        EXEC SQL OPEN m_cursor;
+        while (1) {
+            EXEC SQL FETCH m_cursor INTO :id, :dtype, :ref;
+            if (sqlca.sqlcode != 0) break;
 	    switch (dtype[0]) {
 	    case 'L':
 		dtypes[dcount] = "LIST";
@@ -1974,15 +2021,14 @@ int add_member_to_list(q, argv, cl)
 		break;
 	    default:
 		error++;
-##		endretrieve
 	    }
 	    dref[dcount] = ref;
 	    descendants[dcount++] = id;
 	    if (dcount >= MAXLISTDEPTH) {
 		error++;
-##	        endretrieve
 	    }
-##	}
+  	}
+        EXEC SQL CLOSE m_cursor;
 	if (ingres_errno) return(mr_errcode);
 	if (error)
 	  return(MR_INTERNAL);
@@ -2064,14 +2110,22 @@ int delete_member_from_list(q, argv, cl)
     ancestors[0] = lid;
     aref[0] = 1;
     acount = 1;
-##  repeat retrieve (id = m.list_id, ref = m.ref_count)
-##	where m.member_id = @lid and m.member_type = "LIST" {
-	aref[acount] = ref;
+
+    EXEC SQL DECLARE m1_cursor CURSOR FOR
+         SELECT M.list_id, M.ref_count
+         FROM IMEMBERS M
+         WHERE M.member_id = :lid AND M.member_type = "LIST";
+    EXEC SQL OPEN m1_cursor;
+    while (1) {
+        EXEC SQL FETCH m1_cursor INTO :id, :ref;
+        if (sqlca.sqlcode != 0) break;
+        aref[acount] = ref;
 	ancestors[acount++] = id;
 	if (acount >= MAXLISTDEPTH)
-##	  endretrieve
-##  }
-	  if (ingres_errno) return(mr_errcode);
+          break; 
+    }
+    EXEC SQL CLOSE m1_cursor;
+    if (ingres_errno) return(mr_errcode);
     if (acount >= MAXLISTDEPTH)
       return(MR_INTERNAL);
     descendants[0] = mid;
@@ -2080,9 +2134,14 @@ int delete_member_from_list(q, argv, cl)
     dcount = 1;
     error = 0;
     if (!strcmp(mtype, "LIST")) {
-##	repeat retrieve (id = m.member_id, dtype = m.member_type,
-##			 ref = m.ref_count)
-##	  where m.list_id = @mid {
+        EXEC SQL DECLARE m_cursor CURSOR FOR
+             SELECT M.member_id, M.memeber_type, M.ref_count
+             FROM IMEMBERS M
+             WHERE M.list_id = :mid;
+        EXEC SQL OPEN m_cursor;
+        while (1) {
+            EXEC SQL FETCH m_cursor INTO :id, :dtype, :ref;
+            if (sqlca.sqlcode != 0) break;
 	    switch (dtype[0]) {
 	    case 'L':
 		dtypes[dcount] = "LIST";
@@ -2098,17 +2157,22 @@ int delete_member_from_list(q, argv, cl)
 		break;
 	    default:
 		error++;
-##		endretrieve
 	    }
 	    dref[dcount] = ref;
 	    descendants[dcount++] = id;
 	    if (dcount >= MAXLISTDEPTH)
-##	      endretrieve
-##	}
-	      if (ingres_errno) return(mr_errcode);
+               break;
+        }
+        EXEC SQL CLOSE m_cursor;
+	if (ingres_errno) return(mr_errcode);
 	if (error)
 	  return(MR_INTERNAL);
     }
+    EXEC SQL DECLARE m1_cursor CURSOR FOR
+     SELECT M.ref_count
+     FROM IMEMBERS M
+     WHERE M.list_id = :lid AND M.member_id = :mid AND M.member_type = :mtype;
+    EXEC SQL OPEN m1_cursor;
     for (a = 0; a < acount; a++) {
 	lid = ancestors[a];
 	for (d = 0; d < dcount; d++) {
@@ -2117,34 +2181,39 @@ int delete_member_from_list(q, argv, cl)
 	    if (mid == lid && !strcmp(mtype, "LIST")) {
 		return(MR_LISTLOOP);
 	    }
-##	    repeat retrieve (cnt = m.ref_count)
-##		where m.list_id = @lid and m.member_id = @mid
-##		  and m.member_type = @mtype
+            EXEC SQL FETCH m1_cursor INTO :cnt;
+            if (sqlca.sqlcode != 0) break;
 	    ref = aref[a] * dref[d];
 	    if (cnt <= ref) {
 		iargv[0] = (char *)lid;
 		iargv[1] = mtype;
 		iargv[2] = (char *)mid;
 		incremental_before("members", 0, iargv);
-##		delete m where m.list_id = lid and m.member_id = mid and
-##		    m.member_type = mtype
+                EXEC SQL DELETE 
+                 FROM IMEMBERS 
+                 WHERE list_id = :lid AND member_id = :mid 
+                    AND member_type = :mtype;
 		incremental_clear_after();
 	    } else if (a == 0 && d == 0) {
-##		replace m (ref_count = m.ref_count-ref, direct = 0)
-##		    where m.list_id = lid and m.member_id = mid and
-##		    m.member_type = mtype
+                EXEC SQL UPDATE imembers
+                 SET ref_count = ref_count - :ref, direct = 0
+                 WHERE list_id = :lid AND member_id = :mid 
+                    AND member_type = :mtype;
 	    } else {
-##		replace m (ref_count = m.ref_count-ref)
-##		    where m.list_id = lid and m.member_id = mid and
-##		    m.member_type = mtype
+                EXEC SQL UPDATE imembers
+                 SET ref_count = ref_count - :ref
+                 WHERE list_id = :lid AND member_id = :mid 
+                    AND member_type = :mtype;
 	    }
 	}
     }
+    EXEC SQL CLOSE m1_cursor;
     lid = *(int *)argv[0];
     entity = cl->entity;
     who = cl->client_id;
-##  repeat replace list (modtime = "now", modby = @who, modwith = @entity)
-##	 where list.#list_id = @lid
+    EXEC SQL UPDATE list
+         SET modtime = "now", modby = :who, modwith = :entity
+         WHERE list = :list_id;
     if (ingres_errno) return(mr_errcode);
     return(MR_SUCCESS);
 }
@@ -2172,7 +2241,6 @@ int get_ace_use(q, argv, cl, action, actarg)
     EXEC SQL END DECLARE SECTION;
     struct save_queue *sq, *sq_create();
 
-##  range of m is imembers
     atype = argv[0];
     aid = *(int *)argv[1];
     if (!strcmp(atype, "LIST") || !strcmp(atype, "USER") ||
@@ -2184,22 +2252,35 @@ int get_ace_use(q, argv, cl, action, actarg)
     if (!strcmp(atype, "RLIST")) {
 	sq_save_data(sq, aid);
 	/* get all the list_id's of containing lists */
-##	repeat retrieve (listid = m.list_id)
-##		where m.member_type = "LIST" and m.member_id = @id {
+        EXEC SQL DECLARE m1_cursor CURSOR FOR
+         SELECT M.list_id
+         FROM IMEMBERS M
+         WHERE M.member_type = "LIST" AND M.member_id = :id;
+        EXEC SQL OPEN m1_cursor;
+        while (1) {
+            EXEC SQL FETCH m1_cursor INTO :listid;
+            if (sqlca.sqlcode != 0) break;
 	    sq_save_unique_data(sq, listid);
-##	}
+	}
 	/* now process each one */
 	while (sq_get_data(sq, &id)) {
 	    if (get_ace_internal("LIST", id, action, actarg) == MR_SUCCESS)
 	      found++;
 	}
+    EXEC SQL CLOSE m1_cursor;
     }
 
     if (!strcmp(atype, "RUSER")) {
-##	repeat retrieve (listid = m.list_id)
-##		where m.member_type = "USER" and m.member_id = @aid {
+        EXEC SQL DECLARE m2_cursor CURSOR FOR
+         SELECT M.list_id
+         FROM IMEMBERS M
+         WHERE M.member_type = "USER" AND M.member_id = :aid;
+        EXEC SQL OPEN m2_cursor;
+        while (1) {
+            EXEC SQL FETCH m2_cursor INTO :listid;
+            if (sqlca.sqlcode != 0) break;
 	    sq_save_data(sq, listid);
-##	}
+	}
 	/* now process each one */
 	while (sq_get_data(sq, &id)) {
 	    if (get_ace_internal("LIST", id, action, actarg) == MR_SUCCESS)
@@ -2207,13 +2288,20 @@ int get_ace_use(q, argv, cl, action, actarg)
 	}
 	if (get_ace_internal("USER", aid, action, actarg) == MR_SUCCESS)
 	  found++;
+    EXEC SQL CLOSE m2_cursor;
     }
 
     if (!strcmp(atype, "RKERBERO")) {
-##	repeat retrieve (listid = m.list_id)
-##		where m.member_type = "KERBEROS" and m.member_id = @aid {
+        EXEC SQL DECLARE m3_cursor CURSOR FOR
+         SELECT M.list_id
+         FROM IMEMBERS M
+         WHERE M.member_type = "KERBEROS" AND M.member_id = :aid;
+        EXEC SQL OPEN m3_cursor;
+        while (1) {
+            EXEC SQL FETCH m3_cursor INTO :listid;
+            if (sqlca.sqlcode != 0) break;
 	    sq_save_data(sq, listid);
-##	}
+	}
 	/* now process each one */
 	while (sq_get_data(sq, &id)) {
 	    if (get_ace_internal("LIST", id, action, actarg) == MR_SUCCESS)
@@ -2221,6 +2309,7 @@ int get_ace_use(q, argv, cl, action, actarg)
 	}
 	if (get_ace_internal("KERBEROS", aid, action, actarg) == MR_SUCCESS)
 	  found++;
+    EXEC SQL CLOSE m3_cursor;
     }
 
     sq_destroy(sq);	
@@ -2250,59 +2339,107 @@ int get_ace_use(q, argv, cl, action, actarg)
     EXEC SQL END DECLARE SECTION;
 
     rargv[1] = name;
+    EXEC SQL DECLARE F1_cursor CURSOR FOR
+         SELECT F.label
+         FROM FILESYS F
+         WHERE F.owners = :aid;
+    EXEC SQL OPEN F1_cursor;
+
+    EXEC SQL DECLARE C1_cursor CURSOR FOR
+         SELECT C.capability
+         FROM CAPACLS C
+         WHERE C.list_id = :aid;
+    EXEC SQL OPEN C1_cursor;
+
     if (!strcmp(atype, "LIST")) {
 	rargv[0] = "FILESYS";
-##	repeat retrieve (name = filesys.label) 
-##		where filesys.owners = @aid {
+        while (1) {
+            EXEC SQL FETCH F1_cursor INTO :name;
+            if (sqlca.sqlcode != 0) break;
 	    (*action)(2, rargv, actarg);
 	    found++;
-##	}
-
+	}
 	rargv[0] = "QUERY";
-##	repeat retrieve (name = capacls.capability)
-##		where capacls.list_id = @aid {
+        while (1) {
+            EXEC SQL FETCH C1_cursor INTO :name;
+            if (sqlca.sqlcode != 0) break;
 	    (*action)(2, rargv, actarg);
 	    found++;
-##	}
+	}
     } else if (!strcmp(atype, "USER")) {
 	rargv[0] = "FILESYS";
-## 	repeat retrieve (name = filesys.label) 
-##		where filesys.owner = @aid {
+        while (1) {
+            EXEC SQL FETCH F1_cursor INTO :name;
+            if (sqlca.sqlcode != 0) break;
 	    (*action)(2, rargv, actarg);
 	    found++;
-##	}
+	}
     }
+    EXEC SQL CLOSE F1_cursor;
+    EXEC SQL CLOSE C1_cursor;
 
     rargv[0] = "LIST";
-##  repeat retrieve (name = list.#name) 
-##		where list.acl_type = @atype and list.acl_id = @aid {
+    EXEC SQL DECLARE l_cursor CURSOR FOR
+         SELECT L.name
+         FROM LIST L
+         WHERE L.acl_type = :atype AND L.acl_id = :aid;
+    EXEC SQL OPEN l_cursor;
+
+    while (1) {
+         EXEC SQL FETCH l_cursor INTO :name;
+         if (sqlca.sqlcode != 0) break;
 	 (*action)(2, rargv, actarg);
 	 found++;
-##  }
+    }
+    EXEC SQL CLOSE l_cursor;
 
     rargv[0] = "SERVICE";
-##  repeat retrieve (name = servers.#name) 
-##		where servers.acl_type = @atype and servers.acl_id = @aid {
+    EXEC SQL DECLARE s_cursor CURSOR FOR
+         SELECT S.name
+         FROM SERVERS S
+         WHERE S.acl_type = :atype AND S.acl_id = :aid;
+    EXEC SQL OPEN s_cursor;
+
+    while (1) {
+         EXEC SQL FETCH s_cursor INTO :name;
+         if (sqlca.sqlcode != 0) break;
 	 (*action)(2, rargv, actarg);
 	 found++;
-##  }
+    }
+    EXEC SQL CLOSE s_cursor;
 
     rargv[0] = "HOSTACCESS";
-##  repeat retrieve (name = machine.#name)
-##		where machine.mach_id = hostaccess.mach_id and 
-##		     hostaccess.acl_type = @atype and hostaccess.acl_id = @aid {
+    EXEC SQL DECLARE h_cursor CURSOR FOR
+         SELECT M.name
+         FROM MACHINE M, HOSTACCESS H
+         WHERE M.mach_id = H.mach_id 
+             AND H.acl_type = :atype AND H.acl_id = :aid;
+    EXEC SQL OPEN h_cursor;
+    while (1) {
+        EXEC SQL FETCH h_cursor INTO :name;
+        if (sqlca.sqlcode != 0) break;
 	(*action)(2, rargv, actarg);
 	found++;
-##  }
+    }
+    EXEC SQL CLOSE h_cursor;
+
     rargv[0] = "ZEPHYR";
-##  repeat retrieve (name = zephyr.class) 
-##		where zephyr.xmt_type = @atype and zephyr.xmt_id = @aid or
-##		      zephyr.sub_type = @atype and zephyr.sub_id = @aid or
-##		      zephyr.iws_type = @atype and zephyr.iws_id = @aid or
-##		      zephyr.iui_type = @atype and zephyr.iui_id = @aid {
+    EXEC SQL DECLARE z_cursor CURSOR FOR
+         SELECT Z.class
+         FROM ZEPHYR Z
+         WHERE Z.xmt_type = :atype AND Z.xmt_id = :aid OR
+            Z.sub_type = :atype AND Z.sub_id = :aid OR
+            Z.iws_type = :atype AND Z.iws_id = :aid OR
+            Z.iui_type = :atype AND Z.iui_id = :aid;
+
+    EXEC SQL OPEN z_cursor;
+    while (1) {
+         EXEC SQL FETCH h_cursor INTO :name;
+         if (sqlca.sqlcode != 0) break;
 	 (*action)(2, rargv, actarg);
 	 found++;
-##  }
+    }
+    EXEC SQL CLOSE z_cursor;
 
     if (!found) return(MR_NO_MATCH);
     return(MR_SUCCESS);
@@ -2323,14 +2460,14 @@ int get_lists_of_member(q, argv, cl, action, actarg)
     client *cl;
     int (*action)();
     int actarg;
-##{
+{
     int found = 0, direct = 1;
     char *rargv[6];
     EXEC SQL BEGIN DECLARE SECTION;
+    char *atype;
+    int aid, listid, id;
+    char name[33], active[5], public[5], hidden[5], maillist[5], group[5];
     EXEC SQL END DECLARE SECTION;
-##  char *atype;
-##  int aid, listid, id;
-##  char name[33], active[5], public[5], hidden[5], maillist[5], group[5];
 
     atype = argv[0];
     aid = *(int *)argv[1];
@@ -2432,13 +2569,19 @@ get_members_of_list(q, argv, cl, action, actarg)
     members = 0;
     sq = sq_create();
 
-##  repeat retrieve (member_type = imembers.#member_type,
-##		     member_id = imembers.#member_id)
-##	where imembers.#list_id = @list_id and imembers.direct = 1 {
+    EXEC SQL DECLARE m_cursor CURSOR FOR
+         SELECT M.member_type M.member_id
+         FROM IMEMBERS M
+         WHERE M.list_id = :list_id AND M.direct = 1;
+    EXEC SQL OPEN m_cursor;
+    while (1) {
+      EXEC SQL FETCH m_cursor INTO :member_type, :member_id;
+      if (sqlca.sqlcode != 0) break;
       if (members++ > 49)
-##	endretrieve
+         break;
       sq_save_data(sq, (member_type[0] << 24) | (member_id & 0xffffff));
-##  }
+    }
+    EXEC SQL CLOSE m_cursor;
     if (members <= 49) {
 	targv[1] = malloc(0);
 	while (sq_remove_data(sq, &member_id)) {
@@ -2608,14 +2751,19 @@ int qualified_get(q, argv, action, actarg, start, range, field, flags)
     rvar = range;
     rtbl = q->rtable;
     rfield = field;
-##  range of rvar is rtbl
-##  retrieve (name = rvar.rfield) where qual {
+    EXEC SQL DECLARE r_cursor CURSOR FOR
+         SELECT R.rfield
+         FROM RTBL R
+         WHERE qual;
+    EXEC SQL OPEN r_cursor;
+    while (1) {
+      EXEC SQL FETCH r_cursor INTO :name;
+      if (sqlca.sqlcode != 0) break;
 	(*action)(1, rargv, actarg);
-##  }
+    }
+    EXEC SQL CLOSE r_cursor;
     if (ingres_errno) return(mr_errcode);
-##  inquire_equel(rowcount = "rowcount")
-    if (rowcount == 0)
-      return(MR_NO_MATCH);
+    if (sqlca.sqlcode == 100) return(MR_NO_MATCH);
     return(MR_SUCCESS);
 }
 
@@ -2656,14 +2804,19 @@ int qualified_get_serverhost(q, argv, cl, action, actarg)
       
     rargv[0] = sname;
     rargv[1] = mname;
-##  range of sh is serverhosts
-##  retrieve (sname = sh.service, mname = machine.name) where qual {
+    EXEC SQL DECLARE s_cursor CURSOR FOR
+         SELECT S.service, M.name
+         FROM SERVERHOSTS S, MACHINE M
+         WHERE qual;
+    EXEC SQL OPEN s_cursor;
+    while (1) {
+      EXEC SQL FETCH s_cursor INTO :sname, :mname;
+      if (sqlca.sqlcode != 0) break;
 	(*action)(2, rargv, actarg);
-##  }
+    }
+    EXEC SQL CLOSE s_cursor;
     if (ingres_errno) return(mr_errcode);
-##  inquire_equel(rowcount = "rowcount")
-    if (rowcount == 0)
-      return(MR_NO_MATCH);
+    if (sqlca.sqlcode == 100) return(MR_NO_MATCH);
     return(MR_SUCCESS);
 }
 
@@ -2702,13 +2855,17 @@ register_user(q, argv, cl)
 ##  range of m is machine
 
     /* find user */
-##  repeat retrieve (users_id = u.#users_id)
-##	where u.#uid = @uid and (u.status = 0 or u.status = 5 or u.status = 6)
-##  inquire_equel(rowcount = "rowcount");
-    if (rowcount == 0)
-      return(MR_NO_MATCH);
-    if (rowcount > 1)
-      return(MR_NOT_UNIQUE);
+    EXEC SQL DECLARE u_cursor CURSOR FOR
+     SELECT U.users_id
+     FROM USERS U
+     WHERE U.uid = :uid AND (U.status = 0 OR U.status = 5 OR U.status = 6);
+    EXEC SQL OPEN u_cursor;
+    while (1) {
+        EXEC SQL FETCH u_cursor INTO :users_id;
+        if (sqlca.sqlcode != 0) break;
+    }
+    if (sqlca.sqlcode == 100) return(MR_NO_MATCH);
+    if (sqlca.sqlerrd[2] > 1) return(MR_NOT_UNIQUE);
 
     /* check new login name */
 ##  repeat retrieve (flag = any(u.#login where u.#login = @login and
@@ -2724,13 +2881,12 @@ register_user(q, argv, cl)
     com_err(whoami, 0, "new login name OK");
 
     /* choose place for pobox, put in mid */
+
 ##  repeat retrieve (mid = sh.mach_id, machname = m.name)
 ##    where sh.service = "POP" and m.mach_id = sh.mach_id and
 ##	sh.value2 - sh.value1 = max(sh.value2-sh.value1 where sh.service="POP")
     if (ingres_errno) return(mr_errcode);
-##  inquire_equel(rowcount = "rowcount");
-    if (rowcount == 0)
-      return(MR_NO_POBOX);
+    if (sqlca.sqlcode == 100) return(MR_NO_POBOX);
 
     /* change login name, set pobox */
     sprintf(buffer, "u.users_id = %d", users_id);
@@ -2740,9 +2896,8 @@ register_user(q, argv, cl)
 ##		      pop_id = @mid, pmodtime="now", pmodby=@who,
 ##		      pmodwith=@entity)
 ##	where u.#users_id = @users_id
-##  inquire_equel(rowcount = "rowcount");
     if (ingres_errno) return(mr_errcode);
-    if (rowcount != 1)
+    if (sqlca.sqlcode < 0 || sqlca.sqlerrd[2] != 1)
       return(MR_INTERNAL);
     set_pop_usage(mid, 1);
     com_err(whoami, 0, "set login name to %s and pobox to %s", login,
@@ -2754,10 +2909,20 @@ register_user(q, argv, cl)
       return(MR_NO_ID);
     if (set_next_object_id("list_id", "list"))
       return(MR_NO_ID);
-##  repeat retrieve (list_id = values.value) where values.name = "list_id"
+
+    EXEC SQL DECLARE v_cursor CURSOR FOR
+         SELECT V.value
+         FROM VALUES V
+         WHERE V.name = "list_id";
+    EXEC SQL OPEN v_cursor;
+    while (1) {
+        EXEC SQL FETCH v_cursor INTO :list_id;
+        if (sqlca.sqlcode != 0) break;
+    }
+    EXEC SQL CLOSE v_cursor;
+
     if (ingres_errno) return(mr_errcode);
-##  inquire_equel(rowcount = "rowcount");
-    if (rowcount != 1)
+    if (sqlca.sqlcode < 0 || sqlca.sqlerrd[2] != 1)
       return(MR_INTERNAL);
     incremental_clear_before();
 ##  repeat append list (name = @login, #list_id = @list_id, active = 1,
@@ -2767,8 +2932,7 @@ register_user(q, argv, cl)
 ##			modby = @who, modwith = @entity)
 ##	where values.name = "gid"
     if (ingres_errno) return(mr_errcode);
-##  inquire_equel(rowcount = "rowcount");
-    if (rowcount != 1)
+    if (sqlca.sqlcode < 0 || sqlca.sqlerrd[2] != 1)
       return(MR_INTERNAL);
     sprintf(buffer, "l.list_id = %d", list_id);
     incremental_after("list", buffer, 0);
@@ -2779,9 +2943,9 @@ register_user(q, argv, cl)
 ##  repeat append imembers (#list_id = @list_id, member_type = "USER",
 ##			   member_id = @users_id, ref_count = 1, direct = 1)
     if (ingres_errno) return(mr_errcode);
-##  inquire_equel(rowcount = "rowcount");
-    if (rowcount != 1)
+    if (sqlca.sqlcode < 0 || sqlca.sqlerrd[2] != 1)
       return(MR_INTERNAL);
+
     incremental_after("members", 0, aargv);
     com_err(whoami, 0, "group list created");
 
@@ -2817,8 +2981,7 @@ register_user(q, argv, cl)
 ##			   modby = @who, modwith = @entity)
 ##	where values.name = "filsys_id"
     if (ingres_errno) return(mr_errcode);
-##  inquire_equel(rowcount = "rowcount");
-    if (rowcount != 1)
+    if (sqlca.sqlcode < 0 || sqlca.sqlerrd[2] != 1)
       return(MR_INTERNAL);
     incremental_after("filesys", 
 	  "fs.filsys_id = values.value and values.name = \"filsys_id\"",
@@ -2829,8 +2992,7 @@ register_user(q, argv, cl)
     /* set quota */
 ##  repeat retrieve (quota = values.value) where values.name = "def_quota"
     if (ingres_errno) return(mr_errcode);
-##  inquire_equel(rowcount = "rowcount");
-    if (rowcount != 1)
+    if (sqlca.sqlcode < 0 || sqlca.sqlerrd[2] != 1)
       return(MR_NO_QUOTA);
     incremental_clear_before();
 ##  repeat append #quota (entity_id = @users_id, filsys_id = values.value,
@@ -2839,15 +3001,13 @@ register_user(q, argv, cl)
 ##			  modby = @who, modwith = @entity)
 ##	where values.name = "filsys_id"
     if (ingres_errno) return(mr_errcode);
-##  inquire_equel(rowcount = "rowcount");
-    if (rowcount != 1)
+    if (sqlca.sqlcode < 0 || sqlca.sqlerrd[2] != 1)
       return(MR_INTERNAL);
 ##  repeat replace nfsphys (allocated = nfsphys.allocated + @quota)
 ##	where nfsphys.nfsphys_id = filesys.#phys_id and
 ##	      filesys.filsys_id = values.value and values.name = "filsys_id"
     if (ingres_errno) return(mr_errcode);
-##  inquire_equel(rowcount = "rowcount");
-    if (rowcount != 1)
+    if (sqlca.sqlcode < 0 || sqlca.sqlerrd[2] != 1)
       return(MR_INTERNAL);
     aargv[0] = login;
     aargv[1] = "USER";
@@ -2859,11 +3019,14 @@ register_user(q, argv, cl)
 
     cache_entry(login, "USER", users_id);
 
-##  repeat replace tblstats (updates = tblstats.updates + 1, modtime = "now")
-##	where tblstats.table = "users"
-##  repeat replace tblstats (appends = tblstats.appends + 1, modtime = "now")
-##	where tblstats.table = "list" or tblstats.table = "filesys" or
-##	      tblstats.table = "quota"
+    EXEC SQL UPDATE tblstats
+         SET updates = update + 1, modtime = "now"
+         WHERE table = "users";
+
+    EXEC SQL UPDATE tblstats
+         SET appends = appends + 1, modtime = "now"
+         WHERE table = "list" OR table = "filesys" OR table = "quota";
+
     if (ingres_errno) return(mr_errcode);
     return(MR_SUCCESS);
 }
@@ -2890,8 +3053,9 @@ int count;
     int n = count;
     EXEC SQL END DECLARE SECTION;
 
-##  repeat replace serverhosts (value1 = serverhosts.value1 + @n)
-##         where serverhosts.service = "POP" and serverhosts.#mach_id = @mach_id
+    EXEC SQL UPDATE serverhosts
+         SET value1 = value1 + :n
+         WHERE service = "POP" AND mach_id = :mach_id;
 
     if (ingres_errno) return(mr_errcode);
     return(MR_SUCCESS);
@@ -3084,13 +3248,12 @@ validate_id(argv, vo)
     if (!strcmp(namefield, "uid")) {
 ##    retrieve (id = table.idfield) where table.namefield = int4(name)
       if (ingres_errno) return(mr_errcode);
-##    inquire_equel (rowcount = "rowcount")
     } else {
 ##    retrieve (id = table.idfield) where table.namefield = name
       if (ingres_errno) return(mr_errcode);
-##    inquire_equel (rowcount = "rowcount")
     }
-    if (rowcount != 1) return(vo->error);
+    if (sqlca.sqlcode < 0 || sqlca.sqlerrd[2] != 1)
+      return(vo->error);
     *(int *)argv[vo->index] = id;
     return(MR_EXISTS);
 }
@@ -3134,8 +3297,7 @@ validate_date(argv, vo)
     idate = argv[vo->index];
 
 ##  retrieve (dd = interval("years", date(idate) - date("today")))
-##  inquire_equel (errorno = "errorno")
-    if (errorno != 0 || dd > 5.0) return(MR_DATE);
+    if (sqlca.sqlcode < 0 || dd > 5.0) return(MR_DATE);
     return(MR_EXISTS);
 }
 
@@ -3234,8 +3396,8 @@ validate_typedata(q, argv, vo)
 ##  repeat retrieve (data_type = alias.trans) 
 ##         where alias.#name = @field_type and alias.type = "TYPEDATA"
     if (ingres_errno) return(mr_errcode);
-##  inquire_equel (rowcount = "rowcount")
-    if (rowcount != 1) return(MR_TYPE);
+    if (sqlca.sqlcode < 0 || sqlca.sqlerrd[2] != 1)
+      return(MR_TYPE);
 
     /* now retrieve the record id corresponding to the named object */
     if (index(data_type, ' '))
@@ -3260,8 +3422,8 @@ validate_typedata(q, argv, vo)
 		set_next_object_id(q->validate->object_id, q->rtable);
 		name = vo->idfield;
 ##		repeat retrieve (id = values.value) where values.#name = @name
-##		inquire_equel(rowcount = "rowcount")
-		if (rowcount != 1) return(MR_LIST);
+                if (sqlca.sqlcode < 0 || sqlca.sqlerrd[2] != 1)
+                  return(MR_LIST);
 	    } else
 	      return(MR_LIST);
 	} else if (status) return(status);
@@ -3311,8 +3473,7 @@ struct valobj *vo;
     idfield = vo->idfield;
 ##  replace table (modtime = "now") where table.idfield = 0
     if (ingres_errno) return(mr_errcode);
-##  inquire_equel (rowcount = "rowcount")
-    if (rowcount != 1)
+    if (sqlca.sqlcode < 0 || sqlca.sqlerrd[2] != 1)
       return(vo->error);
     else
       return(MR_EXISTS);

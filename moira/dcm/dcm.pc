@@ -7,11 +7,11 @@
  *
  * $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/dcm.pc,v $
  * $Author: danw $
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/dcm.pc,v 1.1 1997-09-05 20:15:11 danw Exp $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/dcm.pc,v 1.2 1998-01-05 14:52:46 danw Exp $
  */
 
 #ifndef lint
-static char rcsid_dcm_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/dcm.pc,v 1.1 1997-09-05 20:15:11 danw Exp $";
+static char rcsid_dcm_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/dcm.pc,v 1.2 1998-01-05 14:52:46 danw Exp $";
 #endif lint
 
 #include <signal.h>
@@ -104,7 +104,7 @@ char *argv[];
 	    switch (fork()) {
 		case -1:
 		    fprintf(stderr,
-			    "dcm: could not fork to for service %s -- exiting",
+			    "dcm: could not fork for service %s -- exiting",
 			    name);
 		    exit(1);
 		case 0:
@@ -192,10 +192,8 @@ int generate_service(char *name, int force)
 	    errmsg = error_message(status);
 	    EXEC SQL UPDATE servers SET dfcheck = :now, harderror = :status,
 		errmsg = :errmsg, inprogress = 0 WHERE name=UPPER(:name);
-#if 0
 	    critical_alert("DCM","DCM building config files for %s: %s",
 			   name, errmsg);
-#endif
 	}
     }
     EXEC SQL COMMIT RELEASE;
@@ -242,10 +240,8 @@ void do_hosts(char *service)
 	    if (!SOFT_FAIL(status)) {
 		EXEC SQL UPDATE serverhosts SET hosterror = :status
 		    WHERE CURRENT OF csr_hst1;
-#if 0
 		critical_alert("DCM", "DCM updating %s:%s: %s",
 			       service, host, errmsg);
-#endif
 	    }
 	    
 	    if (replicated) break;
@@ -274,10 +270,8 @@ void do_hosts(char *service)
 		if (!SOFT_FAIL(status)) {
 		    EXEC SQL UPDATE serverhosts SET hosterror = :status
 			WHERE CURRENT OF csr_hst2;
-#if 0
 		    critical_alert("DCM", "DCM updating %s:%s: %s",
 				   service, host, errmsg);
-#endif
 		}
 		
 		if (replicated) {

@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menus.c,v 1.12 1989-03-27 14:59:00 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menus.c,v 1.13 1989-08-22 15:55:01 mar Exp $";
 #endif lint
 
 /*	This is the file menus.c for the SMS Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menus.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menus.c,v 1.12 1989-03-27 14:59:00 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menus.c,v 1.13 1989-08-22 15:55:01 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -477,6 +477,30 @@ Menu nfsphys_menu = {
   }
 };
 
+Menu krbmap_menu = {
+    NULLFUNC,
+    NULLFUNC,
+    "User Kerberos Mapping Menu",
+    3,
+    {
+	{ GetKrbmap, NULLMENU, 3, {
+	    { "show", "Show Kerberos Mappings" },
+	    { "user", "User login name: " },
+	    { "principal", "Principal: " },
+	} },
+	{ AddKrbmap, NULLMENU, 3, {
+	    { "add", "Add Kerberos Mapping" },
+	    { "user", "User login name: " },
+	    { "principal", "Principal (this is case sensitive): " },
+	} },
+	{ DeleteKrbmap, NULLMENU, 3, {
+	    { "delete", "Delete Kerberos Mapping" },
+	    { "user", "User login name: " },
+	    { "principal", "Principal: " },
+	} },
+    }
+};
+
 /*
  * User Menu
  */
@@ -504,7 +528,6 @@ Menu user_menu = {
       {"modify", "Change all user fields"},
       {"login", "Login name: "}
     } },
-/*    SIMPLEFUNC("chpw", "Change a user's password", change_user_password), */
     SIMPLEFUNC("adduser", "Add a new user to the database", 
 	       AddNewUser),
     SIMPLEFUNC("register", "Register a user", RegisterUser),
@@ -516,13 +539,9 @@ Menu user_menu = {
       {"expunge", "Expunge user"},
       {"login", "Login name: "}
     } },
-/*    {DeleteUserByUid, NULLMENU, 2, {
-      {"udelete", "Delete user by uid"},
-      {"uid", "User ID (not MIT ID!): "}
-    } }, */
     SUBMENU("pobox", "Post Office Box Menu", &pobox_menu),
     SUBMENU("quota", "Quota Menu", &quota_menu),
-    SIMPLEFUNC("verbose", "Toggle Verbosity of Delete", ToggleVerboseMode)
+    SUBMENU("krbmap", "User Kerberos Mappings", &krbmap_menu),
   }
 };
 
@@ -544,7 +563,7 @@ Menu dcm_menu = {
 };
 
 /* 
- * Printer Menu
+ * Printcap Printer Menu
  */
 
 Menu printer_menu = {
@@ -571,6 +590,53 @@ Menu printer_menu = {
     } }
   }
 };
+
+
+/* 
+ * Palladium Printer Menu
+ */
+
+Menu palladium_menu = {
+  NULLFUNC, 
+  NULLFUNC, 
+  "Printer Menu",
+  7,
+  {
+    { GetPalladium, NULLMENU, 2, {
+      {"get", "Get Palladium Server Information"},
+      {"name", "Name of Printer: "}
+    } },
+    { AddPalladium, NULLMENU, 2, {
+      {"add", "Add New Palladium Server to Database"},
+      {"name", "Supervisor/server name: "},
+    } },
+    { ChngPalladium, NULLMENU, 2, {
+      {"change", "Update Palladium Server Information"},
+      {"name", "name: "},
+    } },
+    { DeletePalladium, NULLMENU, 2, {
+      {"delete", "Delete Palladium Server Entry"},
+      {"name", "Printer Name: "}
+    } },
+    { ShowPalladiumAlias, NULLMENU, 3, {
+      {"aliases", "Show Alternate Queue Names"},
+      {"newname", "Alternate name: "},
+      {"server", "Real supervisor or server name: "},
+    } },
+    { AddPalladiumAlias, NULLMENU, 3, {
+      {"alias", "Add Alternate Queue Name"},
+      {"newname", "New name: "},
+      {"server", "Real supervisor or server name: "},
+    } },
+    { DeletePalladiumAlias, NULLMENU, 3, {
+      {"unalias", "Remove Alternate Queue Name"},
+      {"newname", "Alternate name: "},
+      {"server", "Real supervisor or server name: "},
+    } },
+  }
+};
+
+
 
 
 /*
@@ -608,7 +674,7 @@ Menu sms_top_menu = {
   NULLFUNC,
   NULLFUNC,
   "Sms Database Manipulation",
-  9,
+  10,
   {
     SUBMENU("cluster","Cluster Menu",&cluster_menu),
     SUBMENU("filesys","Filesystem Menu", &filesys_menu),
@@ -616,7 +682,8 @@ Menu sms_top_menu = {
     SUBMENU("machine","Machine Menu",&machine_menu),
     SUBMENU("nfs","NFS Physical Menu", &nfsphys_menu),
     SUBMENU("user","User Menu", &user_menu),
-    SUBMENU("printer", "Printer Menu", &printer_menu),
+    SUBMENU("printcap", "Printcap Printer Menu", &printer_menu),
+    SUBMENU("palladium", "Palladium Printer Menu", &palladium_menu),
     SUBMENU("dcm", "DCM Menu", &dcm_menu),
     SUBMENU("misc", "Miscellaneous Menu", &misc_menu)
   }

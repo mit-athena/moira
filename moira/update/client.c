@@ -1,15 +1,15 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/client.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/client.c,v 1.2 1988-08-04 14:26:17 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/client.c,v 1.3 1988-08-04 14:30:42 mar Exp $
  */
 
 #ifndef lint
-static char *rcsid_client2_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/client.c,v 1.2 1988-08-04 14:26:17 mar Exp $";
+static char *rcsid_client2_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/client.c,v 1.3 1988-08-04 14:30:42 mar Exp $";
 #endif	lint
 
 /*
  * MODULE IDENTIFICATION:
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/client.c,v 1.2 1988-08-04 14:26:17 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/client.c,v 1.3 1988-08-04 14:30:42 mar Exp $
  *	Copyright 1987 MIT Project Athena.
  * DESCRIPTION:
  *	This code handles the actual distribution of data files
@@ -253,7 +253,7 @@ execute(path)
  * this line when they are fixed.  -mar  7/26/88
  ****************************************************************/
 	return(SMS_INTERNAL);
-	return(response.w_retcode);
+/*	return(response.w_retcode); */
     }
     return(SMS_SUCCESS);
 }

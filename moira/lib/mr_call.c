@@ -1,15 +1,18 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_call.c,v $
  *	$Author: wesommer $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_call.c,v 1.2 1987-05-31 22:03:37 wesommer Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_call.c,v 1.3 1987-06-01 03:33:54 wesommer Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
  *	$Log: not supported by cvs2svn $
+ * Revision 1.2  87/05/31  22:03:37  wesommer
+ * Fixed numerous bugs; still shaky.
+ * 
  */
 
 #ifndef lint
-static char *rcsid_sms_call_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_call.c,v 1.2 1987-05-31 22:03:37 wesommer Exp $";
+static char *rcsid_sms_call_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_call.c,v 1.3 1987-06-01 03:33:54 wesommer Exp $";
 #endif lint
 
 #include "sms_private.h"
@@ -231,7 +234,27 @@ sms_do_call(parms, reply)
 	return 0;
 }
 
-sms_destroy_reply() /*XXX not implemented yet*/
+sms_destroy_reply(reply)
+	sms_params *reply;
 {
-	
+	int i;
+	if (reply) {
+		if (reply->sms_argl)
+			free(reply->sms_argl);
+		reply->sms_argl = NULL;
+		if (reply->sms_flattened)
+			free(reply->sms_flattened);
+		reply->sms_flattened = NULL;
+		if (reply->sms_argv) {
+			for (i=0; i<reply->sms_argc; i++) {
+				if (reply->sms_argv[i])
+					free (reply->sms_argv[i]);
+				reply->sms_argv[i] = NULL;
+			}
+			free(reply->sms_argv);
+		}
+		reply->sms_argv = NULL;
+		free(reply);
+	}
 }
+

@@ -1,10 +1,10 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb.c,v 1.2 1987-08-02 23:51:38 wesommer Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb.c,v 1.3 1989-06-01 21:40:09 mar Exp $
  */
 
 #ifndef lint
-static char *rcsid_gdb_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb.c,v 1.2 1987-08-02 23:51:38 wesommer Exp $";
+static char *rcsid_gdb_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb.c,v 1.3 1989-06-01 21:40:09 mar Exp $";
 #endif	lint
 
 
@@ -40,6 +40,10 @@ extern char *sys_errlist[];
 
 extern int errno;
 
+/* This global is defined to make sure that Moira clients are linked
+ * against the correct library.
+ */
+int link_against_the_moira_version_of_gdb = 0;
 int g_inited = FALSE;				/* gdb_init has not been */
 						/* called */
 

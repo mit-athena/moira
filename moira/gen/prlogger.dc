@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/prlogger.dc,v 1.4 1993-04-16 14:11:57 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/prlogger.dc,v 1.5 1993-04-20 16:39:55 mar Exp $
  *
  * This generates a list of active users for the prlogger
  *
@@ -27,7 +27,7 @@ char **argv;
     FILE *out = stdout;
     char *outf = NULL, outft[64];
     struct stat sb;
-    int flag;
+    int flag, ret;
     EXEC SQL BEGIN DECLARE SECTION;
     char login[9], class[9];
     EXEC SQL END DECLARE SECTION;
@@ -42,8 +42,13 @@ char **argv;
 
     if (argc == 2) {
 	if (stat(argv[1], &sb) == 0) {
-	    if (ModDiff (&flag, "users", sb.st_mtime))
-	      exit(MR_DATE);
+	    if (ModDiff (&flag, "users", sb.st_mtime)) {
+		if (sqlca.sqlcode == -37000 ||
+		    sqlca.sqlcode == -49900)
+		  exit(MR_DEADLOCK);
+		else
+		  exit(MR_DATE);		  
+	    }
 	    if (flag < 0) {
 		fprintf(stderr, "File %s does not need to be rebuilt.\n",
 			argv[1]);

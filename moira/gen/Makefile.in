@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.36 2003-10-21 18:35:48 zacheiss Exp $
+# $Id: Makefile.in,v 1.37 2003-12-15 20:16:23 zacheiss Exp $
 
 SHELL=/bin/sh
 @SET_MAKE@
@@ -46,7 +46,8 @@ SCRIPTS=access.gen access.sh acl.sh aliases.sh boot.sh ca.gen calendar.gen dhcp.
 	events.gen events.sh hesiod.sh ip-billing.gen ip-billing.sh longjobs.gen \
 	longjobs.sh mailhub.sh mailman.gen mailman.sh ndb.sh nfs.sh null.sh \
 	postoffice.sh print.sh sapprint.gen sapprint.sh spwatch.gen stellar.gen \
-	stellar.sh warehouse.sh www.sh zephyr.sh install_dirs install_quotas zero_quotas
+	stellar.sh warehouse.sh winstats.gen winstats.sh www.sh zephyr.sh \
+	install_dirs install_quotas zero_quotas
 
 .SUFFIXES: .pc .gen
 

@@ -1,20 +1,20 @@
 /*
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/requests.c,v $
- *      $Author: qjb $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/requests.c,v 1.3 1990-01-12 11:22:08 qjb Exp $
+ *      $Author: mar $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/requests.c,v 1.4 1990-03-19 19:30:07 mar Exp $
  *
  *      Copyright (C) 1987, 1988 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
  *	<mit-copyright.h>.
  *
- *      Server for user registration with SMS and Kerberos.
+ *      Server for user registration with Moira and Kerberos.
  *
  *      This file handles the processing of requests for the register
  *      server.
  */
 
 #ifndef lint
-static char *rcsid_requests_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/requests.c,v 1.3 1990-01-12 11:22:08 qjb Exp $";
+static char *rcsid_requests_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/requests.c,v 1.4 1990-03-19 19:30:07 mar Exp $";
 #endif lint
 
 /*
@@ -34,8 +34,8 @@ static char *rcsid_requests_c = "$Header: /afs/.athena.mit.edu/astaff/project/mo
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <netdb.h>
-#include "sms.h"
-#include "sms_app.h"
+#include "moira.h"
+#include "moira_site.h"
 #include "reg_svr.h"
 
 #define NUM_REQUESTS_SAVED 100	/* Number of transactions to save */
@@ -400,14 +400,3 @@ parse_pkt(packet, pktlen, message)
 
     return status;
 }
-
-/*
- * Local Variables:
- * mode: c
- * c-argdecl-indent: 2
- * c-brace-offset: -4
- * c-continued-statement-offset: 4
- * c-indent-level: 4
- * c-label-offset: -2
- * End:
- */

@@ -1,7 +1,7 @@
 /*
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.30 1990-03-13 13:17:23 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.31 1990-03-19 19:29:56 mar Exp $
  *
  *      Copyright (C) 1987, 1988 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -11,12 +11,12 @@
  *
  *      This program is a client of the Kerberos admin_server and a
  *      server for the userreg program.  It is not a client of the
- *      Moira server as it is linked with libsmsglue which bypasses
+ *      Moira server as it is linked with libmoiraglue which bypasses
  *      the network protocol.
  */
 
 #ifndef lint
-static char *rcsid_reg_svr_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.30 1990-03-13 13:17:23 mar Exp $";
+static char *rcsid_reg_svr_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.31 1990-03-19 19:29:56 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -31,8 +31,8 @@ static char *rcsid_reg_svr_c = "$Header: /afs/.athena.mit.edu/astaff/project/moi
 #include <kadm_err.h>
 #include <krb_err.h>
 #include <errno.h>
-#include "sms.h"
-#include "sms_app.h"
+#include "moira.h"
+#include "moira_site.h"
 #include "reg_svr.h"
 
 extern char admin_errmsg[];
@@ -73,16 +73,16 @@ main(argc,argv)
     krb_set_tkt_string("/tmp/tkt_ureg");
 
     /* Connect to the Moira server */
-    if ((status = sms_connect(SMS_SERVER)) != SMS_SUCCESS) 
+    if ((status = mr_connect(MOIRA_SERVER)) != MR_SUCCESS) 
     {
-	com_err(whoami, status, " on sms_connect");
+	com_err(whoami, status, " on mr_connect");
 	exit(1);
     }
     
     /* Authorize, telling the server who you are */
-    if ((status = sms_auth(whoami)) != SMS_SUCCESS) 
+    if ((status = mr_auth(whoami)) != MR_SUCCESS) 
     {
-	com_err(whoami, status, " on sms_auth");
+	com_err(whoami, status, " on mr_auth");
 	exit(1);
     }
     
@@ -238,7 +238,7 @@ int db_callproc(argc,argv,queue)
   int argc;			/* Number of arguments returned by Moira */
   char *argv[];			/* Arguments returned by Moira */
   struct save_queue *queue;	/* Queue to save information in */
-/* This function is called by sms_query after each tuple found.  It is
+/* This function is called by mr_query after each tuple found.  It is
    used by find_user to cache information about each user found.  */
 {
     struct db_data *data;	/* Structure to store the information in */
@@ -253,7 +253,7 @@ int db_callproc(argc,argv,queue)
 	critical_alert
 	    (FAIL_INST,
 	     "Wrong number of arguments returned from get_user_by_name.");
-	status = SMS_ABORT;
+	status = MR_ABORT;
     }
     else
     {
@@ -308,13 +308,13 @@ int find_user(message)
 	queue = sq_create();
 	
 	/* Do it */
-	status = sms_query(q_name,q_argc,q_argv,db_callproc,(char *)queue);
+	status = mr_query(q_name,q_argc,q_argv,db_callproc,(char *)queue);
 	
 #ifdef DEBUG
 	fprintf(stderr," %d returned by get_user_by_name\n",status);
 #endif
 	
-	if (status == SMS_SUCCESS) 
+	if (status == MR_SUCCESS) 
 	{
 	    /* Traverse the list, freeing data as we go.  If sq_get_data()
 	       returns zero if there is no more data on the queue. */
@@ -363,9 +363,9 @@ int verify_user(message,retval)
     status = find_user(message);
 
     /* If Moira coudn't find the user */
-    if (status == SMS_NO_MATCH) 
+    if (status == MR_NO_MATCH) 
 	status = UREG_USER_NOT_FOUND;
-    else if (status == SMS_SUCCESS)
+    else if (status == MR_SUCCESS)
     {
 	/* If the information sent over in the packet did not point to a
 	   valid user, the mit_id field in the formatted packet structure
@@ -615,22 +615,22 @@ int reserve_user(message,retval)
 	/* Now that we have a valid user with a valid login... */
 
 	/* First, try to reserve the user in Moira. */
-	(void) sprintf(fstype_buf,"%d",SMS_FS_STUDENT);
+	(void) sprintf(fstype_buf,"%d",MR_FS_STUDENT);
 	q_name = "register_user";
 	q_argv[0] = message->db.uid;
 	q_argv[1] = login;
 	q_argv[2] = fstype_buf;
 	q_argc = 3;
-	status = sms_query(q_name,q_argc,q_argv,null_callproc,(char *)0);
+	status = mr_query(q_name,q_argc,q_argv,null_callproc,(char *)0);
 	switch (status)
 	{
-	  case SMS_SUCCESS:
+	  case MR_SUCCESS:
 	    status = SUCCESS;
 	    break;
-	  case SMS_IN_USE:
+	  case MR_IN_USE:
 	    status = UREG_LOGIN_USED;
 	    break;
-	  case SMS_DEADLOCK:
+	  case MR_DEADLOCK:
 	    status = UREG_MISC_ERROR;
 	    break;
 	  default:
@@ -689,9 +689,9 @@ struct msg *message;
     q_argc = 2;
     q_argv[0] = login;
     q_argv[1] = state;
-    if ((status = sms_query(q_name, q_argc, q_argv, null_callproc,
-			    (char *)0)) != SMS_SUCCESS) {
-	if (status == SMS_DEADLOCK)
+    if ((status = mr_query(q_name, q_argc, q_argv, null_callproc,
+			    (char *)0)) != MR_SUCCESS) {
+	if (status == MR_DEADLOCK)
 	  status = UREG_MISC_ERROR;
 	else
 	  critical_alert(FAIL_INST,"%s returned from update_user_status.",
@@ -760,7 +760,7 @@ char **qargv;
     if (argc != U_END) {
 	critical_alert(FAIL_INST,
 		       "Wrong number of args returned from get_user_by_uid");
-	status = SMS_ABORT;
+	status = MR_ABORT;
     } else {
 	qargv[U_NAME] = strsave(argv[U_NAME]);
 	qargv[U_UID+1] = strsave(argv[U_UID]);
@@ -826,24 +826,24 @@ char *retval;
 	/* Now that we have a valid user with a valid login... */
 
 	q_argv[0] = message->db.uid;
-	status = sms_query("get_user_by_uid", 1, q_argv, getuserinfo, q_argv);
+	status = mr_query("get_user_by_uid", 1, q_argv, getuserinfo, q_argv);
 	if (status != SUCCESS) {
 	    com_err(whoami, status, " while getting user info");
 	    return(status);
 	}
 	q_argv[U_NAME+1] = login;
 	q_argv[U_STATE+1] = "7";
-	status = sms_query("update_user", U_MODTIME+1, q_argv,
+	status = mr_query("update_user", U_MODTIME+1, q_argv,
 			   null_callproc, NULL);
 	switch (status)
 	{
-	  case SMS_SUCCESS:
+	  case MR_SUCCESS:
 	    status = SUCCESS;
 	    break;
-	  case SMS_IN_USE:
+	  case MR_IN_USE:
 	    status = UREG_LOGIN_USED;
 	    break;
-	  case SMS_DEADLOCK:
+	  case MR_DEADLOCK:
 	    status = UREG_MISC_ERROR;
 	    break;
 	  default:

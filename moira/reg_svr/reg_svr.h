@@ -1,11 +1,11 @@
 /*
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.h,v $
- *      $Author: qjb $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.h,v 1.6 1990-01-12 11:22:48 qjb Exp $
+ *      $Author: mar $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.h,v 1.7 1990-03-19 19:30:04 mar Exp $
  *
  *      Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
- *      Server for user registration with SMS and Kerberos.
+ *      Server for user registration with MOIRA and Kerberos.
  *
  *      This file contains all the information needed by all source
  *      files for the user registration server.
@@ -42,7 +42,7 @@ extern char *malloc();
 extern char *whoami;		/* Name of program - used by libraries */
 extern int errno;		/* Unix error number */
 
-/* This structure holds information from the SMS database that will be
+/* This structure holds information from the MOIRA database that will be
    worth holding on to.  An instance of it appears in the formatted 
    packet structure. */
 struct db_data
@@ -67,7 +67,7 @@ struct msg
     int encrypted_len;		/* Length of encrypted information in packet */
     char *leftover;		/* Leftover information sent in the packet */
     int leftover_len;		/* Length of leftover information */
-    struct db_data db;		/* Information from the SMS database */
+    struct db_data db;		/* Information from the MOIRA database */
 };
 
 void failure_alert();		/* Log an unexplainable failure */

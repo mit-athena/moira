@@ -7,7 +7,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/f_defs.h,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/f_defs.h,v 1.11 1989-03-27 14:58:09 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/f_defs.h,v 1.12 1989-08-21 22:40:49 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -128,12 +128,17 @@ int UpdateUser();		/* modify info about a user. */
 int DeactivateUser();		/* change a user's status to DELETED */
 int ChangeUserPOBox();		/* change the PO box of a user. */
 int DeleteUserByUid();		/* detete a user by uid. */
+int GetKrbmap();		/* fetch a user->kerberos mapping */
+int AddKrbmap();
+int DeleteKrbmap();
 
 /* printer.c */
 int AddPcap();
 int GetPcap();
 int ChngPcap();
 int DeletePcap();
+int GetPalladium(), AddPalladium(), ChngPalladium(), DeletePalladium();
+int ShowPalladiumAlias(), AddPalladiumAlias(), DeletePalladiumAlias();
 
 /* dcm.c */
 int EnableDcm(), InProgress(), DcmFailed(), Dcm();

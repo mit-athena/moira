@@ -1,4 +1,4 @@
-/* $Id: genacl.pc,v 1.3 2000-03-09 19:56:47 zacheiss Exp $
+/* $Id: genacl.pc,v 1.4 2002-02-27 09:53:12 zacheiss Exp $
  *
  * Utility functions for outputting ACLs
  *
@@ -20,7 +20,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/genacl.pc,v 1.3 2000-03-09 19:56:47 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/genacl.pc,v 1.4 2002-02-27 09:53:12 zacheiss Exp $");
 
 static char defaultrealm[REALM_SZ];
 
@@ -129,7 +129,7 @@ struct save_queue *get_acl(char *type, int id,
 static void save_imember(struct save_queue *sq, char *type, int id, char *tag)
 {
   EXEC SQL BEGIN DECLARE SECTION;
-  int lid = id, mid, mid2, tagid;
+  int lid = id, mid, mid2, tagid, status;
   char mtype[IMEMBERS_MEMBER_TYPE_SIZE];
   EXEC SQL END DECLARE SECTION;
   char *mtag;
@@ -137,7 +137,9 @@ static void save_imember(struct save_queue *sq, char *type, int id, char *tag)
   switch (*type)
     {
     case 'U':
-      sq_save_data(sq, imember('U', user_lookup(id), tag));
+      EXEC SQL SELECT status INTO :status FROM users WHERE users_id = :id;
+      if (status != 3)
+	sq_save_data(sq, imember('U', user_lookup(id), tag));
       break;
 
     case 'K':

@@ -1,11 +1,21 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v $
- *	$Author: mike $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.14 1987-09-04 17:50:03 mike Exp $
+ *	$Author: wesommer $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.15 1987-09-11 15:31:58 wesommer Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
  *	$Log: not supported by cvs2svn $
+Revision 1.15  87/09/10  22:44:49  wesommer
+One more table needs to be modified when adding the user-group.
+
+Revision 1.14  87/09/04  17:50:03  mike
+Renamed delete_list_members to followup_delete_list.  New routine removes
+list from maillists and groups tables in addition to the members table.
+
+Added routines validate_label and validate_label_2 used in validating
+filesys labels for get_filesys and delete_filesys respectively.
+
 Revision 1.13  87/09/01  16:24:01  wesommer
 A list should be considered modified if its acl changes.
 
@@ -54,7 +64,7 @@ Initial revision
  */
 
 #ifndef lint
-static char *rcsid_qsupport_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.14 1987-09-04 17:50:03 mike Exp $";
+static char *rcsid_qsupport_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.15 1987-09-11 15:31:58 wesommer Exp $";
 #endif lint
 
 #include "query.h"
@@ -1379,10 +1389,13 @@ add_user_group(q, argv)
 ##      repeat retrieve (exists = any(g.#gid where g.#gid = @gid))
     }
 ##  repeat replace v (value = @gid) where v.name = "gid"
-
     /* add list to group table */
 ##  repeat append groups (#list_id = @list_id, ltid = list.tid, #gid = @gid)
 ##      where list.#list_id = @list_id
+
+##  repeat replace tbs (modtime = "now", appends = tbs.appends + 1)
+##		where tbs.table = "groups"
+
 ##  repeat replace tbs (modtime = "now", appends = tbs.appends + 1)
 ##         where tbs.table = "members"
 

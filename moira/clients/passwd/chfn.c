@@ -3,13 +3,13 @@
  * and distribution information, see the file "mit-copyright.h". 
  *
  * $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chfn.c,v $
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chfn.c,v 1.4 1989-08-28 23:26:35 mar Exp $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chfn.c,v 1.5 1989-09-07 14:10:43 mar Exp $
  * $Author: mar $
  *
  */
 
 #ifndef lint
-static char *rcsid_chfn_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chfn.c,v 1.4 1989-08-28 23:26:35 mar Exp $";
+static char *rcsid_chfn_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chfn.c,v 1.5 1989-09-07 14:10:43 mar Exp $";
 #endif not lint
 
 /*
@@ -291,13 +291,13 @@ char *ask(question, def_val, phone_num)
 	}
 	
 	if (phone_num && ok) {
-	    for (i = 0; i < strlen(buf); i++) {
-		if (!isdigit(buf[i]) && (buf[i] != '-')) {
+	    for (i = 0; i < strlen(result); i++) {
+		if (!isdigit(result[i]) && (result[i] != '-')) {
 		    printf("Phone numbers can contain only digits.\n");
 		    ok = FALSE;
 		    break;
 		}
-		if (buf[i] == '-')
+		if (result[i] == '-')
 		    dashes = TRUE;
             }
         }

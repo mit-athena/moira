@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_server.h,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_server.h,v 1.12 1988-08-11 17:22:16 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_server.h,v 1.13 1988-12-29 17:57:41 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
@@ -38,8 +38,6 @@ struct krbname {
 typedef struct _client {
 	OPERATION pending_op;	/* Primary pending operation */
 	CONNECTION con;		/* Connection to the client */
-	int state;		/* XXX this is really superfluous and should */
-				/* be removed */
 	int action;		/* what action is pending? */
 	sms_params *args, reply;
 	int id;			/* Unique id of client */

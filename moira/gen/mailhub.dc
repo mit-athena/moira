@@ -1,5 +1,5 @@
 
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/mailhub.dc,v 1.6 1993-07-09 16:21:51 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/mailhub.dc,v 1.7 1993-11-23 17:32:42 mar Exp $
  *
  * This generates the /usr/lib/aliases file for the mailhub.
  *
@@ -157,11 +157,12 @@ get_info()
     EXEC SQL SELECT modtime INTO :buf FROM list WHERE list_id = 0;
 
     cnt = 0;
-    machines = create_hash(10);
+    machines = create_hash(1000);
 
     EXEC SQL DECLARE m_cursor CURSOR FOR
       SELECT mach_id, name
       FROM machine
+      WHERE status=1
       ORDER BY mach_id;
     EXEC SQL OPEN m_cursor;
     while (1) {

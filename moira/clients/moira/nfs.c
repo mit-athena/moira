@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/nfs.c,v 1.15 1990-04-09 18:04:17 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/nfs.c,v 1.16 1990-07-13 15:52:35 mar Exp $";
 #endif lint
 
 /*	This is the file nfs.c for the MOIRA Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/nfs.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/nfs.c,v 1.15 1990-04-09 18:04:17 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/nfs.c,v 1.16 1990-07-13 15:52:35 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -33,7 +33,7 @@
 
 #define TYPE_NFS    "NFS"
 
-#define DEFAULT_DIR    "/mit"
+#define DEFAULT_DIR    "/u1/lockers"
 #define DEFAULT_DEVICE "/dev/ra1c"
 #define DEFAULT_STATUS DEFAULT_YES /* active. */
 #define DEFAULT_ALLOC  "0"
@@ -132,10 +132,17 @@ char ** info;
 {
     /* Also need name of the machine in this structure. */
 
-    GetValueFromUser("Device for this filsystem", &info[NFS_DEVICE]); 
-    GetFSTypes(&info[NFS_STATUS], TRUE);
-    GetValueFromUser("Allocated Space for this filsystem:",&info[NFS_ALLOC]);
-    GetValueFromUser("Size of this Filsystem:",&info[NFS_SIZE]);
+    if (GetValueFromUser("Device for this filsystem", &info[NFS_DEVICE]) ==
+	SUB_ERROR)
+      return(NULL);
+    if (GetFSTypes(&info[NFS_STATUS], TRUE) == SUB_ERROR)
+      return(NULL);
+    if (GetValueFromUser("Allocated Space for this filsystem:",
+			 &info[NFS_ALLOC]) == SUB_ERROR)
+      return(NULL);
+    if (GetValueFromUser("Size of this Filsystem:", &info[NFS_SIZE]) ==
+	SUB_ERROR)
+      return(NULL);
 
     FreeAndClear(&info[NFS_MODTIME], TRUE);
     FreeAndClear(&info[NFS_MODBY], TRUE);
@@ -144,20 +151,6 @@ char ** info;
     return(info);
 }
 
-/*	Function Name: GetDirName
- *	Description: get the directory name.
- *	Arguments: none.
- *	Returns: the directory name.
- */
-
-static char *
-GetDirName()
-{
-    char buf[BUFSIZ];
-    if (Prompt_input("Directory: ", buf, BUFSIZ) == -1)
-	return(NULL);
-    return(Strsave(buf));
-}
 
 /*	Function Name: ShowNFSService
  *	Description: This function prints all exported partitions.
@@ -179,8 +172,9 @@ char **argv;
 	return(DM_NORMAL);
     
     args[0] = canonicalize_hostname(strsave(argv[1]));
-    if ( (args[1] = GetDirName()) == NULL)
-	return(DM_NORMAL);
+    args[1] = strsave(DEFAULT_DIR);
+    if (GetValueFromUser("Directory:", &args[1]) == SUB_ERROR)
+      return(DM_NORMAL);
     
     if ( (stat = do_mr_query("get_nfsphys", 2, args,
 			      StoreInfo, (char *)  &elem)) != MR_SUCCESS)
@@ -212,17 +206,20 @@ int argc;
     int stat;
 
     args[0] = canonicalize_hostname(strsave(argv[1]));
-    if ( (args[1] = GetDirName()) == NULL)
-	return(DM_NORMAL);
+    args[1] = strsave(DEFAULT_DIR);
+    if (GetValueFromUser("Directory:", &args[1]) == SUB_ERROR)
+      return(DM_NORMAL);
     
     if (!ValidName(args[0]) || !ValidName(args[1]))
 	return(DM_NORMAL);
     
     if ( (stat = do_mr_query("get_nfsphys", 2, args,
 			      NullFunc, (char *) NULL)) == MR_SUCCESS)
-	Put_message("This service already exists.");
-    if (stat != MR_NO_MATCH) 
+      stat = MR_EXISTS;
+    if (stat != MR_NO_MATCH) {
 	com_err(program_name, stat, " in get_nfsphys.");
+	return(DM_NORMAL);
+    }
     
     info[NFS_NAME]   = Strsave(args[0]);
     info[NFS_DIR]    = args[1];	/* already saved. */
@@ -233,7 +230,10 @@ int argc;
     info[NFS_MODBY] = info[NFS_MODWITH] = info[NFS_MODTIME] = NULL;
     info[NFS_END] = NULL;	
 
-    add_args = AskNFSInfo(info);
+    if ((add_args = AskNFSInfo(info)) == NULL) {
+	Put_message("Aborted.");
+	return(DM_NORMAL);
+    }
     
     if ((stat = do_mr_query("add_nfsphys", CountArgs(add_args), add_args,
 			     Scream, (char *) NULL)) != 0) 
@@ -260,7 +260,11 @@ Bool junk;
     char ** args;
     register int stat;
     
-    args = AskNFSInfo(info);
+    if ((args = AskNFSInfo(info)) == NULL) {
+	Put_message("Aborted.");
+	return;
+    }
+
     if ((stat = do_mr_query("update_nfsphys", CountArgs(args), args,
 			     Scream, (char *)NULL)) != MR_SUCCESS) 
 	com_err(program_name, stat, (char *) NULL);
@@ -286,8 +290,9 @@ int argc;
 	return(DM_NORMAL);
 
     args[0] = canonicalize_hostname(strsave(argv[1]));
-    if ( (args[1] = GetDirName()) == NULL)
-	return(DM_NORMAL);
+    args[1] = strsave(DEFAULT_DIR);
+    if (GetValueFromUser("Directory:", &args[1]) == SUB_ERROR)
+      return(DM_NORMAL);
 
     if ( (stat = do_mr_query("get_nfsphys", 2, args,
 			      StoreInfo, (char *) &elem)) != MR_SUCCESS) {
@@ -396,8 +401,9 @@ char **argv;
 	return(DM_NORMAL);
 
     args[0] = canonicalize_hostname(strsave(argv[1]));
-    if ( (args[1] = GetDirName()) == NULL)
-	return(DM_NORMAL);
+    args[1] = strsave(DEFAULT_DIR);
+    if (GetValueFromUser("Directory:", &args[1]) == SUB_ERROR)
+      return(DM_NORMAL);
 
     switch(stat = do_mr_query("get_nfsphys", 2, args, 
 			       StoreInfo, (char *) &elem)) {

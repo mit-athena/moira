@@ -1,7 +1,7 @@
 /*
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.26 1989-09-07 14:59:30 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.27 1989-09-08 14:58:53 mar Exp $
  *
  *      Copyright (C) 1987, 1988 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -16,7 +16,7 @@
  */
 
 #ifndef lint
-static char *rcsid_reg_svr_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.26 1989-09-07 14:59:30 mar Exp $";
+static char *rcsid_reg_svr_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.27 1989-09-08 14:58:53 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -92,7 +92,7 @@ main(argc,argv)
 	*s = 0;
     }
 
-    journal = fopen(JOURNAL, "a");
+    journal = fopen(REGJOURNAL, "a");
     if (journal == NULL) {
 	com_err(whoami, errno, " while opening journal file");
 	exit(1);

@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/sis.dc,v 1.1.1.1 1992-09-15 01:15:39 genoa Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/sis.dc,v 1.2 1992-12-21 17:58:31 mar Exp $
  *
  * This generates a list of users and their MIT ID numbers and the
  * signatures which guarentee this mapping.
@@ -50,6 +50,7 @@ char **argv;
 
 #ifsql INGRES
     EXEC SQL CONNECT moira;
+    EXEC SQL SET LOCKMODE SESSION WHERE LEVEL=TABLE, READLOCK=SHARED;
 #endsql
 #ifsql INFORMIX
     EXEC SQL DATABASE moira;
@@ -106,7 +107,7 @@ char **argv;
 	si.timestamp = timestamp;
 	si.SigInfoVersion = 0; /* XXXXXX this isn't used */
 	kname_parse(si.pname, si.pinst, si.prealm, kname);
-	si.rawsig = sig;
+	si.rawsig = (unsigned char *)sig;
 	GDSS_Recompose(&si, outrec.sig);
 	write(out, &outrec, sizeof(outrec));
     }

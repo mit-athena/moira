@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/setquota.c,v $
  *	$Author: raeburn $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/setquota.c,v 1.2 1988-10-06 10:41:55 raeburn Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/setquota.c,v 1.3 1988-10-06 10:46:08 raeburn Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
@@ -17,7 +17,7 @@
  */
 
 #ifndef lint
-static char *rcsid_setquota_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/setquota.c,v 1.2 1988-10-06 10:41:55 raeburn Exp $";
+static char *rcsid_setquota_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/setquota.c,v 1.3 1988-10-06 10:46:08 raeburn Exp $";
 #endif lint
 
 #include <stdio.h>
@@ -66,23 +66,26 @@ quota is in 1KB units\n");
 	device = argv[1];
 	uid = atoi(argv[2]);
 	
+	if (quotactl(Q_GETQUOTA, device, uid, &odb) != 0) {
+	    perror("Can't get current quota info");
+	    exit(1);
+	}
+
 	db.dqb_bsoftlimit = atoi(argv[3]);
 	db.dqb_bhardlimit = db.dqb_bsoftlimit * 1.2;
 	db.dqb_fsoftlimit = atoi(argv[3]) * .5;
 	db.dqb_fhardlimit = db.dqb_fsoftlimit * 1.2;
-	db.dqb_btimelimit = DQ_FTIMELIMIT;
-	db.dqb_btimelimit = DQ_BTIMELIMIT;
+	db.dqb_btimelimit = odb.dqb_btimelimit;
+	db.dqb_ftimelimit = odb.dqb_ftimelimit;
 
 	db.dqb_bsoftlimit *= btodb(1024);
 	db.dqb_bhardlimit *= btodb(1024);
 
 	if (uflag) {
-		if (quotactl(Q_GETQUOTA, device, uid, &odb) == 0) {
 			db.dqb_bhardlimit += odb.dqb_curblocks;
 			db.dqb_bsoftlimit += odb.dqb_curblocks;
 			db.dqb_fhardlimit += odb.dqb_curfiles;
 			db.dqb_fsoftlimit += odb.dqb_curfiles;
-		}
 	}
 	
 	if (quotactl(Q_SETQLIM, device, uid, &db) < 0) {

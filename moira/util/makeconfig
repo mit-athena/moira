@@ -1,4 +1,4 @@
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/util/makeconfig,v 1.5 1996-07-08 22:11:46 danw Exp $
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/util/makeconfig,v 1.6 1996-10-29 23:34:22 danw Exp $
 #
 #  Copyright 1990 by the Massachusetts Institute of Technology.
 # 
@@ -46,6 +46,6 @@ all:
 		${SYMLINK} ${SRCDIR}/$$i/Imakefile ${DESTDIR}/$$i/Imakefile; \
 	done
 	-for i in ${MTDIR}; do mkdir ${DESTDIR}/$$i; done
-	for i in imake makedepend imake.includes et ss; do \
+	for i in imake makedepend imake.includes et; do \
 		make ${MFLAGS} -f ${SRCDIR}/util/$$i/Makefile SRCDIR=${SRCDIR} DESTDIR=${DESTDIR} config; \
 	done

@@ -1,7 +1,7 @@
 #
 # 	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/Makefile,v $
 #	$Author: mar $
-#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/Makefile,v 1.11 1990-03-17 00:01:13 mar Exp $
+#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/Makefile,v 1.12 1990-04-09 12:35:26 mar Exp $
 #
 # Revised makefile for GDB library.
 #
@@ -33,13 +33,13 @@ INGLIBS= /usr/rtingres/lib/libqlib /usr/rtingres/lib/compatlib
 LINTFLAGS= -uhv -I../include
 
 .c.o:
-	${CCPROF} -c -pg ${CFLAGS} $*.c
-	mv $*.o profiled/$*.o
+#	${CCPROF} -c -pg ${CFLAGS} $*.c
+#	mv $*.o profiled/$*.o
 	${CC} -c ${CFLAGS} $*.c
 
 OPTS=
 
-all: libgdb.a libgdb_p.a llib-lgdb.ln
+all: libgdb.a llib-lgdb.ln # libgdb_p.a 
 
 libgdb.a: ${LIBOBJS}
 	ar uv libgdb.a ${LIBOBJS}; ranlib libgdb.a
@@ -55,10 +55,10 @@ llib-lgdb.ln: ${LIBSRC}
 	lint ${LINTFLAGS} -Cgdb ${GDBCSRCS}
 
 install:
-	install -c -m 644 libgdb.a ${DESTDIR}/usr/athena/lib/libsmsgdb.a
-	ranlib ${DESTDIR}/usr/athena/lib/libsmsgdb.a
-	install -c -m 644 libgdb_p.a ${DESTDIR}/usr/athena/lib/libsmsgdb_p.a
-	ranlib ${DESTDIR}/usr/athena/lib/libsmsgdb_p.a
+	install -c -m 644 libgdb.a ${DESTDIR}/usr/athena/lib/libmrgdb.a
+	ranlib ${DESTDIR}/usr/athena/lib/libmrgdb.a
+#	install -c -m 644 libgdb_p.a ${DESTDIR}/usr/athena/lib/libsmsgdb_p.a
+#	ranlib ${DESTDIR}/usr/athena/lib/libsmsgdb_p.a
 	install -c -m 644 llib-lgdb.ln ${DESTDIR}/usr/lib/lint/llib-lsmsgdb.ln
 
 #

@@ -1,4 +1,4 @@
-/* $Id: increment.pc,v 2.16 2002-08-02 10:30:07 zacheiss Exp $
+/* $Id: increment.pc,v 2.17 2002-08-13 15:51:51 zacheiss Exp $
  *
  * Deal with incremental updates
  *
@@ -20,7 +20,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/increment.pc,v 2.16 2002-08-02 10:30:07 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/increment.pc,v 2.17 2002-08-13 15:51:51 zacheiss Exp $");
 
 extern char *whoami;
 extern char *table_name[];
@@ -34,6 +34,7 @@ time_t inc_started;
 
 EXEC SQL WHENEVER SQLERROR DO dbmserr();
 
+EXEC SQL BEGIN DECLARE SECTION;
 /* structures to save before args */
 static char *before[MAXARGC];
 static int beforec;
@@ -42,6 +43,7 @@ static enum tables beforetable;
 /* structures to save after args */
 static char *after[MAXARGC];
 static int afterc;
+EXEC SQL END DECLARE SECTION;
 
 /* structures to save entire sets of incremental changes */
 struct save_queue *incremental_sq = NULL;

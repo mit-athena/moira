@@ -1,14 +1,14 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v 1.20 1988-08-05 16:07:48 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v 1.21 1988-08-11 22:44:32 mar Exp $
  *
  *	Copyright (C) 1987, 1988 by the Massachusetts Institute of Technology
  * 
  */
 
 #ifndef lint
-static char *rcsid_qrtn_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v 1.20 1988-08-05 16:07:48 mar Exp $";
+static char *rcsid_qrtn_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v 1.21 1988-08-11 22:44:32 mar Exp $";
 #endif lint
 
 #include "query.h"
@@ -531,6 +531,10 @@ get_client(cl, client_type, client_id)
 ##  int sublist;
     int child;
     struct save_queue *sq_create();
+
+    if (!strcmp(strtrim(list_type), strtrim(member_type)) &&
+	list_id == member_id)
+	return(1);
 
     /* see if client is a direct member of list */
 ##  repeat retrieve (exists = any(m.#member_id where 

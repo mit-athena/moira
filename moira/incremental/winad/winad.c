@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/winad/winad.c,v 1.18 2001-07-14 22:58:48 zacheiss Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/winad/winad.c,v 1.19 2001-07-16 22:19:04 zacheiss Exp $
 /* winad.incr arguments examples
  *
  *
@@ -1904,6 +1904,18 @@ int group_create(int ac, char **av, void *ptr)
   if ((rc = linklist_build((LDAP *)call_args[0], call_args[1], filter, attr_array, 
                            &group_base, &group_count)) == LDAP_SUCCESS)
     {
+      if (group_count != 1)
+        {
+          if (strlen(call_args[5]) != 0)
+            {
+              linklist_free(group_base);
+              group_count = 0;
+              group_base = NULL;
+              sprintf(filter, "(sAMAccountName=%s)", sam_group_name);
+              rc = linklist_build((LDAP *)call_args[0], call_args[1], filter, 
+                                  attr_array, &group_base, &group_count);
+            }
+        }
       if (group_count == 1)
         {
           (*sid_ptr) = group_base;
@@ -2658,10 +2670,22 @@ int user_create(int ac, char **av, void *ptr)
   if ((rc = linklist_build((LDAP *)call_args[0], call_args[1], filter, attr_array, 
                            &group_base, &group_count)) == LDAP_SUCCESS)
     {
+      if (group_count != 1)
+        {
+          if (strlen(call_args[2]) != 0)
+            {
+              linklist_free(group_base);
+              group_count = 0;
+              group_base = NULL;
+              sprintf(filter, "(sAMAccountName=%s)", av[U_NAME]);
+              rc = linklist_build((LDAP *)call_args[0], call_args[1], filter, 
+                                  attr_array, &group_base, &group_count);
+            }
+        }
       if (group_count == 1)
         {
           (*sid_ptr) = group_base;
-          (*sid_ptr)->member = strdup(av[L_NAME]);
+          (*sid_ptr)->member = strdup(av[U_NAME]);
           (*sid_ptr)->type = (char *)GROUPS;
           sid_ptr = &(*sid_ptr)->next;
         }
@@ -3384,6 +3408,7 @@ int ad_get_group(LDAP *ldap_handle, char *dn_path,
                  LK_ENTRY **linklist_base, int *linklist_count,
                  char *rFilter)
 {
+  LK_ENTRY  *pPtr;
   char  filter[128];
   char  *attr_array[3];
   int   rc;
@@ -3424,6 +3449,19 @@ int ad_get_group(LDAP *ldap_handle, char *dn_path,
                   MoiraId, ldap_err2string(rc));
          return(rc);
        }
+    }
+  if ((*linklist_count) > 1)
+    {
+      com_err(whoami, 0, "multiple groups with mitMoiraId = %s", MoiraId);
+      pPtr = (*linklist_base);
+      while (pPtr)
+        {
+          com_err(whoami, 0, "groups %s has mitMoiraId = %s", pPtr->value, MoiraId);
+          pPtr = pPtr->next;
+        }
+      linklist_free((*linklist_base));
+      (*linklist_base) = NULL;
+      (*linklist_count) = 0;
     }
   if ((*linklist_count) == 1)
     {

@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/quota.c,v 1.10 1989-08-25 12:38:02 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/quota.c,v 1.11 1989-10-05 12:41:40 mar Exp $";
 #endif lint
 
 /*	This is the file quota.c for the SMS Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/quota.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/quota.c,v 1.10 1989-08-25 12:38:02 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/quota.c,v 1.11 1989-10-05 12:41:40 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -135,6 +135,8 @@ char *name;
     int status, ret = 0;
     char *argv[1];
 
+    if (index(name, '*') || index(name, '?') || index(name, '\\'))
+      return(0);
     argv[0] = name;
     status = do_sms_query("get_filesys_by_label", 1, argv,
 			  afsfilsyshelper, &ret);

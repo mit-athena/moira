@@ -1,4 +1,4 @@
-; $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/menus.txt,v 1.4 1992-10-19 17:15:50 mar Exp $
+; $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/menus.txt,v 1.5 1992-10-22 15:33:13 mar Exp $
 ;
 
 ; = menu name "mnemonic"
@@ -108,7 +108,7 @@
 = filesystem group "g"
 	show		{ MM_SHOW_FSGROUP, show_fsgroup get_filesys_by_label 1 "s" }
 	insert		{ MM_ADD_FSGROUP, add_fsgroup add_filesys_to_fsgroup 3 "i" }
-	re-order	{ MM_MOV_FSGROUP, order_fsgroup 0 -1 "o" }
+	re-order	{ MM_MOV_FSGROUP, order_fsgroup add_filesys_to_fsgroup 3 "o" }
 	remove		{ MM_DEL_FSGROUP, del_fsgroup remove_filesys_from_fsgroup 2 "r" }
 
 = filesystem "f"
@@ -145,7 +145,7 @@
 = ?help "?"
 	about moira	{ MM_HELP_MOIRA, 0 about_moira 0 "?" }
 	wildcards	{ MM_HELP_WILDCARDS, 0 wildcards 0 "w" }
-	using the mouse { MM_HELP_MOUSE, 0, mouse 0 "m"
+	using the mouse { MM_HELP_MOUSE, 0, mouse 0 "m" }
 	using the keyboard { MM_HELP_KEYBOARD, 0, keyboard 0 "k" }
 	reporting bugs	{ MM_HELP_BUGS, 0, bugs 0 "b" }
 	authors		{ MM_HELP_AUTHORS, 0 authors 0 "a" }

@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v 1.41 1990-03-30 16:48:21 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v 1.42 1990-04-09 12:39:09 mar Exp $
  *
  *	Copyright (C) 1987, 1988 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_qrtn_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v 1.41 1990-03-30 16:48:21 mar Exp $";
+static char *rcsid_qrtn_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v 1.42 1990-04-09 12:39:09 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -29,6 +29,7 @@ extern FILE *journal;
 #define INGRES_BAD_DATE 4302
 #define INGRES_DEADLOCK 4700
 #define INGRES_TIMEOUT 4702
+#define INGRES_NO_RANGE 2109
 
 /*
  * ingerr: (supposedly) called when Ingres indicates an error.
@@ -55,6 +56,10 @@ static int ingerr(num)
     case INGRES_TIMEOUT:
 	mr_errcode = MR_BUSY;
 	com_err(whoami, 0, "timed out getting lock");
+	break;
+    case INGRES_NO_RANGE:
+	mr_errcode = MR_INGRES_SOFTFAIL;
+	com_err(whoami, 0, "INGRES missing range statement");
 	break;
     default:
 	mr_errcode = MR_INGRES_ERR;

@@ -1,4 +1,4 @@
-/* $Id: mr_main.c,v 1.41 1998-02-23 19:24:30 danw Exp $
+/* $Id: mr_main.c,v 1.42 1998-03-30 16:19:17 danw Exp $
  *
  * Moira server process.
  *
@@ -30,7 +30,7 @@
 
 #include <krb.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.41 1998-02-23 19:24:30 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.42 1998-03-30 16:19:17 danw Exp $");
 
 extern char *krb_get_lrealm(char *, int);
 
@@ -188,8 +188,9 @@ int main(int argc, char **argv)
       struct timeval timeout;
 
       /* If we're supposed to go down and we can, do it */
-      if ((dormant == AWAKE) && (nclients == 0) &&
-	  (stat(MOIRA_MOTD_FILE, &stbuf) == 0))
+      if (((dormant == AWAKE) && (nclients == 0) &&
+	   (stat(MOIRA_MOTD_FILE, &stbuf) == 0)) ||
+	  (dormant == SLEEPY))
 	{
 	  mr_close_database();
 	  com_err(whoami, 0, "database closed");

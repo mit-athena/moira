@@ -1,4 +1,4 @@
-/* $Id: menus.c,v 1.38 1999-05-25 22:06:11 danw Exp $
+/* $Id: menus.c,v 1.39 2000-01-07 21:14:05 danw Exp $
  *
  *	This is the file menus.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -22,7 +22,7 @@
 
 #include <stdio.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menus.c,v 1.38 1999-05-25 22:06:11 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menus.c,v 1.39 2000-01-07 21:14:05 danw Exp $");
 
 /* ------------------------- Second Tier Menus ------------------------- */
 
@@ -78,6 +78,21 @@ Menu list_info_menu = {
 };
 
 /*
+ * List Member Tags Menu
+ */
+
+Menu list_tags_menu = {
+  NULL,
+  NULL,
+  "List Member Tags Menu",
+  2,
+  {
+    SIMPLEFUNC("change", "Change the tag on a list member", TagMember),
+    SIMPLEFUNC("show", "Show all list members with tags", ListMembersWithTags),
+  }
+};
+
+/*
  * List Member Menu
  */
 
@@ -85,7 +100,7 @@ Menu list_member_menu = {
   ListmaintMemberMenuEntry,
   ListmaintMemberMenuExit,
   NULL,
-  7,
+  8,
   {
     SIMPLEFUNC("add", "Add a member to this list", AddMember),
     SIMPLEFUNC("remove", "Remove a member from this list", DeleteMember),
@@ -94,6 +109,7 @@ Menu list_member_menu = {
     SIMPLEFUNC("list", "Show the members of type LIST", ListListMembers),
     SIMPLEFUNC("string", "Show the members of type STRING",
 	       ListStringMembers),
+    SUBMENU("tags", "List Member Tags Menu", &list_tags_menu),
     SIMPLEFUNC("verbose", "Toggle Verbosity of Delete", ToggleVerboseMode)
   }
 };
@@ -732,6 +748,33 @@ Menu zephyr_menu = {
   }
 };
 
+/*
+ * ACL Menu
+ */
+
+Menu acl_menu = {
+  NULLFUNC,
+  NULLFUNC,
+  "Generic ACL Menu",
+  3,
+  {
+    { GetACL, NULLMENU, 3, {
+      {"get", "Get ACL Information"},
+      {"host", "Machine: "},
+      {"target", "Target file: "}
+    } },
+    { AddACL, NULLMENU, 3, {
+      {"add", "Add New ACL"},
+      {"host", "Machine: "},
+      {"target", "Target file: "}
+    } },
+    { DeleteACL, NULLMENU, 3, {
+      {"delete", "Delete ACL"},
+      {"host", "Machine: "},
+      {"target", "Target file: "}
+    } },
+  }
+};
 
 /*
  * Miscellaneous Menu
@@ -780,6 +823,7 @@ Menu moira_top_menu = {
     SUBMENU("user", "User Menu", &user_menu),
     SUBMENU("zephyr", "Zephyr ACLS Menu", &zephyr_menu),
     SUBMENU("dcm", "DCM Menu", &dcm_menu),
+    SUBMENU("acl", "Generic ACL Menu", &acl_menu),
     SUBMENU("misc", "Miscellaneous Menu", &misc_menu)
   }
 };

@@ -1,4 +1,4 @@
-/* $Id: f_defs.h,v 1.27 1999-05-25 22:06:10 danw Exp $
+/* $Id: f_defs.h,v 1.28 2000-01-07 21:14:05 danw Exp $
  *
  *	This is the file f_defs.h for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -17,6 +17,11 @@
 
 #ifndef _f_defs_
 #define _f_defs_
+
+/* acl.c */
+int GetACL(int argc, char **argv);
+int AddACL(int argc, char **argv);
+int DeleteACL(int argc, char **argv);
 
 /* attach.c */
 
@@ -88,6 +93,10 @@ int ListAllMembers(int argc, char **argv);
 int ListUserMembers(int argc, char **argv);
 int ListListMembers(int argc, char **argv);
 int ListStringMembers(int argc, char **argv);
+
+int TagMember(int argc, char **argv);
+int DeleteTag(int argc, char **argv);
+int ListMembersWithTags(int argc, char **argv);
 
 int ShowListInfo(int argc, char **argv);
 int UpdateList(int argc, char **argv);

@@ -1,4 +1,4 @@
-/* $Id: lists.c,v 1.37 1999-03-10 14:54:44 danw Exp $
+/* $Id: lists.c,v 1.38 2000-01-07 21:14:05 danw Exp $
  *
  *	This is the file lists.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -23,12 +23,12 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v 1.37 1999-03-10 14:54:44 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v 1.38 2000-01-07 21:14:05 danw Exp $");
 
 struct mqelem *GetListInfo(int type, char *name1, char *name2);
 char **AskListInfo(char **info, Bool name);
 int AddList(int argc, char **argv);
-void ListMembersByType(char *type);
+void ListMembersByType(char *type, int tags);
 int GetMemberInfo(char *action, char **ret_argv);
 
 #define LIST    0
@@ -49,6 +49,7 @@ int GetMemberInfo(char *action, char **ret_argv);
 /* globals only for this file. */
 
 static char current_list[BUFSIZ];
+
 
 /*	Function Name: PrintListAce
  *	Description: This function prints the list ace information.
@@ -513,11 +514,12 @@ int ListmaintMemberMenuExit(Menu *m)
 /*	Function Name: ListMembersByType
  *	Description: This function lists the users of a list by type.
  *	Arguments: type - the type of the list "USER", "LIST", or "STRING".
+ *		   tags - whether or not to display tags
  *	Returns: none.
  *      NOTE: if type is NULL, all lists members are listed.
  */
 
-void ListMembersByType(char *type)
+void ListMembersByType(char *type, int tags)
 {
   char temp_buf[BUFSIZ];
   int status;
@@ -527,8 +529,9 @@ void ListMembersByType(char *type)
   args[1] = NULL;
 
   found_some = FALSE;
-  if ((status = do_mr_query("get_members_of_list", CountArgs(args), args,
-			    PrintByType, type)))
+  if ((status = do_mr_query(tags ? "get_tagged_members_of_list" :
+			    "get_members_of_list", CountArgs(args),
+			    args, PrintByType, type)))
     com_err(program_name, status, " in ListMembersByType");
   if (!found_some)
     {
@@ -550,7 +553,7 @@ void ListMembersByType(char *type)
 
 int ListAllMembers(int argc, char **argv)
 {
-  ListMembersByType(NULL);
+  ListMembersByType(NULL, 0);
   return DM_NORMAL;
 }
 
@@ -562,7 +565,7 @@ int ListAllMembers(int argc, char **argv)
 
 int ListUserMembers(int argc, char **argv)
 {
-  ListMembersByType("USER");
+  ListMembersByType("USER", 0);
   return DM_NORMAL;
 }
 
@@ -574,7 +577,7 @@ int ListUserMembers(int argc, char **argv)
 
 int ListListMembers(int argc, char **argv)
 {
-  ListMembersByType("LIST");
+  ListMembersByType("LIST", 0);
   return DM_NORMAL;
 }
 
@@ -586,7 +589,7 @@ int ListListMembers(int argc, char **argv)
 
 int ListStringMembers(int argc, char **argv)
 {
-  ListMembersByType("STRING");
+  ListMembersByType("STRING", 0);
   return DM_NORMAL;
 }
 
@@ -716,6 +719,49 @@ int DeleteMember(int argc, char **argv)
     Put_message("Deletion has been Aborted.");
 
   FreeInfo(args);
+  return DM_NORMAL;
+}
+
+/*	Function Name: TagMember
+ *	Description: Add a tag to a list member
+ *	Arguments:
+ *	Returns: DM_NORMAL
+ */
+
+int TagMember(int argc, char **argv)
+{
+  char *args[10];
+  int status;
+  char temp_buf[BUFSIZ];
+
+  if (GetMemberInfo("tag", args) == SUB_ERROR)
+    return DM_NORMAL;
+
+  args[LM_TAG] = strdup("");
+  if (GetValueFromUser("Tag" , &args[LM_TAG]) == SUB_ERROR)
+    {
+      Put_message("Aborted.");
+      return DM_NORMAL;
+    }
+  args[LM_TAG_END] = NULL;		/* NULL terminate this list. */
+
+  if ((status = do_mr_query("tag_member_of_list", CountArgs(args),
+			    args, NULL, NULL)))
+    com_err(program_name, status, " in TagMember");
+
+  FreeInfo(args);
+  return DM_NORMAL;
+}
+
+/*	Function Name: ListAllMembers
+ *	Description: lists all members of the current list.
+ *	Arguments:
+ *	Returns: DM_NORMAL
+ */
+
+int ListMembersWithTags(int argc, char **argv)
+{
+  ListMembersByType(NULL, 1);
   return DM_NORMAL;
 }
 

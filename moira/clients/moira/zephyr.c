@@ -1,4 +1,4 @@
-/* $Id: zephyr.c,v 1.10 1999-06-03 18:34:18 danw Exp $
+/* $Id: zephyr.c,v 1.11 2000-01-07 21:14:06 danw Exp $
  *
  * Zephyr ACL routines for the Moira client
  *
@@ -18,7 +18,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/zephyr.c,v 1.10 1999-06-03 18:34:18 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/zephyr.c,v 1.11 2000-01-07 21:14:06 danw Exp $");
 
 void RealDeleteZephyr(char **info, Bool one_item);
 
@@ -113,37 +113,41 @@ static char **AskZephyrInfo(char **info, Bool rename)
 	}
     }
 
-  if (GetTypeFromUser("What kind of transmit restriction", "ace_type",
+  if (GetTypeFromUser("What kind of transmit restriction", "zace_type",
 		      &info[ZA_XMT_TYPE]) == SUB_ERROR)
     return NULL;
-  if (strcasecmp(info[ZA_XMT_TYPE], "NONE"))
+  if (strcasecmp(info[ZA_XMT_TYPE], "NONE") &&
+      strcasecmp(info[ZA_XMT_TYPE], "ALL"))
     {
       sprintf(buf, "Which %s: ", info[ZA_XMT_TYPE]);
       if (GetValueFromUser(buf, &info[ZA_XMT_ID]) == SUB_ERROR)
 	return NULL;
     }
-  if (GetTypeFromUser("What kind of subscription restriction", "ace_type",
+  if (GetTypeFromUser("What kind of subscription restriction", "zace_type",
 		      &info[ZA_SUB_TYPE]) == SUB_ERROR)
     return NULL;
-  if (strcasecmp(info[ZA_SUB_TYPE], "NONE"))
+  if (strcasecmp(info[ZA_SUB_TYPE], "NONE") &&
+      strcasecmp(info[ZA_SUB_TYPE], "ALL"))
     {
       sprintf(buf, "Which %s: ", info[ZA_SUB_TYPE]);
       if (GetValueFromUser(buf, &info[ZA_SUB_ID]) == SUB_ERROR)
 	return NULL;
     }
   if (GetTypeFromUser("What kind of wildcard instance restriction",
-		      "ace_type", &info[ZA_IWS_TYPE]) == SUB_ERROR)
+		      "zace_type", &info[ZA_IWS_TYPE]) == SUB_ERROR)
     return NULL;
-  if (strcasecmp(info[ZA_IWS_TYPE], "NONE") != 0)
+  if (strcasecmp(info[ZA_IWS_TYPE], "NONE") &&
+      strcasecmp(info[ZA_IWS_TYPE], "ALL"))
     {
       sprintf(buf, "Which %s: ", info[ZA_IWS_TYPE]);
       if (GetValueFromUser(buf, &info[ZA_IWS_ID]) == SUB_ERROR)
 	return NULL;
     }
   if (GetTypeFromUser("What kind of instance identity restriction",
-		      "ace_type", &info[ZA_IUI_TYPE]) == SUB_ERROR)
+		      "zace_type", &info[ZA_IUI_TYPE]) == SUB_ERROR)
     return NULL;
-  if (strcasecmp(info[ZA_IUI_TYPE], "NONE"))
+  if (strcasecmp(info[ZA_IUI_TYPE], "NONE") &&
+      strcasecmp(info[ZA_IUI_TYPE], "ALL"))
     {
       sprintf(buf, "Which %s: ", info[ZA_IUI_TYPE]);
       if (GetValueFromUser(buf, &info[ZA_IUI_ID]) == SUB_ERROR)

@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v $
  *	$Author: wesommer $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.2 1987-08-22 18:39:45 wesommer Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.3 1987-09-03 03:05:18 wesommer Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
@@ -11,13 +11,16 @@
  * 	admin_server, and is a server for the userreg program.
  * 
  *	$Log: not supported by cvs2svn $
+ * Revision 1.2  87/08/22  18:39:45  wesommer
+ * User registration server.
+ * 
  * Revision 1.1  87/07/31  15:48:13  wesommer
  * Initial revision
  * 
  */
 
 #ifndef lint
-static char *rcsid_reg_svr_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.2 1987-08-22 18:39:45 wesommer Exp $";
+static char *rcsid_reg_svr_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.3 1987-09-03 03:05:18 wesommer Exp $";
 #endif lint
 
 #include <stdio.h>
@@ -68,23 +71,13 @@ main()
     u_long seqno;
     struct msg message;
     extern char *whoami;
-
+    int i;
+    
     setlinebuf(stderr);
     whoami = "reg_svr";
     
     init_ureg_err_tbl();
-    
-    status = sms_connect();
-    if (status != 0) {
-	com_err("reg_svr", status, " on connect");
-	exit(1);
-    }
-    status = sms_auth();
-    if (status != 0) {
-	com_err("reg_svr", status, " on auth");
-	exit(1);
-    }
-    
+
     sp = getservbyname("sms_ureg", "udp");
     if (sp == NULL) {
 	fprintf(stderr, "Unknown service sms_ureg/udp\n");
@@ -105,8 +98,21 @@ main()
 	perror("bind");
 	exit(1);
     }
+
+    status = sms_connect();
+    if (status != 0) {
+	com_err("reg_svr", status, " on connect");
+	exit(1);
+    }
+    status = sms_auth();
+    if (status != 0) {
+	com_err("reg_svr", status, " on auth");
+	exit(1);
+    }
     
     for (;;) {
+	printf("waiting..");
+	fflush(stdout);
 	addrlen = sizeof(sin);
 	bzero(retval, BUFSIZ);
 	len = recvfrom(s, buf, BUFSIZ, 0, &sin, &addrlen);
@@ -381,6 +387,8 @@ reserve_user(message)
     
     /* Set login name */
     status = set_login(login, mit_id);
+
+    
     if (status) {
 	com_err("set_login", status, 0);
 	goto punt;
@@ -393,20 +401,23 @@ reserve_user(message)
 	com_err("choose_pobox", status, 0);
 	goto punt;
     }
-    /* set quota entry, create filsys */
-    STAMP;
-    
-    status = alloc_filsys(login, SMS_FS_STUDENT, 0, 0);
-    if (status) {
-	com_err("alloc_filsys", status, 0);
-	goto punt;
-    }
     /* create group */
     STAMP;
     
     status = create_group(login);
+    if (status == SMS_LIST) status = UREG_LOGIN_USED;
+    
     if (status) {
 	com_err("create_group", status, 0);
+	goto punt;
+    }
+    /* set quota entry, create filsys */
+    STAMP;
+    
+    status = alloc_filsys(login, SMS_FS_STUDENT, 0, 0);
+    if (status == SMS_FILESYS_EXISTS) status = UREG_LOGIN_USED;
+    if (status) {
+	com_err("alloc_filsys", status, 0);
 	goto punt;
     }
     /* set filsys and status in SMS database */

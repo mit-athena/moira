@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsetup.dc,v $
- *	$Author: tom $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsetup.dc,v 1.5 1993-12-07 17:03:51 tom Exp $
+ *	$Author: tytso $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsetup.dc,v 1.6 1993-12-10 13:47:36 tytso Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_qsupport_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsetup.dc,v 1.5 1993-12-07 17:03:51 tom Exp $";
+static char *rcsid_qsupport_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsetup.dc,v 1.6 1993-12-10 13:47:36 tytso Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -314,7 +314,6 @@ int setup_alis(q, argv, cl)
     EXEC SQL BEGIN DECLARE SECTION;
     int ngid;
     EXEC SQL END DECLARE SECTION;
-    char *malloc();
     unsigned char *p;
     int idx;
 
@@ -969,9 +968,9 @@ setup_ahst(q,argv,cl)
 	      value = htonl(value);
 	}
 	value = htonl(value);
-	argv[9+row] = strsave(inet_ntoa(value));
+	strcpy(argv[9+row], inet_ntoa(value));
     } else {
-	argv[9+row] = strsave("unassigned");
+	strcpy(argv[9+row], "unassigned");
     }
 
     /* status checking */
@@ -1016,13 +1015,20 @@ setup_ahst(q,argv,cl)
 	  return(MR_PERM);
     }
 
+    /*
+     * If this is an update_host query, we're done.
+     */
+    if (row == 1)
+	return(MR_SUCCESS);
+
+    /*
+     * For an add_host query, allocate and fill in a new machine id,
+     * and then insert the creator id.
+     */
     if ((mr_errcode = prefetch_value(q,argv,cl)) != MR_SUCCESS)
       return(mr_errcode);
 
-    row = q->argc + q->vcnt + 1;
-    sprintf(buf, "%d",cl->client_id);
-    argv[row] = strsave(buf);
-    argv[row+1] = NULL;
+    sprintf(argv[q->argc + q->vcnt + 1], "%d",cl->client_id);
     return(MR_SUCCESS);
 }
 

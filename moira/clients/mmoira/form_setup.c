@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/form_setup.c,v 1.8 1992-11-09 17:10:39 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/form_setup.c,v 1.9 1992-12-10 10:41:02 mar Exp $
  */
 
 #include <stdio.h>
@@ -270,12 +270,10 @@ UserPrompt *prompt;
 		}
 	    }
 	}
-	if (field == Q_TYPE) {
-	    if (!strcmp(stringval(f, Q_TYPE), "ANY"))
-	      maybechange(f, Q_NAME, True)
-	    else
-	      maybechange(f, Q_NAME, False)
-	}
+	if (!strcmp(stringval(f, Q_TYPE), "ANY"))
+	  maybechange(f, Q_NAME, True)
+	else
+	  maybechange(f, Q_NAME, False)
 	break;
     case MM_ADD_ZEPHYR:
     case MM_MOD_ZEPHYR:
@@ -558,7 +556,10 @@ MenuItem	*menu;
     }
 
     f->menu = menu;
-    DisplayForm(f);
+    if (tty)
+      TtyForm(f);
+    else
+      DisplayForm(f);
 }
 
 
@@ -616,7 +617,7 @@ char *name;
 	    break;
 	}
     }
-    if (buttons == NULL) {
+    if (!tty && buttons == NULL) {
 	buttons = (BottomButton **)malloc(5 * sizeof(BottomButton *));
 	buttons[0] = (BottomButton *)malloc(sizeof(BottomButton));
 	buttons[0]->label = "OK";
@@ -832,5 +833,5 @@ char *value;
 
     /* new update form */
     form->inputlines[field]->keywords = ce->values;
-    RemakeRadioField(form, field);
+    if (!tty) RemakeRadioField(form, field);
 }

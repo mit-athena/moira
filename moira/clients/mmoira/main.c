@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/main.c,v 1.9 1992-11-09 17:06:51 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/main.c,v 1.10 1992-12-10 10:46:11 mar Exp $
  *
  *  	Copyright 1991 by the Massachusetts Institute of Technology.
  *
@@ -66,6 +66,7 @@ XtActionsRec actions[] = {
 
 Widget  toplevel;
 char *user, *program_name, *moira_server;
+int tty;
 
 main(argc, argv)
 int argc;
@@ -85,6 +86,11 @@ char *argv[];
 	} else
 	  setenv("XFILESEARCHPATH", "/afs/athena.mit.edu/system/moira/lib/%N", 1);
 
+	if (getenv("DISPLAY"))
+	  tty = 0;
+	else
+	  tty = 1;
+
 	if ((user = getlogin()) == NULL)
 	  user = getpwuid((int) getuid())->pw_name;
 	user = (user && strlen(user)) ? strsave(user) : "";
@@ -95,15 +101,40 @@ char *argv[];
 	  program_name++;
 	program_name = strsave(program_name);
 
-	toplevel = XtInitialize("toplevel", "Moira", options,
-				XtNumber(options), &argc, argv);
+	resources.help_file = my_resources[3].default_addr;
+	resources.maxlogsize = (int) my_resources[6].default_addr;
+	resources.noauth = 0;
+	resources.db = "";
+	for (n = 1; n < argc; n++) {
+	    if (!strcmp(argv[n], "-db") && n+1 < argc) {
+		resources.db = argv[n+1];
+		n++;
+	    } else if (!strcmp(argv[n], "-helpfile") && n+1 < argc) {
+		resources.help_file = argv[n+1];
+		n++;
+	    } else if (!strcmp(argv[n], "-logsize") && n+1 < argc) {
+		resources.maxlogsize = atoi(argv[n+1]);
+		n++;
+	    } else if (!strcmp(argv[n], "-noauth")) {
+		resources.noauth = 1;
+	    } else if (!strcmp(argv[n], "-tty")) {
+		tty = 1;
+	    } else {
+		printf("%s: unknown option: %s\n", argv[0], argv[n]);
+	    }
+	}
 
-	XtAppAddActions(XtWidgetToApplicationContext(toplevel),
-			actions, XtNumber(actions));
+	if (!tty) {
+	    toplevel = XtInitialize("toplevel", "Moira", options,
+				    XtNumber(options), &argc, argv);
 
-	XtGetApplicationResources(toplevel, (caddr_t) &resources, 
-				  my_resources, XtNumber(my_resources),
-				  NULL, (Cardinal) 0);
+	    XtAppAddActions(XtWidgetToApplicationContext(toplevel),
+			    actions, XtNumber(actions));
+
+	    XtGetApplicationResources(toplevel, (caddr_t) &resources, 
+				      my_resources, XtNumber(my_resources),
+				      NULL, (Cardinal) 0);
+	}
 
 	moira_server = "";
 	if (resources.db)
@@ -142,17 +173,20 @@ char *argv[];
 	    }
 	}
 
-	bboard = XtCreateManagedWidget(	"bboard",
-				       xmBulletinBoardWidgetClass,
-				       toplevel, NULL, 0);
-	menuwidget = BuildMenuTree(bboard, &MenuRoot);
-	SetupLogWidget(bboard);
+	if (!tty) {
+	    bboard = XtCreateManagedWidget("bboard",
+					   xmBulletinBoardWidgetClass,
+					   toplevel, NULL, 0);
+	    menuwidget = BuildMenuTree(bboard, &MenuRoot);
+	    SetupLogWidget(bboard);
 
-	XtRealizeWidget(toplevel);
+	    XtRealizeWidget(toplevel);
 
-	set_com_err_hook(popup_error_hook);
-	mr_set_alternate_input(ConnectionNumber(XtDisplay(toplevel)),
-			       mr_x_input);
+	    set_com_err_hook(popup_error_hook);
+	    mr_set_alternate_input(ConnectionNumber(XtDisplay(toplevel)),
+				   mr_x_input);
+	}
+
 	mr_host(host, sizeof(host));
 	if (resources.noauth)
 	  sprintf(buf, "UNAUTHENTICATED connection to Moira server %s\n\n",
@@ -161,7 +195,10 @@ char *argv[];
 	  sprintf(buf, "Connected to Moira server %s\n\n", host);
 	AppendToLog(buf);
 
-	XtMainLoop();
+	if (tty)
+	  TtyMainLoop();
+	else
+	  XtMainLoop();
 }
 
 
@@ -174,18 +211,22 @@ caddr_t data;
 {
     int status;
 
-    MakeWatchCursor(toplevel);
-    XFlush(XtDisplay(toplevel));
+    if (!tty) {
+	MakeWatchCursor(toplevel);
+	XFlush(XtDisplay(toplevel));
+    }
     status = mr_query(query, argc, argv, callback, data);
     if (status != MR_ABORTED && status != MR_NOT_CONNECTED) {
-	MakeNormalCursor(toplevel);
+	if (!tty)
+	  MakeNormalCursor(toplevel);
 	return(status);
     }
     status = mr_connect(moira_server);
     if (status) {
 	com_err(program_name, status, " while re-connecting to server %s",
 		moira_server);
-	MakeNormalCursor(toplevel);
+	if (!tty)
+	  MakeNormalCursor(toplevel);
 	return(MR_ABORTED);
     }
     status = mr_auth("mmoira");
@@ -193,11 +234,13 @@ caddr_t data;
 	com_err(program_name, status, " while re-authenticating to server %s",
 		moira_server);
 	mr_disconnect();
-	MakeNormalCursor(toplevel);
+	if (!tty)
+	  MakeNormalCursor(toplevel);
 	return(MR_ABORTED);
     }
     status = mr_query(query, argc, argv, callback, data);
-    MakeNormalCursor(toplevel);
+    if (!tty)
+      MakeNormalCursor(toplevel);
     return(status);
 
 }

@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/help.c,v 1.6 1992-11-09 18:23:01 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/help.c,v 1.7 1992-12-10 10:42:04 mar Exp $
  *
  *  	Copyright 1991 by the Massachusetts Institute of Technology.
  *
@@ -53,7 +53,10 @@ char *node;
       }
     fclose(helpfile);
     if (msg) {
-	PopupHelpWindow(msg);
+	if (tty)
+	  printf("%s\r\n", msg);
+	else
+	  PopupHelpWindow(msg);
 	free(msg);
     }
     return;

@@ -14,7 +14,7 @@
  * this software for any purpose.  It is provided "as is"
  * without express or implied warranty.
  * 
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/util/imake/imake.c,v 1.1 1989-08-30 11:24:45 jtkohl Exp $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/util/imake/imake.c,v 4.1 1989-08-30 11:25:31 jtkohl Exp $
  * $Locker:  $
  *
  * Author:
@@ -122,11 +122,16 @@ int	InRule = FALSE;
 
 typedef	u_char	boolean;
 
-#ifndef apollo
-char	*cpp = "/lib/cpp";
-#else apollo
+#include <sys/param.h>
+#if BSD > 43
+char	*cpp = "/usr/bin/cpp";
+#else
+#ifdef	apollo
 char	*cpp = "/usr/lib/cpp";
-#endif /* apollo */
+#else
+char	*cpp = "/lib/cpp";
+#endif
+#endif
 
 char	*tmpMakefile    = "/usr/tmp/tmp-make.XXXXXX";
 char	*tmpImakefile    = "/usr/tmp/tmp-imake.XXXXXX";

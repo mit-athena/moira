@@ -1,4 +1,4 @@
-/* $Id: main.c,v 1.34 1998-08-11 18:05:28 danw Exp $
+/* $Id: main.c,v 1.35 1998-10-21 19:24:02 danw Exp $
  *
  *	This is the file main.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -26,7 +26,7 @@
 
 #include <krb.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/main.c,v 1.34 1998-08-11 18:05:28 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/main.c,v 1.35 1998-10-21 19:24:02 danw Exp $");
 
 static void ErrorExit(char *buf, int status);
 static void Usage(void);
@@ -49,7 +49,7 @@ Bool use_menu = TRUE;		/* whether or not we are using a menu. */
  *	Returns: doesn't return.
  */
 
-void main(int argc, char **argv)
+int main(int argc, char **argv)
 {
   int status;
   Menu *menu;

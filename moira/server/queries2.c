@@ -1,6 +1,6 @@
 /* This file defines the query dispatch table for version 2 of the protocol
  *
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/queries2.c,v 2.20 1993-12-29 16:22:07 tom Exp $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/queries2.c,v 2.21 1994-01-07 12:06:35 tom Exp $
  *
  * Copyright 1987, 1988 by the Massachusetts Institute of Technology.
  * For copying and distribution information, please see the file
@@ -976,7 +976,7 @@ static struct validate asnt_validate =
     asnt_valobj,
     4,
     NAME,
-    "name = uppercase(LEFT('%s',SIZE(name))) OR description = '__'+'%s' OR saddr = '%s'",
+    "name = uppercase(LEFT('%s',SIZE(name)))",
     3,
     SNET_ID,
     0,
@@ -1002,7 +1002,7 @@ static struct validate usnt_validate =
     usnt_valobj,
     5,
     NAME,
-    "snet_id = %d OR description = '__'+'%s' OR description = '__'+'%s' OR saddr = '%s'",
+    "snet_id = %d",
     4,
     SNET_ID,
     0,

@@ -1,36 +1,160 @@
 #!/moira/bin/perl -Tw
 
-# $Id: ip-billing.gen,v 1.2 2001-09-13 02:34:39 zacheiss Exp $
+# $Id: ip-billing.gen,v 1.3 2002-02-04 05:21:37 zacheiss Exp $
 # The following exit codes are defined and MUST BE CONSISTENT with the
 # error codes the library uses:
 $MR_DBMS_ERR = 47836421;
 $MR_OCONFIG = 47836460;
 
+$ENV{PATH} = "/bin:/usr/bin:/sbin:/usr/sbin";
+
+$outdir = '/moira/dcm/ip-billing';
 $outfile = '/moira/dcm/ip-billing.out';
+$outdat = '/moira/dcm/ip-billing/moira.dat';
+$outctl = '/moira/dcm/ip-billing/moira.ctl';
+$count = 0;
 
 use DBI;
+use Socket;
+
+umask 022;
+open(DAT, ">$outdat") || exit $MR_OCONFIG;
+open(CTL, ">$outctl") || exit $MR_OCONFIG;
 
 $dbh = DBI->connect("dbi:Oracle:moira", "moira", "moira")
   || exit $MR_DBMS_ERR;
 
-$sth = $dbh->prepare("SELECT m.address, m.location, m.account_number, " .
-		     "m.name, m.contact FROM machine m, subnet s WHERE " .
-		     "m.status = 1 and m.snet_id = s.snet_id " .
-		     "AND s.status = 1") || exit $MR_DBMS_ERR;
+# First report all the NETWK-A hosts.
+$sth = $dbh->prepare("SELECT m.address, m.location, m.name, m.contact, " .
+		     "m.account_number, m.modtime FROM " .
+		     "machine m, subnet s WHERE m.status = 1 " .
+		     "AND m.snet_id = s.snet_id AND s.status = 1 " .
+		     "AND m.account_number != CHR(0) ORDER BY m.address") 
+    || exit $MR_DBMS_ERR;
 
 $sth->execute || exit $MR_DBMS_ERR;
 
-umask 022;
-open(OUT, ">$outfile") || exit $MR_OCONFIG;
-
-while (($address, $location, $accountnumber, $hostname, $contact) =
+while (($address, $location, $name, $contact, $accountnumber, $modtime) =
        $sth->fetchrow_array) {
-    $row= "$address\t$location\t$accountnumber\t$hostname\t$contact\n";
+    if ($location eq "\0") {
+	$location = "NONE";
+    }
+    if ($contact eq "\0") {
+	$contact = "NONE";
+    }
+    $row = "$address\t$location\t$name\t$contact\t$accountnumber\t+NETWK-A\t$modtime\n";
     $row =~ s/\0//g;
-    print OUT $row;
+    print DAT $row;
+    $count++;
 }
 
-close(OUT);
+# Next we do the private subnets.
+# +NETWK-10P.
+$sth = $dbh->prepare("SELECT s.saddr, s.description, s.name, s.contact, " .
+		     "s.account_number, s.modtime FROM subnet s " .
+		     "WHERE s.status = 2 AND s.account_number != CHR(0) " .
+		     "ORDER BY s.saddr")
+    || exit $MR_DBMS_ERR;
+
+$sth->execute || exit $MR_DBMS_ERR;
+
+while (($saddr, $desc, $name, $contact, $accountnumber, $modtime) =
+       $sth->fetchrow_array) {
+    if ($desc eq "\0") {
+	$desc = "NONE";
+    }
+    if ($contact eq "\0") {
+	$contact = "NONE";
+    }
+    @addr = unpack("C4", pack("N", $saddr));
+    $address = "$addr[0].$addr[1].$addr[2].$addr[3]";
+    $row = "$address\t$desc\t$name\t$contact\t$accountnumber\t+NETWK-10P\t$modtime\n";
+    $row =~ s/\0//g;
+    print DAT $row;
+    $count++;
+}
+
+# +NETWK-100P
+$sth = $dbh->prepare("SELECT s.saddr, s.description, s.name, s.contact, " .
+		     "s.account_number, s.modtime FROM subnet s " .
+		     "WHERE s.status = 3 AND s.account_number != CHR(0) " .
+		     "ORDER BY s.saddr")
+    || exit $MR_DBMS_ERR;
+
+$sth->execute || exit $MR_DBMS_ERR;
+
+while (($saddr, $desc, $name, $contact, $accountnumber, $modtime) =
+       $sth->fetchrow_array) {
+    if ($desc eq "\0") {
+	$desc = "NONE";
+    }
+    if ($contact eq "\0") {
+	$contact = "NONE";
+    }
+    @addr = unpack("C4", pack("N", $saddr));
+    $address = "$addr[0].$addr[1].$addr[2].$addr[3]";
+    $row = "$address\t$desc\t$name\t$contact\t$accountnumber\t+NETWK-100P\t$modtime\n";
+    $row =~ s/\0//g;
+    print DAT $row;
+    $count++;
+}
+
+# +NETWK-1000P
+$sth = $dbh->prepare("SELECT s.saddr, s.description, s.name, s.contact, " .
+		     "s.account_number, s.modtime FROM subnet s " .
+		     "WHERE s.status = 7 AND s.account_number != CHR(0) " .
+		     "ORDER BY s.saddr")
+    || exit $MR_DBMS_ERR;
+
+$sth->execute || exit $MR_DBMS_ERR;
+
+while (($saddr, $desc, $name, $contact, $accountnumber, $modtime) =
+       $sth->fetchrow_array) {
+    if ($desc eq "\0") {
+	$desc = "NONE";
+    }
+    if ($contact eq "\0") {
+	$contact = "NONE";
+    }
+    @addr = unpack("C4", pack("N", $saddr));
+    $address = "$addr[0].$addr[1].$addr[2].$addr[3]";
+    $row = "$address\t$desc\t$name\t$contact\t$accountnumber\t+NETWK-1000P\t$modtime\n";
+    $row =~ s/\0//g;
+    print DAT $row;
+    $count++;
+}
+
+# +NETWK-0
+$sth = $dbh->prepare("SELECT m.address, m.location, m.name, m.contact, " .
+		     "m.account_number, m.modtime FROM " .
+		     "machine m, subnet s WHERE m.status = 1 " .
+		     "AND m.snet_id = s.snet_id AND " .
+		     "(s.status = 4 OR s.status = 5 OR s.status = 6) " .
+		     "AND m.account_number != CHR(0) ORDER BY m.address") 
+    || exit $MR_DBMS_ERR;
+
+$sth->execute || exit $MR_DBMS_ERR;
+
+while (($address, $location, $name, $contact, $accountnumber, $modtime) =
+       $sth->fetchrow_array) {
+    if ($location eq "\0") {
+	$location = "NONE";
+    }
+    if ($contact eq "\0") {
+	$contact = "NONE";
+    }
+    $row = "$address\t$location\t$name\t$contact\t$accountnumber\t+NETWK-0\t$modtime\n";
+    $row =~ s/\0//g;
+    print DAT $row;
+    $count++;
+}
+
+print CTL "$count\n";
+
+system("cd $outdir && tar cf $outfile .") == 0 || exit $MR_OCONFIG;
+
+close(DAT);
+close(CTL);
 $dbh->disconnect;
 
 exit 0;

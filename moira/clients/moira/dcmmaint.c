@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/dcmmaint.c,v 1.5 1988-12-07 18:48:47 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/dcmmaint.c,v 1.6 1989-08-21 12:29:45 mar Exp $
  *
  * Copyright 1987, 1988 by the Massachusetts Institute of Technology.
  * For copying and distribution information, please see the file
@@ -256,8 +256,11 @@ int argc;
 char **argv;
 {
     int status;
-    char *qargv[5];
+    char *qargv[5], buf[BUFSIZ];
 
+    sprintf(buf, "Reset state for service %s (Y/N)", argv[1]);
+    if (!Confirm(buf))
+      return(DM_NORMAL);
     qargv[0] = argv[1];
     qargv[1] = "0";
     qargv[2] = "0";
@@ -290,8 +293,12 @@ int argc;
 char **argv;
 {
     int status;
-    char *qargv[9];
+    char *qargv[9], buf[BUFSIZ];
 
+    sprintf(buf, "Reset state for service %s on host %s (Y/N)", argv[1],
+	    canonicalize_hostname(argv[2]));
+    if (!Confirm(buf))
+      return(DM_NORMAL);
     qargv[0] = argv[1];
     qargv[1] = canonicalize_hostname(argv[2]);
     qargv[2] = "0";

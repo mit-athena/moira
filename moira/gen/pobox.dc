@@ -1,0 +1,124 @@
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/pobox.dc,v 1.1 1992-04-06 14:33:43 mar Exp $
+ *
+ * This generates a list of everyone's poboxes for the mitdir.
+ *
+ *  (c) Copyright 1992 by the Massachusetts Institute of Technology.
+ *  For copying and distribution information, please see the file
+ *  <mit-copyright.h>.
+ */
+
+#include <mit-copyright.h>
+#include <stdio.h>
+#include <moira.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <sys/time.h>
+#include <ctype.h>
+EXEC SQL INCLUDE sqlca;
+
+extern int errno;
+char *whoami = "pobox.gen";
+
+
+main(argc, argv)
+int argc;
+char **argv;
+{
+    FILE *out = stdout;
+    char *outf = NULL, outft[64];
+    struct stat sb;
+    int flag, i;
+    EXEC SQL BEGIN DECLARE SECTION;
+    char login[9], id[18], string[257];
+    EXEC SQL END DECLARE SECTION;
+
+#ifsql INGRES
+    EXEC SQL CONNECT sms;
+#endsql
+#ifsql INFORMIX
+    EXEC SQL DATABASE sms;
+#endsql
+
+    if (argc == 2) {
+	if (stat(argv[1], &sb) == 0) {
+	    if (ModDiff (&flag, "users", sb.st_mtime))
+	      exit(MR_DATE);
+	    if (flag < 0) {
+		fprintf(stderr, "File %s does not need to be rebuilt.\n",
+			argv[1]);
+		exit(MR_NO_CHANGE);
+	    }
+	}
+	outf = argv[1];
+	sprintf(outft, "%s~", outf);
+	if ((out = fopen(outft, "w")) == NULL) {
+	    fprintf(stderr, "unable to open %s for output\n", outf);
+	    exit(MR_OCONFIG);
+	}
+    } else if (argc != 1) {
+	fprintf(stderr, "usage: %s [outfile]\n", argv[0]);
+	exit(MR_ARGS);
+    } else {
+	outf = NULL;
+    }
+
+    EXEC SQL WHENEVER SQLERROR GOTO sqlerr;
+
+    EXEC SQL DECLARE x CURSOR FOR SELECT 
+      mit_id, login
+	FROM users WHERE status != 3 and potype="POP";
+    EXEC SQL OPEN x;
+    while (1) {
+	EXEC SQL FETCH x INTO :id, :login;
+	if (sqlca.sqlcode != 0) break;
+	strtrim(login);
+	strtrim(id);
+	if (isdigit(id[0]))
+	  fprintf(out, "%s %s@ATHENA.MIT.EDU\n", id, login);
+    }
+
+    EXEC SQL CLOSE x;
+
+    EXEC SQL DECLARE y CURSOR FOR SELECT 
+      u.mit_id, s.string
+	FROM users u, strings s
+	WHERE u.status != 3 and u.potype="SMTP" and u.box_id = s.string_id;
+    EXEC SQL OPEN y;
+    while (1) {
+	EXEC SQL FETCH y INTO :id, :string;
+	if (sqlca.sqlcode != 0) break;
+	strtrim(string);
+	strtrim(id);
+	if (isdigit(id[0])) {
+	    if ((i = strlen(string)) > 7 &&
+		!strcasecmp(".local", string + i - 6)) {
+		string[i-6] = 0;
+		fprintf(out, "%s %s.mit.edu\n", id, string);
+	    } else
+	      fprintf(out, "%s %s\n", id, string);
+	}
+    }
+
+    EXEC SQL CLOSE y;
+
+#ifsql INGRES
+    EXEC SQL DISCONNECT;
+#endsql
+#ifsql INFORMIX
+    EXEC SQL CLOSE DATABASE;
+#endsql
+
+    if (fclose(out)) {
+	perror("close failed");
+	exit(MR_CCONFIG);
+    }
+    if (outf)
+      fix_file(outf);
+    exit(MR_SUCCESS);
+
+ sqlerr:
+    com_err(whoami, MR_INGRES_ERR, " code %d\n", sqlca.sqlcode);
+    critical_alert("DCM", "Pobox build encountered INGRES ERROR %d",
+		   sqlca.sqlcode);
+    exit(MR_INGRES_ERR);
+}

@@ -1,4 +1,4 @@
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/Makefile,v 1.5 1988-09-12 13:49:13 mar Exp $
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/Makefile,v 1.6 1989-08-25 13:48:50 mar Exp $
 #
 # (c) Copyright 1988 by the Massachusetts Institute of Technology.
 # For copying and distribution information, please see the file
@@ -29,13 +29,13 @@ copy_backups: copy_backups.c
 		 ../update/sms_update.o -L../lib \
 		-lsms -lgdb -lkrb -ldes -lmisc
 
-bkup.qc: ../db/dbbuild db2bkup.awk
-	cc -E ../db/dbbuild | awk -f db2bkup.awk > bkup.qc
+bkup.qc: ../db/newdb db2bkup.awk
+	cc -E ../db/newdb | awk -f db2bkup.awk > bkup.qc
 
 bkup1.qc: bkup.qc
 
-rest.qc: ../db/dbbuild db2rest.awk
-	cc -E ../db/dbbuild | awk -f db2rest.awk > rest.qc
+rest.qc: ../db/newdb db2rest.awk
+	cc -E ../db/newdb | awk -f db2rest.awk > rest.qc
 
 rest1.qc: rest.qc
 

@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.5 1998-10-30 18:18:25 danw Exp $
+# $Id: Makefile.in,v 1.6 1998-12-16 19:42:50 danw Exp $
 
 SHELL=/bin/sh
 @SET_MAKE@
@@ -38,6 +38,8 @@ GDSS_TARGET=warehouse.gen
 TARGET=	hesiod.gen nfs.gen mailhub.gen pobox.gen hosts.gen \
 	network.gen directory.gen ndb.gen @GDSS_TARGET@
 
+SCRIPTS=hesiod.sh mailhub.sh nfs.sh null.sh warehouse.sh
+
 .SUFFIXES: .pc
 
 .pc.c:
@@ -55,6 +57,7 @@ depend: $(CFILES)
 
 install: all
 	@set -x; for p in $(TARGET); do $(INSTALL_PROGRAM) $$p $(mrbindir); done
+	@set -x; for p in $(SCRIPTS); do $(INSTALL) -m 755 $$p $(mrbindir); done
 
 hesiod.gen: hesiod.o util.o moddiff.o $(MR_LIBDEP)
 	$(CC) -o $@ $(LDFLAGS) hesiod.o util.o moddiff.o $(SQL_LIBS) $(LIBS)

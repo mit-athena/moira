@@ -1,16 +1,16 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.pc,v $
  *	$Author: danw $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.pc,v 2.5 1998-01-05 14:59:11 danw Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.pc,v 2.6 1998-01-05 19:53:37 danw Exp $
  *
  *	Copyright (C) 1987, 1988 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
  *	<mit-copyright.h>.
- * 
+ *
  */
 
 #ifndef lint
-static char *rcsid_qrtn_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.pc,v 2.5 1998-01-05 14:59:11 danw Exp $";
+static char *rcsid_qrtn_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.pc,v 2.6 1998-01-05 19:53:37 danw Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -22,12 +22,12 @@ EXEC SQL INCLUDE sqlda;  /* SQL Descriptor Area */
 #include "qrtn.h"
 
 SQLDA *mr_sqlda;
-EXEC SQL BEGIN DECLARE SECTION; 
+EXEC SQL BEGIN DECLARE SECTION;
 int mr_sig_length;
-int idummy;                            
-char cdummy[MR_CDUMMY_LEN];            
+int idummy;
+char cdummy[MR_CDUMMY_LEN];
 char stmt_buf[MR_STMTBUF_LEN];
-EXEC SQL END DECLARE SECTION; 
+EXEC SQL END DECLARE SECTION;
 
 char *Argv[QMAXARGS];
 extern char *table_name[];
@@ -35,7 +35,7 @@ extern char *sqlbuffer[QMAXARGS];
 
 int dbms_errno = 0;
 int mr_errcode = 0;
-EXEC SQL BEGIN DECLARE SECTION; 
+EXEC SQL BEGIN DECLARE SECTION;
 int query_timeout = 30;
 char *database = "moira";
 EXEC SQL END DECLARE SECTION;
@@ -66,19 +66,19 @@ int validate_row(struct query *q, char *argv[], struct validate *v);
 
 void dbmserr(void)
 {
-    EXEC SQL BEGIN DECLARE SECTION; 
-    char err_msg[256];
-    EXEC SQL END DECLARE SECTION;
-    int bufsize=256, msglength=0;
+  EXEC SQL BEGIN DECLARE SECTION;
+  char err_msg[256];
+  EXEC SQL END DECLARE SECTION;
+  int bufsize = 256, msglength = 0;
 
-    dbms_errno = -sqlca.sqlcode;
-    mr_errcode = MR_DBMS_ERR;
-    com_err(whoami, MR_DBMS_ERR, " code %d\n", dbms_errno);
-    sqlglm(err_msg, &bufsize, &msglength);
-    err_msg[msglength]=0;
-    com_err(whoami, 0, "SQL error text = %s", err_msg);
-    critical_alert("MOIRA", "Moira server encountered DBMS ERROR %d\n%s",
-		       dbms_errno, err_msg);
+  dbms_errno = -sqlca.sqlcode;
+  mr_errcode = MR_DBMS_ERR;
+  com_err(whoami, MR_DBMS_ERR, " code %d\n", dbms_errno);
+  sqlglm(err_msg, &bufsize, &msglength);
+  err_msg[msglength] = 0;
+  com_err(whoami, 0, "SQL error text = %s", err_msg);
+  critical_alert("MOIRA", "Moira server encountered DBMS ERROR %d\n%s",
+		 dbms_errno, err_msg);
 }
 
 /* This is declarative, not executed.  Applies from here on, in this file. */
@@ -86,359 +86,403 @@ EXEC SQL WHENEVER SQLERROR DO dbmserr();
 
 int mr_open_database(void)
 {
-    register int i;
-    SQLDA *mr_alloc_sqlda();
-    static first_open = 1;
+  register int i;
+  SQLDA *mr_alloc_sqlda();
+  static first_open = 1;
 
-    if (first_open) {
-	first_open = 0;
+  if (first_open)
+    {
+      first_open = 0;
 
-	/* initialize local argv */
-	for (i = 0; i < 16; i++)
-	  Argv[i] = malloc(ARGLEN);
+      /* initialize local argv */
+      for (i = 0; i < 16; i++)
+	Argv[i] = malloc(ARGLEN);
 
-	mr_sqlda = mr_alloc_sqlda();       
+      mr_sqlda = mr_alloc_sqlda();
 
-	incremental_init();
-	flush_cache();
+      incremental_init();
+      flush_cache();
     }
-	
-    dbms_errno = 0;
-    mr_errcode = 0;
 
-    /* open the database */
-    EXEC SQL CONNECT :database IDENTIFIED BY :database;
+  dbms_errno = 0;
+  mr_errcode = 0;
 
-    if(dbms_errno) 
-        return(mr_errcode);
+  /* open the database */
+  EXEC SQL CONNECT :database IDENTIFIED BY :database;
 
-    EXEC SQL SELECT data_length INTO :mr_sig_length FROM user_tab_columns WHERE table_name='USERS' and column_name='SIGNATURE';
-    EXEC SQL COMMIT WORK;
-    if(dbms_errno)
-        return(mr_errcode);
+  if (dbms_errno)
+    return mr_errcode;
 
-    return(MR_SUCCESS);
+  EXEC SQL SELECT data_length INTO :mr_sig_length FROM user_tab_columns
+    WHERE table_name = 'USERS' and column_name = 'SIGNATURE';
+  EXEC SQL COMMIT WORK;
+  if (dbms_errno)
+    return mr_errcode;
+
+  return MR_SUCCESS;
 }
 
 void mr_close_database(void)
 {
-    flush_cache();
-    EXEC SQL COMMIT RELEASE;
+  flush_cache();
+  EXEC SQL COMMIT RELEASE;
 }
 
-int mr_check_access(cl, name, argc, argv_ro)
-     client *cl;
-     char *name, *argv_ro[];
-     int argc;
+int mr_check_access(client *cl, char *name, int argc, char *argv_ro[])
 {
-    struct query *q;
+  struct query *q;
 
-    dbms_errno = 0;
-    mr_errcode = 0;
+  dbms_errno = 0;
+  mr_errcode = 0;
 
-    q = get_query_by_name(name, cl->args->mr_version_no);
-    if (q == (struct query *)0)
-	return(MR_NO_HANDLE);
+  q = get_query_by_name(name, cl->args->mr_version_no);
+  if (!q)
+    return MR_NO_HANDLE;
 
-    return(mr_verify_query(cl, q, argc, argv_ro));    
+  return mr_verify_query(cl, q, argc, argv_ro);
 }
 
-int mr_process_query(cl, name, argc, argv_ro, action, actarg)
-     client *cl;
-     char *name, *argv_ro[], *actarg;
-     int argc, (*action)();
+int mr_process_query(client *cl, char *name, int argc, char *argv_ro[],
+		     int (*action)(), char *actarg)
 {
-    register struct query *q;
-    register int status;
-    register struct validate *v;
-    char qual[256];
-    char sort[32];
-    char *pqual;
-    char *psort;
-    EXEC SQL BEGIN DECLARE SECTION; 
-    char *table;
-    EXEC SQL END DECLARE SECTION; 
-    struct save_queue *sq;
+  register struct query *q;
+  register int status;
+  register struct validate *v;
+  char qual[256];
+  char sort[32];
+  char *pqual;
+  char *psort;
+  EXEC SQL BEGIN DECLARE SECTION;
+  char *table;
+  EXEC SQL END DECLARE SECTION;
+  struct save_queue *sq;
 
-    dbms_errno = 0;
-    mr_errcode = 0;
+  dbms_errno = 0;
+  mr_errcode = 0;
 
-    /* list queries command */
-    if (!strcmp(name, "_list_queries")) {
-	list_queries(cl->args->mr_version_no, action, actarg);
-	return(MR_SUCCESS);
+  /* list queries command */
+  if (!strcmp(name, "_list_queries"))
+    {
+      list_queries(cl->args->mr_version_no, action, actarg);
+      return MR_SUCCESS;
     }
 
-    /* help query command */
-    if (!strcmp(name, "_help")) {
-	if (argc < 1)
-	    return(MR_ARGS);
-	q = get_query_by_name(argv_ro[0], cl->args->mr_version_no);
-	if (q == (struct query *)0) return(MR_NO_HANDLE);
-	help_query(q, action, actarg);
-	return(MR_SUCCESS);
+  /* help query command */
+  if (!strcmp(name, "_help"))
+    {
+      if (argc < 1)
+	return MR_ARGS;
+      q = get_query_by_name(argv_ro[0], cl->args->mr_version_no);
+      if (!q)
+	return MR_NO_HANDLE;
+      help_query(q, action, actarg);
+      return MR_SUCCESS;
     }
 
-    /* get query structure, return error if named query does not exist */
-    q = get_query_by_name(name, cl->args->mr_version_no);
-    if (q == (struct query *)0) return(MR_NO_HANDLE);
-    v = q->validate;
+  /* get query structure, return error if named query does not exist */
+  q = get_query_by_name(name, cl->args->mr_version_no);
+  if (!q)
+    return MR_NO_HANDLE;
+  v = q->validate;
 
-    /* setup argument vector, verify access and arguments */
-    if ((status = mr_verify_query(cl, q, argc, argv_ro)) != MR_SUCCESS)
+  /* setup argument vector, verify access and arguments */
+  if ((status = mr_verify_query(cl, q, argc, argv_ro)) != MR_SUCCESS)
+    goto out;
+
+  /* perform any special query pre-processing */
+  if (v && v->pre_rtn)
+    {
+      status = (*v->pre_rtn)(q, Argv, cl, 0);
+      if (status != MR_SUCCESS)
 	goto out;
-
-    /* perform any special query pre-processing */
-    if (v && v->pre_rtn) {
-	status = (*v->pre_rtn)(q, Argv, cl, 0);
-	if (status != MR_SUCCESS)
-	    goto out;
     }
 
-    switch (q->type) {
+  switch (q->type)
+    {
     case RETRIEVE:
-	/* for queries that do not permit wildcarding, check if row
-	   uniquely exists */
-	if (v && v->field) {
-	    status = validate_row(q, Argv, v); 
-	    if (status != MR_EXISTS) break;
+      /* for queries that do not permit wildcarding, check if row
+	 uniquely exists */
+      if (v && v->field)
+	{
+	  status = validate_row(q, Argv, v);
+	  if (status != MR_EXISTS)
+	    break;
 	}
 
-	/* build "where" clause if needed */
-	if (q->qual) {
-	    build_qual(q->qual, q->argc, Argv, qual); 
-	    pqual = qual;
-	} else {
-	    pqual = 0;
+      /* build "where" clause if needed */
+      if (q->qual)
+	{
+	  build_qual(q->qual, q->argc, Argv, qual);
+	  pqual = qual;
 	}
+      else
+	pqual = 0;
 
-	/* build "sort" clause if needed */
-	if (v && v->valobj) {
-	    psort = build_sort(v, sort);
-	} else {
-	    psort = 0;
-	}
+      /* build "sort" clause if needed */
+      if (v && v->valobj)
+	psort = build_sort(v, sort);
+      else
+	psort = 0;
 
-	/* if there is a followup routine, then we must save the results */
-	/* of the first query for use by the followup routine */
-	/* if q->rvar = NULL, perform post_rtn only */
-	if (q->rvar) {
-	    if (v && v->post_rtn) {
-		sq = sq_create();
-		status = do_retrieve(q, pqual, psort, sq_save_args,
-				     (char *)sq);
-		if (status != MR_SUCCESS) {
-		    sq_destroy(sq);
-		    break;
+      /* if there is a followup routine, then we must save the results */
+      /* of the first query for use by the followup routine */
+      /* if q->rvar = NULL, perform post_rtn only */
+      if (q->rvar)
+	{
+	  if (v && v->post_rtn)
+	    {
+	      sq = sq_create();
+	      status = do_retrieve(q, pqual, psort, sq_save_args, (char *)sq);
+	      if (status != MR_SUCCESS)
+		{
+		  sq_destroy(sq);
+		  break;
 		}
-		status = (*v->post_rtn)(q, sq, v, action, actarg, cl);
-	    } else {
-		/* normal retrieve */
-		status = do_retrieve(q, pqual, psort, action, actarg);
+	      status = (*v->post_rtn)(q, sq, v, action, actarg, cl);
 	    }
-	    if (status != MR_SUCCESS) break;
-	} else {
-	    status = (*v->post_rtn)(q, Argv, cl, action, actarg);
+	  else
+	    {
+	      /* normal retrieve */
+	      status = do_retrieve(q, pqual, psort, action, actarg);
+	    }
+	  if (status != MR_SUCCESS)
+	    break;
 	}
+      else
+	status = (*v->post_rtn)(q, Argv, cl, action, actarg);
 
-	break;
+      break;
 
     case UPDATE:
-	/* see if row already exists */
-	if (v->field) {
-	    status = validate_row(q, Argv, v);
-	    if (status != MR_EXISTS) break;
+      /* see if row already exists */
+      if (v->field)
+	{
+	  status = validate_row(q, Argv, v);
+	  if (status != MR_EXISTS)
+	    break;
 	}
 
-	/* build "where" clause and perform update */
-	/* if q->rvar = NULL, perform post_rtn only */
-	if (q->rvar) {
-	    build_qual(q->qual, q->argc, Argv, qual);
-	    incremental_before(q->rtable, qual, argv_ro);
-	    status = do_update(q, &Argv[q->argc], qual, action, actarg);
-	    incremental_after(q->rtable, qual, argv_ro);
-	    if (status != MR_SUCCESS) break;
-	    flush_name(argv_ro[0], q->rtable);
-	    table = table_name[q->rtable];
-	    if (strcmp(q->shortname, "sshi") && strcmp(q->shortname, "ssif")) {
-		EXEC SQL UPDATE tblstats
-                  SET updates = updates + 1, modtime = SYSDATE
-		  WHERE table_name = :table;
+      /* build "where" clause and perform update */
+      /* if q->rvar = NULL, perform post_rtn only */
+      if (q->rvar)
+	{
+	  build_qual(q->qual, q->argc, Argv, qual);
+	  incremental_before(q->rtable, qual, argv_ro);
+	  status = do_update(q, &Argv[q->argc], qual, action, actarg);
+	  incremental_after(q->rtable, qual, argv_ro);
+	  if (status != MR_SUCCESS)
+	    break;
+	  flush_name(argv_ro[0], q->rtable);
+	  table = table_name[q->rtable];
+	  if (strcmp(q->shortname, "sshi") && strcmp(q->shortname, "ssif"))
+	    {
+	      EXEC SQL UPDATE tblstats
+		SET updates = updates + 1, modtime = SYSDATE
+		WHERE table_name = :table;
 	    }
 	}
 
-	/* execute followup routine (if any) */
-	if (v->post_rtn) status = (*v->post_rtn)(q, Argv, cl);
+      /* execute followup routine (if any) */
+      if (v->post_rtn)
+	status = (*v->post_rtn)(q, Argv, cl);
 
-	break;
+      break;
 
     case APPEND:
-	/* see if row already exists */
-	if (v->field) {
-	    status = validate_row(q, Argv, v);
-	    if (status != MR_NO_MATCH) break;
+      /* see if row already exists */
+      if (v->field)
+	{
+	  status = validate_row(q, Argv, v);
+	  if (status != MR_NO_MATCH)
+	    break;
 	}
 
-	/* build "where" clause if needed */
-	if (q->qual) {
-	    build_qual(q->qual, q->argc, Argv, qual);
-	    pqual = qual;
-	} else {
-	    pqual = 0;
+      /* build "where" clause if needed */
+      if (q->qual)
+	{
+	  build_qual(q->qual, q->argc, Argv, qual);
+	  pqual = qual;
+	}
+      else
+	pqual = 0;
+
+      /* perform the append */
+      /* if q->rvar = NULL, perform post_rtn only */
+      if (q->rvar)
+	{
+	  incremental_clear_before();
+	  status = do_append(q, &Argv[q->argc], pqual, action, actarg);
+	  if (status != MR_SUCCESS)
+	    break;
+	  if (v && v->object_id)
+	    {
+	      sprintf(qual, "%s.%s = %s", q->rvar, v->object_id,
+		      Argv[q->argc + q->vcnt]);
+	      incremental_after(q->rtable, qual, argv_ro);
+	    }
+	  else
+	    incremental_after(q->rtable, pqual, argv_ro);
+
+	  table = table_name[q->rtable];
+	  EXEC SQL UPDATE tblstats
+	    SET appends = appends + 1, modtime = SYSDATE
+	    WHERE table_name = :table;
 	}
 
-	/* perform the append */
-	/* if q->rvar = NULL, perform post_rtn only */
-	if (q->rvar) {
-	    incremental_clear_before();
-	    status = do_append(q, &Argv[q->argc], pqual, action, actarg);
-	    if (status != MR_SUCCESS) break;
-	    if (v && v->object_id) {
-		sprintf(qual, "%s.%s = %s",q->rvar, v->object_id, 
-			Argv[q->argc+q->vcnt]);
-		incremental_after(q->rtable, qual, argv_ro);
-	    } else
-	      incremental_after(q->rtable, pqual, argv_ro);
-
-	    table = table_name[q->rtable];
-	    EXEC SQL UPDATE tblstats
-	      SET appends = appends + 1, modtime = SYSDATE
-	      WHERE table_name = :table;
-	}
-	
-	/* execute followup routine */
-	if (v->post_rtn) status = (*v->post_rtn)(q, Argv, cl);
-	break;
+      /* execute followup routine */
+      if (v->post_rtn)
+	status = (*v->post_rtn)(q, Argv, cl);
+      break;
 
     case DELETE:
-	/* see if row already exists */
-	if (v->field) {
-	    status = validate_row(q, Argv, v);
-	    if (status != MR_EXISTS) break;
+      /* see if row already exists */
+      if (v->field)
+	{
+	  status = validate_row(q, Argv, v);
+	  if (status != MR_EXISTS)
+	    break;
 	}
 
-	/* build "where" clause and perform delete */
-	/* if q->rvar = NULL, perform post_rtn only */
-	if (q->rvar) {
-	    build_qual(q->qual, q->argc, Argv, qual);
-	    table = table_name[q->rtable];
-     	    incremental_before(q->rtable, qual, argv_ro);
-	    status = do_delete(q, qual, action, actarg);
-	    incremental_clear_after();
-	    if (status != MR_SUCCESS) break;
-	    flush_name(argv_ro[0], q->rtable);
-	    EXEC SQL UPDATE tblstats
-	      SET deletes = deletes + 1, modtime = SYSDATE
-	      WHERE table_name = :table;
+      /* build "where" clause and perform delete */
+      /* if q->rvar = NULL, perform post_rtn only */
+      if (q->rvar)
+	{
+	  build_qual(q->qual, q->argc, Argv, qual);
+	  table = table_name[q->rtable];
+	  incremental_before(q->rtable, qual, argv_ro);
+	  status = do_delete(q, qual, action, actarg);
+	  incremental_clear_after();
+	  if (status != MR_SUCCESS)
+	    break;
+	  flush_name(argv_ro[0], q->rtable);
+	  EXEC SQL UPDATE tblstats
+	    SET deletes = deletes + 1, modtime = SYSDATE
+	    WHERE table_name = :table;
 	}
 
-	/* execute followup routine */
-	if (v->post_rtn) status = (*v->post_rtn)(q, Argv, cl);
-	break;
-
+      /* execute followup routine */
+      if (v->post_rtn)
+	status = (*v->post_rtn)(q, Argv, cl);
+      break;
     }
 
 out:
-    if (status == MR_SUCCESS && dbms_errno != 0) {
-	com_err(whoami, MR_INTERNAL, "Server didn't notice DBMS ERROR %d",
-		       dbms_errno);
-	status = mr_errcode;
+  if (status == MR_SUCCESS && dbms_errno != 0)
+    {
+      com_err(whoami, MR_INTERNAL, "Server didn't notice DBMS ERROR %d",
+	      dbms_errno);
+      status = mr_errcode;
     }
 
-    if (q->type == RETRIEVE) {
-        EXEC SQL COMMIT WORK;
-    } else {
-        if (status == MR_SUCCESS) {
-        EXEC SQL COMMIT WORK;
-	    if (journal) {
-		char buf[1024];
-		int i;
-		extern time_t now;
+  if (q->type == RETRIEVE)
+    EXEC SQL COMMIT WORK;
+  else
+    {
+      if (status == MR_SUCCESS)
+	{
+	  EXEC SQL COMMIT WORK;
+	  if (journal)
+	    {
+	      char buf[1024];
+	      int i;
+	      extern time_t now;
 
-		fprintf(journal, "%% %s %s %s",
-			cl->clname, cl->entity, ctime(&now));
-		fprintf(journal, "%s[%d] ", q->name, cl->args->mr_version_no);
-		for (i = 0; i < argc; i++) {
-		    if (i != 0) {
-			putc(' ', journal);
-		    }
-		    requote(buf, argv_ro[i], sizeof(buf));
-		    fputs(buf, journal);
+	      fprintf(journal, "%% %s %s %s",
+		      cl->clname, cl->entity, ctime(&now));
+	      fprintf(journal, "%s[%d] ", q->name, cl->args->mr_version_no);
+	      for (i = 0; i < argc; i++)
+		{
+		  if (i != 0)
+		    putc(' ', journal);
+		  requote(buf, argv_ro[i], sizeof(buf));
+		  fputs(buf, journal);
 		}
-		putc('\n', journal);
-		fflush(journal);
+	      putc('\n', journal);
+	      fflush(journal);
 	    }
-	    incremental_update();
-	} else {
-	    cache_abort();
-            EXEC SQL ROLLBACK WORK;
-	    incremental_flush();
+	  incremental_update();
+	}
+      else
+	{
+	  cache_abort();
+	  EXEC SQL ROLLBACK WORK;
+	  incremental_flush();
 	}
     }
-    cache_commit(); /* commit following abort is safe */
+  cache_commit(); /* commit following abort is safe */
 
-    if (status != MR_SUCCESS && log_flags & LOG_RES)
-	com_err(whoami, status, " (Query failed)");
-    return(status);
+  if (status != MR_SUCCESS && log_flags & LOG_RES)
+    com_err(whoami, status, " (Query failed)");
+  return status;
 }
 
-int build_qual(fmt_buf, argc, argv, qual)
-     char *fmt_buf, *argv[], *qual;
-     int argc;
+int build_qual(char *fmt_buf, int argc, char *argv[], char *qual)
 {
-    char *res, *fmt;
+  char *res, *fmt;
 
-    for(res=qual, fmt=fmt_buf; *fmt; fmt++) {
-	if(*fmt=='%') {
-	    if(*++fmt) {
-		switch(*fmt) {                       
-		  case '%':                              /* %% -> % */
-		    *res++ = *fmt;           
-		    break;
-		  case 's':
-		    if(*argv[0]) {
-		        char *p=*argv;
-			while(*p) {
-			    if(*p=='\'') *res++='\'';	/* double the ' */
-			    *res++=*p++;
+  for (res = qual, fmt = fmt_buf; *fmt; fmt++)
+    {
+      if (*fmt == '%')
+	{
+	  if (*++fmt)
+	    {
+	      switch (*fmt)
+		{
+		case '%':			/* %% -> % */
+		  *res++ = *fmt;
+		  break;
+		case 's':
+		  if (*argv[0])
+		    {
+		      char *p = *argv;
+		      while (*p)
+			{
+			  if (*p == '\'')
+			    *res++ = '\'';	/* double the ' */
+			  *res++ = *p++;
 			}
 		    }
-		    argv++;
-		    break;
-		  case 'd':
-		    res+=sprintf(res,"%d",*(int *)*argv++);
-		    break;
-		  default:                               /* Swallow other %? pairs */
+		  argv++;
+		  break;
+		case 'd':
+		  res += sprintf(res, "%d", *(int *)*argv++);
+		  break;
+		default:			/* Swallow other %? pairs */
 		    break;
 		}
-	    } else break;
-	} else *res++ = *fmt;                            /* text -> result buffer */
+	    }
+	  else
+	    break;
+	}
+      else
+	*res++ = *fmt;				/* text -> result buffer */
     }
-    *res='\0';
+  *res = '\0';
 }
 
-char *build_sort(v, sort)
-     struct validate *v;
-     char *sort;
+char *build_sort(struct validate *v, char *sort)
 {
-    register struct valobj *vo;
-    register int n;
-    char elem[16];
+  register struct valobj *vo;
+  register int n;
+  char elem[16];
 
-    n = v->objcnt;
-    vo = v->valobj;
-    *sort = 0;
+  n = v->objcnt;
+  vo = v->valobj;
+  *sort = '\0';
 
-    while (--n >= 0) {
-	if (vo->type == V_SORT) {
-	    sprintf(elem, "%d", vo->index + 1);    /* Result column number */
-	    if (*sort) strcat(sort, ", ");
-	    strcat(sort, elem);
+  while (--n >= 0)
+    {
+      if (vo->type == V_SORT)
+	{
+	  sprintf(elem, "%d", vo->index + 1);    /* Result column number */
+	  if (*sort)
+	    strcat(sort, ", ");
+	  strcat(sort, elem);
 	}
-	vo++;
+      vo++;
     }
 
-    return ((*sort) ? sort : 0);
+  return (*sort) ? sort : 0;
 }
 
 
@@ -446,61 +490,63 @@ char *build_sort(v, sort)
 
 int privileged;
 
-int mr_verify_query(cl, q, argc, argv_ro)
-     client *cl;
-     struct query *q;
-     int argc;
-     char *argv_ro[];
+int mr_verify_query(client *cl, struct query *q, int argc, char *argv_ro[])
 {
-    register int argreq;
-    register int status;
-    register struct validate *v = q->validate;
-    register int i;
-    register char *to,*fr,*stop;
+  register int argreq;
+  register int status;
+  register struct validate *v = q->validate;
+  register int i;
+  register char *to, *fr, *stop;
 
-    privileged = 0;
+  privileged = 0;
 
-    /* check argument count */
-    argreq = q->argc;
-    if (q->type == UPDATE || q->type == APPEND) argreq += q->vcnt;
-    if (argc != argreq) return(MR_ARGS);
+  /* check argument count */
+  argreq = q->argc;
+  if (q->type == UPDATE || q->type == APPEND)
+    argreq += q->vcnt;
+  if (argc != argreq)
+    return MR_ARGS;
 
-    /* copy the arguments into a local argv that we can modify */
-    for (i = 0; i < argc; i++) {
-	for (to=Argv[i], fr=argv_ro[i], stop=to+ARGLEN; (*fr) && (to<stop);)
-	  *to++ = *fr++;
+  /* copy the arguments into a local argv that we can modify */
+  for (i = 0; i < argc; i++)
+    {
+      for (to = Argv[i], fr = argv_ro[i], stop = to + ARGLEN; (*fr) && (to < stop);)
+	*to++ = *fr++;
 
-	if (*fr) 
-	  return(MR_ARG_TOO_LONG);
-	*to='\0';
+      if (*fr)
+	return MR_ARG_TOO_LONG;
+      *to = '\0';
 
-	if (*--to == '\\')
-	  return(MR_BAD_CHAR);
+      if (*--to == '\\')
+	return MR_BAD_CHAR;
     }
 
-    /* check initial query access */
-    status = check_query_access(q, Argv, cl);
-    if (status != MR_SUCCESS && status != MR_PERM)
-	return(status);
-    if (status == MR_SUCCESS)
-	privileged++;
+  /* check initial query access */
+  status = check_query_access(q, Argv, cl);
+  if (status != MR_SUCCESS && status != MR_PERM)
+    return status;
+  if (status == MR_SUCCESS)
+    privileged++;
 
-    /* validate arguments */
-    if (v && v->valobj) {
-	status = validate_fields(q, Argv, v->valobj, v->objcnt);
-	if (status != MR_SUCCESS) return(status);
+  /* validate arguments */
+  if (v && v->valobj)
+    {
+      status = validate_fields(q, Argv, v->valobj, v->objcnt);
+      if (status != MR_SUCCESS)
+	return status;
     }
 
-    /* perform special query access check */
-    if (!privileged && v && v->acs_rtn) {
-	status = (*v->acs_rtn)(q, Argv, cl);
-	if (status != MR_SUCCESS && status != MR_PERM)
-	    return(status);
-	if (status == MR_SUCCESS)
-	    return(MR_SUCCESS);
+  /* perform special query access check */
+  if (!privileged && v && v->acs_rtn)
+    {
+      status = (*v->acs_rtn)(q, Argv, cl);
+      if (status != MR_SUCCESS && status != MR_PERM)
+	return status;
+      if (status == MR_SUCCESS)
+	return MR_SUCCESS;
     }
 
-    return(privileged ? MR_SUCCESS : MR_PERM);
+  return privileged ? MR_SUCCESS : MR_PERM;
 }
 
 
@@ -508,254 +554,275 @@ int mr_verify_query(cl, q, argc, argv_ro)
  * in the query structure, and whether that acl contains everybody.
  */
 
-int check_query_access(q, argv, cl)
-     struct query *q;
-     char *argv[];
-     client *cl;
+int check_query_access(struct query *q, char *argv[], client *cl)
 {
-    EXEC SQL BEGIN DECLARE SECTION; 
-    char *name;
-    int acl_id;
-    static int def_uid;
-    EXEC SQL END DECLARE SECTION; 
+  EXEC SQL BEGIN DECLARE SECTION;
+  char *name;
+  int acl_id;
+  static int def_uid;
+  EXEC SQL END DECLARE SECTION;
 
-    /* initialize default uid */
-    if (def_uid == 0) {
-        EXEC SQL SELECT users_id INTO :def_uid FROM users WHERE login='default';
+  /* initialize default uid */
+  if (def_uid == 0)
+    EXEC SQL SELECT users_id INTO :def_uid FROM users WHERE login = 'default';
+
+  /* get query access control list */
+  if (q->acl != 0)
+    acl_id = q->acl;
+  else
+    {
+      name = q->shortname;
+      EXEC SQL SELECT list_id INTO :acl_id FROM capacls WHERE tag = :name;
+      if (sqlca.sqlcode < 0)
+	return MR_DBMS_ERR;
+      if (sqlca.sqlcode == SQL_NO_MATCH)
+	return MR_PERM;
+      q->acl = acl_id;
+
+      /* check for default access */
+      EXEC SQL SELECT member_id INTO :acl_id FROM imembers
+	WHERE list_id = :acl_id AND member_type = 'USER'
+	AND member_id = :def_uid;
+      if (sqlca.sqlerrd[2] == 0)
+	q->everybody = 0;
+      else
+	q->everybody = 1;
     }
 
-    /* get query access control list */
-    if (q->acl != 0)
-      acl_id = q->acl;
-    else {
-	name = q->shortname;
-	EXEC SQL SELECT list_id INTO :acl_id FROM capacls WHERE tag = :name;
-        if (sqlca.sqlcode < 0) return(MR_DBMS_ERR);
-        if (sqlca.sqlcode == SQL_NO_MATCH) return(MR_PERM);
-	q->acl = acl_id;
+  if (q->everybody)
+    return MR_SUCCESS;
 
-	/* check for default access */
-        EXEC SQL SELECT member_id INTO :acl_id FROM imembers
-          WHERE list_id = :acl_id AND member_type = 'USER' 
-	    AND member_id = :def_uid;
-        if (sqlca.sqlerrd[2] == 0)
-          q->everybody = 0;
-        else
-          q->everybody = 1;
-    }
-
-    if (q->everybody)
-      return(MR_SUCCESS);
-
-    if (find_member("LIST", acl_id, cl))
-      return(MR_SUCCESS);
-    else
-      return(MR_PERM);
+  if (find_member("LIST", acl_id, cl))
+    return MR_SUCCESS;
+  else
+    return MR_PERM;
 }
 
 
-int find_member(list_type, list_id, cl)
-     char *list_type;
-     int list_id;
-     client *cl;
+int find_member(char *list_type, int list_id, client *cl)
 {
-    EXEC SQL BEGIN DECLARE SECTION; 
-    int flag, users_id, client_id;
-    EXEC SQL END DECLARE SECTION; 
+  EXEC SQL BEGIN DECLARE SECTION;
+  int flag, users_id, client_id;
+  EXEC SQL END DECLARE SECTION;
 
-    if (!strcmp(strtrim(list_type), "USER") &&
-	list_id == cl->users_id)
-	return(1);
+  if (!strcmp(strtrim(list_type), "USER") && list_id == cl->users_id)
+    return 1;
 
-    if (!strcmp(strtrim(list_type), "KERBEROS") &&
-	list_id == -cl->client_id)
-	return(1);
+  if (!strcmp(strtrim(list_type), "KERBEROS") && list_id == -cl->client_id)
+    return 1;
 
-    /* see if client is a member of list */
-    flag = 0;
-    users_id = cl->users_id;
-    client_id = -cl->client_id;
-    EXEC SQL SELECT COUNT(member_id) INTO :flag FROM imembers
-	WHERE list_id = :list_id
-	AND ( ( member_type = 'USER' AND member_id = :users_id )
-	      OR (member_type = 'KERBEROS' AND member_id = :client_id ) );
-    if (sqlca.sqlcode == 0)
-      return(flag);            
-    return(0);
+  /* see if client is a member of list */
+  flag = 0;
+  users_id = cl->users_id;
+  client_id = -cl->client_id;
+  EXEC SQL SELECT COUNT(member_id) INTO :flag FROM imembers
+    WHERE list_id = :list_id
+    AND ( ( member_type = 'USER' AND member_id = :users_id )
+	  OR (member_type = 'KERBEROS' AND member_id = :client_id ) );
+  if (sqlca.sqlcode == 0)
+    return flag;
+  return 0;
 }
 
 
-int do_retrieve(q, pqual, psort, action, actarg)
-     struct query *q;
-     char *pqual, *psort, *actarg;
-     int (*action)();
+int do_retrieve(struct query *q, char *pqual, char *psort,
+		int (*action)(), char *actarg)
 {
-    build_sql_stmt(stmt_buf,"SELECT",q->tlist,NULL,pqual);
-    if(psort) {
-      strcat(stmt_buf," ORDER BY ");
-      strcat(stmt_buf,psort);
+  build_sql_stmt(stmt_buf, "SELECT", q->tlist, NULL, pqual);
+  if (psort)
+    {
+      strcat(stmt_buf, " ORDER BY ");
+      strcat(stmt_buf, psort);
     }
 
-    return do_for_all_rows(stmt_buf, q->vcnt, action, (int)actarg);
+  return do_for_all_rows(stmt_buf, q->vcnt, action, (int)actarg);
 }
 
-char *sqlstrstr(str, pat)
-     char *str, *pat;
+char *sqlstrstr(char *str, char *pat)
 {
-    register char *p=pat;
-    
-    do {
-	if(*str=='\'') {    /* Skip over single-quote delimited substrings */ 
-	    while(*++str && (*str!='\'')) 
-		; 
-	    continue;
+  register char *p = pat;
+
+  do
+    {
+      if (*str == '\'')    /* Skip over single-quote delimited substrings */
+	{
+	  while (*++str && (*str != '\''))
+	    ;
+	  continue;
 	}
-	if(*str==*p) {
-	    register char *s;
-	    s=str; 
-	    while(*++p && (*++s==*p))
-		; 
-	    if(*p) p=pat;  /* failed */
+      if (*str == *p)
+	{
+	  register char *s;
+	  s = str;
+	  while (*++p && (*++s == *p))
+	    ;
+	  if (*p)
+	    p = pat;  /* failed */
 	}
-    } while(*p && *++str);
+    }
+  while (*p && *++str);
 
-    if(!*str) str=NULL;
-    return(str);
+  if (!*str)
+    str = NULL;
+  return str;
 }
 
-void optimize_sql_stmt(buf)
-     char *buf;
+void optimize_sql_stmt(char *buf)
 {
-    char *point=buf, *pat, *eopat, *esc1, *esc2, *csr;
+  char *point = buf, *pat, *eopat, *esc1, *esc2, *csr;
 
-    for(point=buf; point=sqlstrstr(point,"LIKE"); point++)  {
-	/* Now pointing to string "LIKE" */
+  for (point = buf; point = sqlstrstr(point, "LIKE"); point++)
+    {
+      /* Now pointing to string "LIKE" */
 
-	/* Look at next word */
-	for(pat=point+4; *pat==' '; pat++) ;
+      /* Look at next word */
+      for (pat = point + 4; *pat == ' '; pat++)
+	;
 
-	/* Is it a single-quote delimited string? */
-	if(*pat!='\'') continue;
+      /* Is it a single-quote delimited string? */
+      if (*pat != '\'')
+	continue;
 
-	/* look for "escape" clause - save escape character */
-	/* 1. Find end of pattern */
-	for(eopat=pat+1; 1; eopat++) {
-	    if(*eopat=='\'') {
-		if(eopat[1]=='\'')  /* single-quote is self-escaping */
-		    eopat++;
-		else
-		    break;
+      /* look for "escape" clause - save escape character */
+      /* 1. Find end of pattern */
+      for (eopat = pat + 1; 1; eopat++)
+	{
+	  if (*eopat == '\'')
+	    {
+	      if (eopat[1] == '\'')  /* single-quote is self-escaping */
+		eopat++;
+	      else
+		break;
 	    }
 	}
 
-	/* 2. Look at next word */
-	for(esc1=eopat; *++esc1==' ';) ;
+      /* 2. Look at next word */
+      for (esc1 = eopat; *++esc1 == ' ';)
+	;
 
-	/* 3. esc1=0 if not "ESCAPE '?'", where the ? may be any character. */
-	if(strncmp(esc1,"ESCAPE",6)) esc1=NULL;
+      /* 3. esc1 = 0 if not "ESCAPE '?'", where the ? may be any character. */
+      if (strncmp(esc1, "ESCAPE", 6))
+	esc1 = NULL;
 
-	if(esc1) {
-	    for(esc2=esc1+6; *esc2==' '; esc2++) ;
-	    
-	    if(*esc2++!='\'') continue; /* Bad SQL syntax. Skip. */
-	    /* esc2 now points at the escape character itself */
-	    if(esc2[1]!='\'') continue; /* Weird escape string. Skip. */
-	} else {
-	    esc2="\\";
+      if (esc1)
+	{
+	  for (esc2 = esc1 + 6; *esc2 == ' '; esc2++)
+	    ;
+
+	  if (*esc2++ != '\'')
+	    continue; /* Bad SQL syntax. Skip. */
+	  /* esc2 now points at the escape character itself */
+	  if (esc2[1] != '\'')
+	    continue; /* Weird escape string. Skip. */
 	}
+      else
+	esc2 = "\\";
 
-	/* Is pattern free from special characters? */
-	for(csr=pat; csr<eopat; csr++) 
-	    if((*csr=='%') || (*csr=='_') || (*csr==*esc2)) break;
-	if(csr!=eopat) continue; /* Uses pattern matching. Skip. */
+      /* Is pattern free from special characters? */
+      for (csr = pat; csr < eopat; csr++)
+	{
+	  if ((*csr == '%') || (*csr == '_') || (*csr == *esc2))
+	    break;
+	  }
+      if (csr != eopat)
+	continue; /* Uses pattern matching. Skip. */
 
-	/* Optimize the query statement */
-	/* 1. Change "LIKE" to " =  " */
-	memcpy(point," =  ",4);
-	
-	/* 2. Change "ESCAPE" to "      " */
-	if(esc1) {
-	    memset(esc1,' ',6);
-	    /* 3. Change  "'*'" to "   " */
-	    /*    (Changes '''' to "    ") */
-	    if(esc2) memset(esc2-1,' ',(*esc2=='\'')?4:3); 
+      /* Optimize the query statement */
+      /* 1. Change "LIKE" to " =  " */
+      memcpy(point, " =  ", 4);
+
+      /* 2. Change "ESCAPE" to "      " */
+      if (esc1)
+	{
+	  memset(esc1, ' ', 6);
+	  /* 3. Change  "'*'" to "   " */
+	  /*    (Changes '''' to "    ") */
+	  if (esc2)
+	    memset(esc2 - 1, ' ', (*esc2 == '\'') ? 4 : 3);
 	}
     }
 }
 
-void build_sql_stmt(result_buf, cmd, targetlist, argv, qual)
-     char *result_buf, *cmd, *targetlist, *argv[], *qual;
+void build_sql_stmt(char *result_buf, char *cmd, char *targetlist,
+		    char *argv[], char *qual)
 {
-    char fmt_buf[MR_STMTBUF_LEN];
-    register char *res, *fmt;
+  char fmt_buf[MR_STMTBUF_LEN];
+  register char *res, *fmt;
 
-    if(qual)
-      sprintf(fmt_buf,"%s %s WHERE %s",cmd,targetlist,qual);
-    else
-      sprintf(fmt_buf,"%s %s",cmd,targetlist);
+  if (qual)
+    sprintf(fmt_buf, "%s %s WHERE %s", cmd, targetlist, qual);
+  else
+    sprintf(fmt_buf, "%s %s", cmd, targetlist);
 
-    for(res=result_buf, fmt=fmt_buf; *fmt; fmt++) {
-	if(*fmt=='%') {
-	    if(*++fmt) {
-		switch(*fmt) {                       
-		  case '%':                              /* %% -> % */
-		    *res++ = *fmt;           
-		    break;
-		  case 's':
-		    if(*argv[0]) {
-		        char *p=*argv;
-			while(*p) {
-			    if(*p=='\'') *res++='\'';	/* double the ' */
-			    *res++=*p++;
+  for (res = result_buf, fmt = fmt_buf; *fmt; fmt++)
+    {
+      if (*fmt == '%')
+	{
+	  if (*++fmt)
+	    {
+	      switch (*fmt)
+		{
+		case '%':			/* %% -> % */
+		  *res++ = *fmt;
+		  break;
+		case 's':
+		  if (*argv[0])
+		    {
+		      char *p = *argv;
+		      while (*p)
+			{
+			  if (*p == '\'')
+			    *res++ = '\'';	/* double the ' */
+			  *res++ = *p++;
 			}
 		    }
-		    argv++;
-		    break;
-		  case 'd':
-		    res+=sprintf(res,"%d",*(int *)*argv++);
-		    break;
-		  default:                               /* Swallow other %? pairs */
-		    break;
+		  argv++;
+		  break;
+		case 'd':
+		  res += sprintf(res, "%d", *(int *)*argv++);
+		  break;
+		default:			/* Swallow other %? pairs */
+		  break;
 		}
-	    } else break;
-	} else *res++ = *fmt;                            /* text -> result buffer */
+	    }
+	  else
+	    break;
+	}
+      else
+	*res++ = *fmt;				/* text -> result buffer */
     }
-    *res='\0';
+  *res = '\0';
 
-    optimize_sql_stmt(result_buf);
+  optimize_sql_stmt(result_buf);
 }
 
-int do_update(q, argv, qual, action, actarg)
-     struct query *q;
-     char *argv[], *qual, *actarg;
-     int (*action)();
+int do_update(struct query *q, char *argv[], char *qual,
+	      int (*action)(), char *actarg)
 {
-    build_sql_stmt(stmt_buf,"UPDATE",q->tlist,argv,qual);
-    EXEC SQL EXECUTE IMMEDIATE :stmt_buf;
-    if (mr_errcode) return(mr_errcode);
-    return(MR_SUCCESS);
+  build_sql_stmt(stmt_buf, "UPDATE", q->tlist, argv, qual);
+  EXEC SQL EXECUTE IMMEDIATE :stmt_buf;
+  if (mr_errcode)
+    return mr_errcode;
+  return MR_SUCCESS;
 }
 
-int do_append(q, argv, pqual, action, actarg)
-     struct query *q;
-     char *argv[], *pqual, *actarg;
-     int (*action)();
+int do_append(struct query *q, char *argv[], char *pqual,
+	      int (*action)(), char *actarg)
 {
-    build_sql_stmt(stmt_buf,"INSERT",q->tlist,argv,pqual);
-    EXEC SQL EXECUTE IMMEDIATE :stmt_buf;
-    if (mr_errcode) return(mr_errcode);
-    return(MR_SUCCESS);
+  build_sql_stmt(stmt_buf, "INSERT", q->tlist, argv, pqual);
+  EXEC SQL EXECUTE IMMEDIATE :stmt_buf;
+  if (mr_errcode)
+    return mr_errcode;
+  return MR_SUCCESS;
 }
 
-int do_delete(q, qual, action, actarg)
-     struct query *q;
-     char *qual, *actarg;
-     int (*action)();
+int do_delete(struct query *q, char *qual, int (*action)(), char *actarg)
 {
-    sprintf(stmt_buf,"DELETE FROM %s WHERE %s",table_name[q->rtable],qual);
-    EXEC SQL EXECUTE IMMEDIATE :stmt_buf;
-    if (mr_errcode) return(mr_errcode);
-    return(MR_SUCCESS);
+  sprintf(stmt_buf, "DELETE FROM %s WHERE %s", table_name[q->rtable], qual);
+  EXEC SQL EXECUTE IMMEDIATE :stmt_buf;
+  if (mr_errcode)
+    return mr_errcode;
+  return MR_SUCCESS;
 }
 
 
@@ -771,43 +838,44 @@ int do_delete(q, qual, action, actarg)
  **
  **/
 
-int set_next_object_id(object, table, limit)
-     char *object;
-     enum tables table;
-     int limit;
+int set_next_object_id(char *object, enum tables table, int limit)
 {
-    EXEC SQL BEGIN DECLARE SECTION; 
-    int value;
-    char *obj = object;
-    EXEC SQL END DECLARE SECTION;
-    int starting_value;
-    
-    EXEC SQL SELECT value INTO :value FROM numvalues WHERE name = :obj;
-    if (sqlca.sqlerrd[2] != 1)
-	return(MR_NO_ID);
+  EXEC SQL BEGIN DECLARE SECTION;
+  int value;
+  char *obj = object;
+  EXEC SQL END DECLARE SECTION;
+  int starting_value;
 
-    starting_value=value;
-    while (1) { 
-	if (limit && value > MAX_ID_VALUE) 
-	    value = MIN_ID_VALUE;
+  EXEC SQL SELECT value INTO :value FROM numvalues WHERE name = :obj;
+  if (sqlca.sqlerrd[2] != 1)
+    return MR_NO_ID;
 
-	sprintf(stmt_buf,"SELECT %s FROM %s WHERE %s=%d",
-		object,table_name[table],object,value);
-	dosql(sqlbuffer);
-	if (sqlca.sqlcode < 0) return(mr_errcode);
-	if (sqlca.sqlcode == SQL_NO_MATCH) break;
+  starting_value = value;
+  while (1)
+    {
+      if (limit && value > MAX_ID_VALUE)
+	value = MIN_ID_VALUE;
 
-	value++;
-	if (limit && value == starting_value) {   
-	    com_err(whoami,0,"All id values have been used");
-	    return(MR_NO_ID);
+      sprintf(stmt_buf, "SELECT %s FROM %s WHERE %s = %d",
+	      object, table_name[table], object, value);
+      dosql(sqlbuffer);
+      if (sqlca.sqlcode < 0)
+	return mr_errcode;
+      if (sqlca.sqlcode == SQL_NO_MATCH)
+	break;
+
+      value++;
+      if (limit && value == starting_value)
+	{
+	  com_err(whoami, 0, "All id values have been used");
+	  return MR_NO_ID;
 	}
     }
 
-    if (LOG_RES)
-        com_err(whoami, 0, "setting ID %s to %d", object, value);
-    EXEC SQL UPDATE numvalues SET value = :value WHERE name = :obj;
-    return(MR_SUCCESS);
+  if (LOG_RES)
+    com_err(whoami, 0, "setting ID %s to %d", object, value);
+  EXEC SQL UPDATE numvalues SET value = :value WHERE name = :obj;
+  return MR_SUCCESS;
 }
 
 
@@ -815,47 +883,49 @@ int set_next_object_id(object, table, limit)
  * owns.  Sets the kerberos ID and user ID.
  */
 
-int set_krb_mapping(name, login, ok, kid, uid)
-     char *name, *login;
-     int ok, *kid, *uid;
+int set_krb_mapping(char *name, char *login, int ok, int *kid, int *uid)
 {
-    EXEC SQL BEGIN DECLARE SECTION; 
-    int u_id, k_id;
-    char *krbname;
-    EXEC SQL END DECLARE SECTION; 
+  EXEC SQL BEGIN DECLARE SECTION;
+  int u_id, k_id;
+  char *krbname;
+  EXEC SQL END DECLARE SECTION;
 
-    krbname = name;
-    *kid = 0;
+  krbname = name;
+  *kid = 0;
+  *uid = 0;
+
+  EXEC SQL SELECT km.users_id, km.string_id INTO :u_id, :k_id
+    FROM krbmap km, strings str
+    WHERE km.string_id = str.string_id AND str.string = :krbname;
+  EXEC SQL COMMIT WORK;
+
+  if (dbms_errno)
+    return mr_errcode;
+
+  if (sqlca.sqlerrd[2] == 1)
+    {
+      *kid = -k_id;
+      *uid = u_id;
+      return MR_SUCCESS;
+    }
+
+  if (name_to_id(name, STRINGS_TABLE, &k_id) == MR_SUCCESS)
+    *kid = -k_id;
+
+  if (!ok)
+    {
+      *uid = *kid;
+      return MR_SUCCESS;
+    }
+
+  if (name_to_id(login, USERS_TABLE, uid) != MR_SUCCESS)
     *uid = 0;
 
-    EXEC SQL SELECT km.users_id, km.string_id INTO :u_id, :k_id
-      FROM krbmap km, strings str
-      WHERE km.string_id = str.string_id AND str.string = :krbname;
-    EXEC SQL COMMIT WORK;
-
-    if (dbms_errno) return(mr_errcode);
-    
-    if (sqlca.sqlerrd[2] == 1) {    /* rowcount */
-	*kid = -k_id;
-	*uid = u_id;
-	return(MR_SUCCESS);
-    }
-
-    if (name_to_id(name, STRINGS_TABLE, &k_id) == MR_SUCCESS)
-      *kid = -k_id;
-
-    if (!ok) {             
-	*uid = *kid;
-	return(MR_SUCCESS);
-    }
-
-    if (name_to_id(login, USERS_TABLE, uid) != MR_SUCCESS)
-      *uid = 0;
-
-    if (*kid == 0)
-      *kid = *uid;
-    if (dbms_errno) return(mr_errcode);
-    return(MR_SUCCESS);
+  if (*kid == 0)
+    *kid = *uid;
+  if (dbms_errno)
+    return mr_errcode;
+  return MR_SUCCESS;
 }
 
 
@@ -865,91 +935,99 @@ int set_krb_mapping(name, login, ok, kid, uid)
 
 void sanity_check_queries(void)
 {
-    register int i;
-    int maxv = 0, maxa = 0;
-    extern int QueryCount2;
-    extern struct query Queries2[];
+  register int i;
+  int maxv = 0, maxa = 0;
+  extern int QueryCount2;
+  extern struct query Queries2[];
 
-#define MAX(x,y) ((x) > (y) ? (x) : (y))
+#define MAX(x, y) ((x) > (y) ? (x) : (y))
 
-    for (i = 0; i < QueryCount2; i++) {
-	maxv = MAX(maxv, Queries2[i].vcnt);
-	maxa = MAX(maxa, Queries2[i].argc);
+  for (i = 0; i < QueryCount2; i++)
+    {
+      maxv = MAX(maxv, Queries2[i].vcnt);
+      maxa = MAX(maxa, Queries2[i].argc);
     }
-    if (MAX(maxv, maxa) > QMAXARGS) {
-	com_err(whoami, 0, "A query has more args than QMAXARGS");
-	exit(1);
+  if (MAX(maxv, maxa) > QMAXARGS)
+    {
+      com_err(whoami, 0, "A query has more args than QMAXARGS");
+      exit(1);
     }
 }
 
 
 /* Generically do a SELECT, storing the results in the provided buffers */
 
-void dosql(buffers)
-     char *buffers[];
+void dosql(char *buffers[])
 {
-  int i, errcode=0, errlen;
+  int i, errcode = 0, errlen;
 
   EXEC SQL PREPARE inc_stmt FROM :stmt_buf;
-  if(sqlca.sqlcode) return;
+  if (sqlca.sqlcode)
+    return;
   EXEC SQL DECLARE inc_crs CURSOR FOR inc_stmt;
   EXEC SQL OPEN inc_crs;
   mr_sqlda->N = QMAXARGS;
   EXEC SQL DESCRIBE SELECT LIST FOR inc_stmt INTO mr_sqlda;
   mr_sqlda->N = mr_sqlda->F;
-  for(i=0; i<mr_sqlda->N; i++) {
-    mr_sqlda->V[i]=buffers[i];
-    mr_sqlda->T[i]=97;
-    mr_sqlda->L[i]=ARGLEN;
-  }
+  for (i = 0; i < mr_sqlda->N; i++)
+    {
+      mr_sqlda->V[i] = buffers[i];
+      mr_sqlda->T[i] = 97;
+      mr_sqlda->L[i] = ARGLEN;
+    }
   EXEC SQL FETCH inc_crs USING DESCRIPTOR mr_sqlda;
 
   /* if we got an error from the FETCH, we have to preserve it or the
      close will reset it and the caller will think nothing happened */
-  if(sqlca.sqlcode) {
-    errcode=sqlca.sqlcode;
-    errlen=sqlca.sqlerrm.sqlerrml;
-  }
+  if (sqlca.sqlcode)
+    {
+      errcode = sqlca.sqlcode;
+      errlen = sqlca.sqlerrm.sqlerrml;
+    }
 
   EXEC SQL CLOSE inc_crs;
-  if(errcode) {
-    sqlca.sqlcode=errcode;
-    sqlca.sqlerrm.sqlerrml=errlen;
-  }
+  if (errcode)
+    {
+      sqlca.sqlcode = errcode;
+      sqlca.sqlerrm.sqlerrml = errlen;
+    }
 }
 
-int do_for_all_rows(query, count, action, actarg)
-     char *query;
-     int count, (*action)(), actarg;
+int do_for_all_rows(char *query, int count, int (*action)(), int actarg)
 {
-  int i, rowcount=0;
+  int i, rowcount = 0;
   EXEC SQL BEGIN DECLARE SECTION;
   char *q = query;
   EXEC SQL END DECLARE SECTION;
 
   EXEC SQL PREPARE stmt FROM :q;
-  if(sqlca.sqlcode) return;
+  if (sqlca.sqlcode)
+    return;
   EXEC SQL DECLARE curs CURSOR FOR stmt;
   EXEC SQL OPEN curs;
   mr_sqlda->N = count;
   EXEC SQL DESCRIBE SELECT LIST FOR stmt INTO mr_sqlda;
   mr_sqlda->N = mr_sqlda->F;
-  for(i=0; i<mr_sqlda->N; i++) {
-    mr_sqlda->V[i]=sqlbuffer[i];
-    mr_sqlda->T[i]=97;
-    mr_sqlda->L[i]=ARGLEN;
-  }
+  for (i = 0; i < mr_sqlda->N; i++)
+    {
+      mr_sqlda->V[i] = sqlbuffer[i];
+      mr_sqlda->T[i] = 97;
+      mr_sqlda->L[i] = ARGLEN;
+    }
 
-  while(1) {
-    EXEC SQL FETCH curs USING DESCRIPTOR mr_sqlda;
-    if(sqlca.sqlcode != 0) break;
-    (*action)(count, sqlbuffer, actarg);
-    rowcount++;
-  }
+  while (1)
+    {
+      EXEC SQL FETCH curs USING DESCRIPTOR mr_sqlda;
+      if (sqlca.sqlcode)
+	break;
+      (*action)(count, sqlbuffer, actarg);
+      rowcount++;
+    }
   EXEC SQL CLOSE curs;
-  
-  if (mr_errcode) return(mr_errcode);
-  return ((rowcount == 0) ? MR_NO_MATCH : MR_SUCCESS);
+
+  if (mr_errcode)
+    return mr_errcode;
+  return (rowcount == 0) ? MR_NO_MATCH : MR_SUCCESS;
 }
 
 

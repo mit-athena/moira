@@ -1,5 +1,5 @@
 #	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/db2rest.awk,v $
-#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/db2rest.awk,v 1.6 1997-07-22 03:20:18 danw Exp $
+#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/db2rest.awk,v 1.7 1998-01-05 19:51:33 danw Exp $
 #
 #	This converts the file used to originally create the database
 #	into a program to restore it from a backup.
@@ -12,21 +12,21 @@ BEGIN {
 	print "#include <stdio.h>";
 	print "EXEC SQL INCLUDE sqlca;";
 	print "EXEC SQL WHENEVER SQLERROR DO dbmserr();";
-	print "void parse_nl(), parse_str(FILE *, char *, int), parse_sep();\n";
+	print "void parse_nl(FILE *), parse_str(FILE *, char *, int), parse_sep(FILE *);\n";
 
 	print "/* This file automatically generated */" > "rest1.pc";
 	print "/* Do not edit */\n" >> "rest1.pc";
 	print "#include <stdio.h>" >> "rest1.pc";
-	print "FILE *open_file();" >> "rest1.pc";
-	print "do_restores(prefix)\n\tchar *prefix;\n{" >> "rest1.pc";
+	print "FILE *open_file(char *prefix, char *suffix);\n" >> "rest1.pc";
+	print "int do_restores(char *prefix)\n{" >> "rest1.pc";
 }
 
 $1=="#" { next; }
 
 /^create/ {
-	printf "restore_%s(f)\nFILE *f;\n", $3;
-	print "{\n\tEXEC SQL BEGIN DECLARE SECTION;";
-	printf "\trestore_%s(open_file(prefix, \"%s\"));\n", $3, $3 >> "rest1.pc";
+	printf "int restore_%s(FILE *f)\n", $3;
+	print "{\n  EXEC SQL BEGIN DECLARE SECTION;";
+	printf "  restore_%s(open_file(prefix, \"%s\"));\n", $3, $3 >> "rest1.pc";
 
 	tablename = $3;
 	rangename = substr(tablename, 1, 1);
@@ -35,71 +35,71 @@ $1=="#" { next; }
 }
 
 NF >= 2 {
-	vname[count] = $1; 
-	printf "/* %s */\n", $0;
+	vname[count] = $1;
+	printf "  /* %s */\n", $0;
 	if ($2 ~ /INTEGER/ || $2 ~ /SMALLINT/ || $2 ~ /INTEGER1/) {
-		printf "\tint\tt_%s;\n", vname[count];
+		printf "  int\tt_%s;\n", vname[count];
 		vtype[count]="int";
 	} else if ($2 ~ /CHAR\([0-9]*\)/) {
 		t = split($2, temp, "(");
 		if (t != 2) printf "Can't parse %s\n", $2;
 		t = split(temp[2], temp2, ")");
 		if (t != 2) printf "Can't parse %s\n", temp[2];
-		printf "\tchar\tt_%s[%d];\n", vname[count], temp2[1]+1;
+		printf "  char\tt_%s[%d];\n", vname[count], temp2[1]+1;
 		if ($1 == "signature") {
 			vtype[count]="bin";
-			printf "\tEXEC SQL VAR t_signature IS STRING(%d);\n", temp2[1]+1;
+			printf "  EXEC SQL VAR t_signature IS STRING(%d);\n", temp2[1]+1;
 		} else vtype[count]="str";
 		vsize[count] = temp2[1]+1;
 	} else if ($2 ~ /DATE/) {
-		printf "\tchar\tt_%s[26];\n", vname[count];
+		printf "  char\tt_%s[26];\n", vname[count];
 		vtype[count]="date";
 	} else printf "Unknown data type %s\n", $2;
 	count++;
 }
 
-/^\);$/ { 
-	printf "\tEXEC SQL END DECLARE SECTION;\n\tint count=0;\n";
+/^\);$/ {
+	printf "  EXEC SQL END DECLARE SECTION;\n\n  int count = 0;\n";
 
-	print "\twhile(!feof(f)) {";
-	print "\t\tif(!(++count%100)) {\n\t\t\tEXEC SQL COMMIT;\n\t\t}\n";
+	print "  while (!feof(f))\n    {";
+	print "      if (!(++count % 100))\n        EXEC SQL COMMIT;\n";
 
 	for (i = 0; i < count; i++) {
-		if (i != 0) print "\t\tparse_sep(f);";
+		if (i != 0) print "      parse_sep(f);";
 		if (vtype[i] ~ /int/) {
-			printf("\t\tt_%s = parse_int(f);\n", vname[i]);
+			printf("      t_%s = parse_int(f);\n", vname[i]);
 		} else if (vtype[i] ~ /date/) {
-			printf "\t\tparse_str(f, t_%s, 26);\n", vname[i];
+			printf "      parse_str(f, t_%s, 26);\n", vname[i];
 		} else {
-			printf "\t\tparse_str(f, t_%s, %d);\n", vname[i], vsize[i];
+			printf "      parse_str(f, t_%s, %d);\n", vname[i], vsize[i];
 		}
-		if (i == 0) print "\t\tif (feof(f)) break;";
+		if (i == 0) print "      if (feof(f))\n        break;";
 	}
-	printf "\t\tparse_nl(f);\n"
+	printf "      parse_nl(f);\n"
 
-	printf "\t\tEXEC SQL INSERT INTO %s (\n", tablename;
+	printf "      EXEC SQL INSERT INTO %s (\n", tablename;
 	for (i = 0; i < count; i++) {
 		if (i != 0) printf ",\n";
-		printf "\t\t\t%s", vname[i];
+		printf "          %s", vname[i];
 	}
-	printf ")\n\t\tVALUES (\n";
+	printf ")\n        VALUES (\n";
 	for (i = 0; i < count; i++) {
 		if (i != 0) printf ",\n";
 		if (vtype[i] ~ /date/) {
-			printf "\t\t\tTO_DATE(NVL(:t_%s,TO_CHAR(SYSDATE, 'DD_mon-YYYY HH24:MI:SS')), 'DD-mon-YYYY HH24:MI:SS')", vname[i];
+			printf "          TO_DATE(NVL(:t_%s,TO_CHAR(SYSDATE, 'DD_mon-YYYY HH24:MI:SS')), 'DD-mon-YYYY HH24:MI:SS')", vname[i];
 		} else if(vtype[i] ~ /int/) {
-			printf "\t\t\t:t_%s", vname[i];
+			printf "          :t_%s", vname[i];
 		} else {
-			printf "\t\t\tNVL(:t_%s,CHR(0))", vname[i];
+			printf "          NVL(:t_%s,CHR(0))", vname[i];
 		}
 	}
-	printf ");\n\t\tif (sqlca.sqlcode != 0) {\n";
-	printf "\t\t\tsqlca.sqlerrm.sqlerrmc[sqlca.sqlerrm.sqlerrml]=0;\n";
-	printf "\t\t\tprintf(\"%%s\\n\", sqlca.sqlerrm.sqlerrmc);\n";
-	printf "\t\t\tcom_err(\"restore\", 0, \"insert failed\");\n";
-	printf "\t\t\texit(2);\n\t\t}\n\t}\n";
-	printf "\t(void) fclose(f);\n";
-	printf "\tEXEC SQL COMMIT;\n";
+	printf ");\n      if (sqlca.sqlcode != 0)\n        {\n";
+	printf "          sqlca.sqlerrm.sqlerrmc[sqlca.sqlerrm.sqlerrml] = 0;\n";
+	printf "          printf(\"%%s\\n\", sqlca.sqlerrm.sqlerrmc);\n";
+	printf "          com_err(\"restore\", 0, \"insert failed\");\n";
+	printf "          exit(2);\n        }\n    }\n";
+	printf "  fclose(f);\n";
+	printf "  EXEC SQL COMMIT;\n";
 	printf "}\n\n";
 }
 

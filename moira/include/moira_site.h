@@ -1,10 +1,10 @@
 /*
- * This file contains all definitions that allow easy access to 
+ * This file contains all definitions that allow easy access to
  * elements returned by most of the @i[Moira] queries.  It also defines
  * the default server location and the directories used on the server.
  *
  * If the order of the arguments in the @i[Moira] queries change (again)
- * then all that needs to be changed are the values of these items 
+ * then all that needs to be changed are the values of these items
  * and all should be well, (hopefully :-).
  *
  *                                 Chris D. Peterson - kit@athena
@@ -12,11 +12,11 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/include/moira_site.h,v $
  *      $Author: danw $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/include/moira_site.h,v 1.24 1997-08-14 20:22:24 danw Exp $
- *	
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/include/moira_site.h,v 1.25 1998-01-05 19:52:54 danw Exp $
+ *
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
- *	For further information on copyright and distribution 
+ *	For further information on copyright and distribution
  *	see the file mit-copyright.h
  */
 
@@ -224,7 +224,7 @@
 #define Q_FILESYS   0
 #define Q_TYPE      1
 #define Q_NAME      2
-#define Q_QUOTA     3  
+#define Q_QUOTA     3
 #define Q_DIRECTORY 4
 #define Q_MACHINE   5
 #define Q_MODTIME   6
@@ -318,7 +318,7 @@
 #define U_LAST    3
 #define U_FIRST   4
 #define U_MIDDLE  5
-#define U_STATE   6  
+#define U_STATE   6
 #define U_MITID   7
 #define U_CLASS   8
 #define U_COMMENT 9

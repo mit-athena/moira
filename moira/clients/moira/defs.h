@@ -1,17 +1,17 @@
 /*	This is the file defs.h for the SMS Client, which allows a nieve
  *      user to quickly and easily maintain most parts of the SMS database.
  *	It Contains: useful definitions.
- *	
+ *
  *	Created: 	4/12/88
  *	By:		Chris D. Peterson
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/defs.h,v $
- *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/defs.h,v 1.11 1993-11-10 15:42:02 mar Exp $
- *	
+ *      $Author: danw $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/defs.h,v 1.12 1998-01-05 19:51:59 danw Exp $
+ *
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
- *	For further information on copyright and distribution 
+ *	For further information on copyright and distribution
  *	see the file mit-copyright.h
  */
 
@@ -46,8 +46,8 @@
 #define MAX_ARGS_SIZE 100
 
 typedef void (*FVoid)();	/* function pointer typedef. */
-typedef char * (*FCharStar)();	/* function pointer typedef. */
-typedef int  (*FInt)();		/* function pointer typedef. */
+typedef char *(*FCharStar)();	/* function pointer typedef. */
+typedef int (*FInt)();		/* function pointer typedef. */
 
 typedef int Bool;
 
@@ -62,9 +62,9 @@ typedef int Bool;
 /* for use with insqueue and remque. */
 
 struct qelem {
-  struct    qelem *q_forw;
-  struct    qelem *q_back;
-  char * q_data;
+  struct qelem *q_forw;
+  struct qelem *q_back;
+  char *q_data;
 };
 
 #endif /* _defs_header_ */	/* Do Not Add Anything After This Line */

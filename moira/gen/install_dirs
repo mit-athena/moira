@@ -1,5 +1,5 @@
 #!/bin/csh -f
-# This script installs new directories on NFS servers. 
+# This script installs new directories on NFS servers.
 
 # The following exit codes are defined and MUST BE CONSISTENT with the
 # MR error codes the library uses:
@@ -35,7 +35,7 @@ while (1)
 	 break;
       else
          mkdir $tmpdir
-         # At some point it may be wise to check the status here and 
+         # At some point it may be wise to check the status here and
          # return a soft failure, but the current protocol doesn't
          # support this
          break
@@ -44,12 +44,12 @@ while (1)
    if (! -d $tmpdir) continue
    chown $uid.$gid $tmpdir
 
-   # At some point, we may wish to add a more elegant way of handling 
-   # locker types.  The current arrangement allows for easy adding of 
+   # At some point, we may wish to add a more elegant way of handling
+   # locker types.  The current arrangement allows for easy adding of
    # default actions here.
    switch ($type)
       case HOMEDIR:
-         
+
          # ***** Remove this when /etc/encorce_quota becomes obsolete!
          # Give this filesystem a 1200K quota
          setquota $dev $uid 1200
@@ -59,7 +59,7 @@ while (1)
          (cd $tmpdir; tar xf $USERTAR)
          if ($status) set WARN
 	 chown $uid.$gid $tmpdir $tmpdir/.??* $tmpdir/*
-         breaksw      
+         breaksw
       case COURSE:
 	 /bin/chmod 775 $tmpdir
 	 breaksw
@@ -75,5 +75,5 @@ exit 0
 
 #
 # 	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/install_dirs,v $
-#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/install_dirs,v 1.10 1991-01-04 11:57:04 mar Exp $
+#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/install_dirs,v 1.11 1998-01-05 19:52:45 danw Exp $
 #

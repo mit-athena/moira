@@ -1,6 +1,6 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/xfer_003.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/xfer_003.c,v 1.3 1997-01-29 23:29:07 danw Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/xfer_003.c,v 1.4 1998-01-05 19:53:59 danw Exp $
  */
 /*  (c) Copyright 1988, 1992 by the Massachusetts Institute of Technology.
  *  For copying and distribution information, please see the file
@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char *rcsid_xfer_002_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/xfer_003.c,v 1.3 1997-01-29 23:29:07 danw Exp $";
+static char *rcsid_xfer_002_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/xfer_003.c,v 1.4 1998-01-05 19:53:59 danw Exp $";
 #endif
 
 #include <mit-copyright.h>
@@ -46,51 +46,52 @@ extern int have_authorization, have_file, done;
  * this version of transfer encrypts the file being transferred.
  */
 
-int
-xfer_003(str)
-    char *str;
+int xfer_003(char *str)
 {
-    int file_size;
-    int checksum;
-    char *pathname;
-    
-    str += 8;
-    while (*str == ' ')
-	str++;
-    if (!*str) {
+  int file_size;
+  int checksum;
+  char *pathname;
+
+  str += 8;
+  while (*str == ' ')
+    str++;
+  if (!*str)
+    {
     failure:
-	reject_call(MR_ARGS);
-	return(0);
+      reject_call(MR_ARGS);
+      return 0;
     }
-    file_size = atoi(str);
-    while (isdigit(*str))
-	str++;
-    while (*str == ' ')
-	str++;
-    checksum = atoi(str);
-    while (isdigit(*str))
-	str++;
-    while (*str == ' ')
-	str++;
-    if (*str != '/')
-	goto failure;
-    pathname = str;
-    if (!have_authorization) {
-	reject_call(MR_PERM);
-	return(0);
+  file_size = atoi(str);
+  while (isdigit(*str))
+    str++;
+  while (*str == ' ')
+    str++;
+  checksum = atoi(str);
+  while (isdigit(*str))
+    str++;
+  while (*str == ' ')
+    str++;
+  if (*str != '/')
+    goto failure;
+  pathname = str;
+  if (!have_authorization)
+    {
+      reject_call(MR_PERM);
+      return 0;
     }
-    if (done)			/* re-initialize data */
-	initialize();
-    code = send_ok();
-    if (code)
-	lose("sending ok for file xfer (2)");
-    code = get_file(pathname, file_size, checksum, 0444, 1);
-    if (!code) {
-	char buf[BUFSIZ];
-	have_file = 1;
-	strcpy(buf, "transferred file ");
-	strcat(buf, pathname);
-	mr_log_info(buf);
+  if (done)			/* re-initialize data */
+    initialize();
+  code = send_ok();
+  if (code)
+    lose("sending ok for file xfer (2)");
+  code = get_file(pathname, file_size, checksum, 0444, 1);
+  if (!code)
+    {
+      char buf[BUFSIZ];
+      have_file = 1;
+      strcpy(buf, "transferred file ");
+      strcat(buf, pathname);
+      mr_log_info(buf);
     }
-    return(0);
+  return 0;
 }

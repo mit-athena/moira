@@ -1,21 +1,21 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v 1.30 1997-06-17 20:11:20 danw Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v 1.31 1998-01-05 19:52:03 danw Exp $";
 #endif
 
 /*	This is the file lists.c for the MOIRA Client, which allows a nieve
  *      user to quickly and easily maintain most parts of the MOIRA database.
  *	It Contains: All list manipulation functions, except delete.
- *	
+ *
  *	Created: 	4/12/88
  *	By:		Chris D. Peterson
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v $
  *      $Author: danw $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v 1.30 1997-06-17 20:11:20 danw Exp $
- *	
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v 1.31 1998-01-05 19:52:03 danw Exp $
+ *
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
- *	For further information on copyright and distribution 
+ *	For further information on copyright and distribution
  *	see the file mit-copyright.h
  */
 
@@ -55,15 +55,12 @@ static char current_list[BUFSIZ];
  *	Returns: none.
  */
 
-static void
-PrintListAce(info)
-char ** info;
+static void PrintListAce(char **info)
 {
-    char buf[BUFSIZ];
+  char buf[BUFSIZ];
 
-    sprintf(buf, "Item: %-20s Name: %s", info[ACE_TYPE], 
-	    info[ACE_NAME]);
-    Put_message(buf);
+  sprintf(buf, "Item: %-20s Name: %s", info[ACE_TYPE], info[ACE_NAME]);
+  Put_message(buf);
 }
 
 /*	Function Name: PrintListInfo
@@ -72,44 +69,44 @@ char ** info;
  *	Returns: none.
  */
 
-static void
-PrintListInfo(info)
-char ** info;
+static void PrintListInfo(char **info)
 {
-    char buf[BUFSIZ];
+  char buf[BUFSIZ];
 
-    Put_message(" ");
-    (void) sprintf(buf, "%20sList: %s", "", info[L_NAME]);
-    (void) Put_message(buf);
-    (void) sprintf(buf, "Description: %s", info[L_DESC]);
-    (void) Put_message(buf);
-    if ( atoi(info[L_MAILLIST]))
-	Put_message("This list is a mailing list.");
-    else
-	Put_message("This list is NOT a mailing list.");
-    if ( atoi(info[L_GROUP]) ) {
-	(void) sprintf(buf,"This list is a Group and its ID number is %s",
-		       info[L_GID]);
-	Put_message(buf);
+  Put_message(" ");
+  sprintf(buf, "%20sList: %s", "", info[L_NAME]);
+  Put_message(buf);
+  sprintf(buf, "Description: %s", info[L_DESC]);
+  Put_message(buf);
+  if (atoi(info[L_MAILLIST]))
+    Put_message("This list is a mailing list.");
+  else
+    Put_message("This list is NOT a mailing list.");
+  if (atoi(info[L_GROUP]))
+    {
+      sprintf(buf, "This list is a Group and its ID number is %s",
+	      info[L_GID]);
+      Put_message(buf);
     }
-    else
-	Put_message("This list is NOT a Group.");
+  else
+    Put_message("This list is NOT a Group.");
 
-    if (strcmp(info[L_ACE_TYPE],"NONE") == 0)
-	Put_message("This list has no Administrator, how strange?!");
-    else {
-	sprintf(buf, "The Administrator of this list is the %s: %s",
-		info[L_ACE_TYPE], info[L_ACE_NAME]);
-	Put_message(buf);
+  if (!strcmp(info[L_ACE_TYPE], "NONE"))
+    Put_message("This list has no Administrator, how strange?!");
+  else
+    {
+      sprintf(buf, "The Administrator of this list is the %s: %s",
+	      info[L_ACE_TYPE], info[L_ACE_NAME]);
+      Put_message(buf);
     }
 
-    (void) sprintf(buf, "This list is: %s, %s, and %s",
-		   atoi(info[L_ACTIVE]) ? "active" : "inactive",
-		   atoi(info[L_PUBLIC]) ? "public" : "private",
-		   atoi(info[L_HIDDEN]) ? "hidden" : "visible");
-    (void) Put_message(buf);
-    sprintf(buf, MOD_FORMAT, info[L_MODBY], info[L_MODTIME], info[L_MODWITH]);
-    (void) Put_message(buf);
+  sprintf(buf, "This list is: %s, %s, and %s",
+	  atoi(info[L_ACTIVE]) ? "active" : "inactive",
+	  atoi(info[L_PUBLIC]) ? "public" : "private",
+	  atoi(info[L_HIDDEN]) ? "hidden" : "visible");
+  Put_message(buf);
+  sprintf(buf, MOD_FORMAT, info[L_MODBY], info[L_MODTIME], info[L_MODWITH]);
+  Put_message(buf);
 }
 
 /*	Function Name: GetListInfo
@@ -119,57 +116,58 @@ char ** info;
  *	Returns: the first element in the queue.
  */
 
-/* ARGSUSED */
-struct qelem *
-GetListInfo(type, name1, name2)
-int type;
-char * name1, *name2;
+struct qelem *GetListInfo(int type, char *name1, char *name2)
 {
-    char *args[2];
-    struct qelem * elem = NULL;
-    register int status;
+  char *args[2];
+  struct qelem *elem = NULL;
+  register int status;
 
-    switch(type) {
+  switch (type)
+    {
     case LIST:
-	args[0] = name1;
-	if ( (status = do_mr_query("get_list_info", 1, args,
-			       StoreInfo, (char *) &elem)) != 0) {
-	    com_err(program_name, status, " in get_list_info");
-	    return (NULL);
+      args[0] = name1;
+      if ((status = do_mr_query("get_list_info", 1, args,
+				StoreInfo, (char *) &elem)))
+	{
+	  com_err(program_name, status, " in get_list_info");
+	  return NULL;
 	}
-	break;
+      break;
     case MEMBERS:
-	args[0] = name1;
-	if ( (status = do_mr_query("get_members_of_list", 1, args,
-			       StoreInfo, (char *) &elem)) != 0) {
-	    com_err(program_name, status, " in get_members_of_list");
-	    return (NULL);
+      args[0] = name1;
+      if ((status = do_mr_query("get_members_of_list", 1, args,
+				StoreInfo, (char *) &elem)))
+	{
+	  com_err(program_name, status, " in get_members_of_list");
+	  return NULL;
 	}
-	break;
+      break;
     case GLOM:
-	args[0] = name1; 	
-	args[1] = name2; 	
-	if ( (status =  do_mr_query("get_lists_of_member", 2, args,
-			       StoreInfo, (char *) &elem)) != 0) {
-	    com_err(program_name, status, " in get_list_of_members");
-	    return (NULL);
+      args[0] = name1;
+      args[1] = name2;
+      if ((status = do_mr_query("get_lists_of_member", 2, args,
+				StoreInfo, (char *) &elem)))
+	{
+	  com_err(program_name, status, " in get_list_of_members");
+	  return NULL;
 	}
-	break;
+      break;
     case ACE_USE:
-	args[0] = name1; 	
-	args[1] = name2; 	
-	if ( (status =  do_mr_query("get_ace_use", 2, args,
-			       StoreInfo, (char *) &elem)) != 0) {
-	    com_err(program_name, status, " in get_ace_use");
-	    return (NULL);
+      args[0] = name1;
+      args[1] = name2;
+      if ((status = do_mr_query("get_ace_use", 2, args,
+				StoreInfo, (char *) &elem)))
+	{
+	  com_err(program_name, status, " in get_ace_use");
+	  return NULL;
 	}
-	break;
+      break;
     }
-    return( QueueTop(elem) );
-}	
+  return QueueTop(elem);
+}
 
 /*	Function Name: AskListInfo.
- *	Description: This function askes the user for information about a 
+ *	Description: This function askes the user for information about a
  *                   machine and saves it into a structure.
  *	Arguments: info - a pointer the the structure to put the
  *                             info into.
@@ -177,71 +175,73 @@ char * name1, *name2;
  *	Returns: SUB_ERROR or SUB_NORMAL.
  */
 
-char **
-AskListInfo(info, name)
-char ** info;
-Bool name;
+char **AskListInfo(char **info, Bool name)
 {
-    char temp_buf[BUFSIZ], *newname;
+  char temp_buf[BUFSIZ], *newname;
 
-    Put_message(" ");
-    sprintf(temp_buf,"Setting information of list %s.",info[L_NAME]);
-    Put_message(temp_buf);
-    Put_message(" ");
+  Put_message(" ");
+  sprintf(temp_buf, "Setting information of list %s.", info[L_NAME]);
+  Put_message(temp_buf);
+  Put_message(" ");
 
-    if (name) {
-	while (1) {
-	    newname = Strsave(info[L_NAME]);
-	    if (GetValueFromUser("The new name for this list", &newname) ==
-		SUB_ERROR)
-	      return(NULL);
-	    if (ValidName(newname))
-	      break;
+  if (name)
+    {
+      while (1)
+	{
+	  newname = Strsave(info[L_NAME]);
+	  if (GetValueFromUser("The new name for this list", &newname) ==
+	      SUB_ERROR)
+	    return NULL;
+	  if (ValidName(newname))
+	    break;
 	}
     }
-    if (GetYesNoValueFromUser("Is this an active list", &info[L_ACTIVE]) ==
-	SUB_ERROR)
-      return(NULL);
-    if (GetYesNoValueFromUser("Is this a public list", &info[L_PUBLIC]) ==
-	SUB_ERROR)
-      return(NULL);
-    if (GetYesNoValueFromUser("Is this a hidden list", &info[L_HIDDEN]) ==
-	SUB_ERROR)
-      return(NULL);
-    if (GetYesNoValueFromUser("Is this a maillist", &info[L_MAILLIST]) ==
-	SUB_ERROR)
-      return(NULL);
-    if (GetYesNoValueFromUser("Is this a group", &info[L_GROUP]) == SUB_ERROR)
-      return(NULL);
-    if (atoi(info[L_GROUP]))
+  if (GetYesNoValueFromUser("Is this an active list", &info[L_ACTIVE]) ==
+      SUB_ERROR)
+    return NULL;
+  if (GetYesNoValueFromUser("Is this a public list", &info[L_PUBLIC]) ==
+      SUB_ERROR)
+    return NULL;
+  if (GetYesNoValueFromUser("Is this a hidden list", &info[L_HIDDEN]) ==
+      SUB_ERROR)
+    return NULL;
+  if (GetYesNoValueFromUser("Is this a maillist", &info[L_MAILLIST]) ==
+      SUB_ERROR)
+    return NULL;
+  if (GetYesNoValueFromUser("Is this a group", &info[L_GROUP]) == SUB_ERROR)
+    return NULL;
+  if (atoi(info[L_GROUP]))
+    {
       if (GetValueFromUser("What is the GID for this group.", &info[L_GID]) ==
 	  SUB_ERROR)
-	return(NULL);
-
-    if (GetTypeFromUser("What Type of Administrator", "ace_type",
-			&info[L_ACE_TYPE]) == SUB_ERROR)
-      return(NULL);
-    if ((strcasecmp(info[L_ACE_TYPE], "NONE") != 0) &&
-	(strcasecmp(info[L_ACE_TYPE], "none") != 0)) {
-	sprintf(temp_buf, "Which %s will be the administrator of this list: ",
-		info[L_ACE_TYPE]);
-	if (GetValueFromUser(temp_buf, &info[L_ACE_NAME]) == SUB_ERROR)
-	  return(NULL);
+	return NULL;
     }
-    if (GetValueFromUser("Description: ", &info[L_DESC]) == SUB_ERROR)
-      return(NULL);
 
-    FreeAndClear(&info[L_MODTIME], TRUE);
-    FreeAndClear(&info[L_MODBY], TRUE);
-    FreeAndClear(&info[L_MODWITH], TRUE);
-/* 
- * Slide the newname into the #2 slot, this screws up all future references 
- * to this list.
- */
-    if (name) 			/* slide the newname into the #2 slot. */
-	SlipInNewName(info, newname);
+  if (GetTypeFromUser("What Type of Administrator", "ace_type",
+		      &info[L_ACE_TYPE]) == SUB_ERROR)
+    return NULL;
+  if (strcasecmp(info[L_ACE_TYPE], "NONE") &&
+      strcasecmp(info[L_ACE_TYPE], "none"))
+    {
+      sprintf(temp_buf, "Which %s will be the administrator of this list: ",
+	      info[L_ACE_TYPE]);
+      if (GetValueFromUser(temp_buf, &info[L_ACE_NAME]) == SUB_ERROR)
+	return NULL;
+    }
+  if (GetValueFromUser("Description: ", &info[L_DESC]) == SUB_ERROR)
+    return NULL;
 
-    return(info);
+  FreeAndClear(&info[L_MODTIME], TRUE);
+  FreeAndClear(&info[L_MODBY], TRUE);
+  FreeAndClear(&info[L_MODWITH], TRUE);
+  /*
+   * Slide the newname into the #2 slot, this screws up all future references
+   * to this list.
+   */
+  if (name) 			/* slide the newname into the #2 slot. */
+    SlipInNewName(info, newname);
+
+  return info;
 }
 
 /* -------------- List functions. -------------- */
@@ -252,22 +252,19 @@ Bool name;
  *	Returns: DM status code.
  */
 
-/* ARGSUSED */
-int
-ShowListInfo(argc, argv)
-int argc;
-char **argv;
+int ShowListInfo(int argc, char **argv)
 {
-    struct qelem *top, *list;
+  struct qelem *top, *list;
 
-    top = list = GetListInfo(LIST, argv[1], (char *) NULL);
-    while (list != NULL) {
-	PrintListInfo( (char **) list->q_data);
-	list = list->q_forw;
+  top = list = GetListInfo(LIST, argv[1], NULL);
+  while (list)
+    {
+      PrintListInfo((char **) list->q_data);
+      list = list->q_forw;
     }
-    
-    FreeQueue(top);
-    return(DM_NORMAL);
+
+  FreeQueue(top);
+  return DM_NORMAL;
 }
 
 /*	Function Name: RealUpdateList
@@ -276,50 +273,50 @@ char **argv;
  *                 junk - an UNUSED boolean.
  *	Returns: none.
  */
- 
-/* ARGSUSED */   
-static void
-RealUpdateList(info, junk)
-char ** info;
-Bool junk;
+
+static void RealUpdateList(char **info, Bool junk)
 {
-    register int stat;
-    char ** args;
-    struct qelem *elem = NULL;
-    
-    if ((args = AskListInfo(info, TRUE)) == NULL) {
-	Put_message("Aborted.");
-	return;
+  register int stat;
+  char **args;
+  struct qelem *elem = NULL;
+
+  if (!(args = AskListInfo(info, TRUE)))
+    {
+      Put_message("Aborted.");
+      return;
     }
 
-    /*
-     * If the new list name is less than 8 characters, make sure it doesn't
-     * collide with a username.
-     */
-    if ((strlen(args[2]) <= 8) &&
-	do_mr_query("get_user_account_by_login", 1, args + 1,
-		    StoreInfo, (char *) &elem) != MR_NO_MATCH) {
-	    char buf[256];
+  /*
+   * If the new list name is less than 8 characters, make sure it doesn't
+   * collide with a username.
+   */
+  if ((strlen(args[2]) <= 8) &&
+      do_mr_query("get_user_account_by_login", 1, args + 1,
+		  StoreInfo, (char *) &elem) != MR_NO_MATCH)
+    {
+      char buf[256];
 
-	    sprintf(buf, "\nA user by the name `%s' already exists in the database.",
-		    args[1]);
-	    Put_message(buf);
-	    Loop(QueueTop(elem), FreeInfo);
-	    FreeQueue(elem);
-	    if (YesNoQuestion("Do you still want to rename this list to that name",
-			      FALSE) != TRUE) {
-		Put_message("List ** NOT ** Updated.");
-		return;
-	    }
+      sprintf(buf, "\nA user by the name `%s' already exists in the database.",
+	      args[1]);
+      Put_message(buf);
+      Loop(QueueTop(elem), FreeInfo);
+      FreeQueue(elem);
+      if (YesNoQuestion("Do you still want to rename this list to that name",
+			FALSE) != TRUE)
+	{
+	  Put_message("List ** NOT ** Updated.");
+	  return;
+	}
     }
-    
-    if ( (stat = do_mr_query("update_list", CountArgs(args), args, 
-			   Scream, (char *) NULL)) != MR_SUCCESS) {
-	com_err(program_name, stat, " in UpdateList.");	
-	Put_message("List ** NOT ** Updated.");
+
+  if ((stat = do_mr_query("update_list", CountArgs(args), args,
+			  Scream, (char *) NULL)) != MR_SUCCESS)
+    {
+      com_err(program_name, stat, " in UpdateList.");
+      Put_message("List ** NOT ** Updated.");
     }
-    else
-	Put_message("List successfully updated.");
+  else
+    Put_message("List successfully updated.");
 }
 
 /*	Function Name: UpdateList
@@ -328,19 +325,15 @@ Bool junk;
  *	Returns: DM Status code.
  */
 
-/* ARGSUSED */
-int
-UpdateList(argc, argv)
-int argc;
-char **argv;
+int UpdateList(int argc, char **argv)
 {
-    struct qelem *top;
+  struct qelem *top;
 
-    top = GetListInfo(LIST, argv[1], (char *) NULL);
-    QueryLoop(top, NullPrint, RealUpdateList, "Update the list");
+  top = GetListInfo(LIST, argv[1], (char *) NULL);
+  QueryLoop(top, NullPrint, RealUpdateList, "Update the list");
 
-    FreeQueue(top);
-    return(DM_NORMAL);
+  FreeQueue(top);
+  return DM_NORMAL;
 }
 
 /*	Function Name: SetDefaults
@@ -350,86 +343,81 @@ char **argv;
  *	Returns: defaults - the default information.
  */
 
-static char **
-SetDefaults(info, name)
-char ** info;
-char * name;
+static char **SetDefaults(char **info, char *name)
 {
-   info[L_NAME] =     Strsave(name);
-   info[L_ACTIVE] =   Strsave(DEFAULT_ACTIVE);
-   info[L_PUBLIC] =   Strsave(DEFAULT_PUBLIC);
-   info[L_HIDDEN] =   Strsave(DEFAULT_HIDDEN);
-   info[L_MAILLIST] = Strsave(DEFAULT_MAILLIST);
-   info[L_GROUP] =    Strsave(DEFAULT_GROUP);
-   info[L_GID] =      Strsave(DEFAULT_GID);
-   info[L_ACE_TYPE] = Strsave(DEFAULT_ACE_TYPE);
-   info[L_ACE_NAME] = Strsave(DEFAULT_ACE_NAME);
-   info[L_DESC] =     Strsave(DEFAULT_DESCRIPTION);
-   info[L_MODTIME] = info[L_MODBY] = info[L_MODWITH] = info[L_END] = NULL;
-   return(info);
+  info[L_NAME] =     Strsave(name);
+  info[L_ACTIVE] =   Strsave(DEFAULT_ACTIVE);
+  info[L_PUBLIC] =   Strsave(DEFAULT_PUBLIC);
+  info[L_HIDDEN] =   Strsave(DEFAULT_HIDDEN);
+  info[L_MAILLIST] = Strsave(DEFAULT_MAILLIST);
+  info[L_GROUP] =    Strsave(DEFAULT_GROUP);
+  info[L_GID] =      Strsave(DEFAULT_GID);
+  info[L_ACE_TYPE] = Strsave(DEFAULT_ACE_TYPE);
+  info[L_ACE_NAME] = Strsave(DEFAULT_ACE_NAME);
+  info[L_DESC] =     Strsave(DEFAULT_DESCRIPTION);
+  info[L_MODTIME] = info[L_MODBY] = info[L_MODWITH] = info[L_END] = NULL;
+  return info;
 }
 
 /*	Function Name: AddList
- *	Description: 
+ *	Description:
  *	Arguments: argc, argv - name of list in argv[1].
  *	Returns: SUB_ERROR if list not created.
  */
 
-/* ARGSUSED */
-int
-AddList(argc, argv)
-int argc;
-char **argv;
+int AddList(int argc, char **argv)
 {
-    static char *info[MAX_ARGS_SIZE], **add_args;
-    int status, ret_code = SUB_NORMAL;
-    struct qelem *elem = NULL;
+  static char *info[MAX_ARGS_SIZE], **add_args;
+  int status, ret_code = SUB_NORMAL;
+  struct qelem *elem = NULL;
 
-    if (!ValidName(argv[1]))
-      return(DM_NORMAL);
-    status = do_mr_query("get_list_info", 1, argv + 1, NullFunc, 
-		       (char *) NULL);
-    if (status != MR_NO_MATCH) {
-	if (status == MR_SUCCESS)
-	    Put_message("This list already exists.");
-	else
-	    com_err(program_name, status, " in AddList.");	
-	return(SUB_ERROR);
+  if (!ValidName(argv[1]))
+    return DM_NORMAL;
+  status = do_mr_query("get_list_info", 1, argv + 1, NullFunc, NULL);
+  if (status != MR_NO_MATCH)
+    {
+      if (status == MR_SUCCESS)
+	Put_message("This list already exists.");
+      else
+	com_err(program_name, status, " in AddList.");
+      return SUB_ERROR;
     }
 
-    /*
-     * If the listname is less than 8 characters, make sure it doesn't
-     * collide with a username.
-     */
-    if ((strlen(argv[1]) <= 8) &&
-	do_mr_query("get_user_account_by_login", 1, argv + 1,
-		    StoreInfo, (char *) &elem) != MR_NO_MATCH) {
-	    char buf[256];
+  /*
+   * If the listname is less than 8 characters, make sure it doesn't
+   * collide with a username.
+   */
+  if ((strlen(argv[1]) <= 8) &&
+      do_mr_query("get_user_account_by_login", 1, argv + 1,
+		  StoreInfo, (char *) &elem) != MR_NO_MATCH)
+    {
+      char buf[256];
 
-	    sprintf(buf, "\nA user by the name `%s' already exists in the database.",
-		    argv[1]);
-	    Put_message(buf);
-	    Loop(QueueTop(elem), FreeInfo);
-	    FreeQueue(elem);
-	    if (YesNoQuestion("Crate a list with the same name",
-			      FALSE) != TRUE)
-		    return(SUB_ERROR);
-    }
-    
-    if ((add_args = AskListInfo(SetDefaults(info,argv[1]), FALSE)) == NULL) {
-	Put_message("Aborted.");
-	return(SUB_ERROR);
+      sprintf(buf, "\nA user by the name `%s' already exists in the database.",
+	      argv[1]);
+      Put_message(buf);
+      Loop(QueueTop(elem), FreeInfo);
+      FreeQueue(elem);
+      if (YesNoQuestion("Crate a list with the same name", FALSE) != TRUE)
+	return SUB_ERROR;
     }
 
-    if ( (status = do_mr_query("add_list", CountArgs(add_args), add_args,
-			     Scream, (char *) NULL)) != MR_SUCCESS) {
-	com_err(program_name, status, " in AddList.");	
-	Put_message("List Not Created.");
-	ret_code = SUB_ERROR;
+  if (!(add_args = AskListInfo(SetDefaults(info, argv[1]), FALSE)))
+    {
+      Put_message("Aborted.");
+      return SUB_ERROR;
     }
 
-    FreeInfo(info);
-    return(ret_code);
+  if ((status = do_mr_query("add_list", CountArgs(add_args), add_args,
+			    Scream, (char *) NULL)) != MR_SUCCESS)
+    {
+      com_err(program_name, status, " in AddList.");
+      Put_message("List Not Created.");
+      ret_code = SUB_ERROR;
+    }
+
+  FreeInfo(info);
+  return ret_code;
 }
 
 /*	Function Name: Instructions
@@ -438,25 +426,24 @@ char **argv;
  *	Returns: DM Status Code.
  */
 
-int
-ListHelp()
+int ListHelp(void)
 {
-    static char * message[] = {
-	"Listmaint handles the creation, deletion, and updating of lists.",
-	"A list can be a mailing list, a group list, or both.",
-	"The concept behind lists is that a list has an owner",
-	"- administrator -  and members.",
-	"The administrator of a list may be another list.",
-	"The members of a list can be users (login names), other lists,",
-	"or address strings.",
-	"You can use certain keys to do the following:",
-	"    Refresh the screen - Type ctrl-L.",
-	"    Escape from a function - Type ctrl-C.",
-	"    Suspend the program (temporarily) - Type ctrl-Z.",
-	NULL,
-    };
+  static char *message[] = {
+    "Listmaint handles the creation, deletion, and updating of lists.",
+    "A list can be a mailing list, a group list, or both.",
+    "The concept behind lists is that a list has an owner",
+    "- administrator -  and members.",
+    "The administrator of a list may be another list.",
+    "The members of a list can be users (login names), other lists,",
+    "or address strings.",
+    "You can use certain keys to do the following:",
+    "    Refresh the screen - Type ctrl-L.",
+    "    Escape from a function - Type ctrl-C.",
+    "    Suspend the program (temporarily) - Type ctrl-Z.",
+    NULL,
+  };
 
-    return(PrintHelp(message));
+  return PrintHelp(message);
 }
 
 /*-*-* LISTMAINT UPDATE MENU *-*-*/
@@ -468,66 +455,60 @@ ListHelp()
  *	Returns: none.
  */
 
-/* ARGSUSED */
-int
-ListmaintMemberMenuEntry(m, argc, argv)
-Menu *m;
-int argc;
-char **argv;
+int ListmaintMemberMenuEntry(Menu *m, int argc, char **argv)
 {
-    char temp_buf[BUFSIZ];
-    char *list_name = argv[1];
-    register int stat;    
+  char temp_buf[BUFSIZ];
+  char *list_name = argv[1];
+  register int stat;
 
-    if (!ValidName(list_name))
-	return(DM_QUIT);
+  if (!ValidName(list_name))
+    return DM_QUIT;
 
-    if (*argv[0] == 'a') {	/* add_list */
-	if (AddList(argc, argv) == SUB_ERROR)
-	    return(DM_QUIT);
-	(void) sprintf(temp_buf, "List '%s' created. Do you want to %s",
-		       list_name, "change its membership (y/n)? ");
-	if (YesNoQuestion(temp_buf, TRUE) != TRUE )
-	    return(DM_QUIT);
+  if (*argv[0] == 'a')
+    {	/* add_list */
+      if (AddList(argc, argv) == SUB_ERROR)
+	return DM_QUIT;
+      sprintf(temp_buf, "List '%s' created. Do you want to %s", list_name,
+	      "change its membership (y/n)? ");
+      if (YesNoQuestion(temp_buf, TRUE) != TRUE)
+	return DM_QUIT;
     }
-    else 
-	/* All we want to know is if it exists. */
-	switch( (stat = do_mr_query("count_members_of_list", 1, argv + 1,
-				   NullFunc, (char *) NULL))) {
-	case MR_SUCCESS:
-	    break;
-	case MR_LIST:
-	    Put_message("This list does not exist.");
-	    return(DM_QUIT);
-	case MR_PERM:
-	    Put_message("You are not allowed to view this list.");
-	    break;
-	default:
-	    com_err(program_name, stat, " in get_list_info");
-	    return(DM_QUIT);
-	}
+  else
+    /* All we want to know is if it exists. */
+    switch ((stat = do_mr_query("count_members_of_list", 1, argv + 1,
+				NullFunc, NULL)))
+      {
+      case MR_SUCCESS:
+	break;
+      case MR_LIST:
+	Put_message("This list does not exist.");
+	return DM_QUIT;
+      case MR_PERM:
+	Put_message("You are not allowed to view this list.");
+	break;
+      default:
+	com_err(program_name, stat, " in get_list_info");
+	return DM_QUIT;
+      }
 
-    (void) sprintf(temp_buf, 
-		   "Change/Display membership of '%s'", list_name);
-    m->m_title = Strsave(temp_buf);
-    strcpy(current_list, list_name);
-    return(DM_NORMAL);
+  sprintf(temp_buf, "Change/Display membership of '%s'", list_name);
+  m->m_title = Strsave(temp_buf);
+  strcpy(current_list, list_name);
+  return DM_NORMAL;
 }
 
 /*	Function Name: ListmaintMemberMenuExit
  *	Description: This is the function called when the member menu is
  *                   exited, it frees the memory that is storing the name.
  *	Arguments: m - the menu
- *	Returns: DM_NORMAL 
+ *	Returns: DM_NORMAL
  */
 
-int
-ListmaintMemberMenuExit(m)
-Menu *m;
+int ListmaintMemberMenuExit(Menu *m)
 {
-    free(m->m_title);
-    strcpy(current_list, "");
-    return(DM_NORMAL);
+  free(m->m_title);
+  strcpy(current_list, "");
+  return DM_NORMAL;
 }
 
 /*	Function Name: ListMembersByType
@@ -537,44 +518,44 @@ Menu *m;
  *      NOTE: if type is NULL, all lists members are listed.
  */
 
-int
-ListMembersByType(type)
-char * type;
+int ListMembersByType(char *type)
 {
-    char temp_buf[BUFSIZ];
-    register int status;
-    char * args[10];
+  char temp_buf[BUFSIZ];
+  register int status;
+  char *args[10];
 
-    args[0] = current_list;
-    args[1] = NULL;
+  args[0] = current_list;
+  args[1] = NULL;
 
-    found_some = FALSE;
-    if ( (status = do_mr_query("get_members_of_list", CountArgs(args), args, 
-			     PrintByType, type)) != 0) {
-	com_err(program_name, status, " in ListMembersByType");
-	return(DM_NORMAL);
+  found_some = FALSE;
+  if ((status = do_mr_query("get_members_of_list", CountArgs(args), args,
+			    PrintByType, type)))
+    {
+      com_err(program_name, status, " in ListMembersByType");
+      return DM_NORMAL;
     }
-    if (!found_some) {
-	if (type == NULL)
-	    Put_message("List is empty (no members).");
-	else {
-	    sprintf(temp_buf,"No %s Members",type);
-	    Put_message(temp_buf);
+  if (!found_some)
+    {
+      if (!type)
+	Put_message("List is empty (no members).");
+      else
+	{
+	  sprintf(temp_buf, "No %s Members", type);
+	  Put_message(temp_buf);
 	}
     }
 }
 
 /*	Function Name: ListAllMembers
  *	Description: lists all members of the current list.
- *	Arguments: 
+ *	Arguments:
  *	Returns: DM_NORMAL
  */
 
-int
-ListAllMembers()
+int ListAllMembers(void)
 {
-    ListMembersByType(NULL);
-    return (DM_NORMAL);
+  ListMembersByType(NULL);
+  return DM_NORMAL;
 }
 
 /*	Function Name: ListUserMembers
@@ -583,10 +564,10 @@ ListAllMembers()
  *	Returns: DM_NORMAL.
  */
 
-ListUserMembers()
+int ListUserMembers(void)
 {
-    ListMembersByType("USER");
-    return(DM_NORMAL);
+  ListMembersByType("USER");
+  return DM_NORMAL;
 }
 
 /*	Function Name: ListListMembers
@@ -595,10 +576,10 @@ ListUserMembers()
  *	Returns: DM_NORMAL.
  */
 
-ListListMembers()
+int ListListMembers(void)
 {
-    ListMembersByType("LIST");
-    return(DM_NORMAL);
+  ListMembersByType("LIST");
+  return DM_NORMAL;
 }
 
 /*	Function Name: ListStringMembers
@@ -607,10 +588,10 @@ ListListMembers()
  *	Returns: DM_NORMAL.
  */
 
-ListStringMembers()
+int ListStringMembers(void)
 {
-    ListMembersByType("STRING");
-    return(DM_NORMAL);
+  ListMembersByType("STRING");
+  return DM_NORMAL;
 }
 
 /*	Function Name: GetMemberInfo
@@ -623,31 +604,30 @@ ListStringMembers()
  *	Returns: SUB_ERROR or SUB_NORMAL.
  */
 
-int
-GetMemberInfo(action, ret_argv)
-char *action, **ret_argv;
+int GetMemberInfo(char *action, char **ret_argv)
 {
-    char temp_buf[BUFSIZ];
+  char temp_buf[BUFSIZ];
 
-    ret_argv[LM_LIST] = Strsave(current_list);
+  ret_argv[LM_LIST] = Strsave(current_list);
 
-    ret_argv[LM_TYPE] = Strsave("user");
-    if (GetTypeFromUser("Type of member", "member", &ret_argv[LM_TYPE]) ==
-	SUB_ERROR)
-      return(SUB_ERROR);
+  ret_argv[LM_TYPE] = Strsave("user");
+  if (GetTypeFromUser("Type of member", "member", &ret_argv[LM_TYPE]) ==
+      SUB_ERROR)
+    return SUB_ERROR;
 
-    sprintf(temp_buf,"Name of %s to %s", ret_argv[LM_TYPE], action);
-    ret_argv[LM_MEMBER] = Strsave(user);
-    if (GetValueFromUser(temp_buf, &ret_argv[LM_MEMBER]) == SUB_ERROR)
-      return(SUB_ERROR);
-    ret_argv[LM_END] = NULL;		/* NULL terminate this list. */
+  sprintf(temp_buf, "Name of %s to %s", ret_argv[LM_TYPE], action);
+  ret_argv[LM_MEMBER] = Strsave(user);
+  if (GetValueFromUser(temp_buf, &ret_argv[LM_MEMBER]) == SUB_ERROR)
+    return SUB_ERROR;
+  ret_argv[LM_END] = NULL;		/* NULL terminate this list. */
 
-    if (strcasecmp(ret_argv[LM_TYPE], "string") &&
-	!ValidName( ret_argv[LM_MEMBER] ) ) {
-	FreeInfo(ret_argv);
-	return(SUB_ERROR);
+  if (strcasecmp(ret_argv[LM_TYPE], "string") &&
+      !ValidName(ret_argv[LM_MEMBER]))
+    {
+      FreeInfo(ret_argv);
+      return SUB_ERROR;
     }
-    return(SUB_NORMAL);
+  return SUB_NORMAL;
 }
 
 /*	Function Name: AddMember
@@ -656,53 +636,62 @@ char *action, **ret_argv;
  *	Returns: DM_NORMAL.
  */
 
-int
-AddMember()
+int AddMember(void)
 {
-    char *args[10], temp_buf[BUFSIZ], *p;
-    register int status;
-    struct qelem *mailhubs, *elem, *GetTypeValues();
+  char *args[10], temp_buf[BUFSIZ], *p;
+  register int status;
+  struct qelem *mailhubs, *elem, *GetTypeValues();
 
-    if ( GetMemberInfo("add", args) == SUB_ERROR )
-	return(DM_NORMAL);
+  if (GetMemberInfo("add", args) == SUB_ERROR)
+    return DM_NORMAL;
 
-    if (!strcmp(args[LM_TYPE], "STRING")) {
-	if (p = strchr(args[LM_MEMBER], '@')) {
-	    char *host = canonicalize_hostname(strsave(++p));
-	    mailhubs = GetTypeValues("mailhub");
-	    for (elem = mailhubs; elem; elem = elem->q_forw) {
-		if (!strcasecmp(host, elem->q_data)) {
-		    free(host);
-		    host = strsave(args[LM_MEMBER]);
-		    *(--p) = 0;
-		    sprintf(temp_buf, "String \"%s\" should be USER or LIST \"%s\" because it is a local name.",
-			    host, args[LM_MEMBER]);
-		    Put_message(temp_buf);
-		    free(args[LM_TYPE]);
-		    free(host);
-		    return(DM_NORMAL);
+  if (!strcmp(args[LM_TYPE], "STRING"))
+    {
+      if ((p = strchr(args[LM_MEMBER], '@')))
+	{
+	  char *host = canonicalize_hostname(strsave(++p));
+	  mailhubs = GetTypeValues("mailhub");
+	  for (elem = mailhubs; elem; elem = elem->q_forw)
+	    {
+	      if (!strcasecmp(host, elem->q_data))
+		{
+		  free(host);
+		  host = strsave(args[LM_MEMBER]);
+		  *(--p) = 0;
+		  sprintf(temp_buf, "String \"%s\" should be USER or LIST "
+			  "\"%s\" because it is a local name.", host,
+			  args[LM_MEMBER]);
+		  Put_message(temp_buf);
+		  free(args[LM_TYPE]);
+		  free(host);
+		  return DM_NORMAL;
 		}
 	    }
-	    free(host);
-	} else if (!strchr(args[LM_MEMBER], '!')) {
-	    Put_message("Member which is not a foreign mail address should not be type STRING.");
-	    return(DM_NORMAL);
+	  free(host);
+	}
+      else if (!strchr(args[LM_MEMBER], '!'))
+	{
+	  Put_message("Member which is not a foreign mail address "
+		      "should not be type STRING.");
+	  return DM_NORMAL;
 	}
     }
 
-    if ( (status = do_mr_query("add_member_to_list", CountArgs(args), args,
-			   Scream, NULL)) != MR_SUCCESS) {
-	if (status == MR_EXISTS) {
-	    sprintf(temp_buf, "The %s %s is already a member of LIST %s.",
-		    args[LM_TYPE], args[LM_MEMBER], args[LM_LIST]);
-	    Put_message(temp_buf);
+  if ((status = do_mr_query("add_member_to_list", CountArgs(args), args,
+			    Scream, NULL)) != MR_SUCCESS)
+    {
+      if (status == MR_EXISTS)
+	{
+	  sprintf(temp_buf, "The %s %s is already a member of LIST %s.",
+		  args[LM_TYPE], args[LM_MEMBER], args[LM_LIST]);
+	  Put_message(temp_buf);
 	}
-	else 
-	    com_err(program_name, status, " in AddMember");
+      else
+	com_err(program_name, status, " in AddMember");
     }
 
-    FreeInfo(args);
-    return(DM_NORMAL);
+  FreeInfo(args);
+  return DM_NORMAL;
 }
 
 /*	Function Name: DeleteMember
@@ -711,27 +700,27 @@ AddMember()
  *	Returns: DM_NORMAL
  */
 
-int
-DeleteMember()
+int DeleteMember(void)
 {
-    char *args[10];
-    register int status;
+  char *args[10];
+  register int status;
 
-    if( GetMemberInfo("delete", args) == SUB_ERROR )
-	return(DM_NORMAL);
+  if (GetMemberInfo("delete", args) == SUB_ERROR)
+    return DM_NORMAL;
 
-    if (Confirm("Are you sure you want to delete this member?") ) {
-	if (status = do_mr_query("delete_member_from_list", CountArgs(args),
-			       args, Scream, NULL))
-	    com_err(program_name, status, " in DeleteMember");
-	else
-	    Put_message("Deletion Completed.");
+  if (Confirm("Are you sure you want to delete this member?"))
+    {
+      if ((status = do_mr_query("delete_member_from_list", CountArgs(args),
+				args, Scream, NULL)))
+	com_err(program_name, status, " in DeleteMember");
+      else
+	Put_message("Deletion Completed.");
     }
-    else 
-	Put_message("Deletion has been Aborted.");
+  else
+    Put_message("Deletion has been Aborted.");
 
-    FreeInfo(args);
-    return(DM_NORMAL);
+  FreeInfo(args);
+  return DM_NORMAL;
 }
 
 /*	Function Name: InterRemoveItemFromLists
@@ -743,54 +732,57 @@ DeleteMember()
  *             enough information in it to delete the member from the list.
  */
 
-int
-InterRemoveItemFromLists()
+int InterRemoveItemFromLists(void)
 {
-    register int status;
-    char *type, *name, *args[10], buf[BUFSIZ];
-    struct qelem *top, *elem;
+  register int status;
+  char *type, *name, *args[10], buf[BUFSIZ];
+  struct qelem *top, *elem;
 
-    type = strsave("USER");
-    if (GetTypeFromUser("Type of member", "member", &type) == SUB_ERROR)
-	return(DM_NORMAL);
-    
-    sprintf(buf, "Name of %s", type);
-    name = strsave(user);
-    if (GetValueFromUser(buf, &name) == SUB_ERROR)
-      return(DM_NORMAL);
+  type = strsave("USER");
+  if (GetTypeFromUser("Type of member", "member", &type) == SUB_ERROR)
+    return DM_NORMAL;
 
-    if (!ValidName(name))
-	return(DM_NORMAL);
+  sprintf(buf, "Name of %s", type);
+  name = strsave(user);
+  if (GetValueFromUser(buf, &name) == SUB_ERROR)
+    return DM_NORMAL;
 
-    top = elem = GetListInfo(GLOM, type, name);
+  if (!ValidName(name))
+    return DM_NORMAL;
 
-    while(elem != NULL) {
-	char line[BUFSIZ];
-	char ** info = (char **) elem->q_data;
-	sprintf(line, "Delete %s %s from the list \"%s\" (y/n/q)? ", type,
-		name, info[GLOM_NAME]);
-	switch (YesNoQuitQuestion(line, FALSE)) {
+  top = elem = GetListInfo(GLOM, type, name);
+
+  while (elem)
+    {
+      char line[BUFSIZ];
+      char **info = (char **) elem->q_data;
+      sprintf(line, "Delete %s %s from the list \"%s\" (y/n/q)? ", type,
+	      name, info[GLOM_NAME]);
+      switch (YesNoQuitQuestion(line, FALSE))
+	{
 	case TRUE:
-	    Put_message("deleting...");
-	    args[DM_LIST] = info[GLOM_NAME];
-	    args[DM_TYPE] = type;
-	    args[DM_MEMBER] = name;
-	    if ( (status = do_mr_query("delete_member_from_list", 3, args,
-			       Scream, (char *) NULL)) != 0)
-		/* should probabally check to delete list. */
-		com_err(program_name, status, " in delete_member");
-	    break;
+	  Put_message("deleting...");
+	  args[DM_LIST] = info[GLOM_NAME];
+	  args[DM_TYPE] = type;
+	  args[DM_MEMBER] = name;
+	  if ((status = do_mr_query("delete_member_from_list", 3, args,
+				    Scream, (char *) NULL)))
+	    {
+	      /* should probabally check to delete list. */
+	      com_err(program_name, status, " in delete_member");
+	    }
+	  break;
 	case FALSE:
-	    break;
+	  break;
 	default:
-	    Put_message("Aborting...");
-	    FreeQueue(top);
-	    return(DM_NORMAL);
+	  Put_message("Aborting...");
+	  FreeQueue(top);
+	  return DM_NORMAL;
 	}
-	elem = elem->q_forw;
+      elem = elem->q_forw;
     }
-    FreeQueue(top);
-    return(DM_NORMAL);
+  FreeQueue(top);
+  return DM_NORMAL;
 }
 
 /*-*-* LIST MENU *-*-*/
@@ -801,44 +793,45 @@ InterRemoveItemFromLists()
  *	Returns: DM_NORMAL.
  */
 
-int
-ListByMember()
+int ListByMember(void)
 {
-    char buf[BUFSIZ], temp_buf[BUFSIZ], *type, *name, **info;
-    Bool maillist, group;
-    struct qelem *top, *elem;
+  char buf[BUFSIZ], temp_buf[BUFSIZ], *type, *name, **info;
+  Bool maillist, group;
+  struct qelem *top, *elem;
 
-    type = strsave("USER");
-    if (GetTypeFromUser("Type of member", "member", &type) == SUB_ERROR)
-	return(DM_NORMAL);
-    
-    sprintf(buf, "Name of %s", type);
-    name = strsave(user);
-    if (GetValueFromUser(buf, &name) == SUB_ERROR)
-      return(DM_NORMAL);
+  type = strsave("USER");
+  if (GetTypeFromUser("Type of member", "member", &type) == SUB_ERROR)
+    return DM_NORMAL;
 
-    /* What we really want is a recursive search */
-    sprintf(temp_buf, "R%s", type);
-    free(type); type = Strsave(temp_buf);
+  sprintf(buf, "Name of %s", type);
+  name = strsave(user);
+  if (GetValueFromUser(buf, &name) == SUB_ERROR)
+    return DM_NORMAL;
 
-    if ((maillist = YesNoQuestion("Show Lists that are Maillists (y/n) ?",
-				  TRUE)) == -1)
-      return(DM_NORMAL);
-    if ((group = YesNoQuestion("Show Lists that are Groups (y/n) ?",
-			       TRUE)) == -1)
-      return(DM_NORMAL);
+  /* What we really want is a recursive search */
+  sprintf(temp_buf, "R%s", type);
+  free(type);
+  type = Strsave(temp_buf);
 
-    elem = top = GetListInfo(GLOM, type, name);
+  if ((maillist = YesNoQuestion("Show Lists that are Maillists (y/n) ?",
+				TRUE)) == -1)
+    return DM_NORMAL;
+  if ((group = YesNoQuestion("Show Lists that are Groups (y/n) ?",
+			     TRUE)) == -1)
+    return DM_NORMAL;
 
-    while (elem != NULL) {
-	info = (char**) elem->q_data;
-	if ((maillist == TRUE && !strcmp(info[GLOM_MAILLIST], "1")) ||
-	    (group == TRUE && !strcmp(info[GLOM_GROUP], "1")))
-		Put_message(info[GLOM_NAME]);
-    	elem = elem->q_forw;
+  elem = top = GetListInfo(GLOM, type, name);
+
+  while (elem)
+    {
+      info = (char **) elem->q_data;
+      if ((maillist == TRUE && !strcmp(info[GLOM_MAILLIST], "1")) ||
+	  (group == TRUE && !strcmp(info[GLOM_GROUP], "1")))
+	Put_message(info[GLOM_NAME]);
+      elem = elem->q_forw;
     }
-    FreeQueue(top);
-    return (DM_NORMAL);
+  FreeQueue(top);
+  return DM_NORMAL;
 }
 
 /*	Function Name: ListByAdministrator
@@ -848,38 +841,38 @@ ListByMember()
  *	Returns: DM_NORMAL.
  */
 
-int
-ListByAdministrator()
+int ListByAdministrator(void)
 {
-    char buf[BUFSIZ], temp_buf[BUFSIZ], *type, *name;
-    struct qelem *top;
+  char buf[BUFSIZ], temp_buf[BUFSIZ], *type, *name;
+  struct qelem *top;
 
-    type = strsave("USER");
-    if (GetTypeFromUser("Type of member", "member", &type) == SUB_ERROR)
-	return(DM_NORMAL);
-    
-    sprintf(buf, "Name of %s", type);
-    name = strsave(user);
-    if (GetValueFromUser(buf, &name) == SUB_ERROR)
-      return(DM_NORMAL);
+  type = strsave("USER");
+  if (GetTypeFromUser("Type of member", "member", &type) == SUB_ERROR)
+    return DM_NORMAL;
 
-    switch (YesNoQuestion("Do you want a recursive search (y/n)", FALSE)) {
+  sprintf(buf, "Name of %s", type);
+  name = strsave(user);
+  if (GetValueFromUser(buf, &name) == SUB_ERROR)
+    return DM_NORMAL;
+
+  switch (YesNoQuestion("Do you want a recursive search (y/n)", FALSE))
+    {
     case TRUE:
-	sprintf(temp_buf, "R%s", type);	/* "USER" to "RUSER" etc. */
-	free(type);
-	type = Strsave(temp_buf);
-	break;
+      sprintf(temp_buf, "R%s", type);	/* "USER" to "RUSER" etc. */
+      free(type);
+      type = Strsave(temp_buf);
+      break;
     case FALSE:
-	break;
+      break;
     default:
-	return(DM_NORMAL);
+      return DM_NORMAL;
     }
-    
-    top = GetListInfo(ACE_USE, type, name);
-    Loop(top, PrintListAce);
 
-    FreeQueue(top);
-    return (DM_NORMAL);
+  top = GetListInfo(ACE_USE, type, name);
+  Loop(top, PrintListAce);
+
+  FreeQueue(top);
+  return DM_NORMAL;
 }
 
 /*	Function Name: ListAllPublicMailLists
@@ -888,22 +881,24 @@ ListByAdministrator()
  *	Returns: DM_NORMAL.
  */
 
-ListAllPublicMailLists()
+int ListAllPublicMailLists(void)
 {
-    register int status;
-    static char * args[] = {
-	"TRUE",			/* active */
-	"TRUE",			/* public */
-	"FALSE",		/* hidden */
-	"TRUE",			/* maillist */
-	"DONTCARE",		/* group. */
-    };
+  register int status;
+  static char *args[] = {
+    "TRUE",			/* active */
+    "TRUE",			/* public */
+    "FALSE",			/* hidden */
+    "TRUE",			/* maillist */
+    "DONTCARE",			/* group. */
+  };
 
-    if (YesNoQuestion("This query will take a while. Do you wish to continue?",
-		       TRUE) == TRUE )
-	if (status = do_mr_query("qualified_get_lists", 5, args,
-			       Print, (char *) NULL) != 0)
-	    com_err(program_name, status, " in ListAllGroups");
+  if (YesNoQuestion("This query will take a while. Do you wish to continue?",
+		    TRUE) == TRUE)
+    {
+      if (status = do_mr_query("qualified_get_lists", 5, args,
+			       Print, NULL) != MR_SUCCESS)
+	com_err(program_name, status, " in ListAllGroups");
+    }
 
-    return (DM_NORMAL);	
+  return DM_NORMAL;
 }

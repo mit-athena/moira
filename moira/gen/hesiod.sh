@@ -1,6 +1,6 @@
 #!/bin/csh -f
-# This script performs updates of hesiod files on hesiod servers.  
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/hesiod.sh,v 1.13 1996-03-04 15:40:07 jweiss Exp $
+# This script performs updates of hesiod files on hesiod servers.
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/hesiod.sh,v 1.14 1998-01-05 19:52:44 danw Exp $
 
 set path=(/etc /bin /usr/bin /usr/etc /usr/athena/etc)
 
@@ -42,7 +42,7 @@ endif
 if (! -r $TARFILE) exit $MR_MISSINGFILE
 
 # Empty the tar file one file at a time and move each file to the
-# appropriate place only if it is not zero length. 
+# appropriate place only if it is not zero length.
 cd $SRC_DIR
 foreach  file (`tar tf $TARFILE | awk '{print $1}' | sed 's;/$;;'`)
    if (. == $file) continue

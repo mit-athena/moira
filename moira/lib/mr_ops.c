@@ -1,20 +1,20 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_ops.c,v $
  *	$Author: danw $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_ops.c,v 1.10 1997-01-29 23:24:18 danw Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_ops.c,v 1.11 1998-01-05 19:53:12 danw Exp $
  *
  *	Copyright (C) 1987, 1989, 1990 by the Massachusetts Institute of
  *	Technology
  *	For copying and distribution information, please see the file
  *	<mit-copyright.h>.
- *	
+ *
  * 	This routine is part of the client library.  It handles
  *	the protocol operations: invoking an update and getting the
  *	MR message of the day.
  */
 
 #ifndef lint
-static char *rcsid_sms_do_update_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_ops.c,v 1.10 1997-01-29 23:24:18 danw Exp $";
+static char *rcsid_sms_do_update_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_ops.c,v 1.11 1998-01-05 19:53:12 danw Exp $";
 #endif
 
 #include <mit-copyright.h>
@@ -24,27 +24,27 @@ static char *rcsid_sms_do_update_c = "$Header: /afs/.athena.mit.edu/astaff/proje
 
 /* Invoke a DCM update. */
 
-int mr_do_update()
+int mr_do_update(void)
 {
-    int status;
-    mr_params param_st;
-    struct mr_params *params = NULL;
-    struct mr_params *reply = NULL;
+  int status;
+  mr_params param_st;
+  struct mr_params *params = NULL;
+  struct mr_params *reply = NULL;
 
-    CHECK_CONNECTED;
-    params = &param_st;
-    params->mr_version_no = sending_version_no;
-    params->mr_procno = MR_DO_UPDATE;
-    params->mr_argc = 0;
-    params->mr_argl = NULL;
-    params->mr_argv = NULL;
-	
-    if ((status = mr_do_call(params, &reply)) == 0)
-	status = reply->mr_status;
-	
-    mr_destroy_reply(reply);
+  CHECK_CONNECTED;
+  params = &param_st;
+  params->mr_version_no = sending_version_no;
+  params->mr_procno = MR_DO_UPDATE;
+  params->mr_argc = 0;
+  params->mr_argl = NULL;
+  params->mr_argv = NULL;
 
-    return status;
+  if ((status = mr_do_call(params, &reply)) == 0)
+    status = reply->mr_status;
+
+  mr_destroy_reply(reply);
+
+  return status;
 }
 
 
@@ -52,53 +52,54 @@ int mr_do_update()
  * point to NULL or the motd in a static buffer.
  */
 
-int mr_motd(motd)
-char **motd;
+int mr_motd(char **motd)
 {
-    int status;
-    mr_params param_st;
-    struct mr_params *params = NULL;
-    struct mr_params *reply = NULL;
-    static char buffer[1024];
+  int status;
+  mr_params param_st;
+  struct mr_params *params = NULL;
+  struct mr_params *reply = NULL;
+  static char buffer[1024];
 
-    *motd = NULL;
-    CHECK_CONNECTED;
-    params = &param_st;
-    params->mr_version_no = sending_version_no;
-    params->mr_procno = MR_MOTD;
-    params->mr_argc = 0;
-    params->mr_argl = NULL;
-    params->mr_argv = NULL;
-	
-    if ((status = mr_do_call(params, &reply)))
-      goto punt;
+  *motd = NULL;
+  CHECK_CONNECTED;
+  params = &param_st;
+  params->mr_version_no = sending_version_no;
+  params->mr_procno = MR_MOTD;
+  params->mr_argc = 0;
+  params->mr_argl = NULL;
+  params->mr_argv = NULL;
 
-    while ((status = reply->mr_status) == MR_MORE_DATA) {
-	if (reply->mr_argc > 0) {
-	    strncpy(buffer, reply->mr_argv[0], sizeof(buffer));
-	    *motd = buffer;
+  if ((status = mr_do_call(params, &reply)))
+    goto punt;
+
+  while ((status = reply->mr_status) == MR_MORE_DATA)
+    {
+      if (reply->mr_argc > 0)
+	{
+	  strncpy(buffer, reply->mr_argv[0], sizeof(buffer));
+	  *motd = buffer;
 	}
-	mr_destroy_reply(reply);
-	reply = NULL;
+      mr_destroy_reply(reply);
+      reply = NULL;
 
-	initialize_operation(_mr_recv_op, mr_start_recv, &reply,
-			     (int (*)())NULL);
-	queue_operation(_mr_conn, CON_INPUT, _mr_recv_op);
+      initialize_operation(_mr_recv_op, mr_start_recv, &reply, NULL);
+      queue_operation(_mr_conn, CON_INPUT, _mr_recv_op);
 
-	mr_complete_operation(_mr_recv_op);
-	if (OP_STATUS(_mr_recv_op) != OP_COMPLETE) {
-	    mr_disconnect();
-	    status = MR_ABORTED;
-	    return(status);
+      mr_complete_operation(_mr_recv_op);
+      if (OP_STATUS(_mr_recv_op) != OP_COMPLETE)
+	{
+	  mr_disconnect();
+	  status = MR_ABORTED;
+	  return status;
 	}
-    }	
- punt:
-    mr_destroy_reply(reply);
-    /* for backwards compatability */
-    if (status == MR_UNKNOWN_PROC)
-      return(0);
-    else
-      return(status);
+    }
+punt:
+  mr_destroy_reply(reply);
+  /* for backwards compatability */
+  if (status == MR_UNKNOWN_PROC)
+    return 0;
+  else
+    return status;
 }
 
 
@@ -121,15 +122,13 @@ char **motd;
 static int mr_alternate_input = 0;
 static int (*mr_alternate_handler)();
 
-int mr_set_alternate_input(fd, proc)
-int fd;
-int (*proc)();
+int mr_set_alternate_input(int fd, int (*proc)())
 {
-    if (mr_alternate_input != 0)
-      return(MR_ALREADY_CONNECTED);
-    mr_alternate_input = fd;
-    mr_alternate_handler = proc;
-    return(MR_SUCCESS);
+  if (mr_alternate_input != 0)
+    return MR_ALREADY_CONNECTED;
+  mr_alternate_input = fd;
+  mr_alternate_handler = proc;
+  return MR_SUCCESS;
 }
 
 
@@ -137,27 +136,26 @@ int (*proc)();
  * handles alternate input streams (such as X) as well.
  */
 
-mr_complete_operation(op)
-OPERATION op;
+int mr_complete_operation(OPERATION op)
 {
-    long infd, outfd, exfd;
-    int rc;
- 
-    gdb_progress();		/* try for an immediate completion */
+  long infd, outfd, exfd;
+  int rc;
 
-    if (mr_alternate_input == 0)
-      return(complete_operation(op));
+  gdb_progress();		/* try for an immediate completion */
 
-    infd = (1<<mr_alternate_input);
-    outfd = exfd = 0;
+  if (mr_alternate_input == 0)
+    return complete_operation(op);
 
-    while(op->status != OP_COMPLETE && op->status != OP_CANCELLED) {
-	rc = con_select(mr_alternate_input, (fd_set *)&infd, (fd_set *)&outfd,
-			  (fd_set *)&exfd, (struct timeval *)NULL);
-	if (rc > 0 && mr_alternate_handler) {
-	    (*mr_alternate_handler)();
-	}
+  infd = 1 << mr_alternate_input;
+  outfd = exfd = 0;
+
+  while (op->status != OP_COMPLETE && op->status != OP_CANCELLED)
+    {
+      rc = con_select(mr_alternate_input, (fd_set *)&infd, (fd_set *)&outfd,
+		      (fd_set *)&exfd, NULL);
+      if (rc > 0 && mr_alternate_handler)
+	(*mr_alternate_handler)();
     }
-    return(op->status);
+  return op->status;
 }
 

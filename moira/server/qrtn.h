@@ -1,5 +1,5 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.h,v 1.2 1997-01-20 18:26:24 danw Exp $ 
- *  
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.h,v 1.3 1998-01-05 19:53:36 danw Exp $
+ *
  *  Used by the SQL query routines of the Moira server.
  */
 

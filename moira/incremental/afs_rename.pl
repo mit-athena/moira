@@ -111,7 +111,7 @@ sub check
 {
     local($vname) = @_;
     local(@vos, @a);
-    
+
     open (VOS, "$vos listvldb -name $vname -cell $oldcell 2>/dev/null|");
     chop(@vos = <VOS>);
     close(VOS);

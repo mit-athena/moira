@@ -1,15 +1,15 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/client.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/client.c,v 1.18 1997-09-05 20:16:09 danw Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/client.c,v 1.19 1998-01-05 19:53:51 danw Exp $
  */
 
 #ifndef lint
-static char *rcsid_client2_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/client.c,v 1.18 1997-09-05 20:16:09 danw Exp $";
+static char *rcsid_client2_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/client.c,v 1.19 1998-01-05 19:53:51 danw Exp $";
 #endif	lint
 
 /*
  * MODULE IDENTIFICATION:
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/client.c,v 1.18 1997-09-05 20:16:09 danw Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/client.c,v 1.19 1998-01-05 19:53:51 danw Exp $
  *	Copyright 1987, 1988 by the Massachusetts Institute of Technology.
  *	For copying and distribution information, please see the file
  *	<mit-copyright.h>.
@@ -62,125 +62,112 @@ CONNECTION conn;
  * PROBLEMS:
  *
  */
-static void
-initialize()
+static void initialize()
 {
-    static int initialized = 0;
+  static int initialized = 0;
 
-    if (!initialized) {
-	gdb_init();
-	initialized++;
+  if (!initialized)
+    {
+      gdb_init();
+      initialized++;
     }
 }
 
-send_auth(host_name)
-char *host_name;
+int send_auth(char *host_name)
 {
-    KTEXT_ST ticket_st;
-    KTEXT ticket = &ticket_st;
-    STRING data;
-    register int code;
-    int response;
-    int auth_version = 2;
-    
-    code = get_mr_update_ticket(host_name, ticket);
-    if (code) {
-	return(code);
-    }
-    STRING_DATA(data) = "AUTH_002";
-    MAX_STRING_SIZE(data) = 9;
-    code = send_object(conn, (char *)&data, STRING_T);
-    if (code) {
-	return(connection_errno(conn));
-    }
-    code = receive_object(conn, (char *)&response, INTEGER_T);
-    if (code) {
-	return(connection_errno(conn));
-    }
-    if (response) {
-	STRING_DATA(data) = "AUTH_001";
-	MAX_STRING_SIZE(data) = 9;
-	code = send_object(conn, (char *)&data, STRING_T);
-	if (code) {
-	    return(connection_errno(conn));
-	}
-	code = receive_object(conn, (char *)&response, INTEGER_T);
-	if (code) {
-	    return(connection_errno(conn));
-	}
-	if (response) {
-	    return(response);
-	}
-	auth_version = 1;
-    }
-    STRING_DATA(data) = (char *)ticket->dat;
-    MAX_STRING_SIZE(data) = ticket->length;
-    code = send_object(conn, (char *)&data, STRING_T);
-    if (code) {
-	return(connection_errno(conn));
-    }
-    code = receive_object(conn, (char *)&response, INTEGER_T);
-    if (code) {
-	return(connection_errno(conn));
-    }
-    if (response) {
-	return(response);
-    }
-    
-    if (auth_version == 2) {
-	des_key_schedule sched;
-	C_Block enonce;
+  KTEXT_ST ticket_st;
+  KTEXT ticket = &ticket_st;
+  STRING data;
+  register int code;
+  int response;
+  int auth_version = 2;
 
-	code = receive_object(conn, (char *)&data, STRING_T);
-	if (code) {
-	    return(connection_errno(conn));
-	}
-	des_key_sched(session, sched);
-	des_ecb_encrypt(STRING_DATA(data), enonce, sched, 1);
-	STRING_DATA(data) = enonce;
-	code = send_object(conn, (char *)&data, STRING_T);
-	if (code) {
-	    return(connection_errno(conn));
-	}
-	code = receive_object(conn, (char *)&response, INTEGER_T);
-	if (code) {
-	    return(connection_errno(conn));
-	}
-	if (response) {
-	    return(response);
-	}
+  code = get_mr_update_ticket(host_name, ticket);
+  if (code)
+    return code;
+  STRING_DATA(data) = "AUTH_002";
+  MAX_STRING_SIZE(data) = 9;
+  code = send_object(conn, (char *)&data, STRING_T);
+  if (code)
+    return connection_errno(conn);
+  code = receive_object(conn, (char *)&response, INTEGER_T);
+  if (code)
+    return connection_errno(conn);
+  if (response)
+    {
+      STRING_DATA(data) = "AUTH_001";
+      MAX_STRING_SIZE(data) = 9;
+      code = send_object(conn, (char *)&data, STRING_T);
+      if (code)
+	return connection_errno(conn);
+      code = receive_object(conn, (char *)&response, INTEGER_T);
+      if (code)
+	return connection_errno(conn);
+      if (response)
+	return response;
+      auth_version = 1;
+    }
+  STRING_DATA(data) = (char *)ticket->dat;
+  MAX_STRING_SIZE(data) = ticket->length;
+  code = send_object(conn, (char *)&data, STRING_T);
+  if (code)
+    return connection_errno(conn);
+  code = receive_object(conn, (char *)&response, INTEGER_T);
+  if (code)
+    return connection_errno(conn);
+  if (response)
+    return response;
+
+  if (auth_version == 2)
+    {
+      des_key_schedule sched;
+      C_Block enonce;
+
+      code = receive_object(conn, (char *)&data, STRING_T);
+      if (code)
+	return connection_errno(conn);
+      des_key_sched(session, sched);
+      des_ecb_encrypt(STRING_DATA(data), enonce, sched, 1);
+      STRING_DATA(data) = enonce;
+      code = send_object(conn, (char *)&data, STRING_T);
+      if (code)
+	return connection_errno(conn);
+      code = receive_object(conn, (char *)&response, INTEGER_T);
+      if (code)
+	return connection_errno(conn);
+      if (response)
+	return response;
     }
 
-    return(MR_SUCCESS);
+  return MR_SUCCESS;
 }
 
-execute(path)
-    char *path;
+int execute(char *path)
 {
-    int response;
-    STRING data;
-    register int code;
-    
-    string_alloc(&data, BUFSIZ);
-    sprintf(STRING_DATA(data), "EXEC_002 %s", path);
-    code = send_object(conn, (char *)&data, STRING_T);
-    if (code)
-	return(connection_errno(conn));
-    code = receive_object(conn, (char *)&response, INTEGER_T);
-    if (code)
-	return(connection_errno(conn));
-    if (response)
-      return(response);
-    return(MR_SUCCESS);
+  int response;
+  STRING data;
+  register int code;
+
+  string_alloc(&data, BUFSIZ);
+  sprintf(STRING_DATA(data), "EXEC_002 %s", path);
+  code = send_object(conn, (char *)&data, STRING_T);
+  if (code)
+    return connection_errno(conn);
+  code = receive_object(conn, (char *)&response, INTEGER_T);
+  if (code)
+    return connection_errno(conn);
+  if (response)
+    return response;
+  return MR_SUCCESS;
 }
 
-send_quit()
+send_quit(void)
 {
-    STRING str;
-    if (!conn)
-	return;
-    string_alloc(&str, 5);
-    (void) strcpy(STRING_DATA(str), "quit");
-    (void) send_object(conn, (char *)&str, STRING_T);
-    string_free(&str);
+  STRING str;
+  if (!conn)
+    return;
+  string_alloc(&str, 5);
+  strcpy(STRING_DATA(str), "quit");
+  send_object(conn, (char *)&str, STRING_T);
+  string_free(&str);
 }

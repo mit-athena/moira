@@ -7,11 +7,11 @@
  *
  * $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/dcm.pc,v $
  * $Author: danw $
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/dcm.pc,v 1.2 1998-01-05 14:52:46 danw Exp $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/dcm.pc,v 1.3 1998-01-05 19:52:40 danw Exp $
  */
 
 #ifndef lint
-static char rcsid_dcm_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/dcm.pc,v 1.2 1998-01-05 14:52:46 danw Exp $";
+static char rcsid_dcm_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/dcm.pc,v 1.3 1998-01-05 19:52:40 danw Exp $";
 #endif lint
 
 #include <signal.h>
@@ -31,346 +31,391 @@ EXEC SQL INCLUDE sqlca;
 EXEC SQL WHENEVER SQLERROR DO dbmserr();
 
 #define SQL_NO_MATCH 1403
-#define SOFT_FAIL(x)	(((x) == MR_NO_MEM) || ((x) == MR_CANT_CONNECT) || ((x) == MR_CCONFIG) || ((x) == MR_DEADLOCK) || ((x) == MR_BUSY) || ((x) == MR_ABORT))
+#define SOFT_FAIL(x) (((x) == MR_NO_MEM) || ((x) == MR_CANT_CONNECT) || ((x) == MR_CCONFIG) || ((x) == MR_DEADLOCK) || ((x) == MR_BUSY) || ((x) == MR_ABORT))
 
-char whobuf[256], *whoami=whobuf, *db="moira";
+char whobuf[256], *whoami = whobuf, *db = "moira";
 extern CONNECTION conn;
 
-int main(argc, argv)
-int argc;
-char *argv[];
+int main(int argc, char **argv)
 {
-    int i;
-    EXEC SQL BEGIN DECLARE SECTION;
-    char buf[16], *name;
-    int enable;
-    EXEC SQL END DECLARE SECTION;
-    struct save_queue *sq;
-    int status;
-    
-    if (strchr(argv[0], '/')) strcpy(whoami, strrchr(argv[0], '/')+1);
-    else strcpy(whoami, argv[0]);
-    umask(7);
-    
-    setvbuf(stderr, NULL, _IOLBF, BUFSIZ);
-    setvbuf(stdout, NULL, _IOLBF, BUFSIZ);
-    
-    initialize_sms_error_table();
-    initialize_krb_error_table();
+  int i;
+  EXEC SQL BEGIN DECLARE SECTION;
+  char buf[16], *name;
+  int enable;
+  EXEC SQL END DECLARE SECTION;
+  struct save_queue *sq;
+  int status;
 
-    /* if services were specified on the command line, do just those ones */
-    if (argc > 1) {
-	for (i = 1; i < argc; i++) {
-	    if (generate_service(argv[i], 1))
-		do_hosts(argv[i]);
+  if (strchr(argv[0], '/'))
+    strcpy(whoami, strrchr(argv[0], '/') + 1);
+  else strcpy(whoami, argv[0]);
+  umask(7);
+
+  setvbuf(stderr, NULL, _IOLBF, BUFSIZ);
+  setvbuf(stdout, NULL, _IOLBF, BUFSIZ);
+
+  initialize_sms_error_table();
+  initialize_krb_error_table();
+
+  /* if services were specified on the command line, do just those ones */
+  if (argc > 1)
+    {
+      for (i = 1; i < argc; i++)
+	{
+	  if (generate_service(argv[i], 1))
+	    do_hosts(argv[i]);
 	}
-	exit(0);
+      exit(0);
     }
 
-    /* if DCM is not enabled, exit after logging */
-    if (!access(NODCMFILE, F_OK)) {
-	printf("/etc/nodcm exists -- exiting\n");
-	exit(1);
+  /* if DCM is not enabled, exit after logging */
+  if (!access(NODCMFILE, F_OK))
+    {
+      printf("/etc/nodcm exists -- exiting\n");
+      exit(1);
     }
-    
-    EXEC SQL CONNECT :db IDENTIFIED BY :db;
 
-    EXEC SQL SELECT value INTO :enable FROM numvalues
-	WHERE name='dcm_enable';
-    if (enable == 0) {
-	printf("dcm_enable not set -- exiting\n");
-	exit(1);
+  EXEC SQL CONNECT :db IDENTIFIED BY :db;
+
+  EXEC SQL SELECT value INTO :enable FROM numvalues WHERE name = 'dcm_enable';
+  if (enable == 0)
+    {
+      printf("dcm_enable not set -- exiting\n");
+      exit(1);
     }
-    
-    /* fetch list of services */
-    EXEC SQL DECLARE csr_svc CURSOR FOR SELECT LOWER(name) FROM servers
-	WHERE enable=1 AND harderror=0 AND update_int>0;
-    EXEC SQL OPEN csr_svc;
-    sq = sq_create();
-    while(1) {
-	EXEC SQL FETCH csr_svc INTO :buf;
-	if (sqlca.sqlcode) break;
 
-	sq_save_data(sq, strdup(strtrim(buf)));
+  /* fetch list of services */
+  EXEC SQL DECLARE csr_svc CURSOR FOR SELECT LOWER(name) FROM servers
+    WHERE enable = 1 AND harderror = 0 AND update_int > 0;
+  EXEC SQL OPEN csr_svc;
+  sq = sq_create();
+  while (1)
+    {
+      EXEC SQL FETCH csr_svc INTO :buf;
+      if (sqlca.sqlcode)
+	break;
+
+      sq_save_data(sq, strdup(strtrim(buf)));
     }
-    EXEC SQL CLOSE csr_svc;
-    /* we will repeatedly open and close the db since it seems to get
-       upset if you keep it open across a fork */
-    EXEC SQL COMMIT RELEASE;
+  EXEC SQL CLOSE csr_svc;
+  /* we will repeatedly open and close the db since it seems to get
+     upset if you keep it open across a fork */
+  EXEC SQL COMMIT RELEASE;
 
-    /* Now run through list */
-    while (sq_get_data(sq, &name)) {
-	if (generate_service(name, 0)) {
-	    switch (fork()) {
-		case -1:
-		    fprintf(stderr,
-			    "dcm: could not fork for service %s -- exiting",
-			    name);
-		    exit(1);
-		case 0:
-		    sprintf(strchr(whoami, '\0'), " (%s)", name);
-		    do_hosts(name);
-		    com_err(whoami, 0, "exiting");
-		    exit(0);
-		default:
-		    break;
+  /* Now run through list */
+  while (sq_get_data(sq, &name))
+    {
+      if (generate_service(name, 0))
+	{
+	  switch (fork())
+	    {
+	    case -1:
+	      fprintf(stderr, "dcm: could not fork for service %s -- exiting",
+		      name);
+	      exit(1);
+	    case 0:
+	      sprintf(strchr(whoami, '\0'), " (%s)", name);
+	      do_hosts(name);
+	      com_err(whoami, 0, "exiting");
+	      exit(0);
+	    default:
+	      break;
 	    }
 	}
     }
-    
-    /* wait for children */
-    while (waitpid(0, &status, 0) > 0) ;
-    com_err(whoami, 0, "exiting");
+
+  /* wait for children */
+  while (waitpid(0, &status, 0) > 0)
+    ;
+  com_err(whoami, 0, "exiting");
 }
 
 int generate_service(char *name, int force)
 {
-    EXEC SQL BEGIN DECLARE SECTION;
-    int interval, dfcheck, status;
-    time_t now;
-    char *errmsg;
-    EXEC SQL END DECLARE SECTION;
-    char dfgen_prog[64], dfgen_cmd[128];
-    struct sigaction action, prevaction;
-    int waits;
+  EXEC SQL BEGIN DECLARE SECTION;
+  int interval, dfcheck, status;
+  time_t now;
+  char *errmsg;
+  EXEC SQL END DECLARE SECTION;
+  char dfgen_prog[64], dfgen_cmd[128];
+  struct sigaction action, prevaction;
+  int waits;
 
-    EXEC SQL CONNECT :db IDENTIFIED BY :db;
+  EXEC SQL CONNECT :db IDENTIFIED BY :db;
 
-    EXEC SQL SELECT update_int, dfcheck	INTO :interval, :dfcheck
-	FROM servers WHERE name=UPPER(:name);
-    if (sqlca.sqlcode == SQL_NO_MATCH) {
-	com_err(whoami, 0, "No such service `%s'", name);
-	EXEC SQL COMMIT RELEASE;
-	return 0;
+  EXEC SQL SELECT update_int, dfcheck	INTO :interval, :dfcheck
+    FROM servers WHERE name = UPPER(:name);
+  if (sqlca.sqlcode == SQL_NO_MATCH)
+    {
+      com_err(whoami, 0, "No such service `%s'", name);
+      EXEC SQL COMMIT RELEASE;
+      return 0;
     }
-    
-    time(&now);
-    
-    if ((interval * 60 + dfcheck < now) || force) {
-	sprintf(dfgen_prog, "%s/%s.gen", BIN_DIR, name);
-	if (access(dfgen_prog, F_OK) != 0) {
-	    com_err(whoami, 0, "prog %s doesn't exist", dfgen_prog);
-	    EXEC SQL COMMIT RELEASE;
-	    return 0;
-	}
-	sprintf(dfgen_cmd, "exec %s %s/%s.out", dfgen_prog, DCM_DIR, name);
-	com_err(whoami, 0, "running %s", dfgen_prog);
 
-	EXEC SQL UPDATE servers SET inprogress=1
-	    WHERE name=UPPER(:name);
-	
-	action.sa_flags = 0;
-	sigemptyset(&action.sa_mask);
-	action.sa_handler = SIG_DFL;
-	sigaction(SIGCHLD, &action, &prevaction);
-	waits = system(dfgen_cmd);
-	sigaction(SIGCHLD, &prevaction, NULL);
-	if (WIFSIGNALED(waits)) {
-	    status = MR_COREDUMP;
-	    com_err(whoami, status, " %s exited on signal %d",
-		    dfgen_prog, WTERMSIG(waits));
-	} else if (WEXITSTATUS(waits)) {
-	    /* extract the process's exit value */
-	    status = WEXITSTATUS(waits) + ERROR_TABLE_BASE_sms;
-	    if (status != MR_NO_CHANGE)
-		com_err(whoami, status, "in %s", dfgen_prog);
-	} else status = MR_SUCCESS;
-	
-	if (status == MR_SUCCESS) {
-	    EXEC SQL UPDATE servers SET dfgen = :now, dfcheck = :now,
-		inprogress = 0 WHERE name=UPPER(:name);
-	    EXEC SQL COMMIT RELEASE;
-	    return 1;
-	} else if (status == MR_NO_CHANGE) {
-	    EXEC SQL UPDATE servers SET dfcheck = :now, inprogress = 0
-		WHERE name=UPPER(:name);
-	} else if (SOFT_FAIL(status)) {
-	    errmsg = error_message(status);
-	    EXEC SQL UPDATE servers SET errmsg = :errmsg, inprogress = 0
-		WHERE name=UPPER(:name);
-	} else { /* HARD_FAIL(status) */
-	    errmsg = error_message(status);
-	    EXEC SQL UPDATE servers SET dfcheck = :now, harderror = :status,
-		errmsg = :errmsg, inprogress = 0 WHERE name=UPPER(:name);
-	    critical_alert("DCM","DCM building config files for %s: %s",
-			   name, errmsg);
+  time(&now);
+
+  if ((interval * 60 + dfcheck < now) || force)
+    {
+      sprintf(dfgen_prog, "%s/%s.gen", BIN_DIR, name);
+      if (access(dfgen_prog, F_OK) != 0)
+	{
+	  com_err(whoami, 0, "prog %s doesn't exist", dfgen_prog);
+	  EXEC SQL COMMIT RELEASE;
+	  return 0;
+	}
+      sprintf(dfgen_cmd, "exec %s %s/%s.out", dfgen_prog, DCM_DIR, name);
+      com_err(whoami, 0, "running %s", dfgen_prog);
+
+      EXEC SQL UPDATE servers SET inprogress = 1
+	WHERE name = UPPER(:name);
+
+      action.sa_flags = 0;
+      sigemptyset(&action.sa_mask);
+      action.sa_handler = SIG_DFL;
+      sigaction(SIGCHLD, &action, &prevaction);
+      waits = system(dfgen_cmd);
+      sigaction(SIGCHLD, &prevaction, NULL);
+      if (WIFSIGNALED(waits))
+	{
+	  status = MR_COREDUMP;
+	  com_err(whoami, status, " %s exited on signal %d",
+		  dfgen_prog, WTERMSIG(waits));
+	}
+      else if (WEXITSTATUS(waits))
+	{
+	  /* extract the process's exit value */
+	  status = WEXITSTATUS(waits) + ERROR_TABLE_BASE_sms;
+	  if (status != MR_NO_CHANGE)
+	    com_err(whoami, status, "in %s", dfgen_prog);
+	}
+      else
+	status = MR_SUCCESS;
+
+      if (status == MR_SUCCESS)
+	{
+	  EXEC SQL UPDATE servers SET dfgen = :now, dfcheck = :now,
+	    inprogress = 0 WHERE name = UPPER(:name);
+	  EXEC SQL COMMIT RELEASE;
+	  return 1;
+	}
+      else if (status == MR_NO_CHANGE)
+	{
+	  EXEC SQL UPDATE servers SET dfcheck = :now, inprogress = 0
+	    WHERE name = UPPER(:name);
+	}
+      else if (SOFT_FAIL(status))
+	{
+	  errmsg = error_message(status);
+	  EXEC SQL UPDATE servers SET errmsg = :errmsg, inprogress = 0
+	    WHERE name = UPPER(:name);
+	}
+      else /* HARD_FAIL(status) */
+	{
+	  errmsg = error_message(status);
+	  EXEC SQL UPDATE servers SET dfcheck = :now, harderror = :status,
+	    errmsg = :errmsg, inprogress = 0 WHERE name = UPPER(:name);
+	  critical_alert("DCM", "DCM building config files for %s: %s",
+			 name, errmsg);
 	}
     }
-    EXEC SQL COMMIT RELEASE;
-    return 0;
+  EXEC SQL COMMIT RELEASE;
+  return 0;
 }
 
 void do_hosts(char *service)
 {
-    EXEC SQL BEGIN DECLARE SECTION;
-    char type[16], host[73], target[64], script[128], *errmsg;
-    int status = 0, mid, dfgen, replicated;
-    time_t now;
-    EXEC SQL END DECLARE SECTION;
+  EXEC SQL BEGIN DECLARE SECTION;
+  char type[16], host[73], target[64], script[128], *errmsg;
+  int status = 0, mid, dfgen, replicated;
+  time_t now;
+  EXEC SQL END DECLARE SECTION;
 
-    time(&now);
-    gdb_init();
+  time(&now);
+  gdb_init();
 
-    EXEC SQL CONNECT :db IDENTIFIED BY :db;
+  EXEC SQL CONNECT :db IDENTIFIED BY :db;
 
-    EXEC SQL SELECT dfgen, type, target_file, script
-	INTO :dfgen, :type, :target, :script
-	FROM servers WHERE name=UPPER(:service);
-    replicated = !strncmp(type, "REPLICAT", 8);
+  EXEC SQL SELECT dfgen, type, target_file, script
+    INTO :dfgen, :type, :target, :script
+    FROM servers WHERE name = UPPER(:service);
+  replicated = !strncmp(type, "REPLICAT", 8);
 
-    EXEC SQL DECLARE csr_hst1 CURSOR FOR
+  EXEC SQL DECLARE csr_hst1 CURSOR FOR
+    SELECT m.name FROM machine m, serverhosts sh
+    WHERE sh.service = UPPER(:service)
+    AND sh.enable = 1 AND sh.hosterror = 0
+    AND sh.lts < :dfgen AND sh.mach_id = m.mach_id
+    FOR UPDATE OF sh.inprogress, sh.hosterror, sh.hosterrmsg;
+  EXEC SQL OPEN csr_hst1;
+
+  while (1)
+    {
+      EXEC SQL FETCH csr_hst1 INTO :host;
+      if (sqlca.sqlcode == SQL_NO_MATCH)
+	break;
+
+      com_err(whoami, 0, "sending %s data to %s", service, strtrim(host));
+      EXEC SQL UPDATE serverhosts SET inprogress = 1
+	WHERE CURRENT OF csr_hst1;
+      status = dcm_send_file(service, host, strtrim(target));
+      if (status)
+	{
+	  errmsg = error_message(status);
+	  EXEC SQL UPDATE serverhosts SET hosterrmsg = :errmsg,
+	    inprogress = 0 WHERE CURRENT OF csr_hst1;
+	  if (!SOFT_FAIL(status))
+	    {
+	      EXEC SQL UPDATE serverhosts SET hosterror = :status
+		WHERE CURRENT OF csr_hst1;
+	      critical_alert("DCM", "DCM updating %s:%s: %s",
+			     service, host, errmsg);
+	    }
+
+	  if (replicated)
+	    break;
+	}
+    }
+  EXEC SQL CLOSE csr_hst1;
+
+  if (status == MR_SUCCESS || !replicated)
+    {
+      EXEC SQL DECLARE csr_hst2 CURSOR FOR
 	SELECT m.name FROM machine m, serverhosts sh
-	WHERE sh.service=UPPER(:service) AND sh.enable=1 AND sh.hosterror=0
-	AND sh.lts<:dfgen AND sh.mach_id=m.mach_id
-	FOR UPDATE OF sh.inprogress, sh.hosterror, sh.hosterrmsg;
-    EXEC SQL OPEN csr_hst1;
+	WHERE sh.service = UPPER(:service) AND sh.inprogress = 1
+	AND sh.mach_id = m.mach_id
+	FOR UPDATE OF sh.hosterror, sh.hosterrmsg, sh.inprogress;
+      EXEC SQL OPEN csr_hst2;
 
-    while (1) {
-	EXEC SQL FETCH csr_hst1 INTO :host;
-	if (sqlca.sqlcode == SQL_NO_MATCH) break;
+      while (1)
+	{
+	  EXEC SQL FETCH csr_hst2 INTO :host;
+	  if (sqlca.sqlcode == SQL_NO_MATCH)
+	    break;
 
-	com_err(whoami, 0, "sending %s data to %s", service, strtrim(host));
-	EXEC SQL UPDATE serverhosts SET inprogress = 1
-	    WHERE CURRENT OF csr_hst1;
-	status = dcm_send_file(service, host, strtrim(target));
-	if (status) {
-	    errmsg = error_message(status);
-	    EXEC SQL UPDATE serverhosts SET hosterrmsg = :errmsg,
-		inprogress = 0 WHERE CURRENT OF csr_hst1;
-	    if (!SOFT_FAIL(status)) {
-		EXEC SQL UPDATE serverhosts SET hosterror = :status
-		    WHERE CURRENT OF csr_hst1;
-		critical_alert("DCM", "DCM updating %s:%s: %s",
-			       service, host, errmsg);
-	    }
-	    
-	    if (replicated) break;
-	}
-    }
-    EXEC SQL CLOSE csr_hst1;
-
-    if (status == MR_SUCCESS || !replicated) {
-	EXEC SQL DECLARE csr_hst2 CURSOR FOR
-	    SELECT m.name FROM machine m, serverhosts sh
-	    WHERE sh.service=UPPER(:service) AND sh.inprogress=1
-	    AND sh.mach_id=m.mach_id
-	    FOR UPDATE OF sh.hosterror, sh.hosterrmsg, sh.inprogress;
-	EXEC SQL OPEN csr_hst2;
-
-	while (1) {
-	    EXEC SQL FETCH csr_hst2 INTO :host;
-	    if (sqlca.sqlcode == SQL_NO_MATCH) break;
-	    
-	    com_err(whoami, 0, "executing instructions on %s", strtrim(host));
-	    status = dcm_execute(service, host, strtrim(script));
-	    if (status) {
-		errmsg = error_message(status);
-		EXEC SQL UPDATE serverhosts SET hosterrmsg = :errmsg,
-		    inprogress = 0 WHERE CURRENT OF csr_hst2;
-		if (!SOFT_FAIL(status)) {
-		    EXEC SQL UPDATE serverhosts SET hosterror = :status
-			WHERE CURRENT OF csr_hst2;
-		    critical_alert("DCM", "DCM updating %s:%s: %s",
-				   service, host, errmsg);
-		}
-		
-		if (replicated) {
-		    /* We're giving up, so clear the inprogress flag on
-		       any hosts in this service we haven't gotten to yet */
-		    EXEC SQL UPDATE serverhosts SET inprogress = 0
-			WHERE service=UPPER(:service);
-		    break;
-		}
-	    } else {
-		EXEC SQL UPDATE serverhosts SET inprogress=0, lts=:now
+	  com_err(whoami, 0, "executing instructions on %s", strtrim(host));
+	  status = dcm_execute(service, host, strtrim(script));
+	  if (status)
+	    {
+	      errmsg = error_message(status);
+	      EXEC SQL UPDATE serverhosts SET hosterrmsg = :errmsg,
+		inprogress = 0 WHERE CURRENT OF csr_hst2;
+	      if (!SOFT_FAIL(status))
+		{
+		  EXEC SQL UPDATE serverhosts SET hosterror = :status
 		    WHERE CURRENT OF csr_hst2;
+		  critical_alert("DCM", "DCM updating %s:%s: %s",
+				 service, host, errmsg);
+		}
+
+	      if (replicated)
+		{
+		  /* We're giving up, so clear the inprogress flag on
+		     any hosts in this service we haven't gotten to yet */
+		  EXEC SQL UPDATE serverhosts SET inprogress = 0
+		    WHERE service = UPPER(:service);
+		  break;
+		}
+	    }
+	  else
+	    {
+	      EXEC SQL UPDATE serverhosts SET inprogress = 0, lts = :now
+		WHERE CURRENT OF csr_hst2;
 	    }
 	}
-	EXEC SQL CLOSE csr_hst2;
+      EXEC SQL CLOSE csr_hst2;
     }
 
-    if (status && replicated) {
-	EXEC SQL UPDATE servers SET harderror = :status, errmsg = :errmsg
-	    WHERE name = UPPER(:service);
+  if (status && replicated)
+    {
+      EXEC SQL UPDATE servers SET harderror = :status, errmsg = :errmsg
+	WHERE name = UPPER(:service);
     }
 
-    EXEC SQL COMMIT RELEASE;
+  EXEC SQL COMMIT RELEASE;
 }
 
 int dcm_send_file(char *service, char *host, char *target)
 {
-    char addr[256], data[MAXPATHLEN];
-    int code;
+  char addr[256], data[MAXPATHLEN];
+  int code;
 
-    sprintf(addr, "%s:moira_update", host);
-    conn = start_server_connection(addr, "");
-    if (!conn || (connection_status(conn) == CON_STOPPED)) {
-	com_err(whoami, connection_errno(conn), "can't connect to %s", addr);
-	return MR_CANT_CONNECT;
+  sprintf(addr, "%s:moira_update", host);
+  conn = start_server_connection(addr, "");
+  if (!conn || (connection_status(conn) == CON_STOPPED))
+    {
+      com_err(whoami, connection_errno(conn), "can't connect to %s", addr);
+      return MR_CANT_CONNECT;
     }
 
-    code = send_auth(host);
-    if (code) {
-	com_err(whoami, code, "authenticating to %s", host);
-	goto done;
+  code = send_auth(host);
+  if (code)
+    {
+      com_err(whoami, code, "authenticating to %s", host);
+      goto done;
     }
 
-    sprintf(data, "%s/%s.out", DCM_DIR, service);
-    code = send_file(data, target, 1);
-    if (code == MR_UNKNOWN_PROC) code = send_file(data, target, 0);
-    if (code) com_err(whoami, code, "sending data to %s", host);
+  sprintf(data, "%s/%s.out", DCM_DIR, service);
+  code = send_file(data, target, 1);
+  if (code == MR_UNKNOWN_PROC)
+    code = send_file(data, target, 0);
+  if (code)
+    com_err(whoami, code, "sending data to %s", host);
 
 done:
-    send_quit();
-    sever_connection(conn);
-    return(code);
+  send_quit();
+  sever_connection(conn);
+  return code;
 }
 
 int dcm_execute(char *service, char *host, char *script)
 {
-    char addr[256], inst[MAXPATHLEN];
-    int code;
+  char addr[256], inst[MAXPATHLEN];
+  int code;
 
-    sprintf(addr, "%s:moira_update", host);
-    conn = start_server_connection(addr, "");
-    if (!conn || (connection_status(conn) == CON_STOPPED)) {
-	com_err(whoami, connection_errno(conn), "can't connect to %s", addr);
-	return MR_CANT_CONNECT;
+  sprintf(addr, "%s:moira_update", host);
+  conn = start_server_connection(addr, "");
+  if (!conn || (connection_status(conn) == CON_STOPPED))
+    {
+      com_err(whoami, connection_errno(conn), "can't connect to %s", addr);
+      return MR_CANT_CONNECT;
     }
 
-    code = send_auth(host);
-    if (code) {
-	com_err(whoami, code, "authenticating to %s", host);
-	goto done;
+  code = send_auth(host);
+  if (code)
+    {
+      com_err(whoami, code, "authenticating to %s", host);
+      goto done;
     }
 
-    sprintf(inst, "/tmp/moira-update.XXXXXX");
-    mktemp(inst);
-    code = send_file(script, inst, 0);
-    if (code) {
-	com_err(whoami, code, "sending instructions to %s", host);
-	goto done;
+  sprintf(inst, "/tmp/moira-update.XXXXXX");
+  mktemp(inst);
+  code = send_file(script, inst, 0);
+  if (code)
+    {
+      com_err(whoami, code, "sending instructions to %s", host);
+      goto done;
     }
 
-    code = execute(inst);
-    if (code) com_err(whoami, code, "executing instructions on %s", host);
+  code = execute(inst);
+  if (code)
+    com_err(whoami, code, "executing instructions on %s", host);
 
 done:
-    send_quit();
-    sever_connection(conn);
-    return(code);
-}    
+  send_quit();
+  sever_connection(conn);
+  return code;
+}
 
 void dbmserr(void)
 {
-    EXEC SQL BEGIN DECLARE SECTION; 
-    char err_msg[256];
-    EXEC SQL END DECLARE SECTION;
-    int bufsize=256, msglength=0;
+  EXEC SQL BEGIN DECLARE SECTION;
+  char err_msg[256];
+  EXEC SQL END DECLARE SECTION;
+  int bufsize = 256, msglength = 0;
 
-    sqlglm(err_msg, &bufsize, &msglength);
-    err_msg[msglength]=0;
-    com_err(whoami, 0, "Encountered SQL error:\n%s", err_msg);
-    com_err(whoami, 0, "exiting");
-    exit(1);
+  sqlglm(err_msg, &bufsize, &msglength);
+  err_msg[msglength] = '\0';
+  com_err(whoami, 0, "Encountered SQL error:\n%s", err_msg);
+  com_err(whoami, 0, "exiting");
+  exit(1);
 }

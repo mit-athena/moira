@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/config.c,v 1.4 1997-02-02 21:17:01 danw Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/config.c,v 1.5 1998-01-05 19:53:52 danw Exp $
  *
  * Routines to handle configuration file for Moira's update_server.
  * These routines must load the file into memory rather than parse
@@ -12,6 +12,7 @@
 
 #include <mit-copyright.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
 #include <sys/types.h>
@@ -39,90 +40,102 @@ static char **config_keys, **config_values;
 
 static init()
 {
-    int fd, count = 0;
-    struct stat st;
-    char *p, *start;
+  int fd, count = 0;
+  struct stat st;
+  char *p, *start;
 
-    /* Only execute once */
-    if (config_buf) return(MR_SUCCESS);
+  /* Only execute once */
+  if (config_buf)
+    return MR_SUCCESS;
 
-    fd = open(CONFIG_FILE, O_RDONLY, 0);
-    if (fd < 0) {
-	config_buf = "";
-	config_keys = (char **)malloc(sizeof(char *) * 2);
-	config_keys[0] = config_keys[1] = NULL;
-	return(MR_SUCCESS);
+  fd = open(CONFIG_FILE, O_RDONLY, 0);
+  if (fd < 0)
+    {
+      config_buf = "";
+      config_keys = malloc(sizeof(char *) * 2);
+      config_keys[0] = config_keys[1] = NULL;
+      return MR_SUCCESS;
     }
-    if (fstat(fd, &st) < 0) {
-	return(MR_INTERNAL);
+  if (fstat(fd, &st) < 0)
+    return MR_INTERNAL;
+  config_buf = malloc(st.st_size + 2);
+  if (!config_buf)
+    return MR_NO_MEM;
+  if (read(fd, config_buf, st.st_size) < st.st_size)
+    {
+      free(config_buf);
+      config_buf = NULL;
+      return MR_INTERNAL;
     }
-    config_buf = (char *) malloc(st.st_size + 2);
-    if (config_buf == NULL) {
-	return(MR_NO_MEM);
-    }
-    if (read(fd, config_buf, st.st_size) < st.st_size) {
-	free(config_buf);
-	config_buf = NULL;
-	return(MR_INTERNAL);
-    }
-    config_buf[st.st_size] = '\0';
+  config_buf[st.st_size] = '\0';
 
-    for (p = config_buf; *p; p++)
-      if (*p == '\n') count++;
-    count++;
-    config_keys = (char **)malloc(count * sizeof(char *));
-    config_values = (char **)malloc(count * sizeof(char *));
-    if (config_keys == NULL || config_values == NULL) {
-	free(config_buf);
-	config_buf = NULL;
-	return(MR_NO_MEM);
+  for (p = config_buf; *p; p++)
+    {
+      if (*p == '\n')
+	count++;
     }
-    count = 0;
-    for (p = strtok(config_buf, "\n"); p; p = strtok(NULL, "\n")) {
-	config_keys[count++] = p;
+  count++;
+  config_keys = malloc(count * sizeof(char *));
+  config_values = malloc(count * sizeof(char *));
+  if (!config_keys || !config_values)
+    {
+      free(config_buf);
+      config_buf = NULL;
+      return MR_NO_MEM;
     }
-    config_keys[count] = NULL;
-    for (count = 0; config_keys[count]; count++) {
-	config_values[count] = "";
-	for (p = config_keys[count]; *p; p++)
-	  if (isspace(*p)) {
+  count = 0;
+  for (p = strtok(config_buf, "\n"); p; p = strtok(NULL, "\n"))
+    config_keys[count++] = p;
+  config_keys[count] = NULL;
+  for (count = 0; config_keys[count]; count++)
+    {
+      config_values[count] = "";
+      for (p = config_keys[count]; *p; p++)
+	{
+	  if (isspace(*p))
+	    {
 	      *p++ = '\0';
-	      while (*p && isspace(*p)) p++;
+	      while (*p && isspace(*p))
+		p++;
 	      config_values[count] = p;
-	  }
+	    }
+	}
     }
-    return(MR_SUCCESS);
+  return MR_SUCCESS;
 }
 
 
-/* Given a key, lookup the associated value.  
+/* Given a key, lookup the associated value.
  * Returns "" on a key without a value, NULL on a non-existant key.
  * If a key appears multiple times, successive calls will cycle through
  * the possible values.
  */
 
-char *config_lookup(key)
-char *key;
+char *config_lookup(char *key)
 {
-    static int i = 0;
-    int start;
+  static int i = 0;
+  int start;
 
-    if (init() != MR_SUCCESS)
-      return(NULL);
+  if (init() != MR_SUCCESS)
+    return NULL;
 
-    start = i++;
-    if (config_keys[i] == NULL) i = 0;
-    if (config_keys[i] == NULL) return(NULL);
+  start = i++;
+  if (!config_keys[i])
+    i = 0;
+  if (!config_keys[i])
+    return NULL;
 
-    do {
+  do
+    {
       if (!strcasecmp(key, config_keys[i]))
-	return(config_values[i]);
-      if (config_keys[++i] == NULL)
+	return config_values[i];
+      if (!config_keys[++i])
 	i = 0;
-    } while (i != start);
+    }
+  while (i != start);
 
-    if (!strcasecmp(key, config_keys[i]))
-      return(config_values[i]);
+  if (!strcasecmp(key, config_keys[i]))
+    return config_values[i];
 
-    return(NULL);
+  return NULL;
 }

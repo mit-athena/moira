@@ -1,13 +1,13 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/ticket.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/ticket.c,v 1.16 1997-09-05 20:16:10 danw Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/ticket.c,v 1.17 1998-01-05 19:53:57 danw Exp $
  */
 /*  (c) Copyright 1988 by the Massachusetts Institute of Technology. */
 /*  For copying and distribution information, please see the file */
 /*  <mit-copyright.h>. */
 
 #ifndef lint
-static char *rcsid_ticket_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/ticket.c,v 1.16 1997-09-05 20:16:10 danw Exp $";
+static char *rcsid_ticket_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/ticket.c,v 1.17 1998-01-05 19:53:57 danw Exp $";
 #endif
 
 #include <mit-copyright.h>
@@ -30,67 +30,70 @@ static char service[ANAME_SZ] = "rcmd";
 C_Block session;
 
 
-static init()
+static init(void)
 {
-    static int initialized = 0;
+  static int initialized = 0;
 
-    if (!initialized) {
-	if (krb_get_lrealm(realm, 1))
-	    strcpy(realm, KRB_REALM);
-	initialize_krb_error_table();
-	initialized=1;
+  if (!initialized)
+    {
+      if (krb_get_lrealm(realm, 1))
+	strcpy(realm, KRB_REALM);
+      initialize_krb_error_table();
+      initialized = 1;
     }
 }
 
 
-int
-get_mr_update_ticket(host, ticket)
-     char *host;
-     KTEXT ticket;
+int get_mr_update_ticket(char *host, KTEXT ticket)
 {
-     register int code;
-     register int pass;
-     char phost[BUFSIZ];
-     CREDENTIALS cr;
+  register int code;
+  register int pass;
+  char phost[BUFSIZ];
+  CREDENTIALS cr;
 
-     pass = 1;
-     init();
-     strcpy(phost, (char*)krb_get_phost(host));
- try_it:
-     code = krb_mk_req(ticket, service, phost, realm, (long)0);
-     if (code) {
-	 if (pass == 1) {
-	     /* maybe we're taking too long? */
-	     if ((code = get_mr_tgt()) != 0) {
-		 com_err(whoami, code, "can't get Kerberos TGT");
-		 return(code);
-	     }
-	     pass++;
-	     goto try_it;
-	 }
-	 code += ERROR_TABLE_BASE_krb;
-	 com_err(whoami, code, "in krb_mk_req");
-     } else {
-	 code = krb_get_cred(service, phost, realm, &cr);
-	 if (code) code += ERROR_TABLE_BASE_krb;
-	 memcpy(session, cr.session, sizeof(session));
-     }
-     return(code);
+  pass = 1;
+  init();
+  strcpy(phost, (char *)krb_get_phost(host));
+try_it:
+  code = krb_mk_req(ticket, service, phost, realm, (long)0);
+  if (code)
+    {
+      if (pass == 1)
+	{
+	  /* maybe we're taking too long? */
+	  if ((code = get_mr_tgt()))
+	    {
+	      com_err(whoami, code, "can't get Kerberos TGT");
+	      return code;
+	    }
+	  pass++;
+	  goto try_it;
+	}
+      code += ERROR_TABLE_BASE_krb;
+      com_err(whoami, code, "in krb_mk_req");
+    }
+  else
+    {
+      code = krb_get_cred(service, phost, realm, &cr);
+      if (code)
+	code += ERROR_TABLE_BASE_krb;
+      memcpy(session, cr.session, sizeof(session));
+    }
+  return code;
 }
 
-int
-get_mr_tgt()
+int get_mr_tgt(void)
 {
-    register int code;
-    char linst[INST_SZ], kinst[INST_SZ];
+  register int code;
+  char linst[INST_SZ], kinst[INST_SZ];
 
-    init();
-    linst[0] = '\0';
-    strcpy(kinst, "krbtgt");
-    code = krb_get_svc_in_tkt(master, linst, realm, kinst, realm,
-			      DEFAULT_TKT_LIFE, srvtab);
-    if (!code)
-	return(0);
-    else
-	return(code + ERROR_TABLE_BASE_krb);
+  init();
+  linst[0] = '\0';
+  strcpy(kinst, "krbtgt");
+  code = krb_get_svc_in_tkt(master, linst, realm, kinst, realm,
+			    DEFAULT_TKT_LIFE, srvtab);
+  if (!code)
+    return 0;
+  else
+    return code + ERROR_TABLE_BASE_krb;
 }

@@ -34,7 +34,7 @@ for (@new_data) {
 	$ap =~ s:^([^/]):/vicep\1:;
     }
     next unless ($as && $ap);
-    
+
     &afs_lock;
     truncate(SRV, 0);
     for (@afs_data) {
@@ -43,7 +43,7 @@ for (@new_data) {
 	print SRV $_ unless ($c eq $c2 && $as eq $as2 && $ap eq $ap2);
     }
     &afs_unlock;
-    
+
     open(VOS,"$vos partinfo $as $ap -cell $c -noauth|");
     chop(@vos = <VOS>);
     close(VOS);
@@ -52,12 +52,12 @@ for (@new_data) {
     $total = pop(@vos);
     $used = $total-$vos[5];
     $alloc = 0;
-    
+
     open(VOS,"$vos listvol $as $ap -cell $c -long -noauth|");
     @vos = <VOS>;
     close(VOS);
     next if ($?);
-    
+
     while ($_ = shift(@vos)) {
 	next unless /On-line/;
 	local($vn,$id) = split(/\s+/, $_);

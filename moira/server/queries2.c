@@ -1,6 +1,6 @@
 /* This file defines the query dispatch table for version 2 of the protocol
  *
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/queries2.c,v 2.29 1997-11-11 22:51:42 danw Exp $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/queries2.c,v 2.30 1998-01-05 19:53:45 danw Exp $
  *
  * Copyright 1987, 1988 by the Massachusetts Institute of Technology.
  * For copying and distribution information, please see the file
@@ -174,7 +174,7 @@ int num_tables = 27;
  * A word about validation objects and locking:  The validation object
  * for a query should also request locks on behalf of the pre-processing
  * and post-processing routines.  This helps to ensure that tables are
- * accessed and locked in the proper order and thus avoids deadlock 
+ * accessed and locked in the proper order and thus avoids deadlock
  * situations
  */
 
@@ -210,7 +210,7 @@ static struct valobj VOwild01sort01[] = {
   {V_WILD, 0},
   {V_WILD, 1},
   {V_SORT, 0},
-  {V_SORT, 1}, 
+  {V_SORT, 1},
 };
 
 static struct valobj VOwild012sort0[] = {  /* get_alias */
@@ -265,9 +265,9 @@ static struct valobj VOfilsys0user1[] = {
 static struct validate VDmach = { VOmach0, 1 };
 static struct validate VDwild0= { VOwild0, 1 };
 static struct validate VDupwild0= { VOupwild0, 1 };
-static struct validate VDwild2sort2 = { VOwild01sort01,4 };
-static struct validate VDwild3sort1 = { VOwild012sort0,4 };
-static struct validate VDsortf = { 
+static struct validate VDwild2sort2 = { VOwild01sort01, 4 };
+static struct validate VDwild3sort1 = { VOwild012sort0, 4 };
+static struct validate VDsortf = {
   VOsort0,
   1,
   0,
@@ -279,7 +279,7 @@ static struct validate VDsortf = {
   followup_fix_modby,
 };
 
-static struct validate VDwildsortf = { 
+static struct validate VDwildsortf = {
   VOwild0sort,
   2,
   0,
@@ -318,11 +318,11 @@ static char *gual_fields[] = {
 
 static char *gubl_fields[] = {
   LOGIN,
-  LOGIN, UID, SHELL, LAST, FIRST, MIDDLE, STATUS, 
+  LOGIN, UID, SHELL, LAST, FIRST, MIDDLE, STATUS,
   MIT_ID, CLASS, MOD1, MOD2, MOD3,
 };
 
-static struct validate gubl_validate =	
+static struct validate gubl_validate =
 {
   VOwild0sort,
   2,
@@ -347,7 +347,7 @@ static char *guan_fields[] = {
   MIT_ID, CLASS, COMMENTS, SIGNATURE, SECURE, MOD1, MOD2, MOD3,
 };
 
-static struct validate guan_validate =	
+static struct validate guan_validate =
 {
   VOwild01sort01,
   4,
@@ -374,11 +374,11 @@ static char *guam_fields[] = {
 
 static char *gubu_fields[] = {
   UID,
-  LOGIN, UID, SHELL, LAST, FIRST, MIDDLE, STATUS, 
+  LOGIN, UID, SHELL, LAST, FIRST, MIDDLE, STATUS,
   MIT_ID, CLASS, MOD1, MOD2, MOD3,
 };
 
-static struct validate gubu_validate =	
+static struct validate gubu_validate =
 {
   VOsort0,
   1,
@@ -393,7 +393,7 @@ static struct validate gubu_validate =
 
 static char *gubn_fields[] = {
   FIRST, LAST,
-  LOGIN, UID, SHELL, LAST, FIRST, MIDDLE, STATUS, 
+  LOGIN, UID, SHELL, LAST, FIRST, MIDDLE, STATUS,
   MIT_ID, CLASS, MOD1, MOD2, MOD3,
 };
 
@@ -412,13 +412,13 @@ static struct validate gubn_validate =
 
 static char *gubc_fields[] = {
   CLASS,
-  LOGIN, UID, SHELL, LAST, FIRST, MIDDLE, STATUS, 
+  LOGIN, UID, SHELL, LAST, FIRST, MIDDLE, STATUS,
   MIT_ID, CLASS, MOD1, MOD2, MOD3,
 };
 
 static char *gubm_fields[] = {
   MIT_ID,
-  LOGIN, UID, SHELL, LAST, FIRST, MIDDLE, STATUS, 
+  LOGIN, UID, SHELL, LAST, FIRST, MIDDLE, STATUS,
   MIT_ID, CLASS, MOD1, MOD2, MOD3,
 };
 
@@ -427,7 +427,7 @@ static char *gudf_fields[] = {
   "dirsuppress", "dirremote"
 };
 
-static struct validate gudf_validate =	
+static struct validate gudf_validate =
 {
   VOuser0,
   2,
@@ -441,7 +441,7 @@ static struct validate gudf_validate =
 };
 
 static char *auac_fields[] = {
-  LOGIN, UID, SHELL, LAST, FIRST, MIDDLE, STATUS, 
+  LOGIN, UID, SHELL, LAST, FIRST, MIDDLE, STATUS,
   MIT_ID, CLASS, COMMENTS, SIGNATURE, SECURE,
 };
 
@@ -489,11 +489,11 @@ static struct valobj rusr_valobj[] = {
   {V_LOCK, 0, IMEMBERS_TABLE, 0, LIST_ID, MR_DEADLOCK},
   {V_LOCK, 0, FILESYS_TABLE, 0, FILSYS_ID, MR_DEADLOCK},
   {V_LOCK, 0, USERS_TABLE, 0, USERS_ID, MR_DEADLOCK},
-  {V_RLOCK, 0, MACHINE_TABLE, 0,MACH_ID, MR_DEADLOCK},
+  {V_RLOCK, 0, MACHINE_TABLE, 0, MACH_ID, MR_DEADLOCK},
   {V_LOCK, 0, LIST_TABLE, 0, LIST_ID, MR_DEADLOCK},
   {V_LOCK, 0, NFSPHYS_TABLE, 0, "nfsphys_id", MR_DEADLOCK},
-  {V_LOCK, 0, QUOTA_TABLE,0, FILSYS_ID, MR_DEADLOCK},
-  {V_RLOCK,0, SERVERHOSTS_TABLE,0, MACH_ID, MR_DEADLOCK},
+  {V_LOCK, 0, QUOTA_TABLE, 0, FILSYS_ID, MR_DEADLOCK},
+  {V_RLOCK, 0, SERVERHOSTS_TABLE, 0, MACH_ID, MR_DEADLOCK},
 };
 
 static struct validate rusr_validate = {
@@ -510,7 +510,7 @@ static struct validate rusr_validate = {
 
 static char *uuac_fields[] = {
   LOGIN,
-  "newlogin", UID, SHELL, LAST, FIRST, MIDDLE, STATUS, 
+  "newlogin", UID, SHELL, LAST, FIRST, MIDDLE, STATUS,
   MIT_ID, CLASS, COMMENTS, SIGNATURE, SECURE,
 };
 
@@ -671,7 +671,6 @@ static struct valobj akum_valobj[] =
   {V_LOCK, 0, KRBMAP_TABLE, 0, "users_id", MR_DEADLOCK},
   {V_ID, 0, USERS_TABLE, LOGIN, USERS_ID, MR_USER},
   {V_ID, 1, STRINGS_TABLE, "string", "string_id", MR_NO_MATCH},
-
 };
 
 static struct validate akum_validate =
@@ -703,7 +702,7 @@ static struct validate dkum_validate =
 static char *gfbl_fields[] = {
   LOGIN,
   LOGIN, "fullname", "nickname", "home_addr",
-  "home_phone", "office_addr", "office_phone", "department", 
+  "home_phone", "office_addr", "office_phone", "department",
   "affiliation", MOD1, MOD2, MOD3,
 };
 
@@ -722,7 +721,7 @@ static struct validate gfbl_validate = {
 static char *ufbl_fields[] = {
   LOGIN,
   "fullname", "nickname", "home_addr",
-  "home_phone", "office_addr", "office_phone", "department", 
+  "home_phone", "office_addr", "office_phone", "department",
   "affiliation",
 };
 
@@ -760,7 +759,7 @@ static struct validate gpob_validate = {
   VOuser0,
   1,
   "potype",
-  "potype != 'NONE' and users_id=%d",
+  "potype != 'NONE' and users_id = %d",
   1,
   0,
   access_user,
@@ -772,7 +771,7 @@ static char *gpox_fields[] = {
   LOGIN, TYPE, "box",
 };
 
-struct valobj gpox_valobj[]={
+struct valobj gpox_valobj[] = {
   {V_RLOCK, 0, USERS_TABLE, 0, USERS_ID, MR_DEADLOCK},
   {V_RLOCK, 0, MACHINE_TABLE, 0, MACH_ID, MR_DEADLOCK}
 };
@@ -863,7 +862,7 @@ static struct valobj ghst_valobj[] = {
   {V_SORT, 0},
 };
 
-static struct validate ghst_validate = { 
+static struct validate ghst_validate = {
   ghst_valobj,
   5,
   0,
@@ -886,7 +885,7 @@ static struct valobj ahst_valobj[] = {
   {V_CHAR, 3, MACHINE_TABLE, "os"},
   {V_CHAR, 4, MACHINE_TABLE, "location"},
   {V_CHAR, 5, MACHINE_TABLE, "contact"},
-  {V_RLOCK,0, USERS_TABLE, 0, USERS_ID, MR_DEADLOCK},
+  {V_RLOCK, 0, USERS_TABLE, 0, USERS_ID, MR_DEADLOCK},
   {V_LOCK, 0, MACHINE_TABLE, 0, MACH_ID, MR_DEADLOCK},
   {V_RLOCK, 0, SUBNET_TABLE, 0, SNET_ID, MR_DEADLOCK},
   {V_RLOCK, 0, LIST_TABLE, 0, LIST_ID, MR_DEADLOCK},
@@ -976,8 +975,8 @@ static struct validate dhst_validate = {
 };
 
 static char *ghal_fields[] = {
-    ALIAS, "canonical_hostname",
-    ALIAS, "canonical_hostname"
+  ALIAS, "canonical_hostname",
+  ALIAS, "canonical_hostname"
 };
 
 static struct valobj ghal_valobj[] = {
@@ -1035,9 +1034,9 @@ static struct validate dhal_validate = {
 };
 
 static char *gsnt_fields[] = {
-    NAME,
-    NAME, DESC, ADDRESS, "mask", "low", "high", "prefix", ACE_TYPE, ACE_NAME,
-    MOD1, MOD2, MOD3
+  NAME,
+  NAME, DESC, ADDRESS, "mask", "low", "high", "prefix", ACE_TYPE, ACE_NAME,
+  MOD1, MOD2, MOD3
 };
 
 static struct valobj gsnt_valobj[] = {
@@ -1061,7 +1060,7 @@ static struct validate gsnt_validate = {
 };
 
 static char *asnt_fields[] = {
-    NAME, DESC, ADDRESS, "mask", "low", "high", "prefix", ACE_TYPE, ACE_NAME,
+  NAME, DESC, ADDRESS, "mask", "low", "high", "prefix", ACE_TYPE, ACE_NAME,
 };
 
 static struct valobj asnt_valobj[] = {
@@ -1075,22 +1074,22 @@ static struct valobj asnt_valobj[] = {
   {V_TYPEDATA, 8, 0, 0, 0, MR_ACE},
 };
 
-static struct validate asnt_validate = 
+static struct validate asnt_validate =
 {
-    asnt_valobj,
-    8,
-    NAME,
-    "name = UPPER('%s')",
-    1,
-    SNET_ID,
-    0,
-    prefetch_value,
-    set_uppercase_modtime,
+  asnt_valobj,
+  8,
+  NAME,
+  "name = UPPER('%s')",
+  1,
+  SNET_ID,
+  0,
+  prefetch_value,
+  set_uppercase_modtime,
 };
 
 static char *usnt_fields[] = {
-    NAME,
-    "newname", DESC, ADDRESS, "mask", "low", "high", "prefix", ACE_TYPE, ACE_NAME,
+  NAME,
+  "newname", DESC, ADDRESS, "mask", "low", "high", "prefix", ACE_TYPE, ACE_NAME,
 };
 
 static struct valobj usnt_valobj[] = {
@@ -1105,17 +1104,17 @@ static struct valobj usnt_valobj[] = {
   {V_TYPEDATA, 9, 0, 0, 0, MR_ACE},
 };
 
-static struct validate usnt_validate = 
+static struct validate usnt_validate =
 {
-    usnt_valobj,
-    9,
-    NAME,
-    "snet_id = %d",
-    1,
-    SNET_ID,
-    0,
-    0,
-    set_modtime_by_id,
+  usnt_valobj,
+  9,
+  NAME,
+  "snet_id = %d",
+  1,
+  SNET_ID,
+  0,
+  0,
+  set_modtime_by_id,
 };
 
 static char *dsnt_fields[] = {
@@ -1142,7 +1141,7 @@ static struct validate dsnt_validate = {
 
 static char *gclu_fields[] = {
   NAME,
-  NAME, DESC, LOCATION, MOD1, MOD2, MOD3, 
+  NAME, DESC, LOCATION, MOD1, MOD2, MOD3,
 };
 
 static char *aclu_fields[] = {
@@ -1156,7 +1155,7 @@ static struct valobj aclu_valobj[] = {
   {V_LEN, 2, CLUSTER_TABLE, LOCATION},
 };
 
-static struct validate aclu_validate =	
+static struct validate aclu_validate =
 {
   aclu_valobj,
   4,
@@ -1260,8 +1259,8 @@ static struct valobj acld_valobj[] =
   {V_CHAR, 2, SVC_TABLE, "serv_cluster"}
 };
 
-static struct validate acld_validate =	
-{					
+static struct validate acld_validate =
+{
   acld_valobj,
   3,
   CLU_ID,
@@ -1278,8 +1277,8 @@ static struct valobj dcld_valobj[] =
   {V_ID, 0, CLUSTER_TABLE, NAME, CLU_ID, MR_CLUSTER},
 };
 
-static struct validate dcld_validate =	
-{					
+static struct validate dcld_validate =
+{
   dcld_valobj,
   1,
   CLU_ID,
@@ -1367,13 +1366,13 @@ static char *dlis_fields[] = {
   NAME,
 };
 
-static struct valobj dlis_valobj[] ={
+static struct valobj dlis_valobj[] = {
   {V_RLOCK, 0, CAPACLS_TABLE, 0, LIST_ID, MR_DEADLOCK},
   {V_RLOCK, 0, IMEMBERS_TABLE, 0, LIST_ID, MR_DEADLOCK},
   {V_RLOCK, 0, FILESYS_TABLE, 0, FILSYS_ID, MR_DEADLOCK},
   {V_LOCK, 0, LIST_TABLE, 0, LIST_ID, MR_DEADLOCK},
   {V_RLOCK, 0, QUOTA_TABLE, 0, FILSYS_ID, MR_DEADLOCK},
-  {V_RLOCK, 0, ZEPHYR_TABLE, 0, ZEPH_ID, MR_DEADLOCK},  
+  {V_RLOCK, 0, ZEPHYR_TABLE, 0, ZEPH_ID, MR_DEADLOCK},
   {V_RLOCK, 0, HOSTACCESS_TABLE, 0, MACH_ID, MR_DEADLOCK},
   {V_ID, 0, LIST_TABLE, NAME, LIST_ID, MR_LIST}
 };
@@ -1485,14 +1484,14 @@ static char *gmol_fields[] = {
   "member_type", "member_name",
 };
 
-static struct valobj gmol_valobj[]={
+static struct valobj gmol_valobj[] = {
   {V_LOCK, 0, IMEMBERS_TABLE, 0, LIST_ID, MR_DEADLOCK},
   {V_RLOCK, 0, USERS_TABLE, 0, USERS_ID, MR_DEADLOCK},
   {V_ID, 0, LIST_TABLE, NAME, LIST_ID, MR_LIST},
 
 };
 static struct validate gmol_validate = {
- gmol_valobj,
+  gmol_valobj,
   3,
   0,
   0,
@@ -1521,12 +1520,12 @@ static char *glom_fields[] = {
 };
 
 static struct valobj glom_valobj[] = {
-   {V_LOCK, 0, IMEMBERS_TABLE, 0, LIST_ID, MR_DEADLOCK},
-   {V_RLOCK, 0, USERS_TABLE, 0, USERS_ID, MR_DEADLOCK},
-   {V_RLOCK, 0, LIST_TABLE, 0, LIST_ID, MR_DEADLOCK},
-   {V_TYPE, 0, 0, "rmember", 0, MR_TYPE},
-   {V_TYPEDATA, 1, 0, 0, 0, MR_NO_MATCH},
-   {V_SORT, 0},
+  {V_LOCK, 0, IMEMBERS_TABLE, 0, LIST_ID, MR_DEADLOCK},
+  {V_RLOCK, 0, USERS_TABLE, 0, USERS_ID, MR_DEADLOCK},
+  {V_RLOCK, 0, LIST_TABLE, 0, LIST_ID, MR_DEADLOCK},
+  {V_TYPE, 0, 0, "rmember", 0, MR_TYPE},
+  {V_TYPEDATA, 1, 0, 0, 0, MR_NO_MATCH},
+  {V_SORT, 0},
 };
 
 static struct validate glom_validate = {
@@ -1572,7 +1571,7 @@ static struct valobj gsin_valobj[] =
   {V_UPWILD, 0 },
 };
 
-static struct validate gsin_validate = 
+static struct validate gsin_validate =
 {
   gsin_valobj,
   3,
@@ -1693,7 +1692,7 @@ static char *gshi_fields[] = {
   SERVICE, MACHINE,
   SERVICE, MACHINE, "enable", "override", "success", "inprogress",
   "hosterror", "hosterrormsg", "ltt", "lts", "value1", "value2",
-  "value3", MOD1, MOD2, MOD3, 
+  "value3", MOD1, MOD2, MOD3,
 };
 
 static struct valobj gshi_valobj[] = {
@@ -1745,7 +1744,7 @@ static char *ashi_fields[] = {
 static struct valobj ashi_valobj[] = {
   {V_LOCK, 0, MACHINE_TABLE, 0, MACH_ID, MR_DEADLOCK},
   {V_NAME, 0, SERVERS_TABLE, NAME, 0, MR_SERVICE},
-  {V_LOCK, 0, SERVERHOSTS_TABLE,0, MACH_ID, MR_DEADLOCK},
+  {V_LOCK, 0, SERVERHOSTS_TABLE, 0, MACH_ID, MR_DEADLOCK},
   {V_ID, 1, MACHINE_TABLE, NAME, MACH_ID, MR_MACHINE},
   {V_CHAR, 0, SERVERHOSTS_TABLE, NAME},
   {V_LEN, 5, SERVERHOSTS_TABLE, "value3"},
@@ -1764,7 +1763,7 @@ static struct validate ashi_validate = /* ashi & ushi */
   set_serverhost_modtime,
 };
 
-static struct validate rshe_validate =	
+static struct validate rshe_validate =
 {
   ashi_valobj,
   4,
@@ -1777,7 +1776,7 @@ static struct validate rshe_validate =
   set_serverhost_modtime,
 };
 
-static struct validate ssho_validate =	
+static struct validate ssho_validate =
 {
   ashi_valobj,
   4,
@@ -1802,7 +1801,7 @@ static struct valobj sshi_valobj[] = {
   {V_LEN, 5, SERVERS_TABLE, "errmsg"},
 };
 
-static struct validate sshi_validate =	
+static struct validate sshi_validate =
 {
   sshi_valobj,
   4,
@@ -1819,7 +1818,7 @@ static char *dshi_fields[] = {
   SERVICE, MACHINE,
 };
 
-static struct validate dshi_validate =	
+static struct validate dshi_validate =
 {
   ashi_valobj,
   4,
@@ -2014,7 +2013,7 @@ static struct validate dfil_validate = {
 
 static char *gfgm_fields[] = {
   "fsgroup", FILESYS, "sortkey"
-    };
+};
 
 static struct valobj gfgm_valobj[] = {
   {V_ID, 0, FILESYS_TABLE, LABEL, FILSYS_ID, MR_FILESYS},
@@ -2309,7 +2308,7 @@ static struct validate dnfq_validate = {
 static char *gzcl_fields[] = {
   CLASS,
   CLASS, "xmt_type", "xmt_name", "sub_type", "sub_name",
-  "iws_type", "iws_name", "iui_type", "iui_name", MOD1, MOD2, MOD3, 
+  "iws_type", "iws_name", "iui_type", "iui_name", MOD1, MOD2, MOD3,
 };
 
 static struct valobj gzcl_valobj[] = {
@@ -2339,7 +2338,7 @@ static char *azcl_fields[] = {
 static struct valobj azcl_valobj[] = {
   {V_RLOCK, 0, USERS_TABLE, 0, USERS_ID, MR_DEADLOCK},
   {V_RLOCK, 0, LIST_TABLE, 0, LIST_ID, MR_DEADLOCK},
-  {V_LOCK, 0, ZEPHYR_TABLE, 0, ZEPH_ID, MR_DEADLOCK}, 
+  {V_LOCK, 0, ZEPHYR_TABLE, 0, ZEPH_ID, MR_DEADLOCK},
   {V_CHAR, 0, ZEPHYR_TABLE, CLASS},
   {V_TYPE, 1, 0, ACE_TYPE, 0, MR_ACE},
   {V_TYPEDATA, 2, 0, 0, LIST_ID, MR_ACE},
@@ -2412,7 +2411,7 @@ static char *gsha_fields[] = {
   MACHINE, ACE_TYPE, ACE_NAME, MOD1, MOD2, MOD3,
 };
 
-static struct validate gsha_validate =	
+static struct validate gsha_validate =
 {
   VOupwild0,
   1,
@@ -2437,7 +2436,7 @@ static struct valobj asha_valobj[] = {
   {V_TYPEDATA, 2, 0, 0, 0, MR_ACE},
 };
 
-static struct validate asha_validate =	
+static struct validate asha_validate =
 {
   asha_valobj,
   5,
@@ -2484,7 +2483,7 @@ static char *gpce_fields[] = {
   MOD1, MOD2, MOD3,
 };
 
-static struct valobj gpce_valobj[]={
+static struct valobj gpce_valobj[] = {
   {V_RLOCK, 0, USERS_TABLE, 0, USERS_ID, MR_DEADLOCK},
   {V_RLOCK, 0, MACHINE_TABLE, 0, MACH_ID, MR_DEADLOCK},
   {V_RLOCK, 0, PRINTCAP_TABLE, 0, MACH_ID, MR_DEADLOCK},
@@ -2677,20 +2676,20 @@ static char *gats_fields[] = {
 };
 
 static char *_sdl_fields[] = {
-    "level",
+  "level",
 };
 
-static struct validate _sdl_validate = 
+static struct validate _sdl_validate =
 {
-    0,
-    0,
-    (char *)0,
-    (char *)0,
-    0,
-    0,
-    0,
-    0,
-    _sdl_followup,
+  0,
+  0,
+  (char *)0,
+  (char *)0,
+  0,
+  0,
+  0,
+  0,
+  _sdl_followup,
 };
 
 
@@ -2716,7 +2715,7 @@ struct query Queries2[] = {
     0,
     &VDsort0,
   },
-  
+
   {
     /* Q_GAAL - GET_ALL_ACTIVE_LOGINS */
     "get_all_active_logins",
@@ -2731,7 +2730,7 @@ struct query Queries2[] = {
     0,
     &VDsort0,
   },
-  
+
   {
     /* Q_GUAL - GET_USER_ACCOUNT_BY_LOGIN */
     "get_user_account_by_login",
@@ -2746,7 +2745,7 @@ struct query Queries2[] = {
     1,
     &gubl_validate,
   },
-  
+
   {
     /* Q_GUAU - GET_USER_ACCOUNT_BY_UID */
     "get_user_account_by_uid",
@@ -2761,7 +2760,7 @@ struct query Queries2[] = {
     1,
     &gubu_validate,
   },
-  
+
   {
     /* Q_GUAN - GET_USER_ACCOUNT_BY_NAME */
     "get_user_account_by_name",
@@ -2776,7 +2775,7 @@ struct query Queries2[] = {
     2,
     &guan_validate,
   },
-  
+
   {
     /* Q_GUAC - GET_USER_ACCOUNT_BY_CLASS */
     "get_user_account_by_class",
@@ -2791,7 +2790,7 @@ struct query Queries2[] = {
     1,
     &VDsortf,
   },
-  
+
   {
     /* Q_GUAM - GET_USER_ACCOUNT_BY_MITID */
     "get_user_account_by_id",
@@ -2806,14 +2805,14 @@ struct query Queries2[] = {
     1,
     &VDwildsortf,
   },
-  
+
   {
     /* Q_GUBL - GET_USER_BY_LOGIN */
     "get_user_by_login",
     "gubl",
     RETRIEVE,
     "u",
-    USERS_TABLE,  
+    USERS_TABLE,
     "u.login, u.unix_uid, u.shell, u.last, u.first, u.middle, u.status, u.clearid, u.type, TO_CHAR(u.modtime, 'DD-mon-YYYY HH24:MI:SS'), u.modby, u.modwith FROM users u",
     gubl_fields,
     12,
@@ -2821,7 +2820,7 @@ struct query Queries2[] = {
     1,
     &gubl_validate,
   },
-  
+
   {
     /* Q_GUBU - GET_USER_BY_UID */
     "get_user_by_uid",
@@ -2836,7 +2835,7 @@ struct query Queries2[] = {
     1,
     &gubu_validate,
   },
-  
+
   {
     /* Q_GUBN - GET_USER_BY_NAME */
     "get_user_by_name",
@@ -2851,7 +2850,7 @@ struct query Queries2[] = {
     2,
     &gubn_validate,
   },
-  
+
   {
     /* Q_GUBC - GET_USER_BY_CLASS */
     "get_user_by_class",
@@ -2866,7 +2865,7 @@ struct query Queries2[] = {
     1,
     &VDsortf,
   },
-  
+
   {
     /* Q_GUBM - GET_USER_BY_MITID */
     "get_user_by_mitid",
@@ -2881,7 +2880,7 @@ struct query Queries2[] = {
     1,
     &VDwildsortf,
   },
-  
+
   {
     /* Q_GUDF - GET_USER_DIRECTORY_FLAGS */
     "get_user_directory_flags",
@@ -2904,14 +2903,14 @@ struct query Queries2[] = {
     APPEND,
     "u",
     USERS_TABLE,
-    "INTO users (login, unix_uid, shell, last, first, middle, status, clearid, type, comments, signature, secure, users_id) VALUES ('%s', %s, '%s', NVL('%s',CHR(0)), NVL('%s',CHR(0)), NVL('%s',CHR(0)), %s, NVL('%s',CHR(0)), '%s', %d, LENGTH(NVL('%s',CHR(0))), %s, %s)", /* followup_ausr fixes signature field */
+    "INTO users (login, unix_uid, shell, last, first, middle, status, clearid, type, comments, signature, secure, users_id) VALUES ('%s', %s, '%s', NVL('%s', CHR(0)), NVL('%s', CHR(0)), NVL('%s', CHR(0)), %s, NVL('%s', CHR(0)), '%s', %d, LENGTH(NVL('%s', CHR(0))), %s, %s)", /* followup_ausr fixes signature field */
     auac_fields,
     12,
     (char *)0,
     0,
     &auac_validate,
   },
-  
+
   {
     /* Q_AUSR - ADD_USER */  /* uses prefetch_value() for users_id */
     "add_user",
@@ -2919,14 +2918,14 @@ struct query Queries2[] = {
     APPEND,
     "u",
     USERS_TABLE,
-    "INTO users (login, unix_uid, shell, last, first, middle, status, clearid, type, comments, signature, secure, users_id) VALUES ('%s', %s, '%s', NVL('%s',CHR(0)), NVL('%s',CHR(0)), NVL('%s',CHR(0)), %s, NVL('%s',CHR(0)), '%s', 0, CHR(0), 0, %s)",
+    "INTO users (login, unix_uid, shell, last, first, middle, status, clearid, type, comments, signature, secure, users_id) VALUES ('%s', %s, '%s', NVL('%s', CHR(0)), NVL('%s', CHR(0)), NVL('%s', CHR(0)), %s, NVL('%s', CHR(0)), '%s', 0, CHR(0), 0, %s)",
     auac_fields,
     9,
     0,
     0,
     &ausr_validate,
   },
-  
+
   {
     /* Q_RUSR - REGISTER_USER */
     "register_user",
@@ -2941,7 +2940,7 @@ struct query Queries2[] = {
     0,
     &rusr_validate,
   },
-  
+
   {
     /* Q_UUAC - UPDATE_USER_ACCOUNT */
     "update_user_account",
@@ -2949,14 +2948,14 @@ struct query Queries2[] = {
     UPDATE,
     "u",
     USERS_TABLE,
-    "users SET login = '%s', unix_uid = %s, shell = '%s', last = NVL('%s',CHR(0)), first = NVL('%s',CHR(0)), middle = NVL('%s',CHR(0)), status = %s, clearid = NVL('%s',CHR(0)), type = '%s', comments = %d, signature = LENGTH(NVL('%s',CHR(0))), secure = %s", /* followup_uuac fixes signature */
+    "users SET login = '%s', unix_uid = %s, shell = '%s', last = NVL('%s', CHR(0)), first = NVL('%s', CHR(0)), middle = NVL('%s', CHR(0)), status = %s, clearid = NVL('%s', CHR(0)), type = '%s', comments = %d, signature = LENGTH(NVL('%s', CHR(0))), secure = %s", /* followup_uuac fixes signature */
     uuac_fields,
     12,
     "users_id = %d",
     1,
     &uuac_validate,
   },
- 
+
   {
     /* Q_UUSR - UPDATE_USER */
     "update_user",
@@ -2964,7 +2963,7 @@ struct query Queries2[] = {
     UPDATE,
     "u",
     USERS_TABLE,
-    "users SET login = '%s', unix_uid = %s, shell = '%s', last = NVL('%s',CHR(0)), first = NVL('%s',CHR(0)), middle = NVL('%s',CHR(0)), status = %s, clearid = NVL('%s',CHR(0)),  type = '%s'",
+    "users SET login = '%s', unix_uid = %s, shell = '%s', last = NVL('%s', CHR(0)), first = NVL('%s', CHR(0)), middle = NVL('%s', CHR(0)), status = %s, clearid = NVL('%s', CHR(0)),  type = '%s'",
     uuac_fields,
     9,
     "users_id = %d",
@@ -2979,7 +2978,7 @@ struct query Queries2[] = {
     UPDATE,
     "u",
     USERS_TABLE,
-    "users SET shell = '%s'",  
+    "users SET shell = '%s'",
     uush_fields,
     1,
     "users_id = %d",
@@ -3016,7 +3015,7 @@ struct query Queries2[] = {
     1,
     &uust_validate,
   },
- 
+
   {
     /* Q_UUDF - UPDATE_USER_DIRECTORY_FLAGS */
     "update_user_directory_flags",
@@ -3033,7 +3032,7 @@ struct query Queries2[] = {
   },
 
   {
-    /* Q_DUSR - DELETE_USER */ 
+    /* Q_DUSR - DELETE_USER */
     "delete_user",
     "dusr",
     DELETE,
@@ -3063,7 +3062,7 @@ struct query Queries2[] = {
   },
 
   {
-    /* Q_GKUM - GET_KERBEROS_USER_MAP */ 
+    /* Q_GKUM - GET_KERBEROS_USER_MAP */
     "get_kerberos_user_map",
     "gkum",
     RETRIEVE,
@@ -3129,7 +3128,7 @@ struct query Queries2[] = {
     UPDATE,
     "u",
     USERS_TABLE,
-    "users SET fullname= NVL('%s',CHR(0)),nickname= NVL('%s',CHR(0)),home_addr= NVL('%s',CHR(0)),home_phone= NVL('%s',CHR(0)),office_addr= NVL('%s',CHR(0)),office_phone= NVL('%s',CHR(0)),department= NVL('%s',CHR(0)),affiliation= NVL('%s',CHR(0))",
+    "users SET fullname= NVL('%s', CHR(0)), nickname= NVL('%s', CHR(0)), home_addr= NVL('%s', CHR(0)), home_phone= NVL('%s', CHR(0)), office_addr= NVL('%s', CHR(0)), office_phone= NVL('%s', CHR(0)), department= NVL('%s', CHR(0)), affiliation= NVL('%s', CHR(0))",
     ufbl_fields,
     8,
     "users_id = %d",
@@ -3166,7 +3165,7 @@ struct query Queries2[] = {
     0,
     &gpox_validate,
   },
-      
+
   {
     /* Q_GPOP - GET_POBOXES_POP */
     "get_poboxes_pop",
@@ -3252,7 +3251,7 @@ struct query Queries2[] = {
     "m.name, m.vendor, m.model, m.os, m.location, m.contact, m.use, m.status, TO_CHAR(m.statuschange, 'DD-mon-YYYY HH24:MI:SS'), s.name, m.address, m.owner_type, m.owner_id, m.acomment, m.ocomment, TO_CHAR(m.created, 'DD-mon-YYYY HH24:MI:SS'), m.creator, TO_CHAR(m.inuse, 'DD-mon-YYYY HH24:MI:SS'), TO_CHAR(m.modtime, 'DD-mon-YYYY HH24:MI:SS'), m.modby, m.modwith FROM machine m, subnet s",
     ghst_fields,
     21,
-    "m.name LIKE '%s' ESCAPE '*' AND m.address LIKE '%s' ESCAPE '*' AND m.location LIKE '%s' ESCAPE '*' AND s.name LIKE '%s' ESCAPE '*' AND m.mach_id != 0 AND s.snet_id = m.snet_id", 
+    "m.name LIKE '%s' ESCAPE '*' AND m.address LIKE '%s' ESCAPE '*' AND m.location LIKE '%s' ESCAPE '*' AND s.name LIKE '%s' ESCAPE '*' AND m.mach_id != 0 AND s.snet_id = m.snet_id",
     4,
     &ghst_validate,
   },
@@ -3264,7 +3263,7 @@ struct query Queries2[] = {
     APPEND,
     "m",
     MACHINE_TABLE,
-    "INTO machine (name, vendor, model, os, location, contact, use, status, statuschange, snet_id, address, owner_type, owner_id, acomment, ocomment, created, inuse, mach_id, creator) VALUES (UPPER('%s'),NVL(UPPER('%s'),CHR(0)),NVL(UPPER('%s'),CHR(0)),NVL(UPPER('%s'),CHR(0)),NVL(UPPER('%s'),CHR(0)),NVL('%s',CHR(0)),%s,%s,SYSDATE,%d,'%s','%s',%d,%d,%d,SYSDATE,SYSDATE,%s,%s)",
+    "INTO machine (name, vendor, model, os, location, contact, use, status, statuschange, snet_id, address, owner_type, owner_id, acomment, ocomment, created, inuse, mach_id, creator) VALUES (UPPER('%s'), NVL(UPPER('%s'), CHR(0)), NVL(UPPER('%s'), CHR(0)), NVL(UPPER('%s'), CHR(0)), NVL(UPPER('%s'), CHR(0)), NVL('%s', CHR(0)), %s, %s, SYSDATE, %d, '%s', '%s', %d, %d, %d, SYSDATE, SYSDATE, %s, %s)",
     ahst_fields,
     14,
     0,
@@ -3279,7 +3278,7 @@ struct query Queries2[] = {
     UPDATE,
     "m",
     MACHINE_TABLE,
-    "machine SET name=NVL(UPPER('%s'),CHR(0)),vendor=NVL(UPPER('%s'),CHR(0)),model=NVL(UPPER('%s'),CHR(0)),os=NVL(UPPER('%s'),CHR(0)),location=NVL(UPPER('%s'),CHR(0)),contact=NVL('%s',CHR(0)),use=%s,status=%s,snet_id=%d,address='%s',owner_type='%s',owner_id=%d,acomment=%d,ocomment=%d",
+    "machine SET name = NVL(UPPER('%s'), CHR(0)), vendor = NVL(UPPER('%s'), CHR(0)), model = NVL(UPPER('%s'), CHR(0)), os = NVL(UPPER('%s'), CHR(0)), location = NVL(UPPER('%s'), CHR(0)), contact = NVL('%s', CHR(0)), use = %s, status = %s, snet_id = %d, address = '%s', owner_type = '%s', owner_id = %d, acomment = %d, ocomment = %d",
     uhst_fields,
     14,
     "mach_id = %d",
@@ -3312,7 +3311,7 @@ struct query Queries2[] = {
     "name, vendor, TO_CHAR(modtime, 'DD-mon-YYYY HH24:MI:SS'), modby, modwith FROM machine",
     gmac_fields,
     5,
-    "name LIKE '%s' ESCAPE '*' AND mach_id != 0", 
+    "name LIKE '%s' ESCAPE '*' AND mach_id != 0",
     1,
     &VDupwildsortf,
   },
@@ -3339,7 +3338,7 @@ struct query Queries2[] = {
     APPEND,
     "a",
     HOSTALIAS_TABLE,
-    "INTO hostalias (name, mach_id) VALUES (UPPER('%s'),%d)",
+    "INTO hostalias (name, mach_id) VALUES (UPPER('%s'), %d)",
     ghal_fields,
     2,
     0,
@@ -3384,7 +3383,7 @@ struct query Queries2[] = {
     APPEND,
     "s",
     SUBNET_TABLE,
-    "INTO subnet (name, description, saddr, mask, low, high, prefix, owner_type, owner_id, snet_id) VALUES (UPPER('%s'), NVL('%s',CHR(0)), %s, %s, %s, %s, NVL('%s',CHR(0)), '%s', %d, %s)",
+    "INTO subnet (name, description, saddr, mask, low, high, prefix, owner_type, owner_id, snet_id) VALUES (UPPER('%s'), NVL('%s', CHR(0)), %s, %s, %s, %s, NVL('%s', CHR(0)), '%s', %d, %s)",
     asnt_fields,
     9,
     0,
@@ -3399,7 +3398,7 @@ struct query Queries2[] = {
     UPDATE,
     "s",
     SUBNET_TABLE,
-    "subnet SET name=UPPER('%s'), description=NVL('%s',CHR(0)), saddr=%s, mask=%s, low=%s, high=%s, prefix=NVL('%s',CHR(0)), owner_type='%s', owner_id=%d",
+    "subnet SET name = UPPER('%s'), description = NVL('%s', CHR(0)), saddr = %s, mask = %s, low = %s, high = %s, prefix = NVL('%s', CHR(0)), owner_type = '%s', owner_id = %d",
     usnt_fields,
     9,
     "snet_id = %d",
@@ -3444,7 +3443,7 @@ struct query Queries2[] = {
     APPEND,
     "c",
     CLUSTER_TABLE,
-    "INTO clusters (name, description, location, clu_id) VALUES ('%s',NVL('%s',CHR(0)),NVL('%s',CHR(0)),%s)",
+    "INTO clusters (name, description, location, clu_id) VALUES ('%s', NVL('%s', CHR(0)), NVL('%s', CHR(0)), %s)",
     aclu_fields,
     3,
     0,
@@ -3459,7 +3458,7 @@ struct query Queries2[] = {
     UPDATE,
     "c",
     CLUSTER_TABLE,
-    "clusters SET name = '%s', description = NVL('%s',CHR(0)), location = NVL('%s',CHR(0))",
+    "clusters SET name = '%s', description = NVL('%s', CHR(0)), location = NVL('%s', CHR(0))",
     uclu_fields,
     3,
     "clu_id = %d",
@@ -3483,7 +3482,7 @@ struct query Queries2[] = {
   },
 
   {
-    /* Q_GMCM - GET_MACHINE_TO_CLUSTER_MAP */ 
+    /* Q_GMCM - GET_MACHINE_TO_CLUSTER_MAP */
     "get_machine_to_cluster_map",
     "gmcm",
     RETRIEVE,
@@ -3494,9 +3493,9 @@ struct query Queries2[] = {
     2,
     "m.name LIKE '%s' ESCAPE '*' AND c.name LIKE '%s' ESCAPE '*' AND mcm.clu_id = c.clu_id AND mcm.mach_id = m.mach_id",
     2,
-    &gmcm_validate, 
+    &gmcm_validate,
   },
-                                           
+
   {
     /* Q_AMTC - ADD_MACHINE_TO_CLUSTER */
     "add_machine_to_cluster",
@@ -3549,7 +3548,7 @@ struct query Queries2[] = {
     APPEND,
     "svc",
     SVC_TABLE,
-    "INTO svc (clu_id, serv_label, serv_cluster) VALUES (%d,'%s','%s')",
+    "INTO svc (clu_id, serv_label, serv_cluster) VALUES (%d, '%s', '%s')",
     acld_fields,
     3,
     (char *)0,
@@ -3567,7 +3566,7 @@ struct query Queries2[] = {
     (char *)0,
     acld_fields,
     0,
-    "clu_id = %d AND serv_label = '%s' AND serv_cluster = '%s'",   
+    "clu_id = %d AND serv_label = '%s' AND serv_cluster = '%s'",
     3,
     &dcld_validate,
   },
@@ -3583,10 +3582,10 @@ struct query Queries2[] = {
     glin_fields,
     13,
     0,
-    1,              
-    &glin_validate, 
+    1,
+    &glin_validate,
   },
-    
+
   {
     /* Q_EXLN - EXPAND_LIST_NAMES */
     "expand_list_names",
@@ -3601,15 +3600,15 @@ struct query Queries2[] = {
     1,
     &VDwild0,
   },
-    
+
   {
     /* Q_ALIS - ADD_LIST */ /* uses prefetch_value() for list_id */
     "add_list",
     "alis",
     APPEND,
     "l",
-    LIST_TABLE, 
-    "INTO list (name, active, publicflg, hidden, maillist, grouplist, gid, acl_type, acl_id, description, list_id) VALUES ('%s',%s,%s,%s,%s,%s,%s,'%s',%d,NVL('%s',CHR(0)),%s)",
+    LIST_TABLE,
+    "INTO list (name, active, publicflg, hidden, maillist, grouplist, gid, acl_type, acl_id, description, list_id) VALUES ('%s', %s, %s, %s, %s, %s, %s, '%s', %d, NVL('%s', CHR(0)), %s)",
     alis_fields,
     10,
     0,
@@ -3624,7 +3623,7 @@ struct query Queries2[] = {
     UPDATE,
     "l",
     LIST_TABLE,
-    "list SET name='%s', active=%s, publicflg=%s, hidden=%s, maillist=%s, grouplist=%s, gid=%s, acl_type='%s', acl_id=%d, description=NVL('%s',CHR(0))",
+    "list SET name = '%s', active = %s, publicflg = %s, hidden = %s, maillist = %s, grouplist = %s, gid = %s, acl_type = '%s', acl_id = %d, description = NVL('%s', CHR(0))",
     ulis_fields,
     10,
     "list_id = %d",
@@ -3736,7 +3735,7 @@ struct query Queries2[] = {
     1,
     &geml_validate,
   },
- 
+
   {
     /* Q_GLOM - GET_LISTS_OF_MEMBER */
     "get_lists_of_member",
@@ -3804,7 +3803,7 @@ struct query Queries2[] = {
     APPEND,
     "s",
     SERVERS_TABLE,
-    "INTO servers (name, update_int, target_file, script, type, enable, acl_type, acl_id) VALUES (UPPER('%s'),%s,'%s','%s','%s',%s,'%s',%d)",
+    "INTO servers (name, update_int, target_file, script, type, enable, acl_type, acl_id) VALUES (UPPER('%s'), %s, '%s', '%s', '%s', %s, '%s', %d)",
     asin_fields,
     8,
     (char *)0,
@@ -3849,7 +3848,7 @@ struct query Queries2[] = {
     UPDATE,
     "s",
     SERVERS_TABLE,
-    "servers SET dfgen = %s, dfcheck = %s, inprogress = %s, harderror = %s, errmsg = NVL('%s',CHR(0))",
+    "servers SET dfgen = %s, dfcheck = %s, inprogress = %s, harderror = %s, errmsg = NVL('%s', CHR(0))",
     ssif_fields,
     5,
     "name = UPPER('%s')",
@@ -3873,7 +3872,7 @@ struct query Queries2[] = {
   },
 
   {
-    /* Q_GSHI - GET_SERVER_HOST_INFO */ 
+    /* Q_GSHI - GET_SERVER_HOST_INFO */
     "get_server_host_info",
     "gshi",
     RETRIEVE,
@@ -3909,7 +3908,7 @@ struct query Queries2[] = {
     APPEND,
     "sh",
     SERVERHOSTS_TABLE,
-    "INTO serverhosts (service, mach_id, enable, value1, value2, value3) VALUES (UPPER('%s'), %d, %s, %s, %s, NVL('%s',CHR(0)))",
+    "INTO serverhosts (service, mach_id, enable, value1, value2, value3) VALUES (UPPER('%s'), %d, %s, %s, %s, NVL('%s', CHR(0)))",
     ashi_fields,
     6,
     (char *)0,
@@ -3924,7 +3923,7 @@ struct query Queries2[] = {
     UPDATE,
     "sh",
     SERVERHOSTS_TABLE,
-    "serverhosts SET enable = %s, value1 = %s, value2 = %s, value3 = NVL('%s',CHR(0))",
+    "serverhosts SET enable = %s, value1 = %s, value2 = %s, value3 = NVL('%s', CHR(0))",
     ashi_fields,
     4,
     "service = UPPER('%s') AND mach_id = %d",
@@ -3969,10 +3968,10 @@ struct query Queries2[] = {
     UPDATE,
     "s",
     SERVERHOSTS_TABLE,
-    "serverhosts SET override = %s, success = %s, inprogress = %s, hosterror = %s, hosterrmsg = NVL('%s',CHR(0)), ltt = %s, lts = %s",
+    "serverhosts SET override = %s, success = %s, inprogress = %s, hosterror = %s, hosterrmsg = NVL('%s', CHR(0)), ltt = %s, lts = %s",
     sshi_fields,
     7,
-    "service = UPPER('%s') AND mach_id = %d", 
+    "service = UPPER('%s') AND mach_id = %d",
     2,
     &sshi_validate,
   },
@@ -3993,7 +3992,7 @@ struct query Queries2[] = {
   },
 
   {
-    /* Q_GSLO - GET_SERVER_LOCATIONS */ 
+    /* Q_GSLO - GET_SERVER_LOCATIONS */
     "get_server_locations",
     "gslo",
     RETRIEVE,
@@ -4008,7 +4007,7 @@ struct query Queries2[] = {
   },
 
   {
-    /* Q_GFSL - GET_FILESYS_BY_LABEL */ 
+    /* Q_GFSL - GET_FILESYS_BY_LABEL */
     "get_filesys_by_label",
     "gfsl",
     RETRIEVE,
@@ -4023,7 +4022,7 @@ struct query Queries2[] = {
   },
 
   {
-    /* Q_GFSM - GET_FILESYS_BY_MACHINE */ 
+    /* Q_GFSM - GET_FILESYS_BY_MACHINE */
     "get_filesys_by_machine",
     "gfsm",
     RETRIEVE,
@@ -4038,7 +4037,7 @@ struct query Queries2[] = {
   },
 
   {
-    /* Q_GFSN - GET_FILESYS_BY_NFSPHYS */ 
+    /* Q_GFSN - GET_FILESYS_BY_NFSPHYS */
     "get_filesys_by_nfsphys",
     "gfsn",
     RETRIEVE,
@@ -4047,13 +4046,13 @@ struct query Queries2[] = {
     "fs.label, fs.type, m.name, fs.name, fs.mount, fs.rwaccess, fs.comments, u.login, l.name, fs.createflg, fs.lockertype, TO_CHAR(fs.modtime, 'DD-mon-YYYY HH24:MI:SS'), fs.modby, fs.modwith FROM filesys fs, machine m, users u, list l, nfsphys np",
     gfsn_fields,
     14,
-    "fs.mach_id = %d AND m.mach_id = fs.mach_id AND fs.owner = u.users_id AND fs.owners = l.list_id AND np.nfsphys_id = fs.phys_id AND np.dir LIKE '%s' ESCAPE '*' AND fs.type = 'NFS'", 
+    "fs.mach_id = %d AND m.mach_id = fs.mach_id AND fs.owner = u.users_id AND fs.owners = l.list_id AND np.nfsphys_id = fs.phys_id AND np.dir LIKE '%s' ESCAPE '*' AND fs.type = 'NFS'",
     2,
     &gfsn_validate,
   },
 
   {
-    /* Q_GFSG - GET_FILESYS_BY_GROUP */ 
+    /* Q_GFSG - GET_FILESYS_BY_GROUP */
     "get_filesys_by_group",
     "gfsg",
     RETRIEVE,
@@ -4081,7 +4080,7 @@ struct query Queries2[] = {
     1,
     &VDwildsortf,
   },
- 
+
   {
     /* Q_AFIL - ADD_FILESYS */ /* uses prefetch_value() for filsys_id */
     "add_filesys",
@@ -4089,7 +4088,7 @@ struct query Queries2[] = {
     APPEND,
     "fs",
     FILESYS_TABLE,
-    "INTO filesys (label, type, mach_id, name, mount, rwaccess, comments, owner, owners, createflg, lockertype, filsys_id) VALUES ('%s','%s',%d,NVL('%s',CHR(0)),'%s','%s',NVL('%s',CHR(0)),%d,%d,%s,'%s',%s)",
+    "INTO filesys (label, type, mach_id, name, mount, rwaccess, comments, owner, owners, createflg, lockertype, filsys_id) VALUES ('%s', '%s', %d, NVL('%s', CHR(0)), '%s', '%s', NVL('%s', CHR(0)), %d, %d, %s, '%s', %s)",
     afil_fields,
     11,
     0,
@@ -4104,12 +4103,12 @@ struct query Queries2[] = {
     UPDATE,
     "fs",
     FILESYS_TABLE,
-    "filesys SET label = '%s', type = '%s', mach_id = %d, name = NVL('%s',CHR(0)), mount = '%s', rwaccess = '%s', comments = NVL('%s',CHR(0)), owner = %d, owners = %d, createflg = %s, lockertype = '%s'",
+    "filesys SET label = '%s', type = '%s', mach_id = %d, name = NVL('%s', CHR(0)), mount = '%s', rwaccess = '%s', comments = NVL('%s', CHR(0)), owner = %d, owners = %d, createflg = %s, lockertype = '%s'",
     ufil_fields,
     11,
     "filsys_id = %d",
     1,
-    &ufil_validate,      
+    &ufil_validate,
   },
 
   {
@@ -4128,7 +4127,7 @@ struct query Queries2[] = {
   },
 
   {
-    /* Q_GFGM - GET_FSGROUP_MEMBERS */ 
+    /* Q_GFGM - GET_FSGROUP_MEMBERS */
     "get_fsgroup_members",
     "gfgm",
     RETRIEVE,
@@ -4149,7 +4148,7 @@ struct query Queries2[] = {
     APPEND,
     "fg",
     FSGROUP_TABLE,
-    "INTO fsgroup (group_id,filsys_id,key) VALUES (%d, %d, '%s')",
+    "INTO fsgroup (group_id, filsys_id, key) VALUES (%d, %d, '%s')",
     gfgm_fields,
     3,
     (char *)0,
@@ -4173,7 +4172,7 @@ struct query Queries2[] = {
   },
 
   {
-    /* Q_GANF - GET_ALL_NFSPHYS */ 
+    /* Q_GANF - GET_ALL_NFSPHYS */
     "get_all_nfsphys",
     "ganf",
     RETRIEVE,
@@ -4188,7 +4187,7 @@ struct query Queries2[] = {
   },
 
   {
-    /* Q_GNFP - GET_NFSPHYS */ 
+    /* Q_GNFP - GET_NFSPHYS */
     "get_nfsphys",
     "gnfp",
     RETRIEVE,
@@ -4197,7 +4196,7 @@ struct query Queries2[] = {
     "m.name, np.dir, np.device, np.status, np.allocated, np.partsize, TO_CHAR(np.modtime, 'DD-mon-YYYY HH24:MI:SS'), np.modby, np.modwith FROM nfsphys np, machine m",
     gnfp_fields,
     9,
-    "np.mach_id = %d AND np.dir LIKE '%s' ESCAPE '*' AND m.mach_id = np.mach_id", 
+    "np.mach_id = %d AND np.dir LIKE '%s' ESCAPE '*' AND m.mach_id = np.mach_id",
     2,
     &gnfp_validate,
   },
@@ -4209,7 +4208,7 @@ struct query Queries2[] = {
     APPEND,
     "np",
     NFSPHYS_TABLE,
-    "INTO nfsphys (mach_id, dir, device, status, allocated, partsize, nfsphys_id) VALUES (%d, '%s', NVL('%s',CHR(0)), %s, %s, %s, %s)",
+    "INTO nfsphys (mach_id, dir, device, status, allocated, partsize, nfsphys_id) VALUES (%d, '%s', NVL('%s', CHR(0)), %s, %s, %s, %s)",
     ganf_fields,
     6,
     0,
@@ -4224,10 +4223,10 @@ struct query Queries2[] = {
     UPDATE,
     "np",
     NFSPHYS_TABLE,
-    "nfsphys SET device = NVL('%s',CHR(0)), status = %s, allocated = %s, partsize = %s",
+    "nfsphys SET device = NVL('%s', CHR(0)), status = %s, allocated = %s, partsize = %s",
     ganf_fields,
     4,
-    "mach_id = %d AND dir = '%s'", 
+    "mach_id = %d AND dir = '%s'",
     2,
     &unfp_validate,
   },
@@ -4263,7 +4262,7 @@ struct query Queries2[] = {
   },
 
   {
-    /* Q_GQOT - GET_QUOTA */ 
+    /* Q_GQOT - GET_QUOTA */
     "get_quota",
     "gqot",
     RETRIEVE,
@@ -4278,7 +4277,7 @@ struct query Queries2[] = {
   },
 
   {
-    /* Q_GQBF - GET_QUOTA_BY_FILESYS */ 
+    /* Q_GQBF - GET_QUOTA_BY_FILESYS */
     "get_quota_by_filesys",
     "gqbf",
     RETRIEVE,
@@ -4338,7 +4337,7 @@ struct query Queries2[] = {
   },
 
   {
-    /* Q_GNFQ - GET_NFS_QUOTAS */ 
+    /* Q_GNFQ - GET_NFS_QUOTAS */
     "get_nfs_quota",
     "gnfq",
     RETRIEVE,
@@ -4353,7 +4352,7 @@ struct query Queries2[] = {
   },
 
   {
-    /* Q_GNQP - GET_NFS_QUOTAS_BY_PARTITION */ 
+    /* Q_GNQP - GET_NFS_QUOTAS_BY_PARTITION */
     "get_nfs_quotas_by_partition",
     "gnqp",
     RETRIEVE,
@@ -4383,7 +4382,7 @@ struct query Queries2[] = {
   },
 
   {
-    /* Q_UNFQ - UPDATE_NFS_QUOTA */ 
+    /* Q_UNFQ - UPDATE_NFS_QUOTA */
     "update_nfs_quota",
     "unfq",
     UPDATE,
@@ -4434,13 +4433,13 @@ struct query Queries2[] = {
     APPEND,
     "z",
     ZEPHYR_TABLE,
-    "INTO zephyr (class, xmt_type, xmt_id, sub_type, sub_id, iws_type, iws_id, iui_type, iui_id) VALUES ('%s','%s',%d,'%s',%d,'%s',%d,'%s',%d)",
+    "INTO zephyr (class, xmt_type, xmt_id, sub_type, sub_id, iws_type, iws_id, iui_type, iui_id) VALUES ('%s', '%s', %d, '%s', %d, '%s', %d, '%s', %d)",
     azcl_fields,
     9,
     0,
     0,
     &azcl_validate,
-  },    
+  },
 
   {
     /* Q_UZCL - UPDATE_ZEPHYR_CLASS */
@@ -4455,7 +4454,7 @@ struct query Queries2[] = {
     "class = '%s'",
     1,
     &uzcl_validate,
-  },    
+  },
 
   {
     /* Q_DZCL - DELETE_ZEPHYR_CLASS */
@@ -4470,10 +4469,10 @@ struct query Queries2[] = {
     "class = '%s'",
     1,
     &dzcl_validate,
-  },    
+  },
 
   {
-    /* Q_GSHA - GET_SERVER_HOST_ACCESS */ 
+    /* Q_GSHA - GET_SERVER_HOST_ACCESS */
     "get_server_host_access",
     "gsha",
     RETRIEVE,
@@ -4494,7 +4493,7 @@ struct query Queries2[] = {
     APPEND,
     "ha",
     HOSTACCESS_TABLE,
-    "INTO hostaccess (mach_id, acl_type, acl_id) VALUES (%d,'%s',%d)",
+    "INTO hostaccess (mach_id, acl_type, acl_id) VALUES (%d, '%s', %d)",
     asha_fields,
     3,
     0,
@@ -4554,7 +4553,7 @@ struct query Queries2[] = {
     APPEND,
     "ss",
     SERVICES_TABLE,
-    "INTO services (name, protocol, port, description) VALUES ('%s','%s',%s,NVL('%s',CHR(0)))",
+    "INTO services (name, protocol, port, description) VALUES ('%s', '%s', %s, NVL('%s', CHR(0)))",
     asvc_fields,
     4,
     (char *)0,
@@ -4578,7 +4577,7 @@ struct query Queries2[] = {
   },
 
   {
-    /* Q_GPCE - GET_PRINTCAP_ENTRY */ 
+    /* Q_GPCE - GET_PRINTCAP_ENTRY */
     "get_printcap_entry",
     "gpce",
     RETRIEVE,
@@ -4599,7 +4598,7 @@ struct query Queries2[] = {
     APPEND,
     "pc",
     PRINTCAP_TABLE,
-    "INTO printcap (name, mach_id, dir, rp, quotaserver, auth, price, comments) VALUES ('%s',%d,'%s','%s',%d,%s,%s,NVL('%s',CHR(0)))",
+    "INTO printcap (name, mach_id, dir, rp, quotaserver, auth, price, comments) VALUES ('%s', %d, '%s', '%s', %d, %s, %s, NVL('%s', CHR(0)))",
     apce_fields,
     8,
     0,
@@ -4674,7 +4673,7 @@ struct query Queries2[] = {
     APPEND,
     "pal",
     PALLADIUM_TABLE,
-    "INTO palladium (name, identifier, mach_id) VALUES ('%s',%s,%d)",
+    "INTO palladium (name, identifier, mach_id) VALUES ('%s', %s, %d)",
     apdm_fields,
     3,
     0,
@@ -4737,7 +4736,7 @@ struct query Queries2[] = {
     (char *)0,
     aali_fields,
     0,
-    "name = '%s' AND type = '%s' AND  trans = '%s'", 
+    "name = '%s' AND type = '%s' AND  trans = '%s'",
     3,
     &dali_validate,
   },
@@ -4834,4 +4833,4 @@ struct query Queries2[] = {
 
 };
 
-int QueryCount2 = (sizeof Queries2 / sizeof (struct query));
+int QueryCount2 = (sizeof(Queries2) / sizeof(struct query));

@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/pobox.pc,v 1.1 1997-01-29 23:19:10 danw Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/pobox.pc,v 1.2 1998-01-05 19:52:50 danw Exp $
  *
  * This generates a list of everyone's poboxes for the mitdir.
  *
@@ -8,6 +8,7 @@
  */
 
 #include <mit-copyright.h>
+#include <errno.h>
 #include <stdio.h>
 #include <moira.h>
 #include <sys/types.h>
@@ -16,103 +17,114 @@
 #include <ctype.h>
 EXEC SQL INCLUDE sqlca;
 
-extern int errno;
 char *whoami = "pobox.gen";
 char *db = "moira/moira";
 
-main(argc, argv)
-int argc;
-char **argv;
+int main(int argc, char **argv)
 {
-    FILE *out = stdout;
-    char *outf = NULL, outft[64];
-    struct stat sb;
-    int flag, i;
-    EXEC SQL BEGIN DECLARE SECTION;
-    char login[9], id[18], string[257];
-    EXEC SQL END DECLARE SECTION;
+  FILE *out = stdout;
+  char *outf = NULL, outft[64];
+  struct stat sb;
+  int flag, i;
+  EXEC SQL BEGIN DECLARE SECTION;
+  char login[9], id[18], string[257];
+  EXEC SQL END DECLARE SECTION;
 
-    EXEC SQL CONNECT :db;
+  EXEC SQL CONNECT :db;
 
-    if (argc == 2) {
-	if (stat(argv[1], &sb) == 0) {
-	    if (ModDiff (&flag, "users", sb.st_mtime))
-	      exit(MR_DATE);
-	    if (flag < 0) {
-		fprintf(stderr, "File %s does not need to be rebuilt.\n",
-			argv[1]);
-		exit(MR_NO_CHANGE);
+  if (argc == 2)
+    {
+      if (stat(argv[1], &sb) == 0)
+	{
+	  if (ModDiff(&flag, "users", sb.st_mtime))
+	    exit(MR_DATE);
+	  if (flag < 0)
+	    {
+	      fprintf(stderr, "File %s does not need to be rebuilt.\n",
+		      argv[1]);
+	      exit(MR_NO_CHANGE);
 	    }
 	}
-	outf = argv[1];
-	sprintf(outft, "%s~", outf);
-	if ((out = fopen(outft, "w")) == NULL) {
-	    fprintf(stderr, "unable to open %s for output\n", outf);
-	    exit(MR_OCONFIG);
-	}
-    } else if (argc != 1) {
-	fprintf(stderr, "usage: %s [outfile]\n", argv[0]);
-	exit(MR_ARGS);
-    } else {
-	outf = NULL;
-    }
-
-    /* The following is declarative, not executed,
-     * and so is dependent on where it is in the file,
-     * not in the order of execution of statements.
-     */
-    EXEC SQL WHENEVER SQLERROR GOTO sqlerr;
-
-    EXEC SQL DECLARE x CURSOR FOR SELECT 
-      clearid, login
-	FROM users WHERE status != 3 and potype='POP';
-    EXEC SQL OPEN x;
-    while (1) {
-	EXEC SQL FETCH x INTO :id, :login;
-	if (sqlca.sqlcode != 0) break;
-	strtrim(login);
-	strtrim(id);
-	if (isdigit(id[0]))
-	  fprintf(out, "%s %s@MIT.EDU\n", id, login);
-    }
-
-    EXEC SQL CLOSE x;
-
-    EXEC SQL DECLARE y CURSOR FOR SELECT 
-      u.clearid, s.string
-	FROM users u, strings s
-	WHERE u.status != 3 and u.potype='SMTP' and u.box_id = s.string_id;
-    EXEC SQL OPEN y;
-    while (1) {
-	EXEC SQL FETCH y INTO :id, :string;
-	if (sqlca.sqlcode != 0) break;
-	strtrim(string);
-	strtrim(id);
-	if (isdigit(id[0])) {
-	    if ((i = strlen(string)) > 7 &&
-		!strcasecmp(".local", string + i - 6)) {
-		string[i-6] = 0;
-		fprintf(out, "%s %s.mit.edu\n", id, string);
-	    } else if ( !strchr(string, '@') ) {
-	      fprintf(out, "%s %s@mit.edu\n", id, string);
-	    } else
-	      fprintf(out, "%s %s\n", id, string);
+      outf = argv[1];
+      sprintf(outft, "%s~", outf);
+      if (!(out = fopen(outft, "w")))
+	{
+	  fprintf(stderr, "unable to open %s for output\n", outf);
+	  exit(MR_OCONFIG);
 	}
     }
-
-    EXEC SQL CLOSE y;
-
-    EXEC SQL COMMIT;
-
-    if (fclose(out)) {
-	perror("close failed");
-	exit(MR_CCONFIG);
+  else if (argc != 1)
+    {
+      fprintf(stderr, "usage: %s [outfile]\n", argv[0]);
+      exit(MR_ARGS);
     }
-    if (outf)
-      fix_file(outf);
-    exit(MR_SUCCESS);
+  else
+    outf = NULL;
 
- sqlerr:
-    db_error(sqlca.sqlcode);
-    exit(MR_DBMS_ERR);
+  /* The following is declarative, not executed,
+   * and so is dependent on where it is in the file,
+   * not in the order of execution of statements.
+   */
+  EXEC SQL WHENEVER SQLERROR GOTO sqlerr;
+
+  EXEC SQL DECLARE x CURSOR FOR SELECT
+    clearid, login
+    FROM users WHERE status != 3 and potype = 'POP';
+  EXEC SQL OPEN x;
+  while (1)
+    {
+      EXEC SQL FETCH x INTO :id, :login;
+      if (sqlca.sqlcode)
+	break;
+      strtrim(login);
+      strtrim(id);
+      if (isdigit(id[0]))
+	fprintf(out, "%s %s@MIT.EDU\n", id, login);
+    }
+
+  EXEC SQL CLOSE x;
+
+  EXEC SQL DECLARE y CURSOR FOR SELECT
+    u.clearid, s.string
+    FROM users u, strings s
+    WHERE u.status != 3 and u.potype = 'SMTP' and u.box_id = s.string_id;
+  EXEC SQL OPEN y;
+  while (1)
+    {
+      EXEC SQL FETCH y INTO :id, :string;
+      if (sqlca.sqlcode)
+	break;
+      strtrim(string);
+      strtrim(id);
+      if (isdigit(id[0]))
+	{
+	  if ((i = strlen(string)) > 7 &&
+	      !strcasecmp(".local", string + i - 6))
+	    {
+	      string[i - 6] = '\0';
+	      fprintf(out, "%s %s.mit.edu\n", id, string);
+	    }
+	  else if (!strchr(string, '@'))
+	    fprintf(out, "%s %s@mit.edu\n", id, string);
+	  else
+	    fprintf(out, "%s %s\n", id, string);
+	}
+    }
+
+  EXEC SQL CLOSE y;
+
+  EXEC SQL COMMIT;
+
+  if (fclose(out))
+    {
+      perror("close failed");
+      exit(MR_CCONFIG);
+    }
+  if (outf)
+    fix_file(outf);
+  exit(MR_SUCCESS);
+
+sqlerr:
+  db_error(sqlca.sqlcode);
+  exit(MR_DBMS_ERR);
 }

@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/dump_db.pc,v $
  *	$Author: danw $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/dump_db.pc,v 1.2 1997-02-04 22:53:43 danw Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/dump_db.pc,v 1.3 1998-01-05 19:51:34 danw Exp $
  *
  *	(c) Copyright 1988 by the Massachusetts Institute of Technology.
  *	For copying and distribution information, please see the file
@@ -9,11 +9,11 @@
  *
  * 	This program dumps the SMS database to a series of output files
  * which can be later read back into SMS in the event of a crash.
- * 
+ *
  */
 
 #ifndef lint
-static char *rcsid_dump_db_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/dump_db.pc,v 1.2 1997-02-04 22:53:43 danw Exp $";
+static char *rcsid_dump_db_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/dump_db.pc,v 1.3 1998-01-05 19:51:34 danw Exp $";
 #endif lint
 
 #include <stdio.h>
@@ -33,125 +33,131 @@ EXEC SQL INCLUDE sqlca;
 FILE *open_file();
 
 EXEC SQL BEGIN DECLARE SECTION;
-char *db="moira";
+char *db = "moira";
 EXEC SQL END DECLARE SECTION;
 
-main(argc, argv)
-    int argc;
-    char **argv;
+int main(int argc, char **argv)
 {
-    char *prefix;
-    register int i;
-    
-    if (argc != 2) {
-	fprintf(stderr, "Usage: %s prefix\n", argv[0]);
-	exit(1);
+  char *prefix;
+  register int i;
+
+  if (argc != 2)
+    {
+      fprintf(stderr, "Usage: %s prefix\n", argv[0]);
+      exit(1);
     }
-    prefix = argv[1];
+  prefix = argv[1];
 
-    EXEC SQL CONNECT :db IDENTIFIED BY :db;
+  EXEC SQL CONNECT :db IDENTIFIED BY :db;
 
-    do_backups(prefix);
+  do_backups(prefix);
 
-    EXEC SQL COMMIT;
-    exit(0);
+  EXEC SQL COMMIT;
+  exit(0);
 }
 
-dump_int(f, n)
-    FILE *f;
-    int n;
+int dump_int(FILE *f, int n)
 {
-    char buf[1024];
-    (void) sprintf(buf, "%d", n);
-    dump_str(f, buf);
+  char buf[1024];
+  sprintf(buf, "%d", n);
+  dump_str(f, buf);
 }
 
-wpunt()
+int wpunt(void)
 {
-    punt("can't write backup file");
+  punt("can't write backup file");
 }
 
-dump_str(f, str)
-    register FILE *f;
-    register char *str;
+int dump_str(register FILE *f, register char *str)
 {
-    register char *ibp;
-    register int c;		/* PCC doesn't put chars in registers.. */
-    register int t;
+  register char *ibp;
+  register int c;		/* PCC doesn't put chars in registers.. */
+  register int t;
 
-    for (ibp = str; c = (unsigned char) *ibp; ibp++) {
-	if(c<32 || c>126 || c==SEP_CHAR || c=='\\') {
-	    if (putc1('\\', f) < 0) wpunt();	    
-	    t = ((c>>6)&7) + '0';
-	    if (putc1(t,f) < 0) wpunt();
-	    t = ((c>>3)&7) + '0';
-	    if (putc1(t,f) < 0) wpunt();
-	    t = (c&7) + '0';
-	    if (putc1(t,f) < 0) wpunt();
-	} else {
-	    if (putc1(c, f) < 0) wpunt();
+  for (ibp = str; c = (unsigned char) *ibp; ibp++)
+    {
+      if (c < 32 || c > 126 || c == SEP_CHAR || c == '\\')
+	{
+	  if (putc1('\\', f) < 0)
+	    wpunt();
+	  t = ((c >> 6) & 7) + '0';
+	  if (putc1(t, f) < 0)
+	    wpunt();
+	  t = ((c >> 3) & 7) + '0';
+	  if (putc1(t, f) < 0)
+	    wpunt();
+	  t = (c & 7) + '0';
+	  if (putc1(t, f) < 0)
+	    wpunt();
+	}
+      else
+	{
+	  if (putc1(c, f) < 0)
+	    wpunt();
 	}
     }
 }
 
-safe_close(stream)
-	FILE *stream;
+int safe_close(FILE *stream)
 {
-	if (fflush(stream) == EOF)
-		punt("Unable to fflush");
-	if (fsync(fileno(stream)) != 0) 
-		punt("Unable to fsync");
-	(void) fclose(stream);
-}	
+  if (fflush(stream) == EOF)
+    punt("Unable to fflush");
+  if (fsync(fileno(stream)) != 0)
+    punt("Unable to fsync");
+  fclose(stream);
+}
 
-FILE *open_file(prefix, suffix)
-    char *prefix, *suffix;
+FILE *open_file(char *prefix, char *suffix)
 {
-    char name[BUFSIZ];
-    int fd;
-    FILE *f;
-    
-    (void) strcpy(name, prefix);
-    (void) strcat(name, suffix);
+  char name[BUFSIZ];
+  int fd;
+  FILE *f;
 
-    fd = open(name, O_CREAT|O_WRONLY|O_EXCL, 0644);
-    if (fd < 0) {
-	punt(name);
+  strcpy(name, prefix);
+  strcat(name, suffix);
+
+  fd = open(name, O_CREAT|O_WRONLY|O_EXCL, 0644);
+  if (fd < 0)
+    punt(name);
+  f = fdopen(fd, "w");
+  if (!f)
+    {
+      fprintf(stderr, "fdopen of ");
+      punt(name);
     }
-    f = fdopen(fd, "w");
-    if (f == NULL) {
-	fprintf(stderr, "fdopen of ");
-	punt(name);
-    }
-    fprintf(stderr, "Working on %s\n", name);
-    return(f);
+  fprintf(stderr, "Working on %s\n", name);
+  return f;
 }
 
 
 /*
  * Trim whitespace off both ends of a string.
  */
-char *strtrim(save)
-    register char *save;
+char *strtrim(register char *save)
 {
-    register char *t, *s;
+  register char *t, *s;
 
-    s = save;
-    while (isspace(*s)) s++;
-    /* skip to end of string */
-    if (*s == '\0') {
-	*save = '\0';
-	return(save);
+  s = save;
+  while (isspace(*s))
+    s++;
+  /* skip to end of string */
+  if (*s == '\0')
+    {
+      *save = '\0';
+      return save;
     }
 
-    for (t = s; *t; t++) continue; 
-    while (t > s) {
-	--t;
-	if (!isspace(*t)) {
-	    t++;
-	    break;
+  for (t = s; *t; t++)
+    continue;
+  while (t > s)
+    {
+      --t;
+      if (!isspace(*t))
+	{
+	  t++;
+	  break;
 	}
     }
-    *t = '\0';
-    return s;
+  *t = '\0';
+  return s;
 }

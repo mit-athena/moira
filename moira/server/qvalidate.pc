@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qvalidate.pc,v $
  *	$Author: danw $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qvalidate.pc,v 2.4 1998-01-05 14:59:13 danw Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qvalidate.pc,v 2.5 1998-01-05 19:53:48 danw Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_qsupport_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qvalidate.pc,v 2.4 1998-01-05 14:59:13 danw Exp $";
+static char *rcsid_qsupport_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qvalidate.pc,v 2.5 1998-01-05 19:53:48 danw Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -41,134 +41,137 @@ int lock_table(struct valobj *vo);
 int readlock_table(struct valobj *vo);
 int convert_wildcards_uppercase(char *arg);
 
-extern SQLDA *sqlald(int,int,int);
+extern SQLDA *sqlald(int, int, int);
 
 EXEC SQL WHENEVER SQLERROR DO dbmserr();
 
 /* Validation Routines */
 
-int validate_row(q, argv, v)
-    register struct query *q;
-    char *argv[];
-    register struct validate *v;
+int validate_row(register struct query *q, char *argv[], register struct validate *v)
 {
-    EXEC SQL BEGIN DECLARE SECTION;
-    char qual[128];
-    int rowcount;
-    EXEC SQL END DECLARE SECTION;
+  EXEC SQL BEGIN DECLARE SECTION;
+  char qual[128];
+  int rowcount;
+  EXEC SQL END DECLARE SECTION;
 
-    /* build where clause */
-    build_qual(v->qual, v->argc, argv, qual);
+  /* build where clause */
+  build_qual(v->qual, v->argc, argv, qual);
 
-    if (log_flags & LOG_VALID)
-	/* tell the logfile what we're doing */
-	com_err(whoami, 0, "validating row: %s", qual);
+  if (log_flags & LOG_VALID)
+    /* tell the logfile what we're doing */
+    com_err(whoami, 0, "validating row: %s", qual);
 
-    /* look for the record */
-    sprintf(stmt_buf,"SELECT COUNT (*) FROM %s WHERE %s",
-	    table_name[q->rtable],qual);
-    dosql(sqlbuffer);
-    if (dbms_errno) return(mr_errcode);
+  /* look for the record */
+  sprintf(stmt_buf, "SELECT COUNT (*) FROM %s WHERE %s",
+	  table_name[q->rtable], qual);
+  dosql(sqlbuffer);
+  if (dbms_errno)
+    return mr_errcode;
 
-    rowcount = atoi(sqlbuffer[0]);
-    if (rowcount == 0) return(MR_NO_MATCH);
-    if (rowcount > 1) return(MR_NOT_UNIQUE);
-    return(MR_EXISTS);
+  rowcount = atoi(sqlbuffer[0]);
+  if (rowcount == 0)
+    return MR_NO_MATCH;
+  if (rowcount > 1)
+    return MR_NOT_UNIQUE;
+  return MR_EXISTS;
 }
 
-int validate_fields(q, argv, vo, n)
-    struct query *q;
-    register char *argv[];
-    register struct valobj *vo;
-    register int n;
+int validate_fields(struct query *q, register char *argv[],
+		    register struct valobj *vo, register int n)
 {
-    register int status;
+  register int status;
 
-    while (--n >= 0) {
-	switch (vo->type) {
+  while (--n >= 0)
+    {
+      switch (vo->type)
+	{
 	case V_NAME:
-	    if (log_flags & LOG_VALID)
-		com_err(whoami, 0, "validating %s in %s: %s",
-		    vo->namefield, table_name[vo->table], argv[vo->index]);
-	    status = validate_name(argv, vo);
-	    break;
+	  if (log_flags & LOG_VALID)
+	    {
+	      com_err(whoami, 0, "validating %s in %s: %s",
+		      vo->namefield, table_name[vo->table], argv[vo->index]);
+	    }
+	  status = validate_name(argv, vo);
+	  break;
 
 	case V_ID:
-	    if (log_flags & LOG_VALID)
-		com_err(whoami, 0, "validating %s in %s: %s",
-		    vo->idfield, table_name[vo->table], argv[vo->index]);
-	    status = validate_id(q, argv, vo);
-	    break;
-
-	    /*
-	case V_DATE:
-	    if (log_flags & LOG_VALID)
-		com_err(whoami, 0, "validating date: %s", argv[vo->index]);
-	    status = validate_date(argv, vo);
-	    break;
-	    */
+	  if (log_flags & LOG_VALID)
+	    {
+	      com_err(whoami, 0, "validating %s in %s: %s",
+		      vo->idfield, table_name[vo->table], argv[vo->index]);
+	    }
+	  status = validate_id(q, argv, vo);
+	  break;
 
 	case V_TYPE:
-	    if (log_flags & LOG_VALID)
-		com_err(whoami, 0, "validating %s type: %s",
-		    table_name[vo->table], argv[vo->index]);
-	    status = validate_type(argv, vo);
-	    break;
+	  if (log_flags & LOG_VALID)
+	    {
+	      com_err(whoami, 0, "validating %s type: %s",
+		      table_name[vo->table], argv[vo->index]);
+	    }
+	  status = validate_type(argv, vo);
+	  break;
 
 	case V_TYPEDATA:
-	    if (log_flags & LOG_VALID)
-		com_err(whoami, 0, "validating typed data (%s): %s",
-		    argv[vo->index - 1], argv[vo->index]);
-	    status = validate_typedata(q, argv, vo);
-	    break;
+	  if (log_flags & LOG_VALID)
+	    {
+	      com_err(whoami, 0, "validating typed data (%s): %s",
+		      argv[vo->index - 1], argv[vo->index]);
+	    }
+	  status = validate_typedata(q, argv, vo);
+	  break;
 
 	case V_RENAME:
-	    if (log_flags & LOG_VALID)
-	        com_err(whoami, 0, "validating rename %s in %s",
-			argv[vo->index], table_name[vo->table]);
-	    status = validate_rename(argv, vo);
-	    break;
+	  if (log_flags & LOG_VALID)
+	    {
+	      com_err(whoami, 0, "validating rename %s in %s",
+		      argv[vo->index], table_name[vo->table]);
+	    }
+	  status = validate_rename(argv, vo);
+	  break;
 
 	case V_CHAR:
-	    if (log_flags & LOG_VALID)
-	      com_err(whoami, 0, "validating chars: %s", argv[vo->index]);
-	    status = validate_chars(argv, vo);
-	    break;
+	  if (log_flags & LOG_VALID)
+	    com_err(whoami, 0, "validating chars: %s", argv[vo->index]);
+	  status = validate_chars(argv, vo);
+	  break;
 
 	case V_LEN:
-	    if (log_flags & LOG_VALID)
-	      com_err(whoami, 0, "validating length: %s", argv[vo->index]);
-	    status = validate_len(argv, vo);
-	    break;
+	  if (log_flags & LOG_VALID)
+	    com_err(whoami, 0, "validating length: %s", argv[vo->index]);
+	  status = validate_len(argv, vo);
+	  break;
 
 	case V_SORT:
-	    status = MR_EXISTS;
-	    break;
+	  status = MR_EXISTS;
+	  break;
 
 	case V_LOCK:
-	    status = lock_table(vo);
-	    break;
+	  status = lock_table(vo);
+	  break;
 
         case V_RLOCK:
-            status = readlock_table(vo);
-            break;
+	  status = readlock_table(vo);
+	  break;
 
         case V_WILD:
-	    status = convert_wildcards(argv[vo->index]);
-	    break;
+	  status = convert_wildcards(argv[vo->index]);
+	  break;
 
 	case V_UPWILD:
-	    status = convert_wildcards_uppercase(argv[vo->index]);
-	    break;
+	  status = convert_wildcards_uppercase(argv[vo->index]);
+	  break;
 
 	}
 
-	if (status != MR_EXISTS) return(status);
-	vo++;
+      if (status != MR_EXISTS)
+	return status;
+      vo++;
     }
 
-    if (dbms_errno) return(mr_errcode);
-    return(MR_SUCCESS);
+  if (dbms_errno)
+    return mr_errcode;
+  return MR_SUCCESS;
 }
 
 
@@ -177,381 +180,407 @@ int validate_fields(q, argv, vo, n)
  * ", *, ?, \, [ and ].
  */
 static int illegalchars[] = {
-    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, /* ^@ - ^O */
-    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, /* ^P - ^_ */
-    0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, /* SPACE - / */
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, /* 0 - ? */
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, /* : - O */
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, /* P - _ */
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, /* ` - o */
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, /* p - ^? */
-    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, /* ^@ - ^O */
+  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, /* ^P - ^_ */
+  0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, /* SPACE - / */
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, /* 0 - ? */
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, /* : - O */
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, /* P - _ */
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, /* ` - o */
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, /* p - ^? */
+  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
 };
 
-int validate_chars(argv, vo)
-    char *argv[];
-    register struct valobj *vo;
+int validate_chars(char *argv[], register struct valobj *vo)
 {
-    char *s=argv[vo->index];
-    int arg;
-    EXEC SQL BEGIN DECLARE SECTION;
-    int len;
-    char *tname, *cname;
-    EXEC SQL END DECLARE SECTION;
+  char *s = argv[vo->index];
+  int arg;
+  EXEC SQL BEGIN DECLARE SECTION;
+  int len;
+  char *tname, *cname;
+  EXEC SQL END DECLARE SECTION;
 
-
-    /* check for bad characters */
-    while (*s)
+  /* check for bad characters */
+  while (*s)
+    {
       if (illegalchars[*s++])
-	return(MR_BAD_CHAR);
+	return MR_BAD_CHAR;
+    }
 
-    /* check for length */
-    tname = table_name[vo->table];
-    cname = vo->namefield;
-    EXEC SQL SELECT data_length INTO :len FROM user_tab_columns
-      WHERE table_name=UPPER(:tname) AND column_name=UPPER(:cname);
+  /* check for length */
+  tname = table_name[vo->table];
+  cname = vo->namefield;
+  EXEC SQL SELECT data_length INTO :len FROM user_tab_columns
+    WHERE table_name = UPPER(:tname) AND column_name = UPPER(:cname);
 
-    if((strlen(argv[vo->index]) > len) &&
-       strcmp(argv[vo->index], UNIQUE_LOGIN)) /* kludge... sigh */
-      argv[vo->index][len]='\0'; /* truncate */
+  if ((strlen(argv[vo->index]) > len) &&
+      strcmp(argv[vo->index], UNIQUE_LOGIN)) /* kludge... sigh */
+    argv[vo->index][len] = '\0'; /* truncate */
 
-    return MR_EXISTS;
+  return MR_EXISTS;
 }
 
 
-int validate_id(q, argv, vo)
-    struct query *q;
-    char *argv[];
-    register struct valobj *vo;
+int validate_id(struct query *q, char *argv[], register struct valobj *vo)
 {
-    EXEC SQL BEGIN DECLARE SECTION;
-    char *name, *namefield, *idfield;
-    int id, rowcount, tbl;
-    EXEC SQL END DECLARE SECTION;
-    int status;
-    register char *c;
+  EXEC SQL BEGIN DECLARE SECTION;
+  char *name, *namefield, *idfield;
+  int id, rowcount, tbl;
+  EXEC SQL END DECLARE SECTION;
+  int status;
+  register char *c;
 
-    name = argv[vo->index];
-    tbl = vo->table;
-    namefield = vo->namefield;
-    idfield = vo->idfield;
+  name = argv[vo->index];
+  tbl = vo->table;
+  namefield = vo->namefield;
+  idfield = vo->idfield;
 
-    if ((tbl==USERS_TABLE && !strcmp(namefield, "login")) ||
-	tbl==MACHINE_TABLE || tbl==SUBNET_TABLE || tbl==FILESYS_TABLE ||
-	tbl==LIST_TABLE || tbl==CLUSTER_TABLE || tbl==STRINGS_TABLE) {
-      if (tbl==MACHINE_TABLE || tbl==SUBNET_TABLE)
-	for (c = name; *c; c++) if (islower(*c)) *c = toupper(*c);
+  if ((tbl == USERS_TABLE && !strcmp(namefield, "login")) ||
+      tbl == MACHINE_TABLE || tbl == SUBNET_TABLE || tbl == FILESYS_TABLE ||
+      tbl == LIST_TABLE || tbl == CLUSTER_TABLE || tbl == STRINGS_TABLE)
+    {
+      if (tbl == MACHINE_TABLE || tbl == SUBNET_TABLE)
+	{
+	  for (c = name; *c; c++)
+	    {
+	      if (islower(*c))
+		*c = toupper(*c);
+	    }
+	}
       status = name_to_id(name, tbl, &id);
-      if (status == 0) {
-	*(int *)argv[vo->index] = id;
-	return(MR_EXISTS);
-      } else if (status == MR_NO_MATCH && tbl==STRINGS_TABLE &&
-		 (q->type == APPEND || q->type == UPDATE)) {
-	id=add_string(name);
-	cache_entry(name, STRINGS_TABLE, id);
-	*(int *)argv[vo->index] = id;
-	return(MR_EXISTS);
-      } else if (status == MR_NO_MATCH || status == MR_NOT_UNIQUE)
-	return(vo->error);
+      if (status == 0)
+	{
+	  *(int *)argv[vo->index] = id;
+	  return MR_EXISTS;
+	}
+      else if (status == MR_NO_MATCH && tbl == STRINGS_TABLE &&
+	       (q->type == APPEND || q->type == UPDATE))
+	{
+	  id = add_string(name);
+	  cache_entry(name, STRINGS_TABLE, id);
+	  *(int *)argv[vo->index] = id;
+	  return MR_EXISTS;
+	}
+      else if (status == MR_NO_MATCH || status == MR_NOT_UNIQUE)
+	return vo->error;
       else
-	return(status);
-    } else {
+	return status;
+    }
+  else
+    {
       /* else, it's `dubu', which uses unix_uid from users */
       EXEC SQL SELECT COUNT(*) INTO :rowcount FROM users
 	WHERE unix_uid = :name;
-      if (dbms_errno) return(mr_errcode);
-      if (rowcount != 1) return(vo->error);
+      if (dbms_errno)
+	return mr_errcode;
+      if (rowcount != 1)
+	return vo->error;
       EXEC SQL SELECT users_id INTO :id FROM users
 	WHERE unix_uid = :name;
       *(int *)argv[vo->index] = id;
-      return(MR_EXISTS);
+      return MR_EXISTS;
     }
 }
 
-int validate_name(argv, vo)
-    char *argv[];
-    register struct valobj *vo;
+int validate_name(char *argv[], register struct valobj *vo)
 {
-    char *name, *namefield;
-    register char *c;
+  char *name, *namefield;
+  register char *c;
 
-    name = argv[vo->index];
-    namefield = vo->namefield;
-    if (vo->table==SERVERS_TABLE && !strcmp(namefield, "name")) {
-	for (c = name; *c; c++)
+  name = argv[vo->index];
+  namefield = vo->namefield;
+  if (vo->table == SERVERS_TABLE && !strcmp(namefield, "name"))
+    {
+      for (c = name; *c; c++)
+	{
 	  if (islower(*c))
 	    *c = toupper(*c);
+	}
     }
-    sprintf(stmt_buf,"SELECT DISTINCT COUNT(*) FROM %s WHERE %s.%s = '%s'",
-	    table_name[vo->table],table_name[vo->table],namefield,name);
-    dosql(sqlbuffer);
+  sprintf(stmt_buf, "SELECT DISTINCT COUNT(*) FROM %s WHERE %s.%s = '%s'",
+	  table_name[vo->table], table_name[vo->table], namefield, name);
+  dosql(sqlbuffer);
 
-    if (dbms_errno) return(mr_errcode);
-    return ((atoi(sqlbuffer[0]) == 1) ? MR_EXISTS : vo->error);
+  if (dbms_errno)
+    return mr_errcode;
+  return (atoi(sqlbuffer[0]) == 1) ? MR_EXISTS : vo->error;
 }
 
-/*
-validate_date(argv, vo)
-    char *argv[];
-    struct valobj *vo;
+int validate_rename(char *argv[], struct valobj *vo)
 {
-    EXEC SQL BEGIN DECLARE SECTION;
-    char *idate;
-    double dd;
-    int errorno;
-    EXEC SQL END DECLARE SECTION;
+  EXEC SQL BEGIN DECLARE SECTION;
+  char *name, *namefield, *idfield;
+  int id;
+  EXEC SQL END DECLARE SECTION;
+  int status;
+  register char *c;
 
-    idate = argv[vo->index];
-    EXEC SQL SELECT interval('years',date(:idate)-date('today')) INTO :dd;
-    if (sqlca.sqlcode != 0 || dd > 5.0) return(MR_DATE);
-    return(MR_EXISTS);
-}
-*/
-
-int validate_rename(argv, vo)
-     char *argv[];
-     struct valobj *vo;
-{
-    EXEC SQL BEGIN DECLARE SECTION;
-    char *name, *namefield, *idfield;
-    int id;
-    EXEC SQL END DECLARE SECTION;
-    int status;
-    register char *c;
-
-    status = validate_chars(argv, vo);
-    if(status != MR_EXISTS) return status;
-    name=argv[vo->index];
-    /* minor kludge to upcasify machine names */
-    if (vo->table == MACHINE_TABLE)
-	for (c = name; *c; c++) if (islower(*c)) *c = toupper(*c);
-    namefield = vo->namefield;
-    idfield = vo->idfield;
-    id = -1;
-    if (idfield == 0) {
-	if (!strcmp(argv[vo->index], argv[vo->index - 1]))
-	  return(MR_EXISTS);
-	sprintf(stmt_buf,"SELECT %s FROM %s WHERE %s = '%s'",
-		namefield,table_name[vo->table],namefield,name);
-	dosql(sqlbuffer);
-
-	if (dbms_errno) return(mr_errcode);
-	if (sqlca.sqlcode==SQL_NO_MATCH)
-	  return(MR_EXISTS); /* how's _that_ for intuitive? */
-	else
-	  return(vo->error);
+  status = validate_chars(argv, vo);
+  if (status != MR_EXISTS)
+    return status;
+  name = argv[vo->index];
+  /* minor kludge to upcasify machine names */
+  if (vo->table == MACHINE_TABLE)
+    {
+      for (c = name; *c; c++)
+	{
+	  if (islower(*c))
+	    *c = toupper(*c);
+	}
     }
-    status = name_to_id(name, vo->table, &id);
-    if (status == MR_NO_MATCH || id == *(int *)argv[vo->index - 1])
-      return(MR_EXISTS);
-    else
-      return(vo->error);
+  namefield = vo->namefield;
+  idfield = vo->idfield;
+  id = -1;
+  if (idfield == 0)
+    {
+      if (!strcmp(argv[vo->index], argv[vo->index - 1]))
+	return MR_EXISTS;
+      sprintf(stmt_buf, "SELECT %s FROM %s WHERE %s = '%s'",
+	      namefield, table_name[vo->table], namefield, name);
+      dosql(sqlbuffer);
+
+      if (dbms_errno)
+	return mr_errcode;
+      if (sqlca.sqlcode == SQL_NO_MATCH)
+	return MR_EXISTS; /* how's _that_ for intuitive? */
+      else
+	return vo->error;
+    }
+  status = name_to_id(name, vo->table, &id);
+  if (status == MR_NO_MATCH || id == *(int *)argv[vo->index - 1])
+    return MR_EXISTS;
+  else
+    return vo->error;
 }
 
 
-int validate_type(argv, vo)
-    char *argv[];
-    register struct valobj *vo;
+int validate_type(char *argv[], register struct valobj *vo)
 {
-    EXEC SQL BEGIN DECLARE SECTION;
-    char *typename;
-    char *val;
-    int cnt;
-    EXEC SQL END DECLARE SECTION;
-    register char *c;
+  EXEC SQL BEGIN DECLARE SECTION;
+  char *typename;
+  char *val;
+  int cnt;
+  EXEC SQL END DECLARE SECTION;
+  register char *c;
 
-    typename = vo->namefield;
-    c = val = argv[vo->index];
-    while (*c) {
-	if (illegalchars[*c++])
-	  return(MR_BAD_CHAR);
+  typename = vo->namefield;
+  c = val = argv[vo->index];
+  while (*c)
+    {
+      if (illegalchars[*c++])
+	return MR_BAD_CHAR;
     }
 
-    /* uppercase type fields */
-    for (c = val; *c; c++) if (islower(*c)) *c = toupper(*c);
+  /* uppercase type fields */
+  for (c = val; *c; c++)
+    {
+      if (islower(*c))
+	*c = toupper(*c);
+    }
 
-    EXEC SQL SELECT COUNT(trans) INTO :cnt FROM alias
-      WHERE name = :typename AND type='TYPE' AND trans = :val;
-    if (dbms_errno) return(mr_errcode);
-    return (cnt ? MR_EXISTS : vo->error);
+  EXEC SQL SELECT COUNT(trans) INTO :cnt FROM alias
+    WHERE name = :typename AND type = 'TYPE' AND trans = :val;
+  if (dbms_errno)
+    return mr_errcode;
+  return cnt ? MR_EXISTS : vo->error;
 }
 
 /* validate member or type-specific data field */
 
-int validate_typedata(q, argv, vo)
-    register struct query *q;
-    register char *argv[];
-    register struct valobj *vo;
+int validate_typedata(register struct query *q, register char *argv[], register struct valobj *vo)
 {
-    EXEC SQL BEGIN DECLARE SECTION;
-    char *name;
-    char *field_type;
-    char data_type[129];
-    int id;
-    EXEC SQL END DECLARE SECTION;
-    int status;
-    register char *c;
+  EXEC SQL BEGIN DECLARE SECTION;
+  char *name;
+  char *field_type;
+  char data_type[129];
+  int id;
+  EXEC SQL END DECLARE SECTION;
+  int status;
+  register char *c;
 
-    /* get named object */
-    name = argv[vo->index];
+  /* get named object */
+  name = argv[vo->index];
 
-    /* get field type string (known to be at index-1) */
-    field_type = argv[vo->index-1];
+  /* get field type string (known to be at index-1) */
+  field_type = argv[vo->index - 1];
 
-    /* get corresponding data type associated with field type name */
-    EXEC SQL SELECT trans INTO :data_type FROM alias
-      WHERE name = :field_type AND type='TYPEDATA';
-    if (dbms_errno) return(mr_errcode);
-    if (sqlca.sqlerrd[2] != 1) return(MR_TYPE);
+  /* get corresponding data type associated with field type name */
+  EXEC SQL SELECT trans INTO :data_type FROM alias
+    WHERE name = :field_type AND type = 'TYPEDATA';
+  if (dbms_errno)
+    return mr_errcode;
+  if (sqlca.sqlerrd[2] != 1)
+    return MR_TYPE;
 
-    /* now retrieve the record id corresponding to the named object */
-    if (strchr(data_type, ' '))
-	*strchr(data_type, ' ') = 0;
-    if (!strcmp(data_type, "user")) {
-	/* USER */
-	if (strchr(name, '@'))
-	  return(MR_USER);
-	status = name_to_id(name, USERS_TABLE, &id);
-	if (status && (status == MR_NO_MATCH || status == MR_NOT_UNIQUE))
-	  return(MR_USER);
-	if (status) return(status);
-    } else if (!strcmp(data_type, "list")) {
-	/* LIST */
-	status = name_to_id(name, LIST_TABLE, &id);
-	if (status && status == MR_NOT_UNIQUE)
-	  return(MR_LIST);
-	if (status == MR_NO_MATCH) {
-	    /* if idfield is non-zero, then if argv[0] matches the string
-	     * that we're trying to resolve, we should get the value of
-	     * numvalues.[idfield] for the id.
-	     */
-	    if (vo->idfield && !strcmp(argv[0], argv[vo->index])) {
-		set_next_object_id(q->validate->object_id, q->rtable, 0);
-		name = vo->idfield;
-		EXEC SQL SELECT value INTO :id FROM numvalues
-		  WHERE name = :name;
-		if (sqlca.sqlerrd[2] != 1) return(MR_LIST);
-	    } else
-	      return(MR_LIST);
-	} else if (status) return(status);
-    } else if (!strcmp(data_type, "machine")) {
-	/* MACHINE */
-	for (c = name; *c; c++) if (islower(*c)) *c = toupper(*c);
-	status = name_to_id(name, MACHINE_TABLE, &id);
-	if (status && (status == MR_NO_MATCH || status == MR_NOT_UNIQUE))
-	  return(MR_MACHINE);
-	if (status) return(status);
-    } else if (!strcmp(data_type, "string")) {
-	/* STRING */
-	status = name_to_id(name, STRINGS_TABLE, &id);
-	if (status && status == MR_NOT_UNIQUE)
-	  return(MR_STRING);
-	if (status == MR_NO_MATCH) {
-	    if (q->type != APPEND && q->type != UPDATE) return(MR_STRING);
-	    id=add_string(name);
-	    cache_entry(name, STRINGS_TABLE, id);
-	} else if (status) return(status);
-    } else if (!strcmp(data_type, "none")) {
-	id = 0;
-    } else {
-	return(MR_TYPE);
+  /* now retrieve the record id corresponding to the named object */
+  if (strchr(data_type, ' '))
+    *strchr(data_type, ' ') = '\0';
+  if (!strcmp(data_type, "user"))
+    {
+      /* USER */
+      if (strchr(name, '@'))
+	return MR_USER;
+      status = name_to_id(name, USERS_TABLE, &id);
+      if (status && (status == MR_NO_MATCH || status == MR_NOT_UNIQUE))
+	return MR_USER;
+      if (status)
+	return status;
     }
+  else if (!strcmp(data_type, "list"))
+    {
+      /* LIST */
+      status = name_to_id(name, LIST_TABLE, &id);
+      if (status && status == MR_NOT_UNIQUE)
+	return MR_LIST;
+      if (status == MR_NO_MATCH)
+	{
+	  /* if idfield is non-zero, then if argv[0] matches the string
+	   * that we're trying to resolve, we should get the value of
+	   * numvalues.[idfield] for the id.
+	   */
+	  if (vo->idfield && !strcmp(argv[0], argv[vo->index]))
+	    {
+	      set_next_object_id(q->validate->object_id, q->rtable, 0);
+	      name = vo->idfield;
+	      EXEC SQL SELECT value INTO :id FROM numvalues
+		WHERE name = :name;
+	      if (sqlca.sqlerrd[2] != 1)
+		return MR_LIST;
+	    }
+	  else
+	    return MR_LIST;
+	}
+      else if (status)
+	return status;
+    }
+  else if (!strcmp(data_type, "machine"))
+    {
+      /* MACHINE */
+      for (c = name; *c; c++)
+	{
+	  if (islower(*c))
+	    *c = toupper(*c);
+	}
+      status = name_to_id(name, MACHINE_TABLE, &id);
+      if (status && (status == MR_NO_MATCH || status == MR_NOT_UNIQUE))
+	return MR_MACHINE;
+      if (status)
+	return status;
+    }
+  else if (!strcmp(data_type, "string"))
+    {
+      /* STRING */
+      status = name_to_id(name, STRINGS_TABLE, &id);
+      if (status && status == MR_NOT_UNIQUE)
+	return MR_STRING;
+      if (status == MR_NO_MATCH)
+	{
+	  if (q->type != APPEND && q->type != UPDATE)
+	    return MR_STRING;
+	  id = add_string(name);
+	  cache_entry(name, STRINGS_TABLE, id);
+	}
+      else if (status)
+	return status;
+    }
+  else if (!strcmp(data_type, "none"))
+    id = 0;
+  else
+    return MR_TYPE;
 
-    /* now set value in argv */
-    *(int *)argv[vo->index] = id;
+  /* now set value in argv */
+  *(int *)argv[vo->index] = id;
 
-    return (MR_EXISTS);
+  return MR_EXISTS;
 }
 
 
 /* Make sure the data fits in the field */
-int validate_len(argv, vo)
-    register char *argv[];
-    register struct valobj *vo;
+int validate_len(register char *argv[], register struct valobj *vo)
 {
-    EXEC SQL BEGIN DECLARE SECTION;
-    int len;
-    char *tname, *cname;
-    EXEC SQL END DECLARE SECTION;
+  EXEC SQL BEGIN DECLARE SECTION;
+  int len;
+  char *tname, *cname;
+  EXEC SQL END DECLARE SECTION;
 
-    tname = table_name[vo->table];
-    cname = vo->namefield;
-    EXEC SQL SELECT data_length INTO :len FROM user_tab_columns
-      WHERE table_name=UPPER(:tname) AND column_name=UPPER(:cname);
+  tname = table_name[vo->table];
+  cname = vo->namefield;
+  EXEC SQL SELECT data_length INTO :len FROM user_tab_columns
+    WHERE table_name = UPPER(:tname) AND column_name = UPPER(:cname);
 
-    if((strlen(argv[vo->index]) > len) &&
-       strcmp(argv[vo->index], UNIQUE_LOGIN)) /* kludge... sigh */
-      argv[vo->index][len]='\0'; /* truncate */
+  if ((strlen(argv[vo->index]) > len) &&
+      strcmp(argv[vo->index], UNIQUE_LOGIN)) /* kludge... sigh */
+    argv[vo->index][len] = '\0'; /* truncate */
 
-    return MR_EXISTS;
+  return MR_EXISTS;
 }
 
 /* Lock the table named by the validation object */
 
-int lock_table(vo)
-     struct valobj *vo;
+int lock_table(struct valobj *vo)
 {
 #ifdef DO_LOCKING
-    sprintf(stmt_buf, "LOCK TABLE %s IN EXCLUSIVE MODE", table_name[vo->table]);
-    EXEC SQL EXECUTE IMMEDIATE :stmt_buf;
-    if (dbms_errno) 
-        return(mr_errcode);
-    else
+  sprintf(stmt_buf, "LOCK TABLE %s IN EXCLUSIVE MODE", table_name[vo->table]);
+  EXEC SQL EXECUTE IMMEDIATE :stmt_buf;
+  if (dbms_errno)
+    return mr_errcode;
+  else
 #endif
-      return(MR_EXISTS);
+    return MR_EXISTS;
 }
 
 /*
  * Get a read lock on the table by accessing the magic lock
  * record.  Certain tables are constructed so that they contain
- * an id field whose value is zero and a modtime field.  We 
- * manipulate the modtime field of the id 0 record to effect 
+ * an id field whose value is zero and a modtime field.  We
+ * manipulate the modtime field of the id 0 record to effect
  * locking of the table
  */
 
-int readlock_table(vo)
-    struct valobj *vo;
+int readlock_table(struct valobj *vo)
 {
 #ifdef DO_LOCKING
-    sprintf(stmt_buf, "LOCK TABLE %s IN SHARE MODE", table_name[vo->table]);
-    EXEC SQL EXECUTE IMMEDIATE :stmt_buf;
+  sprintf(stmt_buf, "LOCK TABLE %s IN SHARE MODE", table_name[vo->table]);
+  EXEC SQL EXECUTE IMMEDIATE :stmt_buf;
 
-    if (dbms_errno)
-        return(mr_errcode);
-    if (sqlca.sqlcode)
-        return(vo->error);
+  if (dbms_errno)
+    return mr_errcode;
+  if (sqlca.sqlcode)
+    return vo->error;
 #endif
-    return(MR_EXISTS);  /* validate_fields expects us to return
-                           * this value if everything went okay
-                           */
+  return MR_EXISTS;  /* validate_fields expects us to return
+		      * this value if everything went okay
+		      */
 }
 
 /* Check the database at startup time. */
 
 void sanity_check_database(void)
 {
-    EXEC SQL BEGIN DECLARE SECTION;
-    int oid, id;
-    EXEC SQL END DECLARE SECTION;
+  EXEC SQL BEGIN DECLARE SECTION;
+  int oid, id;
+  EXEC SQL END DECLARE SECTION;
 
-    /* Sometimes a crash can leave strings_id in numvalues in an
-       incorrect state. Check for that and fix it. */
+  /* Sometimes a crash can leave strings_id in numvalues in an
+     incorrect state. Check for that and fix it. */
 
-    EXEC SQL SELECT value INTO :oid FROM numvalues WHERE name='strings_id';
+  EXEC SQL SELECT value INTO :oid FROM numvalues WHERE name = 'strings_id';
 
-    for (id=oid+1; sqlca.sqlcode==0; id++)
-	EXEC SQL SELECT string_id INTO :id FROM strings
-	    WHERE string_id=:id;
+  for (id = oid + 1; sqlca.sqlcode == 0; id++)
+    {
+      EXEC SQL SELECT string_id INTO :id FROM strings
+	WHERE string_id = :id;
+    }
 
-    if (id!=oid+1)
-	EXEC SQL UPDATE numvalues SET value=:id-1 WHERE name='strings_id';
+  if (id != oid + 1)
+    EXEC SQL UPDATE numvalues SET value = :id - 1 WHERE name = 'strings_id';
 }
 
 
@@ -560,47 +589,64 @@ char *sqlbuffer[QMAXARGS];
 /* Dynamic SQL support routines */
 SQLDA *mr_alloc_sqlda()
 {
-    SQLDA *it;
-    register int j;
+  SQLDA *it;
+  register int j;
 
-    it=sqlald(QMAXARGS, ARGLEN, 0);
-    if(it==NULL) {
-	com_err(whoami, MR_NO_MEM, "setting up SQLDA");
-	exit(1);
+  it = sqlald(QMAXARGS, ARGLEN, 0);
+  if (!it)
+    {
+      com_err(whoami, MR_NO_MEM, "setting up SQLDA");
+      exit(1);
     }
 
-    for(j=0; j<QMAXARGS; j++) {
-        it->V[j]=sqlbuffer[j]=malloc(ARGLEN);
-	it->T[j]=97; /* 97 = CHARZ = null-terminated string */
-	it->L[j]=ARGLEN;
+  for (j = 0; j < QMAXARGS; j++)
+    {
+      it->V[j] = sqlbuffer[j] = malloc(ARGLEN);
+      it->T[j] = 97; /* 97 = CHARZ = null-terminated string */
+      it->L[j] = ARGLEN;
     }
 
-    return it;
+  return it;
 }
 
 
 /* Convert normal Unix-style wildcards to SQL voodoo */
-int convert_wildcards(arg)
-    char *arg;
+int convert_wildcards(char *arg)
 {
-    static char buffer[ARGLEN];
-    register char *s, *d;
+  static char buffer[ARGLEN];
+  register char *s, *d;
 
-    for(d=buffer,s=arg;*s;s++) {
-	switch(*s) {
-	  case '*': *d++='%'; *d++='%'; break;
-	  case '?': *d++='_'; break;
-	  case '_': *d++='*'; *d++ = *s; break;
-	  case '%': *d++='*'; *d++='%'; *d++='%'; break;
-	  default: *d++ = *s; break;
+  for (d = buffer, s = arg; *s; s++)
+    {
+      switch (*s)
+	{
+	case '*':
+	  *d++ = '%';
+	  *d++ = '%';
+	  break;
+	case '?':
+	  *d++ = '_';
+	  break;
+	case '_':
+	  *d++ = '*';
+	  *d++ = *s;
+	  break;
+	case '%':
+	  *d++ = '*';
+	  *d++ = '%';
+	  *d++ = '%';
+	  break;
+	default:
+	  *d++ = *s;
+	  break;
 	}
     }
-    *d='\0';
+  *d = '\0';
 
-    /* Copy back into argv */
-    strcpy(arg,buffer);
+  /* Copy back into argv */
+  strcpy(arg, buffer);
 
-    return(MR_EXISTS);
+  return MR_EXISTS;
 }
 
 /* This version includes uppercase conversion, for things like gmac.
@@ -608,46 +654,60 @@ int convert_wildcards(arg)
  * Including it in a wildcard routine saves making two passes over
  * the argument string.
  */
-int convert_wildcards_uppercase(arg)
-    char *arg;
+int convert_wildcards_uppercase(char *arg)
 {
-    static char buffer[ARGLEN];
-    register char *s, *d;
+  static char buffer[ARGLEN];
+  register char *s, *d;
 
-    for(d=buffer,s=arg;*s;s++) {
-	switch(*s) {
-	  case '*': *d++='%'; *d++='%'; break;
-	  case '?': *d++='_'; break;
-	  case '_': *d++='*'; *d++ = *s; break;
-	  case '%': *d++='*'; *d++='%'; *d++='%'; break;
-	  default: *d++=toupper(*s); break;       /* This is the only diff. */
+  for (d = buffer, s = arg; *s; s++)
+    {
+      switch (*s)
+	{
+	case '*':
+	  *d++ = '%';
+	  *d++ = '%';
+	  break;
+	case '?':
+	  *d++ = '_';
+	  break;
+	case '_':
+	  *d++ = '*';
+	  *d++ = *s;
+	  break;
+	case '%':
+	  *d++ = '*';
+	  *d++ = '%';
+	  *d++ = '%';
+	  break;
+	default:
+	  *d++ = toupper(*s);       /* This is the only diff. */
+	  break;
 	}
     }
-    *d='\0';
+  *d = '\0';
 
-    /* Copy back into argv */
-    strcpy(arg,buffer);
+  /* Copy back into argv */
+  strcpy(arg, buffer);
 
-    return(MR_EXISTS);
+  return MR_EXISTS;
 }
 
 
 /*  Adds a string to the string table.  Returns the id number.
- * 
+ *
  */
-int add_string(nm)
-    char *nm;
+int add_string(char *nm)
 {
-    EXEC SQL BEGIN DECLARE SECTION;
-    char buf[256], *name = nm;
-    int id;
-    EXEC SQL END DECLARE SECTION; 
+  EXEC SQL BEGIN DECLARE SECTION;
+  char buf[256], *name = nm;
+  int id;
+  EXEC SQL END DECLARE SECTION;
 
-    EXEC SQL SELECT value INTO :id FROM numvalues WHERE name = 'strings_id';
-    id++;
-    EXEC SQL UPDATE numvalues SET value = :id WHERE name = 'strings_id';
-    
-    EXEC SQL INSERT INTO strings (string_id, string) VALUES (:id, :nm);
- 
-    return(id);
+  EXEC SQL SELECT value INTO :id FROM numvalues WHERE name = 'strings_id';
+  id++;
+  EXEC SQL UPDATE numvalues SET value = :id WHERE name = 'strings_id';
+
+  EXEC SQL INSERT INTO strings (string_id, string) VALUES (:id, :nm);
+
+  return id;
 }

@@ -1,7 +1,7 @@
 #!/bin/csh -f
 # This script performs nfs updates on servers.
 #
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/nfs.sh,v 1.18 1997-12-22 21:34:27 danw Exp $
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/nfs.sh,v 1.19 1998-01-05 19:52:49 danw Exp $
 
 # The following exit codes are defined and MUST BE CONSISTENT with the
 # MR error codes the library uses:
@@ -27,7 +27,7 @@ rm -rf $SRC_DIR
 mkdir $SRC_DIR
 chmod 755 $SRC_DIR
 
-# Note that since MR is going to be exported, assuming .MIT.EDU is 
+# Note that since MR is going to be exported, assuming .MIT.EDU is
 # incorrect.  For now however, it is probably not worth the effort
 # to canonicalize the hostname, especially with the upcoming update
 # protocol redesign

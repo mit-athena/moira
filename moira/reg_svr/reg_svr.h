@@ -1,7 +1,7 @@
 /*
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.h,v $
  *      $Author: danw $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.h,v 1.8 1997-01-29 23:25:29 danw Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.h,v 1.9 1998-01-05 19:53:19 danw Exp $
  *
  *      Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
@@ -29,7 +29,7 @@
 #define CUR_UREG_VERSION 1	/* Version for the register protocol */
 #define SUCCESS 0		/* General purpose success code */
 #define FAILURE 1		/* To use when any non-zero number will work */
-#define min(a,b) ((a)>(b)?(b):(a))
+#define min(a,b) ((a) > (b) ? (b) : (a))
 #define MIN_UNAME 3		/* Username must be between three and */
 #define MAX_UNAME 8		/*    eight characters long. */
 #define CRYPT_LEN 14		/* crypt() returns a 13 char string */
@@ -40,31 +40,31 @@ extern char *whoami;		/* Name of program - used by libraries */
 extern int errno;		/* Unix error number */
 
 /* This structure holds information from the MOIRA database that will be
-   worth holding on to.  An instance of it appears in the formatted 
+   worth holding on to.  An instance of it appears in the formatted
    packet structure. */
 struct db_data
 {
-    char mit_id[CRYPT_LEN];	/* Encrypted MIT ID */
-    int reg_status;		/* Registration status */
-    char uid[UID_LEN];		/* Reserved uid */
-    char login[LOGIN_LEN];	/* Login (username) */
+  char mit_id[CRYPT_LEN];	/* Encrypted MIT ID */
+  int reg_status;		/* Registration status */
+  char uid[UID_LEN];		/* Reserved uid */
+  char login[LOGIN_LEN];	/* Login (username) */
 };
 
-/* This structure stores information sent over in the packet in a 
-   more convenient format and also stores some information obtained 
+/* This structure stores information sent over in the packet in a
+   more convenient format and also stores some information obtained
    from the database that will be needed for each transaction.  It
    initialized from format_pkt() and find_user(). */
 struct msg
-{    
-    U_32BIT version;		/* User registration protocol version */
-    U_32BIT request;		/* Request */
-    char *first;		/* First name */
-    char *last;			/* Last name */
-    char *encrypted;		/* Encrypted information in packet */
-    int encrypted_len;		/* Length of encrypted information in packet */
-    char *leftover;		/* Leftover information sent in the packet */
-    int leftover_len;		/* Length of leftover information */
-    struct db_data db;		/* Information from the MOIRA database */
+{
+  U_32BIT version;		/* User registration protocol version */
+  U_32BIT request;		/* Request */
+  char *first;			/* First name */
+  char *last;			/* Last name */
+  char *encrypted;		/* Encrypted information in packet */
+  int encrypted_len;		/* Length of encrypted information in packet */
+  char *leftover;		/* Leftover information sent in the packet */
+  int leftover_len;		/* Length of leftover information */
+  struct db_data db;		/* Information from the MOIRA database */
 };
 
 void failure_alert();		/* Log an unexplainable failure */

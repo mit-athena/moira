@@ -1,5 +1,5 @@
 /*
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/cache.pc,v 2.2 1997-03-12 02:45:46 danw Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/cache.pc,v 2.3 1998-01-05 19:53:28 danw Exp $
  *
  *	Copyright (C) 1989, 1990 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -7,7 +7,7 @@
  */
 
 #ifndef lint
-static char *rcsid_cache_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/cache.pc,v 2.2 1997-03-12 02:45:46 danw Exp $";
+static char *rcsid_cache_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/cache.pc,v 2.3 1998-01-05 19:53:28 danw Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -25,13 +25,13 @@ extern char *whoami;
 #define NAMESZ 257		/* max size of a name */
 
 struct item {
-    char name[NAMESZ];
-    enum tables type;
-    int nhash;
-    int id;
-    struct item *next;
-    struct item *prev;
-    struct item *trans;		/* keep track of transactions */
+  char name[NAMESZ];
+  enum tables type;
+  int nhash;
+  int id;
+  struct item *next;
+  struct item *prev;
+  struct item *trans;		/* keep track of transactions */
 };
 
 static struct item cachehead;
@@ -43,15 +43,13 @@ int cachehits = 0, cachemisses = 0;
 
 /* Name hash function. */
 
-int hashname(name, type)
-     char *name;
-     enum tables type;
+int hashname(char *name, enum tables type)
 {
-    register int val = type;
+  register int val = type;
 
-    while (*name)
-      val = (val<<5) - val + *name++ - '`';
-    return(val);
+  while (*name)
+    val = (val << 5) - val + *name++ - '`';
+  return val;
 }
 
 
@@ -61,23 +59,26 @@ int hashname(name, type)
 
 void flush_cache(void)
 {
-    register struct item *i;
+  register struct item *i;
 
-    if (cachehits + cachemisses != 0)
+  if (cachehits + cachemisses != 0)
+    {
       com_err(whoami, 0, "Flushing cache; %d hits, %d misses, %d%% hit rate",
 	      cachehits, cachemisses,
 	      (100 * cachehits) / (cachehits + cachemisses));
-    else
-      cachehead.next = cachehead.prev = &cachehead;
-    cachehits = cachemisses = cachesize = 0;
-    for (i = cachehead.next; i != &cachehead; i = i->next) {
-	if (i->prev != &cachehead)
-	  free(i->prev);
     }
-    if (cachehead.prev != &cachehead)
-      free(cachehead.prev);
+  else
     cachehead.next = cachehead.prev = &cachehead;
-    cachehead.trans = (struct item *)NULL;
+  cachehits = cachemisses = cachesize = 0;
+  for (i = cachehead.next; i != &cachehead; i = i->next)
+    {
+      if (i->prev != &cachehead)
+	free(i->prev);
+    }
+  if (cachehead.prev != &cachehead)
+    free(cachehead.prev);
+  cachehead.next = cachehead.prev = &cachehead;
+  cachehead.trans = NULL;
 }
 
 
@@ -85,101 +86,104 @@ void flush_cache(void)
  * it is available, and as a side effect the cache is updated.
  */
 
-int name_to_id(name, type, id)
-     char *name;
-     enum tables type;
-     int *id;
+int name_to_id(char *name, enum tables type, int *id)
 {
-    register struct item *i, *t;
-    EXEC SQL BEGIN DECLARE SECTION;
-    char *iname;
-    int j, h;
-    EXEC SQL END DECLARE SECTION;
+  register struct item *i, *t;
+  EXEC SQL BEGIN DECLARE SECTION;
+  char *iname;
+  int j, h;
+  EXEC SQL END DECLARE SECTION;
 
-    h = hashname(name, type);
-    for (i = cachehead.next; i != &cachehead; i = i->next) {
-	if (i->nhash != h ||
-	    strcmp(name, i->name) ||
-	    type!=i->type)
-	  continue;
-	*id = i->id;
-	cachehits++;
-	i->next->prev = i->prev;
-	i->prev->next = i->next;
-	i->next = cachehead.next;
-	i->prev = &cachehead;
-	cachehead.next->prev = i;
-	cachehead.next = i;
-	return(MR_SUCCESS);
+  h = hashname(name, type);
+  for (i = cachehead.next; i != &cachehead; i = i->next)
+    {
+      if (i->nhash != h || strcmp(name, i->name) || type != i->type)
+	continue;
+      *id = i->id;
+      cachehits++;
+      i->next->prev = i->prev;
+      i->prev->next = i->next;
+      i->next = cachehead.next;
+      i->prev = &cachehead;
+      cachehead.next->prev = i;
+      cachehead.next = i;
+      return MR_SUCCESS;
     }
 
-    cachemisses++;
-    iname = name;
+  cachemisses++;
+  iname = name;
 
-    switch (type)
-      {
-      case USERS_TABLE:
-	if (strchr(iname, '@') || (strlen(iname) > 8)) {
+  switch (type)
+    {
+    case USERS_TABLE:
+      if (strchr(iname, '@') || (strlen(iname) > 8))
+	{
 	  sqlca.sqlcode = SQL_NO_MATCH;
 	  break;
 	}
-	EXEC SQL SELECT users_id INTO :j FROM users WHERE login=:iname;
-	break;
-      case LIST_TABLE:
-	EXEC SQL SELECT list_id INTO :j FROM list WHERE name=:iname;
-	break;
-      case MACHINE_TABLE:
-	EXEC SQL SELECT mach_id INTO :j FROM machine WHERE name=UPPER(:iname);
-	break;
-      case SUBNET_TABLE:
-	EXEC SQL SELECT snet_id INTO :j FROM subnet WHERE name=UPPER(:iname);
-	break;
-      case CLUSTER_TABLE:
-	EXEC SQL SELECT clu_id INTO :j FROM clusters WHERE name=:iname;
-	break;
-      case FILESYS_TABLE:
-	EXEC SQL SELECT filsys_id INTO :j FROM filesys WHERE label=:iname;
-	break;
-      case STRINGS_TABLE:
-	if (!iname[0]) { /* special-case empty string */
-	  *id=0;
+      EXEC SQL SELECT users_id INTO :j FROM users WHERE login = :iname;
+      break;
+    case LIST_TABLE:
+      EXEC SQL SELECT list_id INTO :j FROM list WHERE name = :iname;
+      break;
+    case MACHINE_TABLE:
+      EXEC SQL SELECT mach_id INTO :j FROM machine WHERE name = UPPER(:iname);
+      break;
+    case SUBNET_TABLE:
+      EXEC SQL SELECT snet_id INTO :j FROM subnet WHERE name = UPPER(:iname);
+      break;
+    case CLUSTER_TABLE:
+      EXEC SQL SELECT clu_id INTO :j FROM clusters WHERE name = :iname;
+      break;
+    case FILESYS_TABLE:
+      EXEC SQL SELECT filsys_id INTO :j FROM filesys WHERE label = :iname;
+      break;
+    case STRINGS_TABLE:
+      if (!iname[0])	/* special-case empty string */
+	{
+	  *id = 0;
 	  return MR_SUCCESS;
 	}
-	EXEC SQL SELECT string_id INTO :j FROM strings WHERE string=:iname;
-	break;
-      default:
-	return(MR_INTERNAL);
+      EXEC SQL SELECT string_id INTO :j FROM strings WHERE string = :iname;
+      break;
+    default:
+      return MR_INTERNAL;
     }
-    if (sqlca.sqlcode == SQL_NO_MATCH)
-      return(MR_NO_MATCH);
-    if (sqlca.sqlerrd[2] > 1)
-      return(MR_NOT_UNIQUE);
-    if (sqlca.sqlcode != 0)
-      return(MR_DBMS_ERR);
-    *id = j;
-    if (name[0] == '#' && type!=USERS_TABLE)
-      return(MR_SUCCESS);
-    if (cachesize < CACHESIZE) {
-	i = (struct item *) malloc(sizeof(struct item));
-	cachesize++;
-    } else {
-	i = cachehead.prev;
-	cachehead.prev = i->prev;
-	i->prev->next = &cachehead;
+  if (sqlca.sqlcode == SQL_NO_MATCH)
+    return MR_NO_MATCH;
+  if (sqlca.sqlerrd[2] > 1)
+    return MR_NOT_UNIQUE;
+  if (sqlca.sqlcode)
+    return MR_DBMS_ERR;
+  *id = j;
+  if (name[0] == '#' && type != USERS_TABLE)
+    return MR_SUCCESS;
+  if (cachesize < CACHESIZE)
+    {
+      i = malloc(sizeof(struct item));
+      cachesize++;
     }
-    strcpy(i->name, name);
-    i->type=type;
-    i->nhash = h;
-    i->id = j;
-    i->next = cachehead.next;
-    i->prev = &cachehead;
-    i->trans = NULL;
-    cachehead.next->prev = i;
-    cachehead.next = i;
-    /* find the end of the transaction chain & add this item */
-    for (t = &cachehead; t->trans && t != i; t = t->trans);
-    if (t != i) t->trans = i;
-    return(MR_SUCCESS);
+  else
+    {
+      i = cachehead.prev;
+      cachehead.prev = i->prev;
+      i->prev->next = &cachehead;
+    }
+  strcpy(i->name, name);
+  i->type = type;
+  i->nhash = h;
+  i->id = j;
+  i->next = cachehead.next;
+  i->prev = &cachehead;
+  i->trans = NULL;
+  cachehead.next->prev = i;
+  cachehead.next = i;
+  /* find the end of the transaction chain & add this item */
+  for (t = &cachehead; t->trans && t != i; t = t->trans)
+    ;
+  if (t != i)
+    t->trans = i;
+  return MR_SUCCESS;
 }
 
 
@@ -188,95 +192,100 @@ int name_to_id(name, type, id)
  * allocated with the answer.
  */
 
-int id_to_name(id, type, name)
-     int id;
-     enum tables type;
-     char **name;
+int id_to_name(int id, enum tables type, char **name)
 {
-    register struct item *i, *t;
-    EXEC SQL BEGIN DECLARE SECTION;
-    char iname[NAMESZ];
-    int j;
-    EXEC SQL END DECLARE SECTION;
+  register struct item *i, *t;
+  EXEC SQL BEGIN DECLARE SECTION;
+  char iname[NAMESZ];
+  int j;
+  EXEC SQL END DECLARE SECTION;
 
-    for (i = cachehead.next; i != &cachehead; i = i->next) {
-	if (i->id != id || type!=i->type) continue;
-	free(*name);
-	*name = strsave(i->name);
-	cachehits++;
-	i->next->prev = i->prev;
-	i->prev->next = i->next;
-	i->next = cachehead.next;
-	i->prev = &cachehead;
-	cachehead.next->prev = i;
-	cachehead.next = i;
-	return(MR_SUCCESS);
+  for (i = cachehead.next; i != &cachehead; i = i->next)
+    {
+      if (i->id != id || type != i->type)
+	continue;
+      free(*name);
+      *name = strsave(i->name);
+      cachehits++;
+      i->next->prev = i->prev;
+      i->prev->next = i->next;
+      i->next = cachehead.next;
+      i->prev = &cachehead;
+      cachehead.next->prev = i;
+      cachehead.next = i;
+      return MR_SUCCESS;
     }
 
-    cachemisses++;
-    j = id;
+  cachemisses++;
+  j = id;
 
-    switch (type)
-      {
-      case USERS_TABLE:
-	EXEC SQL SELECT login INTO :iname FROM users WHERE users_id=:j;
-	break;
-      case LIST_TABLE:
-	EXEC SQL SELECT name INTO :iname FROM list WHERE list_id=:j;
-	break;
-      case MACHINE_TABLE:
-	EXEC SQL SELECT name INTO :iname FROM machine WHERE mach_id=:j;
-	break;
-      case SUBNET_TABLE:
-	EXEC SQL SELECT name INTO :iname FROM subnet WHERE snet_id=:j;
-	break;
-      case CLUSTER_TABLE:
-	EXEC SQL SELECT name INTO :iname FROM clusters WHERE clu_id=:j;
-	break;
-      case FILESYS_TABLE:
-	EXEC SQL SELECT label INTO :iname FROM filesys WHERE filsys_id=:j;
-	break;
-      case STRINGS_TABLE:
-	EXEC SQL SELECT string INTO :iname FROM strings WHERE string_id=:j;
-	break;
+  switch (type)
+    {
+    case USERS_TABLE:
+      EXEC SQL SELECT login INTO :iname FROM users WHERE users_id = :j;
+      break;
+    case LIST_TABLE:
+      EXEC SQL SELECT name INTO :iname FROM list WHERE list_id = :j;
+      break;
+    case MACHINE_TABLE:
+      EXEC SQL SELECT name INTO :iname FROM machine WHERE mach_id = :j;
+      break;
+    case SUBNET_TABLE:
+      EXEC SQL SELECT name INTO :iname FROM subnet WHERE snet_id = :j;
+      break;
+    case CLUSTER_TABLE:
+      EXEC SQL SELECT name INTO :iname FROM clusters WHERE clu_id = :j;
+      break;
+    case FILESYS_TABLE:
+      EXEC SQL SELECT label INTO :iname FROM filesys WHERE filsys_id = :j;
+      break;
+    case STRINGS_TABLE:
+      EXEC SQL SELECT string INTO :iname FROM strings WHERE string_id = :j;
+      break;
     default:
-	return(MR_INTERNAL);
+      return MR_INTERNAL;
     }
-    if (sqlca.sqlcode == SQL_NO_MATCH) {
-	free(*name);
-	sprintf(iname, "#%d", j);
-	*name = strsave(iname);
-	return(MR_NO_MATCH);
+  if (sqlca.sqlcode == SQL_NO_MATCH)
+    {
+      free(*name);
+      sprintf(iname, "#%d", j);
+      *name = strsave(iname);
+      return MR_NO_MATCH;
     }
-    if (sqlca.sqlerrd[2] > 1)
-      return(MR_INTERNAL);
-    if (sqlca.sqlcode != 0)
-      return(MR_DBMS_ERR);
-    free(*name);
-    *name = strsave(strtrim(iname));
-    if (**name == '#' && type!=USERS_TABLE)
-      return(MR_SUCCESS);
-    if (cachesize < CACHESIZE) {
-	i = (struct item *) malloc(sizeof(struct item));
-	cachesize++;
-    } else {
-	i = cachehead.prev;
-	cachehead.prev = i->prev;
-	i->prev->next = &cachehead;
+  if (sqlca.sqlerrd[2] > 1)
+    return MR_INTERNAL;
+  if (sqlca.sqlcode)
+    return MR_DBMS_ERR;
+  free(*name);
+  *name = strsave(strtrim(iname));
+  if (**name == '#' && type != USERS_TABLE)
+    return MR_SUCCESS;
+  if (cachesize < CACHESIZE)
+    {
+      i = malloc(sizeof(struct item));
+      cachesize++;
     }
-    strcpy(i->name, *name);
-    i->type=type;
-    i->nhash = hashname(*name, type);
-    i->id = id;
-    i->next = cachehead.next;
-    i->prev = &cachehead;
-    i->trans = NULL;
-    cachehead.next->prev = i;
-    cachehead.next = i;
-    /* find the end of the transaction chain & add this item */
-    for (t = &cachehead; t->trans && t != i; t = t->trans);
-    if (t != i) t->trans = i;
-    return(MR_SUCCESS);
+  else
+    {
+      i = cachehead.prev;
+      cachehead.prev = i->prev;
+      i->prev->next = &cachehead;
+    }
+  strcpy(i->name, *name);
+  i->type = type;
+  i->nhash = hashname(*name, type);
+  i->id = id;
+  i->next = cachehead.next;
+  i->prev = &cachehead;
+  i->trans = NULL;
+  cachehead.next->prev = i;
+  cachehead.next = i;
+  /* find the end of the transaction chain & add this item */
+  for (t = &cachehead; t->trans && t != i; t = t->trans)
+    ;
+  if (t != i)
+    t->trans = i;
+  return MR_SUCCESS;
 }
 
 
@@ -284,67 +293,73 @@ int id_to_name(id, type, name)
  * database.
  */
 
-int cache_entry(name, type, id)
-     char *name;
-     enum tables type;
-     int id;
+int cache_entry(char *name, enum tables type, int id)
 {
-    register struct item *i, *t;
+  register struct item *i, *t;
 
-    for (i = cachehead.next; i != &cachehead; i = i->next)
-      if (i->id == id && i->type==type) {
-	  if (strcmp(i->name, name)) {
+  for (i = cachehead.next; i != &cachehead; i = i->next)
+    {
+      if (i->id == id && i->type == type)
+	{
+	  if (strcmp(i->name, name))
+	    {
 	      strcpy(i->name, name);
 	      i->nhash = hashname(name, type);
-	  }
-	  return(MR_SUCCESS);
-      }
-    if (cachesize < CACHESIZE) {
-	i = (struct item *) malloc(sizeof(struct item));
-	cachesize++;
-    } else {
-	i = cachehead.prev;
-	cachehead.prev = i->prev;
-	i->prev->next = &cachehead;
+	    }
+	  return MR_SUCCESS;
+	}
     }
-    strcpy(i->name, name);
-    i->type=type;
-    i->nhash = hashname(name, type);
-    i->id = id;
-    i->next = cachehead.next;
-    i->prev = &cachehead;
-    i->trans = NULL;
-    cachehead.next->prev = i;
-    cachehead.next = i;
-    /* find the end of the transaction chain & add this item */
-    for (t = &cachehead; t->trans && t != i; t = t->trans);
-    if (t != i) t->trans = i;
-    return(MR_SUCCESS);
+  if (cachesize < CACHESIZE)
+    {
+      i = malloc(sizeof(struct item));
+      cachesize++;
+    }
+  else
+    {
+      i = cachehead.prev;
+      cachehead.prev = i->prev;
+      i->prev->next = &cachehead;
+    }
+  strcpy(i->name, name);
+  i->type = type;
+  i->nhash = hashname(name, type);
+  i->id = id;
+  i->next = cachehead.next;
+  i->prev = &cachehead;
+  i->trans = NULL;
+  cachehead.next->prev = i;
+  cachehead.next = i;
+  /* find the end of the transaction chain & add this item */
+  for (t = &cachehead; t->trans && t != i; t = t->trans)
+    ;
+  if (t != i)
+    t->trans = i;
+  return MR_SUCCESS;
 }
 
 
 /* Flush something that may or may not already be in the cache. */
 
-void flush_name(name, type)
-     char *name;
-     enum tables type;
+void flush_name(char *name, enum tables type)
 {
-    register struct item *i;
+  register struct item *i;
 
-    /* first clear it out of the transaction chain */
-    for (i = &cachehead; i && i->trans; i = i->trans) {
-        if (!strcmp(name, i->trans->name) && type==i->trans->type) {
-            i->trans = i->trans->trans;
-        }
+  /* first clear it out of the transaction chain */
+  for (i = &cachehead; i && i->trans; i = i->trans)
+    {
+      if (!strcmp(name, i->trans->name) && type == i->trans->type)
+	i->trans = i->trans->trans;
     }
 
-    /* now remove it */
-    for (i = cachehead.next; i != &cachehead; i = i->next) {
-	if (!strcmp(name, i->name) && type==i->type) {
-	    cachesize--;
-	    i->next->prev = i->prev;
-	    i->prev->next = i->next;
-	    free(i);
+  /* now remove it */
+  for (i = cachehead.next; i != &cachehead; i = i->next)
+    {
+      if (!strcmp(name, i->name) && type == i->type)
+	{
+	  cachesize--;
+	  i->next->prev = i->prev;
+	  i->prev->next = i->next;
+	  free(i);
 	}
     }
 }
@@ -356,7 +371,7 @@ void flush_name(name, type)
 
 void cache_commit(void)
 {
-    cachehead.trans = (struct item *)NULL;
+  cachehead.trans = NULL;
 }
 
 
@@ -366,11 +381,12 @@ void cache_commit(void)
 
 void cache_abort(void)
 {
-    register struct item *i, *t;
+  register struct item *i, *t;
 
-    for (i = cachehead.trans; i; i = t) {
-	t = i->trans;
-	flush_name(i->name, i->type);
+  for (i = cachehead.trans; i; i = t)
+    {
+      t = i->trans;
+      flush_name(i->name, i->type);
     }
-    cachehead.trans = (struct item *)NULL;
+  cachehead.trans = NULL;
 }

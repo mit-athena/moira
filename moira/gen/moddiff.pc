@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/moddiff.pc,v 1.2 1997-09-05 19:14:51 danw Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/moddiff.pc,v 1.3 1998-01-05 19:52:47 danw Exp $
  *
  *  (c) Copyright 1990 by the Massachusetts Institute of Technology.
  *  For copying and distribution information, please see the file
@@ -7,6 +7,7 @@
 
 #include <mit-copyright.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/time.h>
@@ -14,9 +15,9 @@
 #include <moira_site.h>
 EXEC SQL INCLUDE sqlca;
 
-static char * MONTHNAMES[] = {"january", "february", "march", "april", "may", 
-			      "june", "july", "august", "september",
-			      "october", "november", "december"};
+static char *MONTHNAMES[] = {"january", "february", "march", "april", "may",
+			     "june", "july", "august", "september",
+			     "october", "november", "december"};
 
 static int MONTHDAYS[] = {0,0,31,59,90,120,151,181,212,243,273,304,334};
 
@@ -26,36 +27,30 @@ static int MONTHDAYS[] = {0,0,31,59,90,120,151,181,212,243,273,304,334};
 /**  in flag variable.  Return 0 if success, else errno.       **/
 /****************************************************************/
 
-int ModDiff (flag, tbl, ModTime)
-int *flag;
-char *tbl;
-time_t ModTime;
+int ModDiff(int *flag, char *tbl, time_t ModTime)
 {
-    time_t filetimeno;
-    EXEC SQL BEGIN DECLARE SECTION;
-    char filetime[48], *tbl_name;
-    EXEC SQL END DECLARE SECTION;
+  time_t filetimeno;
+  EXEC SQL BEGIN DECLARE SECTION;
+  char filetime[48], *tbl_name;
+  EXEC SQL END DECLARE SECTION;
 
-    *flag = 0;
-    tbl_name = tbl;
-    EXEC SQL SELECT TO_CHAR(modtime, 'DD-mon-YYYY HH24:MI:SS') INTO :filetime FROM tblstats 
-      WHERE table_name = :tbl_name;
-    if (sqlca.sqlcode != 0) {
-	fprintf(stderr, "Moddiff Query failed: %d\n", sqlca.sqlcode);
-	return(MR_DATE);
+  *flag = 0;
+  tbl_name = tbl;
+  EXEC SQL SELECT TO_CHAR(modtime, 'DD-mon-YYYY HH24:MI:SS')
+    INTO :filetime FROM tblstats
+    WHERE table_name = :tbl_name;
+  if (sqlca.sqlcode)
+    {
+      fprintf(stderr, "Moddiff Query failed: %d\n", sqlca.sqlcode);
+      return MR_DATE;
     }
-#ifdef DEBUG
-    printf("about to call Date2Sec, flag = 0x%x\n", flag);
-#endif
-    if (Date2Sec (filetime, &filetimeno)) {
-	fprintf(stderr,"Unable to parse mod. date for file %s\n", tbl);
-	return(MR_DATE);
+  if (Date2Sec (filetime, &filetimeno))
+    {
+      fprintf(stderr, "Unable to parse mod. date for file %s\n", tbl);
+      return MR_DATE;
     }
-#ifdef DEBUG
-    printf("got time, flag = 0x%x\n", flag);
-#endif
-    *flag = (int) (filetimeno - ModTime);
-    return(0);
+  *flag = (int) (filetimeno - ModTime);
+  return 0;
 }
 
 
@@ -65,66 +60,43 @@ time_t ModTime;
 /**  Return 1 if failure, 0 if success            **/
 /***************************************************/
 
-Date2Sec(DS, UTime)
-char *DS;
-time_t *UTime;
+int Date2Sec(char *DS, time_t *UTime)
 {
-    static int defzone = -1;
-    int Day, Month, Year, Hour, Minute, Sec, Err, TotalDays, Iter;
-    struct timeval tv;
-    struct timezone tz;
+  static int defzone = -1;
+  int Day, Month, Year, Hour, Minute, Sec, Err, TotalDays, Iter;
+  struct timeval tv;
+  struct timezone tz;
 
-    if (defzone == -1) {
-	if (gettimeofday(&tv, &tz))
-	  defzone = 0;
-	else
-	  defzone = tz.tz_minuteswest;
+  if (defzone == -1)
+    {
+      if (gettimeofday(&tv, &tz))
+	defzone = 0;
+      else
+	defzone = tz.tz_minuteswest;
     }
 
-#ifdef DEBUG
-    printf("Date2Sec(\"%s\", %d)\n", DS, *UTime);
-#endif
-    Err = ParseDateString (DS, &Day, &Month, &Year, &Hour, &Minute,&Sec);
-#ifdef DEBUG
-    printf("date=%d/%d/%d %d:%d:%d, err=%d\n", Day, Month, Year,
-	   Hour, Minute, Sec, Err);
-#endif
-    if (Err) return (Err);
+  Err = ParseDateString (DS, &Day, &Month, &Year, &Hour, &Minute, &Sec);
+  if (Err)
+    return Err;
 
-    if (Year < 1970) {
-	for (TotalDays = 0, Iter = 1969; Iter > Year; Iter--) {
-	    TotalDays += NumdaysY(Iter);}
-#ifdef DEBUG
-	printf("Days in years           : %d\n", TotalDays);
-#endif
-	TotalDays += (NumdaysY(Year) - NumdaysM(Month, Year) - Day);
-#ifdef DEBUG
-	printf("Days after months & days: %d\n", TotalDays);
-#endif
-	*UTime = -((((24 * TotalDays) + 24 - Hour) * 60 - Minute) * 60 -
-			  Sec) + defzone;
-	return (0);
-    } else {
-	for (TotalDays = 0, Iter = 1970; Iter < Year; Iter++) {
-	    TotalDays += NumdaysY(Iter);}
-#ifdef DEBUG
-	printf("Days in years    : %d\n", TotalDays);
-#endif
-	TotalDays += NumdaysM(Month, Year);
-#ifdef DEBUG
-	printf("Days after months: %d\n", TotalDays);
-#endif
-	TotalDays += (Day - 1);
-#ifdef DEBUG
-	printf("Days after Days  : %d\n", TotalDays);
-	printf("Calculating seconds...(UTime = 0x%x)\n", *UTime);
-#endif
-	*UTime = (((24 * TotalDays) + Hour) * 60 + Minute) * 60 +
-			Sec + defzone;
-#ifdef DEBUG
-	printf("Calculated value of %d\n", *UTime);
-#endif
-	return (0);
+  if (Year < 1970)
+    {
+      for (TotalDays = 0, Iter = 1969; Iter > Year; Iter--)
+	TotalDays += NumdaysY(Iter);
+      TotalDays += (NumdaysY(Year) - NumdaysM(Month, Year) - Day);
+      *UTime = -((((24 * TotalDays) + 24 - Hour) * 60 - Minute) * 60 -
+		 Sec) + defzone;
+      return 0;
+    }
+  else
+    {
+      for (TotalDays = 0, Iter = 1970; Iter < Year; Iter++)
+	TotalDays += NumdaysY(Iter);
+      TotalDays += NumdaysM(Month, Year);
+      TotalDays += (Day - 1);
+      *UTime = (((24 * TotalDays) + Hour) * 60 + Minute) * 60 +
+	Sec + defzone;
+      return 0;
     }
 }
 
@@ -133,10 +105,9 @@ time_t *UTime;
 /**  Return the # of days in the Year   **/
 /*****************************************/
 
-int NumdaysY(Year)
-int Year;
+int NumdaysY(int Year)
 {
-    return (365 + Leapyear(Year));
+  return 365 + Leapyear(Year);
 }
 
 
@@ -144,13 +115,12 @@ int Year;
 /**  Return the # of days in the Month  **/
 /*****************************************/
 
-int NumdaysM(Month, Year)
-int Month, Year;
+int NumdaysM(int Month, int Year)
 {
-    if ((Month > 2) && (Leapyear (Year)))
-      return (MONTHDAYS[Month] + 1);
-    else
-      return (MONTHDAYS[Month]);
+  if ((Month > 2) && (Leapyear (Year)))
+    return MONTHDAYS[Month] + 1;
+  else
+    return MONTHDAYS[Month];
 }
 
 
@@ -158,13 +128,12 @@ int Month, Year;
 /**  Return 1 if a leapyear, else 0     **/
 /*****************************************/
 
-int Leapyear (Year)
-int Year;
+int Leapyear(int Year)
 {
-    if ((Year % 4) && (!(Year % 100) || (Year % 1000)))
-      return (0);
-    else
-      return (1);
+  if ((Year % 4) && (!(Year % 100) || (Year % 1000)))
+    return 0;
+  else
+    return 1;
 }
 
 
@@ -173,72 +142,72 @@ int Year;
 /**  Return 0 if success, 1 if failure         **/
 /************************************************/
 
-int ParseDateString (DS, Day, Month, Year, Hour, Minute, Sec)
-char *DS;
-int *Day, *Month, *Year, *Hour, *Minute, *Sec;
+int ParseDateString(char *DS, int *Day, int *Month, int *Year, int *Hour,
+		    int *Minute, int *Sec)
 {
-    int Gotten;
-    char *M, *D, *Temp;
-    int Y=0, H=0, Min=0, S=0, DayNum=0, MonthNum=0;
+  int Gotten;
+  char *M, *D, *Temp;
+  int Y = 0, H = 0, Min = 0, S = 0, DayNum = 0, MonthNum = 0;
 
-    M = (char *)malloc(strlen(DS) + 2);
-    D = (char *)malloc(strlen(DS) + 2);
-    if (!(M && D)) return (1);
-    Gotten = sscanf (DS, "%[^-]-%[^-]-%d %d:%d:%d", D, M, &Y, &H, &Min, &S);
-    if (Gotten < 3) 
-      Gotten = sscanf (DS, "%[^/]/%[^/]/%d %d:%d:%d", D, M, &Y, &H, &Min, &S);
-    if (Gotten < 3)
-      Gotten = sscanf (DS, "%s %[^,], %d %d:%d:%d", M, D, &Y, &H, &Min, &S);
-#ifdef DEBUG
-    printf ("Month = %s\nDay = %s\nYear = %d\n", M, D, Y);
-    printf ("Hour = %d\nMin= %d\nSec = %d\n", H, Min, S);
-#endif
-    if ((Gotten < 3) || !(D && M && Y)) {
-	free(M);
-	free(D);
-	return (1);}               /* Couldn't scan in a date */
-    if (atoi(M)) {               /* Month not text, so M/D/Y not D/M/Y */
-	Temp = M;
-	M = D;
-	D = Temp;}
-    DayNum = atoi(D);
-    MonthNum = MonthNo(M);
-    free(M);
-    free(D);
-#ifdef DEBUG
-    printf ("Month = %d\nDay = %d\nYear = %d\n", MonthNum, DayNum, Y);
-#endif
-    if ((DayNum < 1) || (DayNum > 31)) 
-      return (1);                /* Bad Day */
-    if (!MonthNum) 
-      return (1);                /* Bad Month */
-    if ((Y < 1) || (Y > 10000)) 
-      return (1);                /* Bad Year */
-    if (Gotten == 4) 
-      return(1);                 /* Bad Time (Hour only) */
-    if ((Gotten > 4) && (H < 0) || (H > 24)) 
-      return(1);                 /* Bad Hour */
-    if ((Gotten > 4) && ((Min < 0) || (Min > 59))) 
-      return(1);                 /* Bad Minute */
-    if ((Gotten > 5) && ((S < 0) || (S > 59))) 
-      return(1);                 /* Bad Second */
-    *Day = DayNum; 
-    *Month = MonthNum;
-    if (Y < 100)                   /* For abreviations like 90 for 1990    */
-      Y += 1900;                   /* (Yes, it will be wrong in 2000) */
-    *Year = Y;
-    if (Gotten > 4) {
-	*Hour = H;
-	*Minute = Min;
+  M = malloc(strlen(DS) + 2);
+  D = malloc(strlen(DS) + 2);
+  if (!(M && D))
+    return 1;
+  Gotten = sscanf (DS, "%[^-]-%[^-]-%d %d:%d:%d", D, M, &Y, &H, &Min, &S);
+  if (Gotten < 3)
+    Gotten = sscanf (DS, "%[^/]/%[^/]/%d %d:%d:%d", D, M, &Y, &H, &Min, &S);
+  if (Gotten < 3)
+    Gotten = sscanf (DS, "%s %[^,], %d %d:%d:%d", M, D, &Y, &H, &Min, &S);
+  if ((Gotten < 3) || !(D && M && Y))
+    {
+      free(M);
+      free(D);
+      return 1;               /* Couldn't scan in a date */
     }
-    else {
-	*Hour = 0;
-	*Minute = 0;}
-    if (Gotten > 5) 
-      *Sec = S;
-    else
-      *Sec = 0;
-    return(0);
+  if (atoi(M))
+    {               /* Month not text, so M/D/Y not D/M/Y */
+      Temp = M;
+      M = D;
+      D = Temp;
+    }
+  DayNum = atoi(D);
+  MonthNum = MonthNo(M);
+  free(M);
+  free(D);
+  if ((DayNum < 1) || (DayNum > 31))
+    return 1;                /* Bad Day */
+  if (!MonthNum)
+    return 1;                /* Bad Month */
+  if ((Y < 1) || (Y > 10000))
+    return 1;                /* Bad Year */
+  if (Gotten == 4)
+    return 1;                 /* Bad Time (Hour only) */
+  if ((Gotten > 4) && (H < 0) || (H > 24))
+    return 1;                 /* Bad Hour */
+  if ((Gotten > 4) && ((Min < 0) || (Min > 59)))
+    return 1;                 /* Bad Minute */
+  if ((Gotten > 5) && ((S < 0) || (S > 59)))
+    return 1;                 /* Bad Second */
+  *Day = DayNum;
+  *Month = MonthNum;
+  if (Y < 100)                   /* For abreviations like 90 for 1990    */
+    Y += 1900;                   /* (Yes, it will be wrong in 2000) */
+  *Year = Y;
+  if (Gotten > 4)
+    {
+      *Hour = H;
+      *Minute = Min;
+    }
+  else
+    {
+      *Hour = 0;
+      *Minute = 0;
+    }
+  if (Gotten > 5)
+    *Sec = S;
+  else
+    *Sec = 0;
+  return 0;
 }
 
 
@@ -246,20 +215,21 @@ int *Day, *Month, *Year, *Hour, *Minute, *Sec;
 /**  Return the Month number of a Month number or string  **/
 /***********************************************************/
 
-int MonthNo (M)
-char *M;
+int MonthNo(char *M)
 {
-    int Count;
-    if (atoi(M)) {
-	if ((atoi(M) > 0) && (atoi(M) < 13))
-	  return (atoi(M));
-	else
-	  return (0);
-    }  
-    for (Count = 0; Count < 12; Count++) {
-	if (!strcasecmp (M, MONTHNAMES[Count]) 
-	    || !strncasecmp(M, MONTHNAMES[Count], 3)) 
-	  return (Count + 1);
+  int Count;
+  if (atoi(M))
+    {
+      if ((atoi(M) > 0) && (atoi(M) < 13))
+	return atoi(M);
+      else
+	return 0;
     }
-    return (0);
+  for (Count = 0; Count < 12; Count++)
+    {
+      if (!strcasecmp (M, MONTHNAMES[Count])
+	  || !strncasecmp(M, MONTHNAMES[Count], 3))
+	return Count + 1;
+    }
+  return 0;
 }

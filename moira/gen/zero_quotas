@@ -1,6 +1,6 @@
 #!/bin/csh -f
 #
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/zero_quotas,v 1.3 1990-03-19 19:07:48 mar Exp $
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/zero_quotas,v 1.4 1998-01-05 19:52:53 danw Exp $
 #
 # This script zeros quotas for uid's which are not in standard input
 # Note that the input must be sorted in increasing order by uid.
@@ -18,13 +18,13 @@ if ( -f /etc/zero_old_quotas ) then
    while (1)
       # set args = $< will NOT work.  $< will be treated as a single word
       set args = `echo $<`
- 
+
       if (${#args} != 2) break   # end of input
 
       set uid = $args[1]
       @ checksorted = ($current_uid <= $uid)
 
-      if (checksorted == 0) then 
+      if (checksorted == 0) then
 	echo "Input not sorted"
 	exit $MR_SETQUOTA
       endif
@@ -39,10 +39,10 @@ if ( -f /etc/zero_old_quotas ) then
      @ current_uid = $uid + 1
 
    end
-  
+
    # zero all remaining quotas, except for nobody (32767).
    if ($current_uid != 32767) setquota -r $dev $current_uid 32766 0
-   
+
 endif
 
 exit 0

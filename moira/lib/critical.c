@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/critical.c,v 1.14 1997-01-29 23:24:07 danw Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/critical.c,v 1.15 1998-01-05 19:53:01 danw Exp $
  *
  * Log and send a zephyrgram about any critical errors.
  *
@@ -37,35 +37,33 @@ extern char *whoami;
  * don't necessarily have vsprintf().
  */
 
-void critical_alert(instance, msg, arg1, arg2, arg3, arg4,
-		    arg5, arg6, arg7, arg8)
-  char *instance;		/* Instance for zephyr gram */
-  char *msg;			/* printf format message */
-  char *arg1, *arg2, *arg3, *arg4, *arg5, *arg6, *arg7, *arg8;
+void critical_alert(char *instance, char *msg, char *arg1, char *arg2,
+		    char *arg3, char *arg4, char *arg5, char *arg6,
+		    char *arg7, char *arg8)
 {
-    FILE *crit;			/* FILE for critical log file */
-    char buf[BUFSIZ];		/* Holds the formatted message */
+  FILE *crit;			/* FILE for critical log file */
+  char buf[BUFSIZ];		/* Holds the formatted message */
 
-    sprintf(buf, msg, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8);
+  sprintf(buf, msg, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8);
 
-    /* Send zephyr notice */
-    send_zgram(instance, buf);
+  /* Send zephyr notice */
+  send_zgram(instance, buf);
 
-    /* Log message to critical file */
-    if ((crit = fopen(CRITERRLOG, "a")) != (FILE *)NULL) 
+  /* Log message to critical file */
+  if ((crit = fopen(CRITERRLOG, "a")))
     {
-	time_t t;
-	char  *time_s;
+      time_t t;
+      char *time_s;
 
-	time(&t);
-	time_s = ctime(&t) + 4;
-	time_s[strlen(time_s)-6] = '\0';
+      time(&t);
+      time_s = ctime(&t) + 4;
+      time_s[strlen(time_s) - 6] = '\0';
 
-	fprintf(crit, "%s <%d> %s\n", time_s, getpid(), buf);
-	fclose(crit);
+      fprintf(crit, "%s <%d> %s\n", time_s, getpid(), buf);
+      fclose(crit);
     }
 
-    com_err(whoami, 0, buf);
+  com_err(whoami, 0, buf);
 }
 
 
@@ -74,34 +72,28 @@ void critical_alert(instance, msg, arg1, arg2, arg3, arg4,
  * errors while sending message.
  */
 
-send_zgram(inst, msg)
-char *inst;
-char *msg;
+send_zgram(char *inst, char *msg)
 {
 #ifdef ZEPHYR
-    ZNotice_t znotice;
+  ZNotice_t znotice;
 
-#ifdef POSIX
-    memset (&znotice, 0, sizeof (znotice));
-#else
-    bzero (&znotice, sizeof (znotice));
-#endif
-    znotice.z_kind = UNSAFE;
-    znotice.z_class = "MOIRA";
-    znotice.z_class_inst = inst;
-    znotice.z_default_format = "MOIRA $instance on $fromhost:\n $message\n";
-    (void) ZInitialize ();
-    znotice.z_message = msg;
-    znotice.z_message_len = strlen(msg) + 1;
-    znotice.z_opcode = "";
-    znotice.z_recipient = "";
-    ZSendNotice(&znotice, ZNOAUTH);
+  memset(&znotice, 0, sizeof(znotice));
+  znotice.z_kind = UNSAFE;
+  znotice.z_class = "MOIRA";
+  znotice.z_class_inst = inst;
+  znotice.z_default_format = "MOIRA $instance on $fromhost:\n $message\n";
+  ZInitialize();
+  znotice.z_message = msg;
+  znotice.z_message_len = strlen(msg) + 1;
+  znotice.z_opcode = "";
+  znotice.z_recipient = "";
+  ZSendNotice(&znotice, ZNOAUTH);
 #endif
 #ifdef SYSLOG
-    {
-	char buf[512];
-	sprintf(buf, "MOIRA: %s %s", inst, msg);
-	syslog(LOG_ERR, buf);
-    }
+  {
+    char buf[512];
+    sprintf(buf, "MOIRA: %s %s", inst, msg);
+    syslog(LOG_ERR, buf);
+  }
 #endif
 }

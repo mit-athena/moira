@@ -1,4 +1,4 @@
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/Imakefile,v 1.9 1997-07-07 22:29:17 danw Exp $
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/Imakefile,v 1.10 1998-01-05 19:52:42 danw Exp $
 #
 # Copyright 1993 by the Massachusetts Institute of Technology.
 #
@@ -25,13 +25,13 @@ DEFINES = $(GDSSINC)
 #else /* DO_GDSS */
 SRCS = util.c moddiff.c passwd.c hesiod.c \
 	nfs.c mailhub.c pobox.c \
-	hosts.c network.c 
+	hosts.c network.c
 OBJS = util.o moddiff.o passwd.o hesiod.o \
 	nfs.o mailhub.o pobox.o \
-	hosts.o network.o 
+	hosts.o network.o
 CODE = util.c moddiff.pc passwd.pc hesiod.pc \
 	nfs.pc mailhub.pc pobox.pc \
-	hosts.pc network.pc 
+	hosts.pc network.pc
 LIBS =  -L/usr/athena/lib ../lib/libmoira.a -lcom_err -lzephyr \
 	-lkrb -ldes -lhesiod ${SQL_LIB}
 DEFINES =

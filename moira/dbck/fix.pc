@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/fix.pc,v 1.1 1997-01-29 23:13:08 danw Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/fix.pc,v 1.2 1998-01-05 19:52:31 danw Exp $
  *
  * User interface routines for dbck (Moira database consistency checker)
  *
@@ -15,145 +15,131 @@
 EXEC SQL INCLUDE sqlca;  /* SQL Communications Area */
 EXEC SQL INCLUDE sqlda;  /* SQL Descriptor Area */
 
-static char fix_qc_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/fix.pc,v 1.1 1997-01-29 23:13:08 danw Exp $";
+static char fix_qc_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/fix.pc,v 1.2 1998-01-05 19:52:31 danw Exp $";
 
-EXEC SQL BEGIN DECLARE SECTION; 
+EXEC SQL BEGIN DECLARE SECTION;
 char *_table;
 char *_idfield;
 char stmt_buf[500];
-EXEC SQL END DECLARE SECTION; 
+EXEC SQL END DECLARE SECTION;
 
 extern SQLDA *mr_sqlda;
 
-generic_ffunc(id)
-EXEC SQL BEGIN DECLARE SECTION; 
-int id;
-EXEC SQL END DECLARE SECTION; 
+int generic_ffunc(int id)
 {
-    EXEC SQL BEGIN DECLARE SECTION; 
-    int rowcount;
-    EXEC SQL END DECLARE SECTION; 
+  int rowcount;
 
-    sprintf(stmt_buf,"DELETE FROM %s WHERE %s.%s = %d",
-	    _table,_table,_idfield,id);
-    EXEC SQL EXECUTE IMMEDIATE :stmt_buf;
-    rowcount = sqlca.sqlerrd[2];
-    if (rowcount > 0)
-      printf("%d entr%s deleted\n", rowcount, rowcount==1?"y":"ies");
-    else
-      printf("Not deleted\n");
-    modified(_table);
+  sprintf(stmt_buf, "DELETE FROM %s WHERE %s.%s = %d",
+	  _table, _table, _idfield, id);
+  EXEC SQL EXECUTE IMMEDIATE :stmt_buf;
+  rowcount = sqlca.sqlerrd[2];
+  if (rowcount > 0)
+    printf("%d entr%s deleted\n", rowcount, rowcount == 1 ? "y" : "ies");
+  else
+    printf("Not deleted\n");
+  modified(_table);
 }
 
 
-generic_delete(sq, pfunc, table, idfield, preen)
-struct save_queue *sq;
-void (*pfunc)();
-char *table, *idfield;
-int preen;
+int generic_delete(struct save_queue *sq, void (*pfunc)(), char *table,
+		   char *idfield, int preen)
 {
-    _table = table;
-    _idfield = idfield;
-    generic_fix(sq, pfunc, "Delete", generic_ffunc, preen);
+  _table = table;
+  _idfield = idfield;
+  generic_fix(sq, pfunc, "Delete", generic_ffunc, preen);
 }
 
 
-single_delete(table, idfield, id)
-char *table, *idfield;
-int id;
+int single_delete(char *table, char *idfield, int id)
 {
-    _table = table;
-    _idfield = idfield;
-    generic_ffunc(id);
+  _table = table;
+  _idfield = idfield;
+  generic_ffunc(id);
 }
 
 
-zero_fix(tbl, zrfield, idfield, id)
-EXEC SQL BEGIN DECLARE SECTION; 
-char *tbl, *zrfield, *idfield;
-int id;
-EXEC SQL END DECLARE SECTION; 
+int zero_fix(char *tbl, char *zrfield, char *idfield, int id)
 {
-    EXEC SQL BEGIN DECLARE SECTION; 
-    int rowcount;
-    EXEC SQL END DECLARE SECTION; 
+  int rowcount;
 
-    sprintf(stmt_buf,"UPDATE %s SET %s = 0 WHERE %s.%s = %d",
-	    tbl,zrfield,tbl,idfield,id);
-    EXEC SQL EXECUTE IMMEDIATE :stmt_buf;
-    rowcount = sqlca.sqlerrd[2];
-    if (rowcount > 0)
-      printf("%d entr%s fixed\n", rowcount, rowcount==1?"y":"ies");
-    else
-      printf("Not fixed\n");
-    modified(tbl);
+  sprintf(stmt_buf, "UPDATE %s SET %s = 0 WHERE %s.%s = %d",
+	  tbl, zrfield, tbl, idfield, id);
+  EXEC SQL EXECUTE IMMEDIATE :stmt_buf;
+  rowcount = sqlca.sqlerrd[2];
+  if (rowcount > 0)
+    printf("%d entr%s fixed\n", rowcount, rowcount == 1 ? "y" : "ies");
+  else
+    printf("Not fixed\n");
+  modified(tbl);
 }
 
 
-int single_fix(msg, preen)
-char *msg;
-int preen;
+int single_fix(char *msg, int preen)
 {
-    if (mode == MODE_PREEN)
-      return(preen);
+  if (mode == MODE_PREEN)
+    return preen;
 
-    switch (mode) {
+  switch (mode)
+    {
     case MODE_ASK:
-	if (!prompt(msg))
-	  break;
-    case MODE_YES:
-	return(1);
+      if (!prompt(msg))
 	break;
+    case MODE_YES:
+      return 1;
+      break;
     case MODE_NO:
-	;
+      ;
     }
-    return(0);
+  return 0;
 }
 
 
-generic_fix(sq, pfunc, msg, ffunc, preen)
-struct save_queue *sq;
-char *msg;
-int (*pfunc)(), (*ffunc)();
-int preen;
+int generic_fix(struct save_queue *sq, int (*pfunc)(), char *msg,
+		int (*ffunc)(), int preen)
 {
-    int id;
+  int id;
 
-    while (sq_get_data(sq, &id)) {
-	if ((*pfunc)(id) == 0 && single_fix(msg, preen))
-	  (*ffunc)(id);
+  while (sq_get_data(sq, &id))
+    {
+      if ((*pfunc)(id) == 0 && single_fix(msg, preen))
+	(*ffunc)(id);
     }
-    sq_destroy(sq);
+  sq_destroy(sq);
 }
 
 
-int prompt(msg)
-char *msg;
+int prompt(char *msg)
 {
-    char buf[BUFSIZ];
-    EXEC SQL BEGIN DECLARE SECTION; 
-    extern int dcmenable;
-    EXEC SQL END DECLARE SECTION; 
+  char buf[BUFSIZ];
+  EXEC SQL BEGIN DECLARE SECTION;
+  extern int dcmenable;
+  EXEC SQL END DECLARE SECTION;
 
-    while (1) {
-	printf("%s (Y/N/Q)? ", msg);
-	fflush(stdout);
-	gets(buf);
-	if (buf[0] == 'Y' || buf[0] == 'y')
-	  return(1);
-	if (buf[0] == 'N' || buf[0] == 'n')
-	  return(0);
-	if (buf[0] == 'Q' || buf[0] == 'q') {
-	    if (prompt("Are you sure you want to quit")) {
-		if (prompt("Save database changes")) {
-		    EXEC SQL COMMIT WORK;
-		    cleanup();
-		    exit(0);
-		} else {
-		    EXEC SQL ROLLBACK WORK;
-		    EXEC SQL UPDATE numvalues SET value = :dcmenable
-			WHERE name='dcm_enable';
-		    exit(1);
+  while (1)
+    {
+      printf("%s (Y/N/Q)? ", msg);
+      fflush(stdout);
+      gets(buf);
+      if (buf[0] == 'Y' || buf[0] == 'y')
+	return 1;
+      if (buf[0] == 'N' || buf[0] == 'n')
+	return 0;
+      if (buf[0] == 'Q' || buf[0] == 'q')
+	{
+	  if (prompt("Are you sure you want to quit"))
+	    {
+	      if (prompt("Save database changes"))
+		{
+		  EXEC SQL COMMIT WORK;
+		  cleanup();
+		  exit(0);
+		}
+	      else
+		{
+		  EXEC SQL ROLLBACK WORK;
+		  EXEC SQL UPDATE numvalues SET value = :dcmenable
+		    WHERE name = 'dcm_enable';
+		  exit(1);
 		}
 	    }
 	}
@@ -172,82 +158,77 @@ char *msg;
  **
  **/
 
-int set_next_object_id(object, tablename)
-EXEC SQL BEGIN DECLARE SECTION;
-    char *object;
-EXEC SQL END DECLARE SECTION;
-    char *tablename;
+int set_next_object_id(char *object, char *tablename)
 {
-    EXEC SQL BEGIN DECLARE SECTION; 
-    int value;
-    char stmt_buf[256], out_buf[256];
-    EXEC SQL END DECLARE SECTION; 
-    int starting_value, errcode=0;
+  EXEC SQL BEGIN DECLARE SECTION;
+  int value;
+  char stmt_buf[256], out_buf[256];
+  EXEC SQL END DECLARE SECTION;
+  int starting_value, errcode = 0;
 
-    EXEC SQL SELECT value INTO :value FROM numvalues WHERE name = :object;
-    if (sqlca.sqlerrd[2] != 1)
-	return(MR_NO_ID);
+  EXEC SQL SELECT value INTO :value FROM numvalues WHERE name = :object;
+  if (sqlca.sqlerrd[2] != 1)
+    return MR_NO_ID;
 
-    starting_value=value;
-    while(1) {
-        if (value > MAX_ID_VALUE) value = MIN_ID_VALUE;
+  starting_value = value;
+  while (1)
+    {
+      if (value > MAX_ID_VALUE)
+	value = MIN_ID_VALUE;
 
-	sprintf(stmt_buf, "SELECT %s FROM %s WHERE %s=%d",
-		object, tablename, object, value);
-	EXEC SQL PREPARE inc_stmt FROM :stmt_buf;
-	EXEC SQL DECLARE inc_crs CURSOR FOR inc_stmt;
-	EXEC SQL OPEN inc_crs;
-	mr_sqlda->N = 1;
-	EXEC SQL DESCRIBE SELECT LIST FOR inc_stmt INTO mr_sqlda;
-	mr_sqlda->N = mr_sqlda->F;
-	mr_sqlda->V[0]=out_buf;
-	mr_sqlda->T[0]=97;
-	mr_sqlda->L[0]=255;
-	EXEC SQL FETCH inc_crs USING DESCRIPTOR mr_sqlda;
+      sprintf(stmt_buf, "SELECT %s FROM %s WHERE %s = %d",
+	      object, tablename, object, value);
+      EXEC SQL PREPARE inc_stmt FROM :stmt_buf;
+      EXEC SQL DECLARE inc_crs CURSOR FOR inc_stmt;
+      EXEC SQL OPEN inc_crs;
+      mr_sqlda->N = 1;
+      EXEC SQL DESCRIBE SELECT LIST FOR inc_stmt INTO mr_sqlda;
+      mr_sqlda->N = mr_sqlda->F;
+      mr_sqlda->V[0] = out_buf;
+      mr_sqlda->T[0] = 97;
+      mr_sqlda->L[0] = 255;
+      EXEC SQL FETCH inc_crs USING DESCRIPTOR mr_sqlda;
 
-	/* if we got an error from the FETCH, we have to preserve it or the
-	   close will reset it and the caller with think nothing happened */
-	if(sqlca.sqlcode) errcode=sqlca.sqlcode;
+      /* if we got an error from the FETCH, we have to preserve it or the
+	 close will reset it and the caller with think nothing happened */
+      if (sqlca.sqlcode)
+	errcode = sqlca.sqlcode;
 
-	EXEC SQL CLOSE inc_crs;
-	if (errcode < 0) return(MR_DBMS_ERR);
-	if (errcode == 1403) break;
+      EXEC SQL CLOSE inc_crs;
+      if (errcode < 0)
+	return MR_DBMS_ERR;
+      if (errcode == 1403)
+	break;
 
-	value++;
-	if (value == starting_value) return (MR_NO_ID);
+      value++;
+      if (value == starting_value)
+	return MR_NO_ID;
     }
 
-    printf("setting ID %s to %d\n", object, value);
-    EXEC SQL UPDATE numvalues SET value = :value WHERE name = :object;
-    modified("values");
-    return(MR_SUCCESS);
+  printf("setting ID %s to %d\n", object, value);
+  EXEC SQL UPDATE numvalues SET value = :value WHERE name = :object;
+  modified("values");
+  return MR_SUCCESS;
 }
 
 
-generic_fix_id(tbl, idfield, txtfield, oldid, name)
-    EXEC SQL BEGIN DECLARE SECTION; 
-    char *tbl;
-    char *idfield;
-    char *txtfield;
-    int oldid;
-    char *name;
-    EXEC SQL END DECLARE SECTION; 
+int generic_fix_id(char *tbl, char *idfield, char *txtfield,
+		   int oldid, char *name)
 {
-    EXEC SQL BEGIN DECLARE SECTION; 
-    int rowcount, id;
-    EXEC SQL END DECLARE SECTION; 
+  EXEC SQL BEGIN DECLARE SECTION;
+  int rowcount, id;
+  EXEC SQL END DECLARE SECTION;
 
-    set_next_object_id(tbl, idfield);
-    EXEC SQL SELECT value INTO :id FROM numvalues
-	WHERE name = :idfield;
-    sprintf(stmt_buf,"UPDATE %s SET %s = %d WHERE %s=%d AND %s='%s'",
-	    tbl,idfield,id,idfield,oldid,txtfield,name);
-    EXEC SQL EXECUTE IMMEDIATE :stmt_buf;
-    rowcount = sqlca.sqlerrd[2];
-    if (rowcount == 1)
-      printf("Fixed\n");
-    else
-      printf("Not fixed, rowcount = %d\n", rowcount);
-    modified(tbl);
-    return(id);
+  set_next_object_id(tbl, idfield);
+  EXEC SQL SELECT value INTO :id FROM numvalues WHERE name = :idfield;
+  sprintf(stmt_buf, "UPDATE %s SET %s = %d WHERE %s = %d AND %s = '%s'",
+	  tbl, idfield, id, idfield, oldid, txtfield, name);
+  EXEC SQL EXECUTE IMMEDIATE :stmt_buf;
+  rowcount = sqlca.sqlerrd[2];
+  if (rowcount == 1)
+    printf("Fixed\n");
+  else
+    printf("Not fixed, rowcount = %d\n", rowcount);
+  modified(tbl);
+  return id;
 }

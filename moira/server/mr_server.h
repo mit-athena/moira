@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_server.h,v $
  *	$Author: danw $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_server.h,v 1.29 1997-09-05 19:15:04 danw Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_server.h,v 1.30 1998-01-05 19:53:32 danw Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
@@ -19,9 +19,9 @@
 #include <stdarg.h>
 
 typedef struct returned_tuples {
-	struct returned_tuples *next;
-	OPERATION op;
-	mr_params *retval;
+  struct returned_tuples *next;
+  OPERATION op;
+  mr_params *retval;
 } returned_tuples;
 
 /*
@@ -29,9 +29,9 @@ typedef struct returned_tuples {
  */
 
 struct krbname {
-	char name[ANAME_SZ];
-	char inst[INST_SZ];
-	char realm[REALM_SZ];
+  char name[ANAME_SZ];
+  char inst[INST_SZ];
+  char realm[REALM_SZ];
 };
 
 /*
@@ -40,19 +40,19 @@ struct krbname {
  */
 
 typedef struct _client {
-	OPERATION pending_op;	/* Primary pending operation */
-	CONNECTION con;		/* Connection to the client */
-	int action;		/* what action is pending? */
-	mr_params *args, reply;
-	int id;			/* Unique id of client */
-	struct sockaddr_in haddr; /* IP address of client */
-	char clname[MAX_K_NAME_SZ];/* Name client authenticated to */
-	struct krbname kname; 	/* Parsed version of the above */
-	int users_id;		/* MR internal ID of authenticated user */
-	int client_id;		/* MR internal ID of client for modby field */
-	returned_tuples *first, *last;
-	time_t last_time_used;  /* Last time connection used */
-	char entity[9];		/* entity on other end of the connection */
+  OPERATION pending_op;		/* Primary pending operation */
+  CONNECTION con;		/* Connection to the client */
+  int action;			/* what action is pending? */
+  mr_params *args, reply;
+  int id;			/* Unique id of client */
+  struct sockaddr_in haddr; 	/* IP address of client */
+  char clname[MAX_K_NAME_SZ];	/* Name client authenticated to */
+  struct krbname kname; 	/* Parsed version of the above */
+  int users_id;			/* MR internal ID of authenticated user */
+  int client_id;		/* MR internal ID of client for modby field */
+  returned_tuples *first, *last;
+  time_t last_time_used;	/* Last time connection used */
+  char entity[9];		/* entity on other end of the connection */
 } client;
 
 /*
@@ -119,7 +119,7 @@ extern time_t inc_started, now;
 int gdb_init(void);
 int gdb_debug(int flag);
 void start_accepting_client(CONNECTION, OPERATION, CONNECTION *,
-			     char *, int*, TUPLE *);
+			     char *, int *, TUPLE *);
 int initialize_operation(OPERATION, int (*init_function)(), char *,
 			 int (*cancel_function)());
 int reset_operation(OPERATION);

@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/sign.pc,v 1.1 1997-01-29 23:26:06 danw Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/sign.pc,v 1.2 1998-01-05 19:53:24 danw Exp $
  *
  * This program will bulk sign user records in the database.
  */
@@ -18,130 +18,144 @@ EXEC SQL INCLUDE sqlca;
 
 char *program;
 
-main(argc, argv)
-int argc;
-char **argv;
+int main(int argc, char **argv)
 {
-     char buf[BUFSIZ], *data, *p;
-     struct save_queue *sq;
-     SigInfo si;
-     int found, status, i, wait;
-     EXEC SQL BEGIN DECLARE SECTION;
-     char login[10], mid[32], rawsig[256], *db="moira";
-     int id, timestamp, sms;
-     EXEC SQL END DECLARE SECTION;
+  char buf[BUFSIZ], *data, *p;
+  struct save_queue *sq;
+  SigInfo si;
+  int found, status, i, wait;
+  EXEC SQL BEGIN DECLARE SECTION;
+  char login[10], mid[32], rawsig[256], *db = "moira";
+  int id, timestamp, sms;
+  EXEC SQL END DECLARE SECTION;
 
-     program = "sign";
-     init_krb_err_tbl();
-     init_sms_err_tbl();
-     initialize_gdss_error_table();
+  program = "sign";
+  init_krb_err_tbl();
+  init_sms_err_tbl();
+  initialize_gdss_error_table();
 
-     for (i = 1; i < argc; i++) {
-	if (!strcmp(argv[i], "-w"))
-	  wait++;
-	else if (!strcmp(argv[i], "-D"))
-	  setenv("ING_SET", "set printqry");
-	else
-	  fprintf(stderr, "Usage: %s [-w] [-D]\n", argv[0]);
+  for (i = 1; i < argc; i++)
+    {
+      if (!strcmp(argv[i], "-w"))
+	wait++;
+      else if (!strcmp(argv[i], "-D"))
+	setenv("ING_SET", "set printqry");
+      else
+	fprintf(stderr, "Usage: %s [-w] [-D]\n", argv[0]);
     }
 
-     /* Set the name of our kerberos ticket file */
-     krb_set_tkt_string("/tmp/tkt_sign");
-     status = 1;
-     while (status) {
-	 printf("Authenticating as moira.extra:\n");
-	 status = krb_get_pw_in_tkt("moira", "extra", "ATHENA.MIT.EDU",
-				    "krbtgt", "ATHENA.MIT.EDU",
-				    DEFAULT_TKT_LIFE, 0);
-	 if (status != 0)
-	   com_err(program, status + krb_err_base, " in krb_get_pw_in_tkt");
-     }
+  /* Set the name of our kerberos ticket file */
+  krb_set_tkt_string("/tmp/tkt_sign");
+  status = 1;
+  while (status)
+    {
+      printf("Authenticating as moira.extra:\n");
+      status = krb_get_pw_in_tkt("moira", "extra", "ATHENA.MIT.EDU",
+				 "krbtgt", "ATHENA.MIT.EDU",
+				 DEFAULT_TKT_LIFE, 0);
+      if (status)
+	com_err(program, status + krb_err_base, " in krb_get_pw_in_tkt");
+    }
 
-     EXEC SQL CONNECT :db IDENTIFIED BY :db;
-     if (sqlca.sqlcode != 0) {
-	 com_err(program, 0, "dbms error %d", sqlca.sqlcode);
-	 exit(1);
-     }
+  EXEC SQL CONNECT :db IDENTIFIED BY :db;
+  if (sqlca.sqlcode)
+    {
+      com_err(program, 0, "dbms error %d", sqlca.sqlcode);
+      exit(1);
+    }
 
-     sms = 0;
-     EXEC SQL SELECT string_id INTO :sms FROM strings 
-       WHERE string='moira.extra@ATHENA.MIT.EDU';
-     if (sms == 0) {
-	 com_err(program, 0, " failed to find string moira.extra@ATHENA.MIT.EDU in database");
-	 dest_tkt();
-	 exit(1);
-     }
+  sms = 0;
+  EXEC SQL SELECT string_id INTO :sms FROM strings
+    WHERE string = 'moira.extra@ATHENA.MIT.EDU';
+  if (sms == 0)
+    {
+      com_err(program, 0, " failed to find string moira.extra@ATHENA.MIT.EDU "
+	      "in database");
+      dest_tkt();
+      exit(1);
+    }
 
-     found = 0;
-     sq = sq_create();
+  found = 0;
+  sq = sq_create();
 
-     EXEC SQL DECLARE c CURSOR FOR
-       SELECT users_id, login, clearid
-       FROM users WHERE signature = CHR(0);
-     if (sqlca.sqlcode != 0) {
-	 com_err(program, 0, "dbms error %d", sqlca.sqlcode);
-	 exit(1);
-     }
-     EXEC SQL OPEN c;
-     if (sqlca.sqlcode != 0) {
-	 com_err(program, 0, "dbms error %d", sqlca.sqlcode);
-	 exit(1);
-     }
-     while (1) {
-	 EXEC SQL FETCH c INTO :id, :login, :mid;
-	 if (sqlca.sqlcode != 0) break;
-	 if (login[0] == '#' || !isdigit(mid[0]))
-	   continue;
-	 sprintf(buf, "%d:%s:%s", id, strtrim(login), strtrim(mid));
-	 sq_save_data(sq, strsave(buf));
-	 found++;
-     }
-     EXEC SQL CLOSE c;
-     EXEC SQL COMMIT WORK;
-     printf("Found %d users to sign.\n", found);
+  EXEC SQL DECLARE c CURSOR FOR
+    SELECT users_id, login, clearid
+    FROM users WHERE signature = CHR(0);
+  if (sqlca.sqlcode)
+    {
+      com_err(program, 0, "dbms error %d", sqlca.sqlcode);
+      exit(1);
+    }
+  EXEC SQL OPEN c;
+  if (sqlca.sqlcode)
+    {
+      com_err(program, 0, "dbms error %d", sqlca.sqlcode);
+      exit(1);
+    }
+  while (1)
+    {
+      EXEC SQL FETCH c INTO :id, :login, :mid;
+      if (sqlca.sqlcode)
+	break;
+      if (login[0] == '#' || !isdigit(mid[0]))
+	continue;
+      sprintf(buf, "%d:%s:%s", id, strtrim(login), strtrim(mid));
+      sq_save_data(sq, strsave(buf));
+      found++;
+    }
+  EXEC SQL CLOSE c;
+  EXEC SQL COMMIT WORK;
+  printf("Found %d users to sign.\n", found);
 
-     si.rawsig = (unsigned char *) &rawsig[0];
+  si.rawsig = (unsigned char *) &rawsig[0];
 
-     while (sq_get_data(sq, &data)) {
-	 p = strchr(data, ':');
-	 if (!p) {
-	     com_err(program, 0, " malformatted data");
-	     continue;
-	 }
-	 *p++ = 0;
-	 id = atoi(data);
-	 data = p;
-     again:
-	 status = GDSS_Sign(data, strlen(data), buf);
-	 if (status) {
-	     com_err(program, gdss2et(status), "signing data");
-	     continue;
-	 }
-	 status = GDSS_Verify(data, strlen(data), buf, &si);
-	 if (status) {
-	     com_err(program, gdss2et(status), "verifying data");
-	     continue;
-	 }
-	 if (strlen(rawsig) > 68) {
-	     sleep(1);
-	     goto again;
-	 }
+  while (sq_get_data(sq, &data))
+    {
+      p = strchr(data, ':');
+      if (!p)
+	{
+	  com_err(program, 0, " malformatted data");
+	  continue;
+	}
+      *p++ = '\0';
+      id = atoi(data);
+      data = p;
+    again:
+      status = GDSS_Sign(data, strlen(data), buf);
+      if (status)
+	{
+	  com_err(program, gdss2et(status), "signing data");
+	  continue;
+	}
+      status = GDSS_Verify(data, strlen(data), buf, &si);
+      if (status)
+	{
+	  com_err(program, gdss2et(status), "verifying data");
+	  continue;
+	}
+      if (strlen(rawsig) > 68)
+	{
+	  sleep(1);
+	  goto again;
+	}
 
-	 timestamp = si.timestamp;
-	 EXEC SQL UPDATE users 
-	   SET signature = :rawsig, sigwho = :sms, sigdate = :timestamp
-	   WHERE users_id = :id;
-	 if (sqlca.sqlcode != 0) {
-	     com_err(program, 0, "dbms error %d", sqlca.sqlcode);
-	     exit(1);
-	 }
-	 EXEC SQL COMMIT WORK;
-	 if (wait) {
-	     printf("Next");
-	     fflush(stdout);
-	     gets(buf);
-	 }
-     }
-     dest_tkt();
-     exit(0);
+      timestamp = si.timestamp;
+      EXEC SQL UPDATE users
+	SET signature = :rawsig, sigwho = :sms, sigdate = :timestamp
+	WHERE users_id = :id;
+      if (sqlca.sqlcode)
+	{
+	  com_err(program, 0, "dbms error %d", sqlca.sqlcode);
+	  exit(1);
+	}
+      EXEC SQL COMMIT WORK;
+      if (wait)
+	{
+	  printf("Next");
+	  fflush(stdout);
+	  gets(buf);
+	}
+    }
+  dest_tkt();
+  exit(0);
 }

@@ -1,16 +1,16 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_query.c,v $
  *	$Author: danw $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_query.c,v 1.10 1997-01-29 23:24:20 danw Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_query.c,v 1.11 1998-01-05 19:53:14 danw Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
  *	<mit-copyright.h>.
- * 
+ *
  */
 
 #ifndef lint
-static char *rcsid_sms_query_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_query.c,v 1.10 1997-01-29 23:24:20 danw Exp $";
+static char *rcsid_sms_query_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_query.c,v 1.11 1998-01-05 19:53:14 danw Exp $";
 #endif
 
 #include <mit-copyright.h>
@@ -26,21 +26,19 @@ static char *rcsid_sms_query_c = "$Header: /afs/.athena.mit.edu/astaff/project/m
  */
 static int level = 0;
 
-int mr_query(name, argc, argv, callproc, callarg)
-    char *name;		/* Query name */
-    int argc;		/* Arg count */
-    char **argv;		/* Args */
-    int (*callproc)();	/* Callback procedure */
-    char *callarg;		/* Callback argument */
+int mr_query(char *name, int argc, char **argv,
+	     int (*callproc)(), char *callarg)
 {
-    register char **nargv = (char **)malloc(sizeof(char *) * (argc+1));
-    register int status = 0;
-    nargv[0] = name;
-    memcpy((char *)(nargv+1), (char *)argv, sizeof(char *) * argc);
-    status = mr_query_internal(argc+1, nargv, callproc, callarg);
-    free(nargv);
-    return status;
+  register char **nargv = malloc(sizeof(char *) * (argc + 1));
+  register int status = 0;
+
+  nargv[0] = name;
+  memcpy(nargv + 1, argv, sizeof(char *) * argc);
+  status = mr_query_internal(argc + 1, nargv, callproc, callarg);
+  free(nargv);
+  return status;
 }
+
 /*
  * This routine makes an MR query.
  *
@@ -54,54 +52,51 @@ int mr_query(name, argc, argv, callproc, callarg)
  * way to send it a quench..)
  */
 
-int mr_query_internal(argc, argv, callproc, callarg)
-    int argc;		/* Arg count */
-    char **argv;		/* Args */
-    int (*callproc)();	/* Callback procedure */
-    char *callarg;		/* Callback argument */
+int mr_query_internal(int argc, char **argv, int (*callproc)(), char *callarg)
 {
-    int status;
-    mr_params params_st;
-    register mr_params *params = NULL;
-    mr_params *reply = NULL;
-    int stopcallbacks = 0;
+  int status;
+  mr_params params_st;
+  register mr_params *params = NULL;
+  mr_params *reply = NULL;
+  int stopcallbacks = 0;
 
-    if (level) return MR_QUERY_NOT_REENTRANT;
-    
-    CHECK_CONNECTED;
-    level++;
+  if (level)
+    return MR_QUERY_NOT_REENTRANT;
 
-    params = &params_st; 
-    params->mr_version_no = sending_version_no;
-    params->mr_procno = MR_QUERY;
-    params->mr_argc = argc;
-    params->mr_argl = NULL;
-    params->mr_argv = argv;
-	
-    if ((status = mr_do_call(params, &reply)))
-	goto punt;
+  CHECK_CONNECTED;
+  level++;
 
-    while ((status = reply->mr_status) == MR_MORE_DATA) {
-	if (!stopcallbacks) 
-	    stopcallbacks =
-		(*callproc)(reply->mr_argc, reply->mr_argv, callarg);
-	mr_destroy_reply(reply);
-	reply = NULL;
+  params = &params_st;
+  params->mr_version_no = sending_version_no;
+  params->mr_procno = MR_QUERY;
+  params->mr_argc = argc;
+  params->mr_argl = NULL;
+  params->mr_argv = argv;
 
-	initialize_operation(_mr_recv_op, mr_start_recv, &reply,
-			     (int (*)())NULL);
-	queue_operation(_mr_conn, CON_INPUT, _mr_recv_op);
+  if ((status = mr_do_call(params, &reply)))
+    goto punt;
 
-	mr_complete_operation(_mr_recv_op);
-	if (OP_STATUS(_mr_recv_op) != OP_COMPLETE) {
-	    mr_disconnect();
-	    status = MR_ABORTED;
-	    goto punt_1;
+  while ((status = reply->mr_status) == MR_MORE_DATA)
+    {
+      if (!stopcallbacks)
+	stopcallbacks = (*callproc)(reply->mr_argc, reply->mr_argv, callarg);
+      mr_destroy_reply(reply);
+      reply = NULL;
+
+      initialize_operation(_mr_recv_op, mr_start_recv, &reply, NULL);
+      queue_operation(_mr_conn, CON_INPUT, _mr_recv_op);
+
+      mr_complete_operation(_mr_recv_op);
+      if (OP_STATUS(_mr_recv_op) != OP_COMPLETE)
+	{
+	  mr_disconnect();
+	  status = MR_ABORTED;
+	  goto punt_1;
 	}
-    }	
+    }
 punt:
-    mr_destroy_reply(reply);
+  mr_destroy_reply(reply);
 punt_1:
-    level--;
-    return status;
+  level--;
+  return status;
 }

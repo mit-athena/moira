@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase4.pc,v 1.2 1998-01-05 15:01:16 danw Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase4.pc,v 1.3 1998-01-05 19:52:38 danw Exp $
  *
  *  (c) Copyright 1988 by the Massachusetts Institute of Technology.
  *  For copying and distribution information, please see the file
@@ -6,228 +6,232 @@
  */
 
 #include <mit-copyright.h>
+#include <stdlib.h>
 #include <moira.h>
 #include "dbck.h"
 EXEC SQL INCLUDE sqlca;
 
-static char phase4_qc_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase4.pc,v 1.2 1998-01-05 15:01:16 danw Exp $";
+static char phase4_qc_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase4.pc,v 1.3 1998-01-05 19:52:38 danw Exp $";
 
 EXEC SQL WHENEVER SQLERROR DO dbmserr();
 
-count_boxes(id, u, boxes)
-int id;
-struct user *u;
-struct hash *boxes;
+count_boxes(int id, struct user *u, struct hash *boxes)
 {
-    int i;
+  int i;
 
-    if (u->potype == 'P') {
-      if (i = (int) hash_lookup(boxes, u->pobox_id)) {
-	  if( hash_store(boxes, u->pobox_id, i+1) == -1 ) {
+  if (u->potype == 'P')
+    {
+      if ((i = (int) hash_lookup(boxes, u->pobox_id)))
+	{
+	  if (hash_store(boxes, u->pobox_id, i + 1) == -1)
 	    out_of_mem("storing poboxes in hash table");
-	  }
-      } else {
+	}
+      else
+	{
 	  printf("User %s(%s) has pobox on non-POP server %d\n",
 		 u->fullname, u->login, u->pobox_id);
 	  printf("Not fixing this error\n");
-      }
-    }
-}
-
-
-check_box_counts(id, cnt, counts)
-int id, cnt;
-struct hash *counts;
-{
-    EXEC SQL BEGIN DECLARE SECTION; 
-    int oldval, rowcount, iid = id, icnt = cnt;
-    EXEC SQL END DECLARE SECTION; 
-
-    oldval = (int) hash_lookup(counts, id);
-    cnt--;
-    if (oldval != cnt) {
-	printf("Count wrong on POBox machine %s; is %d in db, counted %d\n",
-	       ((struct machine *) hash_lookup(machines, id))->name,
-	       oldval, cnt);
-	if (single_fix("Update", 1)) {
-	    EXEC SQL UPDATE serverhosts SET value1 = :icnt
-		WHERE service='POP' AND mach_id = :iid;
-	    rowcount = sqlca.sqlerrd[2];
-	    if (rowcount > 0)
-	      printf("%d entr%s fixed\n", rowcount, rowcount==1?"y":"ies");
-	    else
-	      printf("Not fixed\n");
-	    modified("serverhosts");
 	}
     }
 }
 
 
-check_nfs_counts(id, n, hint)
-int id, hint;
-struct nfsphys *n;
+check_box_counts(int id, int cnt, struct hash *counts)
 {
-    EXEC SQL BEGIN DECLARE SECTION; 
-    int iid = id, val, rowcount;
-    EXEC SQL END DECLARE SECTION; 
+  EXEC SQL BEGIN DECLARE SECTION;
+  int oldval, rowcount, iid = id, icnt = cnt;
+  EXEC SQL END DECLARE SECTION;
 
-    val = n->count;
-    if (n->allocated != val) {
-	printf("Count wrong on NFSphys %s:%s; is %d in db, counted %d\n",
-	       ((struct machine *) hash_lookup(machines, n->mach_id))->name,
-	       n->dir, n->allocated, val);
-	if (single_fix("Update", 1)) {
-	    EXEC SQL UPDATE nfsphys SET allocated = :val 
-		WHERE nfsphys_id = :iid;
-	    rowcount = sqlca.sqlerrd[2];
-	    if (rowcount > 0)
-	      printf("%d entr%s fixed\n", rowcount, rowcount==1?"y":"ies");
-	    else
-	      printf("Not fixed\n");
-	    modified("nfsphys");
+  oldval = (int) hash_lookup(counts, id);
+  cnt--;
+  if (oldval != cnt)
+    {
+      printf("Count wrong on POBox machine %s; is %d in db, counted %d\n",
+	     ((struct machine *) hash_lookup(machines, id))->name,
+	     oldval, cnt);
+      if (single_fix("Update", 1))
+	{
+	  EXEC SQL UPDATE serverhosts SET value1 = :icnt
+	    WHERE service = 'POP' AND mach_id = :iid;
+	  rowcount = sqlca.sqlerrd[2];
+	  if (rowcount > 0)
+	    printf("%d entr%s fixed\n", rowcount, rowcount == 1 ? "y" : "ies");
+	  else
+	    printf("Not fixed\n");
+	  modified("serverhosts");
 	}
     }
 }
 
 
-phase4()
+check_nfs_counts(int id, struct nfsphys *n, int hint)
 {
-    struct hash *boxes, *counts;
-    EXEC SQL BEGIN DECLARE SECTION; 
-    int id, cnt;
-    EXEC SQL END DECLARE SECTION; 
+  EXEC SQL BEGIN DECLARE SECTION;
+  int iid = id, val, rowcount;
+  EXEC SQL END DECLARE SECTION;
 
-    printf("Phase 4 - Checking counts\n");
-
-    dprintf("Doing POBoxes...\n");
-    boxes = create_hash(10);
-    counts = create_hash(10);
-    EXEC SQL DECLARE csr401 CURSOR FOR
-	SELECT mach_id, value1 FROM serverhosts
-	    WHERE service='POP';
-    EXEC SQL OPEN csr401;
-    while(1) {
-	EXEC SQL FETCH csr401 INTO :id, :cnt;
-	if (sqlca.sqlcode != 0) break;
-	
-	if( hash_store(boxes, id, 1) == -1 ) {
-	    out_of_mem("storing poboxes");
-	}
-	if( hash_store(counts, id, cnt) == -1 ) {
-	    out_of_mem("storing pobox counts? in hash table");
+  val = n->count;
+  if (n->allocated != val)
+    {
+      printf("Count wrong on NFSphys %s:%s; is %d in db, counted %d\n",
+	     ((struct machine *) hash_lookup(machines, n->mach_id))->name,
+	     n->dir, n->allocated, val);
+      if (single_fix("Update", 1))
+	{
+	  EXEC SQL UPDATE nfsphys SET allocated = :val
+	    WHERE nfsphys_id = :iid;
+	  rowcount = sqlca.sqlerrd[2];
+	  if (rowcount > 0)
+	    printf("%d entr%s fixed\n", rowcount, rowcount == 1 ? "y" : "ies");
+	  else
+	    printf("Not fixed\n");
+	  modified("nfsphys");
 	}
     }
-    EXEC SQL CLOSE csr401; 
-    hash_step(users, count_boxes, boxes);
-    hash_step(boxes, check_box_counts, counts);
-
-    dprintf("Doing NFSphys...\n");
-    hash_step(nfsphys, check_nfs_counts, 0);
 }
 
 
-count_only_setup()
+phase4(void)
 {
-    EXEC SQL BEGIN DECLARE SECTION; 
-    int id, status, id2, id3;
-    char name[33], last[17], first[17], buf[257];
-    EXEC SQL END DECLARE SECTION; 
-    struct save_queue *sq;
-    struct user *u;
-    struct nfsphys *n;
-    struct machine *m;
+  struct hash *boxes, *counts;
+  int id, cnt;
 
-    dprintf("Loading users...\n");
-    users = create_hash(30000);
-    EXEC SQL DECLARE csr402 CURSOR FOR
-	SELECT users_id, login, last, first, status, 
-	       potype, pop_id, box_id FROM users
-	    WHERE potype='POP';
-    EXEC SQL OPEN csr402;
-    while(1) {
-	EXEC SQL FETCH csr402 INTO :id, :name, :last, :first, :status, 
-	    :buf, :id2, :id3;
-	if (sqlca.sqlcode != 0) break;
+  printf("Phase 4 - Checking counts\n");
 
-    	u = (struct user *) malloc(sizeof(struct user));
-	if (u == NULL)
-	  out_of_mem("storing users");
-	strcpy(u->login, strtrim(name));
-	u->potype = buf[0];
-	sprintf(buf, "%s, %s", strtrim(last), strtrim(first));
-	u->fullname = strsave(buf);
-	u->status = status;
-	u->users_id = id;
-	switch (u->potype) {
+  dprintf("Doing POBoxes...\n");
+  boxes = create_hash(10);
+  counts = create_hash(10);
+  EXEC SQL DECLARE csr401 CURSOR FOR
+    SELECT mach_id, value1 FROM serverhosts
+    WHERE service = 'POP';
+  EXEC SQL OPEN csr401;
+  while (1)
+    {
+      EXEC SQL FETCH csr401 INTO :id, :cnt;
+      if (sqlca.sqlcode)
+	break;
+
+      if (hash_store(boxes, id, 1) == -1)
+	out_of_mem("storing poboxes");
+      if (hash_store(counts, id, cnt) == -1)
+	out_of_mem("storing pobox counts in hash table");
+    }
+  EXEC SQL CLOSE csr401;
+  hash_step(users, count_boxes, boxes);
+  hash_step(boxes, check_box_counts, counts);
+
+  dprintf("Doing NFSphys...\n");
+  hash_step(nfsphys, check_nfs_counts, 0);
+}
+
+
+count_only_setup(void)
+{
+  EXEC SQL BEGIN DECLARE SECTION;
+  int id, status, id2, id3;
+  char name[33], last[17], first[17], buf[257];
+  EXEC SQL END DECLARE SECTION;
+  struct save_queue *sq;
+  struct user *u;
+  struct nfsphys *n;
+  struct machine *m;
+
+  dprintf("Loading users...\n");
+  users = create_hash(30000);
+  EXEC SQL DECLARE csr402 CURSOR FOR
+    SELECT users_id, login, last, first, status,
+    potype, pop_id, box_id FROM users
+    WHERE potype = 'POP';
+  EXEC SQL OPEN csr402;
+  while (1)
+    {
+      EXEC SQL FETCH csr402 INTO :id, :name, :last, :first, :status,
+	:buf, :id2, :id3;
+      if (sqlca.sqlcode)
+	break;
+
+      u = malloc(sizeof(struct user));
+      if (!u)
+	out_of_mem("storing users");
+      strcpy(u->login, strtrim(name));
+      u->potype = buf[0];
+      sprintf(buf, "%s, %s", strtrim(last), strtrim(first));
+      u->fullname = strsave(buf);
+      u->status = status;
+      u->users_id = id;
+      switch (u->potype)
+	{
 	case 'P':
-	    u->pobox_id = id2;
-	    break;
+	  u->pobox_id = id2;
+	  break;
 	case 'S':
-	    u->pobox_id = id3;
-	    break;
+	  u->pobox_id = id3;
+	  break;
 	default:
-	    u->pobox_id = 0;
+	  u->pobox_id = 0;
 	}
-	if( hash_store(users, id, u) == -1 ) {
-	  out_of_mem("storing users in hash table");
-	}
+      if (hash_store(users, id, u) == -1)
+	out_of_mem("storing users in hash table");
     }
-    EXEC SQL CLOSE csr402; 
+  EXEC SQL CLOSE csr402;
 
-    dprintf("Loading machines...\n");
-    machines = create_hash(20000);
-    EXEC SQL DECLARE csr403 CURSOR FOR
-	SELECT mach_id, name FROM machine;
-    EXEC SQL OPEN csr403;
-    while(1) {
-	EXEC SQL FETCH csr403 INTO :id, :name;
-	if (sqlca.sqlcode != 0) break;
+  dprintf("Loading machines...\n");
+  machines = create_hash(20000);
+  EXEC SQL DECLARE csr403 CURSOR FOR
+    SELECT mach_id, name FROM machine;
+  EXEC SQL OPEN csr403;
+  while (1)
+    {
+      EXEC SQL FETCH csr403 INTO :id, :name;
+      if (sqlca.sqlcode)
+	break;
 
-    	m = (struct machine *) malloc(sizeof(struct machine));
-	if (m == NULL)
+    	m = malloc(sizeof(struct machine));
+	if (!m)
 	  out_of_mem("storing machines");
 	strcpy(m->name, strtrim(name));
 	m->mach_id = id;
-	if( hash_store(machines, id, m) == -1 ) {
+	if (hash_store(machines, id, m) == -1)
 	  out_of_mem("storing users in hash table");
-	}
     }
-    EXEC SQL CLOSE csr403; 
+  EXEC SQL CLOSE csr403;
 
-    dprintf("Loading nfsphys...\n");
-    nfsphys = create_hash(500);
-    EXEC SQL DECLARE csr404 CURSOR FOR
-	SELECT nfsphys_id, dir, mach_id, allocated FROM nfsphys;
-    EXEC SQL OPEN csr404;
-    while(1) {
-	EXEC SQL FETCH csr404 INTO :id, :name, :id2, :id3;
-	if (sqlca.sqlcode != 0) break;
+  dprintf("Loading nfsphys...\n");
+  nfsphys = create_hash(500);
+  EXEC SQL DECLARE csr404 CURSOR FOR
+    SELECT nfsphys_id, dir, mach_id, allocated FROM nfsphys;
+  EXEC SQL OPEN csr404;
+  while (1)
+    {
+      EXEC SQL FETCH csr404 INTO :id, :name, :id2, :id3;
+      if (sqlca.sqlcode)
+	break;
 
-    	n = (struct nfsphys *) malloc(sizeof(struct nfsphys));
-	if (n == NULL)
-	  out_of_mem("storing nfsphys");
-	strcpy(n->dir, strtrim(name));
-	n->mach_id = id2;
-	n->nfsphys_id = id;
-	n->allocated = id3;
-	n->count = 0;
-	if( hash_store(nfsphys, id, n) == -1 ) {
-	  out_of_mem("storing nfsphys in hash table");
-	}
-	}
-    EXEC SQL CLOSE csr404; 
-
-    dprintf("Counting quotas...\n");
-    EXEC SQL DECLARE csr405 CURSOR FOR
-	SELECT phys_id, quota FROM quota;
-    EXEC SQL OPEN csr405;
-    while(1) {
-	EXEC SQL FETCH csr405 INTO :id, :id2;
-	if (sqlca.sqlcode != 0) break;
-	
-        if (n = (struct nfsphys  *) hash_lookup(nfsphys, id)) {
-	    n->count += id2;
-	}
+      n = malloc(sizeof(struct nfsphys));
+      if (!n)
+	out_of_mem("storing nfsphys");
+      strcpy(n->dir, strtrim(name));
+      n->mach_id = id2;
+      n->nfsphys_id = id;
+      n->allocated = id3;
+      n->count = 0;
+      if (hash_store(nfsphys, id, n) == -1)
+	out_of_mem("storing nfsphys in hash table");
     }
-    EXEC SQL CLOSE csr405; 
+  EXEC SQL CLOSE csr404;
+
+  dprintf("Counting quotas...\n");
+  EXEC SQL DECLARE csr405 CURSOR FOR
+    SELECT phys_id, quota FROM quota;
+  EXEC SQL OPEN csr405;
+  while (1)
+    {
+      EXEC SQL FETCH csr405 INTO :id, :id2;
+      if (sqlca.sqlcode)
+	break;
+
+      if (n = (struct nfsphys  *) hash_lookup(nfsphys, id))
+	n->count += id2;
+    }
+  EXEC SQL CLOSE csr405;
 }

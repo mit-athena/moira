@@ -1,25 +1,26 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v 1.38 1997-12-16 20:53:03 danw Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v 1.39 1998-01-05 19:52:14 danw Exp $";
 #endif
 
 /*	This is the file utils.c for the MOIRA Client, which allows a nieve
  *      user to quickly and easily maintain most parts of the MOIRA database.
  *	It Contains:  Many useful utility functions.
- *	
+ *
  *	Created: 	4/25/88
  *	By:		Chris D. Peterson
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v $
  *      $Author: danw $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v 1.38 1997-12-16 20:53:03 danw Exp $
- *	
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v 1.39 1998-01-05 19:52:14 danw Exp $
+ *
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
- *	For further information on copyright and distribution 
+ *	For further information on copyright and distribution
  *	see the file mit-copyright.h
  */
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <moira.h>
 #include <moira_site.h>
@@ -42,18 +43,17 @@
  *	Returns: none.
  */
 
-static void
-AddQueue(elem, pred)
-struct qelem * elem, *pred;
+static void AddQueue(struct qelem *elem, struct qelem *pred)
 {
-    if (pred == NULL) {
-	elem->q_forw = NULL;
-	elem->q_back = NULL;
-	return;
+  if (!pred)
+    {
+      elem->q_forw = NULL;
+      elem->q_back = NULL;
+      return;
     }
-    elem->q_back = pred;
-    elem->q_forw = pred->q_forw;
-    pred->q_forw = elem;
+  elem->q_back = pred;
+  elem->q_forw = pred->q_forw;
+  pred->q_forw = elem;
 }
 
 /*	Function Name: RemoveQueue
@@ -62,34 +62,31 @@ struct qelem * elem, *pred;
  *	Returns: none.
  */
 
-static void
-RemoveQueue(elem)
-struct qelem *elem;
+static void RemoveQueue(struct qelem *elem)
 {
-    if (elem->q_forw != NULL) 
-	(elem->q_forw)->q_back = elem->q_back;
-    if (elem->q_back != NULL)
-	(elem->q_back)->q_forw = elem->q_forw;
+  if (elem->q_forw)
+    elem->q_forw->q_back = elem->q_back;
+  if (elem->q_back)
+    elem->q_back->q_forw = elem->q_forw;
 }
 
 
-/* CopyInfo: allocates memory for a copy of a NULL terminated array of 
+/* CopyInfo: allocates memory for a copy of a NULL terminated array of
  * strings <and returns a pointer to the copy.
  */
 
-char **CopyInfo(info)
-char **info;
+char **CopyInfo(char **info)
 {
-    char **ret;
-    int i;
+  char **ret;
+  int i;
 
-    ret = (char **) malloc(sizeof(char *) * (CountArgs(info) + 1));
-    if (ret == NULL)
-      return(ret);
-    for (i = 0; info[i]; i++)
-      ret[i] = Strsave(info[i]);
-    ret[i] = NULL;
-    return(ret);
+  ret = malloc(sizeof(char *) * (CountArgs(info) + 1));
+  if (!ret)
+    return ret;
+  for (i = 0; info[i]; i++)
+    ret[i] = Strsave(info[i]);
+  ret[i] = NULL;
+  return ret;
 }
 
 
@@ -99,12 +96,10 @@ char **info;
  *	Returns: none.
  */
 
-void
-FreeInfo(info)
-char ** info;
+void FreeInfo(char **info)
 {
-    while (*info != NULL)
-	FreeAndClear(info++, TRUE);
+  while (*info)
+    FreeAndClear(info++, TRUE);
 }
 
 /*	Function Name: FreeAndClear        - I couldn't resist the name.
@@ -114,16 +109,13 @@ char ** info;
  *	Returns: none.
  */
 
-void
-FreeAndClear(pointer, free_it)
-char ** pointer;
-Bool free_it;
+void FreeAndClear(char **pointer, Bool free_it)
 {
-    if (*pointer == NULL)
-	return;
-    else if (free_it)
-	free(*pointer);
-    *pointer = NULL;
+  if (!*pointer)
+    return;
+  else if (free_it)
+    free(*pointer);
+  *pointer = NULL;
 }
 
 /*	Function Name: QueueTop
@@ -132,16 +124,14 @@ Bool free_it;
  *	Arguments: elem - any element of a queue.
  *	Returns: top element of a queue.
  */
-    
-struct qelem * 
-QueueTop(elem)
-struct qelem * elem;
+
+struct qelem *QueueTop(struct qelem *elem)
 {
-    if (elem == NULL)		/* NULL returns NULL.  */
-	return(NULL);
-    while (elem->q_back != NULL) 
-	elem = elem->q_back;
-    return(elem);
+  if (!elem)		/* NULL returns NULL.  */
+    return NULL;
+  while (elem->q_back)
+    elem = elem->q_back;
+  return elem;
 }
 
 /*	Function Name: FreeQueueElem
@@ -150,18 +140,17 @@ struct qelem * elem;
  *	Returns: none
  */
 
-static void
-FreeQueueElem(elem)
-struct qelem * elem;
+static void FreeQueueElem(struct qelem *elem)
 {
-    char ** info = (char **) elem->q_data;
+  char **info = (char **) elem->q_data;
 
-    if (info != (char **) NULL) {
-	FreeInfo( info ); /* free info fields */
-	free(elem->q_data);		/* free info array itself. */
+  if (info)
+    {
+      FreeInfo(info); /* free info fields */
+      free(elem->q_data);		/* free info array itself. */
     }
-    RemoveQueue(elem);		/* remove this element from the queue */
-    free(elem);			/* free its space. */
+  RemoveQueue(elem);		/* remove this element from the queue */
+  free(elem);			/* free its space. */
 }
 
 /*	Function Name: FreeQueue
@@ -170,16 +159,15 @@ struct qelem * elem;
  *	Returns: none.
  */
 
-void
-FreeQueue(elem)
-struct qelem * elem;
+void FreeQueue(struct qelem *elem)
 {
-    struct qelem *temp, *local = QueueTop(elem); 
+  struct qelem *temp, *local = QueueTop(elem);
 
-    while(local != NULL) {
-	temp = local->q_forw;
-	FreeQueueElem(local);
-	local = temp;
+  while (local)
+    {
+      temp = local->q_forw;
+      FreeQueueElem(local);
+      local = temp;
     }
 }
 
@@ -189,17 +177,16 @@ struct qelem * elem;
  *	Returns: none.
  */
 
-int
-QueueCount(elem)
-struct qelem * elem;
+int QueueCount(struct qelem *elem)
 {
-    int count = 0;
-    elem = QueueTop(elem);
-    while (elem != NULL) {
-	count ++;
-	elem = elem->q_forw;
+  int count = 0;
+  elem = QueueTop(elem);
+  while (elem)
+    {
+      count++;
+      elem = elem->q_forw;
     }
-    return(count);
+  return count;
 }
 
 /*	Function Name: StoreInfo
@@ -214,33 +201,30 @@ struct qelem * elem;
  *	Returns: MR_CONT, or MR_ABORT if it has problems.
  */
 
-int
-StoreInfo(argc, argv, data)
-int argc;
-char ** argv;
-char * data;
+int StoreInfo(int argc, char **argv, char *data)
 {
-    char ** info = (char **) malloc( MAX_ARGS_SIZE * sizeof(char *));
-    struct qelem ** old_elem = (struct qelem **) data;
-    struct qelem * new_elem = (struct qelem *) malloc (sizeof (struct qelem));
-    int count;
+  char **info = malloc(MAX_ARGS_SIZE * sizeof(char *));
+  struct qelem **old_elem = (struct qelem **) data;
+  struct qelem *new_elem = malloc(sizeof(struct qelem));
+  int count;
 
-    if ( (new_elem == (struct qelem *) NULL) || (info == (char **) NULL) ) {
-	Put_message("Could Not allocate more memory.");
-	FreeQueue(*old_elem);
-	*old_elem = (struct qelem *) NULL;
-	return(MR_ABORT);
+  if (!new_elem || !info)
+    {
+      Put_message("Could Not allocate more memory.");
+      FreeQueue(*old_elem);
+      *old_elem = NULL;
+      return MR_ABORT;
     }
 
-    for (count = 0; count < argc; count++)
-	info[count] = Strsave(argv[count]);
-    info[count] = NULL;		/* NULL terminate this sucker. */
+  for (count = 0; count < argc; count++)
+    info[count] = Strsave(argv[count]);
+  info[count] = NULL;		/* NULL terminate this sucker. */
 
-    new_elem->q_data = (char *) info;
-    AddQueue(new_elem, *old_elem);
+  new_elem->q_data = (char *) info;
+  AddQueue(new_elem, *old_elem);
 
-    *old_elem = new_elem;
-    return(MR_CONT);
+  *old_elem = new_elem;
+  return MR_CONT;
 }
 
 /*	Function Name: CountArgs
@@ -250,19 +234,18 @@ char * data;
  *	Returns: number if args in the list.
  */
 
-int
-CountArgs(info)
-char ** info;
+int CountArgs(char **info)
 {
-    int number = 0;
-    
-    while (*info != NULL) {
-	number++;
-	info++;
+  int number = 0;
+
+  while (*info)
+    {
+      number++;
+      info++;
     }
 
-    return(number);
-}    
+  return number;
+}
 
 /*	Function Name: Scream
  *	Description: Bitch Loudly and exit, it is intended as a callback
@@ -271,19 +254,18 @@ char ** info;
  *	Returns: doesn't exit.
  */
 
-int
-Scream()
+int Scream(void)
 {
-    com_err(program_name, 0,
-	    "\nA Moira update returned a value -- programmer botch\n");
-    mr_disconnect();
-    exit(1);
-    /*NOTREACHED*/
-    return(-1);
+  com_err(program_name, 0,
+	  "\nA Moira update returned a value -- programmer botch\n");
+  mr_disconnect();
+  exit(1);
+  /*NOTREACHED*/
+  return -1;
 }
 
 /*	Function Name: PromptWithDefault
- *	Description: allows a user to be prompted for input, and given a 
+ *	Description: allows a user to be prompted for input, and given a
  *                   default choice.
  *	Arguments: prompt - the prompt string.
  *                 buf, buflen - buffer to be returned and its MAX size?
@@ -291,31 +273,28 @@ Scream()
  *	Returns: zero on failure
  */
 
-int
-PromptWithDefault(prompt, buf, buflen, def)
-char *prompt, *buf;
-int buflen;
-char *def;
+int PromptWithDefault(char *prompt, char *buf, int buflen, char *def)
 {
-    char tmp[BUFSIZ];
-    int ans;
+  char tmp[BUFSIZ];
+  int ans;
 
-    if (parsed_argc > 0) {
-	parsed_argc--;
-	strncpy(buf, parsed_argv[0], buflen);
-	sprintf(tmp, "%s: %s", prompt, buf);
-	Put_message(tmp);
-	parsed_argv++;
-	return(1);
+  if (parsed_argc > 0)
+    {
+      parsed_argc--;
+      strncpy(buf, parsed_argv[0], buflen);
+      sprintf(tmp, "%s: %s", prompt, buf);
+      Put_message(tmp);
+      parsed_argv++;
+      return 1;
     }
 
-    (void) sprintf(tmp, "%s [%s]: ", prompt, def ? def : "");
-    ans = Prompt_input(tmp, buf, buflen);
-    if (IS_EMPTY(buf))
-	(void) strcpy(buf, def);
-    else if (!strcmp(buf, "\"\""))
-	*buf = 0;
-    return(ans);
+  sprintf(tmp, "%s [%s]: ", prompt, def ? def : "");
+  ans = Prompt_input(tmp, buf, buflen);
+  if (IS_EMPTY(buf))
+    strcpy(buf, def);
+  else if (!strcmp(buf, "\"\""))
+    *buf = 0;
+  return ans;
 }
 
 /*	Function Name: YesNoQuestion
@@ -326,29 +305,29 @@ char *def;
  *	Returns: TRUE or FALSE or -1 on error
  */
 
-Bool
-YesNoQuestion(prompt, bool_def)
-char *prompt;
-int bool_def;
+Bool YesNoQuestion(char *prompt, int bool_def)
 {
-    char ans[2];
+  char ans[2];
 
-    while (TRUE) {
-	if (!PromptWithDefault(prompt, ans, 2, bool_def ? "y" : "n"))
-	    return(-1);
-	switch (ans[0]) {
+  while (TRUE)
+    {
+      if (!PromptWithDefault(prompt, ans, 2, bool_def ? "y" : "n"))
+	return -1;
+      switch (ans[0])
+	{
 	case 'n':
 	case 'N':
-	    return(FALSE);
+	  return FALSE;
 	case 'y':
 	case 'Y':
-	    return(TRUE);
+	  return TRUE;
 	default:
-	    Put_message("Please answer 'y' or 'n'.");
-	    break;
+	  Put_message("Please answer 'y' or 'n'.");
+	  break;
 	}
     }
 }
+
 /*	Function Name: YesNoQuitQuestion
  *	Description: This prompts the user for the answer to a yes-no or
  *                   true-false question, with a quit option.
@@ -359,29 +338,28 @@ int bool_def;
  *            seem to need this functionality.
  */
 
-Bool
-YesNoQuitQuestion(prompt, bool_def)
-char *prompt;
-int bool_def;
+Bool YesNoQuitQuestion(char *prompt, int bool_def)
 {
-    char ans[2];
+  char ans[2];
 
-    while (TRUE) {
-	if (!PromptWithDefault(prompt, ans, 2, bool_def ? "y" : "n"))
-	    return(-1);
-	switch (ans[0]) {
+  while (TRUE)
+    {
+      if (!PromptWithDefault(prompt, ans, 2, bool_def ? "y" : "n"))
+	return -1;
+      switch (ans[0])
+	{
 	case 'n':
 	case 'N':
-	    return(FALSE);
+	  return FALSE;
 	case 'y':
 	case 'Y':
-	    return(TRUE);
+	  return TRUE;
 	case 'q':
 	case 'Q':
-	    return(-1);
+	  return -1;
 	default:
-	    Put_message("Please answer 'y', 'n' or 'q'.");
-	    break;
+	  Put_message("Please answer 'y', 'n' or 'q'.");
+	  break;
 	}
     }
 }
@@ -393,11 +371,9 @@ int bool_def;
  *	Returns:   TRUE/FALSE - wether or not the confirmation occured.
  */
 
-Bool
-Confirm(prompt)
-char * prompt;
+Bool Confirm(char *prompt)
 {
-  return( !verbose || (YesNoQuestion(prompt,FALSE) == TRUE) );
+  return !verbose || (YesNoQuestion(prompt, FALSE) == TRUE);
 }
 
 /*	Function Name: ValidName
@@ -406,19 +382,17 @@ char * prompt;
  *	Returns: TRUE if Valid.
  */
 
-Bool
-ValidName(s)
-char *s;
+Bool ValidName(char *s)
 {
-    if (IS_EMPTY(s))
-	Put_message("Please use a non-empty name.");
-    else if (strchr(s, ' '))
-	Put_message("You cannot use space (' ') in this name.");
-    else if (strchr(s, '*') || strchr(s, '?'))
-	Put_message("Wildcards not accepted here.");
-    else
-	return TRUE;
-    return FALSE;
+  if (IS_EMPTY(s))
+    Put_message("Please use a non-empty name.");
+  else if (strchr(s, ' '))
+    Put_message("You cannot use space (' ') in this name.");
+  else if (strchr(s, '*') || strchr(s, '?'))
+    Put_message("Wildcards not accepted here.");
+  else
+    return TRUE;
+  return FALSE;
 }
 
 /*	Function Name: ToggleVerboseMode
@@ -427,30 +401,27 @@ char *s;
  *	Returns: DM_NORMAL.
  */
 
-int 
-ToggleVerboseMode()
+int ToggleVerboseMode(void)
 {
-
   verbose = !verbose;
 
   if (verbose)
     Put_message("Delete functions will first confirm\n");
   else
     Put_message("Delete functions will be silent\n");
-    
-  return(DM_NORMAL);
+
+  return DM_NORMAL;
 }
 
 /*	Function Name: NullFunc
- *	Description:  dummy callback routine 
+ *	Description:  dummy callback routine
  *	Arguments: none
  *	Returns: MR_CONT
  */
 
-int
-NullFunc()
+int NullFunc(void)
 {
-    return(MR_CONT);
+  return MR_CONT;
 }
 
 /*	Function Name: SlipInNewName
@@ -463,18 +434,14 @@ NullFunc()
  *             big way.
  */
 
-void
-SlipInNewName(info, name)
-char ** info;
-char * name;
+void SlipInNewName(char **info, char *name)
 {
-    register int i;
+  register int i;
 
-    /* This also pushes the NULL down. */
-    for (i = CountArgs(info); i > 0; i--) { 
-	info[i+1] = info[i];
-    }
-    info[1] = name;	/* now slip in the name. */
+  /* This also pushes the NULL down. */
+  for (i = CountArgs(info); i > 0; i--)
+    info[i + 1] = info[i];
+  info[1] = name;	/* now slip in the name. */
 }
 
 /*	Function Name: GetValueFromUser
@@ -486,28 +453,28 @@ char * name;
  *	Returns: SUB_ERROR if break hit (^C).
  */
 
-int
-GetValueFromUser(prompt, pointer)
-char * prompt, ** pointer;
+int GetValueFromUser(char *prompt, char **pointer)
 {
-    char buf[BUFSIZ];
+  char buf[BUFSIZ];
 
-    if (PromptWithDefault(prompt, buf, BUFSIZ, *pointer) == 0)
-	return(SUB_ERROR);
+  if (PromptWithDefault(prompt, buf, BUFSIZ, *pointer) == 0)
+    return SUB_ERROR;
 
-/* 
- * If these are the same then there is no need to allocate a new string.
- *
- * a difference that makes no difference, IS no difference.
- */
+  /*
+   * If these are the same then there is no need to allocate a new string.
+   *
+   * a difference that makes no difference, IS no difference.
+   */
 
-    if (*pointer != NULL) {
-	if (strcmp(buf, *pointer) != 0) { 
-	    free(*pointer);
-	    *pointer = Strsave(buf);
+  if (*pointer)
+    {
+      if (strcmp(buf, *pointer))
+	{
+	  free(*pointer);
+	  *pointer = Strsave(buf);
 	}
     }
-    return(SUB_NORMAL);
+  return SUB_NORMAL;
 }
 
 /*	Function Name: GetYesNoValueFromUser
@@ -519,36 +486,35 @@ char * prompt, ** pointer;
  *	Returns: SUB_ERROR if break hit (^C).
  */
 
-int
-GetYesNoValueFromUser(prompt, pointer)
-char * prompt, ** pointer;
+int GetYesNoValueFromUser(char *prompt, char **pointer)
 {
-    char user_prompt[BUFSIZ];
-    Bool default_val;
+  char user_prompt[BUFSIZ];
+  Bool default_val;
 
-    if ( strcmp (*pointer, DEFAULT_YES) == 0 )
-	default_val = TRUE;
-    else
-	default_val = FALSE;
-    
-    sprintf(user_prompt, "%s (y/n)", prompt);
+  if (!strcmp(*pointer, DEFAULT_YES))
+    default_val = TRUE;
+  else
+    default_val = FALSE;
 
-    switch (YesNoQuestion(user_prompt, default_val)) {
+  sprintf(user_prompt, "%s (y/n)", prompt);
+
+  switch (YesNoQuestion(user_prompt, default_val))
+    {
     case TRUE:
-	if (*pointer != NULL)
-	    free(*pointer);
-	*pointer = Strsave(DEFAULT_YES);
-	break;
+      if (*pointer)
+	free(*pointer);
+      *pointer = Strsave(DEFAULT_YES);
+      break;
     case FALSE:
-	if (*pointer != NULL)
-	    free(*pointer);
-	*pointer = Strsave(DEFAULT_NO);
-	break;
+      if (*pointer)
+	free(*pointer);
+      *pointer = Strsave(DEFAULT_NO);
+      break;
     case -1:
     default:
-	return(SUB_ERROR);
+      return SUB_ERROR;
     }
-    return(SUB_NORMAL);
+  return SUB_NORMAL;
 }
 
 /*	Function Name: GetFSVal
@@ -560,23 +526,21 @@ char * prompt, ** pointer;
  *	Returns: TRUE if successful.
  */
 
-static Bool
-GetFSVal(name, mask, current, new)
-char * name;
-int mask, current, *new;
+static Bool GetFSVal(char *name, int mask, int current, int *new)
 {
-    char temp_buf[BUFSIZ];
-    sprintf(temp_buf, "Is this a %s filsystem", name);
-    switch (YesNoQuestion(temp_buf, ( (mask & current) == mask) )) {
+  char temp_buf[BUFSIZ];
+  sprintf(temp_buf, "Is this a %s filsystem", name);
+  switch (YesNoQuestion(temp_buf, ((mask & current) == mask)))
+    {
     case TRUE:
-	*new |= mask;
-	break;
+      *new |= mask;
+      break;
     case FALSE:
-	break;			/* zero by default. */
+      break;			/* zero by default. */
     default:
-	return(FALSE);
+      return FALSE;
     }
-    return(TRUE);
+  return TRUE;
 }
 
 /*	Function Name: GetFSTypes
@@ -585,37 +549,35 @@ int mask, current, *new;
  *	Returns: SUB_ERROR on ^C.
  */
 
-int
-GetFSTypes(current, options)
-char **  current;
-int options;
+int GetFSTypes(char **current, int options)
 {
-    int c_value, new_val = 0;	/* current value of filesys type (int). */
-    char ret_value[BUFSIZ];
+  int c_value, new_val = 0;	/* current value of filesys type (int). */
+  char ret_value[BUFSIZ];
 
-    if (*current == NULL)
-	c_value = 0;
-    else 
-	c_value = atoi(*current);
+  if (!*current)
+    c_value = 0;
+  else
+    c_value = atoi(*current);
 
-    if (GetFSVal("student", MR_FS_STUDENT, c_value, &new_val) == FALSE)
-	return(SUB_ERROR);
-    if (GetFSVal("faculty", MR_FS_FACULTY, c_value, &new_val) == FALSE)
-	return(SUB_ERROR);
-    if (GetFSVal("staff", MR_FS_STAFF, c_value, &new_val) == FALSE)
-	return(SUB_ERROR);
-    if (GetFSVal("miscellaneous", MR_FS_MISC, c_value, &new_val) == FALSE)
-	return(SUB_ERROR);
-    if (options) {
-	if (GetFSVal("Group Quotas", MR_FS_GROUPQUOTA, c_value, &new_val) ==
-	    FALSE)
-	  return(SUB_ERROR);
+  if (GetFSVal("student", MR_FS_STUDENT, c_value, &new_val) == FALSE)
+    return SUB_ERROR;
+  if (GetFSVal("faculty", MR_FS_FACULTY, c_value, &new_val) == FALSE)
+    return SUB_ERROR;
+  if (GetFSVal("staff", MR_FS_STAFF, c_value, &new_val) == FALSE)
+    return SUB_ERROR;
+  if (GetFSVal("miscellaneous", MR_FS_MISC, c_value, &new_val) == FALSE)
+    return SUB_ERROR;
+  if (options)
+    {
+      if (GetFSVal("Group Quotas", MR_FS_GROUPQUOTA, c_value, &new_val) ==
+	  FALSE)
+	return SUB_ERROR;
     }
 
-    FreeAndClear(current, TRUE);
-    sprintf(ret_value, "%d", new_val);
-    *current = Strsave(ret_value);
-    return(SUB_NORMAL);
+  FreeAndClear(current, TRUE);
+  sprintf(ret_value, "%d", new_val);
+  *current = Strsave(ret_value);
+  return SUB_NORMAL;
 }
 
 /*	Function Name: Strsave
@@ -624,31 +586,28 @@ int options;
  *	Returns: The malloced string, now safely saved, or NULL.
  */
 
-char *
-Strsave(str)
-char *str;
+char *Strsave(char *str)
 {
-    register char *newstr = malloc((unsigned) strlen(str) + 1);
+  register char *newstr = malloc(strlen(str) + 1);
 
-    if (newstr == (char *) NULL)
-	return ((char *) NULL);
-    else
-	return (strcpy(newstr, str));
+  if (!newstr)
+    return NULL;
+  else
+    return strcpy(newstr, str);
 }
 
 
 /* atot: convert ASCII integer unix time into human readable date string */
 
-char *atot(itime)
-char *itime;
+char *atot(char *itime)
 {
-    time_t time;
-    char *ct, *ctime();
+  time_t time;
+  char *ct, *ctime();
 
-    time = (time_t)atoi(itime);
-    ct = ctime(&time);
-    ct[24] = 0;
-    return(&ct[4]);
+  time = (time_t) atoi(itime);
+  ct = ctime(&time);
+  ct[24] = 0;
+  return &ct[4];
 }
 
 
@@ -659,44 +618,36 @@ char *itime;
  *	Returns: MR_CONT
  */
 
-/* ARGSUSED */
-int
-Print(argc, argv, callback)
-int argc;
-char **argv, *callback;
+int Print(int argc, char **argv, char *callback)
 {
-    char buf[BUFSIZ];
-    register int i;
+  char buf[BUFSIZ];
+  register int i;
 
-    found_some = TRUE;
-    (void) strcpy(buf,argv[0]);	/* no newline 'cause Put_message adds one */
-    for (i = 1; i < argc; i++)
-	(void) sprintf(buf,"%s %s",buf,argv[i]);
-    (void) Put_message(buf);
+  found_some = TRUE;
+  strcpy(buf, argv[0]);	/* no newline 'cause Put_message adds one */
+  for (i = 1; i < argc; i++)
+    sprintf(buf, "%s %s", buf, argv[i]);
+  Put_message(buf);
 
-    return (MR_CONT);
+  return MR_CONT;
 }
 
 /*	Function Name: PrintByType
  *	Description: This function prints all members of the type specified
  *                   by the callback arg, unless the callback is NULL, in which
  *                   case it prints all members.
- *	Arguments: argc, argc - normal arguments for mr_callback function. 
+ *	Arguments: argc, argc - normal arguments for mr_callback function.
  *                 callback - either a type of member or NULL.
  *	Returns: MR_CONT or MR_QUIT.
  */
 
-/*ARGSUSED*/
-int
-PrintByType(argc, argv, callback)
-int argc;
-char **argv, *callback;
+int PrintByType(int argc, char **argv, char *callback)
 {
-    if (callback == NULL)
-	return( Print(argc, argv, callback) );
-    if (strcmp(argv[0], callback) == 0) 
-	return( Print(argc, argv, callback) );
-    return(MR_CONT);
+  if (!callback)
+    return Print(argc, argv, callback);
+  if (!strcmp(argv[0], callback))
+    return Print(argc, argv, callback);
+  return MR_CONT;
 }
 
 /*	Function Name: PrintHelp
@@ -706,16 +657,14 @@ char **argv, *callback;
  *	Returns: DM_NORMAL.
  */
 
-int
-PrintHelp(message)
-char ** message;
+int PrintHelp(char **message)
 {
-    register int i;
+  register int i;
 
-    for (i = 0; i < CountArgs(message); i++)
-      Put_message(message[i]);
+  for (i = 0; i < CountArgs(message); i++)
+    Put_message(message[i]);
 
-    return(DM_NORMAL);
+  return DM_NORMAL;
 }
 
 /*	Function Name: Loop
@@ -726,15 +675,13 @@ char ** message;
  *	Returns: none.
  */
 
-void
-Loop(elem, func)
-FVoid func;
-struct qelem * elem;
+void Loop(struct qelem *elem, FVoid func)
 {
-    while (elem != NULL) {
-	char ** info = (char **) elem->q_data;
-	(*func) (info);
-	elem = elem->q_forw;
+  while (elem)
+    {
+      char **info = (char **) elem->q_data;
+      (*func) (info);
+      elem = elem->q_forw;
     }
 }
 
@@ -765,38 +712,37 @@ struct qelem * elem;
  *                              "Delete the list"
  */
 
-void
-QueryLoop(elem, print_func, op_func, query_string)
-struct qelem *elem;
-FVoid op_func;
-FCharStar print_func;
-char * query_string;
+void QueryLoop(struct qelem *elem, FCharStar print_func,
+	       FVoid op_func, char *query_string)
 {
-    Bool one_item;
-    char temp_buf[BUFSIZ], *name;
+  Bool one_item;
+  char temp_buf[BUFSIZ], *name;
 
-    elem = QueueTop(elem);
-    one_item = (QueueCount(elem) == 1);
-    while (elem != NULL) {
-	char **info = (char **) elem->q_data;
-	
-	if (one_item)
-	    (*op_func) (info, one_item);
-	else {
-	    name = (*print_func) (info); /* call print function. */
-	    sprintf(temp_buf,"%s %s (y/n/q)", query_string, name);
-	    switch(YesNoQuitQuestion(temp_buf, FALSE)) {
+  elem = QueueTop(elem);
+  one_item = (QueueCount(elem) == 1);
+  while (elem)
+    {
+      char **info = (char **) elem->q_data;
+
+      if (one_item)
+	(*op_func) (info, one_item);
+      else
+	{
+	  name = (*print_func) (info); /* call print function. */
+	  sprintf(temp_buf, "%s %s (y/n/q)", query_string, name);
+	  switch (YesNoQuitQuestion(temp_buf, FALSE))
+	    {
 	    case TRUE:
-		(*op_func) (info, one_item);
-		break;
+	      (*op_func) (info, one_item);
+	      break;
 	    case FALSE:
-		break;
+	      break;
 	    default:		/* Quit. */
-		Put_message("Aborting...");
-		return;
+	      Put_message("Aborting...");
+	      return;
 	    }
 	}
-	elem = elem->q_forw;
+      elem = elem->q_forw;
     }
 }
 
@@ -806,11 +752,9 @@ char * query_string;
  *	Returns: none.
  */
 
-char *
-NullPrint(info)
-char ** info;
+char *NullPrint(char **info)
 {
-    return(info[NAME]);
+  return info[NAME];
 }
 
 
@@ -820,45 +764,49 @@ char ** info;
  *	Returns: argv of values
  */
 
-struct qelem *
-GetTypeValues(tname)
-char *tname;
+struct qelem *GetTypeValues(char *tname)
 {
-    int stat;
-    char *argv[3], *p, **pp, *strsave();
-    struct qelem *elem, *oelem;
-    static struct qelem *cache = NULL;
-    struct cache_elem { char *cache_name; struct qelem *cache_data; } *ce;
+  int stat;
+  char *argv[3], *p, **pp, *strsave();
+  struct qelem *elem, *oelem;
+  static struct qelem *cache = NULL;
+  struct cache_elem {
+    char *cache_name;
+    struct qelem *cache_data;
+  } *ce;
 
-    for (elem = cache; elem; elem = elem->q_forw) {
-	ce = (struct cache_elem *)elem->q_data;
-	if (!strcmp(ce->cache_name, tname))
-	    return(ce->cache_data);
+  for (elem = cache; elem; elem = elem->q_forw)
+    {
+      ce = (struct cache_elem *) elem->q_data;
+      if (!strcmp(ce->cache_name, tname))
+	return ce->cache_data;
     }
 
-    argv[0] = tname;
-    argv[1] = "TYPE";
-    argv[2] = "*";
-    elem = NULL;
-    if (stat = do_mr_query("get_alias", 3, argv, StoreInfo, (char *)&elem)) {
-	com_err(program_name, stat, " in GetTypeValues");
-	return(NULL);
+  argv[0] = tname;
+  argv[1] = "TYPE";
+  argv[2] = "*";
+  elem = NULL;
+  if ((stat = do_mr_query("get_alias", 3, argv, StoreInfo, (char *)&elem)))
+    {
+      com_err(program_name, stat, " in GetTypeValues");
+      return NULL;
     }
-    oelem = elem;
-    for (elem = QueueTop(elem); elem; elem = elem->q_forw) {
-	pp = (char **) elem->q_data;
-	p = strsave(pp[2]);
-	FreeInfo(pp);
-	elem->q_data = p;
+  oelem = elem;
+  for (elem = QueueTop(elem); elem; elem = elem->q_forw)
+    {
+      pp = (char **) elem->q_data;
+      p = strsave(pp[2]);
+      FreeInfo(pp);
+      elem->q_data = p;
     }
-    elem = (struct qelem *) malloc(sizeof(struct qelem));
-    ce = (struct cache_elem *) malloc(sizeof(struct cache_elem));
-    ce->cache_name = strsave(tname);
-    ce->cache_data = QueueTop(oelem);
-    elem->q_data = (char  *)ce;
-    AddQueue(elem, cache);
-    cache = QueueTop(elem);
-    return(ce->cache_data);
+  elem = malloc(sizeof(struct qelem));
+  ce = malloc(sizeof(struct cache_elem));
+  ce->cache_name = strsave(tname);
+  ce->cache_data = QueueTop(oelem);
+  elem->q_data = (char *) ce;
+  AddQueue(elem, cache);
+  cache = QueueTop(elem);
+  return ce->cache_data;
 }
 
 
@@ -868,72 +816,77 @@ char *tname;
  *	Returns: SUB_ERROR if ^C, SUB_NORMAL otherwise
  */
 
-int GetTypeFromUser(prompt, tname, pointer)
-char *prompt;
-char *tname;
-char  **pointer;
+int GetTypeFromUser(char *prompt, char *tname, char **pointer)
 {
-    char def[BUFSIZ], buffer[BUFSIZ], *p, *argv[3];
-    struct qelem *elem;
-    int stat;
+  char def[BUFSIZ], buffer[BUFSIZ], *p, *argv[3];
+  struct qelem *elem;
+  int stat;
 
-    strcpy(def, *pointer);
-    strcpy(buffer, prompt);
-    strcat(buffer, " (");
-    for (elem = GetTypeValues(tname); elem; elem = elem->q_forw) {
-	strcat(buffer, elem->q_data);
-	if (elem->q_forw)
-	    strcat(buffer, ", ");
+  strcpy(def, *pointer);
+  strcpy(buffer, prompt);
+  strcat(buffer, " (");
+  for (elem = GetTypeValues(tname); elem; elem = elem->q_forw)
+    {
+      strcat(buffer, elem->q_data);
+      if (elem->q_forw)
+	strcat(buffer, ", ");
     }
-    strcat(buffer, ")");
-    if (strlen(buffer) > 64)
-	sprintf(buffer, "%s (? for help)", prompt);
-    if (GetValueFromUser(buffer, pointer) == SUB_ERROR)
-      return(SUB_ERROR);
-    if (**pointer == '?') {
-	sprintf(buffer, "Type %s is one of:", tname);
-	Put_message(buffer);
-	for (elem = GetTypeValues(tname); elem; elem = elem->q_forw) {
-	    Put_message(elem->q_data);
-	}
-	*pointer = strsave(def);
-	return(GetTypeFromUser(prompt, tname, pointer));
-    }
-    for (elem = GetTypeValues(tname); elem; elem = elem->q_forw) {
-	if (!strcasecmp(elem->q_data, *pointer)) {
-	    strcpy(*pointer, elem->q_data);
-	    return(SUB_NORMAL);
-	}
-    }
-    sprintf(buffer, "\"%s\" is not a legal value for %s.  Use one of:",
-	    *pointer, tname);
-    Put_message(buffer);
-    for (elem = GetTypeValues(tname); elem; elem = elem->q_forw) {
+  strcat(buffer, ")");
+  if (strlen(buffer) > 64)
+    sprintf(buffer, "%s (? for help)", prompt);
+  if (GetValueFromUser(buffer, pointer) == SUB_ERROR)
+    return SUB_ERROR;
+  if (**pointer == '?')
+    {
+      sprintf(buffer, "Type %s is one of:", tname);
+      Put_message(buffer);
+      for (elem = GetTypeValues(tname); elem; elem = elem->q_forw)
 	Put_message(elem->q_data);
+      *pointer = strsave(def);
+      return GetTypeFromUser(prompt, tname, pointer);
     }
-    sprintf(buffer, "Are you sure you want \"%s\" to be a legal %s",
-	    *pointer, tname);
-    if (YesNoQuestion("Do you want this to be a new legal value", 0) == TRUE &&
-	YesNoQuestion(buffer, 0) == TRUE) {
-	argv[0] = tname;
-	argv[1] = "TYPE";
-	argv[2] = *pointer;
-	/* don't uppercase access flags.  Do uppercase everything else */
-	if (strncmp(tname, "fs_access", 9))
-	  for (p = argv[2]; *p; p++)
-	    if (islower(*p))
-	      *p = toupper(*p);
-	if (stat = do_mr_query("add_alias", 3, argv, Scream, NULL)) {
-	    com_err(program_name, stat, " in add_alias");
-	} else {
-	    elem = (struct qelem *) malloc(sizeof(struct qelem));
-	    elem->q_data = strsave(*pointer);
-	    AddQueue(elem, GetTypeValues(tname));
-	    Put_message("Done.");
+  for (elem = GetTypeValues(tname); elem; elem = elem->q_forw)
+    {
+      if (!strcasecmp(elem->q_data, *pointer))
+	{
+	  strcpy(*pointer, elem->q_data);
+	  return SUB_NORMAL;
 	}
     }
-    *pointer = strsave(def);
-    return(GetTypeFromUser(prompt, tname, pointer));
+  sprintf(buffer, "\"%s\" is not a legal value for %s.  Use one of:",
+	  *pointer, tname);
+  Put_message(buffer);
+  for (elem = GetTypeValues(tname); elem; elem = elem->q_forw)
+    Put_message(elem->q_data);
+  sprintf(buffer, "Are you sure you want \"%s\" to be a legal %s",
+	  *pointer, tname);
+  if (YesNoQuestion("Do you want this to be a new legal value", 0) == TRUE &&
+      YesNoQuestion(buffer, 0) == TRUE)
+    {
+      argv[0] = tname;
+      argv[1] = "TYPE";
+      argv[2] = *pointer;
+      /* don't uppercase access flags.  Do uppercase everything else */
+      if (strncmp(tname, "fs_access", 9))
+	{
+	  for (p = argv[2]; *p; p++)
+	    {
+	      if (islower(*p))
+		*p = toupper(*p);
+	    }
+	}
+      if ((stat = do_mr_query("add_alias", 3, argv, Scream, NULL)))
+	com_err(program_name, stat, " in add_alias");
+      else
+	{
+	  elem = malloc(sizeof(struct qelem));
+	  elem->q_data = strsave(*pointer);
+	  AddQueue(elem, GetTypeValues(tname));
+	  Put_message("Done.");
+	}
+    }
+  *pointer = strsave(def);
+  return GetTypeFromUser(prompt, tname, pointer);
 }
 
 
@@ -944,54 +897,50 @@ char  **pointer;
  *	Returns: SUB_ERROR if ^C, SUB_NORMAL otherwise
  */
 
-int GetAddressFromUser(prompt, pointer)
-char *prompt;
-char  **pointer;
+int GetAddressFromUser(char *prompt, char **pointer)
 {
-    char *value, buf[256];
-    struct in_addr addr;
-    int ret;
+  char *value, buf[256];
+  struct in_addr addr;
+  int ret;
 
-    addr.s_addr = htonl(atoi(*pointer));
-    value = strsave(inet_ntoa(addr));
-    ret = GetValueFromUser(prompt, &value);
-    if (ret == SUB_ERROR) return(SUB_ERROR);
-    addr.s_addr = inet_addr(value);
-    free(pointer);
-    sprintf(buf, "%d", ntohl(addr.s_addr));
-    *pointer = strsave(buf);
-    return(SUB_NORMAL);
+  addr.s_addr = htonl(atoi(*pointer));
+  value = strsave(inet_ntoa(addr));
+  ret = GetValueFromUser(prompt, &value);
+  if (ret == SUB_ERROR)
+    return SUB_ERROR;
+  addr.s_addr = inet_addr(value);
+  free(pointer);
+  sprintf(buf, "%d", ntohl(addr.s_addr));
+  *pointer = strsave(buf);
+  return SUB_NORMAL;
 }
 
 
-do_mr_query(name, argc, argv, proc, hint)
-char *name;
-int argc;
-char **argv;
-int (*proc)();
-char *hint;
+int do_mr_query(char *name, int argc, char **argv, int (*proc)(), char *hint)
 {
-    int status;
-    extern char *whoami, *moira_server;
+  int status;
+  extern char *whoami, *moira_server;
 
-    refresh_screen();
-    status = mr_query(name, argc, argv, proc, hint);
-    if (status != MR_ABORTED && status != MR_NOT_CONNECTED)
-      return(status);
-    status = mr_connect(moira_server);
-    if (status) {
-	com_err(whoami, status, " while re-connecting to server %s",
-		moira_server);
-	return(MR_ABORTED);
+  refresh_screen();
+  status = mr_query(name, argc, argv, proc, hint);
+  if (status != MR_ABORTED && status != MR_NOT_CONNECTED)
+    return status;
+  status = mr_connect(moira_server);
+  if (status)
+    {
+      com_err(whoami, status, " while re-connecting to server %s",
+	      moira_server);
+      return MR_ABORTED;
     }
-    status = mr_auth(whoami);
-    if (status) {
-	com_err(whoami, status, " while re-authenticating to server %s",
-		moira_server);
-	mr_disconnect();
-	return(MR_ABORTED);
+  status = mr_auth(whoami);
+  if (status)
+    {
+      com_err(whoami, status, " while re-authenticating to server %s",
+	      moira_server);
+      mr_disconnect();
+      return MR_ABORTED;
     }
-    status = mr_query(name, argc, argv, proc, hint);
-    return(status);
+  status = mr_query(name, argc, argv, proc, hint);
+  return status;
 }
 

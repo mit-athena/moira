@@ -1,6 +1,6 @@
 /*	This is the file misc.c for the MOIRA Client, which allows a naieve
  *      user to quickly and easily maintain most parts of the MOIRA database.
- *	It Contains: 
+ *	It Contains:
  *		TableStats
  *		ShowClients
  *		ShowValue
@@ -10,11 +10,11 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/misc.c,v $
  *      $Author: danw $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/misc.c,v 1.5 1997-01-29 23:06:21 danw Exp $
- *	
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/misc.c,v 1.6 1998-01-05 19:52:08 danw Exp $
+ *
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
- *	For further information on copyright and distribution 
+ *	For further information on copyright and distribution
  *	see the file mit-copyright.h
  */
 
@@ -40,16 +40,15 @@
  *	Returns: DM_NORMAL
  */
 
-PrintStats(info)
-char **info;
+int PrintStats(char **info)
 {
-    char buf[BUFSIZ];
+  char buf[BUFSIZ];
 
-    sprintf(buf, "Table: %-30s Modified: %s", info[0], info[5]);
-    Put_message(buf);
-    sprintf(buf, "    %s appends, %s updates, %s deletes",
-	    info[2], info[3], info[4]);
-    Put_message(buf);
+  sprintf(buf, "Table: %-30s Modified: %s", info[0], info[5]);
+  Put_message(buf);
+  sprintf(buf, "    %s appends, %s updates, %s deletes",
+	  info[2], info[3], info[4]);
+  Put_message(buf);
 }
 
 
@@ -59,19 +58,20 @@ char **info;
  *	Returns: DM_NORMAL
  */
 
-int TableStats()
+int TableStats(void)
 {
-    int status;
-    struct qelem *elem = NULL;
+  int status;
+  struct qelem *elem = NULL;
 
-    if (status = do_mr_query("get_all_table_stats", 0, NULL,
-			      StoreInfo, (char *)&elem)) {
-	com_err(program_name, status, " in TableStats");
-	return(DM_NORMAL);
+  if ((status = do_mr_query("get_all_table_stats", 0, NULL,
+			    StoreInfo, (char *)&elem)))
+    {
+      com_err(program_name, status, " in TableStats");
+      return DM_NORMAL;
     }
-    Loop(QueueTop(elem), PrintStats);
-    FreeQueue(elem);
-    return(DM_NORMAL);
+  Loop(QueueTop(elem), PrintStats);
+  FreeQueue(elem);
+  return DM_NORMAL;
 }
 
 
@@ -80,25 +80,26 @@ int TableStats()
  *	Arguments: argv
  */
 
-PrintClients(info)
-char **info;
+int PrintClients(char **info)
 {
-    char buf[BUFSIZ];
-    unsigned long host_address;
-    struct hostent *host_entry;
+  char buf[BUFSIZ];
+  unsigned long host_address;
+  struct hostent *host_entry;
 
-    host_address = inet_addr(info[1]);
-    if (host_address != 0) {
-	host_entry = gethostbyaddr((char *) &host_address, 4, AF_INET);
-	if (host_entry != NULL) {
-	    free(info[1]);
-	    info[1] = Strsave(host_entry->h_name);
+  host_address = inet_addr(info[1]);
+  if (host_address)
+    {
+      host_entry = gethostbyaddr((char *) &host_address, 4, AF_INET);
+      if (host_entry)
+	{
+	  free(info[1]);
+	  info[1] = Strsave(host_entry->h_name);
 	}
     }
-    sprintf(buf, "Principal %s on %s (%s)", info[0], info[1], info[2]);
-    Put_message(buf);
-    sprintf(buf, "    Connected at %s, client %s", info[3], info[4]);
-    Put_message(buf);
+  sprintf(buf, "Principal %s on %s (%s)", info[0], info[1], info[2]);
+  Put_message(buf);
+  sprintf(buf, "    Connected at %s, client %s", info[3], info[4]);
+  Put_message(buf);
 }
 
 
@@ -108,19 +109,20 @@ char **info;
  *	Returns: DM_NORMAL
  */
 
-int ShowClients()
+int ShowClients(void)
 {
-    int status;
-    struct qelem *elem = NULL;
+  int status;
+  struct qelem *elem = NULL;
 
-    if (status = do_mr_query("_list_users", 0, NULL,
-			      StoreInfo, (char *) &elem)) {
-	com_err(program_name, status, " in ShowClients");
-	return(DM_NORMAL);
+  if ((status = do_mr_query("_list_users", 0, NULL,
+			    StoreInfo, (char *) &elem)))
+    {
+      com_err(program_name, status, " in ShowClients");
+      return DM_NORMAL;
     }
-    Loop(QueueTop(elem), PrintClients);
-    FreeQueue(elem);
-    return(DM_NORMAL);
+  Loop(QueueTop(elem), PrintClients);
+  FreeQueue(elem);
+  return DM_NORMAL;
 }
 
 
@@ -129,13 +131,12 @@ int ShowClients()
  *	Arguments: argv
  */
 
-PrintValue(info)
-char **info;
+int PrintValue(char **info)
 {
-    char buf[BUFSIZ];
+  char buf[BUFSIZ];
 
-    sprintf(buf, "Value: %s", info[0]);
-    Put_message(buf);
+  sprintf(buf, "Value: %s", info[0]);
+  Put_message(buf);
 }
 
 
@@ -145,21 +146,20 @@ char **info;
  *	Returns: DM_NORMAL
  */
 
-int ShowValue(argc, argv)
-int argc;
-char **argv;
+int ShowValue(int argc, char **argv)
 {
-    int status;
-    struct qelem *elem = NULL;
+  int status;
+  struct qelem *elem = NULL;
 
-    if (status = do_mr_query("get_value", 1, &argv[1],
-			      StoreInfo, (char *) &elem)) {
-	com_err(program_name, status, " in ShowValue");
-	return(DM_NORMAL);
+  if ((status = do_mr_query("get_value", 1, &argv[1],
+			    StoreInfo, (char *) &elem)))
+    {
+      com_err(program_name, status, " in ShowValue");
+      return DM_NORMAL;
     }
-    Loop(elem, PrintValue);
-    FreeQueue(elem);
-    return(DM_NORMAL);
+  Loop(elem, PrintValue);
+  FreeQueue(elem);
+  return DM_NORMAL;
 }
 
 
@@ -168,14 +168,13 @@ char **argv;
  *	Arguments: argv
  */
 
-PrintAlias(info)
-char **info;
+int PrintAlias(char **info)
 {
-    char buf[BUFSIZ];
+  char buf[BUFSIZ];
 
-    sprintf(buf, "Name: %-20s Type: %-12s Value: %s",
-	    info[0], info[1], info[2]);
-    Put_message(buf);
+  sprintf(buf, "Name: %-20s Type: %-12s Value: %s",
+	  info[0], info[1], info[2]);
+  Put_message(buf);
 }
 
 
@@ -185,23 +184,22 @@ char **info;
  *	Returns: DM_NORMAL
  */
 
-int ShowAlias(argc, argv)
-int argc;
-char **argv;
+int ShowAlias(int argc, char **argv)
 {
-    int status;
-    char *info[4];
-    struct qelem *elem = NULL;
+  int status;
+  char *info[4];
+  struct qelem *elem = NULL;
 
-    info[0] = argv[1];
-    info[1] = argv[2];
-    info[2] = "*";
-    if (status = do_mr_query("get_alias", 3, info,
-			      StoreInfo, (char *) &elem)) {
-	com_err(program_name, status, " in ShowAlias");
-	return(DM_NORMAL);
+  info[0] = argv[1];
+  info[1] = argv[2];
+  info[2] = "*";
+  if ((status = do_mr_query("get_alias", 3, info,
+			    StoreInfo, (char *) &elem)))
+    {
+      com_err(program_name, status, " in ShowAlias");
+      return DM_NORMAL;
     }
-    Loop(QueueTop(elem), PrintAlias);
-    FreeQueue(elem);
-    return(DM_NORMAL);
+  Loop(QueueTop(elem), PrintAlias);
+  FreeQueue(elem);
+  return DM_NORMAL;
 }

@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/warehouse.pc,v 1.6 1998-01-05 14:54:09 danw Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/warehouse.pc,v 1.7 1998-01-05 19:52:52 danw Exp $
  *
  * This generates a database extract from the users table for the MIT
  * Warehouse.
@@ -9,6 +9,7 @@
  */
 
 #include <mit-copyright.h>
+#include <errno.h>
 #include <stdio.h>
 #include <moira.h>
 #include <moira_site.h>
@@ -22,9 +23,9 @@
 #include <string.h>
 #include <ctype.h>
 #include <fcntl.h>
+#include <unistd.h>
 EXEC SQL INCLUDE sqlca;
 
-extern int errno;
 char *whoami = "warehouse.gen";
 char *db = "moira/moira";
 
@@ -34,135 +35,147 @@ char *db = "moira/moira";
 
 char warehouse_dir[128];
 
-main(argc, argv)
-int argc;
-char **argv;
+int main(int argc, char **argv)
 {
-    int out = 1 /* stdout */;
-    char *outf = NULL, outft[64];
-    char control_fn[80], cmd[256];
-    FILE *f;
-    struct stat sb;
-    int flag1;
-    SigInfo si;
-    struct timeval now;
-    int records = 0;
-    EXEC SQL BEGIN DECLARE SECTION;
-    char login[9], sig[257], id[17], kname[257];
-    char fname[17], lname[17], middle[17];
-    EXEC SQL VAR sig IS STRING(257);
-    int timestamp, sigwho;
-    struct { char login[12];
-	     char id[12];
-             char fname[20];
-             char lname[20];
-             char middle[20];
-	     char sig[256];
-	 } outrec;
-    EXEC SQL END DECLARE SECTION;
+  int out = STDOUT_FILENO;
+  char *outf = NULL, outft[64];
+  char control_fn[80], cmd[256];
+  FILE *f;
+  struct stat sb;
+  int flag1;
+  SigInfo si;
+  struct timeval now;
+  int records = 0;
+  EXEC SQL BEGIN DECLARE SECTION;
+  char login[9], sig[257], id[17], kname[257];
+  char fname[17], lname[17], middle[17];
+  EXEC SQL VAR sig IS STRING(257);
+  int timestamp, sigwho;
+  struct {
+    char login[12];
+    char id[12];
+    char fname[20];
+    char lname[20];
+    char middle[20];
+    char sig[256];
+  } outrec;
+  EXEC SQL END DECLARE SECTION;
 
-    initialize_sms_error_table ();
+  initialize_sms_error_table();
 
-    sprintf(warehouse_dir, "%s/%s", DCM_DIR, WAREHOUSE_SUBDIR);
+  sprintf(warehouse_dir, "%s/%s", DCM_DIR, WAREHOUSE_SUBDIR);
 
-    EXEC SQL CONNECT :db;
+  EXEC SQL CONNECT :db;
 
-    if (argc == 2) {
-	if (stat(argv[1], &sb) == 0) {
-	    if (ModDiff (&flag1, "users", sb.st_mtime) == 0 &&
-		flag1 < 0) {
-		fprintf(stderr, "File %s does not need to be rebuilt.\n",
-			argv[1]);
-		exit(MR_NO_CHANGE);
+  if (argc == 2)
+    {
+      if (stat(argv[1], &sb) == 0)
+	{
+	  if (ModDiff(&flag1, "users", sb.st_mtime) == 0 && flag1 < 0)
+	    {
+	      fprintf(stderr, "File %s does not need to be rebuilt.\n",
+		      argv[1]);
+	      exit(MR_NO_CHANGE);
 	    }
 	}
-	outf = argv[1];
-	sprintf(outft, "%s/username_id.map", warehouse_dir);
-	if ((out = open(outft, O_WRONLY|O_APPEND|O_CREAT|O_TRUNC, 0666)) < 0) {
-	    fprintf(stderr, "unable to open %s for output\n", outf);
-	    exit(MR_OCONFIG);
+      outf = argv[1];
+      sprintf(outft, "%s/username_id.map", warehouse_dir);
+      if ((out = open(outft, O_WRONLY|O_APPEND|O_CREAT|O_TRUNC, 0666)) < 0)
+	{
+	  fprintf(stderr, "unable to open %s for output\n", outf);
+	  exit(MR_OCONFIG);
 	}
-    } else if (argc != 1) {
-	fprintf(stderr, "usage: %s [outfile]\n", argv[0]);
-	exit(MR_ARGS);
-    } else {
-	outf = NULL;
     }
+  else if (argc != 1)
+    {
+      fprintf(stderr, "usage: %s [outfile]\n", argv[0]);
+      exit(MR_ARGS);
+    }
+  else
+    outf = NULL;
 
-    /* The following is declarative, not executed,
-     * and so is dependent on where it is in the file,
-     * not in the order of execution of statements.
-     */
-    EXEC SQL WHENEVER SQLERROR GOTO sqlerr;
+  /* The following is declarative, not executed,
+   * and so is dependent on where it is in the file,
+   * not in the order of execution of statements.
+   */
+  EXEC SQL WHENEVER SQLERROR GOTO sqlerr;
 
-    EXEC SQL DECLARE x CURSOR FOR
-      SELECT u.login, u.clearid, u.signature, u.sigdate, s.string, u.sigwho,
-		u.first, u.last, u.middle
-      FROM users u, strings s
-	WHERE (u.status = 1 or u.status=2 or u.status=5 or
-	       u.status=6 or u.status=7) 
-		 and u.sigwho = s.string_id;
-    EXEC SQL OPEN x;
-    while (1) {
-	EXEC SQL FETCH x INTO :login, :id, :sig, :timestamp, :kname, :sigwho,
-		:fname, :lname, :middle;
-	if (sqlca.sqlcode != 0) break;
-	if (id == 0) continue;
-	if (!isdigit(id[1])) continue;
-	strtrim(login);
-	strtrim(id);
-	strtrim(kname);
-	strtrim(fname);
-	strtrim(lname);
-	strtrim(middle);
-	memset(&outrec, 0, sizeof(outrec));
-	strcpy(outrec.login, login);
-	strcpy(outrec.id, id);
-	strcpy(outrec.fname, fname);
-	strcpy(outrec.lname, lname);
-	strcpy(outrec.middle, middle);
-	if (sigwho) {
-		si.timestamp = timestamp;
-		si.SigInfoVersion = 0; /* XXXXXX this isn't used */
-		kname_parse(si.pname, si.pinst, si.prealm, kname);
-		si.rawsig = (unsigned char *)sig;
-		GDSS_Recompose(&si, outrec.sig);
+  EXEC SQL DECLARE x CURSOR FOR
+    SELECT u.login, u.clearid, u.signature, u.sigdate, s.string, u.sigwho,
+    u.first, u.last, u.middle
+    FROM users u, strings s
+    WHERE (u.status = 1 or u.status = 2 or u.status = 5 OR
+	   u.status = 6 or u.status = 7)
+    AND u.sigwho = s.string_id;
+  EXEC SQL OPEN x;
+  while (1)
+    {
+      EXEC SQL FETCH x INTO :login, :id, :sig, :timestamp, :kname, :sigwho,
+	:fname, :lname, :middle;
+      if (sqlca.sqlcode)
+	break;
+      if (id == 0)
+	continue;
+      if (!isdigit(id[1]))
+	continue;
+      strtrim(login);
+      strtrim(id);
+      strtrim(kname);
+      strtrim(fname);
+      strtrim(lname);
+      strtrim(middle);
+      memset(&outrec, 0, sizeof(outrec));
+      strcpy(outrec.login, login);
+      strcpy(outrec.id, id);
+      strcpy(outrec.fname, fname);
+      strcpy(outrec.lname, lname);
+      strcpy(outrec.middle, middle);
+      if (sigwho)
+	{
+	  si.timestamp = timestamp;
+	  si.SigInfoVersion = 0; /* XXXXXX this isn't used */
+	  kname_parse(si.pname, si.pinst, si.prealm, kname);
+	  si.rawsig = (unsigned char *)sig;
+	  GDSS_Recompose(&si, outrec.sig);
 	}
-	write(out, &outrec, sizeof(outrec));
-	records++;
+      write(out, &outrec, sizeof(outrec));
+      records++;
     }
-    EXEC SQL CLOSE x;
+  EXEC SQL CLOSE x;
 
-    EXEC SQL COMMIT;
+  EXEC SQL COMMIT;
 
-    if (close(out)) {
-	perror("close failed");
-	exit(MR_CCONFIG);
+  if (close(out))
+    {
+      perror("close failed");
+      exit(MR_CCONFIG);
     }
-    sprintf(control_fn, "%s/username_id.ctl", warehouse_dir);
+  sprintf(control_fn, "%s/username_id.ctl", warehouse_dir);
 
-    f = fopen(control_fn, "w");
-    if (!f) {
-	perror("creating username_id control file");
-	exit(MR_OCONFIG);
+  f = fopen(control_fn, "w");
+  if (!f)
+    {
+      perror("creating username_id control file");
+      exit(MR_OCONFIG);
     }
-    fprintf(f, "username_id.map --- Moira feed for MIT Data Warehouse\n");
-    fprintf(f, "%d records\n", records);
-    fprintf(f, "%d bytes\n", records * (12+12+20+20+20+256));
-    fprintf(f, "Full feed\n");
-    fprintf(f, "Fixed format -- binary\n");
-    fclose(f);
-    if (outf) {
-	fprintf(stderr, "Building tar file.\n");
-	sprintf(cmd, "(cd %s; tar cf - . ) | compress > %s", 
-		warehouse_dir, outf);
-	if (system(cmd))
-	  exit(MR_TAR_FAIL);
+  fprintf(f, "username_id.map --- Moira feed for MIT Data Warehouse\n");
+  fprintf(f, "%d records\n", records);
+  fprintf(f, "%d bytes\n", records * (12 + 12 + 20 + 20 + 20 + 256));
+  fprintf(f, "Full feed\n");
+  fprintf(f, "Fixed format -- binary\n");
+  fclose(f);
+  if (outf)
+    {
+      fprintf(stderr, "Building tar file.\n");
+      sprintf(cmd, "(cd %s; tar cf - . ) | compress > %s",
+	      warehouse_dir, outf);
+      if (system(cmd))
+	exit(MR_TAR_FAIL);
     }
-    
-    exit(MR_SUCCESS);
 
- sqlerr:
-    db_error(sqlca.sqlcode);
-    exit(MR_DBMS_ERR);
+  exit(MR_SUCCESS);
+
+sqlerr:
+  db_error(sqlca.sqlcode);
+  exit(MR_DBMS_ERR);
 }

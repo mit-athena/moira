@@ -38,7 +38,7 @@
 
 	ec		KRB_RES12,
 		        "Reserved 12"
-  
+
 	ec		KRB_RES13,
 		        "Reserved 13"
 

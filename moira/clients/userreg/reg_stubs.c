@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/reg_stubs.c,v $
  *	$Author: danw $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/reg_stubs.c,v 1.25 1998-01-05 14:51:25 danw Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/reg_stubs.c,v 1.26 1998-01-05 19:52:24 danw Exp $
  *
  *  (c) Copyright 1988 by the Massachusetts Institute of Technology.
  *  For copying and distribution information, please see the file
@@ -9,7 +9,7 @@
  */
 
 #ifndef lint
-static char *rcsid_reg_stubs_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/reg_stubs.c,v 1.25 1998-01-05 14:51:25 danw Exp $";
+static char *rcsid_reg_stubs_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/reg_stubs.c,v 1.26 1998-01-05 19:52:24 danw Exp $";
 #endif
 
 #include <mit-copyright.h>
@@ -18,9 +18,6 @@ static char *rcsid_reg_stubs_c = "$Header: /afs/.athena.mit.edu/astaff/project/m
 #include <sys/types.h>
 #include <sys/time.h>
 #include <sys/socket.h>
-#ifdef _AIX_SOURCE
-#include <sys/select.h>
-#endif
 #include <netinet/in.h>
 #include <netdb.h>
 #include <des.h>
@@ -48,181 +45,185 @@ extern errno;
 #define FD_ISSET(n, p)   ((p)->fds_bits[0] & (1 << (n)))
 #endif /* FD_SET */
 
-ureg_init()
+int ureg_init(void)
 {
-    struct servent *sp;
-    char **p, *s;
-    struct hostent *hp;
-    struct sockaddr_in s_in;
-    
-    initialize_ureg_error_table();
-    initialize_krb_error_table(); 
-    initialize_sms_error_table();
-    initialize_kadm_error_table();
-   
-    seq_no = getpid();
+  struct servent *sp;
+  char **p, *s;
+  struct hostent *hp;
+  struct sockaddr_in s_in;
 
-    host = NULL;
-    host = getenv("REGSERVER");
+  initialize_ureg_error_table();
+  initialize_krb_error_table();
+  initialize_sms_error_table();
+  initialize_kadm_error_table();
+
+  seq_no = getpid();
+
+  host = NULL;
+  host = getenv("REGSERVER");
 #ifdef HESIOD
-    if (!host || (strlen(host) == 0)) {
-	p = hes_resolve("registration", "sloc");
-	if (p) host = *p;
+  if (!host || (strlen(host) == 0))
+    {
+      p = hes_resolve("registration", "sloc");
+      if (p)
+	host = *p;
     }
 #endif
-    if (!host || (strlen(host) == 0)) {
-	host = strsave(MOIRA_SERVER);
-	s = strchr(host, ':');
-	if (s) *s = 0;
+  if (!host || (strlen(host) == 0))
+    {
+      host = strsave(MOIRA_SERVER);
+      s = strchr(host, ':');
+      if (s)
+	*s = '\0';
     }
-    hp = gethostbyname(host);
-    host = strsave(hp->h_name);
-    if (hp == NULL) return UNKNOWN_HOST;
+  hp = gethostbyname(host);
+  host = strsave(hp->h_name);
+  if (hp == NULL)
+    return UNKNOWN_HOST;
 
-    sp = getservbyname("sms_ureg", "udp");
+  sp = getservbyname("sms_ureg", "udp");
 
-    if (sp == NULL) return UNKNOWN_SERVICE;
-    
-    (void) close(reg_sock);
-    reg_sock = socket(AF_INET, SOCK_DGRAM, 0);
-    if (reg_sock < 0) return errno;
+  if (sp == NULL)
+    return UNKNOWN_SERVICE;
 
-    memset((char *)&s_in, 0, sizeof(s_in));
-    s_in.sin_port = sp->s_port;
-    memcpy((char *)&s_in.sin_addr, hp->h_addr, sizeof(struct in_addr));
-    s_in.sin_family = AF_INET;
+  close(reg_sock);
+  reg_sock = socket(AF_INET, SOCK_DGRAM, 0);
+  if (reg_sock < 0)
+    return errno;
 
-    if (connect(reg_sock, (struct sockaddr *)&s_in, sizeof(s_in)) < 0)
-	return errno;
-    return 0;
+  memset(&s_in, 0, sizeof(s_in));
+  s_in.sin_port = sp->s_port;
+  memcpy(&s_in.sin_addr, hp->h_addr, sizeof(struct in_addr));
+  s_in.sin_family = AF_INET;
+
+  if (connect(reg_sock, (struct sockaddr *)&s_in, sizeof(s_in)) < 0)
+    return errno;
+  return 0;
 }
 
-int
-verify_user(first, last, idnumber, hashidnumber, login)
-    char *first, *last, *idnumber, *hashidnumber, *login;
+int verify_user(char *first, char *last, char *idnumber,
+		char *hashidnumber, char *login)
 {
-    char buf[1024];
-    int version = ntohl((u_long)1);
-    int call = ntohl((u_long)UREG_VERIFY_USER);
-    des_cblock key;
-    des_key_schedule ks;
-    register char *bp = buf;
-    register int len;
-    char crypt_src[1024];
-    
-    memcpy(bp, (char *)&version, sizeof(int));
-    bp += sizeof(int);
-    seq_no++;
-    memcpy(bp, (char *)&seq_no, sizeof(int));
+  char buf[1024];
+  int version = ntohl((u_long)1);
+  int call = ntohl((u_long)UREG_VERIFY_USER);
+  des_cblock key;
+  des_key_schedule ks;
+  register char *bp = buf;
+  register int len;
+  char crypt_src[1024];
 
-    bp += sizeof(int);
+  memcpy(bp, &version, sizeof(int));
+  bp += sizeof(int);
+  seq_no++;
+  memcpy(bp, &seq_no, sizeof(int));
 
-    memcpy(bp, (char *)&call, sizeof(int));
+  bp += sizeof(int);
 
-    bp += sizeof(int);
+  memcpy(bp, &call, sizeof(int));
 
-    (void) strcpy(bp, first);
-    bp += strlen(bp)+1;
+  bp += sizeof(int);
 
-    (void) strcpy(bp, last);
-    bp += strlen(bp)+1;
+  strcpy(bp, first);
+  bp += strlen(bp) + 1;
 
-    len = strlen(idnumber) + 1;
-    memcpy(crypt_src, idnumber, len);
+  strcpy(bp, last);
+  bp += strlen(bp) + 1;
 
-    memcpy(crypt_src+len, hashidnumber, 13);
+  len = strlen(idnumber) + 1;
+  memcpy(crypt_src, idnumber, len);
 
-    des_string_to_key(hashidnumber, key);
-    des_key_sched(key, ks);
-    des_pcbc_encrypt(crypt_src, bp, len+13, ks, key, DES_ENCRYPT);
-    bp += len+14+8;
-    len = bp - buf;
-    return do_call(buf, len, seq_no, login);
+  memcpy(crypt_src + len, hashidnumber, 13);
+
+  des_string_to_key(hashidnumber, key);
+  des_key_sched(key, ks);
+  des_pcbc_encrypt(crypt_src, bp, len + 13, ks, key, DES_ENCRYPT);
+  bp += len + 14 + 8;
+  len = bp - buf;
+  return do_call(buf, len, seq_no, login);
 }
 
-do_operation(first, last, idnumber, hashidnumber, data, opcode)
-    char *first, *last, *idnumber, *hashidnumber, *data;
-    u_long opcode;
+int do_operation(char *first, char *last, char *idnumber, char *hashidnumber,
+		 char *data, u_long opcode)
 {
-    char buf[1024];
-    int version = ntohl((u_long)1);
-    int call = ntohl(opcode);
-    des_cblock key;
-    des_key_schedule ks;
-    register char *bp = buf;
-    register int len;
-    
-    char crypt_src[1024];
-    char *cbp;
-    
-    memcpy(bp, (char *)&version, sizeof(int));
-    bp += sizeof(int);
-    seq_no++;
-    memcpy(bp, (char *)&seq_no, sizeof(int));
+  char buf[1024];
+  int version = ntohl((u_long)1);
+  int call = ntohl(opcode);
+  des_cblock key;
+  des_key_schedule ks;
+  register char *bp = buf;
+  register int len;
 
-    bp += sizeof(int);
+  char crypt_src[1024];
+  char *cbp;
 
-    memcpy(bp, (char *)&call, sizeof(int));
+  memcpy(bp, &version, sizeof(int));
+  bp += sizeof(int);
+  seq_no++;
+  memcpy(bp, &seq_no, sizeof(int));
 
-    bp += sizeof(int);
+  bp += sizeof(int);
 
-    (void) strcpy(bp, first);
-    bp += strlen(bp)+1;
+  memcpy(bp, &call, sizeof(int));
 
-    (void) strcpy(bp, last);
-    bp += strlen(bp)+1;
+  bp += sizeof(int);
 
-    len = strlen(idnumber) + 1;
-    cbp = crypt_src;
-    
-    memcpy(crypt_src, idnumber, len);
-    cbp += len;
-    
-    memcpy(cbp, hashidnumber, 14);
-    cbp += 14;
-    
-    len = strlen(data) + 1;
-    memcpy(cbp, data, len);
-    cbp += len;
+  strcpy(bp, first);
+  bp += strlen(bp) + 1;
 
-    len = cbp - crypt_src;
-    des_string_to_key(hashidnumber, key);
-    des_key_sched(key, ks);
-    des_pcbc_encrypt(crypt_src, bp, len, ks, key, 1);
-    len = ((len + 7) >> 3) << 3;
-    bp += len;
-    
-    len = bp - buf;
-    return do_call(buf, len, seq_no, 0);
+  strcpy(bp, last);
+  bp += strlen(bp) + 1;
 
+  len = strlen(idnumber) + 1;
+  cbp = crypt_src;
+
+  memcpy(crypt_src, idnumber, len);
+  cbp += len;
+
+  memcpy(cbp, hashidnumber, 14);
+  cbp += 14;
+
+  len = strlen(data) + 1;
+  memcpy(cbp, data, len);
+  cbp += len;
+
+  len = cbp - crypt_src;
+  des_string_to_key(hashidnumber, key);
+  des_key_sched(key, ks);
+  des_pcbc_encrypt(crypt_src, bp, len, ks, key, 1);
+  len = ((len + 7) >> 3) << 3;
+  bp += len;
+
+  len = bp - buf;
+  return do_call(buf, len, seq_no, 0);
 }
 
-grab_login(first, last, idnumber, hashidnumber, login)
-    char *first, *last, *idnumber, *hashidnumber, *login;
+int grab_login(char *first, char *last, char *idnumber, char *hashidnumber,
+	       char *login)
 {
-    return(do_operation(first, last, idnumber, hashidnumber, login,
-			UREG_RESERVE_LOGIN));
+  return do_operation(first, last, idnumber, hashidnumber, login,
+		      UREG_RESERVE_LOGIN);
 }
 
-enroll_login(first, last, idnumber, hashidnumber, login)
-    char *first, *last, *idnumber, *hashidnumber, *login;
+int enroll_login(char *first, char *last, char *idnumber, char *hashidnumber,
+		 char *login)
 {
-    return(do_operation(first, last, idnumber, hashidnumber, login,
-			UREG_SET_IDENT));
+  return do_operation(first, last, idnumber, hashidnumber, login,
+		      UREG_SET_IDENT);
 }
 
-set_password(first, last, idnumber, hashidnumber, password)
-    char *first, *last, *idnumber, *hashidnumber, *password;
+int set_password(char *first, char *last, char *idnumber, char *hashidnumber,
+		 char *password)
 {
-    return(do_operation(first, last, idnumber, hashidnumber, password,
-			UREG_SET_PASSWORD));
+  return do_operation(first, last, idnumber, hashidnumber, password,
+		      UREG_SET_PASSWORD);
 }
 
-get_krb(first, last, idnumber, hashidnumber, password)
-    char *first, *last, *idnumber, *hashidnumber, *password;
+int get_krb(char *first, char *last, char *idnumber, char *hashidnumber,
+	    char *password)
 {
-    return(do_operation(first, last, idnumber, hashidnumber, password,
-			UREG_GET_KRB));
+  return do_operation(first, last, idnumber, hashidnumber, password,
+		      UREG_GET_KRB);
 }
 
 
@@ -237,173 +238,159 @@ get_krb(first, last, idnumber, hashidnumber, password)
  * of failure codes.
  */
 
-do_secure_operation(login, idnumber, passwd, newpasswd, opcode)
-    char *login, *idnumber, *passwd, *newpasswd;
-    u_long opcode;
+int do_secure_operation(char *login, char *idnumber, char *passwd,
+			char *newpasswd, u_long opcode)
 {
-    char buf[1500], data[128], tktstring[128];
-    int version = ntohl((u_long)1);
-    int call = ntohl(opcode);
-    char inst[INST_SZ], hosti[INST_SZ];
-    char *bp = buf, *src, *dst, *realm;
-    int len, status, i;
-    KTEXT_ST cred;
-    CREDENTIALS creds;
-    Key_schedule keys;
-    char *krb_get_phost(), *krb_realmofhost();
-#ifdef POSIX    
-    memmove(bp, (char *)&version, sizeof(int));
-#else
-    bcopy((char *)&version, bp, sizeof(int));
-#endif
-    bp += sizeof(int);
-    seq_no++;
-#ifdef POSIX
-    memmove(bp, (char *)&seq_no, sizeof(int));
-#else
-    bcopy((char *)&seq_no, bp, sizeof(int));
-#endif
+  char buf[1500], data[128], tktstring[128];
+  int version = ntohl((u_long)1);
+  int call = ntohl(opcode);
+  char inst[INST_SZ], hosti[INST_SZ];
+  char *bp = buf, *src, *dst, *realm;
+  int len, status, i;
+  KTEXT_ST cred;
+  CREDENTIALS creds;
+  Key_schedule keys;
+  char *krb_get_phost(), *krb_realmofhost();
 
-    bp += sizeof(int);
-#ifdef POSIX
-    memmove(bp, (char *)&call,  sizeof(int));
-#else
-    bcopy((char *)&call, bp, sizeof(int));
-#endif
+  memmove(bp, &version, sizeof(int));
+  bp += sizeof(int);
+  seq_no++;
+  memmove(bp, &seq_no, sizeof(int));
 
-    bp += sizeof(int);
+  bp += sizeof(int);
+  memmove(bp, &call,  sizeof(int));
 
-    /* put the login name in the firstname field */
-    (void) strcpy(bp, login);
-    bp += strlen(bp)+1;
+  bp += sizeof(int);
 
-    /* the old lastname field */
-    (void) strcpy(bp, "");
-    bp += strlen(bp)+1;
+  /* put the login name in the firstname field */
+  strcpy(bp, login);
+  bp += strlen(bp) + 1;
 
-    /* don't overwrite existing ticket file */
-    (void) sprintf(tktstring, "/tmp/tkt_cpw_%d",getpid());
-    krb_set_tkt_string(tktstring);
+  /* the old lastname field */
+  strcpy(bp, "");
+  bp += strlen(bp) + 1;
 
-    /* get realm and canonizalized hostname of server */
-    realm = krb_realmofhost(host);
-    for (src = host, dst = hosti; *src && *src != '.'; src++)
+  /* don't overwrite existing ticket file */
+  sprintf(tktstring, "/tmp/tkt_cpw_%d", getpid());
+  krb_set_tkt_string(tktstring);
+
+  /* get realm and canonizalized hostname of server */
+  realm = krb_realmofhost(host);
+  for (src = host, dst = hosti; *src && *src != '.'; src++)
+    {
       if (isupper(*src))
 	*dst++ = tolower(*src);
       else
       	*dst++ = *src;
-    *dst = 0;
-    inst[0] = 0;
-
-    /* get changepw tickets.  We use this service because it's the
-     * only one that guarantees we used the password rather than a
-     * ticket granting ticket.
-     */
-    status = krb_get_pw_in_tkt(login, inst, realm,
-			       "changepw", hosti, 5, passwd);
-    if (status) return (status + krb_err_base);
-
-    status = krb_mk_req(&cred, "changepw", hosti, realm, 0);
-    if (status) return (status + krb_err_base);
-
-    /* round up to word boundry */
-    bp = (char *)((((u_long)bp)+3)&0xfffffffc);
-
-    /* put the ticket in the packet */
-    len = cred.length;
-    cred.length = htonl(cred.length);
-#ifdef POSIX
-    memmove(bp, &(cred), sizeof(int)+len);
-#else
-    bcopy(&(cred), bp, sizeof(int)+len);
-#endif
-#ifdef DEBUG
-    com_err("test", 0, "Cred: length %d", len);
-    for (i = 0; i < len; i += 16)
-      com_err("test", 0, " %02x %02x %02x %02x %02x %02x %02x %02x  %02x %02x %02x %02x %02x %02x %02x %02x",
-	      cred.dat[i+0], cred.dat[i+1], cred.dat[i+2], cred.dat[i+3],
-	      cred.dat[i+4], cred.dat[i+5], cred.dat[i+6], cred.dat[i+7],
-	      cred.dat[i+8], cred.dat[i+9], cred.dat[i+10], cred.dat[i+11],
-	      cred.dat[i+12], cred.dat[i+13], cred.dat[i+14], cred.dat[i+15]);
-#endif /* DEBUG */
-    bp += sizeof(int) + len;
-
-    /* encrypt the data in the session key */
-    sprintf(data, "%s,%s", idnumber, newpasswd);
-    len = strlen(data);
-    len = ((len + 7) >> 3) << 3;
-
-    status = krb_get_cred("changepw", hosti, realm, &creds);
-    if (status) {
-	memset(data, 0, strlen(data));
-	return (status + krb_err_base);
     }
-    dest_tkt();
+  *dst = '\0';
+  inst[0] = '\0';
 
-    des_key_sched(creds.session, keys);
-    des_pcbc_encrypt(data, bp + sizeof(int), len, keys, creds.session, 1);
-    *((int *)bp) = htonl(len);
-    memset(data, 0, strlen(data));
+  /* get changepw tickets.  We use this service because it's the
+   * only one that guarantees we used the password rather than a
+   * ticket granting ticket.
+   */
+  status = krb_get_pw_in_tkt(login, inst, realm, "changepw", hosti, 5, passwd);
+  if (status)
+    return status + krb_err_base;
 
-    bp += len + sizeof(int);
-    
-    len = bp - buf;
-    return do_call(buf, len, seq_no, 0);
+  status = krb_mk_req(&cred, "changepw", hosti, realm, 0);
+  if (status)
+    return status + krb_err_base;
 
+  /* round up to word boundry */
+  bp = (char *)((((u_long)bp) + 3) & 0xfffffffc);
+
+  /* put the ticket in the packet */
+  len = cred.length;
+  cred.length = htonl(cred.length);
+  memmove(bp, &(cred), sizeof(int) + len);
+  bp += sizeof(int) + len;
+
+  /* encrypt the data in the session key */
+  sprintf(data, "%s,%s", idnumber, newpasswd);
+  len = strlen(data);
+  len = ((len + 7) >> 3) << 3;
+
+  status = krb_get_cred("changepw", hosti, realm, &creds);
+  if (status)
+    {
+      memset(data, 0, strlen(data));
+      return status + krb_err_base;
+    }
+  dest_tkt();
+
+  des_key_sched(creds.session, keys);
+  des_pcbc_encrypt(data, bp + sizeof(int), len, keys, creds.session, 1);
+  *((int *)bp) = htonl(len);
+  memset(data, 0, strlen(data));
+
+  bp += len + sizeof(int);
+
+  len = bp - buf;
+  return do_call(buf, len, seq_no, 0);
 }
 
-do_call(buf, len, seq_no, login)
-    char *buf;
-    char *login;
-    int seq_no;
-    int len;
+int do_call(char *buf, int len, int seq_no, char *login)
 {
-    struct timeval timeout;
-    char ibuf[1024];
-    fd_set set;
-    
-    int retry = 0;
+  struct timeval timeout;
+  char ibuf[1024];
+  fd_set set;
 
-    do {
-	if (write(reg_sock, buf, len) != len) return errno;
+  int retry = 0;
 
-	FD_ZERO(&set);
-	FD_SET(reg_sock, &set);
-	timeout.tv_sec = 30;
-	timeout.tv_usec = 0;
-	do {
-	    int rtn;
-	    struct sockaddr_in s_in;
-	    int addrlen = sizeof(s_in);
-	    int vno;
-	    int sno;
-	    int stat;
-	    
-	    rtn = select(reg_sock+1, &set, (fd_set *)0, (fd_set *)0, &timeout);
-	    if (rtn == 0)
-		break;
-	    else if (rtn < 0) return errno;
-	
-	    len = recvfrom(reg_sock, ibuf, BUFSIZ, 0,
-			   (struct sockaddr *)&s_in, &addrlen);
-	    if (len < 0) return errno;
-	    if (len < 12) return UREG_BROKEN_PACKET;
-	    memcpy((char *)&vno, ibuf, sizeof(long));
-	    vno = ntohl((u_long)vno);
-	    if (vno != 1) continue;
-	    memcpy((char *)&sno, ibuf + 4, sizeof(long));
+  do
+    {
+      if (write(reg_sock, buf, len) != len)
+	return errno;
 
-	    if (sno != seq_no) continue;
+      FD_ZERO(&set);
+      FD_SET(reg_sock, &set);
+      timeout.tv_sec = 30;
+      timeout.tv_usec = 0;
+      do
+	{
+	  int rtn;
+	  struct sockaddr_in s_in;
+	  int addrlen = sizeof(s_in);
+	  int vno;
+	  int sno;
+	  int stat;
 
-	    memcpy((char *)&stat, ibuf + 8, sizeof(long));
-	    stat = ntohl((u_long)stat);
-	    if (login && len > 12) {
-		memcpy(login, ibuf+12, len-12);
-		login[len-12] = '\0';
-	    } else if (login)
-		*login = '\0';
-	    return stat;
-	} while (1);
-    } while (++retry < 10);
-    return ETIMEDOUT;
-}    
+	  rtn = select(reg_sock + 1, &set, NULL, NULL, &timeout);
+	  if (rtn == 0)
+	    break;
+	  else if (rtn < 0)
+	    return errno;
+
+	  len = recvfrom(reg_sock, ibuf, BUFSIZ, 0,
+			 (struct sockaddr *)&s_in, &addrlen);
+	  if (len < 0)
+	    return errno;
+	  if (len < 12)
+	    return UREG_BROKEN_PACKET;
+	  memcpy(&vno, ibuf, sizeof(long));
+	  vno = ntohl((u_long)vno);
+	  if (vno != 1)
+	    continue;
+	  memcpy(&sno, ibuf + 4, sizeof(long));
+
+	  if (sno != seq_no)
+	    continue;
+
+	  memcpy(&stat, ibuf + 8, sizeof(long));
+	  stat = ntohl((u_long)stat);
+	  if (login && len > 12)
+	    {
+	      memcpy(login, ibuf + 12, len - 12);
+	      login[len - 12] = '\0';
+	    }
+	  else if (login)
+	    *login = '\0';
+	  return stat;
+	}
+      while (1);
+    }
+  while (++retry < 10);
+  return ETIMEDOUT;
+}

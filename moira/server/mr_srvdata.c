@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_srvdata.c,v $
- *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_srvdata.c,v 1.9 1990-03-19 15:42:21 mar Exp $
+ *	$Author: danw $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_srvdata.c,v 1.10 1998-01-05 19:53:33 danw Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -11,7 +11,7 @@
  */
 
 #ifndef lint
-static char *rcsid_mr_srvdata_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_srvdata.c,v 1.9 1990-03-19 15:42:21 mar Exp $";
+static char *rcsid_mr_srvdata_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_srvdata.c,v 1.10 1998-01-05 19:53:33 danw Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -36,7 +36,7 @@ LIST_OF_OPERATIONS op_list;
  * The current number of connected clients, an array of them, and the
  * "current" client, if any.
  */
-int nclients=0;
+int nclients = 0;
 client **clients, *cur_client;
 /*
  * Socket address of the most recently connected client.
@@ -62,7 +62,7 @@ char buf1[BUFSIZ];
  * If non-null, reason for shutdown.  (Moira will be going down shortly
  * if this is non-null)
  */
-char *takedown=NULL;
+char *takedown = NULL;
 
 /* States for putting the server to sleep & waking it up again. */
 int dormant = AWAKE;

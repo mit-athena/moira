@@ -1,16 +1,16 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/increment.pc,v $
  *	$Author: danw $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/increment.pc,v 2.1 1997-01-29 23:27:07 danw Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/increment.pc,v 2.2 1998-01-05 19:53:28 danw Exp $
  *
  *	Copyright (C) 1989 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
  *	<mit-copyright.h>.
- * 
+ *
  */
 
 #ifndef lint
-static char *rcsid_increment_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/increment.pc,v 2.1 1997-01-29 23:27:07 danw Exp $";
+static char *rcsid_increment_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/increment.pc,v 2.2 1998-01-05 19:53:28 danw Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -48,12 +48,12 @@ static int afterc;
 struct save_queue *incremental_sq = NULL;
 struct save_queue *incremental_exec = NULL;
 struct iupdate {
-    char *table;
-    int beforec;
-    char **before;
-    int afterc;
-    char **after;
-    char *service;
+  char *table;
+  int beforec;
+  char **before;
+  int afterc;
+  char **after;
+  char *service;
 };
 
 void next_incremental(void);
@@ -63,298 +63,267 @@ int table_num(char *table);
 
 void incremental_init(void)
 {
-    int i;
+  int i;
 
-    if (incremental_sq == NULL)
-      incremental_sq = sq_create();
-    if (incremental_exec == NULL)
-      incremental_exec = sq_create();
+  if (!incremental_sq)
+    incremental_sq = sq_create();
+  if (!incremental_exec)
+    incremental_exec = sq_create();
 
-    for(i=0; i<MAXARGC; i++) {
-      before[i]=malloc(ARGLEN);
-      after[i]=malloc(ARGLEN);
+  for (i = 0; i < MAXARGC; i++)
+    {
+      before[i] = malloc(ARGLEN);
+      after[i] = malloc(ARGLEN);
     }
 }
 
 
 /* record the state of a table row before it is changed */
 
-void incremental_before(table, qual, argv)
-     enum tables table;
-EXEC SQL BEGIN DECLARE SECTION;
-     char *qual, **argv;
-EXEC SQL END DECLARE SECTION;
+void incremental_before(enum tables table, char *qual, char **argv)
 {
-    EXEC SQL BEGIN DECLARE SECTION;
-    int id;
-    EXEC SQL END DECLARE SECTION;
+  EXEC SQL BEGIN DECLARE SECTION;
+  int id;
+  EXEC SQL END DECLARE SECTION;
 
-    char *name;
+  char *name;
 
-    beforetable = table;
+  beforetable = table;
 
-    switch(table)
-      {
-      case USERS_TABLE:
-	sprintf(stmt_buf, "SELECT u.login, u.unix_uid, u.shell, u.last, "
-		"u.first, u.middle, u.status, u.clearid, u.type "
-		"FROM users u WHERE %s", qual);
-	dosql(before);
-	beforec = 9;
-	break;
-      case MACHINE_TABLE:
-	sprintf(stmt_buf, "SELECT m.name, m.vendor FROM machine m "
-		"WHERE %s", qual);
-	dosql(before);
-	beforec = 2;
-	break;
-      case CLUSTER_TABLE:
-	sprintf(stmt_buf, "SELECT c.name, c.description, c.location "
-		"FROM clusters c WHERE %s", qual);
-	dosql(before);
-	beforec = 3;
-	break;
-      case MCMAP_TABLE:
-	strcpy(before[0], argv[0]);
-	strcpy(before[1], argv[1]);
-	beforec = 2;
-	break;
-      case SVC_TABLE:
-	strcpy(before[0], argv[0]);
-	strcpy(before[1], argv[1]);
-	strcpy(before[2], argv[2]);
-	beforec = 3;
-	break;
-      case FILESYS_TABLE:
-	sprintf(stmt_buf, "SELECT fs.label, fs.type, fs.mach_id, fs.name, "
-		"fs.mount, fs.rwaccess, fs.comments, fs.owner, fs.owners, "
-		"fs.createflg, fs.lockertype FROM filesys fs WHERE %s", qual);
-	dosql(before);
-        name = malloc(0);
-        id = atoi(before[2]);
-        id_to_name(id, MACHINE_TABLE, &name);
-        strcpy(before[2], name);
-        id = atoi(before[7]);
-        id_to_name(id, USERS_TABLE, &name);
-        strcpy(before[7], name);
-        id = atoi(before[8]);
-        id_to_name(id, LIST_TABLE, &name);
-        strcpy(before[8], name);
-        free(name);
-	beforec = 11;
-	break;
-      case QUOTA_TABLE:
-	strcpy(before[0], "?");
-	strcpy(before[1], argv[1]);
-	strcpy(before[2], "?");
-	sprintf(stmt_buf, "SELECT q.quota, fs.name FROM quota q, filesys fs "
-		"WHERE %s AND fs.filsys_id = q.filsys_id", qual);
-	dosql(&(before[3]));
-	strcpy(before[2], argv[1]);
-	beforec = 5;
-	break;
-      case LIST_TABLE:
-	sprintf(stmt_buf, "SELECT l.name, l.active, l.publicflg, l.hidden, "
-		"l.maillist, l.grouplist, l.gid, l.acl_type, l.acl_id, "
-		"l.description FROM list l WHERE %s", qual);
-	dosql(before);
-	beforec = 10;
-	break;
-      case IMEMBERS_TABLE:
-	id = (int) argv[0];
-	sprintf(stmt_buf, "SELECT active, publicflg, hidden, maillist, "
-		"grouplist, gid FROM list WHERE list_id = %d", id);
-	dosql(&(before[3]));
-	name = malloc(0);
+  switch (table)
+    {
+    case USERS_TABLE:
+      sprintf(stmt_buf, "SELECT u.login, u.unix_uid, u.shell, u.last, "
+	      "u.first, u.middle, u.status, u.clearid, u.type "
+	      "FROM users u WHERE %s", qual);
+      dosql(before);
+      beforec = 9;
+      break;
+    case MACHINE_TABLE:
+      sprintf(stmt_buf, "SELECT m.name, m.vendor FROM machine m "
+	      "WHERE %s", qual);
+      dosql(before);
+      beforec = 2;
+      break;
+    case CLUSTER_TABLE:
+      sprintf(stmt_buf, "SELECT c.name, c.description, c.location "
+	      "FROM clusters c WHERE %s", qual);
+      dosql(before);
+      beforec = 3;
+      break;
+    case MCMAP_TABLE:
+      strcpy(before[0], argv[0]);
+      strcpy(before[1], argv[1]);
+      beforec = 2;
+      break;
+    case SVC_TABLE:
+      strcpy(before[0], argv[0]);
+      strcpy(before[1], argv[1]);
+      strcpy(before[2], argv[2]);
+      beforec = 3;
+      break;
+    case FILESYS_TABLE:
+      sprintf(stmt_buf, "SELECT fs.label, fs.type, fs.mach_id, fs.name, "
+	      "fs.mount, fs.rwaccess, fs.comments, fs.owner, fs.owners, "
+	      "fs.createflg, fs.lockertype FROM filesys fs WHERE %s", qual);
+      dosql(before);
+      name = malloc(0);
+      id = atoi(before[2]);
+      id_to_name(id, MACHINE_TABLE, &name);
+      strcpy(before[2], name);
+      id = atoi(before[7]);
+      id_to_name(id, USERS_TABLE, &name);
+      strcpy(before[7], name);
+      id = atoi(before[8]);
+      id_to_name(id, LIST_TABLE, &name);
+      strcpy(before[8], name);
+      free(name);
+      beforec = 11;
+      break;
+    case QUOTA_TABLE:
+      strcpy(before[0], "?");
+      strcpy(before[1], argv[1]);
+      strcpy(before[2], "?");
+      sprintf(stmt_buf, "SELECT q.quota, fs.name FROM quota q, filesys fs "
+	      "WHERE %s AND fs.filsys_id = q.filsys_id", qual);
+      dosql(&(before[3]));
+      strcpy(before[2], argv[1]);
+      beforec = 5;
+      break;
+    case LIST_TABLE:
+      sprintf(stmt_buf, "SELECT l.name, l.active, l.publicflg, l.hidden, "
+	      "l.maillist, l.grouplist, l.gid, l.acl_type, l.acl_id, "
+	      "l.description FROM list l WHERE %s", qual);
+      dosql(before);
+      beforec = 10;
+      break;
+    case IMEMBERS_TABLE:
+      id = (int) argv[0];
+      sprintf(stmt_buf, "SELECT active, publicflg, hidden, maillist, "
+	      "grouplist, gid FROM list WHERE list_id = %d", id);
+      dosql(&(before[3]));
+      name = malloc(0);
+      id_to_name(id, LIST_TABLE, &name);
+      strcpy(before[0], name);
+      strcpy(before[1], argv[1]);
+      id = (int) argv[2];
+      beforec = 9;
+      if (!strcmp(before[1], "USER"))
+	{
+	  id_to_name(id, USERS_TABLE, &name);
+	  EXEC SQL SELECT status INTO :before[9] FROM users
+	    WHERE users_id = :id;
+	  beforec = 10;
+      }
+      else if (!strcmp(before[1], "LIST"))
 	id_to_name(id, LIST_TABLE, &name);
-	strcpy(before[0], name);
-	strcpy(before[1], argv[1]);
-	id = (int) argv[2];
-	beforec = 9;
-	if (!strcmp(before[1], "USER")) {
-	    id_to_name(id, USERS_TABLE, &name);
-	    EXEC SQL SELECT status INTO :before[9] FROM users 
-		WHERE users_id=:id;
-	    beforec = 10;
-	} else if (!strcmp(before[1], "LIST")) {
-	    id_to_name(id, LIST_TABLE, &name);
-	} else if (!strcmp(before[1], "STRING") || !strcmp(before[1], "KERBEROS")) {
-	    id_to_name(id, STRINGS_TABLE, &name);
-	}
-	strcpy(before[2], name);
-	free(name);
-	break;
-      default:
+      else if (!strcmp(before[1], "STRING") || !strcmp(before[1], "KERBEROS"))
+	id_to_name(id, STRINGS_TABLE, &name);
+      strcpy(before[2], name);
+      free(name);
+      break;
+    default:
 	/*
 	com_err(whoami, 0, "requested incremental on unexpected table `%s'",
 		table_name[table]);
 	*/
-	break;
-      }
+      break;
+    }
 }
 
 
 void incremental_clear_before(void)
 {
-    beforec = 0;
+  beforec = 0;
 }
 
 
 /* add an element to the incremental queue for the changed row */
 
-void incremental_after(table, qual, argv)
-     enum tables table;
-EXEC SQL BEGIN DECLARE SECTION;
-     char *qual, **argv;
-EXEC SQL END DECLARE SECTION;
+void incremental_after(enum tables table, char *qual, char **argv)
 {
-#ifdef DEBUG
-    char buffer[2048];
-#endif
-    char *name;
-EXEC SQL BEGIN DECLARE SECTION; 
-    int id;
-EXEC SQL END DECLARE SECTION; 
-    struct iupdate *iu;
+  char *name;
+  EXEC SQL BEGIN DECLARE SECTION;
+  int id;
+  EXEC SQL END DECLARE SECTION;
+  struct iupdate *iu;
 
-    switch(table)
-      {
-      case USERS_TABLE:
-	sprintf(stmt_buf, "SELECT u.login, u.unix_uid, u.shell, u.last, "
-		"u.first, u.middle, u.status, u.clearid, u.type "
-		"FROM users u WHERE %s", qual);
-	dosql(after);
-	afterc = 9;
-	break;
-      case MACHINE_TABLE:
-	sprintf(stmt_buf, "SELECT m.name, m.vendor FROM machine m "
-		"WHERE %s", qual);
-	dosql(after);
-	afterc = 2;
-	break;
-      case CLUSTER_TABLE:
-	sprintf(stmt_buf, "SELECT c.name, c.description, c.location "
-		"FROM clusters c WHERE %s", qual);
-	dosql(after);
-	afterc = 3;
-	break;
-      case MCMAP_TABLE:
-	strcpy(after[0], argv[0]);
-	strcpy(after[1], argv[1]);
-	afterc = 2;
-	break;
-      case SVC_TABLE:
-	strcpy(after[0], argv[0]);
-	strcpy(after[1], argv[1]);
-	strcpy(after[2], argv[2]);
-	afterc = 3;
-	break;
-      case FILESYS_TABLE:
-	sprintf(stmt_buf, "SELECT fs.label, fs.type, fs.mach_id, fs.name, "
-		"fs.mount, fs.rwaccess, fs.comments, fs.owner, fs.owners, "
-		"fs.createflg, fs.lockertype FROM filesys fs WHERE %s", qual);
-	dosql(after);
-        name = malloc(0);
-        id = atoi(after[2]);
-        id_to_name(id, MACHINE_TABLE, &name);
-        strcpy(after[2], name);
-        id = atoi(after[7]);
-        id_to_name(id, USERS_TABLE, &name);
-        strcpy(after[7], name);
-        id = atoi(after[8]);
-        id_to_name(id, LIST_TABLE, &name);
-        strcpy(after[8], name);
-        free(name);
-	afterc = 11;
-	break;
-      case QUOTA_TABLE:
-	strcpy(after[0], "?");
-	strcpy(after[1], argv[1]);
-	strcpy(after[2], "?");
-	sprintf(stmt_buf, "SELECT q.quota, fs.name FROM quota q, filesys fs "
-		"WHERE %s and fs.filsys_id = q.filsys_id and q.type = '%s'",
-		qual, argv[1]);
-	dosql(&(after[3]));
-	afterc = 5;
-	break;
-      case LIST_TABLE:
-	sprintf(stmt_buf, "SELECT l.name, l.active, l.publicflg, l.hidden, "
-		"l.maillist, l.grouplist, l.gid, l.acl_type, l.acl_id, "
-		"l.description FROM list l WHERE %s", qual);
-	dosql(after);
-	afterc = 10;
-	break;
-      case IMEMBERS_TABLE:
-	id = (int) argv[0];
-	sprintf(stmt_buf, "SELECT active, publicflg, hidden, maillist, "
-		"grouplist, gid FROM list WHERE list_id = %d", id);
-	dosql(&(after[3]));
-	name = malloc(0);
-	id_to_name(id, LIST_TABLE, &name);
-	strcpy(after[0], name);
-	strcpy(after[1], argv[1]);
-	id = (int) argv[2];
-	afterc = 9;
-	if (!strcmp(after[1], "USER")) {
-	    id_to_name(id, USERS_TABLE, &name);
-	    EXEC SQL SELECT status INTO :after[9] FROM users 
-		WHERE users_id=:id;
-	    afterc = 10;
-	} else if (!strcmp(after[1], "LIST")) {
-	    id_to_name(id, LIST_TABLE, &name);
-	} else if (!strcmp(after[1], "STRING") || !strcmp(after[1], "KERBEROS")) {
-	    id_to_name(id, STRINGS_TABLE, &name);
+  switch (table)
+    {
+    case USERS_TABLE:
+      sprintf(stmt_buf, "SELECT u.login, u.unix_uid, u.shell, u.last, "
+	      "u.first, u.middle, u.status, u.clearid, u.type "
+	      "FROM users u WHERE %s", qual);
+      dosql(after);
+      afterc = 9;
+      break;
+    case MACHINE_TABLE:
+      sprintf(stmt_buf, "SELECT m.name, m.vendor FROM machine m "
+	      "WHERE %s", qual);
+      dosql(after);
+      afterc = 2;
+      break;
+    case CLUSTER_TABLE:
+      sprintf(stmt_buf, "SELECT c.name, c.description, c.location "
+	      "FROM clusters c WHERE %s", qual);
+      dosql(after);
+      afterc = 3;
+      break;
+    case MCMAP_TABLE:
+      strcpy(after[0], argv[0]);
+      strcpy(after[1], argv[1]);
+      afterc = 2;
+      break;
+    case SVC_TABLE:
+      strcpy(after[0], argv[0]);
+      strcpy(after[1], argv[1]);
+      strcpy(after[2], argv[2]);
+      afterc = 3;
+      break;
+    case FILESYS_TABLE:
+      sprintf(stmt_buf, "SELECT fs.label, fs.type, fs.mach_id, fs.name, "
+	      "fs.mount, fs.rwaccess, fs.comments, fs.owner, fs.owners, "
+	      "fs.createflg, fs.lockertype FROM filesys fs WHERE %s", qual);
+      dosql(after);
+      name = malloc(0);
+      id = atoi(after[2]);
+      id_to_name(id, MACHINE_TABLE, &name);
+      strcpy(after[2], name);
+      id = atoi(after[7]);
+      id_to_name(id, USERS_TABLE, &name);
+      strcpy(after[7], name);
+      id = atoi(after[8]);
+      id_to_name(id, LIST_TABLE, &name);
+      strcpy(after[8], name);
+      free(name);
+      afterc = 11;
+      break;
+    case QUOTA_TABLE:
+      strcpy(after[0], "?");
+      strcpy(after[1], argv[1]);
+      strcpy(after[2], "?");
+      sprintf(stmt_buf, "SELECT q.quota, fs.name FROM quota q, filesys fs "
+	      "WHERE %s and fs.filsys_id = q.filsys_id and q.type = '%s'",
+	      qual, argv[1]);
+      dosql(&(after[3]));
+      afterc = 5;
+      break;
+    case LIST_TABLE:
+      sprintf(stmt_buf, "SELECT l.name, l.active, l.publicflg, l.hidden, "
+	      "l.maillist, l.grouplist, l.gid, l.acl_type, l.acl_id, "
+	      "l.description FROM list l WHERE %s", qual);
+      dosql(after);
+      afterc = 10;
+      break;
+    case IMEMBERS_TABLE:
+      id = (int) argv[0];
+      sprintf(stmt_buf, "SELECT active, publicflg, hidden, maillist, "
+	      "grouplist, gid FROM list WHERE list_id = %d", id);
+      dosql(&(after[3]));
+      name = malloc(0);
+      id_to_name(id, LIST_TABLE, &name);
+      strcpy(after[0], name);
+      strcpy(after[1], argv[1]);
+      id = (int) argv[2];
+      afterc = 9;
+      if (!strcmp(after[1], "USER"))
+	{
+	  id_to_name(id, USERS_TABLE, &name);
+	  EXEC SQL SELECT status INTO :after[9] FROM users
+	    WHERE users_id = :id;
+	  afterc = 10;
 	}
-	strcpy(after[2], name);
-	free(name);
-	break;
-      case NO_TABLE:
-	afterc = 0;
-	table = beforetable;
-	break;
-      default:
+      else if (!strcmp(after[1], "LIST"))
+	id_to_name(id, LIST_TABLE, &name);
+      else if (!strcmp(after[1], "STRING") || !strcmp(after[1], "KERBEROS"))
+	id_to_name(id, STRINGS_TABLE, &name);
+      strcpy(after[2], name);
+      free(name);
+      break;
+    case NO_TABLE:
+      afterc = 0;
+      table = beforetable;
+      break;
+    default:
 	/*
 	com_err(whoami, 0, "requested incremental on unexpected table `%s'",
 		table_name[table]);
 	*/
-	break;
-      }
-
-    iu = (struct iupdate *) malloc(sizeof(struct iupdate));
-    iu->table = table_name[table];
-    iu->beforec = beforec;
-    iu->before = copy_argv(before, beforec);
-    iu->afterc = afterc;
-    iu->after = copy_argv(after, afterc);
-    sq_save_data(incremental_sq, iu);
-
-#ifdef DEBUG
-    sprintf(buffer, "INCREMENTAL(%s, [", table_name[table]);
-    for (i = 0; i < beforec; i++) {
-	if (i == 0)
-	  strcat(buffer, strtrim(before[0]));
-	else {
-	    strcat(buffer, ", ");
-	    strcat(buffer, strtrim(before[i]));
-	}
+      break;
     }
-    strcat(buffer, "], [");
-    for (i = 0; i < afterc; i++) {
-	if (i == 0)
-	  strcat(buffer, strtrim(after[0]));
-	else {
-	    strcat(buffer, ", ");
-	    strcat(buffer, strtrim(after[i]));
-	}
-    }
-    strcat(buffer, "])");
-    com_err(whoami, 0, buffer);
-#endif DEBUG
+
+  iu = malloc(sizeof(struct iupdate));
+  iu->table = table_name[table];
+  iu->beforec = beforec;
+  iu->before = copy_argv(before, beforec);
+  iu->afterc = afterc;
+  iu->after = copy_argv(after, afterc);
+  sq_save_data(incremental_sq, iu);
 }
 
 void incremental_clear_after(void)
 {
-    incremental_after(NO_TABLE, NULL, NULL);
+  incremental_after(NO_TABLE, NULL, NULL);
 }
 
 
@@ -364,108 +333,112 @@ void incremental_clear_after(void)
  */
 
 struct inc_cache {
-    struct inc_cache *next;
-    char *table, *service;
+  struct inc_cache *next;
+  char *table, *service;
 };
 
 
 void incremental_update(void)
 {
-    static int inited = 0;
-    static struct inc_cache *cache;
-    struct inc_cache *c;
-    EXEC SQL BEGIN DECLARE SECTION;
-    char tab[17], serv[17];
-    EXEC SQL END DECLARE SECTION;
-    struct iupdate *iu;
+  static int inited = 0;
+  static struct inc_cache *cache;
+  struct inc_cache *c;
+  EXEC SQL BEGIN DECLARE SECTION;
+  char tab[17], serv[17];
+  EXEC SQL END DECLARE SECTION;
+  struct iupdate *iu;
 
-    if (!inited) {
-	inited++;
+  if (!inited)
+    {
+      inited++;
 
-	EXEC SQL DECLARE inc CURSOR FOR SELECT table_name, service FROM incremental;
-	EXEC SQL OPEN inc;
-	while (1) {
-	    EXEC SQL FETCH inc INTO :tab, :serv;
-	    if (sqlca.sqlcode != 0) break;
-    	    c = (struct inc_cache *)malloc(sizeof(struct inc_cache));
-	    c->next = cache;
-	    c->table = strsave(strtrim(tab));
-	    c->service = strsave(strtrim(serv));
-	    cache = c;
+      EXEC SQL DECLARE inc CURSOR FOR SELECT table_name, service
+	FROM incremental;
+      EXEC SQL OPEN inc;
+      while (1)
+	{
+	  EXEC SQL FETCH inc INTO :tab, :serv;
+	  if (sqlca.sqlcode)
+	    break;
+	  c = malloc(sizeof(struct inc_cache));
+	  c->next = cache;
+	  c->table = strsave(strtrim(tab));
+	  c->service = strsave(strtrim(serv));
+	  cache = c;
 	}
-	EXEC SQL CLOSE inc;
-	EXEC SQL COMMIT WORK;
+      EXEC SQL CLOSE inc;
+      EXEC SQL COMMIT WORK;
     }
 
-    while (sq_remove_data(incremental_sq, &iu)) {
-	for (c = cache; c; c = c->next) {
-	    if (!strcmp(c->table, iu->table)) {
-		iu->service = c->service;
-		sq_save_data(incremental_exec, iu);
+  while (sq_remove_data(incremental_sq, &iu))
+    {
+      for (c = cache; c; c = c->next)
+	{
+	  if (!strcmp(c->table, iu->table))
+	    {
+	      iu->service = c->service;
+	      sq_save_data(incremental_exec, iu);
 	    }
 	}
     }
-    if (inc_running == 0)
-      next_incremental();
+  if (inc_running == 0)
+    next_incremental();
 }
 
 
 void next_incremental(void)
 {
-    struct iupdate *iu;
-    char *argv[MAXARGC * 2 + 4], cafter[3], cbefore[3], prog[BUFSIZ];
-    int i;
-    sigset_t sigs;
+  struct iupdate *iu;
+  char *argv[MAXARGC * 2 + 4], cafter[3], cbefore[3], prog[BUFSIZ];
+  int i;
+  sigset_t sigs;
 
-    if (incremental_exec == NULL)
-      incremental_init();
+  if (!incremental_exec)
+    incremental_init();
 
-    if (sq_empty(incremental_exec) ||
-	(inc_running && now - inc_started < INC_TIMEOUT))
-      return;
+  if (sq_empty(incremental_exec) ||
+      (inc_running && now - inc_started < INC_TIMEOUT))
+    return;
 
-    if (inc_running)
-      com_err(whoami, 0, "incremental timeout on pid %d", inc_pid);
+  if (inc_running)
+    com_err(whoami, 0, "incremental timeout on pid %d", inc_pid);
 
-    sq_remove_data(incremental_exec, &iu);
-    argv[1] = iu->table;
-    sprintf(cbefore, "%d", iu->beforec);
-    argv[2] = cbefore;
-    sprintf(cafter, "%d", iu->afterc);
-    argv[3] = cafter;
-    for (i = 0; i < iu->beforec; i++)
-      argv[4 + i] = iu->before[i];
-    for (i = 0; i < iu->afterc; i++)
-      argv[4 + iu->beforec + i] = iu->after[i];
+  sq_remove_data(incremental_exec, &iu);
+  argv[1] = iu->table;
+  sprintf(cbefore, "%d", iu->beforec);
+  argv[2] = cbefore;
+  sprintf(cafter, "%d", iu->afterc);
+  argv[3] = cafter;
+  for (i = 0; i < iu->beforec; i++)
+    argv[4 + i] = iu->before[i];
+  for (i = 0; i < iu->afterc; i++)
+    argv[4 + iu->beforec + i] = iu->after[i];
 
-    sprintf(prog, "%s/%s.incr", BIN_DIR, iu->service);
-#ifdef DEBUG
-    com_err(whoami, 0, "forking %s", prog);
-#endif
-    argv[0] = prog;
-    argv[4 + iu->beforec + iu->afterc] = 0;
+  sprintf(prog, "%s/%s.incr", BIN_DIR, iu->service);
+  argv[0] = prog;
+  argv[4 + iu->beforec + iu->afterc] = 0;
 
-    sigemptyset(&sigs);
-    sigaddset(&sigs, SIGCHLD);
-    sigprocmask(SIG_BLOCK, &sigs, NULL);
-    inc_pid = vfork();
-    switch (inc_pid) {
+  sigemptyset(&sigs);
+  sigaddset(&sigs, SIGCHLD);
+  sigprocmask(SIG_BLOCK, &sigs, NULL);
+  inc_pid = vfork();
+  switch (inc_pid)
+    {
     case 0:
-	execv(prog, argv);
-	_exit(1);
+      execv(prog, argv);
+      _exit(1);
     case -1:
-	com_err(whoami, 0, "Failed to start incremental update");
-	break;
+      com_err(whoami, 0, "Failed to start incremental update");
+      break;
     default:
-	inc_running = 1;
-	inc_started = now;
+      inc_running = 1;
+      inc_started = now;
     }
-    sigprocmask(SIG_UNBLOCK, &sigs, NULL);
+  sigprocmask(SIG_UNBLOCK, &sigs, NULL);
 
-    free_argv(iu->before, iu->beforec);
-    free_argv(iu->after, iu->afterc);
-    free(iu);
-
+  free_argv(iu->before, iu->beforec);
+  free_argv(iu->after, iu->afterc);
+  free(iu);
 }
 
 
@@ -475,43 +448,43 @@ void next_incremental(void)
 
 void incremental_flush(void)
 {
-    struct iupdate *iu;
+  struct iupdate *iu;
 
-    while (sq_get_data(incremental_sq, &iu)) {
-	free_argv(iu->before, iu->beforec);
-	free_argv(iu->after, iu->afterc);
-	free(iu);
+  while (sq_get_data(incremental_sq, &iu))
+    {
+      free_argv(iu->before, iu->beforec);
+      free_argv(iu->after, iu->afterc);
+      free(iu);
     }
-    sq_destroy(incremental_sq);
-    incremental_sq = sq_create();
+  sq_destroy(incremental_sq);
+  incremental_sq = sq_create();
 }
 
 
-char **copy_argv(argv, argc)
-     char **argv;
-     int argc;
+char **copy_argv(char **argv, int argc)
 {
-    char **ret = (char **)malloc(sizeof(char *) * argc);
-    while (--argc >= 0)
-      ret[argc] = strsave(strtrim(argv[argc]));
-    return(ret);
+  char **ret = malloc(sizeof(char *) * argc);
+  while (--argc >= 0)
+    ret[argc] = strsave(strtrim(argv[argc]));
+  return ret;
 }
 
-void free_argv(argv, argc)
-     char **argv;
-     int argc;
+void free_argv(char **argv, int argc)
 {
-    while (--argc >= 0)
-      free(argv[argc]);
-    free(argv);
+  while (--argc >= 0)
+    free(argv[argc]);
+  free(argv);
 }
 
 int table_num(char *name)
 {
   int i;
 
-  for(i = num_tables-1; i; i--)
-    if(!strcmp(table_name[i], name)) break;
+  for (i = num_tables - 1; i; i--)
+    {
+      if (!strcmp(table_name[i], name))
+	break;
+    }
 
   return i; /* 0 = "none" if no match */
 }

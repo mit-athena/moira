@@ -1,17 +1,17 @@
-/*	This is the file f_defs.h for the SMS Client, which allows a nieve
+/*	This is the file f_defs.h for the SMS Client, which allows a
  *      user to quickly and easily maintain most parts of the SMS database.
  *	It Contains: useful definitions.
- *	
+ *
  *	Created: 	4/12/88
  *	By:		Chris D. Peterson
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/f_defs.h,v $
  *      $Author: danw $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/f_defs.h,v 1.20 1997-08-14 20:22:47 danw Exp $
- *	
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/f_defs.h,v 1.21 1998-01-05 19:52:00 danw Exp $
+ *
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
- *	For further information on copyright and distribution 
+ *	For further information on copyright and distribution
  *	see the file mit-copyright.h
  */
 
@@ -19,10 +19,6 @@
 
 #ifndef _f_defs_
 #define _f_defs_
-
-/* general Library functions. */
-
-char * malloc();
 
 /* attach.c */
 
@@ -61,7 +57,7 @@ int DeleteCluster();		/* removes a cluste from the database. */
 
 int ShowClusterInfo();		/* show information about a cluster. */
 int MachinesInCluster();	/* list all machines in a give cluster. */
-int AddCluster();		
+int AddCluster();
 int UpdateCluster();		/* add, update, and delete clusters. */
 int DeleteCluster();
 
@@ -87,7 +83,7 @@ int DeleteList(), DeleteUser();
 int ListByMember();		/* list all list to which a member belongs. */
 int ListByAdministrator();	/* list all list to which a given member can
 				 administer. */
-int ListAllGroups();		
+int ListAllGroups();
 int ListAllPublicMailLists();	/* List misc. types of lists. */
 int ListAllMailLists();
 
@@ -99,10 +95,10 @@ int ListStringMembers();
 
 int ShowListInfo();		/* show info about a list. */
 int UpdateList();		/* change info about a list. */
-int InterRemoveItemFromLists();	/* Interactivly remove an item from all lists*/
+int InterRemoveItemFromLists();	/* Interactivly remove item from all lists */
 
 int ListmaintMemberMenuEntry();	/* entry and exit functions for member menu. */
-int ListmaintMemberMenuExit();	
+int ListmaintMemberMenuExit();
 int ListHelp();			/* help function for lists. */
 
 /* nfs.c */
@@ -173,8 +169,8 @@ int TableStats(), ShowClients(), ShowValue(), ShowAlias();
 
 /* utils.c */
 
-/* 
- * For descriptions of all of these functions see the 
+/*
+ * For descriptions of all of these functions see the
  * internals documentation.
  */
 
@@ -185,16 +181,16 @@ void FreeQueue();		/* Frees an entire queue. */
 void FreeAndClear();		/* Frees a single pointer. */
 void Loop();			/* Performs an operation on every item in
 				   a queue. */
-void QueryLoop();		/* Queries the user before performing 
+void QueryLoop();		/* Queries the user before performing
 				   an operation on every item in
 				   a queue. */
 void RemoveHyphens();		/* Removes the hyphens from a string. */
 void SlipInNewName();		/* Slips a new name into an argument list in
 				   the correct place. */
-int CountArgs();		/* Counts the strings in a NULL terminated 
+int CountArgs();		/* Counts the strings in a NULL terminated
 				   array. */
 int GetValueFromUser();		/* Updates value by asking the user. */
-int GetYesNoValueFromUser();	/* Updates a yes/no value by asking the user.*/
+int GetYesNoValueFromUser();	/* Updates yes/no value by asking the user. */
 int GetFSTypes();		/* Gets Filesystem types from a user. */
 int NullFunc();			/* NULL return function. */
 int Print();			/* Prints out array of strings. */
@@ -208,7 +204,7 @@ char *CanonicalizeHostname();	/* this is what it does. */
 char *NullPrint();		/* Prints nothing, returns argv[0]. */
 char *Strsave();		/* allocated space for a copy of the string. */
 char *atot();			/* convert unix time to date string */
-struct qelem * QueueTop();	/* Finds the top of a queue. */
+struct qelem *QueueTop();	/* Finds the top of a queue. */
 Bool Confirm();			/* Confirms a delete operation, with user. */
 Bool YesNoQuestion();		/* Asks a user a yes no type question. */
 Bool YesNoQuitQuestion();	/* Asks a user a yes - no - quit question. */

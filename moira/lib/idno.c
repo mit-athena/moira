@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/idno.c,v 1.4 1997-01-29 23:24:10 danw Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/idno.c,v 1.5 1998-01-05 19:53:04 danw Exp $
  *
  * Routines to encrypt ID's
  *
@@ -10,9 +10,7 @@
 #include <mit-copyright.h>
 #include <string.h>
 #include <ctype.h>
-#ifdef POSIX
 #include <unistd.h>
-#endif
 #ifdef USE_CRYPT_H
 #include <crypt.h>
 #endif
@@ -23,36 +21,32 @@
  *	Returns: none
  */
 
-void
-RemoveHyphens(str)
-char *str;
+void RemoveHyphens(char *str)
 {
-    char *hyphen;
+  char *hyphen;
 
-    while ((hyphen = strchr(str, '-')) != (char *)0)
-	(void) strcpy(hyphen, hyphen + 1);
+  while ((hyphen = strchr(str, '-')))
+    strcpy(hyphen, hyphen + 1);
 }
 
 
 /*	Function Name: EncryptMITID
- *	Description: Encrypts an mit ID number. 
+ *	Description: Encrypts an mit ID number.
  *	Arguments: sbuf - the buffer to return the encrypted number in.
  *                 idnumber - the id number (string).
  *                 first, last - name of the person.
  *	Returns: none.
  */
 
-void
-EncryptID(sbuf, idnumber, first, last)
-char *sbuf, *idnumber, *first, *last;
+void EncryptID(char *sbuf, char *idnumber, char *first, char *last)
 {
-    char salt[3];
+  char salt[3];
 
-    RemoveHyphens(idnumber);
-    salt[0] = tolower(last[0]);
-    salt[1] = tolower(first[0]);
-    salt[2] = 0;
+  RemoveHyphens(idnumber);
+  salt[0] = tolower(last[0]);
+  salt[1] = tolower(first[0]);
+  salt[2] = '\0';
 
-    (void) strcpy(sbuf, crypt(&idnumber[2], salt));
+  strcpy(sbuf, crypt(&idnumber[2], salt));
 }
 

@@ -1,17 +1,17 @@
 #!/bin/csh -f
 #
-# This script sets the quota for a uid on a filesystem. 
+# This script sets the quota for a uid on a filesystem.
 
 set dev=$1
 
-# Checking for /etc/enforce_quota is transitional code and should be 
+# Checking for /etc/enforce_quota is transitional code and should be
 # removed when the SMS database has an accurate understanding of what
 # everyone's quotas are.
 if ( -f /etc/enforce_quota ) then
    while (1)
       # set args = $< will NOT work.  $< will be treated as a single word
       set args = `echo $<`
- 
+
       if (${#args} != 2) break
 
       set uid = $args[1]
@@ -25,5 +25,5 @@ exit 0
 
 #
 # 	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/install_quotas,v $
-#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/install_quotas,v 1.2 1988-08-22 14:46:14 qjb Exp $
+#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/install_quotas,v 1.3 1998-01-05 19:52:46 danw Exp $
 #

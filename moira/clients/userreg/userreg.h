@@ -2,7 +2,7 @@
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.h,v $
  *	$Author: danw $
  *	$Locker:  $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.h,v 1.8 1997-01-29 23:12:31 danw Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.h,v 1.9 1998-01-05 19:52:27 danw Exp $
  */
 
 #include <stdio.h>
@@ -14,18 +14,18 @@
  */
 
 struct user {
-	char u_first[100];
-	char u_mid_init[100];
-	char u_last[100];
-	char u_login[100];
-	char u_password[100];
-	char u_mit_id[100];
-	char u_home_dir[100];
-	int u_status;
+  char u_first[100];
+  char u_mid_init[100];
+  char u_last[100];
+  char u_login[100];
+  char u_password[100];
+  char u_mit_id[100];
+  char u_home_dir[100];
+  int u_status;
 };
 
 struct alias {
-	int foo;
+  int foo;
 };
 
 #define SUCCESS 0

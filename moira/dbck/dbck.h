@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/dbck.h,v 1.8 1997-01-29 23:13:05 danw Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/dbck.h,v 1.9 1998-01-05 19:52:30 danw Exp $
  *
  * Declarations for Moira database consistancy checker
  *
@@ -9,10 +9,6 @@
 
 #include <moira_site.h>
 #include <mit-copyright.h>
-
-#ifndef NULL
-#define NULL ((void*)0)
-#endif
 
 #define MODE_ASK 1
 #define MODE_NO 2
@@ -26,7 +22,7 @@ extern struct hash *filesys, *nfsphys, *strings, *subnets, *string_dups;
 #define MAX_ID_VALUE 32765
 #define MIN_ID_VALUE 100
 
-#define dprintf		if (debug) printf
+#define dprintf if (debug) printf
 
 struct user {
   char login[9];
@@ -64,40 +60,40 @@ struct subnet {
 };
 
 struct cluster {
-    char name[33];
-    int clu_id;
-    int modby;
+  char name[33];
+  int clu_id;
+  int modby;
 };
 
 struct list {
-    char name[33];
-    char acl_type;
-    int list_id;
-    int  acl_id;
-    int members;
+  char name[33];
+  char acl_type;
+  int list_id;
+  int  acl_id;
+  int members;
 };
 
 struct string {
-    char *name;
-    int string_id;
-    int refc;
+  char *name;
+  int string_id;
+  int refc;
 };
 
 struct filesys {
-    char name[33];
-    char dir[81];
-    char type;
-    int filsys_id;
-    int mach_id;
-    int owner;
-    int owners;
-    int phys_id;
+  char name[33];
+  char dir[81];
+  char type;
+  int filsys_id;
+  int mach_id;
+  int owner;
+  int owners;
+  int phys_id;
 };
 
 struct nfsphys {
-    char dir[33];
-    int mach_id;
-    int nfsphys_id;
-    int allocated;
-    int count;
+  char dir[33];
+  int mach_id;
+  int nfsphys_id;
+  int allocated;
+  int count;
 };

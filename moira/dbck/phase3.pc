@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase3.pc,v 1.1 1997-01-29 23:13:18 danw Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase3.pc,v 1.2 1998-01-05 19:52:38 danw Exp $
  *
  *  (c) Copyright 1988 by the Massachusetts Institute of Technology.
  *  For copying and distribution information, please see the file
@@ -6,77 +6,74 @@
  */
 
 #include <mit-copyright.h>
+#include <stdio.h>
 #include "dbck.h"
 
-static char phase3_qc_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase3.pc,v 1.1 1997-01-29 23:13:18 danw Exp $";
+static char phase3_qc_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase3.pc,v 1.2 1998-01-05 19:52:38 danw Exp $";
 
 
-empty_list_check(id, l, hint)
-int id, hint;
-struct list *l;
+empty_list_check(int id, struct list *l, int hint)
 {
-    if (l->members == 0 && l->list_id != 0)
-      printf("Warning: List %s is empty\n", l->name);
+  if (l->members == 0 && l->list_id != 0)
+    printf("Warning: List %s is empty\n", l->name);
 }
 
 
 /* Used by other parts of the program to check that a string_id is good.
- * This returns TRUE if it is, or FALSE if it is not, and as a side effect
+ * This returns the stringif it is, or NULL if it is not, and as a side effect
  * increments the string reference count.
  */
 
-struct string *string_check(id)
-int id;
+struct string *string_check(int id)
 {
-    register struct string *s;
+  register struct string *s;
 
-    s = (struct string *) hash_lookup(strings, id);
-    if (s == NULL)
-      return(s);
-    s->refc++;
-    return(s);
+  s = (struct string *) hash_lookup(strings, id);
+  if (!s)
+    return s;
+  s->refc++;
+  return s;
 }
 
 
-unref_string_check(id, s, hint)
-int id, hint;
-struct string *s;
+unref_string_check(int id, struct string *s, int hint)
 {
-    if (s->refc == 0) {
-	printf("Unreferenced string %s id %d\n", s->name, id);
-	if (single_fix("Delete", 1))
-	  single_delete("strings", "string_id", id);
+  if (s->refc == 0)
+    {
+      printf("Unreferenced string %s id %d\n", s->name, id);
+      if (single_fix("Delete", 1))
+	single_delete("strings", "string_id", id);
     }
 }
 
 /*  This test was disabled because the MIT Moira server, which
- * initially only managed host information for workstations and
+ *  initially only managed host information for workstations and
  *  servers in the Athena Computing Environment, has been extended to
  *  manage all hosts in the MIT.EDU domain (but not subdomains).
  */
-/*
-noclu_mach_check(id, m, hint)
-int id, hint;
-struct machine *m;
+#ifndef ATHENA
+noclu_mach_check(int id, struct machine *m, int hint)
 {
-    if (m->clucount == 0 && m->mach_id != 0)
-      printf("Warning: machine %s is not in any clusters\n", m->name);
+  if (m->clucount == 0 && m->mach_id != 0)
+    printf("Warning: machine %s is not in any clusters\n", m->name);
 }
-*/
+#endif
 
-phase3()
+phase3(void)
 {
-    printf("Phase 3 - Finding unused objects\n");
+  printf("Phase 3 - Finding unused objects\n");
 
-    if (warn) {
-/*	dprintf("Checking machines...\n");
- *	hash_step(machines, noclu_mach_check, NULL);
- */
-	dprintf("Checking lists...\n");
-	hash_step(lists, empty_list_check, NULL);
+  if (warn)
+    {
+#ifndef ATHENA
+      dprintf("Checking machines...\n");
+      hash_step(machines, noclu_mach_check, NULL);
+#endif
+      dprintf("Checking lists...\n");
+      hash_step(lists, empty_list_check, NULL);
     }
 
-    dprintf("Checking strings...\n");
-    hash_step(strings, unref_string_check, NULL);
+  dprintf("Checking strings...\n");
+  hash_step(strings, unref_string_check, NULL);
 }
 

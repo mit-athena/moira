@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_shutdown.c,v $
  *	$Author: danw $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_shutdown.c,v 1.7 1997-01-20 18:26:18 danw Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_shutdown.c,v 1.8 1998-01-05 19:53:33 danw Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_sms_shutdown_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_shutdown.c,v 1.7 1997-01-20 18:26:18 danw Exp $";
+static char *rcsid_sms_shutdown_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_shutdown.c,v 1.8 1998-01-05 19:53:33 danw Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -22,18 +22,15 @@ extern char *whoami;
 
 void sigshut(int sig)
 {
-	takedown = "Shut down by signal.";
+  takedown = "Shut down by signal.";
 }
 
-void
-do_shutdown(cl)
-	client *cl;
+void do_shutdown(client *cl)
 {
-	/*
-	 * This feature is no longer supported.  Sorry.
-	 */
-	com_err(whoami, 0, "Shutdown request by %s rejected",
-		cl->clname);
-	cl->reply.mr_status = EACCES;
+  /*
+   * This feature is no longer supported.  Sorry.
+   */
+  com_err(whoami, 0, "Shutdown request by %s rejected", cl->clname);
+  cl->reply.mr_status = EACCES;
 }
-		
+

@@ -1,4 +1,4 @@
-/* $Id: chpobox.c,v 1.21 1998-03-10 21:22:42 danw Exp $
+/* $Id: chpobox.c,v 1.22 1998-03-26 21:07:21 danw Exp $
  *
  * Talk to the Moira database to change a person's home mail machine. This may
  * be an Athena machine, or a completely arbitrary address.
@@ -29,7 +29,9 @@
 #include <string.h>
 #include <unistd.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chpobox.c,v 1.21 1998-03-10 21:22:42 danw Exp $");
+#include <krb.h>
+
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chpobox.c,v 1.22 1998-03-26 21:07:21 danw Exp $");
 
 int get_pobox(int argc, char **argv, void *callarg);
 char *potype(char *machine);
@@ -44,7 +46,7 @@ static int match;
 int main(int argc, char *argv[])
 {
   struct passwd *pwd;
-  char *mrarg[3], buf[BUFSIZ];
+  char *mrarg[3], buf[BUFSIZ], pname[ANAME_SZ];
   char *address, *uname, *machine, *motd;
   uid_t u;
   int c, setflag, prevpop, usageflag, status;
@@ -98,14 +100,14 @@ int main(int argc, char *argv[])
 
   if (!uname)
     {
-      if (!(uname = getlogin()))
-	usage();
-
-      if (uname[0] == '\0')
+      if ((status = tf_init(TKT_FILE, R_TKT_FIL)) ||
+	  (status = tf_get_pname(pname)))
 	{
-	  pwd = getpwuid(u);
-	  strcpy(uname, pwd->pw_name);
+	  com_err(whoami, status, "reading Kerberos ticket file");
+	  exit(1);
 	}
+      tf_close();
+      uname = pname;
     }
   mrarg[0] = uname;
 

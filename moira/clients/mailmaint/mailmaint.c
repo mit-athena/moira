@@ -1,4 +1,4 @@
-/* $Id: mailmaint.c,v 1.39 1998-03-10 21:22:38 danw Exp $
+/* $Id: mailmaint.c,v 1.40 1998-03-26 21:07:13 danw Exp $
  *
  * Simple add-me-to/remove-me-from list client
  *
@@ -21,7 +21,9 @@
 #include <string.h>
 #include <unistd.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v 1.39 1998-03-10 21:22:38 danw Exp $");
+#include <krb.h>
+
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v 1.40 1998-03-26 21:07:13 danw Exp $");
 
 #define STARTCOL 0
 #define STARTROW 3
@@ -104,8 +106,8 @@ void menu_err_hook(const char *who, long code, const char *fmt, va_list args);
 int main(int argc, char *argv[])
 {
   void (*old_hook)(const char *, long, const char *, va_list);
-  int use_menu = 1;
-  char buf[BUFSIZ], *motd;
+  int use_menu = 1, k_errno;
+  char buf[BUFSIZ], pname[ANAME_SZ], *motd;
 
   if ((whoami = strrchr(argv[0], '/')) == NULL)
     whoami = argv[0];
@@ -125,9 +127,15 @@ int main(int argc, char *argv[])
       current_li->modby = NULL;
       current_li->modwith = NULL;
     }
-  if (!(username = getlogin()))
-    username = getpwuid(getuid())->pw_name;
-  username = username ? strdup(username) : "";
+
+  if ((k_errno = tf_init(TKT_FILE, R_TKT_FIL)) ||
+      (k_errno = tf_get_pname(pname)))
+    {
+      com_err(whoami, k_errno, "reading Kerberos ticket file");
+      exit(1);
+    }
+  tf_close();
+  username = pname;
 
   printf("Connecting to database for %s...please hold on.\n", username);
 

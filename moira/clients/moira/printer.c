@@ -1,4 +1,4 @@
-/* $Id: printer.c,v 1.23 1999-02-06 18:45:33 danw Exp $
+/* $Id: printer.c,v 1.24 1999-04-30 17:41:08 danw Exp $
  *
  *	This is the file printer.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -23,7 +23,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/printer.c,v 1.23 1999-02-06 18:45:33 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/printer.c,v 1.24 1999-04-30 17:41:08 danw Exp $");
 
 void RealDeletePrn(char **info, Bool one_item);
 void ChangePrn(char **info, Bool one_item);
@@ -279,7 +279,7 @@ int GetPrn(int argc, char **argv)
   struct mqelem *top;
 
   top = GetPrnInfo(argv[1], BY_NAME); /* get info. */
-  Loop(top, (void *) PrintPrnInfo);
+  Loop(top, (void (*)(char **)) PrintPrnInfo);
   FreeQueue(top);		/* clean the queue. */
   return DM_NORMAL;
 }
@@ -289,7 +289,7 @@ int GetPrnByEthernet(int argc, char **argv)
   struct mqelem *top;
 
   top = GetPrnInfo(argv[1], BY_ETHERNET); /* get info. */
-  Loop(top, (void *) PrintPrnInfo);
+  Loop(top, (void (*)(char **)) PrintPrnInfo);
   FreeQueue(top);		/* clean the queue. */
   return DM_NORMAL;
 }
@@ -299,7 +299,7 @@ int GetPrnByHostname(int argc, char **argv)
   struct mqelem *top;
 
   top = GetPrnInfo(argv[1], BY_HOSTNAME); /* get info. */
-  Loop(top, (void *) PrintPrnInfo);
+  Loop(top, (void (*)(char **)) PrintPrnInfo);
   FreeQueue(top);		/* clean the queue. */
   return DM_NORMAL;
 }
@@ -309,7 +309,7 @@ int GetPrnByRM(int argc, char **argv)
   struct mqelem *top;
 
   top = GetPrnInfo(argv[1], BY_RM); /* get info. */
-  Loop(top, (void *) PrintPrnInfo);
+  Loop(top, (void (*)(char **)) PrintPrnInfo);
   FreeQueue(top);		/* clean the queue. */
   return DM_NORMAL;
 }
@@ -319,7 +319,7 @@ int GetPrnByLocation(int argc, char **argv)
   struct mqelem *top;
 
   top = GetPrnInfo(argv[1], BY_LOCATION); /* get info. */
-  Loop(top, (void *) PrintPrnInfo);
+  Loop(top, (void (*)(char **)) PrintPrnInfo);
   FreeQueue(top);		/* clean the queue. */
   return DM_NORMAL;
 }
@@ -329,7 +329,7 @@ int GetPrnByContact(int argc, char **argv)
   struct mqelem *top;
 
   top = GetPrnInfo(argv[1], BY_CONTACT); /* get info. */
-  Loop(top, (void *) PrintPrnInfo);
+  Loop(top, (void (*)(char **)) PrintPrnInfo);
   FreeQueue(top);		/* clean the queue. */
   return DM_NORMAL;
 }

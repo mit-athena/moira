@@ -1,4 +1,4 @@
-/* $Id: cluster.c,v 1.37 1998-07-09 20:27:20 danw Exp $
+/* $Id: cluster.c,v 1.38 1999-04-30 17:41:07 danw Exp $
  *
  *	This is the file cluster.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -196,7 +196,7 @@ static char *PrintMachInfo(char **info)
   else
     {
       aliasbuf[0] = 0;
-      Loop(QueueTop(elem), (void *) PrintAliases);
+      Loop(QueueTop(elem), (void (*)(char **)) PrintAliases);
       FreeQueue(elem);
       Put_message(aliasbuf);
     }
@@ -673,7 +673,7 @@ int ShowMachineInfo(int argc, char **argv)
 
   tmpname = canonicalize_hostname(strdup(argv[1]));
   top = GetMCInfo(MACHINE, tmpname, NULL);
-  Loop(top, ((void *) PrintMachInfo));
+  Loop(top, ((void (*)(char **)) PrintMachInfo));
   FreeQueue(top);
   return DM_NORMAL;
 }
@@ -729,7 +729,7 @@ int ShowMachineQuery(int argc, char **argv)
       return DM_NORMAL;
     }
   top = QueueTop(elem);
-  Loop(top, ((void *) PrintMachInfo));
+  Loop(top, ((void (*)(char **)) PrintMachInfo));
   FreeQueue(top);
   return DM_NORMAL;
 }
@@ -886,7 +886,7 @@ int CheckAndRemoveFromCluster(char *name, Bool ask_user)
 	{
 	  sprintf(temp_buf, "%s is assigned to the following clusters.", name);
 	  Put_message(temp_buf);
-	  Loop(top, (void *) PrintMCMap);
+	  Loop(top, (void (*)(char **)) PrintMCMap);
 	  ptr = "Remove this machine from ** ALL ** these clusters?";
 	  if (YesNoQuestion(ptr, FALSE) == TRUE) /* may return -1. */
 	    delete_it = TRUE;
@@ -1032,7 +1032,7 @@ int ShowCname(int argc, char **argv)
   tmpname = canonicalize_hostname(strdup(argv[2]));
   top = GetMCInfo(CNAME, tmpalias, tmpname);
   Put_message("");		/* blank line on screen */
-  Loop(top, ((void *) PrintCname));
+  Loop(top, ((void (*)(char **)) PrintCname));
   FreeQueue(top);
   return DM_NORMAL;
 }
@@ -1257,7 +1257,7 @@ int ShowSubnetInfo(int argc, char **argv)
   struct mqelem *top;
 
   top = GetMCInfo(SUBNET, argv[1], (char *) NULL);
-  Loop(top, (void *) PrintSubnetInfo);
+  Loop(top, (void (*)(char **)) PrintSubnetInfo);
   FreeQueue(top);
   return DM_NORMAL;
 }
@@ -1407,7 +1407,7 @@ int ShowClusterInfo(int argc, char **argv)
   struct mqelem *top;
 
   top = GetMCInfo(CLUSTER, argv[1], NULL);
-  Loop(top, (void *) PrintClusterInfo);
+  Loop(top, (void (*)(char **)) PrintClusterInfo);
   FreeQueue(top);
   return DM_NORMAL;
 }

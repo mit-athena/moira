@@ -1,4 +1,4 @@
-/* $Id: nfs.c,v 1.25 1998-03-10 21:09:41 danw Exp $
+/* $Id: nfs.c,v 1.26 1999-04-30 17:41:08 danw Exp $
  *
  *	This is the file nfs.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -23,7 +23,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/nfs.c,v 1.25 1998-03-10 21:09:41 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/nfs.c,v 1.26 1999-04-30 17:41:08 danw Exp $");
 
 char **AskNFSInfo(char **info);
 
@@ -172,7 +172,7 @@ int ShowNFSService(int argc, char **argv)
   free(args[1]);		/* prevents memory leaks. */
 
   elem = QueueTop(elem);
-  Loop(elem, (void *) PrintNFSInfo);
+  Loop(elem, (void (*)(char **)) PrintNFSInfo);
 
   FreeQueue(elem);
   return DM_NORMAL;

@@ -1,4 +1,4 @@
-/* $Id: quota.c,v 1.29 1998-03-10 21:09:43 danw Exp $
+/* $Id: quota.c,v 1.30 1999-04-30 17:41:09 danw Exp $
  *
  *	This is the file quota.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -285,7 +285,7 @@ int GetQuota(int argc, char **argv)
   free(args);
 
   top = QueueTop(top);
-  Loop(top, (void *) PrintQuota);
+  Loop(top, (void (*)(char **)) PrintQuota);
 
   FreeQueue(top);
   return DM_NORMAL;
@@ -323,7 +323,7 @@ int GetQuotaByFilesys(int argc, char **argv)
   free(args);
 
   top = QueueTop(top);
-  Loop(top, (void *) PrintQuota);
+  Loop(top, (void (*)(char **)) PrintQuota);
 
   FreeQueue(top);
   return DM_NORMAL;

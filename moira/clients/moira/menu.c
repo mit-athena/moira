@@ -5,7 +5,7 @@
  *
  * $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v $
  * $Author: mar $
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.35 1991-05-17 14:45:30 mar Exp $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.36 1992-04-10 15:31:10 mar Exp $
  *
  * Generic menu system module.
  *
@@ -18,7 +18,7 @@
  */
 
 #ifndef lint
-static char rcsid_menu_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.35 1991-05-17 14:45:30 mar Exp $";
+static char rcsid_menu_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.36 1992-04-10 15:31:10 mar Exp $";
 
 #endif lint
 
@@ -33,7 +33,9 @@ static char rcsid_menu_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moira
 #endif /* _AUX_SOURCE */
 #include <ctype.h>
 #include <strings.h>
+#ifndef sun
 #include <varargs.h>
+#endif
 #include <com_err.h>
 #include "menu.h"
 

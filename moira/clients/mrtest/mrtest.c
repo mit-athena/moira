@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v 1.17 1989-12-04 12:47:24 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v 1.18 1990-02-05 13:03:08 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_test_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v 1.17 1989-12-04 12:47:24 mar Exp $";
+static char *rcsid_test_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v 1.18 1990-02-05 13:03:08 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -78,15 +78,11 @@ test_connect(argc, argv)
 int argc;
 char *argv[];
 {
-    	char *server = "", serverbuf[256], *index();
+    	char *server = "", *index();
 	int status;
 
 	if (argc > 1) {
 	    server = argv[1];
-	    if (index(server, ':') == NULL) {
-		server = serverbuf;
-		sprintf(serverbuf, "%s:%s", argv[1], "sms_db");
-	    }
 	}
 	status = sms_connect(server);
 	if (status) ss_perror(ss, status, "");

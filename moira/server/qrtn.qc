@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v 1.40 1990-03-28 15:28:51 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v 1.41 1990-03-30 16:48:21 mar Exp $
  *
  *	Copyright (C) 1987, 1988 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_qrtn_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v 1.40 1990-03-28 15:28:51 mar Exp $";
+static char *rcsid_qrtn_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.qc,v 1.41 1990-03-30 16:48:21 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -820,7 +820,7 @@ int *uid;
     if (rowcount == 1) {
 	*kid = -k_id;
 	*uid = u_id;
-	return;
+	return(MR_SUCCESS);
     }
 
     if (name_to_id(name, "STRINGS", &k_id) == MR_SUCCESS)
@@ -828,7 +828,7 @@ int *uid;
 
     if (!ok) {
 	*uid = *kid;
-	return;
+	return(MR_SUCCESS);
     }
 
     if (name_to_id(login, "USERS", uid) != MR_SUCCESS)

@@ -1,6 +1,6 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v 1.26 1991-05-17 12:57:53 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v 1.27 1992-04-06 17:29:32 mar Exp $
  */
 
 /*  (c) Copyright 1988 by the Massachusetts Institute of Technology. */
@@ -8,7 +8,7 @@
 /*  <mit-copyright.h>. */
 
 #ifndef lint
-static char rcsid_mailmaint_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v 1.26 1991-05-17 12:57:53 mar Exp $";
+static char rcsid_mailmaint_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v 1.27 1992-04-06 17:29:32 mar Exp $";
 #endif lint
 
 /***********************************************************************/
@@ -528,8 +528,8 @@ print_all(argc, argv, callback)
 list_all_groups()
 {
     char *argv[5];
-    argv[0] = argv[3] = "true";
-    argv[1] = argv[4] = "dontcare";
+    argv[0] = argv[1] = argv[3] = "true";
+    argv[4] = "dontcare";
     argv[2] = "false";
     first_time = 1;
     if (status = mr_query("qualified_get_lists", 5, argv,
@@ -693,7 +693,7 @@ pack_main_menu()
     buf = calloc(50, 1);
     (void) sprintf(buf, "Mail List Program for %s", uname);
     main_menu->title = strsave(buf);
-    main_menu->items[0] = strsave("1.  Show all mailing lists.");
+    main_menu->items[0] = strsave("1.  Show all public mailing lists.");
     main_menu->items[1] = strsave("2.  Get all members of a mailing list.");
     main_menu->items[2] = strsave("3.  Display lists of which you are a member.");
     main_menu->items[3] = strsave("4.  Show description of list.");

@@ -2,7 +2,7 @@
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.h,v $
  *	$Author: mar $
  *	$Locker:  $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.h,v 1.5 1989-08-04 13:59:30 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.h,v 1.6 1989-11-21 16:03:26 mar Exp $
  */
 
 #include <stdio.h>
@@ -44,7 +44,7 @@ struct alias {
    other timeouts are just there so that userreg will not stay in a half-used
    state -- possibly confusing an unwary registree.
  */
-#define FIRSTNAME_TIMEOUT            600 /* 10 minutes */
+#define FIRSTNAME_TIMEOUT            180 /* 3 minutes */
 #define MI_TIMEOUT                    90 /* 1.5 minutes */
 #define LASTNAME_TIMEOUT              90 /* 1.5 minutes */
 #define MITID_TIMEOUT                 90 /* 1.5 minutes */

@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/hesiod.qc,v 1.11 1989-03-23 16:49:19 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/hesiod.qc,v 1.12 1989-06-08 16:26:16 mar Exp $
  *
  * This generates the zone files necessary to load a hesiod server.
  * The following zones are generated: passwd, uid, pobox, group,
@@ -55,9 +55,9 @@ char **argv;
     IIseterr(ingerr);
 
 ##  ingres sms
+##  set lockmode session where level = table
 
     changed = do_passwd();
-    changed += do_pobox();
     changed += do_filsys();
     changed += do_cluster();
     changed += do_printers();
@@ -127,25 +127,30 @@ get_mach()
 
 do_passwd()
 ##{
-    FILE *pout, *uout;
-    char poutf[64], uoutf[64], poutft[64], uoutft[64];
-    struct stat psb, usb;
+    FILE *pout, *uout, *bout;
+    char poutf[64], uoutf[64], poutft[64], uoutft[64], boutf[64], boutft[64];
+    struct stat psb, usb, bsb;
     time_t ftime;
     struct user *u;
+    char *mach;
 ##  char login[9], shell[33], fullname[33], oa[17], op[13], hp[17], *filetime;
-##  char nn[17];
-##  int uid, flag, id;
+##  char nn[17], ptype[9];
+##  int uid, flag1, flag2, id, pid;
 
     sprintf(poutf, "%s/passwd.db", HESIOD_DIR);
     sprintf(uoutf, "%s/uid.db", HESIOD_DIR);
+    sprintf(boutf, "%s/pobox.db", HESIOD_DIR);
 
-    if (stat(poutf, &psb) == 0 && stat(uoutf, &usb) == 0) {
-	ftime = min(psb.st_mtime, usb.st_mtime);
+    if (stat(poutf, &psb) == 0 && stat(uoutf, &usb) == 0 &&
+	stat(boutf, &bsb) == 0) {
+	ftime = min(min(psb.st_mtime, usb.st_mtime), bsb.st_mtime);
 	filetime = ingres_date_and_time(ftime);
-##	retrieve (flag = int4(interval("min", tblstats.modtime - filetime)))
+##	retrieve (flag1 = int4(interval("min", tblstats.modtime - filetime)))
 ##	    where tblstats.table = "users"
-	if (flag < 0) {
-	    fprintf(stderr, "Files passwd.db and uid.db do not need to be rebuilt.\n");
+##	retrieve (flag2 = int4(interval("min", tblstats.modtime - filetime)))
+##	    where tblstats.table = "machine"
+	if (flag1 < 0 && flag2 < 0) {
+	    fprintf(stderr, "Files passwd.db, uid.db, and pobox.db do not need to be rebuilt.\n");
 	    return(0);
       }
     }
@@ -162,14 +167,22 @@ do_passwd()
 	perror("cannot open uid.db~ for write");
 	exit(SMS_OCONFIG);
     }
+    sprintf(boutft, "%s~", boutf);
+    bout = fopen(boutft, "w");
+    if (!bout) {
+	perror("cannot open pobox.db for write");
+	exit(SMS_OCONFIG);
+    }
 
-    fprintf(stderr, "Building passwd.db and uid.db\n");
+    fprintf(stderr, "Building passwd.db, uid.db, and pobox.db\n");
+    get_mach();
 
     users = create_hash(10000);
 ##  range of u is users
 ##  retrieve (login = u.#login, uid = u.#uid, shell = u.#shell,
 ##	      fullname = u.#fullname, nn = u.nickname, oa = u.office_addr,
-##	      op = u.office_phone, hp = u.home_phone, id = u.users_id)
+##	      op = u.office_phone, hp = u.home_phone, id = u.users_id,
+##	      pid = u.pop_id, ptype = u.potype)
 ##	where u.status = 1 {
 	    strtrim(login);
 	    dequote(fullname);
@@ -185,66 +198,19 @@ do_passwd()
     	    fprintf(pout, "%s.passwd\tHS UNSPECA \"%s:*:%d:101:%s,%s,%s,%s,%s:/mit/%s:%s\"\n",
 		    login, login, uid, fullname, nn, oa, op, hp, login, shell);
 	    fprintf(uout, "%d.uid\tHS CNAME %s.passwd\n", uid, login);
+	    if (ptype[0] == 'P' && (mach = hash_lookup(machines, pid))) {
+		fprintf(bout, "%s.pobox\tHS UNSPECA \"POP %s %s\"\n",
+			login, mach, login);
+	    }
 ##  }
 
-    if (fclose(pout) || fclose(uout)) {
-	fprintf(stderr, "Unsuccessful file close of passwd.db or uid.db\n");
+    if (fclose(pout) || fclose(uout) || fclose(bout)) {
+	fprintf(stderr, "Unsuccessful file close of passwd.db, uid.db, or pobox.db\n");
 	exit(SMS_CCONFIG);
     }
     fix_file(poutf);
     fix_file(uoutf);
-    return(1);
-##}
-
-
-do_pobox()
-##{
-    FILE *out;
-    char outf[64], outft[64], *mach;
-    struct stat sb;
-    time_t ftime;
-##  char login[9], *filetime;
-##  int flag1, flag2, id;
-
-    sprintf(outf, "%s/pobox.db", HESIOD_DIR);
-
-    if (stat(outf, &sb) == 0) {
-	ftime = sb.st_mtime;
-	filetime = ingres_date_and_time(ftime);
-##	retrieve (flag1 = int4(interval("min", tblstats.modtime - filetime)))
-##	    where tblstats.table = "users"
-##	retrieve (flag2 = int4(interval("min", tblstats.modtime - filetime)))
-##	    where tblstats.table = "machine"
-	if (flag1 < 0 && flag2 < 0) {
-	    fprintf(stderr,"File pobox.db does not need to be rebuilt.\n");
-	    return(0);
-      }
-    }
-
-    sprintf(outft, "%s~", outf);
-    out = fopen(outft, "w");
-    if (!out) {
-	perror("cannot open pobox.db for write");
-	exit(SMS_OCONFIG);
-    }
-
-    fprintf(stderr, "Building pobox.db\n");
-    get_mach();
-
-##  range of u is users
-##  retrieve (login = u.#login, id = u.pop_id)
-##	where u.status = 1 and u.potype = "POP" {
-	    strtrim(login);
-	    if (mach = hash_lookup(machines, id))
-	      fprintf(out, "%s.pobox\tHS UNSPECA \"POP %s %s\"\n",
-		      login, mach, login);
-##  }
-
-    if (fclose(out)) {
-	fprintf(stderr, "Unsuccessful close of pobox.db\n");
-	exit(SMS_CCONFIG);
-    }
-    fix_file(outf);
+    fix_file(boutf);
     return(1);
 ##}
 
@@ -318,6 +284,10 @@ do_groups()
     /* retrieve simple groups */
 ##  range of l is list
 ##  begin transaction
+    /* get lock records */
+##  retrieve (name = l.modtime) where l.list_id = 0
+##  retrieve (name = users.modtime) where users.users_id = 0
+
 ##  retrieve (name = l.#name, gid = l.#gid, lid = l.list_id)
 ##	where l.group != 0 and l.active != 0 {
 	    strtrim(name);

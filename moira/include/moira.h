@@ -1,4 +1,4 @@
-/* $Id: moira.h,v 1.28 2000-03-15 22:44:15 rbasch Exp $
+/* $Id: moira.h,v 1.29 2000-08-18 11:50:37 zacheiss Exp $
  *
  * Copyright (C) 1987-1998 by the Massachusetts Institute of Technology
  *
@@ -11,6 +11,9 @@
 #include <windows.h>
 #ifndef strcasecmp
 #define strcasecmp      stricmp
+#endif
+#ifndef snprintf
+#define snprintf      _snprintf
 #endif
 #endif /*_WIN32 */
 

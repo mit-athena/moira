@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/winad/winad.c,v 1.37 2003-11-19 03:15:40 zacheiss Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/winad/winad.c,v 1.38 2004-02-18 16:17:43 zacheiss Exp $
 /* winad.incr arguments examples
  *
  * arguments when moira creates the account - ignored by winad.incr since the account is unusable.
@@ -512,6 +512,11 @@ int main(int argc, char **argv)
   table = argv[1];
   before = &argv[4];
   after = &argv[4 + beforec];
+
+  if (afterc == 0)
+    after = NULL;
+  if (beforec == 0)
+    before = NULL;
 
   for (i = 1; i < argc; i++)
     {
@@ -1037,8 +1042,8 @@ void do_list(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
                 }
               if ((rc != AD_NO_GROUPS_FOUND) && (rc != 0))
                 {
-                  com_err(whoami, 0, "Unable to change list name from %s to %s",
-                          before[L_NAME], after[L_NAME]);
+                  com_err(whoami, 0, "Unable to process list %s",
+                          before[L_NAME]);
                   return;
                 }
               if (rc == AD_NO_GROUPS_FOUND)

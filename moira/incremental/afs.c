@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/afs.c,v 1.54 1997-01-29 23:21:46 danw Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/afs.c,v 1.55 1997-06-24 20:31:58 danw Exp $
  *
  * Do AFS incremental updates
  *
@@ -373,7 +373,7 @@ char **after;
 int afterc;
 {
     char cmd[1024];
-    int acreate, atype, btype;
+    int acreate, atype, bcreate, btype;
 
     if (afterc < FS_CREATE) {
 	atype = acreate = 0;
@@ -395,8 +395,9 @@ int afterc;
     }
     
     btype = !strcmp(before[FS_TYPE], "AFS");
+    bcreate = atoi(before[FS_CREATE]);
     if (afterc < FS_CREATE) {
-	if (btype)
+	if (btype && bcreate)
 	    critical_alert("incremental",
 			   "Cannot delete AFS filesystem %s: Operation not supported",
 			   before[FS_NAME]);

@@ -1,23 +1,26 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/auth_001.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/auth_001.c,v 1.8 1992-09-21 12:28:17 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/auth_001.c,v 1.9 1993-10-22 14:43:09 mar Exp $
  */
 /*  (c) Copyright 1988 by the Massachusetts Institute of Technology. */
 /*  For copying and distribution information, please see the file */
 /*  <mit-copyright.h>. */
 
 #ifndef lint
-static char *rcsid_auth_001_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/auth_001.c,v 1.8 1992-09-21 12:28:17 mar Exp $";
+static char *rcsid_auth_001_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/auth_001.c,v 1.9 1993-10-22 14:43:09 mar Exp $";
 #endif	lint
 
 #include <mit-copyright.h>
 #include <stdio.h>
-#include <strings.h>
+#include <string.h>
 #include <gdb.h>
 #include <krb.h>
 #include <krb_et.h>
 #include <netinet/in.h>
 #include <errno.h>
+#ifdef POSIX
+#include <sys/utsname.h>
+#endif
 
 extern char buf[BUFSIZ];
 extern int have_authorization;
@@ -50,6 +53,9 @@ auth_001(str)
     AUTH_DAT ad;
     char *p, *first, *config_lookup();
     KTEXT_ST ticket_st;
+#ifdef POSIX
+    struct utsname name;
+#endif
 
     if (send_ok())
 	lose("sending okay for authorization (auth_001)");
@@ -58,10 +64,15 @@ auth_001(str)
 	code = connection_errno(conn);
 	lose("awaiting Kerberos authenticators");
     }
-    gethostname(host, BUFSIZ);
+#ifdef POSIX
+    (void) uname(&name);
+    strncpy(host, name.nodename, sizeof(host));
+#else
+    gethostname(host, sizeof(host));
+#endif
     ticket_st.mbz = 0;
     ticket_st.length = MAX_STRING_SIZE(data);
-    bcopy(STRING_DATA(data), ticket_st.dat, MAX_STRING_SIZE(data));
+    memcpy(ticket_st.dat, STRING_DATA(data), MAX_STRING_SIZE(data));
     code = krb_rd_req(&ticket_st, service,
 		      krb_get_phost(host), 0,
 		      &ad, KEYFILE);
@@ -102,7 +113,7 @@ auth_001(str)
 	lose("sending approval of authorization");
     have_authorization = 1;
     /* Stash away session key */
-    bcopy(ad.session, session, sizeof(session));
+    memcpy(session, ad.session, sizeof(session));
     return(0);
 auth_failed:
     sprintf(buf, "auth for %s.%s@%s failed: %s",

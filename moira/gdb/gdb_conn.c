@@ -1,10 +1,10 @@
 /*
  * $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_conn.c,v $
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_conn.c,v 1.5 1993-05-04 18:14:01 mar Exp $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_conn.c,v 1.6 1993-10-22 14:32:25 mar Exp $
  */
 
 #ifndef lint
-static char *rcsid_gdb_conn_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_conn.c,v 1.5 1993-05-04 18:14:01 mar Exp $";
+static char *rcsid_gdb_conn_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_conn.c,v 1.6 1993-10-22 14:32:25 mar Exp $";
 #endif	lint
 
 /************************************************************************
@@ -27,7 +27,7 @@ static char *rcsid_gdb_conn_c = "$Header: /afs/.athena.mit.edu/astaff/project/mo
 
 #include <mit-copyright.h>
 #include <stdio.h>
-#include <strings.h>
+#include <string.h>
 #include "gdb.h"
 #include <sys/types.h>
 #include <sys/uio.h>
@@ -47,22 +47,22 @@ extern u_short htons();			/* ?? All versions?  */
 
 CONNECTION gdb_allocate_connection();
 
-/************************************************************************/
-/*	
-/*			start_peer_connection (start_peer_connection)
-/*	
-/*	Starts a connection to another process which itself will be 
-/*	issuing a start_peer_connection to us.  Current implementation
-/*	builds at most one stream, with the risk of a hang if 
-/*	the attempts to connect cross in the night.  This is a bug,
-/*	but this level of support is acceptable for casual debugging
-/*	of applications, and perhaps for some production use in
-/*	controlled settings.  I think the only other way to do it 
-/*	is to risk building two streams in parallel, possibly tearing
-/*	one down when the duplication is discovered.  Seems complicated
-/*	and messy.
-/*	
-/************************************************************************/
+/************************************************************************
+ *	
+ *			start_peer_connection (start_peer_connection)
+ *	
+ *	Starts a connection to another process which itself will be 
+ *	issuing a start_peer_connection to us.  Current implementation
+ *	builds at most one stream, with the risk of a hang if 
+ *	the attempts to connect cross in the night.  This is a bug,
+ *	but this level of support is acceptable for casual debugging
+ *	of applications, and perhaps for some production use in
+ *	controlled settings.  I think the only other way to do it 
+ *	is to risk building two streams in parallel, possibly tearing
+ *	one down when the duplication is discovered.  Seems complicated
+ *	and messy.
+ *	
+ ************************************************************************/
 
 CONNECTION
 start_peer_connection(id)
@@ -123,7 +123,8 @@ char *id;					/* null terminated string */
 	} else
 		return NULL;
 }
-
+
+
 /************************************************************************/
 /*	
 /*				g_make_con
@@ -154,7 +155,8 @@ g_make_con()
 
 }
 
-/************************************************************************/
+
+/************************************************************************/
 /*	
 /*				g_null_con
 /*	
@@ -209,7 +211,7 @@ CONNECTION con;
 
 }
 
-
+
 /************************************************************************/
 /*	
 /*			gdb_allocate_connection
@@ -250,7 +252,8 @@ gdb_allocate_connection()
 	return &gdb_cons[i];			/* return new highest con */
 						/* ever used*/       
 }
-
+
+
 /************************************************************************/
 /*	
 /*			g_try_connecting
@@ -292,7 +295,7 @@ char *id;
 	/*	
 	/*----------------------------------------------------------*/
 
-	bzero((char *)&target, sizeof(target));
+	memset((char *)&target, 0, sizeof(target));
 	g_parse_target(id, &peer_host, &target.sin_port);
 	if (peer_host == NULL) {
 		fprintf(gdb_log,"gdb: g_try_connecting...  '%s' is not a valid host:server\n",
@@ -322,7 +325,7 @@ char *id;
 	/*----------------------------------------------------------*/
 
 
-	bcopy(peer_host->h_addr, (char *)&target.sin_addr, peer_host->h_length);
+	memcpy((char *)&target.sin_addr,peer_host->h_addr,peer_host->h_length);
 	target.sin_family = peer_host->h_addrtype;
 
 	/*----------------------------------------------------------*/
@@ -364,7 +367,8 @@ char *id;
 	return TRUE;
 
 }
-
+
+
 /************************************************************************/
 /*	
 /*			g_parse_target
@@ -468,7 +472,8 @@ u_short *port;
 	        *port = serv->s_port;
 	}
 }
-
+
+
 /************************************************************************/
 /*	
 /*			g_try_accepting
@@ -535,7 +540,7 @@ char *id;
 	/*	
 	/*----------------------------------------------------------*/
 
-	bzero((char *)&self, sizeof(self));
+	memset((char *)&self, 0, sizeof(self));
 	g_parse_target(id, &peer_host, &self.sin_port);
 	if (peer_host == NULL) {
 		GDB_GIVEUP("gdb_try_accepting: bad port not caught by try connecting")
@@ -598,7 +603,8 @@ char *id;
 	con->out.fd = peer;
 	con->status = CON_STARTING;
 }
-
+
+
 /************************************************************************/
 /*	
 /*			g_ver_oprotocol
@@ -651,6 +657,7 @@ CONNECTION con;
 	con->status = CON_UP;
 #endif !VERIFY_PROTOCOL
 }
+
 
 /************************************************************************/
 /*	
@@ -705,7 +712,7 @@ CONNECTION con;
 #endif
 }
 
-
+
 /************************************************************************/
 /*	
 /*			sever_connection (sever_connection)
@@ -735,6 +742,7 @@ CONNECTION con;
 	return NULL;
 }
 
+
 /************************************************************************/
 /*	
 /*			g_stop_with_errno
@@ -745,7 +753,6 @@ CONNECTION con;
 /*	
 /************************************************************************/
 
-
 int
 g_stop_with_errno(con)
 CONNECTION con;
@@ -754,6 +761,7 @@ CONNECTION con;
 	g_stop_connection(con);
 	
 }
+
 
 /************************************************************************/
 /*	
@@ -805,7 +813,7 @@ CONNECTION con;
 	return;
 }
 
-
+
 /************************************************************************/
 /*	
 /*			gdb_de_allocate_connection
@@ -833,7 +841,8 @@ CONNECTION con;
 
 	gdb_mcons = i + 1;
 }
-
+
+
 /************************************************************************/
 /*	
 /*			g_cleanup_half_conection
@@ -866,7 +875,8 @@ HALF_CONNECTION hcon;
 		current = next;
 	}
 }
-
+
+
 /************************************************************************/
 /*	
 /*		    create_listening_connection (create_listening_connection)
@@ -957,7 +967,7 @@ char *id;
 	/*	
 	/*----------------------------------------------------------*/
 
-	bzero((char *)&self, sizeof(self));
+	memset((char *)&self, 0, sizeof(self));
        /*
         * Determine our port number
         */
@@ -1009,7 +1019,8 @@ char *id;
 		gdb_mfd = con->in.fd + 1;
 	return con;
 }
-
+
+
 /************************************************************************/
 /*	
 /*			g_allocate_connection_buffers

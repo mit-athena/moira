@@ -1,52 +1,33 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_trans2.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_trans2.c,v 1.2 1988-09-13 14:27:11 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_trans2.c,v 1.3 1993-10-22 14:38:37 mar Exp $
  */
 
 #ifndef lint
-static char *rcsid_gdb_trans2_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_trans2.c,v 1.2 1988-09-13 14:27:11 mar Exp $";
+static char *rcsid_gdb_trans2_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_trans2.c,v 1.3 1993-10-22 14:38:37 mar Exp $";
 #endif	lint
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-/************************************************************************/
-/*	
-/*			   gdb_trans2.c
-/*	
-/*	      GDB - Data Transport Services Routines (Part 2)
-/*	
-/*	Author: Noah Mendelsohn
-/*	Copyright: 1986 MIT Project Athena 
-/*		For copying and distribution information, please see
-/*	  	the file <mit-copyright.h>.
-/*	
-/*	
-/*	These routines implement layer 6 of the Client Library
-/*	Specification of the GDB system, as well as the facilities
-/*	outlined in the GDB Protocol Specification.  Part 2 of 2.
-/*
-/*	Some of the routines specified are actually implemented as
-/*	macros defined in gdb.h.
-/*	
-/************************************************************************/
+/************************************************************************
+ *	
+ *			   gdb_trans2.c
+ *	
+ *	      GDB - Data Transport Services Routines (Part 2)
+ *	
+ *	Author: Noah Mendelsohn
+ *	Copyright: 1986 MIT Project Athena 
+ *		For copying and distribution information, please see
+ *	  	the file <mit-copyright.h>.
+ *	
+ *	
+ *	These routines implement layer 6 of the Client Library
+ *	Specification of the GDB system, as well as the facilities
+ *	outlined in the GDB Protocol Specification.  Part 2 of 2.
+ *
+ *	Some of the routines specified are actually implemented as
+ *	macros defined in gdb.h.
+ *	
+ ************************************************************************/
 
 #include <mit-copyright.h>
 #include <sys/types.h>
@@ -55,6 +36,7 @@ static char *rcsid_gdb_trans2_c = "$Header: /afs/.athena.mit.edu/astaff/project/
 #include "gdb.h"
 #include <sys/uio.h>
 #include <sys/socket.h>
+#include <string.h>
 extern int errno;				/* Unix error slot */
 
 /*
@@ -863,7 +845,7 @@ register HALF_CONNECTION hc;
         * Copy the data, update both stream and data buffer pointers
         */
 
-	bcopy(hc->stream_buffer_next, hc->next_byte, count);
+	memcpy(hc->next_byte, hc->stream_buffer_next, count);
 
 	hc->stream_buffer_next += count;
 	hc->stream_buffer_remaining -= count;

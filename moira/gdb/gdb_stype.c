@@ -1,79 +1,61 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_stype.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_stype.c,v 1.3 1991-03-08 10:15:52 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_stype.c,v 1.4 1993-10-22 14:36:54 mar Exp $
  */
 
 #ifndef lint
-static char *rcsid_gdb_stype_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_stype.c,v 1.3 1991-03-08 10:15:52 mar Exp $";
+static char *rcsid_gdb_stype_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_stype.c,v 1.4 1993-10-22 14:36:54 mar Exp $";
 #endif	lint
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-/************************************************************************/
-/*	
-/*			   gdb_stype.c
-/*	
-/*	      GDB - System Data Type Definitions
-/*	
-/*	Author: Noah Mendelsohn
-/*	Copyright: 1986 MIT Project Athena 
-/*		For copying and distribution information, please see
-/*	  	the file <mit-copyright.h>.
-/*	
-/*	This file initializes the definitions for all system defined
-/*	data types, and it includes the type specific semantic routines
-/*	for each of the system defined types.
-/*	
-/*	The initialization routine which adds these type definitions 
-/*	to the type definition table is at the end of this source file.
-/*	
-/************************************************************************/
-/*	
-/*	This file is organized into one section for each system
-/*	defined type followed at the end by a final section which
-/*	initializes the type tables.  Each of the type specific
-/*	sections does #defines for each type specific parameter.  The
-/*	gdb_i_stype initialization routine at the end of this source
-/*	file uses these defines to initialize the appropriate entry in
-/*	the type definition tables.
-/*	
-/*	NOTE: some of the type definitions in this file may be machine
-/*	dependent.
-/*	
-/************************************************************************/
+/************************************************************************
+ *	
+ *			   gdb_stype.c
+ *	
+ *	      GDB - System Data Type Definitions
+ *	
+ *	Author: Noah Mendelsohn
+ *	Copyright: 1986 MIT Project Athena 
+ *		For copying and distribution information, please see
+ *	  	the file <mit-copyright.h>.
+ *	
+ *	This file initializes the definitions for all system defined
+ *	data types, and it includes the type specific semantic routines
+ *	for each of the system defined types.
+ *	
+ *	The initialization routine which adds these type definitions 
+ *	to the type definition table is at the end of this source file.
+ *	
+ ************************************************************************
+ *	
+ *	This file is organized into one section for each system
+ *	defined type followed at the end by a final section which
+ *	initializes the type tables.  Each of the type specific
+ *	sections does #defines for each type specific parameter.  The
+ *	gdb_i_stype initialization routine at the end of this source
+ *	file uses these defines to initialize the appropriate entry in
+ *	the type definition tables.
+ *	
+ *	NOTE: some of the type definitions in this file may be machine
+ *	dependent.
+ *	
+ ************************************************************************/
 
 #include <mit-copyright.h>
 #include <stdio.h>
-#include <strings.h>
+#include <string.h>
 #include "gdb.h"
 #ifdef vax			/* XXX */
 	extern u_long ntohl(), htonl();
 #endif vax
 #include <netinet/in.h>				/* for htonl routine */
-
-/************************************************************************/
-/*	
-/*			     INTEGER_T
-/*	
-/************************************************************************/
+
+
+/************************************************************************
+ *	
+ *			     INTEGER_T
+ *	
+ ************************************************************************/
 
 #define IN_LEN 		(sizeof(int))
 #define IN_ALI 		IN_LEN
@@ -216,7 +198,8 @@ char *dp;					/* pointer to the data */
 {
 	fprintf(gdb_log, "INTEGER_T\t%s=%d\n",name,(*(int *)dp));
 }
-
+
+
 /************************************************************************/
 /*	
 /*			     STRING_T
@@ -304,7 +287,7 @@ char *outp;					/* place to put the output */
         * Now, copy the data itself after the encoded integer length
         */
 	if (len > 0)
-		bcopy(STRING_DATA(*stp), nextp, len);
+		memcpy(nextp, STRING_DATA(*stp), len);
 						/* copy the data without */
 						/* changing representation*/
 	return (int)(nextp+len);
@@ -361,7 +344,7 @@ char *outp;					/* place to put the output */
        /*
         * Now, copy the data itself 
         */
-	bcopy(nextp, STRING_DATA(*stp), len);	/* copy the data without */
+	memcpy(STRING_DATA(*stp), nextp, len);	/* copy the data without */
 						/* changing representation*/
 	return (int)(nextp+len);
 }
@@ -402,7 +385,8 @@ char *dp;					/* pointer to the data */
 
 	fprintf(gdb_log,"\"\n");
 }
-
+
+
 /************************************************************************/
 /*	
 /*			     REAL_T
@@ -532,7 +516,8 @@ char *dp;					/* pointer to the data */
 {
 	fprintf(gdb_log, "REAL_T\t\t%s=%le\n",name,*((double *)dp) );
 }
-
+
+
 /************************************************************************/
 /*	
 /*			     DATE_T
@@ -668,11 +653,12 @@ char *dp;					/* pointer to the data */
 {
 	char buf[DT_EXTERNSIZE+1];
 
-	bcopy(dp, buf, DT_EXTERNSIZE);		/* copy date to buffer */
+	memcpy(buf, dp, DT_EXTERNSIZE);		/* copy date to buffer */
 	buf[DT_EXTERNSIZE] = '\0';		/* null terminate it */
 	fprintf(gdb_log, "DATE_T\t\t%s=%s\n",name,buf);
 }
-
+
+
 /************************************************************************/
 /*	
 /*			     TUPLE_DESCRIPTOR_T
@@ -799,8 +785,8 @@ char *outp;					/* place to put the output */
        /*
         * Finally, copy all the null terminated strings.
         */
-	bcopy(((char *)(tdp))+gdb_descriptor_length(tdp->field_count), 
-	      nextp, tdp->str_len);		/* copy the string data all */
+	memcpy(nextp,((char *)(tdp))+gdb_descriptor_length(tdp->field_count), 
+	       tdp->str_len);		/* copy the string data all */
 						/* at once */
 	return (int)(nextp+tdp->str_len);
 }
@@ -947,7 +933,8 @@ char *dp;					/* pointer to the data */
 	}
 	fprintf(gdb_log,"\n");
 }
-
+
+
 /************************************************************************/
 /*	
 /*			     TUPLE_T
@@ -1201,7 +1188,8 @@ char *dp;					/* pointer to the data */
 	
 	fprintf(gdb_log,"END_OF_TUPLE\n");
 }
-
+
+
 /************************************************************************/
 /*	
 /*			     TUPLE_DATA_T
@@ -1474,7 +1462,8 @@ char *dp;					/* pointer to the data */
 	
 	fprintf(gdb_log,"END_OF_TUPLE\n");
 }
-
+
+
 /************************************************************************/
 /*	
 /*			     RELATION_T
@@ -1766,7 +1755,8 @@ char *dp;					/* pointer to the data */
 	
 	fprintf(gdb_log,"END_OF_RELATION\n");
 }
-
+
+
 /************************************************************************/
 /*	
 /*	   DECLARE AND INITIALIZE THE SYSTEM TYPE DEFINITION 

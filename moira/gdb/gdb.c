@@ -1,10 +1,10 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb.c,v 1.4 1989-09-13 14:51:21 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb.c,v 1.5 1993-10-22 14:28:26 mar Exp $
  */
 
 #ifndef lint
-static char *rcsid_gdb_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb.c,v 1.4 1989-09-13 14:51:21 mar Exp $";
+static char *rcsid_gdb_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb.c,v 1.5 1993-10-22 14:28:26 mar Exp $";
 #endif	lint
 
 
@@ -34,6 +34,9 @@ static char *rcsid_gdb_c = "$Header: /afs/.athena.mit.edu/astaff/project/moirade
 #include "gdb.h"
 #include "gdb_lib.h"
 #include <errno.h>
+#ifdef POSIX
+#include <sys/utsname.h>
+#endif
 
 extern int sys_nerr;
 extern char *sys_errlist[];
@@ -69,6 +72,14 @@ gdb_init()
 
 	struct passwd *pw_struct;		/* passwd entry comes back */
 						/* here */
+#ifdef POSIX
+	struct utsname nameposix;
+	struct sigaction act;
+
+	sigemptyset(&act.sa_mask);
+	act.sa_flags = 0;
+#endif
+
        /*
         * So we know we've been initialized, and we do it only once
         */
@@ -110,13 +121,23 @@ gdb_init()
         * closed at the other end.  gdb_move_data handles this condition
         * synchronously.
         */
+#ifdef POSIX
+	act.sa_handler = (void(*)()) SIG_IGN;
+	(void) sigaction(SIGPIPE, &act, NULL);
+#else
 	(void) signal(SIGPIPE, SIG_IGN);
+#endif
 
        /*
         * Make a note of the local host and user name
         */
+#ifdef POSIX
+	(void) uname(&nameposix);
+	strncpy(hostname, nameposix.nodename, sizeof(hostname) - 1);
+#else
 	if (gethostname(hostname, sizeof(hostname)-1)!=0)
 		(void) strcpy(hostname, "????");
+#endif
 	gdb_host = db_alloc(strlen(hostname)+1);
 	(void) strcpy(gdb_host, hostname);
 

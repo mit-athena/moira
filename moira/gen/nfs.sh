@@ -1,16 +1,19 @@
 #!/bin/sh
 # This script performs nfs updates on servers.
 #
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/nfs.sh,v 1.24 2000-05-08 18:30:30 zacheiss Exp $
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/nfs.sh,v 1.25 2000-05-25 05:43:22 zacheiss Exp $
 
 # redirect output, and find the credentials directory (not robust, but
 # works for now).
 if [ -d /var/athena ] && [ -w /var/athena ]; then
-    creddir=/var/athena
     exec >/var/athena/moira_update.log 2>&1
 else 
-    creddir=/usr/etc
     exec >/tmp/moira_update.log 2>&1
+fi
+
+creddir=/var/athena
+if [ -d /usr/etc ]; then
+    creddir=/usr/etc
 fi
 
 # The following exit codes are defined and MUST BE CONSISTENT with the 

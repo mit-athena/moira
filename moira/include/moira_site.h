@@ -1,4 +1,4 @@
-/* $Id: moira_site.h,v 1.37 2000-09-25 22:52:18 zacheiss Exp $
+/* $Id: moira_site.h,v 1.38 2000-12-19 07:33:27 zacheiss Exp $
  *
  * This file contains all definitions that allow easy access to
  * elements returned by most of the @i[Moira] queries.  It also defines
@@ -164,22 +164,23 @@
 #define M_OS		3
 #define M_LOC		4
 #define M_CONTACT	5
-#define M_USE		6
-#define M_STAT		7
-#define M_STAT_CHNG	8
-#define M_SUBNET	9
-#define M_ADDR		10
-#define M_OWNER_TYPE	11
-#define M_OWNER_NAME	12
-#define M_ACOMMENT	13
-#define M_OCOMMENT	14
-#define M_CREATED	15
-#define M_CREATOR	16
-#define M_INUSE		17
-#define M_MODTIME	18
-#define M_MODBY		19
-#define M_MODWITH	20
-#define M_END		21
+#define M_BILL_CONTACT  6
+#define M_USE		7
+#define M_STAT		8
+#define M_STAT_CHNG	9
+#define M_SUBNET	10
+#define M_ADDR		11
+#define M_OWNER_TYPE	12
+#define M_OWNER_NAME	13
+#define M_ACOMMENT	14
+#define M_OCOMMENT	15
+#define M_CREATED	16
+#define M_CREATOR	17
+#define M_INUSE		18
+#define M_MODTIME	19
+#define M_MODBY		20
+#define M_MODWITH	21
+#define M_END		22
 
 /*  Machine to Cluster mapping */
 

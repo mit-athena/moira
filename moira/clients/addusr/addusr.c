@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/addusr/addusr.c,v 1.1 1992-07-06 15:01:21 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/addusr/addusr.c,v 1.2 1992-07-06 15:58:09 mar Exp $
  *
  * Program to add users en batch to the moira database
  *
@@ -16,12 +16,11 @@
 #include <ctype.h>
 #include <des.h>
 #include <krb.h>
-#include <gdss.h>
 #include <moira.h>
 #include <moira_site.h>
 
 #ifndef LINT
-static char adduser_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/addusr/addusr.c,v 1.1 1992-07-06 15:01:21 mar Exp $";
+static char adduser_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/addusr/addusr.c,v 1.2 1992-07-06 15:58:09 mar Exp $";
 #endif
 
 /* flags from command line */

@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/mmoira.h,v 1.2 1991-06-05 12:27:04 mar Exp $ */
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/mmoira.h,v 1.3 1992-10-13 11:12:33 mar Exp $ */
 
 #include "data.h"
 
@@ -6,9 +6,10 @@ extern EntryForm *GetAndClearForm(), *GetForm();
 extern char *user, *program_name;
 extern char *user_states[], *nfs_states[];
 extern char *StringValue();
-extern int DisplayCallback();
+extern int DisplayCallback(), MoiraValueChanged();
 
 #define HELPFILE	"/usr/athena/lib/moira.help"
+#define MAXLOGSIZE	10000
 
 #define MM_STATS	1
 #define MM_CLIENTS	2
@@ -102,5 +103,6 @@ extern int DisplayCallback();
 #define MM_HELP_AUTHORS 90
 #define MM_HELP_BUGS	91
 #define MM_SAVE_LOG	92
-#define MM_PERSISTANT_FORMS 93
+#define MM_NEW_VALUE	93
 #define MM_QUIT		94
+#define MM_HELP_KEYBOARD 95

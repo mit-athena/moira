@@ -1,4 +1,4 @@
-/* $Id: sq.c,v 1.13 1998-02-08 19:31:23 danw Exp $
+/* $Id: sq.c,v 1.14 1999-07-12 16:26:22 danw Exp $
  *
  * Generic Queue Routines
  *
@@ -13,7 +13,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/sq.c,v 1.13 1998-02-08 19:31:23 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/sq.c,v 1.14 1999-07-12 16:26:22 danw Exp $");
 
 struct save_queue *sq_create(void)
 {
@@ -126,6 +126,18 @@ int sq_remove_data(struct save_queue *sq, void *data)
     }
   return 0;
 }
+
+void sq_remove_last_data(struct save_queue *sq)
+{
+  struct save_queue *rem = sq->q_lastget;
+
+  if (rem != NULL)
+    {
+      rem->q_next->q_prev = sq->q_lastget = rem->q_prev;
+      rem->q_prev->q_next = rem->q_next;
+      free(rem);
+    }
+}      
 
 int sq_empty(struct save_queue *sq)
 {

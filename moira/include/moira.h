@@ -1,4 +1,4 @@
-/* $Id: moira.h,v 1.22 1998-08-13 18:24:09 danw Exp $
+/* $Id: moira.h,v 1.23 1999-07-12 16:26:11 danw Exp $
  *
  * Copyright (C) 1987-1998 by the Massachusetts Institute of Technology
  *
@@ -118,6 +118,7 @@ int sq_save_unique_string(struct save_queue *sq, char *data);
    pointer to a pointer */
 int sq_get_data(struct save_queue *sq, void *data);
 int sq_remove_data(struct save_queue *sq, void *data);
+void sq_remove_last_data(struct save_queue *sq);
 int sq_empty(struct save_queue *sq);
 void sq_destroy(struct save_queue *sq);
 

@@ -155,11 +155,15 @@ capacity if it relies on the databases which have been corrupted; in
 this case, it is possible that the database may not be easily
 replacable.  Manual intervention would be required for recovery.
 
-@SubHeading(Robustness Engineering)
+@SubHeading(Catastrophic Crashes - Robustness Engineering)
 
 In the event of a catostrophic system crash, SMS must have the
 capability to be brought up with consistent data.  There are a
-list of scenarios which indicate that a rather complex set of
-tools are needed to address this isssue.  Thought will
-be given in order that the system reliably is restored.
+list of scenarios which indicate that a complete set of
+recovery tools are needed to address this isssue.  Thought will
+be given in order that the system reliably is restored.  In many cases,
+the answer to a catastrophic crash will be manual intervention.
+For worst case scenario preparation, the Addendum (section 9), subsection
+@ref(Catfail), presents guidlines and mechanisms for catasrophic recovery
+procedure.
 

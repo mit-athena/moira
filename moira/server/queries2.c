@@ -1,6 +1,6 @@
 /* This file defines the query dispatch table for version 2 of the protocol
  *
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/queries2.c,v 1.21 1990-03-30 19:19:40 mar Exp $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/queries2.c,v 1.22 1990-04-09 12:41:06 mar Exp $
  *
  * Copyright 1987, 1988 by the Massachusetts Institute of Technology.
  * For copying and distribution information, please see the file
@@ -1723,29 +1723,49 @@ static struct validate dzcl_validate = {
   0,
 };
 
-static char *gasv_fields[] = {
-  SERVICE, "protocol", "port", DESC,
+static char *gsvc_fields[] = {
+  SERVICE,
+  SERVICE, "protocol", "port", DESC, MOD1, MOD2, MOD3
 };
 
-static char *gpcp_fields[] = {
+static char *asvc_fields[] = {
+  SERVICE, "protocol", "port", DESC
+};
+
+static struct validate asvc_validate = {
+  VOchar0,
+  1,
+  NAME,
+  "s.name = \"%s\"",
+  1,
+  0,
+  0,
+  0,
+  set_modtime,
+};
+
+static char *gpce_fields[] = {
     "printer",
-    "printer", "spooling_host", "spool_directory", "rprinter", "comments",
+    "printer", "spooling_host", "spool_directory", "rprinter",
+    "quotaserver", "authenticate", "price", "comments",
     MOD1, MOD2, MOD3,
 };
 
-static char *apcp_fields[] = {
-    "printer", "spooling_host", "spool_directory", "rprinter", "comments",
+static char *apce_fields[] = {
+    "printer", "spooling_host", "spool_directory", "rprinter",
+    "quotaserver", "authenticate", "price", "comments",
     MOD1, MOD2, MOD3,
 };
 
-static struct valobj apcp_valobj[] = {
+static struct valobj apce_valobj[] = {
     {V_CHAR, 0},
     {V_ID, 1, MACHINE, NAME, MACH_ID, MR_MACHINE},
+    {V_ID, 4, MACHINE, NAME, MACH_ID, MR_MACHINE},
 };
 
-static struct validate apcp_validate = {
-  apcp_valobj,
-  2,
+static struct validate apce_validate = {
+  apce_valobj,
+  3,
   NAME,
   "p.name = \"%s\"",
   1,
@@ -1755,7 +1775,7 @@ static struct validate apcp_validate = {
   set_modtime,
 };
 
-static struct validate dpcp_validate = {
+static struct validate dpce_validate = {
   0,
   0,
   NAME,
@@ -1765,6 +1785,12 @@ static struct validate dpcp_validate = {
   0,
   0,
   0,
+};
+
+static char *gpcp_fields[] = {
+    "printer",
+    "printer", "spooling_host", "spool_directory", "rprinter", "comments",
+    MOD1, MOD2, MOD3,
 };
 
 static char *gpdm_fields[] = {
@@ -3424,7 +3450,7 @@ struct query Queries2[] = {
     1,
     &dzcl_validate,
   },    
-#ifdef notdef
+
   {
     /* Q_GSVC - GET_SERVICE */
     "get_service",
@@ -3433,11 +3459,11 @@ struct query Queries2[] = {
     "s",
     "services",
     "%c = s.name, %c = s.protocol, %c = text(s.port), %c = s.desc, %c = s.modtime, %c = text(s.modby), %c = s.modwith",
-    gasv_fields,
+    gsvc_fields,
     7,
-    (char *)0,
-    0,
-    &gsvc_validate,
+    "s.name = \"%s\"",
+    1,
+    &VDsortf,
   },
 
   {
@@ -3448,7 +3474,7 @@ struct query Queries2[] = {
     "s",
     "services",
     "name = %c, protocol = %c, port = int2(%c), desc = %c",
-    gasv_fields,
+    asvc_fields,
     4,
     (char *)0,
     0,
@@ -3463,13 +3489,58 @@ struct query Queries2[] = {
     "s",
     "services",
     0,
-    gasv_fields,
+    asvc_fields,
     0,
     "s.name = \"%s\"",
     1,
-    &dsvc_validate,
+    &asvc_validate,
   },
-#endif
+
+  {
+    /* Q_GPCE - GET_PRINTCAP_ENTRY */
+    "get_printcap_entry",
+    "gpce",
+    RETRIEVE,
+    "p",
+    "printcap",
+    "%c = p.name, %c = machine.name, %c = p.dir, %c = p.rp, %c = m.name, %c = text(p.auth), %c = text(p.price), %c = p.comments, %c = p.modtime, %c = text(p.modby), %c = p.modwith",
+    gpce_fields,
+    11,
+    "p.name = \"%s\" and machine.mach_id = p.mach_id and m.mach_id = p.quotaserver",
+    1,
+    &VDsortf,
+  },
+
+  {
+    /* Q_APCE - ADD_PRINTCAP_ENTRY */
+    "add_printcap_entry",
+    "apce",
+    APPEND,
+    "p",
+    "printcap",
+    "name = %c, mach_id = %i4, dir = %c, rp = %c, quotaserver = %i4, auth = int1(%c), price = int2(%c), comments = %c",
+    apce_fields,
+    8,
+    0,
+    0,
+    &apce_validate,
+  },
+
+  {
+    /* Q_DPCE - DELETE_PRINTCAP_ENTRY */
+    "delete_printcap_entry",
+    "dpce",
+    DELETE,
+    "p",
+    "printcap",
+    0,
+    apce_fields,
+    0,
+    "p.name = \"%s\"",
+    1,
+    &dpce_validate,
+  },
+
   {
     /* Q_GPCP - GET_PRINTCAP */
     "get_printcap",
@@ -3486,21 +3557,6 @@ struct query Queries2[] = {
   },
 
   {
-    /* Q_APCP - ADD_PRINTCAP */
-    "add_printcap",
-    "apcp",
-    APPEND,
-    "p",
-    "printcap",
-    "name = %c, mach_id = %i4, dir = %c, rp = %c, comments = %c",
-    apcp_fields,
-    5,
-    0,
-    0,
-    &apcp_validate,
-  },
-
-  {
     /* Q_DPCP - DELETE_PRINTCAP */
     "delete_printcap",
     "dpcp",
@@ -3508,11 +3564,11 @@ struct query Queries2[] = {
     "p",
     "printcap",
     0,
-    apcp_fields,
+    apce_fields,
     0,
     "p.name = \"%s\"",
     1,
-    &dpcp_validate,
+    &dpce_validate,
   },
 
   {

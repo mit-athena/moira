@@ -1,4 +1,4 @@
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/afs/afs_utils.pl,v 1.4 2004-06-08 21:25:10 zacheiss Exp $
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/afs/afs_utils.pl,v 1.5 2004-06-11 21:07:44 zacheiss Exp $
 
 use Fcntl;
 
@@ -82,7 +82,7 @@ sub afs_find
 {
     local($cell,$type,$quota,@except) = @_;
     local($j,$k);
-    local(@max) = ("", "", -10000000000);
+    local(@max) = ("", "", undef);
 
     &afs_lock;
     chop(@afs_data);
@@ -96,7 +96,7 @@ sub afs_find
 	}
 	$alloc = $used if ($alloc < $used);
 	$j = 2*$total - $used - $alloc;
-	@max = ($asrv,$apart,$j) if (! @max || $j > $max[2]);
+	@max = ($asrv,$apart,$j) if (!$max[2] || $j > $max[2]);
     }
 
     &afs_unlock;

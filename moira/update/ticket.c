@@ -1,10 +1,10 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/ticket.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/ticket.c,v 1.1 1987-08-22 17:55:21 wesommer Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/ticket.c,v 1.2 1987-08-28 19:05:51 wesommer Exp $
  */
 
 #ifndef lint
-static char *rcsid_ticket_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/ticket.c,v 1.1 1987-08-22 17:55:21 wesommer Exp $";
+static char *rcsid_ticket_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/ticket.c,v 1.2 1987-08-28 19:05:51 wesommer Exp $";
 #endif	lint
 
 #include <stdio.h>
@@ -20,7 +20,8 @@ static char *rcsid_ticket_c = "$Header: /afs/.athena.mit.edu/astaff/project/moir
 /*static char tkt_pathname[] = "/tmp/tkt:sms";*/
 static char *srvtab = SRVTAB; /* default == /etc/srvtab */
 static char realm[REALM_SZ];
-static char sms[] = "sms";
+static char master[] = "sms";
+static char service[] = "rcmd";
 
 extern char *tkt_string(), *PrincipalHostname();
 static int initialized = 0;
@@ -40,7 +41,7 @@ get_sms_update_ticket(host, ticket)
      init();
      strcpy(phost, PrincipalHostname(host));
  try_it:
-     code = mk_ap_req(ticket, sms, phost, realm, (long)0);
+     code = mk_ap_req(ticket, service, phost, realm, (long)0);
      if (pass == 1) {
 	 /* maybe we're taking too long? */
 	 if ((code = get_sms_tgt()) != 0) {
@@ -61,7 +62,7 @@ get_sms_tgt()
 {
     register int code;
     init();
-    code = get_svc_in_tkt(sms, "", realm, "krbtgt", realm, 1, srvtab);
+    code = get_svc_in_tkt(master, "", realm, "krbtgt", realm, 1, srvtab);
     if (!code)
 	return(0);
     else

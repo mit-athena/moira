@@ -1,10 +1,10 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/auth_001.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/auth_001.c,v 1.1 1987-08-22 17:53:20 wesommer Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/auth_001.c,v 1.2 1987-08-28 19:05:23 wesommer Exp $
  */
 
 #ifndef lint
-static char *rcsid_auth_001_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/auth_001.c,v 1.1 1987-08-22 17:53:20 wesommer Exp $";
+static char *rcsid_auth_001_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/auth_001.c,v 1.2 1987-08-28 19:05:23 wesommer Exp $";
 #endif	lint
 
 #include <stdio.h>
@@ -22,7 +22,8 @@ extern struct sockaddr_in *client_address();
 extern CONNECTION conn;
 int code;
 extern char *PrincipalHostname();
-static char sms[] = "sms";
+static char service[] = "rcmd";
+static char master[] = "sms";
 static char qmark[] = "???";
 
 /*
@@ -56,7 +57,7 @@ auth_001(str)
     ticket_st.mbz = 0;
     ticket_st.length = MAX_STRING_SIZE(data);
     bcopy(STRING_DATA(data), ticket_st.dat, MAX_STRING_SIZE(data));
-    code = rd_ap_req(&ticket_st, sms,
+    code = rd_ap_req(&ticket_st, service,
 		     PrincipalHostname(host), 0,
 		     &ad, "/etc/srvtab");
     if (code) {
@@ -69,7 +70,7 @@ auth_001(str)
     if (get_krbrlm(realm,0))
 	realm[0] = '\0';
     code = EPERM;
-    if (strcmp(sms, ad.pname))
+    if (strcmp(master, ad.pname))
 	goto auth_failed;
     if (ad.pinst[0] != '\0')
 	goto auth_failed;

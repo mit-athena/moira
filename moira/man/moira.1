@@ -1,5 +1,5 @@
 .TH MOIRA 1 "29 Nov 1988" "Project Athena"
-\" RCSID: $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/man/moira.1,v 1.4 1989-08-21 22:17:27 mar Exp $
+\" RCSID: $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/man/moira.1,v 1.5 1990-03-08 18:08:47 mar Exp $
 .SH NAME
 moira, listmaint, usermaint, dcmmaint \- maintain information stored in moira
 .SH SYNOPSIS
@@ -19,9 +19,15 @@ or
 .B dcmmaint,
 .I moira
 will immediately drop into the appropriate sub-menu.
+
 It a database is specified on the command line, that server will be
 contacted rather than the compiled-in default.  The host and port may
-both be symbolic names or numbers.
+both be symbolic names or numbers.  If the port is not specified, the
+default Moira server port will be used.  The server chosen will be the
+one specified on the command line, from the environment variable
+MOIRASERVER, from the "moira" sloc entry in hesiod, or the compiled in
+default, in that order of preference.
+
 The option:
 .TP
 .BI \-nomenu
@@ -82,7 +88,7 @@ used by curses to control of scrolling and menu display.
 Jean Marie Diaz, Mark Roman, Chris Peterson, Mark Rosenstein and a
 cast of thousands
 .SH "SEE ALSO"
-chfn(1), chpobox(1), chsh(1), mailmaint(1), mrlist(1),
+chfn(1), chpobox(1), chsh(1), mailmaint(1), blanche(1),
 Moira section of the Project Athena Technical Plan
 .SH NOTES
 Moira was previously called SMS, and some places still refer to it by

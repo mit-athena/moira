@@ -1,4 +1,4 @@
-/* $Id: qsupport.pc,v 2.11 1998-07-15 20:38:26 danw Exp $
+/* $Id: qsupport.pc,v 2.12 1998-12-28 20:17:26 danw Exp $
  *
  * Special query routines
  *
@@ -18,7 +18,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.pc,v 2.11 1998-07-15 20:38:26 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.pc,v 2.12 1998-12-28 20:17:26 danw Exp $");
 
 extern char *whoami, *table_name[];
 extern int dbms_errno, mr_errcode;
@@ -1173,7 +1173,7 @@ int register_user(struct query *q, char **argv, client *cl)
   if (rowcount > 0)
     return MR_IN_USE;
   EXEC SQL SELECT COUNT(name) INTO :rowcount FROM list
-    WHERE name = :login;
+    WHERE LOWER(name) = :login;
   if (dbms_errno)
     return mr_errcode;
   if (rowcount > 0)

@@ -3,13 +3,13 @@
  * and distribution information, see the file "mit-copyright.h". 
  *
  * $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chfn.c,v $
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chfn.c,v 1.8 1990-03-17 17:19:04 mar Exp $
- * $Author: mar $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chfn.c,v 1.9 1990-03-26 05:42:13 marc Exp $
+ * $Author: marc $
  *
  */
 
 #ifndef lint
-static char *rcsid_chfn_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chfn.c,v 1.8 1990-03-17 17:19:04 mar Exp $";
+static char *rcsid_chfn_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chfn.c,v 1.9 1990-03-26 05:42:13 marc Exp $";
 #endif not lint
 
 /*
@@ -129,13 +129,13 @@ chfn(uname)
 
     status = mr_connect(NULL);
     if (status) {
-	com_err(whoami, status, " while connecting to Moira");
+	com_err(whoami, status, "while connecting to Moira");
 	exit(1);
     }
 
     status = mr_motd(&motd);
     if (status) {
-        com_err(whoami, status, " unable to check server status");
+        com_err(whoami, status, "unable to check server status");
 	leave(1);
     }
     if (motd) {
@@ -146,7 +146,7 @@ chfn(uname)
     status = mr_auth("chfn");	/* Don't use argv[0] - too easy to fake */
     if (status) {
 	com_err(whoami, status, 
-		" while authenticating -- run \"kinit\" and try again.");
+		"while authenticating -- run \"kinit\" and try again.");
 	leave(1);
     }
 
@@ -171,7 +171,7 @@ chfn(uname)
     if (status = mr_query("get_finger_by_login", q_argc, q_argv, 
 		       get_user_info, (char *) &old_info))
     {
-	com_err(whoami, status, " while getting user information.");
+	com_err(whoami, status, "while getting user information.");
 	leave(2);
     }
 
@@ -197,7 +197,7 @@ chfn(uname)
     if (status = mr_query("update_finger_by_login", q_argc, q_argv,
 			   scream, (char *)NULL))
     {
-	com_err(whoami, status, " while updating finger information.");
+	com_err(whoami, status, "while updating finger information.");
 	leave(1);
     }
 
@@ -334,7 +334,7 @@ void get_new_info(old_info, new_info)
     GETINFO("Office address (Exs: E40-342 or 2-108)", 
 	    office_address, FALSE);
     GETINFO("Office phone (Ex: 3-1300)", office_phone, TRUE);
-    GETINFO("MIT department (Exs: 9, Biology, Information Services", 
+    GETINFO("MIT department (Exs: 9, Biology, Information Services)", 
 	    mit_department, FALSE);
     GETINFO("MIT year (Exs: 1989, '91, Faculty, Grad)", mit_year, FALSE);
 }

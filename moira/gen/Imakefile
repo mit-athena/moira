@@ -1,4 +1,4 @@
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/Imakefile,v 1.8 1997-02-07 19:44:08 tytso Exp $
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/Imakefile,v 1.9 1997-07-07 22:29:17 danw Exp $
 #
 # Copyright 1993 by the Massachusetts Institute of Technology.
 #
@@ -20,7 +20,7 @@ CODE = util.c moddiff.pc passwd.pc hesiod.pc \
 	nfs.pc mailhub.pc sis.pc pobox.pc \
 	hosts.pc network.pc warehouse.pc
 LIBS =  -L/usr/athena/lib ../lib/libmoira.a -lcom_err -lzephyr \
-	../server/libmrglue.a $(LIBGDSS) -lkrb -ldes -lhesiod ${SQL_LIB}
+	$(LIBGDSS) -lkrb -ldes -lhesiod ${SQL_LIB}
 DEFINES = $(GDSSINC)
 #else /* DO_GDSS */
 SRCS = util.c moddiff.c passwd.c hesiod.c \
@@ -33,7 +33,7 @@ CODE = util.c moddiff.pc passwd.pc hesiod.pc \
 	nfs.pc mailhub.pc pobox.pc \
 	hosts.pc network.pc 
 LIBS =  -L/usr/athena/lib ../lib/libmoira.a -lcom_err -lzephyr \
-	../server/libmrglue.a -lkrb -ldes -lhesiod ${SQL_LIB}
+	-lkrb -ldes -lhesiod ${SQL_LIB}
 DEFINES =
 #endif /* DO_GDSS */
 sqlrule()

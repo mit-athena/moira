@@ -1,17 +1,21 @@
-#!/bin/sh
+#!/bin/sh -x
 #
 #	Nightly script for backing up SMS.
 #
 #
-BKUPDIRDIR=/tmp
-
+BKUPDIRDIR=/u3/sms_backup
+PATH=/bin:/usr/bin:/usr/ucb:/usr/new; export PATH
 chdir ${BKUPDIRDIR}
+
+/u1/sms/backup/counts </dev/null	
 
 if [ -d in_progress ] 
 then
 	echo "Two backups running?"
 	exit 1
 fi
+
+trap "rm -rf ${BKUPDIRDIR}/in_progress" 0 1 15 
 
 if mkdir in_progress 
 then
@@ -20,7 +24,6 @@ else
 	echo "Cannot create backup directory"
 	exit 1
 fi
-	
 if /u1/sms/backup/smsbackup ${BKUPDIRDIR}/in_progress/
 then
 	echo "Backup successful"
@@ -32,7 +35,7 @@ fi
 if [ -d stale ]
 then
 	echo -n "Stale backup "
-	rm -rf backup_4
+	rm -r stale
 	echo "removed"
 fi
 echo -n "Shifting backups "
@@ -47,6 +50,9 @@ mv in_progress backup_1
 echo 
 echo -n "deleting last backup"
 rm -rf stale
-echo "New backup:"
-ls -l backup_1
+echo "Shipping over the net:"
+su wesommer -fc "rdist -c ${BKUPDIRDIR} apollo:/site/sms/sms_backup"
+su wesommer -fc "rdist -c ${BKUPDIRDIR} zeus:/site/sms/sms_backup"
+su wesommer -fc "rdist -c ${BKUPDIRDIR} jason:/site/sms/sms_backup"
+su wesommer -fc "rdist -c ${BKUPDIRDIR} trillian:/site/sms/sms_backup"
 exit 0

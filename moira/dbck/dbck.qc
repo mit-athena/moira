@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/dbck.qc,v 1.6 1990-03-19 18:43:57 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/dbck.qc,v 1.7 1992-06-24 16:38:39 mar Exp $
  *
  * Moira database consistency checker
  *
@@ -14,7 +14,7 @@
 #include "dbck.h"
 
 
-static char dbck_qc_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/dbck.qc,v 1.6 1990-03-19 18:43:57 mar Exp $";
+static char dbck_qc_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/dbck.qc,v 1.7 1992-06-24 16:38:39 mar Exp $";
 
 
 int debug = 0;
@@ -87,6 +87,8 @@ char **argv;
       printf("Will fix everything without asking\n");
     if (debug)
       printf("Debug level is %d\n", debug);
+
+    setlinebuf(stdout);
 
     signal(SIGHUP, interrupt);
     signal(SIGQUIT, interrupt);

@@ -13,7 +13,7 @@
 #include	"mmoira.h"
 #include	<sys/file.h>
 
-static char rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/stubs.c,v 1.5 1992-10-13 11:11:37 mar Exp $";
+static char rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/stubs.c,v 1.6 1992-10-19 17:11:10 mar Exp $";
 
 void	extra_help_callback();
 
@@ -40,6 +40,198 @@ Widget	parent;
 
 	return (logwidget);
 }
+
+
+static MoiraSelect(w, data, e, cont)
+Widget w;
+caddr_t data;
+XEvent *e;
+Boolean *cont;
+{
+    XmTextPosition pos;
+    XButtonEvent *be;
+
+    be = (XButtonEvent *)e;
+
+    pos = XmTextXYToPos(logwidget, be->x, be->y);
+    DoMoiraSelect(pos, w, 0);
+}
+
+
+static DoMoiraSelect(pos, w, modify)
+XmTextPosition pos;
+Widget w;
+int modify;    
+{
+    char *log, *p, *p1, *p2;
+    char name[256], type[256], type2[256];
+
+    log = XmTextGetString(w);
+    for (p = &log[pos]; p > log; p--)
+      if (isspace(*p) || *p == ':') break;
+
+    /* p now points to the beginning of the word on which the mouse was
+     * clicked.  Begin gross hacking to find the name and type of object.
+     */
+    /* get name */
+    p1 = p + 1;
+    p2 = name;
+    while (*p1 && !isspace(*p1)) *p2++ = *p1++;
+    *p2 = 0;
+    /* backup two words before for type2 */
+    while (p >= log && isspace(*p) || *p == ':') p--;
+    while (p >= log && !isspace(*p)) p--;
+    while (p >= log && isspace(*p)) p--;
+    while (p >= log && !isspace(*p)) p--;
+    p++;
+    p2 = type2;
+    /* new get type2 */
+    if (p > log) {
+	while (!isspace(*p)) *p2++ = *p++;
+	*p2++ = *p++;
+	/* skip additional whitespace */
+	while (isspace(*p)) p++;
+    }
+    /* get type & rest of type2 */
+    p1 = type;
+    while (*p && *p != ':' && !isspace(*p)) *p2++ = *p1++ = *p++;
+    *p2 = *p1 = 0;
+    /* Done! */
+#ifdef DEBUG
+    printf("name \"%s\", type \"%s\" type2 \"%s\"\n", name, type, type2);
+#endif /* DEBUG */
+    if (!strcasecmp(type, "USER") ||
+	!strcmp(type, "name") ||
+	!strcmp(type2, "Modified by") ||
+	!strcmp(type2, "User Ownership") ||
+	!strcmp(type2, "Login name") ||
+	!strcmp(type, "login")) {
+	DoReference(name, "select_user", MM_MOD_USER, MM_SHOW_USER,
+		    "get_user_account_by_login", modify);
+    } else if (!strcasecmp(type, "LIST") ||
+	       !strcmp(type2, "Group Ownership")) {
+	DoReference(name, "select_list", MM_MOD_LIST, MM_SHOW_LIST,
+		    "get_list_info", modify);
+    } else if (!strcasecmp(type, "MACHINE") ||
+	       !strcmp(type, "host") ||
+	       !strcmp(type, "Server") ||
+	       !strcmp(type, "Box")) {
+	DoReference(name, "select_machine", MM_MOD_MACH, MM_SHOW_MACH,
+		    "get_machine", modify);
+    } else if (!strcasecmp(type, "CLUSTER")) {
+	DoReference(name, "select_cluster", MM_MOD_CLUSTER, MM_SHOW_CLUSTER,
+		    "get_cluster", modify);
+    } else if (!strcasecmp(type, "FILESYSTEM") ||
+	       !strcmp(type, "FILESYS") ||
+	       !strcmp(type2, "syslib Data")) {
+	DoReference(name, "select_filsys", MM_MOD_FILSYS, MM_SHOW_FILSYS,
+		    "get_filesys_by_label", modify);
+    } else if (!strcmp(type, "Printer") ||
+	       !strcmp(type2, "lpr Data")) {
+	DoReference(name, "select_printer", MM_MOD_PCAP, MM_SHOW_PCAP,
+		    "get_printcap_entry", modify);
+    } else {
+	XBell(XtDisplay(w), 100);
+    }
+    XtFree(log);
+}
+
+
+static DoReference(name, formname, modop, showop, query, modify)
+char *name;
+char *formname;
+int modop;
+int showop;
+char *query;
+int modify;
+{
+    EntryForm *form, f;
+    MenuItem m;
+    char *argv[2], **aargv;
+    int status;
+
+    if (modify) {
+	form = GetAndClearForm(formname);
+	StoreField(form, 0, name);
+	form->menu = &m;
+	m.operation = modop;
+	m.query = query;
+	m.argc = 1;
+	MoiraFormApply(0, form);
+    } else {
+	f.menu = &m;
+	if (showop == MM_SHOW_FILSYS) f.extrastuff = (caddr_t) sq_create();
+	argv[0] = name;
+	m.operation = showop;
+	status = MoiraQuery(query, 1, argv, DisplayCallback, &f);
+	if (showop == MM_SHOW_FILSYS) {
+	    while (sq_get_data(f.extrastuff, &aargv)) {
+		ShowFilsys(aargv);
+	    }
+	    sq_destroy(f.extrastuff);
+	}
+	if (status)
+	  com_err(program_name, status, " while looking up data");
+	else
+	  AppendToLog("\n");
+    }
+}
+
+
+void noopACT(w, event, p, n)
+Widget w;
+XEvent *event;
+String *p;
+Cardinal *n;
+{
+}
+
+void moiraRetrieveACT(w, event, p, n)
+Widget w;
+XEvent *event;
+String *p;
+Cardinal *n;
+{
+    MoiraSelect(w, 0, event, 0);
+}
+
+void moiraModifyACT(w, event, p, n)
+Widget w;
+XEvent *event;
+String *p;
+Cardinal *n;
+{
+    XmTextPosition pos;
+    XButtonEvent *be;
+
+    be = (XButtonEvent *)event;
+
+    pos = XmTextXYToPos(w, be->x, be->y);
+    DoMoiraSelect(pos, w, 1);
+}
+
+
+XtActionsRec myactions[] = {
+    { "moiraRetrieve", moiraRetrieveACT },
+    { "moiraModify", moiraModifyACT },
+    { "noop", noopACT },
+};
+
+#define newtrans "~Ctrl  Shift ~Meta ~Alt<Btn1Down>: moiraRetrieve()\n\
+	~Ctrl ~Meta ~Alt<Btn1Up>: noop()\n\
+	~Ctrl  Shift ~Meta ~Alt<Btn2Down>: moiraModify()"
+
+SetupClickBacks()
+{
+    static XtTranslations trans = NULL;
+
+    XtAppAddActions(XtWidgetToApplicationContext(logwidget),
+		    myactions, XtNumber(myactions));
+    trans = XtParseTranslationTable(newtrans);
+    XtOverrideTranslations(logwidget, trans);
+
+}
+
 
 /*
 ** PopupErrorMessage(text)
@@ -182,6 +374,8 @@ EntryForm	*spec;
 	int		n, kidcount;
 	Widget		kid;
 
+	if (spec->formpointer == NULL) return;
+
 	for (	current = (*myinputlines);
 		current; 
 		myinputlines++, current = (*myinputlines)) {
@@ -276,27 +470,33 @@ char *fn;
 }
 
 
-yesCallback(w, ret, dummy)
+void yesCallback(w, ret, dummy)
 Widget w;
-int *ret;
+XtPointer ret;
+XtPointer dummy;
 {
+    int *ip = (int *)ret;
     *ret = 1;
 }
 
-noCallback(w, ret, dummy)
+void noCallback(w, ret, dummy)
 Widget w;
-int *ret;
+XtPointer ret;
+XtPointer dummy;
 {
+    int *ip = (int *)ret;
     *ret = -1;
 }
 
 
 static int value;
-static XtCallbackRec yescb[] = { { yesCallback, &value }, {NULL, NULL} };
-static XtCallbackRec nocb[]  = { { noCallback, &value }, {NULL, NULL} };
+static XtCallbackRec yescb[] = { { yesCallback, (XtPointer) &value },
+				 { NULL, NULL} };
+static XtCallbackRec nocb[]  = { { noCallback, (XtPointer) &value },
+				 {NULL, NULL} };
 
 Boolean AskQuestion(text, helpname)
-char *text, helpname;
+char *text, *helpname;
 {
 	static Widget		child;
 	Arg		wargs[10];

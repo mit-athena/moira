@@ -1,7 +1,8 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/form_setup.c,v 1.5 1992-10-22 15:39:30 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/form_setup.c,v 1.6 1992-10-23 19:05:58 mar Exp $
  */
 
 #include <stdio.h>
+#include <ctype.h>
 #include <moira.h>
 #include <moira_site.h>
 #include <Xm/Xm.h>
@@ -57,15 +58,50 @@ struct save_queue *sq;
 }
 
 
-MoiraValueChanged(f, p)
+/* Deal with AFS cell names */
+
+char *canonicalize_cell(c)
+char *c;
+{
+    struct stat stbuf;
+    char path[512];
+    int count;
+
+    c = strtrim(c);
+    sprintf(path, "/afs/%s", c);
+    if (lstat(path, &stbuf) || !stbuf.st_mode&S_IFLNK)
+      return(c);
+    count = readlink(path, path, sizeof(path));
+    if (count < 1) return(c);
+    path[count] = 0;
+    free(c);
+    return(strsave(path));
+}
+
+
+int GetAliasValue(argc, argv, retval)
+int argc;
+char **argv;
+char **retval;
+{
+    *retval = strsave(argv[2]);
+    return(MR_CONT);
+}
+
+
+
+MoiraValueChanged(f, prompt)
 EntryForm *f;
-UserPrompt *p;
+UserPrompt *prompt;
 {
     char buf[1024];
-    char *argv[5];
-    int i, size;
+    char *argv[5], *p;
+    int i, size, field;
     struct save_queue *sq, *s;
 #define maybechange(f, n, v)	{if (f->inputlines[n]->insensitive != v) { f->inputlines[n]->insensitive=v; f->inputlines[n]->changed = True; }}
+
+    for (field = 0; f->inputlines[field]; field++)
+      if (prompt == f->inputlines[field]) break;
 
     switch (f->menu->operation) {
     case MM_ADD_LIST:
@@ -78,22 +114,99 @@ UserPrompt *p;
 	break;
     case MM_ADD_FILSYS:
     case MM_MOD_FILSYS:
-	if (!strcmp(stringval(f, FS_TYPE), "FSGROUP") ||
-		   !strcmp(stringval(f, FS_TYPE), "MUL") ||
-		   !strcmp(stringval(f, FS_TYPE), "ERR")) {
+	if (field == FS_TYPE &&
+	    (!strcmp(stringval(f, FS_TYPE), "FSGROUP") ||
+	     !strcmp(stringval(f, FS_TYPE), "MUL") ||
+	     !strcmp(stringval(f, FS_TYPE), "ERR"))) {
 	    maybechange(f, FS_MACHINE, True);
 	    maybechange(f, FS_PACK, True);
 	    maybechange(f, FS_M_POINT, True);
 	    maybechange(f, FS_ACCESS, True);
 	    maybechange(f, FS_CREATE, True);
-	} else if (!strcmp(stringval(f, FS_TYPE), "NFS") ||	
-		   !strcmp(stringval(f, FS_TYPE), "AFS") ||
-		   !strcmp(stringval(f, FS_TYPE), "RVD")) {
+	} else if (field == FS_TYPE &&
+		   (!strcmp(stringval(f, FS_TYPE), "NFS") ||	
+		    !strcmp(stringval(f, FS_TYPE), "AFS") ||
+		    !strcmp(stringval(f, FS_TYPE), "RVD"))) {
 	    maybechange(f, FS_MACHINE, False);
 	    maybechange(f, FS_PACK, False);
 	    maybechange(f, FS_M_POINT, False);
 	    maybechange(f, FS_ACCESS, False);
 	    maybechange(f, FS_CREATE, False);
+	}
+	if (field == FS_NAME && !strcmp(stringval(f, FS_M_POINT), "/mit/")) {
+	    sprintf(buf, "/mit/%s", stringval(f, FS_NAME));
+	    StoreField(f, FS_M_POINT, buf);
+	}
+	if (field == FS_MACHINE && !strcmp(stringval(f, FS_TYPE), "AFS")) {
+	    p = strsave(stringval(f, FS_MACHINE));
+	    p = canonicalize_cell(p);
+	    lowercase(p);
+	    StoreField(f, FS_MACHINE, p);
+	    free(p);
+	}
+	if (field == FS_MACHINE && (!strcmp(stringval(f, FS_TYPE), "NFS") ||
+				    !strcmp(stringval(f, FS_TYPE), "RVD"))) {
+	    StoreHost(f, FS_MACHINE, &p);
+	}
+	if (!strcmp(stringval(f, FS_TYPE), "AFS") &&
+	    *stringval(f, FS_NAME) &&
+	    *stringval(f, FS_MACHINE) &&
+	    *stringval(f, FS_L_TYPE)) {
+	    char *path;
+	    int depth;
+
+	    sprintf(buf, "%s:%s", stringval(f, FS_MACHINE),
+		    stringval(f, FS_L_TYPE));
+	    argv[0] = buf;
+	    argv[1] = "AFSPATH";
+	    argv[2] = "*";
+	    path = "???";
+	    i = MoiraQuery("get_alias", 3, argv, GetAliasValue, &path);
+	    if (i == MR_SUCCESS) {
+		p = index(path, ':');
+		if (p) {
+		    *p = 0;
+		    depth = atoi(++p);
+		} else depth = 0;
+		sprintf(buf, "/afs/%s/%s", stringval(f, FS_MACHINE), path);
+		if (depth >= 0) {
+		    for (p=stringval(f, FS_NAME);
+			 *p && (p - stringval(f, FS_NAME)) < depth;
+			 p++) {
+			if (islower(*p)) {
+			    strcat(buf, "/x");
+			    buf[strlen(buf)-1] = *p;
+			} else {
+			    sprintf(buf, "/afs/%s/%s/other",
+				    stringval(f, FS_MACHINE), path);
+			    break;
+			}
+		    }
+		} else if (depth = -1) {
+		    if (isdigit(stringval(f, FS_NAME)[0])) {
+			strcat(buf, "/");
+			depth = strlen(buf);
+			for (p = stringval(f, FS_NAME);
+			     *p && isdigit(*p);
+			     p++) {
+			    buf[depth++] = *p;
+			    buf[depth] = 0;
+			}
+		    } else
+		      strcat(buf, "/other");
+		} else {
+		    /* no default */
+		}
+		strcat(buf, "/");
+		strcat(buf, stringval(f, FS_NAME));
+		free(path);
+	    } else {
+		p = strsave(stringval(f, FS_L_TYPE));
+		sprintf(buf, "/afs/%s/%s/%s", stringval(f, FS_MACHINE),
+			lowercase(p), stringval(f, FS_NAME));
+		free(p);
+	    }
+	    StoreField(f, FS_PACK, buf);
 	}
 	break;
     case MM_SET_POBOX:
@@ -280,6 +393,7 @@ MenuItem	*menu;
     case MM_ADD_FILSYS:
 	StoreField(f, FS_TYPE, "AFS");
 	StoreField(f, FS_M_POINT, "/mit/");
+	StoreField(f, FS_MACHINE, "athena.mit.edu");
 	StoreField(f, FS_ACCESS, "w");
 	StoreField(f, FS_OWNER, user);
 	StoreField(f, FS_OWNERS, user);
@@ -288,23 +402,34 @@ MenuItem	*menu;
 	GetKeywords(f, FS_ACCESS, "fs_access_AFS");
 	GetKeywords(f, FS_L_TYPE, "lockertype");
 	f->inputlines[FS_TYPE]->valuechanged = MoiraValueChanged;
+	f->inputlines[FS_L_TYPE]->valuechanged = MoiraValueChanged;
+	f->inputlines[FS_NAME]->valuechanged = MoiraValueChanged;
+	f->inputlines[FS_MACHINE]->valuechanged = MoiraValueChanged;
 	break;
     case MM_ADD_FSGROUP:
+	if (f->inputlines[2]->keywords)
+	  free(f->inputlines[2]->keywords);
 	f->inputlines[2]->keywords = (char **)malloc(sizeof(char*)*2);
 	f->inputlines[2]->keywords[0] = "[First]";
 	f->inputlines[2]->keywords[1] = NULL;
 	f->inputlines[0]->valuechanged = MoiraValueChanged;
 	break;
     case MM_DEL_FSGROUP:
+	if (f->inputlines[1]->keywords)
+	  free(f->inputlines[1]->keywords);
 	f->inputlines[1]->keywords = (char **)malloc(sizeof(char*)*2);
 	f->inputlines[1]->keywords[0] = "[Placeholder]";
 	f->inputlines[1]->keywords[1] = NULL;
 	f->inputlines[0]->valuechanged = MoiraValueChanged;
 	break;
     case MM_MOV_FSGROUP:
+	if (f->inputlines[1]->keywords)
+	  free(f->inputlines[1]->keywords);
 	f->inputlines[1]->keywords = (char **)malloc(sizeof(char*)*2);
 	f->inputlines[1]->keywords[0] = "[Placeholder]";
 	f->inputlines[1]->keywords[1] = NULL;
+	if (f->inputlines[2]->keywords)
+	  free(f->inputlines[2]->keywords);
 	f->inputlines[2]->keywords = (char **)malloc(sizeof(char*)*2);
 	f->inputlines[2]->keywords[0] = "[First]";
 	f->inputlines[2]->keywords[1] = NULL;

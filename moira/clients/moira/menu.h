@@ -1,3 +1,5 @@
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.h,v 1.2 1990-04-09 18:02:53 mar Exp $ */
+
 #define MAX_ARGC 16		/* Maximum argument count per line */
 #define MAX_ARGLEN 128		/* Maximum length of an argument */
 #define MAX_LINES 16		/* Maximum number of lines per menu */
@@ -40,3 +42,7 @@ typedef struct menu {
 #define NULLMENU ((struct menu *) 0)
 #define SUBMENU(cmd, doc, menu) { NULLFUNC, menu, 1, { { cmd, doc } } }
 #define SIMPLEFUNC(cmd, doc, func) { func, NULLMENU, 1, { { cmd, doc } } }
+
+/* Unused words found on parsed command line */
+extern int parsed_argc;
+extern char **parsed_argv;

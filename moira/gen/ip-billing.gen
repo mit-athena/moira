@@ -1,6 +1,6 @@
 #!/moira/bin/perl -Tw
 
-# $Id: ip-billing.gen,v 1.3 2002-02-04 05:21:37 zacheiss Exp $
+# $Id: ip-billing.gen,v 1.4 2002-02-04 18:17:30 zacheiss Exp $
 # The following exit codes are defined and MUST BE CONSISTENT with the
 # error codes the library uses:
 $MR_DBMS_ERR = 47836421;
@@ -26,15 +26,15 @@ $dbh = DBI->connect("dbi:Oracle:moira", "moira", "moira")
 
 # First report all the NETWK-A hosts.
 $sth = $dbh->prepare("SELECT m.address, m.location, m.name, m.contact, " .
-		     "m.account_number, m.modtime FROM " .
+		     "m.account_number, m.created, m.modtime FROM " .
 		     "machine m, subnet s WHERE m.status = 1 " .
 		     "AND m.snet_id = s.snet_id AND s.status = 1 " .
-		     "AND m.account_number != CHR(0) ORDER BY m.address") 
+		     "AND m.address != 'unassigned' ORDER BY m.address") 
     || exit $MR_DBMS_ERR;
 
 $sth->execute || exit $MR_DBMS_ERR;
 
-while (($address, $location, $name, $contact, $accountnumber, $modtime) =
+while (($address, $location, $name, $contact, $accountnumber, $created, $modtime) =
        $sth->fetchrow_array) {
     if ($location eq "\0") {
 	$location = "NONE";
@@ -42,7 +42,10 @@ while (($address, $location, $name, $contact, $accountnumber, $modtime) =
     if ($contact eq "\0") {
 	$contact = "NONE";
     }
-    $row = "$address\t$location\t$name\t$contact\t$accountnumber\t+NETWK-A\t$modtime\n";
+    if ($accountnumber eq "\0") {
+	$accountnumber = "NONE";
+    }
+    $row = "$address\t$location\t$name\t$contact\t$accountnumber\t+NETWK-A\t$created\t$modtime\n";
     $row =~ s/\0//g;
     print DAT $row;
     $count++;
@@ -50,75 +53,72 @@ while (($address, $location, $name, $contact, $accountnumber, $modtime) =
 
 # Next we do the private subnets.
 # +NETWK-10P.
-$sth = $dbh->prepare("SELECT s.saddr, s.description, s.name, s.contact, " .
+$sth = $dbh->prepare("SELECT s.saddr, s.name, s.contact, " .
 		     "s.account_number, s.modtime FROM subnet s " .
-		     "WHERE s.status = 2 AND s.account_number != CHR(0) " .
-		     "ORDER BY s.saddr")
+		     "WHERE s.status = 2 ORDER BY s.saddr")
     || exit $MR_DBMS_ERR;
 
 $sth->execute || exit $MR_DBMS_ERR;
 
-while (($saddr, $desc, $name, $contact, $accountnumber, $modtime) =
+while (($saddr, $name, $contact, $accountnumber, $modtime) =
        $sth->fetchrow_array) {
-    if ($desc eq "\0") {
-	$desc = "NONE";
-    }
     if ($contact eq "\0") {
 	$contact = "NONE";
     }
+    if ($accountnumber eq "\0") {
+	$accountnumber = "NONE";
+    }
     @addr = unpack("C4", pack("N", $saddr));
     $address = "$addr[0].$addr[1].$addr[2].$addr[3]";
-    $row = "$address\t$desc\t$name\t$contact\t$accountnumber\t+NETWK-10P\t$modtime\n";
+    $row = "$address\tNONE\t$name\t$contact\t$accountnumber\t+NETWK-10P\tNONE\t$modtime\n";
     $row =~ s/\0//g;
     print DAT $row;
     $count++;
 }
 
 # +NETWK-100P
-$sth = $dbh->prepare("SELECT s.saddr, s.description, s.name, s.contact, " .
+$sth = $dbh->prepare("SELECT s.saddr, s.name, s.contact, " .
 		     "s.account_number, s.modtime FROM subnet s " .
-		     "WHERE s.status = 3 AND s.account_number != CHR(0) " .
-		     "ORDER BY s.saddr")
+		     "WHERE s.status = 3 ORDER BY s.saddr")
     || exit $MR_DBMS_ERR;
 
 $sth->execute || exit $MR_DBMS_ERR;
 
-while (($saddr, $desc, $name, $contact, $accountnumber, $modtime) =
+while (($saddr, $name, $contact, $accountnumber, $modtime) =
        $sth->fetchrow_array) {
-    if ($desc eq "\0") {
-	$desc = "NONE";
-    }
     if ($contact eq "\0") {
 	$contact = "NONE";
     }
+    if ($accountnumber eq "\0") {
+	$accountnumber = "NONE";
+    }
     @addr = unpack("C4", pack("N", $saddr));
     $address = "$addr[0].$addr[1].$addr[2].$addr[3]";
-    $row = "$address\t$desc\t$name\t$contact\t$accountnumber\t+NETWK-100P\t$modtime\n";
+    $row = "$address\tNONE\t$name\t$contact\t$accountnumber\t+NETWK-100P\tNONE\t$modtime\n";
     $row =~ s/\0//g;
     print DAT $row;
     $count++;
 }
 
 # +NETWK-1000P
-$sth = $dbh->prepare("SELECT s.saddr, s.description, s.name, s.contact, " .
+$sth = $dbh->prepare("SELECT s.saddr, s.name, s.contact, " .
 		     "s.account_number, s.modtime FROM subnet s " .
-		     "WHERE s.status = 7 AND s.account_number != CHR(0) " .
-		     "ORDER BY s.saddr")
+		     "WHERE s.status = 7 ORDER BY s.saddr")
     || exit $MR_DBMS_ERR;
 
 $sth->execute || exit $MR_DBMS_ERR;
 
-while (($saddr, $desc, $name, $contact, $accountnumber, $modtime) =
+while (($saddr, $name, $contact, $accountnumber, $modtime) =
        $sth->fetchrow_array) {
-    if ($desc eq "\0") {
-	$desc = "NONE";
-    }
     if ($contact eq "\0") {
 	$contact = "NONE";
     }
+    if ($accountnumber eq "\0") {
+	$accountnumber = "NONE";
+    }
     @addr = unpack("C4", pack("N", $saddr));
     $address = "$addr[0].$addr[1].$addr[2].$addr[3]";
-    $row = "$address\t$desc\t$name\t$contact\t$accountnumber\t+NETWK-1000P\t$modtime\n";
+    $row = "$address\tNONE\t$name\t$contact\t$accountnumber\t+NETWK-1000P\tNONE\t$modtime\n";
     $row =~ s/\0//g;
     print DAT $row;
     $count++;
@@ -126,16 +126,16 @@ while (($saddr, $desc, $name, $contact, $accountnumber, $modtime) =
 
 # +NETWK-0
 $sth = $dbh->prepare("SELECT m.address, m.location, m.name, m.contact, " .
-		     "m.account_number, m.modtime FROM " .
+		     "m.account_number, m.created, m.modtime FROM " .
 		     "machine m, subnet s WHERE m.status = 1 " .
 		     "AND m.snet_id = s.snet_id AND " .
 		     "(s.status = 4 OR s.status = 5 OR s.status = 6) " .
-		     "AND m.account_number != CHR(0) ORDER BY m.address") 
+		     "AND m.address != 'unassigned' ORDER BY m.address") 
     || exit $MR_DBMS_ERR;
 
 $sth->execute || exit $MR_DBMS_ERR;
 
-while (($address, $location, $name, $contact, $accountnumber, $modtime) =
+while (($address, $location, $name, $contact, $accountnumber, $created, $modtime) =
        $sth->fetchrow_array) {
     if ($location eq "\0") {
 	$location = "NONE";
@@ -143,18 +143,21 @@ while (($address, $location, $name, $contact, $accountnumber, $modtime) =
     if ($contact eq "\0") {
 	$contact = "NONE";
     }
-    $row = "$address\t$location\t$name\t$contact\t$accountnumber\t+NETWK-0\t$modtime\n";
+    if ($accountnumber eq "\0") {
+	$accountnumber = "NONE";
+    }
+    $row = "$address\t$location\t$name\t$contact\t$accountnumber\t+NETWK-0\t$created\t$modtime\n";
     $row =~ s/\0//g;
     print DAT $row;
     $count++;
 }
 
 print CTL "$count\n";
+close(CTL);
+close(DAT);
 
 system("cd $outdir && tar cf $outfile .") == 0 || exit $MR_OCONFIG;
 
-close(DAT);
-close(CTL);
 $dbh->disconnect;
 
 exit 0;

@@ -1,10 +1,13 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/queries.c,v 1.7 1992-10-23 18:59:27 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/queries.c,v 1.8 1992-10-28 16:05:17 mar Exp $
  */
 
 #include <stdio.h>
+#include <strings.h>
+#include <ctype.h>
 #include <moira.h>
 #include <moira_site.h>
 #include <sys/types.h>
+#include <sys/time.h>
 #include <netdb.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -103,6 +106,14 @@ EntryForm *form;
     case MM_MOD_CLUSTER:
 	fn = "mod_cluster";
 	count = C_MODTIME;
+	break;
+    case MM_MOD_PCAP:
+	fn = "mod_printer";
+	count = PCAP_MODTIME;
+	break;
+    case MM_MOD_SERVICE:
+	fn = "mod_service";
+	count = SH_MODTIME;
 	break;
     }
 
@@ -623,6 +634,24 @@ int remove;
     case MM_ADD_PCAP:
 	StoreHost(form, PCAP_SPOOL_HOST, &argv[PCAP_SPOOL_HOST]);
 	StoreHost(form, PCAP_QSERVER, &argv[PCAP_QSERVER]);
+	break;
+    case MM_MOD_PCAP:
+	if (!strcmp(form->formname, "mod_printer")) {
+	    qy = "update_printcap_entry";
+	    argc = PCAP_MODTIME;
+	    break;
+	}
+	form->extrastuff = (caddr_t) "mod_printer";
+	retfunc = ModifyCallback;
+	break;
+    case MM_MOD_SERVICE:
+	if (!strcmp(form->formname, "mod_service")) {
+	    qy = "update_server_host_info";
+	    argc = SH_MODTIME;
+	    break;
+	}
+	form->extrastuff = (caddr_t) "mod_service";
+	retfunc = ModifyCallback;
 	break;
     case MM_SAVE_LOG:
 	if (!write_log_to_file(stringval(form, 0)) && remove)

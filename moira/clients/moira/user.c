@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.20 1990-05-02 15:47:21 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.21 1990-07-14 16:27:05 mar Exp $";
 #endif lint
 
 /*	This is the file user.c for the MOIRA Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.20 1990-05-02 15:47:21 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.21 1990-07-14 16:27:05 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -148,7 +148,7 @@ char **name;
     if (strcmp(fixname, *name)) {
 	Put_message("You entered a name which does not follow the capitalization conventions.");
 	sprintf(temp_buf, "Correct it to \"%s\"", fixname);
-	if (YesNoQuestion(temp_buf, 1)) {
+	if (YesNoQuestion(temp_buf, 1) == TRUE) {
 	    free(*name);
 	    *name = strsave(fixname);
 	}
@@ -180,11 +180,15 @@ Bool name;
 	struct qelem *elem = NULL;
 	char *argv[3];
 
-	GetValueFromUser("User's last name", &info[U_LAST]);
+	if (GetValueFromUser("User's last name", &info[U_LAST]) == SUB_ERROR)
+	  return(NULL);
 	CorrectCapitalization(&info[U_LAST]);
-	GetValueFromUser("User's first name", &info[U_FIRST]);
+	if (GetValueFromUser("User's first name", &info[U_FIRST]) == SUB_ERROR)
+	  return(NULL);
 	CorrectCapitalization(&info[U_FIRST]);
-	GetValueFromUser("User's middle name", &info[U_MIDDLE]);
+	if (GetValueFromUser("User's middle name", &info[U_MIDDLE]) ==
+	    SUB_ERROR)
+	  return(NULL);
 	CorrectCapitalization(&info[U_MIDDLE]);
 	argv[0] = info[U_FIRST];
 	argv[1] = info[U_LAST];
@@ -194,30 +198,40 @@ Bool name;
 	    Loop(QueueTop(elem), PrintUserInfo);
 	    Loop(QueueTop(elem), FreeInfo);
 	    FreeQueue(elem);
-	    if (YesNoQuestion("Add new user anyway", TRUE) == FALSE)
+	    if (YesNoQuestion("Add new user anyway", TRUE) != TRUE)
 	      return(NULL);
 	}
     }
     if (name) {
 	newname = Strsave(info[U_NAME]);
-	GetValueFromUser("The new login name for this user", &newname);
-    }
-    else
-	GetValueFromUser("Login name for this user", &info[U_NAME]);
+	if (GetValueFromUser("The new login name for this user", &newname) ==
+	    SUB_ERROR)
+	  return(NULL);
+    } else if (GetValueFromUser("Login name for this user", &info[U_NAME]) ==
+	       SUB_ERROR)
+      return(NULL);
 
-    GetValueFromUser("User's UID", &info[U_UID]);
-    GetValueFromUser("User's shell", &info[U_SHELL]);
+    if (GetValueFromUser("User's UID", &info[U_UID]) == SUB_ERROR)
+      return(NULL);
+    if (GetValueFromUser("User's shell", &info[U_SHELL]) == SUB_ERROR)
+      return(NULL);
     if (name) {
-	GetValueFromUser("User's last name", &info[U_LAST]);
+	if (GetValueFromUser("User's last name", &info[U_LAST]) == SUB_ERROR)
+	  return(NULL);
 	CorrectCapitalization(&info[U_LAST]);
-	GetValueFromUser("User's first name", &info[U_FIRST]);
+	if (GetValueFromUser("User's first name", &info[U_FIRST]) == SUB_ERROR)
+	  return(NULL);
 	CorrectCapitalization(&info[U_FIRST]);
-	GetValueFromUser("User's middle name", &info[U_MIDDLE]);
+	if (GetValueFromUser("User's middle name", &info[U_MIDDLE]) ==
+	    SUB_ERROR)
+	  return(NULL);
 	CorrectCapitalization(&info[U_MIDDLE]);
     }
     while (1) {
 	int i;
-	GetValueFromUser("User's status (? for help)", &info[U_STATE]);
+	if (GetValueFromUser("User's status (? for help)", &info[U_STATE]) ==
+	    SUB_ERROR)
+	  return(NULL);
 	if (isdigit(info[U_STATE][0]))
 	  break;
 	Put_message("Valid status numbers:");
@@ -228,14 +242,17 @@ Bool name;
     }
     temp_ptr = Strsave(info[U_MITID]);
     Put_message("User's MIT ID number (type a new unencrypted number, or keep same encryption)");
-    GetValueFromUser("", &temp_ptr);
+    if (GetValueFromUser("", &temp_ptr) == SUB_ERROR)
+      return(NULL);
     if ( strcmp( temp_ptr, info[U_MITID] ) != 0) {
 	EncryptID(temp_buf, temp_ptr, info[U_FIRST], info[U_LAST]);
 	free(info[U_MITID]);
 	info[U_MITID] = Strsave(temp_buf);
     }
     free(temp_ptr);
-    GetTypeFromUser("User's MIT Year (class)", "class", &info[U_CLASS]);
+    if (GetTypeFromUser("User's MIT Year (class)", "class", &info[U_CLASS]) ==
+	SUB_ERROR)
+      return(NULL);
     
     FreeAndClear(&info[U_MODTIME], TRUE);
     FreeAndClear(&info[U_MODBY], TRUE);
@@ -326,7 +343,10 @@ AddNewUser()
     register int status;
     char ** args, *info[MAX_ARGS_SIZE];
 
-    args = AskUserInfo(SetUserDefaults(info), FALSE);
+    if ((args = AskUserInfo(SetUserDefaults(info), FALSE)) == NULL) {
+	Put_message("Aborted.");
+	return(DM_NORMAL);
+    }
     if (args == NULL)
       return(DM_NORMAL);
     if ( (status = do_mr_query("add_user", CountArgs(args), 
@@ -349,14 +369,13 @@ AddNewUser()
 static char *
 GetLoginName()
 {
-    char name[BUFSIZ];
+    char *name;
 
-    Prompt_input("Login name for this user? ", name, BUFSIZ);
-    
-    Put_message(
-	      "KERBEROS code not added, did not reserve name with kerberos.");
-
-    return(Strsave(name));
+    name = strsave("");
+    if (GetValueFromUser("Login name for this user? ", &name) == SUB_ERROR)
+      return(NULL);
+    Put_message("KERBEROS code not added, did not reserve name with kerberos.");
+    return(name);
 }
 
 
@@ -399,8 +418,10 @@ GetUidNumberFromName()
     register int status;
     struct qelem * top = NULL;
     
-    Prompt_input("First Name: ", first, BUFSIZ);
-    Prompt_input("Last  Name: ", last, BUFSIZ);
+    if (!Prompt_input("First Name: ", first, BUFSIZ))
+      return(NULL);
+    if (!Prompt_input("Last  Name: ", last, BUFSIZ))
+      return(NULL);
     FixCase(first);
     FixCase(last);
 
@@ -540,7 +561,11 @@ Bool junk;
     register int status;
     char error_buf[BUFSIZ];
     char ** args = AskUserInfo(info, TRUE);
-    
+
+    if (args == NULL) {
+	Put_message("Aborted.");
+	return;
+    }
     if ( (status = do_mr_query("update_user", CountArgs(args), 
 				args, Scream, (char *) NULL)) != MR_SUCCESS) {
 	com_err(program_name, status, " in ModifyFields");
@@ -588,7 +613,7 @@ Bool one_item;
 
     if (one_item) {
 	sprintf(txt_buf, "Deactivate user %s (y/n)", info[NAME]);
-	if (!YesNoQuestion(txt_buf, 2))
+	if (YesNoQuestion(txt_buf, FALSE) != TRUE)
 	    return;
     }
 

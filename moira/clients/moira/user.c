@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.22 1991-01-04 16:58:49 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.23 1991-01-10 16:08:27 mar Exp $";
 #endif lint
 
 /*	This is the file user.c for the MOIRA Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.22 1991-01-04 16:58:49 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.23 1991-01-10 16:08:27 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -508,7 +508,7 @@ RegisterUser()
     char temp_buf[BUFSIZ];
     register int status;
     
-    Put_message("This function has NO kerberos support, so stange things");
+    Put_message("This function has NO kerberos support, so strange things");
     Put_message("may happen if you use it to register a user.");
 
     switch (YesNoQuestion("Do you know the users UID Number (y/n)", FALSE)) {

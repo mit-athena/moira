@@ -1,4 +1,4 @@
-/* $Id: user.c,v 1.60 2000-03-22 23:04:14 zacheiss Exp $
+/* $Id: user.c,v 1.61 2000-04-21 19:48:57 zacheiss Exp $
  *
  *	This is the file user.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -27,7 +27,7 @@
 
 #include <krb.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.60 2000-03-22 23:04:14 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.61 2000-04-21 19:48:57 zacheiss Exp $");
 
 void CorrectCapitalization(char **name);
 char **AskUserInfo(char **info, Bool name);
@@ -46,6 +46,7 @@ struct mqelem *GetUserInfo(int type, char *name1, char *name2);
 #endif
 #define DEFAULT_CLASS "?"
 
+#define DEFAULT_WINCONSOLESHELL "cmd"
 
 /*	Function Name: UserState
  *	Description: Convert a numeric state into a descriptive string.
@@ -106,10 +107,12 @@ static void PrintUserInfo(char **info)
   sprintf(name, "%s, %s %s", info[U_LAST], info[U_FIRST], info[U_MIDDLE]);
   sprintf(buf, "Login name: %-20s Full name: %s", info[U_NAME], name);
   Put_message(buf);
-  sprintf(buf, "User id: %-23s Login shell %-10s Class: %s",
-	  info[U_UID], info[U_SHELL], info[U_CLASS]);
+  sprintf(buf, "User id: %-23s Login shell: %-10s",
+	  info[U_UID], info[U_SHELL]);
   Put_message(buf);
-
+  sprintf(buf, "Class: %-25s Windows Console Shell: %-10s",
+	  info[U_CLASS], info[U_WINCONSOLESHELL]);
+  Put_message(buf);
   sprintf(buf, "Account is: %-20s MIT ID number: %s",
 	  UserState(atoi(info[U_STATE])), info[U_MITID]);
   Put_message(buf);
@@ -137,6 +140,7 @@ static char **SetUserDefaults(char **info)
   info[U_NAME] = strdup(UNIQUE_LOGIN);
   info[U_UID] = strdup(UNIQUE_UID);
   info[U_SHELL] = strdup(DEFAULT_SHELL);
+  info[U_WINCONSOLESHELL] = strdup(DEFAULT_WINCONSOLESHELL);
   info[U_LAST] = strdup(DEFAULT_NONE);
   info[U_FIRST] = strdup(DEFAULT_NONE);
   info[U_MIDDLE] = strdup(DEFAULT_NONE);
@@ -251,6 +255,9 @@ char **AskUserInfo(char **info, Bool name)
     }
 
   if (GetValueFromUser("User's shell", &info[U_SHELL]) == SUB_ERROR)
+    return NULL;
+  if (GetValueFromUser("Windows console shell", &info[U_WINCONSOLESHELL])
+      == SUB_ERROR)
     return NULL;
   if (name)
     {

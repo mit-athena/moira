@@ -1,6 +1,6 @@
 /* This file defines the query dispatch table for version 2 of the protocol
  *
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/queries2.c,v 2.19 1993-12-29 15:37:18 tom Exp $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/queries2.c,v 2.20 1993-12-29 16:22:07 tom Exp $
  *
  * Copyright 1987, 1988 by the Massachusetts Institute of Technology.
  * For copying and distribution information, please see the file
@@ -25,6 +25,7 @@ int access_service();
 int access_filesys();
 int access_host();
 int access_ahal();
+int access_snt();
 
 /* Query Setup Routines */
 int prefetch_value();
@@ -954,7 +955,7 @@ static struct validate gsnt_validate = {
   0,
   0,
   0,
-  0,
+  access_snt,
   0,
   followup_gsnt,
 };

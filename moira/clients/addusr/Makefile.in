@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.2 1998-05-26 21:46:59 danw Exp $
+# $Id: Makefile.in,v 1.3 1998-08-07 14:10:55 danw Exp $
 
 SHELL=/bin/sh
 @SET_MAKE@
@@ -9,7 +9,7 @@ CFLAGS=@CFLAGS@
 DEFS=@DEFS@
 ALL_CFLAGS=$(CPPFLAGS) $(CFLAGS) $(DEFS)
 LDFLAGS=@LDFLAGS@
-LIBS=-lkadm @CRYPT_LIBS@ @LIBS@
+LIBS=@LIBS@
 INSTALL=@INSTALL@
 INSTALL_PROGRAM=@INSTALL_PROGRAM@
 
@@ -21,7 +21,7 @@ prefix=@prefix@
 exec_prefix=@exec_prefix@
 bindir=@bindir@
 
-OBJS=addusr.o reg_stubs.o
+OBJS=addusr.o
 
 TARGET=addusr
 
@@ -31,15 +31,12 @@ TARGET=addusr
 all: depend $(TARGET)
 
 clean:
-	rm -f $(OBJS) $(TARGET) reg_stubs.c
+	rm -f $(OBJS) $(TARGET)
 
-depend: reg_stubs.c
+depend:
 
 install: all
 	$(INSTALL_PROGRAM) -m 755 addusr $(bindir)
-
-reg_stubs.c: $(SRCTOP)/clients/userreg/reg_stubs.c
-	cp $(SRCTOP)/clients/userreg/reg_stubs.c reg_stubs.c
 
 $(TARGET): $(OBJS)
 	$(CC) -o $@ $(LDFLAGS) $(OBJS) $(LIBS)

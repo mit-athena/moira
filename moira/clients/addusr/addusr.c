@@ -1,4 +1,4 @@
-/* $Id: addusr.c,v 1.10 1998-07-29 18:48:54 danw Exp $
+/* $Id: addusr.c,v 1.11 1998-08-07 14:10:56 danw Exp $
  *
  * Program to add users en masse to the moira database
  *
@@ -18,7 +18,7 @@
 #include <stdio.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/addusr/addusr.c,v 1.10 1998-07-29 18:48:54 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/addusr/addusr.c,v 1.11 1998-08-07 14:10:56 danw Exp $");
 
 #ifdef ATHENA
 #define DEFAULT_SHELL "/bin/athena/tcsh"
@@ -36,13 +36,6 @@ int reg_only, reg, verbose, nodupcheck, securereg;
 char *whoami;
 int duplicate, errors;
 
-extern int ureg_init(void);
-extern int grab_login(char *first, char *last, char *idnumber,
-		      char *hashidnumber, char *login);
-extern int set_password(char *first, char *last, char *idnumber,
-			char *hashidnumber, char *password);
-
-
 void usage(char **argv);
 int usercheck(int argc, char **argv, void *qargv);
 
@@ -50,7 +43,7 @@ int main(int argc, char **argv)
 {
   int status, lineno;
   char **arg = argv, *qargv[U_END];
-  char *motd, *p, *first, *middle, *last, *id, *login, *passwd, *server;
+  char *motd, *p, *first, *middle, *last, *id, *login, *server;
   char buf[BUFSIZ], idbuf[32];
   FILE *input;
 
@@ -232,19 +225,6 @@ int main(int argc, char **argv)
 	    p--;
 	  if (p <= first)
 	    {
-	      com_err(whoami, 0, "Missing password on line %d", lineno);
-	      errors++;
-	      continue;
-	    }
-	  passwd = strtrim(&p[1]);
-	  *p-- = '\0';
-	  /* previous field is login name */
-	  while (isspace(*p))
-	    p--;
-	  while (!isspace(*p))
-	    p--;
-	  if (p <= first)
-	    {
 	      com_err(whoami, 0, "Missing login on line %d", lineno);
 	      errors++;
 	      continue;
@@ -340,9 +320,13 @@ int main(int argc, char **argv)
 	}
       if (reg || reg_only)
 	{
-	  EncryptID(idbuf, qargv[U_MITID], qargv[U_FIRST], qargv[U_LAST]);
-	  status = grab_login(qargv[U_FIRST], qargv[U_LAST],
-			      qargv[U_MITID], idbuf, login);
+	  char *rargv[3];
+
+	  rargv[0] = qargv[U_MITID];
+	  rargv[1] = login;
+	  rargv[2] = "0";
+
+	  status = mr_query("register_user", 2, rargv, NULL, NULL);
 	  if (status)
 	    {
 	      com_err(whoami, status, "while registering (login) %s %s",
@@ -355,16 +339,6 @@ int main(int argc, char **argv)
 	      printf("Registered user %s %s as %s\n", qargv[U_FIRST],
 		     qargv[U_LAST], login);
 	    }
-	  status = set_password(qargv[U_FIRST], qargv[U_LAST],
-				qargv[U_MITID], idbuf, passwd);
-	  if (status)
-	    {
-	      com_err(whoami, status, "While registering (passwd) %s %s",
-		      qargv[U_FIRST], qargv[U_LAST]);
-	      errors++;
-	      continue;
-	    } else if (verbose)
-	      printf("Set password for user %s\n", login);
 	}
     }
 

@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.30 1992-06-22 18:29:38 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.31 1993-03-02 18:28:18 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -16,7 +16,7 @@
  * 
  */
 
-static char *rcsid_mr_main_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.30 1992-06-22 18:29:38 mar Exp $";
+static char *rcsid_mr_main_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.31 1993-03-02 18:28:18 mar Exp $";
 
 #include <mit-copyright.h>
 #include <strings.h>
@@ -72,8 +72,10 @@ main(argc, argv)
 	int argc;
 	char **argv;
 {
-	int status;
+	int status, i;
 	time_t tardy;
+	char *port;
+	extern char *database;
 	struct stat stbuf;
 	
 	whoami = argv[0];
@@ -86,10 +88,21 @@ main(argc, argv)
 	set_com_err_hook(mr_com_err);
 	setlinebuf(stderr);
 	
-	if (argc != 1) {
-		com_err(whoami, 0, "Usage: moirad");
+	database = "moira";
+	port = index(MOIRA_SERVER, ':') + 1;
+
+	for (i = 1; i < argc; i++) {
+	    if (!strcmp(argv[i], "-db") && i+1 < argc) {
+		database = argv[i+1];
+		i++;
+	    } else if (!strcmp(argv[i], "-p") && i+1 < argc) {
+		port = argv[i+1];
+		i++;
+	    } else {
+		com_err(whoami, 0, "Usage: moirad [-db database][-p port]");
 		exit(1);
-	}		
+	    }
+	}
 
 	/* Profiling implies that getting rid of one level of call
 	 * indirection here wins us maybe 1% on the VAX.
@@ -143,7 +156,7 @@ main(argc, argv)
 	/*
 	 * Establish template connection.
 	 */
-	if ((status = do_listen()) != 0) {
+	if ((status = do_listen(port)) != 0) {
 		com_err(whoami, status,
 			" while trying to create listening connection");
 		exit(1);
@@ -276,11 +289,10 @@ main(argc, argv)
  */
 
 int
-do_listen()
+do_listen(port)
+char *port;
 {
-	char *service = index(MOIRA_SERVER, ':') + 1;
-
-	listencon = create_listening_connection(service);
+	listencon = create_listening_connection(port);
 
 	if (listencon == NULL)
 		return errno;

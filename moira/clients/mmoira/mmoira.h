@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/mmoira.h,v 1.3 1992-10-13 11:12:33 mar Exp $ */
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/mmoira.h,v 1.4 1992-10-19 17:16:17 mar Exp $ */
 
 #include "data.h"
 
@@ -106,3 +106,4 @@ extern int DisplayCallback(), MoiraValueChanged();
 #define MM_NEW_VALUE	93
 #define MM_QUIT		94
 #define MM_HELP_KEYBOARD 95
+#define MM_HELP_MOUSE	96

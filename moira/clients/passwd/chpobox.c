@@ -3,13 +3,13 @@
  * and distribution information, see the file "mit-copyright.h". 
  *
  * $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chpobox.c,v $
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chpobox.c,v 1.7 1988-09-27 18:04:40 mar Exp $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chpobox.c,v 1.8 1988-12-01 14:47:38 mar Exp $
  * $Author: mar $
  *
  */
 
 #ifndef lint
-static char *rcsid_chpobox_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chpobox.c,v 1.7 1988-09-27 18:04:40 mar Exp $";
+static char *rcsid_chpobox_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chpobox.c,v 1.8 1988-12-01 14:47:38 mar Exp $";
 #endif not lint
 
 /*
@@ -122,7 +122,7 @@ main(argc, argv)
     }
     smsarg[0] = uname;
 
-    status = sms_connect();
+    status = sms_connect(SMS_SERVER);
     if (status) {
 	com_err(whoami, status, " while connecting to SMS");
 	exit(1);

@@ -1,5 +1,5 @@
 .TH SMSTEST 8 "25 Jan 1988" "Project Athena"
-\" RCSID: $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/man/mrtest.8,v 1.3 1988-12-01 16:53:00 mar Exp $
+\" RCSID: $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/man/mrtest.8,v 1.4 1988-12-06 14:33:28 mar Exp $
 .SH NAME
 smstest \- perform SMS operations manually
 .SH SYNOPSIS
@@ -10,7 +10,7 @@ allows one to perform by hand all operations allowed in the sms
 protocol.  There are no command line options, as commands are given to
 a prompt within the program.  Control operations are:
 .TP
-.B connnect [server]
+.B connect [server]
 make a network connection to the SMS server.  If no server is
 specified, the default "SMS.MIT.EDU:sms_db" will be used.
 .TP
@@ -60,7 +60,7 @@ done in queries.  There are over 100 queries, each of which requires
 different arguments.  the arguments should be placed on the line
 following the name of the query, separated by whitespace.
 .TP
-.B access query_handle [query arguements ...]
+.B access query_handle [query arguments ...]
 performs an authorization check on a query without actually executing
 the query.  The arguments are the same as those in the
 .B query
@@ -68,7 +68,11 @@ command described above.
 .TP
 .B dcm
 instructs the server to trigger a DCM update immediately.
+.SH BUGS
+Due to problems in the ss library, standard input must be a terminal.
+If it is a file, only the first line will be read.  However, the
+script command allows one to read input from a file.
 .SH SEE ALSO
 The Project Athena Technical Plan section on SMS for a list of queries
-and their arguements, and a description of the protocol this
+and their arguments, and a description of the protocol this
 implements.

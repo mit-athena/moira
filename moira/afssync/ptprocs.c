@@ -35,7 +35,7 @@ static long WhoIsThisWithName();
 #endif
 
 
-RCSID ("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/afssync/ptprocs.c,v 1.4 1992-05-31 21:05:33 probe Exp $")
+RCSID ("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/afssync/ptprocs.c,v 1.5 1992-05-31 21:33:10 probe Exp $")
 
 extern struct ubik_dbase *dbase;
 extern long Initdb();
@@ -79,6 +79,9 @@ long WhoIsThis (acall, at, aid)
 #ifdef CROSS_CELL
     int foreign = 0;
 #endif
+
+    *aid = SYSADMINID;
+    return 0;
 
     *aid = ANONYMOUSID;
     tconn = rx_ConnectionOf(acall);
@@ -1188,6 +1191,9 @@ static long WhoIsThisWithName(acall, at, aid, aname)
     int  ilen;
     char vname[256];
 
+    *aid = SYSADMINID;
+    return 0;
+    
     *aid = ANONYMOUSID;
     tconn = rx_ConnectionOf(acall);
     code = rx_SecurityClassOf(tconn);

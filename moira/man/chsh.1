@@ -1,9 +1,17 @@
 .TH CHSH 1 "1 Feb 1988" "Project Athena"
-\" RCSID: $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/man/chsh.1,v 1.6 1998-01-07 17:08:24 danw Exp $
+\" RCSID: $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/man/chsh.1,v 1.7 2000-05-21 03:50:33 zacheiss Exp $
 .SH NAME
 chsh \- change user login shell
 .SH SYNOPSIS
 .B chsh
+[
+.BI \-u
+|
+.BI \-w
+] [
+.BI \-db
+.I host:port
+]
 [ username ]
 .SH DESCRIPTION
 This command changes the login shell associated with
@@ -18,6 +26,14 @@ When invoked,
 .B chsh
 displays the current shell, and prompts for the new one.
 .PP
+If invoked with the 
+.BI \-w 
+option, chsh will change the user's Windows shell instead of their
+UNIX shell.  The default behavior is to change the user's UNIX shell,
+and the 
+.BI \-u
+option is provided to explicitly select this behavior.
+
 The actual change will take place overnight.
 Users may only change their own information unless they are
 Moira database administrators.

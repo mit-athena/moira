@@ -1,7 +1,7 @@
 #
 # 	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/Makefile,v $
-#	$Author: wesommer $
-#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/Makefile,v 1.3 1987-08-03 05:09:04 wesommer Exp $
+#	$Author: mar $
+#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/Makefile,v 1.4 1987-12-06 17:06:20 mar Exp $
 #
 # Revised makefile for GDB library.
 #
@@ -108,7 +108,7 @@ dbserv: dbserv.o  libgdb.a
 	chmod 6755 dbserv
 
 dbserv.c: dbserv.qc 
-	eqc -d -fdbserv.c dbserv.qc
+	/usr/rtingres/bin/eqc -d -fdbserv.c dbserv.qc
 
 #
 #	Documentation.

@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.3 2001-10-09 13:33:47 zacheiss Exp $
+# $Id: Makefile.in,v 1.4 2001-10-09 14:15:53 zacheiss Exp $
 
 SHELL=/bin/sh
 @SET_MAKE@
@@ -10,6 +10,7 @@ CFLAGS=@CFLAGS@
 DEFS=@DEFS@
 ALL_CFLAGS=$(CPPFLAGS) $(JAVA_CPPFLAGS) $(CFLAGS) $(DEFS)
 LDFLAGS=@LDFLAGS@
+SO_LDFLAGS=@SO_LDFLAGS@
 LIBS=@LIBS@
 MR_LIBDEP=@MR_LIBDEP@
 INSTALL=@INSTALL@
@@ -45,7 +46,7 @@ cleandir distclean: clean
 depend:
 
 $(SOBJ): $(JHEADER) $(OBJ)
-	$(CC) -G -o $@ $(LDFLAGS) $(OBJ) $(LIBS)
+	$(CC) $(SO_LDFLAGS) -o $@ $(LDFLAGS) $(OBJ) $(LIBS)
 	cp -p $@ $(SOBJG)
 
 $(JHEADER): java

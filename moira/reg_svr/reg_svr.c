@@ -1,7 +1,7 @@
 /*
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.29 1990-02-15 15:56:40 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.30 1990-03-13 13:17:23 mar Exp $
  *
  *      Copyright (C) 1987, 1988 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -16,7 +16,7 @@
  */
 
 #ifndef lint
-static char *rcsid_reg_svr_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.29 1990-02-15 15:56:40 mar Exp $";
+static char *rcsid_reg_svr_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.30 1990-03-13 13:17:23 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -148,8 +148,8 @@ int parse_encrypted(message,data)
    zero and initializes all the fields of the formatted packet structure
    that depend on the encrypted information. */
 {
-    C_Block key;		/* The key for DES en/decryption */
-    Key_schedule sched;		/* En/decryption schedule */
+    des_cblock key;		/* The key for DES en/decryption */
+    des_key_schedule sched;	/* En/decryption schedule */
     static char decrypt[BUFSIZ];   /* Buffer to hold decrypted information */
     long decrypt_len;		/* Length of decypted ID information */
     char recrypt[14];		/* Buffer to hold re-encrypted information */
@@ -169,13 +169,14 @@ int parse_encrypted(message,data)
     decrypt_len = (long)message->encrypted_len;
     
     /* Get key from the one-way encrypted ID in the Moira database */
-    string_to_key(data->mit_id, key);
+    des_string_to_key(data->mit_id, key);
     /* Get schedule from key */
-    key_sched(key, sched);
+    des_key_sched(key, sched);
     /* Decrypt information from packet using this key.  Since decrypt_len
        is an integral multiple of eight bytes, it will probably be null-
        padded. */
-    pcbc_encrypt(message->encrypted,decrypt, decrypt_len, sched, key, DECRYPT);
+    des_pcbc_encrypt(message->encrypted, decrypt, decrypt_len,
+		     sched, key, DES_DECRYPT);
     
     /* Extract the plain text and encrypted ID fields from the decrypted
        packet information. */
@@ -397,6 +398,9 @@ int verify_user(message,retval)
 		break;
 	      case US_ENROLL_NOT_ALLOWED:
 		status = UREG_ENROLL_NOT_ALLOWED;
+		break;
+	    case US_HALF_ENROLLED:
+		status = UREG_HALF_ENROLLED;
 		break;
 	      default:
 		status = UREG_MISC_ERROR;
@@ -718,7 +722,10 @@ int set_password(message,retval)
        is that he exists and has no password. */
     if (status == SUCCESS)
 	status = UREG_NO_LOGIN_YET;
-    if (status == UREG_NO_PASSWD_YET)
+    if (((int)message->request == UREG_SET_PASSWORD &&
+	 status == UREG_NO_PASSWD_YET) ||
+	((int)message->request == UREG_GET_KRB &&
+	 status == UREG_HALF_ENROLLED))
     {
 	/* User is in proper state for this transaction. */
 	
@@ -825,6 +832,7 @@ char *retval;
 	    return(status);
 	}
 	q_argv[U_NAME+1] = login;
+	q_argv[U_STATE+1] = "7";
 	status = sms_query("update_user", U_MODTIME+1, q_argv,
 			   null_callproc, NULL);
 	switch (status)

@@ -1,4 +1,4 @@
-/* $Id: ndb.pc,v 1.2 1998-02-05 22:51:11 danw Exp $
+/* $Id: ndb.pc,v 1.3 1998-02-07 17:50:16 danw Exp $
  *
  * This generates the msql database for the network tables.
  *
@@ -19,7 +19,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/ndb.pc,v 1.2 1998-02-05 22:51:11 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/ndb.pc,v 1.3 1998-02-07 17:50:16 danw Exp $");
 
 char *whoami = "ndb.gen";
 char *db = "moira/moira";
@@ -170,7 +170,7 @@ void hosts(FILE *out)
       if (!*strtrim(mitid))
 	continue;
 
-      hash_store(users, id, strsave(mitid));
+      hash_store(users, id, strdup(mitid));
     }
 
   EXEC SQL CLOSE hosts2;

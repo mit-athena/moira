@@ -1,6 +1,6 @@
 /* This file defines the query dispatch table for version 2 of the protocol
  *
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/queries2.c,v 2.28 1997-09-10 03:40:25 danw Exp $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/queries2.c,v 2.29 1997-11-11 22:51:42 danw Exp $
  *
  * Copyright 1987, 1988 by the Massachusetts Institute of Technology.
  * For copying and distribution information, please see the file
@@ -3731,7 +3731,7 @@ struct query Queries2[] = {
     IMEMBERS_TABLE,
     (char *)0,
     gmol_fields,
-    0,
+    2,
     (char *)0,
     1,
     &geml_validate,

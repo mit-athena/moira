@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/increment.qc,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/increment.qc,v 1.5 1989-09-08 15:25:01 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/increment.qc,v 1.6 1989-12-28 17:11:11 mar Exp $
  *
  *	Copyright (C) 1989 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_qrtn_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/increment.qc,v 1.5 1989-09-08 15:25:01 mar Exp $";
+static char *rcsid_qrtn_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/increment.qc,v 1.6 1989-12-28 17:11:11 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -19,6 +19,11 @@ static char *rcsid_qrtn_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moira
 #include "sms_server.h"
 
 extern char *whoami;
+char *malloc();
+
+int inc_pid = 0;
+int inc_running = 0;
+time_t inc_started;
 
 #define MAXARGC 15
 
@@ -41,12 +46,14 @@ static int afterc;
 
 /* structures to save entire sets of incremental changes */
 struct save_queue *incremental_sq = NULL;
+struct save_queue *incremental_exec = NULL;
 struct iupdate {
     char *table;
     int beforec;
     char **before;
     int afterc;
     char **after;
+    char *service;
 };
 
 
@@ -90,6 +97,8 @@ incremental_init()
     aarg14 = after[14];
     if (incremental_sq == NULL)
       incremental_sq = sq_create();
+    if (incremental_exec == NULL)
+      incremental_exec = sq_create();
 }
 
 
@@ -99,7 +108,7 @@ incremental_init()
 char **argv;
 ##{
 ##  int id;
-    char buffer[512];
+    char buffer[512], *name;
 
     beforetable = table;
 
@@ -153,20 +162,22 @@ char **argv;
 	beforec = 10;
     } else if (!strcmp(table, "members")) {
 	id = (int) argv[0];
-##	repeat retrieve (barg0 = list.name) where list.list_id = @id
+	name = malloc(0);
+	id_to_name(id, "LIST", &name);
+	strcpy(barg0, name);
 	strcpy(barg1, argv[1]);
 	id = (int) argv[2];
 	if (!strcmp(barg1, "USER")) {
-##	    repeat retrieve (barg2 = users.login) where users.users_id = @id
+	    id_to_name(id, barg1, &name);
 	} else if (!strcmp(barg1, "LIST")) {
-##	    repeat retrieve (barg2 = list.name) where list.list_id = @id
+	    id_to_name(id, barg1, &name);
 	} else if (!strcmp(barg1, "STRING")) {
-##	    repeat retrieve (barg2 = strings.string)
-##		where strings.string_id = @id
+	    id_to_name(id, barg1, &name);
 	} else if (!strcmp(barg1, "KERBEROS")) {
-##	    repeat retrieve (barg2 = strings.string)
-##		where strings.string_id = @id
+	    id_to_name(id, "STRING", &name);
 	}
+	strcpy(barg2, name);
+	free(name);
 	beforec = 3;
     } /* else
       com_err(whoami, 0, "unknown table in incremental_before"); */
@@ -190,7 +201,7 @@ incremental_clear_after()
 ##char *qual;
 char **argv;
 ##{
-    char buffer[2048];
+    char buffer[2048], *name;
 ##  int id, i;
     struct iupdate *iu;
     char **copy_argv();
@@ -246,20 +257,22 @@ char **argv;
 	afterc = 10;
     } else if (!strcmp(table, "members")) {
 	id = (int) argv[0];
-##	repeat retrieve (aarg0 = list.name) where list.list_id = @id
+	name = malloc(0);
+	id_to_name(id, "LIST", &name);
+	strcpy(aarg0, name);
 	strcpy(aarg1, argv[1]);
 	id = (int) argv[2];
 	if (!strcmp(aarg1, "USER")) {
-##	    repeat retrieve (aarg2 = users.login) where users.users_id = @id
+	    id_to_name(id, aarg1, &name);
 	} else if (!strcmp(aarg1, "LIST")) {
-##	    repeat retrieve (aarg2 = list.name) where list.list_id = @id
+	    id_to_name(id, aarg1, &name);
 	} else if (!strcmp(aarg1, "STRING")) {
-##	    repeat retrieve (aarg2 = strings.string)
-##		where strings.string_id = @id
+	    id_to_name(id, aarg1, &name);
 	} else if (!strcmp(aarg1, "KERBEROS")) {
-##	    repeat retrieve (aarg2 = strings.string)
-##		where strings.string_id = @id
+	    id_to_name(id, "STRING", &name);
 	}
+	strcpy(aarg2, name);
+	free(name);
 	afterc = 3;
     } else if (!strcmp(table, "clear")) {
 	afterc = 0;
@@ -268,7 +281,7 @@ char **argv;
       com_err(whoami, 0, "unknown table in incremental_after"); */
 
     iu = (struct iupdate *) malloc(sizeof(struct iupdate));
-    iu->table = table;
+    iu->table = strsave(table);
     iu->beforec = beforec;
     iu->before = copy_argv(before, beforec);
     iu->afterc = afterc;
@@ -301,37 +314,8 @@ char **argv;
 
 
 /* Called when the current transaction is committed to start any queued
- * incremental updates
- */
-
-incremental_update()
-{
-    struct iupdate *iu;
-    char *argv[MAXARGC * 2 + 4], cafter[3], cbefore[3];
-    int i;
-
-    while (sq_get_data(incremental_sq, &iu)) {
-	argv[1] = iu->table;
-	sprintf(cbefore, "%d", iu->beforec);
-	argv[2] = cbefore;
-	sprintf(cafter, "%d", iu->afterc);
-	argv[3] = cafter;
-	for (i = 0; i < iu->beforec; i++)
-	  argv[4 + i] = iu->before[i];
-	for (i = 0; i < iu->afterc; i++)
-	  argv[4 + iu->beforec + i] = iu->after[i];
-	invoke_updates(argv, 4 + iu->beforec + iu->afterc);
-	free_argv(iu->before, iu->beforec);
-	free_argv(iu->after, iu->afterc);
-	free(iu);
-    }
-    sq_destroy(incremental_sq);
-    incremental_sq = sq_create();
-}
-
-
-/* Actually start incremental updates.  This caches the update table
- * the first time it is called.
+ * incremental updates.  This caches the update table the first time it
+ * is called.
  */
 
 struct inc_cache {
@@ -341,16 +325,13 @@ struct inc_cache {
 };
 
 
-invoke_updates(argv, argc)
-char **argv;
-int argc;
-##{
+incremental_update()
+{
     static int inited = 0;
     static struct inc_cache *cache;
     struct inc_cache *c;
 ##  char tab[17], serv[17];
-    int pid, i;
-    char prog[64];
+    struct iupdate *iu;
 
     if (!inited) {
 	inited++;
@@ -364,30 +345,68 @@ int argc;
 ##	}
     }
 
-    for (c = cache; c; c = c->next) {
-	if (!strcmp(c->table, argv[1])) {
-	    sprintf(prog, "%s/%s.incr", BIN_DIR, c->service);
-#ifdef DEBUG
-	    com_err(whoami, 0, "forking %s", prog);
-#endif
-	    argv[0] = prog;
-	    argv[argc] = 0;
-	    pid = vfork();
-	    switch (pid) {
-	    case 0:
-		for (i = getdtablesize() - 1; i > 2; i--)
-		  close(i);
-		execv(prog, argv);
-		exit(1);
-	    case -1:
-		com_err(whoami, 0, "Failed to start incremental update");
-		return;
-	    default:
-		return;
+    while (sq_remove_data(incremental_sq, &iu)) {
+	for (c = cache; c; c = c->next) {
+	    if (!strcmp(c->table, iu->table)) {
+		iu->service = c->service;
+		sq_save_data(incremental_exec, iu);
 	    }
 	}
     }
-##}
+    if (inc_running == 0)
+      next_incremental();
+}
+
+
+next_incremental()
+{
+    struct iupdate *iu;
+    char *argv[MAXARGC * 2 + 4], cafter[3], cbefore[3], prog[BUFSIZ];
+    int i;
+
+    if (sq_empty(incremental_exec) ||
+	(inc_running && now - inc_started < INC_TIMEOUT))
+      return;
+
+    if (inc_running)
+      com_err(whoami, 0, "incremental timeout on pid %d", inc_pid);
+
+    sq_remove_data(incremental_exec, &iu);
+    argv[1] = iu->table;
+    sprintf(cbefore, "%d", iu->beforec);
+    argv[2] = cbefore;
+    sprintf(cafter, "%d", iu->afterc);
+    argv[3] = cafter;
+    for (i = 0; i < iu->beforec; i++)
+      argv[4 + i] = iu->before[i];
+    for (i = 0; i < iu->afterc; i++)
+      argv[4 + iu->beforec + i] = iu->after[i];
+
+    sprintf(prog, "%s/%s.incr", BIN_DIR, iu->service);
+#ifdef DEBUG
+    com_err(whoami, 0, "forking %s", prog);
+#endif
+    argv[0] = prog;
+    argv[4 + iu->beforec + iu->afterc] = 0;
+    inc_pid = vfork();
+    switch (inc_pid) {
+    case 0:
+	execv(prog, argv);
+	exit(1);
+    case -1:
+	com_err(whoami, 0, "Failed to start incremental update");
+	break;
+    default:
+	inc_running = 1;
+	inc_started = now;
+    }
+
+    free_argv(iu->before, iu->beforec);
+    free_argv(iu->after, iu->afterc);
+    free(iu->table);
+    free(iu);
+
+}
 
 
 /* Called when the current transaction is aborted to throw away any queued
@@ -401,6 +420,7 @@ incremental_flush()
     while (sq_get_data(incremental_sq, &iu)) {
 	free_argv(iu->before, iu->beforec);
 	free_argv(iu->after, iu->afterc);
+	free(iu->table);
 	free(iu);
     }
     sq_destroy(incremental_sq);

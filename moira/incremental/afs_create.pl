@@ -21,13 +21,15 @@ die "Cannot create $type volumes in $cell\n" unless $vtype;
 $vname = $vtype . "." . $locker;
 $vname =~ s/[^-A-Za-z0-9_.]//g;		# strip out illegal characters
 
-# Find free space
-($asrv,$apart) = &afs_find($cell,$type,$quota);
-die "Unable to find space to create $vname in $cell\n" unless ($asrv&&$apart);
-
-# Create volume
-system("$vos create $asrv $apart $vname -cell $cell >/dev/null") &&
-    &fatal("Unable to create $vname in $cell");
+# Find free space/Create volume
+foreach $tries (1..3) {
+    ($asrv,$apart) = &afs_find($cell,$type,$quota,@except);
+    die "Unable to find space to create $vname in $cell\n" unless ($asrv&&$apart);
+    $code = system("$vos create $asrv $apart $vname -cell $cell >/dev/null");
+    push(@except, $asrv);
+    next if ($code);
+}
+&fatal("Unable to create $vname in $cell") if ($code); # Too many create errors
 push(@clean, "$vos remove $asrv $apart $vname -cell $cell >/dev/null");
 
 # Create mountpoint and set quota

@@ -68,16 +68,20 @@ sub afs_unlock
 
 sub afs_find
 {
-    local($cell,$type,$quota) = @_;
-    local($j);
+    local($cell,$type,$quota,@except) = @_;
+    local($j,$k);
     local(@max) = '';
 
     &afs_lock;
     chop(@afs_data);
 
+  sloop:
     for (@afs_data) {
 	local ($a, $asrv, $apart, $t, $total, $used, $alloc) = split(/\s+/,$_);
 	next if ($a ne $cell || !$total || $type !~ /$t/);
+	for $j (@except) {
+	    next sloop if ($j eq $asrv);
+	}
 	$alloc = $used if ($alloc < $used);
 	$j = 2*$total - $used - $alloc;
 	@max = ($asrv,$apart,$j) if (! @max || $j > $max[2]);

@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/include/moira.h,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/include/moira.h,v 1.16 1990-04-02 19:14:50 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/include/moira.h,v 1.17 1990-06-13 12:40:57 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
@@ -72,6 +72,7 @@ struct hash {
 int mr_connect(char *server);
 int mr_disconnect();
 int mr_host(char *host, int size);
+int mr_motd(char **motd);
 int mr_auth(char *prog);
 int mr_access(char *handle, int argc, char **argv);
 int mr_access_internal(int argc, char **argv);
@@ -90,6 +91,7 @@ char *canonicalize_hostname(char *s);
 int mr_connect();
 int mr_disconnect();
 int mr_host();
+int mr_motd();
 int mr_auth();
 int mr_access();
 int mr_query();

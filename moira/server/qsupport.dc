@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.dc,v $
  *	$Author: kostas $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.dc,v 1.6 1990-10-01 11:53:37 kostas Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.dc,v 1.7 1990-10-01 13:37:40 kostas Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_qsupport_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.dc,v 1.6 1990-10-01 11:53:37 kostas Exp $";
+static char *rcsid_qsupport_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.dc,v 1.7 1990-10-01 13:37:40 kostas Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -67,10 +67,12 @@ access_login(q, argv, cl)
     build_qual(q->qual, q->argc, argv, qual);
 
     sprintf(stmt_1_str, 
-            "EXEC SQL SELECT users_id INTO %s FROM users WHERE %s",
+            "SELECT users_id INTO %s FROM users WHERE %s",
             id, qual );
-    EXEC SQL EXECUTE stmt_1;
 
+    EXEC SQL PREPARE stmt_1 FROM :stmt_1_str;
+    EXEC SQL DESCRIBE stmt_1 INTO SQLDA;
+    EXEC SQL EXECUTE stmt_1;
     if (sqlca.sqlcode < 0 || sqlca.sqlerrd[2] != 1 || id != cl->users_id)
         return(MR_PERM);
     else

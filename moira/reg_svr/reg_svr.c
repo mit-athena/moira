@@ -1,7 +1,7 @@
 /*
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.39 1992-06-24 18:02:37 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.40 1992-07-29 13:41:22 mar Exp $
  *
  *      Copyright (C) 1987, 1988 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -16,7 +16,7 @@
  */
 
 #ifndef lint
-static char *rcsid_reg_svr_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.39 1992-06-24 18:02:37 mar Exp $";
+static char *rcsid_reg_svr_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.40 1992-07-29 13:41:22 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -64,6 +64,7 @@ main(argc,argv)
     init_ureg_err_tbl();
     init_krb_err_tbl();
     init_kadm_err_tbl();
+    initialize_gdss_error_table();
     
     /* Use com_err or output to stderr for all log messages. */    
 #ifdef DEBUG
@@ -852,6 +853,7 @@ char *retval;
 	}
 	q_argv[U_NAME+1] = login;
 	q_argv[U_STATE+1] = "7";
+	q_argv[U_SIGNATURE+1] = "";
 	status = mr_query("update_user_account", U_MODTIME+1, q_argv,
 			   null_callproc, NULL);
 	switch (status)

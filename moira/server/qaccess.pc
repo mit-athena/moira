@@ -1,4 +1,4 @@
-/* $Id: qaccess.pc,v 2.9 1998-02-23 19:24:33 danw Exp $
+/* $Id: qaccess.pc,v 2.10 1998-11-10 19:06:31 danw Exp $
  *
  * Check access to queries
  *
@@ -17,7 +17,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qaccess.pc,v 2.9 1998-02-23 19:24:33 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qaccess.pc,v 2.10 1998-11-10 19:06:31 danw Exp $");
 
 extern char *whoami;
 extern int dbms_errno, mr_errcode;
@@ -60,12 +60,12 @@ int access_login(struct query *q, char *argv[], client *cl)
   if (!strcmp(q->shortname, "gual"))
     {
       EXEC SQL SELECT users_id INTO :id FROM users
-	WHERE login LIKE :argv[0] AND users_id != 0;
+	WHERE login = :argv[0] AND users_id != 0;
     }
   else if (!strcmp(q->shortname, "gubl"))
     {
       EXEC SQL SELECT users_id INTO :id FROM users u
-	WHERE u.login LIKE :argv[0] AND u.users_id != 0;
+	WHERE u.login = :argv[0] AND u.users_id != 0;
     }
   else if (!strcmp(q->shortname, "guau"))
     {

@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.dc,v $
- *	$Author: genoa $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.dc,v 2.14 1993-01-04 15:42:46 genoa Exp $
+ *	$Author: root $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.dc,v 2.15 1993-01-04 17:18:33 root Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_qsupport_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.dc,v 2.14 1993-01-04 15:42:46 genoa Exp $";
+static char *rcsid_qsupport_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.dc,v 2.15 1993-01-04 17:18:33 root Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -29,8 +29,6 @@ extern int ingres_errno, mr_errcode;
 
 EXEC SQL BEGIN DECLARE SECTION;
 extern char stmt_buf[];
-int idummy;
-extern char cdummy[];           
 EXEC SQL END DECLARE SECTION;
 
 /* Specialized Access Routines */
@@ -549,11 +547,11 @@ int setup_dclu(q, argv)
     id = *(int *)argv[0];
     EXEC SQL REPEATED SELECT COUNT(mach_id) INTO :cnt FROM mcmap
       WHERE clu_id = :id;
-    if (sqlca.sqlerrd[2] > 0)
+    if (cnt > 0)
 	return(MR_IN_USE);
     EXEC SQL REPEATED SELECT COUNT(clu_id) INTO :cnt FROM svc
       WHERE clu_id = :id;
-    if (sqlca.sqlerrd[2] > 0)
+    if (cnt > 0)
 	return(MR_IN_USE);
     if (ingres_errno)
 	return(mr_errcode);
@@ -2363,10 +2361,10 @@ int add_member_to_list(q, argv, cl)
     mtype = argv[1];
     mid = *(int *)argv[2];
     /* if the member is already a direct member of the list, punt */
-    EXEC SQL REPEATED SELECT list_id INTO :idummy FROM imembers
+    EXEC SQL REPEATED SELECT COUNT(list_id) INTO :rowcnt FROM imembers
       WHERE list_id = :lid AND member_id = :mid
 	AND member_type = :mtype AND direct = 1;
-    if (sqlca.sqlerrd[2] > 0)
+    if (rowcnt > 0)
       return(MR_EXISTS);
     if (!strcasecmp(mtype, "STRING")) {
 	buf = malloc(0);
@@ -2516,11 +2514,11 @@ int delete_member_from_list(q, argv, cl)
     mtype = argv[1];
     mid = *(int *)argv[2];
     /* if the member is not a direct member of the list, punt */
-    EXEC SQL REPEATED SELECT list_id INTO :idummy FROM imembers
+    EXEC SQL REPEATED SELECT COUNT(list_id) INTO :cnt FROM imembers
       WHERE list_id = :lid AND member_id = :mid
 	AND member_type = :mtype AND direct = 1;
     if (ingres_errno) return(mr_errcode);
-    if (sqlca.sqlcode == 100)
+    if (cnt == 0)
       return(MR_NO_MATCH);
     ancestors[0] = lid;
     aref[0] = 1;
@@ -3838,6 +3836,7 @@ validate_type(argv, vo)
     EXEC SQL BEGIN DECLARE SECTION;
     char *typename;
     char *val;
+    int cnt;
     EXEC SQL END DECLARE SECTION;
     register char *c;
 
@@ -3851,10 +3850,10 @@ validate_type(argv, vo)
     /* uppercase type fields */
     for (c = val; *c; c++) if (islower(*c)) *c = toupper(*c);
 
-    EXEC SQL SELECT trans INTO :cdummy FROM alias
+    EXEC SQL SELECT COUNT(trans) INTO :cnt FROM alias
       WHERE name = :typename AND type='TYPE' AND trans = :val;
     if (ingres_errno) return(mr_errcode);
-    return (sqlca.sqlerrd[2] ? MR_EXISTS : vo->error);
+    return (cnt ? MR_EXISTS : vo->error);
 }
 
 /* validate member or type-specific data field */

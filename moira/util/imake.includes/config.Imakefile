@@ -17,7 +17,7 @@ OSDEFS= -DPOSIX
 #endif
 
 #ifdef sgi
-OSDEFS= -DPOSIX
+OSDEFS= -DPOSIX -DNEED_GETUSERSHELL
 #endif
 
 #if defined(SOLARIS)

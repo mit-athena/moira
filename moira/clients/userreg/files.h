@@ -2,7 +2,7 @@
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/files.h,v $
  *	$Author: mar $
  *	$Locker:  $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/files.h,v 1.4 1988-08-07 22:43:27 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/files.h,v 1.5 1990-03-13 12:59:11 mar Exp $
  */
 
 #ifndef __SABER__
@@ -15,6 +15,7 @@
 #define DELETED_ACCT TEXT/deleted_acct"
 #define NOT_ALLOWED TEXT/not_allowed"
 #define IMPROPER_LOGIN TEXT/improper_reg"
+#define OFFER_ENROLL TEXT/offer_enroll"
 #else
 #define TEXT "/mit/register"
 
@@ -25,4 +26,5 @@
 #define DELETED_ACCT TEXT "/deleted_acct"
 #define NOT_ALLOWED TEXT "/not_allowed"
 #define IMPROPER_LOGIN TEXT "/improper_reg"
+#define OFFER_ENROLL TEXT "/offer_enroll"
 #endif __SABER__

@@ -3,13 +3,13 @@
  * and distribution information, see the file "mit-copyright.h". 
  *
  * $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chfn.c,v $
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chfn.c,v 1.12 1997-01-29 23:10:31 danw Exp $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chfn.c,v 1.13 1997-09-28 17:02:42 danw Exp $
  * $Author: danw $
  *
  */
 
 #ifndef lint
-static char *rcsid_chfn_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chfn.c,v 1.12 1997-01-29 23:10:31 danw Exp $";
+static char *rcsid_chfn_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chfn.c,v 1.13 1997-09-28 17:02:42 danw Exp $";
 #endif
 
 /*
@@ -59,7 +59,6 @@ main(argc, argv)
     char pname[ANAME_SZ];
     char *uname = pname;
     int k_errno;
-    char *whoami;
 
     initialize_krb_error_table();
 

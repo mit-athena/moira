@@ -1,4 +1,4 @@
-/* $Id: winad.pc,v 1.4 2001-08-12 19:26:33 zacheiss Exp $
+/* $Id: winad.pc,v 1.5 2003-08-14 02:43:09 zacheiss Exp $
  *
  * This generates the user, list, list membership, filesys data
  * for windows active directory update
@@ -86,6 +86,8 @@ int do_user(void)
   int users_id, unix_uid, status;
   char type[FILESYS_TYPE_SIZE];
   char name[FILESYS_NAME_SIZE];
+  char homedir[USERS_WINHOMEDIR_SIZE];
+  char profiledir[USERS_WINPROFILEDIR_SIZE];
   int fid;
   EXEC SQL END DECLARE SECTION;
 
@@ -100,75 +102,97 @@ int do_user(void)
   }
 
   EXEC SQL DECLARE u_cursor CURSOR FOR
-    SELECT users_id, login, unix_uid, status, clearid
+    SELECT users_id, login, unix_uid, status, clearid, winhomedir,
+    winprofiledir
     FROM users
     ORDER BY users_id;
   EXEC SQL OPEN u_cursor;
   while (1)
     {
       EXEC SQL FETCH u_cursor INTO :users_id, :login, :unix_uid, :status,
-:mit_id;
+:mit_id, :homedir, :profiledir;
       if (sqlca.sqlcode)
 	      break;
       strtrim(login);
       strtrim(mit_id);
-      
-      EXEC SQL SELECT filsys_id into :fid
-        FROM filesys
-        WHERE lockertype = 'HOMEDIR' 
-        AND label = :login
-        AND type = 'FSGROUP';
+      strtrim(homedir);
+      strtrim(profiledir);
 
-      if (sqlca.sqlcode == 0)
-      {
-        EXEC SQL DECLARE f_cursor CURSOR FOR
-          SELECT type, name 
-          FROM filesys a, fsgroup b
-          WHERE a.filsys_id=b.filsys_id 
-          AND b.group_id=:fid
-          ORDER by key;
-      
-        EXEC SQL OPEN f_cursor;
-      
-        EXEC SQL FETCH f_cursor INTO :type, :name;
+      if (strcmp(mit_id, "") == 0)
+	strcpy(mit_id, "0");
 
-        if (sqlca.sqlcode == 0)
-        {
-          strtrim(type);
-          strtrim(name);
-        }
-        else
-        {
-          strcpy(type, "NONE");
-          strcpy(name, "NONE");
-        }
+      if (strcasecmp(homedir, "[AFS]") == 0 || strcasecmp(profiledir,
+							  "[AFS]") == 0)
+	{
+	  EXEC SQL SELECT filsys_id into :fid
+	    FROM filesys
+	    WHERE lockertype = 'HOMEDIR' 
+	    AND label = :login
+	    AND type = 'FSGROUP';
+	  
+	  if (sqlca.sqlcode == 0)
+	    {
+	      EXEC SQL DECLARE f_cursor CURSOR FOR
+		SELECT type, name 
+		FROM filesys a, fsgroup b
+		WHERE a.filsys_id=b.filsys_id 
+		AND b.group_id=:fid
+		ORDER by key;
+	      
+	      EXEC SQL OPEN f_cursor;
+	      
+	      EXEC SQL FETCH f_cursor INTO :type, :name;
+	      
+	      if (sqlca.sqlcode == 0)
+		{
+		  strtrim(type);
+		  strtrim(name);
+		}
+	      else
+		{
+		  strcpy(type, "NONE");
+		  strcpy(name, "NONE");
+		}
+	      
+	      EXEC SQL CLOSE f_cursor;
+	    }
 
-        EXEC SQL CLOSE f_cursor;
-      }
-	
+	  else
+	    {
+	      EXEC SQL SELECT type, name into :type, :name
+		FROM filesys
+		WHERE lockertype = 'HOMEDIR' 
+		AND label=:login;
+	      
+	      if (sqlca.sqlcode == 0)
+		{
+		  strtrim(type);
+		  strtrim(name);
+		}
+	      else
+		{
+		  strcpy(type, "NONE");
+		  strcpy(name, "NONE");
+		}
+	    }
+	  if (strcasecmp(type, "AFS") != 0)
+	    strcpy(name, "[LOCAL]");
 
-      else
-      {
-        EXEC SQL SELECT type, name into :type, :name
-          FROM filesys
-          WHERE lockertype = 'HOMEDIR' 
-          AND label=:login;
+	}
 
-        if (sqlca.sqlcode == 0)
-        {
-          strtrim(type);
-          strtrim(name);
-        }
-        else
-        {
-          strcpy(type, "NONE");
-          strcpy(name, "NONE");
-        }
-      }
+      if (strcasecmp(homedir, "[AFS]") == 0)
+	strcpy(homedir, name);
+
+      if (strcasecmp(profiledir, "[AFS]") == 0)
+	{
+	  strcpy(profiledir, name);
+	  if (strcasecmp(name, "[LOCAL]"))
+	    strcat(profiledir, "/.winprofile");
+	}
   
       fprintf(fout, "%d %s %d %d %s %s %s\n",
 		      users_id, login, unix_uid, status, mit_id, 
-          type, name);
+	      homedir, profiledir);
     }
   
   if (sqlca.sqlcode < 0)

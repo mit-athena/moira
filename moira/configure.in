@@ -37,6 +37,9 @@ if test "$athena" = true; then
     prefix=/afs/athena.mit.edu/system/moira
     bindir=$prefix/arch/$ATHENA_SYS/bin
     sbindir=$bindir
+    MR_INCLUDE(/usr/athena/include)
+    MR_INCLUDE(/usr/athena/include/kerberosIV)
+    MR_LIBS(/usr/athena/lib)
 fi
 
 # We currently just don't support changing this

@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/startmoira.c,v $
  *	$Author: danw $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/startmoira.c,v 1.10 1996-11-14 02:22:32 danw Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/startmoira.c,v 1.11 1996-11-14 04:02:10 danw Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -13,7 +13,7 @@
  */
 
 #ifndef lint
-static char *rcsid_mr_starter_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/startmoira.c,v 1.10 1996-11-14 02:22:32 danw Exp $";
+static char *rcsid_mr_starter_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/startmoira.c,v 1.11 1996-11-14 04:02:10 danw Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -48,6 +48,7 @@ cleanup()
 					"moirad exited with code %d\n",
 					stat.w_retcode);
 				send_zgram("startmoira", buf);
+			}
 		}
 		if (WIFSIGNALED(stat)) {
 			sprintf(buf, "moirad exited on %s signal%s\n",

@@ -1,4 +1,4 @@
-/* $Id: user.c,v 1.64 2001-01-04 06:25:01 zacheiss Exp $
+/* $Id: user.c,v 1.65 2001-10-17 21:34:19 zacheiss Exp $
  *
  *	This is the file user.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -27,7 +27,7 @@
 
 #include <krb.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.64 2001-01-04 06:25:01 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.65 2001-10-17 21:34:19 zacheiss Exp $");
 
 void CorrectCapitalization(char **name);
 char **AskUserInfo(char **info, Bool name);
@@ -125,6 +125,8 @@ static void PrintUserInfo(char **info)
     }
   sprintf(buf, "Comments: %s", info[U_COMMENT]);
   Put_message(buf);
+  sprintf(buf, "Created  by %s on %s.", info[U_CREATOR], info[U_CREATED]);
+  Put_message(buf);
   sprintf(buf, MOD_FORMAT, info[U_MODBY], info[U_MODTIME], info[U_MODWITH]);
   Put_message(buf);
 }
@@ -151,6 +153,7 @@ static char **SetUserDefaults(char **info)
   info[U_SIGNATURE] = strdup("");
   info[U_SECURE] = strdup("0");
   info[U_MODTIME] = info[U_MODBY] = info[U_MODWITH] = info[U_END] = NULL;
+  info[U_CREATED] = info[U_CREATOR] = NULL;
   return info;
 }
 

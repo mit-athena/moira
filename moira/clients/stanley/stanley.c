@@ -21,7 +21,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/stanley/stanley.c,v 1.6 2001-09-26 05:57:49 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/stanley/stanley.c,v 1.7 2001-10-17 21:34:46 zacheiss Exp $");
 
 struct string_list {
   char *string;
@@ -632,6 +632,7 @@ void show_user_info(char **argv)
 	      atoi(argv[U_SECURE]) ? "needs" : "does not need");
     }
   printf("Comments: %s\n", argv[U_COMMENT]);
+  printf("Created  by %s on %s.\n", argv[U_CREATOR], argv[U_CREATED]);
   printf("Last mod by %s at %s with %s.\n", argv[U_MODBY], argv[U_MODTIME],
 	 argv[U_MODWITH]);
 }
@@ -654,6 +655,8 @@ void show_user_info_unformatted(char **argv)
     printf("Secure:                %s secure Account Coupon to register\n",
 	   atoi(argv[U_SECURE]) ? "Needs" : "Does not need");
   printf("Comments:              %s\n", argv[U_COMMENT]);
+  printf("Created by:            %s\n", argv[U_CREATOR]);
+  printf("Created on:            %s\n", argv[U_CREATED]);
   printf("Last mod by:           %s\n", argv[U_MODBY]);
   printf("Last mod on:           %s\n", argv[U_MODTIME]);
   printf("Last mod with:         %s\n", argv[U_MODWITH]);

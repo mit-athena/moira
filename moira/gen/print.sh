@@ -1,5 +1,5 @@
 #! /bin/sh
-# $Id: print.sh,v 1.4 2000-05-08 18:30:31 zacheiss Exp $
+# $Id: print.sh,v 1.5 2002-02-23 03:53:49 zacheiss Exp $
 
 if [ -d /var/athena ] && [ -w /var/athena ]; then
     exec >/var/athena/moira_update.log 2>&1
@@ -31,7 +31,13 @@ tar xf $TARFILE || exit $MR_TARERR
 # Build full printcap and spools
 cat $PCLOCAL $PCGEN > $PRINTCAP
 /usr/athena/etc/checkpc -f
+if [ $? != 0 ]; then
+    exit $MR_MKCRED
+fi
 /usr/athena/etc/lpc reread
+if [ $? != 0 ]; then
+    exit $MR_MKCRED
+fi
 
 # cleanup
 test -f $TARFILE && rm -f $TARFILE

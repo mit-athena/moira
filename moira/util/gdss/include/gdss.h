@@ -2,9 +2,8 @@
  * Include file for GDSS The Generic Digital Signature Service.
  *
  */
-#ifdef SOLARIS
-#include <string.h>
-#endif
+
+#include <krb.h>
 
 /* Structures Needed */
 
@@ -36,3 +35,11 @@ typedef struct {
 #define GDSS_PAD	10	/* Maximum number of nulls to pad */
 #define GDSS_ESCAPE	0x20	/* Escape character for padding */
 #define GDSS_NULL	0x21	/* Psuedo Null character */
+
+/* GDSS Prototypes */
+int GDSS_Verify(unsigned char *Data, unsigned int DataLen,
+		unsigned char *Signature, SigInfo *aSigInfo);
+int GDSS_Sig_Size(void);
+int GDSS_Recompose(SigInfo *aSigInfo, unsigned char *signature);
+int GDSS_Sign(unsigned char *Data, unsigned int DataLen,
+	      unsigned char *Signature);

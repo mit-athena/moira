@@ -1,4 +1,4 @@
-/* $Id: mailhub.pc,v 1.9 1999-01-19 03:25:44 danw Exp $
+/* $Id: mailhub.pc,v 1.10 1999-11-16 04:47:30 danw Exp $
  *
  * This generates the /usr/lib/aliases file for the mailhub.
  *
@@ -22,7 +22,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/mailhub.pc,v 1.9 1999-01-19 03:25:44 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/mailhub.pc,v 1.10 1999-11-16 04:47:30 danw Exp $");
 
 char *whoami = "mailhub.gen";
 char *db = "moira/moira";
@@ -136,7 +136,7 @@ int main(int argc, char **argv)
 void get_info(void)
 {
   EXEC SQL BEGIN DECLARE SECTION;
-  int id, pid, bid, cnt, maillistp, acl, mid;
+  int id, pid, iid, bid, cnt, maillistp, acl, mid;
   char mname[MACHINE_NAME_SIZE], str[STRINGS_STRING_SIZE];
   char login[USERS_LOGIN_SIZE], potype[USERS_POTYPE_SIZE];
   char lname[LIST_NAME_SIZE], desc[LIST_DESCRIPTION_SIZE];
@@ -214,19 +214,26 @@ void get_info(void)
   users = create_hash(13001);
 
   EXEC SQL DECLARE u_cursor CURSOR FOR
-    SELECT users_id, login, potype, pop_id, box_id
+    SELECT users_id, login, potype, pop_id, imap_id, box_id
     FROM users
     WHERE status != 3
     ORDER BY users_id;
   EXEC SQL OPEN u_cursor;
   while (1)
     {
-      EXEC SQL FETCH u_cursor INTO :id, :login, :potype, :pid, :bid;
+      EXEC SQL FETCH u_cursor INTO :id, :login, :potype, :pid, :iid, :bid;
       if (sqlca.sqlcode)
 	break;
       u = malloc(sizeof(struct user));
       u->login = strdup(strtrim(login));
 
+      if (potype[0] == 'I')
+	{
+	  EXEC SQL SELECT f.mach_id INTO :pid FROM filesys f, users u
+	    WHERE u.users_id = :id AND f.filsys_id = u.imap_id;
+	  if (sqlca.sqlcode == 0)
+	    potype[0] = 'P';
+	}
       if (potype[0] == 'P' && (s = hash_lookup(machines, pid)))
 	{
 	  char *buf = malloc(strlen(u->login) + strlen(s) + 2);

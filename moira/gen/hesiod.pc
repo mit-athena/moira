@@ -1,4 +1,4 @@
-/* $Id: hesiod.pc,v 1.15 1999-11-16 04:43:20 danw Exp $
+/* $Id: hesiod.pc,v 1.16 1999-11-16 04:47:29 danw Exp $
  *
  * This generates the zone files necessary to load a hesiod server.
  * The following zones are generated: passwd, uid, pobox, group,
@@ -23,7 +23,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/hesiod.pc,v 1.15 1999-11-16 04:43:20 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/hesiod.pc,v 1.16 1999-11-16 04:47:29 danw Exp $");
 
 #ifndef HTYPE
 #define HTYPE "TXT"
@@ -203,8 +203,8 @@ int do_passwd(void)
   char login[USERS_LOGIN_SIZE], shell[USERS_SHELL_SIZE];
   char fullname[USERS_FULLNAME_SIZE], oa[USERS_OFFICE_ADDR_SIZE];
   char op[USERS_OFFICE_PHONE_SIZE], hp[USERS_HOME_PHONE_SIZE];
-  char nn[USERS_NICKNAME_SIZE], ptype[USERS_POTYPE_SIZE];
-  int uid, flag1, flag2, id, pid, status;
+  char nn[USERS_NICKNAME_SIZE];
+  int uid, flag1, flag2, id, pid, iid, mid, status;
   EXEC SQL END DECLARE SECTION;
 
   sprintf(poutf, "%s/passwd.db", hesiod_dir);
@@ -254,7 +254,7 @@ int do_passwd(void)
   users = create_hash(12001);
   EXEC SQL DECLARE u_cursor CURSOR FOR
     SELECT login, unix_uid, shell, fullname, nickname, office_addr,
-    office_phone, home_phone, users_id, pop_id, potype, status
+    office_phone, home_phone, users_id, pop_id, imap_id, status
     FROM users
     WHERE status = 1 OR status = 2 OR status = 5 OR status = 6
     ORDER BY users_id;
@@ -262,7 +262,7 @@ int do_passwd(void)
   while (1)
     {
       EXEC SQL FETCH u_cursor INTO :login, :uid, :shell, :fullname, :nn,
-	:oa, :op, :hp, :id, :pid, :ptype, :status;
+	:oa, :op, :hp, :id, :pid, :iid, :status;
       if (sqlca.sqlcode)
 	break;
       strtrim(login);
@@ -283,6 +283,15 @@ int do_passwd(void)
 		  op, hp, login, shell);
 	  fprintf(uout, "%d.uid\t%s CNAME %s.passwd\n", uid, HCLASS, login);
 	}
+
+      if (iid != 0)
+	{
+	  EXEC SQL SELECT mach_id INTO :mid FROM filesys
+	    WHERE filsys_id = :iid AND type = 'IMAP';
+	  if (sqlca.sqlcode == 0)
+	    pid = mid;
+	}
+
       if (pid != 0 && (mach = hash_lookup(machines, pid)))
 	{
 	  fprintf(bout, "%s.pobox\t%s %s \"POP %s %s\"\n",

@@ -2,7 +2,7 @@
  * $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.c,v $
  * $Author: mar $
  * $Locker:  $
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.c,v 1.12 1989-08-16 11:19:34 mar Exp $ 
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.c,v 1.13 1989-08-29 13:26:05 mar Exp $ 
  *
  *  (c) Copyright 1988 by the Massachusetts Institute of Technology.
  *  For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char    *rcsid_userreg_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.c,v 1.12 1989-08-16 11:19:34 mar Exp $";
+static char    *rcsid_userreg_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.c,v 1.13 1989-08-29 13:26:05 mar Exp $";
 #endif	lint
 
 #include <mit-copyright.h>
@@ -225,6 +225,7 @@ dolook()
 	timer_on();
 	switch(result) {
 	case 0:
+	case UREG_ENROLLED:
 		display_text_line("You have been located in the user registration database.");
 		user_is_valid = 1;
 		user_has_login = 0;
@@ -252,9 +253,9 @@ dolook()
 		display_text_line("You are already registered.  An account for you probably already exists");
 		display_text_line("(if not, it will appear within 12 hours).");
 		display_text_line("");
-		display_text_line("Refer to the documents 'Essential Athena' and 'Essential Unix'");
+		display_text_line("Refer to the document 'Getting Started on Athena' for help logging in.");
 		strcpy(user.u_login, db_user.u_login);
-		sprintf(line, "for help logging in.  Remember, the username you chose was '%s'",
+		sprintf(line, "Remember, the username you chose was '%s'",
 			db_user.u_login);
 		display_text_line(line);
 		redisp();
@@ -266,6 +267,7 @@ dolook()
 		restore_display();
 		exit(0);
 	case UREG_NOT_ALLOWED:
+	case UREG_ENROLL_NOT_ALLOWED:
 		display_text(NOT_ALLOWED);
 		wait_for_user();
 		restore_display();
@@ -297,7 +299,7 @@ negotiate_login()
 {
 	register int    result;
 	char            line[100];
-	char            old_login[LOGIN_SIZE];
+	char            old_login[LOGIN_SIZE+2];
 	char		realm[REALM_SZ];
 	int		i;
 	char *cp;
@@ -323,7 +325,7 @@ negotiate_login()
 	display_text_line(
 			  "If you are sure you would prefer another username, feel free to enter");
 	display_text_line(
-			  "a different one, but keep in mind that it will remain with you for all the ");
+			  "a different one.  Keep in mind that it will remain with you for all the ");
 	display_text_line("time you are at MIT.");
 
 	while (1) {
@@ -428,8 +430,8 @@ glast()
 gpass()
 {
 	/* input password */
-	char            new_password[PASSWORD_SIZE];
-	char            new_password_again[PASSWORD_SIZE];
+	char            new_password[PASSWORD_SIZE+1];
+	char            new_password_again[PASSWORD_SIZE+1];
 
 do_input:
 	signal(SIGALRM, restart);
@@ -439,8 +441,9 @@ do_input:
 		display_text_line("Please use a password of at least 4 characters.");
 		goto do_input;
 	}
+	wfeep();
 	signal(SIGALRM, restart);
-	input_no_echo("Enter password again:", new_password_again,
+	input_no_echo("Enter your password again:", new_password_again,
 		      PASSWORD_SIZE, REENTER_PASSWORD_TIMEOUT);
 	if (strcmp(new_password, new_password_again)) {
 		display_text_line("Sorry, the two passwords you just typed in don't match.");
@@ -464,20 +467,23 @@ input_login:
 	user.u_login[0] = '\0';
 	nbuf = &buf[0];
 	signal(SIGALRM, restart);
-	input("Enter username:", buf, LOGIN_SIZE+1, USERNAME_TIMEOUT, FALSE);
+	input("Enter username:", buf, LOGIN_SIZE, USERNAME_TIMEOUT, FALSE);
 	if (!islower(*nbuf) && !isdigit(*nbuf)) {
-	    display_text_line("Your username must start with a letter or number.");
+	    user.u_login[0] = 0;
+	    display_text_line("Your username must start with a lower case letter or number.");
 	    goto input_login;
 	}
 	while (*nbuf != '\0') {
 		if (!islower(*nbuf) && !isdigit(*nbuf)
-		    && (*nbuf != '_') && (*nbuf != '.')) {
-			display_text_line("Your username must be all lowercase alphabetic characters.");
+		    && (*nbuf != '_')) {
+			user.u_login[0] = 0;
+			display_text_line("Your username must be all lowercase letters or numbers.");
 			goto input_login;
 		}
 		user.u_login[i] = *nbuf++;
 		i++;
-		if (i > LOGIN_SIZE - 1) {
+		if (i > LOGIN_SIZE) {
+			user.u_login[0] = 0;
 			display_text_line("Your username must be no more than 8 characters long.");
 			goto input_login;
 		}
@@ -486,6 +492,7 @@ input_login:
 		user.u_login[i] = '\0';
 	}
 	if (strlen(user.u_login) < 3) {
+		user.u_login[0] = 0;
 		display_text_line("Your username must be 3 or more characters long.\n");
 		goto input_login;
 	}

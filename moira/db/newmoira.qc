@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/db/newmoira.qc,v 1.5 1989-04-28 16:27:16 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/db/newmoira.qc,v 1.6 1989-08-04 13:31:31 mar Exp $
  *
  * Creates a new sms database
  *
@@ -15,8 +15,8 @@ static int ingres_errno = 0;
 int ingerr();
 
 extern char *tables[];
-extern struct query Queries1[], Queries2[];
-extern int QueryCount1, QueryCount2;
+extern struct query Queries2[];
+extern int QueryCount2;
 
 char *values[] = { "users_id", "mach_id", "clu_id", "list_id",
 		   "nfsphys_id", "filsys_id", "strings_id", "dcm_enable",
@@ -237,26 +237,14 @@ char **argv;
     }
 
     /* And the capacls */
-    for (i = 0; i < QueryCount1; i++) {
-	query = Queries1[i].name;
-	value = Queries1[i].shortname;
+    for (i = 0; i < QueryCount2; i++) {
+	query = Queries2[i].name;
+	value = Queries2[i].shortname;
 ##	repeat append capacls (capability = @query, tag = @value, list_id = 2)
 	if (ingres_errno) {
 	    printf("Unable to install query ACL for %s (%s)\n", query, value);
 	    exit(1);
 	}
-    }
-    for (i = 0; i < QueryCount2; i++) {
-	query = Queries2[i].name;
-	value = Queries2[i].shortname;
-##	repeat retrieve (flag = any(capacls.tag where capacls.tag = @value))
-	if (!flag) {
-##	  repeat append capacls (capability = @query, tag = @value, list_id = 2)
-	  if (ingres_errno) {
-	      printf("Unable to install query ACL for %s (%s)\n", query, value);
-	      exit(1);
-	  }
-        }
     }
 ##  append capacls (capability = "trigger_dcm", tag = "tdcm", list_id = 2)
 

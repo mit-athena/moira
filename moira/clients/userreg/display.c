@@ -2,7 +2,7 @@
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/display.c,v $
  *	$Author: mar $
  *	$Locker:  $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/display.c,v 1.8 1989-11-21 16:04:21 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/display.c,v 1.9 1991-07-01 14:29:49 mar Exp $
  *
  *  (c) Copyright 1988 by the Massachusetts Institute of Technology.
  *  For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_display_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/display.c,v 1.8 1989-11-21 16:04:21 mar Exp $";
+static char *rcsid_display_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/display.c,v 1.9 1991-07-01 14:29:49 mar Exp $";
 #endif	lint
 
 #include <mit-copyright.h>
@@ -116,12 +116,15 @@ int   l;
 /* This replaces several "useful" display functions in the old userreg */
 redisp () {
   mvwprintw (fnamew, 0, 0, "%-24s", user.u_first);
+  wrefresh(fnamew);
   mvwprintw (midw, 0, 0, "%-24s", user.u_mid_init);
+  wrefresh(midw);
   mvwprintw (lnamew, 0, 0, "%-24s", user.u_last);
+  wrefresh(lnamew);
   mvwprintw (idw, 0, 0, "%-24s", typed_mit_id);
+  wrefresh(idw);
   mvwprintw (loginw, 0, 0, "%-24s", user.u_login);
-
-  wrefresh (dataw);
+  wrefresh(loginw);
 }
 
 
@@ -161,7 +164,7 @@ query_user (prompt, buf, maxsize, timeout, echop, emptyok, valuep)
 char *prompt;
 char *buf;
 int   maxsize, timeout;
-bool echop, emptyok, valuep;
+int echop, emptyok, valuep;
 {
   int  c;
   int   i;
@@ -182,7 +185,7 @@ retry:
   wrefresh (queryw);
 
   i = 0;
-  while ((c = getchar ()) != '\r') {
+  while ((c = getchar ()) != '\r' && c != '\n') {
    switch (c) {
      case '\025': 		/* Ctl-U */
 	goto retry;
@@ -279,7 +282,7 @@ askyn(prompt)
   it.it_value.tv_usec = 0;
   setitimer (ITIMER_REAL, &it, (struct itimerval *) 0);
     
-  while ((c = getchar ()) != '\r') {	/* Wait for CR. */
+  while ((c = getchar ()) != '\r' && c != '\n') {	/* Wait for CR. */
       switch (c) {
       case 'n':			/* No. */
       case 'N':

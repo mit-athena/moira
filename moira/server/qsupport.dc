@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.dc,v $
  *	$Author: kostas $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.dc,v 1.1 1990-09-07 11:03:40 kostas Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.dc,v 1.2 1990-09-12 10:52:03 kostas Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,14 +10,14 @@
  */
 
 #ifndef lint
-static char *rcsid_qsupport_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.dc,v 1.1 1990-09-07 11:03:40 kostas Exp $";
+static char *rcsid_qsupport_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.dc,v 1.2 1990-09-12 10:52:03 kostas Exp $";
 #endif lint
 
 #include <mit-copyright.h>
 #include "query.h"
 #include "mr_server.h"
 #include <ctype.h>
-
+EXEC SQL INCLUDE sqlca;
 
 extern char *whoami, *strsave();
 extern int ingres_errno, mr_errcode;
@@ -53,11 +53,15 @@ access_login(q, argv, cl)
     struct query *q;
     char *argv[];
     client *cl;
-##{
-##  int rowcount, id;
-##  char qual[256];
+
+{
+    EXEC SQL BEGIN DECLARE SECTION;
+    int rowcount, id;
+    char qual[256];
+    EXEC SQL END DECLARE SECTION;
 
     build_qual(q->qual, q->argc, argv, qual);
+
 ##  range of u is users
 ##  retrieve (id = u.users_id) where qual
 ##  inquire_equel(rowcount = "rowcount")
@@ -65,7 +69,7 @@ access_login(q, argv, cl)
 	return(MR_PERM);
     else
 	return(MR_SUCCESS);
-##}
+}
 
     
 
@@ -86,9 +90,11 @@ access_list(q, argv, cl)
     struct query *q;
     char *argv[];
     client *cl;
-##{
-##  int list_id, acl_id, flags, rowcount, gid;
-##  char acl_type[9];
+{
+    EXEC SQL BEGIN DECLARE SECTION;
+    int list_id, acl_id, flags, rowcount, gid;
+    char acl_type[9];
+    EXEC SQL END DECLARE SECTION;
     char *client_type;
     int client_id, status;
 
@@ -121,7 +127,7 @@ access_list(q, argv, cl)
     if (!status) return(MR_PERM);
 
     return(MR_SUCCESS);
-##}
+}
 
 
 /* access_visible_list - allow access to list only if it is not hidden,
@@ -135,9 +141,11 @@ access_visible_list(q, argv, cl)
     struct query *q;
     char *argv[];
     client *cl;
-##{
-##  int list_id, acl_id, flags, rowcount;
-##  char acl_type[9];
+{
+    EXEC SQL BEGIN DECLARE SECTION;
+    int list_id, acl_id, flags, rowcount;
+    char acl_type[9];
+    EXEC SQL END DECLARE SECTION;
     char *client_type;
     int client_id, status;
 
@@ -161,7 +169,7 @@ access_visible_list(q, argv, cl)
 	return(MR_PERM);
 
     return(MR_SUCCESS);
-##}
+}
 
 
 /* access_vis_list_by_name - allow access to list only if it is not hidden,
@@ -175,9 +183,11 @@ access_vis_list_by_name(q, argv, cl)
     struct query *q;
     char *argv[];
     client *cl;
-##{
-##  int acl_id, flags, rowcount;
-##  char acl_type[9], *listname;
+{
+    EXEC SQL BEGIN DECLARE SECTION;
+    int acl_id, flags, rowcount;
+    char acl_type[9], *listname;
+    EXEC SQL END DECLARE SECTION;
     char *client_type;
     int client_id, status;
 
@@ -202,7 +212,7 @@ access_vis_list_by_name(q, argv, cl)
 	return(MR_PERM);
 
     return(MR_SUCCESS);
-##}
+}
 
 
 /* access_member - allow user to access member of type "USER" and name matches
@@ -250,9 +260,11 @@ access_service(q, argv, cl)
     struct query *q;
     char *argv[];
     client *cl;
-##{
-##  int acl_id, rowcount;
-##  char *name, acl_type[9];
+{
+    EXEC SQL BEGIN DECLARE SECTION;
+    int acl_id, rowcount;
+    char *name, acl_type[9];
+    EXEC SQL END DECLARE SECTION;
     int client_id, status;
     char *client_type;
 
@@ -272,7 +284,7 @@ access_service(q, argv, cl)
     if (!status) return(MR_PERM);
 
     return(MR_SUCCESS);
-##}
+}
 
 
 
@@ -284,9 +296,11 @@ access_filesys(q, argv, cl)
     struct query *q;
     char *argv[];
     client *cl;
-##{
-##  int rowcount, users_id, list_id;
-##  char *name;
+{
+    EXEC SQL BEGIN DECLARE SECTION;
+    int rowcount, users_id, list_id;
+    char *name;
+    EXEC SQL END DECLARE SECTION;
     int status, client_id;
     char *client_type;
 
@@ -306,7 +320,7 @@ access_filesys(q, argv, cl)
       return(MR_SUCCESS);
     else
       return(MR_PERM);
-##}
+}
 
     
 
@@ -327,9 +341,11 @@ setup_ausr(q, argv, cl)
     struct query *q;
     register char *argv[];
     client *cl;
-##{
-##  int nuid, rowcount;
-##  char *mit_id;
+{
+    EXEC SQL BEGIN DECLARE SECTION;
+    int nuid, rowcount;
+    char *mit_id;
+    EXEC SQL END DECLARE SECTION;
 
 #ifdef notdef
     /* this is currently disabled because we need an index on ID's
@@ -356,7 +372,7 @@ setup_ausr(q, argv, cl)
     }
 
     return(MR_SUCCESS);
-##}
+d#}
 
 
 /* setup_dusr - verify that the user is no longer being referenced 
@@ -366,8 +382,10 @@ setup_ausr(q, argv, cl)
 int setup_dusr(q, argv)
     struct query *q;
     char **argv;
-##{
-##  int flag, id;
+{
+    EXEC SQL BEGIN DECLARE SECTION;
+    int flag, id;
+    EXEC SQL END DECLARE SECTION;
 
     id = *(int *)argv[0];
 
@@ -400,7 +418,7 @@ int setup_dusr(q, argv)
     if (ingres_errno)
 	return(mr_errcode);
     return(MR_SUCCESS);
-##}
+}
 
 
 /* setup_spop: verify that there is already a valid POP machine_id in the
@@ -409,9 +427,11 @@ int setup_dusr(q, argv)
 int setup_spop(q, argv)
 struct query *q;
 char **argv;
-##{
-##  int id, mid, flag;
-##  char type[9];
+{
+    EXEC SQL BEGIN DECLARE SECTION;
+    int id, mid, flag;
+    char type[9];
+    EXEC SQL END DECLARE SECTION;
 
     id = *(int *)argv[0];
 ##  repeat retrieve (type = u.potype, mid = u.pop_id,
@@ -423,7 +443,7 @@ char **argv;
     if (strcmp(strtrim(type), "POP"))
       set_pop_usage(mid, 1);
     return(MR_SUCCESS);
-##}
+}
 
 
 /* setup_dpob:  Take care of keeping track of the post office usage.
@@ -431,9 +451,11 @@ char **argv;
 int setup_dpob(q, argv)
 struct query *q;
 char **argv;
-##{
-##  int id, user;
-##  char type[9];
+{
+    EXEC SQL BEGIN DECLARE SECTION;
+    int id, user;
+    char type[9];
+    EXEC SQL END DECLARE SECTION;
 
     user = *(int *)argv[0];
 ##  repeat retrieve (type = u.potype, id = u.pop_id)
@@ -443,7 +465,7 @@ char **argv;
     if (!strcmp(strtrim(type), "POP"))
       set_pop_usage(id, -1);
     return(MR_SUCCESS);
-##}
+}
 
 
 /* setup_dmac - verify that the machine is no longer being referenced 
@@ -453,8 +475,10 @@ char **argv;
 int setup_dmac(q, argv)
     struct query *q;
     char **argv;
-##{
-##  int flag, id;
+{
+    EXEC SQL BEGIN DECLARE SECTION;
+    int flag, id;
+    EXEC SQL END DECLARE SECTION;
 
     id = *(int *)argv[0];
 ##  repeat retrieve (flag = any(users.login where users.potype = "POP" 
@@ -484,7 +508,7 @@ int setup_dmac(q, argv)
 ##  repeat delete mcmap where mcmap.mach_id = @id
     if (ingres_errno) return(mr_errcode);
     return(MR_SUCCESS);
-##}
+}
 
 
 /* setup_dclu - verify that the cluster is no longer being referenced 
@@ -494,8 +518,10 @@ int setup_dmac(q, argv)
 int setup_dclu(q, argv)
     struct query *q;
     char **argv;
-##{
-##  int flag, id;
+{
+    EXEC SQL BEGIN DECLARE SECTION;
+    int flag, id;
+    EXEC SQL END DECLARE SECTION;
 
     id = *(int *)argv[0];
 ##  repeat retrieve (flag = any(mcmap.mach_id where mcmap.clu_id=@id))
@@ -507,7 +533,7 @@ int setup_dclu(q, argv)
     if (ingres_errno)
 	return(mr_errcode);
     return(MR_SUCCESS);
-##}
+}
 
 
 /* setup_alis - if argv[5] is non-zero and argv[6] is UNIQUE_ID, then allocate
@@ -520,8 +546,10 @@ int setup_dclu(q, argv)
 int setup_alis(q, argv)
 struct query *q;
 char **argv;
-##{
-##  int ngid;
+{
+    EXEC SQL BEGIN DECLARE SECTION;
+    int ngid;
+    EXEC SQL END DECLARE SECTION;
     char *malloc();
     int idx;
 
@@ -543,7 +571,7 @@ char **argv;
     }
 
     return(MR_SUCCESS);
-##}
+}
 
 
 /* setup_dlist - verify that the list is no longer being referenced 
@@ -553,8 +581,10 @@ char **argv;
 int setup_dlis(q, argv)
     struct query *q;
     char **argv;
-##{
-##  int flag, id;
+{
+    EXEC SQL BEGIN DECLARE SECTION;
+    int flag, id;
+    EXEC SQL END DECLARE SECTION;
 
     id = *(int *)argv[0];
 ##  repeat retrieve (flag = any(imembers.member_id where imembers.member_id=@id
@@ -596,7 +626,7 @@ int setup_dlis(q, argv)
     if (ingres_errno)
 	return(mr_errcode);
     return(MR_SUCCESS);
-##}
+}
 
 
 /* setup_dsin - verify that the service is no longer being referenced 
@@ -606,9 +636,11 @@ int setup_dlis(q, argv)
 int setup_dsin(q, argv)
     struct query *q;
     char **argv;
-##{
-##  int flag;
-##  char *name;
+{
+    EXEC SQL BEGIN DECLARE SECTION;
+    int flag;
+    char *name;
+    EXEC SQL END DECLARE SECTION;
 
     name = argv[0];
 ##  repeat retrieve (flag = any(serverhosts.service 
@@ -621,7 +653,7 @@ int setup_dsin(q, argv)
     if (ingres_errno)
 	return(mr_errcode);
     return(MR_SUCCESS);
-##}
+}
 
 
 /* setup_dshi - verify that the service-host is no longer being referenced 
@@ -631,9 +663,11 @@ int setup_dsin(q, argv)
 int setup_dshi(q, argv)
     struct query *q;
     char **argv;
-##{
-##  int flag, id;
-##  char *name;
+{
+    EXEC SQL BEGIN DECLARE SECTION;
+    int flag, id;
+    char *name;
+    EXEC SQL END DECLARE SECTION;
 
     name = argv[0];
     id = *(int *)argv[1];
@@ -644,7 +678,7 @@ int setup_dshi(q, argv)
     if (ingres_errno)
 	return(mr_errcode);
     return(MR_SUCCESS);
-##}
+}
 
 
 /**
@@ -678,11 +712,13 @@ int setup_dshi(q, argv)
 setup_afil(q, argv)
     struct query *q;
     char *argv[];
-##{
+{
     char *type, *name;
     int mach_id;
-##  int ok;
-##  char ftype[32], *access;
+    EXEC SQL BEGIN DECLARE SECTION;
+    int ok;
+    char ftype[32], *access;
+    EXEC SQL END DECLARE SECTION;
 
     type = argv[1];
     mach_id = *(int *)argv[2];
@@ -700,7 +736,7 @@ setup_afil(q, argv)
 	return (check_nfs(mach_id, name, access));
     else
 	return(MR_SUCCESS);
-##}
+}
 
 
 /* Verify the arguments, depending on the FStype.  Also, if this is an
@@ -712,11 +748,13 @@ setup_ufil(q, argv, cl)
     struct query *q;
     char *argv[];
     client *cl;
-##{
+{
     int mach_id, status;
     char *type, *name;  
-##  int fid, total, who;
-##  char *entity, ftype[32], *access;
+    EXEC SQL BEGIN DECLARE SECTION;
+    int fid, total, who;
+    char *entity, ftype[32], *access;
+    EXEC SQL END DECLARE SECTION;
 
     type = argv[2];
     mach_id = *(int *)argv[3];
@@ -754,7 +792,7 @@ setup_ufil(q, argv, cl)
 	if (ingres_errno) return(mr_errcode);
     }
     return(MR_SUCCESS);
-##}
+}
 
 
 /* Find the NFS physical partition that the named directory is on.
@@ -764,11 +802,15 @@ setup_ufil(q, argv, cl)
  */
 
 ##check_nfs(mach_id, name, access)
-##  int mach_id;
+    EXEC SQL BEGIN DECLARE SECTION;
+    int mach_id;
+    EXEC SQL END DECLARE SECTION;
     char *name;
     char *access;
-##{
-##  char dir[81];
+{
+    EXEC SQL BEGIN DECLARE SECTION;
+    char dir[81];
+    EXEC SQL END DECLARE SECTION;
     char caccess;
     register int status;
     register char *cp1;
@@ -792,7 +834,7 @@ setup_ufil(q, argv, cl)
     if (ingres_errno)
 	return(mr_errcode);
     return(status);
-##}
+}
 
 
 /* setup_dfil: free any quota records and fsgroup info associated with
@@ -803,8 +845,10 @@ setup_dfil(q, argv, cl)
     struct query  *q;
     char **argv;
     client *cl;
-##{
-##  int id;
+{
+    EXEC SQL BEGIN DECLARE SECTION;
+    int id;
+    EXEC SQL END DECLARE SECTION;
 
     id = *(int *)argv[0];
 ##  range of q is quota
@@ -817,7 +861,7 @@ setup_dfil(q, argv, cl)
 ##  repeat delete fsgroup where fsgroup.group_id = @id
     if (ingres_errno) return(mr_errcode);
     return(MR_SUCCESS);
-##}
+}
 
 
 /* setup_dnfp: check to see that the nfs physical partition does not have
@@ -828,9 +872,11 @@ setup_dnfp(q, argv, cl)
     struct query  *q;
     char **argv;
     client *cl;
-##{
-##  int id, exists;
-##  char *dir;
+{
+    EXEC SQL BEGIN DECLARE SECTION;
+    int id, exists;
+    char *dir;
+    EXEC SQL END DECLARE SECTION;
 
     id = *(int *)argv[0];
     dir = argv[1];
@@ -842,7 +888,7 @@ setup_dnfp(q, argv, cl)
     if (ingres_errno)
       return(mr_errcode);
     return(MR_SUCCESS);
-##}
+}
 
 
 /* setup_dqot: Remove allocation from nfsphys before deleting quota.
@@ -855,9 +901,11 @@ setup_dqot(q, argv, cl)
     struct query  *q;
     char **argv;
     client *cl;
-##{
-##  int quota, fs, id;
-##  char *qtype;
+{
+    EXEC SQL BEGIN DECLARE SECTION;
+    int quota, fs, id;
+    char *qtype;
+    EXEC SQL END DECLARE SECTION;
 
     fs = *(int *)argv[0];
     if (!strcmp(q->name, "update_quota") || !strcmp(q->name, "delete_quota")) {
@@ -875,7 +923,7 @@ setup_dqot(q, argv, cl)
 ##	where nfsphys.nfsphys_id = filesys.#phys_id and filesys.filsys_id = @fs
     if (ingres_errno) return(mr_errcode);
     return(MR_SUCCESS);
-##}
+}
 
 
 /* setup_sshi: don't exclusive lock the machine table during
@@ -899,9 +947,11 @@ setup_akum(q, argv, cl)
 struct query *q;
 char **argv;
 client *cl;
-##{
-##  int id, rowcount;
-##  char *name;
+{
+    EXEC SQL BEGIN DECLARE SECTION;
+    int id, rowcount;
+    char *name;
+    EXEC SQL END DECLARE SECTION;
 
     name = argv[1];
     if (name_to_id(name, "STRING", &id) != MR_SUCCESS) {
@@ -916,7 +966,7 @@ client *cl;
     if (ingres_errno) return(mr_errcode);
     *(int *)argv[1] = id;
     return(MR_SUCCESS);
-##}
+}
 
 
 
@@ -931,9 +981,11 @@ set_modtime(q, argv, cl)
     struct query *q;
     char *argv[];
     client *cl;
-##{
-##  char *name, *entity, *table;
-##  int who;
+{
+    EXEC SQL BEGIN DECLARE SECTION;
+    char *name, *entity, *table;
+    int who;
+    EXEC SQL END DECLARE SECTION;
 
     entity = cl->entity;
     who = cl->client_id;
@@ -943,7 +995,7 @@ set_modtime(q, argv, cl)
 ##  replace table (modtime = "now", modby = who, modwith = entity)
 ##	 where table.#name = name
     return(MR_SUCCESS);
-##}
+}
 
 /* generic set_modtime_by_id routine.  This takes the table name from
  * the query, and the id name from the validate record,
@@ -955,9 +1007,11 @@ set_modtime_by_id(q, argv, cl)
     struct query *q;
     char **argv;
     client *cl;
-##{
-##  char *entity, *table, *id_name;
-##  int who, id;
+{
+    EXEC SQL BEGIN DECLARE SECTION;
+    char *entity, *table, *id_name;
+    int who, id;
+    EXEC SQL END DECLARE SECTION;
 
     entity = cl->entity;
     who = cl->client_id;
@@ -968,7 +1022,7 @@ set_modtime_by_id(q, argv, cl)
 ##  replace table (modtime = "now", modby = who, modwith = entity)
 ##	 where table.id_name = id
     return(MR_SUCCESS);
-##}
+}
 
 
 /* Sets the finger modtime on a user record.  The users_id will be in argv[0].
@@ -978,9 +1032,11 @@ set_finger_modtime(q, argv, cl)
     struct query *q;
     char *argv[];
     client *cl;
-##{
-##  int users_id, who;
-##  char *entity;
+{
+    EXEC SQL BEGIN DECLARE SECTION;
+    int users_id, who;
+    char *entity;
+    EXEC SQL END DECLARE SECTION;
 
     entity = cl->entity;
     who = cl->client_id;
@@ -989,7 +1045,7 @@ set_finger_modtime(q, argv, cl)
 ##  repeat replace u (fmodtime = "now", fmodby = @who, fmodwith = @entity)
 ##	 where u.#users_id = @users_id
     return(MR_SUCCESS);
-##}
+}
 
 
 /* Sets the pobox modtime on a user record.  The users_id will be in argv[0].
@@ -999,9 +1055,11 @@ set_pobox_modtime(q, argv, cl)
     struct query *q;
     char **argv;
     client *cl;
-##{
-##  int users_id, who;
-##  char *entity;
+{
+    EXEC SQL BEGIN DECLARE SECTION;
+    int users_id, who;
+    char *entity;
+    EXEC SQL END DECLARE SECTION;
 
     entity = cl->entity;
     who = cl->client_id;
@@ -1010,7 +1068,7 @@ set_pobox_modtime(q, argv, cl)
 ##  repeat replace users (pmodtime = "now", pmodby = @who, pmodwith = @entity)
 ##	 where users.#users_id = @users_id
     return(MR_SUCCESS);
-##}
+}
 
 
 /* Like set_modtime, but uppercases the name first.
@@ -1020,9 +1078,11 @@ set_uppercase_modtime(q, argv, cl)
     struct query *q;
     char **argv;
     client *cl;
-##{
-##  char *name, *entity, *table;
-##  int who;
+{
+    EXEC SQL BEGIN DECLARE SECTION;
+    char *name, *entity, *table;
+    int who;
+    EXEC SQL END DECLARE SECTION;
 
     entity = cl->entity;
     who = cl->client_id;
@@ -1032,7 +1092,7 @@ set_uppercase_modtime(q, argv, cl)
 ##  replace table (modtime = "now", modby = who, modwith = entity)
 ##	 where table.#name = uppercase(name)
     return(MR_SUCCESS);
-##}
+}
 
 
 /* Sets the modtime on the machine whose mach_id is in argv[0].  This routine
@@ -1044,9 +1104,11 @@ set_mach_modtime_by_id(q, argv, cl)
     struct query *q;
     char **argv;
     client *cl;
-##{
-##  char *entity;
-##  int who, id;
+{
+    EXEC SQL BEGIN DECLARE SECTION;
+    char *entity;
+    int who, id;
+    EXEC SQL END DECLARE SECTION;
 
     entity = cl->entity;
     who = cl->client_id;
@@ -1055,7 +1117,7 @@ set_mach_modtime_by_id(q, argv, cl)
 ##  repeat replace machine (modtime = "now", modby = @who, modwith = @entity)
 ##	 where machine.mach_id = @id
     return(MR_SUCCESS);
-##}
+}
 
 
 /* Sets the modtime on the cluster whose mach_id is in argv[0].  This routine
@@ -1067,9 +1129,11 @@ set_cluster_modtime_by_id(q, argv, cl)
     struct query *q;
     char **argv;
     client *cl;
-##{
-##  char *entity;
-##  int who, id;
+{
+    EXEC SQL BEGIN DECLARE SECTION;
+    char *entity;
+    int who, id;
+    EXEC SQL END DECLARE SECTION;
 
     entity = cl->entity;
     who = cl->client_id;
@@ -1078,7 +1142,7 @@ set_cluster_modtime_by_id(q, argv, cl)
 ##  repeat replace cluster (modtime = "now", modby = @who, modwith = @entity)
 ##	 where cluster.clu_id = @id
     return(MR_SUCCESS);
-##}
+}
 
 
 /* sets the modtime on the serverhost where the service name is in argv[0]
@@ -1089,9 +1153,11 @@ set_serverhost_modtime(q, argv, cl)
     struct query *q;
     char **argv;
     client *cl;
-##{
-##  char *entity, *serv;
-##  int who, id;
+{
+    EXEC SQL BEGIN DECLARE SECTION;
+    char *entity, *serv;
+    int who, id;
+    EXEC SQL END DECLARE SECTION;
 
     entity = cl->entity;
     who = cl->client_id;
@@ -1101,7 +1167,7 @@ set_serverhost_modtime(q, argv, cl)
 ##  repeat replace sh (modtime = "now", modby = @who, modwith = @entity)
 ##	 where sh.service = uppercase(@serv) and sh.mach_id = @id
     return(MR_SUCCESS);
-##}
+}
 
 
 /* sets the modtime on the nfsphys where the mach_id is in argv[0] and the
@@ -1112,9 +1178,11 @@ set_nfsphys_modtime(q, argv, cl)
     struct query *q;
     char **argv;
     client *cl;
-##{
-##  char *entity, *dir;
-##  int who, id;
+{
+    EXEC SQL BEGIN DECLARE SECTION;
+    char *entity, *dir;
+    int who, id;
+    EXEC SQL END DECLARE SECTION;
 
     entity = cl->entity;
     who = cl->client_id;
@@ -1124,7 +1192,7 @@ set_nfsphys_modtime(q, argv, cl)
 ##  repeat replace np (modtime = "now", modby = @who, modwith = @entity)
 ##	 where np.#dir = @dir and np.mach_id = @id
     return(MR_SUCCESS);
-##}
+}
 
 
 /* sets the modtime on a filesystem, where argv[0] contains the filesys
@@ -1135,9 +1203,11 @@ set_filesys_modtime(q, argv, cl)
     struct query *q;
     char *argv[];
     client *cl;
-##{
-##  char *label, *entity;
-##  int who;
+{
+    EXEC SQL BEGIN DECLARE SECTION;
+    char *label, *entity;
+    int who;
+    EXEC SQL END DECLARE SECTION;
 
     entity = cl->entity;
     who = cl->client_id;
@@ -1149,7 +1219,7 @@ set_filesys_modtime(q, argv, cl)
 ##  repeat replace fs (modtime = "now", modby = @who, modwith = @entity,
 ##		       #phys_id = @var_phys_id)  where fs.#label = @label
     return(MR_SUCCESS);
-##}
+}
 
 
 /* sets the modtime on a zephyr class, where argv[0] contains the class
@@ -1160,9 +1230,11 @@ set_zephyr_modtime(q, argv, cl)
     struct query *q;
     char *argv[];
     client *cl;
-##{
-##  char *class, *entity;
-##  int who;
+{
+    EXEC SQL BEGIN DECLARE SECTION;
+    char *class, *entity;
+    int who;
+    EXEC SQL END DECLARE SECTION;
 
     entity = cl->entity;
     who = cl->client_id;
@@ -1172,7 +1244,7 @@ set_zephyr_modtime(q, argv, cl)
 ##  repeat replace z (modtime = "now", modby = @who, modwith = @entity)
 ##		       where z.#class = @class
     return(MR_SUCCESS);
-##}
+}
 
 
 /* fixes the modby field.  This will be the second to last thing in the
@@ -1226,10 +1298,12 @@ followup_ausr(q, argv, cl)
     struct query *q;
     char *argv[];
     client *cl;
-##{
-##  int who;
-##  char *login, *entity;
-##  char fullname[129];
+{
+    EXEC SQL BEGIN DECLARE SECTION;
+    int who;
+    char *login, *entity;
+    char fullname[129];
+    EXEC SQL END DECLARE SECTION;
 
     login = argv[0];
     who = cl->client_id;
@@ -1251,7 +1325,7 @@ followup_ausr(q, argv, cl)
 ##	where u.#login = @login
 
     return(MR_SUCCESS);
-##}
+}
 
 
 /* followup_gpob: fixes argv[2] based on the IDs currently there and the
@@ -1406,11 +1480,13 @@ followup_gqot(q, sq, v, action, actarg, cl)
     register int (*action)();
     register int actarg;
     client *cl;
-##{
+{
     register int j;
     char **argv, *malloc();
-##  int id, rowcount;
-##  char *name, *label;
+    EXEC SQL BEGIN DECLARE SECTION;
+    int id, rowcount;
+    char *name, *label;
+    EXEC SQL END DECLARE SECTION;
     int status, idx;
 
     if (!strcmp(q->name, "get_quota") ||
@@ -1467,7 +1543,7 @@ followup_gqot(q, sq, v, action, actarg, cl)
     }
     sq_destroy(sq);
     return(MR_SUCCESS);
-##}
+}
 
 
 /* followup_aqot: Add allocation to nfsphys after creating quota.
@@ -1481,9 +1557,11 @@ followup_aqot(q, argv, cl)
     struct query  *q;
     char **argv;
     client *cl;
-##{
-##  int quota, id, fs, who;
-##  char *entity, *qtype;
+{
+    EXEC SQL BEGIN DECLARE SECTION;
+    int quota, id, fs, who;
+    char *entity, *qtype;
+    EXEC SQL END DECLARE SECTION;
 
     fs = *(int *)argv[0];
     if (!strcmp(q->name, "add_quota") || !strcmp(q->name, "update_quota")) {
@@ -1504,7 +1582,7 @@ followup_aqot(q, argv, cl)
 ##	where nfsphys.nfsphys_id = filesys.#phys_id and filesys.filsys_id = @fs
     if (ingres_errno) return(mr_errcode);
     return(MR_SUCCESS);
-##}
+}
 
 
 followup_gpce(q, sq, v, action, actarg, cl)
@@ -1671,9 +1749,11 @@ int set_pobox(q, argv, cl)
     struct query *q;
     char **argv;
     client *cl;
-##{
-##  int user, id, rowcount;
-##  char *box, potype[9];
+{
+    EXEC SQL BEGIN DECLARE SECTION;
+    int user, id, rowcount;
+    char *box, potype[9];
+    EXEC SQL END DECLARE SECTION;
     int status;
 
     box = argv[2];
@@ -1716,7 +1796,7 @@ int set_pobox(q, argv, cl)
 ##	where tblstats.#table = "users"
     if (ingres_errno) return(mr_errcode);
     return(MR_SUCCESS);
-##}
+}
 
 
 /* get_list_info:  passed a wildcard list name, returns lots of stuff about
@@ -1730,12 +1810,14 @@ get_list_info(q, aargv, cl, action, actarg)
     client *cl;
     register int (*action)();
     int actarg;
-##{
+{
     char *argv[13], *malloc(), *realloc();
-##  char *name, acl_type[9], listname[33], active[5], public[5], hidden[5];
-##  char maillist[5], group[5], gid[6], acl_name[256], desc[256], modtime[27];
-##  char modby[256], modwith[9];
-##  int id, rowcount, acl_id, hid, modby_id;
+    EXEC SQL BEGIN DECLARE SECTION;
+    char *name, acl_type[9], listname[33], active[5], public[5], hidden[5];
+    char maillist[5], group[5], gid[6], acl_name[256], desc[256], modtime[27];
+    char modby[256], modwith[9];
+    int id, rowcount, acl_id, hid, modby_id;
+    EXEC SQL END DECLARE SECTION;
     int returned, status;
     struct save_queue *sq, *sq_create();
 
@@ -1808,7 +1890,7 @@ get_list_info(q, aargv, cl, action, actarg)
     sq_destroy(sq);
     if (ingres_errno) return(mr_errcode);
     return (MR_SUCCESS);
-##}
+}
 
 
 /* Add_member_to_list: do list flattening as we go!  MAXLISTDEPTH is
@@ -1821,9 +1903,11 @@ int add_member_to_list(q, argv, cl)
     struct query *q;
     char **argv;
     client *cl;
-##{
-##  int id, lid, mid, exists, error, who, ref;
-##  char *mtype, dtype[9], *entity;
+{
+    EXEC SQL BEGIN DECLARE SECTION;
+    int id, lid, mid, exists, error, who, ref;
+    char *mtype, dtype[9], *entity;
+    EXEC SQL END DECLARE SECTION;
     int ancestors[MAXLISTDEPTH], aref[MAXLISTDEPTH], acount, a;
     int descendants[MAXLISTDEPTH], dref[MAXLISTDEPTH], dcount, d;
     int status;
@@ -1946,7 +2030,7 @@ int add_member_to_list(q, argv, cl)
 ##	 where list.#list_id = @lid
     if (ingres_errno) return(mr_errcode);
     return(MR_SUCCESS);
-##}
+}
 
 
 /* Delete_member_from_list: do list flattening as we go!
@@ -1956,9 +2040,11 @@ int delete_member_from_list(q, argv, cl)
     struct query *q;
     char **argv;
     client *cl;
-##{
-##  int id, lid, mid, cnt, exists, error, who, ref;
-##  char *mtype, dtype[9], *entity;
+{
+    EXEC SQL BEGIN DECLARE SECTION;
+    int id, lid, mid, cnt, exists, error, who, ref;
+    char *mtype, dtype[9], *entity;
+    EXEC SQL END DECLARE SECTION;
     int ancestors[MAXLISTDEPTH], aref[MAXLISTDEPTH], acount, a;
     int descendants[MAXLISTDEPTH], dref[MAXLISTDEPTH], dcount, d;
     char *dtypes[MAXLISTDEPTH];
@@ -2061,7 +2147,7 @@ int delete_member_from_list(q, argv, cl)
 ##	 where list.#list_id = @lid
     if (ingres_errno) return(mr_errcode);
     return(MR_SUCCESS);
-##}
+}
 
 
 /* get_ace_use - given a type and a name, return a type and a name.
@@ -2078,10 +2164,12 @@ int get_ace_use(q, argv, cl, action, actarg)
     client *cl;
     int (*action)();
     int actarg;
-##{
+{
     int found = 0;
-##  char *atype;
-##  int aid, listid, id;
+    EXEC SQL BEGIN DECLARE SECTION;
+    char *atype;
+    int aid, listid, id;
+    EXEC SQL END DECLARE SECTION;
     struct save_queue *sq, *sq_create();
 
 ##  range of m is imembers
@@ -2139,7 +2227,7 @@ int get_ace_use(q, argv, cl, action, actarg)
     if (ingres_errno) return(mr_errcode);
     if (!found) return(MR_NO_MATCH);
     return(MR_SUCCESS);
-##}
+}
 
 
 /* This looks up a single list or user for ace use.  atype must be "USER"
@@ -2148,14 +2236,18 @@ int get_ace_use(q, argv, cl, action, actarg)
  */
 
 ##get_ace_internal(atype, aid, action, actarg)
-##  char *atype;
-##  int aid;
+    EXEC SQL BEGIN DECLARE SECTION;
+    char *atype;
+    int aid;
+    EXEC SQL END DECLARE SECTION;
     int (*action)();
     int actarg;
-##{
+{
     char *rargv[2];
     int found = 0;
-##  char name[33];
+    EXEC SQL BEGIN DECLARE SECTION;
+    char name[33];
+    EXEC SQL END DECLARE SECTION;
 
     rargv[1] = name;
     if (!strcmp(atype, "LIST")) {
@@ -2214,7 +2306,7 @@ int get_ace_use(q, argv, cl, action, actarg)
 
     if (!found) return(MR_NO_MATCH);
     return(MR_SUCCESS);
-##}
+}
 
 
 /* get_lists_of_member - given a type and a name, return the name and flags
@@ -2234,6 +2326,8 @@ int get_lists_of_member(q, argv, cl, action, actarg)
 ##{
     int found = 0, direct = 1;
     char *rargv[6];
+    EXEC SQL BEGIN DECLARE SECTION;
+    EXEC SQL END DECLARE SECTION;
 ##  char *atype;
 ##  int aid, listid, id;
 ##  char name[33], active[5], public[5], hidden[5], maillist[5], group[5];
@@ -2325,9 +2419,11 @@ get_members_of_list(q, argv, cl, action, actarg)
     client *cl;
     int (*action)();
     int actarg;
-##{
-##  int list_id, member_id;
-##  char member_name[129], member_type[9];
+{
+    EXEC SQL BEGIN DECLARE SECTION;
+    int list_id, member_id;
+    char member_name[129], member_type[9];
+    EXEC SQL END DECLARE SECTION;
     char *targv[2];
     int members;
     struct save_queue *sq;
@@ -2421,7 +2517,7 @@ get_members_of_list(q, argv, cl, action, actarg)
     if (ingres_errno) return(mr_errcode);
 
     return(MR_SUCCESS);
-##}
+}
 
 
 /* count_members_of_list: this is a simple query, but it cannot be done
@@ -2434,8 +2530,10 @@ int count_members_of_list(q, argv, cl, action, actarg)
     client *cl;
     int (*action)();
     int actarg;
-##{
-##  int  list, ct = 0;
+{
+    EXEC SQL BEGIN DECLARE SECTION;
+    int  list, ct = 0;
+    EXEC SQL END DECLARE SECTION;
     char *rargv[1], countbuf[5];
 
     list = *(int *)argv[0];
@@ -2447,7 +2545,7 @@ int count_members_of_list(q, argv, cl, action, actarg)
     sprintf(countbuf, "%d", ct);
     (*action)(1, rargv, actarg);
     return(MR_SUCCESS);
-##}
+}
 
 
 /* qualified_get_server: passed "TRUE", "FALSE", or "DONTCARE" for each of
@@ -2488,10 +2586,12 @@ int qualified_get(q, argv, action, actarg, start, range, field, flags)
     char *range;
     char *field;
     char *flags[];
-##{
-##  char name[33], qual[256], *rvar, *rtbl, *rfield;
+{
+    EXEC SQL BEGIN DECLARE SECTION;
+    char name[33], qual[256], *rvar, *rtbl, *rfield;
+    int rowcount, i;
+    EXEC SQL END DECLARE SECTION;
     char *rargv[1], buf[32];
-##  int rowcount, i;
 
     strcpy(qual, start);
     for (i = 0; i < q->argc; i++) {
@@ -2517,7 +2617,7 @@ int qualified_get(q, argv, action, actarg, start, range, field, flags)
     if (rowcount == 0)
       return(MR_NO_MATCH);
     return(MR_SUCCESS);
-##}
+}
 
 
 /* qualified_get_serverhost: passed "TRUE", "FALSE", or "DONTCARE" for each of
@@ -2535,10 +2635,12 @@ int qualified_get_serverhost(q, argv, cl, action, actarg)
     client *cl;
     int (*action)();
     int actarg;
-##{
-##  char sname[33], mname[33], qual[256];
+{
+    EXEC SQL BEGIN DECLARE SECTION;
+    char sname[33], mname[33], qual[256];
+    int rowcount, i;
+    EXEC SQL END DECLARE SECTION;
     char *rargv[2], buf[32];
-##  int rowcount, i;
 
     sprintf(qual, "machine.mach_id = sh.mach_id and sh.service = uppercase(\"%s\")",
 	    argv[0]);
@@ -2563,7 +2665,7 @@ int qualified_get_serverhost(q, argv, cl, action, actarg)
     if (rowcount == 0)
       return(MR_NO_MATCH);
     return(MR_SUCCESS);
-##}
+}
 
 
 /* register_user - change user's login name and allocate a pobox, group,
@@ -2577,10 +2679,12 @@ register_user(q, argv, cl)
     struct query *q;
     char **argv;
     client *cl;
-##{
-##  char *login, dir[65], *entity, *directory, machname[33];
-##  int who, rowcount, mid, uid, users_id, flag, utype, nid, list_id, quota;
-##  int size, alloc, pid, m_id;
+{
+    EXEC SQL BEGIN DECLARE SECTION;
+    char *login, dir[65], *entity, *directory, machname[33];
+    int who, rowcount, mid, uid, users_id, flag, utype, nid, list_id, quota;
+    int size, alloc, pid, m_id;
+    EXEC SQL END DECLARE SECTION;
     char buffer[256], *aargv[3];
     int maxsize;
 
@@ -2762,7 +2866,7 @@ register_user(q, argv, cl)
 ##	      tblstats.table = "quota"
     if (ingres_errno) return(mr_errcode);
     return(MR_SUCCESS);
-##}
+}
 
 
 
@@ -2780,16 +2884,18 @@ register_user(q, argv, cl)
 static int set_pop_usage(id, count)
 int id;
 int count;
-##{
-##  int mach_id = id;
-##  int n = count;
+{
+    EXEC SQL BEGIN DECLARE SECTION;
+    int mach_id = id;
+    int n = count;
+    EXEC SQL END DECLARE SECTION;
 
 ##  repeat replace serverhosts (value1 = serverhosts.value1 + @n)
 ##         where serverhosts.service = "POP" and serverhosts.#mach_id = @mach_id
 
     if (ingres_errno) return(mr_errcode);
     return(MR_SUCCESS);
-##}
+}
 
 
 
@@ -2799,12 +2905,14 @@ validate_row(q, argv, v)
     register struct query *q;
     char *argv[];
     register struct validate *v;
-##{
-##  char *rvar;
-##  char *table;
-##  char *name;
-##  char qual[128];
-##  int rowcount;
+{
+    EXEC SQL BEGIN DECLARE SECTION;
+    char *rvar;
+    char *table;
+    char *name;
+    char qual[128];
+    int rowcount;
+    EXEC SQL END DECLARE SECTION;
 
     /* build where clause */
     build_qual(v->qual, v->argc, argv, qual);
@@ -2825,7 +2933,7 @@ validate_row(q, argv, v)
     if (rowcount == 0) return(MR_NO_MATCH);
     if (rowcount > 1) return(MR_NOT_UNIQUE);
     return(MR_EXISTS);
-##}
+}
 
 validate_fields(q, argv, vo, n)
     struct query *q;
@@ -2938,12 +3046,14 @@ register char *s;
 validate_id(argv, vo)
     char *argv[];
     register struct valobj *vo;
-##{
-##  char *name;
-##  char *table;
-##  char *namefield;
-##  char *idfield;
-##  int id, rowcount;
+{
+    EXEC SQL BEGIN DECLARE SECTION;
+    char *name;
+    char *table;
+    char *namefield;
+    char *idfield;
+    int id, rowcount;
+    EXEC SQL END DECLARE SECTION;
     int status;
     register char *c;
 
@@ -2983,16 +3093,18 @@ validate_id(argv, vo)
     if (rowcount != 1) return(vo->error);
     *(int *)argv[vo->index] = id;
     return(MR_EXISTS);
-##}
+}
 
 validate_name(argv, vo)
     char *argv[];
     register struct valobj *vo;
-##{
-##  char *name;
-##  char *table;
-##  char *namefield;
-##  int rowcount;
+{
+    EXEC SQL BEGIN DECLARE SECTION;
+    char *name;
+    char *table;
+    char *namefield;
+    int rowcount;
+    EXEC SQL END DECLARE SECTION;
     register char *c;
 
     name = argv[vo->index];
@@ -3007,15 +3119,17 @@ validate_name(argv, vo)
 ##            where table.namefield = name))
     if (ingres_errno) return(mr_errcode);
     return ((rowcount == 1) ? MR_EXISTS : vo->error);
-##}
+}
 
 validate_date(argv, vo)
     char *argv[];
     struct valobj *vo;
-##{
-##  char *idate;
-##  double dd;
-##  int errorno;
+{
+    EXEC SQL BEGIN DECLARE SECTION;
+    char *idate;
+    double dd;
+    int errorno;
+    EXEC SQL END DECLARE SECTION;
 
     idate = argv[vo->index];
 
@@ -3023,15 +3137,17 @@ validate_date(argv, vo)
 ##  inquire_equel (errorno = "errorno")
     if (errorno != 0 || dd > 5.0) return(MR_DATE);
     return(MR_EXISTS);
-##}
+}
 
 
 validate_rename(argv, vo)
 char *argv[];
 struct valobj *vo;
-##{
-##  char *name, *table, *namefield, *idfield;
-##  int id;
+{
+    EXEC SQL BEGIN DECLARE SECTION;
+    char *name, *table, *namefield, *idfield;
+    int id;
+    EXEC SQL END DECLARE SECTION;
     int status;
     register char *c;
 
@@ -3061,16 +3177,18 @@ struct valobj *vo;
       return(MR_EXISTS);
     else
       return(vo->error);
-##}
+}
 
 
 validate_type(argv, vo)
     char *argv[];
     register struct valobj *vo;
-##{
-##  char *typename;
-##  char *value;
-##  int exists;
+{
+    EXEC SQL BEGIN DECLARE SECTION;
+    char *typename;
+    char *value;
+    int exists;
+    EXEC SQL END DECLARE SECTION;
     register char *c;
 
     typename = vo->table;
@@ -3086,7 +3204,7 @@ validate_type(argv, vo)
 ##				  alias.type = "TYPE" and alias.trans = @value))
     if (ingres_errno) return(mr_errcode);
     return (exists ? MR_EXISTS : vo->error);
-##}
+}
 
 /* validate member or type-specific data field */
 
@@ -3094,11 +3212,14 @@ validate_typedata(q, argv, vo)
     register struct query *q;
     register char *argv[];
     register struct valobj *vo;
-##{
-##  char *name;
-##  char *field_type;
-##  char data_type[129];
-##  int id, rowcount;
+{
+    EXEC SQL BEGIN DECLARE SECTION;
+    char *name;
+    char *field_type;
+    char data_type[129];
+    int id, rowcount;
+    EXEC SQL END DECLARE SECTION;
+
     int status;
     char *index();
     register char *c;
@@ -3173,16 +3294,18 @@ validate_typedata(q, argv, vo)
     *(int *)argv[vo->index] = id;
     
     return (MR_EXISTS);
-##}
+}
 
 
 /* Lock the table named by the validation object */
 
 lock_table(vo)
 struct valobj *vo;
-##{
-##  char *table, *idfield;
-##  int rowcount;
+{
+    EXEC SQL BEGIN DECLARE SECTION;
+    char *table, *idfield;
+    int rowcount;
+    EXEC SQL END DECLARE SECTION;
 
     table = vo->table;
     idfield = vo->idfield;
@@ -3193,7 +3316,7 @@ struct valobj *vo;
       return(vo->error);
     else
       return(MR_EXISTS);
-##}
+}
 
 
 /* Check the database at startup time.  For now this just resets the
@@ -3201,5 +3324,5 @@ struct valobj *vo;
  */
 
 sanity_check_database()
-##{
-##}
+{
+}

@@ -1,5 +1,5 @@
 #	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/db2rest.awk,v $
-#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/db2rest.awk,v 1.1 1987-07-13 03:51:08 wesommer Exp $
+#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/db2rest.awk,v 1.2 1988-05-10 11:51:41 mar Exp $
 #
 #	This converts the file used to originally create the database
 #	into a program to restore it from a backup.
@@ -26,7 +26,7 @@ BEGIN { print "/* This file automatically generated */";
 $2 ~ /\=/ {
 	vname[count] = $1; 
 	printf "/* %s */\n", $0
-	if ($3 ~ /i[24]/) {
+	if ($3 ~ /i[124]/) {
 		printf "##	int	t_%s;\n", vname[count]
 		vtype[count]="int"
 	} else if ($3 ~ /text\([0-9]*\)/) {

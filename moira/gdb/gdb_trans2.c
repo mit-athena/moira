@@ -1,11 +1,11 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_trans2.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_trans2.c,v 1.3 1993-10-22 14:38:37 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_trans2.c,v 1.4 1997-01-29 23:16:54 danw Exp $
  */
 
 #ifndef lint
-static char *rcsid_gdb_trans2_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_trans2.c,v 1.3 1993-10-22 14:38:37 mar Exp $";
-#endif	lint
+static char *rcsid_gdb_trans2_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_trans2.c,v 1.4 1997-01-29 23:16:54 danw Exp $";
+#endif
 
 
 /************************************************************************
@@ -190,7 +190,7 @@ OPERATION newop;
         */
 	if (gdb_Debug & GDB_LOG)
 		fprintf(gdb_log, "op preempted: halfcon=0x%x oldop=0x%x newop=0x%x\n",
-			oldop,newop);
+			hc,oldop,newop);
        /*
         * link in the new operation
         */
@@ -1234,7 +1234,7 @@ struct  half_con_data *hc;			/* pointer to control struct */
         /*
          * Selected is >0.  The accept SHOULD not hang.
          */
-#endif notdef
+#endif
 
        /*
         * Here is Bill's non-blocking implementation

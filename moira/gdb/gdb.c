@@ -1,11 +1,11 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb.c,v 1.7 1994-09-16 16:18:23 jweiss Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb.c,v 1.8 1997-01-29 23:16:38 danw Exp $
  */
 
 #ifndef lint
-static char *rcsid_gdb_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb.c,v 1.7 1994-09-16 16:18:23 jweiss Exp $";
-#endif	lint
+static char *rcsid_gdb_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb.c,v 1.8 1997-01-29 23:16:38 danw Exp $";
+#endif
 
 
 /************************************************************************/
@@ -36,10 +36,13 @@ static char *rcsid_gdb_c = "$Header: /afs/.athena.mit.edu/astaff/project/moirade
 #include <errno.h>
 #ifdef POSIX
 #include <sys/utsname.h>
+#include <unistd.h>
 #endif
 
+#ifndef __NetBSD__
 extern int sys_nerr;
 extern char *sys_errlist[];
+#endif
 
 extern int errno;
 
@@ -66,7 +69,6 @@ gdb_init()
 {
 	register int i;
 	char hostname[255];			/* name of local host */
-	extern uid_t getuid();
 	int uid;				/* Unix user-i.d. number */
 	char *username;				/* string form of i.d. */
 
@@ -267,6 +269,6 @@ char *msg;
 	if(errno < sys_nerr)
 		fprintf(gdb_log, "%s.\n", sys_errlist[errno]);
 	else
-	        fprintf(gdb_log, "errno %d is out of range of message table.\n");
+	        fprintf(gdb_log, "errno %d is out of range of message table.\n", errno);
 }
 

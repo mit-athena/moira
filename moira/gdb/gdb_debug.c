@@ -1,11 +1,11 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_debug.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_debug.c,v 1.2 1988-09-13 14:25:46 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_debug.c,v 1.3 1997-01-29 23:16:45 danw Exp $
  */
 
 #ifndef lint
-static char *rcsid_gdb_debug_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_debug.c,v 1.2 1988-09-13 14:25:46 mar Exp $";
-#endif	lint
+static char *rcsid_gdb_debug_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_debug.c,v 1.3 1997-01-29 23:16:45 danw Exp $";
+#endif
 
 /************************************************************************/
 /*      

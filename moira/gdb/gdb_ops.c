@@ -1,11 +1,11 @@
 /*
  * $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_ops.c,v $
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_ops.c,v 1.5 1993-04-29 15:05:42 mar Exp $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_ops.c,v 1.6 1997-01-29 23:16:47 danw Exp $
  */
 
 #ifndef lint
-static char *rcsid_gdb_ops_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_ops.c,v 1.5 1993-04-29 15:05:42 mar Exp $";
-#endif	lint
+static char *rcsid_gdb_ops_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_ops.c,v 1.6 1997-01-29 23:16:47 danw Exp $";
+#endif
 
 
 /************************************************************************
@@ -33,10 +33,6 @@ static char *rcsid_gdb_ops_c = "$Header: /afs/.athena.mit.edu/astaff/project/moi
 #ifdef SOLARIS
 #include <sys/filio.h>
 #endif
-#ifdef vax
-extern u_long htonl();
-#endif vax
-
 
 /************************************************************************
  *	
@@ -90,7 +86,7 @@ int type;
 /*	marked as the 'continuation' routine, which will cause its 
 /*	invocation when the transmission completes.
 /*	
-/*	The data is preceded by its length expressed as a long in 
+/*	The data is preceded by its length expressed as a 32-bit number in 
 /*	network byte order.
 /*	
 /************************************************************************/
@@ -140,7 +136,7 @@ int type;
 	/*	called by the connection management logic when the send
 	/*	request percolates to the top of the queue.  This routine
 	/*	reformats the data into an appropriate form for transmission.
-	/*	The format used is a length, represented as a long in 
+	/*	The format used is a length, represented as a 32-bit # in 
 	/*	network byte order, followed by the data itself.  The
 	/*	continuation routine below is called, either synchronously 
 	/*	or asynchronously, once the transmission is complete.
@@ -162,11 +158,11 @@ struct obj_data *arg;
        /*
         * Allocate space and flatten (encode) the data
         */
-	arg->flattened = db_alloc(arg->len+sizeof(long));
-	*(u_long *)arg->flattened = htonl((u_long)arg->len);
+	arg->flattened = db_alloc(arg->len+sizeof(int32));
+	*(uint32 *)arg->flattened = htonl((uint32)arg->len);
 
 	FCN_PROPERTY(arg->type, ENCODE_PROPERTY)
-	  		       (arg->objp, hcon, arg->flattened+sizeof(long));
+	  		       (arg->objp, hcon, arg->flattened+sizeof(int32));
 
        /*
         * Set up continuation routine in case it's needed after the return
@@ -176,7 +172,7 @@ struct obj_data *arg;
        /*
         * Start sending the data, maybe even complete
         */
-	if (gdb_send_data(hcon, arg->flattened, arg->len + sizeof(long)) == 
+	if (gdb_send_data(hcon, arg->flattened, arg->len + sizeof(int32)) == 
 	    OP_COMPLETE) {		
 		return g_csnobj(op, hcon, arg)	;/* this return is a little */
 						/* subtle.  As continuation */
@@ -216,7 +212,7 @@ HALF_CONNECTION hcon;
 struct obj_data *arg;
 {
 	op->result = OP_SUCCESS;		
-	db_free((char *)arg->flattened, arg->len + sizeof(long));
+	db_free((char *)arg->flattened, arg->len + sizeof(int32));
 						/* free the sent data */
 	db_free((char *)arg, sizeof(struct obj_data));	/* free the state structure */
 	return OP_COMPLETE;
@@ -274,7 +270,7 @@ int type;
 /*	to read the object itself.  When the object itself has been read, it 
 /*	is decoded and the operation completes.
 /*	
-/*	The data is preceded by its length expressed as a long in 
+/*	The data is preceded by its length expressed as a 32-bit number in 
 /*	network byte order.
 /*	
 /*			preempt_and_start_receiving_object (g_prcobj)
@@ -367,7 +363,7 @@ int type;
 	/*	Initialization routine for receiving an object.  
 	/*	Called when the receive operation percolates to the
 	/*	top of the queue.  First, we must receive the single
-	/*	'long' which carries the length of the rest of the data.
+	/*	32-bit # which carries the length of the rest of the data.
 	/*	We do that now, either synchronously or asynchronously.
 	/*	
 	/*----------------------------------------------------------*/
@@ -379,7 +375,7 @@ HALF_CONNECTION hcon;
 struct robj_data *arg;
 {
 	op->fcn.cont = g_c1rcobj;
-	if(gdb_receive_data(hcon, (char *)&(arg->len), sizeof(long)) == OP_COMPLETE) {
+	if(gdb_receive_data(hcon, (char *)&(arg->len), sizeof(int32)) == OP_COMPLETE) {
 		return g_c1rcobj(op, hcon, arg);/* this return is a little */
 						/* subtle.  As continuation */
 						/* routines call each other */
@@ -410,15 +406,11 @@ OPERATION op;
 HALF_CONNECTION hcon;
 struct robj_data *arg;
 {
-#ifdef  vax
-	extern u_long ntohl();
-#endif  vax
-	
        /*
         * Now we know the length of the encoded data, convert the length
         * to local byte order, and allocate the space for the receive.
         */
-	arg->len = (int) ntohl((u_long)arg->len);
+	arg->len = (int) ntohl((uint32)arg->len);
 	if (arg->len > 65536)
 	  return OP_CANCELLED;
 

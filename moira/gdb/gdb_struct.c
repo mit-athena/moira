@@ -1,10 +1,10 @@
 /*
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_struct.c,v 1.5 1994-09-16 16:25:08 jweiss Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_struct.c,v 1.6 1997-01-29 23:16:49 danw Exp $
  */
 
 #ifndef lint
-static char *rcsid_gdb_struct_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_struct.c,v 1.5 1994-09-16 16:25:08 jweiss Exp $";
-#endif	lint
+static char *rcsid_gdb_struct_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_struct.c,v 1.6 1997-01-29 23:16:49 danw Exp $";
+#endif
 
 
 /************************************************************************/
@@ -37,13 +37,10 @@ static char *rcsid_gdb_struct_c = "$Header: /afs/.athena.mit.edu/astaff/project/
 
 #include <mit-copyright.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include "gdb.h"
 
-extern char *malloc();
-#ifndef lint
-extern void   free();
-#endif
 
 /************************************************************************/
 /*	
@@ -435,7 +432,7 @@ TUPLE_DESCRIPTOR descriptor;
         * Wastes time, but helps debugging.
         */
 	t->next = t->prev = NULL;
-#endif GDB_CHECK	
+#endif
 
 	return t;
 }

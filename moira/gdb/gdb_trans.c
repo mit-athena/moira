@@ -1,31 +1,11 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_trans.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_trans.c,v 1.3 1994-09-16 16:25:19 jweiss Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_trans.c,v 1.4 1997-01-29 23:16:53 danw Exp $
  */
 
 #ifndef lint
-static char *rcsid_gdb_trans_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_trans.c,v 1.3 1994-09-16 16:25:19 jweiss Exp $";
-#endif	lint
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+static char *rcsid_gdb_trans_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_trans.c,v 1.4 1997-01-29 23:16:53 danw Exp $";
+#endif
 
 /************************************************************************/
 /*	

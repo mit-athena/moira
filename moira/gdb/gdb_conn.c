@@ -1,11 +1,11 @@
 /*
  * $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_conn.c,v $
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_conn.c,v 1.6 1993-10-22 14:32:25 mar Exp $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_conn.c,v 1.7 1997-01-29 23:16:39 danw Exp $
  */
 
 #ifndef lint
-static char *rcsid_gdb_conn_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_conn.c,v 1.6 1993-10-22 14:32:25 mar Exp $";
-#endif	lint
+static char *rcsid_gdb_conn_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_conn.c,v 1.7 1997-01-29 23:16:39 danw Exp $";
+#endif
 
 /************************************************************************
  *	
@@ -27,6 +27,7 @@ static char *rcsid_gdb_conn_c = "$Header: /afs/.athena.mit.edu/astaff/project/mo
 
 #include <mit-copyright.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include "gdb.h"
 #include <sys/types.h>
@@ -39,11 +40,11 @@ static char *rcsid_gdb_conn_c = "$Header: /afs/.athena.mit.edu/astaff/project/mo
 #ifdef SOLARIS
 #include <sys/filio.h>
 #endif /* SOLARIS */
+#ifdef POSIX
+#include <unistd.h>
+#endif
 
 extern int errno;
-#ifdef vax
-extern u_short htons();			/* ?? All versions?  */
-#endif vax
 
 CONNECTION gdb_allocate_connection();
 
@@ -579,7 +580,7 @@ char *id;
 						/* of pending non-accepted */
 						/* cons.*/
 	fromlen = sizeof(from);
-	peer = accept(slisten, &from, &fromlen);
+	peer = accept(slisten, (struct sockaddr *)&from, &fromlen);
 	if (peer < 0) {
 		g_stop_with_errno(con);
 		gdb_perror("gdb_try_accepting: error accepting connection");
@@ -653,9 +654,9 @@ CONNECTION con;
 		con->status = CON_UP;
 	else
 		con->status = CON_STOPPED;
-#else !VERIFY_PROTOCOL
+#else
 	con->status = CON_UP;
-#endif !VERIFY_PROTOCOL
+#endif
 }
 
 
@@ -707,7 +708,7 @@ CONNECTION con;
 		g_stop_with_errno(con);
 		return;
 	}
-#else   !VERIFY_PROTOCOL
+#else
 	con->status = CON_UP;
 #endif
 }

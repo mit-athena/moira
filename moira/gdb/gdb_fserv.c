@@ -1,10 +1,10 @@
 /*
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_fserv.c,v 1.7 1993-05-04 18:08:24 mar Exp $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_fserv.c,v 1.8 1997-01-29 23:16:46 danw Exp $
  */
 
 #ifndef lint
-static char *rcsid_gdb_fserv_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_fserv.c,v 1.7 1993-05-04 18:08:24 mar Exp $";
-#endif	lint
+static char *rcsid_gdb_fserv_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_fserv.c,v 1.8 1997-01-29 23:16:46 danw Exp $";
+#endif
 
 
 /************************************************************************
@@ -29,6 +29,9 @@ static char *rcsid_gdb_fserv_c = "$Header: /afs/.athena.mit.edu/astaff/project/m
 #include <sys/signal.h>
 #include "gdb.h"
 #include <sys/resource.h>
+#ifdef POSIX
+#include <unistd.h>
+#endif
 
 
 /************************************************************************
@@ -177,7 +180,6 @@ gdb_reaper()
 #else
 	union wait status;
 #endif
-	extern char *sys_siglist[];
        
 #ifdef POSIX
 	while (waitpid(-1, &status, WNOHANG) >0);

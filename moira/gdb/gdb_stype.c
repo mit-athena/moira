@@ -1,11 +1,11 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_stype.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_stype.c,v 1.4 1993-10-22 14:36:54 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_stype.c,v 1.5 1997-01-29 23:16:51 danw Exp $
  */
 
 #ifndef lint
-static char *rcsid_gdb_stype_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_stype.c,v 1.4 1993-10-22 14:36:54 mar Exp $";
-#endif	lint
+static char *rcsid_gdb_stype_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb_stype.c,v 1.5 1997-01-29 23:16:51 danw Exp $";
+#endif
 
 
 /************************************************************************
@@ -45,9 +45,6 @@ static char *rcsid_gdb_stype_c = "$Header: /afs/.athena.mit.edu/astaff/project/m
 #include <stdio.h>
 #include <string.h>
 #include "gdb.h"
-#ifdef vax			/* XXX */
-	extern u_long ntohl(), htonl();
-#endif vax
 #include <netinet/in.h>				/* for htonl routine */
 
 
@@ -113,7 +110,7 @@ HALF_CONNECTION hcon;
 	/*----------------------------------------------------------*/
 
 /*ARGSUSED*/
-int
+char *
 g_in_enc(dp, hcon, outp)
 char *dp;					/* pointer to data */
 HALF_CONNECTION hcon;				/* connection descriptor */
@@ -123,7 +120,7 @@ char *outp;					/* place to put the output */
 	register char *op = outp;
 	register char *endp = outp+IN_EXTERNSIZE;
 
-	unsigned long converted;		/* the integer goes here */
+	uint32 converted;			/* the integer goes here */
 						/* in network byte order*/
 
        /*
@@ -131,7 +128,7 @@ char *outp;					/* place to put the output */
         * account for the fact that the RT has trouble with unaligned longs
         */
 
-	converted = htonl(*(u_long *)dp);
+	converted = htonl(*(uint32 *)dp);
 
 	cp = (char *)&converted;
 	*op++ = *cp++;
@@ -139,7 +136,7 @@ char *outp;					/* place to put the output */
 	*op++ = *cp++;
 	*op++ = *cp++;
 
-	return (int)(endp);			/* return pointer to next */
+	return endp;				/* return pointer to next */
 						/* unused output byte*/
 }
 
@@ -154,7 +151,7 @@ char *outp;					/* place to put the output */
 	/*----------------------------------------------------------*/
 
 /*ARGSUSED*/
-int
+char *
 g_in_dec(outp, hcon, inp)
 char *inp;					/* pointer to data */
 HALF_CONNECTION hcon;				/* connection descriptor */
@@ -179,7 +176,7 @@ char *outp;					/* place to put the output */
         */
 
 	*(int *)outp = ntohl((u_long)buffer);
-	return (int)(ip);
+	return ip;
 }
 
 	/*----------------------------------------------------------*/
@@ -207,7 +204,7 @@ char *dp;					/* pointer to the data */
 /************************************************************************/
 
 #define ST_LEN 		(sizeof(STRING))
-#define ST_ALI 		(sizeof(int))
+#define ST_ALI 		(sizeof(char *))
 #define ST_NULL 	g_st_null
 #define ST_CDLEN 	g_st_cdlen
 #define ST_ENC 		g_st_enc
@@ -265,7 +262,7 @@ HALF_CONNECTION hcon;
 	/*	
 	/*----------------------------------------------------------*/
 
-int
+char *
 g_st_enc(dp, hcon, outp)
 char *dp;					/* pointer to data */
 HALF_CONNECTION hcon;				/* connection descriptor */
@@ -290,7 +287,7 @@ char *outp;					/* place to put the output */
 		memcpy(nextp, STRING_DATA(*stp), len);
 						/* copy the data without */
 						/* changing representation*/
-	return (int)(nextp+len);
+	return nextp+len;
 }
 
 	/*----------------------------------------------------------*/
@@ -309,7 +306,7 @@ char *outp;					/* place to put the output */
 	/*	
 	/*----------------------------------------------------------*/
 
-int
+char *
 g_st_dec(outp, hcon, inp)
 char *inp;					/* pointer to input data */
 HALF_CONNECTION hcon;				/* connection descriptor */
@@ -335,7 +332,7 @@ char *outp;					/* place to put the output */
 	if (len == 0) {
 		STRING_DATA(*stp) = NULL;
 		MAX_STRING_SIZE(*stp) = 0;
-		return (int)(nextp);
+		return nextp;
 	}
 	(void) string_alloc(stp, len);		/* this sets string length */
 						/* in addition to doing the */
@@ -346,7 +343,7 @@ char *outp;					/* place to put the output */
         */
 	memcpy(STRING_DATA(*stp), nextp, len);	/* copy the data without */
 						/* changing representation*/
-	return (int)(nextp+len);
+	return nextp+len;
 }
 
 	/*----------------------------------------------------------*/
@@ -449,7 +446,7 @@ HALF_CONNECTION hcon;
 	/*----------------------------------------------------------*/
 
 /*ARGSUSED*/
-int
+char *
 g_rl_enc(dp, hcon, outp)
 char *dp;					/* pointer to data */
 HALF_CONNECTION hcon;				/* connection descriptor */
@@ -477,7 +474,7 @@ char *outp;					/* place to put the output */
 	while (cp < endp)
 		*cp++ = ' ';			/* pad to desired length */
 
-	return (int)(outp+RL_EXTERNSIZE);	/* return pointer to next */
+	return outp+RL_EXTERNSIZE;		/* return pointer to next */
 						/* unused output byte*/
 }
 
@@ -490,14 +487,14 @@ char *outp;					/* place to put the output */
 	/*----------------------------------------------------------*/
 
 /*ARGSUSED*/
-int
+char *
 g_rl_dec(outp, hcon, inp)
 char *inp;					/* pointer to data */
 HALF_CONNECTION hcon;				/* connection descriptor */
 char *outp;					/* place to put the output */
 {
 	(void) sscanf(inp,"%30le", (double *)outp);
-	return (int)(inp+RL_EXTERNSIZE);
+	return inp+RL_EXTERNSIZE;
 }
 
 	/*----------------------------------------------------------*/
@@ -586,7 +583,7 @@ HALF_CONNECTION hcon;
 	/*----------------------------------------------------------*/
 
 /*ARGSUSED*/
-int
+char *
 g_dt_enc(dp, hcon, outp)
 char *dp;					/* pointer to data */
 HALF_CONNECTION hcon;				/* connection descriptor */
@@ -603,7 +600,7 @@ char *outp;					/* place to put the output */
 	while (op < endp)
 		*op++ = *ip++;			/* pad to desired length */
 
-	return (int)(endp);			/* return pointer to next */
+	return endp;				/* return pointer to next */
 						/* unused output byte*/
 }
 
@@ -616,7 +613,7 @@ char *outp;					/* place to put the output */
 	/*----------------------------------------------------------*/
 
 /*ARGSUSED*/
-int
+char *
 g_dt_dec(outp, hcon, inp)
 char *inp;					/* pointer to data */
 HALF_CONNECTION hcon;				/* connection descriptor */
@@ -633,7 +630,7 @@ char *outp;					/* place to put the output */
 	while (op < endp)
 		*op++ = *ip++;			/* pad to desired length */
 
-	return (int)(endp);			/* return pointer to next */
+	return endp;				/* return pointer to next */
 						/* unused output byte*/
 }
 
@@ -747,7 +744,7 @@ HALF_CONNECTION hcon;
 	/*	
 	/*----------------------------------------------------------*/
 
-int
+char *
 g_tpd_enc(dp, hcon, outp)
 char *dp;					/* pointer to data */
 HALF_CONNECTION hcon;				/* connection descriptor */
@@ -788,7 +785,7 @@ char *outp;					/* place to put the output */
 	memcpy(nextp,((char *)(tdp))+gdb_descriptor_length(tdp->field_count), 
 	       tdp->str_len);		/* copy the string data all */
 						/* at once */
-	return (int)(nextp+tdp->str_len);
+	return nextp+tdp->str_len;
 }
 
 	/*----------------------------------------------------------*/
@@ -809,7 +806,7 @@ char *outp;					/* place to put the output */
 
 #define GDB_MAX_DECODED_FIELDS 100
 
-int
+char *
 g_tpd_dec(outp, hcon, inp)
 char *inp;					/* pointer to input data */
 HALF_CONNECTION hcon;				/* connection descriptor */
@@ -883,7 +880,7 @@ char *outp;					/* place to put the output */
         */
 	*tdp = create_tuple_descriptor(field_count, field_names, field_types);
 
-	return (int)nextn;
+	return nextn;
 }
 
 	/*----------------------------------------------------------*/
@@ -1033,7 +1030,7 @@ HALF_CONNECTION hcon;
 	/*	
 	/*----------------------------------------------------------*/
 
-int
+char *
 g_tp_enc(dp, hcon, outp)
 char *dp;					/* pointer to data */
 HALF_CONNECTION hcon;				/* connection descriptor */
@@ -1068,7 +1065,7 @@ char *outp;					/* place to put the output */
 		           (FIELD_FROM_TUPLE(tup, i),hcon, op);
 	}
 	
-	return (int)op;
+	return op;
 }
 
 	/*----------------------------------------------------------*/
@@ -1085,7 +1082,7 @@ char *outp;					/* place to put the output */
 	/*	
 	/*----------------------------------------------------------*/
 
-int
+char *
 g_tp_dec(outp, hcon, inp)
 char *inp;					/* pointer to input data */
 HALF_CONNECTION hcon;				/* connection descriptor */
@@ -1133,7 +1130,7 @@ char *outp;					/* place to put the output */
 	*((TUPLE *)outp) = tup;			/* put the new tuple */
 						/* pointer where the */
 						/* caller wants it */
-	return (int)ip;
+	return ip;
 }
 
 	/*----------------------------------------------------------*/
@@ -1323,7 +1320,7 @@ HALF_CONNECTION hcon;
 	/*	
 	/*----------------------------------------------------------*/
 
-int
+char *
 g_tdt_enc(dp, hcon, outp)
 char *dp;					/* pointer to data */
 HALF_CONNECTION hcon;				/* connection descriptor */
@@ -1356,7 +1353,7 @@ char *outp;					/* place to put the output */
 		           (FIELD_FROM_TUPLE(tup, i),hcon, op);
 	}
 	
-	return (int)op;
+	return op;
 }
 
 	/*----------------------------------------------------------*/
@@ -1370,7 +1367,7 @@ char *outp;					/* place to put the output */
 	/*	
 	/*----------------------------------------------------------*/
 
-int
+char *
 g_tdt_dec(outp, hcon, inp)
 char *inp;					/* pointer to input data */
 HALF_CONNECTION hcon;				/* connection descriptor */
@@ -1403,7 +1400,7 @@ char *outp;					/* place to put the output */
 		           (FIELD_FROM_TUPLE(tup, i),hcon, ip);
 	}
 	
-	return (int)ip;
+	return ip;
 }
 
 	/*----------------------------------------------------------*/
@@ -1575,7 +1572,7 @@ HALF_CONNECTION hcon;
 	/*	
 	/*----------------------------------------------------------*/
 
-int
+char *
 g_rel_enc(dp, hcon, outp)
 char *dp;					/* pointer to data */
 HALF_CONNECTION hcon;				/* connection descriptor */
@@ -1626,7 +1623,7 @@ char *outp;					/* place to put the output */
 	     t = NEXT_TUPLE_IN_RELATION(rel,t))
 		op = (char *)g_tdt_enc((char *)t, hcon, op);
 	
-	return (int)op;
+	return op;
 }
 
 	/*----------------------------------------------------------*/
@@ -1645,7 +1642,7 @@ char *outp;					/* place to put the output */
 	/*	
 	/*----------------------------------------------------------*/
 
-int
+char *
 g_rel_dec(outp, hcon, inp)
 char *inp;					/* pointer to input data */
 HALF_CONNECTION hcon;				/* connection descriptor */
@@ -1704,7 +1701,7 @@ char *outp;					/* place to put the output */
 
 	*((RELATION *)outp) = rel;
 
-	return (int)ip;
+	return ip;
 }
 
 	/*----------------------------------------------------------*/
@@ -1783,8 +1780,8 @@ char *dp;					/* pointer to the data */
 	g_type_table[inx][ALIGNMENT_PROPERTY].i = ap; \
 	g_type_table[inx][NULL_PROPERTY].f = np; \
 	g_type_table[inx][CODED_LENGTH_PROPERTY].f = clp; \
-	g_type_table[inx][ENCODE_PROPERTY].f = ep; \
-	g_type_table[inx][DECODE_PROPERTY].f = dp; \
+	g_type_table[inx][ENCODE_PROPERTY].cpf = ep; \
+	g_type_table[inx][DECODE_PROPERTY].cpf = dp; \
 	g_type_table[inx][FORMAT_PROPERTY].f = fp; \
 	g_type_table[inx][NAME_PROPERTY].cp = name; \
 }

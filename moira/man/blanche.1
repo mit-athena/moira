@@ -1,11 +1,11 @@
-.TH SMSLIST 1 "14 Sep 1988" "Project Athena"
-\" RCSID: $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/man/blanche.1,v 1.4 1989-05-05 12:19:12 mar Exp $
+.TH BLANCHE 1 "14 Sep 1988" "Project Athena"
+\" RCSID: $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/man/blanche.1,v 1.5 1989-06-01 22:07:49 mar Exp $
 .SH NAME
-smslist \- examine and modify memberships in SMS lists
+blanche \- examine and modify memberships in SMS lists
 .SH SYNOPSIS
-.B smslist [options] listname [options]
+.B blanche [options] listname [options]
 .SH DESCRIPTION
-.I Smslist
+.I Blanche
 is a tool for maintaining the membership of SMS lists.  It is more
 limited than the menu-oriented listmaint, but has a more traditional
 unix user interface which makes it easier to use in scripts.  It can
@@ -17,7 +17,7 @@ user:username, list:listname, or string:string_text; or the type may
 be left off if the member name is non ambiguous.  A member having
 punctuation characters (such as at-sign) in it is immediately assumed
 to be a string.  Otherwise,
-.B smslist
+.B blanche
 will try first as a user, and if that fails will try the member as a
 list, and finally fall back to string if both of those fail.
 
@@ -45,7 +45,7 @@ The file contains one member per line.  It may have blank lines.
 Anything following a semicolon is considered a comment.  If the 
 .I filename
 is "-",
-.B smslist
+.B blanche
 will read from standard input.
 .IP \fB-info\ \fRor\ \fB-i\fR:
 Display other information about the target list besides the

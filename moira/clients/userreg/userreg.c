@@ -1,12 +1,12 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.c,v $
- *	$Author: ostlund $
+ *	$Author: root $
  *	$Locker:  $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.c,v 1.1 1986-08-21 18:06:27 ostlund Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.c,v 1.2 1987-05-24 20:12:43 root Exp $
  */
 
 #ifndef lint
-static char *rcsid_userreg_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.c,v 1.1 1986-08-21 18:06:27 ostlund Exp $";
+static char *rcsid_userreg_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.c,v 1.2 1987-05-24 20:12:43 root Exp $";
 #endif	lint
 
 #include <curses.h>
@@ -70,7 +70,7 @@ char **argv;
       if (ntimes > 3) {
 	display_text_line ("Sorry, you still cannot be found in the database.");
 	display_text_line (" ");
-	display_text_line ("Please call Melissa Silvestre, x1325, for help.");
+	display_text_line ("Please call the account administrator at x1325 for help.");
 	sleep (8);
 	break;
       }
@@ -129,7 +129,7 @@ char **argv;
  sleep (1);
     display_text_line (0);
     display_text_line ("You are now registered to get an Athena account.");
-    sprintf (line, "Please remember your username of '%s' and the password",
+    sprintf (line, "Please remember your username of \"%s\" and the password",
 	user.u_login);
     display_text_line (line);
     display_text_line ("you typed in earlier.");
@@ -259,11 +259,11 @@ negotiate_login_and_password () {
 	continue;
       }
       else {			/* yay! we can go ahead and change it! */
-      /* technically, this is not sound. Somebody /* may have grabbed the
-         username before us. Its /* unlikely, so we just hope it wont
-         happen */
+      /* technically, this is not sound. Somebody may have grabbed the
+         username before us. It's unlikely, so we just hope it won't
+         happen. */
 	display_text_line (0);	
-	sprintf (line,"No one else is using \042%s\042 as a username so you can have it.", user.u_login);
+	sprintf (line,"No one else is using \"%s\" as a username so you can have it.", user.u_login);
 	display_text_line (line);
 	if (askyn ("Are you sure that is the one you want? ") == NO) {
 	  display_text_line (0);
@@ -285,7 +285,7 @@ get_password:
 
  /* at this point we have successfully negotiated a username */
 
-  sprintf (line, "O.K. your username will be \042%s.\042", user.u_login);
+  sprintf (line, "O.K. your username will be \"%s.\"", user.u_login);
   display_text_line (0);
   display_text_line (line);
   redisp();
@@ -393,8 +393,8 @@ gpass () {
     goto do_input;
   }
 
- /* give him a new password. It looks funny because we are trying * to get
-    a semi_random key without a lot of hair by using the * login name as a
+ /* give him a new password. It looks funny because we are trying to get
+    a semi_random key without a lot of hair by using the login name as a
     seed */
 
   strcpy (user.u_password, crypt (new_password, user.u_login));
@@ -521,8 +521,8 @@ qexit () {
 
 
 do_replace () {
- /* replaces a user in the database. If there is an error, * it informs
-    the user and calls qexit(); * It returns only if is is successful */
+ /* replaces a user in the database. If there is an error, it informs
+    the user and calls qexit(); It returns only if is is successful */
 
   register int  result, uid;
 
@@ -565,8 +565,8 @@ lenient_strcmp (string1, string2)
 register char *string1,
              *string2;
 {
- /* a primitive case insensitive string comparison. It returns * only 0 if
-    the strings are equal (ignoring case) and 1 * if they are different.
+ /* a primitive case insensitive string comparison. It returns only 0 if
+    the strings are equal (ignoring case) and 1 if they are different.
     Also ignores spaces. */
 
   while (1) {

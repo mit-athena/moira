@@ -1,4 +1,4 @@
-/* $Id: queries2.c,v 2.84 2001-05-02 21:44:13 zacheiss Exp $
+/* $Id: queries2.c,v 2.85 2001-05-23 21:31:40 zacheiss Exp $
  *
  * This file defines the query dispatch table
  *
@@ -3241,6 +3241,11 @@ static struct validate dmcn_validate = /* for amtn and dmfn */
   access_container,
   0,
   set_mach_modtime_by_id,
+};
+
+static char *gmnm_fields[] = {
+  "machine",
+  "machine", "container",
 };
 
 static char *gmoc_fields[] = {
@@ -6709,9 +6714,9 @@ struct query Queries[] = {
     RETRIEVE,
     "mcn",
     MCNTMAP_TABLE,
-    "c.name FROM machine m, containers c, mcntmap mcn",
-    amcn_fields,
-    1,
+    "m.name, c.name FROM machine m, containers c, mcntmap mcn",
+    gmnm_fields,
+    2,
     "m.name = UPPER('%s') AND mcn.cnt_id = c.cnt_id AND mcn.mach_id = m.mach_id",
     1,
     NULL,

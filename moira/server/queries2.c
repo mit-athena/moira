@@ -1,6 +1,6 @@
 /* This file defines the query dispatch table for version 2 of the protocol
  *
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/queries2.c,v 2.22 1994-01-07 15:50:25 tom Exp $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/queries2.c,v 2.23 1994-06-07 18:39:38 tom Exp $
  *
  * Copyright 1987, 1988 by the Massachusetts Institute of Technology.
  * For copying and distribution information, please see the file
@@ -770,8 +770,8 @@ static char *gmac_fields[] = {
 };
 
 static char *ghst_fields[] = {
-  NAME, ADDRESS, "location", "contact",
-  NAME, "vendor", "model", "os", "location", "contact", "use", "status", "status_change", SUBNET, ADDRESS, ACE_TYPE, ACE_NAME, "admin_comment", "ops_comment", "created", "creator", "inuse", MOD1, MOD2, MOD3,
+  NAME, ADDRESS, "location", "network",
+  NAME, "vendor", "model", "os", "location", "contact", "use", "status", "status_change", "network", ADDRESS, ACE_TYPE, ACE_NAME, "admin_comment", "ops_comment", "created", "creator", "inuse", MOD1, MOD2, MOD3,
 };
 
 static struct valobj ghst_valobj[] = {
@@ -2994,7 +2994,7 @@ struct query Queries2[] = {
     "CHAR(m.name), m.vendor, m.model, m.os, m.location, m.contact, CHAR(m.use), CHAR(m.status), CHAR(m.statuschange), CHAR(s.name), m.address, m.owner_type, CHAR(m.owner_id), CHAR(m.acomment), CHAR(m.ocomment), CHAR(m.created), CHAR(m.creator), CHAR(m.inuse), CHAR(m.modtime), CHAR(m.modby), m.modwith FROM machine m, subnet s",
     ghst_fields,
     21,
-    "m.name LIKE '%s' ESCAPE '*' AND m.address LIKE '%s' ESCAPE '*' AND m.location LIKE '%s' ESCAPE '*' AND m.contact LIKE '%s' ESCAPE '*' AND m.mach_id != 0 AND s.snet_id = m.snet_id", 
+    "m.name LIKE '%s' ESCAPE '*' AND m.address LIKE '%s' ESCAPE '*' AND m.location LIKE '%s' ESCAPE '*' AND s.name LIKE '%s' ESCAPE '*' AND m.mach_id != 0 AND s.snet_id = m.snet_id", 
     4,
     &ghst_validate,
   },

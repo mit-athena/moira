@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/afs.c,v 1.5 1989-09-08 15:03:32 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/afs.c,v 1.6 1989-09-14 18:21:17 mar Exp $
  *
  * Do AFS incremental updates
  *
@@ -97,10 +97,12 @@ char *cmd;
 
 	    if ((fd = open("/usr/vice/etc/ThisCell", O_RDONLY, 0)) < 0) {
 		critical_alert("incremental", "unable to find AFS cell");
+		unlog();
 		exit(1);
 	    }
 	    if ((cc = read(fd, localcell, sizeof(localcell))) < 0) {
 		critical_alert("incremental", "unable to read AFS cell");
+		unlog();
 		exit(1);
 	    }
 	    close(fd);
@@ -165,6 +167,7 @@ int afterc;
     if (beforec > U_UID && afterc > U_UID &&
 	strcmp(before[U_UID], after[U_UID])) {
 	/* change UID, & possibly user name here */
+	unlog();
 	exit(1);
     }
 

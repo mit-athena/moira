@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menus.c,v 1.20 1991-01-09 18:22:23 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menus.c,v 1.21 1991-10-29 14:58:40 mar Exp $";
 #endif lint
 
 /*	This is the file menus.c for the MOIRA Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menus.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menus.c,v 1.20 1991-01-09 18:22:23 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menus.c,v 1.21 1991-10-29 14:58:40 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -338,11 +338,15 @@ Menu filesys_menu = {
   NULLFUNC, 
   NULLFUNC, 
   "Filesystem Menu",
-  9,
+  10,
   {
     { GetFS, NULLMENU, 2, {
       {"get", "Get Filesystem Name Information"},
       {"name", "Name of Filesystem: "}
+    } },
+    { GetFSM, NULLMENU, 2, {
+      {"getmach", "Get Filesystems by Machine"},
+      {"name", "Name of Server: "}
     } },
     { AddFS, NULLMENU, 2, {
       {"add", "Add New Filesystem to Database"},

@@ -2,7 +2,7 @@
 # This script performs nfs updates on servers.
 #
 # $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/nfs.sh,v $
-echo '$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/nfs.sh,v 1.6 1988-08-07 22:37:49 mar Exp $'
+echo '$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/nfs.sh,v 1.7 1989-06-02 12:04:46 mar Exp $'
 
 # The following exit codes are defined and MUST BE CONSISTENT with the
 # SMS error codes the library uses:
@@ -35,17 +35,10 @@ set uchost=`/bin/hostname | tr a-z A-Z`.MIT.EDU
 
 cd $SRC_DIR
 
-# Only files starting with $uchost, install_, and list- are needed.
-# The files starting with list- are needed because the credentials
-# files are hard links to them.  Tar will fail if they are not extracted.
-foreach file (`/bin/tar tf $TARFILE | awk '{print $1}'`)
-   if (($file =~ ./${uchost}*) || \
-       ($file =~ ./install_*) || \
-       ($file =~ ./list-*)) then
-      tar xf $TARFILE $file
-      if ($status) exit $SMS_TARERR
-   endif
-end
+# Just extract everything since some of what we need exists as
+# hardlinks and tar doesn't deal well with extracting them in isolation.
+tar xf $TARFILE
+if ($status) exit $SMS_TARERR
 
 foreach type (dirs quotas)
    echo "Installing ${type}:"

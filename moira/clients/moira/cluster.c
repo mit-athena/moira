@@ -1,4 +1,4 @@
-/* $Id: cluster.c,v 1.56 2001-09-14 20:30:50 zacheiss Exp $
+/* $Id: cluster.c,v 1.57 2001-09-15 19:39:05 zacheiss Exp $
  *
  *	This is the file cluster.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -235,7 +235,7 @@ static char *PrintMachInfo(char **info)
 {
   char buf[BUFSIZ], tbuf[256];
   char *args[3];
-  struct mqelem *elem = NULL;
+  struct mqelem *elem = NULL, *elem2 = NULL;
   int stat;
 
   Put_message("");
@@ -292,16 +292,17 @@ static char *PrintMachInfo(char **info)
    *  Private.
    */
   args[0] = info[M_SUBNET];
-  stat = do_mr_query("get_subnet", 1, args, StoreInfo, &elem);
+  stat = do_mr_query("get_subnet", 1, args, StoreInfo, &elem2);
   if (stat)
     com_err(program_name, stat, " looking up subnet info");
-  else if (atoi(((char **)elem->q_data)[2]) == SNET_STATUS_PRIVATE)
+  else if (atoi(((char **)elem2->q_data)[2]) == SNET_STATUS_PRIVATE)
     {
       Put_message("");
       sprintf(buf, "Warning:  This host is on a private subnet.");
       Put_message(buf);
       sprintf(buf, "Billing information shown is superceded by billing information for the subnet.");
       Put_message(buf);
+      FreeQueue(elem2);
     }
 
   return info[M_NAME];

@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/winad/winad.c,v 1.24 2001-08-12 19:29:34 zacheiss Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/winad/winad.c,v 1.25 2001-08-28 14:32:48 zacheiss Exp $
 /* winad.incr arguments examples
  *
  * arguments when moira creates the account - ignored by winad.incr since the account is unusable.
@@ -3919,15 +3919,26 @@ int container_create(LDAP *ldap_handle, char *dn_path, int count, char **av)
     }
   if ((strlen(av[CONTAINER_TYPE]) != 0) && (strlen(av[CONTAINER_ID]) != 0))
     {
-      if (!strcasecmp(av[CONTAINER_TYPE], "USER"))
+	  if (!strcasecmp(av[CONTAINER_TYPE], "KERBEROS"))
+	  {
+		  if (!contact_create(ldap_handle, dn_path, av[CONTAINER_ID], kerberos_ou))
+		  {
+			sprintf(managedByDN, "CN=%s,%s,%s", av[CONTAINER_ID], kerberos_ou,dn_path);
+			managedBy_v[0] = managedByDN;
+            		ADD_ATTR("managedBy", managedBy_v, LDAP_MOD_ADD);
+		  }
+	  }
+	  else
+	  {
+		if (!strcasecmp(av[CONTAINER_TYPE], "USER"))
         {
-          sprintf(filter, "(&(objectClass=user)(mitMoiraId=%s))", av[CONTAINER_ID]);
+          sprintf(filter, "(&(cn=%s)(&(objectCategory=person)(objectClass=user)))", av[CONTAINER_ID]);
         }
-      if (!strcasecmp(av[CONTAINER_TYPE], "LIST"))
+		if (!strcasecmp(av[CONTAINER_TYPE], "LIST"))
         {
-          sprintf(filter, "(&(objectClass=group)(mitMoiraId=%s))", av[CONTAINER_ID]);
+          sprintf(filter, "(&(objectClass=group)(cn=%s))", av[CONTAINER_ID]);
         }
-      if (strlen(filter) != 0)
+		if (strlen(filter) != 0)
         {
           attr_array[0] = "distinguishedName";
           attr_array[1] = NULL;
@@ -3948,6 +3959,7 @@ int container_create(LDAP *ldap_handle, char *dn_path, int count, char **av)
             }
         }
     }
+  }
   mods[n] = NULL;
 
   sprintf(temp, "%s,%s", dName, dn_path);
@@ -4135,15 +4147,35 @@ int container_adupdate(LDAP *ldap_handle, char *dn_path, char *dName,
     }
   if ((strlen(av[CONTAINER_TYPE]) != 0) && (strlen(av[CONTAINER_ID]) != 0))
     {
-      if (!strcasecmp(av[CONTAINER_TYPE], "USER"))
+	  if (!strcasecmp(av[CONTAINER_TYPE], "KERBEROS"))
+	  {
+		  if (!contact_create(ldap_handle, dn_path, av[CONTAINER_ID], kerberos_ou))
+		  {
+			sprintf(managedByDN, "CN=%s,%s,%s", av[CONTAINER_ID], kerberos_ou, dn_path);
+			managedBy_v[0] = managedByDN;
+            		ADD_ATTR("managedBy", managedBy_v, LDAP_MOD_REPLACE);
+		  }
+		  else
+		  {
+			if (strlen(managedByDN) != 0)
+			{
+				managedBy_v[0] = NULL;
+				ADD_ATTR("managedBy", managedBy_v, LDAP_MOD_REPLACE);
+			}
+		  }
+	  }
+	  else
+	  {
+		memset(filter, '\0', sizeof(filter));
+		if (!strcasecmp(av[CONTAINER_TYPE], "USER"))
         {
-          sprintf(filter, "(&(objectClass=user)(mitMoiraId=%s))", av[CONTAINER_ID]);
+          sprintf(filter, "(&(cn=%s)(&(objectCategory=person)(objectClass=user)))", av[CONTAINER_ID]);
         }
-      if (!strcasecmp(av[CONTAINER_TYPE], "LIST"))
+		if (!strcasecmp(av[CONTAINER_TYPE], "LIST"))
         {
-          sprintf(filter, "(&(objectClass=group)(mitMoiraId=%s))", av[CONTAINER_ID]);
+          sprintf(filter, "(&(objectClass=group)(cn=%s))", av[CONTAINER_ID]);
         }
-      if (strlen(filter) != 0)
+		if (strlen(filter) != 0)
         {
           attr_array[0] = "distinguishedName";
           attr_array[1] = NULL;
@@ -4171,7 +4203,7 @@ int container_adupdate(LDAP *ldap_handle, char *dn_path, char *dName,
               group_count = 0;
             }
         }
-      else
+		else
         {
           if (strlen(managedByDN) != 0)
             {
@@ -4179,6 +4211,7 @@ int container_adupdate(LDAP *ldap_handle, char *dn_path, char *dName,
               ADD_ATTR("managedBy", managedBy_v, LDAP_MOD_REPLACE);
             }
         }
+	  }
     }
   mods[n] = NULL;
   if (n == 0)

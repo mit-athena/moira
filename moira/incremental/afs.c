@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/afs.c,v 1.14 1990-06-18 12:57:57 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/afs.c,v 1.15 1990-09-06 11:48:16 mar Exp $
  *
  * Do AFS incremental updates
  *
@@ -184,7 +184,7 @@ int beforec;
 char **after;
 int afterc;
 {
-    char cmd[512];
+    char cmd[512], *p;
 
     if ((beforec < 4 || !atoi(before[LM_END])) &&
 	(afterc < 4 || !atoi(after[LM_END])))
@@ -196,6 +196,22 @@ int afterc;
 	return;
     }
     if (afterc == 0 && !strcmp(before[LM_TYPE], "USER")) {
+	sprintf(cmd, "%s removeuser -user %s -group system:%s",
+		pts, before[LM_MEMBER], before[LM_LIST]);
+	do_cmd(cmd);
+	return;
+    }
+    if (beforec == 0 && !strcmp(after[LM_TYPE], "KERBEROS")) {
+	p = index(after[LM_MEMBER], '@');
+	if (p) *p = 0;
+	sprintf(cmd, "%s adduser -user %s -group system:%s",
+		pts, after[LM_MEMBER], after[LM_LIST]);
+	do_cmd(cmd);
+	return;
+    }
+    if (afterc == 0 && !strcmp(before[LM_TYPE], "KERBEROS")) {
+	p = index(before[LM_MEMBER], '@');
+	if (p) *p = 0;
 	sprintf(cmd, "%s removeuser -user %s -group system:%s",
 		pts, before[LM_MEMBER], before[LM_LIST]);
 	do_cmd(cmd);

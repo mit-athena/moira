@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v $
  *	$Author: wesommer $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.3 1987-06-01 04:34:27 wesommer Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.4 1987-06-02 20:05:11 wesommer Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
@@ -14,6 +14,9 @@
  * 	Let the reader beware.
  * 
  *	$Log: not supported by cvs2svn $
+ * Revision 1.3  87/06/01  04:34:27  wesommer
+ * Changed returned error code.
+ * 
  * Revision 1.2  87/06/01  03:34:53  wesommer
  * Added shutdown, logging.
  * 
@@ -22,82 +25,122 @@
  * 
  */
 
-#ifndef lint
-static char *rcsid_sms_main_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.3 1987-06-01 04:34:27 wesommer Exp $";
-#endif lint
+static char *rcsid_sms_main_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.4 1987-06-02 20:05:11 wesommer Exp $";
 
 #include <strings.h>
 #include <sys/errno.h>
-#include <sys/types.h>
-#include <sys/uio.h>
-#include <sys/socket.h>
 #include <sys/signal.h>
-#include <netinet/in.h>
-#include <krb.h>
 #include "sms_private.h"
 #include "sms_server.h"
 
+extern CONNECTION newconn, listencon;
+
+extern int nclients;
+extern client **clients, *cur_client;
+
+extern OPERATION listenop;
+extern LIST_OF_OPERATIONS op_list;
+
+extern struct sockaddr_in client_addr;
+extern int client_addrlen;
+extern TUPLE client_tuple;
+
+extern char *whoami;
+extern char buf1[BUFSIZ];
+extern char *takedown;
+extern int errno;
+
+
 extern char *malloc();
+extern char *inet_ntoa();
+extern void sms_com_err();
+extern void do_client();
 
-CONNECTION newconn, listencon;
-int nclients;
-
-client **clients, *cur_client;
-
-OPERATION listenop;
-
-LIST_OF_OPERATIONS op_list;
+extern int sigshut();
+void clist_append();
+void oplist_append();
+extern u_short ntohs();
 
 /*
- * What is this??
+ * Main SMS server loop.
+ *
+ * Initialize the world, then start accepting connections and
+ * making progress on current connections.
  */
-char otherside[100];
-int othersize;
-TUPLE client_tuple;				/* client request goes */
-						/* here */
-void sms_com_err();
-void sigshut();
 
-char *whoami;
-
-char buf1[BUFSIZ];
-
-char *takedown;
-
+/*ARGSUSED*/
+int
 main(argc, argv)
 	int argc;
 	char **argv;
 {
-	int i;
-	gdb_init();
-	nclients = 0;
-	clients = (client **) malloc(0);
+	int status;
+	
+	whoami = argv[0];
+	/*
+	 * Error handler init.
+	 */
 	init_sms_err_tbl();
 	init_krb_err_tbl();
-	whoami = argv[0];
-	
 	set_com_err_hook(sms_com_err);
-	
-	signal (SIGTERM, sigshut);
-	signal (SIGHUP, sigshut);
-	
-	do_listen();
 
+	if (argc != 1) {
+		com_err(whoami, 0, "Usage: smsd");
+		exit(1);
+	}		
+	
+	/*
+	 * GDB initialization.
+	 */
+	gdb_init();
+
+	/*
+	 * Set up client array handler.
+	 */
+	nclients = 0;
+	clients = (client **) malloc(0);
+	
+	/*
+	 * Signal handlers
+	 */
+	
+	if ((((int)signal (SIGTERM, sigshut)) < 0) ||
+	    (((int)signal (SIGHUP, sigshut)) < 0)) {
+		com_err(whoami, errno, "Unable to establish signal handler.");
+		exit(1);
+	}
+	
+	/*
+	 * Establish template connection.
+	 */
+	if ((status = do_listen()) != 0) {
+		com_err(whoami, status,
+			"while trying to create listening connection");
+		exit(1);
+	}
+	
 	op_list = create_list_of_operations(1, listenop);
-
-	sprintf(buf1, "started (pid %d)", getpid());
-	com_err(whoami, 0, buf1);
-	takedown = 0;
 	
+	(void) sprintf(buf1, "started (pid %d)", getpid());
+	com_err(whoami, 0, buf1);
+	com_err(whoami, 0, rcsid_sms_main_c);
+
+	/*
+	 * Run until shut down.
+	 */
 	while(!takedown) {		
+		register int i;
+		/*
+		 * Block until something happens.
+		 */
 		op_select_any(op_list, 0, NULL, NULL, NULL, NULL);
 		if (takedown) break;
 #ifdef notdef
 		fprintf(stderr, "    tick\n");
 #endif notdef
-		if (OP_DONE(listenop)) {
-			new_connection();
-		}
+		/*
+		 * Handle any existing connections.
+		 */
 		for (i=0; i<nclients; i++) {
 			if (OP_DONE(clients[i]->pending_op)) {
 				cur_client = clients[i];
@@ -106,17 +149,54 @@ main(argc, argv)
 				if (takedown) break;
 			}
 		}
+		/*
+		 * Handle any new connections.
+		 */
+		if (OP_DONE(listenop)) {
+			if ((status = new_connection(listenop)) != 0) {
+				com_err(whoami, errno,
+					"Error on listening operation.");
+				/*
+				 * Sleep here to prevent hosing?
+				 */
+			}
+		}
 	}
 	com_err(whoami, 0, takedown);
-	exit(0);
+	return 0;
 }
 
-void sigshut()
+/*
+ * Set up the template connection and queue the first accept.
+ */
+
+int
+do_listen()
 {
-	takedown = "Shut down by signal.";
+	char *service = index(SMS_GDB_SERV, ':') + 1;
+
+	listencon = create_listening_connection(service);
+
+	if (listencon == NULL)
+		return errno;
+
+	listenop = create_operation();
+	client_addrlen = sizeof(client_addr);
+
+	start_accepting_client(listencon, listenop, &newconn,
+			       (char *)&client_addr,
+			       &client_addrlen, &client_tuple);
+	return 0;
 }
 
-new_connection()
+/*
+ * This routine is called when a new connection comes in.
+ *
+ * It sets up a new client and adds it to the list of currently active clients.
+ */
+int
+new_connection(listenop)
+	OPERATION listenop;
 {
 	register client *cp = (client *)malloc(sizeof *cp);
 	static counter = 0;
@@ -126,13 +206,12 @@ new_connection()
 	 */
 	if(OP_STATUS(listenop) != OP_COMPLETE ||
 	   newconn == NULL) {
-		fprintf(stderr,"Error on listening operation\n");
+		return errno;
+#ifdef notdef
 		exit(8); /* XXX */
+#endif notdef
 	}
 
-	/* Add a new client to the array.. */
-	clist_append(cp);
-	
 	/*
 	 * Set up the new connection and reply to the client
 	 */
@@ -141,6 +220,10 @@ new_connection()
 	cp->action = CL_ACCEPT;
 	cp->con = newconn;
 	cp->id = counter++;
+	cp->args = NULL;
+	cp->clname = NULL;
+	cp->reply.sms_argv = NULL;
+
 	newconn = NULL;
 	
 	cp->pending_op = create_operation();
@@ -148,220 +231,55 @@ new_connection()
 	oplist_append(&op_list, cp->pending_op);
 	cur_client = cp;
 	
-	start_replying_to_client(cp->pending_op, cp->con, GDB_ACCEPTED,
-				 "", "");
-	{
-		int namelen = sizeof(struct sockaddr_in);
-		
-		getpeername(cp->con->in.fd, &cp->haddr, &namelen);
-		
-		sprintf(buf1,
-			"New connection from %s port %d (now %d client%s)",
-			inet_ntoa(cp->haddr.sin_addr),
-			ntohs(cp->haddr.sin_port),
-			nclients,
-			nclients!=1?"s":"");
-		com_err(whoami, 0, buf1);
-	}
+	/*
+	 * Add a new client to the array..
+	 */
+	clist_append(cp);
 	
 	/*
-	 * Start listening again
+	 * Let him know we heard him.
+	 */
+	start_replying_to_client(cp->pending_op, cp->con, GDB_ACCEPTED,
+				 "", "");
+
+	cp->haddr = client_addr;
+	
+	/*
+	 * Log new connection.
+	 */
+	
+	(void) sprintf(buf1,
+		       "New connection from %s port %d (now %d client%s)",
+		       inet_ntoa(cp->haddr.sin_addr),
+		       (int)ntohs(cp->haddr.sin_port),
+		       nclients,
+		       nclients!=1?"s":"");
+	com_err(whoami, 0, buf1);
+	
+	/*
+	 * Get ready to accept the next connection.
 	 */
 	reset_operation(listenop);
-	othersize = sizeof(otherside);
+	client_addrlen = sizeof(client_addr);
 
 	start_accepting_client(listencon, listenop, &newconn,
-			       (char *)otherside,
-			       &othersize, &client_tuple);
+			       (char *)&client_addr,
+			       &client_addrlen, &client_tuple);
+	return 0;
 }
 
-int
-do_listen()
-{
-	char *service = index(SMS_GDB_SERV, ':') + 1;
-	extern int errno;
-	listencon = create_listening_connection(service);
-
-	if (listencon == NULL) {
-		com_err(whoami, errno, "while trying to create listening connection");
-		exit (4); /* XXX */
-	}
-
-	listenop = create_operation();
-
-	othersize = sizeof(otherside);
-
-	start_accepting_client(listencon, listenop, &newconn,
-			       (char *)otherside,
-			       &othersize, &client_tuple);
-
-}
-
-/*
- * Welcome to the (finite state) machine (highest level).
- */
-do_client(cp)
-	client *cp;
-{
-	if (OP_STATUS(cp->pending_op) == OP_CANCELLED) {
-		sprintf(buf1, "Closed connection (now %d client%s)",
-			nclients-1,
-			nclients!=2?"s":"");
-		com_err(whoami, 0, buf1);
-		clist_delete(cp);
-		return;
-	}
-	switch (cp->action) {
-	case CL_ACCEPT:
-	case CL_SEND:
-		/* Start recieving next request */
-		gdb_inop(cp->pending_op, sms_start_recv, &cp->args, NULL);
-		gdb_qop(cp->con, CON_INPUT, cp->pending_op);
-		cp->action = CL_RECEIVE;
-		break;
-	case CL_RECEIVE:
-		/* Data is here. Process it & start it heading back */
-		do_call(cp); /* This may block for a while. */
-		gdb_inop(cp->pending_op, sms_start_send, &cp->reply, NULL);
-		gdb_qop(cp->con, CON_OUTPUT, cp->pending_op);
-		cp->action = CL_SEND;
-		break;
-	}
-}		
-
-char *procnames[] = {
-	 "noop",
-	 "auth",
-	 "shutdown",
-	 "retrieve",
-	 "append",
-	 "delete",
-	 "edit",
-	 };
-
-do_call(cl)
-	client *cl;
-{
-	int pn, i;
-	cl->reply.sms_argc = 0;
-	if (((pn = cl->args->sms_procno) < 0) ||
-	    (pn > SMS_MAX_PROC)) {
-		com_err(whoami, 0, "procno out of range");
-		cl->reply.sms_status = SMS_UNKNOWN_PROC;
-		return;
-	}
-#ifdef SMS_DBG
-	fprintf(stderr, "[#%d] %s(", cl->id, procnames[pn]);
-	for (i=0; i < cl->args->sms_argc; i++) {
-		if (i) fputc(',', stderr);
-		frequote(stderr,cl->args->sms_argv[i]);
-	}
-	fprintf(stderr, ")\n");
-#endif SMS_DBG
-
-	switch(pn) {
-	case SMS_NOOP:
-		cl->reply.sms_status = 0;
-		com_err(whoami, 0, "noop");
-		return;
-	case SMS_AUTH:
-		do_auth(cl);
-		return;
-#ifdef notdef
-	case SMS_RETRIEVE:
-		do_retr(cl);
-		return;
-#endif notdef
-
-	case SMS_SHUTDOWN:
-		do_shutdown(cl);
-		return;
-	}
-}
-
-do_shutdown(cl)
-	client *cl;
-{
-	static char buf[BUFSIZ];
-
-	if (cl->args->sms_argc != 1) {
-		cl->reply.sms_status = EINVAL;
-		return;
-	}
-		
-	if (!cl->clname) {
-		sprintf(buf, "Unauthenticated shutdown request rejected",
-			cl->clname);
-		com_err(whoami, 0, buf);
-		cl->reply.sms_status = EACCES;
-		return;
-	}
-	if (!strcmp(cl->clname, "wesommer@ATHENA.MIT.EDU") ||
-	    !strcmp(cl->clname, "mike@ATHENA.MIT.EDU")) {
-		sprintf(buf, "Shut down by %s", cl->clname);
-		com_err(whoami, 0, buf);
-		strcpy(buf, "Reason for shutdown: ");
-		strcat(buf, cl->args->sms_argv[0]);
-		takedown = buf;
-	} else {
-		sprintf(buf, "Shutdown request by %s rejected",
-			cl->clname);
-		com_err(whoami, 0, buf);
-		cl->reply.sms_status = EACCES;
-	}
-}
-		
-		
-do_auth(cl)
-	client *cl;
-{
-	KTEXT_ST auth;
-	AUTH_DAT ad;
-	int status;
-	char buf[REALM_SZ+INST_SZ+ANAME_SZ];
-	extern int krb_err_base;
-	
-	auth.length = cl->args->sms_argl[0];
-	bcopy(cl->args->sms_argv[0], auth.dat, auth.length);
-	auth.mbz = 0;
-	
-	if ((status = rd_ap_req (&auth, "sms", "sms", cl->haddr.sin_addr,
-				 &ad, "")) != KSUCCESS) {
-		status += krb_err_base;
-		cl->reply.sms_status = status;
-		com_err(whoami, status, "(authentication failed)");
-		return;
-	}
-	strcpy(buf, ad.pname);
-	if(ad.pinst[0]) {
-		strcat(buf, ".");
-		strcat(buf, ad.pinst);
-	}
-	strcat(buf, "@");
-	strcat(buf, ad.prealm);
-	if (cl->clname) free((char *)cl->clname);
-	
-	cl->clname = (char *)malloc(strlen(buf)+1);
-	strcpy(cl->clname, buf);
-	sprintf(buf1, "Authenticated to %s", cl->clname);
-	com_err(whoami, 0, buf1);
-}
-
-do_retr(cl)
-	client *cl;
-{
-	
-}
 /*
  * Add a new client to the known clients.
  */
+void
 clist_append(cp)
 	client *cp;
 {		
 	client **clients_n;
 	
 	nclients++;
-	clients_n = (client **)malloc(nclients * sizeof(client *));
+	clients_n = (client **)malloc
+		((unsigned)(nclients * sizeof(client *)));
 	bcopy((char *)clients, (char *)clients_n, (nclients-1)*sizeof(cp));
 	clients_n[nclients-1] = cp;
 	free((char *)clients);
@@ -370,20 +288,17 @@ clist_append(cp)
 }
 
 		
+void
 clist_delete(cp)
 	client *cp;
 {
-	int i;
-	
 	client **clients_n, **scpp, **dcpp; /* source and dest client */
 					    /* ptr ptr */
 	
-/*	cp->state=CL_DEAD;
-	cp->action=0;
-*/
 	int found_it = 0;
 	
-	clients_n = (client **)malloc((nclients - 1)* sizeof(client *));
+	clients_n = (client **)malloc
+		((unsigned)((nclients - 1)* sizeof(client *)));
 	for (scpp = clients, dcpp = clients_n; scpp < clients+nclients; ) {
 		if (*scpp != cp) {
 			*dcpp++ = *scpp++;
@@ -400,12 +315,17 @@ clist_delete(cp)
 
 	reset_operation(cp->pending_op);
 	delete_operation(cp->pending_op);
-	free(cp);
+	free((char *)cp);
 }
+
 /*
- * Grr.  This isn't nice.
+ * Add a new operation to a list of operations.
+ *
+ * This should be rewritten to use realloc instead, since in most
+ * cases it won't have to copy the array.
  */
 
+void
 oplist_append(oplp, op)
 	LIST_OF_OPERATIONS *oplp;
 	OPERATION op;
@@ -415,68 +335,9 @@ oplist_append(oplp, op)
 		db_alloc(size_of_list_of_operations(count));
 	bcopy((char *)(*oplp), (char *)newlist,
 	      size_of_list_of_operations((*oplp)->count));
-	if (newlist->count != count-1) abort(); /*XXX*/
 	newlist->count++;
 	newlist->op[count-1] = op;
 	db_free((*oplp), size_of_list_of_operations(count-1));
 	(*oplp) = newlist;
 }
 
-#include <ctype.h>
-
-frequote(f, cp)
-	FILE *f;
-	register char *cp;
-{
-	register char c;
-	putc('"', f);
-	for( ; c= *cp; *cp++){
-		if (c == '\\' || c == '"') putc('\\', f);
-		if (isprint(c)) putc(c, f);
-		else fprintf(f, "\\%03o", c);
-	}
-	putc('"', f);
-}
-
-void sms_com_err(whoami, code, message)
-	char *whoami;
-	int code;
-	char *message;
-{
-	extern char *error_message();
-	
-	struct iovec strings[7];
-	char buf[32];
-	if (cur_client)
-		sprintf(buf, "[#%d]", cur_client->id);
-	else buf[0]='\0';
-	
-	strings[1].iov_base = buf;
-	strings[1].iov_len = strlen(buf);
-	
-	strings[0].iov_base = whoami;
-	if (whoami) {
-		strings[0].iov_len = strlen(whoami);
-		strings[2].iov_base = ": ";
-		strings[2].iov_len = 2;
-	} else {
-		strings[0].iov_len = 0;
-		strings[2].iov_base = " ";
-		strings[2].iov_len = 1;
-	}
-	if (code) {
-		register char *errmsg = error_message(code);
-		strings[3].iov_base = errmsg;
-		strings[3].iov_len = strlen(errmsg);
-		strings[4].iov_base = " ";
-		strings[4].iov_len = 1;
-	} else {
-		strings[3].iov_len = 0;
-		strings[4].iov_len = 0;
-	}
-	strings[5].iov_base = message;
-	strings[5].iov_len = strlen(message);
-	strings[6].iov_base = "\n";
-	strings[6].iov_len = 1;
-	(void) writev(2, strings, 7);
-}

@@ -1,10 +1,10 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb.c,v 1.5 1993-10-22 14:28:26 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb.c,v 1.6 1993-11-12 11:34:14 mar Exp $
  */
 
 #ifndef lint
-static char *rcsid_gdb_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb.c,v 1.5 1993-10-22 14:28:26 mar Exp $";
+static char *rcsid_gdb_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gdb/gdb.c,v 1.6 1993-11-12 11:34:14 mar Exp $";
 #endif	lint
 
 
@@ -68,7 +68,7 @@ gdb_init()
 	char hostname[255];			/* name of local host */
 	extern uid_t getuid();
 	int uid;				/* Unix user-i.d. number */
-	char *uname;				/* string form of i.d. */
+	char *username;				/* string form of i.d. */
 
 	struct passwd *pw_struct;		/* passwd entry comes back */
 						/* here */
@@ -147,11 +147,11 @@ gdb_init()
 
 	if (pw_struct != NULL && pw_struct ->pw_name != NULL &&
 	    *pw_struct->pw_name !='\0') 
-		uname = pw_struct->pw_name;
+		username = pw_struct->pw_name;
 	else
-		uname = "????";
-	gdb_uname = db_alloc(strlen(uname)+1);
-	(void) strcpy(gdb_uname, uname);	
+		username = "????";
+	gdb_uname = db_alloc(strlen(username)+1);
+	(void) strcpy(gdb_uname, username);	
 	
 	return 0;
 }

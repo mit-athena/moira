@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v 1.19 1989-08-21 12:30:25 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v 1.20 1989-10-12 12:32:26 mar Exp $";
 #endif lint
 
 /*	This is the file lists.c for the SMS Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v 1.19 1989-08-21 12:30:25 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v 1.20 1989-10-12 12:32:26 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -206,14 +206,12 @@ Bool name;
 	GetValueFromUser("What is the GID for this group.", &info[L_GID]);
 
     GetTypeFromUser("What Type of Administrator", "ace_type",&info[L_ACE_TYPE]);
-    if ( (strcmp(info[L_ACE_TYPE], "USER") == 0) || 
-	(strcmp(info[L_ACE_TYPE], "user") == 0) )
-	GetValueFromUser("Who will be the administrator of this list: ",
-			 &info[L_ACE_NAME]);
-    if ( (strcmp(info[L_ACE_TYPE], "LIST") == 0) ||
-	(strcmp(info[L_ACE_TYPE], "list") == 0) )
-       GetValueFromUser("Which group will be the administrator of this list: ",
-			 &info[L_ACE_NAME]);
+    if ((strcasecmp(info[L_ACE_TYPE], "NONE") != 0) &&
+	(strcasecmp(info[L_ACE_TYPE], "none") != 0)) {
+	sprintf(temp_buf, "Which %s will be the administrator of this list: ",
+		info[L_ACE_TYPE]);
+	GetValueFromUser(temp_buf, &info[L_ACE_NAME]);
+    }
     GetValueFromUser("Description: ", &info[L_DESC]);
 
     FreeAndClear(&info[L_MODTIME], TRUE);

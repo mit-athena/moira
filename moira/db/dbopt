@@ -42,9 +42,9 @@ index on list is i_lis_group (group)
 index on list is i_lis_gid (gid)
 modify i_lis_gid to btree
 
-modify members to cbtree on member_id, member_type
-index on members is i_mem_list (list_id)
-modify i_mem_list to hash
+modify imembers to cbtree on member_id, member_type
+index on imembers is i_imem_list (list_id)
+modify i_imem_list to hash
 
 modify strings to cbtree unique on string_id
 index on strings is i_str_name (string)

@@ -1,12 +1,12 @@
 README file for creating Moira
 
-This is the root directory of MIT Project Athena's Moira service
-management system source code.
+This is the root directory of MIT Athena's Moira service management
+system source code.
 
 The Makefiles are set up so that the source tree can be
 separate from the tree(s) containing binaries.  We have
 found this useful since we have to have separate sets of binaries,
-for the IBM RTPC and Vaxstation II machines.
+for different platforms.
 
 The default value of the root of the Moira source tree
 (this directory) is /mit/moiradev/src.  You can set it
@@ -27,7 +27,10 @@ Here are the steps for building the Moira source.
     directories and copies Makefiles into them.
 
 3.  Cd to util/imake.includes.  Read through config.Imakefile, turning
-    on appropriate flags for your installation.  Change SRCTOP appropriately.
+    on appropriate flags for your installation.  Note that we are not
+    liscensed to distribute gdss, so it is not included in this
+    distribution.  Therefore you will probably not want to define
+    it.  Change SRCTOP appropriately.
 
 4.  Still in the top of the object directory (/foo/bar/baz
     of Step 1), type "make world" (or "make world  SRCDIR=/x/y/z).

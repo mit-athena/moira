@@ -1,4 +1,4 @@
-/* $Id: cluster.c,v 1.42 2000-03-30 21:59:52 zacheiss Exp $
+/* $Id: cluster.c,v 1.43 2000-04-20 20:12:15 zacheiss Exp $
  *
  *	This is the file cluster.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -41,7 +41,7 @@
 #include <string.h>
 
 void PrintAliases(char **info);
-void PrintMachine(char **info);
+static void PrintMachine(char **info);
 struct mqelem *GetMCInfo(int type, char *name1, char *name2);
 struct mqelem *GetMachineByOwner(char *type, char *name);
 char **AskMCDInfo(char **info, int type, Bool name);

@@ -1,5 +1,5 @@
 #!/bin/sh
-# $Id: acl.sh,v 1.1 2000-01-06 21:13:51 danw Exp $
+# $Id: acl.sh,v 1.2 2000-01-31 17:10:05 danw Exp $
 
 # The following exit codes are defined and MUST BE CONSISTENT with the
 # error codes the library uses:
@@ -18,7 +18,7 @@ test -r $TARFILE || exit $MR_MISSINGFILE
 # Make a temporary directory to unpack the tar file into
 mkdir /var/tmp/acltmp || exit $MR_MKCRED
 cd /var/tmp/acltmp || exit $MR_MKCRED
-tar xf $TARFILE || exit $MR_TARERR
+tar xpf $TARFILE || exit $MR_TARERR
 
 # Copy over each file which is new or has changed
 for file in `find . -type f -print | sed -e 's/^\.//'`; do
@@ -44,16 +44,36 @@ for file in `find . -type f -print | sed -e 's/^\.//'`; do
         fi
     fi
 
-    cat $file.head .$file $file.tail > .$file.$$
-
-    if [ -f $file ]; then
-	if cmp -s .$file.$$ $file; then
-	    :
-	else
-	    mv .$file.$$ $file
-	fi
+    if [ -f $file.head ]; then
+	head=$file.head
     else
-	mv .$file.$$ $file
+	head=
+    fi
+    if [ -f $file.tail ]; then
+	tail=$file.tail
+    else
+	tail=
+    fi
+
+    # Note that "$file" is a full pathname, and so ".$file" means
+    # the copy of file in the directory hierarchy rooted at ".",
+    # not "$file with a . prepended to its basename".
+
+    # Create a tmp file with the correct owner and mode
+    if [ -f $file ]; then
+	cp -p $file $file.$$
+    else
+	cp -p .$file $file.$$
+    fi
+
+    # Now dump the correct data into the tmp file without changing its
+    # owner and mode
+    cat $head .$file $tail > $file.$$
+
+    if cmp -s $file.$$ $file; then
+	rm -f $file.$$
+    else
+	mv $file.$$ $file
     fi
 done
 

@@ -6,8 +6,8 @@
  *	By:		Chris D. Peterson
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/defs.h,v $
- *      $Author: kit $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/defs.h,v 1.7 1988-07-29 18:34:46 kit Exp $
+ *      $Author: mar $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/defs.h,v 1.8 1988-12-01 14:58:35 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -27,6 +27,9 @@
 #ifndef FALSE
 #define FALSE 0
 #endif FALSE
+
+/* where to find the SMS server */
+#define SMS_SERVER	"SMS.MIT.EDU:sms_db"
 
 /* Modification information is always printed in this format. */
 

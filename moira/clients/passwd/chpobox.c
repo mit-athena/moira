@@ -3,13 +3,13 @@
  * and distribution information, see the file "mit-copyright.h". 
  *
  * $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chpobox.c,v $
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chpobox.c,v 1.13 1990-03-17 17:19:09 mar Exp $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chpobox.c,v 1.14 1991-05-14 18:05:53 mar Exp $
  * $Author: mar $
  *
  */
 
 #ifndef lint
-static char *rcsid_chpobox_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chpobox.c,v 1.13 1990-03-17 17:19:09 mar Exp $";
+static char *rcsid_chpobox_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/passwd/chpobox.c,v 1.14 1991-05-14 18:05:53 mar Exp $";
 #endif not lint
 
 /*
@@ -56,7 +56,7 @@ main(argc, argv)
 {
     struct passwd *pwd;
     char *mrarg[3], buf[BUFSIZ];
-    char *potype(), *index();
+    char *potype();
     char *address, *uname, *machine, *motd;
     uid_t u;
     char *canonicalize_hostname();

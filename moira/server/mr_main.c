@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v $
  *	$Author: wesommer $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.2 1987-06-01 03:34:53 wesommer Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.3 1987-06-01 04:34:27 wesommer Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
@@ -14,13 +14,16 @@
  * 	Let the reader beware.
  * 
  *	$Log: not supported by cvs2svn $
+ * Revision 1.2  87/06/01  03:34:53  wesommer
+ * Added shutdown, logging.
+ * 
  * Revision 1.1  87/05/31  22:06:56  wesommer
  * Initial revision
  * 
  */
 
 #ifndef lint
-static char *rcsid_sms_main_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.2 1987-06-01 03:34:53 wesommer Exp $";
+static char *rcsid_sms_main_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.3 1987-06-01 04:34:27 wesommer Exp $";
 #endif lint
 
 #include <strings.h>
@@ -290,7 +293,7 @@ do_shutdown(cl)
 		sprintf(buf, "Unauthenticated shutdown request rejected",
 			cl->clname);
 		com_err(whoami, 0, buf);
-		cl->reply.sms_status = EPERM;
+		cl->reply.sms_status = EACCES;
 		return;
 	}
 	if (!strcmp(cl->clname, "wesommer@ATHENA.MIT.EDU") ||
@@ -304,7 +307,7 @@ do_shutdown(cl)
 		sprintf(buf, "Shutdown request by %s rejected",
 			cl->clname);
 		com_err(whoami, 0, buf);
-		cl->reply.sms_status = EPERM;
+		cl->reply.sms_status = EACCES;
 	}
 }
 		

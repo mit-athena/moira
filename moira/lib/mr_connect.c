@@ -1,4 +1,4 @@
-/* $Id: mr_connect.c,v 1.25 1998-07-15 20:39:32 danw Exp $
+/* $Id: mr_connect.c,v 1.26 1998-08-13 19:24:12 danw Exp $
  *
  * This routine is part of the client library.  It handles
  * creating a connection to the moira server.
@@ -28,7 +28,7 @@
 #include <hesiod.h>
 #endif
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_connect.c,v 1.25 1998-07-15 20:39:32 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_connect.c,v 1.26 1998-08-13 19:24:12 danw Exp $");
 
 int _mr_conn = 0;
 static char *mr_server_host = NULL;
@@ -76,7 +76,6 @@ static char response[53] = "\0\0\0\061\0\0\0\003\0\001\001disposition\0server_id
 int mr_connect(char *server)
 {
   char *port, **pp, *sbuf = NULL;
-  struct hostent *shost;
 
   if (_mr_conn)
     return MR_ALREADY_CONNECTED;
@@ -98,18 +97,14 @@ int mr_connect(char *server)
   if (!server || (strlen(server) == 0))
     server = MOIRA_SERVER;
 
-  shost = gethostbyname(server);
-  if (!shost)
-    return MR_CANT_CONNECT;
-
   if (strchr(server, ':'))
     {
       int len = strcspn(server, ":");
       sbuf = malloc(len + 1);
       strncpy(sbuf, server, len);
-      sbuf[len - 1] = '\0';
-      server = sbuf;
+      sbuf[len] = '\0';
       port = strchr(server, ':') + 1;
+      server = sbuf;
     }
   else
     port = strchr(MOIRA_SERVER, ':') + 1;
@@ -119,8 +114,6 @@ int mr_connect(char *server)
   if (!_mr_conn)
     return MR_CANT_CONNECT;
 
-  /* stash hostname for later use */
-  mr_server_host = strdup(shost->h_name);
   return MR_SUCCESS;
 }
 
@@ -136,7 +129,7 @@ int mr_connect_internal(char *server, char *port)
     return 0;
 
   if (port[0] == '#')
-    target.sin_port = atoi(port + 1);
+    target.sin_port = htons(atoi(port + 1));
   else
     {
       struct servent *s;
@@ -183,6 +176,8 @@ int mr_connect_internal(char *server, char *port)
       close(fd);
       return 0;
     }
+
+  mr_server_host = strdup(shost->h_name);
 
   /* You win */
   return fd;

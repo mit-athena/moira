@@ -253,6 +253,7 @@ char **argv;
 		    code = pr_ReadEntry(0,0,gpos,&gentry);
 		    if (!code) {
 			gentry.flags = flags;
+			gentry.ngroups = quota;
 			code = pr_WriteEntry(0,0,gpos,&gentry);
 		    }
 		    if (code)

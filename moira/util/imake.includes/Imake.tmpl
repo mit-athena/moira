@@ -4,8 +4,6 @@
 /**/# Ignore this message if you are not using imake.
 /**/#
 /**/#	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/util/imake.includes/Imake.tmpl,v $
-/**/#	$Author: steiner $
-/**/#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/util/imake.includes/Imake.tmpl,v 4.3 1988-12-09 15:41:52 steiner Exp $
 /**/#
 
 #ifndef NEW_TOP
@@ -16,12 +14,17 @@ NEWTOP=NEW_TOP
 BUILDTOP=NEW_TOP
 #endif
 
+#ifndef USELOCALTOOLS
 /* The makedepend program */
 DEPEND=$(BUILDTOP)/util/makedepend/makedepend
 /* The Imake command line */
 IMAKE=$(BUILDTOP)/util/imake/imake -I$(BUILDTOP)/util/imake.includes
+#else
+DEPEND=makedepend
+IMAKE=imake -I$(BUILDTOP)/util/imake.includes
+#endif
 
-INCLUDE= -I$(BUILDTOP)/include
+INCLUDE= -I$(BUILDTOP)/include -I$(BUILDTOP)/lib
 CFLAGS=$(DBG) $(INCLUDE) $(DEFINES) $(GLOBAL_CDEFS)
 LINTFLAGS=$(INCLUDE) $(DEFINES) $(GLOBAL_CDEFS)
 #include "config.Imakefile"
@@ -46,4 +49,3 @@ install::
 Makefiles::
 
 /**/# DO NOT DELETE THIS LINE
-

@@ -1,6 +1,6 @@
 /* This file defines the query dispatch table for version 2 of the protocol
  *
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/queries2.c,v 2.15 1993-03-02 18:06:53 mar Exp $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/queries2.c,v 2.16 1993-11-01 12:06:44 mar Exp $
  *
  * Copyright 1987, 1988 by the Massachusetts Institute of Technology.
  * For copying and distribution information, please see the file
@@ -32,6 +32,7 @@ int setup_dusr();
 int setup_spop();
 int setup_dpob();
 int setup_dmac();
+int setup_dsnet();
 int setup_dclu();
 int setup_alis();
 int setup_dlis();
@@ -45,6 +46,7 @@ int setup_dnfp();
 int setup_dqot();
 int setup_sshi();
 int setup_akum();
+int setup_dsnt();
 
 /* Query Followup Routines */
 int followup_fix_modby();
@@ -59,6 +61,7 @@ int followup_gqot();
 int followup_gpce();
 int followup_guax();
 int followup_uuac();
+int followup_gsnt();
 
 int set_modtime();
 int set_modtime_by_id();
@@ -98,6 +101,7 @@ int _sdl_followup();
 
 static char ACE_NAME[] = "ace_name";
 static char ACE_TYPE[] = "ace_type";
+static char ADDRESS[] = "address";
 static char CLASS[] = "class";
 static char CLU_ID[] = "clu_id";
 static char CLUSTER[] = "cluster";
@@ -128,6 +132,8 @@ static char SECURE[] = "secure";
 static char SERVICE[] = "service";
 static char SHELL[] = "shell";
 static char SIGNATURE[] = "signature";
+static char SNET_ID[] = "snet_id";
+static char SUBNET[] = "subnet";
 static char STATUS[] = "status";
 static char TYPE[] = "type";
 static char USERS[] = "users";
@@ -820,6 +826,100 @@ static struct validate dmac_validate = {
   0,
   0,
   setup_dmac,
+  0,
+};
+
+static char *gsnt_fields[] = {
+    NAME,
+    NAME, DESC, ADDRESS, "mask", "low", "high", ACE_TYPE, ACE_NAME,
+    MOD1, MOD2, MOD3
+};
+
+static struct valobj gsnt_valobj[] = {
+  {V_UPWILD, 0},
+  {V_SORT, 0},
+};
+
+static struct validate gsnt_validate = {
+  gsnt_valobj,
+  2,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  followup_gsnt,
+};
+
+static char *asnt_fields[] = {
+    NAME, DESC, ADDRESS, "mask", "low", "high", ACE_TYPE, ACE_NAME,
+};
+
+static struct valobj asnt_valobj[] = {
+  {V_LOCK, 0, SUBNET, 0, SNET_ID, MR_DEADLOCK},
+  {V_CHAR, 0},
+  {V_TYPE, 6, ACE_TYPE, 0, 0, MR_ACE},
+  {V_TYPEDATA, 7, 0, 0, LIST_ID, MR_ACE},
+};
+
+static struct validate asnt_validate = 
+{
+    asnt_valobj,
+    4,
+    NAME,
+    "name = uppercase(LEFT('%s',SIZE(name)))",
+    1,
+    SNET_ID,
+    0,
+    prefetch_value,
+    set_uppercase_modtime,
+};
+
+static char *usnt_fields[] = {
+    NAME,
+    "newname", DESC, ADDRESS, "mask", "low", "high", ACE_TYPE, ACE_NAME,
+};
+
+static struct valobj usnt_valobj[] = {
+  {V_LOCK, 0, SUBNET, 0, SNET_ID, MR_DEADLOCK},
+  {V_ID, 0, SUBNET, NAME, SNET_ID, MR_NO_MATCH},
+  {V_RENAME, 1, SUBNET, NAME, SNET_ID, MR_NOT_UNIQUE},
+  {V_TYPE, 7, ACE_TYPE, 0, 0, MR_ACE},
+  {V_TYPEDATA, 8, 0, 0, LIST_ID, MR_ACE},
+};
+
+static struct validate usnt_validate = 
+{
+    usnt_valobj,
+    5,
+    NAME,
+    "snet_id = %d",
+    1,
+    SNET_ID,
+    0,
+    0,
+    set_modtime_by_id,
+};
+
+static char *dsnt_fields[] = {
+  NAME,
+};
+
+static struct valobj dsnt_valobj[] = {
+  {V_LOCK, 0, SUBNET, 0, SNET_ID, MR_DEADLOCK},
+  {V_ID, 0, SUBNET, NAME, SNET_ID, MR_MACHINE},
+};
+
+static struct validate dsnt_validate = {
+  dsnt_valobj,
+  2,
+  0,
+  0,
+  0,
+  0,
+  0,
+  setup_dsnt,
   0,
 };
 
@@ -2819,6 +2919,66 @@ struct query Queries2[] = {
     "mach_id = %d",
     1,
     &dmac_validate,
+  },
+
+  {
+    /* Q_GSNT - GET_SUBNET */
+    "get_subnet",
+    "gsnt",
+    RETRIEVE,
+    "s",
+    SUBNET,
+    "CHAR(s.name), CHAR(s.description), CHAR(s.saddr), CHAR(s.mask), CHAR(s.low), CHAR(s.high), s.owner_type, CHAR(s.owner_id), CHAR(s.modtime), CHAR(s.modby), s.modwith FROM subnet s",
+    gsnt_fields,
+    11,
+    "s.name LIKE '%s' ESCAPE '*' and s.snet_id != 0",
+    1,
+    &gsnt_validate,
+  },
+
+  {
+    /* Q_ASNT - ADD_SUBNET */
+    "add_subnet",
+    "asnt",
+    APPEND,
+    "s",
+    SUBNET,
+    "INTO subnet (name, description, saddr, mask, low, high, owner_type, owner_id, snet_id) VALUES (uppercase('%s'), '%s', %s, %s, %s, %s, '%s', %d, %s)",
+    asnt_fields,
+    8,
+    0,
+    0,
+    &asnt_validate,
+  },
+
+  {
+    /* Q_USNT - UPDATE_SUBNET */
+    "update_subnet",
+    "usnt",
+    UPDATE,
+    "s",
+    SUBNET,
+    "subnet SET name=uppercase('%s'), description='%s', saddr=%s, mask=%s, low=%s, high=%s, owner_type='%s', owner_id=%d",
+    usnt_fields,
+    8,
+    "snet_id = %d",
+    1,
+    &usnt_validate,
+  },
+
+  {
+    /* Q_DSNT - DELETE_SUBNET */
+    "delete_subnet",
+    "dsnt",
+    DELETE,
+    "s",
+    SUBNET,
+    (char *)0,
+    dsnt_fields,
+    0,
+    "snet_id = %d",
+    1,
+    &dsnt_validate,
   },
 
   {

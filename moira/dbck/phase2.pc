@@ -1,4 +1,4 @@
-/* $Id: phase2.pc,v 1.18 2000-03-23 07:50:15 zacheiss Exp $
+/* $Id: phase2.pc,v 1.19 2000-08-15 00:07:20 zacheiss Exp $
  *
  * (c) Copyright 1988-1998 by the Massachusetts Institute of Technology.
  * For copying and distribution information, please see the file
@@ -15,7 +15,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase2.pc,v 1.18 2000-03-23 07:50:15 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase2.pc,v 1.19 2000-08-15 00:07:20 zacheiss Exp $");
 
 EXEC SQL WHENEVER SQLERROR DO dbmserr();
 
@@ -49,6 +49,7 @@ void cluster_check(int id, void *cluster, void *hint);
 int show_svc(void *id);
 void list_check(int id, void *list, void *hint);
 void fix_list_acl(int id);
+void fix_list_memacl(int id);
 int show_member_list(void *id);
 int show_mem_user(void *id);
 int show_mem_list(void *id);
@@ -870,6 +871,37 @@ void list_check(int id, void *list, void *hint)
 	}
       break;
     }
+
+  switch (l->memacl_type)
+    {
+    case 'L':
+      if (!hash_lookup(lists, l->memacl_id))
+	{
+	  printf("List %s has bad LIST memacl %d\n", l->name, l->memacl_id);
+	  if (single_fix("Patch", 1))
+	    fix_list_memacl(l->list_id);
+	}
+      break;
+    case 'U':
+      if (!hash_lookup(users, l->memacl_id))
+	{
+	  printf("List %s has bad USER acl %d\n", l->name, l->memacl_id);
+	  if (single_fix("Patch", 1))
+	    fix_list_memacl(l->list_id);
+	}
+      break;
+    case 'K':
+      l->memacl_id = maybe_fixup_unref_string(l->memacl_id, id, l->name,
+					      "list", "memacl_id", "list_id");
+	  if (!l->memacl_id)
+	    {
+	      printf("List %s has bad KERBEROS acl %d\n", l->name, 
+		     l->memacl_id);
+	      if (single_fix("Patch", 1))
+		fix_list_memacl(l->list_id);
+	    }
+	  break;
+    }
 }
 
 void fix_list_acl(int id)
@@ -879,6 +911,22 @@ void fix_list_acl(int id)
   EXEC SQL END DECLARE SECTION;
 
   EXEC SQL UPDATE list SET acl_id = :iid, acl_type = 'LIST'
+    WHERE list_id = :iid;
+  rowcount = sqlca.sqlerrd[2];
+  if (rowcount > 0)
+    printf("%d entr%s fixed\n", rowcount, rowcount == 1 ? "y" : "ies");
+  else
+    printf("Not fixed\n");
+  modified("list");
+}
+
+void fix_list_memacl(int id)
+{
+  EXEC SQL BEGIN DECLARE SECTION;
+  int rowcount, iid = (int)id;
+  EXEC SQL END DECLARE SECTION;
+
+  EXEC SQL UPDATE list SET memacl_id = 0, memacl_type = 'NONE'
     WHERE list_id = :iid;
   rowcount = sqlca.sqlerrd[2];
   if (rowcount > 0)

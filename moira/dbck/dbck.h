@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/dbck.h,v 1.12 2000-01-13 01:39:45 danw Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/dbck.h,v 1.13 2000-08-15 00:07:20 zacheiss Exp $
  *
  * Declarations for Moira database consistancy checker
  *
@@ -69,8 +69,10 @@ struct cluster {
 struct list {
   char name[LIST_NAME_SIZE];
   char acl_type;
+  char memacl_type;
   int list_id;
   int acl_id;
+  int memacl_id;
   int modby;
   int members;
 };

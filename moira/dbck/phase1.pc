@@ -1,4 +1,4 @@
-/* $Id: phase1.pc,v 1.11 2000-03-23 07:50:15 zacheiss Exp $
+/* $Id: phase1.pc,v 1.12 2000-08-15 00:07:20 zacheiss Exp $
  *
  * (c) Copyright 1988-1998 by the Massachusetts Institute of Technology.
  * For copying and distribution information, please see the file
@@ -14,7 +14,7 @@
 #include <string.h>
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase1.pc,v 1.11 2000-03-23 07:50:15 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase1.pc,v 1.12 2000-08-15 00:07:20 zacheiss Exp $");
 
 EXEC SQL WHENEVER SQLERROR DO dbmserr();
 int show_user_id(void *user);
@@ -703,17 +703,20 @@ void phase1(void)
     out_of_mem("loading lists");
 
   EXEC SQL DECLARE csr108 CURSOR FOR
-    SELECT list_id, name, acl_id, acl_type, modby  FROM list
+    SELECT list_id, name, acl_id, acl_type, memacl_id, memacl_type, modby
+    FROM list
     ORDER BY list_id;
   EXEC SQL OPEN csr108;
   while (1)
     {
       EXEC SQL BEGIN DECLARE SECTION;
-      int list_id, acl_id, modby;
+      int list_id, acl_id, memacl_id, modby;
       char name[LIST_NAME_SIZE], acl_type[LIST_ACL_TYPE_SIZE];
+      char memacl_type[LIST_ACL_TYPE_SIZE];
       EXEC SQL END DECLARE SECTION;
 
-      EXEC SQL FETCH csr108 INTO :list_id, :name, :acl_id, :acl_type, :modby;
+      EXEC SQL FETCH csr108 INTO :list_id, :name, :acl_id, :acl_type, 
+	:memacl_id, :memacl_type, :modby;
       if (sqlca.sqlcode)
 	break;
       l = malloc(sizeof(struct list));
@@ -722,6 +725,8 @@ void phase1(void)
       strcpy(l->name, strtrim(name));
       l->acl_type = acl_type[0];
       l->acl_id = acl_id;
+      l->memacl_type = memacl_type[0];
+      l->memacl_id = memacl_id;
       l->list_id = list_id;
       l->modby = modby;
       l->members = 0;

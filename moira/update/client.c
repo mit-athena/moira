@@ -1,4 +1,4 @@
-/* $Id: client.c,v 1.23 1998-02-15 17:49:27 danw Exp $
+/* $Id: client.c,v 1.24 1998-10-21 19:22:16 danw Exp $
  *
  * This code handles the actual distribution of data files
  * to servers in the Moira server-update program.
@@ -15,11 +15,12 @@
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include <des.h>
 #include <krb.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/client.c,v 1.23 1998-02-15 17:49:27 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/client.c,v 1.24 1998-10-21 19:22:16 danw Exp $");
 
 extern des_cblock session;
 

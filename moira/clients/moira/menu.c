@@ -4,8 +4,8 @@
  * "mit-copyright.h".
  *
  * $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v $
- * $Author: kit $
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.19 1988-07-29 18:15:50 kit Exp $
+ * $Author: mar $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.20 1988-08-11 20:47:21 mar Exp $
  *
  * Generic menu system module.
  *
@@ -18,7 +18,7 @@
  */
 
 #ifndef lint
-static char rcsid_menu_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.19 1988-07-29 18:15:50 kit Exp $";
+static char rcsid_menu_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.20 1988-08-11 20:47:21 mar Exp $";
 
 #endif lint
 
@@ -398,6 +398,7 @@ int Prompt_input(prompt, buf, buflen)
 	    c = getchar() & 0x7f;
 	    switch (c) {
 	    case CTL('C'):
+		*p = '\0';
 		return 0;
 	    case CTL('Z'):
 		(void) kill(getpid(), SIGTSTP);

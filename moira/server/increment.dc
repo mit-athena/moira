@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/increment.dc,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/increment.dc,v 2.6 1992-12-30 16:35:36 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/increment.dc,v 2.7 1993-03-02 18:27:13 mar Exp $
  *
  *	Copyright (C) 1989 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_increment_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/increment.dc,v 2.6 1992-12-30 16:35:36 mar Exp $";
+static char *rcsid_increment_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/increment.dc,v 2.7 1993-03-02 18:27:13 mar Exp $";
 #endif lint
 
 #include <fcntl.h>
@@ -233,6 +233,7 @@ char **argv;
 {
     char buffer[2048], *name;
 EXEC SQL BEGIN DECLARE SECTION; 
+    char *type;
     int id, i;
 EXEC SQL END DECLARE SECTION; 
     struct iupdate *iu;
@@ -286,7 +287,12 @@ EXEC SQL END DECLARE SECTION;
 	strcpy(aarg0, "?");
 	strcpy(aarg1, argv[1]);
 	strcpy(aarg2, "?");
-	sprintf(buffer, "%s and fs.filsys_id = q.filsys_id", qual);
+	if (!strcmp(argv[1], "ANY"))
+	  type = "NONE";
+	else
+	  type = argv[1];
+	sprintf(buffer, "%s and fs.filsys_id = q.filsys_id and q.type = '%s'",
+		qual, type);
 	qual = buffer;
 	EXEC SQL SELECT CHAR(q.quota), fs.name INTO :aarg3, :aarg4
 	  FROM quota q, filesys fs WHERE :qual;

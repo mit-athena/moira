@@ -2,7 +2,7 @@
 # 	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/Makefile,v $
 #	$Author: wesommer $
 #	$Locker:  $
-#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/Makefile,v 1.2 1987-08-22 16:56:03 wesommer Exp $
+#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/Makefile,v 1.3 1987-08-23 01:42:02 wesommer Exp $
 #
 
 CFLAGS= -O -I../../include
@@ -45,8 +45,7 @@ install: all
 		${DESTDIR}/usr/athena/userreg.lockout
 	rm -rf ${DESTDIR}/usr/athena/lib/userreg
 	mkdir ${DESTDIR}/usr/athena/lib/userreg
-	install -c -s -o root -g staff -m 4755 userreg \
-		${DESTDIR}/usr/athena/userreg
+	install -c -s userreg ${DESTDIR}/usr/athena/userreg
 	for i in ${TEXT}; do \
 		install -c $$i \
 			${DESTDIR}/usr/athena/lib/userreg/$$i; \

@@ -1,4 +1,4 @@
-/* $Id: qsupport.pc,v 2.14 1999-08-06 18:46:10 danw Exp $
+/* $Id: qsupport.pc,v 2.15 1999-11-02 02:32:41 danw Exp $
  *
  * Special query routines
  *
@@ -18,7 +18,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.pc,v 2.14 1999-08-06 18:46:10 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.pc,v 2.15 1999-11-02 02:32:41 danw Exp $");
 
 extern char *whoami, *table_name[];
 extern int dbms_errno, mr_errcode;
@@ -83,6 +83,16 @@ int set_pobox(struct query *q, char **argv, client *cl)
       else if (status)
 	return status;
       EXEC SQL UPDATE users SET potype = 'SMTP', box_id = :id
+	WHERE users_id = :user;
+    }
+  else if (!strcmp(argv[1], "IMAP"))
+    {
+      status = name_to_id(box, FILESYS_TABLE, &id);
+      if (status == MR_NO_MATCH)
+	return MR_FILESYS;
+      else if (status)
+	return status;
+      EXEC SQL UPDATE users SET potype = 'IMAP', pop_id = :id
 	WHERE users_id = :user;
     }
   else /* argv[1] == "NONE" */

@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/help.c,v 1.2 1991-06-05 12:15:57 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/help.c,v 1.3 1992-10-19 18:07:40 mar Exp $
  *
  *  	Copyright 1991 by the Massachusetts Institute of Technology.
  *
@@ -63,6 +63,21 @@ help_form_callback(dummy, form)
 int dummy;
 EntryForm *form;
 {
+    UserPrompt **p;
+    int count;
+
+    /* undocumented Motif internal routine to advance in tab group.
+     * In this case we're going backwards because for some reason
+     * the form advances whenever this button is pressed.
+     * However, it doesn't seem to go backwards even though source 
+     * implies that it should.  So we go forward until we wrap.
+     */
+    count = 0;
+    for (p = form->inputlines; *p; p++)
+      if (!p->insensitive)
+	count++;
+    while (count-- > 1)
+      _XmMgrTraversal(form->formpointer, XmTRAVERSE_PREV_TAB_GROUP);
     help(form->formname);
 }
 

@@ -1,4 +1,4 @@
-/* $Id: blanche.c,v 1.51 2000-08-17 05:58:38 zacheiss Exp $
+/* $Id: blanche.c,v 1.52 2000-08-21 04:54:45 zacheiss Exp $
  *
  * Command line oriented Moira List tool.
  *
@@ -20,7 +20,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.51 2000-08-17 05:58:38 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.52 2000-08-21 04:54:45 zacheiss Exp $");
 
 struct member {
   int type;
@@ -660,9 +660,9 @@ int main(int argc, char **argv)
 	    }
 	case M_STRING:
 	  status = mrcl_validate_string_member(memberstruct->name);
+	  mrcl_com_err(whoami);
 	  if (status == MRCL_REJECT)
 	    {
-	      mrcl_com_err(whoami);
 	      success = 0;
 	      break;
 	    }

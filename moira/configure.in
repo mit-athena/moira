@@ -319,6 +319,7 @@ MR_INCLUDE('$(SRCTOP)/include')
 MR_INCLUDE('$(SRCTOP)/lib')
 MR_INCLUDE('$(BUILDTOP)/lib')
 MR_INCLUDE('$(BUILDTOP)/db')
+MR_INCLUDE('$(srcdir)')
 LDFLAGS="$LDFLAGS -L\$(BUILDTOP)/lib $LIBPATH"
 KLIBS="-lzephyr $KRB4_LIBS -lcom_err -lhesiod $LIBS"
 LIBS="-lmoira $KLIBS"

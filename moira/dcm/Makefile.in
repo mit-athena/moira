@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.2 1998-05-26 21:50:09 danw Exp $
+# $Id: Makefile.in,v 1.3 1998-05-27 17:33:07 danw Exp $
 
 SHELL=/bin/sh
 @SET_MAKE@
@@ -37,7 +37,7 @@ TARGET=dcm startdcm
 .SUFFIXES: .pc
 
 .pc.c:
-	$(PRO_C) $(PRO_C_FLAGS) INAME=$<
+	$(PRO_C) $(PRO_C_FLAGS) INAME=$< ONAME=$@
 
 .c.o:
 	$(CC) -c $(ALL_CFLAGS) $<

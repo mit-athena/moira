@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 2.2 1998-05-26 21:50:12 danw Exp $
+# $Id: Makefile.in,v 2.3 1998-05-27 17:33:09 danw Exp $
 
 SHELL=/bin/sh
 @SET_MAKE@
@@ -30,20 +30,17 @@ SERVER_OBJS=	mr_main.o mr_sauth.o mr_scall.o mr_shutdown.o mr_util.o \
 		qvalidate.o qaccess.o qsetup.o qsupport.o qfollow.o \
 		queries2.o qrtn.o qsubs.o increment.o cache.o
 SCHEMA_OBJS=	../db/moira_schema.o
-GLUE_OBJS=	mr_glue.o mr_sauth.o mr_util.o \
-		qvalidate.o qaccess.o qsetup.o qsupport.o qfollow.o \
-		queries2.o qrtn.o qsubs.o increment.o cache.o
 START_OBJS=	startmoira.o
 
 CFILES=		qvalidate.c qaccess.c qsetup.c qsupport.c qfollow.c \
 		qrtn.c increment.c cache.c
 
-TARGET=moirad startmoira libmrglue.a
+TARGET=moirad startmoira
 
 .SUFFIXES: .pc
 
 .pc.c:
-	$(PRO_C) $(PRO_C_FLAGS) INAME=$<
+	$(PRO_C) $(PRO_C_FLAGS) INAME=$< ONAME=$@
 
 .c.o:
 	$(CC) -c $(ALL_CFLAGS) $<
@@ -51,7 +48,7 @@ TARGET=moirad startmoira libmrglue.a
 all: $(TARGET)
 
 clean:
-	rm -f $(SERVER_OBJS) $(GLUE_OBJS) $(START_OBJS) $(CFILES) $(TARGET)
+	rm -f $(SERVER_OBJS) $(START_OBJS) $(CFILES) $(TARGET)
 
 depend: $(CFILES)
 
@@ -64,7 +61,3 @@ moirad: $(SERVER_OBJS)
 
 startmoira: $(START_OBJS)
 	$(CC) -o $@ $(LDFLAGS) $(START_OBJS) $(LIBS)
-
-libmrglue.a: $(GLUE_OBJS)
-	ar cru $@ $(GLUE_OBJS) $(SCHEMA_OBJS)
-	$(RANLIB) $@

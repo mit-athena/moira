@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/main.c,v 1.13 1989-06-28 13:20:33 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/main.c,v 1.14 1989-08-21 22:38:56 mar Exp $";
 #endif lint
 
 /*	This is the file main.c for the SMS Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/main.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/main.c,v 1.13 1989-06-28 13:20:33 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/main.c,v 1.14 1989-08-21 22:38:56 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -60,7 +60,7 @@ main(argc, argv)
 {
     int status;
     Menu *menu;
-    char *motd;
+    char *motd, **arg, *server;
 
     if ((user = getlogin()) == NULL) 
 	user = getpwuid((int) getuid())->pw_name;
@@ -74,22 +74,25 @@ main(argc, argv)
     whoami = Strsave(program_name); /* used by menu.c,  ugh !!! */
 
     verbose = TRUE;
+    arg = argv;
+    server = SMS_SERVER;
 
-    switch (argc) {
-    case 2:
-      if (strcmp(argv[1], "-nomenu") == 0)
-	use_menu = FALSE;
-      else 
-	Usage();
-      break;
-    case 1:
-      break;
-    default:
-      Usage();
-      break;
+    while (++arg - argv < argc) {
+	if (**arg == '-') {
+	    if (!strcmp(*arg, "-nomenu"))
+	      use_menu = FALSE;
+	    else if (!strcmp(*arg, "-db"))
+	      if (arg - argv < argc - 1) {
+		  ++arg;
+		  server = *arg;
+	      } else
+		Usage(argv);
+	    else
+	      Usage(argv);
+	}
     }
 
-    if ( status = sms_connect(SMS_SERVER) ) 
+    if ( status = sms_connect(server) ) 
 	ErrorExit("\nConnection to SMS server failed", status);
 
     if ( status = sms_motd(&motd) )

@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/nfs.c,v 1.13 1990-03-17 17:11:05 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/nfs.c,v 1.14 1990-04-02 20:00:01 mar Exp $";
 #endif lint
 
 /*	This is the file nfs.c for the MOIRA Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/nfs.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/nfs.c,v 1.13 1990-03-17 17:11:05 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/nfs.c,v 1.14 1990-04-02 20:00:01 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -30,7 +30,6 @@
 #include "f_defs.h"
 #include "globals.h"
 
-/* #include <sys/types.h> */
 
 #define TYPE_NFS    "NFS"
 
@@ -95,6 +94,11 @@ char ** info;
 	strcat(status_buf, "Miscellaneous");
     }
     /* Add another type here. */
+    if (status & MR_FS_GROUPQUOTA) {
+	if (is_one)
+	    strcat(status_buf, " / ");
+	strcat(status_buf, "Group Quotas Enabled");
+    }
 
     if (status_buf[0] == '\0')
 	strcat(status_buf, "-- None --");

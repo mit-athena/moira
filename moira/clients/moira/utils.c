@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v 1.21 1990-03-17 17:11:31 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v 1.22 1990-04-02 20:00:40 mar Exp $";
 #endif lint
 
 /*	This is the file utils.c for the MOIRA Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v 1.21 1990-03-17 17:11:31 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v 1.22 1990-04-02 20:00:40 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -576,6 +576,8 @@ char **  current;
     if (GetFSVal("staff", MR_FS_STAFF, c_value, &new_val) == FALSE)
 	return(SUB_ERROR);
     if (GetFSVal("miscellaneous", MR_FS_MISC, c_value, &new_val) == FALSE)
+	return(SUB_ERROR);
+    if (GetFSVal("Group Quotas", MR_FS_GROUPQUOTA, c_value, &new_val) == FALSE)
 	return(SUB_ERROR);
 
     FreeAndClear(current, TRUE);

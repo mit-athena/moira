@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/cluster.c,v 1.13 1988-12-07 18:48:35 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/cluster.c,v 1.14 1989-02-23 16:28:22 mar Exp $";
 #endif lint
 
 /*	This is the file cluster.c for the SMS Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/cluster.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/cluster.c,v 1.13 1988-12-07 18:48:35 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/cluster.c,v 1.14 1989-02-23 16:28:22 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -635,7 +635,7 @@ Bool one_map;
     register int stat;
 
     sprintf(temp_buf, "Remove %s from the cluster %s", 
-	    info[MAP_MACHINE], info[MAP_MACHINE]);
+	    info[MAP_MACHINE], info[MAP_CLUSTER]);
     if (!one_map || Confirm(temp_buf)) {
 	if ( (stat = do_sms_query("delete_machine_from_cluster", 2, 
 				  info, Scream, NULL)) != 0 )

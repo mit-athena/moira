@@ -1,4 +1,4 @@
-# $Id: mr_et.et,v 1.25 2000-08-13 04:06:19 zacheiss Exp $
+# $Id: mr_et.et,v 1.26 2001-04-26 21:25:37 zacheiss Exp $
 	error_table sms
 
 ec	MR_NOT_CONNECTED,
@@ -221,5 +221,11 @@ ec	MR_RESERVED,
 
 ec	MR_QUALITY,
 	"Password is too simple."
+
+ec	MR_CONTAINER,
+	"No such container."
+
+ec	MR_NEW_CONTAINER_NAME,
+	"The new container name is invalid."
 
 	end

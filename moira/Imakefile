@@ -1,4 +1,4 @@
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/Imakefile,v 1.8 1997-01-29 22:55:32 danw Exp $
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/Imakefile,v 1.9 1997-10-10 20:29:31 danw Exp $
 #
 # Copyright 1990 by the Massachusetts Institute of Technology.
 #
@@ -11,7 +11,7 @@
 #define have_subdirs
 CODE=Imakefile
 CLIENTDIRS=util include gdb lib clients man update
-SVRDIRS=server db backup dbck dcm gen reg_svr incremental regtape
+SVRDIRS=server db backup dbck dcm gen reg_svr incremental regtape afssync
 #ifdef SVRBUILD
 SUBDIRS=$(CLIENTDIRS) $(SVRDIRS)
 #else

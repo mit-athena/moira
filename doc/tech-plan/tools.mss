@@ -1,5 +1,6 @@
 @part[tools, root "sms.mss"]
 @MajorSection(Specialized Management Tools - User Interface)
+@label(Tools)
 
 SMS will include a set of specialized management tools to enable system
 adminstrators to control system resources.  As the system evolves, more
@@ -414,6 +415,7 @@ manipulates the following fields:
 END USERS: Administrator.  Staff.
 @end(multiple)
 @begin(multiple)
+
 PROGRAM NAME: MAIL_MAINT - Mail Administration
 
 DESCRIPTION: 
@@ -645,9 +647,9 @@ PRE-DEFINED QUERIES USED:
 
 @end(itemize)
 
+
 END USER: Administrator. Staff. Students
-
-
+@end(multiple)
 
 @begin(multiple)
 PROGRAM NAME: DB_MAINT - Data base integrity checker/intersective
@@ -673,7 +675,6 @@ END USER: Administrator. Cron (automatically invoked).
 @end(multiple)
 
 @begin(multiple)
-
 PROGRAM NAME: SMS_MAINT - Master SMS program.
 
 DESCRIPTION: This program can do anything that any of

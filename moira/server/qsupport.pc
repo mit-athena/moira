@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.pc,v $
  *	$Author: danw $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.pc,v 2.1 1997-01-29 23:27:24 danw Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.pc,v 2.2 1997-06-17 20:20:26 danw Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_qsupport_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.pc,v 2.1 1997-01-29 23:27:24 danw Exp $";
+static char *rcsid_qsupport_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.pc,v 2.2 1997-06-17 20:20:26 danw Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -1280,48 +1280,15 @@ int register_user(q, argv, cl)
 	    strtrim(machname));
     incremental_after(USERS_TABLE, buffer, 0);
 
-    /* create group list */
-    if (set_next_object_id("gid", LIST_TABLE, 1))
-      return(MR_NO_ID);
-    if (set_next_object_id("list_id", LIST_TABLE, 0))
-      return(MR_NO_ID);
-    EXEC SQL SELECT value INTO :list_id FROM numvalues
-      WHERE name='list_id';
-    if (dbms_errno) return(mr_errcode);
-    if (sqlca.sqlerrd[2] != 1)
-      return(MR_INTERNAL);
-    incremental_clear_before();
-    EXEC SQL SELECT value INTO :gidval FROM numvalues WHERE name = 'gid';
-    EXEC SQL INSERT INTO list
-      (name, list_id, active, publicflg, hidden, maillist, grouplist,
-       gid, description, acl_type, acl_id,
-       modtime, modby, modwith)
-      VALUES (:login, :list_id, 1, 0, 0, 0, 1,
-	      :gidval, 'User Group', 'USER', :users_id,
-	      SYSDATE, :who, :entity);
-    if (dbms_errno) return(mr_errcode);
-    if (sqlca.sqlerrd[2] != 1)
-      return(MR_INTERNAL);
-    sprintf(buffer, "l.list_id = %d", list_id);
-    incremental_after(LIST_TABLE, buffer, 0);
-    aargv[0] = (char *) list_id;
-    aargv[1] = "USER";
-    aargv[2] = (char *) users_id;
-    incremental_clear_before();
-    EXEC SQL INSERT INTO imembers
-             (list_id, member_type, member_id, ref_count, direct)
-      VALUES (:list_id, 'USER', :users_id, 1, 1);
-    if (dbms_errno) return(mr_errcode);
-    if (sqlca.sqlerrd[2] != 1)
-      return(MR_INTERNAL);
-    incremental_after(IMEMBERS_TABLE, 0, aargv);
-
     if (m_id == 0) {
         /* Cell Name (I know, it shouldn't be hard coded...) */
         strcpy(machname, "ATHENA.MIT.EDU");
 	EXEC SQL SELECT mach_id INTO :m_id FROM machine 
 	  WHERE name = :machname;
     }
+
+    EXEC SQL SELECT list_id INTO :list_id FROM list
+	WHERE name='wheel';
 
     /* create filesystem */
     if (set_next_object_id("filsys_id", FILESYS_TABLE, 0))
@@ -1381,7 +1348,7 @@ int register_user(q, argv, cl)
     EXEC SQL UPDATE tblstats SET updates=updates+1, modtime=SYSDATE
       WHERE table_name='users';
     EXEC SQL UPDATE tblstats SET appends=appends+1, modtime=SYSDATE
-      WHERE table_name='list' OR table_name='filesys' OR table_name='quota';
+      WHERE table_name='filesys' OR table_name='quota';
     if (dbms_errno) return(mr_errcode);
     return(MR_SUCCESS);
 }

@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qaccess.pc,v $
  *	$Author: danw $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qaccess.pc,v 2.1 1997-01-29 23:27:13 danw Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qaccess.pc,v 2.2 1997-06-17 20:20:24 danw Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_qsupport_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qaccess.pc,v 2.1 1997-01-29 23:27:13 danw Exp $";
+static char *rcsid_qsupport_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qaccess.pc,v 2.2 1997-06-17 20:20:24 danw Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -83,7 +83,10 @@ int access_login(q, argv, cl)
 	WHERE u.unix_uid = :argv[0] AND u.users_id != 0;
     }
 
-    if (sqlca.sqlerrd[2] != 1 || id != cl->users_id)
+    if (sqlca.sqlcode == SQL_NO_MATCH)
+	return(MR_NO_MATCH); /* ought to be MR_USER, but this is what
+				gual returns, so we have to be consistent */
+    else if (sqlca.sqlerrd[2] != 1 || id != cl->users_id)
 	return(MR_PERM);
     else
 	return(MR_SUCCESS);
@@ -110,8 +113,8 @@ int access_list(q, argv, cl)
      client *cl;
 {
     EXEC SQL BEGIN DECLARE SECTION;
-    int list_id, acl_id, flags, gid;
-    char acl_type[9];
+    int list_id, acl_id, flags, gid, users_id;
+    char acl_type[9], *newname;
     EXEC SQL END DECLARE SECTION;
     char *client_type;
     int client_id, status;
@@ -134,13 +137,19 @@ int access_list(q, argv, cl)
 	 (!strcmp("dmfl", q->shortname))) &&
 	(!strcmp("USER", argv[1]))) {
 	if (*(int *)argv[2] == client_id) return(MR_SUCCESS);
-    /* if update_list, don't allow them to change the GID */
+    /* if update_list, don't allow them to change the GID or rename to
+       a username other than their own */
     } else if (!strcmp("ulis", q->shortname)) {
       if (!strcmp(argv[7], UNIQUE_GID)) {
 	if(gid != -1) return MR_PERM;
       } else {
 	if(gid != atoi(argv[7])) return MR_PERM;
       }
+      newname = argv[1];
+      EXEC SQL SELECT users_id INTO :users_id FROM users
+	  WHERE login=:newname;
+      if ((sqlca.sqlcode != SQL_NO_MATCH) && (users_id != client_id))
+	  return MR_PERM;
     }
 
     /* check for client in access control list */

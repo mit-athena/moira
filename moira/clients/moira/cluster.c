@@ -1,4 +1,4 @@
-/* $Id: cluster.c,v 1.52 2001-08-19 02:49:48 zacheiss Exp $
+/* $Id: cluster.c,v 1.53 2001-08-19 02:56:46 zacheiss Exp $
  *
  *	This is the file cluster.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -2054,6 +2054,7 @@ static char *PrintContainer(char **info)
 
   sprintf(buf, "Container: %s", info[CON_NAME]);
   Put_message(buf);
+  return "";
 }
 
 static char *PrintMContMap(char **info)

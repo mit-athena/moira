@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v $
  *	$Author: wesommer $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.5 1987-09-10 22:18:32 wesommer Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.6 1987-09-21 15:19:11 wesommer Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
@@ -11,6 +11,9 @@
  * 	admin_server, and is a server for the userreg program.
  * 
  *	$Log: not supported by cvs2svn $
+ * Revision 1.5  87/09/10  22:18:32  wesommer
+ * Clean up output format.
+ * 
  * Revision 1.4  87/09/04  23:33:19  wesommer
  * Deleted test scaffolding (second oops.)
  * 
@@ -26,7 +29,7 @@
  */
 
 #ifndef lint
-static char *rcsid_reg_svr_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.5 1987-09-10 22:18:32 wesommer Exp $";
+static char *rcsid_reg_svr_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.6 1987-09-21 15:19:11 wesommer Exp $";
 #endif lint
 
 #include <stdio.h>
@@ -319,7 +322,8 @@ reserve_user(message)
     }
 
     for (i = 0; i < reg_misc_len && reg_misc[i]; i++) {
-	if (!islower(reg_misc[i])) {
+	if (!islower(reg_misc[i]) && !isdigit(reg_misc[i]) &&
+	    reg_misc[i] != '_' && reg_misc[i] != '.') {
 	    status = UREG_INVALID_UNAME;
 	    goto punt;
 	}

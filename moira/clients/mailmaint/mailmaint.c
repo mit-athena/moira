@@ -1,11 +1,10 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v 1.2 1987-08-22 23:51:56 wesommer Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v 1.3 1987-08-22 23:53:43 wesommer Exp $
  */
 
 #ifndef lint
-static char rcsid_mailmaint_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v 1.2 1987-08-22 23:51:56 wesommer Exp $";
-
+static char rcsid_mailmaint_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v 1.3 1987-08-22 23:53:43 wesommer Exp $";
 #endif lint
 
 /***********************************************************************/
@@ -19,7 +18,7 @@ static char rcsid_mailmaint_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/
 #include <signal.h>
 #include <strings.h>
 #include <curses.h>
-#include </usr/include/sys/types.h>
+#include <sys/types.h>
 #include <ctype.h>
 #include "mit-copyright.h"
 

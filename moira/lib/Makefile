@@ -1,6 +1,6 @@
 #	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/Makefile,v $
 #	$Author: mar $
-#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/Makefile,v 1.15 1990-04-06 17:20:04 mar Exp $
+#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/Makefile,v 1.16 1990-05-02 15:56:06 mar Exp $
 #
 #	Makefile for Moira library.
 #
@@ -38,6 +38,8 @@ all: ${ALL}
 libmoira.a: ${LIBOBJ}
 	ar cruv $@ `lorder ${LIBOBJ} | tsort`
 	ranlib $@
+
+libmoira_p.a: ${LIBOBJ}
 	(cd profiled; ar cruv ../libmoira_p.a ${LIBOBJ}; ranlib ../libmoira_p.a)
 
 mrlib.dvi: mrlib.tex

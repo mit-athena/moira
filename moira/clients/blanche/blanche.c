@@ -1,4 +1,4 @@
-/* $Id: blanche.c,v 1.45 2000-03-15 22:43:56 rbasch Exp $
+/* $Id: blanche.c,v 1.46 2000-04-19 23:15:12 zacheiss Exp $
  *
  * Command line oriented Moira List tool.
  *
@@ -20,7 +20,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.45 2000-03-15 22:43:56 rbasch Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.46 2000-04-19 23:15:12 zacheiss Exp $");
 
 struct member {
   int type;
@@ -41,6 +41,7 @@ struct member {
 int infoflg, verbose, syncflg, memberflg, recursflg, noauth;
 int showusers, showstrings, showkerberos, showlists, showtags;
 int createflag, setinfo, active, public, hidden, maillist, grouplist;
+int nfsgroup;
 struct member *owner;
 char *desc, *newname;
 
@@ -75,7 +76,7 @@ int main(int argc, char **argv)
   infoflg = verbose = syncflg = memberflg = recursflg = 0;
   noauth = showusers = showstrings = showkerberos = showlists = 0;
   createflag = setinfo = 0;
-  active = public = hidden = maillist = grouplist = -1;
+  active = public = hidden = maillist = grouplist = nfsgroup = -1;
   listname = newname = desc = NULL;
   owner = NULL;
   addlist = sq_create();
@@ -251,6 +252,16 @@ int main(int argc, char **argv)
 	      setinfo++;
 	      grouplist = 0;
 	    }
+	  else if (argis("N", "nfs"))
+	    {
+	      setinfo++;
+	      nfsgroup = 1;
+	    }
+	  else if (argis("NN", "notnfs"))
+	    {
+	      setinfo++;
+	      nfsgroup = 0;
+	    }
 	  else if (argis("D", "desc"))
 	    {
 	      if (arg - argv < argc - 1)
@@ -306,7 +317,7 @@ int main(int argc, char **argv)
     showusers = showstrings = showlists = showkerberos = 1;
 
   /* fire up Moira */
-  status = mrcl_connect(server, "blanche", 2, !noauth);
+  status = mrcl_connect(server, "blanche", 3, !noauth);
   if (status == MRCL_AUTH_ERROR)
     {
       com_err(whoami, 0, "Try the -noauth flag if you don't "
@@ -328,46 +339,47 @@ int main(int argc, char **argv)
   /* create if needed */
   if (createflag)
     {
-      char *argv[10];
+      char *argv[11];
 
-      argv[0] = listname;
-      argv[1] = (active == 0) ? "0" : "1";
-      argv[2] = (public == 1) ? "1" : "0";
-      argv[3] = (hidden == 1) ? "1" : "0";
-      argv[4] = (maillist == 0) ? "0" : "1";
-      argv[5] = (grouplist == 1) ? "1" : "0";
-      argv[6] = UNIQUE_GID;
-      argv[9] = desc ? desc : "none";
+      argv[L_NAME] = listname;
+      argv[L_ACTIVE] = (active == 0) ? "0" : "1";
+      argv[L_PUBLIC] = (public == 1) ? "1" : "0";
+      argv[L_HIDDEN] = (hidden == 1) ? "1" : "0";
+      argv[L_MAILLIST] = (maillist == 0) ? "0" : "1";
+      argv[L_GROUP] = (grouplist == 1) ? "1" : "0";
+      argv[L_GID] = UNIQUE_GID;
+      argv[L_NFSGROUP] = (nfsgroup == 1) ? "1" : "0";
+      argv[L_DESC] = desc ? desc : "none";
 
       if (owner)
 	{
-	  argv[8] = owner->name;
+	  argv[L_ACE_NAME] = owner->name;
 	  switch (owner->type)
 	    {
 	    case M_ANY:
 	    case M_USER:
-	      argv[7] = "USER";
-	      status = mr_query("add_list", 10, argv, NULL, NULL);
+	      argv[L_ACE_TYPE] = "USER";
+	      status = mr_query("add_list", 11, argv, NULL, NULL);
 	      if (owner->type != M_ANY || status != MR_USER)
 		break;
 
 	    case M_LIST:
-	      argv[7] = "LIST";
-	      status = mr_query("add_list", 10, argv, NULL, NULL);
+	      argv[L_ACE_TYPE] = "LIST";
+	      status = mr_query("add_list", 11, argv, NULL, NULL);
 	      break;
 
 	    case M_KERBEROS:
-	      argv[7] = "KERBEROS";
-	      status = mr_query("add_list", 10, argv, NULL, NULL);
+	      argv[L_ACE_TYPE] = "KERBEROS";
+	      status = mr_query("add_list", 11, argv, NULL, NULL);
 	      break;
 	    }
 	}
       else
 	{
-	  argv[7] = "USER";
-	  argv[8] = getenv("USER");
+	  argv[L_ACE_TYPE] = "USER";
+	  argv[L_ACE_NAME] = getenv("USER");
 
-	  status = mr_query("add_list", 10, argv, NULL, NULL);
+	  status = mr_query("add_list", 11, argv, NULL, NULL);
 	}
 
       if (status)
@@ -378,7 +390,7 @@ int main(int argc, char **argv)
     }
   else if (setinfo)
     {
-      char *argv[11];
+      char *argv[12];
 
       status = mr_query("get_list_info", 1, &listname,
 			save_list_info, argv);
@@ -390,45 +402,47 @@ int main(int argc, char **argv)
 
       argv[0] = listname;
       if (newname)
-	argv[1] = newname;
+	argv[L_NAME + 1] = newname;
       if (active != -1)
-	argv[2] = active ? "1" : "0";
+	argv[L_ACTIVE + 1] = active ? "1" : "0";
       if (public != -1)
-	argv[3] = public ? "1" : "0";
+	argv[L_PUBLIC + 1] = public ? "1" : "0";
       if (hidden != -1)
-	argv[4] = hidden ? "1" : "0";
+	argv[L_HIDDEN + 1] = hidden ? "1" : "0";
       if (maillist != -1)
-	argv[5] = maillist ? "1" : "0";
+	argv[L_MAILLIST + 1] = maillist ? "1" : "0";
       if (grouplist != -1)
-	argv[6] = grouplist ? "1" : "0";
+	argv[L_GROUP + 1] = grouplist ? "1" : "0";
+      if (nfsgroup != -1)
+	argv[L_NFSGROUP + 1] = nfsgroup ? "1" : "0";
       if (desc)
-	argv[10] = desc;
+	argv[L_DESC + 1] = desc;
 
       if (owner)
 	{
-	  argv[9] = owner->name;
+	  argv[L_ACE_NAME + 1] = owner->name;
 	  switch (owner->type)
 	    {
 	    case M_ANY:
 	    case M_USER:
-	      argv[8] = "USER";
-	      status = mr_query("update_list", 11, argv, NULL, NULL);
+	      argv[L_ACE_TYPE + 1] = "USER";
+	      status = mr_query("update_list", 12, argv, NULL, NULL);
 	      if (owner->type != M_ANY || status != MR_USER)
 		break;
 
 	    case M_LIST:
-	      argv[8] = "LIST";
-	      status = mr_query("update_list", 11, argv, NULL, NULL);
+	      argv[L_ACE_TYPE + 1] = "LIST";
+	      status = mr_query("update_list", 12, argv, NULL, NULL);
 	      break;
 
 	    case M_KERBEROS:
-	      argv[8] = "KERBEROS";
-	      status = mr_query("update_list", 11, argv, NULL, NULL);
+	      argv[L_ACE_TYPE + 1] = "KERBEROS";
+	      status = mr_query("update_list", 12, argv, NULL, NULL);
 	      break;
 	    }
 	}
       else
-	status = mr_query("update_list", 11, argv, NULL, NULL);
+	status = mr_query("update_list", 12, argv, NULL, NULL);
 
       if (status)
 	{
@@ -854,11 +868,13 @@ void usage(char **argv)
   fprintf(stderr, USAGE_OPTIONS_FORMAT, "-dl | -deletelist filename",
 	  "-NG | -notgroup");
   fprintf(stderr, USAGE_OPTIONS_FORMAT, "-f  | -file filename",
-	  "-D  | -desc description");
+	  "-N  | -nfs");
   fprintf(stderr, USAGE_OPTIONS_FORMAT, "-at | -addtagged member tag",
-	  "-O  | -owner owner");
+	  "-NN | -notnfs");
   fprintf(stderr, USAGE_OPTIONS_FORMAT, "-ct | -changetag member tag",
-	  "-t  | -tags");
+	  "-D  | -desc description");
+  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-t  | -tags",
+	  "-O  | -owner owner");
   fprintf(stderr, USAGE_OPTIONS_FORMAT, "-n  | -noauth",
 	  "-db | -database host[:port]");
   exit(1);
@@ -923,21 +939,26 @@ void show_list_member(struct member *memberstruct)
 
 int show_list_info(int argc, char **argv, void *hint)
 {
-  printf("List: %s\n", argv[0]);
-  printf("Description: %s\n", argv[9]);
+  printf("List: %s\n", argv[L_NAME]);
+  printf("Description: %s\n", argv[L_DESC]);
   printf("Flags: %s, %s, and %s\n",
-	 atoi(argv[1]) ? "active" : "inactive",
-	 atoi(argv[2]) ? "public" : "private",
-	 atoi(argv[3]) ? "hidden" : "visible");
-  printf("%s is %sa maillist and is %sa group", argv[0],
-	 atoi(argv[4]) ? "" : "not ",
-	 atoi(argv[5]) ? "" : "not ");
-  if (atoi(argv[5]))
-    printf(" with GID %d\n", atoi(argv[6]));
+	 atoi(argv[L_ACTIVE]) ? "active" : "inactive",
+	 atoi(argv[L_PUBLIC]) ? "public" : "private",
+	 atoi(argv[L_HIDDEN]) ? "hidden" : "visible");
+  printf("%s is %sa maillist and is %sa group", argv[L_NAME],
+	 atoi(argv[L_MAILLIST]) ? "" : "not ",
+	 atoi(argv[L_GROUP]) ? "" : "not ");
+  if (atoi(argv[L_GROUP]))
+    {
+      if (atoi(argv[L_NFSGROUP]))
+	printf(" (and an NFS group)");
+      printf(" with GID %d\n", atoi(argv[L_GID]));
+    }
   else
     printf("\n");
-  printf("Owner: %s %s\n", argv[7], argv[8]);
-  printf("Last modified by %s with %s on %s\n", argv[11], argv[12], argv[10]);
+  printf("Owner: %s %s\n", argv[L_ACE_TYPE], argv[L_ACE_NAME]);
+  printf("Last modified by %s with %s on %s\n", 
+	 argv[L_MODBY], argv[L_MODWITH], argv[L_MODTIME]);
   return MR_CONT;
 }
 
@@ -948,7 +969,7 @@ int save_list_info(int argc, char **argv, void *hint)
 {
   char **nargv = hint;
 
-  for (argc = 0; argc < 10; argc++)
+  for (argc = 0; argc < 11; argc++)
     nargv[argc + 1] = strdup(argv[argc]);
   return MR_CONT;
 }

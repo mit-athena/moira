@@ -1,4 +1,4 @@
-/* $Id: lists.c,v 1.39 2000-03-15 22:44:03 rbasch Exp $
+/* $Id: lists.c,v 1.40 2000-04-19 23:15:35 zacheiss Exp $
  *
  *	This is the file lists.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -23,7 +23,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v 1.39 2000-03-15 22:44:03 rbasch Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v 1.40 2000-04-19 23:15:35 zacheiss Exp $");
 
 struct mqelem *GetListInfo(int type, char *name1, char *name2);
 char **AskListInfo(char **info, Bool name);
@@ -42,6 +42,7 @@ int GetMemberInfo(char *action, char **ret_argv);
 #define DEFAULT_MAILLIST    DEFAULT_YES
 #define DEFAULT_GROUP       DEFAULT_NO
 #define DEFAULT_GID         UNIQUE_GID
+#define DEFAULT_NFSGROUP    DEFAULT_NO
 #define DEFAULT_ACE_TYPE    "user"
 #define DEFAULT_ACE_NAME    (user)
 #define DEFAULT_DESCRIPTION DEFAULT_COMMENT
@@ -86,7 +87,8 @@ static void PrintListInfo(char **info)
     Put_message("This list is NOT a mailing list.");
   if (atoi(info[L_GROUP]))
     {
-      sprintf(buf, "This list is a Group and its ID number is %s",
+      sprintf(buf, "This list is a Group%s and its ID number is %s",
+	      atoi(info[L_NFSGROUP]) ? " and an NFS Group," : "",
 	      info[L_GID]);
       Put_message(buf);
     }
@@ -212,6 +214,9 @@ char **AskListInfo(char **info, Bool name)
     return NULL;
   if (atoi(info[L_GROUP]))
     {
+      if (GetYesNoValueFromUser("Is this an NFS group", &info[L_NFSGROUP]) == 
+	  SUB_ERROR)
+	return NULL;
       if (GetValueFromUser("What is the GID for this group.", &info[L_GID]) ==
 	  SUB_ERROR)
 	return NULL;
@@ -352,6 +357,7 @@ static char **SetDefaults(char **info, char *name)
   info[L_MAILLIST] = strdup(DEFAULT_MAILLIST);
   info[L_GROUP] =    strdup(DEFAULT_GROUP);
   info[L_GID] =      strdup(DEFAULT_GID);
+  info[L_NFSGROUP] = strdup(DEFAULT_NFSGROUP);
   info[L_ACE_TYPE] = strdup(DEFAULT_ACE_TYPE);
   info[L_ACE_NAME] = strdup(DEFAULT_ACE_NAME);
   info[L_DESC] =     strdup(DEFAULT_DESCRIPTION);

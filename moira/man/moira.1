@@ -1,0 +1,81 @@
+.TH SMS 1 "29 Nov 1988" "Project Athena"
+\" RCSID: $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/man/moira.1,v 1.1 1988-11-29 16:11:09 mar Exp $
+.SH NAME
+sms, listmaint, usermaint, dcmmaint \- maintain information stored in SMS
+.SH SYNOPSIS
+.B sms
+[
+.BI \-nomenu
+]
+.SH DESCRIPTION
+.I sms
+administers all of the information stored in the SMS database.  When
+invoked by the name
+.B listmaint, usermaint,
+or
+.B dcmmaint,
+.I sms
+will immediately drop into the appropriate sub-menu.
+There is only one option:
+.TP
+.BI \-nomenu
+Do not take over the screen.  With this option specified, the screen
+will be handled like a printing terminal.  Each menu will be displayed
+only once.  Typing '?' will cause a menu to be redisplayed.
+.PP
+When called without options,
+.I sms
+displays a menu in the top half of the screen listing other menus;
+retrievals, appends, updates, or 
+deletes to the database; or control actions within the program.
+Each menu consists of several lines containing a single character
+(usually a numeral), a keyword, and a short description.  Menu items
+may be selected by either the single character or the keyword.  Needed
+arguments may be put on the same line -- otherwise, they will be 
+prompted for.  It is possible to invoke an option from a sub-menu by
+name while at a higher menu.  The lower half of the screen is a
+dialoge area used to prompt the user and display retrieved information.
+.PP
+The top level menu just lists other menus for each of the types of
+objects stored in the database.  Most menus also list the following
+control options:
+.TP
+.B verbose
+Toggle the verosity of delete.  This controls whether or not an extra
+confirmation will be required before deleting data from the database.
+.TP
+.B return
+Return to the menu above this one in the menu tree.
+.TP
+.B toggle
+Toggle logging on and off.  When logging is turned on, all output in
+the lower half of the screen will also be written to
+.I /usr/tmp/sms-log.XXXX,
+where XXXX is the process-ID of the sms client.
+.TP
+.B quit
+Exits the sms client immediately.  The connection to the SMS server
+will be closed.
+.SH DIAGNOSTICS
+Pay attention to Kerberos diagnostics, as one must be authenticated to
+do most SMS database work.  
+.PP
+As this is a database manipulation application, diagnostics indicate an
+incomplete argument list, an attempt to modify/delete an ambiguous
+entry, or an invalid menu choice.
+.SH ENVIRONMENT
+.TP
+KRBTKFILE
+path name of your Kerberos ticket.  SMS decides who you are and what you
+can do based on your Kerberos tickets, and nothing else.
+.TP
+TERMCAP
+used by curses to control of scrolling and menu display.
+.SH AUTHOR
+Jean Marie Diaz, Mark Roman, Chris Peterson, Mark Rosenstein and a
+cast of thousands
+.SH "SEE ALSO"
+chfn(1), chpobox(1), chsh(1), mailmaint(1), smslist(1),
+SMS section of the Project Athena Technical Plan
+.SH NOTES
+SMS is Project Athena's Service Management System.

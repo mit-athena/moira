@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/startmoira.c,v $
  *	$Author: wesommer $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/startmoira.c,v 1.2 1987-06-02 20:08:16 wesommer Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/startmoira.c,v 1.3 1987-08-22 17:30:58 wesommer Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
@@ -9,13 +9,16 @@
  *	and then waits for it to exit.
  * 
  *	$Log: not supported by cvs2svn $
+ * Revision 1.2  87/06/02  20:08:16  wesommer
+ * Changed logging, location of daemon to run.
+ * 
  * Revision 1.1  87/06/01  03:35:33  wesommer
  * Initial revision
  * 
  */
 
 #ifndef lint
-static char *rcsid_sms_starter_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/startmoira.c,v 1.2 1987-06-02 20:08:16 wesommer Exp $";
+static char *rcsid_sms_starter_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/startmoira.c,v 1.3 1987-08-22 17:30:58 wesommer Exp $";
 #endif lint
 
 #include <stdio.h>
@@ -28,7 +31,7 @@ static char *rcsid_sms_starter_c = "$Header: /afs/.athena.mit.edu/astaff/project
 
 #define SMS_LOG_FILE "/u1/sms/sms.log"
 
-#define SMS_PROG "/u1/sms/server/smsd"
+#define SMS_PROG "/u1/sms/bin/smsd"
 
 int rdpipe[2];
 char *sigdescr[] = {

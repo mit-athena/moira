@@ -1,5 +1,5 @@
 .TH DCM 8 "30 Nov 1988" "Project Athena"
-\" RCSID: $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/man/dcm.8,v 1.6 1990-03-20 11:31:25 mar Exp $
+\" RCSID: $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/man/dcm.8,v 1.7 1998-01-07 17:10:30 danw Exp $
 .SH NAME
 dcm, startdcm \- build config files from Moira database and update servers
 .SH SYNOPSIS
@@ -10,12 +10,9 @@ dcm, startdcm \- build config files from Moira database and update servers
 .SH DESCRIPTION
 The
 .B dcm
-must be run periodically on the Moira server.  It is usually run every
-15 minutes by the
-.I cron
-daemon.  Rather than invoke
+must be run periodically on the Moira server.  Rather than invoke
 .B dcm
-directly, cron runs
+directly, one generally runs
 .B startdcm,
 which starts the dcm running in the proper working directory and
 captures logging messages.
@@ -26,36 +23,22 @@ may be disabled by the presence of the file
 .I /etc/nodcm
 or by setting the value of
 .I dcm_enable
-to zero in the Moira database.  Debug mode may be enabled in the dcm by
-specifying an integer on the command line or by setting the
-environment variable
-.B DEBUG.
-The command line value will override the environment variable.  Three
-bits are currently defined in the debug value: DBG_PLAIN = 01,
-DBG_VERBOSE = 02, DBG_TRACE = 04.  Logging is done to standard output.
+to zero in the Moira database. Logging is done to standard output.
 If critical errors are detected, they are logged to
-.B /u1/sms/critical.log
+.B /moira/critical.log
 and in a zephyrgram to class
 .B Moira
 instance
 .B DCM
 in addition to standard output.
-For the
-.B dcm
-to function properly,
-.I root
-must both be authorized to access each of the tables by RTI Ingres,
-and on the query acls for each of the queries the 
-.B dcm
-will execute.
 .PP
 For the actual generation of config files, the
 .B dcm
 will fork off generator programs of the form
-.B /u1/sms/bin/\fIservice\fB.gen.
+.B /moira/bin/\fIservice\fB.gen.
 Each generator takes as an argument the name of the output file to
 produce.  Many of them also require working directories in
-.B /u1/sms/dcm/\fIservice\fB.
+.B /moira/dcm/\fIservice\fB.
 A generator exits with a status code defined in
 .I <mr_et.h>.
 In particular,
@@ -66,28 +49,28 @@ time this generator was run.
 .B startdcm
 sets its working directory to the root, disconnects from the terminal
 and puts itself in the background.  It then starts
-.B /u1/sms/bin/dcm,
+.B /moira/bin/dcm,
 and will capture lines the dcm writes to standard output and log them
 in
-.B /u1/sms/dcm.log
+.B /moira/dcm.log
 along with a timestamp.
 .B startdcm
 will also log the exit status of the
 .B dcm
 if it is non-zero.
 .SH FILES
-/u1/sms/dcm.log
+/moira/dcm.log
 .br
-/u1/sms/critical.log
+/moira/critical.log
 .br
-/u1/sms/dcm/locks/* \- empty files will be created here for advisory locks.
+/moira/dcm/locks/* \- empty files will be created here for advisory locks.
 .br
-/u1/sms/bin/*.gen \- service file generators will be searched for
+/moira/bin/*.gen \- service file generators will be searched for
 here.
 .br
 /tmp/tkt_dcm \- temporary Kerberos ticket storage.
 .br
-/etc/srvtab \- The dcm must be able to get Kerberos tickets for "sms"
+/etc/athena/srvtab \- The dcm must be able to get Kerberos tickets for "sms"
 (null instance).
 .SH "SEE ALSO"
 The Project Athena Technical Plan section on Moira.

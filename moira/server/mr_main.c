@@ -1,4 +1,4 @@
-/* $Id: mr_main.c,v 1.50 2000-01-27 19:33:31 rbasch Exp $
+/* $Id: mr_main.c,v 1.51 2000-01-28 00:27:41 danw Exp $
  *
  * Moira server process.
  *
@@ -30,7 +30,7 @@
 
 #include <krb.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.50 2000-01-27 19:33:31 rbasch Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.51 2000-01-28 00:27:41 danw Exp $");
 
 client *cur_client;
 
@@ -160,7 +160,8 @@ int main(int argc, char **argv)
   /*
    * Establish template connection.
    */
-  if (!(listener = mr_listen(port)))
+  listener = mr_listen(port);
+  if (listener == -1)
     {
       com_err(whoami, status, "trying to create listening connection");
       exit(1);

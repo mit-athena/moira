@@ -1,6 +1,4 @@
 /**/#	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/util/imake.includes/config.Imakefile,v $
-/**/#	$Author: mar $
-/**/#	$Id: config.Imakefile,v 1.1 1990-08-20 17:16:50 mar Exp $
 /**/#
 
 /* 
@@ -9,35 +7,52 @@
 
 /* GLOBAL_CDEFS are passed to every C compile statement */
 /* Here are some of the common definitions which you might add to GLOBAL_CDEFS:
- *	BSD42 - needed for compiling on BSD-type systems (selects
- *		hostname retrieval method)
- *	ATHENA_COMPAT - compatibility with currently-running Athena software
- *		(old-style .klogin files, reserved ports for r* commands,
- *		KOPT_DO_OLDSTYLE for krb_sendauth, ancient 'srvtab'
- *		files with "Athena" instead of "ATHENA.MIT.EDU"
- *	ATHENA - Athena-local modifications to r-commands (rlogin, rsh, rcp)
- *	KERBEROS - should ALWAYS be turned on
- *	VFS - Virtual File System (for most Sun NFS machines)
- *	SYSLOG42 - if defined, use 4.2BSD-style syslog routines
- *	POSIX - if defined, conform to POSIX library calls and data structures.
+ *	HESIOD - use hesiod lookup Moira server name
+ *	ZEPHYR - report critical errors via Zephyr
+ *	SYSLOG42 - report critical errors via 4.2BSD-style syslog routines
+ *	ATHENA - Athena-local hacks other sites probably don't want
+ *	GDSS - use the generic data signature service to verify user info
+ *	DBMS=xxx - currently supported is INGRES, INFORMIX, ORACLE
  *	ULTRIX022 - if you are running on pre-3.0 Ultrix.
  *	SunOS=xx - if you are running SunOS.  Set xx to 10 times the release
  *		number (e.g. SunOS 3.5 => -DSunOS=35, SunOS 4.0 => -DSunOS=40)
  *	NO_GETUSERSHELL - if your system doesn't have getusershell() in libc
  *		(type 'nm /lib/libc.a | grep getusershell', if something
  *		 shows up, you should NOT turn this flag on)
- *	NOTTYENT - if your system doesn't have ttyent.h (4.3-style /etc/ttys)
- *	NO_WINSIZE - if your system doesn't have struct winsize, but
- *		has struct ttysize (e.g. older Suns) (check <sys/ioctl.h>)
- *	NO_UIDGID_T - if your system does not have uid_t's and gid_t's
- *		(check <sys/types.h>)
  */
 
-GLOBAL_CDEFS= -DBSD42 -DATHENA_COMPAT -DATHENA -DKERBEROS -DVFS \
-	$(NOENCFLAG) $(DBMFLAG) $(SHMFLAG)
+/* Curses library */
+#ifdef SOLARIS
+CURSES= -L/usr/css/lib -lcurses -ltermcap
+#else
+CURSES= -lcurses -ltermcap
+#endif
 
-/* SRCTOP is the root of the Kerberos source tree */
-SRCTOP=/mit/kerberos/src
+#ifdef _AIX
+OSDEFS=-D_BSD -D_BSD_INCLUDES -DPOSIX
+OSLIBS=-lbsd
+CURSES=-lcurses
+#endif
+
+#if defined(SOLARIS)
+OSDEFS= -DPOSIX -DSOLARIS -I/usr/openwin/include
+OSLIBS= -L/usr/ccs/lib -lcurses -ltermcap -lresolv \
+	-lsocket -lnsl -lc /usr/ucblib/libucb.a -lelf -ldl
+CURSES= 
+/* the curses and termcap libs are where they are on purpose. -vrt 4/28/93
+ */
+#endif
+
+#ifdef NeXT
+OSLIBS= -lresolv
+#else
+
+
+GLOBAL_CDEFS= -DHESIOD -DZEPHYR -DGDSS -DATHENA -DDBMS=INGRES -I/usr/athena/include $(OSDEFS)
+
+
+/* SRCTOP is the root of the Moira source tree */
+SRCTOP=/mit/moiradev/src
 
 /* DESTDIR is the root of the tree to install into.  
  * If null, install into the running system.
@@ -62,41 +77,63 @@ DESTDIR=
  * parents of these directories exist.
  */
 USRDIR= /usr
-SVRDIR= /usr/etc
-DAEMDIR= /usr/etc
-PROGDIR=/usr/athena
+ETCDIR= /usr/athena/etc
+PROGDIR=/usr/athena/bin
 LIBDIR= /usr/athena/lib
-USRLIB= /usr/lib
 LINTLIBDIR = /usr/lib/lint
-BINDIR= /usr/bin
-UCBDIR= /usr/ucb
-INCLDIR= /usr/include
-MANDIR= /usr/man
-ETCDIR= /etc
-SLASHBINDIR= /bin
+INCLDIR= /usr/athena/include
+MANDIR= /usr/athena/man
+
 
 /*
- * Set ORGANIZATION to be the desired organization string printed
- * by the 'kinit' program.  It may have spaces.
+ * Define SVRBUILD if this machine has your DBMS installed on it so
+ * that the server programs can be built which link against the DBMS
+ * libraries.
  */
-ORGANIZATION=MIT Project Athena
+/* #define SVRBUILD */
+
+/* Define USELOCALTOOLS if you already have built and installed in
+ * your environment the following tools:
+	imake
+	makedepend
+ */
+#define USELOCALTOOLS
+
+/* Define USELOCALLIBS if you already have built and installed in
+ * your environment the following libraries and associated tools:
+	ss
+	com_err
+ */
+#define USELOCALLIBS
 
 /*
- * Define NOENCRYPTION if you do not have the DES library.
+ * Define HESIOD if you have hesiod installed on your system and want
+ * to use it for the Moira clients to find the Moira server.
  */
-/* #define NOENCRYPTION */
+#define HESIOD
 
 /*
- * Define NDBM if you are using the 4.3 ndbm library (which is part of
- * libc).  If not defined, 4.2 dbm will be assumed.
+ * Define ZEPHYR if you have zephyr installed on your system and want
+ * to use it to report Moira server errors.  Also define the library
+ * to link against.
  */
-#define NDBM 
+#define ZEPHYR
+LZEHPYR=-lzephyr
 
 /*
- * Define NEED_SETENV if you don't have setenv() in your libc.
- * (likely for older 4.3 systems and pre-4.3 systems)
+ * Define GDSS if you use the Generic Data Signature Service to 
+ * stamp user records to guarentee their authenticity.  Also define
+ * location of library and includes.
  */
-/* #define NEED_SETENV */
+#define GDSS
+LIBGDSS= /mit/gdss/`machtype`/libgdss.a
+GDSSINC= -I/mit/gdss/include
+
+/*
+ * Define your DBMS here.  Currently, the code will work with either
+ * INGRES or INFORMIX.
+ */
+#define INGRES
 
 /*
  * Define NEED_STRCASECMP if you don't have strcasecmp() in your libc.
@@ -105,88 +142,110 @@ ORGANIZATION=MIT Project Athena
 /* #define NEED_STRCASECMP */
 
 /*
- * Define NEED_GETOPT if you don't have getopt() in your libc.
+ * Define USELINT if you want to build lint libraries while building
+ * Moira.
  */
-/* #define NEED_GETOPT */
-
-/*
- * Define TKT_SHMEM if you want to use shared memory for the session
- * keys in your ticket caches.
- */
-/* #define TKT_SHMEM */
+#if !defined(NeXT) && !defined(_AIX)
+#define USELINT
+#endif
 
 /*
  * LINTLIBFLAG should be the flag used to tell lint to create a lint
  * library.  On most BSD systems, this is -C
  */
+#if defined(ultrix) || defined(_AIX)
+LINTLIBFLAG=-o
+#else
 LINTLIBFLAG=-C
-
-KRB_LIB=$(BUILDTOP)/lib/krb/libkrb.a
-KRB_LIBDEP=$(KRB_LIB)
-KRB_LINTLIB=$(BUILDTOP)/lib/krb/llib-lkrb.ln
-KADM_LIB=$(BUILDTOP)/lib/kadm/libkadm.a
-KADM_LIBDEP=$(KADM_LIB)
-ACL_LIB=$(BUILDTOP)/lib/acl/libacl.a
-ACL_LIBDEP=$(ACL_LIB)
-
-#ifdef NOENCRYPTION
-NOENCFLAG=-DNOENCRYPTION
-DES_LIBDEP=
-DES_LIB=
-DES_LINTLIB=
-#else /* Do encryption */
-NOENCFLAG=
-DES_LIB=$(BUILDTOP)/lib/des/libdes.a
-DES_LIBDEP=$(DES_LIB)
-DES_LINTLIB=$(BUILDTOP)/lib/des/llib-ldes.ln
-#endif /* NOENCRYPTION */
-
-#ifdef NDBM
-DBMFLAG=-DNDBM
-KDB_LIB=$(BUILDTOP)/lib/kdb/libkdb.a
-KDB_LIBDEP=$(KDB_LIB)
-#else
-DBMFLAG=
-KDB_LIB=$(BUILDTOP)/lib/kdb/libkdb.a -ldbm
-KDB_LIBDEP=$(BUILDTOP)/lib/kdb/libkdb.a
 #endif
 
-#ifdef TKT_SHMEM
-SHMFLAG=-DTKT_SHMEM
-#else
-SHMFLAG=
-#endif
+MR_LIB=$(BUILDTOP)/lib/libmoira.a
+MR_LIBDEP=$(MR_LIB)
+MR_LINTLIB=$(BUILDTOP)/lib/llib-lmoira.ln
+GDB_LIB=$(BUILDTOP)/gdb/libmrgdb.a
+GDB_LIBDEP=$(GDB_LIB)
+GDB_LINTLIB=$(BUILDTOP)/gdb/llib-lmrgdb.ln
+
+
 /*
  * The name of a command which compiles error tables.
  */
+#ifdef USELOCALLIBS
+COMPILE_ET= compile_et
+#else
 COMPILE_ET= $(BUILDTOP)/util/et/compile_et
+#endif
 /*
  * Loader argument to get the com_err library
  */
+#ifdef USELOCALLIBS
+COM_ERR = -lcom_err
+#else
 COM_ERR = $(BUILDTOP)/util/et/libcom_err.a
+#endif
 /*
  * Dependency name for COM_ERR, if any
  */
+#ifndef USELOCALLIBS
 COM_ERR_DEP = $(COM_ERR)
+#endif
 /*
  * The name of a command which compiles command tables.
  */
-MAKE_COMMANDS= $(BUILDTOP)/util/ss/make_commands
+#ifdef USELOCALLIBS
+MAKE_COMMANDS= mk_cmds
+#else
+MAKE_COMMANDS= $(BUILDTOP)/util/ss/mk_cmds
+#endif
 /*
  * Loader argument to get the ss library
  */
+#ifdef USELOCALLIBS
+SS_LIB = -lss
+#else
 SS_LIB = $(BUILDTOP)/util/ss/libss.a
+#endif
 /*
  * Dependency name for SS_LIB, if any
  */
+#ifndef USELOCALLIBS
 SS_LIBDEP = $(SS_LIB)
+#endif
 
-/* 
- * Define OLD_COMPAT if you want to be able to link old binaries with
- * the new library names
- */ 
+LLIB = -L/usr/athena/lib
 
-/* #define OLD_COMPAT */
+/* libraries most Moira programs use */
+#ifdef HESIOD
+CLIBS= $(MR_LIB) $(GDB_LIB) $(LLIB) $(LZEPHYR) $(COM_ERR) -lkrb -ldes -lhesiod
+#else
+CLIBS= $(MR_LIB) $(GDB_LIB) $(LLIB) $(LZEPHYR) $(COM_ERR) -lkrb -ldes
+#endif
+
+/* libraries SQL programs need */
+#ifdef INGRES
+SQL_LIB= /usr/ingres/lib/libingres.a -lm
+#endif
+#ifdef INFORMIX
+SQL_LIB= /usr/informix/lib/libsql.a
+#endif
+#ifdef ORACLE
+SQL_LIB= /usr/oracle/lib/#########
+#endif
+
+
+/* Define NEED_STRCASECMP if your C library doesn't have the BSD-style
+ * case insensitive string compare strcasecmp().
+ */
+#ifdef _AIX
+#define NEED_STRCASECMP
+#endif
+
+/* HAS_VSPRINTF should be defined if this function is in your C library */
+#if defined(_AIX) || defined(sun) || defined(_AUX_SOURCE)
+#define HAS_VSPRINTF
+#else
+#undef HAS_VSPRINTF
+#endif
 
 /*
  * Define DEBUG_LIBS if you want to create versions of the libraries
@@ -207,11 +266,14 @@ SS_LIBDEP = $(SS_LIB)
 
 /*
  * Define PROF_FLAG to be the flag to be passed to your C compiler to
- * turn on profiling.  For 4.3BSD on a VAX, this should probably be -pg.
- * For most other systems, it should probably be -p
+ * turn on profiling.
  */
+#ifdef vax
+#define PROF_FLAG -pg
+#else
 #define PROF_FLAG -p
- 
+#endif 
+
 /*
  * The name of a command which builds an object library.
  */
@@ -219,8 +281,11 @@ ARCHIVE= ar cru
 /*
  * The name of another program needed to post-process the archive.
  */
+#ifdef SOLARIS
+RANLIB= /bin/true
+#else
 RANLIB= ranlib
-
+#endif
 
 
 /* 
@@ -236,8 +301,6 @@ INSTALLLIB= install -c -m 444
 INSTALLPROG= install -c -m 555 
 /* invoke raw install program */
 INSTALLRAW= install
-/* install a program which should run as root */
-INSTALLSUID= install -c -m 4555 -o root
 
 LD=ld			/* The name of the target's linker */
 
@@ -245,9 +308,21 @@ AS=as			/* The name of the target's assembler */
 
 LINT=lint		/* The name of `lint' */
 
+#ifdef SOLARIS
+CC=gcc -traditional
+#else
+#ifdef _AIX
+#ifdef i386
+CC=cc -q -D_BSD -DBSD_INCLUDES
+#else /* i386 */
+CC=cc -D_BSD -D_BSD_INCLUDES	/* Use BSD style header files & be quiet */
+#endif /* i386 */
+#else /* _AIX */
 CC=cc			/* The name of the C compiler for the target */
+#endif /* _AIX */
+#endif /* SOLARIS */
 
-CCRO=cc -R		/* Compile with initialized data read-only 
+CCRO=$(CC) -R		/* Compile with initialized data read-only 
 			   & shared (if possible) */
 
 HCC=$(CC)		/* The name of the C compiler on _this_
@@ -269,14 +344,4 @@ CP=cp			/* copy a file */
 LN=ln -s		/* create a link */
 LPR=lpr -p		/* print a file or files */
 CHMOD=chmod		/* change mode of a file */
-
-/* turds */
-/* XXX default's uid on Athena (for tftp) */
-DEF_UID = 113
-
-#ifdef vax /*XXX*/
-#if 0
-#define VAXASM
-#endif
-#define BIG
-#endif
+AWK=awk			/* used to filter embeded SQL files */

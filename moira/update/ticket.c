@@ -1,13 +1,13 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/ticket.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/ticket.c,v 1.8 1990-03-19 13:02:33 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/ticket.c,v 1.9 1992-08-25 14:45:12 mar Exp $
  */
 /*  (c) Copyright 1988 by the Massachusetts Institute of Technology. */
 /*  For copying and distribution information, please see the file */
 /*  <mit-copyright.h>. */
 
 #ifndef lint
-static char *rcsid_ticket_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/ticket.c,v 1.8 1990-03-19 13:02:33 mar Exp $";
+static char *rcsid_ticket_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/ticket.c,v 1.9 1992-08-25 14:45:12 mar Exp $";
 #endif	lint
 
 #include <mit-copyright.h>
@@ -23,10 +23,8 @@ static char *rcsid_ticket_c = "$Header: /afs/.athena.mit.edu/astaff/project/moir
 /* too bad we can't set the pathname easily */
 static char *srvtab = KEYFILE; /* default == /etc/srvtab */
 static char realm[REALM_SZ];
-static char master[] = "sms";
-static char service[] = "rcmd";
-
-extern char *tkt_string(), *PrincipalHostname();
+static char master[INST_SZ] = "sms";
+static char service[ANAME_SZ] = "rcmd";
 
 
 static init()
@@ -53,21 +51,24 @@ get_mr_update_ticket(host, ticket)
 
      pass = 1;
      init();
-     strcpy(phost, PrincipalHostname(host));
+     strcpy(phost, krb_get_phost(host));
  try_it:
      code = krb_mk_req(ticket, service, phost, realm, (long)0);
-     if (code)
-       code += ERROR_TABLE_BASE_krb;
+     if (code) {
+	 code += ERROR_TABLE_BASE_krb;
+	 com_err(whoami, code, "in krb_mk_req");
+     }
+#ifdef notdef
      if (pass == 1) {
 	 /* maybe we're taking too long? */
 	 if ((code = get_mr_tgt()) != 0) {
-	     /* don't need phost buffer any more */
 	     com_err(whoami, code, " can't get Kerberos TGT");
 	     return(code);
 	 }
 	 pass++;
 	 goto try_it;
      }
+#endif /* notdef */
      return(code);
 }
 
@@ -75,8 +76,12 @@ int
 get_mr_tgt()
 {
     register int code;
+    char linst[INST_SZ], kinst[INST_SZ];
+
     init();
-    code = krb_get_svc_in_tkt(master, "", realm, "krbtgt", realm, 1, srvtab);
+    linst[0] = '\0';
+    strcpy(kinst, "krbtgt");
+    code = krb_get_svc_in_tkt(master, linst, realm, kinst, realm, 1, srvtab);
     if (!code)
 	return(0);
     else

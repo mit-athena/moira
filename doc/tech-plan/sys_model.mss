@@ -90,7 +90,7 @@ Each hesiod server will receive the same 9 files. Each RVD server requires one
 file, each file being different.  Each NFS server requires two files,
 one identical file to all NFS servers, one different file to each filesystem
 on each server.  Usr/lib/aliases is one file.
-@begin(display)
+@begin(verbatim)
 File organization:
 
 Service          File          Size       Number   # propagations  Interval
@@ -106,23 +106,28 @@ Hesiod           cluster.db    22300      1          3              6 hours
                  passwd.db     880000     1          3              6 hours
 
 
-RVD              rvddb         2000(90%) - 
+RVD              /site/rvddb   2000(90%) - 
                                20000        10       10             15 minutes
-                              
+                 /site/rvd/acl/OP.acl       10       10             15 minutes
+                 /site/rvd/acl/AD.acl       10       10             15 minutes
+                 /site/rvd/acl/SH.acl       10       10             15 minutes
+                 /site/rvd/acl/file.acl     10 (min) 10             15 minutes
+                 (.acl files are small)
+
 NFS              /site/nfsid   880000       1        25             6 hours
                  /mit/quota    35000        25       25             6 hours
  
 Mail             /usr/lib/aliases 445000    1        1             24 hours
 
 
-TOTAL -                                    46        70
+TOTAL -                                    86        110
 
 NOTE: The above files will only be generated and propagated if the
       data has changed during the time interval.  For example,  although
       the RVD interval is 15 minutes, there is no effect on
       system resources unless the information relevant to RVD's changed
       during the previous 15 minute interval.
-@end(display)
+@end(verbatim)
 
 Application interfaces provide all the mechanisms to change database
 fields.  There will be no need for any sms updating to be done

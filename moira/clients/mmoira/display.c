@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/display.c,v 1.9 1992-12-10 10:40:12 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/display.c,v 1.10 1992-12-10 11:02:23 mar Exp $
  */
 
 #include <stdio.h>
@@ -233,7 +233,7 @@ EntryForm *form;
 	AppendToLog(buf);
 	break;
     case MM_STATS:
-	sprintf(buf, "Table: %-20s Modified: %s\n", info[0], info[5]);
+	sprintf(buf, "Table: %-20s Modified: %s\n", info[0], info[argc-1]);
 	AppendToLog(buf);
 	sprintf(buf, "  %-8D appends, %-8d updates, %-8d deletes",
 		info[2], info[3], info[4]);

@@ -2,7 +2,7 @@
  * $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.c,v $
  * $Author: mar $
  * $Locker:  $
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.c,v 1.23 1991-07-26 14:51:41 mar Exp $ 
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.c,v 1.24 1991-07-31 18:20:38 mar Exp $ 
  *
  *  (c) Copyright 1988 by the Massachusetts Institute of Technology.
  *  For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char    *rcsid_userreg_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.c,v 1.23 1991-07-26 14:51:41 mar Exp $";
+static char    *rcsid_userreg_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.c,v 1.24 1991-07-31 18:20:38 mar Exp $";
 #endif	lint
 
 #include <mit-copyright.h>
@@ -120,7 +120,7 @@ main(argc, argv)
 			    	display_text_line(0);
 				display_text_line("Sorry, you still cannot be found in the database.");
 				display_text_line(" ");
-				display_text_line("Please call the account administrator at x3-1325 for help.");
+				display_text_line("Please call an accounts consultant at x3-1325 for help.");
 				wait_for_user();
 				break;
 			}

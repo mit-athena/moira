@@ -1,4 +1,4 @@
-/* $Id: qfollow.pc,v 2.20 2000-12-19 07:32:46 zacheiss Exp $
+/* $Id: qfollow.pc,v 2.21 2001-04-01 05:31:13 zacheiss Exp $
  *
  * Query followup routines
  *
@@ -20,7 +20,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qfollow.pc,v 2.20 2000-12-19 07:32:46 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qfollow.pc,v 2.21 2001-04-01 05:31:13 zacheiss Exp $");
 
 extern char *whoami, *table_name[];
 extern int dbms_errno, mr_errcode;
@@ -812,7 +812,6 @@ int followup_aqot(struct query *q, char *argv[], client *cl)
 
   if (dbms_errno)
     return mr_errcode;
-  flush_name(argv[0], table);
   if (q->type == APPEND)
     {
       EXEC SQL UPDATE tblstats SET appends = appends + 1, modtime = SYSDATE
@@ -877,7 +876,6 @@ int followup_dqot(struct query *q, char **argv, client *cl)
 
   if (dbms_errno)
     return mr_errcode;
-  flush_name(argv[0], table);
 
   EXEC SQL UPDATE tblstats SET deletes = deletes + 1, modtime = SYSDATE
     WHERE table_name = :tname;

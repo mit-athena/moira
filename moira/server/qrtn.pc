@@ -1,4 +1,4 @@
-/* $Id: qrtn.pc,v 2.21 2000-01-28 00:03:36 danw Exp $
+/* $Id: qrtn.pc,v 2.22 2001-04-01 05:31:17 zacheiss Exp $
  *
  * Query-processing routines
  *
@@ -20,7 +20,7 @@
 EXEC SQL INCLUDE sqlca;  /* SQL Communications Area */
 EXEC SQL INCLUDE sqlda;  /* SQL Descriptor Area */
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.pc,v 2.21 2000-01-28 00:03:36 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.pc,v 2.22 2001-04-01 05:31:17 zacheiss Exp $");
 
 SQLDA *mr_sqlda;
 EXEC SQL BEGIN DECLARE SECTION;
@@ -101,7 +101,6 @@ int mr_open_database(void)
       mr_sqlda = mr_alloc_sqlda();
 
       incremental_init();
-      flush_cache();
     }
 
   dbms_errno = 0;
@@ -123,7 +122,6 @@ int mr_open_database(void)
 
 void mr_close_database(void)
 {
-  flush_cache();
   EXEC SQL COMMIT RELEASE;
 }
 
@@ -266,7 +264,6 @@ int mr_process_query(client *cl, char *name, int argc, char *argv_ro[],
 	  incremental_after(q->rtable, qual, argv_ro);
 	  if (status != MR_SUCCESS)
 	    break;
-	  flush_name(argv_ro[0], q->rtable);
 	  table = table_name[q->rtable];
 	  if (strcmp(q->shortname, "sshi") && strcmp(q->shortname, "ssif"))
 	    {
@@ -345,7 +342,6 @@ int mr_process_query(client *cl, char *name, int argc, char *argv_ro[],
 	  incremental_clear_after();
 	  if (status != MR_SUCCESS)
 	    break;
-	  flush_name(argv_ro[0], q->rtable);
 	  EXEC SQL UPDATE tblstats
 	    SET deletes = deletes + 1, modtime = SYSDATE
 	    WHERE table_name = :table;
@@ -401,12 +397,10 @@ out:
 	}
       else
 	{
-	  cache_abort();
 	  EXEC SQL ROLLBACK WORK;
 	  incremental_flush();
 	}
     }
-  cache_commit(); /* commit following abort is safe */
 
   if (status != MR_SUCCESS)
     com_err(whoami, status, " (Query failed)");
@@ -600,11 +594,6 @@ int mr_verify_query(client *cl, struct query *q, int argc, char *argv_ro[])
   return privileged ? MR_SUCCESS : MR_PERM;
 }
 
-
-/* This routine caches info from the database.  Each query acl is stored
- * in the query structure, and whether that acl contains everybody.
- */
-
 int check_query_access(struct query *q, char *argv[], client *cl)
 {
   EXEC SQL BEGIN DECLARE SECTION;
@@ -617,28 +606,22 @@ int check_query_access(struct query *q, char *argv[], client *cl)
   if (def_uid == 0)
     EXEC SQL SELECT users_id INTO :def_uid FROM users WHERE login = 'default';
 
-  /* get query access control list */
-  if (q->acl != 0)
-    acl_id = q->acl;
+  name = q->shortname;
+  EXEC SQL SELECT list_id INTO :acl_id FROM capacls WHERE tag = :name;
+  if (sqlca.sqlcode < 0)
+    return MR_DBMS_ERR;
+  if (sqlca.sqlcode == SQL_NO_MATCH)
+    return MR_PERM;
+  q->acl = acl_id;
+  
+  /* check for default access */
+  EXEC SQL SELECT member_id INTO :acl_id FROM imembers
+    WHERE list_id = :acl_id AND member_type = 'USER'
+    AND member_id = :def_uid;
+  if (sqlca.sqlerrd[2] == 0)
+    q->everybody = 0;
   else
-    {
-      name = q->shortname;
-      EXEC SQL SELECT list_id INTO :acl_id FROM capacls WHERE tag = :name;
-      if (sqlca.sqlcode < 0)
-	return MR_DBMS_ERR;
-      if (sqlca.sqlcode == SQL_NO_MATCH)
-	return MR_PERM;
-      q->acl = acl_id;
-
-      /* check for default access */
-      EXEC SQL SELECT member_id INTO :acl_id FROM imembers
-	WHERE list_id = :acl_id AND member_type = 'USER'
-	AND member_id = :def_uid;
-      if (sqlca.sqlerrd[2] == 0)
-	q->everybody = 0;
-      else
-	q->everybody = 1;
-    }
+    q->everybody = 1;
 
   if (q->everybody)
     return MR_SUCCESS;
@@ -981,5 +964,124 @@ int do_for_all_rows(char *query, int count,
     return MR_SUCCESS;
 }
 
+/* Do a name to ID translation.  Moved from cache.pc because we did away
+ * with the cache, but what this function does is still useful to us.
+ */
+
+int name_to_id(char *name, enum tables type, int *id)
+{
+  EXEC SQL BEGIN DECLARE SECTION;
+  char *iname;
+  int j;
+  EXEC SQL END DECLARE SECTION;
+
+  iname = name;
+
+  switch (type)
+    {
+    case USERS_TABLE:
+      if (strchr(iname, '@') || (strlen(iname) > 8))
+	{
+	  sqlca.sqlcode = SQL_NO_MATCH;
+	  break;
+	}
+      EXEC SQL SELECT users_id INTO :j FROM users WHERE login = :iname;
+      break;
+    case LIST_TABLE:
+      EXEC SQL SELECT list_id INTO :j FROM list WHERE name = :iname;
+      break;
+    case MACHINE_TABLE:
+      EXEC SQL SELECT mach_id INTO :j FROM machine WHERE name = UPPER(:iname);
+      break;
+    case SUBNET_TABLE:
+      EXEC SQL SELECT snet_id INTO :j FROM subnet WHERE name = UPPER(:iname);
+      break;
+    case CLUSTERS_TABLE:
+      EXEC SQL SELECT clu_id INTO :j FROM clusters WHERE name = :iname;
+      break;
+    case FILESYS_TABLE:
+      EXEC SQL SELECT filsys_id INTO :j FROM filesys WHERE label = :iname;
+      break;
+    case STRINGS_TABLE:
+      if (!iname[0])	/* special-case empty string */
+	{
+	  *id = 0;
+	  return MR_SUCCESS;
+	}
+      EXEC SQL SELECT string_id INTO :j FROM strings WHERE string = :iname;
+      break;
+    default:
+      return MR_INTERNAL;
+    }
+  if (sqlca.sqlcode == SQL_NO_MATCH)
+    return MR_NO_MATCH;
+  if (sqlca.sqlerrd[2] > 1)
+    return MR_NOT_UNIQUE;
+  if (sqlca.sqlcode)
+    return MR_DBMS_ERR;
+  *id = j;
+
+  return MR_SUCCESS;
+}
+
+/* Perform an ID to name mapping.  name should be a pointer to a pointer to
+ * malloc'ed data.  The buffer it refers to will be freed, and a new buffer
+ * allocated with the answer.
+ * 
+ * This used to be in cache.pc, but we've removed the cache, and this function 
+ * is still useful to us.
+ */
+
+int id_to_name(int id, enum tables type, char **name)
+{
+  EXEC SQL BEGIN DECLARE SECTION;
+  char iname[MAX_FIELD_WIDTH];
+  int j;
+  EXEC SQL END DECLARE SECTION;
+
+  j = id;
+
+  switch (type)
+    {
+    case USERS_TABLE:
+      EXEC SQL SELECT login INTO :iname FROM users WHERE users_id = :j;
+      break;
+    case LIST_TABLE:
+      EXEC SQL SELECT name INTO :iname FROM list WHERE list_id = :j;
+      break;
+    case MACHINE_TABLE:
+      EXEC SQL SELECT name INTO :iname FROM machine WHERE mach_id = :j;
+      break;
+    case SUBNET_TABLE:
+      EXEC SQL SELECT name INTO :iname FROM subnet WHERE snet_id = :j;
+      break;
+    case CLUSTERS_TABLE:
+      EXEC SQL SELECT name INTO :iname FROM clusters WHERE clu_id = :j;
+      break;
+    case FILESYS_TABLE:
+      EXEC SQL SELECT label INTO :iname FROM filesys WHERE filsys_id = :j;
+      break;
+    case STRINGS_TABLE:
+      EXEC SQL SELECT string INTO :iname FROM strings WHERE string_id = :j;
+      break;
+    default:
+      return MR_INTERNAL;
+    }
+  if (sqlca.sqlcode == SQL_NO_MATCH)
+    {
+      free(*name);
+      sprintf(iname, "#%d", j);
+      *name = xstrdup(iname);
+      return MR_NO_MATCH;
+    }
+  if (sqlca.sqlerrd[2] > 1)
+    return MR_INTERNAL;
+  if (sqlca.sqlcode)
+    return MR_DBMS_ERR;
+  free(*name);
+  *name = xstrdup(strtrim(iname));
+
+  return MR_SUCCESS;
+}
 
 /* eof:qrtn.dc */

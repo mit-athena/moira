@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 2.7 2000-01-28 00:03:33 danw Exp $
+# $Id: Makefile.in,v 2.8 2001-04-01 05:31:11 zacheiss Exp $
 
 SHELL=/bin/sh
 @SET_MAKE@
@@ -28,12 +28,12 @@ mrbindir=@mrbindir@
 
 SERVER_OBJS=	mr_main.o mr_sauth.o mr_scall.o mr_shutdown.o mr_util.o \
 		qvalidate.o qaccess.o qsetup.o qsupport.o qfollow.o \
-		queries2.o qrtn.o qsubs.o increment.o cache.o
+		queries2.o qrtn.o qsubs.o increment.o 
 SCHEMA_OBJS=	../db/moira_schema.o
 START_OBJS=	startmoira.o
 
 CFILES=		qvalidate.c qaccess.c qsetup.c qsupport.c qfollow.c \
-		qrtn.c increment.c cache.c
+		qrtn.c increment.c
 
 TARGET=moirad startmoira
 

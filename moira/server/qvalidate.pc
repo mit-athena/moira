@@ -1,4 +1,4 @@
-/* $Id: qvalidate.pc,v 2.20 2000-10-18 19:00:48 zacheiss Exp $
+/* $Id: qvalidate.pc,v 2.21 2001-04-01 05:31:25 zacheiss Exp $
  *
  * Argument validation routines
  *
@@ -20,7 +20,7 @@
 EXEC SQL INCLUDE sqlca;
 EXEC SQL INCLUDE sqlda;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qvalidate.pc,v 2.20 2000-10-18 19:00:48 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qvalidate.pc,v 2.21 2001-04-01 05:31:25 zacheiss Exp $");
 
 extern char *whoami, *table_name[], *sqlbuffer[QMAXARGS];
 extern int dbms_errno, mr_errcode;
@@ -209,7 +209,6 @@ int validate_id(struct query *q, char *argv[], struct valobj *vo)
       if (strlen(name) >= STRINGS_STRING_SIZE)
 	return MR_ARG_TOO_LONG;
       id = add_string(name);
-      cache_entry(name, STRINGS_TABLE, id);
       *(int *)argv[vo->index] = id;
       return MR_EXISTS;
     }
@@ -417,7 +416,6 @@ int validate_typedata(struct query *q, char *argv[], struct valobj *vo)
 	  if (strlen(name) >= STRINGS_STRING_SIZE)
 	    return MR_ARG_TOO_LONG;
 	  id = add_string(name);
-	  cache_entry(name, STRINGS_TABLE, id);
 	}
       else if (status)
 	return status;

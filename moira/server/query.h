@@ -1,4 +1,4 @@
-/* $Id: query.h,v 2.13 2000-01-11 19:46:04 danw Exp $
+/* $Id: query.h,v 2.14 2001-04-01 05:31:25 zacheiss Exp $
  *
  * Structures and constants used in the query dispatch table
  *
@@ -65,16 +65,6 @@ struct valobj
   int error;
 };
 
-
-/* prototypes from cache.dc */
-void flush_cache(void);
-int name_to_id(char *name, enum tables type, int *id);
-int id_to_name(int id, enum tables type, char **name);
-int cache_entry(char *name, enum tables type, int id);
-void flush_name(char *name, enum tables type);
-void cache_commit(void);
-void cache_abort(void);
-
 /* prototypes from increment.dc */
 void incremental_before(enum tables table, char *qualx, char **argv);
 void incremental_clear_before(void);
@@ -84,6 +74,8 @@ void incremental_clear_after(void);
 /* prototypes from qrtn.dc */
 int check_query_access(struct query *q, char *argv[], client *cl);
 int set_next_object_id(char *objectx, enum tables table, int limit);
+int name_to_id(char *name, enum tables type, int *id);
+int id_to_name(int id, enum tables type, char **name);
 
 /* prototypes from qsubs.c */
 void list_queries(client *cl, int (*action)(int, char *[], void *),

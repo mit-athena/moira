@@ -1,4 +1,4 @@
-/* $Id: qsupport.pc,v 2.31 2001-01-05 03:28:03 zacheiss Exp $
+/* $Id: qsupport.pc,v 2.32 2001-04-01 05:31:20 zacheiss Exp $
  *
  * Special query routines
  *
@@ -18,7 +18,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.pc,v 2.31 2001-01-05 03:28:03 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.pc,v 2.32 2001-04-01 05:31:20 zacheiss Exp $");
 
 extern char *whoami, *table_name[];
 extern int dbms_errno, mr_errcode;
@@ -1641,10 +1641,6 @@ int register_user(struct query *q, char **argv, client *cl)
   
   com_err(whoami, 0, "set login name to %s", login);
   incremental_after(USERS_TABLE, buffer, 0);
-
-  /* We've just changed the login name in the DB; recache it in case
-     the wrong thing got into the cache earlier. */
-  cache_entry(login, USERS_TABLE, users_id);
 
   /* create filesystem */
   if (set_next_object_id("filsys_id", FILESYS_TABLE, 0))

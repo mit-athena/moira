@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v $
  *	$Author: danw $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v 1.29 1996-10-30 00:38:27 danw Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v 1.30 1996-11-17 23:14:58 danw Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_test_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v 1.29 1996-10-30 00:38:27 danw Exp $";
+static char *rcsid_test_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v 1.30 1996-11-17 23:14:58 danw Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -22,14 +22,24 @@ static char *rcsid_test_c = "$Header: /afs/.athena.mit.edu/astaff/project/moirad
 #include <string.h>
 #include <moira.h>
 #include <com_err.h>
+#include <setjmp.h>
+#include <signal.h>
+
+#ifdef USE_READLINE
+#include "readline.h"
+#endif
 
 int recursion = 0;
 extern int errno;
 extern int sending_version_no;
 int count, quit=0;
 char *whoami;
+jmp_buf jb;
 
 #define MAXARGS 20
+
+void discard_input(int, int, struct sigcontext *);
+char *mr_gets(char *, char *, size_t);
 
 main(argc, argv)
 	int argc;
@@ -37,20 +47,62 @@ main(argc, argv)
 {	
 	int status;
 	char cmdbuf[BUFSIZ];
+#ifdef POSIX
+	struct sigaction action;
+#endif
 	
 	whoami = argv[0];
 	
 	initialize_sms_error_table();
 	initialize_krb_error_table();
 
+#ifdef POSIX
+	action.sa_handler = discard_input;
+	action.sa_flags = 0;
+	sigemptyset(&action.sa_mask);
+	sigaction(SIGINT, &action, NULL);
+#else
+	signal(SIGINT, discard_input);
+#endif
+	setjmp(jb);
+
 	while(!quit) {
-		printf("moira:  ");
-		fflush(stdout);
-		if(!fgets(cmdbuf,BUFSIZ,stdin)) break;
+		if(!mr_gets("moira:  ",cmdbuf,BUFSIZ)) break;
 		execute_line(cmdbuf);
 	}
 	mr_disconnect();
 	exit(0);
+}
+
+void discard_input(int sig, int code, struct sigcontext *scp)
+{
+  putc('\n', stdout);
+  longjmp(jb, 1);
+}
+
+char *mr_gets(char *prompt, char *buf, size_t len)
+{
+  char *in;
+#ifdef USE_READLINE
+  if(isatty(0)) {
+    in=readline(prompt);
+    
+    if (!in) return NULL;
+    if (*in) {
+      add_history(in);
+      strncpy(buf, in, len-1);
+      buf[len]=0;
+    }
+    
+    return buf;
+  }
+#endif
+  printf("%s", prompt);
+  fflush(stdout);
+  in=fgets(buf, len, stdin);
+  if(!in) return in;
+  if(strchr(buf,'\n')) *(strchr(buf,'\n'))=0;
+  return buf;
 }
 
 execute_line(cmdbuf)
@@ -99,7 +151,9 @@ parse(buf, argv)
 {
   char *p;
   int argc, num;
-	
+  
+  if(!*buf) return 0;
+
   for(p=buf, argc=0, argv[0]=buf; *p && *p!='\n'; p++) {
     if(*p=='"') {
       char *d=p++;
@@ -110,10 +164,10 @@ parse(buf, argv)
 	  return 0;
 	}
 	if(*p=='\\') {
-	  if(*++p!='"' && (*p<'0' || *p>'9')) {
+	  if(*++p!='"' && (*p<'0' || *p>'9') && (*p!='\\')) {
 	    fprintf(stderr, "moira: Bad use of \\\n");
 	    return 0;
-	  } else if (*p!='"') {
+	  } else if (*p>='0' && *p<='9') {
 	    num=(*p-'0')*64 + (*++p-'0')*8 + (*++p-'0');
 	    *p=num;
 	  }

@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qaccess.pc,v $
  *	$Author: danw $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qaccess.pc,v 2.4 1997-10-01 19:59:35 danw Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qaccess.pc,v 2.5 1998-01-05 14:57:26 danw Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_qsupport_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qaccess.pc,v 2.4 1997-10-01 19:59:35 danw Exp $";
+static char *rcsid_qsupport_dc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qaccess.pc,v 2.5 1998-01-05 14:57:26 danw Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -68,16 +68,14 @@ int access_login(q, argv, cl)
     if(q->argc != 1) return MR_ARGS;
 
     if(!strcmp(q->shortname, "gual")) {
-      EXEC SQL SELECT users_id INTO :id FROM users u, strings str
-	WHERE u.login LIKE :argv[0] AND u.users_id != 0
-	AND u.comments = str.string_id;
+      EXEC SQL SELECT users_id INTO :id FROM users
+	WHERE login LIKE :argv[0] AND users_id != 0;
     } else if (!strcmp(q->shortname, "gubl")) {
       EXEC SQL SELECT users_id INTO :id FROM users u
 	WHERE u.login LIKE :argv[0] AND u.users_id != 0;
     } else if (!strcmp(q->shortname, "guau")) {
-      EXEC SQL SELECT users_id INTO :id FROM users u, strings str
-	WHERE u.unix_uid = :argv[0] AND u.users_id != 0
-	AND u.comments = str.string_id;
+      EXEC SQL SELECT users_id INTO :id FROM users
+	WHERE unix_uid = :argv[0] AND users_id != 0;
     } else if(!strcmp(q->shortname, "gubu")) {
       EXEC SQL SELECT users_id INTO :id FROM users u
 	WHERE u.unix_uid = :argv[0] AND u.users_id != 0;

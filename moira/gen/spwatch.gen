@@ -1,0 +1,33 @@
+#!/moira/bin/perl -Tw
+# $Id: spwatch.gen,v 1.1 2000-03-29 19:59:20 zacheiss Exp $
+#
+# The following exit codes are defined and MUST BE CONSISTENT with the
+# error codes the library uses:
+$MR_DBMS_ERR = 47836421;
+$MR_OCONFIG = 47836460;
+
+$outfile = '/moira/dcm/spwatch.out';
+
+use DBI;
+
+$dbh = DBI->connect("dbi:Oracle:moira", "moira", "moira")
+    || exit $MR_DBMS_ERR;
+
+$sth = $dbh->prepare("SELECT p.name, m.name, p.location FROM printers p, ".
+		     "machine m WHERE p.type = 'SAP' AND p.mach_id = ".
+		     "m.mach_id ORDER BY p.name") || exit $MR_DBMS_ERR;
+
+$sth->execute || exit $MR_DBMS_ERR;
+
+umask 022;
+open(OUT, ">$outfile") || exit $MR_OCONFIG;
+
+while (($name, $hostname, $location) = $sth->fetchrow_array) {
+    next if $hostname eq "[NONE]";
+    $row = "$name\t$hostname\t$location\n";
+    $row =~ s/\0//g;
+    print OUT $row;
+}
+
+close OUT;
+exit 0;

@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.24 1994-09-13 16:36:04 tytso Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.25 1994-10-28 17:34:02 jweiss Exp $
  *
  * Command line oriented Moira List tool.
  *
@@ -23,7 +23,7 @@
 #include <moira_site.h>
 
 #ifndef LINT
-static char blanche_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.24 1994-09-13 16:36:04 tytso Exp $";
+static char blanche_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.25 1994-10-28 17:34:02 jweiss Exp $";
 #endif
 
 
@@ -214,8 +214,10 @@ char **argv;
     if (syncflg) {
 	status = mr_query("get_members_of_list", 1, &listname,
 			   get_list_members, (char *)memberlist);
-	if (status)
-	  com_err(whoami, status, "getting members of list %s", listname);
+	if (status) {
+	    com_err(whoami, status, "getting members of list %s", listname);
+	    exit (2);
+	}
 	while (sq_get_data(synclist, &memberstruct)) {
 	    struct save_queue *q;
 	    int removed = 0;
@@ -245,7 +247,7 @@ char **argv;
 		fprintf(stderr, "Illegal character \"'\" in \"STRING:%s\", aborting blanche.\n",
 			memberstruct->name);
 		fprintf(stderr, "No changes were made.\n");
-		exit(1);
+		exit(2);
 	}
 	/* canonicalize string if necessary */
 	if (memberstruct->type == M_STRING &&

@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.21 2000-09-15 05:09:36 zacheiss Exp $
+# $Id: Makefile.in,v 1.22 2000-11-30 23:27:36 zacheiss Exp $
 
 SHELL=/bin/sh
 @SET_MAKE@
@@ -26,8 +26,8 @@ SRCTOP=@top_srcdir@
 BUILDTOP=..
 mrbindir=@mrbindir@
 
-LIB_OBJS=util.o moddiff.o tar.o genacl.o
-LIB_CFILES=moddiff.c genacl.c
+LIB_OBJS=util.o tar.o genacl.o
+LIB_CFILES=genacl.c
 LIB_TARGET=libdcm.a
 
 OBJS=	acl.o boot.o dhcp.o directory.o hesiod.o hosts.o mailhub.o \

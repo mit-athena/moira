@@ -1,4 +1,4 @@
-/* $Id: www.pc,v 1.4 2000-06-01 21:27:23 zacheiss Exp $
+/* $Id: www.pc,v 1.5 2000-11-30 23:27:49 zacheiss Exp $
  *
  * This generates the web server user & group data.
  *
@@ -21,7 +21,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/www.pc,v 1.4 2000-06-01 21:27:23 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/www.pc,v 1.5 2000-11-30 23:27:49 zacheiss Exp $");
 
 
 #ifndef WWW_SUBDIR
@@ -55,7 +55,6 @@ int main(int argc, char **argv)
   FILE *outfsf;
   struct stat sb;
   char *c;
-  int flag;
 
   initialize_sms_error_table();
 
@@ -106,61 +105,38 @@ int main(int argc, char **argv)
   sprintf(wkgrp, "%s/group~", www_dir);
   sprintf(wkfs, "%s/filsys~", www_dir);
 
-  flag = 0;
-  if (stat(outfs, &sb) == 0)
+  fprintf(stderr, "%s: building fs database...\n", whoami);
+  if (!(outfsf = fopen(wkfs, "w")))
     {
-      if (ModDiff (&flag, "filesys", sb.st_mtime))
-        exit(MR_DATE);
+      fprintf(stderr, "%s: cannot open %s for writing (%s)\n", whoami,
+	      wkfs, strerror(errno));
+      exit(MR_OCONFIG);
     }
-  if (flag < 0)
-    fprintf(stderr, "%s: %s does not need to be rebuilt.\n", whoami, outfs);
-  else
+  filsys(outfsf);
+  if (fclose(outfsf))
     {
-      fprintf(stderr, "%s: building fs database...\n", whoami);
-      if (!(outfsf = fopen(wkfs, "w")))
-	{
-	  fprintf(stderr, "%s: cannot open %s for writing (%s)\n", whoami,
-		  wkfs, strerror(errno));
-	  exit(MR_OCONFIG);
-	}
-      filsys(outfsf);
-      if (fclose(outfsf))
-	{
-	  fprintf(stderr, "%s: close of %s failed (%s)", whoami,
-		  wkfs, strerror(errno));
-	  exit(MR_CCONFIG);
-	}
-      fix_file(outfs);
+      fprintf(stderr, "%s: close of %s failed (%s)", whoami,
+	      wkfs, strerror(errno));
+      exit(MR_CCONFIG);
     }
+  fix_file(outfs);
 
-  flag = 0;
-  if (stat(outgrp, &sb) == 0)
+  fprintf(stderr, "%s: building group database...\n", whoami);
+  if (!(outgrpf = fopen(wkgrp, "w")))
     {
-      if (ModDiff (&flag, "list", sb.st_mtime) ||
-	  ModDiff (&flag, "users", sb.st_mtime))
-        exit(MR_DATE);
+      fprintf(stderr, "%s: cannot open %s for writing (%s)\n", whoami,
+	      wkgrp, strerror(errno));
+      exit(MR_OCONFIG);
     }
-  if (flag < 0)
-    fprintf(stderr, "%s: %s does not need to be rebuilt.\n", whoami, outgrp);
-  else
+  group(outgrpf);
+  if (fclose(outgrpf))
     {
-      fprintf(stderr, "%s: building group database...\n", whoami);
-      if (!(outgrpf = fopen(wkgrp, "w")))
-	{
-	  fprintf(stderr, "%s: cannot open %s for writing (%s)\n", whoami,
-		  wkgrp, strerror(errno));
-	  exit(MR_OCONFIG);
-	}
-      group(outgrpf);
-      if (fclose(outgrpf))
-	{
-	  fprintf(stderr, "%s: close of %s failed (%s)", whoami, wkgrp,
-		  strerror(errno));
-	  exit(MR_CCONFIG);
-	}
-      fix_file(outgrp);
+      fprintf(stderr, "%s: close of %s failed (%s)", whoami, wkgrp,
+	      strerror(errno));
+      exit(MR_CCONFIG);
     }
-
+  fix_file(outgrp);
+  
   fprintf(stderr, "%s: building tar file...\n", whoami);
   sprintf(cmd, "(cd %s; tar cf - . ) > %s.out", www_dir, www_dir);
   if (system(cmd))

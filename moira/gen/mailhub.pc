@@ -1,4 +1,4 @@
-/* $Id: mailhub.pc,v 1.14 2000-10-23 05:24:43 zacheiss Exp $
+/* $Id: mailhub.pc,v 1.15 2000-11-30 23:27:42 zacheiss Exp $
  *
  * This generates the /usr/lib/aliases file for the mailhub.
  *
@@ -22,7 +22,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/mailhub.pc,v 1.14 2000-10-23 05:24:43 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/mailhub.pc,v 1.15 2000-11-30 23:27:42 zacheiss Exp $");
 
 char *whoami = "mailhub.gen";
 char *db = "moira/moira";
@@ -67,8 +67,6 @@ int main(int argc, char **argv)
 {
   time_t tm = time(NULL);
   char filename[MAXPATHLEN], *targetfile;
-  struct stat sb;
-  int flag1, flag2;
   FILE *out = stdout;
 
   srand(tm);
@@ -76,18 +74,6 @@ int main(int argc, char **argv)
 
   if (argc == 2)
     {
-      if (stat(argv[1], &sb) == 0)
-	{
-	  if (ModDiff(&flag1, "users", sb.st_mtime) ||
-	      ModDiff(&flag2, "list", sb.st_mtime))
-	    exit(MR_DATE);
-	  if (flag1 < 0 && flag2 < 0)
-	    {
-	      fprintf(stderr, "File %s does not need to be rebuilt.\n",
-		      argv[1]);
-	      exit(MR_NO_CHANGE);
-	    }
-	}
       targetfile = argv[1];
       sprintf(filename, "%s~", targetfile);
       if (!(out = fopen(filename, "w")))

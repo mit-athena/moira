@@ -1,4 +1,4 @@
-/* $Id: network.pc,v 1.4 1998-02-23 19:23:44 danw Exp $
+/* $Id: network.pc,v 1.5 2000-11-30 23:27:45 zacheiss Exp $
  *
  * This generates the network table.
  *
@@ -22,7 +22,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/network.pc,v 1.4 1998-02-23 19:23:44 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/network.pc,v 1.5 2000-11-30 23:27:45 zacheiss Exp $");
 
 char *whoami = "network.gen";
 char *db = "moira/moira";
@@ -31,10 +31,8 @@ int main(int argc, char **argv)
 {
   FILE *out = stdout;
   char *outf = NULL, outft[MAXPATHLEN];
-  struct stat sb;
   struct timeval now;
   struct in_addr addr;
-  int flag1;
   EXEC SQL BEGIN DECLARE SECTION;
   int id, saddr;
   char name[SUBNET_NAME_SIZE], description[SUBNET_DESCRIPTION_SIZE];
@@ -44,17 +42,6 @@ int main(int argc, char **argv)
 
   if (argc == 2)
     {
-      if (stat(argv[1], &sb) == 0)
-	{
-	  if (ModDiff(&flag1, "subnet", sb.st_mtime))
-	    exit(MR_DATE);
-	  if (flag1 < 0)
-	    {
-	      fprintf(stderr, "File %s does not need to be rebuilt.\n",
-		      argv[1]);
-	      exit(MR_NO_CHANGE);
-	    }
-	}
       outf = argv[1];
       sprintf(outft, "%s~", outf);
       if (!(out = fopen(outft, "w")))

@@ -1,4 +1,4 @@
-/* $Id: postoffice.pc,v 1.1 2000-01-10 21:56:36 danw Exp $
+/* $Id: postoffice.pc,v 1.2 2000-11-30 23:27:48 zacheiss Exp $
  *
  * This generates the post office location data.
  *
@@ -21,7 +21,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/postoffice.pc,v 1.1 2000-01-10 21:56:36 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/postoffice.pc,v 1.2 2000-11-30 23:27:48 zacheiss Exp $");
 
 
 #ifndef PO_SUBDIR
@@ -42,7 +42,6 @@ int main(int argc, char **argv)
   char po_dir[MAXPATHLEN], wpo_dir[MAXPATHLEN];
   struct stat sb;
   char *c;
-  int flag;
 
   initialize_sms_error_table();
 
@@ -89,38 +88,24 @@ int main(int argc, char **argv)
 
   EXEC SQL CONNECT :db;
 
-  flag = 0;
-  if (stat(po_dir, &sb) == 0)
-    {
-      if (ModDiff (&flag, "filesys", sb.st_mtime))
-        exit(MR_DATE);
-    }
-  if (flag < 0)
-    {
-      fprintf(stderr, "%s: %s does not need to be rebuilt.\n", whoami, po_dir);
-      unlink(wpo_dir);
-    }
-  else
-    {
-      fprintf(stderr, "%s: building po databases...\n", whoami);
-      pobox(wpo_dir);
+  fprintf(stderr, "%s: building po databases...\n", whoami);
+  pobox(wpo_dir);
 
-      if (stat(po_dir, &sb) != -1)
+  if (stat(po_dir, &sb) != -1)
+    {
+      fprintf(stderr, "%s: removing %s\n", whoami, po_dir);
+      sprintf(cmd, "rm -r %s", po_dir);
+      if (strncmp(po_dir, wpo_dir, strlen(po_dir)))
+	exit(MR_CCONFIG);
+      if (system(cmd))
 	{
-          fprintf(stderr, "%s: removing %s\n", whoami, po_dir);
-          sprintf(cmd, "rm -r %s", po_dir);
-          if (strncmp(po_dir, wpo_dir, strlen(po_dir)))
-	    exit(MR_CCONFIG);
-          if (system(cmd))
-	    {
-              fprintf(stderr, "%s: unable to remove %s (%s)", whoami, po_dir,
-		      strerror(errno));
-              exit(MR_CCONFIG);
-	    }
+	  fprintf(stderr, "%s: unable to remove %s (%s)", whoami, po_dir,
+		  strerror(errno));
+	  exit(MR_CCONFIG);
 	}
-
-      rename(wpo_dir, po_dir);
     }
+
+  rename(wpo_dir, po_dir);
 
   fprintf(stderr, "%s: building tar file...\n", whoami);
   sprintf(cmd, "(cd %s; tar cf - . ) > %s.out", po_dir, po_dir);

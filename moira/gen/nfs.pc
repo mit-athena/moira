@@ -1,4 +1,4 @@
-/* $Id: nfs.pc,v 1.10 2000-04-19 23:13:20 zacheiss Exp $
+/* $Id: nfs.pc,v 1.11 2000-11-30 23:27:46 zacheiss Exp $
  *
  * This generates the files necessary to load an nfs server.
  *
@@ -23,7 +23,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/nfs.pc,v 1.10 2000-04-19 23:13:20 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/nfs.pc,v 1.11 2000-11-30 23:27:46 zacheiss Exp $");
 
 #define min(x, y)	((x) < (y) ? (x) : (y))
 
@@ -135,21 +135,6 @@ int do_lists(struct save_queue *lists)
   EXEC SQL END DECLARE SECTION;
 
   sprintf(file, "%s/list-", nfs_dir);
-#if 0
-  if (stat(file, &sb) == 0)
-    {
-      if ((ModDiff (&flag1, "users", sb.st_mtime)) ||
-	  (ModDiff (&flag2, "list", sb.st_mtime)) ||
-	  (ModDiff (&flag3, "imembers", sb.st_mtime)) ||
-	  (ModDiff (&flag4, "serverhosts", sb.st_mtime)))
-	exit(MR_DATE);
-      if (flag1 < 0 && flag2 < 0 && flag3 < 0 && flag4 < 0)
-	{
-	  fprintf(stderr, "The lists do not need to be rebuilt.\n");
-	  return 0;
-	}
-    }
-#endif
 
   /* build the list of everyone, and store it in a file whose name
    * corresponds to the empty list.

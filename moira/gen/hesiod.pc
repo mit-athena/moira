@@ -1,4 +1,4 @@
-/* $Id: hesiod.pc,v 1.17 2000-04-19 23:12:52 zacheiss Exp $
+/* $Id: hesiod.pc,v 1.18 2000-11-30 23:27:37 zacheiss Exp $
  *
  * This generates the zone files necessary to load a hesiod server.
  * The following zones are generated: passwd, uid, pobox, group,
@@ -23,7 +23,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/hesiod.pc,v 1.17 2000-04-19 23:12:52 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/hesiod.pc,v 1.18 2000-11-30 23:27:37 zacheiss Exp $");
 
 #ifndef HTYPE
 #define HTYPE "TXT"
@@ -195,8 +195,6 @@ int do_passwd(void)
   FILE *pout, *uout, *bout;
   char poutf[MAXPATHLEN], uoutf[MAXPATHLEN], poutft[MAXPATHLEN];
   char uoutft[MAXPATHLEN], boutf[MAXPATHLEN], boutft[MAXPATHLEN];
-  struct stat psb, usb, bsb;
-  time_t ftime;
   struct user *u;
   char *mach;
   EXEC SQL BEGIN DECLARE SECTION;
@@ -204,27 +202,12 @@ int do_passwd(void)
   char fullname[USERS_FULLNAME_SIZE], oa[USERS_OFFICE_ADDR_SIZE];
   char op[USERS_OFFICE_PHONE_SIZE], hp[USERS_HOME_PHONE_SIZE];
   char nn[USERS_NICKNAME_SIZE];
-  int uid, flag1, flag2, id, pid, iid, mid, status;
+  int uid, id, pid, iid, mid, status;
   EXEC SQL END DECLARE SECTION;
 
   sprintf(poutf, "%s/passwd.db", hesiod_dir);
   sprintf(uoutf, "%s/uid.db", hesiod_dir);
   sprintf(boutf, "%s/pobox.db", hesiod_dir);
-
-  if (stat(poutf, &psb) == 0 && stat(uoutf, &usb) == 0 &&
-      stat(boutf, &bsb) == 0)
-    {
-      ftime = min(min(psb.st_mtime, usb.st_mtime), bsb.st_mtime);
-      if (ModDiff (&flag1, "users", ftime) ||
-	  ModDiff (&flag2, "machine", ftime))
-	exit(MR_DATE);
-      if (flag1 < 0 && flag2 < 0)
-	{
-	  fprintf(stderr, "Files passwd.db, uid.db, and pobox.db "
-		  "do not need to be rebuilt.\n");
-	  return 0;
-	}
-    }
 
   sprintf(poutft, "%s~", poutf);
   pout = fopen(poutft, "w");
@@ -324,33 +307,15 @@ int do_groups(void)
   struct bucket *b, **p;
   struct grp *g;
   struct user *u;
-  struct stat isb, gsb, lsb;
-  time_t ftime;
   EXEC SQL BEGIN DECLARE SECTION;
   char name[LIST_NAME_SIZE];
-  int gid, id, lid, flag1, flag2, flag3, len;
+  int gid, id, lid, len;
   EXEC SQL END DECLARE SECTION;
 
   /* open files */
   sprintf(ioutf, "%s/gid.db", hesiod_dir);
   sprintf(goutf, "%s/group.db", hesiod_dir);
   sprintf(loutf, "%s/grplist.db", hesiod_dir);
-
-  if (stat(ioutf, &isb) == 0 && stat(goutf, &gsb) == 0 &&
-      stat(loutf, &lsb) == 0)
-    {
-      ftime = min(isb.st_mtime, min(gsb.st_mtime, lsb.st_mtime));
-      if (ModDiff (&flag1, "users", ftime) ||
-	  ModDiff (&flag2, "list", ftime) ||
-	  ModDiff (&flag3, "imembers", ftime))
-	exit(MR_DATE);
-      if (flag1 < 0 && flag2 < 0 && flag3 < 0)
-	{
-	  fprintf(stderr, "Files gid.db, group.db and grplist.db "
-		  "do not need to be rebuilt.\n");
-	  return 0;
-	}
-    }
 
   sprintf(buf, "%s~", ioutf);
   iout = fopen(buf, "w");
@@ -504,8 +469,6 @@ int do_filsys(void)
 {
   FILE *out;
   char outf[MAXPATHLEN], outft[MAXPATHLEN], *mach, *group;
-  struct stat sb;
-  time_t ftime;
   struct save_queue *sq, *sq2;
   EXEC SQL BEGIN DECLARE SECTION;
   char name[FILESYS_LABEL_SIZE], type[FILESYS_TYPE_SIZE];
@@ -513,30 +476,10 @@ int do_filsys(void)
   char mount[FILESYS_MOUNT_SIZE], comments[FILESYS_COMMENTS_SIZE];
   char key[FSGROUP_KEY_SIZE];
   char aname[ALIAS_NAME_SIZE], trans[ALIAS_TRANS_SIZE];
-  int flag1, flag2, flag3, flag4, id, fid;
+  int flag, id, fid;
   EXEC SQL END DECLARE SECTION;
 
   sprintf(outf, "%s/filsys.db", hesiod_dir);
-
-  if (stat(outf, &sb) == 0)
-    {
-      ftime = sb.st_mtime;
-
-      if (ModDiff(&flag1, "filesys", ftime))
-	exit(MR_DATE);
-      if (ModDiff(&flag2, "machine", ftime))
-	exit(MR_DATE);
-      if (ModDiff(&flag3, "alias", ftime))
-	exit(MR_DATE);
-      if (ModDiff(&flag4, "fsgroup", ftime))
-	exit(MR_DATE);
-
-      if (flag1 < 0 && flag2 < 0 && flag3 < 0 && flag4 < 0)
-	{
-	  fprintf(stderr, "File filsys.db does not need to be rebuilt.\n");
-	  return 0;
-	}
-    }
 
   sprintf(outft, "%s~", outf);
   out = fopen(outft, "w");
@@ -613,7 +556,7 @@ int do_filsys(void)
 	WHERE f.filsys_id = g.filsys_id AND g.group_id = :fid
 	ORDER BY key, label;
       EXEC SQL OPEN f_cursor2;
-      for (flag1 = 1; ; flag1++)
+      for (flag = 1; ; flag++)
 	{
 	  EXEC SQL FETCH f_cursor2 INTO :type, :loc, :id, :access, :mount,
 	    :comments, :name, :key;
@@ -626,14 +569,14 @@ int do_filsys(void)
 		{
 		  fprintf(out, "%s.filsys\t%s %s \"%s %s %s %s %s %d\"\n",
 			  group, HCLASS, HTYPE, type, strtrim(loc), mach,
-			  strtrim(access), strtrim(mount), flag1);
+			  strtrim(access), strtrim(mount), flag);
 		}
 	    }
 	  else if (!strcmp(type, "AFS"))
 	    {
 	      fprintf(out, "%s.filsys\t%s %s \"AFS %s %s %s %d\"\n",
 		      group, HCLASS, HTYPE, strtrim(loc), strtrim(access),
-		      strtrim(mount), flag1);
+		      strtrim(mount), flag);
 	    }
 	  else if (!strcmp(type, "ERR"))
 	    {
@@ -721,31 +664,14 @@ int do_cluster(void)
   FILE *out;
   char outf[MAXPATHLEN], outft[MAXPATHLEN], *mach;
   char machbuf[MACHINE_NAME_SIZE], clubuf[CLUSTERS_NAME_SIZE], *p;
-  struct stat sb;
-  time_t ftime;
   EXEC SQL BEGIN DECLARE SECTION;
-  int flag1, flag2, flag3, flag4, maxmach, maxclu, mid, cid, id;
+  int maxmach, maxclu, mid, cid, id;
   char name[CLUSTERS_NAME_SIZE];
   char label[SVC_SERV_LABEL_SIZE], data[SVC_SERV_CLUSTER_SIZE];
   EXEC SQL END DECLARE SECTION;
   set_mask **machs, *ms, *ps;
 
   sprintf(outf, "%s/cluster.db", hesiod_dir);
-
-  if (stat(outf, &sb) == 0)
-    {
-      ftime = sb.st_mtime;
-      if (ModDiff (&flag1, "clusters", ftime)
-	  || ModDiff (&flag2, "machine", ftime)
-	  || ModDiff (&flag3, "mcmap", ftime)
-	  || ModDiff (&flag4, "svc", ftime))
-	exit(MR_DATE);
-      if (flag1 < 0 && flag2 < 0 && flag3 < 0 && flag4 < 0)
-	{
-	  fprintf(stderr, "File cluster.db does not need to be rebuilt.\n");
-	  return 0;
-	}
-    }
 
   sprintf(outft, "%s~", outf);
   out = fopen(outft, "w");
@@ -906,31 +832,15 @@ int do_printcap(void)
 {
   FILE *out;
   char outf[MAXPATHLEN], outft[MAXPATHLEN];
-  struct stat sb;
-  time_t ftime;
   EXEC SQL BEGIN DECLARE SECTION;
   char name[PRINTERS_NAME_SIZE], duplexname[PRINTERS_DUPLEXNAME_SIZE];
   char rp[PRINTERS_RP_SIZE], type[PRINTERS_TYPE_SIZE];
   char duplexrp[PRINTERS_RP_SIZE], pskind[PRINTSERVERS_KIND_SIZE];
-  int flag1, flag2, ka, rm, mc;
+  int ka, rm, mc;
   EXEC SQL END DECLARE SECTION;
   char *rmname;
 
   sprintf(outf, "%s/printcap.db", hesiod_dir);
-
-  if (stat(outf, &sb) == 0)
-    {
-      ftime = sb.st_mtime;
-      if (ModDiff (&flag1, "printers", ftime)
-	  || ModDiff (&flag2, "printservers", ftime)
-	  || ModDiff (&flag2, "machine", ftime))
-	exit(MR_DATE);
-      if (flag1 < 0 && flag2 < 0)
-	{
-	  fprintf(stderr, "File printcap.db does not need to be rebuilt.\n");
-	  return 0;
-	}
-    }
 
   sprintf(outft, "%s~", outf);
   out = fopen(outft, "w");
@@ -1024,27 +934,12 @@ int do_sloc(void)
 {
   FILE *out;
   char outf[MAXPATHLEN], outft[MAXPATHLEN], *mach;
-  struct stat sb;
-  time_t ftime;
   EXEC SQL BEGIN DECLARE SECTION;
   char service[SERVERHOSTS_SERVICE_SIZE];
-  int flag1, flag2, id;
+  int id;
   EXEC SQL END DECLARE SECTION;
 
   sprintf(outf, "%s/sloc.db", hesiod_dir);
-
-  if (stat(outf, &sb) == 0)
-    {
-      ftime = sb.st_mtime;
-      if ((ModDiff (&flag1, "serverhosts", ftime)) ||
-	  (ModDiff (&flag2, "machine", ftime)))
-	exit(MR_DATE);
-      if (flag1 < 0 && flag2 < 0)
-	{
-	  fprintf(stderr, "File sloc.db does not need to be rebuilt.\n");
-	  return 0;
-	}
-    }
 
   sprintf(outft, "%s~", outf);
   out = fopen(outft, "w");
@@ -1092,27 +987,13 @@ int do_service(void)
 {
   FILE *out;
   char outf[MAXPATHLEN], outft[MAXPATHLEN];
-  struct stat sb;
-  time_t ftime;
   EXEC SQL BEGIN DECLARE SECTION;
   char service[SERVICES_NAME_SIZE], protocol[SERVICES_PROTOCOL_SIZE];
   char aname[ALIAS_NAME_SIZE], trans[ALIAS_TRANS_SIZE];
-  int port, flag1;
+  int port;
   EXEC SQL END DECLARE SECTION;
 
   sprintf(outf, "%s/service.db", hesiod_dir);
-
-  if (stat(outf, &sb) == 0)
-    {
-      ftime = sb.st_mtime;
-      if (ModDiff (&flag1, "services", ftime))
-	exit(MR_DATE);
-      if (flag1 < 0)
-	{
-	  fprintf(stderr, "File service.db does not need to be rebuilt.\n");
-	  return 0;
-	}
-    }
 
   sprintf(outft, "%s~", outf);
   out = fopen(outft, "w");

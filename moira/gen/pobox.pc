@@ -1,4 +1,4 @@
-/* $Id: pobox.pc,v 1.6 1999-11-23 16:04:33 danw Exp $
+/* $Id: pobox.pc,v 1.7 2000-11-30 23:27:47 zacheiss Exp $
  *
  * This generates a list of everyone's poboxes for the mitdir.
  *
@@ -21,7 +21,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/pobox.pc,v 1.6 1999-11-23 16:04:33 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/pobox.pc,v 1.7 2000-11-30 23:27:47 zacheiss Exp $");
 
 char *whoami = "pobox.gen";
 char *db = "moira/moira";
@@ -30,8 +30,7 @@ int main(int argc, char **argv)
 {
   FILE *out = stdout;
   char *outf = NULL, outft[MAXPATHLEN];
-  struct stat sb;
-  int flag, i;
+  int i;
   EXEC SQL BEGIN DECLARE SECTION;
   char login[USERS_LOGIN_SIZE], id[USERS_CLEARID_SIZE];
   char string[STRINGS_STRING_SIZE];
@@ -41,17 +40,6 @@ int main(int argc, char **argv)
 
   if (argc == 2)
     {
-      if (stat(argv[1], &sb) == 0)
-	{
-	  if (ModDiff(&flag, "users", sb.st_mtime))
-	    exit(MR_DATE);
-	  if (flag < 0)
-	    {
-	      fprintf(stderr, "File %s does not need to be rebuilt.\n",
-		      argv[1]);
-	      exit(MR_NO_CHANGE);
-	    }
-	}
       outf = argv[1];
       sprintf(outft, "%s~", outf);
       if (!(out = fopen(outft, "w")))

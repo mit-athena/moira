@@ -1,4 +1,4 @@
-/* $Id: util.c,v 1.13 1998-02-05 22:51:13 danw Exp $
+/* $Id: util.c,v 1.14 2000-11-30 23:27:48 zacheiss Exp $
  *
  * Utility routines used by the MOIRA extraction programs.
  *
@@ -16,7 +16,10 @@
 
 #include "util.h"
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/util.c,v 1.13 1998-02-05 22:51:13 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/util.c,v 1.14 2000-11-30 23:27:48 zacheiss Exp $");
+
+/* Julian day of the UNIX epoch (January 1, 1970) */
+#define UNIX_EPOCH 2440588
 
 extern void sqlglm(char buf[], int *, int *);
 
@@ -68,6 +71,17 @@ char *dequote(char *s)
   return s;
 }
 
+time_t unixtime(char *timestring)
+{
+  time_t t;
+
+  t = strtol(timestring, &timestring, 10) - UNIX_EPOCH;
+  t = t * 24 + strtol(timestring, &timestring, 10);
+  t = t * 60 + strtol(timestring, &timestring, 10);
+  t = t * 60 + strtol(timestring, &timestring, 10);
+
+  return t;
+}
 
 void db_error(int code)
 {

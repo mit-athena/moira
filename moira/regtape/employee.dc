@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/employee.dc,v 1.14 1993-03-10 13:46:27 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/regtape/employee.dc,v 1.15 1993-09-30 14:36:29 mar Exp $
  */
 
 #include <stdio.h>
@@ -73,6 +73,7 @@ int newfinger = 0;
 
 #define sqlfail() (sqlca.sqlcode && sqlca.sqlcode != 100)
 #define SQL_DUPLICATE -40100
+#define SQL_DEADLOCK -49900
 
 
 main(argc, argv)
@@ -122,8 +123,13 @@ char **argv;
 	process_entry(e);
 	EXEC SQL COMMIT WORK;
 	if (sqlca.sqlcode != 0) {
-	    com_err(whoami, 0, "ingres error %d", sqlca.sqlcode);
-	    exit(1);
+            if (sqlca.sqlcode == SQL_DEADLOCK) {
+                com_err(whoami, MR_DEADLOCK, "commiting work");
+                goto again;
+            } else {
+                com_err(whoami, 0, "ingres error %d", sqlca.sqlcode);
+                exit(1);
+            }
 	}
 	if (wait) {
 	    printf("Next");
@@ -270,6 +276,10 @@ struct entry *e;
 	if (sqlca.sqlcode == SQL_DUPLICATE) {
 	    com_err(whoami, 0, "duplicate ID number %s on user %s %s", sid, first, last);
 	    return;
+        } else if (sqlca.sqlcode == SQL_DEADLOCK) {
+            com_err(whoami, MR_DEADLOCK, "looking up user %s", sid);
+            EXEC SQL ROLLBACK;
+            return process_entry(e);
 	} else
 	  sqlexit();
     }
@@ -278,7 +288,14 @@ struct entry *e;
 	  INTO :id, :dfirst, :dlast, :dmiddle, :class, :oaddr, :ophone, :dept, :status
 	  FROM users
 	  WHERE last = :last and first = :first and clearid = :eid;
-	if (sqlfail() && sqlca.sqlcode != SQL_DUPLICATE) sqlexit();
+        if (sqlfail()) {
+            if (sqlca.sqlcode == SQL_DEADLOCK) {
+                com_err(whoami, MR_DEADLOCK, "looking up user %s", sid);
+                EXEC SQL ROLLBACK;
+                return process_entry(e);
+            } else if (sqlca.sqlcode != SQL_DUPLICATE)
+              sqlexit();
+        }
 	encrypted++;
 	if (id == 0) {
 	    newuser(e);
@@ -392,8 +409,14 @@ struct entry *e;
 	    xmodtime = 'now', clearid = :sid
 	  WHERE users_id = :id;
 	if (sqlca.sqlcode != 0) {
-	    com_err(whoami, 0, "ingres error %d", sqlca.sqlcode);
-	    exit(1);
+            if (sqlca.sqlcode == SQL_DEADLOCK) {
+                com_err(whoami, MR_DEADLOCK, "updating user %s", sid);
+                EXEC SQL ROLLBACK;
+                return process_entry(e);
+            } else {
+                com_err(whoami, 0, "ingres error %d", sqlca.sqlcode);
+                exit(1);
+            }
 	}
     } else {
 	EXEC SQL REPEATED UPDATE users
@@ -402,8 +425,14 @@ struct entry *e;
 	    xmodtime = 'now', clearid = :sid
 	  WHERE users_id = :id;
 	if (sqlca.sqlcode != 0) {
-	    com_err(whoami, 0, "ingres error %d", sqlca.sqlcode);
-	    exit(1);
+            if (sqlca.sqlcode == SQL_DEADLOCK) {
+                com_err(whoami, MR_DEADLOCK, "updating user %s", sid);
+                EXEC SQL ROLLBACK;
+                return process_entry(e);
+            } else {
+                com_err(whoami, 0, "ingres error %d", sqlca.sqlcode);
+                exit(1);
+            }
 	}
     }
 }
@@ -519,8 +548,14 @@ set_next_users_id(limit)
     EXEC SQL REPEATED UPDATE numvalues SET value = :value
       WHERE name = 'users_id';
     if (sqlca.sqlcode != 0) {
-	com_err(whoami, 0, "ingres error %d", sqlca.sqlcode);
-	exit(1);
+        if (sqlca.sqlcode == SQL_DEADLOCK) {
+            com_err(whoami, MR_DEADLOCK, "adding user %s", sid);
+            EXEC SQL ROLLBACK;
+            return newuser(e);
+        } else {
+            com_err(whoami, 0, "ingres error %d", sqlca.sqlcode);
+            exit(1);
+        }
     }
     return(retval);
 }
@@ -571,7 +606,11 @@ set_next_uid(limit)
 
 sqlexit()
 {
-    com_err(whoami, 0, "ingres error %d", sqlca.sqlcode);
+    if (sqlca.sqlcode == SQL_DEADLOCK)
+      com_err(whoami, MR_DEADLOCK, "unrecoverable ingres error %d",
+              sqlca.sqlcode);
+    else
+      com_err(whoami, 0, "ingres error %d", sqlca.sqlcode);
     EXEC SQL ROLLBACK WORK;
     exit(1);
 }

@@ -81,7 +81,7 @@ public class Regapplet extends Applet {
   GridBagLayout gridBagLayout6 = new GridBagLayout();
   Panel RulePanel = new Panel();
   Button RuleButton = new Button();
-  TextArea Rules = new TextArea(res.getString("rules"), 20, 78);
+  TextArea Rules = new TextArea(res.getString("rules"), 20, 72);
   Label RuleBanner = new Label();
   public Worker worker = null;
   public Thread workthread = null;
@@ -111,7 +111,7 @@ public class Regapplet extends Applet {
 
   //Component initialization
   public void jbInit() throws Exception{
-    this.resize(new Dimension(500, 500));
+      //    this.resize(new Dimension(600, 600));
     titlelabel.setForeground(Color.red);
     titlelabel.setFont(new Font("Helvetica", 1, 18));
     titlelabel.setText(res.getString("welcome"));
@@ -354,7 +354,7 @@ public class Regapplet extends Applet {
     applet.start();
     //frame.pack();
     //    frame.setSize(700,550);
-    frame.resize(700,550);
+    frame.resize(910,550);
     Dimension d = Toolkit.getDefaultToolkit().getScreenSize();
     //    frame.setLocation((d.width - frame.getSize().width) / 2, (d.height - frame.getSize().height) / 2);
     frame.show();

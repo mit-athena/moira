@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase3.qc,v 1.1 1988-09-25 21:59:37 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase3.qc,v 1.2 1988-09-26 14:08:35 mar Exp $
  *
  *  (c) Copyright 1988 by the Massachusetts Institute of Technology.
  *  For copying and distribution information, please see the file
@@ -9,6 +9,8 @@
 #include "dbck.h"
 
 #define NULL 0
+
+static char phase3_qc_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase3.qc,v 1.2 1988-09-26 14:08:35 mar Exp $";
 
 
 empty_list_check(id, l, hint)
@@ -54,7 +56,7 @@ noclu_mach_check(id, m, hint)
 int id, hint;
 struct machine *m;
 {
-    if (m->clucount == 0)
+    if (m->clucount == 0 && m->mach_id != 0)
       printf("Warning: machine %s is not in any clusters\n", m->name);
 }
 

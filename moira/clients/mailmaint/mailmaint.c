@@ -1,6 +1,6 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v 1.31 1994-04-13 13:14:40 jweiss Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v 1.32 1994-04-27 13:58:15 jweiss Exp $
  */
 
 /*  (c) Copyright 1988 by the Massachusetts Institute of Technology. */
@@ -8,7 +8,7 @@
 /*  <mit-copyright.h>. */
 
 #ifndef lint
-static char rcsid_mailmaint_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v 1.31 1994-04-13 13:14:40 jweiss Exp $";
+static char rcsid_mailmaint_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v 1.32 1994-04-27 13:58:15 jweiss Exp $";
 #endif lint
 
 /***********************************************************************/
@@ -32,7 +32,6 @@ static char rcsid_mailmaint_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/
 
 #define STARTCOL 0
 #define STARTROW 3
-#define SECONDCOL 30
 #define DISPROW 15
 #define LISTMAX 50
 #define LISTSIZE 32
@@ -332,9 +331,11 @@ display_buff(buf)
     int maxcol;
 
     maxcol = COLS;
+
+/* I don't understand the point of this limitation. -jweiss 3/25/94
     if (maxcol >= 80)
 	maxcol = 80;
-
+*/
     cnt = 0;
     printbuf = calloc((unsigned)maxcol, 1);
     for (i = 0; i <= strlen(buf); i++) {
@@ -369,7 +370,8 @@ start_display_buff(buff)
 	mvcur(0, 0, currow, STARTCOL);
 	refresh();
 	if (Prompt("--RETURN for more, ctl-c to exit--", buffer, 1, 0) == 0) {
-	    display_buff("Flushing query...");
+	    erase_line(currow, STARTCOL);
+	    show_text(currow, STARTCOL, "Flushing query...");
 	    moreflg = 1;
 	    return (0);
 	}
@@ -600,7 +602,9 @@ start_display(buff)
     char *buff;
 {
     char *buffer;
+    int secondcol;   /* where to start the second column of text */
 
+    secondcol = (COLS / 2);  /* 1/2 was accross the screen */
     num_members++;
     if (moreflg)
 	return(0);
@@ -610,7 +614,8 @@ start_display(buff)
 	mvcur(0, 0, currow, STARTCOL);
 	refresh();
 	if (Prompt("--RETURN for more, ctl-c to exit--", buffer, 1, 0) == 0) {
-	    display_buff("Flushing query...");
+	    erase_line(currow, STARTCOL);
+	    show_text(currow, STARTCOL, "Flushing query...");
 	    moreflg = 1;
 	    return (0);
 	}
@@ -624,7 +629,8 @@ start_display(buff)
     if (!toggle)
 	show_text(currow, STARTCOL, buff);
     else {
-	show_text(currow, SECONDCOL, buff);
+        erase_line(currow, secondcol-1);  /* in case the 1st col is too long */
+	show_text(currow, secondcol, buff);
 	currow++;
     }
     toggle = !toggle;
@@ -784,6 +790,7 @@ erase_line(row, col)
     mvcur(0, 0, row, col);
     addstr(buff);
     refresh();
+    free(buff);  /* close mem. leak */
 }
 
 /****************************************************/
@@ -802,8 +809,10 @@ clrwin(erase_row)
     int maxcol;
 
     maxcol = COLS;
+/* I don't understand the point of this limitation. -jweiss 3/25/94
+   and I believe it was preventing the window from being cleared properly.
     if (maxcol > 80)
-	maxcol = 80;		/* limit width */
+	maxcol = 80; */		/* limit width */
 
     buff = calloc((unsigned)maxcol + 1, 1);
     for (i = 0; i <= maxcol - 1; i++)
@@ -817,6 +826,7 @@ clrwin(erase_row)
     addstr(buff);
     mvcur(erase_row, STARTCOL, STARTROW + oldpos[level] - 1, STARTCOL);
     refresh();
+    free (buff); /* fix mem. leak */
 }
 
 /****************************************************/

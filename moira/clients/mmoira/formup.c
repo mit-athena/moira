@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/formup.c,v 1.11 1992-11-09 17:12:28 mar Exp $ */
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/formup.c,v 1.12 1992-12-28 18:22:14 mar Exp $ */
 
 #include	<stdio.h>
 #include	<strings.h>
@@ -23,7 +23,7 @@
 #include	<Xm/Traversal.h>
 #include	"mmoira.h"
 
-static char rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/formup.c,v 1.11 1992-11-09 17:12:28 mar Exp $";
+static char rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/formup.c,v 1.12 1992-12-28 18:22:14 mar Exp $";
 
 #ifndef MAX
 #define	MAX(a,b)	((a > b) ? a : b)
@@ -755,7 +755,7 @@ Cardinal *n;
     XmTextRec *tr = (XmTextRec *)w;
     int i;
 
-    if (tr->core.self != w || tr->core.widget_class != xmTextWidgetClass)
+    if (!tr || tr->core.self != w || tr->core.widget_class != xmTextWidgetClass)
       return;
     newvalue = XmTextGetString(w);
     f = WidgetToForm(w);

@@ -1,4 +1,4 @@
-/* $Id: queries2.c,v 2.59 1999-11-02 02:34:44 danw Exp $
+/* $Id: queries2.c,v 2.60 1999-11-16 20:49:44 danw Exp $
  *
  * This file defines the query dispatch table for version 2 of the protocol
  *
@@ -501,7 +501,7 @@ static struct validate spob_validate =	/* SET_POBOX */
   0,
   0,
   0,
-  access_user,
+  access_spob,
   0,
   set_pobox,
 };

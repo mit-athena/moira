@@ -1,4 +1,4 @@
-/* $Id: mr_server.h,v 1.45 1999-08-06 18:46:09 danw Exp $
+/* $Id: mr_server.h,v 1.46 1999-11-16 20:49:43 danw Exp $
  *
  * Copyright (C) 1987-1998 by the Massachusetts Institute of Technology
  * For copying and distribution information, please see the file
@@ -138,6 +138,7 @@ char *xstrdup(char *);
 /* prototypes from qaccess.pc */
 int access_user(struct query *q, char *argv[], client *cl);
 int access_login(struct query *q, char *argv[], client *cl);
+int access_spob(struct query *q, char *argv[], client *cl);
 int access_list(struct query *q, char *argv[], client *cl);
 int access_visible_list(struct query *q, char *argv[], client *cl);
 int access_vis_list_by_name(struct query *q, char *argv[], client *cl);

@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v 1.8 1988-08-07 17:22:49 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v 1.9 1988-08-31 19:31:39 mar Exp $";
 #endif lint
 
 /*	This is the file utils.c for the SMS Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v 1.8 1988-08-07 17:22:49 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/utils.c,v 1.9 1988-08-31 19:31:39 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -275,8 +275,16 @@ char *def;
 
     (void) sprintf(tmp, "%s [%s]: ", prompt, def ? def : "");
     ans = Prompt_input(tmp, buf, buflen);
+    if (ans == 0) {
+	if (YesNoQuestion("Are you sure you want to exit", 1))
+	    exit(0);
+	Put_message("Continuing input...");
+	return(PromptWithDefault(prompt, buf, buflen, def));
+    }
     if (IS_EMPTY(buf))
 	(void) strcpy(buf, def);
+    else if (!strcmp(buf, "\"\""))
+	*buf = 0;
     return(ans);
 }
 

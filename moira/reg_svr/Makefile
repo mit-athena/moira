@@ -2,7 +2,7 @@
 # 	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/Makefile,v $
 #	$Author: mar $
 #	$Locker:  $
-#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/Makefile,v 1.18 1990-03-19 19:28:42 mar Exp $
+#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/Makefile,v 1.19 1990-03-19 21:19:42 mar Exp $
 #
 # (c) Copyright 1988 by the Massachusetts Institute of Technology.
 # For copying and distribution information, please see the file
@@ -60,4 +60,4 @@ startreg.o: /usr/include/strings.h /usr/include/sys/types.h
 startreg.o: /usr/include/sys/file.h /usr/include/sys/wait.h
 startreg.o: /usr/include/sys/signal.h /usr/include/sys/ioctl.h
 startreg.o: /usr/include/sys/ttychars.h /usr/include/sys/ttydev.h
-startreg.o: /usr/include/sms_app.h
+startreg.o: ../include/moira_site.h

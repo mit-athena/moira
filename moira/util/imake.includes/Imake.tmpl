@@ -14,6 +14,12 @@ NEWTOP=NEW_TOP
 BUILDTOP=NEW_TOP
 #endif
 
+INCLUDE= -I$(BUILDTOP)/include -I$(BUILDTOP)/lib
+CFLAGS=$(DBG) $(INCLUDE) $(DEFINES) $(GLOBAL_CDEFS)
+LINTFLAGS=$(INCLUDE) $(DEFINES) $(GLOBAL_CDEFS)
+
+#include "config.Imakefile"
+ 
 #ifndef USELOCALTOOLS
 /* The makedepend program */
 DEPEND=$(BUILDTOP)/util/makedepend/makedepend
@@ -24,11 +30,6 @@ DEPEND=makedepend
 IMAKE=imake -I$(BUILDTOP)/util/imake.includes
 #endif
 
-INCLUDE= -I$(BUILDTOP)/include -I$(BUILDTOP)/lib
-CFLAGS=$(DBG) $(INCLUDE) $(DEFINES) $(GLOBAL_CDEFS)
-LINTFLAGS=$(INCLUDE) $(DEFINES) $(GLOBAL_CDEFS)
-#include "config.Imakefile"
- 
 #include "Imake.rules"
 
 #include INCLUDE_IMAKEFILE

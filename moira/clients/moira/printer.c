@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/printer.c,v 1.4 1988-12-07 18:50:29 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/printer.c,v 1.5 1989-06-01 21:30:34 mar Exp $";
 #endif lint
 
 /*	This is the file printer.c for the SMS Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/printer.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/printer.c,v 1.4 1988-12-07 18:50:29 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/printer.c,v 1.5 1989-06-01 21:30:34 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -143,9 +143,7 @@ char ** info;
     Put_message("");
 
     GetValueFromUser("Printer Server", &info[PCAP_SPOOL_HOST]);
-    strcpy(temp_buf, CanonicalizeHostname(info[PCAP_SPOOL_HOST]));
-    free(info[PCAP_SPOOL_HOST]);
-    info[PCAP_SPOOL_HOST] = Strsave(temp_buf);
+    info[PCAP_SPOOL_HOST] = canonicalize_hostname(info[PCAP_SPOOL_HOST]);
     GetValueFromUser("Spool Directory", &info[PCAP_SPOOL_DIR]);
     GetValueFromUser("Remote Printer Name", &info[PCAP_RPRINTER]);
     GetValueFromUser("Comments", &info[PCAP_COMMENTS]);

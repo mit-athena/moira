@@ -1,4 +1,4 @@
-/* $Id: main.c,v 1.33 1998-05-26 18:13:44 danw Exp $
+/* $Id: main.c,v 1.34 1998-08-11 18:05:28 danw Exp $
  *
  *	This is the file main.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -26,7 +26,7 @@
 
 #include <krb.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/main.c,v 1.33 1998-05-26 18:13:44 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/main.c,v 1.34 1998-08-11 18:05:28 danw Exp $");
 
 static void ErrorExit(char *buf, int status);
 static void Usage(void);
@@ -59,7 +59,9 @@ void main(int argc, char **argv)
   if ((status = tf_init(TKT_FILE, R_TKT_FIL)) ||
       (status = tf_get_pname(pname)))
     {
-      com_err(whoami, status, "reading Kerberos ticket file");
+      initialize_krb_error_table();
+      com_err(whoami, status + ERROR_TABLE_BASE_krb,
+	      "reading Kerberos ticket file");
       exit(1);
     }
   tf_close();

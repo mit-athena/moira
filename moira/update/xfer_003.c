@@ -1,6 +1,6 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/xfer_003.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/xfer_003.c,v 1.2 1994-09-16 22:03:09 jweiss Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/xfer_003.c,v 1.3 1997-01-29 23:29:07 danw Exp $
  */
 /*  (c) Copyright 1988, 1992 by the Massachusetts Institute of Technology.
  *  For copying and distribution information, please see the file
@@ -8,8 +8,8 @@
  */
 
 #ifndef lint
-static char *rcsid_xfer_002_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/xfer_003.c,v 1.2 1994-09-16 22:03:09 jweiss Exp $";
-#endif	lint
+static char *rcsid_xfer_002_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/xfer_003.c,v 1.3 1997-01-29 23:29:07 danw Exp $";
+#endif
 
 #include <mit-copyright.h>
 #include <stdio.h>
@@ -21,7 +21,7 @@ static char *rcsid_xfer_002_c = "$Header: /afs/.athena.mit.edu/astaff/project/mo
 #include <moira.h>
 
 extern CONNECTION conn;
-char buf[BUFSIZ];
+extern char buf[BUFSIZ];
 
 extern int code, errno;
 

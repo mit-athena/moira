@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/update_test.c,v 1.3 1994-09-16 22:02:48 jweiss Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/update_test.c,v 1.4 1997-01-29 23:29:06 danw Exp $
  *
  * Test client for update_server protocol.
  * 
@@ -27,7 +27,6 @@
 
 CONNECTION conn;
 char *whoami;
-
 
 main(argc, argv)
 int argc;
@@ -127,7 +126,6 @@ usage()
     exit(1);
 }
 
-static
 send_auth(host_name)
 char *host_name;
 {
@@ -171,7 +169,6 @@ char *host_name;
     return(MR_SUCCESS);
 }
 
-static
 execute(path)
     char *path;
 {

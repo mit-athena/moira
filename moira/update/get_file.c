@@ -1,14 +1,14 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/get_file.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/get_file.c,v 1.12 1993-10-25 17:11:55 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/get_file.c,v 1.13 1997-01-29 23:29:01 danw Exp $
  */
 /*  (c) Copyright 1988 by the Massachusetts Institute of Technology. */
 /*  For copying and distribution information, please see the file */
 /*  <mit-copyright.h>. */
 
 #ifndef lint
-static char *rcsid_get_file_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/get_file.c,v 1.12 1993-10-25 17:11:55 mar Exp $";
-#endif	lint
+static char *rcsid_get_file_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/get_file.c,v 1.13 1997-01-29 23:29:01 danw Exp $";
+#endif
 
 #include <mit-copyright.h>
 #include <stdio.h>
@@ -28,16 +28,17 @@ static char *rcsid_get_file_c = "$Header: /afs/.athena.mit.edu/astaff/project/mo
 #endif /* MIN */
 
 extern CONNECTION conn;
-char buf[BUFSIZ];
+extern char buf[BUFSIZ];
 
 extern int code, errno, uid;
+extern char *whoami;
 
 extern int have_authorization, have_file, done;
 extern C_Block session;
 static des_key_schedule sched;
 static des_cblock ivec;
 
-int get_block();
+static int get_block();
 
 /*
  * get_file()

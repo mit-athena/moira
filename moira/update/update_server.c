@@ -1,17 +1,18 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/update_server.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/update_server.c,v 1.11 1993-10-25 17:11:15 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/update_server.c,v 1.12 1997-01-29 23:29:05 danw Exp $
  */
 /*  (c) Copyright 1988 by the Massachusetts Institute of Technology. */
 /*  For copying and distribution information, please see the file */
 /*  <mit-copyright.h>. */
 
 #ifndef lint
-static char *rcsid_dispatch_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/update_server.c,v 1.11 1993-10-25 17:11:15 mar Exp $";
-#endif	lint
+static char *rcsid_dispatch_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/update_server.c,v 1.12 1997-01-29 23:29:05 danw Exp $";
+#endif
 
 #include <mit-copyright.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <gdb.h>
 #include <errno.h>
 #include <string.h>
@@ -32,14 +33,11 @@ extern int sync_proc(), quit();
 extern char *config_lookup();
 
 extern void gdb_debug();
-extern int abort(), errno;
-#ifndef sun
-extern int exit();
-#endif
+extern int errno;
 extern STRING instructions;
 
 CONNECTION conn;
-int code;
+int code, log_priority;
 char *whoami;
 
 int have_authorization = 0;
@@ -62,7 +60,7 @@ struct _dt {
      { "XFER_003", xfer_003 },
      { "EXEC_002", exec_002 },
      { "quit", quit },
-     { (char *)NULL, abort }
+     { (char *)NULL, (int (*)())abort }
 };
 
 /* general scratch space -- useful for building error messages et al... */
@@ -232,7 +230,7 @@ quit(str)
      (void) send_ok();
      sever_connection(conn);
      mr_log_info("Closing connection.");
-     return(exit(0));
+     exit(0);
 }
 
 

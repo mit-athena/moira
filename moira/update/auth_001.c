@@ -1,14 +1,14 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/auth_001.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/auth_001.c,v 1.9 1993-10-22 14:43:09 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/auth_001.c,v 1.10 1997-01-29 23:28:57 danw Exp $
  */
 /*  (c) Copyright 1988 by the Massachusetts Institute of Technology. */
 /*  For copying and distribution information, please see the file */
 /*  <mit-copyright.h>. */
 
 #ifndef lint
-static char *rcsid_auth_001_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/auth_001.c,v 1.9 1993-10-22 14:43:09 mar Exp $";
-#endif	lint
+static char *rcsid_auth_001_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/auth_001.c,v 1.10 1997-01-29 23:28:57 danw Exp $";
+#endif
 
 #include <mit-copyright.h>
 #include <stdio.h>
@@ -26,7 +26,7 @@ extern char buf[BUFSIZ];
 extern int have_authorization;
 extern struct sockaddr_in *client_address();
 extern CONNECTION conn;
-int code;
+extern int code;
 extern char *PrincipalHostname();
 static char service[] = "rcmd";
 static char master[] = "sms";

@@ -1,14 +1,14 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/ticket.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/ticket.c,v 1.13 1994-09-16 22:09:04 jweiss Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/ticket.c,v 1.14 1997-01-29 23:29:04 danw Exp $
  */
 /*  (c) Copyright 1988 by the Massachusetts Institute of Technology. */
 /*  For copying and distribution information, please see the file */
 /*  <mit-copyright.h>. */
 
 #ifndef lint
-static char *rcsid_ticket_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/ticket.c,v 1.13 1994-09-16 22:09:04 jweiss Exp $";
-#endif	lint
+static char *rcsid_ticket_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/ticket.c,v 1.14 1997-01-29 23:29:04 danw Exp $";
+#endif
 
 #include <mit-copyright.h>
 #include <stdio.h>
@@ -19,6 +19,8 @@ static char *rcsid_ticket_c = "$Header: /afs/.athena.mit.edu/astaff/project/moir
 #include <update.h>
 #include <com_err.h>
 #include <krb_et.h>
+
+extern char *whoami;
 
 /* too bad we can't set the pathname easily */
 static char *srvtab = KEYFILE; /* default == /etc/srvtab */
@@ -53,7 +55,7 @@ get_mr_update_ticket(host, ticket)
 
      pass = 1;
      init();
-     strcpy(phost, krb_get_phost(host));
+     strcpy(phost, (char*)krb_get_phost(host));
  try_it:
      code = krb_mk_req(ticket, service, phost, realm, (long)0);
      if (code) {

@@ -1,14 +1,14 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/log.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/log.c,v 1.10 1993-05-24 15:13:12 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/log.c,v 1.11 1997-01-29 23:29:03 danw Exp $
  */
 /*  (c) Copyright 1988 by the Massachusetts Institute of Technology. */
 /*  For copying and distribution information, please see the file */
 /*  <mit-copyright.h>. */
 
 #ifndef lint
-static char *rcsid_log_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/log.c,v 1.10 1993-05-24 15:13:12 mar Exp $";
-#endif	lint
+static char *rcsid_log_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/log.c,v 1.11 1997-01-29 23:29:03 danw Exp $";
+#endif
 
 /*
  * handle logging for dcm and update server
@@ -24,13 +24,14 @@ static char *rcsid_log_c = "$Header: /afs/.athena.mit.edu/astaff/project/moirade
 #include <mit-copyright.h>
 #include <stdio.h>
 #include "com_err.h"
+#ifdef __STDC__
+#include <stdarg.h>
+#else
 #include <varargs.h>
-#include "update.h"
-#include <krb.h>
-
-#ifndef __STDC__
 #define const
 #endif
+#include "update.h"
+#include <krb.h>
 
 #ifdef use_syslog
 #include <syslog.h>
@@ -46,7 +47,7 @@ int syslog_prio[] = {
     LOG_ERR
 };
 #endif
-int log_priority;
+extern int log_priority;
 extern char *whoami;
 
 void mr_update_com_err_hook(whoami, code, fmt, args)

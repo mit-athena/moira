@@ -1,4 +1,4 @@
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/afs/afs_utils.pl,v 1.3 2003-07-21 02:23:03 zacheiss Exp $
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/afs/afs_utils.pl,v 1.4 2004-06-08 21:25:10 zacheiss Exp $
 
 use Fcntl;
 
@@ -82,7 +82,7 @@ sub afs_find
 {
     local($cell,$type,$quota,@except) = @_;
     local($j,$k);
-    local(@max) = ("", "", -1000000000);
+    local(@max) = ("", "", -10000000000);
 
     &afs_lock;
     chop(@afs_data);

@@ -1,4 +1,4 @@
-/* $Id: qrtn.pc,v 2.15 1998-05-30 18:17:22 danw Exp $
+/* $Id: qrtn.pc,v 2.16 1999-06-30 20:56:16 danw Exp $
  *
  * Query-processing routines
  *
@@ -20,7 +20,7 @@
 EXEC SQL INCLUDE sqlca;  /* SQL Communications Area */
 EXEC SQL INCLUDE sqlda;  /* SQL Descriptor Area */
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.pc,v 2.15 1998-05-30 18:17:22 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qrtn.pc,v 2.16 1999-06-30 20:56:16 danw Exp $");
 
 SQLDA *mr_sqlda;
 EXEC SQL BEGIN DECLARE SECTION;
@@ -794,6 +794,10 @@ int set_next_object_id(char *object, enum tables table, int limit)
   starting_value = value;
   while (1)
     {
+#ifdef ULTRIX_ID_HOLE
+      if (limit && value > 31999 && value < 32768)
+	value = 32768;
+#endif
       if (limit && value > MAX_ID_VALUE)
 	value = MIN_ID_VALUE;
 

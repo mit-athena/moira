@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/winad/winad.c,v 1.28 2002-03-22 06:55:03 zacheiss Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/winad/winad.c,v 1.29 2002-04-30 02:21:25 zacheiss Exp $
 /* winad.incr arguments examples
  *
  * arguments when moira creates the account - ignored by winad.incr since the account is unusable.
@@ -88,6 +88,15 @@
  *
  * arguments when moira modifies a container information (OU).
  * containers 7 7 machines/test/bottom description location contact USER 105316 2222 machines/test/bottom description1 location contact USER 105316 2222
+ *
+ * arguments when moira adds a machine from an OU
+ * table name, beforec, afterc, machine_name, container_name, mach_id, cnt_id
+ * mcntmap 0 4 DAVIDT.MIT.EDU dttest/dttest1 76767 46
+ *
+ * arguments when moira removes a machine from an OU
+ * table name, beforec, afterc, machine_name, container_name, mach_id, cnt_id
+ * mcntmap 0 4 DAVIDT.MIT.EDU dttest/dttest1 76767 46
+ *
 */
 #include <mit-copyright.h>
 #ifdef _WIN32
@@ -238,6 +247,12 @@ typedef struct _SID {
 #define CONTAINER_ID       5
 #define CONTAINER_ROWID    6
 
+/*mcntmap arguments*/
+#define OU_MACHINE_NAME        0
+#define OU_CONTAINER_NAME      1
+#define OU_MACHINE_ID          2
+#define OU_CONTAINER_ID        3
+
 typedef struct lk_entry {
   int     op;
   int     length;
@@ -303,7 +318,7 @@ int ad_connect(LDAP **ldap_handle, char *ldap_domain, char *dn_path,
                int connect_to_kdc);
 void ad_kdc_disconnect();
 int BEREncodeSecurityBits(ULONG uBits, char *pBuffer);
-int checkAce(LDAP *ldap_handle, char *dn_path, char *Name);
+int checkADname(LDAP *ldap_handle, char *dn_path, char *Name);
 void check_winad(void);
 int check_user(LDAP *ldap_handle, char *dn_path, char *UserName, char *MoiraId);
 /* containers */
@@ -356,6 +371,10 @@ int group_rename(LDAP *ldap_handle, char *dn_path,
                  char *after_group_name, char *after_group_membership, 
                  char *after_group_ou, int after_security_flag, char *after_desc,
                  char *MoiraId, char *filter);
+int machine_check(LDAP *ldap_handle, char *dn_path, char *machine_name);
+int machine_GetMoiraContainer(int ac, char **av, void *ptr);
+int machine_get_moira_container(LDAP *ldap_handle, char *dn_path, char *machine_name, char *container_name);
+int machine_move_to_ou(LDAP *ldap_handle, char *dn_path, char *MoiraMachineName, char *DestinationOu);
 int make_new_group(LDAP *ldap_handle, char *dn_path, char *MoiraId, 
                    char *group_name, char *group_ou, char *group_membership, 
                    int group_security_flag, int updateGroup);
@@ -385,6 +404,8 @@ void do_user(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
              char **before, int beforec, char **after, int afterc);
 void do_member(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
                char **before, int beforec, char **after, int afterc);
+void do_mcntmap(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
+                char **before, int beforec, char **after, int afterc);
 int linklist_create_entry(char *attribute, char *value,
                           LK_ENTRY **linklist_entry);
 int linklist_build(LDAP *ldap_handle, char *dn_path, char *search_exp, 
@@ -496,9 +517,66 @@ int main(int argc, char **argv)
   else if (!strcmp(table, "containers"))
     do_container(ldap_handle, dn_path, ldap_domain, before, beforec, after,
                  afterc);
+  else if (!strcmp(table, "mcntmap"))
+    do_mcntmap(ldap_handle, dn_path, ldap_domain, before, beforec, after,
+               afterc);
   ad_kdc_disconnect();
   rc = ldap_unbind_s(ldap_handle);
   exit(0);
+}
+
+void do_mcntmap(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
+                char **before, int beforec, char **after, int afterc)
+{
+    char    MoiraContainerName[128];
+    char    ADContainerName[128];
+    char    MachineName[128];
+    long    rc;
+
+    memset(MoiraContainerName, '\0', sizeof(MoiraContainerName));
+    memset(ADContainerName, '\0', sizeof(ADContainerName));
+    if ((beforec == 0) && (afterc == 0))
+        return;
+
+    if (rc = moira_connect())
+    {
+        critical_alert("AD incremental",
+                       "Error contacting Moira server : %s",
+                       error_message(rc));
+        return;
+    }
+
+    if ((beforec != 0) && (afterc == 0)) /*remove a machine*/
+    {
+        strcpy(MachineName, before[OU_MACHINE_NAME]);
+        com_err(whoami, 0, "removing machine %s from %s", MachineName, before[OU_CONTAINER_NAME]);
+    }
+    else if ((beforec == 0) && (afterc != 0)) /*add a machine*/
+    {
+        strcpy(MachineName, after[OU_MACHINE_NAME]);
+        com_err(whoami, 0, "adding machine %s to container %s", MachineName, after[OU_CONTAINER_NAME]);
+    }
+    else
+        return;
+
+    if (machine_check(ldap_handle, dn_path, MachineName))
+    {
+        com_err(whoami, 0, "machine %s not found in AD.", MachineName);
+        return;
+    }
+    machine_get_moira_container(ldap_handle, dn_path, MachineName, MoiraContainerName);
+    if (strlen(MoiraContainerName) == 0)
+    {
+        com_err(whoami, 0, "machine %s container not found in Moira - moving to orphans OU.", MachineName);
+        machine_move_to_ou(ldap_handle, dn_path, MachineName, orphans_machines_ou);
+        return;
+    }
+    container_get_dn(MoiraContainerName, ADContainerName);
+    if (MoiraContainerName[strlen(MoiraContainerName) - 1] != '/')
+       strcat(MoiraContainerName, "/");
+    container_check(ldap_handle, dn_path, MoiraContainerName);
+    machine_move_to_ou(ldap_handle, dn_path, MachineName, ADContainerName);
+    return;
 }
 
 void do_container(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
@@ -2169,7 +2247,7 @@ int ProcessGroupSecurity(LDAP *ldap_handle, char *dn_path, char *TargetGroupName
         }
       if (strlen(AceSamAccountName) != 0)
         {
-          sprintf(search_path, "%s,%s", root_ou, dn_path);
+          sprintf(search_path, "%s", dn_path);
           sprintf(filter_exp, "(sAMAccountName=%s)", AceSamAccountName);
           attr_array[0] = "objectSid";
           attr_array[1] = NULL;
@@ -3558,7 +3636,7 @@ int GetAceInfo(int ac, char **av, void *ptr)
 
 }
 
-int checkAce(LDAP *ldap_handle, char *dn_path, char *Name)
+int checkADname(LDAP *ldap_handle, char *dn_path, char *Name)
 {
   char filter[128];
   char *attr_array[3];
@@ -3635,7 +3713,7 @@ int ProcessAce(LDAP *ldap_handle, char *dn_path, char *Name, char *Type, int Upd
         sprintf(temp, "%s_group", AceName);
       if (!UpdateGroup)
         {
-          if (checkAce(ldap_handle, dn_path, temp))
+          if (checkADname(ldap_handle, dn_path, temp))
             return(0);
           (*ProcessGroup) = 1;
         }
@@ -4340,6 +4418,7 @@ int container_delete(LDAP *ldap_handle, char *dn_path, int count, char **av)
     }
   return(rc);
 }
+
 int container_create(LDAP *ldap_handle, char *dn_path, int count, char **av)
 {
   char      *attr_array[3];
@@ -4865,3 +4944,95 @@ int get_machine_ou(LDAP *ldap_handle, char *dn_path, char *member, char *machine
   (*pPtr) = '\0';
   return(0);
 }
+
+int machine_move_to_ou(LDAP *ldap_handle, char * dn_path, char *MoiraMachineName, char *DestinationOu)
+{
+
+    char        NewCn[128];
+    char        OldDn[512];
+    char        MachineName[128];
+    char        filter[128];
+    char        *attr_array[3];
+    char        NewOu[256];
+    char        *cPtr = NULL;
+    int         group_count;
+    long        rc;
+    LK_ENTRY    *group_base;
+
+    group_count = 0;
+    group_base = NULL;
+
+    strcpy(MachineName, MoiraMachineName);
+    cPtr = strchr(MachineName, '.');
+    if (cPtr != NULL)
+        (*cPtr) = '\0';
+    sprintf(filter, "(sAMAccountName=%s$)", MachineName);
+    attr_array[0] = "sAMAccountName";
+    attr_array[1] = NULL;
+    if ((rc = linklist_build(ldap_handle, dn_path, filter, attr_array, &group_base, &group_count)) != 0)
+    {
+        com_err(whoami, 0, "LDAP server couldn't process machine %s : %s",
+                MachineName, ldap_err2string(rc));
+        return(1);
+    }
+
+    if (group_count == 1)
+        strcpy(OldDn, group_base->dn);
+    linklist_free(group_base);
+    group_base = NULL;
+    if (group_count != 1)
+    {
+        com_err(whoami, 0, "Unable to find machine %s in AD: %s", MachineName);
+        return(1);
+    }
+    sprintf(NewOu, "%s,%s", DestinationOu, dn_path);
+    cPtr = strchr(OldDn, ',');
+    if (cPtr != NULL)
+    {
+        ++cPtr;
+        if (!strcasecmp(cPtr, NewOu))
+            return(0);
+    }
+    sprintf(NewCn, "CN=%s", MachineName);
+    rc = ldap_rename_s(ldap_handle, OldDn, NewCn, NewOu, TRUE, NULL, NULL);
+    return(rc);
+}
+
+int machine_check(LDAP *ldap_handle, char *dn_path, char *machine_name)
+{
+    char    Name[128];
+    char    *pPtr;
+    int     rc;
+
+    memset(Name, '\0', sizeof(Name));
+    strcpy(Name, machine_name);
+    pPtr = NULL;
+    pPtr = strchr(Name, '.');
+    if (pPtr != NULL)
+        (*pPtr) = '\0';
+    strcat(Name, "$");
+    return(!(rc = checkADname(ldap_handle, dn_path, Name)));
+}
+
+int machine_get_moira_container(LDAP *ldap_handle, char *dn_path, char *machine_name, char *container_name)
+{
+    int     rc;
+    char    *av[2];
+    char    *call_args[2];
+
+    av[0] = machine_name;
+    call_args[0] = (char *)container_name;
+    rc = mr_query("get_machine_to_container_map", 1, av, machine_GetMoiraContainer,
+                   call_args);
+    return(rc);
+}
+
+int machine_GetMoiraContainer(int ac, char **av, void *ptr)
+{
+    char **call_args;
+    
+    call_args = ptr;
+    strcpy(call_args[0], av[1]);
+    return(0);
+}
+

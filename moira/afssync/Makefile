@@ -1,9 +1,9 @@
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/afssync/Makefile,v 1.3 1992-05-31 21:38:34 probe Exp $
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/afssync/Makefile,v 1.4 1992-05-31 21:40:43 probe Exp $
 
 AFSDIR = /mit/afsdev/bld/dest
 CFLAGS = -I$(AFSDIR)/include -I$(AFSDIR)/include/afs -I../include -O
 
-OBJS= ptprocs.o utils.o ubik.o
+OBJS= ptutils.o ptprocs.o utils.o ubik.o
 LIBS= -L../lib -lmoira -lcom_err -lkrb -ldes \
 	 /usr/rtingres/lib/libqlib /usr/rtingres/lib/compatlib
 

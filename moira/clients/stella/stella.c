@@ -21,7 +21,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/stella/stella.c,v 1.6 2000-09-15 06:09:43 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/stella/stella.c,v 1.7 2000-10-18 20:38:43 zacheiss Exp $");
 
 struct owner_type {
   int type;
@@ -50,7 +50,7 @@ struct string_list {
 
 /* flags from command line */
 int info_flag, update_flag, create_flag, delete_flag, list_map_flag;
-int update_map_flag, verbose, noauth;
+int update_alias_flag, update_map_flag, verbose, noauth;
 
 struct string_list *alias_add_queue, *alias_remove_queue;
 struct string_list *map_add_queue, *map_remove_queue;
@@ -80,7 +80,7 @@ int main(int argc, char **argv)
 
   /* clear all flags & lists */
   info_flag = update_flag = create_flag = list_map_flag = update_map_flag = 0;
-  verbose = noauth = 0;
+  update_alias_flag = verbose = noauth = 0;
   newname = address = network = h_status = vendor = model = NULL;
   os = location = contact = adm_cmt = op_cmt = NULL;
   owner = NULL;
@@ -214,6 +214,7 @@ int main(int argc, char **argv)
 	      alias_add_queue=add_to_string_list(alias_add_queue, *arg);
 	    } else
 	      usage(argv);
+	    update_alias_flag++;
 	  }
 	  else if (argis("d", "aliasdelete")) {
 	    if (arg - argv < argc - 1) {
@@ -221,6 +222,7 @@ int main(int argc, char **argv)
 	      alias_remove_queue=add_to_string_list(alias_remove_queue, *arg);
 	    } else
 	      usage(argv);
+	    update_alias_flag++;
 	  }
 	  else if (argis("am", "addmap")) {
 	    if (arg - argv < argc - 1) {
@@ -267,7 +269,8 @@ int main(int argc, char **argv)
 
   /* default to info_flag if nothing else was specified */
   if(!(info_flag   || update_flag   || create_flag     || \
-       delete_flag || list_map_flag || update_map_flag )) {
+       delete_flag || list_map_flag || update_map_flag || \
+       update_alias_flag)) {
     info_flag++;
   }
 

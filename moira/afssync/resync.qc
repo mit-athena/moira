@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/afssync/resync.qc,v 1.1 1989-09-26 12:11:33 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/afssync/resync.qc,v 1.2 1990-04-13 17:37:07 mar Exp $
  *
  */
 
@@ -9,8 +9,8 @@
 #include "print.h"
 #include "prserver.h"
 #include "prerror.h"
-#include <sms.h>
-#include <sms_app.h>
+#include <moira.h>
+#include <moira_site.h>
 #include <ctype.h>
 
 
@@ -19,8 +19,9 @@
 struct hash *users, *groups, *usersid, *groupsid;
 char *whoami = "sync";
 
-char *malloc(), *strsave();
+char *malloc(), *strsave(), *perm_malloc();
 int dbase_fd;
+int replaceflag = 0;
 struct prheader prh;
 
 
@@ -28,16 +29,33 @@ main(argc, argv)
 int argc;
 char **argv;
 {
+    int i;
+    char *file = NULL;
     int ingerr();
 
-    if (argc != 2) {
-	fprintf(stderr, "usage: %s dbfile\n", argv[0]);
-	exit(SMS_ARGS);
+    for (i = 1; i < argc; i++) {
+	if (argv[i][0] == '-') {
+	    switch (argv[i][1]) {
+	    case 'r':
+		replaceflag++;
+		break;
+	    default:
+		usage(argv[0]);
+	    }
+	} else {
+	    if (file == NULL)
+	      file = argv[i];
+	    else
+	      usage(argv[0]);
+	}
     }
 
-    dbase_fd = open(argv[1], O_RDONLY, 0660);
+    i = O_RDONLY;
+    if (replaceflag)
+      i = O_RDWR;
+    dbase_fd = open(file, i, 0660);
     if (dbase_fd < 0) {
-	perror("opening file %s", argv[1]);
+	perror("opening file %s", file);
 	exit(1);
     }	
     IIseterr(ingerr);
@@ -57,7 +75,14 @@ char **argv;
     pr_Read(NULL, 0, 0, &prh, sizeof(prh));
     check_users_and_groups();
 
-    exit(SMS_SUCCESS);
+    exit(MR_SUCCESS);
+}
+
+usage(name)
+char *name;
+{
+    fprintf(stderr, "usage: %s [-r] dbfile\n", name);
+    exit(MR_ARGS);
 }
 
 
@@ -76,12 +101,12 @@ static int ingerr(num)
 
     switch (*num) {
     case INGRES_DEADLOCK:
-	ingres_errno = SMS_DEADLOCK;
+	ingres_errno = MR_DEADLOCK;
 	break;
     default:
-	ingres_errno = SMS_INGRES_ERR;
+	ingres_errno = MR_INGRES_ERR;
     }
-    com_err(whoami, SMS_INGRES_ERR, " code %d\n", *num);
+    com_err(whoami, MR_INGRES_ERR, " code %d\n", *num);
     exit(ingres_errno);
 }
 
@@ -161,7 +186,7 @@ get_users()
 ##  retrieve (login = u.#login, uid = u.#uid, id = u.users_id)
 ##	where u.#status = 1 {
 	    strtrim(login);
-	    u = (struct user *)malloc(sizeof(struct user));
+	    u = (struct user *)perm_malloc(sizeof(struct user));
 	    if (u == NULL)
 	      nomem("loading users");
 	    strncpy(u->login, login, 9);
@@ -173,7 +198,7 @@ get_users()
 ##}
 
 
-#define CHUNKSIZE 10
+#define CHUNKSIZE 5
 struct chunk {
     short member[CHUNKSIZE];
     struct chunk *xmem;
@@ -201,11 +226,12 @@ get_groups()
 ##  retrieve (name = l.#name, gid = l.#gid, id = l.list_id)
 ##	where l.#active = 1 and l.#group = 1 {
 	    strtrim(name);
-	    g = (struct group *)malloc(sizeof(struct group));
+	    g = (struct group *)perm_malloc(sizeof(struct group));
 	    if (g == NULL)
 	      nomem("loading groups");
 	    bzero(g, sizeof(struct group));
 	    strncpy(g->name, name, 33);
+	    g->gid = gid;
 	    hash_store(groups, gid, g);
 	    hash_store(groupsid, id, g);
 ##  }
@@ -233,7 +259,7 @@ get_members()
 	      struct chunk *c;
 
 	      if ((c = g->ch.xmem) == NULL) {
-		  c = (struct chunk *) malloc(sizeof(struct chunk));
+		  c = (struct chunk *) perm_malloc(sizeof(struct chunk));
 		  if (c == NULL)
 		    nomem("loading members");
 		  g->ch.xmem = c;
@@ -241,7 +267,7 @@ get_members()
 	      while (i >= CHUNKSIZE) {
 		  i -= CHUNKSIZE;
 		  if (c->xmem == NULL) {
-		      c->xmem = (struct chunk *) malloc(sizeof(struct chunk));
+		      c->xmem = (struct chunk *) perm_malloc(sizeof(struct chunk));
 		      if (c->xmem == NULL)
 			nomem("loading members");
 		  }
@@ -261,24 +287,51 @@ checkuser(id, u)
 int id;
 struct user *u;
 {
-    if (u->flag == 0)
-      printf("< User %s id %d is in Moira but not in prs\n", u->login, u->uid);
+    int status;
+
+    if (u->flag == 0) {
+	printf("< User %s id %d is in Moira but not in prs\n",
+	       u->login, u->uid);
+	if (replaceflag) {
+	    status = PR_INewEntry(NULL, u->login, u->uid, 0);
+	    if (status) {
+		prserror(status, "adding user %s uid %d to prs database",
+			 u->login, u->uid);
+	    }
+	}
+    }
 }
 
 checkgroup(id, g)
 int id;
 struct group *g;
 {
-    register int i, j;
+    register int i, j, status;
     struct chunk *c;
 
-    if (g->flag == 0)
-      printf("< Group %s id %d is in Moira but not in prs\n", g->name, g->gid);
+    if (g->flag == 0) {
+	printf("< Group %s id %d is in Moira but not in prs\n",
+	       g->name, g->gid);
+	if (replaceflag) {
+	    char namebuf[64];
+	    sprintf(namebuf, "system:%s", g->name);
+	    status = PR_INewEntry(NULL, namebuf, -g->gid, SYSADMINID);
+	    if (status)
+	      prserror(status, "adding list %s gid %d to prs database",
+		       namebuf, -g->gid);
+	}
+    }
     c = (struct chunk *)&(g->ch);
     for (i = 0; i < g->members; i++) {
 	j = i % CHUNKSIZE;
 	printf("< Group %s contains user %d in Moira but not in prs\n",
 	       g->name, c->member[j]);
+	if (replaceflag) {
+	    status = PR_AddToGroup(NULL, c->member[j], -g->gid);
+	    if (status)
+	      prserror(status, "adding %d to group %d in prs",
+		       c->member[j], -g->gid);
+	}
 	if (j == CHUNKSIZE - 1)
 	  c = c->xmem;
     }
@@ -316,26 +369,44 @@ int offset;
     if ((flags & PRFREE) == 0) {
 	if (flags & PRGRP) {
 	    g = (struct group *) hash_lookup(groups, abs(id));
-	    if (g == NULL)
-	      printf("> Group %s, id %d is in prs but not moira\n",
-		     entry.name, id);
-	    else if (strcasecmp(g->name, index(entry.name, ':')+1))
-	      printf("> Group id %d in prs is %s, but GID %d in moira is %s\n",
-		     id, entry.name, -id, g->name);
-	    else {
+	    if (g == NULL) {
+		if (!strncmp(entry.name, "system:", 7)) {
+		    printf("> Group %s, id %d is in prs but not moira\n",
+			   entry.name, id);
+		    if (replaceflag) {
+			status = PR_Delete(NULL, id);
+			if (status)
+			  prserror(status, "deleting group %d from prs", id);
+		    }
+		}
+	    } else if (strcasecmp(g->name, index(entry.name, ':')+1)) {
+		printf("> GID %d in prs is %s, but GID %d in moira is %s\n",
+		       id, entry.name, -id, g->name);
+		if (replaceflag) {
+		    printf("*** Dont' know how to fix this!!!!!\n");
+		}
+	    } else {
 		g->flag = 1;
 		if (entry.entries[0])
 		  do_members(&entry, g);
 	    }
 	} else {
 	    u = (struct user *) hash_lookup(users, abs(id));
-	    if (u == NULL)
-	      printf("> User %s, id %d is in prs but not moira\n",
-		     entry.name, id);
-	    else if (strcasecmp(u->login, entry.name))
-	      printf("> User id %d in prs is %s, but UID %d in moira is %s\n",
-		     id, entry.name, id, u->login);
-	    else
+	    if (u == NULL) {
+		printf("> User %s, id %d is in prs but not moira\n",
+		       entry.name, id);
+		if (replaceflag) {
+		    status = PR_Delete(NULL, id);
+		    if (status)
+		      prserror(status, "while deleting user %d from prs", id);
+		}
+	    } else if (strcasecmp(u->login, entry.name)) {
+		printf("> User id %d in prs is %s, but UID %d in moira is %s\n",
+		       id, entry.name, id, u->login);
+		if (replaceflag) {
+		    printf("*** don't know how to fix this!!!!!\n");
+		}
+	    } else
 	      u->flag = 1;
 	}
     }
@@ -373,8 +444,10 @@ mark_member(g, uid)
 struct group *g;
 int uid;
 {
-    register int i, j;
+    register int i, j, status;
 
+    if (uid == PRBADID)
+      return;
     if (g->members >= CHUNKSIZE) {
 	short *s = NULL, s1;
 	struct chunk *c = (struct chunk *)&(g->ch);
@@ -398,6 +471,12 @@ int uid;
 	}
 	printf("> Group %s contains user %d in prs but not in Moira\n", g->name,
 	       uid);
+	if (replaceflag) {
+	    status = PR_RemoveFromGroup(NULL, uid, -g->gid);
+	    if (status)
+	      prserror(status, "While removing user %d from group %d in prs",
+		       uid, g->gid);
+	}
 	return;
     }
     for (i = 0; i < g->members; i++) {
@@ -414,4 +493,32 @@ int uid;
     }
     printf("> Group %s contains user %d in prs but not in Moira\n", g->name,
 	   uid);
+    if (replaceflag) {
+	status = PR_RemoveFromGroup(NULL, uid, -g->gid);
+	if (status)
+	  prserror(status, "While removing user %d from group %d in prs",
+		   uid, g->gid);
+    }
 }
+
+
+#define MALLOC_BLOCK	102400
+
+char *perm_malloc(size)
+unsigned size;
+{
+    static char *pool = NULL;
+    static unsigned pool_size = 0;
+    register char *ret;
+
+    if (size > pool_size) {
+	pool = (char *) malloc(MALLOC_BLOCK);
+	pool_size = MALLOC_BLOCK;
+    }
+    ret = pool;
+    pool += size;
+    pool = (char *)(((unsigned) (pool + 1)) & ~1);
+    pool_size -= (pool - ret);
+    return(ret);
+}
+

@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.37 1992-08-18 18:40:39 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.38 1993-10-22 16:11:32 mar Exp $";
 #endif
 
 /*	This is the file attach.c for the MOIRA Client, which allows a nieve
@@ -13,7 +13,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.37 1992-08-18 18:40:39 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.38 1993-10-22 16:11:32 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -22,7 +22,7 @@
  */
 
 #include <stdio.h>
-#include <strings.h>
+#include <string.h>
 #include <moira.h>
 #include <moira_site.h>
 #include <menu.h>
@@ -346,7 +346,7 @@ Bool name;
 		status = do_mr_query("get_alias", 3, args,
 				     GetAliasValue, &path);
 		if (status == MR_SUCCESS) {
-		    p = index(path, ':');
+		    p = strchr(path, ':');
 		    if (p) {
 			*p = 0;
 			depth = atoi(++p);

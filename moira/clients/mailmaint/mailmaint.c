@@ -1,6 +1,6 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v 1.29 1993-01-19 12:17:04 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v 1.30 1993-10-22 16:10:19 mar Exp $
  */
 
 /*  (c) Copyright 1988 by the Massachusetts Institute of Technology. */
@@ -8,7 +8,7 @@
 /*  <mit-copyright.h>. */
 
 #ifndef lint
-static char rcsid_mailmaint_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v 1.29 1993-01-19 12:17:04 mar Exp $";
+static char rcsid_mailmaint_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v 1.30 1993-10-22 16:10:19 mar Exp $";
 #endif lint
 
 /***********************************************************************/
@@ -19,7 +19,7 @@ static char rcsid_mailmaint_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/
 #include <stdio.h>
 #include <pwd.h>
 #include <signal.h>
-#include <strings.h>
+#include <string.h>
 #include <curses.h>
 #include <sys/types.h>
 #include <varargs.h>
@@ -111,7 +111,7 @@ main(argc, argv)
     int use_menu = 1;
     char buf[BUFSIZ], *motd;
 
-    if ((whoami = rindex(argv[0], '/')) == NULL)
+    if ((whoami = strrchr(argv[0], '/')) == NULL)
 	whoami = argv[0];
     else
 	whoami++;

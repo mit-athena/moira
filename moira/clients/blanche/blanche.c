@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.19 1993-05-24 16:05:48 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.20 1993-10-22 16:09:06 mar Exp $
  *
  * Command line oriented Moira List tool.
  *
@@ -17,11 +17,12 @@
 #include <mit-copyright.h>
 #include <stdio.h>
 #include <ctype.h>
+#include <string.h>
 #include <moira.h>
 #include <moira_site.h>
 
 #ifndef LINT
-static char blanche_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.19 1993-05-24 16:05:48 mar Exp $";
+static char blanche_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.20 1993-10-22 16:09:06 mar Exp $";
 #endif
 
 
@@ -49,8 +50,10 @@ struct save_queue *addlist, *dellist, *memberlist, *synclist;
 
 char *listname, *whoami;
 
+#ifndef POSIX
 extern char *index();
 extern int errno;
+#endif
 
 int show_list_info(), show_list_count(), get_list_members(), scream();
 int show_list_members(), membercmp();
@@ -238,7 +241,7 @@ char **argv;
     while (sq_get_data(addlist, &memberstruct)) {
 	/* canonicalize string if necessary */
 	if (memberstruct->type == M_STRING &&
-	    (p = index(memberstruct->name, '@'))) {
+	    (p = strchr(memberstruct->name, '@'))) {
 	    char *host = canonicalize_hostname(strsave(++p));
 	    static char **mailhubs = NULL;
 	    char *argv[4];
@@ -261,7 +264,7 @@ char **argv;
 	    for (i = 0; p = mailhubs[i]; i++) {
 		if (!strcasecmp(p, host)) {
 		    host = strsave(memberstruct->name);
-		    *(index(memberstruct->name, '@')) = 0;
+		    *(strchr(memberstruct->name, '@')) = 0;
 		    memberstruct->type = M_ANY;
 		    fprintf(stderr, "Warning: \"STRING:%s\" converted to \"%s\" because it is a local name.\n",
 			    host, memberstruct->name);
@@ -459,7 +462,7 @@ struct member *memberstruct;
 	else if (memberstruct->type == M_KERBEROS)
 	  printf("KERBEROS:%s\n", memberstruct->name);
 	else if (memberstruct->type == M_STRING &&
-		 !index(memberstruct->name, '@'))
+		 !strchr(memberstruct->name, '@'))
 	  printf("STRING:%s\n", memberstruct->name);
 	else
 	  printf("%s\n", memberstruct->name);
@@ -539,7 +542,7 @@ recursive_display_list_members()
     data = (struct member *) malloc(count * sizeof(struct member));
     count = 0;
     while (sq_get_data(members, &m))
-      bcopy(m, &data[count++], sizeof(struct member));
+      memcpy(&data[count++], m, sizeof(struct member));
     qsort(data, count, sizeof(struct member), membercmp);
     for (count = 0; count < savecount; count++) {
 	show_list_member(&data[count]);
@@ -672,7 +675,7 @@ register char *s;
     if ((m = (struct member *) malloc(sizeof(struct member))) == NULL)
       return(NULL);
 
-    if (p = index(s, ':')) {
+    if (p = strchr(s, ':')) {
 	*p = 0;
 	m->name = ++p;
 	if (!strcasecmp("user", s))
@@ -691,7 +694,7 @@ register char *s;
 	m->name = strsave(m->name);
     } else {
 	m->name = strsave(s);
-	if (index(s, '@') || index(s, '!') || index(s, '%') || index(s, ' '))
+	if (strchr(s, '@') || strchr(s, '!') || strchr(s, '%') || strchr(s, ' '))
 	  m->type = M_STRING;
 	else
 	  m->type = M_ANY;

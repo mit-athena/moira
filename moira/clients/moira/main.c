@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/main.c,v 1.22 1992-11-07 22:40:40 probe Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/main.c,v 1.23 1993-10-22 16:15:25 mar Exp $";
 #endif lint
 
 /*	This is the file main.c for the Moira Client, which allows a nieve
@@ -10,8 +10,8 @@
  *	By:		Chris D. Peterson
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/main.c,v $
- *      $Author: probe $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/main.c,v 1.22 1992-11-07 22:40:40 probe Exp $
+ *      $Author: mar $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/main.c,v 1.23 1993-10-22 16:15:25 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -22,7 +22,7 @@
 #include <pwd.h>
 #include <signal.h>
 #include <stdio.h>
-#include <strings.h>
+#include <string.h>
 #include <sys/types.h>
 #include <moira.h>
 #include <menu.h>
@@ -64,12 +64,15 @@ main(argc, argv)
     int status;
     Menu *menu;
     char *motd, **arg;
+#ifdef POSIX
+    struct sigaction act;
+#endif
 
     if ((user = getlogin()) == NULL) 
 	user = getpwuid((int) getuid())->pw_name;
     user = (user && strlen(user)) ? Strsave(user) : "";
 
-    if ((program_name = rindex(argv[0], '/')) == NULL)
+    if ((program_name = strrchr(argv[0], '/')) == NULL)
       program_name = argv[0];
     else
       program_name++;
@@ -126,13 +129,27 @@ main(argc, argv)
  */
 
 #ifndef DEBUG
+#ifdef POSIX
+    sigemptyset(&act.sa_mask);
+    act.sa_flags = 0;
+    act.sa_handler= (void (*)()) SignalHandler;
+    (void) sigaction(SIGHUP, &act, NULL);
+    (void) sigaction(SIGQUIT, &act, NULL);
+    if (use_menu)
+      (void) sigaction(SIGINT, &act, NULL); 
+    else {
+	act.sa_handler= (void (*)()) CatchInterrupt;
+	(void) sigaction(SIGINT, &act, NULL); 
+    }
+#else
     (void) signal(SIGHUP, SignalHandler);
     (void) signal(SIGQUIT, SignalHandler);
     if (use_menu)
       (void) signal(SIGINT, SignalHandler); 
     else
       (void) signal(SIGINT, CatchInterrupt); 
-#endif DEBUG
+#endif /* POSIX */
+#endif /* DEBUG */
 
     initialize_gdss_error_table();
 

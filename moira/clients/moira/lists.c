@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v 1.25 1992-04-06 17:24:02 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v 1.26 1993-10-22 16:12:18 mar Exp $";
 #endif lint
 
 /*	This is the file lists.c for the MOIRA Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v 1.25 1992-04-06 17:24:02 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v 1.26 1993-10-22 16:12:18 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -20,7 +20,7 @@
  */
 
 #include <stdio.h>
-#include <strings.h>
+#include <string.h>
 #include <moira.h>
 #include <moira_site.h>
 #include <menu.h>
@@ -624,7 +624,7 @@ AddMember()
 	return(DM_NORMAL);
 
     if (!strcmp(args[LM_TYPE], "STRING")) {
-	if (p = index(args[LM_MEMBER], '@')) {
+	if (p = strchr(args[LM_MEMBER], '@')) {
 	    char *host = canonicalize_hostname(strsave(++p));
 	    mailhubs = GetTypeValues("mailhub");
 	    for (elem = mailhubs; elem; elem = elem->q_forw) {
@@ -641,7 +641,7 @@ AddMember()
 		}
 	    }
 	    free(host);
-	} else if (!index(args[LM_MEMBER], '!')) {
+	} else if (!strchr(args[LM_MEMBER], '!')) {
 	    Put_message("Member which is not a foreign mail address should not be type STRING.");
 	    return(DM_NORMAL);
 	}

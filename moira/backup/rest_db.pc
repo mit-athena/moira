@@ -1,4 +1,4 @@
-/* $Id: rest_db.pc,v 1.5 1998-03-10 21:18:04 danw Exp $
+/* $Id: rest_db.pc,v 1.6 2002-05-01 04:38:03 zacheiss Exp $
  *
  * 	This program restores the Moira database from an mrbackup.
  *
@@ -19,7 +19,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/rest_db.pc,v 1.5 1998-03-10 21:18:04 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/backup/rest_db.pc,v 1.6 2002-05-01 04:38:03 zacheiss Exp $");
 
 int yes_or_no(char *prompt);
 
@@ -55,7 +55,7 @@ int main(int argc, char **argv)
   EXEC SQL CONNECT :db IDENTIFIED BY :db;
   if (sqlca.sqlcode != 0)
     {
-      com_err(argv[0], 0, "Ingres database open failed");
+      com_err(argv[0], 0, "Database open failed");
       exit(1);
     }
   printf(" done\n");

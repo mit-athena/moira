@@ -44,6 +44,7 @@ authoritative information about Athena administration.
 @include[server.mss]
 @include[clientlib.mss]
 @include[dcm.mss]
+@include[server_arrang.mss]
 @include[update.mss]
 @include[tools.mss]
 @include[deploy.mss]

@@ -1,11 +1,14 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_scall.c,v $
  *	$Author: wesommer $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_scall.c,v 1.10 1987-08-19 18:39:04 wesommer Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_scall.c,v 1.11 1987-08-19 22:03:52 wesommer Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
  *	$Log: not supported by cvs2svn $
+ * Revision 1.10  87/08/19  18:39:04  wesommer
+ * Added list_users query.
+ * 
  * Revision 1.9  87/08/04  02:41:22  wesommer
  * Clean up messages.
  * 
@@ -38,16 +41,18 @@
  */
 
 #ifndef lint
-static char *rcsid_sms_scall_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_scall.c,v 1.10 1987-08-19 18:39:04 wesommer Exp $";
+static char *rcsid_sms_scall_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_scall.c,v 1.11 1987-08-19 22:03:52 wesommer Exp $";
 #endif lint
 
 #include <krb.h>
 #include <errno.h>
+#include "query.h"
 #include "sms_server.h"
 extern char buf1[];
 extern int nclients;
 extern char *whoami;
 extern char *malloc();
+extern int errno;
 
 extern void clist_delete(), do_auth(), do_shutdown();
 void do_call();
@@ -136,6 +141,10 @@ do_call(cl)
 		
 	case SMS_SHUTDOWN:
 		do_shutdown(cl);
+		return;
+
+	case SMS_DO_UPDATE:
+		trigger_dcm(cl);
 		return;
 	}
 }
@@ -286,3 +295,34 @@ do_access(cl)
 	
 	com_err(whoami, 0, "Access check complete.");
 }
+
+struct query pseudo_query = {
+	"trigger_dcm",
+	"tdcm",
+};
+
+trigger_dcm(cl)
+	client *cl;
+{
+	register int pid;
+	
+	cl->reply.sms_argc = 0;
+
+	if (cl->reply.sms_status = check_query_access(&pseudo_query, 0, cl) )
+		return;
+
+	pid = vfork();
+	switch (pid) {
+	case 0:
+		execl("/u1/sms/bin/dcm", "dcm", 0);
+		exit(1);
+		
+	case -1:
+		cl->reply.sms_status = errno;
+		return;
+
+	default:
+		return;
+	}
+}
+

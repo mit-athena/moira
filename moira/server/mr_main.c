@@ -1,4 +1,4 @@
-/* $Id: mr_main.c,v 1.51 2000-01-28 00:27:41 danw Exp $
+/* $Id: mr_main.c,v 1.52 2002-08-13 15:49:56 zacheiss Exp $
  *
  * Moira server process.
  *
@@ -30,7 +30,7 @@
 
 #include <krb.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.51 2000-01-28 00:27:41 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_main.c,v 1.52 2002-08-13 15:49:56 zacheiss Exp $");
 
 client *cur_client;
 
@@ -163,7 +163,7 @@ int main(int argc, char **argv)
   listener = mr_listen(port);
   if (listener == -1)
     {
-      com_err(whoami, status, "trying to create listening connection");
+      com_err(whoami, MR_ABORTED, "trying to create listening connection");
       exit(1);
     }
   FD_ZERO(&xreadfds);

@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/display.c,v 1.7 1992-11-04 17:58:25 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mmoira/display.c,v 1.8 1992-11-09 17:08:14 mar Exp $
  */
 
 #include <stdio.h>
@@ -140,6 +140,7 @@ EntryForm *form;
     case MM_SHOW_FILSYS:
     case MM_SHOW_FSGROUP:
 	sq_save_args(argc, info, form->extrastuff);
+	return(MR_CONT);
 	break;
     case MM_SHOW_NFS:
 	sprintf(buf,"Machine: %-20s Directory: %-15s Device: %s\n",
@@ -268,26 +269,26 @@ EntryForm *form;
 	AppendToLog(buf);
 	break;
     case MM_SHOW_HOST:
-	sprintf(buf, "%s:%s  mod by %s on %s with %s\n", info[SH_MACHINE],
-		info[SH_SERVICE], info[SH_MODBY], info[SH_MODTIME],
-		info[SH_MODWITH]);
-	AppendToLog(buf);
 	if (atoi(info[SH_HOSTERROR]))
 	  sprintf(name, "Error %d: %s", atoi(info[SH_HOSTERROR]),
 		  info[SH_ERRMSG]);
 	else
 	  strcpy(name, "No error");
-	sprintf(buf, "  %s/%s/%s/%s/%s\n",
+	sprintf(buf, "%s:%s   %s/%s/%s/%s/%s\n",
+		info[SH_MACHINE], info[SH_SERVICE], 
 		atoi(info[SH_ENABLE]) ? "Enabled" : "Disabled",
 		atoi(info[SH_SUCCESS]) ? "Success" : "Failure",
 		atoi(info[SH_INPROGRESS]) ? "InProgress" : "Idle",
 		atoi(info[SH_OVERRIDE]) ? "Override" : "Normal", name);
 	AppendToLog(buf);
-	AppendToLog("  Last Try             Last Success         Value1    Value2    Value3\n");
+	AppendToLog("Last Try             Last Success         Value1    Value2    Value3\n");
 	strcpy(name, atot(info[SH_LASTTRY]));
-	sprintf(buf, "  %-20s %-20s %-9d %-9d %s\n", name,
+	sprintf(buf, "%-20s %-20s %-9d %-9d %s\n", name,
 		atot(info[SH_LASTSUCCESS]), atoi(info[SH_VALUE1]),
 		atoi(info[SH_VALUE2]), info[SH_VALUE3]);
+	AppendToLog(buf);
+	sprintf(buf, MOD_FORMAT, info[SH_MODBY], info[SH_MODTIME],
+		info[SH_MODWITH]);
 	AppendToLog(buf);
 	break;
     case MM_SHOW_DQUOTA:
@@ -385,8 +386,8 @@ EntryForm *form;
 	    if (i != 0) AppendToLog(", ");
 	    AppendToLog(info[i]);
 	}
-	AppendToLog("\n");
     }
+    AppendToLog("\n");
     return(MR_CONT);
 }
 
@@ -458,7 +459,8 @@ char **info;
 		info[FS_MODWITH]);
 	AppendToLog(buf);
     }
-    for (i = 0; info[i]; i++)
+    for (i = 0; i < FS_MODWITH; i++)
       free(info[i]);
     free(info);
+    AppendToLog("\n");
 }

@@ -31,7 +31,6 @@ create table users
         pmodby          INTEGER,
         pmodwith        CHAR( 8 ),
         gid             SMALLINT,
-        uglist_id       INTEGER,
         ugdefault       SMALLINT
 )
 
@@ -83,7 +82,7 @@ create table list
         public          SMALLINT,
         hidden          SMALLINT,
         maillist        SMALLINT,
-        group           SMALLINT,
+        grp             SMALLINT,
         gid             SMALLINT,
         desc            CHAR( 255 ),
         acl_type        CHAR( 8 ),
@@ -274,7 +273,7 @@ create table alias
         trans            CHAR( 128 )
 )
 
-create table values_tbl
+create table values 
 (
         name             CHAR( 32 ),
         value            INTEGER
@@ -282,8 +281,9 @@ create table values_tbl
 
 create table tblstats 
 (
-        tbl              CHAR( 12 ),
+        table            CHAR( 12 ),
         modtime          DATE,
+        retrieves        INTEGER,
         appends          INTEGER,
         updates          INTEGER,
         deletes          INTEGER
@@ -291,6 +291,6 @@ create table tblstats
 
 create table incremental
 (
-        tbl              CHAR( 16 ),
+        table            CHAR( 16 ),
         service          CHAR( 16 )
 )

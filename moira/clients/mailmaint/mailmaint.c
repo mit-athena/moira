@@ -1,10 +1,14 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v 1.12 1988-08-14 20:02:27 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v 1.13 1988-09-12 17:08:48 mar Exp $
  */
 
+/*  (c) Copyright 1988 by the Massachusetts Institute of Technology. */
+/*  For copying and distribution information, please see the file */
+/*  <mit-copyright.h>. */
+
 #ifndef lint
-static char rcsid_mailmaint_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v 1.12 1988-08-14 20:02:27 mar Exp $";
+static char rcsid_mailmaint_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v 1.13 1988-09-12 17:08:48 mar Exp $";
 #endif lint
 
 /***********************************************************************/
@@ -22,7 +26,7 @@ static char rcsid_mailmaint_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/
 #include <varargs.h>
 #include <com_err.h>
 #include <ctype.h>
-#include "mit-copyright.h"
+#include <mit-copyright.h>
 
 #define STARTCOL 0
 #define STARTROW 3

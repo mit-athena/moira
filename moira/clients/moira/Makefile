@@ -7,7 +7,7 @@
 # 
 #       $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/Makefile,v $
 #       $Author: mar $
-#       $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/Makefile,v 1.2 1988-08-07 19:46:35 mar Exp $
+#       $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/Makefile,v 1.3 1988-08-07 21:47:18 mar Exp $
 # 	
 #   	Copyright 1987, 1988 by the Massachusetts Institute of Technology.
 # 
@@ -16,8 +16,8 @@
 # 
 
 DESTDIR=
-CFLAGS = -I/mit/smsdev/include -O
-LDFLAGS =  -L/mit/smsdev/lib
+CFLAGS = -I../../include -O
+LDFLAGS =  -L../../lib
 CONFDIR = ${DESTDIR}/usr/athena
 BINDIR = ${DESTDIR}/bin
 

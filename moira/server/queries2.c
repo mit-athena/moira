@@ -1,4 +1,4 @@
-/* $Id: queries2.c,v 2.44 1998-05-06 23:33:39 danw Exp $
+/* $Id: queries2.c,v 2.45 1998-05-20 14:49:11 danw Exp $
  *
  * This file defines the query dispatch table for version 2 of the protocol
  *
@@ -2966,7 +2966,7 @@ struct query Queries2[] = {
     "name, description, saddr, mask, low, high, prefix, owner_type, owner_id, TO_CHAR(modtime, 'DD-mon-YYYY HH24:MI:SS'), modby, modwith FROM subnet",
     gsnt_fields,
     12,
-    "name LIKE UPPER('%s') and snet_id != 0",
+    "name LIKE UPPER('%s')",
     1,
     "name",
     &gsnt_validate,

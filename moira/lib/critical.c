@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/critical.c,v 1.3 1988-08-07 14:18:02 qjb Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/critical.c,v 1.4 1988-08-07 14:41:44 mar Exp $
  *
  * Log and send a zephyrgram about any critical errors.
  */
@@ -13,6 +13,8 @@
 
 /* mode to create the file with */
 #define LOGFILEMODE	0644
+
+extern char *whoami;
 
 
 void critical_alert(instance, msg, args)

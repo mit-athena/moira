@@ -1,4 +1,4 @@
-/* $Id: moira_site.h,v 1.30 1999-05-25 19:12:27 danw Exp $
+/* $Id: moira_site.h,v 1.31 1999-06-30 20:55:47 danw Exp $
  *
  * This file contains all definitions that allow easy access to
  * elements returned by most of the @i[Moira] queries.  It also defines
@@ -393,6 +393,13 @@
 #define REGJOURNAL	"/moira/journal.reg"
 #define NODCMFILE	"/etc/nodcm"	/* flag to inhibit DCM running */
 #define MOIRA_MOTD_FILE	"/etc/smsdown"	/* make the server go to sleep */
+
+
+/* If you have a uid between 32000 and 32767, Ultrix will give you a
+ * root shell. Oops. This define ought to stay around as long as there
+ * are any Athenized Ultrix machines around.
+ */
+#define ULTRIX_ID_HOLE
 
 
 #endif /* _moira_site_ */	     /* Do not add anything after this line. */

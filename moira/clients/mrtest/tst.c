@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/tst.c,v $
- *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/tst.c,v 1.4 1993-10-22 16:34:54 mar Exp $
+ *	$Author: jweiss $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/tst.c,v 1.5 1994-04-15 14:52:19 jweiss Exp $
  *
  *	Copyright (C) 1991 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -16,7 +16,7 @@
 #include <ctype.h>
 #include <string.h>
 #include <moira.h>
-#include <ss.h>
+#include <ss/ss.h>
 #include "mr_err_array.h"
 
 extern ss_execute_line();

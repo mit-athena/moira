@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v $
- *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v 1.26 1993-10-22 16:33:30 mar Exp $
+ *	$Author: jweiss $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v 1.27 1994-04-15 14:50:39 jweiss Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_test_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v 1.26 1993-10-22 16:33:30 mar Exp $";
+static char *rcsid_test_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v 1.27 1994-04-15 14:50:39 jweiss Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -21,7 +21,7 @@ static char *rcsid_test_c = "$Header: /afs/.athena.mit.edu/astaff/project/moirad
 #include <ctype.h>
 #include <string.h>
 #include <moira.h>
-#include <ss.h>
+#include <ss/ss.h>
 
 int ss;
 int recursion = 0;

@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/dbck.qc,v 1.3 1988-09-26 15:27:33 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/dbck.qc,v 1.4 1989-07-19 14:13:45 mar Exp $
  *
  * SMS database consistency checker
  *
@@ -14,7 +14,7 @@
 #include "dbck.h"
 
 
-static char dbck_qc_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/dbck.qc,v 1.3 1988-09-26 15:27:33 mar Exp $";
+static char dbck_qc_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/dbck.qc,v 1.4 1989-07-19 14:13:45 mar Exp $";
 
 
 int debug = 0;
@@ -24,7 +24,7 @@ int warn = 1;
 int abort = 0;
 struct hash *users, *machines, *clusters, *lists, *filesys, *nfsphys, *strings;
 ##int dcmenable;
-struct save_queue *modtables;
+struct save_queue *modtables, *sq_create();
 int interrupt();
 
 

@@ -12,7 +12,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/include/moira_site.h,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/include/moira_site.h,v 1.21 1992-04-10 17:55:59 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/include/moira_site.h,v 1.22 1992-04-30 16:31:13 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -290,10 +290,11 @@
 #define U_CLASS   8
 #define U_COMMENT 9
 #define U_SIGNATURE 10
-#define U_MODTIME 11
-#define U_MODBY   12
-#define U_MODWITH 13
-#define U_END     14
+#define U_SECURE  11
+#define U_MODTIME 12
+#define U_MODBY   13
+#define U_MODWITH 14
+#define U_END     15
 
 /* User states (the value of argv[U_STATE] from a user query) */
 

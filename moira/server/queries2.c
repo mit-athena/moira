@@ -1,6 +1,6 @@
 /* This file defines the query dispatch table for version 2 of the protocol
  *
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/queries2.c,v 2.14 1993-01-12 12:07:46 mar Exp $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/queries2.c,v 2.15 1993-03-02 18:06:53 mar Exp $
  *
  * Copyright 1987, 1988 by the Massachusetts Institute of Technology.
  * For copying and distribution information, please see the file
@@ -336,6 +336,19 @@ static char *guan_fields[] = {
   FIRST, LAST,
   LOGIN, UID, SHELL, LAST, FIRST, MIDDLE, STATUS,
   MIT_ID, CLASS, COMMENTS, SIGNATURE, SECURE, MOD1, MOD2, MOD3,
+};
+
+static struct validate guan_validate =	
+{
+  VOwild01sort01,
+  4,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  followup_guax,
 };
 
 static char *guac_fields[] = {
@@ -2310,7 +2323,7 @@ struct query Queries2[] = {
     15,
     "u.first LIKE '%s' ESCAPE '*' AND u.last LIKE '%s' ESCAPE '*' AND u.users_id != 0 and u.comment = str.string_id",
     2,
-    &VDwild2sortf,
+    &guan_validate,
   },
   
   {

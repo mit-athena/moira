@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.16 1989-03-27 15:02:25 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.17 1989-06-01 21:13:26 mar Exp $";
 #endif
 
 /*	This is the file attach.c for the SMS Client, which allows a nieve
@@ -13,7 +13,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.16 1989-03-27 15:02:25 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/attach.c,v 1.17 1989-06-01 21:13:26 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -262,9 +262,7 @@ Bool name;
 	info[FS_MACHINE] = Strsave(NO_MACHINE);
     } else {
 	GetValueFromUser("Filesystem's Machine", &info[FS_MACHINE]);
-	strcpy(temp_buf, CanonicalizeHostname(info[FS_MACHINE]));
-	free(info[FS_MACHINE]);
-	info[FS_MACHINE] = Strsave(temp_buf);
+	info[FS_MACHINE] = canonicalize_hostname(info[FS_MACHINE]);
     }
     if (!fsgroup) {
 	GetValueFromUser("Filesystem's Pack Name", &info[FS_PACK]);

@@ -1,4 +1,4 @@
-/* $Id: pobox.c,v 1.29 1999-11-17 18:36:26 danw Exp $
+/* $Id: pobox.c,v 1.30 1999-11-23 19:58:51 danw Exp $
  *
  *	This is the file pobox.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -24,7 +24,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/pobox.c,v 1.29 1999-11-17 18:36:26 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/pobox.c,v 1.30 1999-11-23 19:58:51 danw Exp $");
 
 #define FOREIGN_BOX ("SMTP")
 #define LOCAL_BOX ("POP")
@@ -243,7 +243,7 @@ int SetUserPOBox(int argc, char **argv)
   args[PO_NAME] = local_user;
   args[PO_TYPE] = type;
   args[PO_BOX] = box;
-  args[PO_END] = NULL;
+  args[3] = NULL;
   if ((status = do_mr_query("set_pobox", CountArgs(args), args,
 			    NULL, NULL)))
     com_err(program_name, status, " in ChangeUserPOBox");

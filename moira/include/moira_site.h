@@ -12,7 +12,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/include/moira_site.h,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/include/moira_site.h,v 1.18 1990-04-04 11:30:27 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/include/moira_site.h,v 1.19 1990-07-31 12:19:29 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -323,17 +323,34 @@
 #define USH_SHELL       1
 #define USH_END         2
 
+/* Zehpyr ACL queries */
+
+#define ZA_CLASS	0
+#define ZA_XMT_TYPE	1
+#define ZA_XMT_ID	2
+#define	ZA_SUB_TYPE	3
+#define	ZA_SUB_ID	4
+#define	ZA_IWS_TYPE	5
+#define	ZA_IWS_ID	6
+#define	ZA_IUI_TYPE	7
+#define	ZA_IUI_ID	8
+#define	ZA_MODTIME 	9
+#define	ZA_MODBY	10
+#define	ZA_MODWITH	11
+#define ZA_END		12
+
+
 
 /* Directories & files used on the server machine: */
 
-#define SMS_DIR		"/u1/sms"	/* home directory of the system */
-#define BIN_DIR		"/u1/sms/bin"	/* where progs live */
-#define DCM_DIR		"/u1/sms/dcm"	/* where DCM output files end up */
-#define LOCK_DIR	"/u1/sms/dcm/locks" /* where DCM puts lock files */
+#define SMS_DIR		"/moira"	/* home directory of the system */
+#define BIN_DIR		"/moira/bin"	/* where progs live */
+#define DCM_DIR		"/moira/dcm"	/* where DCM output files end up */
+#define LOCK_DIR	"/moira/dcm/locks" /* where DCM puts lock files */
 
-#define CRITERRLOG	"/u1/sms/critical.log"
-#define JOURNAL		"/u1/sms/journal"
-#define REGJOURNAL	"/u1/sms/journal.reg"
+#define CRITERRLOG	"/moira/critical.log"
+#define JOURNAL		"/moira/journal"
+#define REGJOURNAL	"/moira/journal.reg"
 #define NODCMFILE	"/etc/nodcm"	/* flag to inhibit DCM running */
 #define MOIRA_MOTD_FILE	"/etc/smsdown"	/* make the server go to sleep */
 

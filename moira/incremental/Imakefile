@@ -1,6 +1,6 @@
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/Imakefile,v 1.1 1993-10-21 14:44:40 mar Exp $
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/Imakefile,v 1.2 1996-11-14 04:01:48 danw Exp $
 
-AFSDIR = /mit/afsdev/bld/dest
+AFSDIR = /mit/afsuser
 AFSLIBS=$(AFSDIR)/lib/afs/libprot.a    $(AFSDIR)/lib/afs/libauth.a \
 	$(AFSDIR)/lib/libubik.a        $(AFSDIR)/lib/afs/util.a \
 	$(AFSDIR)/lib/librxkad.a       $(AFSDIR)/lib/afs/libsys.a \

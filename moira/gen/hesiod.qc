@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/hesiod.qc,v 1.23 1990-03-07 16:53:14 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/hesiod.qc,v 1.24 1990-03-08 23:21:40 mar Exp $
  *
  * This generates the zone files necessary to load a hesiod server.
  * The following zones are generated: passwd, uid, pobox, group,
@@ -34,7 +34,7 @@ char *whoami = "hesiod.gen";
 
 struct grp {
     struct grp *next;
-    int id;
+    char *lid;
 };
 struct user {
     char name[9];
@@ -315,12 +315,12 @@ do_groups()
 
 ##  repeat retrieve (lid = m.list_id, id = m.member_id)
 ##	where m.member_type = "USER" {
-      if ((hash_lookup(groups, lid) != NULL) &&
+      if (((l = hash_lookup(groups, lid)) != NULL) &&
 	  (u = (struct user *) hash_lookup(users, id))) {
 	  g = (struct grp *) malloc(sizeof(struct grp));
 	  g->next = u->lists;
 	  u->lists = g;
-	  g->id = lid;
+	  g->lid = l;
       }
 ##  }
 ##  end transaction
@@ -331,12 +331,11 @@ do_groups()
 	      continue;
 	    fprintf(lout, "%s.grplist\tHS %s \"",
 		    ((struct user *)b->data)->name, HTYPE);
-	    for (; g; g = g->next)
-	      if (l = hash_lookup(groups, g->id)) {
-		  fputs(l, lout);
-		  if (g->next)
-		    putc(':', lout);
-	      }
+	    for (; g; g = g->next) {
+		fputs(g->lid, lout);
+		if (g->next)
+		  putc(':', lout);
+	    }
 	    fputs("\"\n", lout);
 	}
     }

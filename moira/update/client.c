@@ -1,15 +1,15 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/client.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/client.c,v 1.12 1992-09-22 13:44:43 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/client.c,v 1.13 1992-12-30 17:47:00 mar Exp $
  */
 
 #ifndef lint
-static char *rcsid_client2_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/client.c,v 1.12 1992-09-22 13:44:43 mar Exp $";
+static char *rcsid_client2_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/client.c,v 1.13 1992-12-30 17:47:00 mar Exp $";
 #endif	lint
 
 /*
  * MODULE IDENTIFICATION:
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/client.c,v 1.12 1992-09-22 13:44:43 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/client.c,v 1.13 1992-12-30 17:47:00 mar Exp $
  *	Copyright 1987, 1988 by the Massachusetts Institute of Technology.
  *	For copying and distribution information, please see the file
  *	<mit-copyright.h>.
@@ -145,14 +145,13 @@ char *instructions;
     com_err(whoami, 0, "starting update for %s", service_updated);
     
     /* open connection */
+    gdb_Options |= GDB_OPT_KEEPALIVE;
     conn = start_server_connection(service_address, "");
     if (!conn || (connection_status(conn) == CON_STOPPED)) {
 	com_err(whoami, connection_errno(conn),
 		" can't connect to update %s", service_address);
 	return(MR_CANT_CONNECT);
     }
-    on = 1;
-    setsockopt(conn->in.fd, SOL_SOCKET, SO_KEEPALIVE, &on, sizeof(on));
     
     /* send authenticators */
     code = send_auth(machine);

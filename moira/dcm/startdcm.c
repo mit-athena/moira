@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/startdcm.c,v $
  *	$Author: danw $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/startdcm.c,v 1.6 1997-01-20 18:22:18 danw Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/startdcm.c,v 1.7 1997-01-22 22:54:43 danw Exp $
  *
  *	Copyright (C) 1987, 1988 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -12,7 +12,7 @@
  */
 
 #ifndef lint
-static char *rcsid_mr_starter_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/startdcm.c,v 1.6 1997-01-20 18:22:18 danw Exp $";
+static char *rcsid_mr_starter_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dcm/startdcm.c,v 1.7 1997-01-22 22:54:43 danw Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -32,7 +32,7 @@ static char *rcsid_mr_starter_c = "$Header: /afs/.athena.mit.edu/astaff/project/
 int rdpipe[2];
 extern int errno;
 
-void cleanup()
+cleanup()
 {
 	int stat, serrno = errno;
 	char buf[BUFSIZ];
@@ -47,7 +47,7 @@ void cleanup()
 					WEXITSTATUS(stat));
 		}
 		if (WIFSIGNALED(stat)) {
-			sprintf(buf, "exited with signal %d%s\n",
+			sprintf(buf, "exited on signal %d%s\n",
 				WTERMSIG(stat),
 				(WCOREDUMP(stat)?"; Core dumped":0));
 		}
@@ -69,7 +69,7 @@ main(argc, argv)
 	
 	struct sigaction action;
 	int nfds;
-
+	
 	getrlimit(RLIMIT_NOFILE, &rl);
 	nfds = rl.rlim_cur;
 
@@ -77,7 +77,7 @@ main(argc, argv)
 	action.sa_flags = 0;
 	sigemptyset(&action.sa_mask);
 	sigaction(SIGCHLD, &action, NULL);
-
+	
 	sprintf(buf, "%s/%s.log", SMS_DIR, PROG);
 	logf = open(buf, O_CREAT|O_WRONLY|O_APPEND, 0640);
 	if (logf<0) {
@@ -131,7 +131,7 @@ main(argc, argv)
 		done = 0;
 		errno = 0;
 		if (fgets(buf, BUFSIZ, prog) == NULL) {
-			if (errno) {
+			if (errno && errno!=EINTR) {
 				strcpy(buf, "Unable to read from program: ");
 				strcat(buf, sys_errlist[errno]);
 				strcat(buf, "\n");
@@ -145,7 +145,3 @@ main(argc, argv)
 	} while (!done);
 	exit(0);
 }
-
-
-
-	  

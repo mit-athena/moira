@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/startmoira.c,v $
  *	$Author: danw $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/startmoira.c,v 1.12 1997-01-20 18:26:37 danw Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/startmoira.c,v 1.13 1997-01-22 22:54:58 danw Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -13,7 +13,7 @@
  */
 
 #ifndef lint
-static char *rcsid_mr_starter_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/startmoira.c,v 1.12 1997-01-20 18:26:37 danw Exp $";
+static char *rcsid_mr_starter_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/startmoira.c,v 1.13 1997-01-22 22:54:58 danw Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -24,24 +24,21 @@ static char *rcsid_mr_starter_c = "$Header: /afs/.athena.mit.edu/astaff/project/
 #include <sys/wait.h>
 #include <sys/signal.h>
 #include <sys/ioctl.h>
-#include <moira_site.h>
-#include <sys/stat.h>
-#include <sys/resource.h>
 #include <fcntl.h>
+#include <sys/resource.h>
+#include <moira_site.h>
 
 
 #define PROG	"moirad"
 
 int rdpipe[2];
+extern int errno;
 char *whoami;
 
 cleanup()
 {
-	int stat;
-
+	int stat, serrno = errno;
 	char buf[BUFSIZ];
-	extern int errno;
-	int serrno = errno;
 
 	buf[0]='\0';
 	
@@ -80,9 +77,9 @@ main(argc, argv)
 	
 	struct sigaction action;
 	int nfds;
-
+	
 	whoami = argv[0];
-
+	
 	getrlimit(RLIMIT_NOFILE, &rl);
 	nfds = rl.rlim_cur;
 
@@ -144,7 +141,7 @@ main(argc, argv)
 		done = 0;
 		errno = 0;
 		if (fgets(buf, BUFSIZ, prog) == NULL) {
-			if (errno) {
+			if (errno && errno!=EINTR) {
 				strcpy(buf, "Unable to read from program: ");
 				strcat(buf, sys_errlist[errno]);
 				strcat(buf, "\n");
@@ -158,7 +155,3 @@ main(argc, argv)
 	} while (!done);
 	exit(0);
 }
-
-
-
-	  

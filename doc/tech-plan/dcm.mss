@@ -1,9 +1,12 @@
 @Comment[
 	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/doc/tech-plan/dcm.mss,v $
 	$Author: ambar $
-	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/doc/tech-plan/dcm.mss,v 1.2 1987-05-29 03:14:20 ambar Exp $
+	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/doc/tech-plan/dcm.mss,v 1.3 1987-05-29 03:27:37 ambar Exp $
 
 	$Log: not supported by cvs2svn $
+Revision 1.2  87/05/29  03:14:20  ambar
+Added in Peter's changes.
+
 Revision 1.1  87/05/20  14:42:38  wesommer
 Initial revision
 
@@ -176,6 +179,7 @@ end header
 
 The target file would look like the following:
 
+@begin(verbatim)
 #two sharp signs puts data in the target file too
 #query 1, all print clusters
 cluster = e40

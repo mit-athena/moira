@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/winad/winad.c,v 1.35 2003-07-29 20:22:34 zacheiss Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/winad/winad.c,v 1.36 2003-09-06 22:42:20 zacheiss Exp $
 /* winad.incr arguments examples
  *
  * arguments when moira creates the account - ignored by winad.incr since the account is unusable.
@@ -359,7 +359,7 @@ int GetAceInfo(int ac, char **av, void *ptr);
 int GetServerList(char *ldap_domain, char **MasterServe);
 int get_group_membership(char *group_membership, char *group_ou, 
                          int *security_flag, char **av);
-int get_machine_ou(LDAP *ldap_handle, char *dn_path, char *member, char *machine_ou);
+int get_machine_ou(LDAP *ldap_handle, char *dn_path, char *member, char *machine_ou, char *pPtr);
 int Moira_container_group_create(char **after);
 int Moira_container_group_delete(char **before);
 int Moira_groupname_create(char *GroupName, char *ContainerName,
@@ -1179,6 +1179,7 @@ void do_member(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
   char  *av[7];
   char  *call_args[7];
   char  *pUserOu;
+  char  NewMachineName[1024];
   int   security_flag;
   int   rc;
   int   ProcessGroup;
@@ -1332,8 +1333,10 @@ void do_member(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
       if (!strcasecmp(ptr[LM_TYPE], "MACHINE"))
         {
           memset(machine_ou, '\0', sizeof(machine_ou));
-          if (get_machine_ou(ldap_handle, dn_path, ptr[LM_MEMBER], machine_ou))
+	  memset(NewMachineName, '\0', sizeof(NewMachineName));
+          if (get_machine_ou(ldap_handle, dn_path, ptr[LM_MEMBER], machine_ou, NewMachineName))
             return;
+	  ptr[LM_MEMBER] = NewMachineName;
           pUserOu = machine_ou;
         }
       if (!strcasecmp(ptr[LM_TYPE], "STRING"))
@@ -1361,8 +1364,10 @@ void do_member(LDAP *ldap_handle, char *dn_path, char *ldap_hostname,
   if (!strcasecmp(ptr[LM_TYPE], "MACHINE"))
     {
       memset(machine_ou, '\0', sizeof(machine_ou));
-      if (get_machine_ou(ldap_handle, dn_path, ptr[LM_MEMBER], machine_ou))
+      memset(NewMachineName, '\0', sizeof(NewMachineName));
+      if (get_machine_ou(ldap_handle, dn_path, ptr[LM_MEMBER], machine_ou, NewMachineName))
         return;
+      ptr[LM_MEMBER] = NewMachineName;
       pUserOu = machine_ou;
     }
   else if (!strcasecmp(ptr[LM_TYPE], "STRING"))
@@ -5052,7 +5057,7 @@ int container_move_objects(LDAP *ldap_handle, char *dn_path, char *dName)
   return(0);
 }
 
-int get_machine_ou(LDAP *ldap_handle, char *dn_path, char *member, char *machine_ou)
+int get_machine_ou(LDAP *ldap_handle, char *dn_path, char *member, char *machine_ou, char *NewMachineName)
 {
   LK_ENTRY  *group_base;
   int  group_count;
@@ -5063,11 +5068,12 @@ int get_machine_ou(LDAP *ldap_handle, char *dn_path, char *member, char *machine
   char dn[256];
   char temp[256];
   char *pPtr;
-  char NewMachineName[1024];
   int   rc;
 
   strcpy(NewMachineName, member);
+  rc = moira_connect();
   rc = GetMachineName(NewMachineName);
+  moira_disconnect();
   if (strlen(NewMachineName) == 0)
     {
       com_err(whoami, 0, "Unable to find alais for machine %s in Moira", member);

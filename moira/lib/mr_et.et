@@ -1,6 +1,6 @@
 #	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_et.et,v $
 #	$Author: mike $
-#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_et.et,v 1.5 1987-08-03 19:06:37 mike Exp $
+#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_et.et,v 1.6 1987-08-21 18:20:49 mike Exp $
 #
 	error_table sms
 
@@ -102,5 +102,8 @@ ec	SMS_NFS,
 
 ec	SMS_FILESYS_ACCESS,
 	"invalid filesys access"
+
+ec	SMS_USER_GROUP,
+	"list is a user group"
 
 	end

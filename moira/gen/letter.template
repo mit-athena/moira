@@ -1,7 +1,9 @@
 %!
 %%Page: 1 1
-% switch to color papertray
-1 statusdict /setpapertray get exec
+% Turn on double-sided printing for HP4mx printers
+%%BeginFeature *Duplex True
+<< /Duplex true >> setpagedevice
+%%EndFeature
 
 /Times-Roman findfont 10 scalefont setfont
 92 708 moveto(Athena User Accounts)show
@@ -16,8 +18,6 @@
 showpage
 
 %%Page: 2 2
-% switch back to white paper
-3 statusdict /setpapertray get exec
 
 /Times-Roman findfont 12 scalefont setfont
 92 678 moveto(From: Information Systems)show

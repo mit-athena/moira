@@ -1,0 +1,38 @@
+	command_table sms_test;
+
+	request ss_quit, "Exit the program",
+		quit, q;
+
+	request test_noop, "Ask SMS to do nothing",
+		noop;
+
+	request test_connect, "Connect to SMS",
+		connect, c;
+
+	request test_disconnect, "Disconnect from SMS",
+		disconnect;
+
+	request test_query, "Make a query.",
+		query;
+
+	request test_shutdown, "Shut down SMS.",
+		shutdown;
+
+	request test_auth, "Authenticate to SMS.",
+		auth;
+
+	request test_access, "Check access to an SMS query.",
+		access;
+
+	request	ss_self_identify, "Identify the subsystem.",
+		".",
+		(dont_list, dont_summarize);
+
+	request	ss_list_requests, "List available commands.",
+		list_requests, lr, "?";
+
+	request	ss_quit, "Leave the subsystem.",
+		quit, q;
+
+	end;
+

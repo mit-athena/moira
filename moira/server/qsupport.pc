@@ -1,4 +1,4 @@
-/* $Id: qsupport.pc,v 2.44 2002-08-02 15:21:27 zacheiss Exp $
+/* $Id: qsupport.pc,v 2.45 2002-08-13 15:50:14 zacheiss Exp $
  *
  * Special query routines
  *
@@ -18,7 +18,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.pc,v 2.44 2002-08-02 15:21:27 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.pc,v 2.45 2002-08-13 15:50:14 zacheiss Exp $");
 
 extern char *whoami, *table_name[];
 extern int dbms_errno, mr_errcode;
@@ -1899,7 +1899,7 @@ int update_container(struct query *q, char *argv[], client *cl)
   int cnt, childid;
   char childname[CONTAINERS_NAME_SIZE];
   char *qual;
-   int index = 0;
+  int index = 0;
 
   cnt_id = *(int *)argv[index++];
   newname = argv[index++];

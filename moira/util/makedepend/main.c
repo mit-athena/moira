@@ -36,6 +36,9 @@ struct symtab	predefs[] = {
 #endif
 #ifdef sun
 	{"sun", NULL},
+#ifdef sparc
+	{"sparc", NULL},
+#endif
 #endif
 #ifdef hpux
 	{"hpux", NULL},

@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_server.h,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_server.h,v 1.18 1989-09-08 15:35:04 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_server.h,v 1.19 1989-12-28 17:03:37 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
@@ -100,3 +100,7 @@ extern int newqueries, oldqueries;
 #define GROGGY 3
 extern int dormant;
 
+/* state for the incremental update system */
+extern int inc_running, inc_pid;
+extern time_t inc_started, now;
+#define INC_TIMEOUT (3 * 60)	/* 3 minutes */

@@ -250,7 +250,7 @@ INSTALLRAW= install
 LD=ld			/* The name of the target's linker */
 
 #ifdef SOLARIS
-CC=gcc -traditional
+CC=gcc
 #else
 #ifdef _AIX
 #ifdef i386

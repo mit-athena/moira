@@ -1,5 +1,6 @@
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/Makefile,v 1.7 1989-09-18 12:00:11 mar Exp $
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/Makefile,v 1.8 1990-01-12 16:29:07 mar Exp $
 
+SRCS= passwd.c aliases.c hesiod.c nfs.c mailhub.c mitdir.c util.c
 LIBS= -L../lib -lsms -lcom_err -lzephyr -lkrb -ldes \
 	 /usr/rtingres/lib/libqlib /usr/rtingres/lib/compatlib
 CFLAGS= -I../include -O
@@ -9,7 +10,7 @@ CFLAGS= -I../include -O
 	rm -f $*.c
 	/usr/rtingres/bin/eqc -p $*
 
-all: passwd.gen aliases.gen hesiod.gen nfs.gen mailhub.gen
+all: passwd.gen aliases.gen hesiod.gen nfs.gen mailhub.gen mitdir.gen
 
 passwd.gen: passwd.o util.o
 	cc -o passwd.gen passwd.o util.o ${LIBS}
@@ -36,6 +37,11 @@ mailhub.gen: mailhub.o util.o
 
 mailhub.o: mailhub.c
 
+mitdir.gen: mitdir.o util.o
+	cc -o mitdir.gen mitdir.o util.o ${LIBS}
+
+mitdir.o: mitdir.c
+
 clean:
 	rm -f *.o 
 	rm -f passwd.c passwd.gen
@@ -43,6 +49,7 @@ clean:
 	rm -f hesiod.c hesiod.gen
 	rm -f nfs.c nfs.gen
 	rm -f mailhub.c mailhub.gen
+	rm -f mitdir.c mitdir.gen
 
 install: all
 	install -c passwd.gen ../bin
@@ -55,3 +62,41 @@ install: all
 	install -c install_quotas ../bin
 	install -c nfs.sh ../bin
 	install -c passwd.sh ../bin
+	install -c zero_quotas ../bin
+
+depend:	${SRCS}
+	mkdep ${CFLAGS} ${SRCS}
+
+# DO NOT DELETE THIS LINE -- mkdep uses it.
+
+passwd.o: passwd.c ../include/mit-copyright.h /usr/include/stdio.h
+passwd.o: ../include/sms.h ../include/sms_et.h /usr/include/sys/types.h
+passwd.o: /usr/include/sys/stat.h /usr/include/sys/time.h
+passwd.o: /usr/include/sys/time.h
+aliases.o: aliases.c ../include/mit-copyright.h /usr/include/stdio.h
+aliases.o: /usr/include/string.h /usr/include/strings.h ../include/sms.h
+aliases.o: ../include/sms_et.h ../include/sms_app.h /usr/include/sys/types.h
+aliases.o: /usr/include/sys/stat.h /usr/include/sys/time.h
+aliases.o: /usr/include/sys/time.h
+hesiod.o: hesiod.c ../include/mit-copyright.h /usr/include/stdio.h
+hesiod.o: ../include/sms.h ../include/sms_et.h ../include/sms_app.h
+hesiod.o: /usr/include/sys/types.h /usr/include/sys/stat.h
+hesiod.o: /usr/include/sys/time.h /usr/include/sys/time.h
+hesiod.o: /usr/include/ctype.h
+nfs.o: nfs.c ../include/mit-copyright.h /usr/include/stdio.h ../include/sms.h
+nfs.o: ../include/sms_et.h ../include/sms_app.h /usr/include/sys/types.h
+nfs.o: /usr/include/sys/stat.h /usr/include/sys/time.h
+nfs.o: /usr/include/sys/time.h
+mailhub.o: mailhub.c ../include/mit-copyright.h /usr/include/stdio.h
+mailhub.o: /usr/include/string.h /usr/include/strings.h /usr/include/ctype.h
+mailhub.o: ../include/sms.h ../include/sms_et.h ../include/sms_app.h
+mailhub.o: /usr/include/sys/types.h /usr/include/sys/stat.h
+mailhub.o: /usr/include/sys/time.h /usr/include/sys/time.h
+mitdir.o: mitdir.c ../include/mit-copyright.h /usr/include/stdio.h
+mitdir.o: /usr/include/string.h /usr/include/strings.h ../include/sms.h
+mitdir.o: ../include/sms_et.h ../include/sms_app.h /usr/include/sys/types.h
+mitdir.o: /usr/include/sys/stat.h /usr/include/sys/time.h
+mitdir.o: /usr/include/sys/time.h
+util.o: util.c ../include/mit-copyright.h /usr/include/stdio.h
+util.o: /usr/include/sys/time.h /usr/include/sys/time.h ../include/sms.h
+util.o: ../include/sms_et.h ../include/sms_app.h

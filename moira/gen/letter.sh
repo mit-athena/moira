@@ -1,5 +1,5 @@
 #!/bin/sh
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/letter.sh,v 1.2 1992-06-22 11:02:58 mar Exp $
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/letter.sh,v 1.3 1992-06-23 17:05:45 mar Exp $
 # This script prints the letters confirming registration for the extra
 # kerberos principal.
 
@@ -8,7 +8,7 @@
 # today's is appended to yesterday's and we continue working with that.
 
 PATH=/bin:/bin/athena:/usr/ucb:/usr/bin/athena:/usr/athena; export PATH
-printer=nil
+printer=linus
 newfile=/tmp/letter.out
 savefile=/u1/letter.save
 

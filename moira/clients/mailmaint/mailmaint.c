@@ -1,6 +1,6 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v 1.34 1995-10-26 22:46:19 jweiss Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v 1.35 1997-01-29 23:01:15 danw Exp $
  */
 
 /*  (c) Copyright 1988 by the Massachusetts Institute of Technology. */
@@ -8,8 +8,8 @@
 /*  <mit-copyright.h>. */
 
 #ifndef lint
-static char rcsid_mailmaint_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v 1.34 1995-10-26 22:46:19 jweiss Exp $";
-#endif lint
+static char rcsid_mailmaint_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v 1.35 1997-01-29 23:01:15 danw Exp $";
+#endif
 
 /***********************************************************************/
 /*  mailmaint.c - pjlevine - 20 August 1987 
@@ -22,7 +22,11 @@ static char rcsid_mailmaint_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/
 #include <string.h>
 #include <curses.h>
 #include <sys/types.h>
+#ifdef __STDC__
+#include <stdarg.h>
+#else
 #include <varargs.h>
+#endif
 #include <com_err.h>
 #include <ctype.h>
 #include <moira.h>
@@ -975,7 +979,7 @@ menu_err_hook(who, code, fmt, args)
 	while (*cp)
 	    cp++;
     }
-#if defined(AIX386) || defined(sun)
+#ifdef HAS_VSPRINTF
     vsprintf(cp, fmt, args);
 #else
     /* can do this because we never pass more than 1 arg here anyway... */

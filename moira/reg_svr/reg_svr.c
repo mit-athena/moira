@@ -1,7 +1,7 @@
 /*
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.23 1989-08-16 21:50:29 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.24 1989-08-25 11:27:01 mar Exp $
  *
  *      Copyright (C) 1987, 1988 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -16,7 +16,7 @@
  */
 
 #ifndef lint
-static char *rcsid_reg_svr_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.23 1989-08-16 21:50:29 mar Exp $";
+static char *rcsid_reg_svr_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.24 1989-08-25 11:27:01 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -29,6 +29,8 @@ extern char admin_errmsg[];
 
 static char krbhst[BUFSIZ];	/* kerberos server name */
 static char krbrealm[REALM_SZ];	/* kerberos realm name */
+void reg_com_err_hook();
+
 
 main(argc,argv)
   int argc;
@@ -52,6 +54,8 @@ main(argc,argv)
     
     /* Error messages sent one line at a time */
     setlinebuf(stderr);
+    setlinebuf(stdout);
+    set_com_err_hook(reg_com_err_hook);
     
     /* Initialize user registration error table for com_err */
     init_ureg_err_tbl();
@@ -111,9 +115,12 @@ main(argc,argv)
 	    status = reserve_user(&message,retval);
 	    break;
 	  case UREG_SET_PASSWORD:
+	  case UREG_GET_KRB:
 	    status = set_password(&message,retval);
 	    break;
-	    
+	  case UREG_SET_IDENT:
+	    status = set_identity(&message,retval);
+	    break;
 	  default:
 	    status = UREG_UNKNOWN_REQUEST;
 	    critical_alert(FAIL_INST,"Unknown request %d from userreg.",
@@ -398,11 +405,16 @@ int verify_user(message,retval)
 	      case US_NOT_ALLOWED:
 		status = UREG_NOT_ALLOWED;
 		break;
-
+	      case US_ENROLLED:
+		status = UREG_ENROLLED;
+		break;
+	      case US_ENROLL_NOT_ALLOWED:
+		status = UREG_ENROLL_NOT_ALLOWED;
+		break;
 	      default:
 		status = UREG_MISC_ERROR;
-		critical_alert(FAIL_INST,"Bad user state for login %s.",
-			       message->db.login);
+		critical_alert(FAIL_INST,"Bad user state %d for login %s.",
+			       message->db.reg_status, message->db.login);
 		break;
 	    }
 	    /* Set retval to the login name so that the client can use
@@ -571,20 +583,28 @@ int reserve_user(message,retval)
     return status;
 }
 
-int set_final_status(login)
-  char *login;
+int set_final_status(message)
+struct msg *message;
     /* This routine updates a user's registration status to fully 
        registered. */
 {
+    char *login;
     char *q_name;		/* Name of SMS query */
     int q_argc;			/* Number of arguments for SMS query */
     char *q_argv[2];		/* Arguments to get user by uid */
     char state[7];		/* Can hold a 16 bit integer */
     int status;			/* Error status */
 
-    com_err(whoami, 0, "Setting final status for %s", login);
+    if (message->request == UREG_SET_PASSWORD)
+      (void) sprintf(state,"%d",US_REGISTERED);
+    else if (message->db.reg_status == US_NO_LOGIN_YET)
+      (void) sprintf(state,"%d",US_ENROLLED);
+    else
+      (void) sprintf(state,"%d",US_ENROLL_NOT_ALLOWED);
 
-    (void) sprintf(state,"%d",US_REGISTERED);
+    login = message->db.login;
+    com_err(whoami, 0, "Setting final status for %s to %s", login, state);
+
     q_name = "update_user_status";
     q_argc = 2;
     q_argv[0] = login;
@@ -630,9 +650,145 @@ int set_password(message,retval)
 	    (void) strcpy(retval,message->db.login);
 	else
 	    /* Otherwise, mark user as finished. */
-	    status = set_final_status(message->db.login);
+	    status = set_final_status(message);
     }
     com_err(whoami, status, " returned from set_passwd");
     
     return status;
+}
+
+
+int getuserinfo(argc, argv, qargv)
+int argc;
+char **argv;
+char **qargv;
+{
+    int status = SUCCESS;
+
+    if (argc != U_END) {
+	critical_alert(FAIL_INST,
+		       "Wrong number of args returned from get_user_by_uid");
+	status = SMS_ABORT;
+    } else {
+	qargv[U_NAME] = strsave(argv[U_NAME]);
+	qargv[U_UID+1] = strsave(argv[U_UID]);
+	qargv[U_SHELL+1] = strsave(argv[U_SHELL]);
+	qargv[U_LAST+1] = strsave(argv[U_LAST]);
+	qargv[U_FIRST+1] = strsave(argv[U_FIRST]);
+	qargv[U_MIDDLE+1] = strsave(argv[U_MIDDLE]);
+	qargv[U_STATE+1] = strsave(argv[U_STATE]);
+	qargv[U_MITID+1] = strsave(argv[U_MITID]);
+	qargv[U_CLASS+1] = strsave(argv[U_CLASS]);
+	qargv[U_MODTIME+1] = NULL;
+    }
+    return(status);
+}
+
+
+int set_identity(message,retval)
+struct msg *message;
+char *retval;
+{
+    int q_argc;			/* Number of arguments to query */
+    char *q_argv[U_END];	/* Arguments to SMS query */
+    char *q_name;		/* Name of SMS query */
+    int status = SUCCESS;	/* General purpose error status */
+    char fstype_buf[7];		/* Buffer to hold fs_type, a 16 bit number */
+    char *login;		/* The login name the user wants */
+    register int i;		/* A counter */
+
+    /* Log that we are about to reserve a user. */
+    com_err(whoami, 0, "set_identity %s %s", 
+	    message->first, message->last);
+    
+    /* Check to make sure that we can verify this user. */
+    status = verify_user(message,retval);
+    if (status == SUCCESS || status == UREG_NOT_ALLOWED)
+    {
+	status = SUCCESS;
+	/* Get the requested login name from leftover packet information. */
+	login = message->leftover;
+
+	/* Check the login name for validity.  The login name is currently
+	   is allowed to contain lowercase letters and numbers in any
+	   position and underscore characters in any position but the 
+	   first. */
+	if ((strlen(login) < MIN_UNAME) || (strlen(login) > MAX_UNAME))
+	    status = UREG_INVALID_UNAME;
+    }
+    if (status == SUCCESS)
+	if (login[1] == '_')
+	    status = UREG_INVALID_UNAME;
+    if (status == SUCCESS)
+    {
+	for (i = 0; i < strlen(login); i++)
+	    if (!islower(login[i]) && !isdigit(login[i]) && 
+		(login[i] != '_'))
+	    {
+		status = UREG_INVALID_UNAME;
+		break;
+	    }
+    }
+    if (status == SUCCESS)
+    {
+	/* Now that we have a valid user with a valid login... */
+
+	q_argv[0] = message->db.uid;
+	status = sms_query("get_user_by_uid", 1, q_argv, getuserinfo, q_argv);
+	if (status != SUCCESS) {
+	    com_err(whoami, status, " while getting user info");
+	    return(status);
+	}
+	q_argv[U_NAME+1] = login;
+	status = sms_query("update_user", U_MODTIME+1, q_argv,
+			   null_callproc, NULL);
+	switch (status)
+	{
+	  case SMS_SUCCESS:
+	    status = SUCCESS;
+	    break;
+	  case SMS_IN_USE:
+	    status = UREG_LOGIN_USED;
+	    break;
+	  default:
+	    critical_alert(FAIL_INST,"%s returned from update_user.",
+			   error_message(status));
+	    status = UREG_MISC_ERROR;
+	    break;
+	}
+    }
+    if (status == SUCCESS)
+    {
+	/* SMS login was successfully created; try to reserve kerberos
+	   principal. */
+	/* If this routine fails, store the login in the retval so
+	   that it can be used in the client-side error message. */
+	if ((status = do_admin_call(login, "", message->db.uid)) != SUCCESS)
+	    (void) strcpy(retval, login);
+    }
+
+    com_err(whoami, status, " returned from set_identity");
+    
+    return status;
+}
+
+
+void reg_com_err_hook(whoami, code, fmt, pvar)
+	char *whoami;
+	int code;
+	char *fmt;
+	caddr_t pvar;
+{
+	if (whoami) {
+		fputs(whoami, stderr);
+		fputs(": ", stderr);
+	}
+	if (code) {
+		fputs(error_message(code), stderr);
+	}
+	if (fmt) {
+		_doprnt(fmt, pvar, stderr);
+	}
+	putc('\n', stderr);
+	fflush(stderr);
 }

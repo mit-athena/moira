@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_connect.c,v $
  *	$Author: wesommer $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_connect.c,v 1.6 1987-08-02 21:48:08 wesommer Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_connect.c,v 1.7 1987-09-03 03:19:45 wesommer Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_sms_connect_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_connect.c,v 1.6 1987-08-02 21:48:08 wesommer Exp $";
+static char *rcsid_sms_connect_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/mr_connect.c,v 1.7 1987-09-03 03:19:45 wesommer Exp $";
 #endif lint
 
 #include "sms_private.h"
@@ -36,6 +36,7 @@ int sms_connect()
 	return errno;
     if (connection_status(_sms_conn) == CON_STOPPED) {
 	register status = connection_errno(_sms_conn);
+	if (!status) status = SMS_CANT_CONNECT;
 	sms_disconnect();
 	return status;
     }

@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase3.dc,v 1.1 1992-11-19 23:51:38 genoa Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase3.dc,v 1.2 1993-01-12 22:11:20 genoa Exp $
  *
  *  (c) Copyright 1988 by the Massachusetts Institute of Technology.
  *  For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
 
 #define NULL 0
 
-static char phase3_qc_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase3.dc,v 1.1 1992-11-19 23:51:38 genoa Exp $";
+static char phase3_qc_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase3.dc,v 1.2 1993-01-12 22:11:20 genoa Exp $";
 
 
 empty_list_check(id, l, hint)
@@ -62,7 +62,7 @@ struct machine *m;
 
 
 phase3()
-##{
+{
     printf("Phase 3 - Finding unused objects\n");
 
     if (warn) {
@@ -76,5 +76,5 @@ phase3()
     dprintf("Checking strings...\n");
     hash_step(strings, unref_string_check, NULL);
 
-##}
+}
 

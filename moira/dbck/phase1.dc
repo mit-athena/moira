@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase1.dc,v 1.1 1992-11-19 23:50:41 genoa Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase1.dc,v 1.2 1993-01-12 22:11:20 genoa Exp $
  *
  *  (c) Copyright 1988 by the Massachusetts Institute of Technology.
  *  For copying and distribution information, please see the file
@@ -8,8 +8,10 @@
 #include <mit-copyright.h>
 #include <moira.h>
 #include "dbck.h"
+EXEC SQL INCLUDE sqlca;
 
-static char phase1_qc_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase1.dc,v 1.1 1992-11-19 23:50:41 genoa Exp $";
+
+static char phase1_qc_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase1.dc,v 1.2 1993-01-12 22:11:20 genoa Exp $";
 
 
 show_user_id(u)
@@ -26,7 +28,8 @@ struct save_queue *sq;
     struct user *u, *uu, *tmp;
 
     uu = (struct user *)0;
-    while (sq_get_data(sq, &u)) {
+    if(sq_get_data(sq,&uu)) {
+      while (sq_get_data(sq, &u)) {
 	if (!strcmp(u->login, uu->login)) {
 	    if (uu->status == 1 || u->status == 0) {
 		tmp = u;
@@ -41,21 +44,26 @@ struct save_queue *sq;
 		single_fix("Delete the second one")) {
 		single_delete("users", "users_id", uu->users_id);
 	    } else if (single_fix("Unregister the second one"))
-##	      {
-##    		int id = uu->users_id, rowcount;
+	      {
+		EXEC SQL BEGIN DECLARE SECTION; 
+    		int id = uu->users_id, rowcount;
+		EXEC SQL END DECLARE SECTION; 
 
-##		replace users (login = "#"+text(users.uid), status = 0)
-##		    where users.users_id = id
-##		inquire_equel(rowcount = "rowcount")
+/*		replace users (login = "#"+text(users.uid), status = 0)
+ *		    where users.users_id = id */
+		EXEC SQL UPDATE users SET login = '#'+CHAR(users.uid),
+		    status=0 WHERE users_id = :id;
+		EXEC SQL INQUIRE_SQL(:rowcount = rowcount);
     		if (rowcount > 0)
 		  printf("%d entr%s fixed\n", rowcount, rowcount==1?"y":"ies");
 		else
 		  printf("Not fixed\n");
 		modified("users");
-##	    }
+	      }
 	} else {
 	    uu = u;
 	}
+      }
     }
 }
 
@@ -174,9 +182,11 @@ struct string *s;
 
 
 phase1()
-##{
-##  char name[81], name1[81], last[17], first[17], buf[257];
-##  int id, id2, id3, aid, aid2, status, sid, sid2, sid3, sid4, sid5;
+{
+    EXEC SQL BEGIN DECLARE SECTION; 
+    char name[81], name1[81], last[17], first[17], buf[257];
+    int id, id2, id3, aid, aid2, status, sid, sid2, sid3, sid4, sid5;
+    EXEC SQL END DECLARE SECTION; 
     struct save_queue *sq;
     struct user *u;
     struct machine *m;
@@ -191,8 +201,16 @@ phase1()
     dprintf("Loading strings...\n");
     sq = sq_create();
     strings = create_hash(5000);
-##  range of s is strings
-##  retrieve (id = s.string_id, buf = s.string) {
+/*  range of s is strings 
+ *  retrieve (id = s.string_id, buf = s.string) { 
+ */
+    EXEC SQL DECLARE csr101 CURSOR FOR
+      SELECT string_id, string FROM strings;
+    EXEC SQL OPEN csr101;
+    while(1) {
+	EXEC SQL FETCH csr101 INTO :id, :buf;
+	if(sqlca.sqlcode != 0) break;
+
     	s = (struct string *) malloc(sizeof(struct string));
 	if (s == NULL)
 	  out_of_mem("storing strings");
@@ -203,18 +221,29 @@ phase1()
 	    sq_save_data(sq, hash_lookup(strings, id));
 	    sq_save_data(sq, s);
 	}
-##  }
+    }
+    EXEC SQL CLOSE csr101;
     generic_delete(sq, show_str_id, "strings", "string_id", 0);
     string_check(0);
 
     dprintf("Loading users...\n");
     sq = sq_create();
     users = create_hash(10000);
-##  range of u is users
-##  retrieve (id = u.users_id, name = u.login, last = u.#last,
-##	      first = u.#first, status = u.#status, buf = u.potype,
-##	      id2 = u.pop_id, id3 = u.box_id, sid = u.modby, sid2 = u.fmodby,
-##	      sid3 = u.pmodby, sid4 = u.comment, sid5 = u.sigwho) {
+/*  range of u is users
+ *  retrieve (id = u.users_id, name = u.login, last = u.#last,
+ *	      first = u.#first, status = u.#status, buf = u.potype,
+ *	      id2 = u.pop_id, id3 = u.box_id, sid = u.modby, sid2 = u.fmodby,
+ *	      sid3 = u.pmodby, sid4 = u.comment, sid5 = u.sigwho) {
+ */
+    EXEC SQL DECLARE csr102 CURSOR FOR 
+      SELECT users_id, login, last, first, status, potype, pop_id, box_id,
+	  modby, fmodby, pmodby, comment, sigwho FROM users;
+    EXEC SQL OPEN csr102;
+    while(1) {
+	EXEC SQL FETCH csr102 INTO :id, :name, :last, :first, :status,
+            :buf, :id2, :id3, :sid, :sid2, :sid3, :sid4, :sid5;
+	if(sqlca.sqlcode != 0) break;
+
     	u = (struct user *) malloc(sizeof(struct user));
 	if (u == NULL)
 	  out_of_mem("storing users");
@@ -248,23 +277,41 @@ phase1()
 	  string_check(sid4);
 	if (sid5)
 	  string_check(sid5);
-##  }
+    }
+    EXEC SQL CLOSE csr102; 
+
     generic_fix(sq, show_user_id, "Change ID", fix_user_id, 0);
 
     if (!fast) {
 	sq = sq_create();
-##	retrieve (id = u.users_id)
-##	    where u.login = users.login and u.tid != users.tid {
-	  sq_save_data(sq, hash_lookup(users, id));
-##	}
+/*	retrieve (id = u.users_id)
+ *	    where u.login = users.login and u.tid != users.tid {
+ */
+	EXEC SQL DECLARE csr103 CURSOR FOR 
+	    SELECT users_id FROM users;
+	EXEC SQL OPEN csr103;
+	while(1) {
+	    EXEC SQL FETCH csr103 INTO :id;
+	    if(sqlca.sqlcode != 0) break;
+	    sq_save_data(sq, hash_lookup(users, id));
+	}
+	EXEC SQL CLOSE csr103; 
 	handle_duplicate_logins(sq);
     }
 
     dprintf("Loading machines...\n");
     machines = create_hash(1000);
     sq = sq_create();
-##  range of m is machine
-##  retrieve (id = m.mach_id, name = m.#name, sid = m.modby) {
+/*  range of m is machine
+ *  retrieve (id = m.mach_id, name = m.#name, sid = m.modby) {
+ */
+    EXEC SQL DECLARE csr104 CURSOR FOR
+	SELECT mach_id, name, modby FROM machine;
+    EXEC SQL OPEN csr104;
+    while(1) {
+	EXEC SQL FETCH csr104 INTO :id, :name, :sid;
+	if(sqlca.sqlcode != 0) break; 
+
     	m = (struct machine *) malloc(sizeof(struct machine));
 	if (m == NULL)
 	  out_of_mem("storing machines");
@@ -277,23 +324,42 @@ phase1()
 	}
 	if (sid < 0)
 	  string_check(-sid);
-##  }
+    }
+    EXEC SQL CLOSE csr104; 
     generic_fix(sq, show_mach_id, "Change ID", fix_mach_id, 0);
 
     if (!fast) {
 	sq = sq_create();
-##	retrieve (id = m.mach_id)
-##	    where m.#name = machine.#name and m.tid != machine.tid {
-	  sq_save_data(sq, hash_lookup(machines, id));
-##	}
+/*	retrieve (id = m.mach_id)
+ *	    where m.#name = machine.#name and m.tid != machine.tid {
+ */
+	EXEC SQL DECLARE csr105 CURSOR FOR
+	    SELECT m1.mach_id FROM machine m1, machine m2
+		WHERE m1.name = m2.name AND m1.tid != m2.tid;
+	EXEC SQL OPEN csr105;
+	while(1) {
+	    EXEC SQL FETCH csr105 INTO :id;
+	    if(sqlca.sqlcode != 0) break; 
+
+	    sq_save_data(sq, hash_lookup(machines, id));
+	}
+	EXEC SQL CLOSE csr105; 
 	generic_fix(sq, show_mach_name, "Change name", cant_fix, 0);
     }	
 
     dprintf("Loading clusters...\n");
     sq = sq_create();
     clusters = create_hash(100);
-##  range of c is cluster
-##  retrieve (id = c.clu_id, name = c.#name, sid = c.modby) {
+/*  range of c is cluster
+ *  retrieve (id = c.clu_id, name = c.#name, sid = c.modby) {
+ */
+    EXEC SQL DECLARE csr106 CURSOR FOR
+	SELECT clu_id, name, modby FROM cluster;
+    EXEC SQL OPEN csr106;
+    while(1) {
+	EXEC SQL FETCH csr106 INTO :id, :name, :sid;
+	if(sqlca.sqlcode != 0) break; 
+
     	c = (struct cluster *) malloc(sizeof(struct cluster));
 	if (c == NULL)
 	  out_of_mem("storing clusters");
@@ -305,24 +371,42 @@ phase1()
 	}
 	if (sid < 0)
 	  string_check(-sid);
-##  }
+    }
+    EXEC SQL CLOSE csr106; 
     generic_fix(sq, show_clu_id, "Change ID", fix_clu_id, 0);
 
     if (!fast) {
 	sq = sq_create();
-##	retrieve (id = c.clu_id)
-##	    where c.#name = cluster.#name and c.tid != cluster.tid {
-    	  sq_save_data(sq, hash_lookup(clusters, id));
-##	}
+/*	retrieve (id = c.clu_id)
+ *	    where c.#name = cluster.#name and c.tid != cluster.tid {
+ */
+	EXEC SQL DECLARE csr107 CURSOR FOR
+	    SELECT clu_id FROM cluster c1, cluster c2
+		WHERE c1.name=c2.name AND c1.tid != c2.tid;
+	EXEC SQL OPEN csr107;
+	while(1) {
+	    EXEC SQL FETCH csr107 INTO :id;
+	    if(sqlca.sqlcode != 0) break; 
+
+	    sq_save_data(sq, hash_lookup(clusters, id));
+	}
+	EXEC SQL CLOSE csr107; 
 	generic_fix(sq, show_clu_name, "Change name", cant_fix, 0);
     }
 
     dprintf("Loading lists...\n");
     sq = sq_create();
     lists = create_hash(10000);
-##  range of l is list
-##  retrieve (id = l.list_id, name = l.#name,
-##	      aid = l.acl_id, buf = l.acl_type, sid = l.modby) {
+/*  range of l is list
+ *  retrieve (id = l.list_id, name = l.#name,
+ *	      aid = l.acl_id, buf = l.acl_type, sid = l.modby) {
+ */
+    EXEC SQL DECLARE csr108 CURSOR FOR
+	SELECT list_id, name, acl_id, acl_type, modby  FROM list;
+    EXEC SQL OPEN csr108;
+    while(1) {
+	EXEC SQL FETCH csr108 INTO :id, :name, :aid, :buf, :sid;
+	if(sqlca.sqlcode != 0) break; 								    
     	l = (struct list *) malloc(sizeof(struct list));
 	if (l == NULL)
 	  out_of_mem("storing lists");
@@ -337,25 +421,46 @@ phase1()
 	}
 	if (sid < 0)
 	  string_check(-sid);
-##  }
+    }
+    EXEC SQL CLOSE csr108; 
     generic_fix(sq, show_list_id, "Change ID", fix_list_id, 0);
 
     if (!fast) {
 	sq = sq_create();
-##	retrieve (id = l.list_id)
-##	    where l.#name = list.#name and l.tid != list.tid {
-	  sq_save_data(sq, hash_lookup(lists, id));
-##	}
+/*	retrieve (id = l.list_id)
+ *	    where l.#name = list.#name and l.tid != list.tid {
+ */
+	EXEC SQL DECLARE csr109 CURSOR FOR
+	    SELECT list_id FROM list l1, list l2
+		WHERE l1.name=l2.name AND l1.tid != l2.tid;
+	EXEC SQL OPEN csr109;
+	while(1) {
+	    EXEC SQL FETCH csr109 INTO :id;
+	    if(sqlca.sqlcode != 0) break; 
+	    
+	    sq_save_data(sq, hash_lookup(lists, id));
+	}
+	EXEC SQL CLOSE csr109;
 	generic_fix(sq, show_list_name, "Change name", cant_fix, 0);
     }
 
     dprintf("Loading filesys...\n");
     sq = sq_create();
     filesys = create_hash(10000);
-##  retrieve (id = filesys.filsys_id, name = filesys.label, aid = filesys.owner,
-##	      aid2 = filesys.owners, id2 = filesys.phys_id,
-##	      id3 = filesys.mach_id, buf = filesys.type,
-##	      name1 = filesys.#name, sid = filesys.modby) {
+/*  retrieve (id = filesys.filsys_id, name = filesys.label, aid = filesys.owner,
+ *	      aid2 = filesys.owners, id2 = filesys.phys_id,
+ *	      id3 = filesys.mach_id, buf = filesys.type,
+ *	      name1 = filesys.#name, sid = filesys.modby) {
+ */
+    EXEC SQL DECLARE csr110 CURSOR FOR
+	SELECT filsys_id, label, owner, owners, phys_id, mach_id,
+	        type, name, modby FROM filesys;
+    EXEC SQL OPEN csr110;
+    while(1) {
+	EXEC SQL FETCH csr110 INTO :id, :name, :aid, :aid2, :id2, :id3, 
+	    :buf, :name1, :sid;
+	if(sqlca.sqlcode != 0) break;
+
     	f = (struct filesys *) malloc(sizeof(struct filesys));
 	if (f == NULL)
 	  out_of_mem("storing filesystems");
@@ -373,15 +478,25 @@ phase1()
 	}
 	if (sid < 0)
 	  string_check(-sid);
-##  }
+    }
+    EXEC SQL CLOSE csr110;
+
     generic_fix(sq, show_fs_id, "Change ID", fix_fs_id, 0);
 
     dprintf("Loading nfsphys...\n");
     sq = sq_create();
     nfsphys = create_hash(500);
-##  retrieve (id = nfsphys.nfsphys_id, name = nfsphys.dir,
-##	      id2 = nfsphys.mach_id, id3 = nfsphys.allocated,
-##	      sid = nfsphys.modby) {
+/*  retrieve (id = nfsphys.nfsphys_id, name = nfsphys.dir,
+ *	      id2 = nfsphys.mach_id, id3 = nfsphys.allocated,
+ *	      sid = nfsphys.modby) {
+ */
+    EXEC SQL DECLARE csr111 CURSOR FOR
+	SELECT nfsphys_id, dir, mach_id, allocated, modby FROM nfsphys;
+    EXEC SQL OPEN csr111;
+    while(1) {
+	EXEC SQL FETCH csr111 INTO :id, :name, :id2, :id3, :sid;
+	if(sqlca.sqlcode != 0) break; 
+
     	n = (struct nfsphys *) malloc(sizeof(struct nfsphys));
 	if (n == NULL)
 	  out_of_mem("storing nfsphys");
@@ -396,31 +511,63 @@ phase1()
 	}
 	if (sid < 0)
 	  string_check(-sid);
-##  }
+    }
+    EXEC SQL CLOSE csr111;
+
     generic_fix(sq, show_np_id, "Change ID", fix_np_id, 0);
 
     if (!fast) {
-##	range of s is strings
-##	retrieve (id = s.string_id, buf = s.string)
-##	    where s.string = strings.string and s.tid != strings.tid {
-	  printf("String %s(%d) is a duplicate!\n", strtrim(buf), id);
-	  printf("Not fixing this error\n");
-##	}
+/*	range of s is strings
+ *	retrieve (id = s.string_id, buf = s.string)
+ *	    where s.string = strings.string and s.tid != strings.tid {
+ */
+	EXEC SQL DECLARE csr112 CURSOR FOR
+	    SELECT s1.string_id, s1.string FROM strings s1, strings s2
+		WHERE s1.string=s2.string AND s1.tid != s2.tid;
+	EXEC SQL OPEN csr112;
+	while(1) {
+	    EXEC SQL FETCH csr112 INTO :id, :buf;
+	    if(sqlca.sqlcode != 0) break; 
+
+	    printf("String %s(%d) is a duplicate!\n", strtrim(buf), id);
+	    printf("Not fixing this error\n");
+	}
+	EXEC SQL CLOSE csr112;
     }
 
     if (!fast) {
 	dprintf("Scanning krbmap...\n");
-##	range of k is krbmap
-##	retrieve (id = k.users_id)
-##	    where k.users_id = krbmap.users_id and k.tid != krbmap.tid {
-    	  printf("User %d is in the krbmap more than once!\n", id);
-	  printf("Not fixing this error\n");
-##	}
-##	retrieve (id = k.string_id)
-##	    where k.string_id = krbmap.string_id and k.tid != krbmap.tid {
-    	  printf("Principal %d is in the krbmap more than once!\n", id);
-	  printf("Not fixing this error\n");
-##	}
-    }
-##}
+/*	range of k is krbmap
+ *	retrieve (id = k.users_id)
+ *	    where k.users_id = krbmap.users_id and k.tid != krbmap.tid {
+ */
+	EXEC SQL DECLARE csr113 CURSOR FOR
+	    SELECT k1.users_id FROM krbmap k1, krbmap k2
+		WHERE k1.users_id = k2.users_id AND k1.tid != k2.tid;
+	EXEC SQL OPEN csr113;
+	while(1) {
+	    EXEC SQL FETCH csr113 INTO :id;
+	    if(sqlca.sqlcode != 0) break; 
 
+	    printf("User %d is in the krbmap more than once!\n", id);
+	    printf("Not fixing this error\n");
+	}
+	EXEC SQL CLOSE csr113; 
+
+/*	retrieve (id = k.string_id)
+ *	    where k.string_id = krbmap.string_id and k.tid != krbmap.tid {
+ */
+	EXEC SQL DECLARE csr114 CURSOR FOR
+	    SELECT k1.string_id FROM krbmap k1, krbmap k2
+		WHERE k1.string_id = k2.string_id AND k1.tid != k2.tid;
+	EXEC SQL OPEN csr114;
+	while(1) {
+	    EXEC SQL FETCH csr114 INTO :id;
+	    if(sqlca.sqlcode != 0) break; 
+
+	    printf("Principal %d is in the krbmap more than once!\n", id);
+	    printf("Not fixing this error\n");
+	}
+	EXEC SQL CLOSE csr114; 
+    }
+}

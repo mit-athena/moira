@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/dbck.dc,v 1.1 1992-11-19 23:49:54 genoa Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/dbck.dc,v 1.2 1993-01-12 22:11:20 genoa Exp $
  *
  * Moira database consistency checker
  *
@@ -14,17 +14,19 @@
 #include "dbck.h"
 
 
-static char dbck_qc_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/dbck.dc,v 1.1 1992-11-19 23:49:54 genoa Exp $";
+static char dbck_qc_rcsid[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/dbck.dc,v 1.2 1993-01-12 22:11:20 genoa Exp $";
 
 
 int debug = 0;
 int mode = MODE_ASK;
 int fast = 0;
 int warn = 1;
-int abort = 0;
+int abort_p = 0;
 struct hash *users, *machines, *clusters, *lists, *filesys, *nfsphys;
 struct hash *strings, *members;
-##int dcmenable;
+EXEC SQL BEGIN DECLARE SECTION; 
+int dcmenable;
+EXEC SQL END DECLARE SECTION; 
 struct save_queue *modtables, *sq_create();
 int interrupt();
 
@@ -34,11 +36,13 @@ int argc;
 char **argv;
 {
     char **arg = argv;
-##  char *database;
+EXEC SQL BEGIN DECLARE SECTION; 
+    char *database;
+EXEC SQL END DECLARE SECTION; 
     int ingerr();
     int countonly = 0;
 
-    database = "sms";
+    database = "moira";
 
     while (++arg - argv < argc) {
 	if  (**arg == '-')
@@ -98,13 +102,17 @@ char **argv;
     IIseterr(ingerr);
     printf("Opening database %s...", database);
     fflush(stdout);
-##  ingres database
+/*  ingres database */
+    EXEC SQL CONNECT :database;
     printf("done\n");
-##  retrieve (dcmenable = values.value) where values.name = "dcm_enable"
+/*  retrieve (dcmenable = values.value) where values.name = "dcm_enable" */
+    EXEC SQL SELECT value INTO :dcmenable FROM numvalues 
+	WHERE name='dcm_enable'; 
     dprintf("DCM disabled (was %d)\n", dcmenable);
-##  replace values (value = 0) where values.name = "dcm_enable"
+/*  replace values (value = 0) where values.name = "dcm_enable" */
+    EXEC SQL UPDATE numvalues SET value=0 WHERE name='dcm_enable';
 
-##  begin transaction
+    /* Begin transaction here. */
 
     if (!countonly) {
 	phase1();
@@ -115,7 +123,8 @@ char **argv;
     }
     phase4();
 
-##  end transaction
+    EXEC SQL COMMIT WORK;
+
     cleanup();
     printf("Done.\n");
     exit(0);
@@ -126,35 +135,41 @@ int	*num;
 {
     printf("An ingres error occuurred, code %d\n", *num);
     printf("Aborting...\n");
-    if (!abort) {
-	abort++;
-##	abort
+    if (!abort_p) {
+	abort_p++;
+	EXEC SQL ROLLBACK WORK;
     }
     exit(1);
 }
 
 
 int interrupt()
-##{
+{
     printf("Signal caught\n");
     if (prompt("Save database changes")) {
 	/* break out of a retrieve loop */
 	IIbreak();
-##	end transaction
+
+	EXEC SQL COMMIT WORK;
 	cleanup();
 	exit(0);
     }
     printf("Aborting transaction\n");
-    if (!abort) {
-	abort++;
+    if (!abort_p) {
+	abort_p++;
 	/* break out of a retrieve loop */
 	IIbreak();
-##  	abort
+	EXEC SQL ROLLBACK WORK;
     }
-##  replace values (value = dcmenable) where values.name = "dcm_enable"
-##  exit
+
+/*  replace values (value = dcmenable) where values.name = "dcm_enable" */
+    EXEC SQL UPDATE numvalues SET value=:dcmenable
+	WHERE name='dcm_enable';
+
+/*  exit */
+    /* No equivalent (?) */
     exit(0);
-##}
+}
 
 
 modified(table)
@@ -164,22 +179,30 @@ char *table;
 }
 
 cleanup()
-##{
-##  char *tab;
+{
+    EXEC SQL BEGIN DECLARE SECTION; 
+    char *tab;
+    EXEC SQL END DECLARE SECTION; 
 
     while (sq_get_data(modtables, &tab)) {
-##	replace tblstats (modtime = "now") where tblstats.table = tab
+/*	replace tblstats (modtime = "now") where tblstats.table = tab */
+	EXEC SQL REPEATED UPDATE tblstats SET modtime='now'
+	    WHERE table_name = :tab;
     }
-##  replace values (value = dcmenable) where values.name = "dcm_enable"
-##  exit
-##}
+/*  replace values (value = dcmenable) where values.name = "dcm_enable" */
+    EXEC SQL UPDATE numvalues SET value = :dcmenable
+	WHERE name='dcm_enable';
+/*  exit */
+    /* No equivalent (?) */
+}
 
 
 out_of_mem(msg)
 char *msg;
 {
     fprintf(stderr, "Out of memory while %s\n", msg);
-##  end transaction    
+/*  end transaction    */
+    EXEC SQL COMMIT WORK;
     cleanup();
     exit(1);
 }

@@ -1,9 +1,12 @@
 @Comment[
 	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/doc/tech-plan/dcm.mss,v $
-	$Author: ambar $
-	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/doc/tech-plan/dcm.mss,v 1.10 1987-06-02 15:42:45 ambar Exp $
+	$Author: pjlevine $
+	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/doc/tech-plan/dcm.mss,v 1.11 1987-06-19 11:27:34 pjlevine Exp $
 
 	$Log: not supported by cvs2svn $
+Revision 1.10  87/06/02  15:42:45  ambar
+spelling fixes.
+
 Revision 1.9  87/06/01  16:27:39  ambar
 consistency checks.
 
@@ -49,7 +52,7 @@ target service.
 
 When invoked the DCM will perform some preliminary operations to
 establish the relationship between the SMS data and each server.
-The very first time the DCM is called, a table is constructed 
+The very first time the DCM is called, a table is constructed (as a disk file) 
 describing the relationship between servers and update frequency.
 The table will be the primary mechanism used by the DCM for recognizing
 the servers which need updating at given times.  As a note here,
@@ -248,8 +251,9 @@ description of each server SMS updates.
 
 Hand created, these files hold information, in English-like syntax, 
 which the DCM uses for
-manipulating generic data into server specific form.  Accommodating new
-servers requires, simply, adding a new SDF to the system.  The purpose of
+manipulating generic data into server specific form.  Accommodating additional
+servers of primary server type requires, simply, adding 
+a new SDF to the system.  The purpose of
 the server description files is to provide a parseable, readable text files
 for determining the structure and personality of a given server.  The three
 reasons for SDF:

@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v $
- *	$Author: wesommer $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.6 1987-09-21 15:19:11 wesommer Exp $
+ *	$Author: mar $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.7 1988-02-08 15:08:15 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
@@ -11,6 +11,9 @@
  * 	admin_server, and is a server for the userreg program.
  * 
  *	$Log: not supported by cvs2svn $
+ * Revision 1.6  87/09/21  15:19:11  wesommer
+ * Allow numbers, _, and . as legal characters in the username.
+ * 
  * Revision 1.5  87/09/10  22:18:32  wesommer
  * Clean up output format.
  * 
@@ -29,7 +32,7 @@
  */
 
 #ifndef lint
-static char *rcsid_reg_svr_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.6 1987-09-21 15:19:11 wesommer Exp $";
+static char *rcsid_reg_svr_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.7 1988-02-08 15:08:15 mar Exp $";
 #endif lint
 
 #include <stdio.h>
@@ -43,9 +46,9 @@ static char *rcsid_reg_svr_c = "$Header: /afs/.athena.mit.edu/astaff/project/moi
 #include <ctype.h>
 #include "ureg_err.h"
 #include "ureg_proto.h"
-#include "../../include/sms.h"
+#include "sms.h"
 #include "admin_server.h"
-#include "admin_err.h" 
+#include "admin_err.h"
 #include <strings.h>
 
 extern void abort();

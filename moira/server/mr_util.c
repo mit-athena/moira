@@ -1,40 +1,77 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_util.c,v $
  *	$Author: wesommer $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_util.c,v 1.2 1987-06-03 16:08:07 wesommer Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_util.c,v 1.3 1987-06-04 01:35:28 wesommer Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
  *	$Log: not supported by cvs2svn $
+ * Revision 1.2  87/06/03  16:08:07  wesommer
+ * Fixes for lint.
+ * 
  * Revision 1.1  87/06/02  20:07:32  wesommer
  * Initial revision
  * 
  */
 
 #ifndef lint
-static char *rcsid_sms_util_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_util.c,v 1.2 1987-06-03 16:08:07 wesommer Exp $";
+static char *rcsid_sms_util_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_util.c,v 1.3 1987-06-04 01:35:28 wesommer Exp $";
 #endif lint
 
 #include "sms_private.h"
 #include "sms_server.h"
 
 #include <ctype.h>
-#ifdef notdef
-frequote(f, cp)
-	FILE *f;
+#include <strings.h>
+
+extern char *whoami;
+
+/*
+ * XXX WARNING! THIS DOES NO RANGE CHECKING!!!
+ * This is a temporary hack...
+ */
+char *
+requote(buf, cp)
+	char *buf;
 	register char *cp;
 {
 	register char c;
-	putc('"', f);
-	for( ; c= *cp; *cp++){
-		if (c == '\\' || c == '"') putc('\\', f);
-		if (isprint(c)) putc(c, f);
-		else fprintf(f, "\\%03o", c);
+	*buf++ = '"';
+	for( ; c= *cp; cp++){
+		if (c == '\\' || c == '"') *buf++ = '\\';
+		if (isprint(c)) *buf++ = c;
+		else {
+			sprintf(buf, "\\%03o", c);
+			buf = index(buf, '\0');
+		}
 	}
-	putc('"', f);
+	*buf++ = '"';
+	*buf = '\0';
+	return buf;
 }
-#endif notdef
-
+/*
+ * XXX WARNING! THIS DOES NO RANGE CHECKING!!!
+ * This is a temporary hack...
+ */
+log_args(argc, argv)
+	int argc;
+	char **argv;
+{
+	char buf[BUFSIZ];
+	register int i;
+	register char *bp = buf;
+	
+	for (i = 0; i < argc; i++) {
+		if (i != 0) {
+			*bp++ = ',';
+			*bp++ = ' '; 
+		}
+		bp = requote(bp, argv[i]);
+	}
+	*bp = '\0';
+	com_err(whoami, 0, buf);
+}
+	
 void sms_com_err(whoami, code, message)
 	char *whoami;
 	int code;

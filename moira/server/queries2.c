@@ -1,4 +1,4 @@
-/* $Id: queries2.c,v 2.77 2000-09-25 22:48:49 zacheiss Exp $
+/* $Id: queries2.c,v 2.78 2000-10-18 19:20:44 zacheiss Exp $
  *
  * This file defines the query dispatch table
  *
@@ -769,6 +769,14 @@ static char *gmac_fields[] = {
 
 static char *ghst_fields[] = {
   "name", "address", "location", "network",
+  "name", "vendor", "model", "os", "location", "contact", "use",
+  "status", "status_change", "network", "address", "ace_type",
+  "ace_name", "admin_comment", "ops_comment", "created", "creator",
+  "inuse", "modtime", "modby", "modwith",
+};
+
+static char *ghbh_fields[] = {
+  "hwaddr",
   "name", "vendor", "model", "os", "location", "contact", "use",
   "status", "status_change", "network", "address", "ace_type",
   "ace_name", "admin_comment", "ops_comment", "created", "creator",
@@ -3902,12 +3910,12 @@ struct query Queries[] = {
     "m",
     MACHINE_TABLE,
     "m.name, m.vendor, m.model, m.os, m.location, m.contact, m.use, m.status, TO_CHAR(m.statuschange, 'DD-mon-YYYY HH24:MI:SS'), s.name, m.address, m.owner_type, m.owner_id, m.acomment, m.ocomment, TO_CHAR(m.created, 'DD-mon-YYYY HH24:MI:SS'), m.creator, TO_CHAR(m.inuse, 'DD-mon-YYYY HH24:MI:SS'), TO_CHAR(m.modtime, 'DD-mon-YYYY HH24:MI:SS'), m.modby, m.modwith FROM machine m, subnet s",
-    ghst_fields,
+    ghbh_fields,
     21,
     "m.hwaddr LIKE LOWER('%s') AND m.mach_id != 0 AND s.snet_id = m.snet_id",
     1,
     "m.name",
-    NULL,
+    &ghst_validate,
   },
 
   {

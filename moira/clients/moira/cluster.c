@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/cluster.c,v 1.8 1988-08-07 17:02:46 qjb Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/cluster.c,v 1.9 1988-09-01 14:01:39 mar Exp $";
 #endif lint
 
 /*	This is the file cluster.c for the SMS Client, which allows a nieve
@@ -10,8 +10,8 @@
  *	By:		Chris D. Peterson
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/cluster.c,v $
- *      $Author: qjb $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/cluster.c,v 1.8 1988-08-07 17:02:46 qjb Exp $
+ *      $Author: mar $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/cluster.c,v 1.9 1988-09-01 14:01:39 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -277,7 +277,7 @@ Bool name;
 
     switch(type) {
     case MACHINE:
-	GetValueFromUser("Machine's Type:", &info[M_TYPE]);
+	GetTypeFromUser("Machine's Type", "mac_type", &info[M_TYPE]);
 	FreeAndClear(&info[M_MODTIME], TRUE);
 	FreeAndClear(&info[M_MODBY], TRUE);
 	FreeAndClear(&info[M_MODWITH], TRUE);

@@ -1,19 +1,19 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/startmoira.c,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/startmoira.c,v 1.5 1989-09-08 18:35:11 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/startmoira.c,v 1.6 1990-03-19 17:55:50 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
  *	<mit-copyright.h>.
  *
- * 	This program starts the sms server in a "clean" environment.
+ * 	This program starts the moira server in a "clean" environment.
  *	and then waits for it to exit.
  * 
  */
 
 #ifndef lint
-static char *rcsid_sms_starter_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/startmoira.c,v 1.5 1989-09-08 18:35:11 mar Exp $";
+static char *rcsid_sms_starter_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/startmoira.c,v 1.6 1990-03-19 17:55:50 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -24,9 +24,9 @@ static char *rcsid_sms_starter_c = "$Header: /afs/.athena.mit.edu/astaff/project
 #include <sys/wait.h>
 #include <sys/signal.h>
 #include <sys/ioctl.h>
-#include <sms_app.h>
+#include <moira_site.h>
 
-#define PROG	"smsd"
+#define PROG	"moirad"
 
 int rdpipe[2];
 char *sigdescr[] = {
@@ -106,7 +106,7 @@ main(argc, argv)
 	setreuid(0);
 	signal(SIGCHLD, cleanup);
 	
-	sprintf(buf, "%s/sms.log", SMS_DIR);
+	sprintf(buf, "%s/moira.log", SMS_DIR);
 	logf = open(buf, O_CREAT|O_WRONLY|O_APPEND, 0640);
 	if (logf<0) {
 		perror(buf);
@@ -141,11 +141,11 @@ main(argc, argv)
 		dup2(1,2);
 		for (i = 3; i <nfds; i++) close(i);
 		execl(buf, PROG, 0);
-		perror("cannot run smsd");
+		perror("cannot run moirad");
 		exit(1);
 	}
 	if (pid<0) {
-		perror("sms_starter");
+		perror("moira_starter");
 		exit(1);
 	}
 

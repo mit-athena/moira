@@ -38,11 +38,13 @@ authoritative information about Athena administration.
 
 @include[intro.mss]
 @include[structure.mss]
+@include[db_analysis.mss]
 @include[protocol.mss]
 @include[server.mss]
 @include[clientlib.mss]
 @include[dcm.mss]
 @include[tools.mss]
 @include[deploy.mss]
+@include[addendum.mss]
 @unnumbered[References]
 @bibliography

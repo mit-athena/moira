@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/strs.c,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/strs.c,v 1.5 1988-09-13 15:52:49 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/strs.c,v 1.6 1990-05-02 13:12:11 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -11,7 +11,7 @@
  */
 
 #ifndef lint
-static char *rcsid_strs_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/strs.c,v 1.5 1988-09-13 15:52:49 mar Exp $";
+static char *rcsid_strs_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/strs.c,v 1.6 1990-05-02 13:12:11 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -73,21 +73,3 @@ char *strtrim(save)
     *t = '\0';
     return s;
 }
-
-/*
- * Case insensitive string compare.
- */
-
-int cistrcmp(cp1, cp2)
-    char *cp1, *cp2;
-{
-    register int c1, c2;
-    
-    do {
-	if (isupper(c1 = (*cp1++))) c1 = tolower(c1);
-	if (isupper(c2 = (*cp2++))) c2 = tolower(c2);
-	if (c1 != c2) return c1-c2;
-    } while (c1 && c2);
-    return 0;
-}
-

@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.8 1988-07-30 17:29:12 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.9 1988-08-07 17:51:26 mar Exp $";
 #endif lint
 
 /*	This is the file user.c for the SMS Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.8 1988-07-30 17:29:12 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.9 1988-08-07 17:51:26 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -156,10 +156,9 @@ Bool name;
     GetValueFromUser("User's middle name", &info[U_MIDDLE]);
     GetValueFromUser("User's status", &info[U_STATE]);
     temp_ptr = Strsave(info[U_MITID]);
-    GetValueFromUser("User's MIT ID number", &temp_ptr);
+    GetValueFromUser("User's (unencrypted) MIT ID number", &temp_ptr);
     if ( strcmp( temp_ptr, info[U_MITID] ) != 0) {
-	RemoveHyphens(temp_ptr); /* zap'em */
-	EncryptMITID(temp_buf, temp_ptr, info[U_FIRST], info[U_LAST]);
+	EncryptID(temp_buf, temp_ptr, info[U_FIRST], info[U_LAST]);
 	free(info[U_MITID]);
 	info[U_MITID] = Strsave(temp_buf);
     }
@@ -333,7 +332,7 @@ GetUidNumberFromName()
     args[1] = last;
     
     switch (status = sms_query("get_user_by_name", 2, args,
-			       StoreInfo, &top)) {
+			       StoreInfo, (char *) &top)) {
     case SMS_SUCCESS:
 	break;
     case SMS_NO_MATCH:
@@ -494,6 +493,61 @@ char **argv;
     FreeQueue(elem);
     return(DM_NORMAL);
 }
+
+/*	Function Name: RealDeactivateUser
+ *	Description: sets the user's status to 3.
+ *	Arguments: info - all current information for the user fields
+ *		   one_item - indicates the user hasn't been queried yet
+ *	Returns: none.
+ */
+
+static void
+RealDeactivateUser(info, one_item)
+char ** info;
+Bool one_item;
+{
+    register int status;
+    char txt_buf[BUFSIZ];
+    char * qargs[2];
+
+    if (one_item) {
+	sprintf(txt_buf, "Deactivate user %s (y/n)", info[NAME]);
+	if (!YesNoQuestion(txt_buf, 1))
+	    return;
+    }
+
+    qargs[0] = info[NAME];
+    qargs[1] = "3";
+    if ((status = sms_query("update_user_status", 2, qargs, Scream,
+			    (char *) NULL)) != SMS_SUCCESS) {
+	com_err(program_name, status, " in update_user_status");
+	sprintf(txt_buf, "User %s not deactivated due to errors.", info[NAME]);
+	Put_message(txt_buf);
+    }
+}
+
+
+/*	Function Name: DeactivateUser
+ *	Description: sets the user's status to 3.
+ *	Arguments: argc, argv - login name of the user in argv[1].
+ *	Returns: DM_NORMAL.
+ */
+
+/* ARGSUSED */
+int
+DeactivateUser(argc, argv)
+int argc;
+char **argv;
+{
+    struct qelem * elem;
+
+    elem = GetUserInfo(LOGIN, argv[1], (char *) NULL);
+    QueryLoop(elem, NullPrint, RealDeactivateUser, "Deactivate user");
+    
+    FreeQueue(elem);
+    return(DM_NORMAL);
+}
+
 
 /* ------------------------- Top Menu ------------------------- */
 

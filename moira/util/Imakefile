@@ -1,0 +1,14 @@
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/util/Imakefile,v 1.1 1990-08-24 16:00:08 mar Exp $
+#
+# Copyright 1990 by the Massachusetts Institute of Technology.
+#
+# For copying and distribution information,
+# please see the file <mit-copyright.h>.
+#
+# Intermediate level makefile for `util' directory.
+
+#define have_subdirs
+SUBDIRS = makedepend
+CODE=Imakefile
+
+do_subdirs_no_imakefile(imake)

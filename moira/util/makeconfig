@@ -1,0 +1,50 @@
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/util/makeconfig,v 1.1 1990-08-24 16:01:20 mar Exp $
+#
+#  Copyright 1990 by the Massachusetts Institute of Technology.
+# 
+#  For copying and distribution information,
+#  please see the file <mit-copyright.h>.
+#
+# Makefile for creating a Moira configuration
+#
+# This Makefile creates the directories needed to hold Moira
+# object files and executables.  It also installs the Imakefiles.
+# This also copies in the Imake and make depend program and Imake macros.
+# By default, the Imakefiles are copied into the configuration
+# and made writeable.  If a link is preferred, change LN to "ln".
+#
+# The default distination for the configuration is the current
+# directory; defaults for destination and source directories may be
+# specified, e.g.:
+#
+# make -f makeconfig SRCDIR=/u2/lockers/moira DESTDIR=myconfig
+
+DESTDIR	= .
+SRCDIR 	= /mit/moiradev/src
+
+LN	= cp
+SYMLINK = ln -s
+
+SUBDIR	= backup clients db dbck dcm et gdb gen include incremental \
+	lib reg_svr regtape rpc server ss test update clients/blanche \
+	clients/mailmaint clients/moira clients/mrcheck clients/passwd \
+	clients/userreg util man
+
+# Empty directories which also need to be built.
+MTDIR	= et/profiled gdb/profiled rpc/profiled server/profiled
+
+all:
+	rm -f ${DESTDIR}/Makefile
+	${LN} ${SRCDIR}/Makefile ${DESTDIR}/Makefile
+	rm -f ${DESTDIR}/Imakefile
+	${SYMLINK} ${SRCDIR}/Imakefile ${DESTDIR}/Imakefile
+	chmod +w ${DESTDIR}/Makefile
+	-for i in ${SUBDIR}; do \
+		mkdir ${DESTDIR}/$$i; \
+		rm -f ${DESTDIR}/$$i/Imakefile; \
+		${SYMLINK} ${SRCDIR}/$$i/Imakefile ${DESTDIR}/$$i/Imakefile; \
+	done
+	-for i in ${MTDIR}; do mkdir ${DESTDIR}/$$i; done
+	for i in imake makedepend imake.includes et ss; do \
+		make ${MFLAGS} -f ${SRCDIR}/util/$$i/Makefile SRCDIR=${SRCDIR} DESTDIR=${DESTDIR} config; \
+	done

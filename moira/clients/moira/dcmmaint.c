@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/dcmmaint.c,v 1.12 1991-03-08 10:25:21 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/dcmmaint.c,v 1.13 1991-03-08 11:06:02 mar Exp $
  *
  * Copyright 1987, 1988 by the Massachusetts Institute of Technology.
  * For copying and distribution information, please see the file
@@ -364,7 +364,7 @@ char **cargv;
 inithost(info)
 char **info;
 {
-    info[SHI_MACHINE] = canonicalize_hostname(strsave(info[SH_MACHINE])));
+    info[SHI_MACHINE] = canonicalize_hostname(strsave(info[SH_MACHINE]));
     info[SHI_ENABLE] = strsave("1");
     info[SHI_VALUE1] = strsave("0");
     info[SHI_VALUE2] = strsave("0");

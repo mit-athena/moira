@@ -15,7 +15,14 @@ BOOTSTRAPCFLAGS =
            MAKE = make
          RM_CMD = $(RM) *.CKP *.ln *.BAK *.bak *.o core errs ,* *~ *.a \
 			tags TAGS make.log
+             LN = cp
           NPROC = 1
+        DESTDIR = .
+         SRCDIR = /mit/moiradev/src
+        SOURCES = ${SRCDIR}/util/imake/imake.c ${SRCDIR}/util/imake/ccimake.c \
+		  ${SRCDIR}/util/imake/Makefile ${SRCDIR}/util/imake/imakemdep.h
+
+all: imake
 
 imake::
 	@echo "making imake with BOOTSTRAPCFLAGS=$(BOOTSTRAPCFLAGS)"
@@ -36,6 +43,11 @@ clean:
 
 depend:
 
+config: $(SOURCES)
+	-mkdir $(DESTDIR)/util/imake
+	for i in $(SOURCES); do \
+		$(RM) ${DESTDIR}/util/imake/`basename $$i`; \
+		$(LN) $$i ${DESTDIR}/util/imake/`basename $$i`; done
 
 # for manual use
 

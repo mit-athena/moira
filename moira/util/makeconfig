@@ -1,4 +1,4 @@
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/util/makeconfig,v 1.4 1993-10-21 15:20:28 mar Exp $
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/util/makeconfig,v 1.5 1996-07-08 22:11:46 danw Exp $
 #
 #  Copyright 1990 by the Massachusetts Institute of Technology.
 # 
@@ -19,6 +19,7 @@
 #
 # make -f makeconfig SRCDIR=/u2/lockers/moira DESTDIR=myconfig
 
+SHELL	= /bin/sh
 DESTDIR	= .
 SRCDIR 	= /mit/moiradev/src
 

@@ -1,14 +1,14 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v 1.6 1988-08-04 14:04:44 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v 1.7 1988-08-07 18:29:49 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
  */
 
 #ifndef lint
-static char *rcsid_test_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v 1.6 1988-08-04 14:04:44 mar Exp $";
+static char *rcsid_test_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v 1.7 1988-08-07 18:29:49 mar Exp $";
 #endif lint
 
 #include <stdio.h>
@@ -193,25 +193,6 @@ char *concat(str1, str2)
 	return rtn;
 }
 
-test_shutdown(argc, argv)
-	int argc;
-	char **argv;
-{
-	char *reason = NULL;
-	int status, i;
-	
-	if (argc < 2) {
-		ss_perror(ss, 0, "Usage: shutdown reason ...");
-		return;
-	}
-	
-	for (i = 1 ; i < argc; i++) {
-		if (i != 1) reason = concat(reason, " ");
-		reason = concat(reason, argv[i]);
-	}
-	status = sms_shutdown(reason);
-	if (status) ss_perror(ss, status, 0);
-}
 static int count;
 
 

@@ -18,9 +18,6 @@
 	request test_query, "Make a query.",
 		query, qy;
 
-	request test_shutdown, "Shut down SMS.",
-		shutdown;
-
 	request test_auth, "Authenticate to SMS.",
 		auth, a;
 

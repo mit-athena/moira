@@ -1,0 +1,19 @@
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/addusr/Imakefile,v 1.1 1992-07-06 15:09:04 mar Exp $
+#
+# Copyright 1992 by the Massachusetts Institute of Technology.
+#
+# For copying and distribution information,
+# please see the file <mit-copyright.h>.
+#
+# Imakefile for addusr.
+#
+
+SRCS=addusr.c
+SRCDIR=${SRCTOP}/clients/addusr
+CODE=${SRCS} Imakefile
+OBJS=addusr.o reg_stubs.o
+
+program(addusr,${OBJS},${MR_LIBDEP} ${GDB_LIBDEP}, -lkadm ${CLIBS},${PROGDIR})
+
+reg_stubs.c: ../userreg/reg_stubs.c
+	cp ../userreg/reg_stubs.c reg_stubs.c

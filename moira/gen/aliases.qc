@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/aliases.qc,v 1.1 1988-06-07 14:02:58 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/aliases.qc,v 1.2 1988-06-20 12:51:01 mar Exp $
  *
  * This generates the /usr/lib/aliases mail aliases file for the mailhub.
  * The aliases file will contain:
@@ -12,12 +12,17 @@
 #include <stdio.h>
 #include <sms.h>
 #include <sms_app.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <sys/time.h>
+
 
 #define ML_WID	72
 #define AL_MAX_WID 896
 
 char *divide = "########################################################################";
 extern int errno;
+char *ingres_date_and_time();
 
 
 main(argc, argv)
@@ -26,9 +31,27 @@ char **argv;
 {
     long tm = time(NULL);
     FILE *out= stdout;
-##  int error;
+    struct stat sb;
+##  int error, flag1, flag2, flag3;
+##  char *filetime;
+
+##  ingres sms
 
     if (argc == 2) {
+	if (stat(argv[1], &sb) == 0) {
+	    filetime = ingres_date_and_time(sb.st_mtime);
+##	    retrieve (flag1 = int4(interval("min",tblstats.modtime - filetime)))
+##		where tblstats.table = "list"
+##	    retrieve (flag2 = int4(interval("min",tblstats.modtime - filetime)))
+##		where tblstats.table = "members"
+##	    retrieve (flag3 = int4(interval("min",tblstats.modtime - filetime)))
+##		where tblstats.table = "users"
+	    if (flag1 < 0 && flag2 < 0 && flag3 < 0) {
+		fprintf(stderr, "File %s does not need to be rebuilt.\n",
+			argv[1]);
+		exit(0);
+	    }
+	}
 	if ((out = fopen(argv[1], "w")) == NULL) {
 	    fprintf(stderr, "unable to open %s for output\n", argv[1]);
 	    exit(errno);
@@ -38,7 +61,6 @@ char **argv;
 	exit(-1);
     }
 
-##  ingres sms
 ##  set lockmode session where readlock = nolock
 
     
@@ -267,21 +289,4 @@ register char *string;
     }
 
     (void) fputc('\n', aliases);
-}
-
-
-trim(s)
-register char *s;
-{
-    register char *p;
-
-    for (p = s; *s; s++)
-      if (*s != ' ')
-	p = s;
-    if (p != s) {
-	if (*p == ' ')
-	  *p = 0;
-	else
-	  p[1] = 0;
-    }
 }

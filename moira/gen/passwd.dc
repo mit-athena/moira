@@ -1,22 +1,40 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/passwd.dc,v 1.1 1988-06-07 13:21:21 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/passwd.dc,v 1.2 1988-06-20 12:51:30 mar Exp $
  *
  * This generates a master /etc/passwd containing all active (status != 0)
  * accounts.
  */
 
 #include <stdio.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <sys/time.h>
 
 extern int errno;
+char *ingres_date_and_time();
+
 
 main(argc, argv)
 int argc;
 char **argv;
 {
-##  char login[9], shell[33], fullname[33], oa[17], op[13], hp[17];
-##  int uid, error;
     FILE *out = stdout;
+    struct stat sb;
+##  char login[9], shell[33], fullname[33], oa[17], op[13], hp[17], *filetime;
+##  int uid, error, flag;
+
+##  ingres sms
 
     if (argc == 2) {
+	if (stat(argv[1], &sb) == 0) {
+	    filetime = ingres_date_and_time(sb.st_mtime);
+##	    retrieve (flag = int4(interval("min", tblstats.modtime - filetime)))
+##		where tblstats.table = "users"
+	    if (flag < 0) {
+		fprintf(stderr, "File %s does not need to be rebuilt.\n",
+			argv[1]);
+		exit(0);
+	    }
+	}
 	if ((out = fopen(argv[1], "w")) == NULL) {
 	    fprintf(stderr, "unable to open %s for output\n", argv[1]);
 	    exit(errno);
@@ -26,7 +44,6 @@ char **argv;
 	exit(-1);
     }
 
-##  ingres sms
 ##  set lockmode on users where readlock = nolock
 
 ##  range of u is users
@@ -56,20 +73,4 @@ char **argv;
 	exit(errno);
     }
     exit(0);
-}
-
-trim(s)
-register char *s;
-{
-    register char *p;
-
-    for (p = s; *s; s++)
-      if (*s != ' ')
-	p = s;
-    if (p != s) {
-	if (*p == ' ')
-	  *p = 0;
-	else
-	  p[1] = 0;
-    }
 }

@@ -1,4 +1,4 @@
-# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/Makefile,v 1.3 1988-12-29 19:08:58 mar Exp $
+# $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/Makefile,v 1.4 1989-01-30 15:51:17 mar Exp $
 
 LIBS= -L../lib -lsms -lcom_err -lzephyr -lkrb -ldes \
 	 /usr/rtingres/lib/libqlib /usr/rtingres/lib/compatlib
@@ -9,7 +9,7 @@ CFLAGS= -I../include -O
 	rm -f $*.c
 	/usr/rtingres/bin/eqc -p $*
 
-all: passwd.gen aliases.gen hesiod.gen nfs.gen sms_untar
+all: passwd.gen aliases.gen hesiod.gen nfs.gen
 
 passwd.gen: passwd.o util.o
 	cc -o passwd.gen passwd.o util.o ${LIBS}
@@ -31,20 +31,15 @@ nfs.gen: nfs.o util.o
 
 nfs.o: nfs.c
 
-sms_untar: sms_untar.c
-	cc -o sms_untar sms_untar.c
-
 clean:
 	rm -f *.o 
 	rm -f passwd.c passwd.gen
 	rm -f aliases.c aliases.gen
 	rm -f hesiod.c hesiod.gen
 	rm -f nfs.c nfs.gen
-	rm -f sms_untar
 
 install: all
 	install passwd.gen ../bin
 	install aliases.gen ../bin
 	install hesiod.gen ../bin
 	install nfs.gen ../bin
-	install sms_untar ../bin

@@ -1,14 +1,15 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/exec_002.c,v $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/exec_002.c,v 1.1 1987-08-22 17:54:08 wesommer Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/exec_002.c,v 1.2 1987-11-02 17:10:42 mar Exp $
  */
 
 #ifndef lint
-static char *rcsid_exec_002_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/exec_002.c,v 1.1 1987-08-22 17:54:08 wesommer Exp $";
+static char *rcsid_exec_002_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/update/exec_002.c,v 1.2 1987-11-02 17:10:42 mar Exp $";
 #endif	lint
 
 #include <stdio.h>
 #include <sys/wait.h>
+#include <signal.h>
 #include "gdb.h"
 #include "update.h"
 #include "sms_update_int.h"
@@ -23,15 +24,17 @@ exec_002(str)
     char *str;
 {
     union wait waitb;
-    int n, pid;
+    int n, pid, mask;
 
     str += 8;
     while (*str == ' ')
 	str++;
+    mask = sigblock(sigmask(SIGCHLD));
     pid = fork();
     switch (pid) {
     case -1:
 	n = errno;
+	sigsetmask(mask);
 	log_priority = log_ERROR;
 	com_err(whoami, errno, ": can't fork to run install script");
 	code = send_object(conn, (char *)&n, INTEGER_T);
@@ -41,6 +44,7 @@ exec_002(str)
     case 0:
 	execlp(str, str, (char *)NULL);
 	n = errno;
+	sigsetmask(mask);
 	log_priority = log_ERROR;
 	com_err(whoami, n, ": %s", str);
 	(void) send_object(conn, (char *)&n, INTEGER_T);
@@ -49,6 +53,7 @@ exec_002(str)
 	do {
 	    n = wait(&waitb);
 	} while (n != -1 && n != pid);
+	sigsetmask(mask);
 	if (waitb.w_status) {
 	    log_priority = log_ERROR;
 	    com_err(whoami, 0, "child exited with status %d", waitb.w_status);

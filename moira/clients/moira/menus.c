@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menus.c,v 1.18 1990-06-13 12:42:07 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menus.c,v 1.19 1990-07-31 18:41:52 mar Exp $";
 #endif lint
 
 /*	This is the file menus.c for the MOIRA Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menus.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menus.c,v 1.18 1990-06-13 12:42:07 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menus.c,v 1.19 1990-07-31 18:41:52 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -640,6 +640,39 @@ Menu palladium_menu = {
 
 
 
+/*
+ * Zephyr Menu
+ */
+
+Menu zephyr_menu = {
+    NULLFUNC,
+    NULLFUNC,
+    "Zephyr Menu",
+    5,
+    {
+	{ GetZephyr, NULLMENU, 2, {
+	    {"get", "Get Zephyr Class Information"},
+	    {"name", "Name of class: "}
+	} },
+	{ AddZephyr, NULLMENU, 2, {
+	    {"add", "Add New Zephyr class restrictions"},
+	    {"name", "Class name: "},
+	} },
+	{ ChngZephyr, NULLMENU, 2, {
+	    {"change", "Update Zephyr class restrictions"},
+	    {"name", "Class name: "},
+	} },
+	{ DeleteZephyr, NULLMENU, 2, {
+	    {"delete", "Delete Zephyr class restriction"},
+	    {"name", "Class Name: "}
+	} },
+	{ NULLFUNC, &list_member_menu, 2, {
+	    {"members", "Member Menu - Change/Show Members of a List."},
+	    {"list name", "Name of list: "}
+	} },
+    }
+};
+
 
 /*
  * Miscellaneous Menu
@@ -676,7 +709,7 @@ Menu moira_top_menu = {
   NULLFUNC,
   NULLFUNC,
   "Moira Database Manipulation",
-  10,
+  11,
   {
     SUBMENU("cluster","Cluster Menu",&cluster_menu),
     SUBMENU("filesys","Filesystem Menu", &filesys_menu),
@@ -686,6 +719,7 @@ Menu moira_top_menu = {
     SUBMENU("user","User Menu", &user_menu),
     SUBMENU("printcap", "Printcap Printer Menu", &printer_menu),
     SUBMENU("palladium", "Palladium Printer Menu", &palladium_menu),
+    SUBMENU("zephyr", "Zephyr ACLS Menu", &zephyr_menu),
     SUBMENU("dcm", "DCM Menu", &dcm_menu),
     SUBMENU("misc", "Miscellaneous Menu", &misc_menu)
   }

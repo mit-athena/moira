@@ -1,4 +1,4 @@
-/* $Id: nfs.pc,v 1.11 2000-11-30 23:27:46 zacheiss Exp $
+/* $Id: nfs.pc,v 1.12 2002-08-13 15:49:31 zacheiss Exp $
  *
  * This generates the files necessary to load an nfs server.
  *
@@ -23,7 +23,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/nfs.pc,v 1.11 2000-11-30 23:27:46 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/gen/nfs.pc,v 1.12 2002-08-13 15:49:31 zacheiss Exp $");
 
 #define min(x, y)	((x) < (y) ? (x) : (y))
 
@@ -204,7 +204,7 @@ struct user {
 void do_everyone(void)
 {
   const buflen = MAXPATHLEN;
-  char buf[buflen], *l;
+  char buf[MAXPATHLEN], *l;
   struct user *u;
   struct grp *g;
   struct bucket *b, **p;

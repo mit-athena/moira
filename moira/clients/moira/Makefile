@@ -7,7 +7,7 @@
 # 
 #       $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/Makefile,v $
 #       $Author: mar $
-#       $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/Makefile,v 1.10 1990-01-10 18:29:57 mar Exp $
+#       $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/Makefile,v 1.11 1990-02-14 12:25:34 mar Exp $
 # 	
 #   	Copyright 1987, 1988 by the Massachusetts Institute of Technology.
 # 
@@ -22,7 +22,7 @@ CONFDIR = ${DESTDIR}/usr/athena
 BINDIR = ${DESTDIR}/bin
 
 SMSLIB = -lsms -lgdb -lcom_err
-LIBS = ${SMSLIB} -lcurses -ltermcap -lkrb -ldes
+LIBS = ${SMSLIB} -lcurses -ltermcap -lkrb -ldes -lhesiod
 
 
 SRCS = utils.c attach.c cluster.c delete.c globals.c lists.c main.c \
@@ -42,7 +42,7 @@ lint:
 	lint -I../../include *.c
 
 install: moira
-	install -s moira ${DESTDIR}/usr/athena/moira
+	install -c -s moira ${DESTDIR}/usr/athena/moira
 	rm -f ${DESTDIR}/usr/athena/usermaint
 	rm -f ${DESTDIR}/usr/athena/listmaint
 	rm -f ${DESTDIR}/usr/athena/dcmmaint

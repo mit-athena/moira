@@ -5,7 +5,7 @@
  *
  * $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v $
  * $Author: mar $
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.28 1990-04-09 18:03:56 mar Exp $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.29 1990-06-12 16:29:49 mar Exp $
  *
  * Generic menu system module.
  *
@@ -18,7 +18,7 @@
  */
 
 #ifndef lint
-static char rcsid_menu_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.28 1990-04-09 18:03:56 mar Exp $";
+static char rcsid_menu_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.29 1990-06-12 16:29:49 mar Exp $";
 
 #endif lint
 
@@ -396,6 +396,15 @@ Do_menu(m, margc, margv)
 	parsed_argc = 0;
     }
 }
+
+refresh_screen()
+{
+    if (cur_ms != NULLMS) {
+	touchwin(cur_ms->ms_screen);
+	refresh_ms(cur_ms);
+    }
+}
+
 
 /* Prompt the user for input in the input window of cur_ms */
 int Prompt_input(prompt, buf, buflen)

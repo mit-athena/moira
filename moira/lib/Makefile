@@ -1,21 +1,20 @@
 #	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/Makefile,v $
 #	$Author: mar $
-#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/Makefile,v 1.7 1989-06-28 14:57:17 mar Exp $
+#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/lib/Makefile,v 1.8 1989-09-04 17:08:44 mar Exp $
 #
 #	Makefile for SMS library.
 #
 LIBSRC=sms_auth.c sms_call.c sms_connect.c sms_data.c sms_init.c \
-	sms_query.c sms_param.c sms_access.c menu.c admin_call.c \
-	sms_ops.c fixname.c strs.c fixhost.c nfsparttype.c \
-	sq.c hash.c idno.c critical.c
+	sms_query.c sms_param.c sms_access.c menu.c sms_ops.c \
+	fixname.c strs.c fixhost.c nfsparttype.c sq.c hash.c \
+	idno.c critical.c
 
 CFILES=${LIBSRC}
 
 LIBOBJ=sms_auth.o sms_call.o sms_connect.o sms_data.o sms_init.o \
-	sms_query.o sms_param.o sms_access.o menu.o admin_call.o \
-	sms_ops.o fixname.o strs.o fixhost.o nfsparttype.o \
-	sq.o hash.o idno.o critical.o \
-	sms_et.o ureg_err.o krb_et.o admin_err.o
+	sms_query.o sms_param.o sms_access.o menu.o sms_ops.o \
+	fixname.o strs.o fixhost.o nfsparttype.o sq.o hash.o \
+	idno.o critical.o sms_et.o ureg_err.o krb_et.o
 
 COPTS= -O
 
@@ -53,15 +52,12 @@ sms_et.c sms_et.h: sms_et.et
 ureg_err.c ureg_err.h: ureg_err.et
 	../et/compile_et ureg_err.et
 
-admin_err.c admin_err.h: admin_err.et
-	../et/compile_et admin_err.et
-
 ../include/sms_et.h: sms_et.h
 
 clean:
 	rm -f ${ALL}
-	rm -f *.o *~ admin_err.h sms_et.h krb_et.h ureg_err.h profiled/*.o \#*
-	rm -f krb_et.c sms_et.c ureg_err.c admin_err.c
+	rm -f *.o *~ sms_et.h krb_et.h ureg_err.h profiled/*.o \#*
+	rm -f krb_et.c sms_et.c ureg_err.c
 	rm -f *.PS *.aux *.dvi *.log
 	rm -f *.bak
 
@@ -83,7 +79,7 @@ lint:	${CFILES} llib-lsms.ln
 llib-lsms.ln:	${LIBSRC}
 	lint -Csms $(LINTFLAGS) $(INCDIRS) ${LIBSRC}
 
-depend: $(CFILES) sms_et.h admin_err.h ureg_err.h krb_et.h
+depend: $(CFILES) sms_et.h ureg_err.h krb_et.h
 	$(CC) -M $(CFLAGS) $(CFILES) | \
 	sed -e 's; ./; ;' \
 	    -e ':loop' \
@@ -145,16 +141,6 @@ menu.o: /usr/include/stdio.h /usr/include/sgtty.h /usr/include/sys/ioctl.h
 menu.o: /usr/include/sys/ttychars.h /usr/include/sys/ttydev.h
 menu.o: /usr/include/ctype.h /usr/include/strings.h /usr/include/varargs.h
 menu.o: ../include/com_err.h ../include/menu.h
-admin_call.o: admin_call.c ../include/mit-copyright.h /usr/include/sys/errno.h
-admin_call.o: /usr/include/sys/types.h /usr/include/sys/time.h
-admin_call.o: /usr/include/time.h /usr/include/sys/ioctl.h
-admin_call.o: /usr/include/sys/ttychars.h /usr/include/sys/ttydev.h
-admin_call.o: /usr/include/sys/socket.h /usr/include/netinet/in.h
-admin_call.o: /usr/include/netdb.h /usr/include/strings.h /usr/include/ctype.h
-admin_call.o: /usr/include/stdio.h admin_err.h ../include/admin_server.h
-admin_call.o: ../include/prot.h /usr/include/krb.h ../include/mit-copyright.h
-admin_call.o: /usr/include/des.h ../include/mit-copyright.h
-admin_call.o: /usr/include/des_conf.h ../include/mit-copyright.h krb_et.h
 sms_ops.o: sms_ops.c ../include/mit-copyright.h sms_private.h
 sms_ops.o: ../include/sms_proto.h /usr/include/stdio.h ../include/gdb.h
 sms_ops.o: /usr/include/sys/types.h /usr/include/sys/time.h /usr/include/time.h

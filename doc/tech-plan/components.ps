@@ -1,0 +1,63 @@
+%! SMS organization picture
+% Mark Rosenstein, 19-jan-88
+
+% Picture is 3 inches high and 6 inches wide
+
+0 -60 translate
+
+/ellipse
+  { 
+    matrix currentmatrix		% Push current matrix	
+    5 1 roll    		% roll to bottom
+    3 index 2 index add 3 index moveto	% move to start
+    4 2 roll translate scale	% translate then scale
+    0 0 1 0 360 arc		% draw it
+    setmatrix			% restore matrix
+  } def
+
+/centershow {
+	dup stringwidth pop 2 div 3 index sub neg 2 index moveto show pop pop
+} def
+
+/Helvetica-Bold findfont 24 scalefont setfont
+45 180 moveto (INPUT) show
+195 180 moveto (DATABASE) show
+370 180 moveto (OUTPUT) show
+
+1.25 setlinewidth
+75 140 40 20 ellipse closepath stroke % cli 1
+75 75 40 20 ellipse closepath stroke % cli 2
+250 130 moveto 220 130 30 0 360 arc closepath stroke % SMS server
+180 90 moveto 260 90 lineto 260 60 lineto 180 60 lineto closepath stroke % db
+315 130 moveto 290 130 25 0 360 arc closepath stroke % DCM
+305 75 35 17 ellipse closepath stroke % backup
+410 135 35 25 ellipse closepath stroke % update server
+370 100 moveto 450 100 lineto 450 60 lineto 370 60 lineto closepath stroke
+
+.75 setlinewidth
+115 140 moveto 190 135 lineto stroke % cli 1 -> SMS server
+115 75 moveto 190 120 lineto stroke % cli 2 -> SMS server
+220 100 moveto 220 90 lineto stroke % db -> SMS server
+250 130 moveto 265 130 lineto stroke % SMS server -> DCM
+260 75 moveto 270 75 lineto stroke % db -> backup
+315 130 moveto 375 135 lineto stroke % DCM -> update
+410 110 moveto 410 100 lineto stroke % update -> sys conf
+
+.5 setlinewidth [3] 0 setdash
+89 122 moveto 89 158 lineto stroke
+89 57 moveto 89 93 lineto stroke
+[] 0 setdash
+
+/Helvetica findfont 16 scalefont setfont
+40 135 moveto (Client) show 92 135 moveto (lib) show
+40 70 moveto (Client) show 92 70 moveto (lib) show
+220 135 (Moira) centershow 220 117 (Server) centershow
+220 70 (Database) centershow
+290 125 (DCM) centershow
+305 70 (backup) centershow
+410 136 (Update) centershow 410 122 (Server) centershow
+410 85 (System) centershow 410 66 (Config) centershow
+
+/Helvetica findfont 12 scalefont setfont
+117 117 moveto (Moira Prtcl) show
+322 137 moveto (Update) show 335 119 moveto (Prtcl) show

@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.1 2000-06-06 04:38:26 zacheiss Exp $
+# $Id: Makefile.in,v 1.2 2002-09-25 20:46:53 zacheiss Exp $
 
 SHELL=/bin/sh
 @SET_MAKE@
@@ -11,7 +11,6 @@ DEFS=@DEFS@
 ALL_CFLAGS=$(CPPFLAGS) $(AFS_CPPFLAGS) $(CFLAGS) $(DEFS)
 LDFLAGS=@LDFLAGS@
 AFS_LIBS=@AFS_LIBS@
-AFS_EXTRA_LIBS=@AFS_EXTRA_LIBS@
 AFS_DIR=@AFS_DIR@
 LIBS=@LIBS@
 MR_LIBDEP=@MR_LIBDEP@
@@ -53,4 +52,4 @@ install:
 afs.incr: $(AFS_OBJS) $(MR_LIBDEP)
 	$(CC) -o $@ $(LDFLAGS) $(AFS_OBJS) $(AFS_LIBS) -lprot -lauth \
 	-lrxkad -ldes -lrx -llwp -lubik -lsys -laudit \
-	$(AFS_DIR)/lib/afs/util.a $(AFS_EXTRA_LIBS) $(LIBS)
+	$(AFS_DIR)/lib/afs/util.a $(LIBS)

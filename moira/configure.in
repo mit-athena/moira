@@ -325,15 +325,9 @@ if test "$afs" != no -a "$oracle" != no; then
 	AFS_LIBS="-L$afs/lib -L$afs/lib/afs"
 	AFS_DIR=$afs
     fi
-    AC_CHECK_FUNC(insque, :, AC_CHECK_LIB(compat, insque,
-					  AFS_EXTRA_LIBS="-lcompat",
-					  AC_MSG_ERROR(insque not found)))
-    AC_CHECK_FUNC(sigvec, :, AC_CHECK_LIB(ucb, sigvec,
-					  AFS_EXTRA_LIBS="$AFS_EXTRA_LIBS -L/usr/ucblib -lc -lucb",
-					  :, -L/usr/ucblib))
     AC_CHECK_LIB(sys, pioctl, :,
 		 [AC_MSG_ERROR(AFS libraries not found)],
-		 $AFS_LIBS -lrx -llwp -lsys $AFS_EXTRA_LIBS)
+		 $AFS_LIBS -lrx -llwp -lsys)
     MR_DEFINE(HAVE_AFS)
 
     AFS_SUBDIRS="afs"
@@ -346,7 +340,6 @@ fi
 AC_SUBST(AFS_CPPFLAGS)
 AC_SUBST(AFS_PRO_C_INCLUDES)
 AC_SUBST(AFS_LIBS)
-AC_SUBST(AFS_EXTRA_LIBS)
 AC_SUBST(AFS_DIR)
 AC_SUBST(AFS_SUBDIRS)
 AC_SUBST(AFS_SYNCDIR)

@@ -1,44 +1,42 @@
-/* Copyright (C) 1990, 1989 Transarc Corporation - All rights reserved */
 /*
- * P_R_P_Q_# (C) COPYRIGHT IBM CORPORATION 1988
- * LICENSED MATERIALS - PROPERTY OF IBM
- * REFER TO COPYRIGHT INSTRUCTIONS FORM NUMBER G120-2083
+ * Copyright 2000, International Business Machines Corporation and others.
+ * All Rights Reserved.
+ * 
+ * This software has been released under the terms of the IBM Public
+ * License.  For details, see the LICENSE file in the top-level source
+ * directory or online at http://www.openafs.org/dl/license10.html
  */
 
-
-/*	
-             Sherri Nichols
-             Information Technology Center
-       November, 1988
-
-       Modified May, 1989 by Jeff Schiller to keep disk file in
-       network byte order
-
-*/
-
 #include <afs/param.h>
+
 #include <afs/stds.h>
 #include <sys/types.h>
 #include <stdio.h>
-#ifdef AFS_HPUX_ENV
-#include <string.h>
+#ifdef AFS_NT40_ENV 
+#include <winsock2.h>
 #else
-#include <strings.h>
-#endif
-#include <lock.h>
 #include <netinet/in.h>
+#endif
+#include <string.h>
+#include <lock.h>
 #include <ubik.h>
 #include <rx/xdr.h>
 #include <afs/com_err.h>
+#include <afs/cellconfig.h>
 #include "ptserver.h"
 #include "pterror.h"
+#include <stdlib.h>
 
-RCSID ("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/afssync/ptutils.c,v 1.7 1992-06-28 16:39:50 probe Exp $")
+/* Foreign cells are represented by the group system:authuser@cell*/
+#define AUTHUSER_GROUP "system:authuser"
+
 
 extern struct ubik_dbase *dbase;
 extern struct afsconf_dir *prdir;
 extern int pr_noAuth;
+extern int IDCmp();
 
+extern afs_int32 AddToEntry();
 static char *whoami = "ptserver";
 
 /* CorrectUserName - Check to make sure a user name is OK.  It must not include
@@ -54,11 +52,8 @@ static int CorrectUserName (name)
 {
     extern int pr_realmNameLen;
 
-#ifdef CROSS_CELL
-    if (index (name, ':') || index(name, '\n')) return 0;
-#else
-    if (index (name, ':') || index(name, '@') || index(name, '\n')) return 0;
-#endif
+    /* We accept foreign names, so we will deal with '@' later */
+    if (strchr (name, ':') || strchr(name, '\n')) return 0;
     if (strlen (name) >= PR_MAXNAMELEN - pr_realmNameLen - 1) return 0; 
     return 1;
 }
@@ -68,14 +63,14 @@ static int CorrectUserName (name)
  * the correct name based on a given name and owner.  This allows easy use by
  * rename, which then compares the correct name with the requested new name. */
 
-static long CorrectGroupName (ut, aname, cid, oid, cname)
+static afs_int32 CorrectGroupName (ut, aname, cid, oid, cname)
   struct ubik_trans *ut;
   char aname[PR_MAXNAMELEN];		/* name for group */
-  long cid;				/* caller id */
-  long oid;				/* owner of group */
+  afs_int32 cid;				/* caller id */
+  afs_int32 oid;				/* owner of group */
   char cname[PR_MAXNAMELEN];		/* correct name for group */
 {
-    long  code;
+    afs_int32  code;
     int   admin;
     char *prefix;			/* ptr to group owner part */
     char *suffix;			/* ptr to group name part */
@@ -83,14 +78,14 @@ static long CorrectGroupName (ut, aname, cid, oid, cname)
     struct prentry tentry;
 
     if (strlen (aname) >= PR_MAXNAMELEN) return PRBADNAM;
-    admin = pr_noAuth || (cid==SYSADMINID) || IsAMemberOf(ut, cid, SYSADMINID);
+    admin = pr_noAuth || IsAMemberOf (ut, cid, SYSADMINID);
 
     if (oid == 0) oid = cid;
 
     /* Determine the correct prefix for the name. */
     if (oid == SYSADMINID) prefix = "system";
     else {
-	long loc = FindByID (ut, oid);
+	afs_int32 loc = FindByID (ut, oid);
 	if (loc == 0) {
 	    /* let admin create groups owned by non-existent ids (probably
              * setting a group to own itself).  Check that they look like
@@ -106,7 +101,7 @@ static long CorrectGroupName (ut, aname, cid, oid, cname)
 	if (ntohl(tentry.flags) & PRGRP) {
 	    if ((tentry.count == 0) && !admin) return PRGROUPEMPTY;
 	    /* terminate prefix at colon if there is one */
-	    if (prefix = index(tentry.name, ':')) *prefix = 0;
+	    if ((prefix = strchr(tentry.name, ':'))) *prefix = 0;
 	}
 	prefix = tentry.name;
     }
@@ -114,7 +109,7 @@ static long CorrectGroupName (ut, aname, cid, oid, cname)
     if ((strcmp (prefix, "system") == 0) && !admin) return PRPERM;
 
     strcpy (name, aname);		/* in case aname & cname are same */
-    suffix = index(name, ':');
+    suffix = strchr(name, ':');
     if (suffix == 0) {
 	/* sysadmin can make groups w/o ':', but they must still look like
          * legal user names. */
@@ -128,18 +123,11 @@ static long CorrectGroupName (ut, aname, cid, oid, cname)
     }
   done:
     /* check for legal name with either group rules or user rules */
-    if (suffix = index(cname, ':')) {
+    if ((suffix = strchr(cname, ':'))) {
 	/* check for confusing characters */
-#ifdef CROSS_CELL
-	if (index(cname, '\n') ||	/* restrict so recreate can work */
-	    index(suffix+1, ':'))	/* avoid multiple colons */
+	if (strchr(cname, '\n') ||	/* restrict so recreate can work */
+	    strchr(suffix+1, ':'))	/* avoid multiple colons */
 	    return PRBADNAM;
-#else
-	if (index(cname, '@') ||	/* avoid confusion w/ foreign users */
-	    index(cname, '\n') ||	/* restrict so recreate can work */
-	    index(suffix+1, ':'))	/* avoid multiple colons */
-	    return PRBADNAM;
-#endif
     } else {
 	if (!CorrectUserName (cname)) return PRBADNAM;
     }
@@ -148,13 +136,13 @@ static long CorrectGroupName (ut, aname, cid, oid, cname)
 
 int AccessOK (ut, cid, tentry, mem, any)
   struct ubik_trans *ut;
-  long cid;				/* caller id */
+  afs_int32 cid;				/* caller id */
   struct prentry *tentry;		/* object being accessed */
   int mem;				/* check membership in aid, if group */
   int any;				/* if set return true */
-{   long flags;
-    long oid;
-    long aid;
+{   afs_int32 flags;
+    afs_int32 oid;
+    afs_int32 aid;
 
     if (pr_noAuth) return 1;
     if (cid == SYSADMINID) return 1;	/* special case fileserver */
@@ -165,11 +153,12 @@ int AccessOK (ut, cid, tentry, mem, any)
     } else {
 	flags = oid = aid = 0;
     }
-    if (!(flags & PRACCESS))		/* provide default access */
+    if (!(flags & PRACCESS)) {		/* provide default access */
 	if (flags & PRGRP)
 	    flags |= PRP_GROUP_DEFAULT;
 	else
 	    flags |= PRP_USER_DEFAULT;
+    }
 
     if (flags & any) return 1;
     if (oid) {
@@ -181,25 +170,28 @@ int AccessOK (ut, cid, tentry, mem, any)
     } else if (aid < 0) {		/* checking on group */
 	if ((flags & mem) && IsAMemberOf (ut, cid, aid)) return 1;
     }
+    /* Allow members of SYSVIEWERID to get membership and status only */
+    if (((mem == PRP_STATUS_MEM)||(mem == PRP_MEMBER_MEM))&&(IsAMemberOf (ut, cid, SYSVIEWERID))) return 1;
     if (IsAMemberOf (ut, cid, SYSADMINID)) return 1;
     return 0;				/* no access */
 }
 
-long CreateEntry (at, aname, aid, idflag, flag, oid, creator)  
-  register struct ubik_trans *at;
+afs_int32 CreateEntry (at, aname, aid, idflag, flag, oid, creator)  
+  struct ubik_trans *at;
   char aname[PR_MAXNAMELEN];
-  long *aid;
-  long idflag;
-  long flag;
-  long oid;
-  long creator;
+  afs_int32 *aid;
+  afs_int32 idflag;
+  afs_int32 flag;
+  afs_int32 oid;
+  afs_int32 creator;
 {
     /* get and init a new entry */
-    register long code;
-    long newEntry;
-    struct prentry tentry;
+    afs_int32 code;
+    afs_int32 newEntry;
+    struct prentry tentry, tent;
+    char *atsign;
     
-    bzero(&tentry, sizeof(tentry));
+    memset(&tentry, 0, sizeof(tentry));
 
     if ((oid == 0) || (oid == ANONYMOUSID)) oid = creator;
 
@@ -212,217 +204,188 @@ long CreateEntry (at, aname, aid, idflag, flag, oid, creator)
 	strcpy (tentry.name, aname);
     }
 
-    if (FindByName(at,aname)) return PREXIST;
+    if (FindByName(at,aname, &tent)) return PREXIST;
 
     newEntry = AllocBlock(at);
     if (!newEntry) return PRDBFAIL;
 #ifdef PR_REMEMBER_TIMES
     tentry.createTime = time(0);
 #endif
+
     if (flag & PRGRP) {
-	tentry.flags |= PRGRP;
+	tentry.flags = PRGRP;
 	tentry.owner = oid;
-    }
-    else if (flag & PRFOREIGN) {
-	tentry.flags |= PRFOREIGN;
-	tentry.owner = oid;
-    }
-    else tentry.owner = SYSADMINID;
-
-#ifdef CROSS_CELL
-#define ADD_TO_AUTHUSER_GROUP 1
-#define AUTHUSER_GROUP "system:authuser"
-    {
-	char * atsign;
-
-	if (!(atsign= index(aname,'@'))) {	/* No @ so local cell*/
-	    if (idflag)
-		tentry.id = *aid;
-	    else {
-		code= AllocID(at,flag,&tentry.id);
-		if (code != PRSUCCESS) return code;
-	    }
-	} else {
-	    /*foreign cells are represented by the group system:authuser@cell*/
-	    if (flag & PRGRP) {
-		/* it's a new foreign cell so the format
-		 * must be AUTHUSER_GROUP@cellname  */
-		int badFormat;
-		
-		*atsign = '\0';
-		badFormat = strcmp(AUTHUSER_GROUP, aname);
-		*atsign = '@';
-		if (badFormat) return PRBADNAM;
-		if (idflag)
-		    tentry.id = *aid;
-		else {
-		    code= AllocID(at,flag,&tentry.id);
-		    if (code != PRSUCCESS) return code;
-		}
-	    } else {
-		/* it's a foreign cell entry */
-		char *cellGroup;
-		long pos;
-		struct prentry centry;
-		extern long allocNextId();
-		extern long AddToEntry();
-		
-		cellGroup = (char *) malloc (strlen(AUTHUSER_GROUP) +
-					     strlen(atsign) +1);
-		strcpy(cellGroup, AUTHUSER_GROUP);
-		strcat(cellGroup, atsign);
-		pos = FindByName(at,cellGroup);
-		
-		/* if the group doesn't exist don't allow user creation */
-		if (!pos) return PRBADNAM;
-		
-		code = pr_Read (at, 0, pos, &centry, sizeof(centry));
-		if (code) return code;
-		tentry.cellid = ntohl(centry.id);
-		/* cellid is the id of the group representing the cell */
-		
-		if (idflag) {
-		    if (!inRange(&centry,*aid))
-                        return PRBADARG;	/* the id specified is not in
-						 * the id space of the group */
-		    tentry.id = *aid;
-		} else
-		    /* allocNextID() will allocate the next id
-		     * in that cell's space */
-		    tentry.id = allocNextId(&centry);
-
-		/* charge the cell group for the new user and test quota */
-		if (!(ntohl(centry.flags) & PRQUOTA)) {
-                    /* quota uninitialized, so initialize it now */
-                    centry.flags = htonl (ntohl(centry.flags) | PRQUOTA);
-                    centry.ngroups = htonl(30);
-		}
-
-		centry.ngroups = htonl(ntohl(centry.ngroups) - 1);
-		if (ntohl(centry.ngroups) < 0)
-		    if (!pr_noAuth) return PRNOMORE;
-		
-#if !ADD_TO_AUTHUSER_GROUP
-		centry.count = htonl(ntohl(centry.ngroups) +1);
-		/* keep count of how many people are in the group. */
-#endif
-		
-		code = pr_Write (at, 0, pos, &centry, sizeof(centry));
-		/* write updated entry for group */
-
-		/* Now add the new user entry to the database */
-		
-		tentry.creator = creator;
-		*aid = tentry.id;
-		code = pr_WriteEntry(at, 0, newEntry, &tentry);
-		if (code) return PRDBFAIL;
-		code = AddToIDHash(at,*aid,newEntry);
-		if (code != PRSUCCESS) return code;
-		code = AddToNameHash(at,aname,newEntry);
-		if (code != PRSUCCESS) return code;
-		if (inc_header_word (at, foreigncount, 1)) return PRDBFAIL;
-		
-#if ADD_TO_AUTHUSER_GROUP
-		
-		/* Now add the entry to the authuser group for this cell.
-		 * We will reread the entries for the user and the group
-		 * instead of modifying them before writing them in the
-		 * previous steps. Although not very efficient, much simpler */
-
-		/* First update the group entry */
-		pos = FindByID(at,tentry.cellid);
-		if (!pos) return PRBADNAM;
-		code = pr_ReadEntry (at, 0, pos, &centry);
-		if (code) return code;
-		code = AddToEntry(at, &centry,pos,*aid);
-		if (code) return code;
-		/* and now the user entry */
-		pos = FindByID(at,*aid);
-		if (!pos) return PRBADNAM;
-		code = pr_ReadEntry(at, 0, pos, &tentry);
-		if (code) return code;
-		code = AddToEntry(at, &tentry,pos,tentry.cellid);
-		if (code) return code;
-		
-#endif
-		
-		/* Ok we're done */
-		return PRSUCCESS;
-	    }
-	}
+    } else if (flag == 0) {
+        tentry.flags = 0;
+        tentry.owner = SYSADMINID;
+    } else {
+        return PRBADARG;
     }
 
-#else	/* !CROSS_CELL */
+    atsign = strchr(aname, '@');
+    if (!atsign) {
+       /* A normal user or group. Pick an id for it */
+       if (idflag) 
+	  tentry.id = *aid;
+       else {
+	  code= AllocID(at,flag,&tentry.id);
+	  if (code != PRSUCCESS) return code;
+       }
+    } else if (flag & PRGRP) {
+       /* A foreign group. Its format must be AUTHUSER_GROUP@cellname
+	* Then pick an id for the group.
+	*/
+       int badFormat;
+	    
+       *atsign = '\0';
+       badFormat = strcmp(AUTHUSER_GROUP, aname);
+       *atsign = '@';
+       if (badFormat) return PRBADNAM;
 
-    if (idflag) 
-	tentry.id = *aid;
-    else {
-	code= AllocID(at,flag,&tentry.id);
-	if (code != PRSUCCESS) return code;
+       if (idflag) 
+	  tentry.id = *aid;
+       else {
+	  code= AllocID(at,flag,&tentry.id);
+	  if (code != PRSUCCESS) return code;
+       }
+    } else {
+       /* A foreign user: <name>@<cell>. The foreign user is added to
+	* its representing group. It is 
+	*/
+       char *cellGroup;
+       afs_int32 pos, n;
+       struct prentry centry;
+       extern afs_int32 allocNextId();
+
+       /* To create the user <name>@<cell> the group AUTHUSER_GROUP@<cell>
+	* must exist.
+	*/
+       cellGroup = (char *)malloc(strlen(AUTHUSER_GROUP) + strlen(atsign) + 1);
+       strcpy(cellGroup, AUTHUSER_GROUP);
+       strcat(cellGroup, atsign);
+       pos = FindByName(at, cellGroup, &centry); 
+       if (!pos) return PRBADNAM;
+       code = pr_Read (at, 0, pos, &centry, sizeof(centry));
+       if (code) return code;
+
+       /* cellid is the id of the group representing the cell */
+       tentry.cellid = ntohl(centry.id); 
+
+       if (idflag) {
+	  /* Check if id is good */
+	  if (!inRange(&centry,*aid)) return PRBADARG;
+	  tentry.id = *aid;
+       } else {
+	  /* Allocate an ID special for this foreign user. It is based 
+	   * on the representing group's id and nusers count.
+	   */
+	  tentry.id = allocNextId(&centry);
+       }
+	 
+       /* The foreign user will be added to the representing foreign
+	* group. The group can hold up to 30 entries.
+	*/
+       if (!(ntohl(centry.flags) & PRQUOTA)) {
+	  centry.flags = htonl (ntohl(centry.flags) | PRQUOTA);
+	  centry.ngroups = htonl(30);
+       }
+       n = ntohl(centry.ngroups);
+       if ( (n <= 0) && !pr_noAuth ) return PRNOMORE;
+       centry.ngroups = htonl(n - 1);
+
+       /* write updated entry for group */
+       code = pr_Write (at, 0, pos, &centry, sizeof(centry));
+
+       /* Now add the new user entry to the database */
+       tentry.creator = creator;
+       *aid = tentry.id;
+       code = pr_WriteEntry(at, 0, newEntry, &tentry);
+       if (code) return PRDBFAIL;
+       code = AddToIDHash(at, *aid, newEntry);
+       if (code != PRSUCCESS) return code;
+       code = AddToNameHash(at, aname, newEntry);
+       if (code != PRSUCCESS) return code;
+       if (inc_header_word (at, foreigncount, 1)) return PRDBFAIL;
+
+       /* Now add the entry to the authuser group for this cell.
+	* We will reread the entries for the user and the group
+	* instead of modifying them before writing them in the
+	* previous steps. Although not very efficient, much simpler
+	*/
+       pos = FindByID(at, tentry.cellid); 
+       if (!pos) return PRBADNAM;
+       code = pr_ReadEntry (at, 0, pos, &centry);
+       if (code) return code;
+       code = AddToEntry(at, &centry, pos, *aid);
+       if (code) return code;
+       /* and now the user entry */
+       pos = FindByID(at,*aid); 
+       if (!pos) return PRBADNAM;
+       code = pr_ReadEntry (at, 0, pos, &tentry);
+       if (code) return code;
+       code = AddToEntry(at, &tentry, pos, tentry.cellid);
+       if (code) return code;
+
+       return PRSUCCESS;
     }
-#endif	/* !CROSS_CELL */
 
+    /* Remember the largest group id or largest user id */
     if (flag & PRGRP) {
 	/* group ids are negative */
-	if (tentry.id < (long)ntohl(cheader.maxGroup)) {
+	if (tentry.id < (afs_int32)ntohl(cheader.maxGroup)) {
 	    code = set_header_word (at, maxGroup, htonl(tentry.id));
 	    if (code) return PRDBFAIL;
 	}
     }
-    else if (flag & PRFOREIGN) {
-	if (tentry.id > (long)ntohl(cheader.maxForeign)) {
-	    code = set_header_word (at, maxForeign, htonl(tentry.id));
-	    if (code) return PRDBFAIL;
-	}
-    }
     else {
-	if (tentry.id > (long)ntohl(cheader.maxID)) {
+	if (tentry.id > (afs_int32)ntohl(cheader.maxID)) {
 	    code = set_header_word (at, maxID, htonl(tentry.id));
 	    if (code) return PRDBFAIL;
 	}
     }
-    /* PRACCESS is off until set, defaults provided in AccessOK */
-    if (flag == 0) {			/* only normal users get quota */
-	tentry.flags |= PRQUOTA;
-	tentry.ngroups = tentry.nusers = 20;
-    }
 
-    if (flag & (PRGRP | PRFOREIGN)) {
-	long loc = FindByID (at, creator);
+    /* Charge the creator for this group */
+    if (flag & PRGRP) {
+	afs_int32 loc = FindByID (at, creator);
 	struct prentry centry;
-	long *nP;			/* ptr to entry to be decremented */
-	long  n;			/* quota to check */
+	int admin;
 
 	if (loc) { /* this should only fail during initialization */
 	    code = pr_Read (at, 0, loc, &centry, sizeof(centry));
 	    if (code) return code;
 
-	    if (flag & PRGRP) nP = &centry.ngroups;
-	    else if (flag & PRFOREIGN) nP = &centry.nusers;
-	    else nP = 0;
-	    
-	    if (nP) {
-		if (!(ntohl(centry.flags) & PRQUOTA)) {
-		    /* quota uninitialized, so do it now */
-		    centry.flags = htonl (ntohl(centry.flags) | PRQUOTA);
-		    centry.ngroups = centry.nusers = htonl(20);
-		}
-		n = ntohl(*nP);
-		if (n <= 0) {
-		    if (!pr_noAuth &&
-			!IsAMemberOf (at, creator, SYSADMINID))
-			return PRNOMORE;
-		}
-		else {			/* don't use up admin user's quota */
-		    int admin = ((creator == SYSADMINID) ||
-				 IsAMemberOf (at, creator, SYSADMINID));
-		    if (!admin) *nP = htonl(n-1);
-		}
+	    /* If quota is uninitialized, do it */
+	    if (!(ntohl(centry.flags) & PRQUOTA)) {
+	       centry.flags = htonl (ntohl(centry.flags) | PRQUOTA);
+	       centry.ngroups = centry.nusers = htonl(20);
 	    }
+
+	    /* Admins don't get charged for creating a group.
+	     * If in noAuth mode, you get changed for it but you 
+	     * are still allowed to create as many groups as you want.
+	     */
+	    admin = ( (creator == SYSADMINID) ||
+		      IsAMemberOf(at,creator,SYSADMINID) );
+	    if (!admin) {
+	       if (ntohl(centry.ngroups) <= 0) {
+		  if (!pr_noAuth) return PRNOMORE;
+		} else {
+		   centry.ngroups = htonl(ntohl(centry.ngroups)-1);
+	      }
+	    }
+
 	    code = pr_Write (at, 0, loc, &centry, sizeof(centry));
 	    if (code) return code;
 	} /* if (loc) */
-    } /* need to check creation quota */
+    }
+    else {
+        /* Initialize the quota for the user. Groups don't have their
+	 * quota initialized.
+	 */
+        tentry.flags |= PRQUOTA;
+	tentry.ngroups = tentry.nusers = 20;
+    }
+
     tentry.creator = creator;
     *aid = tentry.id;
     code = pr_WriteEntry(at, 0, newEntry, &tentry);
@@ -438,9 +401,6 @@ long CreateEntry (at, aname, aid, idflag, flag, oid, creator)
     if (tentry.flags & PRGRP) {
 	if (inc_header_word (at, groupcount, 1)) return PRDBFAIL;
     }
-    else if (tentry.flags & PRFOREIGN) {
-	if (inc_header_word (at, foreigncount, 1)) return PRDBFAIL;
-    }
     else if (tentry.flags & PRINST) {
 	if (inc_header_word (at, instcount, 1)) return PRDBFAIL;
     }
@@ -454,22 +414,22 @@ long CreateEntry (at, aname, aid, idflag, flag, oid, creator)
 /* RemoveFromEntry - remove aid from bid's entries list, freeing a continuation
  * entry if appropriate */
 
-long RemoveFromEntry (at, aid, bid)
-  register struct ubik_trans *at;
-  register long aid;
-  register long bid;
+afs_int32 RemoveFromEntry (at, aid, bid)
+  struct ubik_trans *at;
+  afs_int32 aid;
+  afs_int32 bid;
 {
-    register long code;
+    afs_int32 code;
     struct prentry tentry;
     struct contentry centry;
     struct contentry hentry;
-    long temp;
-    long i,j;
-    long nptr;
-    long hloc;
+    afs_int32 temp;
+    afs_int32 i,j;
+    afs_int32 nptr;
+    afs_int32 hloc;
     
     if (aid == bid) return PRINCONSISTENT;
-    bzero(&hentry,sizeof(hentry));
+    memset(&hentry, 0, sizeof(hentry));
     temp = FindByID(at,bid);
     if (temp == 0) return PRNOENT;
     code = pr_ReadEntry(at, 0, temp, &tentry);
@@ -490,7 +450,7 @@ long RemoveFromEntry (at, aid, bid)
     }
     hloc = 0;
     nptr = tentry.next;
-    while (nptr != NULL) {
+    while (nptr != 0) {
 	code = pr_ReadCoEntry(at,0,nptr,&centry);
 	if (code != 0) return code;
 	if ((centry.id != bid) || !(centry.flags & PRCONT)) return PRDBBAD;
@@ -525,7 +485,7 @@ long RemoveFromEntry (at, aid, bid)
 	} /* for all coentry slots */
 	hloc = nptr;
 	nptr = centry.next;
-	bcopy(&centry,&hentry,sizeof(centry));
+	memcpy(&hentry, &centry, sizeof(centry));
     } /* while there are coentries */
     return PRNOENT;
 }
@@ -533,46 +493,37 @@ long RemoveFromEntry (at, aid, bid)
 /* DeleteEntry - delete the entry in tentry at loc, removing it from all
  * groups, putting groups owned by it on orphan chain, and freeing the space */
 
-long DeleteEntry (at, tentry, loc)
-  register struct ubik_trans *at;
+afs_int32 DeleteEntry (at, tentry, loc)
+  struct ubik_trans *at;
   struct prentry *tentry;
-  long loc;
+  afs_int32 loc;
 {
-    register long code;
+    afs_int32 code;
     struct contentry centry;
-    register long  i;
-    long nptr;
+    afs_int32  i;
+    afs_int32 nptr;
 
-#ifdef CROSS_CELL
-    if (index(tentry->name,'@')) {
-	if (tentry->flags & PRGRP) {
-	    /* If there are still foreign user accounts from that cell
-	     * don't delete the group */
-	    if (tentry->count) return PRBADARG;
+    if (strchr(tentry->name,'@')) {
+       if (tentry->flags & PRGRP) {
+	/* If there are still foreign user accounts from that cell
+	   don't delete the group */
+	   if (tentry->count) return PRBADARG;
 	} else {
-	    /* It's a user adjust the group quota upwards */
-	    long loc = FindByID (at, tentry->cellid);
-	    struct prentry centry;
-	    if (loc) {
-		code = pr_Read (at, 0, loc, &centry, sizeof(centry));
-		if (code) return code;
-		if (ntohl(centry.flags) & PRQUOTA) {
-                    centry.ngroups = htonl(ntohl(centry.ngroups) + 1);
-		}
-#if !ADD_TO_AUTHUSER_GROUP
-		/* if this is a foreign cell entry then decrement the number of
-		 * existing users in the prentry of the authuser group for that
-		 * cell
-		 */
-		centry.count = htonl(ntohl(centry.count) - 1);
-#endif
-		code = pr_Write (at, 0, loc, &centry, sizeof(centry));
-		if (code) return code;
+	    /* adjust quota */
+
+          afs_int32 loc = FindByID (at, tentry->cellid);
+          struct prentry centry;
+          if (loc) {
+            code = pr_Read (at, 0, loc, &centry, sizeof(centry));
+            if (code) return code;
+            if (ntohl(centry.flags) & PRQUOTA) {
+		    centry.ngroups = htonl(ntohl(centry.ngroups) + 1);
 	    }
-        }
+	    code = pr_Write (at, 0, loc, &centry, sizeof(centry));
+	    if (code) return code;
+	  }
+	}
     }
-#endif /* CROSS_CELL */
-    
     /* First remove the entire membership list */
     for (i=0;i<PRSIZE;i++) {
 	if (tentry->entries[i] == PRBADID) continue;
@@ -581,7 +532,7 @@ long DeleteEntry (at, tentry, loc)
 	if (code) return code;
     }
     nptr = tentry->next;
-    while (nptr != NULL) {
+    while (nptr != (afs_int32)NULL) {
 	code = pr_ReadCoEntry(at,0,nptr,&centry);
 	if (code != 0) return PRDBFAIL;
 	for (i=0;i<COSIZE;i++) {
@@ -614,23 +565,20 @@ long DeleteEntry (at, tentry, loc)
     code = RemoveFromNameHash(at,tentry->name,&loc);
     if (code != PRSUCCESS) return code;
 
-    if (tentry->flags & (PRGRP | PRFOREIGN)) {
-	long loc = FindByID (at, tentry->creator);
+    if (tentry->flags & PRGRP) {
+	afs_int32 loc = FindByID(at, tentry->creator);
 	struct prentry centry;
 	int admin;
+
 	if (loc) {
 	    code = pr_Read (at, 0, loc, &centry, sizeof(centry));
 	    if (code) return code;
-	    admin = ((tentry->creator == SYSADMINID) ||
-		     IsAMemberOf (at, tentry->creator, SYSADMINID));
+	    admin = ( (tentry->creator == SYSADMINID) ||
+		      IsAMemberOf(at,tentry->creator,SYSADMINID) );
 	    if (ntohl(centry.flags) & PRQUOTA) {
-		if ((tentry->flags & PRGRP) &&
-		    !(admin && (ntohl(centry.ngroups) >= 20))) {
+		if (!(admin && (ntohl(centry.ngroups) >= 20))) {
 		    centry.ngroups = htonl(ntohl(centry.ngroups) + 1);
-		} else if ((tentry->flags & PRFOREIGN) &&
-			   !(admin && (ntohl(centry.nusers) >= 20))) {
-		    centry.nusers = htonl(ntohl(centry.nusers) + 1);
-		}
+		 }
 	    }
 	    code = pr_Write (at, 0, loc, &centry, sizeof(centry));
 	    if (code) return code;
@@ -638,16 +586,17 @@ long DeleteEntry (at, tentry, loc)
     }
 
     if (tentry->flags & PRGRP) {
-	if (inc_header_word (at, groupcount, -1)) return PRDBFAIL;
-    }
-    else if (tentry->flags & PRFOREIGN) {
-	if (inc_header_word (at, foreigncount, -1)) return PRDBFAIL;
+        if (inc_header_word (at, groupcount, -1)) return PRDBFAIL;
     }
     else if (tentry->flags & PRINST) {
 	if (inc_header_word (at, instcount, -1)) return PRDBFAIL;
     }
     else {
-	if (inc_header_word (at, usercount, -1)) return PRDBFAIL;
+        if (strchr(tentry->name,'@')) {
+	   if (inc_header_word (at, foreigncount, -1)) return PRDBFAIL;
+	} else {
+          if (inc_header_word (at, usercount, -1)) return PRDBFAIL;
+	}
     }
     code = FreeBlock(at, loc);
     return code;
@@ -658,21 +607,21 @@ long DeleteEntry (at, tentry, loc)
  *
  * Note the entry is written out by this routine. */
 
-long AddToEntry (tt, entry, loc, aid)
+afs_int32 AddToEntry (tt, entry, loc, aid)
   struct ubik_trans *tt;
   struct prentry *entry;
-  long loc;
-  long aid;
+  afs_int32 loc;
+  afs_int32 aid;
 {
-    register long code;
-    long i;
+    afs_int32 code;
+    afs_int32 i;
     struct contentry nentry;
     struct contentry aentry;
-    long nptr;
-    long last;				/* addr of last cont. block */
-    long first = 0;
-    long cloc;
-    long slot = -1;
+    afs_int32 nptr;
+    afs_int32 last;				/* addr of last cont. block */
+    afs_int32 first = 0;
+    afs_int32 cloc = 0;
+    afs_int32 slot = -1;
 
     if (entry->id == aid) return PRINCONSISTENT;
 #ifdef PR_REMEMBER_TIMES
@@ -695,7 +644,7 @@ long AddToEntry (tt, entry, loc, aid)
     }
     last = 0;
     nptr = entry->next;
-    while (nptr != NULL) {
+    while (nptr != (afs_int32)NULL) {
  	code = pr_ReadCoEntry(tt,0,nptr,&nentry);
 	if (code != 0) return code;
 	last = nptr;
@@ -747,10 +696,10 @@ long AddToEntry (tt, entry, loc, aid)
     else {
 	entry->next = nptr;
     }
-    bzero(&aentry,sizeof(aentry));
+    memset(&aentry, 0, sizeof(aentry));
     aentry.flags |= PRCONT;
     aentry.id = entry->id;
-    aentry.next = NULL;
+    aentry.next = 0;
     aentry.entries[0] = aid;
     code = pr_WriteCoEntry(tt,0,nptr,&aentry);
     if (code != 0) return code;
@@ -761,37 +710,41 @@ long AddToEntry (tt, entry, loc, aid)
 	
 }
 
-long AddToPRList (alist, sizeP, id)
+afs_int32 AddToPRList (alist, sizeP, id)
   prlist *alist;
   int *sizeP;
-  long id;
+  afs_int32 id;
 {
-    if (alist->prlist_len >= PR_MAXGROUPS) return PRTOOMANY;
+    char *tmp;
+    int count;
+
     if (alist->prlist_len >= *sizeP) {
-	*sizeP = *sizeP + 100;
-	if (*sizeP > PR_MAXGROUPS) *sizeP = PR_MAXGROUPS;
-	alist->prlist_val =
-	    (long *) ((alist->prlist_val) ?
-		      realloc (alist->prlist_val, (*sizeP)*sizeof(long)) :
-		      malloc ((*sizeP)*sizeof(long)));
+        count = alist->prlist_len + 100;
+	if (alist->prlist_val) {
+	   tmp = (char *) realloc(alist->prlist_val, count*sizeof(afs_int32));
+	} else {
+	   tmp = (char *) malloc(count*sizeof(afs_int32));
+	}
+	if (!tmp) return(PRNOMEM);
+	alist->prlist_val = (afs_int32 *)tmp;
+	*sizeP = count;
     }
     alist->prlist_val[alist->prlist_len++] = id;
     return 0;
 }
 
-long GetList (at, tentry, alist, add)
+afs_int32 GetList (at, tentry, alist, add)
   struct ubik_trans *at;
   struct prentry *tentry;
   prlist *alist;
-  long add;
+  afs_int32 add;
 {
-    register long code;
-    long i;
+    afs_int32 code;
+    afs_int32 i;
     struct contentry centry;
-    long nptr;
+    afs_int32 nptr;
     int size;
     int count = 0;
-    extern long IDCmp();
 
     size = 0;
     alist->prlist_val = 0;
@@ -804,8 +757,62 @@ long GetList (at, tentry, alist, add)
 	if (code) return code;
     }
 
+    for (nptr = tentry->next; nptr != 0; nptr = centry.next) {
+	/* look through cont entries */
+	code = pr_ReadCoEntry(at,0,nptr,&centry);
+	if (code != 0) return code;
+	for (i=0;i<COSIZE;i++) {
+	    if (centry.entries[i] == PRBADID) continue;
+	    if (centry.entries[i] == 0) break;
+	    code = AddToPRList (alist, &size, centry.entries[i]);
+	    if (code) return code;
+	}
+	if (count++ > 50) IOMGR_Poll(), count = 0;
+    }
+
+    if (add) { /* this is for a CPS, so tack on appropriate stuff */
+	if (tentry->id != ANONYMOUSID && tentry->id != ANYUSERID) {
+	    if ((code = AddToPRList (alist, &size, ANYUSERID)) ||
+		(code = AddAuthGroup(tentry, alist, &size)) || 
+		(code = AddToPRList (alist, &size, tentry->id))) return code;
+	}
+	else {
+	    if ((code = AddToPRList (alist, &size, ANYUSERID)) ||
+		(code = AddToPRList (alist, &size, tentry->id))) return code;
+	}
+    }
+    if (alist->prlist_len > 100) IOMGR_Poll();
+    qsort(alist->prlist_val,alist->prlist_len,sizeof(afs_int32),IDCmp);
+    return PRSUCCESS;
+}
+
+
+afs_int32 GetList2 (at, tentry, tentry2 , alist, add)
+  struct ubik_trans *at;
+  struct prentry *tentry;
+  struct prentry *tentry2;
+  prlist *alist;
+  afs_int32 add;
+{
+    afs_int32 code = 0;
+    afs_int32 i;
+    struct contentry centry;
+    afs_int32 nptr;
+    afs_int32 size;
+    int count = 0;
+
+    size = 0;
+    alist->prlist_val = 0;
+    alist->prlist_len = 0;
+    for (i=0;i<PRSIZE;i++) {
+	if (tentry->entries[i] == PRBADID) continue;
+	if (tentry->entries[i] == 0) break;
+	code = AddToPRList (alist, &size, tentry->entries[i]);
+	if (code) return code;
+    }
+
     nptr = tentry->next;
-    while (nptr != NULL) {
+    while (nptr != (afs_uint32)NULL) {
 	/* look through cont entries */
 	code = pr_ReadCoEntry(at,0,nptr,&centry);
 	if (code != 0) return code;
@@ -819,17 +826,34 @@ long GetList (at, tentry, alist, add)
 	if (count++ > 50) IOMGR_Poll(), count = 0;
     }
 
+    for (i=0;i<PRSIZE;i++) {
+	if (tentry2->entries[i] == PRBADID) continue;
+	if (tentry2->entries[i] == 0) break;
+	code = AddToPRList (alist, &size, tentry2->entries[i]);
+	if (code) break;
+    }
+
+    if (!code) {
+	    nptr = tentry2->next;
+	    while (nptr != (afs_uint32)NULL) {
+		/* look through cont entries */
+		code = pr_ReadCoEntry(at,0,nptr,&centry);
+		if (code != 0) break;
+		for (i=0;i<COSIZE;i++) {
+		    if (centry.entries[i] == PRBADID) continue;
+	    	    if (centry.entries[i] == 0) break;
+	    	    code = AddToPRList (alist, &size, centry.entries[i]);
+	    	    if (code) break;
+		}
+	   	nptr = centry.next;
+		if (count++ > 50) IOMGR_Poll(), count = 0;
+	    }
+    }
     if (add) { /* this is for a CPS, so tack on appropriate stuff */
 	if (tentry->id != ANONYMOUSID && tentry->id != ANYUSERID) {
-#ifdef CROSS_CELL
-	    if ((code = AddToPRList (alist, &size, ANYUSERID)) ||
-		(code = AddAuthGroup(tentry, alist, &size)) ||
-		(code = AddToPRList (alist, &size, tentry->id))) return code;
-#else
 	    if ((code = AddToPRList (alist, &size, ANYUSERID)) ||
 		(code = AddToPRList (alist, &size, AUTHUSERID)) ||
 		(code = AddToPRList (alist, &size, tentry->id))) return code;
-#endif
 	}
 	else {
 	    if ((code = AddToPRList (alist, &size, ANYUSERID)) ||
@@ -837,53 +861,54 @@ long GetList (at, tentry, alist, add)
 	}
     }
     if (alist->prlist_len > 100) IOMGR_Poll();
-    qsort(alist->prlist_val,alist->prlist_len,sizeof(long),IDCmp);
+    qsort(alist->prlist_val,alist->prlist_len,sizeof(afs_int32),IDCmp);
     return PRSUCCESS;
 }
 
-long GetOwnedChain (ut, next, alist)
+afs_int32 GetOwnedChain (ut, next, alist)
   struct ubik_trans *ut;
-  long next;
+  afs_int32 *next;
   prlist *alist;
-{   register long code;
+{   afs_int32 code;
     struct prentry tentry;
     int size;
     int count = 0;
-    extern long IDCmp();
 
     size = 0;
     alist->prlist_val = 0;
     alist->prlist_len = 0;
 
-    while (next) {
-	code = pr_Read (ut, 0, next, &tentry, sizeof(tentry));
+    for (; *next; *next = ntohl(tentry.nextOwned)) {
+	code = pr_Read (ut, 0, *next, &tentry, sizeof(tentry));
 	if (code) return code;
 	code = AddToPRList (alist, &size, ntohl(tentry.id));
+	if (alist->prlist_len >= PR_MAXGROUPS) {
+	   return PRTOOMANY;
+	}
 	if (code) return code;
-	next = ntohl(tentry.nextOwned);
 	if (count++ > 50) IOMGR_Poll(), count = 0;
     }
     if (alist->prlist_len > 100) IOMGR_Poll();
-    qsort(alist->prlist_val,alist->prlist_len,sizeof(long),IDCmp);
+    qsort(alist->prlist_val,alist->prlist_len,sizeof(afs_int32),IDCmp);
     return PRSUCCESS;
 }
 
-long GetMax(at,uid,gid)
-register struct ubik_trans *at;
-long *uid;
-long *gid;
+afs_int32 GetMax(at,uid,gid)
+struct ubik_trans *at;
+afs_int32 *uid;
+afs_int32 *gid;
 {
     *uid = ntohl(cheader.maxID);
     *gid = ntohl(cheader.maxGroup);
     return PRSUCCESS;
 }
 
-long SetMax(at,id,flag)
-register struct ubik_trans *at;
-long id;
-long flag;
+afs_int32 SetMax(at,id,flag)
+struct ubik_trans *at;
+afs_int32 id;
+afs_int32 flag;
 {
-    register long code;
+    afs_int32 code;
     if (flag & PRGRP) {
 	cheader.maxGroup = htonl(id);
 	code = pr_Write(at,0,16,(char *)&cheader.maxGroup,sizeof(cheader.maxGroup));
@@ -897,20 +922,31 @@ long flag;
     return PRSUCCESS;
 }
 
-int pr_noAuth;
-
-long Initdb()
+afs_int32 read_DbHeader(tt)
+     struct ubik_trans *tt;
 {
-    long code;
-    struct ubik_trans *tt;
-    long len;
-    static long initd=0;
-#if 0
-    static struct ubik_version curver;
-    struct ubik_version newver;
-#endif
+    afs_int32 code;
 
-    /* init the database.  We'll try reading it, but if we're starting from scratch, we'll have to do a write transaction. */
+    if (!ubik_CacheUpdate(tt)) return 0;
+
+    code = pr_Read(tt, 0, 0, (char *)&cheader, sizeof(cheader));
+    if (code != 0) {
+        com_err (whoami, code, "Couldn't read header");
+    }
+    return code;
+}
+
+int pr_noAuth;
+afs_int32 initd=0;
+
+afs_int32 Initdb()
+{
+    afs_int32 code;
+    struct ubik_trans *tt;
+    afs_int32 len;
+
+    /* init the database.  We'll try reading it, but if we're starting
+     * from scratch, we'll have to do a write transaction. */
 
     pr_noAuth = afsconf_GetNoAuthFlag(prdir);
 
@@ -923,23 +959,10 @@ long Initdb()
     }
     if (!initd) {
 	initd = 1;
-#if 0
-	bzero(&curver,sizeof(curver));
-#endif
     } else if (!ubik_CacheUpdate (tt)) {
 	code = ubik_EndTrans(tt);
 	return code;
     }
-#if 0
-    code = ubik_GetVersion(tt,&newver);
-    if (vcmp(curver,newver) == 0) {
-	/* same version */
-	code = ubik_EndTrans(tt);
-	if (code) return code;
-	return PRSUCCESS;
-    }
-    bcopy(&newver,&curver,sizeof(struct ubik_version));
-#endif
 
     len = sizeof(cheader);
     code = pr_Read(tt, 0, 0, (char *) &cheader, len);
@@ -950,7 +973,7 @@ long Initdb()
     }
     if ((ntohl(cheader.version) == PRDBVERSION) &&
 	ntohl(cheader.headerSize) == sizeof(cheader) &&
-	ntohl(cheader.eofPtr) != NULL &&
+	ntohl(cheader.eofPtr) != (afs_uint32)NULL &&
 	FindByID(tt,ANONYMOUSID) != 0){
 	/* database exists, so we don't have to build it */
 	code = ubik_EndTrans(tt);
@@ -996,7 +1019,7 @@ long Initdb()
      */
     if ((ntohl(cheader.version) == PRDBVERSION) &&
 	ntohl(cheader.headerSize) == sizeof(cheader) &&
-	ntohl(cheader.eofPtr) != NULL &&
+	ntohl(cheader.eofPtr) != (afs_uint32)NULL &&
 	FindByID(tt,ANONYMOUSID) != 0){
 	/* database exists, so we don't have to build it */
 	code = ubik_EndTrans(tt);
@@ -1014,8 +1037,8 @@ long Initdb()
     }
 
 #define InitialGroup(id,name) do {    \
-    long temp = (id);		      \
-    long flag = (id) < 0 ? PRGRP : 0; \
+    afs_int32 temp = (id);		      \
+    afs_int32 flag = (id) < 0 ? PRGRP : 0; \
     code = CreateEntry		      \
 	(tt, (name), &temp, /*idflag*/1, flag, SYSADMINID, SYSADMINID); \
     if (code) {			      \
@@ -1027,8 +1050,10 @@ long Initdb()
 } while (0)
 
     InitialGroup (SYSADMINID, "system:administrators");
+    InitialGroup (SYSBACKUPID, "system:backup");
     InitialGroup (ANYUSERID, "system:anyuser");
     InitialGroup (AUTHUSERID, "system:authuser");
+    InitialGroup (SYSVIEWERID, "system:ptsviewers");
     InitialGroup (ANONYMOUSID, "anonymous");
 
     /* Well, we don't really want the max id set to anonymousid, so we'll set
@@ -1045,102 +1070,27 @@ long Initdb()
     return PRSUCCESS;
 }
 
-/*
- * FUNCTION
- * 	fixOwnerChain
- *
- * DESCRIPTION
- * This function follows the "owned" and "nextOwned" chains and verifies
- * that the data is consistent.  The chain is only traversed as far as is
- * necessary for efficiency reasons:
- * o Follow the "nextOwned" chain only if we had to adjust ourself
- *   (either renaming ourself or adjusting the owner id)
- * o Follow the "owned" chain if we had to adjust ourself (see above), or
- *   we are the parent that started this mess (tentry->id == oldid/newid)
- */
-
-long fixOwnerChain(at,loc,tentry,oldid,newid)
-    struct ubik_trans *at;
-    struct prentry *tentry;
-    long loc, oldid, newid;
-{
-    char name[PR_MAXNAMELEN];
-    struct prentry nentry;
-    long pos;
-    register long code;
-    int nextOwn = 0;
-
-    if (newid && oldid != newid) {
-	if (tentry->owner == oldid) tentry->owner = newid;
-	if (tentry->creator == oldid) tentry->creator = newid;
-
-	/* If our owner has changed, continue along the nextOwned chain */
-	if (tentry->owner == newid) nextOwn=1;
-    }
-    
-    strcpy(name, tentry->name);
-    code=CorrectGroupName(at,name,tentry->creator,tentry->owner,tentry->name);
-    if (code) return code;
-    if (strcmp(name, tentry->name)) {
-
-	/* If we had to rename ourself, there are probably others
-	 * along the nextOwned chain that have to do the same.  */
-	nextOwn = 1;
-
-	pos = FindByName(at,tentry->name);
-	if (pos) return PREXIST;
-
-	code = RemoveFromNameHash (at, name, &loc);
-	if (code) return code;
-	code = AddToNameHash(at,tentry->name,loc);
-	if (code) return code;
-    }
-
-    code = pr_WriteEntry(at, 0, loc, tentry);
-    if (code) return code;
-
-    if ((loc = tentry->owned) &&
-	(nextOwn || (newid && tentry->id == newid) || (tentry->id == oldid))) {
-
-	code = pr_ReadEntry(at,0,loc,&nentry);
-	if (code) return code;
-	code = fixOwnerChain(at, loc, &nentry, oldid, newid);
-	if (code) return code;
-    }
-
-    if (nextOwn && (loc = tentry->nextOwned)) {
-
-	code = pr_ReadEntry(at,0,loc,&nentry);
-	if (code) return code;
-	code = fixOwnerChain(at, loc, &nentry, oldid, newid);
-	if (code) return code;
-    }
-    return PRSUCCESS;
-}
-
-long ChangeEntry (at, aid, cid, name, oid, newid)
+afs_int32 ChangeEntry (at, aid, cid, name, oid, newid)
   struct ubik_trans *at;
-  long aid;
-  long cid;
+  afs_int32 aid;
+  afs_int32 cid;
   char *name;
-  long oid;
-  long newid;
+  afs_int32 oid;
+  afs_int32 newid;
 {
-    register long code, nptr, i;
-    long pos;
-    struct prentry tentry, gentry;
+    afs_int32 code;
+    afs_int32 i, nptr, pos;
     struct contentry centry;
-    long loc;
-    long oldowner;
+    struct prentry tentry, tent;
+    afs_int32 loc;
+    afs_int32 oldowner;
     char holder[PR_MAXNAMELEN];
     char temp[PR_MAXNAMELEN];
     char oldname[PR_MAXNAMELEN];
-#if CROSS_CELL
     char *atsign;
-#endif
 
-    bzero(holder,PR_MAXNAMELEN);
-    bzero(temp,PR_MAXNAMELEN);
+    memset(holder, 0, PR_MAXNAMELEN);
+    memset(temp, 0, PR_MAXNAMELEN);
     loc = FindByID(at,aid);
     if (!loc) return PRNOENT;
     code = pr_ReadEntry(at,0,loc,&tentry);
@@ -1154,11 +1104,15 @@ long ChangeEntry (at, aid, cid, name, oid, newid)
 #endif
 
     /* we're actually trying to change the id */
-    if (aid != newid && newid != 0) {
+    if (newid && (newid != aid)) {
 	if (!IsAMemberOf(at,cid,SYSADMINID) && !pr_noAuth) return PRPERM;
+
 	pos = FindByID(at,newid);
 	if (pos) return PRIDEXIST;  /* new id already in use! */
 	if ((aid < 0 && newid > 0) || (aid > 0 && newid < 0)) return PRPERM;
+
+	/* Should check that foreign users id to change to is good: inRange() */
+
 	/* if new id is not in use, rehash things */
 	code = RemoveFromIDHash(at,aid,&loc);
 	if (code != PRSUCCESS) return code;
@@ -1167,78 +1121,71 @@ long ChangeEntry (at, aid, cid, name, oid, newid)
 	if (code) return code;
 	code = AddToIDHash(at,tentry.id,loc);
 	if (code) return code;
+
 	/* get current data */
-	code = pr_ReadEntry(at,0,loc,&tentry);
+	code = pr_ReadEntry(at, 0, loc, &tentry);
 	if (code) return PRDBFAIL;
 
-        for (i=0;i<PRSIZE;i++) {
-	    if (tentry.entries[i] == PRBADID) continue;
-	    if (tentry.entries[i] == 0) break;
-	    if (pos = FindByID(at, tentry.entries[i])) {
-		code = pr_ReadEntry(at,0,pos,&gentry);
-		if (code) return PRDBFAIL;
-		code = AddToEntry(at,&gentry,pos,newid);
-		if (code) return PRDBFAIL;
-		code = RemoveFromEntry(at,aid,tentry.entries[i]);
-		if (code) return PRDBFAIL;
-	    } else {
-		fprintf(stderr, "ChangeEntry: %d: Couldn't locate group %d\n",
-		    newid, tentry.entries[i]);
-		return PRDBFAIL;
-	    }
+	/* Also change the references from the membership list */
+	for (i=0; i<PRSIZE; i++) {
+	   if (tentry.entries[i] == PRBADID) continue;
+	   if (tentry.entries[i] == 0) break;
+           pos = FindByID(at, tentry.entries[i]);
+	   if (!pos) return(PRDBFAIL);
+	   code = RemoveFromEntry(at, aid, tentry.entries[i]);
+	   if (code) return code;
+	   code = pr_ReadEntry(at, 0, pos, &tent);
+	   if (code) return code;
+	   code = AddToEntry(at, &tent, pos, newid);
+	   if (code) return code;
 	}
-	nptr = tentry.next;
-	while (nptr) {
-	    /* look through cont entries */
-	    code = pr_ReadCoEntry(at,0,nptr,&centry);
-	    if (code != 0) return code;
-	    for (i=0;i<COSIZE;i++) {
-		if (centry.entries[i] == PRBADID) continue;
-		if (centry.entries[i] == 0) break;
-		if (pos = FindByID(at, centry.entries[i])) {
-		    code = pr_ReadEntry(at,0,pos,&gentry);
-		    if (code) return PRDBFAIL;
-		    code = AddToEntry(at,&gentry,pos,newid);
-		    if (code) return PRDBFAIL;
-		    code = RemoveFromEntry(at,aid,centry.entries[i]);
-		    if (code) return PRDBFAIL;
-		} else
-		    return PRDBFAIL;
-	    }
-	    nptr = centry.next;
-	}
+	/* Look through cont entries too. This needs to be broken into
+	 * seperate transaction so that no one transaction becomes too 
+	 * large to complete.
+	 */
+	for (nptr=tentry.next; nptr; nptr=centry.next) {
+	   code = pr_ReadCoEntry(at, 0, nptr, &centry);
+           if (code) return code;
+           for (i=0; i<COSIZE; i++) {
+	      if (centry.entries[i] == PRBADID) continue;
+	      if (centry.entries[i] == 0) break;
+	      pos = FindByID(at, centry.entries[i]);
+	      if (!pos) return(PRDBFAIL);
+	      code = RemoveFromEntry(at, aid, centry.entries[i]);
+	      if (code) return code;
+	      code = pr_ReadEntry(at, 0, pos, &tent);
+	      if (code) return code;
+	      code = AddToEntry(at, &tent, pos, newid);
+	      if (code) return code;
+	   }
+       }
     }
 
-#ifdef CROSS_CELL
-    atsign = index(tentry.name, '@'); /* check for foreign entry */
-#endif
+    atsign = strchr(tentry.name, '@'); /* check for foreign entry */
 
     /* Change the owner */
-    if (tentry.owner != oid && oid) {
+    if (oid && (oid != tentry.owner)) {
 	/* only groups can have their owner's changed */
 	if (!(tentry.flags & PRGRP)) return PRPERM;
-#ifdef CROSS_CELL
-	/* don't allow modifications to foreign cell group owners */
-	if (atsign) return PRPERM;
-#endif
+	if (atsign != NULL) return PRPERM;
 	oldowner = tentry.owner;
 	tentry.owner = oid;
 	/* The entry must be written through first so Remove and Add routines
          * can operate on disk data */
 	code = pr_WriteEntry(at,0,loc,(char *)&tentry);
 	if (code) return PRDBFAIL;
-	if (tentry.flags & PRGRP) {
-	    /* switch owner chains */
-	    if (oldowner)		/* if it has an owner */
-		code = RemoveFromOwnerChain(at,tentry.id,oldowner);
-	    else			/* must be an orphan */
-		code = RemoveFromOrphan(at,tentry.id);
-	    if (code) return code;
-	    code = AddToOwnerChain(at,tentry.id,tentry.owner);
-	    if (code) return code;
-	}
+
+	/* switch owner chains */
+	if (oldowner)		/* if it has an owner */
+	   code = RemoveFromOwnerChain(at,tentry.id,oldowner);
+	else			/* must be an orphan */
+	   code = RemoveFromOrphan(at,tentry.id);
+	if (code) return code;
+	code = AddToOwnerChain(at,tentry.id,tentry.owner);
+	if (code) return code;
+
 	/* fix up the name */
-	if ((tentry.flags & PRGRP) && (strlen(name) == 0)) name = tentry.name;
+	if (strlen(name) == 0) name = tentry.name;
 	/* get current data */
 	code = pr_ReadEntry(at,0,loc,&tentry);
 	if (code) return PRDBFAIL;
@@ -1250,9 +1197,8 @@ long ChangeEntry (at, aid, cid, name, oid, newid)
 	(*name && (strcmp (tentry.name, name) != 0))) {
 	strncpy (oldname, tentry.name, PR_MAXNAMELEN);
 	if (tentry.flags & PRGRP) {
-#ifdef CROSS_CELL
-	    if (atsign) return PRPERM;
-#endif
+   	    /* don't let foreign cell groups change name */
+  	    if (atsign != NULL) return PRPERM;
 	    code = CorrectGroupName (at, name, cid, tentry.owner, tentry.name);
 	    if (code) return code;
 
@@ -1261,23 +1207,23 @@ long ChangeEntry (at, aid, cid, name, oid, newid)
 	    } else {			/* new name, caller must be correct */
 		if (strcmp (name, tentry.name) != 0) return PRBADNAM;
 	    }
-	} else {
-#ifdef CROSS_CELL
-	    /* Allow a foreign name change only if the cellname part is
-	     * the same */
+	}
+	else
+	/* Allow a foreign name change only if the cellname part is
+	   the same */
+	{
             char *newatsign;
 
-            newatsign = index (name, '@');
-            if (newatsign != atsign){ /* if they are the same no problem*/
-		/* if the pointers are not equal the strings better be */
-		if ((atsign == 0) || (newatsign == 0) ||
-                    strcmp (atsign,newatsign)) return PRPERM;
-            }
-#endif
-            if (!CorrectUserName(name)) return PRBADNAM;
-        }
+	    newatsign = strchr(name, '@');
+	    if (newatsign != atsign){ /* if they are the same no problem*/
+	       /*if the pointers are not equal the strings better be */
+	       if ((atsign == NULL) || (newatsign == NULL) ||
+		    strcmp (atsign,newatsign)) return PRPERM;
+	    } 
+	    if (!CorrectUserName(name)) return PRBADNAM;
+	}
 
-	pos = FindByName(at,name);
+	pos = FindByName(at,name, &tent);
 	if (pos) return PREXIST;
 	code = RemoveFromNameHash (at, oldname, &loc);
 	if (code != PRSUCCESS) return code;
@@ -1288,64 +1234,73 @@ long ChangeEntry (at, aid, cid, name, oid, newid)
 	if (code != PRSUCCESS) return code;
 nameOK:;
     }
-    return (fixOwnerChain(at, loc, &tentry, aid, newid));
+    return PRSUCCESS;
 }
 
-#ifdef CROSS_CELL
-long allocNextId(cellEntry)
-struct prentry *cellEntry;
+
+afs_int32 allocNextId(cellEntry)
+     struct prentry *cellEntry;
 {
-    /* Id's for foreign cell entries are constructed as follows:
-     * The 16 low order bits are the group id of the cell and the
-     * top 16 bits identify the particular users in that cell */
+	/* Id's for foreign cell entries are constructed as follows:
+	   The 16 low order bits are the group id of the cell and the
+	   top 16 bits identify the particular users in that cell */
 
-    long id;
+	afs_int32 id;
 
-    id = (ntohl(cellEntry -> nusers) +1);
-    cellEntry -> nusers = htonl(id);
-    /* use the field nusers to keep the last used id in that
-     * foreign cell's group.
-     *
-     * Note: It would seem more appropriate to use ngroup for
-     * that and nusers to enforce the quota, however pts does not
-     * have an option to change foreign users quota yet. */
-    id = (id << 16) | ((ntohl(cellEntry-> id)) & 0x0000ffff);
-    return id;
+
+	id = (ntohl(cellEntry -> nusers) +1); 
+	cellEntry->nusers = htonl(id);
+				      /* use the field nusers to keep 
+					 the next available id in that
+					 foreign cell's group. Note :
+					 It would seem more appropriate
+					 to use ngroup for that and nusers
+					 to enforce the quota, however pts
+					 does not have an option to change 
+					 foreign users quota yet  */
+
+	id = (id << 16) | ((ntohl(cellEntry-> id)) & 0x0000ffff);
+	return id;
 }
 
 int inRange(cellEntry,aid)
 struct prentry *cellEntry;
-long aid;
+afs_int32 aid;
 {
-    unsigned long id,cellid,groupid;
+	afs_uint32 id,cellid,groupid;
 
-    /* The only thing that we want to make sure here is that the id
-     * is in the legal range of this group. If it is a duplicate we
-     * don't care since it will get in a different check. */
-    cellid = aid & 0x0000ffff;
-    groupid =  (ntohl(cellEntry-> id)) & 0x0000ffff;
-    if (cellid != groupid) return 0;		/* not in range */
 
-    /* if we got here we're ok but we need to update the nusers field
-     * in order to get the id correct the next time that we try to
-     * allocate it automatically. */
-    id = aid >> 16;
-    if (id > ntohl(cellEntry -> nusers))
-	cellEntry -> nusers = htonl(id);
-    return 1;
+	/*
+	  The only thing that we want to make sure here is that
+	  the id is in the legal range of this group. If it is
+	  a duplicate we don't care since it will get caught 
+	  in a different check.
+	*/
+
+	cellid = aid & 0x0000ffff;
+	groupid =  (ntohl(cellEntry-> id)) & 0x0000ffff;
+	if (cellid != groupid) return 0; /* not in range */
+
+	/* 
+	   if we got here we're ok but we need to update the nusers
+	   field in order to get the id correct the next time that 
+	   we try to allocate it automatically
+	*/
+
+	id = aid >> 16;
+	if (id > ntohl(cellEntry -> nusers))
+		cellEntry -> nusers = htonl(id);
+	return 1;
+
 }
 
 AddAuthGroup(tentry, alist, size)
-    struct prentry *tentry;
-    prlist *alist;
-    long *size;
+  struct prentry *tentry;
+  prlist *alist;
+  afs_int32 *size;
 {
-    if (!(index(tentry->name, '@')))
-	return (AddToPRList (alist, size, AUTHUSERID));
-#if ADD_TO_AUTHUSER_GROUP
-    return PRSUCCESS;
-#else
-    return (AddToPRList (alist, size, tentry->cellid));
-#endif
+	if (!(strchr(tentry->name, '@'))) 
+             return (AddToPRList (alist, size, AUTHUSERID));
+	else 
+	     return PRSUCCESS;
 }
-#endif	/* CROSS_CELL */

@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.7 2001-10-23 19:35:56 zacheiss Exp $
+# $Id: Makefile.in,v 1.8 2002-09-25 20:46:51 zacheiss Exp $
 
 SHELL=/bin/sh
 @SET_MAKE@
@@ -17,7 +17,6 @@ PRO_C_OPTS=@PRO_C_OPTS@
 PRO_C_FLAGS=$(PRO_C_OPTS) $(PRO_C_DEFS) $(PRO_C_INCLUDES) $(AFS_PRO_C_INCLUDES)
 LDFLAGS=@LDFLAGS@
 AFS_LIBS=@AFS_LIBS@
-AFS_EXTRA_LIBS=@AFS_EXTRA_LIBS@
 AFS_DIR=@AFS_DIR@
 SQL_LIBS=@SQL_LIBS@
 LIBS=@LIBS@
@@ -62,7 +61,7 @@ install:
 	$(INSTALL_PROGRAM) $(srcdir)/pt_util.pl $(mrbindir)
 
 afssync: $(SYNC_OBJS) $(MR_LIBDEP)
-	$(CC) -o $@ $(LDFLAGS) $(SYNC_OBJS) $(AFS_LIBS) -llwp -lprot $(AFS_EXTRA_LIBS) $(SQL_LIBS) $(LIBS)
+	$(CC) -o $@ $(LDFLAGS) $(SYNC_OBJS) $(AFS_LIBS) -llwp -lprot $(SQL_LIBS) $(LIBS)
 
 pt_util: $(UTIL_OBJS) $(MR_LIBDEP)
-	$(CC) -o $@ $(LDFLAGS) $(UTIL_OBJS) $(AFS_LIBS) -llwp -lprot $(AFS_EXTRA_LIBS) $(LIBS)
+	$(CC) -o $@ $(LDFLAGS) $(UTIL_OBJS) $(AFS_LIBS) -llwp -lprot $(LIBS)

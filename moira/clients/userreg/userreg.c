@@ -2,7 +2,7 @@
  * $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.c,v $
  * $Author: mar $
  * $Locker:  $
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.c,v 1.18 1990-04-09 14:29:41 mar Exp $ 
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.c,v 1.19 1990-04-09 14:41:00 mar Exp $ 
  *
  *  (c) Copyright 1988 by the Massachusetts Institute of Technology.
  *  For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char    *rcsid_userreg_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.c,v 1.18 1990-04-09 14:29:41 mar Exp $";
+static char    *rcsid_userreg_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/userreg/userreg.c,v 1.19 1990-04-09 14:41:00 mar Exp $";
 #endif	lint
 
 #include <mit-copyright.h>
@@ -236,8 +236,10 @@ dolook()
 		user_has_login = 0;
 		sleep(1);
 		return 0;
-	case UREG_NO_PASSWD_YET:
 	case UREG_HALF_ENROLLED:
+		enrollment = 1;
+		/* fall through to: */
+	case UREG_NO_PASSWD_YET:
 		user_is_valid = 1;
 		user_has_login = 1;
 		display_text_line ("You have chosen a login name, but you have not yet chosen a password.");

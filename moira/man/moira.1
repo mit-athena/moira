@@ -1,11 +1,13 @@
 .TH MOIRA 1 "29 Nov 1988" "Project Athena"
-\" RCSID: $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/man/moira.1,v 1.5 1990-03-08 18:08:47 mar Exp $
+\" RCSID: $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/man/moira.1,v 1.6 1994-10-28 18:23:29 jweiss Exp $
 .SH NAME
 moira, listmaint, usermaint, dcmmaint \- maintain information stored in moira
 .SH SYNOPSIS
 .B moira
 [
 .BI \-nomenu
+|
+.BI \-menu
 ] [
 .BI \-db
 .I host:port
@@ -34,7 +36,8 @@ The option:
 will cause moira to not take over the screen.  With this option
 specified, the screen
 will be handled like a printing terminal.  Each menu will be displayed
-only once.  Typing '?' will cause a menu to be redisplayed.
+only once.  Typing '?' will cause a menu to be redisplayed.  This option
+is the default on the RS6000 and may be overridden with the \-menu option.
 .PP
 When called without options,
 .I moira

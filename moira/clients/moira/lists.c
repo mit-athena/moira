@@ -1,4 +1,4 @@
-/* $Id: lists.c,v 1.51 2002-12-03 21:23:23 zacheiss Exp $
+/* $Id: lists.c,v 1.52 2003-01-02 01:03:36 zacheiss Exp $
  *
  *	This is the file lists.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -24,7 +24,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v 1.51 2002-12-03 21:23:23 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v 1.52 2003-01-02 01:03:36 zacheiss Exp $");
 
 struct mqelem *GetListInfo(int type, char *name1, char *name2);
 char **AskListInfo(char **info, Bool name);
@@ -253,6 +253,10 @@ char **AskListInfo(char **info, Bool name)
 	  SUB_ERROR)
 	return NULL;
       info[L_MAILMAN_SERVER] = canonicalize_hostname(info[L_MAILMAN_SERVER]);
+      
+      /* Change default owner */
+      strcpy(info[L_ACE_TYPE], "LIST");
+      strcpy(info[L_ACE_NAME], "mailman");
     }
 
   do {
@@ -287,16 +291,28 @@ char **AskListInfo(char **info, Bool name)
       free(info[L_ACE_NAME]);
       info[L_ACE_NAME] = canon;
     }
-  if (GetTypeFromUser("What Type of Membership Administrator", "ace_type",
-		      &info[L_MEMACE_TYPE]) == SUB_ERROR)
-    return NULL;
-  if (strcasecmp(info[L_MEMACE_TYPE], "none"))
-    {
-      sprintf(temp_buf, "Which %s will be the membership administrator of this list: ",
-	      info[L_MEMACE_TYPE]);
-      if (GetValueFromUser(temp_buf, &info[L_MEMACE_NAME]) == SUB_ERROR)
-	return NULL;
-    }
+
+  do {
+    if (GetTypeFromUser("What Type of Membership Administrator", "ace_type",
+			&info[L_MEMACE_TYPE]) == SUB_ERROR)
+      return NULL;
+    if (strcasecmp(info[L_MEMACE_TYPE], "none"))
+      {
+	sprintf(temp_buf, "Which %s will be the membership administrator of this list: ",
+		info[L_MEMACE_TYPE]);
+	if (GetValueFromUser(temp_buf, &info[L_MEMACE_NAME]) == SUB_ERROR)
+	  return NULL;
+      }
+    else
+      {
+	Put_message("Setting the Membership Administrator of a Mailman list to 'NONE'");
+	Put_message("means no one will receive the list administrator password.");
+	if (YesNoQuestion("Do you really want to do this?", FALSE) == TRUE)
+	  break;
+      }
+  } while ((!strcasecmp(info[L_MEMACE_TYPE], "none")) && 
+	   atoi(info[L_MAILMAN]));
+
   if (!strcasecmp(info[L_MEMACE_TYPE], "kerberos"))
     {
       char *canon;
@@ -506,6 +522,35 @@ int AddList(int argc, char **argv)
       com_err(program_name, status, " in AddList.");
       Put_message("List Not Created.");
       ret_code = SUB_ERROR;
+    }
+
+  if (atoi(add_args[L_MAILMAN]))
+    {
+      char mailman_address[256], buf[1024];
+
+      status = do_mr_query("get_list_info", 1, add_args, StoreInfo, &elem);
+      if (status)
+	  com_err(program_name, status, "while retrieving list information.");
+      else
+	{
+	  strcpy(mailman_address, add_args[0]);
+	  strcat(mailman_address, "@");
+	  strcat(mailman_address, ((char **)elem->q_data)[L_MAILMAN_SERVER]);
+	  sprintf(buf, "Add STRING %s to LIST %s", mailman_address,
+		  add_args[0]);
+	  if (YesNoQuestion(buf, TRUE) == TRUE)
+	    {
+	      char *args[3];
+	      args[0] = add_args[0];
+	      args[1] = "STRING";
+	      args[2] = mailman_address;
+	      
+	      status = do_mr_query("add_member_to_list", CountArgs(args), args,
+				   NULL, NULL);
+	      if (status)
+		com_err(program_name, status, "while adding member to list.");
+	    }
+	}
     }
 
   FreeInfo(info);

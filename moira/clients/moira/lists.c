@@ -1,4 +1,4 @@
-/* $Id: lists.c,v 1.41 2000-08-10 01:58:40 zacheiss Exp $
+/* $Id: lists.c,v 1.42 2000-08-10 02:16:53 zacheiss Exp $
  *
  *	This is the file lists.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -14,6 +14,7 @@
 
 #include <mit-copyright.h>
 #include <moira.h>
+#include <mrclient.h>
 #include <moira_site.h>
 #include "defs.h"
 #include "f_defs.h"
@@ -23,7 +24,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v 1.41 2000-08-10 01:58:40 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v 1.42 2000-08-10 02:16:53 zacheiss Exp $");
 
 struct mqelem *GetListInfo(int type, char *name1, char *name2);
 char **AskListInfo(char **info, Bool name);
@@ -652,34 +653,21 @@ int AddMember(int argc, char **argv)
 
   if (!strcmp(args[LM_TYPE], "STRING"))
     {
-      if ((p = strchr(args[LM_MEMBER], '@')))
+      if (mrcl_validate_string_member(args[LM_MEMBER]) != MRCL_SUCCESS)
 	{
-	  char *host = canonicalize_hostname(strdup(++p));
-	  mailhubs = GetTypeValues("mailhub");
-	  for (elem = mailhubs; elem; elem = elem->q_forw)
-	    {
-	      if (!strcasecmp(host, elem->q_data))
-		{
-		  free(host);
-		  host = strdup(args[LM_MEMBER]);
-		  *(--p) = 0;
-		  sprintf(temp_buf, "String \"%s\" should be USER or LIST "
-			  "\"%s\" because it is a local name.", host,
-			  args[LM_MEMBER]);
-		  Put_message(temp_buf);
-		  free(args[LM_TYPE]);
-		  free(host);
-		  return DM_NORMAL;
-		}
-	    }
-	  free(host);
-	}
-      else if (!strchr(args[LM_MEMBER], '!'))
-	{
-	  Put_message("Member which is not a foreign mail address "
-		      "should not be type STRING.");
+	  Put_message(mrcl_get_message());
 	  return DM_NORMAL;
 	}
+    }
+  else if (!strcmp(args[LM_TYPE], "KERBEROS"))
+    {
+      char *canon;
+
+      mrcl_validate_kerberos_member(args[LM_MEMBER], &canon);
+      if (mrcl_get_message())
+	Put_message(mrcl_get_message());
+      free(args[LM_MEMBER]);
+      args[LM_MEMBER] = canon;
     }
 
   if ((status = do_mr_query("add_member_to_list", CountArgs(args), args,
@@ -717,6 +705,26 @@ int DeleteMember(int argc, char **argv)
     {
       if ((status = do_mr_query("delete_member_from_list", CountArgs(args),
 				args, NULL, NULL)))
+	{
+	  if ((status == MR_STRING || status == MR_NO_MATCH) &&
+	      !strcmp(args[LM_TYPE], "KERBEROS"))
+	    {
+	      char *canon;
+	      mrcl_validate_kerberos_member(args[LM_MEMBER], &canon);
+	      if (mrcl_get_message())
+		{
+		  free(args[LM_MEMBER]);
+		  args[LM_MEMBER] = canon;
+		  if (do_mr_query("delete_member_from_list", CountArgs(args),
+				  args, NULL, NULL) == MR_SUCCESS)
+		    {
+		      Put_message(mrcl_get_message());
+		      status = MR_SUCCESS;
+		    }
+		}
+	    }
+	}
+      if (status)
 	com_err(program_name, status, " in DeleteMember");
       else
 	Put_message("Deletion Completed.");

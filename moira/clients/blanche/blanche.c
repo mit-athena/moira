@@ -1,4 +1,4 @@
-/* $Id: blanche.c,v 1.47 2000-07-16 23:02:31 zacheiss Exp $
+/* $Id: blanche.c,v 1.48 2000-08-10 02:19:31 zacheiss Exp $
  *
  * Command line oriented Moira List tool.
  *
@@ -20,7 +20,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.47 2000-07-16 23:02:31 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.48 2000-08-10 02:19:31 zacheiss Exp $");
 
 struct member {
   int type;
@@ -612,10 +612,14 @@ int main(int argc, char **argv)
 	      break;
 	    }
 	case M_STRING:
-	  if (memberstruct->type == M_ANY &&
-	      !strchr(memberstruct->name, '@') &&
-	      !strchr(memberstruct->name, '!') &&
-	      !strchr(memberstruct->name, '%'))
+	  status = mrcl_validate_string_member(memberstruct->name);
+	  if (status == MRCL_REJECT)
+	    {
+	      mrcl_com_err(whoami);
+	      success = 0;
+	      break;
+	    }
+	  else if (memberstruct->type == M_ANY && status != MR_SUCCESS)
 	    {
 	      /* if user is trying to add something which isn't a
 		 remote string, or a list, or a user, and didn't
@@ -638,6 +642,9 @@ int main(int argc, char **argv)
 	  break;
 	case M_KERBEROS:
 	  membervec[1] = "KERBEROS";
+	  status = mrcl_validate_kerberos_member(membervec[2], &membervec[2]);
+	  if (mrcl_get_message())
+	    mrcl_com_err(whoami);
 	  status = mr_query("add_tagged_member_to_list", 4, membervec,
 			    NULL, NULL);
 	  if (status != MR_SUCCESS)
@@ -646,6 +653,7 @@ int main(int argc, char **argv)
 		      memberstruct->name, listname);
 	      success = 0;
 	    }
+	  free(membervec[2]);
 	}
     }
 
@@ -734,6 +742,22 @@ int main(int argc, char **argv)
 	  membervec[1] = "KERBEROS";
 	  status = mr_query("delete_member_from_list", 3, membervec,
 			    NULL, NULL);
+	  if (status == MR_STRING || status == MR_NO_MATCH)
+	    {
+	      /* Try canonicalizing the Kerberos principal and trying
+	       * again.  If we succeed, print the message from mrcl.
+	       * Otherwise, just pretend we never did this and print 
+	       * the original error message.
+	       */
+	      mrcl_validate_kerberos_member(membervec[2], &membervec[2]);
+	      if (mrcl_get_message())
+		{
+		  if (mr_query("delete_member_from_list", 3, membervec,
+			       NULL, NULL) == MR_SUCCESS)
+		    mrcl_com_err(whoami);
+		  status = MR_SUCCESS;
+		}
+	    }
 	  if (status != MR_SUCCESS)
 	    {
 	      com_err(whoami, status, "while deleting member %s from %s",
@@ -806,6 +830,22 @@ int main(int argc, char **argv)
 	  membervec[1] = "KERBEROS";
 	  status = mr_query("tag_member_of_list", 4, membervec,
 			    NULL, NULL);
+	  if (status == MR_STRING || status == MR_NO_MATCH)
+	    {
+	      /* Try canonicalizing the Kerberos principal and trying
+	       * again.  If we succeed, print the message from mrcl.
+	       * Otherwise, just pretend we never did this and print 
+	       * the original error message.
+	       */
+	      mrcl_validate_kerberos_member(membervec[2], &membervec[2]);
+	      if (mrcl_get_message())
+		{
+		  if (mr_query("tag_member_of_list", 4, membervec,
+			       NULL, NULL) == MR_SUCCESS)
+		    mrcl_com_err(whoami);
+		  status = MR_SUCCESS;
+		}
+	    }
 	  if (status != MR_SUCCESS)
 	    {
 	      com_err(whoami, status, "while changing tag on member %s of %s",
@@ -814,7 +854,6 @@ int main(int argc, char **argv)
 	    }
 	}
     }
-
 
   /* Display the members of the list now, if requested */
   if (memberflg)

@@ -1,8 +1,8 @@
 #
 # 	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/Makefile,v $
-#	$Author: mar $
+#	$Author: qjb $
 #	$Locker:  $
-#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/Makefile,v 1.4 1988-02-08 15:10:56 mar Exp $
+#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/Makefile,v 1.5 1988-07-30 00:22:01 qjb Exp $
 #
 
 CFLAGS= -O -I../include
@@ -17,6 +17,7 @@ reg_svr: reg_svr.o
 		../rpc/admin_call.o \
 		../rpc/admin_err.o \
 		../rpc/ureg_err.o \
+		../rpc/sq.o \
 		../server/libsmsglue.a \
 		-lcom_err -lkrb -ldes /usr/rtingres/lib/libqlib \
 		/usr/rtingres/lib/compatlib

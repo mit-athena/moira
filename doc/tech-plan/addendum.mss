@@ -198,6 +198,11 @@ indicating that permission was denied for the query.
 	     be unique.
   Errors: SMS_CLUSTER, SMS_EXISTS
 
+@B(update_service_cluster)
+  Args: (cluster, service-label, service-cluster)
+  Returns: none
+  Errors: SMS_NO_MATCH, SMS_NOT_UNIQUE
+
 @B(delete_service_cluster)
   Args: (cluster, service-label)
   Returns: none
@@ -208,34 +213,52 @@ indicating that permission was denied for the query.
 
 @B(get_server_info)
   Args: (service(*))
-  Returns: {service, machine, update_interval, target_dir, value}
+  Returns: {service, update_int, target_dir, script, dfgen, value}
   Errors: SMS_NO_MATCH
 
-@B(get_all_sloc)
-  Args: none
-  Returns: {service, machine}
-
-@B(get_sloc_by_service)
-  Args: (service(*))
-  Returns: {machine}
-  Errors: SMS_NO_MATCH
-
-@B(add_server)
-  Args: (service, machine, update_interval, target_dir, value)
+@B(add_server_info)
+  Args: (service, update_int, target_dir, script, dfgen, value)
   Returns: none
-  Integrity: machine must exist in machine table; application should verify
-	     that target_dir is a valid directory; value is
-	     server/application dependent.
-  Errors: SMS_EXISTS, SMS_MACHINE
+  Integrity: application must verify that target_dir and script exist;
+	     dfgen must be a valid date; value is server/application
+	     specific data.
+  Errors: SMS_EXISTS, SMS_DATE
 
-@B(update_server)
-  Args: (service, machine, update_interval, target_dir, value)
+@B(update_server_info)
+  Args: (service, update_int, target_dir, script, dfgen, value)
   Returns: none
-  Integrity: application should verify that target_dir is a valid directory;
-	     value is server/application dependent.
+  Integrity: application must verify that target_dir and script exist;
+	     dfgen must be a valid date; value is server/application
+	     specific data.
+  Errors: SMS_NO_MATCH, SMS_NOT_UNIQUE, SMS_DATE
+
+@B(delete_server_info)
+  Args: (service)
+  Returns: none
   Errors: SMS_NO_MATCH, SMS_NOT_UNIQUE
 
-@B(delete_server)
+@B(get_all_server_hosts)
+  Args: none
+  Returns: {service, machine, enable, overide, last}
+
+@B(get_server_hosts)
+  Args: (service(*))
+  Returns: {service, machine, enable, overide, last}
+  Errors: SMS_NO_MATCH
+
+@B(add_server_host)
+  Args: (service, machine, enable, overide, last)
+  Returns: none
+  Integrity: machine must exist; last must be a valid date or null.
+  Errors: SMS_EXISTS, SMS_MACHINE, SMS_DATE
+
+@B(update_server_host)
+  Args: (service, machine, enable, overide, last)
+  Returns: none
+  Integrity: last must be a valid date or null.
+  Errors: SMS_NO_MATCH, SMS_NOT_UNIQUE, SMS_DATE
+
+@B(delete_server_host)
   Args: (service, machine)
   Returns: none
   Errors: SMS_NO_MATCH, SMS_NOT_UNIQUE
@@ -347,6 +370,11 @@ indicating that permission was denied for the query.
 @SubSection(NFS)
 @label(Nfsphys)
 @label(Nfsquota)
+
+@B(get_nfs_physical)
+  Args: (machine)
+  Returns: {device}
+  Errors: SMS_NO_MATCH
 
 @B(add_nfs_physical)
   Args: (machine, device)
@@ -487,6 +515,11 @@ indicating that permission was denied for the query.
   Returns: none
   Errors: SMS_NO_MATCH, SMS_NOT_UNIQUE
 
+@B(get_queue_device_map)
+  Args: (machine)
+  Returns: {queue, device, machine, server}
+  Errors: SMS_MACHINE
+
 @B(add_queue_device_map)
   Args: (queue, device, machine, server)
   Returns: none
@@ -586,6 +619,7 @@ indicating that permission was denied for the query.
   Args: (list_name)
   Returns: none
   Errors: SMS_NO_MATCH, SMS_NOT_UNIQUE
+  Side Effects: All members of list are deleted.
 
 @B(add_member_to_list)
   Args: (list_name, member_type, member_name)

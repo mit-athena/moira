@@ -1,7 +1,7 @@
 /*
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.21 1989-04-21 19:13:50 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.22 1989-06-28 16:33:02 mar Exp $
  *
  *      Copyright (C) 1987, 1988 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -16,15 +16,15 @@
  */
 
 #ifndef lint
-static char *rcsid_reg_svr_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.21 1989-04-21 19:13:50 mar Exp $";
+static char *rcsid_reg_svr_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.22 1989-06-28 16:33:02 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
 #include "reg_svr.h"
 #include "admin_server.h"
 #include "admin_err.h"
+#include "krb_et.h"
 
-extern int krb_err_base;
 extern char admin_errmsg[];
 
 static char krbhst[BUFSIZ];	/* kerberos server name */
@@ -71,13 +71,13 @@ main(argc,argv)
     }
     
     if (status = get_krbrlm(krbrealm, 1)) {
-	status += krb_err_base;
+	status += ERROR_TABLE_BASE_krb;
 	com_err(whoami, status, " fetching kerberos realm");
 	exit(1);
     }
     
     if (status = get_krbhst(krbhst, krbrealm, 1)) {
-	status += krb_err_base;
+	status += ERROR_TABLE_BASE_krb;
 	com_err(whoami, status, " fetching kerberos hostname");
 	exit(1);
     } else {
@@ -424,7 +424,7 @@ int ureg_get_tkt()
     /* principal, instance, realm, service, service instance, life, file */
     if (status = get_svc_in_tkt("register", "sms", krbrealm, "changepw", 
 				krbhst, 1, KEYFILE))
-	status += krb_err_base;
+	status += ERROR_TABLE_BASE_krb;
 
 #ifdef DEBUG
     if (status == SUCCESS)

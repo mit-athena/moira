@@ -1,0 +1,1201 @@
+.TL
+.br
+The Athena Service Management System
+.sp 3
+.AU
+Mark A. Rosenstein
+Daniel E. Geer, Jr.
+Peter J. Levine
+.AI
+Project Athena
+Massachusetts Institute of Technology
+Cambridge, Massachusetts  02139
+{mar,geer,pjlevine}@ATHENA.MIT.EDU
+.AB
+Maintaining, managing, and supporting an unbounded
+number of distributed network services on multiple server instances
+requires new solutions.
+The Athena Service Management System provides centralized control of data
+administration, a protocol for interface to the database, tools for
+accessing and modifying the database, and an automated mechanism for
+data distribution.
+.AE
+.2C
+.NH 1
+Introduction
+.PP
+The purpose of the Athena Service Management System (SMS) is to
+provide a single point of contact for authoritative information about
+resources and services in a distributed computing environment.
+SMS is a centralized data administrator providing
+network-based update and maintenance of system servers.\(dg
+.FS
+\(dg Care must be taken to distinguish among different senses of the
+word ``server'':
+the SMS server, which manages a database;
+the servers which provide system services and whose
+maintenance are SMS's reason for existence; and the update servers
+which allow SMS to affect these system services.
+.FE
+.IP \0\0\(bu 4
+Conceptually, SMS provides mechanisms for managing servers and
+resources.  This aspect comprises the fundamental design of SMS.
+.IP \0\0\(bu 4
+Economically, SMS provides a replacement for labor-intensive
+hand-management of server configuration files.
+.IP \0\0\(bu 4
+Technically, SMS consists of a database, a server and its protocol
+interface, a data distribution manager, and tools for accessing and
+modifying SMS data.
+.LP
+SMS provides coherent data access and data update.
+Access to data is provided through a
+standard application interface.
+Programs designed to reconfigure network
+servers, edit mailing lists, manage group membership, etc., all use this
+application interface.
+Applications used as administrative
+tools are invoked by users;
+applications that update servers are
+(automatically) invoked at regular intervals.
+Management reports and operational feedback are also provided.
+.NH 2
+Requirements
+.PP
+The requirements for the initial Athena SMS include:
+.IP \0\0\(bu 4
+Management of 15,000 accounts, including individual users, course,
+and project accounts, and special accounts used by system services.
+.IP \0\0\(bu 4
+Management of 1,000 workstations, timesharing machines, and network
+servers, including specification of default resource assignments.
+.IP \0\0\(bu 4
+Allocation of controlled network services,
+such as creating and setting quotas for new users'
+home directories on network fileservers,
+consistent with load-balancing constraints.
+.IP \0\0\(bu 4
+Maintenance of other control information,
+including user groups, mailing lists, access control lists, etc.
+.IP \0\0\(bu 4
+Maintenance of resource directories, such as the
+location of printers, specialized file systems (including
+privately supported file systems), and other network services.
+.LP
+This must be accomplished with the utmost robustness.
+.PP
+The system must be easily expandable,
+both to support additional instances of a particular service
+and to offer additional services in the future.
+At this time, SMS is used to update three services (with RVD to be
+added shortly):
+.IP \0\0\(bu 4
+.I Hesiod:
+The Athena Name Service,
+.I Hesiod,
+provides service-to-server
+and label translation.
+It can be thought of as a high-performance, read-only
+front-end to the SMS database.
+See the companion paper in this volume.
+.[
+Dyer Hesiod 1988
+.]
+.IP \0\0\(bu 4
+NFS:
+At Athena, most shared-access read-write file systems
+are provided by a locally modified form of the Network File System.
+.[
+Sandberg NFSUsenix 1985
+.]
+SMS manages the NFS server hosts,
+providing quota-based resource allocation,
+and load balancing.
+Also refer to the companion paper in this volume.
+.[
+Steiner KUsenix 1988
+.]
+.IP \0\0\(bu 4
+Mail Service:
+Athena's mail service is through a central
+routing hub to multiple post office servers
+(mail repositories) based on the
+Post Office Protocol
+.[
+Rose POP 1985
+.]
+(POP) of the Rand Mail Handler
+.[
+Rand MH 1985
+.]
+(MH) package.
+SMS allocates individual post office boxes to post office servers, and
+builds the
+.I /usr/lib/aliases
+control file used on the central mail hub.
+.IP \0\0\(bu 4
+RVD:
+At Athena, most shared-access read-only file systems
+are provided by
+a Remote Virtual Disk system.
+SMS manages the RVD server hosts,
+providing access control lists and
+server configuration files.
+.PP
+Each of these server hosts are controlled by some number of
+server-specific data files;
+over 50 separate files are required
+to support the services described above.
+SMS currently supports three 
+.I Hesiod
+servers, 17 RVD file servers,
+32 NFS file servers,
+one mail hub and three post offices.
+Each RVD server requires one
+file, and each server's file is different.
+A 
+.I Hesiod
+server requires 9 separate files containing 64000 resolvable queries,
+but each 
+.I Hesiod
+server receives the same 9 files.
+Each NFS server requires two files, one file identical across most NFS
+servers, one file different.
+The mail hub requires one file, 
+.I /usr/lib/aliases.
+.NH 2
+Design Points
+.PP
+There are five factors to be taken into account when making design
+decisions.
+In order of importance, to this project
+they are:
+.RS 3
+.IP 1. 3
+Reliability
+.IP 2.
+Consistency
+.IP 3.
+Flexibility
+.IP 4.
+Time Efficiency
+.IP 5.
+Space Efficiency
+.RE
+.PP
+SMS must be reliable.
+In particular, it must be designed to allow
+straightforward recreation of SMS on replacement hardware from backups,
+should the need arise.
+The backup regime for SMS consists of frequent database backups
+in ASCII format, to redundant sites.
+All components of the SMS system are designed such that a duplicate
+configuration can be kept running as a test platform without
+interfering with normal, ``real,'' operations.
+Service updates are verified by testing the server before calling an
+update successful.
+Failed operations ring alarms that are heard,
+disabling parts of the system if required, but without
+interactions with logically unconnected parts of the service
+management system. 
+Services which are duplicated for availability are updated
+such that the service is always available;  i.e., it is
+not permitted for server updates to drift into unwarranted
+synchrony, bringing down all instances at the same time.
+The entire life-cycle is considered part of the package, so
+tight change and source-code control
+(reviewing each change to source,
+running only what can be built from source)
+is part of the design.
+.PP
+In addition to having authoritative control of the data,
+SMS must see that the data is kept consistent.
+To guarantee internal consistency,
+SMS clients do not touch the database directly;
+they do not even see the database system used by SMS.
+Each application uses the application library to access the database.
+This library is a collection of functions allowing access to the database by
+communicating with the SMS server using the SMS protocol.
+Many of the database consistency constraints are handled by the library.
+A number of consistency verification applications also exist.
+To make this consistency reliable,
+the protocol is designed to be tamper-proof,
+withstanding both denial-of-service attacks and malicious attempts to
+corrupt the data.
+Security is provided with the help of authentication by the
+.I Kerberos
+private-key authentication system.
+See the companion paper in this volume.
+.[
+Steiner KUsenix 1988
+.]
+.PP
+Beyond these goals, SMS must be flexible in both its database
+underpinnings and the services it supports.
+As discussed later in the design section, the
+particular Database Management System used is insulated from SMS
+through a Global DataBase
+(GDB) library,
+.[
+Mendelsohn GDB 1987
+.]
+making SMS plug-compatible with other database
+foundations.
+It is independent of the individual services\(emwhile each
+service updated by SMS has its own particular data format and
+structure, the SMS database stores data in one coherent format.
+A separate program,
+the Data Control Manager (DCM),
+converts SMS database (internal) structure to
+server-appropriate structure (such as a configuration file).
+When a new service is supported, the database can be changed and only
+minimal updates are necessary in the SMS server, and 
+a new module is
+added to the DCM specifying the additional specific
+output data format to be manufactured.
+.PP
+Also,
+in the interests of flexibility,
+no administrative
+policy decisions are coded into the design.
+These are determined only by the data in the database.
+.PP
+Simplicity of the design is more important than
+the speed of operation;
+other systems, such as the 
+.I Hesiod
+name service,
+provide a high bandwidth read-only interface to the database.
+To this end, the server only supports simple queries.
+Processing efficiency for complex queries is maximized by local
+applications running on the workstation, not on the central server.
+Any set of changes that must be atomic to maintain database
+consistency are performed on the server;  sets of non-atomic changes 
+and complex lookup operations are supported
+in the server only through combining simpler queries.
+.NH
+System Design
+.PP
+There are three sides to the SMS system:
+.IP \0\0\(bu 4
+The input side,
+which contains all of the user-interface programs,
+allowing the user to enter, examine, or modify data in the database.
+.IP \0\0\(bu 4
+The database side,
+which consists of the actual database,
+the SMS server which manipulates the database,
+and utility programs to backup, restore,
+and verify the internal consistency of the database.
+.IP \0\0\(bu 4
+The output side,
+which extracts information from the database, formats
+it into server-specific configuration files, and updates the various
+servers by propagating these files.
+
+.PS
+linewid=.25i; circlerad=.5i
+circle "Input" "\s8User Interface\s0"
+line <->; circle "Database" "\s8SMS Server\s0"
+arrow; circle "Output" "\s8DCM & Update\s0"
+.PE
+
+.PP
+Various amounts of glue are required to connect these three sides.
+At the lowest level,
+there is the network protocol that
+client programs use to gain access to the database.
+This,
+however,
+depends on the actual model of how database queries are done,
+which is influenced
+by the organization of the database (but not its exact format,
+which is hidden through the protocol).
+.NH 2
+The SMS Protocol
+.PP
+The SMS protocol is the fundamental
+interface to SMS for client applications.
+It allows all clients of SMS to speak a common,
+network-transparent language.
+.PP
+The SMS protocol is a remote procedure call protocol based on the GDB
+library,
+which in turn uses a TCP stream.
+Each client program makes a connection to a
+well known port to contact the SMS server,
+sending requests and receiving replies
+over that stream.
+Each request consists of a major request number,
+and several counted strings of bytes.
+Each reply consists of a single status code followed by zero or more
+counted strings of bytes. 
+Requests and replies also contain a protocol version number,
+to allow clean handling of version skew.
+.PP
+The following major requests are defined for SMS.
+It should be noted that each query
+defines its own signature of arguments and results.
+For some of these actions the server checks authorization based on the
+authenticated identity of the user making the request.
+.IP \fBnoop\fP 10
+Do nothing.
+This is useful for testing and profiling of the server.
+.IP \fBauthenticate\fP 10
+There is one argument, a 
+.I Kerberos
+.[
+Miller KTech 1987
+.]
+authenticator.
+All requests received after this request are performed on behalf
+of the principal identified by the authenticator.
+.IP \fBquery\fP 10
+The first argument is the name of a pre-defined query (a ``query
+handle''), and the rest are arguments to that query.
+Queries may retrieve information or modify what is in the database.
+If the server query is allowed, any retrieved data
+are passed back as several return values.  All but the last returned
+value will have a status code 
+indicating more data, with the final one
+returning the real status code of the query.
+.IP \fBaccess\fP 10
+There are a variable number of arguments.
+The first is the
+name of a pre-defined query usable for the ``query'' request,
+and the rest are query arguments.
+The server returns a reply with a zero
+status code if the query would have been allowed,
+or a reply with a
+non-zero status code explaining why the query was rejected.
+.PP
+Normal use of the protocol consists of establishing a connection,
+providing authentication, then performing a series of queries.
+As long as the
+application only wants to retrieve data or perform simple updates,
+only an authenticate followed by queries are necessary.
+The access operation is useful for verifying
+that an operation with side effects will succeed before attempting it.
+.NH 2
+Queries
+.PP
+All access to the database by clients is provided by the
+application library via the SMS protocol.
+This interface provides a limited set of predefined, named queries,
+allowing tightly controlled access to database information.
+Queries fall into four
+classes: retrieve, update, delete, and append.
+An attempt has been
+made to define a set of queries that provide sufficient flexibility to
+meet all of the needs of the Data Control Manager as well as the
+individual application programs, since the DCM uses the same interface
+as the clients to read the database.
+Since the database can be modified and extended, the application
+library has been designed to allow the easy addition of queries.
+.PP
+The generalized layer of functions makes SMS independent of the
+underlying database.
+If a different database management system is required,
+the only change needed
+will be a new SMS server.
+It is made by linking the pre-defined queries to a set of data
+manipulation procedures provided by a version of GDB suited to
+the alternate DBMS.
+.PP
+At this time there are over 100 supported queries.  See the complete
+technical description of SMS for a listing.
+.[
+SMSTech
+.]
+Some sample queries include:
+.IP \fBget_nfs_quotas\fP
+.br
+Arguments: machine, device
+.br
+Returns: list of login/quota tuples
+.br
+Errors: no match, bad machine
+.br
+.I
+Retrieves disk quota assignments for all users on the specified disk
+partition.
+.IP \fBget_user_by_login\fP
+.br
+Arguments: login name
+.br
+Returns: login, uid, shell, home, last, first, middle, status, ID
+number, year, expiration date, modification time
+.br
+Errors: no match, not unique
+.br
+.I
+Retrieves information about a particular user, searching by
+login name.  Similar queries exist to search by last name, first name,
+user ID, and Registrar's ID number.
+.R
+.IP \fBadd_machine\fP
+.br
+Arguments: name, type, model, status, serial number, system type
+.br
+Returns: nothing
+.br
+Errors: already exists, bad type
+.br
+.I
+Appends a new machine to the list of machines known by SMS.
+.R
+.IP \fBupdate_server_info\fP
+.br
+Arguments: service, update interval, target file, script, dfgen
+.br
+Returns: nothing
+.br
+Errors: no match, not unique
+.br
+.I
+Updates a service entry, allowing anything but the service
+name to be changed.
+.R
+.IP \fBdelete_filesys\fP
+.br
+Arguments: label
+.br
+Returns: nothing
+.br
+Errors: no match, not unique
+.br
+.I
+Deletes the specified file system information from the database.
+Does not automatically reclaim the storage at this time.
+.R
+.LP
+Each query has two possible return status values
+in addition to any errors given above:
+.B success
+and
+.B permission_denied.
+.NH 2
+The Database Management System
+.PP
+The database is the core of SMS.
+It provides the storage mechanism
+for the complete system.
+SMS expects its database to consist of
+several tables of records with strings, integers, and dates.
+Tables
+are keyed on one or more fields in each record allowing efficient
+retrieval by key or wild cards.
+.PP
+The database currently in use at Athena is Ingres 
+.[
+RTIngres 1986
+.]
+from Relational Technology, Inc.
+Ingres provides a complete query system,
+a C library of routines,
+and a command interface language.
+Its advantages are that it is available and that it mostly works.
+By design,
+SMS does not depend on any special feature of Ingres
+so as to retain the option to
+utilize other relational database systems.
+.PP
+The database is an independent entity from the SMS system.
+The Ingres query bindings and database-specific routines are layered
+at the lower levels of the SMS server.
+All applications are independent of database-specific routines.
+An application passes
+query handles to the SMS server which then resolves the request into
+an appropriate database query.
+.PP
+The database contains several types of objects.  Each object in the
+database has an access control list (ACL) associated with it
+indicating who is allowed to modify that object.
+Each object also has records who last modified it and when that
+modification was performed.  
+The ACL's are just references to lists in the database.
+The database contains the following:
+.IP \0\0\(bu 4
+User information: full name, login name, user ID, registrar's ID,
+login shell, home directory, class year, status, modification time,
+nickname, home address, home phone, office address, office phone,
+school affiliation, an ACL
+.IP \0\0\(bu 4
+Machine information: name, type, model, status, serial number, system
+type, an ACL
+.IP \0\0\(bu 4
+Cluster (mapping of machines to default printer and RVD server)
+information: name, description, location, default servers, 
+machine assignments, an ACL
+.IP \0\0\(bu 4
+General service information: service name to network port mapping
+.IP \0\0\(bu 4
+File system configuration: name, type, server host, name on server
+host, mount point on client host, access mode, an ACL
+.IP \0\0\(bu 4
+NFS information: host name, physical disk partition, quota by user
+on each partition, an ACL
+.IP \0\0\(bu 4
+RVD information: host name, physical disk partition, virtual
+disks assigned to each partition, pack ID, access passwords, size, an
+ACL
+.IP \0\0\(bu 4
+Printer information: name to 
+.I /etc/printcap
+entry mapping
+.IP \0\0\(bu 4
+Post office location: for each user post office server and box on that
+server
+.IP \0\0\(bu 4
+Lists: name, description, modification date, members (which can be
+users, other lists, or literal strings), attributes (mailing list,
+UNIX group and gid), an ACL
+.IP \0\0\(bu 4
+Aliases: includes allowed keywords for certain fields in the database,
+alternate names for file systems, alternate names for services
+.IP \0\0\(bu 4
+DCM information: services to be updated, hosts supporting each
+service, target files on each host, last update time,
+enable/override/success flags for updates
+.IP \0\0\(bu 4
+Internal control information: next user ID, group ID, machine ID, and
+cluster ID to assign (these are just hints); an ACL for each query; usage
+statistics
+.NH 2
+SMS-to-Server Update Protocol
+.PP
+SMS provides a reliable mechanism for updating the servers it manages.
+The goals of the server update protocol are:
+.IP \0\0\(bu 4
+Rational, automatic update for normal cases and expected kinds of failures.
+.IP \0\0\(bu 4
+Ability to survive clean (target) server crashes.
+.IP \0\0\(bu 4
+Ability to survive clean SMS crashes.
+.IP \0\0\(bu 4
+Easily understood state so that straightforward recovery by hand is
+possible.
+.PP
+All actions are initiated by the SMS system.
+Updates of managed servers are performed such that a partially completed
+update is harmless.
+Updates not completed are simply rescheduled for retry until
+they succeed, or until an update can not be initiated.
+In the latter case, a human operator will be notified.
+.PP
+The update protocol is based on the GDB library just as is the SMS protocol
+itself.  In the update protocol, there are four commands:
+.IP \fBauthenticate\fP 11
+A 
+.I Kerberos
+authenticator is sent.  The update server on
+the target
+server uses this authenticator to verify that the entity
+contacting it is authorized
+to initiate updates.
+.IP \fBtransfer\fP
+This command is used for sending information, usually entire
+files.  The protocol is capable of efficiently sending a half-megabyte
+binary file.
+.IP \fBinstructions\fP
+This sends over a command script, which when executed on the target
+server will install the new configuration files just sent.
+.IP \fBexecute\fP
+This instructs the update server to execute the instructions
+just sent.
+.PP
+In typical usage, all four commands are used in the order presented above.
+Multiple transfers may be necessary for some server types.  Note that
+when data files are transfered, they do not directly overwrite the
+existing data files.  Instead, they are put in a temporary position.
+When the update is executed, the old files are renamed to another
+temporary name, and the new files are given the correct names.  This
+minimizes the interval during which a server system crash would leave an
+inconsistent set of configuration files.  If all portions of the
+preparation are completed without error, the execution is then
+allowed.  This usually consists of moving files around, then sending a
+signal to or restarting a server process.  The update server then
+performs a plausibility check on the result by verifying the operation
+of the system server, and sends SMS an indicative return code.
+.NH 1
+System Components
+.PP
+Six software components make up the SMS system.
+.IP \0\0\(bu 4
+The database, currently built on the commercial database system
+RTI Ingres.
+.IP \0\0\(bu 4
+The SMS server, a program always running on the machine containing the
+database.  It accesses the database for the client programs.
+.IP \0\0\(bu 4
+The application library, a collection of routines implementing the SMS
+protocol.  It is used by client programs to communicate with the
+SMS server.
+.IP \0\0\(bu 4
+The client programs, a collection of programs that make up
+the user interface to the system.
+.IP \0\0\(bu 4
+The data control manager, a program run periodically by
+.I cron
+and driven by data in the database.
+It constructs up-to-date server configuration
+files and installs these files on the servers.
+.IP \0\0\(bu 4
+The update servers, which run on each machine containing a server that
+SMS updates.
+These are contacted by the data control manager to
+install the new configuration files and notify the real servers being
+managed by SMS.
+
+.PS
+linewid = .25i; lineht = .2i
+circlerad = .3i
+
+CH:
+circle "chpobox" "app. lib." radius .35
+move to CH; move right;
+MM:
+circle "usermaint" "app. lib." radius .35
+line dotted from CH.w to CH.e+(-.05,0)
+line dotted from MM.w to MM.e+(-.05,0)
+down
+move to CH+(.45,.7); box dashed width 1.8 height 1.2
+move to CH+(.45,.7); box invis width 1.8 "User Workstation"
+
+move to CH+(-.05,-1)
+SVR:
+circle "SMS" "server"
+move to SVR.e; arrow right
+DB:
+box "database"
+move to SVR; move down
+DCM:
+circle "DCM"
+move to DCM.n; arrow to SVR.s
+move to DB; move down
+BU:
+circle "backup"
+move to BU.n; arrow to DB.s
+move to SVR+(.5,.4); box dashed width 1.8 height 1.8
+move to SVR+(.5,-1); box invis width 1.8 "SMS Machine"
+
+arrow from CH to SVR chop .35 chop .3
+arrow from MM to SVR chop .35 chop .3
+move to SVR+(.2,.8); box invis width 1.7 "SMS Protocol"
+
+move to DCM+(0,-1)
+UL:
+circle "update" "server" radius .35i
+move to UL.e; arrow right
+NFS:
+box "NFS" "server"
+move to UL+(-.4,-.1); box dashed width 1.8 height 1
+move to UL+(-.4,-.5); box invis width 1.8 "System Server"
+
+arrow from DCM to UL chop .3 chop .35
+box invis at UL+(.2,.55) "Update Protocol"
+
+.PE
+
+.PP
+Because SMS has a variety of interfaces, a distinction must be
+maintained between applications called clients that directly read and
+write to SMS (i.e., administrative programs) and services which use
+information distributed from SMS (i.e. a name server).  In both cases
+the interface to the SMS database is through the SMS server, using the SMS
+protocol.  The significant difference is that server update is handled
+automatically through the Data Control Manager; administrative programs
+are executed by users.
+.NH 2
+Clients
+.PP
+SMS includes a set of specialized management tools to grant system
+administrators overall control of system resources.
+For each system service there
+is an administrative interface.  To accommodate novice and occasional
+users, a menu interface is the default.  For regular users, a
+command-line switch is provided that will use a line-oriented
+interface.  This provides speed and directness for users
+familiar with the system, while being reasonably helpful to novices
+and occasional users.  A specialized menu building tool has been
+developed in order that new application programs can be developed
+quickly.  This user interface does not depend on the X Window System.
+.[
+Scheifler XACM 1987
+.]
+It must be possible for
+system operators to use dumb terminals to correct resource problems,
+i.e. it cannot be a requirement that a high level of functionality
+be present before the service management system can operate.
+.PP
+Fields in the database have associated with them lists of legal
+values.  A null list indicates that any value is possible.  This is
+useful for fields such as \fIuser_name, address\fP, and so forth.  The
+application programs, before attempting to modify anything in the
+database, request this information, and compare it with the proposed
+new value.  If an invalid value is discovered, it is reported to the
+user, who is given the opportunity to change the value, or ``insist''
+that it is a new, legal value.  (The ability to update data in the
+database does not necessarily indicate the ability to add new legal
+values to the database.)
+.PP
+Applications should be aware of the ramifications of their actions,
+and notify the user if appropriate.  For example, an administrator
+deleting a user is informed of storage space that is being reclaimed,
+mailing lists that are being modified, and so forth.
+Objects that need to be
+modified at once (such as the ownership of a mailing list)
+present themselves to be dealt with.
+.PP
+The following list of client programs are currently in use at Project
+Athena.  These are rewrites of standard 
+UNIX
+programs, and are available to
+regular users:
+.IP \0\0\(bu 4
+.I chfn
+- change finger information
+.IP \0\0\(bu 4
+.I chsh
+- change default shell
+.LP
+These are new programs available to regular users:
+.IP \0\0\(bu 4
+.I register
+- allow new students to claim an Athena account
+.IP \0\0\(bu 4
+.I mailmaint
+- allow users to add/delete themselves to mailing lists
+.LP
+These are used by system administrators:
+.IP \0\0\(bu 4
+.I
+attachmaint
+.R
+- map file system names to physical server configurations
+.IP \0\0\(bu 4
+.I
+chpobox
+.R
+- change forwarding post office for a user
+.IP \0\0\(bu 4
+.I
+clustermaint
+.R
+- associate a machine with a set of default servers
+.IP \0\0\(bu 4
+.I
+dcmmaint
+.R
+- update DCM table entries, including service/machine mapping
+.IP \0\0\(bu 4
+.I
+listmaint
+.R
+- create and maintain groups, mailing lists, and access
+control lists 
+.IP \0\0\(bu 4
+.I
+nfsmaint
+.R
+- configure NFS file servers
+.IP \0\0\(bu 4
+.I
+portmaint
+.R
+- maintain the list of well known contact ports
+.IP \0\0\(bu 4
+.I
+regtape
+.R
+- enter new students from the Registrar's tape
+.IP \0\0\(bu 4
+.I
+rvdmaint
+.R
+- configure RVD servers
+.IP \0\0\(bu 4
+.I
+usermaint
+.R
+- maintain user information including file service and
+post office location
+.LP
+Finally, this program is used only in debugging SMS:
+.IP \0\0\(bu 4
+.I
+smstest
+.R
+- perform any query manually
+.NH 3
+New User Registration
+.PP
+A specialized client is the new user registration program.  A new
+student must be able to claim an Athena account without any intervention
+from Athena user accounts staff.
+Without this the user accounts staff would be faced with manually
+creating hundreds of accounts at the beginning of each academic term. 
+.PP
+Athena obtains a copy of the official list of registered students from
+the MIT Registrar shortly before the start of each term.  The 
+.I regtape
+client adds each student on the Registrar's tape who has not already
+been registered for an Athena account to the ``users'' relation of the
+database, and assigned a unique user ID; the student is not assigned a
+login name or any other resources at this time.  A one-way encrypted
+form of the student's ID number is stored along with the name.  No
+other database resources are allocated at that time.  This ID number
+and the exact spelling of the student's full name as recorded by the
+Registrar are all that are needed for a student to claim an account.
+Thus the ID number is something of a password until a real account has
+been set up.
+.PP
+When the student decides to register with Athena, he or she walks up
+to any workstation and logs in using the username of ``register''.
+This produces a form-like interface prompting for the user's first
+name, middle initial, last name, and student ID number.  The
+.I register
+program does not talk to the SMS server directly, but goes through a
+registration server first.  The registration server deals with access
+control to the SMS server and the
+.I Kerberos
+administration server.
+Register encrypts the ID number, and sends a
+.I verify_user
+request to the registration server.  The server responds with
+.B
+already_registered, not_found,
+.R
+or
+.B OK.
+After this the
+register server will do work on behalf of the user; the user still
+cannot contact SMS directly until he or she obtains a login name and
+user ID.
+.PP
+If the user has been validated,
+.I register
+then prompts the student for a
+choice in login names.  It then goes through a two-step process to
+verify the login name: first, it simulates a login request for this
+user name with
+.I Kerberos;
+if this fails (indicating that the username
+is free and may be registered), it then sends a
+.B grab_login
+request.  On receiving a
+.B grab_login
+request, the registration server then proceeds to register the login
+name with
+.I Kerberos;
+if the login name is already in use, it returns a failure code to
+.I register.
+Otherwise, it allocates a home directory for the user
+on the least-loaded fileserver,
+sets an initial disk quota for the user,
+builds a post office entry for the user
+on the least-loaded post office server,
+and returns a success code
+to
+.I register.
+SMS keeps track of loading on servers in the database, incrementing
+and decrementing its estimate of the load as it allocates and
+deallocates resources on each server.
+.PP
+.I Register
+then prompts the user for an initial password.
+It sends a
+.B set_password
+request to the registration server, which decrypts it and forwards it to
+.I Kerberos.
+At this point, pending propagation of
+information to the 
+.I Hesiod
+name service, the central mail hub, and the user's home fileserver,
+the user's account has been established.
+These updates may take up to 12 hours to complete.
+.NH 2
+The SMS Server
+.PP
+As previously stated,
+all remote communication with the SMS database is done through the SMS
+server, using the SMS protocol.  The SMS server runs as a single 
+UNIX
+process on the SMS database machine.  It listens for connections on a
+well known service port and processes remote procedure call requests
+on each connection it accepts.
+.PP
+GDB, through the use of BSD
+UNIX
+non-blocking I/O, allows the
+programmer to set up a single-process server that handles multiple
+simultaneous TCP connections.  The SMS server will be able to make
+progress reading new RPC requests and sending old replies
+simultaneously, which is important if a reasonably large amount of
+data is to be sent back.  The RPC system from Sun Microsystems was
+also considered for use in the 
+RPC layer, but was rejected because it cannot handle large return
+values, such as might be returned by a complex query.
+.PP
+A major concern for efficiency in some DBMS's is the time it
+takes to begin accessing the database, sometimes requiring starting up
+a backend process.  Since this is a heavyweight operation, the
+SMS server will do this only once when it starts.
+.PP
+The server performs access control checks on all queries.  An access control
+list (ACL) is associated with each query handle, and with many objects within
+the database.  For instance, to add someone to a list, it is
+sufficient to either be on the ACL associated with the
+.B add_member_to_list
+query, or to be on the ACL of the list in
+question.  
+In addition, lists, users, machines, and
+file systems have lists of additional users who are allowed to modify
+them.
+The concept of an all powerful database administrator is
+not necessary with SMS, although could be implemented by having the
+same ACL for all queries that affect the database.
+.PP
+Because one of the requests that the server supports is a request to
+check access to a particular query, it is expected that many access
+checks will have to be performed twice: once to allow the client to
+find out that it should prompt the user for information, and again
+when the query is actually executed.  It is expected that some form of
+access caching will eventually be worked into the server for
+performance reasons.
+.NH 3
+Input Data Checking
+.PP
+Without proper checks on input values, a user could easily enter data
+of the wrong type or of a nonsensical value for that
+type into SMS.  For example, consider the case of updating a user's mail
+address.  If, instead of typing ``athena-po-1'' (a valid post office server),
+a user accounts administrator
+typed in ``athena-po1'' (a nonexistent machine), all the user's mail
+would be returned to sender as undeliverable. 
+.PP
+Input checking is done by both the SMS server and by applications
+using SMS.  Each query supported by the server may have a validation
+routine supplied which checks that the arguments to the query are
+legitimate.  Queries that do not have side effects on the database do
+not need a validation routine.
+.PP
+Some checks are better done in applications programs; for example, the
+SMS server is not in a good position to tell if a user's new choice
+for a login shell exists.  However, other checks, such as verifying
+that a user's home directory is a valid file system name, are conducted
+by the server.  An error condition will be returned if the value
+specified is incorrect.  The list of predefined queries defines those
+fields which require explicit data checking.
+.NH 2
+Backup
+.PP
+It is not critical that the SMS database be available 24
+hours a day; what is important is that the database remain internally
+consistent and that the data never be lost.  With that in
+mind, the database backup system for SMS has been set up to maximize
+recoverability if the database is damaged.  Backup is done
+in a simple ASCII format to avoid dependence on the actual DBMS in use.
+.PP
+Two programs
+.I (smsbackup
+and
+.I smsrestore)
+are generated
+automatically (using an
+.I awk
+script) from the database description
+file.
+.I smsbackup
+copies each relation of the current SMS database
+into an ASCII file.
+.I Smsbackup
+is invoked nightly by a command
+file that maintains the last three backups on-line.  These backups
+are put on a separate physical disk drive from the drive containing
+the actual database and copied over the network to other locations.
+.I Smsrestore
+does the inverse of
+.I smsbackup,
+taking a set of ASCII files and recreating the
+database.  These backups by themselves provide recovery with the loss of no
+more than roughly a day's transactions.  To obtain complete recovery,
+it is necessary to examine the log files of the servers.
+An automated procedure to do this has not been written since it is
+complicated and has not been needed yet.
+.NH 2
+The Data Control Manager
+.PP
+The Data Control Manager is a program responsible for
+distributing information to servers.  The DCM is invoked by
+.I cron
+at regular, frequent intervals.
+The data that drives the DCM is read from the database, rather
+than being coded into the DCM or kept in separate configuration files.
+Each time the DCM is run, it scans the database to
+determine which servers need updating.  Only those that need
+updating because their configuration has changed and their update
+interval has been reached will be updated.
+.PP
+The determination that it is time to check a service is based on
+information about that service in the database.  Each service has an
+update interval, specifying how often providers of that service should
+be updated, and an enable flag.  For each server/host tuple, the
+database stores the time of the last update attempt, whether or not it
+was successful, and an override flag.  If the previous update attempt
+was not successful, the override flag will indicate when to try again.
+The administrative user's interface provides a mechanism to set the
+override flag manually, so as to update a server sooner than it
+otherwise would be updated.  
+.PP
+Locking is also provided since an update may still be in progress the
+next time the DCM is invoked.  Without this locking the new DCM
+process would attempt to update the same service that the older process
+is still working on.
+.PP
+If it is necessary to update a server, a separate program (also named in
+the database) is invoked to extract the information from the database
+and format into the server-specific files.  The DCM then contacts the
+update server on the machine with the target server, 
+sends the necessary data files and the shell script that is invoked
+on the server machine to install the new files.  
+The success flag is set or cleared based on whether the update attempt
+succeeded.  If the attempt failed, the override flag is set,
+requesting that another attempt be made to update this server sooner
+than indicated by the default update interval.
+.PP
+For performance reasons, some parts of the DCM currently touch the
+database directly rather than going through the SMS server.  Nothing
+is being done that could not be done through the server.  However,
+bypassing the server makes extracting large amounts of information
+much faster and avoids slowing down the server for these operations.
+.NH 1
+System Performance
+.PP
+The system is more reliable than the one previously in
+use at Athena.  The old version had an update mechanism more suited to
+the scale 
+of tens of timesharing hosts rather than thousands of workstations.
+System crashes have been rare.
+The speed of the system
+is fair, being fast enough to use interactively, although some queries
+do take a while to complete.  The database currently
+occupies about 13 megabytes on the server.
+.PP
+Most of the system as described here has been in use for over six
+months.  A few of the points mentioned here are just now being
+implemented and put into service.
+Note that this is the only management
+tool for 5000 active users, 650 workstations, and 65 servers.
+.NH 2
+Availability
+.PP
+The SMS server has nearly always been accessible.  Some queries, such
+as listing all publicly accessible mailing lists, will tie up the
+server for a short period of time.  Regular users are prohibited from
+the longer queries such as listing all users, which will lock up the
+server for several minutes.  The server is occasionally down for
+safety when an SMS administrator wishes to modify the database directly
+through Ingres.
+.NH 2
+Security
+.PP
+.I Kerberos
+authentication on all network access and physical security
+of the machine have been sufficient to prevent breakins.
+However, the system has not had enough exposure to believe
+it is really resistant to concerted attacks.
+.PP
+One problem with the current implementation
+has to do with security and access control lists.  It is difficult to
+administer the numerous ACL's in the system, and it is not always obvious
+when different queries are used to predict the effects of changing an
+ACL.  Currently this problem is avoided by having two classes of
+queries: those that anyone can do, and those that only the database
+administrators can perform.  There need to be more intermediate
+levels.  For instance, it would be useful to allow some system operators
+to change the information describing public workstations, but not the
+timesharing machines and service hosts.
+.NH 2
+Consistency
+.PP
+The current database suffers from decay.  The database grows indexes
+and reference counts that are wrong, post office boxes that do not
+belong to any user, and groups with no members.  These are assumed to
+be caused by coding errors in the client library and clients.  Any
+problem is potentially compounded by the very
+.I
+raison d'\*^etre
+.R
+of SMS.
+With hundreds of workstations in the field there is no guarantee that SMS
+client programs installed on them are all at current revision level.
+There are also a few problems suspected in the
+database system itself (Ingres), but these are difficult to pinpoint.
+However, the various data extraction programs used by the DCM are
+robust; they skip over any inconsistent records so these cause few
+problems.
+.PP
+A database consistency checker, in the spirit of
+.I fsck,
+is run
+regularly, but only for informational purposes.  Because of the
+dangers involved in modifying the database outside the SMS server, it
+is not modified by this checker at this time.
+.PP
+A shortcoming of the current system is that it is occasionally
+necessary to use Ingres directly to make some modification to the
+database.  For example, it was recently necessary to modify every
+instance of a particular login shell in the user account information.
+A special client could have been written to do this, but it would only
+be used once, so the operation was done interactively with the Ingres
+query interpreter.  A large number of similar operations to be
+executed would normally imply a need for a generalized batch
+processor.  This is is too complicated for our needs, hence such
+operations are either done by hand through the regular clients, or
+edited into a script that can be run through the raw Ingres
+interpreter.  Availability of this interpreter makes such operations
+relatively easy; yet there is the temptation to fix too many things
+that way, bypassing the checks built in to the client library and SMS
+server.
+.PP
+Care must be taken to avoid hardcoding into the SMS design current
+policy decisions about accounts and resources here at Athena.  Yet by
+maintaining this flexibility, it sometimes is too easy to break the
+rules.  This is more often an error than an intentional breaking of
+the rules.
+For instance, there have been users who did not have a post office box
+because of administrative mistakes; they were unable to receive mail.
+.NH 1
+Conclusion
+.PP
+Systems for managing the otherwise unmanageable need
+to be designed well, burned in realistically, and
+provided with seamless upgrades.
+With the Athena SMS, we have an example
+of a system that is working for the scale of 1,000
+workstations, but needs significant
+refinement to go to the 10,000 workstation level.
+The initial vision has proven correct; the remaining
+question is whether the design as we now have it will
+be capable of the next leap in scale.  We believe it
+will and will be back to report to you with our results.
+.SH
+Acknowledgments
+.PP
+The authors would like to acknowledge the following people
+from M.I.T. Project Athena for their help in making SMS a
+reality:
+Michael R. Gretzinger, a former Systems Programmer, and William E.
+Sommerfeld, Jean Marie Diaz, Ken Raeburn, Jos\*'e J. Cap\*'o, and Mark
+A. Roman, students working for
+Athena System Development, who helped with the design and
+implementation of the system; and
+Jerome Saltzer, Technical Director of Project Athena, and Jeffery
+Schiller, Manager of Operations at Project Athena, for invaluable
+critiques of the design of the system and this paper.
+.SH
+References
+.[
+$LIST$
+.]

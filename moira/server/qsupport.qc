@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.45 1989-09-27 17:17:03 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.46 1989-10-26 14:51:36 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char *rcsid_qsupport_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.45 1989-09-27 17:17:03 mar Exp $";
+static char *rcsid_qsupport_qc = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/qsupport.qc,v 1.46 1989-10-26 14:51:36 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
@@ -690,22 +690,36 @@ setup_ufil(q, argv)
 ##{
     int mach_id, status;
     char *type, *name, *access;  
-##  int fid;
+##  int fid, total;
 
     type = argv[2];
     mach_id = *(int *)argv[3];
     name = argv[4];
     access = argv[6];
     var_phys_id = 0;
+    fid = *(int *)argv[0];
 
     if (!strcmp(type, "NFS")) {
 	status = check_nfs(mach_id, name, access);
-	fid = *(int *)argv[0];
 ##	replace nfsquota (phys_id = var_phys_id) where nfsquota.filsys_id = fid
 	if (ingres_errno) return(sms_errcode);
 	return(status);
-    } else
-      return(SMS_SUCCESS);
+    } else if (!strcmp(type, "AFS")) {
+	total = 0;
+##	retrieve (total = sum(nfsquota.quota where nfsquota.filsys_id = fid))
+	if (ingres_errno) return(sms_errcode);
+	if (total != 0) {
+##	    delete nfsquota where nfsquota.filsys_id = fid
+	    if (ingres_errno) return(sms_errcode);
+##	    append nfsquota (quota = total, filsys_id = fid,
+##			     phys_id = 0, users_id = 0)
+	    if (ingres_errno) return(sms_errcode);
+	}
+    } else {
+##	replace nfsquota (phys_id = 0) where nfsquota.filsys_id = fid
+	if (ingres_errno) return(sms_errcode);
+    }
+    return(SMS_SUCCESS);
 ##}
 
 
@@ -727,7 +741,8 @@ setup_ufil(q, argv)
     register char *cp2;
 
     caccess = (isupper(*access)) ? tolower(*access) : *access;
-    if (caccess != 'r' && caccess != 'w') return(SMS_FILESYS_ACCESS);
+    if (caccess != 'r' && caccess != 'w' && caccess != 'n')
+      return(SMS_FILESYS_ACCESS);
 
     status = SMS_NFS;
 ##  range of np is nfsphys
@@ -1684,7 +1699,7 @@ get_list_info(q, aargv, cl, action, actarg)
 ##{
     char *argv[13], *malloc(), *realloc();
 ##  char *name, acl_type[9], listname[33], active[5], public[5], hidden[5];
-##  char maillist[5], group[5], gid[6], acl_name[33], desc[256], modtime[27];
+##  char maillist[5], group[5], gid[6], acl_name[256], desc[256], modtime[27];
 ##  char modby[256], modwith[9];
 ##  int id, rowcount, acl_id, hid, modby_id;
     int returned;
@@ -1785,10 +1800,10 @@ int add_member_to_list(q, argv, cl)
     char **argv;
     client *cl;
 ##{
-##  int id, lid, mid, exists, error, who;
+##  int id, lid, mid, exists, error, who, ref;
 ##  char *mtype, dtype[9], buf[256], *entity;
-    int ancestors[MAXLISTDEPTH], acount, a;
-    int descendants[MAXLISTDEPTH], dcount, d;
+    int ancestors[MAXLISTDEPTH], aref[MAXLISTDEPTH], acount, a;
+    int descendants[MAXLISTDEPTH], dref[MAXLISTDEPTH], dcount, d;
     char *dtypes[MAXLISTDEPTH];
     char *iargv[3];
 
@@ -1796,6 +1811,7 @@ int add_member_to_list(q, argv, cl)
     lid = *(int *)argv[0];
     mtype = argv[1];
     mid = *(int *)argv[2];
+    /* if the member is already a direct member of the list, punt */
 ##  repeat retrieve (exists = any(m.list_id where m.list_id=@lid and 
 ##			   m.member_id = @mid and m.member_type = @mtype
 ##			   and m.direct = 1))
@@ -1808,9 +1824,11 @@ int add_member_to_list(q, argv, cl)
     }
 
     ancestors[0] = lid;
+    aref[0] = 1;
     acount = 1;
-##  repeat retrieve (id = m.list_id)
+##  repeat retrieve (id = m.list_id, ref = m.ref_count)
 ##	where m.member_id = @lid and m.member_type = "LIST" {
+	aref[acount] = ref;
 	ancestors[acount++] = id;
 	if (acount >= MAXLISTDEPTH) {
 ##	    endretrieve
@@ -1822,10 +1840,12 @@ int add_member_to_list(q, argv, cl)
     }
     descendants[0] = mid;
     dtypes[0] = mtype;
+    dref[0] = 1;
     dcount = 1;
     error = 0;
     if (!strcmp(mtype, "LIST")) {
-##	repeat retrieve (id = m.member_id, dtype = m.member_type)
+##	repeat retrieve (id = m.member_id, dtype = m.member_type,
+##			 ref = m.ref_count)
 ##	  where m.list_id = @mid {
 	    switch (dtype[0]) {
 	    case 'L':
@@ -1844,6 +1864,7 @@ int add_member_to_list(q, argv, cl)
 		error++;
 ##		endretrieve
 	    }
+	    dref[dcount] = ref;
 	    descendants[dcount++] = id;
 	    if (dcount >= MAXLISTDEPTH) {
 		error++;
@@ -1865,13 +1886,14 @@ int add_member_to_list(q, argv, cl)
 ##	    repeat retrieve (exists = any(m.ref_count where m.list_id = @lid
 ##					 and m.member_id = @mid
 ##					 and m.member_type = @mtype))
+	    ref = aref[a] * dref[d];
 	    if (exists) {
 		if (a == 0 && d == 0)
-##		  replace m (ref_count = m.ref_count+1, direct = 1)
+##		  replace m (ref_count = m.ref_count+ref, direct = 1)
 ##			     where m.list_id = lid and m.member_id = mid and
 ##			     m.member_type = mtype
 		else
-##		  replace m (ref_count = m.ref_count+1)
+##		  replace m (ref_count = m.ref_count+ref)
 ##			     where m.list_id = lid and m.member_id = mid and
 ##			     m.member_type = mtype
 	    } else {
@@ -1881,7 +1903,7 @@ int add_member_to_list(q, argv, cl)
 ##				   member_type=mtype, ref_count = 1)
 		else
 ##		  append imembers (list_id=lid, member_id = mid,
-##				   member_type=mtype, ref_count = 1)
+##				   member_type=mtype, ref_count = ref)
 		iargv[0] = (char *)lid;
 		iargv[1] = mtype;
 		iargv[2] = (char *)mid;
@@ -1907,10 +1929,10 @@ int delete_member_from_list(q, argv, cl)
     char **argv;
     client *cl;
 ##{
-##  int id, lid, mid, cnt, exists, error, who;
+##  int id, lid, mid, cnt, exists, error, who, ref;
 ##  char *mtype, dtype[9], *entity;
-    int ancestors[MAXLISTDEPTH], acount, a;
-    int descendants[MAXLISTDEPTH], dcount, d;
+    int ancestors[MAXLISTDEPTH], aref[MAXLISTDEPTH], acount, a;
+    int descendants[MAXLISTDEPTH], dref[MAXLISTDEPTH], dcount, d;
     char *dtypes[MAXLISTDEPTH];
     char *iargv[3];
 
@@ -1918,6 +1940,7 @@ int delete_member_from_list(q, argv, cl)
     lid = *(int *)argv[0];
     mtype = argv[1];
     mid = *(int *)argv[2];
+    /* if the member is not a direct member of the list, punt */
 ##  repeat retrieve (exists = any(m.list_id where m.list_id=@lid and 
 ##			   m.member_id = @mid and m.member_type = @mtype
 ##			   and m.direct = 1))
@@ -1925,9 +1948,11 @@ int delete_member_from_list(q, argv, cl)
     if (!exists)
       return(SMS_NO_MATCH);
     ancestors[0] = lid;
+    aref[0] = 1;
     acount = 1;
-##  repeat retrieve (id = m.list_id)
+##  repeat retrieve (id = m.list_id, ref = m.ref_count)
 ##	where m.member_id = @lid and m.member_type = "LIST" {
+	aref[acount] = ref;
 	ancestors[acount++] = id;
 	if (acount >= MAXLISTDEPTH)
 ##	  endretrieve
@@ -1937,10 +1962,12 @@ int delete_member_from_list(q, argv, cl)
       return(SMS_INTERNAL);
     descendants[0] = mid;
     dtypes[0] = mtype;
+    dref[0] = 1;
     dcount = 1;
     error = 0;
     if (!strcmp(mtype, "LIST")) {
-##	repeat retrieve (id = m.member_id, dtype = m.member_type)
+##	repeat retrieve (id = m.member_id, dtype = m.member_type,
+##			 ref = m.ref_count)
 ##	  where m.list_id = @mid {
 	    switch (dtype[0]) {
 	    case 'L':
@@ -1959,6 +1986,7 @@ int delete_member_from_list(q, argv, cl)
 		error++;
 ##		endretrieve
 	    }
+	    dref[dcount] = ref;
 	    descendants[dcount++] = id;
 	    if (dcount >= MAXLISTDEPTH)
 ##	      endretrieve
@@ -1978,7 +2006,8 @@ int delete_member_from_list(q, argv, cl)
 ##	    repeat retrieve (cnt = m.ref_count)
 ##		where m.list_id = @lid and m.member_id = @mid
 ##		  and m.member_type = @mtype
-	    if (cnt <= 1) {
+	    ref = aref[a] * dref[d];
+	    if (cnt <= ref) {
 		iargv[0] = (char *)lid;
 		iargv[1] = mtype;
 		iargv[2] = (char *)mid;
@@ -1987,11 +2016,11 @@ int delete_member_from_list(q, argv, cl)
 ##		    m.member_type = mtype
 		incremental_clear_after();
 	    } else if (a == 0 && d == 0) {
-##		replace m (ref_count = m.ref_count-1, direct = 0)
+##		replace m (ref_count = m.ref_count-ref, direct = 0)
 ##		    where m.list_id = lid and m.member_id = mid and
 ##		    m.member_type = mtype
 	    } else {
-##		replace m (ref_count = m.ref_count-1)
+##		replace m (ref_count = m.ref_count-ref)
 ##		    where m.list_id = lid and m.member_id = mid and
 ##		    m.member_type = mtype
 	    }
@@ -3040,7 +3069,7 @@ validate_typedata(q, argv, vo)
 ##      repeat retrieve (id = s.string_id) where s.string = @name
 ##      inquire_equel (rowcount = "rowcount")
 	if (rowcount == 0) {
-	    if (q->type != APPEND) return(SMS_STRING);
+	    if (q->type != APPEND && q->type != UPDATE) return(SMS_STRING);
 ##          range of v is values
 ##          retrieve (id = v.value) where v.#name = "strings_id"
 	    id++;

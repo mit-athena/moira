@@ -1,4 +1,4 @@
-/* $Id: increment.pc,v 2.5 1998-02-23 19:24:29 danw Exp $
+/* $Id: increment.pc,v 2.6 1998-03-31 06:47:20 danw Exp $
  *
  * Deal with incremental updates
  *
@@ -20,7 +20,7 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/increment.pc,v 2.5 1998-02-23 19:24:29 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/increment.pc,v 2.6 1998-03-31 06:47:20 danw Exp $");
 
 extern char *whoami;
 extern char *table_name[];
@@ -56,6 +56,7 @@ struct iupdate {
 };
 
 void next_incremental(void);
+char **copy_argv(char **argv, int argc);
 void free_argv(char **argv, int argc);
 int table_num(char *table);
 
@@ -313,9 +314,9 @@ void incremental_after(enum tables table, char *qual, char **argv)
   iu = xmalloc(sizeof(struct iupdate));
   iu->table = table_name[table];
   iu->beforec = beforec;
-  iu->before = mr_copy_args(before, beforec);
+  iu->before = copy_argv(before, beforec);
   iu->afterc = afterc;
-  iu->after = mr_copy_args(after, afterc);
+  iu->after = copy_argv(after, afterc);
   sq_save_data(incremental_sq, iu);
 }
 
@@ -465,6 +466,14 @@ void incremental_flush(void)
   incremental_sq = sq_create();
 }
 
+
+char **copy_argv(char **argv, int argc)
+{
+  char **ret = xmalloc(sizeof(char *) * argc);
+  while (--argc >= 0)
+    ret[argc] = xstrdup(strtrim(argv[argc]));
+  return ret;
+}
 
 void free_argv(char **argv, int argc)
 {

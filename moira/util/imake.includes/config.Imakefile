@@ -34,6 +34,10 @@ OSLIBS=-lbsd
 CURSES=-lcurses
 #endif
 
+#if defined(sgi)
+OSDEFS= -DPOSIX
+#endif
+
 #if defined(SOLARIS)
 OSDEFS= -DPOSIX -DSOLARIS -I/usr/openwin/include
 OSLIBS= -L/usr/ccs/lib -lcurses -ltermcap -lresolv \
@@ -126,7 +130,11 @@ LZEPHYR=-lzephyr
  * location of library and includes.
  */
 #define GDSS
+#if !defined(sgi)
 LIBGDSS= /mit/gdss/`machtype`/libgdss.a
+#else
+LIBGDSS= /mit/gdss/lib/libgdss.a
+#endif
 GDSSINC= -I/mit/gdss/include
 
 /*
@@ -145,7 +153,7 @@ GDSSINC= -I/mit/gdss/include
  * Define USELINT if you want to build lint libraries while building
  * Moira.
  */
-#if !defined(NeXT) && !defined(_AIX) && !defined(SOLARIS)
+#if !defined(NeXT) && !defined(_AIX) && !defined(SOLARIS) && !defined(sgi)
 #define USELINT
 #endif
 
@@ -241,7 +249,7 @@ SQL_LIB= /usr/oracle/lib/#########
 #endif
 
 /* HAS_VSPRINTF should be defined if this function is in your C library */
-#if defined(_AIX) || defined(sun) || defined(_AUX_SOURCE)
+#if defined(_AIX) || defined(sun) || defined(_AUX_SOURCE) || defined(sgi)
 #define HAS_VSPRINTF
 #else
 #undef HAS_VSPRINTF
@@ -281,7 +289,7 @@ ARCHIVE= ar cru
 /*
  * The name of another program needed to post-process the archive.
  */
-#ifdef SOLARIS
+#if defined(SOLARIS) || defined(sgi)
 RANLIB= /bin/true
 #else
 RANLIB= ranlib
@@ -339,6 +347,7 @@ HCFLAGS=$(CFLAGS)
 
 TAGGER=etags		/* Program to index source files */
 
+SHELL=/bin/sh		/* shell to use from make */
 MAKE=make		/* name of make program */
 RM=rm -f		/* delete one or more files/directories/links */
 MV=mv			/* rename/move a file */

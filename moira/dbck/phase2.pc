@@ -1,4 +1,4 @@
-/* $Id: phase2.pc,v 1.7 1998-04-18 13:01:33 danw Exp $
+/* $Id: phase2.pc,v 1.8 1999-01-27 19:36:01 danw Exp $
  *
  * (c) Copyright 1988-1998 by the Massachusetts Institute of Technology.
  * For copying and distribution information, please see the file
@@ -15,15 +15,21 @@
 
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase2.pc,v 1.7 1998-04-18 13:01:33 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase2.pc,v 1.8 1999-01-27 19:36:01 danw Exp $");
 
 EXEC SQL WHENEVER SQLERROR DO dbmserr();
 
 int show_mcm_mach(void *id);
 int show_mcm_clu(void *id);
 int show_hostalias(void *id);
-int show_pcap_mach(void *id);
-int show_pcap_quota(void *id);
+int show_printer_mach(void *id);
+int show_printer_loghost(void *id);
+int show_printer_spool(void *id);
+int show_printer_quota(void *id);
+int show_printer_ac(void *id);
+int show_printer_lpc_acl(void *id);
+int fix_printer_ac(void *id);
+int fix_printer_lpc_acl(void *id);
 void user_check(int id, void *user, void *hint);
 int maybe_fixup_unref_string(int sid, int oid, char *oname, char *table,
 			     char *field, char *idfield);
@@ -155,15 +161,15 @@ int show_hostalias(void *id)
   return found;
 }
 
-int show_pcap_mach(void *id)
+int show_printer_mach(void *id)
 {
   EXEC SQL BEGIN DECLARE SECTION;
   int iid = (int)id, found = 1;
-  char name[PRINTCAP_NAME_SIZE];
+  char name[PRINTERS_NAME_SIZE];
   EXEC SQL END DECLARE SECTION;
 
   EXEC SQL DECLARE csr235 CURSOR FOR
-    SELECT name FROM printcap WHERE mach_id = :iid;
+    SELECT name FROM printers WHERE mach_id = :iid;
   EXEC SQL OPEN csr235;
   while (1)
     {
@@ -174,22 +180,74 @@ int show_pcap_mach(void *id)
       strtrim(name);
 
       found = 0;
-      printf("Printer %s, non-existant spool machine %d in printcap table\n",
+      printf("Printer %s, non-existant machine %d in printers table\n",
 	     name, iid);
     }
   EXEC SQL CLOSE csr235;
   return found;
 }
 
-int show_pcap_quota(void *id)
+int show_printer_loghost(void *id)
 {
   EXEC SQL BEGIN DECLARE SECTION;
   int iid = (int)id, found = 1;
-  char name[PRINTCAP_NAME_SIZE];
+  char name[PRINTERS_NAME_SIZE];
+  EXEC SQL END DECLARE SECTION;
+
+  EXEC SQL DECLARE csr235 CURSOR FOR
+    SELECT name FROM printers WHERE loghost = :iid;
+  EXEC SQL OPEN csr235;
+  while (1)
+    {
+      EXEC SQL FETCH csr235 INTO :name;
+      if (sqlca.sqlcode)
+	break;
+
+      strtrim(name);
+
+      found = 0;
+      printf("Printer %s, non-existant spool machine %d in printers table\n",
+	     name, iid);
+    }
+  EXEC SQL CLOSE csr235;
+  return found;
+}
+
+int show_printer_spool(void *id)
+{
+  EXEC SQL BEGIN DECLARE SECTION;
+  int iid = (int)id, found = 1;
+  char name[PRINTERS_NAME_SIZE];
+  EXEC SQL END DECLARE SECTION;
+
+  EXEC SQL DECLARE csr235 CURSOR FOR
+    SELECT name FROM printers WHERE rm = :iid;
+  EXEC SQL OPEN csr235;
+  while (1)
+    {
+      EXEC SQL FETCH csr235 INTO :name;
+      if (sqlca.sqlcode)
+	break;
+
+      strtrim(name);
+
+      found = 0;
+      printf("Printer %s, non-existant spool machine %d in printers table\n",
+	     name, iid);
+    }
+  EXEC SQL CLOSE csr235;
+  return found;
+}
+
+int show_printer_quota(void *id)
+{
+  EXEC SQL BEGIN DECLARE SECTION;
+  int iid = (int)id, found = 1;
+  char name[PRINTERS_NAME_SIZE];
   EXEC SQL END DECLARE SECTION;
 
   EXEC SQL DECLARE csr236 CURSOR FOR
-    SELECT name FROM printcap WHERE quotaserver = :iid;
+    SELECT name FROM printers WHERE rq = :iid;
   EXEC SQL OPEN csr236;
   while (1)
     {
@@ -200,11 +258,93 @@ int show_pcap_quota(void *id)
       strtrim(name);
 
       found = 0;
-      printf("Printer %s, non-existant quota server %d in printcap table\n",
+      printf("Printer %s, non-existant quota server %d in printers table\n",
 	     name, iid);
     }
   EXEC SQL CLOSE csr236;
   return found;
+}
+
+int show_printer_ac(void *id)
+{
+  EXEC SQL BEGIN DECLARE SECTION;
+  int iid = (int)id, found = 1;
+  char name[PRINTERS_NAME_SIZE];
+  EXEC SQL END DECLARE SECTION;
+
+  EXEC SQL DECLARE csr236 CURSOR FOR
+    SELECT name FROM printers WHERE ac = :iid;
+  EXEC SQL OPEN csr236;
+  while (1)
+    {
+      EXEC SQL FETCH csr236 INTO :name;
+      if (sqlca.sqlcode)
+	break;
+
+      strtrim(name);
+
+      found = 0;
+      printf("Printer %s, non-existant restrict list %d in printers table\n",
+	     name, iid);
+    }
+  EXEC SQL CLOSE csr236;
+  return found;
+}
+
+int show_printer_lpc_acl(void *id)
+{
+  EXEC SQL BEGIN DECLARE SECTION;
+  int iid = (int)id, found = 1;
+  char name[PRINTERS_NAME_SIZE];
+  EXEC SQL END DECLARE SECTION;
+
+  EXEC SQL DECLARE csr236 CURSOR FOR
+    SELECT name FROM printers WHERE lpc_acl = :iid;
+  EXEC SQL OPEN csr236;
+  while (1)
+    {
+      EXEC SQL FETCH csr236 INTO :name;
+      if (sqlca.sqlcode)
+	break;
+
+      strtrim(name);
+
+      found = 0;
+      printf("Printer %s, non-existant lpc ACL %d in printers table\n",
+	     name, iid);
+    }
+  EXEC SQL CLOSE csr236;
+  return found;
+}
+
+void fix_printer_ac(int id)
+{
+  EXEC SQL BEGIN DECLARE SECTION;
+  int rowcount, iid = (int)id;
+  EXEC SQL END DECLARE SECTION;
+
+  EXEC SQL UPDATE printers SET ac = 0 WHERE ac = :iid;
+  rowcount = sqlca.sqlerrd[2];
+  if (rowcount > 0)
+    printf("%d entr%s fixed\n", rowcount, rowcount == 1 ? "y" : "ies");
+  else
+    printf("Not fixed\n");
+  modified("printers");
+}
+
+void fix_printer_lpc_acl(int id)
+{
+  EXEC SQL BEGIN DECLARE SECTION;
+  int rowcount, iid = (int)id;
+  EXEC SQL END DECLARE SECTION;
+
+  EXEC SQL UPDATE printers SET lpc_acl = 0 WHERE lpc_acl = :iid;
+  rowcount = sqlca.sqlerrd[2];
+  if (rowcount > 0)
+    printf("%d entr%s fixed\n", rowcount, rowcount == 1 ? "y" : "ies");
+  else
+    printf("Not fixed\n");
+  modified("printers");
 }
 
 void user_check(int id, void *user, void *hint)
@@ -1830,29 +1970,6 @@ void phase2(void)
     }
   EXEC SQL CLOSE csr228;
 
-  dprintf("Checking palladium...\n");
-  sq1 = sq_create();
-  EXEC SQL DECLARE csr229 CURSOR FOR
-    SELECT mach_id, modby FROM palladium
-    FOR UPDATE OF modby;
-  EXEC SQL OPEN csr229;
-  while (1)
-    {
-      EXEC SQL BEGIN DECLARE SECTION;
-      int mach_id, modby;
-      EXEC SQL END DECLARE SECTION;
-
-      EXEC SQL FETCH csr229 INTO :mach_id, :modby;
-      if (sqlca.sqlcode)
-	break;
-
-      maybe_fixup_modby2("palladium", "modby", "csr229", modby);
-      if (!hash_lookup(machines, mach_id))
-	sq_save_unique_data(sq1, (void *)mach_id);
-    }
-  EXEC SQL CLOSE csr229;
-  generic_delete(sq1, show_pdm_mach, "palladium", "mach_id", 1);
-
   dprintf("Checking krbmap...\n");
   sq1 = sq_create();
   sq2 = sq_create();
@@ -1923,29 +2040,48 @@ void phase2(void)
   EXEC SQL CLOSE csr232;
   generic_delete(sq1, show_hostalias, "hostalias", "mach_id", 1);
 
-  dprintf("Checking printcaps\n");
+  dprintf("Checking printers\n");
   sq1 = sq_create();
   sq2 = sq_create();
+  sq3 = sq_create();
+  sq4 = sq_create();
+  sq5 = sq_create();
   EXEC SQL DECLARE csr233 CURSOR FOR
-    SELECT mach_id, quotaserver, modby FROM printcap;
+    SELECT mach_id, loghost, rm, rq, ac, lpc_acl, modby FROM printers;
   EXEC SQL OPEN csr233;
   while (1)
     {
       EXEC SQL BEGIN DECLARE SECTION;
-      int mach_id, quotaserver, modby;
+      int mach_id, loghost, rm, rq, ac, lpc_acl, modby
       EXEC SQL END DECLARE SECTION;
 
-      EXEC SQL FETCH csr233 INTO :mach_id, :quotaserver, :modby;
+      EXEC SQL FETCH csr233 INTO :mach_id, :loghost, :rm, :rq,
+	:lpc_acl, :modby;
       if (sqlca.sqlcode)
 	break;
 
-      maybe_fixup_modby2("printcap", "modby", "csr233", modby);
+      maybe_fixup_modby2("printers", "modby", "csr233", modby);
       if (!hash_lookup(machines, mach_id))
 	sq_save_unique_data(sq1, (void *)mach_id);
-      else if (!hash_lookup(machines, quotaserver))
-	sq_save_unique_data(sq2, (void *)quotaserver);
+      else if (!hash_lookup(machines, rm))
+	sq_save_unique_data(sq2, (void *)rm);
+      else if (!hash_lookup(machines, rq))
+	sq_save_unique_data(sq3, (void *)rq);
+      else {
+	if (!hash_lookup(lists, ac))
+	  sq_save_unique_data(sq4, (void *)ac);
+	if (!hash_lookup(lists, lpc_acl))
+	  sq_save_unique_data(sq5, (void *)lpc_acl);
+	if (!hash_lookup(machines, loghost))
+	  {
+	    show_printer_loghost((void *)loghost);
+	    cantfix();
+	  }
     }
   EXEC SQL CLOSE csr233;
-  generic_delete(sq1, show_pcap_mach, "printcap", "mach_id", 1);
-  generic_delete(sq2, show_pcap_quota, "printcap", "quotaserver", 1);
+  generic_delete(sq1, show_printer_mach, "printers", "mach_id", 1);
+  generic_delete(sq2, show_printer_spool, "printers", "rm", 1);
+  generic_delete(sq3, show_printer_quota, "printers", "rq", 1);
+  generic_fix(sq4, show_printer_ac, "Clear", fix_printer_ac, 1);
+  generic_fix(sq5, show_printer_lpc_acl, "Clear", fix_printer_lpc_acl, 1);
 }

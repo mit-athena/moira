@@ -1,4 +1,4 @@
-/* $Id: phase1.pc,v 1.6 1998-02-23 19:23:28 danw Exp $
+/* $Id: phase1.pc,v 1.7 1999-01-27 19:36:00 danw Exp $
  *
  * (c) Copyright 1988-1998 by the Massachusetts Institute of Technology.
  * For copying and distribution information, please see the file
@@ -14,7 +14,7 @@
 #include <string.h>
 EXEC SQL INCLUDE sqlca;
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase1.pc,v 1.6 1998-02-23 19:23:28 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/dbck/phase1.pc,v 1.7 1999-01-27 19:36:00 danw Exp $");
 
 EXEC SQL WHENEVER SQLERROR DO dbmserr();
 int show_user_id(void *user);
@@ -867,24 +867,28 @@ void phase1(void)
 
   generic_fix(sq, show_np_id, "Change ID", fix_np_id, 0);
 
-  dprintf("Checking printcap...\n");
-
-  EXEC SQL DECLARE csr119 CURSOR FOR
-    SELECT p1.name FROM printcap p1, printcap p2
-    WHERE p1.name = p2.name AND p1.rowid < p2.rowid;
-  EXEC SQL OPEN csr119;
-  while (1)
+  if (!fast)
     {
-      EXEC SQL BEGIN DECLARE SECTION;
-      char name[PRINTCAP_NAME_SIZE];
-      EXEC SQL END DECLARE SECTION;
+      dprintf("Checking printers...\n");
 
-      EXEC SQL FETCH csr119 INTO :name;
-      if (sqlca.sqlcode)
-	break;
+      EXEC SQL DECLARE csr119 CURSOR FOR
+	SELECT p1.name FROM printers p1, printers p2
+	WHERE ( p1.name = p2.name AND p1.rowid < p2.rowid )
+	OR ( p1.name = p2.duplexname );
+      EXEC SQL OPEN csr119;
+      while (1)
+	{
+	  EXEC SQL BEGIN DECLARE SECTION;
+	  char name[PRINTERS_NAME_SIZE];
+	  EXEC SQL END DECLARE SECTION;
 
-      printf("Printer %s has duplicate name\n", name);
-      cant_fix(0);
+	  EXEC SQL FETCH csr119 INTO :name;
+	  if (sqlca.sqlcode)
+	    break;
+
+	  printf("Printer %s has duplicate name\n", name);
+	  cant_fix(0);
+	}
+      EXEC SQL CLOSE csr119;
     }
-  EXEC SQL CLOSE csr119;
 }

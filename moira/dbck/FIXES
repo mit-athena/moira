@@ -37,9 +37,6 @@ F* Each filesys name must be unique
    Each string_id must be unique
 	Delete all copies
 F* Each printer name must be unique
-  *Each palladium id must be unique
-	Alloc new ID
-F**Each palladium name must be unique
 
 PHASE 2: checking references
 
@@ -108,12 +105,12 @@ P  Every quota's phys_id must match the filesys' phys_id
  * Every hostaccess must be for a real machine
  * Every hostaccess USER must exist
  * Every hostaccess LIST must exist
-   Every printer must have a real spool machine
+   Every printer must have real printer, spool, and quota machines
 	Delete the printer
-   Every printer must have a real quota server
-	Delete the printer
-P  Every palladium server must be on a real machine
-	Delete the palladium entry
+ * Every printer must have a real log machine
+	Reset to WSLOGGER.MIT.EDU
+   Every print ac/lpc_acl must exist
+	Make it list 0
 P  Every user in the krbmap must exist
 	Delete map entry
 P  Every string in the krbmap must exist

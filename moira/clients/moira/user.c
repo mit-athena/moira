@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.24 1991-03-08 10:21:06 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.25 1992-01-02 13:55:45 mar Exp $";
 #endif lint
 
 /*	This is the file user.c for the MOIRA Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.24 1991-03-08 10:21:06 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/user.c,v 1.25 1992-01-02 13:55:45 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -103,7 +103,7 @@ char ** info;
     sprintf(buf, "User id: %-23s Login shell %-10s Class: %s", 
 	    info[U_UID], info[U_SHELL], info[U_CLASS]);
     Put_message(buf);
-    sprintf(buf, "Account is: %-20s Encrypted MIT ID number: %s",
+    sprintf(buf, "Account is: %-20s MIT ID number: %s",
 	    UserState(atoi(info[U_STATE])), info[U_MITID]);
     Put_message(buf);
     sprintf(buf, MOD_FORMAT, info[U_MODBY], info[U_MODTIME],info[U_MODWITH]);
@@ -240,23 +240,8 @@ Bool name;
 	    Put_message(temp_buf);
 	}
     }
-    temp_ptr = Strsave(info[U_MITID]);
-    Put_message("User's MIT ID number (unencrypted, or encryption in quotes)");
-    if (GetValueFromUser("", &temp_ptr) == SUB_ERROR)
+    if (GetValueFromUser("User's MIT ID number", &info[U_MITID]) == SUB_ERROR)
       return(NULL);
-    if ( strcmp( temp_ptr, info[U_MITID] ) != 0) {
-	if (temp_ptr[0] == '"' &&
-	    temp_ptr[strlen(temp_ptr) - 1] == '"') {
-	    free(info[U_MITID]);
-	    temp_ptr[strlen(temp_ptr) - 1] = 0;
-	    info[U_MITID] = Strsave(++temp_ptr);
-	} else {
-	    EncryptID(temp_buf, temp_ptr, info[U_FIRST], info[U_LAST]);
-	    free(info[U_MITID]);
-	    info[U_MITID] = Strsave(temp_buf);
-	}
-    }
-    free(temp_ptr);
     if (GetTypeFromUser("User's MIT Year (class)", "class", &info[U_CLASS]) ==
 	SUB_ERROR)
       return(NULL);

@@ -1,7 +1,7 @@
 /*
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v $
- *      $Author: qjb $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.15 1988-08-07 16:17:34 qjb Exp $
+ *      $Author: mar $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.16 1988-08-11 20:43:38 mar Exp $
  *
  *      Copyright (C) 1987 by the Massachusetts Institute of Technology
  *
@@ -14,7 +14,7 @@
  */
 
 #ifndef lint
-static char *rcsid_reg_svr_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.15 1988-08-07 16:17:34 qjb Exp $";
+static char *rcsid_reg_svr_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/reg_svr/reg_svr.c,v 1.16 1988-08-11 20:43:38 mar Exp $";
 #endif lint
 
 #include "reg_svr.h"
@@ -83,6 +83,12 @@ main(argc,argv)
 	    if (isupper(*s))
 		*s = tolower(*s);
 	*s = 0;
+    }
+
+    journal = fopen(JOURNAL, "a");
+    if (journal == NULL) {
+	com_err(whoami, errno, " while opening journal file");
+	exit(1);
     }
     
     /* Allow request layer to initialize */

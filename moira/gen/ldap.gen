@@ -1,6 +1,6 @@
 #!/moira/bin/perl -Tw
 
-# $Id: ldap.gen,v 1.5 2004-06-07 19:26:52 zacheiss Exp $
+# $Id: ldap.gen,v 1.6 2004-06-08 05:19:14 zacheiss Exp $
 
 use DBI;
 
@@ -86,6 +86,7 @@ while (($name) = $sth0->fetchrow_array) {
 			 "list l WHERE l.name = " . $dbh->quote($name) .
 			 "AND l.list_id = i.list_id " .
 			 "AND i.member_type = 'USER' " .
+			 "AND (u.status = 1 OR u.status = 9) " .
 			 "AND i.member_id = u.users_id") || exit $MR_DBMS_ERR;
     $sth->execute;
 

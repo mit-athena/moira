@@ -1,4 +1,4 @@
-/* $Id: mrtest.c,v 1.43 1999-04-06 21:39:15 danw Exp $
+/* $Id: mrtest.c,v 1.44 1999-06-02 19:07:32 danw Exp $
  *
  * Bare-bones Moira client
  *
@@ -20,11 +20,11 @@
 #include <unistd.h>
 
 #ifdef HAVE_READLINE
-#include "readline.h"
-#include "history.h"
+#include "readline/readline.h"
+#include "readline/history.h"
 #endif
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v 1.43 1999-04-06 21:39:15 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mrtest/mrtest.c,v 1.44 1999-06-02 19:07:32 danw Exp $");
 
 int recursion = 0, quote_output = 0, interactive;
 int count, quit = 0, cancel = 0;

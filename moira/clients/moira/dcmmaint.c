@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/dcmmaint.c,v 1.11 1990-08-13 18:07:11 mar Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/dcmmaint.c,v 1.12 1991-03-08 10:25:21 mar Exp $
  *
  * Copyright 1987, 1988 by the Massachusetts Institute of Technology.
  * For copying and distribution information, please see the file
@@ -249,7 +249,7 @@ char **argv;
     int status;
 
     qargv[SHI_SERVICE] = argv[1];
-    qargv[SHI_MACHINE] = canonicalize_hostname(argv[2]);
+    qargv[SHI_MACHINE] = canonicalize_hostname(strsave(argv[2]));
     if (status = do_mr_query("get_server_host_info", 2, qargv, shhost, NULL))
       com_err(whoami, status, " getting server/host info");
     return(DM_NORMAL);
@@ -296,7 +296,7 @@ char  **argv;
 {
     int status;
 
-    argv[2] = canonicalize_hostname(argv[2]);
+    argv[2] = canonicalize_hostname(strsave(argv[2]));
     if (status = do_mr_query("reset_server_host_error", 2, &argv[1],
 			      Scream, NULL))
       com_err(whoami, status, " while resetting server/host error");
@@ -312,11 +312,11 @@ char **argv;
     char *qargv[9], buf[BUFSIZ];
 
     sprintf(buf, "Reset state for service %s on host %s (Y/N)", argv[1],
-	    canonicalize_hostname(argv[2]));
+	    canonicalize_hostname(strsave(argv[2])));
     if (!Confirm(buf))
       return(DM_NORMAL);
     qargv[0] = argv[1];
-    qargv[1] = canonicalize_hostname(argv[2]);
+    qargv[1] = canonicalize_hostname(strsave(argv[2]));
     qargv[2] = "0";
     qargv[3] = "0";
     qargv[4] = "0";
@@ -337,7 +337,7 @@ char  **argv;
 {
     int status;
 
-    argv[2] = canonicalize_hostname(argv[2]);
+    argv[2] = canonicalize_hostname(strsave(argv[2]));
     if (status = do_mr_query("set_server_host_override", 2, &argv[1],
 			      Scream, NULL))
       com_err(whoami, status, " while setting server/host override");
@@ -364,7 +364,7 @@ char **cargv;
 inithost(info)
 char **info;
 {
-    info[SHI_MACHINE] = strsave(canonicalize_hostname(info[SH_MACHINE]));
+    info[SHI_MACHINE] = canonicalize_hostname(strsave(info[SH_MACHINE])));
     info[SHI_ENABLE] = strsave("1");
     info[SHI_VALUE1] = strsave("0");
     info[SHI_VALUE2] = strsave("0");
@@ -396,7 +396,7 @@ char **argv;
     int status;
 
     info[SHI_SERVICE] = strsave(argv[1]);
-    info[SHI_MACHINE] = strsave(canonicalize_hostname(argv[2]));
+    info[SHI_MACHINE] = canonicalize_hostname(strsave(argv[2]));
     if (status = do_mr_query("get_server_host_info", 2, info, ghost, 
 			      (char *)info)) {
 	com_err(whoami, status, " while getting server/host info");
@@ -422,7 +422,7 @@ char **argv;
     int status;
 
     info[SHI_SERVICE] = strsave(argv[1]);
-    info[SHI_MACHINE] = strsave(canonicalize_hostname(argv[2]));
+    info[SHI_MACHINE] = canonicalize_hostname(strsave(argv[2]));
     inithost(info);
     if (askhost(info) == NULL) {
 	Put_message("Aborted.");
@@ -454,7 +454,7 @@ char **argv;
 {
     int status;
 
-    argv[2] = canonicalize_hostname(argv[2]);
+    argv[2] = canonicalize_hostname(strsave(argv[2]));
     if (status = do_mr_query("delete_server_host_info", 2, &argv[1],
 			      Scream, NULL))
       com_err(whoami, status, " while deleting server/host info");

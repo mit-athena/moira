@@ -12,7 +12,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/include/moira_site.h,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/include/moira_site.h,v 1.13 1989-09-08 18:45:45 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/include/moira_site.h,v 1.14 1990-02-05 12:38:14 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -27,6 +27,15 @@
 
 /* Default SMS server to connect to */
 #define SMS_SERVER	"SMS.MIT.EDU:sms_db"
+
+/* Compile-time options: */
+/*   used hesiod looking up Moira server name */
+#define HESIOD
+/*   log errors via zephyr */
+#define ZEPHYR
+/*   log errors via syslog */
+/* #define SYSLOG */
+
 
 #define NAME 0
 

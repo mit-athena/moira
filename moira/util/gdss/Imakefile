@@ -1,0 +1,13 @@
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/util/gdss/Imakefile,v 1.1 1997-07-10 23:55:56 danw Exp $ */
+
+#define have_subdirs
+SUBDIRS = lib
+
+all::
+
+gdss_test: lib/libgdss.a
+	$(CC) $(CFLAGS) -I./include -o $@ $@.c lib/libgdss.a $(LLIB) -lkrb -ldes -lhesiod $(OSLIBS)
+
+clean::
+	rm -f gdss_test
+

@@ -1,0 +1,22 @@
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/util/gdss/lib/crypto/algorithm/Imakefile,v 1.1 1997-07-10 23:56:31 danw Exp $ */
+
+OBJS = 	random.o \
+	random_BigNum.o \
+	bigrsacode.o \
+	bigkeygen.o \
+	bigsignverify.o
+
+DEFINES = -I. -I../../../include -I../bignum/h
+
+
+depend:: tables.h
+
+all:: tables.h $(OBJS)
+
+genutil(gentables,gentables.o,,)
+
+endian.h tables.h: gentables
+	./gentables
+
+clean::
+	$(RM) tables.h endian.h

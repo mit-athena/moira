@@ -1,7 +1,7 @@
 /*
  *	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_glue.c,v $
  *	$Author: mar $
- *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_glue.c,v 1.10 1989-08-16 20:50:12 mar Exp $
+ *	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_glue.c,v 1.11 1989-08-25 14:39:32 mar Exp $
  *
  *	Copyright (C) 1987 by the Massachusetts Institute of Technology
  *	For copying and distribution information, please see the file
@@ -12,11 +12,14 @@
  */
 
 #ifndef lint
-static char *rcsid_sms_glue_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_glue.c,v 1.10 1989-08-16 20:50:12 mar Exp $";
+static char *rcsid_sms_glue_c = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/server/mr_glue.c,v 1.11 1989-08-25 14:39:32 mar Exp $";
 #endif lint
 
 #include <mit-copyright.h>
 #include "sms_server.h"
+#include <sys/types.h>
+#include <sys/signal.h>
+#include <sys/wait.h>
 #include <krb_et.h>
 #include <pwd.h>
 #include "query.h"
@@ -29,6 +32,7 @@ static client pseudo_client;
 extern int errno;
 extern char *malloc(), *whoami;
 extern time_t now;
+void reapchild();
 
 sms_connect(server)
 char *server;
@@ -45,6 +49,8 @@ char *server;
     query_timeout = 0;
     status =  sms_open_database();
     if (!status) already_connected = 1;
+
+    signal(SIGCHLD, reapchild);
     return status;
 }
 
@@ -84,10 +90,10 @@ char *prog;
     strcpy(buf, pw->pw_name);
     strcat(buf, "@");
     strcat(buf, pseudo_client.kname.realm);
-    pseudo_client.clname = malloc(strlen(buf)+1);
     strcpy(pseudo_client.clname, buf);
     pseudo_client.users_id = get_users_id(pseudo_client.kname.name);
-    pseudo_client.entity = strsave(prog);
+    pseudo_client.client_id = pseudo_client.users_id;
+    strcpy(pseudo_client.entity, prog);
     pseudo_client.args = (sms_params *) malloc(sizeof(sms_params));
     pseudo_client.args->sms_version_no = SMS_VERSION_2;
     return 0;
@@ -195,4 +201,17 @@ trigger_dcm(dummy0, dummy1, cl)
 	default:
 		return(SMS_SUCCESS);
 	}
+}
+
+
+void reapchild()
+{
+    union wait status;
+    int pid;
+
+    while ((pid = wait3(&status, WNOHANG, (struct rusage *)0)) > 0) {
+	if  (status.w_termsig != 0 || status.w_retcode != 0)
+	  com_err(whoami, 0, "%d: child exits with signal %d status %d",
+		  pid, status.w_termsig, status.w_retcode);
+    }
 }

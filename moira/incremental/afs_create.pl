@@ -22,13 +22,13 @@ $vname = $vtype . "." . $locker;
 $vname =~ s/[^-A-Za-z0-9_.]//g;		# strip out illegal characters
 
 # Find free space/Create volume
-foreach $tries (1..3) {
+$tries = 0; $code = 1;
+while ($tries<3 && $code) {
     ($asrv,$apart) = &afs_find($cell,$type,$quota,@except);
     die "Unable to find space to create $vname in $cell\n" unless ($asrv&&$apart);
     $code = system("$vos create $asrv $apart $vname -cell $cell >/dev/null");
     push(@except, $asrv);
-    next if ($code);
-    break;
+    $tries++;
 }
 &fatal("Unable to create $vname in $cell") if ($code); # Too many create errors
 push(@clean, "$vos remove $asrv $apart $vname -cell $cell >/dev/null");

@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/cluster.c,v 1.21 1991-03-08 10:22:05 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/cluster.c,v 1.22 1993-11-10 15:41:42 mar Exp $";
 #endif lint
 
 /*	This is the file cluster.c for the MOIRA Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/cluster.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/cluster.c,v 1.21 1991-03-08 10:22:05 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/cluster.c,v 1.22 1993-11-10 15:41:42 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -26,6 +26,10 @@
 #include <moira.h>
 #include <moira_site.h>
 #include <menu.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
 
 #include "mit-copyright.h"
 #include "defs.h"
@@ -36,6 +40,8 @@
 #define CLUSTER  1
 #define DATA     2
 #define MAP      3
+#define SUBNET	 4
+#define CNAME	 5
 
 #define M_DEFAULT_TYPE     DEFAULT_NONE
 
@@ -44,6 +50,26 @@
 
 #define CD_DEFAULT_LABEL   DEFAULT_NONE
 #define CD_DEFAULT_DATA    DEFAULT_NONE
+
+
+static char *states[] = { "Reserved (0)",
+			  "Active (1)",
+			  "None (2)",
+			  "Deleted (3)" };
+
+static char *MacState(state)
+int state;
+{
+    char buf[BUFSIZ];
+
+    if (state < 0 || state > 3) {
+	sprintf(buf, "Unknown (%d)", state);
+	return(buf);
+    }
+    return(states[state]);
+}
+
+
 
 /* -------------------- Set Defaults -------------------- */
 
@@ -59,8 +85,20 @@ SetMachineDefaults(info, name)
 char ** info, *name;
 {
     info[M_NAME] = Strsave(name);
-    info[M_TYPE] = Strsave(M_DEFAULT_TYPE);
-    info[M_MODBY] = info[M_MODTIME] = info[M_MODWITH] = info[M_END] = NULL;
+    info[M_VENDOR] = Strsave(M_DEFAULT_TYPE);
+    info[M_MODEL] = Strsave(M_DEFAULT_TYPE);
+    info[M_OS] = Strsave(M_DEFAULT_TYPE);
+    info[M_LOC] = Strsave(M_DEFAULT_TYPE);
+    info[M_CONTACT] = Strsave(M_DEFAULT_TYPE);
+    info[M_USE] = Strsave("0");
+    info[M_STAT] = Strsave("1");
+    info[8] = Strsave("NONE");
+    info[9] = Strsave("unique");
+    info[10] = Strsave("NONE");
+    info[11] = Strsave("NONE");
+    info[12] = Strsave("");
+    info[13] = Strsave("");
+    info[14] = info[15] = info[16] = NULL;
     return(info);
 }
 
@@ -82,6 +120,35 @@ char ** info, *name;
     return(info);
 }
 
+/*	Function Name: SetSubnetDefaults
+ *	Description: sets Subnet defaults.
+ *	Arguments: info - an array to put the defaults into.
+ *                 name - name of the Subnet.
+ *	Returns: info - the array.
+ */
+
+static char **
+SetSubnetDefaults(info, name)
+char ** info, *name;
+{
+    char buf[256];
+
+    info[C_NAME] = Strsave(name);
+    info[SN_DESC] = Strsave("");
+    sprintf(buf, "%d", ntohl(inet_addr("18.0.0.0")));
+    info[SN_ADDRESS] = Strsave(buf);
+    sprintf(buf, "%d", ntohl(inet_addr("255.255.0.0")));
+    info[SN_MASK] = Strsave(buf);
+    sprintf(buf, "%d", ntohl(inet_addr("18.0.0.10")));
+    info[SN_LOW] = Strsave(buf);
+    sprintf(buf, "%d", ntohl(inet_addr("18.0.1.252")));
+    info[SN_HIGH] = Strsave(buf);
+    info[SN_ACE_TYPE] = Strsave("LIST");
+    info[SN_ACE_NAME] = Strsave("network_acl");
+    info[SN_MODBY] = info[SN_MODTIME] = info[SN_MODWITH] = info[SN_END] = NULL;
+    return(info);
+}
+
 /* -------------------- General Functions -------------------- */
 
 /*	Function Name: PrintMachInfo
@@ -98,11 +165,46 @@ char ** info;
     char buf[BUFSIZ];
 
     Put_message("");
-    sprintf(buf, "Machine: %-30s Type: %s", info[M_NAME], info[M_TYPE]);
+    sprintf(buf, "Machine: %s Vendor: %s, Model: %s, OS: %s",
+	    info[M_NAME], info[M_VENDOR], info[M_MODEL], info[M_OS]);
+    Put_message(buf);
+    sprintf(buf, "Location: %s, Contact: %s, Owner: %s %s",
+	    info[M_LOC], info[M_CONTACT], info[M_OWNER_TYPE],
+	    strcmp(info[M_OWNER_TYPE], "NONE") ? info[M_OWNER_NAME] : "");
+    Put_message(buf);
+    sprintf(buf, "Address: %s, Subnet: %s, Use code: %s",
+	    info[M_ADDR], info[M_SUBNET], info[M_USE]);
+    Put_message(buf);
+    sprintf(buf, "Status: %s, Status Changed %s",
+	    MacState(atoi(info[M_STAT])), info[M_STAT_CHNG]);
+    Put_message(buf);
+    sprintf(buf, "Created on %s by %s", info[M_CREATED], info[M_CREATOR]);
+    Put_message(buf);
+    sprintf(buf, "Last known use %s", info[M_INUSE]);
+    Put_message(buf);
+    sprintf(buf, "Admin cmt: %s; Op cmt: %s",
+	    info[M_ACOMMENT], info[M_OCOMMENT]);
     Put_message(buf);
     sprintf(buf, MOD_FORMAT, info[M_MODBY], info[M_MODTIME], info[M_MODWITH]);
     Put_message(buf);
     return(info[M_NAME]);
+}
+
+/*	Function Name: PrintCname
+ *	Description: Prints the Data on a host alias
+ *	Arguments: info a pointer to the data array.
+ *	Returns: The name of the alias.
+ */
+
+static char *
+PrintCname(info)
+char ** info;
+{
+    char buf[BUFSIZ];
+
+    sprintf(buf, "Alias: %-32s Canonical Name: %s", info[0], info[1]);
+    Put_message(buf);
+    return(info[0]);
 }
 
 /*	Function Name: PrintClusterInfo
@@ -166,6 +268,47 @@ char ** info;
     return("");			/* Used by QueryLoop(). */
 }
 
+/*	Function Name: PrintSubnetInfo
+ *	Description: This function Prints out the subnet info 
+ *                   in a coherent form.
+ *	Arguments: info - array of information about a subnet.
+ *	Returns: The name of the subnet.
+ */
+
+static char *
+PrintSubnetInfo(info)
+char ** info;
+{
+    char buf[BUFSIZ];
+    struct in_addr addr, mask, low, high;
+
+    Put_message("");
+    sprintf(buf, "Subnet:     %s", info[SN_NAME]);
+    Put_message(buf);
+    sprintf(buf, "Description: %s", info[SN_DESC]);
+    Put_message(buf);
+    addr.s_addr = htonl(atoi(info[SN_ADDRESS]));
+    mask.s_addr = htonl(atoi(info[SN_MASK]));
+    low.s_addr = htonl(atoi(info[SN_LOW]));
+    high.s_addr = htonl(atoi(info[SN_HIGH]));
+    /* screwy sequence is here because inet_ntoa returns a pointer to
+       a static buf.  If it were all one sprintf, the last value would
+       appear 4 times. */
+    sprintf(buf, "Address %s, Mask ", inet_ntoa(addr));
+    strcat(buf, inet_ntoa(mask));
+    strcat(buf, ", High ");
+    strcat(buf, inet_ntoa(high));
+    strcat(buf, ", Low ");
+    strcat(buf, inet_ntoa(low));
+    Put_message(buf);
+    sprintf(buf, "Owner: %s %s", info[SN_ACE_TYPE],
+	    strcmp(info[SN_ACE_TYPE],"NONE") ? info[SN_ACE_NAME] : "");
+    Put_message(buf);
+    sprintf(buf,MOD_FORMAT,info[SN_MODBY],info[SN_MODTIME],info[SN_MODWITH]);
+    Put_message(buf);
+    return(info[SN_NAME]);
+}
+
 /*	Function Name: GetMCInfo.
  *	Description: This function stores info about a machine.
  *                   type - type of data we are trying to retrieve.
@@ -182,11 +325,13 @@ char * name1, *name2;
 
     int stat;
     struct qelem * elem = NULL;
-    char * args[2];
+    char * args[5];
 
     switch (type) {
     case MACHINE:
-	if ( (stat = do_mr_query("get_machine", 1, &name1,
+	args[0] = name1;
+	args[1] = args[2] = args[3] = "*";
+	if ( (stat = do_mr_query("get_host", 4, args,
 				  StoreInfo, (char *)&elem)) != 0) {
 	    if (stat == MR_NO_MATCH) {
 		char buf[128];
@@ -194,6 +339,27 @@ char * name1, *name2;
 		Put_message(buf);
 	    } else
 	      com_err(program_name, stat, " in get_machine.");
+	    return(NULL);
+	}
+	break;
+    case CNAME:
+	args[0] = name1;
+	args[1] = name2;
+	if ( (stat = do_mr_query("get_hostalias", 2, args,
+				  StoreInfo, (char *)&elem)) != 0) {
+	    com_err(program_name, stat, " in get_hostalias.");
+	    return(NULL);
+	}
+	break;
+    case SUBNET:
+	if ( (stat = do_mr_query("get_subnet", 1, &name1,
+				 StoreInfo, (char *)&elem)) != 0) {
+	    if (stat == MR_NO_MATCH) {
+		char buf[128];
+		sprintf(buf, "Subnet '%s' is not in the database.", name1);
+		Put_message(buf);
+	    } else
+	      com_err(program_name, stat, " in get_subnet.");
 	    return(NULL);
 	}
 	break;
@@ -249,6 +415,10 @@ Bool name;
 	sprintf(temp_buf, "Setting the information for the Machine %s.",
 		info[M_NAME]);
 	break;
+    case SUBNET:
+	sprintf(temp_buf, "Setting the information for the Subnet %s.",
+		info[SN_NAME]);
+	break;
     case CLUSTER:
 	sprintf(temp_buf, "Setting the information for the Cluster %s.",
 		info[C_NAME]);
@@ -276,6 +446,12 @@ Bool name;
 	    }
 	    free(oldnewname);
 	    break;
+	case SUBNET:
+	    newname = Strsave(info[SN_NAME]);
+	    if (GetValueFromUser("The new name for this subnet? ",
+				 &newname) == SUB_ERROR)
+	      return(NULL);
+	    break;
 	case CLUSTER:
 	    newname = Strsave(info[C_NAME]);
 	    if (GetValueFromUser("The new name for this cluster? ",
@@ -290,12 +466,77 @@ Bool name;
 
     switch(type) {
     case MACHINE:
-	if (GetTypeFromUser("Machine's Type", "mac_type", &info[M_TYPE]) ==
+	if (GetValueFromUser("Machine's Vendor", &info[M_VENDOR]) == SUB_ERROR)
+	  return(NULL);
+	if (GetValueFromUser("Machine's Model", &info[M_MODEL]) == SUB_ERROR)
+	  return(NULL);
+	if (GetValueFromUser("Machine's Operating System", &info[M_OS]) ==
 	    SUB_ERROR)
 	  return(NULL);
-	FreeAndClear(&info[M_MODTIME], TRUE);
-	FreeAndClear(&info[M_MODBY], TRUE);
-	FreeAndClear(&info[M_MODWITH], TRUE);
+	if (GetValueFromUser("Location of Machine", &info[M_LOC]) == SUB_ERROR)
+	  return(NULL);
+	if (GetValueFromUser("Contact for Machine", &info[M_CONTACT]) ==
+	    SUB_ERROR)
+	  return(NULL);
+	if (GetValueFromUser("Machine's Use Code", &info[M_USE]) == SUB_ERROR)
+	  return(NULL);
+	while (1) {
+	    int i;
+	    if (GetValueFromUser("Machine's Status (? for help)",
+				 &info[M_STAT]) == SUB_ERROR)
+	      return(NULL);
+	    if (isdigit(info[M_STAT][0])) break;
+	    Put_message("Valid status numbers:");
+	    for (i = 0; i < 4; i++) Put_message(states[i]);
+	}
+	if (name) {
+	    free(info[8]);
+	    info[8] = info[M_SUBNET];
+	    info[9] = info[M_ADDR];
+	    info[10] = info[M_OWNER_TYPE];
+	    info[11] = info[M_OWNER_NAME];
+	    info[12] = info[M_ACOMMENT];
+	    info[13] = info[M_OCOMMENT];
+	}
+	if (GetValueFromUser("Machine's subnet (or 'none')", &info[8])
+	    == SUB_ERROR)
+	  return(NULL);
+	if (GetValueFromUser("Machine's address (or 'unassigned' or 'unique')",
+			     &info[9]) == SUB_ERROR)
+	  return(NULL);
+	if (GetTypeFromUser("Machine's Owner Type", "ace_type", &info[10]) ==
+	    SUB_ERROR)
+	  return(NULL);
+	if (strcmp(info[10], "NONE") &&
+	    GetValueFromUser("Owner's Name", &info[11]) == SUB_ERROR)
+	  return(NULL);
+	if (GetValueFromUser("Administrative Comment", &info[12]) == SUB_ERROR)
+	  return(NULL);
+	if (GetValueFromUser("Operational Comment", &info[13]) == SUB_ERROR)
+	  return(NULL);
+	info[14] = NULL;
+	FreeAndClear(&info[15], TRUE);
+	FreeAndClear(&info[16], TRUE);
+	break;
+    case SUBNET:
+	if (GetValueFromUser("Subnet Description", &info[SN_DESC]) == SUB_ERROR)
+	  return(NULL);
+	if (GetAddressFromUser("Subnet Address", &info[SN_ADDRESS]) == SUB_ERROR)
+	  return(NULL);
+	if (GetAddressFromUser("Subnet Mask", &info[SN_MASK]) == SUB_ERROR)
+	  return(NULL);
+	if (GetAddressFromUser("Lowest assignable address", &info[SN_LOW]) == SUB_ERROR)
+	  return(NULL);
+	if (GetAddressFromUser("Highest assignable address", &info[SN_HIGH]) == SUB_ERROR)
+	  return(NULL);
+	if (GetTypeFromUser("Owner Type", "ace_type", &info[SN_ACE_TYPE]) == SUB_ERROR)
+	  return(NULL);
+	if (strcmp(info[SN_ACE_TYPE], "NONE") &&
+	    GetValueFromUser("Owner Name", &info[SN_ACE_NAME]) == SUB_ERROR)
+	  return(NULL);
+	FreeAndClear(&info[SN_MODTIME], TRUE);
+	FreeAndClear(&info[SN_MODBY], TRUE);
+	FreeAndClear(&info[SN_MODWITH], TRUE);
 	break;
     case CLUSTER:
 	if (GetValueFromUser("Cluster's Description:", &info[C_DESCRIPT]) ==
@@ -351,6 +592,65 @@ char **argv;
     return(DM_NORMAL);
 }
 
+/*	Function Name: ShowMachineQuery
+ *	Description: This function shows the information about a machine.
+ *		or group of machines, which may be selected through a
+ *		number of criteria. 
+ *	Arguments: argc, argv - the name of the machine in argv[1],
+ *		the address of the machine in argv[2],
+ *		the location of the machine in argv[3],
+ *		and the contact name in argv[4].
+ *	     any of these may be wildcards.
+ *	Returns: DM_NORMAL.
+ */
+
+/* ARGSUSED */
+int
+ShowMachineQuery(argc, argv)
+int argc;
+char **argv;
+{
+    int stat;
+    struct qelem *top, *elem = NULL;
+    char *args[5];
+
+    if (!strcmp(argv[1], "") && !strcmp(argv[2], "") &&
+	!strcmp(argv[3], "") && !strcmp(argv[4], "")) {
+	Put_message("You must specify at least one parameter of the query.");
+	return(DM_NORMAL);
+    }
+
+    if (*argv[1])
+      args[0] = canonicalize_hostname(strsave(argv[1]));
+    else
+      args[0] = "*";
+    if (*argv[2])
+      args[1] = argv[2];
+    else
+      args[1] = "*";
+    if (*argv[3])
+      args[2] = argv[3];
+    else
+      args[2] = "*";
+    if (*argv[4])
+      args[3] = argv[4];
+    else
+      args[3] = "*";
+
+    if ((stat = do_mr_query("get_host", 4, args, StoreInfo,
+			    (char *)&elem)) != 0) {
+	if (stat == MR_NO_MATCH)
+	  Put_message("No machine(s) found matching query in the database.");
+	else
+	  com_err(program_name, stat, " in get_machine.");
+	return(DM_NORMAL);
+    }
+    top = QueueTop(elem);
+    Loop(top, ( (void *) PrintMachInfo) );
+    FreeQueue(top);
+    return(DM_NORMAL);
+}
+
 /*	Function Name: AddMachine
  *	Description: This function adds a new machine to the database.
  *	Arguments: argc, argv - the name of the machine in argv[1].
@@ -363,7 +663,7 @@ AddMachine(argc, argv)
 int argc;
 char **argv;
 {
-    char **args, *info[MAX_ARGS_SIZE], *name, buf[256];
+    char **args, *info[MAX_ARGS_SIZE], *name, buf[256], *xargs[5];
     int stat;
 
     if (!ValidName(argv[1]))	/* Checks for wildcards. */
@@ -373,7 +673,9 @@ char **argv;
  */
     name =  canonicalize_hostname(strsave(argv[1]));
 
-    if ( (stat = do_mr_query("get_machine", 1, &name, NullFunc, NULL)) == 0) {
+    xargs[0] = name;
+    xargs[1] = xargs[2] = xargs[3] = "*";
+    if ( (stat = do_mr_query("get_host", 4, xargs, NullFunc, NULL)) == 0) {
 	sprintf(buf, "The machine '%s' already exists.", name);
 	Put_message(buf);
 	free(name);
@@ -396,7 +698,7 @@ char **argv;
  * Actually create the new Machine.
  */
     
-    if ( (stat = do_mr_query("add_machine", CountArgs(args), 
+    if ( (stat = do_mr_query("add_host", CountArgs(args), 
 			      args, Scream, NULL)) != 0)
 	com_err(program_name, stat, " in AddMachine.");
 
@@ -424,7 +726,7 @@ Bool junk;
 	Put_message("Aborted.");
 	return;
     }
-    if ( (stat = do_mr_query("update_machine", CountArgs(args), 
+    if ( (stat = do_mr_query("update_host", CountArgs(args), 
 			      args, Scream, NULL)) != 0)
 	com_err(program_name, stat, " in UpdateMachine.");
     else
@@ -541,7 +843,7 @@ Bool one_machine;
 	    info[M_NAME]);
     if(!one_machine || Confirm(temp_buf)) {
 	if (CheckAndRemoveFromCluster(info[M_NAME], TRUE) != SUB_ERROR) {
-	    if ( (stat = do_mr_query("delete_machine", 1,
+	    if ( (stat = do_mr_query("delete_host", 1,
 				      &info[M_NAME], Scream, NULL)) != 0) {
 		com_err(program_name, stat, " in DeleteMachine.");
 		sprintf(temp_buf, "%s ** NOT ** deleted.", 
@@ -580,6 +882,81 @@ char **argv;
     free(tmpname);
     return(DM_NORMAL);
 }
+
+/*	Function Name: ShowCname
+ *	Description: This function shows machine aliases
+ *	Arguments: argc, argv - the alias argv[1], the real name in argv[2]
+ *	Returns: DM_NORMAL.
+ */
+
+/* ARGSUSED */
+int
+ShowCname(argc, argv)
+int argc;
+char **argv;
+{
+    struct qelem *top;
+    char *tmpalias, *tmpname;
+
+    tmpalias = canonicalize_hostname(strsave(argv[1]));
+    tmpname = canonicalize_hostname(strsave(argv[2]));
+    top = GetMCInfo(CNAME, tmpalias, tmpname);
+    Put_message("");		/* blank line on screen */
+    Loop(top, ( (void *) PrintCname) );
+    FreeQueue(top);
+    return(DM_NORMAL);
+}
+
+
+/* ARGSUSED */
+int 
+AddCname(argc, argv)
+int argc;
+char ** argv;
+{
+    int stat;
+    char *machine, *cluster, temp_buf[BUFSIZ], *args[10];
+    Bool add_it, one_machine, one_cluster;
+    struct qelem * melem, *mtop, *celem, *ctop;
+
+    args[0] = canonicalize_hostname(strsave(argv[1]));
+    args[1] = canonicalize_hostname(strsave(argv[2]));
+    stat = do_mr_query("add_hostalias", 2, args, Scream, NULL);
+    switch (stat) {
+    case MR_SUCCESS:
+	break;
+    case MR_EXISTS:
+	Put_message("That alias name is already in use.");
+	break;
+    case MR_PERM:
+	Put_message("Permission denied.  (Regular users can only add two aliases to a host.");
+	break;
+    default:
+	com_err(program_name, stat, " in add_hostalias");
+    }
+    return(DM_NORMAL);
+}
+
+
+/* ARGSUSED */
+int 
+DeleteCname(argc, argv)
+int argc;
+char ** argv;
+{
+    int stat;
+    char *machine, *cluster, temp_buf[BUFSIZ], *args[10];
+    Bool add_it, one_machine, one_cluster;
+    struct qelem * melem, *mtop, *celem, *ctop;
+
+    args[0] = canonicalize_hostname(strsave(argv[1]));
+    args[1] = canonicalize_hostname(strsave(argv[2]));
+    stat = do_mr_query("delete_hostalias", 2, args, Scream, NULL);
+    if (stat)
+      com_err(program_name, stat, " in delete_hostalias");
+    return(DM_NORMAL);
+}
+
 
 /*	Function Name: AddMachineToCluster
  *	Description: This function adds a machine to a cluster
@@ -747,6 +1124,177 @@ char ** argv;
     return(DM_NORMAL);
 }
 
+/* ---------- Subnet Menu -------- */
+
+/*	Function Name: ShowSubnetInfo
+ *	Description: Gets information about a subnet given its name.
+ *	Arguments: argc, argc - the name of the subnet in in argv[1].
+ *	Returns: DM_NORMAL.
+ */
+
+/* ARGSUSED */
+int
+ShowSubnetInfo(argc, argv)
+int argc;
+char ** argv;
+{
+    struct qelem *top;
+
+    top = GetMCInfo(SUBNET, argv[1], (char *) NULL);
+    Loop(top, (void *) PrintSubnetInfo);
+    FreeQueue(top);
+    return(DM_NORMAL);
+}
+
+/*	Function Name: AddSubnet
+ *	Description: Creates a new subnet.
+ *	Arguments: argc, argv - the name of the new subnet is argv[1].
+ *	Returns: DM_NORMAL.
+ */
+
+/* ARGSUSED */
+int
+AddSubnet(argc, argv)
+int argc;
+char ** argv;
+{
+    char **args, *info[MAX_ARGS_SIZE], *name = argv[1];
+    int stat;
+/* 
+ * Check to see if this subnet already exists. 
+ */
+    if (!ValidName(name))
+	return(DM_NORMAL);
+
+    if ( (stat = do_mr_query("get_subnet", 1, &name, 
+			      NullFunc, NULL)) == MR_SUCCESS) {
+	Put_message("This subnet already exists.");
+	return(DM_NORMAL);
+    }
+    else if (stat != MR_NO_MATCH) {
+	com_err(program_name, stat, " in AddSubnet.");
+	return(DM_NORMAL);
+    }
+    if ((args = AskMCDInfo(SetSubnetDefaults(info, name), SUBNET, FALSE)) ==
+	NULL) {
+	Put_message("Aborted.");
+	FreeInfo(info);
+	return(DM_NORMAL);
+    }
+
+/*
+ * Actually create the new Subnet.
+ */
+    if ( (stat = do_mr_query("add_subnet", CountArgs(args), 
+			      args, Scream, NULL)) != 0)
+	com_err(program_name, stat, " in AddSubnet.");
+
+    FreeInfo(info);
+    return(DM_NORMAL);
+}
+
+/*	Function Name: RealUpdateSubnet
+ *	Description: This function actually performs the subnet update.
+ *	Arguments: info - all information nesc. for updating the subnet.
+ *                 junk - an UNUSED boolean.
+ *	Returns: none.
+ */
+
+/* ARGSUSED */
+static void
+RealUpdateSubnet(info, junk)
+char ** info;
+Bool junk;
+{
+    register int stat;
+    char ** args = AskMCDInfo(info, SUBNET, TRUE);
+    if (args == NULL) {
+	Put_message("Aborted.");
+	return;
+    }
+    if ( (stat = do_mr_query("update_subnet", CountArgs(args), 
+			      args, Scream, NULL)) != 0)
+	com_err(program_name, stat, " in UpdateSubnet.");
+    else
+	Put_message("Subnet successfully updated.");
+}
+
+/*	Function Name: UpdateSubnet
+ *	Description: This Function Updates a subnet
+ *	Arguments: name of the subnet in argv[1].
+ *	Returns: DM_NORMAL.
+ */
+
+/* ARGSUSED */
+int 
+UpdateSubnet(argc, argv)
+int argc;
+char ** argv;
+{
+    struct qelem *top;    
+    top = GetMCInfo( SUBNET, argv[1], (char *) NULL );
+    QueryLoop(top, NullPrint, RealUpdateSubnet, "Update the subnet");
+
+    FreeQueue(top);
+    return(DM_NORMAL);
+}
+
+/*	Function Name: RealDeleteSubnet
+ *	Description: Actually performs the subnet deletion.
+ *	Arguments: info - all information about this subnet.
+ *                 one_subnet - If true then there was only one subnet in
+ *                               the queue, and we should confirm.
+ *	Returns: none.
+ */
+
+static void
+RealDeleteSubnet(info, one_subnet)
+char ** info;
+Bool one_subnet;
+{
+    register int stat;
+    char temp_buf[BUFSIZ];
+    
+    sprintf(temp_buf, 
+	    "Are you sure the you want to delete the subnet %s (y/n) ?", 
+	    info[C_NAME]);
+    if (!one_subnet || Confirm(temp_buf)) {
+	if ( (stat = do_mr_query("delete_subnet", 1,
+				 &info[C_NAME], Scream, NULL)) != 0) {
+	    com_err(program_name, stat, " in delete_subnet.");
+	    sprintf(temp_buf, "Subnet %s ** NOT ** deleted.", 
+		    info[C_NAME]);
+	    Put_message(temp_buf);
+	}
+	else {
+	    sprintf(temp_buf, "subnet %s sucesfully deleted.", 
+		    info[C_NAME]);
+	    Put_message(temp_buf);
+	}
+    }
+}
+
+/*	Function Name: DeleteSubnet
+ *	Description: This function removes a subnet from the database.
+ *	Arguments: argc, argv - the name of the subnet is stored in argv[1].
+ *	Returns: DM_NORMAL.
+ */
+
+/* ARGSUSED */
+int
+DeleteSubnet(argc, argv)
+int argc;
+char ** argv;
+{
+    struct qelem *top;
+
+    top = GetMCInfo( SUBNET, argv[1], (char *) NULL );
+    QueryLoop(top, PrintSubnetInfo, RealDeleteSubnet, "Delete the subnet");
+
+    FreeQueue(top);
+    return(DM_NORMAL);
+}
+    
 /* ---------- Cluster Menu -------- */
 
 /*	Function Name: ShowClusterInfo

@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menus.c,v 1.24 1993-09-22 11:50:09 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menus.c,v 1.25 1993-11-10 15:40:42 mar Exp $";
 #endif lint
 
 /*	This is the file menus.c for the MOIRA Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menus.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menus.c,v 1.24 1993-09-22 11:50:09 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menus.c,v 1.25 1993-11-10 15:40:42 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -375,6 +375,57 @@ Menu filesys_menu = {
   }
 };
 
+Menu subnet_menu = {
+  NULLFUNC,
+  NULLFUNC,
+  "Subnet Menu",
+  5,
+  {
+    { ShowSubnetInfo, NULLMENU, 2, {
+      {"show","Get subnet information"},
+      {"name","Subnet's Name: "}
+    } },
+    { AddSubnet, NULLMENU, 2, {
+      {"add","Add a new subnet"},
+      {"name","Subnet's Name: "},
+    } },
+    { UpdateSubnet, NULLMENU, 2, {
+      {"update","Update subnet information"},
+      {"name","Subnet's Name: "},
+    } },
+    { DeleteSubnet, NULLMENU, 2, {
+      {"delete","Delete this subnet"},
+      {"name","Subnet's Name: "}
+    } },
+    SIMPLEFUNC("verbose", "Toggle Verbosity of Delete", ToggleVerboseMode)
+  }
+};
+
+Menu cname_menu = {
+  NULLFUNC,
+  NULLFUNC,
+  "Host Alias Menu",
+  4,
+  {
+    { ShowCname, NULLMENU, 3, {
+      {"show","Get host alias information"},
+      {"alias","Alias Name (Cname): "},
+      {"host","Canonical Host Name: "}
+    } },
+    { AddCname, NULLMENU, 3, {
+      {"add","Add a new host alias"},
+      {"alias","Alias Name (Cname): "},
+      {"host","Canonical Host Name: "}
+    } },
+    { DeleteCname, NULLMENU, 3, {
+      {"delete","Delete this alias"},
+      {"alias","Alias Name (Cname): "},
+      {"host","Canonical Host Name: "}
+    } },
+    SIMPLEFUNC("verbose", "Toggle Verbosity of Delete", ToggleVerboseMode)
+  }
+};
+
 /*
  * Machine Menu
  */
@@ -383,11 +434,18 @@ Menu machine_menu = {
   NULLFUNC,
   NULLFUNC,
   "Machine Menu",
-  6,
+  7,
   {
     { ShowMachineInfo, NULLMENU, 2, {
       {"show","Get machine information"},
       {"name","Machine's Name: "}
+    } },
+    { ShowMachineQuery, NULLMENU, 5, {
+	{"query", "Lookup machines"},
+	{"name", "Machine Name (or leave empty to match any): "},
+	{"address", "Address in dotted notation (or leave empty to match any): "},
+	{"location", "Location (or leave empty to match any): "},
+	{"contact", "Contact person (or leave empty to match any): "}
     } },
     { AddMachine, NULLMENU, 2, {
       {"add","Add a new machine"},
@@ -401,8 +459,8 @@ Menu machine_menu = {
       {"delete","Delete this machine"},
       {"name","Machine's Name: "}
     } },
+    SUBMENU("cnames","Alias names for machines", &cname_menu),
     SUBMENU("mappings","Machine To Cluster Mappings Menu", &mappings_menu),
-    SIMPLEFUNC("verbose", "Toggle Verbosity of Delete", ToggleVerboseMode)
   }
 };
 
@@ -712,12 +770,13 @@ Menu moira_top_menu = {
   NULLFUNC,
   NULLFUNC,
   "Moira Database Manipulation",
-  11,
+  12,
   {
     SUBMENU("cluster","Cluster Menu",&cluster_menu),
     SUBMENU("filesys","Filesystem Menu", &filesys_menu),
     SUBMENU("list","Lists and Group Menu", &list_menu),
     SUBMENU("machine","Machine Menu",&machine_menu),
+    SUBMENU("subnet", "Subnet Menu", &subnet_menu),
     SUBMENU("nfs","NFS Physical Menu", &nfsphys_menu),
     SUBMENU("user","User Menu", &user_menu),
     SUBMENU("printcap", "Printcap Printer Menu", &printer_menu),

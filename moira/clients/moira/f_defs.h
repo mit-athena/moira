@@ -7,7 +7,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/f_defs.h,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/f_defs.h,v 1.18 1993-09-22 11:50:06 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/f_defs.h,v 1.19 1993-11-10 15:42:20 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -46,6 +46,7 @@ int AttachHelp();		/* Help information specific to filsys. */
 /* cluster.c */
 
 int ShowMachineInfo();		/* Show information on a(many) machine(s). */
+int ShowMachineQuery();		/* Show mach info based on complex query */
 int AddMachine();		/* add a new machine to teh database. */
 int UpdateMachine();		/* updates machine information. */
 int DeleteMachine();		/* delete a machine from the database. */
@@ -67,6 +68,15 @@ int DeleteCluster();
 int ShowClusterData();		/* Show, add, and remove data  */
 int AddClusterData();		/* associated with a cluster. */
 int RemoveClusterData();
+
+int ShowSubnetInfo();
+int AddSubnet();
+int UpdateSubnet();
+int DeleteSubnet();
+
+int ShowCname();
+int AddCname();
+int DeleteCname();
 
 /* delete.c */
 

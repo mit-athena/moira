@@ -1,4 +1,4 @@
-/* $Id: lists.c,v 1.42 2000-08-10 02:16:53 zacheiss Exp $
+/* $Id: lists.c,v 1.43 2000-08-10 02:25:57 zacheiss Exp $
  *
  *	This is the file lists.c for the Moira Client, which allows users
  *      to quickly and easily maintain most parts of the Moira database.
@@ -24,7 +24,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v 1.42 2000-08-10 02:16:53 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v 1.43 2000-08-10 02:25:57 zacheiss Exp $");
 
 struct mqelem *GetListInfo(int type, char *name1, char *name2);
 char **AskListInfo(char **info, Bool name);
@@ -46,6 +46,8 @@ int GetMemberInfo(char *action, char **ret_argv);
 #define DEFAULT_NFSGROUP    DEFAULT_NO
 #define DEFAULT_ACE_TYPE    "user"
 #define DEFAULT_ACE_NAME    (user)
+#define DEFAULT_MEMACE_TYPE "NONE"
+#define DEFAULT_MEMACE_NAME "NONE"
 #define DEFAULT_DESCRIPTION DEFAULT_COMMENT
 
 /* globals only for this file. */
@@ -102,6 +104,13 @@ static void PrintListInfo(char **info)
     {
       sprintf(buf, "The Administrator of this list is the %s: %s",
 	      info[L_ACE_TYPE], info[L_ACE_NAME]);
+      Put_message(buf);
+    }
+
+  if (strcmp(info[L_MEMACE_TYPE], "NONE"))
+    {
+      sprintf(buf, "The Membership Administrator of this list is the %s: %s",
+	      info[L_MEMACE_TYPE], info[L_MEMACE_NAME]);
       Put_message(buf);
     }
 
@@ -234,6 +243,19 @@ char **AskListInfo(char **info, Bool name)
       if (GetValueFromUser(temp_buf, &info[L_ACE_NAME]) == SUB_ERROR)
 	return NULL;
     }
+
+  if (GetTypeFromUser("What Type of Membership Administrator", "ace_type",
+		      &info[L_MEMACE_TYPE]) == SUB_ERROR)
+    return NULL;
+  if (strcasecmp(info[L_MEMACE_TYPE], "NONE") &&
+      strcasecmp(info[L_MEMACE_TYPE], "none"))
+    {
+      sprintf(temp_buf, "Which %s will be the membership administrator of this list: ",
+	      info[L_MEMACE_TYPE]);
+      if (GetValueFromUser(temp_buf, &info[L_MEMACE_NAME]) == SUB_ERROR)
+	return NULL;
+    }
+
   if (GetValueFromUser("Description: ", &info[L_DESC]) == SUB_ERROR)
     return NULL;
 
@@ -361,6 +383,8 @@ static char **SetDefaults(char **info, char *name)
   info[L_NFSGROUP] = strdup(DEFAULT_NFSGROUP);
   info[L_ACE_TYPE] = strdup(DEFAULT_ACE_TYPE);
   info[L_ACE_NAME] = strdup(DEFAULT_ACE_NAME);
+  info[L_MEMACE_TYPE] = strdup(DEFAULT_MEMACE_TYPE);
+  info[L_MEMACE_NAME] = strdup(DEFAULT_MEMACE_NAME);
   info[L_DESC] =     strdup(DEFAULT_DESCRIPTION);
   info[L_MODTIME] = info[L_MODBY] = info[L_MODWITH] = info[L_END] = NULL;
   return info;

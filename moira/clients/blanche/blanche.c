@@ -1,4 +1,4 @@
-/* $Id: blanche.c,v 1.48 2000-08-10 02:19:31 zacheiss Exp $
+/* $Id: blanche.c,v 1.49 2000-08-10 02:25:08 zacheiss Exp $
  *
  * Command line oriented Moira List tool.
  *
@@ -20,7 +20,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.48 2000-08-10 02:19:31 zacheiss Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/blanche/blanche.c,v 1.49 2000-08-10 02:25:08 zacheiss Exp $");
 
 struct member {
   int type;
@@ -34,6 +34,8 @@ struct member {
 #define M_STRING	3
 #define M_KERBEROS	4
 
+char *typename[] = { "ANY", "USER", "LIST", "STRING", "KERBEROS" };
+
 /* argument parsing macro */
 #define argis(a, b) (!strcmp(*arg + 1, a) || !strcmp(*arg + 1, b))
 
@@ -42,7 +44,7 @@ int infoflg, verbose, syncflg, memberflg, recursflg, noauth;
 int showusers, showstrings, showkerberos, showlists, showtags;
 int createflag, setinfo, active, public, hidden, maillist, grouplist;
 int nfsgroup;
-struct member *owner;
+struct member *owner, *memacl;
 char *desc, *newname;
 
 /* various member lists */
@@ -80,6 +82,7 @@ int main(int argc, char **argv)
   active = public = hidden = maillist = grouplist = nfsgroup = -1;
   listname = newname = desc = NULL;
   owner = NULL;
+  memacl = NULL;
   addlist = sq_create();
   dellist = sq_create();
   memberlist = sq_create();
@@ -285,6 +288,17 @@ int main(int argc, char **argv)
 	      else
 		usage(argv);
 	    }
+	  else if (argis("MA", "memacl"))
+	    {
+	      if (arg - argv < argc -1)
+		{
+		  setinfo++;
+		  ++arg;
+		  memacl = parse_member(*arg);
+		}
+	      else
+		usage(argv);
+	    }
 	  else if (argis("R", "rename"))
 	    {
 	      if (arg - argv < argc - 1)
@@ -318,7 +332,7 @@ int main(int argc, char **argv)
     showusers = showstrings = showlists = showkerberos = 1;
 
   /* fire up Moira */
-  status = mrcl_connect(server, "blanche", 3, !noauth);
+  status = mrcl_connect(server, "blanche", 4, !noauth);
   if (status == MRCL_AUTH_ERROR)
     {
       com_err(whoami, 0, "Try the -noauth flag if you don't "
@@ -340,7 +354,7 @@ int main(int argc, char **argv)
   /* create if needed */
   if (createflag)
     {
-      char *argv[11];
+      char *argv[13];
 
       argv[L_NAME] = listname;
       argv[L_ACTIVE] = (active == 0) ? "0" : "1";
@@ -352,6 +366,23 @@ int main(int argc, char **argv)
       argv[L_NFSGROUP] = (nfsgroup == 1) ? "1" : "0";
       argv[L_DESC] = desc ? desc : "none";
 
+      if (memacl)
+	{
+	  if (memacl->type == M_ANY)
+	    {
+	      status = mr_query("get_user_account_by_login", 1,
+				&memacl->name, NULL, NULL);
+	      if (status == MR_NO_MATCH)
+		memacl->type = M_LIST;
+	      else
+		memacl->type = M_USER;
+	    }
+	  argv[L_MEMACE_TYPE] = typename[memacl->type];
+	  argv[L_MEMACE_NAME] = memacl->name;
+	}
+      else 
+	argv[L_MEMACE_TYPE] = argv[L_MEMACE_NAME] = "NONE";
+
       if (owner)
 	{
 	  argv[L_ACE_NAME] = owner->name;
@@ -360,18 +391,18 @@ int main(int argc, char **argv)
 	    case M_ANY:
 	    case M_USER:
 	      argv[L_ACE_TYPE] = "USER";
-	      status = mr_query("add_list", 11, argv, NULL, NULL);
+	      status = mr_query("add_list", 13, argv, NULL, NULL);
 	      if (owner->type != M_ANY || status != MR_USER)
 		break;
 
 	    case M_LIST:
 	      argv[L_ACE_TYPE] = "LIST";
-	      status = mr_query("add_list", 11, argv, NULL, NULL);
+	      status = mr_query("add_list", 13, argv, NULL, NULL);
 	      break;
 
 	    case M_KERBEROS:
 	      argv[L_ACE_TYPE] = "KERBEROS";
-	      status = mr_query("add_list", 11, argv, NULL, NULL);
+	      status = mr_query("add_list", 13, argv, NULL, NULL);
 	      break;
 	    }
 	}
@@ -380,7 +411,7 @@ int main(int argc, char **argv)
 	  argv[L_ACE_TYPE] = "USER";
 	  argv[L_ACE_NAME] = get_username();
 
-	  status = mr_query("add_list", 11, argv, NULL, NULL);
+	  status = mr_query("add_list", 13, argv, NULL, NULL);
 	}
 
       if (status)
@@ -391,7 +422,7 @@ int main(int argc, char **argv)
     }
   else if (setinfo)
     {
-      char *argv[12];
+      char *argv[14];
 
       status = mr_query("get_list_info", 1, &listname,
 			save_list_info, argv);
@@ -419,6 +450,23 @@ int main(int argc, char **argv)
       if (desc)
 	argv[L_DESC + 1] = desc;
 
+      if (memacl)
+	{
+	  if (memacl->type == M_ANY)
+	    {
+	      status = mr_query("get_user_account_by_login", 1,
+				&memacl->name, NULL, NULL);
+	      if (status == MR_NO_MATCH)
+		memacl->type = M_LIST;
+	      else
+		memacl->type = M_USER;
+	    }
+	  argv[L_MEMACE_TYPE + 1] = typename[memacl->type];
+	  argv[L_MEMACE_NAME + 1] = memacl->name;
+	}
+      else
+	argv[L_MEMACE_TYPE + 1] = argv[L_MEMACE_NAME + 1] = "NONE";
+
       if (owner)
 	{
 	  argv[L_ACE_NAME + 1] = owner->name;
@@ -427,23 +475,23 @@ int main(int argc, char **argv)
 	    case M_ANY:
 	    case M_USER:
 	      argv[L_ACE_TYPE + 1] = "USER";
-	      status = mr_query("update_list", 12, argv, NULL, NULL);
+	      status = mr_query("update_list", 14, argv, NULL, NULL);
 	      if (owner->type != M_ANY || status != MR_USER)
 		break;
 
 	    case M_LIST:
 	      argv[L_ACE_TYPE + 1] = "LIST";
-	      status = mr_query("update_list", 12, argv, NULL, NULL);
+	      status = mr_query("update_list", 14, argv, NULL, NULL);
 	      break;
 
 	    case M_KERBEROS:
 	      argv[L_ACE_TYPE + 1] = "KERBEROS";
-	      status = mr_query("update_list", 12, argv, NULL, NULL);
+	      status = mr_query("update_list", 14, argv, NULL, NULL);
 	      break;
 	    }
 	}
       else
-	status = mr_query("update_list", 12, argv, NULL, NULL);
+	status = mr_query("update_list", 14, argv, NULL, NULL);
 
       if (status)
 	{
@@ -916,7 +964,9 @@ void usage(char **argv)
   fprintf(stderr, USAGE_OPTIONS_FORMAT, "-t  | -tags",
 	  "-O  | -owner owner");
   fprintf(stderr, USAGE_OPTIONS_FORMAT, "-n  | -noauth",
-	  "-db | -database host[:port]");
+	  "-MA | -memacl membership_acl");
+  fprintf(stderr, USAGE_OPTIONS_FORMAT, "-db | -database host[:port]",
+	  "");
   exit(1);
 }
 
@@ -997,6 +1047,9 @@ int show_list_info(int argc, char **argv, void *hint)
   else
     printf("\n");
   printf("Owner: %s %s\n", argv[L_ACE_TYPE], argv[L_ACE_NAME]);
+  if (strcmp(argv[L_MEMACE_TYPE], "NONE"))
+    printf("Membership ACL: %s %s\n", argv[L_MEMACE_TYPE], 
+	   argv[L_MEMACE_NAME]);
   printf("Last modified by %s with %s on %s\n", 
 	 argv[L_MODBY], argv[L_MODWITH], argv[L_MODTIME]);
   return MR_CONT;

@@ -5,7 +5,7 @@
  *
  * $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v $
  * $Author: mar $
- * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.15 1988-01-26 16:39:03 mar Exp $
+ * $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.16 1988-04-19 12:37:02 mar Exp $
  *
  * Generic menu system module.
  *
@@ -18,7 +18,7 @@
  */
 
 #ifndef lint
-static char rcsid_menu_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.15 1988-01-26 16:39:03 mar Exp $";
+static char rcsid_menu_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menu.c,v 1.16 1988-04-19 12:37:02 mar Exp $";
 
 #endif lint
 
@@ -397,7 +397,7 @@ int Prompt_input(prompt, buf, buflen)
 	    (void) wclrtoeol(cur_ms->ms_input);
 #endif notdef
 	    refresh_ms(cur_ms);
-	    c = getchar();
+	    c = getchar() & 0x7f;
 	    switch (c) {
 	    case CTL('C'):
 		return 0;
@@ -489,7 +489,7 @@ int Password_input(prompt, buf, buflen)
 	    (void) wmove(cur_ms->ms_input, y, x);
 	    (void) wclrtoeol(cur_ms->ms_input);
 	    refresh_ms(cur_ms);
-	    c = getchar();
+	    c = getchar() & 0x7f;
 	    switch (c) {
 	    case CTL('C'):
 		return 0;
@@ -620,7 +620,7 @@ char *msg;
 		(void) wprintw(cur_ms->ms_input, "---More---");
 		(void) wstandend(cur_ms->ms_input);
 		refresh_ms(cur_ms);
-		chr = getchar();/* We do care what it is */
+		chr = getchar() & 0x7f;/* We do care what it is */
 		if (chr == 'q' || chr == 'Q') {
 		    more_flg = 0;
 		    return;
@@ -633,7 +633,7 @@ char *msg;
 	    }
 	    else {
 		printf("---More (hit return)---");
-		(void) getchar();
+		(void) getchar() & 0x7f;
 	    }
 	    Start_paging();	/* Reset lines_left */
 	}

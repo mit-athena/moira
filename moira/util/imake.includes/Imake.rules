@@ -1,6 +1,4 @@
 /**/#	$Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/util/imake.includes/Imake.rules,v $
-/**/#	$Author: qjb $
-/**/#	$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/util/imake.includes/Imake.rules,v 4.15 1989-09-26 14:34:51 qjb Exp $
 /**/#
 
 #ifdef __STDC__
@@ -22,9 +20,9 @@
  * Rule for building objects in libraries.
  */
 
-#ifdef mips
+#if defined(mips) || defined(_AIX)
 /*
- * The MIPS loader doesn't have the -X flag or its functionality.
+ * The MIPS & AIX loaders don't have the -X flag or its functionality.
  */
 #define library_obj_rule()						@@\
 .c.o:									@@\
@@ -33,7 +31,7 @@
 	$(CC) -c $(CFLAGS) $*.c						@@\
 	-$(LD) -x -r -o a.out $*.o					@@\
 	$(MV) a.out $*.o
-#else /* ! mips */
+#else /* ! mips && ! _AIX */
 #define library_obj_rule()						@@\
 .c.o:									@@\
 	$(CC) PROF_FLAG -c $(CFLAGS) $*.c				@@\
@@ -211,28 +209,14 @@ clean::									@@\
  * Rule for compileing files with "et"
  */
 
-#ifdef PROFILED_LIBS
-#define comp_et_prof(tbl)						@@\
-concat(tbl,.h) concat(tbl,.o): concat(tbl,.et)				@@\
-	$(COMPILE_ET) concat(tbl,.et) -n				@@\
-	$(CC) -c PROF_FLAG concat(tbl,.et.c)				@@\
-	$(MV) concat(tbl,.et.o) concat3(profiled/,tbl,.o)		@@\
-	$(COMPILE_ET) concat(tbl,.et)					@@\
-clean::									@@\
-	$(RM) concat(tbl,.o) concat(tbl,.h)				@@\
-depend:: concat(tbl,.h)
-#else /* !PROFILED_LIBS */
-#define comp_et_prof(tbl) comp_et(tbl)
-#endif /* PROFILED_LIBS */
-
 #define comp_et(tbl)							@@\
-concat(tbl,.h) concat(tbl,.o): concat(tbl,.et)				@@\
+concat(tbl,.h) concat(tbl,.c): concat(tbl,.et)				@@\
 	$(COMPILE_ET) concat(tbl,.et)					@@\
 clean::									@@\
-	$(RM) concat(tbl,.o) concat(tbl,.h)
+	$(RM) concat(tbl,.c) concat(tbl,.h)
 
 #define comp_et_depend(src)						@@\
-	comp_et_prof(src)						@@\
+	comp_et(src)							@@\
 									@@\
 depend:: concat(src,.h)
 
@@ -317,22 +301,6 @@ clean:: 								@@\
 	$(RM) pgm objs							@@\
 
 /*
- * Rule for building a program which is to be installed setuid root:
- */
-
-#define suidprogram(pgm,objs,localdeps,syslibs,installdir)		@@\
-all:: pgm								@@\
-									@@\
-pgm: objs localdeps							@@\
-	$(CC) $(CFLAGS) -o $@ objs syslibs				@@\
-									@@\
-install::								@@\
-	$(INSTALLSUID) pgm ${DESTDIR}installdir/pgm			@@\
-									@@\
-clean:: 								@@\
-	$(RM) pgm objs							@@\
-
-/*
  * Rule for building a specially installed program
  */
 
@@ -347,26 +315,6 @@ install::								@@\
 									@@\
 clean:: 								@@\
 	$(RM) pgm objs							@@\
-
-/*
- * Special rule for building and installing a Berkeley r-command
- * We need to preserve the original copies upon installation.
- */
-
-#define ucbprogram(pgm,objs,localdeps,syslibs,installdir)		@@\
-all:: pgm								@@\
-									@@\
-pgm: objs localdeps							@@\
-	$(CC) $(CFLAGS) -o $@ objs syslibs				@@\
-									@@\
-install::								@@\
-	-if [ ! -f concat5(${DESTDIR},installdir,/,pgm,.ucb) -a -f concat4(${DESTDIR},installdir,/,pgm) ]; then \ @@\
-		mv concat4(${DESTDIR},installdir,/,pgm) concat5(${DESTDIR},installdir,/,pgm,.ucb); fi; exit 0 @@\
-	$(INSTALLSUID) pgm concat4(${DESTDIR},installdir,/,pgm)		@@\
-									@@\
-clean:: 								@@\
-	$(RM) pgm objs							@@\
-
 
 /*
  * Rule for installing man pages.  Section installing into should match
@@ -449,4 +397,47 @@ Makefiles::								@@\
 	done
 
 
+/* Compile Embeded SQL source */
 
+#ifdef INGRES
+#define sqlrule()							@@\
+.SUFFIXES: .sc .dc							@@\
+.dc.sc:									@@\
+	$(AWK) -f $(SRCTOP)/util/imake.includes/ingres.awk < $< > $*.sc	@@\
+									@@\
+.sc.c:									@@\
+	/usr/rtingres/bin/esqlc -p $*
+#define sqlfile(file)							@@\
+concat(file,.sc): concat(file,.dc)					@@\
+concat(file,.c): concat(file,.sc)					@@\
+clean::									@@\
+	$(RM) concat(file,.sc) concat(file,.c)
+#endif
+#ifdef INFORMIX
+#define sqlrule()							@@\
+.SUFFIXES: .ec .dc							@@\
+.dc.ec:									@@\
+	$(AWK) -f $(SRCTOP)/util/imake.includes/informix.awk < $< > $*.ec @@\
+									@@\
+.ec.c:									@@\
+	/usr/informix/bin/esql -e $*.ec
+#define sqlfile(file)							@@\
+concat(file,.ec): concat(file,.dc)					@@\
+concat(file,.c): concat(file,.ec)					@@\
+clean::									@@\
+	$(RM) concat(file,.ec) concat(file,.c)
+#endif
+#ifdef ORACLE
+#define sqlrule()							@@\
+.SUFFIXES: .pc .dc							@@\
+.dc.pc:									@@\
+	$(AWK) -f $(SRCTOP)/util/imake.includes/oracle.awk < $< > $*.pc @@\
+									@@\
+.pc.c:									@@\
+	/usr/oracle/bin/pcc INAME=$*.pc
+#define sqlfile(file)							@@\
+concat(file,.pc): concat(file,.dc)					@@\
+concat(file,.c): concat(file,.pc)					@@\
+clean::									@@\
+	$(RM) concat(file,.pc) concat(file,.c)
+#endif

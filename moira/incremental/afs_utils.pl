@@ -3,7 +3,7 @@ $vos="$afsbin/vos";
 $pts="$afsbin/pts";
 $fs="$afsbin/fs";
 
-$afs_data="/moira/afs_data";
+$afs_data="/moira/afs/afs_data";
 $afs_save="$afs_data.tmp";
 
 $LOCK_EX=2;

@@ -3,7 +3,7 @@
 
 require "/moira/bin/afs_utils.pl";
 
-$protodir="/usr/prototype_user";
+$protodir="/moira/dotfiles";
 $quota=1;
 
 %vtypes_ATHENA_MIT_EDU =

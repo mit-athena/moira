@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.1 2000-06-06 04:38:34 zacheiss Exp $
+# $Id: Makefile.in,v 1.2 2000-11-11 11:05:22 zacheiss Exp $
 
 SHELL=/bin/sh
 @SET_MAKE@
@@ -22,7 +22,7 @@ SRCTOP=@top_srcdir@
 BUILDTOP=../..
 mrbindir=@mrbindir@
 
-WINAD_OBJS=winad.o ldap_adgssapi_bind.o
+WINAD_OBJS=winad.o ldap_adgssapi_bind.o krb5_utils.o setpw.o
 
 TARGET=winad.incr
 

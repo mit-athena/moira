@@ -1,4 +1,4 @@
-/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/afs.c,v 1.42 1993-01-29 16:30:49 probe Exp $
+/* $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/incremental/afs.c,v 1.43 1993-02-02 18:12:43 probe Exp $
  *
  * Do AFS incremental updates
  *
@@ -41,7 +41,7 @@ int do_quota();
 /* Support stub routines */
 int run_cmd();
 int add_user_lists();
-int get_members();
+int add_list_members();
 int check_user();
 int edit_group();
 int pr_try();
@@ -299,8 +299,12 @@ int afterc;
 	}
 	av[0] = "LIST";
 	av[1] = after[L_NAME];
-	get_members(2, av, after[L_NAME]);
-
+	code = mr_query("get_end_members_of_list", 2, av,
+			add_list_members, after[L_NAME]);
+	if (code)
+	    critical_alert("incremental",
+			   "Couldn't retrieve full membership of list %s: %s",
+			   after[L_NAME], error_message(code));
 	moira_disconnect();
 	return;
     }
@@ -448,19 +452,12 @@ add_user_lists(ac, av, user)
 }
 
 
-get_members(ac, av, group)
+add_list_members(ac, av, group)
     int ac;
     char *av[];
     char *group;
 {
-    int code=0;
-
-    code = mr_query("get_end_members_of_list", 1, &av[1], get_members, group);
-    if (code)
-	critical_alert("incremental",
-		       "Couldn't retrieve full membership of %s: %s",
-		       group, error_message(code));
-    return code;
+    edit_group(1, group, av[0], av[1]);
 }
 
 

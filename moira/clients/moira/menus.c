@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menus.c,v 1.21 1991-10-29 14:58:40 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menus.c,v 1.22 1992-04-06 17:24:23 mar Exp $";
 #endif lint
 
 /*	This is the file menus.c for the MOIRA Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menus.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menus.c,v 1.21 1991-10-29 14:58:40 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/menus.c,v 1.22 1992-04-06 17:24:23 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -68,7 +68,7 @@ Menu list_info_menu = {
     NULLFUNC,
     NULLFUNC,
     "List Information Menu",
-    5,
+    3,
     {
         SIMPLEFUNC("member",
 		   "Show all lists to which a given member belongs",
@@ -76,12 +76,8 @@ Menu list_info_menu = {
 	SIMPLEFUNC("admin",
 		   "Show all items which a given member can administer",
 		   ListByAdministrator),
-	SIMPLEFUNC("groups", "Show all lists which are groups",
-		   ListAllGroups),
 	SIMPLEFUNC("public", "Show all public mailing lists",
 		   ListAllPublicMailLists),
-	SIMPLEFUNC("maillists", "Show all mailing lists",
-		   ListAllMailLists)
     }
 };
 

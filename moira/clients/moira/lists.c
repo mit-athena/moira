@@ -1,5 +1,5 @@
 #if (!defined(lint) && !defined(SABER))
-  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v 1.24 1992-03-26 21:59:07 mar Exp $";
+  static char rcsid_module_c[] = "$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v 1.25 1992-04-06 17:24:02 mar Exp $";
 #endif lint
 
 /*	This is the file lists.c for the MOIRA Client, which allows a nieve
@@ -11,7 +11,7 @@
  *
  *      $Source: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v $
  *      $Author: mar $
- *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v 1.24 1992-03-26 21:59:07 mar Exp $
+ *      $Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/moira/lists.c,v 1.25 1992-04-06 17:24:02 mar Exp $
  *	
  *  	Copyright 1988 by the Massachusetts Institute of Technology.
  *
@@ -837,57 +837,6 @@ ListByAdministrator()
 
     FreeQueue(top);
     return (DM_NORMAL);
-}
-
-/*	Function Name: ListAllGroups
- *	Description: This function lists all visable groups.
- *	Arguments: none.
- *	Returns: DM_NORMAL.
- */
-
-ListAllGroups()
-{
-    register int status;
-    static char * args[] = {
-	"TRUE",			/* active */
-	"DONTCARE",		/* public */
-	"FALSE",		/* hidden */
-	"DONTCARE",		/* maillist */
-	"TRUE",			/* group. */
-    };
-
-    if (YesNoQuestion("This query will take a while, Do you wish to continue?",
-		       TRUE) == TRUE )
-	if (status = do_mr_query("qualified_get_lists", 5, args,
-			       Print, (char *) NULL) != 0)
-	    com_err(program_name, status, " in ListAllGroups");
-    return (DM_NORMAL);
-}
-
-/*	Function Name: ListAllMailLists
- *	Description: This function lists all visable maillists.
- *	Arguments: none
- *	Returns: DM_NORMAL.
- */
-
-ListAllMailLists()
-{
-    register int status;
-    static char * args[] = {
-	"TRUE",			/* active */
-	"DONTCARE",		/* public */
-	"FALSE",		/* hidden */
-	"TRUE",			/* maillist */
-	"DONTCARE",		/* group. */
-    };
-
-    if (YesNoQuestion("This query will take a while. Do you wish to continue?",
-		       TRUE) == TRUE )
-	if (status = do_mr_query("qualified_get_lists", 5, args,
-			       Print, (char *) NULL) != 0)
-	    com_err(program_name, status, " in ListAllGroups");
-
-    return (DM_NORMAL);	
 }
 
 /*	Function Name: ListAllPublicMailLists

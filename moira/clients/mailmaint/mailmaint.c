@@ -1,4 +1,4 @@
-/* $Id: mailmaint.c,v 1.41 1998-05-26 18:13:40 danw Exp $
+/* $Id: mailmaint.c,v 1.42 1998-10-21 19:27:04 danw Exp $
  *
  * Simple add-me-to/remove-me-from list client
  *
@@ -25,7 +25,7 @@
 
 #include <krb.h>
 
-RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v 1.41 1998-05-26 18:13:40 danw Exp $");
+RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/clients/mailmaint/mailmaint.c,v 1.42 1998-10-21 19:27:04 danw Exp $");
 
 #define STARTCOL 0
 #define STARTROW 3
@@ -33,6 +33,9 @@ RCSID("$Header: /afs/.athena.mit.edu/astaff/project/moiradev/repository/moira/cl
 #define LISTMAX 50
 #define LISTSIZE 32
 #define CTL(ch) ((ch) & 037)
+#ifdef MAX
+#undef MAX
+#endif
 #define MAX(A, B) ((A) > (B) ? (A) : (B))
 
 char *whoami;		/* should not be static, for logging package */
